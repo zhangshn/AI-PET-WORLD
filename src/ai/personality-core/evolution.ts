@@ -19,6 +19,7 @@
  */
 
 import type {
+  CorePersonality,
   PersonalityProfile,
   PersonalityTraits
 } from "./schema"
@@ -97,6 +98,57 @@ function mergeSummaries(base: string[], extra: string[]): string[] {
   }
 
   return merged
+}
+
+function mergeTags(base: string[], extra: string[]): string[] {
+  const set = new Set<string>()
+  const merged: string[] = []
+
+  for (const item of [...base, ...extra]) {
+    if (!set.has(item)) {
+      set.add(item)
+      merged.push(item)
+    }
+  }
+
+  return merged
+}
+
+function clampCoreValue(value: number): number {
+  if (value < -1) return -1
+  if (value > 1) return 1
+  return Math.round(value * 1000) / 1000
+}
+
+function mergeCorePersonality(
+  seedCore: CorePersonality,
+  birthCore: CorePersonality,
+  imprint: IncubationImprint
+): CorePersonality {
+  return {
+    activity: clampCoreValue(
+      birthCore.activity * 0.65 +
+      seedCore.activity * 0.25 +
+      ((imprint.activeGrowth - 50) / 100) * 0.1
+    ),
+    curiosity: clampCoreValue(
+      birthCore.curiosity * 0.7 +
+      seedCore.curiosity * 0.3
+    ),
+    dependency: clampCoreValue(
+      birthCore.dependency * 0.7 +
+      seedCore.dependency * 0.3
+    ),
+    confidence: clampCoreValue(
+      birthCore.confidence * 0.7 +
+      seedCore.confidence * 0.3
+    ),
+    sensitivity: clampCoreValue(
+      birthCore.sensitivity * 0.65 +
+      seedCore.sensitivity * 0.25 +
+      ((imprint.sensitiveGrowth - 50) / 100) * 0.1
+    )
+  }
 }
 
 /**
@@ -211,6 +263,12 @@ export function evolveProfile(
   const normalizedTraits = clampTraits(mergedTraits)
 
   const evolutionSummaries = buildEvolutionSummaries(imprint)
+  const mergedCorePersonality = mergeCorePersonality(
+    seedProfile.corePersonality,
+    birthProfile.corePersonality,
+    imprint
+  )
+  const mergedTags = mergeTags(seedProfile.tags, birthProfile.tags)
 
   return {
     /**
@@ -230,6 +288,8 @@ export function evolveProfile(
     /**
      * traits 使用融合后的最终结果
      */
-    traits: normalizedTraits
+    traits: normalizedTraits,
+    corePersonality: mergedCorePersonality,
+    tags: mergedTags
   }
 }

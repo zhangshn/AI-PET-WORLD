@@ -2,8 +2,9 @@
  * ======================================================
  * AI-PET-WORLD
  * Home System
+ * ======================================================
  *
- * 功能：
+ * 当前文件负责：
  * 1. 管理家园建造状态
  * 2. 在管家建造时推进进度
  * 3. 建造完成后更新状态
@@ -22,7 +23,7 @@ export class HomeSystem {
     this.home = {
       level: 1,
       progress: 0,
-      status: "not_started"
+      status: "not_started",
     }
   }
 

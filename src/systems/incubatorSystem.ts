@@ -2,8 +2,9 @@
  * ======================================================
  * AI-PET-WORLD
  * Incubator System
+ * ======================================================
  *
- * 功能：
+ * 当前文件负责：
  * 1. 管理孵化器中的胚胎
  * 2. 推进胚胎孵化进度
  * 3. 管理孵化稳定度
@@ -40,7 +41,7 @@ export class IncubatorSystem {
       embryoName: "Mochi",
       progress: 0,
       stability: 85,
-      status: "incubating"
+      status: "incubating",
     }
   }
 

@@ -1,56 +1,131 @@
 /**
  * ======================================================
  * AI-PET-WORLD
- * Event Style - Schema
+ * Event Style Schema
+ * ======================================================
  *
- * 功能：
- * 定义事件文案核心模块所需的数据结构
+ * 当前文件负责：定义事件文案系统（event-style）的输入结构
  *
  * 设计原则：
- * 1. 这个模块只负责“文本风格表达”
- * 2. 不负责业务状态变更
- * 3. 外部系统只传入当前事件上下文和人格结果
- * 4. 返回最终可展示的中文事件文案
+ * - 不暴露紫微斗数细节（仅使用 PersonalityProfile）
+ * - 支持行为叙事（action narrative）
+ * - 支持连续事件（continuity）
+ * - 支持强度变化（intensity）
+ * - 支持未来扩展（但保持当前最小稳定结构）
  * ======================================================
  */
 
-import type { PetAction, PetMood } from "../../types/pet"
-import type { PersonalityProfile } from "../personality-core/gateway"
+import type { PersonalityProfile } from "../personality-core/schema"
 
 /**
- * 宠物事件场景
- *
- * 当前只先支持两种：
- * - 行为变化
- * - 心情变化
+ * ======================================================
+ * 场景类型
+ * ======================================================
  */
 export type PetEventScene =
   | "pet_action_changed"
+  | "pet_action_narrative"
   | "pet_mood_changed"
+  | "pet_action_end"
 
 /**
- * 宠物行为事件文案输入
+ * ======================================================
+ * 行为类型（与 PetAction 对齐，但不强耦合 types/pet.ts）
+ * ======================================================
  */
-export type PetActionEventInput = {
-  scene: "pet_action_changed"
-  petName: string
-  action: PetAction
-  personalityProfile: PersonalityProfile
+export type PetEventAction =
+  | "sleeping"
+  | "walking"
+  | "eating"
+  | "exploring"
+  | "approaching"
+  | "idle"
+  | "observing"
+  | "resting"
+  | "alert_idle"
+
+/**
+ * ======================================================
+ * 情绪类型（用于 mood 事件）
+ * ======================================================
+ */
+export type PetEventMood =
+  | "happy"
+  | "normal"
+  | "sad"
+  | "calm"
+  | "curious"
+  | "alert"
+
+/**
+ * ======================================================
+ * 家园上下文（弱依赖）
+ * ======================================================
+ */
+export type PetHomeContext = {
+  /**
+   * 一句轻量环境提示
+   */
+  homeNote?: string
 }
 
 /**
- * 宠物心情事件文案输入
+ * ======================================================
+ * 事件输入结构（核心）
+ * ======================================================
  */
-export type PetMoodEventInput = {
-  scene: "pet_mood_changed"
-  petName: string
-  mood: PetMood
-  personalityProfile: PersonalityProfile
-}
+export interface PetEventStyleInput {
+  /**
+   * 当前场景
+   */
+  scene: PetEventScene
 
-/**
- * 宠物事件文案统一输入类型
- */
-export type PetEventStyleInput =
-  | PetActionEventInput
-  | PetMoodEventInput
+  /**
+   * 宠物名称
+   */
+  petName: string
+
+  /**
+   * 行为（可选：仅 action 场景使用）
+   */
+  action?: PetEventAction
+
+  /**
+   * 情绪（可选：仅 mood 场景使用）
+   */
+  mood?: PetEventMood
+
+  /**
+   * 人格（核心输入）
+   */
+  personalityProfile: PersonalityProfile
+
+  /**
+   * 家园上下文（弱影响）
+   */
+  homeContext?: PetHomeContext
+
+  /**
+   * 强度（0~1）
+   */
+  intensity?: number
+
+  /**
+   * 叙事类型（由 eventSystem 决定）
+   */
+  narrativeType?: string
+
+  /**
+   * 连续事件链 ID
+   */
+  continuityId?: string
+
+  /**
+   * 当前是第几步（连续叙事）
+   *
+   * ⚠ 注意：
+   * - 只用于文案风格变化
+   * - 不进入 WorldEvent 顶层
+   */
+  continuityStep?: number
+}

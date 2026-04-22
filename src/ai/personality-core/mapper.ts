@@ -4,37 +4,55 @@
  * Personality Core - Mapper
  * ======================================================
  *
- * 【文件职责】
- * 1. 将 BirthPattern（盘面结构）映射为 PersonalityProfile（人格档案）
- * 2. 正式输出：
- *    - corePersonality（紫微核心 5 维人格）
- *    - traits（行为层 9 维）
+ * 【文件定位】
+ * 这是“人格生成层”。
+ *
+ * 它只负责：
+ * 1. 接收 calculator.ts 输出的 BirthPattern
+ * 2. 根据主星、support 星、借星，计算人格
+ * 3. 计算：
+ *    - CorePersonality（核心 5 维）
+ *    - PersonalityTraits（行为层 traits）
  *    - summaries（摘要）
- *    - debug（调试结构）
+ *    - tags（标签）
+ *    - debug（调试信息）
  *
  * ------------------------------------------------------
- * 【当前正式算法流程】
- * 1. 判断命宫是否为空宫
- * 2. 非空宫：
- *    - 1 星 → 单星人格
- *    - 2 星 → 组合人格
- * 3. 空宫：
- *    - 借对宫（0.65）
- * 4. 三方四正修正：
- *    - supportStars 单星修正
- *    - supportStars 组合修正
- * 5. 空宫虚化滤镜
- * 6. 输出 corePersonality
- * 7. 映射为 traits
- * 8. 生成 summaries / debug
+ * 【这个文件不负责什么】
+ * 不负责：
+ * - 阳历转农历
+ * - 命宫/身宫公式
+ * - 五行局
+ * - 紫微/天府定位
+ * - 14 主星安放
+ *
+ * 这些都应该在：
+ *   - lunar.ts
+ *   - ziwei-engine.ts
+ *   - calculator.ts
  *
  * ------------------------------------------------------
- * 【重要说明】
- * 这版严格对齐你当前项目结构：
- * - StarProfile 用 baseCorePersonality / baseTraits
- * - PairProfile 用 pairCorePersonality / pairTraits / summaryText
- * - 不再错误读取不存在的 traits / label 字段
+ * 【当前人格计算原则】
  *
+ * 1. 命宫主星 = 核心人格（权重最高）
+ * 2. 三方四正 / support 星 = 支撑人格（中权重）
+ * 3. 命宫为空时，借星参与，但权重更低
+ * 4. 如果命宫为空，最终人格整体会有“虚化”衰减
+ * 5. 双星组合会进一步拉开 traits 差异
+ *
+ * ------------------------------------------------------
+ * 【当前权重】
+ * - 命宫主星：1.0
+ * - support 星：0.4
+ * - 借星：0.6
+ * - 空宫虚化：0.85
+ *
+ * ------------------------------------------------------
+ * 【当前输出】
+ * 输出：
+ *   PersonalityProfile
+ *
+ * 这是 personality-gateway.ts 和测试页最终会使用的结构。
  * ======================================================
  */
 
@@ -48,645 +66,1023 @@ import type {
 } from "./schema"
 
 import {
-  getPairLabelByStars,
-  getPairProfile,
-  getPairRelation,
-  getStarLabel,
-  getStarProfile,
-  buildTraitSummaries,
-  mergeUniqueSummaries,
-  isEnabledPair
-} from "./knowledge"
+  BORROWED_STAR_WEIGHT,
+  DEFAULT_TRAIT_VALUE,
+  EMPTY_PRIMARY_ATTENUATION,
+  MAX_TRAIT_VALUE,
+  MIN_TRAIT_VALUE,
+  PRIMARY_STAR_WEIGHT,
+  SUPPORT_STAR_WEIGHT
+} from "./constants"
 
 /**
  * ======================================================
- * 兼容当前 knowledge 结构的轻量类型
+ * 单星人格资料结构
  * ======================================================
  */
-type StarProfileLike = {
-  summaryTags?: string[]
-  baseTraits?: Partial<PersonalityTraits>
-  baseCorePersonality?: Partial<CorePersonality>
-}
-
-type PairProfileLike = {
-  summaryText?: string
-  personalityTags?: string[]
-  pairTraits?: Partial<PersonalityTraits>
-  pairCorePersonality?: Partial<CorePersonality>
+type StarProfile = {
+  label: string
+  core: Partial<CorePersonality>
+  traits: Partial<PersonalityTraits>
+  tags: string[]
+  summaries: string[]
 }
 
 /**
  * ======================================================
- * 常量
+ * 双星组合资料结构
  * ======================================================
  */
-
-/**
- * 空宫借对宫衰减
- */
-const EMPTY_BORROW_MULTIPLIER = 0.65
-
-/**
- * 空宫虚化滤镜
- */
-const EMPTY_STATE_FILTER: CorePersonality = {
-  activity: 0.9,
-  curiosity: 1.08,
-  dependency: 1.15,
-  confidence: 0.85,
-  sensitivity: 1.12
-}
-
-/**
- * 默认核心人格
- */
-const DEFAULT_CORE_PERSONALITY: CorePersonality = {
-  activity: 0.5,
-  curiosity: 0.5,
-  dependency: 0.5,
-  confidence: 0.5,
-  sensitivity: 0.5
+type PairProfile = {
+  pairLabel: string
+  core?: Partial<CorePersonality>
+  traits?: Partial<PersonalityTraits>
+  tags?: string[]
+  summaries?: string[]
 }
 
 /**
  * ======================================================
- * 工具函数
+ * 星曜中文标签
  * ======================================================
  */
+const STAR_LABELS: Record<StarId, string> = {
+  star_00: "空",
+  star_01: "紫微",
+  star_02: "贪狼",
+  star_03: "巨门",
+  star_04: "廉贞",
+  star_05: "武曲",
+  star_06: "破军",
+  star_07: "天府",
+  star_08: "天机",
+  star_09: "天相",
+  star_10: "天梁",
+  star_11: "天同",
+  star_12: "七杀",
+  star_13: "太阳",
+  star_14: "太阴"
+}
 
-function clamp01(value: number): number {
-  if (Number.isNaN(value)) return 0.5
+/**
+ * ======================================================
+ * 全量单星人格配置
+ * ======================================================
+ */
+const STAR_PROFILES: Record<StarId, StarProfile> = {
+  star_00: {
+    label: "空",
+    core: {},
+    traits: {},
+    tags: [],
+    summaries: []
+  },
+
+  star_01: {
+    label: "紫微",
+    core: {
+      confidence: 0.28,
+      dependency: -0.18,
+      activity: 0.08
+    },
+    traits: {
+      discipline: 18,
+      stability: 14,
+      caregiving: 8,
+      buildingPreference: 10,
+      activity: 6
+    },
+    tags: ["主导感", "统筹感", "核心意识"],
+    summaries: [
+      "紫微底色明显",
+      "更容易以中心角色理解关系与秩序，重掌控与整体统筹。"
+    ]
+  },
+
+  star_02: {
+    label: "贪狼",
+    core: {
+      activity: 0.24,
+      curiosity: 0.22,
+      sensitivity: 0.06
+    },
+    traits: {
+      activity: 20,
+      appetite: 18,
+      curiosity: 15,
+      discipline: -10,
+      restPreference: -12
+    },
+    tags: ["探索欲", "感官性", "扩张性"],
+    summaries: [
+      "贪狼底色明显",
+      "行动欲与尝试欲偏强，更容易被新鲜感、刺激感与欲望驱动。"
+    ]
+  },
+
+  star_03: {
+    label: "巨门",
+    core: {
+      curiosity: 0.18,
+      sensitivity: 0.18,
+      confidence: -0.08
+    },
+    traits: {
+      curiosity: 12,
+      emotionalSensitivity: 18,
+      stability: -10,
+      discipline: 4,
+      caregiving: -4
+    },
+    tags: ["思辨", "敏感", "怀疑"],
+    summaries: [
+      "巨门底色明显",
+      "容易从细节和矛盾处进入思考，对外界评价、信息偏差更敏感。"
+    ]
+  },
+
+  star_04: {
+    label: "廉贞",
+    core: {
+      confidence: 0.14,
+      sensitivity: 0.10,
+      activity: 0.12
+    },
+    traits: {
+      discipline: 10,
+      activity: 10,
+      emotionalSensitivity: 8,
+      restPreference: -6,
+      stability: -4
+    },
+    tags: ["原则感", "边界感", "欲望张力"],
+    summaries: [
+      "廉贞底色明显",
+      "边界意识和内在原则较强，既会坚持，也容易产生内在拉扯。"
+    ]
+  },
+
+  star_05: {
+    label: "武曲",
+    core: {
+      confidence: 0.18,
+      dependency: -0.22,
+      activity: 0.06
+    },
+    traits: {
+      discipline: 22,
+      stability: 12,
+      appetite: -6,
+      caregiving: -8,
+      buildingPreference: 12
+    },
+    tags: ["执行力", "务实", "资源感"],
+    summaries: [
+      "武曲底色明显",
+      "更偏务实、执行、结果导向，对资源与秩序的感知更强。"
+    ]
+  },
+
+  star_06: {
+    label: "破军",
+    core: {
+      activity: 0.26,
+      confidence: 0.10,
+      sensitivity: -0.06
+    },
+    traits: {
+      activity: 22,
+      curiosity: 12,
+      discipline: -14,
+      stability: -20,
+      buildingPreference: -6
+    },
+    tags: ["破旧立新", "冲撞", "变动性"],
+    summaries: [
+      "破军底色明显",
+      "更容易通过打破旧状态推进变化，节奏跳跃、稳定性较低。"
+    ]
+  },
+
+  star_07: {
+    label: "天府",
+    core: {
+      confidence: 0.16,
+      sensitivity: 0.04,
+      dependency: -0.06
+    },
+    traits: {
+      stability: 18,
+      discipline: 14,
+      caregiving: 10,
+      buildingPreference: 14,
+      appetite: 6
+    },
+    tags: ["稳重", "包容", "承载力"],
+    summaries: [
+      "天府底色明显",
+      "更强调稳妥、承接、容纳与积累，节奏通常比外放型人格更稳。"
+    ]
+  },
+
+  star_08: {
+    label: "天机",
+    core: {
+      curiosity: 0.28,
+      sensitivity: 0.12,
+      confidence: -0.06
+    },
+    traits: {
+      curiosity: 22,
+      emotionalSensitivity: 8,
+      stability: -10,
+      discipline: -4,
+      activity: 6
+    },
+    tags: ["思维快", "变化感", "观察力"],
+    summaries: [
+      "天机底色明显",
+      "思维反应快、联想多，更容易从变化、信息与细节中启动自己。"
+    ]
+  },
+
+  star_09: {
+    label: "天相",
+    core: {
+      sensitivity: 0.10,
+      dependency: 0.06,
+      confidence: 0.04
+    },
+    traits: {
+      caregiving: 18,
+      discipline: 8,
+      stability: 6,
+      emotionalSensitivity: 8,
+      activity: -2
+    },
+    tags: ["协调", "关系秩序", "照应感"],
+    summaries: [
+      "天相底色明显",
+      "更容易站在关系协调与秩序维护的位置，对公平与分寸更在意。"
+    ]
+  },
+
+  star_10: {
+    label: "天梁",
+    core: {
+      sensitivity: 0.16,
+      dependency: 0.10,
+      confidence: 0.06
+    },
+    traits: {
+      caregiving: 22,
+      stability: 10,
+      discipline: 6,
+      emotionalSensitivity: 10,
+      restPreference: 8
+    },
+    tags: ["保护欲", "责任感", "照顾倾向"],
+    summaries: [
+      "天梁底色明显",
+      "保护欲与责任感较强，更容易自然地站到照顾者或撑住局面的位置。"
+    ]
+  },
+
+  star_11: {
+    label: "天同",
+    core: {
+      dependency: 0.22,
+      sensitivity: 0.14,
+      confidence: -0.10
+    },
+    traits: {
+      restPreference: 18,
+      appetite: 10,
+      caregiving: 10,
+      discipline: -10,
+      activity: -10,
+      emotionalSensitivity: 10
+    },
+    tags: ["温和", "舒适倾向", "依恋感"],
+    summaries: [
+      "天同底色明显",
+      "更追求舒适、和气与被接住的感觉，依恋感和情绪柔软度较强。"
+    ]
+  },
+
+  star_12: {
+    label: "七杀",
+    core: {
+      confidence: 0.18,
+      dependency: -0.20,
+      activity: 0.20
+    },
+    traits: {
+      activity: 16,
+      discipline: 10,
+      stability: -12,
+      caregiving: -10,
+      restPreference: -10
+    },
+    tags: ["决断", "硬朗", "冒险性"],
+    summaries: [
+      "七杀底色明显",
+      "更偏决断、硬朗、直接推进，不太依赖温吞的关系缓冲。"
+    ]
+  },
+
+  star_13: {
+    label: "太阳",
+    core: {
+      confidence: 0.24,
+      activity: 0.16,
+      dependency: -0.08
+    },
+    traits: {
+      activity: 14,
+      caregiving: 8,
+      discipline: 6,
+      appetite: 4,
+      restPreference: -8
+    },
+    tags: ["外放", "表达欲", "照亮感"],
+    summaries: [
+      "太阳底色明显",
+      "表达欲与外放度更强，更容易通过主动性和存在感影响周围。"
+    ]
+  },
+
+  star_14: {
+    label: "太阴",
+    core: {
+      sensitivity: 0.24,
+      dependency: 0.12,
+      curiosity: 0.06
+    },
+    traits: {
+      emotionalSensitivity: 22,
+      restPreference: 10,
+      stability: 4,
+      appetite: 6,
+      activity: -8
+    },
+    tags: ["细腻", "内感", "情绪感知"],
+    summaries: [
+      "太阴底色明显",
+      "细腻、内感、情绪感知更强，容易把外界变化转成内心波动。"
+    ]
+  }
+}
+
+/**
+ * ======================================================
+ * 双星组合配置
+ * ======================================================
+ */
+const PAIR_PROFILES: Record<string, PairProfile> = {
+  "star_10+star_11": {
+    pairLabel: "同梁照顾型",
+    traits: {
+      caregiving: 18,
+      emotionalSensitivity: 8,
+      stability: 6,
+      discipline: -4
+    },
+    core: {
+      dependency: 0.10,
+      sensitivity: 0.08
+    },
+    tags: ["照顾型", "保护欲", "心软倾向"],
+    summaries: [
+      "保护欲与和气感并存，重照顾、重关系，也容易变得心软而回避冲突。"
+    ]
+  },
+
+  "star_08+star_14": {
+    pairLabel: "机阴敏思型",
+    traits: {
+      curiosity: 8,
+      emotionalSensitivity: 14,
+      stability: -6
+    },
+    core: {
+      curiosity: 0.08,
+      sensitivity: 0.12
+    },
+    tags: ["敏思型", "观察细腻", "情绪波动"],
+    summaries: [
+      "联动结构：思维细腻而敏感，观察入微，容易把外界变化转化为内在情绪波动。"
+    ]
+  },
+
+  "star_01+star_05": {
+    pairLabel: "紫武掌控型",
+    traits: {
+      discipline: 14,
+      stability: 8,
+      caregiving: -4
+    },
+    core: {
+      confidence: 0.10,
+      dependency: -0.08
+    },
+    tags: ["掌控力", "执行型"],
+    summaries: [
+      "主导感与执行力并存，既想掌控方向，也愿意亲手把事情推进到底。"
+    ]
+  },
+
+  "star_01+star_07": {
+    pairLabel: "紫府中枢型",
+    traits: {
+      stability: 16,
+      discipline: 10,
+      caregiving: 8
+    },
+    core: {
+      confidence: 0.10
+    },
+    tags: ["中枢感", "承载力", "稳中带主导"],
+    summaries: [
+      "中枢气质明显，偏稳中带主导，既想掌控局面，也愿意承接责任。"
+    ]
+  },
+
+  "star_02+star_06": {
+    pairLabel: "贪破冲锋型",
+    traits: {
+      activity: 18,
+      curiosity: 10,
+      stability: -18,
+      discipline: -8
+    },
+    core: {
+      activity: 0.10
+    },
+    tags: ["冲锋", "破格", "高刺激"],
+    summaries: [
+      "刺激感和突破欲都偏强，容易为了变化和新鲜感主动打破旧状态。"
+    ]
+  },
+
+  "star_03+star_08": {
+    pairLabel: "巨机思辨型",
+    traits: {
+      curiosity: 12,
+      emotionalSensitivity: 10,
+      stability: -4
+    },
+    core: {
+      curiosity: 0.08,
+      sensitivity: 0.06
+    },
+    tags: ["思辨型", "多想", "分析欲"],
+    summaries: [
+      "更容易进入分析、推演和反复思考状态，信息处理深但内耗风险也更高。"
+    ]
+  },
+
+  "star_13+star_05": {
+    pairLabel: "阳武执行外放型",
+    traits: {
+      activity: 12,
+      discipline: 12,
+      stability: 4
+    },
+    core: {
+      confidence: 0.08
+    },
+    tags: ["执行外放", "推进感"],
+    summaries: [
+      "外放表达和执行推进结合得较紧，容易一边表态一边直接上手。"
+    ]
+  },
+
+  "star_07+star_10": {
+    pairLabel: "府梁承托型",
+    traits: {
+      caregiving: 14,
+      stability: 12,
+      discipline: 6
+    },
+    core: {
+      sensitivity: 0.06
+    },
+    tags: ["承托型", "可靠", "责任感"],
+    summaries: [
+      "承接力和责任感同时增强，更像能撑住局面、也愿意顾及他人的类型。"
+    ]
+  }
+}
+
+/**
+ * ======================================================
+ * 创建默认核心人格
+ * ======================================================
+ */
+function createBaseCorePersonality(): CorePersonality {
+  return {
+    activity: 0.5,
+    curiosity: 0.5,
+    dependency: 0.5,
+    confidence: 0.5,
+    sensitivity: 0.5
+  }
+}
+
+/**
+ * ======================================================
+ * 创建默认 traits
+ * ======================================================
+ */
+function createBaseTraits(): PersonalityTraits {
+  return {
+    activity: DEFAULT_TRAIT_VALUE,
+    restPreference: DEFAULT_TRAIT_VALUE,
+    appetite: DEFAULT_TRAIT_VALUE,
+    discipline: DEFAULT_TRAIT_VALUE,
+    curiosity: DEFAULT_TRAIT_VALUE,
+    emotionalSensitivity: DEFAULT_TRAIT_VALUE,
+    stability: DEFAULT_TRAIT_VALUE,
+    caregiving: DEFAULT_TRAIT_VALUE,
+    buildingPreference: DEFAULT_TRAIT_VALUE
+  }
+}
+
+/**
+ * ======================================================
+ * 生成 pair key
+ * ======================================================
+ */
+function makePairKey(a: StarId, b: StarId): string {
+  return [a, b].sort().join("+")
+}
+
+/**
+ * ======================================================
+ * 限制 core 数值到 0~1
+ * ======================================================
+ */
+function clampCore(value: number): number {
   if (value < 0) return 0
   if (value > 1) return 1
   return Number(value.toFixed(4))
 }
 
-function clamp100(value: number): number {
-  if (Number.isNaN(value)) return 50
-  if (value < 0) return 0
-  if (value > 100) return 100
+/**
+ * ======================================================
+ * 限制 trait 数值到 MIN~MAX
+ * ======================================================
+ */
+function clampTrait(value: number): number {
+  if (value < MIN_TRAIT_VALUE) return MIN_TRAIT_VALUE
+  if (value > MAX_TRAIT_VALUE) return MAX_TRAIT_VALUE
   return Math.round(value)
 }
 
-function normalizeCore(core: CorePersonality): CorePersonality {
-  return {
-    activity: clamp01(core.activity),
-    curiosity: clamp01(core.curiosity),
-    dependency: clamp01(core.dependency),
-    confidence: clamp01(core.confidence),
-    sensitivity: clamp01(core.sensitivity)
-  }
-}
-
-function blendCore(
-  base: CorePersonality,
-  overlay: CorePersonality,
+/**
+ * ======================================================
+ * 应用 core 增量
+ * ======================================================
+ */
+function applyCoreDelta(
+  target: CorePersonality,
+  delta: Partial<CorePersonality>,
   weight: number
-): CorePersonality {
-  return normalizeCore({
-    activity: base.activity * (1 - weight) + overlay.activity * weight,
-    curiosity: base.curiosity * (1 - weight) + overlay.curiosity * weight,
-    dependency: base.dependency * (1 - weight) + overlay.dependency * weight,
-    confidence: base.confidence * (1 - weight) + overlay.confidence * weight,
-    sensitivity: base.sensitivity * (1 - weight) + overlay.sensitivity * weight
+): void {
+  Object.entries(delta).forEach(([key, value]) => {
+    if (typeof value !== "number") return
+    const traitKey = key as keyof CorePersonality
+    target[traitKey] = clampCore(target[traitKey] + value * weight)
   })
 }
 
-function multiplyCore(
+/**
+ * ======================================================
+ * 应用 traits 增量
+ * ======================================================
+ */
+function applyTraitDelta(
+  target: PersonalityTraits,
+  delta: Partial<PersonalityTraits>,
+  weight: number
+): void {
+  Object.entries(delta).forEach(([key, value]) => {
+    if (typeof value !== "number") return
+    const traitKey = key as keyof PersonalityTraits
+    target[traitKey] = clampTrait(target[traitKey] + value * weight)
+  })
+}
+
+/**
+ * ======================================================
+ * 为空宫做整体虚化
+ * ======================================================
+ */
+function applyEmptyPrimaryAttenuation(
   core: CorePersonality,
-  multiplier: number
-): CorePersonality {
-  return normalizeCore({
-    activity: core.activity * multiplier,
-    curiosity: core.curiosity * multiplier,
-    dependency: core.dependency * multiplier,
-    confidence: core.confidence * multiplier,
-    sensitivity: core.sensitivity * multiplier
-  })
-}
-
-function applyEmptyStateFilter(core: CorePersonality): CorePersonality {
-  return normalizeCore({
-    activity: core.activity * EMPTY_STATE_FILTER.activity,
-    curiosity: core.curiosity * EMPTY_STATE_FILTER.curiosity,
-    dependency: core.dependency * EMPTY_STATE_FILTER.dependency,
-    confidence: core.confidence * EMPTY_STATE_FILTER.confidence,
-    sensitivity: core.sensitivity * EMPTY_STATE_FILTER.sensitivity
-  })
-}
-
-/**
- * ======================================================
- * 旧 traits -> CorePersonality 兼容推导
- *
- * 说明：
- * - 如果某颗星 / 某个组合暂时还没正式写 5 维人格，
- *   就从旧 traits 临时推导
- * ======================================================
- */
-function deriveCoreFromLegacyTraits(
-  traits?: Partial<PersonalityTraits>
-): CorePersonality {
-  const source = traits ?? {}
-
-  const activity = (source.activity ?? 50) / 100
-  const curiosity = (source.curiosity ?? 50) / 100
-
-  const dependency = (
-    ((source.caregiving ?? 50) * 0.45) +
-    ((source.emotionalSensitivity ?? 50) * 0.30) +
-    ((100 - (source.discipline ?? 50)) * 0.25)
-  ) / 100
-
-  const confidence = (
-    ((source.discipline ?? 50) * 0.35) +
-    ((source.buildingPreference ?? 50) * 0.20) +
-    ((source.activity ?? 50) * 0.20) +
-    ((source.stability ?? 50) * 0.25)
-  ) / 100
-
-  const sensitivity = (
-    ((source.emotionalSensitivity ?? 50) * 0.65) +
-    ((source.caregiving ?? 50) * 0.20) +
-    ((100 - (source.stability ?? 50)) * 0.15)
-  ) / 100
-
-  return normalizeCore({
-    activity,
-    curiosity,
-    dependency,
-    confidence,
-    sensitivity
-  })
-}
-
-/**
- * ======================================================
- * 读取单星核心人格
- * ======================================================
- */
-function getStarCorePersonality(starId: StarId): CorePersonality {
-  const profile = getStarProfile(starId) as StarProfileLike | null
-
-  if (!profile) {
-    return DEFAULT_CORE_PERSONALITY
-  }
-
-  if (profile.baseCorePersonality) {
-    return normalizeCore({
-      activity: profile.baseCorePersonality.activity ?? 0.5,
-      curiosity: profile.baseCorePersonality.curiosity ?? 0.5,
-      dependency: profile.baseCorePersonality.dependency ?? 0.5,
-      confidence: profile.baseCorePersonality.confidence ?? 0.5,
-      sensitivity: profile.baseCorePersonality.sensitivity ?? 0.5
-    })
-  }
-
-  return deriveCoreFromLegacyTraits(profile.baseTraits)
-}
-
-/**
- * ======================================================
- * 读取组合核心人格
- * ======================================================
- */
-function getPairCorePersonality(pairId: string): CorePersonality {
-  const profile = getPairProfile(pairId) as PairProfileLike | null
-
-  if (!profile) {
-    return DEFAULT_CORE_PERSONALITY
-  }
-
-  if (profile.pairCorePersonality) {
-    return normalizeCore({
-      activity: profile.pairCorePersonality.activity ?? 0.5,
-      curiosity: profile.pairCorePersonality.curiosity ?? 0.5,
-      dependency: profile.pairCorePersonality.dependency ?? 0.5,
-      confidence: profile.pairCorePersonality.confidence ?? 0.5,
-      sensitivity: profile.pairCorePersonality.sensitivity ?? 0.5
-    })
-  }
-
-  return deriveCoreFromLegacyTraits(profile.pairTraits)
-}
-
-/**
- * ======================================================
- * traits 映射
- * ======================================================
- */
-function mapCoreToBehaviorTraits(core: CorePersonality): PersonalityTraits {
-  return {
-    activity: clamp100(core.activity * 100),
-    restPreference: clamp100((1 - core.activity) * 100),
-    appetite: clamp100((core.activity * 0.45 + core.sensitivity * 0.55) * 100),
-    discipline: clamp100(
-      (core.confidence * 0.75 + (1 - core.dependency) * 0.25) * 100
-    ),
-    curiosity: clamp100(core.curiosity * 100),
-    emotionalSensitivity: clamp100(core.sensitivity * 100),
-    stability: clamp100(
-      ((1 - core.sensitivity) * 0.6 + core.confidence * 0.4) * 100
-    ),
-    caregiving: clamp100(
-      (core.dependency * 0.55 + core.sensitivity * 0.45) * 100
-    ),
-    buildingPreference: clamp100(
-      (
-        core.confidence * 0.5 +
-        (1 - core.curiosity) * 0.2 +
-        (1 - core.dependency) * 0.3
-      ) * 100
-    )
-  }
-}
-
-/**
- * ======================================================
- * 构建命中组合结构
- * ======================================================
- */
-function buildMatchedPair(
-  pairId: string,
-  starA: StarId,
-  starB: StarId
-): MatchedPairResult {
-  return {
-    pairId,
-    starIds: [starA, starB],
-    pairLabel: getPairLabelByStars(starA, starB)
-  }
-}
-
-/**
- * ======================================================
- * 命宫人格
- * ======================================================
- */
-function resolvePrimaryCore(
-  primaryStars: StarId[]
-): {
-  core: CorePersonality
-  hitPairs: MatchedPairResult[]
-} {
-  const validPrimaryStars = primaryStars.filter((starId) => starId !== "star_00")
-
-  if (validPrimaryStars.length === 0) {
-    return {
-      core: DEFAULT_CORE_PERSONALITY,
-      hitPairs: []
-    }
-  }
-
-  if (validPrimaryStars.length === 1) {
-    return {
-      core: getStarCorePersonality(validPrimaryStars[0]),
-      hitPairs: []
-    }
-  }
-
-  const starA = validPrimaryStars[0]
-  const starB = validPrimaryStars[1]
-
-  const relation = getPairRelation(starA, starB)
-
-  if (relation && isEnabledPair(relation.pairId)) {
-    return {
-      core: getPairCorePersonality(relation.pairId),
-      hitPairs: [buildMatchedPair(relation.pairId, starA, starB)]
-    }
-  }
-
-  return {
-    core: blendCore(
-      getStarCorePersonality(starA),
-      getStarCorePersonality(starB),
-      0.5
-    ),
-    hitPairs: []
-  }
-}
-
-/**
- * ======================================================
- * 空宫借对宫
- * ======================================================
- */
-function resolveBorrowedCore(
-  borrowedStars: StarId[]
-): {
-  core: CorePersonality
-  hitPairs: MatchedPairResult[]
-} {
-  const validBorrowedStars = borrowedStars.filter((starId) => starId !== "star_00")
-
-  if (validBorrowedStars.length === 0) {
-    return {
-      core: DEFAULT_CORE_PERSONALITY,
-      hitPairs: []
-    }
-  }
-
-  if (validBorrowedStars.length === 1) {
-    return {
-      core: multiplyCore(
-        getStarCorePersonality(validBorrowedStars[0]),
-        EMPTY_BORROW_MULTIPLIER
-      ),
-      hitPairs: []
-    }
-  }
-
-  const starA = validBorrowedStars[0]
-  const starB = validBorrowedStars[1]
-
-  const relation = getPairRelation(starA, starB)
-
-  if (relation && isEnabledPair(relation.pairId)) {
-    return {
-      core: multiplyCore(
-        getPairCorePersonality(relation.pairId),
-        EMPTY_BORROW_MULTIPLIER
-      ),
-      hitPairs: [buildMatchedPair(relation.pairId, starA, starB)]
-    }
-  }
-
-  return {
-    core: multiplyCore(
-      blendCore(
-        getStarCorePersonality(starA),
-        getStarCorePersonality(starB),
-        0.5
-      ),
-      EMPTY_BORROW_MULTIPLIER
-    ),
-    hitPairs: []
-  }
-}
-
-/**
- * ======================================================
- * 三方四正修正（support）
- * ======================================================
- */
-function applySupportModifier(
-  baseCore: CorePersonality,
-  supportStars: StarId[]
-): {
-  core: CorePersonality
-  supportPairs: MatchedPairResult[]
-} {
-  let current = { ...baseCore }
-  const supportPairs: MatchedPairResult[] = []
-
-  const validSupportStars = Array.from(
-    new Set(supportStars.filter((starId) => starId !== "star_00"))
-  )
-
-  /**
-   * 单星修正
-   */
-  for (const starId of validSupportStars) {
-    const supportCore = getStarCorePersonality(starId)
-    current = blendCore(current, supportCore, 0.08)
-  }
-
-  /**
-   * 组合修正
-   * 当前简化策略：
-   * - 任意 supportStars 两两尝试配对
-   * - 命中 pairRelation + enabled 才生效
-   */
-  for (let i = 0; i < validSupportStars.length; i++) {
-    for (let j = i + 1; j < validSupportStars.length; j++) {
-      const starA = validSupportStars[i]
-      const starB = validSupportStars[j]
-
-      const relation = getPairRelation(starA, starB)
-
-      if (!relation) continue
-      if (!isEnabledPair(relation.pairId)) continue
-
-      current = blendCore(current, getPairCorePersonality(relation.pairId), 0.12)
-
-      supportPairs.push(buildMatchedPair(relation.pairId, starA, starB))
-    }
-  }
-
-  return {
-    core: normalizeCore(current),
-    supportPairs
-  }
-}
-
-/**
- * ======================================================
- * 摘要生成
- * ======================================================
- */
-function buildSummaries(params: {
-  pattern: BirthPattern
-  corePersonality: CorePersonality
   traits: PersonalityTraits
-  hitPairs: MatchedPairResult[]
-  supportPairs: MatchedPairResult[]
-}): string[] {
-  const { pattern, corePersonality, traits, hitPairs, supportPairs } = params
-  const raw: string[] = []
+): void {
+  ;(Object.keys(core) as Array<keyof CorePersonality>).forEach((key) => {
+    const current = core[key]
+    const base = 0.5
+    core[key] = clampCore(base + (current - base) * EMPTY_PRIMARY_ATTENUATION)
+  })
 
-  if (pattern.isEmptyPrimary) {
-    raw.push("命宫为空宫，主性格更容易受外部结构影响")
-  } else {
-    for (const starId of pattern.primaryStars.filter((id) => id !== "star_00")) {
-      raw.push(`${getStarLabel(starId)}底色明显`)
-    }
-  }
+  ;(Object.keys(traits) as Array<keyof PersonalityTraits>).forEach((key) => {
+    const current = traits[key]
+    if (typeof current !== "number") return
 
-  if (pattern.isEmptyPrimary && pattern.borrowedStars.length > 0) {
-    raw.push(
-      `命宫借对宫影响：${pattern.borrowedStars
-        .filter((id) => id !== "star_00")
-        .map((id) => getStarLabel(id))
-        .join("、")}`
+    const base = DEFAULT_TRAIT_VALUE
+    traits[key] = clampTrait(
+      base + (current - base) * EMPTY_PRIMARY_ATTENUATION
     )
-  }
-
-  for (const pair of hitPairs) {
-    const profile = getPairProfile(pair.pairId) as PairProfileLike | null
-    if (profile?.summaryText) {
-      raw.push(profile.summaryText)
-    } else {
-      raw.push(`${pair.pairLabel}组合影响明显`)
-    }
-  }
-
-  for (const pair of supportPairs) {
-    const profile = getPairProfile(pair.pairId) as PairProfileLike | null
-    if (profile?.summaryText) {
-      raw.push(`联动结构：${profile.summaryText}`)
-    } else {
-      raw.push(`联动组合：${pair.pairLabel}`)
-    }
-  }
-
-  for (const starId of pattern.supportStars.slice(0, 2)) {
-    raw.push(`受${getStarLabel(starId)}联动修正`)
-  }
-
-  if (corePersonality.activity >= 0.72) raw.push("行动倾向很强")
-  if (corePersonality.activity <= 0.32) raw.push("更偏静态与保守")
-  if (corePersonality.curiosity >= 0.72) raw.push("探索欲与好奇心明显")
-  if (corePersonality.dependency >= 0.7) raw.push("依赖倾向较高，重关系与回应")
-  if (corePersonality.confidence >= 0.72) raw.push("自我强度高，主导欲明显")
-  if (corePersonality.sensitivity >= 0.72) raw.push("情绪敏感度较高，感受力强")
-
-  if (pattern.emptySectorCount >= 4) {
-    raw.push("空宫数量较多，整体变动性更强")
-  }
-
-  raw.push(...buildTraitSummaries(traits))
-
-  for (const starId of pattern.primaryStars.filter((id) => id !== "star_00")) {
-    const profile = getStarProfile(starId) as StarProfileLike | null
-    if (profile?.summaryTags?.length) {
-      raw.push(...profile.summaryTags.slice(0, 2))
-    }
-  }
-
-  return mergeUniqueSummaries(raw)
+  })
 }
 
 /**
  * ======================================================
- * 对外主函数
+ * 检测一组星中的所有 pair
  * ======================================================
  */
-export function mapPatternToProfile(
+function detectPairs(stars: StarId[]): MatchedPairResult[] {
+  const deduped = Array.from(new Set(stars)).filter((star) => star !== "star_00")
+  const pairs: MatchedPairResult[] = []
+
+  for (let i = 0; i < deduped.length; i++) {
+    for (let j = i + 1; j < deduped.length; j++) {
+      const a = deduped[i]
+      const b = deduped[j]
+      const pairKey = makePairKey(a, b)
+      const pairProfile = PAIR_PROFILES[pairKey]
+
+      pairs.push({
+        pairId: pairKey,
+        starIds: [a, b],
+        pairLabel:
+          pairProfile?.pairLabel ||
+          `${STAR_LABELS[a]} + ${STAR_LABELS[b]}`
+      })
+    }
+  }
+
+  return pairs
+}
+
+/**
+ * ======================================================
+ * 对命中的 pair 应用加成
+ * ======================================================
+ */
+function applyPairs(
+  pairs: MatchedPairResult[],
+  core: CorePersonality,
+  traits: PersonalityTraits,
+  weight: number,
+  tags: Set<string>,
+  summaries: string[]
+): void {
+  pairs.forEach((pair) => {
+    const profile = PAIR_PROFILES[pair.pairId]
+    if (!profile) return
+
+    if (profile.core) {
+      applyCoreDelta(core, profile.core, weight)
+    }
+
+    if (profile.traits) {
+      applyTraitDelta(traits, profile.traits, weight)
+    }
+
+    profile.tags?.forEach((tag) => tags.add(tag))
+    profile.summaries?.forEach((summary) => summaries.push(summary))
+  })
+}
+
+/**
+ * ======================================================
+ * 应用一组星的单星人格
+ * ======================================================
+ */
+function applyStars(
+  stars: StarId[],
+  core: CorePersonality,
+  traits: PersonalityTraits,
+  weight: number,
+  tags: Set<string>,
+  summaries: string[]
+): void {
+  const deduped = Array.from(new Set(stars)).filter((star) => star !== "star_00")
+
+  deduped.forEach((starId) => {
+    const profile = STAR_PROFILES[starId]
+    if (!profile) return
+
+    applyCoreDelta(core, profile.core, weight)
+    applyTraitDelta(traits, profile.traits, weight)
+
+    profile.tags.forEach((tag) => tags.add(tag))
+    profile.summaries.forEach((summary) => summaries.push(summary))
+  })
+}
+
+/**
+ * ======================================================
+ * 根据 traits 追加摘要
+ * ======================================================
+ */
+function appendTraitSummaries(
+  traits: PersonalityTraits,
+  summaries: string[]
+): void {
+  if (traits.caregiving >= 65) {
+    summaries.push("照料倾向较强，容易站到照顾者位置。")
+  }
+
+  if (traits.emotionalSensitivity >= 65) {
+    summaries.push("情绪感知较强，更容易受到关系氛围与环境变化影响。")
+  }
+
+  if (traits.discipline >= 65) {
+    summaries.push("纪律感和执行顺序较强，更习惯按规则或结构推进事情。")
+  }
+
+  if (traits.discipline <= 35) {
+    summaries.push("纪律性相对较弱，更容易受情绪、状态和新鲜感影响节奏。")
+  }
+
+  if (traits.stability <= 40) {
+    summaries.push("状态波动相对明显，对变化和刺激的反应更强。")
+  }
+
+  if (traits.restPreference >= 60) {
+    summaries.push("追求舒适与和气，更倾向在可安放、可休整的环境中恢复自己。")
+  }
+
+  if (traits.curiosity >= 60) {
+    summaries.push("探索欲偏强，容易被新的信息、变化和可能性吸引。")
+  }
+
+  if (traits.activity >= 65) {
+    summaries.push("主动性较强，更愿意自己发起、推动和尝试。")
+  }
+
+  if (traits.activity <= 35) {
+    summaries.push("外放主动性相对较弱，更偏观察、等待或顺势而动。")
+  }
+}
+
+/**
+ * ======================================================
+ * 去重摘要
+ * ======================================================
+ */
+function dedupeSummaries(items: string[]): string[] {
+  const seen = new Set<string>()
+  const result: string[] = []
+
+  items.forEach((item) => {
+    const key = item.trim()
+    if (!key || seen.has(key)) return
+    seen.add(key)
+    result.push(key)
+  })
+
+  return result
+}
+
+/**
+ * ======================================================
+ * 主函数：BirthPattern -> PersonalityProfile
+ * ======================================================
+ */
+export function mapBirthPatternToPersonalityProfile(
   pattern: BirthPattern
 ): PersonalityProfile {
-  const primaryStars = pattern.primaryStars ?? []
-  const supportStars = pattern.supportStars ?? []
-  const borrowedStars = pattern.borrowedStars ?? []
+  const core = createBaseCorePersonality()
+  const traits = createBaseTraits()
 
-  let corePersonality = DEFAULT_CORE_PERSONALITY
-  let hitPairs: MatchedPairResult[] = []
+  const tags = new Set<string>()
+  const summaries: string[] = []
 
-  /**
-   * ----------------------------------------------------
-   * 1. 主人格来源
-   * ----------------------------------------------------
-   */
-  if (pattern.isEmptyPrimary) {
-    const borrowedResult = resolveBorrowedCore(borrowedStars)
-    corePersonality = borrowedResult.core
-    hitPairs = borrowedResult.hitPairs
-  } else {
-    const primaryResult = resolvePrimaryCore(primaryStars)
-    corePersonality = primaryResult.core
-    hitPairs = primaryResult.hitPairs
-  }
-
-  /**
-   * ----------------------------------------------------
-   * 2. 三方四正修正
-   * ----------------------------------------------------
-   */
-  const supportResult = applySupportModifier(corePersonality, supportStars)
-  corePersonality = supportResult.core
-
-  /**
-   * ----------------------------------------------------
-   * 3. 空宫虚化滤镜
-   * ----------------------------------------------------
-   */
-  if (pattern.isEmptyPrimary) {
-    corePersonality = applyEmptyStateFilter(corePersonality)
-  }
-
-  /**
-   * ----------------------------------------------------
-   * 4. 空宫数量整体修正
-   *
-   * 当前简化策略：
-   * - 空宫越多，变动性越强
-   * - 稳定性（通过 confidence / sensitivity 间接体现）偏弱
-   * ----------------------------------------------------
-   */
-  if (pattern.emptySectorCount >= 4) {
-    corePersonality = normalizeCore({
-      activity: corePersonality.activity,
-      curiosity: corePersonality.curiosity + 0.04,
-      dependency: corePersonality.dependency + 0.03,
-      confidence: corePersonality.confidence - 0.04,
-      sensitivity: corePersonality.sensitivity + 0.05
-    })
-  }
-
-  /**
-   * ----------------------------------------------------
-   * 5. 行为层 traits
-   * ----------------------------------------------------
-   */
-  const traits = mapCoreToBehaviorTraits(corePersonality)
-
-  /**
-   * ----------------------------------------------------
-   * 6. summaries
-   * ----------------------------------------------------
-   */
-  const summaries = buildSummaries({
-    pattern,
-    corePersonality,
+  applyStars(
+    pattern.primaryStars,
+    core,
     traits,
-    hitPairs,
-    supportPairs: supportResult.supportPairs
-  })
-
-  /**
-   * ----------------------------------------------------
-   * 7. debug 输出
-   * ----------------------------------------------------
-   */
-  console.log("🧠 Mapper 完整运行", {
-    birthKey: pattern.birthKey,
-    lunarInfo: pattern.lunarInfo,
-    primarySector: pattern.primarySector,
-    primaryStars,
-    supportSectors: pattern.supportSectors,
-    supportStars,
-    oppositeSector: pattern.oppositeSector,
-    borrowedStars,
-    isEmptyPrimary: pattern.isEmptyPrimary,
-    emptySectorCount: pattern.emptySectorCount,
-    hitPairs,
-    supportPairs: supportResult.supportPairs,
-    corePersonality,
-    traits,
+    PRIMARY_STAR_WEIGHT,
+    tags,
     summaries
-  })
+  )
 
-  /**
-   * ----------------------------------------------------
-   * 8. 返回最终人格档案
-   * ----------------------------------------------------
-   */
+  const hitPairs = detectPairs(pattern.primaryStars)
+  applyPairs(
+    hitPairs,
+    core,
+    traits,
+    PRIMARY_STAR_WEIGHT,
+    tags,
+    summaries
+  )
+
+  applyStars(
+    pattern.supportStars,
+    core,
+    traits,
+    SUPPORT_STAR_WEIGHT,
+    tags,
+    summaries
+  )
+
+  const supportPairs = detectPairs(pattern.supportStars)
+  applyPairs(
+    supportPairs,
+    core,
+    traits,
+    SUPPORT_STAR_WEIGHT,
+    tags,
+    summaries
+  )
+
+  if (pattern.isEmptyPrimary && pattern.borrowedStars.length > 0) {
+    applyStars(
+      pattern.borrowedStars,
+      core,
+      traits,
+      BORROWED_STAR_WEIGHT,
+      tags,
+      summaries
+    )
+
+    const borrowedPairs = detectPairs(pattern.borrowedStars)
+    applyPairs(
+      borrowedPairs,
+      core,
+      traits,
+      BORROWED_STAR_WEIGHT,
+      tags,
+      summaries
+    )
+
+    summaries.push("命宫原生主星不足，当前人格更多通过对宫借星来表现。")
+  }
+
+  if (pattern.isEmptyPrimary) {
+    applyEmptyPrimaryAttenuation(core, traits)
+  }
+
+  appendTraitSummaries(traits, summaries)
+
+  const finalSummaries = dedupeSummaries(summaries)
+  const finalTags = Array.from(tags)
+
   return {
     pattern,
-    corePersonality,
+    corePersonality: core,
     traits,
-    summaries,
-    tags: [],
+    summaries: finalSummaries,
+    tags: finalTags,
     debug: {
       primarySector: pattern.primarySector,
-      primaryStars,
+      primaryStars: pattern.primaryStars,
       supportSectors: pattern.supportSectors,
-      supportStars,
-      borrowedStars,
+      supportStars: pattern.supportStars,
+      borrowedStars: pattern.borrowedStars,
       isEmptyPrimary: pattern.isEmptyPrimary,
       hitPairs,
-      supportPairs: supportResult.supportPairs
+      supportPairs
     }
   }
 }
+
+/**
+ * ======================================================
+ * 兼容导出
+ * ======================================================
+ */
+export const buildProfileFromPattern = mapBirthPatternToPersonalityProfile
+export const mapBirthPattern = mapBirthPatternToPersonalityProfile
+
+/**
+ * ======================================================
+ * 对外公开人格结果
+ * ======================================================
+ *
+ * 这是给正式页面、展示层、外部结果层使用的结构。
+ *
+ * 注意：
+ * 这里只保留“可公开展示”的字段，
+ * 不直接暴露紫微术语。
+ * ======================================================
+ */
+export type PublicPersonalityView = {
+  /**
+   * 先天气质标签
+   */
+  innateTemperamentLabel: string
+
+  /**
+   * 对外公开摘要
+   */
+  publicSummaries: string[]
+}
+
+/**
+ * ======================================================
+ * 禁止直接对外展示的关键词
+ * ======================================================
+ */
+const PRIVATE_TERMS_REGEX =
+  /命宫|身宫|主星|辅星|三方四正|借星|紫微|天机|天梁|天同|太阴|太阳|巨门|贪狼|破军|武曲|廉贞|天府|天相|七杀/
+
+/**
+ * ======================================================
+ * 从人格摘要中提取“先天气质”
+ * ======================================================
+ */
+export function getInnateTemperamentLabelFromProfile(
+  profile: { summaries?: string[] }
+): string {
+  const text = (profile.summaries ?? []).join(" ")
+
+  if (
+    text.includes("保护欲") ||
+    text.includes("责任感") ||
+    text.includes("照顾")
+  ) {
+    return "守护型"
+  }
+
+  if (
+    text.includes("探索欲") ||
+    text.includes("变化") ||
+    text.includes("联想")
+  ) {
+    return "探索型"
+  }
+
+  if (
+    text.includes("细腻") ||
+    text.includes("敏感") ||
+    text.includes("情绪感知")
+  ) {
+    return "感知型"
+  }
+
+  if (
+    text.includes("掌控") ||
+    text.includes("主导") ||
+    text.includes("执行")
+  ) {
+    return "主导型"
+  }
+
+  if (
+    text.includes("舒适") ||
+    text.includes("和气") ||
+    text.includes("柔软")
+  ) {
+    return "温和型"
+  }
+
+  return "平衡型"
+}
+
+/**
+ * ======================================================
+ * 构建公开摘要
+ * ======================================================
+ */
+export function buildPublicSummaries(
+  profile: { summaries?: string[] },
+  maxItems: number = 4
+): string[] {
+  const raw = profile.summaries ?? []
+
+  const filtered = raw.filter((item) => {
+    if (!item) return false
+    if (PRIVATE_TERMS_REGEX.test(item)) return false
+    return true
+  })
+
+  const deduped = Array.from(
+    new Set(filtered.map((item) => item.trim()))
+  ).filter(Boolean)
+
+  return deduped.slice(0, maxItems)
+}
+
+/**
+ * ======================================================
+ * 构建公开人格展示结果
+ * ======================================================
+ */
+export function buildPublicPersonalityView(
+  profile: { summaries?: string[] }
+): PublicPersonalityView {
+  return {
+    innateTemperamentLabel: getInnateTemperamentLabelFromProfile(profile),
+    publicSummaries: buildPublicSummaries(profile)
+  }
+}
+
+export default mapBirthPatternToPersonalityProfile

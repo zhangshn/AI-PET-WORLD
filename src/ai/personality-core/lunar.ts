@@ -4,27 +4,64 @@
  * Personality Core - Lunar
  * ======================================================
  *
- * 【文件职责】
- * 这个文件只负责：
- * 1. 校验阳历输入
- * 2. 小时 -> 十二时辰
- * 3. 时辰 -> 时辰索引 / 时辰数
- * 4. 阳历 -> 农历信息
- * 5. 农历月 + 时辰编号 -> 命宫索引
+ * 【文件定位】
+ * 这是排盘前置的“时间转换层”。
+ *
+ * 它只负责：
+ * 1. 接收最外层 BirthInput
+ * 2. 做基础输入校验
+ * 3. 把小时转换成十二时辰地支
+ * 4. 生成当前排盘所需的时辰编号
+ * 5. 阳历 -> 农历年月日
+ * 6. 组装统一的 LunarBirthInfo
  *
  * ------------------------------------------------------
- * 【重要边界】
- * - 正式版本：出生时间来自系统记录的宠物出生时刻
- * - 测试页：出生时间来自手动输入
- * - 但不管来源是什么，到了这里都只接受 BirthInput
+ * 【这个文件不负责什么】
+ * 不负责：
+ * - 命宫公式
+ * - 身宫公式
+ * - 五行局
+ * - 紫微 / 天府
+ * - 主星安放
+ *
+ * 这些都应该交给：
+ *
+ *   src/ai/personality-core/ziwei-engine.ts
  *
  * ------------------------------------------------------
- * 【当前实现说明】
- * - 农历转换使用 Intl.DateTimeFormat 的 Chinese Calendar
- * - 当前环境下通常可用
- * - 如果未来要换成更专业的农历库，只替换：
- *   convertSolarDateToLunarDate()
+ * 【当前最关键的字段】
+ * 这次最重要的是：
  *
+ *   timeBranchNumber
+ *
+ * 它必须严格使用：
+ *   子=1，丑=2，寅=3，卯=4，辰=5，巳=6，
+ *   午=7，未=8，申=9，酉=10，戌=11，亥=12
+ *
+ * 因为你当前新版 ziwei-engine.ts 的命宫算法，
+ * 就是直接用这套编号：
+ *
+ *   L = (Month - Hour) mod 12
+ *
+ * ------------------------------------------------------
+ * 【关于 formulaTimeIndex】
+ * 当前仍然保留 formulaTimeIndex，原因是：
+ * - 调试方便
+ * - 后续如果某些算法需要 0=寅...11=丑 的物理索引，可以直接取用
+ *
+ * 但你当前新版 ziwei-engine.ts 主流程，
+ * 核心依赖的是：
+ *   timeBranchNumber
+ *
+ * ------------------------------------------------------
+ * 【重要提醒】
+ * 如果后面发现排盘仍然不对，
+ * 先核查：
+ * 1. 农历月日是否正确
+ * 2. 时辰划分是否正确
+ * 3. timeBranchNumber 是否符合 子=1...亥=12
+ *
+ * 而不是先去改 calculator.ts 或 page.tsx。
  * ======================================================
  */
 
@@ -37,11 +74,19 @@ import type {
 
 /**
  * ======================================================
- * 十二时辰顺序表
+ * 十二时辰地支顺序（业务展示顺序）
+ * ======================================================
  *
- * 说明：
- * 这是“子=1, 丑=2 ... 亥=12”这套顺序，
- * 主要用于 timeBranchIndex 的顺序编号。
+ * 当前顺序：
+ * 子、丑、寅、卯、辰、巳、午、未、申、酉、戌、亥
+ *
+ * 主要用于：
+ * - timeBranchIndex
+ * - 展示
+ * - 调试
+ *
+ * 注意：
+ * 这不是地支物理索引顺序，也不是“寅起 0”的公式顺序。
  * ======================================================
  */
 const TIME_BRANCH_ORDER: TimeBranch[] = [
@@ -61,7 +106,17 @@ const TIME_BRANCH_ORDER: TimeBranch[] = [
 
 /**
  * ======================================================
- * 中文农历月份映射
+ * 农历月份文本 -> 数字
+ * ======================================================
+ *
+ * Intl Chinese Calendar 返回的月份可能是：
+ * - 正月
+ * - 二月
+ * - 冬月
+ * - 腊月
+ * - 闰四月
+ *
+ * 这里统一做解析。
  * ======================================================
  */
 const LUNAR_MONTH_TEXT_TO_NUMBER: Record<string, number> = {
@@ -84,21 +139,25 @@ const LUNAR_MONTH_TEXT_TO_NUMBER: Record<string, number> = {
 
 /**
  * ======================================================
- * 小时 -> 十二时辰
+ * 小时 -> 时辰地支
+ * ======================================================
  *
- * 正式规则：
- * - 子：23:00 - 00:59
- * - 丑：01:00 - 02:59
- * - 寅：03:00 - 04:59
- * - 卯：05:00 - 06:59
- * - 辰：07:00 - 08:59
- * - 巳：09:00 - 10:59
- * - 午：11:00 - 12:59
- * - 未：13:00 - 14:59
- * - 申：15:00 - 16:59
- * - 酉：17:00 - 18:59
- * - 戌：19:00 - 20:59
- * - 亥：21:00 - 22:59
+ * 规则：
+ * 子时：23:00 - 00:59
+ * 丑时：01:00 - 02:59
+ * 寅时：03:00 - 04:59
+ * 卯时：05:00 - 06:59
+ * 辰时：07:00 - 08:59
+ * 巳时：09:00 - 10:59
+ * 午时：11:00 - 12:59
+ * 未时：13:00 - 14:59
+ * 申时：15:00 - 16:59
+ * 酉时：17:00 - 18:59
+ * 戌时：19:00 - 20:59
+ * 亥时：21:00 - 22:59
+ *
+ * 返回：
+ * - "zi" / "chou" / "yin" ...
  * ======================================================
  */
 export function getTimeBranchFromHour(hour: number): TimeBranch {
@@ -119,20 +178,25 @@ export function getTimeBranchFromHour(hour: number): TimeBranch {
 /**
  * ======================================================
  * 时辰 -> 顺序索引
+ * ======================================================
  *
- * 规则：
- * 子=1, 丑=2 ... 亥=12
+ * 当前返回值：
+ * 子=1，丑=2，寅=3 ... 亥=12
  *
- * 说明：
- * - 这是当前 schema 里的 timeBranchIndex
- * - 主要用于调试和部分简化公式兼容
+ * 这其实和 timeBranchNumber 数值相同，
+ * 但这里保留两个概念，方便你后面理解：
+ *
+ * - timeBranchIndex：顺序位置
+ * - timeBranchNumber：排盘公式使用的时辰编号
+ *
+ * 当前两者值相同。
  * ======================================================
  */
 export function getTimeBranchIndex(branch: TimeBranch): number {
   const index = TIME_BRANCH_ORDER.indexOf(branch)
 
   if (index < 0) {
-    return 1
+    throw new Error(`无法识别时辰地支：${branch}`)
   }
 
   return index + 1
@@ -140,18 +204,30 @@ export function getTimeBranchIndex(branch: TimeBranch): number {
 
 /**
  * ======================================================
- * 时辰 -> 时辰数
+ * 时辰 -> 排盘公式编号
+ * ======================================================
  *
- * 规则：
- * 子=1，丑=2，寅=3，卯=4，辰=5，巳=6，
- * 午=7，未=8，申=9，酉=10，戌=11，亥=12
+ * 当前最重要的字段。
  *
- * 说明：
- * - 这是你当前命宫简化公式中使用的“时辰数”
- * - 与 timeBranchIndex 保持同一顺序定义
+ * 规则必须严格为：
+ * 子=1
+ * 丑=2
+ * 寅=3
+ * 卯=4
+ * 辰=5
+ * 巳=6
+ * 午=7
+ * 未=8
+ * 申=9
+ * 酉=10
+ * 戌=11
+ * 亥=12
+ *
+ * 当前新版 ziwei-engine.ts 就是按这套编号计算：
+ *   命宫 = (Month - Hour) mod 12
  * ======================================================
  */
-function getTimeBranchNumber(branch: TimeBranch): number {
+export function getTimeBranchNumber(branch: TimeBranch): number {
   switch (branch) {
     case "zi":
       return 1
@@ -178,13 +254,67 @@ function getTimeBranchNumber(branch: TimeBranch): number {
     case "hai":
       return 12
     default:
+      throw new Error(`无法识别时辰编号：${branch}`)
+  }
+}
+
+/**
+ * ======================================================
+ * 时辰 -> 物理地支索引（寅起 0）
+ * ======================================================
+ *
+ * 规则：
+ * 寅=0，卯=1，辰=2，巳=3，午=4，未=5，
+ * 申=6，酉=7，戌=8，亥=9，子=10，丑=11
+ *
+ * 说明：
+ * - 这是固定物理地支索引
+ * - 当前新版 ziwei-engine.ts 主流程未直接用它算命宫
+ * - 但保留它有利于调试和后续扩展
+ * ======================================================
+ */
+export function getFormulaTimeIndex(branch: TimeBranch): number {
+  switch (branch) {
+    case "yin":
+      return 0
+    case "mao":
       return 1
+    case "chen":
+      return 2
+    case "si":
+      return 3
+    case "wu":
+      return 4
+    case "wei":
+      return 5
+    case "shen":
+      return 6
+    case "you":
+      return 7
+    case "xu":
+      return 8
+    case "hai":
+      return 9
+    case "zi":
+      return 10
+    case "chou":
+      return 11
+    default:
+      throw new Error(`无法识别物理时辰索引：${branch}`)
   }
 }
 
 /**
  * ======================================================
  * 输入校验
+ * ======================================================
+ *
+ * 做基础合法性检查：
+ * - 年
+ * - 月
+ * - 日
+ * - 时
+ * - 分
  * ======================================================
  */
 export function validateBirthInput(input: BirthInput): void {
@@ -215,12 +345,12 @@ export function validateBirthInput(input: BirthInput): void {
 /**
  * ======================================================
  * 公历年份 -> 天干
+ * ======================================================
  *
- * 说明：
- * - 以公历 4 年对应甲干循环起点
- * - 这里只取天干，不取地支
- * - 这是当前工程版近似处理，后续如需更严格，
- *   可改为直接从农历干支结果解析
+ * 当前实现说明：
+ * - 使用年份循环推天干
+ * - 工程上可用
+ * - 后续如需更严谨，可升级为节气边界算法
  * ======================================================
  */
 function getYearStem(year: number): HeavenlyStem {
@@ -245,6 +375,17 @@ function getYearStem(year: number): HeavenlyStem {
  * ======================================================
  * 解析农历月份文本
  * ======================================================
+ *
+ * 支持：
+ * - 正月
+ * - 冬月
+ * - 腊月
+ * - 闰四月
+ *
+ * 当前：
+ * - 去掉“闰”
+ * - 不单独保存闰月标记
+ * ======================================================
  */
 function parseLunarMonthText(monthText: string): number {
   const normalized = monthText.replace("闰", "")
@@ -259,16 +400,20 @@ function parseLunarMonthText(monthText: string): number {
 
 /**
  * ======================================================
- * 阳历日期 -> 农历日期
+ * 阳历 -> 农历日期
+ * ======================================================
  *
- * 说明：
- * - 使用 Intl Chinese Calendar
- * - 从 formatToParts 中提取：
- *   relatedYear / yearName / month / day
+ * 当前使用：
+ * Intl.DateTimeFormat("zh-Hans-u-ca-chinese")
+ *
+ * 返回：
+ * - lunarYear
+ * - lunarMonth
+ * - lunarDay
  *
  * 注意：
- * - TS 对 chinese calendar 的 part.type 支持不完整
- * - 所以这里统一转 string 再比较
+ * 如果你后面发现盘还是不准，
+ * 这里是第一怀疑对象之一。
  * ======================================================
  */
 function convertSolarDateToLunarDate(input: BirthInput): {
@@ -313,7 +458,7 @@ function convertSolarDateToLunarDate(input: BirthInput): {
   )?.value
 
   if (!relatedYear || !monthText || !dayText) {
-    throw new Error("农历转换失败：无法从 Intl 中读取农历年月日")
+    throw new Error("农历转换失败：无法读取农历年月日")
   }
 
   const lunarYear = Number(relatedYear)
@@ -325,7 +470,7 @@ function convertSolarDateToLunarDate(input: BirthInput): {
     !Number.isInteger(lunarMonth) ||
     !Number.isInteger(lunarDay)
   ) {
-    throw new Error("农历转换失败：农历年月日解析异常")
+    throw new Error("农历转换失败：解析后的年月日无效")
   }
 
   return {
@@ -339,11 +484,15 @@ function convertSolarDateToLunarDate(input: BirthInput): {
 
 /**
  * ======================================================
- * 阳历输入 -> 农历排盘信息
+ * 阳历输入 -> LunarBirthInfo
+ * ======================================================
  *
- * 说明：
- * - 这是 personality-core 中统一的前置入口
- * - 后续 ziwei-engine / calculator 都只应调这个函数
+ * 这是 personality-core 统一时间入口。
+ *
+ * 当前输出会同时保留：
+ * - 业务顺序字段
+ * - 排盘公式字段
+ * - 调试字段
  * ======================================================
  */
 export function convertSolarToLunarInfo(
@@ -355,6 +504,7 @@ export function convertSolarToLunarInfo(
   const timeBranch = getTimeBranchFromHour(input.hour)
   const timeBranchIndex = getTimeBranchIndex(timeBranch)
   const timeBranchNumber = getTimeBranchNumber(timeBranch)
+  const formulaTimeIndex = getFormulaTimeIndex(timeBranch)
 
   const lunarDate = convertSolarDateToLunarDate(input)
 
@@ -373,33 +523,33 @@ export function convertSolarToLunarInfo(
 
     timeBranch,
     timeBranchIndex,
-    timeBranchNumber
+    timeBranchNumber,
+    formulaTimeIndex
   }
 }
 
 /**
  * ======================================================
- * 农历月 + 时辰编号 -> 命宫索引
- *
- * 当前保留这条简化公式供兼容/调试使用：
- * 命宫 = (2 + 农历月数 - 时辰数) mod 12
+ * 旧兼容函数：命宫索引
+ * ======================================================
  *
  * 注意：
- * - 真正紫微排盘主流程后续应优先走 ziwei-engine.ts
- * - 这里保留是为了兼容你之前的测试逻辑与调试展示
+ * 当前新版主排盘逻辑已经主要使用 ziwei-engine.ts。
+ * 这里保留此函数只是为了兼容旧测试或旧代码。
  * ======================================================
  */
 export function calculatePrimarySectorIndex(
   lunarMonth: number,
   timeBranchNumber: number
 ): number {
-  const raw = 2 + lunarMonth - timeBranchNumber
-  return ((raw % 12) + 12) % 12
+  const monthIndex = lunarMonth - 1
+  const hourIndex = timeBranchNumber - 1
+  return ((monthIndex - hourIndex) % 12 + 12) % 12
 }
 
 /**
  * ======================================================
- * 时辰中文
+ * 时辰中文标签
  * ======================================================
  */
 export function getTimeBranchLabel(branch: TimeBranch): string {
@@ -435,7 +585,7 @@ export function getTimeBranchLabel(branch: TimeBranch): string {
 
 /**
  * ======================================================
- * 时辰完整说明
+ * 时辰完整展示文本
  * ======================================================
  */
 export function getTimeBranchDisplayText(branch: TimeBranch): string {

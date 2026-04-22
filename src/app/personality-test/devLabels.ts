@@ -4,63 +4,37 @@
  * Personality Test - Dev Labels
  * ======================================================
  *
- * 【文件职责】
- * 这个文件是“测试页专用的开发映射文件”。
+ * 【文件作用】
+ * 仅用于开发调试页面（personality-test）
  *
- * 它只服务于：
- *   /personality-test
+ * 负责把：
+ * - sector（业务宫位）
+ * - star（主星）
+ * - trait（行为层字段）
  *
- * ------------------------------------------------------
- * 【为什么要单独拆出来】
- * 因为正式产品中不能直接出现紫微斗数术语，
- * 这些名字只允许用于：
- * - 开发调试
- * - 算法校验
- * - 测试页展示
- *
- * 所以这里不能放进正式知识层公共展示出口，
- * 只能放在测试页本地使用。
+ * 转成中文或可读标签。
  *
  * ------------------------------------------------------
- * 【提供内容】
- * 1. 星曜中文名（仅测试页）
- * 2. 宫位中文名（仅测试页）
- * 3. traits 中文名（仅测试页）
+ * 【注意】
+ * 这个文件只用于“展示层”
+ * 不能参与任何算法计算。
  *
+ * ------------------------------------------------------
+ * 【兼容原则】
+ * 当前文件同时保留：
+ * - 新命名
+ * - 旧测试页命名
+ *
+ * 这样可以减少 page.tsx 的来回修改。
  * ======================================================
  */
-
-import type { SectorName, StarId } from "../../ai/personality-core/schema"
 
 /**
  * ======================================================
- * 星曜中文名（仅测试页）
+ * 宫位中文映射
  * ======================================================
  */
-export const DEV_STAR_LABELS: Record<StarId, string> = {
-  star_00: "空宫",
-  star_01: "紫微",
-  star_02: "贪狼",
-  star_03: "巨门",
-  star_04: "廉贞",
-  star_05: "武曲",
-  star_06: "破军",
-  star_07: "天府",
-  star_08: "天机",
-  star_09: "天相",
-  star_10: "天梁",
-  star_11: "天同",
-  star_12: "七杀",
-  star_13: "太阳",
-  star_14: "太阴"
-}
-
-/**
- * ======================================================
- * 宫位中文名（仅测试页）
- * ======================================================
- */
-export const DEV_SECTOR_LABELS: Record<SectorName, string> = {
+export const SECTOR_LABELS: Record<string, string> = {
   life: "命宫",
   siblings: "兄弟",
   spouse: "夫妻",
@@ -76,27 +50,122 @@ export const DEV_SECTOR_LABELS: Record<SectorName, string> = {
 }
 
 /**
+ * 兼容旧测试页命名
+ */
+export const DEV_SECTOR_LABELS = SECTOR_LABELS
+
+/**
  * ======================================================
- * 人格参数中文名（仅测试页）
+ * 14 主星中文映射
  * ======================================================
  */
-export const DEV_TRAIT_LABELS: Record<string, string> = {
-  activity: "活跃度",
-  restPreference: "休息倾向",
-  appetite: "食欲",
-  discipline: "自律",
-  curiosity: "好奇心",
-  emotionalSensitivity: "情绪敏感度",
-  stability: "稳定性",
-  caregiving: "照料倾向",
-  buildingPreference: "建设倾向"
+export const STAR_LABELS: Record<string, string> = {
+  star_00: "空宫",
+
+  star_01: "紫微",
+  star_02: "贪狼",
+  star_03: "巨门",
+  star_04: "廉贞",
+  star_05: "武曲",
+  star_06: "破军",
+
+  star_07: "天府",
+  star_08: "天机",
+  star_09: "天相",
+  star_10: "天梁",
+  star_11: "天同",
+  star_12: "七杀",
+
+  star_13: "太阳",
+  star_14: "太阴"
 }
 
 /**
  * ======================================================
- * 获取星曜中文名
+ * 行为层 traits 中文映射
+ * ======================================================
+ *
+ * 仅用于测试页展示。
  * ======================================================
  */
-export function getDevStarLabel(starId: StarId): string {
-  return DEV_STAR_LABELS[starId] ?? starId
+export const TRAIT_LABELS: Record<string, string> = {
+  activity: "活跃度",
+  restPreference: "休息偏好",
+  appetite: "食欲倾向",
+  discipline: "纪律性",
+  curiosity: "好奇心",
+  emotionalSensitivity: "情绪敏感度",
+  stability: "稳定度",
+  caregiving: "照料倾向",
+  buildingPreference: "建造偏好"
+}
+
+/**
+ * 兼容旧测试页命名
+ */
+export const DEV_TRAIT_LABELS = TRAIT_LABELS
+
+/**
+ * ======================================================
+ * 获取宫位中文
+ * ======================================================
+ */
+export function getSectorLabel(sector?: string): string {
+  if (!sector) return "未知宫位"
+  return SECTOR_LABELS[sector] || sector
+}
+
+/**
+ * ======================================================
+ * 获取星曜中文
+ * ======================================================
+ */
+export function getStarLabel(star?: string): string {
+  if (!star) return "未知星"
+  return STAR_LABELS[star] || star
+}
+
+/**
+ * 兼容旧测试页命名
+ */
+export function getDevStarLabel(star?: string): string {
+  return getStarLabel(star)
+}
+
+/**
+ * ======================================================
+ * 多星转字符串
+ * ======================================================
+ */
+export function formatStars(stars: string[] = []): string {
+  if (!stars.length) return "空宫"
+
+  return stars
+    .map((star) => getStarLabel(star))
+    .join(" / ")
+}
+
+/**
+ * ======================================================
+ * 宫位标题格式化
+ * ======================================================
+ */
+export function formatSectorTitle(
+  sector: string,
+  isPrimary: boolean
+): string {
+  const label = getSectorLabel(sector)
+  return isPrimary ? `${label} ⭐` : label
+}
+
+/**
+ * ======================================================
+ * Debug 用宫位文本
+ * ======================================================
+ */
+export function formatSectorDebug(
+  sector: string,
+  stars: string[]
+): string {
+  return `${getSectorLabel(sector)}：${formatStars(stars)}`
 }

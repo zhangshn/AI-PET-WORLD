@@ -4,34 +4,64 @@
  * Personality Core - Calculator
  * ======================================================
  *
- * 【文件职责】
- * 这个文件是“业务层出生盘面计算器”。
+ * 【文件定位】
+ * 这是 personality-core 的“业务适配层”。
  *
- * 它不再负责底层紫微主星排布公式本身，
- * 而是负责：
- *
- * 1. 接收外部 BirthInput
- * 2. 调用 lunar.ts 完成阳历 -> 农历转换
- * 3. 调用 ZiweiEngine.ts 完成正式紫微排盘
- * 4. 把底层地支宫位盘映射成业务宫位盘
- * 5. 补齐 BirthPattern 中业务层需要的字段
- * 6. 输出给 mapper.ts / 前端 / debug 页面使用
+ * 它不是底层排盘引擎，也不是人格生成器。
  *
  * ------------------------------------------------------
- * 【新的分层原则】
+ * 【它负责什么】
+ * 当前文件只负责：
  *
- * 底层排盘：
- * - lunar.ts
- * - ZiweiEngine.ts
+ * 1. 接收最外层 BirthInput
+ * 2. 调用 lunar.ts，得到 LunarBirthInfo
+ * 3. 调用 ziwei-engine.ts，得到 ZiweiEngineResult
+ * 4. 根据 palaceSequence 动态建立：
+ *    - 地支 -> 宫名
+ *    - 宫名 -> 地支
+ * 5. 把引擎层结果适配成业务层 BirthPattern
  *
- * 当前文件：
- * - 负责“业务适配”
- * - 负责“把 engine result 转成 BirthPattern”
+ * ------------------------------------------------------
+ * 【它不负责什么】
+ * 当前文件不负责：
+ * - 命宫公式
+ * - 身宫公式
+ * - 五行局
+ * - 紫微 / 天府
+ * - 主星安放
+ * - 借星底层规则
  *
- * 这样可以避免：
- * - calculator.ts 里混着时间换算、排星、业务映射、人格逻辑
- * - 类型越来越乱
- * - 算法升级时牵一发而动全身
+ * 这些全部交给：
+ *
+ *   src/ai/personality-core/ziwei-engine.ts
+ *
+ * ------------------------------------------------------
+ * 【为什么这个文件必须存在】
+ * 因为：
+ * - ziwei-engine.ts 输出的是“底层地支物理盘”
+ * - UI / mapper.ts / 业务层更适合消费“适配后的业务结构”
+ *
+ * 所以需要一个单独的中间层，把：
+ *
+ *   ZiweiEngineResult
+ *      ↓
+ *   BirthPattern
+ *
+ * 这一步做干净。
+ *
+ * ------------------------------------------------------
+ * 【这次修复最关键的点】
+ * 过去的错误是：
+ * - 把宫名固定贴在地支上
+ * - 用固定 branch -> sector 映射
+ *
+ * 现在正确逻辑是：
+ * - 地支槽位固定
+ * - 宫名根据命宫旋转
+ *
+ * 所以当前文件最重要的工作就是：
+ *
+ *   根据 palaceSequence 动态建立宫名映射
  *
  * ======================================================
  */
@@ -49,55 +79,41 @@ import type {
 } from "./schema"
 
 import { convertSolarToLunarInfo } from "./lunar"
-import { calculateZiweiEngine, getOppositePalace } from "./ZiweiEngine"
+import { calculateZiweiEngine, getOppositePalace } from "./ziwei-engine"
 
 /**
  * ======================================================
- * 地支宫位顺序（业务映射层使用）
+ * 十二宫角色顺序（固定）
  * ======================================================
+ *
+ * 说明：
+ * 这是“十二宫名称的逻辑顺序”，不是固定贴在地支上的顺序。
+ *
+ * 即：
+ * 0  -> 命宫
+ * 1  -> 兄弟
+ * 2  -> 夫妻
+ * 3  -> 子女
+ * 4  -> 财帛
+ * 5  -> 疾厄
+ * 6  -> 迁移
+ * 7  -> 交友
+ * 8  -> 官禄
+ * 9  -> 田宅
+ * 10 -> 福德
+ * 11 -> 父母
+ *
+ * 当前项目里使用的业务命名为：
+ * - life
+ * - siblings
+ * - spouse
+ * ...
  *
  * 注意：
- * 这里的顺序不是 ZiweiEngine 里的“公式坐标顺序”，
- * 而是当前项目业务映射时使用的自然地支顺序：
- *
- * 子 -> 丑 -> 寅 -> 卯 -> 辰 -> 巳 -> 午 -> 未 -> 申 -> 酉 -> 戌 -> 亥
- *
- * 用途：
- * - 创建空的 branch palaces 结构时参考
- * - 地支宫位转业务宫位时使用
- *
- * 真正的命宫 / 身宫 / 紫微 / 天府位置计算，
- * 已经交给 ZiweiEngine.ts 处理。
+ * 宫名顺序固定，但它们落在哪个地支槽位上，是动态的。
  * ======================================================
  */
-const BRANCH_PALACE_ORDER: BranchPalace[] = [
-  "zi",
-  "chou",
-  "yin",
-  "mao",
-  "chen",
-  "si",
-  "wu",
-  "wei",
-  "shen",
-  "you",
-  "xu",
-  "hai"
-]
-
-/**
- * ======================================================
- * 业务宫位顺序
- * ======================================================
- *
- * 当前项目内部使用的业务宫位顺序。
- *
- * 用于：
- * - 创建空的 sectors 结构
- * - 保证 sectors 的字段完整性
- * ======================================================
- */
-const SECTOR_ORDER: SectorName[] = [
+const PALACE_ROLE_TO_SECTOR: SectorName[] = [
   "life",
   "siblings",
   "spouse",
@@ -114,56 +130,27 @@ const SECTOR_ORDER: SectorName[] = [
 
 /**
  * ======================================================
- * 地支宫位 -> 业务宫位映射
- * ======================================================
- *
- * 当前项目固定采用这套映射关系：
- *
- * 子 -> spouse
- * 丑 -> life
- * 寅 -> friends
- * 卯 -> children
- * 辰 -> wealth
- * 巳 -> health
- * 午 -> parents
- * 未 -> fortune
- * 申 -> property
- * 酉 -> career
- * 戌 -> travel
- * 亥 -> siblings
- *
- * 说明：
- * 这不是传统紫微“十二宫名 = 地支”的一一对应概念，
- * 而是你项目产品层自定义的业务表达结构。
- * ======================================================
- */
-const BRANCH_TO_SECTOR_MAP: Record<BranchPalace, SectorName> = {
-  zi: "spouse",
-  chou: "life",
-  yin: "friends",
-  mao: "children",
-  chen: "wealth",
-  si: "health",
-  wu: "parents",
-  wei: "fortune",
-  shen: "property",
-  you: "career",
-  xu: "travel",
-  hai: "siblings"
-}
-
-/**
- * ======================================================
  * 创建空的业务宫位盘
  * ======================================================
  *
- * 用于把 branchPalaces 映射成 sectors 前，先创建完整骨架。
+ * 返回：
+ * {
+ *   life: [],
+ *   siblings: [],
+ *   spouse: [],
+ *   ...
+ *   parents: []
+ * }
+ *
+ * 用于：
+ * - 在把地支主星盘适配成业务宫位盘前，
+ *   先创建完整骨架
  * ======================================================
  */
 function createEmptySectors(): SectorStars {
   const sectors = {} as SectorStars
 
-  SECTOR_ORDER.forEach((name) => {
+  PALACE_ROLE_TO_SECTOR.forEach((name) => {
     sectors[name] = []
   })
 
@@ -172,38 +159,82 @@ function createEmptySectors(): SectorStars {
 
 /**
  * ======================================================
- * 地支宫位盘 -> 业务宫位盘
+ * 根据 palaceSequence 构建动态映射
  * ======================================================
  *
- * 说明：
- * ZiweiEngine 返回的是地支层原生主星盘：
+ * 输入：
+ * - palaceSequence
  *
- * {
- *   yin: [...],
- *   mao: [...],
- *   ...
- * }
+ * palaceSequence 含义：
+ * - palaceSequence[0] = 命宫所在地支
+ * - palaceSequence[1] = 兄弟宫所在地支
+ * - palaceSequence[2] = 夫妻宫所在地支
+ * - ...
  *
- * 当前项目业务层和 UI 更习惯消费：
+ * ------------------------------------------------------
+ * 输出两个映射：
  *
- * {
- *   life: [...],
- *   spouse: [...],
- *   wealth: [...],
- *   ...
- * }
+ * 1. branchToSectorMap
+ *    表示：
+ *    当前这个地支槽位，属于哪个宫名
  *
- * 所以需要在这里做一层映射。
+ * 2. sectorToBranchMap
+ *    表示：
+ *    当前这个宫名，落在哪个地支槽位
+ *
+ * ------------------------------------------------------
+ * 这一步是整次修复中最重要的一步。
+ * 因为你页面乱，不是地支乱，而是“宫名贴错地支”。
+ * ======================================================
+ */
+function buildDynamicPalaceMaps(
+  palaceSequence: BranchPalace[]
+): {
+  branchToSectorMap: Record<BranchPalace, SectorName>
+  sectorToBranchMap: Record<SectorName, BranchPalace>
+} {
+  const branchToSectorMap = {} as Record<BranchPalace, SectorName>
+  const sectorToBranchMap = {} as Record<SectorName, BranchPalace>
+
+  PALACE_ROLE_TO_SECTOR.forEach((sectorName, index) => {
+    const branch = palaceSequence[index]
+    branchToSectorMap[branch] = sectorName
+    sectorToBranchMap[sectorName] = branch
+  })
+
+  return {
+    branchToSectorMap,
+    sectorToBranchMap
+  }
+}
+
+/**
+ * ======================================================
+ * 地支主星盘 -> 业务宫位盘
+ * ======================================================
+ *
+ * 输入：
+ * - branchPalaces：地支层原生主星盘
+ * - sectorToBranchMap：当前盘动态生成的“宫名 -> 地支”映射
+ *
+ * 输出：
+ * - sectors：业务宫位盘
+ *
+ * ------------------------------------------------------
+ * 注意：
+ * 这里不能再使用固定映射。
+ * 必须严格根据当前盘的动态宫位旋转结果来转换。
  * ======================================================
  */
 function mapBranchPalacesToSectors(
-  branchPalaces: BranchPalaceStars
+  branchPalaces: BranchPalaceStars,
+  sectorToBranchMap: Record<SectorName, BranchPalace>
 ): SectorStars {
   const sectors = createEmptySectors()
 
-  BRANCH_PALACE_ORDER.forEach((palace) => {
-    const sector = BRANCH_TO_SECTOR_MAP[palace]
-    sectors[sector] = [...branchPalaces[palace]]
+  PALACE_ROLE_TO_SECTOR.forEach((sectorName) => {
+    const branch = sectorToBranchMap[sectorName]
+    sectors[sectorName] = [...branchPalaces[branch]]
   })
 
   return sectors
@@ -211,35 +242,59 @@ function mapBranchPalacesToSectors(
 
 /**
  * ======================================================
- * 收集 support 宫位
+ * support 宫位（按宫位角色顺序）
  * ======================================================
  *
- * 当前项目沿用你之前统一过的简化 support 规则：
- * - +4 宫
- * - +8 宫
- * - 对宫（+6 宫）
+ * 当前规则：
+ * - +4
+ * - +8
+ * - +6（对宫）
  *
- * 注意：
- * 这里仍然是业务人格层的“support 结构”，
- * 不是完整传统流派意义下的全部三方四正细则。
+ * 例子：
+ * 如果 primarySector = life（命宫）
+ * 那么：
+ * - +4 -> wealth（财帛）
+ * - +8 -> career（官禄）
+ * - +6 -> travel（迁移）
+ *
+ * 这比按固定地支顺序去推 support 更合理，
+ * 因为 support 本质上是“宫位关系”，不是“固定地支关系”。
  * ======================================================
  */
-function getSupportBranchPalaces(
-  palace: BranchPalace
-): BranchPalace[] {
-  const index = BRANCH_PALACE_ORDER.indexOf(palace)
+function getSupportSectors(primarySector: SectorName): SectorName[] {
+  const index = PALACE_ROLE_TO_SECTOR.indexOf(primarySector)
 
   if (index === -1) {
-    throw new Error(`未知地支宫位: ${palace}`)
+    throw new Error(`未知业务宫位: ${primarySector}`)
   }
 
   const mod12 = (n: number) => ((n % 12) + 12) % 12
 
   return [
-    BRANCH_PALACE_ORDER[mod12(index + 4)],
-    BRANCH_PALACE_ORDER[mod12(index + 8)],
-    BRANCH_PALACE_ORDER[mod12(index + 6)]
+    PALACE_ROLE_TO_SECTOR[mod12(index + 4)],
+    PALACE_ROLE_TO_SECTOR[mod12(index + 8)],
+    PALACE_ROLE_TO_SECTOR[mod12(index + 6)]
   ]
+}
+
+/**
+ * ======================================================
+ * support 宫名 -> support 地支
+ * ======================================================
+ *
+ * 输入：
+ * - supportSectors
+ * - sectorToBranchMap
+ *
+ * 输出：
+ * - 对应 support 宫位所落的地支槽位
+ * ======================================================
+ */
+function mapSupportSectorsToBranches(
+  supportSectors: SectorName[],
+  sectorToBranchMap: Record<SectorName, BranchPalace>
+): BranchPalace[] {
+  return supportSectors.map((sector) => sectorToBranchMap[sector])
 }
 
 /**
@@ -247,9 +302,14 @@ function getSupportBranchPalaces(
  * 收集 supportStars
  * ======================================================
  *
- * 从 3 个 support 宫位中，把所有星曜合并出来。
+ * 输入：
+ * - branchPalaces：原生主星盘
+ * - supportBranchPalaces：support 对应的地支槽位
  *
- * 用 Set 去重，避免重复星曜重复加入。
+ * 输出：
+ * - 这些 support 宫位中的所有星曜合集
+ *
+ * 用 Set 去重，确保结果干净。
  * ======================================================
  */
 function collectSupportStars(
@@ -269,16 +329,12 @@ function collectSupportStars(
 
 /**
  * ======================================================
- * 统计空宫数量（按业务宫位）
+ * 统计业务宫位空宫数量
  * ======================================================
  *
  * 注意：
- * ZiweiEngineResult 里已经有 emptyPalaceCount，
- * 但那个是“按原生地支宫位”统计的。
- *
- * 这里 BirthPattern 里保留的 emptySectorCount，
- * 还是按最终业务宫位 sectors 统计，
- * 以保证和你当前前端展示、旧逻辑字段一致。
+ * 这里统计的是业务层 sectors 的空宫数，
+ * 不是引擎层 nativeStars 的空宫数。
  * ======================================================
  */
 function countEmptySectors(sectors: SectorStars): number {
@@ -295,25 +351,18 @@ function countEmptySectors(sectors: SectorStars): number {
 
 /**
  * ======================================================
- * 引擎层借宫结构 -> 业务层借宫结构
+ * 引擎层借宫信息 -> 业务层借宫信息
  * ======================================================
  *
- * ZiweiEngine 返回的是 BorrowedPalaceInfo[]：
- * {
- *   palace,
- *   sourcePalace,
- *   borrowedStars,
- *   weight
- * }
+ * 输入：
+ *   BorrowedPalaceInfo[]
  *
- * 但 BirthPattern 当前使用的是 BorrowedPalace[]：
- * {
- *   targetPalace,
- *   sourcePalace,
- *   stars
- * }
+ * 输出：
+ *   BorrowedPalace[]
  *
- * 所以这里做一层结构适配。
+ * 为什么要转换：
+ * - 引擎层结构更偏底层规则
+ * - 业务层结构更适合 mapper / UI / 展示
  * ======================================================
  */
 function mapBorrowedPalaces(
@@ -328,180 +377,192 @@ function mapBorrowedPalaces(
 
 /**
  * ======================================================
- * 主函数：根据出生输入计算 BirthPattern
+ * 主函数：根据出生输入生成 BirthPattern
  * ======================================================
  *
- * 这是当前文件唯一对外暴露的入口。
+ * 输入：
+ * - BirthInput
  *
- * 新流程：
- * 1. 阳历 -> 农历
- * 2. 调用正式 ZiweiEngine
- * 3. 把引擎结果转成业务层 BirthPattern
+ * 输出：
+ * - BirthPattern
+ *
+ * 流程：
+ * 1. BirthInput -> LunarBirthInfo
+ * 2. LunarBirthInfo -> ZiweiEngineResult
+ * 3. 根据 palaceSequence 建立动态宫位映射
+ * 4. 适配成业务层 BirthPattern
  * ======================================================
  */
 export function calculateBirthPattern(
   input: BirthInput
 ): BirthPattern {
   /**
-   * ------------------------------------------------------
-   * Step 1：阳历 -> 农历出生信息
-   * ------------------------------------------------------
-   *
-   * 得到：
-   * - 农历年月日
-   * - 年干
-   * - 时辰地支
-   * - timeBranchIndex
-   * - timeBranchNumber
+   * Step 1：阳历 -> 农历与时辰信息
    */
   const lunarInfo = convertSolarToLunarInfo(input)
 
   /**
-   * ------------------------------------------------------
-   * Step 2：调用正式紫微排盘引擎
-   * ------------------------------------------------------
-   *
-   * 这里开始，主星安放、命宫、身宫、五行局、借宫，
-   * 全部交给 ZiweiEngine.ts。
-   *
-   * 当前 calculator.ts 不再自己排星。
+   * Step 2：调用正式排盘引擎
    */
   const engineResult = calculateZiweiEngine(lunarInfo)
 
   /**
-   * ------------------------------------------------------
    * Step 3：取出引擎层核心结果
-   * ------------------------------------------------------
    */
   const primaryBranchPalace = engineResult.lifePalace
   const bodyBranchPalace = engineResult.bodyPalace
-
-  /**
-   * 这里的 branchPalaces 直接使用“原生主星盘”
-   *
-   * 注意：
-   * - 不包含借星
-   * - 借宫记录单独放在 borrowedPalaces
-   */
   const branchPalaces = engineResult.nativeStars
-
-  /**
-   * 引擎层借宫记录 -> 业务层借宫记录
-   */
   const borrowedPalaces = mapBorrowedPalaces(engineResult.borrowedPalaces)
 
   /**
-   * ------------------------------------------------------
-   * Step 4：映射为业务宫位盘
-   * ------------------------------------------------------
+   * Step 4：根据 palaceSequence 动态建立“宫名 <-> 地支”映射
+   *
+   * 这是本文件最关键的一步。
    */
-  const sectors = mapBranchPalacesToSectors(branchPalaces)
+  const { branchToSectorMap, sectorToBranchMap } = buildDynamicPalaceMaps(
+    engineResult.palaceSequence
+  )
 
   /**
-   * ------------------------------------------------------
-   * Step 5：命宫相关信息
-   * ------------------------------------------------------
+   * Step 5：把地支主星盘适配成业务宫位盘
    */
-  const primarySector = BRANCH_TO_SECTOR_MAP[primaryBranchPalace]
+  const sectors = mapBranchPalacesToSectors(
+    branchPalaces,
+    sectorToBranchMap
+  )
+
+  /**
+   * Step 6：命宫业务字段
+   */
+  const primarySector = branchToSectorMap[primaryBranchPalace]
   const primaryStars = [...branchPalaces[primaryBranchPalace]]
   const isEmptyPrimary = primaryStars.length === 0
 
   /**
-   * ------------------------------------------------------
-   * Step 6：对宫相关信息
-   * ------------------------------------------------------
+   * Step 7：对宫字段
    *
-   * oppositeBranchPalace：
-   * 直接调用 ZiweiEngine 导出的对宫函数
-   *
-   * borrowedStars：
-   * 当前项目仍保留这个快捷字段，
-   * 用“对宫原生主星”表示命宫可借参考星。
+   * 对宫仍由引擎层地支逻辑决定；
+   * 对宫属于哪个业务宫位，再通过动态映射得到。
    */
   const oppositeBranchPalace = getOppositePalace(primaryBranchPalace)
-  const oppositeSector = BRANCH_TO_SECTOR_MAP[oppositeBranchPalace]
+  const oppositeSector = branchToSectorMap[oppositeBranchPalace]
   const borrowedStars = [...branchPalaces[oppositeBranchPalace]]
 
   /**
-   * ------------------------------------------------------
-   * Step 7：support 信息
-   * ------------------------------------------------------
+   * Step 8：support 字段
    *
-   * 当前继续沿用你的简化 support 结构：
-   * - 两组三方
-   * - 一组对宫
+   * 这里按“宫位角色关系”来算 support，
+   * 不是按固定地支关系。
    */
-  const supportBranchPalaces = getSupportBranchPalaces(primaryBranchPalace)
-
-  const supportSectors = supportBranchPalaces.map(
-    (palace) => BRANCH_TO_SECTOR_MAP[palace]
+  const supportSectors = getSupportSectors(primarySector)
+  const supportBranchPalaces = mapSupportSectorsToBranches(
+    supportSectors,
+    sectorToBranchMap
   )
-
   const supportStars = collectSupportStars(
     branchPalaces,
     supportBranchPalaces
   )
 
   /**
-   * ------------------------------------------------------
-   * Step 8：统计业务层空宫数
-   * ------------------------------------------------------
+   * Step 9：统计业务层空宫数
    */
   const emptySectorCount = countEmptySectors(sectors)
 
   /**
-   * ------------------------------------------------------
-   * Step 9：生成唯一 birthKey
-   * ------------------------------------------------------
+   * Step 10：生成唯一出生键
    */
   const birthKey =
     `${input.year}-${input.month}-${input.day}-` +
     `${input.hour}-${input.minute ?? 0}`
 
   /**
-   * ------------------------------------------------------
-   * Step 10：输出 BirthPattern
-   * ------------------------------------------------------
-   *
-   * 注意：
-   * 当前 engine 字段仍然是“人格引擎名称”，
-   * 不是 ZiweiEngineResult 对象。
-   *
-   * 如果你后面想在 debug 中保留 engineResult，
-   * 可以新增一个 debugEngineResult 字段，
-   * 但不要塞进 engine。
+   * Step 11：返回最终 BirthPattern
    */
-  const pattern: BirthPattern = {
+  return {
     birthKey,
 
     lunarInfo,
     timeBranch: lunarInfo.timeBranch,
 
+    /**
+     * 当前人格引擎名称
+     *
+     * 注意：
+     * 这里不是排盘引擎对象
+     */
     engine: "star-pair-engine",
 
+    /**
+     * 命宫 / 身宫（地支层）
+     */
     primaryBranchPalace,
     bodyBranchPalace,
 
+    /**
+     * 原生主星地支盘
+     */
     branchPalaces,
+
+    /**
+     * 动态宫位映射
+     *
+     * 这是当前盘真正的：
+     * - 地支 -> 宫名
+     * - 宫名 -> 地支
+     */
+    branchToSectorMap,
+    sectorToBranchMap,
+
+    /**
+     * 借宫信息（业务层）
+     */
     borrowedPalaces,
 
+    /**
+     * 业务宫位盘
+     */
     sectors,
+
+    /**
+     * 当前命宫所属业务宫位
+     */
     primarySector,
 
+    /**
+     * support / 三方四正信息
+     */
     supportSectors,
     supportBranchPalaces,
     supportStars,
+
+    /**
+     * 兼容旧字段
+     *
+     * 当前先让它等于 supportStars
+     */
     supportSymbols: [...supportStars],
 
+    /**
+     * 命宫原生主星
+     */
     primaryStars,
+
+    /**
+     * 命宫是否为空宫
+     */
     isEmptyPrimary,
 
+    /**
+     * 对宫相关字段
+     */
     oppositeSector,
     oppositeBranchPalace,
     borrowedStars,
 
+    /**
+     * 业务层空宫数
+     */
     emptySectorCount
   }
-
-  return pattern
 }

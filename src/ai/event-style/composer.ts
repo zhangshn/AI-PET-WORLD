@@ -1,200 +1,188 @@
-import type {
-  PetActionEventInput,
-  PetEventStyleInput,
-  PetMoodEventInput
-} from "./schema"
-
 /**
- * 强度等级
+ * ======================================================
+ * AI-PET-WORLD
+ * Event Composer
+ * ======================================================
+ *
+ * 当前文件负责：
+ * 1. 根据事件输入生成最终展示文案
+ * 2. 控制叙事风格（不说人话）
+ * 3. 根据人格 traits + 行为 + 强度生成差异
+ * ======================================================
  */
-type IntensityLevel = "low" | "medium" | "high"
 
-/**
- * 主风格
- */
-type PrimaryTone =
-  | "calm"
-  | "active"
-  | "stable"
-  | "sensitive"
-  | "balanced"
+import type { PetEventStyleInput } from "./schema"
 
-/**
- * 获取主风格
- */
-function getPrimaryToneFromTraits(traits: any): PrimaryTone {
-  const scores = {
-    calm: traits.restPreference + traits.emotionalSensitivity / 2,
-    active: traits.activity + traits.appetite / 3,
-    stable: traits.discipline + traits.stability,
-    sensitive:
-      traits.emotionalSensitivity + (100 - traits.stability) / 2,
-    balanced: 100
-  }
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)]
+}
 
-  let best: PrimaryTone = "balanced"
-  let max = scores.balanced
-
-  for (const key in scores) {
-    const tone = key as PrimaryTone
-    if (scores[tone] > max) {
-      max = scores[tone]
-      best = tone
-    }
-  }
-
-  return best
+function clamp(n: number, min = 0, max = 1) {
+  return Math.max(min, Math.min(max, n))
 }
 
 /**
- * 计算行为强度
+ * ======================================================
+ * 根据人格 traits 生成“语气偏移”
+ * ======================================================
  */
-function getActionIntensity(
-  action: string,
-  traits: any
-): IntensityLevel {
-  let score = 50
-
-  if (action === "eating") {
-    score = traits.appetite - traits.discipline / 2
-  }
-
-  if (action === "walking") {
-    score = traits.activity - traits.stability / 2
-  }
-
-  if (action === "sleeping") {
-    score = traits.restPreference + traits.stability / 2
-  }
-
-  if (score < 40) return "low"
-  if (score < 70) return "medium"
-  return "high"
-}
-
-/**
- * 行为文案
- */
-function composeActionMessage(input: PetActionEventInput): string {
+function getTone(input: PetEventStyleInput) {
   const traits = input.personalityProfile.traits
-  const tone = getPrimaryToneFromTraits(traits)
-  const intensity = getActionIntensity(input.action, traits)
 
-  const { petName, action } = input
+  const sensitivity = traits.emotionalSensitivity ?? 50
+  const activity = traits.activity ?? 50
+  const stability = traits.stability ?? 50
 
-  if (action === "sleeping") {
-    if (intensity === "low") {
-      return `${petName}有点疲惫，慢慢躺了下来。`
-    }
-
-    if (intensity === "medium") {
-      return `${petName}安静地进入了睡眠状态。`
-    }
-
-    return `${petName}几乎撑不住困意，直接沉沉睡去。`
+  return {
+    sensitive: sensitivity > 60,
+    active: activity > 60,
+    calm: stability > 60,
   }
-
-  if (action === "walking") {
-    if (intensity === "low") {
-      return `${petName}慢慢地在周围活动。`
-    }
-
-    if (intensity === "medium") {
-      return `${petName}开始四处走动。`
-    }
-
-    return `${petName}精力充沛地四处奔走。`
-  }
-
-  if (action === "eating") {
-    if (intensity === "low") {
-      return `${petName}慢慢地吃了一点东西。`
-    }
-
-    if (intensity === "medium") {
-      return `${petName}开始吃东西。`
-    }
-
-    return `${petName}几乎迫不及待地开始大口进食。`
-  }
-
-  return `${petName}改变了行动状态。`
 }
 
 /**
- * 心情强度
+ * ======================================================
+ * 行为文案（基础层）
+ * ======================================================
  */
-function getMoodIntensity(traits: any): IntensityLevel {
-  const score =
-    traits.emotionalSensitivity - traits.stability / 2
+function buildActionBase(input: PetEventStyleInput): string {
+  const { action, petName } = input
+  const tone = getTone(input)
 
-  if (score < 40) return "low"
-  if (score < 70) return "medium"
-  return "high"
+  switch (action) {
+    case "walking":
+      return pick([
+        `${petName}在周围慢慢移动着`,
+        `${petName}在附近来回走动`,
+        `${petName}轻轻地在周围走着`,
+      ])
+
+    case "exploring":
+      return tone.active
+        ? pick([
+            `${petName}把注意力放向了更远的地方`,
+            `${petName}开始向外探查新的变化`,
+          ])
+        : `${petName}在周围留意着新的动静`
+
+    case "observing":
+      return `${petName}安静地看着周围`
+
+    case "resting":
+      return `${petName}慢慢让自己安静下来`
+
+    case "alert_idle":
+      return `${petName}停在原地，带着一点警觉`
+
+    case "idle":
+      return `${petName}暂时停留在原地`
+
+    case "approaching":
+      return `${petName}慢慢靠近某个方向`
+
+    case "eating":
+      return `${petName}开始进食`
+
+    case "sleeping":
+      return `${petName}进入了安静的休息`
+
+    default:
+      return `${petName}出现了一些变化`
+  }
 }
 
 /**
- * 心情文案
+ * ======================================================
+ * 根据 intensity 增强文案
+ * ======================================================
  */
-function composeMoodMessage(input: PetMoodEventInput): string {
-  const traits = input.personalityProfile.traits
-  const tone = getPrimaryToneFromTraits(traits)
-  const intensity = getMoodIntensity(traits)
+function applyIntensity(
+  base: string,
+  intensity: number | undefined
+): string {
+  if (intensity === undefined) return base
 
+  const i = clamp(intensity)
+
+  if (i < 0.3) {
+    return base.replace("慢慢", "轻轻").replace("开始", "似乎开始")
+  }
+
+  if (i > 0.7) {
+    return base.replace("慢慢", "明显地").replace("轻轻", "更明显地")
+  }
+
+  return base
+}
+
+/**
+ * ======================================================
+ * 连续叙事修饰
+ * ======================================================
+ */
+function applyContinuity(
+  base: string,
+  step?: number
+): string {
+  if (!step || step <= 1) return base
+
+  if (step === 2) {
+    return `随后，${base}`
+  }
+
+  if (step === 3) {
+    return `又过了一会儿，${base}`
+  }
+
+  return `它继续这样，${base}`
+}
+
+/**
+ * ======================================================
+ * mood 文案
+ * ======================================================
+ */
+function buildMood(input: PetEventStyleInput): string {
   const { petName, mood } = input
 
-  if (mood === "happy") {
-    if (intensity === "low") {
-      return `${petName}看起来稍微放松了一些。`
-    }
-
-    if (intensity === "medium") {
-      return `${petName}明显变得开心起来。`
-    }
-
-    return `${petName}情绪高涨，显得非常兴奋。`
+  switch (mood) {
+    case "happy":
+      return `${petName}看起来更放松了一些`
+    case "sad":
+      return `${petName}显得有些低落`
+    case "curious":
+      return `${petName}似乎被什么吸引了注意`
+    case "alert":
+      return `${petName}变得更警觉了一点`
+    case "calm":
+      return `${petName}逐渐恢复平静`
+    default:
+      return `${petName}的状态发生了一点变化`
   }
-
-  if (mood === "normal") {
-    if (intensity === "low") {
-      return `${petName}状态趋于稳定。`
-    }
-
-    if (intensity === "medium") {
-      return `${petName}恢复到了正常状态。`
-    }
-
-    return `${petName}情绪快速波动后回到了平稳。`
-  }
-
-  if (mood === "sad") {
-    if (intensity === "low") {
-      return `${petName}有些低落。`
-    }
-
-    if (intensity === "medium") {
-      return `${petName}情绪明显下降。`
-    }
-
-    return `${petName}情绪波动剧烈，显得非常难过。`
-  }
-
-  return `${petName}的情绪发生了变化。`
 }
 
 /**
+ * ======================================================
  * 主入口
+ * ======================================================
  */
 export function composeStyledPetEventMessage(
   input: PetEventStyleInput
 ): string {
-  if (input.scene === "pet_action_changed") {
-    return composeActionMessage(input)
-  }
-
+  /**
+   * mood 事件
+   */
   if (input.scene === "pet_mood_changed") {
-    return composeMoodMessage(input)
+    return buildMood(input)
   }
 
-  throw new Error("未知事件类型")
+  /**
+   * action 事件
+   */
+  let base = buildActionBase(input)
+
+  base = applyIntensity(base, input.intensity)
+  base = applyContinuity(base, input.continuityStep)
+
+  return base
 }

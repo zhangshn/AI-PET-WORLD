@@ -2,45 +2,59 @@
  * ======================================================
  * AI-PET-WORLD
  * Butler Type
+ * ======================================================
  *
- * 功能：
- * 定义 AI 管家的数据结构
+ * 当前文件负责：
+ * 1. 定义世界层正式使用的管家类型
+ * 2. 统一 worldEngine / eventSystem / UI 使用的 ButlerState
  *
- * 当前版本：
- * - name      管家名字
- * - task      当前任务
- * - mood      管家心情
- *
- * 后续会继续扩展：
- * - personality   紫微斗数人格
- * - efficiency    效率
- * - loyalty       忠诚度
- * - memory        记忆系统
+ * 说明：
+ * - 这里的类型要和 systems/butlerSystem.ts 对齐
+ * - 否则世界层与系统层会发生类型冲突
  * ======================================================
  */
 
-/**
- * 管家当前任务
- */
 export type ButlerTask =
-  | "idle"
-  | "feeding_pet"
-  | "watching_pet"
+  | "watching_incubator"
   | "building_home"
+  | "watching_pet"
+  | "offering_food"
+  | "offering_rest"
+  | "offering_approach"
+  | "idle"
 
-/**
- * 管家当前心情
- */
 export type ButlerMood =
   | "calm"
   | "busy"
-  | "worried"
+  | "gentle"
+  | "alert"
+  | "focused"
 
-/**
- * 管家状态结构
- */
+export type ButlerOpportunityType =
+  | "food_offer"
+  | "rest_offer"
+  | "approach_offer"
+
+export type ButlerOpportunity = {
+  id: string
+  type: ButlerOpportunityType
+  createdAtTick: number
+  expiresAtTick: number
+  createdBy: "butler"
+  target: "pet"
+  summary: string
+  intensity: number
+  payload?: {
+    foodPortion?: number
+    comfortLevel?: number
+    socialWarmth?: number
+  }
+}
+
 export type ButlerState = {
   name: string
   task: ButlerTask
   mood: ButlerMood
+  lastTaskChangedTick: number
+  pendingOpportunities: ButlerOpportunity[]
 }

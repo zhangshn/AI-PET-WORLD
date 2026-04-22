@@ -1,47 +1,25 @@
 /**
- * ======================================================
- * AI-PET-WORLD
- * Event System
- *
- * 功能：
- * 1. 检测世界状态变化
- * 2. 生成世界事件日志
- * 3. 提供手动写入互动结果事件的方法
- * 4. 支持孵化器相关事件
- * 5. 当前版本开始支持“人格化宠物事件文案”
- *
- * 当前支持：
- * - 时间段变化
- * - 孵化器状态变化
- * - 管家任务变化
- * - 宠物行为变化（人格化文案）
- * - 宠物心情变化（人格化文案）
- * - 手动互动结果事件
- * - 宠物出生事件
- * ======================================================
+ * 当前文件负责：监听世界状态变化并生成世界事件
  */
 
-import { TimePeriod } from "../engine/timeSystem"
-import { PetState } from "../types/pet"
-import { ButlerState } from "../types/butler"
-import { IncubatorState } from "../types/incubator"
-import { WorldEvent } from "../types/event"
-import { buildPetEventMessage } from "../ai/event-style/gateway"
+import { buildPetEvent } from "../ai/gateway"
+import type { PetEventStyleInput } from "../ai/event-style/schema"
 
-/**
- * EventSystem 一次更新所需输入
- *
- * 说明：
- * - 宠物在未出生阶段可能为 null
- * - 所以宠物相关字段必须允许空值
- */
-type EventSystemUpdateInput = {
+import type { PersonalityProfile } from "../ai/personality-core/schema"
+
+import type { PetState, PetAction, PetMood } from "../types/pet"
+import type { ButlerState } from "../types/butler"
+import type { IncubatorState } from "../types/incubator"
+import type { WorldEvent, NarrativeType } from "../types/event"
+import type { HomeState } from "../types/home"
+
+export type EventSystemUpdateInput = {
   tick: number
   day: number
   hour: number
 
-  prevPeriod: TimePeriod
-  currentPeriod: TimePeriod
+  prevPeriod: string
+  currentPeriod: string
 
   prevPet: PetState | null
   currentPet: PetState | null
@@ -53,291 +31,1006 @@ type EventSystemUpdateInput = {
   currentIncubator: IncubatorState
 }
 
+export type InteractionEventInput = {
+  tick: number
+  day: number
+  hour: number
+  message: string
+}
+
+export type PetHatchedEventInput = {
+  tick: number
+  day: number
+  hour: number
+  petName: string
+}
+
+type PetStateLike = PetState & {
+  id?: string
+  personalityProfile: PersonalityProfile
+}
+
+type ContinuityState = {
+  continuityId: string
+  step: number
+  action: PetAction
+  narrativeType: NarrativeType
+  drivePrimary: string | null
+  sourceDrive: string | null
+  lastTick: number
+}
+
+let eventSequence = 0
+let continuitySequence = 0
+
+function createEventId(): string {
+  eventSequence += 1
+  return `event_${Date.now()}_${eventSequence}`
+}
+
+function createContinuityId(): string {
+  continuitySequence += 1
+  return `continuity_${Date.now()}_${continuitySequence}`
+}
+
+function getPetEventKey(pet: PetStateLike): string {
+  return pet.id || pet.name
+}
+
+function getLegacyDrivePrimary(pet: PetStateLike): string | null {
+  return pet.timelineSnapshot?.state.drive.primary ?? null
+}
+
+function getSourceDriveFromPet(pet: PetStateLike): string | null {
+  const payload = pet.timelineSnapshot?.state?.drive
+  const dominant =
+    (payload as Record<string, unknown> | undefined)?.dominant
+
+  if (typeof dominant === "string" && dominant.length > 0) {
+    return dominant
+  }
+
+  return getLegacyDrivePrimary(pet)
+}
+
+function getPhaseTag(pet: PetStateLike): string | null {
+  return pet.timelineSnapshot?.fortune.phaseTag ?? null
+}
+
+function getEmotionalLabel(pet: PetStateLike): string | null {
+  return pet.timelineSnapshot?.state.emotional.label ?? null
+}
+
+function buildHomeContextFromHomeState(
+  home?: HomeState
+): PetEventStyleInput["homeContext"] {
+  if (!home) return undefined
+
+  if (home.status === "completed") {
+    return {
+      homeNote: "家园已经搭好，周围看起来安稳了不少",
+    }
+  }
+
+  if (home.status === "building") {
+    return {
+      homeNote: "家园还在一点点搭建起来",
+    }
+  }
+
+  return undefined
+}
+
+function getEventAction(pet: PetStateLike): PetAction {
+  return pet.action
+}
+
+function getEventMood(pet: PetStateLike): PetMood {
+  return pet.mood
+}
+
+function buildActionEventStyleInput(
+  pet: PetStateLike,
+  nextAction: PetAction,
+  home?: HomeState,
+  enhancements?: {
+    intensity?: number
+    narrativeType?: NarrativeType
+    continuityId?: string
+    continuityStep?: number
+  }
+): PetEventStyleInput {
+  return {
+    scene: "pet_action_changed",
+    petName: pet.name,
+    action: nextAction,
+    personalityProfile: pet.personalityProfile,
+    homeContext: buildHomeContextFromHomeState(home),
+    intensity: enhancements?.intensity,
+    narrativeType: enhancements?.narrativeType,
+    continuityId: enhancements?.continuityId,
+    continuityStep: enhancements?.continuityStep,
+  } as PetEventStyleInput
+}
+
+function buildMoodEventStyleInput(
+  pet: PetStateLike,
+  nextMood: PetMood,
+  home?: HomeState
+): PetEventStyleInput {
+  return {
+    scene: "pet_mood_changed",
+    petName: pet.name,
+    mood: nextMood,
+    personalityProfile: pet.personalityProfile,
+    homeContext: buildHomeContextFromHomeState(home),
+  }
+}
+
+function makeWorldEvent(params: {
+  tick: number
+  day: number
+  hour: number
+  type: string
+  petName?: string
+  message: string
+  sourceAction?: string
+  narrativeType?: NarrativeType
+  continuityId?: string
+  intensity?: number
+  payload?: Record<string, unknown>
+}): WorldEvent {
+  return {
+    id: createEventId(),
+    tick: params.tick,
+    day: params.day,
+    hour: params.hour,
+    type: params.type as WorldEvent["type"],
+    petName: params.petName,
+    message: params.message,
+    sourceAction: params.sourceAction,
+    narrativeType: params.narrativeType,
+    continuityId: params.continuityId,
+    intensity: params.intensity,
+    payload: params.payload ?? {},
+  } as WorldEvent
+}
+
+function getNarrativeTypeByAction(
+  action: PetAction,
+  pet: PetStateLike
+): NarrativeType {
+  const energy = pet.timelineSnapshot?.state.physical.energy ?? 50
+  const hunger = pet.timelineSnapshot?.state.physical.hunger ?? 50
+  const arousal = pet.timelineSnapshot?.state.emotional.arousal ?? 0.5
+  const sourceDrive = getSourceDriveFromPet(pet) ?? "observe"
+
+  if (action === "walking") {
+    if (energy < 25) return "linger"
+    if (sourceDrive === "approach") return "approach_target"
+    if (sourceDrive === "eat" && hunger >= 65) return "approach_target"
+    if (sourceDrive === "observe") return "observe_environment"
+    if (arousal >= 0.55) return "observe_environment"
+    return "observe_environment"
+  }
+
+  if (action === "idle") {
+    if (energy < 25) return "recover"
+    if (sourceDrive === "observe") return "observe_environment"
+    if (arousal >= 0.65) return "observe_environment"
+    if (sourceDrive === "rest") return "recover"
+    return "linger"
+  }
+
+  if (action === "observing") {
+    return "observe_environment"
+  }
+
+  if (action === "resting") {
+    return "recover"
+  }
+
+  if (action === "alert_idle") {
+    return "observe_environment"
+  }
+
+  if (action === "exploring") {
+    if (arousal >= 0.65) return "discover"
+    if (sourceDrive === "explore") return "discover"
+    return "observe_environment"
+  }
+
+  if (action === "approaching") {
+    return "approach_target"
+  }
+
+  if (action === "eating") {
+    return "satisfy_need"
+  }
+
+  if (action === "sleeping") {
+    return "recover"
+  }
+
+  return "unknown"
+}
+
+function getActionEventIntensity(pet: PetStateLike): number {
+  const energy = pet.timelineSnapshot?.state.physical.energy ?? 50
+  const emotionalArousal =
+    pet.timelineSnapshot?.state.emotional.arousal ?? 0.5
+
+  const normalizedEnergy = Math.max(0, Math.min(1, energy / 100))
+  const normalizedEmotion = Math.max(0, Math.min(1, emotionalArousal))
+
+  const intensity =
+    (1 - normalizedEnergy) * 0.45 +
+    normalizedEmotion * 0.55
+
+  return Number(Math.max(0, Math.min(1, intensity)).toFixed(2))
+}
+
+function shouldEmitActionNarrativeEvent(params: {
+  tick: number
+  prevAction: PetAction
+  currentAction: PetAction
+}): boolean {
+  if (params.prevAction !== params.currentAction) {
+    return true
+  }
+
+  return params.tick % 3 === 0
+}
+
+function shouldResetContinuity(params: {
+  existing: ContinuityState | undefined
+  currentTick: number
+  currentAction: PetAction
+  currentNarrativeType: NarrativeType
+  currentDrivePrimary: string | null
+  currentSourceDrive: string | null
+}): boolean {
+  const {
+    existing,
+    currentTick,
+    currentAction,
+    currentNarrativeType,
+    currentDrivePrimary,
+    currentSourceDrive,
+  } = params
+
+  if (!existing) {
+    return true
+  }
+
+  if (existing.action !== currentAction) {
+    return true
+  }
+
+  if (existing.narrativeType !== currentNarrativeType) {
+    return true
+  }
+
+  if (existing.drivePrimary !== currentDrivePrimary) {
+    return true
+  }
+
+  if (existing.sourceDrive !== currentSourceDrive) {
+    return true
+  }
+
+  if (currentTick - existing.lastTick > 6) {
+    return true
+  }
+
+  return false
+}
+
+function buildEnhancedActionEventPayload(params: {
+  pet: PetStateLike
+  prevAction: PetAction
+  currentAction: PetAction
+  narrativeType: NarrativeType
+  continuityId: string
+  intensity: number
+  continuityStep: number
+  sourceDrive: string | null
+}): Record<string, unknown> {
+  return {
+    petKey: getPetEventKey(params.pet),
+    prevAction: params.prevAction,
+    currentAction: params.currentAction,
+    drivePrimary: getLegacyDrivePrimary(params.pet),
+    sourceDrive: params.sourceDrive,
+    narrativeType: params.narrativeType,
+    continuityId: params.continuityId,
+    intensity: params.intensity,
+    continuityStep: params.continuityStep,
+    emotionalLabel:
+      params.pet.timelineSnapshot?.state.emotional.label ?? null,
+    phaseTag:
+      params.pet.timelineSnapshot?.fortune.phaseTag ?? null,
+    branchTag:
+      params.pet.timelineSnapshot?.trajectory.branchTag ?? null,
+  }
+}
+
+function decorateNarrativeMessageByContinuity(params: {
+  baseMessage: string
+  step: number
+  action: PetAction
+  narrativeType: NarrativeType
+}): string {
+  const { baseMessage, step, action, narrativeType } = params
+
+  if (step <= 1) {
+    return baseMessage
+  }
+
+  if (step === 2) {
+    if (action === "walking") {
+      return `随后，${baseMessage}`
+    }
+
+    if (action === "exploring" && narrativeType === "discover") {
+      return `接着，${baseMessage}`
+    }
+
+    if (
+      action === "idle" ||
+      action === "sleeping" ||
+      action === "resting" ||
+      action === "observing" ||
+      action === "alert_idle"
+    ) {
+      return `又安静了一会儿，${baseMessage}`
+    }
+
+    return `接着，${baseMessage}`
+  }
+
+  if (step === 3) {
+    if (action === "walking") {
+      return `又过了一会儿，${baseMessage}`
+    }
+
+    if (action === "exploring") {
+      return `紧接着，${baseMessage}`
+    }
+
+    if (
+      action === "idle" ||
+      action === "sleeping" ||
+      action === "resting" ||
+      action === "observing" ||
+      action === "alert_idle"
+    ) {
+      return `再过一会儿，${baseMessage}`
+    }
+
+    return `随后，${baseMessage}`
+  }
+
+  if (action === "walking" || action === "exploring") {
+    return `它没有立刻停下，${baseMessage}`
+  }
+
+  if (
+    action === "idle" ||
+    action === "sleeping" ||
+    action === "resting" ||
+    action === "observing" ||
+    action === "alert_idle"
+  ) {
+    return `它仍旧维持着这样的状态，${baseMessage}`
+  }
+
+  return `它继续这样行动着，${baseMessage}`
+}
+
+function buildWalkingEndMessage(params: {
+  petName: string
+  narrativeType: NarrativeType
+  phaseTag: string | null
+  emotionalLabel: string | null
+  drivePrimary: string | null
+  sourceDrive: string | null
+}): string {
+  const {
+    petName,
+    narrativeType,
+    phaseTag,
+    emotionalLabel,
+    drivePrimary,
+    sourceDrive,
+  } = params
+
+  if (
+    sourceDrive === "approach" ||
+    drivePrimary === "approach" ||
+    narrativeType === "approach_target"
+  ) {
+    return `${petName}把刚才那阵试着靠近的步子慢慢收住了，没有再继续把距离往前压近。`
+  }
+
+  if (sourceDrive === "avoid") {
+    return `${petName}把原本带着防备的移动慢慢收了回来，像是暂时先把距离稳在了这里。`
+  }
+
+  if (phaseTag === "recovery_phase") {
+    return `${petName}慢慢把脚步收了回来，像是觉得现在先把状态稳住更重要。`
+  }
+
+  if (emotionalLabel === "alert") {
+    return `${petName}没有再继续走动，刚才那阵带着留意的活动也慢慢停了下来。`
+  }
+
+  if (narrativeType === "observe_environment") {
+    return `${petName}绕着附近确认了一阵后，慢慢停下了脚步，注意力也没有再继续往外铺开。`
+  }
+
+  if (narrativeType === "linger") {
+    return `${petName}那阵低强度的活动渐渐收住了，最后又把自己留回了原地。`
+  }
+
+  return `${petName}慢慢停下了脚步，刚才那阵来回活动也跟着收了下来。`
+}
+
+function buildExploringEndMessage(params: {
+  petName: string
+  narrativeType: NarrativeType
+  phaseTag: string | null
+  emotionalLabel: string | null
+}): string {
+  const { petName, narrativeType, phaseTag, emotionalLabel } = params
+
+  if (narrativeType === "discover") {
+    if (phaseTag === "growth_phase") {
+      return `${petName}把刚才那阵探索慢慢收住了，像是已经把这一轮新鲜变化看得差不多了。`
+    }
+
+    return `${petName}把刚才那阵探索慢慢收住了，像是暂时看够了周围的新变化。`
+  }
+
+  if (emotionalLabel === "alert" || phaseTag === "sensitive_phase") {
+    return `${petName}没有再继续把注意力往外放开，刚才那阵探索也在谨慎里慢慢停了下来。`
+  }
+
+  if (phaseTag === "attachment_phase") {
+    return `${petName}把向外探索的劲头先收了一些，像是开始把注意力转回更亲近的方向。`
+  }
+
+  return `${petName}慢慢停下了探索，注意力没有再继续向外扩开。`
+}
+
+function buildApproachingEndMessage(params: {
+  petName: string
+  phaseTag: string | null
+  emotionalLabel: string | null
+  drivePrimary: string | null
+}): string {
+  const { petName, phaseTag, emotionalLabel, drivePrimary } = params
+
+  if (phaseTag === "attachment_phase") {
+    return `${petName}没有再继续靠近，像是在已经足够安心的位置上慢慢停了下来。`
+  }
+
+  if (emotionalLabel === "alert" || drivePrimary === "avoid") {
+    return `${petName}原本想缩短距离的动作慢慢收住了，像是又重新留出了一点观察空间。`
+  }
+
+  return `${petName}没有再继续靠近，刚才那股想缩短距离的动作慢慢停了下来。`
+}
+
+function buildIdleEndMessage(params: {
+  petName: string
+  phaseTag: string | null
+  emotionalLabel: string | null
+  sourceDrive: string | null
+}): string {
+  const { petName, phaseTag, emotionalLabel, sourceDrive } = params
+
+  if (sourceDrive === "observe") {
+    return `${petName}结束了刚才那段安静观察，像是已经准备把注意力转向新的方向。`
+  }
+
+  if (phaseTag === "recovery_phase") {
+    return `${petName}结束了刚才那段安静回收的停留，像是准备把状态重新向外放一点。`
+  }
+
+  if (emotionalLabel === "low") {
+    return `${petName}从刚才那阵安静里慢慢缓了出来，像是终于愿意再向外动一点。`
+  }
+
+  return `${petName}结束了刚才那段停留，像是准备转向新的动作。`
+}
+
+function buildObservingEndMessage(params: {
+  petName: string
+  emotionalLabel: string | null
+}): string {
+  const { petName, emotionalLabel } = params
+
+  if (emotionalLabel === "alert") {
+    return `${petName}把刚才那阵持续留意周围的状态慢慢放了下来，像是确认眼前暂时没有更近一步的变化。`
+  }
+
+  return `${petName}结束了刚才那段安静观察，注意力也慢慢从周围收了回来。`
+}
+
+function buildRestingEndMessage(params: {
+  petName: string
+  phaseTag: string | null
+}): string {
+  const { petName, phaseTag } = params
+
+  if (phaseTag === "recovery_phase") {
+    return `${petName}从刚才那阵缓慢恢复里慢慢抽离出来，像是已经把状态稍微稳住了一些。`
+  }
+
+  return `${petName}结束了刚才那段安静休整，像是准备重新把注意力放回外界。`
+}
+
+function buildAlertIdleEndMessage(params: {
+  petName: string
+  emotionalLabel: string | null
+}): string {
+  const { petName, emotionalLabel } = params
+
+  if (emotionalLabel === "alert" || emotionalLabel === "anxious") {
+    return `${petName}原本绷着的那点警惕慢慢松下去了一些，没有继续把自己停在那种紧绷状态里。`
+  }
+
+  return `${petName}把刚才那阵带着防备的停留慢慢收住了。`
+}
+
+function buildSleepingEndMessage(params: {
+  petName: string
+  emotionalLabel: string | null
+}): string {
+  const { petName, emotionalLabel } = params
+
+  if (emotionalLabel === "relaxed" || emotionalLabel === "content") {
+    return `${petName}从刚才那阵安稳的休息里慢慢醒转过来，状态也显得比先前更松一点。`
+  }
+
+  return `${petName}从刚才那阵安静休息里慢慢醒转过来。`
+}
+
+function buildEatingEndMessage(params: {
+  petName: string
+  phaseTag: string | null
+  emotionalLabel: string | null
+}): string {
+  const { petName, phaseTag, emotionalLabel } = params
+
+  if (phaseTag === "recovery_phase" || emotionalLabel === "content") {
+    return `${petName}慢慢停下了进食，刚才那阵回应身体需求的状态也像是被安稳地补回来了一些。`
+  }
+
+  if (emotionalLabel === "excited") {
+    return `${petName}把进食的动作慢慢收住了，像是这一轮需求已经先被回应住了。`
+  }
+
+  return `${petName}慢慢停下了进食，刚才那阵专注回应需求的状态也收了下来。`
+}
+
+function buildActionEndMessage(params: {
+  pet: PetStateLike
+  action: PetAction
+  narrativeType: NarrativeType
+  drivePrimary: string | null
+  sourceDrive: string | null
+}): string {
+  const { pet, action, narrativeType, drivePrimary, sourceDrive } = params
+
+  const petName = pet.name
+  const phaseTag = getPhaseTag(pet)
+  const emotionalLabel = getEmotionalLabel(pet)
+
+  if (action === "walking") {
+    return buildWalkingEndMessage({
+      petName,
+      narrativeType,
+      phaseTag,
+      emotionalLabel,
+      drivePrimary,
+      sourceDrive,
+    })
+  }
+
+  if (action === "exploring") {
+    return buildExploringEndMessage({
+      petName,
+      narrativeType,
+      phaseTag,
+      emotionalLabel,
+    })
+  }
+
+  if (action === "approaching") {
+    return buildApproachingEndMessage({
+      petName,
+      phaseTag,
+      emotionalLabel,
+      drivePrimary,
+    })
+  }
+
+  if (action === "idle") {
+    return buildIdleEndMessage({
+      petName,
+      phaseTag,
+      emotionalLabel,
+      sourceDrive,
+    })
+  }
+
+  if (action === "observing") {
+    return buildObservingEndMessage({
+      petName,
+      emotionalLabel,
+    })
+  }
+
+  if (action === "resting") {
+    return buildRestingEndMessage({
+      petName,
+      phaseTag,
+    })
+  }
+
+  if (action === "alert_idle") {
+    return buildAlertIdleEndMessage({
+      petName,
+      emotionalLabel,
+    })
+  }
+
+  if (action === "sleeping") {
+    return buildSleepingEndMessage({
+      petName,
+      emotionalLabel,
+    })
+  }
+
+  if (action === "eating") {
+    return buildEatingEndMessage({
+      petName,
+      phaseTag,
+      emotionalLabel,
+    })
+  }
+
+  return `${petName}慢慢停下了刚才的行动。`
+}
+
 export class EventSystem {
-  /**
-   * 事件列表
-   * 最新事件放在前面
-   */
   private events: WorldEvent[] = []
+  private continuityByPetKey = new Map<string, ContinuityState>()
 
-  /**
-   * 最大事件数量
-   */
-  private maxEvents: number = 80
-
-  /**
-   * ======================================================
-   * 每个世界 Tick 后的自动事件检测
-   * ======================================================
-   */
-  update(input: EventSystemUpdateInput) {
-    this.checkTimeEvents(input)
-    this.checkIncubatorEvents(input)
-    this.checkButlerEvents(input)
-    this.checkPetEvents(input)
-  }
-
-  /**
-   * ======================================================
-   * 手动添加互动结果事件
-   * ======================================================
-   */
-  addInteractionEvent(params: {
-    tick: number
-    day: number
-    hour: number
-    message: string
-  }) {
-    this.addEvent({
-      tick: params.tick,
-      day: params.day,
-      hour: params.hour,
-      type: "interaction_result",
-      message: params.message
-    })
-  }
-
-  /**
-   * ======================================================
-   * 手动添加宠物出生事件
-   * ======================================================
-   */
-  addPetHatchedEvent(params: {
-    tick: number
-    day: number
-    hour: number
-    petName: string
-  }) {
-    this.addEvent({
-      tick: params.tick,
-      day: params.day,
-      hour: params.hour,
-      type: "pet_hatched",
-      message: `${params.petName}成功孵化，正式来到这个世界了。`
-    })
-  }
-
-  /**
-   * ======================================================
-   * 获取事件列表
-   * ======================================================
-   */
   getEvents(): WorldEvent[] {
-    return [...this.events]
+    return this.events
   }
 
-  /**
-   * ======================================================
-   * 检查时间事件
-   * ======================================================
-   */
-  private checkTimeEvents(input: EventSystemUpdateInput) {
+  addInteractionEvent(input: InteractionEventInput): void {
+    const event = makeWorldEvent({
+      tick: input.tick,
+      day: input.day,
+      hour: input.hour,
+      type: "interaction",
+      message: input.message,
+    })
+
+    this.events.push(event)
+  }
+
+  addPetHatchedEvent(input: PetHatchedEventInput): void {
+    const event = makeWorldEvent({
+      tick: input.tick,
+      day: input.day,
+      hour: input.hour,
+      type: "pet_hatched",
+      petName: input.petName,
+      message: `${input.petName}破壳出生了。`,
+    })
+
+    this.events.push(event)
+  }
+
+  update(input: EventSystemUpdateInput): void {
     if (input.prevPeriod !== input.currentPeriod) {
-      this.addEvent({
+      const event = makeWorldEvent({
         tick: input.tick,
         day: input.day,
         hour: input.hour,
         type: "time_period_changed",
-        message: `世界进入了${this.getPeriodText(input.currentPeriod)}。`
+        message: `时间进入了新的阶段：${input.currentPeriod}。`,
+        payload: {
+          prevPeriod: input.prevPeriod,
+          currentPeriod: input.currentPeriod,
+        },
       })
-    }
-  }
 
-  /**
-   * ======================================================
-   * 检查孵化器状态事件
-   * ======================================================
-   */
-  private checkIncubatorEvents(input: EventSystemUpdateInput) {
-    if (input.prevIncubator.status !== input.currentIncubator.status) {
-      this.addEvent({
-        tick: input.tick,
-        day: input.day,
-        hour: input.hour,
-        type: "incubator_status_changed",
-        message: this.getIncubatorStatusMessage(input.currentIncubator)
-      })
+      this.events.push(event)
     }
-  }
 
-  /**
-   * ======================================================
-   * 检查管家任务事件
-   *
-   * 当前先保持通用文本，
-   * 下一轮如有需要可以再做“管家人格化文案”。
-   * ======================================================
-   */
-  private checkButlerEvents(input: EventSystemUpdateInput) {
-    if (input.prevButler.task !== input.currentButler.task) {
-      this.addEvent({
-        tick: input.tick,
-        day: input.day,
-        hour: input.hour,
-        type: "butler_task_changed",
-        message: this.getButlerTaskMessage(
-          input.currentButler.name,
-          input.currentButler.task
+    if (input.prevPet && input.currentPet) {
+      const prevPet = input.prevPet as PetStateLike
+      const currentPet = input.currentPet as PetStateLike
+      const petKey = getPetEventKey(currentPet)
+
+      const prevAction = getEventAction(prevPet)
+      const currentAction = getEventAction(currentPet)
+      const prevContinuity = this.continuityByPetKey.get(petKey)
+
+      if (prevAction !== currentAction) {
+        if (prevContinuity) {
+          const endMessage = buildActionEndMessage({
+            pet: currentPet,
+            action: prevContinuity.action,
+            narrativeType: prevContinuity.narrativeType,
+            drivePrimary: prevContinuity.drivePrimary,
+            sourceDrive: prevContinuity.sourceDrive,
+          })
+
+          const endEvent = makeWorldEvent({
+            tick: input.tick,
+            day: input.day,
+            hour: input.hour,
+            type: "pet_action_end",
+            petName: currentPet.name,
+            message: endMessage,
+            sourceAction: prevContinuity.action,
+            narrativeType: prevContinuity.narrativeType,
+            continuityId: prevContinuity.continuityId,
+            intensity: 0.3,
+            payload: {
+              petKey,
+              endedAction: prevContinuity.action,
+              continuityId: prevContinuity.continuityId,
+              continuityStep: prevContinuity.step,
+              emotionalLabel: getEmotionalLabel(currentPet),
+              phaseTag: getPhaseTag(currentPet),
+              drivePrimary: prevContinuity.drivePrimary,
+              sourceDrive: prevContinuity.sourceDrive,
+            },
+          })
+
+          this.events.push(endEvent)
+        }
+
+        this.continuityByPetKey.delete(petKey)
+
+        const styleInput = buildActionEventStyleInput(
+          currentPet,
+          currentAction
         )
-      })
-    }
-  }
 
-  /**
-   * ======================================================
-   * 检查宠物事件
-   *
-   * 当前版本重点升级：
-   * - 宠物行为变化文案，改为通过独立文案模块生成
-   * - 宠物心情变化文案，改为通过独立文案模块生成
-   *
-   * 这样做的意义：
-   * - EventSystem 仍然只负责“检测变化”
-   * - 具体怎么表达，由核心文案模块决定
-   * ======================================================
-   */
-  private checkPetEvents(input: EventSystemUpdateInput) {
-    /**
-     * 当前没有宠物实体，直接跳过
-     */
-    if (!input.currentPet) {
-      return
-    }
+        const message = buildPetEvent(styleInput)
 
-    /**
-     * 上一帧没有宠物，这一帧刚出生，
-     * 出生事件会由 addPetHatchedEvent 手动记录，
-     * 这里不再额外补行为/心情事件。
-     */
-    if (!input.prevPet) {
-      return
-    }
-
-    /**
-     * 宠物行为变化
-     */
-    if (input.prevPet.action !== input.currentPet.action) {
-      this.addEvent({
-        tick: input.tick,
-        day: input.day,
-        hour: input.hour,
-        type: "pet_action_changed",
-        message: buildPetEventMessage({
-          scene: "pet_action_changed",
-          petName: input.currentPet.name,
-          action: input.currentPet.action,
-          personalityProfile: input.currentPet.personalityProfile
+        const event = makeWorldEvent({
+          tick: input.tick,
+          day: input.day,
+          hour: input.hour,
+          type: "pet_action_changed",
+          petName: currentPet.name,
+          message,
+          sourceAction: currentAction,
+          payload: {
+            petKey,
+            prevAction,
+            currentAction,
+            drivePrimary: getLegacyDrivePrimary(currentPet),
+            sourceDrive: getSourceDriveFromPet(currentPet),
+          },
         })
-      })
-    }
 
-    /**
-     * 宠物心情变化
-     */
-    if (input.prevPet.mood !== input.currentPet.mood) {
-      this.addEvent({
-        tick: input.tick,
-        day: input.day,
-        hour: input.hour,
-        type: "pet_mood_changed",
-        message: buildPetEventMessage({
-          scene: "pet_mood_changed",
-          petName: input.currentPet.name,
-          mood: input.currentPet.mood,
-          personalityProfile: input.currentPet.personalityProfile
+        this.events.push(event)
+      }
+
+      if (
+        shouldEmitActionNarrativeEvent({
+          tick: input.tick,
+          prevAction,
+          currentAction,
         })
-      })
+      ) {
+        const narrativeType = getNarrativeTypeByAction(
+          currentAction,
+          currentPet
+        )
+        const intensity = getActionEventIntensity(currentPet)
+        const drivePrimary = getLegacyDrivePrimary(currentPet)
+        const sourceDrive = getSourceDriveFromPet(currentPet)
+
+        const existing = this.continuityByPetKey.get(petKey)
+
+        let continuityState: ContinuityState
+
+        if (
+          shouldResetContinuity({
+            existing,
+            currentTick: input.tick,
+            currentAction,
+            currentNarrativeType: narrativeType,
+            currentDrivePrimary: drivePrimary,
+            currentSourceDrive: sourceDrive,
+          })
+        ) {
+          continuityState = {
+            continuityId: createContinuityId(),
+            step: 1,
+            action: currentAction,
+            narrativeType,
+            drivePrimary,
+            sourceDrive,
+            lastTick: input.tick,
+          }
+        } else {
+          continuityState = {
+            continuityId: existing!.continuityId,
+            step: existing!.step + 1,
+            action: currentAction,
+            narrativeType,
+            drivePrimary,
+            sourceDrive,
+            lastTick: input.tick,
+          }
+        }
+
+        this.continuityByPetKey.set(petKey, continuityState)
+
+        const styleInput = buildActionEventStyleInput(
+          currentPet,
+          currentAction,
+          undefined,
+          {
+            intensity,
+            narrativeType,
+            continuityId: continuityState.continuityId,
+            continuityStep: continuityState.step,
+          }
+        )
+
+        const baseMessage = buildPetEvent(styleInput)
+        const message = decorateNarrativeMessageByContinuity({
+          baseMessage,
+          step: continuityState.step,
+          action: currentAction,
+          narrativeType,
+        })
+
+        const event = makeWorldEvent({
+          tick: input.tick,
+          day: input.day,
+          hour: input.hour,
+          type: "pet_action_narrative",
+          petName: currentPet.name,
+          message,
+          sourceAction: currentAction,
+          narrativeType,
+          continuityId: continuityState.continuityId,
+          intensity,
+          payload: buildEnhancedActionEventPayload({
+            pet: currentPet,
+            prevAction,
+            currentAction,
+            narrativeType,
+            continuityId: continuityState.continuityId,
+            intensity,
+            continuityStep: continuityState.step,
+            sourceDrive,
+          }),
+        })
+
+        this.events.push(event)
+      }
+
+      const prevMood = getEventMood(prevPet)
+      const currentMood = getEventMood(currentPet)
+
+      if (prevMood !== currentMood) {
+        const styleInput = buildMoodEventStyleInput(
+          currentPet,
+          currentMood
+        )
+
+        const message = buildPetEvent(styleInput)
+
+        const event = makeWorldEvent({
+          tick: input.tick,
+          day: input.day,
+          hour: input.hour,
+          type: "pet_mood_changed",
+          petName: currentPet.name,
+          message,
+          payload: {
+            petKey,
+            prevMood,
+            currentMood,
+            emotionalLabel:
+              currentPet.timelineSnapshot?.state.emotional.label ?? null,
+            sourceDrive: getSourceDriveFromPet(currentPet),
+          },
+        })
+
+        this.events.push(event)
+      }
+
+      const prevPhase = prevPet.timelineSnapshot?.fortune.phaseTag
+      const currentPhase = currentPet.timelineSnapshot?.fortune.phaseTag
+
+      if (prevPhase && currentPhase && prevPhase !== currentPhase) {
+        const event = makeWorldEvent({
+          tick: input.tick,
+          day: input.day,
+          hour: input.hour,
+          type: "pet_fortune_phase_changed",
+          petName: currentPet.name,
+          message: `${currentPet.name}进入了新的阶段倾向：${currentPhase}。`,
+          payload: {
+            petKey,
+            prevPhase,
+            currentPhase,
+            fortuneSummary:
+              currentPet.timelineSnapshot?.fortune.summary ?? null,
+            sourceDrive: getSourceDriveFromPet(currentPet),
+          },
+        })
+
+        this.events.push(event)
+      }
+
+      const prevBranch = prevPet.timelineSnapshot?.trajectory.branchTag
+      const currentBranch =
+        currentPet.timelineSnapshot?.trajectory.branchTag
+
+      if (prevBranch && currentBranch && prevBranch !== currentBranch) {
+        const event = makeWorldEvent({
+          tick: input.tick,
+          day: input.day,
+          hour: input.hour,
+          type: "pet_trajectory_branch_changed",
+          petName: currentPet.name,
+          message: `${currentPet.name}的生命轨迹开始向新的方向偏移了。`,
+          payload: {
+            petKey,
+            prevBranch,
+            currentBranch,
+            trajectorySummary:
+              currentPet.timelineSnapshot?.trajectory.summary ?? null,
+            sourceDrive: getSourceDriveFromPet(currentPet),
+          },
+        })
+
+        this.events.push(event)
+      }
     }
-  }
 
-  /**
-   * ======================================================
-   * 真正写入事件
-   * ======================================================
-   */
-  private addEvent(params: {
-    tick: number
-    day: number
-    hour: number
-    type: WorldEvent["type"]
-    message: string
-  }) {
-    const event: WorldEvent = {
-      id: `${params.type}-${params.tick}-${params.day}-${params.hour}-${Date.now()}-${Math.random()}`,
-      tick: params.tick,
-      type: params.type,
-      message: params.message,
-      day: params.day,
-      hour: params.hour
+    if (
+      input.prevIncubator.progress !== input.currentIncubator.progress
+    ) {
+      const added =
+        input.currentIncubator.progress - input.prevIncubator.progress
+
+      if (added > 0) {
+        const event = makeWorldEvent({
+          tick: input.tick,
+          day: input.day,
+          hour: input.hour,
+          type: "incubator_progress_changed",
+          message: `孵化器的进度又向前推进了一些。`,
+          payload: {
+            addedProgress: added,
+            progress: input.currentIncubator.progress,
+          },
+        })
+
+        this.events.push(event)
+      }
     }
-
-    this.events.unshift(event)
-
-    if (this.events.length > this.maxEvents) {
-      this.events = this.events.slice(0, this.maxEvents)
-    }
-
-    console.log("事件：", event.message)
-  }
-
-  /**
-   * ======================================================
-   * 时间段转中文
-   * ======================================================
-   */
-  private getPeriodText(period: TimePeriod): string {
-    if (period === "Morning") return "早晨"
-    if (period === "Daytime") return "白天"
-    if (period === "Evening") return "傍晚"
-    return "夜晚"
-  }
-
-  /**
-   * ======================================================
-   * 孵化器状态文案
-   * ======================================================
-   */
-  private getIncubatorStatusMessage(incubator: IncubatorState): string {
-    if (incubator.status === "incubating") {
-      return `胚胎正在孵化器中稳定成长。`
-    }
-
-    if (incubator.status === "ready_to_hatch") {
-      return `胚胎已经做好准备，随时可能孵化。`
-    }
-
-    if (incubator.status === "hatched") {
-      return `孵化器中的胚胎已经完成孵化。`
-    }
-
-    return `孵化器状态发生了变化。`
-  }
-
-  /**
-   * ======================================================
-   * 管家任务文案
-   * ======================================================
-   */
-  private getButlerTaskMessage(
-    butlerName: string,
-    task: ButlerState["task"]
-  ): string {
-    if (task === "feeding_pet") {
-      return `${butlerName}开始照顾当前最需要被照看的对象。`
-    }
-
-    if (task === "watching_pet") {
-      return `${butlerName}开始巡视宠物的活动情况。`
-    }
-
-    if (task === "building_home") {
-      return `${butlerName}开始建造家园。`
-    }
-
-    if (task === "idle") {
-      return `${butlerName}进入了空闲状态。`
-    }
-
-    return `${butlerName}切换了任务。`
   }
 }
+
+export default EventSystem
