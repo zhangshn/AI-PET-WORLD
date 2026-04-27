@@ -1,7 +1,8 @@
 /**
- * 当前文件负责：定义世界刺激系统核心类型、空间刺激状态，以及生态系统输入结构。
+ * 当前文件负责：定义世界刺激系统核心类型、空间刺激状态，以及生态与实体刺激输入结构。
  */
 
+import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 import type { WorldEcologyState } from "@/world/ecology/ecology-engine"
 
 export type WorldStimulusType =
@@ -14,11 +15,16 @@ export type WorldStimulusType =
   | "shadow_motion"
   | "quiet_zone"
   | "warm_zone"
+  | "tree_presence"
+  | "flower_scent"
+  | "water_sound"
+  | "entity_motion"
 
 export type WorldStimulusCategory =
   | "environment"
   | "dynamic"
   | "spatial"
+  | "entity"
 
 export type WorldStimulusIntensity =
   | "low"
@@ -34,6 +40,13 @@ export type StimulusMovementPattern =
 export type StimulusWorldPosition = {
   x: number
   y: number
+}
+
+export type WorldStimulusSource = {
+  kind: "environment" | "ecology_zone" | "world_entity"
+  id?: string
+  type?: string
+  name?: string
 }
 
 export type WorldStimulus = {
@@ -57,6 +70,8 @@ export type WorldStimulus = {
   spatialRadius: number
   movementPattern: StimulusMovementPattern
   movementPhase: number
+
+  source?: WorldStimulusSource
 }
 
 export type BuildWorldStimuliInput = {
@@ -70,6 +85,8 @@ export type BuildWorldStimuliInput = {
 
   ecology: WorldEcologyState
   existingStimuli: WorldStimulus[]
+
+  worldRuntime?: WorldRuntimeState | null
 }
 
 export type WorldStimulusSystemState = {

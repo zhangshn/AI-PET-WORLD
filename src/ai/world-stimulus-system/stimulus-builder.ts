@@ -8,10 +8,19 @@ import type {
   WorldStimulus,
   WorldStimulusCategory,
   WorldStimulusIntensity,
+  WorldStimulusSource,
   WorldStimulusType,
 } from "./stimulus-types"
 
-function buildStimulusId(type: WorldStimulusType, tick: number): string {
+function buildStimulusId(
+  type: WorldStimulusType,
+  tick: number,
+  source?: WorldStimulusSource
+): string {
+  if (source?.id) {
+    return `stimulus-${type}-${source.id}-${tick}`
+  }
+
   return `stimulus-${type}-${tick}`
 }
 
@@ -44,12 +53,23 @@ function buildStimulusWorldPosition(
       return { x: randomBetween(560, 780), y: randomBetween(300, 400) }
     case "warm_zone":
       return { x: randomBetween(610, 760), y: randomBetween(320, 410) }
+    case "tree_presence":
+      return { x: randomBetween(160, 860), y: randomBetween(120, 420) }
+    case "flower_scent":
+      return { x: randomBetween(180, 820), y: randomBetween(180, 440) }
+    case "water_sound":
+      return { x: randomBetween(160, 760), y: randomBetween(240, 480) }
+    case "entity_motion":
+      return { x: randomBetween(240, 840), y: randomBetween(160, 430) }
     default:
       return { x: 480, y: 260 }
   }
 }
 
-function resolveSpatialRadius(type: WorldStimulusType, spatialRadius?: number): number {
+function resolveSpatialRadius(
+  type: WorldStimulusType,
+  spatialRadius?: number
+): number {
   if (typeof spatialRadius === "number") return spatialRadius
 
   switch (type) {
@@ -71,25 +91,39 @@ function resolveSpatialRadius(type: WorldStimulusType, spatialRadius?: number): 
       return 70
     case "warm_zone":
       return 64
+    case "tree_presence":
+      return 56
+    case "flower_scent":
+      return 42
+    case "water_sound":
+      return 58
+    case "entity_motion":
+      return 46
     default:
       return 40
   }
 }
 
-function resolveMovementPattern(type: WorldStimulusType): StimulusMovementPattern {
+function resolveMovementPattern(
+  type: WorldStimulusType
+): StimulusMovementPattern {
   switch (type) {
     case "butterfly":
+    case "entity_motion":
       return "wandering"
     case "falling_leaf":
     case "breeze":
     case "shadow_motion":
       return "drifting"
     case "light_shift":
+    case "flower_scent":
       return "floating"
     case "distant_sound":
     case "temperature_drop":
     case "quiet_zone":
     case "warm_zone":
+    case "tree_presence":
+    case "water_sound":
     default:
       return "static"
   }
@@ -108,9 +142,10 @@ export function createWorldStimulus(input: {
   tags?: string[]
   worldPosition?: StimulusWorldPosition
   spatialRadius?: number
+  source?: WorldStimulusSource
 }): WorldStimulus {
   return {
-    id: buildStimulusId(input.type, input.tick),
+    id: buildStimulusId(input.type, input.tick, input.source),
     type: input.type,
     category: input.category,
     tick: input.tick,
@@ -126,5 +161,6 @@ export function createWorldStimulus(input: {
     spatialRadius: resolveSpatialRadius(input.type, input.spatialRadius),
     movementPattern: resolveMovementPattern(input.type),
     movementPhase: Math.random() * Math.PI * 2,
+    source: input.source,
   }
 }

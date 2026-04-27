@@ -10,7 +10,6 @@ import {
 import { generateStarterWorldMap } from "../map/map-generator"
 import type { WorldMapState } from "../map/world-map"
 import {
-  createEmptyEntityRuntime,
   removeExpiredWorldEntities,
   type EntityRuntimeState,
 } from "./entity-runtime"
@@ -25,6 +24,8 @@ import {
 } from "./civilization-runtime"
 import { resolveWorldBiome, type WorldBiomeState } from "../map/biome-system"
 import { resolveWeatherRuntimeEffect, type WeatherRuntimeEffect } from "./weather-runtime"
+import { createStarterRuntimeEntities } from "./runtime-mapper"
+import { stepRuntimeEntityMovements } from "./movement-runtime"
 
 export type WorldRuntimeState = {
   tick: number
@@ -47,13 +48,19 @@ export function createInitialWorldRuntimeState(input: {
     previousZones: null,
   })
 
+  const map = generateStarterWorldMap()
+  const starterRuntimeEntities = createStarterRuntimeEntities({
+    map,
+    tick: 0,
+  })
+
   return {
     tick: 0,
-    map: generateStarterWorldMap(),
+    map,
     ecology,
     biome: resolveWorldBiome(ecology.environment),
     weatherEffect: resolveWeatherRuntimeEffect(ecology.environment),
-    entities: createEmptyEntityRuntime(),
+    entities: starterRuntimeEntities.entities,
     spatial: createEmptySpatialRuntime(),
     civilization: createInitialCivilizationRuntime(),
   }
@@ -76,8 +83,14 @@ export function stepWorldRuntime(input: {
     previousZones: input.previous.ecology.zones,
   })
 
-  const entities = removeExpiredWorldEntities({
+  const activeEntities = removeExpiredWorldEntities({
     state: input.previous.entities,
+    tick: input.tick,
+  })
+
+  const movedEntities = stepRuntimeEntityMovements({
+    entities: activeEntities,
+    map: input.previous.map,
     tick: input.tick,
   })
 
@@ -97,7 +110,7 @@ export function stepWorldRuntime(input: {
     ecology,
     biome: resolveWorldBiome(ecology.environment),
     weatherEffect: resolveWeatherRuntimeEffect(ecology.environment),
-    entities,
+    entities: movedEntities.entities,
     civilization,
   }
 }
