@@ -1,8 +1,9 @@
 /**
- * 当前文件负责：根据世界生态状态生成刺激、清理过期刺激，并推进刺激在世界空间中的位置变化。
+ * 当前文件负责：根据世界生态与实体状态生成刺激、清理过期刺激，并推进刺激在世界空间中的位置变化。
  */
 
 import { createWorldStimulus } from "./stimulus-builder"
+import { buildEntityDrivenStimuli } from "./entity-stimulus-builder"
 
 import type {
   BuildWorldStimuliInput,
@@ -350,10 +351,19 @@ export function buildNextWorldStimulusState(
     updateStimulusSpatialState(stimulus, input.tick)
   )
 
-  const latestGenerated = buildEcologyDrivenStimuli({
+  const ecologyGenerated = buildEcologyDrivenStimuli({
     ...input,
     existingStimuli: activeStimuli,
   })
+
+  const afterEcologyStimuli = [...activeStimuli, ...ecologyGenerated]
+
+  const entityGenerated = buildEntityDrivenStimuli({
+    ...input,
+    existingStimuli: afterEcologyStimuli,
+  })
+
+  const latestGenerated = [...ecologyGenerated, ...entityGenerated]
 
   return {
     activeStimuli: [...activeStimuli, ...latestGenerated],
