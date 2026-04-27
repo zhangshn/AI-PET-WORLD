@@ -2,132 +2,35 @@
  * 当前文件负责：监听世界状态变化并生成世界事件
  */
 
+/**
+ * 当前文件负责：监听世界状态变化并生成世界事件
+ */
+
 import { buildPetEvent } from "../ai/gateway"
 import type { PetEventStyleInput } from "../ai/event-style/schema"
-
-import type { PersonalityProfile } from "../ai/ziwei-core/schema"
-
-import type { PetState, PetAction, PetMood } from "../types/pet"
-import type { ButlerState } from "../types/butler"
-import type { IncubatorState } from "../types/incubator"
+import type { PetAction, PetMood } from "../types/pet"
 import type { WorldEvent, NarrativeType } from "../types/event"
 import type { HomeState } from "../types/home"
 
-export type EventSystemUpdateInput = {
-  tick: number
-  day: number
-  hour: number
-
-  prevPeriod: string
-  currentPeriod: string
-
-  prevPet: PetState | null
-  currentPet: PetState | null
-
-  prevButler: ButlerState
-  currentButler: ButlerState
-
-  prevIncubator: IncubatorState
-  currentIncubator: IncubatorState
-}
-
-export type InteractionEventInput = {
-  tick: number
-  day: number
-  hour: number
-  message: string
-}
-
-export type PetHatchedEventInput = {
-  tick: number
-  day: number
-  hour: number
-  petName: string
-}
-
-type PetStateLike = PetState & {
-  id?: string
-  personalityProfile: PersonalityProfile
-}
-
-type ContinuityState = {
-  continuityId: string
-  step: number
-  action: PetAction
-  narrativeType: NarrativeType
-  drivePrimary: string | null
-  sourceDrive: string | null
-  lastTick: number
-}
-
-let eventSequence = 0
-let continuitySequence = 0
-
-function createEventId(): string {
-  eventSequence += 1
-  return `event_${Date.now()}_${eventSequence}`
-}
-
-function createContinuityId(): string {
-  continuitySequence += 1
-  return `continuity_${Date.now()}_${continuitySequence}`
-}
-
-function getPetEventKey(pet: PetStateLike): string {
-  return pet.id || pet.name
-}
-
-function getLegacyDrivePrimary(pet: PetStateLike): string | null {
-  return pet.timelineSnapshot?.state.drive.primary ?? null
-}
-
-function getSourceDriveFromPet(pet: PetStateLike): string | null {
-  const payload = pet.timelineSnapshot?.state?.drive
-  const dominant =
-    (payload as Record<string, unknown> | undefined)?.dominant
-
-  if (typeof dominant === "string" && dominant.length > 0) {
-    return dominant
-  }
-
-  return getLegacyDrivePrimary(pet)
-}
-
-function getPhaseTag(pet: PetStateLike): string | null {
-  return pet.timelineSnapshot?.fortune.phaseTag ?? null
-}
-
-function getEmotionalLabel(pet: PetStateLike): string | null {
-  return pet.timelineSnapshot?.state.emotional.label ?? null
-}
-
-function buildHomeContextFromHomeState(
-  home?: HomeState
-): PetEventStyleInput["homeContext"] {
-  if (!home) return undefined
-
-  if (home.status === "completed") {
-    return {
-      homeNote: "家园已经搭好，周围看起来安稳了不少",
-    }
-  }
-
-  if (home.status === "building") {
-    return {
-      homeNote: "家园还在一点点搭建起来",
-    }
-  }
-
-  return undefined
-}
-
-function getEventAction(pet: PetStateLike): PetAction {
-  return pet.action
-}
-
-function getEventMood(pet: PetStateLike): PetMood {
-  return pet.mood
-}
+import {
+  buildHomeContextFromHomeState,
+  createContinuityId,
+  getActionEventIntensity,
+  getEmotionalLabel,
+  getEventAction,
+  getEventMood,
+  getLegacyDrivePrimary,
+  getNarrativeTypeByAction,
+  getPetEventKey,
+  getPhaseTag,
+  getSourceDriveFromPet,
+  makeWorldEvent,
+  type ContinuityState,
+  type EventSystemUpdateInput,
+  type InteractionEventInput,
+  type PetHatchedEventInput,
+  type PetStateLike,
+} from "./event/event-gateway"
 
 function buildActionEventStyleInput(
   pet: PetStateLike,
@@ -165,109 +68,6 @@ function buildMoodEventStyleInput(
     personalityProfile: pet.personalityProfile,
     homeContext: buildHomeContextFromHomeState(home),
   }
-}
-
-function makeWorldEvent(params: {
-  tick: number
-  day: number
-  hour: number
-  type: string
-  petName?: string
-  message: string
-  sourceAction?: string
-  narrativeType?: NarrativeType
-  continuityId?: string
-  intensity?: number
-  payload?: Record<string, unknown>
-}): WorldEvent {
-  return {
-    id: createEventId(),
-    tick: params.tick,
-    day: params.day,
-    hour: params.hour,
-    type: params.type as WorldEvent["type"],
-    petName: params.petName,
-    message: params.message,
-    sourceAction: params.sourceAction,
-    narrativeType: params.narrativeType,
-    continuityId: params.continuityId,
-    intensity: params.intensity,
-    payload: params.payload ?? {},
-  } as WorldEvent
-}
-
-function getNarrativeTypeByAction(
-  action: PetAction,
-  pet: PetStateLike
-): NarrativeType {
-  const energy = pet.timelineSnapshot?.state.physical.energy ?? 50
-  const hunger = pet.timelineSnapshot?.state.physical.hunger ?? 50
-  const arousal = pet.timelineSnapshot?.state.emotional.arousal ?? 0.5
-  const sourceDrive = getSourceDriveFromPet(pet) ?? "observe"
-
-  if (action === "walking") {
-    if (energy < 25) return "linger"
-    if (sourceDrive === "approach") return "approach_target"
-    if (sourceDrive === "eat" && hunger >= 65) return "approach_target"
-    if (sourceDrive === "observe") return "observe_environment"
-    if (arousal >= 0.55) return "observe_environment"
-    return "observe_environment"
-  }
-
-  if (action === "idle") {
-    if (energy < 25) return "recover"
-    if (sourceDrive === "observe") return "observe_environment"
-    if (arousal >= 0.65) return "observe_environment"
-    if (sourceDrive === "rest") return "recover"
-    return "linger"
-  }
-
-  if (action === "observing") {
-    return "observe_environment"
-  }
-
-  if (action === "resting") {
-    return "recover"
-  }
-
-  if (action === "alert_idle") {
-    return "observe_environment"
-  }
-
-  if (action === "exploring") {
-    if (arousal >= 0.65) return "discover"
-    if (sourceDrive === "explore") return "discover"
-    return "observe_environment"
-  }
-
-  if (action === "approaching") {
-    return "approach_target"
-  }
-
-  if (action === "eating") {
-    return "satisfy_need"
-  }
-
-  if (action === "sleeping") {
-    return "recover"
-  }
-
-  return "unknown"
-}
-
-function getActionEventIntensity(pet: PetStateLike): number {
-  const energy = pet.timelineSnapshot?.state.physical.energy ?? 50
-  const emotionalArousal =
-    pet.timelineSnapshot?.state.emotional.arousal ?? 0.5
-
-  const normalizedEnergy = Math.max(0, Math.min(1, energy / 100))
-  const normalizedEmotion = Math.max(0, Math.min(1, emotionalArousal))
-
-  const intensity =
-    (1 - normalizedEnergy) * 0.45 +
-    normalizedEmotion * 0.55
-
-  return Number(Math.max(0, Math.min(1, intensity)).toFixed(2))
 }
 
 function shouldEmitActionNarrativeEvent(params: {
