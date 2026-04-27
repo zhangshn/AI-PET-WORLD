@@ -6,11 +6,14 @@ import { buildPetBirthBundle } from "@/ai/gateway"
 
 import type { TimeState } from "../../timeSystem"
 import type { ButlerState } from "@/types/butler"
-import type { ButlerSystem } from "@/systems/butlerSystem"
-import type { EventSystem } from "@/systems/eventSystem"
-import type { HomeSystem } from "@/systems/homeSystem"
-import type { IncubatorSystem } from "@/systems/incubatorSystem"
-import type { PetSystem } from "@/systems/petSystem"
+
+import type {
+  PetSystem,
+  ButlerSystem,
+  EventSystem,
+  HomeSystem,
+  IncubatorSystem,
+} from "@/systems/systems-gateway"
 
 export type RunManagementInteractionsInput = {
   tick: number
