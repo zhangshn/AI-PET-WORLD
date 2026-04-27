@@ -27,19 +27,10 @@ import {
   runManagementInteractions,
 } from "./world-engine/world-engine-gateway"
 
-export type WorldState = {
-  tick: number
-  time: string
-  timeState: TimeState
-  pet: PetState | null
-  butler: ButlerState
-  home: HomeState
-  incubator: IncubatorState
-  events: WorldEvent[]
-  worldStimuli: WorldStimulus[]
-  ecology: WorldEcologyState
-  worldRuntime: WorldRuntimeState
-}
+import {
+  buildWorldState,
+  type WorldState,
+} from "./world-engine/world-engine-state"
 
 export class WorldEngine {
   private tick = 0
@@ -244,21 +235,26 @@ export class WorldEngine {
   }
 
   private emitUpdate() {
-    if (!this.onUpdate) return
+  if (!this.onUpdate) return
 
-    this.onUpdate({
+  this.onUpdate(
+    buildWorldState({
       tick: this.tick,
-      time: this.timeSystem.getFormattedTime(),
+      formattedTime: this.timeSystem.getFormattedTime(),
       timeState: this.timeSystem.getTime(),
+
       pet: this.petSystem.getPet(),
       butler: this.butlerSystem.getState(),
+
       home: this.homeSystem.getHome(),
       incubator: this.incubatorSystem.getIncubator(),
+
       events: this.eventSystem.getEvents(),
+
       worldStimuli: this.worldStimuli,
-      ecology: this.getEcology(),
-      worldRuntime: this.getWorldRuntime(),
+      worldRuntime: this.worldRuntime,
     })
+  )
   }
 
   getTick(): number {
