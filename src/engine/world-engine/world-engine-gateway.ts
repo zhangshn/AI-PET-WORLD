@@ -9,6 +9,15 @@ export { runPetRuntime } from "./runners/pet-runtime-runner"
 export { runButlerOpportunities } from "./runners/butler-opportunity-runner"
 export { runManagementInteractions } from "./runners/management-interaction-runner"
 
+export {
+  createWorldRuntime,
+  stepWorldRuntime,
+} from "./runners/world-runtime-step-runner"
+export type {
+  CreateWorldRuntimeInput,
+  StepWorldRuntimeInput,
+} from "./runners/world-runtime-step-runner"
+
 export { refreshWorldSystemState } from "./runners/world-state-sync-runner"
 export type {
   RefreshWorldSystemStateInput,

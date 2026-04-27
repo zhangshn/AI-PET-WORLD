@@ -19,20 +19,22 @@ import type { WorldEvent } from "../types/event"
 import type { WorldEcologyState } from "../world/ecology/ecology-engine"
 import type { WorldRuntimeState } from "../world/runtime/world-runtime"
 import {
-  runWorldRuntime,
   runWorldStimulus,
   runPetCognition,
   runPetRuntime,
   runButlerOpportunities,
   runManagementInteractions,
   refreshWorldSystemState,
+  createWorldRuntime,
+  stepWorldRuntime,
 } from "./world-engine/world-engine-gateway"
-
 import {
   buildWorldState,
   type WorldState,
 } from "./world-engine/world-engine-state"
+
 export type { WorldState } from "./world-engine/world-engine-state"
+
 export class WorldEngine {
   private tick = 0
 
@@ -222,11 +224,10 @@ export class WorldEngine {
   }
 
   private createInitialRuntime(): WorldRuntimeState {
-    return runWorldRuntime({
-      previous: null,
+    return createWorldRuntime({
       tick: this.tick,
       time: this.timeSystem.getTime(),
-      homeLevel: this.homeSystem.getHome().level,
+      home: this.homeSystem.getHome(),
       petCount: 0,
       shouldLog: false,
     })
@@ -238,12 +239,12 @@ export class WorldEngine {
     pet: PetState | null
     shouldLog?: boolean
   }): WorldRuntimeState {
-    return runWorldRuntime({
+    return stepWorldRuntime({
       previous: this.worldRuntime,
       tick: this.tick,
       time: input.time,
-      homeLevel: input.home.level,
-      petCount: input.pet ? 1 : 0,
+      home: input.home,
+      pet: input.pet,
       shouldLog: input.shouldLog,
     })
   }
