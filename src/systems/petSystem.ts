@@ -1,5 +1,14 @@
 /**
- * 当前文件负责：管理宠物出生、timeline 更新、goal 接入、memory 接入、cognition 接入、behavior-core 接入，以及状态驱动下的行为调度。
+ * 当前文件负责：管理宠物出生、timeline 更新、goal 接入、memory 接入、
+ * cognition 接入、behavior-core 接入，以及状态驱动下的行为调度。
+ *
+ * 注意：
+ * - 具体认知逻辑放在 pet/pet-cognition
+ * - 生命周期推进放在 pet/pet-life
+ * - 区域影响放在 pet/pet-zone
+ * - 行为选择与行为稳定放在 pet/pet-action
+ * - 喂食判断与喂食状态更新放在 pet/pet-feeding
+ * - timeline 状态事件构建放在 pet/pet-state-events
  */
 
 import { PetState, PetAction, PetMood } from "../types/pet"
@@ -42,6 +51,10 @@ export class PetSystem {
   private lastDecisionReason: ActionDecisionReason | null = null
   private lastFeedingTick = -9999
 
+  /**
+   * 使用 AI 出生数据创建宠物。
+   * 这里只负责组装初始 PetState，不再计算人格、八字、紫微或意识结构。
+   */
   hatchPetWithAiBundle(name: string, aiBundle: PetBirthAiBundle) {
     if (this.pet) return
 
@@ -140,6 +153,11 @@ export class PetSystem {
     })
   }
 
+  /**
+   * 推进宠物一帧逻辑。
+   * 当前方法是调度层：负责串联生命周期、goal、drive、行为选择、行为稳定、
+   * 区域影响、timeline 更新和 memory 更新。
+   */
   update(time: TimeState, zones: WorldZone[] = []) {
     this.currentTick++
 
@@ -278,7 +296,7 @@ export class PetSystem {
     const nextSnapshot = updatePetAiState({
       currentSnapshot,
       time,
-     events: buildPetStateEvents(finalAction),
+      events: buildPetStateEvents(finalAction),
       behaviorShift: {
         previousAction,
         nextAction: finalAction,
@@ -325,6 +343,9 @@ export class PetSystem {
     })
   }
 
+  /**
+   * 接收世界刺激，并交给宠物认知系统处理。
+   */
   perceiveWorldStimuli(
     stimuli: WorldStimulus[],
     time: {
@@ -349,6 +370,9 @@ export class PetSystem {
     return result.records
   }
 
+  /**
+   * 判断宠物是否接受管家提供的食物机会。
+   */
   evaluateFoodOffer(opportunity: ButlerOpportunity): FoodOfferDecision {
     return evaluateFoodOffer({
       pet: this.pet,
@@ -356,10 +380,16 @@ export class PetSystem {
     })
   }
 
+  /**
+   * 对已接受的食物机会应用摄食结果。
+   */
   applyAcceptedFoodOffer(amount: number) {
     this.applyFeeding(amount)
   }
 
+  /**
+   * 直接应用喂食结果。
+   */
   applyFeeding(amount: number = 15) {
     const result = applyFeeding({
       pet: this.pet,
@@ -373,6 +403,10 @@ export class PetSystem {
     }
   }
 
+  /**
+   * 将 timeline 内部情绪标签映射成 PetMood。
+   * 后续可以继续拆到 pet/pet-mood。
+   */
   private mapTimelineStateToPetMood(label: string): PetMood {
     if (label === "excited" || label === "content" || label === "relaxed") {
       return "happy"
