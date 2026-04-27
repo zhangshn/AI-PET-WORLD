@@ -42,3 +42,10 @@ export type {
 } from "./event-style-input-runner"
 
 export { buildActionEndMessage } from "./event-action-end-message-runner"
+
+export {
+  buildEnhancedActionEventPayload,
+  decorateNarrativeMessageByContinuity,
+  shouldEmitActionNarrativeEvent,
+  shouldResetContinuity,
+} from "./event-continuity-runner"
