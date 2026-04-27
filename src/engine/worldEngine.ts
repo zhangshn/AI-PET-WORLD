@@ -27,6 +27,7 @@ import {
   refreshWorldSystemState,
   createWorldRuntime,
   stepWorldRuntime,
+  runWorldEventUpdate,
 } from "./world-engine/world-engine-gateway"
 import {
   buildWorldState,
@@ -203,18 +204,17 @@ export class WorldEngine {
       shouldLog: false,
     })
 
-    this.eventSystem.update({
+    runWorldEventUpdate({
       tick: this.tick,
-      day: currentTime.day,
-      hour: currentTime.hour,
-      prevPeriod: prevTime.period,
-      currentPeriod: currentTime.period,
+      prevTime,
+      currentTime,
       prevPet,
       currentPet,
       prevButler,
       currentButler,
       prevIncubator,
       currentIncubator,
+      eventSystem: this.eventSystem,
     })
 
     console.log("世界 Tick：", this.tick)

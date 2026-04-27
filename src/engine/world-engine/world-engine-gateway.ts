@@ -23,3 +23,8 @@ export type {
   RefreshWorldSystemStateInput,
   WorldSystemStateSnapshot,
 } from "./runners/world-state-sync-runner"
+
+export { runWorldEventUpdate } from "./runners/world-event-update-runner"
+export type {
+  RunWorldEventUpdateInput,
+} from "./runners/world-event-update-runner"
