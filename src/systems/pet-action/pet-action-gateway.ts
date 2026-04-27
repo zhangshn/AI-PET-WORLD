@@ -10,3 +10,9 @@ export {
   type ApplyPetActionStabilityResult,
   type ShouldHoldCurrentActionInput,
 } from "./pet-action-stability"
+
+export {
+  selectPetAction,
+  type SelectPetActionInput,
+  type SelectPetActionResult,
+} from "./pet-action-selector"
