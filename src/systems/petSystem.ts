@@ -32,9 +32,9 @@ import {
   type ActionStabilityState,
 } from "./pet/pet-action/pet-action-gateway"
 import { updatePetAiState, stepPetBehaviorProcess } from "../ai/gateway"
-import { driveSystem, type DriveSnapshot } from "./driveSystem"
-import { attentionSystem } from "./attentionSystem"
-import { goalSystem } from "./goalSystem"
+import { driveSystem, type DriveSnapshot } from "./pet/pet-drive/pet-drive-gateway"
+import { attentionSystem } from "./pet/pet-attention/pet-attention-gateway"
+import { goalSystem } from "./pet/pet-goal/pet-goal-gateway"
 import { updatePetMemoryState } from "../ai/memory-core/memory-gateway"
 import type { ButlerOpportunity } from "./butlerSystem"
 import type { WorldStimulus } from "../ai/gateway"

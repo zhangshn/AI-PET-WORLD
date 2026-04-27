@@ -17,8 +17,8 @@
  * ======================================================
  */
 
-import type { PetAction } from "../types/pet"
-import type { DriveType } from "./driveSystem"
+import type { PetAction } from "../../../types/pet"
+import type { DriveType } from "../pet-drive/pet-drive-gateway"
 
 export type AttentionFocusType =
   | "rest"

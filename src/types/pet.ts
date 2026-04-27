@@ -19,7 +19,7 @@ import type {
 
 import type {
   PetGoalState,
-} from "../systems/goalSystem"
+} from "../systems/pet/pet-goal/pet-goal-gateway"
 
 import type {
   PetCognitionRecord,

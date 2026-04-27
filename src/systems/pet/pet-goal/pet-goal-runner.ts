@@ -2,11 +2,11 @@
  * 当前文件负责：基于紫微意识核、当前状态、世界时间、记忆与世界区域生成宠物当前目标。
  */
 
-import type { TimeState } from "../engine/timeSystem"
-import type { PetState } from "../types/pet"
-import type { ZiweiConsciousnessKernel } from "../ai/consciousness/consciousness-gateway"
-import type { PetMemoryState } from "../ai/memory-core/memory-gateway"
-import type { WorldZone, WorldZoneType } from "../world/ecology/world-zone-types"
+import type { TimeState } from "../../../engine/timeSystem"
+import type { PetState } from "../../../types/pet"
+import type { ZiweiConsciousnessKernel } from "../../../ai/consciousness/consciousness-gateway"
+import type { PetMemoryState } from "../../../ai/memory-core/memory-gateway"
+import type { WorldZone, WorldZoneType } from "../../../world/ecology/world-zone-types"
 
 export type PetGoalType =
   | "expand_territory"

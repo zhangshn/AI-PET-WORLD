@@ -2,10 +2,10 @@
  * 当前文件负责：根据人格底盘、时间、状态、意识偏压与外部刺激，统一计算宠物当前的 drive 强度与主导 drive
  */
 
-import type { TimeState } from "../engine/timeSystem"
-import type { PetState } from "../types/pet"
-import type { PersonalityTraits } from "../ai/ziwei-core/schema"
-import type { ConsciousnessBias } from "../ai/consciousness/consciousness-gateway"
+import type { TimeState } from "../../../engine/timeSystem"
+import type { PetState } from "../../../types/pet"
+import type { PersonalityTraits } from "../../../ai/ziwei-core/schema"
+import type { ConsciousnessBias } from "../../../ai/consciousness/consciousness-gateway"
 
 export type DriveType =
   | "eat"
