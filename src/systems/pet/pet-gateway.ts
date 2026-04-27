@@ -70,3 +70,9 @@ export {
   type RunPetZoneInfluenceInput,
   type RunPetZoneInfluenceResult,
 } from "./pet-zone/pet-zone-gateway"
+
+export { runPetRuntimeTick } from "./pet-runtime/pet-runtime-runner"
+export type {
+  RunPetRuntimeTickInput,
+  RunPetRuntimeTickResult,
+} from "./pet-runtime/pet-runtime-runner"

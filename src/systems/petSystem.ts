@@ -1,22 +1,10 @@
 /**
- * 当前文件负责：管理宠物出生、timeline 更新、goal 接入、memory 接入、
- * cognition 接入、behavior-core 接入，以及状态驱动下的行为调度。
- *
- * 注意：
- * - 具体认知逻辑放在 pet/pet-cognition
- * - 生命周期推进放在 pet/pet-life
- * - 区域影响放在 pet/pet-zone
- * - 行为选择与行为稳定放在 pet/pet-action
- * - 喂食判断与喂食状态更新放在 pet/pet-feeding
- * - timeline 状态事件构建放在 pet/pet-state-events
- * - timeline mood 映射放在 pet/pet-mood
+ * 当前文件负责：维护宠物系统状态，并对外提供出生、运行、认知、喂食与读取接口。
  */
 
-import { PetState, PetAction } from "../types/pet"
-import { TimeState } from "../engine/timeSystem"
+import type { PetState } from "../types/pet"
+import type { TimeState } from "../engine/timeSystem"
 import type { PetBirthAiBundle } from "../ai/gateway"
-import { updatePetAiState, stepPetBehaviorProcess } from "../ai/gateway"
-import { updatePetMemoryState } from "../ai/memory-core/memory-gateway"
 import type { ButlerOpportunity } from "./butlerSystem"
 import type { WorldStimulus } from "../ai/gateway"
 import type { PetCognitionRecord } from "../types/cognition"
@@ -24,14 +12,10 @@ import type { WorldZone } from "../world/ecology/world-zone-types"
 
 import {
   runPetStimulusPerception,
-  runPetLife,
-  runPetZoneInfluence,
-  buildPetStateEvents,
   mapTimelineStateToPetMood,
   applyFeeding,
   evaluateFoodOffer,
-  applyPetActionStability,
-  selectPetAction,
+  runPetRuntimeTick,
   driveSystem,
   attentionSystem,
   goalSystem,
@@ -41,11 +25,6 @@ import {
   type DriveSnapshot,
 } from "./pet/pet-gateway"
 
-
-function clamp(value: number, min = 0, max = 100): number {
-  return Math.max(min, Math.min(max, value))
-}
-
 export class PetSystem {
   private pet: PetState | null = null
   private actionStability: ActionStabilityState | null = null
@@ -54,10 +33,6 @@ export class PetSystem {
   private lastDecisionReason: ActionDecisionReason | null = null
   private lastFeedingTick = -9999
 
-  /**
-   * 使用 AI 出生数据创建宠物。
-   * 这里只负责组装初始 PetState，不再计算人格、八字、紫微或意识结构。
-   */
   hatchPetWithAiBundle(name: string, aiBundle: PetBirthAiBundle) {
     if (this.pet) return
 
@@ -156,199 +131,24 @@ export class PetSystem {
     })
   }
 
-  /**
-   * 推进宠物一帧逻辑。
-   * 当前方法是调度层：负责串联生命周期、goal、drive、行为选择、行为稳定、
-   * 区域影响、timeline 更新和 memory 更新。
-   */
   update(time: TimeState, zones: WorldZone[] = []) {
-    this.currentTick++
+    this.currentTick += 1
 
-    if (!this.pet || !this.pet.timelineSnapshot) return
-
-    this.pet = runPetLife({
+    const result = runPetRuntimeTick({
       pet: this.pet,
-    }).pet
-
-    const currentSnapshot = this.pet.timelineSnapshot
-
-    if (!currentSnapshot) return
-
-    const energyBefore = Math.round(this.pet.energy)
-    const hungerBefore = Math.round(this.pet.hunger)
-    const moodBefore = currentSnapshot.state.emotional.label
-
-    attentionSystem.decayAttention(this.currentTick)
-
-    let forcedAction: PetAction | undefined
-
-    if (this.pet.activeBehaviorProcess) {
-      const processResult = stepPetBehaviorProcess({
-        tick: this.currentTick,
-        process: this.pet.activeBehaviorProcess,
-        energy: this.pet.energy,
-        hunger: this.pet.hunger,
-      })
-
-      this.pet.activeBehaviorProcess = processResult.nextProcess
-      forcedAction = processResult.suggestedAction
-
-      this.pet.energy = clamp(
-        this.pet.energy + processResult.delta.energyDelta,
-        0,
-        100
-      )
-
-      this.pet.hunger = clamp(
-        this.pet.hunger + processResult.delta.hungerDelta,
-        0,
-        100
-      )
-
-      if (processResult.delta.emotionalShift >= 8) {
-        this.pet.mood = "happy"
-      } else if (processResult.delta.emotionalShift <= -8) {
-        this.pet.mood = "alert"
-      }
-    }
-
-    const nextGoal = goalSystem.compute({
-      tick: this.currentTick,
-      pet: {
-        energy: this.pet.energy,
-        hunger: this.pet.hunger,
-        mood: this.pet.mood,
-        timelineSnapshot: currentSnapshot,
-        consciousnessProfile: this.pet.consciousnessProfile,
-        memoryState: this.pet.memoryState,
-      },
-      time,
-      previousGoal: this.pet.currentGoal ?? null,
-      zones,
-    })
-
-    this.pet.currentGoal = nextGoal
-
-    const driveSnapshot = driveSystem.compute({
-      pet: {
-        energy: this.pet.energy,
-        hunger: this.pet.hunger,
-        mood: this.pet.mood,
-        timelineSnapshot: currentSnapshot,
-        personalityProfile: this.pet.personalityProfile,
-        consciousnessProfile: this.pet.consciousnessProfile,
-      },
-      time,
-    })
-
-    this.lastDriveSnapshot = driveSnapshot
-
-    const actionSelection = forcedAction
-      ? {
-          action: forcedAction,
-          reason: "goal_guided_selection" as ActionDecisionReason,
-        }
-      : selectPetAction({
-          pet: this.pet,
-          dominantDrive: driveSnapshot.dominant,
-          currentGoal: nextGoal,
-          snapshot: currentSnapshot,
-          driveSnapshot,
-        })
-
-    const rawAction = actionSelection.action
-    this.lastDecisionReason = actionSelection.reason
-
-    const stabilityResult = applyPetActionStability({
       currentTick: this.currentTick,
-      candidate: rawAction,
-      currentPetAction: this.pet.action,
-      energy: this.pet.energy,
-      hunger: this.pet.hunger,
-      stability: this.actionStability,
-      shouldHoldCurrentAction: (input) =>
-        attentionSystem.shouldHoldCurrentAction(input),
-    })
-
-    const finalAction = stabilityResult.action
-    this.actionStability = stabilityResult.stability
-    this.lastDecisionReason = stabilityResult.reason
-
-    const previousAction = this.pet.action
-    this.pet.action = finalAction
-
-    this.pet = runPetZoneInfluence({
-      pet: this.pet,
-      action: finalAction,
-      zones,
-    }).pet
-
-    if (previousAction !== finalAction || !attentionSystem.getAttention()) {
-      attentionSystem.lockAttention({
-        tick: this.currentTick,
-        currentAction: finalAction,
-        dominantDrive: driveSnapshot.dominant,
-        energy: this.pet.energy,
-        hunger: this.pet.hunger,
-        emotionalLabel: currentSnapshot.state.emotional.label,
-        phaseTag: currentSnapshot.fortune.phaseTag,
-        branchTag: currentSnapshot.trajectory.branchTag,
-      })
-    }
-
-    const nextSnapshot = updatePetAiState({
-      currentSnapshot,
       time,
-      events: buildPetStateEvents(finalAction),
-      behaviorShift: {
-        previousAction,
-        nextAction: finalAction,
-        impact: 0.2,
-      },
-      tickDelta: 1,
-      shouldRefreshTrajectory: true,
-      playerRelation: {
-        familiarity: 60,
-        attachment: 45,
-        trust: 55,
-        distance: 15,
-      },
+      zones,
+      actionStability: this.actionStability,
+      lastFeedingTick: this.lastFeedingTick,
     })
 
-    nextSnapshot.state.physical.energy = this.pet.energy
-    nextSnapshot.state.physical.hunger = this.pet.hunger
-
-    this.pet.timelineSnapshot = nextSnapshot
-    this.pet.energy = Math.round(nextSnapshot.state.physical.energy)
-    this.pet.hunger = Math.round(nextSnapshot.state.physical.hunger)
-    this.pet.mood = mapTimelineStateToPetMood(
-      nextSnapshot.state.emotional.label
-    )
-
-    const wasFed = this.currentTick - this.lastFeedingTick <= 1
-
-    this.pet.memoryState = updatePetMemoryState({
-      previousMemory: this.pet.memoryState,
-      tick: this.currentTick,
-      time: {
-        day: time.day,
-        hour: time.hour,
-        period: time.period,
-      },
-      action: finalAction,
-      energyBefore,
-      energyAfter: this.pet.energy,
-      hungerBefore,
-      hungerAfter: this.pet.hunger,
-      moodBefore,
-      moodAfter: nextSnapshot.state.emotional.label,
-      wasFed,
-    })
+    this.pet = result.pet
+    this.actionStability = result.actionStability
+    this.lastDriveSnapshot = result.lastDriveSnapshot
+    this.lastDecisionReason = result.lastDecisionReason
   }
 
-  /**
-   * 接收世界刺激，并交给宠物认知系统处理。
-   */
   perceiveWorldStimuli(
     stimuli: WorldStimulus[],
     time: {
@@ -373,9 +173,6 @@ export class PetSystem {
     return result.records
   }
 
-  /**
-   * 判断宠物是否接受管家提供的食物机会。
-   */
   evaluateFoodOffer(opportunity: ButlerOpportunity): FoodOfferDecision {
     return evaluateFoodOffer({
       pet: this.pet,
@@ -383,16 +180,10 @@ export class PetSystem {
     })
   }
 
-  /**
-   * 对已接受的食物机会应用摄食结果。
-   */
   applyAcceptedFoodOffer(amount: number) {
     this.applyFeeding(amount)
   }
 
-  /**
-   * 直接应用喂食结果。
-   */
   applyFeeding(amount: number = 15) {
     const result = applyFeeding({
       pet: this.pet,
