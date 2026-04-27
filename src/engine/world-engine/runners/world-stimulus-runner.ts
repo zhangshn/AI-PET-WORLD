@@ -7,7 +7,7 @@ import {
   type WorldStimulus,
 } from "@/ai/gateway"
 
-import type { TimeState } from "../timeSystem"
+import type { TimeState } from "../../timeSystem"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
 export type RunWorldStimulusInput = {

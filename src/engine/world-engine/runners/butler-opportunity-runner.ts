@@ -2,7 +2,7 @@
  * 当前文件负责：处理管家对宠物产生的机会事件，并把结果写入宠物系统与事件系统。
  */
 
-import type { TimeState } from "../timeSystem"
+import type { TimeState } from "../../timeSystem"
 import type { ButlerSystem } from "@/systems/butlerSystem"
 import type { EventSystem } from "@/systems/eventSystem"
 import type { PetSystem } from "@/systems/petSystem"

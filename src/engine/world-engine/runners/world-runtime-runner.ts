@@ -2,7 +2,7 @@
  * 当前文件负责：封装世界 runtime 初始化、推进与生态日志输出。
  */
 
-import type { TimeState } from "../timeSystem"
+import type { TimeState } from "../../timeSystem"
 import { runWorldSimulation } from "@/world/simulation/world-simulation"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 

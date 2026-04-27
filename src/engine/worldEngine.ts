@@ -18,12 +18,14 @@ import type { IncubatorState } from "../types/incubator"
 import type { WorldEvent } from "../types/event"
 import type { WorldEcologyState } from "../world/ecology/ecology-engine"
 import type { WorldRuntimeState } from "../world/runtime/world-runtime"
-import { runWorldRuntime } from "./runners/world-runtime-runner"
-import { runWorldStimulus } from "./runners/world-stimulus-runner"
-import { runPetCognition } from "./runners/pet-cognition-runner"
-import { runPetRuntime } from "./runners/pet-runtime-runner"
-import { runButlerOpportunities } from "./runners/butler-opportunity-runner"
-import { runManagementInteractions } from "./runners/management-interaction-runner"
+import {
+  runWorldRuntime,
+  runWorldStimulus,
+  runPetCognition,
+  runPetRuntime,
+  runButlerOpportunities,
+  runManagementInteractions,
+} from "./world-engine/world-engine-gateway"
 
 export type WorldState = {
   tick: number

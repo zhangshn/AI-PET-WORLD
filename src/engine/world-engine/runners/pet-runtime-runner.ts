@@ -2,7 +2,7 @@
  * 当前文件负责：封装宠物运行更新与宠物状态日志输出。
  */
 
-import type { TimeState } from "../timeSystem"
+import type { TimeState } from "../../timeSystem"
 import type { PetSystem } from "@/systems/petSystem"
 import type { PetState } from "@/types/pet"
 import type { WorldZone } from "@/world/ecology/world-zone-types"
