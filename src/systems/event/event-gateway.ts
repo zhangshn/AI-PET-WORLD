@@ -31,3 +31,12 @@ export {
   getPhaseTag,
   getSourceDriveFromPet,
 } from "./event-pet-context-runner"
+
+export {
+  buildActionEventStyleInput,
+  buildMoodEventStyleInput,
+} from "./event-style-input-runner"
+
+export type {
+  BuildActionEventStyleInputEnhancements,
+} from "./event-style-input-runner"

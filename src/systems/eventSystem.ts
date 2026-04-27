@@ -2,18 +2,13 @@
  * 当前文件负责：监听世界状态变化并生成世界事件
  */
 
-/**
- * 当前文件负责：监听世界状态变化并生成世界事件
- */
-
 import { buildPetEvent } from "../ai/gateway"
-import type { PetEventStyleInput } from "../ai/event-style/schema"
-import type { PetAction, PetMood } from "../types/pet"
+import type { PetAction } from "../types/pet"
 import type { WorldEvent, NarrativeType } from "../types/event"
-import type { HomeState } from "../types/home"
 
 import {
-  buildHomeContextFromHomeState,
+  buildActionEventStyleInput,
+  buildMoodEventStyleInput,
   createContinuityId,
   getActionEventIntensity,
   getEmotionalLabel,
@@ -31,44 +26,6 @@ import {
   type PetHatchedEventInput,
   type PetStateLike,
 } from "./event/event-gateway"
-
-function buildActionEventStyleInput(
-  pet: PetStateLike,
-  nextAction: PetAction,
-  home?: HomeState,
-  enhancements?: {
-    intensity?: number
-    narrativeType?: NarrativeType
-    continuityId?: string
-    continuityStep?: number
-  }
-): PetEventStyleInput {
-  return {
-    scene: "pet_action_changed",
-    petName: pet.name,
-    action: nextAction,
-    personalityProfile: pet.personalityProfile,
-    homeContext: buildHomeContextFromHomeState(home),
-    intensity: enhancements?.intensity,
-    narrativeType: enhancements?.narrativeType,
-    continuityId: enhancements?.continuityId,
-    continuityStep: enhancements?.continuityStep,
-  } as PetEventStyleInput
-}
-
-function buildMoodEventStyleInput(
-  pet: PetStateLike,
-  nextMood: PetMood,
-  home?: HomeState
-): PetEventStyleInput {
-  return {
-    scene: "pet_mood_changed",
-    petName: pet.name,
-    mood: nextMood,
-    personalityProfile: pet.personalityProfile,
-    homeContext: buildHomeContextFromHomeState(home),
-  }
-}
 
 function shouldEmitActionNarrativeEvent(params: {
   tick: number
