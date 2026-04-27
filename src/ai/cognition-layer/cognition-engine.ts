@@ -72,7 +72,9 @@ function applySpatialAwareness(
 
     if (
       input.stimulus.type === "warm_zone" ||
-      input.stimulus.type === "quiet_zone"
+      input.stimulus.type === "quiet_zone" ||
+      input.stimulus.type === "tree_presence" ||
+      input.stimulus.type === "water_sound"
     ) {
       next = {
         ...next,
@@ -85,7 +87,8 @@ function applySpatialAwareness(
     }
 
     if (
-      input.stimulus.type === "butterfly" &&
+      (input.stimulus.type === "butterfly" ||
+        input.stimulus.type === "entity_motion") &&
       input.currentState.energy >= 35 &&
       input.currentState.hunger < 80
     ) {
@@ -122,9 +125,214 @@ function applySpatialAwareness(
   return next
 }
 
-function buildButterflyCognition(
+function buildTreePresenceCognition(
   input: BuildCognitionInput
 ): CognitionResult {
+  const caution =
+    input.consciousness.caution +
+    getTrait(input.personalityTraits, "cautious")
+
+  const awareness =
+    input.consciousness.environmentalAwareness +
+    getTrait(input.personalityTraits, "observation")
+
+  if (caution >= 125) {
+    return {
+      stimulusId: input.stimulus.id,
+      stimulusType: input.stimulus.type,
+      interpretation: "safe",
+      reactionTendency: "observe",
+      curiosityLevel: 26,
+      stressLevel: 8,
+      safetyFeeling: 78,
+      emotionalShift: 5,
+      summary: "它停在树影边缘，像是在判断那里是否足够安全。",
+    }
+  }
+
+  if (awareness >= 125) {
+    return {
+      stimulusId: input.stimulus.id,
+      stimulusType: input.stimulus.type,
+      interpretation: "peaceful",
+      reactionTendency: "observe",
+      curiosityLevel: 34,
+      stressLevel: 4,
+      safetyFeeling: 82,
+      emotionalShift: 8,
+      summary: "它注意到附近的树影，把那片安静的阴影短暂记成了可观察的位置。",
+    }
+  }
+
+  return {
+    stimulusId: input.stimulus.id,
+    stimulusType: input.stimulus.type,
+    interpretation: "peaceful",
+    reactionTendency: "observe",
+    curiosityLevel: 24,
+    stressLevel: 3,
+    safetyFeeling: 72,
+    emotionalShift: 4,
+    summary: "它看见附近落下的树影，注意力在那里停了一小会儿。",
+  }
+}
+
+function buildFlowerScentCognition(
+  input: BuildCognitionInput
+): CognitionResult {
+  const curiosity =
+    input.consciousness.curiosity +
+    getTrait(input.personalityTraits, "curiosity")
+
+  const sensitivity =
+    input.consciousness.emotionalSensitivity +
+    getTrait(input.personalityTraits, "sensitivity")
+
+  if (curiosity >= 125) {
+    return {
+      stimulusId: input.stimulus.id,
+      stimulusType: input.stimulus.type,
+      interpretation: "interesting",
+      reactionTendency: "observe",
+      curiosityLevel: 58,
+      stressLevel: 4,
+      safetyFeeling: 68,
+      emotionalShift: 8,
+      summary: "它抬起头，似乎被空气里很淡的花香吸引了一下。",
+    }
+  }
+
+  if (sensitivity >= 125) {
+    return {
+      stimulusId: input.stimulus.id,
+      stimulusType: input.stimulus.type,
+      interpretation: "peaceful",
+      reactionTendency: "observe",
+      curiosityLevel: 32,
+      stressLevel: 2,
+      safetyFeeling: 76,
+      emotionalShift: 10,
+      summary: "那一点轻微花香让它的状态变得柔和了一些。",
+    }
+  }
+
+  return {
+    stimulusId: input.stimulus.id,
+    stimulusType: input.stimulus.type,
+    interpretation: "interesting",
+    reactionTendency: "observe",
+    curiosityLevel: 38,
+    stressLevel: 3,
+    safetyFeeling: 66,
+    emotionalShift: 5,
+    summary: "它闻到了空气里很淡的花香，短暂把注意力转向花丛附近。",
+  }
+}
+
+function buildWaterSoundCognition(
+  input: BuildCognitionInput
+): CognitionResult {
+  const energy = input.currentState.energy
+
+  const caution =
+    input.consciousness.caution +
+    getTrait(input.personalityTraits, "cautious")
+
+  if (energy <= 45) {
+    return {
+      stimulusId: input.stimulus.id,
+      stimulusType: input.stimulus.type,
+      interpretation: "comforting",
+      reactionTendency: "rest_nearby",
+      curiosityLevel: 28,
+      stressLevel: 4,
+      safetyFeeling: 84,
+      emotionalShift: 10,
+      summary: "它把注意力转向浅水边，像是被细小水声安抚了一点。",
+    }
+  }
+
+  if (caution >= 130) {
+    return {
+      stimulusId: input.stimulus.id,
+      stimulusType: input.stimulus.type,
+      interpretation: "mysterious",
+      reactionTendency: "observe",
+      curiosityLevel: 36,
+      stressLevel: 12,
+      safetyFeeling: 58,
+      emotionalShift: 3,
+      summary: "它听见浅水边细小的水声，先停下来确认那边有没有新的变化。",
+    }
+  }
+
+  return {
+    stimulusId: input.stimulus.id,
+    stimulusType: input.stimulus.type,
+    interpretation: "peaceful",
+    reactionTendency: "observe",
+    curiosityLevel: 34,
+    stressLevel: 2,
+    safetyFeeling: 78,
+    emotionalShift: 7,
+    summary: "它短暂听了一会儿浅水边的细小水声，状态显得平稳了一些。",
+  }
+}
+
+function buildEntityMotionCognition(
+  input: BuildCognitionInput
+): CognitionResult {
+  const curiosity =
+    input.consciousness.curiosity +
+    getTrait(input.personalityTraits, "curiosity")
+
+  const energy = input.currentState.energy
+  const hunger = input.currentState.hunger
+
+  if (curiosity >= 125 && energy >= 35 && hunger < 80) {
+    return {
+      stimulusId: input.stimulus.id,
+      stimulusType: input.stimulus.type,
+      interpretation: "interesting",
+      reactionTendency: "chase",
+      curiosityLevel: 86,
+      stressLevel: 8,
+      safetyFeeling: 60,
+      emotionalShift: 14,
+      summary: "它追随着蝴蝶移动的方向，注意力明显变得更活跃。",
+    }
+  }
+
+  if (energy < 35) {
+    return {
+      stimulusId: input.stimulus.id,
+      stimulusType: input.stimulus.type,
+      interpretation: "interesting",
+      reactionTendency: "observe",
+      curiosityLevel: 42,
+      stressLevel: 5,
+      safetyFeeling: 56,
+      emotionalShift: 4,
+      summary: "它注意到蝴蝶轻轻移动，但现在只是安静地看着，没有立刻跟过去。",
+    }
+  }
+
+  return {
+    stimulusId: input.stimulus.id,
+    stimulusType: input.stimulus.type,
+    interpretation: "interesting",
+    reactionTendency: "observe",
+    curiosityLevel: 62,
+    stressLevel: 8,
+    safetyFeeling: 58,
+    emotionalShift: 8,
+    summary: "它看见蝴蝶在附近轻轻移动，视线跟着那点变化偏了过去。",
+  }
+}
+
+/* 保留原有刺激认知逻辑 */
+
+function buildButterflyCognition(input: BuildCognitionInput): CognitionResult {
   const curiosity =
     input.consciousness.curiosity +
     getTrait(input.personalityTraits, "curiosity")
@@ -224,9 +432,7 @@ function buildShadowMotionCognition(
   }
 }
 
-function buildQuietZoneCognition(
-  input: BuildCognitionInput
-): CognitionResult {
+function buildQuietZoneCognition(input: BuildCognitionInput): CognitionResult {
   const emotionalStability = input.currentState.emotionalStability
   const energy = input.currentState.energy
 
@@ -271,9 +477,7 @@ function buildQuietZoneCognition(
   }
 }
 
-function buildBreezeCognition(
-  input: BuildCognitionInput
-): CognitionResult {
+function buildBreezeCognition(input: BuildCognitionInput): CognitionResult {
   const curiosity =
     input.consciousness.curiosity +
     getTrait(input.personalityTraits, "curiosity")
@@ -379,9 +583,7 @@ function buildTemperatureDropCognition(
   }
 }
 
-function buildWarmZoneCognition(
-  input: BuildCognitionInput
-): CognitionResult {
+function buildWarmZoneCognition(input: BuildCognitionInput): CognitionResult {
   const energy = input.currentState.energy
   const stability = input.currentState.emotionalStability
 
@@ -588,9 +790,7 @@ function buildLightShiftCognition(
   }
 }
 
-function buildGenericCognition(
-  input: BuildCognitionInput
-): CognitionResult {
+function buildGenericCognition(input: BuildCognitionInput): CognitionResult {
   return {
     stimulusId: input.stimulus.id,
     stimulusType: input.stimulus.type,
@@ -610,6 +810,22 @@ export function buildStimulusCognition(
   let baseResult: CognitionResult
 
   switch (input.stimulus.type) {
+    case "tree_presence":
+      baseResult = buildTreePresenceCognition(input)
+      break
+
+    case "flower_scent":
+      baseResult = buildFlowerScentCognition(input)
+      break
+
+    case "water_sound":
+      baseResult = buildWaterSoundCognition(input)
+      break
+
+    case "entity_motion":
+      baseResult = buildEntityMotionCognition(input)
+      break
+
     case "butterfly":
       baseResult = buildButterflyCognition(input)
       break

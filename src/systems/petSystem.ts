@@ -4,11 +4,10 @@
 
 import { PetState, PetAction, PetMood } from "../types/pet"
 import { TimeState } from "../engine/timeSystem"
+import { runPetStimulusPerception } from "./pet-cognition/pet-cognition-gateway"
 import type { PetBirthAiBundle } from "../ai/gateway"
 import {
   updatePetAiState,
-  buildPetStimulusCognition,
-  buildPetBehaviorProcess,
   stepPetBehaviorProcess,
 } from "../ai/gateway"
 import {
@@ -112,15 +111,11 @@ const ACTION_TRANSITIONS: Record<PetAction, PetAction[]> = {
   ],
 }
 
-function clamp(value: number, min = 0, max = 100): number {
-  return Math.max(min, Math.min(max, value))
-}
 
-function pushLimited<T>(list: T[], item: T, max: number): T[] {
-  const next = [...list, item]
-  if (next.length <= max) return next
-  return next.slice(next.length - max)
-}
+  function clamp(value: number, min = 0, max = 100): number {
+    return Math.max(min, Math.min(max, value))
+  }
+
 
 export class PetSystem {
   private pet: PetState | null = null
@@ -1059,65 +1054,16 @@ export class PetSystem {
       return []
     }
 
-    const results: PetCognitionRecord[] = []
+    const result = runPetStimulusPerception({
+      pet: this.pet,
+      currentTick: this.currentTick,
+      stimuli,
+      time,
+    })
 
-    for (const stimulus of stimuli) {
-      const cognition = buildPetStimulusCognition({
-        stimulus,
-        personalityTraits: {
-          ...(this.pet.personalityProfile.traits as Record<string, number>),
-          ...this.pet.finalPersonalityProfile.vector,
-        },
-        consciousness: {
-          caution: this.pet.consciousnessProfile.bias.riskTolerance <= 40 ? 80 : 40,
-          curiosity: this.pet.finalPersonalityProfile.vector.curiosity,
-          sociability: this.pet.personalityProfile.traits.social ?? 50,
-          emotionalSensitivity:
-            this.pet.finalPersonalityProfile.vector.sensitivity,
-          environmentalAwareness:
-            this.pet.finalPersonalityProfile.vector.sensoryDepth,
-        },
-        currentState: {
-          energy: this.pet.energy,
-          hunger: this.pet.hunger,
-          emotionalStability:
-            this.pet.timelineSnapshot.state.emotional.label === "relaxed" ||
-            this.pet.timelineSnapshot.state.emotional.label === "content"
-              ? 78
-              : this.pet.timelineSnapshot.state.emotional.label === "anxious" ||
-                  this.pet.timelineSnapshot.state.emotional.label === "irritated"
-                ? 32
-                : 55,
-        },
-      })
+    this.pet = result.pet
 
-      const record: PetCognitionRecord = {
-        ...cognition,
-        tick: this.currentTick,
-        day: time.day,
-        hour: time.hour,
-      }
-
-      this.pet.latestCognition = record
-      this.pet.recentCognition = pushLimited(this.pet.recentCognition, record, 12)
-      results.push(record)
-
-      if (!this.pet.activeBehaviorProcess) {
-        const process = buildPetBehaviorProcess({
-          tick: this.currentTick,
-          cognition: record,
-          currentAction: this.pet.action,
-          energy: this.pet.energy,
-          hunger: this.pet.hunger,
-        })
-
-        if (process) {
-          this.pet.activeBehaviorProcess = process
-        }
-      }
-    }
-
-    return results
+    return result.records
   }
 
   evaluateFoodOffer(opportunity: ButlerOpportunity): FoodOfferDecision {
