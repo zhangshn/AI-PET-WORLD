@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：管理宠物出生、timeline 更新、goal 接入、memory 接入、cognition 接入、behavior-core 接入，以及状态驱动下的行为决策、行为稳定控制、新生期限制与区域影响。
+ * 当前文件负责：管理宠物出生、timeline 更新、goal 接入、memory 接入、cognition 接入、behavior-core 接入，以及状态驱动下的行为调度。
  */
 
 import { PetState, PetAction, PetMood } from "../types/pet"
@@ -23,12 +23,8 @@ import {
   type DriveSnapshot,
 } from "./driveSystem"
 import { attentionSystem } from "./attentionSystem"
-import {
-  goalSystem,
-} from "./goalSystem"
-import {
-  updatePetMemoryState,
-} from "../ai/memory-core/memory-gateway"
+import { goalSystem } from "./goalSystem"
+import { updatePetMemoryState } from "../ai/memory-core/memory-gateway"
 import type { ButlerOpportunity } from "./butlerSystem"
 import type { WorldStimulus } from "../ai/gateway"
 import type { PetCognitionRecord } from "../types/cognition"
@@ -40,10 +36,9 @@ export type FoodOfferDecision = {
   reason: string
 }
 
-  function clamp(value: number, min = 0, max = 100): number {
-    return Math.max(min, Math.min(max, value))
-  }
-
+function clamp(value: number, min = 0, max = 100): number {
+  return Math.max(min, Math.min(max, value))
+}
 
 export class PetSystem {
   private pet: PetState | null = null
@@ -151,7 +146,7 @@ export class PetSystem {
     })
   }
 
-    update(time: TimeState, zones: WorldZone[] = []) {
+  update(time: TimeState, zones: WorldZone[] = []) {
     this.currentTick++
 
     if (!this.pet || !this.pet.timelineSnapshot) return
@@ -233,7 +228,7 @@ export class PetSystem {
 
     this.lastDriveSnapshot = driveSnapshot
 
-        const actionSelection = forcedAction
+    const actionSelection = forcedAction
       ? {
           action: forcedAction,
           reason: "goal_guided_selection" as ActionDecisionReason,
