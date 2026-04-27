@@ -8,3 +8,9 @@ export { runPetCognition } from "./runners/pet-cognition-runner"
 export { runPetRuntime } from "./runners/pet-runtime-runner"
 export { runButlerOpportunities } from "./runners/butler-opportunity-runner"
 export { runManagementInteractions } from "./runners/management-interaction-runner"
+
+export { refreshWorldSystemState } from "./runners/world-state-sync-runner"
+export type {
+  RefreshWorldSystemStateInput,
+  WorldSystemStateSnapshot,
+} from "./runners/world-state-sync-runner"

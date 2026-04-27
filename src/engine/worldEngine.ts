@@ -25,13 +25,14 @@ import {
   runPetRuntime,
   runButlerOpportunities,
   runManagementInteractions,
+  refreshWorldSystemState,
 } from "./world-engine/world-engine-gateway"
 
 import {
   buildWorldState,
   type WorldState,
 } from "./world-engine/world-engine-state"
-
+export type { WorldState } from "./world-engine/world-engine-state"
 export class WorldEngine {
   private tick = 0
 
@@ -93,16 +94,20 @@ export class WorldEngine {
     this.tick += 1
 
     const prevTime = this.timeSystem.getTime()
-    const prevPet = this.petSystem.getPet()
-    const prevButler = this.butlerSystem.getState()
-    const prevIncubator = this.incubatorSystem.getIncubator()
+
+    const previousState = this.refreshCurrentState()
+    const prevPet = previousState.pet
+    const prevButler = previousState.butler
+    const prevIncubator = previousState.incubator
 
     this.timeSystem.update()
     const currentTime = this.timeSystem.getTime()
 
-    let currentHome = this.homeSystem.getHome()
-    let currentPet = this.petSystem.getPet()
-    let currentIncubator = this.incubatorSystem.getIncubator()
+    let currentState = this.refreshCurrentState()
+    let currentHome = currentState.home
+    let currentPet = currentState.pet
+    let currentIncubator = currentState.incubator
+    let currentButler = currentState.butler
 
     this.worldRuntime = this.stepRuntime({
       time: currentTime,
@@ -120,9 +125,12 @@ export class WorldEngine {
     this.worldStimuli = stimulusState.activeStimuli
 
     this.incubatorSystem.update()
-    currentIncubator = this.incubatorSystem.getIncubator()
-    currentHome = this.homeSystem.getHome()
-    currentPet = this.petSystem.getPet()
+
+    currentState = this.refreshCurrentState()
+    currentHome = currentState.home
+    currentPet = currentState.pet
+    currentIncubator = currentState.incubator
+    currentButler = currentState.butler
 
     this.butlerSystem.update({
       tick: this.tick,
@@ -133,7 +141,11 @@ export class WorldEngine {
       butlerPersonalityProfile: currentPet?.finalPersonalityProfile ?? null,
     })
 
-    let currentButler = this.butlerSystem.getState()
+    currentState = this.refreshCurrentState()
+    currentHome = currentState.home
+    currentPet = currentState.pet
+    currentIncubator = currentState.incubator
+    currentButler = currentState.butler
 
     runManagementInteractions({
       tick: this.tick,
@@ -146,10 +158,11 @@ export class WorldEngine {
       eventSystem: this.eventSystem,
     })
 
-    currentIncubator = this.incubatorSystem.getIncubator()
-    currentHome = this.homeSystem.getHome()
-    currentPet = this.petSystem.getPet()
-    currentButler = this.butlerSystem.getState()
+    currentState = this.refreshCurrentState()
+    currentHome = currentState.home
+    currentPet = currentState.pet
+    currentIncubator = currentState.incubator
+    currentButler = currentState.butler
 
     runPetCognition({
       tick: this.tick,
@@ -175,10 +188,11 @@ export class WorldEngine {
       eventSystem: this.eventSystem,
     })
 
-    currentIncubator = this.incubatorSystem.getIncubator()
-    currentHome = this.homeSystem.getHome()
-    currentPet = this.petSystem.getPet()
-    currentButler = this.butlerSystem.getState()
+    currentState = this.refreshCurrentState()
+    currentHome = currentState.home
+    currentPet = currentState.pet
+    currentIncubator = currentState.incubator
+    currentButler = currentState.butler
 
     this.worldRuntime = this.stepRuntime({
       time: currentTime,
@@ -234,27 +248,36 @@ export class WorldEngine {
     })
   }
 
-  private emitUpdate() {
-  if (!this.onUpdate) return
-
-  this.onUpdate(
-    buildWorldState({
-      tick: this.tick,
-      formattedTime: this.timeSystem.getFormattedTime(),
-      timeState: this.timeSystem.getTime(),
-
-      pet: this.petSystem.getPet(),
-      butler: this.butlerSystem.getState(),
-
-      home: this.homeSystem.getHome(),
-      incubator: this.incubatorSystem.getIncubator(),
-
-      events: this.eventSystem.getEvents(),
-
-      worldStimuli: this.worldStimuli,
-      worldRuntime: this.worldRuntime,
+  private refreshCurrentState() {
+    return refreshWorldSystemState({
+      petSystem: this.petSystem,
+      butlerSystem: this.butlerSystem,
+      homeSystem: this.homeSystem,
+      incubatorSystem: this.incubatorSystem,
     })
-  )
+  }
+
+  private emitUpdate() {
+    if (!this.onUpdate) return
+
+    this.onUpdate(
+      buildWorldState({
+        tick: this.tick,
+        formattedTime: this.timeSystem.getFormattedTime(),
+        timeState: this.timeSystem.getTime(),
+
+        pet: this.petSystem.getPet(),
+        butler: this.butlerSystem.getState(),
+
+        home: this.homeSystem.getHome(),
+        incubator: this.incubatorSystem.getIncubator(),
+
+        events: this.eventSystem.getEvents(),
+
+        worldStimuli: this.worldStimuli,
+        worldRuntime: this.worldRuntime,
+      })
+    )
   }
 
   getTick(): number {
