@@ -24,6 +24,30 @@ type EntityStimulusTemplate = {
   tags: string[]
 }
 
+type EntityStimulusCandidate = {
+  entity: WorldRuntimeEntity
+  template: EntityStimulusTemplate
+  score: number
+}
+
+const MAX_ENTITY_STIMULI_PER_TICK = 3
+
+const MAX_STIMULI_PER_TYPE_PER_TICK: Partial<
+  Record<WorldStimulusType, number>
+> = {
+  tree_presence: 1,
+  flower_scent: 1,
+  water_sound: 1,
+  entity_motion: 1,
+}
+
+const ACTIVE_TYPE_SOFT_LIMIT: Partial<Record<WorldStimulusType, number>> = {
+  tree_presence: 2,
+  flower_scent: 2,
+  water_sound: 1,
+  entity_motion: 1,
+}
+
 export function buildEntityDrivenStimuli(
   input: EntityStimulusBuildInput
 ): WorldStimulus[] {
@@ -31,25 +55,54 @@ export function buildEntityDrivenStimuli(
 
   if (!runtime) return []
 
-  const entities = runtime.entities.entities.filter((entity) => {
-    if (!entity.active) return false
-
-    return (
-      entity.type === "tree" ||
-      entity.type === "flower" ||
-      entity.type === "water" ||
-      entity.type === "butterfly"
-    )
+  const entities = runtime.entities.entities.filter(isRenderableStimulusEntity)
+  const candidates = buildEntityStimulusCandidates({
+    entities,
+    existingStimuli: input.existingStimuli,
+    tick: input.tick,
   })
 
-  const results: WorldStimulus[] = []
+  const selectedCandidates = selectEntityStimulusCandidates({
+    candidates,
+    existingStimuli: input.existingStimuli,
+  })
 
-  for (const entity of entities) {
+  return selectedCandidates.map((candidate) =>
+    createWorldStimulus({
+      type: candidate.template.type,
+      category: "entity",
+      tick: input.tick,
+      day: input.time.day,
+      hour: input.time.hour,
+      period: input.time.period,
+      intensity: candidate.template.intensity,
+      durationTick: candidate.template.durationTick,
+      summary: candidate.template.summary,
+      tags: candidate.template.tags,
+      worldPosition: {
+        x: candidate.entity.position.x,
+        y: candidate.entity.position.y,
+      },
+      spatialRadius: readEntityStimulusRadius(candidate.entity),
+      source: {
+        kind: "world_entity",
+        id: candidate.entity.id,
+        type: candidate.entity.type,
+        name: candidate.entity.name,
+      },
+    })
+  )
+}
+
+function buildEntityStimulusCandidates(input: {
+  entities: WorldRuntimeEntity[]
+  existingStimuli: WorldStimulus[]
+  tick: number
+}): EntityStimulusCandidate[] {
+  const candidates: EntityStimulusCandidate[] = []
+
+  for (const entity of input.entities) {
     if (hasActiveStimulusFromEntity(input.existingStimuli, entity.id)) {
-      continue
-    }
-
-    if (!shouldGenerateEntityStimulus(entity, input.tick)) {
       continue
     }
 
@@ -57,34 +110,61 @@ export function buildEntityDrivenStimuli(
 
     if (!template) continue
 
-    results.push(
-      createWorldStimulus({
-        type: template.type,
-        category: "entity",
-        tick: input.tick,
-        day: input.time.day,
-        hour: input.time.hour,
-        period: input.time.period,
-        intensity: template.intensity,
-        durationTick: template.durationTick,
-        summary: template.summary,
-        tags: template.tags,
-        worldPosition: {
-          x: entity.position.x,
-          y: entity.position.y,
-        },
-        spatialRadius: readEntityStimulusRadius(entity),
-        source: {
-          kind: "world_entity",
-          id: entity.id,
-          type: entity.type,
-          name: entity.name,
-        },
-      })
-    )
+    if (!shouldGenerateEntityStimulus(entity, template.type, input.tick)) {
+      continue
+    }
+
+    candidates.push({
+      entity,
+      template,
+      score: createEntityStimulusScore(entity.id, entity.type, input.tick),
+    })
   }
 
-  return results
+  return candidates.sort((a, b) => b.score - a.score)
+}
+
+function selectEntityStimulusCandidates(input: {
+  candidates: EntityStimulusCandidate[]
+  existingStimuli: WorldStimulus[]
+}): EntityStimulusCandidate[] {
+  const selected: EntityStimulusCandidate[] = []
+  const selectedTypeCount = new Map<WorldStimulusType, number>()
+
+  for (const candidate of input.candidates) {
+    if (selected.length >= MAX_ENTITY_STIMULI_PER_TICK) break
+
+    const type = candidate.template.type
+    const activeTypeCount = countActiveStimuliByType(input.existingStimuli, type)
+    const softLimit = ACTIVE_TYPE_SOFT_LIMIT[type] ?? 1
+
+    if (activeTypeCount >= softLimit) {
+      continue
+    }
+
+    const currentSelectedCount = selectedTypeCount.get(type) ?? 0
+    const maxPerTick = MAX_STIMULI_PER_TYPE_PER_TICK[type] ?? 1
+
+    if (currentSelectedCount >= maxPerTick) {
+      continue
+    }
+
+    selected.push(candidate)
+    selectedTypeCount.set(type, currentSelectedCount + 1)
+  }
+
+  return selected
+}
+
+function isRenderableStimulusEntity(entity: WorldRuntimeEntity): boolean {
+  if (!entity.active) return false
+
+  return (
+    entity.type === "tree" ||
+    entity.type === "flower" ||
+    entity.type === "water" ||
+    entity.type === "butterfly"
+  )
 }
 
 function getEntityStimulusTemplate(
@@ -135,9 +215,10 @@ function getEntityStimulusTemplate(
 
 function shouldGenerateEntityStimulus(
   entity: WorldRuntimeEntity,
+  stimulusType: WorldStimulusType,
   tick: number
 ): boolean {
-  const baseRate = getEntityStimulusRate(entity)
+  const baseRate = getEntityStimulusRate(entity, stimulusType)
 
   if (baseRate <= 0) return false
 
@@ -147,11 +228,19 @@ function shouldGenerateEntityStimulus(
   return normalized < baseRate
 }
 
-function getEntityStimulusRate(entity: WorldRuntimeEntity): number {
-  if (entity.type === "tree") return 0.08
-  if (entity.type === "flower") return 0.12
-  if (entity.type === "water") return 0.14
-  if (entity.type === "butterfly") return 0.18
+function getEntityStimulusRate(
+  entity: WorldRuntimeEntity,
+  stimulusType: WorldStimulusType
+): number {
+  if (stimulusType === "tree_presence") return 0.07
+  if (stimulusType === "flower_scent") return 0.1
+  if (stimulusType === "water_sound") return 0.11
+  if (stimulusType === "entity_motion") return 0.14
+
+  if (entity.type === "tree") return 0.07
+  if (entity.type === "flower") return 0.1
+  if (entity.type === "water") return 0.11
+  if (entity.type === "butterfly") return 0.14
 
   return 0
 }
@@ -161,6 +250,13 @@ function hasActiveStimulusFromEntity(
   entityId: string
 ): boolean {
   return stimuli.some((stimulus) => stimulus.source?.id === entityId)
+}
+
+function countActiveStimuliByType(
+  stimuli: WorldStimulus[],
+  type: WorldStimulusType
+): number {
+  return stimuli.filter((stimulus) => stimulus.type === type).length
 }
 
 function readEntityStimulusRadius(entity: WorldRuntimeEntity): number {
@@ -188,4 +284,18 @@ function createEntityStimulusSeed(
   }
 
   return Math.abs(seed)
+}
+
+function createEntityStimulusScore(
+  entityId: string,
+  entityType: string,
+  tick: number
+): number {
+  let score = tick * 71 + entityType.length * 37
+
+  for (let index = 0; index < entityId.length; index += 1) {
+    score += entityId.charCodeAt(index) * (index + 5)
+  }
+
+  return Math.abs(score % 10000)
 }
