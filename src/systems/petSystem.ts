@@ -4,22 +4,22 @@
 
 import { PetState, PetAction, PetMood } from "../types/pet"
 import { TimeState } from "../engine/timeSystem"
-import { runPetStimulusPerception } from "./pet-cognition/pet-cognition-gateway"
-import { runPetLife } from "./pet-life/pet-life-gateway"
-import { runPetZoneInfluence } from "./pet-zone/pet-zone-gateway"
-import { buildPetStateEvents } from "./pet-state-events/pet-state-events-gateway"
+import { runPetStimulusPerception } from "./pet/pet-cognition/pet-cognition-gateway"
+import { runPetLife } from "./pet/pet-life/pet-life-gateway"
+import { runPetZoneInfluence } from "./pet/pet-zone/pet-zone-gateway"
+import { buildPetStateEvents } from "./pet/pet-state-events/pet-state-events-gateway"
 import {
   applyFeeding,
   evaluateFoodOffer,
   type FoodOfferDecision,
-} from "./pet-feeding/pet-feeding-gateway"
+} from "./pet/pet-feeding/pet-feeding-gateway"
 import type { PetBirthAiBundle } from "../ai/gateway"
 import {
   applyPetActionStability,
   selectPetAction,
   type ActionDecisionReason,
   type ActionStabilityState,
-} from "./pet-action/pet-action-gateway"
+} from "./pet/pet-action/pet-action-gateway"
 import { updatePetAiState, stepPetBehaviorProcess } from "../ai/gateway"
 import { driveSystem, type DriveSnapshot } from "./driveSystem"
 import { attentionSystem } from "./attentionSystem"

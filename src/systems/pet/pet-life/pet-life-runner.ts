@@ -2,7 +2,7 @@
  * 当前文件负责：推进宠物生命周期阶段，并根据人格偏向更新安全半径与探索半径。
  */
 
-import type { PetState } from "../../types/pet"
+import type { PetState } from "../../../types/pet"
 
 export type RunPetLifeInput = {
   pet: PetState

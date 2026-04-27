@@ -5,11 +5,11 @@
 import {
   buildPetBehaviorProcess,
   buildPetStimulusCognition,
-} from "../../ai/gateway"
+} from "../../../ai/gateway"
 
-import type { WorldStimulus } from "../../ai/gateway"
-import type { PetCognitionRecord } from "../../types/cognition"
-import type { PetState } from "../../types/pet"
+import type { WorldStimulus } from "../../../ai/gateway"
+import type { PetCognitionRecord } from "../../../types/cognition"
+import type { PetState } from "../../../types/pet"
 
 export type PetStimulusPerceptionTime = {
   day: number

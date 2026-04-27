@@ -2,8 +2,8 @@
  * 当前文件负责：处理宠物对食物机会的自主判断，以及接受食物后的身体状态更新。
  */
 
-import type { PetMood, PetState } from "../../types/pet"
-import type { ButlerOpportunity } from "../butlerSystem"
+import type { PetMood, PetState } from "../../../types/pet"
+import type { ButlerOpportunity } from "../../butlerSystem"
 
 export type FoodOfferDecision = {
   accepted: boolean

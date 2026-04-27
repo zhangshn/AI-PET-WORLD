@@ -2,7 +2,7 @@
  * 当前文件负责：处理宠物行为切换的稳定控制，避免行为每个 Tick 频繁跳变。
  */
 
-import type { PetAction } from "../../types/pet"
+import type { PetAction } from "../../../types/pet"
 
 export type ActionDecisionReason =
   | "bootstrap_default"

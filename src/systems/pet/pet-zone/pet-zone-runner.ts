@@ -2,8 +2,8 @@
  * 当前文件负责：根据宠物当前目标区域，对宠物状态施加区域影响。
  */
 
-import type { PetAction, PetMood, PetState } from "../../types/pet"
-import type { WorldZone } from "../../world/ecology/world-zone-types"
+import type { PetAction, PetMood, PetState } from "../../../types/pet"
+import type { WorldZone } from "../../../world/ecology/world-zone-types"
 
 export type RunPetZoneInfluenceInput = {
   pet: PetState

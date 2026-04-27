@@ -2,9 +2,9 @@
  * 当前文件负责：根据驱动、目标、认知、人格、记忆与状态，选择宠物下一步候选行为。
  */
 
-import type { PetAction, PetState } from "../../types/pet"
-import type { DriveSnapshot, DriveType } from "../driveSystem"
-import type { PetGoalState } from "../goalSystem"
+import type { PetAction, PetState } from "../../../types/pet"
+import type { DriveSnapshot, DriveType } from "../../driveSystem"
+import type { PetGoalState } from "../../goalSystem"
 import type { ActionDecisionReason } from "./pet-action-stability"
 
 export type SelectPetActionInput = {

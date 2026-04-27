@@ -2,7 +2,7 @@
  * 当前文件负责：根据宠物行为生成 timeline 状态事件输入。
  */
 
-import type { PetAction } from "../../types/pet"
+import type { PetAction } from "../../../types/pet"
 
 export type PetStateEvent =
   | {
