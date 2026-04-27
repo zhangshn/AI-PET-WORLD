@@ -7,6 +7,12 @@ import { TimeState } from "../engine/timeSystem"
 import { runPetStimulusPerception } from "./pet-cognition/pet-cognition-gateway"
 import { runPetLife } from "./pet-life/pet-life-gateway"
 import { runPetZoneInfluence } from "./pet-zone/pet-zone-gateway"
+import { buildPetStateEvents } from "./pet-state-events/pet-state-events-gateway"
+import {
+  applyFeeding,
+  evaluateFoodOffer,
+  type FoodOfferDecision,
+} from "./pet-feeding/pet-feeding-gateway"
 import type { PetBirthAiBundle } from "../ai/gateway"
 import {
   applyPetActionStability,
@@ -14,14 +20,8 @@ import {
   type ActionDecisionReason,
   type ActionStabilityState,
 } from "./pet-action/pet-action-gateway"
-import {
-  updatePetAiState,
-  stepPetBehaviorProcess,
-} from "../ai/gateway"
-import {
-  driveSystem,
-  type DriveSnapshot,
-} from "./driveSystem"
+import { updatePetAiState, stepPetBehaviorProcess } from "../ai/gateway"
+import { driveSystem, type DriveSnapshot } from "./driveSystem"
 import { attentionSystem } from "./attentionSystem"
 import { goalSystem } from "./goalSystem"
 import { updatePetMemoryState } from "../ai/memory-core/memory-gateway"
@@ -29,12 +29,6 @@ import type { ButlerOpportunity } from "./butlerSystem"
 import type { WorldStimulus } from "../ai/gateway"
 import type { PetCognitionRecord } from "../types/cognition"
 import type { WorldZone } from "../world/ecology/world-zone-types"
-
-export type FoodOfferDecision = {
-  accepted: boolean
-  intakeAmount: number
-  reason: string
-}
 
 function clamp(value: number, min = 0, max = 100): number {
   return Math.max(min, Math.min(max, value))
@@ -284,7 +278,7 @@ export class PetSystem {
     const nextSnapshot = updatePetAiState({
       currentSnapshot,
       time,
-      events: this.buildStateEvents(finalAction),
+     events: buildPetStateEvents(finalAction),
       behaviorShift: {
         previousAction,
         nextAction: finalAction,
@@ -331,59 +325,6 @@ export class PetSystem {
     })
   }
 
-  private buildStateEvents(action: PetAction) {
-    switch (action) {
-      case "eating":
-        return [
-          { type: "fed" as const, intensity: 0.6 },
-          { type: "time_passed" as const, intensity: 0.15 },
-        ]
-
-      case "sleeping":
-        return [
-          { type: "rested" as const, intensity: 0.9 },
-          { type: "time_passed" as const, intensity: 0.1 },
-        ]
-
-      case "resting":
-        return [
-          { type: "rested" as const, intensity: 0.6 },
-          { type: "time_passed" as const, intensity: 0.2 },
-        ]
-
-      case "exploring":
-        return [
-          { type: "stimulated" as const, intensity: 1.0 },
-          { type: "time_passed" as const, intensity: 0.6 },
-        ]
-
-      case "walking":
-        return [
-          { type: "time_passed" as const, intensity: 0.6 },
-          { type: "stimulated" as const, intensity: 0.35 },
-        ]
-
-      case "approaching":
-        return [
-          { type: "bonding" as const, intensity: 0.45 },
-          { type: "time_passed" as const, intensity: 0.5 },
-        ]
-
-      case "alert_idle":
-        return [
-          { type: "disturbed" as const, intensity: 0.4 },
-          { type: "time_passed" as const, intensity: 0.3 },
-        ]
-
-      case "observing":
-        return [{ type: "time_passed" as const, intensity: 0.35 }]
-
-      case "idle":
-      default:
-        return [{ type: "time_passed" as const, intensity: 0.25 }]
-    }
-  }
-
   perceiveWorldStimuli(
     stimuli: WorldStimulus[],
     time: {
@@ -409,105 +350,10 @@ export class PetSystem {
   }
 
   evaluateFoodOffer(opportunity: ButlerOpportunity): FoodOfferDecision {
-    if (!this.pet || !this.pet.timelineSnapshot) {
-      return {
-        accepted: false,
-        intakeAmount: 0,
-        reason: "当前宠物状态不可用",
-      }
-    }
-
-    if (opportunity.type !== "food_offer") {
-      return {
-        accepted: false,
-        intakeAmount: 0,
-        reason: "当前机会不是食物机会",
-      }
-    }
-
-    const snapshot = this.pet.timelineSnapshot
-    const hunger = snapshot.state.physical.hunger
-    const energy = snapshot.state.physical.energy
-    const emotion = snapshot.state.emotional.label
-
-    const appetiteTrait = this.pet.personalityProfile.traits.appetite
-    const comfortSeeking = this.pet.consciousnessProfile.bias.comfortSeeking
-    const changeSeeking = this.pet.consciousnessProfile.bias.changeSeeking
-    const memoryEatBias = this.pet.memoryState.preferenceBias.eatBias
-    const currentGoal = this.pet.currentGoal?.type
-    const currentAction = this.pet.action
-
-    const offeredPortion =
-      opportunity.payload?.foodPortion ?? Math.round(opportunity.intensity)
-
-    let acceptanceScore = 0
-
-    acceptanceScore += Math.max(0, hunger - 35) * 1.1
-
-    if (energy <= 30) acceptanceScore += 10
-    if (currentGoal === "satisfy_need") acceptanceScore += 22
-    if (currentAction === "eating") acceptanceScore += 16
-
-    acceptanceScore += (appetiteTrait - 50) * 0.35
-    acceptanceScore += memoryEatBias * 0.35
-    acceptanceScore += (comfortSeeking - 50) * 0.12
-
-    if (changeSeeking >= 70 && hunger < 65) acceptanceScore -= 8
-
-    if (emotion === "anxious" || emotion === "irritated") {
-      if (hunger < 70) acceptanceScore -= 10
-      else acceptanceScore -= 4
-    }
-
-    if (emotion === "relaxed" || emotion === "content") {
-      acceptanceScore += 4
-    }
-
-    const accepted = acceptanceScore >= 18
-
-    if (!accepted) {
-      return {
-        accepted: false,
-        intakeAmount: 0,
-        reason: "当前自主判断未选择接受食物机会",
-      }
-    }
-
-    let intakeRatio = 0.35
-
-    intakeRatio += (Math.max(0, hunger - 40) / 100) * 0.45
-    intakeRatio += ((appetiteTrait - 50) / 100) * 0.22
-
-    if (currentGoal === "satisfy_need") intakeRatio += 0.16
-    if (currentAction === "eating") intakeRatio += 0.12
-
-    if ((emotion === "anxious" || emotion === "irritated") && hunger < 75) {
-      intakeRatio -= 0.12
-    }
-
-    intakeRatio += (memoryEatBias / 100) * 0.18
-    intakeRatio = clamp(intakeRatio, 0.2, 1)
-
-    const intakeAmount = Math.max(
-      4,
-      Math.min(offeredPortion, Math.round(offeredPortion * intakeRatio))
-    )
-
-    let reason = "基于当前身体状态与自主意愿选择了摄食"
-
-    if (currentGoal === "satisfy_need") {
-      reason = "当前目标正在满足身体需求"
-    } else if (currentAction === "eating") {
-      reason = "当前已经进入进食行为，继续完成这次摄食"
-    } else if (hunger >= 70) {
-      reason = "当前饥饿感较强，因此接受了食物机会"
-    }
-
-    return {
-      accepted: true,
-      intakeAmount,
-      reason,
-    }
+    return evaluateFoodOffer({
+      pet: this.pet,
+      opportunity,
+    })
   }
 
   applyAcceptedFoodOffer(amount: number) {
@@ -515,21 +361,16 @@ export class PetSystem {
   }
 
   applyFeeding(amount: number = 15) {
-    if (!this.pet?.timelineSnapshot) return
+    const result = applyFeeding({
+      pet: this.pet,
+      amount,
+    })
 
-    const physical = this.pet.timelineSnapshot.state.physical
+    this.pet = result.pet
 
-    physical.hunger = Math.max(0, physical.hunger - amount)
-    this.pet.hunger = Math.round(physical.hunger)
-
-    physical.energy = Math.min(100, physical.energy + 2)
-    this.pet.energy = Math.round(physical.energy)
-
-    this.pet.mood = this.mapTimelineStateToPetMood(
-      this.pet.timelineSnapshot.state.emotional.label
-    )
-
-    this.lastFeedingTick = this.currentTick
+    if (result.acceptedAmount > 0) {
+      this.lastFeedingTick = this.currentTick
+    }
   }
 
   private mapTimelineStateToPetMood(label: string): PetMood {
