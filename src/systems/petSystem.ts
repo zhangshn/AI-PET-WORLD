@@ -14,32 +14,33 @@
 
 import { PetState, PetAction } from "../types/pet"
 import { TimeState } from "../engine/timeSystem"
-import { runPetStimulusPerception } from "./pet/pet-cognition/pet-cognition-gateway"
-import { runPetLife } from "./pet/pet-life/pet-life-gateway"
-import { runPetZoneInfluence } from "./pet/pet-zone/pet-zone-gateway"
-import { buildPetStateEvents } from "./pet/pet-state-events/pet-state-events-gateway"
-import { mapTimelineStateToPetMood } from "./pet/pet-mood/pet-mood-gateway"
-import {
-  applyFeeding,
-  evaluateFoodOffer,
-  type FoodOfferDecision,
-} from "./pet/pet-feeding/pet-feeding-gateway"
 import type { PetBirthAiBundle } from "../ai/gateway"
-import {
-  applyPetActionStability,
-  selectPetAction,
-  type ActionDecisionReason,
-  type ActionStabilityState,
-} from "./pet/pet-action/pet-action-gateway"
 import { updatePetAiState, stepPetBehaviorProcess } from "../ai/gateway"
-import { driveSystem, type DriveSnapshot } from "./pet/pet-drive/pet-drive-gateway"
-import { attentionSystem } from "./pet/pet-attention/pet-attention-gateway"
-import { goalSystem } from "./pet/pet-goal/pet-goal-gateway"
 import { updatePetMemoryState } from "../ai/memory-core/memory-gateway"
 import type { ButlerOpportunity } from "./butlerSystem"
 import type { WorldStimulus } from "../ai/gateway"
 import type { PetCognitionRecord } from "../types/cognition"
 import type { WorldZone } from "../world/ecology/world-zone-types"
+
+import {
+  runPetStimulusPerception,
+  runPetLife,
+  runPetZoneInfluence,
+  buildPetStateEvents,
+  mapTimelineStateToPetMood,
+  applyFeeding,
+  evaluateFoodOffer,
+  applyPetActionStability,
+  selectPetAction,
+  driveSystem,
+  attentionSystem,
+  goalSystem,
+  type FoodOfferDecision,
+  type ActionDecisionReason,
+  type ActionStabilityState,
+  type DriveSnapshot,
+} from "./pet/pet-gateway"
+
 
 function clamp(value: number, min = 0, max = 100): number {
   return Math.max(min, Math.min(max, value))
