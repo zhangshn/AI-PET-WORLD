@@ -3,21 +3,21 @@
  */
 
 import { TimeSystem, TimeState } from "./timeSystem"
-import { PetSystem } from "../systems/petSystem"
-import { ButlerSystem } from "../systems/butlerSystem"
 import type { ButlerState } from "../types/butler"
-import { EventSystem } from "../systems/eventSystem"
-import { HomeSystem } from "../systems/homeSystem"
-import { IncubatorSystem } from "../systems/incubatorSystem"
-
 import type { WorldStimulus } from "../ai/gateway"
-
 import type { PetState } from "../types/pet"
 import type { HomeState } from "../types/home"
 import type { IncubatorState } from "../types/incubator"
 import type { WorldEvent } from "../types/event"
 import type { WorldEcologyState } from "../world/ecology/ecology-engine"
 import type { WorldRuntimeState } from "../world/runtime/world-runtime"
+import {
+  PetSystem,
+  ButlerSystem,
+  EventSystem,
+  HomeSystem,
+  IncubatorSystem,
+} from "../systems/systems-gateway"
 import {
   createWorldRuntime,
   refreshWorldSystemState,
