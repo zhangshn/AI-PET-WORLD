@@ -1,24 +1,11 @@
 /**
- * ======================================================
- * AI-PET-WORLD
- * Butler System
- * ======================================================
- *
- * 当前文件负责：
- * 1. 管家自身任务判断
- * 2. 管家发起对宠物的“行为机会”
- * 3. 管家作为玩家映射体/平行主体存在，而不是宠物控制器
- *
- * 关键原则：
- * - 管家不能直接替宠物做决定
- * - 管家不能直接改写宠物最终行为结果
- * - 管家只能提供资源、发起机会、执行管理
- * ======================================================
+ * 当前文件负责：管家任务判断、机会提供、孵化器照看、家园建造倾向，以及基于最终人格向量的管家行为偏置。
  */
 
 import type { PetState } from "../types/pet"
 import type { IncubatorState } from "../types/incubator"
 import type { HomeState } from "../types/home"
+import type { FinalPersonalityProfile } from "../ai/gateway"
 import {
   getEntityAutonomyPolicy,
   getOpportunityRule,
@@ -53,16 +40,7 @@ export type ButlerOpportunity = {
   createdBy: "butler"
   target: "pet"
   summary: string
-
-  /**
-   * 机会强度，不是结果强度
-   * 例如 food_offer 的 portion 只是“提供量”，不是“实际吃掉量”
-   */
   intensity: number
-
-  /**
-   * 可选附加信息
-   */
   payload?: {
     foodPortion?: number
     comfortLevel?: number
@@ -71,14 +49,12 @@ export type ButlerOpportunity = {
 }
 
 export type ButlerState = {
-  /**
-   * 兼容世界层 / 事件层正式 ButlerState
-   */
   name: string
   task: ButlerTask
   mood: ButlerMood
   lastTaskChangedTick: number
   pendingOpportunities: ButlerOpportunity[]
+  finalPersonalityProfile?: FinalPersonalityProfile | null
 }
 
 export type ButlerSystemInput = {
@@ -91,6 +67,7 @@ export type ButlerSystemInput = {
     hour: number
     period?: string
   }
+  butlerPersonalityProfile?: FinalPersonalityProfile | null
 }
 
 function clamp(value: number, min = 0, max = 100): number {
@@ -105,6 +82,8 @@ function buildOpportunityId(
 }
 
 function createFoodOffer(tick: number, portion: number): ButlerOpportunity {
+  const safePortion = clamp(portion, 1, 100)
+
   return {
     id: buildOpportunityId("food_offer", tick),
     type: "food_offer",
@@ -113,9 +92,9 @@ function createFoodOffer(tick: number, portion: number): ButlerOpportunity {
     createdBy: "butler",
     target: "pet",
     summary: "管家提供了可被宠物自主决定是否接受的食物机会。",
-    intensity: clamp(portion, 1, 100),
+    intensity: safePortion,
     payload: {
-      foodPortion: clamp(portion, 1, 100),
+      foodPortion: safePortion,
     },
   }
 }
@@ -124,6 +103,8 @@ function createRestOffer(
   tick: number,
   comfortLevel: number
 ): ButlerOpportunity {
+  const safeComfort = clamp(comfortLevel, 1, 100)
+
   return {
     id: buildOpportunityId("rest_offer", tick),
     type: "rest_offer",
@@ -132,9 +113,9 @@ function createRestOffer(
     createdBy: "butler",
     target: "pet",
     summary: "管家整理了恢复环境，给宠物提供休息机会。",
-    intensity: clamp(comfortLevel, 1, 100),
+    intensity: safeComfort,
     payload: {
-      comfortLevel: clamp(comfortLevel, 1, 100),
+      comfortLevel: safeComfort,
     },
   }
 }
@@ -143,6 +124,8 @@ function createApproachOffer(
   tick: number,
   socialWarmth: number
 ): ButlerOpportunity {
+  const safeWarmth = clamp(socialWarmth, 1, 100)
+
   return {
     id: buildOpportunityId("approach_offer", tick),
     type: "approach_offer",
@@ -151,9 +134,9 @@ function createApproachOffer(
     createdBy: "butler",
     target: "pet",
     summary: "管家发起了一次可被宠物自主回应的关系接近机会。",
-    intensity: clamp(socialWarmth, 1, 100),
+    intensity: safeWarmth,
     payload: {
-      socialWarmth: clamp(socialWarmth, 1, 100),
+      socialWarmth: safeWarmth,
     },
   }
 }
@@ -178,31 +161,20 @@ function petExistsAndBorn(pet: PetState | null): boolean {
 
 function isIncubatorCompleted(incubator: IncubatorState | null): boolean {
   if (!incubator) return true
-
-  /**
-   * 当前项目里不要假设存在 "completed" 这个 status
-   * 统一用 progress 判断是否已完成孵化
-   */
-  return incubator.progress >= 100
+  return incubator.progress >= 100 || incubator.status === "hatched"
 }
 
-function shouldOfferFood(pet: PetState | null): boolean {
+function shouldOfferFood(pet: PetState | null, profile?: FinalPersonalityProfile | null): boolean {
   if (!pet?.timelineSnapshot) return false
 
   const hunger = pet.timelineSnapshot.state.physical.hunger
   const emotion = pet.timelineSnapshot.state.emotional.label
+  const carePriority = profile?.bias.butlerBehaviorBias.carePriority ?? 50
 
-  /**
-   * 这里只判断“是否值得提供食物机会”
-   * 不是判断“宠物一定会吃”
-   */
   if (hunger >= 58) return true
 
-  /**
-   * 情绪低或偏紧张时，可以更早准备食物机会
-   */
   if (
-    hunger >= 48 &&
+    hunger >= 48 - Math.max(0, carePriority - 50) * 0.08 &&
     (emotion === "low" || emotion === "anxious" || emotion === "irritated")
   ) {
     return true
@@ -213,15 +185,17 @@ function shouldOfferFood(pet: PetState | null): boolean {
 
 function shouldOfferRest(
   pet: PetState | null,
-  inputTime: ButlerSystemInput["time"]
+  inputTime: ButlerSystemInput["time"],
+  profile?: FinalPersonalityProfile | null
 ): boolean {
   if (!pet?.timelineSnapshot) return false
 
   const energy = pet.timelineSnapshot.state.physical.energy
   const phaseTag = pet.timelineSnapshot.fortune.phaseTag
   const hour = inputTime.hour
+  const carePriority = profile?.bias.butlerBehaviorBias.carePriority ?? 50
 
-  if (energy <= 40) return true
+  if (energy <= 40 + Math.max(0, carePriority - 50) * 0.08) return true
   if (phaseTag === "recovery_phase") return true
   if ((hour >= 22 || hour <= 5) && energy <= 65) return true
 
@@ -236,45 +210,41 @@ function shouldOfferApproach(pet: PetState | null): boolean {
   const hunger = pet.timelineSnapshot.state.physical.hunger
   const energy = pet.timelineSnapshot.state.physical.energy
 
-  /**
-   * 关系较安全、身体没太差时，才更适合发起接近机会
-   */
-  if (
+  return (
     (relation === "secure" || relation === "attached") &&
     hunger < 65 &&
     energy > 35 &&
     emotion !== "irritated" &&
     emotion !== "anxious"
-  ) {
-    return true
-  }
-
-  return false
+  )
 }
 
 function shouldBuildHome(
   home: HomeState | null,
   pet: PetState | null,
-  incubator: IncubatorState | null
+  incubator: IncubatorState | null,
+  profile?: FinalPersonalityProfile | null
 ): boolean {
   if (!home) return false
 
-  /**
-   * 孵化阶段优先照看孵化器
-   */
   if (!isIncubatorCompleted(incubator)) {
     return false
   }
 
-  /**
-   * 宠物出生后，如果状态偏脆弱，先不把建家园放太前
-   */
+  const constructionDrive =
+    profile?.bias.butlerBehaviorBias.constructionDrive ?? 50
+
   if (pet?.timelineSnapshot) {
     const energy = pet.timelineSnapshot.state.physical.energy
     const hunger = pet.timelineSnapshot.state.physical.hunger
+    const lifePhase = pet.lifeState?.phase
+
+    if (lifePhase === "newborn" || lifePhase === "adaptation") {
+      return constructionDrive >= 72 && energy > 45 && hunger < 55
+    }
 
     if (energy <= 35 || hunger >= 65) {
-      return false
+      return constructionDrive >= 76
     }
   }
 
@@ -286,17 +256,28 @@ function chooseButlerTask(
   state: ButlerState
 ): ButlerTask {
   const { pet, incubator, home, time } = input
+  const profile =
+    input.butlerPersonalityProfile ?? pet?.finalPersonalityProfile ?? null
+  const butlerBias = profile?.bias.butlerBehaviorBias
 
   if (!isIncubatorCompleted(incubator)) {
     return "watching_incubator"
   }
 
   if (petExistsAndBorn(pet)) {
-    if (shouldOfferFood(pet)) {
+    if (
+      butlerBias &&
+      butlerBias.constructionDrive >= 68 &&
+      shouldBuildHome(home, pet, incubator, profile)
+    ) {
+      return "building_home"
+    }
+
+    if (shouldOfferFood(pet, profile)) {
       return "offering_food"
     }
 
-    if (shouldOfferRest(pet, time)) {
+    if (shouldOfferRest(pet, time, profile)) {
       return "offering_rest"
     }
 
@@ -304,14 +285,14 @@ function chooseButlerTask(
       return "offering_approach"
     }
 
-    if (shouldBuildHome(home, pet, incubator)) {
+    if (shouldBuildHome(home, pet, incubator, profile)) {
       return "building_home"
     }
 
     return "watching_pet"
   }
 
-  if (shouldBuildHome(home, pet, incubator)) {
+  if (shouldBuildHome(home, pet, incubator, profile)) {
     return "building_home"
   }
 
@@ -345,9 +326,8 @@ export class ButlerSystem {
     mood: "calm",
     lastTaskChangedTick: 0,
     pendingOpportunities: [],
+    finalPersonalityProfile: null,
   }
-
-  constructor() {}
 
   update(input: ButlerSystemInput): ButlerState {
     const butlerPolicy = getEntityAutonomyPolicy("butler")
@@ -355,9 +335,9 @@ export class ButlerSystem {
     const restRule = getOpportunityRule("rest_offer")
     const approachRule = getOpportunityRule("approach_offer")
 
-    /**
-     * 清理过期机会
-     */
+    this.state.finalPersonalityProfile =
+      input.butlerPersonalityProfile ?? input.pet?.finalPersonalityProfile ?? null
+
     this.state.pendingOpportunities = removeExpiredOpportunities(
       this.state.pendingOpportunities,
       input.tick
@@ -372,13 +352,14 @@ export class ButlerSystem {
 
     this.state.mood = deriveButlerMood(this.state.task)
 
-    /**
-     * 管家自己的自主策略仍然存在，
-     * 但它不能越过 autonomy-core 去直接写宠物结果。
-     */
     if (!butlerPolicy?.ownsFinalDecision) {
       return this.state
     }
+
+    const bias = this.state.finalPersonalityProfile?.bias.butlerBehaviorBias
+
+    const carePriority = bias?.carePriority ?? 50
+    const responseSpeed = bias?.responseSpeed ?? 50
 
     if (
       this.state.task === "offering_food" &&
@@ -387,7 +368,10 @@ export class ButlerSystem {
       !hasPendingOpportunity(this.state.pendingOpportunities, "food_offer")
     ) {
       this.state.pendingOpportunities.push(
-        createFoodOffer(input.tick, 18)
+        createFoodOffer(
+          input.tick,
+          18 + (carePriority - 50) * 0.18
+        )
       )
     }
 
@@ -398,7 +382,10 @@ export class ButlerSystem {
       !hasPendingOpportunity(this.state.pendingOpportunities, "rest_offer")
     ) {
       this.state.pendingOpportunities.push(
-        createRestOffer(input.tick, 16)
+        createRestOffer(
+          input.tick,
+          16 + (carePriority - 50) * 0.16
+        )
       )
     }
 
@@ -409,7 +396,10 @@ export class ButlerSystem {
       !hasPendingOpportunity(this.state.pendingOpportunities, "approach_offer")
     ) {
       this.state.pendingOpportunities.push(
-        createApproachOffer(input.tick, 12)
+        createApproachOffer(
+          input.tick,
+          12 + (responseSpeed - 50) * 0.14
+        )
       )
     }
 
@@ -428,12 +418,6 @@ export class ButlerSystem {
     return this.state.pendingOpportunities
   }
 
-  /**
-   * 当外部系统确认某个机会已经被消费后，移除它
-   * 注意：
-   * - 这里的“消费”不代表宠物一定接受了
-   * - 只是这次机会已经进入宠物决策流程，不再重复悬挂
-   */
   consumeOpportunity(opportunityId: string) {
     this.state.pendingOpportunities = this.state.pendingOpportunities.filter(
       (item) => item.id !== opportunityId

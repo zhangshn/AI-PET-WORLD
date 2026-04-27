@@ -1,0 +1,19 @@
+.worldPage {
+  min-height: 100vh;
+  background: #0f172a;
+  color: #e2e8f0;
+  padding: 24px;
+}
+
+.worldContainer {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+
+.worldGrid {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 20px;
+  margin-top: 20px;
+}

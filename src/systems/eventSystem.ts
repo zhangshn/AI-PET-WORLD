@@ -5,7 +5,7 @@
 import { buildPetEvent } from "../ai/gateway"
 import type { PetEventStyleInput } from "../ai/event-style/schema"
 
-import type { PersonalityProfile } from "../ai/personality-core/schema"
+import type { PersonalityProfile } from "../ai/ziwei-core/schema"
 
 import type { PetState, PetAction, PetMood } from "../types/pet"
 import type { ButlerState } from "../types/butler"

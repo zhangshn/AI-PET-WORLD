@@ -1,13 +1,12 @@
 /**
- * ======================================================
- * AI-PET-WORLD
- * Pet Type
- * ======================================================
+ * 当前文件负责：定义宠物状态类型。
  */
 
 import type {
   PersonalityProfile,
   PetTimelineSnapshot,
+  BaziProfile,
+  FinalPersonalityProfile,
 } from "../ai/gateway"
 
 import type {
@@ -21,6 +20,14 @@ import type {
 import type {
   PetGoalState,
 } from "../systems/goalSystem"
+
+import type {
+  PetCognitionRecord,
+} from "./cognition"
+
+import type {
+  ActiveBehaviorProcess,
+} from "../ai/behavior-core/behavior-gateway"
 
 export type PetAction =
   | "sleeping"
@@ -41,6 +48,21 @@ export type PetMood =
   | "curious"
   | "alert"
 
+export type PetLifePhase =
+  | "newborn"
+  | "adaptation"
+  | "dependent"
+  | "curious"
+  | "independent"
+
+export type PetLifeState = {
+  phase: PetLifePhase
+  ageTicks: number
+  bornAtTick: number
+  safeRadius: number
+  maxExploreRadius: number
+}
+
 export type PetState = {
   name: string
   energy: number
@@ -48,28 +70,17 @@ export type PetState = {
   mood: PetMood
   action: PetAction
 
-  /**
-   * 固定人格结果
-   */
   personalityProfile: PersonalityProfile
-
-  /**
-   * 紫微意识核
-   */
+  baziProfile: BaziProfile
+  finalPersonalityProfile: FinalPersonalityProfile
   consciousnessProfile: ZiweiConsciousnessKernel
 
-  /**
-   * 当前目标
-   */
+  lifeState: PetLifeState
+
   currentGoal?: PetGoalState
-
-  /**
-   * 经验记忆
-   */
   memoryState: PetMemoryState
-
-  /**
-   * 当前时间线快照
-   */
   timelineSnapshot?: PetTimelineSnapshot
+  latestCognition?: PetCognitionRecord | null
+  recentCognition: PetCognitionRecord[]
+  activeBehaviorProcess?: ActiveBehaviorProcess | null
 }

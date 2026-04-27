@@ -1,0 +1,78 @@
+.panel {
+  background: #111827;
+  border: 1px solid #1e293b;
+  border-radius: 18px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #e2e8f0;
+}
+
+.tick {
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.empty {
+  color: #64748b;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.block {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.blockTitle {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #f8fafc;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: #cbd5e1;
+  margin-bottom: 8px;
+}
+
+.multiline {
+  text-align: right;
+  max-width: 60%;
+  line-height: 1.5;
+}
+
+.traitsList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.traitItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  color: #cbd5e1;
+}

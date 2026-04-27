@@ -1,44 +1,32 @@
 /**
- * ======================================================
- * AI-PET-WORLD
- * World Engine
- * ======================================================
- *
- * 当前文件负责：
- * 1. 驱动世界 Tick 循环
- * 2. 推进时间系统
- * 3. 更新孵化器系统
- * 4. 更新管家系统
- * 5. 处理世界管理互动
- * 6. 在宠物出生后启动宠物行为系统
- * 7. 处理“机会模型”下的管家->宠物互动
- * 8. 汇总事件并同步给 UI
- *
- * 关键原则：
- * - 管家只能提供机会，不能直接替宠物做决定
- * - 宠物是否接受机会，由宠物当前状态 / 目标 / 行为自主决定
- * - 世界规则是参照物，不是命令器
- * ======================================================
+ * 当前文件负责：驱动世界 Tick 循环，并统一调度时间、世界 runtime、生态、刺激、孵化器、管家、宠物、事件与 UI 状态同步。
  */
 
 import { TimeSystem, TimeState } from "./timeSystem"
 import { PetSystem } from "../systems/petSystem"
-import {
-  ButlerSystem,
-  type ButlerOpportunity,
-} from "../systems/butlerSystem"
-
+import { ButlerSystem } from "../systems/butlerSystem"
 import type { ButlerState } from "../types/butler"
 import { EventSystem } from "../systems/eventSystem"
 import { HomeSystem } from "../systems/homeSystem"
 import { IncubatorSystem } from "../systems/incubatorSystem"
 
-import { buildPetBirthBundle } from "../ai/gateway"
+import {
+  buildPetBirthBundle,
+  buildWorldStimuli,
+  type WorldStimulus,
+} from "../ai/gateway"
 
 import type { PetState } from "../types/pet"
 import type { HomeState } from "../types/home"
 import type { IncubatorState } from "../types/incubator"
 import type { WorldEvent } from "../types/event"
+import type { WorldEcologyState } from "../world/ecology/ecology-engine"
+import {
+  runWorldSimulation,
+} from "../world/simulation/world-simulation"
+import type {
+  WorldRuntimeState,
+} from "../world/runtime/world-runtime"
 
 export type WorldState = {
   tick: number
@@ -49,16 +37,13 @@ export type WorldState = {
   home: HomeState
   incubator: IncubatorState
   events: WorldEvent[]
-}
-
-type FoodAcceptanceResult = {
-  accepted: boolean
-  intakeAmount: number
-  reason: string
+  worldStimuli: WorldStimulus[]
+  ecology: WorldEcologyState
+  worldRuntime: WorldRuntimeState
 }
 
 export class WorldEngine {
-  private tick: number = 0
+  private tick = 0
 
   private timeSystem: TimeSystem
   private petSystem: PetSystem
@@ -67,7 +52,11 @@ export class WorldEngine {
   private homeSystem: HomeSystem
   private incubatorSystem: IncubatorSystem
 
-  private interval: ReturnType<typeof setInterval> | null = null
+  private worldStimuli: WorldStimulus[] = []
+  private worldRuntime: WorldRuntimeState
+
+  private initialized = false
+  private timer: ReturnType<typeof setInterval> | null = null
 
   onUpdate?: (state: WorldState) => void
 
@@ -78,27 +67,48 @@ export class WorldEngine {
     this.eventSystem = new EventSystem()
     this.homeSystem = new HomeSystem()
     this.incubatorSystem = new IncubatorSystem()
+
+    this.worldRuntime = runWorldSimulation({
+      previous: null,
+      tick: this.tick,
+      time: this.timeSystem.getTime(),
+      homeLevel: this.homeSystem.getHome().level,
+      petCount: 0,
+      hasHospital: false,
+      hasShop: false,
+      hasPark: false,
+    }).runtime
   }
 
-  /**
-   * ====================================================
-   * 启动世界循环
-   * ====================================================
-   */
-  start() {
-    if (this.interval) return
+  initialize() {
+    if (this.initialized) return
 
-    this.interval = setInterval(() => {
+    this.initialized = true
+    this.emitUpdate()
+  }
+
+  start(intervalMs = 2000) {
+    this.initialize()
+
+    if (this.timer) return
+
+    this.timer = setInterval(() => {
       this.update()
-    }, 1000)
+    }, intervalMs)
   }
 
-  /**
-   * ====================================================
-   * 世界更新主循环
-   * ====================================================
-   */
-  private update() {
+  stop() {
+    if (!this.timer) return
+
+    clearInterval(this.timer)
+    this.timer = null
+  }
+
+  update() {
+    if (!this.initialized) {
+      this.initialize()
+    }
+
     this.tick++
 
     const prevTime = this.timeSystem.getTime()
@@ -106,55 +116,102 @@ export class WorldEngine {
     const prevButler = this.butlerSystem.getState()
     const prevIncubator = this.incubatorSystem.getIncubator()
 
-    // ===============================
-    // A. 时间推进
-    // ===============================
     this.timeSystem.update()
     const currentTime = this.timeSystem.getTime()
 
-    // ===============================
-    // B. 孵化器更新
-    // ===============================
-    this.incubatorSystem.update()
-    let currentIncubator = this.incubatorSystem.getIncubator()
-
-    // ===============================
-    // C. 取当前家园 / 宠物
-    // ===============================
     let currentHome = this.homeSystem.getHome()
     let currentPet = this.petSystem.getPet()
+    let currentIncubator = this.incubatorSystem.getIncubator()
 
-    // ===============================
-    // D. 管家更新（只判断自己的任务与机会）
-    // ===============================
+    this.worldRuntime = runWorldSimulation({
+      previous: this.worldRuntime,
+      tick: this.tick,
+      time: currentTime,
+      homeLevel: currentHome.level,
+      petCount: currentPet ? 1 : 0,
+      hasHospital: false,
+      hasShop: false,
+      hasPark: false,
+    }).runtime
+
+    console.log("🌱 世界生态：", {
+      weather: this.worldRuntime.ecology.environment.activeWeather,
+      mood: this.worldRuntime.ecology.environment.environmentMood,
+      temperature: this.worldRuntime.ecology.environment.temperature,
+      humidity: this.worldRuntime.ecology.environment.humidity,
+      windLevel: this.worldRuntime.ecology.environment.windLevel,
+      lightLevel: this.worldRuntime.ecology.environment.lightLevel,
+    })
+
+    const stimulusState = buildWorldStimuli({
+      tick: this.tick,
+
+      time: {
+        day: currentTime.day,
+        hour: currentTime.hour,
+        period: currentTime.period,
+      },
+
+      ecology: this.worldRuntime.ecology,
+
+      existingStimuli: this.worldStimuli,
+    })
+
+    this.worldStimuli = stimulusState.activeStimuli
+
+    if (stimulusState.latestGenerated.length > 0) {
+      for (const item of stimulusState.latestGenerated) {
+        console.log("🌍 世界刺激：", item.type, item.summary)
+      }
+    }
+
+    this.incubatorSystem.update()
+    currentIncubator = this.incubatorSystem.getIncubator()
+    currentHome = this.homeSystem.getHome()
+    currentPet = this.petSystem.getPet()
+
     this.butlerSystem.update({
       tick: this.tick,
       pet: currentPet,
       incubator: currentIncubator,
       home: currentHome,
       time: currentTime,
+      butlerPersonalityProfile: currentPet?.finalPersonalityProfile ?? null,
     })
 
     let currentButler = this.butlerSystem.getState()
 
-    // ===============================
-    // E. 世界管理互动（孵化器 / 家园）
-    // ===============================
     this.handleManagementInteractions(currentTime, currentButler)
 
-    // ===============================
-    // F. 重新获取最新状态
-    // ===============================
     currentIncubator = this.incubatorSystem.getIncubator()
     currentHome = this.homeSystem.getHome()
     currentPet = this.petSystem.getPet()
     currentButler = this.butlerSystem.getState()
 
-    // ===============================
-    // G. 宠物行为系统
-    // ===============================
+    if (this.petSystem.hasPet() && stimulusState.latestGenerated.length > 0) {
+      const cognitionResults = this.petSystem.perceiveWorldStimuli(
+        stimulusState.latestGenerated,
+        {
+          day: currentTime.day,
+          hour: currentTime.hour,
+          period: currentTime.period,
+        }
+      )
+
+      for (const result of cognitionResults) {
+        console.log("🧠 宠物认知：", result.summary)
+
+        this.eventSystem.addInteractionEvent({
+          tick: this.tick,
+          day: currentTime.day,
+          hour: currentTime.hour,
+          message: result.summary,
+        })
+      }
+    }
+
     if (this.petSystem.hasPet()) {
-      this.petSystem.update(currentTime)
+      this.petSystem.update(currentTime, this.worldRuntime.ecology.zones)
       currentPet = this.petSystem.getPet()
 
       if (currentPet) {
@@ -166,29 +223,33 @@ export class WorldEngine {
           "饥饿",
           currentPet.timelineSnapshot?.state.physical.hunger ?? currentPet.hunger,
           "情绪",
-          currentPet.timelineSnapshot?.state.emotional.label ?? currentPet.mood
+          currentPet.timelineSnapshot?.state.emotional.label ?? currentPet.mood,
+          "生命阶段",
+          currentPet.lifeState.phase
         )
       }
     } else {
       console.log("世界引擎：当前宠物尚未出生，宠物行为系统未激活。")
     }
 
-    // ===============================
-    // H. 处理管家提供的机会（宠物出生后）
-    // ===============================
     this.handleButlerOpportunities(currentTime)
 
-    // ===============================
-    // I. 再取一遍最新状态
-    // ===============================
     currentIncubator = this.incubatorSystem.getIncubator()
     currentHome = this.homeSystem.getHome()
     currentPet = this.petSystem.getPet()
     currentButler = this.butlerSystem.getState()
 
-    // ===============================
-    // J. 事件系统
-    // ===============================
+    this.worldRuntime = runWorldSimulation({
+      previous: this.worldRuntime,
+      tick: this.tick,
+      time: currentTime,
+      homeLevel: currentHome.level,
+      petCount: currentPet ? 1 : 0,
+      hasHospital: false,
+      hasShop: false,
+      hasPark: false,
+    }).runtime
+
     this.eventSystem.update({
       tick: this.tick,
       day: currentTime.day,
@@ -206,43 +267,15 @@ export class WorldEngine {
     console.log("世界 Tick：", this.tick)
     console.log("当前时间：", this.timeSystem.getFormattedTime())
 
-    // ===============================
-    // K. UI 同步
-    // ===============================
-    if (this.onUpdate) {
-      this.onUpdate({
-        tick: this.tick,
-        time: this.timeSystem.getFormattedTime(),
-        timeState: currentTime,
-        pet: currentPet,
-        butler: currentButler,
-        home: currentHome,
-        incubator: currentIncubator,
-        events: this.eventSystem.getEvents(),
-      })
-    }
+    this.emitUpdate()
   }
 
-  /**
-   * ====================================================
-   * 世界管理互动
-   * 这里只处理：
-   * 1. 照看孵化器
-   * 2. 宠物出生
-   * 3. 建造家园
-   *
-   * 注意：
-   * - 不在这里直接替宠物吃饭
-   * ====================================================
-   */
-  private handleManagementInteractions(time: TimeState, butler: ButlerState) {
-    const butlerName = "管家"
+  private handleManagementInteractions(
+    time: TimeState,
+    butler: ButlerState
+  ) {
+    const butlerName = butler.name
 
-    /**
-     * --------------------------------------------------
-     * A. 管家照看孵化器（宠物未出生时）
-     * --------------------------------------------------
-     */
     if (butler.task === "watching_incubator" && !this.petSystem.hasPet()) {
       const before = this.incubatorSystem.getIncubator()
 
@@ -262,19 +295,10 @@ export class WorldEngine {
         })
       }
 
-      /**
-       * 达到出生条件
-       */
       if (this.incubatorSystem.canHatch()) {
         const petName = this.incubatorSystem.hatch()
 
         if (petName) {
-          /**
-           * ============================================
-           * 出生时刻：personality 使用真实时间
-           * timeline 使用世界时间
-           * ============================================
-           */
           const now = new Date()
 
           const birthInput = {
@@ -309,6 +333,8 @@ export class WorldEngine {
             petName,
             birthInput,
             publicPersonality: birthBundle.publicPersonalityView,
+            bazi: birthBundle.baziProfile,
+            finalPersonality: birthBundle.finalPersonalityProfile,
             summaries: birthBundle.personalityProfile.summaries,
             traits: birthBundle.personalityProfile.traits,
             consciousness: birthBundle.consciousnessProfile,
@@ -317,31 +343,32 @@ export class WorldEngine {
             timelineBranch: createdPet?.timelineSnapshot?.trajectory.branchTag,
             timelineEmotion: createdPet?.timelineSnapshot?.state.emotional.label,
             timelineDrive: createdPet?.timelineSnapshot?.state.drive.primary,
+            lifeState: createdPet?.lifeState,
           })
         }
       }
     }
 
-    /**
-     * --------------------------------------------------
-     * B. 管家建造家园
-     * --------------------------------------------------
-     */
     if (butler.task === "building_home") {
       const homeBefore = this.homeSystem.getHome()
 
       if (homeBefore.status !== "completed") {
-        this.homeSystem.build(15)
+        this.homeSystem.build(
+          15,
+          this.petSystem.getPet()?.finalPersonalityProfile ??
+            butler.finalPersonalityProfile ??
+            null
+        )
 
         const homeAfter = this.homeSystem.getHome()
-        const progressAdded = homeAfter.progress - homeBefore.progress
+        const progressAdded = Math.round(homeAfter.progress - homeBefore.progress)
 
         if (progressAdded > 0) {
           this.eventSystem.addInteractionEvent({
             tick: this.tick,
             day: time.day,
             hour: time.hour,
-            message: `${butlerName}推进了家园建造，进度 +${progressAdded}。`,
+            message: `${butlerName}推进了家园建造，进度 +${progressAdded}，当前阶段：${homeAfter.constructionStage}。`,
           })
         }
 
@@ -350,56 +377,33 @@ export class WorldEngine {
             tick: this.tick,
             day: time.day,
             hour: time.hour,
-            message: `家园第一阶段建造完成了。`,
+            message: "家园第一阶段建造完成了。",
           })
         }
       }
     }
   }
 
-  /**
-   * ====================================================
-   * 处理管家提供的机会
-   *
-   * 关键变化：
-   * - 不再直接 if task === feeding_pet -> hunger -= x
-   * - 改成读取 butlerSystem 的 pending opportunities
-   * - 再由宠物依据自己的状态/目标/行为决定是否接受
-   * ====================================================
-   */
   private handleButlerOpportunities(time: TimeState) {
-    if (!this.petSystem.hasPet()) {
-      return
-    }
+    if (!this.petSystem.hasPet()) return
 
     const pet = this.petSystem.getPet()
     if (!pet) return
 
     const opportunities = this.butlerSystem.getPendingOpportunities()
-    if (opportunities.length === 0) {
-      return
-    }
+    if (opportunities.length === 0) return
 
     const petName = pet.name
-    const butlerName = "管家"
+    const butlerName = this.butlerSystem.getState().name
 
     for (const opportunity of opportunities) {
-      if (opportunity.target !== "pet") {
-        continue
-      }
+      if (opportunity.target !== "pet") continue
 
-      /**
-       * ------------------------------------------------
-       * A. food_offer
-       * ------------------------------------------------
-       * 管家只是提供食物机会。
-       * 是否接受、吃多少，由宠物当下状态自主决定。
-       */
       if (opportunity.type === "food_offer") {
-        const result = this.resolveFoodOfferByPet(pet, opportunity)
+        const result = this.petSystem.evaluateFoodOffer(opportunity)
 
         if (result.accepted && result.intakeAmount > 0) {
-          this.petSystem.applyFeeding(result.intakeAmount)
+          this.petSystem.applyAcceptedFoodOffer(result.intakeAmount)
 
           this.eventSystem.addInteractionEvent({
             tick: this.tick,
@@ -420,12 +424,6 @@ export class WorldEngine {
         continue
       }
 
-      /**
-       * ------------------------------------------------
-       * B. rest_offer
-       * ------------------------------------------------
-       * 这里只提供恢复机会和提示，不直接强制恢复。
-       */
       if (opportunity.type === "rest_offer") {
         const currentPet = this.petSystem.getPet()
 
@@ -452,12 +450,6 @@ export class WorldEngine {
         continue
       }
 
-      /**
-       * ------------------------------------------------
-       * C. approach_offer
-       * ------------------------------------------------
-       * 管家发起接近机会，但不直接等于宠物接受靠近。
-       */
       if (opportunity.type === "approach_offer") {
         const currentPet = this.petSystem.getPet()
 
@@ -481,11 +473,6 @@ export class WorldEngine {
       }
     }
 
-    /**
-     * --------------------------------------------------
-     * D. 宠物睡觉恢复精力（结果提示事件）
-     * --------------------------------------------------
-     */
     const latestPet = this.petSystem.getPet()
 
     if (
@@ -502,203 +489,90 @@ export class WorldEngine {
     }
   }
 
-  /**
-   * ====================================================
-   * 宠物对 food_offer 的自主判断
-   *
-   * 这是当前 worldEngine 中的过渡实现：
-   * - 管家提供 food_offer
-   * - 宠物依据自己的状态/目标/行为决定是否接受
-   * - 实际摄食量不是固定值
-   *
-   * 未来可以进一步下沉到 petSystem / autonomous behavior chain
-   * ====================================================
-   */
-  private resolveFoodOfferByPet(
-    pet: PetState,
-    opportunity: ButlerOpportunity
-  ): FoodAcceptanceResult {
-    const snapshot = pet.timelineSnapshot
+  private emitUpdate() {
+    if (!this.onUpdate) return
 
-    if (!snapshot) {
-      return {
-        accepted: false,
-        intakeAmount: 0,
-        reason: "当前没有可用状态快照",
-      }
-    }
-
-    const hunger = snapshot.state.physical.hunger
-    const energy = snapshot.state.physical.energy
-    const emotion = snapshot.state.emotional.label
-    const appetiteTrait = pet.personalityProfile.traits.appetite
-    const comfortSeeking = pet.consciousnessProfile.bias.comfortSeeking
-    const changeSeeking = pet.consciousnessProfile.bias.changeSeeking
-    const memoryEatBias = pet.memoryState.preferenceBias.eatBias
-    const currentGoal = pet.currentGoal?.type
-    const currentAction = pet.action
-
-    const offeredPortion =
-      opportunity.payload?.foodPortion ?? Math.round(opportunity.intensity)
-
-    /**
-     * ============================================
-     * 1. 是否接受机会
-     * ============================================
-     */
-    let acceptanceScore = 0
-
-    /**
-     * 身体需求
-     */
-    acceptanceScore += Math.max(0, hunger - 35) * 1.1
-
-    /**
-     * 很低能量时，也会更愿意接受食物
-     */
-    if (energy <= 30) {
-      acceptanceScore += 10
-    }
-
-    /**
-     * 当前目标与行为
-     */
-    if (currentGoal === "satisfy_need") {
-      acceptanceScore += 22
-    }
-
-    if (currentAction === "eating") {
-      acceptanceScore += 16
-    }
-
-    /**
-     * 性格与意识偏压
-     */
-    acceptanceScore += (appetiteTrait - 50) * 0.35
-    acceptanceScore += memoryEatBias * 0.35
-    acceptanceScore += (comfortSeeking - 50) * 0.12
-
-    /**
-     * 强变化倾向个体，在轻度饥饿时可能更不愿中断当前外向行为
-     */
-    if (changeSeeking >= 70 && hunger < 65) {
-      acceptanceScore -= 8
-    }
-
-    /**
-     * 情绪影响
-     */
-    if (emotion === "anxious" || emotion === "irritated") {
-      if (hunger < 70) {
-        acceptanceScore -= 10
-      } else {
-        acceptanceScore -= 4
-      }
-    }
-
-    if (emotion === "relaxed" || emotion === "content") {
-      acceptanceScore += 4
-    }
-
-    /**
-     * 最终是否接受
-     */
-    const accepted = acceptanceScore >= 18
-
-    if (!accepted) {
-      return {
-        accepted: false,
-        intakeAmount: 0,
-        reason: "当前自主判断未选择接受食物机会",
-      }
-    }
-
-    /**
-     * ============================================
-     * 2. 实际摄食量
-     * ============================================
-     *
-     * 这不是固定喂食值，而是：
-     * - 看 hunger
-     * - 看 appetite
-     * - 看 goal
-     * - 看情绪
-     * - 看记忆偏压
-     */
-    let intakeRatio = 0.35
-
-    /**
-     * hunger 越高，越容易吃得多
-     */
-    intakeRatio += Math.max(0, hunger - 40) / 100 * 0.45
-
-    /**
-     * appetiteTrait 越高，越容易吃得更足
-     */
-    intakeRatio += (appetiteTrait - 50) / 100 * 0.22
-
-    /**
-     * 当前就是满足需求目标时，会吃得更完整
-     */
-    if (currentGoal === "satisfy_need") {
-      intakeRatio += 0.16
-    }
-
-    /**
-     * 已进入 eating 行为时，会比“只是看到食物机会”吃得更多
-     */
-    if (currentAction === "eating") {
-      intakeRatio += 0.12
-    }
-
-    /**
-     * 焦躁/不安时，在不是极饿的情况下会偏少吃
-     */
-    if ((emotion === "anxious" || emotion === "irritated") && hunger < 75) {
-      intakeRatio -= 0.12
-    }
-
-    /**
-     * 记忆中“吃东西有效”会略提升实际摄食量
-     */
-    intakeRatio += memoryEatBias / 100 * 0.18
-
-    intakeRatio = Math.max(0.2, Math.min(1, intakeRatio))
-
-    const intakeAmount = Math.max(
-      4,
-      Math.min(offeredPortion, Math.round(offeredPortion * intakeRatio))
-    )
-
-    /**
-     * 3. 给一个简短原因
-     */
-    let reason = "基于当前身体状态与自主意愿选择了摄食"
-
-    if (currentGoal === "satisfy_need") {
-      reason = "当前目标正在满足身体需求"
-    } else if (currentAction === "eating") {
-      reason = "当前已经进入进食行为，继续完成这次摄食"
-    } else if (hunger >= 70) {
-      reason = "当前饥饿感较强，因此接受了食物机会"
-    }
-
-    return {
-      accepted: true,
-      intakeAmount,
-      reason,
-    }
+    this.onUpdate({
+      tick: this.tick,
+      time: this.timeSystem.getFormattedTime(),
+      timeState: this.timeSystem.getTime(),
+      pet: this.petSystem.getPet(),
+      butler: this.butlerSystem.getState(),
+      home: this.homeSystem.getHome(),
+      incubator: this.incubatorSystem.getIncubator(),
+      events: this.eventSystem.getEvents(),
+      worldStimuli: this.worldStimuli,
+      ecology: this.getEcology(),
+      worldRuntime: this.getWorldRuntime(),
+    })
   }
 
-  /**
-   * ====================================================
-   * 停止世界循环
-   * ====================================================
-   */
-  stop() {
-    if (this.interval) {
-      clearInterval(this.interval)
-      this.interval = null
-    }
+  getTick(): number {
+    return this.tick
+  }
+
+  getTime(): TimeState {
+    return this.timeSystem.getTime()
+  }
+
+  getFormattedTime(): string {
+    return this.timeSystem.getFormattedTime()
+  }
+
+  getPet(): PetState | null {
+    return this.petSystem.getPet()
+  }
+
+  getButler(): ButlerState {
+    return this.butlerSystem.getState()
+  }
+
+  getHome(): HomeState {
+    return this.homeSystem.getHome()
+  }
+
+  getIncubator(): IncubatorState {
+    return this.incubatorSystem.getIncubator()
+  }
+
+  getEvents(): WorldEvent[] {
+    return this.eventSystem.getEvents()
+  }
+
+  getWorldStimuli(): WorldStimulus[] {
+    return this.worldStimuli
+  }
+
+  getEcology(): WorldEcologyState {
+    return this.worldRuntime.ecology
+  }
+
+  getWorldRuntime(): WorldRuntimeState {
+    return this.worldRuntime
+  }
+
+  reset() {
+    this.stop()
+    this.tick = 0
+    this.timeSystem = new TimeSystem()
+    this.petSystem = new PetSystem()
+    this.butlerSystem = new ButlerSystem()
+    this.eventSystem = new EventSystem()
+    this.homeSystem = new HomeSystem()
+    this.incubatorSystem = new IncubatorSystem()
+    this.worldStimuli = []
+    this.worldRuntime = runWorldSimulation({
+      previous: null,
+      tick: this.tick,
+      time: this.timeSystem.getTime(),
+      homeLevel: this.homeSystem.getHome().level,
+      petCount: 0,
+      hasHospital: false,
+      hasShop: false,
+      hasPark: false,
+    }).runtime
+    this.initialized = false
   }
 }
+
+export const worldEngine = new WorldEngine()

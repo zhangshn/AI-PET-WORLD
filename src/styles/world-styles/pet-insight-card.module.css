@@ -1,0 +1,73 @@
+.card {
+  border-radius: 16px;
+  padding: 16px;
+  background: rgba(255, 241, 198, 0.96);
+  border: 3px solid #5a3b22;
+  box-shadow: 0 10px 0 rgba(86, 54, 28, 0.2);
+  color: #3b2a18;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: #7f5728;
+  margin-bottom: 5px;
+  font-weight: 900;
+}
+
+.name {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 900;
+  color: #3b2a18;
+}
+
+.mood {
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: #b9df7f;
+  border: 2px solid #5a3b22;
+  color: #2f4f25;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.grid div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.grid span {
+  font-size: 11px;
+  color: #8a6335;
+  font-weight: 800;
+}
+
+.grid strong {
+  color: #3b2a18;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.description {
+  margin: 0;
+  line-height: 1.7;
+  color: #5a3b22;
+  font-size: 13px;
+  font-weight: 700;
+}

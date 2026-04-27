@@ -1,0 +1,42 @@
+.panel {
+  background: #111827;
+  border: 1px solid #1e293b;
+  border-radius: 16px;
+  padding: 20px;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.card {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.summary {
+  margin-top: 10px;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+.empty {
+  color: #64748b;
+}

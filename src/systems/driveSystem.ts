@@ -4,7 +4,7 @@
 
 import type { TimeState } from "../engine/timeSystem"
 import type { PetState } from "../types/pet"
-import type { PersonalityTraits } from "../ai/personality-core/schema"
+import type { PersonalityTraits } from "../ai/ziwei-core/schema"
 import type { ConsciousnessBias } from "../ai/consciousness/consciousness-gateway"
 
 export type DriveType =

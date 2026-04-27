@@ -1,18 +1,8 @@
 /**
- * ======================================================
- * AI-PET-WORLD
- * Butler Type
- * ======================================================
- *
- * 当前文件负责：
- * 1. 定义世界层正式使用的管家类型
- * 2. 统一 worldEngine / eventSystem / UI 使用的 ButlerState
- *
- * 说明：
- * - 这里的类型要和 systems/butlerSystem.ts 对齐
- * - 否则世界层与系统层会发生类型冲突
- * ======================================================
+ * 当前文件负责：定义世界层正式使用的管家类型。
  */
+
+import type { FinalPersonalityProfile } from "../ai/gateway"
 
 export type ButlerTask =
   | "watching_incubator"
@@ -57,4 +47,5 @@ export type ButlerState = {
   mood: ButlerMood
   lastTaskChangedTick: number
   pendingOpportunities: ButlerOpportunity[]
+  finalPersonalityProfile?: FinalPersonalityProfile | null
 }

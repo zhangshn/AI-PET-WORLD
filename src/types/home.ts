@@ -1,50 +1,37 @@
 /**
- * ======================================================
- * AI-PET-WORLD
- * Home Type
- * ======================================================
- *
- * 当前文件负责：定义家园系统的数据结构
- *
- * 当前阶段设计：
- * - 家园是“背景系统”，不主导行为
- * - 只提供阶段进度与环境状态
- *
- * 后续可扩展：
- * - 环境影响（舒适度 / 安全感）
- * - 建筑模块（房间 / 功能区）
- * - 装饰系统
- * ======================================================
+ * 当前文件负责：定义家园系统状态。
  */
 
-/**
- * ======================================================
- * 家园状态
- * ======================================================
- */
 export type HomeStatus =
-  | "not_started"
+  | "idle"
   | "building"
   | "completed"
 
-/**
- * ======================================================
- * 家园结构
- * ======================================================
- */
+export type HomeConstructionStage =
+  | "temporary_shelter"
+  | "foundation"
+  | "frame"
+  | "roof"
+  | "interior"
+  | "garden"
+  | "completed"
+
+export type HomeEvolutionFocus =
+  | "balanced"
+  | "expansion"
+  | "stability"
+  | "comfort"
+  | "order"
+  | "adaptive"
+
 export type HomeState = {
-  /**
-   * 家园等级（预留）
-   */
   level: number
-
-  /**
-   * 建造进度（0 - 100）
-   */
   progress: number
-
-  /**
-   * 当前状态
-   */
   status: HomeStatus
+  constructionStage: HomeConstructionStage
+  evolutionFocus: HomeEvolutionFocus
+  gardenProgress: number
+  comfort: number
+  stability: number
+  expansion: number
 }

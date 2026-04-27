@@ -1,11 +1,16 @@
 /**
- * 当前文件负责：管理宠物出生、timeline 更新、goal 接入、memory 接入，以及状态驱动下的行为决策与行为稳定控制
+ * 当前文件负责：管理宠物出生、timeline 更新、goal 接入、memory 接入、cognition 接入、behavior-core 接入，以及状态驱动下的行为决策、行为稳定控制、新生期限制与区域影响。
  */
 
 import { PetState, PetAction, PetMood } from "../types/pet"
 import { TimeState } from "../engine/timeSystem"
 import type { PetBirthAiBundle } from "../ai/gateway"
-import { updatePetAiState } from "../ai/gateway"
+import {
+  updatePetAiState,
+  buildPetStimulusCognition,
+  buildPetBehaviorProcess,
+  stepPetBehaviorProcess,
+} from "../ai/gateway"
 import {
   driveSystem,
   type DriveSnapshot,
@@ -20,13 +25,15 @@ import {
   updatePetMemoryState,
 } from "../ai/memory-core/memory-gateway"
 import type { ButlerOpportunity } from "./butlerSystem"
+import type { WorldStimulus } from "../ai/gateway"
+import type { PetCognitionRecord } from "../types/cognition"
+import type { WorldZone } from "../world/ecology/world-zone-types"
 
 type ActionDecisionReason =
   | "bootstrap_default"
   | "hard_low_energy"
   | "hard_extreme_hunger"
   | "goal_guided_selection"
-  | "fallback_default"
   | "stability_hold_min_duration"
   | "stability_accept_transition"
   | "attention_hold_current"
@@ -55,8 +62,64 @@ const ACTION_MIN_DURATION: Record<PetAction, number> = {
   alert_idle: 3,
 }
 
+const ACTION_TRANSITIONS: Record<PetAction, PetAction[]> = {
+  sleeping: ["idle", "resting", "eating"],
+  eating: ["idle", "resting", "walking"],
+  resting: ["idle", "sleeping", "walking"],
+  idle: [
+    "walking",
+    "observing",
+    "resting",
+    "eating",
+    "sleeping",
+    "alert_idle",
+  ],
+  walking: [
+    "idle",
+    "observing",
+    "exploring",
+    "approaching",
+    "eating",
+    "resting",
+    "alert_idle",
+  ],
+  exploring: [
+    "walking",
+    "observing",
+    "approaching",
+    "idle",
+    "resting",
+  ],
+  approaching: [
+    "idle",
+    "walking",
+    "eating",
+    "observing",
+    "resting",
+  ],
+  observing: [
+    "idle",
+    "walking",
+    "exploring",
+    "approaching",
+    "alert_idle",
+  ],
+  alert_idle: [
+    "observing",
+    "idle",
+    "walking",
+    "resting",
+  ],
+}
+
 function clamp(value: number, min = 0, max = 100): number {
   return Math.max(min, Math.min(max, value))
+}
+
+function pushLimited<T>(list: T[], item: T, max: number): T[] {
+  const next = [...list, item]
+  if (next.length <= max) return next
+  return next.slice(next.length - max)
 }
 
 export class PetSystem {
@@ -67,26 +130,20 @@ export class PetSystem {
   private lastDecisionReason: ActionDecisionReason | null = null
   private lastFeedingTick = -9999
 
-  constructor() {}
-
   private pickActionByWeight(weights: Record<PetAction, number>): PetAction {
     const entries = Object.entries(weights) as [PetAction, number][]
-    const total = entries.reduce((sum, [, w]) => sum + Math.max(w, 0), 0)
+    const total = entries.reduce((sum, [, weight]) => sum + Math.max(weight, 0), 0)
 
-    if (total <= 0) {
-      return "idle"
-    }
+    if (total <= 0) return "idle"
 
-    let rand = Math.random() * total
+    let randomValue = Math.random() * total
 
     for (const [action, weight] of entries) {
       const safeWeight = Math.max(weight, 0)
 
-      if (rand < safeWeight) {
-        return action
-      }
+      if (randomValue < safeWeight) return action
 
-      rand -= safeWeight
+      randomValue -= safeWeight
     }
 
     return entries[0][0]
@@ -97,6 +154,8 @@ export class PetSystem {
 
     const {
       personalityProfile,
+      baziProfile,
+      finalPersonalityProfile,
       consciousnessProfile,
       memoryState,
       timelineSnapshot,
@@ -140,39 +199,45 @@ export class PetSystem {
         period: "Daytime",
       },
       previousGoal: null,
+      zones: [],
     })
-
-    const action = this.mapDriveToPetAction(
-      driveSnapshot.dominant,
-      initialGoal,
-      timelineSnapshot,
-      driveSnapshot
-    )
 
     this.pet = {
       name,
       energy,
       hunger,
       mood,
-      action,
+      action: "observing",
       personalityProfile,
+      baziProfile,
+      finalPersonalityProfile,
       consciousnessProfile,
+      lifeState: {
+        phase: "newborn",
+        ageTicks: 0,
+        bornAtTick: this.currentTick,
+        safeRadius: 70,
+        maxExploreRadius: 90,
+      },
       currentGoal: initialGoal,
       memoryState,
       timelineSnapshot,
+      latestCognition: null,
+      recentCognition: [],
+      activeBehaviorProcess: null,
     }
 
     this.lastDriveSnapshot = driveSnapshot
 
     this.actionStability = {
-      currentAction: action,
+      currentAction: "observing",
       startedAtTick: this.currentTick,
       lastChangedTick: this.currentTick,
     }
 
     attentionSystem.lockAttention({
       tick: this.currentTick,
-      currentAction: action,
+      currentAction: "observing",
       dominantDrive: driveSnapshot.dominant,
       energy,
       hunger,
@@ -182,45 +247,74 @@ export class PetSystem {
     })
   }
 
-  update(time: TimeState) {
+  update(time: TimeState, zones: WorldZone[] = []) {
     this.currentTick++
 
-    if (!this.pet || !this.pet.timelineSnapshot) {
-      return
-    }
+    if (!this.pet || !this.pet.timelineSnapshot) return
+
+    this.updateLifeState()
 
     const currentSnapshot = this.pet.timelineSnapshot
-    const energyBefore = Math.round(currentSnapshot.state.physical.energy)
-    const hungerBefore = Math.round(currentSnapshot.state.physical.hunger)
+    const energyBefore = Math.round(this.pet.energy)
+    const hungerBefore = Math.round(this.pet.hunger)
     const moodBefore = currentSnapshot.state.emotional.label
 
     attentionSystem.decayAttention(this.currentTick)
 
+    let forcedAction: PetAction | undefined
+
+    if (this.pet.activeBehaviorProcess) {
+      const processResult = stepPetBehaviorProcess({
+        tick: this.currentTick,
+        process: this.pet.activeBehaviorProcess,
+        energy: this.pet.energy,
+        hunger: this.pet.hunger,
+      })
+
+      this.pet.activeBehaviorProcess = processResult.nextProcess
+      forcedAction = processResult.suggestedAction
+
+      this.pet.energy = clamp(
+        this.pet.energy + processResult.delta.energyDelta,
+        0,
+        100
+      )
+
+      this.pet.hunger = clamp(
+        this.pet.hunger + processResult.delta.hungerDelta,
+        0,
+        100
+      )
+
+      if (processResult.delta.emotionalShift >= 8) {
+        this.pet.mood = "happy"
+      } else if (processResult.delta.emotionalShift <= -8) {
+        this.pet.mood = "alert"
+      }
+    }
+
     const nextGoal = goalSystem.compute({
       tick: this.currentTick,
       pet: {
-        energy: Math.round(currentSnapshot.state.physical.energy),
-        hunger: Math.round(currentSnapshot.state.physical.hunger),
-        mood: this.mapTimelineStateToPetMood(
-          currentSnapshot.state.emotional.label
-        ),
+        energy: this.pet.energy,
+        hunger: this.pet.hunger,
+        mood: this.pet.mood,
         timelineSnapshot: currentSnapshot,
         consciousnessProfile: this.pet.consciousnessProfile,
         memoryState: this.pet.memoryState,
       },
       time,
       previousGoal: this.pet.currentGoal ?? null,
+      zones,
     })
 
     this.pet.currentGoal = nextGoal
 
     const driveSnapshot = driveSystem.compute({
       pet: {
-        energy: Math.round(currentSnapshot.state.physical.energy),
-        hunger: Math.round(currentSnapshot.state.physical.hunger),
-        mood: this.mapTimelineStateToPetMood(
-          currentSnapshot.state.emotional.label
-        ),
+        energy: this.pet.energy,
+        hunger: this.pet.hunger,
+        mood: this.pet.mood,
         timelineSnapshot: currentSnapshot,
         personalityProfile: this.pet.personalityProfile,
         consciousnessProfile: this.pet.consciousnessProfile,
@@ -230,25 +324,29 @@ export class PetSystem {
 
     this.lastDriveSnapshot = driveSnapshot
 
-    const rawAction = this.mapDriveToPetAction(
-      driveSnapshot.dominant,
-      nextGoal,
-      currentSnapshot,
-      driveSnapshot
-    )
+    const rawAction = forcedAction
+      ? forcedAction
+      : this.mapDriveToPetAction(
+          driveSnapshot.dominant,
+          nextGoal,
+          currentSnapshot,
+          driveSnapshot
+        )
 
     const finalAction = this.applyActionStability(rawAction)
 
     const previousAction = this.pet.action
     this.pet.action = finalAction
 
+    this.applyZoneInfluence(finalAction, zones)
+
     if (previousAction !== finalAction || !attentionSystem.getAttention()) {
       attentionSystem.lockAttention({
         tick: this.currentTick,
         currentAction: finalAction,
         dominantDrive: driveSnapshot.dominant,
-        energy: currentSnapshot.state.physical.energy,
-        hunger: currentSnapshot.state.physical.hunger,
+        energy: this.pet.energy,
+        hunger: this.pet.hunger,
         emotionalLabel: currentSnapshot.state.emotional.label,
         phaseTag: currentSnapshot.fortune.phaseTag,
         branchTag: currentSnapshot.trajectory.branchTag,
@@ -273,6 +371,9 @@ export class PetSystem {
         distance: 15,
       },
     })
+
+    nextSnapshot.state.physical.energy = this.pet.energy
+    nextSnapshot.state.physical.hunger = this.pet.hunger
 
     this.pet.timelineSnapshot = nextSnapshot
     this.pet.energy = Math.round(nextSnapshot.state.physical.energy)
@@ -300,6 +401,151 @@ export class PetSystem {
       moodAfter: nextSnapshot.state.emotional.label,
       wasFed,
     })
+  }
+
+  private updateLifeState() {
+    if (!this.pet) return
+
+    const lifeState = this.pet.lifeState
+
+    lifeState.ageTicks += 1
+
+    const petBias = this.pet.finalPersonalityProfile.bias.petBehaviorBias
+    const activityBias = petBias.newbornActivity
+    const explorationBias = petBias.explorationRange
+
+    if (lifeState.ageTicks < 6) {
+      lifeState.phase = "newborn"
+      lifeState.safeRadius = 70
+      lifeState.maxExploreRadius = 90
+      return
+    }
+
+    if (lifeState.ageTicks < 14) {
+      lifeState.phase = "adaptation"
+      lifeState.safeRadius = 95
+      lifeState.maxExploreRadius = 120 + explorationBias * 0.4
+      return
+    }
+
+    if (lifeState.ageTicks < 28) {
+      lifeState.phase = "dependent"
+      lifeState.safeRadius = 130
+      lifeState.maxExploreRadius = 160 + explorationBias * 0.65
+      return
+    }
+
+    if (lifeState.ageTicks < 48 || activityBias < 55) {
+      lifeState.phase = "curious"
+      lifeState.safeRadius = 170
+      lifeState.maxExploreRadius = 220 + explorationBias * 0.8
+      return
+    }
+
+    lifeState.phase = "independent"
+    lifeState.safeRadius = 240
+    lifeState.maxExploreRadius = 320 + explorationBias
+  }
+
+  private findCurrentGoalZone(zones: WorldZone[]): WorldZone | null {
+    const goal = this.pet?.currentGoal
+
+    if (!goal) return null
+
+    if (goal.targetZoneId) {
+      const byId = zones.find(
+        (zone) => zone.id === goal.targetZoneId && zone.isActive
+      )
+
+      if (byId) return byId
+    }
+
+    if (goal.targetZoneType) {
+      return (
+        zones.find(
+          (zone) => zone.type === goal.targetZoneType && zone.isActive
+        ) ?? null
+      )
+    }
+
+    return null
+  }
+
+  private applyZoneInfluence(action: PetAction, zones: WorldZone[]) {
+    if (!this.pet) return
+
+    const zone = this.findCurrentGoalZone(zones)
+    if (!zone) return
+
+    const effect = zone.effect
+
+    if (
+      zone.type === "sleep_zone" &&
+      (action === "sleeping" || action === "resting")
+    ) {
+      this.pet.energy = clamp(
+        this.pet.energy + Math.max(1, effect.restBonus * 0.08),
+        0,
+        100
+      )
+      this.pet.hunger = clamp(this.pet.hunger + 0.4, 0, 100)
+    }
+
+    if (
+      zone.type === "quiet_zone" &&
+      (action === "resting" || action === "observing")
+    ) {
+      this.pet.energy = clamp(
+        this.pet.energy + Math.max(1, effect.restBonus * 0.05),
+        0,
+        100
+      )
+
+      if (this.pet.mood === "alert" || this.pet.mood === "sad") {
+        this.pet.mood = "normal"
+      }
+    }
+
+    if (
+      zone.type === "warm_zone" &&
+      (action === "resting" || action === "sleeping" || action === "idle")
+    ) {
+      this.pet.energy = clamp(
+        this.pet.energy + Math.max(1, effect.comfortBonus * 0.04),
+        0,
+        100
+      )
+
+      if (this.pet.mood === "normal") {
+        this.pet.mood = "happy"
+      }
+    }
+
+    if (
+      zone.type === "food_zone" &&
+      (action === "eating" || this.pet.currentGoal?.type === "satisfy_need")
+    ) {
+      this.pet.hunger = clamp(this.pet.hunger - 1.5, 0, 100)
+      this.pet.energy = clamp(this.pet.energy + 0.6, 0, 100)
+    }
+
+    if (
+      zone.type === "observation_zone" &&
+      (action === "observing" ||
+        this.pet.currentGoal?.type === "observe_boundary")
+    ) {
+      if (this.pet.mood === "alert") {
+        this.pet.mood = "curious"
+      }
+    }
+
+    if (
+      zone.type === "exploration_zone" &&
+      (action === "exploring" || action === "walking")
+    ) {
+      this.pet.energy = clamp(this.pet.energy - 0.8, 0, 100)
+      this.pet.hunger = clamp(this.pet.hunger + 0.4, 0, 100)
+    }
   }
 
   private buildStateEvents(action: PetAction) {
@@ -415,6 +661,52 @@ export class PetSystem {
     }
   }
 
+  private applyCognitionBias(weights: Record<PetAction, number>) {
+    if (!this.pet?.latestCognition) return
+
+    const cognition = this.pet.latestCognition
+
+    if (cognition.reactionTendency === "chase") {
+      weights.exploring += 18
+      weights.walking += 10
+      weights.observing += 6
+    }
+
+    if (cognition.reactionTendency === "observe") {
+      weights.observing += 16
+      weights.alert_idle += 6
+    }
+
+    if (cognition.reactionTendency === "avoid") {
+      weights.alert_idle += 18
+      weights.resting += 4
+      weights.approaching -= 10
+      weights.exploring -= 6
+    }
+
+    if (cognition.reactionTendency === "rest_nearby") {
+      weights.resting += 16
+      weights.sleeping += 8
+      weights.observing += 4
+    }
+
+    if (cognition.interpretation === "exciting") {
+      weights.exploring += 8
+      weights.walking += 6
+    }
+
+    if (cognition.interpretation === "comforting") {
+      weights.resting += 8
+      weights.sleeping += 4
+    }
+
+    if (cognition.interpretation === "dangerous") {
+      weights.alert_idle += 10
+      weights.observing += 6
+      weights.approaching -= 8
+    }
+  }
+
   private mapDriveToPetAction(
     dominantDrive: DriveType,
     currentGoal?: PetGoalState,
@@ -430,12 +722,14 @@ export class PetSystem {
     const phaseTag = snapshot.fortune.phaseTag
     const branchTag = snapshot.trajectory.branchTag
 
-    const energy = state.physical.energy
-    const hunger = state.physical.hunger
+    const energy = this.pet.energy
+    const hunger = this.pet.hunger
     const emotional = state.emotional.label
     const relational = state.relational.label
 
     const consciousness = this.pet.consciousnessProfile.bias
+    const finalBias = this.pet.finalPersonalityProfile.bias.petBehaviorBias
+    const lifePhase = this.pet.lifeState.phase
     const memory = this.pet.memoryState.preferenceBias
 
     if (energy <= 6) {
@@ -464,20 +758,46 @@ export class PetSystem {
 
     weights.exploring += d.explore
     weights.walking += d.explore * 0.6
-
     weights.approaching += d.approach
     weights.walking += d.approach * 0.5
-
     weights.observing += d.observe
     weights.idle += d.observe * 0.3
-
     weights.alert_idle += d.avoid * 0.6
     weights.observing += d.avoid * 0.25
-
     weights.resting += d.rest
     weights.sleeping += d.rest * 0.7
-
     weights.eating += d.eat
+
+    weights.observing += finalBias.observationNeed * 0.18
+    weights.approaching += finalBias.attachmentNeed * 0.12
+    weights.exploring += finalBias.explorationRange * 0.14
+    weights.resting += finalBias.restNeed * 0.12
+
+    if (lifePhase === "newborn") {
+      weights.exploring -= 34
+      weights.walking -= 18
+      weights.observing += 22
+      weights.resting += 18
+      weights.approaching += 10
+    }
+
+    if (lifePhase === "adaptation") {
+      weights.exploring -= 22
+      weights.walking -= 8
+      weights.observing += 18
+      weights.resting += 10
+    }
+
+    if (lifePhase === "dependent") {
+      weights.exploring -= 10
+      weights.approaching += 14
+      weights.observing += 8
+    }
+
+    if (lifePhase === "curious") {
+      weights.exploring += 8
+      weights.observing += 5
+    }
 
     if (consciousness.changeSeeking >= 75) {
       weights.exploring += 10
@@ -514,6 +834,7 @@ export class PetSystem {
     weights.eating += memory.eatBias * 0.5
 
     this.applyGoalBias(currentGoal, weights)
+    this.applyCognitionBias(weights)
 
     if (energy < 20) {
       weights.sleeping += 36
@@ -627,25 +948,7 @@ export class PetSystem {
   }
 
   private applyActionStability(candidate: PetAction): PetAction {
-    if (Math.random() < 0.08 && this.actionStability) {
-      const current = this.actionStability.currentAction
-
-      if (current === "exploring") {
-        return "walking"
-      }
-
-      if (current === "walking") {
-        return "observing"
-      }
-
-      if (current === "observing") {
-        return "idle"
-      }
-
-      if (current === "idle") {
-        return "walking"
-      }
-    }
+    if (!this.pet) return candidate
 
     if (!this.actionStability) {
       this.actionStability = {
@@ -658,6 +961,33 @@ export class PetSystem {
     }
 
     const current = this.actionStability.currentAction
+    const held = this.currentTick - this.actionStability.startedAtTick
+    const min = ACTION_MIN_DURATION[current]
+
+    const energy = this.pet.energy
+    const hunger = this.pet.hunger
+
+    if (energy <= 6 && current !== "sleeping") {
+      this.actionStability = {
+        currentAction: "sleeping",
+        startedAtTick: this.currentTick,
+        lastChangedTick: this.currentTick,
+      }
+
+      this.lastDecisionReason = "hard_low_energy"
+      return "sleeping"
+    }
+
+    if (hunger >= 95 && current !== "eating") {
+      this.actionStability = {
+        currentAction: "eating",
+        startedAtTick: this.currentTick,
+        lastChangedTick: this.currentTick,
+      }
+
+      this.lastDecisionReason = "hard_extreme_hunger"
+      return "eating"
+    }
 
     if (
       attentionSystem.shouldHoldCurrentAction({
@@ -670,16 +1000,26 @@ export class PetSystem {
       return current
     }
 
-    if (candidate === current) {
-      return current
-    }
-
-    const held = this.currentTick - this.actionStability.startedAtTick
-    const min = ACTION_MIN_DURATION[current]
+    if (candidate === current) return current
 
     if (held < min) {
       this.lastDecisionReason = "stability_hold_min_duration"
       return current
+    }
+
+    const allowedNextActions = ACTION_TRANSITIONS[current] ?? ["idle"]
+
+    if (!allowedNextActions.includes(candidate)) {
+      const bridgeAction = this.resolveBridgeAction(current, candidate)
+
+      this.actionStability = {
+        currentAction: bridgeAction,
+        startedAtTick: this.currentTick,
+        lastChangedTick: this.currentTick,
+      }
+
+      this.lastDecisionReason = "stability_accept_transition"
+      return bridgeAction
     }
 
     this.actionStability = {
@@ -692,11 +1032,94 @@ export class PetSystem {
     return candidate
   }
 
-  /**
-   * ====================================================
-   * 宠物主体内部：自主判断 food_offer
-   * ====================================================
-   */
+  private resolveBridgeAction(
+    current: PetAction,
+    candidate: PetAction
+  ): PetAction {
+    if (current === "sleeping") return "idle"
+    if (current === "eating") return "idle"
+    if (current === "resting") return "idle"
+    if (candidate === "exploring" || candidate === "approaching") return "walking"
+    if (candidate === "sleeping") return "resting"
+    if (candidate === "eating") return "walking"
+    if (candidate === "alert_idle") return "observing"
+
+    return "idle"
+  }
+
+  perceiveWorldStimuli(
+    stimuli: WorldStimulus[],
+    time: {
+      day: number
+      hour: number
+      period?: string
+    }
+  ): PetCognitionRecord[] {
+    if (!this.pet || !this.pet.timelineSnapshot || stimuli.length === 0) {
+      return []
+    }
+
+    const results: PetCognitionRecord[] = []
+
+    for (const stimulus of stimuli) {
+      const cognition = buildPetStimulusCognition({
+        stimulus,
+        personalityTraits: {
+          ...(this.pet.personalityProfile.traits as Record<string, number>),
+          ...this.pet.finalPersonalityProfile.vector,
+        },
+        consciousness: {
+          caution: this.pet.consciousnessProfile.bias.riskTolerance <= 40 ? 80 : 40,
+          curiosity: this.pet.finalPersonalityProfile.vector.curiosity,
+          sociability: this.pet.personalityProfile.traits.social ?? 50,
+          emotionalSensitivity:
+            this.pet.finalPersonalityProfile.vector.sensitivity,
+          environmentalAwareness:
+            this.pet.finalPersonalityProfile.vector.sensoryDepth,
+        },
+        currentState: {
+          energy: this.pet.energy,
+          hunger: this.pet.hunger,
+          emotionalStability:
+            this.pet.timelineSnapshot.state.emotional.label === "relaxed" ||
+            this.pet.timelineSnapshot.state.emotional.label === "content"
+              ? 78
+              : this.pet.timelineSnapshot.state.emotional.label === "anxious" ||
+                  this.pet.timelineSnapshot.state.emotional.label === "irritated"
+                ? 32
+                : 55,
+        },
+      })
+
+      const record: PetCognitionRecord = {
+        ...cognition,
+        tick: this.currentTick,
+        day: time.day,
+        hour: time.hour,
+      }
+
+      this.pet.latestCognition = record
+      this.pet.recentCognition = pushLimited(this.pet.recentCognition, record, 12)
+      results.push(record)
+
+      if (!this.pet.activeBehaviorProcess) {
+        const process = buildPetBehaviorProcess({
+          tick: this.currentTick,
+          cognition: record,
+          currentAction: this.pet.action,
+          energy: this.pet.energy,
+          hunger: this.pet.hunger,
+        })
+
+        if (process) {
+          this.pet.activeBehaviorProcess = process
+        }
+      }
+    }
+
+    return results
+  }
+
   evaluateFoodOffer(opportunity: ButlerOpportunity): FoodOfferDecision {
     if (!this.pet || !this.pet.timelineSnapshot) {
       return {
@@ -733,32 +1156,19 @@ export class PetSystem {
 
     acceptanceScore += Math.max(0, hunger - 35) * 1.1
 
-    if (energy <= 30) {
-      acceptanceScore += 10
-    }
-
-    if (currentGoal === "satisfy_need") {
-      acceptanceScore += 22
-    }
-
-    if (currentAction === "eating") {
-      acceptanceScore += 16
-    }
+    if (energy <= 30) acceptanceScore += 10
+    if (currentGoal === "satisfy_need") acceptanceScore += 22
+    if (currentAction === "eating") acceptanceScore += 16
 
     acceptanceScore += (appetiteTrait - 50) * 0.35
     acceptanceScore += memoryEatBias * 0.35
     acceptanceScore += (comfortSeeking - 50) * 0.12
 
-    if (changeSeeking >= 70 && hunger < 65) {
-      acceptanceScore -= 8
-    }
+    if (changeSeeking >= 70 && hunger < 65) acceptanceScore -= 8
 
     if (emotion === "anxious" || emotion === "irritated") {
-      if (hunger < 70) {
-        acceptanceScore -= 10
-      } else {
-        acceptanceScore -= 4
-      }
+      if (hunger < 70) acceptanceScore -= 10
+      else acceptanceScore -= 4
     }
 
     if (emotion === "relaxed" || emotion === "content") {
@@ -777,22 +1187,17 @@ export class PetSystem {
 
     let intakeRatio = 0.35
 
-    intakeRatio += Math.max(0, hunger - 40) / 100 * 0.45
-    intakeRatio += (appetiteTrait - 50) / 100 * 0.22
+    intakeRatio += (Math.max(0, hunger - 40) / 100) * 0.45
+    intakeRatio += ((appetiteTrait - 50) / 100) * 0.22
 
-    if (currentGoal === "satisfy_need") {
-      intakeRatio += 0.16
-    }
-
-    if (currentAction === "eating") {
-      intakeRatio += 0.12
-    }
+    if (currentGoal === "satisfy_need") intakeRatio += 0.16
+    if (currentAction === "eating") intakeRatio += 0.12
 
     if ((emotion === "anxious" || emotion === "irritated") && hunger < 75) {
       intakeRatio -= 0.12
     }
 
-    intakeRatio += memoryEatBias / 100 * 0.18
+    intakeRatio += (memoryEatBias / 100) * 0.18
     intakeRatio = clamp(intakeRatio, 0.2, 1)
 
     const intakeAmount = Math.max(
@@ -817,11 +1222,6 @@ export class PetSystem {
     }
   }
 
-  /**
-   * ====================================================
-   * 宠物主体内部：执行已接受的 food_offer
-   * ====================================================
-   */
   applyAcceptedFoodOffer(amount: number) {
     this.applyFeeding(amount)
   }
@@ -849,13 +1249,8 @@ export class PetSystem {
       return "happy"
     }
 
-    if (label === "alert") {
-      return "alert"
-    }
-
-    if (label === "curious") {
-      return "curious"
-    }
+    if (label === "alert") return "alert"
+    if (label === "curious") return "curious"
 
     if (label === "anxious" || label === "irritated" || label === "low") {
       return "sad"

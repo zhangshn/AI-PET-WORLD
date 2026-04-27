@@ -1,20 +1,12 @@
 /**
- * ======================================================
- * AI-PET-WORLD
- * Goal System
- * ======================================================
- *
- * 当前文件负责：
- * 1. 基于紫微意识核 + 当前状态 + 世界时间 + 记忆 生成当前目标
- * 2. 让行为围绕目标持续，而不是每 tick 临时投票
- * 3. 让“过去经验”开始进入下一轮目标判断
- * ======================================================
+ * 当前文件负责：基于紫微意识核、当前状态、世界时间、记忆与世界区域生成宠物当前目标。
  */
 
 import type { TimeState } from "../engine/timeSystem"
 import type { PetState } from "../types/pet"
 import type { ZiweiConsciousnessKernel } from "../ai/consciousness/consciousness-gateway"
 import type { PetMemoryState } from "../ai/memory-core/memory-gateway"
+import type { WorldZone, WorldZoneType } from "../world/ecology/world-zone-types"
 
 export type PetGoalType =
   | "expand_territory"
@@ -35,6 +27,13 @@ export type PetGoalState = {
   holdUntilTick: number
   summary: string
   source: "consciousness" | "body" | "world" | "relation" | "memory"
+
+  targetZoneType?: WorldZoneType
+  targetZoneId?: string
+  targetWorldPosition?: {
+    x: number
+    y: number
+  }
 }
 
 export type GoalSystemInput = {
@@ -50,6 +49,7 @@ export type GoalSystemInput = {
   >
   time: TimeState
   previousGoal?: PetGoalState | null
+  zones?: WorldZone[]
 }
 
 function getEnergy(input: GoalSystemInput): number {
@@ -84,6 +84,52 @@ function getMemory(input: GoalSystemInput): PetMemoryState {
   return input.pet.memoryState
 }
 
+function findActiveZone(
+  input: GoalSystemInput,
+  zoneType: WorldZoneType
+): WorldZone | null {
+  return input.zones?.find((zone) => zone.type === zoneType && zone.isActive) ?? null
+}
+
+function resolveTargetZoneType(goalType: PetGoalType): WorldZoneType | undefined {
+  switch (goalType) {
+    case "restore_self":
+      return "quiet_zone"
+    case "satisfy_need":
+      return "food_zone"
+    case "expand_territory":
+      return "exploration_zone"
+    case "observe_boundary":
+      return "observation_zone"
+    case "stabilize_state":
+      return "warm_zone"
+    default:
+      return undefined
+  }
+}
+
+function attachSpatialTarget<T extends Omit<PetGoalState, "startedAtTick" | "holdUntilTick">>(
+  input: GoalSystemInput,
+  goal: T
+): T {
+  const targetZoneType = resolveTargetZoneType(goal.type)
+  if (!targetZoneType) return goal
+
+  const zone = findActiveZone(input, targetZoneType)
+  if (!zone) return goal
+
+  return {
+    ...goal,
+    targetZoneType: zone.type,
+    targetZoneId: zone.id,
+    targetWorldPosition: {
+      x: zone.x,
+      y: zone.y,
+    },
+    summary: `${goal.summary} 目标区域锁定为：${zone.name}。`,
+  }
+}
+
 function buildGoalDuration(
   goalType: PetGoalType,
   kernel: ZiweiConsciousnessKernel,
@@ -102,31 +148,11 @@ function buildGoalDuration(
 
   let duration = baseMap[goalType]
 
-  if (goalType === "expand_territory" && kernel.bias.changeSeeking >= 72) {
-    duration += 2
-  }
-
-  if (goalType === "observe_boundary" && kernel.bias.observationBias >= 72) {
-    duration += 2
-  }
-
-  if (goalType === "restore_self" && kernel.bias.restResistance >= 72) {
-    duration -= 1
-  }
-
-  if (
-    goalType === "restore_self" &&
-    memory.selfImpression.recoveryConfidence >= 10
-  ) {
-    duration += 1
-  }
-
-  if (
-    goalType === "expand_territory" &&
-    memory.preferenceBias.exploreBias >= 10
-  ) {
-    duration += 1
-  }
+  if (goalType === "expand_territory" && kernel.bias.changeSeeking >= 72) duration += 2
+  if (goalType === "observe_boundary" && kernel.bias.observationBias >= 72) duration += 2
+  if (goalType === "restore_self" && kernel.bias.restResistance >= 72) duration -= 1
+  if (goalType === "restore_self" && memory.selfImpression.recoveryConfidence >= 10) duration += 1
+  if (goalType === "expand_territory" && memory.preferenceBias.exploreBias >= 10) duration += 1
 
   return Math.max(2, duration)
 }
@@ -140,76 +166,50 @@ function buildMemoryGoalOverride(
   const hunger = getHunger(input)
   const relation = getRelation(input)
 
-  /**
-   * 夜晚恢复经验很好：
-   * 夜里更容易主动把目标切到恢复
-   */
   if (
     (time.period === "Night" || time.hour >= 22 || time.hour <= 5) &&
     memory.worldImpression.nightSafetyBias >= 8 &&
     energy <= 70 &&
     hunger < 70
   ) {
-    return {
+    return attachSpatialTarget(input, {
       type: "restore_self",
       priority: "high",
       summary: "记忆表明夜晚恢复通常有效，当前目标偏向夜间回收。",
       source: "memory",
-    }
+    })
   }
 
-  /**
-   * 探索长期被记成高代价：
-   * 会更早转向恢复 / 观察
-   */
-  if (
-    memory.worldImpression.explorationConfidence <= -8 &&
-    energy <= 45
-  ) {
-    return {
+  if (memory.worldImpression.explorationConfidence <= -8 && energy <= 45) {
+    return attachSpatialTarget(input, {
       type: "restore_self",
       priority: "high",
       summary: "过去经验表明持续探索代价偏高，当前目标提前转向恢复。",
       source: "memory",
-    }
+    })
   }
 
-  /**
-   * 观察长期有效：
-   * 在不确定时更愿意先观察
-   */
   if (
     memory.worldImpression.observationConfidence >= 8 &&
     (relation === "guarded" || relation === "distant")
   ) {
-    return {
+    return attachSpatialTarget(input, {
       type: "observe_boundary",
       priority: "medium",
       summary: "过去经验表明观察通常有效，当前目标倾向先看边界。",
       source: "memory",
-    }
+    })
   }
 
-  /**
-   * 照料者可靠感高：
-   * 更容易走向关系靠近 / 需求满足
-   */
-  if (
-    memory.relationImpression.caretakerTrust >= 10 &&
-    hunger >= 50
-  ) {
-    return {
+  if (memory.relationImpression.caretakerTrust >= 10 && hunger >= 50) {
+    return attachSpatialTarget(input, {
       type: "satisfy_need",
       priority: "high",
       summary: "记忆表明外部照料在需求升高时可靠，当前目标偏向优先满足身体需要。",
       source: "memory",
-    }
+    })
   }
 
-  /**
-   * 靠近经验总体安全：
-   * 关系稳定时更容易设为关系目标
-   */
   if (
     memory.relationImpression.approachSafety >= 8 &&
     (relation === "secure" || relation === "attached")
@@ -222,37 +222,26 @@ function buildMemoryGoalOverride(
     }
   }
 
-  /**
-   * 恢复经验强：
-   * 在低能量时更果断地切恢复目标
-   */
-  if (
-    memory.selfImpression.recoveryConfidence >= 10 &&
-    energy <= 38
-  ) {
-    return {
+  if (memory.selfImpression.recoveryConfidence >= 10 && energy <= 38) {
+    return attachSpatialTarget(input, {
       type: "restore_self",
       priority: "high",
       summary: "经验表明恢复通常有效，当前目标更快切到回收自身。",
       source: "memory",
-    }
+    })
   }
 
-  /**
-   * 节律感高：
-   * 夜晚更容易守节律，不乱冲
-   */
   if (
     memory.selfImpression.rhythmConfidence >= 10 &&
     time.period === "Night" &&
     energy <= 60
   ) {
-    return {
+    return attachSpatialTarget(input, {
       type: "stabilize_state",
       priority: "medium",
       summary: "经验正在形成稳定节律，当前目标偏向顺着夜间节奏维持状态。",
       source: "memory",
-    }
+    })
   }
 
   return null
@@ -269,30 +258,25 @@ function chooseGoal(
   const branchTag = getBranchTag(input)
   const kernel = getKernel(input)
 
-  /**
-   * 先吃记忆层修正
-   */
   const memoryOverride = buildMemoryGoalOverride(input)
-  if (memoryOverride) {
-    return memoryOverride
-  }
+  if (memoryOverride) return memoryOverride
 
   if (energy <= 12) {
-    return {
+    return attachSpatialTarget(input, {
       type: "restore_self",
       priority: "critical",
       summary: "生理状态接近极限，当前目标转为恢复自身。",
       source: "body",
-    }
+    })
   }
 
   if (hunger >= 68) {
-    return {
+    return attachSpatialTarget(input, {
       type: "satisfy_need",
       priority: "high",
       summary: "身体需求上升，当前目标转为满足进食需求。",
       source: "body",
-    }
+    })
   }
 
   if (
@@ -305,12 +289,12 @@ function chooseGoal(
       kernel.threatInterpretation === "observe_first" ||
       kernel.threatInterpretation === "stabilize_first"
     ) {
-      return {
+      return attachSpatialTarget(input, {
         type: "observe_boundary",
         priority: "high",
         summary: "当前世界读数偏不稳定，先观察边界而不直接进入。",
         source: "world",
-      }
+      })
     }
 
     return {
@@ -322,60 +306,52 @@ function chooseGoal(
   }
 
   if (
-    relation === "secure" ||
-    relation === "attached" ||
-    phaseTag === "attachment_phase"
+    (relation === "secure" || relation === "attached" || phaseTag === "attachment_phase") &&
+    (kernel.attachmentApproach === "warm_and_open" ||
+      kernel.attachmentApproach === "relationship_as_anchor")
   ) {
-    if (
-      kernel.attachmentApproach === "warm_and_open" ||
-      kernel.attachmentApproach === "relationship_as_anchor"
-    ) {
-      return {
-        type: "secure_attachment",
-        priority: "medium",
-        summary: "当前目标偏向确认连接与维持关系靠近。",
-        source: "relation",
-      }
+    return {
+      type: "secure_attachment",
+      priority: "medium",
+      summary: "当前目标偏向确认连接与维持关系靠近。",
+      source: "relation",
     }
   }
 
   if (energy <= 32 || phaseTag === "recovery_phase") {
-    return {
+    return attachSpatialTarget(input, {
       type: "restore_self",
       priority: "high",
       summary: "当前目标偏向恢复、回收与重新稳定状态。",
       source: "body",
-    }
+    })
   }
 
-  if (
-    kernel.coreDrive === "expand" ||
-    kernel.coreDrive === "breakthrough"
-  ) {
-    return {
+  if (kernel.coreDrive === "expand" || kernel.coreDrive === "breakthrough") {
+    return attachSpatialTarget(input, {
       type: "expand_territory",
       priority: "medium",
       summary: "当前目标偏向向外扩展、试探新边界。",
       source: "consciousness",
-    }
+    })
   }
 
   if (kernel.coreDrive === "understand") {
-    return {
+    return attachSpatialTarget(input, {
       type: "observe_boundary",
       priority: "medium",
       summary: "当前目标偏向先理解环境，再决定是否深入。",
       source: "consciousness",
-    }
+    })
   }
 
   if (kernel.coreDrive === "stabilize") {
-    return {
+    return attachSpatialTarget(input, {
       type: "stabilize_state",
       priority: "medium",
       summary: "当前目标偏向维持秩序与稳定，不急于外扩。",
       source: "consciousness",
-    }
+    })
   }
 
   if (kernel.coreDrive === "connect") {
@@ -395,28 +371,15 @@ function chooseGoal(
   }
 }
 
-function shouldKeepPreviousGoal(
-  input: GoalSystemInput
-): boolean {
+function shouldKeepPreviousGoal(input: GoalSystemInput): boolean {
   const previousGoal = input.previousGoal
   if (!previousGoal) return false
 
   const energy = getEnergy(input)
   const hunger = getHunger(input)
 
-  /**
-   * 生理硬中断
-   */
-  if (energy <= 12 || hunger >= 68) {
-    return false
-  }
-
-  /**
-   * 目标还没到保持期，尽量保留
-   */
-  if (input.tick <= previousGoal.holdUntilTick) {
-    return true
-  }
+  if (energy <= 12 || hunger >= 68) return false
+  if (input.tick <= previousGoal.holdUntilTick) return true
 
   return false
 }

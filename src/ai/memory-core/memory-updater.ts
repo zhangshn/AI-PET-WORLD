@@ -18,13 +18,9 @@ import type {
   UpdateMemoryInput,
 } from "./memory-types"
 
-import { clampZeroToHundred } from "../../shared/math/clamp"
-
 function clamp(value: number, min = -100, max = 100): number {
   return Math.max(min, Math.min(max, value))
 }
-
-
 
 function pushLimited<T>(list: T[], item: T, max: number): T[] {
   const next = [...list, item]
@@ -150,7 +146,11 @@ function buildEventRecords(input: UpdateMemoryInput): MemoryEventRecord[] {
 
   if (
     input.action === "approaching" &&
-    (input.moodAfter === "relaxed" || input.moodAfter === "content" || input.moodAfter === "curious")
+    (
+      input.moodAfter === "relaxed" ||
+      input.moodAfter === "content" ||
+      input.moodAfter === "curious"
+    )
   ) {
     records.push({
       tick: input.tick,
@@ -179,7 +179,10 @@ function updateWorldImpression(
       nightSafetyBias = clamp(nightSafetyBias + 4)
     }
 
-    if (event.kind === "night_activity" && input.energyAfter < input.energyBefore - 2) {
+    if (
+      event.kind === "night_activity" &&
+      input.energyAfter < input.energyBefore - 2
+    ) {
       nightSafetyBias = clamp(nightSafetyBias - 3)
     }
 
