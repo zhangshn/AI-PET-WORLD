@@ -5,7 +5,14 @@
 import { PetState, PetAction, PetMood } from "../types/pet"
 import { TimeState } from "../engine/timeSystem"
 import { runPetStimulusPerception } from "./pet-cognition/pet-cognition-gateway"
+import { runPetLife } from "./pet-life/pet-life-gateway"
+import { runPetZoneInfluence } from "./pet-zone/pet-zone-gateway"
 import type { PetBirthAiBundle } from "../ai/gateway"
+import {
+  applyPetActionStability,
+  type ActionDecisionReason,
+  type ActionStabilityState,
+} from "./pet-action/pet-action-gateway"
 import {
   updatePetAiState,
   stepPetBehaviorProcess,
@@ -28,89 +35,11 @@ import type { WorldStimulus } from "../ai/gateway"
 import type { PetCognitionRecord } from "../types/cognition"
 import type { WorldZone } from "../world/ecology/world-zone-types"
 
-type ActionDecisionReason =
-  | "bootstrap_default"
-  | "hard_low_energy"
-  | "hard_extreme_hunger"
-  | "goal_guided_selection"
-  | "stability_hold_min_duration"
-  | "stability_accept_transition"
-  | "attention_hold_current"
-
-type ActionStabilityState = {
-  currentAction: PetAction
-  startedAtTick: number
-  lastChangedTick: number
-}
-
 export type FoodOfferDecision = {
   accepted: boolean
   intakeAmount: number
   reason: string
 }
-
-const ACTION_MIN_DURATION: Record<PetAction, number> = {
-  sleeping: 4,
-  eating: 3,
-  walking: 3,
-  exploring: 4,
-  approaching: 3,
-  idle: 2,
-  observing: 3,
-  resting: 3,
-  alert_idle: 3,
-}
-
-const ACTION_TRANSITIONS: Record<PetAction, PetAction[]> = {
-  sleeping: ["idle", "resting", "eating"],
-  eating: ["idle", "resting", "walking"],
-  resting: ["idle", "sleeping", "walking"],
-  idle: [
-    "walking",
-    "observing",
-    "resting",
-    "eating",
-    "sleeping",
-    "alert_idle",
-  ],
-  walking: [
-    "idle",
-    "observing",
-    "exploring",
-    "approaching",
-    "eating",
-    "resting",
-    "alert_idle",
-  ],
-  exploring: [
-    "walking",
-    "observing",
-    "approaching",
-    "idle",
-    "resting",
-  ],
-  approaching: [
-    "idle",
-    "walking",
-    "eating",
-    "observing",
-    "resting",
-  ],
-  observing: [
-    "idle",
-    "walking",
-    "exploring",
-    "approaching",
-    "alert_idle",
-  ],
-  alert_idle: [
-    "observing",
-    "idle",
-    "walking",
-    "resting",
-  ],
-}
-
 
   function clamp(value: number, min = 0, max = 100): number {
     return Math.max(min, Math.min(max, value))
@@ -242,14 +171,19 @@ export class PetSystem {
     })
   }
 
-  update(time: TimeState, zones: WorldZone[] = []) {
+    update(time: TimeState, zones: WorldZone[] = []) {
     this.currentTick++
 
     if (!this.pet || !this.pet.timelineSnapshot) return
 
-    this.updateLifeState()
+    this.pet = runPetLife({
+      pet: this.pet,
+    }).pet
 
     const currentSnapshot = this.pet.timelineSnapshot
+
+    if (!currentSnapshot) return
+
     const energyBefore = Math.round(this.pet.energy)
     const hungerBefore = Math.round(this.pet.hunger)
     const moodBefore = currentSnapshot.state.emotional.label
@@ -328,12 +262,29 @@ export class PetSystem {
           driveSnapshot
         )
 
-    const finalAction = this.applyActionStability(rawAction)
+    const stabilityResult = applyPetActionStability({
+      currentTick: this.currentTick,
+      candidate: rawAction,
+      currentPetAction: this.pet.action,
+      energy: this.pet.energy,
+      hunger: this.pet.hunger,
+      stability: this.actionStability,
+      shouldHoldCurrentAction: (input) =>
+        attentionSystem.shouldHoldCurrentAction(input),
+    })
+
+    const finalAction = stabilityResult.action
+    this.actionStability = stabilityResult.stability
+    this.lastDecisionReason = stabilityResult.reason
 
     const previousAction = this.pet.action
     this.pet.action = finalAction
 
-    this.applyZoneInfluence(finalAction, zones)
+    this.pet = runPetZoneInfluence({
+      pet: this.pet,
+      action: finalAction,
+      zones,
+    }).pet
 
     if (previousAction !== finalAction || !attentionSystem.getAttention()) {
       attentionSystem.lockAttention({
@@ -396,151 +347,6 @@ export class PetSystem {
       moodAfter: nextSnapshot.state.emotional.label,
       wasFed,
     })
-  }
-
-  private updateLifeState() {
-    if (!this.pet) return
-
-    const lifeState = this.pet.lifeState
-
-    lifeState.ageTicks += 1
-
-    const petBias = this.pet.finalPersonalityProfile.bias.petBehaviorBias
-    const activityBias = petBias.newbornActivity
-    const explorationBias = petBias.explorationRange
-
-    if (lifeState.ageTicks < 6) {
-      lifeState.phase = "newborn"
-      lifeState.safeRadius = 70
-      lifeState.maxExploreRadius = 90
-      return
-    }
-
-    if (lifeState.ageTicks < 14) {
-      lifeState.phase = "adaptation"
-      lifeState.safeRadius = 95
-      lifeState.maxExploreRadius = 120 + explorationBias * 0.4
-      return
-    }
-
-    if (lifeState.ageTicks < 28) {
-      lifeState.phase = "dependent"
-      lifeState.safeRadius = 130
-      lifeState.maxExploreRadius = 160 + explorationBias * 0.65
-      return
-    }
-
-    if (lifeState.ageTicks < 48 || activityBias < 55) {
-      lifeState.phase = "curious"
-      lifeState.safeRadius = 170
-      lifeState.maxExploreRadius = 220 + explorationBias * 0.8
-      return
-    }
-
-    lifeState.phase = "independent"
-    lifeState.safeRadius = 240
-    lifeState.maxExploreRadius = 320 + explorationBias
-  }
-
-  private findCurrentGoalZone(zones: WorldZone[]): WorldZone | null {
-    const goal = this.pet?.currentGoal
-
-    if (!goal) return null
-
-    if (goal.targetZoneId) {
-      const byId = zones.find(
-        (zone) => zone.id === goal.targetZoneId && zone.isActive
-      )
-
-      if (byId) return byId
-    }
-
-    if (goal.targetZoneType) {
-      return (
-        zones.find(
-          (zone) => zone.type === goal.targetZoneType && zone.isActive
-        ) ?? null
-      )
-    }
-
-    return null
-  }
-
-  private applyZoneInfluence(action: PetAction, zones: WorldZone[]) {
-    if (!this.pet) return
-
-    const zone = this.findCurrentGoalZone(zones)
-    if (!zone) return
-
-    const effect = zone.effect
-
-    if (
-      zone.type === "sleep_zone" &&
-      (action === "sleeping" || action === "resting")
-    ) {
-      this.pet.energy = clamp(
-        this.pet.energy + Math.max(1, effect.restBonus * 0.08),
-        0,
-        100
-      )
-      this.pet.hunger = clamp(this.pet.hunger + 0.4, 0, 100)
-    }
-
-    if (
-      zone.type === "quiet_zone" &&
-      (action === "resting" || action === "observing")
-    ) {
-      this.pet.energy = clamp(
-        this.pet.energy + Math.max(1, effect.restBonus * 0.05),
-        0,
-        100
-      )
-
-      if (this.pet.mood === "alert" || this.pet.mood === "sad") {
-        this.pet.mood = "normal"
-      }
-    }
-
-    if (
-      zone.type === "warm_zone" &&
-      (action === "resting" || action === "sleeping" || action === "idle")
-    ) {
-      this.pet.energy = clamp(
-        this.pet.energy + Math.max(1, effect.comfortBonus * 0.04),
-        0,
-        100
-      )
-
-      if (this.pet.mood === "normal") {
-        this.pet.mood = "happy"
-      }
-    }
-
-    if (
-      zone.type === "food_zone" &&
-      (action === "eating" || this.pet.currentGoal?.type === "satisfy_need")
-    ) {
-      this.pet.hunger = clamp(this.pet.hunger - 1.5, 0, 100)
-      this.pet.energy = clamp(this.pet.energy + 0.6, 0, 100)
-    }
-
-    if (
-      zone.type === "observation_zone" &&
-      (action === "observing" ||
-        this.pet.currentGoal?.type === "observe_boundary")
-    ) {
-      if (this.pet.mood === "alert") {
-        this.pet.mood = "curious"
-      }
-    }
-
-    if (
-      zone.type === "exploration_zone" &&
-      (action === "exploring" || action === "walking")
-    ) {
-      this.pet.energy = clamp(this.pet.energy - 0.8, 0, 100)
-      this.pet.hunger = clamp(this.pet.hunger + 0.4, 0, 100)
-    }
   }
 
   private buildStateEvents(action: PetAction) {
@@ -940,106 +746,6 @@ export class PetSystem {
     this.lastDecisionReason = "goal_guided_selection"
 
     return this.pickActionByWeight(weights)
-  }
-
-  private applyActionStability(candidate: PetAction): PetAction {
-    if (!this.pet) return candidate
-
-    if (!this.actionStability) {
-      this.actionStability = {
-        currentAction: candidate,
-        startedAtTick: this.currentTick,
-        lastChangedTick: this.currentTick,
-      }
-
-      return candidate
-    }
-
-    const current = this.actionStability.currentAction
-    const held = this.currentTick - this.actionStability.startedAtTick
-    const min = ACTION_MIN_DURATION[current]
-
-    const energy = this.pet.energy
-    const hunger = this.pet.hunger
-
-    if (energy <= 6 && current !== "sleeping") {
-      this.actionStability = {
-        currentAction: "sleeping",
-        startedAtTick: this.currentTick,
-        lastChangedTick: this.currentTick,
-      }
-
-      this.lastDecisionReason = "hard_low_energy"
-      return "sleeping"
-    }
-
-    if (hunger >= 95 && current !== "eating") {
-      this.actionStability = {
-        currentAction: "eating",
-        startedAtTick: this.currentTick,
-        lastChangedTick: this.currentTick,
-      }
-
-      this.lastDecisionReason = "hard_extreme_hunger"
-      return "eating"
-    }
-
-    if (
-      attentionSystem.shouldHoldCurrentAction({
-        tick: this.currentTick,
-        currentAction: current,
-        candidateAction: candidate,
-      })
-    ) {
-      this.lastDecisionReason = "attention_hold_current"
-      return current
-    }
-
-    if (candidate === current) return current
-
-    if (held < min) {
-      this.lastDecisionReason = "stability_hold_min_duration"
-      return current
-    }
-
-    const allowedNextActions = ACTION_TRANSITIONS[current] ?? ["idle"]
-
-    if (!allowedNextActions.includes(candidate)) {
-      const bridgeAction = this.resolveBridgeAction(current, candidate)
-
-      this.actionStability = {
-        currentAction: bridgeAction,
-        startedAtTick: this.currentTick,
-        lastChangedTick: this.currentTick,
-      }
-
-      this.lastDecisionReason = "stability_accept_transition"
-      return bridgeAction
-    }
-
-    this.actionStability = {
-      currentAction: candidate,
-      startedAtTick: this.currentTick,
-      lastChangedTick: this.currentTick,
-    }
-
-    this.lastDecisionReason = "stability_accept_transition"
-    return candidate
-  }
-
-  private resolveBridgeAction(
-    current: PetAction,
-    candidate: PetAction
-  ): PetAction {
-    if (current === "sleeping") return "idle"
-    if (current === "eating") return "idle"
-    if (current === "resting") return "idle"
-    if (candidate === "exploring" || candidate === "approaching") return "walking"
-    if (candidate === "sleeping") return "resting"
-    if (candidate === "eating") return "walking"
-    if (candidate === "alert_idle") return "observing"
-
-    return "idle"
   }
 
   perceiveWorldStimuli(
