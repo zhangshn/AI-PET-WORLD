@@ -79,7 +79,7 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     existingStimuli: input.worldStimuli,
   })
 
-  let nextStimuli = stimulusState.activeStimuli
+  const nextStimuli = stimulusState.activeStimuli
 
   input.incubatorSystem.update()
 
