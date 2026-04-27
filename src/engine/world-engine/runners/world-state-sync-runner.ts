@@ -2,15 +2,17 @@
  * 当前文件负责：统一从各系统读取当前世界状态，避免 worldEngine 中重复散落 getState/getHome/getPet/getIncubator 调用。
  */
 
-import type { PetSystem } from "@/systems/petSystem"
-import type { ButlerSystem } from "@/systems/butlerSystem"
-import type { HomeSystem } from "@/systems/homeSystem"
-import type { IncubatorSystem } from "@/systems/incubatorSystem"
-
 import type { ButlerState } from "@/types/butler"
 import type { HomeState } from "@/types/home"
 import type { IncubatorState } from "@/types/incubator"
 import type { PetState } from "@/types/pet"
+
+import type {
+  PetSystem,
+  ButlerSystem,
+  HomeSystem,
+  IncubatorSystem,
+} from "@/systems/systems-gateway"
 
 export type WorldSystemStateSnapshot = {
   pet: PetState | null

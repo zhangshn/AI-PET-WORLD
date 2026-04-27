@@ -3,13 +3,16 @@
  */
 
 import type { TimeState } from "../../timeSystem"
-import type { PetSystem } from "@/systems/petSystem"
-import type { ButlerSystem } from "@/systems/butlerSystem"
-import type { EventSystem } from "@/systems/eventSystem"
-import type { HomeSystem } from "@/systems/homeSystem"
-import type { IncubatorSystem } from "@/systems/incubatorSystem"
 import type { WorldStimulus } from "@/ai/gateway"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
+
+import type {
+  PetSystem,
+  ButlerSystem,
+  EventSystem,
+  HomeSystem,
+  IncubatorSystem,
+} from "@/systems/systems-gateway"
 
 import {
   runWorldStimulus,
