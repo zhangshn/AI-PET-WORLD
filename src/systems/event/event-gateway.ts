@@ -40,3 +40,5 @@ export {
 export type {
   BuildActionEventStyleInputEnhancements,
 } from "./event-style-input-runner"
+
+export { buildActionEndMessage } from "./event-action-end-message-runner"
