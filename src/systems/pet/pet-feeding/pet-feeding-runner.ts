@@ -2,8 +2,9 @@
  * 当前文件负责：处理宠物对食物机会的自主判断，以及接受食物后的身体状态更新。
  */
 
-import type { PetMood, PetState } from "../../../types/pet"
+import type { PetState } from "../../../types/pet"
 import type { ButlerOpportunity } from "../../butlerSystem"
+import { mapTimelineStateToPetMood } from "../pet-mood/pet-mood-gateway"
 
 export type FoodOfferDecision = {
   accepted: boolean
@@ -151,8 +152,14 @@ export function applyFeeding(input: ApplyFeedingInput): ApplyFeedingResult {
         ...pet.timelineSnapshot.state,
         physical: {
           ...pet.timelineSnapshot.state.physical,
-          hunger: Math.max(0, pet.timelineSnapshot.state.physical.hunger - amount),
-          energy: Math.min(100, pet.timelineSnapshot.state.physical.energy + 2),
+          hunger: Math.max(
+            0,
+            pet.timelineSnapshot.state.physical.hunger - amount
+          ),
+          energy: Math.min(
+            100,
+            pet.timelineSnapshot.state.physical.energy + 2
+          ),
         },
       },
     },
@@ -179,21 +186,6 @@ export function applyFeeding(input: ApplyFeedingInput): ApplyFeedingResult {
     pet: nextPet,
     acceptedAmount: amount,
   }
-}
-
-function mapTimelineStateToPetMood(label: string): PetMood {
-  if (label === "excited" || label === "content" || label === "relaxed") {
-    return "happy"
-  }
-
-  if (label === "alert") return "alert"
-  if (label === "curious") return "curious"
-
-  if (label === "anxious" || label === "irritated" || label === "low") {
-    return "sad"
-  }
-
-  return "normal"
 }
 
 function clamp(value: number, min = 0, max = 100): number {

@@ -9,14 +9,16 @@
  * - 行为选择与行为稳定放在 pet/pet-action
  * - 喂食判断与喂食状态更新放在 pet/pet-feeding
  * - timeline 状态事件构建放在 pet/pet-state-events
+ * - timeline mood 映射放在 pet/pet-mood
  */
 
-import { PetState, PetAction, PetMood } from "../types/pet"
+import { PetState, PetAction } from "../types/pet"
 import { TimeState } from "../engine/timeSystem"
 import { runPetStimulusPerception } from "./pet/pet-cognition/pet-cognition-gateway"
 import { runPetLife } from "./pet/pet-life/pet-life-gateway"
 import { runPetZoneInfluence } from "./pet/pet-zone/pet-zone-gateway"
 import { buildPetStateEvents } from "./pet/pet-state-events/pet-state-events-gateway"
+import { mapTimelineStateToPetMood } from "./pet/pet-mood/pet-mood-gateway"
 import {
   applyFeeding,
   evaluateFoodOffer,
@@ -69,7 +71,7 @@ export class PetSystem {
 
     const energy = Math.round(timelineSnapshot.state.physical.energy)
     const hunger = Math.round(timelineSnapshot.state.physical.hunger)
-    const mood = this.mapTimelineStateToPetMood(
+    const mood = mapTimelineStateToPetMood(
       timelineSnapshot.state.emotional.label
     )
 
@@ -318,7 +320,7 @@ export class PetSystem {
     this.pet.timelineSnapshot = nextSnapshot
     this.pet.energy = Math.round(nextSnapshot.state.physical.energy)
     this.pet.hunger = Math.round(nextSnapshot.state.physical.hunger)
-    this.pet.mood = this.mapTimelineStateToPetMood(
+    this.pet.mood = mapTimelineStateToPetMood(
       nextSnapshot.state.emotional.label
     )
 
@@ -401,25 +403,6 @@ export class PetSystem {
     if (result.acceptedAmount > 0) {
       this.lastFeedingTick = this.currentTick
     }
-  }
-
-  /**
-   * 将 timeline 内部情绪标签映射成 PetMood。
-   * 后续可以继续拆到 pet/pet-mood。
-   */
-  private mapTimelineStateToPetMood(label: string): PetMood {
-    if (label === "excited" || label === "content" || label === "relaxed") {
-      return "happy"
-    }
-
-    if (label === "alert") return "alert"
-    if (label === "curious") return "curious"
-
-    if (label === "anxious" || label === "irritated" || label === "low") {
-      return "sad"
-    }
-
-    return "normal"
   }
 
   getPet(): PetState | null {
