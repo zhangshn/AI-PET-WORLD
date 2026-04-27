@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：驱动世界 Tick 循环，并统一调度时间、孵化器、管家、宠物、事件与 UI 状态同步。
+ * 当前文件负责：驱动世界 Tick 循环，并统一调度时间、世界运行流程与 UI 状态同步。
  */
 
 import { TimeSystem, TimeState } from "./timeSystem"
@@ -19,15 +19,9 @@ import type { WorldEvent } from "../types/event"
 import type { WorldEcologyState } from "../world/ecology/ecology-engine"
 import type { WorldRuntimeState } from "../world/runtime/world-runtime"
 import {
-  runWorldStimulus,
-  runPetCognition,
-  runPetRuntime,
-  runButlerOpportunities,
-  runManagementInteractions,
-  refreshWorldSystemState,
   createWorldRuntime,
-  stepWorldRuntime,
-  runWorldEventUpdate,
+  refreshWorldSystemState,
+  runWorldTick,
 } from "./world-engine/world-engine-gateway"
 import {
   buildWorldState,
@@ -98,124 +92,24 @@ export class WorldEngine {
 
     const prevTime = this.timeSystem.getTime()
 
-    const previousState = this.refreshCurrentState()
-    const prevPet = previousState.pet
-    const prevButler = previousState.butler
-    const prevIncubator = previousState.incubator
-
     this.timeSystem.update()
     const currentTime = this.timeSystem.getTime()
 
-    let currentState = this.refreshCurrentState()
-    let currentHome = currentState.home
-    let currentPet = currentState.pet
-    let currentIncubator = currentState.incubator
-    let currentButler = currentState.butler
-
-    this.worldRuntime = this.stepRuntime({
-      time: currentTime,
-      home: currentHome,
-      pet: currentPet,
-    })
-
-    const stimulusState = runWorldStimulus({
-      tick: this.tick,
-      time: currentTime,
-      worldRuntime: this.worldRuntime,
-      existingStimuli: this.worldStimuli,
-    })
-
-    this.worldStimuli = stimulusState.activeStimuli
-
-    this.incubatorSystem.update()
-
-    currentState = this.refreshCurrentState()
-    currentHome = currentState.home
-    currentPet = currentState.pet
-    currentIncubator = currentState.incubator
-    currentButler = currentState.butler
-
-    this.butlerSystem.update({
-      tick: this.tick,
-      pet: currentPet,
-      incubator: currentIncubator,
-      home: currentHome,
-      time: currentTime,
-      butlerPersonalityProfile: currentPet?.finalPersonalityProfile ?? null,
-    })
-
-    currentState = this.refreshCurrentState()
-    currentHome = currentState.home
-    currentPet = currentState.pet
-    currentIncubator = currentState.incubator
-    currentButler = currentState.butler
-
-    runManagementInteractions({
-      tick: this.tick,
-      time: currentTime,
-      butler: currentButler,
-      petSystem: this.petSystem,
-      butlerSystem: this.butlerSystem,
-      incubatorSystem: this.incubatorSystem,
-      homeSystem: this.homeSystem,
-      eventSystem: this.eventSystem,
-    })
-
-    currentState = this.refreshCurrentState()
-    currentHome = currentState.home
-    currentPet = currentState.pet
-    currentIncubator = currentState.incubator
-    currentButler = currentState.butler
-
-    runPetCognition({
-      tick: this.tick,
-      time: currentTime,
-      petSystem: this.petSystem,
-      eventSystem: this.eventSystem,
-      latestStimuli: stimulusState.latestGenerated,
-    })
-
-    const petRuntimeResult = runPetRuntime({
-      time: currentTime,
-      petSystem: this.petSystem,
-      zones: this.worldRuntime.ecology.zones,
-    })
-
-    currentPet = petRuntimeResult.pet
-
-    runButlerOpportunities({
-      tick: this.tick,
-      time: currentTime,
-      petSystem: this.petSystem,
-      butlerSystem: this.butlerSystem,
-      eventSystem: this.eventSystem,
-    })
-
-    currentState = this.refreshCurrentState()
-    currentHome = currentState.home
-    currentPet = currentState.pet
-    currentIncubator = currentState.incubator
-    currentButler = currentState.butler
-
-    this.worldRuntime = this.stepRuntime({
-      time: currentTime,
-      home: currentHome,
-      pet: currentPet,
-      shouldLog: false,
-    })
-
-    runWorldEventUpdate({
+    const tickResult = runWorldTick({
       tick: this.tick,
       prevTime,
       currentTime,
-      prevPet,
-      currentPet,
-      prevButler,
-      currentButler,
-      prevIncubator,
-      currentIncubator,
+      petSystem: this.petSystem,
+      butlerSystem: this.butlerSystem,
       eventSystem: this.eventSystem,
+      homeSystem: this.homeSystem,
+      incubatorSystem: this.incubatorSystem,
+      worldStimuli: this.worldStimuli,
+      worldRuntime: this.worldRuntime,
     })
+
+    this.worldStimuli = tickResult.worldStimuli
+    this.worldRuntime = tickResult.worldRuntime
 
     console.log("世界 Tick：", this.tick)
     console.log("当前时间：", this.timeSystem.getFormattedTime())
@@ -233,22 +127,6 @@ export class WorldEngine {
     })
   }
 
-  private stepRuntime(input: {
-    time: TimeState
-    home: HomeState
-    pet: PetState | null
-    shouldLog?: boolean
-  }): WorldRuntimeState {
-    return stepWorldRuntime({
-      previous: this.worldRuntime,
-      tick: this.tick,
-      time: input.time,
-      home: input.home,
-      pet: input.pet,
-      shouldLog: input.shouldLog,
-    })
-  }
-
   private refreshCurrentState() {
     return refreshWorldSystemState({
       petSystem: this.petSystem,
@@ -261,17 +139,19 @@ export class WorldEngine {
   private emitUpdate() {
     if (!this.onUpdate) return
 
+    const currentState = this.refreshCurrentState()
+
     this.onUpdate(
       buildWorldState({
         tick: this.tick,
         formattedTime: this.timeSystem.getFormattedTime(),
         timeState: this.timeSystem.getTime(),
 
-        pet: this.petSystem.getPet(),
-        butler: this.butlerSystem.getState(),
+        pet: currentState.pet,
+        butler: currentState.butler,
 
-        home: this.homeSystem.getHome(),
-        incubator: this.incubatorSystem.getIncubator(),
+        home: currentState.home,
+        incubator: currentState.incubator,
 
         events: this.eventSystem.getEvents(),
 

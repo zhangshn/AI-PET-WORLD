@@ -28,3 +28,9 @@ export { runWorldEventUpdate } from "./runners/world-event-update-runner"
 export type {
   RunWorldEventUpdateInput,
 } from "./runners/world-event-update-runner"
+
+export { runWorldTick } from "./runners/world-tick-runner"
+export type {
+  RunWorldTickInput,
+  RunWorldTickResult,
+} from "./runners/world-tick-runner"
