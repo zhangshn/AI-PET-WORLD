@@ -1,5 +1,6 @@
 /**
- * 当前文件负责：世界观察叙事流。
+ * Current file responsibility:
+ * render recent world observations in a stable, readable way.
  */
 
 import type { WorldEvent } from "@/types/event"
@@ -10,54 +11,87 @@ type Props = {
   events: WorldEvent[]
 }
 
-function getCategoryLabel(type: string): string {
-  if (type.includes("pet")) return "生命观察"
-  if (type.includes("incubator")) return "孵化记录"
-  if (type.includes("time")) return "环境变化"
-  if (type.includes("mood")) return "情绪变化"
-  if (type.includes("interaction")) return "世界互动"
+function getCategoryLabel(type: WorldEvent["type"]): string {
+  switch (type) {
+    case "pet_hatched":
+    case "pet_action_changed":
+    case "pet_action_narrative":
+    case "pet_action_end":
+    case "pet_mood_changed":
+    case "pet_fortune_phase_changed":
+    case "pet_trajectory_branch_changed":
+      return "生命观察"
+    case "incubator_progress_changed":
+      return "孵化记录"
+    case "time_period_changed":
+      return "环境变化"
+    case "interaction":
+      return "世界互动"
+    default:
+      return "世界记录"
+  }
+}
 
-  return "世界记录"
+function getActionLabel(action?: string): string | null {
+  if (!action) return null
+
+  switch (action) {
+    case "sleeping":
+      return "正在休息，恢复状态中。"
+    case "eating":
+      return "正在进食，补充体力。"
+    case "walking":
+      return "在场景里缓慢移动。"
+    case "exploring":
+      return "正在探索新的区域。"
+    case "approaching":
+      return "试着靠近新的目标。"
+    case "idle":
+      return "暂时停在原地观察。"
+    case "observing":
+      return "在安静观察周围变化。"
+    case "resting":
+      return "把节奏放慢，进入恢复阶段。"
+    case "alert_idle":
+      return "保持警觉，暂时没有进一步动作。"
+    default:
+      return null
+  }
 }
 
 function rewriteMessage(event: WorldEvent): string {
-  const message = event.message
+  const petName = event.petName ?? "宠物"
+  const actionLabel = getActionLabel(event.sourceAction)
 
-  if (message.includes("孵化器的进度又向前推进了一些")) {
-    return "孵化器里传来轻微的稳定波动。管家靠近检查了一会儿，确认里面的新生命仍在缓慢成长。"
+  switch (event.type) {
+    case "pet_hatched":
+      return `${petName}刚刚来到这个世界，正在适应周围环境。`
+    case "pet_action_changed":
+    case "pet_action_narrative":
+      return actionLabel ? `${petName}${actionLabel}` : event.message
+    case "pet_action_end":
+      return `${petName}完成了上一段行为，状态正在切换。`
+    case "pet_mood_changed":
+      return `${petName}的情绪发生了变化。`
+    case "pet_fortune_phase_changed":
+      return `${petName}进入了新的阶段倾向。`
+    case "pet_trajectory_branch_changed":
+      return `${petName}的成长轨迹出现了新的分支。`
+    case "time_period_changed":
+      return "光线和环境在变化，世界进入了新的时间段。"
+    case "incubator_progress_changed":
+      return "孵化器的状态有了新的推进，管家在持续关注。"
+    default:
+      return event.message
   }
-
-  if (message.includes("管家正在照看孵化器")) {
-    return "管家停在孵化器旁，安静地确认温度、稳定度和周围环境。"
-  }
-
-  if (message.includes("时间进入新的阶段")) {
-    return "光线慢慢改变了草地的颜色，世界进入了新的时间段。"
-  }
-
-  if (message.includes("Mochi诞生出世了")) {
-    return "Mochi 从孵化器中醒来。它没有立刻行动，只是安静地感受这个陌生的世界。"
-  }
-
-  if (message.includes("正在休息")) {
-    return "Mochi 放慢了动作，停在较安静的位置恢复精力。"
-  }
-
-  if (message.includes("安静地看着周围")) {
-    return "Mochi 停在原地观察了一会儿，像是在确认这个世界的边界。"
-  }
-
-  if (message.includes("观察")) {
-    return message
-  }
-
-  return message
 }
 
 function getEventDisplayKey(event: WorldEvent): string {
   return [
     event.type,
     event.petName ?? "",
+    event.sourceAction ?? "",
+    event.narrativeType ?? "",
     rewriteMessage(event),
   ].join("::")
 }

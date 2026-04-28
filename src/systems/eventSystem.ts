@@ -1,5 +1,6 @@
 /**
- * 当前文件负责：维护世界事件列表，并调度时间、宠物与孵化器事件生成。
+ * Current file responsibility:
+ * maintain world event history and generate per-tick updates.
  */
 
 import type { WorldEvent } from "../types/event"
@@ -16,12 +17,24 @@ import {
   type PetStateLike,
 } from "./event/event-gateway"
 
+const MAX_EVENT_HISTORY = 200
+
 export class EventSystem {
   private events: WorldEvent[] = []
   private continuityByPetKey = new Map<string, ContinuityState>()
 
   getEvents(): WorldEvent[] {
-    return this.events
+    return [...this.events]
+  }
+
+  private appendEvents(nextEvents: WorldEvent[]): void {
+    if (nextEvents.length === 0) return
+
+    this.events.push(...nextEvents)
+
+    if (this.events.length > MAX_EVENT_HISTORY) {
+      this.events.splice(0, this.events.length - MAX_EVENT_HISTORY)
+    }
   }
 
   addInteractionEvent(input: InteractionEventInput): void {
@@ -33,7 +46,7 @@ export class EventSystem {
       message: input.message,
     })
 
-    this.events.push(event)
+    this.appendEvents([event])
   }
 
   addPetHatchedEvent(input: PetHatchedEventInput): void {
@@ -46,12 +59,12 @@ export class EventSystem {
       message: `${input.petName}破壳出生了。`,
     })
 
-    this.events.push(event)
+    this.appendEvents([event])
   }
 
   update(input: EventSystemUpdateInput): void {
-    this.events.push(
-      ...buildTimePeriodEvents({
+    this.appendEvents(
+      buildTimePeriodEvents({
         tick: input.tick,
         day: input.day,
         hour: input.hour,
@@ -61,8 +74,8 @@ export class EventSystem {
     )
 
     if (input.prevPet && input.currentPet) {
-      this.events.push(
-        ...buildPetUpdateEvents({
+      this.appendEvents(
+        buildPetUpdateEvents({
           tick: input.tick,
           day: input.day,
           hour: input.hour,
@@ -73,8 +86,8 @@ export class EventSystem {
       )
     }
 
-    this.events.push(
-      ...buildIncubatorEvents({
+    this.appendEvents(
+      buildIncubatorEvents({
         tick: input.tick,
         day: input.day,
         hour: input.hour,

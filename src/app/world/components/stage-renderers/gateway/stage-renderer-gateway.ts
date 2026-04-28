@@ -86,7 +86,7 @@ export {
   type RuntimeEntityVisualRegistry,
   type RuntimeEntityVisualState,
   type SyncRuntimeEntitiesInput,
-} from "../graphics/runtime-entity-renderer"
+} from "../graphics/entities/runtime-entity-renderer"
 
 export {
   animateStimulusVisuals,
@@ -96,7 +96,7 @@ export {
   type StimulusVisualRegistry,
   type StimulusVisualState,
   type SyncStimulusVisualsInput,
-} from "../graphics/stage-stimulus-renderer"
+} from "../graphics/effects/stage-stimulus-renderer"
 
 export {
   getActiveZonePosition,

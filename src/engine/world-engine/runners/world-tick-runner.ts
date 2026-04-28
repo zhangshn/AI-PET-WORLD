@@ -43,6 +43,20 @@ export type RunWorldTickResult = {
   worldRuntime: WorldRuntimeState
 }
 
+function cloneSnapshot<T>(value: T): T {
+  if (value == null) return value
+
+  const clone = globalThis.structuredClone as
+    | (<V>(input: V) => V)
+    | undefined
+
+  if (clone) {
+    return clone(value)
+  }
+
+  return JSON.parse(JSON.stringify(value)) as T
+}
+
 export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
   const previousState = refreshWorldSystemState({
     petSystem: input.petSystem,
@@ -51,9 +65,9 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     incubatorSystem: input.incubatorSystem,
   })
 
-  const prevPet = previousState.pet
-  const prevButler = previousState.butler
-  const prevIncubator = previousState.incubator
+  const prevPet = cloneSnapshot(previousState.pet)
+  const prevButler = cloneSnapshot(previousState.butler)
+  const prevIncubator = cloneSnapshot(previousState.incubator)
 
   let currentState = refreshWorldSystemState({
     petSystem: input.petSystem,
@@ -67,7 +81,7 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
   let currentIncubator = currentState.incubator
   let currentButler = currentState.butler
 
-  let nextRuntime = stepWorldRuntime({
+  const nextRuntime = stepWorldRuntime({
     previous: input.worldRuntime,
     tick: input.tick,
     time: input.currentTime,
@@ -177,15 +191,6 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
   currentPet = currentState.pet
   currentIncubator = currentState.incubator
   currentButler = currentState.butler
-
-  nextRuntime = stepWorldRuntime({
-    previous: nextRuntime,
-    tick: input.tick,
-    time: input.currentTime,
-    home: currentHome,
-    pet: currentPet,
-    shouldLog: false,
-  })
 
   runWorldEventUpdate({
     tick: input.tick,
