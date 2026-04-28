@@ -2,6 +2,8 @@
  * 当前文件负责：调度当前 Graphics 模式下的世界舞台静态与动态渲染。
  */
 
+
+
 import type { WorldStimulus } from "@/ai/gateway"
 import type { TimeState } from "@/engine/timeSystem"
 import type { ButlerState } from "@/types/butler"
@@ -35,6 +37,7 @@ import type { WorldStageSceneMode } from "./stage-scene-mode"
 export type GraphicsStageRenderState = {
   lastStaticWorldKey: string | null
   phase: number
+  debugMessage?: string
 }
 
 export type SyncGraphicsStageInput = {
@@ -62,6 +65,7 @@ export function createGraphicsStageRenderState(): GraphicsStageRenderState {
   return {
     lastStaticWorldKey: null,
     phase: 0,
+    debugMessage: "stage init",
   }
 }
 
@@ -73,6 +77,8 @@ export function advanceGraphicsStagePhase(input: {
 }
 
 export function syncGraphicsStage(input: SyncGraphicsStageInput) {
+  logStageDebug(input)
+
   redrawStaticSceneIfNeeded(input)
 
   if (input.sceneMode === "exterior") {
@@ -99,6 +105,7 @@ export function resetGraphicsStageRenderState(
 ) {
   renderState.lastStaticWorldKey = null
   renderState.phase = 0
+  renderState.debugMessage = "stage reset"
 }
 
 function redrawStaticSceneIfNeeded(input: SyncGraphicsStageInput) {
@@ -111,20 +118,24 @@ function redrawStaticSceneIfNeeded(input: SyncGraphicsStageInput) {
 }
 
 function redrawExteriorWorldIfNeeded(input: SyncGraphicsStageInput) {
-  /**
-   * 外部世界必须等 runtime.map 准备好再缓存 renderKey。
-   * 否则第一次空 runtime 会把 "empty-map" 缓存住，导致后续地图不再重画。
-   */
-  if (!input.runtime?.map) {
+  const map = input.runtime?.map ?? null
+
+  if (!map) {
     input.renderState.lastStaticWorldKey = null
+    input.renderState.debugMessage =
+      "exterior waiting: runtime.map is null"
     return
   }
 
   const renderKey = getStaticWorldRenderKey(input.runtime)
 
-  if (input.renderState.lastStaticWorldKey === renderKey) return
+  if (input.renderState.lastStaticWorldKey === renderKey) {
+    input.renderState.debugMessage = `exterior skipped: same renderKey ${renderKey}`
+    return
+  }
 
   input.renderState.lastStaticWorldKey = renderKey
+  input.renderState.debugMessage = `exterior redraw: ${renderKey}`
 
   drawStaticWorld({
     layers: {
@@ -148,9 +159,13 @@ function redrawShelterInteriorIfNeeded(input: SyncGraphicsStageInput) {
     height: input.height,
   })
 
-  if (input.renderState.lastStaticWorldKey === renderKey) return
+  if (input.renderState.lastStaticWorldKey === renderKey) {
+    input.renderState.debugMessage = `interior skipped: same renderKey ${renderKey}`
+    return
+  }
 
   input.renderState.lastStaticWorldKey = renderKey
+  input.renderState.debugMessage = `interior redraw: ${renderKey}`
 
   clearExteriorDynamicLayers(input.layers)
 
@@ -216,4 +231,32 @@ function clearExteriorDynamicLayers(layers: WorldStageLayerRefs) {
   layers.zoneLayer?.removeChildren()
   layers.entityLayer?.removeChildren()
   layers.stimulusLayer?.removeChildren()
+}
+
+let debugLogCount = 0
+
+function logStageDebug(input: SyncGraphicsStageInput) {
+  if (debugLogCount >= 20) return
+
+  debugLogCount += 1
+
+  const map = input.runtime?.map ?? null
+
+  console.info("[WORLD STAGE DEBUG]", {
+    sceneMode: input.sceneMode,
+    tick: input.tick,
+    runtime: Boolean(input.runtime),
+    map: Boolean(map),
+    mapSize: map ? `${map.size.width}x${map.size.height}` : "none",
+    tileSize: map?.tileSize ?? "none",
+    tiles: map?.tiles.length ?? 0,
+    lastStaticWorldKey: input.renderState.lastStaticWorldKey,
+    worldLayer: Boolean(input.layers.worldLayer),
+    backgroundLayer: Boolean(input.layers.backgroundLayer),
+    landLayer: Boolean(input.layers.landLayer),
+    structureLayer: Boolean(input.layers.structureLayer),
+    natureLayer: Boolean(input.layers.natureLayer),
+    foregroundLayer: Boolean(input.layers.foregroundLayer),
+    entityLayer: Boolean(input.layers.entityLayer),
+  })
 }
