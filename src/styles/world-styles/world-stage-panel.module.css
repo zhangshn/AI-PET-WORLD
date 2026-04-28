@@ -1,0 +1,60 @@
+.panel {
+  min-width: 0;
+  overflow: hidden;
+  border: 4px solid #5a3b22;
+  border-radius: 28px;
+  background:
+    linear-gradient(180deg, rgba(255, 248, 220, 0.96), rgba(239, 220, 166, 0.92));
+  box-shadow:
+    0 22px 55px rgba(77, 54, 25, 0.24),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.36);
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 15px 18px 13px;
+  border-bottom: 3px solid rgba(90, 59, 34, 0.2);
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: #8a6335;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+}
+
+.title {
+  margin: 0;
+  color: #3b2a18;
+  font-size: 20px;
+  font-weight: 950;
+}
+
+.hint {
+  margin: 0;
+  border: 2px solid rgba(90, 59, 34, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 248, 220, 0.78);
+  padding: 7px 11px;
+  color: #7a542a;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.viewport {
+  position: relative;
+  height: 620px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 248, 220, 0.18), transparent 45%),
+    #7cab58;
+}
+
+.viewport > div {
+  position: absolute;
+  inset: 0;
+}
