@@ -1,0 +1,44 @@
+.pill {
+  display: flex;
+  min-width: 82px;
+  flex-direction: column;
+  gap: 3px;
+  border: 2px solid rgba(90, 59, 34, 0.2);
+  border-radius: 16px;
+  padding: 8px 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45);
+}
+
+.pill span {
+  color: rgba(90, 59, 34, 0.68);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+}
+
+.pill strong {
+  color: #3b2a18;
+  font-size: 14px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.warm {
+  background: rgba(255, 241, 198, 0.86);
+}
+
+.green {
+  background: rgba(205, 232, 158, 0.82);
+}
+
+.blue {
+  background: rgba(192, 226, 232, 0.82);
+}
+
+.amber {
+  background: rgba(245, 203, 118, 0.74);
+}
+
+.muted {
+  background: rgba(255, 248, 220, 0.58);
+}

@@ -6,6 +6,8 @@ import type { TimeState } from "@/engine/timeSystem"
 import type { WorldStimulus } from "@/ai/gateway"
 import type { WorldEcologyState } from "@/world/ecology/ecology-engine"
 
+import WorldStatusPill from "./common/WorldStatusPill"
+
 import styles from "@/styles/world-styles/world-info-bar.module.css"
 
 type Props = {
@@ -72,35 +74,41 @@ export default function WorldInfoBar({ time, stimuli, ecology }: Props) {
 
   return (
     <section className={styles.bar}>
-      <div className={styles.group}>
-        <span className={styles.label}>世界日</span>
-        <strong>Day {time?.day ?? "-"}</strong>
-      </div>
+      <WorldStatusPill
+        label="世界日"
+        value={`Day ${time?.day ?? "-"}`}
+        tone="warm"
+      />
 
-      <div className={styles.group}>
-        <span className={styles.label}>时间</span>
-        <strong>{formatHour(time?.hour)}</strong>
-      </div>
+      <WorldStatusPill
+        label="时间"
+        value={formatHour(time?.hour)}
+        tone="blue"
+      />
 
-      <div className={styles.group}>
-        <span className={styles.label}>时段</span>
-        <strong>{getPeriodLabel(time?.period)}</strong>
-      </div>
+      <WorldStatusPill
+        label="时段"
+        value={getPeriodLabel(time?.period)}
+        tone="amber"
+      />
 
-      <div className={styles.group}>
-        <span className={styles.label}>天气</span>
-        <strong>{getWeatherLabel(ecology?.environment.activeWeather)}</strong>
-      </div>
+      <WorldStatusPill
+        label="天气"
+        value={getWeatherLabel(ecology?.environment.activeWeather)}
+        tone="green"
+      />
 
-      <div className={styles.group}>
-        <span className={styles.label}>温度</span>
-        <strong>{ecology?.environment.temperature ?? "--"}°</strong>
-      </div>
+      <WorldStatusPill
+        label="温度"
+        value={`${ecology?.environment.temperature ?? "--"}°`}
+        tone="warm"
+      />
 
-      <div className={styles.group}>
-        <span className={styles.label}>世界动静</span>
-        <strong>{getWorldPulse(stimuliCount)}</strong>
-      </div>
+      <WorldStatusPill
+        label="世界动静"
+        value={getWorldPulse(stimuliCount)}
+        tone={stimuliCount >= 5 ? "amber" : "muted"}
+      />
     </section>
   )
 }

@@ -50,8 +50,32 @@
   height: 620px;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% 50%, rgba(255, 248, 220, 0.18), transparent 45%),
+    radial-gradient(circle at 50% 45%, rgba(255, 248, 220, 0.18), transparent 42%),
+    linear-gradient(180deg, rgba(110, 164, 82, 0.22), rgba(59, 107, 55, 0.28)),
     #7cab58;
+}
+
+.viewport::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 248, 220, 0.26),
+    inset 0 0 70px rgba(58, 77, 34, 0.28);
+}
+
+.viewport::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 7;
+  background:
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06), transparent 18%, transparent 82%, rgba(58, 77, 34, 0.12)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 24%, transparent 76%, rgba(58, 77, 34, 0.16));
+  mix-blend-mode: soft-light;
 }
 
 .viewport > div {
