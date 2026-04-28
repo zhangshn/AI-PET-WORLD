@@ -16,8 +16,8 @@ import {
   drawHomeConstruction,
   drawTempShelter,
   resolveStageStructureLayout,
-} from "./stage-structure-renderer"
-import { drawWorldTiles } from "./stage-tile-renderer"
+} from "../stage-structure-renderer"
+import { drawWorldTiles } from "../stage-tile-renderer"
 
 export type StaticWorldLayerRefs = {
   backgroundLayer: Container | null

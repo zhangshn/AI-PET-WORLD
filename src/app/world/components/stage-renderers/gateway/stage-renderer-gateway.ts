@@ -65,7 +65,7 @@ export {
   getStaticWorldRenderKey,
   type DrawStaticWorldInput,
   type StaticWorldLayerRefs,
-} from "../graphics/stage-static-world-renderer"
+} from "../graphics/environment/stage-static-world-renderer"
 
 export {
   clearCoreActorVisuals,
