@@ -6,11 +6,11 @@ import { Container, Graphics } from "pixi.js"
 
 import type { WorldStimulus } from "@/ai/gateway"
 
-import { STAGE_VISUAL_CONFIG } from "./stage-visual-config"
+import { STAGE_VISUAL_CONFIG } from "./config/stage-visual-config"
 import {
   darkenColor,
   lightenColor,
-} from "./stage-renderer-utils"
+} from "./shared/stage-renderer-utils"
 
 export type StimulusVisualState = {
   container: Container

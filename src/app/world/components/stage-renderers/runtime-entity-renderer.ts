@@ -7,12 +7,12 @@ import { Container, Graphics } from "pixi.js"
 import type { WorldRuntimeEntity } from "@/world/runtime/entity-runtime"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
-import { STAGE_VISUAL_CONFIG } from "./stage-visual-config"
-import { createStringSeed, lightenColor } from "./stage-renderer-utils"
+import { STAGE_VISUAL_CONFIG } from "./config/stage-visual-config"
+import { createStringSeed, lightenColor } from "./shared/stage-renderer-utils"
 import type {
   RuntimeVisualState,
   StageVisualRegistry,
-} from "./stage-renderer-types"
+} from "./shared/stage-renderer-types"
 
 export type RuntimeEntityVisualState = RuntimeVisualState & {
   entityType: string

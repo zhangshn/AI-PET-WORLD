@@ -7,8 +7,8 @@ import { Container, Graphics } from "pixi.js"
 import type { WorldEcologyState } from "@/world/ecology/ecology-engine"
 import type { WorldZone } from "@/world/ecology/world-zone-types"
 
-import { STAGE_VISUAL_CONFIG } from "./stage-visual-config"
-import { lightenColor } from "./stage-renderer-utils"
+import { STAGE_VISUAL_CONFIG } from "./config/stage-visual-config"
+import { lightenColor } from "./shared/stage-renderer-utils"
 
 export type SyncWorldZonesInput = {
   layer: Container

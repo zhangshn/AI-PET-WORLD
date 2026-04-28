@@ -9,8 +9,8 @@ import type { WorldMapState, WorldMapTileType } from "@/world/map/world-map"
 import {
   getStageTileVisual,
   STAGE_VISUAL_CONFIG,
-} from "./stage-visual-config"
-import { clampNumber, createPointSeed } from "./stage-renderer-utils"
+} from "./config/stage-visual-config"
+import { clampNumber, createPointSeed } from "./shared/stage-renderer-utils"
 
 export type DrawWorldTilesInput = {
   terrainLayer: {

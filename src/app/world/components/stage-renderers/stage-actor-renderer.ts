@@ -10,7 +10,7 @@ import type { IncubatorState } from "@/types/incubator"
 import type { PetState } from "@/types/pet"
 import type { WorldEcologyState } from "@/world/ecology/ecology-engine"
 
-import { STAGE_VISUAL_CONFIG } from "./stage-visual-config"
+import { STAGE_VISUAL_CONFIG } from "./config/stage-visual-config"
 import { getActiveZonePosition } from "./stage-zone-renderer"
 import {
   INCUBATOR_STAGE_POSITION,
@@ -19,7 +19,7 @@ import {
 import {
   darkenColor,
   lightenColor,
-} from "./stage-renderer-utils"
+} from "./shared/stage-renderer-utils"
 
 export type ActorMotionState = {
   x: number
