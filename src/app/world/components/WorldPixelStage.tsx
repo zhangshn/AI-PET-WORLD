@@ -17,25 +17,10 @@ import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
 import { WORLD_STAGE_SIZE } from "./stage-renderers/config/stage-size-config"
 import {
-  clearCoreActorVisuals,
-  clearRuntimeEntityVisuals,
-  clearStimulusVisuals,
-  createCoreActorVisualRegistry,
-  createRuntimeEntityVisualRegistry,
-  createStimulusVisualRegistry,
-  type ActorMotionState,
-} from "./stage-renderers/gateway/stage-renderer-gateway"
-import {
   advanceGraphicsStagePhase,
-  createGraphicsStageRenderState,
-  resetGraphicsStageRenderState,
   syncGraphicsStage,
 } from "./stage-renderers/orchestrator/graphics-stage-orchestrator"
-import {
-  applyStageCamera,
-  createStageCameraState,
-  resetStageCamera,
-} from "./stage-renderers/orchestrator/stage-camera-controller"
+import { applyStageCamera } from "./stage-renderers/orchestrator/stage-camera-controller"
 import {
   attachWorldStageLayers,
   createEmptyWorldStageLayers,
@@ -47,6 +32,10 @@ import {
   destroyWorldPixiApplication,
 } from "./stage-renderers/orchestrator/stage-pixi-app"
 import { bindWorldStagePointerEvents } from "./stage-renderers/orchestrator/stage-pointer-events"
+import {
+  cleanupWorldStageRuntimeState,
+  createWorldStageRuntimeState,
+} from "./stage-renderers/orchestrator/stage-runtime-state"
 
 import styles from "@/styles/world-styles/world-pixel-stage.module.css"
 
@@ -69,36 +58,17 @@ export default function WorldPixelStage(props: Props) {
   const tickerRef = useRef<Ticker | null>(null)
 
   const layersRef = useRef(createEmptyWorldStageLayers())
-
-  const runtimeEntityVisualsRef = useRef(createRuntimeEntityVisualRegistry())
-  const stimulusVisualsRef = useRef(createStimulusVisualRegistry())
-  const actorVisualsRef = useRef(createCoreActorVisualRegistry())
-  const renderStateRef = useRef(createGraphicsStageRenderState())
-  const cameraRef = useRef(createStageCameraState())
-
-  const petMotionRef = useRef<ActorMotionState>({
-    x: 620,
-    y: 420,
-    targetX: 620,
-    targetY: 420,
-    speed: 1.1,
-  })
-
-  const butlerMotionRef = useRef<ActorMotionState>({
-    x: 340,
-    y: 340,
-    targetX: 340,
-    targetY: 340,
-    speed: 0.95,
-  })
+  const stageRuntimeRef = useRef(createWorldStageRuntimeState())
 
   useEffect(() => {
     latestRef.current = props
   }, [props])
 
   const applyCamera = useCallback(() => {
+    const stageRuntime = stageRuntimeRef.current
+
     applyStageCamera({
-      camera: cameraRef.current,
+      camera: stageRuntime.camera,
       worldLayer: layersRef.current.worldLayer,
       runtime: latestRef.current.worldRuntime,
       stageWidth: WORLD_STAGE_SIZE.width,
@@ -110,20 +80,21 @@ export default function WorldPixelStage(props: Props) {
     (ticker: Ticker) => {
       const deltaScale = ticker.deltaTime
       const latest = latestRef.current
+      const stageRuntime = stageRuntimeRef.current
 
       advanceGraphicsStagePhase({
-        renderState: renderStateRef.current,
+        renderState: stageRuntime.renderState,
         deltaScale,
       })
 
       syncGraphicsStage({
         layers: layersRef.current,
-        runtimeEntityVisuals: runtimeEntityVisualsRef.current,
-        stimulusVisuals: stimulusVisualsRef.current,
-        actorVisuals: actorVisualsRef.current,
-        petMotion: petMotionRef.current,
-        butlerMotion: butlerMotionRef.current,
-        renderState: renderStateRef.current,
+        runtimeEntityVisuals: stageRuntime.runtimeEntityVisuals,
+        stimulusVisuals: stageRuntime.stimulusVisuals,
+        actorVisuals: stageRuntime.actorVisuals,
+        petMotion: stageRuntime.petMotion,
+        butlerMotion: stageRuntime.butlerMotion,
+        renderState: stageRuntime.renderState,
         time: latest.time,
         pet: latest.pet,
         butler: latest.butler,
@@ -141,17 +112,13 @@ export default function WorldPixelStage(props: Props) {
     [applyCamera]
   )
 
-    useEffect(() => {
+  useEffect(() => {
     const currentMount = mountRef.current
 
     if (!currentMount || appRef.current) return
 
     const mountElement: HTMLDivElement = currentMount
-    const runtimeEntityVisuals = runtimeEntityVisualsRef.current
-    const stimulusVisuals = stimulusVisualsRef.current
-    const actorVisuals = actorVisualsRef.current
-    const renderState = renderStateRef.current
-    const camera = cameraRef.current
+    const stageRuntime = stageRuntimeRef.current
     let disposed = false
 
     async function setupPixiApp() {
@@ -163,6 +130,7 @@ export default function WorldPixelStage(props: Props) {
       }
 
       appRef.current = app
+
       attachWorldPixiCanvas({
         mount: mountElement,
         app,
@@ -179,7 +147,7 @@ export default function WorldPixelStage(props: Props) {
 
       bindWorldStagePointerEvents({
         app,
-        camera,
+        camera: stageRuntime.camera,
         layers,
         getRuntime: () => latestRef.current.worldRuntime,
       })
@@ -201,11 +169,7 @@ export default function WorldPixelStage(props: Props) {
       tickerRef.current?.destroy()
       tickerRef.current = null
 
-      clearRuntimeEntityVisuals(runtimeEntityVisuals)
-      clearStimulusVisuals(stimulusVisuals)
-      clearCoreActorVisuals(actorVisuals)
-      resetGraphicsStageRenderState(renderState)
-      resetStageCamera(camera)
+      cleanupWorldStageRuntimeState(stageRuntime)
 
       destroyWorldPixiApplication(appRef.current)
       appRef.current = null
