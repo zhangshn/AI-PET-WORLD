@@ -211,6 +211,18 @@ function drawRestCorner(graphic: Graphics, x: number, y: number) {
     alpha: 0.22,
   })
 
+  graphic.rect(x, y + 18, 128, 60).fill(0x6b4b36)
+  graphic.rect(x + 10, y + 8, 104, 34).fill(0x93c5fd)
+  graphic.rect(x + 16, y + 13, 38, 20).fill(0xdbeafe)
+  graphic.rect(x + 68, y + 20, 40, 14).fill({
+    color: 0x60a5fa,
+    alpha: 0.54,
+  })
+
+  graphic.rect(x, y + 70, 12, 24).fill(0x3b271c)
+  graphic.rect(x + 116, y + 70, 12, 24).fill(0x3b271c)
+}
+
 function drawNewbornNest(
   graphic: Graphics,
   x: number,
@@ -263,18 +275,6 @@ function drawNewbornNest(
     color: 0xfef3c7,
     alpha: 0.55,
   })
-}
-
-  graphic.rect(x, y + 18, 128, 60).fill(0x6b4b36)
-  graphic.rect(x + 10, y + 8, 104, 34).fill(0x93c5fd)
-  graphic.rect(x + 16, y + 13, 38, 20).fill(0xdbeafe)
-  graphic.rect(x + 68, y + 20, 40, 14).fill({
-    color: 0x60a5fa,
-    alpha: 0.54,
-  })
-
-  graphic.rect(x, y + 70, 12, 24).fill(0x3b271c)
-  graphic.rect(x + 116, y + 70, 12, 24).fill(0x3b271c)
 }
 
 function drawStorageShelf(graphic: Graphics, x: number, y: number) {
