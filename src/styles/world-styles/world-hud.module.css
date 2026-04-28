@@ -1,29 +1,31 @@
 .topHud {
   position: absolute;
-  top: 18px;
-  left: 18px;
-  right: 18px;
+  top: 14px;
+  left: 50%;
   z-index: 40;
   display: flex;
   justify-content: center;
+  width: auto;
+  max-width: calc(100% - 360px);
   pointer-events: none;
+  transform: translateX(-50%);
 }
 
 .rightHud {
   position: absolute;
-  top: 92px;
-  right: 18px;
+  top: 88px;
+  right: 16px;
   z-index: 40;
-  width: 320px;
-  max-height: 70vh;
+  width: 300px;
+  max-height: 570px;
   pointer-events: auto;
 }
 
 .bottomHud {
   position: absolute;
-  left: 18px;
-  bottom: 18px;
+  left: 16px;
+  bottom: 16px;
   z-index: 40;
-  width: 340px;
+  width: 320px;
   pointer-events: auto;
 }
