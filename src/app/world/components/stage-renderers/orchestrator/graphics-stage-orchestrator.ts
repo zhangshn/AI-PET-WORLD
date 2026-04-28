@@ -13,8 +13,6 @@ import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 import {
   animateStimulusVisuals,
   createCoreActorVisuals,
-  drawStaticWorld,
-  getStaticWorldRenderKey,
   syncCoreActorVisuals,
   syncRuntimeEntityVisuals,
   syncStimulusVisuals,
@@ -24,12 +22,10 @@ import {
   type RuntimeEntityVisualRegistry,
   type StimulusVisualRegistry,
 } from "../gateway/stage-renderer-gateway"
-import {
-  drawShelterInterior,
-  getShelterInteriorRenderKey,
-} from "../graphics/interior/stage-interior-renderer"
 import { logStageDebug } from "./stage-debug-logger"
+import { clearExteriorDynamicLayers } from "./stage-dynamic-layer-cleaner"
 import { syncStageOverlay } from "./stage-overlay-renderer"
+import { redrawStaticSceneIfNeeded } from "./stage-static-scene-sync"
 import type { WorldStageLayerRefs } from "./stage-layer-types"
 import type { WorldStageSceneMode } from "./stage-scene-mode"
 
@@ -107,79 +103,6 @@ export function resetGraphicsStageRenderState(
   renderState.debugMessage = "stage reset"
 }
 
-function redrawStaticSceneIfNeeded(input: SyncGraphicsStageInput) {
-  if (input.sceneMode === "shelterInterior") {
-    redrawShelterInteriorIfNeeded(input)
-    return
-  }
-
-  redrawExteriorWorldIfNeeded(input)
-}
-
-function redrawExteriorWorldIfNeeded(input: SyncGraphicsStageInput) {
-  const map = input.runtime?.map ?? null
-
-  if (!map) {
-    input.renderState.lastStaticWorldKey = null
-    input.renderState.debugMessage = "exterior waiting: runtime.map is null"
-    return
-  }
-
-  const renderKey = getStaticWorldRenderKey(input.runtime)
-
-  if (input.renderState.lastStaticWorldKey === renderKey) {
-    input.renderState.debugMessage = `exterior skipped: same renderKey ${renderKey}`
-    return
-  }
-
-  input.renderState.lastStaticWorldKey = renderKey
-  input.renderState.debugMessage = `exterior redraw: ${renderKey}`
-
-  drawStaticWorld({
-    layers: {
-      backgroundLayer: input.layers.backgroundLayer,
-      terrainLayer: input.layers.landLayer,
-      structureLayer: input.layers.structureLayer,
-      natureLayer: input.layers.natureLayer,
-      foregroundLayer: input.layers.foregroundLayer,
-    },
-    runtime: input.runtime,
-    fallbackWidth: input.width,
-    fallbackHeight: input.height,
-  })
-}
-
-function redrawShelterInteriorIfNeeded(input: SyncGraphicsStageInput) {
-  const renderKey = getShelterInteriorRenderKey({
-    incubator: input.incubator,
-    pet: input.pet,
-    width: input.width,
-    height: input.height,
-  })
-
-  if (input.renderState.lastStaticWorldKey === renderKey) {
-    input.renderState.debugMessage = `interior skipped: same renderKey ${renderKey}`
-    return
-  }
-
-  input.renderState.lastStaticWorldKey = renderKey
-  input.renderState.debugMessage = `interior redraw: ${renderKey}`
-
-  clearExteriorDynamicLayers(input.layers)
-
-  drawShelterInterior({
-    backgroundLayer: input.layers.backgroundLayer,
-    terrainLayer: input.layers.landLayer,
-    structureLayer: input.layers.structureLayer,
-    natureLayer: input.layers.natureLayer,
-    foregroundLayer: input.layers.foregroundLayer,
-    incubator: input.incubator,
-    pet: input.pet,
-    width: input.width,
-    height: input.height,
-  })
-}
-
 function syncDynamicWorld(input: SyncGraphicsStageInput) {
   if (input.layers.natureLayer) {
     syncRuntimeEntityVisuals({
@@ -223,10 +146,4 @@ function syncDynamicWorld(input: SyncGraphicsStageInput) {
       tick: input.tick,
     })
   }
-}
-
-function clearExteriorDynamicLayers(layers: WorldStageLayerRefs) {
-  layers.zoneLayer?.removeChildren()
-  layers.entityLayer?.removeChildren()
-  layers.stimulusLayer?.removeChildren()
 }
