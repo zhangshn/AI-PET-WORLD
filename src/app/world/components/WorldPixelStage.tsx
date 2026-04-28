@@ -36,7 +36,7 @@ import {
 import {
   drawStaticWorld,
   getStaticWorldRenderKey,
-} from "./stage-renderers/stage-static-world-renderer"
+} from "./stage-renderers/graphics/stage-static-world-renderer"
 import { syncWorldZoneVisuals } from "./stage-renderers/graphics/stage-zone-renderer"
 
 import styles from "@/styles/world-styles/world-pixel-stage.module.css"

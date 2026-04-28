@@ -10,13 +10,13 @@ import {
   drawAmbientNature,
   drawForegroundAtmosphere,
   drawStageBackground,
-} from "./stage-atmosphere-renderer"
+} from "../stage-atmosphere-renderer"
 import {
   drawGarden,
   drawHomeConstruction,
   drawTempShelter,
-} from "./graphics/stage-structure-renderer"
-import { drawWorldTiles } from "./graphics/stage-tile-renderer"
+} from "../graphics/stage-structure-renderer"
+import { drawWorldTiles } from "../graphics/stage-tile-renderer"
 
 export type StaticWorldLayerRefs = {
   backgroundLayer: Container | null
