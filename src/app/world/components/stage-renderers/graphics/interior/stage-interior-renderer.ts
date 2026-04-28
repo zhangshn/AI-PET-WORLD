@@ -2,7 +2,7 @@
  * 当前文件负责：组织住所室内场景渲染流程。
  */
 
-import { Container, Graphics, Text, TextStyle } from "pixi.js"
+import { Container, Graphics } from "pixi.js"
 
 import type { IncubatorState } from "@/types/incubator"
 import type { PetState } from "@/types/pet"
@@ -20,6 +20,7 @@ import {
 import { drawInteriorForeground } from "./interior-foreground-renderer"
 import { drawIncubatorStation } from "./interior-incubator-renderer"
 import { drawNewbornNest } from "./interior-newborn-nest-renderer"
+import { drawInteriorText } from "./interior-text-renderer"
 
 export type DrawShelterInteriorInput = {
   backgroundLayer: Container | null
@@ -85,33 +86,5 @@ function drawInteriorStructures(
   drawBirthRecordDesk(graphic, 720, 190, pet)
 
   layer.addChild(graphic)
-
   drawInteriorText(layer)
-}
-
-function drawInteriorText(layer: Container) {
-  const title = new Text({
-    text: "住所内部 · 初始生命舱",
-    style: new TextStyle({
-      fill: 0xf8fafc,
-      fontSize: 15,
-      fontWeight: "600",
-    }),
-  })
-
-  title.x = 92
-  title.y = 72
-  layer.addChild(title)
-
-  const hint = new Text({
-    text: "孵化器是第一个宠物的生命起点；未来繁殖将进入独立的新生照护系统。",
-    style: new TextStyle({
-      fill: 0xcbd5e1,
-      fontSize: 11,
-    }),
-  })
-
-  hint.x = 92
-  hint.y = 96
-  layer.addChild(hint)
 }
