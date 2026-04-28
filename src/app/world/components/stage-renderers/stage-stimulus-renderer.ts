@@ -6,6 +6,8 @@ import { Container, Graphics } from "pixi.js"
 
 import type { WorldStimulus } from "@/ai/gateway"
 
+import { STAGE_VISUAL_CONFIG } from "./stage-visual-config"
+
 export type StimulusVisualState = {
   container: Container
   graphic: Graphics
@@ -149,7 +151,9 @@ function redrawStimulusGraphic(
 }
 
 function drawButterflyTrace(graphic: Graphics, seed: number) {
-  const color = seed % 2 === 0 ? 0xfacc15 : 0xf472b6
+  const visual = STAGE_VISUAL_CONFIG.entity.butterfly
+  const color = visual.wings[seed % visual.wings.length]
+  const light = visual.wingLights[seed % visual.wingLights.length]
 
   graphic.rect(-6, -4, 5, 5).fill({
     color,
@@ -162,17 +166,17 @@ function drawButterflyTrace(graphic: Graphics, seed: number) {
   })
 
   graphic.rect(-1, -3, 2, 7).fill({
-    color: 0x1f2937,
+    color: visual.body,
     alpha: 0.65,
   })
 
   graphic.rect(-10, 5, 3, 2).fill({
-    color: 0xfff7ad,
+    color: light,
     alpha: 0.42,
   })
 
   graphic.rect(8, 4, 3, 2).fill({
-    color: 0xfff7ad,
+    color: light,
     alpha: 0.36,
   })
 }
@@ -180,44 +184,47 @@ function drawButterflyTrace(graphic: Graphics, seed: number) {
 function drawBreezeTrace(graphic: Graphics, seed: number) {
   const widthA = 16 + (seed % 8)
   const widthB = 10 + (seed % 6)
+  const color = STAGE_VISUAL_CONFIG.effect.breeze
 
   graphic.rect(-widthA / 2, -4, widthA, 2).fill({
-    color: 0xdbeafe,
+    color,
     alpha: 0.34,
   })
 
   graphic.rect(-widthB / 2 + 4, 3, widthB, 2).fill({
-    color: 0xbfdbfe,
+    color: darkenColor(color, 18),
     alpha: 0.26,
   })
 
   graphic.rect(-2, -1, 4, 1).fill({
-    color: 0xffffff,
+    color: STAGE_VISUAL_CONFIG.highlightColor,
     alpha: 0.28,
   })
 }
 
 function drawTemperatureTrace(graphic: Graphics, seed: number) {
   const height = 10 + (seed % 6)
+  const color = STAGE_VISUAL_CONFIG.effect.coldLight
 
   graphic.rect(-2, -height, 4, height).fill({
-    color: 0x7dd3fc,
+    color,
     alpha: 0.28,
   })
 
   graphic.rect(-5, -height + 2, 2, 4).fill({
-    color: 0xe0f2fe,
+    color: lightenColor(color, 35),
     alpha: 0.36,
   })
 
   graphic.rect(4, -height + 5, 2, 4).fill({
-    color: 0xbae6fd,
+    color: lightenColor(color, 18),
     alpha: 0.28,
   })
 }
 
 function drawFallingLeafTrace(graphic: Graphics, seed: number) {
-  const color = seed % 2 === 0 ? 0x84cc16 : 0xa3e635
+  const base = STAGE_VISUAL_CONFIG.effect.leaf
+  const color = seed % 2 === 0 ? base : lightenColor(base, 18)
 
   graphic.rect(-3, -5, 7, 4).fill({
     color,
@@ -225,37 +232,41 @@ function drawFallingLeafTrace(graphic: Graphics, seed: number) {
   })
 
   graphic.rect(-1, -1, 3, 6).fill({
-    color: 0x4d7c0f,
+    color: darkenColor(base, 28),
     alpha: 0.44,
   })
 
   graphic.rect(5, 4, 5, 2).fill({
-    color: 0xd9f99d,
+    color: lightenColor(base, 36),
     alpha: 0.22,
   })
 }
 
 function drawLightShiftTrace(graphic: Graphics, seed: number) {
   const size = 3 + (seed % 3)
+  const color = STAGE_VISUAL_CONFIG.effect.sparkle
 
   graphic.rect(-size, -size, size * 2, size * 2).fill({
-    color: 0xfffbeb,
+    color,
     alpha: 0.34,
   })
 
   graphic.rect(-1, -9, 2, 18).fill({
-    color: 0xffffff,
+    color: STAGE_VISUAL_CONFIG.highlightColor,
     alpha: 0.16,
   })
 
   graphic.rect(-9, -1, 18, 2).fill({
-    color: 0xffffff,
+    color: STAGE_VISUAL_CONFIG.highlightColor,
     alpha: 0.16,
   })
 }
 
 function drawGenericWorldTrace(graphic: Graphics, seed: number) {
-  const color = seed % 2 === 0 ? 0xfef3c7 : 0xd9f99d
+  const color =
+    seed % 2 === 0
+      ? STAGE_VISUAL_CONFIG.effect.warmLight
+      : lightenColor(STAGE_VISUAL_CONFIG.effect.leaf, 30)
 
   graphic.rect(-3, -3, 6, 6).fill({
     color,
@@ -307,6 +318,18 @@ function lightenColor(color: number, amount: number): number {
   const nextR = clampNumber(r + amount, 0, 255)
   const nextG = clampNumber(g + amount, 0, 255)
   const nextB = clampNumber(b + amount, 0, 255)
+
+  return (nextR << 16) + (nextG << 8) + nextB
+}
+
+function darkenColor(color: number, amount: number): number {
+  const r = (color >> 16) & 255
+  const g = (color >> 8) & 255
+  const b = color & 255
+
+  const nextR = clampNumber(r - amount, 0, 255)
+  const nextG = clampNumber(g - amount, 0, 255)
+  const nextB = clampNumber(b - amount, 0, 255)
 
   return (nextR << 16) + (nextG << 8) + nextB
 }

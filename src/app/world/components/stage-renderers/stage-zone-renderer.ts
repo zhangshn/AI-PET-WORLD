@@ -7,6 +7,8 @@ import { Container, Graphics } from "pixi.js"
 import type { WorldEcologyState } from "@/world/ecology/ecology-engine"
 import type { WorldZone } from "@/world/ecology/world-zone-types"
 
+import { STAGE_VISUAL_CONFIG } from "./stage-visual-config"
+
 export type SyncWorldZonesInput = {
   layer: Container
   ecology: WorldEcologyState | null
@@ -49,7 +51,7 @@ export function getActiveZonePosition(
 
 function drawNaturalZoneCue(graphic: Graphics, zone: WorldZone) {
   if (zone.type === "sleep_zone") {
-    drawSoftPixelMist(graphic, zone, 0x818cf8)
+    drawSoftPixelMist(graphic, zone, STAGE_VISUAL_CONFIG.actor.butler.clothLight)
     return
   }
 
@@ -110,17 +112,19 @@ function drawSoftPixelMist(
 
 function drawFoodCue(graphic: Graphics, zone: WorldZone) {
   const seed = getZoneSeed(zone)
+  const foodColor = STAGE_VISUAL_CONFIG.actor.petDefault.cloth
+  const leafColor = STAGE_VISUAL_CONFIG.effect.leaf
 
   for (let index = 0; index < 4; index += 1) {
     const offset = getRadialOffset(seed + index * 19, zone.radius * 0.32)
 
     graphic.rect(offset.x, offset.y, 5, 4).fill({
-      color: 0xfacc15,
+      color: foodColor,
       alpha: 0.18,
     })
 
     graphic.rect(offset.x + 2, offset.y - 3, 2, 3).fill({
-      color: 0x22c55e,
+      color: leafColor,
       alpha: 0.16,
     })
   }
@@ -128,7 +132,7 @@ function drawFoodCue(graphic: Graphics, zone: WorldZone) {
 
 function drawWarmLightCue(graphic: Graphics, zone: WorldZone) {
   graphic.circle(0, 0, Math.max(12, zone.radius * 0.38)).fill({
-    color: 0xf59e0b,
+    color: STAGE_VISUAL_CONFIG.effect.warmLight,
     alpha: 0.018,
   })
 
@@ -138,7 +142,7 @@ function drawWarmLightCue(graphic: Graphics, zone: WorldZone) {
     const offset = getRadialOffset(seed + index * 23, zone.radius * 0.35)
 
     graphic.rect(offset.x, offset.y, 10, 2).fill({
-      color: 0xfff7ad,
+      color: STAGE_VISUAL_CONFIG.effect.warmLight,
       alpha: 0.1,
     })
   }
@@ -146,12 +150,13 @@ function drawWarmLightCue(graphic: Graphics, zone: WorldZone) {
 
 function drawQuietCue(graphic: Graphics, zone: WorldZone) {
   const seed = getZoneSeed(zone)
+  const color = STAGE_VISUAL_CONFIG.effect.breeze
 
   for (let index = 0; index < 4; index += 1) {
     const offset = getRadialOffset(seed + index * 29, zone.radius * 0.35)
 
     graphic.rect(offset.x, offset.y, 14, 2).fill({
-      color: 0x93c5fd,
+      color,
       alpha: 0.055,
     })
   }
@@ -159,18 +164,19 @@ function drawQuietCue(graphic: Graphics, zone: WorldZone) {
 
 function drawObservationCue(graphic: Graphics, zone: WorldZone) {
   const seed = getZoneSeed(zone)
+  const leafColor = STAGE_VISUAL_CONFIG.effect.leaf
 
   for (let index = 0; index < 5; index += 1) {
     const offset = getRadialOffset(seed + index * 31, zone.radius * 0.42)
 
     graphic.rect(offset.x, offset.y, 4, 4).fill({
-      color: 0xbbf7d0,
+      color: lightenColor(leafColor, 36),
       alpha: 0.13,
     })
 
     if (index % 2 === 0) {
       graphic.rect(offset.x + 6, offset.y + 3, 5, 2).fill({
-        color: 0x22c55e,
+        color: leafColor,
         alpha: 0.08,
       })
     }
@@ -178,26 +184,29 @@ function drawObservationCue(graphic: Graphics, zone: WorldZone) {
 }
 
 function drawIncubatorCue(graphic: Graphics, zone: WorldZone) {
+  const glass = STAGE_VISUAL_CONFIG.actor.incubator.glass
+
   graphic.circle(0, 0, Math.max(10, zone.radius * 0.28)).stroke({
-    color: 0x38bdf8,
+    color: glass,
     alpha: 0.08,
     width: 2,
   })
 
   graphic.rect(-8, -1, 16, 2).fill({
-    color: 0xbae6fd,
+    color: lightenColor(glass, 40),
     alpha: 0.12,
   })
 }
 
 function drawBuildCue(graphic: Graphics, zone: WorldZone) {
   const seed = getZoneSeed(zone)
+  const woodColor = STAGE_VISUAL_CONFIG.tiles.shelter_foundation.edge
 
   for (let index = 0; index < 4; index += 1) {
     const offset = getRadialOffset(seed + index * 13, zone.radius * 0.3)
 
     graphic.rect(offset.x, offset.y, 10, 3).fill({
-      color: 0x8b5a2b,
+      color: woodColor,
       alpha: 0.12,
     })
   }
@@ -205,12 +214,13 @@ function drawBuildCue(graphic: Graphics, zone: WorldZone) {
 
 function drawExplorationCue(graphic: Graphics, zone: WorldZone) {
   const seed = getZoneSeed(zone)
+  const color = STAGE_VISUAL_CONFIG.actor.petDefault.cloth
 
   for (let index = 0; index < 6; index += 1) {
     const offset = getRadialOffset(seed + index * 37, zone.radius * 0.45)
 
     graphic.rect(offset.x, offset.y, 3, 3).fill({
-      color: 0xfacc15,
+      color,
       alpha: 0.12,
     })
   }
@@ -223,7 +233,7 @@ function drawGenericZoneCue(graphic: Graphics, zone: WorldZone) {
     const offset = getRadialOffset(seed + index * 11, zone.radius * 0.3)
 
     graphic.rect(offset.x, offset.y, 5, 3).fill({
-      color: 0xe2e8f0,
+      color: STAGE_VISUAL_CONFIG.highlightColor,
       alpha: 0.06,
     })
   }
@@ -250,4 +260,20 @@ function getZoneSeed(zone: WorldZone): number {
   }
 
   return Math.abs(seed)
+}
+
+function lightenColor(color: number, amount: number): number {
+  const r = (color >> 16) & 255
+  const g = (color >> 8) & 255
+  const b = color & 255
+
+  const nextR = clampNumber(r + amount, 0, 255)
+  const nextG = clampNumber(g + amount, 0, 255)
+  const nextB = clampNumber(b + amount, 0, 255)
+
+  return (nextR << 16) + (nextG << 8) + nextB
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value))
 }

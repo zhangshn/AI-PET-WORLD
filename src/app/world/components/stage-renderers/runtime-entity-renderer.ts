@@ -7,6 +7,9 @@ import { Container, Graphics } from "pixi.js"
 import type { WorldRuntimeEntity } from "@/world/runtime/entity-runtime"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
+import {
+  STAGE_VISUAL_CONFIG,
+} from "./stage-visual-config"
 import type {
   RuntimeVisualState,
   StageVisualRegistry,
@@ -150,36 +153,45 @@ function drawTreeEntity(
   const seed = getEntitySeed(entity.id)
   const heightOffset = seed % 3
   const crownShift = (seed % 5) - 2
+  const visual = STAGE_VISUAL_CONFIG.entity.tree
 
   drawEntityShadow(graphic, 0, 18, 30, 10, 0.22)
 
-  graphic.rect(-5, 4, 10, 20).fill(0x6b3f24)
+  graphic.rect(-5, 4, 10, 20).fill(visual.trunk)
   graphic.rect(-3, 4, 4, 20).fill({
-    color: 0x9a6336,
+    color: visual.trunkLight,
     alpha: 0.38,
   })
   graphic.rect(2, 8, 3, 14).fill({
-    color: 0x3f2416,
+    color: visual.trunkDark,
     alpha: 0.28,
   })
 
-  graphic.rect(-14 + crownShift, -13 - heightOffset, 28, 20).fill(0x245f2e)
-  graphic.rect(-18 + crownShift, -5 - heightOffset, 34, 18).fill(0x2f7d32)
-  graphic.rect(-12 + crownShift, -20 - heightOffset, 24, 16).fill(0x3f9f46)
-  graphic.rect(-4 + crownShift, -9 - heightOffset, 22, 18).fill(0x4fa84a)
+  graphic.rect(-14 + crownShift, -13 - heightOffset, 28, 20).fill(
+    visual.crownDark
+  )
+  graphic.rect(-18 + crownShift, -5 - heightOffset, 34, 18).fill(
+    visual.crown
+  )
+  graphic.rect(-12 + crownShift, -20 - heightOffset, 24, 16).fill(
+    lightenColor(visual.crown, 10)
+  )
+  graphic.rect(-4 + crownShift, -9 - heightOffset, 22, 18).fill(
+    visual.crownLight
+  )
 
   graphic.rect(-10 + crownShift, -18 - heightOffset, 9, 4).fill({
-    color: 0x7ccf63,
+    color: lightenColor(visual.highlight, 4),
     alpha: 0.45,
   })
   graphic.rect(4 + crownShift, -6 - heightOffset, 9, 4).fill({
-    color: 0x86d76a,
+    color: visual.highlight,
     alpha: 0.36,
   })
 
-  if (tileSize >= 24) {
+  if (tileSize >= STAGE_VISUAL_CONFIG.tileSizeFallback) {
     graphic.rect(-17 + crownShift, 8 - heightOffset, 34, 4).fill({
-      color: 0x1f4f25,
+      color: visual.crownDark,
       alpha: 0.18,
     })
   }
@@ -187,19 +199,20 @@ function drawTreeEntity(
 
 function drawFlowerEntity(graphic: Graphics, entity: WorldRuntimeEntity) {
   const seed = getEntitySeed(entity.id)
+  const visual = STAGE_VISUAL_CONFIG.entity.flower
   const blossomColor = getFlowerColor(seed)
 
   drawEntityShadow(graphic, 0, 10, 12, 4, 0.12)
 
-  graphic.rect(-1, 0, 2, 13).fill(0x25743a)
-  graphic.rect(-5, 5, 5, 3).fill(0x3f9f4a)
-  graphic.rect(1, 3, 5, 3).fill(0x4fbf5a)
+  graphic.rect(-1, 0, 2, 13).fill(visual.stem)
+  graphic.rect(-5, 5, 5, 3).fill(visual.leaf)
+  graphic.rect(1, 3, 5, 3).fill(lightenColor(visual.leaf, 8))
 
   graphic.rect(-3, -4, 6, 6).fill(blossomColor)
   graphic.rect(-6, -1, 4, 4).fill(lightenColor(blossomColor, 18))
   graphic.rect(2, -1, 4, 4).fill(lightenColor(blossomColor, 12))
   graphic.rect(-1, -7, 3, 4).fill(lightenColor(blossomColor, 25))
-  graphic.rect(-1, -1, 3, 3).fill(0xfff3a3)
+  graphic.rect(-1, -1, 3, 3).fill(visual.center)
 }
 
 function drawWaterEntity(
@@ -209,34 +222,35 @@ function drawWaterEntity(
 ) {
   const seed = getEntitySeed(entity.id)
   const radius = tileSize * 0.34
+  const visual = STAGE_VISUAL_CONFIG.entity.water
 
   drawEntityShadow(graphic, 0, 8, 24, 7, 0.1)
 
   graphic.circle(0, 0, radius).fill({
-    color: 0x38bdf8,
+    color: visual.base,
     alpha: 0.38,
   })
 
   graphic.circle(0, 0, radius * 0.75).fill({
-    color: 0x7dd3fc,
+    color: visual.light,
     alpha: 0.28,
   })
 
   graphic.rect(-10, -3, 20, 2).fill({
-    color: 0xe0f2fe,
+    color: visual.highlight,
     alpha: 0.62,
   })
 
   if (seed % 2 === 0) {
     graphic.rect(-7, 5, 14, 2).fill({
-      color: 0xbae6fd,
+      color: visual.light,
       alpha: 0.5,
     })
   }
 
   if (seed % 3 === 0) {
     graphic.rect(-3, -10, 9, 2).fill({
-      color: 0xffffff,
+      color: STAGE_VISUAL_CONFIG.highlightColor,
       alpha: 0.32,
     })
   }
@@ -244,13 +258,14 @@ function drawWaterEntity(
 
 function drawButterflyEntity(graphic: Graphics, entity: WorldRuntimeEntity) {
   const seed = getEntitySeed(entity.id)
-  const wingColor = seed % 2 === 0 ? 0xfacc15 : 0xf472b6
-  const wingLight = seed % 2 === 0 ? 0xfef08a : 0xfbcfe8
+  const visual = STAGE_VISUAL_CONFIG.entity.butterfly
+  const wingColor = visual.wings[seed % visual.wings.length]
+  const wingLight = visual.wingLights[seed % visual.wingLights.length]
 
   drawEntityShadow(graphic, 0, 8, 12, 4, 0.08)
 
-  graphic.rect(-1, -5, 2, 12).fill(0x1f2937)
-  graphic.rect(-2, 6, 4, 2).fill(0x1f2937)
+  graphic.rect(-1, -5, 2, 12).fill(visual.body)
+  graphic.rect(-2, 6, 4, 2).fill(visual.body)
 
   graphic.rect(-9, -5, 8, 8).fill(wingColor)
   graphic.rect(1, -5, 8, 8).fill(lightenColor(wingColor, 8))
@@ -258,12 +273,12 @@ function drawButterflyEntity(graphic: Graphics, entity: WorldRuntimeEntity) {
   graphic.rect(2, 3, 6, 6).fill(wingLight)
 
   graphic.rect(-7, -3, 3, 2).fill({
-    color: 0xffffff,
+    color: STAGE_VISUAL_CONFIG.highlightColor,
     alpha: 0.42,
   })
 
   graphic.rect(4, -3, 3, 2).fill({
-    color: 0xffffff,
+    color: STAGE_VISUAL_CONFIG.highlightColor,
     alpha: 0.38,
   })
 }
@@ -277,19 +292,13 @@ function drawEntityShadow(
   alpha: number
 ) {
   graphic.ellipse(x, y, width, height).fill({
-    color: 0x000000,
+    color: STAGE_VISUAL_CONFIG.shadowColor,
     alpha,
   })
 }
 
 function getFlowerColor(seed: number): number {
-  const options = [
-    0xf472b6,
-    0xfb7185,
-    0xfacc15,
-    0xa78bfa,
-    0x86efac,
-  ]
+  const options = STAGE_VISUAL_CONFIG.entity.flower.blossoms
 
   return options[seed % options.length]
 }
