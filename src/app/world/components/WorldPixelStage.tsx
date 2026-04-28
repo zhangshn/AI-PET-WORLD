@@ -16,28 +16,22 @@ import type { WorldEcologyState } from "@/world/ecology/ecology-engine"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
 import {
+  animateStimulusVisuals,
   clearCoreActorVisuals,
+  clearRuntimeEntityVisuals,
+  clearStimulusVisuals,
   createCoreActorVisualRegistry,
   createCoreActorVisuals,
-  syncCoreActorVisuals,
-  type ActorMotionState,
-} from "./stage-renderers/graphics/stage-actor-renderer"
-import {
-  clearRuntimeEntityVisuals,
   createRuntimeEntityVisualRegistry,
-  syncRuntimeEntityVisuals,
-} from "./stage-renderers/graphics/runtime-entity-renderer"
-import {
-  clearStimulusVisuals,
   createStimulusVisualRegistry,
-  animateStimulusVisuals,
-  syncStimulusVisuals,
-} from "./stage-renderers/graphics/stage-stimulus-renderer"
-import {
   drawStaticWorld,
   getStaticWorldRenderKey,
-} from "./stage-renderers/graphics/stage-static-world-renderer"
-import { syncWorldZoneVisuals } from "./stage-renderers/graphics/stage-zone-renderer"
+  syncCoreActorVisuals,
+  syncRuntimeEntityVisuals,
+  syncStimulusVisuals,
+  syncWorldZoneVisuals,
+  type ActorMotionState,
+} from "./stage-renderers/gateway/stage-renderer-gateway"
 
 import styles from "@/styles/world-styles/world-pixel-stage.module.css"
 
