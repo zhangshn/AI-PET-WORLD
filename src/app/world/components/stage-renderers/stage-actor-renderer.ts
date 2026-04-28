@@ -534,6 +534,8 @@ function drawPetGraphic(graphic: Graphics, pet: PetState | null, phase: number) 
   }
 }
 
+
+
 function getPetBob(action?: string, phase = 0): number {
   if (action === "sleeping") return Math.sin(phase * 1.6) * 0.45
   if (action === "exploring") return Math.sin(phase * 6.5) * 2.2
@@ -556,16 +558,4 @@ function drawActorShadow(
   })
 }
 
-function drawActorShadow(
-  graphic: Graphics,
-  x: number,
-  y: number,
-  width: number,
-  height: number,
-  alpha: number
-) {
-  graphic.ellipse(x, y, width, height).fill({
-    color: STAGE_VISUAL_CONFIG.shadowColor,
-    alpha,
-  })
-}
+
