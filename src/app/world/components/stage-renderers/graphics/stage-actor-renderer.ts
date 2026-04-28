@@ -134,43 +134,8 @@ export function createCoreActorVisuals(input: CreateCoreActorsInput) {
 }
 
 export function syncCoreActorVisuals(input: SyncCoreActorsInput) {
-  if (input.registry.pet) {
-    const target = getPetTargetPosition(input.pet, input.ecology, input.tick)
-    const speed = getPetBaseSpeed(
-      input.pet?.action,
-      input.pet?.activeBehaviorProcess,
-      input.pet?.lifeState?.phase
-    )
-
-    input.petMotion.targetX = target.x
-    input.petMotion.targetY = target.y
-    input.petMotion.speed = speed
-
-    moveToward(input.petMotion)
-
-    input.registry.pet.container.x = input.petMotion.x
-    input.registry.pet.container.y =
-      input.petMotion.y + getPetBob(input.pet?.action, input.phase)
-
-    drawPetGraphic(input.registry.pet.graphic, input.pet, input.phase)
-    input.registry.pet.label.text = input.pet?.name ?? "AI Pet"
-  }
-
-  if (input.registry.butler) {
-    const target = getButlerTargetPosition(input.butler, input.ecology)
-
-    input.butlerMotion.targetX = target.x
-    input.butlerMotion.targetY = target.y
-    input.butlerMotion.speed = getButlerBaseSpeed(input.butler?.task)
-
-    moveToward(input.butlerMotion)
-
-    input.registry.butler.container.x = input.butlerMotion.x
-    input.registry.butler.container.y = input.butlerMotion.y
-
-    drawButlerGraphic(input.registry.butler.graphic, input.butler, input.phase)
-    input.registry.butler.label.text = input.butler?.task ?? "管家"
-  }
+  syncPetVisual(input)
+  syncButlerVisual(input)
 }
 
 export function clearCoreActorVisuals(registry: CoreActorVisualRegistry) {
@@ -180,6 +145,72 @@ export function clearCoreActorVisuals(registry: CoreActorVisualRegistry) {
   registry.pet = null
   registry.butler = null
   registry.incubator = null
+}
+
+function syncPetVisual(input: SyncCoreActorsInput) {
+  if (!input.registry.pet) return
+
+  if (!shouldRenderExternalPet(input.pet, input.incubator)) {
+    input.registry.pet.container.visible = false
+    input.registry.pet.graphic.clear()
+    return
+  }
+
+  input.registry.pet.container.visible = true
+
+  const target = getPetTargetPosition(input.pet, input.ecology, input.tick)
+  const speed = getPetBaseSpeed(
+    input.pet?.action,
+    input.pet?.activeBehaviorProcess,
+    input.pet?.lifeState?.phase
+  )
+
+  input.petMotion.targetX = target.x
+  input.petMotion.targetY = target.y
+  input.petMotion.speed = speed
+
+  moveToward(input.petMotion)
+
+  input.registry.pet.container.x = input.petMotion.x
+  input.registry.pet.container.y =
+    input.petMotion.y + getPetBob(input.pet?.action, input.phase)
+
+  drawPetGraphic(input.registry.pet.graphic, input.pet, input.phase)
+  input.registry.pet.label.text = input.pet?.name ?? "AI Pet"
+}
+
+function syncButlerVisual(input: SyncCoreActorsInput) {
+  if (!input.registry.butler) return
+
+  const target = getButlerTargetPosition(input.butler, input.ecology)
+
+  input.butlerMotion.targetX = target.x
+  input.butlerMotion.targetY = target.y
+  input.butlerMotion.speed = getButlerBaseSpeed(input.butler?.task)
+
+  moveToward(input.butlerMotion)
+
+  input.registry.butler.container.x = input.butlerMotion.x
+  input.registry.butler.container.y = input.butlerMotion.y
+  input.registry.butler.container.visible = true
+
+  drawButlerGraphic(input.registry.butler.graphic, input.butler, input.phase)
+  input.registry.butler.label.text = input.butler?.task ?? "管家"
+}
+
+function shouldRenderExternalPet(
+  pet: PetState | null,
+  incubator: IncubatorState | null
+): boolean {
+  if (!pet) return false
+
+  /**
+   * 孵化器仍在孵化时，宠物不应该出现在外部地图。
+   * 此时宠物只应该通过室内孵化舱的生命反应表现。
+   */
+  if (incubator?.status !== "hatched") return false
+
+  return true
 }
 
 function drawButlerGraphic(
@@ -241,13 +272,13 @@ function getPetTargetPosition(
   const lifePhase = pet.lifeState?.phase
 
   if (lifePhase === "newborn") {
-    return getActiveZonePosition(ecology, "incubator_zone") ?? PET_IDLE_ZONE
+    return getActiveZonePosition(ecology, "quiet_zone") ?? PET_IDLE_ZONE
   }
 
   if (lifePhase === "adaptation") {
     return tick % 2 === 0
-      ? getActiveZonePosition(ecology, "incubator_zone") ?? PET_IDLE_ZONE
-      : getActiveZonePosition(ecology, "quiet_zone") ?? PET_OBSERVE_ZONE
+      ? getActiveZonePosition(ecology, "quiet_zone") ?? PET_IDLE_ZONE
+      : getActiveZonePosition(ecology, "observation_zone") ?? PET_OBSERVE_ZONE
   }
 
   if (lifePhase === "dependent" && pet.action === "exploring") {
