@@ -2,8 +2,6 @@
  * 当前文件负责：组织宠物与管家等核心角色的舞台渲染流程。
  */
 
-import { Container, Graphics, Text, TextStyle } from "pixi.js"
-
 import { moveToward } from "./actor-motion"
 import {
   getButlerBaseSpeed,
@@ -18,75 +16,18 @@ import type {
   CreateCoreActorsInput,
   SyncCoreActorsInput,
 } from "./actor-types"
+import { createCoreActorVisuals } from "./actor-visual-factory"
 import { drawButlerGraphic } from "./butler-renderer"
 import { drawPetGraphic, getPetBob } from "./pet-renderer"
 import { shouldRenderExternalPet } from "./stage-pet-visibility"
+
+export { createCoreActorVisuals }
 
 export function createCoreActorVisualRegistry(): CoreActorVisualRegistry {
   return {
     incubator: null,
     pet: null,
     butler: null,
-  }
-}
-
-export function createCoreActorVisuals(input: CreateCoreActorsInput) {
-  if (!input.registry.butler) {
-    const container = new Container()
-    const graphic = new Graphics()
-    const label = new Text({
-      text: "管家",
-      style: new TextStyle({
-        fill: 0xe2e8f0,
-        fontSize: 11,
-      }),
-    })
-
-    label.x = -36
-    label.y = -22
-    label.visible = false
-
-    container.addChild(graphic)
-    container.addChild(label)
-
-    input.registry.butler = {
-      container,
-      graphic,
-      label,
-    }
-
-    input.layer.addChild(container)
-  } else if (input.registry.butler.container.parent !== input.layer) {
-    input.layer.addChild(input.registry.butler.container)
-  }
-
-  if (!input.registry.pet) {
-    const container = new Container()
-    const graphic = new Graphics()
-    const label = new Text({
-      text: "AI Pet",
-      style: new TextStyle({
-        fill: 0xf8fafc,
-        fontSize: 11,
-      }),
-    })
-
-    label.x = -12
-    label.y = -24
-    label.visible = false
-
-    container.addChild(graphic)
-    container.addChild(label)
-
-    input.registry.pet = {
-      container,
-      graphic,
-      label,
-    }
-
-    input.layer.addChild(container)
-  } else if (input.registry.pet.container.parent !== input.layer) {
-    input.layer.addChild(input.registry.pet.container)
   }
 }
 
