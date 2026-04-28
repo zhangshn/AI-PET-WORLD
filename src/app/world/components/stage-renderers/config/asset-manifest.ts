@@ -85,6 +85,13 @@ export const STAGE_ASSET_MANIFEST: StageAssetManifest = {
       notes: "未来水面中心瓦片。",
     },
     {
+      id: "tile.path.town.01",
+      category: "tile",
+      src: "/assets/world/tiles/path_town_01.png",
+      pixelScale: 1,
+      notes: "未来通往小镇的道路瓦片。",
+    },
+    {
       id: "actor.pet.idle.01",
       category: "actor",
       src: "/assets/world/actors/pet_idle_01.png",
@@ -99,6 +106,7 @@ export const STAGE_ASSET_MANIFEST: StageAssetManifest = {
     flower_patch: ["tile.flower.patch.01"],
     forest_edge: ["tile.forest.edge.01"],
     path: ["tile.path.center.01"],
+    town_path: ["tile.path.town.01"],
     soil: ["tile.soil.center.01"],
     garden_soil: ["tile.garden.soil.01"],
     shelter_foundation: ["tile.foundation.shelter.01"],

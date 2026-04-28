@@ -17,6 +17,7 @@ export type WorldMapTileType =
   | "forest_edge"
   | "mud"
   | "path"
+  | "town_path"
   | "shelter_foundation"
   | "garden_soil"
 
@@ -86,8 +87,8 @@ export function createEmptyWorldMap(input?: {
     id: input?.id ?? "starter-land",
     name: input?.name ?? "Starter Land",
     size: {
-      width: input?.width ?? 48,
-      height: input?.height ?? 32,
+      width: input?.width ?? 80,
+      height: input?.height ?? 48,
     },
     tileSize: input?.tileSize ?? 24,
     tiles: [],

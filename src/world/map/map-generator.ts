@@ -37,6 +37,7 @@ type HomeMapGenerationContext = {
   waterTiles: Set<string>
   wetlandTiles: Set<string>
   pathTiles: Set<string>
+  townPathTiles: Set<string>
   shelterTiles: Set<string>
   gardenTiles: Set<string>
   forestTiles: Set<string>
@@ -102,6 +103,7 @@ function buildHomeMapGenerationContext(
   const waterTiles = createWaterTiles(config)
   const wetlandTiles = createWetlandTiles(config, waterTiles)
   const pathTiles = createPathTiles(config, waterTiles)
+  const townPathTiles = createTownPathTiles(config, waterTiles)
   const shelterTiles = createAreaTiles(
     createRectAroundPoint(config.shelterCenter, 10, 6),
     config
@@ -118,6 +120,7 @@ function buildHomeMapGenerationContext(
     waterTiles,
     wetlandTiles,
     pathTiles,
+    townPathTiles,
     shelterTiles,
     gardenTiles,
     forestTiles,
@@ -221,6 +224,27 @@ function createPathTiles(
   return tiles
 }
 
+function createTownPathTiles(
+  config: HomeMapGenerationConfig,
+  waterTiles: Set<string>
+  ): Set<string> {
+  const tiles = new Set<string>()
+
+  for (let y = config.townGateCenter.y - 2; y <= config.townGateCenter.y + 2; y += 1) {
+    for (let x = config.width - 6; x < config.width; x += 1) {
+      if (!isInsideMap(config, x, y)) continue
+
+      const key = getTileKey(x, y)
+
+      if (waterTiles.has(key)) continue
+
+      tiles.add(key)
+    }
+  }
+
+  return tiles
+}
+
 function createForestTiles(
   config: HomeMapGenerationConfig,
   waterTiles: Set<string>,
@@ -305,6 +329,7 @@ function resolveHomeMapTileType(
   const key = getTileKey(x, y)
 
   if (context.waterTiles.has(key)) return "water"
+  if (context.townPathTiles.has(key)) return "town_path"
   if (context.pathTiles.has(key)) return "path"
   if (context.shelterTiles.has(key)) return "shelter_foundation"
   if (context.gardenTiles.has(key)) return "garden_soil"
@@ -344,7 +369,14 @@ function resolveTileFertility(
   if (type === "wild_grass") return 68
   if (type === "forest_edge") return 58
   if (type === "mud") return 54
-  if (type === "water" || type === "stone" || type === "path") return 10
+  if (
+    type === "water" ||
+    type === "stone" ||
+    type === "path" ||
+    type === "town_path"
+  ) {
+    return 10
+  }
 
   return 48 + randomInt(context.config.seed, `fertility-${x}-${y}`, -8, 12)
 }
@@ -360,7 +392,7 @@ function resolveTileMoisture(
   if (type === "garden_soil") return 62
   if (type === "flower_patch") return 56
   if (type === "forest_edge") return 50
-  if (type === "stone" || type === "path") return 20
+  if (type === "stone" || type === "path" || type === "town_path") return 20
 
   const distanceToWater = getDistanceToNearestTile({ x, y }, context.waterTiles)
 
@@ -490,7 +522,7 @@ function shouldPlaceStone(
   const key = getTileKey(x, y)
 
   if (context.waterTiles.has(key)) return false
-  if (context.pathTiles.has(key)) return false
+  if (context.townPathTiles.has(key)) return false
   if (context.shelterTiles.has(key)) return false
   if (context.gardenTiles.has(key)) return false
   if (context.wetlandTiles.has(key)) return false
