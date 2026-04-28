@@ -54,6 +54,10 @@ export function syncRuntimeEntityVisuals(input: SyncRuntimeEntitiesInput) {
     const existing = input.visuals.get(entity.id)
 
     if (existing) {
+      if (existing.container.parent !== input.layer) {
+        input.layer.addChild(existing.container)
+      }
+
       existing.container.x = x
       existing.container.y = y
       drawRuntimeEntityGraphic(existing.graphic, entity, tileSize)

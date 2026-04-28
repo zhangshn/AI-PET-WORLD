@@ -111,6 +111,9 @@ export function createCoreActorVisuals(input: CreateCoreActorsInput) {
 
     input.layer.addChild(container)
   }
+  else if (input.registry.butler.container.parent !== input.layer) {
+    input.layer.addChild(input.registry.butler.container)
+  }
 
   if (!input.registry.pet) {
     const container = new Container()
@@ -137,6 +140,9 @@ export function createCoreActorVisuals(input: CreateCoreActorsInput) {
     }
 
     input.layer.addChild(container)
+  }
+  else if (input.registry.pet.container.parent !== input.layer) {
+    input.layer.addChild(input.registry.pet.container)
   }
 }
 

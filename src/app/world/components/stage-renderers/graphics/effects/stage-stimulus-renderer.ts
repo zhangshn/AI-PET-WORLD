@@ -49,6 +49,10 @@ export function syncStimulusVisuals(input: SyncStimulusVisualsInput) {
     const existing = input.visuals.get(stimulus.id)
 
     if (existing) {
+      if (existing.container.parent !== input.layer) {
+        input.layer.addChild(existing.container)
+      }
+
       updateStimulusVisualPosition(existing, input.tick)
       redrawStimulusGraphic(existing.graphic, existing.type, existing.seed)
       continue
