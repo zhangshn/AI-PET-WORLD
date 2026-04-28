@@ -102,7 +102,7 @@ export {
   getActiveZonePosition,
   syncWorldZoneVisuals,
   type SyncWorldZonesInput,
-} from "../graphics/stage-zone-renderer"
+} from "../graphics/zones/stage-zone-renderer"
 
 export {
   drawAssetWorldTiles,

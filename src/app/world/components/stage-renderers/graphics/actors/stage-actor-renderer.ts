@@ -19,7 +19,7 @@ import {
   shouldKeepPetNearShelter,
   shouldRenderExternalPet,
 } from "./stage-pet-visibility"
-import { getActiveZonePosition } from "../stage-zone-renderer"
+import { getActiveZonePosition } from "../zones/stage-zone-renderer"
 
 export type ActorMotionState = {
   x: number
