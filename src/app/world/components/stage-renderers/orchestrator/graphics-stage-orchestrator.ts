@@ -102,28 +102,27 @@ export function resetGraphicsStageRenderState(
 }
 
 function redrawStaticSceneIfNeeded(input: SyncGraphicsStageInput) {
-  const renderKey = getCurrentStaticRenderKey(input)
-
-  if (input.renderState.lastStaticWorldKey === renderKey) return
-
   if (input.sceneMode === "shelterInterior") {
-    input.renderState.lastStaticWorldKey = renderKey
-
-    clearExteriorDynamicLayers(input.layers)
-
-    drawShelterInterior({
-      backgroundLayer: input.layers.backgroundLayer,
-      terrainLayer: input.layers.landLayer,
-      structureLayer: input.layers.structureLayer,
-      natureLayer: input.layers.natureLayer,
-      foregroundLayer: input.layers.foregroundLayer,
-      incubator: input.incubator,
-      pet: input.pet,
-      width: input.width,
-      height: input.height,
-    })
+    redrawShelterInteriorIfNeeded(input)
     return
   }
+
+  redrawExteriorWorldIfNeeded(input)
+}
+
+function redrawExteriorWorldIfNeeded(input: SyncGraphicsStageInput) {
+  /**
+   * 外部世界必须等 runtime.map 准备好再缓存 renderKey。
+   * 否则第一次空 runtime 会把 "empty-map" 缓存住，导致后续地图不再重画。
+   */
+  if (!input.runtime?.map) {
+    input.renderState.lastStaticWorldKey = null
+    return
+  }
+
+  const renderKey = getStaticWorldRenderKey(input.runtime)
+
+  if (input.renderState.lastStaticWorldKey === renderKey) return
 
   input.renderState.lastStaticWorldKey = renderKey
 
@@ -141,17 +140,31 @@ function redrawStaticSceneIfNeeded(input: SyncGraphicsStageInput) {
   })
 }
 
-function getCurrentStaticRenderKey(input: SyncGraphicsStageInput): string {
-  if (input.sceneMode === "shelterInterior") {
-    return getShelterInteriorRenderKey({
-      incubator: input.incubator,
-      pet: input.pet,
-      width: input.width,
-      height: input.height,
-    })
-  }
+function redrawShelterInteriorIfNeeded(input: SyncGraphicsStageInput) {
+  const renderKey = getShelterInteriorRenderKey({
+    incubator: input.incubator,
+    pet: input.pet,
+    width: input.width,
+    height: input.height,
+  })
 
-  return getStaticWorldRenderKey(input.runtime)
+  if (input.renderState.lastStaticWorldKey === renderKey) return
+
+  input.renderState.lastStaticWorldKey = renderKey
+
+  clearExteriorDynamicLayers(input.layers)
+
+  drawShelterInterior({
+    backgroundLayer: input.layers.backgroundLayer,
+    terrainLayer: input.layers.landLayer,
+    structureLayer: input.layers.structureLayer,
+    natureLayer: input.layers.natureLayer,
+    foregroundLayer: input.layers.foregroundLayer,
+    incubator: input.incubator,
+    pet: input.pet,
+    width: input.width,
+    height: input.height,
+  })
 }
 
 function syncDynamicWorld(input: SyncGraphicsStageInput) {
