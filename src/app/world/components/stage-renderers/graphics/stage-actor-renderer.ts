@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：渲染宠物、管家与孵化器等核心角色。
+ * 当前文件负责：渲染宠物与管家等核心角色。
  */
 
 import { Container, Graphics, Text, TextStyle } from "pixi.js"
@@ -12,10 +12,6 @@ import type { WorldEcologyState } from "@/world/ecology/ecology-engine"
 
 import { STAGE_VISUAL_CONFIG } from "../config/stage-visual-config"
 import { getActiveZonePosition } from "./stage-zone-renderer"
-import {
-  INCUBATOR_STAGE_POSITION,
-  TEMP_SHELTER_STAGE_POSITION,
-} from "./stage-structure-renderer"
 import {
   darkenColor,
   lightenColor,
@@ -82,30 +78,6 @@ export function createCoreActorVisualRegistry(): CoreActorVisualRegistry {
 }
 
 export function createCoreActorVisuals(input: CreateCoreActorsInput) {
-  if (!input.registry.incubator) {
-    const container = new Container()
-    const graphic = new Graphics()
-    const label = new Text({
-      text: "孵化器 / Incubator",
-      style: new TextStyle({
-        fill: 0xe2e8f0,
-        fontSize: 10,
-      }),
-    })
-
-    label.x = -10
-    label.y = -18
-    label.visible = false
-
-    container.x = INCUBATOR_STAGE_POSITION.x
-    container.y = INCUBATOR_STAGE_POSITION.y
-    container.addChild(graphic)
-    container.addChild(label)
-
-    input.registry.incubator = graphic
-    input.layer.addChild(container)
-  }
-
   if (!input.registry.butler) {
     const container = new Container()
     const graphic = new Graphics()
@@ -162,8 +134,6 @@ export function createCoreActorVisuals(input: CreateCoreActorsInput) {
 }
 
 export function syncCoreActorVisuals(input: SyncCoreActorsInput) {
-  drawIncubatorGraphic(input.registry.incubator, input.incubator)
-
   if (input.registry.pet) {
     const target = getPetTargetPosition(input.pet, input.ecology, input.tick)
     const speed = getPetBaseSpeed(
@@ -210,67 +180,6 @@ export function clearCoreActorVisuals(registry: CoreActorVisualRegistry) {
   registry.pet = null
   registry.butler = null
   registry.incubator = null
-}
-
-function drawIncubatorGraphic(
-  graphic: Graphics | null,
-  incubator: IncubatorState | null
-) {
-  if (!graphic) return
-
-  graphic.clear()
-
-  const progress = incubator?.progress ?? 0
-  const stable = incubator?.stability ?? 100
-  const isStable = stable > 60
-  const visual = STAGE_VISUAL_CONFIG.actor.incubator
-
-  drawActorShadow(graphic, 27, 52, 30, 8, 0.18)
-
-  graphic.rect(0, 4, 54, 50).fill({
-    color: visual.shell,
-    alpha: 0.95,
-  })
-
-  graphic.rect(4, 0, 46, 8).fill({
-    color: lightenColor(visual.shell, 12),
-    alpha: 0.95,
-  })
-
-  graphic.rect(5, 9, 44, 38).fill({
-    color: visual.panel,
-    alpha: 0.88,
-  })
-
-  graphic.rect(7, 11, 40, 34).stroke({
-    color: isStable ? visual.glass : visual.unstableGlow,
-    width: 3,
-  })
-
-  graphic.rect(13, 29, 28, 6).fill({
-    color: darkenColor(visual.glass, 36),
-    alpha: 0.32,
-  })
-
-  graphic.rect(13, 29, Math.max(2, (28 * progress) / 100), 6).fill({
-    color: isStable ? visual.stableGlow : visual.unstableGlow,
-    alpha: 0.88,
-  })
-
-  graphic.rect(15, 16, 24, 10).fill({
-    color: visual.glass,
-    alpha: 0.18,
-  })
-
-  graphic.circle(27, 20, 6).fill({
-    color: STAGE_VISUAL_CONFIG.highlightColor,
-    alpha: 0.24,
-  })
-
-  graphic.rect(8, 48, 38, 4).fill({
-    color: visual.dark,
-    alpha: 0.34,
-  })
 }
 
 function drawButlerGraphic(
@@ -332,22 +241,13 @@ function getPetTargetPosition(
   const lifePhase = pet.lifeState?.phase
 
   if (lifePhase === "newborn") {
-    return {
-      x: INCUBATOR_STAGE_POSITION.x + 42,
-      y: INCUBATOR_STAGE_POSITION.y + 42,
-    }
+    return getActiveZonePosition(ecology, "incubator_zone") ?? PET_IDLE_ZONE
   }
 
   if (lifePhase === "adaptation") {
     return tick % 2 === 0
-      ? {
-          x: INCUBATOR_STAGE_POSITION.x + 70,
-          y: INCUBATOR_STAGE_POSITION.y + 58,
-        }
-      : {
-          x: TEMP_SHELTER_STAGE_POSITION.x + 96,
-          y: TEMP_SHELTER_STAGE_POSITION.y + 86,
-        }
+      ? getActiveZonePosition(ecology, "incubator_zone") ?? PET_IDLE_ZONE
+      : getActiveZonePosition(ecology, "quiet_zone") ?? PET_OBSERVE_ZONE
   }
 
   if (lifePhase === "dependent" && pet.action === "exploring") {
@@ -534,8 +434,6 @@ function drawPetGraphic(graphic: Graphics, pet: PetState | null, phase: number) 
   }
 }
 
-
-
 function getPetBob(action?: string, phase = 0): number {
   if (action === "sleeping") return Math.sin(phase * 1.6) * 0.45
   if (action === "exploring") return Math.sin(phase * 6.5) * 2.2
@@ -557,5 +455,3 @@ function drawActorShadow(
     alpha,
   })
 }
-
-
