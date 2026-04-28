@@ -78,7 +78,7 @@ export function syncGraphicsStage(input: SyncGraphicsStageInput) {
   if (input.sceneMode === "exterior") {
     syncDynamicWorld(input)
   } else {
-    clearExteriorDynamicLayers(input)
+    clearExteriorDynamicLayers(input.layers)
   }
 
   animateStimulusVisuals({
@@ -106,10 +106,10 @@ function redrawStaticSceneIfNeeded(input: SyncGraphicsStageInput) {
 
   if (input.renderState.lastStaticWorldKey === renderKey) return
 
-  input.renderState.lastStaticWorldKey = renderKey
-
   if (input.sceneMode === "shelterInterior") {
-    clearAllWorldLayers(input.layers)
+    input.renderState.lastStaticWorldKey = renderKey
+
+    clearExteriorDynamicLayers(input.layers)
 
     drawShelterInterior({
       backgroundLayer: input.layers.backgroundLayer,
@@ -125,7 +125,7 @@ function redrawStaticSceneIfNeeded(input: SyncGraphicsStageInput) {
     return
   }
 
-  clearAllWorldLayers(input.layers)
+  input.renderState.lastStaticWorldKey = renderKey
 
   drawStaticWorld({
     layers: {
@@ -199,19 +199,8 @@ function syncDynamicWorld(input: SyncGraphicsStageInput) {
   }
 }
 
-function clearAllWorldLayers(layers: WorldStageLayerRefs) {
-  layers.backgroundLayer?.removeChildren()
-  layers.landLayer?.removeChildren()
-  layers.structureLayer?.removeChildren()
-  layers.natureLayer?.removeChildren()
+function clearExteriorDynamicLayers(layers: WorldStageLayerRefs) {
   layers.zoneLayer?.removeChildren()
   layers.entityLayer?.removeChildren()
   layers.stimulusLayer?.removeChildren()
-  layers.foregroundLayer?.removeChildren()
-}
-
-function clearExteriorDynamicLayers(input: SyncGraphicsStageInput) {
-  input.layers.zoneLayer?.removeChildren()
-  input.layers.entityLayer?.removeChildren()
-  input.layers.stimulusLayer?.removeChildren()
 }

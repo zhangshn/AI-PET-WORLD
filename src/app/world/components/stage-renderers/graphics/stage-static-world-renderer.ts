@@ -41,21 +41,19 @@ export function drawStaticWorld(input: DrawStaticWorldInput) {
   const natureLayer = input.layers.natureLayer
   const foregroundLayer = input.layers.foregroundLayer
 
-  if (
-    !backgroundLayer ||
-    !terrainLayer ||
-    !structureLayer ||
-    !natureLayer ||
-    !foregroundLayer
-  ) {
+  /**
+   * 背景、地形、结构是外部世界的最低必需层。
+   * 氛围层和前景层允许暂时为空，避免整个世界被跳过。
+   */
+  if (!backgroundLayer || !terrainLayer || !structureLayer) {
     return
   }
 
   backgroundLayer.removeChildren()
   terrainLayer.removeChildren()
   structureLayer.removeChildren()
-  natureLayer.removeChildren()
-  foregroundLayer.removeChildren()
+  natureLayer?.removeChildren()
+  foregroundLayer?.removeChildren()
 
   const map = input.runtime?.map ?? null
   const mapWidth = map ? map.size.width * map.tileSize : input.fallbackWidth
@@ -70,25 +68,29 @@ export function drawStaticWorld(input: DrawStaticWorldInput) {
 
   drawWorldTiles({
     terrainLayer,
-    detailLayer: natureLayer,
+    detailLayer: natureLayer ?? terrainLayer,
     map,
   })
 
-  drawAmbientNature({
-    layer: natureLayer,
-    mapWidth,
-    mapHeight,
-  })
+  if (natureLayer) {
+    drawAmbientNature({
+      layer: natureLayer,
+      mapWidth,
+      mapHeight,
+    })
+  }
 
   drawTempShelter(structureLayer, structureLayout.tempShelter)
   drawHomeConstruction(structureLayer, structureLayout.homeConstruction)
   drawGarden(structureLayer, structureLayout.garden)
 
-  drawForegroundAtmosphere({
-    layer: foregroundLayer,
-    mapWidth,
-    mapHeight,
-  })
+  if (foregroundLayer) {
+    drawForegroundAtmosphere({
+      layer: foregroundLayer,
+      mapWidth,
+      mapHeight,
+    })
+  }
 }
 
 export function getStaticWorldRenderKey(
