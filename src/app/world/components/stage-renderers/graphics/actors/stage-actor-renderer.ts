@@ -71,7 +71,6 @@ const PET_APPROACH_ZONE = { x: 560, y: 440 }
 const PET_SHELTER_YARD_ZONE = { x: 610, y: 360 }
 const PET_SHELTER_DOOR_ZONE = { x: 555, y: 390 }
 
-const BUTLER_INCUBATOR_ZONE = { x: 340, y: 340 }
 const BUTLER_HOME_ZONE = { x: 900, y: 540 }
 const BUTLER_IDLE_ZONE = { x: 520, y: 420 }
 const BUTLER_SHELTER_CARE_ZONE = { x: 455, y: 340 }
