@@ -21,23 +21,23 @@ import {
   createCoreActorVisuals,
   syncCoreActorVisuals,
   type ActorMotionState,
-} from "./stage-renderers/stage-actor-renderer"
+} from "./stage-renderers/graphics/stage-actor-renderer"
 import {
   clearRuntimeEntityVisuals,
   createRuntimeEntityVisualRegistry,
   syncRuntimeEntityVisuals,
-} from "./stage-renderers/runtime-entity-renderer"
+} from "./stage-renderers/graphics/runtime-entity-renderer"
 import {
   clearStimulusVisuals,
   createStimulusVisualRegistry,
   animateStimulusVisuals,
   syncStimulusVisuals,
-} from "./stage-renderers/stage-stimulus-renderer"
+} from "./stage-renderers/graphics/stage-stimulus-renderer"
 import {
   drawStaticWorld,
   getStaticWorldRenderKey,
 } from "./stage-renderers/stage-static-world-renderer"
-import { syncWorldZoneVisuals } from "./stage-renderers/stage-zone-renderer"
+import { syncWorldZoneVisuals } from "./stage-renderers/graphics/stage-zone-renderer"
 
 import styles from "@/styles/world-styles/world-pixel-stage.module.css"
 
