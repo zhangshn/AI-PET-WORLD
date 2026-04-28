@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：组合渲染世界舞台中的静态地图、固定结构与氛围层。
+ * 当前文件负责：组合渲染世界舞台中的静态地图、地图结构与氛围层。
  */
 
 import type { Container } from "pixi.js"
@@ -15,6 +15,7 @@ import {
   drawGarden,
   drawHomeConstruction,
   drawTempShelter,
+  resolveStageStructureLayout,
 } from "./stage-structure-renderer"
 import { drawWorldTiles } from "./stage-tile-renderer"
 
@@ -59,6 +60,7 @@ export function drawStaticWorld(input: DrawStaticWorldInput) {
   const map = input.runtime?.map ?? null
   const mapWidth = map ? map.size.width * map.tileSize : input.fallbackWidth
   const mapHeight = map ? map.size.height * map.tileSize : input.fallbackHeight
+  const structureLayout = resolveStageStructureLayout(map)
 
   drawStageBackground({
     layer: backgroundLayer,
@@ -78,9 +80,9 @@ export function drawStaticWorld(input: DrawStaticWorldInput) {
     mapHeight,
   })
 
-  drawTempShelter(structureLayer)
-  drawHomeConstruction(structureLayer)
-  drawGarden(structureLayer)
+  drawTempShelter(structureLayer, structureLayout.tempShelter)
+  drawHomeConstruction(structureLayer, structureLayout.homeConstruction)
+  drawGarden(structureLayer, structureLayout.garden)
 
   drawForegroundAtmosphere({
     layer: foregroundLayer,
