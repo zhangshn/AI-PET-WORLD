@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：渲染世界生态区域的可视化范围。
+ * 当前文件负责：渲染世界生态区域的自然化环境线索。
  */
 
 import { Container, Graphics } from "pixi.js"
@@ -20,13 +20,9 @@ export function syncWorldZoneVisuals(input: SyncWorldZonesInput) {
   for (const zone of input.ecology.zones) {
     if (!zone.isActive) continue
 
-    const visual = getZoneVisual(zone)
     const graphic = new Graphics()
 
-    graphic.circle(0, 0, zone.radius).fill({
-      color: visual.color,
-      alpha: visual.alpha,
-    })
+    drawNaturalZoneCue(graphic, zone)
 
     graphic.x = zone.x
     graphic.y = zone.y
@@ -51,15 +47,207 @@ export function getActiveZonePosition(
   }
 }
 
-function getZoneVisual(zone: WorldZone): { color: number; alpha: number } {
-  if (zone.type === "sleep_zone") return { color: 0x818cf8, alpha: 0.025 }
-  if (zone.type === "food_zone") return { color: 0xf97316, alpha: 0.025 }
-  if (zone.type === "warm_zone") return { color: 0xf59e0b, alpha: 0.03 }
-  if (zone.type === "quiet_zone") return { color: 0x60a5fa, alpha: 0.025 }
-  if (zone.type === "observation_zone") return { color: 0x22c55e, alpha: 0.025 }
-  if (zone.type === "incubator_zone") return { color: 0x38bdf8, alpha: 0.025 }
-  if (zone.type === "home_build_zone") return { color: 0xa78bfa, alpha: 0.025 }
-  if (zone.type === "exploration_zone") return { color: 0xfacc15, alpha: 0.02 }
+function drawNaturalZoneCue(graphic: Graphics, zone: WorldZone) {
+  if (zone.type === "sleep_zone") {
+    drawSoftPixelMist(graphic, zone, 0x818cf8)
+    return
+  }
 
-  return { color: 0x94a3b8, alpha: 0.02 }
+  if (zone.type === "food_zone") {
+    drawFoodCue(graphic, zone)
+    return
+  }
+
+  if (zone.type === "warm_zone") {
+    drawWarmLightCue(graphic, zone)
+    return
+  }
+
+  if (zone.type === "quiet_zone") {
+    drawQuietCue(graphic, zone)
+    return
+  }
+
+  if (zone.type === "observation_zone") {
+    drawObservationCue(graphic, zone)
+    return
+  }
+
+  if (zone.type === "incubator_zone") {
+    drawIncubatorCue(graphic, zone)
+    return
+  }
+
+  if (zone.type === "home_build_zone") {
+    drawBuildCue(graphic, zone)
+    return
+  }
+
+  if (zone.type === "exploration_zone") {
+    drawExplorationCue(graphic, zone)
+    return
+  }
+
+  drawGenericZoneCue(graphic, zone)
+}
+
+function drawSoftPixelMist(
+  graphic: Graphics,
+  zone: WorldZone,
+  color: number
+) {
+  const seed = getZoneSeed(zone)
+
+  for (let index = 0; index < 5; index += 1) {
+    const offset = getRadialOffset(seed + index * 17, zone.radius * 0.45)
+
+    graphic.rect(offset.x, offset.y, 12, 4).fill({
+      color,
+      alpha: 0.055,
+    })
+  }
+}
+
+function drawFoodCue(graphic: Graphics, zone: WorldZone) {
+  const seed = getZoneSeed(zone)
+
+  for (let index = 0; index < 4; index += 1) {
+    const offset = getRadialOffset(seed + index * 19, zone.radius * 0.32)
+
+    graphic.rect(offset.x, offset.y, 5, 4).fill({
+      color: 0xfacc15,
+      alpha: 0.18,
+    })
+
+    graphic.rect(offset.x + 2, offset.y - 3, 2, 3).fill({
+      color: 0x22c55e,
+      alpha: 0.16,
+    })
+  }
+}
+
+function drawWarmLightCue(graphic: Graphics, zone: WorldZone) {
+  graphic.circle(0, 0, Math.max(12, zone.radius * 0.38)).fill({
+    color: 0xf59e0b,
+    alpha: 0.018,
+  })
+
+  const seed = getZoneSeed(zone)
+
+  for (let index = 0; index < 4; index += 1) {
+    const offset = getRadialOffset(seed + index * 23, zone.radius * 0.35)
+
+    graphic.rect(offset.x, offset.y, 10, 2).fill({
+      color: 0xfff7ad,
+      alpha: 0.1,
+    })
+  }
+}
+
+function drawQuietCue(graphic: Graphics, zone: WorldZone) {
+  const seed = getZoneSeed(zone)
+
+  for (let index = 0; index < 4; index += 1) {
+    const offset = getRadialOffset(seed + index * 29, zone.radius * 0.35)
+
+    graphic.rect(offset.x, offset.y, 14, 2).fill({
+      color: 0x93c5fd,
+      alpha: 0.055,
+    })
+  }
+}
+
+function drawObservationCue(graphic: Graphics, zone: WorldZone) {
+  const seed = getZoneSeed(zone)
+
+  for (let index = 0; index < 5; index += 1) {
+    const offset = getRadialOffset(seed + index * 31, zone.radius * 0.42)
+
+    graphic.rect(offset.x, offset.y, 4, 4).fill({
+      color: 0xbbf7d0,
+      alpha: 0.13,
+    })
+
+    if (index % 2 === 0) {
+      graphic.rect(offset.x + 6, offset.y + 3, 5, 2).fill({
+        color: 0x22c55e,
+        alpha: 0.08,
+      })
+    }
+  }
+}
+
+function drawIncubatorCue(graphic: Graphics, zone: WorldZone) {
+  graphic.circle(0, 0, Math.max(10, zone.radius * 0.28)).stroke({
+    color: 0x38bdf8,
+    alpha: 0.08,
+    width: 2,
+  })
+
+  graphic.rect(-8, -1, 16, 2).fill({
+    color: 0xbae6fd,
+    alpha: 0.12,
+  })
+}
+
+function drawBuildCue(graphic: Graphics, zone: WorldZone) {
+  const seed = getZoneSeed(zone)
+
+  for (let index = 0; index < 4; index += 1) {
+    const offset = getRadialOffset(seed + index * 13, zone.radius * 0.3)
+
+    graphic.rect(offset.x, offset.y, 10, 3).fill({
+      color: 0x8b5a2b,
+      alpha: 0.12,
+    })
+  }
+}
+
+function drawExplorationCue(graphic: Graphics, zone: WorldZone) {
+  const seed = getZoneSeed(zone)
+
+  for (let index = 0; index < 6; index += 1) {
+    const offset = getRadialOffset(seed + index * 37, zone.radius * 0.45)
+
+    graphic.rect(offset.x, offset.y, 3, 3).fill({
+      color: 0xfacc15,
+      alpha: 0.12,
+    })
+  }
+}
+
+function drawGenericZoneCue(graphic: Graphics, zone: WorldZone) {
+  const seed = getZoneSeed(zone)
+
+  for (let index = 0; index < 3; index += 1) {
+    const offset = getRadialOffset(seed + index * 11, zone.radius * 0.3)
+
+    graphic.rect(offset.x, offset.y, 5, 3).fill({
+      color: 0xe2e8f0,
+      alpha: 0.06,
+    })
+  }
+}
+
+function getRadialOffset(
+  seed: number,
+  radius: number
+): { x: number; y: number } {
+  const angle = (seed % 360) * (Math.PI / 180)
+  const distance = Math.max(6, radius * (0.35 + (seed % 40) / 100))
+
+  return {
+    x: Math.cos(angle) * distance,
+    y: Math.sin(angle) * distance,
+  }
+}
+
+function getZoneSeed(zone: WorldZone): number {
+  let seed = Math.round(zone.x * 13 + zone.y * 17 + zone.radius * 19)
+
+  for (let index = 0; index < zone.type.length; index += 1) {
+    seed += zone.type.charCodeAt(index) * (index + 5)
+  }
+
+  return Math.abs(seed)
 }

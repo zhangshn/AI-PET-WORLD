@@ -1,17 +1,18 @@
 /**
- * 当前文件负责：渲染世界刺激的临时可视化提示。
+ * 当前文件负责：渲染世界刺激的自然化可视线索。
  */
 
-import { Container, Graphics, Text, TextStyle } from "pixi.js"
+import { Container, Graphics } from "pixi.js"
 
 import type { WorldStimulus } from "@/ai/gateway"
 
 export type StimulusVisualState = {
   container: Container
-  label: Text
+  graphic: Graphics
   baseX: number
   baseY: number
   type: string
+  seed: number
 }
 
 export type StimulusVisualRegistry = Map<string, StimulusVisualState>
@@ -28,7 +29,7 @@ export function createStimulusVisualRegistry(): StimulusVisualRegistry {
 }
 
 export function syncStimulusVisuals(input: SyncStimulusVisualsInput) {
-  const activeStimuli = input.stimuli.slice(-8)
+  const activeStimuli = input.stimuli.slice(-7)
   const activeIds = new Set(activeStimuli.map((stimulus) => stimulus.id))
 
   for (const [stimulusId, visual] of input.visuals.entries()) {
@@ -43,6 +44,7 @@ export function syncStimulusVisuals(input: SyncStimulusVisualsInput) {
 
     if (existing) {
       updateStimulusVisualPosition(existing, input.tick)
+      redrawStimulusGraphic(existing.graphic, existing.type, existing.seed)
       continue
     }
 
@@ -58,10 +60,12 @@ export function animateStimulusVisuals(input: {
   phase: number
 }) {
   for (const visual of input.visuals.values()) {
-    const floating = Math.sin(input.phase * 2.4 + visual.baseX * 0.01) * 5
+    const floating = Math.sin(input.phase * 2.2 + visual.seed * 0.03) * 3
+    const swaying = Math.cos(input.phase * 1.4 + visual.seed * 0.02) * 2
 
+    visual.container.x = visual.baseX + swaying
     visual.container.y = visual.baseY + floating
-    visual.container.alpha = 0.72 + Math.sin(input.phase * 2) * 0.12
+    visual.container.alpha = 0.5 + Math.sin(input.phase * 1.6 + visual.seed) * 0.12
   }
 }
 
@@ -79,44 +83,24 @@ function createStimulusVisual(
 ): StimulusVisualState {
   const container = new Container()
   const graphic = new Graphics()
-  const label = new Text({
-    text: getStimulusLabel(stimulus),
-    style: new TextStyle({
-      fill: 0xf8fafc,
-      fontSize: 10,
-    }),
-  })
-
   const position = getStimulusStagePosition(stimulus, tick)
-  const color = getStimulusColor(stimulus.type)
+  const seed = createStableStimulusSeed(stimulus.id, stimulus.type, tick)
 
-  graphic.circle(0, 0, 8).fill({
-    color,
-    alpha: 0.64,
-  })
-  graphic.circle(0, 0, 18).stroke({
-    color,
-    alpha: 0.24,
-    width: 2,
-  })
-
-  label.x = 12
-  label.y = -8
-  label.visible = false
+  redrawStimulusGraphic(graphic, stimulus.type, seed)
 
   container.x = position.x
   container.y = position.y
-  container.alpha = 0.82
+  container.alpha = 0.64
 
   container.addChild(graphic)
-  container.addChild(label)
 
   return {
     container,
-    label,
+    graphic,
     baseX: position.x,
     baseY: position.y,
     type: stimulus.type,
+    seed,
   }
 }
 
@@ -124,9 +108,169 @@ function updateStimulusVisualPosition(
   visual: StimulusVisualState,
   tick: number
 ) {
-  const offset = ((tick + visual.baseX + visual.baseY) % 12) - 6
+  const offset = ((tick + visual.seed) % 8) - 4
 
-  visual.container.x = visual.baseX + offset
+  visual.baseX += offset * 0.08
+}
+
+function redrawStimulusGraphic(
+  graphic: Graphics,
+  type: string,
+  seed: number
+) {
+  graphic.clear()
+
+  if (type === "butterfly") {
+    drawButterflyTrace(graphic, seed)
+    return
+  }
+
+  if (type === "breeze") {
+    drawBreezeTrace(graphic, seed)
+    return
+  }
+
+  if (type === "temperature_drop") {
+    drawTemperatureTrace(graphic, seed)
+    return
+  }
+
+  if (type === "falling_leaf") {
+    drawFallingLeafTrace(graphic, seed)
+    return
+  }
+
+  if (type === "light_shift") {
+    drawLightShiftTrace(graphic, seed)
+    return
+  }
+
+  drawGenericWorldTrace(graphic, seed)
+}
+
+function drawButterflyTrace(graphic: Graphics, seed: number) {
+  const color = seed % 2 === 0 ? 0xfacc15 : 0xf472b6
+
+  graphic.rect(-6, -4, 5, 5).fill({
+    color,
+    alpha: 0.72,
+  })
+
+  graphic.rect(1, -4, 5, 5).fill({
+    color: lightenColor(color, 12),
+    alpha: 0.72,
+  })
+
+  graphic.rect(-1, -3, 2, 7).fill({
+    color: 0x1f2937,
+    alpha: 0.65,
+  })
+
+  graphic.rect(-10, 5, 3, 2).fill({
+    color: 0xfff7ad,
+    alpha: 0.42,
+  })
+
+  graphic.rect(8, 4, 3, 2).fill({
+    color: 0xfff7ad,
+    alpha: 0.36,
+  })
+}
+
+function drawBreezeTrace(graphic: Graphics, seed: number) {
+  const widthA = 16 + (seed % 8)
+  const widthB = 10 + (seed % 6)
+
+  graphic.rect(-widthA / 2, -4, widthA, 2).fill({
+    color: 0xdbeafe,
+    alpha: 0.34,
+  })
+
+  graphic.rect(-widthB / 2 + 4, 3, widthB, 2).fill({
+    color: 0xbfdbfe,
+    alpha: 0.26,
+  })
+
+  graphic.rect(-2, -1, 4, 1).fill({
+    color: 0xffffff,
+    alpha: 0.28,
+  })
+}
+
+function drawTemperatureTrace(graphic: Graphics, seed: number) {
+  const height = 10 + (seed % 6)
+
+  graphic.rect(-2, -height, 4, height).fill({
+    color: 0x7dd3fc,
+    alpha: 0.28,
+  })
+
+  graphic.rect(-5, -height + 2, 2, 4).fill({
+    color: 0xe0f2fe,
+    alpha: 0.36,
+  })
+
+  graphic.rect(4, -height + 5, 2, 4).fill({
+    color: 0xbae6fd,
+    alpha: 0.28,
+  })
+}
+
+function drawFallingLeafTrace(graphic: Graphics, seed: number) {
+  const color = seed % 2 === 0 ? 0x84cc16 : 0xa3e635
+
+  graphic.rect(-3, -5, 7, 4).fill({
+    color,
+    alpha: 0.78,
+  })
+
+  graphic.rect(-1, -1, 3, 6).fill({
+    color: 0x4d7c0f,
+    alpha: 0.44,
+  })
+
+  graphic.rect(5, 4, 5, 2).fill({
+    color: 0xd9f99d,
+    alpha: 0.22,
+  })
+}
+
+function drawLightShiftTrace(graphic: Graphics, seed: number) {
+  const size = 3 + (seed % 3)
+
+  graphic.rect(-size, -size, size * 2, size * 2).fill({
+    color: 0xfffbeb,
+    alpha: 0.34,
+  })
+
+  graphic.rect(-1, -9, 2, 18).fill({
+    color: 0xffffff,
+    alpha: 0.16,
+  })
+
+  graphic.rect(-9, -1, 18, 2).fill({
+    color: 0xffffff,
+    alpha: 0.16,
+  })
+}
+
+function drawGenericWorldTrace(graphic: Graphics, seed: number) {
+  const color = seed % 2 === 0 ? 0xfef3c7 : 0xd9f99d
+
+  graphic.rect(-3, -3, 6, 6).fill({
+    color,
+    alpha: 0.5,
+  })
+
+  graphic.rect(-7, 4, 3, 2).fill({
+    color,
+    alpha: 0.28,
+  })
+
+  graphic.rect(5, -6, 2, 3).fill({
+    color,
+    alpha: 0.24,
+  })
 }
 
 function getStimulusStagePosition(
@@ -155,22 +299,18 @@ function createStableStimulusSeed(
   return Math.abs(seed)
 }
 
-function getStimulusLabel(stimulus: WorldStimulus): string {
-  if (stimulus.type === "butterfly") return "蝴蝶掠过"
-  if (stimulus.type === "breeze") return "微风"
-  if (stimulus.type === "temperature_drop") return "气温变化"
-  if (stimulus.type === "falling_leaf") return "落叶"
-  if (stimulus.type === "light_shift") return "光影变化"
+function lightenColor(color: number, amount: number): number {
+  const r = (color >> 16) & 255
+  const g = (color >> 8) & 255
+  const b = color & 255
 
-  return stimulus.type
+  const nextR = clampNumber(r + amount, 0, 255)
+  const nextG = clampNumber(g + amount, 0, 255)
+  const nextB = clampNumber(b + amount, 0, 255)
+
+  return (nextR << 16) + (nextG << 8) + nextB
 }
 
-function getStimulusColor(type: string): number {
-  if (type === "butterfly") return 0xffd166
-  if (type === "breeze") return 0x93c5fd
-  if (type === "temperature_drop") return 0x38bdf8
-  if (type === "falling_leaf") return 0x84cc16
-  if (type === "light_shift") return 0xf8fafc
-
-  return 0xffffff
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value))
 }

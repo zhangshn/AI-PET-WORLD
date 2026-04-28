@@ -21,3 +21,10 @@ export type StageSize = {
   width: number
   height: number
 }
+
+export type StageColor = number
+
+export type StageAlphaFill = {
+  color: StageColor
+  alpha: number
+}
