@@ -7,6 +7,10 @@ import { Container, Graphics } from "pixi.js"
 import type { WorldStimulus } from "@/ai/gateway"
 
 import { STAGE_VISUAL_CONFIG } from "./stage-visual-config"
+import {
+  darkenColor,
+  lightenColor,
+} from "./stage-renderer-utils"
 
 export type StimulusVisualState = {
   container: Container
@@ -310,30 +314,3 @@ function createStableStimulusSeed(
   return Math.abs(seed)
 }
 
-function lightenColor(color: number, amount: number): number {
-  const r = (color >> 16) & 255
-  const g = (color >> 8) & 255
-  const b = color & 255
-
-  const nextR = clampNumber(r + amount, 0, 255)
-  const nextG = clampNumber(g + amount, 0, 255)
-  const nextB = clampNumber(b + amount, 0, 255)
-
-  return (nextR << 16) + (nextG << 8) + nextB
-}
-
-function darkenColor(color: number, amount: number): number {
-  const r = (color >> 16) & 255
-  const g = (color >> 8) & 255
-  const b = color & 255
-
-  const nextR = clampNumber(r - amount, 0, 255)
-  const nextG = clampNumber(g - amount, 0, 255)
-  const nextB = clampNumber(b - amount, 0, 255)
-
-  return (nextR << 16) + (nextG << 8) + nextB
-}
-
-function clampNumber(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value))
-}

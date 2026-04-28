@@ -5,10 +5,12 @@
 import { Graphics } from "pixi.js"
 
 import type { WorldMapState, WorldMapTileType } from "@/world/map/world-map"
+
 import {
   getStageTileVisual,
   STAGE_VISUAL_CONFIG,
 } from "./stage-visual-config"
+import { clampNumber, createPointSeed } from "./stage-renderer-utils"
 
 export type DrawWorldTilesInput = {
   terrainLayer: {
@@ -101,7 +103,7 @@ function drawTileBase(graphic: Graphics, context: TileContext) {
 function drawSoftGrassBase(graphic: Graphics, context: TileContext) {
   const { x, y, tileX, tileY, tileSize, type } = context
   const visual = getStageTileVisual(type)
-  const seed = getTileSeed(tileX, tileY)
+  const seed = createPointSeed(tileX, tileY)
 
   if (seed % 3 === 0) {
     graphic.rect(x, y, tileSize, 3).fill({
@@ -128,7 +130,7 @@ function drawSoftGrassBase(graphic: Graphics, context: TileContext) {
 function drawWaterBase(graphic: Graphics, context: TileContext) {
   const { x, y, tileX, tileY, tileSize } = context
   const visual = getStageTileVisual("water")
-  const seed = getTileSeed(tileX, tileY)
+  const seed = createPointSeed(tileX, tileY)
 
   graphic.rect(x, y, tileSize, tileSize).fill({
     color: visual.dark,
@@ -163,7 +165,7 @@ function drawWaterBase(graphic: Graphics, context: TileContext) {
 function drawPathBase(graphic: Graphics, context: TileContext) {
   const { x, y, tileX, tileY, tileSize } = context
   const visual = getStageTileVisual("path")
-  const seed = getTileSeed(tileX, tileY)
+  const seed = createPointSeed(tileX, tileY)
 
   graphic.rect(x, y, tileSize, 3).fill({
     color: visual.detail,
@@ -200,7 +202,7 @@ function drawPathBase(graphic: Graphics, context: TileContext) {
 function drawSoilBase(graphic: Graphics, context: TileContext) {
   const { x, y, tileX, tileY, tileSize, type } = context
   const visual = getStageTileVisual(type)
-  const seed = getTileSeed(tileX, tileY)
+  const seed = createPointSeed(tileX, tileY)
 
   graphic.rect(x + 2, y + 6, tileSize - 4, 2).fill({
     color: visual.dark,
@@ -235,7 +237,7 @@ function drawSoilBase(graphic: Graphics, context: TileContext) {
 function drawFoundationBase(graphic: Graphics, context: TileContext) {
   const { x, y, tileX, tileY, tileSize } = context
   const visual = getStageTileVisual("shelter_foundation")
-  const seed = getTileSeed(tileX, tileY)
+  const seed = createPointSeed(tileX, tileY)
 
   graphic.rect(x, y, tileSize, tileSize).fill({
     color: visual.dark,
@@ -415,7 +417,7 @@ function drawTileDetail(graphic: Graphics, context: TileContext) {
 function drawShortGrassDetail(graphic: Graphics, context: TileContext) {
   const { x, y, tileX, tileY, type } = context
   const visual = getStageTileVisual(type)
-  const seed = getTileSeed(tileX, tileY)
+  const seed = createPointSeed(tileX, tileY)
 
   if (seed % 2 === 0) {
     graphic.rect(x + 4, y + 18, 3, 4).fill(visual.detail)
@@ -436,7 +438,7 @@ function drawShortGrassDetail(graphic: Graphics, context: TileContext) {
 function drawWildGrassDetail(graphic: Graphics, context: TileContext) {
   const { x, y, tileX, tileY, type } = context
   const visual = getStageTileVisual(type)
-  const seed = getTileSeed(tileX, tileY)
+  const seed = createPointSeed(tileX, tileY)
 
   graphic.rect(x + 4, y + 13, 4, 9).fill(visual.detail)
 
@@ -456,26 +458,31 @@ function drawWildGrassDetail(graphic: Graphics, context: TileContext) {
 function drawFlowerPatchDetail(graphic: Graphics, context: TileContext) {
   const { x, y, tileX, tileY, type } = context
   const visual = getStageTileVisual(type)
-  const seed = getTileSeed(tileX, tileY)
+  const seed = createPointSeed(tileX, tileY)
 
   graphic.rect(x + 6, y + 16, 3, 4).fill(visual.dark)
   graphic.rect(x + 7, y + 7, 3, 3).fill(visual.detail)
 
   if (seed % 2 === 0) {
-    graphic.rect(x + 14, y + 10, 3, 3).fill(0xffd166)
+    graphic.rect(x + 14, y + 10, 3, 3).fill(
+      STAGE_VISUAL_CONFIG.actor.petDefault.cloth
+    )
   }
 
   if (seed % 3 === 0) {
-    graphic.rect(x + 17, y + 16, 3, 3).fill(0xf28482)
+    graphic.rect(x + 17, y + 16, 3, 3).fill(
+      STAGE_VISUAL_CONFIG.entity.flower.blossoms[1]
+    )
   }
 }
 
 function drawForestEdgeDetail(graphic: Graphics, context: TileContext) {
   const { x, y, tileX, tileY, type } = context
   const visual = getStageTileVisual(type)
-  const seed = getTileSeed(tileX, tileY)
+  const treeVisual = STAGE_VISUAL_CONFIG.entity.tree
+  const seed = createPointSeed(tileX, tileY)
 
-  graphic.rect(x + 8, y + 15, 6, 9).fill(0x7a4b2a)
+  graphic.rect(x + 8, y + 15, 6, 9).fill(treeVisual.trunk)
   graphic.rect(x + 4, y + 10, 16, 12).fill(visual.detail)
   graphic.rect(x + 1, y + 5, 22, 10).fill(visual.light)
 
@@ -541,7 +548,7 @@ function getTileColorWithVariation(
   y: number
 ): number {
   const baseColor = getTileColor(type)
-  const variation = (getTileSeed(x, y) % 7) - 3
+  const variation = (createPointSeed(x, y) % 7) - 3
 
   if (variation === 0) return baseColor
 
@@ -555,14 +562,4 @@ function getTileColorWithVariation(
   const nextB = clampNumber(b + amount, 0, 255)
 
   return (nextR << 16) + (nextG << 8) + nextB
-}
-
-function getTileSeed(x: number, y: number): number {
-  const value = Math.sin(x * 127.1 + y * 311.7) * 10000
-
-  return Math.abs(Math.floor(value))
-}
-
-function clampNumber(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value))
 }
