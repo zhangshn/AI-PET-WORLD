@@ -90,6 +90,11 @@ function drawTileBase(graphic: Graphics, context: TileContext) {
     return
   }
 
+  if (type === "town_path") {
+    drawTownPathBase(graphic, context)
+    return
+  }
+
   if (type === "soil" || type === "garden_soil") {
     drawSoilBase(graphic, context)
     return
@@ -199,6 +204,65 @@ function drawPathBase(graphic: Graphics, context: TileContext) {
   }
 }
 
+function drawTownPathBase(graphic: Graphics, context: TileContext) {
+  const { x, y, tileX, tileY, tileSize } = context
+  const visual = getStageTileVisual("town_path")
+  const seed = createPointSeed(tileX, tileY)
+
+  graphic.rect(x, y + 2, tileSize, tileSize - 4).fill({
+    color: visual.base,
+    alpha: 0.55,
+  })
+
+  graphic.rect(x, y, tileSize, 3).fill({
+    color: visual.light,
+    alpha: 0.36,
+  })
+
+  graphic.rect(x, y + tileSize - 4, tileSize, 4).fill({
+    color: visual.dark,
+    alpha: 0.22,
+  })
+
+  graphic.rect(x + 2, y + 6, tileSize - 4, 2).fill({
+    color: visual.detail,
+    alpha: 0.3,
+  })
+
+  graphic.rect(x + 2, y + tileSize - 8, tileSize - 4, 2).fill({
+    color: visual.edge,
+    alpha: 0.16,
+  })
+
+  if (seed % 2 === 0) {
+    graphic.rect(x + 4, y + 11, 6, 3).fill({
+      color: visual.dark,
+      alpha: 0.18,
+    })
+  }
+
+  if (seed % 3 === 0) {
+    graphic.rect(x + 14, y + 8, 7, 2).fill({
+      color: visual.light,
+      alpha: 0.28,
+    })
+  }
+
+  if (seed % 5 === 0) {
+    graphic.rect(x + 11, y + 17, 5, 3).fill({
+      color: visual.detail,
+      alpha: 0.24,
+    })
+  }
+
+  if (tileX >= context.map.size.width - 5) {
+    graphic.rect(x + tileSize - 5, y + 5, 3, tileSize - 10).fill({
+      color: visual.light,
+      alpha: 0.36,
+    })
+  }
+}
+
 function drawSoilBase(graphic: Graphics, context: TileContext) {
   const { x, y, tileX, tileY, tileSize, type } = context
   const visual = getStageTileVisual(type)
@@ -265,7 +329,12 @@ function drawTileEdges(graphic: Graphics, context: TileContext) {
     return
   }
 
-  if (type === "path" || type === "soil" || type === "garden_soil") {
+  if (
+    type === "path" ||
+    type === "town_path" ||
+    type === "soil" ||
+    type === "garden_soil"
+  ) {
     drawGroundEdge(graphic, context, top, right, bottom, left)
     return
   }
