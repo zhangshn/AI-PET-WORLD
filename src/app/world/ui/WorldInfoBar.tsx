@@ -36,6 +36,13 @@ function getWeatherLabel(weather?: string): string {
 
   const normalized = weather.toLowerCase()
 
+  if (normalized === "warm_morning") return "晴暖"
+  if (normalized === "cool_morning") return "清凉"
+  if (normalized === "warm_day") return "温暖"
+  if (normalized === "hot_day") return "炎热"
+  if (normalized === "cool_evening") return "微凉"
+  if (normalized === "quiet_night") return "静夜"
+
   if (normalized.includes("rain")) return "有雨"
   if (normalized.includes("storm")) return "风暴"
   if (normalized.includes("cloud")) return "多云"
@@ -43,13 +50,18 @@ function getWeatherLabel(weather?: string): string {
   if (normalized.includes("snow")) return "降雪"
   if (normalized.includes("wind")) return "有风"
   if (normalized.includes("clear")) return "晴朗"
+  if (normalized.includes("warm")) return "温暖"
+  if (normalized.includes("cool")) return "清凉"
+  if (normalized.includes("hot")) return "炎热"
+  if (normalized.includes("quiet")) return "安静"
 
-  return weather
+  return "变化中"
 }
 
 function getWorldPulse(stimuliCount: number): string {
-  if (stimuliCount >= 6) return "活跃"
-  if (stimuliCount >= 3) return "有动静"
+  if (stimuliCount >= 8) return "很活跃"
+  if (stimuliCount >= 5) return "活跃"
+  if (stimuliCount >= 2) return "有动静"
   if (stimuliCount >= 1) return "轻微波动"
 
   return "安静"

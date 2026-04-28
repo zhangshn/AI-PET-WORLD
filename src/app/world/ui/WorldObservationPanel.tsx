@@ -43,6 +43,10 @@ function rewriteMessage(event: WorldEvent): string {
     return "Mochi 放慢了动作，停在较安静的位置恢复精力。"
   }
 
+  if (message.includes("安静地看着周围")) {
+    return "Mochi 停在原地观察了一会儿，像是在确认这个世界的边界。"
+  }
+
   if (message.includes("观察")) {
     return message
   }
@@ -50,8 +54,39 @@ function rewriteMessage(event: WorldEvent): string {
   return message
 }
 
+function getEventDisplayKey(event: WorldEvent): string {
+  return [
+    event.type,
+    event.petName ?? "",
+    rewriteMessage(event),
+  ].join("::")
+}
+
+function getDedupedLatestEvents(events: WorldEvent[]): WorldEvent[] {
+  const latestEvents = [...events].reverse()
+  const result: WorldEvent[] = []
+  const usedKeys = new Set<string>()
+
+  for (const event of latestEvents) {
+    const key = getEventDisplayKey(event)
+
+    if (usedKeys.has(key)) {
+      continue
+    }
+
+    usedKeys.add(key)
+    result.push(event)
+
+    if (result.length >= 7) {
+      break
+    }
+  }
+
+  return result
+}
+
 export default function WorldObservationPanel({ events }: Props) {
-  const latest = [...events].reverse().slice(0, 10)
+  const latest = getDedupedLatestEvents(events)
 
   return (
     <section className={styles.panel}>
