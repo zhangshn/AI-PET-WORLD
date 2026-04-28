@@ -12,11 +12,6 @@ import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
 import {
   animateStimulusVisuals,
-  createCoreActorVisuals,
-  syncCoreActorVisuals,
-  syncRuntimeEntityVisuals,
-  syncStimulusVisuals,
-  syncWorldZoneVisuals,
   type ActorMotionState,
   type CoreActorVisualRegistry,
   type RuntimeEntityVisualRegistry,
@@ -24,6 +19,7 @@ import {
 } from "../gateway/stage-renderer-gateway"
 import { logStageDebug } from "./stage-debug-logger"
 import { clearExteriorDynamicLayers } from "./stage-dynamic-layer-cleaner"
+import { syncDynamicWorld } from "./stage-dynamic-scene-sync"
 import { syncStageOverlay } from "./stage-overlay-renderer"
 import { redrawStaticSceneIfNeeded } from "./stage-static-scene-sync"
 import type { WorldStageLayerRefs } from "./stage-layer-types"
@@ -101,49 +97,4 @@ export function resetGraphicsStageRenderState(
   renderState.lastStaticWorldKey = null
   renderState.phase = 0
   renderState.debugMessage = "stage reset"
-}
-
-function syncDynamicWorld(input: SyncGraphicsStageInput) {
-  if (input.layers.natureLayer) {
-    syncRuntimeEntityVisuals({
-      layer: input.layers.natureLayer,
-      runtime: input.runtime,
-      visuals: input.runtimeEntityVisuals,
-    })
-  }
-
-  if (input.layers.zoneLayer) {
-    syncWorldZoneVisuals({
-      layer: input.layers.zoneLayer,
-      ecology: input.ecology,
-    })
-  }
-
-  if (input.layers.entityLayer) {
-    createCoreActorVisuals({
-      layer: input.layers.entityLayer,
-      registry: input.actorVisuals,
-    })
-
-    syncCoreActorVisuals({
-      registry: input.actorVisuals,
-      pet: input.pet,
-      butler: input.butler,
-      incubator: input.incubator,
-      ecology: input.ecology,
-      tick: input.tick,
-      phase: input.renderState.phase,
-      petMotion: input.petMotion,
-      butlerMotion: input.butlerMotion,
-    })
-  }
-
-  if (input.layers.stimulusLayer) {
-    syncStimulusVisuals({
-      layer: input.layers.stimulusLayer,
-      stimuli: input.stimuli,
-      visuals: input.stimulusVisuals,
-      tick: input.tick,
-    })
-  }
 }
