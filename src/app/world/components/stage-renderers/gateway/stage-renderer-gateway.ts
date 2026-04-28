@@ -77,7 +77,7 @@ export {
   type CoreActorVisualRegistry,
   type CreateCoreActorsInput,
   type SyncCoreActorsInput,
-} from "../graphics/stage-actor-renderer"
+} from "../graphics/actors/stage-actor-renderer"
 
 export {
   clearRuntimeEntityVisuals,

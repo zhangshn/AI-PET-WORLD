@@ -29,7 +29,7 @@ import {
 import {
   drawShelterInterior,
   getShelterInteriorRenderKey,
-} from "../graphics/stage-interior-renderer"
+} from "../graphics/interior/stage-interior-renderer"
 import { syncStageOverlay } from "./stage-overlay-renderer"
 import type { WorldStageLayerRefs } from "./stage-layer-types"
 import type { WorldStageSceneMode } from "./stage-scene-mode"

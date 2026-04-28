@@ -3,12 +3,15 @@
  */
 
 import { Container, Graphics, Text, TextStyle } from "pixi.js"
-
+import { shouldRenderInteriorNewbornNest } from "../actors/stage-pet-visibility"
 import type { IncubatorState } from "@/types/incubator"
 import type { PetState } from "@/types/pet"
 
-import { STAGE_VISUAL_CONFIG } from "../config/stage-visual-config"
-import { darkenColor, lightenColor } from "../shared/stage-renderer-utils"
+import { STAGE_VISUAL_CONFIG } from "../../config/stage-visual-config"
+import {
+  darkenColor,
+  lightenColor,
+} from "../../shared/stage-renderer-utils"
 
 export type DrawShelterInteriorInput = {
   backgroundLayer: Container | null

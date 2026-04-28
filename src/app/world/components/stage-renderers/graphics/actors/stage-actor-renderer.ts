@@ -10,12 +10,16 @@ import type { IncubatorState } from "@/types/incubator"
 import type { PetState } from "@/types/pet"
 import type { WorldEcologyState } from "@/world/ecology/ecology-engine"
 
-import { STAGE_VISUAL_CONFIG } from "../config/stage-visual-config"
-import { getActiveZonePosition } from "./stage-zone-renderer"
+import { STAGE_VISUAL_CONFIG } from "../../config/stage-visual-config"
 import {
   darkenColor,
   lightenColor,
-} from "../shared/stage-renderer-utils"
+} from "../../shared/stage-renderer-utils"
+import {
+  shouldKeepPetNearShelter,
+  shouldRenderExternalPet,
+} from "./stage-pet-visibility"
+import { getActiveZonePosition } from "../stage-zone-renderer"
 
 export type ActorMotionState = {
   x: number
@@ -64,10 +68,14 @@ const PET_SLEEP_ZONE = { x: 1090, y: 600 }
 const PET_REST_ZONE = { x: 1040, y: 590 }
 const PET_EAT_ZONE = { x: 720, y: 570 }
 const PET_APPROACH_ZONE = { x: 560, y: 440 }
+const PET_SHELTER_YARD_ZONE = { x: 610, y: 360 }
+const PET_SHELTER_DOOR_ZONE = { x: 555, y: 390 }
 
 const BUTLER_INCUBATOR_ZONE = { x: 340, y: 340 }
 const BUTLER_HOME_ZONE = { x: 900, y: 540 }
 const BUTLER_IDLE_ZONE = { x: 520, y: 420 }
+const BUTLER_SHELTER_CARE_ZONE = { x: 455, y: 340 }
+const BUTLER_SHELTER_DOOR_ZONE = { x: 520, y: 380 }
 
 export function createCoreActorVisualRegistry(): CoreActorVisualRegistry {
   return {
@@ -150,7 +158,12 @@ export function clearCoreActorVisuals(registry: CoreActorVisualRegistry) {
 function syncPetVisual(input: SyncCoreActorsInput) {
   if (!input.registry.pet) return
 
-  if (!shouldRenderExternalPet(input.pet, input.incubator)) {
+  if (
+    !shouldRenderExternalPet({
+      pet: input.pet,
+      incubator: input.incubator,
+    })
+  ) {
     input.registry.pet.container.visible = false
     input.registry.pet.graphic.clear()
     return
@@ -158,7 +171,13 @@ function syncPetVisual(input: SyncCoreActorsInput) {
 
   input.registry.pet.container.visible = true
 
-  const target = getPetTargetPosition(input.pet, input.ecology, input.tick)
+  const target = getPetTargetPosition({
+    pet: input.pet,
+    incubator: input.incubator,
+    ecology: input.ecology,
+    tick: input.tick,
+  })
+
   const speed = getPetBaseSpeed(
     input.pet?.action,
     input.pet?.activeBehaviorProcess,
@@ -182,7 +201,7 @@ function syncPetVisual(input: SyncCoreActorsInput) {
 function syncButlerVisual(input: SyncCoreActorsInput) {
   if (!input.registry.butler) return
 
-  const target = getButlerTargetPosition(input.butler, input.ecology)
+  const target = getButlerTargetPosition(input)
 
   input.butlerMotion.targetX = target.x
   input.butlerMotion.targetY = target.y
@@ -196,21 +215,6 @@ function syncButlerVisual(input: SyncCoreActorsInput) {
 
   drawButlerGraphic(input.registry.butler.graphic, input.butler, input.phase)
   input.registry.butler.label.text = input.butler?.task ?? "管家"
-}
-
-function shouldRenderExternalPet(
-  pet: PetState | null,
-  incubator: IncubatorState | null
-): boolean {
-  if (!pet) return false
-
-  /**
-   * 孵化器仍在孵化时，宠物不应该出现在外部地图。
-   * 此时宠物只应该通过室内孵化舱的生命反应表现。
-   */
-  if (incubator?.status !== "hatched") return false
-
-  return true
 }
 
 function drawButlerGraphic(
@@ -262,70 +266,84 @@ function drawButlerGraphic(
   graphic.rect(0, bodyY - 1, 18, 3).fill(0x5a3b22)
 }
 
-function getPetTargetPosition(
-  pet: PetState | null,
-  ecology: WorldEcologyState | null,
+function getPetTargetPosition(input: {
+  pet: PetState | null
+  incubator: IncubatorState | null
+  ecology: WorldEcologyState | null
   tick: number
-): { x: number; y: number } {
-  if (!pet) return PET_CENTER_ZONE
+}): { x: number; y: number } {
+  if (!input.pet) return PET_CENTER_ZONE
 
-  const lifePhase = pet.lifeState?.phase
-
-  if (lifePhase === "newborn") {
-    return getActiveZonePosition(ecology, "quiet_zone") ?? PET_IDLE_ZONE
+  if (
+    shouldKeepPetNearShelter({
+      pet: input.pet,
+      incubator: input.incubator,
+    })
+  ) {
+    return input.tick % 2 === 0 ? PET_SHELTER_YARD_ZONE : PET_SHELTER_DOOR_ZONE
   }
 
-  if (lifePhase === "adaptation") {
-    return tick % 2 === 0
-      ? getActiveZonePosition(ecology, "quiet_zone") ?? PET_IDLE_ZONE
-      : getActiveZonePosition(ecology, "observation_zone") ?? PET_OBSERVE_ZONE
-  }
+  const lifePhase = input.pet.lifeState?.phase
 
-  if (lifePhase === "dependent" && pet.action === "exploring") {
+  if (lifePhase === "dependent" && input.pet.action === "exploring") {
     return PET_OBSERVE_ZONE
   }
 
-  if (pet.action === "sleeping") {
-    return getActiveZonePosition(ecology, "sleep_zone") ?? PET_SLEEP_ZONE
+  if (input.pet.action === "sleeping") {
+    return getActiveZonePosition(input.ecology, "sleep_zone") ?? PET_SLEEP_ZONE
   }
 
-  if (pet.action === "eating") {
-    return getActiveZonePosition(ecology, "food_zone") ?? PET_EAT_ZONE
+  if (input.pet.action === "eating") {
+    return getActiveZonePosition(input.ecology, "food_zone") ?? PET_EAT_ZONE
   }
 
-  if (pet.action === "resting") {
+  if (input.pet.action === "resting") {
     return (
-      getActiveZonePosition(ecology, "quiet_zone") ??
-      getActiveZonePosition(ecology, "warm_zone") ??
+      getActiveZonePosition(input.ecology, "quiet_zone") ??
+      getActiveZonePosition(input.ecology, "warm_zone") ??
       PET_REST_ZONE
     )
   }
 
-  if (pet.action === "observing") {
-    return getActiveZonePosition(ecology, "observation_zone") ?? PET_OBSERVE_ZONE
+  if (input.pet.action === "observing") {
+    return getActiveZonePosition(input.ecology, "observation_zone") ?? PET_OBSERVE_ZONE
   }
 
-  if (pet.action === "exploring") {
-    return tick % 2 === 0 ? PET_EXPLORE_ZONE_A : PET_EXPLORE_ZONE_B
+  if (input.pet.action === "exploring") {
+    return input.tick % 2 === 0 ? PET_EXPLORE_ZONE_A : PET_EXPLORE_ZONE_B
   }
 
-  if (pet.action === "approaching") return PET_APPROACH_ZONE
-  if (pet.action === "alert_idle") return PET_ALERT_ZONE
-  if (pet.action === "idle") return PET_IDLE_ZONE
+  if (input.pet.action === "approaching") return PET_APPROACH_ZONE
+  if (input.pet.action === "alert_idle") return PET_ALERT_ZONE
+  if (input.pet.action === "idle") return PET_IDLE_ZONE
 
   return PET_CENTER_ZONE
 }
 
 function getButlerTargetPosition(
-  butler: ButlerState | null,
-  ecology: WorldEcologyState | null
+  input: SyncCoreActorsInput
 ): { x: number; y: number } {
-  if (butler?.task === "watching_incubator") {
-    return getActiveZonePosition(ecology, "incubator_zone") ?? BUTLER_INCUBATOR_ZONE
+  const petPhase = input.pet?.lifeState?.phase
+
+  if (input.butler?.task === "watching_incubator") {
+    if (input.incubator?.status === "hatched") {
+      return petPhase === "newborn"
+        ? BUTLER_SHELTER_CARE_ZONE
+        : BUTLER_SHELTER_DOOR_ZONE
+    }
+
+    return (
+      getActiveZonePosition(input.ecology, "incubator_zone") ??
+      BUTLER_SHELTER_CARE_ZONE
+    )
   }
 
-  if (butler?.task === "building_home") {
-    return getActiveZonePosition(ecology, "home_build_zone") ?? BUTLER_HOME_ZONE
+  if (input.butler?.task === "building_home") {
+    return getActiveZonePosition(input.ecology, "home_build_zone") ?? BUTLER_HOME_ZONE
+  }
+
+  if (petPhase === "newborn" || petPhase === "adaptation") {
+    return BUTLER_SHELTER_DOOR_ZONE
   }
 
   return BUTLER_IDLE_ZONE
