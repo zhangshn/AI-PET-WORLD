@@ -26,12 +26,9 @@ export function drawTempShelter(layer: Container) {
   })
 
   drawRoof(shelter, x - 10, y - 16, 155, 34)
-
   drawWoodStrips(shelter, x + 12, y + 22, 111, 72)
-
   drawDarkInterior(shelter, x + 22, y + 30, 90, 62)
   drawIncubatorWindow(shelter, x + 44, y + 47)
-
   drawCornerPosts(shelter, x, y + 8, 135, 102)
 
   layer.addChild(shelter)
@@ -53,7 +50,7 @@ export function drawHomeConstruction(layer: Container) {
     dark: 0x4a3324,
   })
 
-  drawUnfinishedRoof(home, x + 8, y, 140, 30)
+  drawUnfinishedRoof(home, x + 8, y, 140)
   drawConstructionDoor(home, x + 34, y + 56)
   drawConstructionWindow(home, x + 90, y + 45)
   drawLoosePlanks(home, x + 16, y + 34)
@@ -144,7 +141,13 @@ function drawPixelWallBlock(
   })
 }
 
-function drawRoof(graphic: Graphics, x: number, y: number, width: number, height: number) {
+function drawRoof(
+  graphic: Graphics,
+  x: number,
+  y: number,
+  width: number,
+  height: number
+) {
   graphic.rect(x, y + 12, width, height - 12).fill(0x4a2514)
   graphic.rect(x + 8, y + 4, width - 16, 12).fill(0x6b351a)
   graphic.rect(x + 18, y, width - 36, 6).fill(0x7a3f20)
@@ -168,10 +171,9 @@ function drawUnfinishedRoof(
   graphic: Graphics,
   x: number,
   y: number,
-  width: number,
-  height: number
+  width: number
 ) {
-  graphic.rect(x, y + 12, width, height - 12).fill({
+  graphic.rect(x, y + 12, width, 18).fill({
     color: 0x6b3a1f,
     alpha: 0.85,
   })
