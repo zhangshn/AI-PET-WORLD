@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * 当前文件负责：初始化 Pixi 世界舞台，管理图层、摄像机与各舞台渲染器调度。
+ * 当前文件负责：初始化 Pixi 世界舞台，管理图层、摄像机与渲染调度生命周期。
  */
 
 import { useCallback, useEffect, useRef } from "react"
@@ -16,22 +16,29 @@ import type { WorldEcologyState } from "@/world/ecology/ecology-engine"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
 import {
-  animateStimulusVisuals,
   clearCoreActorVisuals,
   clearRuntimeEntityVisuals,
   clearStimulusVisuals,
   createCoreActorVisualRegistry,
-  createCoreActorVisuals,
   createRuntimeEntityVisualRegistry,
   createStimulusVisualRegistry,
-  drawStaticWorld,
-  getStaticWorldRenderKey,
-  syncCoreActorVisuals,
-  syncRuntimeEntityVisuals,
-  syncStimulusVisuals,
-  syncWorldZoneVisuals,
   type ActorMotionState,
 } from "./stage-renderers/gateway/stage-renderer-gateway"
+import {
+  advanceGraphicsStagePhase,
+  createGraphicsStageRenderState,
+  resetGraphicsStageRenderState,
+  syncGraphicsStage,
+} from "./stage-renderers/orchestrator/graphics-stage-orchestrator"
+import {
+  applyStageCamera,
+  beginStageCameraDrag,
+  createStageCameraState,
+  endStageCameraDrag,
+  moveStageCameraDrag,
+  resetStageCamera,
+} from "./stage-renderers/orchestrator/stage-camera-controller"
+import type { WorldStageLayerRefs } from "./stage-renderers/orchestrator/stage-layer-types"
 
 import styles from "@/styles/world-styles/world-pixel-stage.module.css"
 
@@ -46,29 +53,8 @@ type Props = {
   tick: number
 }
 
-type CameraState = {
-  x: number
-  y: number
-  dragging: boolean
-  lastPointerX: number
-  lastPointerY: number
-}
-
 const STAGE_WIDTH = 1280
 const STAGE_HEIGHT = 720
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value))
-}
-
-function getOverlayAlpha(period?: string): number {
-  if (period === "Morning") return 0.025
-  if (period === "Daytime") return 0
-  if (period === "Evening") return 0.06
-  if (period === "Night") return 0.16
-
-  return 0.02
-}
 
 export default function WorldPixelStage(props: Props) {
   const latestRef = useRef<Props>(props)
@@ -77,20 +63,24 @@ export default function WorldPixelStage(props: Props) {
   const appRef = useRef<Application | null>(null)
   const tickerRef = useRef<Ticker | null>(null)
 
-  const worldLayerRef = useRef<Container | null>(null)
-  const backgroundLayerRef = useRef<Container | null>(null)
-  const landLayerRef = useRef<Container | null>(null)
-  const structureLayerRef = useRef<Container | null>(null)
-  const natureLayerRef = useRef<Container | null>(null)
-  const zoneLayerRef = useRef<Container | null>(null)
-  const stimulusLayerRef = useRef<Container | null>(null)
-  const entityLayerRef = useRef<Container | null>(null)
-  const foregroundLayerRef = useRef<Container | null>(null)
-  const overlayRef = useRef<Graphics | null>(null)
+  const layersRef = useRef<WorldStageLayerRefs>({
+    worldLayer: null,
+    backgroundLayer: null,
+    landLayer: null,
+    structureLayer: null,
+    natureLayer: null,
+    zoneLayer: null,
+    stimulusLayer: null,
+    entityLayer: null,
+    foregroundLayer: null,
+    overlay: null,
+  })
 
   const runtimeEntityVisualsRef = useRef(createRuntimeEntityVisualRegistry())
   const stimulusVisualsRef = useRef(createStimulusVisualRegistry())
   const actorVisualsRef = useRef(createCoreActorVisualRegistry())
+  const renderStateRef = useRef(createGraphicsStageRenderState())
+  const cameraRef = useRef(createStageCameraState())
 
   const petMotionRef = useRef<ActorMotionState>({
     x: 620,
@@ -108,150 +98,56 @@ export default function WorldPixelStage(props: Props) {
     speed: 0.95,
   })
 
-  const cameraRef = useRef<CameraState>({
-    x: 0,
-    y: 0,
-    dragging: false,
-    lastPointerX: 0,
-    lastPointerY: 0,
-  })
-
-  const phaseRef = useRef(0)
-  const lastStaticWorldKeyRef = useRef<string | null>(null)
-
   useEffect(() => {
     latestRef.current = props
   }, [props])
 
-  const clampCamera = useCallback(() => {
-    const runtime = latestRef.current.worldRuntime
-    const map = runtime?.map
-
-    const mapWidth = map ? map.size.width * map.tileSize : STAGE_WIDTH
-    const mapHeight = map ? map.size.height * map.tileSize : STAGE_HEIGHT
-
-    const minX = Math.min(0, STAGE_WIDTH - mapWidth)
-    const minY = Math.min(0, STAGE_HEIGHT - mapHeight)
-
-    cameraRef.current.x = clamp(cameraRef.current.x, minX, 0)
-    cameraRef.current.y = clamp(cameraRef.current.y, minY, 0)
-  }, [])
-
   const applyCamera = useCallback(() => {
-    const worldLayer = worldLayerRef.current
-
-    if (!worldLayer) return
-
-    clampCamera()
-
-    worldLayer.x = cameraRef.current.x
-    worldLayer.y = cameraRef.current.y
-  }, [clampCamera])
-
-  const redrawStaticWorldIfNeeded = useCallback(() => {
-    const runtime = latestRef.current.worldRuntime
-    const renderKey = getStaticWorldRenderKey(runtime)
-
-    if (lastStaticWorldKeyRef.current === renderKey) return
-
-    lastStaticWorldKeyRef.current = renderKey
-
-    drawStaticWorld({
-      layers: {
-        backgroundLayer: backgroundLayerRef.current,
-        terrainLayer: landLayerRef.current,
-        structureLayer: structureLayerRef.current,
-        natureLayer: natureLayerRef.current,
-        foregroundLayer: foregroundLayerRef.current,
-      },
-      runtime,
-      fallbackWidth: STAGE_WIDTH,
-      fallbackHeight: STAGE_HEIGHT,
-    })
-  }, [])
-
-  const syncDynamicWorld = useCallback(() => {
-    const runtime = latestRef.current.worldRuntime
-    const natureLayer = natureLayerRef.current
-    const zoneLayer = zoneLayerRef.current
-    const entityLayer = entityLayerRef.current
-    const stimulusLayer = stimulusLayerRef.current
-
-    if (natureLayer) {
-      syncRuntimeEntityVisuals({
-        layer: natureLayer,
-        runtime,
-        visuals: runtimeEntityVisualsRef.current,
-      })
-    }
-
-    if (zoneLayer) {
-      syncWorldZoneVisuals({
-        layer: zoneLayer,
-        ecology: latestRef.current.ecology,
-      })
-    }
-
-    if (entityLayer) {
-      createCoreActorVisuals({
-        layer: entityLayer,
-        registry: actorVisualsRef.current,
-      })
-
-      syncCoreActorVisuals({
-        registry: actorVisualsRef.current,
-        pet: latestRef.current.pet,
-        butler: latestRef.current.butler,
-        incubator: latestRef.current.incubator,
-        ecology: latestRef.current.ecology,
-        tick: latestRef.current.tick,
-        phase: phaseRef.current,
-        petMotion: petMotionRef.current,
-        butlerMotion: butlerMotionRef.current,
-      })
-    }
-
-    if (stimulusLayer) {
-      syncStimulusVisuals({
-        layer: stimulusLayer,
-        stimuli: latestRef.current.stimuli,
-        visuals: stimulusVisualsRef.current,
-        tick: latestRef.current.tick,
-      })
-    }
-  }, [])
-
-  const syncOverlay = useCallback(() => {
-    const overlay = overlayRef.current
-
-    if (!overlay) return
-
-    overlay.clear()
-    overlay.rect(0, 0, STAGE_WIDTH, STAGE_HEIGHT).fill({
-      color: 0x020617,
-      alpha: getOverlayAlpha(latestRef.current.time?.period),
+    applyStageCamera({
+      camera: cameraRef.current,
+      worldLayer: layersRef.current.worldLayer,
+      runtime: latestRef.current.worldRuntime,
+      stageWidth: STAGE_WIDTH,
+      stageHeight: STAGE_HEIGHT,
     })
   }, [])
 
   const tickStage = useCallback(
     (ticker: Ticker) => {
       const deltaScale = ticker.deltaTime
+      const latest = latestRef.current
 
-      phaseRef.current += 0.035 * deltaScale
-
-      redrawStaticWorldIfNeeded()
-      syncDynamicWorld()
-      animateStimulusVisuals({
-        visuals: stimulusVisualsRef.current,
-        phase: phaseRef.current,
+      advanceGraphicsStagePhase({
+        renderState: renderStateRef.current,
+        deltaScale,
       })
-      syncOverlay()
+
+      syncGraphicsStage({
+        layers: layersRef.current,
+        runtimeEntityVisuals: runtimeEntityVisualsRef.current,
+        stimulusVisuals: stimulusVisualsRef.current,
+        actorVisuals: actorVisualsRef.current,
+        petMotion: petMotionRef.current,
+        butlerMotion: butlerMotionRef.current,
+        renderState: renderStateRef.current,
+        time: latest.time,
+        pet: latest.pet,
+        butler: latest.butler,
+        incubator: latest.incubator,
+        stimuli: latest.stimuli,
+        ecology: latest.ecology,
+        runtime: latest.worldRuntime,
+        tick: latest.tick,
+        width: STAGE_WIDTH,
+        height: STAGE_HEIGHT,
+      })
+
       applyCamera()
     },
-    [applyCamera, redrawStaticWorldIfNeeded, syncDynamicWorld, syncOverlay]
+    [applyCamera]
   )
 
-    useEffect(() => {
+  useEffect(() => {
     const mount = mountRef.current
 
     if (!mount || appRef.current) return
@@ -260,6 +156,8 @@ export default function WorldPixelStage(props: Props) {
     const runtimeEntityVisuals = runtimeEntityVisualsRef.current
     const stimulusVisuals = stimulusVisualsRef.current
     const actorVisuals = actorVisualsRef.current
+    const renderState = renderStateRef.current
+    const camera = cameraRef.current
     let disposed = false
 
     async function setupPixiApp() {
@@ -303,46 +201,46 @@ export default function WorldPixelStage(props: Props) {
       app.stage.addChild(worldLayer)
       app.stage.addChild(overlay)
 
-      worldLayerRef.current = worldLayer
-      backgroundLayerRef.current = backgroundLayer
-      landLayerRef.current = landLayer
-      natureLayerRef.current = natureLayer
-      structureLayerRef.current = structureLayer
-      zoneLayerRef.current = zoneLayer
-      entityLayerRef.current = entityLayer
-      stimulusLayerRef.current = stimulusLayer
-      foregroundLayerRef.current = foregroundLayer
-      overlayRef.current = overlay
+      layersRef.current = {
+        worldLayer,
+        backgroundLayer,
+        landLayer,
+        natureLayer,
+        structureLayer,
+        zoneLayer,
+        entityLayer,
+        stimulusLayer,
+        foregroundLayer,
+        overlay,
+      }
 
       app.stage.eventMode = "static"
       app.stage.hitArea = app.screen
 
       app.stage.on("pointerdown", (event) => {
-        cameraRef.current.dragging = true
-        cameraRef.current.lastPointerX = event.global.x
-        cameraRef.current.lastPointerY = event.global.y
+        beginStageCameraDrag({
+          camera: cameraRef.current,
+          pointerX: event.global.x,
+          pointerY: event.global.y,
+        })
       })
 
       app.stage.on("pointermove", (event) => {
-        if (!cameraRef.current.dragging) return
-
-        const dx = event.global.x - cameraRef.current.lastPointerX
-        const dy = event.global.y - cameraRef.current.lastPointerY
-
-        cameraRef.current.x += dx
-        cameraRef.current.y += dy
-        cameraRef.current.lastPointerX = event.global.x
-        cameraRef.current.lastPointerY = event.global.y
+        moveStageCameraDrag({
+          camera: cameraRef.current,
+          pointerX: event.global.x,
+          pointerY: event.global.y,
+        })
 
         applyCamera()
       })
 
       app.stage.on("pointerup", () => {
-        cameraRef.current.dragging = false
+        endStageCameraDrag(cameraRef.current)
       })
 
       app.stage.on("pointerupoutside", () => {
-        cameraRef.current.dragging = false
+        endStageCameraDrag(cameraRef.current)
       })
 
       const ticker = new Ticker()
@@ -365,6 +263,8 @@ export default function WorldPixelStage(props: Props) {
       clearRuntimeEntityVisuals(runtimeEntityVisuals)
       clearStimulusVisuals(stimulusVisuals)
       clearCoreActorVisuals(actorVisuals)
+      resetGraphicsStageRenderState(renderState)
+      resetStageCamera(camera)
 
       if (appRef.current) {
         appRef.current.destroy(true, {
@@ -374,17 +274,18 @@ export default function WorldPixelStage(props: Props) {
         appRef.current = null
       }
 
-      worldLayerRef.current = null
-      backgroundLayerRef.current = null
-      landLayerRef.current = null
-      structureLayerRef.current = null
-      natureLayerRef.current = null
-      zoneLayerRef.current = null
-      stimulusLayerRef.current = null
-      entityLayerRef.current = null
-      foregroundLayerRef.current = null
-      overlayRef.current = null
-      lastStaticWorldKeyRef.current = null
+      layersRef.current = {
+        worldLayer: null,
+        backgroundLayer: null,
+        landLayer: null,
+        structureLayer: null,
+        natureLayer: null,
+        zoneLayer: null,
+        stimulusLayer: null,
+        entityLayer: null,
+        foregroundLayer: null,
+        overlay: null,
+      }
     }
   }, [applyCamera, tickStage])
 

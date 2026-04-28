@@ -103,3 +103,23 @@ export {
   syncWorldZoneVisuals,
   type SyncWorldZonesInput,
 } from "../graphics/stage-zone-renderer"
+
+export {
+  drawAssetWorldTiles,
+  type DrawAssetWorldTilesInput,
+} from "../assets/asset-tile-renderer"
+
+export {
+  syncAssetCoreActors,
+  type SyncAssetCoreActorsInput,
+} from "../assets/asset-actor-renderer"
+
+export {
+  syncAssetRuntimeEntities,
+  type SyncAssetRuntimeEntitiesInput,
+} from "../assets/asset-entity-renderer"
+
+export {
+  syncAssetEffects,
+  type SyncAssetEffectsInput,
+} from "../assets/asset-effect-renderer"
