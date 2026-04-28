@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：渲染宠物与管家等核心角色。
+ * 当前文件负责：组织宠物与管家等核心角色的舞台渲染流程。
  */
 
 import { Container, Graphics, Text, TextStyle } from "pixi.js"
@@ -15,48 +15,19 @@ import {
   darkenColor,
   lightenColor,
 } from "../../shared/stage-renderer-utils"
+import { moveToward } from "./actor-motion"
+import type {
+  ActorMotionState,
+  ActorVisualState,
+  CoreActorVisualRegistry,
+  CreateCoreActorsInput,
+  SyncCoreActorsInput,
+} from "./actor-types"
 import {
   shouldKeepPetNearShelter,
   shouldRenderExternalPet,
 } from "./stage-pet-visibility"
 import { getActiveZonePosition } from "../zones/stage-zone-renderer"
-
-export type ActorMotionState = {
-  x: number
-  y: number
-  targetX: number
-  targetY: number
-  speed: number
-}
-
-export type ActorVisualState = {
-  container: Container
-  graphic: Graphics
-  label: Text
-}
-
-export type CoreActorVisualRegistry = {
-  incubator: Graphics | null
-  pet: ActorVisualState | null
-  butler: ActorVisualState | null
-}
-
-export type CreateCoreActorsInput = {
-  layer: Container
-  registry: CoreActorVisualRegistry
-}
-
-export type SyncCoreActorsInput = {
-  registry: CoreActorVisualRegistry
-  pet: PetState | null
-  butler: ButlerState | null
-  incubator: IncubatorState | null
-  ecology: WorldEcologyState | null
-  tick: number
-  phase: number
-  petMotion: ActorMotionState
-  butlerMotion: ActorMotionState
-}
 
 const PET_CENTER_ZONE = { x: 620, y: 420 }
 const PET_EXPLORE_ZONE_A = { x: 980, y: 350 }
@@ -110,8 +81,7 @@ export function createCoreActorVisuals(input: CreateCoreActorsInput) {
     }
 
     input.layer.addChild(container)
-  }
-  else if (input.registry.butler.container.parent !== input.layer) {
+  } else if (input.registry.butler.container.parent !== input.layer) {
     input.layer.addChild(input.registry.butler.container)
   }
 
@@ -140,8 +110,7 @@ export function createCoreActorVisuals(input: CreateCoreActorsInput) {
     }
 
     input.layer.addChild(container)
-  }
-  else if (input.registry.pet.container.parent !== input.layer) {
+  } else if (input.registry.pet.container.parent !== input.layer) {
     input.layer.addChild(input.registry.pet.container)
   }
 }
@@ -232,7 +201,9 @@ function drawButlerGraphic(
   const task = butler?.task
   const visual = STAGE_VISUAL_CONFIG.actor.butler
   const working = task === "watching_incubator" || task === "building_home"
-  const bob = working ? Math.sin(phase * 5.5) * 1.1 : Math.sin(phase * 2.5) * 0.45
+  const bob = working
+    ? Math.sin(phase * 5.5) * 1.1
+    : Math.sin(phase * 2.5) * 0.45
 
   drawActorShadow(graphic, 9, 67, 15, 5, 0.22)
 
@@ -311,7 +282,10 @@ function getPetTargetPosition(input: {
   }
 
   if (input.pet.action === "observing") {
-    return getActiveZonePosition(input.ecology, "observation_zone") ?? PET_OBSERVE_ZONE
+    return (
+      getActiveZonePosition(input.ecology, "observation_zone") ??
+      PET_OBSERVE_ZONE
+    )
   }
 
   if (input.pet.action === "exploring") {
@@ -344,7 +318,10 @@ function getButlerTargetPosition(
   }
 
   if (input.butler?.task === "building_home") {
-    return getActiveZonePosition(input.ecology, "home_build_zone") ?? BUTLER_HOME_ZONE
+    return (
+      getActiveZonePosition(input.ecology, "home_build_zone") ??
+      BUTLER_HOME_ZONE
+    )
   }
 
   if (petPhase === "newborn" || petPhase === "adaptation") {
@@ -385,29 +362,6 @@ function getButlerBaseSpeed(task?: string): number {
   if (task === "building_home") return 1.2
 
   return 0.85
-}
-
-function moveToward(state: ActorMotionState) {
-  const dx = state.targetX - state.x
-  const dy = state.targetY - state.y
-  const distance = Math.sqrt(dx * dx + dy * dy)
-
-  if (distance < 0.5) {
-    state.x = state.targetX
-    state.y = state.targetY
-    return
-  }
-
-  const step = state.speed
-
-  if (distance <= step) {
-    state.x = state.targetX
-    state.y = state.targetY
-    return
-  }
-
-  state.x += (dx / distance) * step
-  state.y += (dy / distance) * step
 }
 
 function getPetColor(pet: PetState | null): number {
@@ -508,4 +462,12 @@ function drawActorShadow(
     color: STAGE_VISUAL_CONFIG.shadowColor,
     alpha,
   })
+}
+
+export type {
+  ActorMotionState,
+  ActorVisualState,
+  CoreActorVisualRegistry,
+  CreateCoreActorsInput,
+  SyncCoreActorsInput,
 }
