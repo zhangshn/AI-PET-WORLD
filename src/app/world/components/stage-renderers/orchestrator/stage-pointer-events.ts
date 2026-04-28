@@ -25,6 +25,7 @@ export type BindWorldStagePointerEventsInput = {
   getRuntime: () => WorldRuntimeState | null
   getSceneMode: () => WorldStageSceneMode
   onEnterShelter?: () => void
+  onExitShelter?: () => void
 }
 
 type PointerDownState = {
@@ -36,6 +37,13 @@ type PointerDownState = {
 
 const CLICK_MOVE_TOLERANCE = 6
 
+const SHELTER_INTERIOR_DOOR_HIT_BOX = {
+  x: 1060,
+  y: 400,
+  width: 140,
+  height: 190,
+}
+
 export function bindWorldStagePointerEvents(
   input: BindWorldStagePointerEventsInput
 ) {
@@ -45,14 +53,24 @@ export function bindWorldStagePointerEvents(
   input.app.stage.hitArea = input.app.screen
 
   input.app.stage.on("pointerdown", (event) => {
+    const sceneMode = input.getSceneMode()
+
     pointerDownState = {
       screenX: event.global.x,
       screenY: event.global.y,
-      worldX: screenToWorldX(event.global.x, input.layers.worldLayer?.x ?? 0),
-      worldY: screenToWorldY(event.global.y, input.layers.worldLayer?.y ?? 0),
+      worldX: screenToWorldX(
+        event.global.x,
+        input.layers.worldLayer?.x ?? 0,
+        input.layers.worldLayer?.scale.x ?? 1
+      ),
+      worldY: screenToWorldY(
+        event.global.y,
+        input.layers.worldLayer?.y ?? 0,
+        input.layers.worldLayer?.scale.y ?? 1
+      ),
     }
 
-    if (input.getSceneMode() !== "exterior") return
+    if (sceneMode !== "exterior") return
 
     beginStageCameraDrag({
       camera: input.camera,
@@ -83,14 +101,9 @@ export function bindWorldStagePointerEvents(
     const pointerUpX = event.global.x
     const pointerUpY = event.global.y
     const downState = pointerDownState
+    const sceneMode = input.getSceneMode()
 
     pointerDownState = null
-
-    if (input.getSceneMode() !== "exterior") {
-      endStageCameraDrag(input.camera)
-      return
-    }
-
     endStageCameraDrag(input.camera)
 
     if (!downState) return
@@ -101,6 +114,22 @@ export function bindWorldStagePointerEvents(
     )
 
     if (movedDistance > CLICK_MOVE_TOLERANCE) return
+
+    if (sceneMode === "shelterInterior") {
+      if (
+        isPointInsideRect(
+          {
+            x: downState.worldX,
+            y: downState.worldY,
+          },
+          SHELTER_INTERIOR_DOOR_HIT_BOX
+        )
+      ) {
+        input.onExitShelter?.()
+      }
+
+      return
+    }
 
     const hitShelter = isPointInsideShelterStructure({
       map: input.getRuntime()?.map ?? null,
@@ -121,10 +150,38 @@ export function bindWorldStagePointerEvents(
   })
 }
 
-function screenToWorldX(screenX: number, worldLayerX: number): number {
-  return screenX - worldLayerX
+function screenToWorldX(
+  screenX: number,
+  worldLayerX: number,
+  worldLayerScaleX: number
+): number {
+  return (screenX - worldLayerX) / worldLayerScaleX
 }
 
-function screenToWorldY(screenY: number, worldLayerY: number): number {
-  return screenY - worldLayerY
+function screenToWorldY(
+  screenY: number,
+  worldLayerY: number,
+  worldLayerScaleY: number
+): number {
+  return (screenY - worldLayerY) / worldLayerScaleY
+}
+
+function isPointInsideRect(
+  point: {
+    x: number
+    y: number
+  },
+  rect: {
+    x: number
+    y: number
+    width: number
+    height: number
+  }
+): boolean {
+  return (
+    point.x >= rect.x &&
+    point.x <= rect.x + rect.width &&
+    point.y >= rect.y &&
+    point.y <= rect.y + rect.height
+  )
 }

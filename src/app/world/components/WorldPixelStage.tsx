@@ -51,6 +51,7 @@ type Props = {
   tick: number
   sceneMode?: WorldStageSceneMode
   onEnterShelter?: () => void
+  onExitShelter?: () => void
 }
 
 export default function WorldPixelStage(props: Props) {
@@ -171,6 +172,7 @@ export default function WorldPixelStage(props: Props) {
         getRuntime: () => latestRef.current.worldRuntime,
         getSceneMode: () => latestRef.current.sceneMode ?? "exterior",
         onEnterShelter: () => latestRef.current.onEnterShelter?.(),
+        onExitShelter: () => latestRef.current.onExitShelter?.(),
       })
 
       const ticker = new Ticker()

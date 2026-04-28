@@ -2,7 +2,7 @@
  * 当前文件负责：组合渲染世界舞台中的静态地图、地图结构与氛围层。
  */
 
-import { Graphics, type Container } from "pixi.js"
+import type { Container } from "pixi.js"
 
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
@@ -65,22 +65,6 @@ export function drawStaticWorld(input: DrawStaticWorldInput) {
     mapWidth,
     mapHeight,
   })
-
-  /**
-   * 临时调试块：
-   * 如果这个红色方块能显示，说明 Pixi 图层和 camera 没问题，
-   * 问题在 tile/structure 的绘制逻辑。
-   *
-   * 如果红色方块也看不到，说明 worldLayer/camera/layer 挂载有问题。
-   */
-  const debugBox = new Graphics()
-
-  debugBox.rect(40, 40, 120, 80).fill({
-    color: 0xff0000,
-    alpha: 0.85,
-  })
-
-  structureLayer.addChild(debugBox)
 
   drawWorldTiles({
     terrainLayer,

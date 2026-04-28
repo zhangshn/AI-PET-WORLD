@@ -46,43 +46,19 @@ export default function WorldObserveLayout({ world }: Props) {
 
         <section className={styles.contentGrid}>
           <WorldStagePanel>
-            <div style={{ position: "absolute", inset: 0 }}>
-              <WorldPixelStage
-                time={world.time}
-                pet={world.pet}
-                butler={world.butler}
-                incubator={world.incubator}
-                stimuli={world.stimuli}
-                ecology={world.ecology}
-                worldRuntime={world.worldRuntime}
-                tick={world.tick}
-                sceneMode={sceneMode}
-                onEnterShelter={() => setSceneMode("shelterInterior")}
-              />
-
-              {sceneMode === "shelterInterior" && (
-                <button
-                  type="button"
-                  onClick={() => setSceneMode("exterior")}
-                  style={{
-                    position: "absolute",
-                    right: 18,
-                    top: 18,
-                    zIndex: 5,
-                    border: "1px solid rgba(226, 232, 240, 0.24)",
-                    borderRadius: 999,
-                    padding: "8px 14px",
-                    background: "rgba(15, 23, 42, 0.72)",
-                    color: "#f8fafc",
-                    fontSize: 12,
-                    cursor: "pointer",
-                    backdropFilter: "blur(10px)",
-                  }}
-                >
-                  离开住所
-                </button>
-              )}
-            </div>
+            <WorldPixelStage
+              time={world.time}
+              pet={world.pet}
+              butler={world.butler}
+              incubator={world.incubator}
+              stimuli={world.stimuli}
+              ecology={world.ecology}
+              worldRuntime={world.worldRuntime}
+              tick={world.tick}
+              sceneMode={sceneMode}
+              onEnterShelter={() => setSceneMode("shelterInterior")}
+              onExitShelter={() => setSceneMode("exterior")}
+            />
           </WorldStagePanel>
 
           <WorldSidePanel>
