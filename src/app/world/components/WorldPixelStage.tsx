@@ -36,6 +36,7 @@ import {
   cleanupWorldStageRuntimeState,
   createWorldStageRuntimeState,
 } from "./stage-renderers/orchestrator/stage-runtime-state"
+import type { WorldStageSceneMode } from "./stage-renderers/orchestrator/stage-scene-mode"
 
 import styles from "@/styles/world-styles/world-pixel-stage.module.css"
 
@@ -48,6 +49,7 @@ type Props = {
   ecology: WorldEcologyState | null
   worldRuntime: WorldRuntimeState | null
   tick: number
+  sceneMode?: WorldStageSceneMode
 }
 
 export default function WorldPixelStage(props: Props) {
@@ -64,13 +66,28 @@ export default function WorldPixelStage(props: Props) {
     latestRef.current = props
   }, [props])
 
+  useEffect(() => {
+    stageRuntimeRef.current.renderState.lastStaticWorldKey = null
+  }, [props.sceneMode])
+
   const applyCamera = useCallback(() => {
     const stageRuntime = stageRuntimeRef.current
+    const latest = latestRef.current
+    const sceneMode = latest.sceneMode ?? "exterior"
+
+    if (sceneMode === "shelterInterior") {
+      if (layersRef.current.worldLayer) {
+        layersRef.current.worldLayer.x = 0
+        layersRef.current.worldLayer.y = 0
+        layersRef.current.worldLayer.scale.set(1)
+      }
+      return
+    }
 
     applyStageCamera({
       camera: stageRuntime.camera,
       worldLayer: layersRef.current.worldLayer,
-      runtime: latestRef.current.worldRuntime,
+      runtime: latest.worldRuntime,
       stageWidth: WORLD_STAGE_SIZE.width,
       stageHeight: WORLD_STAGE_SIZE.height,
     })
@@ -95,6 +112,7 @@ export default function WorldPixelStage(props: Props) {
         petMotion: stageRuntime.petMotion,
         butlerMotion: stageRuntime.butlerMotion,
         renderState: stageRuntime.renderState,
+        sceneMode: latest.sceneMode ?? "exterior",
         time: latest.time,
         pet: latest.pet,
         butler: latest.butler,
@@ -182,7 +200,9 @@ export default function WorldPixelStage(props: Props) {
     <div className={styles.stageShell}>
       <div ref={mountRef} className={styles.stageCanvas} />
       <div className={styles.stageHint}>
-        拖拽观察世界 · F3 打开开发面板
+        {(props.sceneMode ?? "exterior") === "shelterInterior"
+          ? "住所内部 · 初始生命舱"
+          : "拖拽观察世界 · F3 打开开发面板"}
       </div>
     </div>
   )

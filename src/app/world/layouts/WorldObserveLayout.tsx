@@ -4,7 +4,10 @@
  * 当前文件负责：组织 /world 正式观察页的整体产品布局。
  */
 
+import { useState } from "react"
+
 import type { WorldEngineViewState } from "../hooks/useWorldEngineState"
+import type { WorldStageSceneMode } from "../components/stage-renderers/orchestrator/stage-scene-mode"
 
 import WorldInfoBar from "../ui/WorldInfoBar"
 import PetInsightCard from "../ui/PetInsightCard"
@@ -23,6 +26,8 @@ type Props = {
 }
 
 export default function WorldObserveLayout({ world }: Props) {
+  const [sceneMode, setSceneMode] = useState<WorldStageSceneMode>("exterior")
+
   return (
     <main className={styles.page}>
       <section className={styles.shell}>
@@ -41,16 +46,44 @@ export default function WorldObserveLayout({ world }: Props) {
 
         <section className={styles.contentGrid}>
           <WorldStagePanel>
-            <WorldPixelStage
-              time={world.time}
-              pet={world.pet}
-              butler={world.butler}
-              incubator={world.incubator}
-              stimuli={world.stimuli}
-              ecology={world.ecology}
-              worldRuntime={world.worldRuntime}
-              tick={world.tick}
-            />
+            <div style={{ position: "relative" }}>
+              <WorldPixelStage
+                time={world.time}
+                pet={world.pet}
+                butler={world.butler}
+                incubator={world.incubator}
+                stimuli={world.stimuli}
+                ecology={world.ecology}
+                worldRuntime={world.worldRuntime}
+                tick={world.tick}
+                sceneMode={sceneMode}
+              />
+
+              <button
+                type="button"
+                onClick={() =>
+                  setSceneMode((current) =>
+                    current === "exterior" ? "shelterInterior" : "exterior"
+                  )
+                }
+                style={{
+                  position: "absolute",
+                  right: 18,
+                  top: 18,
+                  zIndex: 5,
+                  border: "1px solid rgba(226, 232, 240, 0.24)",
+                  borderRadius: 999,
+                  padding: "8px 14px",
+                  background: "rgba(15, 23, 42, 0.72)",
+                  color: "#f8fafc",
+                  fontSize: 12,
+                  cursor: "pointer",
+                  backdropFilter: "blur(10px)",
+                }}
+              >
+                {sceneMode === "exterior" ? "进入住所" : "离开住所"}
+              </button>
+            </div>
           </WorldStagePanel>
 
           <WorldSidePanel>

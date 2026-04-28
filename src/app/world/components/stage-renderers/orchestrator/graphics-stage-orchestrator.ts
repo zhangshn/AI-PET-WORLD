@@ -24,8 +24,13 @@ import {
   type RuntimeEntityVisualRegistry,
   type StimulusVisualRegistry,
 } from "../gateway/stage-renderer-gateway"
+import {
+  drawShelterInterior,
+  getShelterInteriorRenderKey,
+} from "../graphics/stage-interior-renderer"
 import { syncStageOverlay } from "./stage-overlay-renderer"
 import type { WorldStageLayerRefs } from "./stage-layer-types"
+import type { WorldStageSceneMode } from "./stage-scene-mode"
 
 export type GraphicsStageRenderState = {
   lastStaticWorldKey: string | null
@@ -40,6 +45,7 @@ export type SyncGraphicsStageInput = {
   petMotion: ActorMotionState
   butlerMotion: ActorMotionState
   renderState: GraphicsStageRenderState
+  sceneMode: WorldStageSceneMode
   time: TimeState | null
   pet: PetState | null
   butler: ButlerState | null
@@ -67,12 +73,17 @@ export function advanceGraphicsStagePhase(input: {
 }
 
 export function syncGraphicsStage(input: SyncGraphicsStageInput) {
-  redrawStaticWorldIfNeeded(input)
-  syncDynamicWorld(input)
+  redrawStaticSceneIfNeeded(input)
+
+  if (input.sceneMode === "exterior") {
+    syncDynamicWorld(input)
+  }
+
   animateStimulusVisuals({
     visuals: input.stimulusVisuals,
     phase: input.renderState.phase,
   })
+
   syncStageOverlay({
     overlay: input.layers.overlay,
     width: input.width,
@@ -88,12 +99,27 @@ export function resetGraphicsStageRenderState(
   renderState.phase = 0
 }
 
-function redrawStaticWorldIfNeeded(input: SyncGraphicsStageInput) {
-  const renderKey = getStaticWorldRenderKey(input.runtime)
+function redrawStaticSceneIfNeeded(input: SyncGraphicsStageInput) {
+  const renderKey = getCurrentStaticRenderKey(input)
 
   if (input.renderState.lastStaticWorldKey === renderKey) return
 
   input.renderState.lastStaticWorldKey = renderKey
+
+  if (input.sceneMode === "shelterInterior") {
+    drawShelterInterior({
+      backgroundLayer: input.layers.backgroundLayer,
+      terrainLayer: input.layers.landLayer,
+      structureLayer: input.layers.structureLayer,
+      natureLayer: input.layers.natureLayer,
+      foregroundLayer: input.layers.foregroundLayer,
+      incubator: input.incubator,
+      pet: input.pet,
+      width: input.width,
+      height: input.height,
+    })
+    return
+  }
 
   drawStaticWorld({
     layers: {
@@ -107,6 +133,19 @@ function redrawStaticWorldIfNeeded(input: SyncGraphicsStageInput) {
     fallbackWidth: input.width,
     fallbackHeight: input.height,
   })
+}
+
+function getCurrentStaticRenderKey(input: SyncGraphicsStageInput): string {
+  if (input.sceneMode === "shelterInterior") {
+    return getShelterInteriorRenderKey({
+      incubator: input.incubator,
+      pet: input.pet,
+      width: input.width,
+      height: input.height,
+    })
+  }
+
+  return getStaticWorldRenderKey(input.runtime)
 }
 
 function syncDynamicWorld(input: SyncGraphicsStageInput) {
