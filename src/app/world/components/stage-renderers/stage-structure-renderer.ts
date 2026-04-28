@@ -26,7 +26,7 @@ export function drawTempShelter(layer: Container) {
   })
 
   drawRoof(shelter, x - 10, y - 16, 155, 34)
-  drawWoodStrips(shelter, x + 12, y + 22, 111, 72)
+  drawWoodStrips(shelter, x + 12, y + 22, 111)
   drawDarkInterior(shelter, x + 22, y + 30, 90, 62)
   drawIncubatorWindow(shelter, x + 44, y + 47)
   drawCornerPosts(shelter, x, y + 8, 135, 102)
@@ -196,8 +196,7 @@ function drawWoodStrips(
   graphic: Graphics,
   x: number,
   y: number,
-  width: number,
-  height: number
+  width: number
 ) {
   for (let index = 0; index < 5; index += 1) {
     const stripY = y + index * 14
