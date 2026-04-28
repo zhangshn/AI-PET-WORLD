@@ -46,7 +46,7 @@ export default function WorldObserveLayout({ world }: Props) {
 
         <section className={styles.contentGrid}>
           <WorldStagePanel>
-            <div style={{ position: "relative" }}>
+            <div style={{ position: "absolute", inset: 0 }}>
               <WorldPixelStage
                 time={world.time}
                 pet={world.pet}
