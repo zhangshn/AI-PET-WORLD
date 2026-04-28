@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * 当前文件负责：初始化 Pixi 世界舞台，管理摄像机与渲染调度生命周期。
+ * 当前文件负责：承载 Pixi 世界舞台并协调渲染生命周期。
  */
 
 import { useCallback, useEffect, useRef } from "react"
@@ -33,10 +33,7 @@ import {
 } from "./stage-renderers/orchestrator/graphics-stage-orchestrator"
 import {
   applyStageCamera,
-  beginStageCameraDrag,
   createStageCameraState,
-  endStageCameraDrag,
-  moveStageCameraDrag,
   resetStageCamera,
 } from "./stage-renderers/orchestrator/stage-camera-controller"
 import {
@@ -44,6 +41,12 @@ import {
   createEmptyWorldStageLayers,
   createWorldStageLayers,
 } from "./stage-renderers/orchestrator/stage-layer-factory"
+import {
+  attachWorldPixiCanvas,
+  createWorldPixiApplication,
+  destroyWorldPixiApplication,
+} from "./stage-renderers/orchestrator/stage-pixi-app"
+import { bindWorldStagePointerEvents } from "./stage-renderers/orchestrator/stage-pointer-events"
 
 import styles from "@/styles/world-styles/world-pixel-stage.module.css"
 
@@ -138,12 +141,12 @@ export default function WorldPixelStage(props: Props) {
     [applyCamera]
   )
 
-  useEffect(() => {
-    const mount = mountRef.current
+    useEffect(() => {
+    const currentMount = mountRef.current
 
-    if (!mount || appRef.current) return
+    if (!currentMount || appRef.current) return
 
-    const app = new Application()
+    const mountElement: HTMLDivElement = currentMount
     const runtimeEntityVisuals = runtimeEntityVisualsRef.current
     const stimulusVisuals = stimulusVisualsRef.current
     const actorVisuals = actorVisualsRef.current
@@ -152,22 +155,18 @@ export default function WorldPixelStage(props: Props) {
     let disposed = false
 
     async function setupPixiApp() {
-      await app.init({
-        width: WORLD_STAGE_SIZE.width,
-        height: WORLD_STAGE_SIZE.height,
-        backgroundAlpha: 0,
-        antialias: false,
-        resolution: window.devicePixelRatio || 1,
-        autoDensity: true,
-      })
+      const app = await createWorldPixiApplication()
 
       if (disposed || !mountRef.current) {
-        app.destroy(true)
+        destroyWorldPixiApplication(app)
         return
       }
 
       appRef.current = app
-      mountRef.current.appendChild(app.canvas)
+      attachWorldPixiCanvas({
+        mount: mountElement,
+        app,
+      })
 
       const layers = createWorldStageLayers()
 
@@ -178,33 +177,11 @@ export default function WorldPixelStage(props: Props) {
 
       layersRef.current = layers
 
-      app.stage.eventMode = "static"
-      app.stage.hitArea = app.screen
-
-      app.stage.on("pointerdown", (event) => {
-        beginStageCameraDrag({
-          camera: cameraRef.current,
-          pointerX: event.global.x,
-          pointerY: event.global.y,
-        })
-      })
-
-      app.stage.on("pointermove", (event) => {
-        moveStageCameraDrag({
-          camera: cameraRef.current,
-          pointerX: event.global.x,
-          pointerY: event.global.y,
-        })
-
-        applyCamera()
-      })
-
-      app.stage.on("pointerup", () => {
-        endStageCameraDrag(cameraRef.current)
-      })
-
-      app.stage.on("pointerupoutside", () => {
-        endStageCameraDrag(cameraRef.current)
+      bindWorldStagePointerEvents({
+        app,
+        camera,
+        layers,
+        getRuntime: () => latestRef.current.worldRuntime,
       })
 
       const ticker = new Ticker()
@@ -230,17 +207,12 @@ export default function WorldPixelStage(props: Props) {
       resetGraphicsStageRenderState(renderState)
       resetStageCamera(camera)
 
-      if (appRef.current) {
-        appRef.current.destroy(true, {
-          children: true,
-          texture: true,
-        })
-        appRef.current = null
-      }
+      destroyWorldPixiApplication(appRef.current)
+      appRef.current = null
 
       layersRef.current = createEmptyWorldStageLayers()
     }
-  }, [applyCamera, tickStage])
+  }, [tickStage])
 
   return (
     <div className={styles.stageShell}>
