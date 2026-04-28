@@ -1,11 +1,11 @@
 "use client"
 
 /**
- * 当前文件负责：初始化 Pixi 世界舞台，管理图层、摄像机与渲染调度生命周期。
+ * 当前文件负责：初始化 Pixi 世界舞台，管理摄像机与渲染调度生命周期。
  */
 
 import { useCallback, useEffect, useRef } from "react"
-import { Application, Container, Graphics, Ticker } from "pixi.js"
+import { Application, Ticker } from "pixi.js"
 
 import type { WorldStimulus } from "@/ai/gateway"
 import type { TimeState } from "@/engine/timeSystem"
@@ -15,6 +15,7 @@ import type { PetState } from "@/types/pet"
 import type { WorldEcologyState } from "@/world/ecology/ecology-engine"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
+import { WORLD_STAGE_SIZE } from "./stage-renderers/config/stage-size-config"
 import {
   clearCoreActorVisuals,
   clearRuntimeEntityVisuals,
@@ -38,7 +39,11 @@ import {
   moveStageCameraDrag,
   resetStageCamera,
 } from "./stage-renderers/orchestrator/stage-camera-controller"
-import type { WorldStageLayerRefs } from "./stage-renderers/orchestrator/stage-layer-types"
+import {
+  attachWorldStageLayers,
+  createEmptyWorldStageLayers,
+  createWorldStageLayers,
+} from "./stage-renderers/orchestrator/stage-layer-factory"
 
 import styles from "@/styles/world-styles/world-pixel-stage.module.css"
 
@@ -53,9 +58,6 @@ type Props = {
   tick: number
 }
 
-const STAGE_WIDTH = 1280
-const STAGE_HEIGHT = 720
-
 export default function WorldPixelStage(props: Props) {
   const latestRef = useRef<Props>(props)
 
@@ -63,18 +65,7 @@ export default function WorldPixelStage(props: Props) {
   const appRef = useRef<Application | null>(null)
   const tickerRef = useRef<Ticker | null>(null)
 
-  const layersRef = useRef<WorldStageLayerRefs>({
-    worldLayer: null,
-    backgroundLayer: null,
-    landLayer: null,
-    structureLayer: null,
-    natureLayer: null,
-    zoneLayer: null,
-    stimulusLayer: null,
-    entityLayer: null,
-    foregroundLayer: null,
-    overlay: null,
-  })
+  const layersRef = useRef(createEmptyWorldStageLayers())
 
   const runtimeEntityVisualsRef = useRef(createRuntimeEntityVisualRegistry())
   const stimulusVisualsRef = useRef(createStimulusVisualRegistry())
@@ -107,8 +98,8 @@ export default function WorldPixelStage(props: Props) {
       camera: cameraRef.current,
       worldLayer: layersRef.current.worldLayer,
       runtime: latestRef.current.worldRuntime,
-      stageWidth: STAGE_WIDTH,
-      stageHeight: STAGE_HEIGHT,
+      stageWidth: WORLD_STAGE_SIZE.width,
+      stageHeight: WORLD_STAGE_SIZE.height,
     })
   }, [])
 
@@ -138,8 +129,8 @@ export default function WorldPixelStage(props: Props) {
         ecology: latest.ecology,
         runtime: latest.worldRuntime,
         tick: latest.tick,
-        width: STAGE_WIDTH,
-        height: STAGE_HEIGHT,
+        width: WORLD_STAGE_SIZE.width,
+        height: WORLD_STAGE_SIZE.height,
       })
 
       applyCamera()
@@ -162,8 +153,8 @@ export default function WorldPixelStage(props: Props) {
 
     async function setupPixiApp() {
       await app.init({
-        width: STAGE_WIDTH,
-        height: STAGE_HEIGHT,
+        width: WORLD_STAGE_SIZE.width,
+        height: WORLD_STAGE_SIZE.height,
         backgroundAlpha: 0,
         antialias: false,
         resolution: window.devicePixelRatio || 1,
@@ -178,41 +169,14 @@ export default function WorldPixelStage(props: Props) {
       appRef.current = app
       mountRef.current.appendChild(app.canvas)
 
-      const worldLayer = new Container()
-      const backgroundLayer = new Container()
-      const landLayer = new Container()
-      const natureLayer = new Container()
-      const structureLayer = new Container()
-      const zoneLayer = new Container()
-      const entityLayer = new Container()
-      const stimulusLayer = new Container()
-      const foregroundLayer = new Container()
-      const overlay = new Graphics()
+      const layers = createWorldStageLayers()
 
-      worldLayer.addChild(backgroundLayer)
-      worldLayer.addChild(landLayer)
-      worldLayer.addChild(natureLayer)
-      worldLayer.addChild(structureLayer)
-      worldLayer.addChild(zoneLayer)
-      worldLayer.addChild(entityLayer)
-      worldLayer.addChild(stimulusLayer)
-      worldLayer.addChild(foregroundLayer)
+      attachWorldStageLayers({
+        appStage: app.stage,
+        layers,
+      })
 
-      app.stage.addChild(worldLayer)
-      app.stage.addChild(overlay)
-
-      layersRef.current = {
-        worldLayer,
-        backgroundLayer,
-        landLayer,
-        natureLayer,
-        structureLayer,
-        zoneLayer,
-        entityLayer,
-        stimulusLayer,
-        foregroundLayer,
-        overlay,
-      }
+      layersRef.current = layers
 
       app.stage.eventMode = "static"
       app.stage.hitArea = app.screen
@@ -274,18 +238,7 @@ export default function WorldPixelStage(props: Props) {
         appRef.current = null
       }
 
-      layersRef.current = {
-        worldLayer: null,
-        backgroundLayer: null,
-        landLayer: null,
-        structureLayer: null,
-        natureLayer: null,
-        zoneLayer: null,
-        stimulusLayer: null,
-        entityLayer: null,
-        foregroundLayer: null,
-        overlay: null,
-      }
+      layersRef.current = createEmptyWorldStageLayers()
     }
   }, [applyCamera, tickStage])
 
