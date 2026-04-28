@@ -105,13 +105,14 @@ export function useWorldEngineState(): WorldEngineViewState {
     worldEngine.initialize()
 
     const interval = setInterval(() => {
-        worldEngine.update()
+      worldEngine.update()
+      syncWorld()
     }, 2000)
 
     return () => {
-        clearInterval(interval)
+      clearInterval(interval)
     }
-    }, [syncWorld])
+  }, [syncWorld])
 
   return {
     time,
