@@ -16,10 +16,31 @@ export type StageTileVisualConfig = StageVisualTone
 
 export type StageActorVisualConfig = {
   skin: number
+  skinShadow: number
   hair: number
   cloth: number
+  clothLight: number
   accent: number
+  outline: number
+  dark: number
   shadow: number
+}
+
+export type StageIncubatorVisualConfig = {
+  shell: number
+  panel: number
+  glass: number
+  stableGlow: number
+  unstableGlow: number
+  dark: number
+}
+
+export type StageEffectVisualConfig = {
+  breeze: number
+  coldLight: number
+  leaf: number
+  sparkle: number
+  warmLight: number
 }
 
 export type StageWorldVisualConfig = {
@@ -31,6 +52,14 @@ export type StageWorldVisualConfig = {
     petDefault: StageActorVisualConfig
     butlerDefault: StageActorVisualConfig
     incubatorDefault: StageActorVisualConfig
+
+    /**
+     * 兼容旧 renderer 的命名。
+     * 后续可以统一迁移到 petDefault / butlerDefault / incubatorDefault。
+     */
+    pet: StageActorVisualConfig
+    butler: StageActorVisualConfig
+    incubator: StageIncubatorVisualConfig
   }
   entity: {
     tree: {
@@ -59,6 +88,52 @@ export type StageWorldVisualConfig = {
       wingLights: number[]
     }
   }
+  effect: StageEffectVisualConfig
+}
+
+const PET_VISUAL: StageActorVisualConfig = {
+  skin: 0xf2c28b,
+  skinShadow: 0xc98655,
+  hair: 0x6b3f2a,
+  cloth: 0xf59cb6,
+  clothLight: 0xffc1d4,
+  accent: 0xffffff,
+  outline: 0x5b3424,
+  dark: 0x3b2418,
+  shadow: 0x1c1917,
+}
+
+const BUTLER_VISUAL: StageActorVisualConfig = {
+  skin: 0xf0c090,
+  skinShadow: 0xc68655,
+  hair: 0x2d3748,
+  cloth: 0x334155,
+  clothLight: 0x64748b,
+  accent: 0xe2e8f0,
+  outline: 0x111827,
+  dark: 0x0f172a,
+  shadow: 0x111827,
+}
+
+const INCUBATOR_ACTOR_VISUAL: StageActorVisualConfig = {
+  skin: 0xd8f3ff,
+  skinShadow: 0x7ccbe3,
+  hair: 0x6bc7e8,
+  cloth: 0x8be9fd,
+  clothLight: 0xc8f7ff,
+  accent: 0xffffff,
+  outline: 0x075985,
+  dark: 0x083344,
+  shadow: 0x083344,
+}
+
+const INCUBATOR_VISUAL: StageIncubatorVisualConfig = {
+  shell: 0x7dd3fc,
+  panel: 0x164e63,
+  glass: 0xa5f3fc,
+  stableGlow: 0x67e8f9,
+  unstableGlow: 0xfb7185,
+  dark: 0x083344,
 }
 
 export const STAGE_VISUAL_CONFIG: StageWorldVisualConfig = {
@@ -154,27 +229,13 @@ export const STAGE_VISUAL_CONFIG: StageWorldVisualConfig = {
   },
 
   actor: {
-    petDefault: {
-      skin: 0xf2c28b,
-      hair: 0x6b3f2a,
-      cloth: 0xf59cb6,
-      accent: 0xffffff,
-      shadow: 0x1c1917,
-    },
-    butlerDefault: {
-      skin: 0xf0c090,
-      hair: 0x2d3748,
-      cloth: 0x334155,
-      accent: 0xe2e8f0,
-      shadow: 0x111827,
-    },
-    incubatorDefault: {
-      skin: 0xd8f3ff,
-      hair: 0x6bc7e8,
-      cloth: 0x8be9fd,
-      accent: 0xffffff,
-      shadow: 0x083344,
-    },
+    petDefault: PET_VISUAL,
+    butlerDefault: BUTLER_VISUAL,
+    incubatorDefault: INCUBATOR_ACTOR_VISUAL,
+
+    pet: PET_VISUAL,
+    butler: BUTLER_VISUAL,
+    incubator: INCUBATOR_VISUAL,
   },
 
   entity: {
@@ -203,6 +264,14 @@ export const STAGE_VISUAL_CONFIG: StageWorldVisualConfig = {
       wings: [0xf59cb6, 0xf9d16b, 0x93c5fd],
       wingLights: [0xffd6e7, 0xffec99, 0xbfdbfe],
     },
+  },
+
+  effect: {
+    breeze: 0xdbeafe,
+    coldLight: 0x93c5fd,
+    leaf: 0x8fbf5a,
+    sparkle: 0xfef3c7,
+    warmLight: 0xfacc15,
   },
 }
 
