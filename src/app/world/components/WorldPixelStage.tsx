@@ -50,6 +50,7 @@ type Props = {
   worldRuntime: WorldRuntimeState | null
   tick: number
   sceneMode?: WorldStageSceneMode
+  onEnterShelter?: () => void
 }
 
 export default function WorldPixelStage(props: Props) {
@@ -168,6 +169,8 @@ export default function WorldPixelStage(props: Props) {
         camera: stageRuntime.camera,
         layers,
         getRuntime: () => latestRef.current.worldRuntime,
+        getSceneMode: () => latestRef.current.sceneMode ?? "exterior",
+        onEnterShelter: () => latestRef.current.onEnterShelter?.(),
       })
 
       const ticker = new Ticker()
@@ -202,7 +205,7 @@ export default function WorldPixelStage(props: Props) {
       <div className={styles.stageHint}>
         {(props.sceneMode ?? "exterior") === "shelterInterior"
           ? "住所内部 · 初始生命舱"
-          : "拖拽观察世界 · F3 打开开发面板"}
+          : "点击住所进入室内 · 拖拽观察世界 · F3 打开开发面板"}
       </div>
     </div>
   )
