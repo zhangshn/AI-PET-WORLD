@@ -2,7 +2,11 @@
  * 当前文件负责：生成 Alpha 阶段世界初始化所需的基础自然实体。
  */
 
-import type { WorldMapState, WorldPosition } from "../map/world-map"
+import type {
+  WorldMapState,
+  WorldMapTileType,
+  WorldPosition,
+} from "../map/world-map"
 import { createWorldEntity, type WorldEntity } from "./entity-types"
 
 export type StarterWorldEntitySpawnInput = {
@@ -23,12 +27,37 @@ type NaturalEntitySpawnPoint = {
   position: WorldPosition
 }
 
+type SpawnRule = {
+  allowedTiles: WorldMapTileType[]
+  searchRadius: number
+}
+
+const TREE_SPAWN_RULE: SpawnRule = {
+  allowedTiles: ["forest_edge", "wild_grass", "short_grass", "flower_patch"],
+  searchRadius: 8,
+}
+
+const FLOWER_SPAWN_RULE: SpawnRule = {
+  allowedTiles: ["flower_patch", "short_grass", "wild_grass"],
+  searchRadius: 7,
+}
+
+const WATER_SPAWN_RULE: SpawnRule = {
+  allowedTiles: ["water"],
+  searchRadius: 10,
+}
+
+const BUTTERFLY_SPAWN_RULE: SpawnRule = {
+  allowedTiles: ["flower_patch", "short_grass", "wild_grass"],
+  searchRadius: 8,
+}
+
 export function spawnStarterWorldEntities(
   input: StarterWorldEntitySpawnInput
 ): StarterWorldEntitySpawnResult {
   const tick = input.tick ?? 0
 
-  const treePoints = clampSpawnPointsToMap(
+  const treePoints = resolveSpawnPointsForRule(
     [
       { id: "tree-north-west", position: { x: 6, y: 5 } },
       { id: "tree-north-east", position: { x: 35, y: 6 } },
@@ -36,10 +65,11 @@ export function spawnStarterWorldEntities(
       { id: "tree-south", position: { x: 28, y: 26 } },
       { id: "tree-east", position: { x: 42, y: 17 } },
     ],
-    input.map
+    input.map,
+    TREE_SPAWN_RULE
   )
 
-  const flowerPoints = clampSpawnPointsToMap(
+  const flowerPoints = resolveSpawnPointsForRule(
     [
       { id: "flower-meadow-1", position: { x: 13, y: 10 } },
       { id: "flower-meadow-2", position: { x: 16, y: 12 } },
@@ -48,24 +78,27 @@ export function spawnStarterWorldEntities(
       { id: "flower-home-2", position: { x: 26, y: 19 } },
       { id: "flower-south-1", position: { x: 31, y: 24 } },
     ],
-    input.map
+    input.map,
+    FLOWER_SPAWN_RULE
   )
 
-  const waterPoints = clampSpawnPointsToMap(
+  const waterPoints = resolveSpawnPointsForRule(
     [
       { id: "water-pond-1", position: { x: 9, y: 23 } },
       { id: "water-pond-2", position: { x: 10, y: 24 } },
       { id: "water-pond-3", position: { x: 11, y: 23 } },
     ],
-    input.map
+    input.map,
+    WATER_SPAWN_RULE
   )
 
-  const butterflyPoints = clampSpawnPointsToMap(
+  const butterflyPoints = resolveSpawnPointsForRule(
     [
       { id: "butterfly-meadow-1", position: { x: 15, y: 11 } },
       { id: "butterfly-meadow-2", position: { x: 22, y: 14 } },
     ],
-    input.map
+    input.map,
+    BUTTERFLY_SPAWN_RULE
   )
 
   const trees = treePoints.map((point, index) =>
@@ -253,14 +286,184 @@ export function spawnStarterWorldEntities(
   }
 }
 
-function clampSpawnPointsToMap(
+function resolveSpawnPointsForRule(
   points: NaturalEntitySpawnPoint[],
-  map: WorldMapState
+  map: WorldMapState,
+  rule: SpawnRule
 ): NaturalEntitySpawnPoint[] {
-  return points.map((point) => ({
-    ...point,
-    position: clampPositionToMap(point.position, map),
-  }))
+  const usedPositions = new Set<string>()
+
+  return points.map((point) => {
+    const safePosition = findNearestAllowedPosition({
+      preferred: point.position,
+      map,
+      rule,
+      usedPositions,
+    })
+
+    usedPositions.add(createPositionKey(safePosition))
+
+    return {
+      ...point,
+      position: safePosition,
+    }
+  })
+}
+
+function findNearestAllowedPosition(input: {
+  preferred: WorldPosition
+  map: WorldMapState
+  rule: SpawnRule
+  usedPositions: Set<string>
+}): WorldPosition {
+  const preferred = clampPositionToMap(input.preferred, input.map)
+
+  if (
+    isAllowedSpawnPosition({
+      position: preferred,
+      map: input.map,
+      rule: input.rule,
+      usedPositions: input.usedPositions,
+    })
+  ) {
+    return preferred
+  }
+
+  for (let radius = 1; radius <= input.rule.searchRadius; radius += 1) {
+    const candidates = getRingPositions(preferred, radius, input.map)
+
+    for (const candidate of candidates) {
+      if (
+        isAllowedSpawnPosition({
+          position: candidate,
+          map: input.map,
+          rule: input.rule,
+          usedPositions: input.usedPositions,
+        })
+      ) {
+        return candidate
+      }
+    }
+  }
+
+  return findFirstAllowedMapPosition({
+    map: input.map,
+    rule: input.rule,
+    usedPositions: input.usedPositions,
+  }) ?? preferred
+}
+
+function isAllowedSpawnPosition(input: {
+  position: WorldPosition
+  map: WorldMapState
+  rule: SpawnRule
+  usedPositions: Set<string>
+}): boolean {
+  const tileType = getTileTypeAt(input.map, input.position)
+
+  if (!tileType) return false
+
+  if (!input.rule.allowedTiles.includes(tileType)) {
+    return false
+  }
+
+  if (input.usedPositions.has(createPositionKey(input.position))) {
+    return false
+  }
+
+  return true
+}
+
+function getRingPositions(
+  center: WorldPosition,
+  radius: number,
+  map: WorldMapState
+): WorldPosition[] {
+  const positions: WorldPosition[] = []
+
+  for (let y = center.y - radius; y <= center.y + radius; y += 1) {
+    for (let x = center.x - radius; x <= center.x + radius; x += 1) {
+      const isOnRing =
+        x === center.x - radius ||
+        x === center.x + radius ||
+        y === center.y - radius ||
+        y === center.y + radius
+
+      if (!isOnRing) continue
+
+      positions.push(
+        clampPositionToMap(
+          {
+            x,
+            y,
+          },
+          map
+        )
+      )
+    }
+  }
+
+  return dedupePositions(positions)
+}
+
+function findFirstAllowedMapPosition(input: {
+  map: WorldMapState
+  rule: SpawnRule
+  usedPositions: Set<string>
+}): WorldPosition | null {
+  for (const tile of input.map.tiles) {
+    const position = {
+      x: tile.x,
+      y: tile.y,
+    }
+
+    if (
+      isAllowedSpawnPosition({
+        position,
+        map: input.map,
+        rule: input.rule,
+        usedPositions: input.usedPositions,
+      })
+    ) {
+      return position
+    }
+  }
+
+  return null
+}
+
+function getTileTypeAt(
+  map: WorldMapState,
+  position: WorldPosition
+): WorldMapTileType | null {
+  const tileX = Math.round(position.x)
+  const tileY = Math.round(position.y)
+
+  return (
+    map.tiles.find((tile) => tile.x === tileX && tile.y === tileY)?.type ?? null
+  )
+}
+
+function dedupePositions(positions: WorldPosition[]): WorldPosition[] {
+  const result: WorldPosition[] = []
+  const used = new Set<string>()
+
+  for (const position of positions) {
+    const key = createPositionKey(position)
+
+    if (used.has(key)) {
+      continue
+    }
+
+    used.add(key)
+    result.push(position)
+  }
+
+  return result
+}
+
+function createPositionKey(position: WorldPosition): string {
+  return `${Math.round(position.x)}:${Math.round(position.y)}`
 }
 
 function clampPositionToMap(
@@ -268,8 +471,8 @@ function clampPositionToMap(
   map: WorldMapState
 ): WorldPosition {
   return {
-    x: clampNumber(position.x, 0, Math.max(0, map.size.width - 1)),
-    y: clampNumber(position.y, 0, Math.max(0, map.size.height - 1)),
+    x: clampNumber(Math.round(position.x), 0, Math.max(0, map.size.width - 1)),
+    y: clampNumber(Math.round(position.y), 0, Math.max(0, map.size.height - 1)),
   }
 }
 

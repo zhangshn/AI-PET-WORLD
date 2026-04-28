@@ -10,9 +10,7 @@ import type { IncubatorState } from "@/types/incubator"
 import type { PetState } from "@/types/pet"
 import type { WorldEcologyState } from "@/world/ecology/ecology-engine"
 
-import {
-  getActiveZonePosition,
-} from "./stage-zone-renderer"
+import { getActiveZonePosition } from "./stage-zone-renderer"
 import {
   INCUBATOR_STAGE_POSITION,
   TEMP_SHELTER_STAGE_POSITION,
@@ -114,11 +112,6 @@ export function createCoreActorVisuals(input: CreateCoreActorsInput) {
       }),
     })
 
-    graphic.rect(0, 0, 18, 18).fill(0xf5d0a9)
-    graphic.rect(-4, 18, 26, 30).fill(0x6366f1)
-    graphic.rect(-2, 48, 8, 20).fill(0x1e293b)
-    graphic.rect(12, 48, 8, 20).fill(0x1e293b)
-
     label.x = -36
     label.y = -22
     label.visible = false
@@ -184,7 +177,7 @@ export function syncCoreActorVisuals(input: SyncCoreActorsInput) {
     input.registry.pet.container.y =
       input.petMotion.y + getPetBob(input.pet?.action, input.phase)
 
-    drawPetGraphic(input.registry.pet.graphic, input.pet)
+    drawPetGraphic(input.registry.pet.graphic, input.pet, input.phase)
     input.registry.pet.label.text = input.pet?.name ?? "AI Pet"
   }
 
@@ -199,6 +192,8 @@ export function syncCoreActorVisuals(input: SyncCoreActorsInput) {
 
     input.registry.butler.container.x = input.butlerMotion.x
     input.registry.butler.container.y = input.butlerMotion.y
+
+    drawButlerGraphic(input.registry.butler.graphic, input.butler, input.phase)
     input.registry.butler.label.text = input.butler?.task ?? "管家"
   }
 }
@@ -222,31 +217,102 @@ function drawIncubatorGraphic(
 
   const progress = incubator?.progress ?? 0
   const stable = incubator?.stability ?? 100
+  const isStable = stable > 60
 
-  graphic.rect(0, 0, 54, 54).fill({
+  drawActorShadow(graphic, 27, 52, 30, 8, 0.18)
+
+  graphic.rect(0, 4, 54, 50).fill({
     color: 0x0f172a,
-    alpha: 0.92,
+    alpha: 0.95,
   })
 
-  graphic.rect(6, 6, 42, 42).stroke({
-    color: stable > 60 ? 0x38bdf8 : 0xf97316,
-    width: 3,
+  graphic.rect(4, 0, 46, 8).fill({
+    color: 0x1e293b,
+    alpha: 0.95,
   })
 
-  graphic.rect(12, 26, 30, 6).fill({
-    color: 0x38bdf8,
-    alpha: 0.26,
-  })
-
-  graphic.rect(12, 26, Math.max(2, (30 * progress) / 100), 6).fill({
-    color: stable > 60 ? 0x67e8f9 : 0xfacc15,
+  graphic.rect(5, 9, 44, 38).fill({
+    color: 0x111827,
     alpha: 0.88,
   })
 
-  graphic.circle(27, 21, 6).fill({
-    color: 0xf8fafc,
-    alpha: 0.28,
+  graphic.rect(7, 11, 40, 34).stroke({
+    color: isStable ? 0x38bdf8 : 0xf97316,
+    width: 3,
   })
+
+  graphic.rect(13, 29, 28, 6).fill({
+    color: 0x0e7490,
+    alpha: 0.32,
+  })
+
+  graphic.rect(13, 29, Math.max(2, (28 * progress) / 100), 6).fill({
+    color: isStable ? 0x67e8f9 : 0xfacc15,
+    alpha: 0.88,
+  })
+
+  graphic.rect(15, 16, 24, 10).fill({
+    color: 0x38bdf8,
+    alpha: 0.18,
+  })
+
+  graphic.circle(27, 20, 6).fill({
+    color: 0xf8fafc,
+    alpha: 0.24,
+  })
+
+  graphic.rect(8, 48, 38, 4).fill({
+    color: 0x020617,
+    alpha: 0.34,
+  })
+}
+
+function drawButlerGraphic(
+  graphic: Graphics,
+  butler: ButlerState | null,
+  phase: number
+) {
+  graphic.clear()
+
+  const task = butler?.task
+  const working = task === "watching_incubator" || task === "building_home"
+  const bob = working ? Math.sin(phase * 5.5) * 1.1 : Math.sin(phase * 2.5) * 0.45
+
+  drawActorShadow(graphic, 9, 67, 15, 5, 0.22)
+
+  const bodyY = bob
+
+  graphic.rect(3, bodyY, 12, 10).fill(0xf0c8a0)
+  graphic.rect(5, bodyY + 2, 3, 2).fill(0x2f2419)
+  graphic.rect(11, bodyY + 2, 3, 2).fill(0x2f2419)
+  graphic.rect(7, bodyY + 7, 5, 2).fill({
+    color: 0x7a4a34,
+    alpha: 0.42,
+  })
+
+  graphic.rect(0, bodyY + 10, 18, 28).fill(0x4456c7)
+  graphic.rect(3, bodyY + 12, 12, 22).fill(0x6366f1)
+  graphic.rect(6, bodyY + 10, 6, 28).fill({
+    color: 0xa5b4fc,
+    alpha: 0.22,
+  })
+
+  graphic.rect(-4, bodyY + 15, 5, 19).fill(0xf0c8a0)
+  graphic.rect(17, bodyY + 15, 5, 19).fill(0xf0c8a0)
+
+  if (working) {
+    graphic.rect(20, bodyY + 22, 11, 4).fill(0x8b5a2b)
+    graphic.rect(28, bodyY + 17, 5, 12).fill(0x6b3f1d)
+  }
+
+  graphic.rect(3, bodyY + 38, 5, 22).fill(0x1e293b)
+  graphic.rect(11, bodyY + 38, 5, 22).fill(0x1e293b)
+
+  graphic.rect(1, bodyY + 60, 8, 4).fill(0x111827)
+  graphic.rect(10, bodyY + 60, 8, 4).fill(0x111827)
+
+  graphic.rect(2, bodyY - 4, 14, 4).fill(0x3f2a18)
+  graphic.rect(0, bodyY - 1, 18, 3).fill(0x5a3b22)
 }
 
 function getPetTargetPosition(
@@ -395,23 +461,67 @@ function getPetColor(pet: PetState | null): number {
   return 0xf8fafc
 }
 
-function drawPetGraphic(graphic: Graphics, pet: PetState | null) {
+function drawPetGraphic(graphic: Graphics, pet: PetState | null, phase: number) {
   graphic.clear()
 
   const color = getPetColor(pet)
+  const blink = Math.sin(phase * 1.4) > 0.96
+  const moving = pet?.action === "walking" || pet?.action === "exploring"
+  const step = moving ? Math.sin(phase * 7) * 1.5 : 0
 
   if (pet?.action === "sleeping") {
+    drawActorShadow(graphic, 12, 20, 15, 5, 0.18)
+
     graphic.rect(0, 8, 26, 13).fill(color)
-    graphic.rect(4, 2, 14, 8).fill(color)
+    graphic.rect(4, 3, 14, 8).fill(lightenColor(color, 8))
+    graphic.rect(2, 19, 22, 3).fill({
+      color: 0x111827,
+      alpha: 0.18,
+    })
+
+    graphic.rect(6, 8, 3, 2).fill(0x1f2937)
     graphic.rect(28, -4, 5, 5).fill(0xe2e8f0)
     graphic.rect(35, -11, 6, 6).fill(0xf8fafc)
     return
   }
 
-  graphic.rect(0, 0, 22, 18).fill(color)
-  graphic.rect(4, -6, 14, 8).fill(color)
-  graphic.rect(2, 18, 5, 5).fill(0x111827)
-  graphic.rect(15, 18, 5, 5).fill(0x111827)
+  drawActorShadow(graphic, 11, 24, 14, 5, 0.2)
+
+  graphic.rect(0, 5, 22, 15).fill(color)
+  graphic.rect(3, 0, 16, 9).fill(lightenColor(color, 8))
+
+  graphic.rect(2, -3, 5, 5).fill(lightenColor(color, 5))
+  graphic.rect(15, -3, 5, 5).fill(lightenColor(color, 5))
+
+  if (blink) {
+    graphic.rect(5, 4, 4, 1).fill(0x111827)
+    graphic.rect(14, 4, 4, 1).fill(0x111827)
+  } else {
+    graphic.rect(6, 3, 3, 3).fill(0x111827)
+    graphic.rect(14, 3, 3, 3).fill(0x111827)
+    graphic.rect(7, 3, 1, 1).fill(0xffffff)
+    graphic.rect(15, 3, 1, 1).fill(0xffffff)
+  }
+
+  graphic.rect(10, 8, 3, 2).fill({
+    color: 0x7a4a24,
+    alpha: 0.45,
+  })
+
+  graphic.rect(2, 19, 5, 5 + Math.max(0, step)).fill(0x111827)
+  graphic.rect(15, 19, 5, 5 + Math.max(0, -step)).fill(0x111827)
+
+  if (pet?.action === "observing") {
+    graphic.rect(22, 6, 5, 2).fill({
+      color: 0xffffff,
+      alpha: 0.35,
+    })
+  }
+
+  if (pet?.action === "eating") {
+    graphic.rect(22, 15, 5, 4).fill(0xfacc15)
+    graphic.rect(24, 12, 2, 3).fill(0x22c55e)
+  }
 }
 
 function getPetBob(action?: string, phase = 0): number {
@@ -420,4 +530,34 @@ function getPetBob(action?: string, phase = 0): number {
   if (action === "walking") return Math.sin(phase * 6) * 1.8
 
   return Math.sin(phase * 3) * 0.8
+}
+
+function drawActorShadow(
+  graphic: Graphics,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  alpha: number
+) {
+  graphic.ellipse(x, y, width, height).fill({
+    color: 0x000000,
+    alpha,
+  })
+}
+
+function lightenColor(color: number, amount: number): number {
+  const r = (color >> 16) & 255
+  const g = (color >> 8) & 255
+  const b = color & 255
+
+  const nextR = clampNumber(r + amount, 0, 255)
+  const nextG = clampNumber(g + amount, 0, 255)
+  const nextB = clampNumber(b + amount, 0, 255)
+
+  return (nextR << 16) + (nextG << 8) + nextB
+}
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value))
 }
