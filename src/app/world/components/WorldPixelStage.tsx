@@ -201,14 +201,15 @@ export default function WorldPixelStage(props: Props) {
     }
   }, [tickStage])
 
+  const stageHint =
+    (props.sceneMode ?? "exterior") === "shelterInterior"
+      ? "点击右侧木门离开住所 · 初始生命舱"
+      : "点击住所进入室内 · 拖拽观察世界 · F3 打开开发面板"
+
   return (
     <div className={styles.stageShell}>
       <div ref={mountRef} className={styles.stageCanvas} />
-      <div className={styles.stageHint}>
-        {(props.sceneMode ?? "exterior") === "shelterInterior"
-          ? "住所内部 · 初始生命舱"
-          : "点击住所进入室内 · 拖拽观察世界 · F3 打开开发面板"}
-      </div>
+      <div className={styles.stageHint}>{stageHint}</div>
     </div>
   )
 }

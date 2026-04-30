@@ -6,7 +6,12 @@ import type { Application } from "pixi.js"
 
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
+import {
+  isPointInsideStageRect,
+  SHELTER_INTERIOR_DOOR_HIT_BOX,
+} from "../graphics/interior/interior-hit-areas"
 import { isPointInsideShelterStructure } from "../graphics/structures/stage-structure-hit-test"
+import { WORLD_STAGE_SIZE } from "../config/stage-size-config"
 import {
   applyStageCamera,
   beginStageCameraDrag,
@@ -16,7 +21,6 @@ import {
 } from "./stage-camera-controller"
 import type { WorldStageLayerRefs } from "./stage-layer-types"
 import type { WorldStageSceneMode } from "./stage-scene-mode"
-import { WORLD_STAGE_SIZE } from "../config/stage-size-config"
 
 export type BindWorldStagePointerEventsInput = {
   app: Application
@@ -36,13 +40,6 @@ type PointerDownState = {
 }
 
 const CLICK_MOVE_TOLERANCE = 6
-
-const SHELTER_INTERIOR_DOOR_HIT_BOX = {
-  x: 1060,
-  y: 400,
-  width: 140,
-  height: 190,
-}
 
 export function bindWorldStagePointerEvents(
   input: BindWorldStagePointerEventsInput
@@ -117,7 +114,7 @@ export function bindWorldStagePointerEvents(
 
     if (sceneMode === "shelterInterior") {
       if (
-        isPointInsideRect(
+        isPointInsideStageRect(
           {
             x: downState.worldX,
             y: downState.worldY,
@@ -164,24 +161,4 @@ function screenToWorldY(
   worldLayerScaleY: number
 ): number {
   return (screenY - worldLayerY) / worldLayerScaleY
-}
-
-function isPointInsideRect(
-  point: {
-    x: number
-    y: number
-  },
-  rect: {
-    x: number
-    y: number
-    width: number
-    height: number
-  }
-): boolean {
-  return (
-    point.x >= rect.x &&
-    point.x <= rect.x + rect.width &&
-    point.y >= rect.y &&
-    point.y <= rect.y + rect.height
-  )
 }
