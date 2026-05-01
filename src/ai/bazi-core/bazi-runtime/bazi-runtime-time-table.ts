@@ -12,53 +12,30 @@ import type {
   BaziSimpleTimeOption
 } from "./bazi-runtime-schema"
 
-const BAZI_MONTH_LABELS = [
-  "正月",
-  "二月",
-  "三月",
-  "四月",
-  "五月",
-  "六月",
-  "七月",
-  "八月",
-  "九月",
-  "十月",
-  "冬月",
-  "腊月",
+const BAZI_SOLAR_MONTH_OPTIONS = [
+  { value: 1, title: "公历1月", subtitle: "流月按节气切换" },
+  { value: 2, title: "公历2月", subtitle: "流月按节气切换" },
+  { value: 3, title: "公历3月", subtitle: "流月按节气切换" },
+  { value: 4, title: "公历4月", subtitle: "流月按节气切换" },
+  { value: 5, title: "公历5月", subtitle: "流月按节气切换" },
+  { value: 6, title: "公历6月", subtitle: "流月按节气切换" },
+  { value: 7, title: "公历7月", subtitle: "流月按节气切换" },
+  { value: 8, title: "公历8月", subtitle: "流月按节气切换" },
+  { value: 9, title: "公历9月", subtitle: "流月按节气切换" },
+  { value: 10, title: "公历10月", subtitle: "流月按节气切换" },
+  { value: 11, title: "公历11月", subtitle: "流月按节气切换" },
+  { value: 12, title: "公历12月", subtitle: "流月按节气切换" },
 ] as const
 
-const BAZI_DAY_LABELS = [
-  "初一",
-  "初二",
-  "初三",
-  "初四",
-  "初五",
-  "初六",
-  "初七",
-  "初八",
-  "初九",
-  "初十",
-  "十一",
-  "十二",
-  "十三",
-  "十四",
-  "十五",
-  "十六",
-  "十七",
-  "十八",
-  "十九",
-  "二十",
-  "廿一",
-  "廿二",
-  "廿三",
-  "廿四",
-  "廿五",
-  "廿六",
-  "廿七",
-  "廿八",
-  "廿九",
-  "三十",
-] as const
+const BAZI_SOLAR_DAY_OPTIONS = Array.from({ length: 31 }, (_, index) => {
+  const value = index + 1
+
+  return {
+    value,
+    title: `${value}日`,
+    subtitle: "公历日",
+  }
+})
 
 const BAZI_HOUR_OPTIONS = [
   { title: "子时", branch: "子", hour: 0 },
@@ -140,14 +117,13 @@ function buildLiuNianOptions(params: {
 function buildLiuYueOptions(
   selection: BaziRuntimeTimeSelection
 ): BaziSimpleTimeOption[] {
-  return BAZI_MONTH_LABELS.map((label, index) => {
-    const value = index + 1
-
+  return BAZI_SOLAR_MONTH_OPTIONS.map((option) => {
     return {
       level: "liuYue",
-      value,
-      title: label,
-      active: selection.currentMonth === value,
+      value: option.value,
+      title: option.title,
+      subtitle: option.subtitle,
+      active: selection.currentMonth === option.value,
     }
   })
 }
@@ -155,14 +131,13 @@ function buildLiuYueOptions(
 function buildLiuRiOptions(
   selection: BaziRuntimeTimeSelection
 ): BaziSimpleTimeOption[] {
-  return BAZI_DAY_LABELS.map((label, index) => {
-    const value = index + 1
-
+  return BAZI_SOLAR_DAY_OPTIONS.map((option) => {
     return {
       level: "liuRi",
-      value,
-      title: label,
-      active: selection.currentDay === value,
+      value: option.value,
+      title: option.title,
+      subtitle: option.subtitle,
+      active: selection.currentDay === option.value,
     }
   })
 }
@@ -183,11 +158,19 @@ function buildLiuShiOptions(
 }
 
 function getMonthLabel(month: number): string {
-  return BAZI_MONTH_LABELS[month - 1] ?? `${month}月`
+  const found = BAZI_SOLAR_MONTH_OPTIONS.find((option) => {
+    return option.value === month
+  })
+
+  return found ? found.title : `公历${month}月`
 }
 
 function getDayLabel(day: number): string {
-  return BAZI_DAY_LABELS[day - 1] ?? `${day}日`
+  const found = BAZI_SOLAR_DAY_OPTIONS.find((option) => {
+    return option.value === day
+  })
+
+  return found ? found.title : `${day}日`
 }
 
 function getHourLabel(hour: number | null): string {
@@ -207,7 +190,7 @@ function buildSelectedSummary(selection: BaziRuntimeTimeSelection): string {
     selection.currentMonth
   )}；日期 ${getDayLabel(selection.currentDay)}；${getHourLabel(
     selection.currentHour
-  )}`
+  )}；流月以节气月令计算`
 }
 
 export function buildBaziRuntimeTimeTable(input: {
