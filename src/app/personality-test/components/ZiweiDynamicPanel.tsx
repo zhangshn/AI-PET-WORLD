@@ -42,6 +42,10 @@ import { ValueLine } from "./common/ValueLine"
 import { ZiweiChartBoard } from "./ZiweiChartBoard"
 import { ZiweiDynamicDetail } from "./ZiweiDynamicDetail"
 import { ZiweiDynamicTabs } from "./ZiweiDynamicTabs"
+import {
+  ZiweiDynamicTimeTable,
+  type ZiweiDynamicTimeSelection
+} from "./ZiweiDynamicTimeTable"
 
 function getActiveFlowResult(
   chart: ZiweiDynamicChart,
@@ -67,13 +71,22 @@ export function ZiweiDynamicPanel({
 }) {
   const [activeFlow, setActiveFlow] = useState<ActiveDynamicFlow>("natal")
 
-  const currentAge = useMemo(() => {
+  const defaultAge = useMemo(() => {
     return resolveCurrentAge(timelineDay)
   }, [timelineDay])
 
-  const currentTimeBranch = useMemo(() => {
+  const defaultTimeBranch = useMemo(() => {
     return getTimeBranchFromHour(timelineHour)
   }, [timelineHour])
+
+  const [timeSelection, setTimeSelection] =
+    useState<ZiweiDynamicTimeSelection>(() => ({
+      currentAge: Math.max(1, defaultAge),
+      currentYear,
+      currentLunarMonth: pattern.lunarInfo.lunarMonth,
+      currentLunarDay: pattern.lunarInfo.lunarDay,
+      currentTimeBranch: defaultTimeBranch
+    }))
 
   const chartResult = useMemo(() => {
     if (!hasBirthHour) {
@@ -83,19 +96,17 @@ export function ZiweiDynamicPanel({
     return buildZiweiDynamicChartOnly({
       pattern,
       gender: dynamicGender,
-      currentAge,
-      currentYear,
-      currentLunarMonth: pattern.lunarInfo.lunarMonth,
-      currentLunarDay: pattern.lunarInfo.lunarDay,
-      currentTimeBranch
+      currentAge: timeSelection.currentAge,
+      currentYear: timeSelection.currentYear,
+      currentLunarMonth: timeSelection.currentLunarMonth,
+      currentLunarDay: timeSelection.currentLunarDay,
+      currentTimeBranch: timeSelection.currentTimeBranch
     })
   }, [
     hasBirthHour,
     pattern,
     dynamicGender,
-    currentAge,
-    currentYear,
-    currentTimeBranch
+    timeSelection
   ])
 
   const influenceResult = useMemo(() => {
@@ -106,19 +117,17 @@ export function ZiweiDynamicPanel({
     return buildZiweiDynamicInfluence({
       pattern,
       gender: dynamicGender,
-      currentAge,
-      currentYear,
-      currentLunarMonth: pattern.lunarInfo.lunarMonth,
-      currentLunarDay: pattern.lunarInfo.lunarDay,
-      currentTimeBranch
+      currentAge: timeSelection.currentAge,
+      currentYear: timeSelection.currentYear,
+      currentLunarMonth: timeSelection.currentLunarMonth,
+      currentLunarDay: timeSelection.currentLunarDay,
+      currentTimeBranch: timeSelection.currentTimeBranch
     })
   }, [
     hasBirthHour,
     pattern,
     dynamicGender,
-    currentAge,
-    currentYear,
-    currentTimeBranch
+    timeSelection
   ])
 
   let activePalace: BranchPalace | undefined
@@ -189,10 +198,12 @@ export function ZiweiDynamicPanel({
               }}
             >
               <ValueLine label="动态性别" value={dynamicGender || "未选择"} />
-              <ValueLine label="当前年龄" value={currentAge} />
+              <ValueLine label="当前年龄" value={timeSelection.currentAge} />
               <ValueLine
                 label="当前时辰"
-                value={`${currentTimeBranch}（${BRANCH_LABELS[currentTimeBranch]}）`}
+                value={`${timeSelection.currentTimeBranch}（${
+                  BRANCH_LABELS[timeSelection.currentTimeBranch]
+                }）`}
               />
 
               {activeFlowResult && (
@@ -238,6 +249,13 @@ export function ZiweiDynamicPanel({
               {chartResult.data.debug.startAge}
             </div>
           )}
+
+          <ZiweiDynamicTimeTable
+            selection={timeSelection}
+            activeFlow={activeFlow}
+            onSelectionChange={setTimeSelection}
+            onActiveFlowChange={setActiveFlow}
+          />
 
           {activeFlowResult && influenceResult?.ok && (
             <div style={{ marginTop: 16 }}>
