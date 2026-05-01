@@ -106,10 +106,10 @@ export type {
 } from "./bazi-schema"
 
 export type {
-  BaziDaYunTimeOption,
   BaziDaYunDirection,
   BaziDaYunItem,
   BaziDaYunResult,
+  BaziDaYunTimeOption,
   BaziFlowResult,
   BaziHourTimeOption,
   BaziLiuNianTimeOption,

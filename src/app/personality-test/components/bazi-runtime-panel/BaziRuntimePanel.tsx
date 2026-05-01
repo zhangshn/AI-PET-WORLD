@@ -9,7 +9,9 @@ import {
   buildBaziRuntimeProfile,
   type BaziPillar,
   type BaziProfile,
-  type BaziRuntimeGender
+  type BaziRuntimeGender,
+  type WuXingElement,
+  type BaziRuntimeModifiers
 } from "../../../../ai/bazi-core/bazi-gateway"
 
 import type { DynamicGenderInput } from "../../types"
@@ -51,6 +53,23 @@ function renderElementPair(pillar: BaziPillar | null): string {
   return `${pillar.stemElement} / ${pillar.branchElement}`
 }
 
+const ELEMENT_KEYS: WuXingElement[] = [
+  "wood",
+  "fire",
+  "earth",
+  "metal",
+  "water",
+]
+
+const MODIFIER_KEYS: Array<keyof BaziRuntimeModifiers> = [
+  "activityModifier",
+  "emotionModifier",
+  "recoveryModifier",
+  "cautionModifier",
+  "explorationModifier",
+  "perceptionModifier",
+]
+
 export function BaziRuntimePanel({
   baziProfile,
   dynamicGender,
@@ -86,16 +105,6 @@ export function BaziRuntimePanel({
       currentHour: selection.currentHour,
     })
   }, [baziProfile, dynamicGender, selection])
-
-  const runtimeElementScores = runtimeProfile.runtimeElementField.elementScores
-  const runtimeModifiers = runtimeProfile.modifiers
-
-  const elementKeys = Object.keys(BAZI_RUNTIME_ELEMENT_LABELS) as Array<
-    keyof typeof BAZI_RUNTIME_ELEMENT_LABELS
-  >
-  const modifierKeys = Object.keys(BAZI_RUNTIME_MODIFIER_LABELS) as Array<
-    keyof typeof BAZI_RUNTIME_MODIFIER_LABELS
-  >
 
   const flowRows: Array<{
     key: string
@@ -205,7 +214,7 @@ export function BaziRuntimePanel({
         <table style={tableStyle}>
           <thead>
             <tr>
-              {elementKeys.map((key) => (
+              {ELEMENT_KEYS.map((key) => (
                 <th key={key} style={headerCellStyle}>
                   {BAZI_RUNTIME_ELEMENT_LABELS[key]}
                 </th>
@@ -215,9 +224,11 @@ export function BaziRuntimePanel({
 
           <tbody>
             <tr>
-              {elementKeys.map((key) => (
+              {ELEMENT_KEYS.map((key) => (
                 <td key={key} style={cellStyle}>
-                  {formatRuntimeScore(runtimeElementScores[key])}
+                  {formatRuntimeScore(
+                    runtimeProfile.runtimeElementField.elementScores[key]
+                  )}
                 </td>
               ))}
             </tr>
@@ -230,11 +241,13 @@ export function BaziRuntimePanel({
 
         <table style={tableStyle}>
           <tbody>
-            {modifierKeys.map((key) => (
+            {MODIFIER_KEYS.map((key) => (
               <tr key={key}>
-                <td style={labelCellStyle}>{BAZI_RUNTIME_MODIFIER_LABELS[key]}</td>
+                <td style={labelCellStyle}>
+                  {BAZI_RUNTIME_MODIFIER_LABELS[key]}
+                </td>
                 <td style={cellStyle}>
-                  {formatRuntimeScore(runtimeModifiers[key])}
+                  {formatRuntimeScore(runtimeProfile.modifiers[key])}
                 </td>
               </tr>
             ))}

@@ -4,8 +4,9 @@
 
 import type {
   BaziRuntimeModifiers,
-  WuXingElement,
+  WuXingElement
 } from "../../../../ai/bazi-core/bazi-gateway"
+
 import type { BaziRuntimeActiveLevel } from "./bazi-runtime-panel-types"
 
 export const BAZI_RUNTIME_ELEMENT_LABELS: Record<WuXingElement, string> = {
@@ -16,7 +17,10 @@ export const BAZI_RUNTIME_ELEMENT_LABELS: Record<WuXingElement, string> = {
   water: "水",
 }
 
-export const BAZI_RUNTIME_MODIFIER_LABELS: Record<keyof BaziRuntimeModifiers, string> = {
+export const BAZI_RUNTIME_MODIFIER_LABELS: Record<
+  keyof BaziRuntimeModifiers,
+  string
+> = {
   activityModifier: "行动修正",
   emotionModifier: "情绪修正",
   recoveryModifier: "恢复修正",
@@ -33,7 +37,10 @@ export const BAZI_RUNTIME_LEVEL_ORDER: BaziRuntimeActiveLevel[] = [
   "liuShi",
 ]
 
-export const BAZI_RUNTIME_LEVEL_LABELS: Record<BaziRuntimeActiveLevel, string> = {
+export const BAZI_RUNTIME_LEVEL_LABELS: Record<
+  BaziRuntimeActiveLevel,
+  string
+> = {
   daYun: "大运",
   liuNian: "流年",
   liuYue: "流月",

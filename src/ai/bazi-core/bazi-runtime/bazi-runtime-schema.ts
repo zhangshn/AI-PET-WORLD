@@ -12,6 +12,13 @@ export type BaziRuntimeGender = "male" | "female" | "unknown"
 
 export type BaziDaYunDirection = "forward" | "backward"
 
+export type BaziRuntimeFlowLevel =
+  | "daYun"
+  | "liuNian"
+  | "liuYue"
+  | "liuRi"
+  | "liuShi"
+
 export type BaziRuntimeInput = {
   birthChart: BaziChart
   gender: BaziRuntimeGender
@@ -20,6 +27,13 @@ export type BaziRuntimeInput = {
   currentMonth: number
   currentDay: number
   currentHour?: number | null
+}
+
+export type BaziRuntimeTimeSelection = {
+  currentYear: number
+  currentMonth: number
+  currentDay: number
+  currentHour: number | null
 }
 
 export type BaziDaYunItem = {
@@ -48,20 +62,6 @@ export type BaziFlowResult = {
   liuShi: BaziPillar | null
 }
 
-export type BaziRuntimeFlowLevel =
-  | "daYun"
-  | "liuNian"
-  | "liuYue"
-  | "liuRi"
-  | "liuShi"
-
-export type BaziRuntimeTimeSelection = {
-  currentYear: number
-  currentMonth: number
-  currentDay: number
-  currentHour: number | null
-}
-
 export type BaziDaYunTimeOption = {
   level: "daYun"
   index: number
@@ -81,6 +81,7 @@ export type BaziLiuNianTimeOption = {
   age: number
   title: string
   subtitle: string
+  active: boolean
 }
 
 export type BaziSimpleTimeOption = {
@@ -88,6 +89,7 @@ export type BaziSimpleTimeOption = {
   value: number
   title: string
   subtitle?: string
+  active: boolean
 }
 
 export type BaziHourTimeOption = {
@@ -96,6 +98,7 @@ export type BaziHourTimeOption = {
   branch: string
   title: string
   subtitle: string
+  active: boolean
 }
 
 export type BaziRuntimeTimeTable = {

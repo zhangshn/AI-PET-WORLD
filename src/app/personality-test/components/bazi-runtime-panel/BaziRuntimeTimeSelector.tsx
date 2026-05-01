@@ -2,22 +2,28 @@
  * 当前文件负责：展示八字大运、流年、流月、流日、流时选择器。
  */
 
-import type { BaziRuntimeProfile } from "../../../../ai/bazi-core/bazi-gateway"
+import type {
+  BaziDaYunTimeOption,
+  BaziHourTimeOption,
+  BaziLiuNianTimeOption,
+  BaziRuntimeProfile,
+  BaziSimpleTimeOption
+} from "../../../../ai/bazi-core/bazi-gateway"
 
 import {
   BAZI_RUNTIME_LEVEL_LABELS,
-  isRuntimeLevelActive,
+  isRuntimeLevelActive
 } from "./bazi-runtime-panel-labels"
 
 import {
   baziRuntimeRowLabelStyle,
   baziRuntimeRowStyle,
-  BaziRuntimeTimeCell,
+  BaziRuntimeTimeCell
 } from "./BaziRuntimeTimeCell"
 
 import type {
   BaziRuntimeActiveLevel,
-  BaziRuntimeTimeSelection,
+  BaziRuntimeTimeSelection
 } from "./bazi-runtime-panel-types"
 
 export function BaziRuntimeTimeSelector({
@@ -25,7 +31,7 @@ export function BaziRuntimeTimeSelector({
   activeLevel,
   selection,
   onActiveLevelChange,
-  onSelectionChange,
+  onSelectionChange
 }: {
   runtimeProfile: BaziRuntimeProfile
   activeLevel: BaziRuntimeActiveLevel
@@ -34,6 +40,46 @@ export function BaziRuntimeTimeSelector({
   onSelectionChange: (selection: BaziRuntimeTimeSelection) => void
 }) {
   const timeTable = runtimeProfile.timeTable
+
+  function selectDaYun(option: BaziDaYunTimeOption) {
+    onActiveLevelChange("daYun")
+    onSelectionChange({
+      ...selection,
+      currentYear: option.startYear,
+    })
+  }
+
+  function selectLiuNian(option: BaziLiuNianTimeOption) {
+    onActiveLevelChange("liuNian")
+    onSelectionChange({
+      ...selection,
+      currentYear: option.year,
+    })
+  }
+
+  function selectLiuYue(option: BaziSimpleTimeOption) {
+    onActiveLevelChange("liuYue")
+    onSelectionChange({
+      ...selection,
+      currentMonth: option.value,
+    })
+  }
+
+  function selectLiuRi(option: BaziSimpleTimeOption) {
+    onActiveLevelChange("liuRi")
+    onSelectionChange({
+      ...selection,
+      currentDay: option.value,
+    })
+  }
+
+  function selectLiuShi(option: BaziHourTimeOption) {
+    onActiveLevelChange("liuShi")
+    onSelectionChange({
+      ...selection,
+      currentHour: option.hour,
+    })
+  }
 
   return (
     <div
@@ -63,13 +109,7 @@ export function BaziRuntimeTimeSelector({
                 targetLevel: "daYun",
               }) && option.active
             }
-            onClick={() => {
-              onActiveLevelChange("daYun")
-              onSelectionChange({
-                ...selection,
-                currentYear: option.startYear,
-              })
-            }}
+            onClick={() => selectDaYun(option)}
           />
         ))}
       </div>
@@ -86,15 +126,9 @@ export function BaziRuntimeTimeSelector({
               isRuntimeLevelActive({
                 activeLevel,
                 targetLevel: "liuNian",
-              }) && selection.currentYear === option.year
+              }) && option.active
             }
-            onClick={() => {
-              onActiveLevelChange("liuNian")
-              onSelectionChange({
-                ...selection,
-                currentYear: option.year,
-              })
-            }}
+            onClick={() => selectLiuNian(option)}
           />
         ))}
       </div>
@@ -111,15 +145,9 @@ export function BaziRuntimeTimeSelector({
               isRuntimeLevelActive({
                 activeLevel,
                 targetLevel: "liuYue",
-              }) && selection.currentMonth === option.value
+              }) && option.active
             }
-            onClick={() => {
-              onActiveLevelChange("liuYue")
-              onSelectionChange({
-                ...selection,
-                currentMonth: option.value,
-              })
-            }}
+            onClick={() => selectLiuYue(option)}
           />
         ))}
       </div>
@@ -136,15 +164,9 @@ export function BaziRuntimeTimeSelector({
               isRuntimeLevelActive({
                 activeLevel,
                 targetLevel: "liuRi",
-              }) && selection.currentDay === option.value
+              }) && option.active
             }
-            onClick={() => {
-              onActiveLevelChange("liuRi")
-              onSelectionChange({
-                ...selection,
-                currentDay: option.value,
-              })
-            }}
+            onClick={() => selectLiuRi(option)}
           />
         ))}
       </div>
@@ -161,21 +183,16 @@ export function BaziRuntimeTimeSelector({
               isRuntimeLevelActive({
                 activeLevel,
                 targetLevel: "liuShi",
-              }) && selection.currentHour === option.hour
+              }) && option.active
             }
-            onClick={() => {
-              onActiveLevelChange("liuShi")
-              onSelectionChange({
-                ...selection,
-                currentHour: option.hour,
-              })
-            }}
+            onClick={() => selectLiuShi(option)}
           />
         ))}
       </div>
 
       <div style={{ color: "#666", fontSize: 12, marginTop: 10 }}>
-        当前层级：{BAZI_RUNTIME_LEVEL_LABELS[activeLevel]}；{timeTable.selectedSummary}
+        当前层级：{BAZI_RUNTIME_LEVEL_LABELS[activeLevel]}；
+        {timeTable.selectedSummary}
       </div>
     </div>
   )
