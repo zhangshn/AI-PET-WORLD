@@ -4,8 +4,7 @@
 
 import type {
   BirthPattern,
-  BranchPalace,
-  ElementGate
+  BranchPalace
 } from "../schema"
 
 import {
@@ -31,12 +30,6 @@ export interface BuildZiweiDynamicInfluenceInput {
    */
   gender: unknown
 
-  /**
-   * 当前 BirthPattern 暂时没有 elementGate，
-   * 所以动态层先显式接收。
-   */
-  elementGate: ElementGate
-
   currentAge: number
   currentYear: number
   currentLunarMonth: number
@@ -44,19 +37,12 @@ export interface BuildZiweiDynamicInfluenceInput {
   currentTimeBranch: BranchPalace
 }
 
-/**
- * 只构建动态盘，不合成行为影响。
- * 适合调试页使用。
- */
 export function buildZiweiDynamicChartOnly(
   input: BuildZiweiDynamicInfluenceInput
 ): ZiweiDynamicResult<ZiweiDynamicChart> {
   return buildZiweiDynamicChart(input)
 }
 
-/**
- * 构建完整动态行为影响。
- */
 export function buildZiweiDynamicInfluence(
   input: BuildZiweiDynamicInfluenceInput
 ): ZiweiDynamicResult<ZiweiDynamicInfluence> {

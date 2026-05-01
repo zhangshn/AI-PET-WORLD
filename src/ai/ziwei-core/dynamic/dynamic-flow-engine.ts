@@ -5,7 +5,6 @@
 import type {
   BirthPattern,
   BranchPalace,
-  ElementGate,
   StarId
 } from "../schema"
 
@@ -27,18 +26,6 @@ import type {
   ZiweiFlowResult
 } from "./dynamic-schema"
 
-/**
- * 公历年份对应地支时，必须使用传统生肖地支顺序：
- * 子、丑、寅、卯、辰、巳、午、未、申、酉、戌、亥
- *
- * 注意：
- * 这不是 ziwei-engine.ts 的物理宫位顺序。
- *
- * ziwei-engine.ts 的宫位物理顺序是：
- * 寅、卯、辰、巳、午、未、申、酉、戌、亥、子、丑
- *
- * 两者不能混用。
- */
 const YEAR_BRANCH_ORDER: BranchPalace[] = [
   "zi",
   "chou",
@@ -54,10 +41,6 @@ const YEAR_BRANCH_ORDER: BranchPalace[] = [
   "hai"
 ]
 
-/**
- * 流时偏移必须使用传统时辰顺序：
- * 子、丑、寅、卯、辰、巳、午、未、申、酉、戌、亥
- */
 const TIME_BRANCH_ORDER: BranchPalace[] = [
   "zi",
   "chou",
@@ -83,59 +66,36 @@ export interface BuildZiweiDynamicChartInput {
   gender: unknown
 
   /**
-   * 当前 BirthPattern 里暂时没有 elementGate，
-   * 所以动态层入口先显式要求传入五行局。
-   */
-  elementGate: ElementGate
-
-  /**
    * 当前年龄。
-   * 用于计算大运移动步数。
    */
   currentAge: number
 
   /**
    * 当前公历年份。
-   * 用于计算流年地支宫。
    */
   currentYear: number
 
   /**
    * 当前农历月份。
-   * v1 规则：正月 = 流年命宫，二月 = 下一宫。
    */
   currentLunarMonth: number
 
   /**
    * 当前农历日期。
-   * v1 规则：初一 = 流月命宫，初二 = 下一宫。
    */
   currentLunarDay: number
 
   /**
    * 当前时辰。
-   * v1 规则：子时 = 流日命宫，丑时 = 下一宫。
    */
   currentTimeBranch: BranchPalace
 }
 
-/**
- * 年份转地支。
- *
- * 2020 是庚子年，所以以 2020 = 子 作为稳定锚点。
- */
 export function getYearBranch(currentYear: number): BranchPalace {
   const offset = safeModulo(currentYear - 2020, 12)
   return YEAR_BRANCH_ORDER[offset]
 }
 
-/**
- * 获取时辰偏移。
- *
- * 子时 = 0
- * 丑时 = 1
- * 寅时 = 2
- */
 export function getTimeBranchOffset(timeBranch: BranchPalace): number {
   const index = TIME_BRANCH_ORDER.indexOf(timeBranch)
 
@@ -146,9 +106,6 @@ export function getTimeBranchOffset(timeBranch: BranchPalace): number {
   return index
 }
 
-/**
- * 规整农历月份。
- */
 function normalizeLunarMonth(value: number): number {
   if (!Number.isFinite(value)) {
     return 1
@@ -167,9 +124,6 @@ function normalizeLunarMonth(value: number): number {
   return month
 }
 
-/**
- * 规整农历日期。
- */
 function normalizeLunarDay(value: number): number {
   if (!Number.isFinite(value)) {
     return 1
@@ -188,9 +142,6 @@ function normalizeLunarDay(value: number): number {
   return day
 }
 
-/**
- * 根据宫位取原盘星曜。
- */
 function getStarsByPalace(
   pattern: BirthPattern,
   palace: BranchPalace
@@ -198,9 +149,6 @@ function getStarsByPalace(
   return [...(pattern.branchPalaces[palace] ?? [])]
 }
 
-/**
- * 根据宫位取业务宫名。
- */
 function getSectorNameByPalace(
   pattern: BirthPattern,
   palace: BranchPalace
@@ -208,9 +156,6 @@ function getSectorNameByPalace(
   return pattern.branchToSectorMap[palace] ?? "unknown"
 }
 
-/**
- * 检测某宫星曜命中的双星组合。
- */
 function detectPairIds(stars: StarId[]): string[] {
   const deduped = Array.from(new Set(stars)).filter((star) => {
     return star !== "star_00"
@@ -231,9 +176,6 @@ function detectPairIds(stars: StarId[]): string[] {
   return Array.from(pairIds)
 }
 
-/**
- * 创建单个动态流结果。
- */
 function createFlowResult(params: {
   pattern: BirthPattern
   type: ZiweiFlowResult["type"]
@@ -252,16 +194,6 @@ function createFlowResult(params: {
   }
 }
 
-/**
- * 计算大运落宫。
- *
- * 规则：
- * currentAge < startAge
- * → 大运仍在命宫
- *
- * currentAge >= startAge
- * → 进入第一步大运宫，之后每 10 年移动一宫
- */
 export function getDaYunPalace(params: {
   lifePalace: BranchPalace
   direction: ZiweiCycleDirection
@@ -284,22 +216,10 @@ export function getDaYunPalace(params: {
   return moveBranch(params.lifePalace, finalSteps)
 }
 
-/**
- * 计算流年落宫。
- *
- * 流年命宫固定落在当前年份地支宫。
- */
 export function getLiuNianPalace(currentYear: number): BranchPalace {
   return getYearBranch(currentYear)
 }
 
-/**
- * 计算流月落宫。
- *
- * v1：
- * 正月 = 流年命宫
- * 二月 = 下一宫
- */
 export function getLiuYuePalace(params: {
   liuNianPalace: BranchPalace
   currentLunarMonth: number
@@ -308,13 +228,6 @@ export function getLiuYuePalace(params: {
   return moveBranch(params.liuNianPalace, month - 1)
 }
 
-/**
- * 计算流日落宫。
- *
- * v1：
- * 初一 = 流月命宫
- * 初二 = 下一宫
- */
 export function getLiuRiPalace(params: {
   liuYuePalace: BranchPalace
   currentLunarDay: number
@@ -323,14 +236,6 @@ export function getLiuRiPalace(params: {
   return moveBranch(params.liuYuePalace, day - 1)
 }
 
-/**
- * 计算流时落宫。
- *
- * v1：
- * 子时 = 流日命宫
- * 丑时 = 下一宫
- * 寅时 = 再下一宫
- */
 export function getLiuShiPalace(params: {
   liuRiPalace: BranchPalace
   currentTimeBranch: BranchPalace
@@ -339,9 +244,6 @@ export function getLiuShiPalace(params: {
   return moveBranch(params.liuRiPalace, offset)
 }
 
-/**
- * 构建完整动态盘。
- */
 export function buildZiweiDynamicChart(
   input: BuildZiweiDynamicChartInput
 ): ZiweiDynamicResult<ZiweiDynamicChart> {
@@ -354,7 +256,7 @@ export function buildZiweiDynamicChart(
     return directionResult
   }
 
-  const startAge = getElementGateStartAge(input.elementGate)
+  const startAge = getElementGateStartAge(input.pattern.elementGate)
 
   const natalPalace = input.pattern.primaryBranchPalace
 
