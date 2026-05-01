@@ -33,6 +33,14 @@ import type {
   BaziRuntimeTimeSelection
 } from "./bazi-runtime-panel-types"
 
+type BaziMergedColumn = {
+  key: string
+  group: "原局" | "动态"
+  label: string
+  pillar: BaziPillar | null
+  note?: string
+}
+
 function resolveGender(dynamicGender: DynamicGenderInput): BaziRuntimeGender {
   if (dynamicGender === "male" || dynamicGender === "female") {
     return dynamicGender
@@ -83,6 +91,42 @@ function renderYinYang(pillar: BaziPillar | null): string {
   return pillar.yinYang === "yang" ? "阳" : "阴"
 }
 
+function getColumnValue(column: BaziMergedColumn, field: string): string {
+  if (field === "group") {
+    return column.group
+  }
+
+  if (field === "pillar") {
+    return renderPillarLabel(column.pillar)
+  }
+
+  if (field === "stem") {
+    return renderStem(column.pillar)
+  }
+
+  if (field === "branch") {
+    return renderBranch(column.pillar)
+  }
+
+  if (field === "hiddenStems") {
+    return renderHiddenStems(column.pillar)
+  }
+
+  if (field === "element") {
+    return renderElementPair(column.pillar)
+  }
+
+  if (field === "yinYang") {
+    return renderYinYang(column.pillar)
+  }
+
+  if (field === "note") {
+    return column.note ?? "-"
+  }
+
+  return "-"
+}
+
 const ELEMENT_KEYS: WuXingElement[] = [
   "wood",
   "fire",
@@ -98,6 +142,17 @@ const MODIFIER_KEYS: Array<keyof BaziRuntimeModifiers> = [
   "cautionModifier",
   "explorationModifier",
   "perceptionModifier",
+]
+
+const MERGED_TABLE_ROWS = [
+  { key: "group", label: "分组" },
+  { key: "pillar", label: "干支" },
+  { key: "stem", label: "天干" },
+  { key: "branch", label: "地支" },
+  { key: "hiddenStems", label: "藏干" },
+  { key: "element", label: "五行" },
+  { key: "yinYang", label: "阴阳" },
+  { key: "note", label: "说明" },
 ]
 
 export function BaziRuntimePanel({
@@ -136,13 +191,7 @@ export function BaziRuntimePanel({
     })
   }, [baziProfile, dynamicGender, selection])
 
-  const mergedRows: Array<{
-    key: string
-    group: "原局" | "动态"
-    label: string
-    pillar: BaziPillar | null
-    note?: string
-  }> = [
+  const mergedColumns: BaziMergedColumn[] = [
     {
       key: "birth-year",
       group: "原局",
@@ -250,47 +299,53 @@ export function BaziRuntimePanel({
       />
 
       <div style={{ marginTop: 16 }}>
-        <div style={sectionTitleStyle}>原局 / 大运 / 流年 / 流月 / 流日 / 流时</div>
+        <div style={sectionTitleStyle}>
+          八字原局 / 大运 / 流年 / 流月 / 流日 / 流时
+        </div>
 
         <div style={{ overflowX: "auto" }}>
           <table style={tableStyle}>
             <thead>
               <tr>
-                <th style={headerCellStyle}>分组</th>
-                <th style={headerCellStyle}>层级</th>
-                <th style={headerCellStyle}>干支</th>
-                <th style={headerCellStyle}>天干</th>
-                <th style={headerCellStyle}>地支</th>
-                <th style={headerCellStyle}>藏干</th>
-                <th style={headerCellStyle}>五行</th>
-                <th style={headerCellStyle}>阴阳</th>
-                <th style={headerCellStyle}>说明</th>
+                <th style={stickyHeaderCellStyle}>日期</th>
+                {mergedColumns.map((column) => (
+                  <th
+                    key={column.key}
+                    style={
+                      column.group === "动态"
+                        ? dynamicHeaderCellStyle
+                        : headerCellStyle
+                    }
+                  >
+                    {column.label}
+                  </th>
+                ))}
               </tr>
             </thead>
 
             <tbody>
-              {mergedRows.map((row) => {
-                const isDynamic = row.group === "动态"
+              {MERGED_TABLE_ROWS.map((row) => (
+                <tr key={row.key}>
+                  <td style={stickyLabelCellStyle}>{row.label}</td>
 
-                return (
-                  <tr
-                    key={row.key}
-                    style={{
-                      background: isDynamic ? "#fbf7ff" : "#fff",
-                    }}
-                  >
-                    <td style={groupCellStyle}>{row.group}</td>
-                    <td style={labelCellStyle}>{row.label}</td>
-                    <td style={mainCellStyle}>{renderPillarLabel(row.pillar)}</td>
-                    <td style={cellStyle}>{renderStem(row.pillar)}</td>
-                    <td style={cellStyle}>{renderBranch(row.pillar)}</td>
-                    <td style={cellStyle}>{renderHiddenStems(row.pillar)}</td>
-                    <td style={cellStyle}>{renderElementPair(row.pillar)}</td>
-                    <td style={cellStyle}>{renderYinYang(row.pillar)}</td>
-                    <td style={cellStyle}>{row.note ?? "-"}</td>
-                  </tr>
-                )
-              })}
+                  {mergedColumns.map((column) => {
+                    const isDynamic = column.group === "动态"
+                    const isMainRow = row.key === "pillar"
+
+                    return (
+                      <td
+                        key={`${row.key}-${column.key}`}
+                        style={{
+                          ...(isMainRow ? mainCellStyle : cellStyle),
+                          ...(isDynamic ? dynamicCellTintStyle : null),
+                        }}
+                      >
+                        {getColumnValue(column, row.key)}
+                      </td>
+                    )
+                  })}
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -398,20 +453,38 @@ const tableStyle: CSSProperties = {
 }
 
 const headerCellStyle: CSSProperties = {
-  padding: "8px",
+  padding: "10px 8px",
   border: "1px solid #e5e5e5",
   background: "#f7f7f7",
   textAlign: "center",
+  fontWeight: 800,
+  minWidth: 100,
 }
 
-const groupCellStyle: CSSProperties = {
-  padding: "8px",
+const dynamicHeaderCellStyle: CSSProperties = {
+  ...headerCellStyle,
+  background: "#f8f2ff",
+}
+
+const stickyHeaderCellStyle: CSSProperties = {
+  ...headerCellStyle,
+  position: "sticky",
+  left: 0,
+  zIndex: 2,
+}
+
+const stickyLabelCellStyle: CSSProperties = {
+  padding: "10px 8px",
   border: "1px solid #e5e5e5",
   background: "#fafafa",
   color: "#555",
   fontWeight: 800,
   width: 72,
+  minWidth: 72,
   textAlign: "center",
+  position: "sticky",
+  left: 0,
+  zIndex: 1,
 }
 
 const labelCellStyle: CSSProperties = {
@@ -425,14 +498,19 @@ const labelCellStyle: CSSProperties = {
 }
 
 const cellStyle: CSSProperties = {
-  padding: "8px",
+  padding: "10px 8px",
   border: "1px solid #e5e5e5",
   textAlign: "center",
   lineHeight: 1.6,
+  minWidth: 100,
 }
 
 const mainCellStyle: CSSProperties = {
   ...cellStyle,
-  fontWeight: 800,
-  fontSize: 16,
+  fontWeight: 900,
+  fontSize: 17,
+}
+
+const dynamicCellTintStyle: CSSProperties = {
+  background: "#fcf8ff",
 }
