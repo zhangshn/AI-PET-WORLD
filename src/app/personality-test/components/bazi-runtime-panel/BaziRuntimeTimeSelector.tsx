@@ -101,8 +101,8 @@ export function BaziRuntimeTimeSelector({
         {timeTable.daYunOptions.map((option) => (
           <BaziRuntimeTimeCell
             key={option.index}
-            title={option.title}
-            subtitle={`${option.subtitle} · ${option.pillarLabel}`}
+            title={`${option.title} · ${option.pillarLabel}`}
+            subtitle={option.subtitle}
             selected={
               isRuntimeLevelActive({
                 activeLevel,
@@ -120,7 +120,7 @@ export function BaziRuntimeTimeSelector({
         {timeTable.liuNianOptions.map((option) => (
           <BaziRuntimeTimeCell
             key={option.year}
-            title={option.title}
+            title={`${option.title} · ${option.pillarLabel}`}
             subtitle={option.subtitle}
             selected={
               isRuntimeLevelActive({
@@ -139,7 +139,7 @@ export function BaziRuntimeTimeSelector({
         {timeTable.liuYueOptions.map((option) => (
           <BaziRuntimeTimeCell
             key={option.value}
-            title={option.title}
+            title={`${option.title} · ${option.pillarLabel}`}
             subtitle={option.subtitle}
             selected={
               isRuntimeLevelActive({
@@ -158,7 +158,7 @@ export function BaziRuntimeTimeSelector({
         {timeTable.liuRiOptions.map((option) => (
           <BaziRuntimeTimeCell
             key={option.value}
-            title={option.title}
+            title={`${option.title} · ${option.pillarLabel}`}
             subtitle={option.subtitle}
             selected={
               isRuntimeLevelActive({
@@ -177,7 +177,7 @@ export function BaziRuntimeTimeSelector({
         {timeTable.liuShiOptions.map((option) => (
           <BaziRuntimeTimeCell
             key={option.hour}
-            title={option.title}
+            title={`${option.title} · ${option.pillarLabel}`}
             subtitle={option.subtitle}
             selected={
               isRuntimeLevelActive({

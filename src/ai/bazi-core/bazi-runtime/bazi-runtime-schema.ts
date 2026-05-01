@@ -81,6 +81,7 @@ export type BaziLiuNianTimeOption = {
   age: number
   title: string
   subtitle: string
+  pillarLabel: string
   active: boolean
 }
 
@@ -89,6 +90,7 @@ export type BaziSimpleTimeOption = {
   value: number
   title: string
   subtitle?: string
+  pillarLabel: string
   active: boolean
 }
 
@@ -98,6 +100,7 @@ export type BaziHourTimeOption = {
   branch: string
   title: string
   subtitle: string
+  pillarLabel: string
   active: boolean
 }
 
