@@ -131,4 +131,8 @@ export const TONE_BIAS_LABELS: Record<string, string> = {
   concise: "简洁",
   protective: "保护性",
   curious: "好奇"
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> d5d5e33 (更新业务逻辑)
