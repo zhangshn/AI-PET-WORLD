@@ -6,6 +6,7 @@
 
 import {
   BaziProfilePanel,
+  BaziRuntimePanel,
   BirthInputBar,
   FinalPersonalityPanel,
   PersonalityTestMainGrid,
@@ -18,6 +19,7 @@ import {
   ZiweiPersonalityOutputPanel
 } from "./components/personality-test-components"
 
+import { useBaziRuntimeState } from "./hooks/useBaziRuntimeState"
 import { usePersonalityTestState } from "./hooks/usePersonalityTestState"
 
 export default function PersonalityTestPage() {
@@ -34,6 +36,7 @@ export default function PersonalityTestPage() {
     day,
     birthHourInput,
     dynamicGender,
+    parsedBirthHour,
     hasBirthHour
   } = birthInput
 
@@ -52,6 +55,15 @@ export default function PersonalityTestPage() {
     lastDiffs,
     timelineLogs
   } = timelineData
+
+  const baziRuntimeProfile = useBaziRuntimeState({
+    baziProfile,
+    dynamicGender,
+    currentYear: year,
+    currentMonth: month,
+    currentDay: day,
+    currentHour: parsedBirthHour
+  })
 
   return (
     <PersonalityTestPageShell>
@@ -80,7 +92,15 @@ export default function PersonalityTestPage() {
             timelineHour={timelineClock.hour}
           />
         }
-        right={<BaziProfilePanel baziProfile={baziProfile} />}
+        right={
+          <>
+            <BaziProfilePanel baziProfile={baziProfile} />
+
+            <SectionSpacer />
+
+            <BaziRuntimePanel runtimeProfile={baziRuntimeProfile} />
+          </>
+        }
       />
 
       <SectionSpacer />
