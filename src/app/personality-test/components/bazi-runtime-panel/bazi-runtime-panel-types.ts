@@ -7,3 +7,17 @@ import type {
 } from "../../../../ai/bazi-core/bazi-gateway"
 
 export type BaziRuntimeProfileView = BaziRuntimeProfile
+
+export type BaziRuntimeActiveLevel =
+  | "daYun"
+  | "liuNian"
+  | "liuYue"
+  | "liuRi"
+  | "liuShi"
+
+export type BaziRuntimeTimeSelection = {
+  currentYear: number
+  currentMonth: number
+  currentDay: number
+  currentHour: number | null
+}

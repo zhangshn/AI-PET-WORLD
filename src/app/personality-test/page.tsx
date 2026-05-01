@@ -19,7 +19,6 @@ import {
   ZiweiPersonalityOutputPanel
 } from "./components/personality-test-components"
 
-import { useBaziRuntimeState } from "./hooks/useBaziRuntimeState"
 import { usePersonalityTestState } from "./hooks/usePersonalityTestState"
 
 export default function PersonalityTestPage() {
@@ -56,15 +55,6 @@ export default function PersonalityTestPage() {
     timelineLogs
   } = timelineData
 
-  const baziRuntimeProfile = useBaziRuntimeState({
-    baziProfile,
-    dynamicGender,
-    currentYear: year,
-    currentMonth: month,
-    currentDay: day,
-    currentHour: parsedBirthHour
-  })
-
   return (
     <PersonalityTestPageShell>
       <PersonalityTestTitle />
@@ -92,15 +82,19 @@ export default function PersonalityTestPage() {
             timelineHour={timelineClock.hour}
           />
         }
-        right={
-          <>
-            <BaziProfilePanel baziProfile={baziProfile} />
+        right={<BaziProfilePanel baziProfile={baziProfile} />}
+      />
 
-            <SectionSpacer />
+      <SectionSpacer />
 
-            <BaziRuntimePanel runtimeProfile={baziRuntimeProfile} />
-          </>
-        }
+      <BaziRuntimePanel
+        key={`${pattern.birthKey}-${year}-${month}-${day}-${birthHourInput}-${dynamicGender}-bazi-runtime`}
+        baziProfile={baziProfile}
+        dynamicGender={dynamicGender}
+        initialYear={year}
+        initialMonth={month}
+        initialDay={day}
+        initialHour={parsedBirthHour}
       />
 
       <SectionSpacer />

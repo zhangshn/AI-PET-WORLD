@@ -2,12 +2,22 @@
  * 当前文件负责：展示八字动态环境对 AI 状态的修正值。
  */
 
+import type { BaziRuntimeModifiers } from "../../../../ai/bazi-core/bazi-gateway"
 import type { BaziRuntimeProfileView } from "./bazi-runtime-panel-types"
 
 import {
   BAZI_RUNTIME_MODIFIER_LABELS,
   formatRuntimeScore
 } from "./bazi-runtime-panel-labels"
+
+const BAZI_RUNTIME_MODIFIER_KEYS: Array<keyof BaziRuntimeModifiers> = [
+  "activityModifier",
+  "emotionModifier",
+  "recoveryModifier",
+  "cautionModifier",
+  "explorationModifier",
+  "perceptionModifier",
+]
 
 export function BaziRuntimeModifierTable({
   runtimeProfile
@@ -25,11 +35,14 @@ export function BaziRuntimeModifierTable({
             <th style={headerCellStyle}>数值</th>
           </tr>
         </thead>
+
         <tbody>
-          {Object.entries(BAZI_RUNTIME_MODIFIER_LABELS).map(([key, label]) => {
+          {BAZI_RUNTIME_MODIFIER_KEYS.map((key) => {
             return (
               <tr key={key}>
-                <td style={labelCellStyle}>{label}</td>
+                <td style={labelCellStyle}>
+                  {BAZI_RUNTIME_MODIFIER_LABELS[key]}
+                </td>
                 <td style={cellStyle}>
                   {formatRuntimeScore(runtimeProfile.modifiers[key])}
                 </td>

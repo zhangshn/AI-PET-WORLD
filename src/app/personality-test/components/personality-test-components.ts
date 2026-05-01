@@ -3,6 +3,7 @@
  */
 
 export { BaziProfilePanel } from "./bazi-panel/BaziProfilePanel"
+export { BaziRuntimePanel } from "./bazi-runtime-panel/BaziRuntimePanel"
 export { BirthInputBar } from "./birth-input/BirthInputBar"
 export { PublicViewPanel } from "./debug/PublicViewPanel"
 export { FinalPersonalityPanel } from "./final-profile/FinalPersonalityPanel"
@@ -13,4 +14,3 @@ export { SectionSpacer } from "./layout/SectionSpacer"
 export { TimelineTestPanel } from "./timeline-test/TimelineTestPanel"
 export { ZiweiDynamicPanel } from "./ZiweiDynamicPanel"
 export { ZiweiPersonalityOutputPanel } from "./ziwei-output/ZiweiPersonalityOutputPanel"
-export { BaziRuntimePanel } from "./bazi-runtime-panel/BaziRuntimePanel"

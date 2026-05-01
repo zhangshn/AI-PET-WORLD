@@ -13,7 +13,7 @@ export function PersonalityTestMainGrid({
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "minmax(0, 1.35fr) minmax(320px, 0.65fr)",
+        gridTemplateColumns: "minmax(0, 1.2fr) minmax(420px, 0.8fr)",
         gap: 20,
         alignItems: "start"
       }}

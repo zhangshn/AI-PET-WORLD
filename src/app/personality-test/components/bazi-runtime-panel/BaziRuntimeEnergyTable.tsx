@@ -2,11 +2,21 @@
  * 当前文件负责：展示八字动态环境五行场。
  */
 
+import type { WuXingElement } from "../../../../ai/bazi-core/bazi-gateway"
 import type { BaziRuntimeProfileView } from "./bazi-runtime-panel-types"
+
 import {
   BAZI_RUNTIME_ELEMENT_LABELS,
   formatRuntimeScore
 } from "./bazi-runtime-panel-labels"
+
+const BAZI_RUNTIME_ELEMENT_KEYS: WuXingElement[] = [
+  "wood",
+  "fire",
+  "earth",
+  "metal",
+  "water",
+]
 
 export function BaziRuntimeEnergyTable({
   runtimeProfile
@@ -20,18 +30,19 @@ export function BaziRuntimeEnergyTable({
       <table style={tableStyle}>
         <thead>
           <tr>
-            {Object.entries(BAZI_RUNTIME_ELEMENT_LABELS).map(([key, label]) => {
+            {BAZI_RUNTIME_ELEMENT_KEYS.map((key) => {
               return (
                 <th key={key} style={headerCellStyle}>
-                  {label}
+                  {BAZI_RUNTIME_ELEMENT_LABELS[key]}
                 </th>
               )
             })}
           </tr>
         </thead>
+
         <tbody>
           <tr>
-            {Object.keys(BAZI_RUNTIME_ELEMENT_LABELS).map((key) => {
+            {BAZI_RUNTIME_ELEMENT_KEYS.map((key) => {
               return (
                 <td key={key} style={cellStyle}>
                   {formatRuntimeScore(
