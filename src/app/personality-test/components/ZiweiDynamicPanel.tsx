@@ -4,42 +4,17 @@
  * 当前文件负责：组装紫微命盘动态测试面板。
  */
 
-import { useMemo, useState } from "react"
-
-import {
-  buildZiweiDynamicChartOnly,
-  buildZiweiDynamicInfluence
-} from "../../../ai/ziwei-core/ziwei-gateway"
+import type { BirthPattern } from "../../../ai/ziwei-core/schema"
 
 import type {
-  BirthPattern,
-  BranchPalace
-} from "../../../ai/ziwei-core/schema"
-
-import type {
-  ZiweiFlowResult
-} from "../../../ai/ziwei-core/dynamic/dynamic-schema"
-
-import type {
-  ActiveDynamicFlow,
   DynamicGenderInput
 } from "../types"
-
-import {
-  getTimeBranchFromHour,
-  resolveCurrentAge
-} from "../utils"
 
 import { InfoCard } from "./common/InfoCard"
 import { ZiweiChartBoard } from "./ZiweiChartBoard"
 import { ZiweiDynamicDetail } from "./ZiweiDynamicDetail"
 import { ZiweiDynamicTabs } from "./ZiweiDynamicTabs"
-import {
-  ZiweiDynamicTimeTable,
-  type ZiweiDynamicTimeSelection
-} from "./ZiweiDynamicTimeTable"
-
-import type { ZiweiChartFlowMarker } from "./chart/ziwei-chart-types"
+import { ZiweiDynamicTimeTable } from "./ZiweiDynamicTimeTable"
 
 import { ZiweiBirthSummary } from "./dynamic/ZiweiBirthSummary"
 import {
@@ -47,11 +22,8 @@ import {
   ZiweiDynamicErrorNotice
 } from "./dynamic/ZiweiDynamicNotice"
 import { ZiweiDynamicStatusBar } from "./dynamic/ZiweiDynamicStatusBar"
-import {
-  buildInitialTimeSelection,
-  buildZiweiFlowMarkers,
-  getActiveFlowResult
-} from "./dynamic/ziwei-dynamic-helpers"
+
+import { useZiweiDynamicPanelState } from "../hooks/useZiweiDynamicPanelState"
 
 export function ZiweiDynamicPanel({
   pattern,
@@ -68,88 +40,30 @@ export function ZiweiDynamicPanel({
   timelineDay: number
   timelineHour: number
 }) {
-  const [activeFlow, setActiveFlow] = useState<ActiveDynamicFlow>("natal")
+  const {
+    activeFlow,
+    setActiveFlow,
 
-  const defaultAge = useMemo(() => {
-    return resolveCurrentAge(timelineDay)
-  }, [timelineDay])
+    timeSelection,
+    setTimeSelection,
 
-  const defaultTimeBranch = useMemo(() => {
-    return getTimeBranchFromHour(timelineHour)
-  }, [timelineHour])
+    chartResult,
+    chartData,
+    influenceResult,
 
-  const [timeSelection, setTimeSelection] =
-    useState<ZiweiDynamicTimeSelection>(() => {
-      return buildInitialTimeSelection({
-        currentAge: defaultAge,
-        currentYear,
-        lunarMonth: pattern.lunarInfo.lunarMonth,
-        lunarDay: pattern.lunarInfo.lunarDay,
-        currentTimeBranch: defaultTimeBranch
-      })
-    })
-
-  const chartResult = useMemo(() => {
-    if (!hasBirthHour) {
-      return null
-    }
-
-    return buildZiweiDynamicChartOnly({
-      pattern,
-      gender: dynamicGender,
-      currentAge: timeSelection.currentAge,
-      currentYear: timeSelection.currentYear,
-      currentLunarMonth: timeSelection.currentLunarMonth,
-      currentLunarDay: timeSelection.currentLunarDay,
-      currentTimeBranch: timeSelection.currentTimeBranch
-    })
-  }, [
-    hasBirthHour,
+    activePalace,
+    activeFlowResult,
+    flowMarkers,
+    startAge,
+    isDaYunRequestedButInactive
+  } = useZiweiDynamicPanelState({
     pattern,
-    dynamicGender,
-    timeSelection
-  ])
-
-  const influenceResult = useMemo(() => {
-    if (!hasBirthHour) {
-      return null
-    }
-
-    return buildZiweiDynamicInfluence({
-      pattern,
-      gender: dynamicGender,
-      currentAge: timeSelection.currentAge,
-      currentYear: timeSelection.currentYear,
-      currentLunarMonth: timeSelection.currentLunarMonth,
-      currentLunarDay: timeSelection.currentLunarDay,
-      currentTimeBranch: timeSelection.currentTimeBranch
-    })
-  }, [
     hasBirthHour,
-    pattern,
     dynamicGender,
-    timeSelection
-  ])
-
-  let activePalace: BranchPalace | undefined
-  let activeFlowResult: ZiweiFlowResult | null = null
-  let flowMarkers: ZiweiChartFlowMarker[] = []
-
-  if (chartResult?.ok) {
-    activeFlowResult = getActiveFlowResult(chartResult.data, activeFlow)
-    activePalace = activeFlowResult.palace
-    flowMarkers = buildZiweiFlowMarkers({
-      chart: chartResult.data,
-      activeFlow
-    })
-  }
-
-  const startAge = chartResult?.ok ? chartResult.data.debug.startAge : 1
-
-  const isDaYunRequestedButInactive =
-    activeFlow === "daYun" &&
-    activeFlowResult !== null &&
-    !activeFlowResult.isActive
+    currentYear,
+    timelineDay,
+    timelineHour
+  })
 
   return (
     <InfoCard title="🌌 紫微命盘">
@@ -194,15 +108,15 @@ export function ZiweiDynamicPanel({
             flowMarkers={flowMarkers}
           />
 
-          {chartResult?.ok && (
+          {chartData && (
             <div style={{ marginTop: 12, color: "#666", lineHeight: 1.8 }}>
-              大运方向：{chartResult.data.debug.direction}；起运岁数：
-              {chartResult.data.debug.startAge}；当前是否起运：
-              {chartResult.data.debug.isDaYunStarted ? "是" : "否"}
+              大运方向：{chartData.debug.direction}；起运岁数：
+              {chartData.debug.startAge}；当前是否起运：
+              {chartData.debug.isDaYunStarted ? "是" : "否"}
             </div>
           )}
 
-          {chartResult?.ok && (
+          {chartData && (
             <ZiweiDynamicTimeTable
               birthYear={currentYear}
               startAge={startAge}
