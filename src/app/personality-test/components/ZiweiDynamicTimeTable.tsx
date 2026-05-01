@@ -16,8 +16,8 @@ import {
 import {
   buildDaYunStartAges,
   buildYearRange,
-  isSelectedDaYunAge,
-  shouldHighlightDaYunForFlow
+  isDynamicFlowVisible,
+  isSelectedDaYunAge
 } from "./dynamic-time/ziwei-time-utils"
 
 import { buildDynamicTimeSummary } from "./dynamic-time/ziwei-time-summary"
@@ -44,16 +44,44 @@ export function ZiweiDynamicTimeTable({
   onActiveFlowChange: (flow: ActiveDynamicFlow) => void
 }) {
   const daYunStartAges = buildDaYunStartAges(startAge)
+
   const yearRange = buildYearRange({
     birthYear,
     startAge,
     currentAge: selection.currentAge
   })
+
   const months = Array.from({ length: 12 }, (_, index) => {
     return index + 1
   })
+
   const days = Array.from({ length: 30 }, (_, index) => {
     return index + 1
+  })
+
+  const shouldShowDaYunSelection = isDynamicFlowVisible({
+    activeFlow,
+    targetFlow: "daYun"
+  })
+
+  const shouldShowLiuNianSelection = isDynamicFlowVisible({
+    activeFlow,
+    targetFlow: "liuNian"
+  })
+
+  const shouldShowLiuYueSelection = isDynamicFlowVisible({
+    activeFlow,
+    targetFlow: "liuYue"
+  })
+
+  const shouldShowLiuRiSelection = isDynamicFlowVisible({
+    activeFlow,
+    targetFlow: "liuRi"
+  })
+
+  const shouldShowLiuShiSelection = isDynamicFlowVisible({
+    activeFlow,
+    targetFlow: "liuShi"
   })
 
   const currentSummary = buildDynamicTimeSummary({
@@ -88,7 +116,7 @@ export function ZiweiDynamicTimeTable({
               title={`${age}-${age + 9}`}
               subtitle={`${startYear}-${endYear}`}
               selected={
-                shouldHighlightDaYunForFlow(activeFlow) &&
+                shouldShowDaYunSelection &&
                 isSelectedDaYunAge({
                   startAge,
                   selectedStartAge: age,
@@ -109,25 +137,26 @@ export function ZiweiDynamicTimeTable({
       </ZiweiTimeRow>
 
       <ZiweiTimeRow label="流年">
-        {yearRange.map((year) => (
-          <ZiweiTimeCell
-            key={year}
-            title={String(year)}
-            subtitle={`${year - birthYear + 1}岁`}
-            selected={
-              activeFlow === "liuNian" &&
-              selection.currentYear === year
-            }
-            onClick={() => {
-              onSelectionChange({
-                ...selection,
-                currentYear: year,
-                currentAge: Math.max(1, year - birthYear + 1)
-              })
-              onActiveFlowChange("liuNian")
-            }}
-          />
-        ))}
+        {yearRange.map((year) => {
+          const isSelectedYear = Number(selection.currentYear) === year
+
+          return (
+            <ZiweiTimeCell
+              key={year}
+              title={String(year)}
+              subtitle={`${year - birthYear + 1}岁`}
+              selected={shouldShowLiuNianSelection && isSelectedYear}
+              onClick={() => {
+                onSelectionChange({
+                  ...selection,
+                  currentYear: year,
+                  currentAge: Math.max(1, year - birthYear + 1)
+                })
+                onActiveFlowChange("liuNian")
+              }}
+            />
+          )
+        })}
       </ZiweiTimeRow>
 
       <ZiweiTimeRow label="流月">
@@ -136,8 +165,8 @@ export function ZiweiDynamicTimeTable({
             key={month}
             title={getMonthLabel(month)}
             selected={
-              activeFlow === "liuYue" &&
-              selection.currentLunarMonth === month
+              shouldShowLiuYueSelection &&
+              Number(selection.currentLunarMonth) === month
             }
             onClick={() => {
               onSelectionChange({
@@ -156,8 +185,8 @@ export function ZiweiDynamicTimeTable({
             key={day}
             title={getDayLabel(day)}
             selected={
-              activeFlow === "liuRi" &&
-              selection.currentLunarDay === day
+              shouldShowLiuRiSelection &&
+              Number(selection.currentLunarDay) === day
             }
             onClick={() => {
               onSelectionChange({
@@ -177,7 +206,7 @@ export function ZiweiDynamicTimeTable({
             title={`${BRANCH_LABELS[branch]}时`}
             subtitle={branch}
             selected={
-              activeFlow === "liuShi" &&
+              shouldShowLiuShiSelection &&
               selection.currentTimeBranch === branch
             }
             onClick={() => {

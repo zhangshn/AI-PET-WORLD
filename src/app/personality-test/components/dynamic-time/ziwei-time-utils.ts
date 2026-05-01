@@ -4,6 +4,15 @@
 
 import type { ActiveDynamicFlow } from "../../types"
 
+const DYNAMIC_FLOW_ORDER: ActiveDynamicFlow[] = [
+  "natal",
+  "daYun",
+  "liuNian",
+  "liuYue",
+  "liuRi",
+  "liuShi"
+]
+
 export function buildDaYunStartAges(startAge: number): number[] {
   return Array.from({ length: 10 }, (_, index) => {
     return startAge + index * 10
@@ -57,12 +66,16 @@ export function isSelectedDaYunAge(params: {
   )
 }
 
-export function shouldHighlightDaYunForFlow(activeFlow: ActiveDynamicFlow): boolean {
-  return [
-    "daYun",
-    "liuNian",
-    "liuYue",
-    "liuRi",
-    "liuShi"
-  ].includes(activeFlow)
+export function isDynamicFlowVisible(params: {
+  activeFlow: ActiveDynamicFlow
+  targetFlow: ActiveDynamicFlow
+}): boolean {
+  const activeIndex = DYNAMIC_FLOW_ORDER.indexOf(params.activeFlow)
+  const targetIndex = DYNAMIC_FLOW_ORDER.indexOf(params.targetFlow)
+
+  if (activeIndex < 0 || targetIndex < 0) {
+    return false
+  }
+
+  return activeIndex >= targetIndex
 }

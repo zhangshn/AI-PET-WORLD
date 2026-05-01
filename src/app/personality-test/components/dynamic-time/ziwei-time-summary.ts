@@ -4,7 +4,16 @@
 
 import type { ActiveDynamicFlow } from "../../types"
 import type { ZiweiDynamicTimeSelection } from "./ziwei-time-types"
-import { BRANCH_LABELS, DYNAMIC_FLOW_LABELS } from "../../constants"
+
+import {
+  BRANCH_LABELS,
+  DYNAMIC_FLOW_LABELS
+} from "../../constants"
+
+import {
+  getDayLabel,
+  getMonthLabel
+} from "./ziwei-time-labels"
 
 export function buildDynamicTimeSummary(params: {
   activeFlow: ActiveDynamicFlow
@@ -35,12 +44,12 @@ export function buildDynamicTimeSummary(params: {
   }
 
   if (activeFlow === "liuYue") {
-    return `当前选择：${DYNAMIC_FLOW_LABELS[activeFlow] ?? activeFlow}；年龄 ${selection.currentAge}；年份 ${selection.currentYear}；农历 ${selection.currentLunarMonth} 月`
+    return `当前选择：${DYNAMIC_FLOW_LABELS[activeFlow] ?? activeFlow}；年龄 ${selection.currentAge}；年份 ${selection.currentYear}；农历 ${getMonthLabel(selection.currentLunarMonth)}`
   }
 
   if (activeFlow === "liuRi") {
-    return `当前选择：${DYNAMIC_FLOW_LABELS[activeFlow] ?? activeFlow}；年龄 ${selection.currentAge}；年份 ${selection.currentYear}；农历 ${selection.currentLunarMonth} 月 ${selection.currentLunarDay} 日`
+    return `当前选择：${DYNAMIC_FLOW_LABELS[activeFlow] ?? activeFlow}；年龄 ${selection.currentAge}；年份 ${selection.currentYear}；农历 ${getMonthLabel(selection.currentLunarMonth)} ${getDayLabel(selection.currentLunarDay)}`
   }
 
-  return `当前选择：${DYNAMIC_FLOW_LABELS[activeFlow] ?? activeFlow}；年龄 ${selection.currentAge}；年份 ${selection.currentYear}；农历 ${selection.currentLunarMonth} 月 ${selection.currentLunarDay} 日；${BRANCH_LABELS[selection.currentTimeBranch]}时`
+  return `当前选择：${DYNAMIC_FLOW_LABELS[activeFlow] ?? activeFlow}；年龄 ${selection.currentAge}；年份 ${selection.currentYear}；农历 ${getMonthLabel(selection.currentLunarMonth)} ${getDayLabel(selection.currentLunarDay)}；${BRANCH_LABELS[selection.currentTimeBranch]}时`
 }
