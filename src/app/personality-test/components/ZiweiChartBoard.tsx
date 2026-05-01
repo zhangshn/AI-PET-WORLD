@@ -1,10 +1,11 @@
 /**
- * 当前文件负责：展示紫微十二宫盘，并高亮当前动态流落宫。
+ * 当前文件负责：展示紫微十二宫盘，并支持动态命宫重排后的宫名显示。
  */
 
 import type {
   BirthPattern,
   BranchPalace,
+  SectorName,
   StarId
 } from "../../../ai/ziwei-core/schema"
 
@@ -31,17 +32,27 @@ function getBorrowedStarsByBranch(
 
 export function ZiweiChartBoard({
   pattern,
-  activePalace
+  activePalace,
+  branchToSectorMap
 }: {
   pattern: BirthPattern
   activePalace?: BranchPalace
+
+  /**
+   * 如果传入，则按动态命宫重排后的宫名显示。
+   * 如果不传，则显示原生命盘宫名。
+   */
+  branchToSectorMap?: Record<BranchPalace, SectorName>
 }) {
+  const displayBranchToSectorMap = branchToSectorMap ?? pattern.branchToSectorMap
+
   function renderBranchCell(branch: BranchPalace) {
-    const sector = pattern.branchToSectorMap[branch]
+    const sector = displayBranchToSectorMap[branch]
     const stars = pattern.branchPalaces[branch] || []
     const borrowedStars = getBorrowedStarsByBranch(branch, pattern.borrowedPalaces)
 
-    const isPrimary = branch === pattern.primaryBranchPalace
+    const isDynamicLife = sector === "life"
+    const isNatalLife = branch === pattern.primaryBranchPalace
     const isBody = branch === pattern.bodyBranchPalace
     const isSupport = pattern.supportBranchPalaces.includes(branch)
     const isOpposite = branch === pattern.oppositeBranchPalace
@@ -51,7 +62,7 @@ export function ZiweiChartBoard({
     let border = "1px solid #ccc"
     let background = "#fff"
 
-    if (isPrimary) {
+    if (isNatalLife) {
       border = "2px solid #ff4d4f"
       background = "#fff1f0"
     }
@@ -64,6 +75,11 @@ export function ZiweiChartBoard({
     if (isSupport) {
       border = "2px dashed #1677ff"
       background = "#f0f8ff"
+    }
+
+    if (isDynamicLife) {
+      border = "3px solid #722ed1"
+      background = "#f9f0ff"
     }
 
     if (isActive) {
@@ -92,9 +108,9 @@ export function ZiweiChartBoard({
         >
           <div style={{ fontWeight: "bold" }}>
             {getSectorLabel(sector)}
-            {isPrimary ? " ⭐命" : ""}
+            {isDynamicLife ? " ◆命" : ""}
+            {isNatalLife && !isDynamicLife ? " ☆本命" : ""}
             {isBody ? " ◎身" : ""}
-            {isActive ? " ◆流" : ""}
           </div>
 
           <div style={{ color: "#666", fontSize: 12 }}>

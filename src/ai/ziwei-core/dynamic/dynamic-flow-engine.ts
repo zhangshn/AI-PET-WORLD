@@ -5,6 +5,7 @@
 import type {
   BirthPattern,
   BranchPalace,
+  SectorName,
   StarId
 } from "../schema"
 
@@ -26,6 +27,35 @@ import type {
   ZiweiFlowResult
 } from "./dynamic-schema"
 
+/**
+ * 十二宫顺序。
+ *
+ * 动态命宫切换时：
+ * 当前动态落宫 = 命宫
+ * 然后逆向排布兄弟、夫妻、子女……
+ *
+ * 这与当前 BirthPattern 里显示的宫名排列保持一致：
+ * 命宫 → 兄弟 → 夫妻 → 子女 → 财帛 → 疾厄 → 迁移 → 交友 → 官禄 → 田宅 → 福德 → 父母
+ */
+const SECTOR_ORDER: SectorName[] = [
+  "life",
+  "siblings",
+  "spouse",
+  "children",
+  "wealth",
+  "health",
+  "travel",
+  "friends",
+  "career",
+  "property",
+  "fortune",
+  "parents"
+]
+
+/**
+ * 公历年份对应地支时，使用传统生肖地支顺序。
+ * 2020 = 子年。
+ */
 const YEAR_BRANCH_ORDER: BranchPalace[] = [
   "zi",
   "chou",
@@ -41,6 +71,9 @@ const YEAR_BRANCH_ORDER: BranchPalace[] = [
   "hai"
 ]
 
+/**
+ * 时辰偏移使用传统时辰顺序。
+ */
 const TIME_BRANCH_ORDER: BranchPalace[] = [
   "zi",
   "chou",
@@ -142,18 +175,45 @@ function normalizeLunarDay(value: number): number {
   return day
 }
 
+/**
+ * 根据动态命宫重建十二宫映射。
+ *
+ * 关键规则：
+ * - dynamicLifePalace 本身 = 命宫
+ * - 兄弟、夫妻、子女……按逆向地支排布
+ *
+ * 例如 dynamicLifePalace = zi：
+ * zi = 命宫
+ * hai = 兄弟
+ * xu = 夫妻
+ * you = 子女
+ */
+function buildDynamicPalaceMaps(
+  dynamicLifePalace: BranchPalace
+): {
+  dynamicBranchToSectorMap: Record<BranchPalace, SectorName>
+  dynamicSectorToBranchMap: Record<SectorName, BranchPalace>
+} {
+  const dynamicBranchToSectorMap = {} as Record<BranchPalace, SectorName>
+  const dynamicSectorToBranchMap = {} as Record<SectorName, BranchPalace>
+
+  SECTOR_ORDER.forEach((sectorName, index) => {
+    const branch = moveBranch(dynamicLifePalace, -index)
+    dynamicBranchToSectorMap[branch] = sectorName
+    dynamicSectorToBranchMap[sectorName] = branch
+  })
+
+  return {
+    dynamicBranchToSectorMap,
+    dynamicSectorToBranchMap
+  }
+}
+
 function getStarsByPalace(
   pattern: BirthPattern,
   palace: BranchPalace
 ): StarId[] {
   return [...(pattern.branchPalaces[palace] ?? [])]
-}
-
-function getSectorNameByPalace(
-  pattern: BirthPattern,
-  palace: BranchPalace
-): string {
-  return pattern.branchToSectorMap[palace] ?? "unknown"
 }
 
 function detectPairIds(stars: StarId[]): string[] {
@@ -183,11 +243,17 @@ function createFlowResult(params: {
   influence: number
 }): ZiweiFlowResult {
   const stars = getStarsByPalace(params.pattern, params.palace)
+  const {
+    dynamicBranchToSectorMap,
+    dynamicSectorToBranchMap
+  } = buildDynamicPalaceMaps(params.palace)
 
   return {
     type: params.type,
     palace: params.palace,
-    sectorName: getSectorNameByPalace(params.pattern, params.palace),
+    sectorName: dynamicBranchToSectorMap[params.palace],
+    dynamicBranchToSectorMap,
+    dynamicSectorToBranchMap,
     stars,
     pairIds: detectPairIds(stars),
     influence: params.influence

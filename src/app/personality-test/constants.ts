@@ -91,6 +91,14 @@ export const ELEMENT_GATE_LABELS: Record<string, string> = {
   fire_6: "火六局"
 }
 
+export const WUXING_LABELS: Record<string, string> = {
+  wood: "木",
+  fire: "火",
+  earth: "土",
+  metal: "金",
+  water: "水"
+}
+
 export const DYNAMIC_FLOW_LABELS: Record<string, string> = {
   natal: "本命",
   daYun: "大运",
@@ -131,8 +139,4 @@ export const TONE_BIAS_LABELS: Record<string, string> = {
   concise: "简洁",
   protective: "保护性",
   curious: "好奇"
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> d5d5e33 (更新业务逻辑)
