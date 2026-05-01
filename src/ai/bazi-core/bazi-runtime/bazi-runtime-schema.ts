@@ -92,6 +92,9 @@ export type BaziSimpleTimeOption = {
   subtitle?: string
   pillarLabel: string
   active: boolean
+  targetYear: number
+  targetMonth: number
+  targetDay: number
 }
 
 export type BaziHourTimeOption = {

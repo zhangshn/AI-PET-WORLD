@@ -61,7 +61,9 @@ export function BaziRuntimeTimeSelector({
     onActiveLevelChange("liuYue")
     onSelectionChange({
       ...selection,
-      currentMonth: option.value,
+      currentYear: option.targetYear,
+      currentMonth: option.targetMonth,
+      currentDay: option.targetDay,
     })
   }
 
@@ -69,7 +71,9 @@ export function BaziRuntimeTimeSelector({
     onActiveLevelChange("liuRi")
     onSelectionChange({
       ...selection,
-      currentDay: option.value,
+      currentYear: option.targetYear,
+      currentMonth: option.targetMonth,
+      currentDay: option.targetDay,
     })
   }
 
@@ -138,8 +142,8 @@ export function BaziRuntimeTimeSelector({
 
         {timeTable.liuYueOptions.map((option, index) => (
           <BaziRuntimeTimeCell
-            key={`liu-yue-${index}-${option.value}-${option.title}-${option.subtitle ?? ""}`}
-            title={`${option.title} · ${option.pillarLabel}`}
+            key={`liu-yue-${index}-${option.value}-${option.targetYear}-${option.targetMonth}-${option.targetDay}`}
+            title={option.title}
             subtitle={option.subtitle}
             selected={
               isRuntimeLevelActive({
@@ -157,8 +161,8 @@ export function BaziRuntimeTimeSelector({
 
         {timeTable.liuRiOptions.map((option, index) => (
           <BaziRuntimeTimeCell
-            key={`liu-ri-${index}-${option.value}-${option.title}-${option.subtitle ?? ""}`}
-            title={`${option.title} · ${option.pillarLabel}`}
+            key={`liu-ri-${index}-${option.value}-${option.targetYear}-${option.targetMonth}-${option.targetDay}`}
+            title={option.title}
             subtitle={option.subtitle}
             selected={
               isRuntimeLevelActive({
@@ -177,7 +181,7 @@ export function BaziRuntimeTimeSelector({
         {timeTable.liuShiOptions.map((option, index) => (
           <BaziRuntimeTimeCell
             key={`liu-shi-${index}-${option.hour}-${option.branch}`}
-            title={`${option.title} · ${option.pillarLabel}`}
+            title={option.title}
             subtitle={option.subtitle}
             selected={
               isRuntimeLevelActive({
