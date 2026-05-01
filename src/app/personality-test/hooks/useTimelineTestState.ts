@@ -21,6 +21,8 @@ import {
   buildTimelineDiffs
 } from "../components/timeline-test/timeline-utils"
 
+import { buildTimelineLogEntry } from "../components/timeline-test/timeline-log-utils"
+
 export const INITIAL_TIMELINE_CLOCK: TimelineClock = {
   day: 1,
   hour: 8,
@@ -57,6 +59,12 @@ export function useTimelineTestState({
     setLastOperation("根据当前出生输入重新初始化测试快照")
   }
 
+  function markUnknownBirthHour() {
+    setLastOperation("当前出生时间未知，仅使用八字三柱生成统一人格")
+    setLastDiffs([])
+    setTimelineLogs([])
+  }
+
   function applyTimelineUpdate(
     label: string,
     events?: StateUpdateEvent[],
@@ -68,14 +76,14 @@ export function useTimelineTestState({
 
     const beforeSnapshot = timelineSnapshot
     const beforeClock = timelineClock
-    const nextClock = advanceClock(timelineClock, hourDelta)
+    const afterClock = advanceClock(timelineClock, hourDelta)
 
     const nextSnapshot = updatePetAiState({
       currentSnapshot: timelineSnapshot,
       time: {
-        day: nextClock.day,
-        hour: nextClock.hour,
-        period: nextClock.period
+        day: afterClock.day,
+        hour: afterClock.hour,
+        period: afterClock.period
       },
       events,
       tickDelta: hourDelta > 0 ? hourDelta : 0,
@@ -84,26 +92,15 @@ export function useTimelineTestState({
 
     const diffs = buildTimelineDiffs(beforeSnapshot, nextSnapshot)
 
-    const logEntry: TimelineLogEntry = {
-      id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      actionLabel: label,
+    const logEntry = buildTimelineLogEntry({
+      label,
       beforeClock,
-      afterClock: nextClock,
+      afterClock,
       diffs,
-      snapshotSummary: {
-        phase: nextSnapshot.fortune.phaseTag,
-        emotional: nextSnapshot.state.emotional.label,
-        energy: Math.round(nextSnapshot.state.physical.energy),
-        hunger: Math.round(nextSnapshot.state.physical.hunger),
-        cognitive: nextSnapshot.state.cognitive.label,
-        relational: nextSnapshot.state.relational.label,
-        drive: nextSnapshot.state.drive.primary,
-        branch: nextSnapshot.trajectory.branchTag
-      },
-      createdAt: new Date().toLocaleTimeString()
-    }
+      nextSnapshot
+    })
 
-    setTimelineClock(nextClock)
+    setTimelineClock(afterClock)
     setTimelineSnapshot(nextSnapshot)
     setLastOperation(label)
     setLastDiffs(diffs)
@@ -114,12 +111,6 @@ export function useTimelineTestState({
     const nextSnapshot = onResetByBirthInput()
     resetTimelineState(nextSnapshot)
     setLastOperation("已重置 timeline 到初始状态")
-  }
-
-  function markUnknownBirthHour() {
-    setLastOperation("当前出生时间未知，仅使用八字三柱生成统一人格")
-    setLastDiffs([])
-    setTimelineLogs([])
   }
 
   return {

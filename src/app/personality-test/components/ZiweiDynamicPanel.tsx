@@ -6,9 +6,7 @@
 
 import type { BirthPattern } from "../../../ai/ziwei-core/schema"
 
-import type {
-  DynamicGenderInput
-} from "../types"
+import type { DynamicGenderInput } from "../types"
 
 import { InfoCard } from "./common/InfoCard"
 import { ZiweiChartBoard } from "./ZiweiChartBoard"
@@ -21,6 +19,7 @@ import {
   ZiweiDaYunInactiveNotice,
   ZiweiDynamicErrorNotice
 } from "./dynamic/ZiweiDynamicNotice"
+import { ZiweiDynamicRuntimeLine } from "./dynamic/ZiweiDynamicRuntimeLine"
 import { ZiweiDynamicStatusBar } from "./dynamic/ZiweiDynamicStatusBar"
 
 import { useZiweiDynamicPanelState } from "../hooks/useZiweiDynamicPanelState"
@@ -108,13 +107,7 @@ export function ZiweiDynamicPanel({
             flowMarkers={flowMarkers}
           />
 
-          {chartData && (
-            <div style={{ marginTop: 12, color: "#666", lineHeight: 1.8 }}>
-              大运方向：{chartData.debug.direction}；起运岁数：
-              {chartData.debug.startAge}；当前是否起运：
-              {chartData.debug.isDaYunStarted ? "是" : "否"}
-            </div>
-          )}
+          <ZiweiDynamicRuntimeLine chartData={chartData} />
 
           {chartData && (
             <ZiweiDynamicTimeTable

@@ -10,19 +10,15 @@ import type {
 import { ZIWEI_LAYOUT } from "../constants"
 
 import { ZiweiPalaceCell } from "./chart/ZiweiPalaceCell"
+
+import {
+  getFlowMarkersByBranch
+} from "./chart/ziwei-chart-utils"
+
 import type {
   ZiweiChartFlowMarker,
   ZiweiChartSectorMap
 } from "./chart/ziwei-chart-types"
-
-function getFlowMarkersByBranch(
-  branch: BranchPalace,
-  flowMarkers: ZiweiChartFlowMarker[]
-): ZiweiChartFlowMarker[] {
-  return flowMarkers.filter((marker) => {
-    return marker.palace === branch
-  })
-}
 
 export function ZiweiChartBoard({
   pattern,

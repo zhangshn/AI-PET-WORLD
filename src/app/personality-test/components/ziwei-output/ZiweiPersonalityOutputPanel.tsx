@@ -1,33 +1,17 @@
 /**
- * 当前文件负责：展示紫微人格结构输出结果。
+ * 当前文件负责：组装紫微人格结构输出结果面板。
  */
 
 import { InfoCard } from "../common/InfoCard"
-import { ScoreLine } from "../common/ScoreLine"
-import { ValueLine } from "../common/ValueLine"
 
-type PairDebugItem = {
-  pairLabel: string
-}
+import { NumericScoreList } from "./NumericScoreList"
+import { ZiweiDebugPairView } from "./ZiweiDebugPairView"
+import { ZiweiSummaryList } from "./ZiweiSummaryList"
 
-type ZiweiDebugView = {
-  hitPairs: PairDebugItem[]
-  supportPairs: PairDebugItem[]
-}
-
-type NumericObjectView = object
-
-function renderNumericEntries(value: NumericObjectView) {
-  return Object.entries(value).map(([key, itemValue]) => {
-    return (
-      <ScoreLine
-        key={key}
-        name={key}
-        value={Number(itemValue)}
-      />
-    )
-  })
-}
+import type {
+  NumericObjectView,
+  ZiweiDebugView
+} from "./ziwei-output-types"
 
 export function ZiweiPersonalityOutputPanel({
   corePersonality,
@@ -52,22 +36,17 @@ export function ZiweiPersonalityOutputPanel({
         <div>
           <strong>核心人格</strong>
           <div style={{ marginTop: 10 }}>
-            {Object.entries(corePersonality).map(([key, value]) => {
-              return (
-                <ScoreLine
-                  key={key}
-                  name={key}
-                  value={Number(value) * 100}
-                />
-              )
-            })}
+            <NumericScoreList
+              values={corePersonality}
+              multiplier={100}
+            />
           </div>
         </div>
 
         <div>
           <strong>行为 traits</strong>
           <div style={{ marginTop: 10 }}>
-            {renderNumericEntries(traits)}
+            <NumericScoreList values={traits} />
           </div>
         </div>
       </div>
@@ -81,47 +60,9 @@ export function ZiweiPersonalityOutputPanel({
       />
 
       <strong>摘要</strong>
-      <div style={{ marginTop: 10, lineHeight: 1.8 }}>
-        {summaries.length > 0 ? (
-          summaries.map((summary) => {
-            return <div key={summary}>- {summary}</div>
-          })
-        ) : (
-          <div style={{ color: "#999" }}>暂无摘要</div>
-        )}
-      </div>
+      <ZiweiSummaryList summaries={summaries} />
 
-      {debug && (
-        <>
-          <hr
-            style={{
-              margin: "16px 0",
-              border: "none",
-              borderTop: "1px solid #eee"
-            }}
-          />
-
-          <strong>Debug Pair</strong>
-          <div style={{ marginTop: 10, lineHeight: 1.8 }}>
-            <ValueLine
-              label="命中组合"
-              value={
-                debug.hitPairs.length > 0
-                  ? debug.hitPairs.map((item) => item.pairLabel).join(" / ")
-                  : "无"
-              }
-            />
-            <ValueLine
-              label="support 组合"
-              value={
-                debug.supportPairs.length > 0
-                  ? debug.supportPairs.map((item) => item.pairLabel).join(" / ")
-                  : "无"
-              }
-            />
-          </div>
-        </>
-      )}
+      <ZiweiDebugPairView debug={debug} />
     </InfoCard>
   )
 }

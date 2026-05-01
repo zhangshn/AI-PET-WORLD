@@ -1,16 +1,14 @@
 /**
- * 当前文件负责：展示人格测试页顶部的出生年月日时与性别输入栏。
+ * 当前文件负责：组装人格测试页顶部的出生年月日时与性别输入栏。
  */
 
 import type { DynamicGenderInput } from "../../types"
-import { ComboInput } from "../common/ComboInput"
 
-import {
-  buildDayOptions,
-  buildHourOptions,
-  buildMonthOptions,
-  buildYearOptions
-} from "./birth-input-utils"
+import { BirthDayInput } from "./BirthDayInput"
+import { BirthGenderInput } from "./BirthGenderInput"
+import { BirthHourInput } from "./BirthHourInput"
+import { BirthMonthInput } from "./BirthMonthInput"
+import { BirthYearInput } from "./BirthYearInput"
 
 export function BirthInputBar({
   year,
@@ -49,70 +47,35 @@ export function BirthInputBar({
         alignItems: "center"
       }}
     >
-      <ComboInput
-        label="年"
-        value={String(year)}
-        width={100}
-        options={buildYearOptions()}
-        onChange={(value) => {
-          const nextYear = Number(value)
-
-          if (!Number.isNaN(nextYear)) {
-            onDateChange({ year: nextYear })
-          }
+      <BirthYearInput
+        year={year}
+        onChange={(nextYear) => {
+          onDateChange({ year: nextYear })
         }}
       />
 
-      <ComboInput
-        label="月"
-        value={String(month)}
-        width={70}
-        options={buildMonthOptions()}
-        onChange={(value) => {
-          const nextMonth = Number(value)
-
-          if (!Number.isNaN(nextMonth)) {
-            onDateChange({ month: nextMonth })
-          }
+      <BirthMonthInput
+        month={month}
+        onChange={(nextMonth) => {
+          onDateChange({ month: nextMonth })
         }}
       />
 
-      <ComboInput
-        label="日"
-        value={String(day)}
-        width={70}
-        options={buildDayOptions()}
-        onChange={(value) => {
-          const nextDay = Number(value)
-
-          if (!Number.isNaN(nextDay)) {
-            onDateChange({ day: nextDay })
-          }
+      <BirthDayInput
+        day={day}
+        onChange={(nextDay) => {
+          onDateChange({ day: nextDay })
         }}
       />
 
-      <ComboInput
-        label="时"
-        value={birthHourInput}
-        width={120}
-        placeholder="未知 / 0-23"
-        options={buildHourOptions()}
+      <BirthHourInput
+        birthHourInput={birthHourInput}
         onChange={onBirthHourInputChange}
       />
 
-      <ComboInput
-        label="性别"
-        value={dynamicGender || "未选择"}
-        width={120}
-        options={["未选择", "male", "female"]}
-        onChange={(value) => {
-          if (value === "male" || value === "female") {
-            onDynamicGenderChange(value)
-            return
-          }
-
-          onDynamicGenderChange("")
-        }}
+      <BirthGenderInput
+        dynamicGender={dynamicGender}
+        onChange={onDynamicGenderChange}
       />
     </div>
   )

@@ -2,23 +2,9 @@
  * 当前文件负责：组合 personality-test 页面的出生输入、人格数据与 Timeline 测试状态。
  */
 
-import { useMemo, useState } from "react"
-
-import {
-  buildPetBirthBundle,
-  type PetBirthAiBundle
-} from "../../../ai/gateway"
-
-import { buildBaziProfile } from "../../../ai/bazi-core/bazi-gateway"
-import { buildFinalPersonalityProfile } from "../../../ai/personality-vector/vector-gateway"
-
 import { useBirthInputState } from "./useBirthInputState"
-import {
-  INITIAL_TIMELINE_CLOCK,
-  useTimelineTestState
-} from "./useTimelineTestState"
-
-import type { BirthInputState } from "./personality-test-state-types"
+import { usePersonalityProfileData } from "./usePersonalityProfileData"
+import { useTimelineTestState } from "./useTimelineTestState"
 
 export function usePersonalityTestState() {
   const {
@@ -35,58 +21,24 @@ export function usePersonalityTestState() {
     ziweiHour
   } = birthInput
 
-  const [birthBundle, setBirthBundle] = useState<PetBirthAiBundle>(() => {
-    return buildPetBirthBundle({
-      birthInput: {
-        year,
-        month,
-        day,
-        hour: 0
-      },
-      time: INITIAL_TIMELINE_CLOCK
-    })
+  const {
+    profileData,
+    profileActions
+  } = usePersonalityProfileData({
+    year,
+    month,
+    day,
+    parsedBirthHour,
+    hasBirthHour
   })
-
-  const profile = birthBundle.personalityProfile
-  const publicView = birthBundle.publicPersonalityView
-  const pattern = profile.pattern
-
-  const baziProfile = useMemo(() => {
-    return buildBaziProfile({
-      year,
-      month,
-      day,
-      hour: parsedBirthHour
-    })
-  }, [year, month, day, parsedBirthHour])
-
-  const finalPersonalityProfile = useMemo(() => {
-    return buildFinalPersonalityProfile({
-      ziweiProfile: hasBirthHour ? profile : null,
-      baziProfile
-    })
-  }, [hasBirthHour, profile, baziProfile])
-
-  function buildBundleFromBirthInput(nextBirthInput: BirthInputState) {
-    return buildPetBirthBundle({
-      birthInput: nextBirthInput,
-      time: INITIAL_TIMELINE_CLOCK
-    })
-  }
-
-  function resetFromBirthInput(nextBirthInput: BirthInputState) {
-    const nextBundle = buildBundleFromBirthInput(nextBirthInput)
-    setBirthBundle(nextBundle)
-    return nextBundle.timelineSnapshot
-  }
 
   const {
     timelineData,
     timelineActions
   } = useTimelineTestState({
-    initialSnapshot: birthBundle.timelineSnapshot,
+    initialSnapshot: profileData.birthBundle.timelineSnapshot,
     onResetByBirthInput: () => {
-      return resetFromBirthInput({
+      return profileActions.resetProfileFromBirthInput({
         year,
         month,
         day,
@@ -106,7 +58,7 @@ export function usePersonalityTestState() {
       return
     }
 
-    const nextSnapshot = resetFromBirthInput({
+    const nextSnapshot = profileActions.resetProfileFromBirthInput({
       year: nextInput.year,
       month: nextInput.month,
       day: nextInput.day,
@@ -144,16 +96,7 @@ export function usePersonalityTestState() {
 
   return {
     birthInput,
-
-    profileData: {
-      birthBundle,
-      profile,
-      publicView,
-      pattern,
-      baziProfile,
-      finalPersonalityProfile
-    },
-
+    profileData,
     timelineData,
 
     actions: {
