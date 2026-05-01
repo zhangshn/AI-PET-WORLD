@@ -40,6 +40,7 @@ import {
 import { InfoCard } from "./common/InfoCard"
 import { ValueLine } from "./common/ValueLine"
 import { ZiweiChartBoard } from "./ZiweiChartBoard"
+import type { ZiweiChartFlowMarker } from "./chart/ziwei-chart-types"
 import { ZiweiDynamicDetail } from "./ZiweiDynamicDetail"
 import { ZiweiDynamicTabs } from "./ZiweiDynamicTabs"
 import {
@@ -52,6 +53,56 @@ function getActiveFlowResult(
   activeFlow: ActiveDynamicFlow
 ): ZiweiFlowResult {
   return chart[activeFlow]
+}
+
+function buildFlowMarkers(params: {
+  chart: ZiweiDynamicChart
+  activeFlow: ActiveDynamicFlow
+}): ZiweiChartFlowMarker[] {
+  return [
+    {
+      kind: "natal",
+      label: "本命",
+      palace: params.chart.natal.palace,
+      active: params.activeFlow === "natal",
+      inactive: !params.chart.natal.isActive
+    },
+    {
+      kind: "daYun",
+      label: "大命",
+      palace: params.chart.daYun.palace,
+      active: params.activeFlow === "daYun",
+      inactive: !params.chart.daYun.isActive
+    },
+    {
+      kind: "liuNian",
+      label: "年命",
+      palace: params.chart.liuNian.palace,
+      active: params.activeFlow === "liuNian",
+      inactive: !params.chart.liuNian.isActive
+    },
+    {
+      kind: "liuYue",
+      label: "月命",
+      palace: params.chart.liuYue.palace,
+      active: params.activeFlow === "liuYue",
+      inactive: !params.chart.liuYue.isActive
+    },
+    {
+      kind: "liuRi",
+      label: "日命",
+      palace: params.chart.liuRi.palace,
+      active: params.activeFlow === "liuRi",
+      inactive: !params.chart.liuRi.isActive
+    },
+    {
+      kind: "liuShi",
+      label: "时命",
+      palace: params.chart.liuShi.palace,
+      active: params.activeFlow === "liuShi",
+      inactive: !params.chart.liuShi.isActive
+    }
+  ]
 }
 
 export function ZiweiDynamicPanel({
@@ -134,10 +185,15 @@ export function ZiweiDynamicPanel({
 
   let activePalace: BranchPalace | undefined
   let activeFlowResult: ZiweiFlowResult | null = null
+  let flowMarkers: ZiweiChartFlowMarker[] = []
 
   if (chartResult?.ok) {
     activeFlowResult = getActiveFlowResult(chartResult.data, activeFlow)
     activePalace = activeFlowResult.palace
+    flowMarkers = buildFlowMarkers({
+      chart: chartResult.data,
+      activeFlow
+    })
   }
 
   const startAge = chartResult?.ok ? chartResult.data.debug.startAge : 1
@@ -266,6 +322,7 @@ export function ZiweiDynamicPanel({
             pattern={pattern}
             activePalace={activePalace}
             branchToSectorMap={activeFlowResult?.dynamicBranchToSectorMap}
+            flowMarkers={flowMarkers}
           />
 
           {chartResult?.ok && (
