@@ -16,6 +16,11 @@ import type {
   BranchPalace
 } from "../../../ai/ziwei-core/schema"
 
+import type {
+  ZiweiDynamicChart,
+  ZiweiFlowResult
+} from "../../../ai/ziwei-core/dynamic/dynamic-schema"
+
 import {
   BRANCH_LABELS,
   ELEMENT_GATE_LABELS
@@ -39,14 +44,9 @@ import { ZiweiDynamicDetail } from "./ZiweiDynamicDetail"
 import { ZiweiDynamicTabs } from "./ZiweiDynamicTabs"
 
 function getActiveFlowResult(
-  chart: NonNullable<ReturnType<typeof buildZiweiDynamicChartOnly>> extends {
-    ok: true
-    data: infer T
-  }
-    ? T
-    : never,
+  chart: ZiweiDynamicChart,
   activeFlow: ActiveDynamicFlow
-) {
+): ZiweiFlowResult {
   return chart[activeFlow]
 }
 
@@ -121,7 +121,7 @@ export function ZiweiDynamicPanel({
   ])
 
   let activePalace: BranchPalace | undefined
-  let activeFlowResult: ReturnType<typeof getActiveFlowResult> | null = null
+  let activeFlowResult: ZiweiFlowResult | null = null
 
   if (chartResult?.ok) {
     activeFlowResult = getActiveFlowResult(chartResult.data, activeFlow)

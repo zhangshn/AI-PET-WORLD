@@ -1609,9 +1609,8 @@ export default function PersonalityTestPage() {
             onClick={() =>
               applyTimelineUpdate("模拟被安抚", [
                 {
-                  type: "comfort",
-                  intensity: 0.75,
-                  description: "测试事件：被安抚"
+                  type: "comforted",
+                  intensity: 0.75
                 }
               ])
             }
@@ -1621,9 +1620,8 @@ export default function PersonalityTestPage() {
             onClick={() =>
               applyTimelineUpdate("模拟环境刺激", [
                 {
-                  type: "environment_stimulus",
-                  intensity: 0.85,
-                  description: "测试事件：环境刺激增强"
+                  type: "stimulated",
+                  intensity: 0.85
                 }
               ])
             }
