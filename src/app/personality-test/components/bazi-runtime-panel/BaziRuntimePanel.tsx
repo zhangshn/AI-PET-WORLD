@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：组装八字大运、流年、流月、流日、流时动态面板。
+ * 当前文件负责：组装八字原局与动态运势合并展示面板。
  */
 
 import { useMemo, useState } from "react"
@@ -45,12 +45,42 @@ function renderPillarLabel(pillar: BaziPillar | null): string {
   return pillar?.label ?? "未知"
 }
 
+function renderStem(pillar: BaziPillar | null): string {
+  return pillar?.stem ?? "未知"
+}
+
+function renderBranch(pillar: BaziPillar | null): string {
+  return pillar?.branch ?? "未知"
+}
+
+function renderHiddenStems(pillar: BaziPillar | null): string {
+  if (!pillar) {
+    return "未知"
+  }
+
+  return pillar.hiddenStems.length > 0 ? pillar.hiddenStems.join(" / ") : "-"
+}
+
+function renderElementLabel(element: WuXingElement): string {
+  return BAZI_RUNTIME_ELEMENT_LABELS[element]
+}
+
 function renderElementPair(pillar: BaziPillar | null): string {
   if (!pillar) {
     return "未知"
   }
 
-  return `${pillar.stemElement} / ${pillar.branchElement}`
+  return `${renderElementLabel(pillar.stemElement)} / ${renderElementLabel(
+    pillar.branchElement
+  )}`
+}
+
+function renderYinYang(pillar: BaziPillar | null): string {
+  if (!pillar) {
+    return "未知"
+  }
+
+  return pillar.yinYang === "yang" ? "阳" : "阴"
 }
 
 const ELEMENT_KEYS: WuXingElement[] = [
@@ -106,35 +136,111 @@ export function BaziRuntimePanel({
     })
   }, [baziProfile, dynamicGender, selection])
 
-  const flowRows: Array<{
+  const mergedRows: Array<{
     key: string
+    group: "原局" | "动态"
     label: string
     pillar: BaziPillar | null
+    note?: string
   }> = [
     {
-      key: "liuNian",
+      key: "birth-year",
+      group: "原局",
+      label: "年柱",
+      pillar: baziProfile.chart.yearPillar,
+    },
+    {
+      key: "birth-month",
+      group: "原局",
+      label: "月柱",
+      pillar: baziProfile.chart.monthPillar,
+    },
+    {
+      key: "birth-day",
+      group: "原局",
+      label: "日柱",
+      pillar: baziProfile.chart.dayPillar,
+    },
+    {
+      key: "birth-hour",
+      group: "原局",
+      label: "时柱",
+      pillar: baziProfile.chart.hourPillar,
+      note: baziProfile.chart.hasHour ? undefined : "出生时辰未知",
+    },
+    {
+      key: "da-yun",
+      group: "动态",
+      label: "大运",
+      pillar: runtimeProfile.daYun.currentDaYun?.pillar ?? null,
+      note: runtimeProfile.daYun.currentDaYun
+        ? `${runtimeProfile.daYun.currentDaYun.startAge}-${runtimeProfile.daYun.currentDaYun.endAge}岁`
+        : "未起运",
+    },
+    {
+      key: "liu-nian",
+      group: "动态",
       label: "流年",
       pillar: runtimeProfile.flows.liuNian,
     },
     {
-      key: "liuYue",
+      key: "liu-yue",
+      group: "动态",
       label: "流月",
       pillar: runtimeProfile.flows.liuYue,
+      note: "按节气月令计算",
     },
     {
-      key: "liuRi",
+      key: "liu-ri",
+      group: "动态",
       label: "流日",
       pillar: runtimeProfile.flows.liuRi,
     },
     {
-      key: "liuShi",
+      key: "liu-shi",
+      group: "动态",
       label: "流时",
       pillar: runtimeProfile.flows.liuShi,
     },
   ]
 
   return (
-    <InfoCard title="☯ 八字动态运势">
+    <InfoCard title="☯ 八字原局与动态运势">
+      <div style={summaryGridStyle}>
+        <div>
+          <strong>当前模式：</strong>
+          {baziProfile.mode === "FOUR_PILLARS" ? "四柱" : "三柱"}
+        </div>
+        <div>
+          <strong>能量精度：</strong>
+          {baziProfile.precision === "high" ? "高" : "中"}
+        </div>
+        <div>
+          <strong>日主：</strong>
+          {baziProfile.dayMaster}
+        </div>
+        <div>
+          <strong>动态性别：</strong>
+          {getBaziRuntimeGenderLabel(runtimeProfile.gender)}
+        </div>
+        <div>
+          <strong>大运方向：</strong>
+          {getBaziRuntimeDirectionLabel(runtimeProfile.daYun.direction)}
+        </div>
+        <div>
+          <strong>起运岁数：</strong>
+          {runtimeProfile.daYun.startAge} 岁
+        </div>
+        <div>
+          <strong>当前年龄：</strong>
+          {runtimeProfile.daYun.currentAge} 岁
+        </div>
+        <div>
+          <strong>是否起运：</strong>
+          {runtimeProfile.daYun.isStarted ? "是" : "否"}
+        </div>
+      </div>
+
       <BaziRuntimeTimeSelector
         runtimeProfile={runtimeProfile}
         activeLevel={activeLevel}
@@ -144,115 +250,99 @@ export function BaziRuntimePanel({
       />
 
       <div style={{ marginTop: 16 }}>
-        <div style={sectionTitleStyle}>大运总览</div>
+        <div style={sectionTitleStyle}>原局 / 大运 / 流年 / 流月 / 流日 / 流时</div>
 
-        <table style={tableStyle}>
-          <tbody>
-            <tr>
-              <td style={labelCellStyle}>性别</td>
-              <td style={cellStyle}>
-                {getBaziRuntimeGenderLabel(runtimeProfile.gender)}
-              </td>
-              <td style={labelCellStyle}>方向</td>
-              <td style={cellStyle}>
-                {getBaziRuntimeDirectionLabel(runtimeProfile.daYun.direction)}
-              </td>
-            </tr>
-
-            <tr>
-              <td style={labelCellStyle}>起运岁数</td>
-              <td style={cellStyle}>{runtimeProfile.daYun.startAge}</td>
-              <td style={labelCellStyle}>当前年龄</td>
-              <td style={cellStyle}>{runtimeProfile.daYun.currentAge}</td>
-            </tr>
-
-            <tr>
-              <td style={labelCellStyle}>是否起运</td>
-              <td style={cellStyle}>
-                {runtimeProfile.daYun.isStarted ? "是" : "否"}
-              </td>
-              <td style={labelCellStyle}>当前大运</td>
-              <td style={mainCellStyle}>
-                {runtimeProfile.daYun.currentDaYun?.pillar.label ?? "未起运"}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div style={{ marginTop: 16 }}>
-        <div style={sectionTitleStyle}>流年 / 流月 / 流日 / 流时</div>
-
-        <table style={tableStyle}>
-          <thead>
-            <tr>
-              <th style={headerCellStyle}>层级</th>
-              <th style={headerCellStyle}>干支</th>
-              <th style={headerCellStyle}>天干</th>
-              <th style={headerCellStyle}>地支</th>
-              <th style={headerCellStyle}>五行</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {flowRows.map((row) => (
-              <tr key={row.key}>
-                <td style={labelCellStyle}>{row.label}</td>
-                <td style={mainCellStyle}>{renderPillarLabel(row.pillar)}</td>
-                <td style={cellStyle}>{row.pillar?.stem ?? "未知"}</td>
-                <td style={cellStyle}>{row.pillar?.branch ?? "未知"}</td>
-                <td style={cellStyle}>{renderElementPair(row.pillar)}</td>
+        <div style={{ overflowX: "auto" }}>
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                <th style={headerCellStyle}>分组</th>
+                <th style={headerCellStyle}>层级</th>
+                <th style={headerCellStyle}>干支</th>
+                <th style={headerCellStyle}>天干</th>
+                <th style={headerCellStyle}>地支</th>
+                <th style={headerCellStyle}>藏干</th>
+                <th style={headerCellStyle}>五行</th>
+                <th style={headerCellStyle}>阴阳</th>
+                <th style={headerCellStyle}>说明</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              {mergedRows.map((row) => {
+                const isDynamic = row.group === "动态"
+
+                return (
+                  <tr
+                    key={row.key}
+                    style={{
+                      background: isDynamic ? "#fbf7ff" : "#fff",
+                    }}
+                  >
+                    <td style={groupCellStyle}>{row.group}</td>
+                    <td style={labelCellStyle}>{row.label}</td>
+                    <td style={mainCellStyle}>{renderPillarLabel(row.pillar)}</td>
+                    <td style={cellStyle}>{renderStem(row.pillar)}</td>
+                    <td style={cellStyle}>{renderBranch(row.pillar)}</td>
+                    <td style={cellStyle}>{renderHiddenStems(row.pillar)}</td>
+                    <td style={cellStyle}>{renderElementPair(row.pillar)}</td>
+                    <td style={cellStyle}>{renderYinYang(row.pillar)}</td>
+                    <td style={cellStyle}>{row.note ?? "-"}</td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div style={{ marginTop: 16 }}>
-        <div style={sectionTitleStyle}>动态环境五行场</div>
+      <div style={lowerGridStyle}>
+        <div>
+          <div style={sectionTitleStyle}>动态环境五行场</div>
 
-        <table style={tableStyle}>
-          <thead>
-            <tr>
-              {ELEMENT_KEYS.map((key) => (
-                <th key={key} style={headerCellStyle}>
-                  {BAZI_RUNTIME_ELEMENT_LABELS[key]}
-                </th>
-              ))}
-            </tr>
-          </thead>
-
-          <tbody>
-            <tr>
-              {ELEMENT_KEYS.map((key) => (
-                <td key={key} style={cellStyle}>
-                  {formatRuntimeScore(
-                    runtimeProfile.runtimeElementField.elementScores[key]
-                  )}
-                </td>
-              ))}
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div style={{ marginTop: 16 }}>
-        <div style={sectionTitleStyle}>动态状态修正</div>
-
-        <table style={tableStyle}>
-          <tbody>
-            {MODIFIER_KEYS.map((key) => (
-              <tr key={key}>
-                <td style={labelCellStyle}>
-                  {BAZI_RUNTIME_MODIFIER_LABELS[key]}
-                </td>
-                <td style={cellStyle}>
-                  {formatRuntimeScore(runtimeProfile.modifiers[key])}
-                </td>
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                {ELEMENT_KEYS.map((key) => (
+                  <th key={key} style={headerCellStyle}>
+                    {BAZI_RUNTIME_ELEMENT_LABELS[key]}
+                  </th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              <tr>
+                {ELEMENT_KEYS.map((key) => (
+                  <td key={key} style={cellStyle}>
+                    {formatRuntimeScore(
+                      runtimeProfile.runtimeElementField.elementScores[key]
+                    )}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div>
+          <div style={sectionTitleStyle}>动态状态修正</div>
+
+          <table style={tableStyle}>
+            <tbody>
+              {MODIFIER_KEYS.map((key) => (
+                <tr key={key}>
+                  <td style={labelCellStyle}>
+                    {BAZI_RUNTIME_MODIFIER_LABELS[key]}
+                  </td>
+                  <td style={cellStyle}>
+                    {formatRuntimeScore(runtimeProfile.modifiers[key])}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div style={{ marginTop: 16 }}>
@@ -278,6 +368,24 @@ export function BaziRuntimePanel({
   )
 }
 
+const summaryGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "repeat(4, minmax(140px, 1fr))",
+  gap: 10,
+  padding: 12,
+  border: "1px solid #eee",
+  borderRadius: 10,
+  background: "#fafafa",
+  lineHeight: 1.7,
+}
+
+const lowerGridStyle: CSSProperties = {
+  display: "grid",
+  gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+  gap: 16,
+  marginTop: 16,
+}
+
 const sectionTitleStyle: CSSProperties = {
   fontWeight: 800,
   marginBottom: 8,
@@ -296,6 +404,16 @@ const headerCellStyle: CSSProperties = {
   textAlign: "center",
 }
 
+const groupCellStyle: CSSProperties = {
+  padding: "8px",
+  border: "1px solid #e5e5e5",
+  background: "#fafafa",
+  color: "#555",
+  fontWeight: 800,
+  width: 72,
+  textAlign: "center",
+}
+
 const labelCellStyle: CSSProperties = {
   padding: "8px",
   border: "1px solid #e5e5e5",
@@ -303,6 +421,7 @@ const labelCellStyle: CSSProperties = {
   color: "#666",
   fontWeight: 700,
   width: 100,
+  textAlign: "center",
 }
 
 const cellStyle: CSSProperties = {

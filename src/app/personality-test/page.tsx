@@ -5,11 +5,9 @@
  */
 
 import {
-  BaziProfilePanel,
   BaziRuntimePanel,
   BirthInputBar,
   FinalPersonalityPanel,
-  PersonalityTestMainGrid,
   PersonalityTestPageShell,
   PersonalityTestTitle,
   PublicViewPanel,
@@ -70,19 +68,14 @@ export default function PersonalityTestPage() {
         onDynamicGenderChange={actions.setDynamicGender}
       />
 
-      <PersonalityTestMainGrid
-        left={
-          <ZiweiDynamicPanel
-            key={`${pattern.birthKey}-${year}-${month}-${day}-${birthHourInput}-${dynamicGender}`}
-            pattern={pattern}
-            hasBirthHour={hasBirthHour}
-            dynamicGender={dynamicGender}
-            currentYear={year}
-            timelineDay={timelineClock.day}
-            timelineHour={timelineClock.hour}
-          />
-        }
-        right={<BaziProfilePanel baziProfile={baziProfile} />}
+      <ZiweiDynamicPanel
+        key={`${pattern.birthKey}-${year}-${month}-${day}-${birthHourInput}-${dynamicGender}`}
+        pattern={pattern}
+        hasBirthHour={hasBirthHour}
+        dynamicGender={dynamicGender}
+        currentYear={year}
+        timelineDay={timelineClock.day}
+        timelineHour={timelineClock.hour}
       />
 
       <SectionSpacer />
