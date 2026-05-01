@@ -53,7 +53,9 @@ export function BaziRuntimeTimeSelector({
     onActiveLevelChange("liuNian")
     onSelectionChange({
       ...selection,
-      currentYear: option.year,
+      currentYear: option.targetYear,
+      currentMonth: option.targetMonth,
+      currentDay: option.targetDay,
     })
   }
 
