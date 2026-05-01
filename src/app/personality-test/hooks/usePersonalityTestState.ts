@@ -1,65 +1,39 @@
 /**
- * 当前文件负责：集中管理 personality-test 页面的输入状态、出生人格包、八字结果、最终人格结果与 Timeline 测试状态。
+ * 当前文件负责：组合 personality-test 页面的出生输入、人格数据与 Timeline 测试状态。
  */
 
 import { useMemo, useState } from "react"
 
 import {
   buildPetBirthBundle,
-  updatePetAiState,
-  type PetBirthAiBundle,
-  type PetTimelineSnapshot,
-  type StateUpdateEvent
+  type PetBirthAiBundle
 } from "../../../ai/gateway"
 
 import { buildBaziProfile } from "../../../ai/bazi-core/bazi-gateway"
 import { buildFinalPersonalityProfile } from "../../../ai/personality-vector/vector-gateway"
 
-import type { DynamicGenderInput } from "../types"
-
-import { parseBirthHourInput } from "../components/birth-input/birth-input-utils"
-
-import type {
-  DiffItem,
-  TimelineClock,
-  TimelineLogEntry
-} from "../components/timeline-test/timeline-types"
-
+import { useBirthInputState } from "./useBirthInputState"
 import {
-  advanceClock,
-  buildTimelineDiffs
-} from "../components/timeline-test/timeline-utils"
+  INITIAL_TIMELINE_CLOCK,
+  useTimelineTestState
+} from "./useTimelineTestState"
 
-type BirthInputState = {
-  year: number
-  month: number
-  day: number
-  hour: number
-}
-
-const INITIAL_TIMELINE_CLOCK: TimelineClock = {
-  day: 1,
-  hour: 8,
-  period: "Morning"
-}
+import type { BirthInputState } from "./personality-test-state-types"
 
 export function usePersonalityTestState() {
-  const [year, setYear] = useState(1900)
-  const [month, setMonth] = useState(1)
-  const [day, setDay] = useState(1)
-  const [birthHourInput, setBirthHourInput] = useState("未知")
-  const [dynamicGender, setDynamicGender] = useState<DynamicGenderInput>("")
+  const {
+    birthInput,
+    birthInputActions
+  } = useBirthInputState()
 
-  const parsedBirthHour = useMemo(() => {
-    return parseBirthHourInput(birthHourInput)
-  }, [birthHourInput])
-
-  const hasBirthHour = parsedBirthHour !== null
-  const ziweiHour = parsedBirthHour ?? 0
-
-  const [timelineClock, setTimelineClock] = useState<TimelineClock>({
-    ...INITIAL_TIMELINE_CLOCK
-  })
+  const {
+    year,
+    month,
+    day,
+    parsedBirthHour,
+    hasBirthHour,
+    ziweiHour
+  } = birthInput
 
   const [birthBundle, setBirthBundle] = useState<PetBirthAiBundle>(() => {
     return buildPetBirthBundle({
@@ -72,13 +46,6 @@ export function usePersonalityTestState() {
       time: INITIAL_TIMELINE_CLOCK
     })
   })
-
-  const [timelineSnapshot, setTimelineSnapshot] =
-    useState<PetTimelineSnapshot | null>(birthBundle.timelineSnapshot)
-
-  const [lastOperation, setLastOperation] = useState("尚未操作")
-  const [lastDiffs, setLastDiffs] = useState<DiffItem[]>([])
-  const [timelineLogs, setTimelineLogs] = useState<TimelineLogEntry[]>([])
 
   const profile = birthBundle.personalityProfile
   const publicView = birthBundle.publicPersonalityView
@@ -100,19 +67,33 @@ export function usePersonalityTestState() {
     })
   }, [hasBirthHour, profile, baziProfile])
 
-  function resetFromBirthInput(nextBirthInput: BirthInputState) {
-    const nextBundle = buildPetBirthBundle({
+  function buildBundleFromBirthInput(nextBirthInput: BirthInputState) {
+    return buildPetBirthBundle({
       birthInput: nextBirthInput,
       time: INITIAL_TIMELINE_CLOCK
     })
-
-    setBirthBundle(nextBundle)
-    setTimelineSnapshot(nextBundle.timelineSnapshot)
-    setTimelineClock({ ...INITIAL_TIMELINE_CLOCK })
-    setLastOperation("根据当前出生输入重新初始化测试快照")
-    setLastDiffs([])
-    setTimelineLogs([])
   }
+
+  function resetFromBirthInput(nextBirthInput: BirthInputState) {
+    const nextBundle = buildBundleFromBirthInput(nextBirthInput)
+    setBirthBundle(nextBundle)
+    return nextBundle.timelineSnapshot
+  }
+
+  const {
+    timelineData,
+    timelineActions
+  } = useTimelineTestState({
+    initialSnapshot: birthBundle.timelineSnapshot,
+    onResetByBirthInput: () => {
+      return resetFromBirthInput({
+        year,
+        month,
+        day,
+        hour: ziweiHour
+      })
+    }
+  })
 
   function syncZiweiWhenPossible(nextInput: {
     year: number
@@ -121,18 +102,18 @@ export function usePersonalityTestState() {
     hour: number | null
   }) {
     if (nextInput.hour === null) {
-      setLastOperation("当前出生时间未知，仅使用八字三柱生成统一人格")
-      setLastDiffs([])
-      setTimelineLogs([])
+      timelineActions.markUnknownBirthHour()
       return
     }
 
-    resetFromBirthInput({
+    const nextSnapshot = resetFromBirthInput({
       year: nextInput.year,
       month: nextInput.month,
       day: nextInput.day,
       hour: nextInput.hour
     })
+
+    timelineActions.markBirthInputReset(nextSnapshot)
   }
 
   function handleDateChange(nextInput: {
@@ -140,108 +121,29 @@ export function usePersonalityTestState() {
     month?: number
     day?: number
   }) {
-    const nextYear = nextInput.year ?? year
-    const nextMonth = nextInput.month ?? month
-    const nextDay = nextInput.day ?? day
-
-    setYear(nextYear)
-    setMonth(nextMonth)
-    setDay(nextDay)
+    const nextBirthInput = birthInputActions.updateDate(nextInput)
 
     syncZiweiWhenPossible({
-      year: nextYear,
-      month: nextMonth,
-      day: nextDay,
-      hour: parsedBirthHour
+      year: nextBirthInput.year,
+      month: nextBirthInput.month,
+      day: nextBirthInput.day,
+      hour: nextBirthInput.hour
     })
   }
 
   function handleBirthHourInputChange(value: string) {
-    const nextHour = parseBirthHourInput(value)
-
-    setBirthHourInput(value)
+    const nextBirthInput = birthInputActions.updateBirthHourInput(value)
 
     syncZiweiWhenPossible({
-      year,
-      month,
-      day,
-      hour: nextHour
+      year: nextBirthInput.year,
+      month: nextBirthInput.month,
+      day: nextBirthInput.day,
+      hour: nextBirthInput.hour
     })
-  }
-
-  function applyTimelineUpdate(
-    label: string,
-    events?: StateUpdateEvent[],
-    hourDelta: number = 0
-  ) {
-    if (!timelineSnapshot) {
-      return
-    }
-
-    const beforeSnapshot = timelineSnapshot
-    const beforeClock = timelineClock
-    const nextClock = advanceClock(timelineClock, hourDelta)
-
-    const nextSnapshot = updatePetAiState({
-      currentSnapshot: timelineSnapshot,
-      time: {
-        day: nextClock.day,
-        hour: nextClock.hour,
-        period: nextClock.period
-      },
-      events,
-      tickDelta: hourDelta > 0 ? hourDelta : 0,
-      shouldRefreshTrajectory: true
-    })
-
-    const diffs = buildTimelineDiffs(beforeSnapshot, nextSnapshot)
-
-    const logEntry: TimelineLogEntry = {
-      id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      actionLabel: label,
-      beforeClock,
-      afterClock: nextClock,
-      diffs,
-      snapshotSummary: {
-        phase: nextSnapshot.fortune.phaseTag,
-        emotional: nextSnapshot.state.emotional.label,
-        energy: Math.round(nextSnapshot.state.physical.energy),
-        hunger: Math.round(nextSnapshot.state.physical.hunger),
-        cognitive: nextSnapshot.state.cognitive.label,
-        relational: nextSnapshot.state.relational.label,
-        drive: nextSnapshot.state.drive.primary,
-        branch: nextSnapshot.trajectory.branchTag
-      },
-      createdAt: new Date().toLocaleTimeString()
-    }
-
-    setTimelineClock(nextClock)
-    setTimelineSnapshot(nextSnapshot)
-    setLastOperation(label)
-    setLastDiffs(diffs)
-    setTimelineLogs((prev) => [logEntry, ...prev])
-  }
-
-  function resetTimeline() {
-    resetFromBirthInput({
-      year,
-      month,
-      day,
-      hour: ziweiHour
-    })
-    setLastOperation("已重置 timeline 到初始状态")
   }
 
   return {
-    birthInput: {
-      year,
-      month,
-      day,
-      birthHourInput,
-      dynamicGender,
-      parsedBirthHour,
-      hasBirthHour
-    },
+    birthInput,
 
     profileData: {
       birthBundle,
@@ -252,20 +154,14 @@ export function usePersonalityTestState() {
       finalPersonalityProfile
     },
 
-    timelineData: {
-      timelineClock,
-      timelineSnapshot,
-      lastOperation,
-      lastDiffs,
-      timelineLogs
-    },
+    timelineData,
 
     actions: {
-      setDynamicGender,
+      setDynamicGender: birthInputActions.setDynamicGender,
       handleDateChange,
       handleBirthHourInputChange,
-      applyTimelineUpdate,
-      resetTimeline
+      applyTimelineUpdate: timelineActions.applyTimelineUpdate,
+      resetTimeline: timelineActions.resetTimeline
     }
   }
 }
