@@ -14,55 +14,6 @@ import type {
   BaziSimpleTimeOption
 } from "./bazi-runtime-schema"
 
-const BAZI_LUNAR_MONTH_LABELS = [
-  "正月",
-  "二月",
-  "三月",
-  "四月",
-  "五月",
-  "六月",
-  "七月",
-  "八月",
-  "九月",
-  "十月",
-  "冬月",
-  "腊月",
-] as const
-
-const BAZI_LUNAR_DAY_LABELS = [
-  "初一",
-  "初二",
-  "初三",
-  "初四",
-  "初五",
-  "初六",
-  "初七",
-  "初八",
-  "初九",
-  "初十",
-  "十一",
-  "十二",
-  "十三",
-  "十四",
-  "十五",
-  "十六",
-  "十七",
-  "十八",
-  "十九",
-  "二十",
-  "廿一",
-  "廿二",
-  "廿三",
-  "廿四",
-  "廿五",
-  "廿六",
-  "廿七",
-  "廿八",
-  "廿九",
-  "三十",
-  "三十一",
-] as const
-
 const BAZI_HOUR_OPTIONS = [
   { title: "子时", branch: "子", hour: 0 },
   { title: "丑时", branch: "丑", hour: 2 },
@@ -110,12 +61,69 @@ function clampSolarDay(params: {
   return Math.max(1, Math.min(params.day, maxDay))
 }
 
-function getLunarMonthLabel(month: number): string {
-  return BAZI_LUNAR_MONTH_LABELS[month - 1] ?? `${month}月`
+function buildSafeLocalDate(params: {
+  year: number
+  month: number
+  day: number
+}): Date {
+  return new Date(params.year, params.month - 1, params.day, 12, 0, 0)
 }
 
-function getLunarDayLabel(day: number): string {
-  return BAZI_LUNAR_DAY_LABELS[day - 1] ?? `${day}日`
+function formatChineseCalendar(params: {
+  year: number
+  month: number
+  day: number
+  monthOnly?: boolean
+}): string {
+  const date = buildSafeLocalDate(params)
+
+  try {
+    const formatter = new Intl.DateTimeFormat("zh-Hans-u-ca-chinese", {
+      month: "long",
+      day: params.monthOnly ? undefined : "numeric",
+    })
+
+    const text = formatter.format(date)
+
+    if (text && text.trim().length > 0) {
+      return text
+    }
+  } catch {
+    return params.monthOnly ? "农历月待换算" : "农历日期待换算"
+  }
+
+  return params.monthOnly ? "农历月待换算" : "农历日期待换算"
+}
+
+function getLunarMonthTitle(params: {
+  year: number
+  month: number
+  day: number
+}): string {
+  const safeDay = clampSolarDay(params)
+  const lunarText = formatChineseCalendar({
+    year: params.year,
+    month: params.month,
+    day: safeDay,
+    monthOnly: true,
+  })
+
+  return lunarText.startsWith("农历") ? lunarText : `农历${lunarText}`
+}
+
+function getLunarDateTitle(params: {
+  year: number
+  month: number
+  day: number
+}): string {
+  const safeDay = clampSolarDay(params)
+  const lunarText = formatChineseCalendar({
+    year: params.year,
+    month: params.month,
+    day: safeDay,
+  })
+
+  return lunarText.startsWith("农历") ? lunarText : `农历${lunarText}`
 }
 
 function getHourLabel(hour: number | null): string {
@@ -210,18 +218,28 @@ function buildLiuYueOptions(
 ): BaziSimpleTimeOption[] {
   return Array.from({ length: 12 }, (_, index) => {
     const value = index + 1
-    const chart = buildRuntimeChart({
+    const safeDay = clampSolarDay({
       year: selection.currentYear,
       month: value,
       day: selection.currentDay,
+    })
+
+    const chart = buildRuntimeChart({
+      year: selection.currentYear,
+      month: value,
+      day: safeDay,
       hour: selection.currentHour,
     })
 
     return {
       level: "liuYue",
       value,
-      title: getLunarMonthLabel(value),
-      subtitle: `${chart.monthPillar.label} · 公历${value}月 · 节气月令`,
+      title: `${getLunarMonthTitle({
+        year: selection.currentYear,
+        month: value,
+        day: safeDay,
+      })} · ${chart.monthPillar.label}`,
+      subtitle: `公历${value}月 · 节气月令`,
       pillarLabel: chart.monthPillar.label,
       active: selection.currentMonth === value,
     }
@@ -248,8 +266,12 @@ function buildLiuRiOptions(
     return {
       level: "liuRi",
       value,
-      title: getLunarDayLabel(value),
-      subtitle: `${chart.dayPillar.label} · 公历${selection.currentMonth}月${value}日`,
+      title: `${getLunarDateTitle({
+        year: selection.currentYear,
+        month: selection.currentMonth,
+        day: value,
+      })} · ${chart.dayPillar.label}`,
+      subtitle: `公历${selection.currentMonth}月${value}日`,
       pillarLabel: chart.dayPillar.label,
       active: selection.currentDay === value,
     }
@@ -271,8 +293,8 @@ function buildLiuShiOptions(
       level: "liuShi",
       hour: option.hour,
       branch: option.branch,
-      title: option.title,
-      subtitle: `${chart.hourPillar?.label ?? "未知"} · ${option.hour}:00`,
+      title: `${option.title} · ${chart.hourPillar?.label ?? "未知"}`,
+      subtitle: `${option.hour}:00`,
       pillarLabel: chart.hourPillar?.label ?? "未知",
       active: selection.currentHour === option.hour,
     }
@@ -280,17 +302,32 @@ function buildLiuShiOptions(
 }
 
 function buildSelectedSummary(selection: BaziRuntimeTimeSelection): string {
-  const chart = buildRuntimeChart({
+  const safeDay = clampSolarDay({
     year: selection.currentYear,
     month: selection.currentMonth,
     day: selection.currentDay,
+  })
+
+  const chart = buildRuntimeChart({
+    year: selection.currentYear,
+    month: selection.currentMonth,
+    day: safeDay,
     hour: selection.currentHour,
   })
 
   return [
     `当前选择：年份 ${selection.currentYear}`,
-    `月份 ${getLunarMonthLabel(selection.currentMonth)}（公历${selection.currentMonth}月）`,
-    `日期 ${getLunarDayLabel(selection.currentDay)}（公历${selection.currentMonth}月${selection.currentDay}日）`,
+    `农历月 ${getLunarMonthTitle({
+      year: selection.currentYear,
+      month: selection.currentMonth,
+      day: safeDay,
+    })}`,
+    `农历日 ${getLunarDateTitle({
+      year: selection.currentYear,
+      month: selection.currentMonth,
+      day: safeDay,
+    })}`,
+    `公历 ${selection.currentYear}-${selection.currentMonth}-${safeDay}`,
     getHourLabel(selection.currentHour),
     `流年 ${chart.yearPillar.label}`,
     `流月 ${chart.monthPillar.label}`,
