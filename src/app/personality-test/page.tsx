@@ -9,6 +9,10 @@ import { BirthInputBar } from "./components/birth-input/BirthInputBar"
 import { InfoCard } from "./components/common/InfoCard"
 import { JsonBlock } from "./components/debug/JsonBlock"
 import { FinalPersonalityPanel } from "./components/final-profile/FinalPersonalityPanel"
+import { PersonalityTestMainGrid } from "./components/layout/PersonalityTestMainGrid"
+import { PersonalityTestPageShell } from "./components/layout/PersonalityTestPageShell"
+import { PersonalityTestTitle } from "./components/layout/PersonalityTestTitle"
+import { SectionSpacer } from "./components/layout/SectionSpacer"
 import { TimelineTestPanel } from "./components/timeline-test/TimelineTestPanel"
 import { ZiweiDynamicPanel } from "./components/ZiweiDynamicPanel"
 import { ZiweiPersonalityOutputPanel } from "./components/ziwei-output/ZiweiPersonalityOutputPanel"
@@ -49,16 +53,8 @@ export default function PersonalityTestPage() {
   } = timelineData
 
   return (
-    <div
-      style={{
-        padding: 20,
-        fontFamily:
-          "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-        background: "#f7f7f7",
-        minHeight: "100vh"
-      }}
-    >
-      <h2 style={{ marginBottom: 16 }}>🧠 AI 人格核心测试系统</h2>
+    <PersonalityTestPageShell>
+      <PersonalityTestTitle />
 
       <BirthInputBar
         year={year}
@@ -71,35 +67,29 @@ export default function PersonalityTestPage() {
         onDynamicGenderChange={actions.setDynamicGender}
       />
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1.35fr) minmax(320px, 0.65fr)",
-          gap: 20,
-          alignItems: "start"
-        }}
-      >
-        <ZiweiDynamicPanel
-          key={`${pattern.birthKey}-${year}-${month}-${day}-${birthHourInput}-${dynamicGender}`}
-          pattern={pattern}
-          hasBirthHour={hasBirthHour}
-          dynamicGender={dynamicGender}
-          currentYear={year}
-          timelineDay={timelineClock.day}
-          timelineHour={timelineClock.hour}
-        />
+      <PersonalityTestMainGrid
+        left={
+          <ZiweiDynamicPanel
+            key={`${pattern.birthKey}-${year}-${month}-${day}-${birthHourInput}-${dynamicGender}`}
+            pattern={pattern}
+            hasBirthHour={hasBirthHour}
+            dynamicGender={dynamicGender}
+            currentYear={year}
+            timelineDay={timelineClock.day}
+            timelineHour={timelineClock.hour}
+          />
+        }
+        right={<BaziProfilePanel baziProfile={baziProfile} />}
+      />
 
-        <BaziProfilePanel baziProfile={baziProfile} />
-      </div>
-
-      <div style={{ height: 20 }} />
+      <SectionSpacer />
 
       <FinalPersonalityPanel
         hasBirthHour={hasBirthHour}
         finalPersonalityProfile={finalPersonalityProfile}
       />
 
-      <div style={{ height: 20 }} />
+      <SectionSpacer />
 
       <ZiweiPersonalityOutputPanel
         corePersonality={profile.corePersonality}
@@ -108,7 +98,7 @@ export default function PersonalityTestPage() {
         debug={profile.debug}
       />
 
-      <div style={{ height: 20 }} />
+      <SectionSpacer />
 
       <TimelineTestPanel
         timelineClock={timelineClock}
@@ -120,11 +110,11 @@ export default function PersonalityTestPage() {
         onResetTimeline={actions.resetTimeline}
       />
 
-      <div style={{ height: 20 }} />
+      <SectionSpacer />
 
       <InfoCard title="🪟 公开展示视图">
         <JsonBlock value={publicView} />
       </InfoCard>
-    </div>
+    </PersonalityTestPageShell>
   )
 }
