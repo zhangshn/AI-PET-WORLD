@@ -24,6 +24,41 @@ import {
 
 import { safeModulo } from "./bazi-utils"
 
+function normalizeInteger(value: number | null | undefined, fallback: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return fallback
+  }
+
+  return Math.trunc(value)
+}
+
+function getDaysInMonth(year: number, month: number): number {
+  return new Date(Date.UTC(year, month, 0)).getUTCDate()
+}
+
+function normalizeBaziInput(input: BaziInput): BaziInput {
+  const year = normalizeInteger(input.year, 2000)
+  const rawMonth = normalizeInteger(input.month, 1)
+  const month = Math.max(1, Math.min(rawMonth, 12))
+
+  const rawDay = normalizeInteger(input.day, 1)
+  const maxDay = getDaysInMonth(year, month)
+  const day = Math.max(1, Math.min(rawDay, maxDay))
+
+  const hour =
+    typeof input.hour === "number" && Number.isFinite(input.hour)
+      ? Math.trunc(input.hour)
+      : null
+
+  return {
+    ...input,
+    year,
+    month,
+    day,
+    hour,
+  }
+}
+
 function hasValidHour(hour?: number | null): hour is number {
   return typeof hour === "number" && Number.isInteger(hour) && hour >= 0 && hour <= 23
 }
@@ -133,7 +168,9 @@ function getHourPillar(input: {
   })
 }
 
-export function calculateBaziChart(input: BaziInput): BaziChart {
+export function calculateBaziChart(rawInput: BaziInput): BaziChart {
+  const input = normalizeBaziInput(rawInput)
+
   const yearPillar = getYearPillar({
     year: input.year,
     month: input.month,

@@ -86,9 +86,17 @@ export const BAZI_BRANCH_YIN_YANG_MAP: Record<EarthlyBranch, YinYang> = {
   亥: "yin",
 }
 
+function normalizeJiaZiIndex(index: number): number {
+  if (!Number.isFinite(index)) {
+    return 0
+  }
+
+  return safeModulo(Math.trunc(index), 60)
+}
+
 export function buildBaziPillarByIndex(index: number): BaziPillar {
-  const safeIndex = safeModulo(index, 60)
-  const label = BAZI_SIXTY_JIAZI[safeIndex]
+  const safeIndex = normalizeJiaZiIndex(index)
+  const label = BAZI_SIXTY_JIAZI[safeIndex] ?? "甲子"
   const stem = label[0] as HeavenlyStem
   const branch = label[1] as EarthlyBranch
 
@@ -108,7 +116,7 @@ export function buildBaziPillarByStemBranch(input: {
     label: `${input.stem}${input.branch}`,
     stemElement: BAZI_STEM_ELEMENT_MAP[input.stem],
     branchElement: BAZI_BRANCH_ELEMENT_MAP[input.branch],
-    hiddenStems: BAZI_HIDDEN_STEMS[input.branch],
+    hiddenStems: BAZI_HIDDEN_STEMS[input.branch] ?? [],
     yinYang: BAZI_STEM_YIN_YANG_MAP[input.stem],
   }
 }
