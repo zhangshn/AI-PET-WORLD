@@ -100,7 +100,7 @@ export function BaziRuntimeTimeSelector({
 
         {timeTable.daYunOptions.map((option) => (
           <BaziRuntimeTimeCell
-            key={option.index}
+            key={`da-yun-${option.index}-${option.startYear}-${option.endYear}`}
             title={`${option.title} · ${option.pillarLabel}`}
             subtitle={option.subtitle}
             selected={
@@ -119,7 +119,7 @@ export function BaziRuntimeTimeSelector({
 
         {timeTable.liuNianOptions.map((option) => (
           <BaziRuntimeTimeCell
-            key={option.year}
+            key={`liu-nian-${option.year}`}
             title={`${option.title} · ${option.pillarLabel}`}
             subtitle={option.subtitle}
             selected={
@@ -136,9 +136,9 @@ export function BaziRuntimeTimeSelector({
       <div style={{ ...baziRuntimeRowStyle, marginBottom: 10 }}>
         <div style={baziRuntimeRowLabelStyle}>流月</div>
 
-        {timeTable.liuYueOptions.map((option) => (
+        {timeTable.liuYueOptions.map((option, index) => (
           <BaziRuntimeTimeCell
-            key={option.value}
+            key={`liu-yue-${index}-${option.value}-${option.title}-${option.subtitle ?? ""}`}
             title={`${option.title} · ${option.pillarLabel}`}
             subtitle={option.subtitle}
             selected={
@@ -155,9 +155,9 @@ export function BaziRuntimeTimeSelector({
       <div style={{ ...baziRuntimeRowStyle, marginBottom: 10 }}>
         <div style={baziRuntimeRowLabelStyle}>流日</div>
 
-        {timeTable.liuRiOptions.map((option) => (
+        {timeTable.liuRiOptions.map((option, index) => (
           <BaziRuntimeTimeCell
-            key={option.value}
+            key={`liu-ri-${index}-${option.value}-${option.title}-${option.subtitle ?? ""}`}
             title={`${option.title} · ${option.pillarLabel}`}
             subtitle={option.subtitle}
             selected={
@@ -174,9 +174,9 @@ export function BaziRuntimeTimeSelector({
       <div style={baziRuntimeRowStyle}>
         <div style={baziRuntimeRowLabelStyle}>流时</div>
 
-        {timeTable.liuShiOptions.map((option) => (
+        {timeTable.liuShiOptions.map((option, index) => (
           <BaziRuntimeTimeCell
-            key={option.hour}
+            key={`liu-shi-${index}-${option.hour}-${option.branch}`}
             title={`${option.title} · ${option.pillarLabel}`}
             subtitle={option.subtitle}
             selected={
