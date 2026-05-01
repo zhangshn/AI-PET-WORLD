@@ -91,43 +91,76 @@ function getDayLabel(day: number): string {
   return labels[day] ?? `${day}日`
 }
 
-function buildDaYunAges(currentAge: number): number[] {
-  const base = Math.max(1, Math.floor((currentAge - 1) / 10) * 10 + 1)
-
+function buildDaYunStartAges(startAge: number): number[] {
   return Array.from({ length: 10 }, (_, index) => {
-    return base + index * 10
+    return startAge + index * 10
   })
 }
 
-function buildYearRange(currentYear: number): number[] {
-  const startYear = currentYear - 5
+function getActiveDaYunStartAge(params: {
+  startAge: number
+  currentAge: number
+}): number {
+  if (params.currentAge < params.startAge) {
+    return params.startAge
+  }
+
+  const offset = Math.floor((params.currentAge - params.startAge) / 10) * 10
+  return params.startAge + offset
+}
+
+function buildYearRange(params: {
+  birthYear: number
+  startAge: number
+  currentAge: number
+}): number[] {
+  const baseAge =
+    params.currentAge < params.startAge
+      ? 1
+      : getActiveDaYunStartAge({
+          startAge: params.startAge,
+          currentAge: params.currentAge
+        })
+
+  const startYear = params.birthYear + baseAge - 1
 
   return Array.from({ length: 12 }, (_, index) => {
     return startYear + index
   })
 }
 
-function isSelectedDaYunAge(
-  startAge: number,
+function isSelectedDaYunAge(params: {
+  startAge: number
+  selectedStartAge: number
   currentAge: number
-): boolean {
-  return currentAge >= startAge && currentAge <= startAge + 9
+}): boolean {
+  if (params.currentAge < params.startAge) {
+    return false
+  }
+
+  return (
+    params.currentAge >= params.selectedStartAge &&
+    params.currentAge <= params.selectedStartAge + 9
+  )
 }
 
 function TimeCell({
   title,
   subtitle,
   selected,
+  disabled,
   onClick
 }: {
   title: string
   subtitle?: string
   selected?: boolean
+  disabled?: boolean
   onClick: () => void
 }) {
   return (
     <button
       type="button"
+      disabled={disabled}
       onClick={onClick}
       style={{
         minWidth: 82,
@@ -136,7 +169,8 @@ function TimeCell({
         border: selected ? "2px solid #722ed1" : "1px solid #ddd",
         background: selected ? "#f9f0ff" : "#fff",
         borderRadius: 6,
-        cursor: "pointer",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.5 : 1,
         textAlign: "center",
         lineHeight: 1.4
       }}
@@ -186,18 +220,26 @@ function TimeRow({
 }
 
 export function ZiweiDynamicTimeTable({
+  birthYear,
+  startAge,
   selection,
   activeFlow,
   onSelectionChange,
   onActiveFlowChange
 }: {
+  birthYear: number
+  startAge: number
   selection: ZiweiDynamicTimeSelection
   activeFlow: ActiveDynamicFlow
   onSelectionChange: (selection: ZiweiDynamicTimeSelection) => void
   onActiveFlowChange: (flow: ActiveDynamicFlow) => void
 }) {
-  const daYunAges = buildDaYunAges(selection.currentAge)
-  const yearRange = buildYearRange(selection.currentYear)
+  const daYunStartAges = buildDaYunStartAges(startAge)
+  const yearRange = buildYearRange({
+    birthYear,
+    startAge,
+    currentAge: selection.currentAge
+  })
   const months = Array.from({ length: 12 }, (_, index) => index + 1)
   const days = Array.from({ length: 30 }, (_, index) => index + 1)
 
@@ -216,24 +258,34 @@ export function ZiweiDynamicTimeTable({
       </div>
 
       <TimeRow label="大运">
-        {daYunAges.map((age) => (
-          <TimeCell
-            key={age}
-            title={`${age}-${age + 9}`}
-            subtitle="岁"
-            selected={
-              activeFlow === "daYun" &&
-              isSelectedDaYunAge(age, selection.currentAge)
-            }
-            onClick={() => {
-              onSelectionChange({
-                ...selection,
-                currentAge: age
-              })
-              onActiveFlowChange("daYun")
-            }}
-          />
-        ))}
+        {daYunStartAges.map((age) => {
+          const startYear = birthYear + age - 1
+          const endYear = startYear + 9
+
+          return (
+            <TimeCell
+              key={age}
+              title={`${age}-${age + 9}`}
+              subtitle={`${startYear}-${endYear}`}
+              selected={
+                activeFlow === "daYun" &&
+                isSelectedDaYunAge({
+                  startAge,
+                  selectedStartAge: age,
+                  currentAge: selection.currentAge
+                })
+              }
+              onClick={() => {
+                onSelectionChange({
+                  ...selection,
+                  currentAge: age,
+                  currentYear: startYear
+                })
+                onActiveFlowChange("daYun")
+              }}
+            />
+          )
+        })}
       </TimeRow>
 
       <TimeRow label="流年">
@@ -241,7 +293,7 @@ export function ZiweiDynamicTimeTable({
           <TimeCell
             key={year}
             title={String(year)}
-            subtitle="年"
+            subtitle={`${year - birthYear + 1}岁`}
             selected={
               activeFlow === "liuNian" &&
               selection.currentYear === year
@@ -249,7 +301,8 @@ export function ZiweiDynamicTimeTable({
             onClick={() => {
               onSelectionChange({
                 ...selection,
-                currentYear: year
+                currentYear: year,
+                currentAge: Math.max(1, year - birthYear + 1)
               })
               onActiveFlowChange("liuNian")
             }}

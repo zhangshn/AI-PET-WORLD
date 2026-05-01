@@ -17,13 +17,8 @@ import {
 import { buildBaziProfile } from "../../ai/bazi-core/bazi-gateway"
 import { buildFinalPersonalityProfile } from "../../ai/personality-vector/vector-gateway"
 
-
-
+import { WUXING_LABELS } from "./constants"
 import type { DynamicGenderInput } from "./types"
-
-import {
-  WUXING_LABELS
-} from "./constants"
 
 import { ComboInput } from "./components/common/ComboInput"
 import { InfoCard } from "./components/common/InfoCard"
@@ -619,38 +614,39 @@ export default function PersonalityTestPage() {
           gridTemplateColumns: "minmax(0, 1.35fr) minmax(320px, 0.65fr)",
           gap: 20,
           alignItems: "start"
-      }}
->
-      <ZiweiDynamicPanel
-        pattern={pattern}
-        hasBirthHour={hasBirthHour}
-        dynamicGender={dynamicGender}
-        currentYear={year}
-        timelineDay={timelineClock.day}
-        timelineHour={timelineClock.hour}
-      />
+        }}
+      >
+        <ZiweiDynamicPanel
+          key={`${pattern.birthKey}-${year}-${month}-${day}-${birthHourInput}-${dynamicGender}`}
+          pattern={pattern}
+          hasBirthHour={hasBirthHour}
+          dynamicGender={dynamicGender}
+          currentYear={year}
+          timelineDay={timelineClock.day}
+          timelineHour={timelineClock.hour}
+        />
 
-      <InfoCard title="☯ 八字动力底盘">
-        <div style={{ lineHeight: 2 }}>
-          <ValueLine label="年柱" value={baziProfile.chart.yearPillar.label} />
-          <ValueLine label="月柱" value={baziProfile.chart.monthPillar.label} />
-          <ValueLine label="日柱" value={baziProfile.chart.dayPillar.label} />
+        <InfoCard title="☯ 八字动力底盘">
+          <div style={{ lineHeight: 2 }}>
+            <ValueLine label="年柱" value={baziProfile.chart.yearPillar.label} />
+            <ValueLine label="月柱" value={baziProfile.chart.monthPillar.label} />
+            <ValueLine label="日柱" value={baziProfile.chart.dayPillar.label} />
 
-      {baziProfile.chart.hourPillar && (
-        <ValueLine label="时柱" value={baziProfile.chart.hourPillar.label} />
-      )}
+            {baziProfile.chart.hourPillar && (
+              <ValueLine label="时柱" value={baziProfile.chart.hourPillar.label} />
+            )}
 
-      <ValueLine
-        label="当前模式"
-        value={baziProfile.chart.hasHour ? "四柱" : "三柱"}
-      />
-      <ValueLine
-        label="主导五行"
-        value={baziProfile.dominantElements
-          .map((element: string) => {
-            return WUXING_LABELS[element] ?? element
-          })
-          .join(" / ")}
+            <ValueLine
+              label="当前模式"
+              value={baziProfile.chart.hasHour ? "四柱" : "三柱"}
+            />
+            <ValueLine
+              label="主导五行"
+              value={baziProfile.dominantElements
+                .map((element: string) => {
+                  return WUXING_LABELS[element] ?? element
+                })
+                .join(" / ")}
             />
           </div>
         </InfoCard>

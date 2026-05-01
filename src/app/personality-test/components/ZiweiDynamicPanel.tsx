@@ -80,13 +80,15 @@ export function ZiweiDynamicPanel({
   }, [timelineHour])
 
   const [timeSelection, setTimeSelection] =
-    useState<ZiweiDynamicTimeSelection>(() => ({
-      currentAge: Math.max(1, defaultAge),
-      currentYear,
-      currentLunarMonth: pattern.lunarInfo.lunarMonth,
-      currentLunarDay: pattern.lunarInfo.lunarDay,
-      currentTimeBranch: defaultTimeBranch
-    }))
+    useState<ZiweiDynamicTimeSelection>(() => {
+      return {
+        currentAge: Math.max(1, defaultAge),
+        currentYear,
+        currentLunarMonth: pattern.lunarInfo.lunarMonth,
+        currentLunarDay: pattern.lunarInfo.lunarDay,
+        currentTimeBranch: defaultTimeBranch
+      }
+    })
 
   const chartResult = useMemo(() => {
     if (!hasBirthHour) {
@@ -137,6 +139,13 @@ export function ZiweiDynamicPanel({
     activeFlowResult = getActiveFlowResult(chartResult.data, activeFlow)
     activePalace = activeFlowResult.palace
   }
+
+  const startAge = chartResult?.ok ? chartResult.data.debug.startAge : 1
+
+  const isDaYunRequestedButInactive =
+    activeFlow === "daYun" &&
+    activeFlowResult !== null &&
+    !activeFlowResult.isActive
 
   return (
     <InfoCard title="🌌 紫微命盘">
@@ -235,6 +244,22 @@ export function ZiweiDynamicPanel({
                 {chartResult.message}
               </div>
             )}
+
+            {isDaYunRequestedButInactive && (
+              <div
+                style={{
+                  border: "1px solid #ffe58f",
+                  background: "#fffbe6",
+                  borderRadius: 8,
+                  padding: 12,
+                  color: "#8c6d1f",
+                  marginBottom: 16
+                }}
+              >
+                {activeFlowResult?.inactiveReason ??
+                  "尚未起运，当前仍按本命盘运行。"}
+              </div>
+            )}
           </div>
 
           <ZiweiChartBoard
@@ -246,16 +271,21 @@ export function ZiweiDynamicPanel({
           {chartResult?.ok && (
             <div style={{ marginTop: 12, color: "#666", lineHeight: 1.8 }}>
               大运方向：{chartResult.data.debug.direction}；起运岁数：
-              {chartResult.data.debug.startAge}
+              {chartResult.data.debug.startAge}；当前是否起运：
+              {chartResult.data.debug.isDaYunStarted ? "是" : "否"}
             </div>
           )}
 
-          <ZiweiDynamicTimeTable
-            selection={timeSelection}
-            activeFlow={activeFlow}
-            onSelectionChange={setTimeSelection}
-            onActiveFlowChange={setActiveFlow}
-          />
+          {chartResult?.ok && (
+            <ZiweiDynamicTimeTable
+              birthYear={currentYear}
+              startAge={startAge}
+              selection={timeSelection}
+              activeFlow={activeFlow}
+              onSelectionChange={setTimeSelection}
+              onActiveFlowChange={setActiveFlow}
+            />
+          )}
 
           {activeFlowResult && influenceResult?.ok && (
             <div style={{ marginTop: 16 }}>

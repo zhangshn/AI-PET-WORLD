@@ -27,16 +27,6 @@ import type {
   ZiweiFlowResult
 } from "./dynamic-schema"
 
-/**
- * 十二宫顺序。
- *
- * 动态命宫切换时：
- * 当前动态落宫 = 命宫
- * 然后逆向排布兄弟、夫妻、子女……
- *
- * 这与当前 BirthPattern 里显示的宫名排列保持一致：
- * 命宫 → 兄弟 → 夫妻 → 子女 → 财帛 → 疾厄 → 迁移 → 交友 → 官禄 → 田宅 → 福德 → 父母
- */
 const SECTOR_ORDER: SectorName[] = [
   "life",
   "siblings",
@@ -52,10 +42,6 @@ const SECTOR_ORDER: SectorName[] = [
   "parents"
 ]
 
-/**
- * 公历年份对应地支时，使用传统生肖地支顺序。
- * 2020 = 子年。
- */
 const YEAR_BRANCH_ORDER: BranchPalace[] = [
   "zi",
   "chou",
@@ -71,9 +57,6 @@ const YEAR_BRANCH_ORDER: BranchPalace[] = [
   "hai"
 ]
 
-/**
- * 时辰偏移使用传统时辰顺序。
- */
 const TIME_BRANCH_ORDER: BranchPalace[] = [
   "zi",
   "chou",
@@ -175,19 +158,6 @@ function normalizeLunarDay(value: number): number {
   return day
 }
 
-/**
- * 根据动态命宫重建十二宫映射。
- *
- * 关键规则：
- * - dynamicLifePalace 本身 = 命宫
- * - 兄弟、夫妻、子女……按逆向地支排布
- *
- * 例如 dynamicLifePalace = zi：
- * zi = 命宫
- * hai = 兄弟
- * xu = 夫妻
- * you = 子女
- */
 function buildDynamicPalaceMaps(
   dynamicLifePalace: BranchPalace
 ): {
@@ -241,6 +211,8 @@ function createFlowResult(params: {
   type: ZiweiFlowResult["type"]
   palace: BranchPalace
   influence: number
+  isActive: boolean
+  inactiveReason?: string
 }): ZiweiFlowResult {
   const stars = getStarsByPalace(params.pattern, params.palace)
   const {
@@ -256,10 +228,20 @@ function createFlowResult(params: {
     dynamicSectorToBranchMap,
     stars,
     pairIds: detectPairIds(stars),
-    influence: params.influence
+    influence: params.isActive ? params.influence : 0,
+    isActive: params.isActive,
+    inactiveReason: params.inactiveReason
   }
 }
 
+/**
+ * 计算大运命宫。
+ *
+ * 关键规则：
+ * - currentAge < startAge：尚未起运，仍用本命命宫。
+ * - startAge ~ startAge+9：第一个大运段，仍从本命命宫开始，不移动。
+ * - startAge+10 ~ startAge+19：第二个大运段，按顺逆移动 1 格。
+ */
 export function getDaYunPalace(params: {
   lifePalace: BranchPalace
   direction: ZiweiCycleDirection
@@ -272,7 +254,7 @@ export function getDaYunPalace(params: {
 
   const movedSteps = Math.floor(
     (params.currentAge - params.startAge) / 10
-  ) + 1
+  )
 
   const finalSteps =
     params.direction === "forward"
@@ -323,7 +305,7 @@ export function buildZiweiDynamicChart(
   }
 
   const startAge = getElementGateStartAge(input.pattern.elementGate)
-
+  const isDaYunStarted = input.currentAge >= startAge
   const natalPalace = input.pattern.primaryBranchPalace
 
   const daYunPalace = getDaYunPalace({
@@ -357,47 +339,58 @@ export function buildZiweiDynamicChart(
         pattern: input.pattern,
         type: "natal",
         palace: natalPalace,
-        influence: getZiweiDynamicFlowWeight("natal")
+        influence: getZiweiDynamicFlowWeight("natal"),
+        isActive: true
       }),
 
       daYun: createFlowResult({
         pattern: input.pattern,
         type: "daYun",
         palace: daYunPalace,
-        influence: getZiweiDynamicFlowWeight("daYun")
+        influence: getZiweiDynamicFlowWeight("daYun"),
+        isActive: isDaYunStarted,
+        inactiveReason: isDaYunStarted
+          ? undefined
+          : `尚未起运，当前年龄 ${input.currentAge} 岁，起运岁数为 ${startAge} 岁。`
       }),
 
       liuNian: createFlowResult({
         pattern: input.pattern,
         type: "liuNian",
         palace: liuNianPalace,
-        influence: getZiweiDynamicFlowWeight("liuNian")
+        influence: getZiweiDynamicFlowWeight("liuNian"),
+        isActive: true
       }),
 
       liuYue: createFlowResult({
         pattern: input.pattern,
         type: "liuYue",
         palace: liuYuePalace,
-        influence: getZiweiDynamicFlowWeight("liuYue")
+        influence: getZiweiDynamicFlowWeight("liuYue"),
+        isActive: true
       }),
 
       liuRi: createFlowResult({
         pattern: input.pattern,
         type: "liuRi",
         palace: liuRiPalace,
-        influence: getZiweiDynamicFlowWeight("liuRi")
+        influence: getZiweiDynamicFlowWeight("liuRi"),
+        isActive: true
       }),
 
       liuShi: createFlowResult({
         pattern: input.pattern,
         type: "liuShi",
         palace: liuShiPalace,
-        influence: getZiweiDynamicFlowWeight("liuShi")
+        influence: getZiweiDynamicFlowWeight("liuShi"),
+        isActive: true
       }),
 
       debug: {
         direction: directionResult.data.direction,
-        startAge
+        startAge,
+        currentAge: input.currentAge,
+        isDaYunStarted
       }
     }
   }

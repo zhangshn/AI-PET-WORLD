@@ -45,29 +45,16 @@ export interface ZiweiFlowResult {
 
   /**
    * 当前动态流的命宫落点。
-   *
-   * 例：
-   * - natal：本命命宫
-   * - daYun：大运命宫
-   * - liuNian：流年命宫
-   * - liuYue：流月命宫
-   * - liuRi：流日命宫
-   * - liuShi：流时命宫
    */
   palace: BranchPalace
 
   /**
    * 当前 palace 在动态重排后的宫名。
-   * 正常情况下会是 life。
    */
   sectorName: SectorName
 
   /**
    * 当前动态命宫重排后的：地支 -> 十二宫。
-   *
-   * 注意：
-   * 星曜仍然固定在原生地支盘上。
-   * 变的是“宫名”，不是星曜位置。
    */
   dynamicBranchToSectorMap: Record<BranchPalace, SectorName>
 
@@ -78,7 +65,28 @@ export interface ZiweiFlowResult {
 
   stars: StarId[]
   pairIds: string[]
+
+  /**
+   * 该动态层对当前影响的权重。
+   *
+   * 注意：
+   * 未起运时 daYun 的 influence 必须是 0。
+   */
   influence: number
+
+  /**
+   * 当前流是否已经在时间上生效。
+   *
+   * 例如：
+   * - natal 永远生效
+   * - daYun 必须 currentAge >= startAge 才生效
+   */
+  isActive: boolean
+
+  /**
+   * 如果当前流被请求但还未生效，用于 UI 解释。
+   */
+  inactiveReason?: string
 }
 
 export interface ZiweiDynamicChart {
@@ -91,6 +99,8 @@ export interface ZiweiDynamicChart {
   debug: {
     direction: ZiweiCycleDirection
     startAge: number
+    currentAge: number
+    isDaYunStarted: boolean
   }
 }
 
