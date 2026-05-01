@@ -15,14 +15,28 @@ type ZiweiDebugView = {
   supportPairs: PairDebugItem[]
 }
 
+type NumericObjectView = object
+
+function renderNumericEntries(value: NumericObjectView) {
+  return Object.entries(value).map(([key, itemValue]) => {
+    return (
+      <ScoreLine
+        key={key}
+        name={key}
+        value={Number(itemValue)}
+      />
+    )
+  })
+}
+
 export function ZiweiPersonalityOutputPanel({
   corePersonality,
   traits,
   summaries,
   debug
 }: {
-  corePersonality: Record<string, number>
-  traits: Record<string, number>
+  corePersonality: NumericObjectView
+  traits: NumericObjectView
   summaries: string[]
   debug?: ZiweiDebugView
 }) {
@@ -53,15 +67,7 @@ export function ZiweiPersonalityOutputPanel({
         <div>
           <strong>行为 traits</strong>
           <div style={{ marginTop: 10 }}>
-            {Object.entries(traits).map(([key, value]) => {
-              return (
-                <ScoreLine
-                  key={key}
-                  name={key}
-                  value={Number(value)}
-                />
-              )
-            })}
+            {renderNumericEntries(traits)}
           </div>
         </div>
       </div>

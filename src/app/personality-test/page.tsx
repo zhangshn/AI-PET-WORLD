@@ -17,12 +17,12 @@ import {
 import { buildBaziProfile } from "../../ai/bazi-core/bazi-gateway"
 import { buildFinalPersonalityProfile } from "../../ai/personality-vector/vector-gateway"
 
-import { WUXING_LABELS } from "./constants"
 import type { DynamicGenderInput } from "./types"
 
-import { ComboInput } from "./components/common/ComboInput"
+import { BaziProfilePanel } from "./components/bazi-panel/BaziProfilePanel"
+import { BirthInputBar } from "./components/birth-input/BirthInputBar"
+import { parseBirthHourInput } from "./components/birth-input/birth-input-utils"
 import { InfoCard } from "./components/common/InfoCard"
-import { ValueLine } from "./components/common/ValueLine"
 import { JsonBlock } from "./components/debug/JsonBlock"
 import { FinalPersonalityPanel } from "./components/final-profile/FinalPersonalityPanel"
 import { TimelineTestPanel } from "./components/timeline-test/TimelineTestPanel"
@@ -49,26 +49,6 @@ const INITIAL_TIMELINE_CLOCK: TimelineClock = {
   day: 1,
   hour: 8,
   period: "Morning"
-}
-
-function parseBirthHourInput(value: string): number | null {
-  const normalized = value.trim()
-
-  if (
-    !normalized ||
-    normalized === "未知" ||
-    normalized.toLowerCase() === "unknown"
-  ) {
-    return null
-  }
-
-  const numericHour = Number(normalized)
-
-  if (Number.isInteger(numericHour) && numericHour >= 0 && numericHour <= 23) {
-    return numericHour
-  }
-
-  return null
 }
 
 export default function PersonalityTestPage() {
@@ -272,96 +252,16 @@ export default function PersonalityTestPage() {
     >
       <h2 style={{ marginBottom: 16 }}>🧠 AI 人格核心测试系统</h2>
 
-      <div
-        style={{
-          border: "1px solid #ddd",
-          borderRadius: 10,
-          padding: 16,
-          background: "#fff",
-          marginBottom: 20,
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 16,
-          alignItems: "center"
-        }}
-      >
-        <ComboInput
-          label="年"
-          value={String(year)}
-          width={100}
-          options={Array.from({ length: 201 }, (_, index) => {
-            return String(1900 + index)
-          })}
-          onChange={(value) => {
-            const nextYear = Number(value)
-
-            if (!Number.isNaN(nextYear)) {
-              handleDateChange({ year: nextYear })
-            }
-          }}
-        />
-
-        <ComboInput
-          label="月"
-          value={String(month)}
-          width={70}
-          options={Array.from({ length: 12 }, (_, index) => {
-            return String(index + 1)
-          })}
-          onChange={(value) => {
-            const nextMonth = Number(value)
-
-            if (!Number.isNaN(nextMonth)) {
-              handleDateChange({ month: nextMonth })
-            }
-          }}
-        />
-
-        <ComboInput
-          label="日"
-          value={String(day)}
-          width={70}
-          options={Array.from({ length: 31 }, (_, index) => {
-            return String(index + 1)
-          })}
-          onChange={(value) => {
-            const nextDay = Number(value)
-
-            if (!Number.isNaN(nextDay)) {
-              handleDateChange({ day: nextDay })
-            }
-          }}
-        />
-
-        <ComboInput
-          label="时"
-          value={birthHourInput}
-          width={120}
-          placeholder="未知 / 0-23"
-          options={[
-            "未知",
-            ...Array.from({ length: 24 }, (_, index) => {
-              return String(index)
-            })
-          ]}
-          onChange={handleBirthHourInputChange}
-        />
-
-        <ComboInput
-          label="性别"
-          value={dynamicGender || "未选择"}
-          width={120}
-          options={["未选择", "male", "female"]}
-          onChange={(value) => {
-            if (value === "male" || value === "female") {
-              setDynamicGender(value)
-              return
-            }
-
-            setDynamicGender("")
-          }}
-        />
-      </div>
+      <BirthInputBar
+        year={year}
+        month={month}
+        day={day}
+        birthHourInput={birthHourInput}
+        dynamicGender={dynamicGender}
+        onDateChange={handleDateChange}
+        onBirthHourInputChange={handleBirthHourInputChange}
+        onDynamicGenderChange={setDynamicGender}
+      />
 
       <div
         style={{
@@ -381,30 +281,7 @@ export default function PersonalityTestPage() {
           timelineHour={timelineClock.hour}
         />
 
-        <InfoCard title="☯ 八字动力底盘">
-          <div style={{ lineHeight: 2 }}>
-            <ValueLine label="年柱" value={baziProfile.chart.yearPillar.label} />
-            <ValueLine label="月柱" value={baziProfile.chart.monthPillar.label} />
-            <ValueLine label="日柱" value={baziProfile.chart.dayPillar.label} />
-
-            {baziProfile.chart.hourPillar && (
-              <ValueLine label="时柱" value={baziProfile.chart.hourPillar.label} />
-            )}
-
-            <ValueLine
-              label="当前模式"
-              value={baziProfile.chart.hasHour ? "四柱" : "三柱"}
-            />
-            <ValueLine
-              label="主导五行"
-              value={baziProfile.dominantElements
-                .map((element: string) => {
-                  return WUXING_LABELS[element] ?? element
-                })
-                .join(" / ")}
-            />
-          </div>
-        </InfoCard>
+        <BaziProfilePanel baziProfile={baziProfile} />
       </div>
 
       <div style={{ height: 20 }} />
