@@ -3,21 +3,13 @@
  */
 
 import type {
-  BaziRuntimeProfile
+  BaziRuntimeFlowLevel,
+  BaziRuntimeProfile,
+  BaziRuntimeTimeSelection as CoreBaziRuntimeTimeSelection
 } from "../../../../ai/bazi-core/bazi-gateway"
 
 export type BaziRuntimeProfileView = BaziRuntimeProfile
 
-export type BaziRuntimeActiveLevel =
-  | "daYun"
-  | "liuNian"
-  | "liuYue"
-  | "liuRi"
-  | "liuShi"
+export type BaziRuntimeActiveLevel = BaziRuntimeFlowLevel
 
-export type BaziRuntimeTimeSelection = {
-  currentYear: number
-  currentMonth: number
-  currentDay: number
-  currentHour: number | null
-}
+export type BaziRuntimeTimeSelection = CoreBaziRuntimeTimeSelection

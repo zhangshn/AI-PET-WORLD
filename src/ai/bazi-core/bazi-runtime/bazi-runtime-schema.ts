@@ -48,6 +48,66 @@ export type BaziFlowResult = {
   liuShi: BaziPillar | null
 }
 
+export type BaziRuntimeFlowLevel =
+  | "daYun"
+  | "liuNian"
+  | "liuYue"
+  | "liuRi"
+  | "liuShi"
+
+export type BaziRuntimeTimeSelection = {
+  currentYear: number
+  currentMonth: number
+  currentDay: number
+  currentHour: number | null
+}
+
+export type BaziDaYunTimeOption = {
+  level: "daYun"
+  index: number
+  title: string
+  subtitle: string
+  startAge: number
+  endAge: number
+  startYear: number
+  endYear: number
+  pillarLabel: string
+  active: boolean
+}
+
+export type BaziLiuNianTimeOption = {
+  level: "liuNian"
+  year: number
+  age: number
+  title: string
+  subtitle: string
+}
+
+export type BaziSimpleTimeOption = {
+  level: "liuYue" | "liuRi"
+  value: number
+  title: string
+  subtitle?: string
+}
+
+export type BaziHourTimeOption = {
+  level: "liuShi"
+  hour: number
+  branch: string
+  title: string
+  subtitle: string
+}
+
+export type BaziRuntimeTimeTable = {
+  daYunOptions: BaziDaYunTimeOption[]
+  liuNianOptions: BaziLiuNianTimeOption[]
+  liuYueOptions: BaziSimpleTimeOption[]
+  liuRiOptions: BaziSimpleTimeOption[]
+  liuShiOptions: BaziHourTimeOption[]
+  selectedSummary: string
+  activeDaYunIndex: number | null
+}
+
 export type BaziRuntimeElementField = {
   rawScore: WuXingScore
   elementScores: WuXingScore
@@ -70,6 +130,7 @@ export type BaziRuntimeProfile = {
 
   daYun: BaziDaYunResult
   flows: BaziFlowResult
+  timeTable: BaziRuntimeTimeTable
 
   runtimeElementField: BaziRuntimeElementField
   modifiers: BaziRuntimeModifiers

@@ -14,6 +14,7 @@ import {
   buildRuntimeElementField,
   mapRuntimeElementsToModifiers
 } from "./bazi-runtime-mapper"
+import { buildBaziRuntimeTimeTable } from "./bazi-runtime-time-table"
 
 export function buildBaziRuntimeProfile(
   input: BaziRuntimeInput
@@ -43,6 +44,17 @@ export function buildBaziRuntimeProfile(
     runtimeElementField.elementScores
   )
 
+  const timeTable = buildBaziRuntimeTimeTable({
+    birthYear: input.birthChart.input.year,
+    daYun,
+    selection: {
+      currentYear: input.currentYear,
+      currentMonth: input.currentMonth,
+      currentDay: input.currentDay,
+      currentHour: input.currentHour ?? null,
+    },
+  })
+
   return {
     birthChart: input.birthChart,
     gender: input.gender,
@@ -50,6 +62,7 @@ export function buildBaziRuntimeProfile(
 
     daYun,
     flows,
+    timeTable,
 
     runtimeElementField,
     modifiers,
@@ -70,13 +83,20 @@ export function buildBaziRuntimeProfile(
 }
 
 export type {
+  BaziDaYunTimeOption,
   BaziDaYunDirection,
   BaziDaYunItem,
   BaziDaYunResult,
   BaziFlowResult,
+  BaziHourTimeOption,
+  BaziLiuNianTimeOption,
   BaziRuntimeElementField,
+  BaziRuntimeFlowLevel,
   BaziRuntimeGender,
   BaziRuntimeInput,
   BaziRuntimeModifiers,
   BaziRuntimeProfile,
+  BaziRuntimeTimeSelection,
+  BaziRuntimeTimeTable,
+  BaziSimpleTimeOption,
 } from "./bazi-runtime-schema"

@@ -106,13 +106,20 @@ export type {
 } from "./bazi-schema"
 
 export type {
+  BaziDaYunTimeOption,
   BaziDaYunDirection,
   BaziDaYunItem,
   BaziDaYunResult,
   BaziFlowResult,
+  BaziHourTimeOption,
+  BaziLiuNianTimeOption,
   BaziRuntimeElementField,
+  BaziRuntimeFlowLevel,
   BaziRuntimeGender,
   BaziRuntimeInput,
   BaziRuntimeModifiers,
   BaziRuntimeProfile,
+  BaziRuntimeTimeSelection,
+  BaziRuntimeTimeTable,
+  BaziSimpleTimeOption,
 } from "./bazi-runtime/bazi-runtime-gateway"

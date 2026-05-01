@@ -87,11 +87,15 @@ export function BaziRuntimePanel({
     })
   }, [baziProfile, dynamicGender, selection])
 
-  const runtimeElementScores =
-    runtimeProfile.runtimeElementField.elementScores as Record<string, number>
+  const runtimeElementScores = runtimeProfile.runtimeElementField.elementScores
+  const runtimeModifiers = runtimeProfile.modifiers
 
-  const runtimeModifiers =
-    runtimeProfile.modifiers as Record<string, number>
+  const elementKeys = Object.keys(BAZI_RUNTIME_ELEMENT_LABELS) as Array<
+    keyof typeof BAZI_RUNTIME_ELEMENT_LABELS
+  >
+  const modifierKeys = Object.keys(BAZI_RUNTIME_MODIFIER_LABELS) as Array<
+    keyof typeof BAZI_RUNTIME_MODIFIER_LABELS
+  >
 
   const flowRows: Array<{
     key: string
@@ -201,9 +205,9 @@ export function BaziRuntimePanel({
         <table style={tableStyle}>
           <thead>
             <tr>
-              {Object.entries(BAZI_RUNTIME_ELEMENT_LABELS).map(([key, label]) => (
+              {elementKeys.map((key) => (
                 <th key={key} style={headerCellStyle}>
-                  {label}
+                  {BAZI_RUNTIME_ELEMENT_LABELS[key]}
                 </th>
               ))}
             </tr>
@@ -211,7 +215,7 @@ export function BaziRuntimePanel({
 
           <tbody>
             <tr>
-              {Object.keys(BAZI_RUNTIME_ELEMENT_LABELS).map((key) => (
+              {elementKeys.map((key) => (
                 <td key={key} style={cellStyle}>
                   {formatRuntimeScore(runtimeElementScores[key])}
                 </td>
@@ -226,9 +230,9 @@ export function BaziRuntimePanel({
 
         <table style={tableStyle}>
           <tbody>
-            {Object.entries(BAZI_RUNTIME_MODIFIER_LABELS).map(([key, label]) => (
+            {modifierKeys.map((key) => (
               <tr key={key}>
-                <td style={labelCellStyle}>{label}</td>
+                <td style={labelCellStyle}>{BAZI_RUNTIME_MODIFIER_LABELS[key]}</td>
                 <td style={cellStyle}>
                   {formatRuntimeScore(runtimeModifiers[key])}
                 </td>
