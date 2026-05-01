@@ -1,6 +1,7 @@
 ﻿"use client"
 
 import { useEffect, useMemo, useRef, useState } from "react"
+
 import {
   buildPetBirthBundle,
   updatePetAiState,
@@ -8,175 +9,25 @@ import {
   type PetTimelineSnapshot,
   type StateUpdateEvent
 } from "../../ai/gateway"
-import type { BranchPalace, SectorName, StarId } from "../../ai/ziwei-core/schema"
+
+import {
+  buildZiweiDynamicChartOnly,
+  buildZiweiDynamicInfluence
+} from "../../ai/ziwei-core/ziwei-gateway"
+
+import type {
+  BranchPalace,
+  SectorName,
+  StarId
+} from "../../ai/ziwei-core/schema"
+
 import {
   DEV_SECTOR_LABELS,
-  DEV_TRAIT_LABELS,
   getDevStarLabel
 } from "./devLabels"
+
 import { buildBaziProfile } from "../../ai/bazi-core/bazi-gateway"
 import { buildFinalPersonalityProfile } from "../../ai/personality-vector/vector-gateway"
-
-const BRANCH_LABELS: Record<BranchPalace, string> = {
-  yin: "Yin",
-  mao: "Mao",
-  chen: "Chen",
-  si: "Si",
-  wu: "Wu",
-  wei: "Wei",
-  shen: "Shen",
-  you: "You",
-  xu: "Xu",
-  hai: "Hai",
-  zi: "Zi",
-  chou: "Chou"
-}
-
-const SECTOR_LABELS_FALLBACK: Record<SectorName, string> = {
-  life: "命宫",
-  siblings: "兄弟",
-  spouse: "夫妻",
-  children: "子女",
-  wealth: "财帛",
-  health: "疾厄",
-  travel: "迁移",
-  friends: "交友",
-  career: "官禄",
-  property: "田宅",
-  fortune: "福德",
-  parents: "父母"
-}
-
-const ZIWEI_LAYOUT: (BranchPalace | null)[][] = [
-  ["si", "wu", "wei", "shen"],
-  ["chen", null, null, "you"],
-  ["mao", null, null, "xu"],
-  ["yin", "chou", "zi", "hai"]
-]
-
-const WUXING_LABELS: Record<string, string> = {
-  wood: "木",
-  fire: "火",
-  earth: "土",
-  metal: "金",
-  water: "水"
-}
-
-const DYNAMICS_LABELS: Record<string, string> = {
-  actionIntensity: "行动强度",
-  reactionSpeed: "反应速度",
-  sensoryDepth: "感知深度",
-  consistency: "行为一致性",
-  explorationDrive: "探索驱动力",
-  stability: "稳定性",
-  persistence: "持续性",
-  adaptability: "适应性"
-}
-
-const FINAL_VECTOR_LABELS: Record<string, string> = {
-  curiosity: "好奇心",
-  activity: "行动性",
-  stability: "稳定性",
-  sensitivity: "敏感度",
-  discipline: "秩序/自律",
-  attachment: "依附/关系需求",
-  control: "控制感",
-  explorationDrive: "探索驱动",
-  reactionSpeed: "反应速度",
-  persistence: "持续性",
-  adaptability: "适应性",
-  sensoryDepth: "感知深度",
-  restPreference: "休息偏好"
-}
-
-const FINAL_BIAS_LABELS: Record<string, string> = {
-  newbornActivity: "新生期活动倾向",
-  observationNeed: "观察需求",
-  attachmentNeed: "依附需求",
-  explorationRange: "探索范围",
-  restNeed: "休息需求",
-  carePriority: "照顾优先级",
-  constructionDrive: "建设驱动力",
-  routinePreference: "固定流程偏好",
-  riskTolerance: "风险容忍",
-  responseSpeed: "响应速度",
-  expansionPreference: "扩张偏好",
-  stabilityPreference: "稳定偏好",
-  comfortPreference: "舒适偏好",
-  orderPreference: "秩序偏好",
-  adaptabilityPreference: "可变适应偏好"
-}
-
-const BEHAVIOR_TAG_LABELS: Record<string, string> = {
-  high_action_release: "行动释放强",
-  fast_reaction: "反应速度快",
-  deep_observer: "观察深度高",
-  stable_state: "状态稳定",
-  consistent_pattern: "行为模式一致",
-  strong_exploration: "探索驱动力强",
-  persistent_behavior: "持续性强",
-  adaptive_response: "适应能力强",
-  balanced_dynamics: "动力结构均衡"
-}
-
-const EMOTIONAL_LABELS: Record<string, string> = {
-  relaxed: "放松",
-  content: "满足",
-  curious: "好奇",
-  excited: "兴奋",
-  alert: "警觉",
-  irritated: "烦躁",
-  anxious: "不安",
-  low: "低落",
-  neutral: "平稳"
-}
-
-const COGNITIVE_LABELS: Record<string, string> = {
-  idle: "松散观察",
-  observing: "Observing",
-  focused: "Focused",
-  curious: "探索留意",
-  hesitant: "Hesitant",
-  stressed: "Stressed",
-  avoidant: "Avoidant"
-}
-
-const RELATIONAL_LABELS: Record<string, string> = {
-  secure: "安心",
-  attached: "亲近",
-  neutral: "Neutral",
-  guarded: "保留",
-  distant: "疏离"
-}
-
-const DRIVE_LABELS: Record<string, string> = {
-  rest: "Rest",
-  eat: "Eat",
-  explore: "Explore",
-  approach: "Approach",
-  avoid: "Avoid",
-  idle: "Idle"
-}
-
-const PHASE_LABELS: Record<string, string> = {
-  stable_phase: "平稳阶段",
-  growth_phase: "成长扩张阶段",
-  sensitive_phase: "敏感波动阶段",
-  recovery_phase: "修整恢复阶段",
-  attachment_phase: "亲近依附阶段",
-  withdrawal_phase: "收缩回避阶段"
-}
-
-const BRANCH_LABEL_MAP: Record<string, string> = {
-  balanced: "平衡路径",
-  attachment: "亲近路径",
-  defense: "防御路径",
-  curiosity: "探索路径",
-  recovery: "恢复路径",
-  survival: "应对路径"
-}
-
-
 
 type TimelineClock = {
   day: number
@@ -216,10 +67,231 @@ type TimelineLogEntry = {
   createdAt: string
 }
 
+type DynamicGenderInput = "" | "male" | "female"
+
 const INITIAL_TIMELINE_CLOCK: TimelineClock = {
   day: 1,
   hour: 8,
   period: "Morning"
+}
+
+const BRANCH_LABELS: Record<BranchPalace, string> = {
+  yin: "寅",
+  mao: "卯",
+  chen: "辰",
+  si: "巳",
+  wu: "午",
+  wei: "未",
+  shen: "申",
+  you: "酉",
+  xu: "戌",
+  hai: "亥",
+  zi: "子",
+  chou: "丑"
+}
+
+const BRANCH_FULL_LABELS: Record<BranchPalace, string> = {
+  yin: "寅宫",
+  mao: "卯宫",
+  chen: "辰宫",
+  si: "巳宫",
+  wu: "午宫",
+  wei: "未宫",
+  shen: "申宫",
+  you: "酉宫",
+  xu: "戌宫",
+  hai: "亥宫",
+  zi: "子宫",
+  chou: "丑宫"
+}
+
+const SECTOR_LABELS_FALLBACK: Record<SectorName, string> = {
+  life: "命宫",
+  siblings: "兄弟",
+  spouse: "夫妻",
+  children: "子女",
+  wealth: "财帛",
+  health: "疾厄",
+  travel: "迁移",
+  friends: "交友",
+  career: "官禄",
+  property: "田宅",
+  fortune: "福德",
+  parents: "父母"
+}
+
+const ZIWEI_LAYOUT: (BranchPalace | null)[][] = [
+  ["si", "wu", "wei", "shen"],
+  ["chen", null, null, "you"],
+  ["mao", null, null, "xu"],
+  ["yin", "chou", "zi", "hai"]
+]
+
+const TIME_BRANCH_BY_HOUR: BranchPalace[] = [
+  "zi",
+  "chou",
+  "chou",
+  "yin",
+  "yin",
+  "mao",
+  "mao",
+  "chen",
+  "chen",
+  "si",
+  "si",
+  "wu",
+  "wu",
+  "wei",
+  "wei",
+  "shen",
+  "shen",
+  "you",
+  "you",
+  "xu",
+  "xu",
+  "hai",
+  "hai",
+  "zi"
+]
+
+const ELEMENT_GATE_LABELS: Record<string, string> = {
+  water_2: "水二局",
+  wood_3: "木三局",
+  metal_4: "金四局",
+  earth_5: "土五局",
+  fire_6: "火六局"
+}
+
+const WUXING_LABELS: Record<string, string> = {
+  wood: "木",
+  fire: "火",
+  earth: "土",
+  metal: "金",
+  water: "水"
+}
+
+const FINAL_VECTOR_LABELS: Record<string, string> = {
+  curiosity: "好奇心",
+  activity: "行动性",
+  stability: "稳定性",
+  sensitivity: "敏感度",
+  discipline: "秩序/自律",
+  attachment: "依附/关系需求",
+  control: "控制感",
+  explorationDrive: "探索驱动",
+  reactionSpeed: "反应速度",
+  persistence: "持续性",
+  adaptability: "适应性",
+  sensoryDepth: "感知深度",
+  restPreference: "休息偏好"
+}
+
+const FINAL_BIAS_LABELS: Record<string, string> = {
+  newbornActivity: "新生期活动倾向",
+  observationNeed: "观察需求",
+  attachmentNeed: "依附需求",
+  explorationRange: "探索范围",
+  restNeed: "休息需求",
+  carePriority: "照顾优先级",
+  constructionDrive: "建设驱动力",
+  routinePreference: "固定流程偏好",
+  riskTolerance: "风险容忍",
+  responseSpeed: "响应速度",
+  expansionPreference: "扩张偏好",
+  stabilityPreference: "稳定偏好",
+  comfortPreference: "舒适偏好",
+  orderPreference: "秩序偏好",
+  adaptabilityPreference: "可变适应偏好"
+}
+
+const DYNAMIC_BIAS_LABELS: Record<string, string> = {
+  careBias: "照护倾向",
+  observeBias: "观察倾向",
+  protectBias: "保护倾向",
+  exploreBias: "探索倾向",
+  recordBias: "记录倾向",
+  routineBias: "秩序倾向",
+  repairBias: "修复倾向",
+  boundaryBias: "边界倾向"
+}
+
+const POSITION_BIAS_LABELS: Record<string, string> = {
+  near_incubator: "靠近孵化器",
+  near_nest: "靠近巢穴",
+  near_door: "靠近门口",
+  near_desk: "靠近记录桌",
+  patrol_room: "房间巡查"
+}
+
+const OBSERVATION_DISTANCE_LABELS: Record<string, string> = {
+  close: "近距离观察",
+  medium: "中距离观察",
+  distant: "远距离观察"
+}
+
+const TONE_BIAS_LABELS: Record<string, string> = {
+  gentle: "温和",
+  rational: "理性",
+  concise: "简洁",
+  protective: "保护性",
+  curious: "好奇"
+}
+
+const PHASE_LABELS: Record<string, string> = {
+  stable_phase: "平稳阶段",
+  growth_phase: "成长扩张阶段",
+  sensitive_phase: "敏感波动阶段",
+  recovery_phase: "修整恢复阶段",
+  attachment_phase: "亲近依附阶段",
+  withdrawal_phase: "收缩回避阶段"
+}
+
+const BRANCH_LABEL_MAP: Record<string, string> = {
+  balanced: "平衡路径",
+  attachment: "亲近路径",
+  defense: "防御路径",
+  curiosity: "探索路径",
+  recovery: "恢复路径",
+  survival: "应对路径"
+}
+
+const EMOTIONAL_LABELS: Record<string, string> = {
+  relaxed: "放松",
+  content: "满足",
+  curious: "好奇",
+  excited: "兴奋",
+  alert: "警觉",
+  irritated: "烦躁",
+  anxious: "不安",
+  low: "低落",
+  neutral: "平稳"
+}
+
+const COGNITIVE_LABELS: Record<string, string> = {
+  idle: "松散观察",
+  observing: "观察中",
+  focused: "专注",
+  curious: "探索留意",
+  hesitant: "犹豫",
+  stressed: "紧张",
+  avoidant: "回避"
+}
+
+const RELATIONAL_LABELS: Record<string, string> = {
+  secure: "安心",
+  attached: "亲近",
+  neutral: "中性",
+  guarded: "保留",
+  distant: "疏离"
+}
+
+const DRIVE_LABELS: Record<string, string> = {
+  rest: "休息",
+  eat: "进食",
+  explore: "探索",
+  approach: "靠近",
+  avoid: "回避",
+  idle: "待机"
 }
 
 function parseBirthHourInput(value: string): number | null {
@@ -247,7 +319,7 @@ function getSectorLabel(sector: SectorName): string {
 }
 
 function getStarDisplay(starId: StarId): string {
-  return `${starId} (${getDevStarLabel(starId)})`
+  return `${starId}（${getDevStarLabel(starId)}）`
 }
 
 function getBorrowedStarsByBranch(
@@ -268,10 +340,24 @@ function clampHour(hour: number): number {
 
 function getPeriodFromHour(hour: number): string {
   const safeHour = clampHour(hour)
-  if (safeHour >= 6 && safeHour < 12) return "Morning"
-  if (safeHour >= 12 && safeHour < 18) return "Daytime"
-  if (safeHour >= 18 && safeHour < 22) return "Evening"
+
+  if (safeHour >= 6 && safeHour < 12) {
+    return "Morning"
+  }
+
+  if (safeHour >= 12 && safeHour < 18) {
+    return "Daytime"
+  }
+
+  if (safeHour >= 18 && safeHour < 22) {
+    return "Evening"
+  }
+
   return "Night"
+}
+
+function getTimeBranchFromHour(hour: number): BranchPalace {
+  return TIME_BRANCH_BY_HOUR[clampHour(hour)]
 }
 
 function advanceClock(current: TimelineClock, hourDelta: number): TimelineClock {
@@ -288,6 +374,10 @@ function advanceClock(current: TimelineClock, hourDelta: number): TimelineClock 
 
 function formatClock(clock: TimelineClock): string {
   return `Day ${clock.day} - ${clock.hour}:00 - ${clock.period}`
+}
+
+function resolveCurrentAge(clock: TimelineClock): number {
+  return Math.max(1, Math.ceil(clock.day / 365))
 }
 
 function snapshotToComparableMap(snapshot: PetTimelineSnapshot) {
@@ -329,6 +419,7 @@ function buildTimelineDiffs(
 
   Object.keys(beforeMap).forEach((key) => {
     const typedKey = key as keyof typeof beforeMap
+
     if (beforeMap[typedKey] !== afterMap[typedKey]) {
       diffs.push({
         label: labelMap[key] || key,
@@ -406,7 +497,10 @@ function ComboInput({
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (!wrapperRef.current) return
+      if (!wrapperRef.current) {
+        return
+      }
+
       if (!wrapperRef.current.contains(event.target as Node)) {
         setOpen(false)
       }
@@ -428,8 +522,8 @@ function ComboInput({
           value={value}
           placeholder={placeholder}
           onFocus={() => setOpen(true)}
-          onChange={(e) => {
-            onChange(e.target.value)
+          onChange={(event) => {
+            onChange(event.target.value)
             setOpen(true)
           }}
           style={{
@@ -518,11 +612,27 @@ function ScoreLine({
   )
 }
 
+function ValueLine({
+  label,
+  value
+}: {
+  label: string
+  value: React.ReactNode
+}) {
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <strong>{label}：</strong>
+      {value}
+    </div>
+  )
+}
+
 export default function PersonalityTestPage() {
   const [year, setYear] = useState(1900)
   const [month, setMonth] = useState(1)
   const [day, setDay] = useState(1)
   const [birthHourInput, setBirthHourInput] = useState("未知")
+  const [dynamicGender, setDynamicGender] = useState<DynamicGenderInput>("")
 
   const parsedBirthHour = useMemo(
     () => parseBirthHourInput(birthHourInput),
@@ -548,9 +658,9 @@ export default function PersonalityTestPage() {
     })
   )
 
-  const [timelineSnapshot, setTimelineSnapshot] = useState<PetTimelineSnapshot | null>(
-    birthBundle.timelineSnapshot
-  )
+  const [timelineSnapshot, setTimelineSnapshot] =
+    useState<PetTimelineSnapshot | null>(birthBundle.timelineSnapshot)
+
   const [lastOperation, setLastOperation] = useState("尚未操作")
   const [lastDiffs, setLastDiffs] = useState<DiffItem[]>([])
   const [timelineLogs, setTimelineLogs] = useState<TimelineLogEntry[]>([])
@@ -562,6 +672,14 @@ export default function PersonalityTestPage() {
   const debug = profile.debug
   const summaries = profile.summaries
   const corePersonality = profile.corePersonality
+
+  const currentAge = useMemo(() => {
+    return resolveCurrentAge(timelineClock)
+  }, [timelineClock])
+
+  const currentTimeBranch = useMemo(() => {
+    return getTimeBranchFromHour(timelineClock.hour)
+  }, [timelineClock.hour])
 
   const baziProfile = useMemo(() => {
     return buildBaziProfile({
@@ -578,6 +696,52 @@ export default function PersonalityTestPage() {
       baziProfile
     })
   }, [hasBirthHour, profile, baziProfile])
+
+  const ziweiDynamicChartResult = useMemo(() => {
+    if (!hasBirthHour) {
+      return null
+    }
+
+    return buildZiweiDynamicChartOnly({
+      pattern,
+      gender: dynamicGender,
+      currentAge,
+      currentYear: year,
+      currentLunarMonth: pattern.lunarInfo.lunarMonth,
+      currentLunarDay: pattern.lunarInfo.lunarDay,
+      currentTimeBranch
+    })
+  }, [
+    hasBirthHour,
+    pattern,
+    dynamicGender,
+    currentAge,
+    year,
+    currentTimeBranch
+  ])
+
+  const ziweiDynamicInfluenceResult = useMemo(() => {
+    if (!hasBirthHour) {
+      return null
+    }
+
+    return buildZiweiDynamicInfluence({
+      pattern,
+      gender: dynamicGender,
+      currentAge,
+      currentYear: year,
+      currentLunarMonth: pattern.lunarInfo.lunarMonth,
+      currentLunarDay: pattern.lunarInfo.lunarDay,
+      currentTimeBranch
+    })
+  }, [
+    hasBirthHour,
+    pattern,
+    dynamicGender,
+    currentAge,
+    year,
+    currentTimeBranch
+  ])
 
   function resetFromBirthInput(nextBirthInput: BirthInputState) {
     const nextBundle = buildPetBirthBundle({
@@ -684,20 +848,28 @@ export default function PersonalityTestPage() {
           background
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: 8
+          }}
+        >
           <div style={{ fontWeight: "bold" }}>
             {getSectorLabel(sector)}
             {isPrimary ? " ⭐命" : ""}
             {isBody ? " ◎身" : ""}
           </div>
-          <div style={{ color: "#666", fontSize: 12 }}>{BRANCH_LABELS[branch]}</div>
+          <div style={{ color: "#666", fontSize: 12 }}>
+            {BRANCH_LABELS[branch]}
+          </div>
         </div>
 
         <div style={{ lineHeight: 1.6, marginBottom: 6 }}>
           {stars.length > 0 ? (
             <>
               <div style={{ color: "#333", marginBottom: 4 }}>原生星：</div>
-              {stars.map((starId: StarId) => (
+              {stars.map((starId) => (
                 <div key={starId}>{getStarDisplay(starId)}</div>
               ))}
             </>
@@ -709,8 +881,10 @@ export default function PersonalityTestPage() {
         {isEmpty && borrowedStars.length > 0 && (
           <div style={{ lineHeight: 1.6, marginTop: 8, color: "#666" }}>
             <div style={{ marginBottom: 4 }}>借星：</div>
-            {borrowedStars.map((starId: StarId) => (
-              <div key={`borrowed-${branch}-${starId}`}>{getStarDisplay(starId)}</div>
+            {borrowedStars.map((starId) => (
+              <div key={`borrowed-${branch}-${starId}`}>
+                {getStarDisplay(starId)}
+              </div>
             ))}
           </div>
         )}
@@ -723,7 +897,9 @@ export default function PersonalityTestPage() {
     events?: StateUpdateEvent[],
     hourDelta: number = 0
   ) {
-    if (!timelineSnapshot) return
+    if (!timelineSnapshot) {
+      return
+    }
 
     const beforeSnapshot = timelineSnapshot
     const beforeClock = timelineClock
@@ -783,7 +959,8 @@ export default function PersonalityTestPage() {
     <div
       style={{
         padding: 20,
-        fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        fontFamily:
+          "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
         background: "#f7f7f7",
         minHeight: "100vh"
       }}
@@ -807,10 +984,14 @@ export default function PersonalityTestPage() {
           label="年"
           value={String(year)}
           width={100}
-          options={Array.from({ length: 201 }, (_, index) => String(1900 + index))}
+          options={Array.from({ length: 201 }, (_, index) =>
+            String(1900 + index)
+          )}
           onChange={(value) => {
             const nextYear = Number(value)
-            if (!Number.isNaN(nextYear)) handleDateChange({ year: nextYear })
+            if (!Number.isNaN(nextYear)) {
+              handleDateChange({ year: nextYear })
+            }
           }}
         />
 
@@ -821,7 +1002,9 @@ export default function PersonalityTestPage() {
           options={Array.from({ length: 12 }, (_, index) => String(index + 1))}
           onChange={(value) => {
             const nextMonth = Number(value)
-            if (!Number.isNaN(nextMonth)) handleDateChange({ month: nextMonth })
+            if (!Number.isNaN(nextMonth)) {
+              handleDateChange({ month: nextMonth })
+            }
           }}
         />
 
@@ -832,7 +1015,9 @@ export default function PersonalityTestPage() {
           options={Array.from({ length: 31 }, (_, index) => String(index + 1))}
           onChange={(value) => {
             const nextDay = Number(value)
-            if (!Number.isNaN(nextDay)) handleDateChange({ day: nextDay })
+            if (!Number.isNaN(nextDay)) {
+              handleDateChange({ day: nextDay })
+            }
           }}
         />
 
@@ -844,311 +1029,747 @@ export default function PersonalityTestPage() {
           options={["未知", ...Array.from({ length: 24 }, (_, index) => String(index))]}
           onChange={handleBirthHourInputChange}
         />
+
+        <ComboInput
+          label="动态性别"
+          value={dynamicGender || "未选择"}
+          width={120}
+          options={["未选择", "male", "female"]}
+          onChange={(value) => {
+            if (value === "male" || value === "female") {
+              setDynamicGender(value)
+              return
+            }
+
+            setDynamicGender("")
+          }}
+        />
       </div>
 
       <InfoCard title="🧬 最终 AI 人格结果（已融合）">
         <div style={{ lineHeight: 1.9 }}>
-          <div>
-            <strong>当前模式：</strong>
-            {hasBirthHour ? "紫微结构 + 八字动力融合" : "八字三柱动力人格"}
-          </div>
-
-          <div>
-            <strong>人格标签：</strong>
-            {finalPersonalityProfile.labels.join(" / ")}
-          </div>
-
+          <ValueLine
+            label="当前模式"
+            value={hasBirthHour ? "紫微结构 + 八字动力融合" : "八字三柱动力人格"}
+          />
+          <ValueLine
+            label="人格标签"
+            value={finalPersonalityProfile.labels.join(" / ")}
+          />
           <div style={{ marginTop: 8, color: "#555" }}>
             {finalPersonalityProfile.summary}
           </div>
         </div>
 
-        <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid #eee" }} />
+        <hr
+          style={{
+            margin: "16px 0",
+            border: "none",
+            borderTop: "1px solid #eee"
+          }}
+        />
 
-        <div style={{ marginBottom: 12 }}>
-          <strong>融合逻辑：</strong>
-        </div>
-
-        <div style={{ lineHeight: 1.9, color: "#444" }}>
-          {hasBirthHour ? (
-            <>
-              <div>紫微提供“人格结构”：决定这个生命的核心性格、表达方式、关系倾向与行为骨架。</div>
-              <div>八字提供“动力底盘”：修正行动速度、感知深度、恢复偏好、探索冲动与适应能力。</div>
-              <div>最终人格不是单独的紫微或八字，而是统一成 AI 行为系统可读取的人格向量。</div>
-            </>
-          ) : (
-            <>
-              <div>当前出生时间未知，因此无法生成完整紫微结构。</div>
-              <div>系统使用八字三柱生成基础动力人格，后续仍可驱动宠物、管家和建筑倾向。</div>
-            </>
-          )}
-        </div>
-
-        <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid #eee" }} />
-
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 18 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: 18
+          }}
+        >
           <div>
             <strong>统一人格向量</strong>
             <div style={{ marginTop: 10 }}>
-              {Object.entries(finalPersonalityProfile.vector).map(([key, value]: [string, number]) => (
-                <ScoreLine
-                  key={key}
-                  name={key}
-                  label={FINAL_VECTOR_LABELS[key]}
-                  value={value}
-                />
-              ))}
+              {Object.entries(finalPersonalityProfile.vector).map(
+                ([key, value]) => (
+                  <ScoreLine
+                    key={key}
+                    name={key}
+                    label={FINAL_VECTOR_LABELS[key]}
+                    value={Number(value)}
+                  />
+                )
+              )}
             </div>
           </div>
 
           <div>
             <strong>宠物行为偏置</strong>
             <div style={{ marginTop: 10 }}>
-              {Object.entries(finalPersonalityProfile.bias.petBehaviorBias).map(([key, value]: [string, number]) => (
-                <ScoreLine
-                  key={key}
-                  name={key}
-                  label={FINAL_BIAS_LABELS[key]}
-                  value={value}
-                />
-              ))}
+              {Object.entries(finalPersonalityProfile.bias.petBehaviorBias).map(
+                ([key, value]) => (
+                  <ScoreLine
+                    key={key}
+                    name={key}
+                    label={FINAL_BIAS_LABELS[key]}
+                    value={Number(value)}
+                  />
+                )
+              )}
             </div>
           </div>
 
           <div>
             <strong>管家行为偏置</strong>
             <div style={{ marginTop: 10 }}>
-              {Object.entries(finalPersonalityProfile.bias.butlerBehaviorBias).map(([key, value]: [string, number]) => (
-                <ScoreLine
-                  key={key}
-                  name={key}
-                  label={FINAL_BIAS_LABELS[key]}
-                  value={value}
-                />
-              ))}
+              {Object.entries(finalPersonalityProfile.bias.butlerBehaviorBias).map(
+                ([key, value]) => (
+                  <ScoreLine
+                    key={key}
+                    name={key}
+                    label={FINAL_BIAS_LABELS[key]}
+                    value={Number(value)}
+                  />
+                )
+              )}
             </div>
           </div>
 
           <div>
             <strong>建筑/家园偏置</strong>
             <div style={{ marginTop: 10 }}>
-              {Object.entries(finalPersonalityProfile.bias.buildingBias).map(([key, value]: [string, number]) => (
-                <ScoreLine
-                  key={key}
-                  name={key}
-                  label={FINAL_BIAS_LABELS[key]}
-                  value={value}
-                />
-              ))}
+              {Object.entries(finalPersonalityProfile.bias.buildingBias).map(
+                ([key, value]) => (
+                  <ScoreLine
+                    key={key}
+                    name={key}
+                    label={FINAL_BIAS_LABELS[key]}
+                    value={Number(value)}
+                  />
+                )
+              )}
             </div>
           </div>
         </div>
+      </InfoCard>
+
+      <div style={{ height: 20 }} />
+
+      <InfoCard title="🔮 紫微动态运势测试">
+        {!hasBirthHour ? (
+          <div style={{ color: "#a66", lineHeight: 1.8 }}>
+            当前出生时间未知，无法生成完整紫微结构，因此不进入动态运势计算。
+          </div>
+        ) : (
+          <>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                gap: 12,
+                lineHeight: 1.8,
+                marginBottom: 16
+              }}
+            >
+              <ValueLine
+                label="五行局"
+                value={`${pattern.elementGate}（${
+                  ELEMENT_GATE_LABELS[pattern.elementGate] ?? pattern.elementGate
+                }）`}
+              />
+              <ValueLine label="五行局数" value={pattern.elementBase} />
+              <ValueLine
+                label="当前动态性别"
+                value={dynamicGender || "未选择"}
+              />
+              <ValueLine label="当前年龄" value={currentAge} />
+              <ValueLine label="当前年份" value={year} />
+              <ValueLine
+                label="当前时辰"
+                value={`${currentTimeBranch}（${BRANCH_LABELS[currentTimeBranch]}）`}
+              />
+              <ValueLine
+                label="农历月"
+                value={pattern.lunarInfo.lunarMonth}
+              />
+              <ValueLine
+                label="农历日"
+                value={pattern.lunarInfo.lunarDay}
+              />
+              <ValueLine
+                label="当前世界时间"
+                value={formatClock(timelineClock)}
+              />
+            </div>
+
+            {ziweiDynamicChartResult && !ziweiDynamicChartResult.ok && (
+              <div
+                style={{
+                  border: "1px solid #ffccc7",
+                  background: "#fff2f0",
+                  borderRadius: 8,
+                  padding: 12,
+                  color: "#a8071a",
+                  marginBottom: 16
+                }}
+              >
+                {ziweiDynamicChartResult.message}
+              </div>
+            )}
+
+            {ziweiDynamicChartResult?.ok && (
+              <div style={{ marginBottom: 18 }}>
+                <strong>动态盘落点</strong>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                    gap: 12,
+                    marginTop: 12
+                  }}
+                >
+                  {[
+                    ziweiDynamicChartResult.data.natal,
+                    ziweiDynamicChartResult.data.daYun,
+                    ziweiDynamicChartResult.data.liuNian,
+                    ziweiDynamicChartResult.data.liuYue,
+                    ziweiDynamicChartResult.data.liuRi,
+                    ziweiDynamicChartResult.data.liuShi
+                  ].map((flow) => (
+                    <div
+                      key={flow.type}
+                      style={{
+                        border: "1px solid #eee",
+                        borderRadius: 8,
+                        padding: 12,
+                        background: "#fafafa",
+                        lineHeight: 1.8
+                      }}
+                    >
+                      <ValueLine label="类型" value={flow.type} />
+                      <ValueLine
+                        label="落宫"
+                        value={`${flow.palace}（${BRANCH_FULL_LABELS[flow.palace]}）`}
+                      />
+                      <ValueLine
+                        label="业务宫位"
+                        value={getSectorLabel(flow.sectorName as SectorName)}
+                      />
+                      <ValueLine label="权重" value={flow.influence} />
+                      <ValueLine
+                        label="星曜"
+                        value={
+                          flow.stars.length > 0
+                            ? flow.stars.map(getStarDisplay).join(" / ")
+                            : "空宫"
+                        }
+                      />
+                      <ValueLine
+                        label="组合"
+                        value={
+                          flow.pairIds.length > 0
+                            ? flow.pairIds.join(" / ")
+                            : "无"
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ marginTop: 12, color: "#666" }}>
+                  大运方向：{ziweiDynamicChartResult.data.debug.direction}；
+                  起运岁数：{ziweiDynamicChartResult.data.debug.startAge}
+                </div>
+              </div>
+            )}
+
+            {ziweiDynamicInfluenceResult?.ok && (
+              <div>
+                <strong>动态行为影响</strong>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                    gap: 18,
+                    marginTop: 12
+                  }}
+                >
+                  <div>
+                    {[
+                      "careBias",
+                      "observeBias",
+                      "protectBias",
+                      "exploreBias",
+                      "recordBias",
+                      "routineBias",
+                      "repairBias",
+                      "boundaryBias"
+                    ].map((key) => (
+                      <ScoreLine
+                        key={key}
+                        name={key}
+                        label={DYNAMIC_BIAS_LABELS[key]}
+                        value={
+                          ziweiDynamicInfluenceResult.data[
+                            key as keyof typeof ziweiDynamicInfluenceResult.data
+                          ] as number
+                        }
+                      />
+                    ))}
+                  </div>
+
+                  <div style={{ lineHeight: 1.9 }}>
+                    <ValueLine
+                      label="站位倾向"
+                      value={
+                        POSITION_BIAS_LABELS[
+                          ziweiDynamicInfluenceResult.data.positionBias
+                        ] ?? ziweiDynamicInfluenceResult.data.positionBias
+                      }
+                    />
+                    <ValueLine
+                      label="观察距离"
+                      value={
+                        OBSERVATION_DISTANCE_LABELS[
+                          ziweiDynamicInfluenceResult.data.observationDistance
+                        ] ?? ziweiDynamicInfluenceResult.data.observationDistance
+                      }
+                    />
+                    <ValueLine
+                      label="语气倾向"
+                      value={
+                        TONE_BIAS_LABELS[ziweiDynamicInfluenceResult.data.toneBias] ??
+                        ziweiDynamicInfluenceResult.data.toneBias
+                      }
+                    />
+                    <ValueLine
+                      label="当前阶段"
+                      value={ziweiDynamicInfluenceResult.data.currentPhaseLabel}
+                    />
+                    <ValueLine
+                      label="当前关注点"
+                      value={ziweiDynamicInfluenceResult.data.currentFocusLabel}
+                    />
+                    <ValueLine
+                      label="Top Bias"
+                      value={ziweiDynamicInfluenceResult.data.debug.topBiases.join(
+                        " / "
+                      )}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </InfoCard>
 
       <div style={{ height: 20 }} />
 
       <InfoCard title="☯ 来源一：八字动力底盘">
         <div style={{ lineHeight: 2 }}>
-          <div><strong>年柱：</strong>{baziProfile.chart.yearPillar.label}</div>
-          <div><strong>月柱：</strong>{baziProfile.chart.monthPillar.label}</div>
-          <div><strong>日柱：</strong>{baziProfile.chart.dayPillar.label}</div>
+          <ValueLine label="年柱" value={baziProfile.chart.yearPillar.label} />
+          <ValueLine label="月柱" value={baziProfile.chart.monthPillar.label} />
+          <ValueLine label="日柱" value={baziProfile.chart.dayPillar.label} />
           {baziProfile.chart.hourPillar && (
-            <div><strong>时柱：</strong>{baziProfile.chart.hourPillar.label}</div>
+            <ValueLine label="时柱" value={baziProfile.chart.hourPillar.label} />
           )}
-          <div><strong>当前模式：</strong>{baziProfile.chart.hasHour ? "四柱" : "三柱"}</div>
-          <div>
-            <strong>主导五行：</strong>
-            {baziProfile.dominantElements.map((element: string) => WUXING_LABELS[element]).join(" / ")}
-          </div>
-        </div>
-
-        <hr style={{ margin: "16px 0", border: "none", borderTop: "1px solid #eee" }} />
-
-        {Object.entries(baziProfile.dynamics).map(([key, value]: [string, number]) => (
-          <ScoreLine
-            key={key}
-            name={key}
-            label={DYNAMICS_LABELS[key]}
-            value={value}
+          <ValueLine
+            label="当前模式"
+            value={baziProfile.chart.hasHour ? "四柱" : "三柱"}
           />
-        ))}
-
-        <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {baziProfile.behaviorTags.map((tag: string) => (
-            <span
-              key={tag}
-              style={{
-                padding: "4px 8px",
-                borderRadius: 999,
-                background: "#f0f5ff",
-                border: "1px solid #adc6ff",
-                fontSize: 12
-              }}
-            >
-              {BEHAVIOR_TAG_LABELS[tag] || tag}
-            </span>
-          ))}
-        </div>
-
-        <div style={{ marginTop: 14, color: "#555", lineHeight: 1.8 }}>
-          {baziProfile.interpretation.summary}
+          <ValueLine
+            label="主导五行"
+            value={baziProfile.dominantElements
+              .map((element: string) => WUXING_LABELS[element] ?? element)
+              .join(" / ")}
+          />
         </div>
       </InfoCard>
 
       <div style={{ height: 20 }} />
 
-      {hasBirthHour && (
-        <>
-          <InfoCard title="⭐ 来源二：紫微人格结构">
-            <div style={{ lineHeight: 1.9 }}>
-              <div><strong>先天气质：</strong>{publicView.innateTemperamentLabel}</div>
-              <div><strong>核心宫位：</strong>{getSectorLabel(pattern.primarySector)}</div>
-              <div>
-                <strong>核心星曜：</strong>
-                {pattern.primaryStars.length > 0
-                  ? pattern.primaryStars.map((starId: StarId) => getStarDisplay(starId)).join(" / ")
-                  : "空宫"}
-              </div>
-              <div style={{ color: "#555", marginTop: 8 }}>
-                紫微部分用于提供人格骨架、关系结构、核心性格表达和长期倾向。
-              </div>
-            </div>
-          </InfoCard>
-
-          <div style={{ height: 20 }} />
-
-          <div style={{ display: "grid", gridTemplateColumns: "1.1fr 0.9fr", gap: 16, marginBottom: 20 }}>
-            <InfoCard title="Timeline 控制台">
-              <div style={{ marginBottom: 12, color: "#555", lineHeight: 1.8 }}>
-                这里用于可控测试“时间推动”和“事件推动”对当前状态层、阶段偏移与生命轨迹的影响。
-              </div>
-
-              <div style={{ marginBottom: 10, fontWeight: 600 }}>当前测试时间</div>
-              <div style={{ marginBottom: 16 }}>{formatClock(timelineClock)}</div>
-
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-                <ActionButton label="+1 小时" onClick={() => applyTimelineUpdate("推进时间 +1 小时", undefined, 1)} />
-                <ActionButton label="+6 小时" onClick={() => applyTimelineUpdate("推进时间 +6 小时", undefined, 6)} />
-                <ActionButton label="+1 天" onClick={() => applyTimelineUpdate("推进时间 +1 天", undefined, 24)} />
-                <ActionButton label="重置 timeline" onClick={resetTimeline} />
-              </div>
-
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-                <ActionButton label="喂食" onClick={() => applyTimelineUpdate("事件：喂食", [{ type: "fed", intensity: 0.7 }])} />
-                <ActionButton label="休息" onClick={() => applyTimelineUpdate("事件：休息", [{ type: "rested", intensity: 0.7 }])} />
-                <ActionButton label="安抚" onClick={() => applyTimelineUpdate("事件：安抚", [{ type: "comforted", intensity: 0.7 }])} />
-                <ActionButton label="惊扰" onClick={() => applyTimelineUpdate("事件：惊扰", [{ type: "disturbed", intensity: 0.75 }])} />
-                <ActionButton label="陪伴" onClick={() => applyTimelineUpdate("事件：陪伴", [{ type: "bonding", intensity: 0.75 }])} />
-                <ActionButton label="忽视" onClick={() => applyTimelineUpdate("事件：忽视", [{ type: "ignored", intensity: 0.45 }])} />
-                <ActionButton label="探索刺激" onClick={() => applyTimelineUpdate("事件：探索刺激", [{ type: "stimulated", intensity: 0.45 }])} />
-              </div>
-
-              <div style={{ padding: 12, borderRadius: 8, background: "#fafafa", border: "1px solid #eee" }}>
-                <strong>最近一次操作：</strong> {lastOperation}
-              </div>
-            </InfoCard>
-
-            <InfoCard title="📡 Timeline 当前结果">
-              {timelineSnapshot ? (
-                <div style={{ lineHeight: 1.9, fontSize: 14 }}>
-                  <div><strong>阶段：</strong>{PHASE_LABELS[timelineSnapshot.fortune.phaseTag] || timelineSnapshot.fortune.phaseTag}</div>
-                  <div style={{ color: "#666", marginBottom: 10 }}>{timelineSnapshot.fortune.summary}</div>
-                  <div><strong>情绪状态：</strong>{EMOTIONAL_LABELS[timelineSnapshot.state.emotional.label] || timelineSnapshot.state.emotional.label}</div>
-                  <div><strong>生理能量：</strong>{Math.round(timelineSnapshot.state.physical.energy)}</div>
-                  <div><strong>饥饿程度：</strong>{Math.round(timelineSnapshot.state.physical.hunger)}</div>
-                  <div><strong>认知状态：</strong>{COGNITIVE_LABELS[timelineSnapshot.state.cognitive.label] || timelineSnapshot.state.cognitive.label}</div>
-                  <div><strong>关系状态：</strong>{RELATIONAL_LABELS[timelineSnapshot.state.relational.label] || timelineSnapshot.state.relational.label}</div>
-                  <div><strong>当前驱动：</strong>{DRIVE_LABELS[timelineSnapshot.state.drive.primary] || timelineSnapshot.state.drive.primary}</div>
-                  <div><strong>生命路径：</strong>{BRANCH_LABEL_MAP[timelineSnapshot.trajectory.branchTag] || timelineSnapshot.trajectory.branchTag}</div>
-                </div>
-              ) : (
-                <div>尚未初始化 timeline。</div>
-              )}
-            </InfoCard>
+      <InfoCard title="🌌 来源二：紫微人格结构">
+        {!hasBirthHour ? (
+          <div style={{ color: "#a66", lineHeight: 1.8 }}>
+            当前出生时间未知，完整紫微结构暂不参与最终人格融合。
           </div>
-
-          <InfoCard title="🧭 紫微斗数十二宫盘（调试详情）">
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
-              {ZIWEI_LAYOUT.flat().map((branch: BranchPalace | null, index: number) => {
-                if (!branch) {
-                  return (
-                    <div
-                      key={`empty-${index}`}
-                      style={{
-                        border: "1px dashed #ddd",
-                        borderRadius: 8,
-                        minHeight: 150,
-                        background: "#fafafa"
-                      }}
-                    />
-                  )
-                }
-
-                return renderBranchCell(branch)
-              })}
-            </div>
-          </InfoCard>
-
-          <div style={{ height: 20 }} />
-
-          <InfoCard title="行为层人格参数（紫微来源）">
-            {Object.entries(traits).map(([key, value]: [string, unknown]) => (
-              <div key={key} style={{ marginBottom: 6 }}>
-                {key} ({DEV_TRAIT_LABELS[key] || "未定义"})： {String(value)}
+        ) : (
+          <>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 18,
+                lineHeight: 1.9
+              }}
+            >
+              <div>
+                <ValueLine label="Birth Key" value={pattern.birthKey} />
+                <ValueLine
+                  label="农历"
+                  value={`${pattern.lunarInfo.lunarYear}-${pattern.lunarInfo.lunarMonth}-${pattern.lunarInfo.lunarDay}`}
+                />
+                <ValueLine
+                  label="出生时辰"
+                  value={`${pattern.timeBranch}（${BRANCH_LABELS[pattern.timeBranch]}）`}
+                />
+                <ValueLine
+                  label="命宫"
+                  value={`${pattern.primaryBranchPalace}（${BRANCH_FULL_LABELS[pattern.primaryBranchPalace]}）`}
+                />
+                <ValueLine
+                  label="身宫"
+                  value={`${pattern.bodyBranchPalace}（${BRANCH_FULL_LABELS[pattern.bodyBranchPalace]}）`}
+                />
+                <ValueLine
+                  label="五行局"
+                  value={`${pattern.elementGate}（${
+                    ELEMENT_GATE_LABELS[pattern.elementGate] ?? pattern.elementGate
+                  }）`}
+                />
               </div>
-            ))}
-          </InfoCard>
 
-          <div style={{ height: 20 }} />
+              <div>
+                <ValueLine
+                  label="命宫主星"
+                  value={
+                    pattern.primaryStars.length > 0
+                      ? pattern.primaryStars.map(getStarDisplay).join(" / ")
+                      : "空宫"
+                  }
+                />
+                <ValueLine
+                  label="support 宫位"
+                  value={pattern.supportSectors.map(getSectorLabel).join(" / ")}
+                />
+                <ValueLine
+                  label="support 星"
+                  value={
+                    pattern.supportStars.length > 0
+                      ? pattern.supportStars.map(getStarDisplay).join(" / ")
+                      : "无"
+                  }
+                />
+                <ValueLine
+                  label="对宫"
+                  value={`${getSectorLabel(pattern.oppositeSector)} / ${
+                    BRANCH_FULL_LABELS[pattern.oppositeBranchPalace]
+                  }`}
+                />
+                <ValueLine
+                  label="借星"
+                  value={
+                    pattern.borrowedStars.length > 0
+                      ? pattern.borrowedStars.map(getStarDisplay).join(" / ")
+                      : "无"
+                  }
+                />
+              </div>
+            </div>
 
-          <InfoCard title="📝 紫微人格摘要">
-            {summaries.length > 0 ? (
-              <ul>
-                {summaries.map((item: string, index: number) => (
-                  <li key={`${item}-${index}`}>{item}</li>
-                ))}
-              </ul>
-            ) : (
-              <div>暂无摘要</div>
-            )}
-          </InfoCard>
+            <hr
+              style={{
+                margin: "16px 0",
+                border: "none",
+                borderTop: "1px solid #eee"
+              }}
+            />
 
-          <div style={{ height: 20 }} />
-        </>
-      )}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                gap: 12
+              }}
+            >
+              {ZIWEI_LAYOUT.flatMap((row, rowIndex) =>
+                row.map((branch, colIndex) => {
+                  if (!branch) {
+                    return (
+                      <div
+                        key={`empty-${rowIndex}-${colIndex}`}
+                        style={{
+                          minHeight: 150,
+                          borderRadius: 8,
+                          background: "#f7f7f7"
+                        }}
+                      />
+                    )
+                  }
 
-      <InfoCard title="🧾 Debug">
-        <pre
+                  return renderBranchCell(branch)
+                })
+              )}
+            </div>
+          </>
+        )}
+      </InfoCard>
+
+      <div style={{ height: 20 }} />
+
+      <InfoCard title="🧩 紫微人格输出">
+        <div
           style={{
-            background: "#f6f6f6",
-            padding: 12,
-            borderRadius: 8,
-            overflowX: "auto",
-            fontSize: 12
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: 18
           }}
         >
-          {JSON.stringify(
-            {
-              finalPersonalityProfile,
-              baziProfile,
-              ziweiProfile: hasBirthHour
-                ? {
-                    pattern,
-                    debug,
-                    publicView,
-                    corePersonality,
-                    traits,
-                    summaries
-                  }
-                : null,
-              timelineClock,
-              timelineSnapshot,
-              lastDiffs,
-              timelineLogs
-            },
-            null,
-            2
+          <div>
+            <strong>核心人格</strong>
+            <div style={{ marginTop: 10 }}>
+              {Object.entries(corePersonality).map(([key, value]) => (
+                <ScoreLine key={key} name={key} value={Number(value) * 100} />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <strong>行为 traits</strong>
+            <div style={{ marginTop: 10 }}>
+              {Object.entries(traits).map(([key, value]) => (
+                <ScoreLine key={key} name={key} value={Number(value)} />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <hr
+          style={{
+            margin: "16px 0",
+            border: "none",
+            borderTop: "1px solid #eee"
+          }}
+        />
+
+        <strong>摘要</strong>
+        <div style={{ marginTop: 10, lineHeight: 1.8 }}>
+          {summaries.length > 0 ? (
+            summaries.map((summary) => <div key={summary}>- {summary}</div>)
+          ) : (
+            <div style={{ color: "#999" }}>暂无摘要</div>
           )}
+        </div>
+
+        {debug && (
+          <>
+            <hr
+              style={{
+                margin: "16px 0",
+                border: "none",
+                borderTop: "1px solid #eee"
+              }}
+            />
+
+            <strong>Debug Pair</strong>
+            <div style={{ marginTop: 10, lineHeight: 1.8 }}>
+              <ValueLine
+                label="命中组合"
+                value={
+                  debug.hitPairs.length > 0
+                    ? debug.hitPairs.map((item) => item.pairLabel).join(" / ")
+                    : "无"
+                }
+              />
+              <ValueLine
+                label="support 组合"
+                value={
+                  debug.supportPairs.length > 0
+                    ? debug.supportPairs.map((item) => item.pairLabel).join(" / ")
+                    : "无"
+                }
+              />
+            </div>
+          </>
+        )}
+      </InfoCard>
+
+      <div style={{ height: 20 }} />
+
+      <InfoCard title="🌱 Timeline / 状态推进测试">
+        <div style={{ lineHeight: 2, marginBottom: 12 }}>
+          <ValueLine label="当前时间" value={formatClock(timelineClock)} />
+          <ValueLine label="上次操作" value={lastOperation} />
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 10,
+            marginBottom: 16
+          }}
+        >
+          <ActionButton
+            label="推进 +1 小时"
+            onClick={() => applyTimelineUpdate("推进时间 +1 小时", undefined, 1)}
+          />
+          <ActionButton
+            label="推进 +6 小时"
+            onClick={() => applyTimelineUpdate("推进时间 +6 小时", undefined, 6)}
+          />
+          <ActionButton
+            label="推进 +1 天"
+            onClick={() => applyTimelineUpdate("推进时间 +1 天", undefined, 24)}
+          />
+          <ActionButton
+            label="模拟被安抚"
+            onClick={() =>
+              applyTimelineUpdate("模拟被安抚", [
+                {
+                  type: "comfort",
+                  intensity: 0.75,
+                  description: "测试事件：被安抚"
+                }
+              ])
+            }
+          />
+          <ActionButton
+            label="模拟环境刺激"
+            onClick={() =>
+              applyTimelineUpdate("模拟环境刺激", [
+                {
+                  type: "environment_stimulus",
+                  intensity: 0.85,
+                  description: "测试事件：环境刺激增强"
+                }
+              ])
+            }
+          />
+          <ActionButton label="重置 Timeline" onClick={resetTimeline} />
+        </div>
+
+        {timelineSnapshot && (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+              gap: 18,
+              lineHeight: 1.9
+            }}
+          >
+            <div>
+              <strong>当前快照</strong>
+              <ValueLine
+                label="阶段"
+                value={
+                  PHASE_LABELS[timelineSnapshot.fortune.phaseTag] ??
+                  timelineSnapshot.fortune.phaseTag
+                }
+              />
+              <ValueLine
+                label="情绪"
+                value={
+                  EMOTIONAL_LABELS[timelineSnapshot.state.emotional.label] ??
+                  timelineSnapshot.state.emotional.label
+                }
+              />
+              <ValueLine
+                label="能量"
+                value={Math.round(timelineSnapshot.state.physical.energy)}
+              />
+              <ValueLine
+                label="饥饿"
+                value={Math.round(timelineSnapshot.state.physical.hunger)}
+              />
+              <ValueLine
+                label="认知"
+                value={
+                  COGNITIVE_LABELS[timelineSnapshot.state.cognitive.label] ??
+                  timelineSnapshot.state.cognitive.label
+                }
+              />
+              <ValueLine
+                label="关系"
+                value={
+                  RELATIONAL_LABELS[timelineSnapshot.state.relational.label] ??
+                  timelineSnapshot.state.relational.label
+                }
+              />
+              <ValueLine
+                label="驱动"
+                value={
+                  DRIVE_LABELS[timelineSnapshot.state.drive.primary] ??
+                  timelineSnapshot.state.drive.primary
+                }
+              />
+              <ValueLine
+                label="路径"
+                value={
+                  BRANCH_LABEL_MAP[timelineSnapshot.trajectory.branchTag] ??
+                  timelineSnapshot.trajectory.branchTag
+                }
+              />
+            </div>
+
+            <div>
+              <strong>本次变化</strong>
+              <div style={{ marginTop: 10 }}>
+                {lastDiffs.length > 0 ? (
+                  lastDiffs.map((item) => (
+                    <div key={`${item.label}-${item.before}-${item.after}`}>
+                      {item.label}：{item.before} → {item.after}
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ color: "#999" }}>这次操作没有造成可见参数变化。</div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        <hr
+          style={{
+            margin: "16px 0",
+            border: "none",
+            borderTop: "1px solid #eee"
+          }}
+        />
+
+        <strong>操作日志</strong>
+        <div style={{ marginTop: 10, lineHeight: 1.8 }}>
+          {timelineLogs.length > 0 ? (
+            timelineLogs.slice(0, 20).map((item) => (
+              <div
+                key={item.id}
+                style={{
+                  border: "1px solid #eee",
+                  borderRadius: 8,
+                  padding: 10,
+                  marginBottom: 10,
+                  background: "#fafafa"
+                }}
+              >
+                <div>
+                  <strong>{item.actionLabel}</strong>
+                  <span style={{ color: "#999", marginLeft: 8 }}>
+                    {item.createdAt}
+                  </span>
+                </div>
+                <div style={{ color: "#666" }}>
+                  {formatClock(item.beforeClock)} → {formatClock(item.afterClock)}
+                </div>
+                <div>
+                  phase: {item.snapshotSummary.phase} | emotional:{" "}
+                  {item.snapshotSummary.emotional} | energy:{" "}
+                  {item.snapshotSummary.energy} | hunger:{" "}
+                  {item.snapshotSummary.hunger} | drive:{" "}
+                  {item.snapshotSummary.drive}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div style={{ color: "#999" }}>暂无日志</div>
+          )}
+        </div>
+      </InfoCard>
+
+      <div style={{ height: 20 }} />
+
+      <InfoCard title="🪟 公开展示视图">
+        <pre
+          style={{
+            whiteSpace: "pre-wrap",
+            background: "#f7f7f7",
+            padding: 12,
+            borderRadius: 8,
+            overflowX: "auto"
+          }}
+        >
+          {JSON.stringify(publicView, null, 2)}
         </pre>
       </InfoCard>
     </div>
