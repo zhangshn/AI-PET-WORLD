@@ -2,55 +2,101 @@
  * 当前文件负责：提供八字动力系统统一出口。
  */
 
-import type { BaziInput, BaziProfile } from "./bazi-types"
+import type {
+  BaziInput,
+  BaziProfile
+} from "./bazi-schema"
+
 import { calculateBaziChart } from "./bazi-calculator"
+import { analyzeBaziElements } from "./bazi-elements"
 import {
-  calculateWuXingScore,
-  getDominantElements,
-  normalizeWuXingScore,
-} from "./wuxing"
-import {
-  buildBaziDynamicsSummary,
-  mapWuXingToDynamics,
+  mapElementsToBehaviorBias,
+  mapElementsToDynamicVector,
+  mapElementsToLegacyDynamics
 } from "./bazi-mapper"
-import { buildBaziBehaviorTags } from "./bazi-traits"
-import { interpretBaziDynamics } from "./bazi-interpreter"
+import {
+  buildBaziBehaviorTags,
+  buildBaziProfileSummary,
+  interpretBaziDynamics
+} from "./bazi-summary"
 
 export function buildBaziProfile(input: BaziInput): BaziProfile {
   const chart = calculateBaziChart(input)
-  const rawScore = calculateWuXingScore(chart)
-  const distribution = normalizeWuXingScore(rawScore)
-  const dominantElements = getDominantElements(distribution)
-  const dynamics = mapWuXingToDynamics(distribution)
+  const elementAnalysis = analyzeBaziElements(chart)
+
+  const dynamicVector = mapElementsToDynamicVector(
+    elementAnalysis.elementScores
+  )
+
+  const behaviorBias = mapElementsToBehaviorBias(
+    elementAnalysis.elementScores
+  )
+
+  const dynamics = mapElementsToLegacyDynamics(
+    elementAnalysis.elementScores
+  )
+
   const behaviorTags = buildBaziBehaviorTags(dynamics)
+
   const interpretation = interpretBaziDynamics({
-    dominantElements,
+    dominantElements: elementAnalysis.dominantElements,
     dynamics,
     behaviorTags,
+    mode: chart.mode,
   })
 
   return {
     chart,
-    rawScore,
-    distribution,
+
+    mode: chart.mode,
+    precision: chart.hasHour ? "high" : "medium",
+    hasHour: chart.hasHour,
+
+    dayMaster: chart.dayMaster,
+
+    elementScores: elementAnalysis.elementScores,
+    yinYangScores: elementAnalysis.yinYangScores,
+    dominantElements: elementAnalysis.dominantElements,
+    weakElements: elementAnalysis.weakElements,
+
+    dynamicVector,
+    behaviorBias,
+
+    rawScore: elementAnalysis.rawScore,
+    distribution: elementAnalysis.elementScores,
     dynamics,
-    dominantElements,
     behaviorTags,
     interpretation,
-    summary: buildBaziDynamicsSummary({
-      dominantElements,
-      dynamics,
+
+    summary: buildBaziProfileSummary({
+      mode: chart.mode,
+      dominantElements: elementAnalysis.dominantElements,
+      weakElements: elementAnalysis.weakElements,
     }),
+
     debug: {
-      usedPillars: [
-        chart.yearPillar.label,
-        chart.monthPillar.label,
-        chart.dayPillar.label,
-        ...(chart.hourPillar ? [chart.hourPillar.label] : []),
-      ],
+      usedPillars: chart.pillars.map((pillar) => pillar.label),
+      missingHour: !chart.hasHour,
+      elementDetails: elementAnalysis.details,
       note: chart.hasHour
-        ? "当前八字计算使用四柱 MVP 算法。"
-        : "当前八字计算使用三柱 MVP 算法，适用于用户不知道出生时辰的情况。",
+        ? "当前八字计算使用四柱模式。"
+        : "当前八字计算使用三柱模式，出生时辰未知，时柱不参与原局计算。",
     },
   }
 }
+
+export type {
+  BaziBehaviorBias,
+  BaziChart,
+  BaziDynamicVector,
+  BaziInput,
+  BaziMode,
+  BaziPillar,
+  BaziPrecision,
+  BaziProfile,
+  EarthlyBranch,
+  HeavenlyStem,
+  WuXingElement,
+  WuXingScore,
+  YinYang,
+} from "./bazi-schema"

@@ -1,63 +1,90 @@
 /**
- * 当前文件负责：把八字五行分布映射为 AI 行为动力向量。
+ * 当前文件负责：把八字五行能量映射为 AI 动力向量与行为偏置。
  */
 
 import type {
+  BaziBehaviorBias,
+  BaziDynamicVector,
   BaziDynamicsVector,
-  WuXingDistribution,
-  WuXingElement,
-} from "./bazi-types"
+  WuXingScore
+} from "./bazi-schema"
 
-function clamp(value: number, min = 0, max = 100): number {
-  return Math.max(min, Math.min(max, value))
+import { clamp, round } from "./bazi-utils"
+
+function getScore(score: WuXingScore, key: keyof WuXingScore): number {
+  return clamp(score[key] ?? 0)
 }
 
-function scale(value: number): number {
-  return clamp(35 + value * 90)
+export function mapElementsToDynamicVector(
+  elementScores: WuXingScore
+): BaziDynamicVector {
+  const wood = getScore(elementScores, "wood")
+  const fire = getScore(elementScores, "fire")
+  const earth = getScore(elementScores, "earth")
+  const metal = getScore(elementScores, "metal")
+  const water = getScore(elementScores, "water")
+
+  return {
+    growthDrive: round(clamp(wood * 0.85 + fire * 0.15)),
+    expressionDrive: round(clamp(fire * 0.85 + wood * 0.1 + metal * 0.05)),
+    stabilityDrive: round(clamp(earth * 0.8 + metal * 0.1 + water * 0.1)),
+    boundaryDrive: round(clamp(metal * 0.85 + earth * 0.1 + water * 0.05)),
+    perceptionDrive: round(clamp(water * 0.85 + metal * 0.1 + wood * 0.05)),
+  }
+}
+
+export function mapElementsToBehaviorBias(
+  elementScores: WuXingScore
+): BaziBehaviorBias {
+  const wood = getScore(elementScores, "wood")
+  const fire = getScore(elementScores, "fire")
+  const earth = getScore(elementScores, "earth")
+  const metal = getScore(elementScores, "metal")
+  const water = getScore(elementScores, "water")
+
+  return {
+    activity: round(clamp(fire * 0.5 + wood * 0.35 + metal * 0.15)),
+    restPreference: round(clamp(earth * 0.4 + water * 0.35 + metal * 0.15)),
+    emotionalSensitivity: round(clamp(water * 0.45 + fire * 0.3 + wood * 0.15)),
+    explorationDrive: round(clamp(wood * 0.6 + fire * 0.25 + water * 0.15)),
+    caution: round(clamp(metal * 0.5 + water * 0.25 + earth * 0.15)),
+    adaptability: round(clamp(water * 0.45 + wood * 0.3 + earth * 0.15)),
+  }
+}
+
+export function mapElementsToLegacyDynamics(
+  elementScores: WuXingScore
+): BaziDynamicsVector {
+  const vector = mapElementsToDynamicVector(elementScores)
+  const bias = mapElementsToBehaviorBias(elementScores)
+
+  return {
+    actionIntensity: bias.activity,
+    reactionSpeed: round(clamp(vector.expressionDrive * 0.65 + bias.activity * 0.25)),
+    sensoryDepth: round(clamp(vector.perceptionDrive * 0.75 + bias.emotionalSensitivity * 0.2)),
+    consistency: round(clamp(vector.stabilityDrive * 0.6 + vector.boundaryDrive * 0.25)),
+    explorationDrive: bias.explorationDrive,
+    stability: vector.stabilityDrive,
+    persistence: round(clamp(vector.stabilityDrive * 0.45 + vector.boundaryDrive * 0.35)),
+    adaptability: bias.adaptability,
+  }
 }
 
 export function mapWuXingToDynamics(
-  distribution: WuXingDistribution
+  distribution: WuXingScore
 ): BaziDynamicsVector {
-  const fire = distribution.fire
-  const water = distribution.water
-  const wood = distribution.wood
-  const metal = distribution.metal
-  const earth = distribution.earth
-
-  return {
-    actionIntensity: scale(fire * 0.8 + wood * 0.25),
-    reactionSpeed: scale(fire * 0.65 + metal * 0.25 + wood * 0.1),
-    sensoryDepth: scale(water * 0.8 + earth * 0.15),
-    consistency: scale(metal * 0.75 + earth * 0.25),
-    explorationDrive: scale(wood * 0.75 + fire * 0.2),
-    stability: scale(earth * 0.8 + water * 0.15),
-    persistence: scale(earth * 0.45 + metal * 0.35 + wood * 0.15),
-    adaptability: scale(water * 0.45 + wood * 0.35 + fire * 0.1),
-  }
+  return mapElementsToLegacyDynamics(distribution)
 }
 
 export function buildBaziDynamicsSummary(input: {
-  dominantElements: WuXingElement[]
+  dominantElements: string[]
   dynamics: BaziDynamicsVector
 }): string {
-  const elementLabelMap: Record<WuXingElement, string> = {
-    wood: "木",
-    fire: "火",
-    earth: "土",
-    metal: "金",
-    water: "水",
-  }
+  const dominantText = input.dominantElements.join(" / ")
 
-  const dominantText = input.dominantElements
-    .map((element) => elementLabelMap[element])
-    .join("、")
-
-  const strongestDynamics = Object.entries(input.dynamics)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 2)
-    .map(([key]) => key)
-    .join("、")
-
-  return `八字动力倾向以 ${dominantText} 为主，AI 行为动力更偏向 ${strongestDynamics}。`
+  return `当前八字动力底盘以 ${dominantText} 为主，行动强度 ${Math.round(
+    input.dynamics.actionIntensity
+  )}，感知深度 ${Math.round(input.dynamics.sensoryDepth)}，适应性 ${Math.round(
+    input.dynamics.adaptability
+  )}。`
 }

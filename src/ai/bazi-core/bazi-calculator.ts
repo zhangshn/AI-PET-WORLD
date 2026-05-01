@@ -1,69 +1,51 @@
 /**
- * 当前文件负责：根据出生日期生成八字 MVP 三柱/四柱。
- * 当前版本：年柱按立春切年，月柱按节气月令，日柱按甲子日循环基准。
+ * 当前文件负责：根据出生日期生成八字三柱/四柱原盘。
  */
 
 import type {
   BaziChart,
   BaziInput,
-  EarthlyBranch,
-  HeavenlyStem,
-} from "./bazi-types"
+  BaziMode,
+  BaziPillar,
+  HeavenlyStem
+} from "./bazi-schema"
+
 import {
-  HEAVENLY_STEMS,
-  buildPillarByIndex,
-  buildPillarByStemBranch,
-  normalizeCycleIndex,
-} from "./ganzhi"
+  BAZI_EARTHLY_BRANCHES,
+  BAZI_HEAVENLY_STEMS,
+  buildBaziPillarByIndex,
+  buildBaziPillarByStemBranch
+} from "./bazi-data/bazi-ganzhi-data"
 
-function isValidHour(hour?: number | null): hour is number {
-  return typeof hour === "number" && hour >= 0 && hour <= 23
+import {
+  getBaziMonthBoundary,
+  isBeforeLiChun
+} from "./bazi-data/bazi-solar-terms-data"
+
+import { safeModulo } from "./bazi-utils"
+
+function hasValidHour(hour?: number | null): hour is number {
+  return typeof hour === "number" && Number.isInteger(hour) && hour >= 0 && hour <= 23
 }
 
-function isBeforeLiChun(month: number, day: number): boolean {
-  return month < 2 || (month === 2 && day < 4)
+function getBaziYear(input: {
+  year: number
+  month: number
+  day: number
+}): number {
+  return isBeforeLiChun(input.month, input.day)
+    ? input.year - 1
+    : input.year
 }
 
-function getBaziYear(year: number, month: number, day: number): number {
-  return isBeforeLiChun(month, day) ? year - 1 : year
-}
+function getYearPillar(input: {
+  year: number
+  month: number
+  day: number
+}): BaziPillar {
+  const baziYear = getBaziYear(input)
 
-function getYearPillarIndex(year: number, month: number, day: number): number {
-  const baziYear = getBaziYear(year, month, day)
-  return baziYear - 1984
-}
-
-type MonthBranchResult = {
-  branch: EarthlyBranch
-  monthIndexFromYin: number
-}
-
-function getMonthBranch(month: number, day: number): MonthBranchResult {
-  if (month === 1 && day < 6) return { branch: "子", monthIndexFromYin: 10 }
-  if (month === 1) return { branch: "丑", monthIndexFromYin: 11 }
-  if (month === 2 && day < 4) return { branch: "丑", monthIndexFromYin: 11 }
-  if (month === 2) return { branch: "寅", monthIndexFromYin: 0 }
-  if (month === 3 && day < 6) return { branch: "寅", monthIndexFromYin: 0 }
-  if (month === 3) return { branch: "卯", monthIndexFromYin: 1 }
-  if (month === 4 && day < 5) return { branch: "卯", monthIndexFromYin: 1 }
-  if (month === 4) return { branch: "辰", monthIndexFromYin: 2 }
-  if (month === 5 && day < 6) return { branch: "辰", monthIndexFromYin: 2 }
-  if (month === 5) return { branch: "巳", monthIndexFromYin: 3 }
-  if (month === 6 && day < 6) return { branch: "巳", monthIndexFromYin: 3 }
-  if (month === 6) return { branch: "午", monthIndexFromYin: 4 }
-  if (month === 7 && day < 7) return { branch: "午", monthIndexFromYin: 4 }
-  if (month === 7) return { branch: "未", monthIndexFromYin: 5 }
-  if (month === 8 && day < 8) return { branch: "未", monthIndexFromYin: 5 }
-  if (month === 8) return { branch: "申", monthIndexFromYin: 6 }
-  if (month === 9 && day < 8) return { branch: "申", monthIndexFromYin: 6 }
-  if (month === 9) return { branch: "酉", monthIndexFromYin: 7 }
-  if (month === 10 && day < 8) return { branch: "酉", monthIndexFromYin: 7 }
-  if (month === 10) return { branch: "戌", monthIndexFromYin: 8 }
-  if (month === 11 && day < 7) return { branch: "戌", monthIndexFromYin: 8 }
-  if (month === 11) return { branch: "亥", monthIndexFromYin: 9 }
-  if (month === 12 && day < 7) return { branch: "亥", monthIndexFromYin: 9 }
-
-  return { branch: "子", monthIndexFromYin: 10 }
+  return buildBaziPillarByIndex(baziYear - 1984)
 }
 
 function getYinMonthStartStem(yearStem: HeavenlyStem): HeavenlyStem {
@@ -79,9 +61,10 @@ function getMonthStem(input: {
   monthIndexFromYin: number
 }): HeavenlyStem {
   const startStem = getYinMonthStartStem(input.yearStem)
-  const startIndex = HEAVENLY_STEMS.indexOf(startStem)
-  return HEAVENLY_STEMS[
-    normalizeCycleIndex(startIndex + input.monthIndexFromYin, 10)
+  const startStemIndex = BAZI_HEAVENLY_STEMS.indexOf(startStem)
+
+  return BAZI_HEAVENLY_STEMS[
+    safeModulo(startStemIndex + input.monthIndexFromYin, 10)
   ]
 }
 
@@ -89,29 +72,36 @@ function getMonthPillar(input: {
   yearStem: HeavenlyStem
   month: number
   day: number
-}) {
-  const monthBranch = getMonthBranch(input.month, input.day)
+}): BaziPillar {
+  const boundary = getBaziMonthBoundary(input.month, input.day)
   const stem = getMonthStem({
     yearStem: input.yearStem,
-    monthIndexFromYin: monthBranch.monthIndexFromYin,
+    monthIndexFromYin: boundary.monthIndexFromYin,
   })
 
-  return buildPillarByStemBranch({
+  return buildBaziPillarByStemBranch({
     stem,
-    branch: monthBranch.branch,
+    branch: boundary.branch,
   })
 }
 
-function getDayPillarIndex(year: number, month: number, day: number): number {
+function getDayPillar(input: {
+  year: number
+  month: number
+  day: number
+}): BaziPillar {
   const baseDate = Date.UTC(1900, 0, 31)
-  const targetDate = Date.UTC(year, month - 1, day)
+  const targetDate = Date.UTC(input.year, input.month - 1, input.day)
   const diffDays = Math.floor((targetDate - baseDate) / 86400000)
 
-  return 40 + diffDays
+  return buildBaziPillarByIndex(40 + diffDays)
 }
 
 function getHourBranchIndex(hour: number): number {
-  if (hour === 23 || hour === 0) return 0
+  if (hour === 23 || hour === 0) {
+    return 0
+  }
+
   return Math.floor((hour + 1) / 2)
 }
 
@@ -126,29 +116,29 @@ function getZiHourStartStem(dayStem: HeavenlyStem): HeavenlyStem {
 function getHourPillar(input: {
   dayStem: HeavenlyStem
   hour: number
-}) {
+}): BaziPillar {
   const branchIndex = getHourBranchIndex(input.hour)
   const startStem = getZiHourStartStem(input.dayStem)
-  const startStemIndex = HEAVENLY_STEMS.indexOf(startStem)
+  const startStemIndex = BAZI_HEAVENLY_STEMS.indexOf(startStem)
 
-  const stem = HEAVENLY_STEMS[
-    normalizeCycleIndex(startStemIndex + branchIndex, 10)
+  const stem = BAZI_HEAVENLY_STEMS[
+    safeModulo(startStemIndex + branchIndex, 10)
   ]
 
-  const branchMap: EarthlyBranch[] = [
-    "子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥",
-  ]
+  const branch = BAZI_EARTHLY_BRANCHES[branchIndex]
 
-  return buildPillarByStemBranch({
+  return buildBaziPillarByStemBranch({
     stem,
-    branch: branchMap[branchIndex],
+    branch,
   })
 }
 
 export function calculateBaziChart(input: BaziInput): BaziChart {
-  const yearPillar = buildPillarByIndex(
-    getYearPillarIndex(input.year, input.month, input.day)
-  )
+  const yearPillar = getYearPillar({
+    year: input.year,
+    month: input.month,
+    day: input.day,
+  })
 
   const monthPillar = getMonthPillar({
     yearStem: yearPillar.stem,
@@ -156,24 +146,38 @@ export function calculateBaziChart(input: BaziInput): BaziChart {
     day: input.day,
   })
 
-  const dayPillar = buildPillarByIndex(
-    getDayPillarIndex(input.year, input.month, input.day)
-  )
+  const dayPillar = getDayPillar({
+    year: input.year,
+    month: input.month,
+    day: input.day,
+  })
 
-  const hour = isValidHour(input.hour) ? input.hour : null
+  const hour = hasValidHour(input.hour) ? input.hour : null
+
+  const hourPillar =
+    hour !== null
+      ? getHourPillar({
+          dayStem: dayPillar.stem,
+          hour,
+        })
+      : null
+
+  const mode: BaziMode = hourPillar ? "FOUR_PILLARS" : "THREE_PILLARS"
 
   return {
     input,
+    mode,
+    hasHour: hourPillar !== null,
     yearPillar,
     monthPillar,
     dayPillar,
-    hourPillar:
-      hour !== null
-        ? getHourPillar({
-            dayStem: dayPillar.stem,
-            hour,
-          })
-        : null,
-    hasHour: hour !== null,
+    hourPillar,
+    dayMaster: dayPillar.stem,
+    pillars: [
+      yearPillar,
+      monthPillar,
+      dayPillar,
+      ...(hourPillar ? [hourPillar] : []),
+    ],
   }
 }
