@@ -7,7 +7,7 @@ import type {
   EarthlyBranch,
   HeavenlyStem,
   WuXingElement,
-  YinYang
+  YinYang,
 } from "../bazi-schema"
 
 import { safeModulo } from "../bazi-utils"
@@ -96,7 +96,7 @@ function normalizeJiaZiIndex(index: number): number {
 
 export function buildBaziPillarByIndex(index: number): BaziPillar {
   const safeIndex = normalizeJiaZiIndex(index)
-  const label = BAZI_SIXTY_JIAZI[safeIndex] ?? "甲子"
+  const label = BAZI_SIXTY_JIAZI[safeIndex] ?? BAZI_SIXTY_JIAZI[0]
   const stem = label[0] as HeavenlyStem
   const branch = label[1] as EarthlyBranch
 

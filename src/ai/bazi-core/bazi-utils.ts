@@ -3,6 +3,10 @@
  */
 
 export function safeModulo(value: number, divisor: number): number {
+  if (!Number.isFinite(value) || !Number.isFinite(divisor) || divisor === 0) {
+    return 0
+  }
+
   return ((value % divisor) + divisor) % divisor
 }
 

@@ -22,7 +22,13 @@ export function ComboInput({
   onChange: (value: string) => void
 }) {
   const [open, setOpen] = useState(false)
+  const [draftValue, setDraftValue] = useState(value)
   const wrapperRef = useRef<HTMLDivElement | null>(null)
+
+  function commitInputValue(nextValue: string) {
+    const normalized = nextValue.trim()
+    onChange(normalized)
+  }
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -48,12 +54,29 @@ export function ComboInput({
       <div ref={wrapperRef} style={{ position: "relative", width: width ?? 100 }}>
         <input
           type="text"
-          value={value}
+          value={open ? draftValue : value}
           placeholder={placeholder}
-          onFocus={() => setOpen(true)}
-          onChange={(event) => {
-            onChange(event.target.value)
+          onFocus={() => {
+            setDraftValue(value)
             setOpen(true)
+          }}
+          onChange={(event) => {
+            setDraftValue(event.target.value)
+            setOpen(true)
+          }}
+          onBlur={() => {
+            commitInputValue(draftValue)
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              commitInputValue(draftValue)
+              setOpen(false)
+            }
+
+            if (event.key === "Escape") {
+              setDraftValue(value)
+              setOpen(false)
+            }
           }}
           style={{
             width: "100%",
@@ -65,7 +88,10 @@ export function ComboInput({
 
         <button
           type="button"
-          onClick={() => setOpen((prev) => !prev)}
+          onClick={() => {
+            setDraftValue(value)
+            setOpen((prev) => !prev)
+          }}
           style={{
             position: "absolute",
             right: 4,
@@ -101,6 +127,7 @@ export function ComboInput({
                 key={item}
                 type="button"
                 onClick={() => {
+                  setDraftValue(item)
                   onChange(item)
                   setOpen(false)
                 }}
