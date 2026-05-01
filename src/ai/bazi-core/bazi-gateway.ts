@@ -85,6 +85,10 @@ export function buildBaziProfile(input: BaziInput): BaziProfile {
   }
 }
 
+export {
+  buildBaziRuntimeProfile
+} from "./bazi-runtime/bazi-runtime-gateway"
+
 export type {
   BaziBehaviorBias,
   BaziChart,
@@ -100,3 +104,15 @@ export type {
   WuXingScore,
   YinYang,
 } from "./bazi-schema"
+
+export type {
+  BaziDaYunDirection,
+  BaziDaYunItem,
+  BaziDaYunResult,
+  BaziFlowResult,
+  BaziRuntimeElementField,
+  BaziRuntimeGender,
+  BaziRuntimeInput,
+  BaziRuntimeModifiers,
+  BaziRuntimeProfile,
+} from "./bazi-runtime/bazi-runtime-gateway"
