@@ -15,7 +15,10 @@ import type {
 } from "./bazi-runtime-schema"
 
 import { BAZI_MONTH_BOUNDARIES } from "../bazi-data/bazi-solar-terms-data"
-import { movePillarByStep, getCurrentAge } from "./bazi-runtime-utils"
+import {
+  getCurrentAge,
+  movePillarByStep
+} from "./bazi-runtime-utils"
 
 function getDaYunDirection(params: {
   gender: BaziRuntimeGender
@@ -169,7 +172,9 @@ export function buildBaziDaYunResult(params: {
     currentAge,
   })
 
-  const currentDaYun = daYunList.find((item) => item.active) ?? null
+  const currentDaYun = daYunList.find((item) => {
+    return item.active
+  }) ?? null
 
   return {
     direction,

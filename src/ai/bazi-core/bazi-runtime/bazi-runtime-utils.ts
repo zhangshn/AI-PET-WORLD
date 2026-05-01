@@ -13,7 +13,7 @@ import {
   buildBaziPillarByIndex
 } from "../bazi-data/bazi-ganzhi-data"
 
-import { safeModulo, round } from "../bazi-utils"
+import { round, safeModulo } from "../bazi-utils"
 
 export function getCurrentAge(params: {
   birthYear: number

@@ -12,13 +12,6 @@ export type BaziRuntimeGender = "male" | "female" | "unknown"
 
 export type BaziDaYunDirection = "forward" | "backward"
 
-export type BaziRuntimeFlowLevel =
-  | "daYun"
-  | "liuNian"
-  | "liuYue"
-  | "liuRi"
-  | "liuShi"
-
 export type BaziRuntimeInput = {
   birthChart: BaziChart
   gender: BaziRuntimeGender

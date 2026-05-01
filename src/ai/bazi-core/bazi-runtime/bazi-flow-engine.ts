@@ -2,13 +2,8 @@
  * 当前文件负责：计算八字流年、流月、流日、流时干支。
  */
 
-import type {
-  BaziPillar
-} from "../bazi-schema"
-
-import type {
-  BaziFlowResult
-} from "./bazi-runtime-schema"
+import type { BaziPillar } from "../bazi-schema"
+import type { BaziFlowResult } from "./bazi-runtime-schema"
 
 import { calculateBaziChart } from "../bazi-calculator"
 
@@ -33,7 +28,9 @@ export function buildBaziFlowResult(params: {
   }
 }
 
-export function getRuntimeFlowPillars(flowResult: BaziFlowResult): BaziPillar[] {
+export function getRuntimeFlowPillars(
+  flowResult: BaziFlowResult
+): BaziPillar[] {
   return [
     flowResult.liuNian,
     flowResult.liuYue,
