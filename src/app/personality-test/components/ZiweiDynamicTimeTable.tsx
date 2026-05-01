@@ -5,11 +5,7 @@
  */
 
 import type { ActiveDynamicFlow } from "../types"
-
-import {
-  BRANCH_LABELS,
-  DYNAMIC_FLOW_LABELS
-} from "../constants"
+import { BRANCH_LABELS } from "../constants"
 
 import {
   getDayLabel,
@@ -20,8 +16,11 @@ import {
 import {
   buildDaYunStartAges,
   buildYearRange,
-  isSelectedDaYunAge
+  isSelectedDaYunAge,
+  shouldHighlightDaYunForFlow
 } from "./dynamic-time/ziwei-time-utils"
+
+import { buildDynamicTimeSummary } from "./dynamic-time/ziwei-time-summary"
 
 import { ZiweiTimeCell } from "./dynamic-time/ZiweiTimeCell"
 import { ZiweiTimeRow } from "./dynamic-time/ZiweiTimeRow"
@@ -57,6 +56,13 @@ export function ZiweiDynamicTimeTable({
     return index + 1
   })
 
+  const currentSummary = buildDynamicTimeSummary({
+    activeFlow,
+    birthYear,
+    startAge,
+    selection
+  })
+
   return (
     <div
       style={{
@@ -82,7 +88,7 @@ export function ZiweiDynamicTimeTable({
               title={`${age}-${age + 9}`}
               subtitle={`${startYear}-${endYear}`}
               selected={
-                activeFlow === "daYun" &&
+                shouldHighlightDaYunForFlow(activeFlow) &&
                 isSelectedDaYunAge({
                   startAge,
                   selectedStartAge: age,
@@ -186,12 +192,7 @@ export function ZiweiDynamicTimeTable({
       </ZiweiTimeRow>
 
       <div style={{ color: "#666", fontSize: 12, marginTop: 8 }}>
-        当前选择：
-        {DYNAMIC_FLOW_LABELS[activeFlow] ?? activeFlow}；
-        年龄 {selection.currentAge}；
-        年份 {selection.currentYear}；
-        农历 {selection.currentLunarMonth} 月 {selection.currentLunarDay} 日；
-        {BRANCH_LABELS[selection.currentTimeBranch]}时
+        {currentSummary}
       </div>
     </div>
   )

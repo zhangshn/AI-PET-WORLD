@@ -2,6 +2,8 @@
  * 当前文件负责：提供紫微动态时间表使用的时间计算工具。
  */
 
+import type { ActiveDynamicFlow } from "../../types"
+
 export function buildDaYunStartAges(startAge: number): number[] {
   return Array.from({ length: 10 }, (_, index) => {
     return startAge + index * 10
@@ -53,4 +55,14 @@ export function isSelectedDaYunAge(params: {
     params.currentAge >= params.selectedStartAge &&
     params.currentAge <= params.selectedStartAge + 9
   )
+}
+
+export function shouldHighlightDaYunForFlow(activeFlow: ActiveDynamicFlow): boolean {
+  return [
+    "daYun",
+    "liuNian",
+    "liuYue",
+    "liuRi",
+    "liuShi"
+  ].includes(activeFlow)
 }

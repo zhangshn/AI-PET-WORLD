@@ -8,14 +8,9 @@ import type {
   SectorName
 } from "../../../../ai/ziwei-core/schema"
 
-import { ZiweiBorrowedStarList } from "./ZiweiBorrowedStarList"
 import { ZiweiFlowMarkers } from "./ZiweiFlowMarkers"
 import { ZiweiPalaceHeader } from "./ZiweiPalaceHeader"
 import { ZiweiStarList } from "./ZiweiStarList"
-
-import {
-  getBorrowedStarsByBranch
-} from "./ziwei-chart-utils"
 
 import {
   getZiweiPalaceCellStyle
@@ -37,7 +32,6 @@ export function ZiweiPalaceCell({
   markers: ZiweiChartFlowMarker[]
 }) {
   const stars = pattern.branchPalaces[branch] || []
-  const borrowedStars = getBorrowedStarsByBranch(branch, pattern.borrowedPalaces)
 
   const isDynamicLife = sector === "life"
   const isNatalLife = branch === pattern.primaryBranchPalace
@@ -45,7 +39,6 @@ export function ZiweiPalaceCell({
   const isSupport = pattern.supportBranchPalaces.includes(branch)
   const isOpposite = branch === pattern.oppositeBranchPalace
   const isActive = branch === activePalace
-  const isEmpty = stars.length === 0
   const hasActiveMarker = markers.some((marker) => {
     return marker.active
   })
@@ -81,12 +74,6 @@ export function ZiweiPalaceCell({
       <ZiweiFlowMarkers markers={markers} />
 
       <ZiweiStarList stars={stars} />
-
-      <ZiweiBorrowedStarList
-        branch={branch}
-        borrowedStars={borrowedStars}
-        visible={isEmpty}
-      />
     </div>
   )
 }
