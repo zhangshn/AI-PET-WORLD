@@ -1,18 +1,5 @@
 /**
- * ======================================================
- * AI-PET-WORLD
- * Personality Gateway
- * ======================================================
- *
- * 【文件职责】
- * 这是 personality-core 子模块的统一入口。
- *
- * 注意：
- * 这是“人格子系统入口”，不是整个 src/ai 的总入口。
- *
- * 整个 AI 系统的统一调度入口在：
- * src/ai/gateway.ts
- * ======================================================
+ * 当前文件负责：提供 ziwei-core 子模块的统一调用入口。
  */
 
 import { calculateBirthPattern } from "./calculator"
@@ -25,14 +12,14 @@ import type {
 } from "./schema"
 
 /**
- * 根据出生输入构建底盘
+ * 根据出生输入构建底盘。
  */
 export function buildBirthPattern(input: BirthInput): BirthPattern {
   return calculateBirthPattern(input)
 }
 
 /**
- * 根据底盘构建人格结果
+ * 根据底盘构建人格结果。
  */
 export function buildPersonalityFromPattern(
   pattern: BirthPattern
@@ -41,7 +28,7 @@ export function buildPersonalityFromPattern(
 }
 
 /**
- * 根据出生输入直接构建完整人格结果
+ * 根据出生输入直接构建完整人格结果。
  */
 export function buildPersonalityProfile(
   input: BirthInput
@@ -49,3 +36,27 @@ export function buildPersonalityProfile(
   const pattern = buildBirthPattern(input)
   return buildPersonalityFromPattern(pattern)
 }
+
+/**
+ * 紫微动态运势模块入口。
+ */
+export {
+  buildZiweiDynamicChartOnly,
+  buildZiweiDynamicInfluence
+} from "./dynamic/dynamic-gateway"
+
+/**
+ * 紫微动态运势模块输入类型。
+ */
+export type {
+  BuildZiweiDynamicInfluenceInput
+} from "./dynamic/dynamic-gateway"
+
+/**
+ * 紫微动态运势模块输出类型。
+ */
+export type {
+  ZiweiDynamicChart,
+  ZiweiDynamicInfluence,
+  ZiweiDynamicResult
+} from "./dynamic/dynamic-schema"
