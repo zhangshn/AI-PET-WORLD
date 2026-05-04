@@ -24,6 +24,9 @@ import {
   driveSystem,
   attentionSystem,
   goalSystem,
+  evaluateApproachOffer,
+  evaluateRestOffer,
+  type PetOpportunityDecision,
   type FoodOfferDecision,
   type ActionDecisionReason,
   type ActionStabilityState,
@@ -204,6 +207,20 @@ export class PetSystem {
 
   evaluateFoodOffer(opportunity: ButlerOpportunity): FoodOfferDecision {
     return evaluateFoodOffer({
+      pet: this.pet,
+      opportunity,
+    })
+  }
+
+    evaluateRestOffer(opportunity: ButlerOpportunity): PetOpportunityDecision {
+    return evaluateRestOffer({
+      pet: this.pet,
+      opportunity,
+    })
+  }
+
+  evaluateApproachOffer(opportunity: ButlerOpportunity): PetOpportunityDecision {
+    return evaluateApproachOffer({
       pet: this.pet,
       opportunity,
     })

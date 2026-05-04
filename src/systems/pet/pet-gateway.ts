@@ -82,3 +82,10 @@ export type {
   RunPetRuntimeTickInput,
   RunPetRuntimeTickResult,
 } from "./pet-runtime/pet-runtime-runner"
+
+export {
+  evaluateApproachOffer,
+  evaluateRestOffer,
+  type EvaluatePetOpportunityInput,
+  type PetOpportunityDecision,
+} from "./pet-opportunity/pet-opportunity-gateway"
