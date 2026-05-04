@@ -67,106 +67,9 @@ function EmptyGenderNotice() {
           lineHeight: 1.8,
         }}
       >
-        请先选择男 / 女视角。男女不是单纯展示文案，而是进入紫微结构解释阶段的核心视角。
+        请先选择男 / 女视角。男女不是简单展示文案，而是人格解释核心的一部分。
+        有出生时辰时进入紫微结构解释；无出生时辰时进入八字动力解释。
       </p>
-    </InfoCard>
-  )
-}
-
-function BaziOnlyNotice({
-  baziProfile,
-  finalPersonalityProfile,
-}: {
-  baziProfile: BaziProfile
-  finalPersonalityProfile: FinalPersonalityProfile
-}) {
-  return (
-    <InfoCard title="🧭 八字人格定义模式">
-      <div
-        style={{
-          display: "grid",
-          gap: 12,
-        }}
-      >
-        <p
-          style={{
-            margin: 0,
-            color: "#374151",
-            lineHeight: 1.8,
-          }}
-        >
-          当前出生时辰未知，紫微斗数无法生成完整命盘结构。本页不使用默认时辰强行解释紫微盘，
-          而是改用八字作为主要人格定义来源。
-        </p>
-
-        <p
-          style={{
-            margin: 0,
-            color: "#4b5563",
-            lineHeight: 1.8,
-          }}
-        >
-          八字模式下，系统主要读取五行动力、行动强度、稳定性、感知深度、持续力和适应力，
-          用来定义当前生命的基础动力结构。
-        </p>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-            gap: 12,
-            fontSize: 13,
-          }}
-        >
-          <div
-            style={{
-              padding: 10,
-              borderRadius: 8,
-              background: "#f9fafb",
-              border: "1px solid #e5e7eb",
-            }}
-          >
-            <strong>八字模式：</strong>
-            {baziProfile.mode}
-          </div>
-
-          <div
-            style={{
-              padding: 10,
-              borderRadius: 8,
-              background: "#f9fafb",
-              border: "1px solid #e5e7eb",
-            }}
-          >
-            <strong>精度：</strong>
-            {baziProfile.precision}
-          </div>
-        </div>
-
-        <SectionTitle>八字动力摘要</SectionTitle>
-
-        <p
-          style={{
-            margin: 0,
-            color: "#374151",
-            lineHeight: 1.8,
-          }}
-        >
-          {baziProfile.summary}
-        </p>
-
-        <SectionTitle>最终人格向量摘要</SectionTitle>
-
-        <p
-          style={{
-            margin: 0,
-            color: "#374151",
-            lineHeight: 1.8,
-          }}
-        >
-          {finalPersonalityProfile.summary}
-        </p>
-      </div>
     </InfoCard>
   )
 }
@@ -232,11 +135,15 @@ function FiveDimensionList({
   )
 }
 
-function LifeFunctionList({
+function ZiweiLifeFunctionList({
   profile,
 }: {
   profile: PersonalityInterpretationProfile
 }) {
+  if (profile.ziweiLifeFunctionProfile === null) {
+    return null
+  }
+
   return (
     <div
       style={{
@@ -245,6 +152,53 @@ function LifeFunctionList({
       }}
     >
       {profile.ziweiLifeFunctionProfile.functions.map((item) => (
+        <div
+          key={item.key}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "92px 1fr auto",
+            gap: 10,
+            alignItems: "start",
+            padding: "8px 0",
+            borderBottom: "1px dashed #e5e7eb",
+          }}
+        >
+          <strong>{item.label}</strong>
+
+          <span
+            style={{
+              color: "#4b5563",
+              lineHeight: 1.7,
+              fontSize: 13,
+            }}
+          >
+            {item.genderFocus}
+          </span>
+
+          <ScoreBadge score={item.score} level={item.level} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function BaziGenderFunctionList({
+  profile,
+}: {
+  profile: PersonalityInterpretationProfile
+}) {
+  if (profile.baziGenderFunctionProfile === null) {
+    return null
+  }
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gap: 8,
+      }}
+    >
+      {profile.baziGenderFunctionProfile.functions.map((item) => (
         <div
           key={item.key}
           style={{
@@ -294,15 +248,16 @@ export function PersonalityInterpretationPanel({
       : null
 
   const interpretationProfile = useMemo(() => {
-    if (!hasBirthHour || selectedGenderPerspective === null) {
+    if (selectedGenderPerspective === null) {
       return null
     }
 
     return buildAiPersonalityInterpretation({
-      ziweiProfile,
+      ziweiProfile: hasBirthHour ? ziweiProfile : null,
       baziProfile,
       finalPersonalityProfile,
       genderPerspective: selectedGenderPerspective as GenderPerspective,
+      hasBirthHour,
     })
   }, [
     hasBirthHour,
@@ -316,26 +271,20 @@ export function PersonalityInterpretationPanel({
     return <EmptyGenderNotice />
   }
 
-  if (!hasBirthHour) {
-    return (
-      <BaziOnlyNotice
-        baziProfile={baziProfile}
-        finalPersonalityProfile={finalPersonalityProfile}
-      />
-    )
-  }
-
   if (interpretationProfile === null) {
     return null
   }
 
-  const title =
-    selectedGenderPerspective === "male"
-      ? "🧭 男命视角人格解释核心"
-      : "🧭 女命视角人格解释核心"
+  const viewpointText =
+    selectedGenderPerspective === "male" ? "男命视角" : "女命视角"
+
+  const modeText =
+    interpretationProfile.mode === "ziwei_primary"
+      ? "紫微主导人格解释核心"
+      : "八字主导人格解释核心"
 
   return (
-    <InfoCard title={title}>
+    <InfoCard title={`🧭 ${viewpointText}${modeText}`}>
       <div
         style={{
           display: "grid",
@@ -362,11 +311,55 @@ export function PersonalityInterpretationPanel({
           {interpretationProfile.summary}
         </p>
 
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+            gap: 12,
+            fontSize: 13,
+          }}
+        >
+          <div
+            style={{
+              padding: 10,
+              borderRadius: 8,
+              background: "#f9fafb",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            <strong>解释模式：</strong>
+            {interpretationProfile.mode === "ziwei_primary"
+              ? "紫微主导"
+              : "八字主导"}
+          </div>
+
+          <div
+            style={{
+              padding: 10,
+              borderRadius: 8,
+              background: "#f9fafb",
+              border: "1px solid #e5e7eb",
+            }}
+          >
+            <strong>出生时辰：</strong>
+            {hasBirthHour ? "已知" : "未知"}
+          </div>
+        </div>
+
         <SectionTitle>五维性格解释</SectionTitle>
         <FiveDimensionList profile={interpretationProfile} />
 
-        <SectionTitle>紫微生命功能解释</SectionTitle>
-        <LifeFunctionList profile={interpretationProfile} />
+        {interpretationProfile.mode === "ziwei_primary" ? (
+          <>
+            <SectionTitle>紫微生命功能解释</SectionTitle>
+            <ZiweiLifeFunctionList profile={interpretationProfile} />
+          </>
+        ) : (
+          <>
+            <SectionTitle>八字男女动力解释</SectionTitle>
+            <BaziGenderFunctionList profile={interpretationProfile} />
+          </>
+        )}
 
         <details
           style={{

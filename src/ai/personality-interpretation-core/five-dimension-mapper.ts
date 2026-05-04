@@ -157,13 +157,14 @@ function buildFiveDimensionResult(input: {
     level,
     baseMeaning: rule.baseMeaning,
     sourceFunctions: rule.sourceFunctions,
+    sourceBaziFunctions: [],
     genderFocus,
     baziSupportKeys: rule.baziSupportKeys,
     vectorSupportKeys: rule.vectorSupportKeys,
     summary: buildFiveDimensionSummary({
-      label: rule.label,
-      score,
-      genderFocus,
+        label: rule.label,
+        score,
+        genderFocus,
     }),
   }
 }

@@ -8,6 +8,10 @@ import type { PersonalityProfile, SectorName, StarId } from "../ziwei-core/schem
 
 export type GenderPerspective = "male" | "female"
 
+export type PersonalityInterpretationMode =
+  | "ziwei_primary"
+  | "bazi_primary"
+
 export type ScoreLevel =
   | "high"
   | "medium_high"
@@ -41,6 +45,16 @@ export type BaziDynamicsSupportKey =
   | "persistence"
   | "adaptability"
 
+export type BaziGenderFunctionKey =
+  | "actionRelease"
+  | "reactionPattern"
+  | "sensoryConnection"
+  | "routineConsistency"
+  | "explorationMomentum"
+  | "stabilityBase"
+  | "persistencePattern"
+  | "adaptivePattern"
+
 export type ZiweiLifeFunctionRule = {
   key: ZiweiLifeFunctionKey
   label: string
@@ -62,11 +76,29 @@ export type GenderLifeFunctionFocus = {
   femaleFocus: string
 }
 
+export type BaziGenderFunctionRule = {
+  key: BaziGenderFunctionKey
+  label: string
+  sourceKey: BaziDynamicsSupportKey
+  baseMeaning: string
+  maleFocus: string
+  femaleFocus: string
+}
+
 export type FiveDimensionRule = {
   key: FiveDimensionKey
   label: string
   baseMeaning: string
   sourceFunctions: ZiweiLifeFunctionKey[]
+  baziSupportKeys: BaziDynamicsSupportKey[]
+  vectorSupportKeys: string[]
+}
+
+export type BaziPrimaryFiveDimensionRule = {
+  key: FiveDimensionKey
+  label: string
+  baseMeaning: string
+  sourceBaziFunctions: BaziGenderFunctionKey[]
   baziSupportKeys: BaziDynamicsSupportKey[]
   vectorSupportKeys: string[]
 }
@@ -115,6 +147,28 @@ export type BaziDynamicsSupportProfile = {
   }
 }
 
+export type BaziGenderFunctionResult = {
+  key: BaziGenderFunctionKey
+  label: string
+  sourceKey: BaziDynamicsSupportKey
+  score: number
+  level: ScoreLevel
+  baseMeaning: string
+  genderFocus: string
+  summary: string
+}
+
+export type BaziGenderFunctionProfile = {
+  genderPerspective: GenderPerspective
+  functions: BaziGenderFunctionResult[]
+  strongestFunctions: BaziGenderFunctionResult[]
+  summary: string
+  debug: {
+    source: "bazi_gender"
+    note: string
+  }
+}
+
 export type FiveDimensionResult = {
   key: FiveDimensionKey
   label: string
@@ -122,6 +176,7 @@ export type FiveDimensionResult = {
   level: ScoreLevel
   baseMeaning: string
   sourceFunctions: ZiweiLifeFunctionKey[]
+  sourceBaziFunctions: BaziGenderFunctionKey[]
   genderFocus: string
   baziSupportKeys: BaziDynamicsSupportKey[]
   vectorSupportKeys: string[]
@@ -134,17 +189,21 @@ export type FiveDimensionProfile = {
   strongestDimensions: FiveDimensionResult[]
   summary: string
   debug: {
-    source: "ziwei_gender_bazi_vector"
+    source: "ziwei_gender_bazi_vector" | "bazi_gender_vector"
     note: string
   }
 }
 
 export type PersonalityInterpretationProfile = {
+  mode: PersonalityInterpretationMode
   genderPerspective: GenderPerspective
   principle: string
-  ziweiLifeFunctionProfile: ZiweiLifeFunctionProfile
+
+  ziweiLifeFunctionProfile: ZiweiLifeFunctionProfile | null
+  baziGenderFunctionProfile: BaziGenderFunctionProfile | null
   baziDynamicsSupportProfile: BaziDynamicsSupportProfile
   fiveDimensionProfile: FiveDimensionProfile
+
   summary: string
   debug: {
     doesModifyZiweiProfile: false
@@ -155,6 +214,7 @@ export type PersonalityInterpretationProfile = {
 }
 
 export type GenderPerspectiveComparison = {
+  mode: PersonalityInterpretationMode
   sameBirthStructure: true
   sameFinalVector: true
   maleProfile: PersonalityInterpretationProfile
@@ -168,14 +228,16 @@ export type GenderPerspectiveComparison = {
 }
 
 export type BuildPersonalityInterpretationInput = {
-  ziweiProfile: PersonalityProfile
+  ziweiProfile?: PersonalityProfile | null
   baziProfile: BaziProfile
   finalPersonalityProfile: FinalPersonalityProfile
   genderPerspective: GenderPerspective
+  hasBirthHour: boolean
 }
 
 export type BuildGenderPerspectiveComparisonInput = {
-  ziweiProfile: PersonalityProfile
+  ziweiProfile?: PersonalityProfile | null
   baziProfile: BaziProfile
   finalPersonalityProfile: FinalPersonalityProfile
+  hasBirthHour: boolean
 }
