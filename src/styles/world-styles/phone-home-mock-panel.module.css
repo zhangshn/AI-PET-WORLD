@@ -417,3 +417,108 @@
   font-size: 12px;
   font-weight: 800;
 }
+
+.detailPage {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 18px;
+  background: rgba(255, 241, 198, 0.9);
+  border: 2px solid rgba(90, 59, 34, 0.22);
+}
+
+.detailPageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.detailPageHeader h4 {
+  margin: 0;
+  color: #3b2a18;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.detailSections {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.detailSection {
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(255, 248, 220, 0.66);
+  border: 2px solid rgba(90, 59, 34, 0.14);
+}
+
+.detailSection h5 {
+  margin: 0;
+  color: #3b2a18;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.sectionDescription {
+  margin: 5px 0 0;
+  color: #6f4d29;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.detailRows {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.detailRow {
+  min-width: 0;
+}
+
+.detailRowTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.detailRowTop span {
+  flex: 0 0 auto;
+  color: #8a6335;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.detailRowTop strong {
+  min-width: 0;
+  color: #3b2a18;
+  font-size: 12px;
+  font-weight: 950;
+  text-align: right;
+  word-break: break-word;
+}
+
+.rowHelper {
+  margin: 4px 0 0;
+  color: #6f4d29;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.detailMeter {
+  height: 8px;
+  margin-top: 5px;
+  border-radius: 999px;
+  background: rgba(90, 59, 34, 0.16);
+  overflow: hidden;
+}
+
+.detailMeterFill {
+  height: 100%;
+  border-radius: 999px;
+  background: #83b84a;
+}

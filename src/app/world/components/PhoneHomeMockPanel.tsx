@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * 当前文件负责：预览未来手机主页与观察模块入口。
+ * 当前文件负责：预览未来手机主页、模块入口与详情页结构。
  */
 
 import { useMemo, useState } from "react"
@@ -11,9 +11,14 @@ import type {
   PhoneHomeScreenModuleData,
   PhoneModuleCard,
 } from "../utils/phoneModuleMappers"
+import type {
+  PhoneDetailPageData,
+  PhoneDetailRow,
+} from "../utils/phoneDetailMappers"
 
 import { buildWorldHudBundle } from "../utils/worldHudMappers"
 import { buildPhoneHomeScreenModuleData } from "../utils/phoneModuleMappers"
+import { buildPhoneDetailBundle } from "../utils/phoneDetailMappers"
 
 import styles from "@/styles/world-styles/phone-home-mock-panel.module.css"
 
@@ -51,10 +56,99 @@ function findModule(
   )
 }
 
+function getDetailByModule(
+  activeModule: ModuleId,
+  details: {
+    pet: PhoneDetailPageData
+    butler: PhoneDetailPageData
+    home: PhoneDetailPageData
+  }
+): PhoneDetailPageData | null {
+  if (activeModule === "pet") return details.pet
+  if (activeModule === "butler") return details.butler
+  if (activeModule === "home") return details.home
+
+  return null
+}
+
+function DetailMeter({ row }: { row: PhoneDetailRow }) {
+  if (!row.meter) return null
+
+  return (
+    <div className={styles.detailMeter}>
+      <div
+        className={styles.detailMeterFill}
+        style={{ width: `${row.meter.value}%` }}
+      />
+    </div>
+  )
+}
+
+function DetailPage({ detail }: { detail: PhoneDetailPageData }) {
+  return (
+    <section className={styles.detailPage}>
+      <div className={styles.detailPageHeader}>
+        <div>
+          <p className={styles.detailEyebrow}>{detail.routeKey}</p>
+          <h4>{detail.title}</h4>
+        </div>
+
+        <span className={styles.detailStatus}>
+          {detail.statusLabel}
+        </span>
+      </div>
+
+      <p className={styles.detailPrimary}>{detail.subtitle}</p>
+      <p className={styles.detailSecondary}>{detail.summary}</p>
+
+      {detail.tags.length > 0 && (
+        <div className={styles.tags}>
+          {detail.tags.slice(0, 6).map((tag) => (
+            <span key={tag}>{tag}</span>
+          ))}
+        </div>
+      )}
+
+      <div className={styles.detailSections}>
+        {detail.sections.map((section) => (
+          <section className={styles.detailSection} key={section.title}>
+            <h5>{section.title}</h5>
+
+            {section.description && (
+              <p className={styles.sectionDescription}>
+                {section.description}
+              </p>
+            )}
+
+            <div className={styles.detailRows}>
+              {section.rows.map((row) => (
+                <div className={styles.detailRow} key={`${section.title}-${row.label}`}>
+                  <div className={styles.detailRowTop}>
+                    <span>{row.label}</span>
+                    <strong>{row.value}</strong>
+                  </div>
+
+                  {row.helperText && (
+                    <p className={styles.rowHelper}>
+                      {row.helperText}
+                    </p>
+                  )}
+
+                  <DetailMeter row={row} />
+                </div>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 export default function PhoneHomeMockPanel({ world }: Props) {
   const [activeModule, setActiveModule] = useState<ModuleId>("observation")
 
-  const phoneData = useMemo(() => {
+  const { phoneData, detailBundle } = useMemo(() => {
     const hud = buildWorldHudBundle({
       time: world.time,
       pet: world.pet,
@@ -64,10 +158,13 @@ export default function PhoneHomeMockPanel({ world }: Props) {
       ecology: world.ecology,
     })
 
-    return buildPhoneHomeScreenModuleData({
-      hud,
-      events: world.events,
-    })
+    return {
+      phoneData: buildPhoneHomeScreenModuleData({
+        hud,
+        events: world.events,
+      }),
+      detailBundle: buildPhoneDetailBundle(hud),
+    }
   }, [
     world.time,
     world.pet,
@@ -79,6 +176,7 @@ export default function PhoneHomeMockPanel({ world }: Props) {
   ])
 
   const selectedModule = findModule(phoneData, activeModule)
+  const selectedDetail = getDetailByModule(activeModule, detailBundle)
   const observationModule = phoneData.modules.find(
     (module) => module.id === "observation"
   )
@@ -142,63 +240,67 @@ export default function PhoneHomeMockPanel({ world }: Props) {
           ))}
         </div>
 
-        <section className={styles.detailPanel}>
-          <div className={styles.detailHeader}>
-            <div>
-              <p className={styles.detailEyebrow}>
-                {selectedModule.routeKey}
-              </p>
+        {selectedDetail ? (
+          <DetailPage detail={selectedDetail} />
+        ) : (
+          <section className={styles.detailPanel}>
+            <div className={styles.detailHeader}>
+              <div>
+                <p className={styles.detailEyebrow}>
+                  {selectedModule.routeKey}
+                </p>
 
-              <h4>{selectedModule.title}</h4>
+                <h4>{selectedModule.title}</h4>
+              </div>
+
+              <span
+                className={`${styles.detailStatus} ${getModuleStatusClass(
+                  selectedModule.status
+                )}`}
+              >
+                {selectedModule.statusLabel}
+              </span>
             </div>
 
-            <span
-              className={`${styles.detailStatus} ${getModuleStatusClass(
-                selectedModule.status
-              )}`}
-            >
-              {selectedModule.statusLabel}
-            </span>
-          </div>
+            <p className={styles.detailPrimary}>
+              {selectedModule.primaryText}
+            </p>
 
-          <p className={styles.detailPrimary}>
-            {selectedModule.primaryText}
-          </p>
+            <p className={styles.detailSecondary}>
+              {selectedModule.secondaryText}
+            </p>
 
-          <p className={styles.detailSecondary}>
-            {selectedModule.secondaryText}
-          </p>
+            {selectedModule.tags.length > 0 && (
+              <div className={styles.tags}>
+                {selectedModule.tags.slice(0, 5).map((tag) => (
+                  <span key={tag}>{tag}</span>
+                ))}
+              </div>
+            )}
 
-          {selectedModule.tags.length > 0 && (
-            <div className={styles.tags}>
-              {selectedModule.tags.slice(0, 5).map((tag) => (
-                <span key={tag}>{tag}</span>
-              ))}
-            </div>
-          )}
-
-          {selectedModule.metrics.length > 0 && (
-            <div className={styles.metrics}>
-              {selectedModule.metrics.map((metric) => (
-                <div className={styles.metricItem} key={metric.label}>
-                  <div className={styles.metricTopRow}>
-                    <span>{metric.label}</span>
-                    <strong>{metric.valueLabel}</strong>
-                  </div>
-
-                  {metric.meter && (
-                    <div className={styles.meterTrack}>
-                      <div
-                        className={styles.meterFill}
-                        style={{ width: `${metric.meter.value}%` }}
-                      />
+            {selectedModule.metrics.length > 0 && (
+              <div className={styles.metrics}>
+                {selectedModule.metrics.map((metric) => (
+                  <div className={styles.metricItem} key={metric.label}>
+                    <div className={styles.metricTopRow}>
+                      <span>{metric.label}</span>
+                      <strong>{metric.valueLabel}</strong>
                     </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
+
+                    {metric.meter && (
+                      <div className={styles.meterTrack}>
+                        <div
+                          className={styles.meterFill}
+                          style={{ width: `${metric.meter.value}%` }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
         {activeModule === "observation" &&
           observationModule?.id === "observation" && (
