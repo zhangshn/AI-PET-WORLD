@@ -1,6 +1,5 @@
 /**
- * Current file responsibility:
- * maintain world event history and generate per-tick updates.
+ * 当前文件负责：维护世界事件历史，并生成每个 Tick 的世界事件。
  */
 
 import type { WorldEvent } from "../types/event"
@@ -43,7 +42,12 @@ export class EventSystem {
       day: input.day,
       hour: input.hour,
       type: "interaction",
+      petName: input.petName,
       message: input.message,
+      sourceAction: input.sourceAction,
+      narrativeType: input.narrativeType,
+      intensity: input.intensity,
+      payload: input.payload,
     })
 
     this.appendEvents([event])

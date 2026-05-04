@@ -32,6 +32,11 @@ export type InteractionEventInput = {
   day: number
   hour: number
   message: string
+  petName?: string
+  sourceAction?: string
+  narrativeType?: NarrativeType
+  intensity?: number
+  payload?: Record<string, unknown>
 }
 
 export type PetHatchedEventInput = {

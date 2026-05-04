@@ -10,7 +10,17 @@ type Props = {
   events: WorldEvent[]
 }
 
-function getCategoryLabel(type: WorldEvent["type"]): string {
+function getCategoryLabel(type: WorldEvent["type"], event: WorldEvent): string {
+  const interactionKind = event.payload?.interactionKind
+
+  if (interactionKind === "butler_opportunity") {
+    return "管家机会"
+  }
+
+  if (interactionKind === "pet_recovery") {
+    return "恢复记录"
+  }
+
   switch (type) {
     case "pet_hatched":
     case "pet_action_changed":
@@ -109,6 +119,40 @@ function getPayloadText(payload?: Record<string, unknown>): string {
   return ""
 }
 
+function rewriteButlerOpportunityMessage(event: WorldEvent): string {
+  const payload = event.payload ?? {}
+  const petName = event.petName ?? "宠物"
+  const accepted = payload.accepted
+  const opportunityType = payload.opportunityType
+  const baseMessage = event.message
+
+  if (opportunityType === "food_offer") {
+    if (accepted === true) {
+      return `${baseMessage} 管家只是提供食物机会，真正的进食决定来自 ${petName} 自己。`
+    }
+
+    return `${baseMessage} 这说明管家无法直接控制 ${petName}，它只能创造条件。`
+  }
+
+  if (opportunityType === "rest_offer") {
+    if (accepted === true) {
+      return `${baseMessage} 管家改善了环境，但休息行为仍然来自 ${petName} 当前的自主状态。`
+    }
+
+    return `${baseMessage} 恢复环境已经存在，但 ${petName} 还没有选择停下来。`
+  }
+
+  if (opportunityType === "approach_offer") {
+    if (accepted === true) {
+      return `${baseMessage} 这是一段关系距离正在缩短的观察信号。`
+    }
+
+    return `${baseMessage} 它还在保持自己的距离边界。`
+  }
+
+  return baseMessage
+}
+
 function rewritePetActionEvent(event: WorldEvent): string {
   const petName = event.petName ?? "宠物"
   const actionObservation = getActionObservation(event.sourceAction)
@@ -128,6 +172,20 @@ function rewritePetActionEvent(event: WorldEvent): string {
   ]
     .filter(Boolean)
     .join("")
+}
+
+function rewriteInteractionMessage(event: WorldEvent): string {
+  const interactionKind = event.payload?.interactionKind
+
+  if (interactionKind === "butler_opportunity") {
+    return rewriteButlerOpportunityMessage(event)
+  }
+
+  if (interactionKind === "pet_recovery") {
+    return event.message
+  }
+
+  return event.message
 }
 
 function rewriteMessage(event: WorldEvent): string {
@@ -160,7 +218,7 @@ function rewriteMessage(event: WorldEvent): string {
       return "孵化器状态有了新的推进。管家会继续优先确认稳定度，但不会替未来的生命决定它将成为什么样。"
 
     case "interaction":
-      return event.message
+      return rewriteInteractionMessage(event)
 
     default:
       return event.message
@@ -174,6 +232,8 @@ function getEventDisplayKey(event: WorldEvent): string {
     event.sourceAction ?? "",
     event.narrativeType ?? "",
     event.continuityId ?? "",
+    event.payload?.interactionKind ?? "",
+    event.payload?.opportunityType ?? "",
     rewriteMessage(event),
   ].join("::")
 }
@@ -224,7 +284,7 @@ export default function WorldObservationPanel({ events }: Props) {
           <article key={event.id} className={styles.item}>
             <div className={styles.topRow}>
               <span className={styles.category}>
-                {getCategoryLabel(event.type)}
+                {getCategoryLabel(event.type, event)}
               </span>
 
               <span className={styles.time}>

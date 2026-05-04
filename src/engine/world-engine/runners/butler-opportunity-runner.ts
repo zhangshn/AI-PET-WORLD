@@ -1,8 +1,9 @@
 /**
- * 当前文件负责：处理管家对宠物产生的机会事件，并把结果写入宠物系统与事件系统。
+ * 当前文件负责：处理管家提供给宠物的机会事件，并把宠物自主选择结果写入系统。
  */
 
 import type { TimeState } from "../../timeSystem"
+import type { NarrativeType } from "@/types/event"
 import type { ButlerSystem } from "@/systems/butlerSystem"
 import type { EventSystem } from "@/systems/eventSystem"
 import type { PetSystem } from "@/systems/petSystem"
@@ -13,6 +14,43 @@ export type RunButlerOpportunityInput = {
   petSystem: PetSystem
   butlerSystem: ButlerSystem
   eventSystem: EventSystem
+}
+
+type ButlerOpportunityEventInput = {
+  tick: number
+  time: TimeState
+  butlerName: string
+  petName: string
+  message: string
+  narrativeType: NarrativeType
+  intensity: number
+  opportunityType: string
+  accepted?: boolean
+  reason?: string
+  value?: number
+}
+
+function addButlerOpportunityEvent(
+  eventSystem: EventSystem,
+  input: ButlerOpportunityEventInput
+) {
+  eventSystem.addInteractionEvent({
+    tick: input.tick,
+    day: input.time.day,
+    hour: input.time.hour,
+    petName: input.petName,
+    message: input.message,
+    narrativeType: input.narrativeType,
+    intensity: input.intensity,
+    payload: {
+      interactionKind: "butler_opportunity",
+      opportunityType: input.opportunityType,
+      butlerName: input.butlerName,
+      accepted: input.accepted,
+      reason: input.reason,
+      value: input.value,
+    },
+  })
 }
 
 export function runButlerOpportunities(input: RunButlerOpportunityInput) {
@@ -36,18 +74,37 @@ export function runButlerOpportunities(input: RunButlerOpportunityInput) {
       if (result.accepted && result.intakeAmount > 0) {
         input.petSystem.applyAcceptedFoodOffer(result.intakeAmount)
 
-        input.eventSystem.addInteractionEvent({
+        addButlerOpportunityEvent(input.eventSystem, {
           tick: input.tick,
-          day: input.time.day,
-          hour: input.time.hour,
-          message: `${butlerName}提供了食物，${petName}自主决定进食，实际摄食量为 ${result.intakeAmount}（${result.reason}）。`,
+          time: input.time,
+          butlerName,
+          petName,
+          narrativeType: "satisfy_need",
+          intensity: Math.min(1, Math.max(0.2, result.intakeAmount / 50)),
+          opportunityType: opportunity.type,
+          accepted: true,
+          reason: result.reason,
+          value: result.intakeAmount,
+          message:
+            `${butlerName}提供了食物。` +
+            `${petName}没有被强制进食，而是自主接受了这次机会，` +
+            `实际摄食量为 ${result.intakeAmount}。`,
         })
       } else {
-        input.eventSystem.addInteractionEvent({
+        addButlerOpportunityEvent(input.eventSystem, {
           tick: input.tick,
-          day: input.time.day,
-          hour: input.time.hour,
-          message: `${butlerName}提供了食物，但${petName}这次没有接受（${result.reason}）。`,
+          time: input.time,
+          butlerName,
+          petName,
+          narrativeType: "keep_distance",
+          intensity: 0.45,
+          opportunityType: opportunity.type,
+          accepted: false,
+          reason: result.reason,
+          message:
+            `${butlerName}提供了食物。` +
+            `${petName}感知到了这个机会，但这一次没有接受，` +
+            `它仍然保留自己的行动判断。`,
         })
       }
 
@@ -62,18 +119,34 @@ export function runButlerOpportunities(input: RunButlerOpportunityInput) {
         currentPet &&
         (currentPet.action === "resting" || currentPet.action === "sleeping")
       ) {
-        input.eventSystem.addInteractionEvent({
+        addButlerOpportunityEvent(input.eventSystem, {
           tick: input.tick,
-          day: input.time.day,
-          hour: input.time.hour,
-          message: `${butlerName}整理了恢复环境，${petName}当前正在自主休息。`,
+          time: input.time,
+          butlerName,
+          petName,
+          narrativeType: "recover",
+          intensity: 0.7,
+          opportunityType: opportunity.type,
+          accepted: true,
+          reason: "pet_is_already_resting",
+          message:
+            `${butlerName}整理了更适合恢复的环境。` +
+            `${petName}当前正在自主休息，这个环境让它更容易保持恢复节奏。`,
         })
       } else {
-        input.eventSystem.addInteractionEvent({
+        addButlerOpportunityEvent(input.eventSystem, {
           tick: input.tick,
-          day: input.time.day,
-          hour: input.time.hour,
-          message: `${butlerName}准备了更适合恢复的环境，但${petName}是否进入休息仍由自己决定。`,
+          time: input.time,
+          butlerName,
+          petName,
+          narrativeType: "recover",
+          intensity: 0.4,
+          opportunityType: opportunity.type,
+          accepted: false,
+          reason: "pet_has_not_entered_rest",
+          message:
+            `${butlerName}准备了更适合恢复的环境。` +
+            `${petName}已经获得休息机会，但是否停下来仍由它自己决定。`,
         })
       }
 
@@ -85,18 +158,34 @@ export function runButlerOpportunities(input: RunButlerOpportunityInput) {
       const currentPet = input.petSystem.getPet()
 
       if (currentPet && currentPet.action === "approaching") {
-        input.eventSystem.addInteractionEvent({
+        addButlerOpportunityEvent(input.eventSystem, {
           tick: input.tick,
-          day: input.time.day,
-          hour: input.time.hour,
-          message: `${butlerName}发起了接近，${petName}当前表现出接受接近的倾向。`,
+          time: input.time,
+          butlerName,
+          petName,
+          narrativeType: "approach_target",
+          intensity: 0.65,
+          opportunityType: opportunity.type,
+          accepted: true,
+          reason: "pet_is_approaching",
+          message:
+            `${butlerName}放慢动作并尝试靠近。` +
+            `${petName}表现出接受接近的倾向，但接触仍然是它自己的选择。`,
         })
       } else {
-        input.eventSystem.addInteractionEvent({
+        addButlerOpportunityEvent(input.eventSystem, {
           tick: input.tick,
-          day: input.time.day,
-          hour: input.time.hour,
-          message: `${butlerName}试图靠近，但${petName}是否回应仍由自己决定。`,
+          time: input.time,
+          butlerName,
+          petName,
+          narrativeType: "keep_distance",
+          intensity: 0.35,
+          opportunityType: opportunity.type,
+          accepted: false,
+          reason: "pet_did_not_approach",
+          message:
+            `${butlerName}尝试靠近。` +
+            `${petName}没有立刻回应，它仍在观察距离、安全感和当前状态。`,
         })
       }
 
@@ -115,7 +204,16 @@ export function runButlerOpportunities(input: RunButlerOpportunityInput) {
       tick: input.tick,
       day: input.time.day,
       hour: input.time.hour,
-      message: `${latestPet.name}正在休息，精力正在恢复。`,
+      petName: latestPet.name,
+      message:
+        `${latestPet.name}正在休息，精力正在缓慢恢复。` +
+        "这不是管家的直接控制，而是它当前状态下的自主恢复过程。",
+      narrativeType: "recover",
+      intensity: 0.5,
+      payload: {
+        interactionKind: "pet_recovery",
+        accepted: true,
+      },
     })
   }
 }
