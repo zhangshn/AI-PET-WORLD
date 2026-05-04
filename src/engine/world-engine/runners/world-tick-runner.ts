@@ -57,24 +57,31 @@ function cloneSnapshot<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
 }
 
-export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
-  const previousState = refreshWorldSystemState({
+function refreshTickState(input: RunWorldTickInput) {
+  return refreshWorldSystemState({
     petSystem: input.petSystem,
     butlerSystem: input.butlerSystem,
     homeSystem: input.homeSystem,
     incubatorSystem: input.incubatorSystem,
   })
+}
+
+export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
+  /**
+   * 阶段 0：保存 Tick 前快照。
+   * 这些快照只用于最后的事件差异判断，不参与中途修改。
+   */
+  const previousState = refreshTickState(input)
 
   const prevPet = cloneSnapshot(previousState.pet)
   const prevButler = cloneSnapshot(previousState.butler)
   const prevIncubator = cloneSnapshot(previousState.incubator)
 
-  let currentState = refreshWorldSystemState({
-    petSystem: input.petSystem,
-    butlerSystem: input.butlerSystem,
-    homeSystem: input.homeSystem,
-    incubatorSystem: input.incubatorSystem,
-  })
+  /**
+   * 阶段 1：读取当前世界状态，推进世界 runtime。
+   * runtime 代表天气、生态、地图区域等世界底层状态。
+   */
+  let currentState = refreshTickState(input)
 
   let currentHome = currentState.home
   let currentPet = currentState.pet
@@ -89,6 +96,10 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     pet: currentPet,
   })
 
+  /**
+   * 阶段 2：基于世界 runtime 生成本轮刺激。
+   * 刺激先生成，后续宠物认知会读取本轮最新刺激。
+   */
   const stimulusState = runWorldStimulus({
     tick: input.tick,
     time: input.currentTime,
@@ -98,20 +109,22 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
 
   const nextStimuli = stimulusState.activeStimuli
 
+  /**
+   * 阶段 3：推进孵化器自然状态。
+   * 这里只做自然推进；真正的照看、出生由管理交互阶段处理。
+   */
   input.incubatorSystem.update()
 
-  currentState = refreshWorldSystemState({
-    petSystem: input.petSystem,
-    butlerSystem: input.butlerSystem,
-    homeSystem: input.homeSystem,
-    incubatorSystem: input.incubatorSystem,
-  })
-
+  currentState = refreshTickState(input)
   currentHome = currentState.home
   currentPet = currentState.pet
   currentIncubator = currentState.incubator
   currentButler = currentState.butler
 
+  /**
+   * 阶段 4：管家根据最新状态判断本轮任务。
+   * 管家只选择任务和创造机会，不直接控制宠物行为。
+   */
   input.butlerSystem.update({
     tick: input.tick,
     pet: currentPet,
@@ -121,18 +134,16 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     butlerBehaviorBias: currentPet?.lifeProfile.genderAwareBehaviorBias ?? null,
   })
 
-  currentState = refreshWorldSystemState({
-    petSystem: input.petSystem,
-    butlerSystem: input.butlerSystem,
-    homeSystem: input.homeSystem,
-    incubatorSystem: input.incubatorSystem,
-  })
-
+  currentState = refreshTickState(input)
   currentHome = currentState.home
   currentPet = currentState.pet
   currentIncubator = currentState.incubator
   currentButler = currentState.butler
 
+  /**
+   * 阶段 5：执行管家管理交互。
+   * 包括照看孵化器、宠物出生、家园建设。
+   */
   runManagementInteractions({
     tick: input.tick,
     time: input.currentTime,
@@ -144,18 +155,16 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     eventSystem: input.eventSystem,
   })
 
-  currentState = refreshWorldSystemState({
-    petSystem: input.petSystem,
-    butlerSystem: input.butlerSystem,
-    homeSystem: input.homeSystem,
-    incubatorSystem: input.incubatorSystem,
-  })
-
+  currentState = refreshTickState(input)
   currentHome = currentState.home
   currentPet = currentState.pet
   currentIncubator = currentState.incubator
   currentButler = currentState.butler
 
+  /**
+   * 阶段 6：宠物感知世界刺激。
+   * 这里会写入认知类 interaction 事件，但不会直接替宠物决定行为。
+   */
   runPetCognition({
     tick: input.tick,
     time: input.currentTime,
@@ -164,6 +173,10 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     latestStimuli: stimulusState.latestGenerated,
   })
 
+  /**
+   * 阶段 7：宠物自主行为运行。
+   * 宠物根据自身状态、记忆、世界区域等信息更新行为。
+   */
   const petRuntimeResult = runPetRuntime({
     time: input.currentTime,
     petSystem: input.petSystem,
@@ -172,6 +185,11 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
 
   currentPet = petRuntimeResult.pet
 
+  /**
+   * 阶段 8：处理管家提供的机会。
+   * 宠物自主判断是否接受食物、恢复、接近机会。
+   * 接受机会只影响状态 / 记忆倾向，不强制改当前行为。
+   */
   runButlerOpportunities({
     tick: input.tick,
     time: input.currentTime,
@@ -180,18 +198,16 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     eventSystem: input.eventSystem,
   })
 
-  currentState = refreshWorldSystemState({
-    petSystem: input.petSystem,
-    butlerSystem: input.butlerSystem,
-    homeSystem: input.homeSystem,
-    incubatorSystem: input.incubatorSystem,
-  })
-
+  currentState = refreshTickState(input)
   currentHome = currentState.home
   currentPet = currentState.pet
   currentIncubator = currentState.incubator
   currentButler = currentState.butler
 
+  /**
+   * 阶段 9：统一生成世界事件变化。
+   * 这里根据 Tick 前后的状态差异生成时间、孵化器、宠物行为等事件。
+   */
   runWorldEventUpdate({
     tick: input.tick,
     prevTime: input.prevTime,
