@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：展示 world 页面右侧观察记录。
  */
 
@@ -8,7 +8,7 @@ import {
   buildLatestWorldObservationViewModels,
 } from "../utils/worldObservationMappers"
 
-import styles from "@/styles/world-styles/world-observation-panel.module.css"
+import styles from "@/styles/world-styles/observation/world-observation-panel.module.css"
 
 type Props = {
   events: WorldEvent[]

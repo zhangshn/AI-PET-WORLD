@@ -1,10 +1,10 @@
-/**
+﻿/**
  * 当前文件负责：展示世界生态环境状态与世界功能区域。
  */
 
 import type { WorldEcologyState } from "@/world/ecology/ecology-engine"
 
-import styles from "@/styles/world-styles/world-ecology-panel.module.css"
+import styles from "@/styles/world-styles/debug/world-ecology-panel.module.css"
 
 type Props = {
   ecology: WorldEcologyState | null

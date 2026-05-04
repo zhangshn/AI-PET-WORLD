@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：
  * 1. 行为过程面板
  * 2. 展示当前 active behavior process
@@ -7,7 +7,7 @@
 
 import type { ActiveBehaviorProcess } from "@/ai/gateway"
 
-import styles from "@/styles/world-styles/behavior-process-panel.module.css"
+import styles from "@/styles/world-styles/debug/behavior-process-panel.module.css"
 
 type Props = {
   process: ActiveBehaviorProcess | null | undefined

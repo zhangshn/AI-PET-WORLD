@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 /**
  * 当前文件负责：组织 /world 正式观察页的整体产品布局。
@@ -24,7 +24,7 @@ import WorldSidePanel from "../ui/panels/WorldSidePanel"
 import WorldBottomPanel from "../ui/panels/WorldBottomPanel"
 import DeveloperDock from "../ui/panels/DeveloperDock"
 
-import styles from "@/styles/world-styles/world-observe-layout.module.css"
+import styles from "@/styles/world-styles/layout/world-observe-layout.module.css"
 
 type Props = {
   world: WorldEngineViewState

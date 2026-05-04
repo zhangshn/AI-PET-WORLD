@@ -1,10 +1,10 @@
-/**
+﻿/**
  * 当前文件负责：承载世界像素舞台，并提供正式观察窗口外壳。
  */
 
 import type { ReactNode } from "react"
 
-import styles from "@/styles/world-styles/world-stage-panel.module.css"
+import styles from "@/styles/world-styles/layout/world-stage-panel.module.css"
 
 type Props = {
   children: ReactNode

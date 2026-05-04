@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：
  * 1. 世界顶部状态栏
  * 2. 显示时间与世界运行状态
@@ -7,7 +7,7 @@
 
 import type { TimeState } from "@/engine/timeSystem"
 
-import styles from "@/styles/world-styles/world-header.module.css"
+import styles from "@/styles/world-styles/layout/world-header.module.css"
 
 type Props = {
   tick: number

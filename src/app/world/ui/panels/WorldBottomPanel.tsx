@@ -1,10 +1,10 @@
-/**
+﻿/**
  * 当前文件负责：承载 Alpha 阶段的生命观察说明区。
  */
 
 import type { ReactNode } from "react"
 
-import styles from "@/styles/world-styles/world-bottom-panel.module.css"
+import styles from "@/styles/world-styles/layout/world-bottom-panel.module.css"
 
 type Props = {
   children: ReactNode

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：
  * 1. 宠物状态面板
  * 2. 展示当前宠物核心状态
@@ -20,7 +20,7 @@ import {
   getTopFiveDimensionItems,
 } from "../utils/petDisplayMappers"
 
-import styles from "@/styles/world-styles/pet-status-panel.module.css"
+import styles from "@/styles/world-styles/debug/pet-status-panel.module.css"
 
 type Props = {
   pet: PetState | null

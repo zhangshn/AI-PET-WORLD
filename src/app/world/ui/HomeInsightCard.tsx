@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：展示正式 world 页中的家园状态摘要。
  */
 
@@ -13,7 +13,7 @@ import {
   getHomeStatusLabel,
 } from "../utils/homeDisplayMappers"
 
-import styles from "@/styles/world-styles/home-insight-card.module.css"
+import styles from "@/styles/world-styles/cards/home-insight-card.module.css"
 
 type Props = {
   home: HomeState | null

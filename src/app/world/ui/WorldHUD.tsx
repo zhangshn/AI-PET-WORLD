@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：
  * 1. 世界 HUD 外层布局
  * 2. 聚合正式用户 UI
@@ -15,7 +15,7 @@ import WorldInfoBar from "./WorldInfoBar"
 import PetInsightCard from "./PetInsightCard"
 import WorldObservationPanel from "./WorldObservationPanel"
 
-import styles from "@/styles/world-styles/world-hud.module.css"
+import styles from "@/styles/world-styles/hud/world-hud.module.css"
 
 type Props = {
   time: TimeState | null

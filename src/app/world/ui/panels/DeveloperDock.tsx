@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：集中承载 /world 开发调试面板。
  */
 
@@ -13,7 +13,7 @@ import WorldRuntimePanel from "../../components/WorldRuntimePanel"
 import WorldEcologyPanel from "../../components/WorldEcologyPanel"
 import WorldStimulusPanel from "../../components/WorldStimulusPanel"
 
-import styles from "@/styles/world-styles/developer-dock.module.css"
+import styles from "@/styles/world-styles/layout/developer-dock.module.css"
 
 type Props = {
   world: WorldEngineViewState

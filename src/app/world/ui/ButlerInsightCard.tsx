@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：展示正式 world 页中的管家观察摘要。
  */
 
@@ -11,7 +11,7 @@ import {
   getButlerTaskLabel,
 } from "../utils/butlerDisplayMappers"
 
-import styles from "@/styles/world-styles/butler-insight-card.module.css"
+import styles from "@/styles/world-styles/cards/butler-insight-card.module.css"
 
 type Props = {
   butler: ButlerState | null

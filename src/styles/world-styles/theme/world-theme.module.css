@@ -1,0 +1,57 @@
+﻿/**
+ * 当前文件负责：定义 /world 页面统一视觉变量。
+ */
+
+.theme {
+  --world-color-ink: #3b2a18;
+  --world-color-ink-soft: #5a3b22;
+  --world-color-muted: #8a6335;
+  --world-color-green: #2f7a3b;
+  --world-color-green-dark: #2f4f25;
+
+  --world-bg-page-start: #f4e9cb;
+  --world-bg-page-mid: #cfe3a5;
+  --world-bg-page-end: #8ab96d;
+
+  --world-surface-main: rgba(255, 248, 220, 0.78);
+  --world-surface-card: rgba(255, 241, 198, 0.96);
+  --world-surface-card-soft: rgba(255, 248, 220, 0.72);
+  --world-surface-stage: rgba(255, 248, 220, 0.96);
+  --world-surface-phone: rgba(255, 248, 220, 0.98);
+
+  --world-border-main: #5a3b22;
+  --world-border-soft: rgba(90, 59, 34, 0.22);
+  --world-border-faint: rgba(90, 59, 34, 0.16);
+
+  --world-radius-panel: 28px;
+  --world-radius-card: 16px;
+  --world-radius-inner: 12px;
+  --world-radius-pill: 999px;
+
+  --world-shadow-panel:
+    0 22px 55px rgba(77, 54, 25, 0.2),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.34);
+  --world-shadow-card: 0 10px 0 rgba(86, 54, 28, 0.2);
+  --world-shadow-soft: 0 8px 18px rgba(53, 39, 19, 0.18);
+
+  --world-font-xs: 10px;
+  --world-font-sm: 11px;
+  --world-font-md: 12px;
+  --world-font-body: 13px;
+  --world-font-title-sm: 18px;
+  --world-font-title: 22px;
+  --world-font-page-title: 30px;
+
+  --world-weight-bold: 800;
+  --world-weight-heavy: 900;
+  --world-weight-black: 950;
+
+  --world-meter-good: #83b84a;
+  --world-meter-neutral: #d6ad56;
+  --world-meter-warning: #e58c3a;
+  --world-meter-danger: #d05c46;
+  --world-meter-quiet: #9aa18b;
+  --world-meter-active: #62a7c7;
+
+  --world-phone-width: 360px;
+}

@@ -1,10 +1,10 @@
-/**
+﻿/**
  * 当前文件负责：展示世界刺激列表，并区分环境、实体与空间来源。
  */
 
 import type { WorldStimulus } from "@/ai/gateway"
 
-import styles from "@/styles/world-styles/world-stimulus-panel.module.css"
+import styles from "@/styles/world-styles/debug/world-stimulus-panel.module.css"
 
 type Props = {
   stimuli: WorldStimulus[]

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：展示宠物当前可观察生命状态。
  */
 
@@ -15,7 +15,7 @@ import {
   getTopFiveDimensionItems,
 } from "../utils/petDisplayMappers"
 
-import styles from "@/styles/world-styles/pet-insight-card.module.css"
+import styles from "@/styles/world-styles/cards/pet-insight-card.module.css"
 
 type Props = {
   pet: PetState | null

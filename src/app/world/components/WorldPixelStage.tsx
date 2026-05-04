@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 /**
  * 当前文件负责：承载 Pixi 世界舞台并协调渲染生命周期。
@@ -38,7 +38,7 @@ import {
 } from "./stage-renderers/orchestrator/stage-runtime-state"
 import type { WorldStageSceneMode } from "./stage-renderers/orchestrator/stage-scene-mode"
 
-import styles from "@/styles/world-styles/world-pixel-stage.module.css"
+import styles from "@/styles/world-styles/layout/world-pixel-stage.module.css"
 
 type Props = {
   time: TimeState | null

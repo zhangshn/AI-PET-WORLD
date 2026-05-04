@@ -1,10 +1,10 @@
-/**
+﻿/**
  * 当前文件负责：展示正式 world 页的舞台内轻量 HUD。
  */
 
 import type { HudMeter, WorldHudBundle } from "../utils/worldHudMappers"
 
-import styles from "@/styles/world-styles/world-compact-hud.module.css"
+import styles from "@/styles/world-styles/hud/world-compact-hud.module.css"
 
 type Props = {
   hud: WorldHudBundle

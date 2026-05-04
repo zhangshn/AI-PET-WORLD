@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：
  * 1. 展示 AI 运行时调试信息
  * 2. 帮助观察 pet runtime 内部驱动层
@@ -18,7 +18,7 @@ import {
   getTopFiveDimensionItems,
 } from "../utils/petDisplayMappers"
 
-import styles from "@/styles/world-styles/runtime-debug-panel.module.css"
+import styles from "@/styles/world-styles/debug/runtime-debug-panel.module.css"
 
 type Props = {
   pet: PetState | null

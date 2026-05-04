@@ -1,10 +1,10 @@
-/**
+﻿/**
  * 当前文件负责：提供 /world 页面通用状态标签。
  */
 
 import type { ReactNode } from "react"
 
-import styles from "@/styles/world-styles/world-status-pill.module.css"
+import styles from "@/styles/world-styles/hud/world-status-pill.module.css"
 
 type Tone = "warm" | "green" | "blue" | "amber" | "muted"
 

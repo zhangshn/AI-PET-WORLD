@@ -1,10 +1,10 @@
-/**
+﻿/**
  * 当前文件负责：展示手机观察模块中的日志列表。
  */
 
 import type { PhoneObservationEntryModuleData } from "../../utils/phoneModuleMappers"
 
-import styles from "@/styles/world-styles/phone-home-mock-panel.module.css"
+import styles from "@/styles/world-styles/phone-mock/phone-home-mock-panel.module.css"
 
 type Props = {
   observationModule: PhoneObservationEntryModuleData

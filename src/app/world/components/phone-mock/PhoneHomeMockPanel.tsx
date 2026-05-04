@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 /**
  * 当前文件负责：组装未来手机主页、模块入口与详情预览。
@@ -18,7 +18,7 @@ import PhoneModuleDetail from "./PhoneModuleDetail"
 import PhoneObservationList from "./PhoneObservationList"
 import type { PhoneMockModuleId } from "./PhoneMockTypes"
 
-import styles from "@/styles/world-styles/phone-home-mock-panel.module.css"
+import styles from "@/styles/world-styles/phone-mock/phone-home-mock-panel.module.css"
 
 type Props = {
   world: WorldEngineViewState

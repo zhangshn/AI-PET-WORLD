@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：
  * 1. 展示宠物最新认知结果
  * 2. 作为开发调试面板的一部分
@@ -7,7 +7,7 @@
 
 import type { PetCognitionRecord } from "@/types/cognition"
 
-import styles from "@/styles/world-styles/cognition-panel.module.css"
+import styles from "@/styles/world-styles/debug/cognition-panel.module.css"
 
 type Props = {
   cognition?: PetCognitionRecord | null

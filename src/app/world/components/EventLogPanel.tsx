@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：
  * 1. 世界观察日记展示
  * 2. 展示 AI 世界最近发生的叙事
@@ -8,7 +8,7 @@
 
 import type { WorldEvent } from "@/types/event"
 
-import styles from "@/styles/world-styles/event-log-panel.module.css"
+import styles from "@/styles/world-styles/debug/event-log-panel.module.css"
 
 type Props = {
   events: WorldEvent[]

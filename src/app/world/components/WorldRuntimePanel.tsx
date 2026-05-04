@@ -1,10 +1,10 @@
-/**
+﻿/**
  * 当前文件负责：展示世界底层 Runtime 状态。
  */
 
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
-import styles from "@/styles/world-styles/world-runtime-panel.module.css"
+import styles from "@/styles/world-styles/debug/world-runtime-panel.module.css"
 
 type Props = {
   runtime: WorldRuntimeState | null

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：展示手机主页四个模块入口。
  */
 
@@ -9,7 +9,7 @@ import {
   type PhoneMockModuleId,
 } from "./PhoneMockTypes"
 
-import styles from "@/styles/world-styles/phone-home-mock-panel.module.css"
+import styles from "@/styles/world-styles/phone-mock/phone-home-mock-panel.module.css"
 
 type Props = {
   modules: PhoneModuleCard[]

@@ -1,11 +1,11 @@
-/**
+﻿/**
  * 当前文件负责：展示手机模块详情页结构。
  */
 
 import type { PhoneDetailPageData, PhoneDetailRow } from "../../utils/phoneDetailMappers"
 import type { PhoneModuleCard } from "../../utils/phoneModuleMappers"
 
-import styles from "@/styles/world-styles/phone-home-mock-panel.module.css"
+import styles from "@/styles/world-styles/phone-mock/phone-home-mock-panel.module.css"
 
 type Props = {
   module: PhoneModuleCard
