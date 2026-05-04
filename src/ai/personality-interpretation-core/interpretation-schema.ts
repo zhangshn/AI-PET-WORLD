@@ -213,6 +213,38 @@ export type PersonalityInterpretationProfile = {
   }
 }
 
+export type GenderAwareBehaviorBias = {
+  petBehaviorBias: {
+    newbornActivity: number
+    observationNeed: number
+    attachmentNeed: number
+    explorationRange: number
+    restNeed: number
+  }
+  butlerBehaviorBias: {
+    carePriority: number
+    constructionDrive: number
+    routinePreference: number
+    riskTolerance: number
+    responseSpeed: number
+  }
+  buildingBias: {
+    expansionPreference: number
+    stabilityPreference: number
+    comfortPreference: number
+    orderPreference: number
+    adaptabilityPreference: number
+  }
+  debug: {
+    source: "gender_aware_interpretation"
+    note: string
+  }
+}
+
+export type BuildGenderAwareBehaviorBiasInput = {
+  interpretationProfile: PersonalityInterpretationProfile
+}
+
 export type GenderPerspectiveComparison = {
   mode: PersonalityInterpretationMode
   sameBirthStructure: true
