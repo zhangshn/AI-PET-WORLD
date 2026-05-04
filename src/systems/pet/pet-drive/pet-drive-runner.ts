@@ -1,11 +1,12 @@
 /**
- * 当前文件负责：根据人格底盘、时间、状态、意识偏压与外部刺激，统一计算宠物当前的 drive 强度与主导 drive
+ * 当前文件负责：根据人格底盘、时间、状态、意识偏压、记忆倾向与外部刺激，统一计算宠物当前的 drive 强度与主导 drive。
  */
 
 import type { TimeState } from "../../../engine/timeSystem"
 import type { PetState } from "../../../types/pet"
 import type { PersonalityTraits } from "../../../ai/ziwei-core/schema"
 import type { ConsciousnessBias } from "../../../ai/consciousness/consciousness-gateway"
+import type { PetMemoryState } from "../../../ai/memory-core/memory-gateway"
 
 export type DriveType =
   | "eat"
@@ -34,6 +35,7 @@ export type DriveSystemInput = {
     | "timelineSnapshot"
     | "personalityProfile"
     | "consciousnessProfile"
+    | "memoryState"
   >
   time: TimeState
   externalStimuli?: Partial<Record<DriveType, number>>
@@ -103,6 +105,12 @@ function getConsciousnessBias(
   pet: DriveSystemInput["pet"]
 ): ConsciousnessBias {
   return pet.consciousnessProfile.bias
+}
+
+function getMemoryState(
+  pet: DriveSystemInput["pet"]
+): PetMemoryState | null {
+  return pet.memoryState ?? null
 }
 
 function getSnapshot(pet: DriveSystemInput["pet"]): TimelineSnapshot | null {
@@ -260,6 +268,7 @@ function applyConsciousnessLayer(
   )
 
   const restSuppression = clamp((bias.restResistance - 50) * 0.18, 0, 14)
+
   if (restSuppression > 0) {
     subtractScore(
       scores,
@@ -271,6 +280,7 @@ function applyConsciousnessLayer(
   }
 
   const riskBoost = clamp((bias.riskTolerance - 50) * 0.16, 0, 12)
+
   if (riskBoost > 0) {
     addScore(
       scores,
@@ -286,6 +296,120 @@ function applyConsciousnessLayer(
       "avoid",
       riskBoost * 0.7,
       "意识层高风险容忍压低回避"
+    )
+  }
+}
+
+function applyMemoryLayer(
+  input: DriveSystemInput,
+  scores: DriveScores,
+  reasons: Record<DriveType, string[]>
+) {
+  const memory = getMemoryState(input.pet)
+
+  if (!memory) return
+
+  const preference = memory.preferenceBias
+  const relation = memory.relationImpression
+  const self = memory.selfImpression
+  const world = memory.worldImpression
+
+  addScore(
+    scores,
+    reasons,
+    "eat",
+    clamp(preference.eatBias * 0.08, 0, 8),
+    "记忆层进食倾向"
+  )
+
+  addScore(
+    scores,
+    reasons,
+    "rest",
+    clamp(preference.restBias * 0.08, 0, 8),
+    "记忆层恢复倾向"
+  )
+
+  addScore(
+    scores,
+    reasons,
+    "approach",
+    clamp(preference.approachBias * 0.08, 0, 8),
+    "记忆层接近倾向"
+  )
+
+  addScore(
+    scores,
+    reasons,
+    "explore",
+    clamp(preference.exploreBias * 0.08, 0, 8),
+    "记忆层探索倾向"
+  )
+
+  addScore(
+    scores,
+    reasons,
+    "observe",
+    clamp(preference.observeBias * 0.08, 0, 8),
+    "记忆层观察倾向"
+  )
+
+  addScore(
+    scores,
+    reasons,
+    "avoid",
+    clamp(preference.avoidBias * 0.08, 0, 8),
+    "记忆层回避倾向"
+  )
+
+  addScore(
+    scores,
+    reasons,
+    "approach",
+    clamp((relation.approachSafety + relation.caretakerTrust) * 0.035, 0, 7),
+    "关系记忆支持接近"
+  )
+
+  addScore(
+    scores,
+    reasons,
+    "rest",
+    clamp(self.recoveryConfidence * 0.06, 0, 6),
+    "恢复经验支持休息"
+  )
+
+  addScore(
+    scores,
+    reasons,
+    "observe",
+    clamp(world.safetyFamiliarity * 0.04, 0, 5),
+    "环境熟悉支持观察"
+  )
+
+  addScore(
+    scores,
+    reasons,
+    "explore",
+    clamp(world.explorationConfidence * 0.05, 0, 6),
+    "探索经验支持探索"
+  )
+
+  const trustPenalty = clamp(Math.max(0, -relation.caretakerTrust) * 0.05, 0, 6)
+  if (trustPenalty > 0) {
+    subtractScore(
+      scores,
+      reasons,
+      "approach",
+      trustPenalty,
+      "关系负面记忆压低接近"
+    )
+
+    addScore(
+      scores,
+      reasons,
+      "avoid",
+      trustPenalty * 0.8,
+      "关系负面记忆提高回避"
     )
   }
 }
@@ -315,10 +439,6 @@ function applyPhysicalLayer(
     addScore(scores, reasons, "rest", (35 - energy) * 0.95, "低精力强恢复")
   }
 
-  /**
-   * consciousness 只能在“疲惫但未危险”阶段对抗休息
-   * 不能越过生理极限
-   */
   const restResistanceFactor = clamp((bias.restResistance - 50) * 0.12, 0, 10)
 
   if (energy <= 40 && energy > 20 && restResistanceFactor > 0) {
@@ -379,11 +499,6 @@ function applyPhysicalLayer(
     )
   }
 
-  /**
-   * 危险疲惫区：
-   * - consciousness 还可以拖延一点点
-   * - 但 explore / approach 必须明显衰退
-   */
   if (energy <= 20 && energy > 10) {
     addScore(scores, reasons, "rest", 22, "危险疲惫推动恢复")
     addScore(scores, reasons, "eat", 4, "危险疲惫抬高补给需求")
@@ -391,17 +506,9 @@ function applyPhysicalLayer(
     subtractScore(scores, reasons, "explore", 18, "危险疲惫强压探索")
     subtractScore(scores, reasons, "approach", 14, "危险疲惫强压靠近")
 
-    /**
-     * 允许高 observation 个体进入观察性停顿，而不是继续猛冲
-     */
     addScore(scores, reasons, "observe", 6, "危险疲惫转入观察停顿")
   }
 
-  /**
-   * 生理崩溃区：
-   * - 生理层绝对接管
-   * - consciousness 不得越过生存底线
-   */
   if (energy <= 10) {
     addScore(scores, reasons, "rest", 40, "生理极限强制恢复")
     addScore(scores, reasons, "eat", 8, "生理极限抬高基础补给")
@@ -413,10 +520,6 @@ function applyPhysicalLayer(
     addScore(scores, reasons, "observe", 4, "生理极限残留环境留意")
   }
 
-  /**
-   * 极低能量：
-   * 进一步锁住向外行为，确保 rest 必然主导
-   */
   if (energy <= 8) {
     addScore(scores, reasons, "rest", 55, "崩溃边界强制休息")
     subtractScore(scores, reasons, "explore", 60, "崩溃边界切断探索")
@@ -711,6 +814,7 @@ export class DriveSystem {
 
     applyTraitBaseLayer(input, scores, reasons)
     applyConsciousnessLayer(input, scores, reasons)
+    applyMemoryLayer(input, scores, reasons)
     applyPhysicalLayer(input, scores, reasons)
     applyEmotionAndRelationLayer(input, scores, reasons)
     applyRhythmLayer(input, scores, reasons)

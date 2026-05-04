@@ -87,6 +87,7 @@ export class PetSystem {
         timelineSnapshot,
         personalityProfile,
         consciousnessProfile,
+        memoryState,
       },
       time: {
         day: 1,
@@ -221,6 +222,17 @@ export class PetSystem {
     })
   }
 
+  evaluateApproachOffer(opportunity: ButlerOpportunity): PetOpportunityDecision {
+    return evaluateApproachOffer({
+      pet: this.pet,
+      opportunity,
+    })
+  }
+
+  applyAcceptedFoodOffer(amount: number) {
+    this.applyFeeding(amount)
+  }
+
   applyAcceptedRestOffer(opportunity: ButlerOpportunity) {
     const result = applyAcceptedRestOfferEffect({
       pet: this.pet,
@@ -241,17 +253,6 @@ export class PetSystem {
     this.pet = result.pet
 
     return result
-  }
-
-  evaluateApproachOffer(opportunity: ButlerOpportunity): PetOpportunityDecision {
-    return evaluateApproachOffer({
-      pet: this.pet,
-      opportunity,
-    })
-  }
-
-  applyAcceptedFoodOffer(amount: number) {
-    this.applyFeeding(amount)
   }
 
   applyFeeding(amount: number = 15) {
