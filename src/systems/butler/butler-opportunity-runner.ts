@@ -1,11 +1,26 @@
 /**
- * 当前文件负责：创建、清理与判断管家提供给宠物的自主机会。
+ * 当前文件负责：创建、清理、冷却与判断管家提供给宠物的自主机会。
  */
 
 import type {
   ButlerOpportunity,
+  ButlerOpportunityCooldowns,
   ButlerOpportunityType,
 } from "./butler-schema"
+
+const OPPORTUNITY_COOLDOWN_TICKS: Record<ButlerOpportunityType, number> = {
+  food_offer: 4,
+  rest_offer: 5,
+  approach_offer: 6,
+}
+
+export function buildInitialOpportunityCooldowns(): ButlerOpportunityCooldowns {
+  return {
+    food_offer: -9999,
+    rest_offer: -9999,
+    approach_offer: -9999,
+  }
+}
 
 function clamp(value: number, min = 0, max = 100): number {
   return Math.max(min, Math.min(max, value))
@@ -16,6 +31,28 @@ function buildOpportunityId(
   tick: number
 ): string {
   return `butler-${type}-${tick}`
+}
+
+export function canCreateOpportunity(input: {
+  type: ButlerOpportunityType
+  tick: number
+  cooldowns: ButlerOpportunityCooldowns
+}): boolean {
+  const lastCreatedTick = input.cooldowns[input.type]
+  const cooldownTicks = OPPORTUNITY_COOLDOWN_TICKS[input.type]
+
+  return input.tick - lastCreatedTick >= cooldownTicks
+}
+
+export function markOpportunityCreated(input: {
+  type: ButlerOpportunityType
+  tick: number
+  cooldowns: ButlerOpportunityCooldowns
+}): ButlerOpportunityCooldowns {
+  return {
+    ...input.cooldowns,
+    [input.type]: input.tick,
+  }
 }
 
 export function createFoodOffer(

@@ -5,6 +5,7 @@
 export type {
   ButlerMood,
   ButlerOpportunity,
+  ButlerOpportunityCooldowns,
   ButlerOpportunityType,
   ButlerState,
   ButlerSystemInput,
@@ -12,10 +13,13 @@ export type {
 } from "./butler-schema"
 
 export {
+  buildInitialOpportunityCooldowns,
+  canCreateOpportunity,
   createApproachOffer,
   createFoodOffer,
   createRestOffer,
   hasPendingOpportunity,
+  markOpportunityCreated,
   removeExpiredOpportunities,
 } from "./butler-opportunity-runner"
 

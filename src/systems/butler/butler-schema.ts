@@ -28,6 +28,11 @@ export type ButlerOpportunityType =
   | "rest_offer"
   | "approach_offer"
 
+export type ButlerOpportunityCooldowns = Record<
+  ButlerOpportunityType,
+  number
+>
+
 export type ButlerOpportunity = {
   id: string
   type: ButlerOpportunityType
@@ -50,6 +55,7 @@ export type ButlerState = {
   mood: ButlerMood
   lastTaskChangedTick: number
   pendingOpportunities: ButlerOpportunity[]
+  opportunityCooldowns: ButlerOpportunityCooldowns
   behaviorBias?: GenderAwareBehaviorBias | null
 }
 

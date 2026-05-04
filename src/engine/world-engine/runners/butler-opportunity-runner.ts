@@ -115,7 +115,7 @@ export function runButlerOpportunities(input: RunButlerOpportunityInput) {
     if (opportunity.type === "rest_offer") {
       const result = input.petSystem.evaluateRestOffer(opportunity)
 
-            if (result.accepted) {
+      if (result.accepted) {
         const effect = input.petSystem.applyAcceptedRestOffer(opportunity)
 
         addButlerOpportunityEvent(input.eventSystem, {

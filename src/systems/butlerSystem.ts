@@ -8,14 +8,18 @@ import {
 } from "../ai/autonomy-core/autonomy-gateway"
 
 import {
+  buildInitialOpportunityCooldowns,
+  canCreateOpportunity,
   chooseButlerTask,
   createApproachOffer,
   createFoodOffer,
   createRestOffer,
   deriveButlerMood,
   hasPendingOpportunity,
+  markOpportunityCreated,
   removeExpiredOpportunities,
   type ButlerOpportunity,
+  type ButlerOpportunityType,
   type ButlerState,
   type ButlerSystemInput,
 } from "./butler/butler-gateway"
@@ -23,6 +27,7 @@ import {
 export type {
   ButlerMood,
   ButlerOpportunity,
+  ButlerOpportunityCooldowns,
   ButlerOpportunityType,
   ButlerState,
   ButlerSystemInput,
@@ -36,6 +41,7 @@ export class ButlerSystem {
     mood: "calm",
     lastTaskChangedTick: 0,
     pendingOpportunities: [],
+    opportunityCooldowns: buildInitialOpportunityCooldowns(),
     behaviorBias: null,
   }
 
@@ -69,44 +75,74 @@ export class ButlerSystem {
     }
 
     const bias = this.state.behaviorBias?.butlerBehaviorBias
-
     const carePriority = bias?.carePriority ?? 50
     const responseSpeed = bias?.responseSpeed ?? 50
 
-    if (
-      this.state.task === "offering_food" &&
-      foodRule &&
-      foodRule.requiresSelfAcceptance &&
-      !hasPendingOpportunity(this.state.pendingOpportunities, "food_offer")
-    ) {
-      this.state.pendingOpportunities.push(
-        createFoodOffer(input.tick, 18 + (carePriority - 50) * 0.18)
-      )
-    }
+    this.tryCreateOpportunity({
+      type: "food_offer",
+      shouldCreate:
+        this.state.task === "offering_food" &&
+        !!foodRule &&
+        foodRule.requiresSelfAcceptance,
+      create: () =>
+        createFoodOffer(input.tick, 18 + (carePriority - 50) * 0.18),
+      tick: input.tick,
+    })
 
-    if (
-      this.state.task === "offering_rest" &&
-      restRule &&
-      restRule.requiresSelfAcceptance &&
-      !hasPendingOpportunity(this.state.pendingOpportunities, "rest_offer")
-    ) {
-      this.state.pendingOpportunities.push(
-        createRestOffer(input.tick, 16 + (carePriority - 50) * 0.16)
-      )
-    }
+    this.tryCreateOpportunity({
+      type: "rest_offer",
+      shouldCreate:
+        this.state.task === "offering_rest" &&
+        !!restRule &&
+        restRule.requiresSelfAcceptance,
+      create: () =>
+        createRestOffer(input.tick, 16 + (carePriority - 50) * 0.16),
+      tick: input.tick,
+    })
 
-    if (
-      this.state.task === "offering_approach" &&
-      approachRule &&
-      approachRule.requiresSelfAcceptance &&
-      !hasPendingOpportunity(this.state.pendingOpportunities, "approach_offer")
-    ) {
-      this.state.pendingOpportunities.push(
-        createApproachOffer(input.tick, 12 + (responseSpeed - 50) * 0.14)
-      )
-    }
+    this.tryCreateOpportunity({
+      type: "approach_offer",
+      shouldCreate:
+        this.state.task === "offering_approach" &&
+        !!approachRule &&
+        approachRule.requiresSelfAcceptance,
+      create: () =>
+        createApproachOffer(input.tick, 12 + (responseSpeed - 50) * 0.14),
+      tick: input.tick,
+    })
 
     return this.state
+  }
+
+  private tryCreateOpportunity(input: {
+    type: ButlerOpportunityType
+    shouldCreate: boolean
+    create: () => ButlerOpportunity
+    tick: number
+  }) {
+    if (!input.shouldCreate) return
+
+    if (hasPendingOpportunity(this.state.pendingOpportunities, input.type)) {
+      return
+    }
+
+    if (
+      !canCreateOpportunity({
+        type: input.type,
+        tick: input.tick,
+        cooldowns: this.state.opportunityCooldowns,
+      })
+    ) {
+      return
+    }
+
+    this.state.pendingOpportunities.push(input.create())
+
+    this.state.opportunityCooldowns = markOpportunityCreated({
+      type: input.type,
+      tick: input.tick,
+      cooldowns: this.state.opportunityCooldowns,
+    })
   }
 
   getState(): ButlerState {
