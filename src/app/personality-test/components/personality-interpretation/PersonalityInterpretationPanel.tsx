@@ -3,6 +3,7 @@
  */
 
 import { useMemo } from "react"
+import type { ReactNode } from "react"
 
 import type {
   BaziProfile,
@@ -43,7 +44,7 @@ function ScoreBadge({
   )
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
+function SectionTitle({ children }: { children: ReactNode }) {
   return (
     <h4
       style={{
@@ -67,8 +68,8 @@ function EmptyGenderNotice() {
           lineHeight: 1.8,
         }}
       >
-        请先选择男 / 女视角。男女不是简单展示文案，而是人格解释核心的一部分。
-        有出生时辰时进入紫微结构解释；无出生时辰时进入八字动力解释。
+        请先选择男 / 女视角。当前逻辑是先确定性别视角，再进入紫微或八字映射，
+        最后生成对应性格结果。
       </p>
     </InfoCard>
   )
@@ -156,7 +157,7 @@ function ZiweiLifeFunctionList({
           key={item.key}
           style={{
             display: "grid",
-            gridTemplateColumns: "92px 1fr auto",
+            gridTemplateColumns: "120px 1fr auto",
             gap: 10,
             alignItems: "start",
             padding: "8px 0",
@@ -203,7 +204,7 @@ function BaziGenderFunctionList({
           key={item.key}
           style={{
             display: "grid",
-            gridTemplateColumns: "92px 1fr auto",
+            gridTemplateColumns: "120px 1fr auto",
             gap: 10,
             alignItems: "start",
             padding: "8px 0",
@@ -280,8 +281,8 @@ export function PersonalityInterpretationPanel({
 
   const modeText =
     interpretationProfile.mode === "ziwei_primary"
-      ? "紫微主导人格解释核心"
-      : "八字主导人格解释核心"
+      ? "紫微主导人格映射"
+      : "八字主导人格映射"
 
   return (
     <InfoCard title={`🧭 ${viewpointText}${modeText}`}>
@@ -341,22 +342,22 @@ export function PersonalityInterpretationPanel({
               border: "1px solid #e5e7eb",
             }}
           >
-            <strong>出生时辰：</strong>
-            {hasBirthHour ? "已知" : "未知"}
+            <strong>映射顺序：</strong>
+            先分性别，再映射性格
           </div>
         </div>
 
-        <SectionTitle>五维性格解释</SectionTitle>
+        <SectionTitle>五维性格结果</SectionTitle>
         <FiveDimensionList profile={interpretationProfile} />
 
         {interpretationProfile.mode === "ziwei_primary" ? (
           <>
-            <SectionTitle>紫微生命功能解释</SectionTitle>
+            <SectionTitle>紫微生命功能映射</SectionTitle>
             <ZiweiLifeFunctionList profile={interpretationProfile} />
           </>
         ) : (
           <>
-            <SectionTitle>八字男女动力解释</SectionTitle>
+            <SectionTitle>八字男女动力映射</SectionTitle>
             <BaziGenderFunctionList profile={interpretationProfile} />
           </>
         )}

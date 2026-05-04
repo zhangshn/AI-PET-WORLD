@@ -1,12 +1,16 @@
 /**
- * 当前文件负责：把紫微主结构与男女视角映射为生命功能结果。
+ * 当前文件负责：先按男女视角进入紫微结构，再映射生命功能结果。
  */
 
 import type { PersonalityProfile, SectorName, StarId } from "../ziwei-core/schema"
 
-import { getGenderLifeFunctionFocus } from "./gender-perspective-rules"
+import {
+  getGenderAwareZiweiTraitWeights,
+  getGenderLifeFunctionFocus,
+} from "./gender-perspective-rules"
 import type {
   GenderPerspective,
+  ZiweiLifeFunctionKey,
   ZiweiLifeFunctionProfile,
   ZiweiLifeFunctionResult,
 } from "./interpretation-schema"
@@ -15,23 +19,29 @@ import {
   ZIWEI_LIFE_FUNCTION_RULES,
 } from "./ziwei-structure-rules"
 import {
-  averageInterpretationScores,
   getInterpretationScoreLevelLabel,
   resolveInterpretationScoreLevel,
   weightedInterpretationScore,
 } from "./interpretation-utils"
 
-function readTraitScore(
+function readProfileScore(
   profile: PersonalityProfile,
-  traitKey: string
+  key: string
 ): number {
-  const value = profile.traits[traitKey]
+  const traitValue = profile.traits[key]
 
-  if (typeof value !== "number") {
-    return 50
+  if (typeof traitValue === "number") {
+    return traitValue
   }
 
-  return value
+  const core = profile.corePersonality as unknown as Record<string, number>
+  const coreValue = core[key]
+
+  if (typeof coreValue === "number") {
+    return coreValue <= 1 ? Math.round(coreValue * 100) : coreValue
+  }
+
+  return 50
 }
 
 function getSectorStars(
@@ -51,15 +61,15 @@ function resolveSectorStructureScore(
   const isOppositeSector = profile.pattern.oppositeSector === sector
 
   if (isPrimarySector) {
-    return 82
+    return 84
   }
 
   if (isSupportSector) {
-    return 68
+    return 70
   }
 
   if (isOppositeSector) {
-    return 60
+    return 62
   }
 
   if (sourceStars.length > 0) {
@@ -69,12 +79,21 @@ function resolveSectorStructureScore(
   return 45
 }
 
-function resolveTraitScore(
-  profile: PersonalityProfile,
-  relatedTraits: string[]
-): number {
-  return averageInterpretationScores(
-    relatedTraits.map((traitKey) => readTraitScore(profile, traitKey))
+function resolveGenderAwareTraitScore(input: {
+  profile: PersonalityProfile
+  functionKey: ZiweiLifeFunctionKey
+  genderPerspective: GenderPerspective
+}): number {
+  const traitWeights = getGenderAwareZiweiTraitWeights({
+    functionKey: input.functionKey,
+    genderPerspective: input.genderPerspective,
+  })
+
+  return weightedInterpretationScore(
+    Object.entries(traitWeights).map(([traitKey, weight]) => ({
+      score: readProfileScore(input.profile, traitKey),
+      weight,
+    }))
   )
 }
 
@@ -97,7 +116,12 @@ function buildLifeFunctionResult(input: {
   const rule = ZIWEI_LIFE_FUNCTION_RULES[input.functionKey]
   const sourceStars = getSectorStars(input.profile, rule.sourceSector)
 
-  const traitScore = resolveTraitScore(input.profile, rule.relatedTraits)
+  const genderAwareTraitScore = resolveGenderAwareTraitScore({
+    profile: input.profile,
+    functionKey: input.functionKey,
+    genderPerspective: input.genderPerspective,
+  })
+
   const structureScore = resolveSectorStructureScore(
     input.profile,
     rule.sourceSector
@@ -105,12 +129,12 @@ function buildLifeFunctionResult(input: {
 
   const baseScore = weightedInterpretationScore([
     {
-      score: traitScore,
-      weight: 0.62,
+      score: genderAwareTraitScore,
+      weight: 0.68,
     },
     {
       score: structureScore,
-      weight: 0.38,
+      weight: 0.32,
     },
   ])
 
@@ -130,7 +154,12 @@ function buildLifeFunctionResult(input: {
     level,
     baseMeaning: rule.baseMeaning,
     genderFocus,
-    relatedTraits: rule.relatedTraits,
+    relatedTraits: Object.keys(
+      getGenderAwareZiweiTraitWeights({
+        functionKey: input.functionKey,
+        genderPerspective: input.genderPerspective,
+      })
+    ),
     summary: buildFunctionSummary({
       label: rule.label,
       score: baseScore,
@@ -150,7 +179,7 @@ function buildLifeFunctionProfileSummary(input: {
     .map((item) => item.label)
     .join("、")
 
-  return `${viewpointText}下，紫微主结构最明显的生命功能集中在${strongestText}。这里的差异来自同一套紫微结构在不同解释视角下的转译，不改变底层命盘。`
+  return `${viewpointText}先进入紫微结构映射，再生成生命功能。当前最明显的生命功能集中在${strongestText}。`
 }
 
 export function mapZiweiToLifeFunctionProfile(input: {
@@ -179,7 +208,7 @@ export function mapZiweiToLifeFunctionProfile(input: {
     }),
     debug: {
       source: "ziwei",
-      note: "生命功能以紫微结构为主轴生成；男女视角在紫微结构解释阶段进入，不修改紫微原盘。",
+      note: "紫微主导模式下，gender 先进入生命功能映射，再生成分数与解释；不是先算统一性格再套男女文案。",
     },
   }
 }

@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：在出生时辰未知时，以八字为主生成男女视角人格解释。
+ * 当前文件负责：在出生时辰未知时，先按男女视角进入八字动力映射，再生成性格。
  */
 
 import type { BaziProfile } from "../bazi-core/bazi-types"
@@ -55,6 +55,29 @@ function readVectorSupportScore(input: {
   return value
 }
 
+function resolveGenderAwareBaziFunctionScore(input: {
+  baziSupportProfile: BaziDynamicsSupportProfile
+  functionKey: BaziGenderFunctionKey
+  genderPerspective: GenderPerspective
+}): number {
+  const rule = BAZI_GENDER_FUNCTION_RULES[input.functionKey]
+
+  const weights =
+    input.genderPerspective === "male"
+      ? rule.maleSupportWeights
+      : rule.femaleSupportWeights
+
+  return weightedInterpretationScore(
+    Object.entries(weights).map(([supportKey, weight]) => ({
+      score: readBaziSupportScore({
+        profile: input.baziSupportProfile,
+        key: supportKey as BaziDynamicsSupportKey,
+      }),
+      weight,
+    }))
+  )
+}
+
 function buildBaziGenderFunctionSummary(input: {
   label: string
   score: number
@@ -72,10 +95,7 @@ function buildBaziGenderFunctionResult(input: {
   genderPerspective: GenderPerspective
 }): BaziGenderFunctionResult {
   const rule = BAZI_GENDER_FUNCTION_RULES[input.functionKey]
-  const score = readBaziSupportScore({
-    profile: input.baziSupportProfile,
-    key: rule.sourceKey,
-  })
+  const score = resolveGenderAwareBaziFunctionScore(input)
   const level = resolveInterpretationScoreLevel(score)
 
   const genderFocus =
@@ -108,7 +128,7 @@ function buildBaziGenderFunctionProfileSummary(input: {
     .map((item) => item.label)
     .join("、")
 
-  return `${viewpointText}下，八字主导的人格动力重点集中在${strongestText}。当前出生时辰未知，不使用默认紫微盘强行解释。`
+  return `${viewpointText}先进入八字动力映射，再生成人格功能。当前最明显的八字人格功能集中在${strongestText}。`
 }
 
 export function mapBaziGenderFunctionProfile(input: {
@@ -137,7 +157,7 @@ export function mapBaziGenderFunctionProfile(input: {
     }),
     debug: {
       source: "bazi_gender",
-      note: "出生时辰未知时，八字成为人格定义主轴；男女视角仍然参与解释，不被忽略。",
+      note: "出生时辰未知时，gender 先进入八字动力映射，再生成八字人格功能；不是先生成统一分数再套男女文案。",
     },
   }
 }
@@ -157,15 +177,44 @@ function readBaziGenderFunctionFocus(input: {
     ?.genderFocus ?? ""
 }
 
+function resolveGenderAwareDimensionScore(input: {
+  dimensionKey: FiveDimensionKey
+  baziGenderFunctionProfile: BaziGenderFunctionProfile
+}): number {
+  const rule = BAZI_PRIMARY_FIVE_DIMENSION_RULES[input.dimensionKey]
+
+  const weights =
+    input.baziGenderFunctionProfile.genderPerspective === "male"
+      ? rule.maleFunctionWeights
+      : rule.femaleFunctionWeights
+
+  return weightedInterpretationScore(
+    Object.entries(weights).map(([functionKey, weight]) => ({
+      score: readBaziGenderFunctionScore({
+        profile: input.baziGenderFunctionProfile,
+        key: functionKey as BaziGenderFunctionKey,
+      }),
+      weight,
+    }))
+  )
+}
+
 function buildBaziGenderFocusText(input: {
   baziGenderFunctionProfile: BaziGenderFunctionProfile
-  sourceBaziFunctions: BaziGenderFunctionKey[]
+  dimensionKey: FiveDimensionKey
 }): string {
-  return input.sourceBaziFunctions
+  const rule = BAZI_PRIMARY_FIVE_DIMENSION_RULES[input.dimensionKey]
+
+  const weights =
+    input.baziGenderFunctionProfile.genderPerspective === "male"
+      ? rule.maleFunctionWeights
+      : rule.femaleFunctionWeights
+
+  return Object.keys(weights)
     .map((functionKey) =>
       readBaziGenderFunctionFocus({
         profile: input.baziGenderFunctionProfile,
-        key: functionKey,
+        key: functionKey as BaziGenderFunctionKey,
       })
     )
     .filter(Boolean)
@@ -191,14 +240,10 @@ function buildBaziPrimaryFiveDimensionResult(input: {
 }): FiveDimensionResult {
   const rule = BAZI_PRIMARY_FIVE_DIMENSION_RULES[input.dimensionKey]
 
-  const baziGenderScore = averageInterpretationScores(
-    rule.sourceBaziFunctions.map((functionKey) =>
-      readBaziGenderFunctionScore({
-        profile: input.baziGenderFunctionProfile,
-        key: functionKey,
-      })
-    )
-  )
+  const baziGenderScore = resolveGenderAwareDimensionScore({
+    dimensionKey: input.dimensionKey,
+    baziGenderFunctionProfile: input.baziGenderFunctionProfile,
+  })
 
   const baziSupportScore = averageInterpretationScores(
     rule.baziSupportKeys.map((supportKey) =>
@@ -236,7 +281,7 @@ function buildBaziPrimaryFiveDimensionResult(input: {
   const level = resolveInterpretationScoreLevel(score)
   const genderFocus = buildBaziGenderFocusText({
     baziGenderFunctionProfile: input.baziGenderFunctionProfile,
-    sourceBaziFunctions: rule.sourceBaziFunctions,
+    dimensionKey: input.dimensionKey,
   })
 
   return {
@@ -246,7 +291,11 @@ function buildBaziPrimaryFiveDimensionResult(input: {
     level,
     baseMeaning: rule.baseMeaning,
     sourceFunctions: [],
-    sourceBaziFunctions: rule.sourceBaziFunctions,
+    sourceBaziFunctions: Object.keys(
+      input.baziGenderFunctionProfile.genderPerspective === "male"
+        ? rule.maleFunctionWeights
+        : rule.femaleFunctionWeights
+    ) as BaziGenderFunctionKey[],
     genderFocus,
     baziSupportKeys: rule.baziSupportKeys,
     vectorSupportKeys: rule.vectorSupportKeys,
@@ -269,7 +318,7 @@ function buildBaziPrimaryFiveDimensionSummary(input: {
     .map((item) => item.label)
     .join("、")
 
-  return `${viewpointText}下，八字主导模式的五维重点为${strongestText}。由于出生时辰未知，系统不使用紫微完整盘，而以八字动力作为主要人格定义来源。`
+  return `${viewpointText}下，八字主导模式先按性别进入动力映射，再生成五维性格。当前五维重点为${strongestText}。`
 }
 
 export function mapBaziPrimaryFiveDimensionProfile(input: {
@@ -301,7 +350,7 @@ export function mapBaziPrimaryFiveDimensionProfile(input: {
     }),
     debug: {
       source: "bazi_gender_vector",
-      note: "八字主导模式下，五维由八字男女解释功能为主体，FinalPersonalityVector 仅作校准参考。",
+      note: "八字主导模式下，gender 先进入八字动力映射，再生成五维；FinalPersonalityVector 仅作校准参考。",
     },
   }
 }

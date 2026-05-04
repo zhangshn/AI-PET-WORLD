@@ -69,20 +69,24 @@ export default function PersonalityTestPage() {
         onDynamicGenderChange={actions.setDynamicGender}
       />
 
-      <ZiweiDynamicPanel
-        key={`${pattern.birthKey}-${year}-${month}-${day}-${birthHourInput}-${dynamicGender}`}
-        pattern={pattern}
-        hasBirthHour={hasBirthHour}
-        dynamicGender={dynamicGender}
-        currentYear={year}
-        timelineDay={timelineClock.day}
-        timelineHour={timelineClock.hour}
-      />
+      {hasBirthHour ? (
+        <>
+          <ZiweiDynamicPanel
+            key={`${pattern.birthKey}-${year}-${month}-${day}-${birthHourInput}-${dynamicGender}`}
+            pattern={pattern}
+            hasBirthHour={hasBirthHour}
+            dynamicGender={dynamicGender}
+            currentYear={year}
+            timelineDay={timelineClock.day}
+            timelineHour={timelineClock.hour}
+          />
 
-      <SectionSpacer />
+          <SectionSpacer />
+        </>
+      ) : null}
 
       <BaziRuntimePanel
-        key={`${pattern.birthKey}-${year}-${month}-${day}-${birthHourInput}-${dynamicGender}-bazi-runtime`}
+        key={`${year}-${month}-${day}-${birthHourInput}-${dynamicGender}-bazi-runtime`}
         baziProfile={baziProfile}
         dynamicGender={dynamicGender}
         initialYear={year}
@@ -108,14 +112,22 @@ export default function PersonalityTestPage() {
         finalPersonalityProfile={finalPersonalityProfile}
       />
 
-      <SectionSpacer />
+      {hasBirthHour ? (
+        <>
+          <SectionSpacer />
 
-      <ZiweiPersonalityOutputPanel
-        corePersonality={profile.corePersonality}
-        traits={profile.traits}
-        summaries={profile.summaries}
-        debug={profile.debug}
-      />
+          <ZiweiPersonalityOutputPanel
+            corePersonality={profile.corePersonality}
+            traits={profile.traits}
+            summaries={profile.summaries}
+            debug={profile.debug}
+          />
+
+          <SectionSpacer />
+
+          <PublicViewPanel publicView={publicView} />
+        </>
+      ) : null}
 
       <SectionSpacer />
 
@@ -128,10 +140,6 @@ export default function PersonalityTestPage() {
         onApplyTimelineUpdate={actions.applyTimelineUpdate}
         onResetTimeline={actions.resetTimeline}
       />
-
-      <SectionSpacer />
-
-      <PublicViewPanel publicView={publicView} />
     </PersonalityTestPageShell>
   )
 }
