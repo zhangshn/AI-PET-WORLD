@@ -8,6 +8,7 @@ import {
   BaziRuntimePanel,
   BirthInputBar,
   FinalPersonalityPanel,
+  PersonalityInterpretationPanel,
   PersonalityTestPageShell,
   PersonalityTestTitle,
   PublicViewPanel,
@@ -94,6 +95,14 @@ export default function PersonalityTestPage() {
 
       <FinalPersonalityPanel
         hasBirthHour={hasBirthHour}
+        finalPersonalityProfile={finalPersonalityProfile}
+      />
+
+      <SectionSpacer />
+
+      <PersonalityInterpretationPanel
+        ziweiProfile={profile}
+        baziProfile={baziProfile}
         finalPersonalityProfile={finalPersonalityProfile}
       />
 
