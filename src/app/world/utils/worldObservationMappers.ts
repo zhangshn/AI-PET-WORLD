@@ -14,6 +14,24 @@ export type WorldObservationViewModel = {
   detail: string
 }
 
+function getPayloadNumber(
+  payload: Record<string, unknown> | undefined,
+  key: string
+): number | null {
+  const value = payload?.[key]
+
+  return typeof value === "number" ? value : null
+}
+
+function getPayloadString(
+  payload: Record<string, unknown> | undefined,
+  key: string
+): string | null {
+  const value = payload?.[key]
+
+  return typeof value === "string" ? value : null
+}
+
 function getNarrativeLabel(narrativeType?: NarrativeType): string {
   if (narrativeType === "observe_environment") return "观察"
   if (narrativeType === "discover") return "发现"
@@ -124,6 +142,51 @@ function getButlerOpportunityDetail(event: WorldEvent): string {
   return `管家无法直接控制 ${petName}，只能创造条件。`
 }
 
+function getIncubatorCareSummary(event: WorldEvent): string {
+  const progressAdded = getPayloadNumber(event.payload, "progressAdded")
+  const stabilityAdded = getPayloadNumber(event.payload, "stabilityAdded")
+
+  return joinSummaryParts([
+    "管家正在维持孵化器稳定。",
+    progressAdded !== null ? `孵化 +${progressAdded}` : "",
+    stabilityAdded !== null ? `稳定 +${stabilityAdded}` : "",
+  ])
+}
+
+function getIncubatorCareDetail(event: WorldEvent): string {
+  const butlerName = getPayloadString(event.payload, "butlerName") ?? "管家"
+
+  return `${butlerName}正在照看孵化器。这个阶段的重点不是干预生命性格，而是保证生命能稳定完成孵化。`
+}
+
+function getHomeConstructionSummary(event: WorldEvent): string {
+  const buildAmount = getPayloadNumber(event.payload, "buildAmount")
+  const progressAdded = getPayloadNumber(event.payload, "progressAdded")
+  const constructionStage =
+    getPayloadString(event.payload, "constructionStage") ?? "建设中"
+
+  return joinSummaryParts([
+    `家园正在推进到「${constructionStage}」。`,
+    buildAmount !== null ? `投入 ${buildAmount}` : "",
+    progressAdded !== null ? `进度 +${progressAdded}` : "",
+  ])
+}
+
+function getHomeConstructionDetail(event: WorldEvent): string {
+  const butlerName = getPayloadString(event.payload, "butlerName") ?? "管家"
+  const constructionStage =
+    getPayloadString(event.payload, "constructionStage") ?? "当前阶段"
+
+  return `${butlerName}正在维护和建设家园。家园建设不会优先于宠物的明确生存需求；当宠物状态稳定时，管家会继续推进「${constructionStage}」。`
+}
+
+function getHomeCompletedDetail(event: WorldEvent): string {
+  const level = getPayloadNumber(event.payload, "level")
+  const levelText = level !== null ? `Lv.${level}` : "新的阶段"
+
+  return `家园第一阶段已经完成，当前进入 ${levelText}。它会继续作为宠物活动、恢复和建立关系的基础空间。`
+}
+
 function getInteractionTitle(event: WorldEvent): string {
   const interactionKind = event.payload?.interactionKind
 
@@ -133,6 +196,18 @@ function getInteractionTitle(event: WorldEvent): string {
 
   if (interactionKind === "pet_recovery") {
     return "自主恢复"
+  }
+
+  if (interactionKind === "incubator_care") {
+    return "孵化照看"
+  }
+
+  if (interactionKind === "home_construction") {
+    return "家园建设"
+  }
+
+  if (interactionKind === "home_completed") {
+    return "家园完成"
   }
 
   return "世界互动"
@@ -149,6 +224,18 @@ function getInteractionSummary(event: WorldEvent): string {
     return "宠物正在恢复精力。"
   }
 
+  if (interactionKind === "incubator_care") {
+    return getIncubatorCareSummary(event)
+  }
+
+  if (interactionKind === "home_construction") {
+    return getHomeConstructionSummary(event)
+  }
+
+  if (interactionKind === "home_completed") {
+    return "家园第一阶段已经完成。"
+  }
+
   return event.message
 }
 
@@ -159,6 +246,18 @@ function getInteractionDetail(event: WorldEvent): string {
     return getButlerOpportunityDetail(event)
   }
 
+  if (interactionKind === "incubator_care") {
+    return getIncubatorCareDetail(event)
+  }
+
+  if (interactionKind === "home_construction") {
+    return getHomeConstructionDetail(event)
+  }
+
+  if (interactionKind === "home_completed") {
+    return getHomeCompletedDetail(event)
+  }
+
   return event.message
 }
 
@@ -167,6 +266,9 @@ export function getWorldObservationCategoryLabel(event: WorldEvent): string {
 
   if (interactionKind === "butler_opportunity") return "管家机会"
   if (interactionKind === "pet_recovery") return "恢复记录"
+  if (interactionKind === "incubator_care") return "孵化管理"
+  if (interactionKind === "home_construction") return "家园管理"
+  if (interactionKind === "home_completed") return "家园管理"
 
   switch (event.type) {
     case "pet_hatched":
