@@ -33,12 +33,6 @@ export const FIVE_DIMENSION_RULES: Record<
       "reactionSpeed",
       "adaptability",
     ],
-    vectorSupportKeys: [
-      "curiosity",
-      "explorationDrive",
-      "activity",
-      "adaptability",
-    ],
   },
   attachment: {
     key: "attachment",
@@ -53,12 +47,6 @@ export const FIVE_DIMENSION_RULES: Record<
       "stability",
       "adaptability",
     ],
-    vectorSupportKeys: [
-      "attachment",
-      "sensitivity",
-      "stability",
-      "restPreference",
-    ],
   },
   stability: {
     key: "stability",
@@ -72,12 +60,6 @@ export const FIVE_DIMENSION_RULES: Record<
       "stability",
       "consistency",
       "persistence",
-    ],
-    vectorSupportKeys: [
-      "stability",
-      "restPreference",
-      "persistence",
-      "discipline",
     ],
   },
   execution: {
@@ -94,12 +76,6 @@ export const FIVE_DIMENSION_RULES: Record<
       "actionIntensity",
       "reactionSpeed",
     ],
-    vectorSupportKeys: [
-      "discipline",
-      "control",
-      "persistence",
-      "reactionSpeed",
-    ],
   },
   caregiving: {
     key: "caregiving",
@@ -113,12 +89,6 @@ export const FIVE_DIMENSION_RULES: Record<
       "sensoryDepth",
       "stability",
       "persistence",
-    ],
-    vectorSupportKeys: [
-      "attachment",
-      "sensitivity",
-      "sensoryDepth",
-      "stability",
     ],
   },
 }

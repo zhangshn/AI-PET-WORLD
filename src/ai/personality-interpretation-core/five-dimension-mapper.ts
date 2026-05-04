@@ -1,14 +1,7 @@
 /**
- * 当前文件负责：把紫微生命功能、八字辅助动力与统一人格向量映射为五维性格。
+ * 当前文件负责：把紫微生命功能与八字辅助动力映射为五维性格。
  */
 
-import type { FinalPersonalityProfile } from "../personality-vector/vector-gateway"
-
-import {
-  BAZI_DYNAMICS_WEIGHT,
-  FINAL_VECTOR_CALIBRATION_WEIGHT,
-  ZIWEI_STRUCTURE_WEIGHT,
-} from "./interpretation-constants"
 import type {
   BaziDynamicsSupportKey,
   BaziDynamicsSupportProfile,
@@ -53,20 +46,6 @@ function readBaziSupportScore(input: {
   return input.profile.items.find((item) => item.key === input.key)?.score ?? 50
 }
 
-function readVectorSupportScore(input: {
-  profile: FinalPersonalityProfile
-  key: string
-}): number {
-  const vector = input.profile.vector as Record<string, number>
-  const value = vector[input.key]
-
-  if (typeof value !== "number") {
-    return 50
-  }
-
-  return value
-}
-
 function buildGenderFocusText(input: {
   lifeFunctionProfile: ZiweiLifeFunctionProfile
   sourceFunctions: ZiweiLifeFunctionKey[]
@@ -95,10 +74,8 @@ function buildFiveDimensionSummary(input: {
 
 function buildFiveDimensionResult(input: {
   dimensionKey: FiveDimensionKey
-  genderPerspective: GenderPerspective
   lifeFunctionProfile: ZiweiLifeFunctionProfile
   baziSupportProfile: BaziDynamicsSupportProfile
-  finalPersonalityProfile: FinalPersonalityProfile
 }): FiveDimensionResult {
   const rule = FIVE_DIMENSION_RULES[input.dimensionKey]
 
@@ -120,27 +97,14 @@ function buildFiveDimensionResult(input: {
     )
   )
 
-  const vectorScore = averageInterpretationScores(
-    rule.vectorSupportKeys.map((supportKey) =>
-      readVectorSupportScore({
-        profile: input.finalPersonalityProfile,
-        key: supportKey,
-      })
-    )
-  )
-
   const score = weightedInterpretationScore([
     {
       score: ziweiScore,
-      weight: ZIWEI_STRUCTURE_WEIGHT,
+      weight: 0.78,
     },
     {
       score: baziScore,
-      weight: BAZI_DYNAMICS_WEIGHT,
-    },
-    {
-      score: vectorScore,
-      weight: FINAL_VECTOR_CALIBRATION_WEIGHT,
+      weight: 0.22,
     },
   ])
 
@@ -160,11 +124,10 @@ function buildFiveDimensionResult(input: {
     sourceBaziFunctions: [],
     genderFocus,
     baziSupportKeys: rule.baziSupportKeys,
-    vectorSupportKeys: rule.vectorSupportKeys,
     summary: buildFiveDimensionSummary({
-        label: rule.label,
-        score,
-        genderFocus,
+      label: rule.label,
+      score,
+      genderFocus,
     }),
   }
 }
@@ -180,22 +143,19 @@ function buildFiveDimensionProfileSummary(input: {
     .map((item) => item.label)
     .join("、")
 
-  return `${viewpointText}下，最终五维性格最明显的是${strongestText}。五维分数以紫微生命功能为主体，八字作为动力辅助，FinalPersonalityVector 只作为校准参考。`
+  return `${viewpointText}下，最终五维性格最明显的是${strongestText}。五维分数由已完成性别映射的紫微生命功能主导，八字动力辅助。`
 }
 
 export function mapFiveDimensionProfile(input: {
   genderPerspective: GenderPerspective
   lifeFunctionProfile: ZiweiLifeFunctionProfile
   baziSupportProfile: BaziDynamicsSupportProfile
-  finalPersonalityProfile: FinalPersonalityProfile
 }): FiveDimensionProfile {
   const dimensions = FIVE_DIMENSION_ORDER.map((dimensionKey) =>
     buildFiveDimensionResult({
       dimensionKey,
-      genderPerspective: input.genderPerspective,
       lifeFunctionProfile: input.lifeFunctionProfile,
       baziSupportProfile: input.baziSupportProfile,
-      finalPersonalityProfile: input.finalPersonalityProfile,
     })
   )
 
@@ -212,8 +172,8 @@ export function mapFiveDimensionProfile(input: {
       strongestDimensions,
     }),
     debug: {
-      source: "ziwei_gender_bazi_vector",
-      note: "五维性格以紫微生命功能为主体，八字动力为辅助，统一人格向量仅用于校准，不被 gender 直接修改。",
+      source: "ziwei_gender_bazi",
+      note: "五维性格由性别化紫微生命功能与八字辅助动力生成，不再依赖 FinalPersonalityVector。",
     },
   }
 }

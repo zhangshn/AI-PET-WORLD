@@ -236,12 +236,6 @@ export const BAZI_PRIMARY_FIVE_DIMENSION_RULES: Record<
       "reactionSpeed",
       "adaptability",
     ],
-    vectorSupportKeys: [
-      "curiosity",
-      "explorationDrive",
-      "activity",
-      "adaptability",
-    ],
     maleFunctionWeights: {
       explorationMomentum: 0.42,
       actionRelease: 0.32,
@@ -268,12 +262,6 @@ export const BAZI_PRIMARY_FIVE_DIMENSION_RULES: Record<
       "sensoryDepth",
       "stability",
       "persistence",
-    ],
-    vectorSupportKeys: [
-      "attachment",
-      "sensitivity",
-      "stability",
-      "restPreference",
     ],
     maleFunctionWeights: {
       stabilityBase: 0.32,
@@ -302,12 +290,6 @@ export const BAZI_PRIMARY_FIVE_DIMENSION_RULES: Record<
       "consistency",
       "persistence",
     ],
-    vectorSupportKeys: [
-      "stability",
-      "restPreference",
-      "persistence",
-      "discipline",
-    ],
     maleFunctionWeights: {
       routineConsistency: 0.32,
       stabilityBase: 0.3,
@@ -333,12 +315,6 @@ export const BAZI_PRIMARY_FIVE_DIMENSION_RULES: Record<
     baziSupportKeys: [
       "actionIntensity",
       "consistency",
-      "persistence",
-      "reactionSpeed",
-    ],
-    vectorSupportKeys: [
-      "discipline",
-      "control",
       "persistence",
       "reactionSpeed",
     ],
@@ -369,12 +345,6 @@ export const BAZI_PRIMARY_FIVE_DIMENSION_RULES: Record<
       "sensoryDepth",
       "stability",
       "persistence",
-    ],
-    vectorSupportKeys: [
-      "attachment",
-      "sensitivity",
-      "sensoryDepth",
-      "stability",
     ],
     maleFunctionWeights: {
       persistencePattern: 0.3,

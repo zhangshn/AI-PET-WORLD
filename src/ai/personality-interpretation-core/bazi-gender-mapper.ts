@@ -2,14 +2,6 @@
  * 当前文件负责：在出生时辰未知时，先按男女视角进入八字动力映射，再生成性格。
  */
 
-import type { BaziProfile } from "../bazi-core/bazi-types"
-import type { FinalPersonalityProfile } from "../personality-vector/vector-gateway"
-
-import {
-  BAZI_DYNAMICS_WEIGHT,
-  FINAL_VECTOR_CALIBRATION_WEIGHT,
-  ZIWEI_STRUCTURE_WEIGHT,
-} from "./interpretation-constants"
 import {
   BAZI_GENDER_FUNCTION_ORDER,
   BAZI_GENDER_FUNCTION_RULES,
@@ -39,20 +31,6 @@ function readBaziSupportScore(input: {
   key: BaziDynamicsSupportKey
 }): number {
   return input.profile.items.find((item) => item.key === input.key)?.score ?? 50
-}
-
-function readVectorSupportScore(input: {
-  profile: FinalPersonalityProfile
-  key: string
-}): number {
-  const vector = input.profile.vector as Record<string, number>
-  const value = vector[input.key]
-
-  if (typeof value !== "number") {
-    return 50
-  }
-
-  return value
 }
 
 function resolveGenderAwareBaziFunctionScore(input: {
@@ -166,15 +144,19 @@ function readBaziGenderFunctionScore(input: {
   profile: BaziGenderFunctionProfile
   key: BaziGenderFunctionKey
 }): number {
-  return input.profile.functions.find((item) => item.key === input.key)?.score ?? 50
+  return (
+    input.profile.functions.find((item) => item.key === input.key)?.score ?? 50
+  )
 }
 
 function readBaziGenderFunctionFocus(input: {
   profile: BaziGenderFunctionProfile
   key: BaziGenderFunctionKey
 }): string {
-  return input.profile.functions.find((item) => item.key === input.key)
-    ?.genderFocus ?? ""
+  return (
+    input.profile.functions.find((item) => item.key === input.key)
+      ?.genderFocus ?? ""
+  )
 }
 
 function resolveGenderAwareDimensionScore(input: {
@@ -236,7 +218,6 @@ function buildBaziPrimaryFiveDimensionResult(input: {
   dimensionKey: FiveDimensionKey
   baziGenderFunctionProfile: BaziGenderFunctionProfile
   baziSupportProfile: BaziDynamicsSupportProfile
-  finalPersonalityProfile: FinalPersonalityProfile
 }): FiveDimensionResult {
   const rule = BAZI_PRIMARY_FIVE_DIMENSION_RULES[input.dimensionKey]
 
@@ -254,27 +235,14 @@ function buildBaziPrimaryFiveDimensionResult(input: {
     )
   )
 
-  const vectorScore = averageInterpretationScores(
-    rule.vectorSupportKeys.map((supportKey) =>
-      readVectorSupportScore({
-        profile: input.finalPersonalityProfile,
-        key: supportKey,
-      })
-    )
-  )
-
   const score = weightedInterpretationScore([
     {
       score: baziGenderScore,
-      weight: ZIWEI_STRUCTURE_WEIGHT,
+      weight: 0.82,
     },
     {
       score: baziSupportScore,
-      weight: BAZI_DYNAMICS_WEIGHT,
-    },
-    {
-      score: vectorScore,
-      weight: FINAL_VECTOR_CALIBRATION_WEIGHT,
+      weight: 0.18,
     },
   ])
 
@@ -284,6 +252,12 @@ function buildBaziPrimaryFiveDimensionResult(input: {
     dimensionKey: input.dimensionKey,
   })
 
+  const sourceBaziFunctions = Object.keys(
+    input.baziGenderFunctionProfile.genderPerspective === "male"
+      ? rule.maleFunctionWeights
+      : rule.femaleFunctionWeights
+  ) as BaziGenderFunctionKey[]
+
   return {
     key: rule.key,
     label: rule.label,
@@ -291,14 +265,9 @@ function buildBaziPrimaryFiveDimensionResult(input: {
     level,
     baseMeaning: rule.baseMeaning,
     sourceFunctions: [],
-    sourceBaziFunctions: Object.keys(
-      input.baziGenderFunctionProfile.genderPerspective === "male"
-        ? rule.maleFunctionWeights
-        : rule.femaleFunctionWeights
-    ) as BaziGenderFunctionKey[],
+    sourceBaziFunctions,
     genderFocus,
     baziSupportKeys: rule.baziSupportKeys,
-    vectorSupportKeys: rule.vectorSupportKeys,
     summary: buildBaziPrimaryDimensionSummary({
       label: rule.label,
       score,
@@ -324,7 +293,6 @@ function buildBaziPrimaryFiveDimensionSummary(input: {
 export function mapBaziPrimaryFiveDimensionProfile(input: {
   baziGenderFunctionProfile: BaziGenderFunctionProfile
   baziSupportProfile: BaziDynamicsSupportProfile
-  finalPersonalityProfile: FinalPersonalityProfile
   genderPerspective: GenderPerspective
 }): FiveDimensionProfile {
   const dimensions = FIVE_DIMENSION_ORDER.map((dimensionKey) =>
@@ -332,7 +300,6 @@ export function mapBaziPrimaryFiveDimensionProfile(input: {
       dimensionKey,
       baziGenderFunctionProfile: input.baziGenderFunctionProfile,
       baziSupportProfile: input.baziSupportProfile,
-      finalPersonalityProfile: input.finalPersonalityProfile,
     })
   )
 
@@ -349,16 +316,14 @@ export function mapBaziPrimaryFiveDimensionProfile(input: {
       strongestDimensions,
     }),
     debug: {
-      source: "bazi_gender_vector",
-      note: "八字主导模式下，gender 先进入八字动力映射，再生成五维；FinalPersonalityVector 仅作校准参考。",
+      source: "bazi_gender",
+      note: "八字主导模式下，gender 先进入八字动力映射，再生成五维；不再依赖 FinalPersonalityVector。",
     },
   }
 }
 
 export function buildBaziPrimaryInterpretationParts(input: {
-  baziProfile: BaziProfile
   baziSupportProfile: BaziDynamicsSupportProfile
-  finalPersonalityProfile: FinalPersonalityProfile
   genderPerspective: GenderPerspective
 }) {
   const baziGenderFunctionProfile = mapBaziGenderFunctionProfile({
@@ -369,7 +334,6 @@ export function buildBaziPrimaryInterpretationParts(input: {
   const fiveDimensionProfile = mapBaziPrimaryFiveDimensionProfile({
     baziGenderFunctionProfile,
     baziSupportProfile: input.baziSupportProfile,
-    finalPersonalityProfile: input.finalPersonalityProfile,
     genderPerspective: input.genderPerspective,
   })
 

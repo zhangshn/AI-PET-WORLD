@@ -9,7 +9,6 @@ import {
 import { adaptBaziDynamicsSupport } from "./bazi-dynamics-adapter"
 import { buildBaziPrimaryInterpretationParts } from "./bazi-gender-mapper"
 import { mapFiveDimensionProfile } from "./five-dimension-mapper"
-import { buildFinalVectorFingerprint } from "./interpretation-utils"
 import type {
   BuildGenderPerspectiveComparisonInput,
   BuildPersonalityInterpretationInput,
@@ -66,7 +65,6 @@ function buildZiweiPrimaryInterpretation(
     genderPerspective: input.genderPerspective,
     lifeFunctionProfile: ziweiLifeFunctionProfile,
     baziSupportProfile: baziDynamicsSupportProfile,
-    finalPersonalityProfile: input.finalPersonalityProfile,
   })
 
   return {
@@ -85,8 +83,7 @@ function buildZiweiPrimaryInterpretation(
     debug: {
       doesModifyZiweiProfile: false,
       doesModifyBaziProfile: false,
-      doesModifyFinalPersonalityVector: false,
-      note: "紫微主导模式：紫微定结构，男女进入紫微结构解释，八字作为辅助动力。",
+      note: "紫微主导模式：性别先进入紫微生命功能映射，八字只作为辅助动力。",
     },
   }
 }
@@ -102,9 +99,7 @@ function buildBaziPrimaryInterpretation(
     baziGenderFunctionProfile,
     fiveDimensionProfile,
   } = buildBaziPrimaryInterpretationParts({
-    baziProfile: input.baziProfile,
     baziSupportProfile: baziDynamicsSupportProfile,
-    finalPersonalityProfile: input.finalPersonalityProfile,
     genderPerspective: input.genderPerspective,
   })
 
@@ -112,7 +107,7 @@ function buildBaziPrimaryInterpretation(
     mode: "bazi_primary",
     genderPerspective: input.genderPerspective,
     principle:
-      "出生时辰未知时，八字作为主要人格定义来源；男女视角仍然进入八字动力解释，不被忽略。",
+      "出生时辰未知时，八字作为主要人格定义来源；男女视角先进入八字动力映射。",
     ziweiLifeFunctionProfile: null,
     baziGenderFunctionProfile,
     baziDynamicsSupportProfile,
@@ -125,8 +120,7 @@ function buildBaziPrimaryInterpretation(
     debug: {
       doesModifyZiweiProfile: false,
       doesModifyBaziProfile: false,
-      doesModifyFinalPersonalityVector: false,
-      note: "八字主导模式：不使用默认出生时辰强行解释紫微盘；八字主导，男女视角参与解释。",
+      note: "八字主导模式：不使用默认出生时辰强行解释紫微盘；性别先进入八字动力映射。",
     },
   }
 }
@@ -154,7 +148,6 @@ export function buildGenderPerspectiveComparison(
   const maleProfile = buildPersonalityInterpretationProfileInternal({
     ziweiProfile: input.ziweiProfile,
     baziProfile: input.baziProfile,
-    finalPersonalityProfile: input.finalPersonalityProfile,
     genderPerspective: "male",
     hasBirthHour: input.hasBirthHour,
   })
@@ -162,38 +155,26 @@ export function buildGenderPerspectiveComparison(
   const femaleProfile = buildPersonalityInterpretationProfileInternal({
     ziweiProfile: input.ziweiProfile,
     baziProfile: input.baziProfile,
-    finalPersonalityProfile: input.finalPersonalityProfile,
     genderPerspective: "female",
     hasBirthHour: input.hasBirthHour,
   })
 
-  const maleVectorFingerprint = buildFinalVectorFingerprint(
-    input.finalPersonalityProfile.vector
-  )
-
-  const femaleVectorFingerprint = buildFinalVectorFingerprint(
-    input.finalPersonalityProfile.vector
-  )
-
   const conclusion =
     mode === "ziwei_primary"
       ? GENDER_COMPARISON_CONCLUSION
-      : "出生时辰未知，系统采用八字主导人格定义模式。男女共用同一套八字动力与最终人格向量，但按男命 / 女命视角生成不同解释。"
+      : "出生时辰未知，系统采用八字主导人格定义模式。男女共用同一套八字动力材料，但先进入不同性别映射路径。"
 
   return {
     mode,
     sameBirthStructure: true,
-    sameFinalVector: true,
     maleProfile,
     femaleProfile,
     conclusion,
     debug: {
-      maleVectorFingerprint,
-      femaleVectorFingerprint,
       note:
         mode === "ziwei_primary"
-          ? "紫微主导模式：同盘男女共用 ziweiProfile、baziProfile 与 finalPersonalityProfile；差异来自 genderPerspective。"
-          : "八字主导模式：出生时辰未知，不使用默认紫微盘；男女共用 baziProfile 与 finalPersonalityProfile；差异来自 genderPerspective。",
+          ? "紫微主导模式：同盘男女共用 ziweiProfile 与 baziProfile；差异来自性别先进入紫微生命功能映射。"
+          : "八字主导模式：出生时辰未知，不使用默认紫微盘；差异来自性别先进入八字动力映射。",
     },
   }
 }

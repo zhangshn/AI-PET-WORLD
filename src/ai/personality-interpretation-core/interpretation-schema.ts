@@ -3,7 +3,6 @@
  */
 
 import type { BaziProfile } from "../bazi-core/bazi-types"
-import type { FinalPersonalityProfile } from "../personality-vector/vector-gateway"
 import type { PersonalityProfile, SectorName, StarId } from "../ziwei-core/schema"
 
 export type GenderPerspective = "male" | "female"
@@ -91,7 +90,6 @@ export type FiveDimensionRule = {
   baseMeaning: string
   sourceFunctions: ZiweiLifeFunctionKey[]
   baziSupportKeys: BaziDynamicsSupportKey[]
-  vectorSupportKeys: string[]
 }
 
 export type BaziPrimaryFiveDimensionRule = {
@@ -100,7 +98,6 @@ export type BaziPrimaryFiveDimensionRule = {
   baseMeaning: string
   sourceBaziFunctions: BaziGenderFunctionKey[]
   baziSupportKeys: BaziDynamicsSupportKey[]
-  vectorSupportKeys: string[]
 }
 
 export type ZiweiLifeFunctionResult = {
@@ -179,7 +176,6 @@ export type FiveDimensionResult = {
   sourceBaziFunctions: BaziGenderFunctionKey[]
   genderFocus: string
   baziSupportKeys: BaziDynamicsSupportKey[]
-  vectorSupportKeys: string[]
   summary: string
 }
 
@@ -189,7 +185,7 @@ export type FiveDimensionProfile = {
   strongestDimensions: FiveDimensionResult[]
   summary: string
   debug: {
-    source: "ziwei_gender_bazi_vector" | "bazi_gender_vector"
+    source: "ziwei_gender_bazi" | "bazi_gender"
     note: string
   }
 }
@@ -208,7 +204,6 @@ export type PersonalityInterpretationProfile = {
   debug: {
     doesModifyZiweiProfile: false
     doesModifyBaziProfile: false
-    doesModifyFinalPersonalityVector: false
     note: string
   }
 }
@@ -248,13 +243,10 @@ export type BuildGenderAwareBehaviorBiasInput = {
 export type GenderPerspectiveComparison = {
   mode: PersonalityInterpretationMode
   sameBirthStructure: true
-  sameFinalVector: true
   maleProfile: PersonalityInterpretationProfile
   femaleProfile: PersonalityInterpretationProfile
   conclusion: string
   debug: {
-    maleVectorFingerprint: string
-    femaleVectorFingerprint: string
     note: string
   }
 }
@@ -262,7 +254,6 @@ export type GenderPerspectiveComparison = {
 export type BuildPersonalityInterpretationInput = {
   ziweiProfile?: PersonalityProfile | null
   baziProfile: BaziProfile
-  finalPersonalityProfile: FinalPersonalityProfile
   genderPerspective: GenderPerspective
   hasBirthHour: boolean
 }
@@ -270,6 +261,5 @@ export type BuildPersonalityInterpretationInput = {
 export type BuildGenderPerspectiveComparisonInput = {
   ziweiProfile?: PersonalityProfile | null
   baziProfile: BaziProfile
-  finalPersonalityProfile: FinalPersonalityProfile
   hasBirthHour: boolean
 }
