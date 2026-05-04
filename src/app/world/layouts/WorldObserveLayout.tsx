@@ -4,12 +4,15 @@
  * 当前文件负责：组织 /world 正式观察页的整体产品布局。
  */
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
 import type { WorldEngineViewState } from "../hooks/useWorldEngineState"
 import type { WorldStageSceneMode } from "../components/stage-renderers/orchestrator/stage-scene-mode"
 
+import { buildWorldHudBundle } from "../utils/worldHudMappers"
+
 import WorldInfoBar from "../ui/WorldInfoBar"
+import WorldCompactHud from "../ui/WorldCompactHud"
 import PetInsightCard from "../ui/PetInsightCard"
 import ButlerInsightCard from "../ui/ButlerInsightCard"
 import HomeInsightCard from "../ui/HomeInsightCard"
@@ -30,6 +33,24 @@ type Props = {
 export default function WorldObserveLayout({ world }: Props) {
   const [sceneMode, setSceneMode] = useState<WorldStageSceneMode>("exterior")
 
+  const hud = useMemo(() => {
+    return buildWorldHudBundle({
+      time: world.time,
+      pet: world.pet,
+      butler: world.butler,
+      home: world.home,
+      stimuli: world.stimuli,
+      ecology: world.ecology,
+    })
+  }, [
+    world.time,
+    world.pet,
+    world.butler,
+    world.home,
+    world.stimuli,
+    world.ecology,
+  ])
+
   return (
     <main className={styles.page}>
       <section className={styles.shell}>
@@ -45,6 +66,8 @@ export default function WorldObserveLayout({ world }: Props) {
             ecology={world.ecology}
           />
         </header>
+
+        <WorldCompactHud hud={hud} />
 
         <section className={styles.contentGrid}>
           <WorldStagePanel>
