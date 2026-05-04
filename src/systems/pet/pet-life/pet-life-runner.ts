@@ -21,7 +21,9 @@ export function runPetLife(input: RunPetLifeInput): RunPetLifeResult {
     },
   }
 
-  const petBias = nextPet.finalPersonalityProfile.bias.petBehaviorBias
+  const petBias =
+    nextPet.lifeProfile.genderAwareBehaviorBias.petBehaviorBias
+
   const activityBias = petBias.newbornActivity
   const explorationBias = petBias.explorationRange
   const ageTicks = nextPet.lifeState.ageTicks

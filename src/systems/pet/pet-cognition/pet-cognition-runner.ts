@@ -49,19 +49,34 @@ export function runPetStimulusPerception(
       break
     }
 
+    const fiveDimensions =
+      nextPet.lifeProfile.personalityInterpretationProfile.fiveDimensionProfile
+        .dimensions
+
+    const explorationScore = readDimensionScore(fiveDimensions, "exploration")
+    const attachmentScore = readDimensionScore(fiveDimensions, "attachment")
+    const stabilityScore = readDimensionScore(fiveDimensions, "stability")
+    const caregivingScore = readDimensionScore(fiveDimensions, "caregiving")
+
     const cognition = buildPetStimulusCognition({
       stimulus,
       personalityTraits: {
         ...(nextPet.personalityProfile.traits as Record<string, number>),
-        ...nextPet.finalPersonalityProfile.vector,
+        exploration: explorationScore,
+        attachment: attachmentScore,
+        stability: stabilityScore,
+        caregiving: caregivingScore,
       },
       consciousness: {
         caution: nextPet.consciousnessProfile.bias.riskTolerance <= 40 ? 80 : 40,
-        curiosity: nextPet.finalPersonalityProfile.vector.curiosity,
-        sociability: nextPet.personalityProfile.traits.social ?? 50,
-        emotionalSensitivity: nextPet.finalPersonalityProfile.vector.sensitivity,
-        environmentalAwareness:
-          nextPet.finalPersonalityProfile.vector.sensoryDepth,
+        curiosity: normalizeTrait(nextPet.personalityProfile.traits.curiosity),
+        sociability: attachmentScore,
+        emotionalSensitivity: normalizeTrait(
+          nextPet.personalityProfile.traits.emotionalSensitivity
+        ),
+        environmentalAwareness: Math.round(
+          (explorationScore + stabilityScore + caregivingScore) / 3
+        ),
       },
       currentState: {
         energy: nextPet.energy,
@@ -109,6 +124,20 @@ export function runPetStimulusPerception(
     pet: nextPet,
     records,
   }
+}
+
+function readDimensionScore(
+  dimensions: Array<{
+    key: string
+    score: number
+  }>,
+  key: string
+): number {
+  return dimensions.find((item) => item.key === key)?.score ?? 50
+}
+
+function normalizeTrait(value: number): number {
+  return Math.max(0, Math.min(100, Math.round(value)))
 }
 
 function resolveEmotionalStability(label: string): number {

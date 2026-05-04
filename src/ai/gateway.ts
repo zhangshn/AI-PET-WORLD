@@ -2,8 +2,7 @@
  * 当前文件负责：作为 AI-PET-WORLD 全部 AI 子系统统一总入口。
  */
 
-import type { BirthInput, PersonalityProfile } from "./ziwei-core/schema"
-import { buildPersonalityProfile } from "./ziwei-core/ziwei-gateway"
+import type { PersonalityProfile } from "./ziwei-core/schema"
 
 import type { PublicPersonalityView } from "./ziwei-core/public-view"
 import { buildPublicPersonalityView } from "./ziwei-core/public-view"
@@ -13,7 +12,6 @@ import type {
   TimelineBehaviorShiftInput,
 } from "./timeline-system/timeline-gateway"
 import {
-  buildPetTimelineSnapshot,
   updatePetTimelineSnapshot,
 } from "./timeline-system/timeline-gateway"
 

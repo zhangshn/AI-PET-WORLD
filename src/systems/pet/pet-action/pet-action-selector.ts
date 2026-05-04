@@ -40,7 +40,7 @@ export function selectPetAction(
   const relational = state.relational.label
 
   const consciousness = input.pet.consciousnessProfile.bias
-  const finalBias = input.pet.finalPersonalityProfile.bias.petBehaviorBias
+  const petBias = input.pet.lifeProfile.genderAwareBehaviorBias.petBehaviorBias
   const lifePhase = input.pet.lifeState.phase
   const memory = input.pet.memoryState.preferenceBias
 
@@ -84,10 +84,11 @@ export function selectPetAction(
   weights.sleeping += d.rest * 0.7
   weights.eating += d.eat
 
-  weights.observing += finalBias.observationNeed * 0.18
-  weights.approaching += finalBias.attachmentNeed * 0.12
-  weights.exploring += finalBias.explorationRange * 0.14
-  weights.resting += finalBias.restNeed * 0.12
+  weights.observing += petBias.observationNeed * 0.18
+  weights.approaching += petBias.attachmentNeed * 0.12
+  weights.exploring += petBias.explorationRange * 0.14
+  weights.resting += petBias.restNeed * 0.12
+  weights.walking += petBias.newbornActivity * 0.08
 
   if (lifePhase === "newborn") {
     weights.exploring -= 34
