@@ -101,6 +101,8 @@ export default function PersonalityTestPage() {
       <SectionSpacer />
 
       <PersonalityInterpretationPanel
+        hasBirthHour={hasBirthHour}
+        genderPerspective={dynamicGender}
         ziweiProfile={profile}
         baziProfile={baziProfile}
         finalPersonalityProfile={finalPersonalityProfile}

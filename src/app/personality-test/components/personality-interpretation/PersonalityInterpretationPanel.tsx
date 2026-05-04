@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：展示同盘男女人格解释核心对照结果。
+ * 当前文件负责：展示当前性别视角下的人格解释核心结果。
  */
 
 import { useMemo } from "react"
@@ -7,11 +7,13 @@ import { useMemo } from "react"
 import type {
   BaziProfile,
   FinalPersonalityProfile,
-  GenderPerspectiveComparison,
+  GenderPerspective,
+  PersonalityInterpretationProfile,
   PersonalityProfile,
 } from "../../../../ai/gateway"
-import { buildAiPersonalityGenderComparison } from "../../../../ai/gateway"
+import { buildAiPersonalityInterpretation } from "../../../../ai/gateway"
 
+import type { DynamicGenderInput } from "../../types"
 import { InfoCard } from "../common/InfoCard"
 
 function ScoreBadge({
@@ -55,183 +57,31 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   )
 }
 
-function DimensionList({
-  title,
-  profile,
-}: {
-  title: string
-  profile: GenderPerspectiveComparison["maleProfile"]
-}) {
+function EmptyGenderNotice() {
   return (
-    <div
-      style={{
-        border: "1px solid #e5e7eb",
-        borderRadius: 10,
-        padding: 14,
-        background: "#fafafa",
-      }}
-    >
-      <h4
-        style={{
-          margin: "0 0 10px",
-          fontSize: 15,
-        }}
-      >
-        {title}
-      </h4>
-
+    <InfoCard title="🧭 人格解释核心">
       <p
         style={{
-          margin: "0 0 12px",
+          margin: 0,
           color: "#4b5563",
-          lineHeight: 1.7,
-          fontSize: 13,
+          lineHeight: 1.8,
         }}
       >
-        {profile.summary}
+        请先选择男 / 女视角。男女不是单纯展示文案，而是进入紫微结构解释阶段的核心视角。
       </p>
-
-      <div
-        style={{
-          display: "grid",
-          gap: 10,
-        }}
-      >
-        {profile.fiveDimensionProfile.dimensions.map((dimension) => (
-          <div
-            key={dimension.key}
-            style={{
-              padding: 10,
-              borderRadius: 8,
-              background: "#fff",
-              border: "1px solid #eee",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 10,
-                marginBottom: 6,
-              }}
-            >
-              <strong>{dimension.label}</strong>
-              <ScoreBadge
-                score={dimension.score}
-                level={dimension.level}
-              />
-            </div>
-
-            <p
-              style={{
-                margin: "0 0 6px",
-                color: "#374151",
-                lineHeight: 1.7,
-                fontSize: 13,
-              }}
-            >
-              {dimension.baseMeaning}
-            </p>
-
-            <p
-              style={{
-                margin: 0,
-                color: "#6b7280",
-                lineHeight: 1.7,
-                fontSize: 13,
-              }}
-            >
-              {dimension.summary}
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
+    </InfoCard>
   )
 }
 
-function LifeFunctionList({
-  title,
-  profile,
-}: {
-  title: string
-  profile: GenderPerspectiveComparison["maleProfile"]
-}) {
-  return (
-    <div
-      style={{
-        border: "1px solid #e5e7eb",
-        borderRadius: 10,
-        padding: 14,
-        background: "#fff",
-      }}
-    >
-      <h4
-        style={{
-          margin: "0 0 10px",
-          fontSize: 15,
-        }}
-      >
-        {title}
-      </h4>
-
-      <div
-        style={{
-          display: "grid",
-          gap: 8,
-        }}
-      >
-        {profile.ziweiLifeFunctionProfile.functions.map((item) => (
-          <div
-            key={item.key}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "92px 1fr auto",
-              gap: 10,
-              alignItems: "start",
-              padding: "8px 0",
-              borderBottom: "1px dashed #e5e7eb",
-            }}
-          >
-            <strong>{item.label}</strong>
-
-            <span
-              style={{
-                color: "#4b5563",
-                lineHeight: 1.7,
-                fontSize: 13,
-              }}
-            >
-              {item.genderFocus}
-            </span>
-
-            <ScoreBadge score={item.score} level={item.level} />
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-export function PersonalityInterpretationPanel({
-  ziweiProfile,
+function BaziOnlyNotice({
   baziProfile,
   finalPersonalityProfile,
 }: {
-  ziweiProfile: PersonalityProfile
   baziProfile: BaziProfile
   finalPersonalityProfile: FinalPersonalityProfile
 }) {
-  const comparison = useMemo(() => {
-    return buildAiPersonalityGenderComparison({
-      ziweiProfile,
-      baziProfile,
-      finalPersonalityProfile,
-    })
-  }, [ziweiProfile, baziProfile, finalPersonalityProfile])
-
   return (
-    <InfoCard title="🧭 同盘男女人格解释核心">
+    <InfoCard title="🧭 八字人格定义模式">
       <div
         style={{
           display: "grid",
@@ -245,7 +95,19 @@ export function PersonalityInterpretationPanel({
             lineHeight: 1.8,
           }}
         >
-          {comparison.conclusion}
+          当前出生时辰未知，紫微斗数无法生成完整命盘结构。本页不使用默认时辰强行解释紫微盘，
+          而是改用八字作为主要人格定义来源。
+        </p>
+
+        <p
+          style={{
+            margin: 0,
+            color: "#4b5563",
+            lineHeight: 1.8,
+          }}
+        >
+          八字模式下，系统主要读取五行动力、行动强度、稳定性、感知深度、持续力和适应力，
+          用来定义当前生命的基础动力结构。
         </p>
 
         <div
@@ -264,8 +126,8 @@ export function PersonalityInterpretationPanel({
               border: "1px solid #e5e7eb",
             }}
           >
-            <strong>是否同一紫微结构：</strong>
-            {comparison.sameBirthStructure ? "是" : "否"}
+            <strong>八字模式：</strong>
+            {baziProfile.mode}
           </div>
 
           <div
@@ -276,36 +138,235 @@ export function PersonalityInterpretationPanel({
               border: "1px solid #e5e7eb",
             }}
           >
-            <strong>是否同一最终向量：</strong>
-            {comparison.sameFinalVector ? "是" : "否"}
+            <strong>精度：</strong>
+            {baziProfile.precision}
           </div>
         </div>
 
-        <SectionTitle>五维性格对照</SectionTitle>
+        <SectionTitle>八字动力摘要</SectionTitle>
 
-        <div
+        <p
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-            gap: 14,
+            margin: 0,
+            color: "#374151",
+            lineHeight: 1.8,
           }}
         >
-          <DimensionList title="男命视角" profile={comparison.maleProfile} />
-          <DimensionList title="女命视角" profile={comparison.femaleProfile} />
-        </div>
+          {baziProfile.summary}
+        </p>
 
-        <SectionTitle>紫微生命功能解释对照</SectionTitle>
+        <SectionTitle>最终人格向量摘要</SectionTitle>
 
-        <div
+        <p
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-            gap: 14,
+            margin: 0,
+            color: "#374151",
+            lineHeight: 1.8,
           }}
         >
-          <LifeFunctionList title="男命视角" profile={comparison.maleProfile} />
-          <LifeFunctionList title="女命视角" profile={comparison.femaleProfile} />
+          {finalPersonalityProfile.summary}
+        </p>
+      </div>
+    </InfoCard>
+  )
+}
+
+function FiveDimensionList({
+  profile,
+}: {
+  profile: PersonalityInterpretationProfile
+}) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gap: 10,
+      }}
+    >
+      {profile.fiveDimensionProfile.dimensions.map((dimension) => (
+        <div
+          key={dimension.key}
+          style={{
+            padding: 10,
+            borderRadius: 8,
+            background: "#fff",
+            border: "1px solid #eee",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: 10,
+              marginBottom: 6,
+            }}
+          >
+            <strong>{dimension.label}</strong>
+            <ScoreBadge score={dimension.score} level={dimension.level} />
+          </div>
+
+          <p
+            style={{
+              margin: "0 0 6px",
+              color: "#374151",
+              lineHeight: 1.7,
+              fontSize: 13,
+            }}
+          >
+            {dimension.baseMeaning}
+          </p>
+
+          <p
+            style={{
+              margin: 0,
+              color: "#6b7280",
+              lineHeight: 1.7,
+              fontSize: 13,
+            }}
+          >
+            {dimension.summary}
+          </p>
         </div>
+      ))}
+    </div>
+  )
+}
+
+function LifeFunctionList({
+  profile,
+}: {
+  profile: PersonalityInterpretationProfile
+}) {
+  return (
+    <div
+      style={{
+        display: "grid",
+        gap: 8,
+      }}
+    >
+      {profile.ziweiLifeFunctionProfile.functions.map((item) => (
+        <div
+          key={item.key}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "92px 1fr auto",
+            gap: 10,
+            alignItems: "start",
+            padding: "8px 0",
+            borderBottom: "1px dashed #e5e7eb",
+          }}
+        >
+          <strong>{item.label}</strong>
+
+          <span
+            style={{
+              color: "#4b5563",
+              lineHeight: 1.7,
+              fontSize: 13,
+            }}
+          >
+            {item.genderFocus}
+          </span>
+
+          <ScoreBadge score={item.score} level={item.level} />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+export function PersonalityInterpretationPanel({
+  hasBirthHour,
+  genderPerspective,
+  ziweiProfile,
+  baziProfile,
+  finalPersonalityProfile,
+}: {
+  hasBirthHour: boolean
+  genderPerspective: DynamicGenderInput
+  ziweiProfile: PersonalityProfile
+  baziProfile: BaziProfile
+  finalPersonalityProfile: FinalPersonalityProfile
+}) {
+  const selectedGenderPerspective =
+    genderPerspective === "male" || genderPerspective === "female"
+      ? genderPerspective
+      : null
+
+  const interpretationProfile = useMemo(() => {
+    if (!hasBirthHour || selectedGenderPerspective === null) {
+      return null
+    }
+
+    return buildAiPersonalityInterpretation({
+      ziweiProfile,
+      baziProfile,
+      finalPersonalityProfile,
+      genderPerspective: selectedGenderPerspective as GenderPerspective,
+    })
+  }, [
+    hasBirthHour,
+    selectedGenderPerspective,
+    ziweiProfile,
+    baziProfile,
+    finalPersonalityProfile,
+  ])
+
+  if (selectedGenderPerspective === null) {
+    return <EmptyGenderNotice />
+  }
+
+  if (!hasBirthHour) {
+    return (
+      <BaziOnlyNotice
+        baziProfile={baziProfile}
+        finalPersonalityProfile={finalPersonalityProfile}
+      />
+    )
+  }
+
+  if (interpretationProfile === null) {
+    return null
+  }
+
+  const title =
+    selectedGenderPerspective === "male"
+      ? "🧭 男命视角人格解释核心"
+      : "🧭 女命视角人格解释核心"
+
+  return (
+    <InfoCard title={title}>
+      <div
+        style={{
+          display: "grid",
+          gap: 12,
+        }}
+      >
+        <p
+          style={{
+            margin: 0,
+            color: "#374151",
+            lineHeight: 1.8,
+          }}
+        >
+          {interpretationProfile.principle}
+        </p>
+
+        <p
+          style={{
+            margin: 0,
+            color: "#4b5563",
+            lineHeight: 1.8,
+          }}
+        >
+          {interpretationProfile.summary}
+        </p>
+
+        <SectionTitle>五维性格解释</SectionTitle>
+        <FiveDimensionList profile={interpretationProfile} />
+
+        <SectionTitle>紫微生命功能解释</SectionTitle>
+        <LifeFunctionList profile={interpretationProfile} />
 
         <details
           style={{
@@ -325,7 +386,7 @@ export function PersonalityInterpretationPanel({
               overflowX: "auto",
             }}
           >
-            {JSON.stringify(comparison.debug, null, 2)}
+            {JSON.stringify(interpretationProfile.debug, null, 2)}
           </pre>
         </details>
       </div>
