@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：展示正式用户可理解的世界顶部状态栏。
+ * 当前文件负责：展示正式用户可理解的世界顶部运行摘要。
  */
 
 import type { TimeState } from "@/engine/timeSystem"
@@ -69,46 +69,107 @@ function getWorldPulse(stimuliCount: number): string {
   return "安静"
 }
 
+function getWorldPulseSummary(stimuliCount: number): string {
+  if (stimuliCount >= 8) {
+    return "世界里的刺激非常密集，生命体更容易被环境牵引。"
+  }
+
+  if (stimuliCount >= 5) {
+    return "世界正在活跃运行，环境变化可能影响宠物接下来的行为。"
+  }
+
+  if (stimuliCount >= 2) {
+    return "世界有一些可感知变化，宠物可能会观察或调整行动。"
+  }
+
+  if (stimuliCount >= 1) {
+    return "世界只有轻微波动，生命体仍会根据自身状态做出选择。"
+  }
+
+  return "世界暂时很安静，生命体会更多受自身状态和基础需求影响。"
+}
+
+function getPeriodSummary(period?: string): string {
+  if (period === "Morning") {
+    return "清晨的节奏更适合苏醒、观察和轻微探索。"
+  }
+
+  if (period === "Daytime") {
+    return "白昼让环境刺激更清晰，活动和建设更容易展开。"
+  }
+
+  if (period === "Evening") {
+    return "黄昏会让世界节奏放慢，生命体更容易转向整理和恢复。"
+  }
+
+  if (period === "Night") {
+    return "夜晚降低外部刺激，休息、安全感和低强度行为会变得更重要。"
+  }
+
+  return "世界时间正在流动，状态会随环境继续变化。"
+}
+
+function buildWorldSummary(
+  time: TimeState | null,
+  stimuliCount: number,
+  weatherLabel: string
+): string {
+  const periodSummary = getPeriodSummary(time?.period)
+  const pulseSummary = getWorldPulseSummary(stimuliCount)
+
+  return `${getPeriodLabel(time?.period)} · ${weatherLabel}。${periodSummary}${pulseSummary}`
+}
+
 export default function WorldInfoBar({ time, stimuli, ecology }: Props) {
   const stimuliCount = stimuli.length
+  const weatherLabel = getWeatherLabel(ecology?.environment.activeWeather)
 
   return (
-    <section className={styles.bar}>
-      <WorldStatusPill
-        label="世界日"
-        value={`Day ${time?.day ?? "-"}`}
-        tone="warm"
-      />
+    <section className={styles.wrapper}>
+      <div className={styles.summary}>
+        <span className={styles.summaryLabel}>当前运行摘要</span>
+        <p className={styles.summaryText}>
+          {buildWorldSummary(time, stimuliCount, weatherLabel)}
+        </p>
+      </div>
 
-      <WorldStatusPill
-        label="时间"
-        value={formatHour(time?.hour)}
-        tone="blue"
-      />
+      <div className={styles.bar}>
+        <WorldStatusPill
+          label="世界日"
+          value={`Day ${time?.day ?? "-"}`}
+          tone="warm"
+        />
 
-      <WorldStatusPill
-        label="时段"
-        value={getPeriodLabel(time?.period)}
-        tone="amber"
-      />
+        <WorldStatusPill
+          label="时间"
+          value={formatHour(time?.hour)}
+          tone="blue"
+        />
 
-      <WorldStatusPill
-        label="天气"
-        value={getWeatherLabel(ecology?.environment.activeWeather)}
-        tone="green"
-      />
+        <WorldStatusPill
+          label="时段"
+          value={getPeriodLabel(time?.period)}
+          tone="amber"
+        />
 
-      <WorldStatusPill
-        label="温度"
-        value={`${ecology?.environment.temperature ?? "--"}°`}
-        tone="warm"
-      />
+        <WorldStatusPill
+          label="天气"
+          value={weatherLabel}
+          tone="green"
+        />
 
-      <WorldStatusPill
-        label="世界动静"
-        value={getWorldPulse(stimuliCount)}
-        tone={stimuliCount >= 5 ? "amber" : "muted"}
-      />
+        <WorldStatusPill
+          label="温度"
+          value={`${ecology?.environment.temperature ?? "--"}°`}
+          tone="warm"
+        />
+
+        <WorldStatusPill
+          label="世界动静"
+          value={getWorldPulse(stimuliCount)}
+          tone={stimuliCount >= 5 ? "amber" : "muted"}
+        />
+      </div>
     </section>
   )
 }
