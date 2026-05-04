@@ -115,7 +115,9 @@ export function runButlerOpportunities(input: RunButlerOpportunityInput) {
     if (opportunity.type === "rest_offer") {
       const result = input.petSystem.evaluateRestOffer(opportunity)
 
-      if (result.accepted) {
+            if (result.accepted) {
+        const effect = input.petSystem.applyAcceptedRestOffer(opportunity)
+
         addButlerOpportunityEvent(input.eventSystem, {
           tick: input.tick,
           time: input.time,
@@ -126,9 +128,11 @@ export function runButlerOpportunities(input: RunButlerOpportunityInput) {
           opportunityType: opportunity.type,
           accepted: true,
           reason: result.reason,
+          value: effect.energyDelta,
           message:
             `${butlerName}整理了更适合恢复的环境。` +
-            `${petName}没有被强制休息，而是自主接受了这次恢复机会。`,
+            `${petName}没有被强制休息，而是自主接受了这次恢复机会。` +
+            `恢复倾向被轻微强化，精力变化 +${effect.energyDelta}。`,
         })
       } else {
         addButlerOpportunityEvent(input.eventSystem, {
@@ -154,7 +158,9 @@ export function runButlerOpportunities(input: RunButlerOpportunityInput) {
     if (opportunity.type === "approach_offer") {
       const result = input.petSystem.evaluateApproachOffer(opportunity)
 
-      if (result.accepted) {
+            if (result.accepted) {
+        const effect = input.petSystem.applyAcceptedApproachOffer(opportunity)
+
         addButlerOpportunityEvent(input.eventSystem, {
           tick: input.tick,
           time: input.time,
@@ -167,7 +173,8 @@ export function runButlerOpportunities(input: RunButlerOpportunityInput) {
           reason: result.reason,
           message:
             `${butlerName}放慢动作并尝试靠近。` +
-            `${petName}没有被命令接近，而是自主回应了这次关系机会。`,
+            `${petName}没有被命令接近，而是自主回应了这次关系机会。` +
+            `${effect.memorySummary}`,
         })
       } else {
         addButlerOpportunityEvent(input.eventSystem, {

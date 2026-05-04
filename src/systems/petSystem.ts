@@ -20,6 +20,8 @@ import {
   mapTimelineStateToPetMood,
   applyFeeding,
   evaluateFoodOffer,
+  applyAcceptedApproachOfferEffect,
+  applyAcceptedRestOfferEffect,
   runPetRuntimeTick,
   driveSystem,
   attentionSystem,
@@ -212,11 +214,33 @@ export class PetSystem {
     })
   }
 
-    evaluateRestOffer(opportunity: ButlerOpportunity): PetOpportunityDecision {
+  evaluateRestOffer(opportunity: ButlerOpportunity): PetOpportunityDecision {
     return evaluateRestOffer({
       pet: this.pet,
       opportunity,
     })
+  }
+
+  applyAcceptedRestOffer(opportunity: ButlerOpportunity) {
+    const result = applyAcceptedRestOfferEffect({
+      pet: this.pet,
+      opportunity,
+    })
+
+    this.pet = result.pet
+
+    return result
+  }
+
+  applyAcceptedApproachOffer(opportunity: ButlerOpportunity) {
+    const result = applyAcceptedApproachOfferEffect({
+      pet: this.pet,
+      opportunity,
+    })
+
+    this.pet = result.pet
+
+    return result
   }
 
   evaluateApproachOffer(opportunity: ButlerOpportunity): PetOpportunityDecision {
