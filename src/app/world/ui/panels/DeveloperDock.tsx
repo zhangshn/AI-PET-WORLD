@@ -22,19 +22,28 @@ export default function DeveloperDock({ world }: Props) {
     <section className={styles.dock}>
       <div className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>DEVELOPER</p>
+          <p className={styles.eyebrow}>DEVELOPER MODE</p>
           <h2 className={styles.title}>世界调试面板</h2>
         </div>
 
-        <p className={styles.hint}>按 F3 隐藏</p>
+        <p className={styles.hint}>
+          F3 隐藏 · 当前面板只用于开发观察
+        </p>
       </div>
 
       <div className={styles.grid}>
         <CognitionPanel cognition={world.pet?.latestCognition ?? null} />
-        <BehaviorProcessPanel process={world.pet?.activeBehaviorProcess ?? null} />
+
+        <BehaviorProcessPanel
+          process={world.pet?.activeBehaviorProcess ?? null}
+        />
+
         <WorldRuntimePanel runtime={world.worldRuntime} />
+
         <RuntimeDebugPanel pet={world.pet} tick={world.tick} />
+
         <WorldEcologyPanel ecology={world.ecology} />
+
         <WorldStimulusPanel stimuli={world.stimuli} />
       </div>
     </section>
