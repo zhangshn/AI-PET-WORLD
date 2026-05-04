@@ -158,7 +158,7 @@ export function runButlerOpportunities(input: RunButlerOpportunityInput) {
     if (opportunity.type === "approach_offer") {
       const result = input.petSystem.evaluateApproachOffer(opportunity)
 
-            if (result.accepted) {
+      if (result.accepted) {
         const effect = input.petSystem.applyAcceptedApproachOffer(opportunity)
 
         addButlerOpportunityEvent(input.eventSystem, {
@@ -174,7 +174,7 @@ export function runButlerOpportunities(input: RunButlerOpportunityInput) {
           message:
             `${butlerName}放慢动作并尝试靠近。` +
             `${petName}没有被命令接近，而是自主回应了这次关系机会。` +
-            `${effect.memorySummary}`,
+            effect.memorySummary,
         })
       } else {
         addButlerOpportunityEvent(input.eventSystem, {

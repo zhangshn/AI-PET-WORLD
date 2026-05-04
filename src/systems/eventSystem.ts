@@ -16,11 +16,14 @@ import {
   type PetStateLike,
 } from "./event/event-gateway"
 
+import { EventDedupeRunner } from "./event/event-dedupe-runner"
+
 const MAX_EVENT_HISTORY = 200
 
 export class EventSystem {
   private events: WorldEvent[] = []
   private continuityByPetKey = new Map<string, ContinuityState>()
+  private dedupeRunner = new EventDedupeRunner()
 
   getEvents(): WorldEvent[] {
     return [...this.events]
@@ -29,7 +32,13 @@ export class EventSystem {
   private appendEvents(nextEvents: WorldEvent[]): void {
     if (nextEvents.length === 0) return
 
-    this.events.push(...nextEvents)
+    const filteredEvents = nextEvents.filter((event) =>
+      this.dedupeRunner.shouldKeepEvent(event)
+    )
+
+    if (filteredEvents.length === 0) return
+
+    this.events.push(...filteredEvents)
 
     if (this.events.length > MAX_EVENT_HISTORY) {
       this.events.splice(0, this.events.length - MAX_EVENT_HISTORY)
