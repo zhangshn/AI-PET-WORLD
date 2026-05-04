@@ -2,7 +2,7 @@
  * 当前文件负责：维护宠物系统状态，并对外提供出生、运行、认知、喂食与读取接口。
  */
 
-import type { PetState } from "../types/pet"
+import type { PetGenderPerspective, PetState } from "../types/pet"
 import type { TimeState } from "../engine/timeSystem"
 import type {
   LifePersonalityProfileBundle,
@@ -40,6 +40,7 @@ export class PetSystem {
 
   hatchPetWithLifeProfileBundle(input: {
     name: string
+    genderPerspective: PetGenderPerspective
     lifeProfile: LifePersonalityProfileBundle
     timelineSnapshot: PetTimelineSnapshot
   }) {
@@ -47,6 +48,7 @@ export class PetSystem {
 
     const {
       name,
+      genderPerspective,
       lifeProfile,
       timelineSnapshot,
     } = input
@@ -109,6 +111,8 @@ export class PetSystem {
 
     this.pet = {
       name,
+      genderPerspective,
+
       energy,
       hunger,
       mood,

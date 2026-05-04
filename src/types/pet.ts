@@ -30,6 +30,8 @@ import type {
   ActiveBehaviorProcess,
 } from "../ai/behavior-core/behavior-gateway"
 
+export type PetGenderPerspective = "male" | "female"
+
 export type PetAction =
   | "sleeping"
   | "eating"
@@ -66,6 +68,8 @@ export type PetLifeState = {
 
 export type PetState = {
   name: string
+  genderPerspective: PetGenderPerspective
+
   energy: number
   hunger: number
   mood: PetMood

@@ -3,6 +3,12 @@
  */
 
 export {
+  resolvePetBirthGender,
+  type PetBirthGenderResult,
+  type PetBirthGenderSeedInput,
+} from "./pet-birth/pet-birth-gateway"
+
+export {
   driveSystem,
   DriveSystem,
   type DriveScores,

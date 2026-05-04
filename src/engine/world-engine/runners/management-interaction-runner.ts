@@ -7,6 +7,8 @@ import {
   buildPetTimelineSnapshot,
 } from "@/ai/gateway"
 
+import { resolvePetBirthGender } from "@/systems/pet/pet-gateway"
+
 import type { TimeState } from "../../timeSystem"
 import type { ButlerState } from "@/types/butler"
 
@@ -87,10 +89,21 @@ function hatchPetWithLifeProfile(
     minute: now.getMinutes(),
   }
 
+  const genderResult = resolvePetBirthGender({
+    petName: input.petName,
+    birthInput,
+    tick: input.tick,
+    worldTime: {
+      day: input.time.day,
+      hour: input.time.hour,
+      period: input.time.period,
+    },
+  })
+
   const lifeProfile = buildLifePersonalityProfile({
     subjectType: "pet",
     birthInput,
-    genderPerspective: "male",
+    genderPerspective: genderResult.genderPerspective,
     hasBirthHour: true,
   })
 
@@ -102,6 +115,7 @@ function hatchPetWithLifeProfile(
 
   input.petSystem.hatchPetWithLifeProfileBundle({
     name: input.petName,
+    genderPerspective: genderResult.genderPerspective,
     lifeProfile,
     timelineSnapshot,
   })
@@ -118,6 +132,7 @@ function hatchPetWithLifeProfile(
   console.log("世界引擎：宠物已通过 LifeProfile 核心完成出生数据构建并绑定。", {
     petName: input.petName,
     birthInput,
+    gender: genderResult,
     mode: lifeProfile.mode,
     genderPerspective: lifeProfile.genderPerspective,
     publicPersonality: lifeProfile.publicPersonalityView,
