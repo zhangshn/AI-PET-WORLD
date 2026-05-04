@@ -84,7 +84,7 @@ export function buildLifePersonalityProfile(
     debug: {
       source: "life_profile_core",
       note:
-        "通用生命人格档案：性别先进入紫微或八字映射，直接生成最终性别人格与行为偏置；不再经过 FinalPersonalityProfile。",
+        "通用生命人格档案：性别先进入紫微或八字映射，直接生成最终性别人格与行为偏置。",
     },
   }
 }
