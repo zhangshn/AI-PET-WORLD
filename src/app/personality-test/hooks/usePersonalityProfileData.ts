@@ -101,19 +101,16 @@ export function usePersonalityProfileData({
   const publicView = lifeProfileBundle?.publicPersonalityView ?? null
   const pattern = profile?.pattern ?? null
 
-  const basePersonalityProfile =
-    lifeProfileBundle?.basePersonalityProfile ?? null
-
   const personalityInterpretationProfile =
     lifeProfileBundle?.personalityInterpretationProfile ?? null
 
   const genderAwareBehaviorBias =
     lifeProfileBundle?.genderAwareBehaviorBias ?? null
 
-  function resetProfileFromBirthInput(_nextBirthInput: BirthInputState) {
+  function resetProfileFromBirthInput(nextBirthInput: BirthInputState) {
     return buildPetTimelineSnapshot({
       day: INITIAL_TIMELINE_CLOCK.day,
-      hour: INITIAL_TIMELINE_CLOCK.hour,
+      hour: nextBirthInput.hour ?? INITIAL_TIMELINE_CLOCK.hour,
       period: INITIAL_TIMELINE_CLOCK.period,
     })
   }
@@ -128,7 +125,6 @@ export function usePersonalityProfileData({
       pattern,
 
       baziProfile,
-      basePersonalityProfile,
       personalityInterpretationProfile,
       genderAwareBehaviorBias,
 

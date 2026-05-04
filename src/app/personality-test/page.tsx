@@ -7,7 +7,6 @@
 import {
   BaziRuntimePanel,
   BirthInputBar,
-  FinalPersonalityPanel,
   PersonalityInterpretationPanel,
   PersonalityTestPageShell,
   PersonalityTestTitle,
@@ -44,7 +43,6 @@ export default function PersonalityTestPage() {
     publicView,
     pattern,
     baziProfile,
-    basePersonalityProfile,
   } = profileData
 
   const {
@@ -95,17 +93,6 @@ export default function PersonalityTestPage() {
         initialDay={day}
         initialHour={parsedBirthHour}
       />
-
-      {basePersonalityProfile !== null ? (
-        <>
-          <SectionSpacer />
-
-          <FinalPersonalityPanel
-            hasBirthHour={hasBirthHour}
-            basePersonalityProfile={basePersonalityProfile}
-          />
-        </>
-      ) : null}
 
       <SectionSpacer />
 
