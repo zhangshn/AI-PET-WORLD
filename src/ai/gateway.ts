@@ -25,18 +25,6 @@ import type {
 import type { PetEventStyleInput } from "./event-style/schema"
 import { buildPetEventMessage } from "./event-style/event-gateway"
 
-import type { ZiweiConsciousnessKernel } from "./consciousness/consciousness-gateway"
-import { buildConsciousnessFromPersonality } from "./consciousness/consciousness-gateway"
-
-import type { PetMemoryState } from "./memory-core/memory-gateway"
-import { buildInitialPetMemoryState } from "./memory-core/memory-gateway"
-
-import type { BaziProfile } from "./bazi-core/bazi-gateway"
-import { buildBaziProfile } from "./bazi-core/bazi-gateway"
-
-import type { FinalPersonalityProfile } from "./personality-vector/vector-gateway"
-import { buildFinalPersonalityProfile } from "./personality-vector/vector-gateway"
-
 import type {
   BuildGenderPerspectiveComparisonInput,
   BuildPersonalityInterpretationInput,
@@ -80,16 +68,6 @@ import {
   stepBehaviorProcess,
 } from "./behavior-core/behavior-gateway"
 
-export type PetBirthAiBundle = {
-  personalityProfile: PersonalityProfile
-  publicPersonalityView: PublicPersonalityView
-  baziProfile: BaziProfile
-  finalPersonalityProfile: FinalPersonalityProfile
-  consciousnessProfile: ZiweiConsciousnessKernel
-  memoryState: PetMemoryState
-  timelineSnapshot: PetTimelineSnapshot
-}
-
 export type UpdatePetAiStateInput = {
   currentSnapshot: PetTimelineSnapshot
   time: {
@@ -102,52 +80,6 @@ export type UpdatePetAiStateInput = {
   tickDelta?: number
   shouldRefreshTrajectory?: boolean
   playerRelation?: PlayerRelationInput
-}
-
-export function buildPetBirthBundle(input: {
-  birthInput: BirthInput
-  time: {
-    day: number
-    hour: number
-    period?: string
-  }
-}): PetBirthAiBundle {
-  const personalityProfile = buildPersonalityProfile(input.birthInput)
-  const publicPersonalityView = buildPublicPersonalityView(personalityProfile)
-
-  const baziProfile = buildBaziProfile({
-    year: input.birthInput.year,
-    month: input.birthInput.month,
-    day: input.birthInput.day,
-    hour: input.birthInput.hour,
-    minute: input.birthInput.minute,
-  })
-
-  const finalPersonalityProfile = buildFinalPersonalityProfile({
-    ziweiProfile: personalityProfile,
-    baziProfile,
-  })
-
-  const consciousnessProfile =
-    buildConsciousnessFromPersonality(personalityProfile)
-
-  const memoryState = buildInitialPetMemoryState()
-
-  const timelineSnapshot = buildPetTimelineSnapshot({
-    day: input.time.day,
-    hour: input.time.hour,
-    period: input.time.period,
-  })
-
-  return {
-    personalityProfile,
-    publicPersonalityView,
-    baziProfile,
-    finalPersonalityProfile,
-    consciousnessProfile,
-    memoryState,
-    timelineSnapshot,
-  }
 }
 
 export function updatePetAiState(
@@ -227,16 +159,11 @@ export function stepPetBehaviorProcess(
 
 export type { BirthInput, PersonalityProfile } from "./ziwei-core/schema"
 
+export { buildPersonalityProfile } from "./ziwei-core/ziwei-gateway"
+
 export type { PublicPersonalityView } from "./ziwei-core/public-view"
 
 export type { BaziProfile } from "./bazi-core/bazi-gateway"
-
-export type {
-  FinalPersonalityProfile,
-  FinalPersonalityVector,
-  FinalPersonalityBias,
-  PersonalitySourceMode,
-} from "./personality-vector/vector-gateway"
 
 export type {
   BaziDynamicsSupportItem,
@@ -275,6 +202,10 @@ export type {
 export type {
   PetTimelineSnapshot,
   TimelineBehaviorShiftInput,
+} from "./timeline-system/timeline-gateway"
+
+export {
+  buildPetTimelineSnapshot,
 } from "./timeline-system/timeline-gateway"
 
 export type {
