@@ -7,7 +7,13 @@ export { runWorldStimulus } from "./runners/world-stimulus-runner"
 export { runPetCognition } from "./runners/pet-cognition-runner"
 export { runPetRuntime } from "./runners/pet-runtime-runner"
 export { runButlerOpportunities } from "./runners/butler-opportunity-runner"
+export { runHomeConstruction } from "./runners/home-construction-runner"
 export { runManagementInteractions } from "./runners/management-interaction-runner"
+
+export type {
+  RunHomeConstructionInput,
+  RunHomeConstructionResult,
+} from "./runners/home-construction-runner"
 
 export {
   createWorldRuntime,

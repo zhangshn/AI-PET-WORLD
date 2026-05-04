@@ -20,6 +20,8 @@ import type {
   IncubatorSystem,
 } from "@/systems/systems-gateway"
 
+import { runHomeConstruction } from "../world-engine-gateway"
+
 export type RunManagementInteractionsInput = {
   tick: number
   time: TimeState
@@ -58,7 +60,15 @@ function handleIncubatorCare(input: RunManagementInteractionsInput) {
       tick: input.tick,
       day: input.time.day,
       hour: input.time.hour,
-      message: `${butlerName}正在照看孵化器，孵化进度 +${progressAdded}，稳定度 +${stabilityAdded}。`,
+      message:
+        `${butlerName}正在照看孵化器，` +
+        `孵化进度 +${progressAdded}，稳定度 +${stabilityAdded}。`,
+      payload: {
+        interactionKind: "incubator_care",
+        butlerName,
+        progressAdded,
+        stabilityAdded,
+      },
     })
   }
 
@@ -151,39 +161,46 @@ function hatchPetWithLifeProfile(
 }
 
 function handleHomeBuilding(input: RunManagementInteractionsInput) {
-  const butlerName = input.butler.name
-
   if (input.butler.task !== "building_home") return
 
-  const homeBefore = input.homeSystem.getHome()
+  const butlerName = input.butler.name
+  const result = runHomeConstruction({
+    homeSystem: input.homeSystem,
+    pet: input.petSystem.getPet(),
+    butler: input.butler,
+  })
 
-  if (homeBefore.status === "completed") return
-
-  input.homeSystem.build(
-    15,
-    input.petSystem.getPet()?.lifeProfile.genderAwareBehaviorBias ??
-      input.butler.lifeProfile?.genderAwareBehaviorBias ??
-      null
-  )
-
-  const homeAfter = input.homeSystem.getHome()
-  const progressAdded = Math.round(homeAfter.progress - homeBefore.progress)
-
-  if (progressAdded > 0) {
+  if (result.didBuild) {
     input.eventSystem.addInteractionEvent({
       tick: input.tick,
       day: input.time.day,
       hour: input.time.hour,
-      message: `${butlerName}推进了家园建造，进度 +${progressAdded}，当前阶段：${homeAfter.constructionStage}。`,
+      message:
+        `${butlerName}推进了家园建造，` +
+        `投入 ${result.buildAmount}，进度 +${result.progressAdded}，` +
+        `当前阶段：${result.currentHome.constructionStage}。`,
+      payload: {
+        interactionKind: "home_construction",
+        butlerName,
+        buildAmount: result.buildAmount,
+        progressAdded: result.progressAdded,
+        constructionStage: result.currentHome.constructionStage,
+        completed: result.completed,
+      },
     })
   }
 
-  if (homeAfter.status === "completed") {
+  if (result.completed) {
     input.eventSystem.addInteractionEvent({
       tick: input.tick,
       day: input.time.day,
       hour: input.time.hour,
       message: "家园第一阶段建造完成了。",
+      payload: {
+        interactionKind: "home_completed",
+        level: result.currentHome.level,
+        constructionStage: result.currentHome.constructionStage,
+      },
     })
   }
 }
