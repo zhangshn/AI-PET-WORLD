@@ -4,7 +4,7 @@
 
 import type { WorldEngineViewState } from "../../hooks/useWorldEngineState"
 
-import PhoneHomeMockPanel from "../../components/PhoneHomeMockPanel"
+import PhoneHomeMockPanel from "../../components/phone-mock/PhoneHomeMockPanel"
 import PetStatusPanel from "../../components/PetStatusPanel"
 import CognitionPanel from "../../components/CognitionPanel"
 import BehaviorProcessPanel from "../../components/BehaviorProcessPanel"

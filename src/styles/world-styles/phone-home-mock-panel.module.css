@@ -205,7 +205,8 @@
   color: #5a3b22;
 }
 
-.detailPanel {
+.detailPanel,
+.detailPage {
   margin-top: 12px;
   padding: 12px;
   border-radius: 18px;
@@ -213,7 +214,8 @@
   border: 2px solid rgba(90, 59, 34, 0.22);
 }
 
-.detailHeader {
+.detailHeader,
+.detailPageHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -228,7 +230,8 @@
   letter-spacing: 0.1em;
 }
 
-.detailHeader h4 {
+.detailHeader h4,
+.detailPageHeader h4 {
   margin: 0;
   color: #3b2a18;
   font-size: 18px;
@@ -239,6 +242,8 @@
   flex: 0 0 auto;
   border-radius: 999px;
   padding: 4px 8px;
+  background: #d7ef9a;
+  color: #2f4f25;
   font-size: 10px;
   font-weight: 950;
 }
@@ -276,42 +281,86 @@
   font-weight: 900;
 }
 
-.metrics {
+.metrics,
+.detailSections,
+.detailRows {
   display: grid;
   gap: 8px;
   margin-top: 12px;
 }
 
-.metricItem {
+.metricItem,
+.detailRow {
   min-width: 0;
 }
 
-.metricTopRow {
+.metricTopRow,
+.detailRowTop {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 4px;
 }
 
 .metricTopRow span,
-.metricTopRow strong {
-  color: #5a3b22;
+.metricTopRow strong,
+.detailRowTop span,
+.detailRowTop strong {
   font-size: 11px;
   font-weight: 900;
 }
 
-.meterTrack {
+.metricTopRow span,
+.detailRowTop span {
+  flex: 0 0 auto;
+  color: #8a6335;
+}
+
+.metricTopRow strong,
+.detailRowTop strong {
+  min-width: 0;
+  color: #3b2a18;
+  text-align: right;
+  word-break: break-word;
+}
+
+.meterTrack,
+.detailMeter {
   height: 8px;
+  margin-top: 5px;
   border-radius: 999px;
   background: rgba(90, 59, 34, 0.16);
   overflow: hidden;
 }
 
-.meterFill {
+.meterFill,
+.detailMeterFill {
   height: 100%;
   border-radius: 999px;
   background: #83b84a;
+}
+
+.detailSection {
+  padding: 10px;
+  border-radius: 14px;
+  background: rgba(255, 248, 220, 0.66);
+  border: 2px solid rgba(90, 59, 34, 0.14);
+}
+
+.detailSection h5 {
+  margin: 0;
+  color: #3b2a18;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.sectionDescription,
+.rowHelper {
+  margin: 5px 0 0;
+  color: #6f4d29;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.55;
 }
 
 .observationPanel {
@@ -416,109 +465,4 @@
   color: #7f5728;
   font-size: 12px;
   font-weight: 800;
-}
-
-.detailPage {
-  margin-top: 12px;
-  padding: 12px;
-  border-radius: 18px;
-  background: rgba(255, 241, 198, 0.9);
-  border: 2px solid rgba(90, 59, 34, 0.22);
-}
-
-.detailPageHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.detailPageHeader h4 {
-  margin: 0;
-  color: #3b2a18;
-  font-size: 18px;
-  font-weight: 950;
-}
-
-.detailSections {
-  display: grid;
-  gap: 12px;
-  margin-top: 12px;
-}
-
-.detailSection {
-  padding: 10px;
-  border-radius: 14px;
-  background: rgba(255, 248, 220, 0.66);
-  border: 2px solid rgba(90, 59, 34, 0.14);
-}
-
-.detailSection h5 {
-  margin: 0;
-  color: #3b2a18;
-  font-size: 14px;
-  font-weight: 950;
-}
-
-.sectionDescription {
-  margin: 5px 0 0;
-  color: #6f4d29;
-  font-size: 11px;
-  font-weight: 800;
-  line-height: 1.55;
-}
-
-.detailRows {
-  display: grid;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.detailRow {
-  min-width: 0;
-}
-
-.detailRowTop {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.detailRowTop span {
-  flex: 0 0 auto;
-  color: #8a6335;
-  font-size: 11px;
-  font-weight: 900;
-}
-
-.detailRowTop strong {
-  min-width: 0;
-  color: #3b2a18;
-  font-size: 12px;
-  font-weight: 950;
-  text-align: right;
-  word-break: break-word;
-}
-
-.rowHelper {
-  margin: 4px 0 0;
-  color: #6f4d29;
-  font-size: 11px;
-  font-weight: 800;
-  line-height: 1.5;
-}
-
-.detailMeter {
-  height: 8px;
-  margin-top: 5px;
-  border-radius: 999px;
-  background: rgba(90, 59, 34, 0.16);
-  overflow: hidden;
-}
-
-.detailMeterFill {
-  height: 100%;
-  border-radius: 999px;
-  background: #83b84a;
 }
