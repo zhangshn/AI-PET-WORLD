@@ -37,6 +37,17 @@ import { buildBaziProfile } from "./bazi-core/bazi-gateway"
 import type { FinalPersonalityProfile } from "./personality-vector/vector-gateway"
 import { buildFinalPersonalityProfile } from "./personality-vector/vector-gateway"
 
+import type {
+  BuildGenderPerspectiveComparisonInput,
+  BuildPersonalityInterpretationInput,
+  GenderPerspectiveComparison,
+  PersonalityInterpretationProfile,
+} from "./personality-interpretation-core/interpretation-gateway"
+import {
+  buildPersonalityGenderComparison,
+  buildPersonalityInterpretationProfile,
+} from "./personality-interpretation-core/interpretation-gateway"
+
 import {
   getWorldAutonomyRuleset,
   getEntityAutonomyPolicy,
@@ -165,6 +176,18 @@ export function buildPetEvent(input: PetEventStyleInput): string {
   return buildPetEventMessage(input)
 }
 
+export function buildAiPersonalityInterpretation(
+  input: BuildPersonalityInterpretationInput
+): PersonalityInterpretationProfile {
+  return buildPersonalityInterpretationProfile(input)
+}
+
+export function buildAiPersonalityGenderComparison(
+  input: BuildGenderPerspectiveComparisonInput
+): GenderPerspectiveComparison {
+  return buildPersonalityGenderComparison(input)
+}
+
 export {
   getWorldAutonomyRuleset,
   getEntityAutonomyPolicy,
@@ -210,6 +233,27 @@ export type {
   FinalPersonalityBias,
   PersonalitySourceMode,
 } from "./personality-vector/vector-gateway"
+
+export type {
+  BaziDynamicsSupportItem,
+  BaziDynamicsSupportKey,
+  BaziDynamicsSupportProfile,
+  BuildGenderPerspectiveComparisonInput,
+  BuildPersonalityInterpretationInput,
+  FiveDimensionKey,
+  FiveDimensionProfile,
+  FiveDimensionResult,
+  GenderLifeFunctionFocus,
+  GenderPerspective,
+  GenderPerspectiveComparison,
+  GenderPerspectiveRule,
+  PersonalityInterpretationProfile,
+  ScoreLevel,
+  ZiweiLifeFunctionKey,
+  ZiweiLifeFunctionProfile,
+  ZiweiLifeFunctionResult,
+  ZiweiLifeFunctionRule,
+} from "./personality-interpretation-core/interpretation-gateway"
 
 export type {
   PetTimelineSnapshot,
