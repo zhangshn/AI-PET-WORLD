@@ -13,6 +13,7 @@ import type { PetState } from "@/types/pet"
 import type { WorldEvent } from "@/types/event"
 import type { WorldStimulus } from "@/ai/gateway"
 import type { ButlerState } from "@/types/butler"
+import type { HomeState } from "@/types/home"
 import type { IncubatorState } from "@/types/incubator"
 import type { WorldEcologyState } from "@/world/ecology/ecology-engine"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
@@ -21,6 +22,7 @@ export type WorldEngineViewState = {
   time: TimeState | null
   pet: PetState | null
   butler: ButlerState | null
+  home: HomeState | null
   incubator: IncubatorState | null
   events: WorldEvent[]
   stimuli: WorldStimulus[]
@@ -36,6 +38,7 @@ function readWorldEngineState() {
     time: worldEngine.getTime(),
     pet: worldEngine.getPet(),
     butler: worldEngine.getButler(),
+    home: worldEngine.getHome(),
     incubator: worldEngine.getIncubator(),
     events: worldEngine.getEvents(),
     stimuli: worldEngine.getWorldStimuli(),
@@ -50,6 +53,9 @@ export function useWorldEngineState(): WorldEngineViewState {
   const [pet, setPet] = useState<PetState | null>(() => worldEngine.getPet())
   const [butler, setButler] = useState<ButlerState | null>(() =>
     worldEngine.getButler()
+  )
+  const [home, setHome] = useState<HomeState | null>(() =>
+    worldEngine.getHome()
   )
   const [incubator, setIncubator] = useState<IncubatorState | null>(() =>
     worldEngine.getIncubator()
@@ -74,6 +80,7 @@ export function useWorldEngineState(): WorldEngineViewState {
     setTime(nextState.time)
     setPet(nextState.pet)
     setButler(nextState.butler)
+    setHome(nextState.home)
     setIncubator(nextState.incubator)
     setEvents(nextState.events)
     setStimuli(nextState.stimuli)
@@ -118,6 +125,7 @@ export function useWorldEngineState(): WorldEngineViewState {
     time,
     pet,
     butler,
+    home,
     incubator,
     events,
     stimuli,

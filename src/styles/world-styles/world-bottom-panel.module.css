@@ -36,7 +36,17 @@
 }
 
 .content {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.45fr) minmax(240px, 0.8fr) minmax(240px, 0.85fr);
+  gap: 14px;
+  align-items: stretch;
   min-width: 0;
+}
+
+@media (max-width: 1180px) {
+  .content {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 860px) {

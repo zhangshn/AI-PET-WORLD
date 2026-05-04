@@ -4,6 +4,7 @@
 
 import type { WorldEngineViewState } from "../../hooks/useWorldEngineState"
 
+import PetStatusPanel from "../../components/PetStatusPanel"
 import CognitionPanel from "../../components/CognitionPanel"
 import BehaviorProcessPanel from "../../components/BehaviorProcessPanel"
 import RuntimeDebugPanel from "../../components/RuntimeDebugPanel"
@@ -32,6 +33,8 @@ export default function DeveloperDock({ world }: Props) {
       </div>
 
       <div className={styles.grid}>
+        <PetStatusPanel pet={world.pet} />
+
         <CognitionPanel cognition={world.pet?.latestCognition ?? null} />
 
         <BehaviorProcessPanel

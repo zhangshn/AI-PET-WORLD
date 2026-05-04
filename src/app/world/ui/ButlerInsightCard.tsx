@@ -1,0 +1,145 @@
+/**
+ * 当前文件负责：展示正式 world 页中的管家观察摘要。
+ */
+
+import type { ButlerState, ButlerTask } from "@/types/butler"
+
+import styles from "@/styles/world-styles/butler-insight-card.module.css"
+
+type Props = {
+  butler: ButlerState | null
+}
+
+function getTaskLabel(task?: ButlerTask): string {
+  if (!task) return "待命"
+
+  if (task === "watching_incubator") return "照看孵化器"
+  if (task === "building_home") return "建设家园"
+  if (task === "watching_pet") return "观察宠物"
+  if (task === "offering_food") return "提供食物机会"
+  if (task === "offering_rest") return "准备恢复环境"
+  if (task === "offering_approach") return "尝试靠近"
+  if (task === "idle") return "待命"
+
+  return task
+}
+
+function getMoodLabel(mood?: string): string {
+  if (!mood) return "平静"
+
+  if (mood === "calm") return "平静"
+  if (mood === "busy") return "忙碌"
+  if (mood === "gentle") return "温和"
+  if (mood === "alert") return "警觉"
+  if (mood === "focused") return "专注"
+
+  return mood
+}
+
+function getOpportunityLabel(type?: string): string {
+  if (type === "food_offer") return "食物机会"
+  if (type === "rest_offer") return "恢复机会"
+  if (type === "approach_offer") return "接近机会"
+
+  return "未知机会"
+}
+
+function buildButlerSummary(butler: ButlerState): string {
+  if (butler.task === "watching_incubator") {
+    return "管家正在优先确认孵化器状态。它的职责是维护环境，而不是替未来的生命决定性格。"
+  }
+
+  if (butler.task === "building_home") {
+    return "管家正在推进家园建设。家园会给生命提供更稳定的活动和恢复空间。"
+  }
+
+  if (butler.task === "offering_food") {
+    return "管家正在提供食物机会。宠物是否接受，仍然由宠物自己的状态和判断决定。"
+  }
+
+  if (butler.task === "offering_rest") {
+    return "管家正在准备更适合恢复的环境。它只能创造条件，不能强制宠物休息。"
+  }
+
+  if (butler.task === "offering_approach") {
+    return "管家正在尝试缩短关系距离。宠物是否回应，取决于它自己的安全感和当前倾向。"
+  }
+
+  if (butler.task === "watching_pet") {
+    return "管家正在观察宠物状态。它会根据环境和生命反应提供机会，但不会直接控制宠物。"
+  }
+
+  return "管家暂时保持待命，等待世界状态出现新的需要。"
+}
+
+export default function ButlerInsightCard({ butler }: Props) {
+  if (!butler) {
+    return (
+      <section className={styles.card}>
+        <div className={styles.header}>
+          <div>
+            <div className={styles.eyebrow}>BUTLER</div>
+            <h2 className={styles.title}>管家未就位</h2>
+          </div>
+
+          <div className={styles.badge}>等待中</div>
+        </div>
+
+        <p className={styles.description}>
+          世界还没有读取到管家状态。
+        </p>
+      </section>
+    )
+  }
+
+  const opportunities = butler.pendingOpportunities ?? []
+
+  return (
+    <section className={styles.card}>
+      <div className={styles.header}>
+        <div>
+          <div className={styles.eyebrow}>BUTLER</div>
+          <h2 className={styles.title}>{butler.name}</h2>
+        </div>
+
+        <div className={styles.badge}>{getMoodLabel(butler.mood)}</div>
+      </div>
+
+      <div className={styles.grid}>
+        <div>
+          <span>当前任务</span>
+          <strong>{getTaskLabel(butler.task)}</strong>
+        </div>
+
+        <div>
+          <span>情绪状态</span>
+          <strong>{getMoodLabel(butler.mood)}</strong>
+        </div>
+
+        <div>
+          <span>待处理机会</span>
+          <strong>{opportunities.length}</strong>
+        </div>
+      </div>
+
+      <p className={styles.description}>
+        {buildButlerSummary(butler)}
+      </p>
+
+      {opportunities.length > 0 && (
+        <div className={styles.opportunityList}>
+          {opportunities.slice(0, 3).map((opportunity) => (
+            <div className={styles.opportunityItem} key={opportunity.id}>
+              <span>{getOpportunityLabel(opportunity.type)}</span>
+              <strong>{Math.round(opportunity.intensity)}</strong>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <p className={styles.note}>
+        管家是机会提供者，不是宠物控制器。
+      </p>
+    </section>
+  )
+}

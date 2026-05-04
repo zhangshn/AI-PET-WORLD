@@ -11,6 +11,8 @@ import type { WorldStageSceneMode } from "../components/stage-renderers/orchestr
 
 import WorldInfoBar from "../ui/WorldInfoBar"
 import PetInsightCard from "../ui/PetInsightCard"
+import ButlerInsightCard from "../ui/ButlerInsightCard"
+import HomeInsightCard from "../ui/HomeInsightCard"
 import WorldObservationPanel from "../ui/WorldObservationPanel"
 import WorldPixelStage from "../components/WorldPixelStage"
 
@@ -68,6 +70,8 @@ export default function WorldObserveLayout({ world }: Props) {
 
         <WorldBottomPanel>
           <PetInsightCard pet={world.pet} />
+          <ButlerInsightCard butler={world.butler} />
+          <HomeInsightCard home={world.home} />
         </WorldBottomPanel>
       </section>
 
