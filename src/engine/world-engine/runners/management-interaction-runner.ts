@@ -2,7 +2,10 @@
  * 当前文件负责：处理管家照看孵化器、宠物出生与家园建造等管理交互。
  */
 
-import { buildPetBirthBundle } from "@/ai/gateway"
+import {
+  buildLifePersonalityProfile,
+  buildPetTimelineSnapshot,
+} from "@/ai/gateway"
 
 import type { TimeState } from "../../timeSystem"
 import type { ButlerState } from "@/types/butler"
@@ -63,13 +66,13 @@ function handleIncubatorCare(input: RunManagementInteractionsInput) {
 
   if (!petName) return
 
-  hatchPetWithAiBundle({
+  hatchPetWithLifeProfile({
     ...input,
     petName,
   })
 }
 
-function hatchPetWithAiBundle(
+function hatchPetWithLifeProfile(
   input: RunManagementInteractionsInput & {
     petName: string
   }
@@ -84,16 +87,24 @@ function hatchPetWithAiBundle(
     minute: now.getMinutes(),
   }
 
-  const birthBundle = buildPetBirthBundle({
+  const lifeProfile = buildLifePersonalityProfile({
+    subjectType: "pet",
     birthInput,
-    time: {
-      day: input.time.day,
-      hour: input.time.hour,
-      period: input.time.period,
-    },
+    genderPerspective: "male",
+    hasBirthHour: true,
   })
 
-  input.petSystem.hatchPetWithAiBundle(input.petName, birthBundle)
+  const timelineSnapshot = buildPetTimelineSnapshot({
+    day: input.time.day,
+    hour: input.time.hour,
+    period: input.time.period,
+  })
+
+  input.petSystem.hatchPetWithLifeProfileBundle({
+    name: input.petName,
+    lifeProfile,
+    timelineSnapshot,
+  })
 
   input.eventSystem.addPetHatchedEvent({
     tick: input.tick,
@@ -104,16 +115,18 @@ function hatchPetWithAiBundle(
 
   const createdPet = input.petSystem.getPet()
 
-  console.log("世界引擎：宠物已通过 AI 总入口完成出生数据构建并绑定。", {
+  console.log("世界引擎：宠物已通过 LifeProfile 核心完成出生数据构建并绑定。", {
     petName: input.petName,
     birthInput,
-    publicPersonality: birthBundle.publicPersonalityView,
-    bazi: birthBundle.baziProfile,
-    finalPersonality: birthBundle.finalPersonalityProfile,
-    summaries: birthBundle.personalityProfile.summaries,
-    traits: birthBundle.personalityProfile.traits,
-    consciousness: birthBundle.consciousnessProfile,
-    memory: birthBundle.memoryState,
+    mode: lifeProfile.mode,
+    genderPerspective: lifeProfile.genderPerspective,
+    publicPersonality: lifeProfile.publicPersonalityView,
+    bazi: lifeProfile.baziProfile,
+    interpretation: lifeProfile.personalityInterpretationProfile.summary,
+    behaviorBias: lifeProfile.genderAwareBehaviorBias,
+    summaries: lifeProfile.ziweiProfile?.summaries ?? [],
+    traits: lifeProfile.ziweiProfile?.traits ?? null,
+    consciousness: lifeProfile.consciousnessProfile,
     timelinePhase: createdPet?.timelineSnapshot?.fortune.phaseTag,
     timelineBranch: createdPet?.timelineSnapshot?.trajectory.branchTag,
     timelineEmotion: createdPet?.timelineSnapshot?.state.emotional.label,
@@ -133,8 +146,8 @@ function handleHomeBuilding(input: RunManagementInteractionsInput) {
 
   input.homeSystem.build(
     15,
-    input.petSystem.getPet()?.finalPersonalityProfile ??
-      input.butler.finalPersonalityProfile ??
+    input.petSystem.getPet()?.lifeProfile.genderAwareBehaviorBias ??
+      input.butler.lifeProfile?.genderAwareBehaviorBias ??
       null
   )
 

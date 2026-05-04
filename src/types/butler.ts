@@ -2,7 +2,7 @@
  * 当前文件负责：定义世界层正式使用的管家类型。
  */
 
-import type { FinalPersonalityProfile } from "../ai/gateway"
+import type { LifePersonalityProfileBundle } from "../ai/gateway"
 
 export type ButlerTask =
   | "watching_incubator"
@@ -47,5 +47,5 @@ export type ButlerState = {
   mood: ButlerMood
   lastTaskChangedTick: number
   pendingOpportunities: ButlerOpportunity[]
-  finalPersonalityProfile?: FinalPersonalityProfile | null
+  lifeProfile?: LifePersonalityProfileBundle | null
 }

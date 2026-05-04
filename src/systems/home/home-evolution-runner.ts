@@ -1,16 +1,16 @@
 /**
- * 当前文件负责：根据管家或宠物的最终人格偏置判断家园成长方向。
+ * 当前文件负责：根据生命人格档案里的建设偏置判断家园成长方向。
  */
 
-import type { FinalPersonalityProfile } from "@/ai/gateway"
+import type { GenderAwareBehaviorBias } from "@/ai/gateway"
 import type { HomeEvolutionFocus } from "@/types/home"
 
 export function resolveEvolutionFocus(
-  profile?: FinalPersonalityProfile | null
+  bias?: GenderAwareBehaviorBias | null
 ): HomeEvolutionFocus {
-  if (!profile) return "balanced"
+  if (!bias) return "balanced"
 
-  const building = profile.bias.buildingBias
+  const building = bias.buildingBias
 
   const entries: Array<[HomeEvolutionFocus, number]> = [
     ["expansion", building.expansionPreference],

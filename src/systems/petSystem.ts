@@ -4,7 +4,10 @@
 
 import type { PetState } from "../types/pet"
 import type { TimeState } from "../engine/timeSystem"
-import type { PetBirthAiBundle } from "../ai/gateway"
+import type {
+  LifePersonalityProfileBundle,
+  PetTimelineSnapshot,
+} from "../ai/gateway"
 import type { ButlerOpportunity } from "./butlerSystem"
 import type { WorldStimulus } from "../ai/gateway"
 import type { PetCognitionRecord } from "../types/cognition"
@@ -33,17 +36,18 @@ export class PetSystem {
   private lastDecisionReason: ActionDecisionReason | null = null
   private lastFeedingTick = -9999
 
-  hatchPetWithAiBundle(name: string, aiBundle: PetBirthAiBundle) {
+  hatchPetWithLifeProfileBundle(input: {
+    name: string
+    lifeProfile: LifePersonalityProfileBundle
+    timelineSnapshot: PetTimelineSnapshot
+  }) {
     if (this.pet) return
 
     const {
-      personalityProfile,
-      baziProfile,
-      finalPersonalityProfile,
-      consciousnessProfile,
-      memoryState,
+      name,
+      lifeProfile,
       timelineSnapshot,
-    } = aiBundle
+    } = input
 
     const energy = Math.round(timelineSnapshot.state.physical.energy)
     const hunger = Math.round(timelineSnapshot.state.physical.hunger)
@@ -51,14 +55,43 @@ export class PetSystem {
       timelineSnapshot.state.emotional.label
     )
 
+    const ziweiProfile = lifeProfile.ziweiProfile
+
+    if (!ziweiProfile) {
+      throw new Error("宠物出生需要出生时辰生成紫微人格；无时辰模式仅用于测试页或未来管家/玩家。")
+    }
+
+    if (!lifeProfile.consciousnessProfile) {
+      throw new Error("宠物出生需要意识核心。")
+    }
+
+    const memoryState = {
+      events: [],
+      preferences: {
+        likedActions: [],
+        dislikedActions: [],
+        likedZones: [],
+        dislikedZones: [],
+      },
+      relations: [],
+      self: {
+        repeatedActions: {},
+        stableTraits: [],
+      },
+      world: {
+        knownZones: [],
+        familiarStimuli: [],
+      },
+    }
+
     const driveSnapshot = driveSystem.compute({
       pet: {
         energy,
         hunger,
         mood,
         timelineSnapshot,
-        personalityProfile,
-        consciousnessProfile,
+        personalityProfile: ziweiProfile,
+        consciousnessProfile: lifeProfile.consciousnessProfile,
       },
       time: {
         day: 1,
@@ -74,7 +107,7 @@ export class PetSystem {
         hunger,
         mood,
         timelineSnapshot,
-        consciousnessProfile,
+        consciousnessProfile: lifeProfile.consciousnessProfile,
         memoryState,
       },
       time: {
@@ -92,10 +125,7 @@ export class PetSystem {
       hunger,
       mood,
       action: "observing",
-      personalityProfile,
-      baziProfile,
-      finalPersonalityProfile,
-      consciousnessProfile,
+      lifeProfile,
       lifeState: {
         phase: "newborn",
         ageTicks: 0,
@@ -104,7 +134,6 @@ export class PetSystem {
         maxExploreRadius: 90,
       },
       currentGoal: initialGoal,
-      memoryState,
       timelineSnapshot,
       latestCognition: null,
       recentCognition: [],

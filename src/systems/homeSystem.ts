@@ -2,7 +2,7 @@
  * 当前文件负责：维护家园状态，并调度家园建造进度更新。
  */
 
-import type { FinalPersonalityProfile } from "../ai/gateway"
+import type { GenderAwareBehaviorBias } from "../ai/gateway"
 import type { HomeState } from "../types/home"
 import { buildHome } from "./home/home-gateway"
 
@@ -23,11 +23,11 @@ export class HomeSystem {
     }
   }
 
-  build(amount: number, profile?: FinalPersonalityProfile | null) {
+  build(amount: number, behaviorBias?: GenderAwareBehaviorBias | null) {
     this.home = buildHome({
       home: this.home,
       amount,
-      profile,
+      behaviorBias,
     })
   }
 

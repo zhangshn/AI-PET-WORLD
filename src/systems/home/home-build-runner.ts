@@ -1,8 +1,8 @@
 /**
- * 当前文件负责：根据建造投入与人格偏置推进家园状态。
+ * 当前文件负责：根据建造投入与人格行为偏置推进家园状态。
  */
 
-import type { FinalPersonalityProfile } from "@/ai/gateway"
+import type { GenderAwareBehaviorBias } from "@/ai/gateway"
 import type { HomeState } from "@/types/home"
 import { resolveEvolutionFocus } from "./home-evolution-runner"
 import { resolveConstructionStage } from "./home-stage-runner"
@@ -11,7 +11,7 @@ import { clamp } from "./home-utils"
 export type BuildHomeInput = {
   home: HomeState
   amount: number
-  profile?: FinalPersonalityProfile | null
+  behaviorBias?: GenderAwareBehaviorBias | null
 }
 
 export function buildHome(input: BuildHomeInput): HomeState {
@@ -21,7 +21,7 @@ export function buildHome(input: BuildHomeInput): HomeState {
     return nextHome
   }
 
-  const building = input.profile?.bias.buildingBias
+  const building = input.behaviorBias?.buildingBias
 
   const constructionBonus = building
     ? (building.stabilityPreference + building.orderPreference) / 200
@@ -30,7 +30,7 @@ export function buildHome(input: BuildHomeInput): HomeState {
   const finalAmount = input.amount * (1 + constructionBonus * 0.35)
 
   nextHome.progress = clamp(nextHome.progress + finalAmount)
-  nextHome.evolutionFocus = resolveEvolutionFocus(input.profile)
+  nextHome.evolutionFocus = resolveEvolutionFocus(input.behaviorBias)
   nextHome.constructionStage = resolveConstructionStage(nextHome.progress)
 
   if (building) {
