@@ -5,7 +5,7 @@
 import type { PetState } from "@/types/pet"
 import type { IncubatorState } from "@/types/incubator"
 import type { HomeState } from "@/types/home"
-import type { FinalPersonalityProfile } from "@/ai/gateway"
+import type { GenderAwareBehaviorBias } from "@/ai/gateway"
 import type {
   ButlerState,
   ButlerSystemInput,
@@ -23,13 +23,14 @@ function isIncubatorCompleted(incubator: IncubatorState | null): boolean {
 
 function shouldOfferFood(
   pet: PetState | null,
-  profile?: FinalPersonalityProfile | null
+  behaviorBias?: GenderAwareBehaviorBias | null
 ): boolean {
   if (!pet?.timelineSnapshot) return false
 
   const hunger = pet.timelineSnapshot.state.physical.hunger
   const emotion = pet.timelineSnapshot.state.emotional.label
-  const carePriority = profile?.bias.butlerBehaviorBias.carePriority ?? 50
+  const carePriority =
+    behaviorBias?.butlerBehaviorBias.carePriority ?? 50
 
   if (hunger >= 58) return true
 
@@ -46,14 +47,15 @@ function shouldOfferFood(
 function shouldOfferRest(
   pet: PetState | null,
   inputTime: ButlerSystemInput["time"],
-  profile?: FinalPersonalityProfile | null
+  behaviorBias?: GenderAwareBehaviorBias | null
 ): boolean {
   if (!pet?.timelineSnapshot) return false
 
   const energy = pet.timelineSnapshot.state.physical.energy
   const phaseTag = pet.timelineSnapshot.fortune.phaseTag
   const hour = inputTime.hour
-  const carePriority = profile?.bias.butlerBehaviorBias.carePriority ?? 50
+  const carePriority =
+    behaviorBias?.butlerBehaviorBias.carePriority ?? 50
 
   if (energy <= 40 + Math.max(0, carePriority - 50) * 0.08) return true
   if (phaseTag === "recovery_phase") return true
@@ -83,7 +85,7 @@ function shouldBuildHome(
   home: HomeState | null,
   pet: PetState | null,
   incubator: IncubatorState | null,
-  profile?: FinalPersonalityProfile | null
+  behaviorBias?: GenderAwareBehaviorBias | null
 ): boolean {
   if (!home) return false
 
@@ -92,7 +94,7 @@ function shouldBuildHome(
   }
 
   const constructionDrive =
-    profile?.bias.butlerBehaviorBias.constructionDrive ?? 50
+    behaviorBias?.butlerBehaviorBias.constructionDrive ?? 50
 
   if (pet?.timelineSnapshot) {
     const energy = pet.timelineSnapshot.state.physical.energy
@@ -116,9 +118,14 @@ export function chooseButlerTask(
   state: ButlerState
 ): ButlerTask {
   const { pet, incubator, home, time } = input
-  const profile =
-    input.butlerPersonalityProfile ?? pet?.finalPersonalityProfile ?? null
-  const butlerBias = profile?.bias.butlerBehaviorBias
+
+  const behaviorBias =
+    input.butlerBehaviorBias ??
+    state.behaviorBias ??
+    pet?.lifeProfile.genderAwareBehaviorBias ??
+    null
+
+  const butlerBias = behaviorBias?.butlerBehaviorBias
 
   if (!isIncubatorCompleted(incubator)) {
     return "watching_incubator"
@@ -128,16 +135,16 @@ export function chooseButlerTask(
     if (
       butlerBias &&
       butlerBias.constructionDrive >= 68 &&
-      shouldBuildHome(home, pet, incubator, profile)
+      shouldBuildHome(home, pet, incubator, behaviorBias)
     ) {
       return "building_home"
     }
 
-    if (shouldOfferFood(pet, profile)) {
+    if (shouldOfferFood(pet, behaviorBias)) {
       return "offering_food"
     }
 
-    if (shouldOfferRest(pet, time, profile)) {
+    if (shouldOfferRest(pet, time, behaviorBias)) {
       return "offering_rest"
     }
 
@@ -145,14 +152,14 @@ export function chooseButlerTask(
       return "offering_approach"
     }
 
-    if (shouldBuildHome(home, pet, incubator, profile)) {
+    if (shouldBuildHome(home, pet, incubator, behaviorBias)) {
       return "building_home"
     }
 
     return "watching_pet"
   }
 
-  if (shouldBuildHome(home, pet, incubator, profile)) {
+  if (shouldBuildHome(home, pet, incubator, behaviorBias)) {
     return "building_home"
   }
 

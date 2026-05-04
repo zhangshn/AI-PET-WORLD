@@ -36,7 +36,7 @@ export class ButlerSystem {
     mood: "calm",
     lastTaskChangedTick: 0,
     pendingOpportunities: [],
-    finalPersonalityProfile: null,
+    behaviorBias: null,
   }
 
   update(input: ButlerSystemInput): ButlerState {
@@ -45,8 +45,10 @@ export class ButlerSystem {
     const restRule = getOpportunityRule("rest_offer")
     const approachRule = getOpportunityRule("approach_offer")
 
-    this.state.finalPersonalityProfile =
-      input.butlerPersonalityProfile ?? input.pet?.finalPersonalityProfile ?? null
+    this.state.behaviorBias =
+      input.butlerBehaviorBias ??
+      input.pet?.lifeProfile.genderAwareBehaviorBias ??
+      null
 
     this.state.pendingOpportunities = removeExpiredOpportunities(
       this.state.pendingOpportunities,
@@ -66,7 +68,7 @@ export class ButlerSystem {
       return this.state
     }
 
-    const bias = this.state.finalPersonalityProfile?.bias.butlerBehaviorBias
+    const bias = this.state.behaviorBias?.butlerBehaviorBias
 
     const carePriority = bias?.carePriority ?? 50
     const responseSpeed = bias?.responseSpeed ?? 50

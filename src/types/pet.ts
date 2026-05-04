@@ -3,9 +3,20 @@
  */
 
 import type {
+  BaziProfile,
   LifePersonalityProfileBundle,
+  PersonalityProfile,
   PetTimelineSnapshot,
+  PublicPersonalityView,
 } from "../ai/gateway"
+
+import type {
+  ZiweiConsciousnessKernel,
+} from "../ai/consciousness/consciousness-gateway"
+
+import type {
+  PetMemoryState,
+} from "../ai/memory-core/memory-gateway"
 
 import type {
   PetGoalState,
@@ -62,9 +73,15 @@ export type PetState = {
 
   lifeProfile: LifePersonalityProfileBundle
 
+  personalityProfile: PersonalityProfile
+  publicPersonalityView: PublicPersonalityView | null
+  baziProfile: BaziProfile
+  consciousnessProfile: ZiweiConsciousnessKernel
+
   lifeState: PetLifeState
 
   currentGoal?: PetGoalState
+  memoryState: PetMemoryState
   timelineSnapshot?: PetTimelineSnapshot
   latestCognition?: PetCognitionRecord | null
   recentCognition: PetCognitionRecord[]

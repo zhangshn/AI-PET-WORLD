@@ -5,7 +5,7 @@
 import type { PetState } from "@/types/pet"
 import type { IncubatorState } from "@/types/incubator"
 import type { HomeState } from "@/types/home"
-import type { FinalPersonalityProfile } from "@/ai/gateway"
+import type { GenderAwareBehaviorBias } from "@/ai/gateway"
 
 export type ButlerTask =
   | "watching_incubator"
@@ -50,7 +50,7 @@ export type ButlerState = {
   mood: ButlerMood
   lastTaskChangedTick: number
   pendingOpportunities: ButlerOpportunity[]
-  finalPersonalityProfile?: FinalPersonalityProfile | null
+  behaviorBias?: GenderAwareBehaviorBias | null
 }
 
 export type ButlerSystemInput = {
@@ -63,5 +63,5 @@ export type ButlerSystemInput = {
     hour: number
     period?: string
   }
-  butlerPersonalityProfile?: FinalPersonalityProfile | null
+  butlerBehaviorBias?: GenderAwareBehaviorBias | null
 }

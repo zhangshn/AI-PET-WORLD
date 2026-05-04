@@ -118,7 +118,7 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     incubator: currentIncubator,
     home: currentHome,
     time: input.currentTime,
-    butlerPersonalityProfile: currentPet?.finalPersonalityProfile ?? null,
+    butlerBehaviorBias: currentPet?.lifeProfile.genderAwareBehaviorBias ?? null,
   })
 
   currentState = refreshWorldSystemState({
