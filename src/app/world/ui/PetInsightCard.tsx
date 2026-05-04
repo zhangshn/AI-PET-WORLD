@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：展示宠物当前可观察状态。
+ * 当前文件负责：展示宠物当前可观察生命状态。
  */
 
 import type { PetState } from "@/types/pet"
@@ -66,7 +66,7 @@ function getHungerLabel(hunger: number): string {
   return "满足"
 }
 
-function buildObservationText(pet: PetState): string {
+function buildBehaviorExplanation(pet: PetState): string {
   const action = getActionLabel(pet.action)
   const mood = getMoodLabel(pet.mood)
   const energy = getEnergyLabel(pet.energy)
@@ -89,6 +89,14 @@ function buildObservationText(pet: PetState): string {
     return `${pet.name} 没有急着行动。它正在观察环境里的变化，并慢慢形成自己的判断。${tendency}`
   }
 
+  if (pet.action === "approaching") {
+    return `${pet.name} 正在尝试靠近目标。靠近不是被命令触发，而是它在当前安全感和关系距离之间做出的自主选择。${tendency}`
+  }
+
+  if (pet.action === "resting" || pet.action === "sleeping") {
+    return `${pet.name} 正在降低行动消耗，优先恢复状态。这个阶段它会更少回应外部刺激。${tendency}`
+  }
+
   return `${pet.name} 现在处于${mood}状态，行为表现为${action}。整体能量${energy}，饥饿状态${hunger}。${tendency}`
 }
 
@@ -105,9 +113,13 @@ export default function PetInsightCard({ pet }: Props) {
           <div className={styles.mood}>孵化中</div>
         </div>
 
-        <p className={styles.description}>
-          世界正在等待新的生命反应。孵化器保持运行，管家会优先确认其中的稳定度。
-        </p>
+        <div className={styles.section}>
+          <div className={styles.sectionTitle}>当前状态</div>
+
+          <p className={styles.description}>
+            世界正在等待新的生命反应。孵化器保持运行，管家会优先确认其中的稳定度。
+          </p>
+        </div>
       </section>
     )
   }
@@ -126,64 +138,91 @@ export default function PetInsightCard({ pet }: Props) {
         <div className={styles.mood}>{getMoodLabel(pet.mood)}</div>
       </div>
 
-      <div className={styles.grid}>
-        <div>
-          <span>生命视角</span>
-          <strong>
-            {getPetGenderPerspectiveLabel(pet.genderPerspective)}
-          </strong>
-        </div>
+      <div className={styles.section}>
+        <div className={styles.sectionTitle}>当前生命状态</div>
 
-        <div>
-          <span>生命阶段</span>
-          <strong>{getLifePhaseDisplayLabel(pet.lifeState?.phase)}</strong>
-        </div>
+        <div className={styles.grid}>
+          <div>
+            <span>生命视角</span>
+            <strong>
+              {getPetGenderPerspectiveLabel(pet.genderPerspective)}
+            </strong>
+          </div>
 
-        <div>
-          <span>当前行为</span>
-          <strong>{getActionLabel(pet.action)}</strong>
-        </div>
+          <div>
+            <span>生命阶段</span>
+            <strong>{getLifePhaseDisplayLabel(pet.lifeState?.phase)}</strong>
+          </div>
 
-        <div>
-          <span>能量状态</span>
-          <strong>{getEnergyLabel(pet.energy)}</strong>
-        </div>
+          <div>
+            <span>当前行为</span>
+            <strong>{getActionLabel(pet.action)}</strong>
+          </div>
 
-        <div>
-          <span>饥饿状态</span>
-          <strong>{getHungerLabel(pet.hunger)}</strong>
-        </div>
+          <div>
+            <span>情绪状态</span>
+            <strong>{getMoodLabel(pet.mood)}</strong>
+          </div>
 
-        <div>
-          <span>天生气质</span>
-          <strong>{getPetInnateTemperament(pet)}</strong>
-        </div>
+          <div>
+            <span>能量状态</span>
+            <strong>{getEnergyLabel(pet.energy)}</strong>
+          </div>
 
-        <div>
-          <span>当前倾向</span>
-          <strong>{getPetCurrentTendency(pet)}</strong>
-        </div>
-
-        <div>
-          <span>可见特质</span>
-          <strong>{visibleTraits.slice(0, 3).join("、")}</strong>
+          <div>
+            <span>饥饿状态</span>
+            <strong>{getHungerLabel(pet.hunger)}</strong>
+          </div>
         </div>
       </div>
 
-      {topDimensions.length > 0 && (
+      <div className={styles.section}>
+        <div className={styles.sectionTitle}>行为解释</div>
+
         <p className={styles.description}>
-          主要人格维度：
-          {topDimensions
-            .map((dimension) => `${dimension.label} ${dimension.score}`)
-            .join(" / ")}
+          {buildBehaviorExplanation(pet)}
         </p>
-      )}
+      </div>
 
-      <p className={styles.description}>
-        {getPetBehaviorBiasSummary(pet)}
-      </p>
+      <div className={styles.section}>
+        <div className={styles.sectionTitle}>生命档案摘要</div>
 
-      <p className={styles.description}>{buildObservationText(pet)}</p>
+        <div className={styles.summaryGrid}>
+          <div>
+            <span>天生气质</span>
+            <strong>{getPetInnateTemperament(pet)}</strong>
+          </div>
+
+          <div>
+            <span>当前倾向</span>
+            <strong>{getPetCurrentTendency(pet)}</strong>
+          </div>
+
+          <div>
+            <span>可见特质</span>
+            <strong>{visibleTraits.slice(0, 3).join("、")}</strong>
+          </div>
+        </div>
+
+        {topDimensions.length > 0 && (
+          <div className={styles.dimensionList}>
+            {topDimensions.map((dimension) => (
+              <div className={styles.dimensionItem} key={dimension.label}>
+                <div className={styles.dimensionTopRow}>
+                  <span>{dimension.label}</span>
+                  <strong>{dimension.score}</strong>
+                </div>
+
+                <p>{dimension.summary}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <p className={styles.description}>
+          {getPetBehaviorBiasSummary(pet)}
+        </p>
+      </div>
     </section>
   )
 }
