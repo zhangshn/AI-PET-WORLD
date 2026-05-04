@@ -2,16 +2,15 @@
  * 当前文件负责：定义通用生命人格档案核心类型。
  */
 
-import type { BaziProfile } from "../bazi-core/bazi-types"
+import type { BaziProfile } from "../bazi-core/bazi-gateway"
 import type { ZiweiConsciousnessKernel } from "../consciousness/consciousness-gateway"
-import type { FinalPersonalityProfile } from "../personality-vector/vector-gateway"
 import type {
   GenderAwareBehaviorBias,
   GenderPerspective,
   PersonalityInterpretationMode,
   PersonalityInterpretationProfile,
 } from "../personality-interpretation-core/interpretation-gateway"
-import type { PublicPersonalityView } from "../ziwei-core/mapper"
+import type { PublicPersonalityView } from "../ziwei-core/public-view"
 import type { PersonalityProfile } from "../ziwei-core/schema"
 
 export type LifeProfileSubjectType =
@@ -47,7 +46,6 @@ export type LifePersonalityProfileBundle = {
 
   baziProfile: BaziProfile
 
-  basePersonalityProfile: FinalPersonalityProfile
   personalityInterpretationProfile: PersonalityInterpretationProfile
   genderAwareBehaviorBias: GenderAwareBehaviorBias
 

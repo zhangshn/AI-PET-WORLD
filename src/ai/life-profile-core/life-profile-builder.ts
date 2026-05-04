@@ -8,8 +8,7 @@ import {
   buildPersonalityInterpretationBehaviorBias,
   buildPersonalityInterpretationProfile,
 } from "../personality-interpretation-core/interpretation-gateway"
-import { buildFinalPersonalityProfile } from "../personality-vector/vector-gateway"
-import { buildPublicPersonalityView } from "../ziwei-core/mapper"
+import { buildPublicPersonalityView } from "../ziwei-core/public-view"
 import { buildPersonalityProfile } from "../ziwei-core/ziwei-gateway"
 
 import type {
@@ -48,16 +47,10 @@ export function buildLifePersonalityProfile(
     minute: input.birthInput.minute ?? null,
   })
 
-  const basePersonalityProfile = buildFinalPersonalityProfile({
-    ziweiProfile,
-    baziProfile,
-  })
-
   const personalityInterpretationProfile =
     buildPersonalityInterpretationProfile({
       ziweiProfile,
       baziProfile,
-      finalPersonalityProfile: basePersonalityProfile,
       genderPerspective: input.genderPerspective,
       hasBirthHour: usableBirthHour !== null,
     })
@@ -83,7 +76,6 @@ export function buildLifePersonalityProfile(
 
     baziProfile,
 
-    basePersonalityProfile,
     personalityInterpretationProfile,
     genderAwareBehaviorBias,
 
@@ -91,7 +83,8 @@ export function buildLifePersonalityProfile(
 
     debug: {
       source: "life_profile_core",
-      note: "通用生命人格档案：先区分性别，再进入紫微或八字映射，最终生成性别人格与行为偏置。",
+      note:
+        "通用生命人格档案：性别先进入紫微或八字映射，直接生成最终性别人格与行为偏置；不再经过 FinalPersonalityProfile。",
     },
   }
 }

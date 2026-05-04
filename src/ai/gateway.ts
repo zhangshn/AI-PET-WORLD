@@ -5,8 +5,8 @@
 import type { BirthInput, PersonalityProfile } from "./ziwei-core/schema"
 import { buildPersonalityProfile } from "./ziwei-core/ziwei-gateway"
 
-import type { PublicPersonalityView } from "./ziwei-core/mapper"
-import { buildPublicPersonalityView } from "./ziwei-core/mapper"
+import type { PublicPersonalityView } from "./ziwei-core/public-view"
+import { buildPublicPersonalityView } from "./ziwei-core/public-view"
 
 import type {
   PetTimelineSnapshot,
@@ -31,7 +31,7 @@ import { buildConsciousnessFromPersonality } from "./consciousness/consciousness
 import type { PetMemoryState } from "./memory-core/memory-gateway"
 import { buildInitialPetMemoryState } from "./memory-core/memory-gateway"
 
-import type { BaziProfile } from "./bazi-core/bazi-types"
+import type { BaziProfile } from "./bazi-core/bazi-gateway"
 import { buildBaziProfile } from "./bazi-core/bazi-gateway"
 
 import type { FinalPersonalityProfile } from "./personality-vector/vector-gateway"
@@ -227,9 +227,9 @@ export function stepPetBehaviorProcess(
 
 export type { BirthInput, PersonalityProfile } from "./ziwei-core/schema"
 
-export type { PublicPersonalityView } from "./ziwei-core/mapper"
+export type { PublicPersonalityView } from "./ziwei-core/public-view"
 
-export type { BaziProfile } from "./bazi-core/bazi-types"
+export type { BaziProfile } from "./bazi-core/bazi-gateway"
 
 export type {
   FinalPersonalityProfile,
