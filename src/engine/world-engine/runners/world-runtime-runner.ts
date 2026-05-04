@@ -5,6 +5,7 @@
 import type { TimeState } from "../../timeSystem"
 import { runWorldSimulation } from "@/world/simulation/world-simulation"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
+import { logWorldEcology } from "../world-runtime-logger"
 
 export type RunWorldRuntimeInput = {
   previous: WorldRuntimeState | null
@@ -37,15 +38,4 @@ export function runWorldRuntime(
   }
 
   return runtime
-}
-
-export function logWorldEcology(runtime: WorldRuntimeState) {
-  console.log("🌱 世界生态：", {
-    weather: runtime.ecology.environment.activeWeather,
-    mood: runtime.ecology.environment.environmentMood,
-    temperature: runtime.ecology.environment.temperature,
-    humidity: runtime.ecology.environment.humidity,
-    windLevel: runtime.ecology.environment.windLevel,
-    lightLevel: runtime.ecology.environment.lightLevel,
-  })
 }

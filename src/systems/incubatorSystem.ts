@@ -11,6 +11,7 @@ import {
   applyIncubatorCare,
   runIncubatorTick,
 } from "./incubator/incubator-runner"
+import { logIncubatorState } from "../engine/world-engine/world-runtime-logger"
 
 export class IncubatorSystem {
   private incubator: IncubatorState
@@ -28,9 +29,7 @@ export class IncubatorSystem {
   update() {
     this.incubator = runIncubatorTick(this.incubator)
 
-    console.log(
-      `孵化器状态：进度=${this.incubator.progress} 稳定度=${this.incubator.stability} 状态=${this.incubator.status}`
-    )
+    logIncubatorState(this.incubator)
   }
 
   care(amountProgress: number, amountStability: number) {

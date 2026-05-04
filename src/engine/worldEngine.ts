@@ -27,6 +27,7 @@ import {
   buildWorldState,
   type WorldState,
 } from "./world-engine/world-engine-state"
+import { logWorldTick } from "./world-engine/world-runtime-logger"
 
 export type { WorldState } from "./world-engine/world-engine-state"
 
@@ -111,8 +112,10 @@ export class WorldEngine {
     this.worldStimuli = tickResult.worldStimuli
     this.worldRuntime = tickResult.worldRuntime
 
-    console.log("世界 Tick：", this.tick)
-    console.log("当前时间：", this.timeSystem.getFormattedTime())
+    logWorldTick({
+      tick: this.tick,
+      formattedTime: this.timeSystem.getFormattedTime(),
+    })
 
     this.emitUpdate()
   }
