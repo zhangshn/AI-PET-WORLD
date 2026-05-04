@@ -67,10 +67,8 @@ export default function WorldObserveLayout({ world }: Props) {
           />
         </header>
 
-        <WorldCompactHud hud={hud} />
-
         <section className={styles.contentGrid}>
-          <WorldStagePanel>
+          <WorldStagePanel overlay={<WorldCompactHud hud={hud} />}>
             <WorldPixelStage
               time={world.time}
               pet={world.pet}
