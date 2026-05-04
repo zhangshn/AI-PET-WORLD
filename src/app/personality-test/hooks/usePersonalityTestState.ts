@@ -1,142 +1,111 @@
 /**
- * 当前文件负责：根据出生输入和性别视角构建通用生命人格档案。
+ * 当前文件负责：组合 personality-test 页面的出生输入、人格数据与 Timeline 测试状态。
  */
 
-import { useMemo } from "react"
+import { useBirthInputState } from "./useBirthInputState"
+import { usePersonalityProfileData } from "./usePersonalityProfileData"
+import { useTimelineTestState } from "./useTimelineTestState"
 
-import {
-  buildLifePersonalityProfile,
-  type GenderPerspective,
-  type LifePersonalityProfileBundle,
-} from "../../../ai/gateway"
+export function usePersonalityTestState() {
+  const {
+    birthInput,
+    birthInputActions,
+  } = useBirthInputState()
 
-import { buildBaziProfile } from "../../../ai/bazi-core/bazi-gateway"
-import { buildPetTimelineSnapshot } from "../../../ai/timeline-system/timeline-gateway"
-
-import {
-  INITIAL_TIMELINE_CLOCK,
-} from "./useTimelineTestState"
-
-import type { DynamicGenderInput } from "../types"
-import type { BirthInputState } from "./personality-test-state-types"
-
-function resolveGenderPerspective(
-  gender: DynamicGenderInput
-): GenderPerspective | null {
-  if (gender === "male" || gender === "female") {
-    return gender
-  }
-
-  return null
-}
-
-export function usePersonalityProfileData({
-  year,
-  month,
-  day,
-  parsedBirthHour,
-  hasBirthHour,
-  dynamicGender,
-}: {
-  year: number
-  month: number
-  day: number
-  parsedBirthHour: number | null
-  hasBirthHour: boolean
-  dynamicGender: DynamicGenderInput
-}) {
-  const selectedGenderPerspective = useMemo(() => {
-    return resolveGenderPerspective(dynamicGender)
-  }, [dynamicGender])
-
-  const baziProfile = useMemo(() => {
-    return buildBaziProfile({
-      year,
-      month,
-      day,
-      hour: hasBirthHour ? parsedBirthHour : null,
-    })
-  }, [
+  const {
     year,
     month,
     day,
     parsedBirthHour,
     hasBirthHour,
-  ])
+    dynamicGender,
+  } = birthInput
 
-  const lifeProfileBundle = useMemo<LifePersonalityProfileBundle | null>(() => {
-    if (selectedGenderPerspective === null) {
-      return null
-    }
+  const {
+    profileData,
+    profileActions,
+  } = usePersonalityProfileData({
+    year,
+    month,
+    day,
+    parsedBirthHour,
+    hasBirthHour,
+    dynamicGender,
+  })
 
-    return buildLifePersonalityProfile({
-      subjectType: "pet",
-      birthInput: {
+  const {
+    timelineData,
+    timelineActions,
+  } = useTimelineTestState({
+    initialSnapshot: profileData.initialTimelineSnapshot,
+    onResetByBirthInput: () => {
+      return profileActions.resetProfileFromBirthInput({
         year,
         month,
         day,
-        hour: hasBirthHour ? parsedBirthHour : null,
-      },
-      genderPerspective: selectedGenderPerspective,
-      hasBirthHour,
+        hour: parsedBirthHour,
+      })
+    },
+  })
+
+  function syncTimelineWhenPossible(nextInput: {
+    year: number
+    month: number
+    day: number
+    hour: number | null
+  }) {
+    if (nextInput.hour === null) {
+      timelineActions.markUnknownBirthHour()
+      return
+    }
+
+    const nextSnapshot = profileActions.resetProfileFromBirthInput({
+      year: nextInput.year,
+      month: nextInput.month,
+      day: nextInput.day,
+      hour: nextInput.hour,
     })
-  }, [
-    year,
-    month,
-    day,
-    parsedBirthHour,
-    hasBirthHour,
-    selectedGenderPerspective,
-  ])
 
-  const initialTimelineSnapshot = useMemo(() => {
-    return buildPetTimelineSnapshot({
-      day: INITIAL_TIMELINE_CLOCK.day,
-      hour: INITIAL_TIMELINE_CLOCK.hour,
-      period: INITIAL_TIMELINE_CLOCK.period,
+    timelineActions.markBirthInputReset(nextSnapshot)
+  }
+
+  function handleDateChange(nextInput: {
+    year?: number
+    month?: number
+    day?: number
+  }) {
+    const nextBirthInput = birthInputActions.updateDate(nextInput)
+
+    syncTimelineWhenPossible({
+      year: nextBirthInput.year,
+      month: nextBirthInput.month,
+      day: nextBirthInput.day,
+      hour: nextBirthInput.hour,
     })
-  }, [])
+  }
 
-  const profile = lifeProfileBundle?.ziweiProfile ?? null
-  const publicView = lifeProfileBundle?.publicPersonalityView ?? null
-  const pattern = profile?.pattern ?? null
+  function handleBirthHourInputChange(value: string) {
+    const nextBirthInput = birthInputActions.updateBirthHourInput(value)
 
-  const basePersonalityProfile =
-    lifeProfileBundle?.basePersonalityProfile ?? null
-
-  const personalityInterpretationProfile =
-    lifeProfileBundle?.personalityInterpretationProfile ?? null
-
-  const genderAwareBehaviorBias =
-    lifeProfileBundle?.genderAwareBehaviorBias ?? null
-
-  function resetProfileFromBirthInput(_nextBirthInput: BirthInputState) {
-    return buildPetTimelineSnapshot({
-      day: INITIAL_TIMELINE_CLOCK.day,
-      hour: INITIAL_TIMELINE_CLOCK.hour,
-      period: INITIAL_TIMELINE_CLOCK.period,
+    syncTimelineWhenPossible({
+      year: nextBirthInput.year,
+      month: nextBirthInput.month,
+      day: nextBirthInput.day,
+      hour: nextBirthInput.hour,
     })
   }
 
   return {
-    profileData: {
-      lifeProfileBundle,
-      selectedGenderPerspective,
+    birthInput,
+    profileData,
+    timelineData,
 
-      profile,
-      publicView,
-      pattern,
-
-      baziProfile,
-      basePersonalityProfile,
-      personalityInterpretationProfile,
-      genderAwareBehaviorBias,
-
-      initialTimelineSnapshot,
-    },
-
-    profileActions: {
-      resetProfileFromBirthInput,
+    actions: {
+      setDynamicGender: birthInputActions.setDynamicGender,
+      handleDateChange,
+      handleBirthHourInputChange,
+      applyTimelineUpdate: timelineActions.applyTimelineUpdate,
+      resetTimeline: timelineActions.resetTimeline,
     },
   }
 }
