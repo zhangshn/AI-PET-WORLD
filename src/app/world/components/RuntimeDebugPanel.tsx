@@ -2,12 +2,21 @@
  * 当前文件负责：
  * 1. 展示 AI 运行时调试信息
  * 2. 帮助观察 pet runtime 内部驱动层
- * 3. 展示 Goal → Zone → World Position
- * 4. 作为 world 页面调试面板使用
- * 5. 中英文双语展示
+ * 3. 展示 LifeProfile、Goal、Cognition、Timeline、Memory 调试信息
+ * 4. 作为 world 页面开发者调试面板使用
  */
 
 import type { PetState } from "@/types/pet"
+
+import {
+  getLifeProfileModeLabel,
+  getPetBehaviorBiasItems,
+  getPetCurrentTendency,
+  getPetGenderPerspectiveLabel,
+  getPetInnateTemperament,
+  getPetVisibleTraits,
+  getTopFiveDimensionItems,
+} from "../utils/petDisplayMappers"
 
 import styles from "@/styles/world-styles/runtime-debug-panel.module.css"
 
@@ -57,6 +66,10 @@ export default function RuntimeDebugPanel({
   const process = pet?.activeBehaviorProcess
   const goal = pet?.currentGoal
 
+  const topDimensions = pet ? getTopFiveDimensionItems(pet, 5) : []
+  const behaviorBiasItems = pet ? getPetBehaviorBiasItems(pet) : []
+  const visibleTraits = pet ? getPetVisibleTraits(pet) : []
+
   return (
     <section className={styles.panel}>
       <div className={styles.header}>
@@ -88,6 +101,13 @@ export default function RuntimeDebugPanel({
             </div>
 
             <div className={styles.row}>
+              <span>生命视角 / Life View</span>
+              <span>
+                {getPetGenderPerspectiveLabel(pet.genderPerspective)}
+              </span>
+            </div>
+
+            <div className={styles.row}>
               <span>行为 / Action</span>
               <span>{pet.action}</span>
             </div>
@@ -106,6 +126,107 @@ export default function RuntimeDebugPanel({
               <span>饥饿 / Hunger</span>
               <span>{pet.hunger}</span>
             </div>
+
+            <div className={styles.row}>
+              <span>生命阶段 / Life Phase</span>
+              <span>{pet.lifeState.phase}</span>
+            </div>
+
+            <div className={styles.row}>
+              <span>年龄 Tick / Age Ticks</span>
+              <span>{pet.lifeState.ageTicks}</span>
+            </div>
+          </div>
+
+          <div className={styles.block}>
+            <h3 className={styles.blockTitle}>
+              LifeProfile Runtime
+            </h3>
+
+            <div className={styles.row}>
+              <span>模式 / Mode</span>
+              <span>{pet.lifeProfile.mode}</span>
+            </div>
+
+            <div className={styles.row}>
+              <span>展示模式 / Display Mode</span>
+              <span>{getLifeProfileModeLabel(pet.lifeProfile.mode)}</span>
+            </div>
+
+            <div className={styles.row}>
+              <span>出生时辰 / Has Birth Hour</span>
+              <span>{pet.lifeProfile.hasBirthHour ? "yes" : "no"}</span>
+            </div>
+
+            <div className={styles.row}>
+              <span>主体 / Subject</span>
+              <span>{pet.lifeProfile.subjectType}</span>
+            </div>
+
+            <div className={styles.row}>
+              <span>气质 / Temperament</span>
+              <span>{getPetInnateTemperament(pet)}</span>
+            </div>
+
+            <div className={styles.row}>
+              <span>当前倾向 / Current Tendency</span>
+              <span className={styles.multiline}>
+                {getPetCurrentTendency(pet)}
+              </span>
+            </div>
+
+            <div className={styles.row}>
+              <span>可见特质 / Visible Traits</span>
+              <span className={styles.multiline}>
+                {visibleTraits.join("、")}
+              </span>
+            </div>
+
+            <div className={styles.row}>
+              <span>解释摘要 / Interpretation</span>
+              <span className={styles.multiline}>
+                {formatValue(
+                  pet.lifeProfile.personalityInterpretationProfile.summary
+                )}
+              </span>
+            </div>
+          </div>
+
+          <div className={styles.block}>
+            <h3 className={styles.blockTitle}>
+              Five Dimensions
+            </h3>
+
+            {topDimensions.length === 0 && (
+              <div className={styles.row}>
+                <span>状态 / Status</span>
+                <span>-</span>
+              </div>
+            )}
+
+            {topDimensions.map((dimension) => (
+              <div className={styles.row} key={dimension.label}>
+                <span>{dimension.label}</span>
+                <span className={styles.multiline}>
+                  {dimension.score} ｜ {dimension.summary}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          <div className={styles.block}>
+            <h3 className={styles.blockTitle}>
+              Pet Behavior Bias
+            </h3>
+
+            {behaviorBiasItems.map((item) => (
+              <div className={styles.row} key={item.key}>
+                <span>{item.label}</span>
+                <span className={styles.multiline}>
+                  {formatValue(item.value)} ｜ {item.description}
+                </span>
+              </div>
+            ))}
           </div>
 
           <div className={styles.block}>
@@ -178,7 +299,7 @@ export default function RuntimeDebugPanel({
 
             <div className={styles.row}>
               <span>解释 / Interpretation</span>
-              <span>
+              <span className={styles.multiline}>
                 {formatValue(latestCognition?.interpretation)}
               </span>
             </div>
