@@ -4,6 +4,17 @@
 
 import type { PetState } from "@/types/pet"
 
+import {
+  getLifePhaseDisplayLabel,
+  getPetBehaviorBiasSummary,
+  getPetBehaviorTendencyText,
+  getPetCurrentTendency,
+  getPetGenderPerspectiveLabel,
+  getPetInnateTemperament,
+  getPetVisibleTraits,
+  getTopFiveDimensionItems,
+} from "../utils/petDisplayMappers"
+
 import styles from "@/styles/world-styles/pet-insight-card.module.css"
 
 type Props = {
@@ -14,12 +25,11 @@ function getMoodLabel(mood?: string): string {
   if (!mood) return "未知"
 
   if (mood === "happy") return "愉快"
+  if (mood === "normal") return "平稳"
   if (mood === "calm") return "平静"
-  if (mood === "excited") return "兴奋"
-  if (mood === "tired") return "疲惫"
-  if (mood === "sad") return "低落"
-  if (mood === "anxious") return "不安"
   if (mood === "curious") return "好奇"
+  if (mood === "alert") return "警觉"
+  if (mood === "sad") return "低落"
 
   return mood
 }
@@ -34,8 +44,8 @@ function getActionLabel(action?: string): string {
   if (action === "resting") return "休息"
   if (action === "sleeping") return "睡眠"
   if (action === "approaching") return "靠近"
-  if (action === "avoiding") return "回避"
   if (action === "observing") return "观察"
+  if (action === "alert_idle") return "警觉停留"
 
   return action
 }
@@ -56,44 +66,30 @@ function getHungerLabel(hunger: number): string {
   return "满足"
 }
 
-function getLifePhaseLabel(phase?: string): string {
-  if (!phase) return "适应中"
-
-  if (phase === "newborn") return "初生期"
-  if (phase === "dependent") return "依赖期"
-  if (phase === "adaptation") return "适应期"
-  if (phase === "growth") return "成长期"
-  if (phase === "stable_phase") return "稳定期"
-  if (phase === "attachment_phase") return "依恋期"
-  if (phase === "recovery_phase") return "恢复期"
-  if (phase === "withdrawal_phase") return "退缩期"
-
-  return phase
-}
-
 function buildObservationText(pet: PetState): string {
   const action = getActionLabel(pet.action)
   const mood = getMoodLabel(pet.mood)
   const energy = getEnergyLabel(pet.energy)
   const hunger = getHungerLabel(pet.hunger)
+  const tendency = getPetBehaviorTendencyText(pet)
 
   if (pet.energy <= 20) {
-    return `${pet.name} 的动作明显放慢了。它现在更需要安全的位置和足够的恢复时间。`
+    return `${pet.name} 的动作明显放慢了。它现在更需要安全的位置和足够的恢复时间。${tendency}`
   }
 
   if (pet.hunger >= 80) {
-    return `${pet.name} 的注意力正在被生存需求牵引。它可能会优先寻找食物或靠近可依赖的区域。`
+    return `${pet.name} 的注意力正在被生存需求牵引。它可能会优先寻找食物或靠近可依赖的区域。${tendency}`
   }
 
   if (pet.action === "exploring") {
-    return `${pet.name} 正在扩大自己的活动范围。它会停下来感知周围，再决定下一步去哪里。`
+    return `${pet.name} 正在扩大自己的活动范围。它会停下来感知周围，再决定下一步去哪里。${tendency}`
   }
 
   if (pet.action === "observing") {
-    return `${pet.name} 没有急着行动。它正在观察环境里的变化，并慢慢形成自己的判断。`
+    return `${pet.name} 没有急着行动。它正在观察环境里的变化，并慢慢形成自己的判断。${tendency}`
   }
 
-  return `${pet.name} 现在处于${mood}状态，行为表现为${action}。整体能量${energy}，饥饿状态${hunger}。`
+  return `${pet.name} 现在处于${mood}状态，行为表现为${action}。整体能量${energy}，饥饿状态${hunger}。${tendency}`
 }
 
 export default function PetInsightCard({ pet }: Props) {
@@ -116,6 +112,9 @@ export default function PetInsightCard({ pet }: Props) {
     )
   }
 
+  const topDimensions = getTopFiveDimensionItems(pet)
+  const visibleTraits = getPetVisibleTraits(pet)
+
   return (
     <section className={styles.card}>
       <div className={styles.header}>
@@ -129,13 +128,20 @@ export default function PetInsightCard({ pet }: Props) {
 
       <div className={styles.grid}>
         <div>
-          <span>当前行为</span>
-          <strong>{getActionLabel(pet.action)}</strong>
+          <span>生命视角</span>
+          <strong>
+            {getPetGenderPerspectiveLabel(pet.genderPerspective)}
+          </strong>
         </div>
 
         <div>
           <span>生命阶段</span>
-          <strong>{getLifePhaseLabel(pet.lifeState?.phase)}</strong>
+          <strong>{getLifePhaseDisplayLabel(pet.lifeState?.phase)}</strong>
+        </div>
+
+        <div>
+          <span>当前行为</span>
+          <strong>{getActionLabel(pet.action)}</strong>
         </div>
 
         <div>
@@ -147,7 +153,35 @@ export default function PetInsightCard({ pet }: Props) {
           <span>饥饿状态</span>
           <strong>{getHungerLabel(pet.hunger)}</strong>
         </div>
+
+        <div>
+          <span>天生气质</span>
+          <strong>{getPetInnateTemperament(pet)}</strong>
+        </div>
+
+        <div>
+          <span>当前倾向</span>
+          <strong>{getPetCurrentTendency(pet)}</strong>
+        </div>
+
+        <div>
+          <span>可见特质</span>
+          <strong>{visibleTraits.slice(0, 3).join("、")}</strong>
+        </div>
       </div>
+
+      {topDimensions.length > 0 && (
+        <p className={styles.description}>
+          主要人格维度：
+          {topDimensions
+            .map((dimension) => `${dimension.label} ${dimension.score}`)
+            .join(" / ")}
+        </p>
+      )}
+
+      <p className={styles.description}>
+        {getPetBehaviorBiasSummary(pet)}
+      </p>
 
       <p className={styles.description}>{buildObservationText(pet)}</p>
     </section>
