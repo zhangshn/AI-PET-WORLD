@@ -9,6 +9,7 @@ import {
 
 import type { TimeState } from "../../timeSystem"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
+import { logGeneratedWorldStimuli } from "../world-runtime-logger"
 
 export type RunWorldStimulusInput = {
   tick: number
@@ -23,7 +24,9 @@ export type RunWorldStimulusResult = {
   latestGenerated: WorldStimulus[]
 }
 
-export function runWorldStimulus(input: RunWorldStimulusInput): RunWorldStimulusResult {
+export function runWorldStimulus(
+  input: RunWorldStimulusInput
+): RunWorldStimulusResult {
   const stimulusState = buildWorldStimuli({
     tick: input.tick,
 
@@ -46,26 +49,5 @@ export function runWorldStimulus(input: RunWorldStimulusInput): RunWorldStimulus
   return {
     activeStimuli: stimulusState.activeStimuli,
     latestGenerated: stimulusState.latestGenerated,
-  }
-}
-
-function logGeneratedWorldStimuli(stimuli: WorldStimulus[]) {
-  if (stimuli.length === 0) return
-
-  for (const item of stimuli) {
-    if (item.source?.kind === "world_entity") {
-      console.log(
-        "🌍 世界刺激：",
-        item.type,
-        item.summary,
-        {
-          source: item.source.name ?? item.source.id,
-          sourceType: item.source.type,
-        }
-      )
-      continue
-    }
-
-    console.log("🌍 世界刺激：", item.type, item.summary)
   }
 }

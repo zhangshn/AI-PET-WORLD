@@ -6,6 +6,7 @@ import type { WorldStimulus } from "@/ai/gateway"
 import type { TimeState } from "../../timeSystem"
 import type { PetSystem } from "@/systems/petSystem"
 import type { EventSystem } from "@/systems/eventSystem"
+import { logPetCognition } from "../world-runtime-logger"
 
 export type RunPetCognitionInput = {
   tick: number
@@ -31,7 +32,7 @@ export function runPetCognition(input: RunPetCognitionInput) {
 
   for (const result of cognitionResults) {
     if (input.shouldLog ?? true) {
-      console.log("🧠 宠物认知：", result.summary)
+      logPetCognition(result.summary)
     }
 
     input.eventSystem.addInteractionEvent({

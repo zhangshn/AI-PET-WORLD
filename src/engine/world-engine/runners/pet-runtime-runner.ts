@@ -6,6 +6,10 @@ import type { TimeState } from "../../timeSystem"
 import type { PetSystem } from "@/systems/petSystem"
 import type { PetState } from "@/types/pet"
 import type { WorldZone } from "@/world/ecology/world-zone-types"
+import {
+  logPetRuntimeInactive,
+  logPetRuntimeState,
+} from "../world-runtime-logger"
 
 export type RunPetRuntimeInput = {
   time: TimeState
@@ -24,7 +28,7 @@ export function runPetRuntime(
 ): RunPetRuntimeResult {
   if (!input.petSystem.hasPet()) {
     if (input.shouldLog ?? true) {
-      console.log("世界引擎：当前宠物尚未出生，宠物行为系统未激活。")
+      logPetRuntimeInactive()
     }
 
     return {
@@ -45,19 +49,4 @@ export function runPetRuntime(
     pet,
     hasPet: true,
   }
-}
-
-function logPetRuntimeState(pet: PetState) {
-  console.log("🐾 宠物行为：", pet.action)
-  console.log(
-    "📊 状态：",
-    "能量",
-    pet.timelineSnapshot?.state.physical.energy ?? pet.energy,
-    "饥饿",
-    pet.timelineSnapshot?.state.physical.hunger ?? pet.hunger,
-    "情绪",
-    pet.timelineSnapshot?.state.emotional.label ?? pet.mood,
-    "生命阶段",
-    pet.lifeState.phase
-  )
 }

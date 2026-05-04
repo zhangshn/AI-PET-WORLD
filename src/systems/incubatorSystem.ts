@@ -3,6 +3,7 @@
  */
 
 import type { IncubatorState } from "../types/incubator"
+import { logIncubatorState } from "../engine/world-engine/world-runtime-logger"
 import {
   canHatchIncubator,
   refreshIncubatorState,
@@ -11,7 +12,6 @@ import {
   applyIncubatorCare,
   runIncubatorTick,
 } from "./incubator/incubator-runner"
-import { logIncubatorState } from "../engine/world-engine/world-runtime-logger"
 
 export class IncubatorSystem {
   private incubator: IncubatorState

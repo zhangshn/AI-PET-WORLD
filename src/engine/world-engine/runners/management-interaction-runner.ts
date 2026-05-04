@@ -21,6 +21,7 @@ import type {
 } from "@/systems/systems-gateway"
 
 import { runHomeConstruction } from "../world-engine-gateway"
+import { logPetBirthProfile } from "../world-runtime-logger"
 
 export type RunManagementInteractionsInput = {
   tick: number
@@ -139,24 +140,13 @@ function hatchPetWithLifeProfile(
 
   const createdPet = input.petSystem.getPet()
 
-  console.log("世界引擎：宠物已通过 LifeProfile 核心完成出生数据构建并绑定。", {
+  logPetBirthProfile({
     petName: input.petName,
     birthInput,
     gender: genderResult,
-    mode: lifeProfile.mode,
-    genderPerspective: lifeProfile.genderPerspective,
-    publicPersonality: lifeProfile.publicPersonalityView,
-    bazi: lifeProfile.baziProfile,
-    interpretation: lifeProfile.personalityInterpretationProfile.summary,
-    behaviorBias: lifeProfile.genderAwareBehaviorBias,
-    summaries: lifeProfile.ziweiProfile?.summaries ?? [],
-    traits: lifeProfile.ziweiProfile?.traits ?? null,
-    consciousness: lifeProfile.consciousnessProfile,
-    timelinePhase: createdPet?.timelineSnapshot?.fortune.phaseTag,
-    timelineBranch: createdPet?.timelineSnapshot?.trajectory.branchTag,
-    timelineEmotion: createdPet?.timelineSnapshot?.state.emotional.label,
-    timelineDrive: createdPet?.timelineSnapshot?.state.drive.primary,
-    lifeState: createdPet?.lifeState,
+    lifeProfile,
+    createdPet,
+    time: input.time,
   })
 }
 
