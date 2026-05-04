@@ -4,148 +4,159 @@
 
 import type { NarrativeType, WorldEvent } from "@/types/event"
 
-function getNarrativeLabel(narrativeType?: NarrativeType): string {
-  switch (narrativeType) {
-    case "observe_environment":
-      return "观察环境"
-    case "discover":
-      return "发现变化"
-    case "approach_target":
-      return "尝试靠近"
-    case "keep_distance":
-      return "保持距离"
-    case "satisfy_need":
-      return "满足需求"
-    case "recover":
-      return "恢复状态"
-    case "linger":
-      return "短暂停留"
-    case "unknown":
-      return "自然反应"
-    default:
-      return "自然反应"
-  }
+export type WorldObservationViewModel = {
+  id: string
+  category: string
+  timeLabel: string
+  focus: string | null
+  title: string
+  summary: string
+  detail: string
 }
 
-function getActionObservation(action?: string): string | null {
-  switch (action) {
-    case "sleeping":
-      return "进入了更深的休息状态，外界刺激对它的影响暂时降低。"
-    case "eating":
-      return "正在补充食物，当前行为明显受到生存需求牵引。"
-    case "walking":
-      return "开始移动，但节奏并不急促，像是在重新确认周围的位置关系。"
-    case "exploring":
-      return "正在扩大活动范围，会边走边停下来感知附近变化。"
-    case "approaching":
-      return "正在靠近某个目标，但是否继续接触仍取决于它自己的判断。"
-    case "idle":
-      return "暂时停在原地，没有立刻进入新的行为。"
-    case "observing":
-      return "正在观察周围变化，行动前的判断过程变得更明显。"
-    case "resting":
-      return "放慢了节奏，优先恢复体力和安全感。"
-    case "alert_idle":
-      return "保持警觉，暂时没有继续靠近或探索。"
-    default:
-      return null
-  }
+function getNarrativeLabel(narrativeType?: NarrativeType): string {
+  if (narrativeType === "observe_environment") return "观察"
+  if (narrativeType === "discover") return "发现"
+  if (narrativeType === "approach_target") return "靠近"
+  if (narrativeType === "keep_distance") return "保持距离"
+  if (narrativeType === "satisfy_need") return "满足需求"
+  if (narrativeType === "recover") return "恢复"
+  if (narrativeType === "linger") return "停留"
+
+  return "自然反应"
+}
+
+function getActionTitle(action?: string): string {
+  if (action === "sleeping") return "进入休息"
+  if (action === "eating") return "开始进食"
+  if (action === "walking") return "移动中"
+  if (action === "exploring") return "探索区域"
+  if (action === "approaching") return "尝试靠近"
+  if (action === "idle") return "短暂停留"
+  if (action === "observing") return "观察环境"
+  if (action === "resting") return "恢复状态"
+  if (action === "alert_idle") return "保持警觉"
+
+  return "行为变化"
+}
+
+function getActionSummary(action?: string): string {
+  if (action === "sleeping") return "外界刺激影响降低。"
+  if (action === "eating") return "生存需求正在牵引行为。"
+  if (action === "walking") return "正在重新确认周围位置。"
+  if (action === "exploring") return "活动范围正在扩大。"
+  if (action === "approaching") return "接触意愿正在出现。"
+  if (action === "idle") return "暂时没有进入新行为。"
+  if (action === "observing") return "行动前的判断更明显。"
+  if (action === "resting") return "正在降低消耗并恢复。"
+  if (action === "alert_idle") return "仍在保持距离和警觉。"
+
+  return "状态正在自然切换。"
 }
 
 function getIntensityText(intensity?: number): string {
   if (typeof intensity !== "number") return ""
 
-  if (intensity >= 0.75) {
-    return "这次反应比较明显。"
-  }
-
-  if (intensity >= 0.45) {
-    return "这次反应强度中等。"
-  }
-
-  if (intensity > 0) {
-    return "这只是一个轻微反应。"
-  }
+  if (intensity >= 0.75) return "反应明显"
+  if (intensity >= 0.45) return "反应中等"
+  if (intensity > 0) return "轻微反应"
 
   return ""
 }
 
-function getPayloadText(payload?: Record<string, unknown>): string {
-  if (!payload) return ""
-
-  const continuityStep = payload.continuityStep
+function getContinuityText(payload?: Record<string, unknown>): string {
+  const continuityStep = payload?.continuityStep
 
   if (typeof continuityStep === "number" && continuityStep > 1) {
-    return `这是连续行为里的第 ${continuityStep} 段。`
+    return `连续行为 ${continuityStep}`
   }
 
   return ""
 }
 
-function rewriteButlerOpportunityMessage(event: WorldEvent): string {
-  const payload = event.payload ?? {}
-  const petName = event.petName ?? "宠物"
-  const accepted = payload.accepted
-  const opportunityType = payload.opportunityType
-  const baseMessage = event.message
+function joinSummaryParts(parts: string[]): string {
+  return parts.filter(Boolean).join(" · ")
+}
+
+function getButlerOpportunityTitle(event: WorldEvent): string {
+  const opportunityType = event.payload?.opportunityType
+
+  if (opportunityType === "food_offer") return "食物机会"
+  if (opportunityType === "rest_offer") return "恢复机会"
+  if (opportunityType === "approach_offer") return "接近机会"
+
+  return "管家机会"
+}
+
+function getButlerOpportunitySummary(event: WorldEvent): string {
+  const accepted = event.payload?.accepted
+  const opportunityType = event.payload?.opportunityType
 
   if (opportunityType === "food_offer") {
-    if (accepted === true) {
-      return `${baseMessage} 管家只是提供食物机会，真正的进食决定来自 ${petName} 自己。`
-    }
-
-    return `${baseMessage} 这说明管家无法直接控制 ${petName}，它只能创造条件。`
+    return accepted === true
+      ? "宠物自主接受了食物。"
+      : "宠物这次没有接受食物。"
   }
 
   if (opportunityType === "rest_offer") {
-    if (accepted === true) {
-      return `${baseMessage} 管家改善了环境，但休息行为仍然来自 ${petName} 当前的自主状态。`
-    }
-
-    return `${baseMessage} 恢复环境已经存在，但 ${petName} 还没有选择停下来。`
+    return accepted === true
+      ? "宠物正在利用恢复环境。"
+      : "恢复环境存在，但宠物还未停下。"
   }
 
   if (opportunityType === "approach_offer") {
-    if (accepted === true) {
-      return `${baseMessage} 这是一段关系距离正在缩短的观察信号。`
-    }
-
-    return `${baseMessage} 它还在保持自己的距离边界。`
+    return accepted === true
+      ? "关系距离正在缩短。"
+      : "宠物仍在保持距离。"
   }
 
-  return baseMessage
+  return "管家创造了一个机会。"
 }
 
-function rewritePetActionEvent(event: WorldEvent): string {
+function getButlerOpportunityDetail(event: WorldEvent): string {
   const petName = event.petName ?? "宠物"
-  const actionObservation = getActionObservation(event.sourceAction)
-  const narrativeLabel = getNarrativeLabel(event.narrativeType)
-  const intensityText = getIntensityText(event.intensity)
-  const payloadText = getPayloadText(event.payload)
+  const accepted = event.payload?.accepted
 
-  const baseText = actionObservation
-    ? `${petName}${actionObservation}`
-    : event.message
+  if (accepted === true) {
+    return `管家只是提供机会，真正的选择来自 ${petName} 自己。`
+  }
 
-  return [
-    baseText,
-    `观察倾向：${narrativeLabel}。`,
-    intensityText,
-    payloadText,
-  ]
-    .filter(Boolean)
-    .join("")
+  return `管家无法直接控制 ${petName}，只能创造条件。`
 }
 
-function rewriteInteractionMessage(event: WorldEvent): string {
+function getInteractionTitle(event: WorldEvent): string {
   const interactionKind = event.payload?.interactionKind
 
   if (interactionKind === "butler_opportunity") {
-    return rewriteButlerOpportunityMessage(event)
+    return getButlerOpportunityTitle(event)
   }
 
   if (interactionKind === "pet_recovery") {
-    return event.message
+    return "自主恢复"
+  }
+
+  return "世界互动"
+}
+
+function getInteractionSummary(event: WorldEvent): string {
+  const interactionKind = event.payload?.interactionKind
+
+  if (interactionKind === "butler_opportunity") {
+    return getButlerOpportunitySummary(event)
+  }
+
+  if (interactionKind === "pet_recovery") {
+    return "宠物正在恢复精力。"
+  }
+
+  return event.message
+}
+
+function getInteractionDetail(event: WorldEvent): string {
+  const interactionKind = event.payload?.interactionKind
+
+  if (interactionKind === "butler_opportunity") {
+    return getButlerOpportunityDetail(event)
   }
 
   return event.message
@@ -154,13 +165,8 @@ function rewriteInteractionMessage(event: WorldEvent): string {
 export function getWorldObservationCategoryLabel(event: WorldEvent): string {
   const interactionKind = event.payload?.interactionKind
 
-  if (interactionKind === "butler_opportunity") {
-    return "管家机会"
-  }
-
-  if (interactionKind === "pet_recovery") {
-    return "恢复记录"
-  }
+  if (interactionKind === "butler_opportunity") return "管家机会"
+  if (interactionKind === "pet_recovery") return "恢复记录"
 
   switch (event.type) {
     case "pet_hatched":
@@ -182,44 +188,162 @@ export function getWorldObservationCategoryLabel(event: WorldEvent): string {
   }
 }
 
-export function rewriteWorldObservationMessage(event: WorldEvent): string {
-  const petName = event.petName ?? "宠物"
+export function buildWorldObservationViewModel(
+  event: WorldEvent
+): WorldObservationViewModel {
+  const focus = event.petName ?? null
+  const timeLabel = `Day ${event.day} · ${event.hour}:00`
 
-  switch (event.type) {
-    case "pet_hatched":
-      return `${petName}刚刚来到这个世界。它还没有形成稳定的行动节奏，正在通过环境、温度和管家的靠近来建立最初的安全感。`
+  if (event.type === "pet_hatched") {
+    const name = event.petName ?? "宠物"
 
-    case "pet_action_changed":
-    case "pet_action_narrative":
-      return rewritePetActionEvent(event)
+    return {
+      id: event.id,
+      category: getWorldObservationCategoryLabel(event),
+      timeLabel,
+      focus: name,
+      title: "生命诞生",
+      summary: "新的生命正在适应世界。",
+      detail: `${name}刚刚来到这个世界。它还没有形成稳定的行动节奏，正在通过环境、温度和管家的靠近来建立最初的安全感。`,
+    }
+  }
 
-    case "pet_action_end":
-      return `${petName}完成了上一段行为。它没有被直接命令切换动作，而是在当前状态和环境刺激之间重新做出选择。`
+  if (
+    event.type === "pet_action_changed" ||
+    event.type === "pet_action_narrative"
+  ) {
+    const metaText = joinSummaryParts([
+      getNarrativeLabel(event.narrativeType),
+      getIntensityText(event.intensity),
+      getContinuityText(event.payload),
+    ])
 
-    case "pet_mood_changed":
-      return `${petName}的情绪状态发生变化。这个变化会影响它接下来更愿意靠近、观察、探索，还是先恢复。`
+    return {
+      id: event.id,
+      category: getWorldObservationCategoryLabel(event),
+      timeLabel,
+      focus,
+      title: getActionTitle(event.sourceAction),
+      summary: joinSummaryParts([
+        getActionSummary(event.sourceAction),
+        metaText,
+      ]),
+      detail: event.message,
+    }
+  }
 
-    case "pet_fortune_phase_changed":
-      return `${petName}进入了新的生命阶段倾向。后续行为的概率会被轻微改写，但不会变成固定脚本。`
+  if (event.type === "pet_action_end") {
+    const name = event.petName ?? "宠物"
 
-    case "pet_trajectory_branch_changed":
-      return `${petName}的成长轨迹出现了新的分支。它之后可能会更偏向某一种长期行为路径。`
+    return {
+      id: event.id,
+      category: getWorldObservationCategoryLabel(event),
+      timeLabel,
+      focus,
+      title: "行为结束",
+      summary: "宠物正在重新选择下一段行为。",
+      detail: `${name}完成了上一段行为。它没有被直接命令切换动作，而是在当前状态和环境刺激之间重新做出选择。`,
+    }
+  }
 
-    case "time_period_changed":
-      return "光线、温度和环境节奏正在变化。世界进入了新的时间段，生命体的行为优先级也可能随之调整。"
+  if (event.type === "pet_mood_changed") {
+    const name = event.petName ?? "宠物"
 
-    case "incubator_progress_changed":
-      return "孵化器状态有了新的推进。管家会继续优先确认稳定度，但不会替未来的生命决定它将成为什么样。"
+    return {
+      id: event.id,
+      category: getWorldObservationCategoryLabel(event),
+      timeLabel,
+      focus,
+      title: "情绪变化",
+      summary: "情绪会影响后续行为倾向。",
+      detail: `${name}的情绪状态发生变化。这个变化会影响它接下来更愿意靠近、观察、探索，还是先恢复。`,
+    }
+  }
 
-    case "interaction":
-      return rewriteInteractionMessage(event)
+  if (event.type === "pet_fortune_phase_changed") {
+    const name = event.petName ?? "宠物"
 
-    default:
-      return event.message
+    return {
+      id: event.id,
+      category: getWorldObservationCategoryLabel(event),
+      timeLabel,
+      focus,
+      title: "阶段倾向变化",
+      summary: "行为概率被轻微改写。",
+      detail: `${name}进入了新的生命阶段倾向。后续行为的概率会被轻微改写，但不会变成固定脚本。`,
+    }
+  }
+
+  if (event.type === "pet_trajectory_branch_changed") {
+    const name = event.petName ?? "宠物"
+
+    return {
+      id: event.id,
+      category: getWorldObservationCategoryLabel(event),
+      timeLabel,
+      focus,
+      title: "成长轨迹分支",
+      summary: "长期行为路径出现变化。",
+      detail: `${name}的成长轨迹出现了新的分支。它之后可能会更偏向某一种长期行为路径。`,
+    }
+  }
+
+  if (event.type === "time_period_changed") {
+    return {
+      id: event.id,
+      category: getWorldObservationCategoryLabel(event),
+      timeLabel,
+      focus: null,
+      title: "时间段变化",
+      summary: "世界节奏正在调整。",
+      detail:
+        "光线、温度和环境节奏正在变化。世界进入了新的时间段，生命体的行为优先级也可能随之调整。",
+    }
+  }
+
+  if (event.type === "incubator_progress_changed") {
+    return {
+      id: event.id,
+      category: getWorldObservationCategoryLabel(event),
+      timeLabel,
+      focus: null,
+      title: "孵化推进",
+      summary: "孵化器状态出现变化。",
+      detail:
+        "孵化器状态有了新的推进。管家会继续优先确认稳定度，但不会替未来的生命决定它将成为什么样。",
+    }
+  }
+
+  if (event.type === "interaction") {
+    return {
+      id: event.id,
+      category: getWorldObservationCategoryLabel(event),
+      timeLabel,
+      focus,
+      title: getInteractionTitle(event),
+      summary: getInteractionSummary(event),
+      detail: getInteractionDetail(event),
+    }
+  }
+
+  return {
+    id: event.id,
+    category: getWorldObservationCategoryLabel(event),
+    timeLabel,
+    focus,
+    title: "世界记录",
+    summary: event.message,
+    detail: event.message,
   }
 }
 
+export function rewriteWorldObservationMessage(event: WorldEvent): string {
+  return buildWorldObservationViewModel(event).detail
+}
+
 export function getWorldObservationDisplayKey(event: WorldEvent): string {
+  const viewModel = buildWorldObservationViewModel(event)
+
   return [
     event.type,
     event.petName ?? "",
@@ -228,7 +352,8 @@ export function getWorldObservationDisplayKey(event: WorldEvent): string {
     event.continuityId ?? "",
     event.payload?.interactionKind ?? "",
     event.payload?.opportunityType ?? "",
-    rewriteWorldObservationMessage(event),
+    viewModel.title,
+    viewModel.summary,
   ].join("::")
 }
 
@@ -256,4 +381,13 @@ export function getDedupedLatestWorldObservations(
   }
 
   return result
+}
+
+export function buildLatestWorldObservationViewModels(
+  events: WorldEvent[],
+  limit = 7
+): WorldObservationViewModel[] {
+  return getDedupedLatestWorldObservations(events, limit).map((event) =>
+    buildWorldObservationViewModel(event)
+  )
 }

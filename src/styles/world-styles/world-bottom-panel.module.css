@@ -1,11 +1,11 @@
 .panel {
   display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-columns: 240px minmax(0, 1fr);
   gap: 16px;
   align-items: stretch;
   border: 4px solid #5a3b22;
   border-radius: 28px;
-  background: rgba(255, 248, 220, 0.86);
+  background: rgba(255, 248, 220, 0.76);
   box-shadow:
     0 22px 55px rgba(77, 54, 25, 0.2),
     inset 0 0 0 3px rgba(255, 255, 255, 0.34);
@@ -33,6 +33,14 @@
   color: #3b2a18;
   font-size: 22px;
   font-weight: 950;
+}
+
+.description {
+  margin: 12px 0 0;
+  color: #6f4d29;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.65;
 }
 
 .content {

@@ -9,29 +9,45 @@
 
 .hud {
   display: grid;
-  grid-template-columns: minmax(180px, 1.1fr) minmax(160px, 0.85fr) minmax(160px, 0.85fr) minmax(160px, 0.85fr);
-  gap: 10px;
+  grid-template-columns: minmax(280px, 1.5fr) minmax(120px, 0.65fr) minmax(110px, 0.55fr) minmax(130px, 0.65fr);
+  gap: 8px;
+  align-items: stretch;
 }
 
-.block {
+.primaryBlock,
+.statusBlock {
   min-width: 0;
-  padding: 10px;
   border-radius: 14px;
-  background: rgba(255, 248, 220, 0.78);
+  background: rgba(255, 248, 220, 0.82);
   border: 2px solid rgba(90, 59, 34, 0.28);
-  box-shadow: 0 8px 18px rgba(53, 39, 19, 0.18);
+  box-shadow: 0 7px 16px rgba(53, 39, 19, 0.18);
   backdrop-filter: blur(10px);
 }
 
-.blockHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 7px;
+.primaryBlock {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  gap: 10px;
+  padding: 8px 10px;
 }
 
-.blockHeader strong {
+.statusBlock {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding: 8px 10px;
+}
+
+.identityRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.identityRow strong,
+.statusBlock strong {
   overflow: hidden;
   color: #3b2a18;
   font-size: 14px;
@@ -41,52 +57,54 @@
 }
 
 .eyebrow {
+  flex: 0 0 auto;
   color: #8a6335;
   font-size: 9px;
   font-weight: 950;
   letter-spacing: 0.14em;
 }
 
-.tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  margin-bottom: 8px;
-}
-
-.tags:last-child {
-  margin-bottom: 0;
-}
-
-.tags span {
+.tag {
+  flex: 0 0 auto;
   padding: 3px 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.58);
   border: 1px solid rgba(90, 59, 34, 0.2);
   color: #5a3b22;
   font-size: 10px;
   font-weight: 900;
 }
 
-.meters {
-  display: grid;
-  gap: 6px;
+.subText {
+  overflow: hidden;
+  color: #5a3b22;
+  font-size: 11px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.meterItem {
+.petMeters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  align-items: center;
+}
+
+.miniMeter {
   min-width: 0;
 }
 
-.meterTopRow {
+.miniMeterTop {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
   margin-bottom: 3px;
 }
 
-.meterTopRow span,
-.meterTopRow strong {
+.miniMeterTop span,
+.miniMeterTop strong {
   color: #5a3b22;
   font-size: 10px;
   font-weight: 900;
@@ -132,11 +150,14 @@
   .hud {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .primaryBlock {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 680px) {
   .overlay {
-    position: absolute;
     top: 8px;
     left: 8px;
     right: 8px;
@@ -146,7 +167,12 @@
     grid-template-columns: 1fr;
   }
 
-  .block {
+  .primaryBlock,
+  .statusBlock {
     padding: 8px;
+  }
+
+  .identityRow {
+    flex-wrap: wrap;
   }
 }

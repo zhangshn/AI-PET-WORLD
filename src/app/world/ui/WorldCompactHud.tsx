@@ -2,7 +2,7 @@
  * 当前文件负责：展示正式 world 页的舞台内轻量 HUD。
  */
 
-import type { WorldHudBundle, HudMeter } from "../utils/worldHudMappers"
+import type { HudMeter, WorldHudBundle } from "../utils/worldHudMappers"
 
 import styles from "@/styles/world-styles/world-compact-hud.module.css"
 
@@ -20,10 +20,10 @@ function getMeterToneClass(tone: HudMeter["tone"]): string {
   return styles.neutral
 }
 
-function HudMeterView({ meter }: { meter: HudMeter }) {
+function MiniMeter({ meter }: { meter: HudMeter }) {
   return (
-    <div className={styles.meterItem}>
-      <div className={styles.meterTopRow}>
+    <div className={styles.miniMeter}>
+      <div className={styles.miniMeterTop}>
         <span>{meter.label}</span>
         <strong>{meter.valueLabel}</strong>
       </div>
@@ -42,64 +42,38 @@ export default function WorldCompactHud({ hud }: Props) {
   return (
     <div className={styles.overlay}>
       <section className={styles.hud}>
-        <div className={styles.block}>
-          <div className={styles.blockHeader}>
+        <div className={styles.primaryBlock}>
+          <div className={styles.identityRow}>
             <span className={styles.eyebrow}>PET</span>
             <strong>{hud.pet.name}</strong>
+            <span className={styles.tag}>{hud.pet.actionLabel}</span>
+            <span className={styles.tag}>{hud.pet.moodLabel}</span>
           </div>
 
-          <div className={styles.tags}>
-            <span>{hud.pet.actionLabel}</span>
-            <span>{hud.pet.moodLabel}</span>
-            <span>{hud.pet.lifePhaseLabel}</span>
-          </div>
-
-          <div className={styles.meters}>
-            <HudMeterView meter={hud.pet.meters.energy} />
-            <HudMeterView meter={hud.pet.meters.hunger} />
+          <div className={styles.petMeters}>
+            <MiniMeter meter={hud.pet.meters.energy} />
+            <MiniMeter meter={hud.pet.meters.hunger} />
           </div>
         </div>
 
-        <div className={styles.block}>
-          <div className={styles.blockHeader}>
-            <span className={styles.eyebrow}>BUTLER</span>
-            <strong>{hud.butler.name}</strong>
-          </div>
-
-          <div className={styles.tags}>
-            <span>{hud.butler.taskLabel}</span>
-            <span>{hud.butler.moodLabel}</span>
-            <span>机会 {hud.butler.opportunityCount}</span>
-          </div>
+        <div className={styles.statusBlock}>
+          <span className={styles.eyebrow}>BUTLER</span>
+          <strong>{hud.butler.taskLabel}</strong>
+          <span className={styles.subText}>{hud.butler.moodLabel}</span>
         </div>
 
-        <div className={styles.block}>
-          <div className={styles.blockHeader}>
-            <span className={styles.eyebrow}>HOME</span>
-            <strong>{hud.home.levelLabel}</strong>
-          </div>
-
-          <div className={styles.tags}>
-            <span>{hud.home.statusLabel}</span>
-            <span>{hud.home.stageLabel}</span>
-          </div>
-
-          <div className={styles.meters}>
-            <HudMeterView meter={hud.home.meters.progress} />
-          </div>
+        <div className={styles.statusBlock}>
+          <span className={styles.eyebrow}>HOME</span>
+          <strong>{hud.home.levelLabel}</strong>
+          <span className={styles.subText}>{hud.home.statusLabel}</span>
         </div>
 
-        <div className={styles.block}>
-          <div className={styles.blockHeader}>
-            <span className={styles.eyebrow}>WORLD</span>
-            <strong>{hud.world.dayLabel}</strong>
-          </div>
-
-          <div className={styles.tags}>
-            <span>{hud.world.timeLabel}</span>
-            <span>{hud.world.periodLabel}</span>
-            <span>{hud.world.weatherLabel}</span>
-          </div>
+        <div className={styles.statusBlock}>
+          <span className={styles.eyebrow}>WORLD</span>
+          <strong>{hud.world.dayLabel}</strong>
+          <span className={styles.subText}>
+            {hud.world.timeLabel} · {hud.world.periodLabel}
+          </span>
         </div>
       </section>
     </div>

@@ -5,9 +5,7 @@
 import type { WorldEvent } from "@/types/event"
 
 import {
-  getDedupedLatestWorldObservations,
-  getWorldObservationCategoryLabel,
-  rewriteWorldObservationMessage,
+  buildLatestWorldObservationViewModels,
 } from "../utils/worldObservationMappers"
 
 import styles from "@/styles/world-styles/world-observation-panel.module.css"
@@ -17,7 +15,7 @@ type Props = {
 }
 
 export default function WorldObservationPanel({ events }: Props) {
-  const latest = getDedupedLatestWorldObservations(events)
+  const latest = buildLatestWorldObservationViewModels(events)
 
   return (
     <section className={styles.panel}>
@@ -26,6 +24,8 @@ export default function WorldObservationPanel({ events }: Props) {
           <div className={styles.eyebrow}>OBSERVATION</div>
           <h2 className={styles.title}>世界观察</h2>
         </div>
+
+        <p className={styles.hint}>简短日志</p>
       </div>
 
       <div className={styles.list}>
@@ -39,22 +39,30 @@ export default function WorldObservationPanel({ events }: Props) {
           <article key={event.id} className={styles.item}>
             <div className={styles.topRow}>
               <span className={styles.category}>
-                {getWorldObservationCategoryLabel(event)}
+                {event.category}
               </span>
 
               <span className={styles.time}>
-                Day {event.day} · {event.hour}:00
+                {event.timeLabel}
               </span>
             </div>
 
-            {event.petName && (
-              <div className={styles.focus}>
-                {event.petName}
-              </div>
-            )}
+            <div className={styles.titleRow}>
+              <div>
+                {event.focus && (
+                  <div className={styles.focus}>
+                    {event.focus}
+                  </div>
+                )}
 
-            <p className={styles.message}>
-              {rewriteWorldObservationMessage(event)}
+                <h3 className={styles.itemTitle}>
+                  {event.title}
+                </h3>
+              </div>
+            </div>
+
+            <p className={styles.summary}>
+              {event.summary}
             </p>
           </article>
         ))}
