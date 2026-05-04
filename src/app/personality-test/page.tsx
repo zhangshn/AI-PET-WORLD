@@ -15,7 +15,7 @@ import {
   SectionSpacer,
   TimelineTestPanel,
   ZiweiDynamicPanel,
-  ZiweiPersonalityOutputPanel
+  ZiweiPersonalityOutputPanel,
 } from "./components/personality-test-components"
 
 import { usePersonalityTestState } from "./hooks/usePersonalityTestState"
@@ -25,7 +25,7 @@ export default function PersonalityTestPage() {
     birthInput,
     profileData,
     timelineData,
-    actions
+    actions,
   } = usePersonalityTestState()
 
   const {
@@ -35,15 +35,16 @@ export default function PersonalityTestPage() {
     birthHourInput,
     dynamicGender,
     parsedBirthHour,
-    hasBirthHour
+    hasBirthHour,
   } = birthInput
 
   const {
+    lifeProfileBundle,
     profile,
     publicView,
     pattern,
     baziProfile,
-    finalPersonalityProfile
+    basePersonalityProfile,
   } = profileData
 
   const {
@@ -51,7 +52,7 @@ export default function PersonalityTestPage() {
     timelineSnapshot,
     lastOperation,
     lastDiffs,
-    timelineLogs
+    timelineLogs,
   } = timelineData
 
   return (
@@ -69,7 +70,7 @@ export default function PersonalityTestPage() {
         onDynamicGenderChange={actions.setDynamicGender}
       />
 
-      {hasBirthHour ? (
+      {hasBirthHour && pattern !== null ? (
         <>
           <ZiweiDynamicPanel
             key={`${pattern.birthKey}-${year}-${month}-${day}-${birthHourInput}-${dynamicGender}`}
@@ -95,24 +96,25 @@ export default function PersonalityTestPage() {
         initialHour={parsedBirthHour}
       />
 
-      <SectionSpacer />
+      {basePersonalityProfile !== null ? (
+        <>
+          <SectionSpacer />
 
-      <FinalPersonalityPanel
-        hasBirthHour={hasBirthHour}
-        finalPersonalityProfile={finalPersonalityProfile}
-      />
+          <FinalPersonalityPanel
+            hasBirthHour={hasBirthHour}
+            basePersonalityProfile={basePersonalityProfile}
+          />
+        </>
+      ) : null}
 
       <SectionSpacer />
 
       <PersonalityInterpretationPanel
-        hasBirthHour={hasBirthHour}
-        genderPerspective={dynamicGender}
-        ziweiProfile={profile}
-        baziProfile={baziProfile}
-        finalPersonalityProfile={finalPersonalityProfile}
+        dynamicGender={dynamicGender}
+        lifeProfileBundle={lifeProfileBundle}
       />
 
-      {hasBirthHour ? (
+      {hasBirthHour && profile !== null && publicView !== null ? (
         <>
           <SectionSpacer />
 

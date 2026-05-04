@@ -197,6 +197,10 @@ export {
   opportunityCanDirectlyResolveOutcome,
 }
 
+export {
+  buildLifePersonalityProfile,
+} from "./life-profile-core/life-profile-gateway"
+
 export function buildWorldStimuli(
   input: BuildWorldStimuliInput
 ): WorldStimulusSystemState {
@@ -238,15 +242,21 @@ export type {
   BaziDynamicsSupportItem,
   BaziDynamicsSupportKey,
   BaziDynamicsSupportProfile,
+  BaziGenderFunctionKey,
+  BaziGenderFunctionProfile,
+  BaziGenderFunctionResult,
+  BuildGenderAwareBehaviorBiasInput,
   BuildGenderPerspectiveComparisonInput,
   BuildPersonalityInterpretationInput,
   FiveDimensionKey,
   FiveDimensionProfile,
   FiveDimensionResult,
+  GenderAwareBehaviorBias,
   GenderLifeFunctionFocus,
   GenderPerspective,
   GenderPerspectiveComparison,
   GenderPerspectiveRule,
+  PersonalityInterpretationMode,
   PersonalityInterpretationProfile,
   ScoreLevel,
   ZiweiLifeFunctionKey,
@@ -254,6 +264,13 @@ export type {
   ZiweiLifeFunctionResult,
   ZiweiLifeFunctionRule,
 } from "./personality-interpretation-core/interpretation-gateway"
+
+export type {
+  BuildLifePersonalityProfileInput,
+  LifePersonalityProfileBundle,
+  LifeProfileBirthInput,
+  LifeProfileSubjectType,
+} from "./life-profile-core/life-profile-gateway"
 
 export type {
   PetTimelineSnapshot,

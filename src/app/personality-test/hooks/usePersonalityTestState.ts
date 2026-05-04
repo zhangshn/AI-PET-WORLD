@@ -9,7 +9,7 @@ import { useTimelineTestState } from "./useTimelineTestState"
 export function usePersonalityTestState() {
   const {
     birthInput,
-    birthInputActions
+    birthInputActions,
   } = useBirthInputState()
 
   const {
@@ -18,36 +18,37 @@ export function usePersonalityTestState() {
     day,
     parsedBirthHour,
     hasBirthHour,
-    ziweiHour
+    dynamicGender,
   } = birthInput
 
   const {
     profileData,
-    profileActions
+    profileActions,
   } = usePersonalityProfileData({
     year,
     month,
     day,
     parsedBirthHour,
-    hasBirthHour
+    hasBirthHour,
+    dynamicGender,
   })
 
   const {
     timelineData,
-    timelineActions
+    timelineActions,
   } = useTimelineTestState({
-    initialSnapshot: profileData.birthBundle.timelineSnapshot,
+    initialSnapshot: profileData.initialTimelineSnapshot,
     onResetByBirthInput: () => {
       return profileActions.resetProfileFromBirthInput({
         year,
         month,
         day,
-        hour: ziweiHour
+        hour: parsedBirthHour,
       })
-    }
+    },
   })
 
-  function syncZiweiWhenPossible(nextInput: {
+  function syncTimelineWhenPossible(nextInput: {
     year: number
     month: number
     day: number
@@ -62,7 +63,7 @@ export function usePersonalityTestState() {
       year: nextInput.year,
       month: nextInput.month,
       day: nextInput.day,
-      hour: nextInput.hour
+      hour: nextInput.hour,
     })
 
     timelineActions.markBirthInputReset(nextSnapshot)
@@ -75,22 +76,22 @@ export function usePersonalityTestState() {
   }) {
     const nextBirthInput = birthInputActions.updateDate(nextInput)
 
-    syncZiweiWhenPossible({
+    syncTimelineWhenPossible({
       year: nextBirthInput.year,
       month: nextBirthInput.month,
       day: nextBirthInput.day,
-      hour: nextBirthInput.hour
+      hour: nextBirthInput.hour,
     })
   }
 
   function handleBirthHourInputChange(value: string) {
     const nextBirthInput = birthInputActions.updateBirthHourInput(value)
 
-    syncZiweiWhenPossible({
+    syncTimelineWhenPossible({
       year: nextBirthInput.year,
       month: nextBirthInput.month,
       day: nextBirthInput.day,
-      hour: nextBirthInput.hour
+      hour: nextBirthInput.hour,
     })
   }
 
@@ -104,7 +105,7 @@ export function usePersonalityTestState() {
       handleDateChange,
       handleBirthHourInputChange,
       applyTimelineUpdate: timelineActions.applyTimelineUpdate,
-      resetTimeline: timelineActions.resetTimeline
-    }
+      resetTimeline: timelineActions.resetTimeline,
+    },
   }
 }

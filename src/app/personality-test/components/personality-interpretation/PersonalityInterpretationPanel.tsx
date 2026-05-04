@@ -1,18 +1,13 @@
 /**
- * 当前文件负责：展示当前性别视角下的人格解释核心结果。
+ * 当前文件负责：展示当前性别视角下的最终人格映射结果。
  */
 
-import { useMemo } from "react"
 import type { ReactNode } from "react"
 
 import type {
-  BaziProfile,
-  FinalPersonalityProfile,
-  GenderPerspective,
+  LifePersonalityProfileBundle,
   PersonalityInterpretationProfile,
-  PersonalityProfile,
 } from "../../../../ai/gateway"
-import { buildAiPersonalityInterpretation } from "../../../../ai/gateway"
 
 import type { DynamicGenderInput } from "../../types"
 import { InfoCard } from "../common/InfoCard"
@@ -60,7 +55,7 @@ function SectionTitle({ children }: { children: ReactNode }) {
 
 function EmptyGenderNotice() {
   return (
-    <InfoCard title="🧭 人格解释核心">
+    <InfoCard title="🧭 最终人格映射核心">
       <p
         style={{
           margin: 0,
@@ -68,8 +63,8 @@ function EmptyGenderNotice() {
           lineHeight: 1.8,
         }}
       >
-        请先选择男 / 女视角。当前逻辑是先确定性别视角，再进入紫微或八字映射，
-        最后生成对应性格结果。
+        请先选择男 / 女视角。当前核心逻辑是先确定性别视角，再进入紫微或八字映射，
+        最后生成对应性格与行为偏置。
       </p>
     </InfoCard>
   )
@@ -230,54 +225,81 @@ function BaziGenderFunctionList({
   )
 }
 
-export function PersonalityInterpretationPanel({
-  hasBirthHour,
-  genderPerspective,
-  ziweiProfile,
-  baziProfile,
-  finalPersonalityProfile,
+function BehaviorBiasPanel({
+  bundle,
 }: {
-  hasBirthHour: boolean
-  genderPerspective: DynamicGenderInput
-  ziweiProfile: PersonalityProfile
-  baziProfile: BaziProfile
-  finalPersonalityProfile: FinalPersonalityProfile
+  bundle: LifePersonalityProfileBundle
 }) {
-  const selectedGenderPerspective =
-    genderPerspective === "male" || genderPerspective === "female"
-      ? genderPerspective
-      : null
+  const bias = bundle.genderAwareBehaviorBias
 
-  const interpretationProfile = useMemo(() => {
-    if (selectedGenderPerspective === null) {
-      return null
-    }
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+        gap: 12,
+        fontSize: 13,
+      }}
+    >
+      <pre
+        style={{
+          whiteSpace: "pre-wrap",
+          background: "#f9fafb",
+          padding: 10,
+          borderRadius: 8,
+          border: "1px solid #e5e7eb",
+        }}
+      >
+        {JSON.stringify(bias.petBehaviorBias, null, 2)}
+      </pre>
 
-    return buildAiPersonalityInterpretation({
-      ziweiProfile: hasBirthHour ? ziweiProfile : null,
-      baziProfile,
-      finalPersonalityProfile,
-      genderPerspective: selectedGenderPerspective as GenderPerspective,
-      hasBirthHour,
-    })
-  }, [
-    hasBirthHour,
-    selectedGenderPerspective,
-    ziweiProfile,
-    baziProfile,
-    finalPersonalityProfile,
-  ])
+      <pre
+        style={{
+          whiteSpace: "pre-wrap",
+          background: "#f9fafb",
+          padding: 10,
+          borderRadius: 8,
+          border: "1px solid #e5e7eb",
+        }}
+      >
+        {JSON.stringify(bias.butlerBehaviorBias, null, 2)}
+      </pre>
 
-  if (selectedGenderPerspective === null) {
+      <pre
+        style={{
+          whiteSpace: "pre-wrap",
+          background: "#f9fafb",
+          padding: 10,
+          borderRadius: 8,
+          border: "1px solid #e5e7eb",
+        }}
+      >
+        {JSON.stringify(bias.buildingBias, null, 2)}
+      </pre>
+    </div>
+  )
+}
+
+export function PersonalityInterpretationPanel({
+  dynamicGender,
+  lifeProfileBundle,
+}: {
+  dynamicGender: DynamicGenderInput
+  lifeProfileBundle: LifePersonalityProfileBundle | null
+}) {
+  if (dynamicGender !== "male" && dynamicGender !== "female") {
     return <EmptyGenderNotice />
   }
 
-  if (interpretationProfile === null) {
-    return null
+  if (lifeProfileBundle === null) {
+    return <EmptyGenderNotice />
   }
 
+  const interpretationProfile =
+    lifeProfileBundle.personalityInterpretationProfile
+
   const viewpointText =
-    selectedGenderPerspective === "male" ? "男命视角" : "女命视角"
+    lifeProfileBundle.genderPerspective === "male" ? "男命视角" : "女命视角"
 
   const modeText =
     interpretationProfile.mode === "ziwei_primary"
@@ -362,6 +384,9 @@ export function PersonalityInterpretationPanel({
           </>
         )}
 
+        <SectionTitle>最终行为偏置</SectionTitle>
+        <BehaviorBiasPanel bundle={lifeProfileBundle} />
+
         <details
           style={{
             marginTop: 4,
@@ -380,7 +405,7 @@ export function PersonalityInterpretationPanel({
               overflowX: "auto",
             }}
           >
-            {JSON.stringify(interpretationProfile.debug, null, 2)}
+            {JSON.stringify(lifeProfileBundle.debug, null, 2)}
           </pre>
         </details>
       </div>
