@@ -1,9 +1,8 @@
 /**
- * Current file responsibility:
- * render recent world observations in a stable, readable way.
+ * 当前文件负责：展示 world 页面右侧观察记录。
  */
 
-import type { WorldEvent } from "@/types/event"
+import type { NarrativeType, WorldEvent } from "@/types/event"
 
 import styles from "@/styles/world-styles/world-observation-panel.module.css"
 
@@ -32,55 +31,137 @@ function getCategoryLabel(type: WorldEvent["type"]): string {
   }
 }
 
-function getActionLabel(action?: string): string | null {
-  if (!action) return null
+function getNarrativeLabel(narrativeType?: NarrativeType): string {
+  switch (narrativeType) {
+    case "observe_environment":
+      return "观察环境"
+    case "discover":
+      return "发现变化"
+    case "approach_target":
+      return "尝试靠近"
+    case "keep_distance":
+      return "保持距离"
+    case "satisfy_need":
+      return "满足需求"
+    case "recover":
+      return "恢复状态"
+    case "linger":
+      return "短暂停留"
+    case "unknown":
+      return "自然反应"
+    default:
+      return "自然反应"
+  }
+}
 
+function getActionObservation(action?: string): string | null {
   switch (action) {
     case "sleeping":
-      return "正在休息，恢复状态中。"
+      return "进入了更深的休息状态，外界刺激对它的影响暂时降低。"
     case "eating":
-      return "正在进食，补充体力。"
+      return "正在补充食物，当前行为明显受到生存需求牵引。"
     case "walking":
-      return "在场景里缓慢移动。"
+      return "开始移动，但节奏并不急促，像是在重新确认周围的位置关系。"
     case "exploring":
-      return "正在探索新的区域。"
+      return "正在扩大活动范围，会边走边停下来感知附近变化。"
     case "approaching":
-      return "试着靠近新的目标。"
+      return "正在靠近某个目标，但是否继续接触仍取决于它自己的判断。"
     case "idle":
-      return "暂时停在原地观察。"
+      return "暂时停在原地，没有立刻进入新的行为。"
     case "observing":
-      return "在安静观察周围变化。"
+      return "正在观察周围变化，行动前的判断过程变得更明显。"
     case "resting":
-      return "把节奏放慢，进入恢复阶段。"
+      return "放慢了节奏，优先恢复体力和安全感。"
     case "alert_idle":
-      return "保持警觉，暂时没有进一步动作。"
+      return "保持警觉，暂时没有继续靠近或探索。"
     default:
       return null
   }
 }
 
+function getIntensityText(intensity?: number): string {
+  if (typeof intensity !== "number") return ""
+
+  if (intensity >= 0.75) {
+    return "这次反应比较明显。"
+  }
+
+  if (intensity >= 0.45) {
+    return "这次反应强度中等。"
+  }
+
+  if (intensity > 0) {
+    return "这只是一个轻微反应。"
+  }
+
+  return ""
+}
+
+function getPayloadText(payload?: Record<string, unknown>): string {
+  if (!payload) return ""
+
+  const continuityStep = payload.continuityStep
+
+  if (typeof continuityStep === "number" && continuityStep > 1) {
+    return `这是连续行为里的第 ${continuityStep} 段。`
+  }
+
+  return ""
+}
+
+function rewritePetActionEvent(event: WorldEvent): string {
+  const petName = event.petName ?? "宠物"
+  const actionObservation = getActionObservation(event.sourceAction)
+  const narrativeLabel = getNarrativeLabel(event.narrativeType)
+  const intensityText = getIntensityText(event.intensity)
+  const payloadText = getPayloadText(event.payload)
+
+  const baseText = actionObservation
+    ? `${petName}${actionObservation}`
+    : event.message
+
+  return [
+    baseText,
+    `观察倾向：${narrativeLabel}。`,
+    intensityText,
+    payloadText,
+  ]
+    .filter(Boolean)
+    .join("")
+}
+
 function rewriteMessage(event: WorldEvent): string {
   const petName = event.petName ?? "宠物"
-  const actionLabel = getActionLabel(event.sourceAction)
 
   switch (event.type) {
     case "pet_hatched":
-      return `${petName}刚刚来到这个世界，正在适应周围环境。`
+      return `${petName}刚刚来到这个世界。它还没有形成稳定的行动节奏，正在通过环境、温度和管家的靠近来建立最初的安全感。`
+
     case "pet_action_changed":
     case "pet_action_narrative":
-      return actionLabel ? `${petName}${actionLabel}` : event.message
+      return rewritePetActionEvent(event)
+
     case "pet_action_end":
-      return `${petName}完成了上一段行为，状态正在切换。`
+      return `${petName}完成了上一段行为。它没有被直接命令切换动作，而是在当前状态和环境刺激之间重新做出选择。`
+
     case "pet_mood_changed":
-      return `${petName}的情绪发生了变化。`
+      return `${petName}的情绪状态发生变化。这个变化会影响它接下来更愿意靠近、观察、探索，还是先恢复。`
+
     case "pet_fortune_phase_changed":
-      return `${petName}进入了新的阶段倾向。`
+      return `${petName}进入了新的生命阶段倾向。后续行为的概率会被轻微改写，但不会变成固定脚本。`
+
     case "pet_trajectory_branch_changed":
-      return `${petName}的成长轨迹出现了新的分支。`
+      return `${petName}的成长轨迹出现了新的分支。它之后可能会更偏向某一种长期行为路径。`
+
     case "time_period_changed":
-      return "光线和环境在变化，世界进入了新的时间段。"
+      return "光线、温度和环境节奏正在变化。世界进入了新的时间段，生命体的行为优先级也可能随之调整。"
+
     case "incubator_progress_changed":
-      return "孵化器的状态有了新的推进，管家在持续关注。"
+      return "孵化器状态有了新的推进。管家会继续优先确认稳定度，但不会替未来的生命决定它将成为什么样。"
+
+    case "interaction":
+      return event.message
+
     default:
       return event.message
   }
@@ -92,6 +173,7 @@ function getEventDisplayKey(event: WorldEvent): string {
     event.petName ?? "",
     event.sourceAction ?? "",
     event.narrativeType ?? "",
+    event.continuityId ?? "",
     rewriteMessage(event),
   ].join("::")
 }
