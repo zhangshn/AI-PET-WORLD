@@ -7,6 +7,7 @@ import type { PetState, PetAction } from "@/types/pet"
 import type { WorldZone } from "@/world/ecology/world-zone-types"
 import { updatePetAiState, stepPetBehaviorProcess } from "@/ai/gateway"
 import { updatePetMemoryState } from "@/ai/memory-core/memory-gateway"
+import { logPetDecisionTrace } from "@/engine/world-engine/world-runtime-logger"
 
 import {
   runPetLife,
@@ -133,6 +134,7 @@ export function runPetRuntimeTick(
       timelineSnapshot: currentSnapshot,
       personalityProfile: pet.personalityProfile,
       consciousnessProfile: pet.consciousnessProfile,
+      memoryState: pet.memoryState,
     },
     time: input.time,
   })
@@ -165,6 +167,27 @@ export function runPetRuntimeTick(
 
   const finalAction = stabilityResult.action
   const previousAction = pet.action
+
+  logPetDecisionTrace({
+    tick: input.currentTick,
+    petName: pet.name,
+    previousAction,
+    rawAction,
+    finalAction,
+    actionSelectionReason: actionSelection.reason,
+    stabilityReason: stabilityResult.reason,
+    driveDominant: driveSnapshot.dominant,
+    driveDominantScore: driveSnapshot.dominantScore,
+    driveValues: driveSnapshot.values,
+    goalType: nextGoal.type,
+    goalPriority: nextGoal.priority,
+    goalSource: nextGoal.source,
+    goalSummary: nextGoal.summary,
+    energy: pet.energy,
+    hunger: pet.hunger,
+    mood: currentSnapshot.state.emotional.label,
+    lifePhase: pet.lifeState.phase,
+  })
 
   pet.action = finalAction
 

@@ -11,12 +11,13 @@ import type { IncubatorState } from "@/types/incubator"
 import type { PetState } from "@/types/pet"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
-const ENABLE_WORLD_TICK_LOG = false
+const ENABLE_WORLD_TICK_LOG = true
 const ENABLE_ECOLOGY_LOG = false
 const ENABLE_STIMULUS_LOG = false
-const ENABLE_INCUBATOR_LOG = false
-const ENABLE_PET_RUNTIME_LOG = false
-const ENABLE_PET_COGNITION_LOG = false
+const ENABLE_INCUBATOR_LOG = true
+const ENABLE_PET_RUNTIME_LOG = true
+const ENABLE_PET_COGNITION_LOG = true
+const ENABLE_PET_DECISION_LOG = true
 const ENABLE_BIRTH_PROFILE_LOG = true
 
 export function logWorldTick(input: {
@@ -94,6 +95,58 @@ export function logPetCognition(summary: string) {
   if (!ENABLE_PET_COGNITION_LOG) return
 
   console.log("🧠 宠物认知：", summary)
+}
+
+export function logPetDecisionTrace(input: {
+  tick: number
+  petName: string
+  previousAction: string
+  rawAction: string
+  finalAction: string
+  actionSelectionReason: string
+  stabilityReason: string
+  driveDominant: string
+  driveDominantScore: number
+  driveValues: Record<string, number>
+  goalType: string
+  goalPriority: string
+  goalSource: string
+  goalSummary: string
+  energy: number
+  hunger: number
+  mood: string
+  lifePhase: string
+}) {
+  if (!ENABLE_PET_DECISION_LOG) return
+
+  console.log("🧭 宠物行为决策：", {
+    tick: input.tick,
+    petName: input.petName,
+    action: {
+      previous: input.previousAction,
+      raw: input.rawAction,
+      final: input.finalAction,
+      selectionReason: input.actionSelectionReason,
+      stabilityReason: input.stabilityReason,
+    },
+    drive: {
+      dominant: input.driveDominant,
+      dominantScore: input.driveDominantScore,
+      values: input.driveValues,
+    },
+    goal: {
+      type: input.goalType,
+      priority: input.goalPriority,
+      source: input.goalSource,
+      summary: input.goalSummary,
+    },
+    state: {
+      energy: input.energy,
+      hunger: input.hunger,
+      mood: input.mood,
+      lifePhase: input.lifePhase,
+    },
+  })
 }
 
 export function logPetBirthProfile(input: {
