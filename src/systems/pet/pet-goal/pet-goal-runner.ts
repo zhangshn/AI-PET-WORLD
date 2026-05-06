@@ -8,6 +8,10 @@ import type { ZiweiConsciousnessKernel } from "../../../ai/consciousness/conscio
 import type { PetMemoryState } from "../../../ai/memory-core/memory-gateway"
 import type { WorldZone, WorldZoneType } from "../../../world/ecology/world-zone-types"
 
+import {
+  applyGoalLifeTendencyLayer,
+} from "./pet-goal-life-tendency-layer"
+
 export type PetGoalType =
   | "expand_territory"
   | "observe_boundary"
@@ -46,6 +50,7 @@ export type GoalSystemInput = {
     | "timelineSnapshot"
     | "consciousnessProfile"
     | "memoryState"
+    | "currentLifeRuntimeBundle"
   >
   time: TimeState
   previousGoal?: PetGoalState | null
@@ -393,10 +398,19 @@ export class GoalSystem {
     const kernel = getKernel(input)
     const memory = getMemory(input)
     const chosen = chooseGoal(input)
-    const duration = buildGoalDuration(chosen.type, kernel, memory)
+
+    const interpreted = applyGoalLifeTendencyLayer({
+      goal: chosen,
+      pet: {
+        currentLifeRuntimeBundle:
+          input.pet.currentLifeRuntimeBundle ?? null,
+      },
+    })
+
+    const duration = buildGoalDuration(interpreted.type, kernel, memory)
 
     return {
-      ...chosen,
+      ...interpreted,
       startedAtTick: input.tick,
       holdUntilTick: input.tick + duration,
     }

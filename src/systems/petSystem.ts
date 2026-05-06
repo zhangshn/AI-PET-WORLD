@@ -106,6 +106,7 @@ export class PetSystem {
         timelineSnapshot,
         consciousnessProfile,
         memoryState,
+        currentLifeRuntimeBundle: null,
       },
       time: {
         day: 1,
