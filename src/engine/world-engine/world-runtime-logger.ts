@@ -115,6 +115,25 @@ function pickLifeTendencyInfluence(
   return result
 }
 
+function pickCognitionInfluence(
+  driveReasons: Record<string, string[]>
+): Record<string, string[]> {
+  const result: Record<string, string[]> = {}
+
+  for (const [drive, reasons] of Object.entries(driveReasons)) {
+    const hits = reasons.filter((reason) =>
+      reason.includes("认知驱动") ||
+      reason.includes("认知解释")
+    )
+
+    if (hits.length > 0) {
+      result[drive] = hits
+    }
+  }
+
+  return result
+}
+
 export function logPetDecisionTrace(input: {
   tick: number
   petName: string
@@ -146,6 +165,10 @@ export function logPetDecisionTrace(input: {
     input.driveReasons
   )
 
+  const cognitionInfluence = pickCognitionInfluence(
+    input.driveReasons
+  )
+
   console.log("🧭 宠物行为决策：", {
     tick: input.tick,
     petName: input.petName,
@@ -166,6 +189,7 @@ export function logPetDecisionTrace(input: {
       reasons: input.driveReasons,
     },
     lifeTendencyInfluence,
+    cognitionInfluence,
     goal: {
       type: input.goalType,
       priority: input.goalPriority,
