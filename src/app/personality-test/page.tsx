@@ -139,7 +139,7 @@ export default function PersonalityTestPage() {
       <TestDashboardSection
         index="2"
         title="命盘展示区"
-        description="这里先展示紫微盘和八字盘。只展示命盘结构，不把数据分析和调试信息混进来。"
+        description="这里先展示紫微盘和八字盘。左右分布保留；八字动态时间表紧接八字盘展示，方便和紫微动态时间同步对齐。"
       >
         <TestDashboardGrid minColumnWidth={620}>
           <TestDashboardPanel
@@ -168,11 +168,26 @@ export default function PersonalityTestPage() {
 
           <TestDashboardPanel
             title="八字盘"
-            subtitle="八字是辅助系统。这里仅展示八字原局、四柱/三柱、天干地支、藏干、五行和阴阳。"
+            subtitle="八字是辅助系统。这里展示八字原局，并紧接动态时间表。"
           >
             <BaziProfilePanel
               baziProfile={baziProfile}
               mode="chart"
+            />
+
+            <SectionSpacer />
+
+            <BaziRuntimePanel
+              key={`${year}-${month}-${day}-${birthHourInput}-${dynamicGender}-bazi-runtime-time`}
+              baziProfile={baziProfile}
+              dynamicGender={dynamicGender}
+              runtimeTime={runtimeTime}
+              activeLevel={toBaziRuntimeLevel(activeRuntimeLevel)}
+              onActiveLevelChange={(level) => {
+                setActiveRuntimeLevel(level)
+              }}
+              onRuntimeTimeChange={setFromBaziSelection}
+              mode="time"
             />
           </TestDashboardPanel>
         </TestDashboardGrid>
@@ -210,10 +225,10 @@ export default function PersonalityTestPage() {
 
           <TestDashboardPanel
             title="八字数据"
-            subtitle="这里展示八字动态大运、流年、流月、流日、流时、动态五行环境场、AI 动力映射和调试信息。"
+            subtitle="这里展示八字动态五行环境场、AI 动力映射、当前行动趋向和调试信息。动态时间表已经放到上面的八字盘区域。"
           >
             <BaziRuntimePanel
-              key={`${year}-${month}-${day}-${birthHourInput}-${dynamicGender}-bazi-runtime`}
+              key={`${year}-${month}-${day}-${birthHourInput}-${dynamicGender}-bazi-runtime-data`}
               baziProfile={baziProfile}
               dynamicGender={dynamicGender}
               runtimeTime={runtimeTime}
@@ -222,6 +237,7 @@ export default function PersonalityTestPage() {
                 setActiveRuntimeLevel(level)
               }}
               onRuntimeTimeChange={setFromBaziSelection}
+              mode="data"
             />
 
             <SectionSpacer />

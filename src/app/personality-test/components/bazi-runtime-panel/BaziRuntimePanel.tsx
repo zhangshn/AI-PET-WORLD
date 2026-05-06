@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：组装八字原局与动态运势合并展示面板。
+ * 当前文件负责：组装八字动态时间与动态数据展示面板。
  */
 
 import { useMemo } from "react"
@@ -35,6 +35,8 @@ import type {
   BaziRuntimeActiveLevel,
   BaziRuntimeTimeSelection
 } from "./bazi-runtime-panel-types"
+
+export type BaziRuntimePanelMode = "full" | "time" | "data"
 
 type BaziMergedColumn = {
   key: string
@@ -130,6 +132,23 @@ function getColumnValue(column: BaziMergedColumn, field: string): string {
   return "-"
 }
 
+function TableScroll({
+  children
+}: {
+  children: React.ReactNode
+}) {
+  return (
+    <div
+      style={{
+        width: "100%",
+        overflowX: "auto",
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
 const ELEMENT_KEYS: WuXingElement[] = [
   "wood",
   "fire",
@@ -165,6 +184,7 @@ export function BaziRuntimePanel({
   activeLevel,
   onActiveLevelChange,
   onRuntimeTimeChange,
+  mode = "full",
 }: {
   baziProfile: BaziProfile
   dynamicGender: DynamicGenderInput
@@ -172,6 +192,7 @@ export function BaziRuntimePanel({
   activeLevel: BaziRuntimeActiveLevel
   onActiveLevelChange: (level: BaziRuntimeActiveLevel) => void
   onRuntimeTimeChange: (selection: BaziRuntimeTimeSelection) => void
+  mode?: BaziRuntimePanelMode
 }) {
   const selection = useMemo<BaziRuntimeTimeSelection>(() => {
     return {
@@ -267,183 +288,202 @@ export function BaziRuntimePanel({
     },
   ]
 
+  const showTime = mode === "full" || mode === "time"
+  const showData = mode === "full" || mode === "data"
+
   return (
-    <InfoCard title="☯ 八字辅助内容">
-      <div style={summaryGridStyle}>
-        <div>
-          <strong>当前模式：</strong>
-          {baziProfile.mode === "FOUR_PILLARS" ? "四柱" : "三柱"}
-        </div>
-        <div>
-          <strong>能量精度：</strong>
-          {baziProfile.precision === "high" ? "高" : "中"}
-        </div>
-        <div>
-          <strong>日主：</strong>
-          {baziProfile.dayMaster}
-        </div>
-        <div>
-          <strong>动态性别：</strong>
-          {getBaziRuntimeGenderLabel(runtimeProfile.gender)}
-        </div>
-        <div>
-          <strong>大运方向：</strong>
-          {getBaziRuntimeDirectionLabel(runtimeProfile.daYun.direction)}
-        </div>
-        <div>
-          <strong>起运岁数：</strong>
-          {runtimeProfile.daYun.startAge} 岁
-        </div>
-        <div>
-          <strong>当前年龄：</strong>
-          {runtimeProfile.daYun.currentAge} 岁
-        </div>
-        <div>
-          <strong>是否起运：</strong>
-          {runtimeProfile.daYun.isStarted ? "是" : "否"}
-        </div>
-      </div>
+    <InfoCard
+      title={mode === "time" ? "☯ 八字动态时间表" : "☯ 八字辅助内容"}
+    >
+      {showTime ? (
+        <>
+          <div style={summaryGridStyle}>
+            <div>
+              <strong>当前模式：</strong>
+              {baziProfile.mode === "FOUR_PILLARS" ? "四柱" : "三柱"}
+            </div>
+            <div>
+              <strong>能量精度：</strong>
+              {baziProfile.precision === "high" ? "高" : "中"}
+            </div>
+            <div>
+              <strong>日主：</strong>
+              {baziProfile.dayMaster}
+            </div>
+            <div>
+              <strong>动态性别：</strong>
+              {getBaziRuntimeGenderLabel(runtimeProfile.gender)}
+            </div>
+            <div>
+              <strong>大运方向：</strong>
+              {getBaziRuntimeDirectionLabel(runtimeProfile.daYun.direction)}
+            </div>
+            <div>
+              <strong>起运岁数：</strong>
+              {runtimeProfile.daYun.startAge} 岁
+            </div>
+            <div>
+              <strong>当前年龄：</strong>
+              {runtimeProfile.daYun.currentAge} 岁
+            </div>
+            <div>
+              <strong>是否起运：</strong>
+              {runtimeProfile.daYun.isStarted ? "是" : "否"}
+            </div>
+          </div>
 
-      <BaziRuntimeTimeSelector
-        runtimeProfile={runtimeProfile}
-        activeLevel={activeLevel}
-        selection={selection}
-        onActiveLevelChange={onActiveLevelChange}
-        onSelectionChange={onRuntimeTimeChange}
-      />
+          <BaziRuntimeTimeSelector
+            runtimeProfile={runtimeProfile}
+            activeLevel={activeLevel}
+            selection={selection}
+            onActiveLevelChange={onActiveLevelChange}
+            onSelectionChange={onRuntimeTimeChange}
+          />
 
-      <div style={{ marginTop: 16 }}>
-        <div style={sectionTitleStyle}>
-          八字原局 / 大运 / 流年 / 流月 / 流日 / 流时
-        </div>
+          <div style={{ marginTop: 16 }}>
+            <div style={sectionTitleStyle}>
+              八字原局 / 大运 / 流年 / 流月 / 流日 / 流时
+            </div>
 
-        <div style={{ overflowX: "auto" }}>
-          <table style={tableStyle}>
-            <thead>
-              <tr>
-                <th style={stickyHeaderCellStyle}>日期</th>
-                {mergedColumns.map((column) => (
-                  <th
-                    key={column.key}
-                    style={
-                      column.group === "动态"
-                        ? dynamicHeaderCellStyle
-                        : headerCellStyle
-                    }
-                  >
-                    {column.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-
-            <tbody>
-              {MERGED_TABLE_ROWS.map((row) => (
-                <tr key={row.key}>
-                  <td style={stickyLabelCellStyle}>{row.label}</td>
-
-                  {mergedColumns.map((column) => {
-                    const isDynamic = column.group === "动态"
-                    const isMainRow = row.key === "pillar"
-
-                    return (
-                      <td
-                        key={`${row.key}-${column.key}`}
-                        style={{
-                          ...(isMainRow ? mainCellStyle : cellStyle),
-                          ...(isDynamic ? dynamicCellTintStyle : null),
-                        }}
+            <TableScroll>
+              <table style={wideTableStyle}>
+                <thead>
+                  <tr>
+                    <th style={stickyHeaderCellStyle}>日期</th>
+                    {mergedColumns.map((column) => (
+                      <th
+                        key={column.key}
+                        style={
+                          column.group === "动态"
+                            ? dynamicHeaderCellStyle
+                            : headerCellStyle
+                        }
                       >
-                        {getColumnValue(column, row.key)}
-                      </td>
-                    )
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+                        {column.label}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
 
-      <div style={lowerGridStyle}>
-        <div>
-          <div style={sectionTitleStyle}>动态环境五行场</div>
+                <tbody>
+                  {MERGED_TABLE_ROWS.map((row) => (
+                    <tr key={row.key}>
+                      <td style={stickyLabelCellStyle}>{row.label}</td>
 
-          <table style={tableStyle}>
-            <thead>
-              <tr>
-                {ELEMENT_KEYS.map((key) => (
-                  <th key={key} style={headerCellStyle}>
-                    {BAZI_RUNTIME_ELEMENT_LABELS[key]}
-                  </th>
-                ))}
-              </tr>
-            </thead>
+                      {mergedColumns.map((column) => {
+                        const isDynamic = column.group === "动态"
+                        const isMainRow = row.key === "pillar"
 
-            <tbody>
-              <tr>
-                {ELEMENT_KEYS.map((key) => (
-                  <td key={key} style={cellStyle}>
-                    {formatRuntimeScore(
-                      runtimeProfile.runtimeElementField.elementScores[key]
-                    )}
-                  </td>
-                ))}
-              </tr>
-            </tbody>
-          </table>
-        </div>
+                        return (
+                          <td
+                            key={`${row.key}-${column.key}`}
+                            style={{
+                              ...(isMainRow ? mainCellStyle : cellStyle),
+                              ...(isDynamic ? dynamicCellTintStyle : null),
+                            }}
+                          >
+                            {getColumnValue(column, row.key)}
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TableScroll>
+          </div>
+        </>
+      ) : null}
 
-        <div>
-          <div style={sectionTitleStyle}>动态状态修正</div>
+      {showData ? (
+        <>
+          <div style={showTime ? lowerGridStyle : lowerGridStyleWithoutTop}>
+            <div style={dataBlockStyle}>
+              <div style={sectionTitleStyle}>动态环境五行场</div>
 
-          <table style={tableStyle}>
-            <tbody>
-              {MODIFIER_KEYS.map((key) => (
-                <tr key={key}>
-                  <td style={labelCellStyle}>
-                    {BAZI_RUNTIME_MODIFIER_LABELS[key]}
-                  </td>
-                  <td style={cellStyle}>
-                    {formatRuntimeScore(runtimeProfile.modifiers[key])}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+              <TableScroll>
+                <table style={tableStyle}>
+                  <thead>
+                    <tr>
+                      {ELEMENT_KEYS.map((key) => (
+                        <th key={key} style={headerCellStyle}>
+                          {BAZI_RUNTIME_ELEMENT_LABELS[key]}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
 
-      <div style={{ marginTop: 16 }}>
-        <BaziCurrentTendencyPanel profile={currentTendencyProfile} />
-      </div>
+                  <tbody>
+                    <tr>
+                      {ELEMENT_KEYS.map((key) => (
+                        <td key={key} style={cellStyle}>
+                          {formatRuntimeScore(
+                            runtimeProfile.runtimeElementField.elementScores[key]
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  </tbody>
+                </table>
+              </TableScroll>
+            </div>
 
-      <div style={{ marginTop: 16 }}>
-        <div style={sectionTitleStyle}>动态调试信息</div>
+            <div style={dataBlockStyle}>
+              <div style={sectionTitleStyle}>动态状态修正</div>
 
-        <table style={tableStyle}>
-          <tbody>
-            <tr>
-              <td style={labelCellStyle}>使用动态柱</td>
-              <td style={cellStyle}>
-                {runtimeProfile.debug.usedRuntimePillars.join(" / ")}
-              </td>
-            </tr>
+              <TableScroll>
+                <table style={tableStyle}>
+                  <tbody>
+                    {MODIFIER_KEYS.map((key) => (
+                      <tr key={key}>
+                        <td style={labelCellStyle}>
+                          {BAZI_RUNTIME_MODIFIER_LABELS[key]}
+                        </td>
+                        <td style={cellStyle}>
+                          {formatRuntimeScore(runtimeProfile.modifiers[key])}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </TableScroll>
+            </div>
+          </div>
 
-            <tr>
-              <td style={labelCellStyle}>说明</td>
-              <td style={cellStyle}>{runtimeProfile.debug.note}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+          <div style={{ marginTop: 16 }}>
+            <BaziCurrentTendencyPanel profile={currentTendencyProfile} />
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <div style={sectionTitleStyle}>动态调试信息</div>
+
+            <TableScroll>
+              <table style={tableStyle}>
+                <tbody>
+                  <tr>
+                    <td style={labelCellStyle}>使用动态柱</td>
+                    <td style={cellStyle}>
+                      {runtimeProfile.debug.usedRuntimePillars.join(" / ")}
+                    </td>
+                  </tr>
+
+                  <tr>
+                    <td style={labelCellStyle}>说明</td>
+                    <td style={cellStyle}>{runtimeProfile.debug.note}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </TableScroll>
+          </div>
+        </>
+      ) : null}
     </InfoCard>
   )
 }
 
 const summaryGridStyle: CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "repeat(4, minmax(140px, 1fr))",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 170px), 1fr))",
   gap: 10,
   padding: 12,
   border: "1px solid #eee",
@@ -454,9 +494,19 @@ const summaryGridStyle: CSSProperties = {
 
 const lowerGridStyle: CSSProperties = {
   display: "grid",
-  gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr)",
+  gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 320px), 1fr))",
   gap: 16,
   marginTop: 16,
+  alignItems: "start",
+}
+
+const lowerGridStyleWithoutTop: CSSProperties = {
+  ...lowerGridStyle,
+  marginTop: 0,
+}
+
+const dataBlockStyle: CSSProperties = {
+  minWidth: 0,
 }
 
 const sectionTitleStyle: CSSProperties = {
@@ -468,6 +518,14 @@ const tableStyle: CSSProperties = {
   width: "100%",
   borderCollapse: "collapse",
   fontSize: 14,
+  tableLayout: "auto",
+}
+
+const wideTableStyle: CSSProperties = {
+  width: "100%",
+  minWidth: 980,
+  borderCollapse: "collapse",
+  fontSize: 14,
 }
 
 const headerCellStyle: CSSProperties = {
@@ -476,7 +534,8 @@ const headerCellStyle: CSSProperties = {
   background: "#f7f7f7",
   textAlign: "center",
   fontWeight: 800,
-  minWidth: 100,
+  minWidth: 88,
+  whiteSpace: "nowrap",
 }
 
 const dynamicHeaderCellStyle: CSSProperties = {
@@ -503,6 +562,7 @@ const stickyLabelCellStyle: CSSProperties = {
   position: "sticky",
   left: 0,
   zIndex: 1,
+  whiteSpace: "nowrap",
 }
 
 const labelCellStyle: CSSProperties = {
@@ -511,8 +571,9 @@ const labelCellStyle: CSSProperties = {
   background: "#fafafa",
   color: "#666",
   fontWeight: 700,
-  width: 100,
+  width: 110,
   textAlign: "center",
+  whiteSpace: "nowrap",
 }
 
 const cellStyle: CSSProperties = {
@@ -520,7 +581,8 @@ const cellStyle: CSSProperties = {
   border: "1px solid #e5e5e5",
   textAlign: "center",
   lineHeight: 1.6,
-  minWidth: 100,
+  minWidth: 72,
+  whiteSpace: "nowrap",
 }
 
 const mainCellStyle: CSSProperties = {
