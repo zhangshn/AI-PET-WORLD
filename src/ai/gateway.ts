@@ -66,6 +66,14 @@ import {
   stepBehaviorProcess,
 } from "./behavior-core/behavior-gateway"
 
+import type {
+  BuildCurrentLifeTendencyFromRuntimeInput,
+  CurrentLifeTendencyProfile,
+} from "./life-tendency-core/life-tendency-gateway"
+import {
+  buildCurrentLifeTendencyFromRuntime,
+} from "./life-tendency-core/life-tendency-gateway"
+
 export type UpdatePetAiStateInput = {
   currentSnapshot: PetTimelineSnapshot
   time: {
@@ -116,6 +124,12 @@ export function buildAiPersonalityGenderComparison(
   input: BuildGenderPerspectiveComparisonInput
 ): GenderPerspectiveComparison {
   return buildPersonalityGenderComparison(input)
+}
+
+export function buildAiCurrentLifeTendency(
+  input: BuildCurrentLifeTendencyFromRuntimeInput
+): CurrentLifeTendencyProfile {
+  return buildCurrentLifeTendencyFromRuntime(input)
 }
 
 export {
@@ -196,6 +210,21 @@ export type {
   LifeProfileBirthInput,
   LifeProfileSubjectType,
 } from "./life-profile-core/life-profile-gateway"
+
+export type {
+  BuildCurrentLifeTendencyFromRuntimeInput,
+  CurrentLifeTendencyProfile,
+  LifeTendencyFiveDimensionScores,
+  LifeTendencyKey,
+  LifeTendencyLabels,
+  LifeTendencyLevel,
+  LifeTendencyRuntimeGender,
+  LifeTendencyRuntimeTime,
+  LifeTendencyScoreInputs,
+  LifeTendencyScoreItem,
+  LifeTendencyScores,
+  LifeTendencySourceProfile,
+} from "./life-tendency-core/life-tendency-gateway"
 
 export type {
   PetTimelineSnapshot,
