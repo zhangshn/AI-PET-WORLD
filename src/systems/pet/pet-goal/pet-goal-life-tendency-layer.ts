@@ -8,11 +8,11 @@ import type {
 } from "../../../ai/gateway"
 
 import type {
+  GoalDraft,
   GoalPriority,
   PetGoalLifeTendencyHint,
-  PetGoalState,
   PetGoalType,
-} from "./pet-goal-runner"
+} from "./pet-goal-types"
 
 import {
   GOAL_LIFE_TENDENCY_ATTACH_RULES,
@@ -125,11 +125,11 @@ function buildVisibleHint(params: {
 }
 
 export function applyGoalLifeTendencyLayer(params: {
-  goal: Omit<PetGoalState, "startedAtTick" | "holdUntilTick">
+  goal: GoalDraft
   pet: {
     currentLifeRuntimeBundle?: CurrentLifeRuntimeBundle | null
   }
-}): Omit<PetGoalState, "startedAtTick" | "holdUntilTick"> {
+}): GoalDraft {
   const baseSummary = cleanLifeTendencySummary(params.goal.summary)
 
   const bundle = getLifeRuntimeBundle(params.pet)

@@ -7,9 +7,8 @@ import type {
 } from "../pet-drive/pet-drive-gateway"
 
 import type {
-  PetGoalState,
-  PetGoalType,
-} from "./pet-goal-runner"
+  GoalDraft,
+} from "./pet-goal-types"
 
 import {
   GOAL_DRIVE_ALIGNMENT_RULES,
@@ -17,7 +16,7 @@ import {
   GOAL_DRIVE_TO_GOAL_TYPE,
 } from "./pet-goal-tuning"
 
-function shouldSkipAlignment(goal: Omit<PetGoalState, "startedAtTick" | "holdUntilTick">): boolean {
+function shouldSkipAlignment(goal: GoalDraft): boolean {
   if (goal.priority === "critical") {
     return true
   }
@@ -36,7 +35,7 @@ function shouldSkipAlignment(goal: Omit<PetGoalState, "startedAtTick" | "holdUnt
 }
 
 function findAlignmentRule(params: {
-  goalType: PetGoalType
+  goalType: GoalDraft["type"]
   driveSnapshot: DriveSnapshot
 }) {
   return GOAL_DRIVE_ALIGNMENT_RULES.find((rule) =>
@@ -54,7 +53,7 @@ function shouldAlignIdleDrift(driveSnapshot: DriveSnapshot): boolean {
 }
 
 function buildNoChangeAlignment(params: {
-  goal: Omit<PetGoalState, "startedAtTick" | "holdUntilTick">
+  goal: GoalDraft
   driveSnapshot: DriveSnapshot
 }) {
   return {
@@ -67,9 +66,9 @@ function buildNoChangeAlignment(params: {
 }
 
 export function applyGoalDriveAlignmentLayer(params: {
-  goal: Omit<PetGoalState, "startedAtTick" | "holdUntilTick">
+  goal: GoalDraft
   driveSnapshot?: DriveSnapshot | null
-}): Omit<PetGoalState, "startedAtTick" | "holdUntilTick"> {
+}): GoalDraft {
   if (!params.driveSnapshot) {
     return {
       ...params.goal,
