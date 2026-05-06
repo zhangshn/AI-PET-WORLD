@@ -402,10 +402,39 @@ function shouldKeepPreviousGoal(input: GoalSystemInput): boolean {
   return false
 }
 
+function refreshPreviousGoalLifeTendency(input: GoalSystemInput): PetGoalState {
+  const previousGoal = input.previousGoal
+
+  if (!previousGoal) {
+    throw new Error("refreshPreviousGoalLifeTendency 需要 previousGoal。")
+  }
+
+  const {
+    startedAtTick,
+    holdUntilTick,
+    ...goalWithoutRuntimeFields
+  } = previousGoal
+
+  const interpreted = applyGoalLifeTendencyLayer({
+    goal: goalWithoutRuntimeFields,
+    pet: {
+      currentLifeRuntimeBundle:
+        input.pet.currentLifeRuntimeBundle ?? null,
+    },
+  })
+
+  return {
+    ...previousGoal,
+    ...interpreted,
+    startedAtTick,
+    holdUntilTick,
+  }
+}
+
 export class GoalSystem {
   compute(input: GoalSystemInput): PetGoalState {
     if (shouldKeepPreviousGoal(input) && input.previousGoal) {
-      return input.previousGoal
+      return refreshPreviousGoalLifeTendency(input)
     }
 
     const kernel = getKernel(input)
