@@ -101,7 +101,15 @@ function formatValue(value: unknown): string {
     return value
   }
 
+  if (typeof value === "boolean") {
+    return value ? "是" : "否"
+  }
+
   return JSON.stringify(value)
+}
+
+function formatGatePassed(value: boolean): string {
+  return value ? "通过" : "未通过"
 }
 
 export default function ButlerProfileSetupPanel({ world }: Props) {
@@ -111,6 +119,8 @@ export default function ButlerProfileSetupPanel({ world }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   const currentProfile = world.butler?.profile ?? lastGeneratedProfile
+  const taskDecisionTrace =
+    world.butler?.latestTaskDecisionTrace ?? null
 
   const profileTuning = useMemo(() => {
     return buildButlerProfileTaskTuning(currentProfile)
@@ -511,6 +521,168 @@ export default function ButlerProfileSetupPanel({ world }: Props) {
               </div>
             </>
           )}
+        </div>
+
+        <div className={styles.block}>
+          <h3 className={styles.blockTitle}>
+            Task Decision Trace / 任务选择审计
+          </h3>
+
+          {!taskDecisionTrace && (
+            <p className={styles.empty}>
+              当前还没有任务选择审计。等待下一次世界 Tick 后生成。
+            </p>
+          )}
+
+          {taskDecisionTrace && (
+            <>
+              <div className={styles.row}>
+                <span>selectedTask</span>
+                <span>{taskDecisionTrace.selectedTask}</span>
+              </div>
+
+              <div className={styles.row}>
+                <span>previousTask</span>
+                <span>{taskDecisionTrace.previousTask}</span>
+              </div>
+
+              <div className={styles.row}>
+                <span>reason</span>
+                <span className={styles.multiline}>
+                  {taskDecisionTrace.reason}
+                </span>
+              </div>
+
+              <div className={styles.row}>
+                <span>hasPet</span>
+                <span>{formatValue(taskDecisionTrace.context.hasPet)}</span>
+              </div>
+
+              <div className={styles.row}>
+                <span>hasTimeline</span>
+                <span>
+                  {formatValue(taskDecisionTrace.context.hasTimelineSnapshot)}
+                </span>
+              </div>
+
+              <div className={styles.row}>
+                <span>incubatorCompleted</span>
+                <span>
+                  {formatValue(taskDecisionTrace.context.incubatorCompleted)}
+                </span>
+              </div>
+
+              <div className={styles.row}>
+                <span>homeCompleted</span>
+                <span>
+                  {formatValue(taskDecisionTrace.context.homeCompleted)}
+                </span>
+              </div>
+
+              <div className={styles.row}>
+                <span>pendingOpportunity</span>
+                <span>
+                  {formatValue(taskDecisionTrace.context.pendingOpportunityCount)}
+                </span>
+              </div>
+
+              <div className={styles.row}>
+                <span>petEnergy</span>
+                <span>{formatValue(taskDecisionTrace.context.petEnergy)}</span>
+              </div>
+
+              <div className={styles.row}>
+                <span>petHunger</span>
+                <span>{formatValue(taskDecisionTrace.context.petHunger)}</span>
+              </div>
+
+              <div className={styles.row}>
+                <span>petEmotion</span>
+                <span>{formatValue(taskDecisionTrace.context.petEmotion)}</span>
+              </div>
+
+              <div className={styles.row}>
+                <span>petRelation</span>
+                <span>{formatValue(taskDecisionTrace.context.petRelation)}</span>
+              </div>
+
+              <div className={styles.row}>
+                <span>lifePhase</span>
+                <span>{formatValue(taskDecisionTrace.context.petLifePhase)}</span>
+              </div>
+
+              <div className={styles.row}>
+                <span>time</span>
+                <span>
+                  {formatValue(taskDecisionTrace.context.timeHour)}
+                  {" / "}
+                  {formatValue(taskDecisionTrace.context.timePeriod)}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className={styles.block}>
+          <h3 className={styles.blockTitle}>
+            Decision Gates / 条件门
+          </h3>
+
+          {!taskDecisionTrace && (
+            <p className={styles.empty}>
+              暂无 gates。
+            </p>
+          )}
+
+          {taskDecisionTrace && taskDecisionTrace.gates.length === 0 && (
+            <p className={styles.empty}>
+              本轮没有记录 gate，可能是孵化器优先分支或待命分支。
+            </p>
+          )}
+
+          {taskDecisionTrace &&
+            taskDecisionTrace.gates.slice(0, 8).map((gate, index) => (
+              <div className={styles.row} key={`${gate.key}-${index}`}>
+                <span>
+                  {gate.key} / {formatGatePassed(gate.passed)}
+                </span>
+
+                <span className={styles.multiline}>
+                  {gate.reason}
+                </span>
+              </div>
+            ))}
+        </div>
+
+        <div className={styles.block}>
+          <h3 className={styles.blockTitle}>
+            Decision Scores / 判断分数
+          </h3>
+
+          {!taskDecisionTrace && (
+            <p className={styles.empty}>
+              暂无 scores。
+            </p>
+          )}
+
+          {taskDecisionTrace && taskDecisionTrace.scores.length === 0 && (
+            <p className={styles.empty}>
+              本轮没有记录 score，可能是孵化器优先分支或待命分支。
+            </p>
+          )}
+
+          {taskDecisionTrace &&
+            taskDecisionTrace.scores.slice(0, 8).map((score, index) => (
+              <div className={styles.row} key={`${score.key}-${index}`}>
+                <span>
+                  {score.key}: {formatValue(score.value)}
+                </span>
+
+                <span className={styles.multiline}>
+                  {score.reason}
+                </span>
+              </div>
+            ))}
         </div>
 
         <div className={styles.block}>
