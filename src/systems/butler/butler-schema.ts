@@ -18,6 +18,10 @@ import type {
   ButlerMemoryState,
 } from "./butler-memory"
 
+import type {
+  ButlerRelationState,
+} from "./butler-relation"
+
 export type ButlerTask =
   | "watching_incubator"
   | "building_home"
@@ -91,6 +95,12 @@ export type ButlerState = {
    * 当前阶段只建立容器，不直接影响任务选择。
    */
   memory: ButlerMemoryState
+
+  /**
+   * 管家与宠物之间的长期关系估计。
+   * 当前阶段只建立容器，不直接影响任务选择。
+   */
+  relation: ButlerRelationState
 }
 
 export type ButlerSystemInput = {

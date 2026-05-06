@@ -58,3 +58,12 @@ export type {
   ButlerMemoryState,
   ButlerMemoryType,
 } from "./butler-memory"
+
+export {
+  createInitialButlerRelationState,
+} from "./butler-relation"
+
+export type {
+  ButlerRelationState,
+  ButlerRelationTone,
+} from "./butler-relation"

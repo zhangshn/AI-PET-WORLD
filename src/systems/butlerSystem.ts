@@ -18,6 +18,7 @@ import {
   createButlerMemoryEntryFromTaskDecision,
   createFoodOffer,
   createInitialButlerMemoryState,
+  createInitialButlerRelationState,
   createRestOffer,
   deriveButlerMood,
   hasPendingOpportunity,
@@ -26,6 +27,7 @@ import {
   type ButlerMemoryState,
   type ButlerOpportunity,
   type ButlerOpportunityType,
+  type ButlerRelationState,
   type ButlerState,
   type ButlerSystemInput,
 } from "./butler/butler-gateway"
@@ -38,6 +40,8 @@ export type {
   ButlerOpportunity,
   ButlerOpportunityCooldowns,
   ButlerOpportunityType,
+  ButlerRelationState,
+  ButlerRelationTone,
   ButlerState,
   ButlerSystemInput,
   ButlerTask,
@@ -55,6 +59,7 @@ export class ButlerSystem {
     behaviorBias: null,
     latestTaskDecisionTrace: null,
     memory: createInitialButlerMemoryState(),
+    relation: createInitialButlerRelationState(),
   }
 
   update(input: ButlerSystemInput): ButlerState {
@@ -187,6 +192,10 @@ export class ButlerSystem {
 
   getMemory(): ButlerMemoryState {
     return this.state.memory
+  }
+
+  getRelation(): ButlerRelationState {
+    return this.state.relation
   }
 
   getState(): ButlerState {
