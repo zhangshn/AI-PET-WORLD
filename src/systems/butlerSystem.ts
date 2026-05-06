@@ -7,6 +7,8 @@ import {
   getOpportunityRule,
 } from "../ai/autonomy-core/autonomy-gateway"
 
+import type { ButlerProfile } from "../ai/gateway"
+
 import {
   buildInitialOpportunityCooldowns,
   canCreateOpportunity,
@@ -42,6 +44,7 @@ export class ButlerSystem {
     lastTaskChangedTick: 0,
     pendingOpportunities: [],
     opportunityCooldowns: buildInitialOpportunityCooldowns(),
+    profile: null,
     behaviorBias: null,
   }
 
@@ -143,6 +146,14 @@ export class ButlerSystem {
       tick: input.tick,
       cooldowns: this.state.opportunityCooldowns,
     })
+  }
+
+  setProfile(profile: ButlerProfile | null): void {
+    this.state.profile = profile
+  }
+
+  getProfile(): ButlerProfile | null {
+    return this.state.profile ?? null
   }
 
   getState(): ButlerState {

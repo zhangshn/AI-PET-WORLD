@@ -5,7 +5,10 @@
 import type { PetState } from "@/types/pet"
 import type { IncubatorState } from "@/types/incubator"
 import type { HomeState } from "@/types/home"
-import type { GenderAwareBehaviorBias } from "@/ai/gateway"
+import type {
+  ButlerProfile,
+  GenderAwareBehaviorBias,
+} from "@/ai/gateway"
 
 export type ButlerTask =
   | "watching_incubator"
@@ -56,6 +59,18 @@ export type ButlerState = {
   lastTaskChangedTick: number
   pendingOpportunities: ButlerOpportunity[]
   opportunityCooldowns: ButlerOpportunityCooldowns
+
+  /**
+   * 管家人格 Profile。
+   * 由 AI 层 butler-profile-core 生成，systems 层只保存结果。
+   * 当前阶段不让 profile 直接决定行为，只进入状态和后续审计链路。
+   */
+  profile?: ButlerProfile | null
+
+  /**
+   * 旧行为偏置暂时保留。
+   * 当前 task / opportunity 仍可能读取 behaviorBias。
+   */
   behaviorBias?: GenderAwareBehaviorBias | null
 }
 
