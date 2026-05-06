@@ -328,3 +328,34 @@ export type {
   StepBehaviorProcessInput,
   StepBehaviorProcessResult,
 } from "./behavior-core/behavior-gateway"
+
+export {
+  buildAgentCycleTrace,
+  buildAgentExpression,
+  buildAgentInterpretation,
+  buildAgentIntention,
+  buildAgentMemoryImpact,
+  buildAgentPerception,
+  buildAgentSignal,
+} from "./agent-core/agent-gateway"
+
+export type {
+  AgentCycleTrace,
+  AgentExpression,
+  AgentExpressionMode,
+  AgentInterpretation,
+  AgentInterpretationType,
+  AgentIntention,
+  AgentIntentionSource,
+  AgentIntentionType,
+  AgentMemoryImpact,
+  AgentMemoryImpactType,
+  AgentPerception,
+  AgentPerceptionFocus,
+  AgentSignal,
+  AgentSignalCategory,
+  AgentSignalPolarity,
+  AgentSignalSource,
+  AutonomousAgentId,
+  AutonomousAgentKind,
+} from "./agent-core/agent-gateway"
