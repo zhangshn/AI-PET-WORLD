@@ -177,22 +177,16 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     latestStimuli: stimulusState.latestGenerated,
   })
 
-  /**
-   * 阶段 7：宠物自主行为运行。
-   * 宠物根据自身状态、记忆、世界区域等信息更新行为。
-   */
-  const petRuntimeResult = runPetRuntime({
-    time: input.currentTime,
-    petSystem: input.petSystem,
-    zones: nextRuntime.ecology.zones,
-  })
-
-  currentPet = petRuntimeResult.pet
+  currentState = refreshTickState(input)
+  currentPet = currentState.pet
 
   /**
-   * 阶段 7.5：生命运行动态包更新。
-   * 这里只把当前世界时间下的生命运行上下文写入 PetState。
-   * 不改变宠物行为，不影响 drive / goal / behavior。
+   * 阶段 6.5：生命运行动态包更新。
+   * 必须在宠物自主行为运行前写入 PetState。
+   * 这样 pet-drive 读取到的是当前世界时间下的动态生命趋向。
+   *
+   * 注意：
+   * 这里只更新生命运行上下文，不直接改变宠物行为。
    */
   const lifeRuntimeBundle = runLifeRuntimeLog({
     tick: input.tick,
@@ -203,6 +197,18 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
   if (lifeRuntimeBundle) {
     input.petSystem.updateLifeRuntimeBundle(lifeRuntimeBundle)
   }
+
+  /**
+   * 阶段 7：宠物自主行为运行。
+   * 宠物根据自身状态、记忆、世界区域、当前生命运行趋向等信息更新行为。
+   */
+  const petRuntimeResult = runPetRuntime({
+    time: input.currentTime,
+    petSystem: input.petSystem,
+    zones: nextRuntime.ecology.zones,
+  })
+
+  currentPet = petRuntimeResult.pet
 
   /**
    * 阶段 8：处理管家提供的机会。
