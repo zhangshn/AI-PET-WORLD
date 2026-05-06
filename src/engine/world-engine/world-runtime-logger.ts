@@ -18,6 +18,7 @@ const ENABLE_INCUBATOR_LOG = true
 const ENABLE_PET_RUNTIME_LOG = true
 const ENABLE_PET_COGNITION_LOG = true
 const ENABLE_PET_DECISION_LOG = true
+const ENABLE_PET_DECISION_AUDIT_LOG = true
 const ENABLE_BIRTH_PROFILE_LOG = true
 
 export function logWorldTick(input: {
@@ -134,6 +135,37 @@ function pickCognitionInfluence(
   return result
 }
 
+function hasRecordContent(record: Record<string, string[]>): boolean {
+  return Object.values(record).some((items) => items.length > 0)
+}
+
+function buildPetDecisionAudit(input: {
+  rawAction: string
+  expressedAction: string
+  finalAction: string
+  lifeTendencyInfluence: Record<string, string[]>
+  cognitionInfluence: Record<string, string[]>
+  goalLifeTendencyHint?: unknown
+  goalDriveAlignment?: unknown
+}) {
+  const goalDriveAlignment = input.goalDriveAlignment as
+    | { changed?: boolean }
+    | null
+    | undefined
+
+  return {
+    cognitionToDrive: hasRecordContent(input.cognitionInfluence),
+    lifeTendencyToDrive: hasRecordContent(input.lifeTendencyInfluence),
+    lifeTendencyToGoal: input.goalLifeTendencyHint != null,
+    driveToGoalAlignment: input.goalDriveAlignment != null,
+    driveAlignmentChanged: goalDriveAlignment?.changed ?? false,
+    expressionApplied: input.rawAction !== input.expressedAction,
+    stabilityApplied: input.expressedAction !== input.finalAction,
+    chain:
+      "world signal → cognition → life tendency → drive → goal → raw intent → expression → stability",
+  }
+}
+
 export function logPetDecisionTrace(input: {
   tick: number
   petName: string
@@ -170,6 +202,16 @@ export function logPetDecisionTrace(input: {
     input.driveReasons
   )
 
+  const audit = buildPetDecisionAudit({
+    rawAction: input.rawAction,
+    expressedAction: input.expressedAction,
+    finalAction: input.finalAction,
+    lifeTendencyInfluence,
+    cognitionInfluence,
+    goalLifeTendencyHint: input.goalLifeTendencyHint ?? null,
+    goalDriveAlignment: input.goalDriveAlignment ?? null,
+  })
+
   console.log("🧭 宠物行为决策：", {
     tick: input.tick,
     petName: input.petName,
@@ -199,6 +241,7 @@ export function logPetDecisionTrace(input: {
       lifeTendencyHint: input.goalLifeTendencyHint ?? null,
       driveAlignment: input.goalDriveAlignment ?? null,
     },
+    audit,
     state: {
       energy: input.energy,
       hunger: input.hunger,
@@ -206,6 +249,21 @@ export function logPetDecisionTrace(input: {
       lifePhase: input.lifePhase,
     },
   })
+
+  if (ENABLE_PET_DECISION_AUDIT_LOG) {
+    console.log("✅ 宠物行为链路验收：", {
+      tick: input.tick,
+      petName: input.petName,
+      cognitionToDrive: audit.cognitionToDrive,
+      lifeTendencyToDrive: audit.lifeTendencyToDrive,
+      lifeTendencyToGoal: audit.lifeTendencyToGoal,
+      driveToGoalAlignment: audit.driveToGoalAlignment,
+      driveAlignmentChanged: audit.driveAlignmentChanged,
+      expressionApplied: audit.expressionApplied,
+      stabilityApplied: audit.stabilityApplied,
+      rawToExpressedToFinal: `${input.rawAction} → ${input.expressedAction} → ${input.finalAction}`,
+    })
+  }
 }
 
 export function logPetBirthProfile(input: {
