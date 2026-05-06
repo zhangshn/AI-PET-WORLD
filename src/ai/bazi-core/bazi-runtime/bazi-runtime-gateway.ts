@@ -14,7 +14,12 @@ import {
   buildRuntimeElementField,
   mapRuntimeElementsToModifiers
 } from "./bazi-runtime-mapper"
+
 import { buildBaziRuntimeTimeTable } from "./bazi-runtime-time-table"
+
+import {
+  buildBaziCurrentTendencyProfile
+} from "./current-tendency/bazi-current-tendency-composer"
 
 export function buildBaziRuntimeProfile(
   input: BaziRuntimeInput
@@ -69,7 +74,9 @@ export function buildBaziRuntimeProfile(
 
     debug: {
       usedRuntimePillars: [
-        ...(daYun.currentDaYun ? [`大运:${daYun.currentDaYun.pillar.label}`] : []),
+        ...(daYun.currentDaYun
+          ? [`大运:${daYun.currentDaYun.pillar.label}`]
+          : []),
         `流年:${flows.liuNian.label}`,
         `流月:${flows.liuYue.label}`,
         `流日:${flows.liuRi.label}`,
@@ -81,6 +88,17 @@ export function buildBaziRuntimeProfile(
     },
   }
 }
+
+export {
+  buildBaziCurrentTendencyProfile
+} from "./current-tendency/bazi-current-tendency-composer"
+
+export type {
+  BaziCurrentDynamicTemperament,
+  BaziCurrentEnergyTone,
+  BaziCurrentTendencies,
+  BaziCurrentTendencyProfile
+} from "./current-tendency/bazi-current-tendency-schema"
 
 export type {
   BaziDaYunTimeOption,

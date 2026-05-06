@@ -86,6 +86,7 @@ export function buildBaziProfile(input: BaziInput): BaziProfile {
 }
 
 export {
+  buildBaziCurrentTendencyProfile,
   buildBaziRuntimeProfile
 } from "./bazi-runtime/bazi-runtime-gateway"
 
@@ -106,6 +107,10 @@ export type {
 } from "./bazi-schema"
 
 export type {
+  BaziCurrentDynamicTemperament,
+  BaziCurrentEnergyTone,
+  BaziCurrentTendencies,
+  BaziCurrentTendencyProfile,
   BaziDaYunDirection,
   BaziDaYunItem,
   BaziDaYunResult,

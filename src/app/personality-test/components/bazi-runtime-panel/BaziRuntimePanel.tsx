@@ -6,6 +6,7 @@ import { useMemo, useState } from "react"
 import type { CSSProperties } from "react"
 
 import {
+  buildBaziCurrentTendencyProfile,
   buildBaziRuntimeProfile,
   type BaziPillar,
   type BaziProfile,
@@ -190,6 +191,13 @@ export function BaziRuntimePanel({
       currentHour: selection.currentHour,
     })
   }, [baziProfile, dynamicGender, selection])
+
+  const currentTendencyProfile = useMemo(() => {
+    return buildBaziCurrentTendencyProfile({
+      baseProfile: baziProfile,
+      runtimeProfile,
+    })
+  }, [baziProfile, runtimeProfile])
 
   const mergedColumns: BaziMergedColumn[] = [
     {
@@ -399,6 +407,10 @@ export function BaziRuntimePanel({
           </table>
         </div>
       </div>
+      
+      <div style={{ marginTop: 16 }}>
+        <BaziCurrentTendencyPanel profile={currentTendencyProfile} />
+      </div>        
 
       <div style={{ marginTop: 16 }}>
         <div style={sectionTitleStyle}>动态调试信息</div>
