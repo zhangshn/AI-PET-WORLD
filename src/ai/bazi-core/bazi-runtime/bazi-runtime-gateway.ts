@@ -17,10 +17,6 @@ import {
 
 import { buildBaziRuntimeTimeTable } from "./bazi-runtime-time-table"
 
-import {
-  buildBaziCurrentTendencyProfile
-} from "./current-tendency/bazi-current-tendency-composer"
-
 export function buildBaziRuntimeProfile(
   input: BaziRuntimeInput
 ): BaziRuntimeProfile {

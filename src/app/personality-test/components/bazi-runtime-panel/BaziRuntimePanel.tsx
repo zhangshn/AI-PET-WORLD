@@ -4,8 +4,7 @@
 
 import { useMemo, useState } from "react"
 import type { CSSProperties } from "react"
-import type { PersonalityTestRuntimeTime } from "../../runtime-time/personality-test-runtime-time-types"
-import type { BaziRuntimeTimeSelection } from "./bazi-runtime-panel-types"
+
 import {
   buildBaziCurrentTendencyProfile,
   buildBaziRuntimeProfile,
@@ -17,6 +16,7 @@ import {
 } from "../../../../ai/bazi-core/bazi-gateway"
 
 import type { DynamicGenderInput } from "../../types"
+import type { PersonalityTestRuntimeTime } from "../../runtime-time/personality-test-runtime-time-types"
 
 import { InfoCard } from "../common/InfoCard"
 
@@ -172,12 +172,19 @@ export function BaziRuntimePanel({
   const [activeLevel, setActiveLevel] =
     useState<BaziRuntimeActiveLevel>("daYun")
 
-    const selection: BaziRuntimeTimeSelection = {
-    currentYear: runtimeTime.currentYear,
-    currentMonth: runtimeTime.currentMonth,
-    currentDay: runtimeTime.currentDay,
-    currentHour: runtimeTime.currentHour,
-  }
+  const selection = useMemo<BaziRuntimeTimeSelection>(() => {
+    return {
+      currentYear: runtimeTime.currentYear,
+      currentMonth: runtimeTime.currentMonth,
+      currentDay: runtimeTime.currentDay,
+      currentHour: runtimeTime.currentHour,
+    }
+  }, [
+    runtimeTime.currentYear,
+    runtimeTime.currentMonth,
+    runtimeTime.currentDay,
+    runtimeTime.currentHour,
+  ])
 
   const runtimeProfile = useMemo(() => {
     return buildBaziRuntimeProfile({
@@ -260,7 +267,7 @@ export function BaziRuntimePanel({
   ]
 
   return (
-    <InfoCard title="☯ 八字原局与动态运势">
+    <InfoCard title="☯ 八字辅助区">
       <div style={summaryGridStyle}>
         <div>
           <strong>当前模式：</strong>
@@ -297,12 +304,12 @@ export function BaziRuntimePanel({
       </div>
 
       <BaziRuntimeTimeSelector
-  runtimeProfile={runtimeProfile}
-  activeLevel={activeLevel}
-  selection={selection}
-  onActiveLevelChange={setActiveLevel}
-  onSelectionChange={onRuntimeTimeChange}
-/>
+        runtimeProfile={runtimeProfile}
+        activeLevel={activeLevel}
+        selection={selection}
+        onActiveLevelChange={setActiveLevel}
+        onSelectionChange={onRuntimeTimeChange}
+      />
 
       <div style={{ marginTop: 16 }}>
         <div style={sectionTitleStyle}>

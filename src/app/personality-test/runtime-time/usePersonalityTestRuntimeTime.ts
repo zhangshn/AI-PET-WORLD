@@ -2,7 +2,7 @@
  * 当前文件负责：维护 personality-test 页面统一动态时间状态。
  */
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 
 import type { BranchPalace } from "../../../ai/ziwei-core/schema"
 
@@ -85,6 +85,46 @@ function resolveAge(params: {
   return Math.max(1, params.currentYear - params.birthYear + 1)
 }
 
+function buildBirthKey(params: {
+  birthYear: number
+  birthMonth: number
+  birthDay: number
+  birthHour: number | null
+  lunarMonth: number
+  lunarDay: number
+}): string {
+  return [
+    params.birthYear,
+    params.birthMonth,
+    params.birthDay,
+    params.birthHour ?? "unknown",
+    params.lunarMonth,
+    params.lunarDay,
+  ].join("-")
+}
+
+function buildInitialRuntimeTime(params: {
+  birthYear: number
+  birthMonth: number
+  birthDay: number
+  birthHour: number | null
+  lunarMonth: number
+  lunarDay: number
+}): PersonalityTestRuntimeTime {
+  return {
+    currentYear: params.birthYear,
+    currentMonth: params.birthMonth,
+    currentDay: params.birthDay,
+    currentHour: params.birthHour,
+
+    currentAge: 1,
+
+    currentLunarMonth: params.lunarMonth,
+    currentLunarDay: params.lunarDay,
+    currentTimeBranch: getTimeBranchFromHour(params.birthHour),
+  }
+}
+
 export function usePersonalityTestRuntimeTime({
   birthYear,
   birthMonth,
@@ -100,19 +140,15 @@ export function usePersonalityTestRuntimeTime({
   lunarMonth: number
   lunarDay: number
 }) {
-  const initialRuntimeTime = useMemo<PersonalityTestRuntimeTime>(() => {
-    return {
-      currentYear: birthYear,
-      currentMonth: birthMonth,
-      currentDay: birthDay,
-      currentHour: birthHour,
-
-      currentAge: 1,
-
-      currentLunarMonth: lunarMonth,
-      currentLunarDay: lunarDay,
-      currentTimeBranch: getTimeBranchFromHour(birthHour),
-    }
+  const birthKey = useMemo(() => {
+    return buildBirthKey({
+      birthYear,
+      birthMonth,
+      birthDay,
+      birthHour,
+      lunarMonth,
+      lunarDay,
+    })
   }, [
     birthYear,
     birthMonth,
@@ -122,59 +158,88 @@ export function usePersonalityTestRuntimeTime({
     lunarDay,
   ])
 
-  const [runtimeTime, setRuntimeTime] =
-    useState<PersonalityTestRuntimeTime>(initialRuntimeTime)
+  const initialRuntimeTime = useMemo(() => {
+    return buildInitialRuntimeTime({
+      birthYear,
+      birthMonth,
+      birthDay,
+      birthHour,
+      lunarMonth,
+      lunarDay,
+    })
+  }, [
+    birthYear,
+    birthMonth,
+    birthDay,
+    birthHour,
+    lunarMonth,
+    lunarDay,
+  ])
 
-  useEffect(() => {
-    setRuntimeTime(initialRuntimeTime)
-  }, [initialRuntimeTime])
+  const [runtimeState, setRuntimeState] = useState<{
+    birthKey: string
+    runtimeTime: PersonalityTestRuntimeTime
+  }>(() => {
+    return {
+      birthKey,
+      runtimeTime: initialRuntimeTime,
+    }
+  })
+
+  const runtimeTime =
+    runtimeState.birthKey === birthKey
+      ? runtimeState.runtimeTime
+      : initialRuntimeTime
+
+  function setRuntimeTime(nextRuntimeTime: PersonalityTestRuntimeTime) {
+    setRuntimeState({
+      birthKey,
+      runtimeTime: nextRuntimeTime,
+    })
+  }
 
   function setFromZiweiSelection(selection: ZiweiDynamicTimeSelection) {
-    setRuntimeTime((current) => {
-      const representativeHour =
-        BRANCH_TO_REPRESENTATIVE_HOUR[selection.currentTimeBranch]
+    const representativeHour =
+      BRANCH_TO_REPRESENTATIVE_HOUR[selection.currentTimeBranch]
 
-      return {
-        ...current,
-        currentYear: selection.currentYear,
-        currentMonth: selection.currentLunarMonth,
-        currentDay: selection.currentLunarDay,
-        currentHour: representativeHour,
+    setRuntimeTime({
+      ...runtimeTime,
+      currentYear: selection.currentYear,
+      currentMonth: selection.currentLunarMonth,
+      currentDay: selection.currentLunarDay,
+      currentHour: representativeHour,
 
-        currentAge: selection.currentAge,
+      currentAge: selection.currentAge,
 
-        currentLunarMonth: selection.currentLunarMonth,
-        currentLunarDay: selection.currentLunarDay,
-        currentTimeBranch: selection.currentTimeBranch,
-      }
+      currentLunarMonth: selection.currentLunarMonth,
+      currentLunarDay: selection.currentLunarDay,
+      currentTimeBranch: selection.currentTimeBranch,
     })
   }
 
   function setFromBaziSelection(selection: BaziRuntimeTimeSelection) {
-    setRuntimeTime((current) => {
-      const nextHour = selection.currentHour ?? current.currentHour
+    const nextHour = selection.currentHour ?? runtimeTime.currentHour
 
-      return {
-        ...current,
+    setRuntimeTime({
+      ...runtimeTime,
+      currentYear: selection.currentYear,
+      currentMonth: selection.currentMonth,
+      currentDay: selection.currentDay,
+      currentHour: nextHour,
+
+      currentAge: resolveAge({
+        birthYear,
         currentYear: selection.currentYear,
-        currentMonth: selection.currentMonth,
-        currentDay: selection.currentDay,
-        currentHour: nextHour,
+      }),
 
-        currentAge: resolveAge({
-          birthYear,
-          currentYear: selection.currentYear,
-        }),
-
-        /**
-         * 测试页当前先做同步调试：
-         * 公历月日同步到紫微动态月日。
-         * 后续如果接入完整农历转换，这里再替换成真实农历运行时间。
-         */
-        currentLunarMonth: selection.currentMonth,
-        currentLunarDay: selection.currentDay,
-        currentTimeBranch: getTimeBranchFromHour(nextHour),
-      }
+      /**
+       * 测试页当前先做同步调试：
+       * 公历月日同步到紫微动态月日。
+       * 后续如果接入完整农历转换，这里再替换成真实农历运行时间。
+       */
+      currentLunarMonth: selection.currentMonth,
+      currentLunarDay: selection.currentDay,
+      currentTimeBranch: getTimeBranchFromHour(nextHour),
     })
   }
 
