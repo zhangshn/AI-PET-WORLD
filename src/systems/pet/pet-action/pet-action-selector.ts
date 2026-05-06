@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：根据驱动、目标、认知、人格、记忆与状态，选择宠物下一步候选行为。
+ * 当前文件负责：根据驱动、目标、人格、记忆与状态，选择宠物下一步候选行为。
  */
 
 import type { PetAction, PetState } from "../../../types/pet"
@@ -151,7 +151,12 @@ export function selectPetAction(
   weights.eating += memory.eatBias * 0.5
 
   applyGoalBias(input.currentGoal, weights)
-  applyCognitionBias(input.pet, weights)
+
+  /**
+   * 认知现在已经进入 pet-drive-cognition-layer。
+   * 这里不再让认知直接强推 action，只保留极弱的表达提示。
+   */
+  applyCognitionExpressionHint(input.pet, weights)
 
   if (energy < 20) {
     weights.sleeping += 36
@@ -325,7 +330,7 @@ function applyGoalBias(
   }
 }
 
-function applyCognitionBias(
+function applyCognitionExpressionHint(
   pet: PetState,
   weights: Record<PetAction, number>
 ) {
@@ -334,43 +339,52 @@ function applyCognitionBias(
   const cognition = pet.latestCognition
 
   if (cognition.reactionTendency === "chase") {
-    weights.exploring += 18
-    weights.walking += 10
-    weights.observing += 6
+    weights.observing += 3
+    weights.walking += 2
   }
 
   if (cognition.reactionTendency === "observe") {
-    weights.observing += 16
-    weights.alert_idle += 6
+    weights.observing += 4
+    weights.alert_idle += 1
+  }
+
+  if (cognition.reactionTendency === "approach") {
+    weights.approaching += 3
+    weights.observing += 1
   }
 
   if (cognition.reactionTendency === "avoid") {
-    weights.alert_idle += 18
-    weights.resting += 4
-    weights.approaching -= 10
-    weights.exploring -= 6
+    weights.alert_idle += 4
+    weights.observing += 2
+    weights.approaching -= 2
   }
 
   if (cognition.reactionTendency === "rest_nearby") {
-    weights.resting += 16
-    weights.sleeping += 8
-    weights.observing += 4
+    weights.resting += 3
+    weights.observing += 1
   }
 
   if (cognition.interpretation === "exciting") {
-    weights.exploring += 8
-    weights.walking += 6
+    weights.walking += 2
   }
 
-  if (cognition.interpretation === "comforting") {
-    weights.resting += 8
-    weights.sleeping += 4
+  if (
+    cognition.interpretation === "interesting" ||
+    cognition.interpretation === "mysterious"
+  ) {
+    weights.observing += 2
+  }
+
+  if (
+    cognition.interpretation === "comforting" ||
+    cognition.interpretation === "peaceful"
+  ) {
+    weights.resting += 2
   }
 
   if (cognition.interpretation === "dangerous") {
-    weights.alert_idle += 10
-    weights.observing += 6
-    weights.approaching -= 8
+    weights.alert_idle += 3
+    weights.observing += 2
   }
 }
 
