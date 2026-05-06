@@ -9,7 +9,7 @@ import type {
 import type { TimeState } from "@/engine/timeSystem"
 import type {
   ButlerState,
-} from "@/systems/systems-gateway"
+} from "@/systems/butler/butler-schema"
 import type { HomeState } from "@/types/home"
 import type { IncubatorState } from "@/types/incubator"
 import type { PetState } from "@/types/pet"
