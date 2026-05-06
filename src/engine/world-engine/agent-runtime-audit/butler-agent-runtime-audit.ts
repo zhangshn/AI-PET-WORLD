@@ -20,34 +20,12 @@ import type {
 } from "@/ai/gateway"
 
 import type {
-  ButlerState,
   ButlerTask,
 } from "@/systems/butler/butler-schema"
 
 import type {
-  HomeState,
-} from "@/types/home"
-
-import type {
-  IncubatorState,
-} from "@/types/incubator"
-
-import type {
-  PetState,
-} from "@/types/pet"
-
-export type RuntimeButlerAgentAuditInput = {
-  tick: number
-  butler: ButlerState
-  pet: PetState | null
-  incubator: IncubatorState | null
-  home: HomeState | null
-  time: {
-    day: number
-    hour: number
-    period?: string
-  }
-}
+  RuntimeButlerAgentAuditInput,
+} from "./agent-runtime-audit-types"
 
 function normalizeButlerIntentionType(task: ButlerTask): AgentIntentionType {
   if (task === "watching_incubator") return "watch_over"

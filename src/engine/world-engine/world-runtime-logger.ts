@@ -13,7 +13,7 @@ import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
 import {
   buildRuntimePetAgentCycleTrace,
-} from "./world-runtime-agent-audit"
+} from "@/engine/agent-runtime-audit/agent-runtime-audit-gateway"
 
 const ENABLE_WORLD_TICK_LOG = true
 const ENABLE_ECOLOGY_LOG = false
