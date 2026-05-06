@@ -4,7 +4,6 @@
 
 import type {
   DriveSnapshot,
-  DriveType,
 } from "../pet-drive/pet-drive-gateway"
 
 import type {
@@ -12,80 +11,23 @@ import type {
   PetGoalType,
 } from "./pet-goal-runner"
 
-export type PetGoalDriveAlignment = {
-  dominantDrive: DriveType
-  originalType: PetGoalType
-  alignedType: PetGoalType
-  summary: string
-  changed: boolean
-}
+import {
+  GOAL_DRIVE_ALIGNMENT_RULES,
+  GOAL_DRIVE_ALIGNMENT_TUNING,
+  GOAL_DRIVE_TO_GOAL_TYPE,
+} from "./pet-goal-tuning"
 
-function mapDriveToGoalType(drive: DriveType): PetGoalType {
-  switch (drive) {
-    case "eat":
-      return "satisfy_need"
-    case "rest":
-      return "restore_self"
-    case "avoid":
-      return "preserve_distance"
-    case "approach":
-      return "secure_attachment"
-    case "explore":
-      return "expand_territory"
-    case "observe":
-      return "observe_boundary"
-  }
-}
-
-function shouldAlignGoal(params: {
-  goal: Omit<PetGoalState, "startedAtTick" | "holdUntilTick">
-  driveSnapshot: DriveSnapshot
-}): boolean {
-  const dominantDrive = params.driveSnapshot.dominant
-  const dominantScore = params.driveSnapshot.dominantScore
-
-  if (dominantScore < 38) {
-    return false
-  }
-
-  if (params.goal.priority === "critical") {
-    return false
+function shouldSkipAlignment(goal: Omit<PetGoalState, "startedAtTick" | "holdUntilTick">): boolean {
+  if (goal.priority === "critical") {
+    return true
   }
 
   if (
-    params.goal.source === "body" &&
+    goal.source === "body" &&
     (
-      params.goal.type === "restore_self" ||
-      params.goal.type === "satisfy_need"
+      goal.type === "restore_self" ||
+      goal.type === "satisfy_need"
     )
-  ) {
-    return false
-  }
-
-  if (
-    params.goal.type === "expand_territory" &&
-    dominantDrive === "observe"
-  ) {
-    return true
-  }
-
-  if (
-    params.goal.type === "expand_territory" &&
-    dominantDrive === "avoid"
-  ) {
-    return true
-  }
-
-  if (
-    params.goal.type === "secure_attachment" &&
-    dominantDrive === "observe"
-  ) {
-    return true
-  }
-
-  if (
-    params.goal.type === "idle_drift" &&
-    dominantScore >= 45
   ) {
     return true
   }
@@ -93,37 +35,35 @@ function shouldAlignGoal(params: {
   return false
 }
 
-function buildAlignmentSummary(params: {
-  dominantDrive: DriveType
-  originalType: PetGoalType
-  alignedType: PetGoalType
-}): string {
-  if (
-    params.originalType === "expand_territory" &&
-    params.alignedType === "observe_boundary"
-  ) {
-    return "当前主导 drive 偏向观察，外扩目标被轻量校正为先观察边界。"
-  }
+function findAlignmentRule(params: {
+  goalType: PetGoalType
+  driveSnapshot: DriveSnapshot
+}) {
+  return GOAL_DRIVE_ALIGNMENT_RULES.find((rule) =>
+    rule.from === params.goalType &&
+    rule.drive === params.driveSnapshot.dominant &&
+    params.driveSnapshot.dominantScore >= rule.minimumDominantScore
+  )
+}
 
-  if (
-    params.originalType === "expand_territory" &&
-    params.alignedType === "preserve_distance"
-  ) {
-    return "当前主导 drive 偏向回避，外扩目标被轻量校正为先保持边界。"
-  }
+function shouldAlignIdleDrift(driveSnapshot: DriveSnapshot): boolean {
+  return (
+    driveSnapshot.dominantScore >=
+    GOAL_DRIVE_ALIGNMENT_TUNING.idleDriftMinimumDominantScore
+  )
+}
 
-  if (
-    params.originalType === "secure_attachment" &&
-    params.alignedType === "observe_boundary"
-  ) {
-    return "当前主导 drive 偏向观察，关系靠近目标被轻量校正为先确认安全。"
+function buildNoChangeAlignment(params: {
+  goal: Omit<PetGoalState, "startedAtTick" | "holdUntilTick">
+  driveSnapshot: DriveSnapshot
+}) {
+  return {
+    dominantDrive: params.driveSnapshot.dominant,
+    originalType: params.goal.type,
+    alignedType: params.goal.type,
+    summary: "当前 goal 与主导 drive 暂不需要校正。",
+    changed: false,
   }
-
-  if (params.originalType === "idle_drift") {
-    return "当前主导 drive 已经变得明确，弱目标被轻量校正为更清晰的目标方向。"
-  }
-
-  return `当前主导 drive 为 ${params.dominantDrive}，goal 获得轻量校正。`
 }
 
 export function applyGoalDriveAlignmentLayer(params: {
@@ -137,42 +77,65 @@ export function applyGoalDriveAlignmentLayer(params: {
     }
   }
 
-  if (
-    !shouldAlignGoal({
-      goal: params.goal,
-      driveSnapshot: params.driveSnapshot,
-    })
-  ) {
+  if (shouldSkipAlignment(params.goal)) {
     return {
       ...params.goal,
+      driveAlignment: buildNoChangeAlignment({
+        goal: params.goal,
+        driveSnapshot: params.driveSnapshot,
+      }),
+    }
+  }
+
+  const rule = findAlignmentRule({
+    goalType: params.goal.type,
+    driveSnapshot: params.driveSnapshot,
+  })
+
+  if (rule) {
+    return {
+      ...params.goal,
+      type: rule.to,
+      summary: `${params.goal.summary} drive 校正：${rule.summary}`,
       driveAlignment: {
         dominantDrive: params.driveSnapshot.dominant,
         originalType: params.goal.type,
-        alignedType: params.goal.type,
-        summary: "当前 goal 与主导 drive 暂不需要校正。",
-        changed: false,
+        alignedType: rule.to,
+        summary: rule.summary,
+        changed: rule.to !== params.goal.type,
       },
     }
   }
 
-  const alignedType = mapDriveToGoalType(params.driveSnapshot.dominant)
+  if (
+    params.goal.type === "idle_drift" &&
+    shouldAlignIdleDrift(params.driveSnapshot)
+  ) {
+    const alignedType =
+      GOAL_DRIVE_TO_GOAL_TYPE[params.driveSnapshot.dominant]
 
-  const summary = buildAlignmentSummary({
-    dominantDrive: params.driveSnapshot.dominant,
-    originalType: params.goal.type,
-    alignedType,
-  })
+    const summary =
+      "当前主导 drive 已经变得明确，弱目标被轻量校正为更清晰的目标方向。"
+
+    return {
+      ...params.goal,
+      type: alignedType,
+      summary: `${params.goal.summary} drive 校正：${summary}`,
+      driveAlignment: {
+        dominantDrive: params.driveSnapshot.dominant,
+        originalType: params.goal.type,
+        alignedType,
+        summary,
+        changed: alignedType !== params.goal.type,
+      },
+    }
+  }
 
   return {
     ...params.goal,
-    type: alignedType,
-    summary: `${params.goal.summary} drive 校正：${summary}`,
-    driveAlignment: {
-      dominantDrive: params.driveSnapshot.dominant,
-      originalType: params.goal.type,
-      alignedType,
-      summary,
-      changed: alignedType !== params.goal.type,
-    },
+    driveAlignment: buildNoChangeAlignment({
+      goal: params.goal,
+      driveSnapshot: params.driveSnapshot,
+    }),
   }
 }

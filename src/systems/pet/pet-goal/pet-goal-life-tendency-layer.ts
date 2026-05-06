@@ -14,16 +14,17 @@ import type {
   PetGoalType,
 } from "./pet-goal-runner"
 
+import {
+  GOAL_LIFE_TENDENCY_ATTACH_RULES,
+  GOAL_LIFE_TENDENCY_CANDIDATE_TUNING,
+  GOAL_LIFE_TENDENCY_SUMMARY_MARKERS,
+} from "./pet-goal-tuning"
+
 export type GoalLifeTendencyHint = {
   targetType: PetGoalType
   priorityBoost: 0 | 1
   summary: string
 }
-
-const LIFE_TENDENCY_SUMMARY_MARKERS = [
-  " 生命趋向提示：",
-  " 生命趋向补充：",
-]
 
 function getLifeRuntimeBundle(input: {
   currentLifeRuntimeBundle?: CurrentLifeRuntimeBundle | null
@@ -34,7 +35,7 @@ function getLifeRuntimeBundle(input: {
 function cleanLifeTendencySummary(summary: string): string {
   let cleaned = summary
 
-  for (const marker of LIFE_TENDENCY_SUMMARY_MARKERS) {
+  for (const marker of GOAL_LIFE_TENDENCY_SUMMARY_MARKERS) {
     const markerIndex = cleaned.indexOf(marker)
 
     if (markerIndex >= 0) {
@@ -45,59 +46,34 @@ function cleanLifeTendencySummary(summary: string): string {
   return cleaned.trim()
 }
 
-function shouldBoostPriority(score: number): boolean {
-  return Number.isFinite(score) && score >= 72
+function getBestScore(
+  scores: LifeTendencyScores,
+  keys: Array<keyof LifeTendencyScores>
+): number {
+  return Math.max(
+    ...keys.map((key) => scores[key] ?? 0)
+  )
 }
 
 function buildPrimaryHint(
   scores: LifeTendencyScores
 ): GoalLifeTendencyHint | null {
-  const candidates: Array<{
-    type: PetGoalType
-    score: number
-    summary: string
-  }> = [
-    {
-      type: "expand_territory",
-      score: Math.max(scores.explore, scores.action),
-      summary:
-        "当前生命趋向对外部变化与探索表达更敏感，因此目标解释偏向试探新边界。",
-    },
-    {
-      type: "observe_boundary",
-      score: Math.max(scores.observe, scores.perception),
-      summary:
-        "当前生命趋向强化观察与信息辨认，因此目标解释偏向先理解环境。",
-    },
-    {
-      type: "restore_self",
-      score: scores.recover,
-      summary:
-        "当前生命趋向提示恢复需求较明显，因此目标解释偏向回收自身与稳定状态。",
-    },
-    {
-      type: "secure_attachment",
-      score: Math.max(scores.approach, scores.care),
-      summary:
-        "当前生命趋向对连接与照护更敏感，因此目标解释偏向确认关系锚点。",
-    },
-    {
-      type: "preserve_distance",
-      score: Math.max(scores.boundary, scores.protect),
-      summary:
-        "当前生命趋向强化边界与保护，因此目标解释偏向维持安全距离。",
-    },
-    {
-      type: "stabilize_state",
-      score: scores.routine,
-      summary:
-        "当前生命趋向偏向秩序与节律，因此目标解释偏向维持稳定状态。",
-    },
-  ]
+  const candidates = GOAL_LIFE_TENDENCY_CANDIDATE_TUNING
+    .map((item) => {
+      const score = getBestScore(scores, item.keys)
 
-  const best = candidates
-    .filter((item) => item.score >= 58)
-    .sort((a, b) => b.score - a.score)[0]
+      return {
+        type: item.type,
+        score,
+        minimumScore: item.minimumScore,
+        priorityBoostScore: item.priorityBoostScore,
+        summary: item.summary,
+      }
+    })
+    .filter((item) => item.score >= item.minimumScore)
+    .sort((a, b) => b.score - a.score)
+
+  const best = candidates[0]
 
   if (!best) {
     return null
@@ -105,7 +81,7 @@ function buildPrimaryHint(
 
   return {
     targetType: best.type,
-    priorityBoost: shouldBoostPriority(best.score) ? 1 : 0,
+    priorityBoost: best.score >= best.priorityBoostScore ? 1 : 0,
     summary: best.summary,
   }
 }
@@ -130,38 +106,10 @@ function shouldAttachHintToGoal(params: {
     return true
   }
 
-  if (
-    params.goalType === "idle_drift" &&
-    (
-      params.hintTargetType === "observe_boundary" ||
-      params.hintTargetType === "stabilize_state"
-    )
-  ) {
-    return true
-  }
+  const allowedTargets =
+    GOAL_LIFE_TENDENCY_ATTACH_RULES[params.goalType] ?? []
 
-  if (
-    params.goalType === "restore_self" &&
-    params.hintTargetType === "stabilize_state"
-  ) {
-    return true
-  }
-
-  if (
-    params.goalType === "observe_boundary" &&
-    params.hintTargetType === "preserve_distance"
-  ) {
-    return true
-  }
-
-  if (
-    params.goalType === "expand_territory" &&
-    params.hintTargetType === "observe_boundary"
-  ) {
-    return true
-  }
-
-  return false
+  return allowedTargets.includes(params.hintTargetType)
 }
 
 function buildVisibleHint(params: {
