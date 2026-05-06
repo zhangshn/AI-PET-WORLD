@@ -359,3 +359,21 @@ export type {
   AutonomousAgentId,
   AutonomousAgentKind,
 } from "./agent-core/agent-gateway"
+
+export {
+  buildButlerProfile,
+} from "./butler-profile-core/butler-profile-gateway"
+
+export type {
+  ButlerBirthTimeMode,
+  ButlerBoundaryStyle,
+  ButlerBuildStyle,
+  ButlerCareStyle,
+  ButlerMappingMode,
+  ButlerOpportunityStyle,
+  ButlerProfile,
+  ButlerProfileBias,
+  ButlerProfileBirthInput,
+  ButlerProfileIdentity,
+  ButlerProfileInput,
+} from "./butler-profile-core/butler-profile-gateway"
