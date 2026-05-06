@@ -330,7 +330,10 @@ function buildButlerAgentTraceSummary(input: {
   agentTrace: ReturnType<typeof buildRuntimeButlerAgentCycleTrace>
 }): Record<string, unknown> {
   const taskTrace = input.butler.latestTaskDecisionTrace
-  const relationTuning = buildButlerRelationTaskTuning(input.butler.relation)
+  const relationTuning = buildButlerRelationTaskTuning({
+  relation: input.butler.relation,
+  profile: input.butler.profile ?? null,
+})
 
   return {
     tick: input.tick,

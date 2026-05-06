@@ -251,7 +251,10 @@ function buildButlerRelationReasonLines(
     ]
   }
 
-  const tuning = buildButlerRelationTaskTuning(relation)
+  const tuning = buildButlerRelationTaskTuning({
+    relation,
+    profile: input.butler.profile ?? null,
+  })
 
   return [
     `Butler Relation：tone=${relation.tone}，familiarity=${relation.familiarity}，trustEstimate=${relation.trustEstimate}，careHistory=${relation.careHistory}，observationCount=${relation.observationCount}，successfulOffers=${relation.successfulOffers}，rejectedOffers=${relation.rejectedOffers}，lastInteractionTick=${relation.lastInteractionTick ?? "-"}。`,

@@ -73,9 +73,12 @@ export type {
 } from "./butler-relation"
 
 export {
+  buildButlerExperienceInterpretation,
   buildButlerRelationTaskTuning,
 } from "./butler-relation-tuning"
 
 export type {
+  ButlerExperienceInterpretation,
+  ButlerExperienceInterpreterInput,
   ButlerRelationTaskTuning,
 } from "./butler-relation-tuning"

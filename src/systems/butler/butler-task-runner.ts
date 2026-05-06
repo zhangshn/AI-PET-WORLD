@@ -13,7 +13,8 @@ import {
 } from "./butler-profile-tuning"
 
 import {
-  buildButlerRelationTaskTuning,
+  buildButlerExperienceInterpretation,
+  type ButlerExperienceInterpretation,
   type ButlerRelationTaskTuning,
 } from "./butler-relation-tuning"
 
@@ -37,6 +38,7 @@ type ButlerTaskContext = {
   behaviorBias: GenderAwareBehaviorBias | null
   profileTuning: ButlerProfileTaskTuning
   relationTuning: ButlerRelationTaskTuning
+  experienceInterpretation: ButlerExperienceInterpretation
   effectiveTuning: ButlerProfileTaskTuning
   pendingOpportunityCount: number
 }
@@ -152,22 +154,42 @@ function pushTuningScores(
 ) {
   pushScore(
     scores,
+    "experience_interpreter",
+    context.experienceInterpretation.mode === "profile_led" ? 1 : 0,
+    `关系事实解释模式=${context.experienceInterpretation.mode}，来源=${context.experienceInterpretation.profileSource}。`
+  )
+
+  pushScore(
+    scores,
     "relation_care_priority",
     context.relationTuning.carePriorityOffset,
     "Relation 作为事实输入，经 ButlerProfile / 八字解释后，对照护优先级形成轻量调参。"
   )
+
   pushScore(
     scores,
     "relation_observation_bias",
     context.relationTuning.observationBiasOffset,
     "Relation 作为事实输入，经 ButlerProfile / 八字解释后，对观察倾向形成轻量调参。"
   )
+
   pushScore(
     scores,
     "relation_approach_sensitivity",
     context.relationTuning.approachSensitivityOffset,
     "Relation 作为事实输入，经 ButlerProfile / 八字解释后，对靠近机会形成轻量调参。"
   )
+
+  for (const [index, reason] of context.experienceInterpretation.reasons
+    .slice(0, 4)
+    .entries()) {
+    pushScore(
+      scores,
+      `experience_reason_${index + 1}`,
+      1,
+      reason
+    )
+  }
 }
 
 function shouldOfferFood(
@@ -468,25 +490,27 @@ function buildTaskContext(
     null
 
   const profileTuning = buildButlerProfileTaskTuning(state.profile)
-  const relationTuning = buildButlerRelationTaskTuning({
+  const experienceInterpretation = buildButlerExperienceInterpretation({
     relation: state.relation,
     profile: state.profile,
   })
+  const relationTuning = experienceInterpretation.tuning
 
   return {
-    pet: input.pet,
-    incubator: input.incubator,
-    home: input.home,
-    time: input.time,
-    behaviorBias,
+  pet: input.pet,
+  incubator: input.incubator,
+  home: input.home,
+  time: input.time,
+  behaviorBias,
+  profileTuning,
+  relationTuning,
+  experienceInterpretation,
+  effectiveTuning: mergeTaskTuning({
     profileTuning,
     relationTuning,
-    effectiveTuning: mergeTaskTuning({
-      profileTuning,
-      relationTuning,
-    }),
-    pendingOpportunityCount: state.pendingOpportunities.length,
-  }
+  }),
+  pendingOpportunityCount: state.pendingOpportunities.length,
+}
 }
 
 export function chooseButlerTask(
