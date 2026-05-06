@@ -120,8 +120,11 @@ export function logPetDecisionTrace(input: {
   petName: string
   previousAction: string
   rawAction: string
+  expressedAction: string
   finalAction: string
   actionSelectionReason: string
+  expressionReason: string
+  expressionSummary: string
   stabilityReason: string
   driveDominant: string
   driveDominantScore: number
@@ -149,8 +152,11 @@ export function logPetDecisionTrace(input: {
     action: {
       previous: input.previousAction,
       raw: input.rawAction,
+      expressed: input.expressedAction,
       final: input.finalAction,
       selectionReason: input.actionSelectionReason,
+      expressionReason: input.expressionReason,
+      expressionSummary: input.expressionSummary,
       stabilityReason: input.stabilityReason,
     },
     drive: {
