@@ -61,6 +61,7 @@ export type {
 
 export {
   createInitialButlerRelationState,
+  updateButlerRelationFromTaskDecision,
 } from "./butler-relation"
 
 export type {

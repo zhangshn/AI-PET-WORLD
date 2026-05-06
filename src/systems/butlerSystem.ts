@@ -24,6 +24,7 @@ import {
   hasPendingOpportunity,
   markOpportunityCreated,
   removeExpiredOpportunities,
+  updateButlerRelationFromTaskDecision,
   type ButlerMemoryState,
   type ButlerOpportunity,
   type ButlerOpportunityType,
@@ -88,6 +89,7 @@ export class ButlerSystem {
     this.state.mood = deriveButlerMood(this.state.task)
 
     this.rememberLatestTaskDecision(input.tick)
+    this.updateRelationFromLatestDecision(input.tick)
 
     if (!butlerPolicy?.ownsFinalDecision) {
       return this.state
@@ -148,6 +150,15 @@ export class ButlerSystem {
       memory: this.state.memory,
       entry,
       maxEntries: 80,
+    })
+  }
+
+  private updateRelationFromLatestDecision(tick: number) {
+    this.state.relation = updateButlerRelationFromTaskDecision({
+      relation: this.state.relation,
+      trace: this.state.latestTaskDecisionTrace,
+      memoryEntry: this.state.memory.latestEntry,
+      tick,
     })
   }
 
