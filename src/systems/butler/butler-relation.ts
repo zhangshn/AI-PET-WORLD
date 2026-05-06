@@ -2,6 +2,9 @@
  * 当前文件负责：定义与维护管家和宠物之间的长期关系状态。
  */
 
+import type {
+  ButlerOpportunityType,
+} from "./butler-schema"
 import type { ButlerMemoryEntry } from "./butler-memory"
 import type {
   ButlerTaskDecisionTrace,
@@ -24,6 +27,15 @@ export type ButlerRelationState = {
   lastInteractionTick: number | null
   tone: ButlerRelationTone
   tags: string[]
+}
+
+export type ButlerOpportunityFeedback = {
+  tick: number
+  type: ButlerOpportunityType
+  accepted: boolean
+  expired?: boolean
+  reason?: string
+  value?: number
 }
 
 export function createInitialButlerRelationState(): ButlerRelationState {
@@ -76,6 +88,16 @@ function deriveRelationTone(input: {
   return "unfamiliar"
 }
 
+function rebuildRelationTone(
+  relation: Omit<ButlerRelationState, "tone" | "tags">
+): ButlerRelationTone {
+  return deriveRelationTone({
+    familiarity: relation.familiarity,
+    trustEstimate: relation.trustEstimate,
+    rejectedOffers: relation.rejectedOffers,
+  })
+}
+
 function isObservationGrowthMilestone(
   memoryEntry: ButlerMemoryEntry | null
 ): boolean {
@@ -113,6 +135,30 @@ function buildRelationTags(input: {
   if (input.memoryEntry) {
     tags.push(`memory_${input.memoryEntry.type}`)
     tags.push(`memory_repeat_${input.memoryEntry.repeatCount}`)
+  }
+
+  return uniqueTags(tags).slice(0, 28)
+}
+
+function buildOpportunityFeedbackTags(input: {
+  relation: ButlerRelationState
+  feedback: ButlerOpportunityFeedback
+}): string[] {
+  const tags = [
+    ...input.relation.tags,
+    `relation_tone_${input.relation.tone}`,
+    `opportunity_${input.feedback.type}`,
+    input.feedback.accepted
+      ? "opportunity_accepted"
+      : "opportunity_rejected",
+  ]
+
+  if (input.feedback.expired) {
+    tags.push("opportunity_expired")
+  }
+
+  if (input.feedback.value !== undefined) {
+    tags.push("opportunity_has_value")
   }
 
   return uniqueTags(tags).slice(0, 28)
@@ -211,6 +257,68 @@ function deriveRelationDelta(input: {
   }
 }
 
+function deriveOpportunityFeedbackDelta(
+  feedback: ButlerOpportunityFeedback
+) {
+  if (feedback.accepted) {
+    if (feedback.type === "food_offer") {
+      return {
+        familiarity: 2,
+        trustEstimate: 3,
+        careHistory: 1,
+        successfulOffers: 1,
+        rejectedOffers: 0,
+      }
+    }
+
+    if (feedback.type === "rest_offer") {
+      return {
+        familiarity: 2,
+        trustEstimate: 2,
+        careHistory: 1,
+        successfulOffers: 1,
+        rejectedOffers: 0,
+      }
+    }
+
+    return {
+      familiarity: 3,
+      trustEstimate: 4,
+      careHistory: 1,
+      successfulOffers: 1,
+      rejectedOffers: 0,
+    }
+  }
+
+  if (feedback.expired) {
+    return {
+      familiarity: 0,
+      trustEstimate: -1,
+      careHistory: 0,
+      successfulOffers: 0,
+      rejectedOffers: 1,
+    }
+  }
+
+  if (feedback.type === "approach_offer") {
+    return {
+      familiarity: 0,
+      trustEstimate: -2,
+      careHistory: 0,
+      successfulOffers: 0,
+      rejectedOffers: 1,
+    }
+  }
+
+  return {
+    familiarity: 0,
+    trustEstimate: -1,
+    careHistory: 0,
+    successfulOffers: 0,
+    rejectedOffers: 1,
+  }
+}
+
 export function updateButlerRelationFromTaskDecision(input: {
   relation: ButlerRelationState
   trace: ButlerTaskDecisionTrace | null | undefined
@@ -272,6 +380,45 @@ export function updateButlerRelationFromTaskDecision(input: {
       relation: nextRelation,
       trace: input.trace,
       memoryEntry: input.memoryEntry,
+    }),
+  }
+}
+
+export function updateButlerRelationFromOpportunityFeedback(input: {
+  relation: ButlerRelationState
+  feedback: ButlerOpportunityFeedback
+}): ButlerRelationState {
+  const delta = deriveOpportunityFeedbackDelta(input.feedback)
+
+  const base = {
+    familiarity: clampRelationValue(
+      input.relation.familiarity + delta.familiarity
+    ),
+    trustEstimate: clampRelationValue(
+      input.relation.trustEstimate + delta.trustEstimate
+    ),
+    careHistory: input.relation.careHistory + delta.careHistory,
+    observationCount: input.relation.observationCount,
+    successfulOffers:
+      input.relation.successfulOffers + delta.successfulOffers,
+    rejectedOffers:
+      input.relation.rejectedOffers + delta.rejectedOffers,
+    lastInteractionTick: input.feedback.tick,
+  }
+
+  const tone = rebuildRelationTone(base)
+
+  const nextRelation: ButlerRelationState = {
+    ...base,
+    tone,
+    tags: [],
+  }
+
+  return {
+    ...nextRelation,
+    tags: buildOpportunityFeedbackTags({
+      relation: nextRelation,
+      feedback: input.feedback,
     }),
   }
 }

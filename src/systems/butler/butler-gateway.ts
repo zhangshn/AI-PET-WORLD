@@ -61,10 +61,12 @@ export type {
 
 export {
   createInitialButlerRelationState,
+  updateButlerRelationFromOpportunityFeedback,
   updateButlerRelationFromTaskDecision,
 } from "./butler-relation"
 
 export type {
+  ButlerOpportunityFeedback,
   ButlerRelationState,
   ButlerRelationTone,
 } from "./butler-relation"

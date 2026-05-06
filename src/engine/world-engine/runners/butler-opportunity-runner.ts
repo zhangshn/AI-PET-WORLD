@@ -7,6 +7,9 @@ import type { NarrativeType } from "@/types/event"
 import type { ButlerSystem } from "@/systems/butlerSystem"
 import type { EventSystem } from "@/systems/eventSystem"
 import type { PetSystem } from "@/systems/petSystem"
+import type {
+  ButlerOpportunity,
+} from "@/systems/butler/butler-gateway"
 
 export type RunButlerOpportunityInput = {
   tick: number
@@ -53,6 +56,23 @@ function addButlerOpportunityEvent(
   })
 }
 
+function recordOpportunityFeedback(input: {
+  butlerSystem: ButlerSystem
+  tick: number
+  opportunity: ButlerOpportunity
+  accepted: boolean
+  reason?: string
+  value?: number
+}) {
+  input.butlerSystem.recordOpportunityFeedback({
+    tick: input.tick,
+    type: input.opportunity.type,
+    accepted: input.accepted,
+    reason: input.reason,
+    value: input.value,
+  })
+}
+
 export function runButlerOpportunities(input: RunButlerOpportunityInput) {
   if (!input.petSystem.hasPet()) return
 
@@ -74,6 +94,15 @@ export function runButlerOpportunities(input: RunButlerOpportunityInput) {
       if (result.accepted && result.intakeAmount > 0) {
         input.petSystem.applyAcceptedFoodOffer(result.intakeAmount)
 
+        recordOpportunityFeedback({
+          butlerSystem: input.butlerSystem,
+          tick: input.tick,
+          opportunity,
+          accepted: true,
+          reason: result.reason,
+          value: result.intakeAmount,
+        })
+
         addButlerOpportunityEvent(input.eventSystem, {
           tick: input.tick,
           time: input.time,
@@ -91,6 +120,14 @@ export function runButlerOpportunities(input: RunButlerOpportunityInput) {
             `实际摄食量为 ${result.intakeAmount}。`,
         })
       } else {
+        recordOpportunityFeedback({
+          butlerSystem: input.butlerSystem,
+          tick: input.tick,
+          opportunity,
+          accepted: false,
+          reason: result.reason,
+        })
+
         addButlerOpportunityEvent(input.eventSystem, {
           tick: input.tick,
           time: input.time,
@@ -118,6 +155,15 @@ export function runButlerOpportunities(input: RunButlerOpportunityInput) {
       if (result.accepted) {
         const effect = input.petSystem.applyAcceptedRestOffer(opportunity)
 
+        recordOpportunityFeedback({
+          butlerSystem: input.butlerSystem,
+          tick: input.tick,
+          opportunity,
+          accepted: true,
+          reason: result.reason,
+          value: effect.energyDelta,
+        })
+
         addButlerOpportunityEvent(input.eventSystem, {
           tick: input.tick,
           time: input.time,
@@ -135,6 +181,14 @@ export function runButlerOpportunities(input: RunButlerOpportunityInput) {
             `恢复倾向被轻微强化，精力变化 +${effect.energyDelta}。`,
         })
       } else {
+        recordOpportunityFeedback({
+          butlerSystem: input.butlerSystem,
+          tick: input.tick,
+          opportunity,
+          accepted: false,
+          reason: result.reason,
+        })
+
         addButlerOpportunityEvent(input.eventSystem, {
           tick: input.tick,
           time: input.time,
@@ -161,6 +215,14 @@ export function runButlerOpportunities(input: RunButlerOpportunityInput) {
       if (result.accepted) {
         const effect = input.petSystem.applyAcceptedApproachOffer(opportunity)
 
+        recordOpportunityFeedback({
+          butlerSystem: input.butlerSystem,
+          tick: input.tick,
+          opportunity,
+          accepted: true,
+          reason: result.reason,
+        })
+
         addButlerOpportunityEvent(input.eventSystem, {
           tick: input.tick,
           time: input.time,
@@ -177,6 +239,14 @@ export function runButlerOpportunities(input: RunButlerOpportunityInput) {
             effect.memorySummary,
         })
       } else {
+        recordOpportunityFeedback({
+          butlerSystem: input.butlerSystem,
+          tick: input.tick,
+          opportunity,
+          accepted: false,
+          reason: result.reason,
+        })
+
         addButlerOpportunityEvent(input.eventSystem, {
           tick: input.tick,
           time: input.time,
