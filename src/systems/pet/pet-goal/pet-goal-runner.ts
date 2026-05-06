@@ -29,12 +29,8 @@ import {
 
 import type {
   GoalDraft,
-  GoalPriority,
   GoalSystemInput,
-  PetGoalDriveAlignment,
-  PetGoalLifeTendencyHint,
   PetGoalState,
-  PetGoalType,
 } from "./pet-goal-types"
 
 function applyRuntimeGoalLayers(
