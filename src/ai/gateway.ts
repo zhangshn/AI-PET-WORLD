@@ -68,11 +68,20 @@ import {
 
 import type {
   BuildCurrentLifeTendencyFromRuntimeInput,
+  CurrentLifeRuntimeBundle,
   CurrentLifeTendencyProfile,
 } from "./life-tendency-core/life-tendency-gateway"
+
 import {
+  buildCurrentLifeRuntimeBundle,
   buildCurrentLifeTendencyFromRuntime,
 } from "./life-tendency-core/life-tendency-gateway"
+
+export function buildAiCurrentLifeRuntimeBundle(
+  input: BuildCurrentLifeTendencyFromRuntimeInput
+): CurrentLifeRuntimeBundle {
+  return buildCurrentLifeRuntimeBundle(input)
+}
 
 export type UpdatePetAiStateInput = {
   currentSnapshot: PetTimelineSnapshot
@@ -213,6 +222,7 @@ export type {
 
 export type {
   BuildCurrentLifeTendencyFromRuntimeInput,
+  CurrentLifeRuntimeBundle,
   CurrentLifeTendencyProfile,
   LifeTendencyFiveDimensionScores,
   LifeTendencyKey,

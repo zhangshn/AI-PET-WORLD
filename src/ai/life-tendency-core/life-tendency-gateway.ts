@@ -7,6 +7,10 @@ export {
 } from "./life-tendency-composer"
 
 export {
+  buildCurrentLifeRuntimeBundle
+} from "./life-runtime-bundle-gateway"
+
+export {
   buildCurrentLifeTendencyFromRuntime
 } from "./life-tendency-runtime-gateway"
 
@@ -20,6 +24,10 @@ export {
   getTopLifeTendencies,
   mixLifeTendencyScore
 } from "./life-tendency-normalizer"
+
+export type {
+  CurrentLifeRuntimeBundle
+} from "./life-runtime-bundle-schema"
 
 export type {
   BuildCurrentLifeTendencyProfileInput,
