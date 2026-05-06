@@ -673,11 +673,8 @@ function deriveDominantInterpretation(input: {
     return "need_based_support"
   }
 
-  if (
-    relation?.tone === "trusted" &&
-    profile.boundaryStyle !== "watchful_boundary"
-  ) {
-    return "gentle_approach"
+  if (relation?.tone === "trusted") {
+     return "gentle_approach"
   }
 
   if (profile.careStyle === "structured_manager") {
