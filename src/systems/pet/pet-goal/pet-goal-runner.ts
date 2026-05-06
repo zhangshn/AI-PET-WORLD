@@ -24,6 +24,13 @@ export type PetGoalType =
 
 export type GoalPriority = "low" | "medium" | "high" | "critical"
 
+export type PetGoalLifeTendencyHint = {
+  targetType: PetGoalType
+  summary: string
+  priorityBoost: 0 | 1
+  attached: boolean
+}
+
 export type PetGoalState = {
   type: PetGoalType
   priority: GoalPriority
@@ -31,6 +38,12 @@ export type PetGoalState = {
   holdUntilTick: number
   summary: string
   source: "consciousness" | "body" | "world" | "relation" | "memory"
+
+  /**
+   * 当前生命趋向对 goal 层的解释影响。
+   * 这里只用于解释和轻量优先级修正，不直接决定 action。
+   */
+  lifeTendencyHint?: PetGoalLifeTendencyHint | null
 
   targetZoneType?: WorldZoneType
   targetZoneId?: string

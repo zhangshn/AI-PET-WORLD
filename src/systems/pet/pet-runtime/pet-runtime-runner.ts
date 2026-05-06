@@ -196,6 +196,7 @@ export function runPetRuntimeTick(
     goalPriority: nextGoal.priority,
     goalSource: nextGoal.source,
     goalSummary: nextGoal.summary,
+    goalLifeTendencyHint: nextGoal.lifeTendencyHint ?? null,
     energy: pet.energy,
     hunger: pet.hunger,
     mood: currentSnapshot.state.emotional.label,

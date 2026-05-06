@@ -9,6 +9,7 @@ import type {
 
 import type {
   GoalPriority,
+  PetGoalLifeTendencyHint,
   PetGoalState,
   PetGoalType,
 } from "./pet-goal-runner"
@@ -144,6 +145,18 @@ function shouldAttachHintToGoal(params: {
   return false
 }
 
+function buildVisibleHint(params: {
+  hint: GoalLifeTendencyHint
+  attached: boolean
+}): PetGoalLifeTendencyHint {
+  return {
+    targetType: params.hint.targetType,
+    summary: params.hint.summary,
+    priorityBoost: params.hint.priorityBoost,
+    attached: params.attached,
+  }
+}
+
 export function applyGoalLifeTendencyLayer(params: {
   goal: Omit<PetGoalState, "startedAtTick" | "holdUntilTick">
   pet: {
@@ -153,7 +166,10 @@ export function applyGoalLifeTendencyLayer(params: {
   const bundle = getLifeRuntimeBundle(params.pet)
 
   if (!bundle) {
-    return params.goal
+    return {
+      ...params.goal,
+      lifeTendencyHint: null,
+    }
   }
 
   const hint = buildPrimaryHint(
@@ -161,23 +177,33 @@ export function applyGoalLifeTendencyLayer(params: {
   )
 
   if (!hint) {
-    return params.goal
-  }
-
-  if (
-    !shouldAttachHintToGoal({
-      goalType: params.goal.type,
-      hintTargetType: hint.targetType,
-    })
-  ) {
     return {
       ...params.goal,
+      lifeTendencyHint: null,
+    }
+  }
+
+  const attached = shouldAttachHintToGoal({
+    goalType: params.goal.type,
+    hintTargetType: hint.targetType,
+  })
+
+  const visibleHint = buildVisibleHint({
+    hint,
+    attached,
+  })
+
+  if (!attached) {
+    return {
+      ...params.goal,
+      lifeTendencyHint: visibleHint,
       summary: `${params.goal.summary} 生命趋向提示：${hint.summary}`,
     }
   }
 
   return {
     ...params.goal,
+    lifeTendencyHint: visibleHint,
     priority:
       hint.priorityBoost > 0
         ? raisePriority(params.goal.priority)
