@@ -11,6 +11,10 @@ import type { IncubatorState } from "@/types/incubator"
 import type { PetState } from "@/types/pet"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
+import {
+  buildRuntimePetAgentCycleTrace,
+} from "./world-runtime-agent-audit"
+
 const ENABLE_WORLD_TICK_LOG = true
 const ENABLE_ECOLOGY_LOG = false
 const ENABLE_STIMULUS_LOG = false
@@ -19,6 +23,7 @@ const ENABLE_PET_RUNTIME_LOG = true
 const ENABLE_PET_COGNITION_LOG = true
 const ENABLE_PET_DECISION_LOG = true
 const ENABLE_PET_DECISION_AUDIT_LOG = true
+const ENABLE_PET_AGENT_TRACE_LOG = true
 const ENABLE_BIRTH_PROFILE_LOG = true
 
 export function logWorldTick(input: {
@@ -263,6 +268,36 @@ export function logPetDecisionTrace(input: {
       stabilityApplied: audit.stabilityApplied,
       rawToExpressedToFinal: `${input.rawAction} → ${input.expressedAction} → ${input.finalAction}`,
     })
+  }
+
+  if (ENABLE_PET_AGENT_TRACE_LOG) {
+    const agentTrace = buildRuntimePetAgentCycleTrace({
+      tick: input.tick,
+      petName: input.petName,
+      rawAction: input.rawAction,
+      expressedAction: input.expressedAction,
+      finalAction: input.finalAction,
+      driveDominant: input.driveDominant,
+      driveDominantScore: input.driveDominantScore,
+      driveReasons: input.driveReasons,
+      goalType: input.goalType,
+      goalPriority: input.goalPriority,
+      goalSource: input.goalSource,
+      goalSummary: input.goalSummary,
+      expressionReason: input.expressionReason,
+      expressionSummary: input.expressionSummary,
+      stabilityReason: input.stabilityReason,
+      energy: input.energy,
+      hunger: input.hunger,
+      mood: input.mood,
+      lifePhase: input.lifePhase,
+      hasCognitionInfluence: audit.cognitionToDrive,
+      hasLifeTendencyInfluence: audit.lifeTendencyToDrive,
+      hasGoalLifeTendencyHint: audit.lifeTendencyToGoal,
+      hasGoalDriveAlignment: audit.driveToGoalAlignment,
+    })
+
+    console.log("🧠 宠物 AgentCycleTrace：", agentTrace)
   }
 }
 
