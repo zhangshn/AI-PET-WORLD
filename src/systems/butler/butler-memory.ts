@@ -2,7 +2,13 @@
  * 当前文件负责：定义与维护管家的长期记忆结构。
  */
 
-import type { ButlerTask } from "./butler-schema"
+import type {
+  ButlerOpportunityType,
+  ButlerTask,
+} from "./butler-schema"
+import type {
+  ButlerOpportunityFeedback,
+} from "./butler-relation"
 import type {
   ButlerTaskDecisionTrace,
 } from "./butler-task-decision-trace"
@@ -61,6 +67,16 @@ function mapTaskToMemoryType(task: ButlerTask): ButlerMemoryType {
   return "system_note"
 }
 
+function mapOpportunityTypeToSourceTask(
+  type: ButlerOpportunityType
+): ButlerTask {
+  if (type === "food_offer") return "offering_food"
+  if (type === "rest_offer") return "offering_rest"
+  if (type === "approach_offer") return "offering_approach"
+
+  return "idle"
+}
+
 function buildTaskMemoryTags(trace: ButlerTaskDecisionTrace): string[] {
   return [
     `task_${trace.selectedTask}`,
@@ -77,6 +93,28 @@ function buildTaskMemoryTags(trace: ButlerTaskDecisionTrace): string[] {
       ? `life_phase_${trace.context.petLifePhase}`
       : "life_phase_none",
   ]
+}
+
+function buildOpportunityFeedbackMemoryTags(
+  feedback: ButlerOpportunityFeedback
+): string[] {
+  const tags = [
+    `opportunity_${feedback.type}`,
+    feedback.accepted
+      ? "opportunity_accepted"
+      : "opportunity_rejected",
+    feedback.expired ? "opportunity_expired" : "opportunity_evaluated",
+  ]
+
+  if (feedback.value !== undefined) {
+    tags.push("opportunity_has_value")
+  }
+
+  if (feedback.reason) {
+    tags.push("opportunity_has_reason")
+  }
+
+  return tags
 }
 
 function buildTaskMemorySummary(trace: ButlerTaskDecisionTrace): string {
@@ -105,6 +143,42 @@ function buildTaskMemorySummary(trace: ButlerTaskDecisionTrace): string {
   }
 
   return `管家记录：本轮保持待命。本轮原因：${trace.reason}`
+}
+
+function buildOpportunityFeedbackMemorySummary(
+  feedback: ButlerOpportunityFeedback
+): string {
+  const reason = feedback.reason ?? "没有额外原因。"
+  const valueText =
+    feedback.value !== undefined
+      ? `反馈数值：${feedback.value}。`
+      : ""
+
+  if (feedback.expired) {
+    return `管家记录：${feedback.type} 在有效期内没有被宠物接受，已作为过期反馈记录。原因：${reason}${valueText}`
+  }
+
+  if (feedback.accepted) {
+    if (feedback.type === "food_offer") {
+      return `管家记录：食物机会被宠物自主接受。原因：${reason}${valueText}`
+    }
+
+    if (feedback.type === "rest_offer") {
+      return `管家记录：休息机会被宠物自主接受。原因：${reason}${valueText}`
+    }
+
+    return `管家记录：靠近机会被宠物自主回应。原因：${reason}${valueText}`
+  }
+
+  if (feedback.type === "food_offer") {
+    return `管家记录：食物机会没有被宠物接受。原因：${reason}${valueText}`
+  }
+
+  if (feedback.type === "rest_offer") {
+    return `管家记录：休息机会没有被宠物接受。原因：${reason}${valueText}`
+  }
+
+  return `管家记录：靠近机会没有被宠物回应，管家需要继续保留边界。原因：${reason}${valueText}`
 }
 
 function deriveMemoryImportance(trace: ButlerTaskDecisionTrace): number {
@@ -143,6 +217,40 @@ function deriveMemoryEmotionalWeight(trace: ButlerTaskDecisionTrace): number {
   return 22
 }
 
+function deriveOpportunityFeedbackImportance(
+  feedback: ButlerOpportunityFeedback
+): number {
+  if (feedback.expired) return 42
+
+  if (feedback.accepted) {
+    if (feedback.type === "approach_offer") return 74
+    if (feedback.type === "food_offer") return 70
+    if (feedback.type === "rest_offer") return 66
+  }
+
+  if (feedback.type === "approach_offer") return 68
+  if (feedback.type === "rest_offer") return 60
+
+  return 56
+}
+
+function deriveOpportunityFeedbackEmotionalWeight(
+  feedback: ButlerOpportunityFeedback
+): number {
+  if (feedback.expired) return 36
+
+  if (feedback.accepted) {
+    if (feedback.type === "approach_offer") return 72
+    if (feedback.type === "food_offer") return 58
+    if (feedback.type === "rest_offer") return 54
+  }
+
+  if (feedback.type === "approach_offer") return 64
+  if (feedback.type === "rest_offer") return 46
+
+  return 42
+}
+
 function uniqueTags(tags: string[]): string[] {
   return Array.from(new Set(tags))
 }
@@ -160,6 +268,28 @@ function shouldMergeWithLatestMemory(input: {
   if (tickGap < 0 || tickGap > maxTickGap) return false
   if (input.latest.type !== input.entry.type) return false
   if (input.latest.sourceTask !== input.entry.sourceTask) return false
+
+  const latestFeedbackTag = input.latest.tags.find((tag) =>
+    tag.startsWith("opportunity_")
+  )
+  const nextFeedbackTag = input.entry.tags.find((tag) =>
+    tag.startsWith("opportunity_")
+  )
+
+  if (latestFeedbackTag || nextFeedbackTag) {
+    const latestAccepted = input.latest.tags.includes("opportunity_accepted")
+    const nextAccepted = input.entry.tags.includes("opportunity_accepted")
+    const latestRejected = input.latest.tags.includes("opportunity_rejected")
+    const nextRejected = input.entry.tags.includes("opportunity_rejected")
+    const latestExpired = input.latest.tags.includes("opportunity_expired")
+    const nextExpired = input.entry.tags.includes("opportunity_expired")
+
+    return (
+      latestAccepted === nextAccepted &&
+      latestRejected === nextRejected &&
+      latestExpired === nextExpired
+    )
+  }
 
   const latestLifePhase = input.latest.tags.find((tag) =>
     tag.startsWith("life_phase_")
@@ -248,6 +378,22 @@ export function createButlerMemoryEntryFromTaskDecision(input: {
     emotionalWeight: deriveMemoryEmotionalWeight(input.trace),
     importance: deriveMemoryImportance(input.trace),
     tags: buildTaskMemoryTags(input.trace),
+  })
+}
+
+export function createButlerMemoryEntryFromOpportunityFeedback(input: {
+  feedback: ButlerOpportunityFeedback
+}): ButlerMemoryEntry {
+  return createButlerMemoryEntry({
+    tick: input.feedback.tick,
+    type: "relation_signal",
+    sourceTask: mapOpportunityTypeToSourceTask(input.feedback.type),
+    summary: buildOpportunityFeedbackMemorySummary(input.feedback),
+    emotionalWeight: deriveOpportunityFeedbackEmotionalWeight(
+      input.feedback
+    ),
+    importance: deriveOpportunityFeedbackImportance(input.feedback),
+    tags: buildOpportunityFeedbackMemoryTags(input.feedback),
   })
 }
 

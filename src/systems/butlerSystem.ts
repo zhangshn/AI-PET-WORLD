@@ -15,6 +15,7 @@ import {
   canCreateOpportunity,
   chooseButlerTask,
   createApproachOffer,
+  createButlerMemoryEntryFromOpportunityFeedback,
   createButlerMemoryEntryFromTaskDecision,
   createFoodOffer,
   createInitialButlerMemoryState,
@@ -158,6 +159,18 @@ export class ButlerSystem {
     })
   }
 
+  private rememberOpportunityFeedback(feedback: ButlerOpportunityFeedback) {
+    const entry = createButlerMemoryEntryFromOpportunityFeedback({
+      feedback,
+    })
+
+    this.state.memory = appendButlerMemoryEntry({
+      memory: this.state.memory,
+      entry,
+      maxEntries: 80,
+    })
+  }
+
   private updateRelationFromLatestDecision(tick: number) {
     this.state.relation = updateButlerRelationFromTaskDecision({
       relation: this.state.relation,
@@ -219,6 +232,8 @@ export class ButlerSystem {
       relation: this.state.relation,
       feedback,
     })
+
+    this.rememberOpportunityFeedback(feedback)
   }
 
   setProfile(profile: ButlerProfile | null): void {

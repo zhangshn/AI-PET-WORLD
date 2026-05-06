@@ -48,6 +48,7 @@ export type {
 export {
   appendButlerMemoryEntry,
   createButlerMemoryEntry,
+  createButlerMemoryEntryFromOpportunityFeedback,
   createButlerMemoryEntryFromTaskDecision,
   createInitialButlerMemoryState,
   shouldRememberTaskDecision,
