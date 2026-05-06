@@ -21,6 +21,10 @@ import {
 } from "@/engine/agent-runtime-audit/agent-runtime-audit-gateway"
 
 import {
+  buildButlerRelationTaskTuning,
+} from "@/systems/butler/butler-gateway"
+
+import {
   WORLD_RUNTIME_LOG_CONFIG,
 } from "./world-runtime-log-config"
 
@@ -299,12 +303,34 @@ export function logPetDecisionTrace(input: {
   }
 }
 
+function buildButlerRelationSummary(
+  butler: ButlerState
+): Record<string, unknown> | null {
+  const relation = butler.relation
+
+  if (!relation) {
+    return null
+  }
+
+  return {
+    tone: relation.tone,
+    familiarity: relation.familiarity,
+    trustEstimate: relation.trustEstimate,
+    careHistory: relation.careHistory,
+    observationCount: relation.observationCount,
+    successfulOffers: relation.successfulOffers,
+    rejectedOffers: relation.rejectedOffers,
+    lastInteractionTick: relation.lastInteractionTick,
+  }
+}
+
 function buildButlerAgentTraceSummary(input: {
   tick: number
   butler: ButlerState
   agentTrace: ReturnType<typeof buildRuntimeButlerAgentCycleTrace>
 }): Record<string, unknown> {
   const taskTrace = input.butler.latestTaskDecisionTrace
+  const relationTuning = buildButlerRelationTaskTuning(input.butler.relation)
 
   return {
     tick: input.tick,
@@ -326,6 +352,8 @@ function buildButlerAgentTraceSummary(input: {
           opportunityStyle: input.butler.profile.opportunityStyle,
         }
       : null,
+    relation: buildButlerRelationSummary(input.butler),
+    relationTuning,
     gates: taskTrace
       ? {
           passed: taskTrace.gates.filter((gate) => gate.passed).length,
@@ -333,7 +361,7 @@ function buildButlerAgentTraceSummary(input: {
         }
       : null,
     scores:
-      taskTrace?.scores.slice(0, 3).map((score) => ({
+      taskTrace?.scores.slice(0, 6).map((score) => ({
         key: score.key,
         value: score.value,
       })) ?? [],
