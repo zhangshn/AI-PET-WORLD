@@ -152,12 +152,6 @@ export function selectPetAction(
 
   applyGoalBias(input.currentGoal, weights)
 
-  /**
-   * 认知现在已经进入 pet-drive-cognition-layer。
-   * 这里不再让认知直接强推 action，只保留极弱的表达提示。
-   */
-  applyCognitionExpressionHint(input.pet, weights)
-
   if (energy < 20) {
     weights.sleeping += 36
     weights.resting += 18
@@ -327,64 +321,6 @@ function applyGoalBias(
     default:
       weights.idle += 6
       break
-  }
-}
-
-function applyCognitionExpressionHint(
-  pet: PetState,
-  weights: Record<PetAction, number>
-) {
-  if (!pet.latestCognition) return
-
-  const cognition = pet.latestCognition
-
-  if (cognition.reactionTendency === "chase") {
-    weights.observing += 3
-    weights.walking += 2
-  }
-
-  if (cognition.reactionTendency === "observe") {
-    weights.observing += 4
-    weights.alert_idle += 1
-  }
-
-  if (cognition.reactionTendency === "approach") {
-    weights.approaching += 3
-    weights.observing += 1
-  }
-
-  if (cognition.reactionTendency === "avoid") {
-    weights.alert_idle += 4
-    weights.observing += 2
-    weights.approaching -= 2
-  }
-
-  if (cognition.reactionTendency === "rest_nearby") {
-    weights.resting += 3
-    weights.observing += 1
-  }
-
-  if (cognition.interpretation === "exciting") {
-    weights.walking += 2
-  }
-
-  if (
-    cognition.interpretation === "interesting" ||
-    cognition.interpretation === "mysterious"
-  ) {
-    weights.observing += 2
-  }
-
-  if (
-    cognition.interpretation === "comforting" ||
-    cognition.interpretation === "peaceful"
-  ) {
-    weights.resting += 2
-  }
-
-  if (cognition.interpretation === "dangerous") {
-    weights.alert_idle += 3
-    weights.observing += 2
   }
 }
 

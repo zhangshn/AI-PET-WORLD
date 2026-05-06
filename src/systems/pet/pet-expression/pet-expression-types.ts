@@ -12,6 +12,10 @@ import type {
 } from "../../../types/pet"
 
 import type {
+  PetCognitionRecord,
+} from "../../../types/cognition"
+
+import type {
   PetGoalState,
 } from "../pet-goal/pet-goal-gateway"
 
@@ -25,6 +29,11 @@ export type PetExpressionReason =
   | "dependent_restore_expression"
   | "low_energy_expression_limit"
   | "high_hunger_expression_limit"
+  | "cognition_observe_expression"
+  | "cognition_chase_expression_softened"
+  | "cognition_avoid_expression"
+  | "cognition_comfort_expression"
+  | "cognition_approach_expression_softened"
 
 export type PetExpressionInput = {
   rawAction: PetAction
@@ -34,6 +43,7 @@ export type PetExpressionInput = {
   energy: number
   hunger: number
   currentLifeRuntimeBundle?: CurrentLifeRuntimeBundle | null
+  latestCognition?: PetCognitionRecord | null
 }
 
 export type PetExpressionResult = {

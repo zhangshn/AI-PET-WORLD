@@ -176,6 +176,7 @@ export function runPetRuntimeTick(
     energy: pet.energy,
     hunger: pet.hunger,
     currentLifeRuntimeBundle: pet.currentLifeRuntimeBundle ?? null,
+    latestCognition: pet.latestCognition ?? null,
   })
 
   const expressedAction = expressionResult.expressedAction

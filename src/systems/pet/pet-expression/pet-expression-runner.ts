@@ -157,6 +157,111 @@ function expressDependentIntent(input: PetExpressionInput): PetExpressionResult 
   return null
 }
 
+function expressCognitionNuance(input: PetExpressionInput): PetExpressionResult | null {
+  const cognition = input.latestCognition
+
+  if (!cognition) {
+    return null
+  }
+
+  if (
+    cognition.reactionTendency === "observe" &&
+    isExploreLike(input.rawAction)
+  ) {
+    return buildResult({
+      expressedAction: "observing",
+      reason: "cognition_observe_expression",
+      internalIntent: input.rawAction,
+      summary: "当前认知更偏向观察，移动或探索意图被表达为停下辨认环境。",
+    })
+  }
+
+  if (
+    cognition.reactionTendency === "chase" &&
+    input.lifePhase !== "curious" &&
+    input.rawAction === "exploring"
+  ) {
+    return buildResult({
+      expressedAction: "walking",
+      reason: "cognition_chase_expression_softened",
+      internalIntent: input.rawAction,
+      summary: "当前认知出现追随倾向，但生命阶段仍在收束，探索意图先表达为小范围移动。",
+    })
+  }
+
+  if (
+    cognition.reactionTendency === "chase" &&
+    input.lifePhase === "newborn" &&
+    isExploreLike(input.rawAction)
+  ) {
+    return buildResult({
+      expressedAction: "observing",
+      reason: "cognition_chase_expression_softened",
+      internalIntent: input.rawAction,
+      summary: "刚出生阶段即使被动态目标吸引，也先表现为注视与确认。",
+    })
+  }
+
+  if (
+    cognition.reactionTendency === "avoid" &&
+    (
+      input.rawAction === "approaching" ||
+      input.rawAction === "walking" ||
+      input.rawAction === "exploring"
+    )
+  ) {
+    return buildResult({
+      expressedAction: "alert_idle",
+      reason: "cognition_avoid_expression",
+      internalIntent: input.rawAction,
+      summary: "当前认知带有回避倾向，靠近或外扩意图被表达为警觉停留。",
+    })
+  }
+
+  if (
+    cognition.reactionTendency === "approach" &&
+    input.lifePhase === "newborn" &&
+    input.rawAction === "approaching"
+  ) {
+    return buildResult({
+      expressedAction: "observing",
+      reason: "cognition_approach_expression_softened",
+      internalIntent: input.rawAction,
+      summary: "刚出生阶段出现靠近意图时，先表达为观察与确认安全。",
+    })
+  }
+
+  if (
+    (
+      cognition.interpretation === "comforting" ||
+      cognition.interpretation === "peaceful"
+    ) &&
+    input.rawAction === "idle" &&
+    input.energy <= 60
+  ) {
+    return buildResult({
+      expressedAction: "resting",
+      reason: "cognition_comfort_expression",
+      internalIntent: input.rawAction,
+      summary: "当前认知把环境解释为舒适，停顿意图被表达为轻度休整。",
+    })
+  }
+
+  if (
+    cognition.interpretation === "dangerous" &&
+    input.rawAction === "approaching"
+  ) {
+    return buildResult({
+      expressedAction: "alert_idle",
+      reason: "cognition_avoid_expression",
+      internalIntent: input.rawAction,
+      summary: "当前认知带有危险解释，靠近意图被表达为警觉停留。",
+    })
+  }
+
+  return null
+}
+
 export function expressPetAction(
   input: PetExpressionInput
 ): PetExpressionResult {
@@ -192,6 +297,9 @@ export function expressPetAction(
     const result = expressDependentIntent(input)
     if (result) return result
   }
+
+  const cognitionResult = expressCognitionNuance(input)
+  if (cognitionResult) return cognitionResult
 
   return buildResult({
     expressedAction: input.rawAction,
