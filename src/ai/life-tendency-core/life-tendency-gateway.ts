@@ -7,6 +7,10 @@ export {
 } from "./life-tendency-composer"
 
 export {
+  buildCurrentLifeTendencyFromRuntime
+} from "./life-tendency-runtime-gateway"
+
+export {
   buildLifeTendencyFiveDimensionScores
 } from "./life-tendency-five-dimension"
 
@@ -29,3 +33,9 @@ export type {
   LifeTendencyScores,
   LifeTendencySourceProfile
 } from "./life-tendency-schema"
+
+export type {
+  BuildCurrentLifeTendencyFromRuntimeInput,
+  LifeTendencyRuntimeGender,
+  LifeTendencyRuntimeTime
+} from "./life-tendency-runtime-gateway"

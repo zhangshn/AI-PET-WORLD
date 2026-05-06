@@ -5,37 +5,30 @@
 import { useMemo } from "react"
 
 import {
-  buildZiweiCurrentDynamicProfile
-} from "../../../../ai/ziwei-core/ziwei-gateway"
+  buildCurrentLifeTendencyFromRuntime
+} from "../../../../ai/life-tendency-core/life-tendency-gateway"
+
+import type {
+  CurrentLifeTendencyProfile,
+  LifeTendencyRuntimeGender,
+  LifeTendencyScoreItem
+} from "../../../../ai/life-tendency-core/life-tendency-gateway"
 
 import type {
   BirthPattern,
   PersonalityProfile
 } from "../../../../ai/ziwei-core/schema"
 
-import {
-  buildBaziCurrentTendencyProfile,
-  buildBaziRuntimeProfile
-} from "../../../../ai/bazi-core/bazi-gateway"
-
 import type {
-  BaziProfile,
-  BaziRuntimeGender
+  BaziProfile
 } from "../../../../ai/bazi-core/bazi-gateway"
-
-import {
-  buildCurrentLifeTendencyProfile
-} from "../../../../ai/life-tendency-core/life-tendency-gateway"
-
-import type {
-  CurrentLifeTendencyProfile,
-  LifeTendencyScoreItem
-} from "../../../../ai/life-tendency-core/life-tendency-gateway"
 
 import type { DynamicGenderInput } from "../../types"
 import type { PersonalityTestRuntimeTime } from "../../runtime-time/personality-test-runtime-time-types"
 
-function resolveGender(dynamicGender: DynamicGenderInput): BaziRuntimeGender {
+function resolveRuntimeGender(
+  dynamicGender: DynamicGenderInput
+): LifeTendencyRuntimeGender {
   if (dynamicGender === "male" || dynamicGender === "female") {
     return dynamicGender
   }
@@ -245,43 +238,12 @@ export function DynamicMappingExplainPanel({
   runtimeTime: PersonalityTestRuntimeTime
 }) {
   const lifeTendencyProfile = useMemo(() => {
-    const ziweiDynamicResult =
-      pattern && profile
-        ? buildZiweiCurrentDynamicProfile({
-            pattern,
-            baseProfile: profile,
-            gender: dynamicGender,
-            currentAge: runtimeTime.currentAge,
-            currentYear: runtimeTime.currentYear,
-            currentLunarMonth: runtimeTime.currentLunarMonth,
-            currentLunarDay: runtimeTime.currentLunarDay,
-            currentTimeBranch: runtimeTime.currentTimeBranch,
-          })
-        : null
-
-    const ziweiProfile =
-      ziweiDynamicResult && ziweiDynamicResult.ok
-        ? ziweiDynamicResult.data
-        : null
-
-    const baziRuntimeProfile = buildBaziRuntimeProfile({
-      birthChart: baziProfile.chart,
-      gender: resolveGender(dynamicGender),
-      currentYear: runtimeTime.currentYear,
-      currentMonth: runtimeTime.currentMonth,
-      currentDay: runtimeTime.currentDay,
-      currentHour: runtimeTime.currentHour,
-    })
-
-    const baziTendencyProfile = buildBaziCurrentTendencyProfile({
-      baseProfile: baziProfile,
-      runtimeProfile: baziRuntimeProfile,
-    })
-
-    return buildCurrentLifeTendencyProfile({
-      ziweiProfile,
-      baziTendencyProfile,
-      fallbackTraits: profile?.traits ?? null,
+    return buildCurrentLifeTendencyFromRuntime({
+      pattern,
+      baseProfile: profile,
+      baziProfile,
+      gender: resolveRuntimeGender(dynamicGender),
+      runtimeTime,
     })
   }, [
     pattern,
@@ -412,11 +374,9 @@ export function DynamicMappingExplainPanel({
         <strong>当前实际链路：</strong>
         世界时间 {runtimeTime.currentYear}-{runtimeTime.currentMonth}-{runtimeTime.currentDay}
         {" → "}
-        紫微动态层更新
+        life-tendency-core 自动构建紫微动态层
         {" → "}
-        八字辅助场更新
-        {" → "}
-        life-tendency-core 合成
+        life-tendency-core 自动构建八字辅助场
         {" → "}
         当前生命趋向 Top：
         {lifeTendencyProfile.labels.topSummary}
@@ -436,9 +396,18 @@ export function DynamicMappingExplainPanel({
         }}
       >
         <strong>调试：</strong>
-        <div>紫微动态可用：{lifeTendencyProfile.debug.hasZiweiProfile ? "是" : "否"}</div>
-        <div>使用紫微动态 traits：{lifeTendencyProfile.debug.usedZiweiDynamicTraits ? "是" : "否"}</div>
-        <div>八字能量调性：{lifeTendencyProfile.debug.baziEnergyTone}</div>
+        <div>
+          紫微动态可用：
+          {lifeTendencyProfile.debug.hasZiweiProfile ? "是" : "否"}
+        </div>
+        <div>
+          使用紫微动态 traits：
+          {lifeTendencyProfile.debug.usedZiweiDynamicTraits ? "是" : "否"}
+        </div>
+        <div>
+          八字能量调性：
+          {lifeTendencyProfile.debug.baziEnergyTone}
+        </div>
         <div>
           八字动态柱：
           {lifeTendencyProfile.debug.baziUsedRuntimePillars.join(" / ")}
