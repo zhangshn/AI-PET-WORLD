@@ -27,10 +27,10 @@ export type RunHomeConstructionResult = {
 function getConstructionBias(input: {
   pet: PetState | null
   butler: ButlerState
-}): GenderAwareBehaviorBias | null {
+  }): GenderAwareBehaviorBias | null {
   return (
     input.pet?.lifeProfile.genderAwareBehaviorBias ??
-    input.butler.lifeProfile?.genderAwareBehaviorBias ??
+    input.butler.behaviorBias ??
     null
   )
 }
