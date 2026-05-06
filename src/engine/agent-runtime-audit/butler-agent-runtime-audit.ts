@@ -19,6 +19,10 @@ import type {
   AgentSignalSource,
 } from "@/ai/gateway"
 
+import {
+  buildButlerProfileTaskTuning,
+} from "@/systems/butler/butler-gateway"
+
 import type {
   ButlerTask,
 } from "@/systems/butler/butler-schema"
@@ -126,6 +130,24 @@ function buildButlerProfileReasonLines(
   ]
 }
 
+function buildButlerProfileTuningReasonLines(
+  input: RuntimeButlerAgentAuditInput
+): string[] {
+  const profile = input.butler.profile
+
+  if (!profile) {
+    return [
+      "Profile Tuning：未注入 ButlerProfile，本轮没有 Profile 调参。",
+    ]
+  }
+
+  const tuning = buildButlerProfileTaskTuning(profile)
+
+  return [
+    `Profile Tuning：carePriorityOffset=${tuning.carePriorityOffset}，constructionDriveOffset=${tuning.constructionDriveOffset}，foodSensitivityOffset=${tuning.foodSensitivityOffset}，restSensitivityOffset=${tuning.restSensitivityOffset}，approachSensitivityOffset=${tuning.approachSensitivityOffset}，observationBiasOffset=${tuning.observationBiasOffset}。`,
+  ]
+}
+
 function buildButlerProfileSummary(
   input: RuntimeButlerAgentAuditInput
 ): string {
@@ -136,7 +158,7 @@ function buildButlerProfileSummary(
   }
 
   return [
-    `当前管家已绑定 ButlerProfile。`,
+    "当前管家已绑定 ButlerProfile",
     `模式=${profile.identity.mappingMode}`,
     `照护=${profile.careStyle}`,
     `建设=${profile.buildStyle}`,
@@ -209,6 +231,7 @@ function buildButlerPerceptionReasons(
   }
 
   reasons.push(...buildButlerProfileReasonLines(input))
+  reasons.push(...buildButlerProfileTuningReasonLines(input))
 
   return reasons
 }
@@ -383,6 +406,7 @@ export function buildRuntimeButlerAgentCycleTrace(
       "管家不是宠物控制器。",
       "当前任务只能形成机会或环境维护，不能直接决定宠物行为。",
       ...buildButlerProfileReasonLines(input),
+      ...buildButlerProfileTuningReasonLines(input),
     ],
   })
 
@@ -403,6 +427,7 @@ export function buildRuntimeButlerAgentCycleTrace(
       `当前任务：${input.butler.task}`,
       `当前心情：${input.butler.mood}`,
       ...buildButlerProfileReasonLines(input),
+      ...buildButlerProfileTuningReasonLines(input),
     ],
   })
 
