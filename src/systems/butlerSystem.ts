@@ -10,10 +10,12 @@ import {
 import type { ButlerProfile } from "../ai/gateway"
 
 import {
+  appendButlerMemoryEntry,
   buildInitialOpportunityCooldowns,
   canCreateOpportunity,
   chooseButlerTask,
   createApproachOffer,
+  createButlerMemoryEntryFromTaskDecision,
   createFoodOffer,
   createInitialButlerMemoryState,
   createRestOffer,
@@ -80,6 +82,8 @@ export class ButlerSystem {
 
     this.state.mood = deriveButlerMood(this.state.task)
 
+    this.rememberLatestTaskDecision(input.tick)
+
     if (!butlerPolicy?.ownsFinalDecision) {
       return this.state
     }
@@ -122,6 +126,24 @@ export class ButlerSystem {
     })
 
     return this.state
+  }
+
+  private rememberLatestTaskDecision(tick: number) {
+    const trace = this.state.latestTaskDecisionTrace
+
+    if (!trace) return
+    if (this.state.memory.latestEntry?.tick === tick) return
+
+    const entry = createButlerMemoryEntryFromTaskDecision({
+      tick,
+      trace,
+    })
+
+    this.state.memory = appendButlerMemoryEntry({
+      memory: this.state.memory,
+      entry,
+      maxEntries: 80,
+    })
   }
 
   private tryCreateOpportunity(input: {

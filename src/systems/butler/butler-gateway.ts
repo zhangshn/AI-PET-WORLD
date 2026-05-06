@@ -48,7 +48,9 @@ export type {
 export {
   appendButlerMemoryEntry,
   createButlerMemoryEntry,
+  createButlerMemoryEntryFromTaskDecision,
   createInitialButlerMemoryState,
+  shouldRememberTaskDecision,
 } from "./butler-memory"
 
 export type {
