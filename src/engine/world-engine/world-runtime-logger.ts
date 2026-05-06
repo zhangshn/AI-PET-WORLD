@@ -30,6 +30,7 @@ const ENABLE_PET_DECISION_LOG = true
 const ENABLE_PET_DECISION_AUDIT_LOG = true
 const ENABLE_PET_AGENT_TRACE_LOG = true
 const ENABLE_BUTLER_AGENT_TRACE_LOG = true
+const ENABLE_BUTLER_AGENT_TRACE_DETAIL_LOG = false
 const ENABLE_BIRTH_PROFILE_LOG = true
 
 export function logWorldTick(input: {
@@ -307,6 +308,47 @@ export function logPetDecisionTrace(input: {
   }
 }
 
+function buildButlerAgentTraceSummary(input: {
+  tick: number
+  butler: ButlerState
+  agentTrace: ReturnType<typeof buildRuntimeButlerAgentCycleTrace>
+}): Record<string, unknown> {
+  const taskTrace = input.butler.latestTaskDecisionTrace
+
+  return {
+    tick: input.tick,
+    task: input.butler.task,
+    mood: input.butler.mood,
+    signalCategory: input.agentTrace.signal?.category ?? "unknown",
+    intention: input.agentTrace.intention?.type ?? "unknown",
+    expression:
+      input.agentTrace.expression?.visibleExpression ?? "unknown",
+    selectedTask: taskTrace?.selectedTask ?? input.butler.task,
+    previousTask: taskTrace?.previousTask ?? null,
+    decisionReason: taskTrace?.reason ?? "暂无任务选择审计。",
+    profile: input.butler.profile
+      ? {
+          mappingMode: input.butler.profile.identity.mappingMode,
+          careStyle: input.butler.profile.careStyle,
+          buildStyle: input.butler.profile.buildStyle,
+          boundaryStyle: input.butler.profile.boundaryStyle,
+          opportunityStyle: input.butler.profile.opportunityStyle,
+        }
+      : null,
+    gates: taskTrace
+      ? {
+          passed: taskTrace.gates.filter((gate) => gate.passed).length,
+          failed: taskTrace.gates.filter((gate) => !gate.passed).length,
+        }
+      : null,
+    scores:
+      taskTrace?.scores.slice(0, 3).map((score) => ({
+        key: score.key,
+        value: score.value,
+      })) ?? [],
+  }
+}
+
 export function logButlerAgentTrace(input: {
   tick: number
   butler: ButlerState | null
@@ -331,7 +373,18 @@ export function logButlerAgentTrace(input: {
     time: input.time,
   })
 
-  console.log("🧠 管家 AgentCycleTrace：", agentTrace)
+  console.log(
+    "🧠 管家 AgentTrace 摘要：",
+    buildButlerAgentTraceSummary({
+      tick: input.tick,
+      butler: input.butler,
+      agentTrace,
+    })
+  )
+
+  if (ENABLE_BUTLER_AGENT_TRACE_DETAIL_LOG) {
+    console.log("🧠 管家 AgentCycleTrace 详情：", agentTrace)
+  }
 }
 
 export function logPetBirthProfile(input: {
