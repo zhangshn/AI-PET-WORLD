@@ -148,6 +148,7 @@ export function runPetRuntimeTick(
       consciousnessProfile: pet.consciousnessProfile,
       memoryState: pet.memoryState,
       currentLifeRuntimeBundle: pet.currentLifeRuntimeBundle ?? null,
+      latestCognition: pet.latestCognition ?? null,
     },
     time: input.time,
   })

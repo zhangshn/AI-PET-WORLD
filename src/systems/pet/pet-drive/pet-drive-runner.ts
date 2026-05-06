@@ -26,6 +26,10 @@ import {
 } from "./pet-drive-life-tendency-layer"
 
 import {
+  applyCognitionDriveLayer,
+} from "./pet-drive-cognition-layer"
+
+import {
   applyCrossDriveSuppression,
   applyEmotionAndRelationLayer,
   applyExternalStimuliLayer,
@@ -60,6 +64,12 @@ export class DriveSystem {
      * 它不能直接决定 action，也不能覆盖饥饿、疲劳等生理优先级。
      */
     applyLifeTendencyLayer(context)
+
+    /**
+     * 认知层只影响 drive。
+     * 世界刺激不能直接推行为，只能先转成主体内部驱动变化。
+     */
+    applyCognitionDriveLayer(context)
 
     applyPhysicalLayer(context)
     applyEmotionAndRelationLayer(context)

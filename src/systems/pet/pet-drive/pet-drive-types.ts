@@ -5,6 +5,7 @@
 import type { TimeState } from "../../../engine/timeSystem"
 import type { PetState } from "../../../types/pet"
 import type { PetMemoryState } from "../../../ai/memory-core/memory-gateway"
+import type { PetCognitionRecord } from "../../../types/cognition"
 
 export type DriveType =
   | "eat"
@@ -35,6 +36,7 @@ export type DriveSystemPetInput = Pick<
   | "currentLifeRuntimeBundle"
 > & {
   memoryState?: PetMemoryState | null
+  latestCognition?: PetCognitionRecord | null
 }
 
 export type DriveSystemInput = {
