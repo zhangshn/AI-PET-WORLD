@@ -190,15 +190,19 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
   currentPet = petRuntimeResult.pet
 
   /**
-   * 阶段 7.5：生命运行动态包日志。
-   * 这里只验证世界时间是否能驱动紫微 / 八字 / 五维生命趋向。
-   * 不改变宠物状态，不影响 drive / goal / behavior。
+   * 阶段 7.5：生命运行动态包更新。
+   * 这里只把当前世界时间下的生命运行上下文写入 PetState。
+   * 不改变宠物行为，不影响 drive / goal / behavior。
    */
-  runLifeRuntimeLog({
+  const lifeRuntimeBundle = runLifeRuntimeLog({
     tick: input.tick,
     time: input.currentTime,
     pet: currentPet,
   })
+
+  if (lifeRuntimeBundle) {
+    input.petSystem.updateLifeRuntimeBundle(lifeRuntimeBundle)
+  }
 
   /**
    * 阶段 8：处理管家提供的机会。

@@ -4,6 +4,7 @@
 
 import type {
   BaziProfile,
+  CurrentLifeRuntimeBundle,
   LifePersonalityProfileBundle,
   PersonalityProfile,
   PetTimelineSnapshot,
@@ -81,6 +82,12 @@ export type PetState = {
   publicPersonalityView: PublicPersonalityView | null
   baziProfile: BaziProfile
   consciousnessProfile: ZiweiConsciousnessKernel
+
+  /**
+   * 当前世界时间下的生命运行动态包。
+   * 这里只保存运行上下文，不直接决定行为。
+   */
+  currentLifeRuntimeBundle?: CurrentLifeRuntimeBundle | null
 
   lifeState: PetLifeState
 

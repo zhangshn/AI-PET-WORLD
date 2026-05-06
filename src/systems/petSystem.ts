@@ -5,6 +5,7 @@
 import type { PetGenderPerspective, PetState } from "../types/pet"
 import type { TimeState } from "../engine/timeSystem"
 import type {
+  CurrentLifeRuntimeBundle,
   LifePersonalityProfileBundle,
   PetTimelineSnapshot,
 } from "../ai/gateway"
@@ -130,6 +131,8 @@ export class PetSystem {
       baziProfile: lifeProfile.baziProfile,
       consciousnessProfile,
 
+      currentLifeRuntimeBundle: null,
+
       lifeState: {
         phase: "newborn",
         ageTicks: 0,
@@ -182,6 +185,19 @@ export class PetSystem {
     this.actionStability = result.actionStability
     this.lastDriveSnapshot = result.lastDriveSnapshot
     this.lastDecisionReason = result.lastDecisionReason
+  }
+
+  updateLifeRuntimeBundle(
+    bundle: CurrentLifeRuntimeBundle | null
+  ) {
+    if (!this.pet) {
+      return
+    }
+
+    this.pet = {
+      ...this.pet,
+      currentLifeRuntimeBundle: bundle,
+    }
   }
 
   perceiveWorldStimuli(

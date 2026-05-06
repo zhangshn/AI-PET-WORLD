@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：在世界 Tick 中打印生命运行动态数据包。
+ * 当前文件负责：在世界 Tick 中构建并打印生命运行动态数据包。
  */
 
 import type {
@@ -82,15 +82,18 @@ function formatTopTendencies(bundle: CurrentLifeRuntimeBundle): string {
     .join(" / ")
 }
 
+function formatWorldTime(time: TimeState): string {
+  return `Day ${time.day} - ${String(time.hour).padStart(
+    2,
+    "0"
+  )}:00 - ${time.period}`
+}
+
 export function runLifeRuntimeLog(input: {
   tick: number
   time: TimeState
   pet: PetState | null
 }): CurrentLifeRuntimeBundle | null {
-  if (!ENABLE_LIFE_RUNTIME_LOG) {
-    return null
-  }
-
   if (!input.pet) {
     return null
   }
@@ -102,24 +105,26 @@ export function runLifeRuntimeLog(input: {
     })
   )
 
-  console.log("🧬 生命运行动态包", {
-    tick: input.tick,
-    worldTime: `Day ${input.time.day} - ${String(input.time.hour).padStart(
-      2,
-      "0"
-    )}:00 - ${input.time.period}`,
-    runtime: {
-      year: bundle.baziRuntimeProfile.flows.liuNian.label,
-      month: bundle.baziRuntimeProfile.flows.liuYue.label,
-      day: bundle.baziRuntimeProfile.flows.liuRi.label,
-      hour: bundle.baziRuntimeProfile.flows.liuShi?.label ?? "未知",
-    },
-    lifeTendencyTop: formatTopTendencies(bundle),
-    ziweiDynamicAvailable: bundle.debug.hasZiweiDynamicProfile,
-    baziUsedRuntimePillars:
-      bundle.baziTendencyProfile.debug.usedRuntimePillars,
-    gameUsage: bundle.lifeTendencyProfile.labels.gameUsage,
-  })
+  if (ENABLE_LIFE_RUNTIME_LOG) {
+    console.log("🧬 生命运行动态包", {
+      tick: input.tick,
+      worldTime: formatWorldTime(input.time),
+      runtime: {
+        daYun:
+          bundle.baziRuntimeProfile.daYun.currentDaYun?.pillar.label ??
+          "未起运",
+        liuNian: bundle.baziRuntimeProfile.flows.liuNian.label,
+        liuYue: bundle.baziRuntimeProfile.flows.liuYue.label,
+        liuRi: bundle.baziRuntimeProfile.flows.liuRi.label,
+        liuShi: bundle.baziRuntimeProfile.flows.liuShi?.label ?? "未知",
+      },
+      lifeTendencyTop: formatTopTendencies(bundle),
+      ziweiDynamicAvailable: bundle.debug.hasZiweiDynamicProfile,
+      baziUsedRuntimePillars:
+        bundle.baziTendencyProfile.debug.usedRuntimePillars,
+      gameUsage: bundle.lifeTendencyProfile.labels.gameUsage,
+    })
+  }
 
   return bundle
 }
