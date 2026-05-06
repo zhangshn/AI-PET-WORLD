@@ -17,6 +17,15 @@ export type ButlerRelationTone =
   | "trusted"
   | "guarded"
 
+export type ButlerOpportunityFeedback = {
+  tick: number
+  type: ButlerOpportunityType
+  accepted: boolean
+  expired?: boolean
+  reason?: string
+  value?: number
+}
+
 export type ButlerRelationState = {
   familiarity: number
   trustEstimate: number
@@ -25,17 +34,9 @@ export type ButlerRelationState = {
   successfulOffers: number
   rejectedOffers: number
   lastInteractionTick: number | null
+  latestOpportunityFeedback: ButlerOpportunityFeedback | null
   tone: ButlerRelationTone
   tags: string[]
-}
-
-export type ButlerOpportunityFeedback = {
-  tick: number
-  type: ButlerOpportunityType
-  accepted: boolean
-  expired?: boolean
-  reason?: string
-  value?: number
 }
 
 export function createInitialButlerRelationState(): ButlerRelationState {
@@ -47,6 +48,7 @@ export function createInitialButlerRelationState(): ButlerRelationState {
     successfulOffers: 0,
     rejectedOffers: 0,
     lastInteractionTick: null,
+    latestOpportunityFeedback: null,
     tone: "unfamiliar",
     tags: [],
   }
@@ -137,7 +139,16 @@ function buildRelationTags(input: {
     tags.push(`memory_repeat_${input.memoryEntry.repeatCount}`)
   }
 
-  return uniqueTags(tags).slice(0, 28)
+  if (input.relation.latestOpportunityFeedback) {
+    tags.push(`latest_feedback_${input.relation.latestOpportunityFeedback.type}`)
+    tags.push(
+      input.relation.latestOpportunityFeedback.accepted
+        ? "latest_feedback_accepted"
+        : "latest_feedback_rejected"
+    )
+  }
+
+  return uniqueTags(tags).slice(0, 32)
 }
 
 function buildOpportunityFeedbackTags(input: {
@@ -161,7 +172,11 @@ function buildOpportunityFeedbackTags(input: {
     tags.push("opportunity_has_value")
   }
 
-  return uniqueTags(tags).slice(0, 28)
+  if (input.feedback.reason) {
+    tags.push("opportunity_has_reason")
+  }
+
+  return uniqueTags(tags).slice(0, 32)
 }
 
 function deriveRelationDelta(input: {
@@ -360,13 +375,10 @@ export function updateButlerRelationFromTaskDecision(input: {
     lastInteractionTick: shouldTouchInteraction
       ? input.tick
       : input.relation.lastInteractionTick,
+    latestOpportunityFeedback: input.relation.latestOpportunityFeedback,
   }
 
-  const tone = deriveRelationTone({
-    familiarity: nextBase.familiarity,
-    trustEstimate: nextBase.trustEstimate,
-    rejectedOffers: nextBase.rejectedOffers,
-  })
+  const tone = rebuildRelationTone(nextBase)
 
   const nextRelation: ButlerRelationState = {
     ...nextBase,
@@ -404,6 +416,7 @@ export function updateButlerRelationFromOpportunityFeedback(input: {
     rejectedOffers:
       input.relation.rejectedOffers + delta.rejectedOffers,
     lastInteractionTick: input.feedback.tick,
+    latestOpportunityFeedback: input.feedback,
   }
 
   const tone = rebuildRelationTone(base)
