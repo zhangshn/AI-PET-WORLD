@@ -2,7 +2,7 @@
  * 当前文件负责：组装八字原局与动态运势合并展示面板。
  */
 
-import { useMemo, useState } from "react"
+import { useMemo } from "react"
 import type { CSSProperties } from "react"
 
 import {
@@ -162,16 +162,17 @@ export function BaziRuntimePanel({
   baziProfile,
   dynamicGender,
   runtimeTime,
+  activeLevel,
+  onActiveLevelChange,
   onRuntimeTimeChange,
 }: {
   baziProfile: BaziProfile
   dynamicGender: DynamicGenderInput
   runtimeTime: PersonalityTestRuntimeTime
+  activeLevel: BaziRuntimeActiveLevel
+  onActiveLevelChange: (level: BaziRuntimeActiveLevel) => void
   onRuntimeTimeChange: (selection: BaziRuntimeTimeSelection) => void
 }) {
-  const [activeLevel, setActiveLevel] =
-    useState<BaziRuntimeActiveLevel>("daYun")
-
   const selection = useMemo<BaziRuntimeTimeSelection>(() => {
     return {
       currentYear: runtimeTime.currentYear,
@@ -267,7 +268,7 @@ export function BaziRuntimePanel({
   ]
 
   return (
-    <InfoCard title="☯ 八字辅助区">
+    <InfoCard title="☯ 八字辅助内容">
       <div style={summaryGridStyle}>
         <div>
           <strong>当前模式：</strong>
@@ -307,7 +308,7 @@ export function BaziRuntimePanel({
         runtimeProfile={runtimeProfile}
         activeLevel={activeLevel}
         selection={selection}
-        onActiveLevelChange={setActiveLevel}
+        onActiveLevelChange={onActiveLevelChange}
         onSelectionChange={onRuntimeTimeChange}
       />
 

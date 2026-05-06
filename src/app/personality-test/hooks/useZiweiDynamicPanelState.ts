@@ -2,14 +2,15 @@
  * 当前文件负责：组合紫微动态面板的输入状态与计算结果。
  */
 
-import { useState } from "react"
-
 import type {
   BirthPattern,
   PersonalityProfile
 } from "../../../ai/ziwei-core/schema"
 
-import type { DynamicGenderInput, ActiveDynamicFlow } from "../types"
+import type {
+  ActiveDynamicFlow,
+  DynamicGenderInput
+} from "../types"
 
 import type { PersonalityTestRuntimeTime } from "../runtime-time/personality-test-runtime-time-types"
 import type { ZiweiDynamicTimeSelection } from "../components/ZiweiDynamicTimeTable"
@@ -34,6 +35,8 @@ export function useZiweiDynamicPanelState({
   hasBirthHour,
   dynamicGender,
   runtimeTime,
+  activeFlow,
+  onActiveFlowChange,
   onRuntimeTimeChange,
 }: {
   pattern: BirthPattern
@@ -41,10 +44,10 @@ export function useZiweiDynamicPanelState({
   hasBirthHour: boolean
   dynamicGender: DynamicGenderInput
   runtimeTime: PersonalityTestRuntimeTime
+  activeFlow: ActiveDynamicFlow
+  onActiveFlowChange: (flow: ActiveDynamicFlow) => void
   onRuntimeTimeChange: (selection: ZiweiDynamicTimeSelection) => void
 }) {
-  const [activeFlow, setActiveFlow] = useState<ActiveDynamicFlow>("natal")
-
   const timeSelection = buildZiweiSelectionFromRuntimeTime(runtimeTime)
 
   const dynamicResults = useZiweiDynamicResults({
@@ -58,7 +61,7 @@ export function useZiweiDynamicPanelState({
 
   return {
     activeFlow,
-    setActiveFlow,
+    setActiveFlow: onActiveFlowChange,
     timeSelection,
     setTimeSelection: onRuntimeTimeChange,
     ...dynamicResults,

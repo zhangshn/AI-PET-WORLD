@@ -6,24 +6,30 @@ import { useMemo, useState } from "react"
 
 import type { BranchPalace } from "../../../ai/ziwei-core/schema"
 
+import {
+  clampSolarDay,
+  findSolarByBaziLunarDate,
+  getBaziLunarInfoBySolar,
+} from "../../../ai/bazi-core/bazi-runtime/bazi-lunar-date-utils"
+
 import type { BaziRuntimeTimeSelection } from "../components/bazi-runtime-panel/bazi-runtime-panel-types"
 import type { ZiweiDynamicTimeSelection } from "../components/ZiweiDynamicTimeTable"
 
 import type { PersonalityTestRuntimeTime } from "./personality-test-runtime-time-types"
 
 const BRANCH_TO_REPRESENTATIVE_HOUR: Record<BranchPalace, number> = {
-  zi: 23,
-  chou: 1,
-  yin: 3,
-  mao: 5,
-  chen: 7,
-  si: 9,
-  wu: 11,
-  wei: 13,
-  shen: 15,
-  you: 17,
-  xu: 19,
-  hai: 21,
+  zi: 0,
+  chou: 2,
+  yin: 4,
+  mao: 6,
+  chen: 8,
+  si: 10,
+  wu: 12,
+  wei: 14,
+  shen: 16,
+  you: 18,
+  xu: 20,
+  hai: 22,
 }
 
 function getTimeBranchFromHour(hour: number | null): BranchPalace {
@@ -125,6 +131,43 @@ function buildInitialRuntimeTime(params: {
   }
 }
 
+function resolveSolarDateFromZiweiSelection(params: {
+  birthYear: number
+  selection: ZiweiDynamicTimeSelection
+  fallback: PersonalityTestRuntimeTime
+}): {
+  currentYear: number
+  currentMonth: number
+  currentDay: number
+} {
+  const targetLunarYear = params.birthYear + params.selection.currentAge - 1
+
+  const mapped = findSolarByBaziLunarDate({
+    lunarYear: targetLunarYear,
+    lunarMonth: params.selection.currentLunarMonth,
+    lunarDay: params.selection.currentLunarDay,
+    includeLeapMonth: true,
+  })
+
+  if (mapped) {
+    return {
+      currentYear: mapped.solarYear,
+      currentMonth: mapped.solarMonth,
+      currentDay: mapped.solarDay,
+    }
+  }
+
+  return {
+    currentYear: params.selection.currentYear,
+    currentMonth: params.fallback.currentMonth,
+    currentDay: clampSolarDay({
+      year: params.selection.currentYear,
+      month: params.fallback.currentMonth,
+      day: params.fallback.currentDay,
+    }),
+  }
+}
+
 export function usePersonalityTestRuntimeTime({
   birthYear,
   birthMonth,
@@ -202,11 +245,18 @@ export function usePersonalityTestRuntimeTime({
     const representativeHour =
       BRANCH_TO_REPRESENTATIVE_HOUR[selection.currentTimeBranch]
 
+    const solarDate = resolveSolarDateFromZiweiSelection({
+      birthYear,
+      selection,
+      fallback: runtimeTime,
+    })
+
     setRuntimeTime({
       ...runtimeTime,
-      currentYear: selection.currentYear,
-      currentMonth: selection.currentLunarMonth,
-      currentDay: selection.currentLunarDay,
+
+      currentYear: solarDate.currentYear,
+      currentMonth: solarDate.currentMonth,
+      currentDay: solarDate.currentDay,
       currentHour: representativeHour,
 
       currentAge: selection.currentAge,
@@ -220,11 +270,24 @@ export function usePersonalityTestRuntimeTime({
   function setFromBaziSelection(selection: BaziRuntimeTimeSelection) {
     const nextHour = selection.currentHour ?? runtimeTime.currentHour
 
+    const safeDay = clampSolarDay({
+      year: selection.currentYear,
+      month: selection.currentMonth,
+      day: selection.currentDay,
+    })
+
+    const lunarInfo = getBaziLunarInfoBySolar({
+      year: selection.currentYear,
+      month: selection.currentMonth,
+      day: safeDay,
+    })
+
     setRuntimeTime({
       ...runtimeTime,
+
       currentYear: selection.currentYear,
       currentMonth: selection.currentMonth,
-      currentDay: selection.currentDay,
+      currentDay: safeDay,
       currentHour: nextHour,
 
       currentAge: resolveAge({
@@ -232,13 +295,8 @@ export function usePersonalityTestRuntimeTime({
         currentYear: selection.currentYear,
       }),
 
-      /**
-       * 测试页当前先做同步调试：
-       * 公历月日同步到紫微动态月日。
-       * 后续如果接入完整农历转换，这里再替换成真实农历运行时间。
-       */
-      currentLunarMonth: selection.currentMonth,
-      currentLunarDay: selection.currentDay,
+      currentLunarMonth: lunarInfo.lunarMonth,
+      currentLunarDay: lunarInfo.lunarDay,
       currentTimeBranch: getTimeBranchFromHour(nextHour),
     })
   }
