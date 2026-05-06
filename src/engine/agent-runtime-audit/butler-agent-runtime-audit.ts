@@ -108,6 +108,23 @@ function buildButlerProfileTags(
   ]
 }
 
+function buildButlerTaskDecisionTags(
+  input: RuntimeButlerAgentAuditInput
+): string[] {
+  const trace = input.butler.latestTaskDecisionTrace
+
+  if (!trace) {
+    return ["no_butler_task_decision_trace"]
+  }
+
+  return [
+    `task_selected_${trace.selectedTask}`,
+    `task_previous_${trace.previousTask}`,
+    `gate_count_${trace.gates.length}`,
+    `score_count_${trace.scores.length}`,
+  ]
+}
+
 function buildButlerProfileReasonLines(
   input: RuntimeButlerAgentAuditInput
 ): string[] {
@@ -148,6 +165,35 @@ function buildButlerProfileTuningReasonLines(
   ]
 }
 
+function buildButlerTaskDecisionReasonLines(
+  input: RuntimeButlerAgentAuditInput
+): string[] {
+  const trace = input.butler.latestTaskDecisionTrace
+
+  if (!trace) {
+    return [
+      "Task Decision Trace：本轮尚未记录任务选择审计。",
+    ]
+  }
+
+  const passedGates = trace.gates.filter((gate) => gate.passed)
+  const failedGates = trace.gates.filter((gate) => !gate.passed)
+  const topScores = trace.scores.slice(0, 5)
+
+  return [
+    `Task Decision：previous=${trace.previousTask}，selected=${trace.selectedTask}。`,
+    `Task Decision Reason：${trace.reason}`,
+    `Task Decision Context：hasPet=${trace.context.hasPet}，hasTimeline=${trace.context.hasTimelineSnapshot}，incubatorCompleted=${trace.context.incubatorCompleted}，homeCompleted=${trace.context.homeCompleted}，pendingOpportunityCount=${trace.context.pendingOpportunityCount}，petEnergy=${trace.context.petEnergy ?? "-"}，petHunger=${trace.context.petHunger ?? "-"}，petEmotion=${trace.context.petEmotion ?? "-"}，petRelation=${trace.context.petRelation ?? "-"}，lifePhase=${trace.context.petLifePhase ?? "-"}，time=${trace.context.timeHour}/${trace.context.timePeriod ?? "unknown"}。`,
+    `Task Decision Gates：通过 ${passedGates.length} 个，未通过 ${failedGates.length} 个。`,
+    ...trace.gates.slice(0, 6).map((gate) =>
+      `Gate ${gate.key}：${gate.passed ? "通过" : "未通过"}，${gate.reason}`
+    ),
+    ...topScores.map((score) =>
+      `Score ${score.key}=${score.value}：${score.reason}`
+    ),
+  ]
+}
+
 function buildButlerProfileSummary(
   input: RuntimeButlerAgentAuditInput
 ): string {
@@ -167,40 +213,58 @@ function buildButlerProfileSummary(
   ].join("，")
 }
 
+function buildButlerTaskDecisionSummary(
+  input: RuntimeButlerAgentAuditInput
+): string {
+  const trace = input.butler.latestTaskDecisionTrace
+
+  if (!trace) {
+    return "当前尚未生成 TaskDecisionTrace。"
+  }
+
+  return [
+    "本轮任务选择审计已生成",
+    `previous=${trace.previousTask}`,
+    `selected=${trace.selectedTask}`,
+    `reason=${trace.reason}`,
+  ].join("，")
+}
+
 function buildButlerSignalSummary(
   input: RuntimeButlerAgentAuditInput
 ): string {
   const profileSummary = buildButlerProfileSummary(input)
+  const decisionSummary = buildButlerTaskDecisionSummary(input)
 
   if (
     input.incubator &&
     input.incubator.status !== "hatched" &&
     input.incubator.progress < 100
   ) {
-    return `孵化器仍在运行，进度 ${input.incubator.progress}，稳定度 ${input.incubator.stability}。${profileSummary}`
+    return `孵化器仍在运行，进度 ${input.incubator.progress}，稳定度 ${input.incubator.stability}。${profileSummary}。${decisionSummary}`
   }
 
   if (input.butler.task === "offering_food") {
-    return `宠物需求可能上升，管家准备提供食物机会。${profileSummary}`
+    return `宠物需求可能上升，管家准备提供食物机会。${profileSummary}。${decisionSummary}`
   }
 
   if (input.butler.task === "offering_rest") {
-    return `宠物可能需要恢复，管家准备提供休息机会。${profileSummary}`
+    return `宠物可能需要恢复，管家准备提供休息机会。${profileSummary}。${decisionSummary}`
   }
 
   if (input.butler.task === "offering_approach") {
-    return `宠物关系状态允许靠近，管家准备提供互动机会。${profileSummary}`
+    return `宠物关系状态允许靠近，管家准备提供互动机会。${profileSummary}。${decisionSummary}`
   }
 
   if (input.butler.task === "building_home") {
-    return `家园仍有建设空间，管家将注意力放在环境维护上。${profileSummary}`
+    return `家园仍有建设空间，管家将注意力放在环境维护上。${profileSummary}。${decisionSummary}`
   }
 
   if (input.butler.task === "watching_pet") {
-    return `宠物已经出生，管家保持观察但不直接控制宠物行为。${profileSummary}`
+    return `宠物已经出生，管家保持观察但不直接控制宠物行为。${profileSummary}。${decisionSummary}`
   }
 
-  return `当前没有紧急事务，管家维持待命观察。${profileSummary}`
+  return `当前没有紧急事务，管家维持待命观察。${profileSummary}。${decisionSummary}`
 }
 
 function buildButlerPerceptionReasons(
@@ -232,6 +296,7 @@ function buildButlerPerceptionReasons(
 
   reasons.push(...buildButlerProfileReasonLines(input))
   reasons.push(...buildButlerProfileTuningReasonLines(input))
+  reasons.push(...buildButlerTaskDecisionReasonLines(input))
 
   return reasons
 }
@@ -250,15 +315,21 @@ function buildButlerInterpretationSummary(
   input: RuntimeButlerAgentAuditInput
 ): string {
   const profile = input.butler.profile
+  const decisionSummary = buildButlerTaskDecisionSummary(input)
 
   if (!profile) {
-    return "管家将当前世界状态解释为需要维护、观察或提供机会的情境。当前尚未接入 ButlerProfile。"
+    return [
+      "管家将当前世界状态解释为需要维护、观察或提供机会的情境。",
+      "当前尚未接入 ButlerProfile。",
+      decisionSummary,
+    ].join("")
   }
 
   return [
     "管家将当前世界状态解释为需要维护、观察或提供机会的情境。",
     `本轮解释会参考 ButlerProfile：${profile.identity.mappingMode} / ${profile.careStyle} / ${profile.buildStyle} / ${profile.boundaryStyle} / ${profile.opportunityStyle}。`,
     "Profile 只参与解释和审计，不直接控制宠物行为。",
+    decisionSummary,
   ].join("")
 }
 
@@ -267,36 +338,37 @@ function buildButlerIntentionSummary(
 ): string {
   const task = input.butler.task
   const profile = input.butler.profile
+  const decisionSummary = buildButlerTaskDecisionSummary(input)
 
   const profileText = profile
     ? `管家当前 Profile 倾向：照护=${profile.careStyle}，建设=${profile.buildStyle}，边界=${profile.boundaryStyle}，机会=${profile.opportunityStyle}。`
     : "管家当前尚未绑定 Profile。"
 
   if (task === "watching_incubator") {
-    return `管家的内部意图是维持孵化器稳定。${profileText}`
+    return `管家的内部意图是维持孵化器稳定。${profileText}${decisionSummary}`
   }
 
   if (task === "building_home") {
-    return `管家的内部意图是维护和建设家园环境。${profileText}`
+    return `管家的内部意图是维护和建设家园环境。${profileText}${decisionSummary}`
   }
 
   if (task === "watching_pet") {
-    return `管家的内部意图是观察宠物状态，而不是替宠物做决定。${profileText}`
+    return `管家的内部意图是观察宠物状态，而不是替宠物做决定。${profileText}${decisionSummary}`
   }
 
   if (task === "offering_food") {
-    return `管家的内部意图是提供食物机会，由宠物自主接受或拒绝。${profileText}`
+    return `管家的内部意图是提供食物机会，由宠物自主接受或拒绝。${profileText}${decisionSummary}`
   }
 
   if (task === "offering_rest") {
-    return `管家的内部意图是提供休息机会，由宠物自主接受或拒绝。${profileText}`
+    return `管家的内部意图是提供休息机会，由宠物自主接受或拒绝。${profileText}${decisionSummary}`
   }
 
   if (task === "offering_approach") {
-    return `管家的内部意图是提供靠近机会，而不是强制互动。${profileText}`
+    return `管家的内部意图是提供靠近机会，而不是强制互动。${profileText}${decisionSummary}`
   }
 
-  return `管家当前保持待命。${profileText}`
+  return `管家当前保持待命。${profileText}${decisionSummary}`
 }
 
 function buildButlerExpression(task: ButlerTask): string {
@@ -314,14 +386,23 @@ function buildButlerExpressionReason(
   input: RuntimeButlerAgentAuditInput
 ): string {
   const profile = input.butler.profile
+  const trace = input.butler.latestTaskDecisionTrace
+
+  const decisionText = trace
+    ? `任务选择审计显示：${trace.reason}`
+    : "当前尚未生成任务选择审计。"
 
   if (!profile) {
-    return "管家的可见行为是管理性表达，不直接覆盖宠物自主行为。"
+    return [
+      "管家的可见行为是管理性表达，不直接覆盖宠物自主行为。",
+      decisionText,
+    ].join("")
   }
 
   return [
     "管家的可见行为是管理性表达，不直接覆盖宠物自主行为。",
     `本轮表达携带 Profile 风格痕迹：照护=${profile.careStyle}，建设=${profile.buildStyle}，边界=${profile.boundaryStyle}，机会=${profile.opportunityStyle}。`,
+    decisionText,
   ].join("")
 }
 
@@ -338,14 +419,19 @@ function buildButlerMemorySummary(
   input: RuntimeButlerAgentAuditInput
 ): string {
   const profile = input.butler.profile
+  const decisionSummary = buildButlerTaskDecisionSummary(input)
 
   if (!profile) {
-    return "本轮管家任务结果未来可进入管家记忆，用于形成管理经验。"
+    return [
+      "本轮管家任务结果未来可进入管家记忆，用于形成管理经验。",
+      decisionSummary,
+    ].join("")
   }
 
   return [
     "本轮管家任务结果未来可进入管家记忆，用于形成管理经验。",
     `记忆审计会保留 Profile 上下文：${profile.identity.mappingMode} / ${profile.careStyle} / ${profile.buildStyle} / ${profile.boundaryStyle} / ${profile.opportunityStyle}。`,
+    decisionSummary,
   ].join("")
 }
 
@@ -372,6 +458,7 @@ export function buildRuntimeButlerAgentCycleTrace(
       input.butler.mood,
       input.time.period ?? "unknown_period",
       ...buildButlerProfileTags(input),
+      ...buildButlerTaskDecisionTags(input),
     ],
   })
 
@@ -388,7 +475,7 @@ export function buildRuntimeButlerAgentCycleTrace(
         ? 35
         : 76,
     perceivedMeaning:
-      "管家根据孵化器、宠物、家园、时间状态和自身 Profile 形成管理性观察。",
+      "管家根据孵化器、宠物、家园、时间状态、自身 Profile 与任务选择审计形成管理性观察。",
     reasons: buildButlerPerceptionReasons(input),
   })
 
@@ -407,6 +494,7 @@ export function buildRuntimeButlerAgentCycleTrace(
       "当前任务只能形成机会或环境维护，不能直接决定宠物行为。",
       ...buildButlerProfileReasonLines(input),
       ...buildButlerProfileTuningReasonLines(input),
+      ...buildButlerTaskDecisionReasonLines(input),
     ],
   })
 
@@ -428,6 +516,7 @@ export function buildRuntimeButlerAgentCycleTrace(
       `当前心情：${input.butler.mood}`,
       ...buildButlerProfileReasonLines(input),
       ...buildButlerProfileTuningReasonLines(input),
+      ...buildButlerTaskDecisionReasonLines(input),
     ],
   })
 
