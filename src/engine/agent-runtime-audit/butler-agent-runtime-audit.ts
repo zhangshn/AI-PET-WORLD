@@ -125,6 +125,26 @@ function buildButlerTaskDecisionTags(
   ]
 }
 
+function buildButlerMemoryTags(
+  input: RuntimeButlerAgentAuditInput
+): string[] {
+  const memory = input.butler.memory
+
+  if (!memory) {
+    return ["no_butler_memory"]
+  }
+
+  const latest = memory.latestEntry
+
+  return [
+    `memory_total_${memory.totalCount}`,
+    `memory_entries_${memory.entries.length}`,
+    `memory_merged_${memory.mergedCount}`,
+    latest ? `memory_latest_${latest.type}` : "memory_latest_none",
+    latest ? `memory_latest_task_${latest.sourceTask}` : "memory_latest_task_none",
+  ]
+}
+
 function buildButlerProfileReasonLines(
   input: RuntimeButlerAgentAuditInput
 ): string[] {
@@ -194,6 +214,31 @@ function buildButlerTaskDecisionReasonLines(
   ]
 }
 
+function buildButlerMemoryReasonLines(
+  input: RuntimeButlerAgentAuditInput
+): string[] {
+  const memory = input.butler.memory
+
+  if (!memory) {
+    return [
+      "Butler Memory：当前尚未初始化记忆状态。",
+    ]
+  }
+
+  const latest = memory.latestEntry
+  const recent = memory.entries.slice(0, 3)
+
+  return [
+    `Butler Memory：total=${memory.totalCount}，entries=${memory.entries.length}，merged=${memory.mergedCount}。`,
+    latest
+      ? `Latest Memory：type=${latest.type}，task=${latest.sourceTask}，importance=${latest.importance}，repeat=${latest.repeatCount}，tick=${latest.tick}，lastUpdated=${latest.lastUpdatedTick}。${latest.summary}`
+      : "Latest Memory：暂无最新记忆。",
+    ...recent.map((entry, index) =>
+      `Recent Memory ${index + 1}：type=${entry.type}，task=${entry.sourceTask}，repeat=${entry.repeatCount}，importance=${entry.importance}，summary=${entry.summary}`
+    ),
+  ]
+}
+
 function buildButlerProfileSummary(
   input: RuntimeButlerAgentAuditInput
 ): string {
@@ -230,41 +275,60 @@ function buildButlerTaskDecisionSummary(
   ].join("，")
 }
 
+function buildButlerMemorySummaryLine(
+  input: RuntimeButlerAgentAuditInput
+): string {
+  const memory = input.butler.memory
+
+  if (!memory) {
+    return "当前尚未初始化 ButlerMemory。"
+  }
+
+  const latest = memory.latestEntry
+
+  if (!latest) {
+    return `当前 ButlerMemory 已初始化，total=${memory.totalCount}，entries=${memory.entries.length}，merged=${memory.mergedCount}，暂无 latestEntry。`
+  }
+
+  return `当前 ButlerMemory：total=${memory.totalCount}，entries=${memory.entries.length}，merged=${memory.mergedCount}，latest=${latest.type}/${latest.sourceTask}，repeat=${latest.repeatCount}。`
+}
+
 function buildButlerSignalSummary(
   input: RuntimeButlerAgentAuditInput
 ): string {
   const profileSummary = buildButlerProfileSummary(input)
   const decisionSummary = buildButlerTaskDecisionSummary(input)
+  const memorySummary = buildButlerMemorySummaryLine(input)
 
   if (
     input.incubator &&
     input.incubator.status !== "hatched" &&
     input.incubator.progress < 100
   ) {
-    return `孵化器仍在运行，进度 ${input.incubator.progress}，稳定度 ${input.incubator.stability}。${profileSummary}。${decisionSummary}`
+    return `孵化器仍在运行，进度 ${input.incubator.progress}，稳定度 ${input.incubator.stability}。${profileSummary}。${decisionSummary}。${memorySummary}`
   }
 
   if (input.butler.task === "offering_food") {
-    return `宠物需求可能上升，管家准备提供食物机会。${profileSummary}。${decisionSummary}`
+    return `宠物需求可能上升，管家准备提供食物机会。${profileSummary}。${decisionSummary}。${memorySummary}`
   }
 
   if (input.butler.task === "offering_rest") {
-    return `宠物可能需要恢复，管家准备提供休息机会。${profileSummary}。${decisionSummary}`
+    return `宠物可能需要恢复，管家准备提供休息机会。${profileSummary}。${decisionSummary}。${memorySummary}`
   }
 
   if (input.butler.task === "offering_approach") {
-    return `宠物关系状态允许靠近，管家准备提供互动机会。${profileSummary}。${decisionSummary}`
+    return `宠物关系状态允许靠近，管家准备提供互动机会。${profileSummary}。${decisionSummary}。${memorySummary}`
   }
 
   if (input.butler.task === "building_home") {
-    return `家园仍有建设空间，管家将注意力放在环境维护上。${profileSummary}。${decisionSummary}`
+    return `家园仍有建设空间，管家将注意力放在环境维护上。${profileSummary}。${decisionSummary}。${memorySummary}`
   }
 
   if (input.butler.task === "watching_pet") {
-    return `宠物已经出生，管家保持观察但不直接控制宠物行为。${profileSummary}。${decisionSummary}`
+    return `宠物已经出生，管家保持观察但不直接控制宠物行为。${profileSummary}。${decisionSummary}。${memorySummary}`
   }
 
-  return `当前没有紧急事务，管家维持待命观察。${profileSummary}。${decisionSummary}`
+  return `当前没有紧急事务，管家维持待命观察。${profileSummary}。${decisionSummary}。${memorySummary}`
 }
 
 function buildButlerPerceptionReasons(
@@ -297,6 +361,7 @@ function buildButlerPerceptionReasons(
   reasons.push(...buildButlerProfileReasonLines(input))
   reasons.push(...buildButlerProfileTuningReasonLines(input))
   reasons.push(...buildButlerTaskDecisionReasonLines(input))
+  reasons.push(...buildButlerMemoryReasonLines(input))
 
   return reasons
 }
@@ -316,12 +381,14 @@ function buildButlerInterpretationSummary(
 ): string {
   const profile = input.butler.profile
   const decisionSummary = buildButlerTaskDecisionSummary(input)
+  const memorySummary = buildButlerMemorySummaryLine(input)
 
   if (!profile) {
     return [
       "管家将当前世界状态解释为需要维护、观察或提供机会的情境。",
       "当前尚未接入 ButlerProfile。",
       decisionSummary,
+      memorySummary,
     ].join("")
   }
 
@@ -330,6 +397,7 @@ function buildButlerInterpretationSummary(
     `本轮解释会参考 ButlerProfile：${profile.identity.mappingMode} / ${profile.careStyle} / ${profile.buildStyle} / ${profile.boundaryStyle} / ${profile.opportunityStyle}。`,
     "Profile 只参与解释和审计，不直接控制宠物行为。",
     decisionSummary,
+    memorySummary,
   ].join("")
 }
 
@@ -339,36 +407,37 @@ function buildButlerIntentionSummary(
   const task = input.butler.task
   const profile = input.butler.profile
   const decisionSummary = buildButlerTaskDecisionSummary(input)
+  const memorySummary = buildButlerMemorySummaryLine(input)
 
   const profileText = profile
     ? `管家当前 Profile 倾向：照护=${profile.careStyle}，建设=${profile.buildStyle}，边界=${profile.boundaryStyle}，机会=${profile.opportunityStyle}。`
     : "管家当前尚未绑定 Profile。"
 
   if (task === "watching_incubator") {
-    return `管家的内部意图是维持孵化器稳定。${profileText}${decisionSummary}`
+    return `管家的内部意图是维持孵化器稳定。${profileText}${decisionSummary}${memorySummary}`
   }
 
   if (task === "building_home") {
-    return `管家的内部意图是维护和建设家园环境。${profileText}${decisionSummary}`
+    return `管家的内部意图是维护和建设家园环境。${profileText}${decisionSummary}${memorySummary}`
   }
 
   if (task === "watching_pet") {
-    return `管家的内部意图是观察宠物状态，而不是替宠物做决定。${profileText}${decisionSummary}`
+    return `管家的内部意图是观察宠物状态，而不是替宠物做决定。${profileText}${decisionSummary}${memorySummary}`
   }
 
   if (task === "offering_food") {
-    return `管家的内部意图是提供食物机会，由宠物自主接受或拒绝。${profileText}${decisionSummary}`
+    return `管家的内部意图是提供食物机会，由宠物自主接受或拒绝。${profileText}${decisionSummary}${memorySummary}`
   }
 
   if (task === "offering_rest") {
-    return `管家的内部意图是提供休息机会，由宠物自主接受或拒绝。${profileText}${decisionSummary}`
+    return `管家的内部意图是提供休息机会，由宠物自主接受或拒绝。${profileText}${decisionSummary}${memorySummary}`
   }
 
   if (task === "offering_approach") {
-    return `管家的内部意图是提供靠近机会，而不是强制互动。${profileText}${decisionSummary}`
+    return `管家的内部意图是提供靠近机会，而不是强制互动。${profileText}${decisionSummary}${memorySummary}`
   }
 
-  return `管家当前保持待命。${profileText}${decisionSummary}`
+  return `管家当前保持待命。${profileText}${decisionSummary}${memorySummary}`
 }
 
 function buildButlerExpression(task: ButlerTask): string {
@@ -387,6 +456,7 @@ function buildButlerExpressionReason(
 ): string {
   const profile = input.butler.profile
   const trace = input.butler.latestTaskDecisionTrace
+  const memorySummary = buildButlerMemorySummaryLine(input)
 
   const decisionText = trace
     ? `任务选择审计显示：${trace.reason}`
@@ -396,6 +466,7 @@ function buildButlerExpressionReason(
     return [
       "管家的可见行为是管理性表达，不直接覆盖宠物自主行为。",
       decisionText,
+      memorySummary,
     ].join("")
   }
 
@@ -403,36 +474,62 @@ function buildButlerExpressionReason(
     "管家的可见行为是管理性表达，不直接覆盖宠物自主行为。",
     `本轮表达携带 Profile 风格痕迹：照护=${profile.careStyle}，建设=${profile.buildStyle}，边界=${profile.boundaryStyle}，机会=${profile.opportunityStyle}。`,
     decisionText,
+    memorySummary,
   ].join("")
 }
 
-function buildButlerMemoryDelta(task: ButlerTask): number {
-  if (task === "watching_incubator") return 1
-  if (task === "building_home") return 1
-  if (task.startsWith("offering_")) return 2
-  if (task === "watching_pet") return 1
+function buildButlerMemoryDelta(input: RuntimeButlerAgentAuditInput): number {
+  const latest = input.butler.memory?.latestEntry ?? null
+
+  if (!latest) {
+    if (input.butler.task === "watching_incubator") return 1
+    if (input.butler.task === "building_home") return 1
+    if (input.butler.task.startsWith("offering_")) return 2
+    if (input.butler.task === "watching_pet") return 1
+
+    return 0
+  }
+
+  if (latest.type === "care_opportunity") return 2
+  if (latest.type === "home_building") return 1
+  if (latest.type === "incubator_care") return 1
+  if (latest.type === "observation") return 1
 
   return 0
 }
 
-function buildButlerMemorySummary(
+function buildButlerMemoryImpactSummary(
   input: RuntimeButlerAgentAuditInput
 ): string {
   const profile = input.butler.profile
   const decisionSummary = buildButlerTaskDecisionSummary(input)
+  const memorySummary = buildButlerMemorySummaryLine(input)
 
   if (!profile) {
     return [
       "本轮管家任务结果未来可进入管家记忆，用于形成管理经验。",
       decisionSummary,
+      memorySummary,
     ].join("")
   }
 
   return [
-    "本轮管家任务结果未来可进入管家记忆，用于形成管理经验。",
-    `记忆审计会保留 Profile 上下文：${profile.identity.mappingMode} / ${profile.careStyle} / ${profile.buildStyle} / ${profile.boundaryStyle} / ${profile.opportunityStyle}。`,
+    "本轮管家任务结果已经进入 ButlerMemory，用于形成后续管理经验。",
+    `记忆审计保留 Profile 上下文：${profile.identity.mappingMode} / ${profile.careStyle} / ${profile.buildStyle} / ${profile.boundaryStyle} / ${profile.opportunityStyle}。`,
     decisionSummary,
+    memorySummary,
   ].join("")
+}
+
+function buildButlerMemoryImpactType(
+  input: RuntimeButlerAgentAuditInput
+) {
+  const latest = input.butler.memory?.latestEntry ?? null
+
+  if (latest?.type === "home_building") return "resource_impression"
+  if (latest?.type === "incubator_care") return "resource_impression"
+
+  return "relation_impression"
 }
 
 export function buildRuntimeButlerAgentCycleTrace(
@@ -459,6 +556,7 @@ export function buildRuntimeButlerAgentCycleTrace(
       input.time.period ?? "unknown_period",
       ...buildButlerProfileTags(input),
       ...buildButlerTaskDecisionTags(input),
+      ...buildButlerMemoryTags(input),
     ],
   })
 
@@ -475,7 +573,7 @@ export function buildRuntimeButlerAgentCycleTrace(
         ? 35
         : 76,
     perceivedMeaning:
-      "管家根据孵化器、宠物、家园、时间状态、自身 Profile 与任务选择审计形成管理性观察。",
+      "管家根据孵化器、宠物、家园、时间状态、自身 Profile、任务选择审计与 ButlerMemory 形成管理性观察。",
     reasons: buildButlerPerceptionReasons(input),
   })
 
@@ -495,6 +593,7 @@ export function buildRuntimeButlerAgentCycleTrace(
       ...buildButlerProfileReasonLines(input),
       ...buildButlerProfileTuningReasonLines(input),
       ...buildButlerTaskDecisionReasonLines(input),
+      ...buildButlerMemoryReasonLines(input),
     ],
   })
 
@@ -517,6 +616,7 @@ export function buildRuntimeButlerAgentCycleTrace(
       ...buildButlerProfileReasonLines(input),
       ...buildButlerProfileTuningReasonLines(input),
       ...buildButlerTaskDecisionReasonLines(input),
+      ...buildButlerMemoryReasonLines(input),
     ],
   })
 
@@ -536,12 +636,9 @@ export function buildRuntimeButlerAgentCycleTrace(
   const memoryImpact = buildAgentMemoryImpact({
     agentKind: "butler",
     agentId: input.butler.name,
-    type:
-      input.butler.task === "building_home"
-        ? "resource_impression"
-        : "relation_impression",
-    delta: buildButlerMemoryDelta(input.butler.task),
-    summary: buildButlerMemorySummary(input),
+    type: buildButlerMemoryImpactType(input),
+    delta: buildButlerMemoryDelta(input),
+    summary: buildButlerMemoryImpactSummary(input),
     sourceSignalId: signal.id,
     sourceIntentionType: intention.type,
   })
