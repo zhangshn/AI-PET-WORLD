@@ -2,7 +2,10 @@
  * 当前文件负责：组合紫微动态面板的输入状态与计算结果。
  */
 
-import type { BirthPattern } from "../../../ai/ziwei-core/schema"
+import type {
+  BirthPattern,
+  PersonalityProfile
+} from "../../../ai/ziwei-core/schema"
 
 import type { DynamicGenderInput } from "../types"
 
@@ -11,6 +14,7 @@ import { useZiweiDynamicResults } from "./useZiweiDynamicResults"
 
 export function useZiweiDynamicPanelState({
   pattern,
+  baseProfile,
   hasBirthHour,
   dynamicGender,
   currentYear,
@@ -18,6 +22,7 @@ export function useZiweiDynamicPanelState({
   timelineHour
 }: {
   pattern: BirthPattern
+  baseProfile: PersonalityProfile | null
   hasBirthHour: boolean
   dynamicGender: DynamicGenderInput
   currentYear: number
@@ -38,6 +43,7 @@ export function useZiweiDynamicPanelState({
 
   const dynamicResults = useZiweiDynamicResults({
     pattern,
+    baseProfile,
     hasBirthHour,
     dynamicGender,
     activeFlow,

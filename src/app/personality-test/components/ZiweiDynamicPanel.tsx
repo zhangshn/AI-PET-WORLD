@@ -4,7 +4,10 @@
  * 当前文件负责：组装紫微命盘动态测试面板。
  */
 
-import type { BirthPattern } from "../../../ai/ziwei-core/schema"
+import type {
+  BirthPattern,
+  PersonalityProfile
+} from "../../../ai/ziwei-core/schema"
 
 import type { DynamicGenderInput } from "../types"
 
@@ -21,11 +24,13 @@ import {
 } from "./dynamic/ZiweiDynamicNotice"
 import { ZiweiDynamicRuntimeLine } from "./dynamic/ZiweiDynamicRuntimeLine"
 import { ZiweiDynamicStatusBar } from "./dynamic/ZiweiDynamicStatusBar"
+import { ZiweiCurrentDynamicProfilePanel } from "./dynamic-current-profile/ZiweiCurrentDynamicProfilePanel"
 
 import { useZiweiDynamicPanelState } from "../hooks/useZiweiDynamicPanelState"
 
 export function ZiweiDynamicPanel({
   pattern,
+  baseProfile,
   hasBirthHour,
   dynamicGender,
   currentYear,
@@ -33,6 +38,7 @@ export function ZiweiDynamicPanel({
   timelineHour
 }: {
   pattern: BirthPattern
+  baseProfile: PersonalityProfile | null
   hasBirthHour: boolean
   dynamicGender: DynamicGenderInput
   currentYear: number
@@ -49,6 +55,7 @@ export function ZiweiDynamicPanel({
     chartResult,
     chartData,
     influenceResult,
+    currentDynamicProfileResult,
 
     activePalace,
     activeFlowResult,
@@ -57,6 +64,7 @@ export function ZiweiDynamicPanel({
     isDaYunRequestedButInactive
   } = useZiweiDynamicPanelState({
     pattern,
+    baseProfile,
     hasBirthHour,
     dynamicGender,
     currentYear,
@@ -125,6 +133,14 @@ export function ZiweiDynamicPanel({
               <ZiweiDynamicDetail
                 flow={activeFlowResult}
                 influence={influenceResult.data}
+              />
+            </div>
+          )}
+
+          {currentDynamicProfileResult?.ok && (
+            <div style={{ marginTop: 16 }}>
+              <ZiweiCurrentDynamicProfilePanel
+                profile={currentDynamicProfileResult.data}
               />
             </div>
           )}

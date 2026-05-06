@@ -30,9 +30,7 @@ export function buildPersonalityFromPattern(
 /**
  * 根据出生输入直接构建完整人格结果。
  */
-export function buildPersonalityProfile(
-  input: BirthInput
-): PersonalityProfile {
+export function buildPersonalityProfile(input: BirthInput): PersonalityProfile {
   const pattern = buildBirthPattern(input)
   return buildPersonalityFromPattern(pattern)
 }
@@ -41,6 +39,7 @@ export function buildPersonalityProfile(
  * 紫微动态运势模块入口。
  */
 export {
+  buildZiweiCurrentDynamicProfile,
   buildZiweiDynamicChartOnly,
   buildZiweiDynamicInfluence
 } from "./dynamic/dynamic-gateway"
@@ -49,12 +48,22 @@ export {
  * 紫微动态运势模块输入类型。
  */
 export type {
+  BuildZiweiCurrentDynamicProfileInput,
   BuildZiweiDynamicInfluenceInput
 } from "./dynamic/dynamic-gateway"
 
 /**
  * 紫微动态运势模块输出类型。
  */
+export type {
+  CurrentDynamicBiases,
+  CurrentDynamicFlowSummary,
+  CurrentDynamicLabels,
+  CurrentDynamicPreference,
+  CurrentDynamicProfile,
+  CurrentDynamicTendencies
+} from "./dynamic/dynamic-gateway"
+
 export type {
   ZiweiDynamicChart,
   ZiweiDynamicInfluence,

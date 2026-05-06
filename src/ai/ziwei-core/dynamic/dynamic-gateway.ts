@@ -4,7 +4,8 @@
 
 import type {
   BirthPattern,
-  BranchPalace
+  BranchPalace,
+  PersonalityProfile
 } from "../schema"
 
 import {
@@ -14,6 +15,14 @@ import {
 import {
   composeZiweiDynamicInfluence
 } from "./dynamic-influence-composer"
+
+import {
+  buildCurrentDynamicProfile
+} from "./current-profile/current-dynamic-profile-composer"
+
+import type {
+  CurrentDynamicProfile
+} from "./current-profile/current-dynamic-profile-schema"
 
 import type {
   ZiweiDynamicChart,
@@ -37,6 +46,11 @@ export interface BuildZiweiDynamicInfluenceInput {
   currentTimeBranch: BranchPalace
 }
 
+export interface BuildZiweiCurrentDynamicProfileInput
+  extends BuildZiweiDynamicInfluenceInput {
+  baseProfile: PersonalityProfile
+}
+
 export function buildZiweiDynamicChartOnly(
   input: BuildZiweiDynamicInfluenceInput
 ): ZiweiDynamicResult<ZiweiDynamicChart> {
@@ -57,3 +71,33 @@ export function buildZiweiDynamicInfluence(
     data: composeZiweiDynamicInfluence(chartResult.data)
   }
 }
+
+export function buildZiweiCurrentDynamicProfile(
+  input: BuildZiweiCurrentDynamicProfileInput
+): ZiweiDynamicResult<CurrentDynamicProfile> {
+  const chartResult = buildZiweiDynamicChart(input)
+
+  if (!chartResult.ok) {
+    return chartResult
+  }
+
+  const influence = composeZiweiDynamicInfluence(chartResult.data)
+
+  return {
+    ok: true,
+    data: buildCurrentDynamicProfile({
+      baseProfile: input.baseProfile,
+      chart: chartResult.data,
+      influence
+    })
+  }
+}
+
+export type {
+  CurrentDynamicBiases,
+  CurrentDynamicFlowSummary,
+  CurrentDynamicLabels,
+  CurrentDynamicPreference,
+  CurrentDynamicProfile,
+  CurrentDynamicTendencies
+} from "./current-profile/current-dynamic-profile-schema"

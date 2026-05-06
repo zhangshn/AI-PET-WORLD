@@ -73,6 +73,7 @@ export default function PersonalityTestPage() {
           <ZiweiDynamicPanel
             key={`${pattern.birthKey}-${year}-${month}-${day}-${birthHourInput}-${dynamicGender}`}
             pattern={pattern}
+            baseProfile={profile}
             hasBirthHour={hasBirthHour}
             dynamicGender={dynamicGender}
             currentYear={year}
