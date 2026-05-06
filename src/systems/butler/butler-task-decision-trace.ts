@@ -4,6 +4,7 @@
 
 import type { ButlerTask } from "./butler-schema"
 import type { ButlerProfileTaskTuning } from "./butler-profile-tuning"
+import type { ButlerExperienceInterpretation } from "./butler-relation-tuning"
 
 export type ButlerTaskDecisionGate = {
   key: string
@@ -24,6 +25,7 @@ export type ButlerTaskDecisionTrace = {
   gates: ButlerTaskDecisionGate[]
   scores: ButlerTaskDecisionScore[]
   profileTuning: ButlerProfileTaskTuning
+  experienceInterpretation: ButlerExperienceInterpretation | null
   context: {
     hasPet: boolean
     hasTimelineSnapshot: boolean
@@ -47,6 +49,7 @@ export function buildButlerTaskDecisionTrace(input: {
   gates: ButlerTaskDecisionGate[]
   scores: ButlerTaskDecisionScore[]
   profileTuning: ButlerProfileTaskTuning
+  experienceInterpretation?: ButlerExperienceInterpretation | null
   context: ButlerTaskDecisionTrace["context"]
 }): ButlerTaskDecisionTrace {
   return {
@@ -56,6 +59,7 @@ export function buildButlerTaskDecisionTrace(input: {
     gates: input.gates,
     scores: input.scores,
     profileTuning: input.profileTuning,
+    experienceInterpretation: input.experienceInterpretation ?? null,
     context: input.context,
   }
 }

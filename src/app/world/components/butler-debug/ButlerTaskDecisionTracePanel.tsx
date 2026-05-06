@@ -18,6 +18,8 @@ type Props = {
 }
 
 export default function ButlerTaskDecisionTracePanel({ trace }: Props) {
+  const experience = trace?.experienceInterpretation ?? null
+
   return (
     <>
       <div className={styles.block}>
@@ -114,6 +116,67 @@ export default function ButlerTaskDecisionTracePanel({ trace }: Props) {
 
       <div className={styles.block}>
         <h3 className={styles.blockTitle}>
+          Experience Interpretation / 经验解释
+        </h3>
+
+        {!experience && (
+          <p className={styles.empty}>
+            当前还没有经验解释审计。
+          </p>
+        )}
+
+        {experience && (
+          <>
+            <div className={styles.row}>
+              <span>mode</span>
+              <span>{experience.mode}</span>
+            </div>
+
+            <div className={styles.row}>
+              <span>profileSource</span>
+              <span className={styles.multiline}>
+                {experience.profileSource}
+              </span>
+            </div>
+
+            <div className={styles.row}>
+              <span>dominantInterpretation</span>
+              <span>{experience.dominantInterpretation}</span>
+            </div>
+
+            <div className={styles.row}>
+              <span>suggestedPosture</span>
+              <span>{experience.suggestedPosture}</span>
+            </div>
+
+            <div className={styles.row}>
+              <span>boundary</span>
+              <span className={styles.multiline}>
+                Relation 不控制行为；Feedback 不控制行为；Profile / 八字负责解释事实。
+              </span>
+            </div>
+
+            <div className={styles.row}>
+              <span>interpretationTags</span>
+              <span className={styles.multiline}>
+                {experience.interpretationTags.length > 0
+                  ? experience.interpretationTags.join(" / ")
+                  : "-"}
+              </span>
+            </div>
+
+            <div className={styles.row}>
+              <span>reasons</span>
+              <span className={styles.multiline}>
+                {experience.reasons.slice(0, 5).join(" / ")}
+              </span>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div className={styles.block}>
+        <h3 className={styles.blockTitle}>
           Decision Gates / 条件门
         </h3>
 
@@ -161,7 +224,7 @@ export default function ButlerTaskDecisionTracePanel({ trace }: Props) {
         )}
 
         {trace &&
-          trace.scores.slice(0, 8).map((score, index) => (
+          trace.scores.slice(0, 10).map((score, index) => (
             <div className={styles.row} key={`${score.key}-${index}`}>
               <span>
                 {score.key}: {formatDebugValue(score.value)}
