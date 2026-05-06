@@ -7,11 +7,16 @@ import type {
   WorldStimulus,
 } from "@/ai/gateway"
 import type { TimeState } from "@/engine/timeSystem"
+import type {
+  ButlerState,
+} from "@/systems/systems-gateway"
+import type { HomeState } from "@/types/home"
 import type { IncubatorState } from "@/types/incubator"
 import type { PetState } from "@/types/pet"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
 import {
+  buildRuntimeButlerAgentCycleTrace,
   buildRuntimePetAgentCycleTrace,
 } from "@/engine/agent-runtime-audit/agent-runtime-audit-gateway"
 
@@ -24,6 +29,7 @@ const ENABLE_PET_COGNITION_LOG = true
 const ENABLE_PET_DECISION_LOG = true
 const ENABLE_PET_DECISION_AUDIT_LOG = true
 const ENABLE_PET_AGENT_TRACE_LOG = true
+const ENABLE_BUTLER_AGENT_TRACE_LOG = true
 const ENABLE_BIRTH_PROFILE_LOG = true
 
 export function logWorldTick(input: {
@@ -299,6 +305,33 @@ export function logPetDecisionTrace(input: {
 
     console.log("🧠 宠物 AgentCycleTrace：", agentTrace)
   }
+}
+
+export function logButlerAgentTrace(input: {
+  tick: number
+  butler: ButlerState | null
+  pet: PetState | null
+  incubator: IncubatorState | null
+  home: HomeState | null
+  time: {
+    day: number
+    hour: number
+    period?: string
+  }
+}) {
+  if (!ENABLE_BUTLER_AGENT_TRACE_LOG) return
+  if (!input.butler) return
+
+  const agentTrace = buildRuntimeButlerAgentCycleTrace({
+    tick: input.tick,
+    butler: input.butler,
+    pet: input.pet,
+    incubator: input.incubator,
+    home: input.home,
+    time: input.time,
+  })
+
+  console.log("🧠 管家 AgentCycleTrace：", agentTrace)
 }
 
 export function logPetBirthProfile(input: {

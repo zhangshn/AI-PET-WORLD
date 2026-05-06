@@ -29,6 +29,10 @@ import {
   runLifeRuntimeLog,
 } from "./life-runtime-log-runner"
 
+import {
+  logButlerAgentTrace,
+} from "../world-runtime-logger"
+
 export type RunWorldTickInput = {
   tick: number
   prevTime: TimeState
@@ -143,6 +147,20 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
   currentPet = currentState.pet
   currentIncubator = currentState.incubator
   currentButler = currentState.butler
+
+  /**
+   * 阶段 4.5：管家 AgentCycleTrace 审计日志。
+   * 这里只把管家当前任务映射为 autonomous agent cycle，
+   * 不改变任务、不执行行为、不控制宠物。
+   */
+  logButlerAgentTrace({
+    tick: input.tick,
+    butler: currentButler,
+    pet: currentPet,
+    incubator: currentIncubator,
+    home: currentHome,
+    time: input.currentTime,
+  })
 
   /**
    * 阶段 5：执行管家管理交互。
