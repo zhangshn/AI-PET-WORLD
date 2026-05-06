@@ -11,6 +11,14 @@ export {
 } from "./life-runtime-bundle-gateway"
 
 export {
+  buildCurrentLifeRuntimeBundleFromWorld
+} from "./life-runtime-world-gateway"
+
+export {
+  buildLifeRuntimeTimeFromWorld
+} from "./life-runtime-time-adapter"
+
+export {
   buildCurrentLifeTendencyFromRuntime
 } from "./life-tendency-runtime-gateway"
 
@@ -28,6 +36,16 @@ export {
 export type {
   CurrentLifeRuntimeBundle
 } from "./life-runtime-bundle-schema"
+
+export type {
+  BuildCurrentLifeRuntimeBundleFromWorldInput
+} from "./life-runtime-world-gateway"
+
+export type {
+  BuildLifeRuntimeTimeFromWorldInput,
+  LifeRuntimeWorldStartDate,
+  LifeRuntimeWorldTimeInput
+} from "./life-runtime-time-adapter"
 
 export type {
   BuildCurrentLifeTendencyProfileInput,

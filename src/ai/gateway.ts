@@ -67,20 +67,36 @@ import {
 } from "./behavior-core/behavior-gateway"
 
 import type {
+  BuildCurrentLifeRuntimeBundleFromWorldInput,
   BuildCurrentLifeTendencyFromRuntimeInput,
   CurrentLifeRuntimeBundle,
   CurrentLifeTendencyProfile,
+  LifeTendencyRuntimeTime,
 } from "./life-tendency-core/life-tendency-gateway"
 
 import {
   buildCurrentLifeRuntimeBundle,
+  buildCurrentLifeRuntimeBundleFromWorld,
   buildCurrentLifeTendencyFromRuntime,
+  buildLifeRuntimeTimeFromWorld,
 } from "./life-tendency-core/life-tendency-gateway"
 
 export function buildAiCurrentLifeRuntimeBundle(
   input: BuildCurrentLifeTendencyFromRuntimeInput
 ): CurrentLifeRuntimeBundle {
   return buildCurrentLifeRuntimeBundle(input)
+}
+
+export function buildAiLifeRuntimeTimeFromWorld(
+  input: Parameters<typeof buildLifeRuntimeTimeFromWorld>[0]
+): LifeTendencyRuntimeTime {
+  return buildLifeRuntimeTimeFromWorld(input)
+}
+
+export function buildAiCurrentLifeRuntimeBundleFromWorld(
+  input: BuildCurrentLifeRuntimeBundleFromWorldInput
+): CurrentLifeRuntimeBundle {
+  return buildCurrentLifeRuntimeBundleFromWorld(input)
 }
 
 export type UpdatePetAiStateInput = {
@@ -221,9 +237,13 @@ export type {
 } from "./life-profile-core/life-profile-gateway"
 
 export type {
+  BuildCurrentLifeRuntimeBundleFromWorldInput,
   BuildCurrentLifeTendencyFromRuntimeInput,
+  BuildLifeRuntimeTimeFromWorldInput,
   CurrentLifeRuntimeBundle,
   CurrentLifeTendencyProfile,
+  LifeRuntimeWorldStartDate,
+  LifeRuntimeWorldTimeInput,
   LifeTendencyFiveDimensionScores,
   LifeTendencyKey,
   LifeTendencyLabels,
