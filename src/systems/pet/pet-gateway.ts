@@ -22,6 +22,8 @@ export {
   GoalSystem,
   type GoalPriority,
   type GoalSystemInput,
+  type PetGoalDriveAlignment,
+  type PetGoalLifeTendencyHint,
   type PetGoalState,
   type PetGoalType,
 } from "./pet-goal/pet-goal-gateway"
@@ -64,7 +66,9 @@ export {
   type RunPetLifeResult,
 } from "./pet-life/pet-life-gateway"
 
-export { mapTimelineStateToPetMood } from "./pet-mood/pet-mood-gateway"
+export {
+  mapTimelineStateToPetMood,
+} from "./pet-mood/pet-mood-gateway"
 
 export {
   buildPetStateEvents,
@@ -77,12 +81,14 @@ export {
   type RunPetZoneInfluenceResult,
 } from "./pet-zone/pet-zone-gateway"
 
-export { runPetRuntimeTick } from "./pet-runtime/pet-runtime-runner"
+export {
+  runPetRuntimeTick,
+} from "./pet-runtime/pet-runtime-runner"
+
 export type {
   RunPetRuntimeTickInput,
   RunPetRuntimeTickResult,
 } from "./pet-runtime/pet-runtime-runner"
-
 
 export {
   applyAcceptedApproachOfferEffect,
@@ -104,3 +110,17 @@ export type {
   PetExpressionReason,
   PetExpressionResult,
 } from "./pet-expression/pet-expression-gateway"
+
+export {
+  PET_CORE_ALLOWED_CHAIN,
+  PET_CORE_BOUNDARY_MODULES,
+  PET_CORE_BOUNDARY_SUMMARY,
+  PET_CORE_DECISION_MODULES,
+  PET_CORE_FORBIDDEN_RULES,
+  PET_CORE_PUBLIC_GATEWAYS,
+  PET_CORE_RUNTIME_MODULES,
+  PET_CORE_TEST_OR_UI_RULES,
+  PET_CORE_TUNING_MODULES,
+  type PetCoreBoundaryLayer,
+  type PetCoreBoundaryModule,
+} from "./pet-core-boundary"
