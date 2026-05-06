@@ -34,3 +34,13 @@ export {
 export type {
   ButlerProfileTaskTuning,
 } from "./butler-profile-tuning"
+
+export {
+  buildButlerTaskDecisionTrace,
+} from "./butler-task-decision-trace"
+
+export type {
+  ButlerTaskDecisionGate,
+  ButlerTaskDecisionScore,
+  ButlerTaskDecisionTrace,
+} from "./butler-task-decision-trace"

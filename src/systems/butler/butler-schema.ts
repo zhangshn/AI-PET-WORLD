@@ -10,6 +10,10 @@ import type {
   GenderAwareBehaviorBias,
 } from "@/ai/gateway"
 
+import type {
+  ButlerTaskDecisionTrace,
+} from "./butler-task-decision-trace"
+
 export type ButlerTask =
   | "watching_incubator"
   | "building_home"
@@ -63,7 +67,6 @@ export type ButlerState = {
   /**
    * 管家人格 Profile。
    * 由 AI 层 butler-profile-core 生成，systems 层只保存结果。
-   * 当前阶段不让 profile 直接决定行为，只进入状态和后续审计链路。
    */
   profile?: ButlerProfile | null
 
@@ -72,6 +75,12 @@ export type ButlerState = {
    * 当前 task / opportunity 仍可能读取 behaviorBias。
    */
   behaviorBias?: GenderAwareBehaviorBias | null
+
+  /**
+   * 管家最近一次任务选择审计。
+   * 用于解释为什么本轮选择某个任务。
+   */
+  latestTaskDecisionTrace?: ButlerTaskDecisionTrace | null
 }
 
 export type ButlerSystemInput = {
