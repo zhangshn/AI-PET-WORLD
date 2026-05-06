@@ -16,6 +16,14 @@ import type {
   PetExpressionResult,
 } from "./pet-expression-types"
 
+import {
+  PET_EXPRESSION_ADAPTATION_TUNING,
+  PET_EXPRESSION_COGNITION_TUNING,
+  PET_EXPRESSION_DEPENDENT_TUNING,
+  PET_EXPRESSION_GLOBAL_TUNING,
+  PET_EXPRESSION_NEWBORN_TUNING,
+} from "./pet-expression-tuning"
+
 function getLifeScores(
   input: PetExpressionInput
 ): LifeTendencyScores | null {
@@ -46,8 +54,9 @@ function isApproachLike(action: PetAction): boolean {
 
 function expressNewbornIntent(input: PetExpressionInput): PetExpressionResult | null {
   const scores = getLifeScores(input)
+  const tuning = PET_EXPRESSION_NEWBORN_TUNING
 
-  if (input.energy <= 18) {
+  if (input.energy <= tuning.lowEnergyRestingThreshold) {
     return buildResult({
       expressedAction: "resting",
       reason: "newborn_low_energy_softened",
@@ -60,7 +69,10 @@ function expressNewbornIntent(input: PetExpressionInput): PetExpressionResult | 
     const observeScore = scores?.observe ?? 50
     const perceptionScore = scores?.perception ?? 50
 
-    if (observeScore >= 56 || perceptionScore >= 56) {
+    if (
+      observeScore >= tuning.exploreObserveThreshold ||
+      perceptionScore >= tuning.explorePerceptionThreshold
+    ) {
       return buildResult({
         expressedAction: "observing",
         reason: "newborn_explore_intent_softened",
@@ -91,8 +103,9 @@ function expressNewbornIntent(input: PetExpressionInput): PetExpressionResult | 
 
 function expressAdaptationIntent(input: PetExpressionInput): PetExpressionResult | null {
   const scores = getLifeScores(input)
+  const tuning = PET_EXPRESSION_ADAPTATION_TUNING
 
-  if (input.energy <= 22) {
+  if (input.energy <= tuning.lowEnergyRestingThreshold) {
     return buildResult({
       expressedAction: "resting",
       reason: "low_energy_expression_limit",
@@ -101,7 +114,10 @@ function expressAdaptationIntent(input: PetExpressionInput): PetExpressionResult
     })
   }
 
-  if (input.hunger >= 82 && input.rawAction !== "eating") {
+  if (
+    input.hunger >= tuning.highHungerIdleThreshold &&
+    input.rawAction !== "eating"
+  ) {
     return buildResult({
       expressedAction: "idle",
       reason: "high_hunger_expression_limit",
@@ -114,7 +130,10 @@ function expressAdaptationIntent(input: PetExpressionInput): PetExpressionResult
     const actionScore = scores?.action ?? 50
     const exploreScore = scores?.explore ?? 50
 
-    if (actionScore >= 72 && exploreScore >= 68) {
+    if (
+      actionScore >= tuning.fullExploreActionThreshold &&
+      exploreScore >= tuning.fullExploreTendencyThreshold
+    ) {
       return null
     }
 
@@ -128,7 +147,7 @@ function expressAdaptationIntent(input: PetExpressionInput): PetExpressionResult
 
   if (
     input.rawAction === "walking" &&
-    (scores?.observe ?? 50) >= 60
+    (scores?.observe ?? 50) >= tuning.walkingToObserveThreshold
   ) {
     return buildResult({
       expressedAction: "observing",
@@ -143,6 +162,7 @@ function expressAdaptationIntent(input: PetExpressionInput): PetExpressionResult
 
 function expressDependentIntent(input: PetExpressionInput): PetExpressionResult | null {
   if (
+    PET_EXPRESSION_DEPENDENT_TUNING.restoreGoalSoftensExplore &&
     input.currentGoal?.type === "restore_self" &&
     isExploreLike(input.rawAction)
   ) {
@@ -237,7 +257,7 @@ function expressCognitionNuance(input: PetExpressionInput): PetExpressionResult 
       cognition.interpretation === "peaceful"
     ) &&
     input.rawAction === "idle" &&
-    input.energy <= 60
+    input.energy <= PET_EXPRESSION_COGNITION_TUNING.comfortToRestEnergyThreshold
   ) {
     return buildResult({
       expressedAction: "resting",
@@ -265,7 +285,10 @@ function expressCognitionNuance(input: PetExpressionInput): PetExpressionResult 
 export function expressPetAction(
   input: PetExpressionInput
 ): PetExpressionResult {
-  if (input.energy <= 10 && input.rawAction !== "sleeping") {
+  if (
+    input.energy <= PET_EXPRESSION_GLOBAL_TUNING.criticalLowEnergy &&
+    input.rawAction !== "sleeping"
+  ) {
     return buildResult({
       expressedAction: "resting",
       reason: "low_energy_expression_limit",
@@ -274,7 +297,10 @@ export function expressPetAction(
     })
   }
 
-  if (input.hunger >= 92 && input.rawAction !== "eating") {
+  if (
+    input.hunger >= PET_EXPRESSION_GLOBAL_TUNING.extremeHunger &&
+    input.rawAction !== "eating"
+  ) {
     return buildResult({
       expressedAction: "idle",
       reason: "high_hunger_expression_limit",
