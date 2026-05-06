@@ -10,6 +10,8 @@ import type {
 } from "../../../ai/ziwei-core/schema"
 
 import type { DynamicGenderInput } from "../types"
+import type { PersonalityTestRuntimeTime } from "../runtime-time/personality-test-runtime-time-types"
+import type { ZiweiDynamicTimeSelection } from "./ZiweiDynamicTimeTable"
 
 import { InfoCard } from "./common/InfoCard"
 import { ZiweiChartBoard } from "./ZiweiChartBoard"
@@ -33,17 +35,15 @@ export function ZiweiDynamicPanel({
   baseProfile,
   hasBirthHour,
   dynamicGender,
-  currentYear,
-  timelineDay,
-  timelineHour
+  runtimeTime,
+  onRuntimeTimeChange,
 }: {
   pattern: BirthPattern
   baseProfile: PersonalityProfile | null
   hasBirthHour: boolean
   dynamicGender: DynamicGenderInput
-  currentYear: number
-  timelineDay: number
-  timelineHour: number
+  runtimeTime: PersonalityTestRuntimeTime
+  onRuntimeTimeChange: (selection: ZiweiDynamicTimeSelection) => void
 }) {
   const {
     activeFlow,
@@ -67,13 +67,12 @@ export function ZiweiDynamicPanel({
     baseProfile,
     hasBirthHour,
     dynamicGender,
-    currentYear,
-    timelineDay,
-    timelineHour
+    runtimeTime,
+    onRuntimeTimeChange,
   })
 
   return (
-    <InfoCard title="🌌 紫微命盘">
+    <InfoCard title="🌌 紫微核心区">
       {!hasBirthHour ? (
         <div style={{ color: "#a66", lineHeight: 1.8 }}>
           当前出生时间未知，完整紫微结构暂不参与最终人格融合，也不进入动态运势计算。
@@ -119,7 +118,7 @@ export function ZiweiDynamicPanel({
 
           {chartData && (
             <ZiweiDynamicTimeTable
-              birthYear={currentYear}
+              birthYear={runtimeTime.currentYear - runtimeTime.currentAge + 1}
               startAge={startAge}
               selection={timeSelection}
               activeFlow={activeFlow}

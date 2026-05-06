@@ -4,7 +4,8 @@
 
 import { useMemo, useState } from "react"
 import type { CSSProperties } from "react"
-
+import type { PersonalityTestRuntimeTime } from "../../runtime-time/personality-test-runtime-time-types"
+import type { BaziRuntimeTimeSelection } from "./bazi-runtime-panel-types"
 import {
   buildBaziCurrentTendencyProfile,
   buildBaziRuntimeProfile,
@@ -160,27 +161,23 @@ const MERGED_TABLE_ROWS = [
 export function BaziRuntimePanel({
   baziProfile,
   dynamicGender,
-  initialYear,
-  initialMonth,
-  initialDay,
-  initialHour
+  runtimeTime,
+  onRuntimeTimeChange,
 }: {
   baziProfile: BaziProfile
   dynamicGender: DynamicGenderInput
-  initialYear: number
-  initialMonth: number
-  initialDay: number
-  initialHour: number | null
+  runtimeTime: PersonalityTestRuntimeTime
+  onRuntimeTimeChange: (selection: BaziRuntimeTimeSelection) => void
 }) {
   const [activeLevel, setActiveLevel] =
     useState<BaziRuntimeActiveLevel>("daYun")
 
-  const [selection, setSelection] = useState<BaziRuntimeTimeSelection>({
-    currentYear: initialYear,
-    currentMonth: initialMonth,
-    currentDay: initialDay,
-    currentHour: initialHour,
-  })
+    const selection: BaziRuntimeTimeSelection = {
+    currentYear: runtimeTime.currentYear,
+    currentMonth: runtimeTime.currentMonth,
+    currentDay: runtimeTime.currentDay,
+    currentHour: runtimeTime.currentHour,
+  }
 
   const runtimeProfile = useMemo(() => {
     return buildBaziRuntimeProfile({
@@ -300,12 +297,12 @@ export function BaziRuntimePanel({
       </div>
 
       <BaziRuntimeTimeSelector
-        runtimeProfile={runtimeProfile}
-        activeLevel={activeLevel}
-        selection={selection}
-        onActiveLevelChange={setActiveLevel}
-        onSelectionChange={setSelection}
-      />
+  runtimeProfile={runtimeProfile}
+  activeLevel={activeLevel}
+  selection={selection}
+  onActiveLevelChange={setActiveLevel}
+  onSelectionChange={onRuntimeTimeChange}
+/>
 
       <div style={{ marginTop: 16 }}>
         <div style={sectionTitleStyle}>
