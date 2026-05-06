@@ -25,6 +25,10 @@ import {
   runWorldEventUpdate,
 } from "../world-engine-gateway"
 
+import {
+  runLifeRuntimeLog,
+} from "./life-runtime-log-runner"
+
 export type RunWorldTickInput = {
   tick: number
   prevTime: TimeState
@@ -184,6 +188,17 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
   })
 
   currentPet = petRuntimeResult.pet
+
+  /**
+   * 阶段 7.5：生命运行动态包日志。
+   * 这里只验证世界时间是否能驱动紫微 / 八字 / 五维生命趋向。
+   * 不改变宠物状态，不影响 drive / goal / behavior。
+   */
+  runLifeRuntimeLog({
+    tick: input.tick,
+    time: input.currentTime,
+    pet: currentPet,
+  })
 
   /**
    * 阶段 8：处理管家提供的机会。
