@@ -12,7 +12,7 @@ import type {
 
 import type {
   PetGoalType,
-} from "./pet-goal-runner"
+} from "./pet-goal-types"
 
 export type GoalLifeTendencyCandidateTuning = {
   type: PetGoalType
@@ -28,6 +28,34 @@ export type GoalDriveAlignmentRule = {
   to: PetGoalType
   minimumDominantScore: number
   summary: string
+}
+
+export const GOAL_BASE_NEED_TUNING = {
+  criticalEnergyThreshold: 12,
+  highHungerThreshold: 68,
+  recoveryEnergyThreshold: 32,
+}
+
+export const GOAL_MEMORY_TUNING = {
+  nightSafetyBiasThreshold: 8,
+  nightRecoveryEnergyThreshold: 70,
+  nightRecoveryHungerLimit: 70,
+
+  explorationLowConfidenceThreshold: -8,
+  explorationLowConfidenceEnergyThreshold: 45,
+
+  observationConfidenceThreshold: 8,
+
+  caretakerTrustThreshold: 10,
+  caretakerTrustHungerThreshold: 50,
+
+  approachSafetyThreshold: 8,
+
+  recoveryConfidenceThreshold: 10,
+  recoveryConfidenceEnergyThreshold: 38,
+
+  rhythmConfidenceThreshold: 10,
+  rhythmEnergyThreshold: 60,
 }
 
 export const GOAL_LIFE_TENDENCY_SUMMARY_MARKERS = [
@@ -150,6 +178,10 @@ export const GOAL_DRIVE_TO_GOAL_TYPE: Record<
 }
 
 export const GOAL_TUNING_NOTES = {
+  baseNeed:
+    "基础目标阈值只处理身体紧急需求和恢复需求，不替代记忆、drive 与生命趋向。",
+  memory:
+    "记忆不是日志，而是会改变 goal 选择优先级的经验结构。",
   lifeTendency:
     "生命趋向只修饰 goal 解释与轻量优先级，不直接决定 action。",
   driveAlignment:

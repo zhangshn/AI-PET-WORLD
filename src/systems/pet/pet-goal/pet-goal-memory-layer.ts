@@ -18,6 +18,10 @@ import {
   attachGoalSpatialTarget,
 } from "./pet-goal-spatial-layer"
 
+import {
+  GOAL_MEMORY_TUNING,
+} from "./pet-goal-tuning"
+
 export function buildMemoryGoalOverride(
   input: GoalSystemInput
 ): GoalDraft | null {
@@ -26,12 +30,14 @@ export function buildMemoryGoalOverride(
   const energy = getGoalEnergy(input)
   const hunger = getGoalHunger(input)
   const relation = getGoalRelation(input)
+  const tuning = GOAL_MEMORY_TUNING
 
   if (
     (time.period === "Night" || time.hour >= 22 || time.hour <= 5) &&
-    memory.worldImpression.nightSafetyBias >= 8 &&
-    energy <= 70 &&
-    hunger < 70
+    memory.worldImpression.nightSafetyBias >=
+      tuning.nightSafetyBiasThreshold &&
+    energy <= tuning.nightRecoveryEnergyThreshold &&
+    hunger < tuning.nightRecoveryHungerLimit
   ) {
     return attachGoalSpatialTarget(input, {
       type: "restore_self",
@@ -41,7 +47,11 @@ export function buildMemoryGoalOverride(
     })
   }
 
-  if (memory.worldImpression.explorationConfidence <= -8 && energy <= 45) {
+  if (
+    memory.worldImpression.explorationConfidence <=
+      tuning.explorationLowConfidenceThreshold &&
+    energy <= tuning.explorationLowConfidenceEnergyThreshold
+  ) {
     return attachGoalSpatialTarget(input, {
       type: "restore_self",
       priority: "high",
@@ -51,7 +61,8 @@ export function buildMemoryGoalOverride(
   }
 
   if (
-    memory.worldImpression.observationConfidence >= 8 &&
+    memory.worldImpression.observationConfidence >=
+      tuning.observationConfidenceThreshold &&
     (relation === "guarded" || relation === "distant")
   ) {
     return attachGoalSpatialTarget(input, {
@@ -62,7 +73,11 @@ export function buildMemoryGoalOverride(
     })
   }
 
-  if (memory.relationImpression.caretakerTrust >= 10 && hunger >= 50) {
+  if (
+    memory.relationImpression.caretakerTrust >=
+      tuning.caretakerTrustThreshold &&
+    hunger >= tuning.caretakerTrustHungerThreshold
+  ) {
     return attachGoalSpatialTarget(input, {
       type: "satisfy_need",
       priority: "high",
@@ -72,7 +87,8 @@ export function buildMemoryGoalOverride(
   }
 
   if (
-    memory.relationImpression.approachSafety >= 8 &&
+    memory.relationImpression.approachSafety >=
+      tuning.approachSafetyThreshold &&
     (relation === "secure" || relation === "attached")
   ) {
     return {
@@ -83,7 +99,11 @@ export function buildMemoryGoalOverride(
     }
   }
 
-  if (memory.selfImpression.recoveryConfidence >= 10 && energy <= 38) {
+  if (
+    memory.selfImpression.recoveryConfidence >=
+      tuning.recoveryConfidenceThreshold &&
+    energy <= tuning.recoveryConfidenceEnergyThreshold
+  ) {
     return attachGoalSpatialTarget(input, {
       type: "restore_self",
       priority: "high",
@@ -93,9 +113,10 @@ export function buildMemoryGoalOverride(
   }
 
   if (
-    memory.selfImpression.rhythmConfidence >= 10 &&
+    memory.selfImpression.rhythmConfidence >=
+      tuning.rhythmConfidenceThreshold &&
     time.period === "Night" &&
-    energy <= 60
+    energy <= tuning.rhythmEnergyThreshold
   ) {
     return attachGoalSpatialTarget(input, {
       type: "stabilize_state",

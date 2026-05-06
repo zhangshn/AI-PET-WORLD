@@ -25,6 +25,10 @@ import {
   attachGoalSpatialTarget,
 } from "./pet-goal-spatial-layer"
 
+import {
+  GOAL_BASE_NEED_TUNING,
+} from "./pet-goal-tuning"
+
 export function chooseBaseGoal(input: GoalSystemInput): GoalDraft {
   const energy = getGoalEnergy(input)
   const hunger = getGoalHunger(input)
@@ -33,11 +37,12 @@ export function chooseBaseGoal(input: GoalSystemInput): GoalDraft {
   const phaseTag = getGoalPhaseTag(input)
   const branchTag = getGoalBranchTag(input)
   const kernel = getGoalKernel(input)
+  const tuning = GOAL_BASE_NEED_TUNING
 
   const memoryOverride = buildMemoryGoalOverride(input)
   if (memoryOverride) return memoryOverride
 
-  if (energy <= 12) {
+  if (energy <= tuning.criticalEnergyThreshold) {
     return attachGoalSpatialTarget(input, {
       type: "restore_self",
       priority: "critical",
@@ -46,7 +51,7 @@ export function chooseBaseGoal(input: GoalSystemInput): GoalDraft {
     })
   }
 
-  if (hunger >= 68) {
+  if (hunger >= tuning.highHungerThreshold) {
     return attachGoalSpatialTarget(input, {
       type: "satisfy_need",
       priority: "high",
@@ -98,7 +103,10 @@ export function chooseBaseGoal(input: GoalSystemInput): GoalDraft {
     }
   }
 
-  if (energy <= 32 || phaseTag === "recovery_phase") {
+  if (
+    energy <= tuning.recoveryEnergyThreshold ||
+    phaseTag === "recovery_phase"
+  ) {
     return attachGoalSpatialTarget(input, {
       type: "restore_self",
       priority: "high",
