@@ -27,6 +27,7 @@ import {
   getBaziRuntimeGenderLabel
 } from "./bazi-runtime-panel-labels"
 
+import { BaziCurrentTendencyPanel } from "./BaziCurrentTendencyPanel"
 import { BaziRuntimeTimeSelector } from "./BaziRuntimeTimeSelector"
 
 import type {
@@ -407,10 +408,10 @@ export function BaziRuntimePanel({
           </table>
         </div>
       </div>
-      
+
       <div style={{ marginTop: 16 }}>
         <BaziCurrentTendencyPanel profile={currentTendencyProfile} />
-      </div>        
+      </div>
 
       <div style={{ marginTop: 16 }}>
         <div style={sectionTitleStyle}>动态调试信息</div>
