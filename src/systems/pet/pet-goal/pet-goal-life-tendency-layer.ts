@@ -20,10 +20,29 @@ export type GoalLifeTendencyHint = {
   summary: string
 }
 
+const LIFE_TENDENCY_SUMMARY_MARKERS = [
+  " 生命趋向提示：",
+  " 生命趋向补充：",
+]
+
 function getLifeRuntimeBundle(input: {
   currentLifeRuntimeBundle?: CurrentLifeRuntimeBundle | null
 }): CurrentLifeRuntimeBundle | null {
   return input.currentLifeRuntimeBundle ?? null
+}
+
+function cleanLifeTendencySummary(summary: string): string {
+  let cleaned = summary
+
+  for (const marker of LIFE_TENDENCY_SUMMARY_MARKERS) {
+    const markerIndex = cleaned.indexOf(marker)
+
+    if (markerIndex >= 0) {
+      cleaned = cleaned.slice(0, markerIndex)
+    }
+  }
+
+  return cleaned.trim()
 }
 
 function shouldBoostPriority(score: number): boolean {
@@ -163,11 +182,14 @@ export function applyGoalLifeTendencyLayer(params: {
     currentLifeRuntimeBundle?: CurrentLifeRuntimeBundle | null
   }
 }): Omit<PetGoalState, "startedAtTick" | "holdUntilTick"> {
+  const baseSummary = cleanLifeTendencySummary(params.goal.summary)
+
   const bundle = getLifeRuntimeBundle(params.pet)
 
   if (!bundle) {
     return {
       ...params.goal,
+      summary: baseSummary,
       lifeTendencyHint: null,
     }
   }
@@ -179,6 +201,7 @@ export function applyGoalLifeTendencyLayer(params: {
   if (!hint) {
     return {
       ...params.goal,
+      summary: baseSummary,
       lifeTendencyHint: null,
     }
   }
@@ -197,7 +220,7 @@ export function applyGoalLifeTendencyLayer(params: {
     return {
       ...params.goal,
       lifeTendencyHint: visibleHint,
-      summary: `${params.goal.summary} 生命趋向提示：${hint.summary}`,
+      summary: `${baseSummary} 生命趋向提示：${hint.summary}`,
     }
   }
 
@@ -208,6 +231,6 @@ export function applyGoalLifeTendencyLayer(params: {
       hint.priorityBoost > 0
         ? raisePriority(params.goal.priority)
         : params.goal.priority,
-    summary: `${params.goal.summary} 生命趋向补充：${hint.summary}`,
+    summary: `${baseSummary} 生命趋向补充：${hint.summary}`,
   }
 }
