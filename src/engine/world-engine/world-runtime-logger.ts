@@ -97,6 +97,24 @@ export function logPetCognition(summary: string) {
   console.log("🧠 宠物认知：", summary)
 }
 
+function pickLifeTendencyInfluence(
+  driveReasons: Record<string, string[]>
+): Record<string, string[]> {
+  const result: Record<string, string[]> = {}
+
+  for (const [drive, reasons] of Object.entries(driveReasons)) {
+    const hits = reasons.filter((reason) =>
+      reason.includes("生命趋向")
+    )
+
+    if (hits.length > 0) {
+      result[drive] = hits
+    }
+  }
+
+  return result
+}
+
 export function logPetDecisionTrace(input: {
   tick: number
   petName: string
@@ -108,6 +126,7 @@ export function logPetDecisionTrace(input: {
   driveDominant: string
   driveDominantScore: number
   driveValues: Record<string, number>
+  driveReasons: Record<string, string[]>
   goalType: string
   goalPriority: string
   goalSource: string
@@ -118,6 +137,10 @@ export function logPetDecisionTrace(input: {
   lifePhase: string
 }) {
   if (!ENABLE_PET_DECISION_LOG) return
+
+  const lifeTendencyInfluence = pickLifeTendencyInfluence(
+    input.driveReasons
+  )
 
   console.log("🧭 宠物行为决策：", {
     tick: input.tick,
@@ -133,7 +156,9 @@ export function logPetDecisionTrace(input: {
       dominant: input.driveDominant,
       dominantScore: input.driveDominantScore,
       values: input.driveValues,
+      reasons: input.driveReasons,
     },
+    lifeTendencyInfluence,
     goal: {
       type: input.goalType,
       priority: input.goalPriority,

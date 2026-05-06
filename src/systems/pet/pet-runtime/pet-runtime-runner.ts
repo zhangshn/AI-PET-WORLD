@@ -190,6 +190,7 @@ export function runPetRuntimeTick(
     driveDominant: driveSnapshot.dominant,
     driveDominantScore: driveSnapshot.dominantScore,
     driveValues: driveSnapshot.values,
+    driveReasons: driveSnapshot.reasons,
     goalType: nextGoal.type,
     goalPriority: nextGoal.priority,
     goalSource: nextGoal.source,
