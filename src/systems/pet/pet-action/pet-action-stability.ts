@@ -53,10 +53,36 @@ const ACTION_MIN_DURATION: Record<PetAction, number> = {
   alert_idle: 3,
 }
 
+/**
+ * 行为转换图。
+ *
+ * 这里控制的是“可见行为是否能自然过渡”，不是决定宠物想做什么。
+ * 内部意图已经由 selector / expression 决定，这里只负责让动作变化看起来不跳。
+ */
 const ACTION_TRANSITIONS: Record<PetAction, PetAction[]> = {
-  sleeping: ["idle", "resting", "eating"],
-  eating: ["idle", "resting", "walking"],
-  resting: ["idle", "sleeping", "walking"],
+  sleeping: [
+    "idle",
+    "resting",
+    "observing",
+    "eating",
+  ],
+
+  eating: [
+    "idle",
+    "resting",
+    "walking",
+    "observing",
+  ],
+
+  resting: [
+    "idle",
+    "sleeping",
+    "walking",
+    "observing",
+    "alert_idle",
+    "eating",
+  ],
+
   idle: [
     "walking",
     "observing",
@@ -64,7 +90,9 @@ const ACTION_TRANSITIONS: Record<PetAction, PetAction[]> = {
     "eating",
     "sleeping",
     "alert_idle",
+    "approaching",
   ],
+
   walking: [
     "idle",
     "observing",
@@ -74,33 +102,206 @@ const ACTION_TRANSITIONS: Record<PetAction, PetAction[]> = {
     "resting",
     "alert_idle",
   ],
+
   exploring: [
     "walking",
     "observing",
     "approaching",
     "idle",
     "resting",
+    "alert_idle",
   ],
+
   approaching: [
     "idle",
     "walking",
     "eating",
     "observing",
     "resting",
+    "alert_idle",
   ],
+
   observing: [
     "idle",
     "walking",
     "exploring",
     "approaching",
     "alert_idle",
+    "resting",
+    "eating",
   ],
+
   alert_idle: [
     "observing",
     "idle",
     "walking",
     "resting",
+    "approaching",
   ],
+}
+
+function buildStabilityState(input: {
+  action: PetAction
+  currentTick: number
+}): ActionStabilityState {
+  return {
+    currentAction: input.action,
+    startedAtTick: input.currentTick,
+    lastChangedTick: input.currentTick,
+  }
+}
+
+function isUrgentCandidate(action: PetAction): boolean {
+  return (
+    action === "sleeping" ||
+    action === "eating" ||
+    action === "alert_idle"
+  )
+}
+
+function shouldBypassMinDuration(input: {
+  current: PetAction
+  candidate: PetAction
+  energy: number
+  hunger: number
+}): boolean {
+  if (input.energy <= 10 && input.candidate === "resting") {
+    return true
+  }
+
+  if (input.energy <= 6 && input.candidate === "sleeping") {
+    return true
+  }
+
+  if (input.hunger >= 90 && input.candidate === "eating") {
+    return true
+  }
+
+  if (
+    input.candidate === "alert_idle" &&
+    (
+      input.current === "walking" ||
+      input.current === "exploring" ||
+      input.current === "approaching" ||
+      input.current === "observing"
+    )
+  ) {
+    return true
+  }
+
+  return false
+}
+
+function resolveBridgeAction(
+  current: PetAction,
+  candidate: PetAction
+): PetAction {
+  if (current === candidate) {
+    return current
+  }
+
+  /**
+   * 睡眠后的过渡：不要突然探索或靠近，先醒来 / 休整 / 观察。
+   */
+  if (current === "sleeping") {
+    if (candidate === "resting") return "resting"
+    if (candidate === "observing") return "observing"
+    if (candidate === "eating") return "eating"
+
+    return "idle"
+  }
+
+  /**
+   * 进食后的过渡：可以停下、观察、休整，也可以轻微移动。
+   */
+  if (current === "eating") {
+    if (candidate === "resting") return "resting"
+    if (candidate === "observing") return "observing"
+    if (candidate === "walking") return "walking"
+
+    return "idle"
+  }
+
+  /**
+   * 休整中的过渡：允许抬头观察、警觉停留、轻微移动。
+   */
+  if (current === "resting") {
+    if (candidate === "observing") return "observing"
+    if (candidate === "alert_idle") return "alert_idle"
+    if (candidate === "walking") return "walking"
+    if (candidate === "sleeping") return "sleeping"
+    if (candidate === "eating") return "eating"
+
+    return "idle"
+  }
+
+  /**
+   * 停顿状态是最灵活的桥接点。
+   */
+  if (current === "idle") {
+    if (candidate === "exploring") return "walking"
+    if (candidate === "approaching") return "walking"
+    if (candidate === "sleeping") return "resting"
+
+    return candidate
+  }
+
+  /**
+   * 移动中的过渡：可以继续探索 / 靠近，也可以停下观察或休整。
+   */
+  if (current === "walking") {
+    if (candidate === "sleeping") return "resting"
+    if (candidate === "eating") return "eating"
+    if (candidate === "alert_idle") return "alert_idle"
+
+    return candidate
+  }
+
+  /**
+   * 探索中的过渡：先降到 walking / observing / resting，不直接突变。
+   */
+  if (current === "exploring") {
+    if (candidate === "sleeping") return "resting"
+    if (candidate === "eating") return "walking"
+    if (candidate === "alert_idle") return "observing"
+    if (candidate === "approaching") return "walking"
+
+    return candidate
+  }
+
+  /**
+   * 靠近中的过渡：可停下观察、休整、进食，也可退回 walking。
+   */
+  if (current === "approaching") {
+    if (candidate === "sleeping") return "resting"
+    if (candidate === "exploring") return "walking"
+    if (candidate === "alert_idle") return "observing"
+
+    return candidate
+  }
+
+  /**
+   * 观察中的过渡：允许进入休整、移动、靠近、警觉。
+   */
+  if (current === "observing") {
+    if (candidate === "sleeping") return "resting"
+    if (candidate === "eating") return "eating"
+
+    return candidate
+  }
+
+  /**
+   * 警觉停留后的过渡：先观察 / 停顿 / 休整，再外扩。
+   */
+  if (current === "alert_idle") {
+    if (candidate === "exploring") return "walking"
+    if (candidate === "approaching") return "observing"
+    if (candidate === "sleeping") return "resting"
+
+    return candidate
+  }
+
+  return "idle"
 }
 
 export function applyPetActionStability(
@@ -109,11 +310,10 @@ export function applyPetActionStability(
   if (!input.stability) {
     return {
       action: input.candidate,
-      stability: {
-        currentAction: input.candidate,
-        startedAtTick: input.currentTick,
-        lastChangedTick: input.currentTick,
-      },
+      stability: buildStabilityState({
+        action: input.candidate,
+        currentTick: input.currentTick,
+      }),
       reason: "stability_accept_transition",
     }
   }
@@ -125,11 +325,10 @@ export function applyPetActionStability(
   if (input.energy <= 6 && current !== "sleeping") {
     return {
       action: "sleeping",
-      stability: {
-        currentAction: "sleeping",
-        startedAtTick: input.currentTick,
-        lastChangedTick: input.currentTick,
-      },
+      stability: buildStabilityState({
+        action: "sleeping",
+        currentTick: input.currentTick,
+      }),
       reason: "hard_low_energy",
     }
   }
@@ -137,11 +336,10 @@ export function applyPetActionStability(
   if (input.hunger >= 95 && current !== "eating") {
     return {
       action: "eating",
-      stability: {
-        currentAction: "eating",
-        startedAtTick: input.currentTick,
-        lastChangedTick: input.currentTick,
-      },
+      stability: buildStabilityState({
+        action: "eating",
+        currentTick: input.currentTick,
+      }),
       reason: "hard_extreme_hunger",
     }
   }
@@ -168,7 +366,18 @@ export function applyPetActionStability(
     }
   }
 
-  if (held < min) {
+  const canBypassMinDuration = shouldBypassMinDuration({
+    current,
+    candidate: input.candidate,
+    energy: input.energy,
+    hunger: input.hunger,
+  })
+
+  if (
+    held < min &&
+    !canBypassMinDuration &&
+    !isUrgentCandidate(input.candidate)
+  ) {
     return {
       action: current,
       stability: input.stability,
@@ -183,37 +392,20 @@ export function applyPetActionStability(
 
     return {
       action: bridgeAction,
-      stability: {
-        currentAction: bridgeAction,
-        startedAtTick: input.currentTick,
-        lastChangedTick: input.currentTick,
-      },
+      stability: buildStabilityState({
+        action: bridgeAction,
+        currentTick: input.currentTick,
+      }),
       reason: "stability_accept_transition",
     }
   }
 
   return {
     action: input.candidate,
-    stability: {
-      currentAction: input.candidate,
-      startedAtTick: input.currentTick,
-      lastChangedTick: input.currentTick,
-    },
+    stability: buildStabilityState({
+      action: input.candidate,
+      currentTick: input.currentTick,
+    }),
     reason: "stability_accept_transition",
   }
-}
-
-function resolveBridgeAction(
-  current: PetAction,
-  candidate: PetAction
-): PetAction {
-  if (current === "sleeping") return "idle"
-  if (current === "eating") return "idle"
-  if (current === "resting") return "idle"
-  if (candidate === "exploring" || candidate === "approaching") return "walking"
-  if (candidate === "sleeping") return "resting"
-  if (candidate === "eating") return "walking"
-  if (candidate === "alert_idle") return "observing"
-
-  return "idle"
 }
