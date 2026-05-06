@@ -5,9 +5,16 @@
 import type { ButlerState } from "@/types/butler"
 
 import {
+  buildButlerProfileSummary,
   buildButlerSummary,
+  getButlerBirthTimeModeLabel,
+  getButlerBoundaryStyleLabel,
+  getButlerBuildStyleLabel,
+  getButlerCareStyleLabel,
+  getButlerMappingModeLabel,
   getButlerMoodLabel,
   getButlerOpportunityLabel,
+  getButlerOpportunityStyleLabel,
   getButlerTaskLabel,
 } from "../utils/butlerDisplayMappers"
 
@@ -38,6 +45,7 @@ export default function ButlerInsightCard({ butler }: Props) {
   }
 
   const opportunities = butler.pendingOpportunities ?? []
+  const profile = butler.profile ?? null
 
   return (
     <section className={styles.card}>
@@ -69,8 +77,54 @@ export default function ButlerInsightCard({ butler }: Props) {
         </div>
       </div>
 
+      {profile && (
+        <div className={styles.grid}>
+          <div>
+            <span>映射模式</span>
+            <strong>
+              {getButlerMappingModeLabel(profile.identity.mappingMode)}
+            </strong>
+          </div>
+
+          <div>
+            <span>时间模式</span>
+            <strong>
+              {getButlerBirthTimeModeLabel(profile.identity.birthTimeMode)}
+            </strong>
+          </div>
+
+          <div>
+            <span>照护风格</span>
+            <strong>{getButlerCareStyleLabel(profile.careStyle)}</strong>
+          </div>
+
+          <div>
+            <span>建设风格</span>
+            <strong>{getButlerBuildStyleLabel(profile.buildStyle)}</strong>
+          </div>
+
+          <div>
+            <span>边界风格</span>
+            <strong>
+              {getButlerBoundaryStyleLabel(profile.boundaryStyle)}
+            </strong>
+          </div>
+
+          <div>
+            <span>机会方式</span>
+            <strong>
+              {getButlerOpportunityStyleLabel(profile.opportunityStyle)}
+            </strong>
+          </div>
+        </div>
+      )}
+
       <p className={styles.description}>
         {buildButlerSummary(butler)}
+      </p>
+
+      <p className={styles.description}>
+        {buildButlerProfileSummary(butler)}
       </p>
 
       {opportunities.length > 0 && (
