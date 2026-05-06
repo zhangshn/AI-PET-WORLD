@@ -26,3 +26,11 @@ export {
 export { chooseButlerTask } from "./butler-task-runner"
 
 export { deriveButlerMood } from "./butler-mood-runner"
+
+export {
+  buildButlerProfileTaskTuning,
+} from "./butler-profile-tuning"
+
+export type {
+  ButlerProfileTaskTuning,
+} from "./butler-profile-tuning"
