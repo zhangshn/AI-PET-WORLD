@@ -11,15 +11,25 @@ import {
   getGoalHunger,
 } from "./pet-goal-context"
 
+import {
+  GOAL_PERSISTENCE_TUNING,
+} from "./pet-goal-tuning"
+
 export function shouldKeepPreviousGoal(input: GoalSystemInput): boolean {
   const previousGoal = input.previousGoal
   if (!previousGoal) return false
 
   const energy = getGoalEnergy(input)
   const hunger = getGoalHunger(input)
+  const tuning = GOAL_PERSISTENCE_TUNING
 
-  if (energy <= 12 || hunger >= 68) return false
-  if (input.tick <= previousGoal.holdUntilTick) return true
+  if (energy <= tuning.interruptEnergyThreshold) {
+    return false
+  }
 
-  return false
+  if (hunger >= tuning.interruptHungerThreshold) {
+    return false
+  }
+
+  return input.tick <= previousGoal.holdUntilTick
 }

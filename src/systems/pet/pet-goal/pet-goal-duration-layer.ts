@@ -9,16 +9,9 @@ import type {
   PetGoalType,
 } from "./pet-goal-types"
 
-const GOAL_BASE_DURATION: Record<PetGoalType, number> = {
-  expand_territory: 4,
-  observe_boundary: 3,
-  restore_self: 4,
-  satisfy_need: 3,
-  secure_attachment: 3,
-  preserve_distance: 3,
-  stabilize_state: 4,
-  idle_drift: 2,
-}
+import {
+  GOAL_DURATION_TUNING,
+} from "./pet-goal-tuning"
 
 export function buildGoalDuration(params: {
   goalType: PetGoalType
@@ -31,33 +24,48 @@ export function buildGoalDuration(params: {
     memory,
   } = params
 
-  let duration = GOAL_BASE_DURATION[goalType]
+  const tuning = GOAL_DURATION_TUNING
+  let duration = tuning.baseDuration[goalType]
 
-  if (goalType === "expand_territory" && kernel.bias.changeSeeking >= 72) {
-    duration += 2
+  if (
+    goalType === "expand_territory" &&
+    kernel.bias.changeSeeking >=
+      tuning.consciousness.expandChangeSeekingThreshold
+  ) {
+    duration += tuning.consciousness.expandChangeSeekingDelta
   }
 
-  if (goalType === "observe_boundary" && kernel.bias.observationBias >= 72) {
-    duration += 2
-  }
-
-  if (goalType === "restore_self" && kernel.bias.restResistance >= 72) {
-    duration -= 1
+  if (
+    goalType === "observe_boundary" &&
+    kernel.bias.observationBias >=
+      tuning.consciousness.observeBiasThreshold
+  ) {
+    duration += tuning.consciousness.observeBiasDelta
   }
 
   if (
     goalType === "restore_self" &&
-    memory.selfImpression.recoveryConfidence >= 10
+    kernel.bias.restResistance >=
+      tuning.consciousness.restoreRestResistanceThreshold
   ) {
-    duration += 1
+    duration += tuning.consciousness.restoreRestResistanceDelta
+  }
+
+  if (
+    goalType === "restore_self" &&
+    memory.selfImpression.recoveryConfidence >=
+      tuning.memory.recoveryConfidenceThreshold
+  ) {
+    duration += tuning.memory.recoveryConfidenceDelta
   }
 
   if (
     goalType === "expand_territory" &&
-    memory.preferenceBias.exploreBias >= 10
+    memory.preferenceBias.exploreBias >=
+      tuning.memory.exploreBiasThreshold
   ) {
-    duration += 1
+    duration += tuning.memory.exploreBiasDelta
   }
 
-  return Math.max(2, duration)
+  return Math.max(tuning.minimumDuration, duration)
 }

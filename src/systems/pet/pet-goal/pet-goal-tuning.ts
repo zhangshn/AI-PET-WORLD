@@ -30,10 +30,55 @@ export type GoalDriveAlignmentRule = {
   summary: string
 }
 
+export type GoalDurationAdjustmentRule = {
+  goalType: PetGoalType
+  threshold: number
+  delta: number
+}
+
 export const GOAL_BASE_NEED_TUNING = {
   criticalEnergyThreshold: 12,
   highHungerThreshold: 68,
   recoveryEnergyThreshold: 32,
+}
+
+export const GOAL_PERSISTENCE_TUNING = {
+  interruptEnergyThreshold: 12,
+  interruptHungerThreshold: 68,
+}
+
+export const GOAL_DURATION_TUNING = {
+  minimumDuration: 2,
+
+  baseDuration: {
+    expand_territory: 4,
+    observe_boundary: 3,
+    restore_self: 4,
+    satisfy_need: 3,
+    secure_attachment: 3,
+    preserve_distance: 3,
+    stabilize_state: 4,
+    idle_drift: 2,
+  } satisfies Record<PetGoalType, number>,
+
+  consciousness: {
+    expandChangeSeekingThreshold: 72,
+    expandChangeSeekingDelta: 2,
+
+    observeBiasThreshold: 72,
+    observeBiasDelta: 2,
+
+    restoreRestResistanceThreshold: 72,
+    restoreRestResistanceDelta: -1,
+  },
+
+  memory: {
+    recoveryConfidenceThreshold: 10,
+    recoveryConfidenceDelta: 1,
+
+    exploreBiasThreshold: 10,
+    exploreBiasDelta: 1,
+  },
 }
 
 export const GOAL_MEMORY_TUNING = {
@@ -182,6 +227,10 @@ export const GOAL_TUNING_NOTES = {
     "基础目标阈值只处理身体紧急需求和恢复需求，不替代记忆、drive 与生命趋向。",
   memory:
     "记忆不是日志，而是会改变 goal 选择优先级的经验结构。",
+  persistence:
+    "目标保持只负责避免频繁跳变；当能量或饥饿进入紧急阈值时必须允许中断。",
+  duration:
+    "目标持续时间是表达稳定性参数，不代表目标不可改变。",
   lifeTendency:
     "生命趋向只修饰 goal 解释与轻量优先级，不直接决定 action。",
   driveAlignment:
