@@ -55,6 +55,27 @@ export type RunPetRuntimeTickResult = {
   lastDecisionReason: ActionDecisionReason | null
 }
 
+function buildDriveSnapshot(input: {
+  pet: PetState
+  time: TimeState
+}): DriveSnapshot {
+  return driveSystem.compute({
+    pet: {
+      energy: input.pet.energy,
+      hunger: input.pet.hunger,
+      mood: input.pet.mood,
+      timelineSnapshot: input.pet.timelineSnapshot,
+      personalityProfile: input.pet.personalityProfile,
+      consciousnessProfile: input.pet.consciousnessProfile,
+      memoryState: input.pet.memoryState,
+      currentLifeRuntimeBundle:
+        input.pet.currentLifeRuntimeBundle ?? null,
+      latestCognition: input.pet.latestCognition ?? null,
+    },
+    time: input.time,
+  })
+}
+
 export function runPetRuntimeTick(
   input: RunPetRuntimeTickInput
 ): RunPetRuntimeTickResult {
@@ -120,6 +141,15 @@ export function runPetRuntimeTick(
     }
   }
 
+  /**
+   * 先根据当前身体、记忆、认知、生命趋向计算 drive。
+   * previousGoal 仍然保留在 pet.currentGoal 中，但不会让 goal 先于 drive 决定方向。
+   */
+  const driveSnapshot = buildDriveSnapshot({
+    pet,
+    time: input.time,
+  })
+
   const nextGoal = goalSystem.compute({
     tick: input.currentTick,
     pet: {
@@ -133,25 +163,11 @@ export function runPetRuntimeTick(
     },
     time: input.time,
     previousGoal: pet.currentGoal ?? null,
+    driveSnapshot,
     zones: input.zones,
   })
 
   pet.currentGoal = nextGoal
-
-  const driveSnapshot = driveSystem.compute({
-    pet: {
-      energy: pet.energy,
-      hunger: pet.hunger,
-      mood: pet.mood,
-      timelineSnapshot: currentSnapshot,
-      personalityProfile: pet.personalityProfile,
-      consciousnessProfile: pet.consciousnessProfile,
-      memoryState: pet.memoryState,
-      currentLifeRuntimeBundle: pet.currentLifeRuntimeBundle ?? null,
-      latestCognition: pet.latestCognition ?? null,
-    },
-    time: input.time,
-  })
 
   const actionSelection = forcedAction
     ? {
@@ -215,6 +231,7 @@ export function runPetRuntimeTick(
     goalSource: nextGoal.source,
     goalSummary: nextGoal.summary,
     goalLifeTendencyHint: nextGoal.lifeTendencyHint ?? null,
+    goalDriveAlignment: nextGoal.driveAlignment ?? null,
     energy: pet.energy,
     hunger: pet.hunger,
     mood: currentSnapshot.state.emotional.label,

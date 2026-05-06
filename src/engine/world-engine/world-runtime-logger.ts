@@ -154,6 +154,7 @@ export function logPetDecisionTrace(input: {
   goalSource: string
   goalSummary: string
   goalLifeTendencyHint?: unknown
+  goalDriveAlignment?: unknown
   energy: number
   hunger: number
   mood: string
@@ -196,6 +197,7 @@ export function logPetDecisionTrace(input: {
       source: input.goalSource,
       summary: input.goalSummary,
       lifeTendencyHint: input.goalLifeTendencyHint ?? null,
+      driveAlignment: input.goalDriveAlignment ?? null,
     },
     state: {
       energy: input.energy,

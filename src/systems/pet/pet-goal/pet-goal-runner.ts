@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：基于紫微意识核、当前状态、世界时间、记忆与世界区域生成宠物当前目标。
+ * 当前文件负责：基于紫微意识核、当前状态、世界时间、记忆、drive 与世界区域生成宠物当前目标。
  */
 
 import type { TimeState } from "../../../engine/timeSystem"
@@ -8,9 +8,18 @@ import type { ZiweiConsciousnessKernel } from "../../../ai/consciousness/conscio
 import type { PetMemoryState } from "../../../ai/memory-core/memory-gateway"
 import type { WorldZone, WorldZoneType } from "../../../world/ecology/world-zone-types"
 
+import type {
+  DriveSnapshot,
+  DriveType,
+} from "../pet-drive/pet-drive-gateway"
+
 import {
   applyGoalLifeTendencyLayer,
 } from "./pet-goal-life-tendency-layer"
+
+import {
+  applyGoalDriveAlignmentLayer,
+} from "./pet-goal-drive-alignment-layer"
 
 export type PetGoalType =
   | "expand_territory"
@@ -31,6 +40,14 @@ export type PetGoalLifeTendencyHint = {
   attached: boolean
 }
 
+export type PetGoalDriveAlignment = {
+  dominantDrive: DriveType
+  originalType: PetGoalType
+  alignedType: PetGoalType
+  summary: string
+  changed: boolean
+}
+
 export type PetGoalState = {
   type: PetGoalType
   priority: GoalPriority
@@ -44,6 +61,12 @@ export type PetGoalState = {
    * 这里只用于解释和轻量优先级修正，不直接决定 action。
    */
   lifeTendencyHint?: PetGoalLifeTendencyHint | null
+
+  /**
+   * 当前 drive 对 goal 层的轻量校正。
+   * 这里只校正目标解释方向，不直接决定 action。
+   */
+  driveAlignment?: PetGoalDriveAlignment | null
 
   targetZoneType?: WorldZoneType
   targetZoneId?: string
@@ -67,6 +90,7 @@ export type GoalSystemInput = {
   >
   time: TimeState
   previousGoal?: PetGoalState | null
+  driveSnapshot?: DriveSnapshot | null
   zones?: WorldZone[]
 }
 
@@ -402,11 +426,11 @@ function shouldKeepPreviousGoal(input: GoalSystemInput): boolean {
   return false
 }
 
-function refreshPreviousGoalLifeTendency(input: GoalSystemInput): PetGoalState {
+function refreshPreviousGoal(input: GoalSystemInput): PetGoalState {
   const previousGoal = input.previousGoal
 
   if (!previousGoal) {
-    throw new Error("refreshPreviousGoalLifeTendency 需要 previousGoal。")
+    throw new Error("refreshPreviousGoal 需要 previousGoal。")
   }
 
   const {
@@ -415,8 +439,13 @@ function refreshPreviousGoalLifeTendency(input: GoalSystemInput): PetGoalState {
     ...goalWithoutRuntimeFields
   } = previousGoal
 
-  const interpreted = applyGoalLifeTendencyLayer({
+  const driveAligned = applyGoalDriveAlignmentLayer({
     goal: goalWithoutRuntimeFields,
+    driveSnapshot: input.driveSnapshot ?? null,
+  })
+
+  const interpreted = applyGoalLifeTendencyLayer({
+    goal: driveAligned,
     pet: {
       currentLifeRuntimeBundle:
         input.pet.currentLifeRuntimeBundle ?? null,
@@ -434,15 +463,20 @@ function refreshPreviousGoalLifeTendency(input: GoalSystemInput): PetGoalState {
 export class GoalSystem {
   compute(input: GoalSystemInput): PetGoalState {
     if (shouldKeepPreviousGoal(input) && input.previousGoal) {
-      return refreshPreviousGoalLifeTendency(input)
+      return refreshPreviousGoal(input)
     }
 
     const kernel = getKernel(input)
     const memory = getMemory(input)
     const chosen = chooseGoal(input)
 
-    const interpreted = applyGoalLifeTendencyLayer({
+    const driveAligned = applyGoalDriveAlignmentLayer({
       goal: chosen,
+      driveSnapshot: input.driveSnapshot ?? null,
+    })
+
+    const interpreted = applyGoalLifeTendencyLayer({
+      goal: driveAligned,
       pet: {
         currentLifeRuntimeBundle:
           input.pet.currentLifeRuntimeBundle ?? null,

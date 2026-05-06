@@ -7,6 +7,7 @@ export {
   GoalSystem,
   type GoalPriority,
   type GoalSystemInput,
+  type PetGoalDriveAlignment,
   type PetGoalLifeTendencyHint,
   type PetGoalState,
   type PetGoalType,
