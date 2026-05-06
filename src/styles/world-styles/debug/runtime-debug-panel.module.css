@@ -10,6 +10,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 18px;
 }
 
@@ -26,19 +27,22 @@
 
 .empty {
   color: #64748b;
+  line-height: 1.6;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 16px;
+  align-items: stretch;
 }
 
 .block {
+  min-width: 0;
   background: #0f172a;
   border: 1px solid #1e293b;
   border-radius: 14px;
-  padding: 14px;
+  padding: 16px;
 }
 
 .blockTitle {
@@ -49,30 +53,102 @@
 }
 
 .row {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(110px, 0.9fr) minmax(0, 1.4fr);
   gap: 12px;
   font-size: 13px;
   color: #cbd5e1;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+  align-items: start;
+}
+
+.row > span:first-child {
+  color: #94a3b8;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.row > span:last-child {
+  color: #e2e8f0;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .multiline {
-  text-align: right;
-  max-width: 60%;
-  line-height: 1.5;
+  text-align: left;
+  max-width: none;
+  line-height: 1.55;
 }
 
 .traitsList {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
 }
 
 .traitItem {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(110px, 0.9fr) minmax(0, 1.4fr);
   gap: 12px;
   font-size: 13px;
   color: #cbd5e1;
+  align-items: center;
+}
+
+.traitItem > span {
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+.traitItem input {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  background: #020617;
+  color: #e2e8f0;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.traitItem input[type="checkbox"],
+.traitItem input[type="radio"] {
+  width: 18px;
+  height: 18px;
+}
+
+.traitsList button {
+  border: 1px solid #334155;
+  border-radius: 12px;
+  background: #1e293b;
+  color: #f8fafc;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.traitsList button:hover {
+  background: #334155;
+}
+
+@media (max-width: 760px) {
+  .panel {
+    padding: 14px;
+  }
+
+  .header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .grid {
+    grid-template-columns: 1fr;
+  }
+
+  .row,
+  .traitItem {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
 }
