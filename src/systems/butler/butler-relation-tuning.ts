@@ -27,7 +27,23 @@ function clampOffset(value: number): number {
     return 0
   }
 
-  return Math.max(-18, Math.min(18, Math.round(value)))
+  return Math.max(-14, Math.min(14, Math.round(value)))
+}
+
+function getSuccessfulOfferConfidence(relation: ButlerRelationState): number {
+  return Math.min(1, relation.successfulOffers / 8)
+}
+
+function getRejectionPressure(relation: ButlerRelationState): number {
+  return Math.min(1, relation.rejectedOffers / 5)
+}
+
+function getTrustNormalized(relation: ButlerRelationState): number {
+  return Math.max(0, Math.min(1, relation.trustEstimate / 80))
+}
+
+function getFamiliarityNormalized(relation: ButlerRelationState): number {
+  return Math.max(0, Math.min(1, relation.familiarity / 70))
 }
 
 export function buildButlerRelationTaskTuning(
@@ -36,6 +52,11 @@ export function buildButlerRelationTaskTuning(
   if (!relation) {
     return DEFAULT_TUNING
   }
+
+  const trust = getTrustNormalized(relation)
+  const familiarity = getFamiliarityNormalized(relation)
+  const successConfidence = getSuccessfulOfferConfidence(relation)
+  const rejectionPressure = getRejectionPressure(relation)
 
   let tuning: ButlerRelationTaskTuning = {
     ...DEFAULT_TUNING,
@@ -61,7 +82,8 @@ export function buildButlerRelationTaskTuning(
     tuning = {
       ...tuning,
       observationBiasOffset: tuning.observationBiasOffset + 1,
-      approachSensitivityOffset: tuning.approachSensitivityOffset + 3,
+      approachSensitivityOffset:
+        tuning.approachSensitivityOffset + 2 + successConfidence * 2,
       restSensitivityOffset: tuning.restSensitivityOffset + 1,
     }
   }
@@ -69,9 +91,10 @@ export function buildButlerRelationTaskTuning(
   if (relation.tone === "trusted") {
     tuning = {
       ...tuning,
-      carePriorityOffset: tuning.carePriorityOffset + 4,
-      approachSensitivityOffset: tuning.approachSensitivityOffset + 6,
-      foodSensitivityOffset: tuning.foodSensitivityOffset + 2,
+      carePriorityOffset: tuning.carePriorityOffset + 3 + trust * 2,
+      approachSensitivityOffset:
+        tuning.approachSensitivityOffset + 4 + successConfidence * 2,
+      foodSensitivityOffset: tuning.foodSensitivityOffset + 1,
       restSensitivityOffset: tuning.restSensitivityOffset + 2,
     }
   }
@@ -79,8 +102,10 @@ export function buildButlerRelationTaskTuning(
   if (relation.tone === "guarded") {
     tuning = {
       ...tuning,
-      observationBiasOffset: tuning.observationBiasOffset + 7,
-      approachSensitivityOffset: tuning.approachSensitivityOffset - 8,
+      observationBiasOffset:
+        tuning.observationBiasOffset + 7 + rejectionPressure * 3,
+      approachSensitivityOffset:
+        tuning.approachSensitivityOffset - 8 - rejectionPressure * 4,
       carePriorityOffset: tuning.carePriorityOffset - 2,
     }
   }
@@ -88,20 +113,48 @@ export function buildButlerRelationTaskTuning(
   tuning = {
     ...tuning,
     carePriorityOffset:
-      tuning.carePriorityOffset + Math.max(0, relation.trustEstimate - 50) * 0.08,
+      tuning.carePriorityOffset + Math.max(0, trust - 0.5) * 4,
     approachSensitivityOffset:
-      tuning.approachSensitivityOffset + Math.max(0, relation.trustEstimate - 45) * 0.1,
+      tuning.approachSensitivityOffset +
+      Math.max(0, trust - 0.45) * 5 +
+      Math.max(0, familiarity - 0.55) * 2,
     observationBiasOffset:
-      tuning.observationBiasOffset + Math.max(0, 30 - relation.familiarity) * 0.08,
+      tuning.observationBiasOffset +
+      Math.max(0, 0.35 - familiarity) * 5,
+    restSensitivityOffset:
+      tuning.restSensitivityOffset + successConfidence * 1.5,
   }
 
-  if (relation.rejectedOffers >= 3) {
+  if (relation.rejectedOffers > 0) {
     tuning = {
       ...tuning,
       approachSensitivityOffset:
-        tuning.approachSensitivityOffset - relation.rejectedOffers,
+        tuning.approachSensitivityOffset -
+        Math.min(10, relation.rejectedOffers * 1.5),
       observationBiasOffset:
-        tuning.observationBiasOffset + Math.min(8, relation.rejectedOffers),
+        tuning.observationBiasOffset +
+        Math.min(8, relation.rejectedOffers * 1.2),
+    }
+  }
+
+  if (
+    relation.latestOpportunityFeedback &&
+    !relation.latestOpportunityFeedback.accepted
+  ) {
+    tuning = {
+      ...tuning,
+      approachSensitivityOffset: tuning.approachSensitivityOffset - 2,
+      observationBiasOffset: tuning.observationBiasOffset + 2,
+    }
+  }
+
+  if (
+    relation.latestOpportunityFeedback &&
+    relation.latestOpportunityFeedback.accepted
+  ) {
+    tuning = {
+      ...tuning,
+      carePriorityOffset: tuning.carePriorityOffset + 1,
     }
   }
 

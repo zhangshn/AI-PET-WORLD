@@ -66,24 +66,114 @@ function uniqueTags(tags: string[]): string[] {
   return Array.from(new Set(tags))
 }
 
+function getObservationFamiliaritySoftCap(relation: ButlerRelationState): number {
+  if (relation.successfulOffers >= 8 && relation.trustEstimate >= 45) {
+    return 52
+  }
+
+  if (relation.successfulOffers >= 4 && relation.trustEstimate >= 28) {
+    return 42
+  }
+
+  if (relation.successfulOffers >= 1 && relation.trustEstimate >= 12) {
+    return 32
+  }
+
+  return 24
+}
+
+function applyFamiliaritySoftCap(input: {
+  current: number
+  delta: number
+  softCap: number
+  hardCap?: number
+}): number {
+  const hardCap = input.hardCap ?? 100
+
+  if (input.delta <= 0) {
+    return clampRelationValue(input.current + input.delta)
+  }
+
+  if (input.current >= input.softCap) {
+    return clampRelationValue(
+      input.current + Math.min(1, input.delta * 0.25)
+    )
+  }
+
+  const next = input.current + input.delta
+
+  if (next <= input.softCap) {
+    return clampRelationValue(next)
+  }
+
+  const overflow = next - input.softCap
+
+  return clampRelationValue(
+    Math.min(hardCap, input.softCap + overflow * 0.35)
+  )
+}
+
+function applyTrustSoftCap(input: {
+  current: number
+  delta: number
+  successfulOffers: number
+  rejectedOffers: number
+}): number {
+  if (input.delta <= 0) {
+    return clampRelationValue(input.current + input.delta)
+  }
+
+  const successCap =
+    12 +
+    input.successfulOffers * 6 -
+    input.rejectedOffers * 2
+
+  const softCap = Math.max(10, Math.min(80, successCap))
+
+  if (input.current >= softCap) {
+    return clampRelationValue(
+      input.current + Math.min(1, input.delta * 0.25)
+    )
+  }
+
+  const next = input.current + input.delta
+
+  if (next <= softCap) {
+    return clampRelationValue(next)
+  }
+
+  const overflow = next - softCap
+
+  return clampRelationValue(softCap + overflow * 0.35)
+}
+
 function deriveRelationTone(input: {
   familiarity: number
   trustEstimate: number
+  successfulOffers: number
   rejectedOffers: number
 }): ButlerRelationTone {
   if (input.rejectedOffers >= 5 && input.trustEstimate < 35) {
     return "guarded"
   }
 
-  if (input.trustEstimate >= 72 && input.familiarity >= 55) {
+  if (
+    input.trustEstimate >= 72 &&
+    input.familiarity >= 58 &&
+    input.successfulOffers >= 8
+  ) {
     return "trusted"
   }
 
-  if (input.familiarity >= 35) {
+  if (
+    input.familiarity >= 38 &&
+    input.trustEstimate >= 18 &&
+    input.successfulOffers >= 2
+  ) {
     return "familiar"
   }
 
-  if (input.familiarity > 0) {
+  if (input.familiarity > 0 || input.trustEstimate > 0) {
     return "observing"
   }
 
@@ -96,6 +186,7 @@ function rebuildRelationTone(
   return deriveRelationTone({
     familiarity: relation.familiarity,
     trustEstimate: relation.trustEstimate,
+    successfulOffers: relation.successfulOffers,
     rejectedOffers: relation.rejectedOffers,
   })
 }
@@ -148,7 +239,11 @@ function buildRelationTags(input: {
     )
   }
 
-  return uniqueTags(tags).slice(0, 32)
+  tags.push(
+    `observation_soft_cap_${getObservationFamiliaritySoftCap(input.relation)}`
+  )
+
+  return uniqueTags(tags).slice(0, 36)
 }
 
 function buildOpportunityFeedbackTags(input: {
@@ -176,10 +271,15 @@ function buildOpportunityFeedbackTags(input: {
     tags.push("opportunity_has_reason")
   }
 
-  return uniqueTags(tags).slice(0, 32)
+  tags.push(
+    `observation_soft_cap_${getObservationFamiliaritySoftCap(input.relation)}`
+  )
+
+  return uniqueTags(tags).slice(0, 36)
 }
 
 function deriveRelationDelta(input: {
+  relation: ButlerRelationState
   trace: ButlerTaskDecisionTrace
   memoryEntry: ButlerMemoryEntry | null
 }) {
@@ -208,8 +308,11 @@ function deriveRelationDelta(input: {
       }
     }
 
+    const softCap = getObservationFamiliaritySoftCap(input.relation)
+    const canGainFamiliarity = input.relation.familiarity < softCap + 8
+
     return {
-      familiarity: 1,
+      familiarity: canGainFamiliarity ? 1 : 0,
       trustEstimate: 0,
       careHistory: 0,
       observationCount: 1,
@@ -220,8 +323,8 @@ function deriveRelationDelta(input: {
 
   if (task === "offering_food") {
     return {
-      familiarity: 2,
-      trustEstimate: 1,
+      familiarity: 1,
+      trustEstimate: 0,
       careHistory: 1,
       observationCount: 0,
       successfulOffers: 0,
@@ -231,8 +334,8 @@ function deriveRelationDelta(input: {
 
   if (task === "offering_rest") {
     return {
-      familiarity: 2,
-      trustEstimate: 1,
+      familiarity: 1,
+      trustEstimate: 0,
       careHistory: 1,
       observationCount: 0,
       successfulOffers: 0,
@@ -242,7 +345,7 @@ function deriveRelationDelta(input: {
 
   if (task === "offering_approach") {
     return {
-      familiarity: 2,
+      familiarity: 1,
       trustEstimate: 0,
       careHistory: 1,
       observationCount: 0,
@@ -253,7 +356,11 @@ function deriveRelationDelta(input: {
 
   if (task === "building_home") {
     return {
-      familiarity: input.trace.context.hasTimelineSnapshot ? 1 : 0,
+      familiarity:
+        input.trace.context.hasTimelineSnapshot &&
+        input.relation.familiarity < 20
+          ? 1
+          : 0,
       trustEstimate: 0,
       careHistory: 0,
       observationCount: 0,
@@ -345,6 +452,7 @@ export function updateButlerRelationFromTaskDecision(input: {
   }
 
   const delta = deriveRelationDelta({
+    relation: input.relation,
     trace: input.trace,
     memoryEntry: input.memoryEntry,
   })
@@ -358,20 +466,28 @@ export function updateButlerRelationFromTaskDecision(input: {
       delta.observationCount > 0
     )
 
+  const nextSuccessfulOffers =
+    input.relation.successfulOffers + delta.successfulOffers
+  const nextRejectedOffers =
+    input.relation.rejectedOffers + delta.rejectedOffers
+
   const nextBase = {
-    familiarity: clampRelationValue(
-      input.relation.familiarity + delta.familiarity
-    ),
-    trustEstimate: clampRelationValue(
-      input.relation.trustEstimate + delta.trustEstimate
-    ),
+    familiarity: applyFamiliaritySoftCap({
+      current: input.relation.familiarity,
+      delta: delta.familiarity,
+      softCap: getObservationFamiliaritySoftCap(input.relation),
+    }),
+    trustEstimate: applyTrustSoftCap({
+      current: input.relation.trustEstimate,
+      delta: delta.trustEstimate,
+      successfulOffers: nextSuccessfulOffers,
+      rejectedOffers: nextRejectedOffers,
+    }),
     careHistory: input.relation.careHistory + delta.careHistory,
     observationCount:
       input.relation.observationCount + delta.observationCount,
-    successfulOffers:
-      input.relation.successfulOffers + delta.successfulOffers,
-    rejectedOffers:
-      input.relation.rejectedOffers + delta.rejectedOffers,
+    successfulOffers: nextSuccessfulOffers,
+    rejectedOffers: nextRejectedOffers,
     lastInteractionTick: shouldTouchInteraction
       ? input.tick
       : input.relation.lastInteractionTick,
@@ -401,20 +517,27 @@ export function updateButlerRelationFromOpportunityFeedback(input: {
   feedback: ButlerOpportunityFeedback
 }): ButlerRelationState {
   const delta = deriveOpportunityFeedbackDelta(input.feedback)
+  const nextSuccessfulOffers =
+    input.relation.successfulOffers + delta.successfulOffers
+  const nextRejectedOffers =
+    input.relation.rejectedOffers + delta.rejectedOffers
 
   const base = {
-    familiarity: clampRelationValue(
-      input.relation.familiarity + delta.familiarity
-    ),
-    trustEstimate: clampRelationValue(
-      input.relation.trustEstimate + delta.trustEstimate
-    ),
+    familiarity: applyFamiliaritySoftCap({
+      current: input.relation.familiarity,
+      delta: delta.familiarity,
+      softCap: getObservationFamiliaritySoftCap(input.relation),
+    }),
+    trustEstimate: applyTrustSoftCap({
+      current: input.relation.trustEstimate,
+      delta: delta.trustEstimate,
+      successfulOffers: nextSuccessfulOffers,
+      rejectedOffers: nextRejectedOffers,
+    }),
     careHistory: input.relation.careHistory + delta.careHistory,
     observationCount: input.relation.observationCount,
-    successfulOffers:
-      input.relation.successfulOffers + delta.successfulOffers,
-    rejectedOffers:
-      input.relation.rejectedOffers + delta.rejectedOffers,
+    successfulOffers: nextSuccessfulOffers,
+    rejectedOffers: nextRejectedOffers,
     lastInteractionTick: input.feedback.tick,
     latestOpportunityFeedback: input.feedback,
   }
