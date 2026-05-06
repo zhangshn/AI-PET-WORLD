@@ -94,3 +94,13 @@ export {
   type EvaluatePetOpportunityInput,
   type PetOpportunityDecision,
 } from "./pet-opportunity/pet-opportunity-gateway"
+
+export {
+  expressPetAction,
+} from "./pet-expression/pet-expression-gateway"
+
+export type {
+  PetExpressionInput,
+  PetExpressionReason,
+  PetExpressionResult,
+} from "./pet-expression/pet-expression-gateway"

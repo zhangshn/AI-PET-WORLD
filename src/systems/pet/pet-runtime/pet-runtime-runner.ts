@@ -26,6 +26,7 @@ import {
   mapTimelineStateToPetMood,
   applyPetActionStability,
   selectPetAction,
+  expressPetAction,
   driveSystem,
   attentionSystem,
   goalSystem,
@@ -166,9 +167,21 @@ export function runPetRuntimeTick(
 
   const rawAction = actionSelection.action
 
+  const expressionResult = expressPetAction({
+    rawAction,
+    currentAction: pet.action,
+    currentGoal: nextGoal,
+    lifePhase: pet.lifeState.phase,
+    energy: pet.energy,
+    hunger: pet.hunger,
+    currentLifeRuntimeBundle: pet.currentLifeRuntimeBundle ?? null,
+  })
+
+  const expressedAction = expressionResult.expressedAction
+
   const stabilityResult = applyPetActionStability({
     currentTick: input.currentTick,
-    candidate: rawAction,
+    candidate: expressedAction,
     currentPetAction: pet.action,
     energy: pet.energy,
     hunger: pet.hunger,
