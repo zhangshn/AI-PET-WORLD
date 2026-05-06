@@ -21,6 +21,7 @@ import type {
 
 import {
   buildButlerProfileTaskTuning,
+  buildButlerRelationTaskTuning,
 } from "@/systems/butler/butler-gateway"
 
 import type {
@@ -239,6 +240,25 @@ function buildButlerMemoryReasonLines(
   ]
 }
 
+function buildButlerRelationReasonLines(
+  input: RuntimeButlerAgentAuditInput
+): string[] {
+  const relation = input.butler.relation
+
+  if (!relation) {
+    return [
+      "Butler Relation：当前尚未初始化关系状态。",
+    ]
+  }
+
+  const tuning = buildButlerRelationTaskTuning(relation)
+
+  return [
+    `Butler Relation：tone=${relation.tone}，familiarity=${relation.familiarity}，trustEstimate=${relation.trustEstimate}，careHistory=${relation.careHistory}，observationCount=${relation.observationCount}，successfulOffers=${relation.successfulOffers}，rejectedOffers=${relation.rejectedOffers}，lastInteractionTick=${relation.lastInteractionTick ?? "-"}。`,
+    `Relation Tuning：carePriorityOffset=${tuning.carePriorityOffset}，constructionDriveOffset=${tuning.constructionDriveOffset}，foodSensitivityOffset=${tuning.foodSensitivityOffset}，restSensitivityOffset=${tuning.restSensitivityOffset}，approachSensitivityOffset=${tuning.approachSensitivityOffset}，observationBiasOffset=${tuning.observationBiasOffset}。`,
+  ]
+}
+
 function buildButlerProfileSummary(
   input: RuntimeButlerAgentAuditInput
 ): string {
@@ -362,6 +382,7 @@ function buildButlerPerceptionReasons(
   reasons.push(...buildButlerProfileTuningReasonLines(input))
   reasons.push(...buildButlerTaskDecisionReasonLines(input))
   reasons.push(...buildButlerMemoryReasonLines(input))
+  reasons.push(...buildButlerRelationReasonLines(input))
 
   return reasons
 }
@@ -594,6 +615,7 @@ export function buildRuntimeButlerAgentCycleTrace(
       ...buildButlerProfileTuningReasonLines(input),
       ...buildButlerTaskDecisionReasonLines(input),
       ...buildButlerMemoryReasonLines(input),
+      ...buildButlerRelationReasonLines(input),
     ],
   })
 
@@ -617,6 +639,7 @@ export function buildRuntimeButlerAgentCycleTrace(
       ...buildButlerProfileTuningReasonLines(input),
       ...buildButlerTaskDecisionReasonLines(input),
       ...buildButlerMemoryReasonLines(input),
+      ...buildButlerRelationReasonLines(input),
     ],
   })
 

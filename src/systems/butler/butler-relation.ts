@@ -76,6 +76,23 @@ function deriveRelationTone(input: {
   return "unfamiliar"
 }
 
+function isObservationGrowthMilestone(
+  memoryEntry: ButlerMemoryEntry | null
+): boolean {
+  if (!memoryEntry) return true
+  if (memoryEntry.type !== "observation") return true
+
+  return (
+    memoryEntry.repeatCount === 1 ||
+    memoryEntry.repeatCount === 3 ||
+    memoryEntry.repeatCount === 6 ||
+    memoryEntry.repeatCount === 10 ||
+    memoryEntry.repeatCount === 15 ||
+    memoryEntry.repeatCount === 20 ||
+    memoryEntry.repeatCount % 10 === 0
+  )
+}
+
 function buildRelationTags(input: {
   relation: ButlerRelationState
   trace: ButlerTaskDecisionTrace
@@ -95,9 +112,10 @@ function buildRelationTags(input: {
 
   if (input.memoryEntry) {
     tags.push(`memory_${input.memoryEntry.type}`)
+    tags.push(`memory_repeat_${input.memoryEntry.repeatCount}`)
   }
 
-  return uniqueTags(tags).slice(0, 24)
+  return uniqueTags(tags).slice(0, 28)
 }
 
 function deriveRelationDelta(input: {
@@ -118,6 +136,17 @@ function deriveRelationDelta(input: {
   }
 
   if (task === "watching_pet") {
+    if (!isObservationGrowthMilestone(input.memoryEntry)) {
+      return {
+        familiarity: 0,
+        trustEstimate: 0,
+        careHistory: 0,
+        observationCount: 0,
+        successfulOffers: 0,
+        rejectedOffers: 0,
+      }
+    }
+
     return {
       familiarity: 1,
       trustEstimate: 0,
@@ -163,7 +192,7 @@ function deriveRelationDelta(input: {
 
   if (task === "building_home") {
     return {
-      familiarity: 1,
+      familiarity: input.trace.context.hasTimelineSnapshot ? 1 : 0,
       trustEstimate: 0,
       careHistory: 0,
       observationCount: 0,
@@ -197,6 +226,15 @@ export function updateButlerRelationFromTaskDecision(input: {
     memoryEntry: input.memoryEntry,
   })
 
+  const shouldTouchInteraction =
+    input.trace.context.hasPet &&
+    (
+      delta.familiarity > 0 ||
+      delta.trustEstimate > 0 ||
+      delta.careHistory > 0 ||
+      delta.observationCount > 0
+    )
+
   const nextBase = {
     familiarity: clampRelationValue(
       input.relation.familiarity + delta.familiarity
@@ -211,7 +249,7 @@ export function updateButlerRelationFromTaskDecision(input: {
       input.relation.successfulOffers + delta.successfulOffers,
     rejectedOffers:
       input.relation.rejectedOffers + delta.rejectedOffers,
-    lastInteractionTick: input.trace.context.hasPet
+    lastInteractionTick: shouldTouchInteraction
       ? input.tick
       : input.relation.lastInteractionTick,
   }
