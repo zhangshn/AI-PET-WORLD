@@ -5,14 +5,14 @@
 import { useMemo } from "react"
 
 import {
-  buildCurrentLifeTendencyFromRuntime
-} from "../../../../ai/life-tendency-core/life-tendency-gateway"
+  buildAiCurrentLifeTendency
+} from "../../../../ai/gateway"
 
 import type {
   CurrentLifeTendencyProfile,
   LifeTendencyRuntimeGender,
   LifeTendencyScoreItem
-} from "../../../../ai/life-tendency-core/life-tendency-gateway"
+} from "../../../../ai/gateway"
 
 import type {
   BirthPattern,
@@ -149,6 +149,7 @@ function TopTendencyCard({
       <div style={{ color: "#667085", fontSize: 13 }}>
         {item.label}
       </div>
+
       <div
         style={{
           marginTop: 6,
@@ -158,6 +159,7 @@ function TopTendencyCard({
       >
         {item.score}
       </div>
+
       <div
         style={{
           marginTop: 2,
@@ -238,7 +240,7 @@ export function DynamicMappingExplainPanel({
   runtimeTime: PersonalityTestRuntimeTime
 }) {
   const lifeTendencyProfile = useMemo(() => {
-    return buildCurrentLifeTendencyFromRuntime({
+    return buildAiCurrentLifeTendency({
       pattern,
       baseProfile: profile,
       baziProfile,
@@ -373,6 +375,8 @@ export function DynamicMappingExplainPanel({
       >
         <strong>当前实际链路：</strong>
         世界时间 {runtimeTime.currentYear}-{runtimeTime.currentMonth}-{runtimeTime.currentDay}
+        {" → "}
+        AI 总网关
         {" → "}
         life-tendency-core 自动构建紫微动态层
         {" → "}
