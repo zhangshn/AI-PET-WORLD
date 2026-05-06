@@ -20,31 +20,22 @@ import {
   buildRuntimePetAgentCycleTrace,
 } from "@/engine/agent-runtime-audit/agent-runtime-audit-gateway"
 
-const ENABLE_WORLD_TICK_LOG = true
-const ENABLE_ECOLOGY_LOG = false
-const ENABLE_STIMULUS_LOG = false
-const ENABLE_INCUBATOR_LOG = true
-const ENABLE_PET_RUNTIME_LOG = true
-const ENABLE_PET_COGNITION_LOG = true
-const ENABLE_PET_DECISION_LOG = true
-const ENABLE_PET_DECISION_AUDIT_LOG = true
-const ENABLE_PET_AGENT_TRACE_LOG = true
-const ENABLE_BUTLER_AGENT_TRACE_LOG = true
-const ENABLE_BUTLER_AGENT_TRACE_DETAIL_LOG = false
-const ENABLE_BIRTH_PROFILE_LOG = true
+import {
+  WORLD_RUNTIME_LOG_CONFIG,
+} from "./world-runtime-log-config"
 
 export function logWorldTick(input: {
   tick: number
   formattedTime: string
 }) {
-  if (!ENABLE_WORLD_TICK_LOG) return
+  if (!WORLD_RUNTIME_LOG_CONFIG.worldTick) return
 
   console.log("世界 Tick：", input.tick)
   console.log("当前时间：", input.formattedTime)
 }
 
 export function logWorldEcology(runtime: WorldRuntimeState) {
-  if (!ENABLE_ECOLOGY_LOG) return
+  if (!WORLD_RUNTIME_LOG_CONFIG.ecology) return
 
   console.log("🌱 世界生态：", {
     weather: runtime.ecology.environment.activeWeather,
@@ -57,7 +48,7 @@ export function logWorldEcology(runtime: WorldRuntimeState) {
 }
 
 export function logGeneratedWorldStimuli(stimuli: WorldStimulus[]) {
-  if (!ENABLE_STIMULUS_LOG) return
+  if (!WORLD_RUNTIME_LOG_CONFIG.stimulus) return
   if (stimuli.length === 0) return
 
   for (const item of stimuli) {
@@ -74,7 +65,7 @@ export function logGeneratedWorldStimuli(stimuli: WorldStimulus[]) {
 }
 
 export function logIncubatorState(incubator: IncubatorState) {
-  if (!ENABLE_INCUBATOR_LOG) return
+  if (!WORLD_RUNTIME_LOG_CONFIG.incubator) return
 
   console.log(
     `孵化器状态：进度=${incubator.progress} 稳定度=${incubator.stability} 状态=${incubator.status}`
@@ -82,13 +73,13 @@ export function logIncubatorState(incubator: IncubatorState) {
 }
 
 export function logPetRuntimeInactive() {
-  if (!ENABLE_PET_RUNTIME_LOG) return
+  if (!WORLD_RUNTIME_LOG_CONFIG.petRuntime) return
 
   console.log("世界引擎：当前宠物尚未出生，宠物行为系统未激活。")
 }
 
 export function logPetRuntimeState(pet: PetState) {
-  if (!ENABLE_PET_RUNTIME_LOG) return
+  if (!WORLD_RUNTIME_LOG_CONFIG.petRuntime) return
 
   console.log("🐾 宠物行为：", pet.action)
   console.log(
@@ -105,7 +96,7 @@ export function logPetRuntimeState(pet: PetState) {
 }
 
 export function logPetCognition(summary: string) {
-  if (!ENABLE_PET_COGNITION_LOG) return
+  if (!WORLD_RUNTIME_LOG_CONFIG.petCognition) return
 
   console.log("🧠 宠物认知：", summary)
 }
@@ -204,7 +195,7 @@ export function logPetDecisionTrace(input: {
   mood: string
   lifePhase: string
 }) {
-  if (!ENABLE_PET_DECISION_LOG) return
+  if (!WORLD_RUNTIME_LOG_CONFIG.petDecision) return
 
   const lifeTendencyInfluence = pickLifeTendencyInfluence(
     input.driveReasons
@@ -262,7 +253,7 @@ export function logPetDecisionTrace(input: {
     },
   })
 
-  if (ENABLE_PET_DECISION_AUDIT_LOG) {
+  if (WORLD_RUNTIME_LOG_CONFIG.petDecisionAudit) {
     console.log("✅ 宠物行为链路验收：", {
       tick: input.tick,
       petName: input.petName,
@@ -277,7 +268,7 @@ export function logPetDecisionTrace(input: {
     })
   }
 
-  if (ENABLE_PET_AGENT_TRACE_LOG) {
+  if (WORLD_RUNTIME_LOG_CONFIG.petAgentTrace) {
     const agentTrace = buildRuntimePetAgentCycleTrace({
       tick: input.tick,
       petName: input.petName,
@@ -361,7 +352,7 @@ export function logButlerAgentTrace(input: {
     period?: string
   }
 }) {
-  if (!ENABLE_BUTLER_AGENT_TRACE_LOG) return
+  if (!WORLD_RUNTIME_LOG_CONFIG.butlerAgentTrace) return
   if (!input.butler) return
 
   const agentTrace = buildRuntimeButlerAgentCycleTrace({
@@ -382,7 +373,7 @@ export function logButlerAgentTrace(input: {
     })
   )
 
-  if (ENABLE_BUTLER_AGENT_TRACE_DETAIL_LOG) {
+  if (WORLD_RUNTIME_LOG_CONFIG.butlerAgentTraceDetail) {
     console.log("🧠 管家 AgentCycleTrace 详情：", agentTrace)
   }
 }
@@ -401,7 +392,7 @@ export function logPetBirthProfile(input: {
   createdPet: PetState | null
   time: TimeState
 }) {
-  if (!ENABLE_BIRTH_PROFILE_LOG) return
+  if (!WORLD_RUNTIME_LOG_CONFIG.birthProfile) return
 
   console.log("世界引擎：宠物已通过 LifeProfile 核心完成出生数据构建并绑定。", {
     petName: input.petName,
