@@ -11,7 +11,10 @@ import { worldEngine } from "@/engine/worldEngine"
 import type { TimeState } from "@/engine/timeSystem"
 import type { PetState } from "@/types/pet"
 import type { WorldEvent } from "@/types/event"
-import type { WorldStimulus } from "@/ai/gateway"
+import type {
+  ButlerProfile,
+  WorldStimulus,
+} from "@/ai/gateway"
 import type { ButlerState } from "@/types/butler"
 import type { HomeState } from "@/types/home"
 import type { IncubatorState } from "@/types/incubator"
@@ -31,6 +34,7 @@ export type WorldEngineViewState = {
   worldRuntime: WorldRuntimeState | null
   showDeveloperPanel: boolean
   toggleDeveloperPanel: () => void
+  setButlerProfile: (profile: ButlerProfile | null) => void
 }
 
 function readWorldEngineState() {
@@ -93,6 +97,14 @@ export function useWorldEngineState(): WorldEngineViewState {
     setShowDeveloperPanel((value) => !value)
   }, [])
 
+  const setButlerProfile = useCallback(
+    (profile: ButlerProfile | null) => {
+      worldEngine.setButlerProfile(profile)
+      syncWorld()
+    },
+    [syncWorld]
+  )
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "F3") {
@@ -134,5 +146,6 @@ export function useWorldEngineState(): WorldEngineViewState {
     worldRuntime,
     showDeveloperPanel,
     toggleDeveloperPanel,
+    setButlerProfile,
   }
 }

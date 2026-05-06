@@ -4,7 +4,10 @@
 
 import { TimeSystem, TimeState } from "./timeSystem"
 import type { ButlerState } from "../types/butler"
-import type { WorldStimulus } from "../ai/gateway"
+import type {
+  ButlerProfile,
+  WorldStimulus,
+} from "../ai/gateway"
 import type { PetState } from "../types/pet"
 import type { HomeState } from "../types/home"
 import type { IncubatorState } from "../types/incubator"
@@ -182,6 +185,15 @@ export class WorldEngine {
 
   getButler(): ButlerState {
     return this.butlerSystem.getState()
+  }
+
+  setButlerProfile(profile: ButlerProfile | null): void {
+    this.butlerSystem.setProfile(profile)
+    this.emitUpdate()
+  }
+
+  getButlerProfile(): ButlerProfile | null {
+    return this.butlerSystem.getProfile()
   }
 
   getHome(): HomeState {
