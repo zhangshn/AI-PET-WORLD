@@ -15,11 +15,13 @@ import {
   chooseButlerTask,
   createApproachOffer,
   createFoodOffer,
+  createInitialButlerMemoryState,
   createRestOffer,
   deriveButlerMood,
   hasPendingOpportunity,
   markOpportunityCreated,
   removeExpiredOpportunities,
+  type ButlerMemoryState,
   type ButlerOpportunity,
   type ButlerOpportunityType,
   type ButlerState,
@@ -27,6 +29,9 @@ import {
 } from "./butler/butler-gateway"
 
 export type {
+  ButlerMemoryEntry,
+  ButlerMemoryState,
+  ButlerMemoryType,
   ButlerMood,
   ButlerOpportunity,
   ButlerOpportunityCooldowns,
@@ -46,6 +51,8 @@ export class ButlerSystem {
     opportunityCooldowns: buildInitialOpportunityCooldowns(),
     profile: null,
     behaviorBias: null,
+    latestTaskDecisionTrace: null,
+    memory: createInitialButlerMemoryState(),
   }
 
   update(input: ButlerSystemInput): ButlerState {
@@ -154,6 +161,10 @@ export class ButlerSystem {
 
   getProfile(): ButlerProfile | null {
     return this.state.profile ?? null
+  }
+
+  getMemory(): ButlerMemoryState {
+    return this.state.memory
   }
 
   getState(): ButlerState {

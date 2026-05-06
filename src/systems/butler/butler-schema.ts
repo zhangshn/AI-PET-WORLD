@@ -14,6 +14,10 @@ import type {
   ButlerTaskDecisionTrace,
 } from "./butler-task-decision-trace"
 
+import type {
+  ButlerMemoryState,
+} from "./butler-memory"
+
 export type ButlerTask =
   | "watching_incubator"
   | "building_home"
@@ -81,6 +85,12 @@ export type ButlerState = {
    * 用于解释为什么本轮选择某个任务。
    */
   latestTaskDecisionTrace?: ButlerTaskDecisionTrace | null
+
+  /**
+   * 管家长期记忆状态。
+   * 当前阶段只建立容器，不直接影响任务选择。
+   */
+  memory: ButlerMemoryState
 }
 
 export type ButlerSystemInput = {

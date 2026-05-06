@@ -44,3 +44,15 @@ export type {
   ButlerTaskDecisionScore,
   ButlerTaskDecisionTrace,
 } from "./butler-task-decision-trace"
+
+export {
+  appendButlerMemoryEntry,
+  createButlerMemoryEntry,
+  createInitialButlerMemoryState,
+} from "./butler-memory"
+
+export type {
+  ButlerMemoryEntry,
+  ButlerMemoryState,
+  ButlerMemoryType,
+} from "./butler-memory"
