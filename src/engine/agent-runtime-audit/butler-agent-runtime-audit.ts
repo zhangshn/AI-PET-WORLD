@@ -85,38 +85,100 @@ function getSignalCategory(
   return "temporal"
 }
 
+function buildButlerProfileTags(
+  input: RuntimeButlerAgentAuditInput
+): string[] {
+  const profile = input.butler.profile
+
+  if (!profile) {
+    return ["no_butler_profile"]
+  }
+
+  return [
+    `mapping_${profile.identity.mappingMode}`,
+    `birth_${profile.identity.birthTimeMode}`,
+    `care_${profile.careStyle}`,
+    `build_${profile.buildStyle}`,
+    `boundary_${profile.boundaryStyle}`,
+    `opportunity_${profile.opportunityStyle}`,
+  ]
+}
+
+function buildButlerProfileReasonLines(
+  input: RuntimeButlerAgentAuditInput
+): string[] {
+  const profile = input.butler.profile
+
+  if (!profile) {
+    return [
+      "管家 Profile 尚未注入，本轮只根据任务、环境和旧行为偏置进行审计。",
+    ]
+  }
+
+  return [
+    `管家映射模式：${profile.identity.mappingMode}。`,
+    `出生时间模式：${profile.identity.birthTimeMode}。`,
+    `照护风格：${profile.careStyle}。`,
+    `建设风格：${profile.buildStyle}。`,
+    `边界风格：${profile.boundaryStyle}。`,
+    `机会提供方式：${profile.opportunityStyle}。`,
+    `Profile Bias：carePriority=${profile.bias.carePriority}，constructionDrive=${profile.bias.constructionDrive}，observationPatience=${profile.bias.observationPatience}，boundarySensitivity=${profile.bias.boundarySensitivity}，opportunityInitiative=${profile.bias.opportunityInitiative}。`,
+  ]
+}
+
+function buildButlerProfileSummary(
+  input: RuntimeButlerAgentAuditInput
+): string {
+  const profile = input.butler.profile
+
+  if (!profile) {
+    return "当前管家尚未绑定 ButlerProfile。"
+  }
+
+  return [
+    `当前管家已绑定 ButlerProfile。`,
+    `模式=${profile.identity.mappingMode}`,
+    `照护=${profile.careStyle}`,
+    `建设=${profile.buildStyle}`,
+    `边界=${profile.boundaryStyle}`,
+    `机会=${profile.opportunityStyle}`,
+  ].join("，")
+}
+
 function buildButlerSignalSummary(
   input: RuntimeButlerAgentAuditInput
 ): string {
+  const profileSummary = buildButlerProfileSummary(input)
+
   if (
     input.incubator &&
     input.incubator.status !== "hatched" &&
     input.incubator.progress < 100
   ) {
-    return `孵化器仍在运行，进度 ${input.incubator.progress}，稳定度 ${input.incubator.stability}。`
+    return `孵化器仍在运行，进度 ${input.incubator.progress}，稳定度 ${input.incubator.stability}。${profileSummary}`
   }
 
   if (input.butler.task === "offering_food") {
-    return "宠物需求可能上升，管家准备提供食物机会。"
+    return `宠物需求可能上升，管家准备提供食物机会。${profileSummary}`
   }
 
   if (input.butler.task === "offering_rest") {
-    return "宠物可能需要恢复，管家准备提供休息机会。"
+    return `宠物可能需要恢复，管家准备提供休息机会。${profileSummary}`
   }
 
   if (input.butler.task === "offering_approach") {
-    return "宠物关系状态允许靠近，管家准备提供互动机会。"
+    return `宠物关系状态允许靠近，管家准备提供互动机会。${profileSummary}`
   }
 
   if (input.butler.task === "building_home") {
-    return "家园仍有建设空间，管家将注意力放在环境维护上。"
+    return `家园仍有建设空间，管家将注意力放在环境维护上。${profileSummary}`
   }
 
   if (input.butler.task === "watching_pet") {
-    return "宠物已经出生，管家保持观察但不直接控制宠物行为。"
+    return `宠物已经出生，管家保持观察但不直接控制宠物行为。${profileSummary}`
   }
 
-  return "当前没有紧急事务，管家维持待命观察。"
+  return `当前没有紧急事务，管家维持待命观察。${profileSummary}`
 }
 
 function buildButlerPerceptionReasons(
@@ -146,6 +208,8 @@ function buildButlerPerceptionReasons(
     )
   }
 
+  reasons.push(...buildButlerProfileReasonLines(input))
+
   return reasons
 }
 
@@ -159,32 +223,57 @@ function buildButlerInterpretationType(task: ButlerTask) {
   return "unknown"
 }
 
-function buildButlerIntentionSummary(task: ButlerTask): string {
+function buildButlerInterpretationSummary(
+  input: RuntimeButlerAgentAuditInput
+): string {
+  const profile = input.butler.profile
+
+  if (!profile) {
+    return "管家将当前世界状态解释为需要维护、观察或提供机会的情境。当前尚未接入 ButlerProfile。"
+  }
+
+  return [
+    "管家将当前世界状态解释为需要维护、观察或提供机会的情境。",
+    `本轮解释会参考 ButlerProfile：${profile.identity.mappingMode} / ${profile.careStyle} / ${profile.buildStyle} / ${profile.boundaryStyle} / ${profile.opportunityStyle}。`,
+    "Profile 只参与解释和审计，不直接控制宠物行为。",
+  ].join("")
+}
+
+function buildButlerIntentionSummary(
+  input: RuntimeButlerAgentAuditInput
+): string {
+  const task = input.butler.task
+  const profile = input.butler.profile
+
+  const profileText = profile
+    ? `管家当前 Profile 倾向：照护=${profile.careStyle}，建设=${profile.buildStyle}，边界=${profile.boundaryStyle}，机会=${profile.opportunityStyle}。`
+    : "管家当前尚未绑定 Profile。"
+
   if (task === "watching_incubator") {
-    return "管家的内部意图是维持孵化器稳定。"
+    return `管家的内部意图是维持孵化器稳定。${profileText}`
   }
 
   if (task === "building_home") {
-    return "管家的内部意图是维护和建设家园环境。"
+    return `管家的内部意图是维护和建设家园环境。${profileText}`
   }
 
   if (task === "watching_pet") {
-    return "管家的内部意图是观察宠物状态，而不是替宠物做决定。"
+    return `管家的内部意图是观察宠物状态，而不是替宠物做决定。${profileText}`
   }
 
   if (task === "offering_food") {
-    return "管家的内部意图是提供食物机会，由宠物自主接受或拒绝。"
+    return `管家的内部意图是提供食物机会，由宠物自主接受或拒绝。${profileText}`
   }
 
   if (task === "offering_rest") {
-    return "管家的内部意图是提供休息机会，由宠物自主接受或拒绝。"
+    return `管家的内部意图是提供休息机会，由宠物自主接受或拒绝。${profileText}`
   }
 
   if (task === "offering_approach") {
-    return "管家的内部意图是提供靠近机会，而不是强制互动。"
+    return `管家的内部意图是提供靠近机会，而不是强制互动。${profileText}`
   }
 
-  return "管家当前保持待命。"
+  return `管家当前保持待命。${profileText}`
 }
 
 function buildButlerExpression(task: ButlerTask): string {
@@ -198,6 +287,21 @@ function buildButlerExpression(task: ButlerTask): string {
   return "idle"
 }
 
+function buildButlerExpressionReason(
+  input: RuntimeButlerAgentAuditInput
+): string {
+  const profile = input.butler.profile
+
+  if (!profile) {
+    return "管家的可见行为是管理性表达，不直接覆盖宠物自主行为。"
+  }
+
+  return [
+    "管家的可见行为是管理性表达，不直接覆盖宠物自主行为。",
+    `本轮表达携带 Profile 风格痕迹：照护=${profile.careStyle}，建设=${profile.buildStyle}，边界=${profile.boundaryStyle}，机会=${profile.opportunityStyle}。`,
+  ].join("")
+}
+
 function buildButlerMemoryDelta(task: ButlerTask): number {
   if (task === "watching_incubator") return 1
   if (task === "building_home") return 1
@@ -205,6 +309,21 @@ function buildButlerMemoryDelta(task: ButlerTask): number {
   if (task === "watching_pet") return 1
 
   return 0
+}
+
+function buildButlerMemorySummary(
+  input: RuntimeButlerAgentAuditInput
+): string {
+  const profile = input.butler.profile
+
+  if (!profile) {
+    return "本轮管家任务结果未来可进入管家记忆，用于形成管理经验。"
+  }
+
+  return [
+    "本轮管家任务结果未来可进入管家记忆，用于形成管理经验。",
+    `记忆审计会保留 Profile 上下文：${profile.identity.mappingMode} / ${profile.careStyle} / ${profile.buildStyle} / ${profile.boundaryStyle} / ${profile.opportunityStyle}。`,
+  ].join("")
 }
 
 export function buildRuntimeButlerAgentCycleTrace(
@@ -229,6 +348,7 @@ export function buildRuntimeButlerAgentCycleTrace(
       input.butler.task,
       input.butler.mood,
       input.time.period ?? "unknown_period",
+      ...buildButlerProfileTags(input),
     ],
   })
 
@@ -245,7 +365,7 @@ export function buildRuntimeButlerAgentCycleTrace(
         ? 35
         : 76,
     perceivedMeaning:
-      "管家根据孵化器、宠物、家园和时间状态形成管理性观察。",
+      "管家根据孵化器、宠物、家园、时间状态和自身 Profile 形成管理性观察。",
     reasons: buildButlerPerceptionReasons(input),
   })
 
@@ -258,11 +378,11 @@ export function buildRuntimeButlerAgentCycleTrace(
       input.butler.task === "idle"
         ? 48
         : 82,
-    internalSummary:
-      "管家将当前世界状态解释为需要维护、观察或提供机会的情境。",
+    internalSummary: buildButlerInterpretationSummary(input),
     reasons: [
       "管家不是宠物控制器。",
       "当前任务只能形成机会或环境维护，不能直接决定宠物行为。",
+      ...buildButlerProfileReasonLines(input),
     ],
   })
 
@@ -278,10 +398,11 @@ export function buildRuntimeButlerAgentCycleTrace(
       input.butler.task === "idle"
         ? 28
         : 78,
-    summary: buildButlerIntentionSummary(input.butler.task),
+    summary: buildButlerIntentionSummary(input),
     reasons: [
       `当前任务：${input.butler.task}`,
       `当前心情：${input.butler.mood}`,
+      ...buildButlerProfileReasonLines(input),
     ],
   })
 
@@ -295,8 +416,7 @@ export function buildRuntimeButlerAgentCycleTrace(
         ? "opportunity_action"
         : "environment_action",
     confidence: 84,
-    reason:
-      "管家的可见行为是管理性表达，不直接覆盖宠物自主行为。",
+    reason: buildButlerExpressionReason(input),
   })
 
   const memoryImpact = buildAgentMemoryImpact({
@@ -307,8 +427,7 @@ export function buildRuntimeButlerAgentCycleTrace(
         ? "resource_impression"
         : "relation_impression",
     delta: buildButlerMemoryDelta(input.butler.task),
-    summary:
-      "本轮管家任务结果未来可进入管家记忆，用于形成管理经验。",
+    summary: buildButlerMemorySummary(input),
     sourceSignalId: signal.id,
     sourceIntentionType: intention.type,
   })
