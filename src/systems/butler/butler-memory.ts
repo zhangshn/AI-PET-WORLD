@@ -18,6 +18,8 @@ export type ButlerMemoryType =
 export type ButlerMemoryEntry = {
   id: string
   tick: number
+  lastUpdatedTick: number
+  repeatCount: number
   type: ButlerMemoryType
   sourceTask: ButlerTask
   summary: string
@@ -30,6 +32,7 @@ export type ButlerMemoryState = {
   entries: ButlerMemoryEntry[]
   latestEntry: ButlerMemoryEntry | null
   totalCount: number
+  mergedCount: number
 }
 
 export function createInitialButlerMemoryState(): ButlerMemoryState {
@@ -37,6 +40,7 @@ export function createInitialButlerMemoryState(): ButlerMemoryState {
     entries: [],
     latestEntry: null,
     totalCount: 0,
+    mergedCount: 0,
   }
 }
 
@@ -139,6 +143,72 @@ function deriveMemoryEmotionalWeight(trace: ButlerTaskDecisionTrace): number {
   return 22
 }
 
+function uniqueTags(tags: string[]): string[] {
+  return Array.from(new Set(tags))
+}
+
+function shouldMergeWithLatestMemory(input: {
+  latest: ButlerMemoryEntry | null
+  entry: ButlerMemoryEntry
+  maxTickGap?: number
+}): boolean {
+  if (!input.latest) return false
+
+  const maxTickGap = input.maxTickGap ?? 6
+  const tickGap = input.entry.tick - input.latest.lastUpdatedTick
+
+  if (tickGap < 0 || tickGap > maxTickGap) return false
+  if (input.latest.type !== input.entry.type) return false
+  if (input.latest.sourceTask !== input.entry.sourceTask) return false
+
+  const latestLifePhase = input.latest.tags.find((tag) =>
+    tag.startsWith("life_phase_")
+  )
+  const nextLifePhase = input.entry.tags.find((tag) =>
+    tag.startsWith("life_phase_")
+  )
+
+  if (latestLifePhase !== nextLifePhase) return false
+
+  const latestHomeState = input.latest.tags.includes("home_completed")
+    ? "home_completed"
+    : "home_not_completed"
+  const nextHomeState = input.entry.tags.includes("home_completed")
+    ? "home_completed"
+    : "home_not_completed"
+
+  return latestHomeState === nextHomeState
+}
+
+function mergeMemoryEntry(input: {
+  latest: ButlerMemoryEntry
+  entry: ButlerMemoryEntry
+}): ButlerMemoryEntry {
+  const repeatCount = input.latest.repeatCount + 1
+
+  return {
+    ...input.latest,
+    lastUpdatedTick: input.entry.tick,
+    repeatCount,
+    importance: clampMemoryValue(
+      Math.max(input.latest.importance, input.entry.importance) +
+        Math.min(10, repeatCount)
+    ),
+    emotionalWeight: clampMemoryValue(
+      Math.max(input.latest.emotionalWeight, input.entry.emotionalWeight)
+    ),
+    tags: uniqueTags([
+      ...input.latest.tags,
+      ...input.entry.tags,
+      `repeat_${repeatCount}`,
+    ]),
+    summary:
+      repeatCount <= 1
+        ? input.latest.summary
+        : `${input.latest.summary}（连续出现 ${repeatCount} 次，最近一次在 Tick ${input.entry.tick}。）`,
+  }
+}
+
 export function createButlerMemoryEntry(input: {
   tick: number
   type: ButlerMemoryType
@@ -153,6 +223,8 @@ export function createButlerMemoryEntry(input: {
       .toString(36)
       .slice(2, 8)}`,
     tick: input.tick,
+    lastUpdatedTick: input.tick,
+    repeatCount: 1,
     type: input.type,
     sourceTask: input.sourceTask,
     summary: input.summary,
@@ -185,6 +257,33 @@ export function appendButlerMemoryEntry(input: {
   maxEntries?: number
 }): ButlerMemoryState {
   const maxEntries = input.maxEntries ?? 50
+  const latest = input.memory.latestEntry
+
+  if (
+    shouldMergeWithLatestMemory({
+      latest,
+      entry: input.entry,
+    }) &&
+    latest
+  ) {
+    const mergedLatest = mergeMemoryEntry({
+      latest,
+      entry: input.entry,
+    })
+
+    const entries = [
+      mergedLatest,
+      ...input.memory.entries.slice(1),
+    ].slice(0, maxEntries)
+
+    return {
+      entries,
+      latestEntry: mergedLatest,
+      totalCount: input.memory.totalCount + 1,
+      mergedCount: input.memory.mergedCount + 1,
+    }
+  }
+
   const entries = [
     input.entry,
     ...input.memory.entries,
@@ -194,6 +293,7 @@ export function appendButlerMemoryEntry(input: {
     entries,
     latestEntry: input.entry,
     totalCount: input.memory.totalCount + 1,
+    mergedCount: input.memory.mergedCount,
   }
 }
 
@@ -206,7 +306,18 @@ export function shouldRememberTaskDecision(input: {
   const latest = input.memory.latestEntry
 
   if (!latest) return true
-  if (latest.tick !== input.trace.context.timeHour) return true
+
+  if (
+    shouldMergeWithLatestMemory({
+      latest,
+      entry: createButlerMemoryEntryFromTaskDecision({
+        tick: latest.lastUpdatedTick + 1,
+        trace: input.trace,
+      }),
+    })
+  ) {
+    return true
+  }
 
   return latest.sourceTask !== input.trace.selectedTask
 }

@@ -132,7 +132,7 @@ export class ButlerSystem {
     const trace = this.state.latestTaskDecisionTrace
 
     if (!trace) return
-    if (this.state.memory.latestEntry?.tick === tick) return
+    if (this.state.memory.latestEntry?.lastUpdatedTick === tick) return
 
     const entry = createButlerMemoryEntryFromTaskDecision({
       tick,
