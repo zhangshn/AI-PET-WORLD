@@ -57,7 +57,10 @@ export default function ButlerProfileSetupPanel({ world }: Props) {
 
         <ButlerMemoryDebugPanel memory={memory} />
 
-        <ButlerRelationDebugPanel relation={relation} />
+        <ButlerRelationDebugPanel
+          relation={relation}
+          profile={currentProfile}
+        />
 
         <ButlerOpportunityFeedbackDebugPanel relation={relation} />
       </div>

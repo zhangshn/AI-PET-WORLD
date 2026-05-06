@@ -154,19 +154,19 @@ function pushTuningScores(
     scores,
     "relation_care_priority",
     context.relationTuning.carePriorityOffset,
-    "Relation 对照护优先级的轻量调参。"
+    "Relation 作为事实输入，经 ButlerProfile / 八字解释后，对照护优先级形成轻量调参。"
   )
   pushScore(
     scores,
     "relation_observation_bias",
     context.relationTuning.observationBiasOffset,
-    "Relation 对观察优先级的轻量调参。"
+    "Relation 作为事实输入，经 ButlerProfile / 八字解释后，对观察倾向形成轻量调参。"
   )
   pushScore(
     scores,
     "relation_approach_sensitivity",
     context.relationTuning.approachSensitivityOffset,
-    "Relation 对靠近机会敏感度的轻量调参。"
+    "Relation 作为事实输入，经 ButlerProfile / 八字解释后，对靠近机会形成轻量调参。"
   )
 }
 
@@ -193,7 +193,7 @@ function shouldOfferFood(
     Math.max(0, foodSensitivity) * 0.15
 
   pushScore(scores, "food_hunger", hunger, `当前饥饿=${hunger}，直接食物阈值=${directThreshold.toFixed(2)}。`)
-  pushScore(scores, "food_sensitivity", foodSensitivity, "Profile + Relation 后的食物机会敏感度。")
+  pushScore(scores, "food_sensitivity", foodSensitivity, "Profile + Profile-led Relation 后的食物机会敏感度。")
 
   if (hunger >= directThreshold) {
     pushGate(gates, "food_direct_hunger", true, "饥饿达到直接提供食物机会阈值。")
@@ -237,7 +237,7 @@ function shouldOfferRest(
     Math.max(0, restSensitivity) * 0.2
 
   pushScore(scores, "rest_energy", energy, `当前能量=${energy}，休息阈值=${energyThreshold.toFixed(2)}。`)
-  pushScore(scores, "rest_sensitivity", restSensitivity, "Profile + Relation 后的休息机会敏感度。")
+  pushScore(scores, "rest_sensitivity", restSensitivity, "Profile + Profile-led Relation 后的休息机会敏感度。")
 
   if (energy <= energyThreshold) {
     pushGate(gates, "rest_low_energy", true, "能量低于休息阈值，提供休息机会。")
@@ -289,7 +289,7 @@ function shouldOfferApproach(
     emotion !== "irritated" &&
     emotion !== "anxious"
 
-  pushScore(scores, "approach_sensitivity", approachSensitivity, "Profile + Relation 后的靠近机会敏感度。")
+  pushScore(scores, "approach_sensitivity", approachSensitivity, "Profile + Profile-led Relation 后的靠近机会敏感度。")
   pushScore(scores, "approach_hunger", hunger, `当前饥饿=${hunger}，靠近允许饥饿上限=${hungerLimit.toFixed(2)}。`)
   pushScore(scores, "approach_energy", energy, `当前能量=${energy}，靠近允许能量下限=${energyLimit.toFixed(2)}。`)
 
@@ -310,7 +310,7 @@ function shouldObserveBeforeActing(
 ): boolean {
   const observationBias = context.effectiveTuning.observationBiasOffset
 
-  pushScore(scores, "observation_bias", observationBias, "Profile + Relation 后的观察优先级调参。")
+  pushScore(scores, "observation_bias", observationBias, "Profile + Profile-led Relation 后的观察优先级调参。")
 
   if (observationBias < 8) {
     pushGate(gates, "observe_bias_threshold", false, "观察调参低于 8，不强制先观察。")
@@ -357,7 +357,7 @@ function shouldBuildHome(
   }
 
   const constructionDrive = getConstructionDrive(context)
-  pushScore(scores, "construction_drive", constructionDrive, "旧行为偏置 + Profile + Relation 后的建设倾向。")
+  pushScore(scores, "construction_drive", constructionDrive, "旧行为偏置 + Profile + Profile-led Relation 后的建设倾向。")
 
   if (!pet?.timelineSnapshot) {
     pushGate(gates, "build_no_pet_timeline", true, "宠物尚无 timelineSnapshot，允许建设。")
@@ -468,7 +468,10 @@ function buildTaskContext(
     null
 
   const profileTuning = buildButlerProfileTaskTuning(state.profile)
-  const relationTuning = buildButlerRelationTaskTuning(state.relation)
+  const relationTuning = buildButlerRelationTaskTuning({
+    relation: state.relation,
+    profile: state.profile,
+  })
 
   return {
     pet: input.pet,
@@ -521,7 +524,7 @@ export function chooseButlerTask(
         state,
         context,
         selectedTask: careTask,
-        reason: "宠物已出生，管家根据宠物状态、Profile 与 Relation 选择照护或机会任务。",
+        reason: "宠物已出生，管家根据宠物状态、ButlerProfile 与 Relation 事实解释选择照护或机会任务。",
         gates,
         scores,
       })

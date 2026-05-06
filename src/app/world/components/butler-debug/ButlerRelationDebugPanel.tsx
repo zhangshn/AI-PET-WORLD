@@ -4,6 +4,8 @@
  * 当前文件负责：展示管家与宠物之间的长期关系调试信息。
  */
 
+import type { ButlerProfile } from "@/ai/gateway"
+
 import {
   buildButlerRelationTaskTuning,
   type ButlerRelationState,
@@ -15,10 +17,17 @@ import styles from "@/styles/world-styles/debug/runtime-debug-panel.module.css"
 
 type Props = {
   relation: ButlerRelationState | null
+  profile: ButlerProfile | null
 }
 
-export default function ButlerRelationDebugPanel({ relation }: Props) {
-  const relationTuning = buildButlerRelationTaskTuning(relation)
+export default function ButlerRelationDebugPanel({
+  relation,
+  profile,
+}: Props) {
+  const relationTuning = buildButlerRelationTaskTuning({
+    relation,
+    profile,
+  })
 
   return (
     <>
@@ -87,7 +96,7 @@ export default function ButlerRelationDebugPanel({ relation }: Props) {
             <div className={styles.row}>
               <span>说明</span>
               <span className={styles.multiline}>
-                Relation 只影响管家任务倾向，不控制宠物行为。
+                Relation 只记录关系事实。具体如何解释这些事实，由 ButlerProfile / 八字管家人格主导。
               </span>
             </div>
           </>
@@ -98,6 +107,15 @@ export default function ButlerRelationDebugPanel({ relation }: Props) {
         <h3 className={styles.blockTitle}>
           Relation Tuning / 关系调参
         </h3>
+
+        <div className={styles.row}>
+          <span>profileSource</span>
+          <span>
+            {profile
+              ? `${profile.careStyle} / ${profile.boundaryStyle} / ${profile.opportunityStyle}`
+              : "no_profile"}
+          </span>
+        </div>
 
         <div className={styles.row}>
           <span>carePriorityOffset</span>
@@ -132,7 +150,7 @@ export default function ButlerRelationDebugPanel({ relation }: Props) {
         <div className={styles.row}>
           <span>说明</span>
           <span className={styles.multiline}>
-            当前调参会被合并进管家任务选择，但不会直接改变宠物行为。
+            当前调参不是由 Relation 直接决定，而是 ButlerProfile / 八字人格对关系事实和机会反馈进行解释后的轻量偏移。
           </span>
         </div>
       </div>
