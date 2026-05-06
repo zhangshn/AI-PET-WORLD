@@ -24,9 +24,11 @@ import {
   hasPendingOpportunity,
   markOpportunityCreated,
   removeExpiredOpportunities,
+  updateButlerRelationFromOpportunityFeedback,
   updateButlerRelationFromTaskDecision,
   type ButlerMemoryState,
   type ButlerOpportunity,
+  type ButlerOpportunityFeedback,
   type ButlerOpportunityType,
   type ButlerRelationState,
   type ButlerState,
@@ -40,6 +42,7 @@ export type {
   ButlerMood,
   ButlerOpportunity,
   ButlerOpportunityCooldowns,
+  ButlerOpportunityFeedback,
   ButlerOpportunityType,
   ButlerRelationState,
   ButlerRelationTone,
@@ -68,6 +71,8 @@ export class ButlerSystem {
     const foodRule = getOpportunityRule("food_offer")
     const restRule = getOpportunityRule("rest_offer")
     const approachRule = getOpportunityRule("approach_offer")
+
+    this.recordExpiredOpportunities(input.tick)
 
     this.state.behaviorBias =
       input.butlerBehaviorBias ??
@@ -162,6 +167,22 @@ export class ButlerSystem {
     })
   }
 
+  private recordExpiredOpportunities(tick: number) {
+    const expiredOpportunities = this.state.pendingOpportunities.filter(
+      (item) => item.expiresAtTick < tick
+    )
+
+    for (const opportunity of expiredOpportunities) {
+      this.recordOpportunityFeedback({
+        tick,
+        type: opportunity.type,
+        accepted: false,
+        expired: true,
+        reason: "机会在有效期内没有被宠物接受，按过期反馈记录。",
+      })
+    }
+  }
+
   private tryCreateOpportunity(input: {
     type: ButlerOpportunityType
     shouldCreate: boolean
@@ -190,6 +211,13 @@ export class ButlerSystem {
       type: input.type,
       tick: input.tick,
       cooldowns: this.state.opportunityCooldowns,
+    })
+  }
+
+  recordOpportunityFeedback(feedback: ButlerOpportunityFeedback) {
+    this.state.relation = updateButlerRelationFromOpportunityFeedback({
+      relation: this.state.relation,
+      feedback,
     })
   }
 
