@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * 当前文件负责：组合管家 Profile、任务审计与记忆开发面板。
+ * 当前文件负责：组合管家 Profile、任务审计、记忆与关系开发面板。
  */
 
 import { useState } from "react"
@@ -13,6 +13,7 @@ import type { WorldEngineViewState } from "../hooks/useWorldEngineState"
 import ButlerMemoryDebugPanel from "./butler-debug/ButlerMemoryDebugPanel"
 import ButlerProfileDebugPanel from "./butler-debug/ButlerProfileDebugPanel"
 import ButlerProfileInputPanel from "./butler-debug/ButlerProfileInputPanel"
+import ButlerRelationDebugPanel from "./butler-debug/ButlerRelationDebugPanel"
 import ButlerTaskDecisionTracePanel from "./butler-debug/ButlerTaskDecisionTracePanel"
 
 import styles from "@/styles/world-styles/debug/runtime-debug-panel.module.css"
@@ -29,6 +30,7 @@ export default function ButlerProfileSetupPanel({ world }: Props) {
   const taskDecisionTrace =
     world.butler?.latestTaskDecisionTrace ?? null
   const memory = world.butler?.memory ?? null
+  const relation = world.butler?.relation ?? null
 
   return (
     <section className={styles.panel}>
@@ -53,6 +55,8 @@ export default function ButlerProfileSetupPanel({ world }: Props) {
         <ButlerTaskDecisionTracePanel trace={taskDecisionTrace} />
 
         <ButlerMemoryDebugPanel memory={memory} />
+
+        <ButlerRelationDebugPanel relation={relation} />
       </div>
     </section>
   )
