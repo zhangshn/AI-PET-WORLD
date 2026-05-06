@@ -5,9 +5,19 @@
 import type { TimeState } from "@/engine/timeSystem"
 import type { PetState, PetAction } from "@/types/pet"
 import type { WorldZone } from "@/world/ecology/world-zone-types"
-import { updatePetAiState, stepPetBehaviorProcess } from "@/ai/gateway"
-import { updatePetMemoryState } from "@/ai/memory-core/memory-gateway"
-import { logPetDecisionTrace } from "@/engine/world-engine/world-runtime-logger"
+
+import {
+  updatePetAiState,
+  stepPetBehaviorProcess,
+} from "@/ai/gateway"
+
+import {
+  updatePetMemoryState,
+} from "@/ai/memory-core/memory-gateway"
+
+import {
+  logPetDecisionTrace,
+} from "@/engine/world-engine/world-runtime-logger"
 
 import {
   runPetLife,
@@ -135,6 +145,7 @@ export function runPetRuntimeTick(
       personalityProfile: pet.personalityProfile,
       consciousnessProfile: pet.consciousnessProfile,
       memoryState: pet.memoryState,
+      currentLifeRuntimeBundle: pet.currentLifeRuntimeBundle ?? null,
     },
     time: input.time,
   })

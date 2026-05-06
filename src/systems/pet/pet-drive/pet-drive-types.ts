@@ -32,6 +32,7 @@ export type DriveSystemPetInput = Pick<
   | "timelineSnapshot"
   | "personalityProfile"
   | "consciousnessProfile"
+  | "currentLifeRuntimeBundle"
 > & {
   memoryState?: PetMemoryState | null
 }

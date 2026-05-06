@@ -6,15 +6,25 @@ import type {
   DriveSnapshot,
   DriveSystemInput,
 } from "./pet-drive-types"
+
 import {
   createEmptyReasons,
   createEmptyScores,
 } from "./pet-drive-score-utils"
+
 import {
   applyConsciousnessLayer,
   applyTraitBaseLayer,
 } from "./pet-drive-base-layers"
-import { applyDriveMemoryLayer } from "./pet-drive-memory-layer"
+
+import {
+  applyDriveMemoryLayer,
+} from "./pet-drive-memory-layer"
+
+import {
+  applyLifeTendencyLayer,
+} from "./pet-drive-life-tendency-layer"
+
 import {
   applyCrossDriveSuppression,
   applyEmotionAndRelationLayer,
@@ -23,6 +33,7 @@ import {
   applyPhysicalLayer,
   applyRhythmLayer,
 } from "./pet-drive-state-layers"
+
 import {
   buildDriveSummary,
   chooseDominantDrive,
@@ -33,6 +44,7 @@ export class DriveSystem {
   compute(input: DriveSystemInput): DriveSnapshot {
     const scores = createEmptyScores()
     const reasons = createEmptyReasons()
+
     const context = {
       input,
       scores,
@@ -42,6 +54,13 @@ export class DriveSystem {
     applyTraitBaseLayer(context)
     applyConsciousnessLayer(context)
     applyDriveMemoryLayer(context)
+
+    /**
+     * 生命趋向层只做底层偏移。
+     * 它不能直接决定 action，也不能覆盖饥饿、疲劳等生理优先级。
+     */
+    applyLifeTendencyLayer(context)
+
     applyPhysicalLayer(context)
     applyEmotionAndRelationLayer(context)
     applyRhythmLayer(context)
