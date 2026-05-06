@@ -9,12 +9,19 @@ import type {
 
 import type {
   DriveLayerContext,
-  DriveType,
 } from "./pet-drive-types"
 
 import {
   addScore,
 } from "./pet-drive-score-utils"
+
+import {
+  LIFE_TENDENCY_ACTION_INTENSITY_TUNING,
+  LIFE_TENDENCY_BOUNDARY_TUNING,
+  LIFE_TENDENCY_CARE_TUNING,
+  LIFE_TENDENCY_DRIVE_TUNING,
+  LIFE_TENDENCY_PERCEPTION_TUNING,
+} from "./pet-drive-tuning"
 
 function getTendencyBonus(
   score: number,
@@ -31,37 +38,36 @@ function getTendencyBonus(
   return ((score - 50) / 50) * maxBonus
 }
 
-function addLifeTendencyScore(params: {
-  context: DriveLayerContext
+function applyConfiguredLifeTendencyScores(
+  context: DriveLayerContext,
   scores: LifeTendencyScores
-  drive: DriveType
-  tendencyKey: keyof LifeTendencyScores
-  maxBonus: number
-  reason: string
-}) {
-  const score = params.scores[params.tendencyKey]
-  const bonus = getTendencyBonus(score, params.maxBonus)
+) {
+  for (const item of LIFE_TENDENCY_DRIVE_TUNING) {
+    const score = scores[item.tendencyKey]
+    const bonus = getTendencyBonus(score, item.maxBonus)
 
-  addScore(
-    params.context.scores,
-    params.context.reasons,
-    params.drive,
-    bonus,
-    `${params.reason}（${score}）`
-  )
+    addScore(
+      context.scores,
+      context.reasons,
+      item.drive,
+      bonus,
+      `${item.reason}（${score}）`
+    )
+  }
 }
 
 function applyActionIntensity(
   context: DriveLayerContext,
   scores: LifeTendencyScores
 ) {
-  const bonus = getTendencyBonus(scores.action, 3)
+  const tuning = LIFE_TENDENCY_ACTION_INTENSITY_TUNING
+  const bonus = getTendencyBonus(scores.action, tuning.maxBonus)
 
   addScore(
     context.scores,
     context.reasons,
     "explore",
-    bonus * 0.6,
+    bonus * tuning.exploreRatio,
     `生命趋向：行动强度推动探索表达（${scores.action}）`
   )
 
@@ -69,7 +75,7 @@ function applyActionIntensity(
     context.scores,
     context.reasons,
     "approach",
-    bonus * 0.4,
+    bonus * tuning.approachRatio,
     `生命趋向：行动强度推动靠近表达（${scores.action}）`
   )
 }
@@ -78,7 +84,10 @@ function applyPerceptionDepth(
   context: DriveLayerContext,
   scores: LifeTendencyScores
 ) {
-  const bonus = getTendencyBonus(scores.perception, 3)
+  const bonus = getTendencyBonus(
+    scores.perception,
+    LIFE_TENDENCY_PERCEPTION_TUNING.maxBonus
+  )
 
   addScore(
     context.scores,
@@ -93,8 +102,15 @@ function applyBoundaryAndProtection(
   context: DriveLayerContext,
   scores: LifeTendencyScores
 ) {
-  const boundaryBonus = getTendencyBonus(scores.boundary, 2)
-  const protectBonus = getTendencyBonus(scores.protect, 2)
+  const boundaryBonus = getTendencyBonus(
+    scores.boundary,
+    LIFE_TENDENCY_BOUNDARY_TUNING.boundaryMaxBonus
+  )
+
+  const protectBonus = getTendencyBonus(
+    scores.protect,
+    LIFE_TENDENCY_BOUNDARY_TUNING.protectMaxBonus
+  )
 
   addScore(
     context.scores,
@@ -117,7 +133,10 @@ function applyCareTendency(
   context: DriveLayerContext,
   scores: LifeTendencyScores
 ) {
-  const bonus = getTendencyBonus(scores.care, 2)
+  const bonus = getTendencyBonus(
+    scores.care,
+    LIFE_TENDENCY_CARE_TUNING.maxBonus
+  )
 
   addScore(
     context.scores,
@@ -145,51 +164,7 @@ export function applyLifeTendencyLayer(
 
   const scores = bundle.lifeTendencyProfile.scores
 
-  addLifeTendencyScore({
-    context,
-    scores,
-    drive: "explore",
-    tendencyKey: "explore",
-    maxBonus: 6,
-    reason: "生命趋向：探索趋向",
-  })
-
-  addLifeTendencyScore({
-    context,
-    scores,
-    drive: "observe",
-    tendencyKey: "observe",
-    maxBonus: 5,
-    reason: "生命趋向：观察趋向",
-  })
-
-  addLifeTendencyScore({
-    context,
-    scores,
-    drive: "approach",
-    tendencyKey: "approach",
-    maxBonus: 4,
-    reason: "生命趋向：靠近趋向",
-  })
-
-  addLifeTendencyScore({
-    context,
-    scores,
-    drive: "rest",
-    tendencyKey: "recover",
-    maxBonus: 4,
-    reason: "生命趋向：恢复趋向",
-  })
-
-  addLifeTendencyScore({
-    context,
-    scores,
-    drive: "observe",
-    tendencyKey: "routine",
-    maxBonus: 2,
-    reason: "生命趋向：秩序趋向提高稳定观察",
-  })
-
+  applyConfiguredLifeTendencyScores(context, scores)
   applyActionIntensity(context, scores)
   applyPerceptionDepth(context, scores)
   applyBoundaryAndProtection(context, scores)
