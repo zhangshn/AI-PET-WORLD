@@ -139,12 +139,12 @@ export default function PersonalityTestPage() {
       <TestDashboardSection
         index="2"
         title="命盘展示区"
-        description="先展示紫微和八字的盘。这里是命理运行内容，不先混入五维解释和最终数据说明。"
+        description="这里先展示紫微盘和八字盘。只展示命盘结构，不把数据分析和调试信息混进来。"
       >
         <TestDashboardGrid minColumnWidth={620}>
           <TestDashboardPanel
             title="紫微盘"
-            subtitle="紫微是主系统，展示本命结构、动态流盘、当前流动人格与行动趋向。"
+            subtitle="紫微是主系统，展示本命结构、宫位、星曜、动态流盘和当前选中层级。"
           >
             {hasBirthHour && pattern !== null ? (
               <ZiweiDynamicPanel
@@ -168,18 +168,11 @@ export default function PersonalityTestPage() {
 
           <TestDashboardPanel
             title="八字盘"
-            subtitle="八字是辅助系统，展示原局、动态大运、流年、流月、流日、流时和动态五行环境场。"
+            subtitle="八字是辅助系统。这里仅展示八字原局、四柱/三柱、天干地支、藏干、五行和阴阳。"
           >
-            <BaziRuntimePanel
-              key={`${year}-${month}-${day}-${birthHourInput}-${dynamicGender}-bazi-runtime`}
+            <BaziProfilePanel
               baziProfile={baziProfile}
-              dynamicGender={dynamicGender}
-              runtimeTime={runtimeTime}
-              activeLevel={toBaziRuntimeLevel(activeRuntimeLevel)}
-              onActiveLevelChange={(level) => {
-                setActiveRuntimeLevel(level)
-              }}
-              onRuntimeTimeChange={setFromBaziSelection}
+              mode="chart"
             />
           </TestDashboardPanel>
         </TestDashboardGrid>
@@ -188,12 +181,12 @@ export default function PersonalityTestPage() {
       <TestDashboardSection
         index="3"
         title="数据内容区"
-        description="盘展示完成后，再分开看数据内容：紫微数据、八字数据、五维性格映射。后续整体数据会逐步切换为动态数据；原盘数据会单独保留在对照区。"
+        description="盘展示完成后，再分开看动态数据内容：紫微数据、八字数据、五维性格映射。这里的数据未来要进入实际游戏行为链路。"
       >
         <TestDashboardGrid minColumnWidth={620}>
           <TestDashboardPanel
             title="紫微数据"
-            subtitle="当前保留紫微原盘人格底盘、核心人格、traits、星曜组合 debug 和 public view。下一步会把这里拆为动态数据与原盘对照。"
+            subtitle="这里展示紫微原盘人格底盘、核心人格、traits、星曜组合 debug 和 public view。后续会继续拆出紫微动态数据。"
           >
             {hasBirthHour && profile !== null && publicView !== null ? (
               <>
@@ -210,16 +203,33 @@ export default function PersonalityTestPage() {
               </>
             ) : (
               <TestDashboardNotice title="紫微数据暂不可用">
-                当前出生时间未知，无法生成完整紫微原盘人格数据。
+                当前出生时间未知，无法生成完整紫微数据。
               </TestDashboardNotice>
             )}
           </TestDashboardPanel>
 
           <TestDashboardPanel
             title="八字数据"
-            subtitle="这里展示八字原局、五行分布、动力向量和调试信息。八字是辅助，不覆盖紫微主系统。"
+            subtitle="这里展示八字动态大运、流年、流月、流日、流时、动态五行环境场、AI 动力映射和调试信息。"
           >
-            <BaziProfilePanel baziProfile={baziProfile} />
+            <BaziRuntimePanel
+              key={`${year}-${month}-${day}-${birthHourInput}-${dynamicGender}-bazi-runtime`}
+              baziProfile={baziProfile}
+              dynamicGender={dynamicGender}
+              runtimeTime={runtimeTime}
+              activeLevel={toBaziRuntimeLevel(activeRuntimeLevel)}
+              onActiveLevelChange={(level) => {
+                setActiveRuntimeLevel(level)
+              }}
+              onRuntimeTimeChange={setFromBaziSelection}
+            />
+
+            <SectionSpacer />
+
+            <BaziProfilePanel
+              baziProfile={baziProfile}
+              mode="data"
+            />
           </TestDashboardPanel>
         </TestDashboardGrid>
 
@@ -239,9 +249,15 @@ export default function PersonalityTestPage() {
       <TestDashboardSection
         index="4"
         title="动态映射说明"
-        description="这里说明紫微、八字、五维映射和未来实际游戏行为系统之间的关系。"
+        description="这里直接展示当前紫微、八字、五维映射出来的生命趋向结果，以及它们未来如何进入实际游戏行为系统。"
       >
-        <DynamicMappingExplainPanel />
+        <DynamicMappingExplainPanel
+          pattern={pattern}
+          profile={profile}
+          baziProfile={baziProfile}
+          dynamicGender={dynamicGender}
+          runtimeTime={runtimeTime}
+        />
       </TestDashboardSection>
 
       <TestDashboardSection

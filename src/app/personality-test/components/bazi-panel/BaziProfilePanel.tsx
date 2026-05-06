@@ -11,10 +11,14 @@ import { BaziVectorTable } from "./BaziVectorTable"
 
 import type { BaziProfileView } from "./bazi-panel-types"
 
+export type BaziProfilePanelMode = "chart" | "data" | "full"
+
 export function BaziProfilePanel({
-  baziProfile
+  baziProfile,
+  mode = "full"
 }: {
   baziProfile: BaziProfileView
+  mode?: BaziProfilePanelMode
 }) {
   const modeLabel =
     baziProfile.mode === "FOUR_PILLARS"
@@ -34,8 +38,11 @@ export function BaziProfilePanel({
           ? "高"
           : "中"
 
+  const showChart = mode === "chart" || mode === "full"
+  const showData = mode === "data" || mode === "full"
+
   return (
-    <InfoCard title="☯ 八字动力底盘">
+    <InfoCard title={mode === "chart" ? "☯ 八字盘" : "☯ 八字数据"}>
       <div style={{ lineHeight: 1.7 }}>
         <table
           style={{
@@ -63,13 +70,32 @@ export function BaziProfilePanel({
           </tbody>
         </table>
 
-        <BaziBaseChartTable baziProfile={baziProfile} />
-        <BaziEnergyTable baziProfile={baziProfile} />
-        <BaziVectorTable baziProfile={baziProfile} />
-        <BaziDebugTable baziProfile={baziProfile} />
+        {showChart ? (
+          <BaziBaseChartTable baziProfile={baziProfile} />
+        ) : null}
+
+        {showData ? (
+          <>
+            <div style={sectionGapStyle}>
+              <BaziEnergyTable baziProfile={baziProfile} />
+            </div>
+
+            <div style={sectionGapStyle}>
+              <BaziVectorTable baziProfile={baziProfile} />
+            </div>
+
+            <div style={sectionGapStyle}>
+              <BaziDebugTable baziProfile={baziProfile} />
+            </div>
+          </>
+        ) : null}
       </div>
     </InfoCard>
   )
+}
+
+const sectionGapStyle: React.CSSProperties = {
+  marginTop: 14,
 }
 
 const labelCellStyle: React.CSSProperties = {
