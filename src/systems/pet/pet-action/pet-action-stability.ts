@@ -4,6 +4,10 @@
 
 import type { PetAction } from "../../../types/pet"
 
+import {
+  ACTION_MIN_DURATION_TUNING,
+} from "./pet-action-tuning"
+
 export type ActionDecisionReason =
   | "bootstrap_default"
   | "hard_low_energy"
@@ -39,18 +43,6 @@ export type ApplyPetActionStabilityResult = {
   action: PetAction
   stability: ActionStabilityState
   reason: ActionDecisionReason
-}
-
-const ACTION_MIN_DURATION: Record<PetAction, number> = {
-  sleeping: 4,
-  eating: 3,
-  walking: 3,
-  exploring: 4,
-  approaching: 3,
-  idle: 2,
-  observing: 3,
-  resting: 3,
-  alert_idle: 3,
 }
 
 /**
@@ -200,9 +192,6 @@ function resolveBridgeAction(
     return current
   }
 
-  /**
-   * 睡眠后的过渡：不要突然探索或靠近，先醒来 / 休整 / 观察。
-   */
   if (current === "sleeping") {
     if (candidate === "resting") return "resting"
     if (candidate === "observing") return "observing"
@@ -211,9 +200,6 @@ function resolveBridgeAction(
     return "idle"
   }
 
-  /**
-   * 进食后的过渡：可以停下、观察、休整，也可以轻微移动。
-   */
   if (current === "eating") {
     if (candidate === "resting") return "resting"
     if (candidate === "observing") return "observing"
@@ -222,9 +208,6 @@ function resolveBridgeAction(
     return "idle"
   }
 
-  /**
-   * 休整中的过渡：允许抬头观察、警觉停留、轻微移动。
-   */
   if (current === "resting") {
     if (candidate === "observing") return "observing"
     if (candidate === "alert_idle") return "alert_idle"
@@ -235,9 +218,6 @@ function resolveBridgeAction(
     return "idle"
   }
 
-  /**
-   * 停顿状态是最灵活的桥接点。
-   */
   if (current === "idle") {
     if (candidate === "exploring") return "walking"
     if (candidate === "approaching") return "walking"
@@ -246,9 +226,6 @@ function resolveBridgeAction(
     return candidate
   }
 
-  /**
-   * 移动中的过渡：可以继续探索 / 靠近，也可以停下观察或休整。
-   */
   if (current === "walking") {
     if (candidate === "sleeping") return "resting"
     if (candidate === "eating") return "eating"
@@ -257,9 +234,6 @@ function resolveBridgeAction(
     return candidate
   }
 
-  /**
-   * 探索中的过渡：先降到 walking / observing / resting，不直接突变。
-   */
   if (current === "exploring") {
     if (candidate === "sleeping") return "resting"
     if (candidate === "eating") return "walking"
@@ -269,9 +243,6 @@ function resolveBridgeAction(
     return candidate
   }
 
-  /**
-   * 靠近中的过渡：可停下观察、休整、进食，也可退回 walking。
-   */
   if (current === "approaching") {
     if (candidate === "sleeping") return "resting"
     if (candidate === "exploring") return "walking"
@@ -280,9 +251,6 @@ function resolveBridgeAction(
     return candidate
   }
 
-  /**
-   * 观察中的过渡：允许进入休整、移动、靠近、警觉。
-   */
   if (current === "observing") {
     if (candidate === "sleeping") return "resting"
     if (candidate === "eating") return "eating"
@@ -290,9 +258,6 @@ function resolveBridgeAction(
     return candidate
   }
 
-  /**
-   * 警觉停留后的过渡：先观察 / 停顿 / 休整，再外扩。
-   */
   if (current === "alert_idle") {
     if (candidate === "exploring") return "walking"
     if (candidate === "approaching") return "observing"
@@ -320,7 +285,7 @@ export function applyPetActionStability(
 
   const current = input.stability.currentAction
   const held = input.currentTick - input.stability.startedAtTick
-  const min = ACTION_MIN_DURATION[current]
+  const min = ACTION_MIN_DURATION_TUNING[current]
 
   if (input.energy <= 6 && current !== "sleeping") {
     return {

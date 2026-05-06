@@ -4,8 +4,12 @@
 
 import type { PetActionWeights } from "./pet-action-weight-types"
 
+import {
+  ACTION_RANDOM_TUNING,
+} from "./pet-action-tuning"
+
 export function applyActionRandomLayer(weights: PetActionWeights) {
-  weights.walking += Math.random() * 4
-  weights.exploring += Math.random() * 3
-  weights.observing += Math.random() * 2
+  weights.walking += Math.random() * ACTION_RANDOM_TUNING.walking
+  weights.exploring += Math.random() * ACTION_RANDOM_TUNING.exploring
+  weights.observing += Math.random() * ACTION_RANDOM_TUNING.observing
 }
