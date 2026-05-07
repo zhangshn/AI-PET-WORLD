@@ -20,6 +20,10 @@ import {
 } from "@/engine/world-engine/world-runtime-logger"
 
 import {
+  recordPetRuntimeDecision,
+} from "./pet-runtime-ai-recorder"
+
+import {
   runPetLife,
   runPetZoneInfluence,
   buildPetStateEvents,
@@ -236,6 +240,22 @@ export function runPetRuntimeTick(
     hunger: pet.hunger,
     mood: currentSnapshot.state.emotional.label,
     lifePhase: pet.lifeState.phase,
+  })
+
+  recordPetRuntimeDecision({
+    tick: input.currentTick,
+    pet,
+    time: input.time,
+    previousAction,
+    rawAction,
+    expressedAction,
+    finalAction,
+    actionSelectionReason: actionSelection.reason,
+    expressionReason: expressionResult.reason,
+    expressionSummary: expressionResult.summary,
+    stabilityReason: stabilityResult.reason,
+    driveSnapshot,
+    currentGoal: nextGoal,
   })
 
   pet.action = finalAction
