@@ -1,9 +1,14 @@
+"use client"
+
 /**
  * 当前文件负责：展示 AI Data Core 的开发观察面板。
  */
 
+import { useMemo, useState } from "react"
+
 import type {
   AiDataRecord,
+  AiDataRecordKind,
   AiDecisionRecord,
   AiMessageRecord,
   AiUserFeedbackRecord,
@@ -16,6 +21,36 @@ import {
 } from "@/ai/data-core/ai-data-gateway"
 
 import styles from "@/styles/world-styles/layout/ai-data-debug-panel.module.css"
+
+type AiDataFilterKind = "all" | AiDataRecordKind
+
+type FilterOption = {
+  id: AiDataFilterKind
+  label: string
+}
+
+const FILTER_OPTIONS: FilterOption[] = [
+  {
+    id: "all",
+    label: "全部",
+  },
+  {
+    id: "decision",
+    label: "决策",
+  },
+  {
+    id: "world_event",
+    label: "世界事件",
+  },
+  {
+    id: "message",
+    label: "消息",
+  },
+  {
+    id: "user_feedback",
+    label: "用户反馈",
+  },
+]
 
 function formatRecordKind(kind: AiDataRecord["kind"]): string {
   if (kind === "decision") return "决策"
@@ -179,10 +214,35 @@ function getRecordClassName(record: AiDataRecord): string {
   return classNames.join(" ")
 }
 
-export default function AiDataDebugPanel() {
-  const records = getAiDataRecords({
+function getFilteredRecords(filterKind: AiDataFilterKind): AiDataRecord[] {
+  if (filterKind === "all") {
+    return getAiDataRecords({
+      limit: 16,
+    })
+  }
+
+  return getAiDataRecords({
+    kind: filterKind,
     limit: 16,
   })
+}
+
+function getFilterCount(filterKind: AiDataFilterKind): number {
+  if (filterKind === "all") {
+    return getAiDataRecordCount()
+  }
+
+  return getAiDataRecordCount({
+    kind: filterKind,
+  })
+}
+
+export default function AiDataDebugPanel() {
+  const [activeFilter, setActiveFilter] = useState<AiDataFilterKind>("all")
+
+  const records = useMemo(() => {
+    return getFilteredRecords(activeFilter)
+  }, [activeFilter])
 
   const totalCount = getAiDataRecordCount()
   const messageCount = getAiDataRecordCount({ kind: "message" })
@@ -223,10 +283,28 @@ export default function AiDataDebugPanel() {
         </span>
       </div>
 
+      <div className={styles.filterBar} aria-label="AI 数据记录过滤">
+        {FILTER_OPTIONS.map((option) => {
+          const isActive = activeFilter === option.id
+
+          return (
+            <button
+              className={isActive ? styles.activeFilter : ""}
+              key={option.id}
+              type="button"
+              onClick={() => setActiveFilter(option.id)}
+            >
+              <span>{option.label}</span>
+              <strong>{getFilterCount(option.id)}</strong>
+            </button>
+          )
+        })}
+      </div>
+
       <div className={styles.recordList}>
         {records.length === 0 && (
           <section className={styles.emptyState}>
-            暂无 AI 数据记录。打开 P-Phone、读取短信或触发世界运行后，这里会出现记录。
+            当前分类暂无 AI 数据记录。打开 P-Phone、读取短信或触发世界运行后，这里会出现记录。
           </section>
         )}
 

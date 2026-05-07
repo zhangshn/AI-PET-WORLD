@@ -80,6 +80,57 @@
   font-weight: 950;
 }
 
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.filterBar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  background: rgba(255, 244, 200, 0.055);
+  color: rgba(255, 247, 223, 0.68);
+  padding: 7px 9px;
+  cursor: pointer;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 244, 200, 0.035),
+    0 4px 0 rgba(0, 0, 0, 0.12);
+}
+
+.filterBar button:hover {
+  background: rgba(255, 244, 200, 0.09);
+}
+
+.filterBar span {
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.filterBar strong {
+  min-width: 22px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 16, 10, 0.72);
+  color: #ffe7a9;
+  font-size: 10px;
+  font-weight: 950;
+  padding: 0 5px;
+}
+
+.filterBar .activeFilter {
+  background: rgba(255, 231, 169, 0.16);
+  color: #fff2c8;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 231, 169, 0.24),
+    0 4px 0 rgba(0, 0, 0, 0.16);
+}
+
 .recordList {
   display: flex;
   flex-direction: column;
