@@ -3,6 +3,7 @@
  */
 
 import type { WorldEvent } from "../types/event"
+import { recordWorldEventForAiData } from "./event/event-ai-recorder"
 
 import {
   buildIncubatorEvents,
@@ -37,6 +38,10 @@ export class EventSystem {
     )
 
     if (filteredEvents.length === 0) return
+
+    filteredEvents.forEach((event) => {
+      recordWorldEventForAiData(event)
+    })
 
     this.events.push(...filteredEvents)
 
