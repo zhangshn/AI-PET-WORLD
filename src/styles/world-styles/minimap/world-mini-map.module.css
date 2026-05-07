@@ -3,9 +3,10 @@
   left: 22px;
   top: 72px;
   z-index: 35;
-  width: 250px;
-  height: 168px;
+  width: 218px;
+  height: 166px;
   color: #fff7df;
+  pointer-events: none;
 }
 
 .mapCircle {
@@ -134,8 +135,8 @@
   .minimap {
     left: 12px;
     top: 62px;
-    width: 220px;
-    height: 150px;
+    width: 196px;
+    height: 148px;
   }
 
   .mapCircle {
