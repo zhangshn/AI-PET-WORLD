@@ -6,7 +6,6 @@ import type { ButlerRelationState } from "./butler-relation"
 
 import {
   buildButlerExperienceInterpretation,
-  type ButlerExperienceInterpretation,
   type ButlerExperienceInterpreterInput,
   type ButlerRelationTaskTuning,
 } from "./butler-experience-interpreter"

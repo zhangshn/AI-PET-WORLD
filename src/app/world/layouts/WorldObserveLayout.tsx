@@ -1,7 +1,7 @@
 ﻿"use client"
 
 /**
- * 当前文件负责：组织 /world 正式观察页的整体产品布局。
+ * 当前文件负责：组织 /world 桌面游戏主界面布局。
  */
 
 import { useMemo, useState } from "react"
@@ -11,18 +11,11 @@ import type { WorldStageSceneMode } from "../components/stage-renderers/orchestr
 
 import { buildWorldHudBundle } from "../utils/worldHudMappers"
 
-import WorldInfoBar from "../ui/WorldInfoBar"
-import WorldCompactHud from "../ui/WorldCompactHud"
-import PetInsightCard from "../ui/PetInsightCard"
-import ButlerInsightCard from "../ui/ButlerInsightCard"
-import HomeInsightCard from "../ui/HomeInsightCard"
-import WorldObservationPanel from "../ui/WorldObservationPanel"
 import WorldPixelStage from "../components/WorldPixelStage"
-
-import WorldStagePanel from "../ui/panels/WorldStagePanel"
-import WorldSidePanel from "../ui/panels/WorldSidePanel"
-import WorldBottomPanel from "../ui/panels/WorldBottomPanel"
 import DeveloperDock from "../ui/panels/DeveloperDock"
+import WorldMiniMap from "../ui/minimap/WorldMiniMap"
+import LifePhoneLauncher from "../ui/phone/LifePhoneLauncher"
+import LifePhoneShell from "../ui/phone/LifePhoneShell"
 
 import styles from "@/styles/world-styles/layout/world-observe-layout.module.css"
 
@@ -32,6 +25,7 @@ type Props = {
 
 export default function WorldObserveLayout({ world }: Props) {
   const [sceneMode, setSceneMode] = useState<WorldStageSceneMode>("exterior")
+  const [isPhoneOpen, setIsPhoneOpen] = useState(false)
 
   const hud = useMemo(() => {
     return buildWorldHudBundle({
@@ -53,47 +47,45 @@ export default function WorldObserveLayout({ world }: Props) {
 
   return (
     <main className={styles.page}>
-      <section className={styles.shell}>
-        <header className={styles.header}>
-          <div>
-            <p className={styles.eyebrow}>AI-PET-WORLD ALPHA</p>
-            <h1 className={styles.title}>生命观察舱</h1>
-          </div>
-
-          <WorldInfoBar
+      <section className={styles.gameShell}>
+        <div className={styles.stageLayer}>
+          <WorldPixelStage
             time={world.time}
+            pet={world.pet}
+            butler={world.butler}
+            incubator={world.incubator}
             stimuli={world.stimuli}
             ecology={world.ecology}
+            worldRuntime={world.worldRuntime}
+            tick={world.tick}
+            sceneMode={sceneMode}
+            onEnterShelter={() => setSceneMode("shelterInterior")}
+            onExitShelter={() => setSceneMode("exterior")}
           />
-        </header>
+        </div>
 
-        <section className={styles.contentGrid}>
-          <WorldStagePanel overlay={<WorldCompactHud hud={hud} />}>
-            <WorldPixelStage
-              time={world.time}
-              pet={world.pet}
-              butler={world.butler}
-              incubator={world.incubator}
-              stimuli={world.stimuli}
-              ecology={world.ecology}
-              worldRuntime={world.worldRuntime}
-              tick={world.tick}
-              sceneMode={sceneMode}
-              onEnterShelter={() => setSceneMode("shelterInterior")}
-              onExitShelter={() => setSceneMode("exterior")}
-            />
-          </WorldStagePanel>
+        <div className={styles.vignetteLayer} />
 
-          <WorldSidePanel>
-            <WorldObservationPanel events={world.events} />
-          </WorldSidePanel>
-        </section>
+        <div className={styles.topHint}>
+          <span>AI-PET-WORLD Desktop MVP</span>
+          <strong>F3 开发审计</strong>
+        </div>
 
-        <WorldBottomPanel>
-          <PetInsightCard pet={world.pet} />
-          <ButlerInsightCard butler={world.butler} />
-          <HomeInsightCard home={world.home} />
-        </WorldBottomPanel>
+        <WorldMiniMap world={world} hud={hud} />
+
+        {isPhoneOpen && (
+          <LifePhoneShell
+            world={world}
+            hud={hud}
+            onClose={() => setIsPhoneOpen(false)}
+          />
+        )}
+
+        <LifePhoneLauncher
+          isOpen={isPhoneOpen}
+          unreadCount={world.events.length}
+          onToggle={() => setIsPhoneOpen((value) => !value)}
+        />
       </section>
 
       {world.showDeveloperPanel && <DeveloperDock world={world} />}
