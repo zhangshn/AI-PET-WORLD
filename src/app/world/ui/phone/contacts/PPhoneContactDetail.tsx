@@ -15,7 +15,6 @@ type Props = {
 }
 
 function toThreadId(contactId: PPhoneContactId): PPhoneMessageThreadId {
-  if (contactId === "p-system") return "p-system"
   if (contactId === "world-notice") return "world-notice"
 
   return "butler"
