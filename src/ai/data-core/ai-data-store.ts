@@ -62,10 +62,35 @@ function matchesFilter(
   return true
 }
 
+function findRecordIndexById(recordId: string): number {
+  return records.findIndex((record) => record.id === recordId)
+}
+
 function trimRecords(): void {
   if (records.length <= maxRecords) return
 
   records.splice(maxRecords)
+}
+
+/**
+ * 同 ID 记录只保留一份。
+ *
+ * 说明：
+ * - world_event 这类记录可能使用稳定 ID。
+ * - message 这类记录也可能通过 recordAiMessageOnce 控制重复。
+ * - store 层仍然需要兜底去重，防止热更新或重复流程写入重复数据。
+ */
+function upsertRecord(record: AiDataRecord): AiDataRecord {
+  const existingIndex = findRecordIndexById(record.id)
+
+  if (existingIndex >= 0) {
+    records.splice(existingIndex, 1)
+  }
+
+  records.unshift(record)
+  trimRecords()
+
+  return record
 }
 
 export function configureAiDataStore(input: { maxRecords?: number }): void {
@@ -77,15 +102,12 @@ export function configureAiDataStore(input: { maxRecords?: number }): void {
 }
 
 export function appendAiDataRecord(record: AiDataRecord): AiDataRecord {
-  records.unshift(record)
-  trimRecords()
-
-  return record
+  return upsertRecord(record)
 }
 
 export function appendAiDataRecords(nextRecords: AiDataRecord[]): AiDataRecord[] {
   nextRecords.forEach((record) => {
-    records.unshift(record)
+    upsertRecord(record)
   })
 
   trimRecords()
@@ -116,6 +138,10 @@ export function readLatestAiDataRecord(
 
 export function countAiDataRecords(filter: AiDataRecordFilter = {}): number {
   return records.filter((record) => matchesFilter(record, filter)).length
+}
+
+export function hasAiDataRecord(filter: AiDataRecordFilter = {}): boolean {
+  return countAiDataRecords(filter) > 0
 }
 
 export function clearAiDataRecords(): void {
