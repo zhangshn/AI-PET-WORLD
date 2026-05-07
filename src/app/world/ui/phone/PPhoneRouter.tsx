@@ -302,7 +302,13 @@ export default function PPhoneRouter({
   }
 
   if (route.screen === "homeApp") {
-    return <PPhoneHomeApp detail={detailBundle.home} onBack={goHome} />
+    return (
+      <PPhoneHomeApp
+        detail={detailBundle.home}
+        progression={world.worldProgression}
+        onBack={goHome}
+      />
+    )
   }
 
   return <PPhoneSettingsApp onBack={goHome} />

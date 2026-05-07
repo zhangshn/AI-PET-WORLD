@@ -4,6 +4,14 @@
   flex-direction: column;
   gap: 14px;
   padding: 18px 16px 22px;
+  background:
+    linear-gradient(rgba(255, 244, 200, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 244, 200, 0.018) 1px, transparent 1px),
+    linear-gradient(180deg, #102016 0%, #07120c 100%);
+  background-size:
+    8px 8px,
+    8px 8px,
+    auto;
 }
 
 .header {
@@ -15,20 +23,24 @@
   gap: 12px;
   margin: -18px -16px 0;
   padding: 14px 16px 12px;
-  background: rgba(17, 27, 21, 0.94);
+  background: rgba(12, 22, 15, 0.96);
   backdrop-filter: blur(12px);
 }
 
 .backButton {
   width: 38px;
   height: 38px;
-  border: 2px solid rgba(255, 247, 223, 0.13);
-  border-radius: 999px;
-  background: rgba(255, 247, 223, 0.08);
-  color: #fff7df;
+  border: 0;
+  border-radius: 0;
+  background: #33402f;
+  color: #fff2c8;
   font-size: 34px;
+  font-weight: 950;
   line-height: 0.8;
   cursor: pointer;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 244, 200, 0.08),
+    0 4px 0 rgba(0, 0, 0, 0.28);
 }
 
 .header p {
@@ -42,35 +54,47 @@
 
 .header h2 {
   margin: 0;
-  color: #fff7df;
-  font-size: 22px;
+  color: #fff2c8;
+  font-size: 23px;
   font-weight: 950;
   letter-spacing: -0.04em;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.42);
 }
 
 .profileCard,
+.worldSummaryCard,
 .infoSection {
-  border: 2px solid rgba(255, 247, 223, 0.11);
-  border-radius: 22px;
-  background: rgba(5, 12, 8, 0.28);
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(90deg, rgba(255, 244, 200, 0.02), transparent),
+    rgba(9, 18, 12, 0.76);
   padding: 14px;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 244, 200, 0.055),
+    0 6px 0 rgba(0, 0, 0, 0.18);
 }
 
-.profileCard p {
+.profileCard p,
+.worldSummaryCard p {
   margin: 0 0 6px;
   color: rgba(255, 231, 169, 0.72);
   font-size: 11px;
   font-weight: 950;
+  letter-spacing: 0.08em;
 }
 
-.profileCard h3 {
+.profileCard h3,
+.worldSummaryCard h3 {
   margin: 0;
-  color: #fff7df;
-  font-size: 24px;
+  color: #fff2c8;
+  font-size: 23px;
   font-weight: 950;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.42);
 }
 
-.profileCard span {
+.profileCard span,
+.worldSummaryCard span {
   display: block;
   margin-top: 8px;
   color: rgba(255, 247, 223, 0.68);
@@ -79,14 +103,40 @@
   line-height: 1.5;
 }
 
+.worldSummaryCard {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.worldSummaryCard > div {
+  min-width: 0;
+}
+
+.worldSummaryCard > strong {
+  min-width: 50px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #263625;
+  color: #ffe7a9;
+  font-size: 15px;
+  font-weight: 950;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 244, 200, 0.08),
+    0 5px 0 rgba(0, 0, 0, 0.18);
+}
+
 .sectionList {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .infoSection h4 {
-  margin: 0 0 8px;
+  margin: 0 0 10px;
   color: #ffe7a9;
   font-size: 14px;
   font-weight: 950;
@@ -115,16 +165,120 @@
   font-weight: 950;
 }
 
-.meterTrack {
+.meterTrack,
+.facilityMeter {
   overflow: hidden;
-  height: 7px;
+  height: 8px;
   margin-top: 8px;
-  border-radius: 999px;
-  background: rgba(255, 247, 223, 0.12);
+  border-radius: 0;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: inset 0 0 0 2px rgba(255, 244, 200, 0.035);
 }
 
-.meterFill {
+.meterFill,
+.facilityMeter i {
   height: 100%;
-  border-radius: inherit;
-  background: linear-gradient(90deg, #89d37f, #ffd47d);
+  display: block;
+  border-radius: 0;
+  background: rgba(255, 231, 169, 0.72);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.16);
+}
+
+.facilityCard,
+.emptyWorldProgress {
+  background: rgba(5, 12, 8, 0.36);
+  padding: 11px;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 244, 200, 0.04),
+    0 4px 0 rgba(0, 0, 0, 0.12);
+}
+
+.facilityCard + .facilityCard {
+  margin-top: 10px;
+}
+
+.emptyWorldProgress {
+  color: rgba(255, 247, 223, 0.58);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.facilityTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.facilityTop div {
+  min-width: 0;
+}
+
+.facilityTop strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #fff2c8;
+  font-size: 13px;
+  font-weight: 950;
+}
+
+.facilityTop span {
+  display: block;
+  color: rgba(255, 247, 223, 0.56);
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
+.facilityTop em {
+  flex: 0 0 auto;
+  padding: 5px 7px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 950;
+  box-shadow: inset 0 0 0 2px rgba(255, 244, 200, 0.04);
+}
+
+.facilityCard p {
+  margin: 0 0 8px;
+  color: rgba(255, 247, 223, 0.62);
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1.5;
+}
+
+.activeStatus {
+  background: rgba(117, 176, 91, 0.24);
+  color: #cfffab;
+}
+
+.buildingStatus {
+  background: rgba(201, 154, 69, 0.24);
+  color: #ffe1a3;
+}
+
+.planningStatus {
+  background: rgba(120, 150, 190, 0.24);
+  color: #cfe6ff;
+}
+
+.lockedStatus {
+  background: rgba(255, 255, 255, 0.055);
+  color: rgba(255, 247, 223, 0.46);
+}
+
+.facilityMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.facilityMeta span {
+  background: rgba(255, 244, 200, 0.06);
+  color: rgba(255, 247, 223, 0.58);
+  padding: 4px 6px;
+  font-size: 10px;
+  font-weight: 850;
 }
