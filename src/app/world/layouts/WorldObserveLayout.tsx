@@ -4,10 +4,12 @@
  * 当前文件负责：组织 /world 桌面游戏主界面布局。
  */
 
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 
 import type { WorldEngineViewState } from "../hooks/useWorldEngineState"
 import type { WorldStageSceneMode } from "../components/stage-renderers/orchestrator/stage-scene-mode"
+
+import { recordAiUserFeedback } from "@/ai/data-core/ai-data-gateway"
 
 import { buildWorldHudBundle } from "../utils/worldHudMappers"
 import {
@@ -25,6 +27,23 @@ import styles from "@/styles/world-styles/layout/world-observe-layout.module.css
 
 type Props = {
   world: WorldEngineViewState
+}
+
+function recordMessageReadFeedback(messageIds: string[]): void {
+  messageIds.forEach((messageId) => {
+    recordAiUserFeedback({
+      source: "p_phone",
+      entityType: "user",
+      entityId: "current-user",
+      importance: "low",
+      userVisibleChannel: "hidden",
+      summary: "用户读取了 P-Phone 短信",
+      tags: ["p-phone", "message-read", "user-feedback"],
+      feedbackType: "read_message",
+      targetId: messageId,
+      feedbackValue: true,
+    })
+  })
 }
 
 export default function WorldObserveLayout({ world }: Props) {
@@ -64,7 +83,7 @@ export default function WorldObserveLayout({ world }: Props) {
     return getPPhoneTotalUnreadCount(messageThreads)
   }, [messageThreads])
 
-  const markMessagesRead = (messageIds: string[]) => {
+  const markMessagesRead = useCallback((messageIds: string[]) => {
     if (messageIds.length === 0) return
 
     setReadMessageIds((current) => {
@@ -76,6 +95,8 @@ export default function WorldObserveLayout({ world }: Props) {
         return current
       }
 
+      recordMessageReadFeedback(unreadMessageIds)
+
       const next = new Set(current)
 
       unreadMessageIds.forEach((messageId) => {
@@ -84,7 +105,7 @@ export default function WorldObserveLayout({ world }: Props) {
 
       return next
     })
-  }
+  }, [])
 
   return (
     <main className={styles.page}>
