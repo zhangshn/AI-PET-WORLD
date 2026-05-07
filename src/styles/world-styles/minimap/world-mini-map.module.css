@@ -3,18 +3,15 @@
   left: 22px;
   top: 72px;
   z-index: 35;
-  width: 218px;
-  height: 166px;
+  width: 142px;
+  height: 142px;
   color: #fff7df;
   pointer-events: none;
 }
 
 .mapCircle {
   position: absolute;
-  left: 0;
-  top: 0;
-  width: 154px;
-  height: 154px;
+  inset: 0;
   overflow: hidden;
   border: 4px solid rgba(255, 248, 220, 0.88);
   border-radius: 50%;
@@ -52,8 +49,8 @@
   position: absolute;
   left: 27%;
   top: 54%;
-  width: 42px;
-  height: 26px;
+  width: 38px;
+  height: 24px;
   border: 2px solid rgba(82, 53, 31, 0.34);
   border-radius: 999px;
   background: rgba(225, 178, 91, 0.58);
@@ -64,8 +61,8 @@
   position: absolute;
   right: -12px;
   top: 20px;
-  width: 70px;
-  height: 42px;
+  width: 62px;
+  height: 38px;
   border-radius: 999px;
   background: rgba(87, 164, 187, 0.52);
   transform: rotate(-18deg);
@@ -73,39 +70,13 @@
 
 .pathCurve {
   position: absolute;
-  left: 25%;
-  top: 52%;
-  width: 88px;
-  height: 30px;
+  left: 24%;
+  top: 53%;
+  width: 78px;
+  height: 26px;
   border-bottom: 4px dashed rgba(255, 231, 169, 0.58);
   border-radius: 50%;
   transform: rotate(-15deg);
-}
-
-.mapTitle {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  z-index: 5;
-  width: 82px;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  text-align: center;
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
-}
-
-.mapTitle p {
-  margin: 0 0 2px;
-  color: rgba(255, 231, 169, 0.72);
-  font-size: 8px;
-  font-weight: 950;
-  letter-spacing: 0.14em;
-}
-
-.mapTitle strong {
-  color: #fff7df;
-  font-size: 12px;
-  font-weight: 950;
 }
 
 .compass {
@@ -113,8 +84,8 @@
   left: 50%;
   top: 9px;
   z-index: 6;
-  width: 23px;
-  height: 23px;
+  width: 22px;
+  height: 22px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -135,16 +106,7 @@
   .minimap {
     left: 12px;
     top: 62px;
-    width: 196px;
-    height: 148px;
-  }
-
-  .mapCircle {
-    width: 136px;
-    height: 136px;
-  }
-
-  .mapTitle {
-    display: none;
+    width: 124px;
+    height: 124px;
   }
 }

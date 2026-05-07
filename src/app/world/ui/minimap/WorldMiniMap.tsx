@@ -5,7 +5,6 @@
 import type { WorldEngineViewState } from "../../hooks/useWorldEngineState"
 import type { WorldHudBundle } from "../../utils/worldHudMappers"
 
-import WorldMiniMapInfoRail from "./WorldMiniMapInfoRail"
 import WorldMiniMapMarkers from "./WorldMiniMapMarkers"
 import { buildWorldMiniMapViewModel } from "./worldMiniMapMappers"
 
@@ -34,17 +33,10 @@ export default function WorldMiniMap({ world, hud }: Props) {
           <WorldMiniMapMarkers markers={viewModel.markers} />
         </div>
 
-        <div className={styles.mapTitle}>
-          <p>MAP</p>
-          <strong>{viewModel.areaName}</strong>
-        </div>
-
         <div className={styles.compass}>
           <span>N</span>
         </div>
       </div>
-
-      <WorldMiniMapInfoRail items={viewModel.infoItems} />
     </aside>
   )
 }
