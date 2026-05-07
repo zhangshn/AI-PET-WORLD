@@ -12,12 +12,9 @@ export type PPhoneAppId =
   | "weather"
   | "calendar"
 
-export type PPhoneContactId = "butler" | "p-system" | "world-notice"
+export type PPhoneContactId = "butler" | "world-notice"
 
-export type PPhoneMessageThreadId =
-  | "butler"
-  | "p-system"
-  | "world-notice"
+export type PPhoneMessageThreadId = "butler" | "world-notice"
 
 export type PPhoneRoute =
   | {

@@ -21,16 +21,10 @@ export function buildPPhoneContacts(hud: WorldHudBundle): PPhoneContact[] {
       description: "环境维护、状态观察、机会提供者。",
     },
     {
-      id: "p-system",
-      name: "P-System",
-      role: "系统",
-      description: "出生报告、系统提示与未来离线报告。",
-    },
-    {
       id: "world-notice",
       name: "World Notice",
       role: "世界通知",
-      description: "生态变化、天气与世界事件摘要。",
+      description: "只记录重大的世界建设、生态变化与阶段事件。",
     },
   ]
 }

@@ -20,7 +20,6 @@ type Props = {
 function getBubbleClassName(sender: PPhoneMessageItem["sender"]): string {
   if (sender === "player") return styles.playerBubble
   if (sender === "butler") return styles.butlerBubble
-  if (sender === "system") return styles.systemBubble
 
   return styles.worldBubble
 }
