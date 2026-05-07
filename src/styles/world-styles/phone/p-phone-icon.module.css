@@ -1,177 +1,231 @@
 .icon {
+  --icon-color: #fff2c8;
+  --icon-accent: #ffd45f;
+  --icon-cut: #102016;
+
   position: relative;
+  display: inline-block;
+  color: var(--icon-color);
+  image-rendering: pixelated;
+}
+
+.normal {
   width: 30px;
   height: 30px;
-  display: inline-block;
-  color: #ffe7a9;
+}
+
+.small {
+  width: 24px;
+  height: 24px;
+}
+
+.large {
+  width: 34px;
+  height: 34px;
 }
 
 .partA,
 .partB,
-.partC {
+.partC,
+.partD {
   position: absolute;
   display: block;
   box-sizing: border-box;
 }
 
+/* 短信：原创像素信封 */
 .messages .partA {
   left: 4px;
-  top: 7px;
+  top: 8px;
   width: 22px;
-  height: 16px;
-  border: 3px solid currentColor;
-  border-radius: 4px;
+  height: 15px;
+  border: 4px solid currentColor;
 }
 
 .messages .partB {
-  left: 7px;
+  left: 8px;
   top: 10px;
-  width: 16px;
+  width: 14px;
   height: 10px;
-  border-left: 3px solid currentColor;
-  border-bottom: 3px solid currentColor;
+  border-left: 4px solid currentColor;
+  border-bottom: 4px solid currentColor;
   transform: rotate(-45deg);
 }
 
-.contacts .partA {
-  left: 9px;
+.messages .partC {
+  right: 2px;
   top: 4px;
-  width: 12px;
-  height: 12px;
-  border: 3px solid currentColor;
-  border-radius: 999px;
+  width: 6px;
+  height: 6px;
+  background: var(--icon-accent);
+}
+
+/* 联系人：身份牌，不做系统人像 */
+.contacts .partA {
+  left: 5px;
+  top: 6px;
+  width: 20px;
+  height: 18px;
+  border: 4px solid currentColor;
 }
 
 .contacts .partB {
-  left: 5px;
-  bottom: 3px;
-  width: 20px;
-  height: 13px;
-  border: 3px solid currentColor;
-  border-radius: 999px 999px 5px 5px;
+  left: 10px;
+  top: 10px;
+  width: 10px;
+  height: 5px;
+  background: currentColor;
 }
 
+.contacts .partC {
+  left: 9px;
+  top: 17px;
+  width: 12px;
+  height: 3px;
+  background: currentColor;
+}
+
+/* 宠物：生命点群，不用爪印 */
 .pet .partA {
   left: 11px;
-  top: 11px;
+  top: 12px;
   width: 9px;
   height: 9px;
-  border-radius: 999px;
   background: currentColor;
 }
 
 .pet .partB {
   left: 5px;
-  top: 7px;
+  top: 8px;
   width: 6px;
   height: 6px;
-  border-radius: 999px;
   background: currentColor;
 }
 
 .pet .partC {
   right: 5px;
-  top: 7px;
+  top: 8px;
   width: 6px;
   height: 6px;
-  border-radius: 999px;
   background: currentColor;
 }
 
+.pet .partD {
+  left: 13px;
+  bottom: 4px;
+  width: 5px;
+  height: 5px;
+  background: var(--icon-accent);
+}
+
+/* 档案：记忆晶格 */
 .profile .partA {
   left: 6px;
   top: 6px;
   width: 18px;
   height: 18px;
-  border: 3px solid currentColor;
+  border: 4px solid currentColor;
   transform: rotate(45deg);
 }
 
 .profile .partB {
-  left: 12px;
-  top: 12px;
-  width: 6px;
-  height: 6px;
-  border-radius: 999px;
-  background: currentColor;
-}
-
-.home .partA {
-  left: 5px;
-  top: 13px;
-  width: 20px;
-  height: 13px;
-  border: 3px solid currentColor;
-  border-top: 0;
-  border-radius: 3px;
-}
-
-.home .partB {
-  left: 7px;
-  top: 6px;
-  width: 16px;
-  height: 16px;
-  border-left: 3px solid currentColor;
-  border-top: 3px solid currentColor;
-  transform: rotate(45deg);
-}
-
-.settings .partA {
-  left: 8px;
-  top: 8px;
-  width: 14px;
-  height: 14px;
-  border: 3px solid currentColor;
-  border-radius: 999px;
-}
-
-.settings .partB {
   left: 13px;
-  top: 2px;
-  width: 4px;
-  height: 26px;
-  background: currentColor;
-}
-
-.settings .partC {
-  left: 2px;
   top: 13px;
-  width: 26px;
+  width: 4px;
   height: 4px;
   background: currentColor;
 }
 
+.profile .partC {
+  left: 12px;
+  top: 4px;
+  width: 6px;
+  height: 6px;
+  background: var(--icon-accent);
+}
+
+/* 家园：原创像素小屋 */
+.home .partA {
+  left: 5px;
+  top: 14px;
+  width: 20px;
+  height: 12px;
+  border: 4px solid currentColor;
+  border-top: 0;
+}
+
+.home .partB {
+  left: 8px;
+  top: 6px;
+  width: 15px;
+  height: 15px;
+  border-left: 4px solid currentColor;
+  border-top: 4px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.home .partC {
+  left: 13px;
+  bottom: 4px;
+  width: 5px;
+  height: 9px;
+  background: currentColor;
+}
+
+/* 设置：四向校准点，不做齿轮 */
+.settings .partA {
+  left: 13px;
+  top: 3px;
+  width: 4px;
+  height: 24px;
+  background: currentColor;
+}
+
+.settings .partB {
+  left: 3px;
+  top: 13px;
+  width: 24px;
+  height: 4px;
+  background: currentColor;
+}
+
+.settings .partC {
+  left: 10px;
+  top: 10px;
+  width: 10px;
+  height: 10px;
+  border: 4px solid currentColor;
+  background: var(--icon-cut);
+}
+
+/* 手机：P-Phone 设备 */
 .phone .partA {
   left: 7px;
   top: 4px;
   width: 16px;
   height: 22px;
-  border: 3px solid currentColor;
-  border-radius: 8px;
-  transform: rotate(-12deg);
+  border: 4px solid currentColor;
+  transform: rotate(-8deg);
 }
 
 .phone .partB {
   left: 12px;
-  top: 20px;
+  top: 21px;
   width: 6px;
   height: 3px;
-  border-radius: 999px;
   background: currentColor;
 }
 
-.system .partA,
-.world .partA {
-  left: 5px;
-  top: 5px;
-  width: 20px;
-  height: 20px;
-  border: 3px solid currentColor;
-  border-radius: 999px;
+/* 系统：核心校准框 */
+.system .partA {
+  left: 6px;
+  top: 6px;
+  width: 18px;
+  height: 18px;
+  border: 4px solid currentColor;
 }
 
-.system .partB,
-.world .partB {
+.system .partB {
   left: 13px;
   top: 2px;
   width: 4px;
@@ -179,11 +233,307 @@
   background: currentColor;
 }
 
-.system .partC,
-.world .partC {
+.system .partC {
   left: 2px;
   top: 13px;
   width: 26px;
   height: 4px;
   background: currentColor;
+}
+
+/* 世界：地图核心，不做品牌地图 */
+.world .partA {
+  left: 5px;
+  top: 5px;
+  width: 20px;
+  height: 20px;
+  border: 4px solid currentColor;
+}
+
+.world .partB {
+  left: 13px;
+  top: 5px;
+  width: 4px;
+  height: 20px;
+  background: currentColor;
+}
+
+.world .partC {
+  left: 5px;
+  top: 13px;
+  width: 20px;
+  height: 4px;
+  background: currentColor;
+}
+
+.world .partD {
+  right: 3px;
+  bottom: 3px;
+  width: 6px;
+  height: 6px;
+  background: var(--icon-accent);
+}
+
+/* 天气：太阳云块 */
+.weather .partA {
+  right: 5px;
+  top: 5px;
+  width: 11px;
+  height: 11px;
+  background: var(--icon-accent);
+}
+
+.weather .partB {
+  left: 5px;
+  bottom: 8px;
+  width: 18px;
+  height: 7px;
+  background: currentColor;
+}
+
+.weather .partC {
+  left: 11px;
+  bottom: 13px;
+  width: 12px;
+  height: 7px;
+  background: currentColor;
+}
+
+/* 日历：像素日期页 */
+.calendar .partA {
+  left: 5px;
+  top: 6px;
+  width: 20px;
+  height: 20px;
+  border: 4px solid currentColor;
+}
+
+.calendar .partB {
+  left: 5px;
+  top: 11px;
+  width: 20px;
+  height: 4px;
+  background: currentColor;
+}
+
+.calendar .partC {
+  left: 10px;
+  top: 18px;
+  width: 10px;
+  height: 4px;
+  background: currentColor;
+}
+
+/* 当前开放：发光核心 */
+.open .partA {
+  left: 8px;
+  top: 8px;
+  width: 14px;
+  height: 14px;
+  background: currentColor;
+}
+
+.open .partB {
+  left: 12px;
+  top: 12px;
+  width: 6px;
+  height: 6px;
+  background: var(--icon-cut);
+}
+
+.open .partC {
+  right: 3px;
+  top: 3px;
+  width: 5px;
+  height: 5px;
+  background: var(--icon-accent);
+}
+
+/* 建设中：砖块 / 木槌抽象 */
+.build .partA {
+  left: 6px;
+  bottom: 6px;
+  width: 20px;
+  height: 6px;
+  background: currentColor;
+}
+
+.build .partB {
+  left: 10px;
+  top: 8px;
+  width: 12px;
+  height: 15px;
+  background: currentColor;
+}
+
+.build .partC {
+  right: 4px;
+  top: 6px;
+  width: 6px;
+  height: 6px;
+  background: var(--icon-accent);
+}
+
+/* 未来区域：斜线网格，不用锁 */
+.future .partA {
+  left: 6px;
+  top: 6px;
+  width: 18px;
+  height: 18px;
+  border: 4px solid currentColor;
+}
+
+.future .partB {
+  left: 13px;
+  top: 1px;
+  width: 4px;
+  height: 28px;
+  background: currentColor;
+  transform: rotate(45deg);
+}
+
+.future .partC {
+  left: 5px;
+  bottom: 4px;
+  width: 7px;
+  height: 7px;
+  background: var(--icon-accent);
+}
+
+/* 生态区：叶芽 / 光点 */
+.eco .partA {
+  left: 9px;
+  top: 8px;
+  width: 8px;
+  height: 20px;
+  background: currentColor;
+  transform: rotate(35deg);
+}
+
+.eco .partB {
+  right: 7px;
+  bottom: 8px;
+  width: 12px;
+  height: 12px;
+  background: var(--icon-accent);
+}
+
+.eco .partC {
+  left: 5px;
+  bottom: 6px;
+  width: 8px;
+  height: 8px;
+  background: currentColor;
+}
+
+/* 社区公告栏：木牌 */
+.community .partA,
+.board .partA {
+  left: 5px;
+  top: 8px;
+  width: 20px;
+  height: 13px;
+  border: 4px solid currentColor;
+}
+
+.community .partB,
+.board .partB {
+  left: 13px;
+  top: 20px;
+  width: 4px;
+  height: 8px;
+  background: currentColor;
+}
+
+.community .partC,
+.board .partC {
+  left: 10px;
+  top: 13px;
+  width: 10px;
+  height: 3px;
+  background: currentColor;
+}
+
+/* 宠物公园：小树 */
+.park .partA {
+  left: 8px;
+  top: 7px;
+  width: 14px;
+  height: 12px;
+  background: currentColor;
+}
+
+.park .partB {
+  left: 13px;
+  top: 18px;
+  width: 5px;
+  height: 10px;
+  background: currentColor;
+}
+
+.park .partC {
+  left: 5px;
+  bottom: 4px;
+  width: 20px;
+  height: 4px;
+  background: var(--icon-accent);
+}
+
+/* 宠物诊所：恢复晶格，禁止红十字 */
+.clinic .partA {
+  left: 6px;
+  top: 6px;
+  width: 18px;
+  height: 18px;
+  border: 4px solid currentColor;
+}
+
+.clinic .partB {
+  left: 13px;
+  top: 7px;
+  width: 4px;
+  height: 16px;
+  background: currentColor;
+}
+
+.clinic .partC {
+  left: 7px;
+  top: 13px;
+  width: 16px;
+  height: 4px;
+  background: currentColor;
+}
+
+.clinic .partD {
+  right: 3px;
+  bottom: 3px;
+  width: 5px;
+  height: 5px;
+  background: var(--icon-accent);
+}
+
+/* 小镇入口：门 / 路牌 */
+.town .partA {
+  left: 7px;
+  top: 7px;
+  width: 16px;
+  height: 20px;
+  border: 4px solid currentColor;
+  border-bottom: 0;
+}
+
+.town .partB {
+  left: 12px;
+  top: 15px;
+  width: 6px;
+  height: 12px;
+  background: currentColor;
+}
+
+.town .partC {
+  right: 2px;
+  top: 5px;
+  width: 8px;
+  height: 5px;
+  background: var(--icon-accent);
 }

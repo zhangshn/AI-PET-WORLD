@@ -8,10 +8,13 @@ import type {
   WorldFacilityStatus,
   WorldProgressionState,
 } from "@/world/progression/world-progression-gateway"
+import type { PPhoneIconKind } from "../PPhoneTypes"
 
 import {
   WORLD_FACILITY_DEFINITIONS,
 } from "@/world/progression/world-progression-gateway"
+
+import PPhoneIcon from "../PPhoneIcon"
 
 import styles from "@/styles/world-styles/phone/home-app/p-phone-home-app.module.css"
 
@@ -21,20 +24,12 @@ type Props = {
   onBack: () => void
 }
 
-type HomeModuleIcon =
-  | "home"
-  | "world"
-  | "open"
-  | "build"
-  | "future"
-  | "eco"
-
 type HomeModuleCard = {
   id: string
   title: string
   value: string
   subtitle: string
-  icon: HomeModuleIcon
+  icon: PPhoneIconKind
   status?: WorldFacilityStatus
 }
 
@@ -43,6 +38,14 @@ const STATUS_LABELS: Record<WorldFacilityStatus, string> = {
   planning: "规划中",
   building: "建设中",
   active: "已开放",
+}
+
+const FACILITY_ICON_MAP: Record<WorldFacilityId, PPhoneIconKind> = {
+  home_base: "home",
+  community_board: "community",
+  pet_park: "park",
+  pet_clinic: "clinic",
+  small_town: "town",
 }
 
 function getFacilityProgress(
@@ -148,21 +151,15 @@ function getModuleCards(input: {
   ]
 }
 
-function getFacilityIconClassName(status: WorldFacilityStatus): string {
-  if (status === "active") return styles.facilityIconActive
-  if (status === "building") return styles.facilityIconBuilding
-  if (status === "planning") return styles.facilityIconPlanning
+function getIconBoxClassName(status?: WorldFacilityStatus): string {
+  const classNames = [styles.iconBox]
 
-  return styles.facilityIconLocked
-}
+  if (status === "active") classNames.push(styles.activeIconBox)
+  if (status === "building") classNames.push(styles.buildingIconBox)
+  if (status === "planning") classNames.push(styles.planningIconBox)
+  if (status === "locked") classNames.push(styles.lockedIconBox)
 
-function renderPixelIcon(icon: HomeModuleIcon) {
-  return (
-    <span className={`${styles.pixelIcon} ${styles[`icon_${icon}`]}`} aria-hidden="true">
-      <i />
-      <b />
-    </span>
-  )
+  return classNames.join(" ")
 }
 
 function renderFacilityTile(input: {
@@ -180,9 +177,9 @@ function renderFacilityTile(input: {
 
   return (
     <article className={styles.facilityTile} key={definition.id}>
-      <div className={`${styles.facilityPixelIcon} ${getFacilityIconClassName(facility.status)}`}>
-        <i />
-      </div>
+      <span className={getIconBoxClassName(facility.status)}>
+        <PPhoneIcon kind={FACILITY_ICON_MAP[definition.id]} />
+      </span>
 
       <div className={styles.facilityTileText}>
         <strong>{definition.title}</strong>
@@ -218,9 +215,9 @@ export default function PPhoneHomeApp({
       </header>
 
       <section className={styles.homeHero}>
-        <div className={styles.homeHeroIcon}>
-          <i />
-        </div>
+        <span className={`${styles.iconBox} ${styles.homeIconBox}`}>
+          <PPhoneIcon kind="home" size="large" />
+        </span>
 
         <div>
           <p>{detail.statusLabel}</p>
@@ -232,7 +229,9 @@ export default function PPhoneHomeApp({
       <section className={styles.moduleGrid} aria-label="家园模块">
         {moduleCards.map((module) => (
           <article className={styles.moduleTile} key={module.id}>
-            {renderPixelIcon(module.icon)}
+            <span className={getIconBoxClassName(module.status)}>
+              <PPhoneIcon kind={module.icon} />
+            </span>
 
             <div>
               <strong>{module.value}</strong>

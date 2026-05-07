@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：展示 P-Phone 原创几何图标。
+ * 当前文件负责：展示 P-Phone 原创像素图标。
  */
 
 import type { PPhoneIconKind } from "./PPhoneTypes"
@@ -8,27 +8,49 @@ import styles from "@/styles/world-styles/phone/p-phone-icon.module.css"
 
 type Props = {
   kind: PPhoneIconKind
+  size?: "small" | "normal" | "large"
 }
 
-function getIconClassName(kind: PPhoneIconKind): string {
-  if (kind === "messages") return styles.messages
-  if (kind === "contacts") return styles.contacts
-  if (kind === "pet") return styles.pet
-  if (kind === "profile") return styles.profile
-  if (kind === "home") return styles.home
-  if (kind === "settings") return styles.settings
-  if (kind === "phone") return styles.phone
-  if (kind === "system") return styles.system
-
-  return styles.world
+const ICON_CLASS_NAMES: Record<PPhoneIconKind, string> = {
+  messages: styles.messages,
+  contacts: styles.contacts,
+  pet: styles.pet,
+  profile: styles.profile,
+  home: styles.home,
+  settings: styles.settings,
+  phone: styles.phone,
+  system: styles.system,
+  world: styles.world,
+  weather: styles.weather,
+  calendar: styles.calendar,
+  open: styles.open,
+  build: styles.build,
+  future: styles.future,
+  eco: styles.eco,
+  community: styles.community,
+  park: styles.park,
+  clinic: styles.clinic,
+  town: styles.town,
+  board: styles.board,
 }
 
-export default function PPhoneIcon({ kind }: Props) {
+function getSizeClassName(size: Props["size"]): string {
+  if (size === "small") return styles.small
+  if (size === "large") return styles.large
+
+  return styles.normal
+}
+
+export default function PPhoneIcon({ kind, size = "normal" }: Props) {
   return (
-    <span className={`${styles.icon} ${getIconClassName(kind)}`}>
+    <span
+      className={`${styles.icon} ${getSizeClassName(size)} ${ICON_CLASS_NAMES[kind]}`}
+      aria-hidden="true"
+    >
       <span className={styles.partA} />
       <span className={styles.partB} />
       <span className={styles.partC} />
+      <span className={styles.partD} />
     </span>
   )
 }

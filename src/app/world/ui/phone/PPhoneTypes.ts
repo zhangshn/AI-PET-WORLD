@@ -67,6 +67,17 @@ export type PPhoneIconKind =
   | "phone"
   | "system"
   | "world"
+  | "weather"
+  | "calendar"
+  | "open"
+  | "build"
+  | "future"
+  | "eco"
+  | "community"
+  | "park"
+  | "clinic"
+  | "town"
+  | "board"
 
 export type PPhoneAppShortcut = {
   id: PPhoneAppId
