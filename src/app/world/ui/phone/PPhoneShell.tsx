@@ -16,7 +16,6 @@ type Props = {
   hud: WorldHudBundle
   readMessageIds: ReadonlySet<string>
   onMarkMessagesRead: (messageIds: string[]) => void
-  onClose: () => void
 }
 
 export default function PPhoneShell({
@@ -24,7 +23,6 @@ export default function PPhoneShell({
   hud,
   readMessageIds,
   onMarkMessagesRead,
-  onClose,
 }: Props) {
   return (
     <aside className={styles.phoneShell} aria-label="P-Phone">
@@ -32,15 +30,7 @@ export default function PPhoneShell({
         <div className={styles.deviceTop}>
           <span className={styles.brand}>P-Phone</span>
           <span className={styles.cameraSlot} />
-
-          <button
-            className={styles.closeButton}
-            type="button"
-            aria-label="收起 P-Phone"
-            onClick={onClose}
-          >
-            ×
-          </button>
+          <span className={styles.statusLight} aria-hidden="true" />
         </div>
 
         <div className={styles.screen}>

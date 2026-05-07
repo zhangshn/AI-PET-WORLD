@@ -82,26 +82,15 @@
   pointer-events: none;
 }
 
-.closeButton {
-  position: relative;
-  z-index: 2;
-  width: 30px;
-  height: 30px;
-  border: 0;
-  border-radius: 0;
-  background: #4b3c28;
-  color: #fff2c8;
-  font-size: 24px;
-  font-weight: 950;
-  line-height: 1;
-  cursor: pointer;
+.statusLight {
+  width: 9px;
+  height: 9px;
+  display: inline-block;
+  border-radius: 999px;
+  background: #6bd084;
   box-shadow:
-    inset 0 0 0 3px rgba(255, 247, 223, 0.12),
-    0 4px 0 rgba(0, 0, 0, 0.34);
-}
-
-.closeButton:hover {
-  background: #6a5637;
+    0 0 0 3px rgba(107, 208, 132, 0.1),
+    0 0 10px rgba(107, 208, 132, 0.46);
 }
 
 .screen {

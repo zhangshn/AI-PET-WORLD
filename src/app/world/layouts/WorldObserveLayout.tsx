@@ -120,7 +120,6 @@ export default function WorldObserveLayout({ world }: Props) {
             hud={hud}
             readMessageIds={readMessageIds}
             onMarkMessagesRead={markMessagesRead}
-            onClose={() => setIsPPhoneOpen(false)}
           />
         )}
 
