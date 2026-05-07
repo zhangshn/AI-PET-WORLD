@@ -18,3 +18,15 @@ export type WorldMiniMapMarker = {
   tone: WorldMiniMapMarkerTone
   isVisible: boolean
 }
+
+export type WorldMiniMapInfoItem = {
+  id: "date" | "time" | "weather" | "period"
+  label: string
+  value: string
+}
+
+export type WorldMiniMapViewModel = {
+  areaName: string
+  markers: WorldMiniMapMarker[]
+  infoItems: WorldMiniMapInfoItem[]
+}
