@@ -18,14 +18,29 @@ import type {
 import {
   getAiDataRecordCount,
   getAiDataRecords,
+  resetAiDataRecords,
 } from "@/ai/data-core/ai-data-gateway"
 
 import styles from "@/styles/world-styles/layout/ai-data-debug-panel.module.css"
 
 type AiDataFilterKind = "all" | AiDataRecordKind
 
+type AiWorldEventVisibilityFilter =
+  | "all"
+  | "debug_log"
+  | "message_candidate"
+  | "world_notice"
+  | "timeline"
+
+type RecordLimit = 16 | 32 | 64
+
 type FilterOption = {
   id: AiDataFilterKind
+  label: string
+}
+
+type VisibilityOption = {
+  id: AiWorldEventVisibilityFilter
   label: string
 }
 
@@ -51,6 +66,31 @@ const FILTER_OPTIONS: FilterOption[] = [
     label: "用户反馈",
   },
 ]
+
+const VISIBILITY_OPTIONS: VisibilityOption[] = [
+  {
+    id: "all",
+    label: "全部事件",
+  },
+  {
+    id: "timeline",
+    label: "时间线",
+  },
+  {
+    id: "debug_log",
+    label: "调试日志",
+  },
+  {
+    id: "world_notice",
+    label: "世界公告",
+  },
+  {
+    id: "message_candidate",
+    label: "消息候选",
+  },
+]
+
+const RECORD_LIMIT_OPTIONS: RecordLimit[] = [16, 32, 64]
 
 function formatRecordKind(kind: AiDataRecord["kind"]): string {
   if (kind === "decision") return "决策"
@@ -214,17 +254,34 @@ function getRecordClassName(record: AiDataRecord): string {
   return classNames.join(" ")
 }
 
-function getFilteredRecords(filterKind: AiDataFilterKind): AiDataRecord[] {
-  if (filterKind === "all") {
-    return getAiDataRecords({
-      limit: 16,
-    })
-  }
+function isMatchingVisibility(
+  record: AiDataRecord,
+  visibilityFilter: AiWorldEventVisibilityFilter
+): boolean {
+  if (visibilityFilter === "all") return true
+  if (record.kind !== "world_event") return true
 
-  return getAiDataRecords({
-    kind: filterKind,
-    limit: 16,
-  })
+  return record.visibility === visibilityFilter
+}
+
+function getFilteredRecords(input: {
+  filterKind: AiDataFilterKind
+  visibilityFilter: AiWorldEventVisibilityFilter
+  limit: RecordLimit
+}): AiDataRecord[] {
+  const records =
+    input.filterKind === "all"
+      ? getAiDataRecords({
+          limit: input.limit,
+        })
+      : getAiDataRecords({
+          kind: input.filterKind,
+          limit: input.limit,
+        })
+
+  return records.filter((record) =>
+    isMatchingVisibility(record, input.visibilityFilter)
+  )
 }
 
 function getFilterCount(filterKind: AiDataFilterKind): number {
@@ -237,18 +294,41 @@ function getFilterCount(filterKind: AiDataFilterKind): number {
   })
 }
 
+function formatJson(record: AiDataRecord): string {
+  return JSON.stringify(record, null, 2)
+}
+
 export default function AiDataDebugPanel() {
   const [activeFilter, setActiveFilter] = useState<AiDataFilterKind>("all")
+  const [visibilityFilter, setVisibilityFilter] =
+    useState<AiWorldEventVisibilityFilter>("all")
+  const [recordLimit, setRecordLimit] = useState<RecordLimit>(16)
+  const [expandedRecordId, setExpandedRecordId] = useState<string | null>(null)
+  const [refreshKey, setRefreshKey] = useState(0)
 
   const records = useMemo(() => {
-    return getFilteredRecords(activeFilter)
-  }, [activeFilter])
+    return getFilteredRecords({
+      filterKind: activeFilter,
+      visibilityFilter,
+      limit: recordLimit,
+    })
+  }, [activeFilter, visibilityFilter, recordLimit, refreshKey])
 
   const totalCount = getAiDataRecordCount()
   const messageCount = getAiDataRecordCount({ kind: "message" })
   const feedbackCount = getAiDataRecordCount({ kind: "user_feedback" })
   const decisionCount = getAiDataRecordCount({ kind: "decision" })
   const worldEventCount = getAiDataRecordCount({ kind: "world_event" })
+
+  const handleReset = () => {
+    resetAiDataRecords()
+    setExpandedRecordId(null)
+    setRefreshKey((value) => value + 1)
+  }
+
+  const handleRefresh = () => {
+    setRefreshKey((value) => value + 1)
+  }
 
   return (
     <article className={styles.panel}>
@@ -283,22 +363,68 @@ export default function AiDataDebugPanel() {
         </span>
       </div>
 
-      <div className={styles.filterBar} aria-label="AI 数据记录过滤">
-        {FILTER_OPTIONS.map((option) => {
-          const isActive = activeFilter === option.id
+      <div className={styles.toolbar}>
+        <div className={styles.filterBar} aria-label="AI 数据记录过滤">
+          {FILTER_OPTIONS.map((option) => {
+            const isActive = activeFilter === option.id
 
-          return (
-            <button
-              className={isActive ? styles.activeFilter : ""}
-              key={option.id}
-              type="button"
-              onClick={() => setActiveFilter(option.id)}
-            >
-              <span>{option.label}</span>
-              <strong>{getFilterCount(option.id)}</strong>
-            </button>
-          )
-        })}
+            return (
+              <button
+                className={isActive ? styles.activeFilter : ""}
+                key={option.id}
+                type="button"
+                onClick={() => setActiveFilter(option.id)}
+              >
+                <span>{option.label}</span>
+                <strong>{getFilterCount(option.id)}</strong>
+              </button>
+            )
+          })}
+        </div>
+
+        <div className={styles.actionBar}>
+          <button type="button" onClick={handleRefresh}>
+            刷新
+          </button>
+
+          <button className={styles.dangerButton} type="button" onClick={handleReset}>
+            清空
+          </button>
+        </div>
+      </div>
+
+      {(activeFilter === "all" || activeFilter === "world_event") && (
+        <div className={styles.visibilityBar} aria-label="世界事件可见性过滤">
+          {VISIBILITY_OPTIONS.map((option) => {
+            const isActive = visibilityFilter === option.id
+
+            return (
+              <button
+                className={isActive ? styles.activeFilter : ""}
+                key={option.id}
+                type="button"
+                onClick={() => setVisibilityFilter(option.id)}
+              >
+                {option.label}
+              </button>
+            )
+          })}
+        </div>
+      )}
+
+      <div className={styles.limitBar} aria-label="AI 数据记录数量">
+        <span>显示数量</span>
+
+        {RECORD_LIMIT_OPTIONS.map((limit) => (
+          <button
+            className={recordLimit === limit ? styles.activeFilter : ""}
+            key={limit}
+            type="button"
+            onClick={() => setRecordLimit(limit)}
+          >
+            {limit}
+          </button>
+        ))}
       </div>
 
       <div className={styles.recordList}>
@@ -310,6 +436,7 @@ export default function AiDataDebugPanel() {
 
         {records.map((record) => {
           const details = getRecordDetails(record)
+          const isExpanded = expandedRecordId === record.id
 
           return (
             <section className={getRecordClassName(record)} key={record.id}>
@@ -336,6 +463,22 @@ export default function AiDataDebugPanel() {
                 <span>{record.importance}</span>
                 <span>{record.userVisibleChannel}</span>
               </div>
+
+              <button
+                className={styles.expandButton}
+                type="button"
+                onClick={() =>
+                  setExpandedRecordId((currentId) =>
+                    currentId === record.id ? null : record.id
+                  )
+                }
+              >
+                {isExpanded ? "收起 JSON" : "查看 JSON"}
+              </button>
+
+              {isExpanded && (
+                <pre className={styles.jsonBlock}>{formatJson(record)}</pre>
+              )}
             </section>
           )
         })}
