@@ -14,8 +14,8 @@ import { buildWorldHudBundle } from "../utils/worldHudMappers"
 import WorldPixelStage from "../components/WorldPixelStage"
 import DeveloperDock from "../ui/panels/DeveloperDock"
 import WorldMiniMap from "../ui/minimap/WorldMiniMap"
-import LifePhoneLauncher from "../ui/phone/LifePhoneLauncher"
-import LifePhoneShell from "../ui/phone/LifePhoneShell"
+import PPhoneLauncher from "../ui/phone/PPhoneLauncher"
+import PPhoneShell from "../ui/phone/PPhoneShell"
 
 import styles from "@/styles/world-styles/layout/world-observe-layout.module.css"
 
@@ -25,7 +25,7 @@ type Props = {
 
 export default function WorldObserveLayout({ world }: Props) {
   const [sceneMode, setSceneMode] = useState<WorldStageSceneMode>("exterior")
-  const [isPhoneOpen, setIsPhoneOpen] = useState(false)
+  const [isPPhoneOpen, setIsPPhoneOpen] = useState(false)
 
   const hud = useMemo(() => {
     return buildWorldHudBundle({
@@ -73,18 +73,18 @@ export default function WorldObserveLayout({ world }: Props) {
 
         <WorldMiniMap world={world} hud={hud} />
 
-        {isPhoneOpen && (
-          <LifePhoneShell
+        {isPPhoneOpen && (
+          <PPhoneShell
             world={world}
             hud={hud}
-            onClose={() => setIsPhoneOpen(false)}
+            onClose={() => setIsPPhoneOpen(false)}
           />
         )}
 
-        <LifePhoneLauncher
-          isOpen={isPhoneOpen}
+        <PPhoneLauncher
+          isOpen={isPPhoneOpen}
           unreadCount={world.events.length}
-          onToggle={() => setIsPhoneOpen((value) => !value)}
+          onToggle={() => setIsPPhoneOpen((value) => !value)}
         />
       </section>
 

@@ -2,8 +2,8 @@
  * 当前文件负责：把世界状态整理成圆形小地图展示数据。
  */
 
-import type { WorldEngineViewState } from "../hooks/useWorldEngineState"
-import type { WorldHudBundle } from "../utils/worldHudMappers"
+import type { WorldEngineViewState } from "../../hooks/useWorldEngineState"
+import type { WorldHudBundle } from "../../utils/worldHudMappers"
 
 import type {
   WorldMiniMapInfoItem,
