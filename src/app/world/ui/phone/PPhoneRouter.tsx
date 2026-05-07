@@ -46,6 +46,7 @@ type Props = {
   hud: WorldHudBundle
   readMessageIds: ReadonlySet<string>
   onMarkMessagesRead: (messageIds: string[]) => void
+  onRecordAppOpen: (appId: PPhoneAppId) => void
 }
 
 function buildAppShortcuts(input: {
@@ -104,51 +105,15 @@ function buildAppShortcuts(input: {
 }
 
 function toAppRoute(appId: PPhoneAppId): PPhoneRoute {
-  if (appId === "messages") {
-    return {
-      screen: "messages",
-    }
-  }
+  if (appId === "messages") return { screen: "messages" }
+  if (appId === "contacts") return { screen: "contacts" }
+  if (appId === "pet") return { screen: "pet" }
+  if (appId === "profile") return { screen: "profile" }
+  if (appId === "homeApp") return { screen: "homeApp" }
+  if (appId === "weather") return { screen: "weather" }
+  if (appId === "calendar") return { screen: "calendar" }
 
-  if (appId === "contacts") {
-    return {
-      screen: "contacts",
-    }
-  }
-
-  if (appId === "pet") {
-    return {
-      screen: "pet",
-    }
-  }
-
-  if (appId === "profile") {
-    return {
-      screen: "profile",
-    }
-  }
-
-  if (appId === "homeApp") {
-    return {
-      screen: "homeApp",
-    }
-  }
-
-  if (appId === "weather") {
-    return {
-      screen: "weather",
-    }
-  }
-
-  if (appId === "calendar") {
-    return {
-      screen: "calendar",
-    }
-  }
-
-  return {
-    screen: "settings",
-  }
+  return { screen: "settings" }
 }
 
 function findThreadOrFallback(
@@ -170,6 +135,7 @@ export default function PPhoneRouter({
   hud,
   readMessageIds,
   onMarkMessagesRead,
+  onRecordAppOpen,
 }: Props) {
   const [route, setRoute] = useState<PPhoneRoute>(() => createPPhoneHomeRoute())
 
@@ -205,6 +171,7 @@ export default function PPhoneRouter({
   }
 
   const openApp = (appId: PPhoneAppId) => {
+    onRecordAppOpen(appId)
     setRoute(toAppRoute(appId))
   }
 

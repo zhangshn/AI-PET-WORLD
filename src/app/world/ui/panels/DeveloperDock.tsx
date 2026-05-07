@@ -13,6 +13,7 @@ import RuntimeDebugPanel from "../../components/RuntimeDebugPanel"
 import WorldRuntimePanel from "../../components/WorldRuntimePanel"
 import WorldEcologyPanel from "../../components/WorldEcologyPanel"
 import WorldStimulusPanel from "../../components/WorldStimulusPanel"
+import AiDataDebugPanel from "./AiDataDebugPanel"
 
 import styles from "@/styles/world-styles/layout/developer-dock.module.css"
 
@@ -38,6 +39,8 @@ export default function DeveloperDock({ world }: Props) {
         <ButlerProfileSetupPanel world={world} />
 
         <PhoneHomeMockPanel world={world} />
+
+        <AiDataDebugPanel />
 
         <PetStatusPanel pet={world.pet} />
 

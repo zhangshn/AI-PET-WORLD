@@ -6,6 +6,7 @@
 
 import type { WorldEngineViewState } from "../../hooks/useWorldEngineState"
 import type { WorldHudBundle } from "../../utils/worldHudMappers"
+import type { PPhoneAppId } from "./PPhoneTypes"
 
 import PPhoneRouter from "./PPhoneRouter"
 
@@ -16,6 +17,7 @@ type Props = {
   hud: WorldHudBundle
   readMessageIds: ReadonlySet<string>
   onMarkMessagesRead: (messageIds: string[]) => void
+  onRecordAppOpen: (appId: PPhoneAppId) => void
 }
 
 export default function PPhoneShell({
@@ -23,6 +25,7 @@ export default function PPhoneShell({
   hud,
   readMessageIds,
   onMarkMessagesRead,
+  onRecordAppOpen,
 }: Props) {
   return (
     <aside className={styles.phoneShell} aria-label="P-Phone">
@@ -39,6 +42,7 @@ export default function PPhoneShell({
             hud={hud}
             readMessageIds={readMessageIds}
             onMarkMessagesRead={onMarkMessagesRead}
+            onRecordAppOpen={onRecordAppOpen}
           />
         </div>
 

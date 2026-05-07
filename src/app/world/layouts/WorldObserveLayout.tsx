@@ -8,6 +8,7 @@ import { useCallback, useMemo, useState } from "react"
 
 import type { WorldEngineViewState } from "../hooks/useWorldEngineState"
 import type { WorldStageSceneMode } from "../components/stage-renderers/orchestrator/stage-scene-mode"
+import type { PPhoneAppId } from "../ui/phone/PPhoneTypes"
 
 import { recordAiUserFeedback } from "@/ai/data-core/ai-data-gateway"
 
@@ -43,6 +44,21 @@ function recordMessageReadFeedback(messageIds: string[]): void {
       targetId: messageId,
       feedbackValue: true,
     })
+  })
+}
+
+function recordAppOpenFeedback(appId: PPhoneAppId): void {
+  recordAiUserFeedback({
+    source: "p_phone",
+    entityType: "user",
+    entityId: "current-user",
+    importance: "low",
+    userVisibleChannel: "hidden",
+    summary: `用户打开了 P-Phone 应用：${appId}`,
+    tags: ["p-phone", "app-open", "user-feedback", appId],
+    feedbackType: "open_app",
+    targetId: appId,
+    feedbackValue: appId,
   })
 }
 
@@ -107,6 +123,10 @@ export default function WorldObserveLayout({ world }: Props) {
     })
   }, [])
 
+  const recordPPhoneAppOpen = useCallback((appId: PPhoneAppId) => {
+    recordAppOpenFeedback(appId)
+  }, [])
+
   return (
     <main className={styles.page}>
       <section className={styles.gameShell}>
@@ -141,6 +161,7 @@ export default function WorldObserveLayout({ world }: Props) {
             hud={hud}
             readMessageIds={readMessageIds}
             onMarkMessagesRead={markMessagesRead}
+            onRecordAppOpen={recordPPhoneAppOpen}
           />
         )}
 
