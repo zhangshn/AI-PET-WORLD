@@ -4,7 +4,7 @@
  * 当前文件负责：管理 P-Phone 当前页面路由。
  */
 
-import { useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 
 import type { WorldEngineViewState } from "../../hooks/useWorldEngineState"
 import type { WorldHudBundle } from "../../utils/worldHudMappers"
@@ -23,7 +23,10 @@ import PPhoneHomeScreen from "./home/PPhoneHomeScreen"
 
 import PPhoneMessagesApp from "./messages/PPhoneMessagesApp"
 import PPhoneMessageThread from "./messages/PPhoneMessageThread"
-import { buildPPhoneMessageThreads } from "./messages/pPhoneMessageMappers"
+import {
+  buildPPhoneMessageThreads,
+  getPPhoneTotalUnreadCount,
+} from "./messages/pPhoneMessageMappers"
 
 import PPhoneContactsApp from "./contacts/PPhoneContactsApp"
 import PPhoneContactDetail from "./contacts/PPhoneContactDetail"
@@ -41,6 +44,8 @@ import PPhoneCalendarApp from "./calendar/PPhoneCalendarApp"
 type Props = {
   world: WorldEngineViewState
   hud: WorldHudBundle
+  readMessageIds: ReadonlySet<string>
+  onMarkMessagesRead: (messageIds: string[]) => void
 }
 
 function buildAppShortcuts(input: {
@@ -160,13 +165,12 @@ function findContactOrFallback(
   return contacts.find((contact) => contact.id === contactId) ?? contacts[0]
 }
 
-function getMessageUnreadCount(
-  threads: ReturnType<typeof buildPPhoneMessageThreads>
-): number {
-  return threads.reduce((total, thread) => total + thread.unreadCount, 0)
-}
-
-export default function PPhoneRouter({ world, hud }: Props) {
+export default function PPhoneRouter({
+  world,
+  hud,
+  readMessageIds,
+  onMarkMessagesRead,
+}: Props) {
   const [route, setRoute] = useState<PPhoneRoute>(() => createPPhoneHomeRoute())
 
   const detailBundle = useMemo(() => {
@@ -177,11 +181,12 @@ export default function PPhoneRouter({ world, hud }: Props) {
     return buildPPhoneMessageThreads({
       events: world.events,
       hud,
+      readMessageIds,
     })
-  }, [world.events, hud])
+  }, [world.events, hud, readMessageIds])
 
   const messageUnreadCount = useMemo(() => {
-    return getMessageUnreadCount(messageThreads)
+    return getPPhoneTotalUnreadCount(messageThreads)
   }, [messageThreads])
 
   const shortcuts = useMemo(() => {
@@ -209,6 +214,13 @@ export default function PPhoneRouter({ world, hud }: Props) {
       threadId,
     })
   }
+
+  const markThreadRead = useCallback(
+    (messageIds: string[]) => {
+      onMarkMessagesRead(messageIds)
+    },
+    [onMarkMessagesRead]
+  )
 
   const openContact = (contactId: PPhoneContactId) => {
     setRoute({
@@ -270,6 +282,7 @@ export default function PPhoneRouter({ world, hud }: Props) {
             screen: "messages",
           })
         }
+        onMarkRead={markThreadRead}
       />
     )
   }

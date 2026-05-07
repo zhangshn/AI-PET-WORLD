@@ -2,6 +2,8 @@
  * 当前文件负责：展示 P-Phone 单个短信线程。
  */
 
+import { useEffect } from "react"
+
 import type {
   PPhoneMessageItem,
   PPhoneMessageThread,
@@ -12,6 +14,7 @@ import styles from "@/styles/world-styles/phone/messages/p-phone-message-thread.
 type Props = {
   thread: PPhoneMessageThread
   onBack: () => void
+  onMarkRead: (messageIds: string[]) => void
 }
 
 function getBubbleClassName(sender: PPhoneMessageItem["sender"]): string {
@@ -22,7 +25,17 @@ function getBubbleClassName(sender: PPhoneMessageItem["sender"]): string {
   return styles.worldBubble
 }
 
-export default function PPhoneMessageThread({ thread, onBack }: Props) {
+export default function PPhoneMessageThread({
+  thread,
+  onBack,
+  onMarkRead,
+}: Props) {
+  useEffect(() => {
+    const messageIds = thread.messages.map((message) => message.id)
+
+    onMarkRead(messageIds)
+  }, [thread.messages, onMarkRead])
+
   return (
     <div className={styles.page}>
       <header className={styles.header}>
