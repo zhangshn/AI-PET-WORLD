@@ -19,6 +19,7 @@ export type PPhoneMessageItem = {
   senderName: string
   text: string
   timeLabel: string
+  isPlaceholder?: boolean
 }
 
 export type PPhoneMessageThread = {
@@ -66,33 +67,53 @@ function buildIntentMessages(input: {
   })
 
   return {
-    butlerMessages: butlerMessages.slice(0, 6),
-    worldMessages: worldMessages.slice(0, 8),
+    butlerMessages: dedupeMessagesById(butlerMessages).slice(0, 6),
+    worldMessages: dedupeMessagesById(worldMessages).slice(0, 8),
   }
 }
 
-function buildFallbackButlerMessages(hud: WorldHudBundle): PPhoneMessageItem[] {
-  if (hud.pet.available) {
-    return [
-      {
-        id: "butler-pet-born-status",
-        sender: "butler",
-        senderName: hud.butler.name,
-        text: "宠物目前已经进入自主活动阶段。我会继续观察它的状态，但不会替它做决定。",
-        timeLabel: hud.world.timeLabel,
-      },
-    ]
-  }
+function dedupeMessagesById(messages: PPhoneMessageItem[]): PPhoneMessageItem[] {
+  const seenIds = new Set<string>()
 
-  return [
-    {
-      id: "butler-incubator-status",
+  return messages.filter((message) => {
+    if (seenIds.has(message.id)) return false
+
+    seenIds.add(message.id)
+    return true
+  })
+}
+
+function buildButlerPlaceholderMessage(hud: WorldHudBundle): PPhoneMessageItem {
+  if (hud.pet.available) {
+    return {
+      id: "placeholder-butler-pet-autonomy",
       sender: "butler",
       senderName: hud.butler.name,
-      text: "我会先维持孵化器和周围环境的稳定。有重要变化时，我再发消息给你。",
+      text: "目前没有新的重要消息。宠物正在自主活动，我会继续观察它的状态。",
       timeLabel: hud.world.timeLabel,
-    },
-  ]
+      isPlaceholder: true,
+    }
+  }
+
+  return {
+    id: "placeholder-butler-incubator-stable",
+    sender: "butler",
+    senderName: hud.butler.name,
+    text: "目前没有新的重要消息。我会继续维持孵化器和周围环境的稳定。",
+    timeLabel: hud.world.timeLabel,
+    isPlaceholder: true,
+  }
+}
+
+function buildWorldNoticePlaceholderMessage(): PPhoneMessageItem {
+  return {
+    id: "placeholder-world-notice-empty",
+    sender: "world",
+    senderName: "World Notice",
+    text: "暂无世界公告。社区、小镇、医院、公园或公共设施有重要变化时，会在这里通知你。",
+    timeLabel: "--:--",
+    isPlaceholder: true,
+  }
 }
 
 function getLatestText(messages: PPhoneMessageItem[], fallback: string): string {
@@ -103,7 +124,11 @@ function countUnreadMessages(
   messages: PPhoneMessageItem[],
   readMessageIds: ReadonlySet<string>
 ): number {
-  return messages.filter((message) => !readMessageIds.has(message.id)).length
+  return messages.filter((message) => {
+    if (message.isPlaceholder) return false
+
+    return !readMessageIds.has(message.id)
+  }).length
 }
 
 export function buildPPhoneMessageThreads(input: {
@@ -122,7 +147,10 @@ export function buildPPhoneMessageThreads(input: {
   const butlerMessages =
     eventButlerMessages.length > 0
       ? eventButlerMessages
-      : buildFallbackButlerMessages(input.hud)
+      : [buildButlerPlaceholderMessage(input.hud)]
+
+  const visibleWorldMessages =
+    worldMessages.length > 0 ? worldMessages : [buildWorldNoticePlaceholderMessage()]
 
   return [
     {
@@ -137,9 +165,9 @@ export function buildPPhoneMessageThreads(input: {
       id: "world-notice",
       title: "World Notice",
       subtitle: "世界通知",
-      unreadCount: countUnreadMessages(worldMessages, readMessageIds),
-      latestText: getLatestText(worldMessages, "暂无世界公告。"),
-      messages: worldMessages,
+      unreadCount: countUnreadMessages(visibleWorldMessages, readMessageIds),
+      latestText: getLatestText(visibleWorldMessages, "暂无世界公告。"),
+      messages: visibleWorldMessages,
     },
   ]
 }
