@@ -68,7 +68,8 @@
 }
 
 .threadItem {
-  display: flex;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
   align-items: center;
   gap: 13px;
   border: 0;
@@ -88,6 +89,15 @@
   filter: brightness(1.04);
 }
 
+.quietThread {
+  background: #0b1710;
+  opacity: 0.76;
+}
+
+.quietThread:hover {
+  opacity: 1;
+}
+
 .avatar {
   width: 48px;
   height: 48px;
@@ -101,6 +111,11 @@
   font-size: 20px;
   font-weight: 950;
   box-shadow: inset 0 0 0 5px rgba(255, 244, 200, 0.05);
+}
+
+.quietThread .avatar {
+  background: #243124;
+  color: rgba(255, 231, 169, 0.6);
 }
 
 .threadBody {
@@ -156,4 +171,38 @@
   font-weight: 750;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.threadStatus {
+  align-self: end;
+  color: rgba(255, 247, 223, 0.42);
+  font-size: 10px;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.emptyInbox {
+  margin-top: auto;
+  border: 0;
+  background: #0b1710;
+  padding: 14px;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 244, 200, 0.06),
+    0 6px 0 rgba(0, 0, 0, 0.2);
+}
+
+.emptyInbox strong {
+  display: block;
+  margin-bottom: 7px;
+  color: #fff2c8;
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.emptyInbox p {
+  margin: 0;
+  color: rgba(255, 247, 223, 0.58);
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1.5;
 }
