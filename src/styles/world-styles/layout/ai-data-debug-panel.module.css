@@ -83,16 +83,18 @@
 .recordList {
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  max-height: 360px;
+  gap: 10px;
+  max-height: 390px;
   overflow: auto;
   padding-right: 4px;
 }
 
 .emptyState,
 .recordItem {
-  background: rgba(9, 18, 12, 0.76);
-  padding: 11px;
+  background:
+    linear-gradient(90deg, rgba(255, 244, 200, 0.02), transparent),
+    rgba(9, 18, 12, 0.76);
+  padding: 12px;
   box-shadow:
     inset 0 0 0 2px rgba(255, 244, 200, 0.035),
     0 4px 0 rgba(0, 0, 0, 0.12);
@@ -103,6 +105,34 @@
   font-size: 12px;
   font-weight: 750;
   line-height: 1.5;
+}
+
+.decisionRecord {
+  box-shadow:
+    inset 4px 0 0 rgba(255, 231, 169, 0.36),
+    inset 0 0 0 2px rgba(255, 244, 200, 0.035),
+    0 4px 0 rgba(0, 0, 0, 0.12);
+}
+
+.worldEventRecord {
+  box-shadow:
+    inset 4px 0 0 rgba(131, 190, 104, 0.42),
+    inset 0 0 0 2px rgba(255, 244, 200, 0.035),
+    0 4px 0 rgba(0, 0, 0, 0.12);
+}
+
+.messageRecord {
+  box-shadow:
+    inset 4px 0 0 rgba(100, 165, 210, 0.42),
+    inset 0 0 0 2px rgba(255, 244, 200, 0.035),
+    0 4px 0 rgba(0, 0, 0, 0.12);
+}
+
+.feedbackRecord {
+  box-shadow:
+    inset 4px 0 0 rgba(197, 143, 72, 0.48),
+    inset 0 0 0 2px rgba(255, 244, 200, 0.035),
+    0 4px 0 rgba(0, 0, 0, 0.12);
 }
 
 .recordTop {
@@ -125,11 +155,46 @@
 }
 
 .recordItem p {
-  margin: 0 0 8px;
+  margin: 0 0 9px;
   color: rgba(255, 247, 223, 0.72);
   font-size: 12px;
   font-weight: 750;
   line-height: 1.45;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 9px;
+}
+
+.detailGrid span {
+  min-width: 0;
+  background: rgba(255, 244, 200, 0.045);
+  padding: 6px;
+  box-shadow: inset 0 0 0 1px rgba(255, 244, 200, 0.03);
+}
+
+.detailGrid small {
+  display: block;
+  overflow: hidden;
+  margin-bottom: 3px;
+  color: rgba(255, 247, 223, 0.42);
+  font-size: 9px;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detailGrid strong {
+  display: block;
+  overflow: hidden;
+  color: rgba(255, 242, 200, 0.88);
+  font-size: 11px;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .recordMeta {
@@ -144,4 +209,10 @@
   padding: 4px 6px;
   font-size: 10px;
   font-weight: 850;
+}
+
+@media (max-width: 760px) {
+  .detailGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }

@@ -2,6 +2,14 @@
  * 当前文件负责：展示 AI Data Core 的开发观察面板。
  */
 
+import type {
+  AiDataRecord,
+  AiDecisionRecord,
+  AiMessageRecord,
+  AiUserFeedbackRecord,
+  AiWorldEventRecord,
+} from "@/ai/data-core/ai-data-types"
+
 import {
   getAiDataRecordCount,
   getAiDataRecords,
@@ -9,7 +17,7 @@ import {
 
 import styles from "@/styles/world-styles/layout/ai-data-debug-panel.module.css"
 
-function formatRecordKind(kind: string): string {
+function formatRecordKind(kind: AiDataRecord["kind"]): string {
   if (kind === "decision") return "决策"
   if (kind === "world_event") return "世界事件"
   if (kind === "message") return "消息"
@@ -19,9 +27,161 @@ function formatRecordKind(kind: string): string {
   return kind
 }
 
+function formatValue(value: unknown): string {
+  if (value === null || value === undefined) return "-"
+  if (typeof value === "string") return value
+  if (typeof value === "number") return String(Math.round(value * 100) / 100)
+  if (typeof value === "boolean") return value ? "true" : "false"
+
+  return JSON.stringify(value)
+}
+
+function getDecisionDetails(record: AiDecisionRecord) {
+  return [
+    {
+      label: "drive",
+      value: record.afterState?.values.dominantDrive,
+    },
+    {
+      label: "final",
+      value: record.afterState?.values.finalAction,
+    },
+    {
+      label: "goal",
+      value: record.afterState?.values.goalType,
+    },
+    {
+      label: "energy",
+      value: record.beforeState.values.energy,
+    },
+    {
+      label: "hunger",
+      value: record.beforeState.values.hunger,
+    },
+    {
+      label: "reason",
+      value: record.reason.mainReason,
+    },
+  ]
+}
+
+function getWorldEventDetails(record: AiWorldEventRecord) {
+  return [
+    {
+      label: "type",
+      value: record.eventType,
+    },
+    {
+      label: "visibility",
+      value: record.visibility,
+    },
+    {
+      label: "day",
+      value: record.payload.day,
+    },
+    {
+      label: "hour",
+      value: record.payload.hour,
+    },
+    {
+      label: "pet",
+      value: record.payload.petName,
+    },
+  ]
+}
+
+function getMessageDetails(record: AiMessageRecord) {
+  return [
+    {
+      label: "channel",
+      value: record.messageChannel,
+    },
+    {
+      label: "trigger",
+      value: record.triggerReason,
+    },
+    {
+      label: "read",
+      value: record.wasReadByUser ?? false,
+    },
+    {
+      label: "source",
+      value: record.sourceEventId,
+    },
+  ]
+}
+
+function getUserFeedbackDetails(record: AiUserFeedbackRecord) {
+  return [
+    {
+      label: "type",
+      value: record.feedbackType,
+    },
+    {
+      label: "target",
+      value: record.targetId,
+    },
+    {
+      label: "value",
+      value: record.feedbackValue,
+    },
+  ]
+}
+
+function getRecordDetails(record: AiDataRecord) {
+  if (record.kind === "decision") {
+    return getDecisionDetails(record)
+  }
+
+  if (record.kind === "world_event") {
+    return getWorldEventDetails(record)
+  }
+
+  if (record.kind === "message") {
+    return getMessageDetails(record)
+  }
+
+  if (record.kind === "user_feedback") {
+    return getUserFeedbackDetails(record)
+  }
+
+  if (record.kind === "state_snapshot") {
+    return [
+      {
+        label: "snapshot",
+        value: record.snapshot.label,
+      },
+    ]
+  }
+
+  return []
+}
+
+function getRecordClassName(record: AiDataRecord): string {
+  const classNames = [styles.recordItem]
+
+  if (record.kind === "decision") {
+    classNames.push(styles.decisionRecord)
+  }
+
+  if (record.kind === "world_event") {
+    classNames.push(styles.worldEventRecord)
+  }
+
+  if (record.kind === "message") {
+    classNames.push(styles.messageRecord)
+  }
+
+  if (record.kind === "user_feedback") {
+    classNames.push(styles.feedbackRecord)
+  }
+
+  return classNames.join(" ")
+}
+
 export default function AiDataDebugPanel() {
   const records = getAiDataRecords({
-    limit: 12,
+    limit: 16,
   })
 
   const totalCount = getAiDataRecordCount()
@@ -66,26 +226,41 @@ export default function AiDataDebugPanel() {
       <div className={styles.recordList}>
         {records.length === 0 && (
           <section className={styles.emptyState}>
-            暂无 AI 数据记录。打开 P-Phone、读取短信或触发世界通知后，这里会出现记录。
+            暂无 AI 数据记录。打开 P-Phone、读取短信或触发世界运行后，这里会出现记录。
           </section>
         )}
 
-        {records.map((record) => (
-          <section className={styles.recordItem} key={record.id}>
-            <div className={styles.recordTop}>
-              <strong>{formatRecordKind(record.kind)}</strong>
-              <small>{record.source}</small>
-            </div>
+        {records.map((record) => {
+          const details = getRecordDetails(record)
 
-            <p>{record.summary}</p>
+          return (
+            <section className={getRecordClassName(record)} key={record.id}>
+              <div className={styles.recordTop}>
+                <strong>{formatRecordKind(record.kind)}</strong>
+                <small>{record.source}</small>
+              </div>
 
-            <div className={styles.recordMeta}>
-              <span>{record.entityType}</span>
-              <span>{record.importance}</span>
-              <span>{record.userVisibleChannel}</span>
-            </div>
-          </section>
-        ))}
+              <p>{record.summary}</p>
+
+              {details.length > 0 && (
+                <div className={styles.detailGrid}>
+                  {details.map((detail) => (
+                    <span key={`${record.id}-${detail.label}`}>
+                      <small>{detail.label}</small>
+                      <strong>{formatValue(detail.value)}</strong>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className={styles.recordMeta}>
+                <span>{record.entityType}</span>
+                <span>{record.importance}</span>
+                <span>{record.userVisibleChannel}</span>
+              </div>
+            </section>
+          )
+        })}
       </div>
     </article>
   )
