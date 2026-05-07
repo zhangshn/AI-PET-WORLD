@@ -3,9 +3,15 @@
  */
 
 import type { WorldEvent, WorldEventType } from "@/types/event"
-import type { AiWorldEventRecord } from "@/ai/data-core/ai-data-types"
+import type {
+  AiImportance,
+  AiUserVisibleChannel,
+  AiWorldEventRecord,
+} from "@/ai/data-core/ai-data-types"
 
 import { recordAiWorldEvent } from "@/ai/data-core/ai-data-gateway"
+
+const DEBUG_EVENT_SAMPLE_INTERVAL = 6
 
 const WORLD_NOTICE_KEYWORDS = [
   "医院",
@@ -59,7 +65,7 @@ function resolveEventVisibility(
   return "debug_log"
 }
 
-function resolveEventImportance(event: WorldEvent) {
+function resolveEventImportance(event: WorldEvent): AiImportance {
   if (isWorldNoticeCandidate(event)) return "high"
   if (event.type === "pet_hatched") return "medium"
   if (event.type === "interaction") return "medium"
@@ -67,7 +73,7 @@ function resolveEventImportance(event: WorldEvent) {
   return "debug"
 }
 
-function resolveUserVisibleChannel(event: WorldEvent) {
+function resolveUserVisibleChannel(event: WorldEvent): AiUserVisibleChannel {
   const visibility = resolveEventVisibility(event)
 
   if (visibility === "world_notice") return "p_phone_world_notice"
@@ -75,6 +81,16 @@ function resolveUserVisibleChannel(event: WorldEvent) {
   if (visibility === "timeline") return "world_timeline"
 
   return "hidden"
+}
+
+function shouldRecordWorldEvent(event: WorldEvent): boolean {
+  const visibility = resolveEventVisibility(event)
+
+  if (visibility !== "debug_log") return true
+
+  if (event.type === "time_period_changed") return true
+
+  return event.tick % DEBUG_EVENT_SAMPLE_INTERVAL === 0
 }
 
 function buildEventTags(event: WorldEvent): string[] {
@@ -95,6 +111,10 @@ function buildEventTags(event: WorldEvent): string[] {
     tags.push(`narrative:${event.narrativeType}`)
   }
 
+  if (visibility === "debug_log") {
+    tags.push("sampled-debug")
+  }
+
   return tags
 }
 
@@ -112,6 +132,8 @@ function buildEventPayload(event: WorldEvent) {
 }
 
 export function recordWorldEventForAiData(event: WorldEvent): void {
+  if (!shouldRecordWorldEvent(event)) return
+
   recordAiWorldEvent({
     id: `ai-world-event-${event.id}`,
     source: "event_system",

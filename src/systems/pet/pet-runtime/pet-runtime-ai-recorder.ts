@@ -22,6 +22,8 @@ const DRIVE_LABELS: Record<DriveType, string> = {
   observe: "观察驱动",
 }
 
+const DECISION_SAMPLE_INTERVAL = 3
+
 type RecordPetRuntimeDecisionInput = {
   tick: number
   pet: PetState
@@ -49,22 +51,65 @@ function buildDriveCandidates(driveSnapshot: DriveSnapshot) {
   )
 }
 
+function shouldAlwaysRecordDecision(input: RecordPetRuntimeDecisionInput): boolean {
+  if (input.previousAction !== input.finalAction) return true
+
+  if (input.rawAction !== input.finalAction) return true
+
+  if (input.driveSnapshot.dominant === "eat") return true
+
+  if (input.driveSnapshot.dominant === "rest" && input.pet.energy <= 25) {
+    return true
+  }
+
+  if (input.pet.hunger >= 80) return true
+
+  if (input.pet.energy <= 20) return true
+
+  return false
+}
+
+function shouldSampleDecision(input: RecordPetRuntimeDecisionInput): boolean {
+  return input.tick % DECISION_SAMPLE_INTERVAL === 0
+}
+
+function shouldRecordDecision(input: RecordPetRuntimeDecisionInput): boolean {
+  if (shouldAlwaysRecordDecision(input)) return true
+
+  return shouldSampleDecision(input)
+}
+
+function buildDecisionSummary(input: RecordPetRuntimeDecisionInput): string {
+  if (input.previousAction !== input.finalAction) {
+    return `宠物行为决策：${input.previousAction} → ${input.finalAction}`
+  }
+
+  return `宠物行为维持：${input.finalAction}`
+}
+
 export function recordPetRuntimeDecision(
   input: RecordPetRuntimeDecisionInput
 ): void {
+  if (!shouldRecordDecision(input)) return
+
   recordAiDecision({
+    id: `ai-decision-${input.pet.name}-${input.tick}`,
     source: "pet_system",
     entityType: "pet",
     entityId: input.pet.name,
-    importance: "medium",
+    importance:
+      input.previousAction !== input.finalAction ? "high" : "medium",
     userVisibleChannel: "hidden",
-    summary: `宠物行为决策：${input.previousAction} → ${input.finalAction}`,
+    summary: buildDecisionSummary(input),
     tags: [
       "pet-runtime",
       "behavior-decision",
       `drive:${input.driveSnapshot.dominant}`,
       `action:${input.finalAction}`,
       `goal:${input.currentGoal.type}`,
+      input.previousAction !== input.finalAction
+        ? "action-changed"
+        : "action-stable",
     ],
 
     beforeState: {
