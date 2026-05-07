@@ -287,10 +287,11 @@
 
 .badge {
   position: absolute;
-  top: -10px;
-  right: -10px;
-  min-width: 25px;
-  height: 25px;
+  right: -8px;
+  top: -8px;
+  z-index: 2;
+  min-width: 22px;
+  height: 22px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -298,8 +299,13 @@
   border-radius: 999px;
   background: #cf4638;
   color: #fff;
-  font-size: 11px;
+  padding: 0 5px;
+  font-size: 10px;
   font-weight: 950;
+  line-height: 1;
+  box-shadow:
+    0 3px 0 rgba(0, 0, 0, 0.34),
+    inset 0 -2px 0 rgba(0, 0, 0, 0.18);
 }
 
 .appButton strong {

@@ -42,16 +42,20 @@ type Props = {
 }
 
 function buildAppShortcuts(input: {
-  world: WorldEngineViewState
   hud: WorldHudBundle
+  messageUnreadCount: number
 }): PPhoneAppShortcut[] {
   return [
     {
       id: "messages",
       title: "短信",
-      subtitle: "管家与系统通知",
+      subtitle:
+        input.messageUnreadCount > 0
+          ? `${input.messageUnreadCount} 条未读`
+          : "没有未读短信",
       icon: "messages",
-      badgeCount: input.world.events.length,
+      badgeCount:
+        input.messageUnreadCount > 0 ? input.messageUnreadCount : undefined,
     },
     {
       id: "contacts",
@@ -142,12 +146,14 @@ function findContactOrFallback(
   return contacts.find((contact) => contact.id === contactId) ?? contacts[0]
 }
 
+function getMessageUnreadCount(
+  threads: ReturnType<typeof buildPPhoneMessageThreads>
+): number {
+  return threads.reduce((total, thread) => total + thread.unreadCount, 0)
+}
+
 export default function PPhoneRouter({ world, hud }: Props) {
   const [route, setRoute] = useState<PPhoneRoute>(() => createPPhoneHomeRoute())
-
-  const shortcuts = useMemo(() => {
-    return buildAppShortcuts({ world, hud })
-  }, [world, hud])
 
   const detailBundle = useMemo(() => {
     return buildPhoneDetailBundle(hud)
@@ -159,6 +165,17 @@ export default function PPhoneRouter({ world, hud }: Props) {
       hud,
     })
   }, [world.events, hud])
+
+  const messageUnreadCount = useMemo(() => {
+    return getMessageUnreadCount(messageThreads)
+  }, [messageThreads])
+
+  const shortcuts = useMemo(() => {
+    return buildAppShortcuts({
+      hud,
+      messageUnreadCount,
+    })
+  }, [hud, messageUnreadCount])
 
   const contacts = useMemo(() => {
     return buildPPhoneContacts(hud)

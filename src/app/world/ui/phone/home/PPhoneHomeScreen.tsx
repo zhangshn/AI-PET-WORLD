@@ -35,6 +35,12 @@ function buildSystemDateLabel(): string {
     .replace(/\s/g, "")
 }
 
+function formatBadgeCount(count: number): string {
+  if (count > 99) return "99+"
+
+  return String(count)
+}
+
 export default function PPhoneHomeScreen({
   timeLabel,
   periodLabel,
@@ -103,11 +109,12 @@ export default function PPhoneHomeScreen({
             <span className={styles.iconWrap}>
               <PPhoneIcon kind={shortcut.icon} />
 
-              {Boolean(shortcut.badgeCount) && (
-                <strong className={styles.badge}>
-                  {Math.min(99, shortcut.badgeCount ?? 0)}
-                </strong>
-              )}
+              {typeof shortcut.badgeCount === "number" &&
+                shortcut.badgeCount > 0 && (
+                  <strong className={styles.badge}>
+                    {formatBadgeCount(shortcut.badgeCount)}
+                  </strong>
+                )}
             </span>
 
             <strong>{shortcut.title}</strong>
