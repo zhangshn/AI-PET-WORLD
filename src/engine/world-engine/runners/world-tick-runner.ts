@@ -5,6 +5,7 @@
 import type { TimeState } from "../../timeSystem"
 import type { WorldStimulus } from "@/ai/gateway"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
+import type { WorldProgressionSystem } from "@/world/progression/world-progression-gateway"
 
 import type {
   PetSystem,
@@ -42,6 +43,7 @@ export type RunWorldTickInput = {
   eventSystem: EventSystem
   homeSystem: HomeSystem
   incubatorSystem: IncubatorSystem
+  worldProgressionSystem: WorldProgressionSystem
   worldStimuli: WorldStimulus[]
   worldRuntime: WorldRuntimeState
 }
@@ -71,6 +73,40 @@ function refreshTickState(input: RunWorldTickInput) {
     butlerSystem: input.butlerSystem,
     homeSystem: input.homeSystem,
     incubatorSystem: input.incubatorSystem,
+  })
+}
+
+function emitWorldProgressionNotices(input: {
+  tick: number
+  time: TimeState
+  currentHome: ReturnType<HomeSystem["getHome"]>
+  currentPet: ReturnType<PetSystem["getPet"]>
+  eventSystem: EventSystem
+  worldProgressionSystem: WorldProgressionSystem
+}): void {
+  const notices = input.worldProgressionSystem.update({
+    tick: input.tick,
+    time: input.time,
+    home: input.currentHome,
+    pet: input.currentPet,
+  })
+
+  notices.forEach((notice) => {
+    input.eventSystem.addInteractionEvent({
+      tick: input.tick,
+      day: input.time.day,
+      hour: input.time.hour,
+      message: notice.message,
+      sourceAction: "world_progression",
+      narrativeType: "unknown",
+      intensity: 0.78,
+      payload: {
+        source: "world_progression",
+        noticeId: notice.id,
+        facilityId: notice.facilityId,
+        noticeType: notice.type,
+      },
+    })
   })
 }
 
@@ -182,6 +218,19 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
   currentPet = currentState.pet
   currentIncubator = currentState.incubator
   currentButler = currentState.butler
+
+  /**
+   * 阶段 5.5：推进 MVP 世界进度。
+   * 这里只推进世界设施建设与世界公告，不改变宠物自主行为。
+   */
+  emitWorldProgressionNotices({
+    tick: input.tick,
+    time: input.currentTime,
+    currentHome,
+    currentPet,
+    eventSystem: input.eventSystem,
+    worldProgressionSystem: input.worldProgressionSystem,
+  })
 
   /**
    * 阶段 6：宠物感知世界刺激。

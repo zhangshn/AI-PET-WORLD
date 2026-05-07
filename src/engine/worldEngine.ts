@@ -14,6 +14,9 @@ import type { IncubatorState } from "../types/incubator"
 import type { WorldEvent } from "../types/event"
 import type { WorldEcologyState } from "../world/ecology/ecology-engine"
 import type { WorldRuntimeState } from "../world/runtime/world-runtime"
+
+import { WorldProgressionSystem } from "../world/progression/world-progression-gateway"
+
 import {
   PetSystem,
   ButlerSystem,
@@ -21,15 +24,18 @@ import {
   HomeSystem,
   IncubatorSystem,
 } from "../systems/systems-gateway"
+
 import {
   createWorldRuntime,
   refreshWorldSystemState,
   runWorldTick,
 } from "./world-engine/world-engine-gateway"
+
 import {
   buildWorldState,
   type WorldState,
 } from "./world-engine/world-engine-state"
+
 import { logWorldTick } from "./world-engine/world-runtime-logger"
 
 export type { WorldState } from "./world-engine/world-engine-state"
@@ -43,6 +49,7 @@ export class WorldEngine {
   private eventSystem: EventSystem
   private homeSystem: HomeSystem
   private incubatorSystem: IncubatorSystem
+  private worldProgressionSystem: WorldProgressionSystem
 
   private worldStimuli: WorldStimulus[] = []
   private worldRuntime: WorldRuntimeState
@@ -59,6 +66,7 @@ export class WorldEngine {
     this.eventSystem = new EventSystem()
     this.homeSystem = new HomeSystem()
     this.incubatorSystem = new IncubatorSystem()
+    this.worldProgressionSystem = new WorldProgressionSystem()
 
     this.worldRuntime = this.createInitialRuntime()
   }
@@ -108,6 +116,7 @@ export class WorldEngine {
       eventSystem: this.eventSystem,
       homeSystem: this.homeSystem,
       incubatorSystem: this.incubatorSystem,
+      worldProgressionSystem: this.worldProgressionSystem,
       worldStimuli: this.worldStimuli,
       worldRuntime: this.worldRuntime,
     })
@@ -229,6 +238,7 @@ export class WorldEngine {
     this.eventSystem = new EventSystem()
     this.homeSystem = new HomeSystem()
     this.incubatorSystem = new IncubatorSystem()
+    this.worldProgressionSystem = new WorldProgressionSystem()
     this.worldStimuli = []
     this.worldRuntime = this.createInitialRuntime()
     this.initialized = false
