@@ -2,8 +2,16 @@
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
   padding: 18px 16px 22px;
+  background:
+    linear-gradient(rgba(255, 244, 200, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 244, 200, 0.018) 1px, transparent 1px),
+    linear-gradient(180deg, #102016 0%, #07120c 100%);
+  background-size:
+    8px 8px,
+    8px 8px,
+    auto;
 }
 
 .header {
@@ -15,20 +23,24 @@
   gap: 12px;
   margin: -18px -16px 0;
   padding: 14px 16px 12px;
-  background: rgba(17, 27, 21, 0.94);
+  background: rgba(12, 22, 15, 0.96);
   backdrop-filter: blur(12px);
 }
 
 .backButton {
   width: 38px;
   height: 38px;
-  border: 2px solid rgba(255, 247, 223, 0.13);
-  border-radius: 999px;
-  background: rgba(255, 247, 223, 0.08);
-  color: #fff7df;
+  border: 0;
+  border-radius: 0;
+  background: #33402f;
+  color: #fff2c8;
   font-size: 34px;
+  font-weight: 950;
   line-height: 0.8;
   cursor: pointer;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 244, 200, 0.08),
+    0 4px 0 rgba(0, 0, 0, 0.28);
 }
 
 .header p {
@@ -42,68 +54,81 @@
 
 .header h2 {
   margin: 0;
-  color: #fff7df;
-  font-size: 22px;
+  color: #fff2c8;
+  font-size: 23px;
   font-weight: 950;
   letter-spacing: -0.04em;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.42);
 }
 
 .profileCard {
   display: flex;
   flex-direction: column;
   align-items: center;
-  border: 2px solid rgba(255, 247, 223, 0.11);
-  border-radius: 28px;
-  background: rgba(5, 12, 8, 0.28);
-  padding: 22px 16px;
+  border: 0;
+  border-radius: 0;
+  background: #102016;
+  padding: 24px 16px;
   text-align: center;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 244, 200, 0.08),
+    0 8px 0 rgba(0, 0, 0, 0.22);
 }
 
 .avatar {
-  width: 74px;
-  height: 74px;
+  width: 78px;
+  height: 78px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-radius: 26px;
-  background: rgba(255, 231, 169, 0.14);
+  border-radius: 0;
+  background: #364329;
   color: #ffe7a9;
-  font-size: 30px;
+  font-size: 34px;
   font-weight: 950;
+  box-shadow:
+    inset 0 0 0 7px rgba(255, 244, 200, 0.05),
+    0 6px 0 rgba(0, 0, 0, 0.22);
 }
 
 .profileCard h3 {
-  margin: 12px 0 6px;
-  color: #fff7df;
-  font-size: 24px;
+  margin: 14px 0 7px;
+  color: #fff2c8;
+  font-size: 26px;
   font-weight: 950;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.42);
 }
 
 .profileCard p {
+  max-width: 260px;
   margin: 0;
-  color: rgba(255, 247, 223, 0.68);
+  color: rgba(255, 247, 223, 0.72);
   font-size: 13px;
   font-weight: 750;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
 .actionGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
 
 .actionGrid button {
-  border: 2px solid rgba(255, 231, 169, 0.18);
-  border-radius: 20px;
-  background: rgba(255, 231, 169, 0.1);
+  border: 0;
+  border-radius: 0;
+  background: #28361f;
   color: #ffe7a9;
-  padding: 14px 12px;
+  padding: 15px 12px;
   font-size: 14px;
   font-weight: 950;
   cursor: pointer;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 244, 200, 0.1),
+    0 6px 0 rgba(0, 0, 0, 0.22);
 }
 
 .actionGrid button:hover {
-  background: rgba(255, 231, 169, 0.16);
+  background: #35492b;
+  filter: brightness(1.06);
 }

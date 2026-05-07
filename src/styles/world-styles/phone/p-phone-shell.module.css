@@ -1,90 +1,134 @@
 .phoneShell {
   position: absolute;
-  right: 24px;
+  right: 40px;
   bottom: 94px;
   z-index: 44;
-  width: min(390px, calc(100vw - 32px));
+  width: min(392px, calc(100vw - 48px));
   max-height: calc(100vh - 122px);
   color: #fff7df;
+  filter: drop-shadow(-12px 24px 34px rgba(0, 0, 0, 0.42));
 }
 
 .deviceFrame {
+  position: relative;
   overflow: hidden;
-  border: 4px solid rgba(24, 20, 17, 0.96);
-  border-radius: 34px;
-  background:
-    linear-gradient(180deg, rgba(42, 35, 29, 0.98), rgba(18, 16, 14, 0.98)),
-    #15120f;
+  border: 0;
+  border-radius: 0;
+  background: #070706;
   box-shadow:
-    0 24px 80px rgba(0, 0, 0, 0.48),
-    inset 0 0 0 2px rgba(255, 255, 255, 0.08);
+    0 0 0 8px #070706,
+    0 0 0 18px #241d15,
+    inset 0 0 0 4px rgba(255, 247, 223, 0.04);
+}
+
+/* 像素设备的阶梯边，不模仿现实手机外形 */
+.deviceFrame::before,
+.deviceFrame::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  width: 14px;
+  background: #070706;
+  pointer-events: none;
+}
+
+.deviceFrame::before {
+  left: -14px;
+  top: 58px;
+  bottom: 74px;
+}
+
+.deviceFrame::after {
+  right: -14px;
+  top: 92px;
+  bottom: 118px;
 }
 
 .deviceTop {
   position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 16px 9px;
-  background: rgba(19, 18, 16, 0.96);
+  padding: 14px 16px 11px;
+  background:
+    linear-gradient(180deg, #15120f 0%, #0d0b09 100%);
 }
 
 .brand {
-  color: rgba(255, 247, 223, 0.82);
+  color: #ffe7a9;
   font-size: 11px;
   font-weight: 950;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
 }
 
 .cameraSlot {
   position: absolute;
   left: 50%;
-  top: 12px;
-  width: 78px;
-  height: 22px;
+  top: 16px;
+  width: 76px;
+  height: 18px;
   transform: translateX(-50%);
-  border-radius: 999px;
-  background: rgba(0, 0, 0, 0.62);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  border-radius: 0;
+  background: #020202;
+  box-shadow:
+    inset 18px 6px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -4px 0 rgba(255, 255, 255, 0.03);
 }
 
 .closeButton {
   position: relative;
   z-index: 2;
-  width: 28px;
-  height: 28px;
-  border: 2px solid rgba(255, 247, 223, 0.18);
-  border-radius: 999px;
-  background: rgba(255, 247, 223, 0.08);
-  color: #fff7df;
-  font-size: 20px;
-  font-weight: 800;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 0;
+  background: #4b3c28;
+  color: #fff2c8;
+  font-size: 24px;
+  font-weight: 950;
   line-height: 1;
   cursor: pointer;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 247, 223, 0.12),
+    0 4px 0 rgba(0, 0, 0, 0.34);
 }
 
 .closeButton:hover {
-  background: rgba(255, 247, 223, 0.16);
+  background: #6a5637;
 }
 
 .screen {
+  position: relative;
+  z-index: 2;
   max-height: calc(100vh - 198px);
   min-height: 560px;
   overflow-y: auto;
+  border: 8px solid #07100a;
   background:
-    radial-gradient(circle at 24% 0%, rgba(104, 163, 96, 0.38), transparent 36%),
-    radial-gradient(circle at 84% 14%, rgba(236, 185, 93, 0.28), transparent 35%),
-    linear-gradient(180deg, #203221 0%, #111b15 100%);
+    linear-gradient(rgba(255, 244, 200, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 244, 200, 0.025) 1px, transparent 1px),
+    radial-gradient(circle at 50% 0%, rgba(98, 145, 79, 0.2), transparent 34%),
+    linear-gradient(180deg, #132319 0%, #06100a 100%);
+  background-size:
+    8px 8px,
+    8px 8px,
+    auto,
+    auto;
 }
 
 .homeIndicator {
-  width: 118px;
-  height: 5px;
-  margin: 10px auto 12px;
-  border-radius: 999px;
-  background: rgba(255, 247, 223, 0.26);
+  position: relative;
+  z-index: 2;
+  width: 116px;
+  height: 6px;
+  margin: 12px auto 14px;
+  border-radius: 0;
+  background: #726a55;
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.34);
 }
 
 @media (max-width: 720px) {
