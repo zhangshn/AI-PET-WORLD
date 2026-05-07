@@ -72,6 +72,17 @@ function buildBaseRecord(
   }
 }
 
+function isSameMessageRecord(
+  record: AiDataRecord,
+  messageId: string
+): record is AiMessageRecord {
+  return record.kind === "message" && record.messageId === messageId
+}
+
+export function hasAiDataRecord(filter: AiDataRecordFilter = {}): boolean {
+  return countAiDataRecords(filter) > 0
+}
+
 export function recordAiDecision(
   input: CreateAiDecisionRecordInput
 ): AiDecisionRecord {
@@ -118,6 +129,21 @@ export function recordAiMessage(
   }
 
   return appendAiDataRecord(record) as AiMessageRecord
+}
+
+export function recordAiMessageOnce(
+  input: CreateAiMessageRecordInput
+): AiMessageRecord | undefined {
+  const existingRecord = readAiDataRecords({
+    kind: "message",
+    limit: 200,
+  }).find((record) => isSameMessageRecord(record, input.messageId))
+
+  if (existingRecord) {
+    return existingRecord
+  }
+
+  return recordAiMessage(input)
 }
 
 export function recordAiStateSnapshot(

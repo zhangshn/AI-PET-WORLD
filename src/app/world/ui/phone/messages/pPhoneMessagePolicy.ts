@@ -4,7 +4,7 @@
 
 import type { WorldEvent } from "@/types/event"
 
-import { recordAiMessage } from "@/ai/data-core/ai-data-gateway"
+import { recordAiMessageOnce } from "@/ai/data-core/ai-data-gateway"
 
 export type PPhoneMessageChannel = "butler" | "world-notice" | "silent"
 
@@ -96,7 +96,7 @@ function buildButlerIntent(
 function recordIntentForAiData(intent: PPhoneMessageIntent): void {
   if (intent.channel === "silent") return
 
-  recordAiMessage({
+  recordAiMessageOnce({
     source: "message_policy",
     entityType: intent.channel === "world-notice" ? "world" : "butler",
     entityId: intent.senderName,
