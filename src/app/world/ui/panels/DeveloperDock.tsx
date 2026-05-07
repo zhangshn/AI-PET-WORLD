@@ -4,7 +4,6 @@
 
 import type { WorldEngineViewState } from "../../hooks/useWorldEngineState"
 
-import PhoneHomeMockPanel from "../../components/phone-mock/PhoneHomeMockPanel"
 import ButlerProfileSetupPanel from "../../components/ButlerProfileSetupPanel"
 import PetStatusPanel from "../../components/PetStatusPanel"
 import CognitionPanel from "../../components/CognitionPanel"
@@ -37,8 +36,6 @@ export default function DeveloperDock({ world }: Props) {
 
       <div className={styles.grid}>
         <ButlerProfileSetupPanel world={world} />
-
-        <PhoneHomeMockPanel world={world} />
 
         <AiDataDebugPanel />
 
