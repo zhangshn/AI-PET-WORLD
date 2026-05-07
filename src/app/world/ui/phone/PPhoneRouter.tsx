@@ -67,7 +67,7 @@ function buildAppShortcuts(input: {
     {
       id: "contacts",
       title: "联系人",
-      subtitle: "管家 / 系统",
+      subtitle: "管家 / 世界通知",
       icon: "contacts",
     },
     {
