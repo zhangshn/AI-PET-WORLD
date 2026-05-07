@@ -31,10 +31,12 @@ export default function PPhoneMessageThread({
   onMarkRead,
 }: Props) {
   useEffect(() => {
+    if (thread.unreadCount <= 0) return
+
     const messageIds = thread.messages.map((message) => message.id)
 
     onMarkRead(messageIds)
-  }, [thread.messages, onMarkRead])
+  }, [thread.id, thread.unreadCount, onMarkRead, thread.messages])
 
   return (
     <div className={styles.page}>

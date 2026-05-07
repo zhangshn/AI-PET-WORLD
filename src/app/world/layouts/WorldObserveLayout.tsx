@@ -68,9 +68,17 @@ export default function WorldObserveLayout({ world }: Props) {
     if (messageIds.length === 0) return
 
     setReadMessageIds((current) => {
+      const unreadMessageIds = messageIds.filter(
+        (messageId) => !current.has(messageId)
+      )
+
+      if (unreadMessageIds.length === 0) {
+        return current
+      }
+
       const next = new Set(current)
 
-      messageIds.forEach((messageId) => {
+      unreadMessageIds.forEach((messageId) => {
         next.add(messageId)
       })
 
