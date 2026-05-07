@@ -4,7 +4,7 @@
   bottom: 94px;
   z-index: 78;
   width: min(392px, calc(100vw - 48px));
-  max-height: calc(100vh - 122px);
+  height: min(760px, calc(100vh - 122px));
   color: #fff7df;
   pointer-events: auto;
   filter: drop-shadow(-12px 24px 34px rgba(0, 0, 0, 0.42));
@@ -12,9 +12,10 @@
 
 .deviceFrame {
   position: relative;
+  height: 100%;
   overflow: hidden;
   border: 0;
-  border-radius: 0;
+  border-radius: 34px 34px 26px 26px;
   background: #070706;
   box-shadow:
     0 0 0 8px #070706,
@@ -34,19 +35,20 @@
 
 .deviceFrame::before {
   left: -14px;
-  top: 58px;
-  bottom: 74px;
+  top: 74px;
+  bottom: 104px;
 }
 
 .deviceFrame::after {
   right: -14px;
-  top: 92px;
-  bottom: 118px;
+  top: 112px;
+  bottom: 142px;
 }
 
 .deviceTop {
   position: relative;
   z-index: 2;
+  height: 58px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -68,11 +70,11 @@
 .cameraSlot {
   position: absolute;
   left: 50%;
-  top: 16px;
+  top: 17px;
   width: 76px;
   height: 18px;
   transform: translateX(-50%);
-  border-radius: 0;
+  border-radius: 12px;
   background: #020202;
   box-shadow:
     inset 18px 6px 0 rgba(255, 255, 255, 0.06),
@@ -105,8 +107,8 @@
 .screen {
   position: relative;
   z-index: 2;
-  max-height: calc(100vh - 198px);
-  min-height: 560px;
+  height: calc(100% - 96px);
+  min-height: 0;
   overflow-y: auto;
   border: 8px solid #07100a;
   background:
@@ -127,7 +129,7 @@
   width: 116px;
   height: 6px;
   margin: 12px auto 14px;
-  border-radius: 0;
+  border-radius: 999px;
   background: #726a55;
   box-shadow: 0 3px 0 rgba(0, 0, 0, 0.34);
 }
@@ -137,11 +139,10 @@
     right: 14px;
     bottom: 78px;
     width: calc(100vw - 28px);
-    max-height: calc(100vh - 92px);
+    height: calc(100vh - 92px);
   }
 
-  .screen {
-    min-height: 520px;
-    max-height: calc(100vh - 166px);
+  .deviceFrame {
+    border-radius: 28px 28px 22px 22px;
   }
 }

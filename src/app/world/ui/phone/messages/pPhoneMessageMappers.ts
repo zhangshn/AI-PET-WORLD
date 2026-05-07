@@ -25,25 +25,45 @@ export type PPhoneMessageThread = {
   messages: PPhoneMessageItem[]
 }
 
-const WORLD_NOTICE_EVENT_TYPES = new Set<WorldEvent["type"]>([
-  "pet_hatched",
-])
+const WORLD_NOTICE_KEYWORDS = [
+  "医院",
+  "诊所",
+  "社区",
+  "小镇",
+  "广场",
+  "公园",
+  "商店",
+  "市场",
+  "学校",
+  "建筑完成",
+  "建成",
+  "开放",
+  "区域开放",
+  "设施",
+  "公共设施",
+  "社区活动",
+  "节日",
+  "生态变化",
+  "天气异常",
+]
 
 function formatEventTime(event: WorldEvent): string {
   return `${String(event.hour).padStart(2, "0")}:00`
 }
 
 function shouldShowWorldNotice(event: WorldEvent): boolean {
-  if (WORLD_NOTICE_EVENT_TYPES.has(event.type)) return true
+  if (
+    event.type === "pet_hatched" ||
+    event.type === "pet_action_changed" ||
+    event.type === "pet_mood_changed" ||
+    event.type === "incubator_progress_changed" ||
+    event.type === "time_period_changed"
+  ) {
+    return false
+  }
 
-  return (
-    event.message.includes("医院") ||
-    event.message.includes("社区") ||
-    event.message.includes("公园") ||
-    event.message.includes("家园完成") ||
-    event.message.includes("建筑完成") ||
-    event.message.includes("区域开放") ||
-    event.message.includes("生态变化")
+  return WORLD_NOTICE_KEYWORDS.some((keyword) =>
+    event.message.includes(keyword)
   )
 }
 
