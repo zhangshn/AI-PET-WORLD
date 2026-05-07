@@ -6,6 +6,11 @@ import type { WorldEvent } from "@/types/event"
 import type { WorldHudBundle } from "../../../utils/worldHudMappers"
 import type { PPhoneMessageThreadId } from "../PPhoneTypes"
 
+import {
+  buildMessageIntentFromEvent,
+  type PPhoneMessageIntent,
+} from "./pPhoneMessagePolicy"
+
 export type PPhoneMessageSender = "player" | "butler" | "world"
 
 export type PPhoneMessageItem = {
@@ -25,95 +30,69 @@ export type PPhoneMessageThread = {
   messages: PPhoneMessageItem[]
 }
 
-const WORLD_NOTICE_KEYWORDS = [
-  "医院",
-  "诊所",
-  "社区",
-  "小镇",
-  "广场",
-  "公园",
-  "商店",
-  "市场",
-  "学校",
-  "建筑完成",
-  "建成",
-  "开放",
-  "区域开放",
-  "设施",
-  "公共设施",
-  "社区活动",
-  "节日",
-  "生态变化",
-  "天气异常",
-]
-
-function formatEventTime(event: WorldEvent): string {
-  return `${String(event.hour).padStart(2, "0")}:00`
-}
-
-function shouldShowWorldNotice(event: WorldEvent): boolean {
-  if (
-    event.type === "pet_hatched" ||
-    event.type === "pet_action_changed" ||
-    event.type === "pet_mood_changed" ||
-    event.type === "incubator_progress_changed" ||
-    event.type === "time_period_changed"
-  ) {
-    return false
+function toMessageItem(intent: PPhoneMessageIntent): PPhoneMessageItem {
+  return {
+    id: intent.id,
+    sender: intent.channel === "world-notice" ? "world" : "butler",
+    senderName: intent.senderName,
+    text: intent.text,
+    timeLabel: intent.timeLabel,
   }
-
-  return WORLD_NOTICE_KEYWORDS.some((keyword) =>
-    event.message.includes(keyword)
-  )
 }
 
-function buildWorldNoticeMessages(events: WorldEvent[]): PPhoneMessageItem[] {
-  return events
-    .filter(shouldShowWorldNotice)
-    .slice(0, 8)
-    .map((event) => ({
-      id: `world-${event.id}`,
-      sender: "world",
-      senderName: "World Notice",
-      text: event.message,
-      timeLabel: formatEventTime(event),
-    }))
-}
+function buildIntentMessages(input: {
+  events: WorldEvent[]
+  hud: WorldHudBundle
+}): {
+  butlerMessages: PPhoneMessageItem[]
+  worldMessages: PPhoneMessageItem[]
+} {
+  const butlerMessages: PPhoneMessageItem[] = []
+  const worldMessages: PPhoneMessageItem[] = []
 
-function buildButlerMessages(hud: WorldHudBundle): PPhoneMessageItem[] {
-  const messages: PPhoneMessageItem[] = []
+  input.events.forEach((event) => {
+    const intent = buildMessageIntentFromEvent(event, input.hud.butler.name)
 
-  if (hud.home.available && hud.home.statusLabel.includes("已完成")) {
-    messages.push({
-      id: "butler-home-ready",
-      sender: "butler",
-      senderName: hud.butler.name,
-      text: "家园已经整理完成。我会继续维护环境，观察宠物的状态变化。",
-      timeLabel: hud.world.timeLabel,
-    })
+    if (!intent) return
+
+    if (intent.channel === "butler") {
+      butlerMessages.push(toMessageItem(intent))
+      return
+    }
+
+    if (intent.channel === "world-notice") {
+      worldMessages.push(toMessageItem(intent))
+    }
+  })
+
+  return {
+    butlerMessages: butlerMessages.slice(0, 6),
+    worldMessages: worldMessages.slice(0, 8),
   }
+}
 
+function buildFallbackButlerMessages(hud: WorldHudBundle): PPhoneMessageItem[] {
   if (hud.pet.available) {
-    messages.push({
-      id: `butler-pet-${hud.pet.actionLabel}-${hud.pet.moodLabel}`,
-      sender: "butler",
-      senderName: hud.butler.name,
-      text: `宠物现在处于「${hud.pet.actionLabel}」状态，情绪表现为「${hud.pet.moodLabel}」。我会保持观察，不会替它做决定。`,
-      timeLabel: hud.world.timeLabel,
-    })
+    return [
+      {
+        id: "butler-pet-born-status",
+        sender: "butler",
+        senderName: hud.butler.name,
+        text: "宠物目前已经进入自主活动阶段。我会继续观察它的状态，但不会替它做决定。",
+        timeLabel: hud.world.timeLabel,
+      },
+    ]
   }
 
-  if (messages.length === 0) {
-    messages.push({
-      id: "butler-initial-status",
+  return [
+    {
+      id: "butler-incubator-status",
       sender: "butler",
       senderName: hud.butler.name,
       text: "我会先维持孵化器和周围环境的稳定。有重要变化时，我再发消息给你。",
       timeLabel: hud.world.timeLabel,
-    })
-  }
-
-  return messages.slice(0, 4)
+    },
+  ]
 }
 
 function getLatestText(messages: PPhoneMessageItem[], fallback: string): string {
@@ -134,8 +113,16 @@ export function buildPPhoneMessageThreads(input: {
 }): PPhoneMessageThread[] {
   const readMessageIds = input.readMessageIds ?? new Set<string>()
 
-  const butlerMessages = buildButlerMessages(input.hud)
-  const worldMessages = buildWorldNoticeMessages(input.events)
+  const { butlerMessages: eventButlerMessages, worldMessages } =
+    buildIntentMessages({
+      events: input.events,
+      hud: input.hud,
+    })
+
+  const butlerMessages =
+    eventButlerMessages.length > 0
+      ? eventButlerMessages
+      : buildFallbackButlerMessages(input.hud)
 
   return [
     {
@@ -151,7 +138,7 @@ export function buildPPhoneMessageThreads(input: {
       title: "World Notice",
       subtitle: "世界通知",
       unreadCount: countUnreadMessages(worldMessages, readMessageIds),
-      latestText: getLatestText(worldMessages, "世界暂时没有新通知。"),
+      latestText: getLatestText(worldMessages, "暂无世界公告。"),
       messages: worldMessages,
     },
   ]
