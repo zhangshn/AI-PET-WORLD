@@ -17,11 +17,18 @@ type Props = {
   onMarkRead: (messageIds: string[]) => void
 }
 
-function getBubbleClassName(sender: PPhoneMessageItem["sender"]): string {
-  if (sender === "player") return styles.playerBubble
-  if (sender === "butler") return styles.butlerBubble
+function getBubbleClassName(message: PPhoneMessageItem): string {
+  if (message.isPlaceholder) return styles.placeholderBubble
+  if (message.sender === "player") return styles.playerBubble
+  if (message.sender === "butler") return styles.butlerBubble
 
   return styles.worldBubble
+}
+
+function getReadableMessageIds(thread: PPhoneMessageThread): string[] {
+  return thread.messages
+    .filter((message) => !message.isPlaceholder)
+    .map((message) => message.id)
 }
 
 export default function PPhoneMessageThread({
@@ -32,7 +39,7 @@ export default function PPhoneMessageThread({
   useEffect(() => {
     if (thread.unreadCount <= 0) return
 
-    const messageIds = thread.messages.map((message) => message.id)
+    const messageIds = getReadableMessageIds(thread)
 
     onMarkRead(messageIds)
   }, [thread.id, thread.unreadCount, onMarkRead, thread.messages])
@@ -62,14 +69,13 @@ export default function PPhoneMessageThread({
 
         {thread.messages.map((message) => (
           <article
-            className={`${styles.messageBubble} ${getBubbleClassName(
-              message.sender
-            )}`}
+            className={`${styles.messageBubble} ${getBubbleClassName(message)}`}
             key={message.id}
           >
             <span>{message.senderName}</span>
             <p>{message.text}</p>
-            <small>{message.timeLabel}</small>
+
+            {!message.isPlaceholder && <small>{message.timeLabel}</small>}
           </article>
         ))}
       </div>
