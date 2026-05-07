@@ -2,8 +2,7 @@
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  padding: 18px 16px 22px;
+  padding: 18px 16px 0;
 }
 
 .header {
@@ -50,8 +49,10 @@
 
 .messageList {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: 10px;
+  padding: 14px 0 96px;
 }
 
 .messageBubble,
@@ -103,25 +104,52 @@
   align-self: flex-start;
 }
 
-.presetArea {
+.inputBar {
   position: sticky;
   bottom: 0;
-  display: grid;
-  grid-template-columns: 1fr;
+  display: flex;
   gap: 8px;
-  margin: 6px -16px -22px;
-  padding: 12px 16px 16px;
-  background: rgba(17, 27, 21, 0.94);
+  margin: 0 -16px;
+  padding: 12px 14px 16px;
+  border-top: 1px solid rgba(255, 247, 223, 0.08);
+  background: rgba(17, 27, 21, 0.96);
   backdrop-filter: blur(12px);
 }
 
-.presetArea button {
+.inputBar input {
+  min-width: 0;
+  flex: 1;
+  border: 2px solid rgba(255, 247, 223, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 247, 223, 0.08);
+  color: #fff7df;
+  padding: 10px 13px;
+  font-size: 13px;
+  font-weight: 750;
+  outline: none;
+}
+
+.inputBar input::placeholder {
+  color: rgba(255, 247, 223, 0.42);
+}
+
+.inputBar input:focus {
+  border-color: rgba(255, 231, 169, 0.36);
+  background: rgba(255, 247, 223, 0.11);
+}
+
+.inputBar button {
+  flex: 0 0 auto;
   border: 2px solid rgba(255, 231, 169, 0.18);
   border-radius: 999px;
-  background: rgba(255, 231, 169, 0.1);
+  background: rgba(255, 231, 169, 0.12);
   color: #ffe7a9;
-  padding: 10px 12px;
+  padding: 0 14px;
   font-size: 13px;
   font-weight: 950;
   cursor: pointer;
+}
+
+.inputBar button:hover {
+  background: rgba(255, 231, 169, 0.18);
 }

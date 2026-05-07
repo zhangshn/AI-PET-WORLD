@@ -219,7 +219,6 @@ export default function PPhoneRouter({ world, hud }: Props) {
     return (
       <PPhoneMessageThread
         thread={findThreadOrFallback(route.threadId, messageThreads)}
-        hud={hud}
         onBack={() =>
           setRoute({
             screen: "messages",
