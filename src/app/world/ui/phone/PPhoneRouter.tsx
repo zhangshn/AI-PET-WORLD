@@ -35,6 +35,8 @@ import PPhonePetApp from "./pet/PPhonePetApp"
 import PPhoneProfileApp from "./profile/PPhoneProfileApp"
 import PPhoneHomeApp from "./home-app/PPhoneHomeApp"
 import PPhoneSettingsApp from "./settings/PPhoneSettingsApp"
+import PPhoneWeatherApp from "./weather/PPhoneWeatherApp"
+import PPhoneCalendarApp from "./calendar/PPhoneCalendarApp"
 
 type Props = {
   world: WorldEngineViewState
@@ -124,6 +126,18 @@ function toAppRoute(appId: PPhoneAppId): PPhoneRoute {
   if (appId === "homeApp") {
     return {
       screen: "homeApp",
+    }
+  }
+
+  if (appId === "weather") {
+    return {
+      screen: "weather",
+    }
+  }
+
+  if (appId === "calendar") {
+    return {
+      screen: "calendar",
     }
   }
 
@@ -220,6 +234,21 @@ export default function PPhoneRouter({ world, hud }: Props) {
         onOpenApp={openApp}
       />
     )
+  }
+
+  if (route.screen === "weather") {
+    return (
+      <PPhoneWeatherApp
+        weatherLabel={hud.world.weatherLabel}
+        periodLabel={hud.world.periodLabel}
+        worldTimeLabel={hud.world.timeLabel}
+        onBack={goHome}
+      />
+    )
+  }
+
+  if (route.screen === "calendar") {
+    return <PPhoneCalendarApp onBack={goHome} />
   }
 
   if (route.screen === "messages") {

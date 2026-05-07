@@ -393,3 +393,93 @@
     height: 54px;
   }
 }
+
+.hourHand,
+.minuteHand,
+.secondHand {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  display: block;
+  transform-origin: 50% 100%;
+}
+
+.hourHand {
+  width: 5px;
+  height: 34px;
+  background: #2d3427;
+}
+
+.minuteHand {
+  width: 4px;
+  height: 50px;
+  background: #2d3427;
+}
+
+.secondHand {
+  width: 2px;
+  height: 52px;
+  background: #db8d2e;
+}
+
+.calendarWidget {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 0;
+  background: #102016;
+  color: #fff2c8;
+  padding: 12px 14px;
+  cursor: pointer;
+  text-align: left;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 244, 200, 0.08),
+    0 6px 0 rgba(0, 0, 0, 0.22);
+}
+
+.calendarWidget:hover {
+  background: #182a1d;
+  filter: brightness(1.06);
+}
+
+.calendarWidget span {
+  color: rgba(255, 231, 169, 0.76);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+}
+
+.calendarWidget strong {
+  color: #fff2c8;
+  font-size: 19px;
+  font-weight: 950;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.42);
+}
+
+.calendarWidget em {
+  color: rgba(255, 247, 223, 0.58);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.weatherWidget {
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  cursor: pointer;
+  text-align: center;
+}
+
+.weatherWidget:hover .weatherCard {
+  filter: brightness(1.06);
+}
+
+.hiddenWorldTime {
+  display: none;
+}

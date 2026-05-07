@@ -1,7 +1,12 @@
+"use client"
+
 /**
  * 当前文件负责：展示 P-Phone 桌面应用入口。
  */
 
+import { useEffect, useMemo, useState } from "react"
+
+import type { CSSProperties } from "react"
 import type { PPhoneAppId, PPhoneAppShortcut } from "../PPhoneTypes"
 
 import PPhoneIcon from "../PPhoneIcon"
@@ -23,16 +28,57 @@ function findShortcut(
   return shortcuts.find((shortcut) => shortcut.id === appId)
 }
 
-function buildSystemDateLabel(): string {
-  const now = new Date()
-
+function buildSystemDateLabel(date: Date): string {
   return new Intl.DateTimeFormat("zh-CN", {
     month: "numeric",
     day: "numeric",
     weekday: "short",
   })
-    .format(now)
+    .format(date)
     .replace(/\s/g, "")
+}
+
+function buildCalendarTitle(date: Date): string {
+  return new Intl.DateTimeFormat("zh-CN", {
+    day: "numeric",
+    weekday: "short",
+  })
+    .format(date)
+    .replace(/\s/g, "")
+}
+
+function buildRealTimeLabel(date: Date): string {
+  return new Intl.DateTimeFormat("zh-CN", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date)
+}
+
+function buildClockHandStyles(date: Date): {
+  hourHandStyle: CSSProperties
+  minuteHandStyle: CSSProperties
+  secondHandStyle: CSSProperties
+} {
+  const seconds = date.getSeconds()
+  const minutes = date.getMinutes()
+  const hours = date.getHours() % 12
+
+  const secondDegrees = seconds * 6
+  const minuteDegrees = minutes * 6 + seconds * 0.1
+  const hourDegrees = hours * 30 + minutes * 0.5
+
+  return {
+    hourHandStyle: {
+      transform: `translate(-50%, -100%) rotate(${hourDegrees}deg)`,
+    },
+    minuteHandStyle: {
+      transform: `translate(-50%, -100%) rotate(${minuteDegrees}deg)`,
+    },
+    secondHandStyle: {
+      transform: `translate(-50%, -100%) rotate(${secondDegrees}deg)`,
+    },
+  }
 }
 
 function formatBadgeCount(count: number): string {
@@ -48,7 +94,23 @@ export default function PPhoneHomeScreen({
   shortcuts,
   onOpenApp,
 }: Props) {
-  const systemDateLabel = buildSystemDateLabel()
+  const [now, setNow] = useState(() => new Date())
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNow(new Date())
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [])
+
+  const systemDateLabel = useMemo(() => buildSystemDateLabel(now), [now])
+  const calendarTitle = useMemo(() => buildCalendarTitle(now), [now])
+  const realTimeLabel = useMemo(() => buildRealTimeLabel(now), [now])
+
+  const { hourHandStyle, minuteHandStyle, secondHandStyle } = useMemo(() => {
+    return buildClockHandStyles(now)
+  }, [now])
 
   const dockShortcuts = [
     findShortcut(shortcuts, "messages"),
@@ -62,7 +124,7 @@ export default function PPhoneHomeScreen({
       <section className={styles.widgetGrid} aria-label="P-Phone 桌面组件">
         <article
           className={styles.clockWidget}
-          aria-label={`时钟，当前世界时间 ${timeLabel}`}
+          aria-label={`真实时钟，当前时间 ${realTimeLabel}`}
         >
           <div className={styles.clockFace}>
             <span className={styles.clockMarkTop}>12</span>
@@ -70,15 +132,21 @@ export default function PPhoneHomeScreen({
             <span className={styles.clockMarkRight}>3</span>
             <span className={styles.clockMarkBottom}>6</span>
 
-            <span className={styles.hourHand} />
-            <span className={styles.minuteHand} />
+            <span className={styles.hourHand} style={hourHandStyle} />
+            <span className={styles.minuteHand} style={minuteHandStyle} />
+            <span className={styles.secondHand} style={secondHandStyle} />
             <span className={styles.clockCenter} />
           </div>
 
           <strong>时钟</strong>
         </article>
 
-        <article className={styles.weatherWidget}>
+        <button
+          className={styles.weatherWidget}
+          type="button"
+          aria-label={`打开天气，当前游戏天气 ${weatherLabel}`}
+          onClick={() => onOpenApp("weather")}
+        >
           <div className={styles.weatherCard}>
             <span>天气</span>
             <strong>{weatherLabel}</strong>
@@ -95,8 +163,19 @@ export default function PPhoneHomeScreen({
           </div>
 
           <strong>天气</strong>
-        </article>
+        </button>
       </section>
+
+      <button
+        className={styles.calendarWidget}
+        type="button"
+        aria-label={`打开日历，今天是 ${calendarTitle}`}
+        onClick={() => onOpenApp("calendar")}
+      >
+        <span>日历</span>
+        <strong>{calendarTitle}</strong>
+        <em>系统日期</em>
+      </button>
 
       <div className={styles.appGrid} aria-label="P-Phone 应用">
         {shortcuts.map((shortcut) => (
@@ -136,6 +215,8 @@ export default function PPhoneHomeScreen({
           </button>
         ))}
       </nav>
+
+      <span className={styles.hiddenWorldTime}>世界时间：{timeLabel}</span>
     </div>
   )
 }

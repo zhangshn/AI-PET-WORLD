@@ -9,6 +9,8 @@ export type PPhoneAppId =
   | "profile"
   | "homeApp"
   | "settings"
+  | "weather"
+  | "calendar"
 
 export type PPhoneContactId = "butler" | "p-system" | "world-notice"
 
@@ -50,6 +52,12 @@ export type PPhoneRoute =
     }
   | {
       screen: "settings"
+    }
+  | {
+      screen: "weather"
+    }
+  | {
+      screen: "calendar"
     }
 
 export type PPhoneIconKind =
