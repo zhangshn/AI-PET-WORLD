@@ -12,12 +12,18 @@ type Props = {
   onToggle: () => void
 }
 
+function formatUnreadCount(unreadCount: number): string {
+  if (unreadCount > 99) return "99+"
+
+  return String(Math.max(0, unreadCount))
+}
+
 export default function PPhoneLauncher({
   isOpen,
   unreadCount,
   onToggle,
 }: Props) {
-  const displayUnreadCount = Math.min(99, Math.max(0, unreadCount))
+  const hasUnread = unreadCount > 0
 
   return (
     <button
@@ -25,7 +31,18 @@ export default function PPhoneLauncher({
       type="button"
       aria-pressed={isOpen}
       aria-label={isOpen ? "收起 P-Phone" : "打开 P-Phone"}
-      onClick={onToggle}
+      onPointerDown={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        onToggle()
+      }}
+      onKeyDown={(event) => {
+        if (event.key !== "Enter" && event.key !== " ") return
+
+        event.preventDefault()
+        event.stopPropagation()
+        onToggle()
+      }}
     >
       <span className={styles.phoneBody}>
         <span className={styles.speakerSlot} />
@@ -35,9 +52,7 @@ export default function PPhoneLauncher({
         <span className={styles.homeBar} />
       </span>
 
-      {displayUnreadCount > 0 && (
-        <span className={styles.badge}>{displayUnreadCount}</span>
-      )}
+      {hasUnread && <span className={styles.badge}>{formatUnreadCount(unreadCount)}</span>}
     </button>
   )
 }
