@@ -1,0 +1,139 @@
+.page {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 16px 22px;
+}
+
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: -18px -16px 0;
+  padding: 14px 16px 12px;
+  background: rgba(17, 27, 21, 0.94);
+  backdrop-filter: blur(12px);
+}
+
+.backButton {
+  width: 38px;
+  height: 38px;
+  border: 2px solid rgba(255, 247, 223, 0.13);
+  border-radius: 999px;
+  background: rgba(255, 247, 223, 0.08);
+  color: #fff7df;
+  font-size: 34px;
+  line-height: 0.8;
+  cursor: pointer;
+}
+
+.header p {
+  margin: 0 0 2px;
+  color: rgba(255, 231, 169, 0.66);
+  font-size: 10px;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.header h2 {
+  margin: 0;
+  color: #fff7df;
+  font-size: 22px;
+  font-weight: 950;
+  letter-spacing: -0.04em;
+}
+
+.threadList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.threadItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 2px solid rgba(255, 247, 223, 0.11);
+  border-radius: 22px;
+  background: rgba(5, 12, 8, 0.28);
+  color: #fff7df;
+  padding: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.threadItem:hover {
+  background: rgba(255, 247, 223, 0.08);
+}
+
+.avatar {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: rgba(255, 231, 169, 0.14);
+  color: #ffe7a9;
+  font-size: 18px;
+  font-weight: 950;
+}
+
+.threadBody {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.threadTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.threadTop strong {
+  overflow: hidden;
+  color: #fff7df;
+  font-size: 15px;
+  font-weight: 950;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.threadTop em {
+  min-width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #cf4638;
+  color: #fff7df;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 950;
+}
+
+.threadBody small {
+  color: rgba(255, 231, 169, 0.65);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.preview {
+  overflow: hidden;
+  color: rgba(255, 247, 223, 0.58);
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

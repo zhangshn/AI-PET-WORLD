@@ -1,0 +1,189 @@
+.icon {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  display: inline-block;
+  color: #ffe7a9;
+}
+
+.partA,
+.partB,
+.partC {
+  position: absolute;
+  display: block;
+  box-sizing: border-box;
+}
+
+.messages .partA {
+  left: 4px;
+  top: 7px;
+  width: 22px;
+  height: 16px;
+  border: 3px solid currentColor;
+  border-radius: 4px;
+}
+
+.messages .partB {
+  left: 7px;
+  top: 10px;
+  width: 16px;
+  height: 10px;
+  border-left: 3px solid currentColor;
+  border-bottom: 3px solid currentColor;
+  transform: rotate(-45deg);
+}
+
+.contacts .partA {
+  left: 9px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border: 3px solid currentColor;
+  border-radius: 999px;
+}
+
+.contacts .partB {
+  left: 5px;
+  bottom: 3px;
+  width: 20px;
+  height: 13px;
+  border: 3px solid currentColor;
+  border-radius: 999px 999px 5px 5px;
+}
+
+.pet .partA {
+  left: 11px;
+  top: 11px;
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.pet .partB {
+  left: 5px;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.pet .partC {
+  right: 5px;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.profile .partA {
+  left: 6px;
+  top: 6px;
+  width: 18px;
+  height: 18px;
+  border: 3px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.profile .partB {
+  left: 12px;
+  top: 12px;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.home .partA {
+  left: 5px;
+  top: 13px;
+  width: 20px;
+  height: 13px;
+  border: 3px solid currentColor;
+  border-top: 0;
+  border-radius: 3px;
+}
+
+.home .partB {
+  left: 7px;
+  top: 6px;
+  width: 16px;
+  height: 16px;
+  border-left: 3px solid currentColor;
+  border-top: 3px solid currentColor;
+  transform: rotate(45deg);
+}
+
+.settings .partA {
+  left: 8px;
+  top: 8px;
+  width: 14px;
+  height: 14px;
+  border: 3px solid currentColor;
+  border-radius: 999px;
+}
+
+.settings .partB {
+  left: 13px;
+  top: 2px;
+  width: 4px;
+  height: 26px;
+  background: currentColor;
+}
+
+.settings .partC {
+  left: 2px;
+  top: 13px;
+  width: 26px;
+  height: 4px;
+  background: currentColor;
+}
+
+.phone .partA {
+  left: 7px;
+  top: 4px;
+  width: 16px;
+  height: 22px;
+  border: 3px solid currentColor;
+  border-radius: 8px;
+  transform: rotate(-12deg);
+}
+
+.phone .partB {
+  left: 12px;
+  top: 20px;
+  width: 6px;
+  height: 3px;
+  border-radius: 999px;
+  background: currentColor;
+}
+
+.system .partA,
+.world .partA {
+  left: 5px;
+  top: 5px;
+  width: 20px;
+  height: 20px;
+  border: 3px solid currentColor;
+  border-radius: 999px;
+}
+
+.system .partB,
+.world .partB {
+  left: 13px;
+  top: 2px;
+  width: 4px;
+  height: 26px;
+  background: currentColor;
+}
+
+.system .partC,
+.world .partC {
+  left: 2px;
+  top: 13px;
+  width: 26px;
+  height: 4px;
+  background: currentColor;
+}
