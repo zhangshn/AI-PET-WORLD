@@ -2,10 +2,11 @@
   position: absolute;
   right: 40px;
   bottom: 94px;
-  z-index: 44;
+  z-index: 78;
   width: min(392px, calc(100vw - 48px));
   max-height: calc(100vh - 122px);
   color: #fff7df;
+  pointer-events: auto;
   filter: drop-shadow(-12px 24px 34px rgba(0, 0, 0, 0.42));
 }
 
@@ -21,7 +22,6 @@
     inset 0 0 0 4px rgba(255, 247, 223, 0.04);
 }
 
-/* 像素设备的阶梯边，不模仿现实手机外形 */
 .deviceFrame::before,
 .deviceFrame::after {
   content: "";
@@ -77,6 +77,7 @@
   box-shadow:
     inset 18px 6px 0 rgba(255, 255, 255, 0.06),
     inset 0 -4px 0 rgba(255, 255, 255, 0.03);
+  pointer-events: none;
 }
 
 .closeButton {
