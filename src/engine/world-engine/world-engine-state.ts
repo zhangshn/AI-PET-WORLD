@@ -13,6 +13,7 @@ import type { PetState } from "../../types/pet"
 
 import type { WorldEcologyState } from "../../world/ecology/ecology-engine"
 import type { WorldRuntimeState } from "../../world/runtime/world-runtime"
+import type { WorldProgressionState } from "../../world/progression/world-progression-gateway"
 
 export type WorldState = {
   tick: number
@@ -30,6 +31,7 @@ export type WorldState = {
 
   ecology: WorldEcologyState
   worldRuntime: WorldRuntimeState
+  worldProgression: WorldProgressionState
 }
 
 export type BuildWorldStateInput = {
@@ -47,6 +49,7 @@ export type BuildWorldStateInput = {
 
   worldStimuli: WorldStimulus[]
   worldRuntime: WorldRuntimeState
+  worldProgression: WorldProgressionState
 }
 
 export function buildWorldState(
@@ -69,5 +72,6 @@ export function buildWorldState(
 
     ecology: input.worldRuntime.ecology,
     worldRuntime: input.worldRuntime,
+    worldProgression: input.worldProgression,
   }
 }

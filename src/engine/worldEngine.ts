@@ -172,6 +172,7 @@ export class WorldEngine {
 
         worldStimuli: this.worldStimuli,
         worldRuntime: this.worldRuntime,
+        worldProgression: this.worldProgressionSystem.getState(),
       })
     )
   }
@@ -229,6 +230,10 @@ export class WorldEngine {
     return this.worldRuntime
   }
 
+  getWorldProgression() {
+    return this.worldProgressionSystem.getState()
+  }
+  
   reset() {
     this.stop()
     this.tick = 0

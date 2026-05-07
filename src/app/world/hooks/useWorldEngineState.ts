@@ -20,6 +20,7 @@ import type { HomeState } from "@/types/home"
 import type { IncubatorState } from "@/types/incubator"
 import type { WorldEcologyState } from "@/world/ecology/ecology-engine"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
+import type { WorldProgressionState } from "@/world/progression/world-progression-gateway"
 
 export type WorldEngineViewState = {
   time: TimeState | null
@@ -32,6 +33,7 @@ export type WorldEngineViewState = {
   tick: number
   ecology: WorldEcologyState | null
   worldRuntime: WorldRuntimeState | null
+  worldProgression: WorldProgressionState | null
   showDeveloperPanel: boolean
   toggleDeveloperPanel: () => void
   setButlerProfile: (profile: ButlerProfile | null) => void
@@ -49,6 +51,7 @@ function readWorldEngineState() {
     tick: worldEngine.getTick(),
     ecology: worldEngine.getEcology(),
     worldRuntime: worldEngine.getWorldRuntime(),
+    worldProgression: worldEngine.getWorldProgression(),
   }
 }
 
@@ -76,6 +79,10 @@ export function useWorldEngineState(): WorldEngineViewState {
   )
   const [worldRuntime, setWorldRuntime] =
     useState<WorldRuntimeState | null>(() => worldEngine.getWorldRuntime())
+  const [worldProgression, setWorldProgression] =
+    useState<WorldProgressionState | null>(() =>
+      worldEngine.getWorldProgression()
+    )
   const [showDeveloperPanel, setShowDeveloperPanel] = useState(false)
 
   const syncWorld = useCallback(() => {
@@ -91,6 +98,7 @@ export function useWorldEngineState(): WorldEngineViewState {
     setTick(nextState.tick)
     setEcology(nextState.ecology)
     setWorldRuntime(nextState.worldRuntime)
+    setWorldProgression(nextState.worldProgression)
   }, [])
 
   const toggleDeveloperPanel = useCallback(() => {
@@ -144,6 +152,7 @@ export function useWorldEngineState(): WorldEngineViewState {
     tick,
     ecology,
     worldRuntime,
+    worldProgression,
     showDeveloperPanel,
     toggleDeveloperPanel,
     setButlerProfile,

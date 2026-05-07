@@ -13,6 +13,7 @@ import WorldRuntimePanel from "../../components/WorldRuntimePanel"
 import WorldEcologyPanel from "../../components/WorldEcologyPanel"
 import WorldStimulusPanel from "../../components/WorldStimulusPanel"
 import AiDataDebugPanel from "./AiDataDebugPanel"
+import WorldProgressionPanel from "./WorldProgressionPanel"
 
 import styles from "@/styles/world-styles/layout/developer-dock.module.css"
 
@@ -36,6 +37,8 @@ export default function DeveloperDock({ world }: Props) {
 
       <div className={styles.grid}>
         <ButlerProfileSetupPanel world={world} />
+
+        <WorldProgressionPanel progression={world.worldProgression} />
 
         <AiDataDebugPanel />
 
