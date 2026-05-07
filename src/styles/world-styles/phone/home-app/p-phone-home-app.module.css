@@ -69,10 +69,11 @@
   border: 0;
   border-radius: 0;
   background:
-    linear-gradient(90deg, rgba(255, 244, 200, 0.02), transparent),
-    rgba(9, 18, 12, 0.76);
+    linear-gradient(135deg, rgba(255, 244, 200, 0.035), transparent 42%),
+    rgba(9, 18, 12, 0.8);
   box-shadow:
     inset 0 0 0 3px rgba(255, 244, 200, 0.055),
+    inset 0 -18px 36px rgba(0, 0, 0, 0.16),
     0 6px 0 rgba(0, 0, 0, 0.18);
 }
 
@@ -110,8 +111,8 @@
 .iconBox {
   --icon-cut: #102016;
 
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
@@ -119,13 +120,14 @@
   background: #33402f;
   color: #fff2c8;
   box-shadow:
-    inset 0 0 0 7px rgba(255, 244, 200, 0.06),
-    0 4px 0 rgba(0, 0, 0, 0.18);
+    inset 0 0 0 7px rgba(255, 244, 200, 0.07),
+    inset 0 -10px 0 rgba(0, 0, 0, 0.1),
+    0 4px 0 rgba(0, 0, 0, 0.2);
 }
 
 .homeIconBox {
-  width: 58px;
-  height: 58px;
+  width: 60px;
+  height: 60px;
   background: #a66737;
 }
 
@@ -153,17 +155,17 @@
 }
 
 .moduleTile {
-  min-height: 104px;
+  min-height: 118px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 11px;
+  padding: 12px;
 }
 
 .moduleTile strong {
   display: block;
   color: #fff2c8;
-  font-size: 19px;
+  font-size: 20px;
   font-weight: 950;
   line-height: 1;
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.36);
@@ -180,7 +182,7 @@
 .moduleTile small {
   display: block;
   margin-top: 4px;
-  color: rgba(255, 247, 223, 0.48);
+  color: rgba(255, 247, 223, 0.5);
   font-size: 10px;
   font-weight: 800;
 }
@@ -213,20 +215,27 @@
 .facilityGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 9px;
+  gap: 10px;
 }
 
 .facilityTile {
-  min-height: 116px;
+  min-height: 128px;
   display: flex;
   flex-direction: column;
-  padding: 10px;
-  background: rgba(5, 12, 8, 0.36);
+  padding: 11px;
+  background:
+    linear-gradient(135deg, rgba(255, 244, 200, 0.025), transparent 46%),
+    rgba(5, 12, 8, 0.44);
+}
+
+.facilityTile .iconBox {
+  width: 44px;
+  height: 44px;
 }
 
 .facilityTileText {
-  min-height: 46px;
-  margin-top: 8px;
+  min-height: 44px;
+  margin-top: 9px;
 }
 
 .facilityTileText strong {
@@ -245,13 +254,18 @@
 }
 
 .facilityTile em {
-  display: block;
+  display: inline-flex;
+  align-self: flex-end;
+  justify-content: center;
+  min-width: 34px;
   margin-top: auto;
-  color: rgba(255, 231, 169, 0.72);
-  font-size: 11px;
+  padding: 4px 6px;
+  background: rgba(255, 244, 200, 0.06);
+  color: rgba(255, 231, 169, 0.82);
+  font-size: 10px;
   font-style: normal;
   font-weight: 950;
-  text-align: right;
+  box-shadow: inset 0 0 0 2px rgba(255, 244, 200, 0.035);
 }
 
 .emptyWorldProgress {
