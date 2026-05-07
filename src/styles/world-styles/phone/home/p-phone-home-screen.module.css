@@ -2,8 +2,9 @@
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  padding: 22px 18px 26px;
+  gap: 18px;
+  padding: 18px 16px 22px;
+  overflow: hidden;
   background:
     linear-gradient(rgba(255, 244, 200, 0.025) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 244, 200, 0.025) 1px, transparent 1px),
@@ -25,7 +26,16 @@
 .clockWidget,
 .weatherWidget {
   min-width: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0;
+  cursor: default;
   text-align: center;
+}
+
+.weatherWidget {
+  cursor: pointer;
 }
 
 .clockWidget > strong,
@@ -38,8 +48,12 @@
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.44);
 }
 
+/* 真实时钟组件：所有定位都强制收口在 clockFace 内 */
 .clockFace {
   position: relative;
+  isolation: isolate;
+  contain: layout paint;
+  overflow: hidden;
   aspect-ratio: 1;
   border: 8px solid rgba(255, 244, 214, 0.8);
   background:
@@ -56,69 +70,79 @@
   content: "";
   position: absolute;
   inset: 18px;
+  z-index: 1;
   border: 4px solid #2d3427;
   border-radius: 999px;
 }
 
-.clockMarkTop,
-.clockMarkLeft,
-.clockMarkRight,
-.clockMarkBottom {
+.clockFace > .clockMarkTop,
+.clockFace > .clockMarkLeft,
+.clockFace > .clockMarkRight,
+.clockFace > .clockMarkBottom {
   position: absolute;
   z-index: 2;
   color: #2d3427;
   font-size: 17px;
   font-weight: 950;
   line-height: 1;
+  pointer-events: none;
 }
 
-.clockMarkTop {
+.clockFace > .clockMarkTop {
   left: 50%;
   top: 25px;
   transform: translateX(-50%);
 }
 
-.clockMarkLeft {
+.clockFace > .clockMarkLeft {
   left: 25px;
   top: 50%;
   transform: translateY(-50%);
 }
 
-.clockMarkRight {
+.clockFace > .clockMarkRight {
   right: 25px;
   top: 50%;
   transform: translateY(-50%);
 }
 
-.clockMarkBottom {
+.clockFace > .clockMarkBottom {
   left: 50%;
   bottom: 25px;
   transform: translateX(-50%);
 }
 
-.hourHand,
-.minuteHand {
+.clockFace > .hourHand,
+.clockFace > .minuteHand,
+.clockFace > .secondHand {
   position: absolute;
   left: 50%;
   top: 50%;
   z-index: 3;
   display: block;
-  width: 5px;
   transform-origin: 50% 100%;
+  pointer-events: none;
+}
+
+.clockFace > .hourHand {
+  width: 5px;
+  height: 34px;
   background: #2d3427;
 }
 
-.hourHand {
-  height: 38px;
-  transform: translate(-50%, -100%) rotate(34deg);
+.clockFace > .minuteHand {
+  width: 4px;
+  height: 50px;
+  background: #2d3427;
 }
 
-.minuteHand {
-  height: 54px;
-  transform: translate(-50%, -100%) rotate(220deg);
+.clockFace > .secondHand {
+  width: 2px;
+  height: 52px;
+  background: #db8d2e;
 }
 
-.clockCenter {
+.clockFace > .clockCenter {
   position: absolute;
   left: 50%;
   top: 50%;
@@ -127,13 +151,20 @@
   height: 10px;
   transform: translate(-50%, -50%);
   background: #db8d2e;
+  pointer-events: none;
 }
 
-/* 天气组件：修正文字和图标打架的问题 */
+/* 天气组件 */
+.weatherWidget:hover .weatherCard {
+  filter: brightness(1.06);
+}
+
 .weatherCard {
   position: relative;
-  aspect-ratio: 1;
+  isolation: isolate;
+  contain: layout paint;
   overflow: hidden;
+  aspect-ratio: 1;
   border: 8px solid rgba(15, 27, 18, 0.9);
   background:
     linear-gradient(135deg, rgba(255, 244, 200, 0.1), transparent 38%),
@@ -221,11 +252,56 @@
   height: 14px;
 }
 
+/* 日历组件 */
+.calendarWidget {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 0;
+  background: #102016;
+  color: #fff2c8;
+  padding: 12px 14px;
+  cursor: pointer;
+  text-align: left;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 244, 200, 0.08),
+    0 6px 0 rgba(0, 0, 0, 0.22);
+}
+
+.calendarWidget:hover {
+  background: #182a1d;
+  filter: brightness(1.06);
+}
+
+.calendarWidget span {
+  color: rgba(255, 231, 169, 0.76);
+  font-size: 12px;
+  font-weight: 950;
+  letter-spacing: 0.12em;
+}
+
+.calendarWidget strong {
+  color: #fff2c8;
+  font-size: 19px;
+  font-weight: 950;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.42);
+}
+
+.calendarWidget em {
+  color: rgba(255, 247, 223, 0.58);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 850;
+}
+
+/* App 图标区 */
 .appGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 26px 16px;
-  padding: 6px 2px 0;
+  gap: 22px 16px;
+  padding: 2px 2px 0;
 }
 
 .appButton {
@@ -321,6 +397,7 @@
   display: none;
 }
 
+/* 快捷栏 */
 .quickDock {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -363,9 +440,13 @@
   filter: brightness(1.1);
 }
 
+.hiddenWorldTime {
+  display: none;
+}
+
 @media (max-width: 720px) {
   .homeScreen {
-    gap: 18px;
+    gap: 16px;
     padding: 18px 14px 22px;
   }
 
@@ -385,101 +466,11 @@
   }
 
   .appGrid {
-    gap: 22px 12px;
+    gap: 20px 12px;
   }
 
   .iconWrap {
     width: 54px;
     height: 54px;
   }
-}
-
-.hourHand,
-.minuteHand,
-.secondHand {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  z-index: 3;
-  display: block;
-  transform-origin: 50% 100%;
-}
-
-.hourHand {
-  width: 5px;
-  height: 34px;
-  background: #2d3427;
-}
-
-.minuteHand {
-  width: 4px;
-  height: 50px;
-  background: #2d3427;
-}
-
-.secondHand {
-  width: 2px;
-  height: 52px;
-  background: #db8d2e;
-}
-
-.calendarWidget {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 10px;
-  border: 0;
-  border-radius: 0;
-  background: #102016;
-  color: #fff2c8;
-  padding: 12px 14px;
-  cursor: pointer;
-  text-align: left;
-  box-shadow:
-    inset 0 0 0 3px rgba(255, 244, 200, 0.08),
-    0 6px 0 rgba(0, 0, 0, 0.22);
-}
-
-.calendarWidget:hover {
-  background: #182a1d;
-  filter: brightness(1.06);
-}
-
-.calendarWidget span {
-  color: rgba(255, 231, 169, 0.76);
-  font-size: 12px;
-  font-weight: 950;
-  letter-spacing: 0.12em;
-}
-
-.calendarWidget strong {
-  color: #fff2c8;
-  font-size: 19px;
-  font-weight: 950;
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.42);
-}
-
-.calendarWidget em {
-  color: rgba(255, 247, 223, 0.58);
-  font-size: 11px;
-  font-style: normal;
-  font-weight: 850;
-}
-
-.weatherWidget {
-  min-width: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  padding: 0;
-  cursor: pointer;
-  text-align: center;
-}
-
-.weatherWidget:hover .weatherCard {
-  filter: brightness(1.06);
-}
-
-.hiddenWorldTime {
-  display: none;
 }
