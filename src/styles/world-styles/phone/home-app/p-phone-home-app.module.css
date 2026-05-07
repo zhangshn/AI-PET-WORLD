@@ -61,11 +61,10 @@
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.42);
 }
 
-.heroCard,
+.homeHero,
 .phoneSection,
-.moduleCard,
-.homeStatCard,
-.facilityMiniCard,
+.moduleTile,
+.facilityTile,
 .emptyWorldProgress {
   border: 0;
   border-radius: 0;
@@ -77,33 +76,66 @@
     0 6px 0 rgba(0, 0, 0, 0.18);
 }
 
-.heroCard {
+.homeHero {
+  display: flex;
+  align-items: center;
+  gap: 13px;
   padding: 14px;
 }
 
-.heroCard p {
-  margin: 0 0 6px;
+.homeHeroIcon {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 auto;
+  position: relative;
+  background: #b5793c;
+  box-shadow:
+    inset 0 0 0 8px rgba(255, 244, 200, 0.08),
+    0 5px 0 rgba(0, 0, 0, 0.2);
+}
+
+.homeHeroIcon::before {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: 17px;
+  width: 28px;
+  height: 24px;
+  background: #fff2c8;
+  clip-path: polygon(50% 0, 100% 40%, 100% 100%, 0 100%, 0 40%);
+}
+
+.homeHeroIcon i {
+  position: absolute;
+  left: 22px;
+  bottom: 17px;
+  width: 14px;
+  height: 13px;
+  background: #b5793c;
+}
+
+.homeHero p {
+  margin: 0 0 4px;
   color: rgba(255, 231, 169, 0.72);
   font-size: 11px;
   font-weight: 950;
   letter-spacing: 0.08em;
 }
 
-.heroCard h3 {
+.homeHero h3 {
   margin: 0;
   color: #fff2c8;
-  font-size: 25px;
+  font-size: 26px;
   font-weight: 950;
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.42);
 }
 
-.heroCard span {
+.homeHero span {
   display: block;
-  margin-top: 8px;
-  color: rgba(255, 247, 223, 0.68);
-  font-size: 13px;
-  font-weight: 750;
-  line-height: 1.5;
+  margin-top: 5px;
+  color: rgba(255, 247, 223, 0.62);
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .moduleGrid {
@@ -112,35 +144,180 @@
   gap: 10px;
 }
 
-.moduleCard {
-  min-height: 78px;
+.moduleTile {
+  min-height: 104px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   padding: 11px;
 }
 
-.moduleCard small,
-.homeStatCard span {
-  display: block;
-  margin-bottom: 6px;
-  color: rgba(255, 231, 169, 0.66);
-  font-size: 10px;
-  font-weight: 950;
-  letter-spacing: 0.08em;
-}
-
-.moduleCard strong {
+.moduleTile strong {
   display: block;
   color: #fff2c8;
-  font-size: 20px;
+  font-size: 19px;
   font-weight: 950;
+  line-height: 1;
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.36);
 }
 
-.moduleCard span {
+.moduleTile span {
   display: block;
-  margin-top: 5px;
-  color: rgba(255, 247, 223, 0.52);
-  font-size: 11px;
-  font-weight: 750;
+  margin-top: 7px;
+  color: #ffe7a9;
+  font-size: 12px;
+  font-weight: 950;
+}
+
+.moduleTile small {
+  display: block;
+  margin-top: 4px;
+  color: rgba(255, 247, 223, 0.48);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.pixelIcon {
+  width: 38px;
+  height: 38px;
+  position: relative;
+  display: block;
+  margin-bottom: 9px;
+  background: #33402f;
+  box-shadow:
+    inset 0 0 0 6px rgba(255, 244, 200, 0.06),
+    0 4px 0 rgba(0, 0, 0, 0.18);
+}
+
+.pixelIcon i,
+.pixelIcon b {
+  position: absolute;
+  display: block;
+  content: "";
+}
+
+.icon_home {
+  background: #a66737;
+}
+
+.icon_home i {
+  left: 9px;
+  top: 14px;
+  width: 20px;
+  height: 16px;
+  background: #fff2c8;
+  clip-path: polygon(50% 0, 100% 42%, 100% 100%, 0 100%, 0 42%);
+}
+
+.icon_home b {
+  left: 16px;
+  top: 21px;
+  width: 7px;
+  height: 9px;
+  background: #a66737;
+}
+
+.icon_world {
+  background: #557e4c;
+}
+
+.icon_world i {
+  left: 9px;
+  top: 9px;
+  width: 20px;
+  height: 20px;
+  border: 4px solid #fff2c8;
+  border-radius: 999px;
+}
+
+.icon_world b {
+  left: 17px;
+  top: 5px;
+  width: 4px;
+  height: 28px;
+  background: #fff2c8;
+}
+
+.icon_open {
+  background: #5c9d53;
+}
+
+.icon_open i {
+  left: 10px;
+  top: 10px;
+  width: 18px;
+  height: 18px;
+  background: #fff2c8;
+}
+
+.icon_open b {
+  left: 14px;
+  top: 14px;
+  width: 10px;
+  height: 10px;
+  background: #5c9d53;
+}
+
+.icon_build {
+  background: #b88b36;
+}
+
+.icon_build i {
+  left: 9px;
+  top: 24px;
+  width: 20px;
+  height: 5px;
+  background: #fff2c8;
+}
+
+.icon_build b {
+  left: 13px;
+  top: 10px;
+  width: 12px;
+  height: 16px;
+  background: #fff2c8;
+}
+
+.icon_future {
+  background: #6e7580;
+}
+
+.icon_future i {
+  left: 9px;
+  top: 9px;
+  width: 20px;
+  height: 20px;
+  border: 4px solid #d8e0df;
+}
+
+.icon_future b {
+  left: 17px;
+  top: 3px;
+  width: 4px;
+  height: 32px;
+  background: #d8e0df;
+  transform: rotate(45deg);
+}
+
+.icon_eco {
+  background: #597f4a;
+}
+
+.icon_eco i {
+  left: 10px;
+  top: 8px;
+  width: 8px;
+  height: 22px;
+  background: #fff2c8;
+  transform: rotate(35deg);
+}
+
+.icon_eco b {
+  right: 8px;
+  bottom: 9px;
+  width: 12px;
+  height: 12px;
+  background: #ffd45f;
 }
 
 .phoneSection {
@@ -149,7 +326,7 @@
 
 .sectionTitle {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 11px;
@@ -163,135 +340,86 @@
 }
 
 .sectionTitle span {
-  max-width: 58%;
   color: rgba(255, 247, 223, 0.5);
   font-size: 10px;
-  font-weight: 750;
-  line-height: 1.45;
-  text-align: right;
+  font-weight: 850;
 }
 
-.homeStatGrid {
+.facilityGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 9px;
 }
 
-.homeStatCard {
+.facilityTile {
+  min-height: 116px;
+  display: flex;
+  flex-direction: column;
   padding: 10px;
   background: rgba(5, 12, 8, 0.36);
 }
 
-.homeStatCard strong {
+.facilityPixelIcon {
+  width: 34px;
+  height: 34px;
+  position: relative;
+  margin-bottom: 8px;
+  background: #33402f;
+  box-shadow: inset 0 0 0 6px rgba(255, 244, 200, 0.06);
+}
+
+.facilityPixelIcon i {
+  position: absolute;
+  left: 9px;
+  top: 9px;
+  width: 16px;
+  height: 16px;
+  background: #fff2c8;
+}
+
+.facilityIconActive {
+  background: #5c9d53;
+}
+
+.facilityIconBuilding {
+  background: #b88b36;
+}
+
+.facilityIconPlanning {
+  background: #5f7691;
+}
+
+.facilityIconLocked {
+  background: #555b5f;
+}
+
+.facilityTileText {
+  min-height: 46px;
+}
+
+.facilityTileText strong {
   display: block;
-  color: #fff7df;
-  font-size: 13px;
-  font-weight: 950;
-}
-
-.facilityModuleList {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.facilityGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.facilityGroupTitle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 2px;
-}
-
-.facilityGroupTitle strong {
-  color: #ffe7a9;
+  color: #fff2c8;
   font-size: 12px;
   font-weight: 950;
 }
 
-.facilityGroupTitle span {
-  min-width: 24px;
-  height: 22px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 244, 200, 0.06);
-  color: rgba(255, 247, 223, 0.72);
-  font-size: 10px;
-  font-weight: 950;
-  box-shadow: inset 0 0 0 2px rgba(255, 244, 200, 0.035);
-}
-
-.facilityList {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-}
-
-.facilityMiniCard {
-  padding: 11px;
-  background: rgba(5, 12, 8, 0.36);
-}
-
-.facilityMiniTop {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 7px;
-}
-
-.facilityMiniTop strong {
-  color: #fff2c8;
-  font-size: 13px;
-  font-weight: 950;
-}
-
-.facilityMiniTop em {
-  flex: 0 0 auto;
-  padding: 5px 7px;
-  font-size: 10px;
-  font-style: normal;
-  font-weight: 950;
-  box-shadow: inset 0 0 0 2px rgba(255, 244, 200, 0.04);
-}
-
-.facilityMiniCard p {
-  margin: 0 0 8px;
-  color: rgba(255, 247, 223, 0.58);
-  font-size: 11px;
-  font-weight: 750;
-  line-height: 1.5;
-}
-
-.facilityMiniCard small {
+.facilityTileText span {
   display: block;
-  margin-top: 6px;
-  color: rgba(255, 247, 223, 0.46);
+  margin-top: 4px;
+  color: rgba(255, 247, 223, 0.5);
   font-size: 10px;
   font-weight: 850;
-  text-align: right;
 }
 
-.facilityMeter {
-  overflow: hidden;
-  height: 8px;
-  border-radius: 0;
-  background: rgba(0, 0, 0, 0.28);
-  box-shadow: inset 0 0 0 2px rgba(255, 244, 200, 0.035);
-}
-
-.facilityMeter i {
-  height: 100%;
+.facilityTile em {
   display: block;
-  border-radius: 0;
-  background: rgba(255, 231, 169, 0.72);
-  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.16);
+  margin-top: auto;
+  color: rgba(255, 231, 169, 0.72);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 950;
+  text-align: right;
 }
 
 .emptyWorldProgress {
@@ -299,24 +427,4 @@
   color: rgba(255, 247, 223, 0.58);
   font-size: 12px;
   font-weight: 750;
-}
-
-.activeStatus {
-  background: rgba(117, 176, 91, 0.24);
-  color: #cfffab;
-}
-
-.buildingStatus {
-  background: rgba(201, 154, 69, 0.24);
-  color: #ffe1a3;
-}
-
-.planningStatus {
-  background: rgba(120, 150, 190, 0.24);
-  color: #cfe6ff;
-}
-
-.lockedStatus {
-  background: rgba(255, 255, 255, 0.055);
-  color: rgba(255, 247, 223, 0.46);
 }

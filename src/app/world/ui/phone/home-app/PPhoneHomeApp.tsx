@@ -21,15 +21,25 @@ type Props = {
   onBack: () => void
 }
 
-const STATUS_LABELS: Record<WorldFacilityStatus, string> = {
-  locked: "未开放",
-  planning: "规划中",
-  building: "建设中",
-  active: "已开放",
+type HomeModuleIcon =
+  | "home"
+  | "world"
+  | "open"
+  | "build"
+  | "future"
+  | "eco"
+
+type HomeModuleCard = {
+  id: string
+  title: string
+  value: string
+  subtitle: string
+  icon: HomeModuleIcon
+  status?: WorldFacilityStatus
 }
 
-const MODULE_LABELS: Record<WorldFacilityStatus, string> = {
-  locked: "未来区域",
+const STATUS_LABELS: Record<WorldFacilityStatus, string> = {
+  locked: "未开放",
   planning: "规划中",
   building: "建设中",
   active: "已开放",
@@ -53,48 +63,109 @@ function countFacilitiesByStatus(
   }).length
 }
 
-function countActiveFacilities(progression: WorldProgressionState | null): number {
-  return countFacilitiesByStatus(progression, "active")
+function getAverageWorldProgress(progression: WorldProgressionState | null): number {
+  if (!progression) return 0
+
+  const totalProgress = WORLD_FACILITY_DEFINITIONS.reduce((total, definition) => {
+    return total + getFacilityProgress(progression, definition.id).progress
+  }, 0)
+
+  return Math.round(totalProgress / WORLD_FACILITY_DEFINITIONS.length)
 }
 
-function getWorldProgressSummary(progression: WorldProgressionState | null): string {
-  if (!progression) return "世界设施状态正在同步。"
+function getHomeStageValue(detail: PhoneDetailPageData): string {
+  const stageRow = detail.sections
+    .flatMap((section) => section.rows)
+    .find((row) => row.label === "阶段")
 
-  const activeCount = countActiveFacilities(progression)
-
-  if (activeCount === 0) {
-    return "初始生态区正在建设，管家会优先维持基础环境。"
-  }
-
-  if (activeCount < WORLD_FACILITY_DEFINITIONS.length) {
-    return "世界正在逐步扩展，新的设施会在合适阶段开放。"
-  }
-
-  return "初始生态区的核心设施已经开放。"
+  return stageRow?.value ?? detail.statusLabel
 }
 
-function getStatusClassName(status: WorldFacilityStatus): string {
-  if (status === "active") return styles.activeStatus
-  if (status === "building") return styles.buildingStatus
-  if (status === "planning") return styles.planningStatus
+function getHomeLevelValue(detail: PhoneDetailPageData): string {
+  const levelRow = detail.sections
+    .flatMap((section) => section.rows)
+    .find((row) => row.label === "等级")
 
-  return styles.lockedStatus
+  return levelRow?.value ?? detail.subtitle
 }
 
-function getPrimaryHomeRows(detail: PhoneDetailPageData) {
-  return detail.sections.flatMap((section) => section.rows).slice(0, 4)
+function getModuleCards(input: {
+  detail: PhoneDetailPageData
+  progression: WorldProgressionState | null
+}): HomeModuleCard[] {
+  const activeCount = countFacilitiesByStatus(input.progression, "active")
+  const buildingCount = countFacilitiesByStatus(input.progression, "building")
+  const planningCount = countFacilitiesByStatus(input.progression, "planning")
+  const lockedCount = countFacilitiesByStatus(input.progression, "locked")
+  const averageProgress = getAverageWorldProgress(input.progression)
+
+  return [
+    {
+      id: "home-status",
+      title: "家园状态",
+      value: input.detail.statusLabel,
+      subtitle: getHomeStageValue(input.detail),
+      icon: "home",
+    },
+    {
+      id: "world-progress",
+      title: "世界设施",
+      value: `${activeCount}/${WORLD_FACILITY_DEFINITIONS.length}`,
+      subtitle: `总进度 ${averageProgress}%`,
+      icon: "world",
+    },
+    {
+      id: "active-facilities",
+      title: "当前开放",
+      value: String(activeCount),
+      subtitle: "可用区域",
+      icon: "open",
+      status: "active",
+    },
+    {
+      id: "building-facilities",
+      title: "建设中",
+      value: String(buildingCount),
+      subtitle: "正在推进",
+      icon: "build",
+      status: "building",
+    },
+    {
+      id: "future-facilities",
+      title: "未来区域",
+      value: String(planningCount + lockedCount),
+      subtitle: "等待开放",
+      icon: "future",
+      status: "locked",
+    },
+    {
+      id: "eco-zone",
+      title: "生态区",
+      value: getHomeLevelValue(input.detail),
+      subtitle: "初始区域",
+      icon: "eco",
+    },
+  ]
 }
 
-function getFacilitiesByStatus(
-  progression: WorldProgressionState,
-  status: WorldFacilityStatus
-) {
-  return WORLD_FACILITY_DEFINITIONS.filter((definition) => {
-    return getFacilityProgress(progression, definition.id).status === status
-  })
+function getFacilityIconClassName(status: WorldFacilityStatus): string {
+  if (status === "active") return styles.facilityIconActive
+  if (status === "building") return styles.facilityIconBuilding
+  if (status === "planning") return styles.facilityIconPlanning
+
+  return styles.facilityIconLocked
 }
 
-function renderFacilityMiniCard(input: {
+function renderPixelIcon(icon: HomeModuleIcon) {
+  return (
+    <span className={`${styles.pixelIcon} ${styles[`icon_${icon}`]}`} aria-hidden="true">
+      <i />
+      <b />
+    </span>
+  )
+}
+
+function renderFacilityTile(input: {
   progression: WorldProgressionState
   facilityId: WorldFacilityId
 }) {
@@ -108,21 +179,17 @@ function renderFacilityMiniCard(input: {
   const progressValue = Math.round(facility.progress)
 
   return (
-    <article className={styles.facilityMiniCard} key={definition.id}>
-      <div className={styles.facilityMiniTop}>
+    <article className={styles.facilityTile} key={definition.id}>
+      <div className={`${styles.facilityPixelIcon} ${getFacilityIconClassName(facility.status)}`}>
+        <i />
+      </div>
+
+      <div className={styles.facilityTileText}>
         <strong>{definition.title}</strong>
-        <em className={getStatusClassName(facility.status)}>
-          {STATUS_LABELS[facility.status]}
-        </em>
+        <span>{STATUS_LABELS[facility.status]}</span>
       </div>
 
-      <p>{definition.description}</p>
-
-      <div className={styles.facilityMeter}>
-        <i style={{ width: `${progressValue}%` }} />
-      </div>
-
-      <small>{progressValue}%</small>
+      <em>{progressValue}%</em>
     </article>
   )
 }
@@ -132,11 +199,10 @@ export default function PPhoneHomeApp({
   progression,
   onBack,
 }: Props) {
-  const activeFacilityCount = countActiveFacilities(progression)
-  const buildingCount = countFacilitiesByStatus(progression, "building")
-  const planningCount = countFacilitiesByStatus(progression, "planning")
-  const lockedCount = countFacilitiesByStatus(progression, "locked")
-  const homeRows = getPrimaryHomeRows(detail)
+  const moduleCards = getModuleCards({
+    detail,
+    progression,
+  })
 
   return (
     <div className={styles.page}>
@@ -151,70 +217,36 @@ export default function PPhoneHomeApp({
         </div>
       </header>
 
-      <section className={styles.heroCard}>
-        <p>{detail.statusLabel}</p>
-        <h3>{detail.subtitle}</h3>
-        <span>{detail.summary}</span>
+      <section className={styles.homeHero}>
+        <div className={styles.homeHeroIcon}>
+          <i />
+        </div>
+
+        <div>
+          <p>{detail.statusLabel}</p>
+          <h3>{detail.subtitle}</h3>
+          <span>{getHomeStageValue(detail)}</span>
+        </div>
       </section>
 
-      <section className={styles.moduleGrid}>
-        <article className={styles.moduleCard}>
-          <small>家园状态</small>
-          <strong>{detail.statusLabel}</strong>
-          <span>当前阶段</span>
-        </article>
+      <section className={styles.moduleGrid} aria-label="家园模块">
+        {moduleCards.map((module) => (
+          <article className={styles.moduleTile} key={module.id}>
+            {renderPixelIcon(module.icon)}
 
-        <article className={styles.moduleCard}>
-          <small>世界设施</small>
-          <strong>
-            {activeFacilityCount}/{WORLD_FACILITY_DEFINITIONS.length}
-          </strong>
-          <span>已开放</span>
-        </article>
-
-        <article className={styles.moduleCard}>
-          <small>建设中</small>
-          <strong>{buildingCount}</strong>
-          <span>正在推进</span>
-        </article>
-
-        <article className={styles.moduleCard}>
-          <small>未来区域</small>
-          <strong>{lockedCount + planningCount}</strong>
-          <span>等待开放</span>
-        </article>
+            <div>
+              <strong>{module.value}</strong>
+              <span>{module.title}</span>
+              <small>{module.subtitle}</small>
+            </div>
+          </article>
+        ))}
       </section>
 
       <section className={styles.phoneSection}>
         <div className={styles.sectionTitle}>
-          <h4>家园概览</h4>
-          <span>Home Status</span>
-        </div>
-
-        <div className={styles.homeStatGrid}>
-          {homeRows.map((row) => (
-            <article className={styles.homeStatCard} key={row.label}>
-              <span>{row.label}</span>
-              <strong>{row.value}</strong>
-
-              {row.meter && (
-                <div className={styles.facilityMeter}>
-                  <i
-                    style={{
-                      width: `${Math.min(100, Math.max(0, row.meter.value))}%`,
-                    }}
-                  />
-                </div>
-              )}
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className={styles.phoneSection}>
-        <div className={styles.sectionTitle}>
-          <h4>世界设施</h4>
-          <span>{getWorldProgressSummary(progression)}</span>
+          <h4>设施网格</h4>
+          <span>World Grid</span>
         </div>
 
         {!progression && (
@@ -224,31 +256,12 @@ export default function PPhoneHomeApp({
         )}
 
         {progression && (
-          <div className={styles.facilityModuleList}>
-            {(["active", "building", "planning", "locked"] as const).map(
-              (status) => {
-                const facilities = getFacilitiesByStatus(progression, status)
-
-                if (facilities.length === 0) return null
-
-                return (
-                  <section className={styles.facilityGroup} key={status}>
-                    <div className={styles.facilityGroupTitle}>
-                      <strong>{MODULE_LABELS[status]}</strong>
-                      <span>{facilities.length}</span>
-                    </div>
-
-                    <div className={styles.facilityList}>
-                      {facilities.map((definition) =>
-                        renderFacilityMiniCard({
-                          progression,
-                          facilityId: definition.id,
-                        })
-                      )}
-                    </div>
-                  </section>
-                )
-              }
+          <div className={styles.facilityGrid}>
+            {WORLD_FACILITY_DEFINITIONS.map((definition) =>
+              renderFacilityTile({
+                progression,
+                facilityId: definition.id,
+              })
             )}
           </div>
         )}
