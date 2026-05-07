@@ -80,10 +80,20 @@ function getLatestText(messages: PPhoneMessageItem[], fallback: string): string 
   return messages[0]?.text ?? fallback
 }
 
+function countUnreadMessages(
+  messages: PPhoneMessageItem[],
+  readMessageIds: ReadonlySet<string>
+): number {
+  return messages.filter((message) => !readMessageIds.has(message.id)).length
+}
+
 export function buildPPhoneMessageThreads(input: {
   events: WorldEvent[]
   hud: WorldHudBundle
+  readMessageIds?: ReadonlySet<string>
 }): PPhoneMessageThread[] {
+  const readMessageIds = input.readMessageIds ?? new Set<string>()
+
   const butlerMessages = buildButlerMessages(input.hud)
   const systemMessages = buildSystemMessages(input.events)
   const worldMessages = buildWorldNoticeMessages(input.events)
@@ -101,7 +111,7 @@ export function buildPPhoneMessageThreads(input: {
       id: "p-system",
       title: "P-System",
       subtitle: "系统短信",
-      unreadCount: systemMessages.length,
+      unreadCount: countUnreadMessages(systemMessages, readMessageIds),
       latestText: getLatestText(systemMessages, "系统暂时没有新短信。"),
       messages: systemMessages,
     },
@@ -109,9 +119,15 @@ export function buildPPhoneMessageThreads(input: {
       id: "world-notice",
       title: "World Notice",
       subtitle: "世界通知",
-      unreadCount: worldMessages.length,
+      unreadCount: countUnreadMessages(worldMessages, readMessageIds),
       latestText: getLatestText(worldMessages, "世界暂时没有新通知。"),
       messages: worldMessages,
     },
   ]
+}
+
+export function getPPhoneTotalUnreadCount(
+  threads: PPhoneMessageThread[]
+): number {
+  return threads.reduce((total, thread) => total + thread.unreadCount, 0)
 }

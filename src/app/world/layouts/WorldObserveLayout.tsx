@@ -10,6 +10,10 @@ import type { WorldEngineViewState } from "../hooks/useWorldEngineState"
 import type { WorldStageSceneMode } from "../components/stage-renderers/orchestrator/stage-scene-mode"
 
 import { buildWorldHudBundle } from "../utils/worldHudMappers"
+import {
+  buildPPhoneMessageThreads,
+  getPPhoneTotalUnreadCount,
+} from "../ui/phone/messages/pPhoneMessageMappers"
 
 import WorldPixelStage from "../components/WorldPixelStage"
 import DeveloperDock from "../ui/panels/DeveloperDock"
@@ -26,6 +30,9 @@ type Props = {
 export default function WorldObserveLayout({ world }: Props) {
   const [sceneMode, setSceneMode] = useState<WorldStageSceneMode>("exterior")
   const [isPPhoneOpen, setIsPPhoneOpen] = useState(false)
+  const [readMessageIds, setReadMessageIds] = useState<Set<string>>(
+    () => new Set()
+  )
 
   const hud = useMemo(() => {
     return buildWorldHudBundle({
@@ -44,6 +51,32 @@ export default function WorldObserveLayout({ world }: Props) {
     world.stimuli,
     world.ecology,
   ])
+
+  const messageThreads = useMemo(() => {
+    return buildPPhoneMessageThreads({
+      events: world.events,
+      hud,
+      readMessageIds,
+    })
+  }, [world.events, hud, readMessageIds])
+
+  const unreadMessageCount = useMemo(() => {
+    return getPPhoneTotalUnreadCount(messageThreads)
+  }, [messageThreads])
+
+  const markMessagesRead = (messageIds: string[]) => {
+    if (messageIds.length === 0) return
+
+    setReadMessageIds((current) => {
+      const next = new Set(current)
+
+      messageIds.forEach((messageId) => {
+        next.add(messageId)
+      })
+
+      return next
+    })
+  }
 
   return (
     <main className={styles.page}>
@@ -77,13 +110,15 @@ export default function WorldObserveLayout({ world }: Props) {
           <PPhoneShell
             world={world}
             hud={hud}
+            readMessageIds={readMessageIds}
+            onMarkMessagesRead={markMessagesRead}
             onClose={() => setIsPPhoneOpen(false)}
           />
         )}
 
         <PPhoneLauncher
           isOpen={isPPhoneOpen}
-          unreadCount={world.events.length}
+          unreadCount={unreadMessageCount}
           onToggle={() => setIsPPhoneOpen((value) => !value)}
         />
       </section>
