@@ -22,7 +22,7 @@ export function drawStageBackground(input: {
   })
   background.circle(input.mapWidth - 280, input.mapHeight - 210, 180).fill({
     color: 0x1d4f5f,
-    alpha: 0.16,
+    alpha: 0.08,
   })
 
   input.layer.addChild(background)
@@ -36,7 +36,6 @@ export function drawAmbientNature(input: {
   const ambient = new Graphics()
 
   drawSoftLightFields(ambient, input.mapWidth, input.mapHeight)
-  drawLakeHint(ambient, input.mapWidth, input.mapHeight)
   drawButterflyAndFlowerSignals(ambient, input.mapWidth, input.mapHeight)
   drawFireflySignals(ambient, input.mapWidth)
   drawTinyGrassSparkles(ambient, input.mapWidth, input.mapHeight)
@@ -73,7 +72,7 @@ export function drawForegroundAtmosphere(input: {
 
   atmosphere.circle(input.mapWidth - 250, input.mapHeight - 180, 150).fill({
     color: 0x93c5fd,
-    alpha: 0.035,
+    alpha: 0.025,
   })
 
   input.layer.addChild(atmosphere)
@@ -90,7 +89,7 @@ function drawSoftLightFields(
   })
   graphic.circle(800, 380, 210).fill({
     color: 0x60a5fa,
-    alpha: 0.025,
+    alpha: 0.018,
   })
   graphic.circle(mapWidth - 240, 160, 180).fill({
     color: 0xfacc15,
@@ -99,41 +98,6 @@ function drawSoftLightFields(
   graphic.circle(260, mapHeight - 180, 130).fill({
     color: 0xfde68a,
     alpha: 0.018,
-  })
-}
-
-function drawLakeHint(
-  graphic: Graphics,
-  mapWidth: number,
-  mapHeight: number
-) {
-  const lakeX = mapWidth - 360
-  const lakeY = mapHeight - 270
-
-  graphic.ellipse(lakeX, lakeY, 145, 58).fill({
-    color: 0x1d4f5f,
-    alpha: 0.34,
-  })
-
-  graphic.ellipse(lakeX - 8, lakeY - 4, 122, 43).fill({
-    color: 0x256d7b,
-    alpha: 0.24,
-  })
-
-  for (let index = 0; index < 5; index += 1) {
-    graphic.rect(lakeX - 88 + index * 38, lakeY - 13 + (index % 2) * 8, 25, 2).fill({
-      color: 0x93c5fd,
-      alpha: 0.2,
-    })
-  }
-
-  graphic.rect(lakeX - 118, lakeY + 46, 42, 5).fill({
-    color: 0x86efac,
-    alpha: 0.18,
-  })
-  graphic.rect(lakeX + 72, lakeY + 38, 34, 4).fill({
-    color: 0x86efac,
-    alpha: 0.16,
   })
 }
 
