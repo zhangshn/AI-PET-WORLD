@@ -1,12 +1,17 @@
 "use client"
 
 /**
- * 当前文件负责：集中管理 /world 页面所需的世界运行状态。
+ * 当前文件负责：集中管理 /world 页面所需的世界运行状态，并接入本地存档读取与自动保存。
  */
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import { worldEngine } from "@/engine/worldEngine"
+
+import {
+  loadWorldSnapshotFromLocal,
+  saveWorldSnapshotToLocal,
+} from "@/world/persistence/world-save-gateway"
 
 import type { TimeState } from "@/engine/timeSystem"
 import type { PetState } from "@/types/pet"
@@ -55,7 +60,14 @@ function readWorldEngineState() {
   }
 }
 
+function saveCurrentWorldSnapshot(): void {
+  const snapshot = worldEngine.createSaveSnapshot("auto_save")
+  saveWorldSnapshotToLocal(snapshot)
+}
+
 export function useWorldEngineState(): WorldEngineViewState {
+  const didBootRef = useRef(false)
+
   const [time, setTime] = useState<TimeState | null>(() => worldEngine.getTime())
   const [pet, setPet] = useState<PetState | null>(() => worldEngine.getPet())
   const [butler, setButler] = useState<ButlerState | null>(() =>
@@ -108,6 +120,7 @@ export function useWorldEngineState(): WorldEngineViewState {
   const setButlerProfile = useCallback(
     (profile: ButlerProfile | null) => {
       worldEngine.setButlerProfile(profile)
+      saveCurrentWorldSnapshot()
       syncWorld()
     },
     [syncWorld]
@@ -129,15 +142,47 @@ export function useWorldEngineState(): WorldEngineViewState {
   }, [toggleDeveloperPanel])
 
   useEffect(() => {
-    worldEngine.initialize()
+    if (didBootRef.current) {
+      return
+    }
+
+    didBootRef.current = true
+
+    const savedSnapshot = loadWorldSnapshotFromLocal()
+
+    if (savedSnapshot) {
+      worldEngine.restoreFromSnapshot(savedSnapshot)
+    } else {
+      worldEngine.initialize()
+      saveCurrentWorldSnapshot()
+    }
+
+    syncWorld()
 
     const interval = setInterval(() => {
       worldEngine.update()
+      saveCurrentWorldSnapshot()
       syncWorld()
     }, 2000)
 
+    const handleBeforeUnload = () => {
+      saveCurrentWorldSnapshot()
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        saveCurrentWorldSnapshot()
+      }
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload)
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+
     return () => {
       clearInterval(interval)
+      saveCurrentWorldSnapshot()
+      window.removeEventListener("beforeunload", handleBeforeUnload)
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
     }
   }, [syncWorld])
 
