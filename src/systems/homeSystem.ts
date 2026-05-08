@@ -23,6 +23,10 @@ export class HomeSystem {
     }
   }
 
+  restore(home: HomeState): void {
+    this.home = { ...home }
+  }
+
   build(amount: number, behaviorBias?: GenderAwareBehaviorBias | null) {
     this.home = buildHome({
       home: this.home,

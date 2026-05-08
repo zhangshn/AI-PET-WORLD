@@ -30,6 +30,12 @@ export class EventSystem {
     return [...this.events]
   }
 
+  restore(events: WorldEvent[]): void {
+    this.events = events.slice(-MAX_EVENT_HISTORY)
+    this.continuityByPetKey = new Map<string, ContinuityState>()
+    this.dedupeRunner = new EventDedupeRunner()
+  }
+
   private appendEvents(nextEvents: WorldEvent[]): void {
     if (nextEvents.length === 0) return
 

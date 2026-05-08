@@ -127,6 +127,20 @@ export function readAiDataRecords(
   return matchedRecords
 }
 
+export function exportAiDataRecords(): AiDataRecord[] {
+  return records.map((record) => ({ ...record }))
+}
+
+export function restoreAiDataRecords(nextRecords: AiDataRecord[]): void {
+  records.splice(0, records.length)
+
+  nextRecords.forEach((record) => {
+    upsertRecord(record)
+  })
+
+  trimRecords()
+}
+
 export function readLatestAiDataRecord(
   filter: AiDataRecordFilter = {}
 ): AiDataRecord | undefined {

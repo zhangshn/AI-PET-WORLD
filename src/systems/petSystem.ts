@@ -285,6 +285,26 @@ export class PetSystem {
     }
   }
 
+  restore(pet: PetState | null, currentTick: number): void {
+    this.pet = pet
+    this.currentTick = Math.max(0, Math.floor(currentTick))
+
+    this.lastDriveSnapshot = null
+    this.lastDecisionReason = null
+    this.lastFeedingTick = -9999
+
+    if (!pet) {
+      this.actionStability = null
+      return
+    }
+
+    this.actionStability = {
+      currentAction: pet.action,
+      startedAtTick: this.currentTick,
+      lastChangedTick: this.currentTick,
+    }
+  }
+
   getPet(): PetState | null {
     return this.pet
   }

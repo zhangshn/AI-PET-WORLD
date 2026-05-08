@@ -26,6 +26,10 @@ export class IncubatorSystem {
     })
   }
 
+  restore(incubator: IncubatorState): void {
+    this.incubator = refreshIncubatorState({ ...incubator })
+  }
+
   update() {
     this.incubator = runIncubatorTick(this.incubator)
 

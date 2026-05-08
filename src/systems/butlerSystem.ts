@@ -236,6 +236,22 @@ export class ButlerSystem {
     this.rememberOpportunityFeedback(feedback)
   }
 
+  restore(state: ButlerState): void {
+    this.state = {
+      ...state,
+      pendingOpportunities: [...state.pendingOpportunities],
+      opportunityCooldowns: { ...state.opportunityCooldowns },
+      memory: {
+        ...state.memory,
+        entries: [...state.memory.entries],
+        latestEntry: state.memory.latestEntry
+          ? { ...state.memory.latestEntry }
+          : null,
+      },
+      relation: { ...state.relation },
+    }
+  }
+
   setProfile(profile: ButlerProfile | null): void {
     this.state.profile = profile
   }

@@ -18,8 +18,10 @@ import {
   clearAiDataRecords,
   configureAiDataStore,
   countAiDataRecords,
+  exportAiDataRecords,
   readAiDataRecords,
   readLatestAiDataRecord,
+  restoreAiDataRecords,
   type AiDataRecordFilter,
 } from "./ai-data-store"
 
@@ -180,6 +182,14 @@ export function getAiDataRecords(
   filter: AiDataRecordFilter = {}
 ): AiDataRecord[] {
   return readAiDataRecords(filter)
+}
+
+export function exportAiDataSnapshot(): AiDataRecord[] {
+  return exportAiDataRecords()
+}
+
+export function restoreAiDataSnapshot(records: AiDataRecord[]): void {
+  restoreAiDataRecords(records)
 }
 
 export function getLatestAiDataRecord(

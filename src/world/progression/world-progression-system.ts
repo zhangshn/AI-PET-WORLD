@@ -43,6 +43,19 @@ export class WorldProgressionSystem {
     return result.notices
   }
 
+  restore(state: WorldProgressionState): void {
+    this.state = {
+      ...state,
+      facilities: {
+        home_base: { ...state.facilities.home_base },
+        community_board: { ...state.facilities.community_board },
+        pet_park: { ...state.facilities.pet_park },
+        pet_clinic: { ...state.facilities.pet_clinic },
+        small_town: { ...state.facilities.small_town },
+      },
+    }
+  }
+
   getState(): WorldProgressionState {
     return {
       ...this.state,
