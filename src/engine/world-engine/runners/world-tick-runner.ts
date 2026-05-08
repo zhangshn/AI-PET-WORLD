@@ -4,6 +4,8 @@
 
 import type { TimeState } from "../../timeSystem"
 import type { WorldStimulus } from "@/ai/gateway"
+import type { ButlerState } from "@/types/butler"
+import type { PetState } from "@/types/pet"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 import type { WorldProgressionSystem } from "@/world/progression/world-progression-gateway"
 
@@ -107,6 +109,121 @@ function emitWorldProgressionNotices(input: {
         noticeType: notice.type,
       },
     })
+  })
+}
+
+function isExcursionGoal(pet: PetState): boolean {
+  return (
+    pet.currentGoal?.type === "expand_territory" ||
+    pet.currentGoal?.type === "observe_boundary"
+  )
+}
+
+function isExcursionAction(pet: PetState): boolean {
+  return (
+    pet.action === "exploring" ||
+    pet.action === "walking" ||
+    pet.action === "observing" ||
+    pet.action === "alert_idle"
+  )
+}
+
+function shouldEmitDualAgentInteractionEvent(input: {
+  tick: number
+  prevPet: PetState | null
+  currentPet: PetState | null
+}): boolean {
+  const pet = input.currentPet
+  if (!pet) return false
+  if (!isExcursionGoal(pet)) return false
+  if (!isExcursionAction(pet)) return false
+
+  const prevGoalType = input.prevPet?.currentGoal?.type
+  const currentGoalType = pet.currentGoal?.type
+  const prevAction = input.prevPet?.action
+
+  return (
+    prevGoalType !== currentGoalType ||
+    prevAction !== pet.action ||
+    input.tick % 8 === 0
+  )
+}
+
+function resolveButlerBoundaryResponse(butler: ButlerState | null): string {
+  if (!butler) return "not_observed"
+
+  if (butler.task === "offering_rest") return "boundary_waiting"
+  if (butler.task === "offering_approach") return "companion_response"
+  if (butler.task === "watching_pet") return "boundary_waiting"
+
+  return "observing"
+}
+
+function buildDualAgentInteractionMessage(input: {
+  pet: PetState
+  butler: ButlerState | null
+}): string {
+  const petName = input.pet.name
+  const butlerName = input.butler?.name ?? "管家"
+
+  if (input.pet.currentGoal?.type === "expand_territory") {
+    return `${petName}沿着庭院外侧继续探索。${butlerName}注意到了这次外扩行为，但没有直接打断它。`
+  }
+
+  return `${petName}停在边界附近观察环境。${butlerName}保持距离记录了这次边界观察。`
+}
+
+function emitDualAgentInteractionEvent(input: {
+  tick: number
+  time: TimeState
+  prevPet: PetState | null
+  currentPet: PetState | null
+  currentButler: ButlerState | null
+  eventSystem: EventSystem
+}): void {
+  if (!shouldEmitDualAgentInteractionEvent({
+    tick: input.tick,
+    prevPet: input.prevPet,
+    currentPet: input.currentPet,
+  })) {
+    return
+  }
+
+  const pet = input.currentPet
+  if (!pet) return
+
+  const goalType = pet.currentGoal?.type ?? "unknown"
+  const butlerResponse = resolveButlerBoundaryResponse(input.currentButler)
+  const target = pet.currentGoal?.targetWorldPosition
+
+  input.eventSystem.addInteractionEvent({
+    tick: input.tick,
+    day: input.time.day,
+    hour: input.time.hour,
+    petName: pet.name,
+    message: buildDualAgentInteractionMessage({
+      pet,
+      butler: input.currentButler,
+    }),
+    sourceAction: pet.action,
+    narrativeType:
+      goalType === "observe_boundary" ? "observe_environment" : "discover",
+    intensity: goalType === "expand_territory" ? 0.72 : 0.58,
+    payload: {
+      source: "dual_agent_interaction",
+      interactionKind:
+        goalType === "expand_territory"
+          ? "pet_short_excursion"
+          : "pet_boundary_observation",
+      petGoalType: goalType,
+      petAction: pet.action,
+      butlerName: input.currentButler?.name ?? "管家",
+      butlerTask: input.currentButler?.task ?? "unknown",
+      butlerResponse,
+      reason: pet.currentGoal?.reason ?? "宠物当前目标进入边界表达场景。",
+      targetX: target?.x ?? null,
+      targetY: target?.y ?? null,
+    },
   })
 }
 
@@ -276,6 +393,19 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
   })
 
   currentPet = petRuntimeResult.pet
+
+  /**
+   * 阶段 7.5：双主角边界互动表达。
+   * 这里只记录宠物自主目标与管家当前回应，不替宠物或管家改决定。
+   */
+  emitDualAgentInteractionEvent({
+    tick: input.tick,
+    time: input.currentTime,
+    prevPet,
+    currentPet,
+    currentButler,
+    eventSystem: input.eventSystem,
+  })
 
   /**
    * 阶段 8：处理管家提供的机会。
