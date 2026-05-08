@@ -24,6 +24,13 @@ import {
   type TileBounds,
 } from "./structure-types"
 
+type StructureRect = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 export function resolveStageStructureLayout(
   map: WorldMapState | null
 ): StageStructureLayout {
@@ -37,9 +44,11 @@ export function resolveStageStructureLayout(
   }
 
   const shelterCenter = getTileGroupStageCenter(map, "shelter_foundation")
+  const shelterBounds = getTileGroupStageBounds(map, "shelter_foundation")
   const gardenCenter = getTileGroupStageCenter(map, "garden_soil")
-  const townPathCenter = getTileGroupStageCenter(map, "town_path")
-  const pathCenter = getTileGroupStageCenter(map, "path")
+  const gardenBounds = getTileGroupStageBounds(map, "garden_soil")
+  const townPathBounds = getTileGroupStageBounds(map, "town_path")
+  const pathBounds = getTileGroupStageBounds(map, "path")
 
   const tempShelter = shelterCenter
     ? {
@@ -61,10 +70,13 @@ export function resolveStageStructureLayout(
     : GARDEN_STAGE_POSITION
 
   const homeConstruction = resolveHomeConstructionPosition({
-    shelterCenter,
-    gardenCenter,
-    pathCenter,
-    townPathCenter,
+    map,
+    shelterBounds,
+    gardenBounds,
+    pathBounds,
+    townPathBounds,
+    tempShelter,
+    garden,
   })
 
   return {
@@ -76,57 +88,232 @@ export function resolveStageStructureLayout(
 }
 
 function resolveHomeConstructionPosition(input: {
-  shelterCenter: StagePoint | null
-  gardenCenter: StagePoint | null
-  pathCenter: StagePoint | null
-  townPathCenter: StagePoint | null
+  map: WorldMapState
+  shelterBounds: StructureRect | null
+  gardenBounds: StructureRect | null
+  pathBounds: StructureRect | null
+  townPathBounds: StructureRect | null
+  tempShelter: StagePoint
+  garden: StagePoint
 }): StagePoint {
-  if (input.gardenCenter && input.shelterCenter) {
-    const x =
-      input.shelterCenter.x +
-      (input.gardenCenter.x - input.shelterCenter.x) * 0.58
-    const y =
-      input.shelterCenter.y +
-      (input.gardenCenter.y - input.shelterCenter.y) * 0.42
+  const blockedRects = [
+    toStructureRect(input.tempShelter, TEMP_SHELTER_WIDTH, TEMP_SHELTER_HEIGHT),
+    toStructureRect(input.garden, GARDEN_WIDTH, GARDEN_HEIGHT),
+  ]
 
-    return {
-      x: Math.round(x - HOME_CONSTRUCTION_WIDTH / 2),
-      y: Math.round(y - HOME_CONSTRUCTION_HEIGHT / 2),
+  if (input.shelterBounds) {
+    blockedRects.push(expandRect(input.shelterBounds, 24))
+  }
+
+  if (input.gardenBounds) {
+    blockedRects.push(expandRect(input.gardenBounds, 20))
+  }
+
+  const candidates = buildHomeConstructionCandidates(input)
+
+  const safeCandidate = candidates.find((candidate) =>
+    isSafeHomeCandidate({
+      point: candidate,
+      map: input.map,
+      blockedRects,
+    })
+  )
+
+  return safeCandidate ?? HOME_CONSTRUCTION_STAGE_POSITION
+}
+
+function buildHomeConstructionCandidates(input: {
+  map: WorldMapState
+  shelterBounds: StructureRect | null
+  gardenBounds: StructureRect | null
+  pathBounds: StructureRect | null
+  townPathBounds: StructureRect | null
+  tempShelter: StagePoint
+  garden: StagePoint
+}): StagePoint[] {
+  const candidates: StagePoint[] = []
+
+  if (input.shelterBounds) {
+    candidates.push(
+      {
+        x: Math.round(input.shelterBounds.x + input.shelterBounds.width + 56),
+        y: Math.round(input.shelterBounds.y + 20),
+      },
+      {
+        x: Math.round(input.shelterBounds.x),
+        y: Math.round(input.shelterBounds.y + input.shelterBounds.height + 48),
+      },
+      {
+        x: Math.round(input.shelterBounds.x + input.shelterBounds.width + 56),
+        y: Math.round(input.shelterBounds.y + input.shelterBounds.height + 42),
+      }
+    )
+  }
+
+  if (input.pathBounds) {
+    candidates.push({
+      x: Math.round(input.pathBounds.x + input.pathBounds.width + 32),
+      y: Math.round(input.pathBounds.y - HOME_CONSTRUCTION_HEIGHT - 18),
+    })
+  }
+
+  if (input.townPathBounds) {
+    candidates.push({
+      x: Math.round(input.townPathBounds.x + 24),
+      y: Math.round(input.townPathBounds.y - HOME_CONSTRUCTION_HEIGHT - 22),
+    })
+  }
+
+  candidates.push(
+    {
+      x: input.tempShelter.x + TEMP_SHELTER_WIDTH + 72,
+      y: input.tempShelter.y + 8,
+    },
+    HOME_CONSTRUCTION_STAGE_POSITION
+  )
+
+  return candidates
+}
+
+function isSafeHomeCandidate(input: {
+  point: StagePoint
+  map: WorldMapState
+  blockedRects: StructureRect[]
+}): boolean {
+  const rect = toStructureRect(
+    input.point,
+    HOME_CONSTRUCTION_WIDTH,
+    HOME_CONSTRUCTION_HEIGHT
+  )
+
+  if (!isRectInsideMap(rect, input.map)) return false
+
+  if (input.blockedRects.some((blocked) => intersectsRect(rect, blocked))) {
+    return false
+  }
+
+  return hasEnoughBuildableTiles({
+    rect,
+    map: input.map,
+    minRatio: 0.42,
+  })
+}
+
+function hasEnoughBuildableTiles(input: {
+  rect: StructureRect
+  map: WorldMapState
+  minRatio: number
+}): boolean {
+  const minTileX = Math.max(0, Math.floor(input.rect.x / input.map.tileSize))
+  const maxTileX = Math.min(
+    input.map.size.width - 1,
+    Math.floor((input.rect.x + input.rect.width) / input.map.tileSize)
+  )
+  const minTileY = Math.max(0, Math.floor(input.rect.y / input.map.tileSize))
+  const maxTileY = Math.min(
+    input.map.size.height - 1,
+    Math.floor((input.rect.y + input.rect.height) / input.map.tileSize)
+  )
+
+  let total = 0
+  let buildable = 0
+
+  for (let tileY = minTileY; tileY <= maxTileY; tileY += 1) {
+    for (let tileX = minTileX; tileX <= maxTileX; tileX += 1) {
+      total += 1
+
+      const tile = input.map.tiles.find(
+        (item) => item.x === tileX && item.y === tileY
+      )
+
+      if (!tile) continue
+      if (tile.type === "water" || tile.type === "stone" || tile.type === "forest_edge") {
+        continue
+      }
+
+      if (tile.buildable || tile.type === "short_grass" || tile.type === "wild_grass") {
+        buildable += 1
+      }
     }
   }
 
-  if (input.pathCenter && input.townPathCenter) {
-    const x =
-      input.pathCenter.x +
-      (input.townPathCenter.x - input.pathCenter.x) * 0.34
-    const y =
-      input.pathCenter.y +
-      (input.townPathCenter.y - input.pathCenter.y) * 0.18
+  if (total === 0) return false
 
-    return {
-      x: Math.round(x - HOME_CONSTRUCTION_WIDTH / 2),
-      y: Math.round(y - HOME_CONSTRUCTION_HEIGHT / 2),
-    }
+  return buildable / total >= input.minRatio
+}
+
+function toStructureRect(
+  point: StagePoint,
+  width: number,
+  height: number
+): StructureRect {
+  return {
+    x: point.x,
+    y: point.y,
+    width,
+    height,
   }
+}
 
-  return HOME_CONSTRUCTION_STAGE_POSITION
+function expandRect(rect: StructureRect, padding: number): StructureRect {
+  return {
+    x: rect.x - padding,
+    y: rect.y - padding,
+    width: rect.width + padding * 2,
+    height: rect.height + padding * 2,
+  }
+}
+
+function isRectInsideMap(rect: StructureRect, map: WorldMapState): boolean {
+  const mapWidth = map.size.width * map.tileSize
+  const mapHeight = map.size.height * map.tileSize
+
+  return (
+    rect.x >= 0 &&
+    rect.y >= 0 &&
+    rect.x + rect.width <= mapWidth &&
+    rect.y + rect.height <= mapHeight
+  )
+}
+
+function intersectsRect(a: StructureRect, b: StructureRect): boolean {
+  return !(
+    a.x + a.width <= b.x ||
+    b.x + b.width <= a.x ||
+    a.y + a.height <= b.y ||
+    b.y + b.height <= a.y
+  )
 }
 
 function getTileGroupStageCenter(
   map: WorldMapState,
   type: WorldMapTileType
 ): StagePoint | null {
+  const bounds = getTileGroupStageBounds(map, type)
+
+  if (!bounds) return null
+
+  return {
+    x: bounds.x + bounds.width / 2,
+    y: bounds.y + bounds.height / 2,
+  }
+}
+
+function getTileGroupStageBounds(
+  map: WorldMapState,
+  type: WorldMapTileType
+): StructureRect | null {
   const tiles = map.tiles.filter((tile) => tile.type === type)
 
   if (tiles.length === 0) return null
 
   const bounds = getTileBounds(tiles)
-  const centerX = ((bounds.minX + bounds.maxX + 1) / 2) * map.tileSize
-  const centerY = ((bounds.minY + bounds.maxY + 1) / 2) * map.tileSize
 
   return {
-    x: centerX,
-    y: centerY,
+    x: bounds.minX * map.tileSize,
+    y: bounds.minY * map.tileSize,
+    width: (bounds.maxX - bounds.minX + 1) * map.tileSize,
+    height: (bounds.maxY - bounds.minY + 1) * map.tileSize,
   }
 }
 
