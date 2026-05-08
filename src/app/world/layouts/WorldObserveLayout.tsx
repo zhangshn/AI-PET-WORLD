@@ -144,6 +144,7 @@ export default function WorldObserveLayout({ world }: Props) {
             time={world.time}
             pet={world.pet}
             butler={world.butler}
+            home={world.home}
             incubator={world.incubator}
             stimuli={world.stimuli}
             ecology={world.ecology}

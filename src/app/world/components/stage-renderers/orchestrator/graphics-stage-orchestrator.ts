@@ -5,6 +5,7 @@
 import type { WorldStimulus } from "@/ai/gateway"
 import type { TimeState } from "@/engine/timeSystem"
 import type { ButlerState } from "@/types/butler"
+import type { HomeState } from "@/types/home"
 import type { IncubatorState } from "@/types/incubator"
 import type { PetState } from "@/types/pet"
 import type { WorldEcologyState } from "@/world/ecology/ecology-engine"
@@ -43,6 +44,7 @@ export type SyncGraphicsStageInput = {
   time: TimeState | null
   pet: PetState | null
   butler: ButlerState | null
+  home: HomeState | null
   incubator: IncubatorState | null
   stimuli: WorldStimulus[]
   ecology: WorldEcologyState | null
