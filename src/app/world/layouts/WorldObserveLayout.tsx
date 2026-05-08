@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 /**
  * 当前文件负责：组织 /world 桌面游戏主界面布局。
@@ -30,8 +30,17 @@ type Props = {
   world: WorldEngineViewState
 }
 
+const recordedReadFeedbackMessageIds = new Set<string>()
+
 function recordMessageReadFeedback(messageIds: string[]): void {
-  messageIds.forEach((messageId) => {
+  const nextMessageIds = messageIds.filter((messageId) => {
+    if (recordedReadFeedbackMessageIds.has(messageId)) return false
+
+    recordedReadFeedbackMessageIds.add(messageId)
+    return true
+  })
+
+  nextMessageIds.forEach((messageId) => {
     recordAiUserFeedback({
       source: "p_phone",
       entityType: "user",
