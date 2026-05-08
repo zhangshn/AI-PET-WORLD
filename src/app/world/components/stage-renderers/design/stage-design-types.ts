@@ -25,8 +25,6 @@ export type StageDesignDensity =
 
 export type StageDesignPlacement =
   | "core_courtyard"
-  | "pet_activity_area"
-  | "butler_observation_area"
   | "home_area"
   | "life_capsule_area"
   | "forest_edge"
