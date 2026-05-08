@@ -13,6 +13,11 @@ import {
   saveWorldSnapshotToLocal,
 } from "@/world/persistence/world-save-gateway"
 
+import {
+  buildOfflineCatchupPlan,
+  buildOfflineCatchupResult,
+} from "@/world/offline/offline-catchup-gateway"
+
 import type { TimeState } from "@/engine/timeSystem"
 import type { PetState } from "@/types/pet"
 import type { WorldEvent } from "@/types/event"
@@ -63,6 +68,38 @@ function readWorldEngineState() {
 function saveCurrentWorldSnapshot(): void {
   const snapshot = worldEngine.createSaveSnapshot("auto_save")
   saveWorldSnapshotToLocal(snapshot)
+}
+
+function saveOfflineCatchupWorldSnapshot(): void {
+  const snapshot = worldEngine.createSaveSnapshot("offline_catchup")
+  saveWorldSnapshotToLocal(snapshot)
+}
+
+function runOfflineCatchupIfNeeded(lastSavedAt: number): void {
+  const plan = buildOfflineCatchupPlan({
+    lastSavedAt,
+    now: Date.now(),
+  })
+
+  if (!plan.shouldCatchup) {
+    return
+  }
+
+  const startedAtTick = worldEngine.getTick()
+
+  for (let index = 0; index < plan.tickCount; index += 1) {
+    worldEngine.update()
+  }
+
+  const result = buildOfflineCatchupResult({
+    plan,
+    startedAtTick,
+    endedAtTick: worldEngine.getTick(),
+  })
+
+  console.info("🌙 离线补算完成：", result)
+
+  saveOfflineCatchupWorldSnapshot()
 }
 
 export function useWorldEngineState(): WorldEngineViewState {
@@ -150,8 +187,9 @@ export function useWorldEngineState(): WorldEngineViewState {
 
     const savedSnapshot = loadWorldSnapshotFromLocal()
 
-    if (savedSnapshot) {
+     if (savedSnapshot) {
       worldEngine.restoreFromSnapshot(savedSnapshot)
+      runOfflineCatchupIfNeeded(savedSnapshot.savedAt)
     } else {
       worldEngine.initialize()
       saveCurrentWorldSnapshot()
