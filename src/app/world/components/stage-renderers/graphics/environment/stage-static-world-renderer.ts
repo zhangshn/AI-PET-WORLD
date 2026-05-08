@@ -4,6 +4,7 @@
 
 import type { Container } from "pixi.js"
 
+import type { HomeState } from "@/types/home"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
 import {
@@ -30,6 +31,7 @@ export type StaticWorldLayerRefs = {
 export type DrawStaticWorldInput = {
   layers: StaticWorldLayerRefs
   runtime: WorldRuntimeState | null
+  home: HomeState | null
   fallbackWidth: number
   fallbackHeight: number
 }
@@ -80,9 +82,11 @@ export function drawStaticWorld(input: DrawStaticWorldInput) {
     })
   }
 
-  drawTempShelter(structureLayer, structureLayout.tempShelter)
-  drawHomeConstruction(structureLayer, structureLayout.homeConstruction)
-  drawGarden(structureLayer, structureLayout.garden)
+  drawWorldStructures({
+    layer: structureLayer,
+    home: input.home,
+    structureLayout,
+  })
 
   if (foregroundLayer) {
     drawForegroundAtmosphere({
@@ -93,12 +97,46 @@ export function drawStaticWorld(input: DrawStaticWorldInput) {
   }
 }
 
-export function getStaticWorldRenderKey(
+function drawWorldStructures(input: {
+  layer: Container
+  home: HomeState | null
+  structureLayout: ReturnType<typeof resolveStageStructureLayout>
+}) {
+  const constructionStage = input.home?.constructionStage ?? "temporary_shelter"
+
+  drawTempShelter(input.layer, input.structureLayout.tempShelter)
+
+  if (
+    constructionStage === "foundation" ||
+    constructionStage === "frame" ||
+    constructionStage === "roof" ||
+    constructionStage === "interior" ||
+    constructionStage === "garden" ||
+    constructionStage === "completed"
+  ) {
+    drawHomeConstruction(input.layer, input.structureLayout.homeConstruction)
+  }
+
+  if (constructionStage === "garden" || constructionStage === "completed") {
+    drawGarden(input.layer, input.structureLayout.garden)
+  }
+}
+
+export function getStaticWorldRenderKey(input: {
   runtime: WorldRuntimeState | null
-): string {
-  const map = runtime?.map
+  home: HomeState | null
+}): string {
+  const map = input.runtime?.map
 
   if (!map) return "empty-map"
 
-  return `${map.id}-${map.size.width}-${map.size.height}-${map.tileSize}`
+  return [
+    map.id,
+    map.size.width,
+    map.size.height,
+    map.tileSize,
+    input.home?.status ?? "no-home",
+    input.home?.constructionStage ?? "no-stage",
+    input.home?.progress ?? 0,
+  ].join("-")
 }
