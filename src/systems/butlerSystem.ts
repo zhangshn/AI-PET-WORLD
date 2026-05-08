@@ -15,6 +15,7 @@ import {
   canCreateOpportunity,
   chooseButlerTask,
   createApproachOffer,
+  createButlerMemoryEntry,
   createButlerMemoryEntryFromOpportunityFeedback,
   createButlerMemoryEntryFromTaskDecision,
   createFoodOffer,
@@ -32,6 +33,7 @@ import {
   type ButlerOpportunityFeedback,
   type ButlerOpportunityType,
   type ButlerRelationState,
+  type ButlerRelationTone,
   type ButlerState,
   type ButlerSystemInput,
 } from "./butler/butler-gateway"
@@ -51,6 +53,37 @@ export type {
   ButlerSystemInput,
   ButlerTask,
 } from "./butler/butler-gateway"
+
+export type ButlerBoundaryInteractionFeedback = {
+  tick: number
+  petName: string
+  petGoalType: string
+  petAction: string
+  butlerResponse: string
+  reason: string
+}
+
+function clampRelationValue(value: number): number {
+  if (!Number.isFinite(value)) return 0
+
+  return Math.max(0, Math.min(100, Math.round(value)))
+}
+
+function uniqueTags(tags: string[]): string[] {
+  return Array.from(new Set(tags))
+}
+
+function deriveBoundaryRelationTone(input: {
+  familiarity: number
+  trustEstimate: number
+  currentTone: ButlerRelationTone
+}): ButlerRelationTone {
+  if (input.trustEstimate >= 72 && input.familiarity >= 58) return "trusted"
+  if (input.familiarity >= 38 && input.trustEstimate >= 18) return "familiar"
+  if (input.familiarity > 0 || input.trustEstimate > 0) return "observing"
+
+  return input.currentTone
+}
 
 export class ButlerSystem {
   private state: ButlerState = {
@@ -234,6 +267,83 @@ export class ButlerSystem {
     })
 
     this.rememberOpportunityFeedback(feedback)
+  }
+
+  recordBoundaryInteraction(feedback: ButlerBoundaryInteractionFeedback) {
+    const entry = createButlerMemoryEntry({
+      tick: feedback.tick,
+      type: "relation_signal",
+      sourceTask: this.state.task,
+      summary:
+        `管家记录：${feedback.petName}出现边界/短程探索行为。` +
+        `管家回应=${feedback.butlerResponse}。原因：${feedback.reason}`,
+      emotionalWeight:
+        feedback.butlerResponse === "companion_response"
+          ? 66
+          : feedback.butlerResponse === "protective_response"
+            ? 78
+            : 48,
+      importance:
+        feedback.petGoalType === "expand_territory" ? 72 : 64,
+      tags: [
+        "dual_agent_interaction",
+        "boundary_interaction",
+        `pet_goal_${feedback.petGoalType}`,
+        `pet_action_${feedback.petAction}`,
+        `butler_response_${feedback.butlerResponse}`,
+        `butler_task_${this.state.task}`,
+      ],
+    })
+
+    this.state.memory = appendButlerMemoryEntry({
+      memory: this.state.memory,
+      entry,
+      maxEntries: 80,
+    })
+
+    const familiarityDelta =
+      feedback.butlerResponse === "not_observed" ? 0 : 1
+    const trustDelta =
+      feedback.butlerResponse === "companion_response"
+        ? 2
+        : feedback.butlerResponse === "boundary_waiting"
+          ? 1
+          : feedback.butlerResponse === "protective_response"
+            ? 1
+            : 0
+    const careDelta =
+      feedback.butlerResponse === "companion_response" ||
+      feedback.butlerResponse === "protective_response"
+        ? 1
+        : 0
+
+    const nextFamiliarity = clampRelationValue(
+      this.state.relation.familiarity + familiarityDelta
+    )
+    const nextTrustEstimate = clampRelationValue(
+      this.state.relation.trustEstimate + trustDelta
+    )
+
+    this.state.relation = {
+      ...this.state.relation,
+      familiarity: nextFamiliarity,
+      trustEstimate: nextTrustEstimate,
+      careHistory: this.state.relation.careHistory + careDelta,
+      observationCount: this.state.relation.observationCount + 1,
+      lastInteractionTick: feedback.tick,
+      tone: deriveBoundaryRelationTone({
+        familiarity: nextFamiliarity,
+        trustEstimate: nextTrustEstimate,
+        currentTone: this.state.relation.tone,
+      }),
+      tags: uniqueTags([
+        ...this.state.relation.tags,
+        "dual_agent_interaction",
+        "boundary_interaction",
+        `pet_goal_${feedback.petGoalType}`,
+        `butler_response_${feedback.butlerResponse}`,
+      ]).slice(0, 36),
+    }
   }
 
   restore(state: ButlerState): void {
