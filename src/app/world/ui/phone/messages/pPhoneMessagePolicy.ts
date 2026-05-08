@@ -44,6 +44,20 @@ function formatEventTime(event: WorldEvent): string {
   return `${String(event.hour).padStart(2, "0")}:00`
 }
 
+function readPayloadString(
+  event: WorldEvent,
+  key: string
+): string | null {
+  const value = event.payload?.[key]
+
+  if (typeof value === "string") return value
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value)
+  }
+
+  return null
+}
+
 function isBackgroundLogEvent(event: WorldEvent): boolean {
   return (
     event.type === "time_period_changed" ||
@@ -69,8 +83,30 @@ function isOfflineCatchupEvent(event: WorldEvent): boolean {
   )
 }
 
+function isDualAgentInteractionEvent(event: WorldEvent): boolean {
+  if (event.type !== "interaction") return false
+
+  const source = readPayloadString(event, "source")
+  const interactionKind = readPayloadString(event, "interactionKind")
+
+  return (
+    source === "dual_agent_interaction" ||
+    source === "pet_excursion" ||
+    source === "butler_response" ||
+    interactionKind === "dual_agent_interaction" ||
+    interactionKind === "pet_short_excursion" ||
+    interactionKind === "pet_boundary_observation" ||
+    interactionKind === "butler_boundary_response" ||
+    interactionKind === "butler_protective_response"
+  )
+}
+
 function isButlerMessageEvent(event: WorldEvent): boolean {
-  return event.type === "pet_hatched" || isOfflineCatchupEvent(event)
+  return (
+    event.type === "pet_hatched" ||
+    isOfflineCatchupEvent(event) ||
+    isDualAgentInteractionEvent(event)
+  )
 }
 
 function buildWorldNoticeIntent(event: WorldEvent): PPhoneMessageIntent {
@@ -83,6 +119,38 @@ function buildWorldNoticeIntent(event: WorldEvent): PPhoneMessageIntent {
     sourceEventId: event.id,
     triggerReason: "world_notice_event",
   }
+}
+
+function buildDualAgentButlerText(event: WorldEvent): string {
+  const petGoalType = readPayloadString(event, "petGoalType")
+  const butlerResponse = readPayloadString(event, "butlerResponse")
+  const reason = readPayloadString(event, "reason")
+
+  if (butlerResponse === "protective_response") {
+    return `${event.message} 我记录了这次保护性回应：这不是命令宠物，而是基于当时状态做出的照看判断。`
+  }
+
+  if (butlerResponse === "boundary_waiting") {
+    return `${event.message} 我没有打断它，只是在边界附近等待，确认它仍然能自主判断方向。`
+  }
+
+  if (butlerResponse === "companion_response") {
+    return `${event.message} 我选择靠近一些，但保留距离，让它知道家园方向仍然安全。`
+  }
+
+  if (petGoalType === "expand_territory") {
+    return `${event.message} 我把这次记录为短程探索：它不是被安排过去的，而是在按自己的倾向试探更远的边界。`
+  }
+
+  if (petGoalType === "observe_boundary") {
+    return `${event.message} 我把这次记录为边界观察：它更像是在确认环境，而不是迷路。`
+  }
+
+  if (reason) {
+    return `${event.message} 记录原因：${reason}`
+  }
+
+  return event.message
 }
 
 function buildButlerIntent(
@@ -98,6 +166,18 @@ function buildButlerIntent(
       timeLabel: formatEventTime(event),
       sourceEventId: event.id,
       triggerReason: "offline_catchup_report",
+    }
+  }
+
+  if (isDualAgentInteractionEvent(event)) {
+    return {
+      id: `butler-dual-agent-${event.id}`,
+      channel: "butler",
+      senderName: butlerName,
+      text: buildDualAgentButlerText(event),
+      timeLabel: formatEventTime(event),
+      sourceEventId: event.id,
+      triggerReason: "dual_agent_interaction_report",
     }
   }
 
@@ -132,6 +212,7 @@ function recordIntentForAiData(intent: PPhoneMessageIntent): void {
       "p-phone",
       "message-policy",
       intent.channel === "world-notice" ? "world-notice" : "butler-message",
+      `trigger:${intent.triggerReason}`,
     ],
     messageId: intent.id,
     messageChannel: intent.channel === "world-notice" ? "world_notice" : "butler",
