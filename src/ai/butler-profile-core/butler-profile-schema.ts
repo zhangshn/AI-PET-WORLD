@@ -2,6 +2,15 @@
  * 当前文件负责：定义管家人格核心类型。
  */
 
+import type {
+  LifePersonalityProfileBundle,
+} from "../life-profile-core/life-profile-gateway"
+
+import type {
+  GenderAwareBehaviorBias,
+  GenderPerspective,
+} from "../personality-interpretation-core/interpretation-gateway"
+
 export type ButlerMappingMode =
   | "self_projection"
   | "parallel_self"
@@ -27,6 +36,7 @@ export type ButlerProfileInput = {
   birth: ButlerProfileBirthInput
   mappingMode: ButlerMappingMode
   displayName?: string
+  genderPerspective?: GenderPerspective
 }
 
 export type ButlerProfileIdentity = {
@@ -94,9 +104,17 @@ export type ButlerProfileBias = {
   opportunityInitiative: number
 }
 
+export type ButlerProfileSource = {
+  sourceType: "player_birth_data"
+  algorithm: "life_profile_core"
+}
+
 export type ButlerProfile = {
   identity: ButlerProfileIdentity
   birth: ButlerProfileBirthInput
+  lifeProfile: LifePersonalityProfileBundle
+  behaviorBias: GenderAwareBehaviorBias
+  source: ButlerProfileSource
   careStyle: ButlerCareStyle
   buildStyle: ButlerBuildStyle
   boundaryStyle: ButlerBoundaryStyle

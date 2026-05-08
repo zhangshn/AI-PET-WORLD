@@ -376,4 +376,5 @@ export type {
   ButlerProfileBirthInput,
   ButlerProfileIdentity,
   ButlerProfileInput,
+  ButlerProfileSource,
 } from "./butler-profile-core/butler-profile-gateway"

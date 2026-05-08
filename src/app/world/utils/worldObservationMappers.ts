@@ -136,7 +136,7 @@ function getButlerOpportunityDetail(event: WorldEvent): string {
   const accepted = event.payload?.accepted
 
   if (accepted === true) {
-    return `管家只是提供机会，真正的选择来自 ${petName} 自己。`
+    return `管家提供了可被回应的机会，真正的选择来自 ${petName} 自己。`
   }
 
   return `管家无法直接控制 ${petName}，只能创造条件。`

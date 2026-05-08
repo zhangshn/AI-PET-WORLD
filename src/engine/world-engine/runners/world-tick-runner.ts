@@ -303,7 +303,7 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     incubator: currentIncubator,
     home: currentHome,
     time: input.currentTime,
-    butlerBehaviorBias: currentPet?.lifeProfile.genderAwareBehaviorBias ?? null,
+    butlerBehaviorBias: currentButler.profile?.behaviorBias ?? null,
   })
 
   currentState = refreshTickState(input)

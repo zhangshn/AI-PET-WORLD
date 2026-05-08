@@ -25,13 +25,23 @@ export type RunHomeConstructionResult = {
 }
 
 function getConstructionBias(input: {
-  pet: PetState | null
   butler: ButlerState
-  }): GenderAwareBehaviorBias | null {
+}): GenderAwareBehaviorBias | null {
   return (
-    input.pet?.lifeProfile.genderAwareBehaviorBias ??
+    input.butler.profile?.behaviorBias ??
     input.butler.behaviorBias ??
     null
+  )
+}
+
+function resolveConstructionDrive(input: {
+  butler: ButlerState
+}): number {
+  return (
+    input.butler.profile?.bias.constructionDrive ??
+    input.butler.profile?.behaviorBias.butlerBehaviorBias.constructionDrive ??
+    input.butler.behaviorBias?.butlerBehaviorBias.constructionDrive ??
+    50
   )
 }
 
@@ -39,9 +49,9 @@ function resolveBuildAmount(input: {
   pet: PetState | null
   butler: ButlerState
 }): number {
-  const behaviorBias = getConstructionBias(input)
-  const constructionDrive =
-    behaviorBias?.butlerBehaviorBias.constructionDrive ?? 50
+  const constructionDrive = resolveConstructionDrive({
+    butler: input.butler,
+  })
 
   let amount = 12
 
@@ -88,7 +98,6 @@ export function runHomeConstruction(
   input.homeSystem.build(
     buildAmount,
     getConstructionBias({
-      pet: input.pet,
       butler: input.butler,
     })
   )

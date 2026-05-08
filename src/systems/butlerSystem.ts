@@ -110,7 +110,8 @@ export class ButlerSystem {
 
     this.state.behaviorBias =
       input.butlerBehaviorBias ??
-      input.pet?.lifeProfile.genderAwareBehaviorBias ??
+      this.state.profile?.behaviorBias ??
+      this.state.behaviorBias ??
       null
 
     this.state.pendingOpportunities = removeExpiredOpportunities(
@@ -364,6 +365,7 @@ export class ButlerSystem {
 
   setProfile(profile: ButlerProfile | null): void {
     this.state.profile = profile
+    this.state.behaviorBias = profile?.behaviorBias ?? null
   }
 
   getProfile(): ButlerProfile | null {

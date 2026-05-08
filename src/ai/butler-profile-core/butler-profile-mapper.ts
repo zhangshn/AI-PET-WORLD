@@ -2,6 +2,19 @@
  * 当前文件负责：根据用户出生信息与映射模式生成管家人格核心。
  */
 
+import {
+  buildLifePersonalityProfile,
+} from "../life-profile-core/life-profile-gateway"
+
+import type {
+  LifePersonalityProfileBundle,
+} from "../life-profile-core/life-profile-gateway"
+
+import type {
+  GenderAwareBehaviorBias,
+  GenderPerspective,
+} from "../personality-interpretation-core/interpretation-gateway"
+
 import type {
   ButlerBirthTimeMode,
   ButlerBoundaryStyle,
@@ -14,6 +27,8 @@ import type {
   ButlerProfileBirthInput,
   ButlerProfileInput,
 } from "./butler-profile-schema"
+
+const DEFAULT_BUTLER_GENDER_PERSPECTIVE: GenderPerspective = "male"
 
 function clampScore(value: number): number {
   if (!Number.isFinite(value)) {
@@ -58,6 +73,61 @@ function buildBaseBias(birth: ButlerProfileBirthInput): ButlerProfileBias {
     observationPatience: clampScore(42 + ((seed >> 2) % 34)),
     boundarySensitivity: clampScore(38 + ((seed >> 3) % 40)),
     opportunityInitiative: clampScore(40 + ((seed >> 4) % 38)),
+  }
+}
+
+function buildButlerLifeProfile(
+  input: ButlerProfileInput
+): LifePersonalityProfileBundle {
+  const hasBirthHour = typeof input.birth.hour === "number"
+  const genderPerspective =
+    input.genderPerspective ?? DEFAULT_BUTLER_GENDER_PERSPECTIVE
+
+  return buildLifePersonalityProfile({
+    subjectType: "butler",
+    birthInput: {
+      year: input.birth.year,
+      month: input.birth.month,
+      day: input.birth.day,
+      hour: input.birth.hour ?? null,
+      minute: input.birth.minute ?? null,
+    },
+    genderPerspective,
+    hasBirthHour,
+  })
+}
+
+function buildBiasFromLifeProfile(input: {
+  lifeProfile: LifePersonalityProfileBundle
+  birth: ButlerProfileBirthInput
+}): ButlerProfileBias {
+  const butlerBias =
+    input.lifeProfile.genderAwareBehaviorBias.butlerBehaviorBias
+  const seedFlavor = buildBaseBias(input.birth)
+
+  return {
+    carePriority: clampScore(
+      butlerBias.carePriority + (seedFlavor.carePriority - 50) * 0.04
+    ),
+    constructionDrive: clampScore(
+      butlerBias.constructionDrive +
+        (seedFlavor.constructionDrive - 50) * 0.04
+    ),
+    observationPatience: clampScore(
+      butlerBias.routinePreference * 0.55 +
+        butlerBias.carePriority * 0.25 +
+        (100 - butlerBias.riskTolerance) * 0.15
+    ),
+    boundarySensitivity: clampScore(
+      (100 - butlerBias.riskTolerance) * 0.45 +
+        butlerBias.routinePreference * 0.25 +
+        butlerBias.carePriority * 0.2
+    ),
+    opportunityInitiative: clampScore(
+      butlerBias.responseSpeed * 0.45 +
+        butlerBias.carePriority * 0.25 +
+        butlerBias.constructionDrive * 0.15
+    ),
   }
 }
 
@@ -163,7 +233,13 @@ export function buildButlerProfile(
   input: ButlerProfileInput
 ): ButlerProfile {
   const birthTimeMode = resolveBirthTimeMode(input.birth)
-  const baseBias = buildBaseBias(input.birth)
+  const lifeProfile = buildButlerLifeProfile(input)
+  const behaviorBias: GenderAwareBehaviorBias =
+    lifeProfile.genderAwareBehaviorBias
+  const baseBias = buildBiasFromLifeProfile({
+    lifeProfile,
+    birth: input.birth,
+  })
   const bias = applyMappingModeBias(baseBias, input.mappingMode)
 
   const careStyle = pickCareStyle(bias)
@@ -184,6 +260,12 @@ export function buildButlerProfile(
   return {
     identity,
     birth: input.birth,
+    lifeProfile,
+    behaviorBias,
+    source: {
+      sourceType: "player_birth_data",
+      algorithm: "life_profile_core",
+    },
     careStyle,
     buildStyle,
     boundaryStyle,
@@ -197,9 +279,10 @@ export function buildButlerProfile(
       opportunityStyle,
     }),
     internalNotes: [
-      "管家人格来自用户出生信息，不是系统默认 NPC。",
-      "管家人格只影响管理风格、照护倾向、建设节奏和机会提供方式。",
-      "管家不能直接控制宠物行为，只能提供机会或维护环境。",
+      "管家人格来自玩家生命数据，不是系统默认 NPC。",
+      "管家是玩家生命数据生成的自主意识管理者主角，拥有管理风格、建设倾向、边界判断、关系记忆和行动目标。",
+      "管家可以自主建设、整理、维护、观察、靠近、等待、解释、记录、提供机会或进行保护性回应。",
+      "管家不能剥夺宠物的自主决定权；对宠物的照护、靠近、食物、休息和互动必须以机会或环境条件进入宠物自己的判断链。",
     ],
   }
 }

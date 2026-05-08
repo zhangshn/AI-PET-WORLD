@@ -545,8 +545,8 @@ function buildTaskContext(
 ): ButlerTaskContext {
   const behaviorBias =
     input.butlerBehaviorBias ??
+    state.profile?.behaviorBias ??
     state.behaviorBias ??
-    input.pet?.lifeProfile.genderAwareBehaviorBias ??
     null
 
   const profileTuning = buildButlerProfileTaskTuning(state.profile)
