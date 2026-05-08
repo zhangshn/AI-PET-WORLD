@@ -5,6 +5,7 @@
 import type { WorldEvent, WorldEventType } from "@/types/event"
 import type {
   AiImportance,
+  AiScalarValue,
   AiUserVisibleChannel,
   AiWorldEventRecord,
 } from "@/ai/data-core/ai-data-types"
@@ -111,6 +112,14 @@ function buildEventTags(event: WorldEvent): string[] {
     tags.push(`narrative:${event.narrativeType}`)
   }
 
+  if (event.payload?.interactionKind) {
+    tags.push(`interaction:${String(event.payload.interactionKind)}`)
+  }
+
+  if (event.payload?.source) {
+    tags.push(`source:${String(event.payload.source)}`)
+  }
+
   if (visibility === "debug_log") {
     tags.push("sampled-debug")
   }
@@ -118,8 +127,38 @@ function buildEventTags(event: WorldEvent): string[] {
   return tags
 }
 
-function buildEventPayload(event: WorldEvent) {
-  return {
+function toAiScalarValue(value: unknown): AiScalarValue {
+  if (
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  ) {
+    return value
+  }
+
+  return null
+}
+
+function copyScalarPayloadFields(input: {
+  payload: Record<string, unknown> | undefined
+  target: Record<string, AiScalarValue>
+}) {
+  if (!input.payload) return
+
+  Object.entries(input.payload).forEach(([key, value]) => {
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean" ||
+      value === null
+    ) {
+      input.target[key] = value
+    }
+  })
+}
+
+function buildEventPayload(event: WorldEvent): Record<string, AiScalarValue> {
+  const payload: Record<string, AiScalarValue> = {
     tick: event.tick,
     day: event.day,
     hour: event.hour,
@@ -129,6 +168,24 @@ function buildEventPayload(event: WorldEvent) {
     continuityId: event.continuityId ?? null,
     intensity: event.intensity ?? null,
   }
+
+  copyScalarPayloadFields({
+    payload: event.payload,
+    target: payload,
+  })
+
+  if (event.payload) {
+    payload.hasOriginalPayload = true
+    payload.payloadInteractionKind = toAiScalarValue(event.payload.interactionKind)
+    payload.payloadSource = toAiScalarValue(event.payload.source)
+    payload.payloadOpportunityType = toAiScalarValue(event.payload.opportunityType)
+    payload.payloadAccepted = toAiScalarValue(event.payload.accepted)
+    payload.payloadReason = toAiScalarValue(event.payload.reason)
+    payload.payloadPetGoalType = toAiScalarValue(event.payload.petGoalType)
+    payload.payloadButlerResponse = toAiScalarValue(event.payload.butlerResponse)
+  }
+
+  return payload
 }
 
 export function recordWorldEventForAiData(event: WorldEvent): void {
