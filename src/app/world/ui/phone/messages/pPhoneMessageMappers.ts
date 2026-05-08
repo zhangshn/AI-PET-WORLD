@@ -1,10 +1,13 @@
 /**
- * 当前文件负责：把世界事件与状态整理成 P-Phone 短信数据。
+ * 当前文件负责：把世界事件、AI 消息记录与状态整理成 P-Phone 短信数据。
  */
 
 import type { WorldEvent } from "@/types/event"
 import type { WorldHudBundle } from "../../../utils/worldHudMappers"
 import type { PPhoneMessageThreadId } from "../PPhoneTypes"
+import type { AiMessageRecord } from "@/ai/data-core/ai-data-types"
+
+import { getAiDataRecords } from "@/ai/data-core/ai-data-gateway"
 
 import {
   buildMessageIntentFromEvent,
@@ -41,6 +44,66 @@ function toMessageItem(intent: PPhoneMessageIntent): PPhoneMessageItem {
   }
 }
 
+function formatAiMessageTime(record: AiMessageRecord): string {
+  const occurredAt = new Date(record.occurredAt)
+
+  if (Number.isNaN(occurredAt.getTime())) {
+    return "--:--"
+  }
+
+  return `${String(occurredAt.getHours()).padStart(2, "0")}:${String(
+    occurredAt.getMinutes()
+  ).padStart(2, "0")}`
+}
+
+function toMessageItemFromAiRecord(
+  record: AiMessageRecord,
+  fallbackButlerName: string
+): PPhoneMessageItem {
+  const isWorldMessage = record.messageChannel === "world_notice"
+
+  return {
+    id: record.messageId,
+    sender: isWorldMessage ? "world" : "butler",
+    senderName: isWorldMessage ? "World Notice" : fallbackButlerName,
+    text: record.messageText,
+    timeLabel: formatAiMessageTime(record),
+  }
+}
+
+function readPersistedMessageItems(input: {
+  butlerName: string
+}): {
+  butlerMessages: PPhoneMessageItem[]
+  worldMessages: PPhoneMessageItem[]
+} {
+  const records = getAiDataRecords({
+    kind: "message",
+    limit: 200,
+  }) as AiMessageRecord[]
+
+  const butlerMessages: PPhoneMessageItem[] = []
+  const worldMessages: PPhoneMessageItem[] = []
+
+  records.forEach((record) => {
+    const message = toMessageItemFromAiRecord(record, input.butlerName)
+
+    if (record.messageChannel === "butler") {
+      butlerMessages.push(message)
+      return
+    }
+
+    if (record.messageChannel === "world_notice") {
+      worldMessages.push(message)
+    }
+  })
+
+  return {
+    butlerMessages,
+    worldMessages,
+  }
+}
+
 function buildIntentMessages(input: {
   events: WorldEvent[]
   hud: WorldHudBundle
@@ -67,8 +130,8 @@ function buildIntentMessages(input: {
   })
 
   return {
-    butlerMessages: dedupeMessagesById(butlerMessages).slice(0, 6),
-    worldMessages: dedupeMessagesById(worldMessages).slice(0, 8),
+    butlerMessages,
+    worldMessages,
   }
 }
 
@@ -81,6 +144,10 @@ function dedupeMessagesById(messages: PPhoneMessageItem[]): PPhoneMessageItem[] 
     seenIds.add(message.id)
     return true
   })
+}
+
+function limitVisibleMessages(messages: PPhoneMessageItem[], limit: number) {
+  return dedupeMessagesById(messages).slice(0, limit)
 }
 
 function buildButlerPlaceholderMessage(hud: WorldHudBundle): PPhoneMessageItem {
@@ -138,15 +205,34 @@ export function buildPPhoneMessageThreads(input: {
 }): PPhoneMessageThread[] {
   const readMessageIds = input.readMessageIds ?? new Set<string>()
 
-  const { butlerMessages: eventButlerMessages, worldMessages } =
-    buildIntentMessages({
-      events: input.events,
-      hud: input.hud,
-    })
+  const {
+    butlerMessages: eventButlerMessages,
+    worldMessages: eventWorldMessages,
+  } = buildIntentMessages({
+    events: input.events,
+    hud: input.hud,
+  })
 
-  const butlerMessages =
-    eventButlerMessages.length > 0
-      ? eventButlerMessages
+  const {
+    butlerMessages: persistedButlerMessages,
+    worldMessages: persistedWorldMessages,
+  } = readPersistedMessageItems({
+    butlerName: input.hud.butler.name,
+  })
+
+  const butlerMessages = limitVisibleMessages(
+    [...persistedButlerMessages, ...eventButlerMessages],
+    30
+  )
+
+  const worldMessages = limitVisibleMessages(
+    [...persistedWorldMessages, ...eventWorldMessages],
+    30
+  )
+
+  const visibleButlerMessages =
+    butlerMessages.length > 0
+      ? butlerMessages
       : [buildButlerPlaceholderMessage(input.hud)]
 
   const visibleWorldMessages =
@@ -157,9 +243,9 @@ export function buildPPhoneMessageThreads(input: {
       id: "butler",
       title: input.hud.butler.name,
       subtitle: "管家短信",
-      unreadCount: countUnreadMessages(butlerMessages, readMessageIds),
-      latestText: getLatestText(butlerMessages, "管家暂时没有新短信。"),
-      messages: butlerMessages,
+      unreadCount: countUnreadMessages(visibleButlerMessages, readMessageIds),
+      latestText: getLatestText(visibleButlerMessages, "管家暂时没有新短信。"),
+      messages: visibleButlerMessages,
     },
     {
       id: "world-notice",
