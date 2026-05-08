@@ -307,6 +307,8 @@ export default function AiDataDebugPanel() {
   const [refreshKey, setRefreshKey] = useState(0)
 
   const records = useMemo(() => {
+    void refreshKey
+
     return getFilteredRecords({
       filterKind: activeFilter,
       visibilityFilter,

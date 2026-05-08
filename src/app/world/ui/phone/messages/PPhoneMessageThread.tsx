@@ -25,11 +25,6 @@ function getBubbleClassName(message: PPhoneMessageItem): string {
   return styles.worldBubble
 }
 
-function getReadableMessageIds(thread: PPhoneMessageThread): string[] {
-  return thread.messages
-    .filter((message) => !message.isPlaceholder)
-    .map((message) => message.id)
-}
 
 export default function PPhoneMessageThread({
   thread,
@@ -39,10 +34,12 @@ export default function PPhoneMessageThread({
   useEffect(() => {
     if (thread.unreadCount <= 0) return
 
-    const messageIds = getReadableMessageIds(thread)
+    const messageIds = thread.messages
+      .filter((message) => !message.isPlaceholder)
+      .map((message) => message.id)
 
     onMarkRead(messageIds)
-  }, [thread.id, thread.unreadCount, onMarkRead, thread.messages])
+  }, [thread.unreadCount, thread.messages, onMarkRead])
 
   return (
     <div className={styles.page}>
