@@ -7,7 +7,10 @@ import type { WorldHudBundle } from "../../../utils/worldHudMappers"
 import type { PPhoneMessageThreadId } from "../PPhoneTypes"
 import type { AiMessageRecord } from "@/ai/data-core/ai-data-types"
 
-import { getAiDataRecords } from "@/ai/data-core/ai-data-gateway"
+import {
+  getAiDataRecords,
+  recordAiMessageOnce,
+} from "@/ai/data-core/ai-data-gateway"
 
 import {
   buildMessageIntentFromEvent,
@@ -150,25 +153,44 @@ function limitVisibleMessages(messages: PPhoneMessageItem[], limit: number) {
   return dedupeMessagesById(messages).slice(0, limit)
 }
 
-function buildButlerPlaceholderMessage(hud: WorldHudBundle): PPhoneMessageItem {
+function buildButlerStatusMessageText(hud: WorldHudBundle): string {
   if (hud.pet.available) {
-    return {
-      id: "placeholder-butler-pet-autonomy",
-      sender: "butler",
-      senderName: hud.butler.name,
-      text: "目前没有新的重要消息。宠物正在自主活动，我会继续观察它的状态。",
-      timeLabel: hud.world.timeLabel,
-      isPlaceholder: true,
-    }
+    return `${hud.pet.name} 正在自主活动。我会继续观察它的状态，也会把重要变化通过短信告诉你。`
   }
 
+  return "孵化器目前保持稳定。我会继续照看周围环境，等有重要变化时再通知你。"
+}
+
+function buildButlerStatusMessage(input: {
+  hud: WorldHudBundle
+}): PPhoneMessageItem {
+  const dayLabel = input.hud.world.dayLabel
+  const messageId = `butler-status-${dayLabel}`
+  const text = buildButlerStatusMessageText(input.hud)
+
+  const record = recordAiMessageOnce({
+    id: `ai-message-${messageId}`,
+    source: "message_policy",
+    entityType: "butler",
+    entityId: input.hud.butler.name,
+    importance: "low",
+    userVisibleChannel: "p_phone_butler",
+    summary: "管家基础状态短信生成",
+    tags: ["p-phone", "message-policy", "butler-message", "status-message"],
+    messageId,
+    messageChannel: "butler",
+    messageText: text,
+    triggerReason: "butler_status_message",
+    sourceEventId: messageId,
+    wasReadByUser: false,
+  })
+
   return {
-    id: "placeholder-butler-incubator-stable",
+    id: messageId,
     sender: "butler",
-    senderName: hud.butler.name,
-    text: "目前没有新的重要消息。我会继续维持孵化器和周围环境的稳定。",
-    timeLabel: hud.world.timeLabel,
-    isPlaceholder: true,
+    senderName: input.hud.butler.name,
+    text,
+    timeLabel: record ? formatAiMessageTime(record) : input.hud.world.timeLabel,
   }
 }
 
@@ -233,7 +255,7 @@ export function buildPPhoneMessageThreads(input: {
   const visibleButlerMessages =
     butlerMessages.length > 0
       ? butlerMessages
-      : [buildButlerPlaceholderMessage(input.hud)]
+      : [buildButlerStatusMessage({ hud: input.hud })]
 
   const visibleWorldMessages =
     worldMessages.length > 0 ? worldMessages : [buildWorldNoticePlaceholderMessage()]
