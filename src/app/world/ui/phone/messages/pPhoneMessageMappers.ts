@@ -138,19 +138,33 @@ function buildIntentMessages(input: {
   }
 }
 
-function dedupeMessagesById(messages: PPhoneMessageItem[]): PPhoneMessageItem[] {
+function buildMessageContentKey(message: PPhoneMessageItem): string {
+  return [
+    message.sender,
+    message.senderName,
+    message.text.replace(/\s+/g, " ").trim(),
+  ].join("::")
+}
+
+function dedupeMessages(messages: PPhoneMessageItem[]): PPhoneMessageItem[] {
   const seenIds = new Set<string>()
+  const seenContentKeys = new Set<string>()
 
   return messages.filter((message) => {
     if (seenIds.has(message.id)) return false
 
+    const contentKey = buildMessageContentKey(message)
+
+    if (seenContentKeys.has(contentKey)) return false
+
     seenIds.add(message.id)
+    seenContentKeys.add(contentKey)
     return true
   })
 }
 
 function limitVisibleMessages(messages: PPhoneMessageItem[], limit: number) {
-  return dedupeMessagesById(messages).slice(0, limit)
+  return dedupeMessages(messages).slice(0, limit)
 }
 
 function buildButlerStatusMessageText(hud: WorldHudBundle): string {
@@ -283,5 +297,5 @@ export function buildPPhoneMessageThreads(input: {
 export function getPPhoneTotalUnreadCount(
   threads: PPhoneMessageThread[]
 ): number {
-  return threads.reduce((total, thread) => total + thread.unreadCount, 0)
+  return threads.reduce((total, thread) => thread.unreadCount + total, 0)
 }
