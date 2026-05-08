@@ -38,7 +38,7 @@ export function drawAmbientNature(input: {
   drawSoftLightFields(ambient, input.mapWidth, input.mapHeight)
   drawLakeHint(ambient, input.mapWidth, input.mapHeight)
   drawButterflyAndFlowerSignals(ambient, input.mapWidth, input.mapHeight)
-  drawFireflySignals(ambient, input.mapWidth, input.mapHeight)
+  drawFireflySignals(ambient, input.mapWidth)
   drawTinyGrassSparkles(ambient, input.mapWidth, input.mapHeight)
 
   input.layer.addChild(ambient)
@@ -188,8 +188,7 @@ function drawButterflyAndFlowerSignals(
 
 function drawFireflySignals(
   graphic: Graphics,
-  mapWidth: number,
-  mapHeight: number
+  mapWidth: number
 ) {
   const startX = mapWidth - 420
   const startY = 135
