@@ -66,10 +66,34 @@ function findRecordIndexById(recordId: string): number {
   return records.findIndex((record) => record.id === recordId)
 }
 
+const PROTECTED_RECORD_KINDS: AiDataRecordKind[] = [
+  "message",
+  "user_feedback",
+]
+
+function isProtectedRecord(record: AiDataRecord): boolean {
+  return PROTECTED_RECORD_KINDS.includes(record.kind)
+}
+
 function trimRecords(): void {
   if (records.length <= maxRecords) return
 
-  records.splice(maxRecords)
+  const protectedRecords = records.filter(isProtectedRecord)
+  const normalRecords = records.filter((record) => !isProtectedRecord(record))
+
+  const protectedLimit = Math.min(
+    protectedRecords.length,
+    Math.max(80, Math.floor(maxRecords * 0.25))
+  )
+
+  const normalLimit = Math.max(0, maxRecords - protectedLimit)
+
+  const nextRecords = [
+    ...protectedRecords.slice(0, protectedLimit),
+    ...normalRecords.slice(0, normalLimit),
+  ]
+
+  records.splice(0, records.length, ...nextRecords)
 }
 
 /**
