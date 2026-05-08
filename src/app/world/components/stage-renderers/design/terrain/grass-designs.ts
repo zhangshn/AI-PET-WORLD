@@ -10,11 +10,11 @@ export const GRASS_STAGE_DESIGN_ITEMS: StageDesignItem[] = [
     category: "terrain",
     label: "短草地",
     description:
-      "核心庭院、宠物活动区和家园附近的基础地面，提供温暖、稳定、可停留的主视觉底色。",
+      "核心庭院、宠物自主表达场景和家园附近的基础地面，提供温暖、稳定、可停留的主视觉底色。",
     priority: "P0",
     mvpStatus: "enabled",
     density: "high",
-    placements: ["core_courtyard", "pet_activity_area", "home_area", "path_side"],
+    placements: ["core_courtyard", "home_area", "path_side"],
     interactionRoles: ["visual_only", "atmosphere_feedback"],
     timeMode: "all_day",
     visualKeywords: ["低饱和绿色", "柔和", "安全", "庭院感", "不抢角色"],
@@ -22,6 +22,7 @@ export const GRASS_STAGE_DESIGN_ITEMS: StageDesignItem[] = [
       "短草地必须服务核心庭院，不允许让主角和生命舱淹没在背景里。",
       "不能整片纯色铺满，需要保留轻微草叶和明暗变化。",
       "颜色亮度要保证宠物、管家、生命舱轮廓清楚。",
+      "短草地只是固定世界舞台素材，不决定宠物或管家的行动。",
     ],
   },
   {
