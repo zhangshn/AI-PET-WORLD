@@ -52,7 +52,7 @@ export const BUTLER_RESPONSE_SCENE_STAGE_DESIGN_ITEMS: StageDesignItem[] = [
     priority: "P0",
     mvpStatus: "enabled",
     density: "very_low",
-    placements: ["core_courtyard", "home_area", "butler_observation_area"],
+    placements: ["core_courtyard", "home_area", "path_side"],
     interactionRoles: ["butler_work_target", "world_notice_anchor", "atmosphere_feedback"],
     timeMode: "all_day",
     visualKeywords: ["观察", "记录", "解释", "保持距离", "P-Phone", "管家报告"],
