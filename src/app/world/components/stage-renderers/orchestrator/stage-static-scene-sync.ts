@@ -31,7 +31,10 @@ function redrawExteriorWorldIfNeeded(input: SyncGraphicsStageInput) {
     return
   }
 
-  const renderKey = getStaticWorldRenderKey(input.runtime)
+  const renderKey = getStaticWorldRenderKey({
+    runtime: input.runtime,
+    home: input.home,
+  })
 
   if (input.renderState.lastStaticWorldKey === renderKey) {
     input.renderState.debugMessage = `exterior skipped: same renderKey ${renderKey}`
@@ -50,6 +53,7 @@ function redrawExteriorWorldIfNeeded(input: SyncGraphicsStageInput) {
       foregroundLayer: input.layers.foregroundLayer,
     },
     runtime: input.runtime,
+    home: input.home,
     fallbackWidth: input.width,
     fallbackHeight: input.height,
   })
