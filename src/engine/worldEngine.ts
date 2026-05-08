@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：驱动世界 Tick 循环，并统一调度时间、世界运行流程与 UI 状态同步。
+ * 当前文件负责：驱动世界 Tick 循环，并统一调度时间、世界运行流程、存档快照与 UI 状态同步。
  */
 
 import { TimeSystem, TimeState } from "./timeSystem"
@@ -14,6 +14,17 @@ import type { IncubatorState } from "../types/incubator"
 import type { WorldEvent } from "../types/event"
 import type { WorldEcologyState } from "../world/ecology/ecology-engine"
 import type { WorldRuntimeState } from "../world/runtime/world-runtime"
+
+import {
+  exportAiDataSnapshot,
+  restoreAiDataSnapshot,
+} from "../ai/data-core/ai-data-gateway"
+
+import {
+  WORLD_SAVE_VERSION,
+  type WorldSaveSnapshot,
+  type WorldSaveSource,
+} from "../world/persistence/world-save-gateway"
 
 import { WorldProgressionSystem } from "../world/progression/world-progression-gateway"
 
@@ -132,6 +143,66 @@ export class WorldEngine {
     this.emitUpdate()
   }
 
+  createSaveSnapshot(source: WorldSaveSource): WorldSaveSnapshot {
+    const now = Date.now()
+
+    return {
+      saveVersion: WORLD_SAVE_VERSION,
+      savedAt: now,
+      lastPlayedAt: now,
+
+      engine: {
+        tick: this.tick,
+        time: this.timeSystem.getTime(),
+      },
+
+      systems: {
+        pet: this.petSystem.getPet(),
+        butler: this.butlerSystem.getState(),
+        home: this.homeSystem.getHome(),
+        incubator: this.incubatorSystem.getIncubator(),
+        events: this.eventSystem.getEvents(),
+      },
+
+      world: {
+        stimuli: this.worldStimuli,
+        runtime: this.worldRuntime,
+        progression: this.worldProgressionSystem.getState(),
+      },
+
+      aiData: {
+        records: exportAiDataSnapshot(),
+      },
+
+      meta: {
+        source,
+        appVersion: "desktop-mvp-v1",
+      },
+    }
+  }
+
+  restoreFromSnapshot(snapshot: WorldSaveSnapshot): void {
+    this.stop()
+
+    this.tick = Math.max(0, Math.floor(snapshot.engine.tick))
+    this.timeSystem.restore(snapshot.engine.time)
+
+    this.petSystem.restore(snapshot.systems.pet, this.tick)
+    this.butlerSystem.restore(snapshot.systems.butler)
+    this.homeSystem.restore(snapshot.systems.home)
+    this.incubatorSystem.restore(snapshot.systems.incubator)
+    this.eventSystem.restore(snapshot.systems.events)
+    this.worldProgressionSystem.restore(snapshot.world.progression)
+
+    this.worldStimuli = [...snapshot.world.stimuli]
+    this.worldRuntime = snapshot.world.runtime
+
+    restoreAiDataSnapshot(snapshot.aiData.records)
+
+    this.initialized = true
+    this.emitUpdate()
+  }
+
   private createInitialRuntime(): WorldRuntimeState {
     return createWorldRuntime({
       tick: this.tick,
@@ -233,7 +304,7 @@ export class WorldEngine {
   getWorldProgression() {
     return this.worldProgressionSystem.getState()
   }
-  
+
   reset() {
     this.stop()
     this.tick = 0
