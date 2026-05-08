@@ -13,6 +13,7 @@ export type {
 } from "./pet/pet-gateway"
 
 export type {
+  ButlerBoundaryInteractionFeedback,
   ButlerMood,
   ButlerOpportunity,
   ButlerOpportunityType,
