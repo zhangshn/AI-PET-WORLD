@@ -30,6 +30,57 @@ const BUTLER_IDLE_ZONE = { x: 520, y: 420 }
 const BUTLER_SHELTER_CARE_ZONE = { x: 455, y: 340 }
 const BUTLER_SHELTER_DOOR_ZONE = { x: 520, y: 380 }
 
+type StagePoint = {
+  x: number
+  y: number
+}
+
+function getPetGoalTargetPosition(pet: PetState): StagePoint | null {
+  const target = pet.currentGoal?.targetWorldPosition
+
+  if (!target) return null
+  if (!Number.isFinite(target.x) || !Number.isFinite(target.y)) return null
+
+  return {
+    x: target.x,
+    y: target.y,
+  }
+}
+
+function shouldUseGoalTargetPosition(pet: PetState): boolean {
+  const goalType = pet.currentGoal?.type
+
+  if (!goalType) return false
+
+  if (goalType === "expand_territory") {
+    return pet.action === "exploring" || pet.action === "walking"
+  }
+
+  if (goalType === "observe_boundary") {
+    return pet.action === "observing" || pet.action === "alert_idle"
+  }
+
+  if (goalType === "restore_self") {
+    return pet.action === "resting" || pet.action === "sleeping"
+  }
+
+  if (goalType === "satisfy_need") {
+    return pet.action === "eating" || pet.action === "walking"
+  }
+
+  if (goalType === "stabilize_state") {
+    return pet.action === "observing" || pet.action === "resting" || pet.action === "idle"
+  }
+
+  return false
+}
+
+function getPetGoalTargetIfAvailable(pet: PetState): StagePoint | null {
+  if (!shouldUseGoalTargetPosition(pet)) return null
+
+  return getPetGoalTargetPosition(pet)
+}
+
 export function getPetTargetPosition(input: {
   pet: PetState | null
   incubator: IncubatorState | null
@@ -50,7 +101,17 @@ export function getPetTargetPosition(input: {
   const lifePhase = input.pet.lifeState?.phase
 
   if (lifePhase === "dependent" && input.pet.action === "exploring") {
-    return PET_OBSERVE_ZONE
+    return (
+      getActiveZonePosition(input.ecology, "observation_zone") ??
+      getPetGoalTargetPosition(input.pet) ??
+      PET_OBSERVE_ZONE
+    )
+  }
+
+  const goalTarget = getPetGoalTargetIfAvailable(input.pet)
+
+  if (goalTarget) {
+    return goalTarget
   }
 
   if (input.pet.action === "sleeping") {
@@ -77,7 +138,18 @@ export function getPetTargetPosition(input: {
   }
 
   if (input.pet.action === "exploring") {
-    return input.tick % 2 === 0 ? PET_EXPLORE_ZONE_A : PET_EXPLORE_ZONE_B
+    return (
+      getActiveZonePosition(input.ecology, "exploration_zone") ??
+      (input.tick % 2 === 0 ? PET_EXPLORE_ZONE_A : PET_EXPLORE_ZONE_B)
+    )
+  }
+
+  if (input.pet.action === "walking") {
+    return (
+      getActiveZonePosition(input.ecology, "exploration_zone") ??
+      getActiveZonePosition(input.ecology, "observation_zone") ??
+      PET_CENTER_ZONE
+    )
   }
 
   if (input.pet.action === "approaching") return PET_APPROACH_ZONE
