@@ -220,7 +220,7 @@ function emitDualAgentInteractionEvent(input: {
       butlerName: input.currentButler?.name ?? "管家",
       butlerTask: input.currentButler?.task ?? "unknown",
       butlerResponse,
-      reason: pet.currentGoal?.reason ?? "宠物当前目标进入边界表达场景。",
+      reason: pet.currentGoal?.summary ?? "宠物当前目标进入边界表达场景。",
       targetX: target?.x ?? null,
       targetY: target?.y ?? null,
     },
