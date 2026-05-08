@@ -1,0 +1,102 @@
+/**
+ * 当前文件负责：调度当前 Graphics 模式下的世界舞台静态与动态渲染。
+ */
+
+import type { WorldStimulus } from "@/ai/gateway"
+import type { TimeState } from "@/engine/timeSystem"
+import type { ButlerState } from "@/types/butler"
+import type { HomeState } from "@/types/home"
+import type { IncubatorState } from "@/types/incubator"
+import type { PetState } from "@/types/pet"
+import type { WorldEcologyState } from "@/world/ecology/ecology-engine"
+import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
+
+import {
+  animateStimulusVisuals,
+  type ActorMotionState,
+  type CoreActorVisualRegistry,
+  type RuntimeEntityVisualRegistry,
+  type StimulusVisualRegistry,
+} from "../gateway/stage-renderer-gateway"
+import { logStageDebug } from "./stage-debug-logger"
+import { clearExteriorDynamicLayers } from "./stage-dynamic-layer-cleaner"
+import { syncDynamicWorld } from "./stage-dynamic-scene-sync"
+import { syncStageOverlay } from "./stage-overlay-renderer"
+import { redrawStaticSceneIfNeeded } from "./stage-static-scene-sync"
+import type { WorldStageLayerRefs } from "./stage-layer-types"
+import type { WorldStageSceneMode } from "./stage-scene-mode"
+
+export type GraphicsStageRenderState = {
+  lastStaticWorldKey: string | null
+  phase: number
+  debugMessage?: string
+}
+
+export type SyncGraphicsStageInput = {
+  layers: WorldStageLayerRefs
+  runtimeEntityVisuals: RuntimeEntityVisualRegistry
+  stimulusVisuals: StimulusVisualRegistry
+  actorVisuals: CoreActorVisualRegistry
+  petMotion: ActorMotionState
+  butlerMotion: ActorMotionState
+  renderState: GraphicsStageRenderState
+  sceneMode: WorldStageSceneMode
+  time: TimeState | null
+  pet: PetState | null
+  butler: ButlerState | null
+  home: HomeState | null
+  incubator: IncubatorState | null
+  stimuli: WorldStimulus[]
+  ecology: WorldEcologyState | null
+  runtime: WorldRuntimeState | null
+  tick: number
+  width: number
+  height: number
+}
+
+export function createGraphicsStageRenderState(): GraphicsStageRenderState {
+  return {
+    lastStaticWorldKey: null,
+    phase: 0,
+    debugMessage: "stage init",
+  }
+}
+
+export function advanceGraphicsStagePhase(input: {
+  renderState: GraphicsStageRenderState
+  deltaScale: number
+}) {
+  input.renderState.phase += 0.035 * input.deltaScale
+}
+
+export function syncGraphicsStage(input: SyncGraphicsStageInput) {
+  logStageDebug(input)
+
+  redrawStaticSceneIfNeeded(input)
+
+  if (input.sceneMode === "exterior") {
+    syncDynamicWorld(input)
+  } else {
+    clearExteriorDynamicLayers(input.layers)
+  }
+
+  animateStimulusVisuals({
+    visuals: input.stimulusVisuals,
+    phase: input.renderState.phase,
+  })
+
+  syncStageOverlay({
+    overlay: input.layers.overlay,
+    width: input.width,
+    height: input.height,
+    period: input.time?.period,
+  })
+}
+
+export function resetGraphicsStageRenderState(
+  renderState: GraphicsStageRenderState
+) {
+  renderState.lastStaticWorldKey = null
+  renderState.phase = 0
+  renderState.debugMessage = "stage reset"
+}
