@@ -17,21 +17,14 @@ export const FIREFLY_STAGE_DESIGN_ITEMS: StageDesignItem[] = [
     placements: ["forest_edge", "lake_side", "flower_slope", "night_only"],
     interactionRoles: ["pet_perception_source", "atmosphere_feedback"],
     timeMode: "night",
-    spawnRule: {
-      min: 3,
-      max: 8,
-      defaultCount: 5,
-      mode: "runtime_dynamic",
-    },
     visualKeywords: ["夜间", "微光", "黄绿色光点", "轻微闪烁", "安静"],
     validationNotes: [
       "萤火虫只应该在夜间明显出现。",
-      "萤火虫数量应控制在同屏 3 到 8 个光点。",
       "萤火虫亮度不能高过生命舱核心光效。",
       "萤火虫应服务夜间氛围，不应像技能特效。",
-      "萤火虫数量不是固定死值，而是由 spawnRule 控制在安全范围内。",
+      "萤火虫数量不在定义文件中决定，由 rules/spawn 层控制。",
     ],
-    seasonalHook:
+    futureHook:
       "后续季节系统接入后，夏季夜晚萤火虫更活跃，春秋较少，冬季基本隐藏；MVP 暂不执行。",
   },
 ]
