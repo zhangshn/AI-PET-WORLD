@@ -179,6 +179,7 @@ function emitDualAgentInteractionEvent(input: {
   prevPet: PetState | null
   currentPet: PetState | null
   currentButler: ButlerState | null
+  butlerSystem: ButlerSystem
   eventSystem: EventSystem
 }): void {
   if (!shouldEmitDualAgentInteractionEvent({
@@ -194,7 +195,17 @@ function emitDualAgentInteractionEvent(input: {
 
   const goalType = pet.currentGoal?.type ?? "unknown"
   const butlerResponse = resolveButlerBoundaryResponse(input.currentButler)
+  const reason = pet.currentGoal?.summary ?? "宠物当前目标进入边界表达场景。"
   const target = pet.currentGoal?.targetWorldPosition
+
+  input.butlerSystem.recordBoundaryInteraction({
+    tick: input.tick,
+    petName: pet.name,
+    petGoalType: goalType,
+    petAction: pet.action,
+    butlerResponse,
+    reason,
+  })
 
   input.eventSystem.addInteractionEvent({
     tick: input.tick,
@@ -220,7 +231,7 @@ function emitDualAgentInteractionEvent(input: {
       butlerName: input.currentButler?.name ?? "管家",
       butlerTask: input.currentButler?.task ?? "unknown",
       butlerResponse,
-      reason: pet.currentGoal?.summary ?? "宠物当前目标进入边界表达场景。",
+      reason,
       targetX: target?.x ?? null,
       targetY: target?.y ?? null,
     },
@@ -404,6 +415,7 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     prevPet,
     currentPet,
     currentButler,
+    butlerSystem: input.butlerSystem,
     eventSystem: input.eventSystem,
   })
 
