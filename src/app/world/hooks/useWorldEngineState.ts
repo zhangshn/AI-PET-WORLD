@@ -97,6 +97,8 @@ function runOfflineCatchupIfNeeded(lastSavedAt: number): void {
     endedAtTick: worldEngine.getTick(),
   })
 
+  worldEngine.addOfflineCatchupReport(result)
+
   console.info("🌙 离线补算完成：", result)
 
   saveOfflineCatchupWorldSnapshot()

@@ -26,6 +26,10 @@ import {
   type WorldSaveSource,
 } from "../world/persistence/world-save-gateway"
 
+import type {
+  OfflineCatchupResult,
+} from "../world/offline/offline-catchup-gateway"
+
 import { WorldProgressionSystem } from "../world/progression/world-progression-gateway"
 
 import {
@@ -200,6 +204,40 @@ export class WorldEngine {
     restoreAiDataSnapshot(snapshot.aiData.records)
 
     this.initialized = true
+    this.emitUpdate()
+  }
+
+addOfflineCatchupReport(result: OfflineCatchupResult): void {
+    if (!result.plan.shouldCatchup || result.appliedTickCount <= 0) {
+      return
+    }
+
+    const currentTime = this.timeSystem.getTime()
+    const pet = this.petSystem.getPet()
+
+    const petStateText = pet
+      ? `宠物目前保持${pet.action}，能量 ${pet.energy}，饥饿 ${pet.hunger}，情绪 ${pet.mood}。`
+      : "孵化器仍是当前世界的主要照看对象。"
+
+    this.eventSystem.addInteractionEvent({
+      tick: this.tick,
+      day: currentTime.day,
+      hour: currentTime.hour,
+      petName: pet?.name,
+      message: `你离开期间，我继续照看了这个世界。世界补记了 ${result.appliedTickCount} 个 Tick，当前时间来到 Day ${currentTime.day} - ${String(currentTime.hour).padStart(2, "0")}:00。${petStateText}`,
+      sourceAction: "offline_catchup",
+      narrativeType: "observe_environment",
+      intensity: 0.75,
+      payload: {
+        source: "offline_catchup",
+        offlineMinutes: result.plan.offlineMinutes,
+        appliedTickCount: result.appliedTickCount,
+        startedAtTick: result.startedAtTick,
+        endedAtTick: result.endedAtTick,
+        reportSender: "butler",
+      },
+    })
+
     this.emitUpdate()
   }
 

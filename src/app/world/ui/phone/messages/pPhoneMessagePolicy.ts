@@ -62,8 +62,15 @@ function isWorldNoticeEvent(event: WorldEvent): boolean {
   )
 }
 
+function isOfflineCatchupEvent(event: WorldEvent): boolean {
+  return (
+    event.type === "interaction" &&
+    event.payload?.source === "offline_catchup"
+  )
+}
+
 function isButlerMessageEvent(event: WorldEvent): boolean {
-  return event.type === "pet_hatched"
+  return event.type === "pet_hatched" || isOfflineCatchupEvent(event)
 }
 
 function buildWorldNoticeIntent(event: WorldEvent): PPhoneMessageIntent {
@@ -82,6 +89,18 @@ function buildButlerIntent(
   event: WorldEvent,
   butlerName: string
 ): PPhoneMessageIntent {
+  if (isOfflineCatchupEvent(event)) {
+    return {
+      id: `butler-offline-${event.id}`,
+      channel: "butler",
+      senderName: butlerName,
+      text: event.message,
+      timeLabel: formatEventTime(event),
+      sourceEventId: event.id,
+      triggerReason: "offline_catchup_report",
+    }
+  }
+
   return {
     id: `butler-${event.id}`,
     channel: "butler",
