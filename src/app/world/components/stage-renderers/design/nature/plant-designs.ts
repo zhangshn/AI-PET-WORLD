@@ -29,11 +29,11 @@ export const PLANT_STAGE_DESIGN_ITEMS: StageDesignItem[] = [
     category: "plant",
     label: "庭院植物",
     description:
-      "放在小屋、生命舱和管家观察区附近，用来营造有人照看的生活空间。",
+      "放在小屋、生命舱和管家记录场景附近，用来营造有人照看的生活空间。",
     priority: "P1",
     mvpStatus: "enabled",
     density: "low",
-    placements: ["core_courtyard", "home_area", "butler_observation_area"],
+    placements: ["core_courtyard", "home_area", "path_side"],
     interactionRoles: ["visual_only", "home_progress_anchor"],
     timeMode: "all_day",
     visualKeywords: ["小盆栽", "庭院", "生活感", "被照看", "温暖"],
