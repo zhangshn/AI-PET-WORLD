@@ -6,6 +6,7 @@
 
 import {
   buildButlerEducationStrategy,
+  type ButlerEducationStrategy,
   type ButlerRelationState,
 } from "@/systems/butler/butler-gateway"
 
@@ -15,14 +16,16 @@ import styles from "@/styles/world-styles/debug/runtime-debug-panel.module.css"
 
 type Props = {
   relation: ButlerRelationState | null
+  strategy?: ButlerEducationStrategy | null
 }
 
 export default function ButlerEducationStrategyDebugPanel({
   relation,
+  strategy: providedStrategy = null,
 }: Props) {
-  const strategy = relation
-    ? buildButlerEducationStrategy(relation)
-    : null
+  const strategy = providedStrategy ?? (
+    relation ? buildButlerEducationStrategy(relation) : null
+  )
 
   return (
     <div className={styles.block}>

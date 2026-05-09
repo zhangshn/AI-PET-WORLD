@@ -310,3 +310,32 @@ createFoodOffer / createRestOffer / createApproachOffer
 - 不直接写入宠物 learning
 - 不接 P-Phone
 - 只让 F3 开发审计面板能看到教育策略如何参与管家判断解释
+
+## 13. BUTLER-EDUCATION-4 当前状态
+
+当前已经把管家教育策略保存为 `ButlerState.latestEducationStrategy`。
+
+该字段用于：
+
+- F3 开发审计读取当前教育策略快照
+- 后续 message-decision 判断管家是否需要主动联系玩家
+- 后续 P-Phone 使用管家自主判断结果，而不是重新读取系统日志
+
+当前字段内容来自：
+
+```txt
+ButlerRelationState
+↓
+buildButlerEducationStrategy
+↓
+ButlerState.latestEducationStrategy
+```
+
+边界原则：
+
+- 不改变宠物行为
+- 不让管家控制宠物
+- 不直接写入宠物 learning
+- 不接 P-Phone
+- 不改变 worldEngine 调度顺序
+- 只保存当前管家的教育策略快照，供开发审计和未来 message-decision 读取

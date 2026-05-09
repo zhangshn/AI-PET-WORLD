@@ -15,6 +15,10 @@ import type {
 } from "./task/butler-task-decision-trace"
 
 import type {
+  ButlerEducationStrategy,
+} from "./education/strategy/butler-education-strategy-gateway"
+
+import type {
   ButlerMemoryState,
 } from "./memory-relation/butler-memory"
 
@@ -89,6 +93,12 @@ export type ButlerState = {
    * 用于解释为什么本轮选择某个任务。
    */
   latestTaskDecisionTrace?: ButlerTaskDecisionTrace | null
+
+  /**
+   * 管家最近一次教育策略快照。
+   * 用于开发审计和未来 message-decision，不直接决定宠物行为。
+   */
+  latestEducationStrategy?: ButlerEducationStrategy | null
 
   /**
    * 管家长期记忆状态。

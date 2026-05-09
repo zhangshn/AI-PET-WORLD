@@ -63,7 +63,10 @@ export default function ButlerProfileSetupPanel({ world }: Props) {
           profile={currentProfile}
         />
 
-        <ButlerEducationStrategyDebugPanel relation={relation} />
+        <ButlerEducationStrategyDebugPanel
+          relation={relation}
+          strategy={world.butler?.latestEducationStrategy ?? null}
+        />
 
         <ButlerOpportunityFeedbackDebugPanel relation={relation} />
       </div>

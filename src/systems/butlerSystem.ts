@@ -97,6 +97,7 @@ export class ButlerSystem {
     profile: null,
     behaviorBias: null,
     latestTaskDecisionTrace: null,
+    latestEducationStrategy: null,
     memory: createInitialButlerMemoryState(),
     relation: createInitialButlerRelationState(),
   }
@@ -143,6 +144,7 @@ export class ButlerSystem {
     const educationStrategy = buildButlerEducationStrategy(
       this.state.relation
     )
+    this.state.latestEducationStrategy = educationStrategy
 
     this.tryCreateOpportunity({
       type: "food_offer",
@@ -372,6 +374,7 @@ export class ButlerSystem {
       ...state,
       pendingOpportunities: [...state.pendingOpportunities],
       opportunityCooldowns: { ...state.opportunityCooldowns },
+      latestEducationStrategy: state.latestEducationStrategy ?? null,
       memory: {
         ...state.memory,
         entries: [...state.memory.entries],
