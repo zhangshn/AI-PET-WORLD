@@ -2,7 +2,7 @@
  * 当前文件负责：集中管理 personality-test 页面使用的展示常量。
  */
 
-import type { BranchPalace, SectorName } from "../../ai/ziwei-core/schema"
+import type { BranchPalace, SectorName } from "../../ai/destiny-core/ziwei-core/schema"
 
 export const BRANCH_LABELS: Record<BranchPalace, string> = {
   yin: "寅",

@@ -8,23 +8,23 @@ import {
   buildZiweiCurrentDynamicProfile,
   buildZiweiDynamicChartOnly,
   buildZiweiDynamicInfluence
-} from "../../../ai/ziwei-core/ziwei-gateway"
+} from "../../../ai/destiny-core/ziwei-core/ziwei-gateway"
 
 import type {
   BirthPattern,
   BranchPalace,
   PersonalityProfile
-} from "../../../ai/ziwei-core/schema"
+} from "../../../ai/destiny-core/ziwei-core/schema"
 
 import type {
   ZiweiDynamicChart,
   ZiweiDynamicResult,
   ZiweiFlowResult
-} from "../../../ai/ziwei-core/dynamic/dynamic-schema"
+} from "../../../ai/destiny-core/ziwei-core/dynamic/dynamic-schema"
 
 import type {
   CurrentDynamicProfile
-} from "../../../ai/ziwei-core/ziwei-gateway"
+} from "../../../ai/destiny-core/ziwei-core/ziwei-gateway"
 
 import type {
   ActiveDynamicFlow,

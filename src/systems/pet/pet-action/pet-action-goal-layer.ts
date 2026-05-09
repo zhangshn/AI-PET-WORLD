@@ -2,7 +2,7 @@
  * 当前文件负责：把当前 goal 映射为候选行为权重。
  */
 
-import type { PetGoalState } from "../pet-goal/pet-goal-gateway"
+import type { PetGoalState } from "../goal/pet-goal-gateway"
 import type { PetActionWeights } from "./pet-action-weight-types"
 
 export function applyActionGoalLayer(

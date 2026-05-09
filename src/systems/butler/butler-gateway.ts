@@ -23,7 +23,7 @@ export {
   removeExpiredOpportunities,
 } from "./butler-opportunity-runner"
 
-export { chooseButlerTask } from "./butler-task-runner"
+export { chooseButlerTask } from "./task/butler-task-runner"
 
 export { deriveButlerMood } from "./butler-mood-runner"
 
@@ -37,13 +37,13 @@ export type {
 
 export {
   buildButlerTaskDecisionTrace,
-} from "./butler-task-decision-trace"
+} from "./task/butler-task-decision-trace"
 
 export type {
   ButlerTaskDecisionGate,
   ButlerTaskDecisionScore,
   ButlerTaskDecisionTrace,
-} from "./butler-task-decision-trace"
+} from "./task/butler-task-decision-trace"
 
 export {
   appendButlerMemoryEntry,
@@ -52,33 +52,33 @@ export {
   createButlerMemoryEntryFromTaskDecision,
   createInitialButlerMemoryState,
   shouldRememberTaskDecision,
-} from "./butler-memory"
+} from "./memory-relation/butler-memory"
 
 export type {
   ButlerMemoryEntry,
   ButlerMemoryState,
   ButlerMemoryType,
-} from "./butler-memory"
+} from "./memory-relation/butler-memory"
 
 export {
   createInitialButlerRelationState,
   updateButlerRelationFromOpportunityFeedback,
   updateButlerRelationFromTaskDecision,
-} from "./butler-relation"
+} from "./memory-relation/butler-relation"
 
 export type {
   ButlerOpportunityFeedback,
   ButlerRelationState,
   ButlerRelationTone,
-} from "./butler-relation"
+} from "./memory-relation/butler-relation"
 
 export {
   buildButlerExperienceInterpretation,
   buildButlerRelationTaskTuning,
-} from "./butler-relation-tuning"
+} from "./memory-relation/butler-relation-tuning"
 
 export type {
   ButlerExperienceInterpretation,
   ButlerExperienceInterpreterInput,
   ButlerRelationTaskTuning,
-} from "./butler-relation-tuning"
+} from "./memory-relation/butler-relation-tuning"

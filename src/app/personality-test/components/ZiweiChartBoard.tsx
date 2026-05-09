@@ -5,7 +5,7 @@
 import type {
   BirthPattern,
   BranchPalace
-} from "../../../ai/ziwei-core/schema"
+} from "../../../ai/destiny-core/ziwei-core/schema"
 
 import { ZIWEI_LAYOUT } from "../constants"
 

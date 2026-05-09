@@ -13,7 +13,7 @@ import type {
 
 import type {
   ZiweiConsciousnessKernel,
-} from "../ai/consciousness/consciousness-gateway"
+} from "../ai/consciousness-core/consciousness/consciousness-gateway"
 
 import type {
   PetMemoryState,
@@ -21,7 +21,7 @@ import type {
 
 import type {
   PetGoalState,
-} from "../systems/pet/pet-goal/pet-goal-gateway"
+} from "../systems/pet/goal/pet-goal-gateway"
 
 import type {
   PetCognitionRecord,

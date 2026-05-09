@@ -4,7 +4,7 @@
 
 import { useMemo, useState } from "react"
 
-import type { BirthPattern } from "../../../ai/ziwei-core/schema"
+import type { BirthPattern } from "../../../ai/destiny-core/ziwei-core/schema"
 
 import type { ActiveDynamicFlow } from "../types"
 

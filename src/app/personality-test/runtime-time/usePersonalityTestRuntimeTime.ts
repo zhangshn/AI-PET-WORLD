@@ -4,13 +4,13 @@
 
 import { useMemo, useState } from "react"
 
-import type { BranchPalace } from "../../../ai/ziwei-core/schema"
+import type { BranchPalace } from "../../../ai/destiny-core/ziwei-core/schema"
 
 import {
   clampSolarDay,
   findSolarByBaziLunarDate,
   getBaziLunarInfoBySolar,
-} from "../../../ai/bazi-core/bazi-runtime/bazi-lunar-date-utils"
+} from "../../../ai/destiny-core/bazi-core/bazi-runtime/bazi-lunar-date-utils"
 
 import type { BaziRuntimeTimeSelection } from "../components/bazi-runtime-panel/bazi-runtime-panel-types"
 import type { ZiweiDynamicTimeSelection } from "../components/ZiweiDynamicTimeTable"

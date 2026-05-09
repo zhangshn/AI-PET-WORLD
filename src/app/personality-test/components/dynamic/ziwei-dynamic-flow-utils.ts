@@ -5,7 +5,7 @@
 import type {
   ZiweiDynamicChart,
   ZiweiFlowResult
-} from "../../../../ai/ziwei-core/dynamic/dynamic-schema"
+} from "../../../../ai/destiny-core/ziwei-core/dynamic/dynamic-schema"
 
 import type { ActiveDynamicFlow } from "../../types"
 

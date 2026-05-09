@@ -7,9 +7,9 @@ import { useMemo } from "react"
 import {
   buildBaziRuntimeProfile,
   type BaziRuntimeGender
-} from "../../../ai/bazi-core/bazi-gateway"
+} from "../../../ai/destiny-core/bazi-core/bazi-gateway"
 
-import type { BaziProfile } from "../../../ai/bazi-core/bazi-gateway"
+import type { BaziProfile } from "../../../ai/destiny-core/bazi-core/bazi-gateway"
 import type { DynamicGenderInput } from "../types"
 
 function resolveBaziRuntimeGender(

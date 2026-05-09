@@ -4,12 +4,12 @@
 
 import type {
   BranchPalace
-} from "../ziwei-core/schema"
+} from "../destiny-core/ziwei-core/schema"
 
 import {
   clampSolarDay,
   getBaziLunarInfoBySolar
-} from "../bazi-core/bazi-runtime/bazi-lunar-date-utils"
+} from "../destiny-core/bazi-core/bazi-runtime/bazi-lunar-date-utils"
 
 import type {
   LifeTendencyRuntimeTime

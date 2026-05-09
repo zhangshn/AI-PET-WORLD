@@ -2,7 +2,7 @@
  * 当前文件负责：展示紫微动态盘运行状态说明。
  */
 
-import type { ZiweiDynamicChart } from "../../../../ai/ziwei-core/dynamic/dynamic-schema"
+import type { ZiweiDynamicChart } from "../../../../ai/destiny-core/ziwei-core/dynamic/dynamic-schema"
 
 export function ZiweiDynamicRuntimeLine({
   chartData

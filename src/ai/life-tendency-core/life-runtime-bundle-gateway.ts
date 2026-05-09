@@ -4,16 +4,16 @@
 
 import {
   buildZiweiCurrentDynamicProfile
-} from "../ziwei-core/ziwei-gateway"
+} from "../destiny-core/ziwei-core/ziwei-gateway"
 
 import {
   buildBaziCurrentTendencyProfile,
   buildBaziRuntimeProfile
-} from "../bazi-core/bazi-gateway"
+} from "../destiny-core/bazi-core/bazi-gateway"
 
 import type {
   BaziRuntimeGender
-} from "../bazi-core/bazi-gateway"
+} from "../destiny-core/bazi-core/bazi-gateway"
 
 import {
   buildCurrentLifeTendencyProfile

@@ -2,10 +2,10 @@
  * 当前文件负责：作为 AI-PET-WORLD 全部 AI 子系统统一总入口。
  */
 
-import type { PersonalityProfile } from "./ziwei-core/schema"
+import type { PersonalityProfile } from "./destiny-core/ziwei-core/schema"
 
-import type { PublicPersonalityView } from "./ziwei-core/public-view"
-import { buildPublicPersonalityView } from "./ziwei-core/public-view"
+import type { PublicPersonalityView } from "./destiny-core/ziwei-core/public-view"
+import { buildPublicPersonalityView } from "./destiny-core/ziwei-core/public-view"
 
 import type {
   PetTimelineSnapshot,
@@ -28,11 +28,11 @@ import type {
   BuildPersonalityInterpretationInput,
   GenderPerspectiveComparison,
   PersonalityInterpretationProfile,
-} from "./personality-interpretation-core/interpretation-gateway"
+} from "./personality-core/personality-interpretation-core/interpretation-gateway"
 import {
   buildPersonalityGenderComparison,
   buildPersonalityInterpretationProfile,
-} from "./personality-interpretation-core/interpretation-gateway"
+} from "./personality-core/personality-interpretation-core/interpretation-gateway"
 
 import {
   getWorldAutonomyRuleset,
@@ -41,7 +41,7 @@ import {
   entityOwnsFinalDecision,
   opportunityRequiresSelfAcceptance,
   opportunityCanDirectlyResolveOutcome,
-} from "./autonomy-core/autonomy-gateway"
+} from "./consciousness-core/autonomy-core/autonomy-gateway"
 
 import type {
   WorldStimulusSystemState,
@@ -168,7 +168,7 @@ export {
 
 export {
   buildLifePersonalityProfile,
-} from "./life-profile-core/life-profile-gateway"
+} from "./personality-core/life-profile-core/life-profile-gateway"
 
 export function buildWorldStimuli(
   input: BuildWorldStimuliInput
@@ -194,13 +194,13 @@ export function stepPetBehaviorProcess(
   return stepBehaviorProcess(input)
 }
 
-export type { BirthInput, PersonalityProfile } from "./ziwei-core/schema"
+export type { BirthInput, PersonalityProfile } from "./destiny-core/ziwei-core/schema"
 
-export { buildPersonalityProfile } from "./ziwei-core/ziwei-gateway"
+export { buildPersonalityProfile } from "./destiny-core/ziwei-core/ziwei-gateway"
 
-export type { PublicPersonalityView } from "./ziwei-core/public-view"
+export type { PublicPersonalityView } from "./destiny-core/ziwei-core/public-view"
 
-export type { BaziProfile } from "./bazi-core/bazi-gateway"
+export type { BaziProfile } from "./destiny-core/bazi-core/bazi-gateway"
 
 export type {
   BaziDynamicsSupportItem,
@@ -227,14 +227,14 @@ export type {
   ZiweiLifeFunctionProfile,
   ZiweiLifeFunctionResult,
   ZiweiLifeFunctionRule,
-} from "./personality-interpretation-core/interpretation-gateway"
+} from "./personality-core/personality-interpretation-core/interpretation-gateway"
 
 export type {
   BuildLifePersonalityProfileInput,
   LifePersonalityProfileBundle,
   LifeProfileBirthInput,
   LifeProfileSubjectType,
-} from "./life-profile-core/life-profile-gateway"
+} from "./personality-core/life-profile-core/life-profile-gateway"
 
 export type {
   BuildCurrentLifeRuntimeBundleFromWorldInput,
@@ -277,7 +277,7 @@ export type {
   ConsciousnessArchetype,
   ConsciousnessBias,
   ConsciousnessCoreDrive,
-} from "./consciousness/consciousness-gateway"
+} from "./consciousness-core/consciousness/consciousness-gateway"
 
 export type {
   PetMemoryState,
@@ -301,7 +301,7 @@ export type {
   EntityAutonomyPolicy,
   OpportunityRule,
   WorldAutonomyRuleset,
-} from "./autonomy-core/autonomy-gateway"
+} from "./consciousness-core/autonomy-core/autonomy-gateway"
 
 export type {
   WorldStimulus,
@@ -337,7 +337,7 @@ export {
   buildAgentMemoryImpact,
   buildAgentPerception,
   buildAgentSignal,
-} from "./agent-core/agent-gateway"
+} from "./consciousness-core/agent-core/agent-gateway"
 
 export type {
   AgentCycleTrace,
@@ -358,11 +358,11 @@ export type {
   AgentSignalSource,
   AutonomousAgentId,
   AutonomousAgentKind,
-} from "./agent-core/agent-gateway"
+} from "./consciousness-core/agent-core/agent-gateway"
 
 export {
   buildButlerProfile,
-} from "./butler-profile-core/butler-profile-gateway"
+} from "./personality-core/butler-profile-core/butler-profile-gateway"
 
 export type {
   ButlerBirthTimeMode,
@@ -377,4 +377,4 @@ export type {
   ButlerProfileIdentity,
   ButlerProfileInput,
   ButlerProfileSource,
-} from "./butler-profile-core/butler-profile-gateway"
+} from "./personality-core/butler-profile-core/butler-profile-gateway"

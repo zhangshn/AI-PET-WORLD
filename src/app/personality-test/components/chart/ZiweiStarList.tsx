@@ -2,7 +2,7 @@
  * 当前文件负责：展示紫微宫格中的原生星曜。
  */
 
-import type { StarId } from "../../../../ai/ziwei-core/schema"
+import type { StarId } from "../../../../ai/destiny-core/ziwei-core/schema"
 import { getStarDisplay } from "../../utils"
 
 export function ZiweiStarList({

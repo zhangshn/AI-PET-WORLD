@@ -12,15 +12,15 @@ import type {
 
 import type {
   ButlerTaskDecisionTrace,
-} from "./butler-task-decision-trace"
+} from "./task/butler-task-decision-trace"
 
 import type {
   ButlerMemoryState,
-} from "./butler-memory"
+} from "./memory-relation/butler-memory"
 
 import type {
   ButlerRelationState,
-} from "./butler-relation"
+} from "./memory-relation/butler-relation"
 
 export type ButlerTask =
   | "watching_incubator"

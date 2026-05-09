@@ -13,7 +13,7 @@ import {
   type BaziRuntimeGender,
   type WuXingElement,
   type BaziRuntimeModifiers
-} from "../../../../ai/bazi-core/bazi-gateway"
+} from "../../../../ai/destiny-core/bazi-core/bazi-gateway"
 
 import type { DynamicGenderInput } from "../../types"
 import type { PersonalityTestRuntimeTime } from "../../runtime-time/personality-test-runtime-time-types"

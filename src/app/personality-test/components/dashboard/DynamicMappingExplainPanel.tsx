@@ -17,11 +17,11 @@ import type {
 import type {
   BirthPattern,
   PersonalityProfile
-} from "../../../../ai/ziwei-core/schema"
+} from "../../../../ai/destiny-core/ziwei-core/schema"
 
 import type {
   BaziProfile
-} from "../../../../ai/bazi-core/bazi-gateway"
+} from "../../../../ai/destiny-core/bazi-core/bazi-gateway"
 
 import type { DynamicGenderInput } from "../../types"
 import type { PersonalityTestRuntimeTime } from "../../runtime-time/personality-test-runtime-time-types"

@@ -2,7 +2,7 @@
  * 当前文件负责：展示紫微动态影响中的行为偏置评分。
  */
 
-import type { ZiweiDynamicInfluence } from "../../../../ai/ziwei-core/dynamic/dynamic-schema"
+import type { ZiweiDynamicInfluence } from "../../../../ai/destiny-core/ziwei-core/dynamic/dynamic-schema"
 
 import { ScoreLine } from "../common/ScoreLine"
 import { DYNAMIC_BIAS_LABELS } from "./dynamic-detail-labels"

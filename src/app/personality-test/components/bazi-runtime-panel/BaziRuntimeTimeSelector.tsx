@@ -8,7 +8,7 @@ import type {
   BaziLiuNianTimeOption,
   BaziRuntimeProfile,
   BaziSimpleTimeOption
-} from "../../../../ai/bazi-core/bazi-gateway"
+} from "../../../../ai/destiny-core/bazi-core/bazi-gateway"
 
 import {
   BAZI_RUNTIME_LEVEL_LABELS,

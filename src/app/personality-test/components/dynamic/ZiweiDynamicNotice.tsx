@@ -6,7 +6,7 @@ import type {
   ZiweiDynamicResult,
   ZiweiDynamicChart,
   ZiweiFlowResult
-} from "../../../../ai/ziwei-core/dynamic/dynamic-schema"
+} from "../../../../ai/destiny-core/ziwei-core/dynamic/dynamic-schema"
 
 export function ZiweiDynamicErrorNotice({
   chartResult

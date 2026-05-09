@@ -4,7 +4,7 @@
 
 import type {
   ZiweiFlowResult
-} from "../../../../ai/ziwei-core/dynamic/dynamic-schema"
+} from "../../../../ai/destiny-core/ziwei-core/dynamic/dynamic-schema"
 
 import {
   BRANCH_FULL_LABELS,

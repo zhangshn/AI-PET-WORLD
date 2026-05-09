@@ -6,7 +6,7 @@ import type {
   BranchPalace,
   SectorName,
   StarId
-} from "../../ai/ziwei-core/schema"
+} from "../../ai/destiny-core/ziwei-core/schema"
 
 import {
   BRANCH_LABELS,

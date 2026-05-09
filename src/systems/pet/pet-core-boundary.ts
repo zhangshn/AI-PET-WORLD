@@ -55,14 +55,14 @@ export const PET_CORE_RUNTIME_MODULES: PetCoreBoundaryModule[] = [
 export const PET_CORE_DECISION_MODULES: PetCoreBoundaryModule[] = [
   {
     layer: "core_decision",
-    path: "src/systems/pet/pet-drive",
+    path: "src/systems/pet/drive",
     role: "宠物 drive 计算系统。",
     accessRule:
       "只能输出内部驱动倾向，不直接输出 action；参数统一放在 pet-drive-tuning.ts。",
   },
   {
     layer: "core_decision",
-    path: "src/systems/pet/pet-goal",
+    path: "src/systems/pet/goal",
     role: "宠物 goal 计算系统。",
     accessRule:
       "只能输出目标解释和目标方向，不直接输出 action；参数统一放在 pet-goal-tuning.ts。",
@@ -107,14 +107,14 @@ export const PET_CORE_TUNING_MODULES: PetCoreBoundaryModule[] = [
   },
   {
     layer: "core_tuning",
-    path: "src/systems/pet/pet-drive/pet-drive-tuning.ts",
+    path: "src/systems/pet/drive/pet-drive-tuning.ts",
     role: "宠物 drive 调参入口。",
     accessRule:
       "调 drive 权重优先改 tuning，不在 drive runner 中硬编码数值。",
   },
   {
     layer: "core_tuning",
-    path: "src/systems/pet/pet-goal/pet-goal-tuning.ts",
+    path: "src/systems/pet/goal/pet-goal-tuning.ts",
     role: "宠物 goal 调参入口。",
     accessRule:
       "调 goal 阈值、持续时间、记忆覆盖、drive alignment 时优先改 tuning。",

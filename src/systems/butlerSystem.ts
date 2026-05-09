@@ -5,7 +5,7 @@
 import {
   getEntityAutonomyPolicy,
   getOpportunityRule,
-} from "../ai/autonomy-core/autonomy-gateway"
+} from "../ai/consciousness-core/autonomy-core/autonomy-gateway"
 
 import type { ButlerProfile } from "../ai/gateway"
 

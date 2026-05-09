@@ -6,7 +6,7 @@ import type {
   BirthPattern,
   BranchPalace,
   SectorName
-} from "../../../../ai/ziwei-core/schema"
+} from "../../../../ai/destiny-core/ziwei-core/schema"
 
 import { ZiweiFlowMarkers } from "./ZiweiFlowMarkers"
 import { ZiweiPalaceHeader } from "./ZiweiPalaceHeader"

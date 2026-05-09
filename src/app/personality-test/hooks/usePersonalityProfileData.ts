@@ -10,7 +10,7 @@ import {
   type LifePersonalityProfileBundle,
 } from "../../../ai/gateway"
 
-import { buildBaziProfile } from "../../../ai/bazi-core/bazi-gateway"
+import { buildBaziProfile } from "../../../ai/destiny-core/bazi-core/bazi-gateway"
 import { buildPetTimelineSnapshot } from "../../../ai/timeline-system/timeline-gateway"
 
 import {

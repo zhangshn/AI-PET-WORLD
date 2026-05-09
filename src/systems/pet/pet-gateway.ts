@@ -15,7 +15,7 @@ export {
   type DriveSnapshot,
   type DriveSystemInput,
   type DriveType,
-} from "./pet-drive/pet-drive-gateway"
+} from "./drive/pet-drive-gateway"
 
 export {
   goalSystem,
@@ -26,7 +26,7 @@ export {
   type PetGoalLifeTendencyHint,
   type PetGoalState,
   type PetGoalType,
-} from "./pet-goal/pet-goal-gateway"
+} from "./goal/pet-goal-gateway"
 
 export {
   attentionSystem,
@@ -34,7 +34,7 @@ export {
   type AttentionFocusType,
   type AttentionState,
   type BuildAttentionContext,
-} from "./pet-attention/pet-attention-gateway"
+} from "./attention/pet-attention-gateway"
 
 export {
   applyPetActionStability,

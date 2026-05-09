@@ -4,12 +4,12 @@
 
 import type {
   CurrentDynamicProfile
-} from "../ziwei-core/ziwei-gateway"
+} from "../destiny-core/ziwei-core/ziwei-gateway"
 
 import type {
   BaziCurrentTendencyProfile,
   BaziRuntimeProfile
-} from "../bazi-core/bazi-gateway"
+} from "../destiny-core/bazi-core/bazi-gateway"
 
 import type {
   CurrentLifeTendencyProfile

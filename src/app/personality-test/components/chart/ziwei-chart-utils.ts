@@ -6,7 +6,7 @@ import type {
   BirthPattern,
   BranchPalace,
   StarId
-} from "../../../../ai/ziwei-core/schema"
+} from "../../../../ai/destiny-core/ziwei-core/schema"
 
 import type { ZiweiChartFlowMarker } from "./ziwei-chart-types"
 

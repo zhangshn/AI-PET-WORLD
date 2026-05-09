@@ -4,15 +4,15 @@
 
 import type {
   CurrentDynamicProfile
-} from "../ziwei-core/ziwei-gateway"
+} from "../destiny-core/ziwei-core/ziwei-gateway"
 
 import type {
   PersonalityTraits
-} from "../ziwei-core/schema"
+} from "../destiny-core/ziwei-core/schema"
 
 import type {
   BaziCurrentTendencyProfile
-} from "../bazi-core/bazi-gateway"
+} from "../destiny-core/bazi-core/bazi-gateway"
 
 export type LifeTendencyKey =
   | "explore"

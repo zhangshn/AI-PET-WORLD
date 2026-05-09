@@ -3,8 +3,8 @@
  */
 
 import type { PetAction, PetState } from "../../../types/pet"
-import type { DriveSnapshot, DriveType } from "../pet-drive/pet-drive-gateway"
-import type { PetGoalState } from "../pet-goal/pet-goal-gateway"
+import type { DriveSnapshot, DriveType } from "../drive/pet-drive-gateway"
+import type { PetGoalState } from "../goal/pet-goal-gateway"
 import type { ActionDecisionReason } from "./pet-action-stability"
 
 import {

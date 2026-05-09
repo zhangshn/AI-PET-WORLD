@@ -5,7 +5,7 @@
 import type {
   BranchPalace,
   SectorName
-} from "../../../../ai/ziwei-core/schema"
+} from "../../../../ai/destiny-core/ziwei-core/schema"
 
 export type ZiweiChartFlowMarkerKind =
   | "natal"

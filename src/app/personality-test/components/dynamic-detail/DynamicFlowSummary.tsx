@@ -2,7 +2,7 @@
  * 当前文件负责：展示当前紫微动态流的基础摘要。
  */
 
-import type { ZiweiFlowResult } from "../../../../ai/ziwei-core/dynamic/dynamic-schema"
+import type { ZiweiFlowResult } from "../../../../ai/destiny-core/ziwei-core/dynamic/dynamic-schema"
 
 import {
   BRANCH_FULL_LABELS,

@@ -4,7 +4,7 @@
 
 import type {
   PersonalityTraits
-} from "../ziwei-core/schema"
+} from "../destiny-core/ziwei-core/schema"
 
 import type {
   LifeTendencyFiveDimensionScores

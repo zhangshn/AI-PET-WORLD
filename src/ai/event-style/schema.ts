@@ -15,7 +15,7 @@
  * ======================================================
  */
 
-import type { PersonalityProfile } from "../ziwei-core/schema"
+import type { PersonalityProfile } from "../destiny-core/ziwei-core/schema"
 
 /**
  * ======================================================

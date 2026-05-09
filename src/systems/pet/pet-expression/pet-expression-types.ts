@@ -17,7 +17,7 @@ import type {
 
 import type {
   PetGoalState,
-} from "../pet-goal/pet-goal-gateway"
+} from "../goal/pet-goal-gateway"
 
 export type PetExpressionReason =
   | "no_expression_change"

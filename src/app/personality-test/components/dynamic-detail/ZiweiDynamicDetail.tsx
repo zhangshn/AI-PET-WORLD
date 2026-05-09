@@ -5,7 +5,7 @@
 import type {
   ZiweiDynamicInfluence,
   ZiweiFlowResult
-} from "../../../../ai/ziwei-core/dynamic/dynamic-schema"
+} from "../../../../ai/destiny-core/ziwei-core/dynamic/dynamic-schema"
 
 import { DynamicBiasGrid } from "./DynamicBiasGrid"
 import { DynamicDebugFlows } from "./DynamicDebugFlows"

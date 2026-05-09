@@ -4,11 +4,11 @@
 
 import type {
   CurrentDynamicTendencies
-} from "../ziwei-core/ziwei-gateway"
+} from "../destiny-core/ziwei-core/ziwei-gateway"
 
 import type {
   BaziCurrentTendencies
-} from "../bazi-core/bazi-gateway"
+} from "../destiny-core/bazi-core/bazi-gateway"
 
 import type {
   BuildCurrentLifeTendencyProfileInput,

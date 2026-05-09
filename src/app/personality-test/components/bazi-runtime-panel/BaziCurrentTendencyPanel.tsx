@@ -5,7 +5,7 @@
 import type {
   BaziCurrentTendencyProfile,
   WuXingElement
-} from "../../../../ai/bazi-core/bazi-gateway"
+} from "../../../../ai/destiny-core/bazi-core/bazi-gateway"
 
 import { NumericScoreList } from "../ziwei-output/NumericScoreList"
 

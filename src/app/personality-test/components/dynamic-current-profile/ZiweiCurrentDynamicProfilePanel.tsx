@@ -4,7 +4,7 @@
 
 import type {
   CurrentDynamicProfile
-} from "../../../../ai/ziwei-core/ziwei-gateway"
+} from "../../../../ai/destiny-core/ziwei-core/ziwei-gateway"
 
 import { NumericScoreList } from "../ziwei-output/NumericScoreList"
 

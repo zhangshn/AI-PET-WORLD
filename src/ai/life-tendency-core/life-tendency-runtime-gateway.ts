@@ -6,11 +6,11 @@ import type {
   BirthPattern,
   BranchPalace,
   PersonalityProfile
-} from "../ziwei-core/schema"
+} from "../destiny-core/ziwei-core/schema"
 
 import type {
   BaziProfile
-} from "../bazi-core/bazi-gateway"
+} from "../destiny-core/bazi-core/bazi-gateway"
 
 import {
   buildCurrentLifeRuntimeBundle

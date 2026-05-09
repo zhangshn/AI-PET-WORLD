@@ -2,7 +2,7 @@
  * 当前文件负责：把 drive 分数映射为候选行为权重。
  */
 
-import type { DriveSnapshot } from "../pet-drive/pet-drive-gateway"
+import type { DriveSnapshot } from "../drive/pet-drive-gateway"
 import type { PetActionWeights } from "./pet-action-weight-types"
 
 export function applyActionDriveLayer(
