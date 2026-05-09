@@ -128,6 +128,13 @@ export const PET_CORE_AUTONOMOUS_DRIVE_MODULES: PetCoreBoundaryModule[] = [
   },
   {
     layer: "autonomous_drive",
+    path: "src/systems/pet/opportunity-decision",
+    role: "宠物机会接受 / 拒绝判断入口。",
+    accessRule:
+      "只判断宠物是否接受机会，不执行机会效果，不直接修改行为结果。",
+  },
+  {
+    layer: "autonomous_drive",
     path: "src/systems/pet/pet-cognition",
     role: "宠物对世界刺激的主体解释层。",
     accessRule:
@@ -163,6 +170,13 @@ export const PET_CORE_BEHAVIOR_EXECUTION_MODULES: PetCoreBoundaryModule[] = [
     role: "宠物行为执行层预留目录。",
     accessRule:
       "只负责把上层意图表达为行为，不负责主体判断。",
+  },
+  {
+    layer: "behavior_execution",
+    path: "src/systems/pet/behavior/opportunity-effect",
+    role: "宠物接受机会后的实际效果执行入口。",
+    accessRule:
+      "只执行已接受机会的效果，不负责判断宠物是否应该接受机会。",
   },
   {
     layer: "behavior_execution",

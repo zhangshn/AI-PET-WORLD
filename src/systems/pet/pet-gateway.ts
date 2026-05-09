@@ -85,15 +85,18 @@ export type {
 } from "./pet-runtime/pet-runtime-runner"
 
 export {
-  applyAcceptedApproachOfferEffect,
-  applyAcceptedRestOfferEffect,
   evaluateApproachOffer,
   evaluateRestOffer,
-  type ApplyPetOpportunityEffectInput,
-  type ApplyPetOpportunityEffectResult,
   type EvaluatePetOpportunityInput,
   type PetOpportunityDecision,
-} from "./pet-opportunity/pet-opportunity-gateway"
+} from "./opportunity-decision/pet-opportunity-decision-gateway"
+
+export {
+  applyAcceptedApproachOfferEffect,
+  applyAcceptedRestOfferEffect,
+  type ApplyPetOpportunityEffectInput,
+  type ApplyPetOpportunityEffectResult,
+} from "./behavior/pet-behavior-gateway"
 
 export {
   expressPetAction,

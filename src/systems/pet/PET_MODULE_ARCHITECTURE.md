@@ -140,6 +140,17 @@ learning 逐渐形成经验
   - 接受 / 拒绝判断进入自主驱动层
   - 实际进食效果进入 behavior
 
+## 5.3 ARCH-2E 当前迁移状态
+
+当前已经完成 pet-opportunity 第一轮包装归口：
+
+- pet-opportunity 暂时仍保留原目录。
+- evaluateApproachOffer / evaluateRestOffer 已通过 opportunity-decision 暴露为自主驱动层入口。
+- applyAcceptedApproachOfferEffect / applyAcceptedRestOfferEffect 已通过 behavior/opportunity-effect 暴露为行为执行层入口。
+- pet-gateway.ts 对外仍导出这些函数和类型，但来源已经切换到新包装层。
+- 本轮不改变运行逻辑，只完成机会判断与机会效果的入口分离。
+- 后续再逐步拆分 pet-opportunity 内部实现。
+
 ## 5. 后续迁移顺序
 
 1. pet-life / pet-mood 的状态部分逐步迁入 daily-state

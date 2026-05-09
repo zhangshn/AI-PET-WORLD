@@ -8,4 +8,18 @@
 
 边界说明：behavior 只回答“已经形成的内部意图如何被执行或表达”。主体判断必须在上游自主驱动链中完成。
 
+## 当前已接入入口
+
+当前 behavior 已经建立以下包装入口：
+
+- `opportunity-effect/pet-opportunity-effect-gateway.ts`
+  - 当前包装既有 pet-opportunity 中“接受机会后的实际效果”
+  - 暂不改变原运行逻辑
+  - 后续逐步迁移到 behavior 内部实现
+
+- `pet-behavior-gateway.ts`
+  - 当前作为 behavior 总出口
+  - 只导出行为执行层相关能力
+  - 不允许直接做 drive / goal / attention / learning 判断
+
 后续扩展方向：迁入行为表达、行为稳定、动作执行和行为 gateway。
