@@ -98,6 +98,23 @@ UI 层可以展示管家消息结果，但不能写管家消息判断逻辑。
 
 本轮不移动旧目录，不改变运行逻辑，只补齐目录 README 与架构说明。
 
+## 6.1 ARCH-3B 当前状态
+
+当前已经建立管家系统核心边界声明：
+
+- `butler-core-boundary.ts`
+- `BUTLER_CORE_PUBLIC_GATEWAYS`
+- `BUTLER_CORE_MEMORY_RELATION_MODULES`
+- `BUTLER_CORE_AUTONOMOUS_DRIVE_MODULES`
+- `BUTLER_CORE_EDUCATION_MODULES`
+- `BUTLER_CORE_MESSAGE_DECISION_MODULES`
+- `BUTLER_CORE_BEHAVIOR_EXECUTION_MODULES`
+- `BUTLER_CORE_RUNTIME_MODULES`
+- `BUTLER_CORE_TUNING_MODULES`
+- `BUTLER_CORE_TYPE_BOUNDARY_MODULES`
+
+本轮不移动旧目录，不改变运行逻辑，只建立边界声明和 gateway 导出。
+
 ## 7. 后续迁移顺序建议
 
 1. 建立 butler-core-boundary 边界声明
