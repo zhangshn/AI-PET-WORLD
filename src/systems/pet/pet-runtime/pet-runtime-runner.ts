@@ -309,7 +309,7 @@ export function runPetRuntimeTick(
 
   const wasFed = input.currentTick - input.lastFeedingTick <= 1
 
-    pet.memoryState = updatePetMemoryState({
+  pet.memoryState = updatePetMemoryState({
     previousMemory: pet.memoryState,
     tick: input.currentTick,
     time: {

@@ -306,7 +306,6 @@ export class PetSystem {
   }
 
   restore(pet: PetState | null, currentTick: number): void {
-    this.pet = pet
     this.currentTick = Math.max(0, Math.floor(currentTick))
 
     this.lastDriveSnapshot = null
@@ -314,12 +313,20 @@ export class PetSystem {
     this.lastFeedingTick = -9999
 
     if (!pet) {
+      this.pet = null
       this.actionStability = null
       return
     }
 
+    const restoredPet: PetState = {
+      ...pet,
+      learningState: pet.learningState ?? createInitialPetLearningState(),
+    }
+
+    this.pet = restoredPet
+
     this.actionStability = {
-      currentAction: pet.action,
+      currentAction: restoredPet.action,
       startedAtTick: this.currentTick,
       lastChangedTick: this.currentTick,
     }
