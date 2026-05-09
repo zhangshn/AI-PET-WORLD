@@ -259,3 +259,29 @@ buildButlerEducationStrategy
 createFoodOffer / createRestOffer / createApproachOffer
 ↓
 宠物自主判断是否接受
+
+## 11. BUTLER-EDUCATION-2 当前状态
+
+当前已经新增管家教育策略开发审计面板：
+
+- `src/app/world/components/butler-debug/ButlerEducationStrategyDebugPanel.tsx`
+
+该面板只出现在 `/world` 的 F3 开发审计区域中。
+
+当前展示：
+
+- posture
+- foodIntensityOffset
+- restIntensityOffset
+- approachIntensityOffset
+- reason
+- tags
+
+边界原则：
+
+- 不展示在正式世界主体验中
+- 不接 P-Phone
+- 不生成系统日志
+- 不影响宠物行为
+- 不直接写入宠物 learning
+- 只用于开发审计管家是否根据关系反馈调整照看方式

@@ -14,7 +14,7 @@ import ButlerMemoryDebugPanel from "./butler-debug/ButlerMemoryDebugPanel"
 import ButlerOpportunityFeedbackDebugPanel from "./butler-debug/ButlerOpportunityFeedbackDebugPanel"
 import ButlerProfileDebugPanel from "./butler-debug/ButlerProfileDebugPanel"
 import ButlerProfileInputPanel from "./butler-debug/ButlerProfileInputPanel"
-import ButlerRelationDebugPanel from "./butler-debug/ButlerRelationDebugPanel"
+import ButlerEducationStrategyDebugPanel from "./butler-debug/ButlerEducationStrategyDebugPanel"
 import ButlerTaskDecisionTracePanel from "./butler-debug/ButlerTaskDecisionTracePanel"
 
 import styles from "@/styles/world-styles/debug/runtime-debug-panel.module.css"
@@ -61,6 +61,8 @@ export default function ButlerProfileSetupPanel({ world }: Props) {
           relation={relation}
           profile={currentProfile}
         />
+
+        <ButlerEducationStrategyDebugPanel relation={relation} />
 
         <ButlerOpportunityFeedbackDebugPanel relation={relation} />
       </div>
