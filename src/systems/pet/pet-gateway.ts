@@ -52,19 +52,16 @@ export {
 } from "./pet-cognition/pet-cognition-gateway"
 
 export {
+  runPetLife,
+  type RunPetLifeInput,
+  type RunPetLifeResult,
+  mapTimelineStateToPetMood,
   evaluateFoodOffer,
   applyFeeding,
   type ApplyFeedingInput,
   type ApplyFeedingResult,
   type EvaluateFoodOfferInput,
   type FoodOfferDecision,
-} from "./pet-feeding/pet-feeding-gateway"
-
-export {
-  runPetLife,
-  type RunPetLifeInput,
-  type RunPetLifeResult,
-  mapTimelineStateToPetMood,
 } from "./daily-state/daily-state-gateway"
 
 export {

@@ -14,3 +14,12 @@ export {
 export {
   mapTimelineStateToPetMood,
 } from "./emotion-state/pet-emotion-state-gateway"
+
+export {
+  evaluateFoodOffer,
+  applyFeeding,
+  type ApplyFeedingInput,
+  type ApplyFeedingResult,
+  type EvaluateFoodOfferInput,
+  type FoodOfferDecision,
+} from "./feeding-state/pet-feeding-state-gateway"

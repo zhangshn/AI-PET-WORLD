@@ -22,6 +22,14 @@
   - 暂不改变原运行逻辑
   - 后续逐步迁移情绪状态映射逻辑
 
+- `feeding-state/pet-feeding-state-gateway.ts`
+  - 当前包装既有 pet-feeding 进食相关能力
+  - 暂不改变原运行逻辑
+  - 当前 pet-feeding 仍是混合模块
+  - 后续会把饥饿 / 饱腹 / 进食状态迁入 daily-state
+  - 机会接受判断迁入自主驱动层
+  - 实际进食效果迁入 behavior
+
 - `daily-state-gateway.ts`
   - 当前作为 daily-state 总出口
   - 只导出状态层相关能力

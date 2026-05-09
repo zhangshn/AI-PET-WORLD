@@ -128,6 +128,18 @@ learning 逐渐形成经验
 - pet-gateway.ts 对外仍导出 runPetLife 和 mapTimelineStateToPetMood，但来源已切换为 daily-state-gateway。
 - 本轮不改变运行逻辑，只完成状态层入口归口。
 
+## 5.2 ARCH-2D 当前迁移状态
+
+当前已经完成 pet-feeding 第一轮包装归口：
+
+- pet-feeding 暂时仍保留原目录，但已通过 daily-state/feeding-state 暴露入口。
+- pet-gateway.ts 对外仍导出 evaluateFoodOffer / applyFeeding 及相关类型，但来源已切换为 daily-state-gateway。
+- 本轮不改变运行逻辑，只完成进食相关入口归口。
+- pet-feeding 仍是混合模块，后续再拆分：
+  - 饥饿 / 饱腹 / 进食状态进入 daily-state
+  - 接受 / 拒绝判断进入自主驱动层
+  - 实际进食效果进入 behavior
+
 ## 5. 后续迁移顺序
 
 1. pet-life / pet-mood 的状态部分逐步迁入 daily-state
