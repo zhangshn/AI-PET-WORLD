@@ -28,6 +28,14 @@ export {
   createRestOffer,
 } from "./behavior/butler-behavior-gateway"
 
+export {
+  buildButlerMessageDecision,
+  type BuildButlerMessageDecisionInput,
+  type ButlerMessageDecision,
+  type ButlerMessageDecisionPriority,
+  type ButlerMessageDecisionReason,
+} from "./message-decision/butler-message-decision-gateway"
+
 export { chooseButlerTask } from "./intention/butler-intention-gateway"
 
 export { deriveButlerMood } from "./intention/butler-intention-gateway"

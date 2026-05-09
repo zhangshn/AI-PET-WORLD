@@ -32,3 +32,36 @@ P-Phone 消息不是系统日志，不是事件自动转短信，而是管家基
 - 消息冷却规则
 - 关系语气
 - message-decision gateway
+
+## MESSAGE-DECISION-1 当前状态
+
+当前已经建立管家主动消息判断层最小闭环：
+
+- `butler-message-decision-schema.ts`
+- `butler-message-decision-runner.ts`
+- `butler-message-decision-gateway.ts`
+
+当前链路：
+
+```txt
+ButlerState
+↓
+latestEducationStrategy
+↓
+relation / task
+↓
+buildButlerMessageDecision
+↓
+ButlerMessageDecision
+```
+
+边界原则：
+
+- 不生成 P-Phone 消息
+- 不写系统日志
+- 不把事件自动转短信
+- 不接入真实短信发送
+- 不改变 worldEngine 调度顺序
+- 不改变宠物行为
+- 不让管家控制宠物
+- 不让管家直接写入宠物 learning
