@@ -29,3 +29,23 @@
 结果反馈到管家记忆 / 关系
 ↓
 结果成为宠物记忆 / learning 材料
+## 7. ARCH-4B worldEngine / petSystem / butlerSystem 调用关系审计结果
+
+当前已经确认 worldEngine 的 Tick 调度链路如下：
+
+```txt
+worldEngine.update
+↓
+runWorldTick
+↓
+butlerSystem.update
+↓
+runManagementInteractions
+↓
+runPetCognition
+↓
+runPetRuntime
+↓
+runButlerOpportunities
+↓
+runWorldEventUpdate
