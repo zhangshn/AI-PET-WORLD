@@ -19,8 +19,10 @@ import ButlerMessageDecisionDebugPanel from "./butler-debug/ButlerMessageDecisio
 import ButlerMessageDeliveryDebugPanel from "./butler-debug/ButlerMessageDeliveryDebugPanel"
 import ButlerPPhoneAiMessageRecordPreviewPanel from "./butler-debug/ButlerPPhoneAiMessageRecordPreviewPanel"
 import ButlerPPhoneBridgePreviewPanel from "./butler-debug/ButlerPPhoneBridgePreviewPanel"
+import ButlerPPhoneDeliveryReadbackPanel from "./butler-debug/ButlerPPhoneDeliveryReadbackPanel"
 import ButlerPPhoneDeliveryWriterAuditPanel from "./butler-debug/ButlerPPhoneDeliveryWriterAuditPanel"
 import ButlerPPhoneDeliveryQueueDebugPanel from "./butler-debug/ButlerPPhoneDeliveryQueueDebugPanel"
+import ButlerPPhoneManualDeliveryWritePanel from "./butler-debug/ButlerPPhoneManualDeliveryWritePanel"
 import ButlerPPhoneReadonlyIntegrationPreviewPanel from "./butler-debug/ButlerPPhoneReadonlyIntegrationPreviewPanel"
 import ButlerTaskDecisionTracePanel from "./butler-debug/ButlerTaskDecisionTracePanel"
 import ButlerRelationDebugPanel from "./butler-debug/ButlerRelationDebugPanel"
@@ -34,6 +36,8 @@ type Props = {
 export default function ButlerProfileSetupPanel({ world }: Props) {
   const [lastGeneratedProfile, setLastGeneratedProfile] =
     useState<ButlerProfile | null>(world.butler?.profile ?? null)
+  const [deliveryReadbackVersion, setDeliveryReadbackVersion] =
+    useState(0)
 
   const currentProfile = world.butler?.profile ?? lastGeneratedProfile
   const taskDecisionTrace =
@@ -104,6 +108,20 @@ export default function ButlerProfileSetupPanel({ world }: Props) {
         />
 
         <ButlerPPhoneReadonlyIntegrationPreviewPanel
+          delivery={world.butler?.latestMessageDeliveryDecision ?? null}
+          butlerName={world.butler?.name ?? "管家"}
+        />
+
+        <ButlerPPhoneManualDeliveryWritePanel
+          delivery={world.butler?.latestMessageDeliveryDecision ?? null}
+          butlerName={world.butler?.name ?? "管家"}
+          onWriteResult={() => {
+            setDeliveryReadbackVersion((version) => version + 1)
+          }}
+        />
+
+        <ButlerPPhoneDeliveryReadbackPanel
+          key={deliveryReadbackVersion}
           delivery={world.butler?.latestMessageDeliveryDecision ?? null}
           butlerName={world.butler?.name ?? "管家"}
         />

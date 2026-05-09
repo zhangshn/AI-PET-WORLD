@@ -428,3 +428,110 @@ read-only P-Phone integration preview
 - 不替换正式 P-Phone thread
 - 不把事件自动转短信
 - 不把系统日志转成管家消息
+
+## 21. P-PHONE-DELIVERY-11 当前状态
+
+当前已经修复 manual writer 的重复写入判断。
+
+当前写入顺序：
+
+```txt
+recordInput
+↓
+control.mode === "enabled"
+↓
+find existing AiMessage by messageId
+↓
+existing → skipped_duplicate
+↓
+not existing → recordAiMessageOnce
+```
+
+当前 duplicate 判断发生在写入前。
+
+这样可以避免先写入再判断重复造成的边界混乱。
+
+## 22. P-PHONE-DELIVERY-12 当前状态
+
+当前已经新增 persisted readback mapper：
+
+- `src/app/world/ui/phone/messages/pPhoneButlerDeliveryReadback.ts`
+- `buildPPhoneButlerDeliveryReadback`
+
+当前链路：
+
+```txt
+CreateAiMessageRecordInput
+↓
+getAiDataRecords({ kind: "message" })
+↓
+find by messageId
+↓
+PPhoneButlerDeliveryReadbackResult
+```
+
+该 mapper 只读取持久化记录，不写 AiMessage，不接正式 P-Phone thread。
+
+## 23. P-PHONE-DELIVERY-13 当前状态
+
+当前已经新增 F3 手动写入面板：
+
+- `src/app/world/components/butler-debug/ButlerPPhoneManualDeliveryWritePanel.tsx`
+
+当前行为：
+
+- 只有点击按钮时才调用 `writePPhoneButlerDeliveryMessageOnce`
+- 点击时使用显式 `enabled` control
+- 写入结果保存在组件 `useState`
+- 写入后触发 readback 面板刷新
+
+当前不做：
+
+- 不自动写入
+- 不在 React render 中写入
+- 不替换正式 P-Phone thread
+- 不让 UI 自动发送消息
+
+## 24. P-PHONE-DELIVERY-14 当前状态
+
+当前已经新增 F3 persisted readback 面板：
+
+- `src/app/world/components/butler-debug/ButlerPPhoneDeliveryReadbackPanel.tsx`
+
+当前展示：
+
+- found
+- messageId
+- recordId
+- reason
+- P-Phone preview
+- tags
+
+该面板用于验证手动写入后，AiMessage 是否能被持久化读取链路读到。
+
+它不替换正式 P-Phone thread。
+
+## 25. P-PHONE-DELIVERY-15 当前状态
+
+当前已经完成 P-Phone delivery 第四批基础建设：
+
+- 写入前 messageId 去重
+- 开发限定手动写入按钮
+- 持久化 readback mapper
+- F3 手动写入结果审计
+- F3 持久化读取验证
+
+当前允许：
+
+- 开发面板点击按钮时显式 enabled 写入 AiMessage
+- 写入后通过 `getAiDataRecords` 读取验证
+
+当前仍然禁止：
+
+- 不自动写 AiMessage
+- 不在 worldEngine 中触发写入
+- 不在 butlerSystem 中触发写入
+- 不在 React render 中触发写入
+- 不替换正式 P-Phone thread
+- 不把事件自动转短信
+- 不把系统日志转成管家消息

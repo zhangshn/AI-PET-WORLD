@@ -837,3 +837,88 @@ read-only integration preview
 3. 明确 `enabled` 控制只来自开发工具或未来受控 delivery service。
 4. 在真实写入前继续验证去重、冷却和 queue item 稳定性。
 5. 最后再考虑让正式 P-Phone 读取持久化 AiMessage，而不是读取 bridge preview。
+
+## 36. P-PHONE-DELIVERY-11 当前状态
+
+当前已经修复 manual writer 的 duplicate 判断。
+
+当前 writer 写入顺序：
+
+```txt
+preview
+↓
+recordInput exists
+↓
+control.mode === "enabled"
+↓
+find existing AiMessage by messageId
+↓
+existing → skipped_duplicate
+↓
+not existing → recordAiMessageOnce
+```
+
+duplicate 检查发生在写入前，避免重复调用 `recordAiMessageOnce`。
+
+## 37. P-PHONE-DELIVERY-12 当前状态
+
+当前已经新增 persisted readback mapper：
+
+- `src/app/world/ui/phone/messages/pPhoneButlerDeliveryReadback.ts`
+- `buildPPhoneButlerDeliveryReadback`
+
+该 mapper 通过 `getAiDataRecords` 读取指定 `messageId` 的 AiMessage。
+
+当前只读，不写 AiMessage，不接正式 P-Phone thread。
+
+## 38. P-PHONE-DELIVERY-13 当前状态
+
+当前已经新增 F3 开发限定手动写入面板：
+
+- `src/app/world/components/butler-debug/ButlerPPhoneManualDeliveryWritePanel.tsx`
+
+当前行为：
+
+- 只有点击按钮才调用 enabled writer
+- 写入结果保存在 `useState`
+- 写入后刷新 persisted readback 面板
+- 不自动写入
+
+该按钮只出现在 F3 / 管家开发审计区域，不属于生产主体验。
+
+## 39. P-PHONE-DELIVERY-14 当前状态
+
+当前已经新增 F3 persisted readback 面板：
+
+- `src/app/world/components/butler-debug/ButlerPPhoneDeliveryReadbackPanel.tsx`
+
+当前用于验证：
+
+- 手动写入后是否能通过持久化读取链路读到 AiMessage
+- 读到的 AiMessage 是否能转换为 P-Phone preview
+- 正式 P-Phone thread 是否仍未被替换
+
+## 40. P-PHONE-DELIVERY-15 当前状态
+
+当前已经完成 P-Phone delivery 第四批基础建设：
+
+- manual writer 写入前去重
+- persisted readback mapper
+- F3 手动写入面板
+- F3 persisted readback 面板
+- 文档边界补充
+
+当前允许：
+
+- 开发面板显式点击后写入 AiMessage
+- 写入后读取验证
+
+当前禁止：
+
+- 不自动写 AiMessage
+- 不在 worldEngine 中触发写入
+- 不在 butlerSystem 中触发写入
+- 不在 React render 中触发写入
+- 不替换正式 P-Phone thread
+- 不把事件自动转短信
+- 不把系统日志转成管家消息

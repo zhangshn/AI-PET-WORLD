@@ -7,9 +7,14 @@
  */
 
 import {
+  getAiDataRecords,
   recordAiMessageOnce,
   type CreateAiMessageRecordInput,
 } from "@/ai/data-core/ai-data-gateway"
+
+import type {
+  AiMessageRecord,
+} from "@/ai/data-core/ai-data-types"
 
 import type {
   PPhoneButlerDeliveryWriteControl,
@@ -25,6 +30,17 @@ export type WritePPhoneButlerDeliveryMessageInput = {
   control: PPhoneButlerDeliveryWriteControl
 }
 
+function findExistingMessageRecord(
+  messageId: string
+): AiMessageRecord | null {
+  const records = getAiDataRecords({
+    kind: "message",
+    limit: 200,
+  }) as AiMessageRecord[]
+
+  return records.find((record) => record.messageId === messageId) ?? null
+}
+
 export function writePPhoneButlerDeliveryMessageOnce(
   input: WritePPhoneButlerDeliveryMessageInput
 ): PPhoneButlerDeliveryWriteResult {
@@ -34,6 +50,26 @@ export function writePPhoneButlerDeliveryMessageOnce(
 
   if (input.control.mode !== "enabled") {
     return preview
+  }
+
+  const existingRecord = findExistingMessageRecord(
+    input.recordInput.messageId
+  )
+
+  if (existingRecord) {
+    return {
+      status: "skipped_duplicate",
+      canWrite: true,
+      didWrite: false,
+      messageId: existingRecord.messageId,
+      recordId: existingRecord.id,
+      reason: "写入前已发现相同 messageId 的 AiMessage，跳过重复写入。",
+      tags: [
+        "p-phone-delivery-writer",
+        "skipped-duplicate",
+        ...existingRecord.tags,
+      ],
+    }
   }
 
   const record = recordAiMessageOnce(input.recordInput)
@@ -50,26 +86,6 @@ export function writePPhoneButlerDeliveryMessageOnce(
         "p-phone-delivery-writer",
         "write-blocked",
         ...input.recordInput.tags,
-      ],
-    }
-  }
-
-  const isDuplicate =
-    record.id !== input.recordInput.id &&
-    record.messageId === input.recordInput.messageId
-
-  if (isDuplicate) {
-    return {
-      status: "skipped_duplicate",
-      canWrite: true,
-      didWrite: false,
-      messageId: record.messageId,
-      recordId: record.id,
-      reason: "已存在相同 messageId 的 AiMessage，跳过重复写入。",
-      tags: [
-        "p-phone-delivery-writer",
-        "skipped-duplicate",
-        ...record.tags,
       ],
     }
   }
