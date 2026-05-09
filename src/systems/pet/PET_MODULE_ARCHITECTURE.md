@@ -119,6 +119,15 @@ learning 逐渐形成经验
 
 宠物对管家的机会必须经过自身判断链。
 
+## 5.1 ARCH-2C 当前迁移状态
+
+当前已经完成 daily-state 第一轮包装：
+
+- pet-life 暂时仍保留原目录，但已通过 daily-state/life-stage 暴露状态层入口。
+- pet-mood 暂时仍保留原目录，但已通过 daily-state/emotion-state 暴露状态层入口。
+- pet-gateway.ts 对外仍导出 runPetLife 和 mapTimelineStateToPetMood，但来源已切换为 daily-state-gateway。
+- 本轮不改变运行逻辑，只完成状态层入口归口。
+
 ## 5. 后续迁移顺序
 
 1. pet-life / pet-mood 的状态部分逐步迁入 daily-state

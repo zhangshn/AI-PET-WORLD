@@ -64,11 +64,8 @@ export {
   runPetLife,
   type RunPetLifeInput,
   type RunPetLifeResult,
-} from "./pet-life/pet-life-gateway"
-
-export {
   mapTimelineStateToPetMood,
-} from "./pet-mood/pet-mood-gateway"
+} from "./daily-state/daily-state-gateway"
 
 export {
   buildPetStateEvents,

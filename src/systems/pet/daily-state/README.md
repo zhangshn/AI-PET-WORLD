@@ -8,4 +8,23 @@
 
 边界说明：daily-state 只回答“宠物现在处于什么状态”，不回答“宠物一定会做什么”。行为必须继续经过感知、记忆 / 学习、drive、goal、attention 和 behavior 执行链。
 
+## 当前已接入入口
+
+当前 daily-state 已经建立以下包装入口：
+
+- `life-stage/pet-life-stage-gateway.ts`
+  - 当前包装既有 pet-life 生命周期推进能力
+  - 暂不改变原运行逻辑
+  - 后续逐步迁移生命阶段状态逻辑
+
+- `emotion-state/pet-emotion-state-gateway.ts`
+  - 当前包装既有 pet-mood 情绪映射能力
+  - 暂不改变原运行逻辑
+  - 后续逐步迁移情绪状态映射逻辑
+
+- `daily-state-gateway.ts`
+  - 当前作为 daily-state 总出口
+  - 只导出状态层相关能力
+  - 不允许直接选择 action / goal / behavior
+
 后续扩展方向：承接 `pet-life`、`pet-mood`、`pet-feeding` 中的状态部分，并逐步拆出身体状态、情绪状态、环境熟悉度和状态 gateway。
