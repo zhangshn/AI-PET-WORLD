@@ -3,6 +3,7 @@
  */
 
 import type { PetState } from "@/types/pet"
+import type { PetLearningState } from "../learning/pet-learning-gateway"
 import type { ButlerOpportunity } from "@/systems/butlerSystem"
 
 export type PetOpportunityDecision = {
@@ -14,6 +15,7 @@ export type PetOpportunityDecision = {
 export type EvaluatePetOpportunityInput = {
   pet: PetState | null
   opportunity: ButlerOpportunity
+  learningState?: PetLearningState | null
 }
 
 function clamp(value: number, min = 0, max = 1): number {
@@ -43,7 +45,7 @@ function getPhaseTag(pet: PetState): string {
 export function evaluateRestOffer(
   input: EvaluatePetOpportunityInput
 ): PetOpportunityDecision {
-  const { pet, opportunity } = input
+  const learningState = input.learningState ?? pet?.learningState ?? null
 
   if (!pet) {
     return {
@@ -71,6 +73,8 @@ export function evaluateRestOffer(
 
   acceptanceScore += Math.max(0, 60 - energy) * 1.1
   acceptanceScore += Math.max(0, comfortLevel - 35) * 0.28
+  acceptanceScore += (learningState?.restFamiliarity ?? 0) * 0.18
+  acceptanceScore += (learningState?.butlerTrustLearning ?? 0) * 0.08
 
   if (pet.action === "resting" || pet.action === "sleeping") {
     acceptanceScore += 28
@@ -103,6 +107,7 @@ export function evaluateApproachOffer(
   input: EvaluatePetOpportunityInput
 ): PetOpportunityDecision {
   const { pet, opportunity } = input
+  const learningState = input.learningState ?? pet?.learningState ?? null
 
   if (!pet) {
     return {
@@ -127,6 +132,9 @@ export function evaluateApproachOffer(
   const socialWarmth = opportunity.payload?.socialWarmth ?? opportunity.intensity
 
   let acceptanceScore = 0
+
+  acceptanceScore += (learningState?.approachSafetyLearning ?? 0) * 0.2
+  acceptanceScore += (learningState?.butlerTrustLearning ?? 0) * 0.1
 
   if (relation === "secure") acceptanceScore += 26
   if (relation === "attached") acceptanceScore += 30

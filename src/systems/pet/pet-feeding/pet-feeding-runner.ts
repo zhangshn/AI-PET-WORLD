@@ -3,6 +3,7 @@
  */
 
 import type { PetState } from "../../../types/pet"
+import type { PetLearningState } from "../learning/pet-learning-gateway"
 import type { ButlerOpportunity } from "../../butlerSystem"
 import { mapTimelineStateToPetMood } from "../pet-mood/pet-mood-gateway"
 
@@ -15,6 +16,7 @@ export type FoodOfferDecision = {
 export type EvaluateFoodOfferInput = {
   pet: PetState | null
   opportunity: ButlerOpportunity
+  learningState?: PetLearningState | null
 }
 
 export type ApplyFeedingInput = {
@@ -31,6 +33,7 @@ export function evaluateFoodOffer(
   input: EvaluateFoodOfferInput
 ): FoodOfferDecision {
   const { pet, opportunity } = input
+  const learningState = input.learningState ?? pet?.learningState ?? null
 
   if (!pet || !pet.timelineSnapshot) {
     return {
@@ -73,6 +76,8 @@ export function evaluateFoodOffer(
 
   acceptanceScore += (appetiteTrait - 50) * 0.35
   acceptanceScore += memoryEatBias * 0.35
+  acceptanceScore += (learningState?.foodFamiliarity ?? 0) * 0.18
+  acceptanceScore += (learningState?.butlerTrustLearning ?? 0) * 0.12
   acceptanceScore += (comfortSeeking - 50) * 0.12
 
   if (changeSeeking >= 70 && hunger < 65) acceptanceScore -= 8
@@ -109,6 +114,7 @@ export function evaluateFoodOffer(
   }
 
   intakeRatio += (memoryEatBias / 100) * 0.18
+  intakeRatio += ((learningState?.foodFamiliarity ?? 0) / 100) * 0.12
   intakeRatio = clamp(intakeRatio, 0.2, 1)
 
   const intakeAmount = Math.max(

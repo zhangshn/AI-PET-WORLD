@@ -241,3 +241,20 @@ learning 逐渐形成经验
 当前没有移动旧模块，没有改变运行逻辑。
 
 下一阶段不应继续盲目拆宠物系统内部实现，而应先进入 `systems/butler` 的同类架构整理。
+
+
+## 8. PET-LEARNING-1 当前状态
+
+当前已经建立宠物 AI 学习层最小闭环：
+
+- `learning/pet-learning-schema.ts`
+- `learning/pet-learning-builder.ts`
+- `learning/pet-learning-updater.ts`
+- `learning/pet-learning-gateway.ts`
+
+当前 learning 只做：
+
+```txt
+PetMemoryState
+↓
+PetLearningState

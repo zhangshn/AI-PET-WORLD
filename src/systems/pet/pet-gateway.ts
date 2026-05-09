@@ -79,6 +79,13 @@ export {
 } from "./runtime-orchestration/pet-runtime-orchestration-gateway"
 
 export {
+  createInitialPetLearningState,
+  updatePetLearningState,
+  type PetLearningState,
+  type UpdatePetLearningInput,
+} from "./learning/pet-learning-gateway"
+
+export {
   evaluateApproachOffer,
   evaluateRestOffer,
   type EvaluatePetOpportunityInput,

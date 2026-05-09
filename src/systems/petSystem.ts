@@ -24,6 +24,8 @@ import {
   applyAcceptedApproachOfferEffect,
   applyAcceptedRestOfferEffect,
   runPetRuntimeTick,
+  createInitialPetLearningState,
+  updatePetLearningState,
   driveSystem,
   attentionSystem,
   goalSystem,
@@ -73,6 +75,7 @@ export class PetSystem {
     }
 
     const memoryState = buildInitialPetMemoryState()
+    const learningState = createInitialPetLearningState()
 
     const energy = Math.round(timelineSnapshot.state.physical.energy)
     const hunger = Math.round(timelineSnapshot.state.physical.hunger)
@@ -144,6 +147,7 @@ export class PetSystem {
 
       currentGoal: initialGoal,
       memoryState,
+      learningState,
       timelineSnapshot,
       latestCognition: null,
       recentCognition: [],
@@ -229,6 +233,7 @@ export class PetSystem {
     return evaluateFoodOffer({
       pet: this.pet,
       opportunity,
+      learningState: this.pet?.learningState ?? null,
     })
   }
 
@@ -236,6 +241,7 @@ export class PetSystem {
     return evaluateRestOffer({
       pet: this.pet,
       opportunity,
+      learningState: this.pet?.learningState ?? null,
     })
   }
 
@@ -243,6 +249,7 @@ export class PetSystem {
     return evaluateApproachOffer({
       pet: this.pet,
       opportunity,
+      learningState: this.pet?.learningState ?? null,
     })
   }
 
@@ -282,6 +289,19 @@ export class PetSystem {
 
     if (result.acceptedAmount > 0) {
       this.lastFeedingTick = this.currentTick
+    }
+  }
+
+  refreshLearningState(tick: number) {
+    if (!this.pet) return
+
+    this.pet = {
+      ...this.pet,
+      learningState: updatePetLearningState({
+        previousLearning: this.pet.learningState,
+        memoryState: this.pet.memoryState,
+        tick,
+      }),
     }
   }
 

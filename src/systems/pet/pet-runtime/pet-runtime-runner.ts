@@ -36,6 +36,7 @@ import {
   goalSystem,
   type ActionDecisionReason,
   type ActionStabilityState,
+  updatePetLearningState,
   type DriveSnapshot,
 } from "../pet-gateway"
 
@@ -308,7 +309,7 @@ export function runPetRuntimeTick(
 
   const wasFed = input.currentTick - input.lastFeedingTick <= 1
 
-  pet.memoryState = updatePetMemoryState({
+    pet.memoryState = updatePetMemoryState({
     previousMemory: pet.memoryState,
     tick: input.currentTick,
     time: {
@@ -324,6 +325,12 @@ export function runPetRuntimeTick(
     moodBefore,
     moodAfter: nextSnapshot.state.emotional.label,
     wasFed,
+  })
+
+  pet.learningState = updatePetLearningState({
+    previousLearning: pet.learningState,
+    memoryState: pet.memoryState,
+    tick: input.currentTick,
   })
 
   return {

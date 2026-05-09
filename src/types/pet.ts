@@ -20,6 +20,10 @@ import type {
 } from "../ai/memory-core/memory-gateway"
 
 import type {
+  PetLearningState,
+} from "../systems/pet/learning/pet-learning-gateway"
+
+import type {
   PetGoalState,
 } from "../systems/pet/goal/pet-goal-gateway"
 
@@ -93,6 +97,7 @@ export type PetState = {
 
   currentGoal?: PetGoalState
   memoryState: PetMemoryState
+  learningState: PetLearningState
   timelineSnapshot?: PetTimelineSnapshot
   latestCognition?: PetCognitionRecord | null
   recentCognition: PetCognitionRecord[]
