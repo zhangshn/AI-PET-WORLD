@@ -171,6 +171,16 @@ learning 逐渐形成经验
 - 本轮不改变运行逻辑，只完成行为意图选择入口归口。
 - 后续再逐步把 pet-action 内部实现迁入 action-intention。
 
+## 5.6 ARCH-2H 当前迁移状态
+
+当前已经完成 pet-cognition 第一轮包装归口：
+
+- pet-cognition 暂时仍保留原目录。
+- runPetStimulusPerception 及相关类型已通过 cognition/perception 暴露为自主驱动层中的感知 / 主体解释入口。
+- pet-gateway.ts 对外仍导出 runPetStimulusPerception 和相关类型，但来源已经切换为 cognition/pet-cognition-layer-gateway。
+- 本轮不改变运行逻辑，只完成世界 signal → 宠物主体解释入口归口。
+- 后续再逐步把 pet-cognition 内部实现迁入 cognition/perception。
+
 ## 5. 后续迁移顺序
 
 1. pet-life / pet-mood 的状态部分逐步迁入 daily-state

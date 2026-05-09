@@ -135,6 +135,13 @@ export const PET_CORE_AUTONOMOUS_DRIVE_MODULES: PetCoreBoundaryModule[] = [
   },
   {
     layer: "autonomous_drive",
+    path: "src/systems/pet/cognition/perception",
+    role: "宠物感知 / 主体解释入口。",
+    accessRule:
+      "只把 world signal 转换为宠物主体解释，不直接决定 action，也不绕过 drive / goal / attention。",
+  },
+  {
+    layer: "autonomous_drive",
     path: "src/systems/pet/opportunity-decision",
     role: "宠物机会接受 / 拒绝判断入口。",
     accessRule:
@@ -145,7 +152,7 @@ export const PET_CORE_AUTONOMOUS_DRIVE_MODULES: PetCoreBoundaryModule[] = [
     path: "src/systems/pet/pet-cognition",
     role: "宠物对世界刺激的主体解释层。",
     accessRule:
-      "只把世界 signal 转为 cognition，不直接决定 action。",
+      "只把世界 signal 转为 cognition，不直接决定 action；后续将逐步迁入 cognition/perception。",
   },
   {
     layer: "autonomous_drive",

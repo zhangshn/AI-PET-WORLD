@@ -49,7 +49,7 @@ export {
   runPetStimulusPerception,
   type RunPetStimulusPerceptionInput,
   type RunPetStimulusPerceptionResult,
-} from "./pet-cognition/pet-cognition-gateway"
+} from "./cognition/pet-cognition-layer-gateway"
 
 export {
   runPetLife,
