@@ -1,9 +1,26 @@
-# daily-state
+# pet/daily-state
 
 当前目录属于第 4 层：生命日常状态层。
 
-当前负责：预留宠物日常生命状态。未来负责饥饿、饱腹、口渴、能量、困意、排泄、清洁、安全感、注意力、环境熟悉度等状态。
+## 当前负责
 
-当前不能做：不能直接决定宠物行为，不能写学习逻辑，不能替代 memory-relation，也不能读取底层命理细节来硬控状态。
+这里未来负责宠物作为幼儿期生命的日常身体与感知状态，包括但不限于：
 
-后续扩展方向：迁入宠物身体状态、状态衰减、照看影响、状态快照和状态 gateway。
+- hunger 饥饿
+- fullness 饱腹
+- thirst 口渴
+- energy 能量
+- sleepiness 困意
+- toiletNeed 排泄需求
+- cleanliness 清洁度
+- bodyComfort 身体舒适度
+- safetyFeeling 安全感
+- attentionFocus 当前注意对象
+- environmentFamiliarity 环境熟悉度
+- confusion 困惑
+- learningReadiness 学习准备度
+
+这一层回答的问题是：
+
+```txt
+它现在身体和感知状态怎么样？
