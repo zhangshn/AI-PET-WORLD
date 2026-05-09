@@ -158,6 +158,31 @@ UI 层可以展示管家消息结果，但不能写管家消息判断逻辑。
 - 本轮不改变运行逻辑，只完成任务意图选择与决策痕迹入口归口。
 - 后续再逐步把 task 内部实现迁入 intention/task-decision，或者继续保留 task 作为任务域内部实现。
 
+## 6.6 ARCH-3G 当前状态
+
+当前已经完成 memory-relation 第一轮统一 gateway 归口：
+
+- memory-relation 目录暂时仍保留原位置。
+- butler-memory / butler-relation / butler-relation-tuning 仍保留原实现。
+- appendButlerMemoryEntry / createButlerMemoryEntry / createInitialButlerMemoryState 等记忆能力已通过 memory-relation/butler-memory-relation-gateway 暴露。
+- createInitialButlerRelationState / updateButlerRelationFromOpportunityFeedback / updateButlerRelationFromTaskDecision 等关系能力已通过 memory-relation/butler-memory-relation-gateway 暴露。
+- buildButlerExperienceInterpretation / buildButlerRelationTaskTuning 等经验解释能力已通过 memory-relation/butler-memory-relation-gateway 暴露。
+- butler-gateway.ts 对外仍导出这些函数和类型，但来源已经切换为 memory-relation/butler-memory-relation-gateway。
+- 本轮不改变运行逻辑，只完成记忆 / 关系层公开入口归口。
+- memory-relation 只记录经历、关系和经验解释，不直接执行行为，也不直接决定任务、消息或宠物行为。
+
+## 6.7 关于 runtime-orchestration 的当前处理
+
+当前暂不把 butlerSystem.ts 通过 butler-gateway.ts 反向导出。
+
+原因：
+
+- butlerSystem.ts 当前会 import ./butler/butler-gateway。
+- 如果 butler-gateway.ts 反过来 export butlerSystem.ts，容易形成循环引用。
+- 所以 runtime-orchestration 当前仍作为预留目录和未来收口方向。
+- 后续真正重构 butlerSystem.ts 时，应让 butlerSystem.ts 逐步变薄，并把内部编排迁入 runtime-orchestration。
+- 这一阶段不改运行逻辑，不强行包装 butlerSystem.ts。
+
 ## 7. 后续迁移顺序建议
 
 1. 建立 butler-core-boundary 边界声明
@@ -179,3 +204,30 @@ UI 层可以展示管家消息结果，但不能写管家消息判断逻辑。
 - 禁止 butlerSystem.ts 继续变重
 - 禁止 UI 深层 import 管家内部旧模块
 - 禁止在本阶段移动旧实现
+
+## 9. ARCH-3 第一阶段完成状态
+
+当前 ARCH-3 管家系统入口归口第一阶段已完成。
+
+已完成：
+
+- butler-core-boundary 边界声明
+- education / opportunity 入口归口
+- behavior / opportunity-action 入口归口
+- intention / state-interpretation 入口归口
+- intention / task-decision 入口归口
+- tuning / profile-tendency 入口归口
+- memory-relation 统一 gateway 归口
+- 管家系统第一阶段总结文档
+
+当前没有移动旧模块，没有改变运行逻辑。
+
+当前暂不把 butlerSystem.ts 通过 butler-gateway.ts 反向导出，避免循环引用。
+
+下一阶段不应继续盲目拆文件，而应进入运行链路审计：
+
+- butlerSystem.ts 是否继续变重
+- butlerSystem.ts 是否可以逐步改为调用各层 gateway
+- 管家机会是否进入宠物自主判断链
+- message-decision 是否仍然没有被误写成事件触发器
+- P-Phone 是否仍然不是系统日志

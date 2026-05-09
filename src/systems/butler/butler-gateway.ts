@@ -49,36 +49,21 @@ export {
   createButlerMemoryEntryFromTaskDecision,
   createInitialButlerMemoryState,
   shouldRememberTaskDecision,
-} from "./memory-relation/butler-memory"
-
-export type {
-  ButlerMemoryEntry,
-  ButlerMemoryState,
-  ButlerMemoryType,
-} from "./memory-relation/butler-memory"
-
-export {
   createInitialButlerRelationState,
   updateButlerRelationFromOpportunityFeedback,
   updateButlerRelationFromTaskDecision,
-} from "./memory-relation/butler-relation"
-
-export type {
-  ButlerOpportunityFeedback,
-  ButlerRelationState,
-  ButlerRelationTone,
-} from "./memory-relation/butler-relation"
-
-export {
   buildButlerExperienceInterpretation,
   buildButlerRelationTaskTuning,
-} from "./memory-relation/butler-relation-tuning"
-
-export type {
-  ButlerExperienceInterpretation,
-  ButlerExperienceInterpreterInput,
-  ButlerRelationTaskTuning,
-} from "./memory-relation/butler-relation-tuning"
+  type ButlerMemoryEntry,
+  type ButlerMemoryState,
+  type ButlerMemoryType,
+  type ButlerOpportunityFeedback,
+  type ButlerRelationState,
+  type ButlerRelationTone,
+  type ButlerExperienceInterpretation,
+  type ButlerExperienceInterpreterInput,
+  type ButlerRelationTaskTuning,
+} from "./memory-relation/butler-memory-relation-gateway"
 
 export {
   BUTLER_CORE_ALLOWED_CHAIN,

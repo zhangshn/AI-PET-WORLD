@@ -46,6 +46,13 @@ export const BUTLER_CORE_MEMORY_RELATION_MODULES: ButlerCoreBoundaryModule[] = [
     accessRule:
       "只记录管家经历、任务判断、机会反馈、宠物关系和经验解释，不直接执行行为。",
   },
+  {
+    layer: "memory_relation",
+    path: "src/systems/butler/memory-relation/butler-memory-relation-gateway.ts",
+    role: "管家记忆 / 关系层统一公开入口。",
+    accessRule:
+      "只统一导出管家记忆、关系和经验解释能力，不直接执行行为，也不直接决定任务、消息或宠物行为。",
+  },
 ]
 
 export const BUTLER_CORE_AUTONOMOUS_DRIVE_MODULES: ButlerCoreBoundaryModule[] = [
@@ -170,8 +177,6 @@ export const BUTLER_CORE_TUNING_MODULES: ButlerCoreBoundaryModule[] = [
       "只把 ButlerProfile 转换为任务选择层可读取的轻量调参，不直接决定 task、message 或 behavior。",
   },
 ]
-
-
 
 export const BUTLER_CORE_TYPE_BOUNDARY_MODULES: ButlerCoreBoundaryModule[] = [
   {
