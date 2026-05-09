@@ -45,6 +45,7 @@ function getPhaseTag(pet: PetState): string {
 export function evaluateRestOffer(
   input: EvaluatePetOpportunityInput
 ): PetOpportunityDecision {
+  const { pet, opportunity } = input
   const learningState = input.learningState ?? pet?.learningState ?? null
 
   if (!pet) {
