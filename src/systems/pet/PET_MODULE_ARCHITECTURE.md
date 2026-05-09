@@ -258,3 +258,29 @@ learning 逐渐形成经验
 PetMemoryState
 ↓
 PetLearningState
+
+## 8.3 PET-LEARNING-2 当前状态
+
+当前已经新增宠物学习层开发审计面板：
+
+- `src/app/world/components/PetLearningDebugPanel.tsx`
+- `src/styles/world-styles/debug/pet-learning-debug-panel.module.css`
+
+该面板只出现在 `/world` 的 F3 开发审计区域中。
+
+当前展示：
+
+- foodFamiliarity
+- restFamiliarity
+- butlerTrustLearning
+- approachSafetyLearning
+- lastUpdatedTick
+- learning summaries
+
+边界原则：
+
+- 不展示在正式世界主体验中
+- 不接 P-Phone
+- 不生成系统日志
+- 不影响宠物行为
+- 只用于开发审计 learning 是否随 memory 正常变化

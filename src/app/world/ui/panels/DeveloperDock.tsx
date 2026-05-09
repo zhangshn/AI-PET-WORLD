@@ -6,6 +6,7 @@ import type { WorldEngineViewState } from "../../hooks/useWorldEngineState"
 
 import ButlerProfileSetupPanel from "../../components/ButlerProfileSetupPanel"
 import PetStatusPanel from "../../components/PetStatusPanel"
+import PetLearningDebugPanel from "../../components/PetLearningDebugPanel"
 import CognitionPanel from "../../components/CognitionPanel"
 import BehaviorProcessPanel from "../../components/BehaviorProcessPanel"
 import RuntimeDebugPanel from "../../components/RuntimeDebugPanel"
@@ -44,6 +45,8 @@ export default function DeveloperDock({ world }: Props) {
 
         <PetStatusPanel pet={world.pet} />
 
+        <PetLearningDebugPanel pet={world.pet} />
+        
         <CognitionPanel cognition={world.pet?.latestCognition ?? null} />
 
         <BehaviorProcessPanel
