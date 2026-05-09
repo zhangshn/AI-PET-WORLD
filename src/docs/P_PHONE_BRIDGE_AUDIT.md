@@ -113,3 +113,78 @@ PPhoneMessageItem
 - 禁止在 mapper 中接入 P-Phone 正式 thread。
 - 禁止把 `draftText` 当成已发送消息。
 - 禁止跳过 delivery boundary 直接生成 P-Phone 消息。
+
+## 8. P-PHONE-BRIDGE-2 当前状态
+
+当前已经新增 F3 bridge preview 审计面板：
+
+- `src/app/world/components/butler-debug/ButlerPPhoneBridgePreviewPanel.tsx`
+
+当前展示：
+
+- previewId
+- sender
+- senderName
+- timeLabel
+- text
+
+边界原则：
+
+- 只展示 preview
+- 不接正式 P-Phone
+- 不写 AiMessage
+- 不替换旧事件逻辑
+
+## 9. P-PHONE-BRIDGE-3 当前状态
+
+当前已经新增未来 delivery queue 的临时队列项 builder：
+
+- `src/app/world/ui/phone/messages/pPhoneButlerDeliveryQueue.ts`
+
+当前链路：
+
+```txt
+ButlerMessageDeliveryDecision
+↓
+buildPPhoneButlerDeliveryPreview
+↓
+buildPPhoneButlerDeliveryQueueItem
+↓
+PPhoneButlerDeliveryQueueItem | null
+```
+
+当前 queue item 只来自 delivery preview。
+
+当前不做：
+
+- 不持久化
+- 不写 AiMessage
+- 不接正式 P-Phone thread
+- 不生成短信
+- 不把事件自动转短信
+- 不把系统日志转成管家消息
+
+## 10. P-PHONE-BRIDGE-4 当前状态
+
+当前已经新增 F3 delivery queue 审计面板：
+
+- `src/app/world/components/butler-debug/ButlerPPhoneDeliveryQueueDebugPanel.tsx`
+
+当前展示：
+
+- queueId
+- source
+- status
+- decisionReason
+- priority
+- createdAtTick
+- checkedAtTick
+- messageText
+- tags
+
+当前状态：
+
+- queue item 仍是 `preview_only`
+- 不会写入 AiMessage
+- 不会出现在正式 P-Phone
+- 只用于 F3 / bridge 审计和未来 delivery queue 接入前验证
