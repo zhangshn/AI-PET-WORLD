@@ -684,3 +684,156 @@ F3 record preview
 ```
 
 当前仍然不接正式 P-Phone，不生成真实短信，不记录 AiMessage。
+
+## 28. P-PHONE-DELIVERY-5 当前状态
+
+当前已经新增 P-Phone delivery 受控写入开关类型：
+
+- `src/app/world/ui/phone/messages/pPhoneButlerDeliveryWriterTypes.ts`
+- `PPhoneButlerDeliveryWriteControl`
+- `PPhoneButlerDeliveryWriteMode`
+- `PPhoneButlerDeliveryWriteResult`
+
+默认写入控制是：
+
+```txt
+disabled
+↓
+canWrite=false
+↓
+didWrite=false
+```
+
+该边界只定义 writer 输入、开关与结果类型，不写 AiMessage。
+
+## 29. P-PHONE-DELIVERY-6 当前状态
+
+当前已经新增受控手动 writer：
+
+- `src/app/world/ui/phone/messages/pPhoneButlerDeliveryWriter.ts`
+- `writePPhoneButlerDeliveryMessageOnce`
+
+该 writer 只有在显式满足以下条件时才允许写入：
+
+```txt
+recordInput exists
+↓
+control.mode === "enabled"
+↓
+recordAiMessageOnce
+```
+
+默认业务链路不调用该 writer。
+
+边界原则：
+
+- 不在 worldEngine 中触发写入
+- 不在 butlerSystem 中触发写入
+- 不在 React render 中触发写入
+- 不让 UI 自动发送消息
+
+## 30. P-PHONE-DELIVERY-7 当前状态
+
+当前 writer result 已区分以下结果：
+
+- `disabled`
+- `manual_audit_only`
+- `missing_record_input`
+- `blocked`
+- `written`
+- `skipped_duplicate`
+
+其中 `written` 只可能来自显式 enabled 的 manual writer。
+
+当前 F3 审计路径只展示 disabled preview，不会触发真实写入。
+
+## 31. P-PHONE-DELIVERY-8 当前状态
+
+当前已经新增 F3 manual writer 审计面板：
+
+- `src/app/world/components/butler-debug/ButlerPPhoneDeliveryWriterAuditPanel.tsx`
+
+当前面板展示：
+
+- status
+- canWrite
+- didWrite
+- messageId
+- recordId
+- reason
+- tags
+
+当前面板不提供按钮，不调用 `recordAiMessageOnce`，不写 AiMessage。
+
+## 32. P-PHONE-DELIVERY-9 当前状态
+
+当前已经新增 P-Phone read-only integration preview：
+
+- `src/app/world/ui/phone/messages/pPhoneButlerRecordPreviewMapper.ts`
+- `src/app/world/components/butler-debug/ButlerPPhoneReadonlyIntegrationPreviewPanel.tsx`
+
+当前链路：
+
+```txt
+CreateAiMessageRecordInput
+↓
+buildPPhoneButlerRecordPreviewMessage
+↓
+PPhoneMessageItem | null
+```
+
+该预览只展示未来进入正式 P-Phone 前的消息形态，不接正式 thread。
+
+## 33. P-PHONE-DELIVERY-10 当前状态
+
+当前已经完成 P-Phone delivery 第三批基础建设：
+
+- 受控写入开关类型
+- 手动 writer
+- writer result 状态边界
+- F3 writer 审计面板
+- read-only integration preview mapper
+- F3 read-only integration preview 面板
+
+当前整体链路：
+
+```txt
+ButlerMessageDeliveryDecision
+↓
+P-Phone bridge preview
+↓
+future delivery queue item
+↓
+CreateAiMessageRecordInput
+↓
+writer disabled preview
+↓
+read-only integration preview
+```
+
+当前仍不接正式 P-Phone，不自动写 AiMessage。
+
+## 34. P-Phone Delivery 安全边界
+
+当前 P-Phone delivery 链路必须保持以下边界：
+
+- P-Phone UI 不决定管家是否联系玩家
+- P-Phone UI 不自动发送消息
+- P-Phone bridge 不读取 WorldEvent 生成短信
+- P-Phone bridge 不把系统日志转成管家消息
+- `draftText` 不是已发送消息
+- `CreateAiMessageRecordInput` 不是已写入记录
+- `ready_for_future_delivery` 不是已发送状态
+- manual writer 只能由显式 enabled 控制调用
+
+## 35. 下一阶段建议
+
+下一阶段如果要继续推进 P-Phone delivery，应先建立明确的手动触发边界。
+
+建议顺序：
+
+1. 继续保持正式 P-Phone thread 不变。
+2. 为 manual writer 增加开发期显式触发入口前，先设计权限和审计条件。
+3. 明确 `enabled` 控制只来自开发工具或未来受控 delivery service。
+4. 在真实写入前继续验证去重、冷却和 queue item 稳定性。
+5. 最后再考虑让正式 P-Phone 读取持久化 AiMessage，而不是读取 bridge preview。

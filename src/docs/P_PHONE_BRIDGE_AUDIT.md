@@ -287,3 +287,144 @@ CreateAiMessageRecordInput preview
 ```
 
 当前仍然不接正式 P-Phone，不写 AiMessage，不把事件自动转短信。
+
+## 15. P-PHONE-DELIVERY-5 当前状态
+
+当前已经新增受控写入开关类型：
+
+- `PPhoneButlerDeliveryWriteControl`
+- `PPhoneButlerDeliveryWriteMode`
+- `PPhoneButlerDeliveryWriteResult`
+- `createDisabledPPhoneButlerDeliveryWriteControl`
+- `createManualAuditPPhoneButlerDeliveryWriteControl`
+- `createEnabledPPhoneButlerDeliveryWriteControl`
+
+默认状态是：
+
+```txt
+disabled
+↓
+no write
+↓
+preview only
+```
+
+当前文件：
+
+- `src/app/world/ui/phone/messages/pPhoneButlerDeliveryWriterTypes.ts`
+
+当前只定义写入边界，不写 AiMessage。
+
+## 16. P-PHONE-DELIVERY-6 当前状态
+
+当前已经新增受控 manual writer：
+
+- `src/app/world/ui/phone/messages/pPhoneButlerDeliveryWriter.ts`
+- `writePPhoneButlerDeliveryMessageOnce`
+
+写入条件必须是：
+
+```txt
+recordInput exists
+↓
+control.mode === "enabled"
+↓
+recordAiMessageOnce
+```
+
+默认业务链路不调用该 writer。
+
+当前不做：
+
+- 不自动写 AiMessage
+- 不在 worldEngine 中触发写入
+- 不在 butlerSystem 中触发写入
+- 不在 React render 中触发写入
+- 不接正式 P-Phone thread
+
+## 17. P-PHONE-DELIVERY-7 当前状态
+
+当前已经新增 writer result 类型，用于区分写入边界结果：
+
+- `disabled`
+- `manual_audit_only`
+- `missing_record_input`
+- `blocked`
+- `written`
+- `skipped_duplicate`
+
+这些状态只描述 writer 边界的结果，不代表 UI 可以自动发送消息。
+
+默认 F3 审计面板只展示 `disabled` preview。
+
+## 18. P-PHONE-DELIVERY-8 当前状态
+
+当前已经新增 F3 manual writer 审计面板：
+
+- `src/app/world/components/butler-debug/ButlerPPhoneDeliveryWriterAuditPanel.tsx`
+
+当前展示：
+
+- status
+- canWrite
+- didWrite
+- messageId
+- recordId
+- reason
+- tags
+
+当前面板：
+
+- 不提供按钮
+- 不调用 `recordAiMessageOnce`
+- 不写 AiMessage
+- 只展示 disabled preview
+
+## 19. P-PHONE-DELIVERY-9 当前状态
+
+当前已经新增 P-Phone read-only integration preview：
+
+- `src/app/world/ui/phone/messages/pPhoneButlerRecordPreviewMapper.ts`
+- `src/app/world/components/butler-debug/ButlerPPhoneReadonlyIntegrationPreviewPanel.tsx`
+
+当前链路：
+
+```txt
+CreateAiMessageRecordInput
+↓
+buildPPhoneButlerRecordPreviewMessage
+↓
+PPhoneMessageItem | null
+```
+
+当前只把 record input 转成 P-Phone 只读预览消息。
+
+当前不接正式 P-Phone thread，不写 AiMessage。
+
+## 20. P-PHONE-DELIVERY-10 当前状态
+
+当前已经完成 P-Phone delivery 第三批基础建设文档固化。
+
+当前整体链路：
+
+```txt
+ButlerMessageDeliveryDecision
+↓
+delivery preview
+↓
+future delivery queue item
+↓
+CreateAiMessageRecordInput
+↓
+writer disabled preview
+↓
+read-only P-Phone integration preview
+```
+
+当前仍然不做：
+
+- 不自动写 AiMessage
+- 不生成真实短信
+- 不替换正式 P-Phone thread
+- 不把事件自动转短信
+- 不把系统日志转成管家消息
