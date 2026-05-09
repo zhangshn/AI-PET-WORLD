@@ -378,6 +378,34 @@ ButlerMessageDecision
 - 不让管家控制宠物
 - 不让管家直接写入宠物 learning
 
+## 17. MESSAGE-DECISION-4 当前状态
+
+当前已经为 `ButlerMessageDecision` 增加草稿文本字段：
+
+- `draftText`
+
+当前链路：
+
+```txt
+ButlerState
+↓
+latestMessageDecision
+↓
+draftText
+↓
+F3 开发审计
+```
+
+该字段只表示未来 message delivery 允许发送时，管家可能会怎么说。
+
+边界原则：
+
+- 不接 P-Phone
+- 不生成短信
+- 不记录 AiMessage
+- 不把事件自动转短信
+- 不把系统日志转成管家消息
+
 ## 16. MESSAGE-DECISION-3 当前状态
 
 当前已经为管家主动消息判断层加入冷却 / 去重规则。

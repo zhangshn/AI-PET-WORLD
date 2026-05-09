@@ -84,6 +84,13 @@ export default function ButlerMessageDecisionDebugPanel({
           </div>
 
           <div className={styles.row}>
+            <span>draftText</span>
+            <span className={styles.multiline}>
+              {decision.draftText ?? "-"}
+            </span>
+          </div>
+
+          <div className={styles.row}>
             <span>tags</span>
             <span className={styles.multiline}>
               {decision.tags.length > 0 ? decision.tags.join(" / ") : "-"}

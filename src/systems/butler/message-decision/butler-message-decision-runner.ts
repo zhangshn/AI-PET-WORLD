@@ -48,6 +48,7 @@ function buildSilentDecision(
     priority: "silent",
     reason: "none",
     summary,
+    draftText: null,
     suggestedTone: "quiet",
     sourceTask: input.butler.task,
     relationTone: input.butler.relation.tone,
@@ -56,6 +57,38 @@ function buildSilentDecision(
     cooldownUntilTick: null,
     tags: ["message_decision", "silent"],
   }
+}
+
+function buildDraftText(input: {
+  reason: ButlerMessageDecisionReason
+  suggestedTone: ButlerMessageDecision["suggestedTone"]
+  summary: string
+}): string {
+  if (input.reason === "repeated_rejection_observed") {
+    return "我注意到它最近几次没有接受我的照看机会。我会先放慢靠近和引导的节奏，继续观察它自己的选择，不会要求你立刻干预。"
+  }
+
+  if (input.reason === "stable_care_progress") {
+    return "它对一些照看机会开始形成稳定回应了。我会继续保持现在的节奏，让它慢慢把这些经验变成自己的判断。"
+  }
+
+  if (input.reason === "education_strategy_changed") {
+    return "我刚调整了靠近方式，会更谨慎一些。它现在仍然需要自己判断是否回应，我不会替它做决定。"
+  }
+
+  if (input.reason === "protective_boundary_pattern") {
+    return "我观察到它在边界附近需要更多确认。我会先守住环境安全，同时尽量不打断它的探索。"
+  }
+
+  if (input.reason === "needs_player_attention") {
+    return "我认为这件事需要你看一眼，但我不会把它当成命令，只会把当前判断告诉你。"
+  }
+
+  if (input.reason === "first_pet_birth_observation") {
+    return "它刚来到这个世界，我会先保持观察，让它自己适应周围环境。"
+  }
+
+  return input.summary
 }
 
 function buildDecision(input: {
@@ -71,12 +104,18 @@ function buildDecision(input: {
 
   const cooldownUntilTick =
     cooldownTicks > 0 ? input.source.tick + cooldownTicks : null
+  const draftText = buildDraftText({
+    reason: input.reason,
+    suggestedTone: input.suggestedTone,
+    summary: input.summary,
+  })
 
   return {
     shouldContactPlayer: input.priority !== "silent",
     priority: input.priority,
     reason: input.reason,
     summary: input.summary,
+    draftText,
     suggestedTone: input.suggestedTone,
     sourceTask: input.source.butler.task,
     relationTone: input.source.butler.relation.tone,

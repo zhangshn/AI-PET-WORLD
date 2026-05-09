@@ -32,6 +32,11 @@ export type ButlerMessageDecision = {
   priority: ButlerMessageDecisionPriority
   reason: ButlerMessageDecisionReason
   summary: string
+  /**
+   * 管家主动消息草稿。
+   * 只用于开发审计和未来 message delivery，不代表已经发送。
+   */
+  draftText: string | null
   suggestedTone: "quiet" | "gentle" | "reassuring" | "careful" | "urgent"
   sourceTask: ButlerTask
   relationTone: ButlerRelationState["tone"]
