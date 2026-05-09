@@ -118,6 +118,26 @@ ButlerState.latestMessageDecision
 - 不把事件自动转短信
 - 不把系统日志转成管家消息
 
+## MESSAGE-DECISION-4 当前状态
+
+当前已经为管家主动消息判断加入草稿文本字段：
+
+- `draftText`
+
+该字段表示：
+
+- 如果未来 message delivery 允许发送，管家可能会怎么说
+- 当前只用于 F3 开发审计
+- 当前不代表已经发送
+
+当前不做：
+
+- 不接 P-Phone
+- 不生成短信
+- 不记录 AiMessage
+- 不把事件自动转短信
+- 不把系统日志转成管家消息
+
 ## MESSAGE-DECISION-5 当前状态
 
 当前已经建立 message delivery 边界层。
@@ -138,26 +158,6 @@ ButlerState.latestMessageDeliveryDecision
 ```
 
 当前只判断是否允许未来进入投递队列。
-
-当前不做：
-
-- 不接 P-Phone
-- 不生成短信
-- 不记录 AiMessage
-- 不把事件自动转短信
-- 不把系统日志转成管家消息
-
-## MESSAGE-DECISION-4 当前状态
-
-当前已经为管家主动消息判断加入草稿文本字段：
-
-- `draftText`
-
-该字段表示：
-
-- 如果未来 message delivery 允许发送，管家可能会怎么说
-- 当前只用于 F3 开发审计
-- 当前不代表已经发送
 
 当前不做：
 
