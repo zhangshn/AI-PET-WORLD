@@ -28,7 +28,7 @@ export {
 
 export { chooseButlerTask } from "./task/butler-task-runner"
 
-export { deriveButlerMood } from "./butler-mood-runner"
+export { deriveButlerMood } from "./intention/butler-intention-gateway"
 
 export {
   buildButlerProfileTaskTuning,

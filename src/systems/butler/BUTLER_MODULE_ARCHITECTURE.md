@@ -126,6 +126,16 @@ UI 层可以展示管家消息结果，但不能写管家消息判断逻辑。
 - 本轮不改变运行逻辑，只完成机会判断与机会创建动作的入口分离。
 - 管家创建机会不等于宠物必须接受，机会必须进入宠物自身判断链。
 
+## 6.3 ARCH-3D 当前状态
+
+当前已经完成 butler-mood-runner 第一轮包装归口：
+
+- butler-mood-runner.ts 暂时仍保留原目录。
+- deriveButlerMood 已通过 intention/state-interpretation 暴露为管家状态解释 / 情绪表现推导入口。
+- butler-gateway.ts 对外仍导出 deriveButlerMood，但来源已经切换为 intention/butler-intention-gateway。
+- 本轮不改变运行逻辑，只完成管家状态解释入口归口。
+- 后续再逐步把 butler-mood-runner 内部实现迁入 intention/state-interpretation。
+
 ## 7. 后续迁移顺序建议
 
 1. 建立 butler-core-boundary 边界声明

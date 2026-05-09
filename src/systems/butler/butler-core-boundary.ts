@@ -58,6 +58,13 @@ export const BUTLER_CORE_AUTONOMOUS_DRIVE_MODULES: ButlerCoreBoundaryModule[] = 
   },
   {
     layer: "autonomous_drive",
+    path: "src/systems/butler/intention/state-interpretation",
+    role: "管家状态解释 / 情绪表现推导入口。",
+    accessRule:
+      "只根据管家任务和状态推导 mood / 状态解释，不直接决定 task、message 或 behavior。",
+  },
+  {
+    layer: "autonomous_drive",
     path: "src/systems/butler/intention",
     role: "管家意图形成预留目录。",
     accessRule:
