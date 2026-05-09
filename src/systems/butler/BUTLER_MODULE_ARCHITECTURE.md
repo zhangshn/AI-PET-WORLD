@@ -115,6 +115,17 @@ UI 层可以展示管家消息结果，但不能写管家消息判断逻辑。
 
 本轮不移动旧目录，不改变运行逻辑，只建立边界声明和 gateway 导出。
 
+## 6.2 ARCH-3C 当前状态
+
+当前已经完成 butler-opportunity-runner 第一轮包装归口：
+
+- butler-opportunity-runner.ts 暂时仍保留原目录。
+- buildInitialOpportunityCooldowns / canCreateOpportunity / hasPendingOpportunity / markOpportunityCreated / removeExpiredOpportunities 已通过 education/opportunity 暴露为照看 / 教育判断与机会状态管理入口。
+- createFoodOffer / createRestOffer / createApproachOffer 已通过 behavior/opportunity-action 暴露为管家提供机会行为入口。
+- butler-gateway.ts 对外仍导出这些函数，但来源已经切换为 education/butler-education-gateway 与 behavior/butler-behavior-gateway。
+- 本轮不改变运行逻辑，只完成机会判断与机会创建动作的入口分离。
+- 管家创建机会不等于宠物必须接受，机会必须进入宠物自身判断链。
+
 ## 7. 后续迁移顺序建议
 
 1. 建立 butler-core-boundary 边界声明

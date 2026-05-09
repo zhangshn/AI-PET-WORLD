@@ -15,13 +15,16 @@ export type {
 export {
   buildInitialOpportunityCooldowns,
   canCreateOpportunity,
-  createApproachOffer,
-  createFoodOffer,
-  createRestOffer,
   hasPendingOpportunity,
   markOpportunityCreated,
   removeExpiredOpportunities,
-} from "./butler-opportunity-runner"
+} from "./education/butler-education-gateway"
+
+export {
+  createApproachOffer,
+  createFoodOffer,
+  createRestOffer,
+} from "./behavior/butler-behavior-gateway"
 
 export { chooseButlerTask } from "./task/butler-task-runner"
 

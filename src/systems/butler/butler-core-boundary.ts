@@ -82,10 +82,17 @@ export const BUTLER_CORE_EDUCATION_MODULES: ButlerCoreBoundaryModule[] = [
   },
   {
     layer: "education",
+    path: "src/systems/butler/education/opportunity",
+    role: "管家机会判断与机会状态管理入口。",
+    accessRule:
+      "只判断机会是否可创建、冷却是否允许、机会是否待处理，不直接控制宠物行为。",
+  },
+  {
+    layer: "education",
     path: "src/systems/butler/butler-opportunity-runner.ts",
     role: "当前管家机会创建与冷却混合模块。",
     accessRule:
-      "当前保留旧实现；后续拆分为 education 判断和 behavior 执行。管家机会只能成为宠物判断输入。",
+      "当前保留旧实现；后续逐步拆分到 education / behavior。管家机会只能成为宠物判断输入。",
   },
 ]
 
@@ -106,6 +113,13 @@ export const BUTLER_CORE_BEHAVIOR_EXECUTION_MODULES: ButlerCoreBoundaryModule[] 
     role: "管家行为执行层预留目录。",
     accessRule:
       "只把上层意图表达为可见行为或世界操作，不负责意图判断。",
+  },
+  {
+    layer: "behavior_execution",
+    path: "src/systems/butler/behavior/opportunity-action",
+    role: "管家提供食物、休息、靠近机会的行为入口。",
+    accessRule:
+      "只创建可供宠物自主判断的机会，不代表宠物必须接受。",
   },
 ]
 
