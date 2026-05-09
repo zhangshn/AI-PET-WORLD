@@ -535,3 +535,24 @@ PPhoneButlerDeliveryReadbackResult
 - 不替换正式 P-Phone thread
 - 不把事件自动转短信
 - 不把系统日志转成管家消息
+
+## 26. P-PHONE-INTEGRATION-BATCH-5 当前状态
+
+当前已经开始正式 P-Phone butler thread 接入。
+
+本轮完成：
+
+- delivery-generated persisted butler message 优先显示
+- 普通 persisted butler message 次级显示
+- 旧 message-policy butler message 降级
+- 旧 WorldEvent → butler message 仅作为 fallback
+- World Notice 保持原样
+- fallback butler status message 不再写入 AiMessage
+
+当前仍然不做：
+
+- 不自动写 AiMessage
+- 不删除旧 event policy
+- 不关闭 World Notice
+- 不让 P-Phone UI 决定管家是否联系玩家
+- 不新增 F3 面板

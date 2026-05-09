@@ -9,7 +9,6 @@ import type { AiMessageRecord } from "@/ai/data-core/ai-data-types"
 
 import {
   getAiDataRecords,
-  recordAiMessageOnce,
 } from "@/ai/data-core/ai-data-gateway"
 
 import {
@@ -74,6 +73,61 @@ function toMessageItemFromAiRecord(
   }
 }
 
+function isDeliveryGeneratedButlerRecord(record: AiMessageRecord): boolean {
+  return (
+    record.messageChannel === "butler" &&
+    record.tags.some((tag) =>
+      [
+        "message-delivery",
+        "future-delivery-ready",
+        "butler-message",
+      ].includes(tag)
+    ) &&
+    !record.tags.includes("message-policy")
+  )
+}
+
+function getMessageRecordPriority(record: AiMessageRecord): number {
+  if (isDeliveryGeneratedButlerRecord(record)) {
+    return 0
+  }
+
+  if (
+    record.messageChannel === "butler" &&
+    !record.tags.includes("message-policy")
+  ) {
+    return 1
+  }
+
+  if (record.messageChannel === "butler") {
+    return 2
+  }
+
+  if (record.messageChannel === "world_notice") {
+    return 0
+  }
+
+  return 9
+}
+
+function sortAiMessageRecords(records: AiMessageRecord[]): AiMessageRecord[] {
+  return [...records].sort((a, b) => {
+    const priorityDiff =
+      getMessageRecordPriority(a) - getMessageRecordPriority(b)
+
+    if (priorityDiff !== 0) return priorityDiff
+
+    const bTime = new Date(b.occurredAt).getTime()
+    const aTime = new Date(a.occurredAt).getTime()
+
+    if (Number.isNaN(aTime) || Number.isNaN(bTime)) {
+      return 0
+    }
+
+    return bTime - aTime
+  })
+}
+
 function readPersistedMessageItems(input: {
   butlerName: string
 }): {
@@ -88,7 +142,7 @@ function readPersistedMessageItems(input: {
   const butlerMessages: PPhoneMessageItem[] = []
   const worldMessages: PPhoneMessageItem[] = []
 
-  records.forEach((record) => {
+  sortAiMessageRecords(records).forEach((record) => {
     const message = toMessageItemFromAiRecord(record, input.butlerName)
 
     if (record.messageChannel === "butler") {
@@ -182,29 +236,13 @@ function buildButlerStatusMessage(input: {
   const messageId = `butler-status-${dayLabel}`
   const text = buildButlerStatusMessageText(input.hud)
 
-  const record = recordAiMessageOnce({
-    id: `ai-message-${messageId}`,
-    source: "message_policy",
-    entityType: "butler",
-    entityId: input.hud.butler.name,
-    importance: "low",
-    userVisibleChannel: "p_phone_butler",
-    summary: "管家基础状态短信生成",
-    tags: ["p-phone", "message-policy", "butler-message", "status-message"],
-    messageId,
-    messageChannel: "butler",
-    messageText: text,
-    triggerReason: "butler_status_message",
-    sourceEventId: messageId,
-    wasReadByUser: false,
-  })
-
   return {
     id: messageId,
     sender: "butler",
     senderName: input.hud.butler.name,
     text,
-    timeLabel: record ? formatAiMessageTime(record) : input.hud.world.timeLabel,
+    timeLabel: input.hud.world.timeLabel,
+    isPlaceholder: true,
   }
 }
 
@@ -234,6 +272,14 @@ function countUnreadMessages(
   }).length
 }
 
+/**
+ * 正式 P-Phone message thread 构建规则：
+ * 1. 已持久化 AiMessage 优先。
+ * 2. 新 delivery 链路生成的 butler message 优先于旧 message-policy。
+ * 3. 旧 WorldEvent → butler message 仅作为兼容 fallback。
+ * 4. World Notice 暂时保留事件来源。
+ * 5. fallback 状态短信不再写入 AiMessage。
+ */
 export function buildPPhoneMessageThreads(input: {
   events: WorldEvent[]
   hud: WorldHudBundle
@@ -256,6 +302,8 @@ export function buildPPhoneMessageThreads(input: {
     butlerName: input.hud.butler.name,
   })
 
+  // 新 delivery 链路写入的是 persistedButlerMessages。
+  // 旧 WorldEvent → butler message 仅作为兼容 fallback，不能排在持久化消息前面。
   const butlerMessages = limitVisibleMessages(
     [...persistedButlerMessages, ...eventButlerMessages],
     30
