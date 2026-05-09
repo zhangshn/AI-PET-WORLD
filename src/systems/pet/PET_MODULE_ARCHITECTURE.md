@@ -181,6 +181,18 @@ learning 逐渐形成经验
 - 本轮不改变运行逻辑，只完成世界 signal → 宠物主体解释入口归口。
 - 后续再逐步把 pet-cognition 内部实现迁入 cognition/perception。
 
+## 5.7 ARCH-2I 当前迁移状态
+
+当前已经完成 pet-state-events / pet-zone 第一轮包装归口：
+
+- pet-state-events 暂时仍保留原目录。
+- buildPetStateEvents 及相关类型已通过 world-boundary/state-events 暴露为世界边界事件输出入口。
+- pet-zone 暂时仍保留原目录。
+- runPetZoneInfluence 及相关类型已通过 world-boundary/zone-influence 暴露为世界区域影响输入入口。
+- pet-gateway.ts 对外仍导出这些函数和类型，但来源已经切换为 world-boundary/pet-world-boundary-gateway。
+- 本轮不改变运行逻辑，只完成世界边界入口归口。
+- 后续再逐步把 pet-state-events / pet-zone 内部实现迁入 world-boundary。
+
 ## 5. 后续迁移顺序
 
 1. pet-life / pet-mood 的状态部分逐步迁入 daily-state

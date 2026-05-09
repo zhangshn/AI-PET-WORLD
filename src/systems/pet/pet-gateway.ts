@@ -67,13 +67,10 @@ export {
 export {
   buildPetStateEvents,
   type PetStateEvent,
-} from "./pet-state-events/pet-state-events-gateway"
-
-export {
   runPetZoneInfluence,
   type RunPetZoneInfluenceInput,
   type RunPetZoneInfluenceResult,
-} from "./pet-zone/pet-zone-gateway"
+} from "./world-boundary/pet-world-boundary-gateway"
 
 export {
   runPetRuntimeTick,

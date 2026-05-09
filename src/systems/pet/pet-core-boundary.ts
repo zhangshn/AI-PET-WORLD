@@ -221,20 +221,34 @@ export const PET_CORE_RUNTIME_MODULES: PetCoreBoundaryModule[] = [
 export const PET_CORE_WORLD_EVENT_BOUNDARY_MODULES: PetCoreBoundaryModule[] = [
   {
     layer: "world_event_boundary",
+    path: "src/systems/pet/world-boundary/state-events",
+    role: "宠物状态变化事件输出入口。",
+    accessRule:
+      "只把宠物状态变化转换为事件材料，不写主体判断，不决定下一步行为。",
+  },
+  {
+    layer: "world_event_boundary",
     path: "src/systems/pet/pet-state-events",
     role: "宠物状态变化事件输出边界。",
     accessRule:
-      "只把宠物状态变化转换为事件材料，不写主体判断，不决定下一步行为。",
+      "只把宠物状态变化转换为事件材料，不写主体判断，不决定下一步行为；后续将逐步迁入 world-boundary/state-events。",
   },
 ]
 
 export const PET_CORE_WORLD_INFLUENCE_MODULES: PetCoreBoundaryModule[] = [
   {
     layer: "world_influence",
+    path: "src/systems/pet/world-boundary/zone-influence",
+    role: "世界区域对宠物影响输入入口。",
+    accessRule:
+      "只把世界区域影响转换为宠物可接收的影响输入，不直接决定宠物 action。",
+  },
+  {
+    layer: "world_influence",
     path: "src/systems/pet/pet-zone",
     role: "世界区域对宠物状态与倾向的输入影响。",
     accessRule:
-      "世界区域只能形成影响和 signal，不能直接决定宠物 action。",
+      "世界区域只能形成影响和 signal，不能直接决定宠物 action；后续将逐步迁入 world-boundary/zone-influence。",
   },
 ]
 
