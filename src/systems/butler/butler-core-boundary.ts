@@ -77,6 +77,13 @@ export const BUTLER_CORE_AUTONOMOUS_DRIVE_MODULES: ButlerCoreBoundaryModule[] = 
     accessRule:
       "只作为状态解释输入，不直接决定 task、message 或 behavior；后续可归入 intention。",
   },
+  {
+    layer: "autonomous_drive",
+    path: "src/systems/butler/intention/task-decision",
+    role: "管家任务意图选择与决策痕迹入口。",
+    accessRule:
+      "只形成任务倾向、任务选择和决策解释，不直接执行行为，也不替宠物做决定。",
+  },
 ]
 
 export const BUTLER_CORE_EDUCATION_MODULES: ButlerCoreBoundaryModule[] = [

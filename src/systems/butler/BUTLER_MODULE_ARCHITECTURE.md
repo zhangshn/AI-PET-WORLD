@@ -147,6 +147,17 @@ UI 层可以展示管家消息结果，但不能写管家消息判断逻辑。
 - tuning 只负责把管家先天人格、倾向和偏置转换为运行层可读取的轻量调参，不直接决定任务、消息或行为。
 - 后续再逐步把 butler-profile-tuning 内部实现迁入 tuning/profile-tendency。
 
+## 6.5 ARCH-3F 当前状态
+
+当前已经完成 task 第一轮包装归口：
+
+- task 目录暂时仍保留原位置。
+- chooseButlerTask 已通过 intention/task-decision 暴露为管家任务意图选择入口。
+- buildButlerTaskDecisionTrace 及相关类型已通过 intention/task-decision 暴露为管家任务决策痕迹入口。
+- butler-gateway.ts 对外仍导出 chooseButlerTask / buildButlerTaskDecisionTrace 及相关类型，但来源已经切换为 intention/butler-intention-gateway。
+- 本轮不改变运行逻辑，只完成任务意图选择与决策痕迹入口归口。
+- 后续再逐步把 task 内部实现迁入 intention/task-decision，或者继续保留 task 作为任务域内部实现。
+
 ## 7. 后续迁移顺序建议
 
 1. 建立 butler-core-boundary 边界声明

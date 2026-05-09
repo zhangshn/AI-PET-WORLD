@@ -26,7 +26,7 @@ export {
   createRestOffer,
 } from "./behavior/butler-behavior-gateway"
 
-export { chooseButlerTask } from "./task/butler-task-runner"
+export { chooseButlerTask } from "./intention/butler-intention-gateway"
 
 export { deriveButlerMood } from "./intention/butler-intention-gateway"
 
@@ -37,13 +37,10 @@ export {
 
 export {
   buildButlerTaskDecisionTrace,
-} from "./task/butler-task-decision-trace"
-
-export type {
-  ButlerTaskDecisionGate,
-  ButlerTaskDecisionScore,
-  ButlerTaskDecisionTrace,
-} from "./task/butler-task-decision-trace"
+  type ButlerTaskDecisionGate,
+  type ButlerTaskDecisionScore,
+  type ButlerTaskDecisionTrace,
+} from "./intention/butler-intention-gateway"
 
 export {
   appendButlerMemoryEntry,
