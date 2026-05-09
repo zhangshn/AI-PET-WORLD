@@ -36,6 +36,18 @@ export type ButlerMessageDecision = {
   sourceTask: ButlerTask
   relationTone: ButlerRelationState["tone"]
   educationPosture: ButlerEducationStrategy["posture"] | null
+
+  /**
+   * 本次主动消息判断生成时的 tick。
+   */
+  createdAtTick: number
+
+  /**
+   * 相同 reason 的主动消息判断建议冷却到哪个 tick。
+   * silent 判断没有冷却。
+   */
+  cooldownUntilTick: number | null
+
   tags: string[]
 }
 

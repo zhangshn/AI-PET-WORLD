@@ -67,6 +67,16 @@ export default function ButlerMessageDecisionDebugPanel({
           </div>
 
           <div className={styles.row}>
+            <span>createdAtTick</span>
+            <span>{decision.createdAtTick}</span>
+          </div>
+
+          <div className={styles.row}>
+            <span>cooldownUntilTick</span>
+            <span>{decision.cooldownUntilTick ?? "-"}</span>
+          </div>
+
+          <div className={styles.row}>
             <span>summary</span>
             <span className={styles.multiline}>
               {decision.summary}

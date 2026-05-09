@@ -94,3 +94,26 @@ ButlerState.latestMessageDecision
 - 不接 P-Phone
 - 不把事件自动转短信
 - 不把系统日志转成管家消息
+
+## MESSAGE-DECISION-3 当前状态
+
+当前已经为管家主动消息判断层加入最小冷却 / 去重规则。
+
+当前 `ButlerMessageDecision` 增加：
+
+- `createdAtTick`
+- `cooldownUntilTick`
+
+当前冷却规则只用于：
+
+- 避免同一 reason 在短时间内重复形成联系玩家意图
+- 让管家继续观察，而不是每个 tick 都想联系玩家
+- 为未来 P-Phone message delivery 提供节流依据
+
+当前不做：
+
+- 不接 P-Phone
+- 不生成短信
+- 不记录 AiMessage
+- 不把事件自动转短信
+- 不把系统日志转成管家消息

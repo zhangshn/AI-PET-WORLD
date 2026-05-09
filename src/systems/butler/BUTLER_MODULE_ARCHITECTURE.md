@@ -378,6 +378,39 @@ ButlerMessageDecision
 - 不让管家控制宠物
 - 不让管家直接写入宠物 learning
 
+## 16. MESSAGE-DECISION-3 当前状态
+
+当前已经为管家主动消息判断层加入冷却 / 去重规则。
+
+当前字段：
+
+- `createdAtTick`
+- `cooldownUntilTick`
+
+当前规则：
+
+```txt
+latestMessageDecision
+↓
+same reason cooldown check
+↓
+silent or new message decision
+```
+
+当前冷却只用于避免同一 reason 在短时间内重复形成联系玩家意图。
+
+边界原则：
+
+- 不接 P-Phone
+- 不生成短信
+- 不记录 AiMessage
+- 不把事件自动转短信
+- 不把系统日志转成管家消息
+- 不改变 worldEngine 调度顺序
+- 不改变宠物行为
+- 不让管家控制宠物
+- 不让管家直接写入宠物 learning
+
 ## 15. MESSAGE-DECISION-2 当前状态
 
 当前已经把管家主动消息判断结果保存为 `ButlerState.latestMessageDecision`。

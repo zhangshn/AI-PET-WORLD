@@ -13,6 +13,32 @@ import type {
   ButlerMessageDecisionReason,
 } from "./butler-message-decision-schema"
 
+const MESSAGE_DECISION_COOLDOWN_TICKS: Record<
+  ButlerMessageDecisionReason,
+  number
+> = {
+  none: 0,
+  first_pet_birth_observation: 18,
+  education_strategy_changed: 12,
+  repeated_rejection_observed: 16,
+  stable_care_progress: 24,
+  protective_boundary_pattern: 10,
+  needs_player_attention: 8,
+}
+
+function isSameReasonCoolingDown(
+  input: BuildButlerMessageDecisionInput,
+  reason: ButlerMessageDecisionReason
+): boolean {
+  const previousDecision = input.butler.latestMessageDecision
+
+  if (!previousDecision) return false
+  if (previousDecision.reason !== reason) return false
+  if (!previousDecision.cooldownUntilTick) return false
+
+  return input.tick < previousDecision.cooldownUntilTick
+}
+
 function buildSilentDecision(
   input: BuildButlerMessageDecisionInput,
   summary = "当前管家没有形成联系玩家的必要。"
@@ -26,6 +52,8 @@ function buildSilentDecision(
     sourceTask: input.butler.task,
     relationTone: input.butler.relation.tone,
     educationPosture: input.butler.latestEducationStrategy?.posture ?? null,
+    createdAtTick: input.tick,
+    cooldownUntilTick: null,
     tags: ["message_decision", "silent"],
   }
 }
@@ -38,6 +66,12 @@ function buildDecision(input: {
   suggestedTone: ButlerMessageDecision["suggestedTone"]
   tags: string[]
 }): ButlerMessageDecision {
+  const cooldownTicks =
+    MESSAGE_DECISION_COOLDOWN_TICKS[input.reason] ?? 0
+
+  const cooldownUntilTick =
+    cooldownTicks > 0 ? input.source.tick + cooldownTicks : null
+
   return {
     shouldContactPlayer: input.priority !== "silent",
     priority: input.priority,
@@ -48,6 +82,8 @@ function buildDecision(input: {
     relationTone: input.source.butler.relation.tone,
     educationPosture:
       input.source.butler.latestEducationStrategy?.posture ?? null,
+    createdAtTick: input.source.tick,
+    cooldownUntilTick,
     tags: ["message_decision", ...input.tags],
   }
 }
@@ -101,6 +137,13 @@ export function buildButlerMessageDecision(
     hasRecentRepeatedRejection(input) &&
     hasCarefulEducationPosture(input)
   ) {
+    if (isSameReasonCoolingDown(input, "repeated_rejection_observed")) {
+      return buildSilentDecision(
+        input,
+        "近期已经形成过重复拒绝相关联系意图，当前仍处于冷却观察中。"
+      )
+    }
+
     return buildDecision({
       source: input,
       priority: "medium",
@@ -117,6 +160,13 @@ export function buildButlerMessageDecision(
   }
 
   if (hasStableCareProgress(input)) {
+    if (isSameReasonCoolingDown(input, "stable_care_progress")) {
+      return buildSilentDecision(
+        input,
+        "稳定照看进展已经形成过联系意图，当前继续观察，不重复提醒。"
+      )
+    }
+
     return buildDecision({
       source: input,
       priority: "low",
@@ -136,6 +186,13 @@ export function buildButlerMessageDecision(
     butler.task === "offering_approach" &&
     latestStrategy.posture === "cautious_distance"
   ) {
+    if (isSameReasonCoolingDown(input, "education_strategy_changed")) {
+      return buildSilentDecision(
+        input,
+        "靠近策略变化已经形成过联系意图，当前不重复提醒。"
+      )
+    }
+
     return buildDecision({
       source: input,
       priority: "low",
