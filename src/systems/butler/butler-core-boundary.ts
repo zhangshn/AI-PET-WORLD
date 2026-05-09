@@ -155,7 +155,16 @@ export const BUTLER_CORE_TUNING_MODULES: ButlerCoreBoundaryModule[] = [
     accessRule:
       "只做 profile tendency 到任务倾向的调参适配，不写具体任务执行流程。",
   },
+  {
+    layer: "tuning",
+    path: "src/systems/butler/tuning/profile-tendency",
+    role: "管家人格倾向调参入口。",
+    accessRule:
+      "只把 ButlerProfile 转换为任务选择层可读取的轻量调参，不直接决定 task、message 或 behavior。",
+  },
 ]
+
+
 
 export const BUTLER_CORE_TYPE_BOUNDARY_MODULES: ButlerCoreBoundaryModule[] = [
   {

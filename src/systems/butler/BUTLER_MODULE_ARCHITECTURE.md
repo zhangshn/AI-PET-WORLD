@@ -136,6 +136,17 @@ UI 层可以展示管家消息结果，但不能写管家消息判断逻辑。
 - 本轮不改变运行逻辑，只完成管家状态解释入口归口。
 - 后续再逐步把 butler-mood-runner 内部实现迁入 intention/state-interpretation。
 
+## 6.4 ARCH-3E 当前状态
+
+当前已经完成 butler-profile-tuning 第一轮包装归口：
+
+- butler-profile-tuning.ts 暂时仍保留原目录。
+- buildButlerProfileTaskTuning / ButlerProfileTaskTuning 已通过 tuning/profile-tendency 暴露为管家人格倾向调参入口。
+- butler-gateway.ts 对外仍导出 buildButlerProfileTaskTuning 和 ButlerProfileTaskTuning，但来源已经切换为 tuning/butler-tuning-gateway。
+- 本轮不改变运行逻辑，只完成 profile tendency adapter 入口归口。
+- tuning 只负责把管家先天人格、倾向和偏置转换为运行层可读取的轻量调参，不直接决定任务、消息或行为。
+- 后续再逐步把 butler-profile-tuning 内部实现迁入 tuning/profile-tendency。
+
 ## 7. 后续迁移顺序建议
 
 1. 建立 butler-core-boundary 边界声明

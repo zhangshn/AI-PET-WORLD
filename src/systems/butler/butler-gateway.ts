@@ -32,11 +32,8 @@ export { deriveButlerMood } from "./intention/butler-intention-gateway"
 
 export {
   buildButlerProfileTaskTuning,
-} from "./butler-profile-tuning"
-
-export type {
-  ButlerProfileTaskTuning,
-} from "./butler-profile-tuning"
+  type ButlerProfileTaskTuning,
+} from "./tuning/butler-tuning-gateway"
 
 export {
   buildButlerTaskDecisionTrace,
