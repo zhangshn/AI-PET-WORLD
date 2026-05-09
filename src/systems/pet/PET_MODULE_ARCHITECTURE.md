@@ -151,6 +151,16 @@ learning 逐渐形成经验
 - 本轮不改变运行逻辑，只完成机会判断与机会效果的入口分离。
 - 后续再逐步拆分 pet-opportunity 内部实现。
 
+## 5.4 ARCH-2F 当前迁移状态
+
+当前已经完成 pet-expression 第一轮包装归口：
+
+- pet-expression 暂时仍保留原目录。
+- expressPetAction 及相关类型已通过 behavior/expression 暴露为行为执行层入口。
+- pet-gateway.ts 对外仍导出 expressPetAction 和相关类型，但来源已经切换为 behavior/pet-behavior-gateway。
+- 本轮不改变运行逻辑，只完成可见行为表达入口归口。
+- 后续再逐步把 pet-expression 内部实现迁入 behavior/expression。
+
 ## 5. 后续迁移顺序
 
 1. pet-life / pet-mood 的状态部分逐步迁入 daily-state

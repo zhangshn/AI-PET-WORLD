@@ -94,19 +94,13 @@ export {
 export {
   applyAcceptedApproachOfferEffect,
   applyAcceptedRestOfferEffect,
+  expressPetAction,
   type ApplyPetOpportunityEffectInput,
   type ApplyPetOpportunityEffectResult,
+  type PetExpressionInput,
+  type PetExpressionReason,
+  type PetExpressionResult,
 } from "./behavior/pet-behavior-gateway"
-
-export {
-  expressPetAction,
-} from "./pet-expression/pet-expression-gateway"
-
-export type {
-  PetExpressionInput,
-  PetExpressionReason,
-  PetExpressionResult,
-} from "./pet-expression/pet-expression-gateway"
 
 export {
   PET_CORE_ALLOWED_CHAIN,

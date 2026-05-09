@@ -11,3 +11,13 @@ export {
   type ApplyPetOpportunityEffectInput,
   type ApplyPetOpportunityEffectResult,
 } from "./opportunity-effect/pet-opportunity-effect-gateway"
+
+export {
+  expressPetAction,
+} from "./expression/pet-expression-behavior-gateway"
+
+export type {
+  PetExpressionInput,
+  PetExpressionReason,
+  PetExpressionResult,
+} from "./expression/pet-expression-behavior-gateway"

@@ -180,6 +180,13 @@ export const PET_CORE_BEHAVIOR_EXECUTION_MODULES: PetCoreBoundaryModule[] = [
   },
   {
     layer: "behavior_execution",
+    path: "src/systems/pet/behavior/expression",
+    role: "宠物可见行为表达入口。",
+    accessRule:
+      "只把上层意图表达为可见行为，不负责 drive / goal / attention / learning 判断。",
+  },
+  {
+    layer: "behavior_execution",
     path: "src/systems/pet/pet-expression",
     role: "把内部意图转换为当前阶段可见行为表达。",
     accessRule:
