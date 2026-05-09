@@ -74,12 +74,9 @@ export {
 
 export {
   runPetRuntimeTick,
-} from "./pet-runtime/pet-runtime-runner"
-
-export type {
-  RunPetRuntimeTickInput,
-  RunPetRuntimeTickResult,
-} from "./pet-runtime/pet-runtime-runner"
+  type RunPetRuntimeTickInput,
+  type RunPetRuntimeTickResult,
+} from "./runtime-orchestration/pet-runtime-orchestration-gateway"
 
 export {
   evaluateApproachOffer,

@@ -211,10 +211,17 @@ export const PET_CORE_BEHAVIOR_EXECUTION_MODULES: PetCoreBoundaryModule[] = [
 export const PET_CORE_RUNTIME_MODULES: PetCoreBoundaryModule[] = [
   {
     layer: "runtime_orchestration",
+    path: "src/systems/pet/runtime-orchestration",
+    role: "宠物单 Tick 运行编排公开入口。",
+    accessRule:
+      "只作为运行编排入口，不写具体业务判断；后续应逐步只调用各层 gateway。",
+  },
+  {
+    layer: "runtime_orchestration",
     path: "src/systems/pet/pet-runtime/pet-runtime-runner.ts",
     role: "宠物单 Tick 运行编排层。",
     accessRule:
-      "只允许系统层或 pet-gateway 调用；UI 和测试页不得直接修改这里的运行链路。",
+      "只允许系统层或 pet-gateway 调用；UI 和测试页不得直接修改这里的运行链路；后续将逐步迁入 runtime-orchestration。",
   },
 ]
 
