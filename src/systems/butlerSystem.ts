@@ -11,6 +11,7 @@ import type { ButlerProfile } from "../ai/gateway"
 
 import {
   appendButlerMemoryEntry,
+  buildButlerEducationStrategy,
   buildInitialOpportunityCooldowns,
   canCreateOpportunity,
   chooseButlerTask,
@@ -28,6 +29,7 @@ import {
   removeExpiredOpportunities,
   updateButlerRelationFromOpportunityFeedback,
   updateButlerRelationFromTaskDecision,
+  type ButlerEducationStrategy,
   type ButlerMemoryState,
   type ButlerOpportunity,
   type ButlerOpportunityFeedback,
@@ -139,6 +141,10 @@ export class ButlerSystem {
     const carePriority = bias?.carePriority ?? 50
     const responseSpeed = bias?.responseSpeed ?? 50
 
+    const educationStrategy = buildButlerEducationStrategy(
+      this.state.relation
+    )
+
     this.tryCreateOpportunity({
       type: "food_offer",
       shouldCreate:
@@ -146,7 +152,12 @@ export class ButlerSystem {
         !!foodRule &&
         foodRule.requiresSelfAcceptance,
       create: () =>
-        createFoodOffer(input.tick, 18 + (carePriority - 50) * 0.18),
+        createFoodOffer(
+          input.tick,
+          18 +
+            (carePriority - 50) * 0.18 +
+            educationStrategy.foodIntensityOffset
+        ),
       tick: input.tick,
     })
 
@@ -157,7 +168,12 @@ export class ButlerSystem {
         !!restRule &&
         restRule.requiresSelfAcceptance,
       create: () =>
-        createRestOffer(input.tick, 16 + (carePriority - 50) * 0.16),
+        createRestOffer(
+          input.tick,
+          16 +
+            (carePriority - 50) * 0.16 +
+            educationStrategy.restIntensityOffset
+        ),
       tick: input.tick,
     })
 
@@ -168,7 +184,12 @@ export class ButlerSystem {
         !!approachRule &&
         approachRule.requiresSelfAcceptance,
       create: () =>
-        createApproachOffer(input.tick, 12 + (responseSpeed - 50) * 0.14),
+        createApproachOffer(
+          input.tick,
+          12 +
+            (responseSpeed - 50) * 0.14 +
+            educationStrategy.approachIntensityOffset
+        ),
       tick: input.tick,
     })
 

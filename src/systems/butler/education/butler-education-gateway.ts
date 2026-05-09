@@ -12,3 +12,8 @@ export {
   markOpportunityCreated,
   removeExpiredOpportunities,
 } from "./opportunity/butler-opportunity-education-gateway"
+
+export {
+  buildButlerEducationStrategy,
+  type ButlerEducationStrategy,
+} from "./strategy/butler-education-strategy-gateway"

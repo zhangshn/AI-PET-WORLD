@@ -13,11 +13,13 @@ export type {
 } from "./butler-schema"
 
 export {
+  buildButlerEducationStrategy,
   buildInitialOpportunityCooldowns,
   canCreateOpportunity,
   hasPendingOpportunity,
   markOpportunityCreated,
   removeExpiredOpportunities,
+  type ButlerEducationStrategy,
 } from "./education/butler-education-gateway"
 
 export {

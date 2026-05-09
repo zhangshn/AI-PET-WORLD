@@ -231,3 +231,31 @@ UI 层可以展示管家消息结果，但不能写管家消息判断逻辑。
 - 管家机会是否进入宠物自主判断链
 - message-decision 是否仍然没有被误写成事件触发器
 - P-Phone 是否仍然不是系统日志
+
+## 10. BUTLER-EDUCATION-1 当前状态
+
+当前已经建立管家教育策略最小层：
+
+- `education/strategy/butler-education-strategy-gateway.ts`
+
+该层根据 `ButlerRelationState` 生成：
+
+- foodIntensityOffset
+- restIntensityOffset
+- approachIntensityOffset
+- posture
+- reason
+- tags
+
+当前教育策略只影响管家提供机会的方式：
+
+```txt
+ButlerRelationState
+↓
+buildButlerEducationStrategy
+↓
+机会强度 offset
+↓
+createFoodOffer / createRestOffer / createApproachOffer
+↓
+宠物自主判断是否接受
