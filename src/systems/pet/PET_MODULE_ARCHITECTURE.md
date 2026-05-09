@@ -221,3 +221,23 @@ learning 逐渐形成经验
 - 禁止 petSystem.ts 继续变重
 - 禁止 UI 直接深层 import 宠物内部模块
 - 禁止世界信号直接决定宠物行为
+
+## 7. ARCH-2 第一阶段完成状态
+
+当前 ARCH-2 宠物系统入口归口第一阶段已完成。
+
+已完成：
+
+- daily-state 入口归口
+- memory-relation 预留
+- learning 预留
+- cognition/perception 入口归口
+- action-intention 入口归口
+- opportunity-decision 入口归口
+- behavior 入口归口
+- world-boundary 入口归口
+- runtime-orchestration 入口归口
+
+当前没有移动旧模块，没有改变运行逻辑。
+
+下一阶段不应继续盲目拆宠物系统内部实现，而应先进入 `systems/butler` 的同类架构整理。
