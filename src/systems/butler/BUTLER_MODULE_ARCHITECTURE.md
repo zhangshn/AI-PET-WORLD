@@ -285,3 +285,27 @@ createFoodOffer / createRestOffer / createApproachOffer
 - 不影响宠物行为
 - 不直接写入宠物 learning
 - 只用于开发审计管家是否根据关系反馈调整照看方式
+
+## 12. BUTLER-EDUCATION-3 当前状态
+
+当前已经把管家教育策略写入任务决策 trace 审计信息。
+
+当前 trace scores 会补充：
+
+- education_posture
+- education_food_intensity_offset
+- education_rest_intensity_offset
+- education_approach_intensity_offset
+- education_reason
+- education_tag_x
+
+本轮只增加开发审计信息，不改变任务选择逻辑。
+
+边界原则：
+
+- 不改变 chooseButlerTask 的判断结果
+- 不改变机会创建逻辑
+- 不影响宠物行为
+- 不直接写入宠物 learning
+- 不接 P-Phone
+- 只让 F3 开发审计面板能看到教育策略如何参与管家判断解释

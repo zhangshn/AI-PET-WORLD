@@ -19,6 +19,11 @@ import {
 } from "../memory-relation/butler-relation-tuning"
 
 import {
+  buildButlerEducationStrategy,
+  type ButlerEducationStrategy,
+} from "../education/butler-education-gateway"
+
+import {
   buildButlerTaskDecisionTrace,
   type ButlerTaskDecisionGate,
   type ButlerTaskDecisionScore,
@@ -38,6 +43,7 @@ type ButlerTaskContext = {
   behaviorBias: GenderAwareBehaviorBias | null
   profileTuning: ButlerProfileTaskTuning
   relationTuning: ButlerRelationTaskTuning
+  educationStrategy: ButlerEducationStrategy
   experienceInterpretation: ButlerExperienceInterpretation
   effectiveTuning: ButlerProfileTaskTuning
   pendingOpportunityCount: number
@@ -202,6 +208,57 @@ function pushTuningScores(
       `experience_reason_${index + 1}`,
       1,
       reason
+    )
+  }
+}
+
+function pushEducationStrategyScores(
+  context: ButlerTaskContext,
+  scores: ButlerTaskDecisionScore[]
+) {
+  pushScore(
+    scores,
+    "education_posture",
+    1,
+    `educationPosture=${context.educationStrategy.posture}。`
+  )
+
+  pushScore(
+    scores,
+    "education_food_intensity_offset",
+    context.educationStrategy.foodIntensityOffset,
+    "Education strategy 根据宠物机会反馈与关系状态，对食物机会强度形成轻量调整。"
+  )
+
+  pushScore(
+    scores,
+    "education_rest_intensity_offset",
+    context.educationStrategy.restIntensityOffset,
+    "Education strategy 根据宠物机会反馈与关系状态，对休息机会强度形成轻量调整。"
+  )
+
+  pushScore(
+    scores,
+    "education_approach_intensity_offset",
+    context.educationStrategy.approachIntensityOffset,
+    "Education strategy 根据宠物机会反馈与关系状态，对靠近机会强度形成轻量调整。"
+  )
+
+  pushScore(
+    scores,
+    "education_reason",
+    1,
+    context.educationStrategy.reason
+  )
+
+  for (const [index, tag] of context.educationStrategy.tags
+    .slice(0, 6)
+    .entries()) {
+    pushScore(
+      scores,
+      `education_tag_${index + 1}`,
+      1,
+      tag
     )
   }
 }
@@ -555,6 +612,7 @@ function buildTaskContext(
     profile: state.profile,
   })
   const relationTuning = experienceInterpretation.tuning
+  const educationStrategy = buildButlerEducationStrategy(state.relation)
 
   return {
     pet: input.pet,
@@ -564,6 +622,7 @@ function buildTaskContext(
     behaviorBias,
     profileTuning,
     relationTuning,
+    educationStrategy,
     experienceInterpretation,
     effectiveTuning: mergeTaskTuning({
       profileTuning,
@@ -582,6 +641,7 @@ export function chooseButlerTask(
   const scores: ButlerTaskDecisionScore[] = []
 
   pushTuningScores(context, scores)
+  pushEducationStrategyScores(context, scores)
 
   if (!isIncubatorCompleted(context.incubator)) {
     commitDecisionTrace({
