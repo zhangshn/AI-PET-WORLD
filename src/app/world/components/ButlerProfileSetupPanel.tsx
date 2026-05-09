@@ -17,6 +17,7 @@ import ButlerProfileInputPanel from "./butler-debug/ButlerProfileInputPanel"
 import ButlerEducationStrategyDebugPanel from "./butler-debug/ButlerEducationStrategyDebugPanel"
 import ButlerMessageDecisionDebugPanel from "./butler-debug/ButlerMessageDecisionDebugPanel"
 import ButlerMessageDeliveryDebugPanel from "./butler-debug/ButlerMessageDeliveryDebugPanel"
+import ButlerPPhoneAiMessageRecordPreviewPanel from "./butler-debug/ButlerPPhoneAiMessageRecordPreviewPanel"
 import ButlerPPhoneBridgePreviewPanel from "./butler-debug/ButlerPPhoneBridgePreviewPanel"
 import ButlerPPhoneDeliveryQueueDebugPanel from "./butler-debug/ButlerPPhoneDeliveryQueueDebugPanel"
 import ButlerTaskDecisionTracePanel from "./butler-debug/ButlerTaskDecisionTracePanel"
@@ -86,6 +87,11 @@ export default function ButlerProfileSetupPanel({ world }: Props) {
         />
 
         <ButlerPPhoneDeliveryQueueDebugPanel
+          delivery={world.butler?.latestMessageDeliveryDecision ?? null}
+          butlerName={world.butler?.name ?? "管家"}
+        />
+
+        <ButlerPPhoneAiMessageRecordPreviewPanel
           delivery={world.butler?.latestMessageDeliveryDecision ?? null}
           butlerName={world.butler?.name ?? "管家"}
         />

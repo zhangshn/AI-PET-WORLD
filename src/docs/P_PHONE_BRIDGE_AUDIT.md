@@ -188,3 +188,102 @@ PPhoneButlerDeliveryQueueItem | null
 - 不会写入 AiMessage
 - 不会出现在正式 P-Phone
 - 只用于 F3 / bridge 审计和未来 delivery queue 接入前验证
+
+## 11. P-PHONE-DELIVERY-1 当前状态
+
+当前已经新增未来正式 delivery queue item builder：
+
+- `buildPPhoneButlerFutureDeliveryQueueItem`
+- `PPhoneButlerFutureDeliveryQueueItem`
+
+当前链路：
+
+```txt
+ButlerMessageDeliveryDecision
+↓
+buildPPhoneButlerDeliveryPreview
+↓
+buildPPhoneButlerDeliveryQueueItem
+↓
+buildPPhoneButlerFutureDeliveryQueueItem
+↓
+PPhoneButlerFutureDeliveryQueueItem | null
+```
+
+当前 future delivery queue item 只是数据边界。
+
+当前不做：
+
+- 不持久化
+- 不写 AiMessage
+- 不生成真实短信
+- 不接正式 P-Phone thread
+
+## 12. P-PHONE-DELIVERY-2 当前状态
+
+当前已经新增 AiMessage record input builder：
+
+- `src/app/world/ui/phone/messages/pPhoneButlerAiMessageRecordBuilder.ts`
+- `buildPPhoneButlerAiMessageRecordInput`
+
+当前链路：
+
+```txt
+PPhoneButlerFutureDeliveryQueueItem
+↓
+buildPPhoneButlerAiMessageRecordInput
+↓
+CreateAiMessageRecordInput | null
+```
+
+当前只构造 `CreateAiMessageRecordInput`。
+
+当前不做：
+
+- 不调用 `recordAiMessage`
+- 不调用 `recordAiMessageOnce`
+- 不写入 AiMessage
+- 不进入正式 P-Phone thread
+
+## 13. P-PHONE-DELIVERY-3 当前状态
+
+当前已经新增 F3 AiMessage record preview 审计面板：
+
+- `src/app/world/components/butler-debug/ButlerPPhoneAiMessageRecordPreviewPanel.tsx`
+
+当前展示：
+
+- id
+- source
+- entityType
+- entityId
+- importance
+- userVisibleChannel
+- messageId
+- messageChannel
+- triggerReason
+- sourceEventId
+- messageText
+- tags
+
+该面板只展示未来可能写入 AiMessage 的输入内容。
+
+## 14. P-PHONE-DELIVERY-4 当前状态
+
+当前已经完成 P-Phone delivery bridge 的第二批基础建设文档固化。
+
+当前整体链路：
+
+```txt
+ButlerMessageDeliveryDecision
+↓
+P-Phone bridge preview
+↓
+preview_only queue item
+↓
+future_delivery_ready queue item
+↓
+CreateAiMessageRecordInput preview
+```
+
+当前仍然不接正式 P-Phone，不写 AiMessage，不把事件自动转短信。

@@ -499,3 +499,188 @@ ButlerState.latestMessageDeliveryDecision
 - 不改变宠物行为
 - 不让管家控制宠物
 - 不让管家直接写入宠物 learning
+
+## 19. P-PHONE-PRE-AUDIT-2 当前状态
+
+当前已经新增 P-Phone 接入前审计文档：
+
+- `src/docs/P_PHONE_PRE_AUDIT.md`
+
+当前文档明确：
+
+- P-Phone 旧链路仍包含 WorldEvent 临时转短信
+- P-Phone 新链路必须来自管家 message-decision / delivery
+- P-Phone 不应该成为系统日志查看器
+- `draftText` 不等于已发送消息
+
+边界原则：
+
+- 不改 P-Phone UI
+- 不改 `pPhoneMessageMappers.ts`
+- 不改 `pPhoneMessagePolicy.ts`
+- 不生成短信
+- 不记录 AiMessage
+
+## 20. P-PHONE-BRIDGE-1 当前状态
+
+当前已经新增管家 delivery 到 P-Phone preview mapper：
+
+- `src/app/world/ui/phone/messages/pPhoneButlerDeliveryMapper.ts`
+- `buildPPhoneButlerDeliveryPreview`
+
+当前链路：
+
+```txt
+ButlerMessageDeliveryDecision
+↓
+buildPPhoneButlerDeliveryPreview
+↓
+PPhoneMessageItem | null
+```
+
+当前 mapper 只做预览结构转换，不接正式 P-Phone thread。
+
+## 21. P-PHONE-BRIDGE-2 当前状态
+
+当前已经新增 F3 bridge preview 审计面板：
+
+- `src/app/world/components/butler-debug/ButlerPPhoneBridgePreviewPanel.tsx`
+
+当前展示管家 delivery preview 的：
+
+- previewId
+- sender
+- senderName
+- timeLabel
+- text
+
+当前只用于 F3 开发审计，不代表已经发送。
+
+## 22. P-PHONE-BRIDGE-3 当前状态
+
+当前已经新增 P-Phone bridge delivery queue preview builder：
+
+- `src/app/world/ui/phone/messages/pPhoneButlerDeliveryQueue.ts`
+- `buildPPhoneButlerDeliveryQueueItem`
+
+当前链路：
+
+```txt
+ButlerMessageDeliveryDecision
+↓
+buildPPhoneButlerDeliveryPreview
+↓
+buildPPhoneButlerDeliveryQueueItem
+↓
+PPhoneButlerDeliveryQueueItem | null
+```
+
+当前 queue item 状态为 `preview_only`，不持久化、不写 AiMessage。
+
+## 23. P-PHONE-BRIDGE-4 当前状态
+
+当前已经新增 F3 delivery queue 审计面板：
+
+- `src/app/world/components/butler-debug/ButlerPPhoneDeliveryQueueDebugPanel.tsx`
+
+当前展示 queue preview 的：
+
+- queueId
+- source
+- status
+- decisionReason
+- priority
+- createdAtTick
+- checkedAtTick
+- messageText
+- tags
+
+当前不接正式 P-Phone，不写 AiMessage。
+
+## 24. P-PHONE-DELIVERY-1 当前状态
+
+当前已经新增未来正式 delivery queue item builder：
+
+- `PPhoneButlerFutureDeliveryQueueItem`
+- `buildPPhoneButlerFutureDeliveryQueueItem`
+
+当前链路：
+
+```txt
+PPhoneButlerDeliveryQueueItem
+↓
+buildPPhoneButlerFutureDeliveryQueueItem
+↓
+PPhoneButlerFutureDeliveryQueueItem | null
+```
+
+当前只是数据边界，`ready_for_future_delivery` 不代表已经发送。
+
+## 25. P-PHONE-DELIVERY-2 当前状态
+
+当前已经新增 AiMessage record input builder：
+
+- `src/app/world/ui/phone/messages/pPhoneButlerAiMessageRecordBuilder.ts`
+- `buildPPhoneButlerAiMessageRecordInput`
+
+当前链路：
+
+```txt
+PPhoneButlerFutureDeliveryQueueItem
+↓
+buildPPhoneButlerAiMessageRecordInput
+↓
+CreateAiMessageRecordInput | null
+```
+
+当前只构造未来可写入 AiMessage 的输入，不调用 `recordAiMessageOnce`。
+
+## 26. P-PHONE-DELIVERY-3 当前状态
+
+当前已经新增 F3 AiMessage record preview 审计面板：
+
+- `src/app/world/components/butler-debug/ButlerPPhoneAiMessageRecordPreviewPanel.tsx`
+
+当前展示：
+
+- id
+- source
+- entityType
+- entityId
+- importance
+- userVisibleChannel
+- messageId
+- messageChannel
+- triggerReason
+- sourceEventId
+- messageText
+- tags
+
+当前只展示 `CreateAiMessageRecordInput` 预览，不写正式消息。
+
+## 27. P-PHONE-DELIVERY-4 当前状态
+
+当前已经完成 P-Phone delivery 第二批基础建设：
+
+- 正式 future delivery queue 数据边界
+- AiMessage record input builder
+- F3 AiMessage record preview
+- bridge / butler 架构文档补充
+
+当前整体链路：
+
+```txt
+ButlerState.latestMessageDeliveryDecision
+↓
+buildPPhoneButlerDeliveryPreview
+↓
+buildPPhoneButlerDeliveryQueueItem
+↓
+buildPPhoneButlerFutureDeliveryQueueItem
+↓
+buildPPhoneButlerAiMessageRecordInput
+↓
+F3 record preview
+```
+
+当前仍然不接正式 P-Phone，不生成真实短信，不记录 AiMessage。

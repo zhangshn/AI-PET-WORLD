@@ -81,3 +81,34 @@ export function buildPPhoneButlerDeliveryQueueItem(
     ],
   }
 }
+
+export type PPhoneButlerFutureDeliveryQueueItem = Omit<
+  PPhoneButlerDeliveryQueueItem,
+  "status"
+> & {
+  status: "ready_for_future_delivery"
+  deliveryAllowedAtTick: number
+}
+
+export type BuildPPhoneButlerFutureDeliveryQueueItemInput = {
+  delivery: ButlerMessageDeliveryDecision | null
+  butlerName: string
+}
+
+export function buildPPhoneButlerFutureDeliveryQueueItem(
+  input: BuildPPhoneButlerFutureDeliveryQueueItemInput
+): PPhoneButlerFutureDeliveryQueueItem | null {
+  const previewItem = buildPPhoneButlerDeliveryQueueItem(input)
+
+  if (!previewItem) return null
+
+  return {
+    ...previewItem,
+    status: "ready_for_future_delivery",
+    deliveryAllowedAtTick: previewItem.checkedAtTick,
+    tags: [
+      ...previewItem.tags,
+      "future-delivery-ready",
+    ],
+  }
+}
