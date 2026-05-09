@@ -13,6 +13,7 @@ import {
   appendButlerMemoryEntry,
   buildButlerEducationStrategy,
   buildInitialOpportunityCooldowns,
+  buildButlerMessageDecision,
   canCreateOpportunity,
   chooseButlerTask,
   createApproachOffer,
@@ -98,6 +99,7 @@ export class ButlerSystem {
     behaviorBias: null,
     latestTaskDecisionTrace: null,
     latestEducationStrategy: null,
+    latestMessageDecision: null,
     memory: createInitialButlerMemoryState(),
     relation: createInitialButlerRelationState(),
   }
@@ -145,6 +147,10 @@ export class ButlerSystem {
       this.state.relation
     )
     this.state.latestEducationStrategy = educationStrategy
+    this.state.latestMessageDecision = buildButlerMessageDecision({
+      butler: this.state,
+      tick: input.tick,
+    })
 
     this.tryCreateOpportunity({
       type: "food_offer",
@@ -375,6 +381,7 @@ export class ButlerSystem {
       pendingOpportunities: [...state.pendingOpportunities],
       opportunityCooldowns: { ...state.opportunityCooldowns },
       latestEducationStrategy: state.latestEducationStrategy ?? null,
+      latestMessageDecision: state.latestMessageDecision ?? null,
       memory: {
         ...state.memory,
         entries: [...state.memory.entries],

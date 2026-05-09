@@ -19,6 +19,10 @@ import type {
 } from "./education/strategy/butler-education-strategy-gateway"
 
 import type {
+  ButlerMessageDecision,
+} from "./message-decision/butler-message-decision-schema"
+
+import type {
   ButlerMemoryState,
 } from "./memory-relation/butler-memory"
 
@@ -99,6 +103,12 @@ export type ButlerState = {
    * 用于开发审计和未来 message-decision，不直接决定宠物行为。
    */
   latestEducationStrategy?: ButlerEducationStrategy | null
+
+  /**
+   * 管家最近一次主动消息判断快照。
+   * 只表示是否形成联系玩家意图，不代表已经发送 P-Phone 消息。
+   */
+  latestMessageDecision?: ButlerMessageDecision | null
 
   /**
    * 管家长期记忆状态。

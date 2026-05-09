@@ -65,3 +65,32 @@ ButlerMessageDecision
 - 不改变宠物行为
 - 不让管家控制宠物
 - 不让管家直接写入宠物 learning
+
+## MESSAGE-DECISION-2 当前状态
+
+当前已经把管家主动消息判断结果保存为：
+
+- `ButlerState.latestMessageDecision`
+
+当前链路：
+
+```txt
+ButlerState
+↓
+latestEducationStrategy
+↓
+relation / task
+↓
+buildButlerMessageDecision
+↓
+ButlerState.latestMessageDecision
+```
+
+边界原则：
+
+- 只保存判断快照
+- 不生成短信
+- 不记录 AiMessage
+- 不接 P-Phone
+- 不把事件自动转短信
+- 不把系统日志转成管家消息
