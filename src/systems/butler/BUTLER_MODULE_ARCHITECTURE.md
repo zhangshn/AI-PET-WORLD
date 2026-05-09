@@ -259,6 +259,7 @@ buildButlerEducationStrategy
 createFoodOffer / createRestOffer / createApproachOffer
 ↓
 宠物自主判断是否接受
+```
 
 ## 11. BUTLER-EDUCATION-2 当前状态
 

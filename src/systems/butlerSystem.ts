@@ -29,7 +29,6 @@ import {
   removeExpiredOpportunities,
   updateButlerRelationFromOpportunityFeedback,
   updateButlerRelationFromTaskDecision,
-  type ButlerEducationStrategy,
   type ButlerMemoryState,
   type ButlerOpportunity,
   type ButlerOpportunityFeedback,
