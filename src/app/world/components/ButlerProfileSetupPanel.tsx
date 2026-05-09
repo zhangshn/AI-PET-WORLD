@@ -16,6 +16,7 @@ import ButlerProfileDebugPanel from "./butler-debug/ButlerProfileDebugPanel"
 import ButlerProfileInputPanel from "./butler-debug/ButlerProfileInputPanel"
 import ButlerEducationStrategyDebugPanel from "./butler-debug/ButlerEducationStrategyDebugPanel"
 import ButlerTaskDecisionTracePanel from "./butler-debug/ButlerTaskDecisionTracePanel"
+import ButlerRelationDebugPanel from "./butler-debug/ButlerRelationDebugPanel"
 
 import styles from "@/styles/world-styles/debug/runtime-debug-panel.module.css"
 
