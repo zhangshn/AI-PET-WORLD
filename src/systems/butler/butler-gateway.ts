@@ -30,10 +30,14 @@ export {
 
 export {
   buildButlerMessageDecision,
+  buildButlerMessageDeliveryDecision,
   type BuildButlerMessageDecisionInput,
+  type BuildButlerMessageDeliveryDecisionInput,
   type ButlerMessageDecision,
   type ButlerMessageDecisionPriority,
   type ButlerMessageDecisionReason,
+  type ButlerMessageDeliveryBlockReason,
+  type ButlerMessageDeliveryDecision,
 } from "./message-decision/butler-message-decision-gateway"
 
 export { chooseButlerTask } from "./intention/butler-intention-gateway"

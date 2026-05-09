@@ -23,6 +23,10 @@ import type {
 } from "./message-decision/butler-message-decision-schema"
 
 import type {
+  ButlerMessageDeliveryDecision,
+} from "./message-decision/butler-message-delivery-schema"
+
+import type {
   ButlerMemoryState,
 } from "./memory-relation/butler-memory"
 
@@ -109,6 +113,12 @@ export type ButlerState = {
    * 只表示是否形成联系玩家意图，不代表已经发送 P-Phone 消息。
    */
   latestMessageDecision?: ButlerMessageDecision | null
+
+  /**
+   * 管家最近一次消息投递边界判断快照。
+   * 只表示是否允许未来进入投递队列，不代表已经发送。
+   */
+  latestMessageDeliveryDecision?: ButlerMessageDeliveryDecision | null
 
   /**
    * 管家长期记忆状态。

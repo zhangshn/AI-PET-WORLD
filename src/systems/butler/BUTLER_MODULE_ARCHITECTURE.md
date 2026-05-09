@@ -373,6 +373,39 @@ ButlerMessageDecision
 - 不记录 AiMessage
 - 不把事件自动转短信
 - 不把系统日志转成管家消息
+
+## 18. MESSAGE-DECISION-5 当前状态
+
+当前已经建立 message delivery 边界层。
+
+已新增：
+
+- `message-decision/butler-message-delivery-schema.ts`
+- `message-decision/butler-message-delivery-runner.ts`
+
+当前链路：
+
+```txt
+ButlerState.latestMessageDecision
+↓
+buildButlerMessageDeliveryDecision
+↓
+ButlerState.latestMessageDeliveryDecision
+```
+
+当前只判断 latestMessageDecision 是否允许未来进入投递队列。
+
+边界原则：
+
+- 不接 P-Phone
+- 不生成短信
+- 不记录 AiMessage
+- 不把事件自动转短信
+- 不把系统日志转成管家消息
+- 不改变 worldEngine 调度顺序
+- 不改变宠物行为
+- 不让管家控制宠物
+- 不让管家直接写入宠物 learning
 - 不改变 worldEngine 调度顺序
 - 不改变宠物行为
 - 不让管家控制宠物
