@@ -128,6 +128,13 @@ export const PET_CORE_AUTONOMOUS_DRIVE_MODULES: PetCoreBoundaryModule[] = [
   },
   {
     layer: "autonomous_drive",
+    path: "src/systems/pet/action-intention",
+    role: "宠物行为意图选择与稳定控制入口。",
+    accessRule:
+      "只选择 raw action intent 和处理 action stability，不执行最终行为，也不绕过 drive / goal / attention。",
+  },
+  {
+    layer: "autonomous_drive",
     path: "src/systems/pet/opportunity-decision",
     role: "宠物机会接受 / 拒绝判断入口。",
     accessRule:
@@ -145,7 +152,7 @@ export const PET_CORE_AUTONOMOUS_DRIVE_MODULES: PetCoreBoundaryModule[] = [
     path: "src/systems/pet/pet-action",
     role: "宠物内部行为意图选择与稳定控制。",
     accessRule:
-      "action selector 只选择 raw intent；不得直接读取世界实体刺激，不得绕过 drive / goal / attention。",
+      "action selector 只选择 raw intent；不得直接读取世界实体刺激，不得绕过 drive / goal / attention；后续将逐步迁入 action-intention。",
   },
   {
     layer: "autonomous_drive",

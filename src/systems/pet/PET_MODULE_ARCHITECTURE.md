@@ -161,6 +161,16 @@ learning 逐渐形成经验
 - 本轮不改变运行逻辑，只完成可见行为表达入口归口。
 - 后续再逐步把 pet-expression 内部实现迁入 behavior/expression。
 
+## 5.5 ARCH-2G 当前迁移状态
+
+当前已经完成 pet-action 第一轮包装归口：
+
+- pet-action 暂时仍保留原目录。
+- selectPetAction / applyPetActionStability 及相关类型已通过 action-intention 暴露为自主驱动层入口。
+- pet-gateway.ts 对外仍导出 selectPetAction / applyPetActionStability 和相关类型，但来源已经切换为 action-intention/pet-action-intention-gateway。
+- 本轮不改变运行逻辑，只完成行为意图选择入口归口。
+- 后续再逐步把 pet-action 内部实现迁入 action-intention。
+
 ## 5. 后续迁移顺序
 
 1. pet-life / pet-mood 的状态部分逐步迁入 daily-state

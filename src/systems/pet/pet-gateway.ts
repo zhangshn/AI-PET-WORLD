@@ -43,7 +43,7 @@ export {
   type ActionStabilityState,
   type SelectPetActionInput,
   type SelectPetActionResult,
-} from "./pet-action/pet-action-gateway"
+} from "./action-intention/pet-action-intention-gateway"
 
 export {
   runPetStimulusPerception,
