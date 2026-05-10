@@ -4,7 +4,7 @@
  * 当前文件负责：承载 Pixi 世界舞台并协调渲染生命周期。
  */
 
-import { useCallback, useEffect, useRef } from "react"
+import { useCallback, useEffect, useMemo, useRef } from "react"
 import { Application, Ticker } from "pixi.js"
 
 import type { WorldStimulus } from "@/ai/gateway"
@@ -39,6 +39,8 @@ import {
 } from "./stage-renderers/orchestrator/stage-runtime-state"
 import type { WorldStageSceneMode } from "./stage-renderers/orchestrator/stage-scene-mode"
 import WorldHomeSpaceStatusOverlay from "./home/WorldHomeSpaceStatusOverlay"
+import WorldStageHudOverlay from "./stage-hud/WorldStageHudOverlay"
+import { buildWorldStageViewModel } from "../view-models/worldStageViewModel"
 
 import styles from "@/styles/world-styles/layout/world-pixel-stage.module.css"
 
@@ -66,6 +68,30 @@ export default function WorldPixelStage(props: Props) {
 
   const layersRef = useRef(createEmptyWorldStageLayers())
   const stageRuntimeRef = useRef(createWorldStageRuntimeState())
+
+  const stageViewModel = useMemo(() => {
+    return buildWorldStageViewModel({
+      time: props.time,
+      pet: props.pet,
+      butler: props.butler,
+      home: props.home,
+      incubator: props.incubator,
+      stimuli: props.stimuli,
+      ecology: props.ecology,
+      worldRuntime: props.worldRuntime,
+      tick: props.tick,
+    })
+  }, [
+    props.time,
+    props.pet,
+    props.butler,
+    props.home,
+    props.incubator,
+    props.stimuli,
+    props.ecology,
+    props.worldRuntime,
+    props.tick,
+  ])
 
   useEffect(() => {
     latestRef.current = props
@@ -205,18 +231,12 @@ export default function WorldPixelStage(props: Props) {
     }
   }, [tickStage])
 
-  const stageHint =
-    (props.sceneMode ?? "exterior") === "shelterInterior"
-      ? "点击右侧木门离开住所 · 初始生命舱"
-      : "点击住所进入室内 · 拖拽观察世界 · F3 打开开发面板"
-
   return (
     <div className={styles.stageShell}>
       <div ref={mountRef} className={styles.stageCanvas} />
 
       <WorldHomeSpaceStatusOverlay home={props.home} />
-
-      <div className={styles.stageHint}>{stageHint}</div>
+      <WorldStageHudOverlay viewModel={stageViewModel} />
     </div>
   )
 }
