@@ -11,6 +11,7 @@ import type { ButlerProfile } from "../ai/gateway"
 
 import {
   appendButlerMemoryEntry,
+  buildButlerBehaviorExecution,
   buildButlerEducationStrategy,
   buildInitialOpportunityCooldowns,
   buildButlerMessageDecision,
@@ -100,6 +101,7 @@ export class ButlerSystem {
     behaviorBias: null,
     latestTaskDecisionTrace: null,
     latestEducationStrategy: null,
+    latestBehaviorExecution: null,
     latestMessageDecision: null,
     latestMessageDeliveryDecision: null,
     memory: createInitialButlerMemoryState(),
@@ -149,6 +151,12 @@ export class ButlerSystem {
       this.state.relation
     )
     this.state.latestEducationStrategy = educationStrategy
+    this.state.latestBehaviorExecution = buildButlerBehaviorExecution({
+      task: this.state.task,
+      relation: this.state.relation,
+      educationStrategy,
+      tick: input.tick,
+    })
     this.state.latestMessageDecision = buildButlerMessageDecision({
       butler: this.state,
       tick: input.tick,
@@ -388,6 +396,7 @@ export class ButlerSystem {
       pendingOpportunities: [...state.pendingOpportunities],
       opportunityCooldowns: { ...state.opportunityCooldowns },
       latestEducationStrategy: state.latestEducationStrategy ?? null,
+      latestBehaviorExecution: state.latestBehaviorExecution ?? null,
       latestMessageDecision: state.latestMessageDecision ?? null,
       latestMessageDeliveryDecision:
         state.latestMessageDeliveryDecision ?? null,

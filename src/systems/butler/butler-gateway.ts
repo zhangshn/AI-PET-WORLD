@@ -23,9 +23,14 @@ export {
 } from "./education/butler-education-gateway"
 
 export {
+  buildButlerBehaviorExecution,
   createApproachOffer,
   createFoodOffer,
   createRestOffer,
+  type BuildButlerBehaviorExecutionInput,
+  type ButlerBehaviorExecution,
+  type ButlerBehaviorExecutionKind,
+  type ButlerBehaviorExecutionTarget,
 } from "./behavior/butler-behavior-gateway"
 
 export {

@@ -19,6 +19,10 @@ import type {
 } from "./education/strategy/butler-education-strategy-gateway"
 
 import type {
+  ButlerBehaviorExecution,
+} from "./behavior/execution/butler-behavior-execution-schema"
+
+import type {
   ButlerMessageDecision,
 } from "./message-decision/butler-message-decision-schema"
 
@@ -107,6 +111,12 @@ export type ButlerState = {
    * 用于开发审计和未来 message-decision，不直接决定宠物行为。
    */
   latestEducationStrategy?: ButlerEducationStrategy | null
+
+  /**
+   * 管家最近一次行为执行快照。
+   * 只表示当前管家准备如何执行任务，不代表已经直接修改世界。
+   */
+  latestBehaviorExecution?: ButlerBehaviorExecution | null
 
   /**
    * 管家最近一次主动消息判断快照。

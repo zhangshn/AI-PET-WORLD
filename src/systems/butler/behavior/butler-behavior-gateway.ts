@@ -10,3 +10,14 @@ export {
   createFoodOffer,
   createRestOffer,
 } from "./opportunity-action/butler-opportunity-action-gateway"
+
+export {
+  buildButlerBehaviorExecution,
+} from "./execution/butler-behavior-execution-gateway"
+
+export type {
+  BuildButlerBehaviorExecutionInput,
+  ButlerBehaviorExecution,
+  ButlerBehaviorExecutionKind,
+  ButlerBehaviorExecutionTarget,
+} from "./execution/butler-behavior-execution-gateway"

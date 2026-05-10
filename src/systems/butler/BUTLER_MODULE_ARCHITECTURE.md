@@ -987,3 +987,38 @@ Butler Message：默认关闭
 - 不关闭 World Notice
 - 不改变 worldEngine 调度
 - 不改变宠物行为
+
+## 45. BUTLER-BEHAVIOR-BATCH-1 当前状态
+
+当前已经建立管家行为执行层第一阶段。
+
+新增：
+
+- `src/systems/butler/behavior/execution/butler-behavior-execution-schema.ts`
+- `src/systems/butler/behavior/execution/butler-behavior-execution-runner.ts`
+- `src/systems/butler/behavior/execution/butler-behavior-execution-gateway.ts`
+
+当前链路：
+
+```txt
+ButlerState.task
+↓
+ButlerRelationState
+↓
+ButlerEducationStrategy
+↓
+buildButlerBehaviorExecution
+↓
+ButlerState.latestBehaviorExecution
+```
+
+当前行为执行层只生成快照，不选择任务，不直接修改家园，不控制宠物。
+
+当前边界：
+
+- 不新增 F3 面板
+- 不接 P-Phone
+- 不直接调用 homeSystem.build
+- 不改变 worldEngine 调度
+- 不改变宠物行为
+- 不让管家替宠物做决定
