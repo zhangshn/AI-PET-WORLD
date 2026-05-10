@@ -183,21 +183,21 @@ function pushTuningScores(
     scores,
     "relation_care_priority",
     context.relationTuning.carePriorityOffset,
-    "Relation 作为事实输入，经 ButlerProfile / 八字解释后，对照护优先级形成轻量调参。"
+    "Relation / GoalExecutionMemory 作为事实输入，经 ButlerProfile / 八字解释后，对照护优先级形成轻量调参。"
   )
 
   pushScore(
     scores,
     "relation_observation_bias",
     context.relationTuning.observationBiasOffset,
-    "Relation 作为事实输入，经 ButlerProfile / 八字解释后，对观察倾向形成轻量调参。"
+    "Relation / GoalExecutionMemory 作为事实输入，经 ButlerProfile / 八字解释后，对观察倾向形成轻量调参。"
   )
 
   pushScore(
     scores,
     "relation_approach_sensitivity",
     context.relationTuning.approachSensitivityOffset,
-    "Relation 作为事实输入，经 ButlerProfile / 八字解释后，对靠近机会形成轻量调参。"
+    "Relation / GoalExecutionMemory 作为事实输入，经 ButlerProfile / 八字解释后，对靠近机会形成轻量调参。"
   )
 
   for (const [index, reason] of context.experienceInterpretation.reasons
@@ -208,6 +208,18 @@ function pushTuningScores(
       `experience_reason_${index + 1}`,
       1,
       reason
+    )
+  }
+
+  for (const [index, tag] of context.experienceInterpretation.interpretationTags
+    .filter((tag) => tag.startsWith("goal_memory_"))
+    .slice(0, 6)
+    .entries()) {
+    pushScore(
+      scores,
+      `goal_memory_tag_${index + 1}`,
+      1,
+      tag
     )
   }
 }
