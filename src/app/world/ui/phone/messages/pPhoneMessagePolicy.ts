@@ -1,5 +1,9 @@
 /**
- * 当前文件负责：判断世界事件是否可以转成 P-Phone 短信。
+ * 当前文件负责：处理 P-Phone 旧事件消息策略。
+ *
+ * 注意：
+ * World Notice 可以继续由世界事件生成。
+ * 管家短信不再由 WorldEvent 自动生成，后续必须来自 message delivery 链路。
  */
 
 import type { WorldEvent } from "@/types/event"
@@ -39,6 +43,8 @@ const WORLD_NOTICE_KEYWORDS = [
   "生态变化",
   "天气异常",
 ]
+
+const ENABLE_LEGACY_BUTLER_EVENT_MESSAGES = false
 
 function formatEventTime(event: WorldEvent): string {
   return `${String(event.hour).padStart(2, "0")}:00`
@@ -102,6 +108,10 @@ function isDualAgentInteractionEvent(event: WorldEvent): boolean {
 }
 
 function isButlerMessageEvent(event: WorldEvent): boolean {
+  if (!ENABLE_LEGACY_BUTLER_EVENT_MESSAGES) {
+    return false
+  }
+
   return (
     event.type === "pet_hatched" ||
     isOfflineCatchupEvent(event) ||
@@ -195,6 +205,10 @@ function buildButlerIntent(
 function recordIntentForAiData(intent: PPhoneMessageIntent): void {
   if (intent.channel === "silent") return
 
+  if (intent.channel === "butler") {
+    return
+  }
+
   recordAiMessageOnce({
     source: "message_policy",
     entityType: intent.channel === "world-notice" ? "world" : "butler",
@@ -223,6 +237,12 @@ function recordIntentForAiData(intent: PPhoneMessageIntent): void {
   })
 }
 
+/**
+ * 旧事件消息入口：
+ * - World Notice 仍允许由世界事件生成。
+ * - Butler message 默认关闭，不再由 WorldEvent 自动生成。
+ * - 新管家短信必须来自 message delivery / AiMessage 持久化链路。
+ */
 export function buildMessageIntentFromEvent(
   event: WorldEvent,
   butlerName: string

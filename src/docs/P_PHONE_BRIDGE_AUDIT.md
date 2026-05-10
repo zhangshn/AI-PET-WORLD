@@ -556,3 +556,24 @@ PPhoneButlerDeliveryReadbackResult
 - 不关闭 World Notice
 - 不让 P-Phone UI 决定管家是否联系玩家
 - 不新增 F3 面板
+
+## 27. P-PHONE-MIGRATION-BATCH-6 当前状态
+
+当前已经降级旧 WorldEvent → butler message 逻辑。
+
+本轮完成：
+
+- 新增 `ENABLE_LEGACY_BUTLER_EVENT_MESSAGES = false`
+- 默认关闭 `pet_hatched / offline_catchup / dual_agent_interaction` 自动生成管家短信
+- 旧 event policy 不再写入 butler AiMessage
+- World Notice 保持事件来源
+- World Notice 仍可写入 AiMessage
+
+当前边界：
+
+- 新管家短信必须来自 message delivery 链路
+- 旧 WorldEvent 不再自动变成管家短信
+- World Notice 暂时保留
+- 不新增 F3 面板
+- 不改变宠物行为
+- 不改变 worldEngine 调度
