@@ -23,6 +23,9 @@ const MESSAGE_DECISION_COOLDOWN_TICKS: Record<
   repeated_rejection_observed: 16,
   stable_care_progress: 24,
   protective_boundary_pattern: 10,
+  home_goal_execution_observed: 18,
+  home_goal_maintenance_observed: 14,
+  home_goal_incubator_observed: 12,
   needs_player_attention: 8,
 }
 
@@ -59,11 +62,119 @@ function buildSilentDecision(
   }
 }
 
+function getLatestGoalExecutionMemory(
+  input: BuildButlerMessageDecisionInput
+) {
+  return input.butler.memory.entries.find(
+    (entry) =>
+      entry.tags.includes("behavior_execution") &&
+      entry.tags.includes("goal_driven_execution")
+  ) ?? null
+}
+
+function getHomeGoalTag(tags: string[]): string | null {
+  return tags.find((tag) => tag.startsWith("home_goal_")) ?? null
+}
+
+function getGoalMemoryReason(
+  tags: string[]
+): ButlerMessageDecisionReason {
+  if (
+    tags.includes("incubator_watch") ||
+    tags.includes("home_goal_stabilize_incubator")
+  ) {
+    return "home_goal_incubator_observed"
+  }
+
+  if (
+    tags.includes("home_maintenance") ||
+    tags.includes("home_goal_maintain_home_facilities")
+  ) {
+    return "home_goal_maintenance_observed"
+  }
+
+  return "home_goal_execution_observed"
+}
+
+function buildGoalMemorySummary(input: {
+  reason: ButlerMessageDecisionReason
+  homeGoalTag: string | null
+}): string {
+  if (input.reason === "home_goal_incubator_observed") {
+    return "管家近期持续围绕孵化器稳定目标行动，形成了可向玩家解释的照看进展。"
+  }
+
+  if (input.reason === "home_goal_maintenance_observed") {
+    return "管家近期注意到家园设施或空间需要维护，形成了轻量联系玩家的解释意图。"
+  }
+
+  if (input.homeGoalTag === "home_goal_build_temporary_shelter") {
+    return "管家近期正在推进临时住所目标，形成了可向玩家解释的家园建设进展。"
+  }
+
+  if (input.homeGoalTag === "home_goal_complete_basic_living") {
+    return "管家近期正在补齐基础生活设施，形成了可向玩家解释的生活支持进展。"
+  }
+
+  if (input.homeGoalTag === "home_goal_open_garden_area") {
+    return "管家近期正在整理庭院和开放空间，形成了可向玩家解释的空间扩展进展。"
+  }
+
+  if (input.homeGoalTag === "home_goal_prepare_future_expansion") {
+    return "管家近期正在为未来世界扩展整理空间，形成了可向玩家解释的准备进展。"
+  }
+
+  return "管家近期根据家园目标持续行动，形成了可向玩家解释的阶段性进展。"
+}
+
+function buildGoalDraftText(input: {
+  reason: ButlerMessageDecisionReason
+  homeGoalTag: string | null
+}): string {
+  if (input.reason === "home_goal_incubator_observed") {
+    return "我最近在优先稳定孵化器区域。它还没有完全进入可以自由活动的阶段，所以我会先把环境维持住，不急着扩大其它安排。"
+  }
+
+  if (input.reason === "home_goal_maintenance_observed") {
+    return "我注意到家园里有些设施或空间需要维护。我会先处理这些基础问题，让环境保持稳定，不会因此打断宠物自己的选择。"
+  }
+
+  if (input.homeGoalTag === "home_goal_build_temporary_shelter") {
+    return "我正在推进临时住所。现在最重要的是先让这个世界有一个能遮蔽、能整理、能继续成长的基础空间。"
+  }
+
+  if (input.homeGoalTag === "home_goal_complete_basic_living") {
+    return "我在补齐基础生活设施。休息、食物和饮水这些支持能力稳定以后，宠物后面的自主活动会更安全。"
+  }
+
+  if (input.homeGoalTag === "home_goal_open_garden_area") {
+    return "我正在整理庭院和开放空间。那里以后会成为观察、探索和扩展世界的重要区域，但我会按当前节奏慢慢推进。"
+  }
+
+  if (input.homeGoalTag === "home_goal_prepare_future_expansion") {
+    return "我在为后续扩展预留空间。现在不会直接打开太多内容，只是先把家园结构整理到可以继续成长的状态。"
+  }
+
+  return "我最近在根据当前家园目标持续行动。我会优先处理环境和空间，不会替宠物做决定。"
+}
+
 function buildDraftText(input: {
   reason: ButlerMessageDecisionReason
   suggestedTone: ButlerMessageDecision["suggestedTone"]
   summary: string
+  homeGoalTag?: string | null
 }): string {
+  if (
+    input.reason === "home_goal_execution_observed" ||
+    input.reason === "home_goal_maintenance_observed" ||
+    input.reason === "home_goal_incubator_observed"
+  ) {
+    return buildGoalDraftText({
+      reason: input.reason,
+      homeGoalTag: input.homeGoalTag ?? null,
+    })
+  }
+
   if (input.reason === "repeated_rejection_observed") {
     return "我注意到它最近几次没有接受我的照看机会。我会先放慢靠近和引导的节奏，继续观察它自己的选择，不会要求你立刻干预。"
   }
@@ -98,6 +209,7 @@ function buildDecision(input: {
   summary: string
   suggestedTone: ButlerMessageDecision["suggestedTone"]
   tags: string[]
+  homeGoalTag?: string | null
 }): ButlerMessageDecision {
   const cooldownTicks =
     MESSAGE_DECISION_COOLDOWN_TICKS[input.reason] ?? 0
@@ -108,6 +220,7 @@ function buildDecision(input: {
     reason: input.reason,
     suggestedTone: input.suggestedTone,
     summary: input.summary,
+    homeGoalTag: input.homeGoalTag ?? null,
   })
 
   return {
@@ -159,6 +272,62 @@ function hasCarefulEducationPosture(
   )
 }
 
+function shouldReportGoalMemory(
+  input: BuildButlerMessageDecisionInput
+): boolean {
+  const memory = getLatestGoalExecutionMemory(input)
+
+  if (!memory) return false
+  if (input.tick - memory.lastUpdatedTick > 6) return false
+  if (memory.repeatCount < 2 && memory.importance < 62) return false
+
+  return true
+}
+
+function buildGoalMemoryDecision(
+  input: BuildButlerMessageDecisionInput
+): ButlerMessageDecision | null {
+  if (!shouldReportGoalMemory(input)) return null
+
+  const memory = getLatestGoalExecutionMemory(input)
+
+  if (!memory) return null
+
+  const reason = getGoalMemoryReason(memory.tags)
+  const homeGoalTag = getHomeGoalTag(memory.tags)
+
+  if (isSameReasonCoolingDown(input, reason)) {
+    return buildSilentDecision(
+      input,
+      "近期已经形成过家园目标执行相关联系意图，当前继续观察，不重复提醒。"
+    )
+  }
+
+  return buildDecision({
+    source: input,
+    priority:
+      reason === "home_goal_maintenance_observed" ? "medium" : "low",
+    reason,
+    summary: buildGoalMemorySummary({
+      reason,
+      homeGoalTag,
+    }),
+    suggestedTone:
+      reason === "home_goal_maintenance_observed" ? "careful" : "gentle",
+    homeGoalTag,
+    tags: [
+      "goal_execution_memory",
+      "home_goal_message_context",
+      homeGoalTag ?? "home_goal_unknown",
+      `relation_${input.butler.relation.tone}`,
+      `source_task_${input.butler.task}`,
+      memory.tags.includes("no_pet_control")
+        ? "no_pet_control"
+        : "pet_control_unknown",
+    ],
+  })
+}
+
 export function buildButlerMessageDecision(
   input: BuildButlerMessageDecisionInput
 ): ButlerMessageDecision {
@@ -170,6 +339,12 @@ export function buildButlerMessageDecision(
       input,
       "当前还没有教育策略快照，管家暂时不主动联系玩家。"
     )
+  }
+
+  const goalMemoryDecision = buildGoalMemoryDecision(input)
+
+  if (goalMemoryDecision) {
+    return goalMemoryDecision
   }
 
   if (
