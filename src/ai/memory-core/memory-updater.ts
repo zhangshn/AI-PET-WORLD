@@ -42,6 +42,52 @@ function buildActionRecord(input: UpdateMemoryInput): MemoryActionRecord {
   }
 }
 
+function buildPerceptionEventRecords(
+  input: UpdateMemoryInput
+): MemoryEventRecord[] {
+  const perception = input.latestWorldPerception
+
+  if (!perception || perception.perceivedSignals.length === 0) {
+    return []
+  }
+
+  const strongestSignal = perception.perceivedSignals[0]
+  const records: MemoryEventRecord[] = [
+    {
+      tick: input.tick,
+      day: input.time.day,
+      hour: input.time.hour,
+      kind: "world_perception",
+      summary: perception.summary,
+      weight: Math.min(1, Math.max(0.2, strongestSignal.intensity / 100)),
+    },
+  ]
+
+  if (strongestSignal.kind === "exploration_context") {
+    records.push({
+      tick: input.tick,
+      day: input.time.day,
+      hour: input.time.hour,
+      kind: "environment_novelty",
+      summary: "环境边界或开放空间变化被记为值得留意的线索。",
+      weight: Math.min(1, Math.max(0.25, strongestSignal.intensity / 100)),
+    })
+  }
+
+  if (strongestSignal.kind === "background_context") {
+    records.push({
+      tick: input.tick,
+      day: input.time.day,
+      hour: input.time.hour,
+      kind: "environment_stability",
+      summary: "稳定的环境背景被记为低代价观察线索。",
+      weight: Math.min(1, Math.max(0.2, strongestSignal.intensity / 100)),
+    })
+  }
+
+  return records
+}
+
 function buildEventRecords(input: UpdateMemoryInput): MemoryEventRecord[] {
   const records: MemoryEventRecord[] = []
 
@@ -162,7 +208,7 @@ function buildEventRecords(input: UpdateMemoryInput): MemoryEventRecord[] {
     })
   }
 
-  return records
+  return [...records, ...buildPerceptionEventRecords(input)]
 }
 
 function updateWorldImpression(
@@ -199,6 +245,19 @@ function updateWorldImpression(
 
     if (event.kind === "observation_result") {
       observationConfidence = clamp(observationConfidence + 2)
+    }
+
+    if (event.kind === "world_perception") {
+      observationConfidence = clamp(observationConfidence + Math.round(event.weight * 2))
+    }
+
+    if (event.kind === "environment_novelty") {
+      explorationConfidence = clamp(explorationConfidence + Math.round(event.weight * 2))
+      observationConfidence = clamp(observationConfidence + 1)
+    }
+
+    if (event.kind === "environment_stability") {
+      observationConfidence = clamp(observationConfidence + Math.round(event.weight * 2))
     }
   }
 
@@ -296,6 +355,15 @@ function updatePreferenceBias(
       observeBias = clamp(observeBias + 2)
     }
 
+    if (event.kind === "environment_novelty") {
+      exploreBias = clamp(exploreBias + Math.round(event.weight * 2))
+      observeBias = clamp(observeBias + 1)
+    }
+
+    if (event.kind === "environment_stability") {
+      observeBias = clamp(observeBias + Math.round(event.weight * 2))
+    }
+
     if (event.kind === "approach_result") {
       approachBias = clamp(approachBias + 2)
     }
@@ -331,6 +399,10 @@ function buildMemorySummaries(memory: PetMemoryState): string[] {
     results.push("探索经验正在累积为较积极的外扩印象。")
   } else if (memory.worldImpression.explorationConfidence <= -8) {
     results.push("探索经验正在累积为高消耗印象。")
+  }
+
+  if (memory.worldImpression.observationConfidence >= 8) {
+    results.push("环境观察经验正在被记为有帮助的世界线索。")
   }
 
   if (memory.relationImpression.caretakerTrust >= 10) {
