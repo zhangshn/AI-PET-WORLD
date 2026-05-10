@@ -10,6 +10,10 @@ import {
 import type { ButlerProfile } from "../ai/gateway"
 
 import {
+  buildButlerWorldPerception,
+} from "./agent-perception/agent-world-perception"
+
+import {
   appendButlerMemoryEntry,
   buildButlerBehaviorExecution,
   buildButlerEducationStrategy,
@@ -152,12 +156,16 @@ export class ButlerSystem {
     const educationStrategy = buildButlerEducationStrategy(
       this.state.relation
     )
+    const butlerWorldPerception = buildButlerWorldPerception({
+      home: input.home,
+    })
+
     this.state.latestEducationStrategy = educationStrategy
     this.state.latestBehaviorExecution = buildButlerBehaviorExecution({
       task: this.state.task,
       relation: this.state.relation,
       educationStrategy,
-      homeGoals: input.homeGoals,
+      butlerWorldPerception,
       tick: input.tick,
     })
     this.rememberLatestBehaviorExecution(input.tick)
