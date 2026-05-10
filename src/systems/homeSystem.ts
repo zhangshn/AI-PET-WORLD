@@ -12,6 +12,7 @@ import {
   applyButlerHomeSpaceAction,
   applyHomeFacilityEffects,
   buildHome,
+  buildHomeGoals,
   buildHomeSpaceSummary,
   createInitialHomeFacilities,
   createInitialHomeSpaces,
@@ -40,10 +41,15 @@ export class HomeSystem {
       homeFacilities: initialFacilities,
     }
 
-    this.home = {
+    const initialHomeWithLifecycle: HomeState = {
       ...initialHome,
       spaceSummary: buildHomeSpaceSummary(initialHome),
       lifecycle: resolveHomeLifecycle(initialHome),
+    }
+
+    this.home = {
+      ...initialHomeWithLifecycle,
+      homeGoals: buildHomeGoals(initialHomeWithLifecycle),
     }
   }
 
@@ -56,10 +62,15 @@ export class HomeSystem {
 
     const restoredWithEffects = applyHomeFacilityEffects(restoredHome)
 
-    this.home = {
+    const restoredWithLifecycle: HomeState = {
       ...restoredWithEffects,
       spaceSummary: buildHomeSpaceSummary(restoredWithEffects),
       lifecycle: resolveHomeLifecycle(restoredWithEffects),
+    }
+
+    this.home = {
+      ...restoredWithLifecycle,
+      homeGoals: buildHomeGoals(restoredWithLifecycle),
     }
   }
 
@@ -79,9 +90,14 @@ export class HomeSystem {
       execution,
     })
 
-    this.home = {
+    const nextHomeWithLifecycle: HomeState = {
       ...nextHome,
       lifecycle: resolveHomeLifecycle(nextHome),
+    }
+
+    this.home = {
+      ...nextHomeWithLifecycle,
+      homeGoals: buildHomeGoals(nextHomeWithLifecycle),
     }
   }
 
@@ -95,9 +111,14 @@ export class HomeSystem {
       })
     )
 
-    this.home = {
+    const nextHomeWithLifecycle: HomeState = {
       ...nextHome,
       lifecycle: resolveHomeLifecycle(nextHome),
+    }
+
+    this.home = {
+      ...nextHomeWithLifecycle,
+      homeGoals: buildHomeGoals(nextHomeWithLifecycle),
     }
   }
 
@@ -129,6 +150,11 @@ export class HomeSystem {
             tags: [...this.home.lifecycle.tags],
           }
         : undefined,
+      homeGoals: this.home.homeGoals?.map((goal) => ({
+        ...goal,
+        recommendedBehaviorKinds: [...goal.recommendedBehaviorKinds],
+        tags: [...goal.tags],
+      })),
     }
   }
 }

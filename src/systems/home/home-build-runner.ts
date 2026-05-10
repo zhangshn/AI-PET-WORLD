@@ -8,6 +8,7 @@ import { resolveEvolutionFocus } from "./home-evolution-runner"
 import { resolveConstructionStage } from "./home-stage-runner"
 import { applyHomeFacilityEffects } from "./home-facility-effect-runner"
 import { syncHomeFacilities } from "./home-facility-runner"
+import { buildHomeGoals } from "./home-goal-runner"
 import { resolveHomeLifecycle } from "./home-lifecycle-runner"
 import { buildHomeSpaceSummary } from "./home-space-summary-runner"
 import { syncHomeSpaces } from "./home-space-runner"
@@ -32,10 +33,15 @@ function syncHomeDerivedState(home: HomeState): HomeState {
 
   const homeWithFacilityEffects = applyHomeFacilityEffects(homeWithFacilities)
 
-  return {
+  const homeWithLifecycle: HomeState = {
     ...homeWithFacilityEffects,
     spaceSummary: buildHomeSpaceSummary(homeWithFacilityEffects),
     lifecycle: resolveHomeLifecycle(homeWithFacilityEffects),
+  }
+
+  return {
+    ...homeWithLifecycle,
+    homeGoals: buildHomeGoals(homeWithLifecycle),
   }
 }
 

@@ -1234,6 +1234,41 @@ HomeState.lifecycle
 - 不改变 pet action
 - 不写宠物 learning
 - 不新增 UI / F3 / Pixi 渲染
+
+## 53. HOME-GOAL-BATCH-10 当前状态
+
+当前已经建立家园目标系统。
+
+当前链路：
+
+```txt
+HomeState.lifecycle
+↓
+homeSpaces
+↓
+homeFacilities
+↓
+buildHomeGoals
+↓
+HomeState.homeGoals
+```
+
+当前目标：
+
+- stabilize_incubator
+- build_temporary_shelter
+- complete_basic_living
+- open_garden_area
+- maintain_home_facilities
+- prepare_future_expansion
+
+当前边界：
+
+- homeGoals 只提供家园目标和推荐行为
+- 不直接控制宠物行为
+- 不改变 pet action
+- 不写宠物 learning
+- 不新增 UI / F3 / Pixi 渲染
 - 不改变 worldEngine 调度顺序
 
 ## 50. HOME-FACILITY-BATCH-7 当前状态

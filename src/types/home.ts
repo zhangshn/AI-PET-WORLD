@@ -137,6 +137,39 @@ export type HomeLifecycleState = {
   tags: string[]
 }
 
+export type HomeGoalId =
+  | "stabilize_incubator"
+  | "build_temporary_shelter"
+  | "complete_basic_living"
+  | "open_garden_area"
+  | "maintain_home_facilities"
+  | "prepare_future_expansion"
+
+export type HomeGoalPriority =
+  | "low"
+  | "medium"
+  | "high"
+  | "urgent"
+
+export type HomeGoalTarget =
+  | "incubator"
+  | "space"
+  | "facility"
+  | "home"
+  | "future_world"
+
+export type HomeGoalState = {
+  id: HomeGoalId
+  priority: HomeGoalPriority
+  target: HomeGoalTarget
+  progress: number
+  title: string
+  description: string
+  reason: string
+  recommendedBehaviorKinds: string[]
+  tags: string[]
+}
+
 export type HomeState = {
   level: number
   progress: number
@@ -151,4 +184,5 @@ export type HomeState = {
   spaceSummary?: HomeSpaceSummary
   homeFacilities?: HomeFacilityState[]
   lifecycle?: HomeLifecycleState
+  homeGoals?: HomeGoalState[]
 }

@@ -135,3 +135,20 @@ homeSpaces 用于让后续正式世界 UI / 像素地图读取空间结构。
 - canSupportGardenActivity
 - summary
 - tags
+
+## Home Goals
+
+当前已经建立家园目标系统。
+
+目标由 lifecycle、homeSpaces、homeFacilities 共同推导。
+
+当前目标包括：
+
+- stabilize_incubator
+- build_temporary_shelter
+- complete_basic_living
+- open_garden_area
+- maintain_home_facilities
+- prepare_future_expansion
+
+homeGoals 只提供家园目标和推荐行为，不直接控制宠物行为。
