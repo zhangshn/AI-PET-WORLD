@@ -119,6 +119,75 @@ function getButlerPose(
   }
 }
 
+function drawButlerInterpretationMarker(
+  graphic: Graphics,
+  butler: ButlerState | null,
+  phase: number
+) {
+  if (!butler?.latestWorldInterpretation) return
+
+  const interpretation = butler.latestWorldInterpretation
+  const pulse = 0.18 + Math.max(0, Math.sin(phase * 2.4)) * 0.18
+  const confidence = Math.max(0.18, Math.min(0.6, interpretation.confidence / 175))
+  const alpha = Math.min(0.76, pulse + confidence)
+  const color =
+    interpretation.tone === "protective"
+      ? 0xfde68a
+      : interpretation.tone === "careful"
+        ? 0x93c5fd
+        : interpretation.tone === "steady"
+          ? 0xa7f3d0
+          : 0xe2e8f0
+
+  graphic.rect(-9, -9, 4, 4).fill({ color, alpha })
+  graphic.rect(-14, -4, 3, 3).fill({ color, alpha: alpha * 0.58 })
+
+  if (interpretation.posture === "stabilize_environment") {
+    graphic.rect(19, -8, 7, 2).fill({ color, alpha: alpha * 0.72 })
+    graphic.rect(27, -11, 4, 2).fill({ color, alpha: alpha * 0.48 })
+  }
+
+  if (interpretation.posture === "observe_first") {
+    graphic.rect(19, -5, 5, 2).fill({ color, alpha: alpha * 0.62 })
+    graphic.rect(26, -7, 3, 2).fill({ color, alpha: alpha * 0.42 })
+  }
+}
+
+function drawButlerExecutionMarker(
+  graphic: Graphics,
+  butler: ButlerState | null,
+  phase: number
+) {
+  const execution = butler?.latestBehaviorExecution
+
+  if (!execution) return
+
+  const pulse = 0.2 + Math.max(0, Math.sin(phase * 3.6)) * 0.18
+  const alpha = Math.min(0.68, pulse + execution.intensity / 220)
+  const color = execution.canAffectHome
+    ? 0x86efac
+    : execution.canAffectPet
+      ? 0xfde68a
+      : 0x93c5fd
+
+  if (execution.kind === "home_building" || execution.kind === "home_maintenance") {
+    graphic.rect(22, 41, 5, 3).fill({ color, alpha })
+    graphic.rect(29, 38, 4, 3).fill({ color, alpha: alpha * 0.58 })
+    return
+  }
+
+  if (execution.kind === "incubator_watch") {
+    graphic.rect(22, 35, 4, 4).fill({ color: 0xa7f3d0, alpha })
+    graphic.rect(28, 32, 3, 3).fill({ color: 0xa7f3d0, alpha: alpha * 0.58 })
+    return
+  }
+
+  if (execution.kind === "care_opportunity_support") {
+    graphic.rect(22, 19, 4, 4).fill({ color: 0xfde68a, alpha })
+    graphic.rect(28, 16, 3, 3).fill({ color: 0xfde68a, alpha: alpha * 0.5 })
+  }
+}
+
 function drawButlerTaskAccessory(
   graphic: Graphics,
   butler: ButlerState | null,
@@ -209,6 +278,8 @@ export function drawButlerGraphic(
     ? Math.sin(phase * 5.5) * 1.1
     : Math.sin(phase * 2.5) * 0.45
 
+  drawButlerInterpretationMarker(graphic, butler, phase)
+  drawButlerExecutionMarker(graphic, butler, phase)
   drawActorShadow(graphic, 9, 67, 15, 5, 0.22)
 
   const bodyY = bob
