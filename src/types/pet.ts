@@ -28,6 +28,10 @@ import type {
 } from "../systems/pet/goal/pet-goal-gateway"
 
 import type {
+  PetWorldPerceptionSnapshot,
+} from "../systems/agent-perception/agent-world-perception"
+
+import type {
   PetCognitionRecord,
 } from "./cognition"
 
@@ -99,6 +103,13 @@ export type PetState = {
   memoryState: PetMemoryState
   learningState: PetLearningState
   timelineSnapshot?: PetTimelineSnapshot
+
+  /**
+   * 宠物最近一次世界感知快照。
+   * 这里只保存“宠物可能注意到的环境线索”，不直接决定 action / drive。
+   */
+  latestWorldPerception?: PetWorldPerceptionSnapshot | null
+
   latestCognition?: PetCognitionRecord | null
   recentCognition: PetCognitionRecord[]
   activeBehaviorProcess?: ActiveBehaviorProcess | null
