@@ -20,6 +20,10 @@ import {
 } from "@/engine/world-engine/world-runtime-logger"
 
 import {
+  buildPetPerceptionDriveBias,
+} from "@/systems/agent-perception/agent-world-perception"
+
+import {
   recordPetRuntimeDecision,
 } from "./pet-runtime-ai-recorder"
 
@@ -78,6 +82,9 @@ function buildDriveSnapshot(input: {
       latestCognition: input.pet.latestCognition ?? null,
     },
     time: input.time,
+    externalStimuli: buildPetPerceptionDriveBias(
+      input.pet.latestWorldPerception ?? null
+    ),
   })
 }
 
@@ -147,8 +154,8 @@ export function runPetRuntimeTick(
   }
 
   /**
-   * 先根据当前身体、记忆、认知、生命趋向计算 drive。
-   * previousGoal 仍然保留在 pet.currentGoal 中，但不会让 goal 先于 drive 决定方向。
+   * 先根据当前身体、记忆、认知、生命趋向和感知偏移计算 drive。
+   * 感知偏移只进入 externalStimuli，不直接决定 action。
    */
   const driveSnapshot = buildDriveSnapshot({
     pet,
