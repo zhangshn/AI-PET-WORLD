@@ -12,6 +12,9 @@ import type {
 import type {
   ButlerTaskDecisionTrace,
 } from "../task/butler-task-decision-trace"
+import type {
+  ButlerBehaviorExecution,
+} from "../behavior/execution/butler-behavior-execution-schema"
 
 export type ButlerMemoryType =
   | "observation"
@@ -291,6 +294,21 @@ function shouldMergeWithLatestMemory(input: {
     )
   }
 
+  const latestHomeGoal = input.latest.tags.find((tag) =>
+    tag.startsWith("home_goal_")
+  )
+  const nextHomeGoal = input.entry.tags.find((tag) =>
+    tag.startsWith("home_goal_")
+  )
+
+  if (latestHomeGoal || nextHomeGoal) {
+    return (
+      latestHomeGoal === nextHomeGoal &&
+      input.latest.tags.includes("behavior_execution") ===
+        input.entry.tags.includes("behavior_execution")
+    )
+  }
+
   const latestLifePhase = input.latest.tags.find((tag) =>
     tag.startsWith("life_phase_")
   )
@@ -394,6 +412,56 @@ export function createButlerMemoryEntryFromOpportunityFeedback(input: {
     ),
     importance: deriveOpportunityFeedbackImportance(input.feedback),
     tags: buildOpportunityFeedbackMemoryTags(input.feedback),
+  })
+}
+
+export function createButlerMemoryEntryFromBehaviorExecution(input: {
+  tick: number
+  sourceTask: ButlerTask
+  execution: ButlerBehaviorExecution
+}): ButlerMemoryEntry {
+  const isGoalDriven = input.execution.tags.includes("goal_driven_execution")
+  const homeGoalTag =
+    input.execution.tags.find((tag) => tag.startsWith("home_goal_")) ??
+    "home_goal_unknown"
+
+  const type: ButlerMemoryType =
+    input.execution.kind === "incubator_watch"
+      ? "incubator_care"
+      : input.execution.canAffectHome
+        ? "home_building"
+        : "observation"
+
+  const importance = input.execution.canAffectHome
+    ? 62
+    : input.execution.kind === "incubator_watch"
+      ? 66
+      : 42
+
+  const emotionalWeight = isGoalDriven ? 38 : 24
+
+  return createButlerMemoryEntry({
+    tick: input.tick,
+    type,
+    sourceTask: input.sourceTask,
+    summary:
+      `管家记录：${input.execution.summary}` +
+      `原因：${input.execution.reason}`,
+    emotionalWeight,
+    importance,
+    tags: [
+      "behavior_execution",
+      input.execution.kind,
+      input.execution.target,
+      homeGoalTag,
+      isGoalDriven ? "goal_driven_execution" : "task_driven_execution",
+      input.execution.canAffectHome
+        ? "home_effect_allowed"
+        : "home_effect_blocked",
+      input.execution.canAffectPet
+        ? "pet_effect_allowed"
+        : "no_pet_control",
+    ],
   })
 }
 

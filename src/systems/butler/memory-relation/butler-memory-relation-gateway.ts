@@ -9,6 +9,7 @@
 export {
   appendButlerMemoryEntry,
   createButlerMemoryEntry,
+  createButlerMemoryEntryFromBehaviorExecution,
   createButlerMemoryEntryFromOpportunityFeedback,
   createButlerMemoryEntryFromTaskDecision,
   createInitialButlerMemoryState,

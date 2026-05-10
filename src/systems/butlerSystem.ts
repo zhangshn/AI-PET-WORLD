@@ -20,6 +20,7 @@ import {
   chooseButlerTask,
   createApproachOffer,
   createButlerMemoryEntry,
+  createButlerMemoryEntryFromBehaviorExecution,
   createButlerMemoryEntryFromOpportunityFeedback,
   createButlerMemoryEntryFromTaskDecision,
   createFoodOffer,
@@ -158,6 +159,7 @@ export class ButlerSystem {
       homeGoals: input.homeGoals,
       tick: input.tick,
     })
+    this.rememberLatestBehaviorExecution(input.tick)
     this.state.latestMessageDecision = buildButlerMessageDecision({
       butler: this.state,
       tick: input.tick,
@@ -228,6 +230,40 @@ export class ButlerSystem {
     const entry = createButlerMemoryEntryFromTaskDecision({
       tick,
       trace,
+    })
+
+    this.state.memory = appendButlerMemoryEntry({
+      memory: this.state.memory,
+      entry,
+      maxEntries: 80,
+    })
+  }
+
+  private rememberLatestBehaviorExecution(tick: number) {
+    const execution = this.state.latestBehaviorExecution
+
+    if (!execution) return
+    if (!execution.tags.includes("goal_driven_execution")) return
+
+    const latest = this.state.memory.latestEntry
+    const homeGoalTag = execution.tags.find((tag) =>
+      tag.startsWith("home_goal_")
+    )
+
+    if (
+      latest &&
+      latest.tags.includes("behavior_execution") &&
+      homeGoalTag &&
+      latest.tags.includes(homeGoalTag) &&
+      tick - latest.lastUpdatedTick <= 3
+    ) {
+      return
+    }
+
+    const entry = createButlerMemoryEntryFromBehaviorExecution({
+      tick,
+      sourceTask: this.state.task,
+      execution,
     })
 
     this.state.memory = appendButlerMemoryEntry({

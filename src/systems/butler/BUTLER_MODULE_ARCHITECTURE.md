@@ -1263,6 +1263,34 @@ ButlerState.latestBehaviorExecution
 - 不改变 pet action
 - 不写宠物 learning
 
+## 55. BUTLER-GOAL-MEMORY-BATCH-12 当前状态
+
+当前管家会记录家园目标驱动的行为执行记忆。
+
+当前链路：
+
+```txt
+HomeState.homeGoals
+↓
+buildButlerBehaviorExecution
+↓
+goal_driven_execution
+↓
+createButlerMemoryEntryFromBehaviorExecution
+↓
+ButlerMemoryState
+```
+
+当前规则：
+
+- 只记录 `goal_driven_execution`
+- 3 tick 内同一个 homeGoal 不重复写入
+- appendButlerMemoryEntry 仍可继续合并同类记忆
+- memory 层不调用 homeSystem
+- 不控制宠物行为
+- 不改变 pet action
+- 不写宠物 learning
+
 ## 53. HOME-GOAL-BATCH-10 当前状态
 
 当前已经建立家园目标系统。

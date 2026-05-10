@@ -52,3 +52,18 @@ execution 当前只负责把已经形成的任务、关系、教育策略转换�
 - `offering_food` / `offering_rest` / `offering_approach` 不会被 homeGoals 覆盖
 - 管家仍不能控制宠物
 - behavior execution 不直接调用 homeSystem
+
+## Goal Execution Memory
+
+当前管家行为执行层如果命中 `goal_driven_execution`，会写入管家长期记忆。
+
+记录内容包括：
+
+- 当前执行类型
+- 当前 homeGoal
+- 是否允许影响 home
+- 是否保持 no_pet_control
+- 执行 summary
+- 执行 reason
+
+该记忆只记录管家后天经历，不控制宠物行为，不写宠物 learning。
