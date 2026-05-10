@@ -2,8 +2,12 @@
  * 当前文件负责：定义管家行为执行层的最小类型。
  *
  * 行为执行层不负责选择任务。
- * 它只把当前任务、关系、教育策略转换为可被世界读取的行为执行快照。
+ * 它只把当前任务、关系、教育策略和管家感知转换为可被世界读取的行为执行快照。
  */
+
+import type {
+  ButlerWorldPerceptionSnapshot,
+} from "@/systems/agent-perception/agent-world-perception"
 
 import type {
   ButlerEducationStrategy,
@@ -16,10 +20,6 @@ import type {
 import type {
   ButlerTask,
 } from "../../butler-schema"
-
-import type {
-  HomeGoalState,
-} from "@/types/home"
 
 export type ButlerBehaviorExecutionKind =
   | "idle_observation"
@@ -57,6 +57,6 @@ export type BuildButlerBehaviorExecutionInput = {
   task: ButlerTask
   relation: ButlerRelationState
   educationStrategy: ButlerEducationStrategy | null
-  homeGoals?: HomeGoalState[]
+  butlerWorldPerception?: ButlerWorldPerceptionSnapshot | null
   tick: number
 }
