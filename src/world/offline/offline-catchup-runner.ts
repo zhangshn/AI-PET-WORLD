@@ -1,79 +1,64 @@
 /**
- * 当前文件负责：计算世界离线补算计划与补算结果摘要。
+ * 当前文件负责：执行有限离线补算。
  */
 
 import type {
-  BuildOfflineCatchupPlanInput,
-  BuildOfflineCatchupResultInput,
-  OfflineCatchupPlan,
+  WorldSaveSnapshot,
+} from "@/world/persistence/world-save-gateway"
+
+import {
+  buildOfflineCatchupPlan,
+} from "./offline-catchup-planner"
+import type {
   OfflineCatchupResult,
-} from "./offline-catchup-types"
+} from "./offline-catchup-schema"
 
-const MIN_OFFLINE_MINUTES_FOR_CATCHUP = 3
-const REAL_MINUTES_PER_WORLD_TICK = 5
-const MAX_OFFLINE_CATCHUP_TICKS = 24
-
-function clampTickCount(value: number): number {
-  if (!Number.isFinite(value)) {
-    return 0
-  }
-
-  return Math.max(0, Math.min(MAX_OFFLINE_CATCHUP_TICKS, Math.floor(value)))
+export type OfflineCatchupWorldEngine = {
+  restoreFromSnapshot: (snapshot: WorldSaveSnapshot) => void
+  update: () => void
+  getTick: () => number
+  addOfflineCatchupReport: (result: OfflineCatchupResult) => void
 }
 
-export function buildOfflineCatchupPlan(
-  input: BuildOfflineCatchupPlanInput
-): OfflineCatchupPlan {
-  const offlineMs = Math.max(0, input.now - input.lastSavedAt)
-  const offlineMinutes = Math.floor(offlineMs / 60_000)
-
-  if (offlineMinutes < MIN_OFFLINE_MINUTES_FOR_CATCHUP) {
-    return {
-      shouldCatchup: false,
-      offlineMs,
-      offlineMinutes,
-      tickCount: 0,
-      reason: "离线时间较短，不进行补算。",
-    }
-  }
-
-  const rawTickCount = offlineMinutes / REAL_MINUTES_PER_WORLD_TICK
-  const tickCount = clampTickCount(rawTickCount)
-
-  if (tickCount <= 0) {
-    return {
-      shouldCatchup: false,
-      offlineMs,
-      offlineMinutes,
-      tickCount: 0,
-      reason: "离线时间不足以形成一个世界 Tick。",
-    }
-  }
-
-  return {
-    shouldCatchup: true,
-    offlineMs,
-    offlineMinutes,
-    tickCount,
-    reason: `离线约 ${offlineMinutes} 分钟，补算 ${tickCount} 个世界 Tick。`,
-  }
+export type RunOfflineCatchupInput = {
+  worldEngine: OfflineCatchupWorldEngine
+  snapshot: WorldSaveSnapshot
+  now: number
 }
 
-export function buildOfflineCatchupResult(
-  input: BuildOfflineCatchupResultInput
+export function runOfflineCatchup(
+  input: RunOfflineCatchupInput
 ): OfflineCatchupResult {
-  const appliedTickCount = Math.max(0, input.endedAtTick - input.startedAtTick)
+  const startedAt = Date.now()
+  const plan = buildOfflineCatchupPlan(input.snapshot, input.now)
 
-  const summary =
-    appliedTickCount > 0
-      ? `你离开期间，世界继续推进了 ${appliedTickCount} 个 Tick。`
-      : "你离开期间，世界状态保持稳定，没有进行额外补算。"
+  input.worldEngine.restoreFromSnapshot(input.snapshot)
 
-  return {
-    plan: input.plan,
-    appliedTickCount,
-    startedAtTick: input.startedAtTick,
-    endedAtTick: input.endedAtTick,
-    summary,
+  const startedAtTick = input.worldEngine.getTick()
+
+  for (let index = 0; index < plan.tickCount; index += 1) {
+    input.worldEngine.update()
   }
+
+  const endedAtTick = input.worldEngine.getTick()
+
+  const result: OfflineCatchupResult = {
+    plan,
+    appliedTickCount: Math.max(0, endedAtTick - startedAtTick),
+    startedAtTick,
+    endedAtTick,
+    startedAt,
+    endedAt: Date.now(),
+    tags: [
+      "offline_catchup",
+      `reason_${plan.reason}`,
+      plan.shouldCatchup ? "catchup_applied" : "catchup_skipped",
+    ],
+  }
+
+  if (result.appliedTickCount > 0) {
+    input.worldEngine.addOfflineCatchupReport(result)
+  }
+
+  return result
 }

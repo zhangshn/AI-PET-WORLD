@@ -1,15 +1,19 @@
 /**
- * 当前文件负责：统一导出世界离线补算模块入口。
+ * 当前文件负责：统一导出世界离线补算入口。
  */
 
 export {
   buildOfflineCatchupPlan,
-  buildOfflineCatchupResult,
+} from "./offline-catchup-planner"
+
+export {
+  runOfflineCatchup,
+  type OfflineCatchupWorldEngine,
+  type RunOfflineCatchupInput,
 } from "./offline-catchup-runner"
 
 export type {
-  BuildOfflineCatchupPlanInput,
-  BuildOfflineCatchupResultInput,
   OfflineCatchupPlan,
+  OfflineCatchupReason,
   OfflineCatchupResult,
-} from "./offline-catchup-types"
+} from "./offline-catchup-schema"

@@ -13,6 +13,9 @@ import {
   loadWorldSnapshot,
   saveWorldSnapshot,
 } from "@/world/persistence/world-save-gateway"
+import {
+  runOfflineCatchup,
+} from "@/world/offline/offline-catchup-gateway"
 
 import type {
   TimeState,
@@ -172,7 +175,16 @@ export function useWorldEngineState(): WorldEngineViewState {
     const savedSnapshot = loadWorldSnapshot()
 
     if (savedSnapshot) {
-      worldEngine.restoreFromSnapshot(savedSnapshot)
+      const catchupResult = runOfflineCatchup({
+        worldEngine,
+        snapshot: savedSnapshot,
+        now: Date.now(),
+      })
+
+      if (catchupResult.appliedTickCount > 0) {
+        saveCurrentWorldSnapshot()
+        lastAutoSaveAtRef.current = Date.now()
+      }
     } else {
       worldEngine.initialize()
       saveCurrentWorldSnapshot()
