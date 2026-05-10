@@ -3,8 +3,12 @@
  */
 
 import type { GenderAwareBehaviorBias } from "../ai/gateway"
+import type {
+  ButlerBehaviorExecution,
+} from "./butler/butler-gateway"
 import type { HomeState } from "../types/home"
 import {
+  applyButlerHomeSpaceAction,
   buildHome,
   buildHomeSpaceSummary,
   createInitialHomeSpaces,
@@ -60,6 +64,15 @@ export class HomeSystem {
       home: this.home,
       amount,
       behaviorBias,
+    })
+  }
+
+  applyButlerSpaceAction(
+    execution: ButlerBehaviorExecution | null | undefined
+  ): void {
+    this.home = applyButlerHomeSpaceAction({
+      home: this.home,
+      execution,
     })
   }
 

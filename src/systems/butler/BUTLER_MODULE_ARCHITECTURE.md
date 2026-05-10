@@ -1141,3 +1141,37 @@ HomeState.spaceSummary
 - 不做像素地图渲染
 - 不改变 worldEngine 调度
 - 旧存档通过 HomeSystem.restore 自动补齐摘要
+
+## 49. HOME-SPACE-ACTION-BATCH-6 当前状态
+
+当前已经建立管家行为影响具体家园空间的第一阶段。
+
+当前链路：
+
+```txt
+ButlerState.latestBehaviorExecution
+↓
+homeSystem.applyButlerSpaceAction
+↓
+applyButlerHomeSpaceAction
+↓
+HomeState.homeSpaces
+↓
+HomeState.spaceSummary
+```
+
+当前空间影响：
+
+- `home_building` 主要推进 `temporary_shelter`
+- `home_maintenance` 修复舒适度 / 稳定度最低的可用空间
+- `space_tidying` 提升 `storage_area / activity_area` 的稳定度和秩序感
+- `incubator_watch` 轻微提升 `incubator_area` 稳定度
+
+当前边界：
+
+- behavior 层不直接调用 homeSystem
+- 不控制宠物行为
+- 不写宠物 learning
+- 不新增正式 overlay
+- 不新增 F3 面板
+- 不改变 worldEngine 调度顺序

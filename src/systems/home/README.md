@@ -48,3 +48,22 @@ homeSpaces 用于让后续正式世界 UI / 像素地图读取空间结构。
 - 需要维护空间数量
 
 该展示不是 F3，不是 debug，也不接 Pixi 地图渲染。
+
+## Butler Home Space Action
+
+当前已经建立 `applyButlerHomeSpaceAction`。
+
+它根据 `ButlerState.latestBehaviorExecution` 安全影响具体家园空间：
+
+- `home_building` 推进 `temporary_shelter`
+- `home_maintenance` 修复舒适度 / 稳定度最低的可用空间
+- `space_tidying` 影响 `storage_area` 与 `activity_area`
+- `incubator_watch` 轻微提升 `incubator_area` 稳定度
+
+边界：
+
+- 不控制宠物
+- 不写宠物 learning
+- 不发 P-Phone
+- 不新增正式 overlay
+- 不新增 F3 面板
