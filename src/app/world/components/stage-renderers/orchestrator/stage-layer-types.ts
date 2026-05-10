@@ -14,5 +14,6 @@ export type WorldStageLayerRefs = {
   stimulusLayer: Container | null
   entityLayer: Container | null
   foregroundLayer: Container | null
+  affordanceLayer: Container | null
   overlay: Graphics | null
 }
