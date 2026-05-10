@@ -26,3 +26,4 @@ export {
 export type {
   HomeFacilityEffectSummary,
 } from "./home-facility-effect-runner"
+export { resolveHomeLifecycle } from "./home-lifecycle-runner"

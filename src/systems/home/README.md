@@ -107,3 +107,31 @@ homeSpaces 用于让后续正式世界 UI / 像素地图读取空间结构。
 设施状态为 `active` 时提供正向效果。
 设施状态为 `needs_maintenance` 时会产生轻微负向效果。
 设施状态为 `building` 时只产生极小过渡效果。
+
+## Home Lifecycle
+
+当前已经建立家园生命周期阶段。
+
+阶段包括：
+
+- initial_empty_land
+- incubator_care_phase
+- temporary_shelter_phase
+- basic_living_phase
+- garden_opening_phase
+- stable_home_phase
+
+生命周期只描述家园发展状态，不直接控制宠物行为。
+
+当前 lifecycle 会输出：
+
+- phase
+- phaseProgress
+- mainGoal
+- nextGoal
+- canSupportPetExploration
+- canSupportPetRest
+- canSupportFoodRoutine
+- canSupportGardenActivity
+- summary
+- tags

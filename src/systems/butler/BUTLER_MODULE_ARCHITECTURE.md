@@ -1199,6 +1199,41 @@ HomeState comfort / stability / expansion / gardenProgress
 - 设施效果不直接控制宠物行为
 - 设施效果不改变 pet action
 - 设施效果不写宠物 learning
+
+## 52. HOME-LIFECYCLE-BATCH-9 当前状态
+
+当前已经建立家园生命周期阶段系统。
+
+当前阶段：
+
+- initial_empty_land
+- incubator_care_phase
+- temporary_shelter_phase
+- basic_living_phase
+- garden_opening_phase
+- stable_home_phase
+
+当前链路：
+
+```txt
+HomeState
+↓
+homeSpaces
+↓
+homeFacilities
+↓
+resolveHomeLifecycle
+↓
+HomeState.lifecycle
+```
+
+当前边界：
+
+- lifecycle 只描述家园发展状态
+- 不直接控制宠物行为
+- 不改变 pet action
+- 不写宠物 learning
+- 不新增 UI / F3 / Pixi 渲染
 - 不改变 worldEngine 调度顺序
 
 ## 50. HOME-FACILITY-BATCH-7 当前状态

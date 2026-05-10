@@ -15,6 +15,7 @@ import {
   buildHomeSpaceSummary,
   createInitialHomeFacilities,
   createInitialHomeSpaces,
+  resolveHomeLifecycle,
   syncHomeFacilities,
   syncHomeSpaces,
 } from "./home/home-gateway"
@@ -25,8 +26,7 @@ export class HomeSystem {
   constructor() {
     const initialSpaces = createInitialHomeSpaces()
     const initialFacilities = createInitialHomeFacilities()
-
-    this.home = {
+    const initialHome: HomeState = {
       level: 1,
       progress: 0,
       status: "building",
@@ -38,19 +38,12 @@ export class HomeSystem {
       expansion: 20,
       homeSpaces: initialSpaces,
       homeFacilities: initialFacilities,
-      spaceSummary: buildHomeSpaceSummary({
-        level: 1,
-        progress: 0,
-        status: "building",
-        constructionStage: "temporary_shelter",
-        evolutionFocus: "balanced",
-        gardenProgress: 0,
-        comfort: 35,
-        stability: 45,
-        expansion: 20,
-        homeSpaces: initialSpaces,
-        homeFacilities: initialFacilities,
-      }),
+    }
+
+    this.home = {
+      ...initialHome,
+      spaceSummary: buildHomeSpaceSummary(initialHome),
+      lifecycle: resolveHomeLifecycle(initialHome),
     }
   }
 
@@ -66,6 +59,7 @@ export class HomeSystem {
     this.home = {
       ...restoredWithEffects,
       spaceSummary: buildHomeSpaceSummary(restoredWithEffects),
+      lifecycle: resolveHomeLifecycle(restoredWithEffects),
     }
   }
 
@@ -80,21 +74,31 @@ export class HomeSystem {
   applyButlerSpaceAction(
     execution: ButlerBehaviorExecution | null | undefined
   ): void {
-    this.home = applyButlerHomeSpaceAction({
+    const nextHome = applyButlerHomeSpaceAction({
       home: this.home,
       execution,
     })
+
+    this.home = {
+      ...nextHome,
+      lifecycle: resolveHomeLifecycle(nextHome),
+    }
   }
 
   applyButlerFacilityAction(
     execution: ButlerBehaviorExecution | null | undefined
   ): void {
-    this.home = applyHomeFacilityEffects(
+    const nextHome = applyHomeFacilityEffects(
       applyButlerHomeFacilityAction({
         home: this.home,
         execution,
       })
     )
+
+    this.home = {
+      ...nextHome,
+      lifecycle: resolveHomeLifecycle(nextHome),
+    }
   }
 
   getHome(): HomeState {
@@ -117,6 +121,12 @@ export class HomeSystem {
             maintenanceSpaceIds: [...this.home.spaceSummary.maintenanceSpaceIds],
             activitySpaceIds: [...this.home.spaceSummary.activitySpaceIds],
             tags: [...this.home.spaceSummary.tags],
+          }
+        : undefined,
+      lifecycle: this.home.lifecycle
+        ? {
+            ...this.home.lifecycle,
+            tags: [...this.home.lifecycle.tags],
           }
         : undefined,
     }

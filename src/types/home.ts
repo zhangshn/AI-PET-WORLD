@@ -116,6 +116,27 @@ export type HomeFacilityState = {
   tags: string[]
 }
 
+export type HomeLifecyclePhase =
+  | "initial_empty_land"
+  | "incubator_care_phase"
+  | "temporary_shelter_phase"
+  | "basic_living_phase"
+  | "garden_opening_phase"
+  | "stable_home_phase"
+
+export type HomeLifecycleState = {
+  phase: HomeLifecyclePhase
+  phaseProgress: number
+  mainGoal: string
+  nextGoal: string
+  canSupportPetExploration: boolean
+  canSupportPetRest: boolean
+  canSupportFoodRoutine: boolean
+  canSupportGardenActivity: boolean
+  summary: string
+  tags: string[]
+}
+
 export type HomeState = {
   level: number
   progress: number
@@ -129,4 +150,5 @@ export type HomeState = {
   homeSpaces?: HomeSpaceState[]
   spaceSummary?: HomeSpaceSummary
   homeFacilities?: HomeFacilityState[]
+  lifecycle?: HomeLifecycleState
 }

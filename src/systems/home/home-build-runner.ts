@@ -8,6 +8,7 @@ import { resolveEvolutionFocus } from "./home-evolution-runner"
 import { resolveConstructionStage } from "./home-stage-runner"
 import { applyHomeFacilityEffects } from "./home-facility-effect-runner"
 import { syncHomeFacilities } from "./home-facility-runner"
+import { resolveHomeLifecycle } from "./home-lifecycle-runner"
 import { buildHomeSpaceSummary } from "./home-space-summary-runner"
 import { syncHomeSpaces } from "./home-space-runner"
 import { clamp } from "./home-utils"
@@ -34,6 +35,7 @@ function syncHomeDerivedState(home: HomeState): HomeState {
   return {
     ...homeWithFacilityEffects,
     spaceSummary: buildHomeSpaceSummary(homeWithFacilityEffects),
+    lifecycle: resolveHomeLifecycle(homeWithFacilityEffects),
   }
 }
 
