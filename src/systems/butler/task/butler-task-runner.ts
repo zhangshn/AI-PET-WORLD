@@ -224,17 +224,6 @@ function pushTuningScores(
   }
 }
 
-  for (const [index, tag] of context.experienceInterpretation.interpretationTags
-    .filter((tag) => tag.startsWith("goal_memory_"))
-    .slice(0, 6)
-    .entries()) {
-    pushScore(
-      scores,
-      `goal_memory_tag_${index + 1}`,
-      1,
-      tag
-    )
-  }
 
 function pushEducationStrategyScores(
   context: ButlerTaskContext,
