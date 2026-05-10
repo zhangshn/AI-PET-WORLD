@@ -1175,3 +1175,50 @@ HomeState.spaceSummary
 - 不新增正式 overlay
 - 不新增 F3 面板
 - 不改变 worldEngine 调度顺序
+
+## 50. HOME-FACILITY-BATCH-7 当前状态
+
+当前已经建立家园设施系统第一阶段。
+
+新增：
+
+- HomeFacilityState
+- HomeFacilityId
+- HomeFacilityStatus
+- HomeFacilityRole
+- HomeState.homeFacilities
+- createInitialHomeFacilities
+- syncHomeFacilities
+- applyButlerHomeFacilityAction
+- homeSystem.applyButlerFacilityAction
+
+当前设施包括：
+
+- basic_incubator
+- shelter_bed
+- food_corner
+- water_corner
+- storage_box
+- garden_patch
+- observation_spot
+
+当前链路：
+
+```txt
+ButlerState.latestBehaviorExecution
+↓
+homeSystem.applyButlerFacilityAction
+↓
+applyButlerHomeFacilityAction
+↓
+HomeState.homeFacilities
+```
+
+当前边界：
+
+- 设施属于 home 后台状态
+- 不控制宠物行为
+- 不直接改变宠物 action
+- 不写宠物 learning
+- 不新增正式 overlay
+- 不新增 F3 面板

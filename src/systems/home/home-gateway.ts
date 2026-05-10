@@ -13,3 +13,9 @@ export { syncHomeSpaces } from "./home-space-runner"
 export { buildHomeSpaceSummary } from "./home-space-summary-runner"
 export { applyButlerHomeSpaceAction } from "./home-space-action-runner"
 export type { ApplyButlerHomeSpaceActionInput } from "./home-space-action-runner"
+export { createInitialHomeFacilities } from "./home-facility-builder"
+export { syncHomeFacilities } from "./home-facility-runner"
+export { applyButlerHomeFacilityAction } from "./home-facility-action-runner"
+export type {
+  ApplyButlerHomeFacilityActionInput,
+} from "./home-facility-action-runner"

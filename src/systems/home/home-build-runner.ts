@@ -6,6 +6,7 @@ import type { GenderAwareBehaviorBias } from "@/ai/gateway"
 import type { HomeState } from "@/types/home"
 import { resolveEvolutionFocus } from "./home-evolution-runner"
 import { resolveConstructionStage } from "./home-stage-runner"
+import { syncHomeFacilities } from "./home-facility-runner"
 import { buildHomeSpaceSummary } from "./home-space-summary-runner"
 import { syncHomeSpaces } from "./home-space-runner"
 import { clamp } from "./home-utils"
@@ -22,9 +23,14 @@ function syncHomeDerivedState(home: HomeState): HomeState {
     homeSpaces: syncHomeSpaces(home),
   }
 
-  return {
+  const homeWithFacilities: HomeState = {
     ...homeWithSpaces,
-    spaceSummary: buildHomeSpaceSummary(homeWithSpaces),
+    homeFacilities: syncHomeFacilities(homeWithSpaces),
+  }
+
+  return {
+    ...homeWithFacilities,
+    spaceSummary: buildHomeSpaceSummary(homeWithFacilities),
   }
 }
 

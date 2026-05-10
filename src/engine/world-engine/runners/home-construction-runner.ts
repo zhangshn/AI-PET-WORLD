@@ -179,6 +179,10 @@ export function runHomeConstruction(
     input.butler.latestBehaviorExecution
   )
 
+  input.homeSystem.applyButlerFacilityAction(
+    input.butler.latestBehaviorExecution
+  )
+
   const currentHome = input.homeSystem.getHome()
   const progressAdded = Math.max(
     0,

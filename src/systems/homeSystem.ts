@@ -8,10 +8,13 @@ import type {
 } from "./butler/butler-gateway"
 import type { HomeState } from "../types/home"
 import {
+  applyButlerHomeFacilityAction,
   applyButlerHomeSpaceAction,
   buildHome,
   buildHomeSpaceSummary,
+  createInitialHomeFacilities,
   createInitialHomeSpaces,
+  syncHomeFacilities,
   syncHomeSpaces,
 } from "./home/home-gateway"
 
@@ -20,6 +23,7 @@ export class HomeSystem {
 
   constructor() {
     const initialSpaces = createInitialHomeSpaces()
+    const initialFacilities = createInitialHomeFacilities()
 
     this.home = {
       level: 1,
@@ -32,6 +36,7 @@ export class HomeSystem {
       stability: 45,
       expansion: 20,
       homeSpaces: initialSpaces,
+      homeFacilities: initialFacilities,
       spaceSummary: buildHomeSpaceSummary({
         level: 1,
         progress: 0,
@@ -43,6 +48,7 @@ export class HomeSystem {
         stability: 45,
         expansion: 20,
         homeSpaces: initialSpaces,
+        homeFacilities: initialFacilities,
       }),
     }
   }
@@ -51,6 +57,7 @@ export class HomeSystem {
     const restoredHome = {
       ...home,
       homeSpaces: syncHomeSpaces(home),
+      homeFacilities: syncHomeFacilities(home),
     }
 
     this.home = {
@@ -76,12 +83,25 @@ export class HomeSystem {
     })
   }
 
+  applyButlerFacilityAction(
+    execution: ButlerBehaviorExecution | null | undefined
+  ): void {
+    this.home = applyButlerHomeFacilityAction({
+      home: this.home,
+      execution,
+    })
+  }
+
   getHome(): HomeState {
     return {
       ...this.home,
       homeSpaces: this.home.homeSpaces?.map((space) => ({
         ...space,
         tags: [...space.tags],
+      })),
+      homeFacilities: this.home.homeFacilities?.map((facility) => ({
+        ...facility,
+        tags: [...facility.tags],
       })),
       spaceSummary: this.home.spaceSummary
         ? {

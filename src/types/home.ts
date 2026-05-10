@@ -75,6 +75,47 @@ export type HomeSpaceSummary = {
   tags: string[]
 }
 
+export type HomeFacilityId =
+  | "basic_incubator"
+  | "shelter_bed"
+  | "food_corner"
+  | "water_corner"
+  | "storage_box"
+  | "garden_patch"
+  | "observation_spot"
+
+export type HomeFacilityStatus =
+  | "locked"
+  | "planned"
+  | "building"
+  | "active"
+  | "needs_maintenance"
+
+export type HomeFacilityRole =
+  | "incubation"
+  | "rest"
+  | "food"
+  | "water"
+  | "storage"
+  | "garden"
+  | "observation"
+
+export type HomeFacilityState = {
+  id: HomeFacilityId
+  name: string
+  role: HomeFacilityRole
+  status: HomeFacilityStatus
+  spaceId: HomeSpaceId
+  progress: number
+  durability: number
+  usefulness: number
+  comfortBonus: number
+  stabilityBonus: number
+  activityBonus: number
+  description: string
+  tags: string[]
+}
+
 export type HomeState = {
   level: number
   progress: number
@@ -87,4 +128,5 @@ export type HomeState = {
   expansion: number
   homeSpaces?: HomeSpaceState[]
   spaceSummary?: HomeSpaceSummary
+  homeFacilities?: HomeFacilityState[]
 }
