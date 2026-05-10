@@ -75,7 +75,6 @@ export type ButlerBoundaryInteractionFeedback = {
 
 function clampRelationValue(value: number): number {
   if (!Number.isFinite(value)) return 0
-
   return Math.max(0, Math.min(100, Math.round(value)))
 }
 
@@ -91,7 +90,6 @@ function deriveBoundaryRelationTone(input: {
   if (input.trustEstimate >= 72 && input.familiarity >= 58) return "trusted"
   if (input.familiarity >= 38 && input.trustEstimate >= 18) return "familiar"
   if (input.familiarity > 0 || input.trustEstimate > 0) return "observing"
-
   return input.currentTone
 }
 
@@ -119,6 +117,9 @@ export class ButlerSystem {
     const foodRule = getOpportunityRule("food_offer")
     const restRule = getOpportunityRule("rest_offer")
     const approachRule = getOpportunityRule("approach_offer")
+    const butlerWorldPerception = buildButlerWorldPerception({
+      home: input.home,
+    })
 
     this.recordExpiredOpportunities(input.tick)
 
@@ -133,7 +134,13 @@ export class ButlerSystem {
       input.tick
     )
 
-    const nextTask = chooseButlerTask(input, this.state)
+    const nextTask = chooseButlerTask(
+      {
+        ...input,
+        butlerWorldPerception,
+      },
+      this.state
+    )
 
     if (nextTask !== this.state.task) {
       this.state.task = nextTask
@@ -156,9 +163,6 @@ export class ButlerSystem {
     const educationStrategy = buildButlerEducationStrategy(
       this.state.relation
     )
-    const butlerWorldPerception = buildButlerWorldPerception({
-      home: input.home,
-    })
 
     this.state.latestEducationStrategy = educationStrategy
     this.state.latestBehaviorExecution = buildButlerBehaviorExecution({
@@ -232,15 +236,10 @@ export class ButlerSystem {
 
   private rememberLatestTaskDecision(tick: number) {
     const trace = this.state.latestTaskDecisionTrace
-
     if (!trace) return
     if (this.state.memory.latestEntry?.lastUpdatedTick === tick) return
 
-    const entry = createButlerMemoryEntryFromTaskDecision({
-      tick,
-      trace,
-    })
-
+    const entry = createButlerMemoryEntryFromTaskDecision({ tick, trace })
     this.state.memory = appendButlerMemoryEntry({
       memory: this.state.memory,
       entry,
@@ -250,14 +249,11 @@ export class ButlerSystem {
 
   private rememberLatestBehaviorExecution(tick: number) {
     const execution = this.state.latestBehaviorExecution
-
     if (!execution) return
     if (!execution.tags.includes("goal_driven_execution")) return
 
     const latest = this.state.memory.latestEntry
-    const homeGoalTag = execution.tags.find((tag) =>
-      tag.startsWith("home_goal_")
-    )
+    const homeGoalTag = execution.tags.find((tag) => tag.startsWith("home_goal_"))
 
     if (
       latest &&
@@ -289,10 +285,7 @@ export class ButlerSystem {
   }
 
   private rememberOpportunityFeedback(feedback: ButlerOpportunityFeedback) {
-    const entry = createButlerMemoryEntryFromOpportunityFeedback({
-      feedback,
-    })
-
+    const entry = createButlerMemoryEntryFromOpportunityFeedback({ feedback })
     this.state.memory = appendButlerMemoryEntry({
       memory: this.state.memory,
       entry,
@@ -332,10 +325,7 @@ export class ButlerSystem {
     tick: number
   }) {
     if (!input.shouldCreate) return
-
-    if (hasPendingOpportunity(this.state.pendingOpportunities, input.type)) {
-      return
-    }
+    if (hasPendingOpportunity(this.state.pendingOpportunities, input.type)) return
 
     if (
       !canCreateOpportunity({
@@ -348,7 +338,6 @@ export class ButlerSystem {
     }
 
     this.state.pendingOpportunities.push(input.create())
-
     this.state.opportunityCooldowns = markOpportunityCreated({
       type: input.type,
       tick: input.tick,
@@ -361,7 +350,6 @@ export class ButlerSystem {
       relation: this.state.relation,
       feedback,
     })
-
     this.rememberOpportunityFeedback(feedback)
   }
 
@@ -379,8 +367,7 @@ export class ButlerSystem {
           : feedback.butlerResponse === "protective_response"
             ? 78
             : 48,
-      importance:
-        feedback.petGoalType === "expand_territory" ? 72 : 64,
+      importance: feedback.petGoalType === "expand_territory" ? 72 : 64,
       tags: [
         "dual_agent_interaction",
         "boundary_interaction",
@@ -397,8 +384,7 @@ export class ButlerSystem {
       maxEntries: 80,
     })
 
-    const familiarityDelta =
-      feedback.butlerResponse === "not_observed" ? 0 : 1
+    const familiarityDelta = feedback.butlerResponse === "not_observed" ? 0 : 1
     const trustDelta =
       feedback.butlerResponse === "companion_response"
         ? 2
@@ -413,12 +399,8 @@ export class ButlerSystem {
         ? 1
         : 0
 
-    const nextFamiliarity = clampRelationValue(
-      this.state.relation.familiarity + familiarityDelta
-    )
-    const nextTrustEstimate = clampRelationValue(
-      this.state.relation.trustEstimate + trustDelta
-    )
+    const nextFamiliarity = clampRelationValue(this.state.relation.familiarity + familiarityDelta)
+    const nextTrustEstimate = clampRelationValue(this.state.relation.trustEstimate + trustDelta)
 
     this.state.relation = {
       ...this.state.relation,
@@ -450,14 +432,11 @@ export class ButlerSystem {
       latestEducationStrategy: state.latestEducationStrategy ?? null,
       latestBehaviorExecution: state.latestBehaviorExecution ?? null,
       latestMessageDecision: state.latestMessageDecision ?? null,
-      latestMessageDeliveryDecision:
-        state.latestMessageDeliveryDecision ?? null,
+      latestMessageDeliveryDecision: state.latestMessageDeliveryDecision ?? null,
       memory: {
         ...state.memory,
         entries: [...state.memory.entries],
-        latestEntry: state.memory.latestEntry
-          ? { ...state.memory.latestEntry }
-          : null,
+        latestEntry: state.memory.latestEntry ? { ...state.memory.latestEntry } : null,
       },
       relation: { ...state.relation },
     }
