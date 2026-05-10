@@ -6,22 +6,18 @@
 
 import { Container, Graphics } from "pixi.js"
 
-import type { HomeState } from "@/types/home"
-import type { IncubatorState } from "@/types/incubator"
-import type { PetState } from "@/types/pet"
-import type { WorldMapState } from "@/world/map/world-map"
-
-import { SHELTER_INTERIOR_DOOR_HIT_BOX } from "../interior/interior-hit-areas"
-import { resolveStageStructureLayout } from "../structures/structure-layout-resolver"
+import type {
+  WorldFocusPoint,
+} from "../../focus-points/world-focus-point-gateway"
+import {
+  getFocusPointByKind,
+} from "../../focus-points/world-focus-point-gateway"
 import type { WorldStageSceneMode } from "../../orchestrator/stage-scene-mode"
 
 export type SyncStageAffordancesInput = {
   layer: Container
   sceneMode: WorldStageSceneMode
-  map: WorldMapState | null
-  home: HomeState | null
-  incubator: IncubatorState | null
-  pet: PetState | null
+  focusPoints: WorldFocusPoint[]
   phase: number
 }
 
@@ -31,7 +27,7 @@ export function syncStageAffordances(input: SyncStageAffordancesInput) {
   const graphic = new Graphics()
 
   if (input.sceneMode === "shelterInterior") {
-    drawInteriorExitAffordance(graphic, input.phase)
+    drawInteriorExitAffordance(graphic, input)
   } else {
     drawExteriorAffordances(graphic, input)
   }
@@ -43,18 +39,32 @@ function drawExteriorAffordances(
   graphic: Graphics,
   input: SyncStageAffordancesInput
 ) {
-  const layout = resolveStageStructureLayout(input.map)
-  const shelter = layout.tempShelter
   const pulse = 0.26 + Math.max(0, Math.sin(input.phase * 3.1)) * 0.22
+  const shelterEntrance = getFocusPointByKind(
+    input.focusPoints,
+    "shelter_entrance"
+  )
+  const gardenObserve = getFocusPointByKind(
+    input.focusPoints,
+    "garden_observe"
+  )
+  const incubator = getFocusPointByKind(input.focusPoints, "incubator")
 
-  drawEnterDoorMarker(graphic, shelter.x + 67, shelter.y + 108, pulse)
-
-  if (input.home?.constructionStage === "garden" || input.home?.constructionStage === "completed") {
-    drawObservePatchMarker(graphic, layout.garden.x + 62, layout.garden.y - 10, pulse * 0.72)
+  if (shelterEntrance) {
+    drawEnterDoorMarker(graphic, shelterEntrance.x, shelterEntrance.y, pulse)
   }
 
-  if (!input.pet && input.incubator?.status !== "hatched") {
-    drawIncubatorFocusMarker(graphic, shelter.x + 68, shelter.y + 32, pulse)
+  if (gardenObserve) {
+    drawObservePatchMarker(
+      graphic,
+      gardenObserve.x,
+      gardenObserve.y,
+      pulse * 0.72
+    )
+  }
+
+  if (incubator) {
+    drawIncubatorFocusMarker(graphic, incubator.x, incubator.y, pulse)
   }
 }
 
@@ -91,10 +101,27 @@ function drawIncubatorFocusMarker(
   graphic.rect(x - 3, y - 18, 6, 3).fill({ color: 0xa7f3d0, alpha: alpha * 0.52 })
 }
 
-function drawInteriorExitAffordance(graphic: Graphics, phase: number) {
-  const pulse = 0.28 + Math.max(0, Math.sin(phase * 3.1)) * 0.22
-  const x = SHELTER_INTERIOR_DOOR_HIT_BOX.x + SHELTER_INTERIOR_DOOR_HIT_BOX.width / 2
-  const y = SHELTER_INTERIOR_DOOR_HIT_BOX.y + 4
+function drawInteriorExitAffordance(
+  graphic: Graphics,
+  input: SyncStageAffordancesInput
+) {
+  const pulse = 0.28 + Math.max(0, Math.sin(input.phase * 3.1)) * 0.22
+  const shelterExit = getFocusPointByKind(
+    input.focusPoints,
+    "shelter_exit"
+  )
+
+  if (!shelterExit) return
+
+  drawInteriorExitMarker(graphic, shelterExit.x, shelterExit.y - 14, pulse)
+}
+
+function drawInteriorExitMarker(
+  graphic: Graphics,
+  x: number,
+  y: number,
+  pulse: number
+) {
 
   graphic.rect(x - 14, y, 28, 3).fill({ color: 0xfde68a, alpha: pulse })
   graphic.rect(x - 8, y + 5, 16, 3).fill({ color: 0x93c5fd, alpha: pulse * 0.66 })

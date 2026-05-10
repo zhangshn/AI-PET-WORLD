@@ -25,6 +25,9 @@ import {
   syncStageClickFeedbacks,
   type StageClickFeedback,
 } from "../graphics/feedback/stage-click-feedback-renderer"
+import {
+  buildWorldFocusPoints,
+} from "../focus-points/world-focus-point-gateway"
 import { logStageDebug } from "./stage-debug-logger"
 import { clearExteriorDynamicLayers } from "./stage-dynamic-layer-cleaner"
 import { syncDynamicWorld } from "./stage-dynamic-scene-sync"
@@ -83,6 +86,18 @@ export function advanceGraphicsStagePhase(input: {
 export function syncGraphicsStage(input: SyncGraphicsStageInput) {
   logStageDebug(input)
 
+  const focusPoints = buildWorldFocusPoints({
+    sceneMode: input.sceneMode,
+    map: input.runtime?.map ?? null,
+    home: input.home,
+    incubator: input.incubator,
+    pet: input.pet,
+    butler: input.butler,
+    petMotion: input.petMotion,
+    butlerMotion: input.butlerMotion,
+    ecology: input.ecology,
+  })
+
   redrawStaticSceneIfNeeded(input)
 
   if (input.sceneMode === "exterior") {
@@ -100,10 +115,7 @@ export function syncGraphicsStage(input: SyncGraphicsStageInput) {
     syncStageAffordances({
       layer: input.layers.affordanceLayer,
       sceneMode: input.sceneMode,
-      map: input.runtime?.map ?? null,
-      home: input.home,
-      incubator: input.incubator,
-      pet: input.pet,
+      focusPoints,
       phase: input.renderState.phase,
     })
   }
