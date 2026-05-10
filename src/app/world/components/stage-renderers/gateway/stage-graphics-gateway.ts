@@ -45,3 +45,8 @@ export {
   syncWorldZoneVisuals,
   type SyncWorldZonesInput,
 } from "../graphics/zones/stage-zone-renderer"
+
+export {
+  syncStageAffordances,
+  type SyncStageAffordancesInput,
+} from "../graphics/affordances/stage-affordance-renderer"
