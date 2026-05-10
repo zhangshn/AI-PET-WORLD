@@ -18,6 +18,7 @@ import type { WorldZone } from "../world/ecology/world-zone-types"
 import { buildInitialPetMemoryState } from "../ai/memory-core/memory-gateway"
 import { buildPetWorldPerception } from "./agent-perception/agent-world-perception"
 import { interpretPetWorldPerception } from "./agent-perception/agent-consciousness-interpretation"
+import { buildLifeLineInfluenceSnapshot } from "./life-line/life-line-influence"
 
 import {
   runPetStimulusPerception,
@@ -139,6 +140,7 @@ export class PetSystem {
       consciousnessProfile,
 
       currentLifeRuntimeBundle: null,
+      latestLifeLineInfluence: null,
 
       lifeState: {
         phase: "newborn",
@@ -226,6 +228,7 @@ export class PetSystem {
     this.pet = {
       ...this.pet,
       currentLifeRuntimeBundle: bundle,
+      latestLifeLineInfluence: buildLifeLineInfluenceSnapshot(bundle),
     }
   }
 
@@ -345,6 +348,7 @@ export class PetSystem {
     const restoredPet: PetState = {
       ...pet,
       learningState: pet.learningState ?? createInitialPetLearningState(),
+      latestLifeLineInfluence: pet.latestLifeLineInfluence ?? null,
       latestWorldPerception: pet.latestWorldPerception ?? null,
       latestWorldInterpretation: pet.latestWorldInterpretation ?? null,
     }
