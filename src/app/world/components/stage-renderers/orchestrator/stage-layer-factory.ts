@@ -17,6 +17,7 @@ export function createEmptyWorldStageLayers(): WorldStageLayerRefs {
     stimulusLayer: null,
     entityLayer: null,
     foregroundLayer: null,
+    affordanceLayer: null,
     overlay: null,
   }
 }
@@ -31,6 +32,7 @@ export function createWorldStageLayers(): WorldStageLayerRefs {
   const entityLayer = new Container()
   const stimulusLayer = new Container()
   const foregroundLayer = new Container()
+  const affordanceLayer = new Container()
   const overlay = new Graphics()
 
   worldLayer.addChild(backgroundLayer)
@@ -41,6 +43,7 @@ export function createWorldStageLayers(): WorldStageLayerRefs {
   worldLayer.addChild(entityLayer)
   worldLayer.addChild(stimulusLayer)
   worldLayer.addChild(foregroundLayer)
+  worldLayer.addChild(affordanceLayer)
 
   return {
     worldLayer,
@@ -52,6 +55,7 @@ export function createWorldStageLayers(): WorldStageLayerRefs {
     entityLayer,
     stimulusLayer,
     foregroundLayer,
+    affordanceLayer,
     overlay,
   }
 }
