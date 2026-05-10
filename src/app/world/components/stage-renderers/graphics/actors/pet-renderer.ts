@@ -157,6 +157,64 @@ function drawPetIntentSignal(
   }
 }
 
+function drawPetInterpretationAura(
+  graphic: Graphics,
+  pet: PetState | null,
+  phase: number
+) {
+  if (!pet?.latestWorldInterpretation) return
+
+  const interpretation = pet.latestWorldInterpretation
+  const pulse = 0.16 + Math.max(0, Math.sin(phase * 2.6)) * 0.16
+  const confidence = Math.max(0.18, Math.min(0.58, interpretation.confidence / 180))
+  const alpha = Math.min(0.72, pulse + confidence)
+  const color =
+    interpretation.tone === "curious"
+      ? 0x86efac
+      : interpretation.tone === "careful"
+        ? 0x93c5fd
+        : interpretation.tone === "protective"
+          ? 0xfde68a
+          : 0xe2e8f0
+
+  graphic.rect(-7, -9, 4, 4).fill({ color, alpha })
+  graphic.rect(-12, -4, 3, 3).fill({ color, alpha: alpha * 0.58 })
+
+  if (interpretation.posture === "observe_first") {
+    graphic.rect(28, -7, 5, 2).fill({ color, alpha: alpha * 0.72 })
+    graphic.rect(35, -10, 3, 2).fill({ color, alpha: alpha * 0.48 })
+  }
+
+  if (interpretation.posture === "explore_carefully") {
+    graphic.rect(27, -4, 4, 4).fill({ color, alpha: alpha * 0.7 })
+    graphic.rect(33, -1, 4, 4).fill({ color, alpha: alpha * 0.48 })
+  }
+}
+
+function drawPetLifeLineMarker(
+  graphic: Graphics,
+  pet: PetState | null,
+  phase: number
+) {
+  if (!pet?.latestLifeLineInfluence?.dominantFocus) return
+
+  const focus = pet.latestLifeLineInfluence.dominantFocus
+  const pulse = 0.2 + Math.max(0, Math.sin(phase * 1.8)) * 0.18
+  const color =
+    focus === "explore"
+      ? 0x22c55e
+      : focus === "observe" || focus === "perception"
+        ? 0x60a5fa
+        : focus === "recover"
+          ? 0xa7f3d0
+          : focus === "boundary" || focus === "protect"
+            ? 0xfacc15
+            : 0xe2e8f0
+
+  graphic.rect(7, -13, 4, 3).fill({ color, alpha: pulse })
+  graphic.rect(13, -15, 5, 3).fill({ color, alpha: pulse * 0.72 })
+}
+
 function drawPetStatusAccessory(
   graphic: Graphics,
   pet: PetState | null,
@@ -222,6 +280,9 @@ export function drawPetGraphic(
   const moving = pet?.action === "walking" || pet?.action === "exploring"
   const step = moving ? Math.sin(phase * 7) * 1.7 : 0
   const pose = getPetPose(pet, phase)
+
+  drawPetInterpretationAura(graphic, pet, phase)
+  drawPetLifeLineMarker(graphic, pet, phase)
 
   if (pet?.action === "sleeping") {
     drawActorShadow(graphic, 12, 20, 15, 5, 0.18)
