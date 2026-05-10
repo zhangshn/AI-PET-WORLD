@@ -14,6 +14,10 @@ import type {
 } from "@/ai/gateway"
 
 import type {
+  ButlerWorldPerceptionSnapshot,
+} from "../agent-perception/agent-world-perception"
+
+import type {
   ButlerTaskDecisionTrace,
 } from "./task/butler-task-decision-trace"
 
@@ -152,6 +156,7 @@ export type ButlerSystemInput = {
   incubator: IncubatorState | null
   home: HomeState | null
   homeGoals?: HomeGoalState[]
+  butlerWorldPerception?: ButlerWorldPerceptionSnapshot | null
   time: {
     day: number
     hour: number
