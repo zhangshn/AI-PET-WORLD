@@ -15,5 +15,6 @@ export type WorldStageLayerRefs = {
   entityLayer: Container | null
   foregroundLayer: Container | null
   affordanceLayer: Container | null
+  feedbackLayer: Container | null
   overlay: Graphics | null
 }

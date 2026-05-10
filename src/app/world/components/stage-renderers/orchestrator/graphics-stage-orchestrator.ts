@@ -19,6 +19,10 @@ import {
   type RuntimeEntityVisualRegistry,
   type StimulusVisualRegistry,
 } from "../gateway/stage-renderer-gateway"
+import {
+  syncStageClickFeedbacks,
+  type StageClickFeedback,
+} from "../graphics/feedback/stage-click-feedback-renderer"
 import { logStageDebug } from "./stage-debug-logger"
 import { clearExteriorDynamicLayers } from "./stage-dynamic-layer-cleaner"
 import { syncDynamicWorld } from "./stage-dynamic-scene-sync"
@@ -30,6 +34,7 @@ import type { WorldStageSceneMode } from "./stage-scene-mode"
 export type GraphicsStageRenderState = {
   lastStaticWorldKey: string | null
   phase: number
+  clickFeedbacks: StageClickFeedback[]
   debugMessage?: string
 }
 
@@ -59,6 +64,7 @@ export function createGraphicsStageRenderState(): GraphicsStageRenderState {
   return {
     lastStaticWorldKey: null,
     phase: 0,
+    clickFeedbacks: [],
     debugMessage: "stage init",
   }
 }
@@ -104,6 +110,12 @@ export function syncGraphicsStage(input: SyncGraphicsStageInput) {
     height: input.height,
     period: input.time?.period,
   })
+
+  syncStageClickFeedbacks({
+    layer: input.layers.feedbackLayer,
+    feedbacks: input.renderState.clickFeedbacks,
+    nowMs: getNowMs(),
+  })
 }
 
 export function resetGraphicsStageRenderState(
@@ -111,5 +123,10 @@ export function resetGraphicsStageRenderState(
 ) {
   renderState.lastStaticWorldKey = null
   renderState.phase = 0
+  renderState.clickFeedbacks = []
   renderState.debugMessage = "stage reset"
+}
+
+function getNowMs(): number {
+  return globalThis.performance?.now() ?? Date.now()
 }

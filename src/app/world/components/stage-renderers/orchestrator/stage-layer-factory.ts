@@ -18,6 +18,7 @@ export function createEmptyWorldStageLayers(): WorldStageLayerRefs {
     entityLayer: null,
     foregroundLayer: null,
     affordanceLayer: null,
+    feedbackLayer: null,
     overlay: null,
   }
 }
@@ -33,6 +34,7 @@ export function createWorldStageLayers(): WorldStageLayerRefs {
   const stimulusLayer = new Container()
   const foregroundLayer = new Container()
   const affordanceLayer = new Container()
+  const feedbackLayer = new Container()
   const overlay = new Graphics()
 
   worldLayer.addChild(backgroundLayer)
@@ -56,6 +58,7 @@ export function createWorldStageLayers(): WorldStageLayerRefs {
     stimulusLayer,
     foregroundLayer,
     affordanceLayer,
+    feedbackLayer,
     overlay,
   }
 }
@@ -66,6 +69,10 @@ export function attachWorldStageLayers(input: {
 }) {
   if (input.layers.worldLayer) {
     input.appStage.addChild(input.layers.worldLayer)
+  }
+
+  if (input.layers.feedbackLayer) {
+    input.appStage.addChild(input.layers.feedbackLayer)
   }
 
   if (input.layers.overlay) {
