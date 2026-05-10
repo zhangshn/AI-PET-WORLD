@@ -20,6 +20,15 @@ export type WorldSignal = {
   tags: string[]
 }
 
+export type PetPerceptionDriveBias = Partial<{
+  eat: number
+  rest: number
+  avoid: number
+  approach: number
+  explore: number
+  observe: number
+}>
+
 export type ButlerWorldPerceptionSnapshot = {
   perceivedSignals: WorldSignal[]
   strongestHomeGoalId: HomeGoalState["id"] | null
@@ -38,6 +47,16 @@ export type PetWorldPerceptionSnapshot = {
 function clampSignalValue(value: number): number {
   if (!Number.isFinite(value)) return 0
   return Math.max(0, Math.min(100, Math.round(value)))
+}
+
+function addDriveBias(
+  bias: PetPerceptionDriveBias,
+  key: keyof PetPerceptionDriveBias,
+  value: number
+): void {
+  if (!Number.isFinite(value) || value <= 0) return
+
+  bias[key] = clampSignalValue((bias[key] ?? 0) + value)
 }
 
 function priorityToIntensity(priority: HomeGoalState["priority"]): number {
@@ -151,4 +170,30 @@ export function buildPetWorldPerception(input: {
       : "宠物暂时没有明显注意到新的环境线索。",
     tags: ["pet_world_perception", "perception_not_command", "no_behavior_override"],
   }
+}
+
+export function buildPetPerceptionDriveBias(
+  perception: PetWorldPerceptionSnapshot | null | undefined
+): PetPerceptionDriveBias {
+  const bias: PetPerceptionDriveBias = {}
+
+  if (!perception || perception.perceivedSignals.length === 0) {
+    return bias
+  }
+
+  for (const signal of perception.perceivedSignals.slice(0, 4)) {
+    const strength = clampSignalValue(signal.intensity) / 100
+
+    if (signal.kind === "exploration_context") {
+      addDriveBias(bias, "explore", 5 * strength)
+      addDriveBias(bias, "observe", 3 * strength)
+    }
+
+    if (signal.kind === "background_context") {
+      addDriveBias(bias, "observe", 4 * strength)
+      addDriveBias(bias, "rest", 2 * strength)
+    }
+  }
+
+  return bias
 }
