@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：根据孵化器、宠物、家园、Profile 与 Relation 判断管家的当前任务。
+ * 当前文件负责：根据孵化器、宠物、家园、Profile、Relation 与后天记忆判断管家的当前任务。
  */
 
 import type { GenderAwareBehaviorBias } from "@/ai/gateway"
@@ -212,6 +212,18 @@ function pushTuningScores(
   }
 }
 
+  for (const [index, tag] of context.experienceInterpretation.interpretationTags
+    .filter((tag) => tag.startsWith("goal_memory_"))
+    .slice(0, 6)
+    .entries()) {
+    pushScore(
+      scores,
+      `goal_memory_tag_${index + 1}`,
+      1,
+      tag
+    )
+  }
+
 function pushEducationStrategyScores(
   context: ButlerTaskContext,
   scores: ButlerTaskDecisionScore[]
@@ -295,7 +307,7 @@ function shouldOfferFood(
     scores,
     "food_sensitivity",
     foodSensitivity,
-    "Profile + Profile-led Relation 后的食物机会敏感度。"
+    "Profile + Relation + GoalExecutionMemory 后的食物机会敏感度。"
   )
 
   if (hunger >= directThreshold) {
@@ -349,7 +361,7 @@ function shouldOfferRest(
     scores,
     "rest_sensitivity",
     restSensitivity,
-    "Profile + Profile-led Relation 后的休息机会敏感度。"
+    "Profile + Relation + GoalExecutionMemory 后的休息机会敏感度。"
   )
 
   if (energy <= energyThreshold) {
@@ -406,7 +418,7 @@ function shouldOfferApproach(
     scores,
     "approach_sensitivity",
     approachSensitivity,
-    "Profile + Profile-led Relation 后的靠近机会敏感度。"
+    "Profile + Relation + GoalExecutionMemory 后的靠近机会敏感度。"
   )
   pushScore(
     scores,
@@ -442,7 +454,7 @@ function shouldObserveBeforeActing(
     scores,
     "observation_bias",
     observationBias,
-    "Profile + Profile-led Relation 后的观察优先级调参。"
+    "Profile + Relation + GoalExecutionMemory 后的观察优先级调参。"
   )
 
   if (observationBias < 8) {
@@ -494,7 +506,7 @@ function shouldBuildHome(
     scores,
     "construction_drive",
     constructionDrive,
-    "旧行为偏置 + Profile + Profile-led Relation 后的建设倾向。"
+    "旧行为偏置 + Profile + Relation + GoalExecutionMemory 后的建设倾向。"
   )
 
   if (!pet?.timelineSnapshot) {
@@ -610,6 +622,7 @@ function buildTaskContext(
   const experienceInterpretation = buildButlerExperienceInterpretation({
     relation: state.relation,
     profile: state.profile,
+    memory: state.memory,
   })
   const relationTuning = experienceInterpretation.tuning
   const educationStrategy = buildButlerEducationStrategy(state.relation)
