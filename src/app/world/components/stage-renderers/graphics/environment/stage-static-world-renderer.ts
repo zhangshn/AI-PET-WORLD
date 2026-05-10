@@ -104,7 +104,7 @@ function drawWorldStructures(input: {
 }) {
   const constructionStage = input.home?.constructionStage ?? "temporary_shelter"
 
-  drawTempShelter(input.layer, input.structureLayout.tempShelter)
+  drawTempShelter(input.layer, input.structureLayout.tempShelter, input.home)
 
   if (
     constructionStage === "foundation" ||
@@ -114,11 +114,15 @@ function drawWorldStructures(input: {
     constructionStage === "garden" ||
     constructionStage === "completed"
   ) {
-    drawHomeConstruction(input.layer, input.structureLayout.homeConstruction)
+    drawHomeConstruction(
+      input.layer,
+      input.structureLayout.homeConstruction,
+      input.home
+    )
   }
 
   if (constructionStage === "garden" || constructionStage === "completed") {
-    drawGarden(input.layer, input.structureLayout.garden)
+    drawGarden(input.layer, input.structureLayout.garden, input.home)
   }
 }
 
@@ -138,5 +142,9 @@ export function getStaticWorldRenderKey(input: {
     input.home?.status ?? "no-home",
     input.home?.constructionStage ?? "no-stage",
     input.home?.progress ?? 0,
+    input.home?.gardenProgress ?? 0,
+    input.home?.comfort ?? 0,
+    input.home?.stability ?? 0,
+    input.home?.expansion ?? 0,
   ].join("-")
 }
