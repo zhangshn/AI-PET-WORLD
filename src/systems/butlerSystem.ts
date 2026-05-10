@@ -155,6 +155,7 @@ export class ButlerSystem {
       task: this.state.task,
       relation: this.state.relation,
       educationStrategy,
+      homeGoals: input.homeGoals,
       tick: input.tick,
     })
     this.state.latestMessageDecision = buildButlerMessageDecision({

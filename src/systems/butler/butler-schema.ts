@@ -4,7 +4,10 @@
 
 import type { PetState } from "@/types/pet"
 import type { IncubatorState } from "@/types/incubator"
-import type { HomeState } from "@/types/home"
+import type {
+  HomeGoalState,
+  HomeState,
+} from "@/types/home"
 import type {
   ButlerProfile,
   GenderAwareBehaviorBias,
@@ -148,6 +151,7 @@ export type ButlerSystemInput = {
   pet: PetState | null
   incubator: IncubatorState | null
   home: HomeState | null
+  homeGoals?: HomeGoalState[]
   time: {
     day: number
     hour: number

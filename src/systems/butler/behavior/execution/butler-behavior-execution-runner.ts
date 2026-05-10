@@ -12,10 +12,179 @@ import type {
   ButlerBehaviorExecution,
 } from "./butler-behavior-execution-schema"
 
+import type {
+  HomeGoalState,
+} from "@/types/home"
+
 function clampIntensity(value: number): number {
   if (!Number.isFinite(value)) return 0
 
   return Math.max(0, Math.min(100, Math.round(value)))
+}
+
+function getTopHomeGoal(
+  homeGoals: HomeGoalState[] | undefined
+): HomeGoalState | null {
+  if (!homeGoals || homeGoals.length === 0) return null
+
+  return homeGoals[0] ?? null
+}
+
+function getHomeGoalIntensityBonus(goal: HomeGoalState | null): number {
+  if (!goal) return 0
+
+  if (goal.priority === "urgent") return 18
+  if (goal.priority === "high") return 10
+  if (goal.priority === "medium") return 5
+
+  return 0
+}
+
+function getHomeGoalTag(goal: HomeGoalState | null): string {
+  if (!goal) return "home_goal_none"
+
+  return `home_goal_${goal.id}`
+}
+
+function resolveGoalDrivenHomeExecution(input: {
+  goal: HomeGoalState
+  baseTags: string[]
+  tick: number
+}): ButlerBehaviorExecution | null {
+  const intensityBonus = getHomeGoalIntensityBonus(input.goal)
+
+  if (input.goal.id === "stabilize_incubator") {
+    return {
+      kind: "incubator_watch",
+      target: "incubator",
+      intensity: clampIntensity(62 + intensityBonus),
+      canAffectHome: false,
+      canAffectPet: false,
+      canContactPlayer: false,
+      summary: "管家正在根据家园目标优先稳定孵化器区域。",
+      reason: `当前最高家园目标是：${input.goal.title}。${input.goal.reason}`,
+      tags: [
+        ...input.baseTags,
+        "goal_driven_execution",
+        getHomeGoalTag(input.goal),
+        "incubator_priority",
+        "no_pet_control",
+      ],
+      createdAtTick: input.tick,
+    }
+  }
+
+  if (input.goal.id === "build_temporary_shelter") {
+    return {
+      kind: "home_building",
+      target: "home",
+      intensity: clampIntensity(54 + intensityBonus),
+      canAffectHome: true,
+      canAffectPet: false,
+      canContactPlayer: false,
+      summary: "管家正在根据家园目标推进临时住所。",
+      reason: `当前最高家园目标是：${input.goal.title}。${input.goal.reason}`,
+      tags: [
+        ...input.baseTags,
+        "goal_driven_execution",
+        getHomeGoalTag(input.goal),
+        "home_building",
+        "home_effect_allowed",
+        "no_pet_control",
+      ],
+      createdAtTick: input.tick,
+    }
+  }
+
+  if (input.goal.id === "complete_basic_living") {
+    return {
+      kind: "home_building",
+      target: "home",
+      intensity: clampIntensity(50 + intensityBonus),
+      canAffectHome: true,
+      canAffectPet: false,
+      canContactPlayer: false,
+      summary: "管家正在根据家园目标补齐基础生活设施。",
+      reason: `当前最高家园目标是：${input.goal.title}。${input.goal.reason}`,
+      tags: [
+        ...input.baseTags,
+        "goal_driven_execution",
+        getHomeGoalTag(input.goal),
+        "basic_living",
+        "home_effect_allowed",
+        "no_pet_control",
+      ],
+      createdAtTick: input.tick,
+    }
+  }
+
+  if (input.goal.id === "open_garden_area") {
+    return {
+      kind: "space_tidying",
+      target: "garden",
+      intensity: clampIntensity(46 + intensityBonus),
+      canAffectHome: true,
+      canAffectPet: false,
+      canContactPlayer: false,
+      summary: "管家正在根据家园目标整理庭院与开放空间。",
+      reason: `当前最高家园目标是：${input.goal.title}。${input.goal.reason}`,
+      tags: [
+        ...input.baseTags,
+        "goal_driven_execution",
+        getHomeGoalTag(input.goal),
+        "garden_opening",
+        "home_effect_allowed",
+        "no_pet_control",
+      ],
+      createdAtTick: input.tick,
+    }
+  }
+
+  if (input.goal.id === "maintain_home_facilities") {
+    return {
+      kind: "home_maintenance",
+      target: "home",
+      intensity: clampIntensity(50 + intensityBonus),
+      canAffectHome: true,
+      canAffectPet: false,
+      canContactPlayer: false,
+      summary: "管家正在根据家园目标维护当前设施。",
+      reason: `当前最高家园目标是：${input.goal.title}。${input.goal.reason}`,
+      tags: [
+        ...input.baseTags,
+        "goal_driven_execution",
+        getHomeGoalTag(input.goal),
+        "home_maintenance",
+        "home_effect_allowed",
+        "no_pet_control",
+      ],
+      createdAtTick: input.tick,
+    }
+  }
+
+  if (input.goal.id === "prepare_future_expansion") {
+    return {
+      kind: "space_tidying",
+      target: "world",
+      intensity: clampIntensity(38 + intensityBonus),
+      canAffectHome: true,
+      canAffectPet: false,
+      canContactPlayer: false,
+      summary: "管家正在根据家园目标整理未来扩展空间。",
+      reason: `当前最高家园目标是：${input.goal.title}。${input.goal.reason}`,
+      tags: [
+        ...input.baseTags,
+        "goal_driven_execution",
+        getHomeGoalTag(input.goal),
+        "future_expansion",
+        "home_effect_allowed",
+        "no_pet_control",
+      ],
+      createdAtTick: input.tick,
+    }
+  }
+
+  return null
 }
 
 function buildBaseTags(input: BuildButlerBehaviorExecutionInput): string[] {
@@ -32,7 +201,30 @@ function buildBaseTags(input: BuildButlerBehaviorExecutionInput): string[] {
 export function buildButlerBehaviorExecution(
   input: BuildButlerBehaviorExecutionInput
 ): ButlerBehaviorExecution {
-  const baseTags = buildBaseTags(input)
+  const topHomeGoal = getTopHomeGoal(input.homeGoals)
+  const baseTags = [
+    ...buildBaseTags(input),
+    getHomeGoalTag(topHomeGoal),
+  ]
+
+  const goalDrivenExecution =
+    topHomeGoal &&
+    (
+      input.task === "building_home" ||
+      input.task === "watching_incubator" ||
+      input.task === "idle" ||
+      input.task === "watching_pet"
+    )
+      ? resolveGoalDrivenHomeExecution({
+          goal: topHomeGoal,
+          baseTags,
+          tick: input.tick,
+        })
+      : null
+
+  if (goalDrivenExecution) {
+    return goalDrivenExecution
+  }
 
   if (input.task === "watching_incubator") {
     return {

@@ -1235,6 +1235,34 @@ HomeState.lifecycle
 - 不写宠物 learning
 - 不新增 UI / F3 / Pixi 渲染
 
+## 54. BUTLER-HOME-GOAL-DRIVE-BATCH-11 当前状态
+
+当前管家行为执行层已经开始读取家园目标。
+
+当前链路：
+
+```txt
+HomeState.homeGoals
+↓
+worldEngine
+↓
+butlerSystem.update
+↓
+buildButlerBehaviorExecution
+↓
+ButlerState.latestBehaviorExecution
+```
+
+当前规则：
+
+- homeGoals 只影响行为执行快照
+- homeGoals 不负责选择 butler task
+- 照看机会类任务不会被 homeGoals 覆盖
+- behavior execution 不直接调用 homeSystem
+- 不控制宠物行为
+- 不改变 pet action
+- 不写宠物 learning
+
 ## 53. HOME-GOAL-BATCH-10 当前状态
 
 当前已经建立家园目标系统。

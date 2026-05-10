@@ -302,6 +302,7 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     pet: currentPet,
     incubator: currentIncubator,
     home: currentHome,
+    homeGoals: currentHome?.homeGoals,
     time: input.currentTime,
     butlerBehaviorBias: currentButler.profile?.behaviorBias ?? null,
   })

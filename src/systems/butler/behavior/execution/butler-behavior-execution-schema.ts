@@ -17,6 +17,10 @@ import type {
   ButlerTask,
 } from "../../butler-schema"
 
+import type {
+  HomeGoalState,
+} from "@/types/home"
+
 export type ButlerBehaviorExecutionKind =
   | "idle_observation"
   | "incubator_watch"
@@ -53,5 +57,6 @@ export type BuildButlerBehaviorExecutionInput = {
   task: ButlerTask
   relation: ButlerRelationState
   educationStrategy: ButlerEducationStrategy | null
+  homeGoals?: HomeGoalState[]
   tick: number
 }
