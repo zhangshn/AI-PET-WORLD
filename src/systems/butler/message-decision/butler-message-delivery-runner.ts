@@ -11,6 +11,42 @@ import type {
   ButlerMessageDeliveryDecision,
 } from "./butler-message-delivery-schema"
 
+import type {
+  ButlerMessageDecision,
+} from "./butler-message-decision-schema"
+
+function isHomeGoalDecision(
+  decision: ButlerMessageDecision
+): boolean {
+  return (
+    decision.reason === "home_goal_execution_observed" ||
+    decision.reason === "home_goal_maintenance_observed" ||
+    decision.reason === "home_goal_incubator_observed" ||
+    decision.tags.includes("home_goal_message_context") ||
+    decision.tags.includes("goal_execution_memory")
+  )
+}
+
+function isHighValueHomeGoalDecision(
+  decision: ButlerMessageDecision
+): boolean {
+  if (!isHomeGoalDecision(decision)) return false
+
+  if (decision.priority === "medium" || decision.priority === "high") {
+    return true
+  }
+
+  if (decision.reason === "home_goal_maintenance_observed") {
+    return true
+  }
+
+  if (decision.reason === "home_goal_incubator_observed") {
+    return true
+  }
+
+  return false
+}
+
 function buildBlockedDeliveryDecision(input: {
   source: BuildButlerMessageDeliveryDecisionInput
   blockReason: ButlerMessageDeliveryDecision["blockReason"]
@@ -27,6 +63,29 @@ function buildBlockedDeliveryDecision(input: {
     createdAtTick: decision?.createdAtTick ?? input.source.tick,
     checkedAtTick: input.source.tick,
     tags: ["message_delivery", "blocked", ...input.tags],
+  }
+}
+
+function buildAllowedDeliveryDecision(input: {
+  source: BuildButlerMessageDeliveryDecisionInput
+  decision: ButlerMessageDecision
+  tags: string[]
+}): ButlerMessageDeliveryDecision {
+  return {
+    canEnterDeliveryQueue: true,
+    blockReason: "none",
+    decisionReason: input.decision.reason,
+    priority: input.decision.priority,
+    draftText: input.decision.draftText,
+    createdAtTick: input.decision.createdAtTick,
+    checkedAtTick: input.source.tick,
+    tags: [
+      "message_delivery",
+      "allowed",
+      `reason_${input.decision.reason}`,
+      `priority_${input.decision.priority}`,
+      ...input.tags,
+    ],
   }
 }
 
@@ -73,6 +132,36 @@ export function buildButlerMessageDeliveryDecision(
     })
   }
 
+  if (isHomeGoalDecision(decision)) {
+    if (isHighValueHomeGoalDecision(decision)) {
+      return buildAllowedDeliveryDecision({
+        source: input,
+        decision,
+        tags: [
+          "home_goal_delivery",
+          "goal_execution_memory",
+          decision.reason === "home_goal_maintenance_observed"
+            ? "home_goal_maintenance_delivery"
+            : "home_goal_progress_delivery",
+          decision.tags.includes("no_pet_control")
+            ? "no_pet_control"
+            : "pet_control_unknown",
+        ],
+      })
+    }
+
+    return buildBlockedDeliveryDecision({
+      source: input,
+      blockReason: "home_goal_low_priority_record_only",
+      tags: [
+        `reason_${decision.reason}`,
+        "home_goal_delivery",
+        "record_only",
+        "low_priority_home_goal",
+      ],
+    })
+  }
+
   if (decision.priority === "low") {
     return buildBlockedDeliveryDecision({
       source: input,
@@ -81,19 +170,9 @@ export function buildButlerMessageDeliveryDecision(
     })
   }
 
-  return {
-    canEnterDeliveryQueue: true,
-    blockReason: "none",
-    decisionReason: decision.reason,
-    priority: decision.priority,
-    draftText: decision.draftText,
-    createdAtTick: decision.createdAtTick,
-    checkedAtTick: input.tick,
-    tags: [
-      "message_delivery",
-      "allowed",
-      `reason_${decision.reason}`,
-      `priority_${decision.priority}`,
-    ],
-  }
+  return buildAllowedDeliveryDecision({
+    source: input,
+    decision,
+    tags: [],
+  })
 }

@@ -16,6 +16,7 @@ export type ButlerMessageDeliveryBlockReason =
   | "missing_draft_text"
   | "cooling_down"
   | "low_priority_observe_only"
+  | "home_goal_low_priority_record_only"
 
 export type ButlerMessageDeliveryDecision = {
   canEnterDeliveryQueue: boolean
