@@ -1,5 +1,9 @@
 /**
- * 当前文件负责：处理单次 Tick 中管家推进家园建设的结果。
+ * 当前文件负责：根据管家行为执行快照，安全推进单次 Tick 中的家园建设。
+ *
+ * 注意：
+ * 家园建设必须经过 ButlerState.latestBehaviorExecution 边界。
+ * 管家可以影响家园，但不能借此控制宠物。
  */
 
 import type { GenderAwareBehaviorBias } from "@/ai/gateway"
@@ -45,6 +49,53 @@ function resolveConstructionDrive(input: {
   )
 }
 
+function canButlerAffectHome(input: {
+  butler: ButlerState
+}): boolean {
+  const execution = input.butler.latestBehaviorExecution
+
+  if (!execution) return false
+  if (!execution.canAffectHome) return false
+
+  return (
+    execution.kind === "home_building" ||
+    execution.kind === "home_maintenance" ||
+    execution.kind === "space_tidying"
+  )
+}
+
+function resolveExecutionHomeMultiplier(input: {
+  butler: ButlerState
+}): number {
+  const execution = input.butler.latestBehaviorExecution
+
+  if (!execution) return 0
+
+  if (execution.kind === "home_building") {
+    return 1
+  }
+
+  if (execution.kind === "home_maintenance") {
+    return 0.55
+  }
+
+  if (execution.kind === "space_tidying") {
+    return 0.35
+  }
+
+  return 0
+}
+
+function resolveExecutionIntensityMultiplier(input: {
+  butler: ButlerState
+}): number {
+  const execution = input.butler.latestBehaviorExecution
+
+  if (!execution) return 0
+
+  return Math.max(0.2, Math.min(1.4, execution.intensity / 60))
+}
+
 function resolveBuildAmount(input: {
   pet: PetState | null
   butler: ButlerState
@@ -71,7 +122,18 @@ function resolveBuildAmount(input: {
     }
   }
 
-  return Math.max(5, Math.round(amount))
+  const executionMultiplier = resolveExecutionHomeMultiplier({
+    butler: input.butler,
+  })
+
+  const intensityMultiplier = resolveExecutionIntensityMultiplier({
+    butler: input.butler,
+  })
+
+  amount *= executionMultiplier
+  amount *= intensityMultiplier
+
+  return Math.max(1, Math.round(amount))
 }
 
 export function runHomeConstruction(
@@ -83,6 +145,17 @@ export function runHomeConstruction(
     return {
       didBuild: false,
       completed: true,
+      progressAdded: 0,
+      previousHome,
+      currentHome: previousHome,
+      buildAmount: 0,
+    }
+  }
+
+  if (!canButlerAffectHome({ butler: input.butler })) {
+    return {
+      didBuild: false,
+      completed: false,
       progressAdded: 0,
       previousHome,
       currentHome: previousHome,

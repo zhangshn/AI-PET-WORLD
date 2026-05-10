@@ -1022,3 +1022,36 @@ ButlerState.latestBehaviorExecution
 - 不改变 worldEngine 调度
 - 不改变宠物行为
 - 不让管家替宠物做决定
+
+## 46. BUTLER-HOME-ACTION-BATCH-2 当前状态
+
+当前已经让家园建设经过管家行为执行边界。
+
+当前链路：
+
+```txt
+ButlerSystem.update
+↓
+ButlerState.latestBehaviorExecution
+↓
+runHomeConstruction
+↓
+canButlerAffectHome
+↓
+homeSystem.build
+```
+
+当前规则：
+
+- `homeSystem.build` 必须经过 `latestBehaviorExecution` 边界
+- 只有 `canAffectHome === true` 才允许推进家园建设
+- 只有 `home_building / home_maintenance / space_tidying` 类行为可影响家园
+- `butler.task` 只作为行为执行快照输入，不再直接决定家园建设
+- 家园建设仍不控制宠物，不写宠物 learning
+
+当前边界：
+
+- 不改变 worldEngine 调度顺序
+- 不在 butlerSystem 里直接调用 homeSystem
+- 不新增 F3 面板
+- 不改 P-Phone
