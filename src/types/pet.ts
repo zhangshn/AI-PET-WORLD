@@ -32,6 +32,10 @@ import type {
 } from "../systems/agent-perception/agent-world-perception"
 
 import type {
+  AgentConsciousnessInterpretation,
+} from "../systems/agent-perception/agent-consciousness-interpretation"
+
+import type {
   PetCognitionRecord,
 } from "./cognition"
 
@@ -109,6 +113,12 @@ export type PetState = {
    * 这里只保存“宠物可能注意到的环境线索”，不直接决定 action / drive。
    */
   latestWorldPerception?: PetWorldPerceptionSnapshot | null
+
+  /**
+   * 宠物最近一次意识解释快照。
+   * 这里只保存“宠物如何解释感知线索”，不直接决定 action / drive。
+   */
+  latestWorldInterpretation?: AgentConsciousnessInterpretation | null
 
   latestCognition?: PetCognitionRecord | null
   recentCognition: PetCognitionRecord[]
