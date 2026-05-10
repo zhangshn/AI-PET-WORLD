@@ -239,20 +239,12 @@ function emitDualAgentInteractionEvent(input: {
 }
 
 export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
-  /**
-   * 阶段 0：保存 Tick 前快照。
-   * 这些快照只用于最后的事件差异判断，不参与中途修改。
-   */
   const previousState = refreshTickState(input)
 
   const prevPet = cloneSnapshot(previousState.pet)
   const prevButler = cloneSnapshot(previousState.butler)
   const prevIncubator = cloneSnapshot(previousState.incubator)
 
-  /**
-   * 阶段 1：读取当前世界状态，推进世界 runtime。
-   * runtime 代表天气、生态、地图区域等世界底层状态。
-   */
   let currentState = refreshTickState(input)
 
   let currentHome = currentState.home
@@ -268,10 +260,6 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     pet: currentPet,
   })
 
-  /**
-   * 阶段 2：基于世界 runtime 生成本轮刺激。
-   * 刺激先生成，后续宠物认知会读取本轮最新刺激。
-   */
   const stimulusState = runWorldStimulus({
     tick: input.tick,
     time: input.currentTime,
@@ -281,10 +269,6 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
 
   const nextStimuli = stimulusState.activeStimuli
 
-  /**
-   * 阶段 3：推进孵化器自然状态。
-   * 这里只做自然推进；真正的照看、出生由管理交互阶段处理。
-   */
   input.incubatorSystem.update()
 
   currentState = refreshTickState(input)
@@ -293,10 +277,6 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
   currentIncubator = currentState.incubator
   currentButler = currentState.butler
 
-  /**
-   * 阶段 4：管家根据最新状态判断本轮任务。
-   * 管家只选择任务和创造机会，不直接控制宠物行为。
-   */
   input.butlerSystem.update({
     tick: input.tick,
     pet: currentPet,
@@ -313,11 +293,6 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
   currentIncubator = currentState.incubator
   currentButler = currentState.butler
 
-  /**
-   * 阶段 4.5：管家 AgentCycleTrace 审计日志。
-   * 这里只把管家当前任务映射为 autonomous agent cycle，
-   * 不改变任务、不执行行为、不控制宠物。
-   */
   logButlerAgentTrace({
     tick: input.tick,
     butler: currentButler,
@@ -327,10 +302,6 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     time: input.currentTime,
   })
 
-  /**
-   * 阶段 5：执行管家管理交互。
-   * 包括照看孵化器、宠物出生、家园建设。
-   */
   runManagementInteractions({
     tick: input.tick,
     time: input.currentTime,
@@ -348,10 +319,6 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
   currentIncubator = currentState.incubator
   currentButler = currentState.butler
 
-  /**
-   * 阶段 5.5：推进 MVP 世界进度。
-   * 这里只推进世界设施建设与世界公告，不改变宠物自主行为。
-   */
   emitWorldProgressionNotices({
     tick: input.tick,
     time: input.currentTime,
@@ -361,10 +328,6 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     worldProgressionSystem: input.worldProgressionSystem,
   })
 
-  /**
-   * 阶段 6：宠物感知世界刺激。
-   * 这里会写入认知类 interaction 事件，但不会直接替宠物决定行为。
-   */
   runPetCognition({
     tick: input.tick,
     time: input.currentTime,
@@ -374,16 +337,9 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
   })
 
   currentState = refreshTickState(input)
+  currentHome = currentState.home
   currentPet = currentState.pet
 
-  /**
-   * 阶段 6.5：生命运行动态包更新。
-   * 必须在宠物自主行为运行前写入 PetState。
-   * 这样 pet-drive 读取到的是当前世界时间下的动态生命趋向。
-   *
-   * 注意：
-   * 这里只更新生命运行上下文，不直接改变宠物行为。
-   */
   const lifeRuntimeBundle = runLifeRuntimeLog({
     tick: input.tick,
     time: input.currentTime,
@@ -394,22 +350,15 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     input.petSystem.updateLifeRuntimeBundle(lifeRuntimeBundle)
   }
 
-  /**
-   * 阶段 7：宠物自主行为运行。
-   * 宠物根据自身状态、记忆、世界区域、当前生命运行趋向等信息更新行为。
-   */
   const petRuntimeResult = runPetRuntime({
     time: input.currentTime,
     petSystem: input.petSystem,
     zones: nextRuntime.ecology.zones,
+    home: currentHome,
   })
 
   currentPet = petRuntimeResult.pet
 
-  /**
-   * 阶段 7.5：双主角边界互动表达。
-   * 这里只记录宠物自主目标与管家当前回应，不替宠物或管家改决定。
-   */
   emitDualAgentInteractionEvent({
     tick: input.tick,
     time: input.currentTime,
@@ -420,11 +369,6 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     eventSystem: input.eventSystem,
   })
 
-  /**
-   * 阶段 8：处理管家提供的机会。
-   * 宠物自主判断是否接受食物、恢复、接近机会。
-   * 接受机会只影响状态 / 记忆倾向，不强制改当前行为。
-   */
   runButlerOpportunities({
     tick: input.tick,
     time: input.currentTime,
@@ -439,10 +383,6 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
   currentIncubator = currentState.incubator
   currentButler = currentState.butler
 
-  /**
-   * 阶段 9：统一生成世界事件变化。
-   * 这里根据 Tick 前后的状态差异生成时间、孵化器、宠物行为等事件。
-   */
   runWorldEventUpdate({
     tick: input.tick,
     prevTime: input.prevTime,
