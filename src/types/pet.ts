@@ -36,6 +36,10 @@ import type {
 } from "../systems/agent-perception/agent-consciousness-interpretation"
 
 import type {
+  LifeLineInfluenceSnapshot,
+} from "../systems/life-line/life-line-influence"
+
+import type {
   PetCognitionRecord,
 } from "./cognition"
 
@@ -100,6 +104,12 @@ export type PetState = {
    * 这里只保存运行上下文，不直接决定行为。
    */
   currentLifeRuntimeBundle?: CurrentLifeRuntimeBundle | null
+
+  /**
+   * 当前世界时间下的纵向生命线影响快照。
+   * 这里只保存长期阶段倾向，不直接决定 action / drive。
+   */
+  latestLifeLineInfluence?: LifeLineInfluenceSnapshot | null
 
   lifeState: PetLifeState
 
