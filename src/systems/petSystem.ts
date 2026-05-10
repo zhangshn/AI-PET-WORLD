@@ -2,6 +2,7 @@
  * 当前文件负责：维护宠物系统状态，并对外提供出生、运行、认知、喂食与读取接口。
  */
 
+import type { HomeState } from "@/types/home"
 import type { PetGenderPerspective, PetState } from "../types/pet"
 import type { TimeState } from "../engine/timeSystem"
 import type {
@@ -15,6 +16,7 @@ import type { PetCognitionRecord } from "../types/cognition"
 import type { WorldZone } from "../world/ecology/world-zone-types"
 
 import { buildInitialPetMemoryState } from "../ai/memory-core/memory-gateway"
+import { buildPetWorldPerception } from "./agent-perception/agent-world-perception"
 
 import {
   runPetStimulusPerception,
@@ -149,6 +151,7 @@ export class PetSystem {
       memoryState,
       learningState,
       timelineSnapshot,
+      latestWorldPerception: null,
       latestCognition: null,
       recentCognition: [],
       activeBehaviorProcess: null,
@@ -174,7 +177,11 @@ export class PetSystem {
     })
   }
 
-  update(time: TimeState, zones: WorldZone[] = []) {
+  update(
+    time: TimeState,
+    zones: WorldZone[] = [],
+    home: HomeState | null = null
+  ) {
     this.currentTick += 1
 
     const result = runPetRuntimeTick({
@@ -190,6 +197,15 @@ export class PetSystem {
     this.actionStability = result.actionStability
     this.lastDriveSnapshot = result.lastDriveSnapshot
     this.lastDecisionReason = result.lastDecisionReason
+
+    if (this.pet) {
+      this.pet = {
+        ...this.pet,
+        latestWorldPerception: buildPetWorldPerception({
+          home,
+        }),
+      }
+    }
   }
 
   updateLifeRuntimeBundle(
@@ -321,6 +337,7 @@ export class PetSystem {
     const restoredPet: PetState = {
       ...pet,
       learningState: pet.learningState ?? createInitialPetLearningState(),
+      latestWorldPerception: pet.latestWorldPerception ?? null,
     }
 
     this.pet = restoredPet
