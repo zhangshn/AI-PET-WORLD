@@ -17,6 +17,7 @@ import {
   type ActorMotionState,
   type CoreActorVisualRegistry,
   type RuntimeEntityVisualRegistry,
+  type PetMotionProcessState,
   type StimulusVisualRegistry,
 } from "../gateway/stage-renderer-gateway"
 import {
@@ -44,6 +45,7 @@ export type SyncGraphicsStageInput = {
   stimulusVisuals: StimulusVisualRegistry
   actorVisuals: CoreActorVisualRegistry
   petMotion: ActorMotionState
+  petMotionProcess: PetMotionProcessState
   butlerMotion: ActorMotionState
   renderState: GraphicsStageRenderState
   sceneMode: WorldStageSceneMode

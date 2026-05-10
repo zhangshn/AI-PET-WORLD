@@ -20,6 +20,10 @@ import {
   type GraphicsStageRenderState,
 } from "./graphics-stage-orchestrator"
 import {
+  createInitialPetMotionProcessState,
+  type PetMotionProcessState,
+} from "../graphics/actors/pet-motion-process"
+import {
   createStageCameraState,
   resetStageCamera,
   type StageCameraState,
@@ -32,6 +36,7 @@ export type WorldStageRuntimeState = {
   renderState: GraphicsStageRenderState
   camera: StageCameraState
   petMotion: ActorMotionState
+  petMotionProcess: PetMotionProcessState
   butlerMotion: ActorMotionState
 }
 
@@ -49,6 +54,7 @@ export function createWorldStageRuntimeState(): WorldStageRuntimeState {
       targetY: 420,
       speed: 1.1,
     },
+    petMotionProcess: createInitialPetMotionProcessState(),
     butlerMotion: {
       x: 340,
       y: 340,

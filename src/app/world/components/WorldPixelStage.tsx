@@ -140,6 +140,7 @@ export default function WorldPixelStage(props: Props) {
         stimulusVisuals: stageRuntime.stimulusVisuals,
         actorVisuals: stageRuntime.actorVisuals,
         petMotion: stageRuntime.petMotion,
+        petMotionProcess: stageRuntime.petMotionProcess,
         butlerMotion: stageRuntime.butlerMotion,
         renderState: stageRuntime.renderState,
         sceneMode: latest.sceneMode ?? "exterior",

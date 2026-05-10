@@ -42,6 +42,7 @@ export function syncDynamicWorld(input: SyncGraphicsStageInput) {
       tick: input.tick,
       phase: input.renderState.phase,
       petMotion: input.petMotion,
+      petMotionProcess: input.petMotionProcess,
       butlerMotion: input.butlerMotion,
     })
   }

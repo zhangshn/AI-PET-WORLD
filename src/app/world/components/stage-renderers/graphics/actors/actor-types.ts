@@ -8,6 +8,12 @@ import type { ButlerState } from "@/types/butler"
 import type { IncubatorState } from "@/types/incubator"
 import type { PetState } from "@/types/pet"
 import type { WorldEcologyState } from "@/world/ecology/ecology-engine"
+import type {
+  ActorVisualIntent,
+} from "../../visual-intent/actor-visual-intent-types"
+import type {
+  PetMotionProcessState,
+} from "./pet-motion-process"
 
 export type ActorMotionState = {
   x: number
@@ -43,5 +49,7 @@ export type SyncCoreActorsInput = {
   tick: number
   phase: number
   petMotion: ActorMotionState
+  petMotionProcess: PetMotionProcessState
+  petVisualIntent?: ActorVisualIntent | null
   butlerMotion: ActorMotionState
 }

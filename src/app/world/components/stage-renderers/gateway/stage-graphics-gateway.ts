@@ -18,6 +18,7 @@ export {
   type ActorVisualState,
   type CoreActorVisualRegistry,
   type CreateCoreActorsInput,
+  type PetMotionProcessState,
   type SyncCoreActorsInput,
 } from "../graphics/actors/stage-actor-renderer"
 

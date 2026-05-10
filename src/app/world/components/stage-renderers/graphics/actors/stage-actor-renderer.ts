@@ -6,8 +6,6 @@ import { moveToward } from "./actor-motion"
 import {
   getButlerBaseSpeed,
   getButlerTargetPosition,
-  getPetBaseSpeed,
-  getPetTargetPosition,
 } from "./actor-target-resolver"
 import type {
   ActorMotionState,
@@ -18,8 +16,15 @@ import type {
 } from "./actor-types"
 import { createCoreActorVisuals } from "./actor-visual-factory"
 import { drawButlerGraphic } from "./butler-renderer"
+import {
+  updatePetMotionProcess,
+  type PetMotionProcessState,
+} from "./pet-motion-process"
 import { drawPetGraphic, getPetBob } from "./pet-renderer"
 import { shouldRenderExternalPet } from "./stage-pet-visibility"
+import {
+  buildPetVisualIntent,
+} from "../../visual-intent/visual-intent-gateway"
 
 export { createCoreActorVisuals }
 
@@ -61,22 +66,20 @@ function syncPetVisual(input: SyncCoreActorsInput) {
 
   input.registry.pet.container.visible = true
 
-  const target = getPetTargetPosition({
-    pet: input.pet,
-    incubator: input.incubator,
-    ecology: input.ecology,
+  const petIntent = input.petVisualIntent ?? buildPetVisualIntent(input.pet)
+  const motionProcess = updatePetMotionProcess({
     tick: input.tick,
+    pet: input.pet,
+    petIntent,
+    currentMotion: input.petMotion,
+    processState: input.petMotionProcess,
+    ecology: input.ecology,
+    incubator: input.incubator,
   })
 
-  const speed = getPetBaseSpeed(
-    input.pet?.action,
-    input.pet?.activeBehaviorProcess,
-    input.pet?.lifeState?.phase
-  )
-
-  input.petMotion.targetX = target.x
-  input.petMotion.targetY = target.y
-  input.petMotion.speed = speed
+  input.petMotion.targetX = motionProcess.targetX
+  input.petMotion.targetY = motionProcess.targetY
+  input.petMotion.speed = motionProcess.speed
 
   moveToward(input.petMotion)
 
@@ -112,5 +115,6 @@ export type {
   ActorVisualState,
   CoreActorVisualRegistry,
   CreateCoreActorsInput,
+  PetMotionProcessState,
   SyncCoreActorsInput,
 }
