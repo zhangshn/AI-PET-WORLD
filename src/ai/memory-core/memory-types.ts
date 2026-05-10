@@ -17,6 +17,9 @@
  */
 
 import type { PetAction } from "../../types/pet"
+import type {
+  PetWorldPerceptionSnapshot,
+} from "../../systems/agent-perception/agent-world-perception"
 
 export type MemoryEventKind =
   | "action_loop"
@@ -28,6 +31,9 @@ export type MemoryEventKind =
   | "approach_result"
   | "observation_result"
   | "exploration_result"
+  | "world_perception"
+  | "environment_novelty"
+  | "environment_stability"
 
 export type MemoryActionRecord = {
   tick: number
@@ -164,4 +170,10 @@ export type UpdateMemoryInput = {
   moodBefore: string
   moodAfter: string
   wasFed?: boolean
+
+  /**
+   * 宠物最近一次世界感知。
+   * 只用于形成世界印象和轻量经验偏压，不直接决定行为。
+   */
+  latestWorldPerception?: PetWorldPerceptionSnapshot | null
 }
