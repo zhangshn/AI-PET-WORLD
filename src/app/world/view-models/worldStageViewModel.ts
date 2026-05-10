@@ -143,8 +143,7 @@ function buildButlerActorViewModel(
       butler.latestBehaviorExecution?.summary ??
       butler.latestTaskDecisionTrace?.reason ??
       "管家正在观察世界运行。",
-    perceptionSummary:
-      butler.latestTaskDecisionTrace?.context.butlerPerceptionSummary ?? null,
+    perceptionSummary: null,
     interpretationSummary: butler.latestWorldInterpretation?.summary ?? null,
     lifeLineSummary: null,
     tags: [
