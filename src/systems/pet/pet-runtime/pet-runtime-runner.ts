@@ -1,31 +1,13 @@
-/**
- * 当前文件负责：封装宠物单 Tick 的完整运行流程。
- */
-
 import type { TimeState } from "@/engine/timeSystem"
 import type { PetState, PetAction } from "@/types/pet"
 import type { WorldZone } from "@/world/ecology/world-zone-types"
 
-import {
-  updatePetAiState,
-  stepPetBehaviorProcess,
-} from "@/ai/gateway"
+import { updatePetAiState, stepPetBehaviorProcess } from "@/ai/gateway"
+import { updatePetMemoryState } from "@/ai/memory-core/memory-gateway"
+import { logPetDecisionTrace } from "@/engine/world-engine/world-runtime-logger"
+import { buildPetPerceptionDriveBias } from "@/systems/agent-perception/agent-world-perception"
 
-import {
-  updatePetMemoryState,
-} from "@/ai/memory-core/memory-gateway"
-
-import {
-  logPetDecisionTrace,
-} from "@/engine/world-engine/world-runtime-logger"
-
-import {
-  buildPetPerceptionDriveBias,
-} from "@/systems/agent-perception/agent-world-perception"
-
-import {
-  recordPetRuntimeDecision,
-} from "./pet-runtime-ai-recorder"
+import { recordPetRuntimeDecision } from "./pet-runtime-ai-recorder"
 
 import {
   runPetLife,
@@ -64,10 +46,7 @@ export type RunPetRuntimeTickResult = {
   lastDecisionReason: ActionDecisionReason | null
 }
 
-function buildDriveSnapshot(input: {
-  pet: PetState
-  time: TimeState
-}): DriveSnapshot {
+function buildDriveSnapshot(input: { pet: PetState; time: TimeState }): DriveSnapshot {
   return driveSystem.compute({
     pet: {
       energy: input.pet.energy,
@@ -77,20 +56,15 @@ function buildDriveSnapshot(input: {
       personalityProfile: input.pet.personalityProfile,
       consciousnessProfile: input.pet.consciousnessProfile,
       memoryState: input.pet.memoryState,
-      currentLifeRuntimeBundle:
-        input.pet.currentLifeRuntimeBundle ?? null,
+      currentLifeRuntimeBundle: input.pet.currentLifeRuntimeBundle ?? null,
       latestCognition: input.pet.latestCognition ?? null,
     },
     time: input.time,
-    externalStimuli: buildPetPerceptionDriveBias(
-      input.pet.latestWorldPerception ?? null
-    ),
+    externalStimuli: buildPetPerceptionDriveBias(input.pet.latestWorldPerception ?? null),
   })
 }
 
-export function runPetRuntimeTick(
-  input: RunPetRuntimeTickInput
-): RunPetRuntimeTickResult {
+export function runPetRuntimeTick(input: RunPetRuntimeTickInput): RunPetRuntimeTickResult {
   if (!input.pet || !input.pet.timelineSnapshot) {
     return {
       pet: input.pet,
@@ -100,10 +74,7 @@ export function runPetRuntimeTick(
     }
   }
 
-  let pet = runPetLife({
-    pet: input.pet,
-  }).pet
-
+  let pet = runPetLife({ pet: input.pet }).pet
   const currentSnapshot = pet.timelineSnapshot
 
   if (!currentSnapshot) {
@@ -133,34 +104,14 @@ export function runPetRuntimeTick(
 
     pet.activeBehaviorProcess = processResult.nextProcess
     forcedAction = processResult.suggestedAction
+    pet.energy = clamp(pet.energy + processResult.delta.energyDelta, 0, 100)
+    pet.hunger = clamp(pet.hunger + processResult.delta.hungerDelta, 0, 100)
 
-    pet.energy = clamp(
-      pet.energy + processResult.delta.energyDelta,
-      0,
-      100
-    )
-
-    pet.hunger = clamp(
-      pet.hunger + processResult.delta.hungerDelta,
-      0,
-      100
-    )
-
-    if (processResult.delta.emotionalShift >= 8) {
-      pet.mood = "happy"
-    } else if (processResult.delta.emotionalShift <= -8) {
-      pet.mood = "alert"
-    }
+    if (processResult.delta.emotionalShift >= 8) pet.mood = "happy"
+    else if (processResult.delta.emotionalShift <= -8) pet.mood = "alert"
   }
 
-  /**
-   * 先根据当前身体、记忆、认知、生命趋向和感知偏移计算 drive。
-   * 感知偏移只进入 externalStimuli，不直接决定 action。
-   */
-  const driveSnapshot = buildDriveSnapshot({
-    pet,
-    time: input.time,
-  })
+  const driveSnapshot = buildDriveSnapshot({ pet, time: input.time })
 
   const nextGoal = goalSystem.compute({
     tick: input.currentTick,
@@ -182,10 +133,7 @@ export function runPetRuntimeTick(
   pet.currentGoal = nextGoal
 
   const actionSelection = forcedAction
-    ? {
-        action: forcedAction,
-        reason: "goal_guided_selection" as ActionDecisionReason,
-      }
+    ? { action: forcedAction, reason: "goal_guided_selection" as ActionDecisionReason }
     : selectPetAction({
         pet,
         dominantDrive: driveSnapshot.dominant,
@@ -195,7 +143,6 @@ export function runPetRuntimeTick(
       })
 
   const rawAction = actionSelection.action
-
   const expressionResult = expressPetAction({
     rawAction,
     currentAction: pet.action,
@@ -208,7 +155,6 @@ export function runPetRuntimeTick(
   })
 
   const expressedAction = expressionResult.expressedAction
-
   const stabilityResult = applyPetActionStability({
     currentTick: input.currentTick,
     candidate: expressedAction,
@@ -216,8 +162,7 @@ export function runPetRuntimeTick(
     energy: pet.energy,
     hunger: pet.hunger,
     stability: input.actionStability,
-    shouldHoldCurrentAction: (payload) =>
-      attentionSystem.shouldHoldCurrentAction(payload),
+    shouldHoldCurrentAction: (payload) => attentionSystem.shouldHoldCurrentAction(payload),
   })
 
   const finalAction = stabilityResult.action
@@ -267,12 +212,7 @@ export function runPetRuntimeTick(
   })
 
   pet.action = finalAction
-
-  pet = runPetZoneInfluence({
-    pet,
-    action: finalAction,
-    zones: input.zones,
-  }).pet
+  pet = runPetZoneInfluence({ pet, action: finalAction, zones: input.zones }).pet
 
   if (previousAction !== finalAction || !attentionSystem.getAttention()) {
     attentionSystem.lockAttention({
@@ -291,19 +231,10 @@ export function runPetRuntimeTick(
     currentSnapshot,
     time: input.time,
     events: buildPetStateEvents(finalAction),
-    behaviorShift: {
-      previousAction,
-      nextAction: finalAction,
-      impact: 0.2,
-    },
+    behaviorShift: { previousAction, nextAction: finalAction, impact: 0.2 },
     tickDelta: 1,
     shouldRefreshTrajectory: true,
-    playerRelation: {
-      familiarity: 60,
-      attachment: 45,
-      trust: 55,
-      distance: 15,
-    },
+    playerRelation: { familiarity: 60, attachment: 45, trust: 55, distance: 15 },
   })
 
   nextSnapshot.state.physical.energy = pet.energy
@@ -332,6 +263,7 @@ export function runPetRuntimeTick(
     moodBefore,
     moodAfter: nextSnapshot.state.emotional.label,
     wasFed,
+    latestWorldPerception: pet.latestWorldPerception ?? null,
   })
 
   pet.learningState = updatePetLearningState({
