@@ -10,6 +10,7 @@ import type { HomeState } from "../types/home"
 import {
   applyButlerHomeFacilityAction,
   applyButlerHomeSpaceAction,
+  applyHomeFacilityEffects,
   buildHome,
   buildHomeSpaceSummary,
   createInitialHomeFacilities,
@@ -60,9 +61,11 @@ export class HomeSystem {
       homeFacilities: syncHomeFacilities(home),
     }
 
+    const restoredWithEffects = applyHomeFacilityEffects(restoredHome)
+
     this.home = {
-      ...restoredHome,
-      spaceSummary: buildHomeSpaceSummary(restoredHome),
+      ...restoredWithEffects,
+      spaceSummary: buildHomeSpaceSummary(restoredWithEffects),
     }
   }
 
@@ -86,10 +89,12 @@ export class HomeSystem {
   applyButlerFacilityAction(
     execution: ButlerBehaviorExecution | null | undefined
   ): void {
-    this.home = applyButlerHomeFacilityAction({
-      home: this.home,
-      execution,
-    })
+    this.home = applyHomeFacilityEffects(
+      applyButlerHomeFacilityAction({
+        home: this.home,
+        execution,
+      })
+    )
   }
 
   getHome(): HomeState {

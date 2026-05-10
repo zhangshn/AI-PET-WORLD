@@ -1174,6 +1174,31 @@ HomeState.spaceSummary
 - 不写宠物 learning
 - 不新增正式 overlay
 - 不新增 F3 面板
+
+## 51. HOME-FACILITY-EFFECT-BATCH-8 当前状态
+
+当前已经让家园设施参与整体家园状态演化。
+
+当前链路：
+
+```txt
+HomeState.homeFacilities
+↓
+summarizeHomeFacilityEffects
+↓
+applyHomeFacilityEffects
+↓
+HomeState comfort / stability / expansion / gardenProgress
+```
+
+当前规则：
+
+- `active` 设施对整体环境数值提供轻量正向效果
+- `needs_maintenance` 设施对整体环境数值提供轻量负向效果
+- `building` 设施只提供极小过渡效果
+- 设施效果不直接控制宠物行为
+- 设施效果不改变 pet action
+- 设施效果不写宠物 learning
 - 不改变 worldEngine 调度顺序
 
 ## 50. HOME-FACILITY-BATCH-7 当前状态

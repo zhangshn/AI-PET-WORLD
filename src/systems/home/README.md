@@ -90,3 +90,20 @@ homeSpaces 用于让后续正式世界 UI / 像素地图读取空间结构。
 - home_building 推进 shelter_bed / food_corner
 - home_maintenance 修复最弱 active facility
 - space_tidying 推进 storage_box / observation_spot
+
+## Home Facility Effects
+
+当前设施已经开始影响家园整体环境数值。
+
+设施效果只影响：
+
+- comfort
+- stability
+- expansion
+- gardenProgress
+
+设施不会直接控制宠物行为，不会直接改变宠物 action，也不会写宠物 learning。
+
+设施状态为 `active` 时提供正向效果。
+设施状态为 `needs_maintenance` 时会产生轻微负向效果。
+设施状态为 `building` 时只产生极小过渡效果。
