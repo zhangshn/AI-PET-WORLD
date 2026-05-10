@@ -38,6 +38,7 @@ import {
   createWorldStageRuntimeState,
 } from "./stage-renderers/orchestrator/stage-runtime-state"
 import type { WorldStageSceneMode } from "./stage-renderers/orchestrator/stage-scene-mode"
+import WorldHomeSpaceStatusOverlay from "./home/WorldHomeSpaceStatusOverlay"
 
 import styles from "@/styles/world-styles/layout/world-pixel-stage.module.css"
 
@@ -212,6 +213,9 @@ export default function WorldPixelStage(props: Props) {
   return (
     <div className={styles.stageShell}>
       <div ref={mountRef} className={styles.stageCanvas} />
+
+      <WorldHomeSpaceStatusOverlay home={props.home} />
+
       <div className={styles.stageHint}>{stageHint}</div>
     </div>
   )
