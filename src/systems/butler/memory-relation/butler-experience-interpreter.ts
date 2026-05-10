@@ -4,6 +4,7 @@
 
 import type { ButlerProfile } from "@/ai/gateway"
 
+import type { ButlerMemoryState } from "./butler-memory"
 import type { ButlerRelationState } from "./butler-relation"
 
 export type ButlerRelationTaskTuning = {
@@ -43,6 +44,7 @@ export type ButlerSuggestedPosture =
 export type ButlerExperienceInterpreterInput = {
   relation: ButlerRelationState | null | undefined
   profile: ButlerProfile | null | undefined
+  memory?: ButlerMemoryState | null | undefined
 }
 
 export type ButlerExperienceInterpretation = {
@@ -623,6 +625,130 @@ function interpretLongTermBiasByProfile(input: {
   }
 }
 
+function interpretGoalExecutionMemory(input: {
+  memory: ButlerMemoryState | null | undefined
+  profile: ButlerProfile
+}) {
+  const { memory, profile } = input
+
+  let tuning = {
+    ...DEFAULT_TUNING,
+  }
+  const reasons: string[] = []
+  const tags: string[] = []
+
+  if (!memory || memory.entries.length === 0) {
+    tags.push("no_goal_execution_memory")
+    reasons.push("当前没有家园目标执行记忆，不从后天经历调整管家倾向。")
+
+    return {
+      tuning,
+      reasons,
+      tags,
+    }
+  }
+
+  const recentEntries = memory.entries.slice(0, 12)
+  const goalExecutionEntries = recentEntries.filter((entry) =>
+    entry.tags.includes("goal_driven_execution")
+  )
+
+  if (goalExecutionEntries.length === 0) {
+    tags.push("no_recent_goal_execution_memory")
+    reasons.push("近期没有 goal_driven_execution 记忆，家园目标经历暂不形成偏移。")
+
+    return {
+      tuning,
+      reasons,
+      tags,
+    }
+  }
+
+  const homeBuildingCount = goalExecutionEntries.filter(
+    (entry) =>
+      entry.tags.includes("home_building") ||
+      entry.tags.includes("home_goal_build_temporary_shelter") ||
+      entry.tags.includes("home_goal_complete_basic_living")
+  ).length
+
+  const maintenanceCount = goalExecutionEntries.filter(
+    (entry) =>
+      entry.tags.includes("home_maintenance") ||
+      entry.tags.includes("home_goal_maintain_home_facilities")
+  ).length
+
+  const incubatorCount = goalExecutionEntries.filter(
+    (entry) =>
+      entry.tags.includes("incubator_watch") ||
+      entry.tags.includes("home_goal_stabilize_incubator")
+  ).length
+
+  const gardenCount = goalExecutionEntries.filter(
+    (entry) =>
+      entry.tags.includes("space_tidying") ||
+      entry.tags.includes("home_goal_open_garden_area") ||
+      entry.tags.includes("home_goal_prepare_future_expansion")
+  ).length
+
+  if (homeBuildingCount > 0) {
+    tuning = addTuning(tuning, {
+      constructionDriveOffset:
+        profile.buildStyle === "steady_builder" ? 2 : 1,
+      observationBiasOffset:
+        profile.careStyle === "quiet_maintainer" ? 1 : 0,
+    })
+
+    tags.push("goal_memory_home_building")
+    reasons.push("近期存在家园建设目标执行记忆，轻微增强建设倾向。")
+  }
+
+  if (maintenanceCount > 0) {
+    tuning = addTuning(tuning, {
+      constructionDriveOffset: 1,
+      observationBiasOffset: 1,
+    })
+
+    tags.push("goal_memory_home_maintenance")
+    reasons.push("近期存在设施维护目标执行记忆，管家会更重视维护与观察。")
+  }
+
+  if (incubatorCount > 0) {
+    tuning = addTuning(tuning, {
+      carePriorityOffset: 1,
+      observationBiasOffset: 1,
+    })
+
+    tags.push("goal_memory_incubator_care")
+    reasons.push("近期存在孵化器稳定目标执行记忆，管家会保留照看优先级。")
+  }
+
+  if (gardenCount > 0) {
+    tuning = addTuning(tuning, {
+      constructionDriveOffset:
+        profile.buildStyle === "adaptive_builder" ? 2 : 1,
+      observationBiasOffset: 1,
+    })
+
+    tags.push("goal_memory_garden_or_expansion")
+    reasons.push("近期存在庭院或未来扩展目标执行记忆，轻微增强空间整理倾向。")
+  }
+
+  if (goalExecutionEntries.length >= 4) {
+    tuning = addTuning(tuning, {
+      constructionDriveOffset: 1,
+    })
+
+    tags.push("goal_memory_repeated_execution")
+    reasons.push("近期连续出现家园目标执行记忆，说明管家正在形成阶段性管理惯性。")
+  }
+
+  return {
+    tuning,
+    reasons,
+    tags,
+  }
+}
+
 function deriveDominantInterpretation(input: {
   profile: ButlerProfile | null | undefined
   tags: string[]
@@ -702,7 +828,7 @@ function deriveSuggestedPosture(
 export function buildButlerExperienceInterpretation(
   input: ButlerExperienceInterpreterInput
 ): ButlerExperienceInterpretation {
-  const { relation, profile } = input
+  const { relation, profile, memory } = input
 
   if (!profile) {
     return buildRelationFactOnlyInterpretation(relation)
@@ -729,6 +855,10 @@ export function buildButlerExperienceInterpretation(
   const tone = interpretToneByProfile({ relation, profile })
   const feedback = interpretFeedbackByProfile({ relation, profile })
   const longTerm = interpretLongTermBiasByProfile({ relation, profile })
+  const goalMemory = interpretGoalExecutionMemory({
+    memory,
+    profile,
+  })
 
   const interpretationTags = uniqueTags([
     "profile_led",
@@ -739,6 +869,7 @@ export function buildButlerExperienceInterpretation(
     ...tone.tags,
     ...feedback.tags,
     ...longTerm.tags,
+    ...goalMemory.tags,
   ])
 
   const dominantInterpretation = deriveDominantInterpretation({
@@ -751,8 +882,11 @@ export function buildButlerExperienceInterpretation(
 
   const tuning = finalizeTuning(
     addTuning(
-      addTuning(tone.tuning, feedback.tuning),
-      longTerm.tuning
+      addTuning(
+        addTuning(tone.tuning, feedback.tuning),
+        longTerm.tuning
+      ),
+      goalMemory.tuning
     )
   )
 
@@ -764,13 +898,14 @@ export function buildButlerExperienceInterpretation(
     interpretationTags,
     tuning,
     reasons: [
-      "Relation / OpportunityFeedback 只作为事实输入。",
+      "Relation / OpportunityFeedback / GoalExecutionMemory 只作为事实输入。",
       "ButlerProfile / 八字人格负责解释这些事实。",
       `dominantInterpretation=${dominantInterpretation}。`,
       `suggestedPosture=${suggestedPosture}。`,
       ...tone.reasons,
       ...feedback.reasons,
       ...longTerm.reasons,
+      ...goalMemory.reasons,
     ],
     boundary: createBoundary(),
   }

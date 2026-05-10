@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：提供管家关系调参入口。
+ * 当前文件负责：提供管家关系与后天经历调参入口。
  */
 
 import type { ButlerRelationState } from "./butler-relation"
