@@ -9,6 +9,7 @@ import PetStatusPanel from "../../components/PetStatusPanel"
 import PetLearningDebugPanel from "../../components/PetLearningDebugPanel"
 import CognitionPanel from "../../components/CognitionPanel"
 import BehaviorProcessPanel from "../../components/BehaviorProcessPanel"
+import MvpCheckDebugPanel from "../../components/MvpCheckDebugPanel"
 import RuntimeDebugPanel from "../../components/RuntimeDebugPanel"
 import WorldRuntimePanel from "../../components/WorldRuntimePanel"
 import WorldEcologyPanel from "../../components/WorldEcologyPanel"
@@ -37,6 +38,8 @@ export default function DeveloperDock({ world }: Props) {
       </div>
 
       <div className={styles.grid}>
+        <MvpCheckDebugPanel report={world.mvpCheckReport} />
+
         <ButlerProfileSetupPanel world={world} />
 
         <WorldProgressionPanel progression={world.worldProgression} />

@@ -16,6 +16,10 @@ import {
 import {
   runOfflineCatchup,
 } from "@/world/offline/offline-catchup-gateway"
+import {
+  buildMvpWorldCheckReport,
+  type MvpCheckReport,
+} from "@/world/mvp-check/mvp-check-gateway"
 
 import type {
   TimeState,
@@ -63,13 +67,14 @@ export type WorldEngineViewState = {
   ecology: WorldEcologyState | null
   worldRuntime: WorldRuntimeState | null
   worldProgression: WorldProgressionState | null
+  mvpCheckReport: MvpCheckReport
   showDeveloperPanel: boolean
   toggleDeveloperPanel: () => void
   setButlerProfile: (profile: ButlerProfile | null) => void
 }
 
 function readWorldEngineState() {
-  return {
+  const state = {
     time: worldEngine.getTime(),
     pet: worldEngine.getPet(),
     butler: worldEngine.getButler(),
@@ -81,6 +86,11 @@ function readWorldEngineState() {
     ecology: worldEngine.getEcology(),
     worldRuntime: worldEngine.getWorldRuntime(),
     worldProgression: worldEngine.getWorldProgression(),
+  }
+
+  return {
+    ...state,
+    mvpCheckReport: buildMvpWorldCheckReport(state),
   }
 }
 
@@ -121,6 +131,9 @@ export function useWorldEngineState(): WorldEngineViewState {
     useState<WorldProgressionState | null>(() =>
       worldEngine.getWorldProgression()
     )
+  const [mvpCheckReport, setMvpCheckReport] = useState<MvpCheckReport>(() =>
+    readWorldEngineState().mvpCheckReport
+  )
   const [showDeveloperPanel, setShowDeveloperPanel] = useState(false)
 
   const syncWorld = useCallback(() => {
@@ -137,6 +150,7 @@ export function useWorldEngineState(): WorldEngineViewState {
     setEcology(nextState.ecology)
     setWorldRuntime(nextState.worldRuntime)
     setWorldProgression(nextState.worldProgression)
+    setMvpCheckReport(nextState.mvpCheckReport)
   }, [])
 
   const toggleDeveloperPanel = useCallback(() => {
@@ -239,6 +253,7 @@ export function useWorldEngineState(): WorldEngineViewState {
     ecology,
     worldRuntime,
     worldProgression,
+    mvpCheckReport,
     showDeveloperPanel,
     toggleDeveloperPanel,
     setButlerProfile,
