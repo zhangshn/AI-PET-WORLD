@@ -20,6 +20,10 @@ import {
   type GraphicsStageRenderState,
 } from "./graphics-stage-orchestrator"
 import {
+  createInitialButlerMotionProcessState,
+  type ButlerMotionProcessState,
+} from "../graphics/actors/butler-motion-process"
+import {
   createInitialPetMotionProcessState,
   type PetMotionProcessState,
 } from "../graphics/actors/pet-motion-process"
@@ -38,6 +42,7 @@ export type WorldStageRuntimeState = {
   petMotion: ActorMotionState
   petMotionProcess: PetMotionProcessState
   butlerMotion: ActorMotionState
+  butlerMotionProcess: ButlerMotionProcessState
 }
 
 export function createWorldStageRuntimeState(): WorldStageRuntimeState {
@@ -62,6 +67,7 @@ export function createWorldStageRuntimeState(): WorldStageRuntimeState {
       targetY: 340,
       speed: 0.95,
     },
+    butlerMotionProcess: createInitialButlerMotionProcessState(),
   }
 }
 

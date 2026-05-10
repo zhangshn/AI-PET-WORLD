@@ -16,6 +16,7 @@ export {
   syncCoreActorVisuals,
   type ActorMotionState,
   type ActorVisualState,
+  type ButlerMotionProcessState,
   type CoreActorVisualRegistry,
   type CreateCoreActorsInput,
   type PetMotionProcessState,

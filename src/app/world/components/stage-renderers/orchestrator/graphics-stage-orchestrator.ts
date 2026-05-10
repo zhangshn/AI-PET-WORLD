@@ -15,6 +15,7 @@ import {
   animateStimulusVisuals,
   syncStageAffordances,
   type ActorMotionState,
+  type ButlerMotionProcessState,
   type CoreActorVisualRegistry,
   type RuntimeEntityVisualRegistry,
   type PetMotionProcessState,
@@ -47,6 +48,7 @@ export type SyncGraphicsStageInput = {
   petMotion: ActorMotionState
   petMotionProcess: PetMotionProcessState
   butlerMotion: ActorMotionState
+  butlerMotionProcess: ButlerMotionProcessState
   renderState: GraphicsStageRenderState
   sceneMode: WorldStageSceneMode
   time: TimeState | null

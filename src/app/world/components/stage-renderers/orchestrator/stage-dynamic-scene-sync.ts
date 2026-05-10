@@ -44,6 +44,7 @@ export function syncDynamicWorld(input: SyncGraphicsStageInput) {
       petMotion: input.petMotion,
       petMotionProcess: input.petMotionProcess,
       butlerMotion: input.butlerMotion,
+      butlerMotionProcess: input.butlerMotionProcess,
     })
   }
 

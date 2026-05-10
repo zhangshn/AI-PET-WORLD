@@ -12,6 +12,9 @@ import type {
   ActorVisualIntent,
 } from "../../visual-intent/actor-visual-intent-types"
 import type {
+  ButlerMotionProcessState,
+} from "./butler-motion-process"
+import type {
   PetMotionProcessState,
 } from "./pet-motion-process"
 
@@ -52,4 +55,6 @@ export type SyncCoreActorsInput = {
   petMotionProcess: PetMotionProcessState
   petVisualIntent?: ActorVisualIntent | null
   butlerMotion: ActorMotionState
+  butlerMotionProcess: ButlerMotionProcessState
+  butlerVisualIntent?: ActorVisualIntent | null
 }
