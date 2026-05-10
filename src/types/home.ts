@@ -24,6 +24,42 @@ export type HomeEvolutionFocus =
   | "order"
   | "adaptive"
 
+export type HomeSpaceId =
+  | "empty_land"
+  | "incubator_area"
+  | "temporary_shelter"
+  | "garden_area"
+  | "storage_area"
+  | "activity_area"
+
+export type HomeSpaceStatus =
+  | "locked"
+  | "available"
+  | "building"
+  | "active"
+
+export type HomeSpaceRole =
+  | "origin"
+  | "incubation"
+  | "shelter"
+  | "garden"
+  | "storage"
+  | "activity"
+
+export type HomeSpaceState = {
+  id: HomeSpaceId
+  name: string
+  role: HomeSpaceRole
+  status: HomeSpaceStatus
+  order: number
+  progress: number
+  comfort: number
+  stability: number
+  activity: number
+  description: string
+  tags: string[]
+}
+
 export type HomeState = {
   level: number
   progress: number
@@ -34,4 +70,5 @@ export type HomeState = {
   comfort: number
   stability: number
   expansion: number
+  homeSpaces?: HomeSpaceState[]
 }

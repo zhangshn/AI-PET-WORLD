@@ -1055,3 +1055,46 @@ homeSystem.build
 - 不在 butlerSystem 里直接调用 homeSystem
 - 不新增 F3 面板
 - 不改 P-Phone
+
+## 47. HOME-SPACE-BATCH-3 当前状态
+
+当前已经建立家园空间实体第一阶段。
+
+新增 / 更新：
+
+- `HomeSpaceState`
+- `HomeSpaceId`
+- `HomeSpaceStatus`
+- `HomeSpaceRole`
+- `HomeState.homeSpaces`
+- `createInitialHomeSpaces`
+- `syncHomeSpaces`
+
+当前最小空间包括：
+
+- `empty_land`
+- `incubator_area`
+- `temporary_shelter`
+- `garden_area`
+- `storage_area`
+- `activity_area`
+
+当前链路：
+
+```txt
+homeSystem.build
+↓
+buildHome
+↓
+syncHomeSpaces
+↓
+HomeState.homeSpaces
+```
+
+当前边界：
+
+- homeSpaces 不控制宠物行为
+- 不接 PixiJS
+- 不做像素地图渲染
+- 不改变 worldEngine 调度
+- 旧存档通过 HomeSystem.restore 自动补齐空间结构

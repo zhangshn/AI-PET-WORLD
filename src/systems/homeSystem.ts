@@ -4,7 +4,11 @@
 
 import type { GenderAwareBehaviorBias } from "../ai/gateway"
 import type { HomeState } from "../types/home"
-import { buildHome } from "./home/home-gateway"
+import {
+  buildHome,
+  createInitialHomeSpaces,
+  syncHomeSpaces,
+} from "./home/home-gateway"
 
 export class HomeSystem {
   private home: HomeState
@@ -20,11 +24,15 @@ export class HomeSystem {
       comfort: 35,
       stability: 45,
       expansion: 20,
+      homeSpaces: createInitialHomeSpaces(),
     }
   }
 
   restore(home: HomeState): void {
-    this.home = { ...home }
+    this.home = {
+      ...home,
+      homeSpaces: syncHomeSpaces(home),
+    }
   }
 
   build(amount: number, behaviorBias?: GenderAwareBehaviorBias | null) {
@@ -36,7 +44,13 @@ export class HomeSystem {
   }
 
   getHome(): HomeState {
-    return { ...this.home }
+    return {
+      ...this.home,
+      homeSpaces: this.home.homeSpaces?.map((space) => ({
+        ...space,
+        tags: [...space.tags],
+      })),
+    }
   }
 }
 
