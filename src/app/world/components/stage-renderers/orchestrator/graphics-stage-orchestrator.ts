@@ -13,6 +13,7 @@ import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
 import {
   animateStimulusVisuals,
+  syncStageAffordances,
   type ActorMotionState,
   type CoreActorVisualRegistry,
   type RuntimeEntityVisualRegistry,
@@ -84,6 +85,18 @@ export function syncGraphicsStage(input: SyncGraphicsStageInput) {
     visuals: input.stimulusVisuals,
     phase: input.renderState.phase,
   })
+
+  if (input.layers.affordanceLayer) {
+    syncStageAffordances({
+      layer: input.layers.affordanceLayer,
+      sceneMode: input.sceneMode,
+      map: input.runtime?.map ?? null,
+      home: input.home,
+      incubator: input.incubator,
+      pet: input.pet,
+      phase: input.renderState.phase,
+    })
+  }
 
   syncStageOverlay({
     overlay: input.layers.overlay,
