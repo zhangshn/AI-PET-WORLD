@@ -18,6 +18,10 @@ import type {
 } from "../agent-perception/agent-world-perception"
 
 import type {
+  AgentConsciousnessInterpretation,
+} from "../agent-perception/agent-consciousness-interpretation"
+
+import type {
   ButlerTaskDecisionTrace,
 } from "./task/butler-task-decision-trace"
 
@@ -124,6 +128,12 @@ export type ButlerState = {
    * 只表示当前管家准备如何执行任务，不代表已经直接修改世界。
    */
   latestBehaviorExecution?: ButlerBehaviorExecution | null
+
+  /**
+   * 管家最近一次意识解释快照。
+   * 只表示管家如何解释世界感知线索，不代表命令或强制行为。
+   */
+  latestWorldInterpretation?: AgentConsciousnessInterpretation | null
 
   /**
    * 管家最近一次主动消息判断快照。
