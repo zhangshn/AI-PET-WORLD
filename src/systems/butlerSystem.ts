@@ -33,6 +33,7 @@ import {
   removeExpiredOpportunities,
   updateButlerRelationFromOpportunityFeedback,
   updateButlerRelationFromTaskDecision,
+  updateButlerRelationFromBehaviorExecutionMemory,
   type ButlerMemoryState,
   type ButlerOpportunity,
   type ButlerOpportunityFeedback,
@@ -270,6 +271,12 @@ export class ButlerSystem {
       memory: this.state.memory,
       entry,
       maxEntries: 80,
+    })
+
+    this.state.relation = updateButlerRelationFromBehaviorExecutionMemory({
+      relation: this.state.relation,
+      memoryEntry: this.state.memory.latestEntry,
+      tick,
     })
   }
 

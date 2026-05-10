@@ -71,6 +71,7 @@ export {
   shouldRememberTaskDecision,
   createInitialButlerRelationState,
   updateButlerRelationFromOpportunityFeedback,
+  updateButlerRelationFromBehaviorExecutionMemory,
   updateButlerRelationFromTaskDecision,
   buildButlerExperienceInterpretation,
   buildButlerRelationTaskTuning,

@@ -24,6 +24,7 @@ export type {
 
 export {
   createInitialButlerRelationState,
+  updateButlerRelationFromBehaviorExecutionMemory,
   updateButlerRelationFromOpportunityFeedback,
   updateButlerRelationFromTaskDecision,
 } from "./butler-relation"

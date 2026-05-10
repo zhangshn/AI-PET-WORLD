@@ -278,6 +278,59 @@ function buildOpportunityFeedbackTags(input: {
   return uniqueTags(tags).slice(0, 36)
 }
 
+function buildBehaviorExecutionMemoryTags(input: {
+  relation: ButlerRelationState
+  memoryEntry: ButlerMemoryEntry
+}): string[] {
+  const tags = [
+    ...input.relation.tags,
+    `relation_tone_${input.relation.tone}`,
+    "behavior_execution_memory",
+  ]
+
+  if (input.memoryEntry.tags.includes("goal_driven_execution")) {
+    tags.push("goal_driven_execution")
+  }
+
+  const homeGoalTag = input.memoryEntry.tags.find((tag) =>
+    tag.startsWith("home_goal_")
+  )
+
+  if (homeGoalTag) {
+    tags.push(homeGoalTag)
+  }
+
+  if (input.memoryEntry.tags.includes("home_effect_allowed")) {
+    tags.push("home_effect_allowed")
+  }
+
+  if (input.memoryEntry.tags.includes("no_pet_control")) {
+    tags.push("no_pet_control")
+  }
+
+  if (input.memoryEntry.tags.includes("incubator_watch")) {
+    tags.push("relation_memory_incubator_watch")
+  }
+
+  if (input.memoryEntry.tags.includes("home_building")) {
+    tags.push("relation_memory_home_building")
+  }
+
+  if (input.memoryEntry.tags.includes("home_maintenance")) {
+    tags.push("relation_memory_home_maintenance")
+  }
+
+  if (input.memoryEntry.tags.includes("space_tidying")) {
+    tags.push("relation_memory_space_tidying")
+  }
+
+  tags.push(
+    `observation_soft_cap_${getObservationFamiliaritySoftCap(input.relation)}`
+  )
+
+  return uniqueTags(tags).slice(0, 36)
+}
+
 function deriveRelationDelta(input: {
   relation: ButlerRelationState
   trace: ButlerTaskDecisionTrace
@@ -441,6 +494,81 @@ function deriveOpportunityFeedbackDelta(
   }
 }
 
+function deriveBehaviorExecutionMemoryDelta(input: {
+  relation: ButlerRelationState
+  memoryEntry: ButlerMemoryEntry
+}) {
+  const entry = input.memoryEntry
+
+  if (!entry.tags.includes("behavior_execution")) {
+    return {
+      familiarity: 0,
+      trustEstimate: 0,
+      careHistory: 0,
+      observationCount: 0,
+    }
+  }
+
+  if (!entry.tags.includes("goal_driven_execution")) {
+    return {
+      familiarity: 0,
+      trustEstimate: 0,
+      careHistory: 0,
+      observationCount: 0,
+    }
+  }
+
+  const repeatBonus =
+    entry.repeatCount >= 6
+      ? 2
+      : entry.repeatCount >= 3
+        ? 1
+        : 0
+
+  if (entry.tags.includes("incubator_watch")) {
+    return {
+      familiarity: input.relation.familiarity < 30 ? 1 : 0,
+      trustEstimate: 0,
+      careHistory: 1,
+      observationCount: 1 + repeatBonus,
+    }
+  }
+
+  if (entry.tags.includes("home_building")) {
+    return {
+      familiarity: input.relation.familiarity < 36 ? 1 : 0,
+      trustEstimate: 0,
+      careHistory: 0,
+      observationCount: repeatBonus,
+    }
+  }
+
+  if (entry.tags.includes("home_maintenance")) {
+    return {
+      familiarity: input.relation.familiarity < 42 ? 1 : 0,
+      trustEstimate: 0,
+      careHistory: 1,
+      observationCount: 1,
+    }
+  }
+
+  if (entry.tags.includes("space_tidying")) {
+    return {
+      familiarity: input.relation.familiarity < 40 ? 1 : 0,
+      trustEstimate: 0,
+      careHistory: 0,
+      observationCount: 1,
+    }
+  }
+
+  return {
+    familiarity: 0,
+    trustEstimate: 0,
+    careHistory: 0,
+    observationCount: 0,
+  }
+}
+
 export function updateButlerRelationFromTaskDecision(input: {
   relation: ButlerRelationState
   trace: ButlerTaskDecisionTrace | null | undefined
@@ -555,6 +683,74 @@ export function updateButlerRelationFromOpportunityFeedback(input: {
     tags: buildOpportunityFeedbackTags({
       relation: nextRelation,
       feedback: input.feedback,
+    }),
+  }
+}
+
+export function updateButlerRelationFromBehaviorExecutionMemory(input: {
+  relation: ButlerRelationState
+  memoryEntry: ButlerMemoryEntry | null | undefined
+  tick: number
+}): ButlerRelationState {
+  if (!input.memoryEntry) {
+    return input.relation
+  }
+
+  if (!input.memoryEntry.tags.includes("behavior_execution")) {
+    return input.relation
+  }
+
+  if (!input.memoryEntry.tags.includes("goal_driven_execution")) {
+    return input.relation
+  }
+
+  const delta = deriveBehaviorExecutionMemoryDelta({
+    relation: input.relation,
+    memoryEntry: input.memoryEntry,
+  })
+
+  const shouldTouchInteraction =
+    delta.familiarity > 0 ||
+    delta.trustEstimate > 0 ||
+    delta.careHistory > 0 ||
+    delta.observationCount > 0
+
+  const base = {
+    familiarity: applyFamiliaritySoftCap({
+      current: input.relation.familiarity,
+      delta: delta.familiarity,
+      softCap: getObservationFamiliaritySoftCap(input.relation),
+    }),
+    trustEstimate: applyTrustSoftCap({
+      current: input.relation.trustEstimate,
+      delta: delta.trustEstimate,
+      successfulOffers: input.relation.successfulOffers,
+      rejectedOffers: input.relation.rejectedOffers,
+    }),
+    careHistory: input.relation.careHistory + delta.careHistory,
+    observationCount:
+      input.relation.observationCount + delta.observationCount,
+    successfulOffers: input.relation.successfulOffers,
+    rejectedOffers: input.relation.rejectedOffers,
+    lastInteractionTick: shouldTouchInteraction
+      ? input.tick
+      : input.relation.lastInteractionTick,
+    latestOpportunityFeedback: input.relation.latestOpportunityFeedback,
+  }
+
+  const tone = rebuildRelationTone(base)
+
+  const nextRelation: ButlerRelationState = {
+    ...base,
+    tone,
+    tags: [],
+  }
+
+  return {
+    ...nextRelation,
+    tags: buildBehaviorExecutionMemoryTags({
+      relation: nextRelation,
+      memoryEntry: input.memoryEntry,
     }),
   }
 }
