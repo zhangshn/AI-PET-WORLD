@@ -151,9 +151,19 @@ export class WorldEngine {
     const now = Date.now()
 
     return {
+      version: WORLD_SAVE_VERSION,
       saveVersion: WORLD_SAVE_VERSION,
       savedAt: now,
       lastPlayedAt: now,
+      tick: this.tick,
+      time: this.timeSystem.getTime(),
+      pet: this.petSystem.getPet(),
+      butler: this.butlerSystem.getState(),
+      home: this.homeSystem.getHome(),
+      incubator: this.incubatorSystem.getIncubator(),
+      worldRuntime: this.worldRuntime,
+      ecology: this.worldRuntime.ecology,
+      tags: [source],
 
       engine: {
         tick: this.tick,

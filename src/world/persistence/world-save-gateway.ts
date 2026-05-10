@@ -4,15 +4,21 @@
 
 export {
   WORLD_SAVE_VERSION,
+  type WorldSaveMetadata,
   type WorldSaveSnapshot,
   type WorldSaveSource,
   type WorldSaveValidationResult,
-} from "./world-save-types"
+} from "./world-save-schema"
 
 export {
+  clearWorldSnapshot,
   clearWorldSnapshotFromLocal,
   getWorldSaveStorageKey,
+  hasWorldSnapshot,
   loadWorldSnapshotFromLocal,
+  loadWorldSnapshot,
+  normalizeWorldSaveSnapshot,
+  saveWorldSnapshot,
   saveWorldSnapshotToLocal,
   validateWorldSaveSnapshot,
 } from "./world-save-store"

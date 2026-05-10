@@ -1,36 +1,52 @@
 "use client"
 
 /**
- * 当前文件负责：集中管理 /world 页面所需的世界运行状态，并接入本地存档读取与自动保存。
+ * 当前文件负责：集中管理 /world 页面运行状态与本地存档。
  */
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
-import { worldEngine } from "@/engine/worldEngine"
-
 import {
-  loadWorldSnapshotFromLocal,
-  saveWorldSnapshotToLocal,
+  worldEngine,
+} from "@/engine/worldEngine"
+import {
+  loadWorldSnapshot,
+  saveWorldSnapshot,
 } from "@/world/persistence/world-save-gateway"
 
-import {
-  buildOfflineCatchupPlan,
-  buildOfflineCatchupResult,
-} from "@/world/offline/offline-catchup-gateway"
-
-import type { TimeState } from "@/engine/timeSystem"
-import type { PetState } from "@/types/pet"
-import type { WorldEvent } from "@/types/event"
+import type {
+  TimeState,
+} from "@/engine/timeSystem"
 import type {
   ButlerProfile,
   WorldStimulus,
 } from "@/ai/gateway"
-import type { ButlerState } from "@/types/butler"
-import type { HomeState } from "@/types/home"
-import type { IncubatorState } from "@/types/incubator"
-import type { WorldEcologyState } from "@/world/ecology/ecology-engine"
-import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
-import type { WorldProgressionState } from "@/world/progression/world-progression-gateway"
+import type {
+  ButlerState,
+} from "@/types/butler"
+import type {
+  WorldEvent,
+} from "@/types/event"
+import type {
+  HomeState,
+} from "@/types/home"
+import type {
+  IncubatorState,
+} from "@/types/incubator"
+import type {
+  PetState,
+} from "@/types/pet"
+import type {
+  WorldEcologyState,
+} from "@/world/ecology/ecology-engine"
+import type {
+  WorldProgressionState,
+} from "@/world/progression/world-progression-gateway"
+import type {
+  WorldRuntimeState,
+} from "@/world/runtime/world-runtime"
+
+const AUTO_SAVE_INTERVAL_MS = 4000
 
 export type WorldEngineViewState = {
   time: TimeState | null
@@ -66,48 +82,16 @@ function readWorldEngineState() {
 }
 
 function saveCurrentWorldSnapshot(): void {
-  const snapshot = worldEngine.createSaveSnapshot("auto_save")
-  saveWorldSnapshotToLocal(snapshot)
-}
-
-function saveOfflineCatchupWorldSnapshot(): void {
-  const snapshot = worldEngine.createSaveSnapshot("offline_catchup")
-  saveWorldSnapshotToLocal(snapshot)
-}
-
-function runOfflineCatchupIfNeeded(lastSavedAt: number): void {
-  const plan = buildOfflineCatchupPlan({
-    lastSavedAt,
-    now: Date.now(),
-  })
-
-  if (!plan.shouldCatchup) {
-    return
-  }
-
-  const startedAtTick = worldEngine.getTick()
-
-  for (let index = 0; index < plan.tickCount; index += 1) {
-    worldEngine.update()
-  }
-
-  const result = buildOfflineCatchupResult({
-    plan,
-    startedAtTick,
-    endedAtTick: worldEngine.getTick(),
-  })
-
-  worldEngine.addOfflineCatchupReport(result)
-
-  console.info("🌙 离线补算完成：", result)
-
-  saveOfflineCatchupWorldSnapshot()
+  saveWorldSnapshot(worldEngine.createSaveSnapshot("auto_save"))
 }
 
 export function useWorldEngineState(): WorldEngineViewState {
   const didBootRef = useRef(false)
+  const lastAutoSaveAtRef = useRef(0)
 
-  const [time, setTime] = useState<TimeState | null>(() => worldEngine.getTime())
+  const [time, setTime] = useState<TimeState | null>(() =>
+    worldEngine.getTime()
+  )
   const [pet, setPet] = useState<PetState | null>(() => worldEngine.getPet())
   const [butler, setButler] = useState<ButlerState | null>(() =>
     worldEngine.getButler()
@@ -181,27 +165,32 @@ export function useWorldEngineState(): WorldEngineViewState {
   }, [toggleDeveloperPanel])
 
   useEffect(() => {
-    if (didBootRef.current) {
-      return
-    }
+    if (didBootRef.current) return
 
     didBootRef.current = true
 
-    const savedSnapshot = loadWorldSnapshotFromLocal()
+    const savedSnapshot = loadWorldSnapshot()
 
-     if (savedSnapshot) {
+    if (savedSnapshot) {
       worldEngine.restoreFromSnapshot(savedSnapshot)
-      runOfflineCatchupIfNeeded(savedSnapshot.savedAt)
     } else {
       worldEngine.initialize()
       saveCurrentWorldSnapshot()
+      lastAutoSaveAtRef.current = Date.now()
     }
 
     syncWorld()
 
     const interval = setInterval(() => {
       worldEngine.update()
-      saveCurrentWorldSnapshot()
+
+      const now = Date.now()
+
+      if (now - lastAutoSaveAtRef.current >= AUTO_SAVE_INTERVAL_MS) {
+        saveCurrentWorldSnapshot()
+        lastAutoSaveAtRef.current = now
+      }
+
       syncWorld()
     }, 2000)
 
