@@ -17,6 +17,7 @@ import type { WorldZone } from "../world/ecology/world-zone-types"
 
 import { buildInitialPetMemoryState } from "../ai/memory-core/memory-gateway"
 import { buildPetWorldPerception } from "./agent-perception/agent-world-perception"
+import { interpretPetWorldPerception } from "./agent-perception/agent-consciousness-interpretation"
 
 import {
   runPetStimulusPerception,
@@ -152,6 +153,7 @@ export class PetSystem {
       learningState,
       timelineSnapshot,
       latestWorldPerception: null,
+      latestWorldInterpretation: null,
       latestCognition: null,
       recentCognition: [],
       activeBehaviorProcess: null,
@@ -199,10 +201,16 @@ export class PetSystem {
     this.lastDecisionReason = result.lastDecisionReason
 
     if (this.pet) {
+      const latestWorldPerception = buildPetWorldPerception({
+        home,
+      })
+
       this.pet = {
         ...this.pet,
-        latestWorldPerception: buildPetWorldPerception({
-          home,
+        latestWorldPerception,
+        latestWorldInterpretation: interpretPetWorldPerception({
+          perception: latestWorldPerception,
+          consciousness: this.pet.consciousnessProfile,
         }),
       }
     }
@@ -338,6 +346,7 @@ export class PetSystem {
       ...pet,
       learningState: pet.learningState ?? createInitialPetLearningState(),
       latestWorldPerception: pet.latestWorldPerception ?? null,
+      latestWorldInterpretation: pet.latestWorldInterpretation ?? null,
     }
 
     this.pet = restoredPet
