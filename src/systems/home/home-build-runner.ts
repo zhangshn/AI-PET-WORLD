@@ -6,6 +6,7 @@ import type { GenderAwareBehaviorBias } from "@/ai/gateway"
 import type { HomeState } from "@/types/home"
 import { resolveEvolutionFocus } from "./home-evolution-runner"
 import { resolveConstructionStage } from "./home-stage-runner"
+import { buildHomeSpaceSummary } from "./home-space-summary-runner"
 import { syncHomeSpaces } from "./home-space-runner"
 import { clamp } from "./home-utils"
 
@@ -15,14 +16,23 @@ export type BuildHomeInput = {
   behaviorBias?: GenderAwareBehaviorBias | null
 }
 
+function syncHomeDerivedState(home: HomeState): HomeState {
+  const homeWithSpaces: HomeState = {
+    ...home,
+    homeSpaces: syncHomeSpaces(home),
+  }
+
+  return {
+    ...homeWithSpaces,
+    spaceSummary: buildHomeSpaceSummary(homeWithSpaces),
+  }
+}
+
 export function buildHome(input: BuildHomeInput): HomeState {
   const nextHome: HomeState = { ...input.home }
 
   if (nextHome.status === "completed") {
-    return {
-      ...nextHome,
-      homeSpaces: syncHomeSpaces(nextHome),
-    }
+    return syncHomeDerivedState(nextHome)
   }
 
   const building = input.behaviorBias?.buildingBias
@@ -67,8 +77,5 @@ export function buildHome(input: BuildHomeInput): HomeState {
     nextHome.level = Math.max(nextHome.level, 2)
   }
 
-  return {
-    ...nextHome,
-    homeSpaces: syncHomeSpaces(nextHome),
-  }
+  return syncHomeDerivedState(nextHome)
 }

@@ -60,6 +60,21 @@ export type HomeSpaceState = {
   tags: string[]
 }
 
+export type HomeSpaceSummary = {
+  primarySpaceId: HomeSpaceId
+  primarySpaceName: string
+  buildingSpaceIds: HomeSpaceId[]
+  activeSpaceIds: HomeSpaceId[]
+  availableSpaceIds: HomeSpaceId[]
+  maintenanceSpaceIds: HomeSpaceId[]
+  activitySpaceIds: HomeSpaceId[]
+  overallComfort: number
+  overallStability: number
+  overallActivity: number
+  summary: string
+  tags: string[]
+}
+
 export type HomeState = {
   level: number
   progress: number
@@ -71,4 +86,5 @@ export type HomeState = {
   stability: number
   expansion: number
   homeSpaces?: HomeSpaceState[]
+  spaceSummary?: HomeSpaceSummary
 }

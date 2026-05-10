@@ -1098,3 +1098,46 @@ HomeState.homeSpaces
 - 不做像素地图渲染
 - 不改变 worldEngine 调度
 - 旧存档通过 HomeSystem.restore 自动补齐空间结构
+
+## 48. HOME-SPACE-BATCH-4 当前状态
+
+当前已经建立家园空间摘要第一阶段。
+
+新增 / 更新：
+
+- `HomeSpaceSummary`
+- `HomeState.spaceSummary`
+- `buildHomeSpaceSummary`
+
+当前摘要包括：
+
+- 当前主空间
+- 正在建设空间
+- 已激活空间
+- 可用空间
+- 需要维护空间
+- 可活动空间
+- 家园整体舒适度
+- 家园整体稳定度
+- 家园整体活跃度
+- summary 文本
+- tags
+
+当前链路：
+
+```txt
+HomeState.homeSpaces
+↓
+buildHomeSpaceSummary
+↓
+HomeState.spaceSummary
+```
+
+当前边界：
+
+- spaceSummary 只用于展示和后续空间选择
+- 不控制宠物行为
+- 不接 PixiJS
+- 不做像素地图渲染
+- 不改变 worldEngine 调度
+- 旧存档通过 HomeSystem.restore 自动补齐摘要
