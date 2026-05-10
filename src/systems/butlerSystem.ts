@@ -14,6 +14,10 @@ import {
 } from "./agent-perception/agent-world-perception"
 
 import {
+  interpretButlerWorldPerception,
+} from "./agent-perception/agent-consciousness-interpretation"
+
+import {
   appendButlerMemoryEntry,
   buildButlerBehaviorExecution,
   buildButlerEducationStrategy,
@@ -106,6 +110,7 @@ export class ButlerSystem {
     latestTaskDecisionTrace: null,
     latestEducationStrategy: null,
     latestBehaviorExecution: null,
+    latestWorldInterpretation: null,
     latestMessageDecision: null,
     latestMessageDeliveryDecision: null,
     memory: createInitialButlerMemoryState(),
@@ -120,6 +125,12 @@ export class ButlerSystem {
     const butlerWorldPerception = buildButlerWorldPerception({
       home: input.home,
     })
+    const butlerWorldInterpretation = interpretButlerWorldPerception({
+      perception: butlerWorldPerception,
+      profile: this.state.profile ?? null,
+    })
+
+    this.state.latestWorldInterpretation = butlerWorldInterpretation
 
     this.recordExpiredOpportunities(input.tick)
 
@@ -431,6 +442,7 @@ export class ButlerSystem {
       opportunityCooldowns: { ...state.opportunityCooldowns },
       latestEducationStrategy: state.latestEducationStrategy ?? null,
       latestBehaviorExecution: state.latestBehaviorExecution ?? null,
+      latestWorldInterpretation: state.latestWorldInterpretation ?? null,
       latestMessageDecision: state.latestMessageDecision ?? null,
       latestMessageDeliveryDecision: state.latestMessageDeliveryDecision ?? null,
       memory: {
