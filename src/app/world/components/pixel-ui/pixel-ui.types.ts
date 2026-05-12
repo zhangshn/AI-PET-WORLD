@@ -36,3 +36,29 @@ export type PixelLayerStackProps = {
   children?: ReactNode
   debug?: boolean
 }
+
+export type PixelPartVariant =
+  | "default"
+  | "light"
+  | "dark"
+  | "warm"
+  | "quiet"
+  | "structured"
+  | "wild"
+  | "soft"
+
+export type PixelPartState =
+  | "idle"
+  | "active"
+  | "maintained"
+  | "overgrown"
+  | "trampled"
+  | "new"
+  | "aged"
+
+export type PixelPartProps = {
+  variant?: PixelPartVariant
+  state?: PixelPartState
+  debug?: boolean
+  className?: string
+}
