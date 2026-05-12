@@ -52,6 +52,9 @@ import type {
 import type {
   WorldRuntimeState,
 } from "@/world/runtime/world-runtime"
+import type {
+  AdoptionState,
+} from "@/world/adoption/adoption-center-gateway"
 
 const AUTO_SAVE_INTERVAL_MS = 4000
 
@@ -61,6 +64,7 @@ export type WorldEngineViewState = {
   butler: ButlerState | null
   home: HomeState | null
   incubator: IncubatorState | null
+  adoptionState: AdoptionState
   events: WorldEvent[]
   stimuli: WorldStimulus[]
   tick: number
@@ -80,6 +84,7 @@ function readWorldEngineState() {
     butler: worldEngine.getButler(),
     home: worldEngine.getHome(),
     incubator: worldEngine.getIncubator(),
+    adoptionState: worldEngine.getAdoptionState(),
     events: worldEngine.getEvents(),
     stimuli: worldEngine.getWorldStimuli(),
     tick: worldEngine.getTick(),
@@ -115,6 +120,9 @@ export function useWorldEngineState(): WorldEngineViewState {
   const [incubator, setIncubator] = useState<IncubatorState | null>(() =>
     worldEngine.getIncubator()
   )
+  const [adoptionState, setAdoptionState] = useState<AdoptionState>(() =>
+    worldEngine.getAdoptionState()
+  )
   const [events, setEvents] = useState<WorldEvent[]>(() =>
     worldEngine.getEvents()
   )
@@ -144,6 +152,7 @@ export function useWorldEngineState(): WorldEngineViewState {
     setButler(nextState.butler)
     setHome(nextState.home)
     setIncubator(nextState.incubator)
+    setAdoptionState(nextState.adoptionState)
     setEvents(nextState.events)
     setStimuli(nextState.stimuli)
     setTick(nextState.tick)
@@ -247,6 +256,7 @@ export function useWorldEngineState(): WorldEngineViewState {
     butler,
     home,
     incubator,
+    adoptionState,
     events,
     stimuli,
     tick,

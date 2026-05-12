@@ -36,7 +36,7 @@ export default function WorldHomeSpaceStatusOverlay({
         <div className={styles.kicker}>Home Space</div>
         <h2 className={styles.title}>家园空间正在初始化</h2>
         <p className={styles.description}>
-          管家正在确认最初的空地、孵化器区域和临时住所。
+          管家正在确认最初的空地、宠物抵达点和临时住所。
         </p>
       </section>
     )

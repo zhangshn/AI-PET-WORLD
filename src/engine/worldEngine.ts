@@ -14,6 +14,10 @@ import type { IncubatorState } from "../types/incubator"
 import type { WorldEvent } from "../types/event"
 import type { WorldEcologyState } from "../world/ecology/ecology-engine"
 import type { WorldRuntimeState } from "../world/runtime/world-runtime"
+import {
+  buildAdoptionStateFromIncubator,
+  type AdoptionState,
+} from "../world/adoption/adoption-center-gateway"
 
 import {
   exportAiDataSnapshot,
@@ -227,7 +231,7 @@ addOfflineCatchupReport(result: OfflineCatchupResult): void {
 
     const petStateText = pet
       ? `宠物目前保持${pet.action}，能量 ${pet.energy}，饥饿 ${pet.hunger}，情绪 ${pet.mood}。`
-      : "孵化器仍是当前世界的主要照看对象。"
+      : "领养宠物的抵达准备仍是当前世界的主要照看对象。"
 
     this.eventSystem.addInteractionEvent({
       tick: this.tick,
@@ -331,6 +335,19 @@ addOfflineCatchupReport(result: OfflineCatchupResult): void {
 
   getIncubator(): IncubatorState {
     return this.incubatorSystem.getIncubator()
+  }
+
+  getAdoptionState(): AdoptionState {
+    const time = this.timeSystem.getTime()
+
+    return buildAdoptionStateFromIncubator(
+      this.incubatorSystem.getIncubator(),
+      {
+        tick: this.tick,
+        day: time.day,
+        hour: time.hour,
+      }
+    )
   }
 
   getEvents(): WorldEvent[] {

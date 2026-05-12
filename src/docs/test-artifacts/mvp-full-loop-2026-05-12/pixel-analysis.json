@@ -1,0 +1,48 @@
+{
+  "01_initial_world.png": {
+    "size": [
+      1366,
+      860
+    ],
+    "sampleUniqueColors": 15188,
+    "brightnessMean": 107.4,
+    "brightnessStdev": 21.92
+  },
+  "02_after_runtime.png": {
+    "size": [
+      1366,
+      860
+    ],
+    "sampleUniqueColors": 15198,
+    "brightnessMean": 107.38,
+    "brightnessStdev": 21.94
+  },
+  "04_before_click.png": {
+    "size": [
+      1366,
+      860
+    ],
+    "sampleUniqueColors": 15217,
+    "brightnessMean": 107.38,
+    "brightnessStdev": 21.93
+  },
+  "05_after_click_feedback.png": {
+    "size": [
+      1366,
+      860
+    ],
+    "sampleUniqueColors": 15213,
+    "brightnessMean": 107.38,
+    "brightnessStdev": 21.93
+  },
+  "runtimeDiff_01_to_02": {
+    "changedSamplePixels": 108,
+    "changedRatio": 0.0067,
+    "meanDiff": 0.9
+  },
+  "clickDiff_04_to_05": {
+    "changedSamplePixels": 53,
+    "changedRatio": 0.0033,
+    "meanDiff": 0.37
+  }
+}

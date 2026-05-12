@@ -107,17 +107,17 @@ export default function PetInsightCard({ pet }: Props) {
         <div className={styles.header}>
           <div>
             <div className={styles.eyebrow}>DIGITAL LIFE</div>
-            <h2 className={styles.name}>等待诞生</h2>
+            <h2 className={styles.name}>等待抵达</h2>
           </div>
 
-          <div className={styles.mood}>孵化中</div>
+          <div className={styles.mood}>领养流程中</div>
         </div>
 
         <div className={styles.section}>
           <div className={styles.sectionTitle}>当前状态</div>
 
           <p className={styles.description}>
-            世界正在等待新的生命反应。孵化器保持运行，管家会优先确认其中的稳定度。
+            管家已经向小镇宠物领养中心提交申请，世界正在等待宠物被分配并送达家园。
           </p>
         </div>
       </section>

@@ -32,6 +32,9 @@ import type {
 import type {
   WorldRuntimeState,
 } from "@/world/runtime/world-runtime"
+import type {
+  AdoptionState,
+} from "@/world/adoption/adoption-center-gateway"
 
 import type {
   MvpCheckItem,
@@ -46,6 +49,7 @@ export type BuildMvpWorldCheckReportInput = {
   butler: ButlerState | null
   home: HomeState | null
   incubator: IncubatorState | null
+  adoptionState: AdoptionState | null
   worldRuntime: WorldRuntimeState | null
   ecology: WorldEcologyState | null
   worldProgression: WorldProgressionState | null
@@ -75,6 +79,12 @@ function hasValidNumber(value: unknown): boolean {
   return typeof value === "number" && Number.isFinite(value)
 }
 
+function formatAdoptionStatus(adoption: AdoptionState | null): string {
+  if (!adoption) return "missing"
+
+  return `${adoption.status} / ${adoption.progress}% / readiness ${adoption.readiness}%`
+}
+
 export function buildMvpWorldCheckReport(
   input: BuildMvpWorldCheckReportInput
 ): MvpCheckReport {
@@ -82,9 +92,9 @@ export function buildMvpWorldCheckReport(
     buildItem({
       id: "world_initialized",
       title: "世界初始化",
-      status: input.time && input.home && input.incubator ? "pass" : "fail",
+      status: input.time && input.home && input.adoptionState ? "pass" : "fail",
       message:
-        input.time && input.home && input.incubator
+        input.time && input.home && input.adoptionState
           ? "世界基础状态已经可读取。"
           : "世界基础状态缺失，MVP 主循环无法可靠运行。",
       tags: ["mvp", "world", "initialization"],
@@ -129,30 +139,30 @@ export function buildMvpWorldCheckReport(
       tags: ["mvp", "home"],
     }),
     buildItem({
-      id: "incubator_available",
-      title: "孵化器状态",
-      status: input.incubator ? "pass" : "fail",
-      message: input.incubator
-        ? `孵化器状态 ${input.incubator.status}。`
-        : "孵化器状态缺失。",
-      tags: ["mvp", "incubator"],
+      id: "adoption_available",
+      title: "领养 / 抵达状态",
+      status: input.adoptionState ? "pass" : "fail",
+      message: input.adoptionState
+        ? `领养状态 ${formatAdoptionStatus(input.adoptionState)}。`
+        : "领养 / 抵达状态缺失。",
+      tags: ["mvp", "adoption", "arrival"],
     }),
     buildItem({
-      id: "pre_birth_incubator_valid",
-      title: "出生前孵化器有效",
+      id: "pre_arrival_adoption_valid",
+      title: "宠物抵达前领养状态有效",
       status:
-        input.pet || input.incubator?.status === "hatched"
+        input.pet || input.adoptionState?.status === "arrived"
           ? "pass"
-          : input.incubator?.hasEmbryo
+          : input.adoptionState?.hasPendingPet
             ? "pass"
             : "warn",
       message:
-        input.pet || input.incubator?.status === "hatched"
-          ? "宠物已出生或孵化器已完成孵化。"
-          : input.incubator?.hasEmbryo
-            ? "宠物未出生时，孵化器仍持有胚胎。"
-            : "宠物未出生，但孵化器没有胚胎标记。",
-      tags: ["mvp", "incubator", "pet_birth"],
+        input.pet || input.adoptionState?.status === "arrived"
+          ? "宠物已抵达家园，并可作为建立关系的命格时刻。"
+          : input.adoptionState?.hasPendingPet
+            ? "宠物尚未抵达，领养中心仍有待送达宠物。"
+            : "宠物尚未抵达，且当前没有待送达宠物标记。",
+      tags: ["mvp", "adoption", "pet_arrival"],
     }),
     buildItem({
       id: "pet_runtime_valid",

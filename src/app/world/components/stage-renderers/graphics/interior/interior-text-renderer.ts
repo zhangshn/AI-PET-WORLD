@@ -19,7 +19,7 @@ export function drawInteriorText(layer: Container) {
   layer.addChild(title)
 
   const hint = new Text({
-    text: "孵化器是第一个宠物的生命起点；未来繁殖将进入独立的新生照护系统。",
+    text: "这里保留为第一个宠物的抵达照护点；未来领养与繁殖会进入独立系统。",
     style: new TextStyle({
       fill: 0xcbd5e1,
       fontSize: 11,

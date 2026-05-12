@@ -76,7 +76,7 @@ function buildAppShortcuts(input: {
       title: "宠物",
       subtitle: input.hud.pet.available
         ? input.hud.pet.actionLabel
-        : "等待诞生",
+        : "等待抵达",
       icon: "pet",
     },
     {

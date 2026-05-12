@@ -188,7 +188,7 @@ export default function ButlerTaskDecisionTracePanel({ trace }: Props) {
 
         {trace && trace.gates.length === 0 && (
           <p className={styles.empty}>
-            本轮没有记录 gate，可能是孵化器优先分支或待命分支。
+            本轮没有记录 gate，可能是领养抵达优先分支或待命分支。
           </p>
         )}
 
@@ -219,7 +219,7 @@ export default function ButlerTaskDecisionTracePanel({ trace }: Props) {
 
         {trace && trace.scores.length === 0 && (
           <p className={styles.empty}>
-            本轮没有记录 score，可能是孵化器优先分支或待命分支。
+            本轮没有记录 score，可能是领养抵达优先分支或待命分支。
           </p>
         )}
 

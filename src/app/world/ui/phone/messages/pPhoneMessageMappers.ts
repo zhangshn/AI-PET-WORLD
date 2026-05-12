@@ -226,7 +226,7 @@ function buildButlerStatusMessageText(hud: WorldHudBundle): string {
     return `${hud.pet.name} 正在自主活动。我会继续观察它的状态，也会把重要变化通过短信告诉你。`
   }
 
-  return "孵化器目前保持稳定。我会继续照看周围环境，等有重要变化时再通知你。"
+  return "领养宠物的抵达准备目前保持稳定。我会继续照看周围环境，等有重要变化时再通知你。"
 }
 
 function buildButlerStatusMessage(input: {

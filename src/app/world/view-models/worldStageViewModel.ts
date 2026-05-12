@@ -83,9 +83,9 @@ function buildPetActorViewModel(pet: PetState | null): WorldStageActorViewModel 
       id: "pet",
       name: "宠物",
       visible: false,
-      actionLabel: "尚未出生",
+      actionLabel: "等待抵达",
       moodLabel: "等待中",
-      intentionSummary: "胚胎仍在孵化，宠物意识尚未进入世界舞台。",
+      intentionSummary: "宠物还在领养中心的分配与送达流程中，尚未进入世界舞台。",
       perceptionSummary: null,
       interpretationSummary: null,
       lifeLineSummary: null,
@@ -193,9 +193,9 @@ function buildIncubatorViewModel(
   if (!incubator) {
     return {
       visible: false,
-      statusLabel: "无孵化器",
+      statusLabel: "无领养状态",
       progress: 0,
-      summary: "当前没有孵化器状态。",
+      summary: "当前没有领养 / 抵达状态。",
       tags: ["incubator_missing"],
     }
   }
@@ -204,7 +204,7 @@ function buildIncubatorViewModel(
     visible: true,
     statusLabel: incubator.status,
     progress: clampProgress(incubator.progress),
-    summary: `孵化器状态 ${incubator.status}，进度 ${clampProgress(incubator.progress)}%。`,
+    summary: `领养 / 抵达状态 ${incubator.status}，进度 ${clampProgress(incubator.progress)}%。`,
     tags: ["incubator_stage", `incubator_status_${incubator.status}`],
   }
 }
@@ -243,7 +243,7 @@ function buildVisibleStorySummary(input: {
   incubator: WorldStageIncubatorViewModel
 }): string {
   if (!input.pet.visible && input.incubator.visible) {
-    return `${input.butler.name}正在守着${input.incubator.statusLabel}的孵化器，家园仍处在${input.home.statusLabel}阶段。`
+    return `${input.butler.name}正在等待宠物从领养中心抵达，家园仍处在${input.home.statusLabel}阶段。`
   }
 
   if (input.pet.visible) {

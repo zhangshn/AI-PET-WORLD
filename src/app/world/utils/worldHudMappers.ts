@@ -175,15 +175,15 @@ export function buildPetHudData(pet: PetState | null): PetHudData {
   if (!pet) {
     return {
       available: false,
-      name: "等待诞生",
-      actionLabel: "孵化中",
+      name: "等待抵达",
+      actionLabel: "领养流程中",
       moodLabel: "未知",
-      lifePhaseLabel: "未出生",
+      lifePhaseLabel: "未抵达",
       genderPerspectiveLabel: "未知视角",
       temperamentLabel: "尚未生成",
-      currentTendencyLabel: "等待生命反应",
+      currentTendencyLabel: "等待宠物抵达",
       traitTags: [],
-      behaviorBiasSummary: "孵化完成后，生命倾向才会逐步进入世界表现。",
+      behaviorBiasSummary: "宠物抵达家园的那一刻，才会形成与这个世界建立关系的命格时刻。",
       meters: {
         energy: {
           label: "能量",

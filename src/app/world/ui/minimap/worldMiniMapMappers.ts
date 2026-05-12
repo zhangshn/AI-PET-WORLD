@@ -49,7 +49,7 @@ function resolvePetMarker(input: {
 
   if (!pet) {
     return {
-      helperText: "等待诞生",
+      helperText: "等待抵达",
       x: 64,
       y: 40,
     }
@@ -174,12 +174,14 @@ function buildMarkers(world: WorldEngineViewState): WorldMiniMapMarker[] {
     },
     {
       id: "incubator",
-      label: "孵化器",
-      helperText: world.pet ? "孵化完成" : "生命舱运行中",
+      label: "领养抵达",
+      helperText: world.pet
+        ? "宠物已抵达"
+        : world.adoptionState.status,
       x: 49,
       y: 50,
       tone: "incubator",
-      isVisible: Boolean(world.incubator),
+      isVisible: Boolean(world.adoptionState),
     },
     {
       id: "butler",

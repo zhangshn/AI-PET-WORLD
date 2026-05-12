@@ -31,7 +31,7 @@ export default function WorldObservationPanel({ events }: Props) {
       <div className={styles.list}>
         {latest.length === 0 && (
           <article className={styles.empty}>
-            世界暂时很安静。孵化器正在等待第一段生命反应。
+            世界暂时很安静。管家正在等待领养中心完成宠物送达。
           </article>
         )}
 

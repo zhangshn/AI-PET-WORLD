@@ -7,7 +7,7 @@ import type { ButlerState, ButlerTask } from "@/types/butler"
 export function getButlerTaskLabel(task?: ButlerTask): string {
   if (!task) return "待命"
 
-  if (task === "watching_incubator") return "照看孵化器"
+  if (task === "watching_incubator") return "跟进领养抵达"
   if (task === "building_home") return "建设家园"
   if (task === "watching_pet") return "观察宠物"
   if (task === "offering_food") return "提供食物机会"
@@ -108,7 +108,7 @@ export function buildButlerProfileSummary(butler: ButlerState): string {
 
 export function buildButlerSummary(butler: ButlerState): string {
   if (butler.task === "watching_incubator") {
-    return "管家正在优先确认孵化器状态。它的职责是维护环境，而不是替未来的生命决定性格。"
+    return "管家正在优先确认领养宠物的抵达准备。它的职责是维护环境，而不是替宠物决定性格。"
   }
 
   if (butler.task === "building_home") {

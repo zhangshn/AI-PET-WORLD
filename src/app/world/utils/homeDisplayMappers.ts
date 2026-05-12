@@ -60,8 +60,8 @@ export function buildHomeSummary(home: HomeState): string {
   }
 
   if (home.status === "building") {
-    return "家园正在建设中。管家会在孵化器和宠物状态允许时推进空间完善。"
+    return "家园正在建设中。管家会在领养抵达流程和宠物状态允许时推进空间完善。"
   }
 
-  return "家园暂时没有进入明显建设阶段。世界会优先处理孵化器和生命状态。"
+  return "家园暂时没有进入明显建设阶段。世界会优先处理领养抵达和宠物状态。"
 }

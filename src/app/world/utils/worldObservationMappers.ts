@@ -147,8 +147,8 @@ function getIncubatorCareSummary(event: WorldEvent): string {
   const stabilityAdded = getPayloadNumber(event.payload, "stabilityAdded")
 
   return joinSummaryParts([
-    "管家正在维持孵化器稳定。",
-    progressAdded !== null ? `孵化 +${progressAdded}` : "",
+    "管家正在确认领养宠物的抵达准备。",
+    progressAdded !== null ? `抵达准备 +${progressAdded}` : "",
     stabilityAdded !== null ? `稳定 +${stabilityAdded}` : "",
   ])
 }
@@ -156,7 +156,7 @@ function getIncubatorCareSummary(event: WorldEvent): string {
 function getIncubatorCareDetail(event: WorldEvent): string {
   const butlerName = getPayloadString(event.payload, "butlerName") ?? "管家"
 
-  return `${butlerName}正在照看孵化器。这个阶段的重点不是干预生命性格，而是保证生命能稳定完成孵化。`
+  return `${butlerName}正在跟进领养中心的送达准备。这个阶段的重点不是干预宠物性格，而是保证它抵达家园时环境稳定。`
 }
 
 function getHomeConstructionSummary(event: WorldEvent): string {
@@ -199,7 +199,7 @@ function getInteractionTitle(event: WorldEvent): string {
   }
 
   if (interactionKind === "incubator_care") {
-    return "孵化照看"
+    return "领养准备"
   }
 
   if (interactionKind === "home_construction") {
@@ -266,7 +266,7 @@ export function getWorldObservationCategoryLabel(event: WorldEvent): string {
 
   if (interactionKind === "butler_opportunity") return "管家机会"
   if (interactionKind === "pet_recovery") return "恢复记录"
-  if (interactionKind === "incubator_care") return "孵化管理"
+  if (interactionKind === "incubator_care") return "领养准备"
   if (interactionKind === "home_construction") return "家园管理"
   if (interactionKind === "home_completed") return "家园管理"
 
@@ -280,7 +280,7 @@ export function getWorldObservationCategoryLabel(event: WorldEvent): string {
     case "pet_trajectory_branch_changed":
       return "生命观察"
     case "incubator_progress_changed":
-      return "孵化记录"
+      return "抵达准备"
     case "time_period_changed":
       return "环境变化"
     case "interaction":
@@ -409,10 +409,10 @@ export function buildWorldObservationViewModel(
       category: getWorldObservationCategoryLabel(event),
       timeLabel,
       focus: null,
-      title: "孵化推进",
-      summary: "孵化器状态出现变化。",
+      title: "抵达准备推进",
+      summary: "领养宠物的抵达准备出现变化。",
       detail:
-        "孵化器状态有了新的推进。管家会继续优先确认稳定度，但不会替未来的生命决定它将成为什么样。",
+        "领养宠物的抵达准备有了新的推进。管家会继续优先确认稳定度，但不会替宠物决定它将成为什么样。",
     }
   }
 
