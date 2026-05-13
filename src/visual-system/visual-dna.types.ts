@@ -66,6 +66,12 @@ export type CarePriority =
   | "stability_first"
   | "context_first"
 
+export type VisualSource =
+  | "ziwei_primary"
+  | "bazi_fallback"
+  | "mixed"
+  | "mock"
+
 export type VisualDNA = {
   archetype: ZiweiVisualArchetype
   colorTone: VisualColorTone
@@ -80,7 +86,7 @@ export type VisualDNA = {
   protectionNeed: number
   decorationNeed: number
   confidence: number
-  source: "ziwei_primary" | "bazi_fallback" | "mock"
+  source: VisualSource
 }
 
 export type SpriteVariant = {
