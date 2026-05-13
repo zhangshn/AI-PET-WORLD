@@ -161,12 +161,12 @@
 }
 
 .frameGrid {
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
 }
 
 .frameCard {
   display: grid;
-  grid-template-columns: 96px 1fr;
+  grid-template-columns: 116px 1fr;
   gap: 16px;
   align-items: start;
 }
@@ -174,8 +174,8 @@
 .framePreview {
   display: grid;
   place-items: center;
-  width: 96px;
-  height: 96px;
+  width: 116px;
+  height: 116px;
   border: 2px solid #29342d;
   background:
     linear-gradient(#1a211b 2px, transparent 2px),
@@ -184,13 +184,282 @@
   background-size: 16px 16px;
 }
 
-.framePreview span {
+.previewSprite,
+.previewSprite i {
+  position: relative;
   display: block;
+  box-sizing: border-box;
+}
+
+.previewSprite {
+  border: 0;
+  background: transparent;
+  image-rendering: pixelated;
+}
+
+.previewButler .partHead {
+  position: absolute;
+  left: 50%;
+  top: 2px;
+  width: 16px;
+  height: 16px;
+  transform: translateX(-50%);
   border: 3px solid #4b3528;
-  background: #8f9d58;
-  box-shadow:
-    4px 4px 0 #425037,
-    inset -4px -4px 0 rgba(0, 0, 0, 0.16);
+  background: #d7a071;
+}
+
+.previewButler .partBody {
+  position: absolute;
+  left: 50%;
+  top: 20px;
+  width: 22px;
+  height: 25px;
+  transform: translateX(-50%);
+  border: 3px solid #3f332b;
+  background: #8da0a6;
+  box-shadow: inset -4px -4px 0 rgba(0, 0, 0, 0.16);
+}
+
+.previewButler .partHead::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 6px;
+  width: 3px;
+  height: 3px;
+  background: #2d211c;
+  box-shadow: 7px 0 0 #2d211c;
+}
+
+.partArmLeft,
+.partArmRight {
+  position: absolute;
+  top: 27px;
+  width: 7px;
+  height: 17px;
+  background: #d7a071;
+  border: 2px solid #4b3528;
+}
+
+.partArmLeft { left: 4px; }
+.partArmRight { right: 4px; }
+
+.partLegLeft,
+.partLegRight {
+  position: absolute;
+  bottom: 0;
+  width: 8px;
+  height: 11px;
+  background: #4a3528;
+}
+
+.partLegLeft { left: 12px; }
+.partLegRight { right: 12px; }
+
+.previewPet .partPetBody {
+  position: absolute;
+  left: 3px;
+  top: 12px;
+  width: 28px;
+  height: 18px;
+  border: 3px solid #4b3528;
+  background: #d8a36f;
+  box-shadow: inset -4px -4px 0 rgba(0, 0, 0, 0.14);
+}
+
+.partPetEarLeft,
+.partPetEarRight {
+  position: absolute;
+  top: 3px;
+  width: 8px;
+  height: 12px;
+  background: #d8a36f;
+  border: 3px solid #4b3528;
+  border-bottom: 0;
+}
+
+.partPetEarLeft { left: 7px; }
+.partPetEarRight { right: 7px; }
+
+.partPetTail {
+  position: absolute;
+  right: -7px;
+  top: 16px;
+  width: 10px;
+  height: 7px;
+  border: 2px solid #4b3528;
+  background: #d8a36f;
+}
+
+.partPetEye {
+  position: absolute;
+  left: 12px;
+  top: 18px;
+  width: 3px;
+  height: 3px;
+  background: #2d211c;
+  box-shadow: 10px 0 0 #2d211c;
+}
+
+.previewTree .partTreeTrunk {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  width: 10px;
+  height: 24px;
+  transform: translateX(-50%);
+  background: #7b4f2f;
+  box-shadow: 4px 0 0 #5d3924;
+}
+
+.previewTree .partTreeCrown,
+.partTreeLeafA,
+.partTreeLeafB {
+  position: absolute;
+  background: #6d9b4d;
+  border: 3px solid #35562d;
+}
+
+.previewTree .partTreeCrown {
+  left: 13px;
+  top: 8px;
+  width: 28px;
+  height: 24px;
+}
+
+.partTreeLeafA {
+  left: 4px;
+  top: 20px;
+  width: 22px;
+  height: 22px;
+}
+
+.partTreeLeafB {
+  right: 4px;
+  top: 20px;
+  width: 22px;
+  height: 22px;
+}
+
+.previewCare .partMat {
+  position: absolute;
+  left: 6px;
+  bottom: 7px;
+  width: 52px;
+  height: 18px;
+  border: 3px solid #5e4430;
+  background: #a97e43;
+}
+
+.partFoodBowl,
+.partWaterBowl {
+  position: absolute;
+  bottom: 13px;
+  width: 14px;
+  height: 10px;
+  border: 2px solid #4b3528;
+}
+
+.partFoodBowl {
+  left: 14px;
+  background: #d69a4e;
+}
+
+.partWaterBowl {
+  left: 34px;
+  background: #8fb6cc;
+}
+
+.partStorage {
+  position: absolute;
+  right: 6px;
+  top: 8px;
+  width: 18px;
+  height: 16px;
+  border: 3px solid #4b3528;
+  background: #b8a06a;
+}
+
+.previewTile {
+  border: 3px solid #35562d;
+  background: #6f8f4a;
+}
+
+.partTileA,
+.partTileB,
+.partTileC {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #8fb464;
+}
+
+.partTileA { left: 5px; top: 5px; }
+.partTileB { right: 6px; top: 12px; }
+.partTileC { left: 12px; bottom: 6px; }
+
+.previewShelter .partRoof,
+.previewHouse .partRoof,
+.previewAdoption .partRoof {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 4px;
+  height: 16px;
+  border: 3px solid #4f3729;
+  background: #9a4f35;
+}
+
+.previewShelter .partWall,
+.previewHouse .partWall,
+.previewAdoption .partWall {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 20px;
+  bottom: 6px;
+  border: 3px solid #4f3729;
+  background: #c98b51;
+}
+
+.partDoor {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  width: 12px;
+  height: 20px;
+  transform: translateX(-50%);
+  border: 3px solid #4a2f20;
+  border-bottom: 0;
+  background: #5b3823;
+}
+
+.partWindow {
+  position: absolute;
+  right: 16px;
+  top: 31px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #4a2f20;
+  background: #f3d77a;
+}
+
+.previewHouse .partRoof {
+  height: 20px;
+  background: #8e4a32;
+}
+
+.previewHouse .partWall {
+  top: 24px;
+}
+
+.previewAdoption .partRoof {
+  background: #b0703d;
+  box-shadow: inset 0 -4px 0 rgba(255, 255, 255, 0.14);
+}
+
+.previewAdoption .partWall {
+  background: #d0a062;
 }
 
 @media (max-width: 720px) {
