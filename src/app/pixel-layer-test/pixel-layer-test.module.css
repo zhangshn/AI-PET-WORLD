@@ -127,6 +127,108 @@
   font-size: 18px;
 }
 
+.variantGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
+  gap: 14px;
+}
+
+.variantCard {
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: rgba(10, 14, 20, 0.5);
+}
+
+.variantHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.variantHeader div {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.variantHeader strong {
+  color: #fff8ea;
+  font-size: 15px;
+}
+
+.variantHeader span {
+  overflow: hidden;
+  color: rgba(244, 239, 230, 0.58);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.variantHeader b {
+  flex: none;
+  padding: 5px 8px;
+  border-radius: 8px;
+  background: #26384d;
+  color: #d7e8ff;
+  font-size: 11px;
+}
+
+.variantColumns {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+}
+
+.variantColumn {
+  min-width: 0;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.variantColumn h3 {
+  margin: 0 0 8px;
+  color: #f2c66d;
+  font-size: 12px;
+  letter-spacing: 0;
+}
+
+.variantList {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.variantList div {
+  display: grid;
+  grid-template-columns: minmax(100px, 0.42fr) minmax(0, 0.58fr);
+  gap: 8px;
+  align-items: start;
+}
+
+.variantList dt,
+.variantList dd {
+  min-width: 0;
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.variantList dt {
+  color: rgba(244, 239, 230, 0.48);
+}
+
+.variantList dd {
+  overflow-wrap: anywhere;
+  color: rgba(244, 239, 230, 0.84);
+}
+
 .planGrid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));

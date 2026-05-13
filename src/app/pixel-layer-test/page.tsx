@@ -5,6 +5,17 @@
 import type { ComponentType, ReactNode } from "react"
 
 import {
+  mockVisualArchetypeLabels,
+  mockVisualGenerationResults,
+} from "../../visual-system/visual-system.mock"
+import type {
+  PrefabVariant,
+  SceneLayoutVariant,
+  SpriteVariant,
+  VisualDNA,
+  VisualGenerationResult,
+} from "../../visual-system/visual-system-gateway"
+import {
   AdoptionCenterBody,
   AdoptionCenterRoof,
   AdoptionCenterSign,
@@ -462,6 +473,108 @@ function renderVisualCard(card: VisualCard) {
   )
 }
 
+function renderKeyValueList(
+  values: Array<[string, string | number]>
+) {
+  return (
+    <dl className={styles.variantList}>
+      {values.map(([label, value]) => (
+        <div key={label}>
+          <dt>{label}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+function getVisualDNAItems(visualDNA: VisualDNA) {
+  return [
+    ["colorTone", visualDNA.colorTone],
+    ["butlerSilhouette", visualDNA.butlerSilhouette],
+    ["petMatchType", visualDNA.petMatchType],
+    ["homeStyle", visualDNA.homeStyle],
+    ["gardenStyle", visualDNA.gardenStyle],
+    ["shelterStyle", visualDNA.shelterStyle],
+    ["carePriority", visualDNA.carePriority],
+    ["orderVsNature", visualDNA.orderVsNature],
+    ["warmthVsDistance", visualDNA.warmthVsDistance],
+    ["protectionNeed", visualDNA.protectionNeed],
+    ["decorationNeed", visualDNA.decorationNeed],
+  ] satisfies Array<[string, string | number]>
+}
+
+function getSpriteVariantItems(spriteVariant: SpriteVariant) {
+  return [
+    ["butlerSprite", spriteVariant.butlerSprite],
+    ["petSprite", spriteVariant.petSprite],
+    ["shelterSprite", spriteVariant.shelterSprite],
+    ["houseSprite", spriteVariant.houseSprite],
+  ] satisfies Array<[string, string]>
+}
+
+function getPrefabVariantItems(prefabVariant: PrefabVariant) {
+  return [
+    ["butlerPrefab", prefabVariant.butlerPrefab],
+    ["petPrefab", prefabVariant.petPrefab],
+    ["careCornerPrefab", prefabVariant.careCornerPrefab],
+    ["shelterPrefab", prefabVariant.shelterPrefab],
+    ["basicHousePrefab", prefabVariant.basicHousePrefab],
+    ["gardenPrefab", prefabVariant.gardenPrefab],
+  ] satisfies Array<[string, string]>
+}
+
+function getSceneLayoutVariantItems(
+  sceneLayoutVariant: SceneLayoutVariant
+) {
+  return [
+    ["initialHomeScene", sceneLayoutVariant.initialHomeScene],
+    ["carePointScene", sceneLayoutVariant.carePointScene],
+    ["temporaryShelterScene", sceneLayoutVariant.temporaryShelterScene],
+    ["basicHomeScene", sceneLayoutVariant.basicHomeScene],
+  ] satisfies Array<[string, string]>
+}
+
+function renderVisualVariantCard(result: VisualGenerationResult) {
+  const archetype = result.visualDNA.archetype
+
+  return (
+    <article key={archetype} className={styles.variantCard}>
+      <header className={styles.variantHeader}>
+        <div>
+          <strong>{mockVisualArchetypeLabels[archetype]}</strong>
+          <span>{archetype}</span>
+        </div>
+        <b>{result.visualDNA.colorTone}</b>
+      </header>
+
+      <div className={styles.variantColumns}>
+        <section className={styles.variantColumn}>
+          <h3>VisualDNA</h3>
+          {renderKeyValueList(getVisualDNAItems(result.visualDNA))}
+        </section>
+
+        <section className={styles.variantColumn}>
+          <h3>SpriteVariant</h3>
+          {renderKeyValueList(getSpriteVariantItems(result.spriteVariant))}
+        </section>
+
+        <section className={styles.variantColumn}>
+          <h3>PrefabVariant</h3>
+          {renderKeyValueList(getPrefabVariantItems(result.prefabVariant))}
+        </section>
+
+        <section className={styles.variantColumn}>
+          <h3>SceneLayoutVariant</h3>
+          {renderKeyValueList(
+            getSceneLayoutVariantItems(result.sceneLayoutVariant)
+          )}
+        </section>
+      </div>
+    </article>
+  )
+}
+
 export default function PixelLayerTestPage() {
   return (
     <main className={styles.page}>
@@ -497,6 +610,17 @@ export default function PixelLayerTestPage() {
               {index < pipelineSteps.length - 1 && <b>↓</b>}
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2>Ziwei Visual Variants / 紫微视觉变体</h2>
+        <p className={styles.sectionNote}>
+          这里展示的是不同紫微视觉类型如何生成不同管家、宠物、家园风格和场景变体。
+          这一步不接真实紫微算法，但证明系统不是固定 UI，而是可以根据不同玩家生成不同视觉结果。
+        </p>
+        <div className={styles.variantGrid}>
+          {mockVisualGenerationResults.map(renderVisualVariantCard)}
         </div>
       </section>
 
