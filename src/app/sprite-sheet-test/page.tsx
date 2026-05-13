@@ -2,6 +2,9 @@
  * 当前文件负责：展示 Sprite Sheet 元数据与视觉变体映射。
  */
 
+import type {
+  SpriteFrameMetadata,
+} from "../../sprite-system/sprite-system-gateway"
 import {
   spriteFrames,
   spriteMetadataIndex,
@@ -31,15 +34,111 @@ function getCategoryLabel(category: string) {
   return categoryLabels[category] ?? category
 }
 
+function getPreviewClass(frame: SpriteFrameMetadata) {
+  if (frame.category === "butler") return styles.previewButler
+  if (frame.category === "pet") return styles.previewPet
+  if (frame.category === "nature") return styles.previewTree
+  if (frame.category === "facility") return styles.previewCare
+  if (frame.category === "tile") return styles.previewTile
+  if (frame.id.includes("adoption_center")) return styles.previewAdoption
+  if (frame.id.includes("home_")) return styles.previewHouse
+
+  return styles.previewShelter
+}
+
+function renderPreviewParts(frame: SpriteFrameMetadata) {
+  if (frame.category === "butler") {
+    return (
+      <>
+        <i className={styles.partHead} />
+        <i className={styles.partBody} />
+        <i className={styles.partArmLeft} />
+        <i className={styles.partArmRight} />
+        <i className={styles.partLegLeft} />
+        <i className={styles.partLegRight} />
+      </>
+    )
+  }
+
+  if (frame.category === "pet") {
+    return (
+      <>
+        <i className={styles.partPetBody} />
+        <i className={styles.partPetEarLeft} />
+        <i className={styles.partPetEarRight} />
+        <i className={styles.partPetTail} />
+        <i className={styles.partPetEye} />
+      </>
+    )
+  }
+
+  if (frame.category === "nature") {
+    return (
+      <>
+        <i className={styles.partTreeTrunk} />
+        <i className={styles.partTreeCrown} />
+        <i className={styles.partTreeLeafA} />
+        <i className={styles.partTreeLeafB} />
+      </>
+    )
+  }
+
+  if (frame.category === "facility") {
+    return (
+      <>
+        <i className={styles.partMat} />
+        <i className={styles.partFoodBowl} />
+        <i className={styles.partWaterBowl} />
+        <i className={styles.partStorage} />
+      </>
+    )
+  }
+
+  if (frame.category === "tile") {
+    return (
+      <>
+        <i className={styles.partTileA} />
+        <i className={styles.partTileB} />
+        <i className={styles.partTileC} />
+      </>
+    )
+  }
+
+  return (
+    <>
+      <i className={styles.partRoof} />
+      <i className={styles.partWall} />
+      <i className={styles.partDoor} />
+      <i className={styles.partWindow} />
+    </>
+  )
+}
+
+function renderFramePreview(frame: SpriteFrameMetadata) {
+  return (
+    <div className={styles.framePreview}>
+      <span
+        className={`${styles.previewSprite} ${getPreviewClass(frame)}`}
+        style={{
+          width: `${Math.max(24, frame.rect.width / 2)}px`,
+          height: `${Math.max(24, frame.rect.height / 2)}px`,
+        }}
+      >
+        {renderPreviewParts(frame)}
+      </span>
+    </div>
+  )
+}
+
 export default function SpriteSheetTestPage() {
   return (
     <main className={styles.page}>
       <section className={styles.hero}>
-        <p className={styles.eyebrow}>SPRITE-03</p>
+        <p className={styles.eyebrow}>SPRITE-04</p>
         <h1>Sprite Sheet Metadata / 像素资源元数据测试页</h1>
         <p>
           本页面用于检查 AI-PET-WORLD 的 Sprite Sheet 规范是否已经可被系统读取：
-          包括 sheet、frame、variant mapping、尺寸、锚点、占地网格和中文说明。
+          包括 sheet、frame、variant mapping、尺寸、锚点、占地网格和中文说明。当前预览是按分类生成的开发占位，不是最终美术。
         </p>
       </section>
 
@@ -111,14 +210,7 @@ export default function SpriteSheetTestPage() {
         <div className={styles.frameGrid}>
           {spriteFrames.map((frame) => (
             <article key={frame.id} className={styles.frameCard}>
-              <div className={styles.framePreview}>
-                <span
-                  style={{
-                    width: `${Math.max(16, frame.rect.width / 2)}px`,
-                    height: `${Math.max(16, frame.rect.height / 2)}px`,
-                  }}
-                />
-              </div>
+              {renderFramePreview(frame)}
               <div>
                 <p className={styles.eyebrow}>{getCategoryLabel(frame.category)}</p>
                 <h3>{frame.name}</h3>
