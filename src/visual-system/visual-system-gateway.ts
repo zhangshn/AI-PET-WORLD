@@ -3,6 +3,10 @@
  */
 
 export {
+  buildVisualDNAFromPreferenceProfile,
+} from "./preference-to-visual-dna"
+
+export {
   buildPrefabVariantFromVisualDNA,
   buildSceneLayoutVariantFromVisualDNA,
   buildSpriteVariantFromVisualDNA,
