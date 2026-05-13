@@ -113,7 +113,10 @@ import {
   PixelTemporaryShelterPrototype,
   PixelTreePrototype,
 } from "../world/components/pixel-ui/pixel-art-prototypes"
-import type { PixelPartProps } from "../world/components/pixel-ui/pixel-ui.types"
+import type {
+  PixelPartProps,
+  PixelPartVariant,
+} from "../world/components/pixel-ui/pixel-ui.types"
 
 import styles from "./pixel-layer-test.module.css"
 
@@ -121,6 +124,8 @@ type PrimitiveComponentItem = {
   cn: string
   en: string
   Component: ComponentType<PixelPartProps>
+  previewClass: string
+  variant?: PixelPartVariant
 }
 
 type PrimitiveComponentGroup = {
@@ -206,117 +211,117 @@ const componentGroups: PrimitiveComponentGroup[] = [
     title: "Ground / 地面",
     description: "地表、泥地区块和地面过渡边界。",
     items: [
-      { cn: "地面基础块", en: "GroundTile", Component: GroundTile },
-      { cn: "泥地区块", en: "DirtPatch", Component: DirtPatch },
-      { cn: "地面边界", en: "GroundEdge", Component: GroundEdge },
+      { cn: "地面基础块", en: "GroundTile", Component: GroundTile, previewClass: styles.primitiveGroundTile },
+      { cn: "泥地区块", en: "DirtPatch", Component: DirtPatch, previewClass: styles.primitiveDirtPatch },
+      { cn: "地面边界", en: "GroundEdge", Component: GroundEdge, previewClass: styles.primitiveGroundEdge },
     ],
   },
   {
     title: "Grass / 草地",
     description: "草皮、小草、草丛、小花、杂草和踩踏草痕。",
     items: [
-      { cn: "草地基础块", en: "GrassTile", Component: GrassTile },
-      { cn: "单簇小草", en: "GrassBlade", Component: GrassBlade },
-      { cn: "草丛组件", en: "GrassCluster", Component: GrassCluster },
-      { cn: "小花组件", en: "FlowerPatch", Component: FlowerPatch },
-      { cn: "杂草组件", en: "WeedPatch", Component: WeedPatch },
-      { cn: "踩踏草痕", en: "TrampledGrass", Component: TrampledGrass },
+      { cn: "草地基础块", en: "GrassTile", Component: GrassTile, previewClass: styles.primitiveGrassTile },
+      { cn: "单簇小草", en: "GrassBlade", Component: GrassBlade, previewClass: styles.primitiveGrassBlade },
+      { cn: "草丛组件", en: "GrassCluster", Component: GrassCluster, previewClass: styles.primitiveGrassCluster },
+      { cn: "小花组件", en: "FlowerPatch", Component: FlowerPatch, previewClass: styles.primitiveFlowerPatch },
+      { cn: "杂草组件", en: "WeedPatch", Component: WeedPatch, previewClass: styles.primitiveWeedPatch },
+      { cn: "踩踏草痕", en: "TrampledGrass", Component: TrampledGrass, previewClass: styles.primitiveTrampledGrass },
     ],
   },
   {
     title: "Nature / 树木自然",
     description: "树干、树冠、树叶簇、树影、小石头和落叶。",
     items: [
-      { cn: "树干", en: "TreeTrunk", Component: TreeTrunk },
-      { cn: "树冠", en: "TreeCanopy", Component: TreeCanopy },
-      { cn: "树叶簇", en: "TreeLeafCluster", Component: TreeLeafCluster },
-      { cn: "树影", en: "TreeShadow", Component: TreeShadow },
-      { cn: "小石头", en: "StoneSmall", Component: StoneSmall },
-      { cn: "落叶", en: "FallenLeaf", Component: FallenLeaf },
+      { cn: "树干", en: "TreeTrunk", Component: TreeTrunk, previewClass: styles.primitiveTreeTrunk },
+      { cn: "树冠", en: "TreeCanopy", Component: TreeCanopy, previewClass: styles.primitiveTreeCanopy },
+      { cn: "树叶簇", en: "TreeLeafCluster", Component: TreeLeafCluster, previewClass: styles.primitiveTreeLeafCluster },
+      { cn: "树影", en: "TreeShadow", Component: TreeShadow, previewClass: styles.primitiveTreeShadow },
+      { cn: "小石头", en: "StoneSmall", Component: StoneSmall, previewClass: styles.primitiveStoneSmall },
+      { cn: "落叶", en: "FallenLeaf", Component: FallenLeaf, previewClass: styles.primitiveFallenLeaf },
     ],
   },
   {
     title: "Buildings / 建筑",
     description: "地基、墙体、屋顶、门窗、围栏、阴影和招牌。",
     items: [
-      { cn: "地基块", en: "FoundationBlock", Component: FoundationBlock },
-      { cn: "墙体面板", en: "WallPanel", Component: WallPanel },
-      { cn: "屋顶部件", en: "RoofPiece", Component: RoofPiece },
-      { cn: "门板", en: "DoorPanel", Component: DoorPanel },
-      { cn: "窗组件", en: "WindowPanel", Component: WindowPanel },
-      { cn: "门把手", en: "DoorHandle", Component: DoorHandle },
-      { cn: "窗光", en: "WindowLight", Component: WindowLight },
-      { cn: "围栏段", en: "FenceSegment", Component: FenceSegment },
-      { cn: "建筑阴影", en: "BuildingShadow", Component: BuildingShadow },
-      { cn: "通用招牌", en: "SignBoard", Component: SignBoard },
+      { cn: "地基块", en: "FoundationBlock", Component: FoundationBlock, previewClass: styles.primitiveFoundationBlock },
+      { cn: "墙体面板", en: "WallPanel", Component: WallPanel, previewClass: styles.primitiveWallPanel },
+      { cn: "屋顶部件", en: "RoofPiece", Component: RoofPiece, previewClass: styles.primitiveRoofPiece },
+      { cn: "门板", en: "DoorPanel", Component: DoorPanel, previewClass: styles.primitiveDoorPanel },
+      { cn: "窗组件", en: "WindowPanel", Component: WindowPanel, previewClass: styles.primitiveWindowPanel },
+      { cn: "门把手", en: "DoorHandle", Component: DoorHandle, previewClass: styles.primitiveDoorHandle },
+      { cn: "窗光", en: "WindowLight", Component: WindowLight, previewClass: styles.primitiveWindowLight },
+      { cn: "围栏段", en: "FenceSegment", Component: FenceSegment, previewClass: styles.primitiveFenceSegment },
+      { cn: "建筑阴影", en: "BuildingShadow", Component: BuildingShadow, previewClass: styles.primitiveBuildingShadow },
+      { cn: "通用招牌", en: "SignBoard", Component: SignBoard, previewClass: styles.primitiveSignBoard },
     ],
   },
   {
     title: "Facilities / 设施",
     description: "食物、饮水、宠物床、储物、观察点、庭院和欢迎垫。",
     items: [
-      { cn: "食物碗", en: "FoodBowl", Component: FoodBowl },
-      { cn: "饮水碗", en: "WaterBowl", Component: WaterBowl },
-      { cn: "宠物床", en: "PetBed", Component: PetBed },
-      { cn: "储物箱", en: "StorageBox", Component: StorageBox },
-      { cn: "观察点", en: "ObservationSpot", Component: ObservationSpot },
-      { cn: "庭院地块", en: "GardenPatch", Component: GardenPatch },
-      { cn: "欢迎垫", en: "WelcomeMat", Component: WelcomeMat },
+      { cn: "食物碗", en: "FoodBowl", Component: FoodBowl, previewClass: styles.primitiveFoodBowl },
+      { cn: "饮水碗", en: "WaterBowl", Component: WaterBowl, previewClass: styles.primitiveWaterBowl },
+      { cn: "宠物床", en: "PetBed", Component: PetBed, previewClass: styles.primitivePetBed },
+      { cn: "储物箱", en: "StorageBox", Component: StorageBox, previewClass: styles.primitiveStorageBox },
+      { cn: "观察点", en: "ObservationSpot", Component: ObservationSpot, previewClass: styles.primitiveObservationSpot },
+      { cn: "庭院地块", en: "GardenPatch", Component: GardenPatch, previewClass: styles.primitiveGardenPatch },
+      { cn: "欢迎垫", en: "WelcomeMat", Component: WelcomeMat, previewClass: styles.primitiveWelcomeMat },
     ],
   },
   {
     title: "Adoption Center / 领养中心",
     description: "小镇宠物领养中心、登记柜台、公告板、等待区和抵达点。",
     items: [
-      { cn: "领养中心主体", en: "AdoptionCenterBody", Component: AdoptionCenterBody },
-      { cn: "领养中心屋顶", en: "AdoptionCenterRoof", Component: AdoptionCenterRoof },
-      { cn: "领养中心招牌", en: "AdoptionCenterSign", Component: AdoptionCenterSign },
-      { cn: "领养登记柜台", en: "AdoptionCounter", Component: AdoptionCounter },
-      { cn: "领养公告板", en: "NoticeBoard", Component: NoticeBoard },
-      { cn: "等待区长椅", en: "WaitingBench", Component: WaitingBench },
-      { cn: "宠物抵达点", en: "ArrivalPoint", Component: ArrivalPoint },
-      { cn: "小镇服务点", en: "TownServiceMarker", Component: TownServiceMarker },
+      { cn: "领养中心主体", en: "AdoptionCenterBody", Component: AdoptionCenterBody, previewClass: styles.primitiveAdoptionCenterBody },
+      { cn: "领养中心屋顶", en: "AdoptionCenterRoof", Component: AdoptionCenterRoof, previewClass: styles.primitiveAdoptionCenterRoof },
+      { cn: "领养中心招牌", en: "AdoptionCenterSign", Component: AdoptionCenterSign, previewClass: styles.primitiveAdoptionCenterSign },
+      { cn: "领养登记柜台", en: "AdoptionCounter", Component: AdoptionCounter, previewClass: styles.primitiveAdoptionCounter },
+      { cn: "领养公告板", en: "NoticeBoard", Component: NoticeBoard, previewClass: styles.primitiveNoticeBoard },
+      { cn: "等待区长椅", en: "WaitingBench", Component: WaitingBench, previewClass: styles.primitiveWaitingBench },
+      { cn: "宠物抵达点", en: "ArrivalPoint", Component: ArrivalPoint, previewClass: styles.primitiveArrivalPoint },
+      { cn: "小镇服务点", en: "TownServiceMarker", Component: TownServiceMarker, previewClass: styles.primitiveTownServiceMarker },
     ],
   },
   {
     title: "Actors / 角色",
     description: "管家、宠物、通用身体、角色细节和工具语义零件。",
     items: [
-      { cn: "角色锚点", en: "ActorAnchor", Component: ActorAnchor },
-      { cn: "通用身体", en: "ActorBodyBase", Component: ActorBodyBase },
-      { cn: "通用阴影", en: "ActorShadow", Component: ActorShadow },
-      { cn: "管家主体", en: "ButlerActor", Component: ButlerActor },
-      { cn: "管家身体", en: "ButlerBody", Component: ButlerBody },
-      { cn: "管家头部", en: "ButlerHead", Component: ButlerHead },
-      { cn: "管家手部", en: "ButlerHands", Component: ButlerHands },
-      { cn: "管家脚部", en: "ButlerFeet", Component: ButlerFeet },
-      { cn: "宠物主体", en: "PetActor", Component: PetActor },
-      { cn: "宠物身体", en: "PetBody", Component: PetBody },
-      { cn: "宠物头部", en: "PetHead", Component: PetHead },
-      { cn: "宠物腿部", en: "PetLegs", Component: PetLegs },
-      { cn: "通用眼睛", en: "PixelEye", Component: PixelEye },
-      { cn: "通用嘴巴", en: "PixelMouth", Component: PixelMouth },
-      { cn: "通用手部细节", en: "PixelHandDetail", Component: PixelHandDetail },
-      { cn: "通用脚部细节", en: "PixelFootDetail", Component: PixelFootDetail },
-      { cn: "管家眼睛", en: "ButlerEye", Component: ButlerEye },
-      { cn: "管家嘴巴", en: "ButlerMouth", Component: ButlerMouth },
-      { cn: "管家头发", en: "ButlerHair", Component: ButlerHair },
-      { cn: "管家帽子", en: "ButlerHat", Component: ButlerHat },
-      { cn: "管家衣服", en: "ButlerOutfit", Component: ButlerOutfit },
-      { cn: "管家袖子", en: "ButlerSleeve", Component: ButlerSleeve },
-      { cn: "管家鞋子", en: "ButlerShoe", Component: ButlerShoe },
-      { cn: "建设工具小锤子", en: "ButlerToolHammer", Component: ButlerToolHammer },
-      { cn: "记录板", en: "ButlerToolClipboard", Component: ButlerToolClipboard },
-      { cn: "食物托盘", en: "ButlerToolFoodTray", Component: ButlerToolFoodTray },
-      { cn: "宠物眼睛", en: "PetEye", Component: PetEye },
-      { cn: "宠物鼻子", en: "PetNose", Component: PetNose },
-      { cn: "宠物嘴巴", en: "PetMouth", Component: PetMouth },
-      { cn: "宠物耳朵", en: "PetEar", Component: PetEar },
-      { cn: "宠物尾巴", en: "PetTail", Component: PetTail },
-      { cn: "宠物爪子", en: "PetPaw", Component: PetPaw },
-      { cn: "宠物胡须", en: "PetWhisker", Component: PetWhisker },
-      { cn: "宠物腹部花纹", en: "PetBellyPatch", Component: PetBellyPatch },
-      { cn: "宠物背部花纹", en: "PetBackMark", Component: PetBackMark },
+      { cn: "角色锚点", en: "ActorAnchor", Component: ActorAnchor, previewClass: styles.primitiveActorAnchor },
+      { cn: "通用身体", en: "ActorBodyBase", Component: ActorBodyBase, previewClass: styles.primitiveActorBodyBase },
+      { cn: "通用阴影", en: "ActorShadow", Component: ActorShadow, previewClass: styles.primitiveActorShadow },
+      { cn: "管家主体", en: "ButlerActor", Component: ButlerActor, previewClass: styles.primitiveButlerActor },
+      { cn: "管家身体", en: "ButlerBody", Component: ButlerBody, previewClass: styles.primitiveButlerBody },
+      { cn: "管家头部", en: "ButlerHead", Component: ButlerHead, previewClass: styles.primitiveButlerHead },
+      { cn: "管家手部", en: "ButlerHands", Component: ButlerHands, previewClass: styles.primitiveButlerHands },
+      { cn: "管家脚部", en: "ButlerFeet", Component: ButlerFeet, previewClass: styles.primitiveButlerFeet },
+      { cn: "宠物主体", en: "PetActor", Component: PetActor, previewClass: styles.primitivePetActor },
+      { cn: "宠物身体", en: "PetBody", Component: PetBody, previewClass: styles.primitivePetBody },
+      { cn: "宠物头部", en: "PetHead", Component: PetHead, previewClass: styles.primitivePetHead },
+      { cn: "宠物腿部", en: "PetLegs", Component: PetLegs, previewClass: styles.primitivePetLegs },
+      { cn: "通用眼睛", en: "PixelEye", Component: PixelEye, previewClass: styles.primitivePixelEye },
+      { cn: "通用嘴巴", en: "PixelMouth", Component: PixelMouth, previewClass: styles.primitivePixelMouth },
+      { cn: "通用手部细节", en: "PixelHandDetail", Component: PixelHandDetail, previewClass: styles.primitivePixelHandDetail },
+      { cn: "通用脚部细节", en: "PixelFootDetail", Component: PixelFootDetail, previewClass: styles.primitivePixelFootDetail },
+      { cn: "管家眼睛", en: "ButlerEye", Component: ButlerEye, previewClass: styles.primitiveButlerEye },
+      { cn: "管家嘴巴", en: "ButlerMouth", Component: ButlerMouth, previewClass: styles.primitiveButlerMouth },
+      { cn: "管家头发", en: "ButlerHair", Component: ButlerHair, previewClass: styles.primitiveButlerHair },
+      { cn: "管家帽子", en: "ButlerHat", Component: ButlerHat, previewClass: styles.primitiveButlerHat },
+      { cn: "管家衣服", en: "ButlerOutfit", Component: ButlerOutfit, previewClass: styles.primitiveButlerOutfit },
+      { cn: "管家袖子", en: "ButlerSleeve", Component: ButlerSleeve, previewClass: styles.primitiveButlerSleeve },
+      { cn: "管家鞋子", en: "ButlerShoe", Component: ButlerShoe, previewClass: styles.primitiveButlerShoe },
+      { cn: "建设工具小锤子", en: "ButlerToolHammer", Component: ButlerToolHammer, previewClass: styles.primitiveButlerToolHammer },
+      { cn: "记录板", en: "ButlerToolClipboard", Component: ButlerToolClipboard, previewClass: styles.primitiveButlerToolClipboard },
+      { cn: "食物托盘", en: "ButlerToolFoodTray", Component: ButlerToolFoodTray, previewClass: styles.primitiveButlerToolFoodTray },
+      { cn: "宠物眼睛", en: "PetEye", Component: PetEye, previewClass: styles.primitivePetEye },
+      { cn: "宠物鼻子", en: "PetNose", Component: PetNose, previewClass: styles.primitivePetNose },
+      { cn: "宠物嘴巴", en: "PetMouth", Component: PetMouth, previewClass: styles.primitivePetMouth },
+      { cn: "宠物耳朵", en: "PetEar", Component: PetEar, previewClass: styles.primitivePetEar },
+      { cn: "宠物尾巴", en: "PetTail", Component: PetTail, previewClass: styles.primitivePetTail },
+      { cn: "宠物爪子", en: "PetPaw", Component: PetPaw, previewClass: styles.primitivePetPaw },
+      { cn: "宠物胡须", en: "PetWhisker", Component: PetWhisker, previewClass: styles.primitivePetWhisker },
+      { cn: "宠物腹部花纹", en: "PetBellyPatch", Component: PetBellyPatch, previewClass: styles.primitivePetBellyPatch },
+      { cn: "宠物背部花纹", en: "PetBackMark", Component: PetBackMark, previewClass: styles.primitivePetBackMark },
     ],
   },
 ]
@@ -434,8 +439,8 @@ function renderPrimitiveCard(item: PrimitiveComponentItem) {
       </div>
       <div className={styles.componentPreview}>
         <PreviewComponent
-          className={styles.pixelPart}
-          variant="warm"
+          className={`${styles.pixelPart} ${item.previewClass}`}
+          variant={item.variant ?? "default"}
           state="active"
           debug
         />
@@ -522,6 +527,7 @@ export default function PixelLayerTestPage() {
         <h2>Primitive Components / 原子定义组件</h2>
         <p className={styles.sectionNote}>
           这些组件用于定义世界有哪些语义部件，不代表最终美术。它们未来可被资源系统、建设系统和 AI 管家引用。
+          本区域展示的是 Primitive Debug Preview：用于区分语义零件，不代表最终 Sprite / Prefab 视觉质量。
         </p>
         <div className={styles.groupStack}>
           {componentGroups.map((group) => (
