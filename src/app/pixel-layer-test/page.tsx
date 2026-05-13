@@ -339,9 +339,9 @@ export default function PixelLayerTestPage() {
       </section>
 
       <section className={styles.section}>
-        <h2>Pixel-art prototype / ??????</h2>
+        <h2>Pixel-art prototype / 像素美术原型</h2>
         <p className={styles.prototypeIntro}>
-          ???? CSS grid ??????????????????????????
+          以下原型不是最终美术，而是用于验证 AI-PET-WORLD 的宠物、管家、房屋和树木是否具备清晰可识别的像素风格。
         </p>
         <div className={styles.prototypeBoard}>
           <article className={styles.prototypeCard}>
