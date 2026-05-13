@@ -448,6 +448,114 @@
   height: 38px;
 }
 
+.prototypeIntro {
+  max-width: 680px;
+  margin: -4px 0 18px;
+  color: rgba(243, 240, 231, 0.68);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.prototypeBoard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+}
+
+.prototypeCard {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  padding: 16px;
+  border: 1px solid rgba(243, 240, 231, 0.12);
+  border-radius: 12px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    rgba(8, 11, 14, 0.48);
+  background-size: 16px 16px;
+}
+
+.prototypeCard h3 {
+  margin: 0;
+  color: #d9cfa8;
+  font-size: 13px;
+}
+
+.prototypeGrid {
+  --prototype-pixel: 8px;
+
+  display: grid;
+  grid-template-columns: repeat(16, var(--prototype-pixel));
+  grid-auto-rows: var(--prototype-pixel);
+  gap: 0;
+  padding: 14px;
+  border: 2px solid rgba(243, 240, 231, 0.14);
+  background: #1d2421;
+  image-rendering: pixelated;
+}
+
+.prototypeGrid span {
+  width: var(--prototype-pixel);
+  height: var(--prototype-pixel);
+}
+
+.prototypeGrid span[data-pixel-tone="empty"] {
+  background: transparent;
+}
+
+.prototypeGrid span[data-pixel-tone="shadow"] {
+  background: #12161a;
+}
+
+.prototypeGrid span[data-pixel-tone="fur"] {
+  background: #c89286;
+}
+
+.prototypeGrid span[data-pixel-tone="furDark"] {
+  background: #7e4f54;
+}
+
+.prototypeGrid span[data-pixel-tone="skin"] {
+  background: #c99c7a;
+}
+
+.prototypeGrid span[data-pixel-tone="cloth"] {
+  background: #6f7f8f;
+}
+
+.prototypeGrid span[data-pixel-tone="clothDark"] {
+  background: #364250;
+}
+
+.prototypeGrid span[data-pixel-tone="roof"] {
+  background: #9f6252;
+}
+
+.prototypeGrid span[data-pixel-tone="wall"] {
+  background: #bfa983;
+}
+
+.prototypeGrid span[data-pixel-tone="wood"] {
+  background: #744e35;
+}
+
+.prototypeGrid span[data-pixel-tone="leaf"] {
+  background: #5f8e56;
+}
+
+.prototypeGrid span[data-pixel-tone="leafDark"] {
+  background: #2f5d3b;
+}
+
+.prototypeGrid span[data-pixel-tone="light"] {
+  background: #efd97c;
+}
+
+.prototypeGrid span[data-pixel-tone="detail"] {
+  background: #1f2024;
+}
+
 @media (max-width: 760px) {
   .page {
     padding: 22px;

@@ -98,6 +98,12 @@ import type {
   PixelPartVariant,
 } from "../world/components/pixel-ui/pixel-ui.types"
 
+import {
+  PixelButlerPrototype,
+  PixelHousePrototype,
+  PixelPetPrototype,
+  PixelTreePrototype,
+} from "./pixel-art-prototypes"
 import styles from "./pixel-layer-test.module.css"
 
 type ComponentPreviewItem = {
@@ -333,36 +339,27 @@ export default function PixelLayerTestPage() {
       </section>
 
       <section className={styles.section}>
-        <h2>低保真静态组合预览</h2>
-        <div className={styles.stagePreview}>
-          <GroundTile className={`${styles.pixelPart} ${styles.stageGround}`} />
-          <GrassTile className={`${styles.pixelPart} ${styles.stageGrass}`} variant="soft" />
-          <DirtPatch className={`${styles.pixelPart} ${styles.stagePath}`} state="trampled" />
-          <TreeShadow className={`${styles.pixelPart} ${styles.stageTreeShadow}`} variant="dark" />
-          <TreeTrunk className={`${styles.pixelPart} ${styles.stageTreeTrunk}`} />
-          <TreeCanopy className={`${styles.pixelPart} ${styles.stageTreeCanopy}`} variant="wild" />
-          <FlowerPatch className={`${styles.pixelPart} ${styles.stageFlowers}`} variant="warm" />
-          <BuildingShadow className={`${styles.pixelPart} ${styles.stageBuildingShadow}`} variant="dark" />
-          <FoundationBlock className={`${styles.pixelPart} ${styles.stageFoundation}`} variant="structured" />
-          <WallPanel className={`${styles.pixelPart} ${styles.stageWall}`} />
-          <RoofPiece className={`${styles.pixelPart} ${styles.stageRoof}`} variant="warm" />
-          <DoorPanel className={`${styles.pixelPart} ${styles.stageDoor}`} />
-          <WindowPanel className={`${styles.pixelPart} ${styles.stageWindow}`} />
-          <WindowLight className={`${styles.pixelPart} ${styles.stageWindowLight}`} variant="light" />
-          <FoodBowl className={`${styles.pixelPart} ${styles.stageFood}`} variant="warm" />
-          <WaterBowl className={`${styles.pixelPart} ${styles.stageWater}`} variant="light" />
-          <PetBed className={`${styles.pixelPart} ${styles.stageBed}`} variant="soft" />
-          <WelcomeMat className={`${styles.pixelPart} ${styles.stageWelcome}`} variant="warm" />
-          <ArrivalPoint className={`${styles.pixelPart} ${styles.stageArrival}`} variant="warm" />
-          <ButlerActor className={`${styles.pixelPart} ${styles.stageButler}`} variant="structured" />
-          <ButlerEye className={`${styles.pixelPart} ${styles.stageButlerEye}`} />
-          <ButlerMouth className={`${styles.pixelPart} ${styles.stageButlerMouth}`} />
-          <ButlerToolClipboard className={`${styles.pixelPart} ${styles.stageClipboard}`} />
-          <PetActor className={`${styles.pixelPart} ${styles.stagePet}`} variant="soft" />
-          <PetEye className={`${styles.pixelPart} ${styles.stagePetEye}`} />
-          <PetNose className={`${styles.pixelPart} ${styles.stagePetNose}`} />
-          <PetTail className={`${styles.pixelPart} ${styles.stagePetTail}`} />
-          <AdoptionCenterSign className={`${styles.pixelPart} ${styles.stageAdoptionSign}`} />
+        <h2>Pixel-art prototype / ??????</h2>
+        <p className={styles.prototypeIntro}>
+          ???? CSS grid ??????????????????????????
+        </p>
+        <div className={styles.prototypeBoard}>
+          <article className={styles.prototypeCard}>
+            <h3>PixelPetPrototype</h3>
+            <PixelPetPrototype />
+          </article>
+          <article className={styles.prototypeCard}>
+            <h3>PixelButlerPrototype</h3>
+            <PixelButlerPrototype />
+          </article>
+          <article className={styles.prototypeCard}>
+            <h3>PixelHousePrototype</h3>
+            <PixelHousePrototype />
+          </article>
+          <article className={styles.prototypeCard}>
+            <h3>PixelTreePrototype</h3>
+            <PixelTreePrototype />
+          </article>
         </div>
       </section>
     </main>
