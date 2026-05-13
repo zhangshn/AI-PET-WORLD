@@ -26,6 +26,12 @@ function clampScore(value: number): number {
   return Math.max(0, Math.min(100, Math.round(value)))
 }
 
+function normalizeScore(value: number, maxScore: number): number {
+  if (maxScore <= 0) return 0
+
+  return clampScore((value / maxScore) * 100)
+}
+
 function addArchetypeScores(
   target: ArchetypeScoreMap,
   source: ArchetypeScoreMap,
@@ -76,17 +82,29 @@ function getSecondScoreKey<Key extends string>(
 function normalizeArchetypeScores(
   scores: ArchetypeScoreMap
 ): ArchetypeScoreMap {
+  const maxScore = Math.max(
+    ...ziweiVisualArchetypes.map((key) => scores[key])
+  )
+
   return createArchetypeScores(
     Object.fromEntries(
-      ziweiVisualArchetypes.map((key) => [key, clampScore(scores[key])])
+      ziweiVisualArchetypes.map((key) => [
+        key,
+        normalizeScore(scores[key], maxScore),
+      ])
     ) as Partial<ArchetypeScoreMap>
   )
 }
 
 function normalizePetMatchScores(scores: PetMatchScoreMap): PetMatchScoreMap {
+  const maxScore = Math.max(...petMatchTypes.map((key) => scores[key]))
+
   return createPetMatchScores(
     Object.fromEntries(
-      petMatchTypes.map((key) => [key, clampScore(scores[key])])
+      petMatchTypes.map((key) => [
+        key,
+        normalizeScore(scores[key], maxScore),
+      ])
     ) as Partial<PetMatchScoreMap>
   )
 }
@@ -94,13 +112,23 @@ function normalizePetMatchScores(scores: PetMatchScoreMap): PetMatchScoreMap {
 function normalizeVisualScores(
   scores: VisualPreferenceScoreMap
 ): VisualPreferenceScoreMap {
+  const rawScores = [
+    scores.order,
+    scores.warmth,
+    scores.protection,
+    scores.decoration,
+    scores.nature,
+    scores.stability,
+  ]
+  const maxScore = Math.max(...rawScores)
+
   return createVisualScores({
-    order: clampScore(scores.order),
-    warmth: clampScore(scores.warmth),
-    protection: clampScore(scores.protection),
-    decoration: clampScore(scores.decoration),
-    nature: clampScore(scores.nature),
-    stability: clampScore(scores.stability),
+    order: normalizeScore(scores.order, maxScore),
+    warmth: normalizeScore(scores.warmth, maxScore),
+    protection: normalizeScore(scores.protection, maxScore),
+    decoration: normalizeScore(scores.decoration, maxScore),
+    nature: normalizeScore(scores.nature, maxScore),
+    stability: normalizeScore(scores.stability, maxScore),
   })
 }
 
