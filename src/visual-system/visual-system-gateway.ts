@@ -7,6 +7,11 @@ export {
 } from "./preference-to-visual-dna"
 
 export {
+  buildVisualGenerationResultFromZiweiProbability,
+  buildZiweiDrivenVisualGenerationResult,
+} from "./ziwei-to-visual-generation"
+
+export {
   buildPrefabVariantFromVisualDNA,
   buildSceneLayoutVariantFromVisualDNA,
   buildSpriteVariantFromVisualDNA,
@@ -16,10 +21,15 @@ export {
 export { ziweiVisualProfiles } from "./ziwei-visual-profiles"
 
 export type {
+  ZiweiDrivenVisualGenerationResult,
+} from "./ziwei-to-visual-generation"
+
+export type {
   PrefabVariant,
   SceneLayoutVariant,
   SpriteVariant,
   VisualDNA,
   VisualGenerationResult,
+  VisualSource,
   ZiweiVisualArchetype,
 } from "./visual-dna.types"
