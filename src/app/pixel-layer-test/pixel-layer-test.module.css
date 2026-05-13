@@ -1,0 +1,463 @@
+.page {
+  min-height: 100vh;
+  padding: 40px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(126, 185, 140, 0.16), transparent 34%),
+    linear-gradient(180deg, #10141b 0%, #151922 48%, #101318 100%);
+  color: #f3f0e7;
+}
+
+.hero {
+  max-width: 960px;
+  margin: 0 auto 28px;
+}
+
+.kicker {
+  margin: 0 0 8px;
+  color: #9fb88f;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.2;
+}
+
+.hero p:last-child {
+  max-width: 680px;
+  margin: 12px 0 0;
+  color: rgba(243, 240, 231, 0.72);
+  line-height: 1.7;
+}
+
+.section {
+  max-width: 1120px;
+  margin: 0 auto 28px;
+  padding: 22px;
+  border: 1px solid rgba(243, 240, 231, 0.12);
+  border-radius: 14px;
+  background: rgba(20, 24, 31, 0.84);
+}
+
+.section h2 {
+  margin: 0 0 16px;
+  font-size: 20px;
+}
+
+.planGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.planItem {
+  display: grid;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.planItem span {
+  color: #9fb88f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.planItem strong {
+  font-size: 13px;
+}
+
+.planItem em {
+  color: rgba(243, 240, 231, 0.66);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.layerList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 8px 18px;
+  margin: 0;
+  padding-left: 20px;
+}
+
+.layerList li {
+  padding: 8px 0;
+}
+
+.layerList strong {
+  display: block;
+  font-size: 13px;
+}
+
+.layerList span {
+  color: rgba(243, 240, 231, 0.64);
+  font-size: 12px;
+}
+
+.groupStack {
+  display: grid;
+  gap: 20px;
+}
+
+.componentGroup h3 {
+  margin: 0 0 10px;
+  color: #d9cfa8;
+  font-size: 16px;
+}
+
+.componentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.componentCard {
+  display: grid;
+  min-height: 132px;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+  border: 1px solid rgba(243, 240, 231, 0.1);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.componentMeta {
+  display: grid;
+  gap: 3px;
+  padding: 10px;
+  border-bottom: 1px solid rgba(243, 240, 231, 0.08);
+}
+
+.componentMeta span {
+  color: rgba(243, 240, 231, 0.72);
+  font-size: 12px;
+}
+
+.componentMeta strong {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.componentPreview {
+  display: grid;
+  min-height: 74px;
+  place-items: center;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+
+.pixelPart {
+  position: relative;
+  display: inline-block;
+  width: 34px;
+  height: 34px;
+  border: 2px solid rgba(255, 255, 255, 0.22);
+  background: #7f9569;
+  image-rendering: pixelated;
+}
+
+.pixelPart[data-variant="light"] {
+  background: #e7d98c;
+}
+
+.pixelPart[data-variant="dark"] {
+  background: #30343c;
+}
+
+.pixelPart[data-variant="warm"] {
+  background: #bd8c5a;
+}
+
+.pixelPart[data-variant="quiet"] {
+  background: #6f7d82;
+}
+
+.pixelPart[data-variant="structured"] {
+  background: #8d8070;
+}
+
+.pixelPart[data-variant="wild"] {
+  background: #5f8e56;
+}
+
+.pixelPart[data-variant="soft"] {
+  background: #c9938e;
+}
+
+.pixelPart[data-pixel-part*="shadow"] {
+  height: 14px;
+  border-radius: 50%;
+}
+
+.pixelPart[data-pixel-part*="eye"],
+.pixelPart[data-pixel-part*="nose"],
+.pixelPart[data-pixel-part*="mouth"],
+.pixelPart[data-pixel-part*="paw"],
+.pixelPart[data-pixel-part*="shoe"],
+.pixelPart[data-pixel-part*="handle"] {
+  width: 14px;
+  height: 14px;
+}
+
+.pixelPart[data-pixel-part*="tail"],
+.pixelPart[data-pixel-part*="whisker"],
+.pixelPart[data-pixel-part*="sleeve"] {
+  width: 28px;
+  height: 10px;
+}
+
+.pixelPart[data-pixel-part*="actor"] {
+  width: 44px;
+  height: 58px;
+}
+
+.pixelPart[data-pixel-part*="roof"] {
+  width: 58px;
+  height: 24px;
+}
+
+.pixelPart[data-pixel-part*="wall"],
+.pixelPart[data-pixel-part*="body"] {
+  width: 52px;
+  height: 42px;
+}
+
+.pixelPart[data-pixel-part*="door"] {
+  width: 22px;
+  height: 38px;
+}
+
+.pixelPart[data-pixel-part*="window"] {
+  width: 20px;
+  height: 20px;
+}
+
+.pixelPart[data-pixel-part*="grass"],
+.pixelPart[data-pixel-part*="flower"],
+.pixelPart[data-pixel-part*="weed"],
+.pixelPart[data-pixel-part*="leaf"] {
+  width: 38px;
+  height: 18px;
+}
+
+.pixelPart[data-pixel-part*="tree-canopy"] {
+  width: 56px;
+  height: 44px;
+  border-radius: 26px 26px 16px 16px;
+}
+
+.pixelPart[data-pixel-part*="tree-trunk"] {
+  width: 18px;
+  height: 44px;
+  background: #7b573f;
+}
+
+.stagePreview {
+  position: relative;
+  min-height: 420px;
+  overflow: hidden;
+  border: 1px solid rgba(243, 240, 231, 0.12);
+  border-radius: 14px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    #273627;
+  background-size: 24px 24px;
+}
+
+.stagePreview .pixelPart {
+  position: absolute;
+}
+
+.stageGround {
+  inset: auto 0 0 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #4c6f43;
+}
+
+.stageGrass {
+  left: 30px;
+  bottom: 34px;
+  width: 260px;
+  height: 92px;
+}
+
+.stagePath {
+  left: 240px;
+  bottom: 0;
+  width: 170px;
+  height: 210px;
+  transform: skewX(-18deg);
+}
+
+.stageTreeShadow {
+  left: 82px;
+  bottom: 178px;
+  width: 92px;
+}
+
+.stageTreeTrunk {
+  left: 118px;
+  bottom: 184px;
+}
+
+.stageTreeCanopy {
+  left: 92px;
+  bottom: 220px;
+}
+
+.stageFlowers {
+  left: 54px;
+  bottom: 112px;
+}
+
+.stageBuildingShadow {
+  left: 426px;
+  bottom: 132px;
+  width: 190px;
+}
+
+.stageFoundation {
+  left: 444px;
+  bottom: 146px;
+  width: 154px;
+  height: 34px;
+}
+
+.stageWall {
+  left: 462px;
+  bottom: 178px;
+  width: 118px;
+  height: 88px;
+}
+
+.stageRoof {
+  left: 438px;
+  bottom: 260px;
+  width: 166px;
+  height: 50px;
+}
+
+.stageDoor {
+  left: 508px;
+  bottom: 178px;
+}
+
+.stageWindow {
+  left: 474px;
+  bottom: 222px;
+}
+
+.stageWindowLight {
+  left: 478px;
+  bottom: 226px;
+  width: 12px;
+  height: 12px;
+}
+
+.stageFood {
+  left: 372px;
+  bottom: 100px;
+}
+
+.stageWater {
+  left: 418px;
+  bottom: 92px;
+}
+
+.stageBed {
+  left: 618px;
+  bottom: 96px;
+  width: 66px;
+  height: 34px;
+}
+
+.stageWelcome {
+  left: 504px;
+  bottom: 134px;
+  width: 52px;
+  height: 18px;
+}
+
+.stageArrival {
+  right: 140px;
+  bottom: 92px;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+}
+
+.stageButler {
+  left: 335px;
+  bottom: 130px;
+}
+
+.stageButlerEye {
+  left: 352px;
+  bottom: 172px;
+}
+
+.stageButlerMouth {
+  left: 354px;
+  bottom: 158px;
+}
+
+.stageClipboard {
+  left: 386px;
+  bottom: 140px;
+  width: 20px;
+  height: 28px;
+}
+
+.stagePet {
+  left: 690px;
+  bottom: 132px;
+}
+
+.stagePetEye {
+  left: 716px;
+  bottom: 174px;
+}
+
+.stagePetNose {
+  left: 724px;
+  bottom: 160px;
+}
+
+.stagePetTail {
+  left: 674px;
+  bottom: 152px;
+}
+
+.stageAdoptionSign {
+  right: 102px;
+  bottom: 148px;
+  width: 72px;
+  height: 38px;
+}
+
+@media (max-width: 760px) {
+  .page {
+    padding: 22px;
+  }
+
+  .hero h1 {
+    font-size: 28px;
+  }
+
+  .stagePreview {
+    min-height: 360px;
+  }
+}
