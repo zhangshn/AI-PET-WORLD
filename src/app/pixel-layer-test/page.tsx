@@ -5,15 +5,6 @@
 import type { ComponentType, ReactNode } from "react"
 
 import {
-  FoodBowl,
-  GardenPatch,
-  ObservationSpot,
-  PetBed,
-  StorageBox,
-  WaterBowl,
-  WelcomeMat,
-} from "../world/components/pixel-ui/facilities"
-import {
   AdoptionCenterBody,
   AdoptionCenterRoof,
   AdoptionCenterSign,
@@ -23,39 +14,6 @@ import {
   TownServiceMarker,
   WaitingBench,
 } from "../world/components/pixel-ui/adoption-center"
-import {
-  BuildingShadow,
-  DoorHandle,
-  DoorPanel,
-  FenceSegment,
-  FoundationBlock,
-  RoofPiece,
-  SignBoard,
-  WallPanel,
-  WindowLight,
-  WindowPanel,
-} from "../world/components/pixel-ui/buildings"
-import {
-  DirtPatch,
-  GroundEdge,
-  GroundTile,
-} from "../world/components/pixel-ui/ground"
-import {
-  FallenLeaf,
-  StoneSmall,
-  TreeCanopy,
-  TreeLeafCluster,
-  TreeShadow,
-  TreeTrunk,
-} from "../world/components/pixel-ui/nature"
-import {
-  FlowerPatch,
-  GrassBlade,
-  GrassCluster,
-  GrassTile,
-  TrampledGrass,
-  WeedPatch,
-} from "../world/components/pixel-ui/grass"
 import {
   ActorAnchor,
   ActorBodyBase,
@@ -94,15 +52,39 @@ import {
   PixelMouth,
 } from "../world/components/pixel-ui/actors"
 import {
-  PixelAdoptionCenterPrototype,
-  PixelArrivalPointPrototype,
-  PixelBasicHousePrototype,
-  PixelButlerPrototype,
-  PixelCareCornerPrototype,
-  PixelPetPrototype,
-  PixelTemporaryShelterPrototype,
-  PixelTreePrototype,
-} from "../world/components/pixel-ui/pixel-art-prototypes"
+  BuildingShadow,
+  DoorHandle,
+  DoorPanel,
+  FenceSegment,
+  FoundationBlock,
+  RoofPiece,
+  SignBoard,
+  WallPanel,
+  WindowLight,
+  WindowPanel,
+} from "../world/components/pixel-ui/buildings"
+import {
+  FoodBowl,
+  GardenPatch,
+  ObservationSpot,
+  PetBed,
+  StorageBox,
+  WaterBowl,
+  WelcomeMat,
+} from "../world/components/pixel-ui/facilities"
+import {
+  FlowerPatch,
+  GrassBlade,
+  GrassCluster,
+  GrassTile,
+  TrampledGrass,
+  WeedPatch,
+} from "../world/components/pixel-ui/grass"
+import {
+  DirtPatch,
+  GroundEdge,
+  GroundTile,
+} from "../world/components/pixel-ui/ground"
 import {
   LowFiAdoptionCenterPrefab,
   LowFiArrivalPointPrefab,
@@ -113,338 +95,363 @@ import {
   LowFiTemporaryShelterPrefab,
   LowFiTreePrefab,
 } from "../world/components/pixel-ui/low-fi-prefabs"
-import type {
-  PixelPartProps,
-  PixelPartVariant,
-} from "../world/components/pixel-ui/pixel-ui.types"
+import {
+  FallenLeaf,
+  StoneSmall,
+  TreeCanopy,
+  TreeLeafCluster,
+  TreeShadow,
+  TreeTrunk,
+} from "../world/components/pixel-ui/nature"
+import {
+  PixelAdoptionCenterPrototype,
+  PixelArrivalPointPrototype,
+  PixelBasicHousePrototype,
+  PixelButlerPrototype,
+  PixelCareCornerPrototype,
+  PixelPetPrototype,
+  PixelTemporaryShelterPrototype,
+  PixelTreePrototype,
+} from "../world/components/pixel-ui/pixel-art-prototypes"
+import type { PixelPartProps } from "../world/components/pixel-ui/pixel-ui.types"
 
 import styles from "./pixel-layer-test.module.css"
 
-type PrimitiveItem = {
-  label: string
-  name: string
+type PrimitiveComponentItem = {
+  cn: string
+  en: string
   Component: ComponentType<PixelPartProps>
-  variant?: PixelPartVariant
 }
 
-type PrimitiveGroup = {
+type PrimitiveComponentGroup = {
   title: string
-  items: PrimitiveItem[]
+  description: string
+  items: PrimitiveComponentItem[]
 }
 
 type VisualCard = {
-  label: string
-  name: string
+  cn: string
+  en: string
   meaning: string
   preview: ReactNode
 }
 
-type SceneCardProps = {
-  title: string
-  phase: string
-  modules: string[]
-  children: ReactNode
-}
+const coreRequirements = [
+  "紫微斗数是产品第一核心，不是装饰功能。",
+  "八字不是并列核心，只是出生时间缺失时的辅助补全机制。",
+  "用户真实出生信息生成管家源头人格 / 初始形象。",
+  "宠物不是随机宠物，而是根据用户紫微人格倾向匹配。",
+  "宠物性格用真实抵达时间映射，不用游戏加速时间。",
+  "UI 世界不是普通像素地图，而是紫微驱动生成的世界。",
+  "世界资源像真实地球，有生成、消耗、恢复、循环。",
+  "世界显示 24 小时制，命理映射走真实时间。",
+  "管家自主建设家园，玩家不直接点击建造。",
+  "管家根据紫微人格、资源、宠物需求建设房子 / 花园 / 照护点。",
+  "现有小组件是 Primitive 语义零件，不是最终视觉。",
+  "最终视觉应走 Sprite / Prefab / Scene，而不是色块拼接。",
+  "房屋要有阶段：空地 → 照护点 → 临时住所 → 基础小屋 → 稳定家园。",
+  "临时领养中心可以作为 MVP 临时设施，未来小镇有大型领养中心。",
+  "社区规则本阶段不定义，未来由 AI 自发发起，人类不参与。",
+  "每次继续开发前都必须打印此 MVP 核心表。",
+]
+
+const pipelineSteps = [
+  "真实出生信息",
+  "紫微斗数主算法",
+  "出生时间缺失时，八字辅助补全",
+  "DestinyProfile",
+  "VisualDNA",
+  "SpriteVariant",
+  "PrefabVariant",
+  "SceneLayout",
+  "Pixel World",
+]
 
 const planItems = [
-  ["UI-00", "PIXEL-UI-DIRECTORY-PLAN", "已完成"],
-  ["UI-01", "PIXEL-UI-LAYER-COMPONENTS", "已完成"],
-  ["UI-02", "GROUND-GRASS-NATURE-COMPONENTS", "已完成"],
-  ["UI-03", "BUILDING-FACILITY-COMPONENTS", "已完成"],
-  ["UI-04", "ACTOR-BASIC-COMPONENTS", "已完成"],
-  ["UI-05", "ACTOR-DETAIL-COMPONENTS", "已完成"],
-  ["RULE-00", "WORLD-TIME-AND-RESOURCE-RULES", "已完成"],
-  ["DEV-UI-01", "PIXEL-LAYER-TEST-PAGE", "已完成"],
-  ["ART-00", "PIXEL-ART-MODULE-RULES", "当前已完成"],
-  ["ART-01", "PIXEL-SPRITE-PROTOTYPES", "当前已完成"],
-  ["ART-02", "LOW-FI-PREFABS", "当前已完成"],
-  ["UI-06", "LOW-FI-PIXEL-STAGE", "未开始"],
-] as const
+  "UI-00：PIXEL-UI-DIRECTORY-PLAN ✅ 已完成",
+  "UI-01：PIXEL-UI-LAYER-COMPONENTS ✅ 已完成",
+  "UI-02：GROUND-GRASS-NATURE-COMPONENTS ✅ 已完成",
+  "UI-03：BUILDING-FACILITY-COMPONENTS ✅ 已完成",
+  "UI-04：ACTOR-BASIC-COMPONENTS ✅ 已完成",
+  "UI-05：ACTOR-DETAIL-COMPONENTS ✅ 已完成",
+  "RULE-00：WORLD-TIME-AND-RESOURCE-RULES ✅ 已完成",
+  "DEV-UI-01：PIXEL-LAYER-TEST-PAGE ✅ 已有",
+  "CORE-00：MVP-CORE-REQUIREMENTS-LOCK ✅ 当前页面展示",
+  "CORE-01：DESTINY-TO-VISUAL-RULES ✅ 文档锁定",
+  "CORE-02：VISUAL-GENERATION-PIPELINE ✅ 文档锁定",
+  "ART-00：PIXEL-ART-STYLE-GUIDE ✅ 文档锁定",
+  "UI-06：LOW-FI-PIXEL-STAGE 暂不做",
+]
 
 const layerItems = [
-  ["GroundLayer", "地面层"],
-  ["GrassLayer", "草地层"],
-  ["TreeNatureLayer", "树木自然层"],
-  ["PathLayer", "路径层"],
-  ["BuildingBaseLayer", "建筑基础层"],
-  ["BuildingBodyLayer", "建筑主体层"],
-  ["BuildingDetailLayer", "建筑细节层"],
-  ["FacilityLayer", "家具设施层"],
-  ["ActorShadowLayer", "角色阴影层"],
-  ["ActorBodyLayer", "角色身体层"],
-  ["ActorDetailLayer", "角色细节层"],
-  ["ActorMotionLayer", "角色动作层"],
-  ["EffectLayer", "情绪状态特效层"],
-  ["InteractionLayer", "交互反馈层"],
-  ["AtmosphereLayer", "时间天气氛围层"],
-] as const
+  "GroundLayer：地面层",
+  "GrassLayer：草地层",
+  "TreeNatureLayer：树木自然层",
+  "PathLayer：路径层",
+  "BuildingBaseLayer：建筑基础层",
+  "BuildingBodyLayer：建筑主体层",
+  "BuildingDetailLayer：建筑细节层",
+  "FacilityLayer：家具设施层",
+  "ActorShadowLayer：角色阴影层",
+  "ActorBodyLayer：角色身体层",
+  "ActorDetailLayer：角色细节层",
+  "ActorMotionLayer：角色动作层",
+  "EffectLayer：情绪状态特效层",
+  "InteractionLayer：交互反馈层",
+  "AtmosphereLayer：时间天气氛围层",
+]
 
-const primitiveGroups: PrimitiveGroup[] = [
+const componentGroups: PrimitiveComponentGroup[] = [
   {
-    title: "Ground / 地面 Primitive",
+    title: "Ground / 地面",
+    description: "地表、泥地区块和地面过渡边界。",
     items: [
-      { label: "地面基础块", name: "GroundTile", Component: GroundTile },
-      { label: "泥地区块", name: "DirtPatch", Component: DirtPatch },
-      { label: "地面边界", name: "GroundEdge", Component: GroundEdge },
+      { cn: "地面基础块", en: "GroundTile", Component: GroundTile },
+      { cn: "泥地区块", en: "DirtPatch", Component: DirtPatch },
+      { cn: "地面边界", en: "GroundEdge", Component: GroundEdge },
     ],
   },
   {
-    title: "Grass / 草地 Primitive",
+    title: "Grass / 草地",
+    description: "草皮、小草、草丛、小花、杂草和踩踏草痕。",
     items: [
-      { label: "草地基础块", name: "GrassTile", Component: GrassTile },
-      { label: "单簇小草", name: "GrassBlade", Component: GrassBlade },
-      { label: "草丛", name: "GrassCluster", Component: GrassCluster },
-      { label: "小花", name: "FlowerPatch", Component: FlowerPatch, variant: "warm" },
-      { label: "杂草", name: "WeedPatch", Component: WeedPatch, variant: "wild" },
-      { label: "踩踏草痕", name: "TrampledGrass", Component: TrampledGrass, variant: "quiet" },
+      { cn: "草地基础块", en: "GrassTile", Component: GrassTile },
+      { cn: "单簇小草", en: "GrassBlade", Component: GrassBlade },
+      { cn: "草丛组件", en: "GrassCluster", Component: GrassCluster },
+      { cn: "小花组件", en: "FlowerPatch", Component: FlowerPatch },
+      { cn: "杂草组件", en: "WeedPatch", Component: WeedPatch },
+      { cn: "踩踏草痕", en: "TrampledGrass", Component: TrampledGrass },
     ],
   },
   {
-    title: "Nature / 自然 Primitive",
+    title: "Nature / 树木自然",
+    description: "树干、树冠、树叶簇、树影、小石头和落叶。",
     items: [
-      { label: "树干", name: "TreeTrunk", Component: TreeTrunk },
-      { label: "树冠", name: "TreeCanopy", Component: TreeCanopy },
-      { label: "树叶簇", name: "TreeLeafCluster", Component: TreeLeafCluster },
-      { label: "树影", name: "TreeShadow", Component: TreeShadow, variant: "quiet" },
-      { label: "小石头", name: "StoneSmall", Component: StoneSmall },
-      { label: "落叶", name: "FallenLeaf", Component: FallenLeaf, variant: "warm" },
+      { cn: "树干", en: "TreeTrunk", Component: TreeTrunk },
+      { cn: "树冠", en: "TreeCanopy", Component: TreeCanopy },
+      { cn: "树叶簇", en: "TreeLeafCluster", Component: TreeLeafCluster },
+      { cn: "树影", en: "TreeShadow", Component: TreeShadow },
+      { cn: "小石头", en: "StoneSmall", Component: StoneSmall },
+      { cn: "落叶", en: "FallenLeaf", Component: FallenLeaf },
     ],
   },
   {
-    title: "Buildings / 建筑 Primitive",
+    title: "Buildings / 建筑",
+    description: "地基、墙体、屋顶、门窗、围栏、阴影和招牌。",
     items: [
-      { label: "地基块", name: "FoundationBlock", Component: FoundationBlock, variant: "structured" },
-      { label: "墙体面板", name: "WallPanel", Component: WallPanel },
-      { label: "屋顶部件", name: "RoofPiece", Component: RoofPiece, variant: "warm" },
-      { label: "门板", name: "DoorPanel", Component: DoorPanel },
-      { label: "窗", name: "WindowPanel", Component: WindowPanel },
-      { label: "门把手", name: "DoorHandle", Component: DoorHandle, variant: "light" },
-      { label: "窗光", name: "WindowLight", Component: WindowLight, variant: "light" },
-      { label: "围栏段", name: "FenceSegment", Component: FenceSegment, variant: "structured" },
-      { label: "建筑阴影", name: "BuildingShadow", Component: BuildingShadow, variant: "dark" },
-      { label: "通用招牌", name: "SignBoard", Component: SignBoard },
+      { cn: "地基块", en: "FoundationBlock", Component: FoundationBlock },
+      { cn: "墙体面板", en: "WallPanel", Component: WallPanel },
+      { cn: "屋顶部件", en: "RoofPiece", Component: RoofPiece },
+      { cn: "门板", en: "DoorPanel", Component: DoorPanel },
+      { cn: "窗组件", en: "WindowPanel", Component: WindowPanel },
+      { cn: "门把手", en: "DoorHandle", Component: DoorHandle },
+      { cn: "窗光", en: "WindowLight", Component: WindowLight },
+      { cn: "围栏段", en: "FenceSegment", Component: FenceSegment },
+      { cn: "建筑阴影", en: "BuildingShadow", Component: BuildingShadow },
+      { cn: "通用招牌", en: "SignBoard", Component: SignBoard },
     ],
   },
   {
-    title: "Facilities / 设施 Primitive",
+    title: "Facilities / 设施",
+    description: "食物、饮水、宠物床、储物、观察点、庭院和欢迎垫。",
     items: [
-      { label: "食物碗", name: "FoodBowl", Component: FoodBowl, variant: "warm" },
-      { label: "饮水碗", name: "WaterBowl", Component: WaterBowl, variant: "light" },
-      { label: "宠物床", name: "PetBed", Component: PetBed, variant: "soft" },
-      { label: "储物箱", name: "StorageBox", Component: StorageBox, variant: "structured" },
-      { label: "观察点", name: "ObservationSpot", Component: ObservationSpot, variant: "quiet" },
-      { label: "庭院地块", name: "GardenPatch", Component: GardenPatch, variant: "wild" },
-      { label: "家园欢迎垫", name: "WelcomeMat", Component: WelcomeMat, variant: "warm" },
+      { cn: "食物碗", en: "FoodBowl", Component: FoodBowl },
+      { cn: "饮水碗", en: "WaterBowl", Component: WaterBowl },
+      { cn: "宠物床", en: "PetBed", Component: PetBed },
+      { cn: "储物箱", en: "StorageBox", Component: StorageBox },
+      { cn: "观察点", en: "ObservationSpot", Component: ObservationSpot },
+      { cn: "庭院地块", en: "GardenPatch", Component: GardenPatch },
+      { cn: "欢迎垫", en: "WelcomeMat", Component: WelcomeMat },
     ],
   },
   {
-    title: "Adoption Center / 领养中心 Primitive",
+    title: "Adoption Center / 领养中心",
+    description: "小镇宠物领养中心、登记柜台、公告板、等待区和抵达点。",
     items: [
-      { label: "领养中心主体", name: "AdoptionCenterBody", Component: AdoptionCenterBody },
-      { label: "领养中心屋顶", name: "AdoptionCenterRoof", Component: AdoptionCenterRoof, variant: "warm" },
-      { label: "领养中心招牌", name: "AdoptionCenterSign", Component: AdoptionCenterSign },
-      { label: "领养登记柜台", name: "AdoptionCounter", Component: AdoptionCounter, variant: "structured" },
-      { label: "领养公告板", name: "NoticeBoard", Component: NoticeBoard },
-      { label: "等待区长椅", name: "WaitingBench", Component: WaitingBench, variant: "quiet" },
-      { label: "宠物抵达点", name: "ArrivalPoint", Component: ArrivalPoint, variant: "warm" },
-      { label: "小镇服务点", name: "TownServiceMarker", Component: TownServiceMarker, variant: "light" },
+      { cn: "领养中心主体", en: "AdoptionCenterBody", Component: AdoptionCenterBody },
+      { cn: "领养中心屋顶", en: "AdoptionCenterRoof", Component: AdoptionCenterRoof },
+      { cn: "领养中心招牌", en: "AdoptionCenterSign", Component: AdoptionCenterSign },
+      { cn: "领养登记柜台", en: "AdoptionCounter", Component: AdoptionCounter },
+      { cn: "领养公告板", en: "NoticeBoard", Component: NoticeBoard },
+      { cn: "等待区长椅", en: "WaitingBench", Component: WaitingBench },
+      { cn: "宠物抵达点", en: "ArrivalPoint", Component: ArrivalPoint },
+      { cn: "小镇服务点", en: "TownServiceMarker", Component: TownServiceMarker },
     ],
   },
   {
-    title: "Actors / 角色 Primitive",
+    title: "Actors / 角色",
+    description: "管家、宠物、通用身体、角色细节和工具语义零件。",
     items: [
-      { label: "角色定位锚点", name: "ActorAnchor", Component: ActorAnchor },
-      { label: "角色身体基础", name: "ActorBodyBase", Component: ActorBodyBase },
-      { label: "角色阴影", name: "ActorShadow", Component: ActorShadow, variant: "dark" },
-      { label: "管家主体", name: "ButlerActor", Component: ButlerActor, variant: "structured" },
-      { label: "管家身体", name: "ButlerBody", Component: ButlerBody, variant: "structured" },
-      { label: "管家头部", name: "ButlerHead", Component: ButlerHead },
-      { label: "管家手部", name: "ButlerHands", Component: ButlerHands },
-      { label: "管家脚部", name: "ButlerFeet", Component: ButlerFeet },
-      { label: "宠物主体", name: "PetActor", Component: PetActor, variant: "soft" },
-      { label: "宠物身体", name: "PetBody", Component: PetBody, variant: "soft" },
-      { label: "宠物头部", name: "PetHead", Component: PetHead, variant: "soft" },
-      { label: "宠物腿部", name: "PetLegs", Component: PetLegs },
-      { label: "通用眼睛", name: "PixelEye", Component: PixelEye },
-      { label: "通用嘴巴", name: "PixelMouth", Component: PixelMouth },
-      { label: "通用手部细节", name: "PixelHandDetail", Component: PixelHandDetail },
-      { label: "通用脚部细节", name: "PixelFootDetail", Component: PixelFootDetail },
-      { label: "管家眼睛", name: "ButlerEye", Component: ButlerEye },
-      { label: "管家嘴巴", name: "ButlerMouth", Component: ButlerMouth },
-      { label: "管家头发", name: "ButlerHair", Component: ButlerHair },
-      { label: "管家帽子", name: "ButlerHat", Component: ButlerHat },
-      { label: "管家衣服", name: "ButlerOutfit", Component: ButlerOutfit, variant: "structured" },
-      { label: "管家袖子", name: "ButlerSleeve", Component: ButlerSleeve },
-      { label: "管家鞋子", name: "ButlerShoe", Component: ButlerShoe, variant: "dark" },
-      { label: "管家小锤子", name: "ButlerToolHammer", Component: ButlerToolHammer, variant: "warm" },
-      { label: "管家记录板", name: "ButlerToolClipboard", Component: ButlerToolClipboard },
-      { label: "管家食物托盘", name: "ButlerToolFoodTray", Component: ButlerToolFoodTray, variant: "warm" },
-      { label: "宠物眼睛", name: "PetEye", Component: PetEye },
-      { label: "宠物鼻子", name: "PetNose", Component: PetNose },
-      { label: "宠物嘴巴", name: "PetMouth", Component: PetMouth },
-      { label: "宠物耳朵", name: "PetEar", Component: PetEar },
-      { label: "宠物尾巴", name: "PetTail", Component: PetTail },
-      { label: "宠物爪子", name: "PetPaw", Component: PetPaw },
-      { label: "宠物胡须", name: "PetWhisker", Component: PetWhisker },
-      { label: "宠物腹部花纹", name: "PetBellyPatch", Component: PetBellyPatch, variant: "light" },
-      { label: "宠物背部花纹", name: "PetBackMark", Component: PetBackMark, variant: "dark" },
+      { cn: "角色锚点", en: "ActorAnchor", Component: ActorAnchor },
+      { cn: "通用身体", en: "ActorBodyBase", Component: ActorBodyBase },
+      { cn: "通用阴影", en: "ActorShadow", Component: ActorShadow },
+      { cn: "管家主体", en: "ButlerActor", Component: ButlerActor },
+      { cn: "管家身体", en: "ButlerBody", Component: ButlerBody },
+      { cn: "管家头部", en: "ButlerHead", Component: ButlerHead },
+      { cn: "管家手部", en: "ButlerHands", Component: ButlerHands },
+      { cn: "管家脚部", en: "ButlerFeet", Component: ButlerFeet },
+      { cn: "宠物主体", en: "PetActor", Component: PetActor },
+      { cn: "宠物身体", en: "PetBody", Component: PetBody },
+      { cn: "宠物头部", en: "PetHead", Component: PetHead },
+      { cn: "宠物腿部", en: "PetLegs", Component: PetLegs },
+      { cn: "通用眼睛", en: "PixelEye", Component: PixelEye },
+      { cn: "通用嘴巴", en: "PixelMouth", Component: PixelMouth },
+      { cn: "通用手部细节", en: "PixelHandDetail", Component: PixelHandDetail },
+      { cn: "通用脚部细节", en: "PixelFootDetail", Component: PixelFootDetail },
+      { cn: "管家眼睛", en: "ButlerEye", Component: ButlerEye },
+      { cn: "管家嘴巴", en: "ButlerMouth", Component: ButlerMouth },
+      { cn: "管家头发", en: "ButlerHair", Component: ButlerHair },
+      { cn: "管家帽子", en: "ButlerHat", Component: ButlerHat },
+      { cn: "管家衣服", en: "ButlerOutfit", Component: ButlerOutfit },
+      { cn: "管家袖子", en: "ButlerSleeve", Component: ButlerSleeve },
+      { cn: "管家鞋子", en: "ButlerShoe", Component: ButlerShoe },
+      { cn: "建设工具小锤子", en: "ButlerToolHammer", Component: ButlerToolHammer },
+      { cn: "记录板", en: "ButlerToolClipboard", Component: ButlerToolClipboard },
+      { cn: "食物托盘", en: "ButlerToolFoodTray", Component: ButlerToolFoodTray },
+      { cn: "宠物眼睛", en: "PetEye", Component: PetEye },
+      { cn: "宠物鼻子", en: "PetNose", Component: PetNose },
+      { cn: "宠物嘴巴", en: "PetMouth", Component: PetMouth },
+      { cn: "宠物耳朵", en: "PetEar", Component: PetEar },
+      { cn: "宠物尾巴", en: "PetTail", Component: PetTail },
+      { cn: "宠物爪子", en: "PetPaw", Component: PetPaw },
+      { cn: "宠物胡须", en: "PetWhisker", Component: PetWhisker },
+      { cn: "宠物腹部花纹", en: "PetBellyPatch", Component: PetBellyPatch },
+      { cn: "宠物背部花纹", en: "PetBackMark", Component: PetBackMark },
     ],
   },
 ]
 
 const prototypeCards: VisualCard[] = [
   {
-    label: "宠物像素原型",
-    name: "PixelPetPrototype",
-    meaning: "验证宠物身体、头、耳朵、眼睛、鼻子、嘴巴、尾巴和爪子的可识别轮廓。",
+    cn: "宠物像素原型",
+    en: "PixelPetPrototype",
+    meaning: "验证宠物身体、头、耳朵、眼睛、鼻子、嘴巴、尾巴是否可识别。",
     preview: <PixelPetPrototype />,
   },
   {
-    label: "管家像素原型",
-    name: "PixelButlerPrototype",
-    meaning: "验证管家的头、身体、衣服、手、脚、简单表情和头发轮廓。",
+    cn: "管家像素原型",
+    en: "PixelButlerPrototype",
+    meaning: "验证管家头、身体、衣服、手、脚和简单表情是否可识别。",
     preview: <PixelButlerPrototype />,
   },
   {
-    label: "树木像素原型",
-    name: "PixelTreePrototype",
-    meaning: "验证树干、树冠层次和地面阴影。",
+    cn: "树木像素原型",
+    en: "PixelTreePrototype",
+    meaning: "验证树干、树冠、层次和树影是否可识别。",
     preview: <PixelTreePrototype />,
   },
   {
-    label: "临时住所像素原型",
-    name: "PixelTemporaryShelterPrototype",
-    meaning: "验证 HOME-02 阶段的简单遮蔽、支撑结构、临时墙体、小入口和屋顶。",
+    cn: "临时住所原型",
+    en: "PixelTemporaryShelterPrototype",
+    meaning: "验证简单遮蔽、支撑结构、临时墙体和小入口。",
     preview: <PixelTemporaryShelterPrototype />,
   },
   {
-    label: "基础小屋像素原型",
-    name: "PixelBasicHousePrototype",
-    meaning: "验证 HOME-03 阶段的地基、墙、门、窗、屋顶和窗光。",
+    cn: "基础小屋原型",
+    en: "PixelBasicHousePrototype",
+    meaning: "验证地基、墙、门、窗、屋顶和窗光。",
     preview: <PixelBasicHousePrototype />,
   },
   {
-    label: "照护区像素原型",
-    name: "PixelCareCornerPrototype",
+    cn: "照护角原型",
+    en: "PixelCareCornerPrototype",
     meaning: "验证食物碗、饮水碗、宠物床、欢迎垫和照护区边界。",
     preview: <PixelCareCornerPrototype />,
   },
   {
-    label: "小镇宠物领养中心像素原型",
-    name: "PixelAdoptionCenterPrototype",
-    meaning: "验证功能建筑主体、屋顶、招牌、登记柜台、公告板和等待区暗示。",
+    cn: "领养中心原型",
+    en: "PixelAdoptionCenterPrototype",
+    meaning: "验证小镇宠物领养中心主体、招牌、柜台、公告板和等待区。",
     preview: <PixelAdoptionCenterPrototype />,
   },
   {
-    label: "宠物抵达点像素原型",
-    name: "PixelArrivalPointPrototype",
-    meaning: "验证宠物抵达点、欢迎垫、光圈和开发测试标记。",
+    cn: "宠物抵达点原型",
+    en: "PixelArrivalPointPrototype",
+    meaning: "验证宠物抵达点、欢迎垫、光圈和小标记。",
     preview: <PixelArrivalPointPrototype />,
   },
 ]
 
 const prefabCards: VisualCard[] = [
   {
-    label: "树木组合对象",
-    name: "LowFiTreePrefab",
-    meaning: "占地 2x3，用于未来家园自然对象摆放。",
-    preview: <LowFiTreePrefab debug />,
+    cn: "树木组合对象",
+    en: "LowFiTreePrefab",
+    meaning: "2x3 世界网格对象，用于自然资源和场景层次。",
+    preview: <LowFiTreePrefab />,
   },
   {
-    label: "宠物组合对象",
-    name: "LowFiPetPrefab",
-    meaning: "占地 2x2，用于未来宠物在世界网格中的摆放。",
-    preview: <LowFiPetPrefab debug />,
+    cn: "宠物组合对象",
+    en: "LowFiPetPrefab",
+    meaning: "2x2 世界网格对象，用于未来宠物站位。",
+    preview: <LowFiPetPrefab />,
   },
   {
-    label: "管家组合对象",
-    name: "LowFiButlerPrefab",
-    meaning: "占地 2x3，用于未来管家在世界网格中的摆放。",
-    preview: <LowFiButlerPrefab debug />,
+    cn: "管家组合对象",
+    en: "LowFiButlerPrefab",
+    meaning: "2x3 世界网格对象，用于未来管家站位。",
+    preview: <LowFiButlerPrefab />,
   },
   {
-    label: "临时住所组合对象",
-    name: "LowFiTemporaryShelterPrefab",
-    meaning: "占地 4x3，对应 HOME-02 临时住所。",
-    preview: <LowFiTemporaryShelterPrefab debug />,
+    cn: "临时住所组合对象",
+    en: "LowFiTemporaryShelterPrefab",
+    meaning: "4x3 世界网格对象，用于 HOME-02 阶段。",
+    preview: <LowFiTemporaryShelterPrefab />,
   },
   {
-    label: "基础小屋组合对象",
-    name: "LowFiBasicHousePrefab",
-    meaning: "占地 5x4，对应 HOME-03 基础小屋。",
-    preview: <LowFiBasicHousePrefab debug />,
+    cn: "基础小屋组合对象",
+    en: "LowFiBasicHousePrefab",
+    meaning: "5x4 世界网格对象，用于 HOME-03 阶段。",
+    preview: <LowFiBasicHousePrefab />,
   },
   {
-    label: "照护区组合对象",
-    name: "LowFiCareCornerPrefab",
-    meaning: "占地 4x2，用于宠物食物、水、休息和欢迎点。",
-    preview: <LowFiCareCornerPrefab debug />,
+    cn: "照护角组合对象",
+    en: "LowFiCareCornerPrefab",
+    meaning: "4x2 世界网格对象，用于食物、饮水、宠物床和欢迎垫。",
+    preview: <LowFiCareCornerPrefab />,
   },
   {
-    label: "领养中心组合对象",
-    name: "LowFiAdoptionCenterPrefab",
-    meaning: "占地 6x4，用于小镇宠物领养中心低保真摆放。",
-    preview: <LowFiAdoptionCenterPrefab debug />,
+    cn: "领养中心组合对象",
+    en: "LowFiAdoptionCenterPrefab",
+    meaning: "6x4 世界网格对象，用于小镇宠物领养中心占位。",
+    preview: <LowFiAdoptionCenterPrefab />,
   },
   {
-    label: "宠物抵达点组合对象",
-    name: "LowFiArrivalPointPrefab",
-    meaning: "占地 2x2，用于宠物送达家园的开发测试点位。",
-    preview: <LowFiArrivalPointPrefab debug />,
+    cn: "宠物抵达点组合对象",
+    en: "LowFiArrivalPointPrefab",
+    meaning: "2x2 世界网格对象，用于宠物抵达家园的低保真点位。",
+    preview: <LowFiArrivalPointPrefab />,
   },
 ]
 
-function PrimitiveCard({ item }: { item: PrimitiveItem }) {
+function renderPrimitiveCard(item: PrimitiveComponentItem) {
   const PreviewComponent = item.Component
 
   return (
-    <article className={styles.componentCard}>
+    <article key={item.en} className={styles.componentCard}>
       <div className={styles.componentMeta}>
-        <span>{item.label}</span>
-        <strong>{item.name}</strong>
+        <strong>{item.cn}</strong>
+        <span>{item.en}</span>
       </div>
       <div className={styles.componentPreview}>
         <PreviewComponent
           className={styles.pixelPart}
-          variant={item.variant ?? "default"}
-          state="idle"
-          debug={false}
+          variant="warm"
+          state="active"
+          debug
         />
       </div>
     </article>
   )
 }
 
-function VisualCardPanel({ item }: { item: VisualCard }) {
+function renderVisualCard(card: VisualCard) {
   return (
-    <article className={styles.visualCard}>
-      <div className={styles.visualPreview}>{item.preview}</div>
+    <article key={card.en} className={styles.visualCard}>
+      <div className={styles.visualPreview}>{card.preview}</div>
       <div className={styles.visualMeta}>
-        <span>{item.label}</span>
-        <strong>{item.name}</strong>
-        <p>{item.meaning}</p>
-      </div>
-    </article>
-  )
-}
-
-function SceneCard({
-  title,
-  phase,
-  modules,
-  children,
-}: SceneCardProps) {
-  return (
-    <article className={styles.sceneCard}>
-      <div className={styles.sceneHeader}>
-        <span>{phase}</span>
-        <h3>{title}</h3>
-      </div>
-      <div className={styles.sceneCanvas}>{children}</div>
-      <div className={styles.moduleList}>
-        {modules.map((module) => (
-          <span key={module}>{module}</span>
-        ))}
+        <strong>{card.cn}</strong>
+        <span>{card.en}</span>
+        <p>{card.meaning}</p>
       </div>
     </article>
   )
@@ -454,38 +461,59 @@ export default function PixelLayerTestPage() {
   return (
     <main className={styles.page}>
       <section className={styles.hero}>
-        <p className={styles.kicker}>AI-PET-WORLD Pixel Layer Test</p>
-        <h1>像素图层测试页</h1>
+        <div className={styles.kicker}>AI-PET-WORLD</div>
+        <h1>Pixel Layer Test / 像素图层测试页</h1>
         <p>
-          此页面用于查看 Primitive 原子定义、Pixel Sprite 原型、Low-Fi Prefab
-          和场景组合效果，不属于正式玩家主世界。
+          此页面用于查看 pixel-ui 图层、组件、像素原型和低保真组合效果，不属于正式玩家主世界。
         </p>
       </section>
 
       <section className={styles.section}>
-        <h2>计划状态</h2>
-        <div className={styles.planGrid}>
-          {planItems.map(([id, title, status]) => (
-            <div className={styles.planItem} key={id}>
-              <span>{id}</span>
-              <strong>{title}</strong>
-              <em>{status}</em>
+        <h2>MVP Core Lock / MVP 核心需求锁定表 v1.1</h2>
+        <p className={styles.sectionNote}>
+          每次继续开发前都必须对照这张表。紫微斗数是第一核心，八字仅作为出生时间缺失时的辅助补全机制。
+        </p>
+        <ol className={styles.coreList}>
+          {coreRequirements.map((item, index) => (
+            <li key={item} className={styles.coreItem}>
+              <span>{String(index + 1).padStart(2, "0")}</span>
+              <p>{item}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className={styles.section}>
+        <h2>Visual Generation Pipeline / 视觉生成管线</h2>
+        <div className={styles.pipeline}>
+          {pipelineSteps.map((step, index) => (
+            <div key={step} className={styles.pipelineStep}>
+              <span>{step}</span>
+              {index < pipelineSteps.length - 1 && <b>↓</b>}
             </div>
           ))}
         </div>
       </section>
 
       <section className={styles.section}>
-        <h2>图层顺序</h2>
+        <h2>Plan Status / 计划状态</h2>
+        <div className={styles.planGrid}>
+          {planItems.map((item) => (
+            <span key={item} className={styles.planItem}>
+              {item}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2>Layer Order / 图层顺序</h2>
         <p className={styles.sectionNote}>
           世界图层负责对象前后关系；Sprite 内部图层负责宠物眼睛、鼻子、衣服等内部结构；二者不能混用。
         </p>
         <ol className={styles.layerList}>
-          {layerItems.map(([name, label]) => (
-            <li key={name}>
-              <strong>{name}</strong>
-              <span>{label}</span>
-            </li>
+          {layerItems.map((item) => (
+            <li key={item}>{item}</li>
           ))}
         </ol>
       </section>
@@ -496,15 +524,14 @@ export default function PixelLayerTestPage() {
           这些组件用于定义世界有哪些语义部件，不代表最终美术。它们未来可被资源系统、建设系统和 AI 管家引用。
         </p>
         <div className={styles.groupStack}>
-          {primitiveGroups.map((group) => (
-            <section className={styles.componentGroup} key={group.title}>
+          {componentGroups.map((group) => (
+            <article key={group.title} className={styles.componentGroup}>
               <h3>{group.title}</h3>
+              <p>{group.description}</p>
               <div className={styles.componentGrid}>
-                {group.items.map((item) => (
-                  <PrimitiveCard item={item} key={item.name} />
-                ))}
+                {group.items.map(renderPrimitiveCard)}
               </div>
-            </section>
+            </article>
           ))}
         </div>
       </section>
@@ -515,106 +542,100 @@ export default function PixelLayerTestPage() {
           以下原型不是最终美术，而是用于验证 AI-PET-WORLD 的宠物、管家、住所、树木、照护区和领养中心是否具备清晰可识别的像素风格。
         </p>
         <div className={styles.visualGrid}>
-          {prototypeCards.map((item) => (
-            <VisualCardPanel item={item} key={item.name} />
-          ))}
+          {prototypeCards.map(renderVisualCard)}
         </div>
       </section>
 
       <section className={styles.section}>
         <h2>Low-Fi Prefabs / 低保真组合对象</h2>
         <p className={styles.sectionNote}>
-          Prefab 是未来世界场景应优先摆放的对象，Primitive 不应直接作为最终场景对象使用。
+          Prefab 是未来管家建设和世界场景优先使用的组合对象。Primitive 不应直接作为最终场景对象使用。
         </p>
         <div className={styles.visualGrid}>
-          {prefabCards.map((item) => (
-            <VisualCardPanel item={item} key={item.name} />
-          ))}
+          {prefabCards.map(renderVisualCard)}
         </div>
       </section>
 
       <section className={styles.section}>
         <h2>Scene Preview / 场景组合预览</h2>
+        <p className={styles.sectionNote}>
+          场景应该由 Prefab 组合，而不是由 Primitive 色块直接拼接。下面只是开发测试预览，不接真实世界状态。
+        </p>
         <div className={styles.sceneGrid}>
-          <SceneCard
-            title="初始家园预览"
-            phase="HOME-00 空地"
-            modules={[
-              "LowFiTreePrefab",
-              "LowFiButlerPrefab",
-              "LowFiArrivalPointPrefab",
-              "StorageBox",
-              "ObservationSpot",
-            ]}
-          >
-            <GrassTile className={`${styles.primitiveInScene} ${styles.sceneGrass}`} variant="wild" />
-            <DirtPatch className={`${styles.primitiveInScene} ${styles.scenePath}`} variant="warm" />
-            <StoneSmall className={`${styles.primitiveInScene} ${styles.sceneStone}`} />
-            <GrassCluster className={`${styles.primitiveInScene} ${styles.sceneCluster}`} variant="wild" />
-            <LowFiTreePrefab className={styles.sceneTree} />
-            <LowFiButlerPrefab className={styles.sceneButler} />
-            <LowFiArrivalPointPrefab className={styles.sceneArrival} />
-            <StorageBox className={`${styles.primitiveInScene} ${styles.sceneStorage}`} variant="structured" />
-            <ObservationSpot className={`${styles.primitiveInScene} ${styles.sceneObserve}`} variant="quiet" />
-          </SceneCard>
+          <article className={styles.sceneCard}>
+            <div className={styles.sceneHeader}>
+              <h3>初始家园预览</h3>
+              <span>HOME-00 / 空地</span>
+            </div>
+            <div className={styles.sceneCanvas}>
+              <div className={styles.sceneGrass} />
+              <div className={styles.scenePath} />
+              <LowFiTreePrefab className={styles.sceneTree} />
+              <LowFiButlerPrefab className={styles.sceneButler} />
+              <LowFiArrivalPointPrefab className={styles.sceneArrival} />
+              <StorageBox className={`${styles.primitiveInScene} ${styles.sceneStorage}`} />
+              <ObservationSpot className={`${styles.primitiveInScene} ${styles.sceneObserve}`} />
+              <GrassCluster className={`${styles.primitiveInScene} ${styles.sceneCluster}`} />
+              <StoneSmall className={`${styles.primitiveInScene} ${styles.sceneStone}`} />
+            </div>
+            <p className={styles.moduleList}>
+              使用模块：LowFiTreePrefab / LowFiButlerPrefab / LowFiArrivalPointPrefab / StorageBox / ObservationSpot
+            </p>
+          </article>
 
-          <SceneCard
-            title="临时住所建设预览"
-            phase="HOME-02 临时住所"
-            modules={[
-              "LowFiTemporaryShelterPrefab",
-              "FoundationBlock",
-              "BuildingShadow",
-              "LowFiButlerPrefab",
-            ]}
-          >
-            <BuildingShadow className={`${styles.primitiveInScene} ${styles.sceneBuildShadow}`} variant="dark" />
-            <FoundationBlock className={`${styles.primitiveInScene} ${styles.sceneBuildFoundation}`} variant="structured" />
-            <LowFiTemporaryShelterPrefab className={styles.sceneShelter} />
-            <LowFiButlerPrefab className={styles.sceneBuilder} />
-            <StoneSmall className={`${styles.primitiveInScene} ${styles.sceneMaterialA}`} />
-            <StoneSmall className={`${styles.primitiveInScene} ${styles.sceneMaterialB}`} />
-          </SceneCard>
+          <article className={styles.sceneCard}>
+            <div className={styles.sceneHeader}>
+              <h3>临时住所建设预览</h3>
+              <span>HOME-02 / 临时住所</span>
+            </div>
+            <div className={styles.sceneCanvas}>
+              <div className={styles.sceneBuildShadow} />
+              <FoundationBlock className={`${styles.primitiveInScene} ${styles.sceneBuildFoundation}`} />
+              <LowFiTemporaryShelterPrefab className={styles.sceneShelter} />
+              <LowFiButlerPrefab className={styles.sceneBuilder} />
+              <DirtPatch className={`${styles.primitiveInScene} ${styles.sceneMaterialA}`} />
+              <DirtPatch className={`${styles.primitiveInScene} ${styles.sceneMaterialB}`} />
+            </div>
+            <p className={styles.moduleList}>
+              使用模块：LowFiTemporaryShelterPrefab / LowFiButlerPrefab / FoundationBlock / DirtPatch
+            </p>
+          </article>
 
-          <SceneCard
-            title="宠物生活区预览"
-            phase="HOME-01 照护点"
-            modules={[
-              "LowFiPetPrefab",
-              "LowFiCareCornerPrefab",
-              "FoodBowl",
-              "WaterBowl",
-              "PetBed",
-              "GardenPatch",
-              "ObservationSpot",
-            ]}
-          >
-            <GardenPatch className={`${styles.primitiveInScene} ${styles.sceneGarden}`} variant="wild" />
-            <LowFiCareCornerPrefab className={styles.sceneCare} />
-            <LowFiPetPrefab className={styles.scenePet} />
-            <FoodBowl className={`${styles.primitiveInScene} ${styles.sceneFood}`} variant="warm" />
-            <WaterBowl className={`${styles.primitiveInScene} ${styles.sceneWater}`} variant="light" />
-            <PetBed className={`${styles.primitiveInScene} ${styles.sceneBed}`} variant="soft" />
-            <ObservationSpot className={`${styles.primitiveInScene} ${styles.sceneCareObserve}`} variant="quiet" />
-          </SceneCard>
+          <article className={styles.sceneCard}>
+            <div className={styles.sceneHeader}>
+              <h3>宠物生活区预览</h3>
+              <span>HOME-01 / 照护点</span>
+            </div>
+            <div className={styles.sceneCanvas}>
+              <LowFiCareCornerPrefab className={styles.sceneCare} />
+              <LowFiPetPrefab className={styles.scenePet} />
+              <FoodBowl className={`${styles.primitiveInScene} ${styles.sceneFood}`} />
+              <WaterBowl className={`${styles.primitiveInScene} ${styles.sceneWater}`} />
+              <PetBed className={`${styles.primitiveInScene} ${styles.sceneBed}`} />
+              <GardenPatch className={`${styles.primitiveInScene} ${styles.sceneGarden}`} />
+              <ObservationSpot className={`${styles.primitiveInScene} ${styles.sceneCareObserve}`} />
+            </div>
+            <p className={styles.moduleList}>
+              使用模块：LowFiPetPrefab / LowFiCareCornerPrefab / FoodBowl / WaterBowl / PetBed / GardenPatch
+            </p>
+          </article>
 
-          <SceneCard
-            title="领养中心预览"
-            phase="小镇服务原型"
-            modules={[
-              "LowFiAdoptionCenterPrefab",
-              "LowFiArrivalPointPrefab",
-              "AdoptionCenterSign",
-              "NoticeBoard",
-              "WaitingBench",
-            ]}
-          >
-            <LowFiAdoptionCenterPrefab className={styles.sceneAdoptionCenter} />
-            <LowFiArrivalPointPrefab className={styles.sceneTownArrival} />
-            <AdoptionCenterSign className={`${styles.primitiveInScene} ${styles.sceneTownSign}`} variant="light" />
-            <NoticeBoard className={`${styles.primitiveInScene} ${styles.sceneNotice}`} />
-            <WaitingBench className={`${styles.primitiveInScene} ${styles.sceneBench}`} variant="quiet" />
-          </SceneCard>
+          <article className={styles.sceneCard}>
+            <div className={styles.sceneHeader}>
+              <h3>领养中心预览</h3>
+              <span>Town / 临时设施</span>
+            </div>
+            <div className={styles.sceneCanvas}>
+              <LowFiAdoptionCenterPrefab className={styles.sceneAdoptionCenter} />
+              <LowFiArrivalPointPrefab className={styles.sceneTownArrival} />
+              <AdoptionCenterSign className={`${styles.primitiveInScene} ${styles.sceneTownSign}`} />
+              <NoticeBoard className={`${styles.primitiveInScene} ${styles.sceneNotice}`} />
+              <WaitingBench className={`${styles.primitiveInScene} ${styles.sceneBench}`} />
+            </div>
+            <p className={styles.moduleList}>
+              使用模块：LowFiAdoptionCenterPrefab / LowFiArrivalPointPrefab / AdoptionCenterSign / NoticeBoard / WaitingBench
+            </p>
+          </article>
         </div>
       </section>
     </main>

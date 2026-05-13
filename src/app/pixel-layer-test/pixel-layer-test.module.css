@@ -1,537 +1,509 @@
 .page {
   min-height: 100vh;
   padding: 40px;
-  background:
-    radial-gradient(circle at 18% 0%, rgba(117, 168, 112, 0.16), transparent 34%),
-    linear-gradient(180deg, #10141b 0%, #151922 48%, #101318 100%);
-  color: #f3f0e7;
+  background: #11151c;
+  color: #f4efe6;
 }
 
-.hero {
-  max-width: 980px;
+.hero,
+.section {
+  width: min(1180px, 100%);
   margin: 0 auto 28px;
 }
 
+.hero {
+  padding: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
+  background: #1a2029;
+}
+
 .kicker {
-  margin: 0 0 8px;
-  color: #9fb88f;
+  margin-bottom: 8px;
+  color: #9fb7d7;
   font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
 }
 
-.hero h1 {
+.hero h1,
+.section h2,
+.componentGroup h3,
+.sceneHeader h3 {
   margin: 0;
-  font-size: 34px;
+  letter-spacing: 0;
+}
+
+.hero h1 {
+  font-size: 32px;
   line-height: 1.2;
 }
 
-.hero p:last-child {
-  max-width: 760px;
-  margin: 12px 0 0;
-  color: rgba(243, 240, 231, 0.72);
+.hero p,
+.sectionNote,
+.componentGroup p,
+.moduleList {
+  color: rgba(244, 239, 230, 0.72);
   line-height: 1.7;
 }
 
 .section {
-  max-width: 1180px;
-  margin: 0 auto 28px;
-  padding: 22px;
-  border: 1px solid rgba(243, 240, 231, 0.12);
-  border-radius: 14px;
-  background: rgba(20, 24, 31, 0.84);
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(26, 32, 41, 0.74);
 }
 
 .section h2 {
-  margin: 0 0 12px;
-  font-size: 20px;
+  font-size: 22px;
 }
 
 .sectionNote {
-  max-width: 820px;
-  margin: 0 0 18px;
-  color: rgba(243, 240, 231, 0.68);
+  margin: 10px 0 18px;
+  font-size: 14px;
+}
+
+.coreList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.coreItem {
+  display: grid;
+  grid-template-columns: 36px 1fr;
+  gap: 10px;
+  min-height: 70px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.coreItem span {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #26384d;
+  color: #d7e8ff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.coreItem p {
+  margin: 0;
+  color: rgba(244, 239, 230, 0.84);
   font-size: 13px;
-  line-height: 1.7;
+  line-height: 1.6;
+}
+
+.pipeline {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.pipelineStep {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  min-height: 78px;
+  padding: 10px;
+  border-radius: 12px;
+  background: #202936;
+  color: rgba(244, 239, 230, 0.88);
+  text-align: center;
+  font-size: 13px;
+}
+
+.pipelineStep b {
+  color: #f2c66d;
+  font-size: 18px;
 }
 
 .planGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 8px;
 }
 
-.planItem {
-  display: grid;
-  gap: 4px;
-  padding: 12px;
+.planItem,
+.layerList li {
+  padding: 10px 12px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.06);
-}
-
-.planItem span {
-  color: #9fb88f;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.planItem strong {
+  color: rgba(244, 239, 230, 0.86);
   font-size: 13px;
-}
-
-.planItem em {
-  color: rgba(243, 240, 231, 0.66);
-  font-size: 12px;
-  font-style: normal;
 }
 
 .layerList {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 8px 18px;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 8px;
+  padding: 0;
   margin: 0;
-  padding-left: 20px;
-}
-
-.layerList li {
-  padding: 8px 0;
-}
-
-.layerList strong {
-  display: block;
-  font-size: 13px;
-}
-
-.layerList span {
-  color: rgba(243, 240, 231, 0.64);
-  font-size: 12px;
+  list-style-position: inside;
 }
 
 .groupStack {
   display: grid;
-  gap: 20px;
+  gap: 18px;
+}
+
+.componentGroup {
+  padding: 18px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.045);
 }
 
 .componentGroup h3 {
-  margin: 0 0 10px;
-  color: #d9cfa8;
-  font-size: 16px;
+  font-size: 18px;
 }
 
 .componentGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 10px;
+  margin-top: 14px;
+}
+
+.componentCard,
+.visualCard,
+.sceneCard {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(10, 14, 20, 0.44);
 }
 
 .componentCard {
   display: grid;
-  min-height: 132px;
-  grid-template-rows: auto 1fr;
-  overflow: hidden;
-  border: 1px solid rgba(243, 240, 231, 0.1);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.045);
+  grid-template-columns: 1fr 54px;
+  gap: 10px;
+  min-height: 76px;
+  padding: 10px;
 }
 
 .componentMeta {
-  display: grid;
-  gap: 3px;
-  padding: 10px;
-  border-bottom: 1px solid rgba(243, 240, 231, 0.08);
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
 }
 
-.componentMeta span {
-  color: rgba(243, 240, 231, 0.72);
-  font-size: 12px;
+.componentMeta strong,
+.visualMeta strong {
+  color: #fff8ea;
+  font-size: 13px;
 }
 
-.componentMeta strong {
+.componentMeta span,
+.visualMeta span {
   overflow: hidden;
+  color: rgba(244, 239, 230, 0.54);
   font-size: 12px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.componentPreview,
-.visualPreview {
+.componentPreview {
   display: grid;
-  min-height: 86px;
   place-items: center;
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 12px 12px;
+  min-width: 0;
+  min-height: 54px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .pixelPart {
-  position: relative;
-  display: inline-block;
-  width: 34px;
-  height: 34px;
-  border: 2px solid rgba(255, 255, 255, 0.22);
-  background: #7f9569;
+  display: block;
+  width: 24px;
+  height: 24px;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 5px;
+  background: #74a06d;
+  box-shadow:
+    4px 4px 0 rgba(0, 0, 0, 0.16),
+    inset 0 0 0 4px rgba(255, 255, 255, 0.08);
   image-rendering: pixelated;
 }
 
-.pixelPart[data-variant="light"] {
-  background: #e7d98c;
-}
-
-.pixelPart[data-variant="dark"] {
-  background: #30343c;
-}
-
-.pixelPart[data-variant="warm"] {
-  background: #bd8c5a;
-}
-
-.pixelPart[data-variant="quiet"] {
-  background: #6f7d82;
-}
-
-.pixelPart[data-variant="structured"] {
-  background: #8d8070;
-}
-
-.pixelPart[data-variant="wild"] {
-  background: #5f8e56;
-}
-
-.pixelPart[data-variant="soft"] {
-  background: #c9938e;
-}
-
-.pixelPart[data-pixel-part*="shadow"] {
-  height: 14px;
-  border-radius: 50%;
-}
-
-.pixelPart[data-pixel-part*="eye"],
-.pixelPart[data-pixel-part*="nose"],
-.pixelPart[data-pixel-part*="mouth"],
-.pixelPart[data-pixel-part*="paw"],
-.pixelPart[data-pixel-part*="shoe"],
-.pixelPart[data-pixel-part*="handle"] {
-  width: 14px;
-  height: 14px;
-}
-
-.pixelPart[data-pixel-part*="tail"],
-.pixelPart[data-pixel-part*="whisker"],
-.pixelPart[data-pixel-part*="sleeve"] {
-  width: 28px;
-  height: 10px;
-}
-
-.pixelPart[data-pixel-part*="actor"] {
-  width: 44px;
-  height: 58px;
-}
-
-.pixelPart[data-pixel-part*="roof"] {
-  width: 58px;
-  height: 24px;
-}
-
-.pixelPart[data-pixel-part*="wall"],
-.pixelPart[data-pixel-part*="body"] {
-  width: 52px;
-  height: 42px;
-}
-
-.pixelPart[data-pixel-part*="door"] {
-  width: 22px;
-  height: 38px;
-}
-
-.pixelPart[data-pixel-part*="window"] {
-  width: 20px;
-  height: 20px;
-}
-
-.pixelPart[data-pixel-part*="grass"],
-.pixelPart[data-pixel-part*="flower"],
-.pixelPart[data-pixel-part*="weed"],
-.pixelPart[data-pixel-part*="leaf"] {
-  width: 38px;
-  height: 18px;
-}
-
-.visualGrid {
+.visualGrid,
+.sceneGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 14px;
 }
 
 .visualCard {
   display: grid;
+  grid-template-rows: 160px auto;
   overflow: hidden;
-  border: 1px solid rgba(243, 240, 231, 0.12);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.045);
 }
 
 .visualPreview {
-  min-height: 150px;
+  display: grid;
+  place-items: center;
+  min-height: 160px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    #151b23;
+  background-size: 16px 16px;
 }
 
 .visualMeta {
-  display: grid;
-  gap: 5px;
   padding: 12px;
-  border-top: 1px solid rgba(243, 240, 231, 0.08);
-}
-
-.visualMeta span {
-  color: rgba(243, 240, 231, 0.72);
-  font-size: 12px;
-}
-
-.visualMeta strong {
-  font-size: 13px;
 }
 
 .visualMeta p {
-  margin: 0;
-  color: rgba(243, 240, 231, 0.64);
-  font-size: 12px;
-  line-height: 1.55;
-}
-
-.sceneGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-  gap: 16px;
+  margin: 8px 0 0;
+  color: rgba(244, 239, 230, 0.68);
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .sceneCard {
-  display: grid;
-  gap: 12px;
-  padding: 14px;
-  border: 1px solid rgba(243, 240, 231, 0.12);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.045);
+  overflow: hidden;
 }
 
 .sceneHeader {
-  display: grid;
-  gap: 4px;
-}
-
-.sceneHeader span {
-  color: #9fb88f;
-  font-size: 12px;
-  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
 }
 
 .sceneHeader h3 {
-  margin: 0;
   font-size: 16px;
+}
+
+.sceneHeader span {
+  flex: none;
+  color: #9fb7d7;
+  font-size: 12px;
 }
 
 .sceneCanvas {
   position: relative;
-  min-height: 240px;
+  height: 224px;
   overflow: hidden;
-  border: 1px solid rgba(243, 240, 231, 0.1);
-  border-radius: 10px;
   background:
-    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    #2d402e;
+    linear-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.06) 1px, transparent 1px),
+    #20351f;
   background-size: 16px 16px;
 }
 
-.sceneCanvas > * {
-  position: absolute;
+.moduleList {
+  margin: 0;
+  padding: 12px 14px 14px;
+  font-size: 12px;
 }
 
 .primitiveInScene {
-  border: 1px solid rgba(255, 255, 255, 0.18);
-}
-
-.moduleList {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.moduleList span {
-  padding: 5px 7px;
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.07);
-  color: rgba(243, 240, 231, 0.68);
-  font-size: 11px;
+  position: absolute;
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  background: #b58a51;
+  image-rendering: pixelated;
 }
 
 .sceneGrass {
-  left: 16px;
-  bottom: 16px;
-  width: 120px;
-  height: 48px;
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 24px 32px, rgba(146, 199, 112, 0.32) 0 5px, transparent 6px),
+    radial-gradient(circle at 160px 72px, rgba(118, 181, 101, 0.28) 0 6px, transparent 7px);
 }
 
 .scenePath {
-  left: 128px;
-  bottom: 0;
-  width: 64px;
-  height: 144px;
-  background: #9a714c;
-}
-
-.sceneStone {
-  left: 48px;
-  bottom: 88px;
-}
-
-.sceneCluster {
-  left: 24px;
-  bottom: 118px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 48px;
+  height: 32px;
+  background: rgba(139, 102, 64, 0.48);
 }
 
 .sceneTree {
-  left: 48px;
-  bottom: 104px;
+  position: absolute;
+  left: 24px;
+  top: 32px;
 }
 
 .sceneButler {
-  left: 160px;
-  bottom: 64px;
+  position: absolute;
+  left: 152px;
+  top: 96px;
 }
 
 .sceneArrival {
-  left: 240px;
-  bottom: 48px;
+  position: absolute;
+  left: 224px;
+  top: 128px;
 }
 
 .sceneStorage {
-  left: 288px;
-  bottom: 72px;
+  left: 96px;
+  top: 144px;
+  background: #9b7146;
 }
 
 .sceneObserve {
+  left: 272px;
+  top: 64px;
+  background: #8fa7bd;
+}
+
+.sceneCluster {
   left: 320px;
-  bottom: 128px;
+  top: 152px;
+  background: #5f9b62;
+}
+
+.sceneStone {
+  left: 56px;
+  top: 168px;
+  background: #9ba0a6;
 }
 
 .sceneBuildShadow {
-  left: 118px;
-  bottom: 56px;
-  width: 130px;
-  height: 16px;
+  position: absolute;
+  left: 72px;
+  top: 144px;
+  width: 112px;
+  height: 24px;
+  background: rgba(0, 0, 0, 0.22);
 }
 
 .sceneBuildFoundation {
-  left: 128px;
-  bottom: 70px;
-  width: 96px;
-  height: 20px;
+  left: 72px;
+  top: 128px;
+  width: 80px;
+  background: #9a8062;
 }
 
 .sceneShelter {
-  left: 136px;
-  bottom: 80px;
+  position: absolute;
+  left: 64px;
+  top: 72px;
 }
 
 .sceneBuilder {
-  left: 84px;
-  bottom: 64px;
+  position: absolute;
+  left: 184px;
+  top: 96px;
 }
 
 .sceneMaterialA {
-  left: 260px;
-  bottom: 64px;
+  left: 240px;
+  top: 144px;
 }
 
 .sceneMaterialB {
-  left: 292px;
-  bottom: 80px;
-}
-
-.sceneGarden {
-  left: 42px;
-  bottom: 96px;
-  width: 96px;
-  height: 52px;
+  left: 264px;
+  top: 144px;
 }
 
 .sceneCare {
-  left: 138px;
-  bottom: 72px;
+  position: absolute;
+  left: 64px;
+  top: 96px;
 }
 
 .scenePet {
-  left: 232px;
-  bottom: 78px;
+  position: absolute;
+  left: 184px;
+  top: 112px;
 }
 
 .sceneFood {
-  left: 150px;
-  bottom: 128px;
+  left: 120px;
+  top: 152px;
+  background: #d6a85c;
 }
 
 .sceneWater {
-  left: 184px;
-  bottom: 124px;
+  left: 144px;
+  top: 152px;
+  background: #6fa9d8;
 }
 
 .sceneBed {
-  left: 264px;
-  bottom: 112px;
-  width: 64px;
-  height: 30px;
+  left: 80px;
+  top: 152px;
+  width: 32px;
+  background: #c77d66;
+}
+
+.sceneGarden {
+  left: 248px;
+  top: 96px;
+  width: 48px;
+  height: 32px;
+  background: #658f55;
 }
 
 .sceneCareObserve {
-  left: 320px;
-  bottom: 156px;
+  left: 312px;
+  top: 112px;
+  background: #8fa7bd;
 }
 
 .sceneAdoptionCenter {
-  left: 76px;
-  bottom: 92px;
+  position: absolute;
+  left: 48px;
+  top: 56px;
 }
 
 .sceneTownArrival {
-  left: 220px;
-  bottom: 56px;
+  position: absolute;
+  left: 184px;
+  top: 144px;
 }
 
 .sceneTownSign {
-  left: 146px;
-  bottom: 166px;
-  width: 56px;
-  height: 22px;
+  left: 168px;
+  top: 48px;
+  width: 40px;
+  background: #c9b071;
 }
 
 .sceneNotice {
-  left: 272px;
-  bottom: 112px;
+  left: 240px;
+  top: 96px;
+  width: 32px;
+  height: 32px;
+  background: #8a6f4c;
 }
 
 .sceneBench {
-  left: 302px;
-  bottom: 64px;
-  width: 44px;
-  height: 18px;
+  left: 272px;
+  top: 152px;
+  width: 48px;
+  background: #7a553d;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 720px) {
   .page {
-    padding: 22px;
+    padding: 18px;
+  }
+
+  .hero,
+  .section {
+    padding: 18px;
   }
 
   .hero h1 {
-    font-size: 28px;
-  }
-
-  .sceneGrid {
-    grid-template-columns: 1fr;
-  }
-
-  .sceneCanvas {
-    min-height: 220px;
+    font-size: 26px;
   }
 }
