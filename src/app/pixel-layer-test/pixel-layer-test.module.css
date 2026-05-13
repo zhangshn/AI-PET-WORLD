@@ -2,13 +2,13 @@
   min-height: 100vh;
   padding: 40px;
   background:
-    radial-gradient(circle at 20% 0%, rgba(126, 185, 140, 0.16), transparent 34%),
+    radial-gradient(circle at 18% 0%, rgba(117, 168, 112, 0.16), transparent 34%),
     linear-gradient(180deg, #10141b 0%, #151922 48%, #101318 100%);
   color: #f3f0e7;
 }
 
 .hero {
-  max-width: 960px;
+  max-width: 980px;
   margin: 0 auto 28px;
 }
 
@@ -28,14 +28,14 @@
 }
 
 .hero p:last-child {
-  max-width: 680px;
+  max-width: 760px;
   margin: 12px 0 0;
   color: rgba(243, 240, 231, 0.72);
   line-height: 1.7;
 }
 
 .section {
-  max-width: 1120px;
+  max-width: 1180px;
   margin: 0 auto 28px;
   padding: 22px;
   border: 1px solid rgba(243, 240, 231, 0.12);
@@ -44,8 +44,16 @@
 }
 
 .section h2 {
-  margin: 0 0 16px;
+  margin: 0 0 12px;
   font-size: 20px;
+}
+
+.sectionNote {
+  max-width: 820px;
+  margin: 0 0 18px;
+  color: rgba(243, 240, 231, 0.68);
+  font-size: 13px;
+  line-height: 1.7;
 }
 
 .planGrid {
@@ -146,9 +154,10 @@
   white-space: nowrap;
 }
 
-.componentPreview {
+.componentPreview,
+.visualPreview {
   display: grid;
-  min-height: 74px;
+  min-height: 86px;
   place-items: center;
   background:
     linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
@@ -250,310 +259,263 @@
   height: 18px;
 }
 
-.pixelPart[data-pixel-part*="tree-canopy"] {
-  width: 56px;
-  height: 44px;
-  border-radius: 26px 26px 16px 16px;
-}
-
-.pixelPart[data-pixel-part*="tree-trunk"] {
-  width: 18px;
-  height: 44px;
-  background: #7b573f;
-}
-
-.stagePreview {
-  position: relative;
-  min-height: 420px;
-  overflow: hidden;
-  border: 1px solid rgba(243, 240, 231, 0.12);
-  border-radius: 14px;
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    #273627;
-  background-size: 24px 24px;
-}
-
-.stagePreview .pixelPart {
-  position: absolute;
-}
-
-.stageGround {
-  inset: auto 0 0 0;
-  width: 100%;
-  height: 100%;
-  border: 0;
-  background: #4c6f43;
-}
-
-.stageGrass {
-  left: 30px;
-  bottom: 34px;
-  width: 260px;
-  height: 92px;
-}
-
-.stagePath {
-  left: 240px;
-  bottom: 0;
-  width: 170px;
-  height: 210px;
-  transform: skewX(-18deg);
-}
-
-.stageTreeShadow {
-  left: 82px;
-  bottom: 178px;
-  width: 92px;
-}
-
-.stageTreeTrunk {
-  left: 118px;
-  bottom: 184px;
-}
-
-.stageTreeCanopy {
-  left: 92px;
-  bottom: 220px;
-}
-
-.stageFlowers {
-  left: 54px;
-  bottom: 112px;
-}
-
-.stageBuildingShadow {
-  left: 426px;
-  bottom: 132px;
-  width: 190px;
-}
-
-.stageFoundation {
-  left: 444px;
-  bottom: 146px;
-  width: 154px;
-  height: 34px;
-}
-
-.stageWall {
-  left: 462px;
-  bottom: 178px;
-  width: 118px;
-  height: 88px;
-}
-
-.stageRoof {
-  left: 438px;
-  bottom: 260px;
-  width: 166px;
-  height: 50px;
-}
-
-.stageDoor {
-  left: 508px;
-  bottom: 178px;
-}
-
-.stageWindow {
-  left: 474px;
-  bottom: 222px;
-}
-
-.stageWindowLight {
-  left: 478px;
-  bottom: 226px;
-  width: 12px;
-  height: 12px;
-}
-
-.stageFood {
-  left: 372px;
-  bottom: 100px;
-}
-
-.stageWater {
-  left: 418px;
-  bottom: 92px;
-}
-
-.stageBed {
-  left: 618px;
-  bottom: 96px;
-  width: 66px;
-  height: 34px;
-}
-
-.stageWelcome {
-  left: 504px;
-  bottom: 134px;
-  width: 52px;
-  height: 18px;
-}
-
-.stageArrival {
-  right: 140px;
-  bottom: 92px;
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-}
-
-.stageButler {
-  left: 335px;
-  bottom: 130px;
-}
-
-.stageButlerEye {
-  left: 352px;
-  bottom: 172px;
-}
-
-.stageButlerMouth {
-  left: 354px;
-  bottom: 158px;
-}
-
-.stageClipboard {
-  left: 386px;
-  bottom: 140px;
-  width: 20px;
-  height: 28px;
-}
-
-.stagePet {
-  left: 690px;
-  bottom: 132px;
-}
-
-.stagePetEye {
-  left: 716px;
-  bottom: 174px;
-}
-
-.stagePetNose {
-  left: 724px;
-  bottom: 160px;
-}
-
-.stagePetTail {
-  left: 674px;
-  bottom: 152px;
-}
-
-.stageAdoptionSign {
-  right: 102px;
-  bottom: 148px;
-  width: 72px;
-  height: 38px;
-}
-
-.prototypeIntro {
-  max-width: 680px;
-  margin: -4px 0 18px;
-  color: rgba(243, 240, 231, 0.68);
-  font-size: 13px;
-  line-height: 1.7;
-}
-
-.prototypeBoard {
+.visualGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 14px;
 }
 
-.prototypeCard {
+.visualCard {
   display: grid;
-  gap: 12px;
-  justify-items: center;
-  padding: 16px;
+  overflow: hidden;
   border: 1px solid rgba(243, 240, 231, 0.12);
   border-radius: 12px;
-  background:
-    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
-    rgba(8, 11, 14, 0.48);
-  background-size: 16px 16px;
+  background: rgba(255, 255, 255, 0.045);
 }
 
-.prototypeCard h3 {
-  margin: 0;
-  color: #d9cfa8;
+.visualPreview {
+  min-height: 150px;
+}
+
+.visualMeta {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border-top: 1px solid rgba(243, 240, 231, 0.08);
+}
+
+.visualMeta span {
+  color: rgba(243, 240, 231, 0.72);
+  font-size: 12px;
+}
+
+.visualMeta strong {
   font-size: 13px;
 }
 
-.prototypeGrid {
-  --prototype-pixel: 8px;
+.visualMeta p {
+  margin: 0;
+  color: rgba(243, 240, 231, 0.64);
+  font-size: 12px;
+  line-height: 1.55;
+}
 
+.sceneGrid {
   display: grid;
-  grid-template-columns: repeat(16, var(--prototype-pixel));
-  grid-auto-rows: var(--prototype-pixel);
-  gap: 0;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 16px;
+}
+
+.sceneCard {
+  display: grid;
+  gap: 12px;
   padding: 14px;
-  border: 2px solid rgba(243, 240, 231, 0.14);
-  background: #1d2421;
-  image-rendering: pixelated;
+  border: 1px solid rgba(243, 240, 231, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.045);
 }
 
-.prototypeGrid span {
-  width: var(--prototype-pixel);
-  height: var(--prototype-pixel);
+.sceneHeader {
+  display: grid;
+  gap: 4px;
 }
 
-.prototypeGrid span[data-pixel-tone="empty"] {
-  background: transparent;
+.sceneHeader span {
+  color: #9fb88f;
+  font-size: 12px;
+  font-weight: 700;
 }
 
-.prototypeGrid span[data-pixel-tone="shadow"] {
-  background: #12161a;
+.sceneHeader h3 {
+  margin: 0;
+  font-size: 16px;
 }
 
-.prototypeGrid span[data-pixel-tone="fur"] {
-  background: #c89286;
+.sceneCanvas {
+  position: relative;
+  min-height: 240px;
+  overflow: hidden;
+  border: 1px solid rgba(243, 240, 231, 0.1);
+  border-radius: 10px;
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    #2d402e;
+  background-size: 16px 16px;
 }
 
-.prototypeGrid span[data-pixel-tone="furDark"] {
-  background: #7e4f54;
+.sceneCanvas > * {
+  position: absolute;
 }
 
-.prototypeGrid span[data-pixel-tone="skin"] {
-  background: #c99c7a;
+.primitiveInScene {
+  border: 1px solid rgba(255, 255, 255, 0.18);
 }
 
-.prototypeGrid span[data-pixel-tone="cloth"] {
-  background: #6f7f8f;
+.moduleList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.prototypeGrid span[data-pixel-tone="clothDark"] {
-  background: #364250;
+.moduleList span {
+  padding: 5px 7px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(243, 240, 231, 0.68);
+  font-size: 11px;
 }
 
-.prototypeGrid span[data-pixel-tone="roof"] {
-  background: #9f6252;
+.sceneGrass {
+  left: 16px;
+  bottom: 16px;
+  width: 120px;
+  height: 48px;
 }
 
-.prototypeGrid span[data-pixel-tone="wall"] {
-  background: #bfa983;
+.scenePath {
+  left: 128px;
+  bottom: 0;
+  width: 64px;
+  height: 144px;
+  background: #9a714c;
 }
 
-.prototypeGrid span[data-pixel-tone="wood"] {
-  background: #744e35;
+.sceneStone {
+  left: 48px;
+  bottom: 88px;
 }
 
-.prototypeGrid span[data-pixel-tone="leaf"] {
-  background: #5f8e56;
+.sceneCluster {
+  left: 24px;
+  bottom: 118px;
 }
 
-.prototypeGrid span[data-pixel-tone="leafDark"] {
-  background: #2f5d3b;
+.sceneTree {
+  left: 48px;
+  bottom: 104px;
 }
 
-.prototypeGrid span[data-pixel-tone="light"] {
-  background: #efd97c;
+.sceneButler {
+  left: 160px;
+  bottom: 64px;
 }
 
-.prototypeGrid span[data-pixel-tone="detail"] {
-  background: #1f2024;
+.sceneArrival {
+  left: 240px;
+  bottom: 48px;
+}
+
+.sceneStorage {
+  left: 288px;
+  bottom: 72px;
+}
+
+.sceneObserve {
+  left: 320px;
+  bottom: 128px;
+}
+
+.sceneBuildShadow {
+  left: 118px;
+  bottom: 56px;
+  width: 130px;
+  height: 16px;
+}
+
+.sceneBuildFoundation {
+  left: 128px;
+  bottom: 70px;
+  width: 96px;
+  height: 20px;
+}
+
+.sceneShelter {
+  left: 136px;
+  bottom: 80px;
+}
+
+.sceneBuilder {
+  left: 84px;
+  bottom: 64px;
+}
+
+.sceneMaterialA {
+  left: 260px;
+  bottom: 64px;
+}
+
+.sceneMaterialB {
+  left: 292px;
+  bottom: 80px;
+}
+
+.sceneGarden {
+  left: 42px;
+  bottom: 96px;
+  width: 96px;
+  height: 52px;
+}
+
+.sceneCare {
+  left: 138px;
+  bottom: 72px;
+}
+
+.scenePet {
+  left: 232px;
+  bottom: 78px;
+}
+
+.sceneFood {
+  left: 150px;
+  bottom: 128px;
+}
+
+.sceneWater {
+  left: 184px;
+  bottom: 124px;
+}
+
+.sceneBed {
+  left: 264px;
+  bottom: 112px;
+  width: 64px;
+  height: 30px;
+}
+
+.sceneCareObserve {
+  left: 320px;
+  bottom: 156px;
+}
+
+.sceneAdoptionCenter {
+  left: 76px;
+  bottom: 92px;
+}
+
+.sceneTownArrival {
+  left: 220px;
+  bottom: 56px;
+}
+
+.sceneTownSign {
+  left: 146px;
+  bottom: 166px;
+  width: 56px;
+  height: 22px;
+}
+
+.sceneNotice {
+  left: 272px;
+  bottom: 112px;
+}
+
+.sceneBench {
+  left: 302px;
+  bottom: 64px;
+  width: 44px;
+  height: 18px;
 }
 
 @media (max-width: 760px) {
@@ -565,7 +527,11 @@
     font-size: 28px;
   }
 
-  .stagePreview {
-    min-height: 360px;
+  .sceneGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .sceneCanvas {
+    min-height: 220px;
   }
 }
