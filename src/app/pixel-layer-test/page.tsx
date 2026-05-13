@@ -8,6 +8,15 @@ import {
   mockVisualArchetypeLabels,
   mockVisualGenerationResults,
 } from "../../visual-system/visual-system.mock"
+import {
+  mockPreferenceProfiles,
+} from "../../preference-system/preference-gateway"
+import {
+  mockZiweiProbabilityProfiles,
+} from "../../ziwei-probability/ziwei-probability-gateway"
+import type {
+  PreferenceProfile,
+} from "../../preference-system/preference-gateway"
 import type {
   PrefabVariant,
   SceneLayoutVariant,
@@ -15,6 +24,9 @@ import type {
   VisualDNA,
   VisualGenerationResult,
 } from "../../visual-system/visual-system-gateway"
+import type {
+  ZiweiProbabilityProfile,
+} from "../../ziwei-probability/ziwei-probability-gateway"
 import {
   AdoptionCenterBody,
   AdoptionCenterRoof,
@@ -175,6 +187,8 @@ const pipelineSteps = [
   "真实出生信息",
   "紫微斗数主算法",
   "出生时间缺失时，八字辅助补全",
+  "ZiweiProbabilityProfile",
+  "PreferenceProfile",
   "DestinyProfile",
   "VisualDNA",
   "SpriteVariant",
@@ -439,6 +453,13 @@ const prefabCards: VisualCard[] = [
   },
 ]
 
+const probabilityPreferenceCards = mockZiweiProbabilityProfiles.map(
+  (profile, index) => ({
+    profile,
+    preference: mockPreferenceProfiles[index],
+  })
+)
+
 function renderPrimitiveCard(item: PrimitiveComponentItem) {
   const PreviewComponent = item.Component
 
@@ -535,6 +556,93 @@ function getSceneLayoutVariantItems(
   ] satisfies Array<[string, string]>
 }
 
+function getTopArchetypeScoreItems(profile: ZiweiProbabilityProfile) {
+  return Object.entries(profile.archetypeScores)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([key, value]) => [key, value] satisfies [string, number])
+}
+
+function getVisualScoreItems(profile: ZiweiProbabilityProfile) {
+  return Object.entries(profile.visualScores).map(
+    ([key, value]) => [key, value] satisfies [string, number]
+  )
+}
+
+function getPreferenceSummaryItems(preference: PreferenceProfile) {
+  return [
+    ["color.primaryTone", preference.colorPreference.primaryTone],
+    ["pet.matchType", preference.petPreference.matchType],
+    ["home.homeStyle", preference.homePreference.homeStyle],
+    ["home.gardenStyle", preference.homePreference.gardenStyle],
+    ["home.shelterStyle", preference.homePreference.shelterStyle],
+    ["home.carePriority", preference.homePreference.carePriority],
+    ["atmosphere.mood", preference.atmospherePreference.mood],
+    [
+      "interaction.butlerActionBias",
+      preference.interactionPreference.butlerActionBias,
+    ],
+  ] satisfies Array<[string, string]>
+}
+
+function renderProbabilityPreferenceCard(input: {
+  profile: ZiweiProbabilityProfile
+  preference: PreferenceProfile | undefined
+}) {
+  const preference = input.preference
+  const profile = input.profile
+
+  if (!preference) return null
+
+  return (
+    <article
+      key={`${profile.topArchetype}-${profile.topPetMatchType}`}
+      className={styles.preferenceCard}
+    >
+      <header className={styles.preferenceHeader}>
+        <div>
+          <strong>{mockVisualArchetypeLabels[profile.topArchetype]}</strong>
+          <span>{profile.topArchetype}</span>
+        </div>
+        <b>{profile.confidence}</b>
+      </header>
+
+      <div className={styles.preferenceColumns}>
+        <section className={styles.variantColumn}>
+          <h3>ZiweiProbabilityProfile</h3>
+          {renderKeyValueList([
+            ["topArchetype", profile.topArchetype],
+            ["secondaryArchetype", profile.secondaryArchetype ?? "none"],
+            ["topPetMatchType", profile.topPetMatchType],
+            ["confidence", profile.confidence],
+          ])}
+        </section>
+
+        <section className={styles.variantColumn}>
+          <h3>Archetype Scores</h3>
+          {renderKeyValueList(getTopArchetypeScoreItems(profile))}
+        </section>
+
+        <section className={styles.variantColumn}>
+          <h3>Visual Scores</h3>
+          {renderKeyValueList(getVisualScoreItems(profile))}
+        </section>
+
+        <section className={styles.variantColumn}>
+          <h3>PreferenceProfile</h3>
+          {renderKeyValueList(getPreferenceSummaryItems(preference))}
+        </section>
+      </div>
+
+      <ol className={styles.explanationList}>
+        {profile.explanations.slice(0, 2).map((explanation) => (
+          <li key={explanation}>{explanation}</li>
+        ))}
+      </ol>
+    </article>
+  )
+}
+
 function renderVisualVariantCard(result: VisualGenerationResult) {
   const archetype = result.visualDNA.archetype
 
@@ -610,6 +718,20 @@ export default function PixelLayerTestPage() {
               {index < pipelineSteps.length - 1 && <b>↓</b>}
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2>
+          Ziwei Probability & Preference / 紫微概率与喜好画像
+        </h2>
+        <p className={styles.sectionNote}>
+          这里展示的是 14 主星 + 24 组合如何被解释成概率倾向，再转成用户潜在喜好画像。
+          喜好不是用户手填，而是紫微斗数主算法推导出的高概率偏好。
+          后续 VisualDNA、Sprite、Prefab、Scene 都应该从 PreferenceProfile 继续生成。
+        </p>
+        <div className={styles.preferenceGrid}>
+          {probabilityPreferenceCards.map(renderProbabilityPreferenceCard)}
         </div>
       </section>
 

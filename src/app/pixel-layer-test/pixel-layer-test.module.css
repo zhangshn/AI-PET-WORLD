@@ -133,6 +133,13 @@
   gap: 14px;
 }
 
+.preferenceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 14px;
+}
+
+.preferenceCard,
 .variantCard {
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -140,6 +147,7 @@
   background: rgba(10, 14, 20, 0.5);
 }
 
+.preferenceHeader,
 .variantHeader {
   display: flex;
   align-items: flex-start;
@@ -150,6 +158,7 @@
   background: rgba(255, 255, 255, 0.045);
 }
 
+.preferenceHeader div,
 .variantHeader div {
   display: flex;
   min-width: 0;
@@ -157,11 +166,13 @@
   gap: 4px;
 }
 
+.preferenceHeader strong,
 .variantHeader strong {
   color: #fff8ea;
   font-size: 15px;
 }
 
+.preferenceHeader span,
 .variantHeader span {
   overflow: hidden;
   color: rgba(244, 239, 230, 0.58);
@@ -170,6 +181,7 @@
   white-space: nowrap;
 }
 
+.preferenceHeader b,
 .variantHeader b {
   flex: none;
   padding: 5px 8px;
@@ -179,10 +191,15 @@
   font-size: 11px;
 }
 
+.preferenceColumns,
 .variantColumns {
   display: grid;
   gap: 10px;
   padding: 12px;
+}
+
+.preferenceColumns {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
 }
 
 .variantColumn {
@@ -227,6 +244,16 @@
 .variantList dd {
   overflow-wrap: anywhere;
   color: rgba(244, 239, 230, 0.84);
+}
+
+.explanationList {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0 14px 14px 30px;
+  color: rgba(244, 239, 230, 0.68);
+  font-size: 12px;
+  line-height: 1.6;
 }
 
 .planGrid {

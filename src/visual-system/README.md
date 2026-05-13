@@ -17,6 +17,22 @@
 
 八字只在出生时间缺失时辅助补全，不作为并列核心。
 
+当前完整链路：
+
+```txt
+ZiweiProbabilityProfile
+↓
+PreferenceProfile
+↓
+VisualDNA
+↓
+SpriteVariant
+↓
+PrefabVariant
+↓
+SceneLayout
+```
+
 `VisualDNA` 负责连接命理结果和视觉系统。它会进一步生成：
 
 - `SpriteVariant`
