@@ -3,6 +3,9 @@
  */
 
 import {
+  resolveSpriteVariants,
+} from "../../sprite-system/sprite-system-gateway"
+import {
   mockVisualArchetypeLabels,
   mockVisualGenerationResults,
 } from "../../visual-system/visual-system.mock"
@@ -16,7 +19,7 @@ const coreRequirements = [
   "管家不是工具人，是用户生命信息映射出的自主意识管理者。",
   "宠物不是随机宠物，而是根据用户紫微人格倾向和当前阶段匹配。",
   "不同玩家应该生成不同管家长相、不同宠物类型、不同颜色、不同家园风格。",
-  "最终视觉必须走：ZiweiProbabilityProfile → PreferenceProfile → VisualDNA → SpriteVariant → PrefabVariant → SceneLayout。",
+  "最终视觉必须走：ZiweiProbabilityProfile → PreferenceProfile → VisualDNA → SpriteVariant → Sprite Sheet → PrefabVariant → SceneLayout。",
 ]
 
 const toneClassMap: Record<string, string> = {
@@ -121,15 +124,29 @@ function renderMetric(label: string, value: number) {
   )
 }
 
+function renderSpriteMetadata(spriteVariantIds: string[]) {
+  const resolvedSprites = resolveSpriteVariants(spriteVariantIds)
+
+  if (resolvedSprites.length === 0) {
+    return <p>当前外观变体还没有绑定 Sprite Sheet 元数据。</p>
+  }
+
+  return resolvedSprites.map(({ frame, mapping }) => (
+    <p key={mapping.spriteVariantId}>
+      {frame.name}：{mapping.spriteVariantId} → {frame.sheetId} / {frame.id} / {frame.rect.width}x{frame.rect.height}px / 占地 {frame.gridSize.columns}x{frame.gridSize.rows}
+    </p>
+  ))
+}
+
 export default function VisualVariantTestPage() {
   return (
     <main className={styles.page}>
       <section className={styles.hero}>
-        <p className={styles.eyebrow}>DESIGN-02</p>
+        <p className={styles.eyebrow}>SPRITE-02</p>
         <h1>Ziwei Visual Render Samples / 紫微视觉渲染样板</h1>
         <p>
           本页面用于验证：14 主星 + 24 组合经过紫微概率解释和喜好画像后，
-          能否生成不同的管家、宠物、颜色、家园风格和场景方向。
+          能否生成不同的管家、宠物、颜色、家园风格和场景方向，并进一步解析到 Sprite Sheet 元数据。
         </p>
       </section>
 
@@ -149,8 +166,8 @@ export default function VisualVariantTestPage() {
         <h2>当前生成链路</h2>
         <p>
           真实出生信息 → 紫微斗数主算法 → ZiweiProbabilityProfile →
-          PreferenceProfile → VisualDNA → SpriteVariant → PrefabVariant →
-          SceneLayout
+          PreferenceProfile → VisualDNA → SpriteVariant → Sprite Sheet →
+          PrefabVariant → SceneLayout
         </p>
       </section>
 
@@ -162,6 +179,15 @@ export default function VisualVariantTestPage() {
           const archetypeClass = getArchetypeClass(visualDNA.archetype)
           const title = mockVisualArchetypeLabels[visualDNA.archetype]
           const description = archetypeDescriptions[visualDNA.archetype]
+          const spriteVariantIds = [
+            spriteVariant.butlerSprite,
+            spriteVariant.petSprite,
+            spriteVariant.treeSprite,
+            spriteVariant.shelterSprite,
+            spriteVariant.houseSprite,
+            spriteVariant.careCornerSprite,
+            spriteVariant.adoptionCenterSprite,
+          ]
 
           return (
             <article
@@ -194,34 +220,27 @@ export default function VisualVariantTestPage() {
               <div className={styles.infoGrid}>
                 <div>
                   <h3>VisualDNA / 视觉 DNA</h3>
-                  <p>
-                    颜色：{getChineseLabel(visualDNA.colorTone)} / {visualDNA.colorTone}
-                  </p>
-                  <p>
-                    管家：{getChineseLabel(visualDNA.butlerSilhouette)} / {visualDNA.butlerSilhouette}
-                  </p>
-                  <p>
-                    宠物：{getChineseLabel(visualDNA.petMatchType)} / {visualDNA.petMatchType}
-                  </p>
-                  <p>
-                    家园：{getChineseLabel(visualDNA.homeStyle)} / {visualDNA.homeStyle}
-                  </p>
-                  <p>
-                    花园：{getChineseLabel(visualDNA.gardenStyle)} / {visualDNA.gardenStyle}
-                  </p>
-                  <p>
-                    住所：{getChineseLabel(visualDNA.shelterStyle)} / {visualDNA.shelterStyle}
-                  </p>
-                  <p>
-                    照护优先级：{getChineseLabel(visualDNA.carePriority)} / {visualDNA.carePriority}
-                  </p>
+                  <p>颜色：{getChineseLabel(visualDNA.colorTone)} / {visualDNA.colorTone}</p>
+                  <p>管家：{getChineseLabel(visualDNA.butlerSilhouette)} / {visualDNA.butlerSilhouette}</p>
+                  <p>宠物：{getChineseLabel(visualDNA.petMatchType)} / {visualDNA.petMatchType}</p>
+                  <p>家园：{getChineseLabel(visualDNA.homeStyle)} / {visualDNA.homeStyle}</p>
+                  <p>花园：{getChineseLabel(visualDNA.gardenStyle)} / {visualDNA.gardenStyle}</p>
+                  <p>住所：{getChineseLabel(visualDNA.shelterStyle)} / {visualDNA.shelterStyle}</p>
+                  <p>照护优先级：{getChineseLabel(visualDNA.carePriority)} / {visualDNA.carePriority}</p>
                 </div>
                 <div>
                   <h3>Sprite / 外观变体</h3>
                   <p>管家外观：{spriteVariant.butlerSprite}</p>
                   <p>宠物外观：{spriteVariant.petSprite}</p>
+                  <p>树木外观：{spriteVariant.treeSprite}</p>
                   <p>临时住所外观：{spriteVariant.shelterSprite}</p>
                   <p>基础小屋外观：{spriteVariant.houseSprite}</p>
+                  <p>照护角外观：{spriteVariant.careCornerSprite}</p>
+                  <p>领养中心外观：{spriteVariant.adoptionCenterSprite}</p>
+                </div>
+                <div>
+                  <h3>Sprite Sheet / 像素资源元数据</h3>
+                  {renderSpriteMetadata(spriteVariantIds)}
                 </div>
                 <div>
                   <h3>Prefab / 世界对象</h3>
@@ -229,12 +248,17 @@ export default function VisualVariantTestPage() {
                   <p>宠物对象：{prefabVariant.petPrefab}</p>
                   <p>照护角对象：{prefabVariant.careCornerPrefab}</p>
                   <p>住所对象：{prefabVariant.shelterPrefab}</p>
+                  <p>基础小屋对象：{prefabVariant.basicHousePrefab}</p>
+                  <p>花园对象：{prefabVariant.gardenPrefab}</p>
+                  <p>领养中心对象：{prefabVariant.adoptionCenterPrefab}</p>
                 </div>
                 <div>
                   <h3>Scene / 场景方向</h3>
                   <p>初始家园：{sceneLayoutVariant.initialHomeScene}</p>
                   <p>照护点：{sceneLayoutVariant.carePointScene}</p>
                   <p>临时住所：{sceneLayoutVariant.temporaryShelterScene}</p>
+                  <p>基础小屋：{sceneLayoutVariant.basicHomeScene}</p>
+                  <p>领养抵达：{sceneLayoutVariant.adoptionArrivalScene}</p>
                 </div>
               </div>
 
