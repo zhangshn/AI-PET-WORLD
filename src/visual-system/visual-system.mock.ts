@@ -3,28 +3,24 @@
  */
 
 import {
+  mockPreferenceProfiles,
+} from "../preference-system/preference.mock"
+import {
+  buildVisualDNAFromPreferenceProfile,
+} from "./preference-to-visual-dna"
+import {
   buildVisualGenerationResult,
 } from "./visual-variant-mapper"
-import {
-  ziweiVisualProfiles,
-} from "./ziwei-visual-profiles"
 import type {
   VisualGenerationResult,
   ZiweiVisualArchetype,
 } from "./visual-dna.types"
 
-const mockArchetypes: ZiweiVisualArchetype[] = [
-  "structured_builder",
-  "warm_caretaker",
-  "protective_keeper",
-  "aesthetic_organizer",
-  "quiet_maintainer",
-  "adaptive_planner",
-]
-
 export const mockVisualGenerationResults: VisualGenerationResult[] =
-  mockArchetypes.map((archetype) =>
-    buildVisualGenerationResult(ziweiVisualProfiles[archetype])
+  mockPreferenceProfiles.map((preference) =>
+    buildVisualGenerationResult(
+      buildVisualDNAFromPreferenceProfile(preference)
+    )
   )
 
 export const mockVisualArchetypeLabels: Record<
