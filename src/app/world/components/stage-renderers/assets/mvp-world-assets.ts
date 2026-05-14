@@ -2,6 +2,8 @@
  * 当前文件负责：登记 MVP 世界拼装测试层使用的 PNG 素材路径。
  */
 
+export const MVP_PNG_WORLD_STAGE_REPLACES_LEGACY = true
+
 export const MVP_WORLD_ASSETS = {
   groundGrassBase01: "/assets/generated/world/ground/ground_grass_base_01.png",
   pathDirtHorizontal01: "/assets/generated/world/paths/path_dirt_horizontal_01.png",
