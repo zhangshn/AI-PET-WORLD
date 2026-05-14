@@ -2,7 +2,7 @@
  * 当前文件负责：在 Pixi 世界舞台中渲染 MVP 阶段 PNG 素材拼装测试层。
  */
 
-import { Container, SCALE_MODES, Sprite, Texture } from "pixi.js"
+import { Container, Sprite, Texture } from "pixi.js"
 
 import type { HomeState } from "@/types/home"
 import type { WorldMapState } from "@/world/map/world-map"
@@ -144,11 +144,7 @@ function addSpritePlacements(layer: Container, placements: MvpSpritePlacement[])
 }
 
 function createMvpSprite(assetId: MvpWorldAssetId): Sprite {
-  const texture = Texture.from(getMvpWorldAssetPath(assetId))
-
-  texture.source.scaleMode = SCALE_MODES.NEAREST
-
-  const sprite = new Sprite(texture)
+  const sprite = new Sprite(Texture.from(getMvpWorldAssetPath(assetId)))
 
   sprite.anchor.set(0.5, 1)
   sprite.roundPixels = true
