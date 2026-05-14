@@ -12,10 +12,10 @@ import {
   drawForegroundAtmosphere,
   drawStageBackground,
 } from "./stage-atmosphere-renderer"
+import { drawMvpAssetScene } from "../assets/stage-mvp-asset-scene-renderer"
 import {
   drawGarden,
   drawHomeConstruction,
-  drawTempShelter,
   resolveStageStructureLayout,
 } from "../structures/stage-structure-renderer"
 import { drawWorldTiles } from "../tiles/stage-tile-renderer"
@@ -88,6 +88,14 @@ export function drawStaticWorld(input: DrawStaticWorldInput) {
     structureLayout,
   })
 
+  drawMvpAssetScene({
+    structureLayer,
+    natureLayer,
+    map,
+    home: input.home,
+    structureLayout,
+  })
+
   if (foregroundLayer) {
     drawForegroundAtmosphere({
       layer: foregroundLayer,
@@ -104,8 +112,10 @@ function drawWorldStructures(input: {
 }) {
   const constructionStage = input.home?.constructionStage ?? "temporary_shelter"
 
-  drawTempShelter(input.layer, input.structureLayout.tempShelter, input.home)
-
+  /**
+   * MVP PNG 世界拼装阶段：临时住所与初始照护点改由 PNG 素材层承载。
+   * 这里保留后续正式家园、花园的 Graphics 结构，避免一次性重构世界渲染链。
+   */
   if (
     constructionStage === "foundation" ||
     constructionStage === "frame" ||
