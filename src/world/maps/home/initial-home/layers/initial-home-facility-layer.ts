@@ -20,7 +20,7 @@ export const INITIAL_HOME_FACILITY_LAYER: InitialHomeLayoutLayer = {
     {
       id: "water-bowl",
       assetId: "facilityWaterBowlFull01",
-      label: "水碗",
+      label: "水盆",
       x: 36,
       y: 29,
       scale: 0.9,
@@ -29,10 +29,19 @@ export const INITIAL_HOME_FACILITY_LAYER: InitialHomeLayoutLayer = {
     {
       id: "pet-bed",
       assetId: "facilityPetBedNeat01",
-      label: "宠物临时休息窝",
+      label: "宠物临时休息点",
       x: 55,
       y: 29,
       scale: 0.96,
+      layer: 60,
+    },
+    {
+      id: "storage-box",
+      assetId: "facilityStorageBoxClosed01",
+      label: "储物箱",
+      x: 39,
+      y: 30,
+      scale: 0.78,
       layer: 60,
     },
     {

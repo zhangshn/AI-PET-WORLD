@@ -9,6 +9,10 @@ export type InitialHomeTileCoordinate = {
   y: number
 }
 
+export type InitialHomeTilePlacement = InitialHomeTileCoordinate & {
+  assetId: WorldMapAssetId
+}
+
 export type InitialHomeSpritePlacement = InitialHomeTileCoordinate & {
   id: string
   assetId: WorldMapAssetId
@@ -27,5 +31,12 @@ export type InitialHomeLayoutLayer = {
 export type InitialHomePathLayer = {
   id: string
   name: string
-  tiles: InitialHomeTileCoordinate[]
+  tiles: InitialHomeTilePlacement[]
+}
+
+export type InitialHomeGroundLayer = {
+  id: string
+  name: string
+  baseAssetId: WorldMapAssetId
+  overlayTiles: InitialHomeTilePlacement[]
 }

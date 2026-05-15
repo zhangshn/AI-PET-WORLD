@@ -11,6 +11,7 @@ export type WorldMapAssetCategory =
   | "facility"
   | "nature"
   | "surface_decoration"
+  | "actor"
 
 export type WorldMapAssetAnchor = "top-left" | "bottom-center" | "center"
 

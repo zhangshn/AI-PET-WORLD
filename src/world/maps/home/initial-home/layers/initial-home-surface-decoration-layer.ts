@@ -10,7 +10,7 @@ export const INITIAL_HOME_SURFACE_DECORATION_LAYER: InitialHomeLayoutLayer = {
   placements: [
     {
       id: "arrival-side-grass",
-      assetId: "surfaceGrassTuftLow01",
+      assetId: "surfaceGrassTuft01",
       label: "抵达点旁草丛",
       x: 14,
       y: 24,
@@ -19,7 +19,7 @@ export const INITIAL_HOME_SURFACE_DECORATION_LAYER: InitialHomeLayoutLayer = {
     },
     {
       id: "mid-left-grass",
-      assetId: "surfaceGrassTuftLow01",
+      assetId: "surfaceGrassTuft01",
       label: "中部左侧草丛",
       x: 28,
       y: 22,
@@ -28,8 +28,8 @@ export const INITIAL_HOME_SURFACE_DECORATION_LAYER: InitialHomeLayoutLayer = {
     },
     {
       id: "shelter-side-grass",
-      assetId: "surfaceGrassTuftLow01",
-      label: "帐篷旁草丛",
+      assetId: "surfaceGrassTuft01",
+      label: "住所旁草丛",
       x: 47,
       y: 19,
       scale: 0.78,
@@ -37,7 +37,7 @@ export const INITIAL_HOME_SURFACE_DECORATION_LAYER: InitialHomeLayoutLayer = {
     },
     {
       id: "right-bottom-grass",
-      assetId: "surfaceGrassTuftLow01",
+      assetId: "surfaceGrassTuft01",
       label: "右下草丛",
       x: 70,
       y: 35,
@@ -46,12 +46,39 @@ export const INITIAL_HOME_SURFACE_DECORATION_LAYER: InitialHomeLayoutLayer = {
     },
     {
       id: "lower-unfinished-grass",
-      assetId: "surfaceGrassTuftLow01",
+      assetId: "surfaceGrassTuft01",
       label: "未整理地块草丛",
       x: 44,
       y: 39,
       scale: 0.8,
       layer: 30,
+    },
+    {
+      id: "arrival-stone",
+      assetId: "surfaceStoneSmall01",
+      label: "抵达点旁小石头",
+      x: 23,
+      y: 22,
+      scale: 0.72,
+      layer: 31,
+    },
+    {
+      id: "care-flower",
+      assetId: "surfaceFlowerPatch01",
+      label: "照护区小花",
+      x: 31,
+      y: 30,
+      scale: 0.7,
+      layer: 31,
+    },
+    {
+      id: "shelter-fallen-leaf",
+      assetId: "surfaceFallenLeaf01",
+      label: "住所旁落叶",
+      x: 58,
+      y: 24,
+      scale: 0.74,
+      layer: 31,
     },
   ],
 }

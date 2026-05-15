@@ -9,8 +9,17 @@ export const INITIAL_HOME_NATURE_LAYER: InitialHomeLayoutLayer = {
   name: "初始家园自然物件层",
   placements: [
     {
+      id: "upper-left-tree",
+      assetId: "natureTreeSmall01",
+      label: "左上小树",
+      x: 7,
+      y: 9,
+      scale: 1,
+      layer: 36,
+    },
+    {
       id: "left-boundary-bush",
-      assetId: "natureBushRoundLow01",
+      assetId: "natureBushSmall01",
       label: "左侧自然边界灌木",
       x: 8,
       y: 11,
@@ -19,7 +28,7 @@ export const INITIAL_HOME_NATURE_LAYER: InitialHomeLayoutLayer = {
     },
     {
       id: "arrival-bottom-bush",
-      assetId: "natureBushRoundLow01",
+      assetId: "natureBushSmall01",
       label: "抵达点下方灌木",
       x: 20,
       y: 29,
@@ -28,7 +37,7 @@ export const INITIAL_HOME_NATURE_LAYER: InitialHomeLayoutLayer = {
     },
     {
       id: "middle-bush",
-      assetId: "natureBushRoundLow01",
+      assetId: "natureBushSmall01",
       label: "中部自然灌木",
       x: 39,
       y: 21,
@@ -37,8 +46,8 @@ export const INITIAL_HOME_NATURE_LAYER: InitialHomeLayoutLayer = {
     },
     {
       id: "shelter-right-bush",
-      assetId: "natureBushRoundLow01",
-      label: "临时帐篷右侧灌木",
+      assetId: "natureBushSmall01",
+      label: "临时住所右侧灌木",
       x: 57,
       y: 25,
       scale: 0.88,
@@ -46,12 +55,21 @@ export const INITIAL_HOME_NATURE_LAYER: InitialHomeLayoutLayer = {
     },
     {
       id: "right-boundary-bush",
-      assetId: "natureBushRoundLow01",
+      assetId: "natureBushSmall01",
       label: "右侧自然边界灌木",
       x: 67,
       y: 15,
       scale: 0.94,
       layer: 35,
+    },
+    {
+      id: "right-upper-tree",
+      assetId: "natureTreeSmall01",
+      label: "右侧小树",
+      x: 69,
+      y: 14,
+      scale: 0.94,
+      layer: 36,
     },
   ],
 }

@@ -10,7 +10,7 @@ export const INITIAL_HOME_STRUCTURE_LAYER: InitialHomeLayoutLayer = {
   placements: [
     {
       id: "adoption-arrival-point",
-      assetId: "arrivalPointGrassRingSoft01",
+      assetId: "buildingPetArrivalPoint01",
       label: "临时领养抵达点",
       x: 18,
       y: 21,
@@ -19,12 +19,22 @@ export const INITIAL_HOME_STRUCTURE_LAYER: InitialHomeLayoutLayer = {
     },
     {
       id: "butler-temporary-shelter",
-      assetId: "buildingTempShelterCanvasTent01",
-      label: "管家临时管理点",
+      assetId: "buildingTempShelter01",
+      label: "临时住所",
       x: 52,
       y: 20,
       scale: 1,
       layer: 70,
+    },
+    {
+      id: "initial-care-station",
+      assetId: "buildingInitialCareStation01",
+      label: "初始照护点",
+      x: 35,
+      y: 30,
+      scale: 0.72,
+      layer: 45,
+      alpha: 0.82,
     },
   ],
 }
