@@ -1,13 +1,18 @@
 /**
- * 当前文件负责：根据 Scene Recipe 输出地图摆放结果。
+ * 当前文件负责：根据 Scene Recipe 输出稳定地图摆放结果。
  */
 
 import type {
+  HomeMapSize,
   HomeZoneType,
+  MapCoordinate,
   MapPlacement,
 } from "@/world/map-state/home-map-state-schema"
 import type { WorldMapAssetId } from "@/world/map-assets/world-map-asset-registry"
-import type { InitialHomeSceneRecipe } from "@/world/generation/generation-schema"
+import type {
+  InitialHomeAreaRecipe,
+  InitialHomeSceneRecipe,
+} from "@/world/generation/generation-schema"
 import { buildSeededNumber, pickSeededItem } from "@/world/generation/world-seed"
 
 import type {
@@ -17,9 +22,13 @@ import type {
 } from "./placement-schema"
 import { validatePlacementRules } from "./placement-rules"
 
+type PointRoute = MapCoordinate[]
+
 export function buildInitialHomePlacements(
   input: PlacementRequest
 ): PlacementResult {
+  const supportPlacements = createAreaSupportPlacements(input)
+  const pathPlacements = createPathPlacements(input)
   const placements = [
     createPlacement({
       id: "base-grass",
@@ -30,12 +39,12 @@ export function buildInitialHomePlacements(
       label: "基础草地",
       tags: ["base_ground"],
     }),
-    ...createAreaSupportPlacements(input),
-    ...createPathPlacements(input),
+    ...supportPlacements,
+    ...pathPlacements,
     ...createCoreStructurePlacements(input),
     ...createFacilityPlacements(input),
-    ...createNatureBoundaryPlacements(input),
-    ...createSurfaceDecorationPlacements(input),
+    ...createNatureBoundaryPlacements(input, pathPlacements),
+    ...createSurfaceDecorationPlacements(input, pathPlacements),
     ...createActorPlacements(input),
   ]
 
@@ -88,16 +97,21 @@ export function createAreaSupportPlacements(
 ): MapPlacement[] {
   const shelter = requireArea(input.recipe, "temporary_shelter")
   const care = requireArea(input.recipe, "initial_care")
-  const rest = requireArea(input.recipe, "pet_rest")
+  const petBedPoint = resolvePetBedPoint(input)
 
   return [
-    ...rectangleSupport("shelter-support", shelter.center.x - 4, shelter.center.y - 3, 8, 4, [
-      "temporary_shelter_support",
-    ]),
+    ...rectangleSupport(
+      "shelter-support",
+      shelter.center.x - 4,
+      shelter.center.y - 3,
+      8,
+      4,
+      ["temporary_shelter_support"]
+    ),
     ...rectangleSupport("care-support", care.center.x - 3, care.center.y - 1, 6, 3, [
       "care_support",
     ]),
-    ...rectangleSupport("rest-support", rest.center.x - 2, rest.center.y - 1, 4, 2, [
+    ...rectangleSupport("rest-support", petBedPoint.x - 2, petBedPoint.y - 1, 4, 2, [
       "rest_support",
     ]),
   ]
@@ -107,13 +121,23 @@ export function createPathPlacements(input: PlacementRequest): MapPlacement[] {
   const arrival = requireArea(input.recipe, "pet_arrival")
   const care = requireArea(input.recipe, "initial_care")
   const shelter = requireArea(input.recipe, "temporary_shelter")
-  const rest = requireArea(input.recipe, "pet_rest")
-
-  const points = uniquePoints([
-    ...walkAxisFirst(arrival.center, care.center),
-    ...walkAxisFirst(care.center, shelter.center),
-    ...walkAxisFirst(shelter.center, rest.center),
+  const petBedPoint = resolvePetBedPoint(input)
+  const route = buildCorePathRoute(input, [
+    arrival.center,
+    care.center,
+    shelter.center,
+    petBedPoint,
   ])
+
+  const points = uniquePoints(
+    route.flatMap((point, index) => {
+      const next = route[index + 1]
+
+      if (!next) return [point]
+
+      return walkAxisFirst(point, next)
+    })
+  )
 
   return points.map((point, index) => {
     const previous = points[index - 1]
@@ -133,53 +157,47 @@ export function createPathPlacements(input: PlacementRequest): MapPlacement[] {
 }
 
 export function createNatureBoundaryPlacements(
-  input: PlacementRequest
+  input: PlacementRequest,
+  existingPathPlacements: MapPlacement[] = []
 ): MapPlacement[] {
-  const treeCandidates = [
-    { x: 7, y: 9 },
-    { x: 12, y: 38 },
-    { x: 68, y: 13 },
-    { x: 72, y: 34 },
-  ]
-  const bushCandidates = [
-    { x: 8, y: 12 },
-    { x: 17, y: 31 },
-    { x: 40, y: 21 },
-    { x: 57, y: 26 },
-    { x: 67, y: 16 },
-    { x: 73, y: 24 },
-  ]
-  const treeOffset = Math.floor(buildSeededNumber(input.seed, "tree-offset") * 2)
+  const area = requireArea(input.recipe, "natural_boundary")
+  const protective = input.butlerConstructionStyle.protectiveKeeper
+  const treeCount = getDensityCount(area.density, 3) + Math.round(protective * 3)
+  const bushCount = getDensityCount(area.density, 4) + Math.round(protective * 5)
+  const rawPoints = [
+    ...createSeededAreaPoints(area, input.seed, "boundary-tree", treeCount),
+    ...createSeededAreaPoints(area, input.seed, "boundary-bush", bushCount),
+  ].map((point, index) =>
+    pushPointTowardBoundary(
+      point,
+      input.recipe.mapSize,
+      buildSeededNumber(input.seed, `boundary-side-${index}`)
+    )
+  )
+  const points = avoidCorePathPoints(
+    uniquePoints(rawPoints),
+    existingPathPlacements
+  )
 
-  return [
-    ...treeCandidates.map((point, index) =>
-      createPlacement({
-        id: `boundary-tree-${index + 1}`,
-        assetId: "natureTreeSmall01",
-        x: point.x + (index % 2 === 0 ? treeOffset : -treeOffset),
-        y: point.y,
-        layer: "nature",
-        label: "自然边界小树",
-        tags: ["nature_boundary", "tree"],
-      })
-    ),
-    ...bushCandidates.map((point, index) =>
-      createPlacement({
-        id: `boundary-bush-${index + 1}`,
-        assetId: "natureBushSmall01",
-        x: point.x,
-        y: point.y,
-        layer: "nature",
-        label: "自然边界灌木",
-        scale: 0.9,
-        tags: ["nature_boundary", "bush"],
-      })
-    ),
-  ]
+  return points.slice(0, treeCount + bushCount).map((point, index) => {
+    const isTree = index < treeCount
+
+    return createPlacement({
+      id: `${isTree ? "boundary-tree" : "boundary-bush"}-${index + 1}`,
+      assetId: isTree ? "natureTreeSmall01" : "natureBushSmall01",
+      x: point.x,
+      y: point.y,
+      layer: "nature",
+      label: isTree ? "自然边界小树" : "自然边界灌木",
+      scale: isTree ? 1 : 0.9,
+      tags: ["nature_boundary", isTree ? "tree" : "bush"],
+    })
+  })
 }
 
 export function createSurfaceDecorationPlacements(
-  input: PlacementRequest
+  input: PlacementRequest,
+  existingPathPlacements: MapPlacement[] = []
 ): MapPlacement[] {
   const decorationAssets: WorldMapAssetId[] = [
     "surfaceGrassTuft01",
@@ -187,18 +205,19 @@ export function createSurfaceDecorationPlacements(
     "surfaceFlowerPatch01",
     "surfaceFallenLeaf01",
   ]
-  const points = [
-    { x: 14, y: 24 },
-    { x: 23, y: 22 },
-    { x: 28, y: 22 },
-    { x: 31, y: 30 },
-    { x: 44, y: 39 },
-    { x: 47, y: 19 },
-    { x: 58, y: 24 },
-    { x: 70, y: 35 },
-    { x: 74, y: 18 },
-    { x: 10, y: 34 },
-  ]
+  const centerArea = requireArea(input.recipe, "visual_center")
+  const aesthetic = input.butlerConstructionStyle.aestheticOrganizer
+  const decorationCount =
+    getDensityCount(centerArea.density, 8) + Math.round(aesthetic * 8)
+  const points = avoidCorePathPoints(
+    createSeededAreaPoints(
+      centerArea,
+      input.seed,
+      "surface-decoration",
+      decorationCount + 5
+    ),
+    existingPathPlacements
+  ).slice(0, decorationCount)
 
   return points.map((point, index) =>
     createPlacement({
@@ -212,6 +231,66 @@ export function createSurfaceDecorationPlacements(
       tags: ["surface_decoration", "natural_detail"],
     })
   )
+}
+
+export function createSeededAreaPoints(
+  area: InitialHomeAreaRecipe,
+  seed: string,
+  salt: string,
+  count: number
+): MapCoordinate[] {
+  const bounds = getAreaBounds(area)
+
+  return Array.from({ length: count }, (_, index) => {
+    const xSeed = buildSeededNumber(seed, `${salt}-x-${index}`)
+    const ySeed = buildSeededNumber(seed, `${salt}-y-${index}`)
+
+    return {
+      x: bounds.x + Math.floor(xSeed * bounds.width),
+      y: bounds.y + Math.floor(ySeed * bounds.height),
+    }
+  })
+}
+
+export function getDensityCount(
+  density: InitialHomeAreaRecipe["density"],
+  baseCount: number
+): number {
+  const multiplier = {
+    none: 0,
+    low: 0.65,
+    medium: 1,
+    high: 1.35,
+  }[density]
+
+  return Math.max(0, Math.round(baseCount * multiplier))
+}
+
+export function clampPointToMap(
+  point: MapCoordinate,
+  mapSize: HomeMapSize
+): MapCoordinate {
+  return {
+    x: Math.min(mapSize.columns, Math.max(1, point.x)),
+    y: Math.min(mapSize.rows, Math.max(1, point.y)),
+  }
+}
+
+export function avoidCorePathPoints(
+  points: MapCoordinate[],
+  existingPathPlacements: MapPlacement[]
+): MapCoordinate[] {
+  const blocked = new Set(
+    existingPathPlacements.flatMap((placement) => [
+      `${placement.x}:${placement.y}`,
+      `${placement.x + 1}:${placement.y}`,
+      `${placement.x - 1}:${placement.y}`,
+      `${placement.x}:${placement.y + 1}`,
+      `${placement.x}:${placement.y - 1}`,
+    ])
+  )
+
+  return points.filter((point) => !blocked.has(`${point.x}:${point.y}`))
 }
 
 function createCoreStructurePlacements(input: PlacementRequest): MapPlacement[] {
@@ -255,8 +334,8 @@ function createCoreStructurePlacements(input: PlacementRequest): MapPlacement[] 
 
 function createFacilityPlacements(input: PlacementRequest): MapPlacement[] {
   const care = requireArea(input.recipe, "initial_care")
-  const rest = requireArea(input.recipe, "pet_rest")
   const storage = requireArea(input.recipe, "storage_tools")
+  const petBedPoint = resolvePetBedPoint(input)
 
   return [
     createPlacement({
@@ -292,8 +371,8 @@ function createFacilityPlacements(input: PlacementRequest): MapPlacement[] {
     createPlacement({
       id: "pet-bed",
       assetId: "facilityPetBedNeat01",
-      x: rest.center.x,
-      y: rest.center.y,
+      x: petBedPoint.x,
+      y: petBedPoint.y,
       layer: "facility",
       label: "宠物床",
       scale: 0.96,
@@ -330,6 +409,95 @@ function createActorPlacements(input: PlacementRequest): MapPlacement[] {
   ]
 }
 
+function resolvePetBedPoint(input: PlacementRequest): MapCoordinate {
+  const rest = requireArea(input.recipe, "pet_rest")
+  const care = requireArea(input.recipe, "initial_care")
+  const shelter = requireArea(input.recipe, "temporary_shelter")
+  const style = input.butlerConstructionStyle
+  const adaptiveOffset = getAdaptiveOffset(style.adaptivePlanner)
+  const warmBias = style.warmCaretaker > 0.65 ? -1 : 0
+  const quietBias = style.quietMaintainer > 0.6 ? 2 : 0
+  const x = Math.round(
+    rest.center.x +
+      warmBias +
+      adaptiveOffset *
+        (buildSeededNumber(input.seed, "pet-bed-x") > 0.5 ? 1 : -1)
+  )
+  const y = Math.round(
+    rest.center.y +
+      quietBias -
+      (style.warmCaretaker > 0.72 ? 1 : 0) +
+      adaptiveOffset *
+        (buildSeededNumber(input.seed, "pet-bed-y") > 0.5 ? 1 : -1)
+  )
+
+  return clampPointToMap(
+    {
+      x: Math.min(Math.max(x, Math.min(care.center.x, shelter.center.x)), rest.center.x + 3),
+      y,
+    },
+    input.recipe.mapSize
+  )
+}
+
+function buildCorePathRoute(
+  input: PlacementRequest,
+  route: PointRoute
+): PointRoute {
+  if (input.butlerConstructionStyle.structuredBuilder >= 0.55) return route
+
+  const arrival = route[0]
+  const care = route[1]
+  const adaptiveOffset = getAdaptiveOffset(input.butlerConstructionStyle.adaptivePlanner)
+  const waypoint = clampPointToMap(
+    {
+      x:
+        Math.round((arrival.x + care.x) / 2) +
+        adaptiveOffset *
+          (buildSeededNumber(input.seed, "path-waypoint-x") > 0.5 ? 1 : -1),
+      y:
+        arrival.y +
+        Math.round(
+          (care.y - arrival.y) *
+            buildSeededNumber(input.seed, "path-waypoint-y")
+        ),
+    },
+    input.recipe.mapSize
+  )
+
+  return [arrival, waypoint, ...route.slice(1)]
+}
+
+function pushPointTowardBoundary(
+  point: MapCoordinate,
+  mapSize: HomeMapSize,
+  sideSeed: number
+): MapCoordinate {
+  const side = Math.floor(sideSeed * 4)
+
+  if (side === 0) return clampPointToMap({ ...point, y: 4 }, mapSize)
+  if (side === 1) return clampPointToMap({ ...point, y: mapSize.rows - 4 }, mapSize)
+  if (side === 2) return clampPointToMap({ ...point, x: 5 }, mapSize)
+
+  return clampPointToMap({ ...point, x: mapSize.columns - 5 }, mapSize)
+}
+
+function getAdaptiveOffset(adaptivePlanner: number): number {
+  if (adaptivePlanner >= 0.7) return 0
+  if (adaptivePlanner >= 0.45) return 1
+
+  return 2
+}
+
+function getAreaBounds(area: InitialHomeAreaRecipe) {
+  return {
+    x: area.center.x - Math.floor(area.size.width / 2),
+    y: area.center.y - Math.floor(area.size.height / 2),
+    width: area.size.width,
+    height: area.size.height,
+  }
+}
+
 function rectangleSupport(
   idPrefix: string,
   startX: number,
@@ -355,11 +523,8 @@ function rectangleSupport(
   })
 }
 
-function walkAxisFirst(
-  start: { x: number; y: number },
-  end: { x: number; y: number }
-): { x: number; y: number }[] {
-  const points: { x: number; y: number }[] = []
+function walkAxisFirst(start: MapCoordinate, end: MapCoordinate): MapCoordinate[] {
+  const points: MapCoordinate[] = []
   const xStep = start.x <= end.x ? 1 : -1
   const yStep = start.y <= end.y ? 1 : -1
 
@@ -376,7 +541,7 @@ function walkAxisFirst(
   return points
 }
 
-function uniquePoints(points: { x: number; y: number }[]): { x: number; y: number }[] {
+function uniquePoints(points: MapCoordinate[]): MapCoordinate[] {
   const seen = new Set<string>()
 
   return points.filter((point) => {
@@ -389,14 +554,13 @@ function uniquePoints(points: { x: number; y: number }[]): { x: number; y: numbe
 }
 
 function getPathAssetId(
-  previous: { x: number; y: number } | undefined,
-  current: { x: number; y: number },
-  next: { x: number; y: number } | undefined
+  previous: MapCoordinate | undefined,
+  current: MapCoordinate,
+  next: MapCoordinate | undefined
 ): WorldMapAssetId {
   if (!previous || !next) return "pathDirtHorizontal01"
 
-  const horizontal =
-    previous.y === current.y && next.y === current.y
+  const horizontal = previous.y === current.y && next.y === current.y
   const vertical = previous.x === current.x && next.x === current.x
 
   if (horizontal) return "pathDirtHorizontal01"
@@ -418,7 +582,7 @@ function getPathAssetId(
 function requireArea(
   recipe: InitialHomeSceneRecipe,
   areaType: HomeZoneType
-) {
+): InitialHomeAreaRecipe {
   const area = recipe.areas.find((candidate) => candidate.areaType === areaType)
 
   if (!area) {

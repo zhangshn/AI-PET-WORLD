@@ -77,6 +77,7 @@ export const WORLD_MAP_ASSETS = {
     anchor: "top-left",
     description: "泥土小路右下转角",
   },
+  // TODO: P0 标准文件补齐后改为 edge_grass_dirt_top_01.png。
   edgeGrassDirtTop01: {
     id: "edgeGrassDirtTop01",
     category: "edge",
@@ -85,6 +86,7 @@ export const WORLD_MAP_ASSETS = {
     anchor: "top-left",
     description: "草地泥地上边缘",
   },
+  // TODO: P0 标准文件补齐后改为 edge_grass_dirt_bottom_01.png。
   edgeGrassDirtBottom01: {
     id: "edgeGrassDirtBottom01",
     category: "edge",
@@ -93,6 +95,7 @@ export const WORLD_MAP_ASSETS = {
     anchor: "top-left",
     description: "草地泥地下边缘",
   },
+  // TODO: P0 标准文件补齐后改为 edge_grass_dirt_left_01.png。
   edgeGrassDirtLeft01: {
     id: "edgeGrassDirtLeft01",
     category: "edge",
@@ -101,6 +104,7 @@ export const WORLD_MAP_ASSETS = {
     anchor: "top-left",
     description: "草地泥地左边缘",
   },
+  // TODO: P0 标准文件补齐后改为 edge_grass_dirt_right_01.png。
   edgeGrassDirtRight01: {
     id: "edgeGrassDirtRight01",
     category: "edge",
@@ -133,6 +137,7 @@ export const WORLD_MAP_ASSETS = {
     anchor: "bottom-center",
     description: "管家临时管理帐篷",
   },
+  // TODO: P0 标准文件补齐后确认临时住所素材最终路径。
   buildingTempShelter01: {
     id: "buildingTempShelter01",
     category: "structure",
@@ -149,6 +154,7 @@ export const WORLD_MAP_ASSETS = {
     anchor: "bottom-center",
     description: "宠物抵达点",
   },
+  // TODO: P0 标准文件补齐后替换为独立 initial care station 素材。
   buildingInitialCareStation01: {
     id: "buildingInitialCareStation01",
     category: "structure",
@@ -261,6 +267,7 @@ export const WORLD_MAP_ASSETS = {
     anchor: "bottom-center",
     description: "落叶",
   },
+  // TODO: P0 标准文件补齐后确认管家标准身体素材最终路径。
   butlerBodyStandard01: {
     id: "butlerBodyStandard01",
     category: "actor",
@@ -269,6 +276,7 @@ export const WORLD_MAP_ASSETS = {
     anchor: "bottom-center",
     description: "管家占位",
   },
+  // TODO: P0 标准文件补齐后确认宠物圆形身体素材最终路径。
   petPartBodyRound01: {
     id: "petPartBodyRound01",
     category: "actor",
@@ -277,6 +285,7 @@ export const WORLD_MAP_ASSETS = {
     anchor: "bottom-center",
     description: "宠物身体占位",
   },
+  // TODO: P0 标准文件补齐后确认宠物正面 idle pose 素材最终路径。
   petPoseSkeletonIdleFront01: {
     id: "petPoseSkeletonIdleFront01",
     category: "actor",

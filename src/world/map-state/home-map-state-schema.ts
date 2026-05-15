@@ -88,6 +88,10 @@ export type MapDiff = {
   id: string
   operation: MapDiffOperation
   placementId: string
+  placement?: MapPlacement
+  patch?: Partial<
+    Pick<MapPlacement, "x" | "y" | "scale" | "alpha" | "label" | "tags">
+  >
   reason: string
   createdAt: number
   tags: string[]

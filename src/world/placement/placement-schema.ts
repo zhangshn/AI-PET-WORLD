@@ -10,6 +10,7 @@ import type {
 } from "@/world/map-state/home-map-state-schema"
 
 import type {
+  ButlerConstructionStyleVector,
   InitialHomeAreaRecipe,
   InitialHomeSceneRecipe,
 } from "@/world/generation/generation-schema"
@@ -54,6 +55,7 @@ export type PlacementRequest = {
   recipe: InitialHomeSceneRecipe
   zones: HomeZone[]
   rules: PlacementRule[]
+  butlerConstructionStyle: ButlerConstructionStyleVector
 }
 
 export type PlacementResult = {

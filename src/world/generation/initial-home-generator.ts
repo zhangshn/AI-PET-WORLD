@@ -43,6 +43,7 @@ export function generateInitialHomeMapResult(
     recipe,
     zones,
     rules: INITIAL_HOME_PLACEMENT_RULE_SET,
+    butlerConstructionStyle: input.butlerConstructionStyle,
   })
 
   return {
