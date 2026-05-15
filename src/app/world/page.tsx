@@ -1,14 +1,14 @@
-﻿"use client"
+"use client"
 
 /**
- * 当前文件负责：世界观察页入口。
+ * 当前文件负责：新版世界页面入口；旧前端界面已停止使用。
  */
 
-import WorldObserveLayout from "./layouts/WorldObserveLayout"
+import NewWorldMvpPage from "./NewWorldMvpPage"
 import { useWorldEngineState } from "./hooks/useWorldEngineState"
 
 export default function WorldPage() {
-  const world = useWorldEngineState()
+  useWorldEngineState()
 
-  return <WorldObserveLayout world={world} />
+  return <NewWorldMvpPage />
 }
