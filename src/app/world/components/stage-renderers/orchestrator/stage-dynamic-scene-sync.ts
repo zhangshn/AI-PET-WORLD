@@ -15,10 +15,7 @@ import type { SyncGraphicsStageInput } from "./graphics-stage-orchestrator"
 const MVP_INITIAL_HOME_STATIC_LAYOUT_ENABLED = true
 
 export function syncDynamicWorld(input: SyncGraphicsStageInput) {
-  if (
-    MVP_INITIAL_HOME_STATIC_LAYOUT_ENABLED &&
-    input.sceneMode !== "shelterInterior"
-  ) {
+  if (MVP_INITIAL_HOME_STATIC_LAYOUT_ENABLED) {
     clearExteriorDynamicLayers(input.layers)
     return
   }
