@@ -4,7 +4,7 @@
  * 当前文件负责：承载 Pixi 世界舞台并协调渲染生命周期。
  */
 
-import { useCallback, useEffect, useMemo, useRef } from "react"
+import { useCallback, useEffect, useRef } from "react"
 import { Application, Ticker } from "pixi.js"
 
 import type { WorldStimulus } from "@/ai/gateway"
@@ -38,8 +38,6 @@ import {
   createWorldStageRuntimeState,
 } from "./stage-renderers/orchestrator/stage-runtime-state"
 import type { WorldStageSceneMode } from "./stage-renderers/orchestrator/stage-scene-mode"
-import WorldStageHudOverlay from "./stage-hud/WorldStageHudOverlay"
-import { buildWorldStageViewModel } from "../view-models/worldStageViewModel"
 
 import styles from "@/styles/world-styles/layout/world-pixel-stage.module.css"
 
@@ -68,30 +66,6 @@ export default function WorldPixelStage(props: Props) {
   const layersRef = useRef(createEmptyWorldStageLayers())
   const stageRuntimeRef = useRef(createWorldStageRuntimeState())
 
-  const stageViewModel = useMemo(() => {
-    return buildWorldStageViewModel({
-      time: props.time,
-      pet: props.pet,
-      butler: props.butler,
-      home: props.home,
-      incubator: props.incubator,
-      stimuli: props.stimuli,
-      ecology: props.ecology,
-      worldRuntime: props.worldRuntime,
-      tick: props.tick,
-    })
-  }, [
-    props.time,
-    props.pet,
-    props.butler,
-    props.home,
-    props.incubator,
-    props.stimuli,
-    props.ecology,
-    props.worldRuntime,
-    props.tick,
-  ])
-
   useEffect(() => {
     latestRef.current = props
   }, [props])
@@ -103,16 +77,6 @@ export default function WorldPixelStage(props: Props) {
   const applyCamera = useCallback(() => {
     const stageRuntime = stageRuntimeRef.current
     const latest = latestRef.current
-    const sceneMode = latest.sceneMode ?? "exterior"
-
-    if (sceneMode === "shelterInterior") {
-      if (layersRef.current.worldLayer) {
-        layersRef.current.worldLayer.x = 0
-        layersRef.current.worldLayer.y = 0
-        layersRef.current.worldLayer.scale.set(1)
-      }
-      return
-    }
 
     applyStageCamera({
       camera: stageRuntime.camera,
@@ -144,7 +108,7 @@ export default function WorldPixelStage(props: Props) {
         butlerMotion: stageRuntime.butlerMotion,
         butlerMotionProcess: stageRuntime.butlerMotionProcess,
         renderState: stageRuntime.renderState,
-        sceneMode: latest.sceneMode ?? "exterior",
+        sceneMode: "exterior",
         time: latest.time,
         pet: latest.pet,
         butler: latest.butler,
@@ -205,9 +169,9 @@ export default function WorldPixelStage(props: Props) {
         getHome: () => latestRef.current.home,
         getIncubator: () => latestRef.current.incubator,
         getPet: () => latestRef.current.pet,
-        getSceneMode: () => latestRef.current.sceneMode ?? "exterior",
-        onEnterShelter: () => latestRef.current.onEnterShelter?.(),
-        onExitShelter: () => latestRef.current.onExitShelter?.(),
+        getSceneMode: () => "exterior",
+        onEnterShelter: undefined,
+        onExitShelter: undefined,
       })
 
       const ticker = new Ticker()
@@ -239,7 +203,6 @@ export default function WorldPixelStage(props: Props) {
   return (
     <div className={styles.stageShell}>
       <div ref={mountRef} className={styles.stageCanvas} />
-      <WorldStageHudOverlay viewModel={stageViewModel} />
     </div>
   )
 }
