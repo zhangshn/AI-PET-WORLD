@@ -36,7 +36,6 @@ export const HOME_MAP_RENDER_STYLES = {
   },
   ground: {
     backgroundColor: "#4c7337",
-    backgroundRepeat: "repeat",
     left: 0,
     position: "absolute",
     top: 0,

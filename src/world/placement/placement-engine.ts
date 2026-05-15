@@ -27,18 +27,11 @@ type PointRoute = MapCoordinate[]
 export function buildInitialHomePlacements(
   input: PlacementRequest
 ): PlacementResult {
+  const groundPlacements = createGroundTilePlacements(input)
   const supportPlacements = createAreaSupportPlacements(input)
   const pathPlacements = createPathPlacements(input)
   const placements = [
-    createPlacement({
-      id: "base-grass",
-      assetId: "groundGrassBase01",
-      x: 1,
-      y: 1,
-      layer: "ground",
-      label: "基础草地",
-      tags: ["base_ground"],
-    }),
+    ...groundPlacements,
     ...supportPlacements,
     ...pathPlacements,
     ...createCoreStructurePlacements(input),
@@ -90,6 +83,28 @@ export function createPlacement(input: CreatePlacementInput): MapPlacement {
     source: input.source ?? "placement_engine",
     tags: input.tags ?? [],
   }
+}
+
+export function createGroundTilePlacements(
+  input: PlacementRequest
+): MapPlacement[] {
+  const { columns, rows } = input.recipe.mapSize
+
+  return Array.from({ length: columns * rows }, (_, index) => {
+    const x = (index % columns) + 1
+    const y = Math.floor(index / columns) + 1
+
+    return createPlacement({
+      id: `ground-${x}-${y}`,
+      assetId: pickGroundAssetId(input, { x, y }),
+      x,
+      y,
+      layer: "ground",
+      label: "基础草地",
+      source: "placement_engine",
+      tags: ["base_ground_tile", "tilemap_ground"],
+    })
+  })
 }
 
 export function createAreaSupportPlacements(
@@ -407,6 +422,36 @@ function createActorPlacements(input: PlacementRequest): MapPlacement[] {
       tags: ["pet", "actor"],
     }),
   ]
+}
+
+function pickGroundAssetId(
+  input: PlacementRequest,
+  point: MapCoordinate
+): WorldMapAssetId {
+  const variantSeed = buildSeededNumber(
+    input.seed,
+    `ground-${point.x}-${point.y}`
+  )
+  const edgeDistance = Math.min(
+    point.x - 1,
+    point.y - 1,
+    input.recipe.mapSize.columns - point.x,
+    input.recipe.mapSize.rows - point.y
+  )
+  const inVisualCenter =
+    point.x >= input.recipe.visualCenter.start.x &&
+    point.x <= input.recipe.visualCenter.end.x &&
+    point.y >= input.recipe.visualCenter.start.y &&
+    point.y <= input.recipe.visualCenter.end.y
+  const variantThreshold = inVisualCenter
+    ? 0.08
+    : edgeDistance <= 5
+      ? 0.28
+      : 0.16
+
+  return variantSeed < variantThreshold
+    ? "groundGrassBase02"
+    : "groundGrassBase01"
 }
 
 function resolvePetBedPoint(input: PlacementRequest): MapCoordinate {

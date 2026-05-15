@@ -32,6 +32,7 @@ export type PlacementRuleId =
   | "cluster_core_living_area"
   | "higher_natural_boundary_density"
   | "avoid_empty_central_grass"
+  | "complete_ground_coverage"
   | "forbid_old_birth_device_tags"
 
 export type PlacementRule = {

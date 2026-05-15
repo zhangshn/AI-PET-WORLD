@@ -64,7 +64,11 @@ function getPlacementSize(
   defaultSize: number,
   tileSize: number
 ): { width: number; height: number } {
-  if (placement.layer === "ground" || placement.layer === "path") {
+  if (
+    placement.layer === "ground" ||
+    placement.layer === "path" ||
+    placement.layer === "edge"
+  ) {
     return { width: tileSize, height: tileSize }
   }
 

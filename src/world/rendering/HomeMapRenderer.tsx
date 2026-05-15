@@ -4,9 +4,6 @@
  * 当前文件负责：渲染 HomeMapRenderModel。
  */
 
-import { WORLD_MAP_ASSETS } from "@/world/map-assets/world-map-asset-registry"
-import type { MapPlacement } from "@/world/map-state/home-map-state-schema"
-
 import { HomeMapPlacementSprite } from "./HomeMapPlacementSprite"
 import type { HomeMapRenderModel } from "./home-map-render-model"
 import { HOME_MAP_RENDER_STYLES } from "./home-map-render-styles"
@@ -26,7 +23,6 @@ export function HomeMapRenderer({
   const tileSize = renderModel.mapSize.tileSize
   const mapWidth = renderModel.mapSize.columns * tileSize
   const mapHeight = renderModel.mapSize.rows * tileSize
-  const baseGround = getBaseGroundPlacement(renderModel.allPlacements)
 
   return (
     <main style={HOME_MAP_RENDER_STYLES.page}>
@@ -41,25 +37,13 @@ export function HomeMapRenderer({
             width: mapWidth,
           }}
         >
-          <div
-            style={{
-              ...HOME_MAP_RENDER_STYLES.ground,
-              backgroundImage: `url(${WORLD_MAP_ASSETS[baseGround.assetId].path})`,
-              backgroundSize: `${tileSize}px ${tileSize}px`,
-              height: mapHeight,
-              width: mapWidth,
-            }}
-          />
-
-          {renderModel.allPlacements
-            .filter((placement) => placement.id !== baseGround.id)
-            .map((placement) => (
-              <HomeMapPlacementSprite
-                key={placement.id}
-                placement={placement}
-                tileSize={tileSize}
-              />
-            ))}
+          {renderModel.allPlacements.map((placement) => (
+            <HomeMapPlacementSprite
+              key={placement.id}
+              placement={placement}
+              tileSize={tileSize}
+            />
+          ))}
 
           <div
             style={{
@@ -96,28 +80,6 @@ export function HomeMapRenderer({
       </section>
     </main>
   )
-}
-
-function getBaseGroundPlacement(placements: MapPlacement[]): MapPlacement {
-  return (
-    placements.find((placement) => placement.tags.includes("base_ground")) ??
-    createFallbackGroundPlacement()
-  )
-}
-
-function createFallbackGroundPlacement(): MapPlacement {
-  return {
-    id: "fallback-base-ground",
-    assetId: "groundGrassBase01",
-    x: 1,
-    y: 1,
-    layer: "ground",
-    scale: 1,
-    alpha: 1,
-    label: "基础草地",
-    source: "scene_recipe",
-    tags: ["base_ground", "fallback"],
-  }
 }
 
 function AxisLabels(props: {

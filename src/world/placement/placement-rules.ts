@@ -11,6 +11,12 @@ import type {
 } from "./placement-schema"
 
 export const PLACEMENT_RULES = {
+  completeGroundCoverage: {
+    id: "complete_ground_coverage",
+    description: "基础地表 tile 必须完整覆盖地图。",
+    severity: "block",
+    tags: ["placement", "ground", "tilemap"],
+  },
   noIsolatedAssets: {
     id: "no_isolated_assets",
     description: "禁止素材孤立摆放。",
@@ -68,6 +74,7 @@ export const PLACEMENT_RULES = {
 } as const satisfies Record<string, PlacementRule>
 
 export const INITIAL_HOME_PLACEMENT_RULE_SET: PlacementRule[] = [
+  PLACEMENT_RULES.completeGroundCoverage,
   PLACEMENT_RULES.noIsolatedAssets,
   PLACEMENT_RULES.requiresBuildingGroundSupport,
   PLACEMENT_RULES.requiresFacilityGroundSupport,
@@ -84,6 +91,7 @@ export function validatePlacementRules(input: {
   recipe: InitialHomeSceneRecipe
 }): PlacementRuleResult[] {
   return [
+    validateGroundCoverage(input.placements, input.recipe),
     validateForbiddenTags(input.placements),
     validatePathContinuity(input.placements),
     validateCoreSupport(input.placements, "structure"),
@@ -93,6 +101,56 @@ export function validatePlacementRules(input: {
     validateNaturalBoundaryDensity(input.placements),
     validateCoreLivingCluster(input.placements, input.recipe),
   ]
+}
+
+export function validateGroundCoverage(
+  placements: MapPlacement[],
+  recipe: InitialHomeSceneRecipe
+): PlacementRuleResult {
+  const expectedCount = recipe.mapSize.columns * recipe.mapSize.rows
+  const baseGroundPlacements = placements.filter((placement) =>
+    placement.tags.includes("tilemap_ground")
+  )
+  const seen = new Set<string>()
+  const duplicateIds: string[] = []
+  const outOfRangeIds: string[] = []
+
+  baseGroundPlacements.forEach((placement) => {
+    const key = `${placement.x}:${placement.y}`
+
+    if (seen.has(key)) duplicateIds.push(placement.id)
+    seen.add(key)
+
+    if (
+      placement.x < 1 ||
+      placement.y < 1 ||
+      placement.x > recipe.mapSize.columns ||
+      placement.y > recipe.mapSize.rows
+    ) {
+      outOfRangeIds.push(placement.id)
+    }
+  })
+
+  const missingIds: string[] = []
+
+  for (let y = 1; y <= recipe.mapSize.rows; y += 1) {
+    for (let x = 1; x <= recipe.mapSize.columns; x += 1) {
+      if (!seen.has(`${x}:${y}`)) {
+        missingIds.push(`ground-${x}-${y}`)
+      }
+    }
+  }
+
+  const affected = [...duplicateIds, ...outOfRangeIds, ...missingIds]
+
+  return result(
+    "complete_ground_coverage",
+    baseGroundPlacements.length === expectedCount && affected.length === 0,
+    affected.length === 0
+      ? `基础地表完整覆盖 ${expectedCount} 个 tile。`
+      : "基础地表 tile 存在缺失、重复或越界。",
+    affected
+  )
 }
 
 function validateForbiddenTags(placements: MapPlacement[]): PlacementRuleResult {
@@ -228,9 +286,19 @@ function validateNaturalBoundaryDensity(
   )
 }
 
-function validateCoreLivingCluster(inputPlacements: MapPlacement[], recipe: InitialHomeSceneRecipe): PlacementRuleResult {
-  const coreAreaTypes = new Set(["pet_arrival", "initial_care", "temporary_shelter", "pet_rest"])
-  const coreZones = recipe.areas.filter((area) => coreAreaTypes.has(area.areaType))
+function validateCoreLivingCluster(
+  inputPlacements: MapPlacement[],
+  recipe: InitialHomeSceneRecipe
+): PlacementRuleResult {
+  const coreAreaTypes = new Set([
+    "pet_arrival",
+    "initial_care",
+    "temporary_shelter",
+    "pet_rest",
+  ])
+  const coreZones = recipe.areas.filter((area) =>
+    coreAreaTypes.has(area.areaType)
+  )
   const maxDistance = coreZones.reduce((max, area) => {
     return Math.max(
       max,
