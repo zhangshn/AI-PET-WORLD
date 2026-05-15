@@ -1,10 +1,25 @@
 /**
- * 当前文件负责：定义家园地图状态的数据结构。
+ * 当前文件负责：定义家园地图持久化状态。
  */
 
 import type { WorldMapAssetId } from "@/world/map-assets/world-map-asset-registry"
 
-export type HomeMapLayer =
+export type HomeMapSize = {
+  columns: number
+  rows: number
+  tileSize: number
+}
+
+export type HomeZoneType =
+  | "visual_center"
+  | "pet_arrival"
+  | "initial_care"
+  | "temporary_shelter"
+  | "pet_rest"
+  | "storage_tools"
+  | "natural_boundary"
+
+export type MapPlacementLayer =
   | "ground"
   | "path"
   | "edge"
@@ -16,14 +31,7 @@ export type HomeMapLayer =
   | "actor"
   | "atmosphere"
 
-export type HomeZoneId =
-  | "visual_center"
-  | "pet_arrival"
-  | "initial_care"
-  | "temporary_shelter"
-  | "pet_rest"
-  | "storage_tools"
-  | "natural_boundary"
+export type MapDiffOperation = "add" | "remove" | "update" | "move"
 
 export type MapCoordinate = {
   x: number
@@ -36,27 +44,11 @@ export type MapBounds = MapCoordinate & {
 }
 
 export type HomeZone = {
-  id: HomeZoneId
+  id: string
+  type: HomeZoneType
   name: string
   purpose: string
   bounds: MapBounds
-  requiredAssetIds: WorldMapAssetId[]
-  optionalAssetIds: WorldMapAssetId[]
-  forbiddenTags: string[]
-  decorationDensity: "none" | "low" | "medium" | "high"
-  pathConnectionTargetIds: HomeZoneId[]
-  tags: string[]
-}
-
-export type MapPlacement = MapCoordinate & {
-  id: string
-  assetId: WorldMapAssetId
-  layer: HomeMapLayer
-  zoneId: HomeZoneId
-  width: number
-  height: number
-  scale: number
-  priority: number
   tags: string[]
 }
 
@@ -69,25 +61,49 @@ export type HomeResourceState = {
   tags: string[]
 }
 
+export type ConstructionPlanSummary = {
+  id: string
+  title: string
+  targetZoneType: HomeZoneType
+  status: "planned" | "active" | "paused" | "completed"
+  progress: number
+  reason: string
+  tags: string[]
+}
+
+export type MapPlacement = {
+  id: string
+  assetId: WorldMapAssetId
+  x: number
+  y: number
+  layer: MapPlacementLayer
+  scale: number
+  alpha: number
+  label: string
+  source: "scene_recipe" | "placement_engine" | "construction_plan"
+  tags: string[]
+}
+
 export type MapDiff = {
   id: string
+  operation: MapDiffOperation
+  placementId: string
   reason: string
-  addedPlacementIds: string[]
-  removedPlacementIds: string[]
-  changedPlacementIds: string[]
+  createdAt: number
   tags: string[]
 }
 
 export type HomeMapState = {
-  id: string
-  name: string
-  columns: number
-  rows: number
-  tileSize: number
+  worldId: string
+  ownerId: string
   seed: string
+  mapSize: HomeMapSize
   zones: HomeZone[]
   placements: MapPlacement[]
   resources: HomeResourceState
-  diffs: MapDiff[]
+  constructionPlans: ConstructionPlanSummary[]
+  mapDiffs: MapDiff[]
+  createdAt: number
+  updatedAt: number
   tags: string[]
 }

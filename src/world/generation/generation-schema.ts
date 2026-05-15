@@ -1,51 +1,75 @@
 /**
- * 当前文件负责：定义世界生成输入、seed 与生成结果类型。
+ * 当前文件负责：定义世界生成输入与输出类型。
  */
 
+import type { WorldMapAssetId } from "@/world/map-assets/world-map-asset-registry"
 import type {
+  HomeMapSize,
   HomeMapState,
   HomeZone,
+  HomeZoneType,
+  MapCoordinate,
 } from "@/world/map-state/home-map-state-schema"
-import type { PlacementRecipeItem } from "@/world/placement/placement-schema"
 
-export type WorldSeedInput = {
+export type ButlerConstructionStyleVector = {
+  structuredBuilder: number
+  warmCaretaker: number
+  protectiveKeeper: number
+  aestheticOrganizer: number
+  quietMaintainer: number
+  adaptivePlanner: number
+}
+
+export type WorldGenerationInput = {
+  worldId: string
   ownerId: string
   birthSignature: string
   worldSalt: string
+  butlerConstructionStyle: ButlerConstructionStyleVector
+  now: number
 }
 
-export type StableWorldSeed = {
-  value: string
-  numericHash: number
-  sourceText: string
-}
+export type InitialHomeAreaType = HomeZoneType
 
-export type InitialHomeGenerationParams = {
-  seedInput: WorldSeedInput
-  constructionStyle?: string
-  resourceBiasTags?: string[]
+export type InitialHomeAreaRecipe = {
+  id: string
+  areaType: InitialHomeAreaType
+  name: string
+  purpose: string
+  center: MapCoordinate
+  size: {
+    width: number
+    height: number
+  }
+  requiredAssets: WorldMapAssetId[]
+  optionalAssets: WorldMapAssetId[]
+  forbiddenTags: string[]
+  density: "none" | "low" | "medium" | "high"
+  pathConnections: InitialHomeAreaType[]
+  supportRules: string[]
+  tags: string[]
 }
 
 export type InitialHomeSceneRecipe = {
   id: string
   name: string
-  columns: number
-  rows: number
-  tileSize: number
-  zones: HomeZone[]
-  recipeItems: PlacementRecipeItem[]
+  mapSize: HomeMapSize
+  visualCenter: {
+    start: MapCoordinate
+    end: MapCoordinate
+  }
+  areas: InitialHomeAreaRecipe[]
   tags: string[]
 }
 
-export type InitialHomeGenerationInput = {
-  params: InitialHomeGenerationParams
+export type InitialHomeGenerationInput = WorldGenerationInput & {
   recipe?: InitialHomeSceneRecipe
 }
 
 export type InitialHomeGenerationResult = {
-  seed: StableWorldSeed
-  mapState: HomeMapState
-  placementWarnings: string[]
+  homeMapState: HomeMapState
+  zones: HomeZone[]
+  warnings: string[]
   rejectedPlacementIds: string[]
   tags: string[]
 }

@@ -1,25 +1,37 @@
 /**
- * 当前文件负责：定义地图摆放请求与规则结果类型。
+ * 当前文件负责：定义 Placement Engine 类型。
  */
 
-import type { WorldMapAssetId } from "@/world/map-assets/world-map-asset-registry"
 import type {
-  HomeMapLayer,
   HomeZone,
-  HomeZoneId,
+  MapBounds,
   MapPlacement,
+  MapPlacementLayer,
 } from "@/world/map-state/home-map-state-schema"
+
+import type {
+  InitialHomeAreaRecipe,
+  InitialHomeSceneRecipe,
+} from "@/world/generation/generation-schema"
 
 export type PlacementAnchor = "top-left" | "bottom-center" | "center"
 
+export type PlacementCollisionBox = MapBounds
+
+export type PlacementArea = InitialHomeAreaRecipe & {
+  bounds: MapBounds
+}
+
 export type PlacementRuleId =
   | "no_isolated_assets"
-  | "requires_ground_support"
+  | "requires_building_ground_support"
+  | "requires_facility_ground_support"
   | "continuous_path"
   | "avoid_collision"
-  | "zone_density_limit"
-
-export type PlacementLayer = HomeMapLayer
+  | "cluster_core_living_area"
+  | "higher_natural_boundary_density"
+  | "avoid_empty_central_grass"
+  | "forbid_old_birth_device_tags"
 
 export type PlacementRule = {
   id: PlacementRuleId
@@ -28,42 +40,38 @@ export type PlacementRule = {
   tags: string[]
 }
 
-export type PlacementRecipeItem = {
-  id: string
-  assetId: WorldMapAssetId
-  layer: PlacementLayer
-  zoneId: HomeZoneId
-  x: number
-  y: number
-  width: number
-  height: number
-  scale: number
-  priority: number
-  anchor: PlacementAnchor
-  requiredSupportLayer?: PlacementLayer
-  tags: string[]
+export type PlacementRuleResult = {
+  ruleId: PlacementRuleId
+  passed: boolean
+  message: string
+  affectedPlacementIds: string[]
 }
 
 export type PlacementRequest = {
-  mapId: string
-  columns: number
-  rows: number
-  tileSize: number
+  worldId: string
+  ownerId: string
+  seed: string
+  recipe: InitialHomeSceneRecipe
   zones: HomeZone[]
-  recipeItems: PlacementRecipeItem[]
-  existingPlacements?: MapPlacement[]
   rules: PlacementRule[]
-}
-
-export type PlacementRejectedItem = {
-  itemId: string
-  reason: string
-  ruleId: PlacementRuleId
 }
 
 export type PlacementResult = {
   placements: MapPlacement[]
-  rejected: PlacementRejectedItem[]
+  ruleResults: PlacementRuleResult[]
+  rejectedPlacementIds: string[]
   warnings: string[]
-  appliedRules: PlacementRuleId[]
+}
+
+export type CreatePlacementInput = {
+  id: string
+  assetId: MapPlacement["assetId"]
+  x: number
+  y: number
+  layer: MapPlacementLayer
+  scale?: number
+  alpha?: number
+  label: string
+  source?: MapPlacement["source"]
+  tags?: string[]
 }
