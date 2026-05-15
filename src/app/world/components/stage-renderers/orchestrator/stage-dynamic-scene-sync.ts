@@ -9,9 +9,20 @@ import {
   syncStimulusVisuals,
   syncWorldZoneVisuals,
 } from "../gateway/stage-renderer-gateway"
+import { clearExteriorDynamicLayers } from "./stage-dynamic-layer-cleaner"
 import type { SyncGraphicsStageInput } from "./graphics-stage-orchestrator"
 
+const MVP_INITIAL_HOME_STATIC_LAYOUT_ENABLED = true
+
 export function syncDynamicWorld(input: SyncGraphicsStageInput) {
+  if (
+    MVP_INITIAL_HOME_STATIC_LAYOUT_ENABLED &&
+    input.sceneMode !== "shelterInterior"
+  ) {
+    clearExteriorDynamicLayers(input.layers)
+    return
+  }
+
   if (input.layers.natureLayer) {
     syncRuntimeEntityVisuals({
       layer: input.layers.natureLayer,
