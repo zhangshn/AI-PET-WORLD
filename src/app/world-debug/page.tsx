@@ -1,11 +1,13 @@
 "use client"
 
 /**
- * 当前文件负责 /world 正式体验入口。
+ * 当前文件负责 /world-debug 开发验证入口。
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
+import { WorldLogicDashboard } from "@/app/world/components/logic-visualization/WorldLogicDashboard"
+import { useWorldEngineState } from "@/app/world/hooks/useWorldEngineState"
 import type { ConstructionPlan } from "@/world/construction/construction-schema"
 import {
   advanceMvpConstruction,
@@ -19,10 +21,7 @@ import {
   loadHomeMapLocalSnapshot,
   saveHomeMapLocalSnapshot,
 } from "@/world/map-state/home-map-local-persistence"
-import { buildWorldExperienceModel } from "@/world/visualization/build-world-experience-model"
-
-import { WorldExperiencePage } from "./components/experience/WorldExperiencePage"
-import { useWorldEngineState } from "./hooks/useWorldEngineState"
+import { buildWorldVisualizationModel } from "@/world/visualization/build-world-visualization-model"
 
 const WORLD_ID = "mvp-visible-world"
 const OWNER_ID = "local-player"
@@ -37,7 +36,7 @@ const DEFAULT_CONSTRUCTION_STYLE = {
   adaptivePlanner: 0.52,
 }
 
-export default function WorldPage() {
+export default function WorldDebugPage() {
   const worldState = useWorldEngineState()
   const lastAutoConstructionTickRef = useRef<number | null>(worldState.tick)
   const hydrationStartTickRef = useRef(worldState.tick)
@@ -67,18 +66,22 @@ export default function WorldPage() {
   >(null)
   const [localSnapshotLoaded, setLocalSnapshotLoaded] = useState(false)
 
-  const experienceModel = useMemo(
+  const visualizationModel = useMemo(
     () =>
-      buildWorldExperienceModel({
+      buildWorldVisualizationModel({
         homeMapState: currentHomeMapState,
         constructionPlan: currentConstructionPlan,
         constructionMessage,
         worldTick: worldState.tick,
+        lastAutoConstructionTick,
+        localSnapshotLoaded,
       }),
     [
       constructionMessage,
       currentConstructionPlan,
       currentHomeMapState,
+      lastAutoConstructionTick,
+      localSnapshotLoaded,
       worldState.tick,
     ]
   )
@@ -187,10 +190,23 @@ export default function WorldPage() {
   ])
 
   return (
-    <WorldExperiencePage
-      model={experienceModel}
-      onManualAdvanceConstruction={handleAdvanceConstruction}
-      onResetLocalHomeMap={handleResetLocalHomeMap}
-    />
+    <>
+      <div
+        style={{
+          padding: "12px 28px",
+          color: "#f8fafc",
+          background: "#172033",
+          borderBottom: "1px solid rgba(255,255,255,0.12)",
+          fontSize: 14,
+        }}
+      >
+        开发验证页：用于查看 HomeMapState / ConstructionPlan / MapDiff，非正式用户体验。
+      </div>
+      <WorldLogicDashboard
+        model={visualizationModel}
+        onManualAdvanceConstruction={handleAdvanceConstruction}
+        onResetLocalHomeMap={handleResetLocalHomeMap}
+      />
+    </>
   )
 }
