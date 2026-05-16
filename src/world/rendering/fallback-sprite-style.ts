@@ -16,7 +16,6 @@ export function buildFallbackSpriteBackground(
       "linear-gradient(#2b2524 0 18%, transparent 18%)",
       "linear-gradient(90deg, transparent 0 18%, #d5a37e 18% 32%, transparent 32% 68%, #d5a37e 68% 82%, transparent 82%)",
       "linear-gradient(#d5a37e 0 32%, #60708d 32% 78%, #252b35 78%)",
-      `url(${path})`,
     ].join(", ")
   }
 
@@ -30,7 +29,6 @@ export function buildFallbackSpriteBackground(
       "linear-gradient(135deg, transparent 0 12%, #9b604b 12% 24%, transparent 24%)",
       "linear-gradient(225deg, transparent 0 12%, #9b604b 12% 24%, transparent 24%)",
       "linear-gradient(#c78161 0 52%, #a86651 52%)",
-      `url(${path})`,
     ].join(", ")
   }
 
