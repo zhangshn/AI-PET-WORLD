@@ -12,6 +12,7 @@ export type WorldConstructionTestControlsProps = {
   autoAdvanceIntervalTicks: number
   lastAutoConstructionTick: number | null
   onAdvanceConstruction: () => void
+  onResetLocalHomeMap: () => void
 }
 
 export function WorldConstructionTestControls({
@@ -20,6 +21,7 @@ export function WorldConstructionTestControls({
   autoAdvanceIntervalTicks,
   lastAutoConstructionTick,
   onAdvanceConstruction,
+  onResetLocalHomeMap,
 }: WorldConstructionTestControlsProps) {
   return (
     <div
@@ -31,7 +33,7 @@ export function WorldConstructionTestControls({
         flexWrap: "wrap",
         gap: 12,
         left: 16,
-        maxWidth: "min(760px, calc(100vw - 32px))",
+        maxWidth: "min(820px, calc(100vw - 32px))",
         padding: "10px 12px",
         position: "fixed",
         top: 16,
@@ -41,6 +43,9 @@ export function WorldConstructionTestControls({
       <button type="button" onClick={onAdvanceConstruction}>
         手动推进管家建设 +1 阶段
       </button>
+      <button type="button" onClick={onResetLocalHomeMap}>
+        重置本地家园
+      </button>
       <span>当前阶段：{currentConstructionPlan?.currentStage ?? "未开始"}</span>
       <span>自动建设：已启用</span>
       <span>推进频率：每 {autoAdvanceIntervalTicks} ticks</span>
@@ -49,8 +54,9 @@ export function WorldConstructionTestControls({
         {lastAutoConstructionTick === null ? "暂无" : lastAutoConstructionTick}
       </span>
       <span>世界时间推进时，管家会按周期整理家园。</span>
+      <span>当前为 MVP 本地保存，刷新页面后会恢复本地家园状态。</span>
       <span>{constructionMessage}</span>
-      <span>玩家不是直接建造；此按钮只是开发期调试入口。</span>
+      <span>玩家不是直接建造；这些按钮只是开发期调试入口。</span>
     </div>
   )
 }

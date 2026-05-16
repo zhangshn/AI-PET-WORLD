@@ -14,11 +14,21 @@ import {
   MVP_CONSTRUCTION_AUTO_ADVANCE_TICK_INTERVAL,
 } from "@/world/construction/construction-gateway"
 import { generateInitialHomeMap } from "@/world/generation/initial-home-generator"
+import {
+  clearHomeMapLocalSnapshot,
+  HOME_MAP_LOCAL_STORAGE_VERSION,
+  loadHomeMapLocalSnapshot,
+  saveHomeMapLocalSnapshot,
+} from "@/world/map-state/home-map-local-persistence"
 import { HomeMapRenderer } from "@/world/rendering/HomeMapRenderer"
 import { buildHomeMapRenderModel } from "@/world/rendering/home-map-render-model"
 
 import { WorldConstructionTestControls } from "./WorldConstructionTestControls"
 import { useWorldEngineState } from "./hooks/useWorldEngineState"
+
+const WORLD_ID = "mvp-visible-world"
+const OWNER_ID = "local-player"
+const DEFAULT_CONSTRUCTION_MESSAGE = "管家建设尚未开始。"
 
 const DEFAULT_CONSTRUCTION_STYLE = {
   structuredBuilder: 0.56,
@@ -36,8 +46,8 @@ export default function WorldPage() {
   const initialHomeMapState = useMemo(
     () =>
       generateInitialHomeMap({
-        worldId: "mvp-visible-world",
-        ownerId: "local-player",
+        worldId: WORLD_ID,
+        ownerId: OWNER_ID,
         birthSignature: "mvp-v1-2-visible-world",
         worldSalt: "initial-home",
         butlerConstructionStyle: DEFAULT_CONSTRUCTION_STYLE,
@@ -45,16 +55,27 @@ export default function WorldPage() {
       }),
     []
   )
+  const localSnapshot = useMemo(
+    () =>
+      loadHomeMapLocalSnapshot({
+        worldId: WORLD_ID,
+        ownerId: OWNER_ID,
+      }),
+    []
+  )
   const [currentHomeMapState, setCurrentHomeMapState] = useState(
-    () => initialHomeMapState
+    () => localSnapshot?.homeMapState ?? initialHomeMapState
   )
   const [currentConstructionPlan, setCurrentConstructionPlan] =
-    useState<ConstructionPlan | null>(null)
-  const [constructionMessage, setConstructionMessage] =
-    useState("管家建设尚未开始。")
+    useState<ConstructionPlan | null>(
+      () => localSnapshot?.constructionPlan ?? null
+    )
+  const [constructionMessage, setConstructionMessage] = useState(
+    () => localSnapshot?.constructionMessage ?? DEFAULT_CONSTRUCTION_MESSAGE
+  )
   const [lastAutoConstructionTick, setLastAutoConstructionTick] = useState<
     number | null
-  >(null)
+  >(() => localSnapshot?.lastAutoConstructionTick ?? null)
 
   const renderModel = useMemo(
     () => buildHomeMapRenderModel(currentHomeMapState),
@@ -75,6 +96,40 @@ export default function WorldPage() {
     setCurrentConstructionPlan(result.plan)
     setConstructionMessage(result.messages.join(" "))
   }, [currentConstructionPlan, currentHomeMapState])
+
+  const handleResetLocalHomeMap = useCallback(() => {
+    clearHomeMapLocalSnapshot({
+      worldId: WORLD_ID,
+      ownerId: OWNER_ID,
+    })
+    lastAutoConstructionTickRef.current = worldState.tick
+    setCurrentHomeMapState(initialHomeMapState)
+    setCurrentConstructionPlan(null)
+    setConstructionMessage(DEFAULT_CONSTRUCTION_MESSAGE)
+    setLastAutoConstructionTick(null)
+  }, [initialHomeMapState, worldState.tick])
+
+  useEffect(() => {
+    saveHomeMapLocalSnapshot({
+      worldId: WORLD_ID,
+      ownerId: OWNER_ID,
+      snapshot: {
+        version: HOME_MAP_LOCAL_STORAGE_VERSION,
+        worldId: WORLD_ID,
+        ownerId: OWNER_ID,
+        homeMapState: currentHomeMapState,
+        constructionPlan: currentConstructionPlan,
+        constructionMessage,
+        lastAutoConstructionTick,
+        savedAt: Date.now(),
+      },
+    })
+  }, [
+    constructionMessage,
+    currentConstructionPlan,
+    currentHomeMapState,
+    lastAutoConstructionTick,
+  ])
 
   useEffect(() => {
     if (lastAutoConstructionTickRef.current === worldState.tick) return
@@ -106,6 +161,7 @@ export default function WorldPage() {
         autoAdvanceIntervalTicks={MVP_CONSTRUCTION_AUTO_ADVANCE_TICK_INTERVAL}
         lastAutoConstructionTick={lastAutoConstructionTick}
         onAdvanceConstruction={handleAdvanceConstruction}
+        onResetLocalHomeMap={handleResetLocalHomeMap}
       />
       <HomeMapRenderer
         renderModel={renderModel}
