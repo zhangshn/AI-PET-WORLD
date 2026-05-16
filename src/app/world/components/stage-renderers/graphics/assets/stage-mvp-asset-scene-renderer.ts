@@ -8,7 +8,16 @@ import type { HomeState } from "@/types/home"
 import type { WorldMapState } from "@/world/map/world-map"
 
 import { MVP_WORLD_ASSETS } from "../../assets/mvp-world-assets"
-import type { StageStructureLayout } from "../structures/stage-structure-renderer"
+
+type StageStructurePoint = {
+  x: number
+  y: number
+}
+
+type StageStructureLayout = {
+  tempShelter: StageStructurePoint
+  incubator: StageStructurePoint
+}
 
 type DrawMvpAssetSceneInput = {
   structureLayer: Container
