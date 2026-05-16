@@ -4,7 +4,7 @@
 
 export const WORLD_RENDER_FEATURE_FLAGS = {
   useCanvasGround: true,
-  useCanvasPath: false,
-  useCanvasEdge: false,
-  useCanvasDecal: false,
+  useCanvasPath: true,
+  useCanvasEdge: true,
+  useCanvasDecal: true,
 } as const

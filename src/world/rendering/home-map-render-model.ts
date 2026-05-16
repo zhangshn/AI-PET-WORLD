@@ -21,6 +21,13 @@ export type CanvasBuckets = {
   decal: MapPlacement[]
 }
 
+export type CanvasRevisionBuckets = {
+  ground: string
+  path: string
+  edge: string
+  decal: string
+}
+
 export type DomBuckets = {
   nonGroundPlacements: MapPlacement[]
 }
@@ -32,6 +39,7 @@ export type HomeMapRenderModel = {
   canvas: CanvasBuckets
   dom: DomBuckets
   canvasRevision: string
+  canvasRevisions: CanvasRevisionBuckets
   groundPlacements: MapPlacement[]
   pathPlacements: MapPlacement[]
   edgePlacements: MapPlacement[]
@@ -69,6 +77,12 @@ export function buildHomeMapRenderModel(
   const canvasRevision = buildCanvasRevision(
     [...canvas.ground].sort(sortPlacementsForCanvas)
   )
+  const canvasRevisions = {
+    ground: canvasRevision,
+    path: buildCanvasRevision([...canvas.path].sort(sortPlacementsForCanvas)),
+    edge: buildCanvasRevision([...canvas.edge].sort(sortPlacementsForCanvas)),
+    decal: buildCanvasRevision([...canvas.decal].sort(sortPlacementsForCanvas)),
+  }
 
   return {
     mapSize: homeMapState.mapSize,
@@ -77,6 +91,7 @@ export function buildHomeMapRenderModel(
     canvas,
     dom,
     canvasRevision,
+    canvasRevisions,
     groundPlacements: placementsByLayer.ground,
     pathPlacements: placementsByLayer.path,
     edgePlacements: placementsByLayer.edge,
@@ -121,7 +136,11 @@ function buildCanvasBuckets(placements: MapPlacement[]): CanvasBuckets {
 function buildDomBuckets(placements: MapPlacement[]): DomBuckets {
   return {
     nonGroundPlacements: placements.filter(
-      (placement) => placement.layer !== "ground"
+      (placement) =>
+        placement.layer !== "ground" &&
+        placement.layer !== "path" &&
+        placement.layer !== "edge" &&
+        placement.layer !== "surface-decoration"
     ),
   }
 }
