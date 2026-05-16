@@ -285,10 +285,9 @@ function buildCompletionDiffs(input: ConstructionExecutionInput): MapDiff[] {
       placementId: targetPetBed.id,
       patch: {
         label: "已完成的宠物休息角",
-        tags: addTags(
-          targetPetBed.tags.filter((tag) => tag !== "under_construction"),
-          ["completed_construction"]
-        ),
+        tags: addTags(removeTags(targetPetBed.tags, ["under_construction"]), [
+          "completed_construction",
+        ]),
       },
       reason: "管家确认宠物休息角已经完成。",
       createdAt: input.now,
@@ -382,7 +381,7 @@ function getStageMessage(
   if (stage === "building") return "管家给休息角增加了自然点缀。"
   if (stage === "decorating") return "宠物休息角已经完成。"
 
-  return "宠物休息角建设已完成。"
+  return "宠物休息角建设已经完成。"
 }
 
 function findConstructionTargetPetBed(
@@ -403,4 +402,10 @@ function getPetBedTargetPoint(targetZone: HomeZone): { x: number; y: number } {
 
 function addTags(currentTags: string[], nextTags: string[]): string[] {
   return Array.from(new Set([...currentTags, ...nextTags]))
+}
+
+function removeTags(currentTags: string[], removedTags: string[]): string[] {
+  const removedTagSet = new Set(removedTags)
+
+  return currentTags.filter((tag) => !removedTagSet.has(tag))
 }
