@@ -17,6 +17,15 @@ export type WorldMapAssetAnchor = "top-left" | "bottom-center" | "center"
 
 export type WorldMapAssetSize = 24 | 32 | 64 | 128
 
+export type WorldMapAssetCanvasMeta = {
+  sourceRect?: {
+    x: number
+    y: number
+    width: number
+    height: number
+  }
+}
+
 export type WorldMapAssetDefinition = {
   id: string
   category: WorldMapAssetCategory
@@ -24,4 +33,5 @@ export type WorldMapAssetDefinition = {
   baseSize: WorldMapAssetSize
   anchor: WorldMapAssetAnchor
   description: string
+  canvas?: WorldMapAssetCanvasMeta
 }

@@ -39,7 +39,7 @@ export async function drawGroundCanvas(
 
   const logicalWidth = args.input.mapSize.columns * args.input.tileSize
   const logicalHeight = args.input.mapSize.rows * args.input.tileSize
-  const dpr = window.devicePixelRatio || 1
+  const dpr = Math.min(window.devicePixelRatio || 1, 2)
 
   args.canvas.width = logicalWidth * dpr
   args.canvas.height = logicalHeight * dpr

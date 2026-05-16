@@ -47,6 +47,14 @@ export const HOME_MAP_RENDER_STYLES = {
     pointerEvents: "none",
     position: "absolute",
   },
+  canvasLayer: {
+    imageRendering: "pixelated",
+    left: 0,
+    pointerEvents: "none",
+    position: "absolute",
+    top: 0,
+    zIndex: 0,
+  },
   sprite: {
     boxSizing: "border-box",
     imageRendering: "pixelated",

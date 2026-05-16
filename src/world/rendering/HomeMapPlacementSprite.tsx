@@ -24,20 +24,12 @@ import {
 export type HomeMapPlacementSpriteProps = {
   placement: MapPlacement
   tileSize: number
-  renderMode: "entity" | "actor"
 }
 
 export function HomeMapPlacementSprite({
   placement,
   tileSize,
-  renderMode,
 }: HomeMapPlacementSpriteProps) {
-  if (isTerrainLikePlacement(placement)) {
-    warnTerrainPlacement(placement)
-
-    return null
-  }
-
   const asset = resolveMapPlacementAsset(placement.assetId)
 
   if (!asset) {
@@ -46,27 +38,22 @@ export function HomeMapPlacementSprite({
     return null
   }
 
-  const size = getSpriteBaseSize(placement) * (tileSize / 32) * placement.scale
-  const placementSize = getPlacementSize(size)
+  const placementSize = getPlacementSize(placement, tileSize)
   const baseStyle: CSSProperties = {
     ...HOME_MAP_RENDER_STYLES.sprite,
-    ...anchorStyle(
-      "bottom-center",
-      placement,
-      tileSize
-    ),
+    ...anchorStyle(asset.anchor ?? "top-left", placement, tileSize),
     backgroundColor: getFallbackSpriteColor(placement.assetId),
     backgroundImage: buildFallbackSpriteBackground(placement.assetId, asset.path),
     backgroundPosition: "center",
     backgroundRepeat: "no-repeat",
-    backgroundSize: "contain",
+    backgroundSize: isTilePlacement(placement) ? "cover" : "contain",
     height: placementSize.height,
     opacity: placement.alpha,
     width: placementSize.width,
     zIndex: LAYER_Z_INDEX[placement.layer],
   }
 
-  if (renderMode === "entity" || renderMode === "actor") {
+  if (hasContactShadow(placement)) {
     return (
       <>
         <div
@@ -91,8 +78,23 @@ export function HomeMapPlacementSprite({
   )
 }
 
-function getPlacementSize(defaultSize: number): { width: number; height: number } {
-  return { width: defaultSize, height: defaultSize }
+function getPlacementSize(
+  placement: MapPlacement,
+  tileSize: number
+): { width: number; height: number } {
+  if (isTilePlacement(placement)) {
+    return { width: tileSize + 1, height: tileSize + 1 }
+  }
+
+  if (placement.layer === "surface-decoration") {
+    const size = Math.round(tileSize * placement.scale)
+
+    return { width: size, height: size }
+  }
+
+  const size = getSpriteBaseSize(placement) * (tileSize / 32) * placement.scale
+
+  return { width: size, height: size }
 }
 
 function anchorStyle(
@@ -170,24 +172,21 @@ function getSpriteBaseSize(placement: MapPlacement): number {
   return 64
 }
 
-function isTerrainLikePlacement(placement: MapPlacement): boolean {
+function isTilePlacement(placement: MapPlacement): boolean {
   return (
     placement.layer === "ground" ||
     placement.layer === "path" ||
-    placement.layer === "edge" ||
-    placement.layer === "surface-decoration" ||
-    placement.tags.includes("ground_support") ||
-    placement.id.startsWith("support-") ||
-    placement.id.includes("support")
+    placement.layer === "edge"
   )
 }
 
-function warnTerrainPlacement(placement: MapPlacement) {
-  if (process.env.NODE_ENV === "development") {
-    console.warn(
-      `[HomeMapPlacementSprite] terrain placement should be rendered by GroundCanvasLayer: ${placement.id}`
-    )
-  }
+function hasContactShadow(placement: MapPlacement): boolean {
+  return (
+    placement.layer === "structure" ||
+    placement.layer === "facility" ||
+    placement.layer === "nature" ||
+    placement.layer === "actor"
+  )
 }
 
 function warnMissingAsset(placement: MapPlacement) {

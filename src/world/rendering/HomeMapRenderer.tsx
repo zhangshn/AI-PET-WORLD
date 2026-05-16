@@ -4,10 +4,13 @@
  * 当前文件负责：编排 HomeMapRenderModel 的分层渲染。
  */
 
+import { WORLD_MAP_ASSETS } from "@/world/map-assets/world-map-asset-registry"
+
 import type { HomeMapRenderModel } from "./home-map-render-model"
 import { HomeMapPlacementSprite } from "./HomeMapPlacementSprite"
-import { GroundCanvasLayer } from "./canvas/GroundCanvasLayer"
 import { HOME_MAP_RENDER_STYLES } from "./home-map-render-styles"
+import { GroundCanvasLayer } from "./layers/GroundCanvasLayer"
+import { WORLD_RENDER_FEATURE_FLAGS } from "./rendering-feature-flags"
 
 export type HomeMapRendererProps = {
   renderModel: HomeMapRenderModel
@@ -18,9 +21,13 @@ export function HomeMapRenderer({
   renderModel,
   worldTick,
 }: HomeMapRendererProps) {
-  const tileSize = renderModel.mapSize.tileSize
+  const tileSize = renderModel.tileSize
   const mapWidth = renderModel.mapSize.columns * tileSize
   const mapHeight = renderModel.mapSize.rows * tileSize
+  const shouldUseCanvasGround = WORLD_RENDER_FEATURE_FLAGS.useCanvasGround
+  const domPlacements = shouldUseCanvasGround
+    ? renderModel.dom.nonGroundPlacements
+    : renderModel.allPlacements
 
   return (
     <main style={HOME_MAP_RENDER_STYLES.page}>
@@ -35,22 +42,20 @@ export function HomeMapRenderer({
             width: mapWidth,
           }}
         >
-          <GroundCanvasLayer input={renderModel.groundCanvas} />
-
-          {renderModel.entityPlacements.map((placement) => (
-            <HomeMapPlacementSprite
-              key={placement.id}
-              placement={placement}
-              renderMode="entity"
+          {shouldUseCanvasGround ? (
+            <GroundCanvasLayer
+              assetRegistry={WORLD_MAP_ASSETS}
+              groundPlacements={renderModel.canvas.ground}
+              mapSize={renderModel.mapSize}
+              revisionKey={renderModel.canvasRevision}
               tileSize={tileSize}
             />
-          ))}
+          ) : null}
 
-          {renderModel.actorPlacements.map((placement) => (
+          {domPlacements.map((placement) => (
             <HomeMapPlacementSprite
               key={placement.id}
               placement={placement}
-              renderMode="actor"
               tileSize={tileSize}
             />
           ))}
