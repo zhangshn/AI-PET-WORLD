@@ -6,11 +6,6 @@
 
 import type { CSSProperties } from "react"
 
-import {
-  WORLD_MAP_ASSETS,
-  type WorldMapAssetId,
-} from "@/world/map-assets/world-map-asset-registry"
-import type { WorldMapAssetAnchor } from "@/world/map-assets/world-map-asset-schema"
 import type { MapPlacement } from "@/world/map-state/home-map-state-schema"
 
 import {
@@ -21,40 +16,50 @@ import {
   HOME_MAP_RENDER_STYLES,
   LAYER_Z_INDEX,
 } from "./home-map-render-styles"
+import {
+  resolveMapPlacementAsset,
+  type ResolvedMapPlacementAsset,
+} from "./resolve-map-placement-asset"
 
 export type HomeMapPlacementSpriteProps = {
   placement: MapPlacement
   tileSize: number
-  renderMode?: "tile" | "decal" | "entity" | "actor"
-  pixelOffset?: {
-    x: number
-    y: number
-  }
+  renderMode: "entity" | "actor"
 }
 
 export function HomeMapPlacementSprite({
   placement,
   tileSize,
-  renderMode = "entity",
-  pixelOffset = { x: 0, y: 0 },
+  renderMode,
 }: HomeMapPlacementSpriteProps) {
-  const asset = WORLD_MAP_ASSETS[placement.assetId]
-  const size = asset.baseSize * (tileSize / 32) * placement.scale
-  const placementSize = getPlacementSize(renderMode, size, tileSize)
-  const tileBackgroundSize = renderMode === "tile" ? "cover" : "contain"
+  if (isTerrainLikePlacement(placement)) {
+    warnTerrainPlacement(placement)
+
+    return null
+  }
+
+  const asset = resolveMapPlacementAsset(placement.assetId)
+
+  if (!asset) {
+    warnMissingAsset(placement)
+
+    return null
+  }
+
+  const size = getSpriteBaseSize(placement) * (tileSize / 32) * placement.scale
+  const placementSize = getPlacementSize(size)
   const baseStyle: CSSProperties = {
     ...HOME_MAP_RENDER_STYLES.sprite,
     ...anchorStyle(
-      getRenderAnchor(renderMode, asset.anchor as WorldMapAssetAnchor),
+      "bottom-center",
       placement,
-      tileSize,
-      pixelOffset
+      tileSize
     ),
     backgroundColor: getFallbackSpriteColor(placement.assetId),
     backgroundImage: buildFallbackSpriteBackground(placement.assetId, asset.path),
     backgroundPosition: "center",
     backgroundRepeat: "no-repeat",
-    backgroundSize: tileBackgroundSize,
+    backgroundSize: "contain",
     height: placementSize.height,
     opacity: placement.alpha,
     width: placementSize.width,
@@ -86,56 +91,34 @@ export function HomeMapPlacementSprite({
   )
 }
 
-function getPlacementSize(
-  renderMode: HomeMapPlacementSpriteProps["renderMode"],
-  defaultSize: number,
-  tileSize: number
-): { width: number; height: number } {
-  if (renderMode === "tile") {
-    return { width: tileSize + 1, height: tileSize + 1 }
-  }
-
+function getPlacementSize(defaultSize: number): { width: number; height: number } {
   return { width: defaultSize, height: defaultSize }
 }
 
-function getRenderAnchor(
-  renderMode: HomeMapPlacementSpriteProps["renderMode"],
-  assetAnchor: WorldMapAssetAnchor
-): WorldMapAssetAnchor {
-  if (renderMode === "tile") return "top-left"
-  if (renderMode === "decal") return "center"
-  if (renderMode === "entity" || renderMode === "actor") {
-    return "bottom-center"
-  }
-
-  return assetAnchor
-}
-
 function anchorStyle(
-  anchor: WorldMapAssetAnchor,
+  anchor: NonNullable<ResolvedMapPlacementAsset["anchor"]>,
   placement: MapPlacement,
-  tileSize: number,
-  pixelOffset: { x: number; y: number }
+  tileSize: number
 ): CSSProperties {
   if (anchor === "top-left") {
     return {
-      left: left(placement.x, tileSize) + pixelOffset.x,
-      top: top(placement.y, tileSize) + pixelOffset.y,
+      left: left(placement.x, tileSize),
+      top: top(placement.y, tileSize),
       transform: "none",
     }
   }
 
   if (anchor === "center") {
     return {
-      left: objectX(placement.x, tileSize) + pixelOffset.x,
-      top: top(placement.y, tileSize) + tileSize / 2 + pixelOffset.y,
+      left: objectX(placement.x, tileSize),
+      top: top(placement.y, tileSize) + tileSize / 2,
       transform: "translate(-50%, -50%)",
     }
   }
 
   return {
-    left: objectX(placement.x, tileSize) + pixelOffset.x,
-    top: objectY(placement.y, tileSize) + pixelOffset.y,
+    left: objectX(placement.x, tileSize),
+    top: objectY(placement.y, tileSize),
     transform: "translate(-50%, -100%)",
   }
 }
@@ -178,6 +161,39 @@ function objectY(y: number, tileSize: number): number {
   return top(y, tileSize) + tileSize
 }
 
-export function isKnownMapAssetId(assetId: string): assetId is WorldMapAssetId {
-  return assetId in WORLD_MAP_ASSETS
+function getSpriteBaseSize(placement: MapPlacement): number {
+  if (placement.layer === "actor") return 64
+  if (placement.layer === "nature") return 64
+  if (placement.layer === "facility") return 64
+  if (placement.layer === "structure") return 128
+
+  return 64
+}
+
+function isTerrainLikePlacement(placement: MapPlacement): boolean {
+  return (
+    placement.layer === "ground" ||
+    placement.layer === "path" ||
+    placement.layer === "edge" ||
+    placement.layer === "surface-decoration" ||
+    placement.tags.includes("ground_support") ||
+    placement.id.startsWith("support-") ||
+    placement.id.includes("support")
+  )
+}
+
+function warnTerrainPlacement(placement: MapPlacement) {
+  if (process.env.NODE_ENV === "development") {
+    console.warn(
+      `[HomeMapPlacementSprite] terrain placement should be rendered by GroundCanvasLayer: ${placement.id}`
+    )
+  }
+}
+
+function warnMissingAsset(placement: MapPlacement) {
+  if (process.env.NODE_ENV === "development") {
+    console.warn(
+      `[HomeMapPlacementSprite] missing asset for placement: ${placement.id}`
+    )
+  }
 }

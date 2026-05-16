@@ -5,13 +5,9 @@
  */
 
 import type { HomeMapRenderModel } from "./home-map-render-model"
+import { HomeMapPlacementSprite } from "./HomeMapPlacementSprite"
+import { GroundCanvasLayer } from "./canvas/GroundCanvasLayer"
 import { HOME_MAP_RENDER_STYLES } from "./home-map-render-styles"
-import { ActorLayer } from "./layers/ActorLayer"
-import { AtmosphereLayer } from "./layers/AtmosphereLayer"
-import { DecalLayer } from "./layers/DecalLayer"
-import { EntityLayer } from "./layers/EntityLayer"
-import { GroundTileLayer } from "./layers/GroundTileLayer"
-import { PathAutotileLayer } from "./layers/PathAutotileLayer"
 
 export type HomeMapRendererProps = {
   renderModel: HomeMapRenderModel
@@ -25,11 +21,6 @@ export function HomeMapRenderer({
   const tileSize = renderModel.mapSize.tileSize
   const mapWidth = renderModel.mapSize.columns * tileSize
   const mapHeight = renderModel.mapSize.rows * tileSize
-  const entityPlacements = [
-    ...renderModel.structurePlacements,
-    ...renderModel.facilityPlacements,
-    ...renderModel.naturePlacements,
-  ]
 
   return (
     <main style={HOME_MAP_RENDER_STYLES.page}>
@@ -44,38 +35,33 @@ export function HomeMapRenderer({
             width: mapWidth,
           }}
         >
-          <GroundTileLayer
-            height={mapHeight}
-            placements={renderModel.groundPlacements}
-            tileSize={tileSize}
-            width={mapWidth}
+          <GroundCanvasLayer input={renderModel.groundCanvas} />
+
+          {renderModel.entityPlacements.map((placement) => (
+            <HomeMapPlacementSprite
+              key={placement.id}
+              placement={placement}
+              renderMode="entity"
+              tileSize={tileSize}
+            />
+          ))}
+
+          {renderModel.actorPlacements.map((placement) => (
+            <HomeMapPlacementSprite
+              key={placement.id}
+              placement={placement}
+              renderMode="actor"
+              tileSize={tileSize}
+            />
+          ))}
+
+          <div
+            style={{
+              ...HOME_MAP_RENDER_STYLES.dayNightAtmosphere,
+              height: mapHeight,
+              width: mapWidth,
+            }}
           />
-          <PathAutotileLayer
-            edgePlacements={renderModel.edgePlacements}
-            height={mapHeight}
-            pathPlacements={renderModel.pathPlacements}
-            tileSize={tileSize}
-            width={mapWidth}
-          />
-          <DecalLayer
-            height={mapHeight}
-            placements={renderModel.surfaceDecorationPlacements}
-            tileSize={tileSize}
-            width={mapWidth}
-          />
-          <EntityLayer
-            height={mapHeight}
-            placements={entityPlacements}
-            tileSize={tileSize}
-            width={mapWidth}
-          />
-          <ActorLayer
-            height={mapHeight}
-            placements={renderModel.actorPlacements}
-            tileSize={tileSize}
-            width={mapWidth}
-          />
-          <AtmosphereLayer height={mapHeight} width={mapWidth} />
 
           <span style={HOME_MAP_RENDER_STYLES.hiddenStatus}>
             {`world tick ${worldTick}; placements ${renderModel.debugInfo.placementCount}`}

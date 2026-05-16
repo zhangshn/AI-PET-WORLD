@@ -733,7 +733,7 @@ function createSoftSupportPlacements(
     if (shouldSkipEdge) return null
 
     return createPlacement({
-      id: `${idPrefix}-${x}-${y}`,
+      id: `support-${idPrefix}-${x}-${y}`,
       assetId: "groundDirtBase01",
       x,
       y,

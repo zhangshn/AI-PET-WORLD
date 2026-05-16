@@ -11,24 +11,6 @@ export function buildFallbackSpriteBackground(
   assetId: WorldMapAssetId,
   path: string
 ): string {
-  if (assetId === "groundGrassBase01") {
-    return [
-      "radial-gradient(circle at 22% 28%, rgba(115, 156, 91, 0.22) 0 12%, transparent 13%)",
-      "radial-gradient(circle at 74% 68%, rgba(68, 113, 59, 0.16) 0 10%, transparent 11%)",
-      "linear-gradient(135deg, rgba(83, 132, 68, 0.28), rgba(93, 143, 74, 0.2))",
-      "linear-gradient(#597f46, #5c8549)",
-    ].join(", ")
-  }
-
-  if (assetId === "groundGrassBase02") {
-    return [
-      "radial-gradient(circle at 34% 62%, rgba(132, 166, 96, 0.18) 0 11%, transparent 12%)",
-      "radial-gradient(circle at 78% 24%, rgba(64, 111, 59, 0.14) 0 9%, transparent 10%)",
-      "linear-gradient(45deg, rgba(91, 137, 72, 0.22), rgba(101, 148, 79, 0.18))",
-      "linear-gradient(#5d854a, #5b8248)",
-    ].join(", ")
-  }
-
   if (assetId === "butlerBodyStandard01") {
     return [
       "linear-gradient(#2b2524 0 18%, transparent 18%)",

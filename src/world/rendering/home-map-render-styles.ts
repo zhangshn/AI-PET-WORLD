@@ -19,15 +19,6 @@ export const LAYER_Z_INDEX: Record<MapPlacementLayer, number> = {
   atmosphere: 200,
 }
 
-export const RENDER_LAYER_Z_INDEX = {
-  groundTilemap: 1,
-  pathAutotile: 20,
-  decal: 40,
-  entity: 70,
-  actor: 120,
-  atmosphere: 200,
-} as const
-
 export const HOME_MAP_RENDER_STYLES = {
   page: {
     background: "#10200f",
@@ -49,6 +40,12 @@ export const HOME_MAP_RENDER_STYLES = {
     position: "absolute",
     top: 0,
     zIndex: LAYER_Z_INDEX.ground,
+  },
+  groundCanvas: {
+    imageRendering: "pixelated",
+    inset: 0,
+    pointerEvents: "none",
+    position: "absolute",
   },
   sprite: {
     boxSizing: "border-box",
