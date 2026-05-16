@@ -17,6 +17,16 @@ export type HomeMapPlacementsByLayer = Record<
 export type HomeMapRenderModel = {
   mapSize: HomeMapSize
   placementsByLayer: HomeMapPlacementsByLayer
+  groundPlacements: MapPlacement[]
+  pathPlacements: MapPlacement[]
+  edgePlacements: MapPlacement[]
+  zonePlacements: MapPlacement[]
+  structurePlacements: MapPlacement[]
+  facilityPlacements: MapPlacement[]
+  naturePlacements: MapPlacement[]
+  surfaceDecorationPlacements: MapPlacement[]
+  actorPlacements: MapPlacement[]
+  atmospherePlacements: MapPlacement[]
   allPlacements: MapPlacement[]
   debugInfo: {
     worldId: string
@@ -31,9 +41,21 @@ export type HomeMapRenderModel = {
 export function buildHomeMapRenderModel(
   homeMapState: HomeMapState
 ): HomeMapRenderModel {
+  const placementsByLayer = groupPlacementsByLayer(homeMapState.placements)
+
   return {
     mapSize: homeMapState.mapSize,
-    placementsByLayer: groupPlacementsByLayer(homeMapState.placements),
+    placementsByLayer,
+    groundPlacements: placementsByLayer.ground,
+    pathPlacements: placementsByLayer.path,
+    edgePlacements: placementsByLayer.edge,
+    zonePlacements: placementsByLayer.zone,
+    structurePlacements: placementsByLayer.structure,
+    facilityPlacements: placementsByLayer.facility,
+    naturePlacements: placementsByLayer.nature,
+    surfaceDecorationPlacements: placementsByLayer["surface-decoration"],
+    actorPlacements: placementsByLayer.actor,
+    atmospherePlacements: placementsByLayer.atmosphere,
     allPlacements: [...homeMapState.placements],
     debugInfo: {
       worldId: homeMapState.worldId,

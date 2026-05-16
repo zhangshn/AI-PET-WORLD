@@ -1,15 +1,17 @@
 "use client"
 
 /**
- * 当前文件负责：渲染 HomeMapRenderModel。
+ * 当前文件负责：编排 HomeMapRenderModel 的分层渲染。
  */
 
-import { HomeMapPlacementSprite } from "./HomeMapPlacementSprite"
 import type { HomeMapRenderModel } from "./home-map-render-model"
 import { HOME_MAP_RENDER_STYLES } from "./home-map-render-styles"
-
-const SHOW_DEBUG_GRID = false
-const SHOW_AXIS_LABELS = false
+import { ActorLayer } from "./layers/ActorLayer"
+import { AtmosphereLayer } from "./layers/AtmosphereLayer"
+import { DecalLayer } from "./layers/DecalLayer"
+import { EntityLayer } from "./layers/EntityLayer"
+import { GroundTileLayer } from "./layers/GroundTileLayer"
+import { PathAutotileLayer } from "./layers/PathAutotileLayer"
 
 export type HomeMapRendererProps = {
   renderModel: HomeMapRenderModel
@@ -23,6 +25,11 @@ export function HomeMapRenderer({
   const tileSize = renderModel.mapSize.tileSize
   const mapWidth = renderModel.mapSize.columns * tileSize
   const mapHeight = renderModel.mapSize.rows * tileSize
+  const entityPlacements = [
+    ...renderModel.structurePlacements,
+    ...renderModel.facilityPlacements,
+    ...renderModel.naturePlacements,
+  ]
 
   return (
     <main style={HOME_MAP_RENDER_STYLES.page}>
@@ -37,41 +44,38 @@ export function HomeMapRenderer({
             width: mapWidth,
           }}
         >
-          {renderModel.allPlacements.map((placement) => (
-            <HomeMapPlacementSprite
-              key={placement.id}
-              placement={placement}
-              tileSize={tileSize}
-            />
-          ))}
-
-          <div
-            style={{
-              ...HOME_MAP_RENDER_STYLES.dayNightAtmosphere,
-              height: mapHeight,
-              width: mapWidth,
-            }}
+          <GroundTileLayer
+            height={mapHeight}
+            placements={renderModel.groundPlacements}
+            tileSize={tileSize}
+            width={mapWidth}
           />
-
-          {SHOW_DEBUG_GRID ? (
-            <div
-              style={{
-                ...HOME_MAP_RENDER_STYLES.grid,
-                backgroundSize:
-                  `${tileSize}px ${tileSize}px, ${tileSize}px ${tileSize}px, ${tileSize * 5}px ${tileSize * 5}px, ${tileSize * 5}px ${tileSize * 5}px`,
-                height: mapHeight,
-                width: mapWidth,
-              }}
-            />
-          ) : null}
-
-          {SHOW_AXIS_LABELS ? (
-            <AxisLabels
-              columns={renderModel.mapSize.columns}
-              rows={renderModel.mapSize.rows}
-              tileSize={tileSize}
-            />
-          ) : null}
+          <PathAutotileLayer
+            edgePlacements={renderModel.edgePlacements}
+            height={mapHeight}
+            pathPlacements={renderModel.pathPlacements}
+            tileSize={tileSize}
+            width={mapWidth}
+          />
+          <DecalLayer
+            height={mapHeight}
+            placements={renderModel.surfaceDecorationPlacements}
+            tileSize={tileSize}
+            width={mapWidth}
+          />
+          <EntityLayer
+            height={mapHeight}
+            placements={entityPlacements}
+            tileSize={tileSize}
+            width={mapWidth}
+          />
+          <ActorLayer
+            height={mapHeight}
+            placements={renderModel.actorPlacements}
+            tileSize={tileSize}
+            width={mapWidth}
+          />
+          <AtmosphereLayer height={mapHeight} width={mapWidth} />
 
           <span style={HOME_MAP_RENDER_STYLES.hiddenStatus}>
             {`world tick ${worldTick}; placements ${renderModel.debugInfo.placementCount}`}
@@ -80,51 +84,4 @@ export function HomeMapRenderer({
       </section>
     </main>
   )
-}
-
-function AxisLabels(props: {
-  columns: number
-  rows: number
-  tileSize: number
-}) {
-  return (
-    <>
-      {Array.from({ length: props.columns }, (_, index) => index + 1).map(
-        (x) => (
-          <span
-            key={`x-${x}`}
-            style={{
-              ...HOME_MAP_RENDER_STYLES.label,
-              left: left(x, props.tileSize) + 1,
-              top: 1,
-              width: props.tileSize - 2,
-            }}
-          >
-            {x}
-          </span>
-        )
-      )}
-      {Array.from({ length: props.rows }, (_, index) => index + 1).map((y) => (
-        <span
-          key={`y-${y}`}
-          style={{
-            ...HOME_MAP_RENDER_STYLES.label,
-            left: 1,
-            top: top(y, props.tileSize) + 1,
-            width: props.tileSize - 2,
-          }}
-        >
-          {y}
-        </span>
-      ))}
-    </>
-  )
-}
-
-function left(x: number, tileSize: number): number {
-  return (x - 1) * tileSize
-}
-
-function top(y: number, tileSize: number): number {
-  return (y - 1) * tileSize
 }

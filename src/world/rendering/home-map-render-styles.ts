@@ -19,6 +19,15 @@ export const LAYER_Z_INDEX: Record<MapPlacementLayer, number> = {
   atmosphere: 200,
 }
 
+export const RENDER_LAYER_Z_INDEX = {
+  groundTilemap: 1,
+  pathAutotile: 20,
+  decal: 40,
+  entity: 70,
+  actor: 120,
+  atmosphere: 200,
+} as const
+
 export const HOME_MAP_RENDER_STYLES = {
   page: {
     background: "#10200f",
@@ -55,30 +64,6 @@ export const HOME_MAP_RENDER_STYLES = {
     position: "absolute",
     top: 0,
     zIndex: LAYER_Z_INDEX.atmosphere,
-  },
-  grid: {
-    backgroundImage:
-      "linear-gradient(to right, rgba(255,255,255,.13) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,.13) 1px, transparent 1px), linear-gradient(to right, rgba(255,255,255,.34) 2px, transparent 2px), linear-gradient(to bottom, rgba(255,255,255,.34) 2px, transparent 2px)",
-    left: 0,
-    pointerEvents: "none",
-    position: "absolute",
-    top: 0,
-    zIndex: 450,
-  },
-  label: {
-    alignItems: "center",
-    background: "rgba(16, 24, 15, 0.86)",
-    color: "#ffffff",
-    display: "flex",
-    fontFamily: "Arial, Microsoft YaHei, sans-serif",
-    fontSize: 12,
-    fontWeight: 800,
-    height: 14,
-    justifyContent: "center",
-    lineHeight: "14px",
-    pointerEvents: "none",
-    position: "absolute",
-    zIndex: 500,
   },
   hiddenStatus: {
     clip: "rect(0 0 0 0)",
