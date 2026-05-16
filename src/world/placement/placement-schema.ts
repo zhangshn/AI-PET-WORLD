@@ -34,6 +34,12 @@ export type PlacementRuleId =
   | "avoid_empty_central_grass"
   | "complete_ground_coverage"
   | "forbid_old_birth_device_tags"
+  | "prevent_core_zone_scatter"
+  | "prevent_path_overlap"
+  | "ensure_facility_has_support"
+  | "ensure_nature_as_boundary"
+  | "ensure_decoration_near_edge"
+  | "ensure_material_pile_near_construction_zone"
 
 export type PlacementRule = {
   id: PlacementRuleId

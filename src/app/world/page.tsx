@@ -42,6 +42,7 @@ const DEFAULT_CONSTRUCTION_STYLE = {
 export default function WorldPage() {
   const worldState = useWorldEngineState()
   const lastAutoConstructionTickRef = useRef<number | null>(worldState.tick)
+  const hydrationStartTickRef = useRef(worldState.tick)
 
   const initialHomeMapState = useMemo(
     () =>
@@ -55,27 +56,18 @@ export default function WorldPage() {
       }),
     []
   )
-  const localSnapshot = useMemo(
-    () =>
-      loadHomeMapLocalSnapshot({
-        worldId: WORLD_ID,
-        ownerId: OWNER_ID,
-      }),
-    []
-  )
   const [currentHomeMapState, setCurrentHomeMapState] = useState(
-    () => localSnapshot?.homeMapState ?? initialHomeMapState
+    initialHomeMapState
   )
   const [currentConstructionPlan, setCurrentConstructionPlan] =
-    useState<ConstructionPlan | null>(
-      () => localSnapshot?.constructionPlan ?? null
-    )
+    useState<ConstructionPlan | null>(null)
   const [constructionMessage, setConstructionMessage] = useState(
-    () => localSnapshot?.constructionMessage ?? DEFAULT_CONSTRUCTION_MESSAGE
+    DEFAULT_CONSTRUCTION_MESSAGE
   )
   const [lastAutoConstructionTick, setLastAutoConstructionTick] = useState<
     number | null
-  >(() => localSnapshot?.lastAutoConstructionTick ?? null)
+  >(null)
+  const [localSnapshotLoaded, setLocalSnapshotLoaded] = useState(false)
 
   const renderModel = useMemo(
     () => buildHomeMapRenderModel(currentHomeMapState),
@@ -110,6 +102,31 @@ export default function WorldPage() {
   }, [initialHomeMapState, worldState.tick])
 
   useEffect(() => {
+    const snapshot = loadHomeMapLocalSnapshot({
+      worldId: WORLD_ID,
+      ownerId: OWNER_ID,
+    })
+
+    const restoreTimer = window.setTimeout(() => {
+      if (snapshot) {
+        setCurrentHomeMapState(snapshot.homeMapState)
+        setCurrentConstructionPlan(snapshot.constructionPlan)
+        setConstructionMessage(snapshot.constructionMessage)
+        setLastAutoConstructionTick(snapshot.lastAutoConstructionTick)
+      }
+
+      lastAutoConstructionTickRef.current = hydrationStartTickRef.current
+      setLocalSnapshotLoaded(true)
+    }, 0)
+
+    return () => {
+      window.clearTimeout(restoreTimer)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!localSnapshotLoaded) return
+
     saveHomeMapLocalSnapshot({
       worldId: WORLD_ID,
       ownerId: OWNER_ID,
@@ -129,9 +146,11 @@ export default function WorldPage() {
     currentConstructionPlan,
     currentHomeMapState,
     lastAutoConstructionTick,
+    localSnapshotLoaded,
   ])
 
   useEffect(() => {
+    if (!localSnapshotLoaded) return
     if (lastAutoConstructionTickRef.current === worldState.tick) return
 
     lastAutoConstructionTickRef.current = worldState.tick
@@ -151,7 +170,12 @@ export default function WorldPage() {
       setConstructionMessage(result.messages[0] ?? "")
       setLastAutoConstructionTick(worldState.tick)
     }, 0)
-  }, [currentConstructionPlan, currentHomeMapState, worldState.tick])
+  }, [
+    currentConstructionPlan,
+    currentHomeMapState,
+    localSnapshotLoaded,
+    worldState.tick,
+  ])
 
   return (
     <>
@@ -160,6 +184,7 @@ export default function WorldPage() {
         constructionMessage={constructionMessage}
         autoAdvanceIntervalTicks={MVP_CONSTRUCTION_AUTO_ADVANCE_TICK_INTERVAL}
         lastAutoConstructionTick={lastAutoConstructionTick}
+        localSnapshotLoaded={localSnapshotLoaded}
         onAdvanceConstruction={handleAdvanceConstruction}
         onResetLocalHomeMap={handleResetLocalHomeMap}
       />

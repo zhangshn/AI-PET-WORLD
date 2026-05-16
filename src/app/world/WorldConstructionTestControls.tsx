@@ -11,6 +11,7 @@ export type WorldConstructionTestControlsProps = {
   constructionMessage: string
   autoAdvanceIntervalTicks: number
   lastAutoConstructionTick: number | null
+  localSnapshotLoaded: boolean
   onAdvanceConstruction: () => void
   onResetLocalHomeMap: () => void
 }
@@ -20,6 +21,7 @@ export function WorldConstructionTestControls({
   constructionMessage,
   autoAdvanceIntervalTicks,
   lastAutoConstructionTick,
+  localSnapshotLoaded,
   onAdvanceConstruction,
   onResetLocalHomeMap,
 }: WorldConstructionTestControlsProps) {
@@ -53,6 +55,7 @@ export function WorldConstructionTestControls({
         最近自动推进 tick：
         {lastAutoConstructionTick === null ? "暂无" : lastAutoConstructionTick}
       </span>
+      <span>本地家园状态：{localSnapshotLoaded ? "已恢复" : "读取中"}</span>
       <span>世界时间推进时，管家会按周期整理家园。</span>
       <span>当前为 MVP 本地保存，刷新页面后会恢复本地家园状态。</span>
       <span>{constructionMessage}</span>

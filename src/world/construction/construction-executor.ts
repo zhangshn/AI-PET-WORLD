@@ -4,6 +4,7 @@
 
 import type {
   HomeZone,
+  MapCoordinate,
   MapDiff,
   MapPlacement,
 } from "@/world/map-state/home-map-state-schema"
@@ -151,6 +152,8 @@ function buildPlacingMaterialsDiffs(
   input: ConstructionExecutionInput,
   targetZone: HomeZone
 ): MapDiff[] {
+  const materialPoint = getMaterialPilePoint(input, targetZone)
+
   return [
     createAddPlacementDiff({
       id: `diff-add-material-pile-${input.now}`,
@@ -158,8 +161,8 @@ function buildPlacingMaterialsDiffs(
       placement: createConstructionPlacement({
         id: "material-pile-rest-area",
         assetId: "facilityStorageBoxClosed01",
-        x: targetZone.bounds.x + 2,
-        y: targetZone.bounds.y + targetZone.bounds.height - 1,
+        x: materialPoint.x,
+        y: materialPoint.y,
         label: "休息角材料堆",
         tags: ["construction_material", "pet_rest_area"],
       }),
@@ -235,26 +238,30 @@ function buildDecoratingDiffs(
   input: ConstructionExecutionInput,
   targetZone: HomeZone
 ): MapDiff[] {
+  const [grassPoint, flowerPoint, stonePoint] = getRestDecorationPoints(
+    input,
+    targetZone
+  )
   const decorations = [
     {
       id: "construction-rest-grass-tuft-01",
       assetId: "surfaceGrassTuft01" as const,
-      x: targetZone.bounds.x + 1,
-      y: targetZone.bounds.y + 1,
+      x: grassPoint.x,
+      y: grassPoint.y,
       label: "休息角小草丛",
     },
     {
       id: "construction-rest-flower-01",
       assetId: "surfaceFlowerPatch01" as const,
-      x: targetZone.bounds.x + targetZone.bounds.width - 2,
-      y: targetZone.bounds.y + 1,
+      x: flowerPoint.x,
+      y: flowerPoint.y,
       label: "休息角小花",
     },
     {
       id: "construction-rest-stone-01",
       assetId: "surfaceStoneSmall01" as const,
-      x: targetZone.bounds.x + targetZone.bounds.width - 1,
-      y: targetZone.bounds.y + targetZone.bounds.height - 1,
+      x: stonePoint.x,
+      y: stonePoint.y,
       label: "休息角小石头",
     },
   ]
@@ -398,6 +405,144 @@ function getPetBedTargetPoint(targetZone: HomeZone): { x: number; y: number } {
     x: targetZone.bounds.x + Math.floor(targetZone.bounds.width / 2),
     y: targetZone.bounds.y + Math.floor(targetZone.bounds.height / 2),
   }
+}
+
+function getMaterialPilePoint(
+  input: ConstructionExecutionInput,
+  targetZone: HomeZone
+): MapCoordinate {
+  const candidates = [
+    {
+      x: targetZone.bounds.x,
+      y: targetZone.bounds.y + targetZone.bounds.height - 1,
+    },
+    {
+      x: targetZone.bounds.x + 1,
+      y: targetZone.bounds.y + targetZone.bounds.height - 1,
+    },
+    { x: targetZone.bounds.x, y: targetZone.bounds.y + 1 },
+    {
+      x: targetZone.bounds.x + targetZone.bounds.width - 1,
+      y: targetZone.bounds.y + targetZone.bounds.height - 1,
+    },
+  ]
+
+  return pickSafeRestEdgePoint(input, candidates, {
+    minPetBedDistance: 2,
+    preferNearPathOrSupport: true,
+  })
+}
+
+function getRestDecorationPoints(
+  input: ConstructionExecutionInput,
+  targetZone: HomeZone
+): [MapCoordinate, MapCoordinate, MapCoordinate] {
+  const candidates = [
+    { x: targetZone.bounds.x, y: targetZone.bounds.y },
+    { x: targetZone.bounds.x + targetZone.bounds.width - 1, y: targetZone.bounds.y },
+    {
+      x: targetZone.bounds.x,
+      y: targetZone.bounds.y + targetZone.bounds.height - 1,
+    },
+    {
+      x: targetZone.bounds.x + targetZone.bounds.width - 1,
+      y: targetZone.bounds.y + targetZone.bounds.height - 1,
+    },
+    { x: targetZone.bounds.x + 1, y: targetZone.bounds.y },
+    {
+      x: targetZone.bounds.x + targetZone.bounds.width - 2,
+      y: targetZone.bounds.y + targetZone.bounds.height - 1,
+    },
+  ]
+  const used = new Set<string>()
+
+  return [0, 1, 2].map(() => {
+    const point =
+      candidates.find((candidate) => {
+        const key = `${candidate.x}:${candidate.y}`
+
+        return (
+          !used.has(key) &&
+          isSafeRestEdgePoint(input, candidate, {
+            minPetBedDistance: 1,
+            preferNearPathOrSupport: false,
+          })
+        )
+      }) ?? candidates[used.size % candidates.length]
+
+    used.add(`${point.x}:${point.y}`)
+
+    return point
+  }) as [MapCoordinate, MapCoordinate, MapCoordinate]
+}
+
+function pickSafeRestEdgePoint(
+  input: ConstructionExecutionInput,
+  candidates: MapCoordinate[],
+  options: {
+    minPetBedDistance: number
+    preferNearPathOrSupport: boolean
+  }
+): MapCoordinate {
+  return (
+    candidates.find((candidate) =>
+      isSafeRestEdgePoint(input, candidate, options)
+    ) ?? candidates[0]
+  )
+}
+
+function isSafeRestEdgePoint(
+  input: ConstructionExecutionInput,
+  point: MapCoordinate,
+  options: {
+    minPetBedDistance: number
+    preferNearPathOrSupport: boolean
+  }
+): boolean {
+  if (isPathPoint(input.homeMapState.placements, point)) return false
+
+  const petBed = findConstructionTargetPetBed(input.homeMapState.placements)
+
+  if (
+    petBed &&
+    getPlacementDistance(point, petBed) < options.minPetBedDistance
+  ) {
+    return false
+  }
+
+  if (options.preferNearPathOrSupport) {
+    return isNearPathOrSupport(input.homeMapState.placements, point)
+  }
+
+  return true
+}
+
+function isPathPoint(
+  placements: MapPlacement[],
+  point: MapCoordinate
+): boolean {
+  return placements.some(
+    (placement) =>
+      placement.layer === "path" && placement.x === point.x && placement.y === point.y
+  )
+}
+
+function isNearPathOrSupport(
+  placements: MapPlacement[],
+  point: MapCoordinate
+): boolean {
+  return placements.some(
+    (placement) =>
+      (placement.layer === "path" || placement.tags.includes("ground_support")) &&
+      getPlacementDistance(point, placement) <= 3
+  )
+}
+
+function getPlacementDistance(
+  first: MapCoordinate,
+  second: MapCoordinate
+): number {
+  return Math.abs(first.x - second.x) + Math.abs(first.y - second.y)
 }
 
 function addTags(currentTags: string[], nextTags: string[]): string[] {

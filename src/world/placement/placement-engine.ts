@@ -15,6 +15,14 @@ import type {
 } from "@/world/generation/generation-schema"
 import { buildSeededNumber, pickSeededItem } from "@/world/generation/world-seed"
 
+import {
+  INITIAL_HOME_LAYOUT_RULES,
+  getPlacementDistance,
+  isFunctionalCorePlacement,
+  isSupportPlacement,
+  shouldAvoidCoreZone,
+  shouldAvoidPathOverlap,
+} from "./layout-rules"
 import type {
   CreatePlacementInput,
   PlacementRequest,
@@ -30,14 +38,33 @@ export function buildInitialHomePlacements(
   const groundPlacements = createGroundTilePlacements(input)
   const supportPlacements = createAreaSupportPlacements(input)
   const pathPlacements = createPathPlacements(input)
+  const structurePlacements = createCoreStructurePlacements(input)
+  const facilityPlacements = createFacilityPlacements(
+    input,
+    supportPlacements,
+    pathPlacements
+  )
+  const naturePlacements = createNatureBoundaryPlacements(input, [
+    ...supportPlacements,
+    ...pathPlacements,
+    ...structurePlacements,
+    ...facilityPlacements,
+  ])
+  const decorationPlacements = createSurfaceDecorationPlacements(input, [
+    ...supportPlacements,
+    ...pathPlacements,
+    ...structurePlacements,
+    ...facilityPlacements,
+    ...naturePlacements,
+  ])
   const placements = [
     ...groundPlacements,
     ...supportPlacements,
     ...pathPlacements,
-    ...createCoreStructurePlacements(input),
-    ...createFacilityPlacements(input),
-    ...createNatureBoundaryPlacements(input, pathPlacements),
-    ...createSurfaceDecorationPlacements(input, pathPlacements),
+    ...structurePlacements,
+    ...facilityPlacements,
+    ...naturePlacements,
+    ...decorationPlacements,
     ...createActorPlacements(input),
   ]
 
@@ -115,7 +142,8 @@ export function createAreaSupportPlacements(
   const petBedPoint = resolvePetBedPoint(input)
 
   return [
-    ...rectangleSupport(
+    ...createSoftSupportPlacements(
+      input,
       "shelter-support",
       shelter.center.x - 4,
       shelter.center.y - 3,
@@ -123,10 +151,10 @@ export function createAreaSupportPlacements(
       4,
       ["temporary_shelter_support"]
     ),
-    ...rectangleSupport("care-support", care.center.x - 3, care.center.y - 1, 6, 3, [
+    ...createSoftSupportPlacements(input, "care-support", care.center.x - 3, care.center.y - 1, 6, 3, [
       "care_support",
     ]),
-    ...rectangleSupport("rest-support", petBedPoint.x - 2, petBedPoint.y - 1, 4, 2, [
+    ...createSoftSupportPlacements(input, "rest-support", petBedPoint.x - 2, petBedPoint.y - 1, 4, 2, [
       "rest_support",
     ]),
   ]
@@ -173,15 +201,19 @@ export function createPathPlacements(input: PlacementRequest): MapPlacement[] {
 
 export function createNatureBoundaryPlacements(
   input: PlacementRequest,
-  existingPathPlacements: MapPlacement[] = []
+  existingPlacements: MapPlacement[] = []
 ): MapPlacement[] {
   const area = requireArea(input.recipe, "natural_boundary")
   const protective = input.butlerConstructionStyle.protectiveKeeper
   const treeCount = getDensityCount(area.density, 3) + Math.round(protective * 3)
   const bushCount = getDensityCount(area.density, 4) + Math.round(protective * 5)
+  const targetCount = treeCount + bushCount
+  const pathPlacements = existingPlacements.filter(
+    (placement) => placement.layer === "path"
+  )
   const rawPoints = [
-    ...createSeededAreaPoints(area, input.seed, "boundary-tree", treeCount),
-    ...createSeededAreaPoints(area, input.seed, "boundary-bush", bushCount),
+    ...createSeededAreaPoints(area, input.seed, "boundary-tree", treeCount * 4),
+    ...createSeededAreaPoints(area, input.seed, "boundary-bush", bushCount * 4),
   ].map((point, index) =>
     pushPointTowardBoundary(
       point,
@@ -189,12 +221,33 @@ export function createNatureBoundaryPlacements(
       buildSeededNumber(input.seed, `boundary-side-${index}`)
     )
   )
-  const points = avoidCorePathPoints(
-    uniquePoints(rawPoints),
-    existingPathPlacements
-  )
+  const points = uniquePoints(rawPoints)
+    .filter(
+      (point) =>
+        !shouldAvoidCoreZone({
+          point,
+          zones: input.zones,
+          mapSize: input.recipe.mapSize,
+        })
+    )
+    .filter(
+      (point) =>
+        !shouldAvoidPathOverlap({
+          point,
+          pathPlacements,
+          minDistance:
+            INITIAL_HOME_LAYOUT_RULES.natureBoundary.naturePathAvoidDistance,
+        })
+    )
+    .filter(
+      (point) =>
+        !isNearBlockedPlacement(point, existingPlacements, [
+          "facility",
+          "structure",
+        ])
+    )
 
-  return points.slice(0, treeCount + bushCount).map((point, index) => {
+  return points.slice(0, targetCount).map((point, index) => {
     const isTree = index < treeCount
 
     return createPlacement({
@@ -212,7 +265,7 @@ export function createNatureBoundaryPlacements(
 
 export function createSurfaceDecorationPlacements(
   input: PlacementRequest,
-  existingPathPlacements: MapPlacement[] = []
+  existingPlacements: MapPlacement[] = []
 ): MapPlacement[] {
   const decorationAssets: WorldMapAssetId[] = [
     "surfaceGrassTuft01",
@@ -220,19 +273,51 @@ export function createSurfaceDecorationPlacements(
     "surfaceFlowerPatch01",
     "surfaceFallenLeaf01",
   ]
-  const centerArea = requireArea(input.recipe, "visual_center")
   const aesthetic = input.butlerConstructionStyle.aestheticOrganizer
+  const supportPlacements = existingPlacements.filter(isSupportPlacement)
+  const pathPlacements = existingPlacements.filter(
+    (placement) => placement.layer === "path"
+  )
   const decorationCount =
-    getDensityCount(centerArea.density, 8) + Math.round(aesthetic * 8)
-  const points = avoidCorePathPoints(
-    createSeededAreaPoints(
-      centerArea,
-      input.seed,
-      "surface-decoration",
-      decorationCount + 5
-    ),
-    existingPathPlacements
-  ).slice(0, decorationCount)
+    getDensityCount("medium", 7) + Math.round(aesthetic * 7)
+  const edgePoints = createSupportEdgePoints(
+    supportPlacements,
+    input.recipe.mapSize,
+    input.seed,
+    "surface-decoration-edge"
+  )
+  const boundaryArea = requireArea(input.recipe, "natural_boundary")
+  const boundaryTransitionPoints = createSeededAreaPoints(
+    boundaryArea,
+    input.seed,
+    "surface-decoration-boundary",
+    decorationCount * 2
+  ).map((point, index) =>
+    pushPointTowardBoundary(
+      point,
+      input.recipe.mapSize,
+      buildSeededNumber(input.seed, `surface-boundary-side-${index}`)
+    )
+  )
+  const points = uniquePoints([...edgePoints, ...boundaryTransitionPoints])
+    .filter(
+      (point) =>
+        !shouldAvoidPathOverlap({
+          point,
+          pathPlacements,
+          minDistance:
+            INITIAL_HOME_LAYOUT_RULES.surfaceDecoration
+              .decorationPathAvoidDistance,
+        })
+    )
+    .filter(
+      (point) =>
+        !isNearBlockedPlacement(point, existingPlacements, [
+          "facility",
+          "structure",
+        ])
+    )
+    .slice(0, decorationCount)
 
   return points.map((point, index) =>
     createPlacement({
@@ -347,10 +432,14 @@ function createCoreStructurePlacements(input: PlacementRequest): MapPlacement[] 
   ]
 }
 
-function createFacilityPlacements(input: PlacementRequest): MapPlacement[] {
+function createFacilityPlacements(
+  input: PlacementRequest,
+  supportPlacements: MapPlacement[],
+  pathPlacements: MapPlacement[]
+): MapPlacement[] {
   const care = requireArea(input.recipe, "initial_care")
-  const storage = requireArea(input.recipe, "storage_tools")
   const petBedPoint = resolvePetBedPoint(input)
+  const storagePoint = resolveStoragePoint(input, supportPlacements, pathPlacements)
 
   return [
     createPlacement({
@@ -376,8 +465,8 @@ function createFacilityPlacements(input: PlacementRequest): MapPlacement[] {
     createPlacement({
       id: "storage-box",
       assetId: "facilityStorageBoxClosed01",
-      x: storage.center.x,
-      y: storage.center.y,
+      x: storagePoint.x,
+      y: storagePoint.y,
       layer: "facility",
       label: "储物箱",
       scale: 0.82,
@@ -478,10 +567,40 @@ function resolvePetBedPoint(input: PlacementRequest): MapCoordinate {
 
   return clampPointToMap(
     {
-      x: Math.min(Math.max(x, Math.min(care.center.x, shelter.center.x)), rest.center.x + 3),
+      x: Math.min(
+        Math.max(x, Math.min(care.center.x, shelter.center.x)),
+        rest.center.x + 3
+      ),
       y,
     },
     input.recipe.mapSize
+  )
+}
+
+function resolveStoragePoint(
+  input: PlacementRequest,
+  supportPlacements: MapPlacement[],
+  pathPlacements: MapPlacement[]
+): MapCoordinate {
+  const storage = requireArea(input.recipe, "storage_tools")
+  const shelter = requireArea(input.recipe, "temporary_shelter")
+  const candidates = [
+    { x: storage.center.x + 2, y: storage.center.y + 1 },
+    { x: storage.center.x + 1, y: storage.center.y + 2 },
+    { x: shelter.center.x - 3, y: shelter.center.y + 3 },
+    storage.center,
+  ].map((point) => clampPointToMap(point, input.recipe.mapSize))
+
+  return (
+    candidates.find(
+      (point) =>
+        supportPlacements.some(
+          (placement) => getPlacementDistance(point, placement) <= 3
+        ) &&
+        pathPlacements.some(
+          (placement) => getPlacementDistance(point, placement) <= 3
+        )
+    ) ?? storage.center
   )
 }
 
@@ -527,6 +646,53 @@ function pushPointTowardBoundary(
   return clampPointToMap({ ...point, x: mapSize.columns - 5 }, mapSize)
 }
 
+function createSupportEdgePoints(
+  supportPlacements: MapPlacement[],
+  mapSize: HomeMapSize,
+  seed: string,
+  salt: string
+): MapCoordinate[] {
+  const offsets: readonly MapCoordinate[] = [
+    { x: -1, y: 0 },
+    { x: 1, y: 0 },
+    { x: 0, y: -1 },
+    { x: 0, y: 1 },
+    { x: -1, y: -1 },
+    { x: 1, y: 1 },
+  ]
+
+  return supportPlacements
+    .filter((placement, index) => {
+      return buildSeededNumber(seed, `${salt}-support-${placement.id}-${index}`) > 0.45
+    })
+    .flatMap((placement, index) => {
+      const offset = pickSeededItem(offsets, seed, `${salt}-offset-${index}`)
+
+      return [
+        clampPointToMap(
+          {
+            x: placement.x + offset.x,
+            y: placement.y + offset.y,
+          },
+          mapSize
+        ),
+      ]
+    })
+}
+
+function isNearBlockedPlacement(
+  point: MapCoordinate,
+  placements: MapPlacement[],
+  layers: MapPlacement["layer"][]
+): boolean {
+  return placements.some((placement) => {
+    if (!layers.includes(placement.layer)) return false
+    if (!isFunctionalCorePlacement(placement)) return false
+
+    return getPlacementDistance(point, placement) <= 2
+  })
+}
+
 function getAdaptiveOffset(adaptivePlanner: number): number {
   if (adaptivePlanner >= 0.7) return 0
   if (adaptivePlanner >= 0.45) return 1
@@ -543,7 +709,8 @@ function getAreaBounds(area: InitialHomeAreaRecipe) {
   }
 }
 
-function rectangleSupport(
+function createSoftSupportPlacements(
+  input: PlacementRequest,
   idPrefix: string,
   startX: number,
   startY: number,
@@ -551,9 +718,19 @@ function rectangleSupport(
   height: number,
   tags: string[]
 ): MapPlacement[] {
+  const canSoften = width > 4 && height > 2
+
   return Array.from({ length: width * height }, (_, index) => {
     const x = startX + (index % width)
     const y = startY + Math.floor(index / width)
+    const isEdge = x === startX || y === startY || x === startX + width - 1 || y === startY + height - 1
+    const shouldSkipEdge =
+      canSoften &&
+      isEdge &&
+      buildSeededNumber(input.seed, `${idPrefix}-soft-edge-${x}-${y}`) <
+        INITIAL_HOME_LAYOUT_RULES.support.supportEdgeSoftness
+
+    if (shouldSkipEdge) return null
 
     return createPlacement({
       id: `${idPrefix}-${x}-${y}`,
@@ -565,7 +742,7 @@ function rectangleSupport(
       source: "scene_recipe",
       tags: ["ground_support", ...tags],
     })
-  })
+  }).filter((placement): placement is MapPlacement => placement !== null)
 }
 
 function walkAxisFirst(start: MapCoordinate, end: MapCoordinate): MapCoordinate[] {

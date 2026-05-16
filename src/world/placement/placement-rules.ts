@@ -2,9 +2,23 @@
  * 当前文件负责：定义地图摆放规则与校验函数。
  */
 
-import type { MapPlacement } from "@/world/map-state/home-map-state-schema"
 import type { InitialHomeSceneRecipe } from "@/world/generation/generation-schema"
+import type {
+  HomeZone,
+  MapPlacement,
+} from "@/world/map-state/home-map-state-schema"
 
+import {
+  INITIAL_HOME_LAYOUT_RULES,
+  getPlacementDistance,
+  isNatureBoundaryPlacement,
+  isPointInZone,
+  isSupportPlacement,
+  isSurfaceDecorationPlacement,
+  shouldAvoidCoreZone,
+  shouldAvoidPathOverlap,
+  shouldStayNearSupport,
+} from "./layout-rules"
 import type {
   PlacementRule,
   PlacementRuleResult,
@@ -71,6 +85,42 @@ export const PLACEMENT_RULES = {
     severity: "block",
     tags: ["placement", "product_boundary"],
   },
+  preventCoreZoneScatter: {
+    id: "prevent_core_zone_scatter",
+    description: "防止自然物件、装饰和材料堆散入核心区中心。",
+    severity: "warn",
+    tags: ["placement", "layout", "core_zone"],
+  },
+  preventPathOverlap: {
+    id: "prevent_path_overlap",
+    description: "防止自然物件、装饰和材料堆压住主路径。",
+    severity: "block",
+    tags: ["placement", "layout", "path"],
+  },
+  ensureFacilityHasSupport: {
+    id: "ensure_facility_has_support",
+    description: "设施必须靠近承托地面或路径。",
+    severity: "block",
+    tags: ["placement", "layout", "support"],
+  },
+  ensureNatureAsBoundary: {
+    id: "ensure_nature_as_boundary",
+    description: "树和灌木主要用于自然边界。",
+    severity: "warn",
+    tags: ["placement", "layout", "nature"],
+  },
+  ensureDecorationNearEdge: {
+    id: "ensure_decoration_near_edge",
+    description: "地表装饰应靠近边缘或承托过渡。",
+    severity: "warn",
+    tags: ["placement", "layout", "decoration"],
+  },
+  ensureMaterialPileNearConstructionZone: {
+    id: "ensure_material_pile_near_construction_zone",
+    description: "建设材料堆必须靠近建设区域但不贴宠物床。",
+    severity: "warn",
+    tags: ["placement", "layout", "construction"],
+  },
 } as const satisfies Record<string, PlacementRule>
 
 export const INITIAL_HOME_PLACEMENT_RULE_SET: PlacementRule[] = [
@@ -84,12 +134,20 @@ export const INITIAL_HOME_PLACEMENT_RULE_SET: PlacementRule[] = [
   PLACEMENT_RULES.higherNaturalBoundaryDensity,
   PLACEMENT_RULES.avoidEmptyCentralGrass,
   PLACEMENT_RULES.forbidOldBirthDeviceTags,
+  PLACEMENT_RULES.preventCoreZoneScatter,
+  PLACEMENT_RULES.preventPathOverlap,
+  PLACEMENT_RULES.ensureFacilityHasSupport,
+  PLACEMENT_RULES.ensureNatureAsBoundary,
+  PLACEMENT_RULES.ensureDecorationNearEdge,
+  PLACEMENT_RULES.ensureMaterialPileNearConstructionZone,
 ]
 
 export function validatePlacementRules(input: {
   placements: MapPlacement[]
   recipe: InitialHomeSceneRecipe
 }): PlacementRuleResult[] {
+  const zones = buildZonesFromRecipe(input.recipe)
+
   return [
     validateGroundCoverage(input.placements, input.recipe),
     validateForbiddenTags(input.placements),
@@ -100,6 +158,12 @@ export function validatePlacementRules(input: {
     validateCentralDensity(input.placements),
     validateNaturalBoundaryDensity(input.placements),
     validateCoreLivingCluster(input.placements, input.recipe),
+    validateCoreZoneScatter(input.placements, zones, input.recipe),
+    validatePathOverlap(input.placements),
+    validateFacilityHasSupport(input.placements),
+    validateNatureAsBoundary(input.placements, zones, input.recipe),
+    validateDecorationNearEdge(input.placements),
+    validateMaterialPileNearConstructionZone(input.placements, zones),
   ]
 }
 
@@ -154,10 +218,9 @@ export function validateGroundCoverage(
 }
 
 function validateForbiddenTags(placements: MapPlacement[]): PlacementRuleResult {
+  const forbiddenTags = new Set(["old_birth_device"])
   const affected = placements
-    .filter((placement) =>
-      placement.tags.some((tag) => tag === "old_birth_device")
-    )
+    .filter((placement) => placement.tags.some((tag) => forbiddenTags.has(tag)))
     .map((placement) => placement.id)
 
   return result(
@@ -195,17 +258,15 @@ function validateCoreSupport(
   placements: MapPlacement[],
   layer: "structure" | "facility"
 ): PlacementRuleResult {
-  const support = placements.filter((placement) =>
-    ["ground", "zone", "path"].includes(placement.layer)
-  )
+  const support = getSupportPlacements(placements)
   const unsupported = placements.filter(
     (placement) =>
       placement.layer === layer &&
-      !support.some(
-        (candidate) =>
-          Math.abs(candidate.x - placement.x) <= 2 &&
-          Math.abs(candidate.y - placement.y) <= 2
-      )
+      !shouldStayNearSupport({
+        point: placement,
+        supportPlacements: support,
+        maxDistance: INITIAL_HOME_LAYOUT_RULES.support.supportNearDistance,
+      })
   )
 
   return result(
@@ -313,8 +374,231 @@ function validateCoreLivingCluster(
   return result(
     "cluster_core_living_area",
     maxDistance <= 48 && inputPlacements.length > 0,
-    maxDistance <= 48 ? "核心生活区保持聚合。" : "核心生活区距离过远。",
+    maxDistance <= 48
+      ? "核心生活区保持聚合。"
+      : "核心生活区距离过远。",
     []
+  )
+}
+
+function validateCoreZoneScatter(
+  placements: MapPlacement[],
+  zones: HomeZone[],
+  recipe: InitialHomeSceneRecipe
+): PlacementRuleResult {
+  const affected = placements
+    .filter(
+      (placement) =>
+        (isNatureBoundaryPlacement(placement) ||
+          isSurfaceDecorationPlacement(placement) ||
+          placement.tags.includes("construction_material")) &&
+        shouldAvoidCoreZone({
+          point: placement,
+          zones,
+          mapSize: recipe.mapSize,
+        })
+    )
+    .map((placement) => placement.id)
+
+  return result(
+    "prevent_core_zone_scatter",
+    affected.length === 0,
+    affected.length === 0
+      ? "自然、装饰和材料未散入核心区中心。"
+      : "部分自然、装饰或材料进入核心区中心。",
+    affected
+  )
+}
+
+function validatePathOverlap(placements: MapPlacement[]): PlacementRuleResult {
+  const pathPlacements = placements.filter((placement) => placement.layer === "path")
+  const affected = placements
+    .filter(
+      (placement) =>
+        (isNatureBoundaryPlacement(placement) ||
+          isSurfaceDecorationPlacement(placement) ||
+          placement.tags.includes("construction_material")) &&
+        shouldAvoidPathOverlap({
+          point: placement,
+          pathPlacements,
+          minDistance: 0,
+        })
+    )
+    .map((placement) => placement.id)
+
+  return result(
+    "prevent_path_overlap",
+    affected.length === 0,
+    affected.length === 0
+      ? "路径未被自然物件、装饰或材料压住。"
+      : "路径被自然物件、装饰或材料压住。",
+    affected
+  )
+}
+
+function validateFacilityHasSupport(
+  placements: MapPlacement[]
+): PlacementRuleResult {
+  const support = getSupportPlacements(placements)
+  const affected = placements
+    .filter(
+      (placement) =>
+        placement.layer === "facility" &&
+        !shouldStayNearSupport({
+          point: placement,
+          supportPlacements: support,
+          maxDistance:
+            INITIAL_HOME_LAYOUT_RULES.functionalCore.facilitySupportMaxDistance,
+        })
+    )
+    .map((placement) => placement.id)
+
+  return result(
+    "ensure_facility_has_support",
+    affected.length === 0,
+    affected.length === 0
+      ? "设施均靠近承托地面或路径。"
+      : "部分设施缺少承托关系。",
+    affected
+  )
+}
+
+function validateNatureAsBoundary(
+  placements: MapPlacement[],
+  zones: HomeZone[],
+  recipe: InitialHomeSceneRecipe
+): PlacementRuleResult {
+  const nature = placements.filter(isNatureBoundaryPlacement)
+  const visualCenter = zones.find((zone) => zone.type === "visual_center")
+  const insideVisualCenterCount = visualCenter
+    ? nature.filter((placement) => isPointInZone(placement, visualCenter)).length
+    : 0
+  const ratio = nature.length === 0 ? 0 : insideVisualCenterCount / nature.length
+  const affected =
+    ratio <=
+    INITIAL_HOME_LAYOUT_RULES.natureBoundary.natureMaxInsideVisualCenterRatio
+      ? []
+      : nature
+          .filter((placement) =>
+            visualCenter ? isPointInZone(placement, visualCenter) : false
+          )
+          .map((placement) => placement.id)
+
+  return result(
+    "ensure_nature_as_boundary",
+    affected.length === 0,
+    affected.length === 0
+      ? "树和灌木主要作为自然边界。"
+      : `树和灌木进入视觉中心比例过高，当前 ${ratio.toFixed(2)}。`,
+    recipe.mapSize.columns > 0 ? affected : []
+  )
+}
+
+function validateDecorationNearEdge(
+  placements: MapPlacement[]
+): PlacementRuleResult {
+  const support = placements.filter(isSupportPlacement)
+  const decoration = placements.filter(isSurfaceDecorationPlacement)
+  const affected = decoration
+    .filter(
+      (placement) =>
+        !support.some(
+          (candidate) =>
+            getPlacementDistance(placement, candidate) <=
+            INITIAL_HOME_LAYOUT_RULES.surfaceDecoration
+              .decorationPreferredNearSupportEdge
+        ) && !placement.tags.includes("natural_detail")
+    )
+    .map((placement) => placement.id)
+
+  return result(
+    "ensure_decoration_near_edge",
+    affected.length === 0,
+    affected.length === 0
+      ? "地表装饰靠近边缘、承托或过渡区域。"
+      : "部分地表装饰离边缘或承托过远。",
+    affected
+  )
+}
+
+function validateMaterialPileNearConstructionZone(
+  placements: MapPlacement[],
+  zones: HomeZone[]
+): PlacementRuleResult {
+  const restZone = zones.find((zone) => zone.type === "pet_rest")
+  const petBed = placements.find((placement) => placement.id === "pet-bed")
+  const materials = placements.filter((placement) =>
+    placement.tags.includes("construction_material")
+  )
+  const affected = materials
+    .filter((placement) => {
+      const tooFarFromRest = restZone
+        ? !isPointNearZone(
+            placement,
+            restZone,
+            INITIAL_HOME_LAYOUT_RULES.constructionMaterial
+              .materialTargetZoneMaxDistance
+          )
+        : false
+      const tooCloseToPetBed = petBed
+        ? getPlacementDistance(placement, petBed) <
+          INITIAL_HOME_LAYOUT_RULES.constructionMaterial.materialPetBedMinDistance
+        : false
+
+      return tooFarFromRest || tooCloseToPetBed
+    })
+    .map((placement) => placement.id)
+
+  return result(
+    "ensure_material_pile_near_construction_zone",
+    affected.length === 0,
+    affected.length === 0
+      ? "建设材料靠近目标区域且未贴住宠物床。"
+      : "建设材料距离目标区过远或贴住宠物床。",
+    affected
+  )
+}
+
+function getSupportPlacements(placements: MapPlacement[]): MapPlacement[] {
+  return placements.filter(
+    (placement) => isSupportPlacement(placement) || placement.layer === "path"
+  )
+}
+
+function buildZonesFromRecipe(recipe: InitialHomeSceneRecipe): HomeZone[] {
+  return recipe.areas.map((area) => ({
+    id: area.id,
+    type: area.areaType,
+    name: area.name,
+    purpose: area.purpose,
+    bounds: {
+      x: area.center.x - Math.floor(area.size.width / 2),
+      y: area.center.y - Math.floor(area.size.height / 2),
+      width: area.size.width,
+      height: area.size.height,
+    },
+    tags: area.tags,
+  }))
+}
+
+function isPointNearZone(
+  point: MapPlacement,
+  zone: HomeZone,
+  maxDistance: number
+): boolean {
+  if (isPointInZone(point, zone)) return true
+
+  const nearestX = Math.min(
+    zone.bounds.x + zone.bounds.width - 1,
+    Math.max(zone.bounds.x, point.x)
+  )
+  const nearestY = Math.min(
+    zone.bounds.y + zone.bounds.height - 1,
+    Math.max(zone.bounds.y, point.y)
+  )
+
+  return (
+    Math.abs(point.x - nearestX) + Math.abs(point.y - nearestY) <= maxDistance
   )
 }
 
