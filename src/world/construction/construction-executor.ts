@@ -9,6 +9,7 @@ import type {
 } from "@/world/map-state/home-map-state-schema"
 import {
   createAddPlacementDiff,
+  createMovePlacementDiff,
   createUpdatePlacementDiff,
 } from "@/world/map-state/map-diff-engine"
 
@@ -18,6 +19,9 @@ import type {
   ConstructionPlan,
   ConstructionStageType,
 } from "./construction-schema"
+
+const EXISTING_PET_BED_ID = "pet-bed"
+const CONSTRUCTION_PET_BED_ID = "construction-pet-bed-01"
 
 export function advanceConstructionPlan(
   input: ConstructionExecutionInput
@@ -57,7 +61,7 @@ export function advanceConstructionPlan(
   return {
     nextPlan,
     mapDiffs,
-    messages: [getStageMessage(input.plan.currentStage)],
+    messages: [getStageMessage(input.plan.currentStage, mapDiffs)],
     tags: ["construction_advanced", input.plan.currentStage, nextStage],
   }
 }
@@ -71,43 +75,11 @@ function buildStageDiffs(
   }
 
   if (input.plan.currentStage === "preparing_ground") {
-    return [
-      createAddPlacementDiff({
-        id: `diff-add-material-pile-${input.now}`,
-        placementId: "material-pile-rest-area",
-        placement: createConstructionPlacement({
-          id: "material-pile-rest-area",
-          assetId: "facilityStorageBoxClosed01",
-          x: targetZone.bounds.x + 2,
-          y: targetZone.bounds.y + targetZone.bounds.height - 1,
-          label: "休息角材料堆",
-          tags: ["construction_material", "pet_rest_area"],
-        }),
-        reason: "管家把整理休息角需要的基础材料放到附近。",
-        createdAt: input.now,
-        tags: ["construction_diff", "placing_materials"],
-      }),
-    ]
+    return buildPlacingMaterialsDiffs(input, targetZone)
   }
 
   if (input.plan.currentStage === "placing_materials") {
-    return [
-      createAddPlacementDiff({
-        id: `diff-add-construction-pet-bed-${input.now}`,
-        placementId: "construction-pet-bed-01",
-        placement: createConstructionPlacement({
-          id: "construction-pet-bed-01",
-          assetId: "facilityPetBedNeat01",
-          x: targetZone.bounds.x + Math.floor(targetZone.bounds.width / 2),
-          y: targetZone.bounds.y + Math.floor(targetZone.bounds.height / 2),
-          label: "新整理的宠物床",
-          tags: ["construction_result", "pet_bed", "pet_rest_area"],
-        }),
-        reason: "管家把宠物床放到休息角中心位置。",
-        createdAt: input.now,
-        tags: ["construction_diff", "building"],
-      }),
-    ]
+    return buildPetBedConstructionDiffs(input, targetZone)
   }
 
   if (input.plan.currentStage === "building") {
@@ -115,25 +87,7 @@ function buildStageDiffs(
   }
 
   if (input.plan.currentStage === "decorating") {
-    const petBed = input.homeMapState.placements.find(
-      (placement) => placement.id === "construction-pet-bed-01"
-    )
-
-    if (!petBed) return []
-
-    return [
-      createUpdatePlacementDiff({
-        id: `diff-complete-construction-pet-bed-${input.now}`,
-        placementId: "construction-pet-bed-01",
-        patch: {
-          label: "已完成的宠物休息角",
-          tags: [...new Set([...petBed.tags, "completed_construction"])],
-        },
-        reason: "管家确认宠物休息角已经完成。",
-        createdAt: input.now,
-        tags: ["construction_diff", "completed"],
-      }),
-    ]
+    return buildCompletionDiffs(input)
   }
 
   return []
@@ -148,7 +102,6 @@ function buildPreparingGroundDiffs(
     { x: targetZone.bounds.x + 3, y: targetZone.bounds.y + 2 },
     { x: targetZone.bounds.x + 4, y: targetZone.bounds.y + 2 },
   ]
-
   const groundDiffs = targetPoints.flatMap((point, index) => {
     const placement = input.homeMapState.placements.find(
       (candidate) => candidate.id === `ground-${point.x}-${point.y}`
@@ -162,13 +115,10 @@ function buildPreparingGroundDiffs(
         placementId: placement.id,
         patch: {
           label: "已整理的休息角地面",
-          tags: [
-            ...new Set([
-              ...placement.tags,
-              "construction_prepared_ground",
-              "pet_rest_area",
-            ]),
-          ],
+          tags: addTags(placement.tags, [
+            "construction_prepared_ground",
+            "pet_rest_area",
+          ]),
         },
         reason: "管家先整理宠物休息区附近的地面。",
         createdAt: input.now,
@@ -193,6 +143,90 @@ function buildPreparingGroundDiffs(
       reason: "管家在宠物休息角放下整理标记，让地面整理变得可见。",
       createdAt: input.now,
       tags: ["construction_diff", "preparing_ground", "visible_change"],
+    }),
+  ]
+}
+
+function buildPlacingMaterialsDiffs(
+  input: ConstructionExecutionInput,
+  targetZone: HomeZone
+): MapDiff[] {
+  return [
+    createAddPlacementDiff({
+      id: `diff-add-material-pile-${input.now}`,
+      placementId: "material-pile-rest-area",
+      placement: createConstructionPlacement({
+        id: "material-pile-rest-area",
+        assetId: "facilityStorageBoxClosed01",
+        x: targetZone.bounds.x + 2,
+        y: targetZone.bounds.y + targetZone.bounds.height - 1,
+        label: "休息角材料堆",
+        tags: ["construction_material", "pet_rest_area"],
+      }),
+      reason: "管家把整理休息角需要的基础材料放到附近。",
+      createdAt: input.now,
+      tags: ["construction_diff", "placing_materials"],
+    }),
+  ]
+}
+
+function buildPetBedConstructionDiffs(
+  input: ConstructionExecutionInput,
+  targetZone: HomeZone
+): MapDiff[] {
+  const targetPoint = getPetBedTargetPoint(targetZone)
+  const existingPetBed = input.homeMapState.placements.find(
+    (placement) => placement.id === EXISTING_PET_BED_ID
+  )
+
+  if (existingPetBed) {
+    return [
+      createMovePlacementDiff({
+        id: `diff-move-existing-pet-bed-${input.now}`,
+        placementId: EXISTING_PET_BED_ID,
+        patch: targetPoint,
+        reason: "管家把原有宠物床移动到更稳定的休息角位置。",
+        createdAt: input.now,
+        tags: ["construction_diff", "building", "reuse_existing_pet_bed"],
+      }),
+      createUpdatePlacementDiff({
+        id: `diff-update-existing-pet-bed-${input.now}`,
+        placementId: EXISTING_PET_BED_ID,
+        patch: {
+          label: "正在整理的宠物床",
+          tags: addTags(existingPetBed.tags, [
+            "construction_result",
+            "pet_rest_area",
+            "under_construction",
+          ]),
+        },
+        reason: "管家重新整理原有宠物床，不新增第二个宠物床。",
+        createdAt: input.now,
+        tags: ["construction_diff", "building", "reuse_existing_pet_bed"],
+      }),
+    ]
+  }
+
+  return [
+    createAddPlacementDiff({
+      id: `diff-add-construction-pet-bed-${input.now}`,
+      placementId: CONSTRUCTION_PET_BED_ID,
+      placement: createConstructionPlacement({
+        id: CONSTRUCTION_PET_BED_ID,
+        assetId: "facilityPetBedNeat01",
+        x: targetPoint.x,
+        y: targetPoint.y,
+        label: "正在整理的宠物床",
+        tags: [
+          "construction_result",
+          "pet_bed",
+          "pet_rest_area",
+          "under_construction",
+        ],
+      }),
+      reason: "管家放置新的宠物床，形成可见休息点。",
+      createdAt: input.now,
+      tags: ["construction_diff", "building", "new_pet_bed"],
     }),
   ]
 }
@@ -238,6 +272,29 @@ function buildDecoratingDiffs(
       tags: ["construction_diff", "decorating"],
     })
   )
+}
+
+function buildCompletionDiffs(input: ConstructionExecutionInput): MapDiff[] {
+  const targetPetBed = findConstructionTargetPetBed(input.homeMapState.placements)
+
+  if (!targetPetBed) return []
+
+  return [
+    createUpdatePlacementDiff({
+      id: `diff-complete-pet-bed-${input.now}`,
+      placementId: targetPetBed.id,
+      patch: {
+        label: "已完成的宠物休息角",
+        tags: addTags(
+          targetPetBed.tags.filter((tag) => tag !== "under_construction"),
+          ["completed_construction"]
+        ),
+      },
+      reason: "管家确认宠物休息角已经完成。",
+      createdAt: input.now,
+      tags: ["construction_diff", "completed"],
+    }),
+  ]
 }
 
 function createConstructionPlacement(input: {
@@ -311,12 +368,39 @@ function getNextStage(stage: ConstructionStageType): ConstructionStageType {
   return "completed"
 }
 
-function getStageMessage(stage: ConstructionStageType): string {
+function getStageMessage(
+  stage: ConstructionStageType,
+  mapDiffs: MapDiff[]
+): string {
   if (stage === "planned") return "管家开始整理宠物休息角地面。"
   if (stage === "preparing_ground") return "管家把材料放到休息角附近。"
-  if (stage === "placing_materials") return "管家放置了新的宠物床。"
+  if (stage === "placing_materials") {
+    return mapDiffs.some((diff) => diff.placementId === EXISTING_PET_BED_ID)
+      ? "管家重新整理了原有宠物床的位置。"
+      : "管家放置了新的宠物床。"
+  }
   if (stage === "building") return "管家给休息角增加了自然点缀。"
   if (stage === "decorating") return "宠物休息角已经完成。"
 
   return "宠物休息角建设已完成。"
+}
+
+function findConstructionTargetPetBed(
+  placements: MapPlacement[]
+): MapPlacement | undefined {
+  return (
+    placements.find((placement) => placement.id === EXISTING_PET_BED_ID) ??
+    placements.find((placement) => placement.id === CONSTRUCTION_PET_BED_ID)
+  )
+}
+
+function getPetBedTargetPoint(targetZone: HomeZone): { x: number; y: number } {
+  return {
+    x: targetZone.bounds.x + Math.floor(targetZone.bounds.width / 2),
+    y: targetZone.bounds.y + Math.floor(targetZone.bounds.height / 2),
+  }
+}
+
+function addTags(currentTags: string[], nextTags: string[]): string[] {
+  return Array.from(new Set([...currentTags, ...nextTags]))
 }
