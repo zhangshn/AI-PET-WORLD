@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * 当前文件负责：作为 /world 新版地图入口。
+ * 当前文件负责 /world 逻辑可视化入口。
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
@@ -11,7 +11,6 @@ import {
   advanceMvpConstruction,
   advanceMvpConstructionByWorldTick,
   createMvpPetRestConstructionPlan,
-  MVP_CONSTRUCTION_AUTO_ADVANCE_TICK_INTERVAL,
 } from "@/world/construction/construction-gateway"
 import { generateInitialHomeMap } from "@/world/generation/initial-home-generator"
 import {
@@ -20,10 +19,9 @@ import {
   loadHomeMapLocalSnapshot,
   saveHomeMapLocalSnapshot,
 } from "@/world/map-state/home-map-local-persistence"
-import { HomeMapRenderer } from "@/world/rendering/HomeMapRenderer"
-import { buildHomeMapRenderModel } from "@/world/rendering/home-map-render-model"
+import { buildWorldVisualizationModel } from "@/world/visualization/build-world-visualization-model"
 
-import { WorldConstructionTestControls } from "./WorldConstructionTestControls"
+import { WorldLogicDashboard } from "./components/logic-visualization/WorldLogicDashboard"
 import { useWorldEngineState } from "./hooks/useWorldEngineState"
 
 const WORLD_ID = "mvp-visible-world"
@@ -69,9 +67,24 @@ export default function WorldPage() {
   >(null)
   const [localSnapshotLoaded, setLocalSnapshotLoaded] = useState(false)
 
-  const renderModel = useMemo(
-    () => buildHomeMapRenderModel(currentHomeMapState),
-    [currentHomeMapState]
+  const visualizationModel = useMemo(
+    () =>
+      buildWorldVisualizationModel({
+        homeMapState: currentHomeMapState,
+        constructionPlan: currentConstructionPlan,
+        constructionMessage,
+        worldTick: worldState.tick,
+        lastAutoConstructionTick,
+        localSnapshotLoaded,
+      }),
+    [
+      constructionMessage,
+      currentConstructionPlan,
+      currentHomeMapState,
+      lastAutoConstructionTick,
+      localSnapshotLoaded,
+      worldState.tick,
+    ]
   )
 
   const handleAdvanceConstruction = useCallback(() => {
@@ -178,20 +191,10 @@ export default function WorldPage() {
   ])
 
   return (
-    <>
-      <WorldConstructionTestControls
-        currentConstructionPlan={currentConstructionPlan}
-        constructionMessage={constructionMessage}
-        autoAdvanceIntervalTicks={MVP_CONSTRUCTION_AUTO_ADVANCE_TICK_INTERVAL}
-        lastAutoConstructionTick={lastAutoConstructionTick}
-        localSnapshotLoaded={localSnapshotLoaded}
-        onAdvanceConstruction={handleAdvanceConstruction}
-        onResetLocalHomeMap={handleResetLocalHomeMap}
-      />
-      <HomeMapRenderer
-        renderModel={renderModel}
-        worldTick={worldState.tick}
-      />
-    </>
+    <WorldLogicDashboard
+      model={visualizationModel}
+      onManualAdvanceConstruction={handleAdvanceConstruction}
+      onResetLocalHomeMap={handleResetLocalHomeMap}
+    />
   )
 }
