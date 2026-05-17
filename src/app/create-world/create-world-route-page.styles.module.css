@@ -1,0 +1,137 @@
+.createWorldPage {
+  align-items: center;
+  background:
+    radial-gradient(circle at 28% 32%, rgba(97, 139, 74, 0.2), transparent 36%),
+    radial-gradient(circle at 82% 18%, rgba(29, 67, 45, 0.24), transparent 34%),
+    radial-gradient(circle at 74% 78%, rgba(82, 105, 55, 0.18), transparent 40%),
+    linear-gradient(155deg, #101d13 0%, #21361f 52%, #0b1710 100%);
+  color: #edf4df;
+  display: flex;
+  height: 100vh;
+  justify-content: flex-start;
+  min-height: 100vh;
+  overflow: hidden;
+  padding: clamp(28px, 7vw, 88px);
+  position: relative;
+  width: 100vw;
+}
+
+.createWorldPage::before {
+  background:
+    linear-gradient(rgba(255, 255, 255, 0.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.014) 1px, transparent 1px);
+  background-size: 48px 48px;
+  content: "";
+  inset: 0;
+  opacity: 0.22;
+  pointer-events: none;
+  position: absolute;
+}
+
+.createPanel {
+  background: rgba(15, 28, 18, 0.72);
+  border: 1px solid rgba(198, 226, 159, 0.16);
+  display: grid;
+  gap: 22px;
+  padding: clamp(24px, 4vw, 42px);
+  position: relative;
+  width: min(440px, 100%);
+}
+
+.brand {
+  color: rgba(220, 239, 193, 0.76);
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.title {
+  color: #f3f8e8;
+  font-size: clamp(30px, 5vw, 46px);
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1.05;
+  margin: 0;
+}
+
+.fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.legend {
+  color: rgba(237, 244, 223, 0.78);
+  font-size: 15px;
+  margin-bottom: 14px;
+  padding: 0;
+}
+
+.fieldGrid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.field,
+.fieldWide {
+  display: grid;
+  gap: 8px;
+}
+
+.fieldWide {
+  grid-column: 1 / -1;
+}
+
+.label {
+  color: rgba(237, 244, 223, 0.7);
+  font-size: 13px;
+}
+
+.input,
+.select {
+  appearance: none;
+  background: rgba(8, 18, 11, 0.74);
+  border: 1px solid rgba(198, 226, 159, 0.18);
+  color: #f4f8ea;
+  font: inherit;
+  height: 44px;
+  outline: none;
+  padding: 0 12px;
+  width: 100%;
+}
+
+.input:focus,
+.select:focus {
+  border-color: rgba(198, 226, 159, 0.48);
+}
+
+.enterButton {
+  background: #c8df8f;
+  border: 0;
+  color: #142014;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  height: 48px;
+  letter-spacing: 0;
+  margin-top: 2px;
+}
+
+.enterButton:hover {
+  background: #d6eba4;
+}
+
+@media (max-width: 560px) {
+  .createWorldPage {
+    align-items: stretch;
+    padding: 18px;
+  }
+
+  .createPanel {
+    align-self: center;
+  }
+
+  .fieldGrid {
+    grid-template-columns: 1fr;
+  }
+}
