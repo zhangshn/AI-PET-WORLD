@@ -1,0 +1,140 @@
+.rendererPanel {
+  background: rgba(15, 28, 18, 0.72);
+  border: 1px solid rgba(198, 226, 159, 0.16);
+  display: grid;
+  gap: 18px;
+  margin: 0 auto 22px;
+  max-width: 1120px;
+  padding: clamp(18px, 3vw, 28px);
+  position: relative;
+}
+
+.rendererHeader {
+  align-items: start;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+}
+
+.eyebrow {
+  color: rgba(220, 239, 193, 0.76);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  margin-bottom: 8px;
+}
+
+.rendererHeader h2 {
+  color: #f3f8e8;
+  font-size: 24px;
+  line-height: 1.15;
+  margin: 0 0 8px;
+}
+
+.rendererHeader p {
+  color: rgba(237, 244, 223, 0.68);
+  font-size: 13px;
+  line-height: 1.7;
+  margin: 0;
+  max-width: 700px;
+}
+
+.rendererMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  min-width: 220px;
+}
+
+.rendererMeta span {
+  background: rgba(8, 18, 11, 0.5);
+  border: 1px solid rgba(198, 226, 159, 0.12);
+  color: rgba(237, 244, 223, 0.72);
+  font-size: 12px;
+  padding: 7px 9px;
+}
+
+.viewport {
+  background:
+    radial-gradient(circle at 24% 22%, rgba(179, 218, 128, 0.1), transparent 34%),
+    linear-gradient(160deg, rgba(17, 39, 21, 0.72), rgba(7, 17, 10, 0.82));
+  border: 1px solid rgba(198, 226, 159, 0.12);
+  overflow: auto;
+  padding: 18px;
+}
+
+.mapCanvas {
+  background: #2d4928;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.035),
+    0 22px 60px rgba(0, 0, 0, 0.28);
+  image-rendering: pixelated;
+  margin: 0 auto;
+  overflow: hidden;
+  position: relative;
+}
+
+.zoneAura {
+  border: 1px solid rgba(200, 223, 143, 0.12);
+  box-shadow: inset 0 0 22px rgba(255, 255, 255, 0.035);
+  pointer-events: none;
+  position: absolute;
+  z-index: 25000;
+}
+
+.zoneAura[data-zone="pet_arrival"],
+.zoneAura[data-zone="initial_care"],
+.zoneAura[data-zone="temporary_shelter"],
+.zoneAura[data-zone="pet_rest"] {
+  background: rgba(234, 214, 145, 0.06);
+}
+
+.zoneAura[data-zone="natural_boundary"] {
+  background: rgba(120, 174, 83, 0.035);
+}
+
+.sprite {
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  display: block;
+  image-rendering: pixelated;
+  position: absolute;
+}
+
+.sprite[data-layer="ground"] {
+  z-index: 1;
+}
+
+.sprite[data-layer="path"] {
+  z-index: 2;
+}
+
+.sprite[data-layer="edge"] {
+  z-index: 3;
+}
+
+.sprite[data-layer="zone"] {
+  z-index: 4;
+}
+
+.sprite[data-layer="nature"] {
+  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.18));
+}
+
+.sprite[data-layer="structure"],
+.sprite[data-layer="facility"],
+.sprite[data-layer="actor"] {
+  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.18));
+}
+
+@media (max-width: 800px) {
+  .rendererHeader {
+    display: grid;
+  }
+
+  .rendererMeta {
+    justify-content: flex-start;
+    min-width: 0;
+  }
+}
