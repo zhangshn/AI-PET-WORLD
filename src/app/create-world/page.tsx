@@ -13,7 +13,7 @@ import {
   serializeCreateWorldInput,
   type CreateWorldInput,
   type CreateWorldPerspective,
-} from "../world/world-creation-runtime"
+} from "@/world/creation/world-creation-runtime"
 
 import styles from "./page.module.css"
 
