@@ -7,7 +7,7 @@
 import { useMemo, useSyncExternalStore } from "react"
 import Link from "next/link"
 
-import { StructuredHomeMapView } from "@/app/world/components/structured-home-map/StructuredHomeMapView"
+import { HomeMapRenderer } from "@/app/world/components/home-map-renderer/HomeMapRenderer"
 import {
   CREATE_WORLD_STORAGE_KEY,
   parseCreateWorldInput,
@@ -81,7 +81,7 @@ export default function WorldRoutePage() {
         </div>
       </section>
 
-      <StructuredHomeMapView homeMapState={firstSceneModel.homeMapState} />
+      <HomeMapRenderer homeMapState={firstSceneModel.homeMapState} />
 
       <section className={styles.contentGrid}>
         <article className={styles.panel}>
