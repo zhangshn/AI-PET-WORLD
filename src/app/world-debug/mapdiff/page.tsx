@@ -8,6 +8,17 @@ import { useEffect, useMemo, useState } from "react"
 
 import { runConstructionIntentDiffCycle } from "@/world/construction/construction-gateway"
 import { generateInitialHomeMap } from "@/world/generation/initial-home-generator"
+import type {
+  HomeMapState,
+  MapPlacement,
+} from "@/world/map-state/home-map-state-schema"
+import {
+  createAddPlacementDiff,
+  createMovePlacementDiff,
+  createRemovePlacementDiff,
+} from "@/world/map-state/map-diff-engine"
+import { validateMapDiffs } from "@/world/map-state/map-diff-validator"
+import type { WorldMapAssetId } from "@/world/map-assets/world-map-asset-registry"
 
 import {
   buildWorldCreationRuntime,
@@ -84,6 +95,11 @@ export default function MapDiffDebugPage() {
       now: runtime.now + DEBUG_WORLD_TICK,
     })
 
+    const validatorSafetyTest = buildValidatorSafetyTest({
+      homeMapState: initialHomeMapState,
+      now: runtime.now + DEBUG_WORLD_TICK + 1,
+    })
+
     return {
       createWorldInput,
       runtime: {
@@ -92,6 +108,7 @@ export default function MapDiffDebugPage() {
       },
       initialHomeMapState,
       constructionCycle,
+      validatorSafetyTest,
     }
   }, [butlerPreset, createWorldInput, hasMounted, petPreset])
 
@@ -195,6 +212,35 @@ export default function MapDiffDebugPage() {
           }}
         />
       </section>
+
+      <section className={styles.section}>
+        <header className={styles.sectionHeader}>
+          <div className={styles.eyebrow}>VALIDATOR SAFETY TEST</div>
+          <h2 className={styles.sectionTitle}>非法 MapDiff 拦截测试</h2>
+          <p className={styles.description}>
+            这里故意构造错误地图变化，验证 Validator 是否能拒绝它们。
+          </p>
+        </header>
+
+        <section className={styles.grid}>
+          <DebugCard
+            title="Unsafe Proposed MapDiff[]"
+            value={debugResult.validatorSafetyTest.proposedDiffs}
+          />
+          <DebugCard
+            title="Unsafe Accepted MapDiff[]"
+            value={debugResult.validatorSafetyTest.acceptedDiffs}
+          />
+          <DebugCard
+            title="Unsafe Rejected MapDiff[]"
+            value={debugResult.validatorSafetyTest.rejectedDiffs}
+          />
+          <DebugCard
+            title="Validator Safety Summary"
+            value={debugResult.validatorSafetyTest.summary}
+          />
+        </section>
+      </section>
     </main>
   )
 }
@@ -205,6 +251,171 @@ function DebugCard(input: { title: string; value: unknown }) {
       <h2>{input.title}</h2>
       <pre>{JSON.stringify(input.value, null, 2)}</pre>
     </article>
+  )
+}
+
+function buildValidatorSafetyTest(input: {
+  homeMapState: HomeMapState
+  now: number
+}) {
+  const protectedPlacement = findProtectedPlacement(input.homeMapState)
+  const pathPlacement = input.homeMapState.placements.find(
+    (placement) => placement.layer === "path"
+  )
+  const firstPlacement = input.homeMapState.placements[0]
+
+  const proposedDiffs = [
+    createAddPlacementDiff({
+      id: "safety-test-invalid-asset",
+      placementId: "safety-test-invalid-asset",
+      placement: createDebugPlacement({
+        id: "safety-test-invalid-asset",
+        assetId: "notRegisteredAsset01" as WorldMapAssetId,
+        x: 2,
+        y: 2,
+        layer: "surface-decoration",
+        tags: ["safety_test", "invalid_asset"],
+      }),
+      reason: "安全测试：未注册 assetId 应被拒绝。",
+      createdAt: input.now,
+      tags: ["safety_test", "invalid_asset"],
+    }),
+    createAddPlacementDiff({
+      id: "safety-test-out-of-bounds",
+      placementId: "safety-test-out-of-bounds",
+      placement: createDebugPlacement({
+        id: "safety-test-out-of-bounds",
+        assetId: "surfaceFlowerPatch01",
+        x: input.homeMapState.mapSize.columns + 99,
+        y: input.homeMapState.mapSize.rows + 99,
+        layer: "surface-decoration",
+        tags: ["safety_test", "out_of_bounds"],
+      }),
+      reason: "安全测试：越界坐标应被拒绝。",
+      createdAt: input.now,
+      tags: ["safety_test", "out_of_bounds"],
+    }),
+    createAddPlacementDiff({
+      id: "safety-test-duplicate-placement",
+      placementId: firstPlacement?.id ?? "missing-placement",
+      placement: createDebugPlacement({
+        id: firstPlacement?.id ?? "missing-placement",
+        assetId: "surfaceFlowerPatch01",
+        x: 3,
+        y: 3,
+        layer: "surface-decoration",
+        tags: ["safety_test", "duplicate_placement"],
+      }),
+      reason: "安全测试：重复 placementId 应被拒绝。",
+      createdAt: input.now,
+      tags: ["safety_test", "duplicate_placement"],
+    }),
+    createAddPlacementDiff({
+      id: "safety-test-layer-mismatch",
+      placementId: "safety-test-layer-mismatch",
+      placement: createDebugPlacement({
+        id: "safety-test-layer-mismatch",
+        assetId: "facilityFoodBowlFull01",
+        x: 4,
+        y: 4,
+        layer: "nature",
+        tags: ["safety_test", "layer_mismatch"],
+      }),
+      reason: "安全测试：asset category 与 layer 不匹配应被拒绝。",
+      createdAt: input.now,
+      tags: ["safety_test", "layer_mismatch"],
+    }),
+    createAddPlacementDiff({
+      id: "safety-test-cover-path",
+      placementId: "safety-test-cover-path",
+      placement: createDebugPlacement({
+        id: "safety-test-cover-path",
+        assetId: "surfaceFlowerPatch01",
+        x: pathPlacement?.x ?? 1,
+        y: pathPlacement?.y ?? 1,
+        layer: "surface-decoration",
+        tags: ["safety_test", "cover_path"],
+      }),
+      reason: "安全测试：覆盖路径应被拒绝。",
+      createdAt: input.now,
+      tags: ["safety_test", "cover_path"],
+    }),
+    createMovePlacementDiff({
+      id: "safety-test-move-protected",
+      placementId: protectedPlacement?.id ?? "missing-protected-placement",
+      patch: {
+        x: 1,
+        y: 1,
+      },
+      reason: "安全测试：移动受保护核心对象应被拒绝。",
+      createdAt: input.now,
+      tags: ["safety_test", "move_protected"],
+    }),
+    createRemovePlacementDiff({
+      id: "safety-test-remove-protected",
+      placementId: protectedPlacement?.id ?? "missing-protected-placement",
+      reason: "安全测试：删除受保护核心对象应被拒绝。",
+      createdAt: input.now,
+      tags: ["safety_test", "remove_protected"],
+    }),
+  ]
+
+  const validationResult = validateMapDiffs({
+    homeMapState: input.homeMapState,
+    mapDiffs: proposedDiffs,
+  })
+
+  return {
+    proposedDiffs,
+    acceptedDiffs: validationResult.acceptedDiffs,
+    rejectedDiffs: validationResult.rejectedDiffs,
+    summary: {
+      proposedCount: proposedDiffs.length,
+      acceptedCount: validationResult.acceptedDiffs.length,
+      rejectedCount: validationResult.rejectedDiffs.length,
+      passed:
+        validationResult.acceptedDiffs.length === 0 &&
+        validationResult.rejectedDiffs.length === proposedDiffs.length,
+      warnings: validationResult.warnings,
+    },
+  }
+}
+
+function createDebugPlacement(input: {
+  id: string
+  assetId: WorldMapAssetId
+  x: number
+  y: number
+  layer: MapPlacement["layer"]
+  tags: string[]
+}): MapPlacement {
+  return {
+    id: input.id,
+    assetId: input.assetId,
+    x: input.x,
+    y: input.y,
+    layer: input.layer,
+    scale: 1,
+    alpha: 1,
+    label: input.id,
+    source: "construction_plan",
+    tags: input.tags,
+  }
+}
+
+function findProtectedPlacement(homeMapState: HomeMapState) {
+  return homeMapState.placements.find((placement) =>
+    placement.tags.some((tag) =>
+      [
+        "core_living",
+        "arrival_focus",
+        "temporary_shelter",
+        "pet_bed",
+        "butler",
+        "pet",
+        "actor",
+      ].includes(tag)
+    )
   )
 }
 

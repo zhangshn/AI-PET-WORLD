@@ -98,3 +98,18 @@
   padding: 16px;
   white-space: pre-wrap;
 }
+
+.section {
+  margin: 32px auto 0;
+  max-width: 1120px;
+}
+
+.sectionHeader {
+  margin-bottom: 18px;
+}
+
+.sectionTitle {
+  font-size: 22px;
+  line-height: 1.25;
+  margin: 0 0 8px;
+}
