@@ -4,7 +4,7 @@
  * 当前文件负责：调试 Intent → MapDiff → HomeMapState 数据闭环。
  */
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { runConstructionIntentDiffCycle } from "@/world/construction/construction-gateway"
 import { generateInitialHomeMap } from "@/world/generation/initial-home-generator"
@@ -36,9 +36,23 @@ export default function MapDiffDebugPage() {
   const [petPreset, setPetPreset] = useState<DebugPetPreset>("tired_hungry")
   const [butlerPreset, setButlerPreset] =
     useState<DebugButlerPreset>("balanced")
+  const [createWorldInput, setCreateWorldInput] =
+    useState<CreateWorldInput | null>(null)
+  const [hasMounted, setHasMounted] = useState(false)
+
+  useEffect(() => {
+    const parsedInput =
+      parseCreateWorldInput(
+        window.localStorage.getItem(CREATE_WORLD_STORAGE_KEY)
+      ) ?? DEFAULT_CREATE_WORLD_INPUT
+
+    setCreateWorldInput(parsedInput)
+    setHasMounted(true)
+  }, [])
 
   const debugResult = useMemo(() => {
-    const createWorldInput = readCreateWorldInputFromLocalStorage()
+    if (!hasMounted || !createWorldInput) return null
+
     const runtime = buildWorldCreationRuntime({
       createWorldInput,
     })
@@ -79,7 +93,19 @@ export default function MapDiffDebugPage() {
       initialHomeMapState,
       constructionCycle,
     }
-  }, [butlerPreset, petPreset])
+  }, [butlerPreset, createWorldInput, hasMounted, petPreset])
+
+  if (!debugResult) {
+    return (
+      <main className={styles.page}>
+        <header className={styles.header}>
+          <div className={styles.eyebrow}>AI-PET-WORLD DEBUG</div>
+          <h1 className={styles.title}>Intent → MapDiff 数据闭环测试</h1>
+          <p className={styles.description}>正在读取本地创建世界输入……</p>
+        </header>
+      </main>
+    )
+  }
 
   return (
     <main className={styles.page}>
@@ -179,16 +205,6 @@ function DebugCard(input: { title: string; value: unknown }) {
       <h2>{input.title}</h2>
       <pre>{JSON.stringify(input.value, null, 2)}</pre>
     </article>
-  )
-}
-
-function readCreateWorldInputFromLocalStorage(): CreateWorldInput {
-  if (typeof window === "undefined") return DEFAULT_CREATE_WORLD_INPUT
-
-  return (
-    parseCreateWorldInput(
-      window.localStorage.getItem(CREATE_WORLD_STORAGE_KEY)
-    ) ?? DEFAULT_CREATE_WORLD_INPUT
   )
 }
 
