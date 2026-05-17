@@ -4,7 +4,7 @@
  * 当前文件负责：展示 Intent → MapDiff → HomeMapState 数据闭环调试结果。
  */
 
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useSyncExternalStore, useState } from "react"
 
 import {
   buildConstructionDebugScenario,
@@ -21,34 +21,43 @@ import {
 
 import styles from "./page.module.css"
 
+const CREATE_WORLD_INPUT_PENDING = "__ai_pet_world_create_input_pending__"
+const CREATE_WORLD_INPUT_EMPTY = "__ai_pet_world_create_input_empty__"
+
 export default function MapDiffDebugPage() {
   const [petPreset, setPetPreset] =
     useState<ConstructionDebugPetPreset>("tired_hungry")
   const [butlerPreset, setButlerPreset] =
     useState<ConstructionDebugButlerPreset>("balanced")
-  const [createWorldInput, setCreateWorldInput] =
-    useState<ConstructionDebugCreateWorldInput | null>(null)
-  const [hasMounted, setHasMounted] = useState(false)
 
-  useEffect(() => {
-    const parsedInput =
-      parseCreateWorldInput(
-        window.localStorage.getItem(CREATE_WORLD_STORAGE_KEY)
-      ) ?? DEFAULT_CONSTRUCTION_DEBUG_CREATE_WORLD_INPUT
+  const createWorldInputSnapshot = useSyncExternalStore(
+    subscribeCreateWorldInput,
+    getCreateWorldInputSnapshot,
+    getCreateWorldInputServerSnapshot
+  )
 
-    setCreateWorldInput(parsedInput)
-    setHasMounted(true)
-  }, [])
+  const createWorldInput = useMemo(() => {
+    if (createWorldInputSnapshot === CREATE_WORLD_INPUT_PENDING) return null
+
+    if (createWorldInputSnapshot === CREATE_WORLD_INPUT_EMPTY) {
+      return DEFAULT_CONSTRUCTION_DEBUG_CREATE_WORLD_INPUT
+    }
+
+    return (
+      parseCreateWorldInput(createWorldInputSnapshot) ??
+      DEFAULT_CONSTRUCTION_DEBUG_CREATE_WORLD_INPUT
+    )
+  }, [createWorldInputSnapshot])
 
   const debugResult = useMemo(() => {
-    if (!hasMounted || !createWorldInput) return null
+    if (!createWorldInput) return null
 
     return buildConstructionDebugScenario({
       createWorldInput,
       petPreset,
       butlerPreset,
     })
-  }, [butlerPreset, createWorldInput, hasMounted, petPreset])
+  }, [butlerPreset, createWorldInput, petPreset])
 
   if (!debugResult) {
     return (
@@ -192,4 +201,27 @@ function DebugCard(input: { title: string; value: unknown }) {
       <pre>{JSON.stringify(input.value, null, 2)}</pre>
     </article>
   )
+}
+
+function subscribeCreateWorldInput(onStoreChange: () => void): () => void {
+  if (typeof window === "undefined") return () => undefined
+
+  window.addEventListener("storage", onStoreChange)
+
+  return () => {
+    window.removeEventListener("storage", onStoreChange)
+  }
+}
+
+function getCreateWorldInputSnapshot(): string {
+  if (typeof window === "undefined") return CREATE_WORLD_INPUT_PENDING
+
+  return (
+    window.localStorage.getItem(CREATE_WORLD_STORAGE_KEY) ??
+    CREATE_WORLD_INPUT_EMPTY
+  )
+}
+
+function getCreateWorldInputServerSnapshot(): string {
+  return CREATE_WORLD_INPUT_PENDING
 }
