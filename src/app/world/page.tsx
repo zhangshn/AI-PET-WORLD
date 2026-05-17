@@ -4,6 +4,7 @@
  * 当前文件负责 /world 正式体验入口。
  */
 
+import type { CSSProperties } from "react"
 import { useEffect, useMemo, useRef, useState } from "react"
 
 import type { ConstructionPlan } from "@/world/construction/construction-schema"
@@ -31,6 +32,21 @@ const DEFAULT_CONSTRUCTION_STYLE = {
   quietMaintainer: 0.48,
   adaptivePlanner: 0.52,
 }
+
+const WORLD_PAGE_STYLES = {
+  shell: {
+    background:
+      "radial-gradient(circle at 50% 38%, #395d2f 0 34%, #203d24 72%, #102014 100%)",
+    height: "100vh",
+    overflow: "hidden",
+    width: "100vw",
+  },
+  stage: {
+    height: "100%",
+    overflow: "auto",
+    width: "100%",
+  },
+} satisfies Record<string, CSSProperties>
 
 export default function WorldPage() {
   const worldState = useWorldEngineState()
@@ -144,9 +160,13 @@ export default function WorldPage() {
   ])
 
   return (
-    <HomeMapRenderer
-      renderModel={homeMapRenderModel}
-      worldTick={worldState.tick}
-    />
+    <main style={WORLD_PAGE_STYLES.shell}>
+      <section style={WORLD_PAGE_STYLES.stage}>
+        <HomeMapRenderer
+          renderModel={homeMapRenderModel}
+          worldTick={worldState.tick}
+        />
+      </section>
+    </main>
   )
 }

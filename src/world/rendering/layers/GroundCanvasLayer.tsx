@@ -46,7 +46,7 @@ export function GroundCanvasLayer({
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
 
   useEffect(() => {
-    if (!WORLD_RENDER_FEATURE_FLAGS.useCanvasGround) return
+    if (!WORLD_RENDER_FEATURE_FLAGS.renderGroundTiles) return
 
     let cancelled = false
 

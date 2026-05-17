@@ -20,18 +20,20 @@ export const LAYER_Z_INDEX: Record<MapPlacementLayer, number> = {
 }
 
 export const HOME_MAP_RENDER_STYLES = {
-  page: {
-    background: "#10200f",
-    minHeight: "100vh",
-  },
-  viewport: {
-    height: "100vh",
-    overflow: "auto",
-    width: "100vw",
+  renderer: {
+    alignItems: "center",
+    display: "flex",
+    justifyContent: "center",
+    minHeight: "100%",
+    minWidth: "100%",
+    padding: 32,
   },
   mapCanvas: {
-    background: "#4c7337",
+    background:
+      "radial-gradient(circle at 38% 30%, rgba(124, 171, 81, 0.38), transparent 34%), radial-gradient(circle at 70% 72%, rgba(51, 96, 45, 0.32), transparent 38%), linear-gradient(135deg, #5b7f3e 0%, #54783b 46%, #486f35 100%)",
+    boxShadow: "0 28px 80px rgba(5, 18, 9, 0.36)",
     imageRendering: "pixelated",
+    overflow: "hidden",
     position: "relative",
   },
   ground: {
@@ -69,14 +71,5 @@ export const HOME_MAP_RENDER_STYLES = {
     position: "absolute",
     top: 0,
     zIndex: LAYER_Z_INDEX.atmosphere,
-  },
-  hiddenStatus: {
-    clip: "rect(0 0 0 0)",
-    clipPath: "inset(50%)",
-    height: 1,
-    overflow: "hidden",
-    position: "absolute",
-    whiteSpace: "nowrap",
-    width: 1,
   },
 } satisfies Record<string, CSSProperties>

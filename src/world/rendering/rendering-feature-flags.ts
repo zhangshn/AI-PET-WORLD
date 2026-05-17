@@ -3,8 +3,8 @@
  */
 
 export const WORLD_RENDER_FEATURE_FLAGS = {
-  useCanvasGround: true,
+  renderGroundTiles: false,
   useCanvasPath: true,
-  useCanvasEdge: true,
+  useCanvasEdge: false,
   useCanvasDecal: true,
 } as const
