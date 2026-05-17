@@ -7,6 +7,7 @@
     linear-gradient(155deg, #101d13 0%, #21361f 52%, #0b1710 100%);
   color: #edf4df;
   display: flex;
+  gap: clamp(20px, 4vw, 48px);
   height: 100vh;
   justify-content: flex-start;
   min-height: 100vh;
@@ -28,14 +29,29 @@
   position: absolute;
 }
 
-.createPanel {
+.createPanel,
+.previewPanel {
   background: rgba(15, 28, 18, 0.72);
   border: 1px solid rgba(198, 226, 159, 0.16);
+  position: relative;
+}
+
+.createPanel {
   display: grid;
+  flex: 0 0 min(440px, 100%);
   gap: 22px;
   padding: clamp(24px, 4vw, 42px);
-  position: relative;
   width: min(440px, 100%);
+}
+
+.previewPanel {
+  display: grid;
+  gap: 18px;
+  max-height: min(720px, calc(100vh - 96px));
+  max-width: 560px;
+  overflow: auto;
+  padding: clamp(22px, 3vw, 36px);
+  width: min(560px, 100%);
 }
 
 .brand {
@@ -51,6 +67,13 @@
   letter-spacing: 0;
   line-height: 1.05;
   margin: 0;
+}
+
+.description {
+  color: rgba(237, 244, 223, 0.72);
+  font-size: 14px;
+  line-height: 1.7;
+  margin: -10px 0 0;
 }
 
 .fieldset {
@@ -117,21 +140,132 @@
   margin-top: 2px;
 }
 
-.enterButton:hover {
+.enterButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.enterButton:hover:not(:disabled) {
   background: #d6eba4;
+}
+
+.previewBadge {
+  align-self: start;
+  background: rgba(200, 223, 143, 0.12);
+  border: 1px solid rgba(200, 223, 143, 0.24);
+  color: rgba(237, 244, 223, 0.78);
+  font-size: 12px;
+  justify-self: start;
+  padding: 7px 10px;
+}
+
+.previewTitle {
+  color: #f3f8e8;
+  font-size: clamp(26px, 4vw, 38px);
+  font-weight: 600;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.previewSubtitle,
+.previewNote {
+  color: rgba(237, 244, 223, 0.72);
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 0;
+}
+
+.dominantGrid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dominantCard {
+  background: rgba(8, 18, 11, 0.48);
+  border: 1px solid rgba(198, 226, 159, 0.14);
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+}
+
+.dominantCard span {
+  color: rgba(237, 244, 223, 0.7);
+  font-size: 13px;
+}
+
+.dominantCard strong {
+  color: #f3f8e8;
+  font-size: 34px;
+  line-height: 1;
+}
+
+.dominantCard p {
+  color: rgba(237, 244, 223, 0.68);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.styleList {
+  display: grid;
+  gap: 13px;
+}
+
+.styleRow {
+  display: grid;
+  gap: 8px;
+}
+
+.styleRowHeader {
+  align-items: center;
+  color: rgba(237, 244, 223, 0.76);
+  display: flex;
+  font-size: 13px;
+  justify-content: space-between;
+}
+
+.styleRowHeader strong {
+  color: #f3f8e8;
+}
+
+.meter {
+  background: rgba(8, 18, 11, 0.74);
+  height: 8px;
+  overflow: hidden;
+}
+
+.meter span {
+  background: #c8df8f;
+  display: block;
+  height: 100%;
+}
+
+@media (max-width: 960px) {
+  .createWorldPage {
+    align-items: stretch;
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow: auto;
+  }
+
+  .createPanel,
+  .previewPanel {
+    flex-basis: auto;
+    max-height: none;
+    max-width: none;
+    width: 100%;
+  }
 }
 
 @media (max-width: 560px) {
   .createWorldPage {
-    align-items: stretch;
     padding: 18px;
   }
 
-  .createPanel {
-    align-self: center;
-  }
-
-  .fieldGrid {
+  .fieldGrid,
+  .dominantGrid {
     grid-template-columns: 1fr;
   }
 }
