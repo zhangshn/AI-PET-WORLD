@@ -19,6 +19,11 @@ import {
   validateMapDiffs,
 } from "@/world/map-state/map-diff-validator"
 import type { WorldMapAssetId } from "@/world/map-assets/world-map-asset-registry"
+import {
+  buildWorldCreationRuntime,
+  type CreateWorldInput,
+  type WorldCreationRuntimeResult,
+} from "@/world/creation/world-creation-runtime"
 
 import {
   runConstructionIntentDiffCycle,
@@ -32,23 +37,9 @@ export type ConstructionDebugButlerPreset =
   | "protective"
   | "aesthetic"
 
-export type ConstructionDebugCreateWorldInput = {
-  year: number
-  month: number
-  day: number
-  time: string
-  perspective: "unspecified" | "female" | "male"
-  createdAt: number
-}
+export type ConstructionDebugCreateWorldInput = CreateWorldInput
 
-export type ConstructionDebugRuntime = {
-  worldId: string
-  ownerId: string
-  birthSignature: string
-  worldSalt: string
-  butlerConstructionStyle: ButlerConstructionStyleVector
-  now: number
-}
+export type ConstructionDebugRuntime = WorldCreationRuntimeResult
 
 export type ValidatorSafetyTestResult = {
   proposedDiffs: MapDiff[]
@@ -92,7 +83,9 @@ export const CONSTRUCTION_DEBUG_WORLD_TICK = 12
 export function buildConstructionDebugScenario(
   input: ConstructionDebugScenarioInput
 ): ConstructionDebugScenarioResult {
-  const runtime = buildConstructionDebugRuntime(input.createWorldInput)
+  const runtime = buildWorldCreationRuntime({
+    createWorldInput: input.createWorldInput,
+  })
 
   const adjustedConstructionStyle = buildDebugConstructionStyle({
     baseStyle: runtime.butlerConstructionStyle,
@@ -138,74 +131,6 @@ export function buildConstructionDebugScenario(
     constructionCycle,
     validatorSafetyTest,
   }
-}
-
-function buildConstructionDebugRuntime(
-  createWorldInput: ConstructionDebugCreateWorldInput
-): ConstructionDebugRuntime {
-  const birthSignature = buildBirthSignature(createWorldInput)
-  const stableToken = buildStableToken(birthSignature)
-
-  return {
-    worldId: `world-${stableToken}`,
-    ownerId: `owner-${stableToken}`,
-    birthSignature,
-    worldSalt: `local-mvp-${createWorldInput.createdAt}`,
-    butlerConstructionStyle:
-      buildDeterministicConstructionStyle(birthSignature),
-    now: createWorldInput.createdAt,
-  }
-}
-
-function buildBirthSignature(input: ConstructionDebugCreateWorldInput): string {
-  return [
-    input.year.toString().padStart(4, "0"),
-    input.month.toString().padStart(2, "0"),
-    input.day.toString().padStart(2, "0"),
-    input.time,
-    input.perspective,
-  ].join("-")
-}
-
-function buildDeterministicConstructionStyle(
-  birthSignature: string
-): ButlerConstructionStyleVector {
-  return {
-    structuredBuilder: buildStyleValue(birthSignature, "structuredBuilder"),
-    warmCaretaker: buildStyleValue(birthSignature, "warmCaretaker"),
-    protectiveKeeper: buildStyleValue(birthSignature, "protectiveKeeper"),
-    aestheticOrganizer: buildStyleValue(birthSignature, "aestheticOrganizer"),
-    quietMaintainer: buildStyleValue(birthSignature, "quietMaintainer"),
-    adaptivePlanner: buildStyleValue(birthSignature, "adaptivePlanner"),
-  }
-}
-
-function buildStyleValue(signature: string, salt: string): number {
-  const normalized = hashToUnit(`${signature}:${salt}`)
-  const value = 0.28 + normalized * 0.58
-
-  return Number(value.toFixed(3))
-}
-
-function buildStableToken(value: string): string {
-  return Math.abs(hashString(value)).toString(36)
-}
-
-function hashToUnit(value: string): number {
-  const hash = Math.abs(hashString(value))
-
-  return (hash % 10_000) / 10_000
-}
-
-function hashString(value: string): number {
-  let hash = 0x811c9dc5
-
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index)
-    hash = Math.imul(hash, 0x01000193)
-  }
-
-  return hash | 0
 }
 
 function buildDebugPetContext(preset: ConstructionDebugPetPreset) {

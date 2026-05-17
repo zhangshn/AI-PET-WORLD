@@ -1,13 +1,21 @@
 "use client"
 
+/**
+ * 当前文件负责：创建世界输入页面。
+ */
+
 import type { FormEvent } from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+
+import {
+  CREATE_WORLD_STORAGE_KEY,
+  serializeCreateWorldInput,
+  type CreateWorldInput,
+  type CreateWorldPerspective,
+} from "../world/world-creation-runtime"
+
 import styles from "./page.module.css"
-
-const CREATE_WORLD_STORAGE_KEY = "ai-pet-world:create-world-input"
-
-type Perspective = "unspecified" | "female" | "male"
 
 export default function CreateWorldPage() {
   const router = useRouter()
@@ -15,12 +23,13 @@ export default function CreateWorldPage() {
   const [month, setMonth] = useState("1")
   const [day, setDay] = useState("1")
   const [time, setTime] = useState("08:00")
-  const [perspective, setPerspective] = useState<Perspective>("unspecified")
+  const [perspective, setPerspective] =
+    useState<CreateWorldPerspective>("unspecified")
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
-    const createWorldInput = {
+    const createWorldInput: CreateWorldInput = {
       year: Number(year),
       month: Number(month),
       day: Number(day),
@@ -31,7 +40,7 @@ export default function CreateWorldPage() {
 
     window.localStorage.setItem(
       CREATE_WORLD_STORAGE_KEY,
-      JSON.stringify(createWorldInput),
+      serializeCreateWorldInput(createWorldInput)
     )
     router.push("/world")
   }
@@ -103,7 +112,7 @@ export default function CreateWorldPage() {
               <select
                 className={styles.select}
                 onChange={(event) =>
-                  setPerspective(event.target.value as Perspective)
+                  setPerspective(event.target.value as CreateWorldPerspective)
                 }
                 value={perspective}
               >
