@@ -6,6 +6,10 @@ import type { ButlerConstructionStyleVector } from "@/world/generation/generatio
 
 export type CreateWorldPerspective = "unspecified" | "female" | "male"
 
+export type WorldCreationStyleSource =
+  | "life_profile_core"
+  | "deterministic_fallback"
+
 export type CreateWorldInput = {
   year: number
   month: number
@@ -26,4 +30,10 @@ export type WorldCreationRuntimeResult = {
   worldSalt: string
   butlerConstructionStyle: ButlerConstructionStyleVector
   now: number
+  styleSource: WorldCreationStyleSource
+  debug: {
+    source: "world_creation_runtime"
+    note: string
+    warnings: string[]
+  }
 }
