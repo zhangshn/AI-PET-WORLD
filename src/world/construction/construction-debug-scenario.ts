@@ -24,6 +24,10 @@ import {
   type CreateWorldInput,
   type WorldCreationRuntimeResult,
 } from "@/world/creation/world-creation-runtime"
+import {
+  buildWorldCreationInfluenceTest,
+  type WorldCreationInfluenceTestResult,
+} from "@/world/creation/world-creation-influence-test"
 
 import {
   runConstructionIntentDiffCycle,
@@ -63,6 +67,7 @@ export type ConstructionDebugScenarioInput = {
 export type ConstructionDebugScenarioResult = {
   createWorldInput: ConstructionDebugCreateWorldInput
   runtime: ConstructionDebugRuntime
+  worldCreationInfluenceTest: WorldCreationInfluenceTestResult
   initialHomeMapState: HomeMapState
   constructionCycle: RunConstructionIntentDiffCycleResult
   validatorSafetyTest: ValidatorSafetyTestResult
@@ -127,6 +132,9 @@ export function buildConstructionDebugScenario(
   return {
     createWorldInput: input.createWorldInput,
     runtime: finalRuntime,
+    worldCreationInfluenceTest: buildWorldCreationInfluenceTest({
+      baseCreateWorldInput: input.createWorldInput,
+    }),
     initialHomeMapState,
     constructionCycle,
     validatorSafetyTest,
