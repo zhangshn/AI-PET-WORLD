@@ -11,6 +11,13 @@ import type {
   WorldCreationRuntimeResult,
 } from "./world-creation-schema"
 
+export type {
+  CreateWorldInput,
+  CreateWorldPerspective,
+  WorldCreationRuntimeInput,
+  WorldCreationRuntimeResult,
+} from "./world-creation-schema"
+
 export const CREATE_WORLD_STORAGE_KEY = "ai-pet-world:create-world-input"
 
 export function parseCreateWorldInput(
