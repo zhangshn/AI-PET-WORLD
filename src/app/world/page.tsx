@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation"
 import {
   CREATE_WORLD_STORAGE_KEY,
   parseCreateWorldInput,
-} from "./world-creation-runtime"
+} from "@/world/creation/world-creation-runtime"
 
 import styles from "./page.module.css"
 
@@ -18,9 +18,7 @@ export default function WorldPage() {
   const router = useRouter()
 
   useEffect(() => {
-    const rawCreateWorldInput = window.localStorage.getItem(
-      CREATE_WORLD_STORAGE_KEY
-    )
+    const rawCreateWorldInput = window.localStorage.getItem(CREATE_WORLD_STORAGE_KEY)
     const createWorldInput = parseCreateWorldInput(rawCreateWorldInput)
 
     if (!createWorldInput) {
