@@ -56,6 +56,7 @@
 
 .viewport {
   background:
+    radial-gradient(circle at 48% 42%, rgba(225, 207, 139, 0.14), transparent 30%),
     radial-gradient(circle at 24% 22%, rgba(179, 218, 128, 0.1), transparent 34%),
     linear-gradient(160deg, rgba(17, 39, 21, 0.72), rgba(7, 17, 10, 0.82));
   border: 1px solid rgba(198, 226, 159, 0.12);
@@ -64,8 +65,11 @@
 }
 
 .mapCanvas {
-  background: #2d4928;
+  background:
+    radial-gradient(circle at 50% 48%, rgba(118, 150, 77, 0.2), transparent 40%),
+    linear-gradient(160deg, #334f2d, #19311d);
   box-shadow:
+    inset 0 0 70px rgba(7, 17, 10, 0.32),
     inset 0 0 0 1px rgba(255, 255, 255, 0.035),
     0 22px 60px rgba(0, 0, 0, 0.28);
   image-rendering: pixelated;
@@ -74,58 +78,108 @@
   position: relative;
 }
 
-.zoneAura {
-  border: 1px solid rgba(200, 223, 143, 0.12);
-  box-shadow: inset 0 0 22px rgba(255, 255, 255, 0.035);
+.mapCanvas::after {
+  background: radial-gradient(circle at 50% 48%, transparent 48%, rgba(4, 12, 7, 0.2) 100%);
+  content: "";
+  inset: 0;
   pointer-events: none;
   position: absolute;
-  z-index: 25000;
+  z-index: 900000;
 }
 
-.zoneAura[data-zone="pet_arrival"],
-.zoneAura[data-zone="initial_care"],
-.zoneAura[data-zone="temporary_shelter"],
-.zoneAura[data-zone="pet_rest"] {
-  background: rgba(234, 214, 145, 0.06);
+.zonePad {
+  pointer-events: none;
+  position: absolute;
 }
 
-.zoneAura[data-zone="natural_boundary"] {
-  background: rgba(120, 174, 83, 0.035);
+.zonePad[data-zone="pet_arrival"],
+.zonePad[data-zone="initial_care"],
+.zonePad[data-zone="temporary_shelter"],
+.zonePad[data-zone="pet_rest"] {
+  background: radial-gradient(circle at 50% 50%, rgba(191, 141, 74, 0.2), rgba(133, 98, 50, 0.06) 64%, transparent 72%);
+  filter: blur(0.2px);
 }
 
-.sprite {
+.zonePad[data-zone="pet_arrival"] {
+  border-radius: 48%;
+}
+
+.zonePad[data-zone="temporary_shelter"],
+.zonePad[data-zone="pet_rest"] {
+  border-radius: 34%;
+}
+
+.zonePad[data-zone="natural_boundary"] {
+  background: radial-gradient(circle at 50% 50%, rgba(75, 118, 56, 0.12), transparent 72%);
+}
+
+.terrainCell,
+.edgeCell,
+.pathCell,
+.objectSprite {
+  display: block;
+  position: absolute;
+}
+
+.terrainCell {
+  background:
+    radial-gradient(circle at 25% 28%, rgba(205, 226, 139, 0.1), transparent 26%),
+    linear-gradient(160deg, rgba(65, 104, 46, 0.34), rgba(40, 76, 39, 0.28));
+}
+
+.terrainCell[data-asset="groundGrassBase02"] {
+  background:
+    radial-gradient(circle at 70% 62%, rgba(220, 235, 150, 0.12), transparent 22%),
+    linear-gradient(160deg, rgba(80, 119, 52, 0.32), rgba(34, 71, 35, 0.26));
+}
+
+.terrainCell[data-asset="groundDirtBase01"] {
+  background:
+    radial-gradient(circle at 36% 38%, rgba(230, 198, 123, 0.14), transparent 28%),
+    linear-gradient(160deg, rgba(143, 105, 55, 0.44), rgba(101, 72, 41, 0.36));
+}
+
+.pathCell {
+  background:
+    linear-gradient(90deg, rgba(181, 132, 66, 0.82), rgba(210, 165, 90, 0.8), rgba(137, 91, 44, 0.72));
+  box-shadow:
+    0 2px 0 rgba(42, 30, 18, 0.18),
+    inset 0 1px 0 rgba(255, 234, 165, 0.18);
+}
+
+.pathCell[data-asset="pathDirtVertical01"] {
+  background:
+    linear-gradient(180deg, rgba(181, 132, 66, 0.82), rgba(210, 165, 90, 0.8), rgba(137, 91, 44, 0.72));
+}
+
+.edgeCell {
+  background: rgba(72, 99, 46, 0.18);
+}
+
+.objectSprite {
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
-  display: block;
   image-rendering: pixelated;
-  position: absolute;
 }
 
-.sprite[data-layer="ground"] {
-  z-index: 1;
+.objectSprite[data-layer="nature"] {
+  filter: drop-shadow(0 5px 0 rgba(0, 0, 0, 0.2));
 }
 
-.sprite[data-layer="path"] {
-  z-index: 2;
+.objectSprite[data-layer="surface-decoration"] {
+  filter: drop-shadow(0 1px 0 rgba(0, 0, 0, 0.12));
 }
 
-.sprite[data-layer="edge"] {
-  z-index: 3;
+.objectSprite[data-layer="structure"],
+.objectSprite[data-layer="facility"],
+.objectSprite[data-layer="actor"] {
+  filter: drop-shadow(0 5px 0 rgba(0, 0, 0, 0.22));
 }
 
-.sprite[data-layer="zone"] {
-  z-index: 4;
-}
-
-.sprite[data-layer="nature"] {
-  filter: drop-shadow(0 3px 0 rgba(0, 0, 0, 0.18));
-}
-
-.sprite[data-layer="structure"],
-.sprite[data-layer="facility"],
-.sprite[data-layer="actor"] {
-  filter: drop-shadow(0 4px 0 rgba(0, 0, 0, 0.18));
+.objectSprite[data-asset="buildingTempShelterCanvasTent01"],
+.objectSprite[data-asset="buildingTempShelter01"] {
+  filter: drop-shadow(0 7px 0 rgba(0, 0, 0, 0.24));
 }
 
 @media (max-width: 800px) {
