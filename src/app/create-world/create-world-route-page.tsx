@@ -15,7 +15,7 @@ import {
   type CreateWorldPerspective,
 } from "@/world/creation/world-creation-runtime"
 
-import styles from "./create-world-route-page.module.css"
+import styles from "./create-world-route-page.styles.module.css"
 
 export default function CreateWorldRoutePage() {
   const router = useRouter()
