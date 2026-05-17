@@ -12,7 +12,7 @@ import {
   parseCreateWorldInput,
 } from "@/world/creation/world-creation-runtime"
 
-import styles from "./world-route-page.module.css"
+import styles from "./world-route-page.styles.module.css"
 
 export default function WorldRoutePage() {
   const router = useRouter()
