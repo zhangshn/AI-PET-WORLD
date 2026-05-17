@@ -144,8 +144,6 @@ function isValidTime(value: unknown): value is string {
   return typeof value === "string" && /^\d{2}:\d{2}$/.test(value)
 }
 
-function isValidPerspective(
-  value: unknown
-): value is CreateWorldPerspective {
+function isValidPerspective(value: unknown): value is CreateWorldPerspective {
   return value === "unspecified" || value === "female" || value === "male"
 }
