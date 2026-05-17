@@ -2,13 +2,16 @@
  * 当前文件负责：把创建世界输入转换为世界生成运行时参数。
  */
 
+import { buildButlerProfile } from "@/ai/personality-core/butler-profile-core/butler-profile-gateway"
 import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
 
+import { buildButlerConstructionStyleFromLifeCore } from "./life-core-to-world-style"
 import type {
   CreateWorldInput,
   CreateWorldPerspective,
   WorldCreationRuntimeInput,
   WorldCreationRuntimeResult,
+  WorldCreationStyleSource,
 } from "./world-creation-schema"
 
 export type {
@@ -16,6 +19,7 @@ export type {
   CreateWorldPerspective,
   WorldCreationRuntimeInput,
   WorldCreationRuntimeResult,
+  WorldCreationStyleSource,
 } from "./world-creation-schema"
 
 export const CREATE_WORLD_STORAGE_KEY = "ai-pet-world:create-world-input"
@@ -59,15 +63,25 @@ export function buildWorldCreationRuntime(
 ): WorldCreationRuntimeResult {
   const birthSignature = buildBirthSignature(input.createWorldInput)
   const stableToken = buildStableToken(birthSignature)
-  const style = buildDeterministicConstructionStyle(birthSignature)
+  const fallbackStyle = buildDeterministicConstructionStyle(birthSignature)
+  const styleResult = buildRuntimeStyle({
+    createWorldInput: input.createWorldInput,
+    fallbackStyle,
+  })
 
   return {
     worldId: `world-${stableToken}`,
     ownerId: `owner-${stableToken}`,
     birthSignature,
     worldSalt: `local-mvp-${input.createWorldInput.createdAt}`,
-    butlerConstructionStyle: style,
+    butlerConstructionStyle: styleResult.constructionStyle,
     now: input.createWorldInput.createdAt,
+    styleSource: styleResult.source,
+    debug: {
+      source: "world_creation_runtime",
+      note: styleResult.note,
+      warnings: styleResult.warnings,
+    },
   }
 }
 
@@ -79,6 +93,58 @@ export function buildBirthSignature(input: CreateWorldInput): string {
     input.time,
     input.perspective,
   ].join("-")
+}
+
+function buildRuntimeStyle(input: {
+  createWorldInput: CreateWorldInput
+  fallbackStyle: ButlerConstructionStyleVector
+}): {
+  constructionStyle: ButlerConstructionStyleVector
+  source: WorldCreationStyleSource
+  note: string
+  warnings: string[]
+} {
+  try {
+    const birthTime = parseCreateWorldTime(input.createWorldInput.time)
+    const hasBirthHour = birthTime !== null
+    const genderPerspective = resolveGenderPerspective(
+      input.createWorldInput.perspective
+    )
+
+    const butlerProfile = buildButlerProfile({
+      birth: {
+        year: input.createWorldInput.year,
+        month: input.createWorldInput.month,
+        day: input.createWorldInput.day,
+        hour: birthTime?.hour,
+        minute: birthTime?.minute,
+      },
+      mappingMode: "self_projection",
+      genderPerspective,
+      displayName: "管家",
+    })
+
+    const lifeCoreStyle = buildButlerConstructionStyleFromLifeCore({
+      butlerProfile,
+      fallbackStyle: input.fallbackStyle,
+    })
+
+    return {
+      constructionStyle: lifeCoreStyle.constructionStyle,
+      source: lifeCoreStyle.source,
+      note: hasBirthHour
+        ? "世界创建已接入管家生命人格核心，使用完整出生时间映射建设风格。"
+        : "世界创建已接入管家生命人格核心，但出生时间不可用，使用日期模式映射建设风格。",
+      warnings: [],
+    }
+  } catch (error) {
+    return {
+      constructionStyle: input.fallbackStyle,
+      source: "deterministic_fallback",
+      note: "生命人格核心映射失败，已回退到稳定 deterministic 风格，保证世界创建不中断。",
+      warnings: [getErrorMessage(error)],
+    }
+  }
 }
 
 function buildDeterministicConstructionStyle(
@@ -120,6 +186,36 @@ function hashString(value: string): number {
   }
 
   return hash | 0
+}
+
+function parseCreateWorldTime(
+  value: string
+): { hour: number; minute: number } | null {
+  if (!isValidTime(value)) return null
+
+  const [hourText, minuteText] = value.split(":")
+  const hour = Number(hourText)
+  const minute = Number(minuteText)
+
+  if (!Number.isInteger(hour) || !Number.isInteger(minute)) return null
+  if (hour < 0 || hour > 23) return null
+  if (minute < 0 || minute > 59) return null
+
+  return { hour, minute }
+}
+
+function resolveGenderPerspective(
+  perspective: CreateWorldPerspective
+): "male" | "female" {
+  if (perspective === "female") return "female"
+
+  return "male"
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+
+  return "Unknown world creation runtime error"
 }
 
 function isValidYear(value: unknown): value is number {
