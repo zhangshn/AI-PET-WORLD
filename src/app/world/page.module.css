@@ -9,3 +9,83 @@
   position: relative;
   width: 100vw;
 }
+
+.worldAtmosphere {
+  background:
+    radial-gradient(circle at 48% 62%, rgba(122, 160, 94, 0.1), transparent 24%),
+    radial-gradient(circle at 22% 80%, rgba(17, 37, 21, 0.36), transparent 34%),
+    linear-gradient(180deg, rgba(244, 222, 143, 0.04), rgba(10, 21, 14, 0.18));
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.originGround {
+  background:
+    radial-gradient(circle at 44% 46%, rgba(95, 133, 72, 0.72), transparent 42%),
+    radial-gradient(circle at 62% 58%, rgba(53, 87, 47, 0.56), transparent 38%);
+  height: 132px;
+  left: 50%;
+  position: absolute;
+  top: 68%;
+  transform: translate(-50%, -50%);
+  width: 176px;
+}
+
+.originGlow {
+  background: rgba(173, 190, 108, 0.2);
+  height: 44px;
+  left: 66px;
+  position: absolute;
+  top: 38px;
+  width: 44px;
+}
+
+.originCore {
+  background:
+    linear-gradient(135deg, rgba(217, 209, 126, 0.92), rgba(126, 151, 83, 0.88));
+  height: 18px;
+  left: 79px;
+  position: absolute;
+  top: 51px;
+  width: 18px;
+}
+
+.originPebbleA,
+.originPebbleB {
+  background: rgba(44, 62, 42, 0.72);
+  height: 8px;
+  position: absolute;
+  width: 12px;
+}
+
+.originPebbleA {
+  left: 50px;
+  top: 76px;
+}
+
+.originPebbleB {
+  left: 116px;
+  top: 82px;
+  width: 9px;
+}
+
+.originGrassA,
+.originGrassB {
+  background: rgba(126, 157, 76, 0.78);
+  height: 18px;
+  position: absolute;
+  width: 7px;
+}
+
+.originGrassA {
+  left: 40px;
+  top: 54px;
+  transform: rotate(-10deg);
+}
+
+.originGrassB {
+  left: 132px;
+  top: 62px;
+  transform: rotate(12deg);
+}
