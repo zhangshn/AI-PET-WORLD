@@ -5,21 +5,17 @@
  */
 
 import type { FormEvent } from "react"
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 
 import {
-  buildWorldCreationRuntime,
   CREATE_WORLD_STORAGE_KEY,
   serializeCreateWorldInput,
   type CreateWorldInput,
   type CreateWorldPerspective,
 } from "@/world/creation/world-creation-runtime"
-import { buildWorldCreationPublicPreview } from "@/world/creation/world-creation-public-preview"
 
 import styles from "./create-world-route-page.styles.module.css"
-
-const PREVIEW_CREATED_AT = 1_700_000_000_000
 
 export default function CreateWorldRoutePage() {
   const router = useRouter()
@@ -29,27 +25,6 @@ export default function CreateWorldRoutePage() {
   const [time, setTime] = useState("08:00")
   const [perspective, setPerspective] =
     useState<CreateWorldPerspective>("unspecified")
-
-  const previewInput = useMemo(() => {
-    return buildCreateWorldInput({
-      year,
-      month,
-      day,
-      time,
-      perspective,
-      createdAt: PREVIEW_CREATED_AT,
-    })
-  }, [day, month, perspective, time, year])
-
-  const publicPreview = useMemo(() => {
-    if (!previewInput) return null
-
-    const runtime = buildWorldCreationRuntime({
-      createWorldInput: previewInput,
-    })
-
-    return buildWorldCreationPublicPreview(runtime)
-  }, [previewInput])
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -78,7 +53,7 @@ export default function CreateWorldRoutePage() {
         <div className={styles.brand}>AI-PET-WORLD</div>
         <h1 className={styles.title}>创建你的世界</h1>
         <p className={styles.description}>
-          输入出生信息后，系统会生成管家的初始建设倾向，并决定家园最早的成长方向。
+          输入出生信息后，系统会在后台生成管家的初始人格与世界种子。正式画面将在进入世界后生成。
         </p>
 
         <fieldset className={styles.fieldset}>
@@ -154,54 +129,10 @@ export default function CreateWorldRoutePage() {
           </div>
         </fieldset>
 
-        <button className={styles.enterButton} disabled={!previewInput} type="submit">
+        <button className={styles.enterButton} type="submit">
           进入世界
         </button>
       </form>
-
-      <aside className={styles.previewPanel}>
-        {publicPreview ? (
-          <>
-            <div className={styles.previewBadge}>{publicPreview.sourceLabel}</div>
-            <h2 className={styles.previewTitle}>{publicPreview.title}</h2>
-            <p className={styles.previewSubtitle}>{publicPreview.subtitle}</p>
-
-            <div className={styles.dominantGrid}>
-              {publicPreview.dominantStyles.map((style) => (
-                <article className={styles.dominantCard} key={style.key}>
-                  <span>{style.label}</span>
-                  <strong>{style.score}</strong>
-                  <p>{style.summary}</p>
-                </article>
-              ))}
-            </div>
-
-            <div className={styles.styleList}>
-              {publicPreview.styleItems.map((style) => (
-                <div className={styles.styleRow} key={style.key}>
-                  <div className={styles.styleRowHeader}>
-                    <span>{style.label}</span>
-                    <strong>{style.score}</strong>
-                  </div>
-                  <div className={styles.meter}>
-                    <span style={{ width: `${style.score}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <p className={styles.previewNote}>{publicPreview.note}</p>
-          </>
-        ) : (
-          <>
-            <div className={styles.previewBadge}>等待输入</div>
-            <h2 className={styles.previewTitle}>世界尚未稳定</h2>
-            <p className={styles.previewSubtitle}>
-              请检查出生年、月、日和时间格式，系统会自动生成创建预览。
-            </p>
-          </>
-        )}
-      </aside>
     </main>
   )
 }
