@@ -10,7 +10,6 @@ import {
   buildConstructionDebugScenario,
   DEFAULT_CONSTRUCTION_DEBUG_CREATE_WORLD_INPUT,
   type ConstructionDebugButlerPreset,
-  type ConstructionDebugCreateWorldInput,
   type ConstructionDebugPetPreset,
 } from "@/world/construction/construction-debug-scenario"
 import {
