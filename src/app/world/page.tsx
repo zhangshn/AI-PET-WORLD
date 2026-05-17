@@ -4,24 +4,19 @@
  * 当前文件负责 /world 正式体验入口。
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import type { ConstructionPlan } from "@/world/construction/construction-schema"
-import {
-  advanceMvpConstruction,
-  advanceMvpConstructionByWorldTick,
-  createMvpPetRestConstructionPlan,
-} from "@/world/construction/construction-gateway"
+import { advanceMvpConstructionByWorldTick } from "@/world/construction/construction-gateway"
 import { generateInitialHomeMap } from "@/world/generation/initial-home-generator"
 import {
-  clearHomeMapLocalSnapshot,
   HOME_MAP_LOCAL_STORAGE_VERSION,
   loadHomeMapLocalSnapshot,
   saveHomeMapLocalSnapshot,
 } from "@/world/map-state/home-map-local-persistence"
-import { buildWorldExperienceModel } from "@/world/visualization/build-world-experience-model"
+import { HomeMapRenderer } from "@/world/rendering/HomeMapRenderer"
+import { buildHomeMapRenderModel } from "@/world/rendering/home-map-render-model"
 
-import { WorldExperiencePage } from "./components/experience/WorldExperiencePage"
 import { useWorldEngineState } from "./hooks/useWorldEngineState"
 
 const WORLD_ID = "mvp-visible-world"
@@ -67,48 +62,10 @@ export default function WorldPage() {
   >(null)
   const [localSnapshotLoaded, setLocalSnapshotLoaded] = useState(false)
 
-  const experienceModel = useMemo(
-    () =>
-      buildWorldExperienceModel({
-        homeMapState: currentHomeMapState,
-        constructionPlan: currentConstructionPlan,
-        constructionMessage,
-        worldTick: worldState.tick,
-      }),
-    [
-      constructionMessage,
-      currentConstructionPlan,
-      currentHomeMapState,
-      worldState.tick,
-    ]
+  const homeMapRenderModel = useMemo(
+    () => buildHomeMapRenderModel(currentHomeMapState),
+    [currentHomeMapState]
   )
-
-  const handleAdvanceConstruction = useCallback(() => {
-    const plan =
-      currentConstructionPlan ??
-      createMvpPetRestConstructionPlan(currentHomeMapState)
-    const result = advanceMvpConstruction(
-      currentHomeMapState,
-      plan,
-      Date.now()
-    )
-
-    setCurrentHomeMapState(result.homeMapState)
-    setCurrentConstructionPlan(result.plan)
-    setConstructionMessage(result.messages.join(" "))
-  }, [currentConstructionPlan, currentHomeMapState])
-
-  const handleResetLocalHomeMap = useCallback(() => {
-    clearHomeMapLocalSnapshot({
-      worldId: WORLD_ID,
-      ownerId: OWNER_ID,
-    })
-    lastAutoConstructionTickRef.current = worldState.tick
-    setCurrentHomeMapState(initialHomeMapState)
-    setCurrentConstructionPlan(null)
-    setConstructionMessage(DEFAULT_CONSTRUCTION_MESSAGE)
-    setLastAutoConstructionTick(null)
-  }, [initialHomeMapState, worldState.tick])
 
   useEffect(() => {
     const snapshot = loadHomeMapLocalSnapshot({
@@ -187,10 +144,9 @@ export default function WorldPage() {
   ])
 
   return (
-    <WorldExperiencePage
-      model={experienceModel}
-      onManualAdvanceConstruction={handleAdvanceConstruction}
-      onResetLocalHomeMap={handleResetLocalHomeMap}
+    <HomeMapRenderer
+      renderModel={homeMapRenderModel}
+      worldTick={worldState.tick}
     />
   )
 }
