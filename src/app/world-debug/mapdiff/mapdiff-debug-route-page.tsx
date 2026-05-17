@@ -17,7 +17,7 @@ import {
   parseCreateWorldInput,
 } from "@/world/creation/world-creation-runtime"
 
-import styles from "./mapdiff-debug-route-page.module.css"
+import styles from "./mapdiff-debug-route-page.styles.module.css"
 
 const CREATE_WORLD_INPUT_PENDING = "__ai_pet_world_create_input_pending__"
 const CREATE_WORLD_INPUT_EMPTY = "__ai_pet_world_create_input_empty__"
