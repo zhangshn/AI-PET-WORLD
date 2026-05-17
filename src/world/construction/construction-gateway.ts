@@ -2,9 +2,24 @@
  * 当前文件负责：提供 MVP 建设闭环入口。
  */
 
-import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
+import type { HomeMapState, MapDiff } from "@/world/map-state/home-map-state-schema"
 import { applyMapDiffs } from "@/world/map-state/map-diff-engine"
+import {
+  type RejectedMapDiff,
+  validateMapDiffs,
+} from "@/world/map-state/map-diff-validator"
 
+import {
+  buildMapDiffsFromConstructionIntents,
+} from "./construction-diff-planner"
+import {
+  buildConstructionIntents,
+} from "./construction-intent-planner"
+import type {
+  ButlerConstructionContext,
+  ConstructionIntent,
+  PetConstructionContext,
+} from "./construction-intent-schema"
 import type { ConstructionPlan } from "./construction-schema"
 import { advanceConstructionPlan } from "./construction-executor"
 import { createInitialConstructionPlan } from "./construction-planner"
@@ -25,10 +40,72 @@ export type AdvanceMvpConstructionByWorldTickResult = {
   didAdvance: boolean
 }
 
+export type RunConstructionIntentDiffCycleInput = {
+  homeMapState: HomeMapState
+  pet: PetConstructionContext
+  butler: ButlerConstructionContext
+  worldTick: number
+  now: number
+}
+
+export type RunConstructionIntentDiffCycleResult = {
+  nextHomeMapState: HomeMapState
+  intents: ConstructionIntent[]
+  proposedDiffs: MapDiff[]
+  acceptedDiffs: MapDiff[]
+  rejectedDiffs: RejectedMapDiff[]
+  messages: string[]
+  didAdvance: boolean
+  tags: string[]
+}
+
 export function createMvpPetRestConstructionPlan(
   homeMapState: HomeMapState
 ): ConstructionPlan {
   return createInitialConstructionPlan(homeMapState)
+}
+
+export function runConstructionIntentDiffCycle(
+  input: RunConstructionIntentDiffCycleInput
+): RunConstructionIntentDiffCycleResult {
+  const intentResult = buildConstructionIntents({
+    worldTick: input.worldTick,
+    now: input.now,
+    pet: input.pet,
+    butler: input.butler,
+    resources: input.homeMapState.resources,
+  })
+
+  const diffResult = buildMapDiffsFromConstructionIntents({
+    homeMapState: input.homeMapState,
+    intents: intentResult.intents,
+    now: input.now,
+  })
+
+  const validationResult = validateMapDiffs({
+    homeMapState: input.homeMapState,
+    mapDiffs: diffResult.mapDiffs,
+  })
+
+  const nextHomeMapState = applyMapDiffs(
+    input.homeMapState,
+    validationResult.acceptedDiffs
+  )
+
+  return {
+    nextHomeMapState,
+    intents: intentResult.intents,
+    proposedDiffs: diffResult.mapDiffs,
+    acceptedDiffs: validationResult.acceptedDiffs,
+    rejectedDiffs: validationResult.rejectedDiffs,
+    messages: [
+      ...intentResult.messages,
+      ...diffResult.messages,
+      ...validationResult.warnings.map((warning) => `拒绝地图变化：${warning}`),
+    ],
+    didAdvance: validationResult.acceptedDiffs.length > 0,
+    tags: ["construction_intent_diff_cycle_result"],
+  }
 }
 
 export function advanceMvpConstruction(
