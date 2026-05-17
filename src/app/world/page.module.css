@@ -1,0 +1,28 @@
+.worldPage {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(76, 113, 60, 0.82), transparent 48%),
+    linear-gradient(160deg, #132416 0%, #243c22 48%, #0d1b12 100%);
+  height: 100vh;
+  overflow: hidden;
+  width: 100vw;
+}
+
+.worldStage {
+  align-items: center;
+  display: flex;
+  height: 100%;
+  justify-content: center;
+  overflow: hidden;
+  width: 100%;
+}
+
+.worldStageSurface {
+  background:
+    radial-gradient(circle at 34% 24%, rgba(144, 175, 102, 0.18), transparent 36%),
+    radial-gradient(circle at 72% 70%, rgba(43, 79, 42, 0.28), transparent 42%),
+    linear-gradient(135deg, #496d3a 0%, #416435 48%, #34552f 100%);
+  box-shadow: 0 32px 90px rgba(3, 14, 8, 0.42);
+  height: min(86vh, 920px);
+  max-width: 1440px;
+  width: min(92vw, 1440px);
+}
