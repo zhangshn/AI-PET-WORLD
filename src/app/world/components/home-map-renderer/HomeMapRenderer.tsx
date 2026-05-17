@@ -24,7 +24,12 @@ export function HomeMapRenderer(input: { homeMapState: HomeMapState }) {
   const viewport = buildActiveViewport(input.homeMapState)
   const visiblePlacements = renderModel.allPlacements
     .filter((placement) => isPlacementInsideViewport(placement, viewport))
-    .filter((placement) => placement.layer !== "atmosphere")
+    .filter(
+      (placement) =>
+        placement.layer !== "ground" &&
+        placement.layer !== "edge" &&
+        placement.layer !== "atmosphere"
+    )
     .sort(sortPlacementsForRender)
 
   return (
@@ -34,7 +39,7 @@ export function HomeMapRenderer(input: { homeMapState: HomeMapState }) {
           <div className={styles.eyebrow}>HOME MAP RENDERER / UI-06</div>
           <h2>初始家园</h2>
           <p>
-            这里按 HomeMapState 的区域、地面、道路、承托、建筑、设施、自然物和角色绘制第一幕家园。
+            这里按 HomeMapState 的区域、道路、承托、建筑、设施、自然物和角色绘制第一幕家园。
           </p>
         </div>
         <div className={styles.rendererMeta}>
@@ -84,33 +89,11 @@ function PlacementLayerItem(input: {
 }) {
   if (input.placement.layer === "zone") return null
 
-  if (input.placement.layer === "ground") {
-    return <TerrainCell placement={input.placement} viewport={input.viewport} />
-  }
-
   if (input.placement.layer === "path") {
     return <PathCell placement={input.placement} viewport={input.viewport} />
   }
 
-  if (input.placement.layer === "edge") {
-    return <EdgeCell placement={input.placement} viewport={input.viewport} />
-  }
-
   return <ObjectSprite placement={input.placement} viewport={input.viewport} />
-}
-
-function TerrainCell(input: {
-  placement: MapPlacement
-  viewport: HomeMapViewport
-}) {
-  return (
-    <span
-      aria-hidden="true"
-      className={styles.terrainCell}
-      data-asset={input.placement.assetId}
-      style={buildTileStyle(input.placement, input.viewport, 1)}
-    />
-  )
 }
 
 function PathCell(input: { placement: MapPlacement; viewport: HomeMapViewport }) {
@@ -121,17 +104,6 @@ function PathCell(input: { placement: MapPlacement; viewport: HomeMapViewport })
       data-asset={input.placement.assetId}
       style={buildPathStyle(input.placement, input.viewport)}
       title={`${input.placement.label} / ${input.placement.assetId}`}
-    />
-  )
-}
-
-function EdgeCell(input: { placement: MapPlacement; viewport: HomeMapViewport }) {
-  return (
-    <span
-      aria-hidden="true"
-      className={styles.edgeCell}
-      data-asset={input.placement.assetId}
-      style={buildTileStyle(input.placement, input.viewport, 3)}
     />
   )
 }
@@ -261,21 +233,6 @@ function buildZonePadStyle(
   }
 }
 
-function buildTileStyle(
-  placement: MapPlacement,
-  viewport: HomeMapViewport,
-  zIndex: number
-): CSSProperties {
-  return {
-    left: (placement.x - viewport.originX) * VIEW_TILE_SIZE,
-    top: (placement.y - viewport.originY) * VIEW_TILE_SIZE,
-    width: VIEW_TILE_SIZE + 1,
-    height: VIEW_TILE_SIZE + 1,
-    opacity: placement.alpha,
-    zIndex,
-  }
-}
-
 function buildPathStyle(
   placement: MapPlacement,
   viewport: HomeMapViewport
@@ -286,10 +243,10 @@ function buildPathStyle(
   const isVertical = placement.assetId === "pathDirtVertical01"
 
   return {
-    left: baseLeft + (isVertical ? 4 : -2),
-    top: baseTop + (isHorizontal ? 4 : -2),
-    width: isVertical ? VIEW_TILE_SIZE - 8 : VIEW_TILE_SIZE + 5,
-    height: isHorizontal ? VIEW_TILE_SIZE - 8 : VIEW_TILE_SIZE + 5,
+    left: baseLeft + (isVertical ? 5 : -3),
+    top: baseTop + (isHorizontal ? 5 : -3),
+    width: isVertical ? VIEW_TILE_SIZE - 10 : VIEW_TILE_SIZE + 7,
+    height: isHorizontal ? VIEW_TILE_SIZE - 10 : VIEW_TILE_SIZE + 7,
     opacity: placement.alpha,
     zIndex: buildPlacementZIndex(placement),
   }
