@@ -6,7 +6,6 @@ import type {
   ButlerProfile,
   ButlerProfileBias,
 } from "@/ai/personality-core/butler-profile-core/butler-profile-gateway"
-import type { GenderAwareBehaviorBias } from "@/ai/personality-core/personality-interpretation-core/interpretation-gateway"
 import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
 
 export type BuildButlerConstructionStyleFromLifeCoreInput = {
