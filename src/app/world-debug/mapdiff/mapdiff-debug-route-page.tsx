@@ -118,6 +118,24 @@ export default function MapdiffDebugRoutePage() {
         />
         <DebugCard title="Runtime" value={debugResult.runtime} />
         <DebugCard
+          title="World Creation Influence Summary"
+          value={debugResult.worldCreationInfluenceTest.summary}
+        />
+        <DebugCard
+          title="World Creation Influence Cases"
+          value={debugResult.worldCreationInfluenceTest.cases.map(
+            (influenceCase) => ({
+              id: influenceCase.id,
+              label: influenceCase.label,
+              input: influenceCase.input,
+              styleSource: influenceCase.runtime.styleSource,
+              butlerConstructionStyle:
+                influenceCase.runtime.butlerConstructionStyle,
+              styleDeltaFromBase: influenceCase.styleDeltaFromBase,
+            })
+          )}
+        />
+        <DebugCard
           title="Initial HomeMapState Summary"
           value={{
             zones: debugResult.initialHomeMapState.zones.map((zone) => ({
