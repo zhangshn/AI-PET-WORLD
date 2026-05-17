@@ -9,12 +9,3 @@
   position: relative;
   width: 100vw;
 }
-
-.worldStage {
-  align-items: center;
-  display: flex;
-  inset: 0;
-  justify-content: center;
-  overflow: hidden;
-  position: absolute;
-}
