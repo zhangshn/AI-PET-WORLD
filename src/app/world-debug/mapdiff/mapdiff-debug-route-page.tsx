@@ -11,31 +11,21 @@ import {
   DEFAULT_CONSTRUCTION_DEBUG_CREATE_WORLD_INPUT,
   type ConstructionDebugButlerPreset,
   type ConstructionDebugPetPreset,
-  type ConstructionDebugScenarioResult,
 } from "@/world/construction/construction-debug-scenario"
 import {
   CREATE_WORLD_STORAGE_KEY,
   parseCreateWorldInput,
 } from "@/world/creation/world-creation-runtime"
-import { buildEnvironmentStateFromHomeMap } from "@/world/environment/environment-gateway"
-import { buildPlacementGeometryAuditReport } from "@/world/geometry-audit/geometry-audit-gateway"
 import {
-  buildButlerIntentDecision,
-  type ButlerIntentContext,
-  type IntentDecision,
-  type PetIntentContext,
-  type WorldIntentContext,
-} from "@/world/intent-system/intent-gateway"
-import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
-import {
-  validateMapDiffs,
-  type MapDiffValidationResult,
-} from "@/world/map-state/map-diff-validator"
-import {
-  buildWorldChangePlan,
-  buildWorldDiffProposal,
-  type WorldChangePlan,
-  type WorldDiffProposal,
+  buildWorldEngineDebugScenario,
+} from "@/world/debug-scenarios/world-debug-scenario-gateway"
+import type { EnvironmentState } from "@/world/environment/environment-gateway"
+import type { PlacementGeometryAuditReport } from "@/world/geometry-audit/geometry-audit-gateway"
+import type { IntentDecision } from "@/world/intent-system/intent-gateway"
+import type { MapDiffValidationResult } from "@/world/map-state/map-diff-validator"
+import type {
+  WorldChangePlan,
+  WorldDiffProposal,
 } from "@/world/world-evolution/world-evolution-gateway"
 
 import styles from "./mapdiff-debug-route-page.styles.module.css"
@@ -78,133 +68,14 @@ export default function MapdiffDebugRoutePage() {
     })
   }, [butlerPreset, createWorldInput, petPreset])
 
-  const initialPlacementGeometryAudit = useMemo(() => {
+  const worldEngineDebugScenario = useMemo(() => {
     if (!debugResult) return null
 
-    return buildPlacementGeometryAuditReport({
-      homeMapState: debugResult.initialHomeMapState,
-      checkedAt: debugResult.initialHomeMapState.updatedAt,
+    return buildWorldEngineDebugScenario({
+      debugResult,
+      petPreset,
     })
-  }, [debugResult])
-
-  const nextPlacementGeometryAudit = useMemo(() => {
-    if (!debugResult) return null
-
-    return buildPlacementGeometryAuditReport({
-      homeMapState: debugResult.constructionCycle.nextHomeMapState,
-      checkedAt: debugResult.constructionCycle.nextHomeMapState.updatedAt,
-    })
-  }, [debugResult])
-
-  const initialEnvironmentState = useMemo(() => {
-    if (!debugResult) return null
-
-    return buildEnvironmentStateFromHomeMap({
-      homeMapState: debugResult.initialHomeMapState,
-      generatedAt: debugResult.initialHomeMapState.updatedAt,
-    })
-  }, [debugResult])
-
-  const nextEnvironmentState = useMemo(() => {
-    if (!debugResult) return null
-
-    return buildEnvironmentStateFromHomeMap({
-      homeMapState: debugResult.constructionCycle.nextHomeMapState,
-      generatedAt: debugResult.constructionCycle.nextHomeMapState.updatedAt,
-    })
-  }, [debugResult])
-
-  const initialButlerIntentDecision = useMemo(() => {
-    if (!debugResult || !initialEnvironmentState) return null
-
-    return buildButlerIntentDecision({
-      butler: buildDebugButlerIntentContext({ debugResult }),
-      pet: buildDebugPetIntentContext({ petPreset }),
-      environment: initialEnvironmentState,
-      world: buildWorldIntentContext({
-        homeMapState: debugResult.initialHomeMapState,
-        worldTick: 0,
-      }),
-    })
-  }, [debugResult, initialEnvironmentState, petPreset])
-
-  const nextButlerIntentDecision = useMemo(() => {
-    if (!debugResult || !nextEnvironmentState) return null
-
-    return buildButlerIntentDecision({
-      butler: buildDebugButlerIntentContext({ debugResult }),
-      pet: buildDebugPetIntentContext({ petPreset }),
-      environment: nextEnvironmentState,
-      world: buildWorldIntentContext({
-        homeMapState: debugResult.constructionCycle.nextHomeMapState,
-        worldTick: 12,
-      }),
-    })
-  }, [debugResult, nextEnvironmentState, petPreset])
-
-  const initialWorldChangePlan = useMemo(() => {
-    if (!debugResult || !initialEnvironmentState || !initialButlerIntentDecision) {
-      return null
-    }
-
-    return buildWorldChangePlan({
-      homeMapState: debugResult.initialHomeMapState,
-      environment: initialEnvironmentState,
-      decision: initialButlerIntentDecision,
-      now: debugResult.initialHomeMapState.updatedAt,
-    })
-  }, [debugResult, initialButlerIntentDecision, initialEnvironmentState])
-
-  const nextWorldChangePlan = useMemo(() => {
-    if (!debugResult || !nextEnvironmentState || !nextButlerIntentDecision) {
-      return null
-    }
-
-    return buildWorldChangePlan({
-      homeMapState: debugResult.constructionCycle.nextHomeMapState,
-      environment: nextEnvironmentState,
-      decision: nextButlerIntentDecision,
-      now: debugResult.constructionCycle.nextHomeMapState.updatedAt,
-    })
-  }, [debugResult, nextButlerIntentDecision, nextEnvironmentState])
-
-  const initialWorldDiffProposal = useMemo(() => {
-    if (!debugResult || !initialWorldChangePlan) return null
-
-    return buildWorldDiffProposal({
-      homeMapState: debugResult.initialHomeMapState,
-      plan: initialWorldChangePlan,
-      now: debugResult.initialHomeMapState.updatedAt,
-    })
-  }, [debugResult, initialWorldChangePlan])
-
-  const nextWorldDiffProposal = useMemo(() => {
-    if (!debugResult || !nextWorldChangePlan) return null
-
-    return buildWorldDiffProposal({
-      homeMapState: debugResult.constructionCycle.nextHomeMapState,
-      plan: nextWorldChangePlan,
-      now: debugResult.constructionCycle.nextHomeMapState.updatedAt,
-    })
-  }, [debugResult, nextWorldChangePlan])
-
-  const initialWorldDiffProposalValidation = useMemo(() => {
-    if (!debugResult || !initialWorldDiffProposal) return null
-
-    return validateMapDiffs({
-      homeMapState: debugResult.initialHomeMapState,
-      mapDiffs: initialWorldDiffProposal.mapDiffs,
-    })
-  }, [debugResult, initialWorldDiffProposal])
-
-  const nextWorldDiffProposalValidation = useMemo(() => {
-    if (!debugResult || !nextWorldDiffProposal) return null
-
-    return validateMapDiffs({
-      homeMapState: debugResult.constructionCycle.nextHomeMapState,
-      mapDiffs: nextWorldDiffProposal.mapDiffs,
-    })
-  }, [debugResult, nextWorldDiffProposal])
+  }, [debugResult, petPreset])
 
   if (!debugResult) {
     return (
@@ -300,46 +171,63 @@ export default function MapdiffDebugRoutePage() {
         />
         <DebugCard
           title="Initial Environment Summary"
-          value={mapEnvironmentSummary(initialEnvironmentState)}
+          value={mapEnvironmentSummary(
+            worldEngineDebugScenario?.initial.environmentState ?? null
+          )}
         />
         <DebugCard
           title="Initial Butler Intent Decision Summary"
-          value={mapIntentDecisionSummary(initialButlerIntentDecision)}
+          value={mapIntentDecisionSummary(
+            worldEngineDebugScenario?.initial.butlerIntentDecision ?? null
+          )}
         />
         <DebugCard
           title="Initial Butler Intent Candidates"
-          value={mapIntentCandidateTable(initialButlerIntentDecision)}
+          value={mapIntentCandidateTable(
+            worldEngineDebugScenario?.initial.butlerIntentDecision ?? null
+          )}
         />
         <DebugCard
           title="Initial World Change Plan"
-          value={mapWorldChangePlan(initialWorldChangePlan)}
+          value={mapWorldChangePlan(
+            worldEngineDebugScenario?.initial.worldChangePlan ?? null
+          )}
         />
         <DebugCard
           title="Initial World Diff Proposal"
-          value={mapWorldDiffProposal(initialWorldDiffProposal)}
+          value={mapWorldDiffProposal(
+            worldEngineDebugScenario?.initial.worldDiffProposal ?? null
+          )}
         />
         <DebugCard
           title="Initial World Diff Proposal Validation"
-          value={mapMapDiffValidationResult(initialWorldDiffProposalValidation)}
+          value={mapMapDiffValidationResult(
+            worldEngineDebugScenario?.initial.worldDiffProposalValidation ??
+              null
+          )}
         />
         <DebugCard
           title="Initial Terrain Cell Sample"
-          value={mapTerrainCellSample(initialEnvironmentState)}
+          value={mapTerrainCellSample(
+            worldEngineDebugScenario?.initial.environmentState ?? null
+          )}
         />
         <DebugCard
           title="Initial Placement Geometry Audit Summary"
-          value={initialPlacementGeometryAudit?.summary}
+          value={
+            worldEngineDebugScenario?.initial.placementGeometryAudit.summary
+          }
         />
         <DebugCard
           title="Initial Placement Geometry Audit Rejected Items"
           value={mapRejectedPlacementGeometryAuditItems(
-            initialPlacementGeometryAudit?.items ?? []
+            worldEngineDebugScenario?.initial.placementGeometryAudit.items ?? []
           )}
         />
         <DebugCard
           title="Initial Placement Geometry Audit Unmapped Sample"
           value={mapUnmappedPlacementGeometryAuditItems(
-            initialPlacementGeometryAudit?.items ?? []
+            worldEngineDebugScenario?.initial.placementGeometryAudit.items ?? []
           )}
         />
         <DebugCard
@@ -371,46 +259,60 @@ export default function MapdiffDebugRoutePage() {
         />
         <DebugCard
           title="Next Environment Summary"
-          value={mapEnvironmentSummary(nextEnvironmentState)}
+          value={mapEnvironmentSummary(
+            worldEngineDebugScenario?.next.environmentState ?? null
+          )}
         />
         <DebugCard
           title="Next Butler Intent Decision Summary"
-          value={mapIntentDecisionSummary(nextButlerIntentDecision)}
+          value={mapIntentDecisionSummary(
+            worldEngineDebugScenario?.next.butlerIntentDecision ?? null
+          )}
         />
         <DebugCard
           title="Next Butler Intent Candidates"
-          value={mapIntentCandidateTable(nextButlerIntentDecision)}
+          value={mapIntentCandidateTable(
+            worldEngineDebugScenario?.next.butlerIntentDecision ?? null
+          )}
         />
         <DebugCard
           title="Next World Change Plan"
-          value={mapWorldChangePlan(nextWorldChangePlan)}
+          value={mapWorldChangePlan(
+            worldEngineDebugScenario?.next.worldChangePlan ?? null
+          )}
         />
         <DebugCard
           title="Next World Diff Proposal"
-          value={mapWorldDiffProposal(nextWorldDiffProposal)}
+          value={mapWorldDiffProposal(
+            worldEngineDebugScenario?.next.worldDiffProposal ?? null
+          )}
         />
         <DebugCard
           title="Next World Diff Proposal Validation"
-          value={mapMapDiffValidationResult(nextWorldDiffProposalValidation)}
+          value={mapMapDiffValidationResult(
+            worldEngineDebugScenario?.next.worldDiffProposalValidation ?? null
+          )}
         />
         <DebugCard
           title="Next Terrain Cell Sample"
-          value={mapTerrainCellSample(nextEnvironmentState)}
+          value={mapTerrainCellSample(
+            worldEngineDebugScenario?.next.environmentState ?? null
+          )}
         />
         <DebugCard
           title="Next Placement Geometry Audit Summary"
-          value={nextPlacementGeometryAudit?.summary}
+          value={worldEngineDebugScenario?.next.placementGeometryAudit.summary}
         />
         <DebugCard
           title="Next Placement Geometry Audit Rejected Items"
           value={mapRejectedPlacementGeometryAuditItems(
-            nextPlacementGeometryAudit?.items ?? []
+            worldEngineDebugScenario?.next.placementGeometryAudit.items ?? []
           )}
         />
         <DebugCard
           title="Next Placement Geometry Audit Unmapped Sample"
           value={mapUnmappedPlacementGeometryAuditItems(
-            nextPlacementGeometryAudit?.items ?? []
+            worldEngineDebugScenario?.next.placementGeometryAudit.items ?? []
           )}
         />
       </section>
@@ -457,7 +359,7 @@ function DebugCard(input: { title: string; value: unknown }) {
 }
 
 function mapEnvironmentSummary(
-  environment: ReturnType<typeof buildEnvironmentStateFromHomeMap> | null
+  environment: EnvironmentState | null
 ) {
   if (!environment) return null
 
@@ -471,9 +373,7 @@ function mapEnvironmentSummary(
   }
 }
 
-function mapTerrainCellSample(
-  environment: ReturnType<typeof buildEnvironmentStateFromHomeMap> | null
-) {
+function mapTerrainCellSample(environment: EnvironmentState | null) {
   if (!environment) return []
 
   return Object.values(environment.terrain.cells)
@@ -487,67 +387,6 @@ function mapTerrainCellSample(
       fertility: cell.fertility,
       tags: cell.tags.slice(0, 8),
     }))
-}
-
-function buildDebugPetIntentContext(input: {
-  petPreset: ConstructionDebugPetPreset
-}): PetIntentContext {
-  if (input.petPreset === "tired_hungry") {
-    return {
-      energy: 28,
-      hunger: 72,
-      mood: "curious",
-      currentZoneType: "pet_arrival",
-      recentAction: "arrived",
-      tags: ["mapdiff_debug_pet", "tired_hungry_pet"],
-    }
-  }
-
-  if (input.petPreset === "stable") {
-    return {
-      energy: 68,
-      hunger: 32,
-      mood: "stable",
-      currentZoneType: "initial_care",
-      recentAction: "observing",
-      tags: ["mapdiff_debug_pet", "stable_pet"],
-    }
-  }
-
-  return {
-    energy: 22,
-    hunger: 38,
-    mood: "quiet",
-    currentZoneType: "pet_rest",
-    recentAction: "resting",
-    tags: ["mapdiff_debug_pet", "resting_pet"],
-  }
-}
-
-function buildDebugButlerIntentContext(input: {
-  debugResult: ConstructionDebugScenarioResult
-}): ButlerIntentContext {
-  return {
-    mood: "focused",
-    currentTask: "observe_home",
-    constructionStyle: input.debugResult.runtime.butlerConstructionStyle,
-    tags: ["mapdiff_debug_butler"],
-  }
-}
-
-function buildWorldIntentContext(input: {
-  homeMapState: HomeMapState
-  worldTick: number
-}): WorldIntentContext {
-  return {
-    worldTick: input.worldTick,
-    spacePressure: input.homeMapState.resources.spacePressure,
-    constructionPlanCount: input.homeMapState.constructionPlans.length,
-    activeConstructionPlanCount: input.homeMapState.constructionPlans.filter(
-      (plan) => plan.status === "active"
-    ).length,
-    tags: ["mapdiff_debug_world_context"],
-  }
 }
 
 function mapIntentDecisionSummary(decision: IntentDecision | null) {
@@ -659,9 +498,7 @@ function mapMapDiffForDebug(
 }
 
 function mapRejectedPlacementGeometryAuditItems(
-  items: NonNullable<
-    ReturnType<typeof buildPlacementGeometryAuditReport>
-  >["items"]
+  items: PlacementGeometryAuditReport["items"]
 ) {
   return items
     .filter((item) => !item.ruleAccepted)
@@ -678,9 +515,7 @@ function mapRejectedPlacementGeometryAuditItems(
 }
 
 function mapUnmappedPlacementGeometryAuditItems(
-  items: NonNullable<
-    ReturnType<typeof buildPlacementGeometryAuditReport>
-  >["items"]
+  items: PlacementGeometryAuditReport["items"]
 ) {
   return items
     .filter((item) => item.objectType === null)
