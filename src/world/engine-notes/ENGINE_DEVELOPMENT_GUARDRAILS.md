@@ -22,3 +22,14 @@
 ## 架构判断
 
 世界不是贴图摆放。世界由规则、点线面、生态、意图和变化共同推导。任何新的视觉呈现都必须服从 WorldState 和规则层输出，不能反向塑造世界事实。
+
+## P5 世界变化层补充红线
+
+1. IntentDecision 仍然不能直接修改 HomeMapState。
+2. WorldChangePlan 只是计划层。
+3. WorldDiffProposal 只是提案层。
+4. validateMapDiffs 只校验，不写入。
+5. WorldEvolutionAuditReport 只判断风险与安全性。
+6. WorldEvolutionExecutionResult 当前只用于 debug，不代表正式世界已经自动写入。
+7. 正式写入必须等 P7 MVP 闭环阶段再决定。
+8. Renderer 仍然不能读取 proposal 或 execution 直接画图，必须读取最终 WorldState。
