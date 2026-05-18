@@ -12,6 +12,18 @@ import type {
 export function buildWorldEvolutionExecution(
   input: BuildWorldEvolutionExecutionInput
 ): WorldEvolutionExecutionResult {
+  if (input.proposal.mapDiffs.length === 0) {
+    return {
+      id: buildExecutionId(input),
+      status: "skipped",
+      appliedMapDiffCount: 0,
+      nextHomeMapState: input.homeMapState,
+      messages: ["世界变化未执行：没有可应用的 MapDiff。"],
+      blockedReasons: ["proposal.mapDiffs 为空"],
+      tags: ["world_evolution_execution_v0", "execution_skipped"],
+    }
+  }
+
   if (input.audit.summary.canApplySafely !== true) {
     return {
       id: buildExecutionId(input),
@@ -26,18 +38,6 @@ export function buildWorldEvolutionExecution(
         ...input.audit.notes,
       ],
       tags: ["world_evolution_execution_v0", "execution_blocked"],
-    }
-  }
-
-  if (input.proposal.mapDiffs.length === 0) {
-    return {
-      id: buildExecutionId(input),
-      status: "skipped",
-      appliedMapDiffCount: 0,
-      nextHomeMapState: input.homeMapState,
-      messages: ["世界变化未执行：没有可应用的 MapDiff。"],
-      blockedReasons: ["proposal.mapDiffs 为空"],
-      tags: ["world_evolution_execution_v0", "execution_skipped"],
     }
   }
 
