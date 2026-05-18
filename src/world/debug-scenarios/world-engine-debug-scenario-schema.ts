@@ -14,6 +14,7 @@ import type {
   WorldChangePlan,
   WorldDiffProposal,
 } from "@/world/world-evolution/world-evolution-gateway"
+import type { WorldEvolutionAuditReport } from "@/world/world-evolution-audit/world-evolution-audit-gateway"
 
 export type WorldEngineDebugStageResult = {
   environmentState: EnvironmentState
@@ -22,6 +23,7 @@ export type WorldEngineDebugStageResult = {
   worldChangePlan: WorldChangePlan
   worldDiffProposal: WorldDiffProposal
   worldDiffProposalValidation: MapDiffValidationResult
+  worldEvolutionAudit: WorldEvolutionAuditReport
 }
 
 export type WorldEngineDebugScenarioResult = {

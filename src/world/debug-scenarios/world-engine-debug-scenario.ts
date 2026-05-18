@@ -22,6 +22,7 @@ import {
   buildWorldChangePlan,
   buildWorldDiffProposal,
 } from "@/world/world-evolution/world-evolution-gateway"
+import { buildWorldEvolutionAuditReport } from "@/world/world-evolution-audit/world-evolution-audit-gateway"
 
 import type {
   BuildWorldEngineDebugScenarioInput,
@@ -89,6 +90,13 @@ function buildWorldEngineDebugStage(input: {
     homeMapState: input.homeMapState,
     mapDiffs: worldDiffProposal.mapDiffs,
   })
+  const worldEvolutionAudit = buildWorldEvolutionAuditReport({
+    checkedAt: input.homeMapState.updatedAt,
+    decision: butlerIntentDecision,
+    plan: worldChangePlan,
+    proposal: worldDiffProposal,
+    validation: worldDiffProposalValidation,
+  })
 
   return {
     environmentState,
@@ -97,6 +105,7 @@ function buildWorldEngineDebugStage(input: {
     worldChangePlan,
     worldDiffProposal,
     worldDiffProposalValidation,
+    worldEvolutionAudit,
   }
 }
 

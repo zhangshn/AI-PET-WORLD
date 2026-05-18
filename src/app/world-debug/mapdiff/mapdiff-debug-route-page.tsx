@@ -27,6 +27,7 @@ import type {
   WorldChangePlan,
   WorldDiffProposal,
 } from "@/world/world-evolution/world-evolution-gateway"
+import type { WorldEvolutionAuditReport } from "@/world/world-evolution-audit/world-evolution-audit-gateway"
 
 import styles from "./mapdiff-debug-route-page.styles.module.css"
 
@@ -207,6 +208,12 @@ export default function MapdiffDebugRoutePage() {
           )}
         />
         <DebugCard
+          title="Initial World Evolution Audit"
+          value={mapWorldEvolutionAudit(
+            worldEngineDebugScenario?.initial.worldEvolutionAudit ?? null
+          )}
+        />
+        <DebugCard
           title="Initial Terrain Cell Sample"
           value={mapTerrainCellSample(
             worldEngineDebugScenario?.initial.environmentState ?? null
@@ -291,6 +298,12 @@ export default function MapdiffDebugRoutePage() {
           title="Next World Diff Proposal Validation"
           value={mapMapDiffValidationResult(
             worldEngineDebugScenario?.next.worldDiffProposalValidation ?? null
+          )}
+        />
+        <DebugCard
+          title="Next World Evolution Audit"
+          value={mapWorldEvolutionAudit(
+            worldEngineDebugScenario?.next.worldEvolutionAudit ?? null
           )}
         />
         <DebugCard
@@ -471,6 +484,21 @@ function mapMapDiffValidationResult(
       operation: item.diff.operation,
       tags: item.tags,
     })),
+  }
+}
+
+function mapWorldEvolutionAudit(report: WorldEvolutionAuditReport | null) {
+  if (!report) return null
+
+  return {
+    id: report.id,
+    checkedAt: report.checkedAt,
+    summary: report.summary,
+    blockers: report.blockers,
+    warnings: report.warnings,
+    rejectedReasons: report.rejectedReasons,
+    notes: report.notes,
+    tags: report.tags,
   }
 }
 
