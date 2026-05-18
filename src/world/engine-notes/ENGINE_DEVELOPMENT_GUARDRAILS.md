@@ -55,3 +55,14 @@
 6. 正式接入前必须通过 debug 页验证 VisualState 与 DrawCommand 稳定。
 7. HomeMapRenderer placeholder 在正式接入前继续保留。
 8. 不允许为了“看起来像世界”恢复旧贴图假世界。
+
+## P6.8 正式 ProceduralRenderer 组件设计红线
+
+1. P6.8 只允许写设计文档，不允许新增正式 Renderer 组件。
+2. 正式 ProceduralRenderer 未来只能读取 RenderableWorldSnapshot。
+3. 正式 ProceduralRenderer 不能读取 debug scenario。
+4. 正式 ProceduralRenderer 不能读取 IntentDecision / WorldChangePlan / WorldDiffProposal / Audit / Execution。
+5. 正式 ProceduralRenderer 不能从 assetId 推导贴图或假对象。
+6. 正式 ProceduralRenderer 不能生成 placement 或修改 HomeMapState。
+7. Debug wireframe 不能直接搬进正式 /world。
+8. HomeMapRenderer placeholder 必须保留到 P6.12 之后再评估替换。
