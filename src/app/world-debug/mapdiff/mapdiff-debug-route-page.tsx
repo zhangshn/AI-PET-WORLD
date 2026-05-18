@@ -16,6 +16,7 @@ import {
   CREATE_WORLD_STORAGE_KEY,
   parseCreateWorldInput,
 } from "@/world/creation/world-creation-runtime"
+import { buildEnvironmentStateFromHomeMap } from "@/world/environment/environment-gateway"
 import { buildPlacementGeometryAuditReport } from "@/world/geometry-audit/geometry-audit-gateway"
 
 import styles from "./mapdiff-debug-route-page.styles.module.css"
@@ -73,6 +74,24 @@ export default function MapdiffDebugRoutePage() {
     return buildPlacementGeometryAuditReport({
       homeMapState: debugResult.constructionCycle.nextHomeMapState,
       checkedAt: debugResult.constructionCycle.nextHomeMapState.updatedAt,
+    })
+  }, [debugResult])
+
+  const initialEnvironmentState = useMemo(() => {
+    if (!debugResult) return null
+
+    return buildEnvironmentStateFromHomeMap({
+      homeMapState: debugResult.initialHomeMapState,
+      generatedAt: debugResult.initialHomeMapState.updatedAt,
+    })
+  }, [debugResult])
+
+  const nextEnvironmentState = useMemo(() => {
+    if (!debugResult) return null
+
+    return buildEnvironmentStateFromHomeMap({
+      homeMapState: debugResult.constructionCycle.nextHomeMapState,
+      generatedAt: debugResult.constructionCycle.nextHomeMapState.updatedAt,
     })
   }, [debugResult])
 
@@ -169,6 +188,14 @@ export default function MapdiffDebugRoutePage() {
           }}
         />
         <DebugCard
+          title="Initial Environment Summary"
+          value={mapEnvironmentSummary(initialEnvironmentState)}
+        />
+        <DebugCard
+          title="Initial Terrain Cell Sample"
+          value={mapTerrainCellSample(initialEnvironmentState)}
+        />
+        <DebugCard
           title="Initial Placement Geometry Audit Summary"
           value={initialPlacementGeometryAudit?.summary}
         />
@@ -210,6 +237,14 @@ export default function MapdiffDebugRoutePage() {
               debugResult.constructionCycle.nextHomeMapState.mapDiffs.length,
             messages: debugResult.constructionCycle.messages,
           }}
+        />
+        <DebugCard
+          title="Next Environment Summary"
+          value={mapEnvironmentSummary(nextEnvironmentState)}
+        />
+        <DebugCard
+          title="Next Terrain Cell Sample"
+          value={mapTerrainCellSample(nextEnvironmentState)}
         />
         <DebugCard
           title="Next Placement Geometry Audit Summary"
@@ -268,6 +303,39 @@ function DebugCard(input: { title: string; value: unknown }) {
       <pre>{JSON.stringify(input.value, null, 2)}</pre>
     </article>
   )
+}
+
+function mapEnvironmentSummary(
+  environment: ReturnType<typeof buildEnvironmentStateFromHomeMap> | null
+) {
+  if (!environment) return null
+
+  return {
+    worldId: environment.worldId,
+    generatedAt: environment.generatedAt,
+    tags: environment.tags,
+    terrainSummary: environment.terrain.summary,
+    ecology: environment.ecology,
+    materials: environment.materials,
+  }
+}
+
+function mapTerrainCellSample(
+  environment: ReturnType<typeof buildEnvironmentStateFromHomeMap> | null
+) {
+  if (!environment) return []
+
+  return Object.values(environment.terrain.cells)
+    .slice(0, 20)
+    .map((cell) => ({
+      x: cell.x,
+      y: cell.y,
+      biome: cell.biome,
+      surfaceType: cell.surfaceType,
+      moisture: cell.moisture,
+      fertility: cell.fertility,
+      tags: cell.tags.slice(0, 8),
+    }))
 }
 
 function mapRejectedPlacementGeometryAuditItems(
