@@ -4,3 +4,4 @@
 
 export * from "./renderer-schema"
 export * from "./visual-state-builder"
+export * from "./draw-command-builder"
