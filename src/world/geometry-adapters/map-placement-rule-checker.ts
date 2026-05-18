@@ -97,13 +97,8 @@ export function checkPlacementWorldRule(
     }
   }
 
-  const surfaceType =
-    input.surfaceType ?? inferSurfaceTypeFromPlacement(input.placement)
-  const supportSurfaceType =
-    input.supportSurfaceType ??
-    (SUPPORT_INFERRED_LAYERS.has(input.placement.layer)
-      ? inferSurfaceTypeFromPlacement(input.placement)
-      : undefined)
+  const surfaceType = inferRuleSurfaceType(input, objectType)
+  const supportSurfaceType = inferRuleSupportSurfaceType(input, objectType)
   const checkResult = checkWorldObjectRule({
     objectType,
     surfaceType,
@@ -123,4 +118,38 @@ export function checkPlacementWorldRule(
 
 function hasTag(tags: string[], expectedTag: string): boolean {
   return tags.includes(expectedTag)
+}
+
+function inferRuleSurfaceType(
+  input: CheckPlacementWorldRuleInput,
+  objectType: WorldObjectType
+): WorldSurfaceType {
+  if (input.surfaceType) {
+    return input.surfaceType
+  }
+
+  if (objectType === "house_foundation") {
+    return "grass"
+  }
+
+  return inferSurfaceTypeFromPlacement(input.placement)
+}
+
+function inferRuleSupportSurfaceType(
+  input: CheckPlacementWorldRuleInput,
+  objectType: WorldObjectType
+): WorldSurfaceType | undefined {
+  if (input.supportSurfaceType) {
+    return input.supportSurfaceType
+  }
+
+  if (objectType === "house_foundation") {
+    return "grass"
+  }
+
+  if (SUPPORT_INFERRED_LAYERS.has(input.placement.layer)) {
+    return inferSurfaceTypeFromPlacement(input.placement)
+  }
+
+  return undefined
 }
