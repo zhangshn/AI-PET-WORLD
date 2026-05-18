@@ -27,6 +27,16 @@ import {
   type WorldIntentContext,
 } from "@/world/intent-system/intent-gateway"
 import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
+import {
+  validateMapDiffs,
+  type MapDiffValidationResult,
+} from "@/world/map-state/map-diff-validator"
+import {
+  buildWorldChangePlan,
+  buildWorldDiffProposal,
+  type WorldChangePlan,
+  type WorldDiffProposal,
+} from "@/world/world-evolution/world-evolution-gateway"
 
 import styles from "./mapdiff-debug-route-page.styles.module.css"
 
@@ -131,6 +141,70 @@ export default function MapdiffDebugRoutePage() {
       }),
     })
   }, [debugResult, nextEnvironmentState, petPreset])
+
+  const initialWorldChangePlan = useMemo(() => {
+    if (!debugResult || !initialEnvironmentState || !initialButlerIntentDecision) {
+      return null
+    }
+
+    return buildWorldChangePlan({
+      homeMapState: debugResult.initialHomeMapState,
+      environment: initialEnvironmentState,
+      decision: initialButlerIntentDecision,
+      now: debugResult.initialHomeMapState.updatedAt,
+    })
+  }, [debugResult, initialButlerIntentDecision, initialEnvironmentState])
+
+  const nextWorldChangePlan = useMemo(() => {
+    if (!debugResult || !nextEnvironmentState || !nextButlerIntentDecision) {
+      return null
+    }
+
+    return buildWorldChangePlan({
+      homeMapState: debugResult.constructionCycle.nextHomeMapState,
+      environment: nextEnvironmentState,
+      decision: nextButlerIntentDecision,
+      now: debugResult.constructionCycle.nextHomeMapState.updatedAt,
+    })
+  }, [debugResult, nextButlerIntentDecision, nextEnvironmentState])
+
+  const initialWorldDiffProposal = useMemo(() => {
+    if (!debugResult || !initialWorldChangePlan) return null
+
+    return buildWorldDiffProposal({
+      homeMapState: debugResult.initialHomeMapState,
+      plan: initialWorldChangePlan,
+      now: debugResult.initialHomeMapState.updatedAt,
+    })
+  }, [debugResult, initialWorldChangePlan])
+
+  const nextWorldDiffProposal = useMemo(() => {
+    if (!debugResult || !nextWorldChangePlan) return null
+
+    return buildWorldDiffProposal({
+      homeMapState: debugResult.constructionCycle.nextHomeMapState,
+      plan: nextWorldChangePlan,
+      now: debugResult.constructionCycle.nextHomeMapState.updatedAt,
+    })
+  }, [debugResult, nextWorldChangePlan])
+
+  const initialWorldDiffProposalValidation = useMemo(() => {
+    if (!debugResult || !initialWorldDiffProposal) return null
+
+    return validateMapDiffs({
+      homeMapState: debugResult.initialHomeMapState,
+      mapDiffs: initialWorldDiffProposal.mapDiffs,
+    })
+  }, [debugResult, initialWorldDiffProposal])
+
+  const nextWorldDiffProposalValidation = useMemo(() => {
+    if (!debugResult || !nextWorldDiffProposal) return null
+
+    return validateMapDiffs({
+      homeMapState: debugResult.constructionCycle.nextHomeMapState,
+      mapDiffs: nextWorldDiffProposal.mapDiffs,
+    })
+  }, [debugResult, nextWorldDiffProposal])
 
   if (!debugResult) {
     return (
@@ -237,6 +311,18 @@ export default function MapdiffDebugRoutePage() {
           value={mapIntentCandidateTable(initialButlerIntentDecision)}
         />
         <DebugCard
+          title="Initial World Change Plan"
+          value={mapWorldChangePlan(initialWorldChangePlan)}
+        />
+        <DebugCard
+          title="Initial World Diff Proposal"
+          value={mapWorldDiffProposal(initialWorldDiffProposal)}
+        />
+        <DebugCard
+          title="Initial World Diff Proposal Validation"
+          value={mapMapDiffValidationResult(initialWorldDiffProposalValidation)}
+        />
+        <DebugCard
           title="Initial Terrain Cell Sample"
           value={mapTerrainCellSample(initialEnvironmentState)}
         />
@@ -294,6 +380,18 @@ export default function MapdiffDebugRoutePage() {
         <DebugCard
           title="Next Butler Intent Candidates"
           value={mapIntentCandidateTable(nextButlerIntentDecision)}
+        />
+        <DebugCard
+          title="Next World Change Plan"
+          value={mapWorldChangePlan(nextWorldChangePlan)}
+        />
+        <DebugCard
+          title="Next World Diff Proposal"
+          value={mapWorldDiffProposal(nextWorldDiffProposal)}
+        />
+        <DebugCard
+          title="Next World Diff Proposal Validation"
+          value={mapMapDiffValidationResult(nextWorldDiffProposalValidation)}
         />
         <DebugCard
           title="Next Terrain Cell Sample"
@@ -482,6 +580,82 @@ function mapIntentCandidateTable(decision: IntentDecision | null) {
     blockers: candidate.blockers,
     reason: candidate.reason,
   }))
+}
+
+function mapWorldChangePlan(plan: WorldChangePlan | null) {
+  if (!plan) return null
+
+  return {
+    id: plan.id,
+    type: plan.type,
+    status: plan.status,
+    sourceIntentType: plan.sourceIntentType,
+    sourceIntentScore: plan.sourceIntentScore,
+    shouldGenerateDiff: plan.shouldGenerateDiff,
+    target: plan.target,
+    reason: plan.reason,
+    blockers: plan.blockers,
+    tags: plan.tags,
+  }
+}
+
+function mapWorldDiffProposal(proposal: WorldDiffProposal | null) {
+  if (!proposal) return null
+
+  return {
+    id: proposal.id,
+    type: proposal.type,
+    planId: proposal.planId,
+    acceptedForPlanning: proposal.acceptedForPlanning,
+    mapDiffCount: proposal.mapDiffs.length,
+    reason: proposal.reason,
+    warnings: proposal.warnings,
+    tags: proposal.tags,
+    mapDiffs: proposal.mapDiffs.map(mapMapDiffForDebug),
+  }
+}
+
+function mapMapDiffValidationResult(
+  validation: MapDiffValidationResult | null
+) {
+  if (!validation) return null
+
+  return {
+    acceptedCount: validation.acceptedDiffs.length,
+    rejectedCount: validation.rejectedDiffs.length,
+    warnings: validation.warnings,
+    acceptedDiffs: validation.acceptedDiffs.map(mapMapDiffForDebug),
+    rejectedDiffs: validation.rejectedDiffs.map((item) => ({
+      reason: item.reason,
+      diffId: item.diff.id,
+      placementId: item.diff.placementId,
+      operation: item.diff.operation,
+      tags: item.tags,
+    })),
+  }
+}
+
+function mapMapDiffForDebug(
+  diff: MapDiffValidationResult["acceptedDiffs"][number]
+) {
+  return {
+    id: diff.id,
+    operation: diff.operation,
+    placementId: diff.placementId,
+    reason: diff.reason,
+    tags: diff.tags,
+    placement: diff.placement
+      ? {
+          id: diff.placement.id,
+          assetId: diff.placement.assetId,
+          x: diff.placement.x,
+          y: diff.placement.y,
+          layer: diff.placement.layer,
+          label: diff.placement.label,
+          tags: diff.placement.tags,
+        }
+      : null,
+  }
 }
 
 function mapRejectedPlacementGeometryAuditItems(
