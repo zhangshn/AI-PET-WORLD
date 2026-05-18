@@ -23,6 +23,7 @@ import {
   buildWorldDiffProposal,
 } from "@/world/world-evolution/world-evolution-gateway"
 import { buildWorldEvolutionAuditReport } from "@/world/world-evolution-audit/world-evolution-audit-gateway"
+import { buildWorldEvolutionExecution } from "@/world/world-evolution-executor/world-evolution-executor-gateway"
 
 import type {
   BuildWorldEngineDebugScenarioInput,
@@ -97,6 +98,12 @@ function buildWorldEngineDebugStage(input: {
     proposal: worldDiffProposal,
     validation: worldDiffProposalValidation,
   })
+  const worldEvolutionExecution = buildWorldEvolutionExecution({
+    homeMapState: input.homeMapState,
+    proposal: worldDiffProposal,
+    audit: worldEvolutionAudit,
+    now: input.homeMapState.updatedAt,
+  })
 
   return {
     environmentState,
@@ -106,6 +113,7 @@ function buildWorldEngineDebugStage(input: {
     worldDiffProposal,
     worldDiffProposalValidation,
     worldEvolutionAudit,
+    worldEvolutionExecution,
   }
 }
 

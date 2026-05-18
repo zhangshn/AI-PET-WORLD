@@ -28,6 +28,7 @@ import type {
   WorldDiffProposal,
 } from "@/world/world-evolution/world-evolution-gateway"
 import type { WorldEvolutionAuditReport } from "@/world/world-evolution-audit/world-evolution-audit-gateway"
+import type { WorldEvolutionExecutionResult } from "@/world/world-evolution-executor/world-evolution-executor-gateway"
 
 import styles from "./mapdiff-debug-route-page.styles.module.css"
 
@@ -214,6 +215,12 @@ export default function MapdiffDebugRoutePage() {
           )}
         />
         <DebugCard
+          title="Initial World Evolution Execution"
+          value={mapWorldEvolutionExecution(
+            worldEngineDebugScenario?.initial.worldEvolutionExecution ?? null
+          )}
+        />
+        <DebugCard
           title="Initial Terrain Cell Sample"
           value={mapTerrainCellSample(
             worldEngineDebugScenario?.initial.environmentState ?? null
@@ -304,6 +311,12 @@ export default function MapdiffDebugRoutePage() {
           title="Next World Evolution Audit"
           value={mapWorldEvolutionAudit(
             worldEngineDebugScenario?.next.worldEvolutionAudit ?? null
+          )}
+        />
+        <DebugCard
+          title="Next World Evolution Execution"
+          value={mapWorldEvolutionExecution(
+            worldEngineDebugScenario?.next.worldEvolutionExecution ?? null
           )}
         />
         <DebugCard
@@ -499,6 +512,26 @@ function mapWorldEvolutionAudit(report: WorldEvolutionAuditReport | null) {
     rejectedReasons: report.rejectedReasons,
     notes: report.notes,
     tags: report.tags,
+  }
+}
+
+function mapWorldEvolutionExecution(
+  result: WorldEvolutionExecutionResult | null
+) {
+  if (!result) return null
+
+  return {
+    id: result.id,
+    status: result.status,
+    appliedMapDiffCount: result.appliedMapDiffCount,
+    messages: result.messages,
+    blockedReasons: result.blockedReasons,
+    tags: result.tags,
+    nextHomeMapStateSummary: {
+      placementCount: result.nextHomeMapState.placements.length,
+      mapDiffCount: result.nextHomeMapState.mapDiffs.length,
+      updatedAt: result.nextHomeMapState.updatedAt,
+    },
   }
 }
 
