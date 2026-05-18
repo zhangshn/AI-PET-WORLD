@@ -16,6 +16,7 @@ import {
   CREATE_WORLD_STORAGE_KEY,
   parseCreateWorldInput,
 } from "@/world/creation/world-creation-runtime"
+import { buildPlacementGeometryAuditReport } from "@/world/geometry-audit/geometry-audit-gateway"
 
 import styles from "./mapdiff-debug-route-page.styles.module.css"
 
@@ -56,6 +57,24 @@ export default function MapdiffDebugRoutePage() {
       butlerPreset,
     })
   }, [butlerPreset, createWorldInput, petPreset])
+
+  const initialPlacementGeometryAudit = useMemo(() => {
+    if (!debugResult) return null
+
+    return buildPlacementGeometryAuditReport({
+      homeMapState: debugResult.initialHomeMapState,
+      checkedAt: debugResult.initialHomeMapState.updatedAt,
+    })
+  }, [debugResult])
+
+  const nextPlacementGeometryAudit = useMemo(() => {
+    if (!debugResult) return null
+
+    return buildPlacementGeometryAuditReport({
+      homeMapState: debugResult.constructionCycle.nextHomeMapState,
+      checkedAt: debugResult.constructionCycle.nextHomeMapState.updatedAt,
+    })
+  }, [debugResult])
 
   if (!debugResult) {
     return (
@@ -150,6 +169,22 @@ export default function MapdiffDebugRoutePage() {
           }}
         />
         <DebugCard
+          title="Initial Placement Geometry Audit Summary"
+          value={initialPlacementGeometryAudit?.summary}
+        />
+        <DebugCard
+          title="Initial Placement Geometry Audit Rejected Items"
+          value={mapRejectedPlacementGeometryAuditItems(
+            initialPlacementGeometryAudit?.items ?? []
+          )}
+        />
+        <DebugCard
+          title="Initial Placement Geometry Audit Unmapped Sample"
+          value={mapUnmappedPlacementGeometryAuditItems(
+            initialPlacementGeometryAudit?.items ?? []
+          )}
+        />
+        <DebugCard
           title="ConstructionIntent[]"
           value={debugResult.constructionCycle.intents}
         />
@@ -175,6 +210,22 @@ export default function MapdiffDebugRoutePage() {
               debugResult.constructionCycle.nextHomeMapState.mapDiffs.length,
             messages: debugResult.constructionCycle.messages,
           }}
+        />
+        <DebugCard
+          title="Next Placement Geometry Audit Summary"
+          value={nextPlacementGeometryAudit?.summary}
+        />
+        <DebugCard
+          title="Next Placement Geometry Audit Rejected Items"
+          value={mapRejectedPlacementGeometryAuditItems(
+            nextPlacementGeometryAudit?.items ?? []
+          )}
+        />
+        <DebugCard
+          title="Next Placement Geometry Audit Unmapped Sample"
+          value={mapUnmappedPlacementGeometryAuditItems(
+            nextPlacementGeometryAudit?.items ?? []
+          )}
         />
       </section>
 
@@ -217,6 +268,42 @@ function DebugCard(input: { title: string; value: unknown }) {
       <pre>{JSON.stringify(input.value, null, 2)}</pre>
     </article>
   )
+}
+
+function mapRejectedPlacementGeometryAuditItems(
+  items: NonNullable<
+    ReturnType<typeof buildPlacementGeometryAuditReport>
+  >["items"]
+) {
+  return items
+    .filter((item) => !item.ruleAccepted)
+    .map((item) => ({
+      placementId: item.placementId,
+      label: item.label,
+      layer: item.layer,
+      assetId: item.assetId,
+      objectType: item.objectType,
+      ruleReason: item.ruleReason,
+      ruleMessage: item.ruleMessage,
+      tags: item.tags,
+    }))
+}
+
+function mapUnmappedPlacementGeometryAuditItems(
+  items: NonNullable<
+    ReturnType<typeof buildPlacementGeometryAuditReport>
+  >["items"]
+) {
+  return items
+    .filter((item) => item.objectType === null)
+    .slice(0, 20)
+    .map((item) => ({
+      placementId: item.placementId,
+      label: item.label,
+      layer: item.layer,
+      assetId: item.assetId,
+      tags: item.tags,
+    }))
 }
 
 function subscribeCreateWorldInput(onStoreChange: () => void): () => void {
