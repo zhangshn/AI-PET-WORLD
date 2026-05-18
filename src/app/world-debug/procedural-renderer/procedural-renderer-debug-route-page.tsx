@@ -27,6 +27,7 @@ import {
 } from "@/world/rendering/renderer-gateway"
 
 import styles from "../mapdiff/mapdiff-debug-route-page.styles.module.css"
+import { ProceduralRendererWireframePreview } from "./procedural-renderer-wireframe-preview"
 
 const CREATE_WORLD_INPUT_PENDING = "__ai_pet_world_create_input_pending__"
 const CREATE_WORLD_INPUT_EMPTY = "__ai_pet_world_create_input_empty__"
@@ -137,7 +138,7 @@ export default function ProceduralRendererDebugRoutePage() {
         <div className={styles.eyebrow}>AI-PET-WORLD DEBUG</div>
         <h1 className={styles.title}>ProceduralRenderer v0 JSON 调试</h1>
         <p className={styles.description}>
-          这个页面只展示 VisualState 与 DrawCommand JSON，不绘制画面，不进入正式 /world。
+          这个页面展示 VisualState、DrawCommand JSON，以及基于 DrawCommand 的 debug 线框预览；不进入正式 /world。
         </p>
       </header>
 
@@ -171,6 +172,17 @@ export default function ProceduralRendererDebugRoutePage() {
             <option value="aesthetic">aesthetic</option>
           </select>
         </label>
+      </section>
+
+      <section className={styles.grid}>
+        <ProceduralRendererWireframePreview
+          title="Initial ProceduralRenderer Wireframe Preview"
+          snapshot={initialRenderableWorldSnapshot}
+        />
+        <ProceduralRendererWireframePreview
+          title="Next ProceduralRenderer Wireframe Preview"
+          snapshot={nextRenderableWorldSnapshot}
+        />
       </section>
 
       <section className={styles.grid}>
