@@ -44,3 +44,14 @@
 6. Renderer 不能直接修改 HomeMapState。
 7. Renderer 不能替代 WorldEngine。
 8. P6 第一阶段只允许做 debug visual，不允许追求漂亮画面。
+
+## P6.7 正式世界接入评估红线
+
+1. 正式 /world 不能直接接 debug wireframe。
+2. 正式 /world 不能直接使用 /world-debug/procedural-renderer 的页面组件。
+3. 正式 /world 接入前，必须先有正式 ProceduralRenderer 组件设计。
+4. 正式 ProceduralRenderer 只能读取 RenderableWorldSnapshot 或最终 VisualState。
+5. 正式 ProceduralRenderer 不能读取 IntentDecision / WorldChangePlan / WorldDiffProposal / Audit / Execution。
+6. 正式接入前必须通过 debug 页验证 VisualState 与 DrawCommand 稳定。
+7. HomeMapRenderer placeholder 在正式接入前继续保留。
+8. 不允许为了“看起来像世界”恢复旧贴图假世界。
