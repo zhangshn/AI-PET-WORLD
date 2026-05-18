@@ -3,3 +3,4 @@
  */
 
 export * from "./renderer-schema"
+export * from "./visual-state-builder"
