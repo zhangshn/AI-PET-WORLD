@@ -23,6 +23,7 @@ import type { EnvironmentState } from "@/world/environment/environment-gateway"
 import type { PlacementGeometryAuditReport } from "@/world/geometry-audit/geometry-audit-gateway"
 import type { IntentDecision } from "@/world/intent-system/intent-gateway"
 import type { MapDiffValidationResult } from "@/world/map-state/map-diff-validator"
+import type { WorldEngineChainAuditReport } from "@/world/world-engine-chain-audit/world-engine-chain-audit-gateway"
 import type {
   WorldChangePlan,
   WorldDiffProposal,
@@ -178,6 +179,12 @@ export default function MapdiffDebugRoutePage() {
           )}
         />
         <DebugCard
+          title="Initial World Engine Chain Audit"
+          value={mapWorldEngineChainAudit(
+            worldEngineDebugScenario?.initial.worldEngineChainAudit ?? null
+          )}
+        />
+        <DebugCard
           title="Initial Butler Intent Decision Summary"
           value={mapIntentDecisionSummary(
             worldEngineDebugScenario?.initial.butlerIntentDecision ?? null
@@ -275,6 +282,12 @@ export default function MapdiffDebugRoutePage() {
           title="Next Environment Summary"
           value={mapEnvironmentSummary(
             worldEngineDebugScenario?.next.environmentState ?? null
+          )}
+        />
+        <DebugCard
+          title="Next World Engine Chain Audit"
+          value={mapWorldEngineChainAudit(
+            worldEngineDebugScenario?.next.worldEngineChainAudit ?? null
           )}
         />
         <DebugCard
@@ -532,6 +545,22 @@ function mapWorldEvolutionExecution(
       mapDiffCount: result.nextHomeMapState.mapDiffs.length,
       updatedAt: result.nextHomeMapState.updatedAt,
     },
+  }
+}
+
+function mapWorldEngineChainAudit(report: WorldEngineChainAuditReport | null) {
+  if (!report) return null
+
+  return {
+    id: report.id,
+    checkedAt: report.checkedAt,
+    summary: report.summary,
+    timeline: report.timeline,
+    keyReasons: report.keyReasons,
+    blockers: report.blockers,
+    warnings: report.warnings,
+    notes: report.notes,
+    tags: report.tags,
   }
 }
 

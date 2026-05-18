@@ -18,6 +18,7 @@ import {
 } from "@/world/intent-system/intent-gateway"
 import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
 import { validateMapDiffs } from "@/world/map-state/map-diff-validator"
+import { buildWorldEngineChainAuditReport } from "@/world/world-engine-chain-audit/world-engine-chain-audit-gateway"
 import {
   buildWorldChangePlan,
   buildWorldDiffProposal,
@@ -104,6 +105,16 @@ function buildWorldEngineDebugStage(input: {
     audit: worldEvolutionAudit,
     now: input.homeMapState.updatedAt,
   })
+  const worldEngineChainAudit = buildWorldEngineChainAuditReport({
+    checkedAt: input.homeMapState.updatedAt,
+    environment: environmentState,
+    decision: butlerIntentDecision,
+    plan: worldChangePlan,
+    proposal: worldDiffProposal,
+    validation: worldDiffProposalValidation,
+    audit: worldEvolutionAudit,
+    execution: worldEvolutionExecution,
+  })
 
   return {
     environmentState,
@@ -114,6 +125,7 @@ function buildWorldEngineDebugStage(input: {
     worldDiffProposalValidation,
     worldEvolutionAudit,
     worldEvolutionExecution,
+    worldEngineChainAudit,
   }
 }
 

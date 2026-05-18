@@ -16,6 +16,7 @@ import type {
 } from "@/world/world-evolution/world-evolution-gateway"
 import type { WorldEvolutionAuditReport } from "@/world/world-evolution-audit/world-evolution-audit-gateway"
 import type { WorldEvolutionExecutionResult } from "@/world/world-evolution-executor/world-evolution-executor-gateway"
+import type { WorldEngineChainAuditReport } from "@/world/world-engine-chain-audit/world-engine-chain-audit-gateway"
 
 export type WorldEngineDebugStageResult = {
   environmentState: EnvironmentState
@@ -26,6 +27,7 @@ export type WorldEngineDebugStageResult = {
   worldDiffProposalValidation: MapDiffValidationResult
   worldEvolutionAudit: WorldEvolutionAuditReport
   worldEvolutionExecution: WorldEvolutionExecutionResult
+  worldEngineChainAudit: WorldEngineChainAuditReport
 }
 
 export type WorldEngineDebugScenarioResult = {
