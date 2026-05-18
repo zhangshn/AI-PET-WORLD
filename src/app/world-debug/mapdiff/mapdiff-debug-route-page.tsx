@@ -11,6 +11,7 @@ import {
   DEFAULT_CONSTRUCTION_DEBUG_CREATE_WORLD_INPUT,
   type ConstructionDebugButlerPreset,
   type ConstructionDebugPetPreset,
+  type ConstructionDebugScenarioResult,
 } from "@/world/construction/construction-debug-scenario"
 import {
   CREATE_WORLD_STORAGE_KEY,
@@ -18,6 +19,14 @@ import {
 } from "@/world/creation/world-creation-runtime"
 import { buildEnvironmentStateFromHomeMap } from "@/world/environment/environment-gateway"
 import { buildPlacementGeometryAuditReport } from "@/world/geometry-audit/geometry-audit-gateway"
+import {
+  buildButlerIntentDecision,
+  type ButlerIntentContext,
+  type IntentDecision,
+  type PetIntentContext,
+  type WorldIntentContext,
+} from "@/world/intent-system/intent-gateway"
+import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
 
 import styles from "./mapdiff-debug-route-page.styles.module.css"
 
@@ -94,6 +103,34 @@ export default function MapdiffDebugRoutePage() {
       generatedAt: debugResult.constructionCycle.nextHomeMapState.updatedAt,
     })
   }, [debugResult])
+
+  const initialButlerIntentDecision = useMemo(() => {
+    if (!debugResult || !initialEnvironmentState) return null
+
+    return buildButlerIntentDecision({
+      butler: buildDebugButlerIntentContext({ debugResult }),
+      pet: buildDebugPetIntentContext({ petPreset }),
+      environment: initialEnvironmentState,
+      world: buildWorldIntentContext({
+        homeMapState: debugResult.initialHomeMapState,
+        worldTick: 0,
+      }),
+    })
+  }, [debugResult, initialEnvironmentState, petPreset])
+
+  const nextButlerIntentDecision = useMemo(() => {
+    if (!debugResult || !nextEnvironmentState) return null
+
+    return buildButlerIntentDecision({
+      butler: buildDebugButlerIntentContext({ debugResult }),
+      pet: buildDebugPetIntentContext({ petPreset }),
+      environment: nextEnvironmentState,
+      world: buildWorldIntentContext({
+        homeMapState: debugResult.constructionCycle.nextHomeMapState,
+        worldTick: 12,
+      }),
+    })
+  }, [debugResult, nextEnvironmentState, petPreset])
 
   if (!debugResult) {
     return (
@@ -192,6 +229,14 @@ export default function MapdiffDebugRoutePage() {
           value={mapEnvironmentSummary(initialEnvironmentState)}
         />
         <DebugCard
+          title="Initial Butler Intent Decision Summary"
+          value={mapIntentDecisionSummary(initialButlerIntentDecision)}
+        />
+        <DebugCard
+          title="Initial Butler Intent Candidates"
+          value={mapIntentCandidateTable(initialButlerIntentDecision)}
+        />
+        <DebugCard
           title="Initial Terrain Cell Sample"
           value={mapTerrainCellSample(initialEnvironmentState)}
         />
@@ -241,6 +286,14 @@ export default function MapdiffDebugRoutePage() {
         <DebugCard
           title="Next Environment Summary"
           value={mapEnvironmentSummary(nextEnvironmentState)}
+        />
+        <DebugCard
+          title="Next Butler Intent Decision Summary"
+          value={mapIntentDecisionSummary(nextButlerIntentDecision)}
+        />
+        <DebugCard
+          title="Next Butler Intent Candidates"
+          value={mapIntentCandidateTable(nextButlerIntentDecision)}
         />
         <DebugCard
           title="Next Terrain Cell Sample"
@@ -336,6 +389,99 @@ function mapTerrainCellSample(
       fertility: cell.fertility,
       tags: cell.tags.slice(0, 8),
     }))
+}
+
+function buildDebugPetIntentContext(input: {
+  petPreset: ConstructionDebugPetPreset
+}): PetIntentContext {
+  if (input.petPreset === "tired_hungry") {
+    return {
+      energy: 28,
+      hunger: 72,
+      mood: "curious",
+      currentZoneType: "pet_arrival",
+      recentAction: "arrived",
+      tags: ["mapdiff_debug_pet", "tired_hungry_pet"],
+    }
+  }
+
+  if (input.petPreset === "stable") {
+    return {
+      energy: 68,
+      hunger: 32,
+      mood: "stable",
+      currentZoneType: "initial_care",
+      recentAction: "observing",
+      tags: ["mapdiff_debug_pet", "stable_pet"],
+    }
+  }
+
+  return {
+    energy: 22,
+    hunger: 38,
+    mood: "quiet",
+    currentZoneType: "pet_rest",
+    recentAction: "resting",
+    tags: ["mapdiff_debug_pet", "resting_pet"],
+  }
+}
+
+function buildDebugButlerIntentContext(input: {
+  debugResult: ConstructionDebugScenarioResult
+}): ButlerIntentContext {
+  return {
+    mood: "focused",
+    currentTask: "observe_home",
+    constructionStyle: input.debugResult.runtime.butlerConstructionStyle,
+    tags: ["mapdiff_debug_butler"],
+  }
+}
+
+function buildWorldIntentContext(input: {
+  homeMapState: HomeMapState
+  worldTick: number
+}): WorldIntentContext {
+  return {
+    worldTick: input.worldTick,
+    spacePressure: input.homeMapState.resources.spacePressure,
+    constructionPlanCount: input.homeMapState.constructionPlans.length,
+    activeConstructionPlanCount: input.homeMapState.constructionPlans.filter(
+      (plan) => plan.status === "active"
+    ).length,
+    tags: ["mapdiff_debug_world_context"],
+  }
+}
+
+function mapIntentDecisionSummary(decision: IntentDecision | null) {
+  if (!decision) return null
+
+  return {
+    shouldAct: decision.shouldAct,
+    decisionReason: decision.decisionReason,
+    selectedIntent: {
+      type: decision.selectedIntent.type,
+      score: decision.selectedIntent.score,
+      urgency: decision.selectedIntent.urgency,
+      reason: decision.selectedIntent.reason,
+      drivers: decision.selectedIntent.drivers,
+      blockers: decision.selectedIntent.blockers,
+      tags: decision.selectedIntent.tags,
+    },
+    tags: decision.tags,
+  }
+}
+
+function mapIntentCandidateTable(decision: IntentDecision | null) {
+  if (!decision) return []
+
+  return decision.candidates.map((candidate) => ({
+    type: candidate.type,
+    score: candidate.score,
+    urgency: candidate.urgency,
+    drivers: candidate.drivers,
+    blockers: candidate.blockers,
+    reason: candidate.reason,
+  }))
 }
 
 function mapRejectedPlacementGeometryAuditItems(
