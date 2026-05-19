@@ -1,0 +1,41 @@
+.rendererShell {
+  border: 1px solid currentColor;
+  border-radius: 16px;
+  padding: 24px;
+}
+
+.header {
+  display: grid;
+  gap: 8px;
+}
+
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 24px 0 0;
+}
+
+.summaryItem {
+  border: 1px solid currentColor;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.summaryItem dt {
+  font-size: 12px;
+  opacity: 0.72;
+}
+
+.summaryItem dd {
+  margin: 6px 0 0;
+  font-size: 18px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
