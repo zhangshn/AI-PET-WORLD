@@ -118,3 +118,16 @@
 8. 后续新增建设行为必须优先进入 WorldChangePlan / WorldDiffProposal。
 9. construction flow 的后续职责是收缩，不是扩张。
 10. 删除旧逻辑前必须先完成替代链路与迁移文档。
+
+## P7.9 MVP 世界闭环收口红线
+
+1. P7.9 只允许写收口文档，不允许写新代码。
+2. 当前 MVP 闭环只支持手动 Tick，不支持自动 Tick。
+3. 当前 RuntimeWorldState 只存在 React memory state，不做持久化。
+4. Renderer 仍然只能读取 RenderableWorldSnapshot。
+5. Renderer 不能执行 world-loop。
+6. UI 不能绕过 buildWorldLoopStep / applyWorldLoopStep。
+7. SafeApplyDecision 仍然是正式采用 nextHomeMapState 的唯一开关。
+8. construction flow 继续收缩为 initial generation / debug support。
+9. P7.10 之前不允许新增 persistence schema。
+10. P7.10 之前不允许写 localStorage adapter。
