@@ -92,3 +92,16 @@
 8. 多 Tick 推进必须保持可审计。
 9. 所有正式世界变化必须能追溯到 MapDiff。
 10. P7 第一阶段只允许设计，不允许直接写 runtime loop 代码。
+
+## P7.7 WorldLoop 持久化红线
+
+1. P7.7 只允许写持久化策略文档，不允许写持久化代码。
+2. 不能直接把完整 RuntimeWorldState 无裁剪写入 localStorage。
+3. 不能持久化 debug scenario 结果。
+4. 不能持久化 Renderer 派生对象作为唯一世界事实。
+5. 持久化的核心事实必须是 HomeMapState 或可恢复 HomeMapState 的安全快照。
+6. auditTrail 必须有裁剪策略。
+7. 世界状态必须按 worldId / ownerId 隔离。
+8. 恢复状态必须校验版本与 worldId。
+9. 持久化失败必须能 fallback 到 firstSceneModel。
+10. Renderer 不能参与持久化决策。
