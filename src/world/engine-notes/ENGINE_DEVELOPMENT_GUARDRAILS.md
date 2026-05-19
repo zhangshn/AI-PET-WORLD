@@ -105,3 +105,16 @@
 8. 恢复状态必须校验版本与 worldId。
 9. 持久化失败必须能 fallback 到 firstSceneModel。
 10. Renderer 不能参与持久化决策。
+
+## P7.8 旧 construction flow 收缩红线
+
+1. P7.8 只允许写收缩文档，不允许删除或重写 construction flow。
+2. construction flow 继续保留初始世界生成职责。
+3. construction flow 可以继续服务 debug scenario。
+4. construction flow 不再扩展为长期世界推进系统。
+5. 长期世界变化必须进入 world-loop / world-evolution / SafeApply 链路。
+6. /world 正式 Tick 不能直接调用 construction debug scenario。
+7. Renderer 不能读取 construction debug result 当作正式世界事实。
+8. 后续新增建设行为必须优先进入 WorldChangePlan / WorldDiffProposal。
+9. construction flow 的后续职责是收缩，不是扩张。
+10. 删除旧逻辑前必须先完成替代链路与迁移文档。
