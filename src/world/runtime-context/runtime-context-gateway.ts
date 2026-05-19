@@ -4,3 +4,4 @@
 
 export * from "./butler-runtime-context-schema"
 export * from "./pet-runtime-context-schema"
+export * from "./world-loop-context-adapter"
