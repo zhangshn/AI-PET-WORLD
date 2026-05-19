@@ -144,3 +144,16 @@
 8. 禁止 Renderer 参与保存或恢复。
 9. 禁止跳过 worldId / ownerId 校验。
 10. P7.14 只评估自动保存，不实现自动保存。
+
+## P7.15 真实管家 / 宠物 runtime context 红线
+
+1. P7.15 只允许写策略文档，不直接接真实 context 代码。
+2. 管家 / 宠物 runtime context 只能作为 world-loop 输入，不能直接修改 HomeMapState。
+3. context 不能直接生成 placement。
+4. context 不能绕过 IntentDecision / WorldChangePlan / WorldDiffProposal。
+5. context 不能绕过 SafeApply。
+6. /world 页面不能直接拼复杂人格算法。
+7. world-loop 不能深层依赖 personality-core。
+8. Renderer 状态不能作为 intent context。
+9. debug scenario result 不能作为正式 context。
+10. 在没有 schema 前不能把 context 写入持久化。
