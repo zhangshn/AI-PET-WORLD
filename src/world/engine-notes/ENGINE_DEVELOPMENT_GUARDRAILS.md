@@ -131,3 +131,16 @@
 8. construction flow 继续收缩为 initial generation / debug support。
 9. P7.10 之前不允许新增 persistence schema。
 10. P7.10 之前不允许写 localStorage adapter。
+
+## P7.11-P7.14 WorldLoop 持久化接入红线
+
+1. persistence adapter 只能保存 PersistedWorldLoopState，不允许保存完整 RuntimeWorldState。
+2. /world 恢复 persisted state 时必须重新派生 RenderableWorldSnapshot。
+3. /world 恢复失败必须 fallback 到 firstSceneModel。
+4. 手动保存必须由用户点击触发。
+5. 禁止自动保存。
+6. 禁止 Tick 后自动写 localStorage。
+7. 禁止持久化 RenderableWorldSnapshot / VisualState / DrawCommand。
+8. 禁止 Renderer 参与保存或恢复。
+9. 禁止跳过 worldId / ownerId 校验。
+10. P7.14 只评估自动保存，不实现自动保存。

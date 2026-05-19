@@ -19,7 +19,10 @@ import {
 import {
   applyWorldLoopStep,
   buildRuntimeWorldState,
+  buildWorldLoopRenderableState,
   buildWorldLoopStep,
+  loadPersistedWorldLoopState,
+  savePersistedWorldLoopState,
   type RuntimeWorldState,
 } from "@/world/world-loop/world-loop-gateway"
 
@@ -27,6 +30,14 @@ import styles from "./world-route-page.styles.module.css"
 
 const CREATE_WORLD_INPUT_PENDING = "__ai_pet_world_create_input_pending__"
 const CREATE_WORLD_INPUT_EMPTY = "__ai_pet_world_create_input_empty__"
+
+type WorldPersistenceUiState = {
+  status: "memory_only" | "restored" | "saved" | "restore_failed" | "save_failed"
+  message: string
+  key?: string
+  savedAt?: number
+  tags: string[]
+}
 
 export default function WorldRoutePage() {
   const createWorldInputSnapshot = useSyncExternalStore(
@@ -76,13 +87,11 @@ export default function WorldRoutePage() {
 function WorldRuntimeShell(input: { firstSceneModel: WorldFirstSceneModel }) {
   const { firstSceneModel } = input
   const [runtimeState, setRuntimeState] = useState<RuntimeWorldState>(() =>
-    buildRuntimeWorldState({
-      worldId: firstSceneModel.worldId,
-      ownerId: firstSceneModel.homeMapState.ownerId,
-      initialHomeMapState: firstSceneModel.homeMapState,
-      initialRenderableSnapshot: firstSceneModel.renderableWorldSnapshot,
-      now: firstSceneModel.homeMapState.updatedAt,
-    })
+    buildInitialRuntimeState({ firstSceneModel })
+  )
+  const [persistenceState, setPersistenceState] =
+    useState<WorldPersistenceUiState>(() =>
+      buildInitialPersistenceUiState({ firstSceneModel })
   )
   const lastStepResult = runtimeState.lastStepResult
   const lastSafeApplyTag =
@@ -116,6 +125,29 @@ function WorldRuntimeShell(input: { firstSceneModel: WorldFirstSceneModel }) {
         runtimeState: currentRuntimeState,
         stepResult,
       })
+    })
+  }
+
+  function handleManualSave() {
+    if (typeof window === "undefined") return
+
+    const saveResult = savePersistedWorldLoopState({
+      storage: window.localStorage,
+      runtimeState,
+      savedAt:
+        runtimeState.currentHomeMapState.updatedAt + runtimeState.tickIndex + 1,
+    })
+
+    setPersistenceState({
+      status: saveResult.ok ? "saved" : "save_failed",
+      message: saveResult.message,
+      key: saveResult.key,
+      savedAt: saveResult.persistedState?.savedAt,
+      tags: [
+        "world_persistence_ui_state",
+        saveResult.ok ? "saved" : "save_failed",
+        ...saveResult.tags,
+      ],
     })
   }
 
@@ -198,17 +230,41 @@ function WorldRuntimeShell(input: { firstSceneModel: WorldFirstSceneModel }) {
               label="MapDiff Delta"
               value={lastStepResult ? String(mapDiffDelta) : "0"}
             />
+            <RuntimeInfoItem
+              label="Persistence"
+              value={persistenceState.status}
+            />
+            <RuntimeInfoItem
+              label="Persisted Key"
+              value={persistenceState.key ?? "none"}
+            />
+            <RuntimeInfoItem
+              label="Saved At"
+              value={
+                persistenceState.savedAt !== undefined
+                  ? String(persistenceState.savedAt)
+                  : "none"
+              }
+            />
           </div>
           <p>
             RuntimeWorldState 已建立；当前 Tick 只能手动触发，不自动推进，
-            不持久化，不绕过 SafeApply。
+            不自动持久化，不绕过 SafeApply。
           </p>
+          <p>{persistenceState.message}</p>
           <button
             className={styles.primaryLink}
             type="button"
             onClick={handleManualTick}
           >
             手动推进 Tick
+          </button>
+          <button
+            className={styles.primaryLink}
+            type="button"
+            onClick={handleManualSave}
+          >
+            手动保存世界状态
           </button>
         </article>
 
@@ -396,6 +452,87 @@ function WorldRuntimeShell(input: { firstSceneModel: WorldFirstSceneModel }) {
       </section>
     </main>
   )
+}
+
+function buildInitialRuntimeState(input: {
+  firstSceneModel: WorldFirstSceneModel
+}): RuntimeWorldState {
+  const { firstSceneModel } = input
+  const fallbackRuntimeState = buildRuntimeWorldState({
+    worldId: firstSceneModel.worldId,
+    ownerId: firstSceneModel.homeMapState.ownerId,
+    initialHomeMapState: firstSceneModel.homeMapState,
+    initialRenderableSnapshot: firstSceneModel.renderableWorldSnapshot,
+    now: firstSceneModel.homeMapState.updatedAt,
+  })
+
+  if (typeof window === "undefined") return fallbackRuntimeState
+
+  const loadResult = loadPersistedWorldLoopState({
+    storage: window.localStorage,
+    worldId: firstSceneModel.worldId,
+    ownerId: firstSceneModel.homeMapState.ownerId,
+  })
+
+  if (!loadResult.ok || !loadResult.persistedState) {
+    return fallbackRuntimeState
+  }
+
+  const renderableState = buildWorldLoopRenderableState({
+    homeMapState: loadResult.persistedState.currentHomeMapState,
+    now: loadResult.persistedState.savedAt,
+  })
+
+  return {
+    ...fallbackRuntimeState,
+    tickIndex: loadResult.persistedState.tickIndex,
+    currentHomeMapState: loadResult.persistedState.currentHomeMapState,
+    currentRenderableSnapshot: renderableState.renderableWorldSnapshot,
+    auditTrail: fallbackRuntimeState.auditTrail,
+    tags: Array.from(
+      new Set([
+        ...fallbackRuntimeState.tags,
+        "runtime_world_state_restored_from_persistence",
+      ])
+    ),
+  }
+}
+
+function buildInitialPersistenceUiState(input: {
+  firstSceneModel: WorldFirstSceneModel
+}): WorldPersistenceUiState {
+  const { firstSceneModel } = input
+
+  if (typeof window === "undefined") {
+    return {
+      status: "memory_only",
+      message: "当前使用内存运行态。",
+      tags: ["world_persistence_ui_state", "memory_only"],
+    }
+  }
+
+  const loadResult = loadPersistedWorldLoopState({
+    storage: window.localStorage,
+    worldId: firstSceneModel.worldId,
+    ownerId: firstSceneModel.homeMapState.ownerId,
+  })
+
+  if (loadResult.ok) {
+    return {
+      status: "restored",
+      message: loadResult.message,
+      key: loadResult.key,
+      savedAt: loadResult.persistedState?.savedAt,
+      tags: ["world_persistence_ui_state", "restored", ...loadResult.tags],
+    }
+  }
+
+  return {
+    status: "restore_failed",
+    message: loadResult.message,
+    key: loadResult.key,
+    tags: ["world_persistence_ui_state", "restore_failed", ...loadResult.tags],
+  }
 }
 
 function SummaryCard(input: { label: string; value: string }) {
