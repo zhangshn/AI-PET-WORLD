@@ -196,3 +196,16 @@
 8. P8 视觉增强不能为了好看创造不存在的 placement。
 9. 自动 Tick 与自动保存仍然禁止。
 10. 进入 P8 前必须确认 Renderer 仍然只读 RenderableWorldSnapshot / VisualState / DrawCommand。
+
+## P8.0 正式视觉阶段规划红线
+
+1. P8.0 只允许写规划文档，不写视觉代码。
+2. P8 负责显示世界事实，不负责生成世界事实。
+3. 正式 Renderer 只能读取 RenderableWorldSnapshot / VisualState / DrawCommand。
+4. 正式 Renderer 不能读取 IntentDecision / WorldChangePlan / WorldDiffProposal / Audit / Execution。
+5. 正式 Renderer 不能生成 placement。
+6. 正式 Renderer 不能修改 HomeMapState。
+7. 正式 Renderer 不能为了视觉效果伪造对象。
+8. debug renderer / debug scenario 不能直接变成正式世界事实。
+9. P8 第一阶段不做动画、不做拖拽、不做编辑器。
+10. P8 视觉增强必须能追溯到已采用的 HomeMapState。
