@@ -9,6 +9,16 @@ import type {
   RenderableWorldSnapshot,
   VisualPlacement,
 } from "@/world/rendering/renderer-gateway"
+import {
+  WORLD_MAP_ASSETS,
+  type WorldMapAssetId,
+} from "@/world/map-assets/world-map-asset-registry"
+import type {
+  WorldMapAssetAnchor,
+  WorldMapAssetCategory,
+  WorldMapAssetDefinition,
+} from "@/world/map-assets/world-map-asset-schema"
+import type { MapPlacementLayer } from "@/world/map-state/home-map-state-schema"
 import type { Point2D } from "@/world/spatial/spatial-gateway"
 
 import styles from "./procedural-renderer-view.styles.module.css"
@@ -16,6 +26,20 @@ import styles from "./procedural-renderer-view.styles.module.css"
 const VIEW_SCALE = 24
 const VIEW_PADDING = 24
 const MAX_VISIBLE_COMMANDS = 400
+const FORMAL_VIEW_SCALE = 32
+const FORMAL_VIEW_PADDING = 32
+const LAYER_RENDER_ORDER: MapPlacementLayer[] = [
+  "ground",
+  "edge",
+  "zone",
+  "path",
+  "nature",
+  "structure",
+  "facility",
+  "surface-decoration",
+  "actor",
+  "atmosphere",
+]
 
 export type ProceduralRendererViewProps = {
   snapshot: RenderableWorldSnapshot
@@ -30,9 +54,18 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
     .filter((overlay) => overlay.enabled)
     .map((overlay) => overlay.type)
   const visibleCommands = snapshot.drawCommands.slice(0, MAX_VISIBLE_COMMANDS)
+  const visualAssetItems = buildVisualAssetRenderItems({
+    placements: visualState.placements,
+    tileSize: visualState.mapSize.tileSize,
+  })
+  const visualAssetSummary = buildVisualAssetSummary(visualAssetItems)
   const svgWidth =
     visualState.mapSize.columns * VIEW_SCALE + VIEW_PADDING * 2
   const svgHeight = visualState.mapSize.rows * VIEW_SCALE + VIEW_PADDING * 2
+  const formalViewportWidth =
+    visualState.mapSize.columns * FORMAL_VIEW_SCALE + FORMAL_VIEW_PADDING * 2
+  const formalViewportHeight =
+    visualState.mapSize.rows * FORMAL_VIEW_SCALE + FORMAL_VIEW_PADDING * 2
 
   return (
     <section
@@ -43,8 +76,9 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
         <span className={styles.eyebrow}>PROCEDURAL RENDERER / SUMMARY</span>
         <h2>ProceduralRenderer 正式组件摘要</h2>
         <p>
-          ProceduralRenderer 正式组件已接收 RenderableWorldSnapshot，
-          但当前阶段仍不绘制世界。
+          ProceduralRenderer 正式组件已接收 RenderableWorldSnapshot。
+          当前 P8.2 会优先显示已注册 asset 的贴图预览；线框仍作为
+          debug overlay 保留。
         </p>
       </div>
 
@@ -198,14 +232,77 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
 
       <section
         className={styles.summarySection}
+        aria-labelledby="formal-visual-preview"
+      >
+        <h3 className={styles.sectionTitle} id="formal-visual-preview">
+          正式贴图预览 v1
+        </h3>
+        <p className={styles.sectionDescription}>
+          当前视图只读取 VisualState.placements 与 WorldMapAssetRegistry，
+          不读取 proposal，不生成 placement，不修改 HomeMapState。
+        </p>
+
+        <div className={styles.formalViewport}>
+          <div
+            className={styles.formalWorldCanvas}
+            style={{
+              width: formalViewportWidth,
+              height: formalViewportHeight,
+            }}
+          >
+            {visualAssetItems.map(renderVisualAssetItem)}
+          </div>
+        </div>
+
+        <dl className={styles.metricGrid}>
+          <div className={styles.metricItem}>
+            <dt>visual assets</dt>
+            <dd>{visualAssetSummary.total}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>registered</dt>
+            <dd>{visualAssetSummary.registered}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>missing</dt>
+            <dd>{visualAssetSummary.missing}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>incompatible</dt>
+            <dd>{visualAssetSummary.incompatible}</dd>
+          </div>
+        </dl>
+
+        <dl className={styles.metricGrid}>
+          <div className={styles.metricItem}>
+            <dt>layer path</dt>
+            <dd>{getCount(visualAssetSummary.byLayer, "path")}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>layer structure</dt>
+            <dd>{getCount(visualAssetSummary.byLayer, "structure")}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>layer facility</dt>
+            <dd>{getCount(visualAssetSummary.byLayer, "facility")}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>layer actor</dt>
+            <dd>{getCount(visualAssetSummary.byLayer, "actor")}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section
+        className={styles.summarySection}
         aria-labelledby="wireframe-preview"
       >
         <h3 className={styles.sectionTitle} id="wireframe-preview">
           基础线框预览
         </h3>
         <p className={styles.sectionDescription}>
-          当前线框只读取 DrawCommand，不加载图片，不根据 assetId 画贴图，
-          也不代表最终美术效果。
+          线框只作为 debug overlay 保留；正式贴图预览读取
+          VisualState.placements 与已注册 asset。
         </p>
         <div className={styles.wireframeViewport}>
           <svg
@@ -280,6 +377,255 @@ type DrawCommandSummary = {
   byKind: CountMap
   byLayer: CountMap
   bySource: CountMap
+}
+
+type VisualAssetRenderItem = {
+  placement: VisualPlacement
+  asset?: WorldMapAssetDefinition
+  assetId: string
+  isRegisteredAsset: boolean
+  isLayerCompatible: boolean
+  left: number
+  top: number
+  width: number
+  height: number
+  zIndex: number
+  tags: string[]
+}
+
+type VisualAssetSummary = {
+  total: number
+  registered: number
+  missing: number
+  incompatible: number
+  byLayer: CountMap
+}
+
+function renderVisualAssetItem(item: VisualAssetRenderItem): ReactNode {
+  if (item.asset && item.isLayerCompatible) {
+    return (
+      <div
+        key={item.placement.placementId}
+        className={styles.visualAsset}
+        style={{
+          left: item.left,
+          top: item.top,
+          width: item.width,
+          height: item.height,
+          opacity: item.placement.alpha,
+          zIndex: item.zIndex,
+          backgroundImage: `url(${item.asset.path})`,
+        }}
+        title={`${item.placement.label} / ${item.assetId}`}
+      >
+        <span className={styles.visualAssetLabel}>
+          {item.placement.label}
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      key={item.placement.placementId}
+      className={styles.visualAssetFallback}
+      style={{
+        left: item.left,
+        top: item.top,
+        width: item.width,
+        height: item.height,
+        opacity: item.placement.alpha,
+        zIndex: item.zIndex,
+      }}
+      title={`${item.placement.label} / ${item.assetId}`}
+    >
+      <span className={styles.visualAssetFallbackText}>
+        {item.isRegisteredAsset ? "layer mismatch" : "missing asset"}
+      </span>
+    </div>
+  )
+}
+
+function buildVisualAssetRenderItems(input: {
+  placements: VisualPlacement[]
+  tileSize: number
+}): VisualAssetRenderItem[] {
+  return [...input.placements]
+    .sort(sortVisualPlacementsForRender)
+    .map((placement, index) => {
+      const asset = getRegisteredWorldMapAsset(placement.assetId)
+      const isRegisteredAsset = asset !== undefined
+      const isLayerCompatible = asset
+        ? isAssetCategoryCompatibleWithLayer({
+            category: asset.category,
+            layer: placement.layer,
+          })
+        : false
+      const width = asset
+        ? asset.baseSize * placement.scale
+        : input.tileSize * placement.scale
+      const height = asset
+        ? asset.baseSize * placement.scale
+        : input.tileSize * placement.scale
+      const anchorPosition = computeVisualAssetPosition({
+        placement,
+        asset,
+        width,
+        height,
+      })
+      const baseItem = {
+        placement,
+        assetId: placement.assetId,
+        isRegisteredAsset,
+        isLayerCompatible,
+        left: anchorPosition.left,
+        top: anchorPosition.top,
+        width,
+        height,
+        zIndex: buildVisualAssetZIndex({
+          layer: placement.layer,
+          orderIndex: index,
+        }),
+        tags: [
+          "visual_asset_render_item_v1",
+          isRegisteredAsset ? "asset_registered" : "asset_missing",
+          isLayerCompatible ? "layer_compatible" : "layer_incompatible",
+          `placement_layer:${placement.layer}`,
+        ],
+      }
+
+      return asset ? { ...baseItem, asset } : baseItem
+    })
+}
+
+function getRegisteredWorldMapAsset(
+  assetId: string
+): WorldMapAssetDefinition | undefined {
+  if (!isWorldMapAssetId(assetId)) return undefined
+
+  return WORLD_MAP_ASSETS[assetId]
+}
+
+function isWorldMapAssetId(assetId: string): assetId is WorldMapAssetId {
+  return Object.prototype.hasOwnProperty.call(WORLD_MAP_ASSETS, assetId)
+}
+
+function isAssetCategoryCompatibleWithLayer(input: {
+  category: WorldMapAssetCategory
+  layer: MapPlacementLayer
+}): boolean {
+  return mapAssetCategoryToPlacementLayer(input.category) === input.layer
+}
+
+function mapAssetCategoryToPlacementLayer(
+  category: WorldMapAssetCategory
+): MapPlacementLayer | undefined {
+  if (category === "ground") return "ground"
+  if (category === "path") return "path"
+  if (category === "edge") return "edge"
+  if (category === "zone") return "zone"
+  if (category === "structure") return "structure"
+  if (category === "facility") return "facility"
+  if (category === "nature") return "nature"
+  if (category === "surface_decoration") return "surface-decoration"
+  if (category === "actor") return "actor"
+
+  return undefined
+}
+
+function sortVisualPlacementsForRender(
+  left: VisualPlacement,
+  right: VisualPlacement
+): number {
+  const leftLayerOrder = getLayerRenderOrder(left.layer)
+  const rightLayerOrder = getLayerRenderOrder(right.layer)
+
+  if (leftLayerOrder !== rightLayerOrder) {
+    return leftLayerOrder - rightLayerOrder
+  }
+
+  if (left.anchor.y !== right.anchor.y) {
+    return left.anchor.y - right.anchor.y
+  }
+
+  if (left.anchor.x !== right.anchor.x) {
+    return left.anchor.x - right.anchor.x
+  }
+
+  return left.placementId.localeCompare(right.placementId)
+}
+
+function getLayerRenderOrder(layer: MapPlacementLayer): number {
+  const index = LAYER_RENDER_ORDER.indexOf(layer)
+
+  return index >= 0 ? index : LAYER_RENDER_ORDER.length
+}
+
+function buildVisualAssetZIndex(input: {
+  layer: MapPlacementLayer
+  orderIndex: number
+}): number {
+  return getLayerRenderOrder(input.layer) * 1000 + input.orderIndex
+}
+
+function computeVisualAssetPosition(input: {
+  placement: VisualPlacement
+  asset: WorldMapAssetDefinition | undefined
+  width: number
+  height: number
+}): { left: number; top: number } {
+  const anchor = input.asset?.anchor ?? "center"
+  const anchorPoint = {
+    x: input.placement.anchor.x * FORMAL_VIEW_SCALE + FORMAL_VIEW_PADDING,
+    y: input.placement.anchor.y * FORMAL_VIEW_SCALE + FORMAL_VIEW_PADDING,
+  }
+
+  return offsetByAnchor({
+    anchor,
+    anchorPoint,
+    width: input.width,
+    height: input.height,
+  })
+}
+
+function offsetByAnchor(input: {
+  anchor: WorldMapAssetAnchor
+  anchorPoint: Point2D
+  width: number
+  height: number
+}): { left: number; top: number } {
+  if (input.anchor === "top-left") {
+    return {
+      left: input.anchorPoint.x,
+      top: input.anchorPoint.y,
+    }
+  }
+
+  if (input.anchor === "bottom-center") {
+    return {
+      left: input.anchorPoint.x - input.width / 2,
+      top: input.anchorPoint.y - input.height,
+    }
+  }
+
+  return {
+    left: input.anchorPoint.x - input.width / 2,
+    top: input.anchorPoint.y - input.height / 2,
+  }
+}
+
+function buildVisualAssetSummary(
+  items: VisualAssetRenderItem[]
+): VisualAssetSummary {
+  return {
+    total: items.length,
+    registered: items.filter((item) => item.isRegisteredAsset).length,
+    missing: items.filter((item) => !item.isRegisteredAsset).length,
+    incompatible: items.filter(
+      (item) => item.isRegisteredAsset && !item.isLayerCompatible
+    ).length,
+    byLayer: countBy(items.map((item) => item.placement.layer)),
+  }
 }
 
 function buildPlacementRuleSummary(
