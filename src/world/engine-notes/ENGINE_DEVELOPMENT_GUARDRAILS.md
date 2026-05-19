@@ -79,3 +79,16 @@
 8. P7 之前 Renderer 不能承担世界推进职责。
 9. P7 之前 Renderer 不能接管 world-evolution execution。
 10. 任何正式视觉元素都必须能追溯到 WorldState / VisualState / DrawCommand。
+
+## P7 MVP 世界闭环红线
+
+1. P7 不能绕过 Intent -> Plan -> Proposal -> Validation -> Audit -> Execution。
+2. 正式写入 HomeMapState 必须经过 audit.canApplySafely。
+3. 正式写入不能直接使用 debug scenario。
+4. Renderer 仍然不能执行 MapDiff。
+5. Renderer 仍然不能修改 HomeMapState。
+6. world-evolution execution 不能无条件自动写入。
+7. 旧 construction flow 不能被突然硬删，必须有迁移策略。
+8. 多 Tick 推进必须保持可审计。
+9. 所有正式世界变化必须能追溯到 MapDiff。
+10. P7 第一阶段只允许设计，不允许直接写 runtime loop 代码。
