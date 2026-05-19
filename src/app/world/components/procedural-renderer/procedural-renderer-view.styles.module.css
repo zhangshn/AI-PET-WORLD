@@ -51,6 +51,11 @@
   font-size: 16px;
 }
 
+.sectionDescription {
+  margin: 0;
+  opacity: 0.72;
+}
+
 .metricGrid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -106,4 +111,16 @@
   border-radius: 999px;
   padding: 4px 8px;
   font-size: 12px;
+}
+
+.wireframeViewport {
+  border: 1px solid currentColor;
+  border-radius: 12px;
+  overflow: auto;
+  padding: 12px;
+}
+
+.wireframeSvg {
+  display: block;
+  max-width: 100%;
 }

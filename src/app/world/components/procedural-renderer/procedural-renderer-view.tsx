@@ -2,13 +2,20 @@
  * 当前文件负责：提供正式 ProceduralRenderer 组件骨架。
  */
 
+import type { ReactNode } from "react"
+
 import type {
   DrawCommand,
   RenderableWorldSnapshot,
   VisualPlacement,
 } from "@/world/rendering/renderer-gateway"
+import type { Point2D } from "@/world/spatial/spatial-gateway"
 
 import styles from "./procedural-renderer-view.styles.module.css"
+
+const VIEW_SCALE = 24
+const VIEW_PADDING = 24
+const MAX_VISIBLE_COMMANDS = 400
 
 export type ProceduralRendererViewProps = {
   snapshot: RenderableWorldSnapshot
@@ -22,6 +29,10 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
   const enabledOverlays = visualState.overlays
     .filter((overlay) => overlay.enabled)
     .map((overlay) => overlay.type)
+  const visibleCommands = snapshot.drawCommands.slice(0, MAX_VISIBLE_COMMANDS)
+  const svgWidth =
+    visualState.mapSize.columns * VIEW_SCALE + VIEW_PADDING * 2
+  const svgHeight = visualState.mapSize.rows * VIEW_SCALE + VIEW_PADDING * 2
 
   return (
     <section
@@ -185,6 +196,41 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
         </dl>
       </section>
 
+      <section
+        className={styles.summarySection}
+        aria-labelledby="wireframe-preview"
+      >
+        <h3 className={styles.sectionTitle} id="wireframe-preview">
+          基础线框预览
+        </h3>
+        <p className={styles.sectionDescription}>
+          当前线框只读取 DrawCommand，不加载图片，不根据 assetId 画贴图，
+          也不代表最终美术效果。
+        </p>
+        <div className={styles.wireframeViewport}>
+          <svg
+            className={styles.wireframeSvg}
+            width={svgWidth}
+            height={svgHeight}
+            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+            role="img"
+            aria-label="ProceduralRenderer 基础线框预览"
+          >
+            {visibleCommands.map(renderDrawCommand)}
+          </svg>
+        </div>
+        <dl className={styles.metricGrid}>
+          <div className={styles.metricItem}>
+            <dt>visible commands</dt>
+            <dd>{visibleCommands.length}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>max visible</dt>
+            <dd>{MAX_VISIBLE_COMMANDS}</dd>
+          </div>
+        </dl>
+      </section>
+
       <section className={styles.summarySection} aria-labelledby="meta-summary">
         <h3 className={styles.sectionTitle} id="meta-summary">
           Tags / Sources
@@ -273,4 +319,132 @@ function countBy<TValue extends string>(values: TValue[]): CountMap {
 
 function getCount(counts: CountMap, key: string): number {
   return counts[key] ?? 0
+}
+
+function toScreenPoint(point: Point2D): Point2D {
+  return {
+    x: point.x * VIEW_SCALE + VIEW_PADDING,
+    y: point.y * VIEW_SCALE + VIEW_PADDING,
+  }
+}
+
+function toSvgPoints(points: Point2D[]): string {
+  return points
+    .map(toScreenPoint)
+    .map((point) => `${point.x},${point.y}`)
+    .join(" ")
+}
+
+function dashToStrokeDasharray(dash?: number[]): string | undefined {
+  return dash?.join(" ")
+}
+
+function renderDrawCommand(command: DrawCommand): ReactNode {
+  if (command.kind === "point") {
+    return renderPointCommand(command)
+  }
+
+  if (command.kind === "line") {
+    return renderLineCommand(command)
+  }
+
+  if (command.kind === "polygon" || command.kind === "bounds") {
+    return renderShapeCommand(command)
+  }
+
+  if (command.kind === "label") {
+    return renderLabelCommand(command)
+  }
+
+  return null
+}
+
+function renderShapeCommand(command: DrawCommand): ReactNode {
+  const commonProps = {
+    fill: "none",
+    stroke: "currentColor",
+    strokeDasharray: dashToStrokeDasharray(command.debugStyle.dash),
+    strokeWidth: command.debugStyle.strokeWidth,
+    opacity: command.debugStyle.opacity,
+  }
+
+  if (command.geometry.kind === "polygon") {
+    return (
+      <polygon
+        key={command.id}
+        points={toSvgPoints(command.geometry.polygon.points)}
+        {...commonProps}
+      />
+    )
+  }
+
+  if (command.geometry.kind === "multiPolygon") {
+    return command.geometry.multiPolygon.polygons.map((polygon, index) => (
+      <polygon
+        key={`${command.id}-polygon-${index}`}
+        points={toSvgPoints(polygon.points)}
+        {...commonProps}
+      />
+    ))
+  }
+
+  return null
+}
+
+function renderPointCommand(command: DrawCommand): ReactNode {
+  if (command.geometry.kind !== "point") {
+    return null
+  }
+
+  const point = toScreenPoint(command.geometry.point)
+
+  return (
+    <circle
+      key={command.id}
+      cx={point.x}
+      cy={point.y}
+      r={3}
+      fill="currentColor"
+      opacity={command.debugStyle.opacity}
+    />
+  )
+}
+
+function renderLineCommand(command: DrawCommand): ReactNode {
+  if (command.geometry.kind !== "line") {
+    return null
+  }
+
+  return (
+    <polyline
+      key={command.id}
+      points={toSvgPoints(command.geometry.line.points)}
+      fill="none"
+      stroke="currentColor"
+      strokeDasharray={dashToStrokeDasharray(command.debugStyle.dash)}
+      strokeWidth={command.debugStyle.strokeWidth}
+      opacity={command.debugStyle.opacity}
+    />
+  )
+}
+
+function renderLabelCommand(command: DrawCommand): ReactNode {
+  if (command.geometry.kind !== "point") {
+    return null
+  }
+
+  const point = toScreenPoint(command.geometry.point)
+
+  return (
+    <text
+      key={command.id}
+      x={point.x}
+      y={point.y}
+      fill="currentColor"
+      fontSize={10}
+      opacity={0.85}
+    >
+      {command.label ?? command.id}
+    </text>
+  )
 }
