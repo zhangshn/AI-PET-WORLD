@@ -4,7 +4,7 @@
  * 当前文件负责：正式世界首屏入口。
  */
 
-import { useMemo, useSyncExternalStore } from "react"
+import { useMemo, useState, useSyncExternalStore } from "react"
 import Link from "next/link"
 
 import { ProceduralRendererView } from "@/app/world/components/procedural-renderer/procedural-renderer-view"
@@ -12,7 +12,14 @@ import {
   CREATE_WORLD_STORAGE_KEY,
   parseCreateWorldInput,
 } from "@/world/creation/world-creation-runtime"
-import { buildWorldFirstSceneModel } from "@/world/runtime/world-first-scene-model"
+import {
+  buildWorldFirstSceneModel,
+  type WorldFirstSceneModel,
+} from "@/world/runtime/world-first-scene-model"
+import {
+  buildRuntimeWorldState,
+  type RuntimeWorldState,
+} from "@/world/world-loop/world-loop-gateway"
 
 import styles from "./world-route-page.styles.module.css"
 
@@ -57,6 +64,26 @@ export default function WorldRoutePage() {
   }
 
   return (
+    <WorldRuntimeShell
+      key={firstSceneModel.worldId}
+      firstSceneModel={firstSceneModel}
+    />
+  )
+}
+
+function WorldRuntimeShell(input: { firstSceneModel: WorldFirstSceneModel }) {
+  const { firstSceneModel } = input
+  const [runtimeState] = useState<RuntimeWorldState>(() =>
+    buildRuntimeWorldState({
+      worldId: firstSceneModel.worldId,
+      ownerId: firstSceneModel.homeMapState.ownerId,
+      initialHomeMapState: firstSceneModel.homeMapState,
+      initialRenderableSnapshot: firstSceneModel.renderableWorldSnapshot,
+      now: firstSceneModel.homeMapState.updatedAt,
+    })
+  )
+
+  return (
     <main className={styles.worldPage} aria-label="AI-PET-WORLD">
       <section className={styles.heroPanel}>
         <div className={styles.eyebrow}>AI-PET-WORLD / FIRST SCENE</div>
@@ -82,10 +109,43 @@ export default function WorldRoutePage() {
       </section>
 
       <ProceduralRendererView
-        snapshot={firstSceneModel.renderableWorldSnapshot}
+        snapshot={runtimeState.currentRenderableSnapshot}
       />
 
       <section className={styles.contentGrid}>
+        <article className={styles.panel}>
+          <h2>世界运行态</h2>
+          <div className={styles.resourceList}>
+            <RuntimeInfoItem
+              label="Runtime Tick"
+              value={String(runtimeState.tickIndex)}
+            />
+            <RuntimeInfoItem label="Owner" value={runtimeState.ownerId} />
+            <RuntimeInfoItem
+              label="Current Placement"
+              value={String(
+                runtimeState.currentHomeMapState.placements.length
+              )}
+            />
+            <RuntimeInfoItem
+              label="MapDiff History"
+              value={String(runtimeState.currentHomeMapState.mapDiffs.length)}
+            />
+            <RuntimeInfoItem
+              label="Audit Trail"
+              value={String(runtimeState.auditTrail.length)}
+            />
+            <RuntimeInfoItem
+              label="Last Step"
+              value={runtimeState.lastStepResult?.status ?? "not_started"}
+            />
+          </div>
+          <p>
+            RuntimeWorldState 已建立；当前阶段不自动 Tick、不持久化、不执行
+            world-evolution。
+          </p>
+        </article>
+
         <article className={styles.panel}>
           <h2>第一幕状态</h2>
           <div className={styles.milestoneList}>
@@ -156,6 +216,17 @@ function SummaryCard(input: { label: string; value: string }) {
       <span>{input.label}</span>
       <strong>{input.value}</strong>
     </article>
+  )
+}
+
+function RuntimeInfoItem(input: { label: string; value: string }) {
+  return (
+    <div className={styles.resourceItem}>
+      <div className={styles.resourceHeader}>
+        <strong>{input.label}</strong>
+        <span>{input.value}</span>
+      </div>
+    </div>
   )
 }
 
