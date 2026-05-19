@@ -1,5 +1,5 @@
 /**
- * 当前文件职责：验证 P8.2 正式贴图预览能否显示 P7.23 世界变化结果。
+ * 当前文件职责：验证 P8.2 几何 / 程序化视觉预览能否显示 P7.23 世界变化结果。
  */
 
 import { ProceduralRendererView } from "@/app/world/components/procedural-renderer/procedural-renderer-view"
@@ -106,7 +106,7 @@ export default function VisualChangeVerificationPage() {
         <h1>P8.3 Visual Change Verification</h1>
         <p>
           本页面用于验证 P7.23 的世界变化，在 SafeApply 之后是否能通过
-          P8.2 正式贴图预览显示。
+          P8.2 几何 / 程序化视觉预览显示。
         </p>
       </section>
 

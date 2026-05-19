@@ -1,24 +1,15 @@
 /**
- * 当前文件负责：提供正式 ProceduralRenderer 组件骨架。
+ * 当前文件职责：提供正式 ProceduralRenderer 组件骨架。
  */
 
 import type { ReactNode } from "react"
 
+import type { MapPlacementLayer } from "@/world/map-state/home-map-state-schema"
 import type {
   DrawCommand,
   RenderableWorldSnapshot,
   VisualPlacement,
 } from "@/world/rendering/renderer-gateway"
-import {
-  WORLD_MAP_ASSETS,
-  type WorldMapAssetId,
-} from "@/world/map-assets/world-map-asset-registry"
-import type {
-  WorldMapAssetAnchor,
-  WorldMapAssetCategory,
-  WorldMapAssetDefinition,
-} from "@/world/map-assets/world-map-asset-schema"
-import type { MapPlacementLayer } from "@/world/map-state/home-map-state-schema"
 import type { Point2D } from "@/world/spatial/spatial-gateway"
 
 import styles from "./procedural-renderer-view.styles.module.css"
@@ -54,11 +45,12 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
     .filter((overlay) => overlay.enabled)
     .map((overlay) => overlay.type)
   const visibleCommands = snapshot.drawCommands.slice(0, MAX_VISIBLE_COMMANDS)
-  const visualAssetItems = buildVisualAssetRenderItems({
+  const proceduralVisualItems = buildProceduralVisualItems({
     placements: visualState.placements,
     tileSize: visualState.mapSize.tileSize,
   })
-  const visualAssetSummary = buildVisualAssetSummary(visualAssetItems)
+  const proceduralVisualSummary =
+    buildProceduralVisualSummary(proceduralVisualItems)
   const svgWidth =
     visualState.mapSize.columns * VIEW_SCALE + VIEW_PADDING * 2
   const svgHeight = visualState.mapSize.rows * VIEW_SCALE + VIEW_PADDING * 2
@@ -77,8 +69,9 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
         <h2>ProceduralRenderer 正式组件摘要</h2>
         <p>
           ProceduralRenderer 正式组件已接收 RenderableWorldSnapshot。
-          当前 P8.2 会优先显示已注册 asset 的贴图预览；线框仍作为
-          debug overlay 保留。
+          当前 Renderer 按定版文档改为几何 / 程序化绘制：它只读取
+          RenderableWorldSnapshot、VisualState 与 DrawCommand，不读取 PNG
+          图片，不把素材贴图当作世界。
         </p>
       </div>
 
@@ -235,11 +228,12 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
         aria-labelledby="formal-visual-preview"
       >
         <h3 className={styles.sectionTitle} id="formal-visual-preview">
-          正式贴图预览 v1
+          几何 / 程序化视觉预览 v1
         </h3>
         <p className={styles.sectionDescription}>
-          当前视图只读取 VisualState.placements 与 WorldMapAssetRegistry，
-          不读取 proposal，不生成 placement，不修改 HomeMapState。
+          当前视图只读取 VisualState.placements 与几何派生信息，并用程序化
+          CSS 形状绘制世界对象；不读取 PNG 图片，不读取 proposal，不生成
+          placement，不修改 HomeMapState。
         </p>
 
         <div className={styles.formalViewport}>
@@ -250,45 +244,67 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
               height: formalViewportHeight,
             }}
           >
-            {visualAssetItems.map(renderVisualAssetItem)}
+            {proceduralVisualItems.map(renderProceduralVisualItem)}
           </div>
         </div>
 
         <dl className={styles.metricGrid}>
           <div className={styles.metricItem}>
-            <dt>visual assets</dt>
-            <dd>{visualAssetSummary.total}</dd>
+            <dt>procedural visuals</dt>
+            <dd>{proceduralVisualSummary.total}</dd>
           </div>
           <div className={styles.metricItem}>
-            <dt>registered</dt>
-            <dd>{visualAssetSummary.registered}</dd>
+            <dt>kind ground</dt>
+            <dd>{getCount(proceduralVisualSummary.byKind, "ground")}</dd>
           </div>
           <div className={styles.metricItem}>
-            <dt>missing</dt>
-            <dd>{visualAssetSummary.missing}</dd>
+            <dt>kind path</dt>
+            <dd>{getCount(proceduralVisualSummary.byKind, "path")}</dd>
           </div>
           <div className={styles.metricItem}>
-            <dt>incompatible</dt>
-            <dd>{visualAssetSummary.incompatible}</dd>
+            <dt>kind structure</dt>
+            <dd>{getCount(proceduralVisualSummary.byKind, "structure")}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>kind facility</dt>
+            <dd>{getCount(proceduralVisualSummary.byKind, "facility")}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>kind nature</dt>
+            <dd>{getCount(proceduralVisualSummary.byKind, "nature")}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>kind surface_decoration</dt>
+            <dd>
+              {getCount(proceduralVisualSummary.byKind, "surface_decoration")}
+            </dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>kind actor</dt>
+            <dd>{getCount(proceduralVisualSummary.byKind, "actor")}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>kind zone</dt>
+            <dd>{getCount(proceduralVisualSummary.byKind, "zone")}</dd>
           </div>
         </dl>
 
         <dl className={styles.metricGrid}>
           <div className={styles.metricItem}>
             <dt>layer path</dt>
-            <dd>{getCount(visualAssetSummary.byLayer, "path")}</dd>
+            <dd>{getCount(proceduralVisualSummary.byLayer, "path")}</dd>
           </div>
           <div className={styles.metricItem}>
             <dt>layer structure</dt>
-            <dd>{getCount(visualAssetSummary.byLayer, "structure")}</dd>
+            <dd>{getCount(proceduralVisualSummary.byLayer, "structure")}</dd>
           </div>
           <div className={styles.metricItem}>
             <dt>layer facility</dt>
-            <dd>{getCount(visualAssetSummary.byLayer, "facility")}</dd>
+            <dd>{getCount(proceduralVisualSummary.byLayer, "facility")}</dd>
           </div>
           <div className={styles.metricItem}>
             <dt>layer actor</dt>
-            <dd>{getCount(visualAssetSummary.byLayer, "actor")}</dd>
+            <dd>{getCount(proceduralVisualSummary.byLayer, "actor")}</dd>
           </div>
         </dl>
       </section>
@@ -301,8 +317,9 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
           基础线框预览
         </h3>
         <p className={styles.sectionDescription}>
-          线框只作为 debug overlay 保留；正式贴图预览读取
-          VisualState.placements 与已注册 asset。
+          线框作为 debug overlay 保留；几何 / 程序化视觉预览读取
+          VisualState.placements、anchor、footprint、collision、support、
+          influence 与 DrawCommand 派生信息。
         </p>
         <div className={styles.wireframeViewport}>
           <svg
@@ -379,56 +396,44 @@ type DrawCommandSummary = {
   bySource: CountMap
 }
 
-type VisualAssetRenderItem = {
+type ProceduralVisualKind =
+  | "ground"
+  | "path"
+  | "structure"
+  | "facility"
+  | "nature"
+  | "surface_decoration"
+  | "actor"
+  | "zone"
+  | "edge"
+  | "atmosphere"
+  | "unknown"
+
+type ProceduralVisualItem = {
   placement: VisualPlacement
-  asset?: WorldMapAssetDefinition
-  assetId: string
-  isRegisteredAsset: boolean
-  isLayerCompatible: boolean
+  kind: ProceduralVisualKind
   left: number
   top: number
   width: number
   height: number
   zIndex: number
+  label: string
   tags: string[]
 }
 
-type VisualAssetSummary = {
+type ProceduralVisualSummary = {
   total: number
-  registered: number
-  missing: number
-  incompatible: number
+  byKind: CountMap
   byLayer: CountMap
 }
 
-function renderVisualAssetItem(item: VisualAssetRenderItem): ReactNode {
-  if (item.asset && item.isLayerCompatible) {
-    return (
-      <div
-        key={item.placement.placementId}
-        className={styles.visualAsset}
-        style={{
-          left: item.left,
-          top: item.top,
-          width: item.width,
-          height: item.height,
-          opacity: item.placement.alpha,
-          zIndex: item.zIndex,
-          backgroundImage: `url(${item.asset.path})`,
-        }}
-        title={`${item.placement.label} / ${item.assetId}`}
-      >
-        <span className={styles.visualAssetLabel}>
-          {item.placement.label}
-        </span>
-      </div>
-    )
-  }
-
+function renderProceduralVisualItem(item: ProceduralVisualItem): ReactNode {
   return (
     <div
       key={item.placement.placementId}
-      className={styles.visualAssetFallback}
+      className={`${styles.proceduralVisualItem} ${getProceduralVisualClassName(
+        item.kind
+      )}`}
       style={{
         left: item.left,
         top: item.top,
@@ -437,100 +442,231 @@ function renderVisualAssetItem(item: VisualAssetRenderItem): ReactNode {
         opacity: item.placement.alpha,
         zIndex: item.zIndex,
       }}
-      title={`${item.placement.label} / ${item.assetId}`}
+      title={`${item.label} / ${item.placement.assetId} / ${item.kind}`}
     >
-      <span className={styles.visualAssetFallbackText}>
-        {item.isRegisteredAsset ? "layer mismatch" : "missing asset"}
-      </span>
+      {renderProceduralVisualInner(item)}
+      <span className={styles.visualAssetLabel}>{item.label}</span>
     </div>
   )
 }
 
-function buildVisualAssetRenderItems(input: {
+function getProceduralVisualClassName(kind: ProceduralVisualKind): string {
+  if (kind === "ground") return styles.proceduralGround
+  if (kind === "path") return styles.proceduralPath
+  if (kind === "structure") return styles.proceduralStructure
+  if (kind === "facility") return styles.proceduralFacility
+  if (kind === "nature") return styles.proceduralNature
+  if (kind === "surface_decoration") return styles.proceduralSurfaceDecoration
+  if (kind === "actor") return styles.proceduralActor
+  if (kind === "zone") return styles.proceduralZone
+  if (kind === "edge") return styles.proceduralEdge
+  if (kind === "atmosphere") return styles.proceduralAtmosphere
+
+  return styles.proceduralUnknown
+}
+
+function renderProceduralVisualInner(item: ProceduralVisualItem): ReactNode {
+  if (item.kind === "ground") {
+    return <div className={styles.proceduralGrassNoise} />
+  }
+
+  if (item.kind === "path") {
+    return <div className={styles.proceduralPathLine} />
+  }
+
+  if (item.kind === "structure") {
+    return (
+      <>
+        <div className={styles.proceduralStructureRoof} />
+        <div className={styles.proceduralStructureBody} />
+      </>
+    )
+  }
+
+  if (item.kind === "facility") {
+    return <div className={styles.proceduralFacilityCore} />
+  }
+
+  if (item.kind === "nature") {
+    return (
+      <>
+        <div className={styles.proceduralTreeCrown} />
+        <div className={styles.proceduralTreeTrunk} />
+      </>
+    )
+  }
+
+  if (item.kind === "surface_decoration") {
+    return <div className={styles.proceduralDecorationDot} />
+  }
+
+  if (item.kind === "actor") {
+    return <div className={styles.proceduralActorBody} />
+  }
+
+  if (item.kind === "zone") {
+    return <div className={styles.proceduralZoneCore} />
+  }
+
+  if (item.kind === "edge") {
+    return <div className={styles.proceduralEdgeCore} />
+  }
+
+  if (item.kind === "atmosphere") {
+    return <div className={styles.proceduralAtmosphereCore} />
+  }
+
+  return <span className={styles.visualAssetFallbackText}>unknown</span>
+}
+
+function buildProceduralVisualItems(input: {
   placements: VisualPlacement[]
   tileSize: number
-}): VisualAssetRenderItem[] {
+}): ProceduralVisualItem[] {
   return [...input.placements]
     .sort(sortVisualPlacementsForRender)
     .map((placement, index) => {
-      const asset = getRegisteredWorldMapAsset(placement.assetId)
-      const isRegisteredAsset = asset !== undefined
-      const isLayerCompatible = asset
-        ? isAssetCategoryCompatibleWithLayer({
-            category: asset.category,
-            layer: placement.layer,
-          })
-        : false
-      const width = asset
-        ? asset.baseSize * placement.scale
-        : input.tileSize * placement.scale
-      const height = asset
-        ? asset.baseSize * placement.scale
-        : input.tileSize * placement.scale
-      const anchorPosition = computeVisualAssetPosition({
+      const kind = resolveProceduralVisualKind(placement)
+      const baseSize = getProceduralVisualBaseSize({
         placement,
-        asset,
+        kind,
+        tileSize: input.tileSize,
+      })
+      const width = baseSize.width * placement.scale
+      const height = baseSize.height * placement.scale
+      const position = computeProceduralVisualPosition({
+        placement,
+        kind,
         width,
         height,
       })
-      const baseItem = {
+
+      return {
         placement,
-        assetId: placement.assetId,
-        isRegisteredAsset,
-        isLayerCompatible,
-        left: anchorPosition.left,
-        top: anchorPosition.top,
+        kind,
+        left: position.left,
+        top: position.top,
         width,
         height,
-        zIndex: buildVisualAssetZIndex({
+        zIndex: buildProceduralVisualZIndex({
           layer: placement.layer,
           orderIndex: index,
         }),
+        label: placement.label,
         tags: [
-          "visual_asset_render_item_v1",
-          isRegisteredAsset ? "asset_registered" : "asset_missing",
-          isLayerCompatible ? "layer_compatible" : "layer_incompatible",
+          "procedural_visual_item_v1",
+          `procedural_kind:${kind}`,
           `placement_layer:${placement.layer}`,
+          ...placement.tags,
         ],
       }
-
-      return asset ? { ...baseItem, asset } : baseItem
     })
 }
 
-function getRegisteredWorldMapAsset(
-  assetId: string
-): WorldMapAssetDefinition | undefined {
-  if (!isWorldMapAssetId(assetId)) return undefined
+function resolveProceduralVisualKind(
+  placement: VisualPlacement
+): ProceduralVisualKind {
+  if (placement.layer === "ground") return "ground"
+  if (placement.layer === "path") return "path"
+  if (placement.layer === "structure") return "structure"
+  if (placement.layer === "facility") return "facility"
+  if (placement.layer === "nature") return "nature"
+  if (placement.layer === "surface-decoration") return "surface_decoration"
+  if (placement.layer === "actor") return "actor"
+  if (placement.layer === "zone") return "zone"
+  if (placement.layer === "edge") return "edge"
+  if (placement.layer === "atmosphere") return "atmosphere"
 
-  return WORLD_MAP_ASSETS[assetId]
+  return "unknown"
 }
 
-function isWorldMapAssetId(assetId: string): assetId is WorldMapAssetId {
-  return Object.prototype.hasOwnProperty.call(WORLD_MAP_ASSETS, assetId)
+function getProceduralVisualBaseSize(input: {
+  placement: VisualPlacement
+  kind: ProceduralVisualKind
+  tileSize: number
+}): { width: number; height: number } {
+  if (
+    input.kind === "ground" ||
+    input.kind === "path" ||
+    input.kind === "edge" ||
+    input.kind === "zone"
+  ) {
+    return { width: input.tileSize, height: input.tileSize }
+  }
+
+  if (input.kind === "surface_decoration") {
+    return { width: input.tileSize, height: input.tileSize }
+  }
+
+  if (input.kind === "facility") {
+    return { width: input.tileSize * 1.6, height: input.tileSize * 1.4 }
+  }
+
+  if (input.kind === "nature") {
+    return { width: input.tileSize * 2, height: input.tileSize * 2.4 }
+  }
+
+  if (input.kind === "structure") {
+    return { width: input.tileSize * 3, height: input.tileSize * 2.6 }
+  }
+
+  if (input.kind === "actor") {
+    return { width: input.tileSize * 1.4, height: input.tileSize * 1.8 }
+  }
+
+  return { width: input.tileSize, height: input.tileSize }
 }
 
-function isAssetCategoryCompatibleWithLayer(input: {
-  category: WorldMapAssetCategory
-  layer: MapPlacementLayer
-}): boolean {
-  return mapAssetCategoryToPlacementLayer(input.category) === input.layer
+function computeProceduralVisualPosition(input: {
+  placement: VisualPlacement
+  kind: ProceduralVisualKind
+  width: number
+  height: number
+}): { left: number; top: number } {
+  const anchorPoint = {
+    x: input.placement.anchor.x * FORMAL_VIEW_SCALE + FORMAL_VIEW_PADDING,
+    y: input.placement.anchor.y * FORMAL_VIEW_SCALE + FORMAL_VIEW_PADDING,
+  }
+
+  if (
+    input.kind === "ground" ||
+    input.kind === "path" ||
+    input.kind === "edge" ||
+    input.kind === "zone"
+  ) {
+    return {
+      left: anchorPoint.x,
+      top: anchorPoint.y,
+    }
+  }
+
+  if (
+    input.kind === "structure" ||
+    input.kind === "facility" ||
+    input.kind === "nature" ||
+    input.kind === "actor" ||
+    input.kind === "surface_decoration"
+  ) {
+    return {
+      left: anchorPoint.x - input.width / 2,
+      top: anchorPoint.y - input.height,
+    }
+  }
+
+  return {
+    left: anchorPoint.x - input.width / 2,
+    top: anchorPoint.y - input.height / 2,
+  }
 }
 
-function mapAssetCategoryToPlacementLayer(
-  category: WorldMapAssetCategory
-): MapPlacementLayer | undefined {
-  if (category === "ground") return "ground"
-  if (category === "path") return "path"
-  if (category === "edge") return "edge"
-  if (category === "zone") return "zone"
-  if (category === "structure") return "structure"
-  if (category === "facility") return "facility"
-  if (category === "nature") return "nature"
-  if (category === "surface_decoration") return "surface-decoration"
-  if (category === "actor") return "actor"
-
-  return undefined
+function buildProceduralVisualSummary(
+  items: ProceduralVisualItem[]
+): ProceduralVisualSummary {
+  return {
+    total: items.length,
+    byKind: countBy(items.map((item) => item.kind)),
+    byLayer: countBy(items.map((item) => item.placement.layer)),
+  }
 }
 
 function sortVisualPlacementsForRender(
@@ -561,71 +697,11 @@ function getLayerRenderOrder(layer: MapPlacementLayer): number {
   return index >= 0 ? index : LAYER_RENDER_ORDER.length
 }
 
-function buildVisualAssetZIndex(input: {
+function buildProceduralVisualZIndex(input: {
   layer: MapPlacementLayer
   orderIndex: number
 }): number {
   return getLayerRenderOrder(input.layer) * 1000 + input.orderIndex
-}
-
-function computeVisualAssetPosition(input: {
-  placement: VisualPlacement
-  asset: WorldMapAssetDefinition | undefined
-  width: number
-  height: number
-}): { left: number; top: number } {
-  const anchor = input.asset?.anchor ?? "center"
-  const anchorPoint = {
-    x: input.placement.anchor.x * FORMAL_VIEW_SCALE + FORMAL_VIEW_PADDING,
-    y: input.placement.anchor.y * FORMAL_VIEW_SCALE + FORMAL_VIEW_PADDING,
-  }
-
-  return offsetByAnchor({
-    anchor,
-    anchorPoint,
-    width: input.width,
-    height: input.height,
-  })
-}
-
-function offsetByAnchor(input: {
-  anchor: WorldMapAssetAnchor
-  anchorPoint: Point2D
-  width: number
-  height: number
-}): { left: number; top: number } {
-  if (input.anchor === "top-left") {
-    return {
-      left: input.anchorPoint.x,
-      top: input.anchorPoint.y,
-    }
-  }
-
-  if (input.anchor === "bottom-center") {
-    return {
-      left: input.anchorPoint.x - input.width / 2,
-      top: input.anchorPoint.y - input.height,
-    }
-  }
-
-  return {
-    left: input.anchorPoint.x - input.width / 2,
-    top: input.anchorPoint.y - input.height / 2,
-  }
-}
-
-function buildVisualAssetSummary(
-  items: VisualAssetRenderItem[]
-): VisualAssetSummary {
-  return {
-    total: items.length,
-    registered: items.filter((item) => item.isRegisteredAsset).length,
-    missing: items.filter((item) => !item.isRegisteredAsset).length,
-    incompatible: items.filter(
-      (item) => item.isRegisteredAsset && !item.isLayerCompatible
-    ).length,
-    byLayer: countBy(items.map((item) => item.placement.layer)),
-  }
 }
 
 function buildPlacementRuleSummary(

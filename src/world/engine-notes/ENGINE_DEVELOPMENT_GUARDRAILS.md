@@ -209,3 +209,17 @@
 8. debug renderer / debug scenario 不能直接变成正式世界事实。
 9. P8 第一阶段不做动画、不做拖拽、不做编辑器。
 10. P8 视觉增强必须能追溯到已采用的 HomeMapState。
+## P8 Geometry Renderer 纠偏红线
+
+1. 定版文档优先于 P8.1 / P8.2 临时贴图实现。
+2. 正式 Renderer 不能以 WORLD_MAP_ASSETS + backgroundImage 作为世界显示主路径。
+3. 正式 Renderer 不能把 PNG 贴图当作世界对象本体。
+4. 世界对象必须先被理解成点、线、面与几何结构。
+5. 树不是 tree.png，房屋不是 house.png，道路不是 path.png。
+6. Renderer 只能根据 WorldState / VisualState / DrawCommand / Geometry 绘制。
+7. Renderer 不能绕过规则直接摆素材。
+8. Renderer 不能生成 placement。
+9. Renderer 不能修改 HomeMapState。
+10. 贴图资源只能作为非正式调试资源或未来视觉参考，不得作为正式世界本体。
+11. 后续树 / 房屋 / 道路必须进入几何拆解协议。
+12. P8.2 PNG 贴图版只能作为历史临时验证，不能继续扩展。
