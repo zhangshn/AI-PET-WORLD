@@ -13,7 +13,12 @@ import type {
   WorldChangeTarget,
 } from "./world-evolution-schema"
 
-const DIFF_GENERATING_PLAN_TYPES: WorldChangePlanType[] = ["plant_nature"]
+const DIFF_GENERATING_PLAN_TYPES: WorldChangePlanType[] = [
+  "plant_nature",
+  "build_path",
+  "clean_area",
+  "repair_facility",
+]
 
 export function buildWorldChangePlan(
   input: BuildWorldChangePlanInput
