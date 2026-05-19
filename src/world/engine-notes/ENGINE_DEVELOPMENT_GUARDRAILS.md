@@ -183,3 +183,16 @@
 8. Renderer 不能参与 context、proposal、保存或恢复。
 9. construction debug scenario 不能进入正式 Tick。
 10. 下一阶段必须先做 ButlerRuntimeContext / PetRuntimeContext schema，再接真实 context。
+
+## P7.25 context + proposal 收口红线
+
+1. P7.25 只允许写收口文档，不新增运行时代码。
+2. context 只能作为 world-loop 输入，不能直接修改 HomeMapState。
+3. context 不能绕过 IntentDecision / WorldChangePlan / WorldDiffProposal / SafeApply。
+4. proposal 只能生成候选 MapDiff，不能直接写入世界。
+5. build_path / clean_area / repair_facility / plant_nature 仍然必须经过 validation / audit / execution / SafeApply。
+6. proposal debug 页面只能用于审计，不得作为正式 /world 入口。
+7. Renderer 只能读取最终世界事实，不能读取 proposal 当作现实。
+8. P8 视觉增强不能为了好看创造不存在的 placement。
+9. 自动 Tick 与自动保存仍然禁止。
+10. 进入 P8 前必须确认 Renderer 仍然只读 RenderableWorldSnapshot / VisualState / DrawCommand。
