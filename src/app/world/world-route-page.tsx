@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * 当前文件负责：正式世界首屏入口。
+ * 当前文件职责：正式世界首屏入口。
  */
 
 import { useMemo, useState, useSyncExternalStore } from "react"
@@ -84,6 +84,22 @@ function WorldRuntimeShell(input: { firstSceneModel: WorldFirstSceneModel }) {
       now: firstSceneModel.homeMapState.updatedAt,
     })
   )
+  const lastStepResult = runtimeState.lastStepResult
+  const lastSafeApplyTag =
+    lastStepResult?.auditTrail.tags.find((tag) =>
+      tag.startsWith("safe_apply:")
+    ) ?? "not_started"
+  const placementDelta = lastStepResult
+    ? lastStepResult.nextHomeMapState.placements.length -
+      lastStepResult.previousHomeMapState.placements.length
+    : 0
+  const mapDiffDelta = lastStepResult
+    ? lastStepResult.nextHomeMapState.mapDiffs.length -
+      lastStepResult.previousHomeMapState.mapDiffs.length
+    : 0
+  const rendererSnapshotTickLabel = lastStepResult
+    ? `tick:${lastStepResult.context.tickIndex}`
+    : "initial_world"
 
   function handleManualTick() {
     setRuntimeState((currentRuntimeState) => {
@@ -116,7 +132,10 @@ function WorldRuntimeShell(input: { firstSceneModel: WorldFirstSceneModel }) {
         </div>
 
         <div className={styles.summaryGrid}>
-          <SummaryCard label="地图规格" value={firstSceneModel.homeSummary.mapSizeLabel} />
+          <SummaryCard
+            label="地图规格"
+            value={firstSceneModel.homeSummary.mapSizeLabel}
+          />
           <SummaryCard
             label="初始区域"
             value={String(firstSceneModel.homeSummary.zoneCount)}
@@ -157,28 +176,32 @@ function WorldRuntimeShell(input: { firstSceneModel: WorldFirstSceneModel }) {
             />
             <RuntimeInfoItem
               label="Last Step"
-              value={runtimeState.lastStepResult?.status ?? "not_started"}
+              value={lastStepResult?.status ?? "not_started"}
             />
             <RuntimeInfoItem
               label="Last SafeApply"
-              value={
-                runtimeState.lastStepResult
-                  ? runtimeState.lastStepResult.auditTrail.tags.find((tag) =>
-                      tag.startsWith("safe_apply:")
-                    ) ?? "unknown"
-                  : "not_started"
-              }
+              value={lastSafeApplyTag}
             />
             <RuntimeInfoItem
               label="Last Tick Source"
-              value={
-                runtimeState.lastStepResult?.context.source ?? "initial_world"
-              }
+              value={lastStepResult?.context.source ?? "initial_world"}
+            />
+            <RuntimeInfoItem
+              label="Renderer Snapshot"
+              value={rendererSnapshotTickLabel}
+            />
+            <RuntimeInfoItem
+              label="Placement Delta"
+              value={lastStepResult ? String(placementDelta) : "0"}
+            />
+            <RuntimeInfoItem
+              label="MapDiff Delta"
+              value={lastStepResult ? String(mapDiffDelta) : "0"}
             />
           </div>
           <p>
-            RuntimeWorldState 已建立；当前阶段不自动 Tick、不持久化、不执行
-            world-evolution。
+            RuntimeWorldState 已建立；当前 Tick 只能手动触发，不自动推进，
+            不持久化，不绕过 SafeApply。
           </p>
           <button
             className={styles.primaryLink}
@@ -191,52 +214,74 @@ function WorldRuntimeShell(input: { firstSceneModel: WorldFirstSceneModel }) {
 
         <article className={styles.panel}>
           <h2>最近 Tick 审计</h2>
-          {runtimeState.lastStepResult ? (
+          {lastStepResult ? (
             <div className={styles.resourceList}>
               <RuntimeInfoItem
                 label="Step Status"
-                value={runtimeState.lastStepResult.status}
+                value={lastStepResult.status}
               />
               <RuntimeInfoItem
                 label="Tick ID"
-                value={runtimeState.lastStepResult.context.tickId}
+                value={lastStepResult.context.tickId}
               />
               <RuntimeInfoItem
                 label="Intent"
-                value={
-                  runtimeState.lastStepResult.intentDecision.selectedIntent.type
-                }
+                value={lastStepResult.intentDecision.selectedIntent.type}
               />
               <RuntimeInfoItem
                 label="Plan"
-                value={runtimeState.lastStepResult.worldChangePlan.type}
+                value={lastStepResult.worldChangePlan.type}
               />
               <RuntimeInfoItem
                 label="Proposal MapDiff"
-                value={String(
-                  runtimeState.lastStepResult.worldDiffProposal.mapDiffs.length
-                )}
+                value={String(lastStepResult.worldDiffProposal.mapDiffs.length)}
               />
               <RuntimeInfoItem
                 label="Applied MapDiff"
                 value={String(
-                  runtimeState.lastStepResult.worldEvolutionExecution
-                    .appliedMapDiffCount
+                  lastStepResult.worldEvolutionExecution.appliedMapDiffCount
                 )}
               />
               <RuntimeInfoItem
                 label="Audit Risk"
-                value={
-                  runtimeState.lastStepResult.worldEvolutionAudit.summary
-                    .riskLevel
-                }
+                value={lastStepResult.worldEvolutionAudit.summary.riskLevel}
               />
               <RuntimeInfoItem
                 label="Can Apply Safely"
                 value={String(
-                  runtimeState.lastStepResult.worldEvolutionAudit.summary
-                    .canApplySafely
+                  lastStepResult.worldEvolutionAudit.summary.canApplySafely
                 )}
+              />
+              <RuntimeInfoItem label="SafeApply" value={lastSafeApplyTag} />
+              <RuntimeInfoItem
+                label="Previous Placement"
+                value={String(
+                  lastStepResult.previousHomeMapState.placements.length
+                )}
+              />
+              <RuntimeInfoItem
+                label="Next Placement"
+                value={String(lastStepResult.nextHomeMapState.placements.length)}
+              />
+              <RuntimeInfoItem
+                label="Previous MapDiff"
+                value={String(lastStepResult.previousHomeMapState.mapDiffs.length)}
+              />
+              <RuntimeInfoItem
+                label="Next MapDiff"
+                value={String(lastStepResult.nextHomeMapState.mapDiffs.length)}
+              />
+              <RuntimeInfoItem
+                label="Blocker Count"
+                value={String(lastStepResult.auditTrail.blockers.length)}
+              />
+              <RuntimeInfoItem
+                label="Warning Count"
+                value={String(lastStepResult.auditTrail.warnings.length)}
+              />
+              <RuntimeInfoItem
+                label="Note Count"
+                value={String(lastStepResult.auditTrail.notes.length)}
               />
             </div>
           ) : (
@@ -245,11 +290,56 @@ function WorldRuntimeShell(input: { firstSceneModel: WorldFirstSceneModel }) {
         </article>
 
         <article className={styles.panel}>
+          <h2>Tick 阶段链路</h2>
+          {lastStepResult ? (
+            <div className={styles.resourceList}>
+              {lastStepResult.auditTrail.stages.map((stage) => (
+                <RuntimeInfoItem
+                  key={`${stage.stage}-${stage.status}-${stage.message}`}
+                  label={stage.stage}
+                  value={`${stage.status}｜${stage.message}`}
+                />
+              ))}
+            </div>
+          ) : (
+            <p>尚未生成 Tick 阶段链路。</p>
+          )}
+        </article>
+
+        <article className={styles.panel}>
+          <h2>Tick 结果说明</h2>
+          {lastStepResult ? (
+            <div className={styles.resourceList}>
+              <RuntimeTextList
+                title="Blockers"
+                items={lastStepResult.auditTrail.blockers}
+                emptyText="没有阻塞原因。"
+              />
+              <RuntimeTextList
+                title="Warnings"
+                items={lastStepResult.auditTrail.warnings}
+                emptyText="没有警告。"
+              />
+              <RuntimeTextList
+                title="Notes"
+                items={lastStepResult.auditTrail.notes}
+                emptyText="没有补充说明。"
+              />
+            </div>
+          ) : (
+            <p>手动推进 Tick 后，这里会显示阻塞、警告和说明。</p>
+          )}
+        </article>
+
+        <article className={styles.panel}>
           <h2>第一幕状态</h2>
           <div className={styles.milestoneList}>
             {firstSceneModel.milestones.map((milestone) => (
               <div className={styles.milestoneItem} key={milestone.title}>
-                <span className={styles.statusDot} data-status={milestone.status} />
+                <span
+                  className={styles.statusDot}
+                  data-status={milestone.status}
+                />
                 <div>
                   <strong>{milestone.title}</strong>
                   <p>{milestone.description}</p>
@@ -324,6 +414,30 @@ function RuntimeInfoItem(input: { label: string; value: string }) {
         <strong>{input.label}</strong>
         <span>{input.value}</span>
       </div>
+    </div>
+  )
+}
+
+function RuntimeTextList(input: {
+  title: string
+  items: string[]
+  emptyText: string
+}) {
+  return (
+    <div className={styles.resourceItem}>
+      <div className={styles.resourceHeader}>
+        <strong>{input.title}</strong>
+        <span>{input.items.length}</span>
+      </div>
+      {input.items.length > 0 ? (
+        <ul>
+          {input.items.slice(0, 6).map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+      ) : (
+        <p>{input.emptyText}</p>
+      )}
     </div>
   )
 }
