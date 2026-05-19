@@ -157,3 +157,16 @@
 8. Renderer 状态不能作为 intent context。
 9. debug scenario result 不能作为正式 context。
 10. 在没有 schema 前不能把 context 写入持久化。
+
+## P7.16 长期建设 proposal 扩展红线
+
+1. P7.16 只允许写策略文档，不直接扩展 proposal 代码。
+2. 长期建设必须进入 WorldChangePlan / WorldDiffProposal / validation / audit / SafeApply 链路。
+3. proposal 不能直接修改 HomeMapState。
+4. proposal 不能直接调用 applyMapDiffs。
+5. proposal 不能绕过 validation / audit / SafeApply。
+6. 禁止为了视觉效果生成无来源 placement。
+7. Renderer 不能参与 proposal 生成。
+8. construction debug scenario 不能进入正式 Tick。
+9. rejected proposal 不能被当作世界事实。
+10. 长期建设能力必须分阶段扩展，不能一次性塞入所有行为。
