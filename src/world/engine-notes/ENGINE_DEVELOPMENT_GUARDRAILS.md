@@ -170,3 +170,16 @@
 8. construction debug scenario 不能进入正式 Tick。
 9. rejected proposal 不能被当作世界事实。
 10. 长期建设能力必须分阶段扩展，不能一次性塞入所有行为。
+
+## P7.17 persistence / context / proposal 收口红线
+
+1. P7.17 只允许写收口文档，不新增代码。
+2. 当前保存只能保存 PersistedWorldLoopState，不能保存完整 RuntimeWorldState。
+3. 当前恢复必须从 HomeMapState 重新派生 RenderableWorldSnapshot。
+4. 当前仍然禁止自动保存。
+5. 当前仍然禁止自动 Tick。
+6. 真实 context 在没有 schema 前不能写入持久化。
+7. 长期建设 proposal 在没有扩展 schema 前不能进入正式 Tick。
+8. Renderer 不能参与 context、proposal、保存或恢复。
+9. construction debug scenario 不能进入正式 Tick。
+10. 下一阶段必须先做 ButlerRuntimeContext / PetRuntimeContext schema，再接真实 context。
