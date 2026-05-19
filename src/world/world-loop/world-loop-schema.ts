@@ -4,7 +4,11 @@
 
 import type { EnvironmentState } from "@/world/environment/environment-gateway"
 import type { PlacementGeometryAuditReport } from "@/world/geometry-audit/geometry-audit-gateway"
-import type { IntentDecision } from "@/world/intent-system/intent-gateway"
+import type {
+  ButlerIntentContext,
+  IntentDecision,
+  PetIntentContext,
+} from "@/world/intent-system/intent-gateway"
 import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
 import type { MapDiffValidationResult } from "@/world/map-state/map-diff-validator"
 import type { RenderableWorldSnapshot } from "@/world/rendering/renderer-gateway"
@@ -120,6 +124,8 @@ export type BuildWorldLoopStepInput = {
   runtimeState: RuntimeWorldState
   now: number
   source: WorldLoopContext["source"]
+  butlerIntentContext?: ButlerIntentContext
+  petIntentContext?: PetIntentContext
 }
 
 export type ApplyWorldLoopStepInput = {

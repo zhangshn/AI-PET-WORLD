@@ -4,3 +4,4 @@
 
 export * from "./world-loop-schema"
 export * from "./safe-apply-policy"
+export * from "./world-loop-runtime-builder"
