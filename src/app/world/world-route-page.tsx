@@ -9,13 +9,26 @@ import Link from "next/link"
 
 import { ProceduralRendererView } from "@/app/world/components/procedural-renderer/procedural-renderer-view"
 import {
+  buildWorldCreationRuntime,
   CREATE_WORLD_STORAGE_KEY,
   parseCreateWorldInput,
+  type CreateWorldInput,
 } from "@/world/creation/world-creation-runtime"
 import {
   buildWorldFirstSceneModel,
   type WorldFirstSceneModel,
 } from "@/world/runtime/world-first-scene-model"
+import {
+  buildButlerRuntimeContextSummary,
+  buildDefaultButlerRuntimeContext,
+  buildDefaultPetRuntimeContext,
+  buildPetRuntimeContextSummary,
+  buildRuntimeToIntentContext,
+  validateButlerRuntimeContext,
+  validatePetRuntimeContext,
+  type ButlerRuntimeContextSummary,
+  type PetRuntimeContextSummary,
+} from "@/world/runtime-context/runtime-context-gateway"
 import {
   applyWorldLoopStep,
   buildRuntimeWorldState,
@@ -39,6 +52,14 @@ type WorldPersistenceUiState = {
   tags: string[]
 }
 
+type WorldRuntimeContextUiState = {
+  status: "not_used" | "used_runtime_context" | "runtime_context_invalid"
+  message: string
+  butlerSummary?: ButlerRuntimeContextSummary
+  petSummary?: PetRuntimeContextSummary
+  tags: string[]
+}
+
 export default function WorldRoutePage() {
   const createWorldInputSnapshot = useSyncExternalStore(
     subscribeCreateWorldInput,
@@ -59,7 +80,7 @@ export default function WorldRoutePage() {
     return buildWorldFirstSceneModel({ createWorldInput })
   }, [createWorldInput])
 
-  if (!firstSceneModel) {
+  if (!firstSceneModel || !createWorldInput) {
     return (
       <main className={styles.worldPage} aria-label="AI-PET-WORLD">
         <section className={styles.emptyStatePanel}>
@@ -80,12 +101,20 @@ export default function WorldRoutePage() {
     <WorldRuntimeShell
       key={firstSceneModel.worldId}
       firstSceneModel={firstSceneModel}
+      createWorldInput={createWorldInput}
     />
   )
 }
 
-function WorldRuntimeShell(input: { firstSceneModel: WorldFirstSceneModel }) {
-  const { firstSceneModel } = input
+function WorldRuntimeShell(input: {
+  firstSceneModel: WorldFirstSceneModel
+  createWorldInput: CreateWorldInput
+}) {
+  const { firstSceneModel, createWorldInput } = input
+  const worldCreationRuntime = useMemo(
+    () => buildWorldCreationRuntime({ createWorldInput }),
+    [createWorldInput]
+  )
   const [runtimeState, setRuntimeState] = useState<RuntimeWorldState>(() =>
     buildInitialRuntimeState({ firstSceneModel })
   )
@@ -93,6 +122,12 @@ function WorldRuntimeShell(input: { firstSceneModel: WorldFirstSceneModel }) {
     useState<WorldPersistenceUiState>(() =>
       buildInitialPersistenceUiState({ firstSceneModel })
   )
+  const [runtimeContextState, setRuntimeContextState] =
+    useState<WorldRuntimeContextUiState>(() => ({
+      status: "not_used",
+      message: "尚未在 Tick 中使用真实 runtime context。",
+      tags: ["world_runtime_context_ui_state", "not_used"],
+    }))
   const lastStepResult = runtimeState.lastStepResult
   const lastSafeApplyTag =
     lastStepResult?.auditTrail.tags.find((tag) =>
@@ -111,20 +146,79 @@ function WorldRuntimeShell(input: { firstSceneModel: WorldFirstSceneModel }) {
     : "initial_world"
 
   function handleManualTick() {
-    setRuntimeState((currentRuntimeState) => {
-      const stepResult = buildWorldLoopStep({
-        runtimeState: currentRuntimeState,
-        now:
-          currentRuntimeState.currentHomeMapState.updatedAt +
-          currentRuntimeState.tickIndex +
-          1,
-        source: "manual_tick",
-      })
+    const tickNow =
+      runtimeState.currentHomeMapState.updatedAt + runtimeState.tickIndex + 1
+    const nextTickIndex = runtimeState.tickIndex + 1
+    const butlerRuntimeContext = buildDefaultButlerRuntimeContext({
+      worldId: runtimeState.worldId,
+      ownerId: runtimeState.ownerId,
+      tickIndex: nextTickIndex,
+      now: tickNow,
+      constructionStyle: worldCreationRuntime.butlerConstructionStyle,
+    })
+    const petRuntimeContext = buildDefaultPetRuntimeContext({
+      worldId: runtimeState.worldId,
+      ownerId: runtimeState.ownerId,
+      tickIndex: nextTickIndex,
+      now: tickNow,
+      lifeStage: "embryo",
+    })
+    const butlerValidation = validateButlerRuntimeContext({
+      context: butlerRuntimeContext,
+      expectedWorldId: runtimeState.worldId,
+      expectedOwnerId: runtimeState.ownerId,
+    })
+    const petValidation = validatePetRuntimeContext({
+      context: petRuntimeContext,
+      expectedWorldId: runtimeState.worldId,
+      expectedOwnerId: runtimeState.ownerId,
+    })
+    const butlerSummary = buildButlerRuntimeContextSummary(
+      butlerRuntimeContext
+    )
+    const petSummary = buildPetRuntimeContextSummary(petRuntimeContext)
+    const canUseRuntimeContext =
+      butlerValidation.isValid && petValidation.isValid
+    const runtimeToIntentContext = buildRuntimeToIntentContext({
+      butlerRuntimeContext,
+      petRuntimeContext,
+    })
+    const stepResult = buildWorldLoopStep({
+      runtimeState,
+      now: tickNow,
+      source: "manual_tick",
+      butlerIntentContext: canUseRuntimeContext
+        ? runtimeToIntentContext.butler
+        : undefined,
+      petIntentContext: canUseRuntimeContext
+        ? runtimeToIntentContext.pet
+        : undefined,
+    })
 
-      return applyWorldLoopStep({
-        runtimeState: currentRuntimeState,
+    setRuntimeState(
+      applyWorldLoopStep({
+        runtimeState,
         stepResult,
       })
+    )
+
+    setRuntimeContextState({
+      status: canUseRuntimeContext
+        ? "used_runtime_context"
+        : "runtime_context_invalid",
+      message: canUseRuntimeContext
+        ? "本次 Tick 已使用 ButlerRuntimeContext / PetRuntimeContext 转换后的 intent context。"
+        : [...butlerValidation.reasons, ...petValidation.reasons].join("；") ||
+          "runtime context 校验未通过。",
+      butlerSummary,
+      petSummary,
+      tags: [
+        "world_runtime_context_ui_state",
+        canUseRuntimeContext
+          ? "used_runtime_context"
+          : "runtime_context_invalid",
+        ...runtimeToIntentContext.tags,
+      ],
     })
   }
 
@@ -246,12 +340,37 @@ function WorldRuntimeShell(input: { firstSceneModel: WorldFirstSceneModel }) {
                   : "none"
               }
             />
+            <RuntimeInfoItem
+              label="Runtime Context"
+              value={runtimeContextState.status}
+            />
+            <RuntimeInfoItem
+              label="Butler Runtime Task"
+              value={runtimeContextState.butlerSummary?.currentTask ?? "not_used"}
+            />
+            <RuntimeInfoItem
+              label="Butler Runtime Mood"
+              value={runtimeContextState.butlerSummary?.mood ?? "not_used"}
+            />
+            <RuntimeInfoItem
+              label="Pet Life Stage"
+              value={runtimeContextState.petSummary?.lifeStage ?? "not_used"}
+            />
+            <RuntimeInfoItem
+              label="Pet Runtime Drive"
+              value={runtimeContextState.petSummary?.currentDrive ?? "not_used"}
+            />
+            <RuntimeInfoItem
+              label="Pet Runtime Action"
+              value={runtimeContextState.petSummary?.currentAction ?? "not_used"}
+            />
           </div>
           <p>
             RuntimeWorldState 已建立；当前 Tick 只能手动触发，不自动推进，
             不自动持久化，不绕过 SafeApply。
           </p>
           <p>{persistenceState.message}</p>
+          <p>{runtimeContextState.message}</p>
           <button
             className={styles.primaryLink}
             type="button"
@@ -338,6 +457,26 @@ function WorldRuntimeShell(input: { firstSceneModel: WorldFirstSceneModel }) {
               <RuntimeInfoItem
                 label="Note Count"
                 value={String(lastStepResult.auditTrail.notes.length)}
+              />
+              <RuntimeInfoItem
+                label="Context Source"
+                value={runtimeContextState.status}
+              />
+              <RuntimeInfoItem
+                label="Butler Context Tick"
+                value={
+                  runtimeContextState.butlerSummary
+                    ? String(runtimeContextState.butlerSummary.tickIndex)
+                    : "not_used"
+                }
+              />
+              <RuntimeInfoItem
+                label="Pet Context Tick"
+                value={
+                  runtimeContextState.petSummary
+                    ? String(runtimeContextState.petSummary.tickIndex)
+                    : "not_used"
+                }
               />
             </div>
           ) : (

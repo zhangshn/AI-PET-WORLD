@@ -6,6 +6,7 @@ import type {
   ButlerIntentContext,
   PetIntentContext,
 } from "@/world/intent-system/intent-gateway"
+import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
 
 import type {
   ButlerRuntimeContext,
@@ -49,7 +50,9 @@ export function buildButlerIntentContextFromRuntime(
       runtimeTask: butlerRuntimeContext.currentTask,
       topNeedSignal,
     }),
-    constructionStyle: butlerRuntimeContext.constructionStyle,
+    constructionStyle: normalizeButlerConstructionStyleForIntent(
+      butlerRuntimeContext.constructionStyle
+    ),
     tags: [
       "butler_intent_context_from_runtime",
       `runtime_mood:${butlerRuntimeContext.mood}`,
@@ -187,4 +190,42 @@ export function clampRuntimeValue(value: number): number {
   if (value > 100) return 100
 
   return value
+}
+
+export function normalizeButlerConstructionStyleForIntent(
+  constructionStyle: ButlerConstructionStyleVector
+): ButlerConstructionStyleVector {
+  return {
+    structuredBuilder: normalizeStyleValueForIntent(
+      constructionStyle.structuredBuilder
+    ),
+    warmCaretaker: normalizeStyleValueForIntent(
+      constructionStyle.warmCaretaker
+    ),
+    protectiveKeeper: normalizeStyleValueForIntent(
+      constructionStyle.protectiveKeeper
+    ),
+    aestheticOrganizer: normalizeStyleValueForIntent(
+      constructionStyle.aestheticOrganizer
+    ),
+    quietMaintainer: normalizeStyleValueForIntent(
+      constructionStyle.quietMaintainer
+    ),
+    adaptivePlanner: normalizeStyleValueForIntent(
+      constructionStyle.adaptivePlanner
+    ),
+  }
+}
+
+export function normalizeStyleValueForIntent(value: number): number {
+  if (!Number.isFinite(value)) return 50
+
+  if (value >= 0 && value <= 1) {
+    return Math.round(value * 100)
+  }
+
+  if (value < 0) return 0
+  if (value > 100) return 100
+
+  return Math.round(value)
 }
