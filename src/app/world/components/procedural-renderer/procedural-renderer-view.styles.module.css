@@ -19,7 +19,7 @@
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
-  margin: 24px 0 0;
+  margin: 0;
 }
 
 .summaryItem {
@@ -38,4 +38,72 @@
   font-size: 18px;
   font-weight: 700;
   overflow-wrap: anywhere;
+}
+
+.summarySection {
+  display: grid;
+  gap: 12px;
+  margin: 24px 0 0;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 16px;
+}
+
+.metricGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.metricItem {
+  border: 1px solid currentColor;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.metricItem dt {
+  font-size: 12px;
+  opacity: 0.72;
+}
+
+.metricItem dd {
+  margin: 6px 0 0;
+  font-size: 18px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.metaList {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.metaList dt {
+  font-size: 12px;
+  opacity: 0.72;
+}
+
+.metaList dd {
+  margin: 6px 0 0;
+  overflow-wrap: anywhere;
+}
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tagList li {
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 12px;
 }
