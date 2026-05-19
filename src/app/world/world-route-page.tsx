@@ -7,7 +7,7 @@
 import { useMemo, useSyncExternalStore } from "react"
 import Link from "next/link"
 
-import { HomeMapRenderer } from "@/app/world/components/home-map-renderer/HomeMapRenderer"
+import { ProceduralRendererView } from "@/app/world/components/procedural-renderer/procedural-renderer-view"
 import {
   CREATE_WORLD_STORAGE_KEY,
   parseCreateWorldInput,
@@ -81,7 +81,9 @@ export default function WorldRoutePage() {
         </div>
       </section>
 
-      <HomeMapRenderer homeMapState={firstSceneModel.homeMapState} />
+      <ProceduralRendererView
+        snapshot={firstSceneModel.renderableWorldSnapshot}
+      />
 
       <section className={styles.contentGrid}>
         <article className={styles.panel}>

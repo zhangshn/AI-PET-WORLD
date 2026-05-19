@@ -4,13 +4,20 @@
 
 import { buildWorldCreationRuntime } from "@/world/creation/world-creation-runtime"
 import type { CreateWorldInput } from "@/world/creation/world-creation-schema"
+import { buildEnvironmentStateFromHomeMap } from "@/world/environment/environment-gateway"
 import { generateInitialHomeMap } from "@/world/generation/initial-home-generator"
+import { buildPlacementGeometryAuditReport } from "@/world/geometry-audit/geometry-audit-gateway"
 import type {
   ConstructionPlanSummary,
   HomeMapState,
   HomeResourceState,
   HomeZone,
 } from "@/world/map-state/home-map-state-schema"
+import {
+  buildRenderableWorldSnapshot,
+  buildVisualState,
+  type RenderableWorldSnapshot,
+} from "@/world/rendering/renderer-gateway"
 
 export type WorldFirstSceneMilestone = {
   title: string
@@ -53,6 +60,7 @@ export type WorldFirstSceneModel = {
   plans: WorldFirstScenePlan[]
   resources: WorldFirstSceneResource[]
   homeMapState: HomeMapState
+  renderableWorldSnapshot: RenderableWorldSnapshot
 }
 
 export function buildWorldFirstSceneModel(input: {
@@ -68,6 +76,23 @@ export function buildWorldFirstSceneModel(input: {
     worldSalt: runtime.worldSalt,
     butlerConstructionStyle: runtime.butlerConstructionStyle,
     now: runtime.now,
+  })
+  const environmentState = buildEnvironmentStateFromHomeMap({
+    homeMapState,
+    generatedAt: homeMapState.updatedAt,
+  })
+  const placementGeometryAudit = buildPlacementGeometryAuditReport({
+    homeMapState,
+    checkedAt: homeMapState.updatedAt,
+  })
+  const visualState = buildVisualState({
+    homeMapState,
+    environmentState,
+    placementGeometryAudit,
+    generatedAt: homeMapState.updatedAt,
+  })
+  const renderableWorldSnapshot = buildRenderableWorldSnapshot({
+    visualState,
   })
 
   return {
@@ -86,6 +111,7 @@ export function buildWorldFirstSceneModel(input: {
     plans: homeMapState.constructionPlans.map(toFirstScenePlan),
     resources: buildResourceItems(homeMapState.resources),
     homeMapState,
+    renderableWorldSnapshot,
   }
 }
 
