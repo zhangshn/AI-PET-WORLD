@@ -17,7 +17,9 @@ import {
   type WorldFirstSceneModel,
 } from "@/world/runtime/world-first-scene-model"
 import {
+  applyWorldLoopStep,
   buildRuntimeWorldState,
+  buildWorldLoopStep,
   type RuntimeWorldState,
 } from "@/world/world-loop/world-loop-gateway"
 
@@ -73,7 +75,7 @@ export default function WorldRoutePage() {
 
 function WorldRuntimeShell(input: { firstSceneModel: WorldFirstSceneModel }) {
   const { firstSceneModel } = input
-  const [runtimeState] = useState<RuntimeWorldState>(() =>
+  const [runtimeState, setRuntimeState] = useState<RuntimeWorldState>(() =>
     buildRuntimeWorldState({
       worldId: firstSceneModel.worldId,
       ownerId: firstSceneModel.homeMapState.ownerId,
@@ -82,6 +84,24 @@ function WorldRuntimeShell(input: { firstSceneModel: WorldFirstSceneModel }) {
       now: firstSceneModel.homeMapState.updatedAt,
     })
   )
+
+  function handleManualTick() {
+    setRuntimeState((currentRuntimeState) => {
+      const stepResult = buildWorldLoopStep({
+        runtimeState: currentRuntimeState,
+        now:
+          currentRuntimeState.currentHomeMapState.updatedAt +
+          currentRuntimeState.tickIndex +
+          1,
+        source: "manual_tick",
+      })
+
+      return applyWorldLoopStep({
+        runtimeState: currentRuntimeState,
+        stepResult,
+      })
+    })
+  }
 
   return (
     <main className={styles.worldPage} aria-label="AI-PET-WORLD">
@@ -139,11 +159,89 @@ function WorldRuntimeShell(input: { firstSceneModel: WorldFirstSceneModel }) {
               label="Last Step"
               value={runtimeState.lastStepResult?.status ?? "not_started"}
             />
+            <RuntimeInfoItem
+              label="Last SafeApply"
+              value={
+                runtimeState.lastStepResult
+                  ? runtimeState.lastStepResult.auditTrail.tags.find((tag) =>
+                      tag.startsWith("safe_apply:")
+                    ) ?? "unknown"
+                  : "not_started"
+              }
+            />
+            <RuntimeInfoItem
+              label="Last Tick Source"
+              value={
+                runtimeState.lastStepResult?.context.source ?? "initial_world"
+              }
+            />
           </div>
           <p>
             RuntimeWorldState 已建立；当前阶段不自动 Tick、不持久化、不执行
             world-evolution。
           </p>
+          <button
+            className={styles.primaryLink}
+            type="button"
+            onClick={handleManualTick}
+          >
+            手动推进 Tick
+          </button>
+        </article>
+
+        <article className={styles.panel}>
+          <h2>最近 Tick 审计</h2>
+          {runtimeState.lastStepResult ? (
+            <div className={styles.resourceList}>
+              <RuntimeInfoItem
+                label="Step Status"
+                value={runtimeState.lastStepResult.status}
+              />
+              <RuntimeInfoItem
+                label="Tick ID"
+                value={runtimeState.lastStepResult.context.tickId}
+              />
+              <RuntimeInfoItem
+                label="Intent"
+                value={
+                  runtimeState.lastStepResult.intentDecision.selectedIntent.type
+                }
+              />
+              <RuntimeInfoItem
+                label="Plan"
+                value={runtimeState.lastStepResult.worldChangePlan.type}
+              />
+              <RuntimeInfoItem
+                label="Proposal MapDiff"
+                value={String(
+                  runtimeState.lastStepResult.worldDiffProposal.mapDiffs.length
+                )}
+              />
+              <RuntimeInfoItem
+                label="Applied MapDiff"
+                value={String(
+                  runtimeState.lastStepResult.worldEvolutionExecution
+                    .appliedMapDiffCount
+                )}
+              />
+              <RuntimeInfoItem
+                label="Audit Risk"
+                value={
+                  runtimeState.lastStepResult.worldEvolutionAudit.summary
+                    .riskLevel
+                }
+              />
+              <RuntimeInfoItem
+                label="Can Apply Safely"
+                value={String(
+                  runtimeState.lastStepResult.worldEvolutionAudit.summary
+                    .canApplySafely
+                )}
+              />
+            </div>
+          ) : (
+            <p>尚未手动推进 Tick。</p>
+          )}
         </article>
 
         <article className={styles.panel}>
