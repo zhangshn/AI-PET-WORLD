@@ -341,3 +341,21 @@
 8. Renderer 不能读取 proposal 当作现实。
 9. World Geometry Overview Debug / Geometry Source Diagnostics 仍然是开发期 Debug 诊断区，不是最终玩家 UI。
 10. 下一阶段 P8-H 角色占位仍必须来自世界状态与几何链路，不得用 UI 临时状态伪造存在。
+
+## P8-H0 Actor Geometry Placeholder Plan 红线
+
+1. P8-H0 只做规划文档，不新增运行时功能。
+2. 管家 / 宠物显示必须来自世界状态或 actor runtime projection。
+3. Renderer 不能生成 actor。
+4. Renderer 不能生成 placement。
+5. Renderer 不能修改 HomeMapState。
+6. Renderer 不能用 UI 临时状态伪造角色存在。
+7. 管家是管理者，不是玩家手动操控角色。
+8. 宠物是独立生命，不是按钮驱动对象。
+9. 宠物不能通过事件文本说人话。
+10. Actor geometry 不能读取 PNG。
+11. Actor geometry 不能读取 WORLD_MAP_ASSETS。
+12. Actor geometry 不能使用 backgroundImage / img / next/image 作为正式角色显示。
+13. Actor projection 不能写回 placement。
+14. Actor Debug Diagnostics 不是最终玩家 UI。
+15. 后续动画必须由 runtime state / behavior state 派生。

@@ -295,3 +295,42 @@ P8-G 之后继续禁止：
 10. 混淆世界事实层、几何派生层、Debug 展示层。
 
 下一阶段建议进入 P8-H：角色几何占位阶段。
+
+## 13. P8-H 管家 / 宠物 actor 几何占位入口
+
+P8-G 已完成几何视觉阶段收口。
+
+P8-H 进入角色几何占位阶段。
+
+P8-H 的目标不是最终角色美术，也不是角色动画，而是建立管家 / 宠物 actor 在几何视觉系统中的只读投影。
+
+P8-H 必须遵守：
+
+1. 角色显示来自世界状态或 actor runtime projection。
+2. Renderer 不能生成 actor。
+3. Renderer 不能生成 placement。
+4. Renderer 不能修改 HomeMapState。
+5. Renderer 不能用 UI 临时状态伪造角色存在。
+6. 管家是管理者，不是玩家手动操控角色。
+7. 宠物是独立生命，不是按钮驱动对象。
+8. 宠物不能通过事件文本说人话。
+9. 初期只允许几何 / 程序化 actor 占位。
+10. 后续动画必须由 runtime state / behavior state 派生。
+11. 不读取 PNG。
+12. 不读取 WORLD_MAP_ASSETS。
+13. 不使用 backgroundImage 作为正式角色显示。
+
+P8-H 推荐阶段：
+
+1. P8-H0：actor 几何占位规划。
+2. P8-H1：Actor Geometry Projection 协议。
+3. P8-H2：Actor Runtime Projection 输入边界。
+4. P8-H3：VisualState 接入 actor projection。
+5. P8-H4：Renderer 显示 actor geometry。
+6. P8-H5：Actor Debug Diagnostics。
+
+下一步进入：
+
+```text
+P8-H1：Actor Geometry Projection 协议
+```
