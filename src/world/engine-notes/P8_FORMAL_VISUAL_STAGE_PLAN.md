@@ -369,3 +369,53 @@ P8-H1 不做：
 ```text
 P8-H2：Actor Runtime Projection 输入边界
 ```
+
+## 15. P8-H2 Actor Runtime Projection 输入边界记录
+
+P8-H2 已新增 actor-runtime-projection 层。
+
+本阶段定义从世界状态 / runtime state 到 actor projection 的轻量输入边界。
+
+Actor Runtime Projection Result 描述：
+
+1. actorId。
+2. actorKind。
+3. worldId。
+4. presence。
+5. canProject。
+6. anchor。
+7. pose。
+8. attentionDirection。
+9. source。
+10. scale。
+11. reason。
+12. tags。
+
+本阶段不直接导入 ButlerRuntimeContext / PetState，避免过度耦合。
+
+当前只提供 deterministic placeholder anchor：
+
+1. butler：{ x: 6, y: 6 }。
+2. pet：{ x: 7, y: 6 }。
+
+placeholder 只用于输入边界验证，不代表最终 autonomous movement。
+
+P8-H2 不做：
+
+1. Renderer 显示 actor。
+2. VisualState 接入 actor。
+3. ActorGeometryProjection 串联。
+4. 生成 placement。
+5. 修改 HomeMapState。
+6. 修改 world-loop。
+7. 修改 runtime state。
+8. 读取 PNG。
+9. 读取 WORLD_MAP_ASSETS。
+10. 使用 backgroundImage。
+11. 角色动画。
+
+下一步进入：
+
+```text
+P8-H3：Actor Runtime Projection -> Actor Geometry Projection 串联
+```

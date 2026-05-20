@@ -377,3 +377,21 @@
 13. 管家 / 宠物后续显示必须来自世界状态或 actor runtime projection。
 14. 宠物不能通过事件文本说人话。
 15. 管家不能替宠物做决定。
+
+## P8-H2 Actor Runtime Projection Input Boundary 红线
+
+1. Actor Runtime Projection 只能定义轻量输入边界，不接 Renderer。
+2. Actor Runtime Projection 不能接 VisualState。
+3. Actor Runtime Projection 不能修改 world-loop。
+4. Actor Runtime Projection 不能修改 HomeMapState。
+5. Actor Runtime Projection 不能生成 placement。
+6. Actor Runtime Projection 不能导入 ButlerRuntimeContext。
+7. Actor Runtime Projection 不能导入 PetState。
+8. Actor Runtime Projection 不能读取 PNG。
+9. Actor Runtime Projection 不能读取 WORLD_MAP_ASSETS。
+10. Actor Runtime Projection 不能导入 map-assets。
+11. Actor Runtime Projection 不能导入 Renderer。
+12. projection 必须 deterministic。
+13. anchor 缺省时只能使用 deterministic placeholder anchor，并必须通过 reason / tags 可识别。
+14. pet isBorn === false 时 presence 必须是 not_ready，canProject 必须是 false。
+15. placeholder 不能代表最终 autonomous movement，不能写回 HomeMapState。
