@@ -11,11 +11,20 @@ import type {
   WorldRuleCheckReason,
 } from "@/world/core-rules/world-rule-gateway"
 
+export type GeometrySource =
+  | "shape_grammar_tree"
+  | "shape_grammar_house"
+  | "shape_grammar_road"
+  | "shape_grammar_generic"
+  | "fallback_rectangle"
+  | "unknown"
+
 export type PlacementGeometryAuditItem = {
   placementId: string
   label: string
   layer: MapPlacementLayer
   assetId: WorldMapAssetId
+  geometrySource: GeometrySource
   geometryBuilt: boolean
   hasFootprint: boolean
   hasCollision: boolean
@@ -38,6 +47,9 @@ export type PlacementGeometryAuditSummary = {
   collisionGeometryCount: number
   supportGeometryCount: number
   influenceGeometryCount: number
+  shapeGrammarCount: number
+  fallbackRectangleCount: number
+  unknownGeometrySourceCount: number
 }
 
 export type PlacementGeometryAuditReport = {

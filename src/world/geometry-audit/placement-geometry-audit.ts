@@ -9,6 +9,7 @@ import {
 import type { MapPlacement, HomeMapState } from "@/world/map-state/home-map-state-schema"
 
 import type {
+  GeometrySource,
   PlacementGeometryAuditItem,
   PlacementGeometryAuditReport,
   PlacementGeometryAuditSummary,
@@ -40,12 +41,14 @@ function buildPlacementGeometryAuditItem(
   try {
     const geometry = buildEntityGeometryFromPlacement({ placement })
     const ruleCheck = checkPlacementWorldRule({ placement })
+    const geometrySource = inferGeometrySourceFromTags(geometry.tags)
 
     return {
       placementId: placement.id,
       label: placement.label,
       layer: placement.layer,
       assetId: placement.assetId,
+      geometrySource,
       geometryBuilt: true,
       hasFootprint: Boolean(geometry.footprint),
       hasCollision: Boolean(geometry.collision),
@@ -68,6 +71,7 @@ function buildPlacementGeometryAuditItem(
       label: placement.label,
       layer: placement.layer,
       assetId: placement.assetId,
+      geometrySource: "unknown",
       geometryBuilt: false,
       hasFootprint: false,
       hasCollision: false,
@@ -95,7 +99,51 @@ function buildPlacementGeometryAuditSummary(
     collisionGeometryCount: countBy(items, (item) => item.hasCollision),
     supportGeometryCount: countBy(items, (item) => item.hasSupport),
     influenceGeometryCount: countBy(items, (item) => item.hasInfluence),
+    shapeGrammarCount: countBy(items, (item) =>
+      isShapeGrammarSource(item.geometrySource)
+    ),
+    fallbackRectangleCount: countBy(
+      items,
+      (item) => item.geometrySource === "fallback_rectangle"
+    ),
+    unknownGeometrySourceCount: countBy(
+      items,
+      (item) => item.geometrySource === "unknown"
+    ),
   }
+}
+
+function inferGeometrySourceFromTags(tags: string[]): GeometrySource {
+  if (tags.includes("geometry_source:shape_grammar:tree")) {
+    return "shape_grammar_tree"
+  }
+
+  if (tags.includes("geometry_source:shape_grammar:house")) {
+    return "shape_grammar_house"
+  }
+
+  if (tags.includes("geometry_source:shape_grammar:road")) {
+    return "shape_grammar_road"
+  }
+
+  if (tags.includes("geometry_source:shape_grammar:generic")) {
+    return "shape_grammar_generic"
+  }
+
+  if (tags.includes("geometry_source:fallback_rectangle")) {
+    return "fallback_rectangle"
+  }
+
+  return "unknown"
+}
+
+function isShapeGrammarSource(source: GeometrySource): boolean {
+  return (
+    source === "shape_grammar_tree" ||
+    source === "shape_grammar_house" ||
+    source === "shape_grammar_road" ||
+    source === "shape_grammar_generic"
+  )
 }
 
 function countBy<TItem>(

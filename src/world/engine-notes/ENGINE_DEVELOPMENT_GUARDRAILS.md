@@ -249,3 +249,16 @@
 8. Adapter 不能绕过 world rules。
 9. fallback rectangle 逻辑必须保留，避免未映射对象中断。
 10. 后续 geometry audit 必须能看出 geometry_source。
+
+## P8-G3 Geometry Audit 红线
+
+1. Geometry audit 只能读取 EntityGeometry 与规则校验结果。
+2. Geometry audit 不能生成 placement。
+3. Geometry audit 不能修改 HomeMapState。
+4. Geometry audit 不能读取 PNG。
+5. Geometry audit 不能读取 WORLD_MAP_ASSETS。
+6. Geometry audit 不能修改 Renderer。
+7. geometrySource 必须来自 EntityGeometry.tags。
+8. shapeGrammarCount 只能统计 shape_grammar_* 来源。
+9. fallback rectangle 必须可见，不能被伪装成 ShapeGrammar。
+10. unknown source 必须保留，不能静默吞掉。
