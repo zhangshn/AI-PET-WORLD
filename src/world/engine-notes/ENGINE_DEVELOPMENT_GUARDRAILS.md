@@ -301,3 +301,16 @@
 8. 本阶段不能修改 Renderer。
 9. 本阶段不能读取 PNG。
 10. 本阶段不能读取 WORLD_MAP_ASSETS。
+
+## P8-G6 Geometry Source Diagnostics 红线
+
+1. Diagnostics 只能读取 VisualPlacement.tags。
+2. Diagnostics 不能读取 PNG。
+3. Diagnostics 不能读取 WORLD_MAP_ASSETS。
+4. Diagnostics 不能生成 placement。
+5. Diagnostics 不能修改 HomeMapState。
+6. Diagnostics 不能重新推断世界事实。
+7. Diagnostics 不能读取 proposal 当作现实。
+8. Diagnostics 只用于页面审计，不参与世界运行。
+9. 每个 source 分组必须保留 unknown。
+10. 每个 source 分组必须能看出 footprint / collision / support / influence 是否存在。

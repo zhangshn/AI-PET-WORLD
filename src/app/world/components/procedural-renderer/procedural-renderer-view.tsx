@@ -51,6 +51,8 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
   const visibleCommands = snapshot.drawCommands.slice(0, MAX_VISIBLE_COMMANDS)
   const geometryVisualItems = buildGeometryVisualItems(visualState.placements)
   const geometryVisualSummary = buildGeometryVisualSummary(geometryVisualItems)
+  const geometrySourceDiagnostics =
+    buildGeometrySourceDiagnostics(visualState.placements)
   const proceduralVisualItems = buildProceduralVisualItems({
     placements: visualState.placements.filter((placement) =>
       shouldRenderProceduralFallbackPlacement(placement)
@@ -367,6 +369,28 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
           </span>
         </div>
 
+        <section
+          className={styles.geometryDiagnostics}
+          aria-labelledby="geometry-source-diagnostics"
+        >
+          <h4
+            className={styles.geometryDiagnosticsTitle}
+            id="geometry-source-diagnostics"
+          >
+            Geometry Source Diagnostics
+          </h4>
+          <p className={styles.sectionDescription}>
+            这里按 VisualPlacement.tags 中的 geometry_source 分组显示
+            placement，用于确认 tree / house / road / generic / fallback
+            是否真的来自几何链路。
+          </p>
+          <div className={styles.geometryDiagnosticGrid}>
+            {geometrySourceDiagnostics.groups.map(
+              renderGeometrySourceDiagnosticGroup
+            )}
+          </div>
+        </section>
+
         <dl className={styles.metricGrid}>
           <div className={styles.metricItem}>
             <dt>procedural fallback visuals</dt>
@@ -556,6 +580,30 @@ type GeometryVisualSummary = {
   unknownSource: number
 }
 
+type GeometrySourceDiagnosticItem = {
+  placementId: string
+  label: string
+  layer: VisualPlacement["layer"]
+  source: GeometryVisualSource
+  ruleStatus: VisualPlacement["ruleStatus"]
+  hasFootprint: boolean
+  hasCollision: boolean
+  hasSupport: boolean
+  hasInfluence: boolean
+  tags: string[]
+}
+
+type GeometrySourceDiagnosticGroup = {
+  source: GeometryVisualSource
+  label: string
+  items: GeometrySourceDiagnosticItem[]
+}
+
+type GeometrySourceDiagnostics = {
+  totalPlacements: number
+  groups: GeometrySourceDiagnosticGroup[]
+}
+
 type ProceduralVisualKind =
   | "ground"
   | "path"
@@ -709,6 +757,111 @@ function inferGeometryVisualSourceFromTags(
   }
 
   return "unknown"
+}
+
+function buildGeometrySourceDiagnostics(
+  placements: VisualPlacement[]
+): GeometrySourceDiagnostics {
+  const items = placements.map(buildGeometrySourceDiagnosticItem)
+  const sources: GeometryVisualSource[] = [
+    "shape_grammar_tree",
+    "shape_grammar_house",
+    "shape_grammar_road",
+    "shape_grammar_generic",
+    "fallback_rectangle",
+    "unknown",
+  ]
+
+  return {
+    totalPlacements: placements.length,
+    groups: sources.map((source) => ({
+      source,
+      label: buildGeometrySourceLabel(source),
+      items: items
+        .filter((item) => item.source === source)
+        .sort(sortGeometrySourceDiagnosticItems),
+    })),
+  }
+}
+
+function buildGeometrySourceDiagnosticItem(
+  placement: VisualPlacement
+): GeometrySourceDiagnosticItem {
+  return {
+    placementId: placement.placementId,
+    label: placement.label,
+    layer: placement.layer,
+    source: inferGeometryVisualSourceFromTags(placement.tags),
+    ruleStatus: placement.ruleStatus,
+    hasFootprint: Boolean(placement.footprint),
+    hasCollision: Boolean(placement.collision),
+    hasSupport: Boolean(placement.support),
+    hasInfluence: Boolean(placement.influence),
+    tags: placement.tags,
+  }
+}
+
+function renderGeometrySourceDiagnosticGroup(
+  group: GeometrySourceDiagnosticGroup
+): ReactNode {
+  return (
+    <article key={group.source} className={styles.geometryDiagnosticGroup}>
+      <div className={styles.geometryDiagnosticGroupHeader}>
+        <strong>{group.label}</strong>
+        <span>{group.items.length}</span>
+      </div>
+      {group.items.length > 0 ? (
+        <ul className={styles.geometryDiagnosticList}>
+          {group.items.slice(0, 12).map(renderGeometrySourceDiagnosticItem)}
+        </ul>
+      ) : (
+        <p className={styles.geometryDiagnosticEmpty}>暂无 placement</p>
+      )}
+    </article>
+  )
+}
+
+function renderGeometrySourceDiagnosticItem(
+  item: GeometrySourceDiagnosticItem
+): ReactNode {
+  return (
+    <li key={item.placementId} className={styles.geometryDiagnosticItem}>
+      <span className={styles.geometryDiagnosticItemLabel}>{item.label}</span>
+      <span className={styles.geometryDiagnosticItemMeta}>
+        {item.layer} / {item.ruleStatus}
+      </span>
+      <span className={styles.geometryDiagnosticItemMeta}>
+        F:{formatBooleanFlag(item.hasFootprint)} C:
+        {formatBooleanFlag(item.hasCollision)} S:
+        {formatBooleanFlag(item.hasSupport)} I:
+        {formatBooleanFlag(item.hasInfluence)}
+      </span>
+    </li>
+  )
+}
+
+function buildGeometrySourceLabel(source: GeometryVisualSource): string {
+  if (source === "shape_grammar_tree") return "shape grammar / tree"
+  if (source === "shape_grammar_house") return "shape grammar / house"
+  if (source === "shape_grammar_road") return "shape grammar / road"
+  if (source === "shape_grammar_generic") return "shape grammar / generic"
+  if (source === "fallback_rectangle") return "fallback rectangle"
+  return "unknown"
+}
+
+function sortGeometrySourceDiagnosticItems(
+  left: GeometrySourceDiagnosticItem,
+  right: GeometrySourceDiagnosticItem
+): number {
+  if (left.layer !== right.layer) {
+    return left.layer.localeCompare(right.layer)
+  }
+
+  return left.placementId.localeCompare(right.placementId)
+}
+
+function formatBooleanFlag(value: boolean): string {
+  return value ? "Y" : "N"
 }
 
 function renderGeometryVisualItem(item: GeometryVisualItem): ReactNode {
