@@ -373,17 +373,18 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
 
         <section
           className={styles.worldGeometryOverview}
-          aria-labelledby="world-geometry-overview"
+          aria-labelledby="world-geometry-overview-debug"
         >
           <h4
             className={styles.worldGeometryOverviewTitle}
-            id="world-geometry-overview"
+            id="world-geometry-overview-debug"
           >
-            World Geometry Overview
+            World Geometry Overview Debug
           </h4>
           <p className={styles.sectionDescription}>
-            这里把 ShapeGrammar 与 Geometry Source 转成更直观的世界结构摘要；
-            它只读取 VisualPlacement.tags 与几何投影状态，不生成 placement，也不修改世界。
+            世界几何结构概览（Debug）：这里把 ShapeGrammar 与 Geometry Source
+            转成开发期可读的世界结构摘要；它只读取 VisualPlacement.tags
+            与几何投影状态，不生成 placement，也不修改世界。该区域不是最终玩家 UI。
           </p>
           <div className={styles.worldGeometryOverviewGrid}>
             {worldGeometryOverview.items.map(renderWorldGeometryOverviewItem)}

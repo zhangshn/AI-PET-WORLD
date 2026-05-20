@@ -315,15 +315,16 @@
 9. 每个 source 分组必须保留 unknown。
 10. 每个 source 分组必须能看出 footprint / collision / support / influence 是否存在。
 
-## P8-G7 World Geometry Overview 红线
+## P8-G7 World Geometry Overview Debug 红线
 
-1. Overview 只能读取 Geometry Source Diagnostics 的只读结果。
-2. Overview 不能读取 PNG。
-3. Overview 不能读取 WORLD_MAP_ASSETS。
-4. Overview 不能生成 placement。
-5. Overview 不能修改 HomeMapState。
-6. Overview 不能重新推断世界事实。
-7. Overview 不参与世界运行。
-8. Overview 只能把 geometry_source 翻译成产品可读摘要。
-9. fallback 和 unknown 必须保留显示。
-10. 产品可读表达不能掩盖底层 Geometry / ShapeGrammar 来源。
+1. Overview Debug 只能读取 Geometry Source Diagnostics 的只读结果。
+2. Overview Debug 不是最终玩家 UI。
+3. Overview Debug 不能读取 PNG。
+4. Overview Debug 不能读取 WORLD_MAP_ASSETS。
+5. Overview Debug 不能生成 placement。
+6. Overview Debug 不能修改 HomeMapState。
+7. Overview Debug 不能重新推断世界事实。
+8. Overview Debug 不参与世界运行。
+9. Overview Debug 只能把 geometry_source 翻译成开发期可读摘要。
+10. fallback 和 unknown 必须保留显示。
+11. 开发期可读表达不能掩盖底层 Geometry / ShapeGrammar 来源。
