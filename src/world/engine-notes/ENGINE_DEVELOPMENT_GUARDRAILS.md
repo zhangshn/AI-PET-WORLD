@@ -288,3 +288,16 @@
 8. CSS fallback 只能作为辅助可读层。
 9. ground / path / zone / edge 不能重新用 fallback 大量铺满。
 10. tree / house / road 的视觉区分必须追溯到 ShapeGrammar / Geometry 来源。
+
+## P8-G5.1 VisualState Geometry Tags 红线
+
+1. VisualState 可以透传 EntityGeometry.tags，但不能生成新的世界事实。
+2. VisualState 不能生成 placement。
+3. VisualState 不能修改 HomeMapState。
+4. geometry_source 必须来自 EntityGeometry.tags。
+5. VisualPlacement.tags 必须保留 placement.tags / visual_rule / placement_layer。
+6. tags 必须去重。
+7. Renderer 的 geometry source 判断只能依赖 VisualPlacement.tags。
+8. 本阶段不能修改 Renderer。
+9. 本阶段不能读取 PNG。
+10. 本阶段不能读取 WORLD_MAP_ASSETS。

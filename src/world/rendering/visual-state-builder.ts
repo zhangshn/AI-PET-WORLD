@@ -111,11 +111,12 @@ function buildVisualPlacement(input: {
       ruleMessage,
       alpha: input.placement.alpha,
       scale: input.placement.scale,
-      tags: [
-        ...input.placement.tags,
-        `visual_rule:${ruleStatus}`,
-        `placement_layer:${input.placement.layer}`,
-      ],
+      tags: buildVisualPlacementTags({
+        placementTags: input.placement.tags,
+        geometryTags: geometry.tags,
+        ruleStatus,
+        placementLayer: input.placement.layer,
+      }),
     }
   } catch {
     return {
@@ -131,14 +132,35 @@ function buildVisualPlacement(input: {
       ruleMessage: input.auditItem ? ruleMessage : "无法生成 EntityGeometry。",
       alpha: input.placement.alpha,
       scale: input.placement.scale,
-      tags: [
-        ...input.placement.tags,
-        `visual_rule:${ruleStatus}`,
-        `placement_layer:${input.placement.layer}`,
-        "visual_geometry_failed",
-      ],
+      tags: buildVisualPlacementTags({
+        placementTags: input.placement.tags,
+        geometryTags: [],
+        ruleStatus,
+        placementLayer: input.placement.layer,
+        extraTags: ["visual_geometry_failed"],
+      }),
     }
   }
+}
+
+function buildVisualPlacementTags(input: {
+  placementTags: string[]
+  geometryTags: string[]
+  ruleStatus: VisualRuleStatus
+  placementLayer: MapPlacement["layer"]
+  extraTags?: string[]
+}): string[] {
+  return uniqueTags([
+    ...input.placementTags,
+    ...input.geometryTags,
+    `visual_rule:${input.ruleStatus}`,
+    `placement_layer:${input.placementLayer}`,
+    ...(input.extraTags ?? []),
+  ])
+}
+
+function uniqueTags(tags: string[]): string[] {
+  return Array.from(new Set(tags))
 }
 
 function buildRuleStatus(
