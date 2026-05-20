@@ -262,3 +262,16 @@
 8. shapeGrammarCount 只能统计 shape_grammar_* 来源。
 9. fallback rectangle 必须可见，不能被伪装成 ShapeGrammar。
 10. unknown source 必须保留，不能静默吞掉。
+
+## P8-G4 Renderer Geometry Projection 红线
+
+1. Renderer 读取 VisualPlacement.footprint / collision / support / influence 绘制。
+2. Renderer 不能读取 PNG。
+3. Renderer 不能读取 WORLD_MAP_ASSETS。
+4. Renderer 不能生成 placement。
+5. Renderer 不能修改 HomeMapState。
+6. Renderer 不能读取 proposal 当作现实。
+7. SVG geometry layer 是正式几何主绘制层。
+8. CSS procedural fallback 只能作为临时可读层。
+9. ground / path / zone / edge 不能继续用大量 CSS fallback 铺满遮挡几何层。
+10. 后续视觉增强必须继续追溯到 Geometry / VisualState / WorldState。

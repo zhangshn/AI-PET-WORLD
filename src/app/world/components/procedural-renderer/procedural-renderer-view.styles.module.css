@@ -141,6 +141,46 @@
   opacity: 1;
 }
 
+.geometryProjectionSvg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+}
+
+.proceduralFallbackLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.geometryFootprint {
+  fill: rgba(120, 190, 110, 0.35);
+  stroke: rgba(35, 95, 45, 0.75);
+  stroke-width: 1.5;
+}
+
+.geometryCollision {
+  fill: rgba(210, 80, 70, 0.18);
+  stroke: rgba(190, 55, 48, 0.86);
+  stroke-width: 1.25;
+  stroke-dasharray: 4 3;
+}
+
+.geometrySupport {
+  fill: rgba(80, 125, 210, 0.14);
+  stroke: rgba(72, 100, 190, 0.8);
+  stroke-width: 1.25;
+  stroke-dasharray: 5 3;
+}
+
+.geometryInfluence {
+  fill: rgba(220, 190, 80, 0.12);
+  stroke: rgba(205, 170, 62, 0.72);
+  stroke-width: 1;
+  stroke-dasharray: 6 4;
+}
+
 .visualAssetLabel {
   position: absolute;
   left: 50%;

@@ -1,6 +1,5 @@
-/**
- * 当前文件职责：提供正式 ProceduralRenderer 组件骨架。
- */
+﻿/**
+ * 褰撳墠鏂囦欢鑱岃矗锛氭彁渚涙寮?ProceduralRenderer 缁勪欢楠ㄦ灦銆? */
 
 import type { ReactNode } from "react"
 
@@ -10,7 +9,10 @@ import type {
   RenderableWorldSnapshot,
   VisualPlacement,
 } from "@/world/rendering/renderer-gateway"
-import type { Point2D } from "@/world/spatial/spatial-gateway"
+import type {
+  Point2D,
+  SpatialShape,
+} from "@/world/spatial/spatial-gateway"
 
 import styles from "./procedural-renderer-view.styles.module.css"
 
@@ -19,6 +21,8 @@ const VIEW_PADDING = 24
 const MAX_VISIBLE_COMMANDS = 400
 const FORMAL_VIEW_SCALE = 32
 const FORMAL_VIEW_PADDING = 32
+const GEOMETRY_VIEW_SCALE = 32
+const GEOMETRY_VIEW_PADDING = 32
 const LAYER_RENDER_ORDER: MapPlacementLayer[] = [
   "ground",
   "edge",
@@ -45,8 +49,12 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
     .filter((overlay) => overlay.enabled)
     .map((overlay) => overlay.type)
   const visibleCommands = snapshot.drawCommands.slice(0, MAX_VISIBLE_COMMANDS)
+  const geometryVisualItems = buildGeometryVisualItems(visualState.placements)
+  const geometryVisualSummary = buildGeometryVisualSummary(geometryVisualItems)
   const proceduralVisualItems = buildProceduralVisualItems({
-    placements: visualState.placements,
+    placements: visualState.placements.filter((placement) =>
+      shouldRenderProceduralFallbackPlacement(placement)
+    ),
     tileSize: visualState.mapSize.tileSize,
   })
   const proceduralVisualSummary =
@@ -54,10 +62,12 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
   const svgWidth =
     visualState.mapSize.columns * VIEW_SCALE + VIEW_PADDING * 2
   const svgHeight = visualState.mapSize.rows * VIEW_SCALE + VIEW_PADDING * 2
-  const formalViewportWidth =
-    visualState.mapSize.columns * FORMAL_VIEW_SCALE + FORMAL_VIEW_PADDING * 2
-  const formalViewportHeight =
-    visualState.mapSize.rows * FORMAL_VIEW_SCALE + FORMAL_VIEW_PADDING * 2
+  const geometryViewportWidth =
+    visualState.mapSize.columns * GEOMETRY_VIEW_SCALE +
+    GEOMETRY_VIEW_PADDING * 2
+  const geometryViewportHeight =
+    visualState.mapSize.rows * GEOMETRY_VIEW_SCALE +
+    GEOMETRY_VIEW_PADDING * 2
 
   return (
     <section
@@ -66,22 +76,20 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
     >
       <div className={styles.header}>
         <span className={styles.eyebrow}>PROCEDURAL RENDERER / SUMMARY</span>
-        <h2>ProceduralRenderer 正式组件摘要</h2>
+        <h2>ProceduralRenderer 姝ｅ紡缁勪欢鎽樿</h2>
         <p>
-          ProceduralRenderer 正式组件已接收 RenderableWorldSnapshot。
-          当前 Renderer 按定版文档改为几何 / 程序化绘制：它只读取
-          RenderableWorldSnapshot、VisualState 与 DrawCommand，不读取 PNG
-          图片，不把素材贴图当作世界。
-        </p>
+          ProceduralRenderer 姝ｅ紡缁勪欢宸叉帴鏀?RenderableWorldSnapshot銆?          褰撳墠 Renderer 鎸夊畾鐗堟枃妗ｆ敼涓哄嚑浣?/ 绋嬪簭鍖栫粯鍒讹細瀹冨彧璇诲彇
+          RenderableWorldSnapshot銆乂isualState 涓?DrawCommand锛屼笉璇诲彇 PNG
+          鍥剧墖锛屼笉鎶婄礌鏉愯创鍥惧綋浣滀笘鐣屻€?        </p>
       </div>
 
       <section className={styles.summarySection} aria-labelledby="base-summary">
         <h3 className={styles.sectionTitle} id="base-summary">
-          基础 Summary
+          鍩虹 Summary
         </h3>
         <dl className={styles.summaryGrid}>
           <div className={styles.summaryItem}>
-            <dt>世界编号</dt>
+            <dt>涓栫晫缂栧彿</dt>
             <dd>{visualState.worldId}</dd>
           </div>
           <div className={styles.summaryItem}>
@@ -228,29 +236,66 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
         aria-labelledby="formal-visual-preview"
       >
         <h3 className={styles.sectionTitle} id="formal-visual-preview">
-          几何 / 程序化视觉预览 v1
+          鍑犱綍 / 绋嬪簭鍖栬瑙夐瑙?v1
         </h3>
         <p className={styles.sectionDescription}>
-          当前视图只读取 VisualState.placements 与几何派生信息，并用程序化
-          CSS 形状绘制世界对象；不读取 PNG 图片，不读取 proposal，不生成
-          placement，不修改 HomeMapState。
+          当前视图优先读取 VisualState.placements 中的 footprint / collision /
+          support / influence 几何投影，并用 SVG 绘制世界结构；CSS
+          程序化形状仅作为 fallback / label 层保留。不读取 PNG
+          图片，不读取 proposal，不生成 placement，不修改 HomeMapState。
         </p>
 
         <div className={styles.formalViewport}>
           <div
             className={styles.formalWorldCanvas}
             style={{
-              width: formalViewportWidth,
-              height: formalViewportHeight,
+              width: geometryViewportWidth,
+              height: geometryViewportHeight,
             }}
           >
-            {proceduralVisualItems.map(renderProceduralVisualItem)}
+            <svg
+              className={styles.geometryProjectionSvg}
+              width={geometryViewportWidth}
+              height={geometryViewportHeight}
+              viewBox={`0 0 ${geometryViewportWidth} ${geometryViewportHeight}`}
+              role="img"
+              aria-label="Geometry projection rendering"
+            >
+              {geometryVisualItems.map(renderGeometryVisualItem)}
+            </svg>
+
+            <div className={styles.proceduralFallbackLayer}>
+              {proceduralVisualItems.map(renderProceduralVisualItem)}
+            </div>
           </div>
         </div>
 
         <dl className={styles.metricGrid}>
           <div className={styles.metricItem}>
-            <dt>procedural visuals</dt>
+            <dt>geometry visuals</dt>
+            <dd>{geometryVisualSummary.total}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>footprint</dt>
+            <dd>{geometryVisualSummary.footprint}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>collision</dt>
+            <dd>{geometryVisualSummary.collision}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>support</dt>
+            <dd>{geometryVisualSummary.support}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>influence</dt>
+            <dd>{geometryVisualSummary.influence}</dd>
+          </div>
+        </dl>
+
+        <dl className={styles.metricGrid}>
+          <div className={styles.metricItem}>
+            <dt>procedural fallback visuals</dt>
             <dd>{proceduralVisualSummary.total}</dd>
           </div>
           <div className={styles.metricItem}>
@@ -314,12 +359,11 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
         aria-labelledby="wireframe-preview"
       >
         <h3 className={styles.sectionTitle} id="wireframe-preview">
-          基础线框预览
+          鍩虹绾挎棰勮
         </h3>
         <p className={styles.sectionDescription}>
-          线框作为 debug overlay 保留；几何 / 程序化视觉预览读取
-          VisualState.placements、anchor、footprint、collision、support、
-          influence 与 DrawCommand 派生信息。
+          线框作为 debug overlay 保留；上方 SVG 几何主绘制层读取
+          VisualPlacement 的 footprint / collision / support / influence。
         </p>
         <div className={styles.wireframeViewport}>
           <svg
@@ -328,7 +372,7 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
             height={svgHeight}
             viewBox={`0 0 ${svgWidth} ${svgHeight}`}
             role="img"
-            aria-label="ProceduralRenderer 基础线框预览"
+            aria-label="ProceduralRenderer 鍩虹绾挎棰勮"
           >
             {visibleCommands.map(renderDrawCommand)}
           </svg>
@@ -396,6 +440,32 @@ type DrawCommandSummary = {
   bySource: CountMap
 }
 
+type GeometryVisualLayer =
+  | "footprint"
+  | "collision"
+  | "support"
+  | "influence"
+
+type GeometryVisualItem = {
+  id: string
+  placementId: string
+  label: string
+  layer: GeometryVisualLayer
+  shape: SpatialShape
+  ruleStatus: VisualPlacement["ruleStatus"]
+  placementLayer: VisualPlacement["layer"]
+  tags: string[]
+}
+
+type GeometryVisualSummary = {
+  total: number
+  footprint: number
+  collision: number
+  support: number
+  influence: number
+  byPlacementLayer: CountMap
+}
+
 type ProceduralVisualKind =
   | "ground"
   | "path"
@@ -425,6 +495,191 @@ type ProceduralVisualSummary = {
   total: number
   byKind: CountMap
   byLayer: CountMap
+}
+
+function buildGeometryVisualItems(
+  placements: VisualPlacement[]
+): GeometryVisualItem[] {
+  return placements.flatMap((placement) => {
+    const items: GeometryVisualItem[] = []
+
+    if (placement.footprint) {
+      items.push(buildGeometryVisualItem({
+        placement,
+        layer: "footprint",
+        shape: placement.footprint,
+      }))
+    }
+
+    if (placement.collision) {
+      items.push(buildGeometryVisualItem({
+        placement,
+        layer: "collision",
+        shape: placement.collision,
+      }))
+    }
+
+    if (placement.support) {
+      items.push(buildGeometryVisualItem({
+        placement,
+        layer: "support",
+        shape: placement.support,
+      }))
+    }
+
+    if (placement.influence) {
+      items.push(buildGeometryVisualItem({
+        placement,
+        layer: "influence",
+        shape: placement.influence,
+      }))
+    }
+
+    return items
+  })
+}
+
+function buildGeometryVisualItem(input: {
+  placement: VisualPlacement
+  layer: GeometryVisualLayer
+  shape: SpatialShape
+}): GeometryVisualItem {
+  return {
+    id: `geometry-${input.layer}-${input.placement.placementId}`,
+    placementId: input.placement.placementId,
+    label: `${input.placement.label} ${input.layer}`,
+    layer: input.layer,
+    shape: input.shape,
+    ruleStatus: input.placement.ruleStatus,
+    placementLayer: input.placement.layer,
+    tags: [
+      ...input.placement.tags,
+      "geometry_visual_item_v1",
+      `geometry_visual_layer:${input.layer}`,
+      `placement_layer:${input.placement.layer}`,
+    ],
+  }
+}
+
+function buildGeometryVisualSummary(
+  items: GeometryVisualItem[]
+): GeometryVisualSummary {
+  return {
+    total: items.length,
+    footprint: items.filter((item) => item.layer === "footprint").length,
+    collision: items.filter((item) => item.layer === "collision").length,
+    support: items.filter((item) => item.layer === "support").length,
+    influence: items.filter((item) => item.layer === "influence").length,
+    byPlacementLayer: countBy(items.map((item) => item.placementLayer)),
+  }
+}
+
+function renderGeometryVisualItem(item: GeometryVisualItem): ReactNode {
+  if (item.shape.kind === "point") {
+    return renderGeometryPoint(item)
+  }
+
+  if (item.shape.kind === "line") {
+    return renderGeometryLine(item)
+  }
+
+  if (item.shape.kind === "polygon") {
+    return renderGeometryPolygon({
+      item,
+      points: item.shape.polygon.points,
+    })
+  }
+
+  return item.shape.multiPolygon.polygons.map((polygon, index) =>
+    renderGeometryPolygon({
+      item: {
+        ...item,
+        id: `${item.id}-polygon-${index}`,
+      },
+      points: polygon.points,
+    })
+  )
+}
+
+function renderGeometryPoint(item: GeometryVisualItem): ReactNode {
+  if (item.shape.kind !== "point") {
+    return null
+  }
+
+  const point = toGeometryScreenPoint(item.shape.point)
+
+  return (
+    <circle
+      key={item.id}
+      className={getGeometryVisualClassName(item)}
+      cx={point.x}
+      cy={point.y}
+      r={4}
+      opacity={getGeometryVisualOpacity(item.layer)}
+    >
+      <title>{item.label}</title>
+    </circle>
+  )
+}
+
+function renderGeometryLine(item: GeometryVisualItem): ReactNode {
+  if (item.shape.kind !== "line") {
+    return null
+  }
+
+  return (
+    <polyline
+      key={item.id}
+      className={getGeometryVisualClassName(item)}
+      points={toGeometrySvgPoints(item.shape.line.points)}
+      fill="none"
+      opacity={getGeometryVisualOpacity(item.layer)}
+    >
+      <title>{item.label}</title>
+    </polyline>
+  )
+}
+
+function renderGeometryPolygon(input: {
+  item: GeometryVisualItem
+  points: readonly Point2D[]
+}): ReactNode {
+  return (
+    <polygon
+      key={input.item.id}
+      className={getGeometryVisualClassName(input.item)}
+      points={toGeometrySvgPoints(input.points)}
+      opacity={getGeometryVisualOpacity(input.item.layer)}
+    >
+      <title>{input.item.label}</title>
+    </polygon>
+  )
+}
+
+function getGeometryVisualClassName(item: GeometryVisualItem): string {
+  if (item.layer === "footprint") return styles.geometryFootprint
+  if (item.layer === "collision") return styles.geometryCollision
+  if (item.layer === "support") return styles.geometrySupport
+  return styles.geometryInfluence
+}
+
+function getGeometryVisualOpacity(layer: GeometryVisualLayer): number {
+  if (layer === "footprint") return 0.5
+  if (layer === "collision") return 0.35
+  if (layer === "support") return 0.28
+  return 0.22
+}
+
+function shouldRenderProceduralFallbackPlacement(
+  placement: VisualPlacement
+): boolean {
+  return (
+    placement.layer === "structure" ||
+    placement.layer === "facility" ||
+    placement.layer === "nature" ||
+    placement.layer === "surface-decoration" ||
+    placement.layer === "actor"
+  )
 }
 
 function renderProceduralVisualItem(item: ProceduralVisualItem): ReactNode {
@@ -753,6 +1008,20 @@ function toScreenPoint(point: Point2D): Point2D {
 function toSvgPoints(points: Point2D[]): string {
   return points
     .map(toScreenPoint)
+    .map((point) => `${point.x},${point.y}`)
+    .join(" ")
+}
+
+function toGeometryScreenPoint(point: Point2D): Point2D {
+  return {
+    x: point.x * GEOMETRY_VIEW_SCALE + GEOMETRY_VIEW_PADDING,
+    y: point.y * GEOMETRY_VIEW_SCALE + GEOMETRY_VIEW_PADDING,
+  }
+}
+
+function toGeometrySvgPoints(points: readonly Point2D[]): string {
+  return points
+    .map(toGeometryScreenPoint)
     .map((point) => `${point.x},${point.y}`)
     .join(" ")
 }
