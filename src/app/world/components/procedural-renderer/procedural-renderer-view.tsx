@@ -53,6 +53,8 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
   const geometryVisualSummary = buildGeometryVisualSummary(geometryVisualItems)
   const geometrySourceDiagnostics =
     buildGeometrySourceDiagnostics(visualState.placements)
+  const worldGeometryOverview =
+    buildWorldGeometryOverview(geometrySourceDiagnostics)
   const proceduralVisualItems = buildProceduralVisualItems({
     placements: visualState.placements.filter((placement) =>
       shouldRenderProceduralFallbackPlacement(placement)
@@ -370,6 +372,25 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
         </div>
 
         <section
+          className={styles.worldGeometryOverview}
+          aria-labelledby="world-geometry-overview"
+        >
+          <h4
+            className={styles.worldGeometryOverviewTitle}
+            id="world-geometry-overview"
+          >
+            World Geometry Overview
+          </h4>
+          <p className={styles.sectionDescription}>
+            这里把 ShapeGrammar 与 Geometry Source 转成更直观的世界结构摘要；
+            它只读取 VisualPlacement.tags 与几何投影状态，不生成 placement，也不修改世界。
+          </p>
+          <div className={styles.worldGeometryOverviewGrid}>
+            {worldGeometryOverview.items.map(renderWorldGeometryOverviewItem)}
+          </div>
+        </section>
+
+        <section
           className={styles.geometryDiagnostics}
           aria-labelledby="geometry-source-diagnostics"
         >
@@ -602,6 +623,31 @@ type GeometrySourceDiagnosticGroup = {
 type GeometrySourceDiagnostics = {
   totalPlacements: number
   groups: GeometrySourceDiagnosticGroup[]
+}
+
+type WorldGeometryOverviewKind =
+  | "tree"
+  | "house"
+  | "road"
+  | "generic"
+  | "fallback"
+  | "unknown"
+
+type WorldGeometryOverviewItem = {
+  kind: WorldGeometryOverviewKind
+  title: string
+  description: string
+  count: number
+  items: GeometrySourceDiagnosticItem[]
+  hasAnyFootprint: boolean
+  hasAnyCollision: boolean
+  hasAnySupport: boolean
+  hasAnyInfluence: boolean
+}
+
+type WorldGeometryOverview = {
+  totalPlacements: number
+  items: WorldGeometryOverviewItem[]
 }
 
 type ProceduralVisualKind =
@@ -862,6 +908,152 @@ function sortGeometrySourceDiagnosticItems(
 
 function formatBooleanFlag(value: boolean): string {
   return value ? "Y" : "N"
+}
+
+function buildWorldGeometryOverview(
+  diagnostics: GeometrySourceDiagnostics
+): WorldGeometryOverview {
+  const treeItems = findGeometryDiagnosticItemsBySource(
+    diagnostics,
+    "shape_grammar_tree"
+  )
+  const houseItems = findGeometryDiagnosticItemsBySource(
+    diagnostics,
+    "shape_grammar_house"
+  )
+  const roadItems = findGeometryDiagnosticItemsBySource(
+    diagnostics,
+    "shape_grammar_road"
+  )
+  const genericItems = findGeometryDiagnosticItemsBySource(
+    diagnostics,
+    "shape_grammar_generic"
+  )
+  const fallbackItems = findGeometryDiagnosticItemsBySource(
+    diagnostics,
+    "fallback_rectangle"
+  )
+  const unknownItems = findGeometryDiagnosticItemsBySource(
+    diagnostics,
+    "unknown"
+  )
+
+  return {
+    totalPlacements: diagnostics.totalPlacements,
+    items: [
+      buildWorldGeometryOverviewItem({
+        kind: "tree",
+        title: "树木结构",
+        description: "由生长点、树干线、树冠面、根系 / 阴影影响区组成。",
+        items: treeItems,
+      }),
+      buildWorldGeometryOverviewItem({
+        kind: "house",
+        title: "房屋 / 建筑结构",
+        description: "由入口点、墙线、地基面、屋顶面、支撑 / 碰撞区组成。",
+        items: houseItems,
+      }),
+      buildWorldGeometryOverviewItem({
+        kind: "road",
+        title: "道路结构",
+        description: "由起点、终点、中心线、道路面与影响区组成。",
+        items: roadItems,
+      }),
+      buildWorldGeometryOverviewItem({
+        kind: "generic",
+        title: "设施 / 小物结构",
+        description: "由通用锚点、边界线、碰撞区与影响区组成。",
+        items: genericItems,
+      }),
+      buildWorldGeometryOverviewItem({
+        kind: "fallback",
+        title: "矩形 fallback",
+        description: "尚未进入 ShapeGrammar 的对象，仍使用兼容矩形几何。",
+        items: fallbackItems,
+      }),
+      buildWorldGeometryOverviewItem({
+        kind: "unknown",
+        title: "未知来源",
+        description: "暂时无法识别 geometry_source，需要继续检查标签链路。",
+        items: unknownItems,
+      }),
+    ],
+  }
+}
+
+function findGeometryDiagnosticItemsBySource(
+  diagnostics: GeometrySourceDiagnostics,
+  source: GeometryVisualSource
+): GeometrySourceDiagnosticItem[] {
+  return (
+    diagnostics.groups.find((group) => group.source === source)?.items ?? []
+  )
+}
+
+function buildWorldGeometryOverviewItem(input: {
+  kind: WorldGeometryOverviewKind
+  title: string
+  description: string
+  items: GeometrySourceDiagnosticItem[]
+}): WorldGeometryOverviewItem {
+  return {
+    kind: input.kind,
+    title: input.title,
+    description: input.description,
+    count: input.items.length,
+    items: input.items,
+    hasAnyFootprint: input.items.some((item) => item.hasFootprint),
+    hasAnyCollision: input.items.some((item) => item.hasCollision),
+    hasAnySupport: input.items.some((item) => item.hasSupport),
+    hasAnyInfluence: input.items.some((item) => item.hasInfluence),
+  }
+}
+
+function renderWorldGeometryOverviewItem(
+  item: WorldGeometryOverviewItem
+): ReactNode {
+  return (
+    <article
+      key={item.kind}
+      className={`${styles.worldGeometryOverviewCard} ${getWorldGeometryOverviewKindClassName(item.kind)}`}
+    >
+      <div className={styles.worldGeometryOverviewCardHeader}>
+        <strong>{item.title}</strong>
+        <span>{item.count}</span>
+      </div>
+      <p className={styles.worldGeometryOverviewDescription}>
+        {item.description}
+      </p>
+      <div className={styles.worldGeometryFlagRow}>
+        <span>F:{formatBooleanFlag(item.hasAnyFootprint)}</span>
+        <span>C:{formatBooleanFlag(item.hasAnyCollision)}</span>
+        <span>S:{formatBooleanFlag(item.hasAnySupport)}</span>
+        <span>I:{formatBooleanFlag(item.hasAnyInfluence)}</span>
+      </div>
+      {item.items.length > 0 ? (
+        <ul className={styles.worldGeometryOverviewList}>
+          {item.items.slice(0, 5).map((placement) => (
+            <li key={`${item.kind}-${placement.placementId}`}>
+              {placement.label}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className={styles.worldGeometryOverviewEmpty}>暂无对象</p>
+      )}
+    </article>
+  )
+}
+
+function getWorldGeometryOverviewKindClassName(
+  kind: WorldGeometryOverviewKind
+): string {
+  if (kind === "tree") return styles.worldGeometryTree
+  if (kind === "house") return styles.worldGeometryHouse
+  if (kind === "road") return styles.worldGeometryRoad
+  if (kind === "generic") return styles.worldGeometryGeneric
+  if (kind === "fallback") return styles.worldGeometryFallback
+  return styles.worldGeometryUnknown
 }
 
 function renderGeometryVisualItem(item: GeometryVisualItem): ReactNode {

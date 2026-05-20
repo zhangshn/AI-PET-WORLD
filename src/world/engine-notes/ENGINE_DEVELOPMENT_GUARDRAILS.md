@@ -314,3 +314,16 @@
 8. Diagnostics 只用于页面审计，不参与世界运行。
 9. 每个 source 分组必须保留 unknown。
 10. 每个 source 分组必须能看出 footprint / collision / support / influence 是否存在。
+
+## P8-G7 World Geometry Overview 红线
+
+1. Overview 只能读取 Geometry Source Diagnostics 的只读结果。
+2. Overview 不能读取 PNG。
+3. Overview 不能读取 WORLD_MAP_ASSETS。
+4. Overview 不能生成 placement。
+5. Overview 不能修改 HomeMapState。
+6. Overview 不能重新推断世界事实。
+7. Overview 不参与世界运行。
+8. Overview 只能把 geometry_source 翻译成产品可读摘要。
+9. fallback 和 unknown 必须保留显示。
+10. 产品可读表达不能掩盖底层 Geometry / ShapeGrammar 来源。

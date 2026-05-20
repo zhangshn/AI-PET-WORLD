@@ -235,6 +235,94 @@
   background: rgba(150, 105, 60, 0.55);
 }
 
+.worldGeometryOverview {
+  display: grid;
+  gap: 10px;
+  border: 1px solid currentColor;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.worldGeometryOverviewTitle {
+  margin: 0;
+  font-size: 14px;
+}
+
+.worldGeometryOverviewGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.worldGeometryOverviewCard {
+  display: grid;
+  gap: 8px;
+  border: 1px solid currentColor;
+  border-radius: 10px;
+  padding: 10px;
+  min-width: 0;
+}
+
+.worldGeometryOverviewCardHeader {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  font-size: 13px;
+}
+
+.worldGeometryOverviewDescription {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.worldGeometryFlagRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.worldGeometryOverviewList {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-inline-start: 16px;
+  font-size: 12px;
+}
+
+.worldGeometryOverviewEmpty {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.68;
+}
+
+.worldGeometryTree {
+  background: rgba(70, 165, 75, 0.08);
+}
+
+.worldGeometryHouse {
+  background: rgba(185, 120, 70, 0.08);
+}
+
+.worldGeometryRoad {
+  background: rgba(150, 105, 60, 0.08);
+}
+
+.worldGeometryGeneric {
+  background: rgba(120, 150, 205, 0.08);
+}
+
+.worldGeometryFallback {
+  background: rgba(150, 150, 150, 0.08);
+}
+
+.worldGeometryUnknown {
+  background: rgba(210, 80, 70, 0.08);
+}
+
 .geometryDiagnostics {
   display: grid;
   gap: 10px;
