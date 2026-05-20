@@ -334,3 +334,38 @@ P8-H 推荐阶段：
 ```text
 P8-H1：Actor Geometry Projection 协议
 ```
+
+## 14. P8-H1 Actor Geometry Projection 协议记录
+
+P8-H1 已新增 actor-geometry 层，用于描述管家 / 宠物在几何视觉系统中的只读投影。
+
+Actor Geometry Projection 只描述：
+
+1. actorId。
+2. actorKind：butler / pet。
+3. anchor。
+4. body。
+5. interactionRadius。
+6. pose。
+7. attentionDirection。
+8. source。
+9. tags。
+
+P8-H1 不做：
+
+1. Renderer 显示 actor。
+2. VisualState 接入 actor。
+3. 生成 placement。
+4. 修改 HomeMapState。
+5. 修改 world-loop。
+6. 修改 runtime state。
+7. 读取 PNG。
+8. 读取 WORLD_MAP_ASSETS。
+9. 使用 backgroundImage。
+10. 角色动画。
+
+下一步进入：
+
+```text
+P8-H2：Actor Runtime Projection 输入边界
+```

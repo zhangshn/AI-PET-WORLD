@@ -359,3 +359,21 @@
 13. Actor projection 不能写回 placement。
 14. Actor Debug Diagnostics 不是最终玩家 UI。
 15. 后续动画必须由 runtime state / behavior state 派生。
+
+## P8-H1 Actor Geometry Projection Protocol 红线
+
+1. Actor Geometry Projection 是只读几何投影，不是 MapPlacement。
+2. Actor Geometry 不能写回 HomeMapState。
+3. Actor Geometry 不能生成 placement。
+4. Actor Geometry 不能自己决定角色是否存在。
+5. Actor Geometry 不能自己决定角色位置，anchor 必须来自输入。
+6. Actor Geometry builder 必须 deterministic。
+7. Actor Geometry 不能读取 PNG。
+8. Actor Geometry 不能读取 WORLD_MAP_ASSETS。
+9. Actor Geometry 不能导入 map-assets。
+10. Actor Geometry 不能导入 Renderer。
+11. Actor Geometry 不能导入 HomeMapState。
+12. Actor Geometry 不能修改 runtime。
+13. 管家 / 宠物后续显示必须来自世界状态或 actor runtime projection。
+14. 宠物不能通过事件文本说人话。
+15. 管家不能替宠物做决定。
