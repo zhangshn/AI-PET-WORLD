@@ -236,3 +236,16 @@
 8. ShapeGrammar 只描述结构，不决定世界是否发生变化。
 9. 后续接入必须经过 Intent / Plan / Validate / Diff / WorldState。
 10. Renderer 只能读取最终 WorldState / Geometry 派生结果。
+
+## P8-G2 ShapeGrammar Adapter 红线
+
+1. MapPlacement 进入 EntityGeometry 时，tree / house / road 应优先经过 ShapeGrammar。
+2. ShapeGrammar projection 只能生成 footprint / collision / support / influence。
+3. Adapter 不能生成 placement。
+4. Adapter 不能修改 HomeMapState。
+5. Adapter 不能读取 PNG。
+6. Adapter 不能读取 WORLD_MAP_ASSETS。
+7. Adapter 不能修改 Renderer。
+8. Adapter 不能绕过 world rules。
+9. fallback rectangle 逻辑必须保留，避免未映射对象中断。
+10. 后续 geometry audit 必须能看出 geometry_source。
