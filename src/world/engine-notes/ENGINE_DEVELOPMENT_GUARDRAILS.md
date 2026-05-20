@@ -328,3 +328,16 @@
 9. Overview Debug 只能把 geometry_source 翻译成开发期可读摘要。
 10. fallback 和 unknown 必须保留显示。
 11. 开发期可读表达不能掩盖底层 Geometry / ShapeGrammar 来源。
+
+## P8-G8 Geometry Visual Stage Closeout 红线
+
+1. P8-G8 只做文档收口，不新增运行时功能。
+2. P8-G 收口后，正式 Renderer 仍然只能读取 WorldState / VisualState / Geometry 派生结果。
+3. Renderer 不能读取 PNG 作为正式世界本体。
+4. Renderer 不能读取 WORLD_MAP_ASSETS 作为正式显示主路径。
+5. Renderer 不能使用 backgroundImage 作为正式世界对象绘制方式。
+6. Renderer 不能生成 placement。
+7. Renderer 不能修改 HomeMapState。
+8. Renderer 不能读取 proposal 当作现实。
+9. World Geometry Overview Debug / Geometry Source Diagnostics 仍然是开发期 Debug 诊断区，不是最终玩家 UI。
+10. 下一阶段 P8-H 角色占位仍必须来自世界状态与几何链路，不得用 UI 临时状态伪造存在。

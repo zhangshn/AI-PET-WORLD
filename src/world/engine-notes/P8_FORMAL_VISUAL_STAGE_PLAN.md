@@ -232,3 +232,66 @@ VisualState / DrawCommand / VisualPlacement / Geometry
 ```
 
 PNG 贴图路线已经纠偏，不再作为正式 Renderer 路线。
+
+## 12. P8-G 几何视觉纠偏与收口记录
+
+P8 原计划中 P8.1 / P8.2 曾经出现过 PNG / asset 贴图路线偏差。
+
+根据定版文档，P8 已经纠偏为 Geometry / ShapeGrammar / VisualState 路线。
+
+已完成补充阶段：
+
+1. P8-GEOMETRY-REPAIR：纠偏正式 Renderer，不再使用 PNG / WORLD_MAP_ASSETS / backgroundImage。
+2. P8-G1：新增 ShapeGrammar 点线面基础协议。
+3. P8-G2：ShapeGrammar 接入 placement geometry adapter。
+4. P8-G3：Geometry audit 显示 ShapeGrammar 来源。
+5. P8-G4：Renderer 读取 geometry projection 并用 SVG 绘制。
+6. P8-G4.1：修复中文乱码。
+7. P8-G5：增强 geometry source 可读性。
+8. P8-G5.1：VisualState 透传 EntityGeometry.tags。
+9. P8-G6：新增 Geometry Source Diagnostics。
+10. P8-G7：新增 World Geometry Overview。
+11. P8-G7.1：明确 World Geometry Overview Debug 不是最终玩家 UI。
+
+当前 P8-G 收口结论：
+
+```text
+HomeMapState
+-> MapPlacement
+-> ShapeGrammar
+-> SpatialProjection
+-> EntityGeometry
+-> VisualState
+-> VisualPlacement
+-> Renderer SVG geometry layer
+-> Debug diagnostics
+```
+
+当前页面验证位置：
+
+- /world
+- 几何 / 程序化视觉预览 v1
+- World Geometry Overview Debug
+- Geometry Source Diagnostics
+
+当前 Debug 页面验证位置：
+
+- /world-debug/visual-change-verification
+- Before / After
+- World Geometry Overview Debug
+- Geometry Source Diagnostics
+
+P8-G 之后继续禁止：
+
+1. Renderer 读取 PNG 作为正式世界本体。
+2. Renderer 读取 WORLD_MAP_ASSETS 作为正式显示主路径。
+3. Renderer 使用 backgroundImage 作为正式世界对象绘制方式。
+4. Renderer 生成 placement。
+5. Renderer 修改 HomeMapState。
+6. Renderer 读取 proposal 当作现实。
+7. Renderer 为了视觉效果伪造世界对象。
+8. Debug 诊断区被包装成最终玩家 UI。
+9. 管家 / 宠物使用 UI 临时状态伪造存在。
+10. 混淆世界事实层、几何派生层、Debug 展示层。
+
+下一阶段建议进入 P8-H：角色几何占位阶段。
