@@ -275,3 +275,16 @@
 8. CSS procedural fallback 只能作为临时可读层。
 9. ground / path / zone / edge 不能继续用大量 CSS fallback 铺满遮挡几何层。
 10. 后续视觉增强必须继续追溯到 Geometry / VisualState / WorldState。
+
+## P8-G5 Geometry Visual Readability 红线
+
+1. G5 只增强 Renderer 几何可读性，不修改世界生成。
+2. geometry source 必须来自 VisualPlacement.tags / EntityGeometry.tags。
+3. Renderer 不能重新推断世界事实。
+4. Renderer 不能生成 placement。
+5. Renderer 不能修改 HomeMapState。
+6. Renderer 不能读取 PNG。
+7. Renderer 不能读取 WORLD_MAP_ASSETS。
+8. CSS fallback 只能作为辅助可读层。
+9. ground / path / zone / edge 不能重新用 fallback 大量铺满。
+10. tree / house / road 的视觉区分必须追溯到 ShapeGrammar / Geometry 来源。

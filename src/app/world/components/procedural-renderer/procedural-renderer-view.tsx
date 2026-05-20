@@ -297,6 +297,78 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
 
         <dl className={styles.metricGrid}>
           <div className={styles.metricItem}>
+            <dt>source tree</dt>
+            <dd>{geometryVisualSummary.shapeGrammarTree}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>source house</dt>
+            <dd>{geometryVisualSummary.shapeGrammarHouse}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>source road</dt>
+            <dd>{geometryVisualSummary.shapeGrammarRoad}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>source generic</dt>
+            <dd>{geometryVisualSummary.shapeGrammarGeneric}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>source fallback</dt>
+            <dd>{geometryVisualSummary.fallbackRectangle}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>source unknown</dt>
+            <dd>{geometryVisualSummary.unknownSource}</dd>
+          </div>
+        </dl>
+
+        <div className={styles.geometryLegend} aria-label="Geometry visual legend">
+          <span className={styles.geometryLegendItem}>
+            <span
+              className={`${styles.geometryLegendSwatch} ${styles.geometryLegendFootprint}`}
+            />
+            footprint
+          </span>
+          <span className={styles.geometryLegendItem}>
+            <span
+              className={`${styles.geometryLegendSwatch} ${styles.geometryLegendCollision}`}
+            />
+            collision
+          </span>
+          <span className={styles.geometryLegendItem}>
+            <span
+              className={`${styles.geometryLegendSwatch} ${styles.geometryLegendSupport}`}
+            />
+            support
+          </span>
+          <span className={styles.geometryLegendItem}>
+            <span
+              className={`${styles.geometryLegendSwatch} ${styles.geometryLegendInfluence}`}
+            />
+            influence
+          </span>
+          <span className={styles.geometryLegendItem}>
+            <span
+              className={`${styles.geometryLegendSwatch} ${styles.geometryLegendTree}`}
+            />
+            tree source
+          </span>
+          <span className={styles.geometryLegendItem}>
+            <span
+              className={`${styles.geometryLegendSwatch} ${styles.geometryLegendHouse}`}
+            />
+            house source
+          </span>
+          <span className={styles.geometryLegendItem}>
+            <span
+              className={`${styles.geometryLegendSwatch} ${styles.geometryLegendRoad}`}
+            />
+            road source
+          </span>
+        </div>
+
+        <dl className={styles.metricGrid}>
+          <div className={styles.metricItem}>
             <dt>procedural fallback visuals</dt>
             <dd>{proceduralVisualSummary.total}</dd>
           </div>
@@ -448,12 +520,21 @@ type GeometryVisualLayer =
   | "support"
   | "influence"
 
+type GeometryVisualSource =
+  | "shape_grammar_tree"
+  | "shape_grammar_house"
+  | "shape_grammar_road"
+  | "shape_grammar_generic"
+  | "fallback_rectangle"
+  | "unknown"
+
 type GeometryVisualItem = {
   id: string
   placementId: string
   label: string
   layer: GeometryVisualLayer
   shape: SpatialShape
+  source: GeometryVisualSource
   ruleStatus: VisualPlacement["ruleStatus"]
   placementLayer: VisualPlacement["layer"]
   tags: string[]
@@ -466,6 +547,13 @@ type GeometryVisualSummary = {
   support: number
   influence: number
   byPlacementLayer: CountMap
+  bySource: CountMap
+  shapeGrammarTree: number
+  shapeGrammarHouse: number
+  shapeGrammarRoad: number
+  shapeGrammarGeneric: number
+  fallbackRectangle: number
+  unknownSource: number
 }
 
 type ProceduralVisualKind =
@@ -546,18 +634,22 @@ function buildGeometryVisualItem(input: {
   layer: GeometryVisualLayer
   shape: SpatialShape
 }): GeometryVisualItem {
+  const source = inferGeometryVisualSourceFromTags(input.placement.tags)
+
   return {
     id: `geometry-${input.layer}-${input.placement.placementId}`,
     placementId: input.placement.placementId,
     label: `${input.placement.label} ${input.layer}`,
     layer: input.layer,
     shape: input.shape,
+    source,
     ruleStatus: input.placement.ruleStatus,
     placementLayer: input.placement.layer,
     tags: [
       ...input.placement.tags,
       "geometry_visual_item_v1",
       `geometry_visual_layer:${input.layer}`,
+      `geometry_visual_source:${source}`,
       `placement_layer:${input.placement.layer}`,
     ],
   }
@@ -573,7 +665,50 @@ function buildGeometryVisualSummary(
     support: items.filter((item) => item.layer === "support").length,
     influence: items.filter((item) => item.layer === "influence").length,
     byPlacementLayer: countBy(items.map((item) => item.placementLayer)),
+    bySource: countBy(items.map((item) => item.source)),
+    shapeGrammarTree: items.filter((item) =>
+      item.source === "shape_grammar_tree"
+    ).length,
+    shapeGrammarHouse: items.filter((item) =>
+      item.source === "shape_grammar_house"
+    ).length,
+    shapeGrammarRoad: items.filter((item) =>
+      item.source === "shape_grammar_road"
+    ).length,
+    shapeGrammarGeneric: items.filter((item) =>
+      item.source === "shape_grammar_generic"
+    ).length,
+    fallbackRectangle: items.filter((item) =>
+      item.source === "fallback_rectangle"
+    ).length,
+    unknownSource: items.filter((item) => item.source === "unknown").length,
   }
+}
+
+function inferGeometryVisualSourceFromTags(
+  tags: string[]
+): GeometryVisualSource {
+  if (tags.includes("geometry_source:shape_grammar:tree")) {
+    return "shape_grammar_tree"
+  }
+
+  if (tags.includes("geometry_source:shape_grammar:house")) {
+    return "shape_grammar_house"
+  }
+
+  if (tags.includes("geometry_source:shape_grammar:road")) {
+    return "shape_grammar_road"
+  }
+
+  if (tags.includes("geometry_source:shape_grammar:generic")) {
+    return "shape_grammar_generic"
+  }
+
+  if (tags.includes("geometry_source:fallback_rectangle")) {
+    return "fallback_rectangle"
+  }
+
+  return "unknown"
 }
 
 function renderGeometryVisualItem(item: GeometryVisualItem): ReactNode {
@@ -619,7 +754,7 @@ function renderGeometryPoint(item: GeometryVisualItem): ReactNode {
       r={4}
       opacity={getGeometryVisualOpacity(item.layer)}
     >
-      <title>{item.label}</title>
+      <title>{buildGeometryVisualTitle(item)}</title>
     </circle>
   )
 }
@@ -637,7 +772,7 @@ function renderGeometryLine(item: GeometryVisualItem): ReactNode {
       fill="none"
       opacity={getGeometryVisualOpacity(item.layer)}
     >
-      <title>{item.label}</title>
+      <title>{buildGeometryVisualTitle(item)}</title>
     </polyline>
   )
 }
@@ -653,16 +788,51 @@ function renderGeometryPolygon(input: {
       points={toGeometrySvgPoints(input.points)}
       opacity={getGeometryVisualOpacity(input.item.layer)}
     >
-      <title>{input.item.label}</title>
+      <title>{buildGeometryVisualTitle(input.item)}</title>
     </polygon>
   )
 }
 
 function getGeometryVisualClassName(item: GeometryVisualItem): string {
-  if (item.layer === "footprint") return styles.geometryFootprint
-  if (item.layer === "collision") return styles.geometryCollision
-  if (item.layer === "support") return styles.geometrySupport
+  return [
+    getGeometryLayerClassName(item.layer),
+    getGeometrySourceClassName(item.source),
+    getGeometryPlacementLayerClassName(item.placementLayer),
+  ].join(" ")
+}
+
+function buildGeometryVisualTitle(item: GeometryVisualItem): string {
+  return `${item.label} / ${item.source} / ${item.layer} / ${item.placementLayer}`
+}
+
+function getGeometryLayerClassName(layer: GeometryVisualLayer): string {
+  if (layer === "footprint") return styles.geometryFootprint
+  if (layer === "collision") return styles.geometryCollision
+  if (layer === "support") return styles.geometrySupport
   return styles.geometryInfluence
+}
+
+function getGeometrySourceClassName(source: GeometryVisualSource): string {
+  if (source === "shape_grammar_tree") return styles.geometrySourceTree
+  if (source === "shape_grammar_house") return styles.geometrySourceHouse
+  if (source === "shape_grammar_road") return styles.geometrySourceRoad
+  if (source === "shape_grammar_generic") return styles.geometrySourceGeneric
+  if (source === "fallback_rectangle") return styles.geometrySourceFallback
+  return styles.geometrySourceUnknown
+}
+
+function getGeometryPlacementLayerClassName(
+  layer: VisualPlacement["layer"]
+): string {
+  if (layer === "path") return styles.geometryPlacementPath
+  if (layer === "structure") return styles.geometryPlacementStructure
+  if (layer === "nature") return styles.geometryPlacementNature
+  if (layer === "facility") return styles.geometryPlacementFacility
+  if (layer === "actor") return styles.geometryPlacementActor
+  if (layer === "surface-decoration") {
+    return styles.geometryPlacementSurfaceDecoration
+  }
+  return styles.geometryPlacementOther
 }
 
 function getGeometryVisualOpacity(layer: GeometryVisualLayer): number {
