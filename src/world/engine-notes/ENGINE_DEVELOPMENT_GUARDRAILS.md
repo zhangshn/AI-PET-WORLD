@@ -223,3 +223,16 @@
 10. 贴图资源只能作为非正式调试资源或未来视觉参考，不得作为正式世界本体。
 11. 后续树 / 房屋 / 道路必须进入几何拆解协议。
 12. P8.2 PNG 贴图版只能作为历史临时验证，不能继续扩展。
+
+## P8-G1 Shape Grammar 红线
+
+1. 点线面图形生成基础层早于 Point / Line / Polygon 工程协议。
+2. 树、房屋、道路必须优先拆解为点、线、面。
+3. ShapeGrammar 不能读取 PNG。
+4. ShapeGrammar 不能读取 WORLD_MAP_ASSETS。
+5. ShapeGrammar 不能生成 placement。
+6. ShapeGrammar 不能修改 HomeMapState。
+7. ShapeGrammar 不能绕过 world rules。
+8. ShapeGrammar 只描述结构，不决定世界是否发生变化。
+9. 后续接入必须经过 Intent / Plan / Validate / Diff / WorldState。
+10. Renderer 只能读取最终 WorldState / Geometry 派生结果。
