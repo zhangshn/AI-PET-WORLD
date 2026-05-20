@@ -1,6 +1,6 @@
 ﻿/**
- * 褰撳墠鏂囦欢鑱岃矗锛氭彁渚涙寮?ProceduralRenderer 缁勪欢楠ㄦ灦銆? */
-
+ * 当前文件职责：提供正式 ProceduralRenderer 组件骨架。
+ */
 import type { ReactNode } from "react"
 
 import type { MapPlacementLayer } from "@/world/map-state/home-map-state-schema"
@@ -76,20 +76,22 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
     >
       <div className={styles.header}>
         <span className={styles.eyebrow}>PROCEDURAL RENDERER / SUMMARY</span>
-        <h2>ProceduralRenderer 姝ｅ紡缁勪欢鎽樿</h2>
+        <h2>ProceduralRenderer 正式组件摘要</h2>
         <p>
-          ProceduralRenderer 姝ｅ紡缁勪欢宸叉帴鏀?RenderableWorldSnapshot銆?          褰撳墠 Renderer 鎸夊畾鐗堟枃妗ｆ敼涓哄嚑浣?/ 绋嬪簭鍖栫粯鍒讹細瀹冨彧璇诲彇
-          RenderableWorldSnapshot銆乂isualState 涓?DrawCommand锛屼笉璇诲彇 PNG
-          鍥剧墖锛屼笉鎶婄礌鏉愯创鍥惧綋浣滀笘鐣屻€?        </p>
+          ProceduralRenderer 正式组件已接收 RenderableWorldSnapshot。
+          当前 Renderer 按定版文档改为几何 / 程序化绘制：它只读取
+          RenderableWorldSnapshot、VisualState 与 DrawCommand，不读取 PNG
+          图片，不把素材贴图当作世界。
+        </p>
       </div>
 
       <section className={styles.summarySection} aria-labelledby="base-summary">
         <h3 className={styles.sectionTitle} id="base-summary">
-          鍩虹 Summary
+          基础 Summary
         </h3>
         <dl className={styles.summaryGrid}>
           <div className={styles.summaryItem}>
-            <dt>涓栫晫缂栧彿</dt>
+            <dt>世界编号</dt>
             <dd>{visualState.worldId}</dd>
           </div>
           <div className={styles.summaryItem}>
@@ -236,7 +238,7 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
         aria-labelledby="formal-visual-preview"
       >
         <h3 className={styles.sectionTitle} id="formal-visual-preview">
-          鍑犱綍 / 绋嬪簭鍖栬瑙夐瑙?v1
+          几何 / 程序化视觉预览 v1
         </h3>
         <p className={styles.sectionDescription}>
           当前视图优先读取 VisualState.placements 中的 footprint / collision /
@@ -359,7 +361,7 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
         aria-labelledby="wireframe-preview"
       >
         <h3 className={styles.sectionTitle} id="wireframe-preview">
-          鍩虹绾挎棰勮
+          基础线框预览
         </h3>
         <p className={styles.sectionDescription}>
           线框作为 debug overlay 保留；上方 SVG 几何主绘制层读取
@@ -372,7 +374,7 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
             height={svgHeight}
             viewBox={`0 0 ${svgWidth} ${svgHeight}`}
             role="img"
-            aria-label="ProceduralRenderer 鍩虹绾挎棰勮"
+            aria-label="ProceduralRenderer 基础线框预览"
           >
             {visibleCommands.map(renderDrawCommand)}
           </svg>
