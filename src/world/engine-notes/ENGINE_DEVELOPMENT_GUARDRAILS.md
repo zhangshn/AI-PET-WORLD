@@ -303,3 +303,21 @@ VISUAL-MODEL-00：FormalVisualModel schema
 13. FormalVisualGenerator 不能使用 Date.now / Math.random / any。
 14. 本阶段不能新增 FormalWorldView / React 组件 / CSS。
 15. 本阶段不能接入 /world 或修改 ProceduralRendererView / renderer schema / world-loop。
+
+## FORMAL-VIEW-00 FormalWorldView Readonly 红线
+
+1. FormalWorldView 只能接收 `model: FormalVisualModel`。
+2. FormalWorldView 不能接收 RenderableWorldSnapshot。
+3. FormalWorldView 不能接收 VisualState。
+4. FormalWorldView 不能调用 FormalVisualGenerator。
+5. FormalWorldView 不能生成 FormalVisualModel。
+6. FormalWorldView 不能生成 FormalWorldVisualItem / FormalActorVisualItem。
+7. FormalWorldView 不能生成 actor。
+8. FormalWorldView 不能生成 placement。
+9. FormalWorldView 不能填默认 anchor。
+10. FormalWorldView 不能修改 VisualState / HomeMapState。
+11. FormalWorldView 不能读取 PNG / WORLD_MAP_ASSETS。
+12. FormalWorldView 不能显示 raw tags / source diagnostics / audit internals。
+13. FormalWorldView 不能默认接入 pet。
+14. 本阶段不能接入 /world 页面。
+15. 本阶段不能修改 ProceduralRendererView 或现有 Debug Renderer。

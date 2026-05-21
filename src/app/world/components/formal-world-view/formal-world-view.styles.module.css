@@ -1,0 +1,225 @@
+.formalWorldShell {
+  display: grid;
+  gap: 16px;
+  border: 1px solid currentColor;
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.formalHeader {
+  display: grid;
+  gap: 8px;
+}
+
+.formalHeader h2,
+.formalHeader p {
+  margin: 0;
+}
+
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.68;
+}
+
+.formalCanvasShell {
+  border: 1px solid currentColor;
+  border-radius: 16px;
+  overflow: auto;
+  padding: 12px;
+}
+
+.formalCanvas {
+  position: relative;
+  min-width: 100%;
+  min-height: 320px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.formalGround {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 18% 18%,
+      rgba(255, 255, 255, 0.16),
+      transparent 16%
+    ),
+    linear-gradient(135deg, rgba(118, 174, 86, 0.72), rgba(64, 128, 72, 0.82));
+}
+
+.formalAtmosphere {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 76% 24%,
+      rgba(246, 224, 154, 0.16),
+      transparent 20%
+    ),
+    radial-gradient(
+      circle at 28% 78%,
+      rgba(120, 150, 205, 0.12),
+      transparent 22%
+    );
+  pointer-events: none;
+}
+
+.formalWorldObject {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.formalObjectTerrain {
+  width: 36px;
+  height: 26px;
+  border-radius: 999px;
+  background: rgba(95, 150, 82, 0.24);
+}
+
+.formalObjectPath {
+  width: 54px;
+  height: 12px;
+  border-radius: 999px;
+  background: rgba(138, 104, 72, 0.72);
+}
+
+.formalObjectShelter,
+.formalObjectStructure {
+  width: 34px;
+  height: 30px;
+  border-radius: 10px 10px 14px 14px;
+  background: linear-gradient(
+    180deg,
+    rgba(152, 92, 62, 0.86),
+    rgba(206, 160, 112, 0.86)
+  );
+}
+
+.formalObjectFacility {
+  border-radius: 14px;
+  background: rgba(90, 118, 158, 0.72);
+}
+
+.formalObjectTree {
+  width: 32px;
+  height: 36px;
+  border-radius: 999px 999px 18px 18px;
+  background: linear-gradient(
+    180deg,
+    rgba(58, 132, 72, 0.86),
+    rgba(104, 72, 42, 0.76)
+  );
+}
+
+.formalObjectBush,
+.formalObjectSurfaceDecoration,
+.formalObjectResource,
+.formalObjectLifeTrace {
+  border-radius: 999px;
+  background: rgba(232, 216, 142, 0.58);
+}
+
+.formalObjectBoundary {
+  width: 42px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(150, 150, 150, 0.42);
+}
+
+.formalObjectUnknown {
+  border-radius: 12px;
+  background: rgba(180, 180, 180, 0.24);
+}
+
+.formalActor {
+  position: absolute;
+  display: grid;
+  width: 32px;
+  height: 42px;
+  place-items: center;
+  pointer-events: none;
+  transform: translate(-50%, -100%);
+}
+
+.formalActorCore {
+  width: 62%;
+  height: 76%;
+  border-radius: 999px 999px 16px 16px;
+}
+
+.formalActorButler .formalActorCore {
+  background: linear-gradient(
+    180deg,
+    rgba(96, 122, 204, 0.9),
+    rgba(54, 76, 150, 0.92)
+  );
+  box-shadow: 0 0 18px rgba(118, 146, 220, 0.36);
+}
+
+.formalActorPet .formalActorCore {
+  background: rgba(230, 185, 120, 0.82);
+}
+
+.formalActorUnknown .formalActorCore {
+  background: rgba(180, 180, 180, 0.62);
+}
+
+.formalHud {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.formalInfoCard {
+  display: grid;
+  gap: 6px;
+  border: 1px solid currentColor;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.formalInfoCard span {
+  font-size: 12px;
+  opacity: 0.68;
+}
+
+.formalInfoCard strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.formalNotes {
+  display: grid;
+  gap: 8px;
+  border: 1px solid currentColor;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.formalNotes h3,
+.formalNotes p {
+  margin: 0;
+}
+
+.formalNotes ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding-inline-start: 18px;
+}
+
+.formalEmptyText {
+  opacity: 0.72;
+}
+
+@media (max-width: 900px) {
+  .formalHud {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

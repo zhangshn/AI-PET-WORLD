@@ -398,3 +398,37 @@ FORMAL-VIEW-00 仍然不能：
 8. 填默认 anchor。
 9. 读取 PNG / WORLD_MAP_ASSETS 作为正式世界事实来源。
 10. 默认显示 pet。
+
+## 16. FORMAL-VIEW-00 FormalWorldView 只读 FormalVisualModel 完成记录
+
+FORMAL-VIEW-00 已新增只读 FormalWorldView 组件。
+
+本阶段新增：
+
+1. `src/app/world/components/formal-world-view/formal-world-view.tsx`。
+2. `src/app/world/components/formal-world-view/formal-world-view.styles.module.css`。
+3. `src/app/world/components/formal-world-view/index.ts`。
+4. `src/world/engine-notes/FORMAL_VIEW_00_FORMAL_WORLD_VIEW_READONLY.md`。
+
+本阶段规则：
+
+1. FormalWorldView 只接收 `model: FormalVisualModel`。
+2. FormalWorldView 不接收 RenderableWorldSnapshot。
+3. FormalWorldView 不接收 VisualState。
+4. FormalWorldView 不调用 FormalVisualGenerator。
+5. FormalWorldView 不生成 FormalVisualModel。
+6. FormalWorldView 不生成 actor。
+7. FormalWorldView 不生成 placement。
+8. FormalWorldView 不填默认 anchor。
+9. FormalWorldView 不修改 VisualState / HomeMapState。
+10. FormalWorldView 不读取 PNG / WORLD_MAP_ASSETS。
+11. FormalWorldView 不显示 raw tags / source diagnostics / audit internals。
+12. FormalWorldView 不接入 /world 页面。
+13. FormalWorldView 不修改 ProceduralRendererView。
+14. FormalWorldView 不改变现有 Debug Renderer。
+
+下一步进入：
+
+```text
+FORMAL-VIEW-01：FormalWorldView 接入演示入口或 debug preview
+```
