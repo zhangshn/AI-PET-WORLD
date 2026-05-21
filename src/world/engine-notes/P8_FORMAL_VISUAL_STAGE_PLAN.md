@@ -1,260 +1,120 @@
-# AI-PET-WORLD P8.0 正式视觉阶段规划
+﻿# AI-PET-WORLD P8.0 姝ｅ紡瑙嗚闃舵瑙勫垝
 
-## 1. P8.0 的定位
-
-P8.0 是正式视觉阶段的开篇规划文档。
-
-P7 已经完成：
-
+## 1. P8.0 鐨勫畾浣?
+P8.0 鏄寮忚瑙夐樁娈电殑寮€绡囪鍒掓枃妗ｃ€?
+P7 宸茬粡瀹屾垚锛?
 ```text
-真实 runtime context 输入
+鐪熷疄 runtime context 杈撳叆
 -> intent context adapter
--> 手动 Tick
+-> 鎵嬪姩 Tick
 -> WorldChangePlan
 -> WorldDiffProposal
 -> MapDiff validation
 -> Audit
 -> Execution
 -> SafeApply
--> HomeMapState 更新
--> Renderer 读取当前世界事实
+-> HomeMapState 鏇存柊
+-> Renderer 璇诲彇褰撳墠涓栫晫浜嬪疄
 ```
 
-P8 不继续扩展底层世界闭环，而是负责把已经存在的世界事实稳定显示出来。
+P8 涓嶇户缁墿灞曞簳灞備笘鐣岄棴鐜紝鑰屾槸璐熻矗鎶婂凡缁忓瓨鍦ㄧ殑涓栫晫浜嬪疄绋冲畾鏄剧ず鍑烘潵銆?
+鏍规嵁瀹氱増鏂囨。锛孭8 鐨勬寮忚瑙夋柟鍚戜笉鏄创鍥惧湴鍥撅紝鑰屾槸鏍规嵁鐐广€佺嚎銆侀潰 / VisualState / DrawCommand / Geometry 绋嬪簭鍖栫粯鍒朵笘鐣屻€?
+## 2. 褰撳墠瑙嗚鐘舵€?
+褰撳墠 `/world` 宸茬粡鍏峰锛?
+1. HomeMapState銆?2. RenderableWorldSnapshot銆?3. VisualState銆?4. DrawCommand銆?5. ProceduralRendererView銆?6. 鍩虹绾挎棰勮銆?7. 鍒濆涓栫晫鏁版嵁鍙鍖栥€?8. Tick 鍚?MapDiff 鍙互鏀瑰彉 HomeMapState銆?
+褰撳墠鐩爣涓嶆槸璁╀笘鐣屽彉鎴?PNG 鎷艰创鐢伙紝鑰屾槸璁╀笘鐣屼粠瑙勫垯涓庡嚑浣曠粨鏋勪腑琚粯鍒跺嚭鏉ャ€?
+## 3. P8 鐨勬牳蹇冪洰鏍?
+P8 鐨勭洰鏍囦笉鏄 Renderer 鐢熸垚涓栫晫锛岃€屾槸璁?Renderer 蹇犲疄鏄剧ず涓栫晫宸茬粡瀛樺湪鐨勪簨瀹炪€?
+鏍稿績鐩爣锛?
+1. 灏?RenderableWorldSnapshot 涓殑 DrawCommand 绋冲畾鏄剧ず涓哄嚑浣曡緟鍔╀俊鎭€?2. 灏?VisualState 涓殑 placement 鏄剧ず涓虹▼搴忓寲鐐广€佺嚎銆侀潰瀵硅薄銆?3. 楠岃瘉 P7.23 鐨?world change 鍦ㄧ敾闈笂鍙銆?4. 淇濇寔 Renderer 鍙锛屼笉鍐欎笘鐣屻€?5. 淇濇寔瑙嗚澧炲己涓嶅弽鍚戝垱閫?placement銆?6. 涓虹瀹?/ 瀹犵墿鍑犱綍鍗犱綅鍜屽悗缁姩鐢绘墦鍩虹銆?
+## 4. P8 涓?P7 鐨勮竟鐣?
+P7 璐熻矗锛?
+```text
+涓栫晫浜嬪疄濡備綍鐢熸垚
+```
 
-根据定版文档，P8 的正式视觉方向不是贴图地图，而是根据点、线、面 / VisualState / DrawCommand / Geometry 程序化绘制世界。
+P8 璐熻矗锛?
+```text
+涓栫晫浜嬪疄濡備綍鏄剧ず
+```
 
-## 2. 当前视觉状态
+P8 涓嶈兘鍙嶅悜鎵挎媴 P7 鐨勮亴璐ｃ€?
+绂佹 P8 鍋氾細
 
-当前 `/world` 已经具备：
+1. 鐢熸垚 MapDiff銆?2. 淇敼 HomeMapState銆?3. 淇敼 RuntimeWorldState銆?4. 淇敼 intent decision銆?5. 淇敼 proposal銆?6. 缁曡繃 SafeApply銆?7. 鎶?debug scenario 褰撴寮忎笘鐣屻€?8. 涓轰簡濂界湅涓存椂琛ラ€犱笉瀛樺湪鐨勫璞°€?
+## 5. 姝ｅ紡 Renderer 杈撳叆杈圭晫
 
-1. HomeMapState。
-2. RenderableWorldSnapshot。
-3. VisualState。
-4. DrawCommand。
-5. ProceduralRendererView。
-6. 基础线框预览。
-7. 初始世界数据可视化。
-8. Tick 后 MapDiff 可以改变 HomeMapState。
+姝ｅ紡瑙嗚灞傚彧鍏佽璇诲彇锛?
+1. RenderableWorldSnapshot銆?2. VisualState銆?3. VisualPlacement銆?4. DrawCommand銆?5. Geometry 娲剧敓淇℃伅銆?6. HomeMapState 涓凡缁忓瓨鍦ㄧ殑 placement 娲剧敓缁撴灉銆?
+姝ｅ紡瑙嗚灞備笉鑳借鍙栵細
 
-当前目标不是让世界变成 PNG 拼贴画，而是让世界从规则与几何结构中被绘制出来。
+1. IntentDecision銆?2. WorldChangePlan銆?3. WorldDiffProposal銆?4. WorldEvolutionAuditReport銆?5. WorldEvolutionExecutionResult銆?6. SafeApplyDecision 鍐呴儴鍒ゆ柇杩囩▼銆?7. Debug scenario result銆?8. 鏈粡閲囩敤鐨?proposal銆?9. localStorage 鍘熷 persisted JSON銆?10. personality-core 鍘熷鐩橀潰銆?11. WORLD_MAP_ASSETS 浣滀负姝ｅ紡鏄剧ず涓昏矾寰勩€?
+## 6. P8 鍒嗛樁娈佃矾绾?
+### P8.0锛氭寮忚瑙夐樁娈佃鍒?
+鍙啓瑙勫垝鏂囨。锛屾槑纭?P8 瑙嗚杈圭晫銆?
+### P8.1锛氳创鍥捐矾绾垮簾寮冧笌鍑犱綍璺嚎纭
 
-## 3. P8 的核心目标
+鏄庣‘ `WORLD_MAP_ASSETS / assetId / PNG` 璺嚎涓嶈兘浣滀负姝ｅ紡 Renderer銆傛寮忚矾绾胯浆涓哄嚑浣?/ 绋嬪簭鍖栫粯鍒躲€?
+### P8.2锛氬嚑浣?/ 绋嬪簭鍖?Renderer 绗竴鐗?
+瀹炵幇姝ｅ紡 Renderer v1銆?
+瑕佹眰锛?
+1. 璇诲彇 RenderableWorldSnapshot銆?2. 璇诲彇 VisualState / VisualPlacement / DrawCommand銆?3. 鎸?layer 鎺掑簭銆?4. 鎸?placement anchor / scale / alpha 鍋氱▼搴忓寲缁樺埗銆?5. 鐢ㄧ▼搴忓寲 CSS 褰㈢姸琛ㄨ揪 ground / path / structure / facility / nature / surface-decoration / actor銆?6. 涓嶈鍙?PNG 鍥剧墖銆?7. 涓嶈鍙?WORLD_MAP_ASSETS銆?8. 涓嶅仛鍔ㄧ敾銆?9. 涓嶅仛澶嶆潅浜や簰銆?10. 涓嶄慨鏀逛笘鐣岀姸鎬併€?
+### P8.3锛氬嚑浣曡瑙夊彉鍖栭獙璇?
+楠岃瘉 P7.23 鐨勫彉鍖栬兘琚湅瑙侊細
 
-P8 的目标不是让 Renderer 生成世界，而是让 Renderer 忠实显示世界已经存在的事实。
+1. plant_nature锛氭柊澧炶嚜鐒剁粏鑺傘€?2. build_path锛氭柊澧炶矾寰勩€?3. clean_area锛氭竻鐞?surface-decoration銆?4. repair_facility锛氳鏂界姸鎬佸彉鍖栥€?
+楠岃瘉蹇呴』鍩轰簬 SafeApply 涔嬪悗鐨?HomeMapState 娲剧敓 RenderableWorldSnapshot銆?
+### P8.4锛氱瀹朵笌瀹犵墿鍑犱綍鍗犱綅鏄剧ず
 
-核心目标：
+P8.4 鍙€冭檻绠″ / 瀹犵墿鍗犱綅锛屼絾涔熷繀椤绘槸鍑犱綍 / 绋嬪簭鍖栧崰浣嶏紝涓嶆槸 PNG 璐村浘銆?
+### P8.5锛氳瑙夌姸鎬佷笌涓栫晫鐘舵€佹敹鍙?
+纭姝ｅ紡 Renderer 娌℃湁鍙嶅悜鐢熸垚涓栫晫浜嬪疄銆?
+## 7. P8.2 绗竴鐗堣寖鍥?
+姝ｅ紡 Renderer v1 鍙仛鏈€灏忓彲瑙佺増鏈細
 
-1. 将 RenderableWorldSnapshot 中的 DrawCommand 稳定显示为几何辅助信息。
-2. 将 VisualState 中的 placement 显示为程序化点、线、面对象。
-3. 验证 P7.23 的 world change 在画面上可见。
-4. 保持 Renderer 只读，不写世界。
-5. 保持视觉增强不反向创造 placement。
-6. 为管家 / 宠物几何占位和后续动画打基础。
-
-## 4. P8 与 P7 的边界
-
-P7 负责：
+1. 鍦板浘瀹瑰櫒銆?2. 缃戞牸淇濈暀涓?debug overlay銆?3. ground / path / zone / structure / facility / nature / surface-decoration / actor 鍒嗗眰鏄剧ず銆?4. 鏍规嵁 placement 鐨?anchor / scale / alpha 鏄剧ず瀵硅薄銆?5. 鏍规嵁 layer 鍜屽嚑浣曞惈涔夐€夋嫨绋嬪簭鍖栧舰鐘躲€?6. 涓嶅仛鎷栨嫿銆?7. 涓嶅仛鐐瑰嚮缂栬緫銆?8. 涓嶅仛鍔ㄧ敾銆?9. 涓嶅仛鐩告満绯荤粺銆?10. 涓嶅仛缇庢湳閲嶅埗銆?
+鐩爣鏄細
 
 ```text
-世界事实如何生成
+鍏堣涓栫晫鍍忕敱瑙勫垯鍜屽嚑浣曠敓鎴愮殑涓栫晫
 ```
 
-P8 负责：
+鑰屼笉鏄細
 
 ```text
-世界事实如何显示
-```
+鍏堣涓栫晫鍍忎竴缁勮创鍥剧礌鏉?```
 
-P8 不能反向承担 P7 的职责。
+## 8. P8.3 鍙鍙樺寲楠屾敹鏍囧噯
 
-禁止 P8 做：
+P8.3 鐨勯獙鏀舵爣鍑嗭細
 
-1. 生成 MapDiff。
-2. 修改 HomeMapState。
-3. 修改 RuntimeWorldState。
-4. 修改 intent decision。
-5. 修改 proposal。
-6. 绕过 SafeApply。
-7. 把 debug scenario 当正式世界。
-8. 为了好看临时补造不存在的对象。
+1. plant_nature 鐢熸垚鐨勬柊鑷劧缁嗚妭鑳藉湪鍑犱綍 / 绋嬪簭鍖栬瑙変腑鐪嬭銆?2. build_path 鐢熸垚鐨勬柊璺緞鑳藉湪鍑犱綍 / 绋嬪簭鍖栬瑙変腑鐪嬭銆?3. clean_area 鍒犻櫎鐨?surface-decoration 鑳藉湪鐢婚潰涓婃秷澶便€?4. repair_facility 鏇存柊鐨?facility 鑷冲皯鑳介€氳繃 label / alpha / tags 鐘舵€佺‘璁ゃ€?5. 鎵€鏈夊彉鍖栦粛鐒舵潵鑷?SafeApply 涔嬪悗鐨?HomeMapState銆?6. Renderer 涓嶈鍙?proposal銆?7. Renderer 涓嶇敓鎴?placement銆?8. Renderer 涓嶄慨鏀?HomeMapState銆?
+## 9. 绠″涓庡疇鐗╄瑙夊師鍒?
+绠″鍜屽疇鐗╄瑙夎繘鍏?P8.4銆?
+鍘熷垯锛?
+1. 绠″鏄鐞嗚€咃紝涓嶆槸鐜╁鎵嬪姩鎿嶆帶瑙掕壊銆?2. 瀹犵墿鏄嫭绔嬬敓鍛斤紝涓嶆槸鎸夐挳椹卞姩瀵硅薄銆?3. 瑙掕壊鏄剧ず鏉ヨ嚜涓栫晫鐘舵€侊紝涓嶆潵鑷?UI 涓存椂鐘舵€併€?4. 瀹犵墿涓嶈兘閫氳繃浜嬩欢鏂囨湰璇翠汉璇濄€?5. 绠″ / 瀹犵墿鍔ㄧ敾鍚庣画蹇呴』鐢?runtime state / behavior state 娲剧敓銆?6. 鍒濇湡鍙厑璁稿嚑浣?/ 绋嬪簭鍖栧崰浣嶏紝涓嶆帴澶嶆潅鍔ㄧ敾鏍戙€?
+## 10. 绂佹浜嬮」
 
-## 5. 正式 Renderer 输入边界
+P8 绂佹锛?
+1. Renderer 鐢熸垚 placement銆?2. Renderer 淇敼 HomeMapState銆?3. Renderer 鐩存帴搴旂敤 MapDiff銆?4. Renderer 璇诲彇鏈噰鐢?proposal銆?5. Renderer 鏍规嵁瑙嗚闇€瑕佷吉閫犲璞°€?6. 姝ｅ紡 `/world` 浣跨敤 debug scenario 浣滀负涓栫晫浜嬪疄銆?7. 姝ｅ紡 Renderer 娣卞眰瀵煎叆 personality-core銆?8. 瑙嗚缁勪欢鎺ョ world-loop銆?9. 涓轰簡鍔ㄧ敾缁曡繃 runtime state銆?10. 浠?WORLD_MAP_ASSETS + PNG 浣滀负姝ｅ紡涓栫晫鏄剧ず涓昏矾寰勩€?11. 鎶婃爲銆佹埧灞嬨€侀亾璺悊瑙ｄ负鍥剧墖锛岃€屼笉鏄偣銆佺嚎銆侀潰涓庡嚑浣曠粨鏋勩€?
+## 11. 褰撳墠缁撹
 
-正式视觉层只允许读取：
-
-1. RenderableWorldSnapshot。
-2. VisualState。
-3. VisualPlacement。
-4. DrawCommand。
-5. Geometry 派生信息。
-6. HomeMapState 中已经存在的 placement 派生结果。
-
-正式视觉层不能读取：
-
-1. IntentDecision。
-2. WorldChangePlan。
-3. WorldDiffProposal。
-4. WorldEvolutionAuditReport。
-5. WorldEvolutionExecutionResult。
-6. SafeApplyDecision 内部判断过程。
-7. Debug scenario result。
-8. 未经采用的 proposal。
-9. localStorage 原始 persisted JSON。
-10. personality-core 原始盘面。
-11. WORLD_MAP_ASSETS 作为正式显示主路径。
-
-## 6. P8 分阶段路线
-
-### P8.0：正式视觉阶段规划
-
-只写规划文档，明确 P8 视觉边界。
-
-### P8.1：贴图路线废弃与几何路线确认
-
-明确 `WORLD_MAP_ASSETS / assetId / PNG` 路线不能作为正式 Renderer。正式路线转为几何 / 程序化绘制。
-
-### P8.2：几何 / 程序化 Renderer 第一版
-
-实现正式 Renderer v1。
-
-要求：
-
-1. 读取 RenderableWorldSnapshot。
-2. 读取 VisualState / VisualPlacement / DrawCommand。
-3. 按 layer 排序。
-4. 按 placement anchor / scale / alpha 做程序化绘制。
-5. 用程序化 CSS 形状表达 ground / path / structure / facility / nature / surface-decoration / actor。
-6. 不读取 PNG 图片。
-7. 不读取 WORLD_MAP_ASSETS。
-8. 不做动画。
-9. 不做复杂交互。
-10. 不修改世界状态。
-
-### P8.3：几何视觉变化验证
-
-验证 P7.23 的变化能被看见：
-
-1. plant_nature：新增自然细节。
-2. build_path：新增路径。
-3. clean_area：清理 surface-decoration。
-4. repair_facility：设施状态变化。
-
-验证必须基于 SafeApply 之后的 HomeMapState 派生 RenderableWorldSnapshot。
-
-### P8.4：管家与宠物几何占位显示
-
-P8.4 只考虑管家 / 宠物占位，但也必须是几何 / 程序化占位，不是 PNG 贴图。
-
-### P8.5：视觉状态与世界状态收口
-
-确认正式 Renderer 没有反向生成世界事实。
-
-## 7. P8.2 第一版范围
-
-正式 Renderer v1 只做最小可见版本：
-
-1. 地图容器。
-2. 网格保留为 debug overlay。
-3. ground / path / zone / structure / facility / nature / surface-decoration / actor 分层显示。
-4. 根据 placement 的 anchor / scale / alpha 显示对象。
-5. 根据 layer 和几何含义选择程序化形状。
-6. 不做拖拽。
-7. 不做点击编辑。
-8. 不做动画。
-9. 不做相机系统。
-10. 不做美术重制。
-
-目标是：
-
-```text
-先让世界像由规则和几何生成的世界
-```
-
-而不是：
-
-```text
-先让世界像一组贴图素材
-```
-
-## 8. P8.3 可视变化验收标准
-
-P8.3 的验收标准：
-
-1. plant_nature 生成的新自然细节能在几何 / 程序化视觉中看见。
-2. build_path 生成的新路径能在几何 / 程序化视觉中看见。
-3. clean_area 删除的 surface-decoration 能在画面上消失。
-4. repair_facility 更新的 facility 至少能通过 label / alpha / tags 状态确认。
-5. 所有变化仍然来自 SafeApply 之后的 HomeMapState。
-6. Renderer 不读取 proposal。
-7. Renderer 不生成 placement。
-8. Renderer 不修改 HomeMapState。
-
-## 9. 管家与宠物视觉原则
-
-管家和宠物视觉进入 P8.4。
-
-原则：
-
-1. 管家是管理者，不是玩家手动操控角色。
-2. 宠物是独立生命，不是按钮驱动对象。
-3. 角色显示来自世界状态，不来自 UI 临时状态。
-4. 宠物不能通过事件文本说人话。
-5. 管家 / 宠物动画后续必须由 runtime state / behavior state 派生。
-6. 初期只允许几何 / 程序化占位，不接复杂动画树。
-
-## 10. 禁止事项
-
-P8 禁止：
-
-1. Renderer 生成 placement。
-2. Renderer 修改 HomeMapState。
-3. Renderer 直接应用 MapDiff。
-4. Renderer 读取未采用 proposal。
-5. Renderer 根据视觉需要伪造对象。
-6. 正式 `/world` 使用 debug scenario 作为世界事实。
-7. 正式 Renderer 深层导入 personality-core。
-8. 视觉组件接管 world-loop。
-9. 为了动画绕过 runtime state。
-10. 以 WORLD_MAP_ASSETS + PNG 作为正式世界显示主路径。
-11. 把树、房屋、道路理解为图片，而不是点、线、面与几何结构。
-
-## 11. 当前结论
-
-P8.0 锁定正式视觉阶段边界。
-
-当前正式路线为：
+P8.0 閿佸畾姝ｅ紡瑙嗚闃舵杈圭晫銆?
+褰撳墠姝ｅ紡璺嚎涓猴細
 
 ```text
 VisualState / DrawCommand / VisualPlacement / Geometry
--> 几何 / 程序化绘制
--> Renderer 显示当前世界事实
+-> 鍑犱綍 / 绋嬪簭鍖栫粯鍒?-> Renderer 鏄剧ず褰撳墠涓栫晫浜嬪疄
 ```
 
-PNG 贴图路线已经纠偏，不再作为正式 Renderer 路线。
+PNG 璐村浘璺嚎宸茬粡绾犲亸锛屼笉鍐嶄綔涓烘寮?Renderer 璺嚎銆?
+## 12. P8-G 鍑犱綍瑙嗚绾犲亸涓庢敹鍙ｈ褰?
+P8 鍘熻鍒掍腑 P8.1 / P8.2 鏇剧粡鍑虹幇杩?PNG / asset 璐村浘璺嚎鍋忓樊銆?
+鏍规嵁瀹氱増鏂囨。锛孭8 宸茬粡绾犲亸涓?Geometry / ShapeGrammar / VisualState 璺嚎銆?
+宸插畬鎴愯ˉ鍏呴樁娈碉細
 
-## 12. P8-G 几何视觉纠偏与收口记录
-
-P8 原计划中 P8.1 / P8.2 曾经出现过 PNG / asset 贴图路线偏差。
-
-根据定版文档，P8 已经纠偏为 Geometry / ShapeGrammar / VisualState 路线。
-
-已完成补充阶段：
-
-1. P8-GEOMETRY-REPAIR：纠偏正式 Renderer，不再使用 PNG / WORLD_MAP_ASSETS / backgroundImage。
-2. P8-G1：新增 ShapeGrammar 点线面基础协议。
-3. P8-G2：ShapeGrammar 接入 placement geometry adapter。
-4. P8-G3：Geometry audit 显示 ShapeGrammar 来源。
-5. P8-G4：Renderer 读取 geometry projection 并用 SVG 绘制。
-6. P8-G4.1：修复中文乱码。
-7. P8-G5：增强 geometry source 可读性。
-8. P8-G5.1：VisualState 透传 EntityGeometry.tags。
-9. P8-G6：新增 Geometry Source Diagnostics。
-10. P8-G7：新增 World Geometry Overview。
-11. P8-G7.1：明确 World Geometry Overview Debug 不是最终玩家 UI。
-
-当前 P8-G 收口结论：
-
+1. P8-GEOMETRY-REPAIR锛氱籂鍋忔寮?Renderer锛屼笉鍐嶄娇鐢?PNG / WORLD_MAP_ASSETS / backgroundImage銆?2. P8-G1锛氭柊澧?ShapeGrammar 鐐圭嚎闈㈠熀纭€鍗忚銆?3. P8-G2锛歋hapeGrammar 鎺ュ叆 placement geometry adapter銆?4. P8-G3锛欸eometry audit 鏄剧ず ShapeGrammar 鏉ユ簮銆?5. P8-G4锛歊enderer 璇诲彇 geometry projection 骞剁敤 SVG 缁樺埗銆?6. P8-G4.1锛氫慨澶嶄腑鏂囦贡鐮併€?7. P8-G5锛氬寮?geometry source 鍙鎬с€?8. P8-G5.1锛歏isualState 閫忎紶 EntityGeometry.tags銆?9. P8-G6锛氭柊澧?Geometry Source Diagnostics銆?10. P8-G7锛氭柊澧?World Geometry Overview銆?11. P8-G7.1锛氭槑纭?World Geometry Overview Debug 涓嶆槸鏈€缁堢帺瀹?UI銆?
+褰撳墠 P8-G 鏀跺彛缁撹锛?
 ```text
 HomeMapState
 -> MapPlacement
@@ -267,253 +127,119 @@ HomeMapState
 -> Debug diagnostics
 ```
 
-当前页面验证位置：
-
+褰撳墠椤甸潰楠岃瘉浣嶇疆锛?
 - /world
-- 几何 / 程序化视觉预览 v1
+- 鍑犱綍 / 绋嬪簭鍖栬瑙夐瑙?v1
 - World Geometry Overview Debug
 - Geometry Source Diagnostics
 
-当前 Debug 页面验证位置：
-
+褰撳墠 Debug 椤甸潰楠岃瘉浣嶇疆锛?
 - /world-debug/visual-change-verification
 - Before / After
 - World Geometry Overview Debug
 - Geometry Source Diagnostics
 
-P8-G 之后继续禁止：
+P8-G 涔嬪悗缁х画绂佹锛?
+1. Renderer 璇诲彇 PNG 浣滀负姝ｅ紡涓栫晫鏈綋銆?2. Renderer 璇诲彇 WORLD_MAP_ASSETS 浣滀负姝ｅ紡鏄剧ず涓昏矾寰勩€?3. Renderer 浣跨敤 backgroundImage 浣滀负姝ｅ紡涓栫晫瀵硅薄缁樺埗鏂瑰紡銆?4. Renderer 鐢熸垚 placement銆?5. Renderer 淇敼 HomeMapState銆?6. Renderer 璇诲彇 proposal 褰撲綔鐜板疄銆?7. Renderer 涓轰簡瑙嗚鏁堟灉浼€犱笘鐣屽璞°€?8. Debug 璇婃柇鍖鸿鍖呰鎴愭渶缁堢帺瀹?UI銆?9. 绠″ / 瀹犵墿浣跨敤 UI 涓存椂鐘舵€佷吉閫犲瓨鍦ㄣ€?10. 娣锋穯涓栫晫浜嬪疄灞傘€佸嚑浣曟淳鐢熷眰銆丏ebug 灞曠ず灞傘€?
+涓嬩竴闃舵寤鸿杩涘叆 P8-H锛氳鑹插嚑浣曞崰浣嶉樁娈点€?
 
-1. Renderer 读取 PNG 作为正式世界本体。
-2. Renderer 读取 WORLD_MAP_ASSETS 作为正式显示主路径。
-3. Renderer 使用 backgroundImage 作为正式世界对象绘制方式。
-4. Renderer 生成 placement。
-5. Renderer 修改 HomeMapState。
-6. Renderer 读取 proposal 当作现实。
-7. Renderer 为了视觉效果伪造世界对象。
-8. Debug 诊断区被包装成最终玩家 UI。
-9. 管家 / 宠物使用 UI 临时状态伪造存在。
-10. 混淆世界事实层、几何派生层、Debug 展示层。
+## 13. P8-H 绠″ / 瀹犵墿 actor 鍑犱綍鍗犱綅鍏ュ彛
 
-下一阶段建议进入 P8-H：角色几何占位阶段。
-
-## 13. P8-H 管家 / 宠物 actor 几何占位入口
-
-P8-G 已完成几何视觉阶段收口。
-
-P8-H 进入角色几何占位阶段。
-
-P8-H 的目标不是最终角色美术，也不是角色动画，而是建立管家 / 宠物 actor 在几何视觉系统中的只读投影。
-
-P8-H 必须遵守：
-
-1. 角色显示来自世界状态或 actor runtime projection。
-2. Renderer 不能生成 actor。
-3. Renderer 不能生成 placement。
-4. Renderer 不能修改 HomeMapState。
-5. Renderer 不能用 UI 临时状态伪造角色存在。
-6. 管家是管理者，不是玩家手动操控角色。
-7. 宠物是独立生命，不是按钮驱动对象。
-8. 宠物不能通过事件文本说人话。
-9. 初期只允许几何 / 程序化 actor 占位。
-10. 后续动画必须由 runtime state / behavior state 派生。
-11. 不读取 PNG。
-12. 不读取 WORLD_MAP_ASSETS。
-13. 不使用 backgroundImage 作为正式角色显示。
-
-P8-H 推荐阶段：
-
-1. P8-H0：actor 几何占位规划。
-2. P8-H1：Actor Geometry Projection 协议。
-3. P8-H2：Actor Runtime Projection 输入边界。
-4. P8-H3：VisualState 接入 actor projection。
-5. P8-H4：Renderer 显示 actor geometry。
-6. P8-H5：Actor Debug Diagnostics。
-
-下一步进入：
+P8-G 宸插畬鎴愬嚑浣曡瑙夐樁娈垫敹鍙ｃ€?
+P8-H 杩涘叆瑙掕壊鍑犱綍鍗犱綅闃舵銆?
+P8-H 鐨勭洰鏍囦笉鏄渶缁堣鑹茬編鏈紝涔熶笉鏄鑹插姩鐢伙紝鑰屾槸寤虹珛绠″ / 瀹犵墿 actor 鍦ㄥ嚑浣曡瑙夌郴缁熶腑鐨勫彧璇绘姇褰便€?
+P8-H 蹇呴』閬靛畧锛?
+1. 瑙掕壊鏄剧ず鏉ヨ嚜涓栫晫鐘舵€佹垨 actor runtime projection銆?2. Renderer 涓嶈兘鐢熸垚 actor銆?3. Renderer 涓嶈兘鐢熸垚 placement銆?4. Renderer 涓嶈兘淇敼 HomeMapState銆?5. Renderer 涓嶈兘鐢?UI 涓存椂鐘舵€佷吉閫犺鑹插瓨鍦ㄣ€?6. 绠″鏄鐞嗚€咃紝涓嶆槸鐜╁鎵嬪姩鎿嶆帶瑙掕壊銆?7. 瀹犵墿鏄嫭绔嬬敓鍛斤紝涓嶆槸鎸夐挳椹卞姩瀵硅薄銆?8. 瀹犵墿涓嶈兘閫氳繃浜嬩欢鏂囨湰璇翠汉璇濄€?9. 鍒濇湡鍙厑璁稿嚑浣?/ 绋嬪簭鍖?actor 鍗犱綅銆?10. 鍚庣画鍔ㄧ敾蹇呴』鐢?runtime state / behavior state 娲剧敓銆?11. 涓嶈鍙?PNG銆?12. 涓嶈鍙?WORLD_MAP_ASSETS銆?13. 涓嶄娇鐢?backgroundImage 浣滀负姝ｅ紡瑙掕壊鏄剧ず銆?
+P8-H 鎺ㄨ崘闃舵锛?
+1. P8-H0锛歛ctor 鍑犱綍鍗犱綅瑙勫垝銆?2. P8-H1锛欰ctor Geometry Projection 鍗忚銆?3. P8-H2锛欰ctor Runtime Projection 杈撳叆杈圭晫銆?4. P8-H3锛歏isualState 鎺ュ叆 actor projection銆?5. P8-H4锛歊enderer 鏄剧ず actor geometry銆?6. P8-H5锛欰ctor Debug Diagnostics銆?
+涓嬩竴姝ヨ繘鍏ワ細
 
 ```text
-P8-H1：Actor Geometry Projection 协议
+P8-H1锛欰ctor Geometry Projection 鍗忚
 ```
 
-## 14. P8-H1 Actor Geometry Projection 协议记录
+## 14. P8-H1 Actor Geometry Projection 鍗忚璁板綍
 
-P8-H1 已新增 actor-geometry 层，用于描述管家 / 宠物在几何视觉系统中的只读投影。
+P8-H1 宸叉柊澧?actor-geometry 灞傦紝鐢ㄤ簬鎻忚堪绠″ / 瀹犵墿鍦ㄥ嚑浣曡瑙夌郴缁熶腑鐨勫彧璇绘姇褰便€?
+Actor Geometry Projection 鍙弿杩帮細
 
-Actor Geometry Projection 只描述：
-
-1. actorId。
-2. actorKind：butler / pet。
-3. anchor。
-4. body。
-5. interactionRadius。
-6. pose。
-7. attentionDirection。
-8. source。
-9. tags。
-
-P8-H1 不做：
-
-1. Renderer 显示 actor。
-2. VisualState 接入 actor。
-3. 生成 placement。
-4. 修改 HomeMapState。
-5. 修改 world-loop。
-6. 修改 runtime state。
-7. 读取 PNG。
-8. 读取 WORLD_MAP_ASSETS。
-9. 使用 backgroundImage。
-10. 角色动画。
-
-下一步进入：
+1. actorId銆?2. actorKind锛歜utler / pet銆?3. anchor銆?4. body銆?5. interactionRadius銆?6. pose銆?7. attentionDirection銆?8. source銆?9. tags銆?
+P8-H1 涓嶅仛锛?
+1. Renderer 鏄剧ず actor銆?2. VisualState 鎺ュ叆 actor銆?3. 鐢熸垚 placement銆?4. 淇敼 HomeMapState銆?5. 淇敼 world-loop銆?6. 淇敼 runtime state銆?7. 璇诲彇 PNG銆?8. 璇诲彇 WORLD_MAP_ASSETS銆?9. 浣跨敤 backgroundImage銆?10. 瑙掕壊鍔ㄧ敾銆?
+涓嬩竴姝ヨ繘鍏ワ細
 
 ```text
-P8-H2：Actor Runtime Projection 输入边界
+P8-H2锛欰ctor Runtime Projection 杈撳叆杈圭晫
 ```
 
-## 15. P8-H2 Actor Runtime Projection 输入边界记录
+## 15. P8-H2 Actor Runtime Projection 杈撳叆杈圭晫璁板綍
 
-P8-H2 已新增 actor-runtime-projection 层。
-
-本阶段定义从世界状态 / runtime state 到 actor projection 的轻量输入边界。
-
-Actor Runtime Projection Result 描述：
-
-1. actorId。
-2. actorKind。
-3. worldId。
-4. presence。
-5. canProject。
-6. anchor。
-7. pose。
-8. attentionDirection。
-9. source。
-10. scale。
-11. reason。
-12. tags。
-
-本阶段不直接导入 ButlerRuntimeContext / PetState，避免过度耦合。
-
-当前只提供 deterministic placeholder anchor：
-
-1. butler：{ x: 6, y: 6 }。
-2. pet：{ x: 7, y: 6 }。
-
-placeholder 只用于输入边界验证，不代表最终 autonomous movement。
-
-P8-H2 不做：
-
-1. Renderer 显示 actor。
-2. VisualState 接入 actor。
-3. ActorGeometryProjection 串联。
-4. 生成 placement。
-5. 修改 HomeMapState。
-6. 修改 world-loop。
-7. 修改 runtime state。
-8. 读取 PNG。
-9. 读取 WORLD_MAP_ASSETS。
-10. 使用 backgroundImage。
-11. 角色动画。
-
-下一步进入：
+P8-H2 宸叉柊澧?actor-runtime-projection 灞傘€?
+鏈樁娈靛畾涔変粠涓栫晫鐘舵€?/ runtime state 鍒?actor projection 鐨勮交閲忚緭鍏ヨ竟鐣屻€?
+Actor Runtime Projection Result 鎻忚堪锛?
+1. actorId銆?2. actorKind銆?3. worldId銆?4. presence銆?5. canProject銆?6. anchor銆?7. pose銆?8. attentionDirection銆?9. source銆?10. scale銆?11. reason銆?12. tags銆?
+鏈樁娈典笉鐩存帴瀵煎叆 ButlerRuntimeContext / PetState锛岄伩鍏嶈繃搴﹁€﹀悎銆?
+褰撳墠鍙彁渚?deterministic placeholder anchor锛?
+1. butler锛歿 x: 6, y: 6 }銆?2. pet锛歿 x: 7, y: 6 }銆?
+placeholder 鍙敤浜庤緭鍏ヨ竟鐣岄獙璇侊紝涓嶄唬琛ㄦ渶缁?autonomous movement銆?
+P8-H2 涓嶅仛锛?
+1. Renderer 鏄剧ず actor銆?2. VisualState 鎺ュ叆 actor銆?3. ActorGeometryProjection 涓茶仈銆?4. 鐢熸垚 placement銆?5. 淇敼 HomeMapState銆?6. 淇敼 world-loop銆?7. 淇敼 runtime state銆?8. 璇诲彇 PNG銆?9. 璇诲彇 WORLD_MAP_ASSETS銆?10. 浣跨敤 backgroundImage銆?11. 瑙掕壊鍔ㄧ敾銆?
+涓嬩竴姝ヨ繘鍏ワ細
 
 ```text
-P8-H3：Actor Runtime Projection -> Actor Geometry Projection 串联
+P8-H3锛欰ctor Runtime Projection -> Actor Geometry Projection 涓茶仈
 ```
 
-## 16. P8-H3 Actor Runtime Projection -> Actor Geometry Projection 串联记录
+## 16. P8-H3 Actor Runtime Projection -> Actor Geometry Projection 涓茶仈璁板綍
 
-P8-H3 已新增 actor runtime -> geometry adapter。
-
-本阶段将 ActorRuntimeProjectionResult 转换为 ActorGeometryProjection。
-
-规则：
-
-1. runtimeProjection.canProject === true 时，才允许生成 ActorGeometryProjection。
-2. runtimeProjection.canProject === false 时，不生成 geometryProjection。
-3. pet 未出生时，presence = not_ready，结果必须是 skipped_not_ready。
-4. deterministic placeholder anchor 必须通过 geometrySource / tags 保留可见。
-5. adapter 不接 Renderer。
-6. adapter 不接 VisualState。
-7. adapter 不生成 placement。
-8. adapter 不修改 HomeMapState。
-9. adapter 不修改 runtime state。
-10. adapter 不读取 PNG / WORLD_MAP_ASSETS。
-
-下一步进入：
+P8-H3 宸叉柊澧?actor runtime -> geometry adapter銆?
+鏈樁娈靛皢 ActorRuntimeProjectionResult 杞崲涓?ActorGeometryProjection銆?
+瑙勫垯锛?
+1. runtimeProjection.canProject === true 鏃讹紝鎵嶅厑璁哥敓鎴?ActorGeometryProjection銆?2. runtimeProjection.canProject === false 鏃讹紝涓嶇敓鎴?geometryProjection銆?3. pet 鏈嚭鐢熸椂锛宲resence = not_ready锛岀粨鏋滃繀椤绘槸 skipped_not_ready銆?4. deterministic placeholder anchor 蹇呴』閫氳繃 geometrySource / tags 淇濈暀鍙銆?5. adapter 涓嶆帴 Renderer銆?6. adapter 涓嶆帴 VisualState銆?7. adapter 涓嶇敓鎴?placement銆?8. adapter 涓嶄慨鏀?HomeMapState銆?9. adapter 涓嶄慨鏀?runtime state銆?10. adapter 涓嶈鍙?PNG / WORLD_MAP_ASSETS銆?
+涓嬩竴姝ヨ繘鍏ワ細
 
 ```text
-P8-H4：VisualState 接入 actor geometry projection
+P8-H4锛歏isualState 鎺ュ叆 actor geometry projection
 ```
 
-## 17. P8-H4 VisualState 接入 actor geometry projection 记录
+## 17. P8-H4 VisualState 鎺ュ叆 actor geometry projection 璁板綍
 
-P8-H4 已让 VisualState 可以携带 actor geometry projection。
-
-新增：
-
+P8-H4 宸茶 VisualState 鍙互鎼哄甫 actor geometry projection銆?
+鏂板锛?
 VisualActorGeometryProjection
 VisualState.actorGeometryProjections
 
-VisualState builder 新增可选输入：
+VisualState builder 鏂板鍙€夎緭鍏ワ細
 
 actorRuntimeGeometryProjections?: ActorRuntimeGeometryProjectionResult[]
 
-本阶段规则：
+鏈樁娈佃鍒欙細
 
-1. actorRuntimeGeometryProjections 缺省时为空数组。
-2. 现有 buildVisualState 调用不传 actorRuntimeGeometryProjections 时不受影响。
-3. VisualActorGeometryProjection 不是 VisualPlacement。
-4. Actor projection 不写入 HomeMapState。
-5. Actor projection 不生成 MapPlacement。
-6. canProject === false 时，geometryProjection 可以为空。
-7. pet 未出生时，只能承载 skipped_not_ready。
-8. 本阶段不接 Renderer。
-9. 本阶段不修改 /world。
-10. 本阶段不读取 PNG / WORLD_MAP_ASSETS。
-
-下一步进入：
+1. actorRuntimeGeometryProjections 缂虹渷鏃朵负绌烘暟缁勩€?2. 鐜版湁 buildVisualState 璋冪敤涓嶄紶 actorRuntimeGeometryProjections 鏃朵笉鍙楀奖鍝嶃€?3. VisualActorGeometryProjection 涓嶆槸 VisualPlacement銆?4. Actor projection 涓嶅啓鍏?HomeMapState銆?5. Actor projection 涓嶇敓鎴?MapPlacement銆?6. canProject === false 鏃讹紝geometryProjection 鍙互涓虹┖銆?7. pet 鏈嚭鐢熸椂锛屽彧鑳芥壙杞?skipped_not_ready銆?8. 鏈樁娈典笉鎺?Renderer銆?9. 鏈樁娈典笉淇敼 /world銆?10. 鏈樁娈典笉璇诲彇 PNG / WORLD_MAP_ASSETS銆?
+涓嬩竴姝ヨ繘鍏ワ細
 
 ```text
-P8-H5：Renderer 显示 actor geometry
+P8-H5锛歊enderer 鏄剧ず actor geometry
 ```
 
-## 18. P8-H5 Renderer 显示 actor geometry 记录
+## 18. P8-H5 Renderer 鏄剧ず actor geometry 璁板綍
 
-P8-H5 已让 Renderer 只读 VisualState.actorGeometryProjections。
+P8-H5 宸茶 Renderer 鍙 VisualState.actorGeometryProjections銆?
+鏈樁娈垫柊澧烇細
 
-本阶段新增：
-
-1. Actor Geometry Summary。
-2. Actor Geometry Diagnostics。
-3. SVG actor geometry layer。
-4. actor body 绘制。
-5. actor interactionRadius 绘制。
-
-规则：
-
-1. Renderer 只读取 VisualState.actorGeometryProjections。
-2. Renderer 不生成 actor。
-3. Renderer 不生成 actor projection。
-4. Renderer 不决定角色是否存在。
-5. Renderer 不填默认 anchor。
-6. canProject === false 时不绘制 actor geometry。
-7. VisualState.actorGeometryProjections 空数组时不显示角色。
-8. pet 未出生 skipped_not_ready 时不绘制宠物 actor。
-9. 本阶段不修改 HomeMapState。
-10. 本阶段不读取 PNG / WORLD_MAP_ASSETS。
-
-下一步进入：
+1. Actor Geometry Summary銆?2. Actor Geometry Diagnostics銆?3. SVG actor geometry layer銆?4. actor body 缁樺埗銆?5. actor interactionRadius 缁樺埗銆?
+瑙勫垯锛?
+1. Renderer 鍙鍙?VisualState.actorGeometryProjections銆?2. Renderer 涓嶇敓鎴?actor銆?3. Renderer 涓嶇敓鎴?actor projection銆?4. Renderer 涓嶅喅瀹氳鑹叉槸鍚﹀瓨鍦ㄣ€?5. Renderer 涓嶅～榛樿 anchor銆?6. canProject === false 鏃朵笉缁樺埗 actor geometry銆?7. VisualState.actorGeometryProjections 绌烘暟缁勬椂涓嶆樉绀鸿鑹层€?8. pet 鏈嚭鐢?skipped_not_ready 鏃朵笉缁樺埗瀹犵墿 actor銆?9. 鏈樁娈典笉淇敼 HomeMapState銆?10. 鏈樁娈典笉璇诲彇 PNG / WORLD_MAP_ASSETS銆?
+涓嬩竴姝ヨ繘鍏ワ細
 
 ```text
-P8-H6：Actor projection 数据接入 world snapshot
+P8-H6锛欰ctor projection 鏁版嵁鎺ュ叆 world snapshot
 ```
 
-## 19. P8-H6 Actor projection 数据接入 world snapshot 记录
+## 19. P8-H6 Actor projection 鏁版嵁鎺ュ叆 world snapshot 璁板綍
 
-P8-H6 已让 world-loop renderable state 接入 butler actor projection。
-
-当前链路：
-
+P8-H6 宸茶 world-loop renderable state 鎺ュ叆 butler actor projection銆?
+褰撳墠閾捐矾锛?
 ```text
 HomeMapState
 -> world-loop renderable state
@@ -521,59 +247,33 @@ HomeMapState
 -> buildActorGeometryProjectionFromRuntime
 -> buildVisualState(actorRuntimeGeometryProjections)
 -> VisualState.actorGeometryProjections
--> Renderer 只读显示
+-> Renderer 鍙鏄剧ず
 ```
 
-本阶段规则：
+鏈樁娈佃鍒欙細
 
-1. 只接入 butler。
-2. 不接入 pet。
-3. butler anchor 从 HomeMapState 派生。
-4. anchor 优先来自 actor_kind:butler placement。
-5. 其次来自 visual_center zone。
-6. 再次来自 temporary_shelter zone。
-7. 最后 fallback 到 mapSize 中心。
-8. 不生成 MapPlacement。
-9. 不修改 HomeMapState。
-10. 不写入 mapDiff。
-11. 不修改 Renderer。
-12. 不读取 PNG / WORLD_MAP_ASSETS。
-
-下一步进入：
+1. 鍙帴鍏?butler銆?2. 涓嶆帴鍏?pet銆?3. butler anchor 浠?HomeMapState 娲剧敓銆?4. anchor 浼樺厛鏉ヨ嚜 actor_kind:butler placement銆?5. 鍏舵鏉ヨ嚜 visual_center zone銆?6. 鍐嶆鏉ヨ嚜 temporary_shelter zone銆?7. 鏈€鍚?fallback 鍒?mapSize 涓績銆?8. 涓嶇敓鎴?MapPlacement銆?9. 涓嶄慨鏀?HomeMapState銆?10. 涓嶅啓鍏?mapDiff銆?11. 涓嶄慨鏀?Renderer銆?12. 涓嶈鍙?PNG / WORLD_MAP_ASSETS銆?
+涓嬩竴姝ヨ繘鍏ワ細
 
 ```text
-P8-H7：Actor Geometry Display 可读性与 Debug 收口
+P8-H7锛欰ctor Geometry Display 鍙鎬т笌 Debug 鏀跺彛
 ```
 
-## 20. P8-H7 Actor Geometry Display 可读性与 Debug 收口记录
+## 20. P8-H7 Actor Geometry Display 鍙鎬т笌 Debug 鏀跺彛璁板綍
 
-P8-H7 已增强 Actor Geometry Diagnostics 可读性。
+P8-H7 宸插寮?Actor Geometry Diagnostics 鍙鎬с€?
+鏈樁娈垫槑纭細
 
-本阶段明确：
-
-1. 当前 actor 图形是 Debug 几何占位。
-2. 当前不是最终玩家 UI。
-3. 当前不是最终角色美术。
-4. 当前不代表最终 autonomous movement。
-5. 当前只接入 butler。
-6. 当前不接入 pet。
-7. butler anchor source 会在 tags 中显示。
-8. Renderer 只读 tags 展示 anchor source，不重新推断世界事实。
-9. Renderer 不生成 actor。
-10. Renderer 不填默认 anchor。
-11. 不生成 MapPlacement。
-12. 不修改 HomeMapState。
-13. 不读取 PNG / WORLD_MAP_ASSETS。
-
-下一步进入：
+1. 褰撳墠 actor 鍥惧舰鏄?Debug 鍑犱綍鍗犱綅銆?2. 褰撳墠涓嶆槸鏈€缁堢帺瀹?UI銆?3. 褰撳墠涓嶆槸鏈€缁堣鑹茬編鏈€?4. 褰撳墠涓嶄唬琛ㄦ渶缁?autonomous movement銆?5. 褰撳墠鍙帴鍏?butler銆?6. 褰撳墠涓嶆帴鍏?pet銆?7. butler anchor source 浼氬湪 tags 涓樉绀恒€?8. Renderer 鍙 tags 灞曠ず anchor source锛屼笉閲嶆柊鎺ㄦ柇涓栫晫浜嬪疄銆?9. Renderer 涓嶇敓鎴?actor銆?10. Renderer 涓嶅～榛樿 anchor銆?11. 涓嶇敓鎴?MapPlacement銆?12. 涓嶄慨鏀?HomeMapState銆?13. 涓嶈鍙?PNG / WORLD_MAP_ASSETS銆?
+涓嬩竴姝ヨ繘鍏ワ細
 
 ```text
-P8-H8：Actor Geometry 阶段收口与 Formal World View 分离规划
+P8-H8锛欰ctor Geometry 闃舵鏀跺彛涓?Formal World View 鍒嗙瑙勫垝
 ```
 
-## 21. P8-H8 Actor Geometry 阶段收口与 Formal World View 分离规划记录
+## 21. P8-H8 Actor Geometry 阶段收口与 FormalVisualModel 分离规划记录
 
-P8-H8 已完成 Actor Geometry 阶段收口规划。
+P8-H8 已完成 Actor Geometry 阶段收口，并在本次 reset 后修正下一步路线。
 
 当前确认：
 
@@ -586,158 +286,34 @@ P8-H8 已完成 Actor Geometry 阶段收口规划。
 7. Renderer 不生成 actor。
 8. Renderer 不生成 placement。
 9. pet 不作为默认 actor 接入。
-10. Formal World View 必须单独规划。
+10. 旧 FormalWorldView 手写视觉路线已作废。
 11. Debug View 可以保留工程诊断。
-12. Formal World View 不应直接显示 raw tags / source diagnostics / collision boxes / F-C-S-I。
-13. Formal World View 仍然必须遵守不读取 PNG / WORLD_MAP_ASSETS 主路径。
-14. Formal World View 不能伪造世界事实。
-15. Formal World View 不能显示紫微斗数原始术语。
+12. 未来正式玩家主视觉必须等待 FormalVisualModel / FormalVisualGenerator。
+13. FormalWorldView 只能只读 FormalVisualModel 渲染。
+14. FormalWorldView 不能伪造世界事实。
+15. FormalWorldView 不能显示紫微斗数原始术语。
 
-下一步进入：
-
-```text
-P8-I0：Formal World View 规划
-```
-
-## 22. P8-I0 Formal World View 规划记录
-
-P8-I0 已定义 Formal World View 的阶段边界。
-
-当前确认：
-
-1. Formal World View 是未来玩家主视觉。
-2. Debug View 是工程验证视图。
-3. /world 未来应走 Formal World View。
-4. /world-debug 应保留 Debug Diagnostics。
-5. Formal World View 只读取 RenderableWorldSnapshot / VisualState。
-6. Formal World View 不读取 PNG。
-7. Formal World View 不读取 WORLD_MAP_ASSETS 作为正式主路径。
-8. Formal World View 不生成 actor。
-9. Formal World View 不生成 placement。
-10. Formal World View 不修改 HomeMapState。
-11. Formal World View 不显示 raw tags / source diagnostics / collision boxes / F-C-S-I。
-12. Formal World View 不显示紫微斗数原始术语。
-13. Formal World View 不默认接入 pet。
-14. 管家作为第一生命可以从 VisualState.actorGeometryProjections 显示。
-15. 宠物仍然后置，必须由生命关系事件接纳后进入。
-
-下一步进入：
+下一步重新进入：
 
 ```text
-P8-I1：FormalWorldView 组件骨架
+VISUAL-MODEL-00：FormalVisualModel schema
 ```
 
-## 23. P8-I1 FormalWorldView 组件骨架记录
+## P8-I 璺嚎鍥炴粴涓?v1.4 瀵归綈璁板綍
 
-P8-I1 已新增 FormalWorldView 组件骨架。
-
-本阶段新增：
-
-1. formal-world-view.tsx。
-2. formal-world-view.styles.module.css。
-3. FormalWorldViewProps。
-4. FormalWorldView。
-5. Formal World Canvas 壳层。
-6. Formal World HUD 骨架。
-7. Formal Actor Summary 骨架。
-
-本阶段规则：
-
-1. 组件只读取 RenderableWorldSnapshot / VisualState。
-2. 不接入 /world 页面。
-3. 不替换 ProceduralRendererView。
-4. 不显示 Debug Diagnostics。
-5. 不显示 raw tags。
-6. 不显示 source labels。
-7. 不显示 collision boxes / F-C-S-I。
-8. 不读取 PNG。
-9. 不读取 WORLD_MAP_ASSETS。
-10. 不生成 actor。
-11. 不生成 placement。
-12. 不修改 HomeMapState。
-13. 不默认显示 pet。
-14. 不显示紫微斗数原始术语。
-
-下一步进入：
+鏈宸插洖婊?P8-I0 / P8-I1 / P8-I2 / P8-I3 鐨勬棫 FormalWorldView 璺嚎銆?
+鍥炴粴鍘熷洜锛?
+1. 鏃ц矾绾胯 FormalWorldView 缁勪欢鎵挎媴姝ｅ紡瑙嗚妯″瀷鐢熸垚鑱岃矗銆?2. 鏃ц矾绾垮湪缁勪欢鍐呯敓鎴?FormalWorldVisualItem / FormalActorVisualItem銆?3. 鏃ц矾绾胯缁勪欢鍐冲畾涓栫晫瀵硅薄鍜?actor 鐨勬寮忚瑙夎〃鐜般€?4. 杩欒繚鍙?MVP v1.4 涓庤鍒欎笘鐣屽紩鎿?v1.2銆?5. 姝ｅ紡瑙嗚妯″瀷蹇呴』鐢?src/world/formal-visual-model/ 鐢熸垚銆?6. FormalWorldView 鍙兘鍙 FormalVisualModel 娓叉煋銆?
+淇濈暀鍐呭锛?
+1. P8-H Debug Geometry / Actor Projection 閾捐矾淇濈暀銆?2. VisualState / RenderableWorldSnapshot 淇濈暀銆?3. Renderer Debug View 淇濈暀銆?4. world-loop actor projection debug 鎺ュ叆淇濈暀銆?
+鍒犻櫎鍐呭锛?
+1. src/app/world/components/formal-world-view/ 鏃х粍浠躲€?2. P8_I0_FORMAL_WORLD_VIEW_PLAN.md銆?3. P8_I1_FORMAL_WORLD_VIEW_COMPONENT_SHELL.md銆?4. P8_I2_FORMAL_WORLD_CANVAS.md銆?5. P8_I3_FORMAL_ACTOR_PRESENTATION.md銆?
+浣滃簾澹版槑锛?
+1. P8-I0 鏃?Formal World View 瑙勫垝璁板綍浣滃簾銆?2. P8-I1 鏃?FormalWorldView 缁勪欢楠ㄦ灦璁板綍浣滃簾銆?3. P8-I2 鏃?Formal World Canvas 璁板綍浣滃簾銆?4. P8-I3 鏃?Formal Actor Presentation 璁板綍浣滃簾銆?5. 鍚庣画涓嶅緱娌跨敤缁勪欢鍐呯敓鎴愭寮忚瑙夋ā鍨嬬殑璺嚎銆?
+涓嬩竴姝ラ噸鏂拌繘鍏ワ細
 
 ```text
-P8-I2：Formal World Canvas
+VISUAL-MODEL-00锛欶ormalVisualModel schema
 ```
 
-## 24. P8-I2 Formal World Canvas 记录
 
-P8-I2 已增强 FormalWorldView 的 Formal World Canvas。
-
-本阶段新增：
-
-1. FormalWorldVisualItem。
-2. FormalWorldVisualKind。
-3. 从 VisualState.placements 派生干净程序化世界对象。
-4. 地面 / 道路 / 建筑 / 树木 / 设施 / 小物 / 角色占位样式。
-5. Formal Canvas 尺寸从 VisualState.mapSize 派生。
-
-本阶段规则：
-
-1. FormalWorldView 仍然只读取 RenderableWorldSnapshot / VisualState。
-2. 不接入 /world 页面。
-3. 不替换 ProceduralRendererView。
-4. 不显示 Debug Diagnostics。
-5. 不显示 raw tags。
-6. 不显示 assetId。
-7. 不显示 source labels。
-8. 不显示 collision / support / influence debug boxes。
-9. 不显示 F / C / S / I。
-10. 不读取 PNG。
-11. 不读取 WORLD_MAP_ASSETS。
-12. 不生成 actor。
-13. 不生成 placement。
-14. 不修改 HomeMapState。
-15. 不默认显示 pet。
-16. 不显示紫微斗数原始术语。
-
-下一步进入：
-
-```text
-P8-I3：Formal Actor Presentation
-```
-
-## 25. P8-I3 Formal Actor Presentation 记录
-
-P8-I3 已增强 FormalWorldView 的 Formal Actor Presentation。
-
-本阶段新增：
-
-1. FormalActorVisualItem。
-2. 从 VisualState.actorGeometryProjections 派生 butler actor visual。
-3. butler aura。
-4. butler head。
-5. butler body。
-6. butler glow。
-7. Formal canvas 内显示 butler actor projection 的正式几何占位样式。
-
-本阶段规则：
-
-1. FormalWorldView 仍然只读取 RenderableWorldSnapshot / VisualState。
-2. actor visual 只从 VisualState.actorGeometryProjections 派生。
-3. 只显示 butler。
-4. 不默认显示 pet。
-5. canProject === false 不显示。
-6. geometryProjection 不存在不显示。
-7. 不接入 /world 页面。
-8. 不替换 ProceduralRendererView。
-9. 不显示 raw tags。
-10. 不显示 source / geometrySource / anchorSource。
-11. 不显示 Actor Geometry Diagnostics。
-12. 不读取 PNG。
-13. 不读取 WORLD_MAP_ASSETS。
-14. 不生成 actor。
-15. 不生成 placement。
-16. 不填默认 anchor。
-17. 不修改 HomeMapState。
-18. 不显示紫微斗数原始术语。
-
-下一步进入：
-
-```text
-P8-I4：Formal World HUD 最小版
-```
