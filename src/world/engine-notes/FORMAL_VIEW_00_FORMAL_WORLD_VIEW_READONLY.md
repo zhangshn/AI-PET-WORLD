@@ -2,15 +2,13 @@
 
 ## 1. 阶段定位
 
-本阶段新增只读 FormalWorldView 组件。
+本阶段新增 FormalWorldView 只读渲染组件。
 
-本阶段不是世界生成层。
-本阶段不是 FormalVisualGenerator。
-本阶段不生成 FormalVisualModel。
-本阶段不接入 /world 页面。
-本阶段不改变现有 Debug Renderer。
+FormalWorldView 是玩家主视觉壳层，但本阶段不接入 /world 页面，不替换 Debug Renderer。
 
-## 2. 组件输入
+本阶段不是世界生成层，不是 FormalVisualGenerator，也不生成 FormalVisualModel。
+
+## 2. 输入
 
 FormalWorldView 只能接收：
 
@@ -18,72 +16,61 @@ FormalWorldView 只能接收：
 model: FormalVisualModel
 ```
 
-组件不能接收 RenderableWorldSnapshot。
-组件不能接收 VisualState。
-组件不能调用 FormalVisualGenerator。
+组件只能读取并渲染：
 
-## 3. 本阶段新增文件
+1. `model.canvas`。
+2. `model.objects`。
+3. `model.actors`。
+4. `model.environment`。
+5. `model.hudSummary`。
 
-新增：
+## 3. 渲染原则
 
-1. `src/app/world/components/formal-world-view/formal-world-view.tsx`。
-2. `src/app/world/components/formal-world-view/formal-world-view.styles.module.css`。
-3. `src/app/world/components/formal-world-view/index.ts`。
+FormalWorldView 只能根据 FormalVisualModel 已存在的 geometry 渲染：
 
-## 4. 渲染原则
+1. point。
+2. line。
+3. polygon。
+4. multiPolygon。
 
-FormalWorldView 只读渲染 FormalVisualModel：
+CSS 只能控制显示风格，不能决定对象是否存在。
 
-1. 从 model.canvas 渲染画布壳层。
-2. 从 model.objects 渲染世界对象。
-3. 从 model.actors 渲染 actor。
-4. 从 model.environment 渲染环境摘要。
-5. 从 model.hudSummary 渲染玩家可读 HUD。
+组件可以做 layer 显示排序，但排序只用于显示层级，不能改变世界内容。
 
-FormalWorldView 不显示：
-
-1. raw tags。
-2. source diagnostics。
-3. audit internals。
-4. collision / support / influence debug boxes。
-5. F / C / S / I。
-6. 紫微斗数原始术语。
-
-## 5. 边界
-
-FormalWorldView 不能：
-
-1. 生成 FormalVisualModel。
-2. 生成 FormalWorldVisualItem。
-3. 生成 FormalActorVisualItem。
-4. 调用 buildFormalVisualModel。
-5. 调用 buildFormalVisualModelFromSnapshot。
-6. 生成 actor。
-7. 生成 placement。
-8. 填默认 anchor。
-9. 修改 VisualState。
-10. 修改 HomeMapState。
-11. 读取 PNG。
-12. 读取 WORLD_MAP_ASSETS。
-13. 默认接入 pet。
-
-## 6. 本阶段不做
+## 4. 本阶段不做
 
 本阶段不做：
 
 1. 不接入 /world 页面。
-2. 不修改 ProceduralRendererView。
-3. 不修改 renderer schema / builder。
-4. 不修改 world-loop。
-5. 不新增 FormalVisualGenerator 逻辑。
-6. 不生成世界事实。
+2. 不生成 FormalVisualModel。
+3. 不调用 FormalVisualGenerator。
+4. 不生成世界事实。
+5. 不生成 placement。
+6. 不生成 actor。
+7. 不填默认 anchor。
+8. 不读取 PNG。
+9. 不读取 WORLD_MAP_ASSETS。
+10. 不默认显示 pet。
 
-## 7. 下一步
+## 5. 红线
+
+FormalWorldView 不能：
+
+1. import FormalVisualGenerator。
+2. 调用 `buildFormalVisualModel`。
+3. 定义 FormalWorldVisualItem。
+4. 定义 FormalActorVisualItem。
+5. 写 `buildFormalWorldVisualItems`。
+6. 写 `buildFormalActorVisualItems`。
+7. 写树 / 房子 / 道路 / 管家的专属结构模型。
+8. 显示 raw tags / source diagnostics / audit internals。
+9. 使用 `img` / `next/image`。
+10. 使用 `backgroundImage`。
+
+## 6. 下一步
 
 下一步进入：
 
 ```text
-FORMAL-VIEW-01：FormalWorldView 接入演示入口或 debug preview
+FORMAL-VIEW-01：FormalWorldView preview harness
 ```
-
-接入前仍需确认它只接收 FormalVisualModel。

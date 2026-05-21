@@ -432,3 +432,47 @@ FORMAL-VIEW-00 已新增只读 FormalWorldView 组件。
 ```text
 FORMAL-VIEW-01：FormalWorldView 接入演示入口或 debug preview
 ```
+
+## 17. FORMAL-VIEW-00 严格只读修订记录
+
+FORMAL-VIEW-00 已完成严格只读修订。
+
+当前 FormalWorldView 只接收：
+
+```ts
+model: FormalVisualModel
+```
+
+本阶段新增：
+
+1. `src/app/world/components/formal-world-view/formal-world-view.tsx`。
+2. `src/app/world/components/formal-world-view/formal-world-view.styles.module.css`。
+3. `src/app/world/components/formal-world-view/index.ts`。
+4. `src/world/engine-notes/FORMAL_VIEW_00_FORMAL_WORLD_VIEW_READONLY.md`。
+
+本阶段确认：
+
+1. FormalWorldView 只读 `model.canvas`。
+2. FormalWorldView 只读 `model.objects`。
+3. FormalWorldView 只读 `model.actors`。
+4. FormalWorldView 只读 `model.environment`。
+5. FormalWorldView 只读 `model.hudSummary`。
+6. FormalWorldView 只根据 FormalVisualModel 已存在的 geometry 渲染 point / line / polygon / multiPolygon。
+7. layer 排序只用于显示层级，不改变世界内容。
+8. FormalWorldView 不调用 FormalVisualGenerator。
+9. FormalWorldView 不生成 FormalVisualModel。
+10. FormalWorldView 不生成 FormalWorldVisualItem / FormalActorVisualItem。
+11. FormalWorldView 不写 buildFormalWorldVisualItems / buildFormalActorVisualItems。
+12. FormalWorldView 不生成世界事实。
+13. FormalWorldView 不生成 placement。
+14. FormalWorldView 不生成 actor。
+15. FormalWorldView 不填默认 anchor。
+16. FormalWorldView 不读取 PNG / WORLD_MAP_ASSETS。
+17. FormalWorldView 不默认接入 pet。
+18. 本阶段不接入 /world 页面。
+
+下一步进入：
+
+```text
+FORMAL-VIEW-01：FormalWorldView preview harness
+```

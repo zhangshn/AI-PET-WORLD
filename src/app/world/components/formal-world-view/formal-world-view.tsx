@@ -5,9 +5,11 @@ import type { ReactNode } from "react"
 
 import type {
   FormalActorModel,
+  FormalVisualLayer,
   FormalVisualModel,
   FormalWorldObjectModel,
 } from "@/world/formal-visual-model/formal-visual-model-gateway"
+import type { Point2D, SpatialShape } from "@/world/spatial/spatial-gateway"
 
 import styles from "./formal-world-view.styles.module.css"
 
@@ -27,8 +29,8 @@ export function FormalWorldView(input: FormalWorldViewProps) {
         <div className={styles.eyebrow}>AI-PET-WORLD / FORMAL WORLD VIEW</div>
         <h2>主世界视图</h2>
         <p>
-          这里只读 FormalVisualModel 渲染玩家主视觉壳层，不生成世界对象，
-          不显示工程诊断。
+          这里只读 FormalVisualModel 渲染玩家主视觉壳层，不生成模型、
+          世界事实、placement 或 actor。
         </p>
       </header>
 
@@ -36,19 +38,23 @@ export function FormalWorldView(input: FormalWorldViewProps) {
         <div
           className={styles.formalCanvas}
           style={{
-            width: model.canvas.width,
-            height: model.canvas.height,
+            aspectRatio: `${model.canvas.width} / ${model.canvas.height}`,
           }}
           aria-label="formal world canvas"
         >
           <div className={styles.formalGround} />
           <div className={styles.formalAtmosphere} />
-          {model.objects.map((objectModel) =>
-            renderFormalWorldObject(model, objectModel)
-          )}
-          {model.actors.map((actorModel) =>
-            renderFormalActor(model, actorModel)
-          )}
+          <svg
+            className={styles.formalGeometrySvg}
+            role="img"
+            aria-label="formal world geometry"
+            viewBox={`0 0 ${model.canvas.width} ${model.canvas.height}`}
+          >
+            {renderFormalObjects(model)}
+            {model.actors.map((actorModel) =>
+              renderFormalActor(model, actorModel)
+            )}
+          </svg>
         </div>
       </div>
 
@@ -79,24 +85,29 @@ export function FormalWorldView(input: FormalWorldViewProps) {
   )
 }
 
+function renderFormalObjects(model: FormalVisualModel): ReactNode {
+  return [...model.objects]
+    .sort((left, right) => getLayerOrder(left.layer) - getLayerOrder(right.layer))
+    .map((objectModel) => renderFormalWorldObject(model, objectModel))
+}
+
 function renderFormalWorldObject(
   model: FormalVisualModel,
   objectModel: FormalWorldObjectModel
 ): ReactNode {
-  return (
-    <div
-      className={`${styles.formalWorldObject} ${getObjectClassName(
-        objectModel
-      )}`}
-      key={objectModel.id}
-      style={{
-        left: objectModel.anchor.x * model.canvas.tileSize,
-        top: objectModel.anchor.y * model.canvas.tileSize,
-        opacity: objectModel.opacity,
-      }}
-      aria-label={objectModel.label}
-    />
-  )
+  return renderSpatialShape({
+    id: `object-${objectModel.id}`,
+    label: objectModel.label,
+    shape: objectModel.geometry,
+    tileSize: model.canvas.tileSize,
+    className: [
+      styles.formalShape,
+      styles.formalObjectShape,
+      getLayerClassName(objectModel.layer),
+      getStyleTokenClassName(objectModel.styleToken),
+    ].join(" "),
+    opacity: objectModel.opacity,
+  })
 }
 
 function renderFormalActor(
@@ -108,43 +119,168 @@ function renderFormalActor(
   }
 
   return (
-    <div
-      className={`${styles.formalActor} ${getActorClassName(actorModel)}`}
-      key={actorModel.actorId}
-      style={{
-        left: actorModel.anchor.x * model.canvas.tileSize,
-        top: actorModel.anchor.y * model.canvas.tileSize,
-      }}
-      aria-label={actorModel.label}
-    >
-      <span className={styles.formalActorCore} />
-    </div>
+    <g key={`actor-${actorModel.actorId}`} aria-label={actorModel.label}>
+      {actorModel.aura
+        ? renderSpatialShape({
+            id: `actor-${actorModel.actorId}-aura`,
+            label: actorModel.label,
+            shape: actorModel.aura,
+            tileSize: model.canvas.tileSize,
+            className: [
+              styles.formalShape,
+              styles.formalActorAura,
+              getStyleTokenClassName(actorModel.styleToken),
+            ].join(" "),
+            opacity: 0.28,
+          })
+        : null}
+      {renderSpatialShape({
+        id: `actor-${actorModel.actorId}-body`,
+        label: actorModel.label,
+        shape: actorModel.body,
+        tileSize: model.canvas.tileSize,
+        className: [
+          styles.formalShape,
+          styles.formalActorBody,
+          getStyleTokenClassName(actorModel.styleToken),
+        ].join(" "),
+        opacity: 0.92,
+      })}
+    </g>
   )
 }
 
-function getObjectClassName(objectModel: FormalWorldObjectModel): string {
-  if (objectModel.kind === "terrain") return styles.formalObjectTerrain
-  if (objectModel.kind === "path") return styles.formalObjectPath
-  if (objectModel.kind === "shelter") return styles.formalObjectShelter
-  if (objectModel.kind === "structure") return styles.formalObjectStructure
-  if (objectModel.kind === "facility") return styles.formalObjectFacility
-  if (objectModel.kind === "tree") return styles.formalObjectTree
-  if (objectModel.kind === "bush") return styles.formalObjectBush
-  if (objectModel.kind === "surfaceDecoration") {
-    return styles.formalObjectSurfaceDecoration
-  }
-  if (objectModel.kind === "resource") return styles.formalObjectResource
-  if (objectModel.kind === "lifeTrace") return styles.formalObjectLifeTrace
-  if (objectModel.kind === "boundary") return styles.formalObjectBoundary
+function renderSpatialShape(input: {
+  id: string
+  label: string
+  shape: SpatialShape
+  tileSize: number
+  className: string
+  opacity: number
+}): ReactNode {
+  if (input.shape.kind === "point") {
+    const point = toCanvasPoint(input.shape.point, input.tileSize)
 
-  return styles.formalObjectUnknown
+    return (
+      <circle
+        className={`${input.className} ${styles.formalShapePoint}`}
+        cx={point.x}
+        cy={point.y}
+        key={input.id}
+        opacity={input.opacity}
+        r={Math.max(3, input.tileSize * 0.16)}
+      >
+        <title>{input.label}</title>
+      </circle>
+    )
+  }
+
+  if (input.shape.kind === "line") {
+    return (
+      <polyline
+        className={`${input.className} ${styles.formalShapeLine}`}
+        fill="none"
+        key={input.id}
+        opacity={input.opacity}
+        points={toCanvasSvgPoints(input.shape.line.points, input.tileSize)}
+      >
+        <title>{input.label}</title>
+      </polyline>
+    )
+  }
+
+  if (input.shape.kind === "polygon") {
+    return renderPolygonShape({
+      ...input,
+      points: input.shape.polygon.points,
+    })
+  }
+
+  return input.shape.multiPolygon.polygons.map((polygon, index) =>
+    renderPolygonShape({
+      ...input,
+      id: `${input.id}-polygon-${index}`,
+      points: polygon.points,
+    })
+  )
 }
 
-function getActorClassName(actorModel: FormalActorModel): string {
-  if (actorModel.actorKind === "butler") return styles.formalActorButler
-  if (actorModel.actorKind === "pet") return styles.formalActorPet
+function renderPolygonShape(input: {
+  id: string
+  label: string
+  points: readonly Point2D[]
+  tileSize: number
+  className: string
+  opacity: number
+}): ReactNode {
+  return (
+    <polygon
+      className={`${input.className} ${styles.formalShapePolygon}`}
+      key={input.id}
+      opacity={input.opacity}
+      points={toCanvasSvgPoints(input.points, input.tileSize)}
+    >
+      <title>{input.label}</title>
+    </polygon>
+  )
+}
 
-  return styles.formalActorUnknown
+function toCanvasPoint(point: Point2D, tileSize: number): Point2D {
+  return {
+    x: point.x * tileSize,
+    y: point.y * tileSize,
+  }
+}
+
+function toCanvasSvgPoints(points: readonly Point2D[], tileSize: number): string {
+  return points
+    .map((point) => {
+      const canvasPoint = toCanvasPoint(point, tileSize)
+
+      return `${canvasPoint.x},${canvasPoint.y}`
+    })
+    .join(" ")
+}
+
+function getLayerOrder(layer: FormalVisualLayer): number {
+  if (layer === "ground") return 1
+  if (layer === "path") return 2
+  if (layer === "surfaceDecoration") return 3
+  if (layer === "facility") return 4
+  if (layer === "nature") return 5
+  if (layer === "structure") return 6
+  if (layer === "environment") return 7
+  if (layer === "actor") return 8
+  if (layer === "hud") return 9
+
+  return 10
+}
+
+function getLayerClassName(layer: FormalVisualLayer): string {
+  if (layer === "ground") return styles.formalLayerGround
+  if (layer === "path") return styles.formalLayerPath
+  if (layer === "structure") return styles.formalLayerStructure
+  if (layer === "facility") return styles.formalLayerFacility
+  if (layer === "nature") return styles.formalLayerNature
+  if (layer === "surfaceDecoration") return styles.formalLayerSurfaceDecoration
+  if (layer === "actor") return styles.formalLayerActor
+  if (layer === "environment") return styles.formalLayerEnvironment
+  if (layer === "hud") return styles.formalLayerHud
+
+  return styles.formalLayerUnknown
+}
+
+function getStyleTokenClassName(
+  styleToken: FormalWorldObjectModel["styleToken"]
+): string {
+  if (styleToken === "warmNatural") return styles.formalStyleWarmNatural
+  if (styleToken === "ordered") return styles.formalStyleOrdered
+  if (styleToken === "protective") return styles.formalStyleProtective
+  if (styleToken === "quiet") return styles.formalStyleQuiet
+  if (styleToken === "exploratory") return styles.formalStyleExploratory
+  if (styleToken === "caretaking") return styles.formalStyleCaretaking
+
+  return styles.formalStyleNeutral
 }
 
 function FormalInfoCard(input: { label: string; value: string }) {

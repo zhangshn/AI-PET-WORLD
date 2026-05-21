@@ -321,3 +321,27 @@ VISUAL-MODEL-00：FormalVisualModel schema
 13. FormalWorldView 不能默认接入 pet。
 14. 本阶段不能接入 /world 页面。
 15. 本阶段不能修改 ProceduralRendererView 或现有 Debug Renderer。
+
+## FORMAL-VIEW-00 严格只读红线
+
+1. FormalWorldView 只能接收 `model: FormalVisualModel`。
+2. FormalWorldView 不能接收 RenderableWorldSnapshot。
+3. FormalWorldView 不能接收 VisualState。
+4. FormalWorldView 不能调用 FormalVisualGenerator。
+5. FormalWorldView 不能调用 `buildFormalVisualModel`。
+6. FormalWorldView 不能生成 FormalVisualModel。
+7. FormalWorldView 不能生成 FormalWorldVisualItem。
+8. FormalWorldView 不能生成 FormalActorVisualItem。
+9. FormalWorldView 不能写 `buildFormalWorldVisualItems`。
+10. FormalWorldView 不能写 `buildFormalActorVisualItems`。
+11. FormalWorldView 只能根据 FormalVisualModel 已存在的 geometry 渲染 point / line / polygon / multiPolygon。
+12. CSS 只能控制显示风格，不能决定对象存在。
+13. layer 排序只能用于显示层级，不能改变世界内容。
+14. FormalWorldView 不能生成世界事实。
+15. FormalWorldView 不能生成 placement。
+16. FormalWorldView 不能生成 actor。
+17. FormalWorldView 不能填默认 anchor。
+18. FormalWorldView 不能读取 PNG。
+19. FormalWorldView 不能读取 WORLD_MAP_ASSETS。
+20. FormalWorldView 不能默认接入 pet。
+21. FORMAL-VIEW-00 不能接入 /world 页面。

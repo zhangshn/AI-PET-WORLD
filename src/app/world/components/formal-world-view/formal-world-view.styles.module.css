@@ -33,7 +33,6 @@
 .formalCanvas {
   position: relative;
   min-width: 100%;
-  min-height: 320px;
   border-radius: 14px;
   overflow: hidden;
 }
@@ -44,10 +43,10 @@
   background:
     radial-gradient(
       circle at 18% 18%,
-      rgba(255, 255, 255, 0.16),
+      rgba(255, 255, 255, 0.14),
       transparent 16%
     ),
-    linear-gradient(135deg, rgba(118, 174, 86, 0.72), rgba(64, 128, 72, 0.82));
+    linear-gradient(135deg, rgba(118, 174, 86, 0.7), rgba(64, 128, 72, 0.82));
 }
 
 .formalAtmosphere {
@@ -56,118 +55,137 @@
   background:
     radial-gradient(
       circle at 76% 24%,
-      rgba(246, 224, 154, 0.16),
+      rgba(246, 224, 154, 0.14),
       transparent 20%
     ),
     radial-gradient(
       circle at 28% 78%,
-      rgba(120, 150, 205, 0.12),
+      rgba(120, 150, 205, 0.1),
       transparent 22%
     );
   pointer-events: none;
 }
 
-.formalWorldObject {
+.formalGeometrySvg {
   position: absolute;
-  width: 28px;
-  height: 28px;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  transform: translate(-50%, -50%);
 }
 
-.formalObjectTerrain {
-  width: 36px;
-  height: 26px;
-  border-radius: 999px;
-  background: rgba(95, 150, 82, 0.24);
+.formalShape {
+  vector-effect: non-scaling-stroke;
 }
 
-.formalObjectPath {
-  width: 54px;
-  height: 12px;
-  border-radius: 999px;
-  background: rgba(138, 104, 72, 0.72);
+.formalObjectShape {
+  stroke-width: 1.2;
 }
 
-.formalObjectShelter,
-.formalObjectStructure {
-  width: 34px;
-  height: 30px;
-  border-radius: 10px 10px 14px 14px;
-  background: linear-gradient(
-    180deg,
-    rgba(152, 92, 62, 0.86),
-    rgba(206, 160, 112, 0.86)
-  );
+.formalActorAura {
+  fill: rgba(118, 146, 220, 0.2);
+  stroke: rgba(92, 112, 184, 0.32);
+  stroke-dasharray: 5 4;
+  stroke-width: 1.2;
 }
 
-.formalObjectFacility {
-  border-radius: 14px;
-  background: rgba(90, 118, 158, 0.72);
+.formalActorBody {
+  fill: rgba(82, 104, 174, 0.74);
+  stroke: rgba(38, 54, 112, 0.84);
+  stroke-width: 1.5;
 }
 
-.formalObjectTree {
-  width: 32px;
-  height: 36px;
-  border-radius: 999px 999px 18px 18px;
-  background: linear-gradient(
-    180deg,
-    rgba(58, 132, 72, 0.86),
-    rgba(104, 72, 42, 0.76)
-  );
+.formalShapePoint {
+  stroke-width: 1.4;
 }
 
-.formalObjectBush,
-.formalObjectSurfaceDecoration,
-.formalObjectResource,
-.formalObjectLifeTrace {
-  border-radius: 999px;
-  background: rgba(232, 216, 142, 0.58);
+.formalShapeLine {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 3;
 }
 
-.formalObjectBoundary {
-  width: 42px;
-  height: 8px;
-  border-radius: 999px;
-  background: rgba(150, 150, 150, 0.42);
+.formalShapePolygon {
+  stroke-linejoin: round;
 }
 
-.formalObjectUnknown {
-  border-radius: 12px;
-  background: rgba(180, 180, 180, 0.24);
+.formalLayerGround {
+  fill: rgba(95, 150, 82, 0.22);
+  stroke: rgba(72, 126, 68, 0.48);
 }
 
-.formalActor {
-  position: absolute;
-  display: grid;
-  width: 32px;
-  height: 42px;
-  place-items: center;
-  pointer-events: none;
-  transform: translate(-50%, -100%);
+.formalLayerPath {
+  fill: rgba(138, 104, 72, 0.44);
+  stroke: rgba(104, 76, 50, 0.7);
 }
 
-.formalActorCore {
-  width: 62%;
-  height: 76%;
-  border-radius: 999px 999px 16px 16px;
+.formalLayerStructure {
+  fill: rgba(206, 160, 112, 0.58);
+  stroke: rgba(138, 84, 58, 0.74);
 }
 
-.formalActorButler .formalActorCore {
-  background: linear-gradient(
-    180deg,
-    rgba(96, 122, 204, 0.9),
-    rgba(54, 76, 150, 0.92)
-  );
-  box-shadow: 0 0 18px rgba(118, 146, 220, 0.36);
+.formalLayerFacility {
+  fill: rgba(120, 148, 180, 0.42);
+  stroke: rgba(76, 102, 138, 0.72);
 }
 
-.formalActorPet .formalActorCore {
-  background: rgba(230, 185, 120, 0.82);
+.formalLayerNature {
+  fill: rgba(58, 132, 72, 0.52);
+  stroke: rgba(42, 104, 56, 0.74);
 }
 
-.formalActorUnknown .formalActorCore {
-  background: rgba(180, 180, 180, 0.62);
+.formalLayerSurfaceDecoration {
+  fill: rgba(232, 216, 142, 0.46);
+  stroke: rgba(168, 148, 76, 0.62);
+}
+
+.formalLayerActor {
+  fill: rgba(110, 138, 202, 0.42);
+  stroke: rgba(56, 76, 150, 0.8);
+}
+
+.formalLayerEnvironment {
+  fill: rgba(190, 210, 232, 0.24);
+  stroke: rgba(122, 144, 176, 0.44);
+}
+
+.formalLayerHud {
+  fill: rgba(220, 220, 220, 0.22);
+  stroke: rgba(160, 160, 160, 0.48);
+}
+
+.formalLayerUnknown {
+  fill: rgba(180, 180, 180, 0.24);
+  stroke: rgba(120, 120, 120, 0.48);
+}
+
+.formalStyleWarmNatural {
+  filter: saturate(1.08);
+}
+
+.formalStyleOrdered {
+  filter: contrast(1.04);
+}
+
+.formalStyleProtective {
+  filter: saturate(1.12);
+}
+
+.formalStyleQuiet {
+  filter: saturate(0.9);
+}
+
+.formalStyleExploratory {
+  filter: brightness(1.04);
+}
+
+.formalStyleCaretaking {
+  filter: saturate(1.06);
+}
+
+.formalStyleNeutral {
+  filter: none;
 }
 
 .formalHud {
