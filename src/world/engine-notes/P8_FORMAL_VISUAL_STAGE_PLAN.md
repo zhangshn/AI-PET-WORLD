@@ -340,3 +340,46 @@ VISUAL-MODEL-00 已完成 FormalVisualModel 正式视觉模型容器协议。
 ```text
 VISUAL-MODEL-01：FormalVisualGenerator 纯函数
 ```
+
+## 15. VISUAL-MODEL-01 FormalVisualGenerator 纯函数完成记录
+
+VISUAL-MODEL-01 已完成 FormalVisualGenerator 纯函数层。
+
+本阶段新增：
+
+1. `src/world/formal-visual-model/formal-visual-generator.ts`。
+2. `src/world/formal-visual-model/formal-world-object-model-builder.ts`。
+3. `src/world/formal-visual-model/formal-actor-model-builder.ts`。
+4. `src/world/formal-visual-model/formal-canvas-model-builder.ts`。
+5. `src/world/formal-visual-model/formal-environment-model-builder.ts`。
+6. `src/world/formal-visual-model/formal-hud-summary-builder.ts`。
+7. `src/world/engine-notes/VISUAL_MODEL_01_FORMAL_VISUAL_GENERATOR.md`。
+
+本阶段修改：
+
+1. `formal-visual-model-gateway.ts` 导出 FormalVisualGenerator。
+
+本阶段规则：
+
+1. FormalVisualGenerator 是纯函数。
+2. 输入是 RenderableWorldSnapshot / VisualState。
+3. 输出是 FormalVisualModel。
+4. 不新增 FormalWorldView。
+5. 不新增 React 组件。
+6. 不新增 CSS。
+7. 不接入 /world 页面。
+8. 不修改 ProceduralRendererView。
+9. 不修改 renderer-schema.ts / renderer-gateway.ts。
+10. 不修改 world-loop。
+11. 不生成 actor。
+12. 不生成 placement。
+13. 不填默认 anchor。
+14. 不读取 PNG / WORLD_MAP_ASSETS。
+15. 不默认接入 pet。
+16. 不写固定布局。
+
+下一步进入：
+
+```text
+VISUAL-MODEL-02：FormalVisualModel audit / debug summary
+```

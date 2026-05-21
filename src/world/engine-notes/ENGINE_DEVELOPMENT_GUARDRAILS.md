@@ -285,3 +285,21 @@ VISUAL-MODEL-00：FormalVisualModel schema
 13. FormalVisualModel 不能填默认 anchor。
 14. FormalVisualModel 不能修改 HomeMapState / VisualState。
 15. FormalVisualModel 不能读取 PNG / WORLD_MAP_ASSETS，不能默认接入 pet。
+
+## VISUAL-MODEL-01 FormalVisualGenerator 红线
+
+1. FormalVisualGenerator 必须是纯函数。
+2. FormalVisualGenerator 只能从 RenderableWorldSnapshot / VisualState 派生 FormalVisualModel。
+3. FormalVisualGenerator 不能生成世界事实。
+4. FormalVisualGenerator 不能生成 placement。
+5. FormalVisualGenerator 不能生成 actor。
+6. FormalVisualGenerator 不能填默认 anchor。
+7. FormalVisualGenerator 不能修改输入对象。
+8. FormalVisualGenerator 不能修改 HomeMapState / VisualState。
+9. FormalVisualGenerator 不能读取 PNG。
+10. FormalVisualGenerator 不能读取 WORLD_MAP_ASSETS。
+11. FormalVisualGenerator 不能默认接入 pet。
+12. FormalVisualGenerator 不能写固定 UI 布局。
+13. FormalVisualGenerator 不能使用 Date.now / Math.random / any。
+14. 本阶段不能新增 FormalWorldView / React 组件 / CSS。
+15. 本阶段不能接入 /world 或修改 ProceduralRendererView / renderer schema / world-loop。
