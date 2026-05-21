@@ -15,9 +15,11 @@ import type {
   HomeMapState,
   MapPlacement,
 } from "@/world/map-state/home-map-state-schema"
+import type { ActorRuntimeGeometryProjectionResult } from "@/world/actor-runtime-projection/actor-runtime-projection-gateway"
 
 import {
   DEFAULT_RENDERER_DEBUG_OVERLAYS,
+  type VisualActorGeometryProjection,
   type VisualPlacement,
   type VisualRuleStatus,
   type VisualState,
@@ -29,6 +31,7 @@ export type BuildVisualStateInput = {
   homeMapState: HomeMapState
   environmentState: EnvironmentState
   placementGeometryAudit: PlacementGeometryAuditReport
+  actorRuntimeGeometryProjections?: ActorRuntimeGeometryProjectionResult[]
   generatedAt?: number
 }
 
@@ -41,21 +44,81 @@ export function buildVisualState(input: BuildVisualStateInput): VisualState {
       homeMapState: input.homeMapState,
       placementGeometryAudit: input.placementGeometryAudit,
     }),
+    actorGeometryProjections: buildVisualActorGeometryProjections(
+      input.actorRuntimeGeometryProjections ?? []
+    ),
     terrainCells: buildVisualTerrainCells(input.environmentState),
     overlays: DEFAULT_RENDERER_DEBUG_OVERLAYS,
     generatedAt: input.generatedAt ?? input.homeMapState.updatedAt,
-    sources: [
-      "home_map_state",
-      "entity_geometry",
-      "terrain_state",
-      "placement_geometry_audit",
-    ],
+    sources: buildVisualStateSources({
+      hasActorGeometryProjections:
+        (input.actorRuntimeGeometryProjections ?? []).length > 0,
+    }),
     tags: [
       "visual_state_v0",
       "procedural_renderer_input",
       ...input.homeMapState.tags,
     ],
   }
+}
+
+function buildVisualActorGeometryProjections(
+  actorRuntimeGeometryProjections: ActorRuntimeGeometryProjectionResult[]
+): VisualActorGeometryProjection[] {
+  return actorRuntimeGeometryProjections.map(buildVisualActorGeometryProjection)
+}
+
+function buildVisualActorGeometryProjection(
+  input: ActorRuntimeGeometryProjectionResult
+): VisualActorGeometryProjection {
+  return {
+    actorId: input.actorId,
+    actorKind: input.actorKind,
+    status: input.status,
+    presence: input.runtimeProjection.presence,
+    source: input.runtimeProjection.source,
+    geometrySource: input.geometrySource,
+    canProject: input.canProject,
+    geometryProjection: input.geometryProjection,
+    reason: input.reason,
+    tags: buildVisualActorGeometryProjectionTags(input),
+  }
+}
+
+function buildVisualActorGeometryProjectionTags(
+  input: ActorRuntimeGeometryProjectionResult
+): string[] {
+  return uniqueTags([
+    "visual_actor_geometry_projection_v0",
+    `actor_kind:${input.actorKind}`,
+    `actor_runtime_geometry_status:${input.status}`,
+    `actor_presence:${input.runtimeProjection.presence}`,
+    `actor_runtime_source:${input.runtimeProjection.source}`,
+    `actor_geometry_source:${input.geometrySource}`,
+    ...input.tags,
+  ])
+}
+
+function buildVisualStateSources(input: {
+  hasActorGeometryProjections: boolean
+}): VisualState["sources"] {
+  if (!input.hasActorGeometryProjections) {
+    return [
+      "home_map_state",
+      "entity_geometry",
+      "terrain_state",
+      "placement_geometry_audit",
+    ]
+  }
+
+  return [
+    "home_map_state",
+    "entity_geometry",
+    "terrain_state",
+    "placement_geometry_audit",
+    "actor_runtime_projection",
+    "actor_geometry_projection",
+  ]
 }
 
 function buildVisualZones(homeMapState: HomeMapState): VisualZone[] {

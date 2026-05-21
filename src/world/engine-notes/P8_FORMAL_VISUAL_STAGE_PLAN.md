@@ -444,3 +444,35 @@ P8-H3 已新增 actor runtime -> geometry adapter。
 ```text
 P8-H4：VisualState 接入 actor geometry projection
 ```
+
+## 17. P8-H4 VisualState 接入 actor geometry projection 记录
+
+P8-H4 已让 VisualState 可以携带 actor geometry projection。
+
+新增：
+
+VisualActorGeometryProjection
+VisualState.actorGeometryProjections
+
+VisualState builder 新增可选输入：
+
+actorRuntimeGeometryProjections?: ActorRuntimeGeometryProjectionResult[]
+
+本阶段规则：
+
+1. actorRuntimeGeometryProjections 缺省时为空数组。
+2. 现有 buildVisualState 调用不传 actorRuntimeGeometryProjections 时不受影响。
+3. VisualActorGeometryProjection 不是 VisualPlacement。
+4. Actor projection 不写入 HomeMapState。
+5. Actor projection 不生成 MapPlacement。
+6. canProject === false 时，geometryProjection 可以为空。
+7. pet 未出生时，只能承载 skipped_not_ready。
+8. 本阶段不接 Renderer。
+9. 本阶段不修改 /world。
+10. 本阶段不读取 PNG / WORLD_MAP_ASSETS。
+
+下一步进入：
+
+```text
+P8-H5：Renderer 显示 actor geometry
+```

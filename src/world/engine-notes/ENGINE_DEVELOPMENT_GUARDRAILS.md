@@ -413,3 +413,21 @@
 13. H3 不能导入 map-assets。
 14. H3 不能导入 Renderer / HomeMapState / ButlerRuntimeContext / PetState。
 15. H3 不能修改 runtime state。
+
+## P8-H4 VisualState Actor Geometry Projection 红线
+
+1. VisualState 只能承载 actor geometry projection，不能生成 actor。
+2. VisualState 不能生成 placement。
+3. VisualState 不能修改 HomeMapState。
+4. VisualActorGeometryProjection 不是 VisualPlacement。
+5. VisualActorGeometryProjection 不是 MapPlacement。
+6. actorRuntimeGeometryProjections 缺省时必须为空数组。
+7. canProject === false 时不能强行补 geometryProjection。
+8. pet 未出生 skipped_not_ready 只能被承载，不能被显示层伪装成 present。
+9. 本阶段不能修改 Renderer 组件。
+10. 本阶段不能修改 /world 页面。
+11. 本阶段不能修改 world-loop / runtime state。
+12. 本阶段不能读取 PNG。
+13. 本阶段不能读取 WORLD_MAP_ASSETS。
+14. 本阶段不能使用 backgroundImage / img / next/image。
+15. Renderer 后续只能只读 VisualState.actorGeometryProjections。

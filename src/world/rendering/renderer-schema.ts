@@ -9,6 +9,16 @@ import type {
   MapPlacementLayer,
 } from "@/world/map-state/home-map-state-schema"
 
+import type {
+  ActorGeometryKind,
+  ActorGeometryProjection,
+  ActorGeometrySource,
+} from "@/world/actor-geometry/actor-geometry-gateway"
+import type {
+  ActorRuntimeGeometryProjectionStatus,
+  ActorRuntimePresence,
+  ActorRuntimeProjectionSource,
+} from "@/world/actor-runtime-projection/actor-runtime-projection-gateway"
 import type { TerrainBiome } from "@/world/environment/environment-gateway"
 import type { Point2D, SpatialShape } from "@/world/spatial/spatial-gateway"
 
@@ -30,6 +40,8 @@ export type VisualStateSource =
   | "entity_geometry"
   | "terrain_state"
   | "placement_geometry_audit"
+  | "actor_runtime_projection"
+  | "actor_geometry_projection"
   | "map_diff_history"
 
 export type VisualZone = {
@@ -75,11 +87,25 @@ export type VisualDebugOverlay = {
   tags: string[]
 }
 
+export type VisualActorGeometryProjection = {
+  actorId: string
+  actorKind: ActorGeometryKind
+  status: ActorRuntimeGeometryProjectionStatus
+  presence: ActorRuntimePresence
+  source: ActorRuntimeProjectionSource
+  geometrySource: ActorGeometrySource
+  canProject: boolean
+  geometryProjection?: ActorGeometryProjection
+  reason: string
+  tags: string[]
+}
+
 export type VisualState = {
   worldId: string
   mapSize: HomeMapSize
   zones: VisualZone[]
   placements: VisualPlacement[]
+  actorGeometryProjections: VisualActorGeometryProjection[]
   terrainCells: VisualTerrainCell[]
   overlays: VisualDebugOverlay[]
   generatedAt: number
