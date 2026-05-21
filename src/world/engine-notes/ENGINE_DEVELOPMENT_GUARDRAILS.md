@@ -395,3 +395,21 @@
 13. anchor 缺省时只能使用 deterministic placeholder anchor，并必须通过 reason / tags 可识别。
 14. pet isBorn === false 时 presence 必须是 not_ready，canProject 必须是 false。
 15. placeholder 不能代表最终 autonomous movement，不能写回 HomeMapState。
+
+## P8-H3 Actor Runtime To Geometry Projection 红线
+
+1. H3 只允许把 ActorRuntimeProjectionResult 转换为 ActorGeometryProjection。
+2. H3 不接 Renderer。
+3. H3 不接 VisualState。
+4. H3 不能修改 world-loop。
+5. H3 不能修改 HomeMapState。
+6. H3 不能生成 placement。
+7. runtimeProjection.canProject === false 时绝不能生成 geometryProjection。
+8. pet 未出生 not_ready 时必须返回 skipped_not_ready。
+9. deterministic placeholder anchor 必须通过 geometrySource / tags 保持可见。
+10. placeholder 不能代表最终 autonomous movement。
+11. H3 不能读取 PNG。
+12. H3 不能读取 WORLD_MAP_ASSETS。
+13. H3 不能导入 map-assets。
+14. H3 不能导入 Renderer / HomeMapState / ButlerRuntimeContext / PetState。
+15. H3 不能修改 runtime state。

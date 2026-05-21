@@ -419,3 +419,28 @@ P8-H2 不做：
 ```text
 P8-H3：Actor Runtime Projection -> Actor Geometry Projection 串联
 ```
+
+## 16. P8-H3 Actor Runtime Projection -> Actor Geometry Projection 串联记录
+
+P8-H3 已新增 actor runtime -> geometry adapter。
+
+本阶段将 ActorRuntimeProjectionResult 转换为 ActorGeometryProjection。
+
+规则：
+
+1. runtimeProjection.canProject === true 时，才允许生成 ActorGeometryProjection。
+2. runtimeProjection.canProject === false 时，不生成 geometryProjection。
+3. pet 未出生时，presence = not_ready，结果必须是 skipped_not_ready。
+4. deterministic placeholder anchor 必须通过 geometrySource / tags 保留可见。
+5. adapter 不接 Renderer。
+6. adapter 不接 VisualState。
+7. adapter 不生成 placement。
+8. adapter 不修改 HomeMapState。
+9. adapter 不修改 runtime state。
+10. adapter 不读取 PNG / WORLD_MAP_ASSETS。
+
+下一步进入：
+
+```text
+P8-H4：VisualState 接入 actor geometry projection
+```

@@ -4,3 +4,4 @@
 
 export * from "./actor-runtime-projection-schema"
 export * from "./actor-runtime-projection-builder"
+export * from "./actor-runtime-geometry-adapter"

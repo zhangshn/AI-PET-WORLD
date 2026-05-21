@@ -4,8 +4,10 @@
 
 import type {
   ActorAttentionDirection,
+  ActorGeometryProjection,
   ActorGeometryKind,
   ActorGeometryPose,
+  ActorGeometrySource,
 } from "@/world/actor-geometry/actor-geometry-gateway"
 
 import type { Point2D } from "@/world/spatial/spatial-gateway"
@@ -46,6 +48,24 @@ export type ActorRuntimeProjectionResult = {
   attentionDirection: ActorAttentionDirection
   source: ActorRuntimeProjectionSource
   scale: number
+  reason: string
+  tags: string[]
+}
+
+export type ActorRuntimeGeometryProjectionStatus =
+  | "projected"
+  | "skipped_not_ready"
+  | "skipped_unknown"
+
+export type ActorRuntimeGeometryProjectionResult = {
+  actorId: string
+  actorKind: ActorGeometryKind
+  worldId: string
+  status: ActorRuntimeGeometryProjectionStatus
+  canProject: boolean
+  runtimeProjection: ActorRuntimeProjectionResult
+  geometryProjection?: ActorGeometryProjection
+  geometrySource: ActorGeometrySource
   reason: string
   tags: string[]
 }
