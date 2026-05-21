@@ -7,6 +7,7 @@ import type { MapPlacementLayer } from "@/world/map-state/home-map-state-schema"
 import type {
   DrawCommand,
   RenderableWorldSnapshot,
+  VisualActorGeometryProjection,
   VisualPlacement,
 } from "@/world/rendering/renderer-gateway"
 import type {
@@ -51,6 +52,12 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
   const visibleCommands = snapshot.drawCommands.slice(0, MAX_VISIBLE_COMMANDS)
   const geometryVisualItems = buildGeometryVisualItems(visualState.placements)
   const geometryVisualSummary = buildGeometryVisualSummary(geometryVisualItems)
+  const actorGeometryVisualItems = buildActorGeometryVisualItems(
+    visualState.actorGeometryProjections
+  )
+  const actorGeometrySummary = buildActorGeometryVisualSummary(
+    visualState.actorGeometryProjections
+  )
   const geometrySourceDiagnostics =
     buildGeometrySourceDiagnostics(visualState.placements)
   const worldGeometryOverview =
@@ -268,6 +275,7 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
               aria-label="Geometry projection rendering"
             >
               {geometryVisualItems.map(renderGeometryVisualItem)}
+              {actorGeometryVisualItems.map(renderActorGeometryVisualItem)}
             </svg>
 
             <div className={styles.proceduralFallbackLayer}>
@@ -323,6 +331,33 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
           <div className={styles.metricItem}>
             <dt>source unknown</dt>
             <dd>{geometryVisualSummary.unknownSource}</dd>
+          </div>
+        </dl>
+
+        <dl className={styles.metricGrid}>
+          <div className={styles.metricItem}>
+            <dt>actor projections</dt>
+            <dd>{actorGeometrySummary.total}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>actor projected</dt>
+            <dd>{actorGeometrySummary.projected}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>actor skipped_not_ready</dt>
+            <dd>{actorGeometrySummary.skippedNotReady}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>actor skipped_unknown</dt>
+            <dd>{actorGeometrySummary.skippedUnknown}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>actor butler</dt>
+            <dd>{actorGeometrySummary.butler}</dd>
+          </div>
+          <div className={styles.metricItem}>
+            <dt>actor pet</dt>
+            <dd>{actorGeometrySummary.pet}</dd>
           </div>
         </dl>
 
@@ -389,6 +424,33 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
           <div className={styles.worldGeometryOverviewGrid}>
             {worldGeometryOverview.items.map(renderWorldGeometryOverviewItem)}
           </div>
+        </section>
+
+        <section
+          className={styles.actorGeometryDiagnostics}
+          aria-labelledby="actor-geometry-diagnostics"
+        >
+          <h4
+            className={styles.actorGeometryDiagnosticsTitle}
+            id="actor-geometry-diagnostics"
+          >
+            Actor Geometry Diagnostics
+          </h4>
+          <p className={styles.sectionDescription}>
+            这里只读 VisualState.actorGeometryProjections，用于确认管家 / 宠物
+            是否已经通过 runtime projection 进入几何显示通道。该区域不是最终玩家 UI。
+          </p>
+          {visualState.actorGeometryProjections.length > 0 ? (
+            <ul className={styles.actorGeometryDiagnosticList}>
+              {visualState.actorGeometryProjections
+                .slice(0, 12)
+                .map(renderActorGeometryDiagnosticItem)}
+            </ul>
+          ) : (
+            <p className={styles.actorGeometryDiagnosticEmpty}>
+              当前 VisualState 没有 actorGeometryProjections；Renderer 不会伪造管家或宠物。
+            </p>
+          )}
         </section>
 
         <section
@@ -602,6 +664,30 @@ type GeometryVisualSummary = {
   unknownSource: number
 }
 
+type ActorGeometryVisualLayer =
+  | "body"
+  | "interactionRadius"
+
+type ActorGeometryVisualItem = {
+  id: string
+  actorId: string
+  actorKind: VisualActorGeometryProjection["actorKind"]
+  layer: ActorGeometryVisualLayer
+  projection: VisualActorGeometryProjection
+  shape: SpatialShape
+  label: string
+  tags: string[]
+}
+
+type ActorGeometryVisualSummary = {
+  total: number
+  projected: number
+  skippedNotReady: number
+  skippedUnknown: number
+  butler: number
+  pet: number
+}
+
 type GeometrySourceDiagnosticItem = {
   placementId: string
   label: string
@@ -777,6 +863,70 @@ function buildGeometryVisualSummary(
       item.source === "fallback_rectangle"
     ).length,
     unknownSource: items.filter((item) => item.source === "unknown").length,
+  }
+}
+
+function buildActorGeometryVisualItems(
+  projections: VisualActorGeometryProjection[]
+): ActorGeometryVisualItem[] {
+  return projections.flatMap((projection) => {
+    if (!projection.canProject || !projection.geometryProjection) {
+      return []
+    }
+
+    return [
+      {
+        id: `actor-${projection.actorId}-interactionRadius`,
+        actorId: projection.actorId,
+        actorKind: projection.actorKind,
+        layer: "interactionRadius",
+        projection,
+        shape: projection.geometryProjection.interactionRadius,
+        label: `${projection.actorKind} ${projection.actorId} interaction radius`,
+        tags: [
+          ...projection.tags,
+          "actor_geometry_visual_item_v0",
+          "actor_geometry_layer:interactionRadius",
+        ],
+      },
+      {
+        id: `actor-${projection.actorId}-body`,
+        actorId: projection.actorId,
+        actorKind: projection.actorKind,
+        layer: "body",
+        projection,
+        shape: projection.geometryProjection.body,
+        label: `${projection.actorKind} ${projection.actorId} body`,
+        tags: [
+          ...projection.tags,
+          "actor_geometry_visual_item_v0",
+          "actor_geometry_layer:body",
+        ],
+      },
+    ]
+  })
+}
+
+function buildActorGeometryVisualSummary(
+  projections: VisualActorGeometryProjection[]
+): ActorGeometryVisualSummary {
+  return {
+    total: projections.length,
+    projected: projections.filter((projection) =>
+      projection.status === "projected"
+    ).length,
+    skippedNotReady: projections.filter((projection) =>
+      projection.status === "skipped_not_ready"
+    ).length,
+    skippedUnknown: projections.filter((projection) =>
+      projection.status === "skipped_unknown"
+    ).length,
+    butler: projections.filter((projection) =>
+      projection.actorKind === "butler"
+    ).length,
+    pet: projections.filter((projection) =>
+      projection.actorKind === "pet"
+    ).length,
   }
 }
 
@@ -1186,6 +1336,143 @@ function getGeometryVisualOpacity(layer: GeometryVisualLayer): number {
   if (layer === "collision") return 0.35
   if (layer === "support") return 0.28
   return 0.22
+}
+
+function renderActorGeometryVisualItem(
+  item: ActorGeometryVisualItem
+): ReactNode {
+  if (item.shape.kind === "point") {
+    return renderActorGeometryPoint(item)
+  }
+
+  if (item.shape.kind === "line") {
+    return renderActorGeometryLine(item)
+  }
+
+  if (item.shape.kind === "polygon") {
+    return renderActorGeometryPolygon({
+      item,
+      points: item.shape.polygon.points,
+    })
+  }
+
+  return item.shape.multiPolygon.polygons.map((polygon, index) =>
+    renderActorGeometryPolygon({
+      item: {
+        ...item,
+        id: `${item.id}-polygon-${index}`,
+      },
+      points: polygon.points,
+    })
+  )
+}
+
+function renderActorGeometryPoint(
+  item: ActorGeometryVisualItem
+): ReactNode {
+  if (item.shape.kind !== "point") return null
+  const point = toGeometryScreenPoint(item.shape.point)
+
+  return (
+    <circle
+      key={item.id}
+      className={getActorGeometryClassName(item)}
+      cx={point.x}
+      cy={point.y}
+      r={item.layer === "body" ? 5 : 8}
+      opacity={getActorGeometryOpacity(item)}
+    >
+      <title>{buildActorGeometryTitle(item)}</title>
+    </circle>
+  )
+}
+
+function renderActorGeometryLine(item: ActorGeometryVisualItem): ReactNode {
+  if (item.shape.kind !== "line") return null
+
+  return (
+    <polyline
+      key={item.id}
+      className={getActorGeometryClassName(item)}
+      points={toGeometrySvgPoints(item.shape.line.points)}
+      fill="none"
+      opacity={getActorGeometryOpacity(item)}
+    >
+      <title>{buildActorGeometryTitle(item)}</title>
+    </polyline>
+  )
+}
+
+function renderActorGeometryPolygon(input: {
+  item: ActorGeometryVisualItem
+  points: readonly Point2D[]
+}): ReactNode {
+  return (
+    <polygon
+      key={input.item.id}
+      className={getActorGeometryClassName(input.item)}
+      points={toGeometrySvgPoints(input.points)}
+      opacity={getActorGeometryOpacity(input.item)}
+    >
+      <title>{buildActorGeometryTitle(input.item)}</title>
+    </polygon>
+  )
+}
+
+function getActorGeometryClassName(item: ActorGeometryVisualItem): string {
+  return [
+    item.layer === "body"
+      ? styles.actorGeometryBody
+      : styles.actorGeometryInteractionRadius,
+    item.actorKind === "butler"
+      ? styles.actorGeometryButler
+      : styles.actorGeometryPet,
+    item.projection.geometrySource === "deterministic_placeholder"
+      ? styles.actorGeometryPlaceholder
+      : styles.actorGeometryRuntime,
+  ].join(" ")
+}
+
+function getActorGeometryOpacity(item: ActorGeometryVisualItem): number {
+  if (item.layer === "interactionRadius") return 0.22
+  return 0.82
+}
+
+function buildActorGeometryTitle(item: ActorGeometryVisualItem): string {
+  return [
+    item.label,
+    `status:${item.projection.status}`,
+    `presence:${item.projection.presence}`,
+    `source:${item.projection.source}`,
+    `geometrySource:${item.projection.geometrySource}`,
+    `canProject:${item.projection.canProject}`,
+    item.projection.reason,
+  ].join(" / ")
+}
+
+function renderActorGeometryDiagnosticItem(
+  projection: VisualActorGeometryProjection
+): ReactNode {
+  return (
+    <li
+      key={`actor-diagnostic-${projection.actorId}`}
+      className={styles.actorGeometryDiagnosticItem}
+    >
+      <span className={styles.actorGeometryDiagnosticLabel}>
+        {projection.actorKind} / {projection.actorId}
+      </span>
+      <span className={styles.actorGeometryDiagnosticMeta}>
+        {projection.status} / {projection.presence} / canProject:
+        {formatBooleanFlag(projection.canProject)}
+      </span>
+      <span className={styles.actorGeometryDiagnosticMeta}>
+        source:{projection.source} / geometrySource:{projection.geometrySource}
+      </span>
+      <span className={styles.actorGeometryDiagnosticReason}>
+        {projection.reason}
+      </span>
+    </li>
+  )
 }
 
 function shouldRenderProceduralFallbackPlacement(

@@ -182,6 +182,33 @@
   stroke-dasharray: 6 4;
 }
 
+.actorGeometryBody {
+  stroke-width: 1.6;
+}
+
+.actorGeometryInteractionRadius {
+  stroke-width: 1.2;
+  stroke-dasharray: 5 4;
+}
+
+.actorGeometryButler {
+  fill: rgba(120, 150, 205, 0.42);
+  stroke: rgba(48, 72, 130, 0.9);
+}
+
+.actorGeometryPet {
+  fill: rgba(230, 185, 120, 0.42);
+  stroke: rgba(130, 82, 45, 0.9);
+}
+
+.actorGeometryPlaceholder {
+  filter: grayscale(0.35);
+}
+
+.actorGeometryRuntime {
+  filter: saturate(1.1);
+}
+
 .geometryLegend {
   display: flex;
   flex-wrap: wrap;
@@ -321,6 +348,59 @@
 
 .worldGeometryUnknown {
   background: rgba(210, 80, 70, 0.08);
+}
+
+.actorGeometryDiagnostics {
+  display: grid;
+  gap: 10px;
+  border: 1px solid currentColor;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.actorGeometryDiagnosticsTitle {
+  margin: 0;
+  font-size: 14px;
+}
+
+.actorGeometryDiagnosticList {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.actorGeometryDiagnosticItem {
+  display: grid;
+  gap: 3px;
+  border: 1px solid currentColor;
+  border-radius: 10px;
+  padding: 10px;
+}
+
+.actorGeometryDiagnosticLabel {
+  font-size: 12px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.actorGeometryDiagnosticMeta {
+  font-size: 11px;
+  opacity: 0.72;
+  overflow-wrap: anywhere;
+}
+
+.actorGeometryDiagnosticReason {
+  font-size: 11px;
+  opacity: 0.8;
+  overflow-wrap: anywhere;
+}
+
+.actorGeometryDiagnosticEmpty {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.72;
 }
 
 .geometryDiagnostics {

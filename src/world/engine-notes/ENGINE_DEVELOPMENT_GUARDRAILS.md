@@ -431,3 +431,21 @@
 13. 本阶段不能读取 WORLD_MAP_ASSETS。
 14. 本阶段不能使用 backgroundImage / img / next/image。
 15. Renderer 后续只能只读 VisualState.actorGeometryProjections。
+
+## P8-H5 Renderer Actor Geometry Display 红线
+
+1. Renderer 只能读取 VisualState.actorGeometryProjections。
+2. Renderer 不能生成 actor。
+3. Renderer 不能生成 actor projection。
+4. Renderer 不能决定角色是否存在。
+5. Renderer 不能填默认 anchor。
+6. Renderer 不能生成 placement。
+7. Renderer 不能修改 HomeMapState。
+8. Renderer 不能读取 PNG。
+9. Renderer 不能读取 WORLD_MAP_ASSETS。
+10. Renderer 不能使用 backgroundImage / img / next/image。
+11. VisualState.actorGeometryProjections 为空时必须显示 0，不能伪造管家或宠物。
+12. canProject === false 时不能绘制 actor geometry。
+13. pet 未出生 skipped_not_ready 时不能绘制宠物 actor。
+14. Actor Geometry Diagnostics 不是最终玩家 UI。
+15. 后续 actor 数据必须由上游 world snapshot / VisualState 输入，不能由 Renderer 构造。

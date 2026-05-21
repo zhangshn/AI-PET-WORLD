@@ -476,3 +476,34 @@ actorRuntimeGeometryProjections?: ActorRuntimeGeometryProjectionResult[]
 ```text
 P8-H5：Renderer 显示 actor geometry
 ```
+
+## 18. P8-H5 Renderer 显示 actor geometry 记录
+
+P8-H5 已让 Renderer 只读 VisualState.actorGeometryProjections。
+
+本阶段新增：
+
+1. Actor Geometry Summary。
+2. Actor Geometry Diagnostics。
+3. SVG actor geometry layer。
+4. actor body 绘制。
+5. actor interactionRadius 绘制。
+
+规则：
+
+1. Renderer 只读取 VisualState.actorGeometryProjections。
+2. Renderer 不生成 actor。
+3. Renderer 不生成 actor projection。
+4. Renderer 不决定角色是否存在。
+5. Renderer 不填默认 anchor。
+6. canProject === false 时不绘制 actor geometry。
+7. VisualState.actorGeometryProjections 空数组时不显示角色。
+8. pet 未出生 skipped_not_ready 时不绘制宠物 actor。
+9. 本阶段不修改 HomeMapState。
+10. 本阶段不读取 PNG / WORLD_MAP_ASSETS。
+
+下一步进入：
+
+```text
+P8-H6：Actor projection 数据接入 world snapshot
+```
