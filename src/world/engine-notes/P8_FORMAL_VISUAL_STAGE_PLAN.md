@@ -476,3 +476,34 @@ model: FormalVisualModel
 ```text
 FORMAL-VIEW-01：FormalWorldView preview harness
 ```
+
+## 18. FORMAL-VIEW-01 FormalWorldView preview harness 完成记录
+
+FORMAL-VIEW-01 已完成 preview harness。
+
+本阶段新增：
+
+1. `src/app/world/components/formal-world-view/formal-world-view.preview.tsx`。
+2. `src/world/engine-notes/FORMAL_VIEW_01_FORMAL_WORLD_VIEW_PREVIEW_HARNESS.md`。
+
+本阶段确认：
+
+1. preview harness 只用于开发预览。
+2. preview harness 用于验证 FormalVisualModel -> FormalWorldView 的只读渲染效果。
+3. preview mock 命名为 `PREVIEW_FORMAL_VISUAL_MODEL`。
+4. preview mock 只存在于 preview harness 文件内部。
+5. preview mock 带有 `preview_only` / `not_world_fact` / `not_persisted` auditTags。
+6. preview mock 不是世界事实。
+7. preview mock 不进入正式数据流。
+8. preview harness 不等于正式 /world 接入。
+9. 本阶段不修改 FormalVisualGenerator。
+10. 本阶段不修改 FormalVisualModel schema。
+11. 本阶段不修改 world-loop。
+12. 本阶段不修改 HomeMapState。
+13. 本阶段不生成真实 world object / placement / actor。
+14. 本阶段不读取 PNG / WORLD_MAP_ASSETS。
+15. 本阶段不默认接入 pet。
+
+下一步是 FORMAL-VIEW-02 或 /world 正式接入前检查，具体以后再定。
+
+在正式决策前，不得擅自接入正式 /world。

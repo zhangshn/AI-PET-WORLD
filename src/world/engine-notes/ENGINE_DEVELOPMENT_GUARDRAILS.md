@@ -345,3 +345,24 @@ VISUAL-MODEL-00：FormalVisualModel schema
 19. FormalWorldView 不能读取 WORLD_MAP_ASSETS。
 20. FormalWorldView 不能默认接入 pet。
 21. FORMAL-VIEW-00 不能接入 /world 页面。
+
+## FORMAL-VIEW-01 preview harness 红线
+
+1. preview mock 只能用于开发预览。
+2. preview mock 不能进入正式数据流。
+3. preview mock 不能被 /world 引用。
+4. preview mock 不能被当作 HomeMapState 正式来源。
+5. preview mock 不能被当作 WorldState 正式来源。
+6. preview mock 不能被当作 VisualState 正式来源。
+7. preview mock 不能被当作 FormalVisualModel 正式来源。
+8. preview harness 不能修改 FormalVisualGenerator。
+9. preview harness 不能修改 FormalVisualModel schema。
+10. preview harness 不能修改 world-loop。
+11. preview harness 不能修改 HomeMapState。
+12. preview harness 不能生成真实世界事实。
+13. preview harness 不能生成真实 placement。
+14. preview harness 不能生成真实 actor。
+15. preview harness 不能读取 PNG。
+16. preview harness 不能读取 WORLD_MAP_ASSETS。
+17. preview harness 不能默认接入 pet。
+18. preview harness 不能被当作正式玩家 UI。
