@@ -521,3 +521,21 @@
 13. Formal World View 不能显示紫微斗数原始术语。
 14. Formal World View 不能默认接入 pet actor。
 15. Formal World View 不能让玩家直接控制管家或宠物。
+
+## P8-I1 FormalWorldView Component Shell 红线
+
+1. P8-I1 只新增 FormalWorldView 组件骨架，不接入 /world 页面。
+2. FormalWorldView 只能读取 props.snapshot。
+3. FormalWorldView 只能读取 RenderableWorldSnapshot / VisualState 派生数据。
+4. FormalWorldView 不能读取 PNG。
+5. FormalWorldView 不能读取 WORLD_MAP_ASSETS。
+6. FormalWorldView 不能导入 map-assets。
+7. FormalWorldView 不能导入 actor-geometry builder。
+8. FormalWorldView 不能导入 actor-runtime-projection builder。
+9. FormalWorldView 不能导入 world-loop / HomeMapState。
+10. FormalWorldView 不能生成 actor。
+11. FormalWorldView 不能生成 placement。
+12. FormalWorldView 不能填默认 anchor。
+13. FormalWorldView 不能修改 VisualState。
+14. FormalWorldView 不能显示 raw tags / source diagnostics / F-C-S-I。
+15. FormalWorldView 不能默认显示 pet 或显示紫微斗数原始术语。

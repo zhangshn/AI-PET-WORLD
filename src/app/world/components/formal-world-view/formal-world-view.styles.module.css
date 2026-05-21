@@ -1,0 +1,143 @@
+.formalWorldShell {
+  display: grid;
+  gap: 16px;
+  border: 1px solid currentColor;
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.formalHeader {
+  display: grid;
+  gap: 8px;
+}
+
+.formalHeader h2,
+.formalHeader p {
+  margin: 0;
+}
+
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.68;
+}
+
+.formalCanvasShell {
+  border: 1px solid currentColor;
+  border-radius: 16px;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.formalCanvas {
+  position: relative;
+  min-height: 320px;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.formalGround {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 20% 24%,
+      rgba(255, 255, 255, 0.16),
+      transparent 18%
+    ),
+    radial-gradient(
+      circle at 72% 64%,
+      rgba(255, 255, 255, 0.1),
+      transparent 20%
+    ),
+    linear-gradient(135deg, rgba(118, 174, 86, 0.72), rgba(64, 128, 72, 0.82));
+}
+
+.formalCanvasHint {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 6px;
+  place-items: center;
+  min-height: 320px;
+  text-align: center;
+  padding: 24px;
+}
+
+.formalCanvasHint span {
+  opacity: 0.74;
+}
+
+.formalHud {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.formalInfoCard {
+  display: grid;
+  gap: 6px;
+  border: 1px solid currentColor;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.formalInfoCard span {
+  font-size: 12px;
+  opacity: 0.68;
+}
+
+.formalInfoCard strong {
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.formalActorPanel {
+  display: grid;
+  gap: 10px;
+  border: 1px solid currentColor;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.formalActorPanel h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.formalActorList {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.formalActorItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid currentColor;
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.formalActorItem span {
+  opacity: 0.72;
+}
+
+.formalActorItem strong {
+  text-align: right;
+}
+
+.formalEmptyText {
+  margin: 0;
+  opacity: 0.72;
+}
+
+@media (max-width: 900px) {
+  .formalHud {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

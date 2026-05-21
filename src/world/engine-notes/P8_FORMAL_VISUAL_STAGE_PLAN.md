@@ -626,3 +626,40 @@ P8-I0 已定义 Formal World View 的阶段边界。
 ```text
 P8-I1：FormalWorldView 组件骨架
 ```
+
+## 23. P8-I1 FormalWorldView 组件骨架记录
+
+P8-I1 已新增 FormalWorldView 组件骨架。
+
+本阶段新增：
+
+1. formal-world-view.tsx。
+2. formal-world-view.styles.module.css。
+3. FormalWorldViewProps。
+4. FormalWorldView。
+5. Formal World Canvas 壳层。
+6. Formal World HUD 骨架。
+7. Formal Actor Summary 骨架。
+
+本阶段规则：
+
+1. 组件只读取 RenderableWorldSnapshot / VisualState。
+2. 不接入 /world 页面。
+3. 不替换 ProceduralRendererView。
+4. 不显示 Debug Diagnostics。
+5. 不显示 raw tags。
+6. 不显示 source labels。
+7. 不显示 collision boxes / F-C-S-I。
+8. 不读取 PNG。
+9. 不读取 WORLD_MAP_ASSETS。
+10. 不生成 actor。
+11. 不生成 placement。
+12. 不修改 HomeMapState。
+13. 不默认显示 pet。
+14. 不显示紫微斗数原始术语。
+
+下一步进入：
+
+```text
+P8-I2：Formal World Canvas
+```
