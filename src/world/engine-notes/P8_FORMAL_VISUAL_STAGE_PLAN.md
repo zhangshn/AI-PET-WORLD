@@ -381,5 +381,20 @@ VISUAL-MODEL-01 已完成 FormalVisualGenerator 纯函数层。
 下一步进入：
 
 ```text
-VISUAL-MODEL-02：FormalVisualModel audit / debug summary
+FORMAL-VIEW-00：FormalWorldView 只读 FormalVisualModel
 ```
+
+FORMAL-VIEW-00 目标是新增只读 FormalWorldView，让它只读取 FormalVisualModel 渲染玩家主视觉壳层。
+
+FORMAL-VIEW-00 仍然不能：
+
+1. 在组件内生成 FormalWorldVisualItem。
+2. 在组件内生成 FormalActorVisualItem。
+3. buildFormalWorldVisualItems。
+4. buildFormalActorVisualItems。
+5. 生成世界事实。
+6. 生成 placement。
+7. 生成 actor。
+8. 填默认 anchor。
+9. 读取 PNG / WORLD_MAP_ASSETS 作为正式世界事实来源。
+10. 默认显示 pet。
