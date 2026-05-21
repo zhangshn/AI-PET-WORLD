@@ -449,3 +449,21 @@
 13. pet 未出生 skipped_not_ready 时不能绘制宠物 actor。
 14. Actor Geometry Diagnostics 不是最终玩家 UI。
 15. 后续 actor 数据必须由上游 world snapshot / VisualState 输入，不能由 Renderer 构造。
+
+## P8-H6 Actor Projection World Snapshot Integration 红线
+
+1. world-loop renderable state 可以派生只读 butler actor projection。
+2. 本阶段只能接入 butler，不能接入 pet 默认 actor。
+3. pet 不是开局默认资产，不能为了画面完整而伪造。
+4. actor projection 必须从 HomeMapState 派生 anchor。
+5. actor projection 不能生成 MapPlacement。
+6. actor projection 不能修改 HomeMapState。
+7. actor projection 不能写入 mapDiff。
+8. Renderer 仍然不能生成 actor。
+9. Renderer 仍然不能决定角色是否存在。
+10. Renderer 仍然不能填默认 anchor。
+11. 不能读取 PNG。
+12. 不能读取 WORLD_MAP_ASSETS。
+13. 不能使用 backgroundImage / img / next/image。
+14. 管家 projection v0 不是最终管家行为系统。
+15. butler anchor 不代表最终 autonomous movement。

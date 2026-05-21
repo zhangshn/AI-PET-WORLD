@@ -507,3 +507,40 @@ P8-H5 已让 Renderer 只读 VisualState.actorGeometryProjections。
 ```text
 P8-H6：Actor projection 数据接入 world snapshot
 ```
+
+## 19. P8-H6 Actor projection 数据接入 world snapshot 记录
+
+P8-H6 已让 world-loop renderable state 接入 butler actor projection。
+
+当前链路：
+
+```text
+HomeMapState
+-> world-loop renderable state
+-> buildButlerRuntimeProjection
+-> buildActorGeometryProjectionFromRuntime
+-> buildVisualState(actorRuntimeGeometryProjections)
+-> VisualState.actorGeometryProjections
+-> Renderer 只读显示
+```
+
+本阶段规则：
+
+1. 只接入 butler。
+2. 不接入 pet。
+3. butler anchor 从 HomeMapState 派生。
+4. anchor 优先来自 actor_kind:butler placement。
+5. 其次来自 visual_center zone。
+6. 再次来自 temporary_shelter zone。
+7. 最后 fallback 到 mapSize 中心。
+8. 不生成 MapPlacement。
+9. 不修改 HomeMapState。
+10. 不写入 mapDiff。
+11. 不修改 Renderer。
+12. 不读取 PNG / WORLD_MAP_ASSETS。
+
+下一步进入：
+
+```text
+P8-H7：Actor Geometry Display 可读性与 Debug 收口
+```
