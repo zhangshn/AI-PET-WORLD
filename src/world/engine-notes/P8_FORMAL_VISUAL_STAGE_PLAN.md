@@ -663,3 +663,40 @@ P8-I1 已新增 FormalWorldView 组件骨架。
 ```text
 P8-I2：Formal World Canvas
 ```
+
+## 24. P8-I2 Formal World Canvas 记录
+
+P8-I2 已增强 FormalWorldView 的 Formal World Canvas。
+
+本阶段新增：
+
+1. FormalWorldVisualItem。
+2. FormalWorldVisualKind。
+3. 从 VisualState.placements 派生干净程序化世界对象。
+4. 地面 / 道路 / 建筑 / 树木 / 设施 / 小物 / 角色占位样式。
+5. Formal Canvas 尺寸从 VisualState.mapSize 派生。
+
+本阶段规则：
+
+1. FormalWorldView 仍然只读取 RenderableWorldSnapshot / VisualState。
+2. 不接入 /world 页面。
+3. 不替换 ProceduralRendererView。
+4. 不显示 Debug Diagnostics。
+5. 不显示 raw tags。
+6. 不显示 assetId。
+7. 不显示 source labels。
+8. 不显示 collision / support / influence debug boxes。
+9. 不显示 F / C / S / I。
+10. 不读取 PNG。
+11. 不读取 WORLD_MAP_ASSETS。
+12. 不生成 actor。
+13. 不生成 placement。
+14. 不修改 HomeMapState。
+15. 不默认显示 pet。
+16. 不显示紫微斗数原始术语。
+
+下一步进入：
+
+```text
+P8-I3：Formal Actor Presentation
+```

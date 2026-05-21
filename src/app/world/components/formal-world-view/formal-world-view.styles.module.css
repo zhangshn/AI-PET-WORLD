@@ -32,6 +32,7 @@
 
 .formalCanvas {
   position: relative;
+  min-width: 100%;
   min-height: 320px;
   border-radius: 14px;
   overflow: hidden;
@@ -55,18 +56,145 @@
 }
 
 .formalCanvasHint {
-  position: relative;
-  z-index: 1;
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 20;
   display: grid;
   gap: 6px;
-  place-items: center;
-  min-height: 320px;
-  text-align: center;
-  padding: 24px;
+  max-width: 320px;
+  border: 1px solid currentColor;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: left;
 }
 
 .formalCanvasHint span {
   opacity: 0.74;
+}
+
+.formalAtmosphere {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 18% 18%,
+      rgba(255, 255, 255, 0.16),
+      transparent 16%
+    ),
+    radial-gradient(
+      circle at 82% 72%,
+      rgba(244, 226, 158, 0.14),
+      transparent 22%
+    );
+  pointer-events: none;
+}
+
+.formalWorldObject {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.formalObjectGround {
+  border-radius: 999px;
+  background: rgba(95, 150, 82, 0.22);
+}
+
+.formalObjectPath {
+  min-height: 10px;
+}
+
+.formalObjectPathLine {
+  display: block;
+  width: 100%;
+  height: 35%;
+  border-radius: 999px;
+  background: rgba(138, 104, 72, 0.72);
+  transform: rotate(-8deg);
+}
+
+.formalObjectStructure {
+  display: grid;
+  place-items: center;
+}
+
+.formalObjectRoof {
+  width: 78%;
+  height: 42%;
+  border-radius: 999px 999px 18px 18px;
+  background: rgba(152, 92, 62, 0.86);
+  transform: translateY(10%);
+}
+
+.formalObjectHouseBody {
+  width: 62%;
+  height: 52%;
+  border-radius: 10px 10px 14px 14px;
+  background: rgba(206, 160, 112, 0.86);
+  transform: translateY(-10%);
+}
+
+.formalObjectFacility {
+  border-radius: 16px;
+  background: rgba(120, 148, 180, 0.24);
+}
+
+.formalObjectFacilityCore {
+  width: 58%;
+  height: 58%;
+  border-radius: 14px;
+  background: rgba(90, 118, 158, 0.7);
+}
+
+.formalObjectNature {
+  display: grid;
+  place-items: center;
+}
+
+.formalObjectTreeCrown {
+  width: 76%;
+  height: 70%;
+  border-radius: 999px;
+  background: rgba(58, 132, 72, 0.82);
+}
+
+.formalObjectTreeTrunk {
+  width: 18%;
+  height: 42%;
+  border-radius: 999px;
+  background: rgba(104, 72, 42, 0.76);
+  transform: translateY(-22%);
+}
+
+.formalObjectSurfaceDecoration {
+  border-radius: 999px;
+  background: rgba(232, 216, 142, 0.5);
+}
+
+.formalObjectDot {
+  width: 44%;
+  height: 44%;
+  border-radius: 999px;
+  background: rgba(255, 238, 158, 0.78);
+}
+
+.formalObjectActor {
+  border-radius: 999px;
+  background: rgba(110, 138, 202, 0.24);
+}
+
+.formalObjectActorCore {
+  width: 46%;
+  height: 72%;
+  border-radius: 999px 999px 14px 14px;
+  background: rgba(82, 104, 174, 0.76);
+}
+
+.formalObjectOther {
+  border-radius: 14px;
+  background: rgba(180, 180, 180, 0.22);
 }
 
 .formalHud {

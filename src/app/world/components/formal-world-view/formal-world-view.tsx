@@ -8,8 +8,12 @@ import type {
   VisualActorGeometryProjection,
   VisualPlacement,
 } from "@/world/rendering/renderer-gateway"
+import type { Point2D } from "@/world/spatial/spatial-gateway"
 
 import styles from "./formal-world-view.styles.module.css"
+
+const FORMAL_WORLD_TILE_SIZE = 32
+const FORMAL_WORLD_MIN_ITEM_SIZE = 18
 
 export type FormalWorldViewProps = {
   snapshot: RenderableWorldSnapshot
@@ -30,10 +34,40 @@ type FormalActorSummary = {
   canShow: boolean
 }
 
+type FormalWorldVisualKind =
+  | "ground"
+  | "path"
+  | "structure"
+  | "facility"
+  | "nature"
+  | "surfaceDecoration"
+  | "actor"
+  | "other"
+
+type FormalWorldVisualItem = {
+  placementId: string
+  kind: FormalWorldVisualKind
+  label: string
+  left: number
+  top: number
+  width: number
+  height: number
+  opacity: number
+  zIndex: number
+}
+
+type FormalBounds = {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+}
+
 export function FormalWorldView(input: FormalWorldViewProps) {
   const { snapshot } = input
   const visualState = snapshot.visualState
   const summary = buildFormalWorldSummary(snapshot)
+  const visualItems = buildFormalWorldVisualItems(visualState.placements)
   const actors = buildFormalActorSummaries(
     visualState.actorGeometryProjections
   )
@@ -56,11 +90,21 @@ export function FormalWorldView(input: FormalWorldViewProps) {
         className={styles.formalCanvasShell}
         aria-label="formal world canvas shell"
       >
-        <div className={styles.formalCanvas}>
+        <div
+          className={styles.formalCanvas}
+          style={{
+            width: buildFormalCanvasWidth(visualState.mapSize.columns),
+            height: buildFormalCanvasHeight(visualState.mapSize.rows),
+          }}
+        >
           <div className={styles.formalGround} />
+          <div className={styles.formalAtmosphere} />
+          {visualItems.map(renderFormalWorldVisualItem)}
           <div className={styles.formalCanvasHint}>
-            <strong>自主世界画布骨架</strong>
-            <span>后续 P8-I2 会在这里接入干净的程序化世界对象。</span>
+            <strong>自主世界画布</strong>
+            <span>
+              当前只读 VisualState.placements，以干净程序化样式显示世界对象。
+            </span>
           </div>
         </div>
       </div>
@@ -96,6 +140,14 @@ export function FormalWorldView(input: FormalWorldViewProps) {
       </section>
     </section>
   )
+}
+
+function buildFormalCanvasWidth(columns: number): number {
+  return columns * FORMAL_WORLD_TILE_SIZE
+}
+
+function buildFormalCanvasHeight(rows: number): number {
+  return rows * FORMAL_WORLD_TILE_SIZE
 }
 
 function buildFormalWorldSummary(
@@ -141,11 +193,225 @@ function isPlayerFacingPlacementLayer(
   )
 }
 
+function buildFormalWorldVisualItems(
+  placements: VisualPlacement[]
+): FormalWorldVisualItem[] {
+  return placements
+    .filter((placement) => isPlayerFacingPlacementLayer(placement.layer))
+    .map(buildFormalWorldVisualItem)
+    .sort((left, right) => left.zIndex - right.zIndex)
+}
+
+function buildFormalWorldVisualItem(
+  placement: VisualPlacement
+): FormalWorldVisualItem {
+  const bounds = buildFormalPlacementBounds(placement)
+  const width = Math.max(
+    FORMAL_WORLD_MIN_ITEM_SIZE,
+    (bounds.maxX - bounds.minX) * FORMAL_WORLD_TILE_SIZE
+  )
+  const height = Math.max(
+    FORMAL_WORLD_MIN_ITEM_SIZE,
+    (bounds.maxY - bounds.minY) * FORMAL_WORLD_TILE_SIZE
+  )
+
+  return {
+    placementId: placement.placementId,
+    kind: mapPlacementLayerToFormalKind(placement.layer),
+    label: buildPlayerFacingPlacementLabel(placement),
+    left: bounds.minX * FORMAL_WORLD_TILE_SIZE,
+    top: bounds.minY * FORMAL_WORLD_TILE_SIZE,
+    width,
+    height,
+    opacity: placement.alpha,
+    zIndex: buildFormalZIndex(placement.layer),
+  }
+}
+
+function buildFormalPlacementBounds(placement: VisualPlacement): FormalBounds {
+  if (placement.footprint) {
+    return buildBoundsFromVisualShape(placement.footprint, placement.anchor)
+  }
+
+  return buildBoundsAroundAnchor(placement.anchor, placement.scale)
+}
+
+function buildBoundsAroundAnchor(
+  anchor: Point2D,
+  scale: number
+): FormalBounds {
+  const halfSize = Math.max(0.35, scale * 0.5)
+
+  return {
+    minX: anchor.x - halfSize,
+    minY: anchor.y - halfSize,
+    maxX: anchor.x + halfSize,
+    maxY: anchor.y + halfSize,
+  }
+}
+
+function buildBoundsFromVisualShape(
+  shape: NonNullable<VisualPlacement["footprint"]>,
+  fallbackAnchor: Point2D
+): FormalBounds {
+  if (shape.kind === "point") {
+    return buildBoundsAroundAnchor(shape.point, 1)
+  }
+
+  if (shape.kind === "line") {
+    return buildBoundsFromPoints(shape.line.points, fallbackAnchor)
+  }
+
+  if (shape.kind === "polygon") {
+    return buildBoundsFromPoints(shape.polygon.points, fallbackAnchor)
+  }
+
+  return buildBoundsFromPoints(
+    shape.multiPolygon.polygons.flatMap((polygon) => polygon.points),
+    fallbackAnchor
+  )
+}
+
+function buildBoundsFromPoints(
+  points: readonly Point2D[],
+  fallbackAnchor: Point2D
+): FormalBounds {
+  if (points.length === 0) {
+    return buildBoundsAroundAnchor(fallbackAnchor, 1)
+  }
+
+  const xValues = points.map((point) => point.x)
+  const yValues = points.map((point) => point.y)
+
+  return {
+    minX: Math.min(...xValues),
+    minY: Math.min(...yValues),
+    maxX: Math.max(...xValues),
+    maxY: Math.max(...yValues),
+  }
+}
+
+function mapPlacementLayerToFormalKind(
+  layer: VisualPlacement["layer"]
+): FormalWorldVisualKind {
+  if (layer === "ground") return "ground"
+  if (layer === "path") return "path"
+  if (layer === "structure") return "structure"
+  if (layer === "facility") return "facility"
+  if (layer === "nature") return "nature"
+  if (layer === "surface-decoration") return "surfaceDecoration"
+  if (layer === "actor") return "actor"
+
+  return "other"
+}
+
+function buildPlayerFacingPlacementLabel(placement: VisualPlacement): string {
+  if (placement.layer === "ground") return "地面"
+  if (placement.layer === "path") return "道路"
+  if (placement.layer === "structure") return "建筑"
+  if (placement.layer === "facility") return "设施"
+  if (placement.layer === "nature") return "树木"
+  if (placement.layer === "surface-decoration") return "小物"
+  if (placement.layer === "actor") return "角色"
+
+  return "世界对象"
+}
+
+function buildFormalZIndex(layer: VisualPlacement["layer"]): number {
+  if (layer === "ground") return 1
+  if (layer === "path") return 2
+  if (layer === "surface-decoration") return 3
+  if (layer === "facility") return 4
+  if (layer === "nature") return 5
+  if (layer === "structure") return 6
+  if (layer === "actor") return 8
+
+  return 7
+}
+
+function renderFormalWorldVisualItem(item: FormalWorldVisualItem): ReactNode {
+  return (
+    <div
+      className={`${styles.formalWorldObject} ${getFormalWorldObjectClassName(
+        item.kind
+      )}`}
+      key={item.placementId}
+      style={{
+        left: item.left,
+        top: item.top,
+        width: item.width,
+        height: item.height,
+        opacity: item.opacity,
+        zIndex: item.zIndex,
+      }}
+      aria-label={item.label}
+    >
+      {renderFormalWorldObjectInner(item)}
+    </div>
+  )
+}
+
+function getFormalWorldObjectClassName(kind: FormalWorldVisualKind): string {
+  if (kind === "ground") return styles.formalObjectGround
+  if (kind === "path") return styles.formalObjectPath
+  if (kind === "structure") return styles.formalObjectStructure
+  if (kind === "facility") return styles.formalObjectFacility
+  if (kind === "nature") return styles.formalObjectNature
+  if (kind === "surfaceDecoration") {
+    return styles.formalObjectSurfaceDecoration
+  }
+  if (kind === "actor") return styles.formalObjectActor
+
+  return styles.formalObjectOther
+}
+
+function renderFormalWorldObjectInner(
+  item: FormalWorldVisualItem
+): ReactNode {
+  if (item.kind === "path") {
+    return <span className={styles.formalObjectPathLine} />
+  }
+
+  if (item.kind === "structure") {
+    return (
+      <>
+        <span className={styles.formalObjectRoof} />
+        <span className={styles.formalObjectHouseBody} />
+      </>
+    )
+  }
+
+  if (item.kind === "facility") {
+    return <span className={styles.formalObjectFacilityCore} />
+  }
+
+  if (item.kind === "nature") {
+    return (
+      <>
+        <span className={styles.formalObjectTreeCrown} />
+        <span className={styles.formalObjectTreeTrunk} />
+      </>
+    )
+  }
+
+  if (item.kind === "surfaceDecoration") {
+    return <span className={styles.formalObjectDot} />
+  }
+
+  if (item.kind === "actor") {
+    return <span className={styles.formalObjectActorCore} />
+  }
+
+  return null
+}
+
 function buildFormalActorSummaries(
   projections: VisualActorGeometryProjection[]
 ): FormalActorSummary[] {
   return projections
-    .filter((projection) => projection.canProject && projection.geometryProjection)
+    .filter(
+      (projection) => projection.canProject && projection.geometryProjection
+    )
     .filter((projection) => projection.actorKind === "butler")
     .map((projection) => ({
       actorId: projection.actorId,

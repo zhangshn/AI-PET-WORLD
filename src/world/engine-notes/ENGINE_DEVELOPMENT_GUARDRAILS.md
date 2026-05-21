@@ -539,3 +539,21 @@
 13. FormalWorldView 不能修改 VisualState。
 14. FormalWorldView 不能显示 raw tags / source diagnostics / F-C-S-I。
 15. FormalWorldView 不能默认显示 pet 或显示紫微斗数原始术语。
+
+## P8-I2 Formal World Canvas 红线
+
+1. P8-I2 只增强 FormalWorldView 内部 Canvas，不接入 /world 页面。
+2. Formal World Canvas 只能从 VisualState.placements 派生显示对象。
+3. Formal World Canvas 不能读取 PNG。
+4. Formal World Canvas 不能读取 WORLD_MAP_ASSETS。
+5. Formal World Canvas 不能导入 map-assets。
+6. Formal World Canvas 不能导入 world-loop / HomeMapState。
+7. Formal World Canvas 不能生成 placement。
+8. Formal World Canvas 不能生成 actor。
+9. Formal World Canvas 不能填默认 anchor。
+10. Formal World Canvas 不能修改 VisualState / HomeMapState。
+11. Formal World Canvas 不能显示 raw tags / assetId / source labels。
+12. Formal World Canvas 不能显示 collision / support / influence debug boxes。
+13. Formal World Canvas 不能显示 F / C / S / I 或 actor debug flags。
+14. Formal World Canvas 不能显示紫微斗数原始术语。
+15. Formal World Canvas 不能默认显示 pet 或伪造宠物存在。
