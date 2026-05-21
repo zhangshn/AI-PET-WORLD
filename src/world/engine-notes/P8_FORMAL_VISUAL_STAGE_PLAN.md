@@ -570,3 +570,31 @@ P8-H7 已增强 Actor Geometry Diagnostics 可读性。
 ```text
 P8-H8：Actor Geometry 阶段收口与 Formal World View 分离规划
 ```
+
+## 21. P8-H8 Actor Geometry 阶段收口与 Formal World View 分离规划记录
+
+P8-H8 已完成 Actor Geometry 阶段收口规划。
+
+当前确认：
+
+1. 当前 /world 的几何 / 程序化视觉预览 v1 是 Debug View / Dev View。
+2. 当前大面积网格、线框、诊断面板不是最终玩家主视觉。
+3. 当前 actor 图形是 Debug 几何占位。
+4. 当前 actor 图形不是最终角色美术。
+5. 当前 actor 图形不代表最终 autonomous movement。
+6. Renderer 仍然只读 VisualState / RenderableWorldSnapshot。
+7. Renderer 不生成 actor。
+8. Renderer 不生成 placement。
+9. pet 不作为默认 actor 接入。
+10. Formal World View 必须单独规划。
+11. Debug View 可以保留工程诊断。
+12. Formal World View 不应直接显示 raw tags / source diagnostics / collision boxes / F-C-S-I。
+13. Formal World View 仍然必须遵守不读取 PNG / WORLD_MAP_ASSETS 主路径。
+14. Formal World View 不能伪造世界事实。
+15. Formal World View 不能显示紫微斗数原始术语。
+
+下一步进入：
+
+```text
+P8-I0：Formal World View 规划
+```

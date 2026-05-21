@@ -485,3 +485,21 @@
 13. 本阶段不能写入 mapDiff。
 14. 本阶段不能读取 PNG / WORLD_MAP_ASSETS。
 15. 本阶段不能使用 backgroundImage / img / next/image。
+
+## P8-H8 Actor Geometry Closeout / Formal World View Separation 红线
+
+1. H8 只做 Actor Geometry 阶段收口与 Formal World View 分离规划，不新增运行时功能。
+2. 当前 /world 的几何 / 程序化视觉预览 v1 必须被视为 Debug View / Dev View。
+3. 当前大面积网格、线框、诊断面板不能被当作最终玩家主视觉。
+4. 当前 actor Debug 占位不能被当作最终角色美术。
+5. 当前 actor Debug 占位不能被当作最终 autonomous movement。
+6. Debug View 可以保留 raw geometry / raw tags / diagnostics / audit data。
+7. Formal World View 不能直接显示 raw tags / source diagnostics / collision boxes / F-C-S-I。
+8. Formal World View 不能把 Debug reason / anchor source 原始 tag 暴露给最终玩家主视觉。
+9. Formal World View 仍然只能读取 VisualState / RenderableWorldSnapshot 中已经存在的事实。
+10. Formal World View 不能生成 actor。
+11. Formal World View 不能生成 placement。
+12. Formal World View 不能修改 HomeMapState。
+13. Formal World View 不能读取 proposal 当现实。
+14. Formal World View 不能读取 PNG / WORLD_MAP_ASSETS 作为正式主路径。
+15. pet 不能作为默认 actor 接入，必须继续遵守生命关系事件后置原则。
