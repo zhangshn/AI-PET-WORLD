@@ -267,3 +267,21 @@ VISUAL-MODEL-00：FormalVisualModel schema
 4. src/app/world/components/formal-world-view/ 不存在。
 5. P8_I_ROUTE_RESET_TO_FORMAL_VISUAL_MODEL.md 存在。
 6. 总控文档明确下一步是 VISUAL-MODEL-00。
+
+## VISUAL-MODEL-00 FormalVisualModel Schema 红线
+
+1. VISUAL-MODEL-00 只定义 FormalVisualModel schema。
+2. 本阶段不能实现 FormalVisualGenerator。
+3. 本阶段不能实现 FormalWorldView。
+4. 本阶段不能新增 React 组件。
+5. 本阶段不能修改 /world 页面。
+6. 本阶段不能修改 ProceduralRendererView。
+7. 本阶段不能修改 renderer-schema.ts / renderer-gateway.ts。
+8. 本阶段不能修改 world-loop。
+9. 本阶段不能修改 actor-geometry / actor-runtime-projection。
+10. FormalVisualModel 不能生成世界事实。
+11. FormalVisualModel 不能生成 actor。
+12. FormalVisualModel 不能生成 placement。
+13. FormalVisualModel 不能填默认 anchor。
+14. FormalVisualModel 不能修改 HomeMapState / VisualState。
+15. FormalVisualModel 不能读取 PNG / WORLD_MAP_ASSETS，不能默认接入 pet。

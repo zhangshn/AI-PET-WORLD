@@ -282,3 +282,61 @@ P8 当前结论：
 4. 再做 FormalVisualGenerator。
 5. 最后做 FormalWorldView 只读渲染。
 6. 不允许再回到前端手写世界内容路线。
+
+## 14. VISUAL-MODEL-00 FormalVisualModel schema 完成记录
+
+VISUAL-MODEL-00 已完成 FormalVisualModel 正式视觉模型容器协议。
+
+本阶段新增：
+
+1. `src/world/formal-visual-model/formal-visual-model-schema.ts`。
+2. `src/world/formal-visual-model/formal-visual-model-gateway.ts`。
+3. `src/world/engine-notes/VISUAL_MODEL_00_FORMAL_VISUAL_MODEL_SCHEMA.md`。
+
+本阶段定义：
+
+1. FormalVisualModelVersion。
+2. FormalVisualModelSource。
+3. FormalVisualTraceSource。
+4. FormalVisualLayer。
+5. FormalWorldObjectKind。
+6. FormalActorKind。
+7. FormalVisualStyleToken。
+8. FormalCanvasMood。
+9. FormalAtmosphereTone。
+10. FormalActorPoseToken。
+11. FormalPetStatusToken。
+12. FormalVisualSourceTrace。
+13. FormalVisualAuditSummary。
+14. FormalCanvasModel。
+15. FormalWorldObjectModel。
+16. FormalActorModel。
+17. FormalEnvironmentModel。
+18. FormalHudSummary。
+19. FormalVisualModel。
+20. FormalVisualModelInput。
+21. FORMAL_VISUAL_MODEL_VERSION。
+
+本阶段规则：
+
+1. 只定义 schema。
+2. 不实现 FormalVisualGenerator。
+3. 不实现 FormalWorldView。
+4. 不新增 React 组件。
+5. 不接入 /world 页面。
+6. 不修改 ProceduralRendererView。
+7. 不修改 renderer-schema.ts / renderer-gateway.ts。
+8. 不修改 world-loop。
+9. 不生成 actor。
+10. 不生成 placement。
+11. 不填默认 anchor。
+12. 不修改 HomeMapState。
+13. 不读取 PNG / WORLD_MAP_ASSETS。
+14. 不默认接入 pet。
+15. 不写固定布局。
+
+下一步进入：
+
+```text
+VISUAL-MODEL-01：FormalVisualGenerator 纯函数
+```
