@@ -598,3 +598,31 @@ P8-H8 已完成 Actor Geometry 阶段收口规划。
 ```text
 P8-I0：Formal World View 规划
 ```
+
+## 22. P8-I0 Formal World View 规划记录
+
+P8-I0 已定义 Formal World View 的阶段边界。
+
+当前确认：
+
+1. Formal World View 是未来玩家主视觉。
+2. Debug View 是工程验证视图。
+3. /world 未来应走 Formal World View。
+4. /world-debug 应保留 Debug Diagnostics。
+5. Formal World View 只读取 RenderableWorldSnapshot / VisualState。
+6. Formal World View 不读取 PNG。
+7. Formal World View 不读取 WORLD_MAP_ASSETS 作为正式主路径。
+8. Formal World View 不生成 actor。
+9. Formal World View 不生成 placement。
+10. Formal World View 不修改 HomeMapState。
+11. Formal World View 不显示 raw tags / source diagnostics / collision boxes / F-C-S-I。
+12. Formal World View 不显示紫微斗数原始术语。
+13. Formal World View 不默认接入 pet。
+14. 管家作为第一生命可以从 VisualState.actorGeometryProjections 显示。
+15. 宠物仍然后置，必须由生命关系事件接纳后进入。
+
+下一步进入：
+
+```text
+P8-I1：FormalWorldView 组件骨架
+```

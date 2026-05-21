@@ -503,3 +503,21 @@
 13. Formal World View 不能读取 proposal 当现实。
 14. Formal World View 不能读取 PNG / WORLD_MAP_ASSETS 作为正式主路径。
 15. pet 不能作为默认 actor 接入，必须继续遵守生命关系事件后置原则。
+
+## P8-I0 Formal World View Plan 红线
+
+1. P8-I0 只做 Formal World View 规划，不新增组件、不改页面、不改 Renderer、不改运行时。
+2. Formal World View 是未来玩家主视觉，Debug View 是工程验证视图。
+3. /world 未来应走 Formal World View，/world-debug 应保留 Debug Diagnostics。
+4. Formal World View 只能读取 RenderableWorldSnapshot / VisualState 中已经存在的事实。
+5. Formal World View 不能读取 PNG。
+6. Formal World View 不能读取 WORLD_MAP_ASSETS 作为正式主路径。
+7. Formal World View 不能生成 actor。
+8. Formal World View 不能生成 placement。
+9. Formal World View 不能修改 HomeMapState。
+10. Formal World View 不能读取 proposal 当现实。
+11. Formal World View 不能显示 raw tags / source diagnostics / audit internals。
+12. Formal World View 不能显示 collision boxes / F-C-S-I / actor debug flags。
+13. Formal World View 不能显示紫微斗数原始术语。
+14. Formal World View 不能默认接入 pet actor。
+15. Formal World View 不能让玩家直接控制管家或宠物。
