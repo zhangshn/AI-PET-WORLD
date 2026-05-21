@@ -8,7 +8,7 @@ import type {
   VisualActorGeometryProjection,
   VisualPlacement,
 } from "@/world/rendering/renderer-gateway"
-import type { Point2D } from "@/world/spatial/spatial-gateway"
+import type { Point2D, SpatialShape } from "@/world/spatial/spatial-gateway"
 
 import styles from "./formal-world-view.styles.module.css"
 
@@ -56,6 +56,22 @@ type FormalWorldVisualItem = {
   zIndex: number
 }
 
+type FormalActorVisualItem = {
+  actorId: string
+  actorKind: VisualActorGeometryProjection["actorKind"]
+  left: number
+  top: number
+  width: number
+  height: number
+  auraLeft: number
+  auraTop: number
+  auraWidth: number
+  auraHeight: number
+  opacity: number
+  zIndex: number
+  label: string
+}
+
 type FormalBounds = {
   minX: number
   minY: number
@@ -68,6 +84,9 @@ export function FormalWorldView(input: FormalWorldViewProps) {
   const visualState = snapshot.visualState
   const summary = buildFormalWorldSummary(snapshot)
   const visualItems = buildFormalWorldVisualItems(visualState.placements)
+  const actorVisualItems = buildFormalActorVisualItems(
+    visualState.actorGeometryProjections
+  )
   const actors = buildFormalActorSummaries(
     visualState.actorGeometryProjections
   )
@@ -100,6 +119,7 @@ export function FormalWorldView(input: FormalWorldViewProps) {
           <div className={styles.formalGround} />
           <div className={styles.formalAtmosphere} />
           {visualItems.map(renderFormalWorldVisualItem)}
+          {actorVisualItems.map(renderFormalActorVisualItem)}
           <div className={styles.formalCanvasHint}>
             <strong>自主世界画布</strong>
             <span>
@@ -251,7 +271,7 @@ function buildBoundsAroundAnchor(
 }
 
 function buildBoundsFromVisualShape(
-  shape: NonNullable<VisualPlacement["footprint"]>,
+  shape: SpatialShape,
   fallbackAnchor: Point2D
 ): FormalBounds {
   if (shape.kind === "point") {
@@ -329,6 +349,84 @@ function buildFormalZIndex(layer: VisualPlacement["layer"]): number {
   return 7
 }
 
+function buildFormalActorVisualItems(
+  projections: VisualActorGeometryProjection[]
+): FormalActorVisualItem[] {
+  return projections
+    .filter((projection) => projection.actorKind === "butler")
+    .filter(
+      (projection) => projection.canProject && projection.geometryProjection
+    )
+    .map(buildFormalActorVisualItem)
+}
+
+function buildFormalActorVisualItem(
+  projection: VisualActorGeometryProjection
+): FormalActorVisualItem {
+  const geometryProjection = projection.geometryProjection
+
+  if (!geometryProjection) {
+    return buildEmptyFormalActorVisualItem(projection)
+  }
+
+  const bodyBounds = buildBoundsFromVisualShape(
+    geometryProjection.body,
+    geometryProjection.anchor
+  )
+  const auraBounds = buildBoundsFromVisualShape(
+    geometryProjection.interactionRadius,
+    geometryProjection.anchor
+  )
+
+  return {
+    actorId: projection.actorId,
+    actorKind: projection.actorKind,
+    left: bodyBounds.minX * FORMAL_WORLD_TILE_SIZE,
+    top: bodyBounds.minY * FORMAL_WORLD_TILE_SIZE,
+    width: Math.max(
+      FORMAL_WORLD_MIN_ITEM_SIZE,
+      (bodyBounds.maxX - bodyBounds.minX) * FORMAL_WORLD_TILE_SIZE
+    ),
+    height: Math.max(
+      FORMAL_WORLD_MIN_ITEM_SIZE,
+      (bodyBounds.maxY - bodyBounds.minY) * FORMAL_WORLD_TILE_SIZE
+    ),
+    auraLeft: auraBounds.minX * FORMAL_WORLD_TILE_SIZE,
+    auraTop: auraBounds.minY * FORMAL_WORLD_TILE_SIZE,
+    auraWidth: Math.max(
+      FORMAL_WORLD_MIN_ITEM_SIZE,
+      (auraBounds.maxX - auraBounds.minX) * FORMAL_WORLD_TILE_SIZE
+    ),
+    auraHeight: Math.max(
+      FORMAL_WORLD_MIN_ITEM_SIZE,
+      (auraBounds.maxY - auraBounds.minY) * FORMAL_WORLD_TILE_SIZE
+    ),
+    opacity: 0.92,
+    zIndex: 12,
+    label: projection.actorKind === "butler" ? "管家" : "角色",
+  }
+}
+
+function buildEmptyFormalActorVisualItem(
+  projection: VisualActorGeometryProjection
+): FormalActorVisualItem {
+  return {
+    actorId: projection.actorId,
+    actorKind: projection.actorKind,
+    left: 0,
+    top: 0,
+    width: 0,
+    height: 0,
+    auraLeft: 0,
+    auraTop: 0,
+    auraWidth: 0,
+    auraHeight: 0,
+    opacity: 0,
+    zIndex: 0,
+    label: "角色",
+  }
+}
+
 function renderFormalWorldVisualItem(item: FormalWorldVisualItem): ReactNode {
   return (
     <div
@@ -347,6 +445,39 @@ function renderFormalWorldVisualItem(item: FormalWorldVisualItem): ReactNode {
       aria-label={item.label}
     >
       {renderFormalWorldObjectInner(item)}
+    </div>
+  )
+}
+
+function renderFormalActorVisualItem(item: FormalActorVisualItem): ReactNode {
+  return (
+    <div key={item.actorId}>
+      <div
+        className={styles.formalActorAura}
+        style={{
+          left: item.auraLeft,
+          top: item.auraTop,
+          width: item.auraWidth,
+          height: item.auraHeight,
+          opacity: item.opacity * 0.32,
+          zIndex: item.zIndex - 1,
+        }}
+        aria-hidden="true"
+      />
+      <div
+        className={styles.formalActorVisual}
+        style={{
+          left: item.left,
+          top: item.top,
+          width: item.width,
+          height: item.height,
+          opacity: item.opacity,
+          zIndex: item.zIndex,
+        }}
+        aria-label={item.label}
+      >
+        {renderFormalActorVisualInner(item)}
+      </div>
     </div>
   )
 }
@@ -405,6 +536,20 @@ function renderFormalWorldObjectInner(
   return null
 }
 
+function renderFormalActorVisualInner(item: FormalActorVisualItem): ReactNode {
+  if (item.actorKind === "butler") {
+    return (
+      <>
+        <span className={styles.formalButlerHead} />
+        <span className={styles.formalButlerBody} />
+        <span className={styles.formalButlerGlow} />
+      </>
+    )
+  }
+
+  return null
+}
+
 function buildFormalActorSummaries(
   projections: VisualActorGeometryProjection[]
 ): FormalActorSummary[] {
@@ -429,7 +574,7 @@ function buildActorStatusLabel(
   }
 
   if (projection.actorKind === "butler") {
-    return "正在观察家园"
+    return "正在安静观察家园"
   }
 
   return "尚未进入主世界"

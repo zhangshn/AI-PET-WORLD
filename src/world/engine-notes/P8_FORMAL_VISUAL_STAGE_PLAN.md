@@ -700,3 +700,44 @@ P8-I2 已增强 FormalWorldView 的 Formal World Canvas。
 ```text
 P8-I3：Formal Actor Presentation
 ```
+
+## 25. P8-I3 Formal Actor Presentation 记录
+
+P8-I3 已增强 FormalWorldView 的 Formal Actor Presentation。
+
+本阶段新增：
+
+1. FormalActorVisualItem。
+2. 从 VisualState.actorGeometryProjections 派生 butler actor visual。
+3. butler aura。
+4. butler head。
+5. butler body。
+6. butler glow。
+7. Formal canvas 内显示 butler actor projection 的正式几何占位样式。
+
+本阶段规则：
+
+1. FormalWorldView 仍然只读取 RenderableWorldSnapshot / VisualState。
+2. actor visual 只从 VisualState.actorGeometryProjections 派生。
+3. 只显示 butler。
+4. 不默认显示 pet。
+5. canProject === false 不显示。
+6. geometryProjection 不存在不显示。
+7. 不接入 /world 页面。
+8. 不替换 ProceduralRendererView。
+9. 不显示 raw tags。
+10. 不显示 source / geometrySource / anchorSource。
+11. 不显示 Actor Geometry Diagnostics。
+12. 不读取 PNG。
+13. 不读取 WORLD_MAP_ASSETS。
+14. 不生成 actor。
+15. 不生成 placement。
+16. 不填默认 anchor。
+17. 不修改 HomeMapState。
+18. 不显示紫微斗数原始术语。
+
+下一步进入：
+
+```text
+P8-I4：Formal World HUD 最小版
+```

@@ -557,3 +557,21 @@
 13. Formal World Canvas 不能显示 F / C / S / I 或 actor debug flags。
 14. Formal World Canvas 不能显示紫微斗数原始术语。
 15. Formal World Canvas 不能默认显示 pet 或伪造宠物存在。
+
+## P8-I3 Formal Actor Presentation 红线
+
+1. P8-I3 只增强 FormalWorldView 内部 actor presentation，不接入 /world 页面。
+2. Formal actor visual 只能从 VisualState.actorGeometryProjections 派生。
+3. Formal actor visual 只能显示 actorKind === butler。
+4. canProject === false 时不能显示 actor visual。
+5. geometryProjection 不存在时不能显示 actor visual。
+6. FormalWorldView 不能默认显示 pet。
+7. FormalWorldView 不能生成 actor。
+8. FormalWorldView 不能生成 actor projection。
+9. FormalWorldView 不能生成 placement。
+10. FormalWorldView 不能填默认 anchor。
+11. FormalWorldView 不能修改 VisualState / HomeMapState。
+12. FormalWorldView 不能显示 raw tags / source / geometrySource / anchorSource。
+13. FormalWorldView 不能显示 Actor Geometry Diagnostics / F-C-S-I。
+14. FormalWorldView 不能读取 PNG / WORLD_MAP_ASSETS。
+15. FormalWorldView 不能导入 actor-geometry builder / actor-runtime-projection builder。
