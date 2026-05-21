@@ -19,13 +19,26 @@ P8 阶段的核心目标不是让前端手写一个好看的世界页面，而�
 -> FormalWorldView 只读渲染
 ```
 
-正式视觉必须服从世界事实，不能反过来由 UI 生成世界。
+的正式链路。
 
-## 2. 已完成的 P8-G 几何视觉链路
+## 2. 当前最高原则
 
-P8-G 已完成从贴图路线到几何路线的纠偏。
+1. 世界不是前端画出来的，世界由规则和状态生成。
+2. 布局不是固定模板，布局由 worldSeed、管家人格、资源、事件、建设意图和空间规则共同生成。
+3. 正式视觉模型不是组件生成的，必须由 Formal Visual Generation Layer 生成。
+4. FormalWorldView 只能只读 FormalVisualModel。
+5. Debug View 与 Formal World View 必须分离。
+6. Renderer / FormalWorldView 不能生成世界事实。
+7. Renderer / FormalWorldView 不能生成 placement。
+8. Renderer / FormalWorldView 不能生成 actor。
+9. Renderer / FormalWorldView 不能读取 PNG / WORLD_MAP_ASSETS 作为正式世界事实来源。
+10. 宠物后置，petState 不存在时不能默认显示宠物。
 
-当前稳定链路：
+## 3. 已完成并保留的 P8-G 结论
+
+P8-G 已完成几何视觉纠偏与收口。
+
+保留链路：
 
 ```text
 HomeMapState
@@ -36,79 +49,51 @@ HomeMapState
 -> VisualState
 -> VisualPlacement
 -> Renderer SVG geometry layer
--> World Geometry Overview Debug / Geometry Source Diagnostics
+-> Debug diagnostics
 ```
 
-有效结论：
+P8-G 的有效结论：
 
-1. 世界对象不应先被理解成贴图。
-2. 树不是 tree.png。
-3. 房屋不是 house.png。
-4. 道路不是 path.png。
-5. ShapeGrammar 用点 / 线 / 面描述世界对象。
-6. EntityGeometry 承载 footprint / collision / support / influence。
-7. VisualState 可以透传 geometry_source。
-8. Renderer Debug View 可以显示几何来源。
-9. Debug 诊断区不是最终玩家 UI。
-10. P8-G 的几何链路保留。
+1. PNG / WORLD_MAP_ASSETS 不能作为正式 Renderer 主路径。
+2. Renderer 不能为了视觉效果生成 placement。
+3. Renderer 不能修改 HomeMapState。
+4. Renderer 不能读取 proposal 当现实。
+5. ShapeGrammar / EntityGeometry / VisualState 几何链路保留。
+6. Debug diagnostics 可以保留在 Debug View。
+7. Debug diagnostics 不能伪装成最终玩家 UI。
 
-## 3. 已完成的 P8-H Actor Geometry 链路
+## 4. 已完成并保留的 P8-H 结论
 
-P8-H 已完成管家 actor projection 的 Debug 几何占位链路。
+P8-H 已完成 Actor Geometry Debug 链路。
 
-当前稳定链路：
+保留链路：
 
 ```text
-HomeMapState
--> world-loop renderable state
+world-loop renderable state
 -> buildButlerRuntimeProjection
 -> buildActorGeometryProjectionFromRuntime
--> buildVisualState(actorRuntimeGeometryProjections)
 -> VisualState.actorGeometryProjections
 -> Renderer Debug View 只读显示
 ```
 
-有效结论：
+P8-H 的有效结论：
 
-1. 管家可以作为第一生命进入 actor projection 通道。
-2. 管家 actor projection 由 world snapshot 派生。
-3. Renderer 只读 VisualState.actorGeometryProjections。
-4. Renderer 不能生成 actor。
-5. Renderer 不能填默认 anchor。
-6. Renderer 不能修改 HomeMapState。
-7. 当前 actor geometry 是 Debug 几何占位。
-8. 当前 actor geometry 不是最终角色美术。
-9. 当前 actor geometry 不代表最终 autonomous movement。
-10. pet 不作为默认 actor 接入，必须继续后置。
+1. butler actor projection 可以从 world snapshot 进入 VisualState。
+2. Renderer 可以只读显示 actor geometry。
+3. 当前 actor 图形是 Debug 几何占位。
+4. 当前 actor 图形不是最终玩家 UI。
+5. 当前 actor 图形不是最终角色美术。
+6. 当前 actor 图形不代表最终 autonomous movement。
+7. pet 没有被默认接入。
+8. Renderer 不生成 actor。
+9. Renderer 不填默认 anchor。
+10. Renderer 不修改 HomeMapState。
 
-## 4. Debug View 与正式视觉的边界
+## 5. 已回滚的旧 P8-I 路线
 
-当前 `/world` 中的“几何 / 程序化视觉预览 v1”仍属于 Debug View / Dev View。
+旧 P8-I0 / P8-I1 / P8-I2 / P8-I3 路线已作废。
 
-Debug View 可以显示：
-
-1. 大面积工程网格。
-2. footprint / collision / support / influence。
-3. Geometry Source Diagnostics。
-4. World Geometry Overview Debug。
-5. Actor Geometry Diagnostics。
-6. raw tags。
-7. raw sources。
-8. F / C / S / I。
-9. anchor source。
-10. debug reason。
-11. actor_projection_debug_only。
-12. notFinalArt / notFinalMovement。
-
-这些内容不能作为最终玩家主视觉直接展示。
-
-正式玩家主视觉必须通过 FormalVisualModel 进入，不允许直接复用 Debug View 的诊断结构。
-
-## 5. P8-I 旧路线作废记录
-
-P8-I0 / P8-I1 / P8-I2 / P8-I3 的旧 FormalWorldView 手写视觉路线已经作废。
-
-旧路线的问题：
+作废原因：
 
 1. 旧路线让 FormalWorldView 组件承担正式视觉模型生成职责。
 2. 旧路线在组件内定义 FormalWorldVisualItem。
@@ -116,131 +101,184 @@ P8-I0 / P8-I1 / P8-I2 / P8-I3 的旧 FormalWorldView 手写视觉路线已经作
 4. 旧路线在组件内实现 buildFormalWorldVisualItems。
 5. 旧路线在组件内实现 buildFormalActorVisualItems。
 6. 旧路线让组件决定地面、道路、建筑、树木、设施、管家如何显示。
-7. 这违反 MVP v1.5、规则世界引擎 v1.3 与整体架构 v1.0。
+7. 这违反 MVP v1.5、规则世界引擎 v1.3 和整体架构 v1.0。
 
 已删除内容：
 
-1. `src/app/world/components/formal-world-view/` 旧组件目录。
-2. `P8_I0_FORMAL_WORLD_VIEW_PLAN.md`。
-3. `P8_I1_FORMAL_WORLD_VIEW_COMPONENT_SHELL.md`。
-4. `P8_I2_FORMAL_WORLD_CANVAS.md`。
-5. `P8_I3_FORMAL_ACTOR_PRESENTATION.md`。
+1. src/app/world/components/formal-world-view/formal-world-view.tsx。
+2. src/app/world/components/formal-world-view/formal-world-view.styles.module.css。
+3. src/app/world/components/formal-world-view/。
+4. src/world/engine-notes/P8_I0_FORMAL_WORLD_VIEW_PLAN.md。
+5. src/world/engine-notes/P8_I1_FORMAL_WORLD_VIEW_COMPONENT_SHELL.md。
+6. src/world/engine-notes/P8_I2_FORMAL_WORLD_CANVAS.md。
+7. src/world/engine-notes/P8_I3_FORMAL_ACTOR_PRESENTATION.md。
 
-保留内容：
+## 6. 当前正确正式路线
 
-1. P8-G 几何链路。
-2. P8-H actor projection Debug 链路。
-3. VisualState / RenderableWorldSnapshot。
-4. Renderer Debug View。
-5. world-loop actor projection debug 接入。
-
-## 6. P8-I-RESET 当前结论
-
-P8-I-RESET 已完成。
-
-当前结论：
-
-1. 不能继续沿用旧 FormalWorldView 手写视觉路线。
-2. 不能在 React 组件内生成正式视觉模型。
-3. 不能让组件决定世界对象的正式视觉语义。
-4. 正式视觉模型必须来自 `src/world/formal-visual-model/`。
-5. FormalVisualModel / FormalVisualGenerator 必须早于新的 FormalWorldView。
-6. FormalWorldView 只能只读 FormalVisualModel 渲染。
-7. 未来 `/world` 正式主视觉必须等待 FormalVisualModel 链路完成后再接入。
-
-## 7. 正确的后续路线
-
-下一步重新进入：
+从现在开始，正式视觉路线必须是：
 
 ```text
-VISUAL-MODEL-00：FormalVisualModel schema
+HomeMapState / WorldState
+-> placements / MapDiff
+-> VisualState / RenderableWorldSnapshot
+-> FormalVisualGenerator
+-> FormalVisualModel
+-> FormalWorldView 只读渲染
 ```
 
-推荐阶段：
+这条路线的核心是：
 
-1. VISUAL-MODEL-00：FormalVisualModel schema。
-2. VISUAL-MODEL-01：FormalVisualGenerator 纯函数。
-3. VISUAL-MODEL-02：FormalVisualModel audit / debug summary。
-4. VISUAL-MODEL-03：VisualState -> FormalVisualModel 输入边界。
-5. VISUAL-MODEL-04：FormalWorldView 只读渲染骨架。
-6. VISUAL-MODEL-05：/world 与 /world-debug 展示边界整理。
+1. HomeMapState 保存世界事实。
+2. MapDiff / EventLog 保存世界变化。
+3. VisualState / RenderableWorldSnapshot 保存可渲染投影。
+4. FormalVisualModel 保存正式玩家主视觉模型。
+5. FormalWorldView 只负责渲染 FormalVisualModel。
 
-## 8. FormalVisualModel 的职责
+## 7. FormalVisualModel 的定位
 
-FormalVisualModel 负责把世界渲染投影转换成正式视觉语义。
+FormalVisualModel 是正式主视觉模型容器。
 
-它可以描述：
+它可以包含：
 
-1. 地面视觉对象。
-2. 道路视觉对象。
-3. 建筑视觉对象。
-4. 树木视觉对象。
-5. 设施视觉对象。
-6. actor 视觉对象。
-7. 环境氛围。
-8. 玩家可理解的状态摘要。
+1. FormalCanvasModel。
+2. FormalWorldObjectModel。
+3. FormalActorModel。
+4. FormalEnvironmentModel。
+5. FormalHudSummary。
 
-FormalVisualModel 不能：
+它不能：
 
-1. 生成 world fact。
-2. 生成 MapPlacement。
+1. 生成不存在的世界对象。
+2. 生成 placement。
 3. 修改 HomeMapState。
-4. 绕过 Intent / Plan / Validate / Diff / WorldState。
-5. 读取 PNG 作为正式主路径。
-6. 读取 WORLD_MAP_ASSETS 作为正式主路径。
-7. 伪造宠物存在。
-8. 让宠物通过事件文本说人话。
+4. 读取 proposal 当现实。
+5. 伪造 pet。
+6. 绕过 VisualState / RenderableWorldSnapshot。
 
-## 9. FormalWorldView 的未来职责
+## 8. FormalWorldView 的边界
 
-未来新的 FormalWorldView 只能：
+FormalWorldView 是只读渲染容器。
 
-1. 接收 FormalVisualModel。
-2. 只读渲染 FormalVisualModel。
-3. 显示玩家可理解的世界画面。
-4. 隐藏 Debug Diagnostics。
-5. 不显示 raw tags。
-6. 不显示 source diagnostics。
-7. 不显示 collision boxes / F-C-S-I。
-8. 不显示紫微斗数原始术语。
+FormalWorldView 可以：
 
-未来新的 FormalWorldView 不能：
+1. 读取 FormalVisualModel。
+2. 渲染 FormalCanvasModel。
+3. 渲染 FormalWorldObjectModel。
+4. 渲染 FormalActorModel。
+5. 渲染 FormalEnvironmentModel。
+6. 渲染 FormalHudSummary。
 
-1. 生成 FormalVisualModel。
-2. 生成 FormalWorldVisualItem。
-3. 生成 FormalActorVisualItem。
-4. 自行决定树、房子、道路、管家如何显示。
-5. 生成 actor。
-6. 生成 placement。
-7. 填默认 anchor。
-8. 修改 VisualState。
-9. 修改 HomeMapState。
-10. 读取 proposal 当现实。
+FormalWorldView 不能：
 
-## 10. 继续禁止事项
+1. 生成 FormalWorldVisualItem。
+2. 生成 FormalActorVisualItem。
+3. buildFormalWorldVisualItems。
+4. buildFormalActorVisualItems。
+5. 决定树、房子、道路、设施、管家、宠物怎么长。
+6. 生成 actor。
+7. 生成 placement。
+8. 填默认 anchor。
+9. 修改 VisualState。
+10. 修改 HomeMapState。
+11. 读取 PNG / WORLD_MAP_ASSETS 作为正式世界事实来源。
+12. 显示 raw tags / source diagnostics / F-C-S-I。
+13. 显示紫微斗数原始术语。
+14. petState 不存在时显示默认宠物。
 
-1. 禁止把 Debug View 当最终玩家 UI。
-2. 禁止把工程网格当最终世界效果。
-3. 禁止把 actor Debug 占位当最终角色美术。
-4. 禁止为了好看读取 PNG。
-5. 禁止重新把 WORLD_MAP_ASSETS 作为正式主路径。
-6. 禁止 FormalWorldView 生成正式视觉模型。
-7. 禁止 FormalWorldView 生成 actor。
-8. 禁止 FormalWorldView 生成 placement。
-9. 禁止 FormalWorldView 修改 HomeMapState。
-10. 禁止 UI 临时伪造宠物。
-11. 禁止默认接入 pet actor。
-12. 禁止让宠物通过事件文本说人话。
-13. 禁止在正式世界主视觉显示紫微斗数原始术语。
-14. 禁止显示 raw tags / source diagnostics / audit internals。
-15. 禁止读取 proposal 当现实。
+## 9. 非固定布局规则
 
-## 11. 当前状态
+正式布局不能是固定模板。
 
-当前 P8 正式视觉阶段处于 reset 后状态。
+正确规则：
 
-可以继续的唯一正确入口是：
+```text
+同一玩家 + 同一 worldSeed + 同一世界状态
+-> 布局稳定可复现
+
+不同玩家 + 不同管家人格 + 不同 seed + 不同资源 / 事件状态
+-> 布局出现可观察差异
+```
+
+布局可以使用 layout recipe 作为候选关系，但 recipe 不能成为固定画面。
+
+最终布局必须经过：
+
+1. worldSeed。
+2. 管家人格。
+3. constructionStyle。
+4. visualTendency。
+5. resource state。
+6. construction plan。
+7. placement rules。
+8. spatial validation。
+9. MapDiff / HomeMapState 写入。
+
+## 10. Debug View 与 Formal World View 边界
+
+Debug View 可以显示：
+
+1. grid。
+2. raw tags。
+3. source diagnostics。
+4. Geometry Source Diagnostics。
+5. Actor Geometry Diagnostics。
+6. collision / support / influence。
+7. F / C / S / I。
+8. anchorSource。
+9. debug reason。
+
+Formal World View 不能直接显示：
+
+1. debug grid。
+2. raw tags。
+3. source labels。
+4. diagnostics。
+5. collision / support / influence boxes。
+6. F / C / S / I。
+7. actor debug flags。
+8. anchorSource 原始 tag。
+9. 紫微斗数原始术语。
+
+## 11. 当前阶段状态
+
+当前阶段：
+
+```text
+P8-I-RESET-DOC-CLEANUP
+```
+
+当前目标：
+
+1. 清理 P8 总控计划文档乱码。
+2. 清理 Guardrails 乱码。
+3. 对齐 MVP v1.5 / 引擎 v1.3 / 架构 v1.0。
+4. 准备进入 VISUAL-MODEL-00。
+
+## 12. 下一步
+
+下一步进入：
 
 ```text
 VISUAL-MODEL-00：FormalVisualModel schema
 ```
+
+VISUAL-MODEL-00 目标：
+
+1. 新增 src/world/formal-visual-model/。
+2. 新增 formal-visual-model-schema.ts。
+3. 新增 formal-visual-model-gateway.ts。
+4. 只定义 FormalVisualModel 类型协议。
+5. 不写 FormalVisualGenerator。
+6. 不写 FormalWorldView。
+7. 不接 /world 页面。
+
+## 13. P8 当前最终结论
+
+P8 当前结论：
+
+1. P8-G / P8-H Debug Geometry 链路保留。
+2. 旧 P8-I FormalWorldView 手写视觉路线作废。
+3. 后续先做 FormalVisualModel 容器。
+4. 再做 FormalVisualGenerator。
+5. 最后做 FormalWorldView 只读渲染。
+6. 不允许再回到前端手写世界内容路线。
