@@ -7,7 +7,9 @@
 import { useMemo, useState, useSyncExternalStore } from "react"
 import Link from "next/link"
 
+import { FormalWorldView } from "@/app/world/components/formal-world-view"
 import { ProceduralRendererView } from "@/app/world/components/procedural-renderer/procedural-renderer-view"
+import { buildFormalVisualModelFromSnapshot } from "@/world/formal-visual-model/formal-visual-model-gateway"
 import {
   buildWorldCreationRuntime,
   CREATE_WORLD_STORAGE_KEY,
@@ -144,6 +146,13 @@ function WorldRuntimeShell(input: {
   const rendererSnapshotTickLabel = lastStepResult
     ? `tick:${lastStepResult.context.tickIndex}`
     : "initial_world"
+  const formalVisualModel = useMemo(
+    () =>
+      buildFormalVisualModelFromSnapshot(
+        runtimeState.currentRenderableSnapshot
+      ),
+    [runtimeState.currentRenderableSnapshot]
+  )
 
   function handleManualTick() {
     const tickNow =
@@ -276,6 +285,21 @@ function WorldRuntimeShell(input: {
       <ProceduralRendererView
         snapshot={runtimeState.currentRenderableSnapshot}
       />
+
+      <section
+        className={styles.formalWorldPanel}
+        aria-label="Formal World View"
+      >
+        <div className={styles.formalWorldPanelHeader}>
+          <div className={styles.eyebrow}>FORMAL WORLD VIEW</div>
+          <h2>正式主视觉预览</h2>
+          <p>
+            这里从当前真实 RenderableWorldSnapshot 派生 FormalVisualModel，
+            并交给 FormalWorldView 只读渲染；Debug Renderer 仍然保留。
+          </p>
+        </div>
+        <FormalWorldView model={formalVisualModel} />
+      </section>
 
       <section className={styles.contentGrid}>
         <article className={styles.panel}>

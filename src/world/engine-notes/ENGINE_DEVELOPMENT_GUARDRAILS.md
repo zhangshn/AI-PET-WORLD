@@ -383,3 +383,21 @@ VISUAL-MODEL-00：FormalVisualModel schema
 12. /world 正式接入前必须确认 preview mock 不会被引用。
 13. /world 正式接入前必须确认 actorRuntimeGeometryProjections 真实链路。
 14. 未完成 FORMAL-VIEW-02 检查前，不允许进入正式 /world 接入。
+
+## FORMAL-VIEW-03 /world 只读接入红线
+
+1. /world 只能从 `runtimeState.currentRenderableSnapshot` 构建 FormalVisualModel。
+2. /world 必须调用 `buildFormalVisualModelFromSnapshot(runtimeState.currentRenderableSnapshot)`。
+3. /world 不能使用 preview mock。
+4. /world 不能 import `formal-world-view.preview`。
+5. /world 不能引用 `PREVIEW_FORMAL_VISUAL_MODEL`。
+6. /world 不能生成 world object。
+7. /world 不能生成 placement。
+8. /world 不能生成 actor。
+9. /world 不能填默认 anchor。
+10. /world 不能读取 PNG 作为世界事实。
+11. /world 不能读取 WORLD_MAP_ASSETS 作为世界事实。
+12. /world 不能默认接入 pet。
+13. Debug Renderer 未迁移前必须保留。
+14. FormalWorldView 只能接收真实链路生成的 FormalVisualModel。
+15. FORMAL-VIEW-03 不能修改 FormalVisualGenerator / FormalVisualModel schema / renderer / world-loop / HomeMapState。

@@ -128,6 +128,38 @@
   position: relative;
 }
 
+.formalWorldPanel {
+  background: rgba(15, 28, 18, 0.72);
+  border: 1px solid rgba(198, 226, 159, 0.16);
+  display: grid;
+  gap: 16px;
+  margin: 0 auto 22px;
+  max-width: 1120px;
+  padding: clamp(18px, 3vw, 28px);
+  position: relative;
+}
+
+.formalWorldPanelHeader {
+  display: grid;
+  gap: 8px;
+}
+
+.formalWorldPanelHeader h2,
+.formalWorldPanelHeader p {
+  margin: 0;
+}
+
+.formalWorldPanelHeader h2 {
+  color: #f3f8e8;
+  font-size: 20px;
+}
+
+.formalWorldPanelHeader p {
+  color: rgba(237, 244, 223, 0.68);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
 .panel {
   display: grid;
   gap: 16px;

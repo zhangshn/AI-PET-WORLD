@@ -539,3 +539,49 @@ FORMAL-VIEW-02 已完成 /world 正式接入前检查。
 ```text
 FORMAL-VIEW-03：/world 只读接入 FormalVisualModel
 ```
+
+## 20. FORMAL-VIEW-03 /world 只读接入 FormalVisualModel 完成记录
+
+FORMAL-VIEW-03 已完成 /world 只读接入 FormalVisualModel。
+
+本阶段新增：
+
+1. `src/world/engine-notes/FORMAL_VIEW_03_WORLD_ROUTE_READONLY_FORMAL_VISUAL_MODEL.md`。
+
+本阶段修改：
+
+1. `src/app/world/world-route-page.tsx`。
+2. `src/app/world/world-route-page.styles.module.css`。
+
+当前真实链路：
+
+```text
+runtimeState.currentRenderableSnapshot
+-> buildFormalVisualModelFromSnapshot
+-> FormalVisualModel
+-> FormalWorldView
+```
+
+本阶段确认：
+
+1. FormalVisualModel 只从 `runtimeState.currentRenderableSnapshot` 构建。
+2. `/world` 未使用 preview mock。
+3. `/world` 未引用 `PREVIEW_FORMAL_VISUAL_MODEL`。
+4. `/world` 未 import `formal-world-view.preview`。
+5. 本阶段未修改 FormalWorldView。
+6. 本阶段未修改 FormalVisualGenerator。
+7. 本阶段未修改 FormalVisualModel schema。
+8. 本阶段未修改 renderer。
+9. 本阶段未修改 world-loop。
+10. 本阶段未修改 HomeMapState。
+11. 本阶段未生成 world object / placement / actor。
+12. 本阶段未读取 PNG / WORLD_MAP_ASSETS。
+13. 本阶段未默认接入 pet。
+14. Debug Renderer 保留。
+15. FormalWorldView 读取真实链路生成的 FormalVisualModel。
+
+下一步进入：
+
+```text
+FORMAL-VIEW-04：正式 / Debug 视图切换策略或主视觉布局整理
+```
