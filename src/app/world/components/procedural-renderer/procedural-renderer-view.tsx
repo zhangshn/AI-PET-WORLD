@@ -438,7 +438,8 @@ export function ProceduralRendererView(input: ProceduralRendererViewProps) {
           </h4>
           <p className={styles.sectionDescription}>
             这里只读 VisualState.actorGeometryProjections，用于确认管家 / 宠物
-            是否已经通过 runtime projection 进入几何显示通道。该区域不是最终玩家 UI。
+            是否已经通过 runtime projection 进入几何显示通道。当前 actor 图形是 Debug 几何占位，
+            不是最终玩家 UI，不是最终角色美术，也不代表最终 autonomous movement。
           </p>
           {visualState.actorGeometryProjections.length > 0 ? (
             <ul className={styles.actorGeometryDiagnosticList}>
@@ -1446,6 +1447,8 @@ function buildActorGeometryTitle(item: ActorGeometryVisualItem): string {
     `source:${item.projection.source}`,
     `geometrySource:${item.projection.geometrySource}`,
     `canProject:${item.projection.canProject}`,
+    `anchor:${formatActorAnchor(item.projection)}`,
+    `anchorSource:${findActorTagValue(item.projection.tags, "actor_anchor_source")}`,
     item.projection.reason,
   ].join(" / ")
 }
@@ -1468,11 +1471,50 @@ function renderActorGeometryDiagnosticItem(
       <span className={styles.actorGeometryDiagnosticMeta}>
         source:{projection.source} / geometrySource:{projection.geometrySource}
       </span>
+      <span className={styles.actorGeometryDiagnosticMeta}>
+        anchor:{formatActorAnchor(projection)} / anchorSource:
+        {findActorTagValue(projection.tags, "actor_anchor_source")}
+      </span>
+      <span className={styles.actorGeometryDiagnosticMeta}>
+        debug:
+        {formatBooleanFlag(projection.tags.includes("actor_projection_debug_only"))}
+        {" "}
+        notFinalArt:
+        {formatBooleanFlag(projection.tags.includes("not_final_actor_art"))}
+        {" "}
+        notFinalMovement:
+        {formatBooleanFlag(
+          projection.tags.includes("not_final_autonomous_movement")
+        )}
+      </span>
       <span className={styles.actorGeometryDiagnosticReason}>
         {projection.reason}
       </span>
     </li>
   )
+}
+
+function formatActorAnchor(
+  projection: VisualActorGeometryProjection
+): string {
+  if (!projection.geometryProjection) {
+    return "none"
+  }
+
+  return `${formatCoordinate(projection.geometryProjection.anchor.x)}, ${formatCoordinate(
+    projection.geometryProjection.anchor.y
+  )}`
+}
+
+function formatCoordinate(value: number): string {
+  return Number.isInteger(value) ? String(value) : value.toFixed(2)
+}
+
+function findActorTagValue(tags: string[], key: string): string {
+  const prefix = `${key}:`
+  const tag = tags.find((item) => item.startsWith(prefix))
+
+  return tag ? tag.slice(prefix.length) : "unknown"
 }
 
 function shouldRenderProceduralFallbackPlacement(

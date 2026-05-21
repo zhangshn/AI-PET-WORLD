@@ -467,3 +467,21 @@
 13. 不能使用 backgroundImage / img / next/image。
 14. 管家 projection v0 不是最终管家行为系统。
 15. butler anchor 不代表最终 autonomous movement。
+
+## P8-H7 Actor Geometry Debug Readability Closeout 红线
+
+1. H7 只增强 Actor Geometry Debug 可读性，不改变 actor projection 链路。
+2. 当前 actor 图形必须标记为 Debug 几何占位。
+3. 当前 actor 图形不是最终玩家 UI。
+4. 当前 actor 图形不是最终角色美术。
+5. 当前 actor 图形不代表最终 autonomous movement。
+6. 本阶段只接入 butler，不接入 pet。
+7. Renderer 只能读取 VisualState.actorGeometryProjections 与 tags。
+8. Renderer 不能重新推断世界事实。
+9. Renderer 不能生成 actor。
+10. Renderer 不能填默认 anchor。
+11. 本阶段不能生成 MapPlacement。
+12. 本阶段不能修改 HomeMapState。
+13. 本阶段不能写入 mapDiff。
+14. 本阶段不能读取 PNG / WORLD_MAP_ASSETS。
+15. 本阶段不能使用 backgroundImage / img / next/image。

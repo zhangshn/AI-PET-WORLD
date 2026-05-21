@@ -373,7 +373,7 @@
 
 .actorGeometryDiagnosticItem {
   display: grid;
-  gap: 3px;
+  gap: 4px;
   border: 1px solid currentColor;
   border-radius: 10px;
   padding: 10px;

@@ -544,3 +544,29 @@ HomeMapState
 ```text
 P8-H7：Actor Geometry Display 可读性与 Debug 收口
 ```
+
+## 20. P8-H7 Actor Geometry Display 可读性与 Debug 收口记录
+
+P8-H7 已增强 Actor Geometry Diagnostics 可读性。
+
+本阶段明确：
+
+1. 当前 actor 图形是 Debug 几何占位。
+2. 当前不是最终玩家 UI。
+3. 当前不是最终角色美术。
+4. 当前不代表最终 autonomous movement。
+5. 当前只接入 butler。
+6. 当前不接入 pet。
+7. butler anchor source 会在 tags 中显示。
+8. Renderer 只读 tags 展示 anchor source，不重新推断世界事实。
+9. Renderer 不生成 actor。
+10. Renderer 不填默认 anchor。
+11. 不生成 MapPlacement。
+12. 不修改 HomeMapState。
+13. 不读取 PNG / WORLD_MAP_ASSETS。
+
+下一步进入：
+
+```text
+P8-H8：Actor Geometry 阶段收口与 Formal World View 分离规划
+```

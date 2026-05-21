@@ -23,6 +23,11 @@ export type BuildWorldLoopRenderableStateInput = {
   now: number
 }
 
+type ButlerActorAnchorProjection = {
+  anchor: Point2D
+  anchorSourceTag: string
+}
+
 export function buildWorldLoopRenderableState(
   input: BuildWorldLoopRenderableStateInput
 ): WorldLoopRenderableState {
@@ -67,6 +72,8 @@ function buildActorRuntimeGeometryProjectionsForRenderableState(input: {
   homeMapState: HomeMapState
   now: number
 }): ActorRuntimeGeometryProjectionResult[] {
+  const butlerAnchorProjection =
+    buildButlerActorAnchorProjectionFromHomeMap(input.homeMapState)
   const butlerRuntimeProjection = buildButlerRuntimeProjection({
     worldId: input.homeMapState.worldId,
     butlerId: buildButlerActorId(input.homeMapState.ownerId),
@@ -74,13 +81,17 @@ function buildActorRuntimeGeometryProjectionsForRenderableState(input: {
     currentTask: "inspect_environment",
     mood: "calm",
     attentionTargetType: "home",
-    anchor: buildButlerActorAnchorFromHomeMap(input.homeMapState),
+    anchor: butlerAnchorProjection.anchor,
     tags: [
       "world_loop_renderable_actor_projection_v0",
       "actor_projection_origin:world_loop_renderable_state",
       "actor_kind:butler",
       "butler_first_life",
       "pet_not_default_actor",
+      "actor_projection_debug_only",
+      "not_final_actor_art",
+      "not_final_autonomous_movement",
+      butlerAnchorProjection.anchorSourceTag,
     ],
   })
 
@@ -93,9 +104,9 @@ function buildButlerActorId(ownerId: string): string {
   return `butler:${ownerId}`
 }
 
-function buildButlerActorAnchorFromHomeMap(
+function buildButlerActorAnchorProjectionFromHomeMap(
   homeMapState: HomeMapState
-): Point2D {
+): ButlerActorAnchorProjection {
   const actorPlacement = homeMapState.placements.find((placement) =>
     placement.layer === "actor" &&
     placement.tags.includes("actor_kind:butler")
@@ -103,8 +114,11 @@ function buildButlerActorAnchorFromHomeMap(
 
   if (actorPlacement) {
     return {
-      x: actorPlacement.x,
-      y: actorPlacement.y,
+      anchor: {
+        x: actorPlacement.x,
+        y: actorPlacement.y,
+      },
+      anchorSourceTag: "actor_anchor_source:actor_kind_butler_placement",
     }
   }
 
@@ -114,8 +128,11 @@ function buildButlerActorAnchorFromHomeMap(
 
   if (visualCenterZone) {
     return {
-      x: visualCenterZone.bounds.x + visualCenterZone.bounds.width / 2,
-      y: visualCenterZone.bounds.y + visualCenterZone.bounds.height / 2,
+      anchor: {
+        x: visualCenterZone.bounds.x + visualCenterZone.bounds.width / 2,
+        y: visualCenterZone.bounds.y + visualCenterZone.bounds.height / 2,
+      },
+      anchorSourceTag: "actor_anchor_source:visual_center_zone",
     }
   }
 
@@ -125,13 +142,19 @@ function buildButlerActorAnchorFromHomeMap(
 
   if (shelterZone) {
     return {
-      x: shelterZone.bounds.x + shelterZone.bounds.width / 2,
-      y: shelterZone.bounds.y + shelterZone.bounds.height / 2,
+      anchor: {
+        x: shelterZone.bounds.x + shelterZone.bounds.width / 2,
+        y: shelterZone.bounds.y + shelterZone.bounds.height / 2,
+      },
+      anchorSourceTag: "actor_anchor_source:temporary_shelter_zone",
     }
   }
 
   return {
-    x: homeMapState.mapSize.columns / 2,
-    y: homeMapState.mapSize.rows / 2,
+    anchor: {
+      x: homeMapState.mapSize.columns / 2,
+      y: homeMapState.mapSize.rows / 2,
+    },
+    anchorSourceTag: "actor_anchor_source:map_center_fallback",
   }
 }
