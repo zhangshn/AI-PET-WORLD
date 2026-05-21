@@ -624,3 +624,26 @@ FORMAL-VIEW-04 已完成 Formal / Debug 视图切换策略。
 15. 本阶段未默认接入 pet。
 
 下一步是 WORLD-GEN-00 或 FORMAL-VIEW-05，待检查后决定。
+
+## WORLD-GEN-00 世界生成链路现状审计记录
+
+WORLD-GEN-00 已完成世界生成链路现状审计。
+
+当前确认：
+
+1. P8 Formal View 路线已经完成真实链路只读接入与 Formal / Debug 视图切换。
+2. 下一阶段应回到 MVP v1.5 的世界自动生成主线。
+3. 当前已有 worldSeed、InitialHomeGenerator、HomeMapState、MapDiff、PlacementEngine、layout recipe。
+4. 当前 placements 已经部分受到 seed 与 constructionStyle 影响，但还不是完整的非固定布局规则系统。
+5. 当前 constructionStyle 已进入初始生成链路。
+6. 当前没有发现明确 visualTendency 实现入口。
+7. 当前缺少 worldSeed / generation input schema 的正式边界。
+8. 当前缺少不同 seed / 人格 / 资源状态产生可观察布局差异的验证机制。
+9. 当前初始生成中存在 pet actor placement，需要后续与 pet 后置原则重新对齐。
+10. 后续 WORLD-GEN 不能把 PNG / assetId 当作世界事实来源。
+
+下一步建议进入：
+
+```text
+WORLD-GEN-01：worldSeed / generation input schema
+```

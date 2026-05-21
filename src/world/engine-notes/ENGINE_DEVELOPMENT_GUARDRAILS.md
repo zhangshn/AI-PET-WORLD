@@ -419,3 +419,20 @@ VISUAL-MODEL-00：FormalVisualModel schema
 13. /world 不能引用 `PREVIEW_FORMAL_VISUAL_MODEL`。
 14. /world 不能读取 PNG / WORLD_MAP_ASSETS 作为世界事实。
 15. /world 不能默认接入 pet。
+
+## WORLD-GEN-00 世界生成链路审计红线
+
+WORLD-GEN-00 是审计阶段，不是实现阶段。
+
+红线：
+
+1. 审计阶段不能修改 UI。
+2. 审计阶段不能生成正式 placement。
+3. 审计阶段不能伪造世界事实。
+4. 审计阶段不能默认接入 pet。
+5. 审计阶段不能把 PNG / assetId 当世界事实来源。
+6. 审计阶段不能修改 HomeMapState。
+7. 审计阶段不能修改 world-loop。
+8. 后续 WORLD-GEN 实现必须保证同一 seed 稳定。
+9. 后续 WORLD-GEN 实现必须保证不同人格 / seed / 资源状态产生可观察差异。
+10. visualTendency 后续如接入，只能影响正式视觉模型或风格摘要，不能反向生成世界事实。
