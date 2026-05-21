@@ -507,3 +507,35 @@ FORMAL-VIEW-01 已完成 preview harness。
 下一步是 FORMAL-VIEW-02 或 /world 正式接入前检查，具体以后再定。
 
 在正式决策前，不得擅自接入正式 /world。
+
+## 19. FORMAL-VIEW-02 /world 正式接入前检查记录
+
+FORMAL-VIEW-02 已完成 /world 正式接入前检查。
+
+本阶段新增：
+
+1. `src/world/engine-notes/FORMAL_VIEW_02_WORLD_ROUTE_PREFLIGHT.md`。
+
+本阶段确认当前已有链路：
+
+1. `buildVisualState`：HomeMapState / EnvironmentState / placementGeometryAudit / actor projection -> VisualState。
+2. `buildRenderableWorldSnapshot`：VisualState -> RenderableWorldSnapshot。
+3. `buildFormalVisualModelFromSnapshot`：RenderableWorldSnapshot -> FormalVisualModel。
+4. `FormalWorldView`：FormalVisualModel -> 只读渲染。
+
+本阶段确认当前 /world 状态：
+
+1. /world 已有真实 HomeMapState 来源。
+2. /world 已有真实 RenderableWorldSnapshot 来源。
+3. EnvironmentState 与 placementGeometryAudit 已在上游派生并进入 VisualState。
+4. /world 尚未构建真实 FormalVisualModel。
+5. /world 尚未接入 FormalWorldView。
+6. preview mock 未接入 /world，且不能接入 /world。
+7. actorRuntimeGeometryProjections 在正式切换前需要确认所有真实 snapshot 路径一致。
+8. 当前不应直接切换到 FormalWorldView。
+
+下一步只有在确认真实链路完整后，才允许进入：
+
+```text
+FORMAL-VIEW-03：/world 只读接入 FormalVisualModel
+```
