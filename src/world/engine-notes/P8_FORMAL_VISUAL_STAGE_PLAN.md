@@ -585,3 +585,42 @@ runtimeState.currentRenderableSnapshot
 ```text
 FORMAL-VIEW-04：正式 / Debug 视图切换策略或主视觉布局整理
 ```
+
+## 21. FORMAL-VIEW-04 正式 / Debug 视图切换策略完成记录
+
+FORMAL-VIEW-04 已完成 Formal / Debug 视图切换策略。
+
+本阶段新增：
+
+1. `src/world/engine-notes/FORMAL_VIEW_04_FORMAL_DEBUG_VIEW_MODE.md`。
+
+本阶段修改：
+
+1. `src/app/world/world-route-page.tsx`。
+2. `src/app/world/world-route-page.styles.module.css`。
+
+当前 viewMode：
+
+```ts
+"formal" | "debug" | "both"
+```
+
+本阶段确认：
+
+1. 默认 viewMode 为 `"formal"`。
+2. Formal 模式只显示 FormalWorldView。
+3. Debug 模式只显示 ProceduralRendererView。
+4. Both 模式同时显示 FormalWorldView 与 ProceduralRendererView。
+5. Debug Renderer 保留。
+6. Both 模式只用于开发对照。
+7. viewMode 只是本地 UI 状态，不写入持久化。
+8. viewMode 不进入 world-loop。
+9. viewMode 不修改 HomeMapState。
+10. viewMode 不参与 FormalVisualModel 生成。
+11. FormalVisualModel 仍然来自 `runtimeState.currentRenderableSnapshot`。
+12. 本阶段未使用 preview mock。
+13. 本阶段未生成 world object / placement / actor。
+14. 本阶段未读取 PNG / WORLD_MAP_ASSETS。
+15. 本阶段未默认接入 pet。
+
+下一步是 WORLD-GEN-00 或 FORMAL-VIEW-05，待检查后决定。

@@ -62,6 +62,8 @@ type WorldRuntimeContextUiState = {
   tags: string[]
 }
 
+type WorldViewMode = "formal" | "debug" | "both"
+
 export default function WorldRoutePage() {
   const createWorldInputSnapshot = useSyncExternalStore(
     subscribeCreateWorldInput,
@@ -130,6 +132,7 @@ function WorldRuntimeShell(input: {
       message: "尚未在 Tick 中使用真实 runtime context。",
       tags: ["world_runtime_context_ui_state", "not_used"],
     }))
+  const [viewMode, setViewMode] = useState<WorldViewMode>("formal")
   const lastStepResult = runtimeState.lastStepResult
   const lastSafeApplyTag =
     lastStepResult?.auditTrail.tags.find((tag) =>
@@ -153,6 +156,8 @@ function WorldRuntimeShell(input: {
       ),
     [runtimeState.currentRenderableSnapshot]
   )
+  const shouldShowFormalView = viewMode === "formal" || viewMode === "both"
+  const shouldShowDebugView = viewMode === "debug" || viewMode === "both"
 
   function handleManualTick() {
     const tickNow =
@@ -282,24 +287,76 @@ function WorldRuntimeShell(input: {
         </div>
       </section>
 
-      <ProceduralRendererView
-        snapshot={runtimeState.currentRenderableSnapshot}
-      />
-
-      <section
-        className={styles.formalWorldPanel}
-        aria-label="Formal World View"
-      >
-        <div className={styles.formalWorldPanelHeader}>
-          <div className={styles.eyebrow}>FORMAL WORLD VIEW</div>
-          <h2>正式主视觉预览</h2>
+      <section className={styles.viewModePanel} aria-label="World view mode">
+        <div>
+          <div className={styles.eyebrow}>WORLD VIEW MODE</div>
+          <h2>视图模式</h2>
           <p>
-            这里从当前真实 RenderableWorldSnapshot 派生 FormalVisualModel，
-            并交给 FormalWorldView 只读渲染；Debug Renderer 仍然保留。
+            默认显示正式主视觉；Debug 视图保留给开发调试，双视图用于开发对照。
           </p>
         </div>
-        <FormalWorldView model={formalVisualModel} />
+        <div className={styles.viewModeActions}>
+          <button
+            className={styles.viewModeButton}
+            data-active={viewMode === "formal"}
+            type="button"
+            onClick={() => setViewMode("formal")}
+          >
+            正式主视觉
+          </button>
+          <button
+            className={styles.viewModeButton}
+            data-active={viewMode === "debug"}
+            type="button"
+            onClick={() => setViewMode("debug")}
+          >
+            Debug 视图
+          </button>
+          <button
+            className={styles.viewModeButton}
+            data-active={viewMode === "both"}
+            type="button"
+            onClick={() => setViewMode("both")}
+          >
+            双视图
+          </button>
+        </div>
       </section>
+
+      {shouldShowFormalView ? (
+        <section
+          className={styles.formalWorldPanel}
+          aria-label="Formal World View"
+        >
+          <div className={styles.formalWorldPanelHeader}>
+            <div className={styles.eyebrow}>FORMAL WORLD VIEW</div>
+            <h2>正式主视觉</h2>
+            <p>
+              这里从当前真实 RenderableWorldSnapshot 派生 FormalVisualModel，
+              并交给 FormalWorldView 只读渲染。
+            </p>
+          </div>
+          <FormalWorldView model={formalVisualModel} />
+        </section>
+      ) : null}
+
+      {shouldShowDebugView ? (
+        <section
+          className={styles.debugWorldPanel}
+          aria-label="Debug renderer view"
+        >
+          <div className={styles.debugWorldPanelHeader}>
+            <div className={styles.eyebrow}>DEBUG VIEW / 开发调试</div>
+            <h2>Debug 视图</h2>
+            <p>
+              ProceduralRendererView 仍然保留，用于验证真实世界链路与几何诊断。
+            </p>
+          </div>
+          <ProceduralRendererView
+            snapshot={runtimeState.currentRenderableSnapshot}
+          />
+        </section>
+      ) : null}
 
       <section className={styles.contentGrid}>
         <article className={styles.panel}>

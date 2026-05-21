@@ -128,6 +128,59 @@
   position: relative;
 }
 
+.viewModePanel {
+  align-items: center;
+  background: rgba(15, 28, 18, 0.72);
+  border: 1px solid rgba(198, 226, 159, 0.16);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: space-between;
+  margin: 0 auto 22px;
+  max-width: 1120px;
+  padding: clamp(16px, 2vw, 22px);
+  position: relative;
+}
+
+.viewModePanel h2,
+.viewModePanel p {
+  margin: 0;
+}
+
+.viewModePanel h2 {
+  color: #f3f8e8;
+  font-size: 18px;
+}
+
+.viewModePanel p {
+  color: rgba(237, 244, 223, 0.68);
+  font-size: 13px;
+  line-height: 1.7;
+  margin-top: 6px;
+}
+
+.viewModeActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.viewModeButton {
+  background: rgba(8, 18, 11, 0.48);
+  border: 1px solid rgba(198, 226, 159, 0.18);
+  color: rgba(237, 244, 223, 0.78);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  padding: 10px 12px;
+}
+
+.viewModeButton[data-active="true"] {
+  background: #c8df8f;
+  color: #142014;
+  font-weight: 700;
+}
+
 .formalWorldPanel {
   background: rgba(15, 28, 18, 0.72);
   border: 1px solid rgba(198, 226, 159, 0.16);
@@ -139,22 +192,43 @@
   position: relative;
 }
 
+.debugWorldPanel {
+  display: grid;
+  gap: 16px;
+  margin: 0 auto 22px;
+  max-width: 1120px;
+  position: relative;
+}
+
 .formalWorldPanelHeader {
   display: grid;
   gap: 8px;
 }
 
+.debugWorldPanelHeader {
+  background: rgba(15, 28, 18, 0.72);
+  border: 1px solid rgba(198, 226, 159, 0.16);
+  display: grid;
+  gap: 8px;
+  padding: clamp(18px, 3vw, 28px);
+  position: relative;
+}
+
 .formalWorldPanelHeader h2,
-.formalWorldPanelHeader p {
+.formalWorldPanelHeader p,
+.debugWorldPanelHeader h2,
+.debugWorldPanelHeader p {
   margin: 0;
 }
 
-.formalWorldPanelHeader h2 {
+.formalWorldPanelHeader h2,
+.debugWorldPanelHeader h2 {
   color: #f3f8e8;
   font-size: 20px;
 }
 
-.formalWorldPanelHeader p {
+.formalWorldPanelHeader p,
+.debugWorldPanelHeader p {
   color: rgba(237, 244, 223, 0.68);
   font-size: 13px;
   line-height: 1.7;

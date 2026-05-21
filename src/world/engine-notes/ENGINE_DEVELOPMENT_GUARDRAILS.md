@@ -401,3 +401,21 @@ VISUAL-MODEL-00：FormalVisualModel schema
 13. Debug Renderer 未迁移前必须保留。
 14. FormalWorldView 只能接收真实链路生成的 FormalVisualModel。
 15. FORMAL-VIEW-03 不能修改 FormalVisualGenerator / FormalVisualModel schema / renderer / world-loop / HomeMapState。
+
+## FORMAL-VIEW-04 正式 / Debug 视图切换红线
+
+1. viewMode 只能控制 UI 显示。
+2. viewMode 不能进入 world-loop。
+3. viewMode 不能修改 HomeMapState。
+4. viewMode 不能生成 FormalVisualModel。
+5. viewMode 不能参与 FormalVisualModel 生成。
+6. viewMode 不能生成 world object。
+7. viewMode 不能生成 placement。
+8. viewMode 不能生成 actor。
+9. viewMode 不能写入持久化。
+10. Debug Renderer 不能被删除。
+11. FormalWorldView 不能使用 preview mock。
+12. /world 不能 import `formal-world-view.preview`。
+13. /world 不能引用 `PREVIEW_FORMAL_VISUAL_MODEL`。
+14. /world 不能读取 PNG / WORLD_MAP_ASSETS 作为世界事实。
+15. /world 不能默认接入 pet。
