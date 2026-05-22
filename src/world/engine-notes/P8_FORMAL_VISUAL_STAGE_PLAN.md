@@ -55,6 +55,7 @@
 | MVP-ALIGN-03 | 已完成 | 对齐文档体系，清理旧 README / legacy docs / 乱码计划文档。 |
 | WORLD-GEN-02 | 已完成 | 建立 worldSeed + personality layout input schema，并接入 PlacementEngine。 |
 | WORLD-GEN-03 | 已完成 | 建立多 seed / 多人格 / 多资源布局差异化验证与 debug audit。 |
+| CONSTRUCTION-00 | 已完成 | 建立 ConstructionPlanner 输入协议与输入审计。 |
 
 ## 4. 已废弃路线
 
@@ -110,6 +111,9 @@ HomeMapState / WorldState
 14. FormalWorldView。
 15. WorldLayoutVariationScenario。
 16. WorldLayoutVariationAudit。
+17. ConstructionPlannerInput。
+18. ButlerConstructionIntentInput。
+19. ConstructionPlannerInputAudit。
 
 当前已完成中性化：
 
@@ -119,6 +123,7 @@ HomeMapState / WorldState
 4. 初始世界不再默认生成 pet bed。
 5. 初始世界不再默认生成 pet 专属设施。
 6. 初始区域改为 entry_area / initial_care / temporary_shelter / quiet_living / storage_tools / natural_boundary。
+7. ConstructionPlanner 输入协议不生成宠物相关建设意图。
 
 WORLD-GEN-02 已完成：
 
@@ -135,9 +140,17 @@ WORLD-GEN-03 已完成：
 4. 输出可复用 debug audit，不靠肉眼猜测布局差异。
 5. 保持 audit 工具只读生成层与 PlacementEngine，不接入 UI。
 
+CONSTRUCTION-00 已完成：
+
+1. 扩展 ConstructionPlanner 输入协议。
+2. 从 HomeMapState、管家建设倾向、资源快照和世界日数构建 planner input。
+3. 生成建设意图输入，但不生成 MapDiff。
+4. 通过 input audit 检查稳定 fingerprint、intent 合法性和旧路线 token。
+5. 保持 ConstructionPlanner 输入协议不修改 HomeMapState、不接入 UI、不接入宠物。
+
 仍未完成：
 
-1. ConstructionPlanner。
+1. ConstructionPlanner 候选计划生成。
 2. ConstructionExecutor。
 3. MapDiff 驱动的长期建设变化。
 
@@ -162,23 +175,25 @@ WORLD-GEN-03 已完成：
 | P8 总控文档乱码 | 已处理 | 已重写为 UTF-8 中文。 |
 | worldSeed + 人格布局输入 | 已处理 | WORLD-GEN-02 已建立 schema 并接入 PlacementEngine。 |
 | 布局差异是否足够可观察 | 已处理 | WORLD-GEN-03 已建立差异化 audit 工具。 |
-| ConstructionPlanner / Executor | 未完成 | 后续 CONSTRUCTION 模块。 |
+| ConstructionPlanner 输入协议 | 已处理 | CONSTRUCTION-00 已建立 planner input 与 audit。 |
+| ConstructionPlanner 候选计划生成 | 未完成 | 后续 CONSTRUCTION-01。 |
+| ConstructionExecutor / MapDiff | 未完成 | 后续 CONSTRUCTION-02 或执行模块。 |
 | LifeEvent / CompanionDecision | 未完成 | 后续 LIFE-EVENT 模块。 |
 
 ## 9. 下一大模块计划
 
-WORLD-GEN-03 完成后，进入：
+CONSTRUCTION-00 完成后，进入：
 
 ```text
-CONSTRUCTION-00：ConstructionPlanner 输入协议
+CONSTRUCTION-01：ConstructionPlanner 候选计划生成
 ```
 
-CONSTRUCTION-00 目标：
+CONSTRUCTION-01 目标：
 
-1. 定义管家建设意图输入协议。
-2. 读取管家人格、资源状态、世界阶段和 HomeMapState。
-3. 输出 ConstructionPlan 候选。
-4. 不直接修改 HomeMapState。
+1. 读取 ConstructionPlannerInput。
+2. 根据 intent、资源状态、阶段、已有计划和管家建设倾向生成 ConstructionPlan 候选。
+3. 只输出计划候选，不直接修改 HomeMapState。
+4. 不生成 MapDiff。
 5. 不生成 UI。
 6. 不接入宠物。
 
@@ -193,5 +208,7 @@ P8 Formal 视觉链路已完成并保留。
 WORLD-GEN-02 已把世界生成从固定 recipe 推进到 `seed + personality + resources + phase + variant + placement rules` 的输入协议。
 
 WORLD-GEN-03 已把布局差异化从肉眼判断推进到稳定 fingerprint 与 pair audit。
+
+CONSTRUCTION-00 已把建设系统推进到 `HomeMapState + 管家建设倾向 + 资源状态 + 世界阶段 -> ConstructionPlannerInput`。
 
 后续开发必须围绕规则生成、结构化世界事实、FormalVisualModel First、宠物后置和非固定布局差异化继续推进。
