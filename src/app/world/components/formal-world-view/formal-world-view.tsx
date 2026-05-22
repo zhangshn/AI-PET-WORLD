@@ -1,5 +1,5 @@
 /**
- * 当前文件职责：只读 FormalVisualModel 渲染未来玩家主视觉壳层。
+ * 当前文件职责：只读 FormalVisualModel 渲染玩家主视觉壳层。
  */
 import type { ReactNode } from "react"
 
@@ -29,8 +29,8 @@ export function FormalWorldView(input: FormalWorldViewProps) {
         <div className={styles.eyebrow}>AI-PET-WORLD / FORMAL WORLD VIEW</div>
         <h2>主世界视图</h2>
         <p>
-          这里只读 FormalVisualModel 渲染玩家主视觉壳层，不生成模型、
-          世界事实、placement 或 actor。
+          这里只读 FormalVisualModel 渲染玩家主视觉，不生成模型、世界事实、
+          placement 或 actor。
         </p>
       </header>
 
@@ -59,12 +59,18 @@ export function FormalWorldView(input: FormalWorldViewProps) {
       </div>
 
       <section className={styles.formalHud} aria-label="formal world summary">
-        <FormalInfoCard label="世界阶段" value={model.hudSummary.worldPhaseLabel} />
+        <FormalInfoCard
+          label="世界阶段"
+          value={model.hudSummary.worldPhaseLabel}
+        />
         <FormalInfoCard
           label="管家状态"
           value={model.hudSummary.butlerStatusLabel}
         />
-        <FormalInfoCard label="宠物状态" value={model.hudSummary.petStatusLabel} />
+        <FormalInfoCard
+          label="伙伴状态"
+          value={model.hudSummary.petStatusLabel}
+        />
         <FormalInfoCard label="环境" value={model.environment.weatherLabel} />
       </section>
 

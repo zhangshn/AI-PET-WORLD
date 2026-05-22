@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * 当前文件职责：正式世界首屏入口。
+ * 当前文件职责：展示 AI-PET-WORLD 的只读 MVP 世界运行页面。
  */
 
 import { useMemo, useState, useSyncExternalStore } from "react"
@@ -10,11 +10,7 @@ import Link from "next/link"
 import { FormalWorldView } from "@/app/world/components/formal-world-view"
 import { ProceduralRendererView } from "@/app/world/components/procedural-renderer/procedural-renderer-view"
 import { buildFormalVisualModelFromSnapshot } from "@/world/formal-visual-model/formal-visual-model-gateway"
-import {
-  buildMvpPresentationModel,
-  runMvpCoreDebugRunner,
-  type MvpPresentationModel,
-} from "@/world/mvp-core/mvp-core-gateway"
+import { runAiPetWorldMvpPipeline } from "@/world/mvp-core/mvp-core-gateway"
 import {
   buildWorldCreationRuntime,
   CREATE_WORLD_STORAGE_KEY,
@@ -42,6 +38,10 @@ import {
   type RuntimeWorldState,
 } from "@/world/world-loop/world-loop-gateway"
 
+import {
+  buildMvpWorldViewModel,
+  type MvpWorldViewModel,
+} from "./mvp-world-view-model"
 import styles from "./world-route-page.styles.module.css"
 
 const CREATE_WORLD_INPUT_PENDING = "__ai_pet_world_create_input_pending__"
@@ -129,7 +129,7 @@ function WorldRuntimeShell(input: {
   const [runtimeContextState, setRuntimeContextState] =
     useState<WorldRuntimeContextUiState>(() => ({
       status: "not_used",
-      message: "尚未在 Tick 中使用真实 runtime context。",
+      message: "尚未在手动 Tick 中使用 runtime context。",
       tags: ["world_runtime_context_ui_state", "not_used"],
     }))
   const [viewMode, setViewMode] = useState<WorldViewMode>("formal")
@@ -146,9 +146,6 @@ function WorldRuntimeShell(input: {
     ? lastStepResult.nextHomeMapState.mapDiffs.length -
       lastStepResult.previousHomeMapState.mapDiffs.length
     : 0
-  const rendererSnapshotTickLabel = lastStepResult
-    ? `tick:${lastStepResult.context.tickIndex}`
-    : "initial_world"
   const formalVisualModel = useMemo(
     () =>
       buildFormalVisualModelFromSnapshot(
@@ -156,30 +153,43 @@ function WorldRuntimeShell(input: {
       ),
     [runtimeState.currentRenderableSnapshot]
   )
-  const mvpCoreResult = useMemo(
+  const mvpPipelineResult = useMemo(
     () =>
-      runMvpCoreDebugRunner({
-        homeMapState: runtimeState.currentHomeMapState,
-        constructionStyle: worldCreationRuntime.butlerConstructionStyle,
+      runAiPetWorldMvpPipeline({
+        playerId: runtimeState.ownerId,
+        ownerId: runtimeState.ownerId,
+        worldId: runtimeState.worldId,
+        birthYear: createWorldInput.year,
+        birthMonth: createWorldInput.month,
+        birthDay: createWorldInput.day,
+        birthHour: parseBirthHour(createWorldInput.time),
+        timezone: "Asia/Shanghai",
         worldDay: runtimeState.tickIndex + 1,
         now:
           runtimeState.currentHomeMapState.updatedAt +
           runtimeState.tickIndex +
           1,
+        seed: runtimeState.currentHomeMapState.seed,
+        runMode: "preview",
+        persistenceMode: "memory_preview",
+        visualMode: "formal_precheck",
         tags: [
-          "world_route_mvp_core_preview",
-          "read_only_debug_dry_run",
+          "world_route_mvp_pipeline_preview",
+          "read_only_world_view",
+          "no_default_companion_entry",
         ],
       }),
     [
+      createWorldInput,
       runtimeState.currentHomeMapState,
+      runtimeState.ownerId,
       runtimeState.tickIndex,
-      worldCreationRuntime.butlerConstructionStyle,
+      runtimeState.worldId,
     ]
   )
-  const mvpPresentationModel = useMemo(
-    () => buildMvpPresentationModel(mvpCoreResult),
-    [mvpCoreResult]
+  const mvpWorldViewModel = useMemo(
+    () => buildMvpWorldViewModel(mvpPipelineResult),
+    [mvpPipelineResult]
   )
   const shouldShowFormalView = viewMode === "formal" || viewMode === "both"
   const shouldShowDebugView = viewMode === "debug" || viewMode === "both"
@@ -229,7 +239,7 @@ function WorldRuntimeShell(input: {
         ? "used_runtime_context"
         : "runtime_context_invalid",
       message: canUseRuntimeContext
-        ? "本次 Tick 已使用 ButlerRuntimeContext 转换后的 intent context；宠物 runtime 后置等待。"
+        ? "本次 Tick 已使用管家 runtime context；伙伴入口仍保持后置等待。"
         : butlerValidation.reasons.join("；") ||
           "runtime context 校验未通过。",
       butlerSummary,
@@ -271,7 +281,7 @@ function WorldRuntimeShell(input: {
   return (
     <main className={styles.worldPage} aria-label="AI-PET-WORLD">
       <section className={styles.heroPanel}>
-        <div className={styles.eyebrow}>AI-PET-WORLD / FIRST SCENE</div>
+        <div className={styles.eyebrow}>AI-PET-WORLD / MVP WORLD</div>
         <h1 className={styles.title}>{firstSceneModel.title}</h1>
         <p className={styles.description}>{firstSceneModel.subtitle}</p>
 
@@ -290,18 +300,18 @@ function WorldRuntimeShell(input: {
             value={String(firstSceneModel.homeSummary.zoneCount)}
           />
           <SummaryCard
-            label="生成对象"
+            label="世界对象"
             value={String(firstSceneModel.homeSummary.placementCount)}
           />
         </div>
       </section>
 
-      <section className={styles.viewModePanel} aria-label="World view mode">
+      <section className={styles.viewModePanel} aria-label="视图模式">
         <div>
           <div className={styles.eyebrow}>WORLD VIEW MODE</div>
           <h2>视图模式</h2>
           <p>
-            默认显示正式主视觉；Debug 视图保留给开发调试，双视图用于开发对照。
+            默认显示正式主视觉。Debug 视图保留给链路和几何诊断，双视图用于开发对照。
           </p>
         </div>
         <div className={styles.viewModeActions}>
@@ -335,14 +345,14 @@ function WorldRuntimeShell(input: {
       {shouldShowFormalView ? (
         <section
           className={styles.formalWorldPanel}
-          aria-label="Formal World View"
+          aria-label="正式主视觉"
         >
           <div className={styles.formalWorldPanelHeader}>
             <div className={styles.eyebrow}>FORMAL WORLD VIEW</div>
             <h2>正式主视觉</h2>
             <p>
-              这里从当前真实 RenderableWorldSnapshot 派生 FormalVisualModel，
-              并交给 FormalWorldView 只读渲染。
+              当前画面来自真实 RenderableWorldSnapshot 派生的
+              FormalVisualModel。FormalWorldView 只读渲染，不生成世界事实。
             </p>
           </div>
           <FormalWorldView model={formalVisualModel} />
@@ -358,7 +368,7 @@ function WorldRuntimeShell(input: {
             <div className={styles.eyebrow}>DEBUG VIEW / 开发调试</div>
             <h2>Debug 视图</h2>
             <p>
-              ProceduralRendererView 仍然保留，用于验证真实世界链路与几何诊断。
+              ProceduralRendererView 保留用于验证真实世界链路与几何诊断，不作为默认玩家主视觉。
             </p>
           </div>
           <ProceduralRendererView
@@ -367,11 +377,11 @@ function WorldRuntimeShell(input: {
         </section>
       ) : null}
 
-      <MvpCorePanel model={mvpPresentationModel} />
+      <MvpCorePanel model={mvpWorldViewModel} />
 
       <section className={styles.contentGrid}>
         <article className={styles.panel}>
-          <h2>世界运行态</h2>
+          <h2>世界运行</h2>
           <div className={styles.resourceList}>
             <RuntimeInfoItem
               label="Runtime Tick"
@@ -401,65 +411,30 @@ function WorldRuntimeShell(input: {
               value={lastSafeApplyTag}
             />
             <RuntimeInfoItem
-              label="Last Tick Source"
-              value={lastStepResult?.context.source ?? "initial_world"}
-            />
-            <RuntimeInfoItem
-              label="Renderer Snapshot"
-              value={rendererSnapshotTickLabel}
-            />
-            <RuntimeInfoItem
               label="Placement Delta"
-              value={lastStepResult ? String(placementDelta) : "0"}
+              value={String(placementDelta)}
             />
             <RuntimeInfoItem
               label="MapDiff Delta"
-              value={lastStepResult ? String(mapDiffDelta) : "0"}
+              value={String(mapDiffDelta)}
             />
             <RuntimeInfoItem
               label="Persistence"
               value={persistenceState.status}
             />
             <RuntimeInfoItem
-              label="Persisted Key"
-              value={persistenceState.key ?? "none"}
-            />
-            <RuntimeInfoItem
-              label="Saved At"
-              value={
-                persistenceState.savedAt !== undefined
-                  ? String(persistenceState.savedAt)
-                  : "none"
-              }
-            />
-            <RuntimeInfoItem
               label="Runtime Context"
               value={runtimeContextState.status}
             />
             <RuntimeInfoItem
-              label="Butler Runtime Task"
-              value={runtimeContextState.butlerSummary?.currentTask ?? "not_used"}
+              label="Butler Task"
+              value={runtimeContextState.butlerSummary?.currentTask ?? "未使用"}
             />
-            <RuntimeInfoItem
-              label="Butler Runtime Mood"
-              value={runtimeContextState.butlerSummary?.mood ?? "not_used"}
-            />
-            <RuntimeInfoItem
-              label="Pet Life Stage"
-              value="后置等待"
-            />
-            <RuntimeInfoItem
-              label="Pet Runtime Drive"
-              value="后置等待"
-            />
-            <RuntimeInfoItem
-              label="Pet Runtime Action"
-              value="后置等待"
-            />
+            <RuntimeInfoItem label="Companion" value="后置等待" />
           </div>
           <p>
-            RuntimeWorldState 已建立；当前 Tick 只能手动触发，不自动推进，
-            不自动持久化，不绕过 SafeApply。
+            RuntimeWorldState 已建立；手动 Tick 会走管家意图、MapDiff、
+            SafeApply 和快照刷新链路。这里不会默认接入伙伴，也不会绕过世界事实容器。
           </p>
           <p>{persistenceState.message}</p>
           <p>{runtimeContextState.message}</p>
@@ -519,52 +494,13 @@ function WorldRuntimeShell(input: {
                   lastStepResult.worldEvolutionAudit.summary.canApplySafely
                 )}
               />
-              <RuntimeInfoItem label="SafeApply" value={lastSafeApplyTag} />
               <RuntimeInfoItem
-                label="Previous Placement"
-                value={String(
-                  lastStepResult.previousHomeMapState.placements.length
-                )}
-              />
-              <RuntimeInfoItem
-                label="Next Placement"
-                value={String(lastStepResult.nextHomeMapState.placements.length)}
-              />
-              <RuntimeInfoItem
-                label="Previous MapDiff"
-                value={String(lastStepResult.previousHomeMapState.mapDiffs.length)}
-              />
-              <RuntimeInfoItem
-                label="Next MapDiff"
-                value={String(lastStepResult.nextHomeMapState.mapDiffs.length)}
-              />
-              <RuntimeInfoItem
-                label="Blocker Count"
+                label="Blockers"
                 value={String(lastStepResult.auditTrail.blockers.length)}
               />
               <RuntimeInfoItem
-                label="Warning Count"
+                label="Warnings"
                 value={String(lastStepResult.auditTrail.warnings.length)}
-              />
-              <RuntimeInfoItem
-                label="Note Count"
-                value={String(lastStepResult.auditTrail.notes.length)}
-              />
-              <RuntimeInfoItem
-                label="Context Source"
-                value={runtimeContextState.status}
-              />
-              <RuntimeInfoItem
-                label="Butler Context Tick"
-                value={
-                  runtimeContextState.butlerSummary
-                    ? String(runtimeContextState.butlerSummary.tickIndex)
-                    : "not_used"
-                }
-              />
-              <RuntimeInfoItem
-                label="Pet Context Tick"
-                value="后置等待"
               />
             </div>
           ) : (
@@ -580,37 +516,12 @@ function WorldRuntimeShell(input: {
                 <RuntimeInfoItem
                   key={`${stage.stage}-${stage.status}-${stage.message}`}
                   label={stage.stage}
-                  value={`${stage.status}｜${stage.message}`}
+                  value={`${stage.status} / ${stage.message}`}
                 />
               ))}
             </div>
           ) : (
-            <p>尚未生成 Tick 阶段链路。</p>
-          )}
-        </article>
-
-        <article className={styles.panel}>
-          <h2>Tick 结果说明</h2>
-          {lastStepResult ? (
-            <div className={styles.resourceList}>
-              <RuntimeTextList
-                title="Blockers"
-                items={lastStepResult.auditTrail.blockers}
-                emptyText="没有阻塞原因。"
-              />
-              <RuntimeTextList
-                title="Warnings"
-                items={lastStepResult.auditTrail.warnings}
-                emptyText="没有警告。"
-              />
-              <RuntimeTextList
-                title="Notes"
-                items={lastStepResult.auditTrail.notes}
-                emptyText="没有补充说明。"
-              />
-            </div>
-          ) : (
-            <p>手动推进 Tick 后，这里会显示阻塞、警告和说明。</p>
+            <p>手动推进 Tick 后，这里会显示阶段链路。</p>
           )}
         </article>
 
@@ -782,62 +693,48 @@ function RuntimeInfoItem(input: { label: string; value: string }) {
   )
 }
 
-function RuntimeTextList(input: {
-  title: string
-  items: string[]
-  emptyText: string
-}) {
-  return (
-    <div className={styles.resourceItem}>
-      <div className={styles.resourceHeader}>
-        <strong>{input.title}</strong>
-        <span>{input.items.length}</span>
-      </div>
-      {input.items.length > 0 ? (
-        <ul>
-          {input.items.slice(0, 6).map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      ) : (
-        <p>{input.emptyText}</p>
-      )}
-    </div>
-  )
-}
-
-function MvpCorePanel(input: { model: MvpPresentationModel }) {
+function MvpCorePanel(input: { model: MvpWorldViewModel }) {
   const { model } = input
 
   return (
-    <section className={styles.mvpCorePanel} aria-label="MVP core closure">
+    <section className={styles.mvpCorePanel} aria-label="MVP core">
       <div className={styles.mvpCoreHeader}>
-        <div className={styles.eyebrow}>MVP CORE / DRY-RUN</div>
+        <div className={styles.eyebrow}>MVP CORE / READONLY</div>
         <h2>MVP 核心闭环</h2>
         <p>
-          这里只读展示 MVP 核心 dry-run：建设、持久化预检查、视觉刷新请求、
-          生命事件后置候选和 P-Phone 摘要。它不写入世界事实，也不生成宠物。
+          这里读取 MVP 总入口输出：管家人格、初始世界、建设运行、持久化
+          dry-run、视觉刷新预检、日志、P-Phone 和生命事件后置候选。
         </p>
       </div>
 
       <div className={styles.mvpCoreGrid}>
         <article className={styles.mvpCoreCard}>
-          <span>P-Phone</span>
-          <strong>{model.pPhoneData.statusLabel}</strong>
-          <p>{model.pPhoneData.primaryActionLabel}</p>
+          <span>World</span>
+          <strong>{model.worldSummary.worldId}</strong>
+          <p>
+            {model.worldSummary.placementCount} 个对象，
+            {model.worldSummary.mapDiffCount} 条 MapDiff 记录。
+          </p>
         </article>
         <article className={styles.mvpCoreCard}>
           <span>Butler</span>
-          <strong>{model.pPhoneData.butlerExplanation.title}</strong>
-          <p>{model.pPhoneData.butlerExplanation.summary}</p>
+          <strong>{model.butlerSummary.displayName}</strong>
+          <p>{model.butlerSummary.tone}</p>
         </article>
         <article className={styles.mvpCoreCard}>
-          <span>Warnings</span>
-          <strong>{String(model.warnings.length)}</strong>
+          <span>Construction</span>
+          <strong>{model.constructionSummary.acceptedDiffCount}</strong>
           <p>
-            {model.warnings.length === 0
-              ? "MVP core dry-run audit passed."
-              : "MVP core dry-run still has warnings."}
+            已接受 diff；拒绝 {model.constructionSummary.rejectedDiffCount}。
+          </p>
+        </article>
+        <article className={styles.mvpCoreCard}>
+          <span>Audit</span>
+          <strong>{model.auditSummary.warningCount}</strong>
+          <p>
+            {model.auditSummary.warningCount === 0
+              ? "MVP 总入口审计通过。"
+              : "MVP 总入口仍有警告，需要继续产品化。"}
           </p>
         </article>
       </div>
@@ -846,7 +743,7 @@ function MvpCorePanel(input: { model: MvpPresentationModel }) {
         <article className={styles.mvpCoreSubPanel}>
           <h3>World Log</h3>
           <div className={styles.mvpCoreList}>
-            {model.pPhoneData.logEntries.map((entry) => (
+            {model.logItems.map((entry) => (
               <div className={styles.mvpCoreListItem} key={entry.id}>
                 <strong>{entry.title}</strong>
                 <p>{entry.body}</p>
@@ -856,12 +753,12 @@ function MvpCorePanel(input: { model: MvpPresentationModel }) {
         </article>
 
         <article className={styles.mvpCoreSubPanel}>
-          <h3>Full MVP Report</h3>
+          <h3>P-Phone</h3>
           <div className={styles.mvpCoreList}>
-            {model.report.sections.map((section) => (
-              <div className={styles.mvpCoreListItem} key={section.title}>
-                <strong>{section.title}</strong>
-                <p>{section.lines[0] ?? section.status}</p>
+            {model.pPhoneMessages.map((message) => (
+              <div className={styles.mvpCoreListItem} key={message.id}>
+                <strong>{message.title}</strong>
+                <p>{message.body}</p>
               </div>
             ))}
           </div>
@@ -869,6 +766,15 @@ function MvpCorePanel(input: { model: MvpPresentationModel }) {
       </div>
     </section>
   )
+}
+
+function parseBirthHour(time: string): number {
+  const [hourText] = time.split(":")
+  const hour = Number(hourText)
+
+  if (!Number.isInteger(hour) || hour < 0 || hour > 23) return 0
+
+  return hour
 }
 
 function subscribeCreateWorldInput(onStoreChange: () => void): () => void {

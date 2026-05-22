@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：生成正式世界首屏所需的可展示状态模型。
+ * 当前文件职责：生成正式世界首屏所需的可展示状态模型。
  */
 
 import { buildWorldCreationRuntime } from "@/world/creation/world-creation-runtime"
@@ -102,7 +102,7 @@ export function buildWorldFirstSceneModel(input: {
     worldStatus: buildWorldStatus(runtime.styleSource),
     worldId: runtime.worldId,
     homeSummary: {
-      mapSizeLabel: `${homeMapState.mapSize.columns} × ${homeMapState.mapSize.rows}`,
+      mapSizeLabel: `${homeMapState.mapSize.columns} x ${homeMapState.mapSize.rows}`,
       zoneCount: homeMapState.zones.length,
       placementCount: homeMapState.placements.length,
     },
@@ -119,7 +119,7 @@ function buildWorldStatus(
   styleSource: "life_profile_core" | "deterministic_fallback"
 ): string {
   if (styleSource === "life_profile_core") {
-    return "生命核心已连接，世界参数已生成。"
+    return "生命信息已连接，世界参数已生成。"
   }
 
   return "世界使用稳定备用参数生成。"
@@ -147,7 +147,8 @@ function buildMilestones(): WorldFirstSceneMilestone[] {
     },
     {
       title: "自主建设待启动",
-      description: "后续将由管家的意图生成 MapDiff，再由 Renderer 渲染真实变化。",
+      description:
+        "后续将由管家的意图生成 MapDiff，再通过 SafeApply 更新真实世界事实。",
       status: "waiting",
     },
   ]
@@ -171,7 +172,9 @@ function toFirstScenePlan(plan: ConstructionPlanSummary): WorldFirstScenePlan {
   }
 }
 
-function buildPlanStatusLabel(status: ConstructionPlanSummary["status"]): string {
+function buildPlanStatusLabel(
+  status: ConstructionPlanSummary["status"]
+): string {
   if (status === "active") return "进行中"
   if (status === "completed") return "已完成"
   if (status === "paused") return "暂停"
@@ -179,7 +182,9 @@ function buildPlanStatusLabel(status: ConstructionPlanSummary["status"]): string
   return "计划中"
 }
 
-function buildResourceItems(resources: HomeResourceState): WorldFirstSceneResource[] {
+function buildResourceItems(
+  resources: HomeResourceState
+): WorldFirstSceneResource[] {
   return [
     {
       label: "地面稳定",
@@ -189,7 +194,7 @@ function buildResourceItems(resources: HomeResourceState): WorldFirstSceneResour
     {
       label: "自然生长",
       value: Math.round(resources.naturalGrowth),
-      description: "影响草地、花草和自然边界的成长趋势。",
+      description: "影响草地、植物和自然边界的成长趋势。",
     },
     {
       label: "材料准备",
@@ -199,7 +204,7 @@ function buildResourceItems(resources: HomeResourceState): WorldFirstSceneResour
     {
       label: "照护准备",
       value: Math.round(resources.careReadiness),
-      description: "影响食物、水、休息点等照护设施的准备度。",
+      description: "影响基础物资、照护点和生活区的准备程度。",
     },
   ]
 }

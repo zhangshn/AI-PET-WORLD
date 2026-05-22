@@ -569,3 +569,32 @@ BirthInput
 ```
 
 å½“å‰ä»ä¸æ˜¯çº¿ä¸ŠçœŸå®äº§å“ï¼šçœŸå®æ•°æ®åº“ã€çœŸå® schedulerã€å® ç‰©æ­£å¼è¿›å…¥ã€çº¿ä¸Šç”¨æˆ·æ•°æ®ä»éœ€åç»­äº§å“åŒ–ã€‚
+
+## MVP Ò³Ãæ¿ÉÓÃ»¯ÊÕ¿Ú¼ÇÂ¼
+
+±¾ÂÖÒÑ°Ñ MVP ±Ø½»¸¶±Õ»·´Ó¡°Èë¿Ú´æÔÚ¡±ÍÆ½øµ½¡°Ò³Ãæ¿ÉÓÃÕ¹Ê¾¡±£º
+
+1. `/create-world` ÒÑĞŞ¸´Îª¿É¶ÁÖĞÎÄÊäÈëÒ³£¬²¢Ê¹ÓÃÎÈ¶¨ÊäÈëÊ±¼ä´Á£¬²»Ê¹ÓÃ `Date.now`¡£
+2. `/world` Ä¬ÈÏÕ¹Ê¾ FormalWorldView£¬±£Áô Debug ÊÓÍ¼ÇĞ»»¡£
+3. `/world` ÒÑ½ÓÈë `runAiPetWorldMvpPipeline` Óë `buildMvpWorldViewModel`£¬Õ¹Ê¾ MVP ×ÜÈë¿ÚµÄÖ»¶ÁÕªÒª¡¢ÈÕÖ¾¡¢P-Phone¡¢½¨ÉèÕªÒªºÍÉó¼ÆÕªÒª¡£
+4. FormalWorldView ÈÔÈ»Ö»¶Á `FormalVisualModel`£¬²»Éú³ÉÊÀ½çÊÂÊµ¡£
+5. ÊÀ½çÊ×ÆÁÄ£ĞÍÎÄ°¸ÒÑĞŞ¸´ÎªÕıÊ½ MVP ÎÄ°¸£¬²»»Ö¸´¾ÉÄ¬ÈÏ³èÎï¿ª¾ÖÂ·Ïß¡£
+
+µ±Ç°Á´Â·£º
+
+```text
+Player Birth Input
+-> Butler MVP Profile
+-> Initial HomeMapState
+-> Runtime Tick / Construction / SafeApply
+-> nextHomeMapState
+-> Persistence Dry Run
+-> Visual Refresh / Formal Visual Refresh
+-> WorldLog / ButlerExplanation / P-Phone
+-> LifeEvent / CompanionDecision Candidate
+-> MVP Audit / MVP Report
+-> MvpWorldViewModel
+-> /world FormalWorldView Ö»¶ÁÕ¹Ê¾
+```
+
+ºóĞø²úÆ·»¯ÖØµã²»ÔÙ¼ÌĞø¶ÑĞ­Òé£¬ÓÅÏÈ½øÈëÕæÊµ persistence adapter¡¢world-loop scheduler¡¢snapshot refresh adapter Óë integration tests¡£

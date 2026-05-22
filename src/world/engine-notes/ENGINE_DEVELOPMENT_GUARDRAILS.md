@@ -462,3 +462,15 @@ CONSTRUCTION-FINAL-01 å·²å®Œæˆå»ºè®¾ç³»ç»Ÿå¯è¿è¡Œçºµå‘é—­ç¯ã€‚
 8. ç¦æ­¢ UI / CSS / PNG / WORLD_MAP_ASSETS å†³å®šä¸–ç•Œäº‹å®ã€‚
 9. ç¦æ­¢ç»•è¿‡ HomeMapState / MapDiff / SafeApply / FormalVisualModelã€‚
 10. ç¦æ­¢æŠŠ dry-run / audit / report å½“ä½œçº¿ä¸Šæœ€ç»ˆäº‹å®ã€‚
+
+## MVP Ò³Ãæ¿ÉÓÃ»¯ºìÏß
+
+1. `/create-world` Ö»ÄÜÊÕ¼¯Íæ¼ÒÊäÈë²¢Ğ´Èë±¾µØ´´½¨ÊÀ½çÊäÈë£¬²»ÄÜÉú³É³èÎï¡¢pet actor¡¢pet bed¡¢pet_arrival »ò pet_rest¡£
+2. `/world` Ö»ÄÜ¶ÁÈ¡ÕæÊµÁ´Â·Óë MVP pipeline result£¬²»ÄÜÉú³É placement¡¢actor »òÊÀ½çÊÂÊµ¡£
+3. `/world` Ä¬ÈÏ Formal Ö÷ÊÓ¾õ±ØĞëÀ´×Ô `RenderableWorldSnapshot -> FormalVisualModel -> FormalWorldView`¡£
+4. `MvpWorldViewModel` Ö»ÄÜ¶ÁÈ¡ pipeline result / FormalVisualModel / logs / P-Phone / audit summary£¬²»ÄÜĞ´ HomeMapState¡£
+5. P-Phone¡¢WorldLog¡¢ButlerExplanation ÊÇÍæ¼Ò¿É¶ÁÕªÒª£¬²»ÊÇÊÀ½çÊÂÊµÀ´Ô´¡£
+6. Persistence dry-run¡¢memory preview¡¢audit report ¶¼²»ÄÜ±»ÊÓÎªÏßÉÏ×îÖÕÊÂÊµ¡£
+7. ³èÎïÈÔÈ»Ö»ÄÜÍ¨¹ı LifeEvent / CompanionDecision / accept_companion ºóÖÃ½øÈë£¬²»ÄÜÄ¬ÈÏ³öÏÖÔÚ³õÊ¼ÊÀ½ç»ò `/world` Ò³Ãæ¡£
+8. UI / CSS / PNG / WORLD_MAP_ASSETS ²»ÄÜ¾ö¶¨ÊÀ½çÊÂÊµ¡£
+9. ĞÂ´úÂë²»µÃÊ¹ÓÃ `Math.random`¡¢`Date.now` »ò `any` ÈÆ¹ıÎÈ¶¨Éó¼Æ¡£

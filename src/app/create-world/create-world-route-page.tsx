@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * 当前文件负责：创建世界输入页面。
+ * 当前文件职责：提供创建世界的玩家输入入口。
  */
 
 import type { FormEvent } from "react"
@@ -35,7 +35,6 @@ export default function CreateWorldRoutePage() {
       day,
       time,
       perspective,
-      createdAt: Date.now(),
     })
 
     if (!createWorldInput) return
@@ -51,9 +50,10 @@ export default function CreateWorldRoutePage() {
     <main className={styles.createWorldPage}>
       <form className={styles.createPanel} onSubmit={handleSubmit}>
         <div className={styles.brand}>AI-PET-WORLD</div>
-        <h1 className={styles.title}>创建你的世界</h1>
+        <h1 className={styles.title}>创建你的第一片家园</h1>
         <p className={styles.description}>
-          输入出生信息后，系统会在后台生成管家的初始人格与世界种子。正式画面将在进入世界后生成。
+          输入出生信息后，系统会生成管家人格、世界种子和第一片家园。
+          宠物不会默认出现；世界会先围绕管家、资源、住所和自主建设运行。
         </p>
 
         <fieldset className={styles.fieldset}>
@@ -113,7 +113,7 @@ export default function CreateWorldRoutePage() {
             </label>
 
             <label className={styles.fieldWide}>
-              <span className={styles.label}>性别</span>
+              <span className={styles.label}>视角</span>
               <select
                 className={styles.select}
                 onChange={(event) =>
@@ -122,8 +122,8 @@ export default function CreateWorldRoutePage() {
                 value={perspective}
               >
                 <option value="unspecified">不指定</option>
-                <option value="female">女性</option>
-                <option value="male">男性</option>
+                <option value="female">女性视角</option>
+                <option value="male">男性视角</option>
               </select>
             </label>
           </div>
@@ -143,7 +143,6 @@ function buildCreateWorldInput(input: {
   day: string
   time: string
   perspective: CreateWorldPerspective
-  createdAt: number
 }): CreateWorldInput | null {
   const yearValue = Number(input.year)
   const monthValue = Number(input.month)
@@ -171,6 +170,35 @@ function buildCreateWorldInput(input: {
     day: dayValue,
     time: input.time,
     perspective: input.perspective,
-    createdAt: input.createdAt,
+    createdAt: buildStableCreateWorldCreatedAt({
+      year: yearValue,
+      month: monthValue,
+      day: dayValue,
+      time: input.time,
+      perspective: input.perspective,
+    }),
   }
+}
+
+function buildStableCreateWorldCreatedAt(input: {
+  year: number
+  month: number
+  day: number
+  time: string
+  perspective: CreateWorldPerspective
+}): number {
+  const [hourText, minuteText] = input.time.split(":")
+  const hour = Number(hourText)
+  const minute = Number(minuteText)
+  const perspectiveOffset =
+    input.perspective === "female" ? 2 : input.perspective === "male" ? 1 : 0
+
+  return (
+    input.year * 10_000_000 +
+    input.month * 100_000 +
+    input.day * 1_000 +
+    hour * 10 +
+    Math.floor(minute / 10) +
+    perspectiveOffset
+  )
 }

@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：把创建世界输入转换为世界生成运行时参数。
+ * 当前文件职责：把创建世界输入转换为世界生成运行时参数。
  */
 
 import { buildButlerProfile } from "@/ai/personality-core/butler-profile-core/butler-profile-gateway"
@@ -47,7 +47,7 @@ export function parseCreateWorldInput(
       createdAt:
         typeof parsedValue.createdAt === "number"
           ? parsedValue.createdAt
-          : Date.now(),
+          : buildStableCreatedAtFromInput(parsedValue),
     }
   } catch {
     return null
@@ -133,15 +133,15 @@ function buildRuntimeStyle(input: {
       constructionStyle: lifeCoreStyle.constructionStyle,
       source: lifeCoreStyle.source,
       note: hasBirthHour
-        ? "世界创建已接入管家生命人格核心，使用完整出生时间映射建设风格。"
-        : "世界创建已接入管家生命人格核心，但出生时间不可用，使用日期模式映射建设风格。",
+        ? "世界创建已接入管家人格核心，并使用完整出生时间映射建设风格。"
+        : "世界创建已接入管家人格核心；出生时间不可用时使用日期模式映射建设风格。",
       warnings: [],
     }
   } catch (error) {
     return {
       constructionStyle: input.fallbackStyle,
       source: "deterministic_fallback",
-      note: "生命人格核心映射失败，已回退到稳定 deterministic 风格，保证世界创建不中断。",
+      note: "人格核心映射失败，已回退到稳定的确定性建设风格，保证世界创建不中断。",
       warnings: [getErrorMessage(error)],
     }
   }
@@ -210,6 +210,35 @@ function resolveGenderPerspective(
   if (perspective === "female") return "female"
 
   return "male"
+}
+
+function buildStableCreatedAtFromInput(
+  input: Partial<CreateWorldInput>
+): number {
+  if (
+    !isValidYear(input.year) ||
+    !isValidMonth(input.month) ||
+    !isValidDay(input.day) ||
+    !isValidTime(input.time) ||
+    !isValidPerspective(input.perspective)
+  ) {
+    return 0
+  }
+
+  const birthTime = parseCreateWorldTime(input.time)
+  const hour = birthTime?.hour ?? 0
+  const minute = birthTime?.minute ?? 0
+  const perspectiveOffset =
+    input.perspective === "female" ? 2 : input.perspective === "male" ? 1 : 0
+
+  return (
+    input.year * 10_000_000 +
+    input.month * 100_000 +
+    input.day * 1_000 +
+    hour * 10 +
+    Math.floor(minute / 10) +
+    perspectiveOffset
+  )
 }
 
 function getErrorMessage(error: unknown): string {
