@@ -2,20 +2,33 @@
 
 当前目录负责：家园状态、建设进度与空间实体。
 
+## 当前正式边界
+
+当前 Home System 遵循用户最新三份正式文档：
+
+1. 不默认生成宠物。
+2. 不默认生成宠物床。
+3. 不默认生成宠物抵达区或宠物休息区。
+4. 不默认生成旧出生装置。
+5. 宠物相关空间和设施只能通过后置 LifeEvent / CompanionDecision / accept_companion 或后续建设计划进入。
+6. Home System 只描述家园空间、设施、生命周期和目标，不控制宠物自主行为。
+
 ## Home Spaces
 
-当前已经建立最小家园空间实体：
+当前正式最小家园空间实体：
 
 - empty_land
-- incubator_area
+- entry_area
 - temporary_shelter
-- garden_area
+- initial_care_area
+- quiet_living_area
 - storage_area
+- garden_area
 - activity_area
 
 HomeState 仍保留原有 level / progress / status / constructionStage 等字段。
 
-homeSpaces 用于让后续正式世界 UI / 像素地图读取空间结构。
+homeSpaces 用于让正式 world 页面 / 未来像素地图读取空间结构。
 
 当前 homeSpaces 不控制宠物行为，不直接生成地图，也不接 PixiJS。
 
@@ -38,7 +51,7 @@ homeSpaces 用于让后续正式世界 UI / 像素地图读取空间结构。
 
 ## World Display
 
-当前正式世界舞台已经可以读取 `HomeState.spaceSummary`，并通过轻量 overlay 展示：
+当前正式世界舞台可以读取 `HomeState.spaceSummary`，并通过轻量 overlay 展示：
 
 - 当前主空间
 - 家园摘要
@@ -58,7 +71,7 @@ homeSpaces 用于让后续正式世界 UI / 像素地图读取空间结构。
 - `home_building` 推进 `temporary_shelter`
 - `home_maintenance` 修复舒适度 / 稳定度最低的可用空间
 - `space_tidying` 影响 `storage_area` 与 `activity_area`
-- `incubator_watch` 轻微提升 `incubator_area` 稳定度
+- `observe_home` / `maintain_home` 用于观察和维护当前家园状态
 
 边界：
 
@@ -67,17 +80,15 @@ homeSpaces 用于让后续正式世界 UI / 像素地图读取空间结构。
 - 不发 P-Phone
 - 不新增正式 overlay
 - 不新增 F3 面板
+- 不把后置宠物关系提前当作开局事实
 
 ## Home Facilities
 
-当前已经建立最小家园设施系统。
+当前正式最小家园设施系统可以包含：
 
-设施包括：
-
-- basic_incubator
-- shelter_bed
-- food_corner
-- water_corner
+- resting_mat 或 shelter_bed：中性住所设施，不是宠物床
+- food_corner：基础生活物资点，不是默认宠物设施
+- water_corner：基础生活物资点，不是默认宠物设施
 - storage_box
 - garden_patch
 - observation_spot
@@ -86,10 +97,9 @@ homeSpaces 用于让后续正式世界 UI / 像素地图读取空间结构。
 
 管家行为可以安全影响设施：
 
-- incubator_watch 维护 basic_incubator
-- home_building 推进 shelter_bed / food_corner
-- home_maintenance 修复最弱 active facility
-- space_tidying 推进 storage_box / observation_spot
+- `home_building` 推进 shelter / food_corner / water_corner 等基础生活设施
+- `home_maintenance` 修复最弱 active facility
+- `space_tidying` 推进 storage_box / observation_spot
 
 ## Home Facility Effects
 
@@ -110,12 +120,9 @@ homeSpaces 用于让后续正式世界 UI / 像素地图读取空间结构。
 
 ## Home Lifecycle
 
-当前已经建立家园生命周期阶段。
-
-阶段包括：
+当前正式家园生命周期阶段：
 
 - initial_empty_land
-- incubator_care_phase
 - temporary_shelter_phase
 - basic_living_phase
 - garden_opening_phase
@@ -136,15 +143,14 @@ homeSpaces 用于让后续正式世界 UI / 像素地图读取空间结构。
 - summary
 - tags
 
+其中 `canSupportPetExploration / canSupportPetRest / canSupportFoodRoutine / canSupportGardenActivity` 只能表示“未来后置宠物关系是否具备环境支持”，不能表示开局已有宠物。
+
 ## Home Goals
 
-当前已经建立家园目标系统。
+当前目标由 lifecycle、homeSpaces、homeFacilities 共同推导。
 
-目标由 lifecycle、homeSpaces、homeFacilities 共同推导。
+当前正式目标包括：
 
-当前目标包括：
-
-- stabilize_incubator
 - build_temporary_shelter
 - complete_basic_living
 - open_garden_area
@@ -152,3 +158,9 @@ homeSpaces 用于让后续正式世界 UI / 像素地图读取空间结构。
 - prepare_future_expansion
 
 homeGoals 只提供家园目标和推荐行为，不直接控制宠物行为。
+
+## 与当前 MVP 文档的关系
+
+当前 README 以用户最新三份正式文档为最高依据。
+
+若历史文档、旧测试记录或旧架构冻结文档与本文冲突，以最新三份正式文档为准。
