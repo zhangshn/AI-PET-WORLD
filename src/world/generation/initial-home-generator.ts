@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：整合 seed、Scene Recipe 与 Placement Engine 生成 HomeMapState。
+ * 当前文件负责：整合 seed、布局输入、Scene Recipe 与 Placement Engine 生成 HomeMapState。
  */
 
 import type {
@@ -18,6 +18,8 @@ import type {
   InitialHomeSceneRecipe,
 } from "./generation-schema"
 import { INITIAL_HOME_SCENE_RECIPE } from "./initial-home-scene-recipe"
+import { auditWorldLayoutGenerationInput } from "./world-layout-input-audit"
+import { buildWorldLayoutGenerationInput } from "./world-layout-input-builder"
 import { buildStableWorldSeed } from "./world-seed"
 
 export function generateInitialHomeMap(
@@ -35,6 +37,15 @@ export function generateInitialHomeMapResult(
     birthSignature: input.birthSignature,
     worldSalt: input.worldSalt,
   })
+  const resources = buildInitialResources(input)
+  const layoutBuildResult = buildWorldLayoutGenerationInput({
+    generationInput: input,
+    seed,
+    resources,
+  })
+  const layoutAudit = auditWorldLayoutGenerationInput(
+    layoutBuildResult.layoutInput
+  )
   const zones = recipe.areas.map(toHomeZone)
   const placementResult = buildInitialHomePlacements({
     worldId: input.worldId,
@@ -44,6 +55,7 @@ export function generateInitialHomeMapResult(
     zones,
     rules: INITIAL_HOME_PLACEMENT_RULE_SET,
     butlerConstructionStyle: input.butlerConstructionStyle,
+    layoutInput: layoutBuildResult.layoutInput,
   })
 
   return {
@@ -54,7 +66,7 @@ export function generateInitialHomeMapResult(
       mapSize: recipe.mapSize,
       zones,
       placements: placementResult.placements,
-      resources: buildInitialResources(input),
+      resources,
       constructionPlans: buildInitialConstructionPlans(input, recipe),
       mapDiffs: [],
       createdAt: input.now,
@@ -63,12 +75,20 @@ export function generateInitialHomeMapResult(
         "mvp_initial_home",
         "scene_recipe_driven",
         "placement_engine_driven",
+        "layout_input_driven",
+        "personality_layout_input",
+        "stable_world_seed",
+        layoutBuildResult.layoutInput.variant.variantId,
       ],
     },
     zones,
-    warnings: placementResult.warnings,
+    warnings: [...layoutAudit.warnings, ...placementResult.warnings],
     rejectedPlacementIds: placementResult.rejectedPlacementIds,
-    tags: ["initial_home_generation_result"],
+    tags: [
+      "initial_home_generation_result",
+      "world_layout_generation_input_built",
+      ...layoutAudit.tags,
+    ],
   }
 }
 
