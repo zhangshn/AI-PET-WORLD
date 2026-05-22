@@ -222,6 +222,46 @@ export type ConstructionSafeApplyBuildResult = {
   audit: ConstructionSafeApplyAudit
 }
 
+export type ConstructionWorldLoopProtocolInput = {
+  homeMapState: HomeMapState
+  constructionStyle: ButlerConstructionStyleVector
+  worldDay: number
+  now: number
+  preferredPlanId?: string
+  tags: string[]
+}
+
+export type ConstructionWorldLoopAudit = {
+  stableWorldLoopFingerprint: string
+  selectedPlanId: string | null
+  plannerWarningCount: number
+  candidateWarningCount: number
+  executionWarningCount: number
+  safeApplyWarningCount: number
+  acceptedDiffIds: string[]
+  rejectedDiffIds: string[]
+  warnings: string[]
+  tags: string[]
+}
+
+export type ConstructionWorldLoopProtocolResult = {
+  nextHomeMapState: HomeMapState
+  plannerInputResult: ConstructionPlannerInputBuildResult
+  candidateResult: ConstructionPlanCandidateResult
+  selectedPlan: ConstructionPlan | null
+  executionResult: ConstructionExecutionResult | null
+  safeApplyResult: ConstructionSafeApplyResult | null
+  messages: string[]
+  audit: ConstructionWorldLoopAudit
+  tags: string[]
+}
+
+export type ConstructionWorldLoopProtocolBuildResult = {
+  input: ConstructionWorldLoopProtocolInput
+  result: ConstructionWorldLoopProtocolResult
+  audit: ConstructionWorldLoopAudit
+}
+
 export function toConstructionResourceSnapshot(
   resources: HomeResourceState
 ): ConstructionPlannerResourceSnapshot {
