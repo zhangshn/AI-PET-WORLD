@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：根据 Scene Recipe 输出稳定地图摆放结果。
+ * 当前文件负责：根据 Scene Recipe 与布局输入输出稳定地图摆放结果。
  */
 
 import type {
@@ -12,6 +12,7 @@ import type { WorldMapAssetId } from "@/world/map-assets/world-map-asset-registr
 import type {
   InitialHomeAreaRecipe,
   InitialHomeSceneRecipe,
+  WorldLayoutGenerationInput,
 } from "@/world/generation/generation-schema"
 import { buildSeededNumber, pickSeededItem } from "@/world/generation/world-seed"
 
@@ -140,15 +141,16 @@ export function createAreaSupportPlacements(
   const shelter = requireArea(input.recipe, "temporary_shelter")
   const care = requireArea(input.recipe, "initial_care")
   const quietLivingPoint = resolveQuietLivingPoint(input)
+  const supportScale = getSupportScale(input.layoutInput)
 
   return [
     ...createSoftSupportPlacements(
       input,
       "shelter-support",
-      shelter.center.x - 4,
-      shelter.center.y - 3,
-      8,
-      4,
+      shelter.center.x - supportScale.shelterWidthOffset,
+      shelter.center.y - supportScale.shelterHeightOffset,
+      supportScale.shelterWidth,
+      supportScale.shelterHeight,
       ["temporary_shelter_support"]
     ),
     ...createSoftSupportPlacements(input, "care-support", care.center.x - 3, care.center.y - 1, 6, 3, [
@@ -157,9 +159,9 @@ export function createAreaSupportPlacements(
     ...createSoftSupportPlacements(
       input,
       "quiet-living-support",
-      quietLivingPoint.x - 2,
+      quietLivingPoint.x - supportScale.quietWidthOffset,
       quietLivingPoint.y - 1,
-      4,
+      supportScale.quietWidth,
       2,
       ["quiet_living_support"]
     ),
@@ -200,7 +202,7 @@ export function createPathPlacements(input: PlacementRequest): MapPlacement[] {
       layer: "path",
       label: "连续泥土小路",
       source: "scene_recipe",
-      tags: ["main_path", "core_connection"],
+      tags: ["main_path", "core_connection", input.layoutInput.variant.pathStyle],
     })
   })
 }
@@ -210,9 +212,15 @@ export function createNatureBoundaryPlacements(
   existingPlacements: MapPlacement[] = []
 ): MapPlacement[] {
   const area = requireArea(input.recipe, "natural_boundary")
-  const protective = input.butlerConstructionStyle.protectiveKeeper
-  const treeCount = getDensityCount(area.density, 3) + Math.round(protective * 3)
-  const bushCount = getDensityCount(area.density, 4) + Math.round(protective * 5)
+  const protective = input.layoutInput.personality.protectionPreference
+  const naturalGrowth = input.layoutInput.resources.naturalGrowth / 100
+  const natureBiasBoost = getNatureBiasBoost(input.layoutInput)
+  const treeCount =
+    getDensityCount(area.density, 3) +
+    Math.round(protective * 3 + naturalGrowth * 3 + natureBiasBoost)
+  const bushCount =
+    getDensityCount(area.density, 4) +
+    Math.round(protective * 5 + naturalGrowth * 4 + natureBiasBoost)
   const targetCount = treeCount + bushCount
   const pathPlacements = existingPlacements.filter(
     (placement) => placement.layer === "path"
@@ -264,7 +272,11 @@ export function createNatureBoundaryPlacements(
       layer: "nature",
       label: isTree ? "自然边界小树" : "自然边界灌木",
       scale: isTree ? 1 : 0.9,
-      tags: ["nature_boundary", isTree ? "tree" : "bush"],
+      tags: [
+        "nature_boundary",
+        isTree ? "tree" : "bush",
+        input.layoutInput.variant.natureBias,
+      ],
     })
   })
 }
@@ -279,13 +291,18 @@ export function createSurfaceDecorationPlacements(
     "surfaceFlowerPatch01",
     "surfaceFallenLeaf01",
   ]
-  const aesthetic = input.butlerConstructionStyle.aestheticOrganizer
+  const aesthetic = input.layoutInput.personality.aestheticPreference
+  const quietPreference = input.layoutInput.personality.quietPreference
   const supportPlacements = existingPlacements.filter(isSupportPlacement)
   const pathPlacements = existingPlacements.filter(
     (placement) => placement.layer === "path"
   )
-  const decorationCount =
-    getDensityCount("medium", 7) + Math.round(aesthetic * 7)
+  const decorationCount = Math.max(
+    5,
+    getDensityCount("medium", 7) +
+      Math.round(aesthetic * 7) -
+      Math.round(quietPreference * 2)
+  )
   const edgePoints = createSupportEdgePoints(
     supportPlacements,
     input.recipe.mapSize,
@@ -334,7 +351,11 @@ export function createSurfaceDecorationPlacements(
       layer: "surface-decoration",
       label: "自然地表装饰",
       scale: 0.82,
-      tags: ["surface_decoration", "natural_detail"],
+      tags: [
+        "surface_decoration",
+        "natural_detail",
+        input.layoutInput.variant.quietAreaBias,
+      ],
     })
   )
 }
@@ -402,6 +423,7 @@ export function avoidCorePathPoints(
 function createCoreStructurePlacements(input: PlacementRequest): MapPlacement[] {
   const care = requireArea(input.recipe, "initial_care")
   const shelter = requireArea(input.recipe, "temporary_shelter")
+  const shelterPoint = resolveShelterPoint(input, shelter.center)
 
   return [
     createPlacement({
@@ -418,11 +440,15 @@ function createCoreStructurePlacements(input: PlacementRequest): MapPlacement[] 
     createPlacement({
       id: "temporary-shelter",
       assetId: "buildingTempShelter01",
-      x: shelter.center.x,
-      y: shelter.center.y,
+      x: shelterPoint.x,
+      y: shelterPoint.y,
       layer: "structure",
       label: "临时住所",
-      tags: ["temporary_shelter", "core_living"],
+      tags: [
+        "temporary_shelter",
+        "core_living",
+        input.layoutInput.variant.shelterBias,
+      ],
     }),
   ]
 }
@@ -443,20 +469,21 @@ function createFacilityPlacements(
       layer: "facility",
       label: "储物箱",
       scale: 0.82,
-      tags: ["storage", "tools"],
+      tags: ["storage", "tools", input.layoutInput.variant.pathStyle],
     }),
   ]
 }
 
 function createActorPlacements(input: PlacementRequest): MapPlacement[] {
   const shelter = requireArea(input.recipe, "temporary_shelter")
+  const shelterPoint = resolveShelterPoint(input, shelter.center)
 
   return [
     createPlacement({
       id: "butler-near-shelter",
       assetId: "butlerBodyStandard01",
-      x: shelter.center.x - 5,
-      y: shelter.center.y + 4,
+      x: shelterPoint.x - 5,
+      y: shelterPoint.y + 4,
       layer: "actor",
       label: "管家",
       scale: 0.78,
@@ -484,11 +511,12 @@ function pickGroundAssetId(
     point.x <= input.recipe.visualCenter.end.x &&
     point.y >= input.recipe.visualCenter.start.y &&
     point.y <= input.recipe.visualCenter.end.y
+  const naturalBias = input.layoutInput.variant.natureBias === "dense_boundary" ? 0.05 : 0
   const variantThreshold = inVisualCenter
     ? 0.08
     : edgeDistance <= 5
-      ? 0.28
-      : 0.16
+      ? 0.28 + naturalBias
+      : 0.16 + naturalBias
 
   return variantSeed < variantThreshold
     ? "groundGrassBase02"
@@ -499,20 +527,23 @@ function resolveQuietLivingPoint(input: PlacementRequest): MapCoordinate {
   const quietLiving = requireArea(input.recipe, "quiet_living")
   const care = requireArea(input.recipe, "initial_care")
   const shelter = requireArea(input.recipe, "temporary_shelter")
-  const style = input.butlerConstructionStyle
-  const adaptiveOffset = getAdaptiveOffset(style.adaptivePlanner)
-  const warmBias = style.warmCaretaker > 0.65 ? -1 : 0
-  const quietBias = style.quietMaintainer > 0.6 ? 2 : 0
+  const style = input.layoutInput.personality
+  const adaptiveOffset = getAdaptiveOffset(style.adaptabilityPreference)
+  const warmBias = style.carePreference > 0.65 ? -1 : 0
+  const quietBias = style.quietPreference > 0.6 ? 2 : 0
+  const variantBias = getQuietAreaVariantOffset(input.layoutInput)
   const x = Math.round(
     quietLiving.center.x +
       warmBias +
+      variantBias.x +
       adaptiveOffset *
         (buildSeededNumber(input.seed, "quiet-living-x") > 0.5 ? 1 : -1)
   )
   const y = Math.round(
     quietLiving.center.y +
-      quietBias -
-      (style.warmCaretaker > 0.72 ? 1 : 0) +
+      quietBias +
+      variantBias.y -
+      (style.carePreference > 0.72 ? 1 : 0) +
       adaptiveOffset *
         (buildSeededNumber(input.seed, "quiet-living-y") > 0.5 ? 1 : -1)
   )
@@ -529,6 +560,43 @@ function resolveQuietLivingPoint(input: PlacementRequest): MapCoordinate {
   )
 }
 
+function resolveShelterPoint(
+  input: PlacementRequest,
+  basePoint: MapCoordinate
+): MapCoordinate {
+  const storage = requireArea(input.recipe, "storage_tools")
+  const visualCenter = requireArea(input.recipe, "visual_center")
+  const bias = input.layoutInput.variant.shelterBias
+
+  if (bias === "edge_protected") {
+    return clampPointToMap(
+      {
+        x: basePoint.x + 3,
+        y: basePoint.y - 2,
+      },
+      input.recipe.mapSize
+    )
+  }
+
+  if (bias === "resource_adjacent") {
+    return clampPointToMap(
+      {
+        x: Math.round((basePoint.x + storage.center.x) / 2),
+        y: Math.round((basePoint.y + storage.center.y) / 2),
+      },
+      input.recipe.mapSize
+    )
+  }
+
+  return clampPointToMap(
+    {
+      x: Math.round((basePoint.x + visualCenter.center.x) / 2),
+      y: Math.round((basePoint.y + visualCenter.center.y) / 2),
+    },
+    input.recipe.mapSize
+  )
+}
+
 function resolveStoragePoint(
   input: PlacementRequest,
   supportPlacements: MapPlacement[],
@@ -536,9 +604,10 @@ function resolveStoragePoint(
 ): MapCoordinate {
   const storage = requireArea(input.recipe, "storage_tools")
   const shelter = requireArea(input.recipe, "temporary_shelter")
+  const clusterOffset = input.layoutInput.personality.structurePreference > 0.62 ? 1 : 0
   const candidates = [
-    { x: storage.center.x + 2, y: storage.center.y + 1 },
-    { x: storage.center.x + 1, y: storage.center.y + 2 },
+    { x: storage.center.x + 2 - clusterOffset, y: storage.center.y + 1 },
+    { x: storage.center.x + 1, y: storage.center.y + 2 - clusterOffset },
     { x: shelter.center.x - 3, y: shelter.center.y + 3 },
     storage.center,
   ].map((point) => clampPointToMap(point, input.recipe.mapSize))
@@ -560,11 +629,15 @@ function buildCorePathRoute(
   input: PlacementRequest,
   route: PointRoute
 ): PointRoute {
-  if (input.butlerConstructionStyle.structuredBuilder >= 0.55) return route
+  const pathStyle = input.layoutInput.variant.pathStyle
+
+  if (pathStyle === "direct" || input.layoutInput.personality.structurePreference >= 0.7) {
+    return route
+  }
 
   const arrival = route[0]
   const care = route[1]
-  const adaptiveOffset = getAdaptiveOffset(input.butlerConstructionStyle.adaptivePlanner)
+  const adaptiveOffset = getAdaptiveOffset(input.layoutInput.personality.adaptabilityPreference)
   const waypoint = clampPointToMap(
     {
       x:
@@ -580,6 +653,19 @@ function buildCorePathRoute(
     },
     input.recipe.mapSize
   )
+
+  if (pathStyle === "clustered") {
+    const shelter = route[2]
+    const clusterPoint = clampPointToMap(
+      {
+        x: Math.round((care.x + shelter.x) / 2),
+        y: Math.round((care.y + shelter.y) / 2),
+      },
+      input.recipe.mapSize
+    )
+
+    return [arrival, waypoint, care, clusterPoint, ...route.slice(2)]
+  }
 
   return [arrival, waypoint, ...route.slice(1)]
 }
@@ -652,6 +738,34 @@ function getAdaptiveOffset(adaptivePlanner: number): number {
   return 2
 }
 
+function getNatureBiasBoost(layoutInput: WorldLayoutGenerationInput): number {
+  if (layoutInput.variant.natureBias === "dense_boundary") return 3
+  if (layoutInput.variant.natureBias === "soft_boundary") return 1
+
+  return -1
+}
+
+function getQuietAreaVariantOffset(layoutInput: WorldLayoutGenerationInput): MapCoordinate {
+  if (layoutInput.variant.quietAreaBias === "near_nature") return { x: 2, y: 2 }
+  if (layoutInput.variant.quietAreaBias === "near_care") return { x: -2, y: -1 }
+
+  return { x: 0, y: 0 }
+}
+
+function getSupportScale(layoutInput: WorldLayoutGenerationInput) {
+  const compact = layoutInput.resources.spacePressure > 32
+  const quietClearance = layoutInput.personality.quietPreference > 0.64
+
+  return {
+    shelterWidthOffset: compact ? 3 : 4,
+    shelterHeightOffset: compact ? 2 : 3,
+    shelterWidth: compact ? 7 : 8,
+    shelterHeight: compact ? 3 : 4,
+    quietWidthOffset: quietClearance ? 3 : 2,
+    quietWidth: quietClearance ? 5 : 4,
+  }
+}
+
 function getAreaBounds(area: InitialHomeAreaRecipe) {
   return {
     x: area.center.x - Math.floor(area.size.width / 2),
@@ -671,6 +785,9 @@ function createSoftSupportPlacements(
   tags: string[]
 ): MapPlacement[] {
   const canSoften = width > 4 && height > 2
+  const supportSoftness =
+    INITIAL_HOME_LAYOUT_RULES.support.supportEdgeSoftness +
+    input.layoutInput.personality.aestheticPreference * 0.08
 
   return Array.from({ length: width * height }, (_, index) => {
     const x = startX + (index % width)
@@ -680,7 +797,7 @@ function createSoftSupportPlacements(
       canSoften &&
       isEdge &&
       buildSeededNumber(input.seed, `${idPrefix}-soft-edge-${x}-${y}`) <
-        INITIAL_HOME_LAYOUT_RULES.support.supportEdgeSoftness
+        supportSoftness
 
     if (shouldSkipEdge) return null
 
