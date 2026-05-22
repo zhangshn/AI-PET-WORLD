@@ -36,6 +36,9 @@ HomeMapState
 -> ConstructionPlan[] 候选
 -> ConstructionExecutionResult
 -> MapDiff[] 候选
+-> SafeApply
+-> nextHomeMapState
+-> ConstructionWorldLoopProtocolResult
 ```
 
 核心原则：
@@ -48,7 +51,7 @@ HomeMapState
 6. PNG / WORLD_MAP_ASSETS 只能作为表现资源，不能作为世界事实来源。
 7. 当前正式 MVP 不包含旧默认宠物开局路线。
 8. 宠物未来能力保留，但只能通过 LifeEvent / CompanionDecision / accept_companion 后置进入。
-9. ConstructionExecutor 当前只生成 MapDiff 候选，不能直接应用到 HomeMapState。
+9. ConstructionWorldLoopProtocol 当前只是接入前协议，不能等同于已接入真实 world-loop。
 
 ## 3. 已完成阶段总表
 
@@ -72,6 +75,8 @@ HomeMapState
 | CONSTRUCTION-00 | 已完成 | 建立 ConstructionPlanner 输入协议与输入审计。 |
 | CONSTRUCTION-01 | 已完成 | 建立 ConstructionPlanner 候选计划生成与候选审计。 |
 | CONSTRUCTION-02 | 已完成 | 建立 ConstructionExecutor 与 MapDiff 候选生成协议。 |
+| CONSTRUCTION-03 | 已完成 | 建立 MapDiff SafeApply 与 HomeMapState 更新协议。 |
+| CONSTRUCTION-04 | 已完成 | 建立 Construction World Loop 接入前协议。 |
 
 ## 4. 已废弃路线
 
@@ -106,7 +111,7 @@ HomeMapState / WorldState
 4. FormalVisualModel 保存正式玩家主视觉模型。
 5. FormalWorldView 只负责渲染 FormalVisualModel。
 6. Debug Renderer 只用于工程对照，不是最终玩家 UI。
-7. ConstructionExecutionResult 当前只是执行候选输出，不等同于已应用世界事实。
+7. ConstructionWorldLoopProtocolResult 当前只是接入前协议输出，不等同于 runtime 已经接入。
 
 ## 6. 世界生成与建设链路现状
 
@@ -137,6 +142,12 @@ HomeMapState / WorldState
 23. ConstructionExecutionResult。
 24. ConstructionExecutionAudit。
 25. MapDiff candidate generation。
+26. ConstructionSafeApplyInput。
+27. ConstructionSafeApplyResult。
+28. ConstructionSafeApplyAudit。
+29. ConstructionWorldLoopProtocolInput。
+30. ConstructionWorldLoopProtocolResult。
+31. ConstructionWorldLoopAudit。
 
 当前已完成中性化：
 
@@ -149,6 +160,8 @@ HomeMapState / WorldState
 7. ConstructionPlanner 输入协议不生成宠物相关建设意图。
 8. ConstructionPlan 候选不生成宠物相关建设计划。
 9. ConstructionExecutor 不生成宠物相关 MapDiff。
+10. SafeApply 不接受宠物相关 MapDiff。
+11. World loop pre-integration protocol 不接入宠物系统。
 
 WORLD-GEN-02 已完成：
 
@@ -194,11 +207,37 @@ CONSTRUCTION-02 已完成：
 7. Execution audit 检查重复 diff id、placement 引用、createdAt、candidate tag、nextPlan id 与旧路线 token。
 8. 保持 Executor 不接 UI、不接宠物、不绕过 HomeMapState / MapDiff / FormalVisualModel 链路。
 
+CONSTRUCTION-03 已完成：
+
+1. 新增 ConstructionSafeApplyInput。
+2. 新增 ConstructionSafeApplyResult。
+3. 新增 ConstructionSafeApplyRejectedDiff。
+4. 新增 ConstructionSafeApplyAudit。
+5. 实现 buildConstructionSafeApplyResult。
+6. SafeApply 当前只接受 update 已存在 placement。
+7. SafeApply 当前拒绝 add / remove / move。
+8. SafeApply 返回新的 nextHomeMapState，不修改输入 HomeMapState 原对象。
+9. SafeApply 会追加 accepted MapDiff 到 HomeMapState.mapDiffs。
+10. SafeApply 会在已有 constructionPlans 中更新对应 plan summary，但不会强行新增 plan。
+11. 新增 SafeApply audit 检查 diff 覆盖率、HomeMapState identity、updatedAt、actor placement、禁止 token 与 stable fingerprint。
+
+CONSTRUCTION-04 已完成：
+
+1. 新增 ConstructionWorldLoopProtocolInput。
+2. 新增 ConstructionWorldLoopProtocolResult。
+3. 新增 ConstructionWorldLoopAudit。
+4. 实现 buildConstructionWorldLoopProtocolResult。
+5. 协议按 planner input -> candidates -> selected plan -> executor -> safeApply 编排。
+6. selected plan 优先使用 preferredPlanId，否则按 priority 选择。
+7. 协议输出 nextHomeMapState，但只来自 SafeApply。
+8. 协议 audit 检查 HomeMapState identity、selected plan lineage、execution / safeApply lineage、nested warning 与禁止 token。
+9. 保持协议不接真实 world-loop、不接 UI、不接宠物。
+
 仍未完成：
 
-1. SafeApply / MapDiff 验证与应用。
-2. MapDiff 驱动的 HomeMapState 更新。
-3. World loop 接入。
+1. 真实 world-loop 接入。
+2. 持久化策略。
+3. RenderableWorldSnapshot / FormalVisualModel 刷新链路接入。
 4. LifeEvent / CompanionDecision。
 
 ## 7. 宠物后置与旧路线清理现状
@@ -224,25 +263,27 @@ CONSTRUCTION-02 已完成：
 | ConstructionPlanner 输入协议 | 已处理 | CONSTRUCTION-00 已建立 planner input 与 audit。 |
 | ConstructionPlanner 候选计划生成 | 已处理 | CONSTRUCTION-01 已建立候选计划生成与 audit。 |
 | ConstructionExecutor / MapDiff 候选 | 已处理 | CONSTRUCTION-02 已建立 executor 与 MapDiff 候选协议。 |
-| SafeApply / MapDiff 应用 | 未完成 | 后续 CONSTRUCTION-03。 |
-| HomeMapState 更新协议 | 未完成 | 后续 CONSTRUCTION-03。 |
-| World loop 接入 | 未完成 | SafeApply 后再接。 |
+| SafeApply / MapDiff 应用 | 已处理 | CONSTRUCTION-03 已建立 SafeApply 协议。 |
+| Construction world loop pre-integration | 已处理 | CONSTRUCTION-04 已建立接入前协议。 |
+| 真实 world-loop 接入 | 未完成 | 后续 CONSTRUCTION-05。 |
+| 持久化策略 | 未完成 | 后续 Persistence 模块。 |
+| RenderableWorldSnapshot / FormalVisualModel 刷新链路 | 未完成 | 后续视觉刷新链路。 |
 | LifeEvent / CompanionDecision | 未完成 | 后续 LIFE-EVENT 模块。 |
 
 ## 9. 下一大模块计划
 
-CONSTRUCTION-02 完成后，进入：
+CONSTRUCTION-04 完成后，进入：
 
 ```text
-CONSTRUCTION-03：MapDiff SafeApply 与 HomeMapState 更新协议
+CONSTRUCTION-05：Construction Runtime 接入与持久化前协议
 ```
 
-CONSTRUCTION-03 目标：
+CONSTRUCTION-05 目标：
 
-1. 定义 MapDiff SafeApply 输入协议。
-2. 验证 MapDiff 候选是否可应用。
-3. 通过安全应用协议更新 HomeMapState。
-4. 保持 FormalVisualModel First，不让 UI 直接改变世界事实。
+1. 定义建设协议如何被 runtime 调用。
+2. 明确 runtime 只调用已审计的 construction world loop protocol。
+3. 明确持久化前的输入 / 输出 / rollback 边界。
+4. 不做 UI。
 5. 不接入宠物。
 6. 不绕过 HomeMapState / MapDiff / FormalVisualModel 链路。
 
@@ -264,50 +305,8 @@ CONSTRUCTION-01 已把建设系统推进到 `ConstructionPlannerInput -> Constru
 
 CONSTRUCTION-02 已把建设系统推进到 `selected ConstructionPlan -> ConstructionExecutionResult -> MapDiff[] 候选`。
 
+CONSTRUCTION-03 已把建设系统推进到 `MapDiff[] 候选 -> SafeApply -> nextHomeMapState`。
+
+CONSTRUCTION-04 已把建设系统推进到完整接入前协议：`planner -> candidates -> executor -> safeApply -> protocol audit`。
+
 后续开发必须围绕规则生成、结构化世界事实、FormalVisualModel First、宠物后置和非固定布局差异化继续推进。
-
-## CONSTRUCTION-03 MapDiff SafeApply 与 HomeMapState 更新协议记录
-
-CONSTRUCTION-03 已完成 MapDiff SafeApply 与 HomeMapState 更新协议。
-
-当前链路推进为：
-
-```text
-HomeMapState
-+ 管家建设倾向
-+ 资源状态
-+ 世界阶段
--> ConstructionPlannerInput
--> ConstructionPlan[] 候选
--> ConstructionExecutionResult
--> MapDiff[] 候选
--> SafeApply
--> next HomeMapState
-```
-
-本阶段完成：
-
-1. 新增 ConstructionSafeApplyInput。
-2. 新增 ConstructionSafeApplyResult。
-3. 新增 ConstructionSafeApplyRejectedDiff。
-4. 新增 ConstructionSafeApplyAudit。
-5. 实现 buildConstructionSafeApplyResult。
-6. SafeApply 当前只接受 update 已存在 placement。
-7. SafeApply 当前拒绝 add / remove / move。
-8. SafeApply 返回新的 nextHomeMapState，不修改输入 HomeMapState 原对象。
-9. SafeApply 会追加 accepted MapDiff 到 HomeMapState.mapDiffs。
-10. SafeApply 会在已有 constructionPlans 中更新对应 plan summary，但不会强行新增 plan。
-11. 新增 SafeApply audit 检查 diff 覆盖率、HomeMapState identity、updatedAt、actor placement、禁止 token 与 stable fingerprint。
-
-仍未完成：
-
-1. World loop 接入。
-2. 持久化策略。
-3. RenderableWorldSnapshot / FormalVisualModel 刷新链路接入。
-4. LifeEvent / CompanionDecision。
-
-下一步进入：
-
-```text
-CONSTRUCTION-04：Construction World Loop 接入前协议
-```
