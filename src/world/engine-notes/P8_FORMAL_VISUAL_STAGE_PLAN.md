@@ -56,6 +56,7 @@
 | WORLD-GEN-02 | 已完成 | 建立 worldSeed + personality layout input schema，并接入 PlacementEngine。 |
 | WORLD-GEN-03 | 已完成 | 建立多 seed / 多人格 / 多资源布局差异化验证与 debug audit。 |
 | CONSTRUCTION-00 | 已完成 | 建立 ConstructionPlanner 输入协议与输入审计。 |
+| CONSTRUCTION-01 | 已完成 | 建立 ConstructionPlanner 候选计划生成与候选审计。 |
 
 ## 4. 已废弃路线
 
@@ -114,6 +115,8 @@ HomeMapState / WorldState
 17. ConstructionPlannerInput。
 18. ButlerConstructionIntentInput。
 19. ConstructionPlannerInputAudit。
+20. ConstructionPlanCandidateResult。
+21. ConstructionPlanCandidateAudit。
 
 当前已完成中性化：
 
@@ -124,6 +127,7 @@ HomeMapState / WorldState
 5. 初始世界不再默认生成 pet 专属设施。
 6. 初始区域改为 entry_area / initial_care / temporary_shelter / quiet_living / storage_tools / natural_boundary。
 7. ConstructionPlanner 输入协议不生成宠物相关建设意图。
+8. ConstructionPlan 候选不生成宠物相关建设计划。
 
 WORLD-GEN-02 已完成：
 
@@ -148,10 +152,20 @@ CONSTRUCTION-00 已完成：
 4. 通过 input audit 检查稳定 fingerprint、intent 合法性和旧路线 token。
 5. 保持 ConstructionPlanner 输入协议不修改 HomeMapState、不接入 UI、不接入宠物。
 
+CONSTRUCTION-01 已完成：
+
+1. 新增 ConstructionPlanCandidateResult。
+2. 新增 ConstructionPlanCandidateAudit。
+3. 从 ConstructionPlannerInput 生成多个 ConstructionPlan 候选。
+4. 根据已有计划 id 跳过重复候选。
+5. 候选计划 priority 由 intent、资源敏感度、空间敏感度、阶段加成和发展压力共同计算。
+6. 候选 audit 检查 stable output fingerprint、重复 plan id、stage 边界和旧路线 token。
+7. 保持候选计划不生成 MapDiff、不修改 HomeMapState、不接入 UI、不接入宠物。
+
 仍未完成：
 
-1. ConstructionPlanner 候选计划生成。
-2. ConstructionExecutor。
+1. ConstructionExecutor。
+2. MapDiff 协议与执行。
 3. MapDiff 驱动的长期建设变化。
 
 ## 7. 宠物后置与旧路线清理现状
@@ -176,26 +190,26 @@ CONSTRUCTION-00 已完成：
 | worldSeed + 人格布局输入 | 已处理 | WORLD-GEN-02 已建立 schema 并接入 PlacementEngine。 |
 | 布局差异是否足够可观察 | 已处理 | WORLD-GEN-03 已建立差异化 audit 工具。 |
 | ConstructionPlanner 输入协议 | 已处理 | CONSTRUCTION-00 已建立 planner input 与 audit。 |
-| ConstructionPlanner 候选计划生成 | 未完成 | 后续 CONSTRUCTION-01。 |
-| ConstructionExecutor / MapDiff | 未完成 | 后续 CONSTRUCTION-02 或执行模块。 |
+| ConstructionPlanner 候选计划生成 | 已处理 | CONSTRUCTION-01 已建立候选计划生成与 audit。 |
+| ConstructionExecutor / MapDiff | 未完成 | 后续 CONSTRUCTION-02。 |
 | LifeEvent / CompanionDecision | 未完成 | 后续 LIFE-EVENT 模块。 |
 
 ## 9. 下一大模块计划
 
-CONSTRUCTION-00 完成后，进入：
+CONSTRUCTION-01 完成后，进入：
 
 ```text
-CONSTRUCTION-01：ConstructionPlanner 候选计划生成
+CONSTRUCTION-02：ConstructionExecutor + MapDiff 协议
 ```
 
-CONSTRUCTION-01 目标：
+CONSTRUCTION-02 目标：
 
-1. 读取 ConstructionPlannerInput。
-2. 根据 intent、资源状态、阶段、已有计划和管家建设倾向生成 ConstructionPlan 候选。
-3. 只输出计划候选，不直接修改 HomeMapState。
-4. 不生成 MapDiff。
-5. 不生成 UI。
-6. 不接入宠物。
+1. 定义 ConstructionExecutor 输入协议。
+2. 定义 ConstructionPlan 如何被执行为 MapDiff 候选。
+3. 明确 MapDiff 仍需规则验证后才能影响 HomeMapState。
+4. 不做 UI。
+5. 不接入宠物。
+6. 不绕过 HomeMapState / MapDiff / FormalVisualModel 链路。
 
 ## 10. 当前最终结论
 
@@ -210,5 +224,7 @@ WORLD-GEN-02 已把世界生成从固定 recipe 推进到 `seed + personality + 
 WORLD-GEN-03 已把布局差异化从肉眼判断推进到稳定 fingerprint 与 pair audit。
 
 CONSTRUCTION-00 已把建设系统推进到 `HomeMapState + 管家建设倾向 + 资源状态 + 世界阶段 -> ConstructionPlannerInput`。
+
+CONSTRUCTION-01 已把建设系统推进到 `ConstructionPlannerInput -> ConstructionPlan[] 候选 -> CandidateAudit`。
 
 后续开发必须围绕规则生成、结构化世界事实、FormalVisualModel First、宠物后置和非固定布局差异化继续推进。
