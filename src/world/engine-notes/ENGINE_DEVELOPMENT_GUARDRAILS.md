@@ -81,6 +81,7 @@ LifeEvent
 5. debug scenario result 被当作正式玩家世界。
 6. assetId / PNG 反向决定世界对象是否存在。
 7. ConstructionExecutionResult 未经 SafeApply 就被当作已应用世界事实。
+8. ConstructionWorldLoopProtocolResult 未经 runtime / persistence 边界确认就被当作持久化事实。
 
 ## 5. 非固定布局红线
 
@@ -200,6 +201,8 @@ PNG / WORLD_MAP_ASSETS 可以作为表现资源候选，但不能作为世界事
 | CONSTRUCTION-00 | ConstructionPlanner 输入协议与输入审计已完成。 |
 | CONSTRUCTION-01 | ConstructionPlanner 候选计划生成与候选审计已完成。 |
 | CONSTRUCTION-02 | ConstructionExecutor 与 MapDiff 候选生成协议已完成。 |
+| CONSTRUCTION-03 | MapDiff SafeApply 与 HomeMapState 更新协议已完成。 |
+| CONSTRUCTION-04 | Construction World Loop 接入前协议已完成。 |
 
 ## 10. WORLD-GEN-02 布局输入红线
 
@@ -291,7 +294,45 @@ CONSTRUCTION-02 已建立 ConstructionExecutor 与 MapDiff 候选生成协议。
 11. ConstructionExecutionResult 不能被直接当作 HomeMapState。
 12. `nextPlan` 是执行候选输出，不等同于已持久化状态。
 
-## 15. 每轮开发必须回答
+## 15. CONSTRUCTION-03 SafeApply 红线
+
+CONSTRUCTION-03 已建立 MapDiff SafeApply 与 HomeMapState 更新协议。
+
+红线：
+
+1. SafeApply 可以返回 nextHomeMapState，但必须来自 MapDiff 验证。
+2. SafeApply 不能接 UI。
+3. SafeApply 不能接 FormalWorldView。
+4. SafeApply 不能读取 PNG / WORLD_MAP_ASSETS 决定世界事实。
+5. SafeApply 不能生成宠物、pet actor、pet bed。
+6. SafeApply 不能包含 pet_arrival / pet_rest。
+7. SafeApply 不能恢复旧默认宠物开局路线。
+8. SafeApply 不能使用 Math.random / Date.now / any。
+9. SafeApply 输出必须经过 audit。
+10. SafeApply 不能接受未经 ConstructionExecutionResult / audit 产生的 MapDiff。
+11. SafeApply 拒绝 add / remove，除非后续阶段明确开放并增加严格规则。
+12. SafeApply 必须保持 HomeMapState 的 worldId / ownerId / seed 不变。
+
+## 16. CONSTRUCTION-04 World Loop 接入前协议红线
+
+CONSTRUCTION-04 已建立 Construction World Loop 接入前协议。
+
+红线：
+
+1. World loop protocol 只能作为接入前协议，不能自动注册到真实 world-loop。
+2. World loop protocol 不能接 UI。
+3. World loop protocol 不能接 FormalWorldView。
+4. World loop protocol 不能读取 PNG / WORLD_MAP_ASSETS 决定世界事实。
+5. World loop protocol 不能生成宠物、pet actor、pet bed。
+6. World loop protocol 不能包含 pet_arrival / pet_rest。
+7. World loop protocol 不能恢复旧默认宠物开局路线。
+8. World loop protocol 不能使用 Math.random / Date.now / any。
+9. World loop protocol 输出必须经过 protocol audit。
+10. World loop protocol 必须按 planner -> candidate -> executor -> SafeApply 链路运行。
+11. World loop protocol 不能跳过 SafeApply 直接返回修改后的 HomeMapState。
+12. World loop protocol result 不能等同于已持久化 runtime 状态。
+
+## 17. 每轮开发必须回答
 
 每轮开发开始前必须打印并确认：
 
@@ -310,7 +351,7 @@ CONSTRUCTION-02 已建立 ConstructionExecutor 与 MapDiff 候选生成协议。
 13. 完成后去哪里看。
 14. 如何验证。
 
-## 16. 验收门槛
+## 18. 验收门槛
 
 每轮必须通过：
 
@@ -327,31 +368,12 @@ npm run build
 3. 文档无旧路线冲突描述。
 4. legacy / historical 文档不能被当作当前最高依据。
 
-## 17. 当前下一大模块
+## 19. 当前下一大模块
 
-CONSTRUCTION-02 完成后，进入：
+CONSTRUCTION-04 完成后，进入：
 
 ```text
-CONSTRUCTION-03：MapDiff SafeApply 与 HomeMapState 更新协议
+CONSTRUCTION-05：Construction Runtime 接入与持久化前协议
 ```
 
-CONSTRUCTION-03 目标是定义 MapDiff SafeApply 输入协议，验证 MapDiff 候选是否可应用，并通过安全应用协议更新 HomeMapState；该阶段仍不做 UI，不接入宠物，不绕过 HomeMapState / MapDiff / FormalVisualModel 链路。
-
-## CONSTRUCTION-03 红线
-
-CONSTRUCTION-03 已建立 MapDiff SafeApply 与 HomeMapState 更新协议。
-
-红线：
-
-1. SafeApply 可以返回 nextHomeMapState，但必须来自 MapDiff 验证。
-2. SafeApply 不能接 UI。
-3. SafeApply 不能接 FormalWorldView。
-4. SafeApply 不能读取 PNG / WORLD_MAP_ASSETS 决定世界事实。
-5. SafeApply 不能生成宠物、pet actor、pet bed。
-6. SafeApply 不能包含 pet_arrival / pet_rest。
-7. SafeApply 不能恢复旧默认宠物开局路线。
-8. SafeApply 不能使用 Math.random / Date.now / any。
-9. SafeApply 输出必须经过 audit。
-10. SafeApply 不能接受未经 ConstructionExecutionResult / audit 产生的 MapDiff。
-11. SafeApply 拒绝 add / remove，除非后续阶段明确开放并增加严格规则。
-12. SafeApply 必须保持 HomeMapState 的 worldId / ownerId / seed 不变。
+CONSTRUCTION-05 目标是定义建设协议如何被 runtime 调用，明确 runtime 只调用已审计的 construction world loop protocol，并明确持久化前的输入 / 输出 / rollback 边界；该阶段仍不做 UI，不接入宠物，不绕过 HomeMapState / MapDiff / FormalVisualModel 链路。
