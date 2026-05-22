@@ -13,6 +13,7 @@ import type {
   ButlerConstructionStyleVector,
   InitialHomeAreaRecipe,
   InitialHomeSceneRecipe,
+  WorldLayoutGenerationInput,
 } from "@/world/generation/generation-schema"
 
 export type PlacementAnchor = "top-left" | "bottom-center" | "center"
@@ -63,6 +64,7 @@ export type PlacementRequest = {
   zones: HomeZone[]
   rules: PlacementRule[]
   butlerConstructionStyle: ButlerConstructionStyleVector
+  layoutInput: WorldLayoutGenerationInput
 }
 
 export type PlacementResult = {
