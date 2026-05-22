@@ -475,3 +475,54 @@ MVP-CORE-TEST-00：核心闭环 integration tests
 ```
 
 或根据产品优先级进入 persistence adapter 实现、world-loop scheduler、UI preview 接入前审计。
+
+## MVP FULL IMPLEMENTATION PASS 记录
+
+本阶段完成 MVP 全量一次性实现 pass。
+
+本次新增 / 接通：
+
+1. `/world` 只读接入 MVP Core dry-run 展示面板。
+2. `MvpPresentationModel`。
+3. `MvpPPhoneData`。
+4. `MvpWorldLogEntry`。
+5. `MvpButlerExplanation`。
+6. MVP Core Report sections 在页面可见。
+7. Persistence dry-run / Snapshot refresh request / LifeEvent candidate 在 MVP 面板中可读展示。
+
+当前 MVP 闭环：
+
+```text
+CreateWorldInput
+-> WorldCreationRuntime
+-> InitialHomeMapState
+-> RenderableWorldSnapshot
+-> FormalVisualModel
+-> FormalWorldView
+
+HomeMapState
+-> MVP Core Debug Runner
+-> Construction Runtime Bridge
+-> PersistenceAdapterDryRun
+-> SnapshotRefreshRequest
+-> LifeEventCandidate / CompanionDecisionCandidate
+-> MvpPresentationModel
+-> /world MVP Core panel
+```
+
+本阶段仍不做：
+
+1. 不写真实数据库。
+2. 不注册真实 world-loop scheduler。
+3. 不让 UI / CSS / PNG 决定世界事实。
+4. 不让 FormalWorldView 生成世界事实。
+5. 不默认生成宠物。
+6. 不生成 pet actor / pet bed / pet_arrival / pet_rest。
+
+下一步建议进入：
+
+```text
+MVP-CORE-TEST-00：MVP core integration tests
+```
+
+或进入 persistence adapter / scheduler / snapshot refresh adapter 的产品化实现。

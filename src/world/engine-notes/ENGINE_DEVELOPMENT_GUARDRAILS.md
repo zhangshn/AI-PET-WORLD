@@ -436,3 +436,16 @@ CONSTRUCTION-FINAL-01 已完成建设系统可运行纵向闭环。
 10. 禁止 UI / CSS / PNG / WORLD_MAP_ASSETS 决定世界事实。
 11. 禁止使用 Math.random / Date.now / any。
 12. 禁止把 dry-run、mock、proposal、signal 当作最终世界事实。
+
+## MVP FULL IMPLEMENTATION PASS 红线
+
+1. `/world` 的 MVP Core panel 只能展示 `MvpPresentationModel`，不能生成世界事实。
+2. `MvpPresentationModel` 只能来自 MVP core dry-run / audit / report，不能绕过 Construction / SafeApply。
+3. P-Phone / WorldLog / ButlerExplanation 是玩家可读摘要，不是 HomeMapState。
+4. Persistence dry-run 不能当作真实持久化。
+5. Snapshot refresh request 不能当作 Renderer / FormalVisualModel 自动刷新。
+6. LifeEvent / CompanionDecision candidate 不能默认触发宠物进入。
+7. UI 不得生成 pet actor、pet bed、pet_arrival、pet_rest。
+8. 禁止使用 PNG / WORLD_MAP_ASSETS 作为世界事实来源。
+9. 禁止使用 Math.random / Date.now / any。
+10. 后续产品化必须优先补 integration tests、真实 persistence adapter、world-loop scheduler、snapshot refresh adapter。

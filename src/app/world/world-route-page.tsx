@@ -11,6 +11,11 @@ import { FormalWorldView } from "@/app/world/components/formal-world-view"
 import { ProceduralRendererView } from "@/app/world/components/procedural-renderer/procedural-renderer-view"
 import { buildFormalVisualModelFromSnapshot } from "@/world/formal-visual-model/formal-visual-model-gateway"
 import {
+  buildMvpPresentationModel,
+  runMvpCoreDebugRunner,
+  type MvpPresentationModel,
+} from "@/world/mvp-core/mvp-core-gateway"
+import {
   buildWorldCreationRuntime,
   CREATE_WORLD_STORAGE_KEY,
   parseCreateWorldInput,
@@ -150,6 +155,31 @@ function WorldRuntimeShell(input: {
         runtimeState.currentRenderableSnapshot
       ),
     [runtimeState.currentRenderableSnapshot]
+  )
+  const mvpCoreResult = useMemo(
+    () =>
+      runMvpCoreDebugRunner({
+        homeMapState: runtimeState.currentHomeMapState,
+        constructionStyle: worldCreationRuntime.butlerConstructionStyle,
+        worldDay: runtimeState.tickIndex + 1,
+        now:
+          runtimeState.currentHomeMapState.updatedAt +
+          runtimeState.tickIndex +
+          1,
+        tags: [
+          "world_route_mvp_core_preview",
+          "read_only_debug_dry_run",
+        ],
+      }),
+    [
+      runtimeState.currentHomeMapState,
+      runtimeState.tickIndex,
+      worldCreationRuntime.butlerConstructionStyle,
+    ]
+  )
+  const mvpPresentationModel = useMemo(
+    () => buildMvpPresentationModel(mvpCoreResult),
+    [mvpCoreResult]
   )
   const shouldShowFormalView = viewMode === "formal" || viewMode === "both"
   const shouldShowDebugView = viewMode === "debug" || viewMode === "both"
@@ -336,6 +366,8 @@ function WorldRuntimeShell(input: {
           />
         </section>
       ) : null}
+
+      <MvpCorePanel model={mvpPresentationModel} />
 
       <section className={styles.contentGrid}>
         <article className={styles.panel}>
@@ -771,6 +803,71 @@ function RuntimeTextList(input: {
         <p>{input.emptyText}</p>
       )}
     </div>
+  )
+}
+
+function MvpCorePanel(input: { model: MvpPresentationModel }) {
+  const { model } = input
+
+  return (
+    <section className={styles.mvpCorePanel} aria-label="MVP core closure">
+      <div className={styles.mvpCoreHeader}>
+        <div className={styles.eyebrow}>MVP CORE / DRY-RUN</div>
+        <h2>MVP 核心闭环</h2>
+        <p>
+          这里只读展示 MVP 核心 dry-run：建设、持久化预检查、视觉刷新请求、
+          生命事件后置候选和 P-Phone 摘要。它不写入世界事实，也不生成宠物。
+        </p>
+      </div>
+
+      <div className={styles.mvpCoreGrid}>
+        <article className={styles.mvpCoreCard}>
+          <span>P-Phone</span>
+          <strong>{model.pPhoneData.statusLabel}</strong>
+          <p>{model.pPhoneData.primaryActionLabel}</p>
+        </article>
+        <article className={styles.mvpCoreCard}>
+          <span>Butler</span>
+          <strong>{model.pPhoneData.butlerExplanation.title}</strong>
+          <p>{model.pPhoneData.butlerExplanation.summary}</p>
+        </article>
+        <article className={styles.mvpCoreCard}>
+          <span>Warnings</span>
+          <strong>{String(model.warnings.length)}</strong>
+          <p>
+            {model.warnings.length === 0
+              ? "MVP core dry-run audit passed."
+              : "MVP core dry-run still has warnings."}
+          </p>
+        </article>
+      </div>
+
+      <div className={styles.mvpCoreColumns}>
+        <article className={styles.mvpCoreSubPanel}>
+          <h3>World Log</h3>
+          <div className={styles.mvpCoreList}>
+            {model.pPhoneData.logEntries.map((entry) => (
+              <div className={styles.mvpCoreListItem} key={entry.id}>
+                <strong>{entry.title}</strong>
+                <p>{entry.body}</p>
+              </div>
+            ))}
+          </div>
+        </article>
+
+        <article className={styles.mvpCoreSubPanel}>
+          <h3>Full MVP Report</h3>
+          <div className={styles.mvpCoreList}>
+            {model.report.sections.map((section) => (
+              <div className={styles.mvpCoreListItem} key={section.title}>
+                <strong>{section.title}</strong>
+                <p>{section.lines[0] ?? section.status}</p>
+              </div>
+            ))}
+          </div>
+        </article>
+      </div>
+    </section>
   )
 }
 

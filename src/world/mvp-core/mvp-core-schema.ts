@@ -56,3 +56,39 @@ export type MvpCoreDebugRunnerResult = {
   messages: string[]
   tags: string[]
 }
+
+export type MvpWorldLogEntry = {
+  id: string
+  title: string
+  body: string
+  severity: "info" | "warning" | "success"
+  tags: string[]
+}
+
+export type MvpButlerExplanation = {
+  explanationId: string
+  title: string
+  summary: string
+  nextActionHint: string
+  tags: string[]
+}
+
+export type MvpPPhoneData = {
+  phoneId: string
+  worldId: string
+  ownerId: string
+  statusLabel: string
+  primaryActionLabel: string
+  logEntries: MvpWorldLogEntry[]
+  butlerExplanation: MvpButlerExplanation
+  tags: string[]
+}
+
+export type MvpPresentationModel = {
+  worldId: string
+  ownerId: string
+  report: MvpCoreReport
+  pPhoneData: MvpPPhoneData
+  warnings: string[]
+  tags: string[]
+}
