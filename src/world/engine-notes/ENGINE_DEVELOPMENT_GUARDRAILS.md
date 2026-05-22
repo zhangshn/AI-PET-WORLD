@@ -377,3 +377,24 @@ CONSTRUCTION-05：Construction Runtime 接入与持久化前协议
 ```
 
 CONSTRUCTION-05 目标是定义建设协议如何被 runtime 调用，明确 runtime 只调用已审计的 construction world loop protocol，并明确持久化前的输入 / 输出 / rollback 边界；该阶段仍不做 UI，不接入宠物，不绕过 HomeMapState / MapDiff / FormalVisualModel 链路。
+
+## CONSTRUCTION-05 红线
+
+CONSTRUCTION-05 已建立建设 Runtime 调用边界、持久化前协议与视觉刷新前协议。
+
+红线：
+
+1. RuntimeCycle 只能作为 runtime 调用边界，不能自动注册真实 world-loop。
+2. RuntimeCycle 不能直接写 storage。
+3. RuntimeCycle 不能直接刷新 UI。
+4. RuntimeCycle 不能修改 FormalVisualModel。
+5. RuntimeCycle 不能修改 Renderer。
+6. RuntimeCycle 不能生成宠物、pet actor、pet bed。
+7. RuntimeCycle 不能包含 pet_arrival / pet_rest。
+8. RuntimeCycle 不能恢复旧默认宠物开局路线。
+9. RuntimeCycle 不能使用 Math.random / Date.now / any。
+10. RuntimeCycle 必须调用 ConstructionWorldLoopProtocol。
+11. RuntimeCycle 不能跳过 SafeApply。
+12. PersistenceProposal 只是提案，不是已持久化事实。
+13. VisualRefreshSignal 只是信号，不是 UI model。
+14. RuntimeCycle 输出必须经过 audit。

@@ -262,6 +262,88 @@ export type ConstructionWorldLoopProtocolBuildResult = {
   audit: ConstructionWorldLoopAudit
 }
 
+export type ConstructionRuntimeRunReason =
+  | "manual_debug"
+  | "scheduled_tick"
+  | "world_recovery"
+  | "maintenance_check"
+
+export type ConstructionPersistenceMode =
+  | "proposal_only"
+  | "disabled"
+
+export type ConstructionVisualRefreshMode =
+  | "signal_only"
+  | "disabled"
+
+export type ConstructionRuntimeCycleInput = {
+  homeMapState: HomeMapState
+  constructionStyle: ButlerConstructionStyleVector
+  worldDay: number
+  now: number
+  preferredPlanId?: string
+  runReason: ConstructionRuntimeRunReason
+  persistenceMode: ConstructionPersistenceMode
+  visualRefreshMode: ConstructionVisualRefreshMode
+  tags: string[]
+}
+
+export type ConstructionPersistenceProposal = {
+  proposalId: string
+  worldId: string
+  ownerId: string
+  seed: string
+  sourcePlanId: string | null
+  shouldPersist: boolean
+  baseUpdatedAt: number
+  nextUpdatedAt: number
+  acceptedDiffIds: string[]
+  rejectedDiffIds: string[]
+  reason: string
+  tags: string[]
+}
+
+export type ConstructionVisualRefreshSignal = {
+  signalId: string
+  worldId: string
+  ownerId: string
+  sourcePlanId: string | null
+  shouldRefresh: boolean
+  acceptedDiffIds: string[]
+  changedPlacementIds: string[]
+  reason: string
+  tags: string[]
+}
+
+export type ConstructionRuntimeCycleAudit = {
+  stableRuntimeFingerprint: string
+  sourceWorldId: string
+  sourceOwnerId: string
+  selectedPlanId: string | null
+  acceptedDiffIds: string[]
+  rejectedDiffIds: string[]
+  persistenceProposalId: string | null
+  visualRefreshSignalId: string | null
+  warnings: string[]
+  tags: string[]
+}
+
+export type ConstructionRuntimeCycleResult = {
+  nextHomeMapState: HomeMapState
+  worldLoopProtocolResult: ConstructionWorldLoopProtocolResult
+  persistenceProposal: ConstructionPersistenceProposal | null
+  visualRefreshSignal: ConstructionVisualRefreshSignal | null
+  messages: string[]
+  audit: ConstructionRuntimeCycleAudit
+  tags: string[]
+}
+
+export type ConstructionRuntimeCycleBuildResult = {
+  input: ConstructionRuntimeCycleInput
+  result: ConstructionRuntimeCycleResult
+  audit: ConstructionRuntimeCycleAudit
+}
+
 export function toConstructionResourceSnapshot(
   resources: HomeResourceState
 ): ConstructionPlannerResourceSnapshot {

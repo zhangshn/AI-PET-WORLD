@@ -310,3 +310,55 @@ CONSTRUCTION-03 已把建设系统推进到 `MapDiff[] 候选 -> SafeApply -> ne
 CONSTRUCTION-04 已把建设系统推进到完整接入前协议：`planner -> candidates -> executor -> safeApply -> protocol audit`。
 
 后续开发必须围绕规则生成、结构化世界事实、FormalVisualModel First、宠物后置和非固定布局差异化继续推进。
+
+## CONSTRUCTION-05 Runtime Boundary + Persistence Proposal + Visual Refresh Pre-Integration 记录
+
+CONSTRUCTION-05 已完成建设 Runtime 调用边界、持久化前协议与视觉刷新前协议。
+
+当前链路推进为：
+
+```text
+HomeMapState
++ 管家建设倾向
++ 资源状态
++ 世界阶段
+-> ConstructionPlannerInput
+-> ConstructionPlan[] 候选
+-> ConstructionExecutionResult
+-> MapDiff[] 候选
+-> SafeApply
+-> nextHomeMapState
+-> ConstructionWorldLoopProtocolResult
+-> ConstructionRuntimeCycleResult
+-> PersistenceProposal
+-> VisualRefreshSignal
+```
+
+本阶段完成：
+
+1. 新增 ConstructionRuntimeCycleInput。
+2. 新增 ConstructionRuntimeCycleResult。
+3. 新增 ConstructionRuntimeCycleAudit。
+4. 新增 ConstructionPersistenceProposal。
+5. 新增 ConstructionVisualRefreshSignal。
+6. 实现 buildConstructionRuntimeCycleResult。
+7. 实现 buildConstructionPersistenceProposal。
+8. 实现 buildConstructionVisualRefreshSignal。
+9. 实现 auditConstructionRuntimeCycle。
+10. RuntimeCycle 调用 ConstructionWorldLoopProtocol，不跳过 SafeApply。
+11. PersistenceProposal 只作为 proposal_only 提案，不写 storage。
+12. VisualRefreshSignal 只作为 signal_only 信号，不修改 FormalVisualModel / Renderer / UI。
+
+仍未完成：
+
+1. 真实 world-loop 接入。
+2. 真实 persistence 写入。
+3. RenderableWorldSnapshot / FormalVisualModel 刷新实现。
+4. LifeEvent / CompanionDecision。
+5. 宠物后置进入正式链路。
+
+下一步进入：
+
+```text
+CONSTRUCTION-06：正式 Runtime Adapter 与 World Loop Bridge 审计
+```
