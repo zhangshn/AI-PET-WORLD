@@ -398,3 +398,22 @@ CONSTRUCTION-05 已建立建设 Runtime 调用边界、持久化前协议与视�
 12. PersistenceProposal 只是提案，不是已持久化事实。
 13. VisualRefreshSignal 只是信号，不是 UI model。
 14. RuntimeCycle 输出必须经过 audit。
+
+## CONSTRUCTION-FINAL-01 红线
+
+CONSTRUCTION-FINAL-01 已完成建设系统可运行纵向闭环。
+
+红线：
+
+1. Runtime Adapter 不能注册真实 world-loop。
+2. Debug Harness 只能用于工程调试，不能进入玩家 UI。
+3. Memory Persistence Mock 不能当作正式持久化。
+4. Visual Refresh Bridge 不能当作 UI model。
+5. Full Pipeline Audit 不能跳过 RuntimeCycle / SafeApply。
+6. Pipeline Report 不能当作玩家 UI。
+7. 本阶段不能生成宠物、pet actor、pet bed。
+8. 本阶段不能包含 pet_arrival / pet_rest。
+9. 本阶段不能恢复旧默认宠物开局路线。
+10. 本阶段不能读取 PNG / WORLD_MAP_ASSETS 决定世界事实。
+11. 本阶段不能使用 Math.random / Date.now / any。
+12. 未进入真实 Runtime Bridge 前，Memory Mock / Visual Bridge / Pipeline Report 都不能被视为最终世界事实。

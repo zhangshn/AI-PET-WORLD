@@ -344,6 +344,81 @@ export type ConstructionRuntimeCycleBuildResult = {
   audit: ConstructionRuntimeCycleAudit
 }
 
+export type ConstructionRuntimeAdapterInput = ConstructionRuntimeCycleInput
+
+export type ConstructionMemoryPersistenceMockResult = {
+  mockPersistenceId: string
+  proposalId: string | null
+  didStore: boolean
+  storedWorldId: string
+  storedUpdatedAt: number | null
+  acceptedDiffIds: string[]
+  reason: string
+  tags: string[]
+}
+
+export type ConstructionVisualRefreshBridgeResult = {
+  bridgeId: string
+  signalId: string | null
+  shouldRequestRefresh: boolean
+  changedPlacementIds: string[]
+  acceptedDiffIds: string[]
+  reason: string
+  tags: string[]
+}
+
+export type ConstructionFullPipelineAudit = {
+  stablePipelineFingerprint: string
+  worldId: string
+  ownerId: string
+  selectedPlanId: string | null
+  acceptedDiffIds: string[]
+  rejectedDiffIds: string[]
+  shouldPersist: boolean
+  shouldRefresh: boolean
+  warnings: string[]
+  tags: string[]
+}
+
+export type ConstructionPipelineReport = {
+  reportId: string
+  worldId: string
+  ownerId: string
+  status: "applied_to_memory_mock" | "no_changes" | "blocked_by_audit"
+  selectedPlanId: string | null
+  acceptedDiffCount: number
+  rejectedDiffCount: number
+  changedPlacementCount: number
+  shouldPersist: boolean
+  shouldRefresh: boolean
+  messages: string[]
+  tags: string[]
+}
+
+export type ConstructionRuntimeAdapterResult = {
+  nextHomeMapState: HomeMapState
+  runtimeCycleResult: ConstructionRuntimeCycleResult
+  memoryPersistenceMockResult: ConstructionMemoryPersistenceMockResult
+  visualRefreshBridgeResult: ConstructionVisualRefreshBridgeResult
+  fullPipelineAudit: ConstructionFullPipelineAudit
+  pipelineReport: ConstructionPipelineReport
+  messages: string[]
+  tags: string[]
+}
+
+export type ConstructionDebugHarnessInput = ConstructionRuntimeAdapterInput & {
+  harnessId: string
+}
+
+export type ConstructionDebugHarnessResult = {
+  harnessId: string
+  adapterResult: ConstructionRuntimeAdapterResult
+  report: ConstructionPipelineReport
+  audit: ConstructionFullPipelineAudit
+  messages: string[]
+  tags: string[]
+}
+
 export function toConstructionResourceSnapshot(
   resources: HomeResourceState
 ): ConstructionPlannerResourceSnapshot {

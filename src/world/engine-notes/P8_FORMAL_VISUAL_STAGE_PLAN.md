@@ -362,3 +362,57 @@ HomeMapState
 ```text
 CONSTRUCTION-06：正式 Runtime Adapter 与 World Loop Bridge 审计
 ```
+
+## CONSTRUCTION-FINAL-01 Construction Usable Runtime Vertical Slice 记录
+
+CONSTRUCTION-FINAL-01 已完成建设系统可运行纵向闭环。
+
+当前链路收口为：
+
+```text
+HomeMapState
++ 管家建设倾向
++ 资源状态
++ 世界阶段
+-> ConstructionPlannerInput
+-> ConstructionPlan[] 候选
+-> selected ConstructionPlan
+-> ConstructionExecutionResult
+-> MapDiff[] 候选
+-> SafeApply
+-> nextHomeMapState
+-> ConstructionWorldLoopProtocolResult
+-> ConstructionRuntimeCycleResult
+-> PersistenceProposal
+-> VisualRefreshSignal
+-> MemoryPersistenceMock
+-> VisualRefreshBridge
+-> FullPipelineAudit
+-> PipelineReport
+```
+
+本阶段完成：
+
+1. Construction Runtime Adapter。
+2. Construction Debug Harness。
+3. Construction Memory Persistence Mock。
+4. Construction Visual Refresh Bridge。
+5. Construction Full Pipeline Audit。
+6. Construction Pipeline Report。
+7. 阶段文档与 Guardrails 收口。
+
+本阶段仍然不做：
+
+1. 不接真实 world-loop。
+2. 不写真实 storage。
+3. 不刷新 UI。
+4. 不修改 FormalVisualModel。
+5. 不修改 Renderer。
+6. 不接宠物。
+7. 不恢复旧默认宠物开局路线。
+
+下一步建议进入：
+
+```text
+CONSTRUCTION-FINAL-02：Runtime Bridge 接入前一致性检查
+```
