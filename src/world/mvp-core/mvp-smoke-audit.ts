@@ -13,6 +13,7 @@ export type MvpSmokeAuditResult = {
   warningCount: number
   forbiddenTokenWarnings: string[]
   results: AiPetWorldMvpPipelineResult[]
+  summary: string
   messages: string[]
   tags: string[]
 }
@@ -51,6 +52,12 @@ export function runMvpSmokeAudit(): MvpSmokeAuditResult {
     warningCount,
     forbiddenTokenWarnings,
     results,
+    summary: [
+      `MVP smoke audit ${passed ? "passed" : "has warnings"}.`,
+      `Scenarios: ${results.length}.`,
+      `Stable seed matched: ${String(stableScenarioMatched)}.`,
+      `Forbidden token warnings: ${forbiddenTokenWarnings.length}.`,
+    ].join(" "),
     messages: [
       `Smoke scenarios: ${results.length}`,
       `Stable seed matched: ${String(stableScenarioMatched)}`,

@@ -22,6 +22,7 @@ export type CompanionDecisionCandidateType = CompanionDecisionCandidateKind
 
 export type LifeEventCandidate = {
   candidateId: string
+  type: LifeEventCandidateType
   kind: LifeEventCandidateKind
   worldId: string
   ownerId: string
@@ -32,6 +33,7 @@ export type LifeEventCandidate = {
 
 export type CompanionDecisionCandidate = {
   candidateId: string
+  type: CompanionDecisionCandidateType
   kind: CompanionDecisionCandidateKind
   worldId: string
   ownerId: string
@@ -68,7 +70,7 @@ export type LifeEventReportSection = {
 
 export type LifeEventCandidateBuilderInput = {
   homeMapState: HomeMapState
-  constructionBridgeResult: ConstructionRuntimeBridgeResult
+  constructionBridgeResult?: ConstructionRuntimeBridgeResult
   now: number
   tags: string[]
 }

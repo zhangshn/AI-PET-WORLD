@@ -710,32 +710,23 @@ function MvpCorePanel(input: { model: MvpWorldViewModel }) {
       <div className={styles.mvpCoreGrid}>
         <article className={styles.mvpCoreCard}>
           <span>World</span>
-          <strong>{model.worldSummary.worldId}</strong>
-          <p>
-            {model.worldSummary.placementCount} 个对象，
-            {model.worldSummary.mapDiffCount} 条 MapDiff 记录。
-          </p>
+          <strong>世界摘要</strong>
+          <p>{model.worldSummary}</p>
         </article>
         <article className={styles.mvpCoreCard}>
           <span>Butler</span>
-          <strong>{model.butlerSummary.displayName}</strong>
-          <p>{model.butlerSummary.tone}</p>
+          <strong>管家摘要</strong>
+          <p>{model.butlerSummary}</p>
         </article>
         <article className={styles.mvpCoreCard}>
           <span>Construction</span>
-          <strong>{model.constructionSummary.acceptedDiffCount}</strong>
-          <p>
-            已接受 diff；拒绝 {model.constructionSummary.rejectedDiffCount}。
-          </p>
+          <strong>建设摘要</strong>
+          <p>{model.constructionSummary}</p>
         </article>
         <article className={styles.mvpCoreCard}>
           <span>Audit</span>
-          <strong>{model.auditSummary.warningCount}</strong>
-          <p>
-            {model.auditSummary.warningCount === 0
-              ? "MVP 总入口审计通过。"
-              : "MVP 总入口仍有警告，需要继续产品化。"}
-          </p>
+          <strong>审计摘要</strong>
+          <p>{model.auditSummary}</p>
         </article>
       </div>
 
@@ -744,9 +735,9 @@ function MvpCorePanel(input: { model: MvpWorldViewModel }) {
           <h3>World Log</h3>
           <div className={styles.mvpCoreList}>
             {model.logItems.map((entry) => (
-              <div className={styles.mvpCoreListItem} key={entry.id}>
-                <strong>{entry.title}</strong>
-                <p>{entry.body}</p>
+              <div className={styles.mvpCoreListItem} key={entry}>
+                <strong>世界日志</strong>
+                <p>{entry}</p>
               </div>
             ))}
           </div>
@@ -756,7 +747,10 @@ function MvpCorePanel(input: { model: MvpWorldViewModel }) {
           <h3>P-Phone</h3>
           <div className={styles.mvpCoreList}>
             {model.pPhoneMessages.map((message) => (
-              <div className={styles.mvpCoreListItem} key={message.id}>
+              <div
+                className={styles.mvpCoreListItem}
+                key={`${message.title}-${message.body}`}
+              >
                 <strong>{message.title}</strong>
                 <p>{message.body}</p>
               </div>

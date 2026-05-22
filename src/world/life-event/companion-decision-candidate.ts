@@ -22,6 +22,7 @@ function buildCompanionDecisionCandidate(
   ) {
     return {
       candidateId: `${candidate.candidateId}-decision-later`,
+      type: "eligible_later",
       kind: "eligible_later",
       worldId: candidate.worldId,
       ownerId: candidate.ownerId,
@@ -39,6 +40,7 @@ function buildCompanionDecisionCandidate(
   if (candidate.kind === "observe_world_ready") {
     return {
       candidateId: `${candidate.candidateId}-decision-observe`,
+      type: "wait_and_observe",
       kind: "wait_and_observe",
       worldId: candidate.worldId,
       ownerId: candidate.ownerId,
@@ -55,6 +57,7 @@ function buildCompanionDecisionCandidate(
 
   return {
     candidateId: `${candidate.candidateId}-decision-none`,
+    type: "no_companion_decision",
     kind: "no_companion_decision",
     worldId: candidate.worldId,
     ownerId: candidate.ownerId,
