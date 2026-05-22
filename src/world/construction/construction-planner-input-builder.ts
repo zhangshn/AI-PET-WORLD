@@ -1,0 +1,264 @@
+/**
+ * 当前文件负责：从 HomeMapState 与管家建设倾向构建 ConstructionPlanner 输入。
+ */
+
+import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
+import type {
+  HomeMapState,
+  HomeZoneType,
+} from "@/world/map-state/home-map-state-schema"
+
+import type {
+  ButlerConstructionIntentInput,
+  ConstructionIntentGoal,
+  ConstructionIntentSource,
+  ConstructionPlannerInput,
+  ConstructionPlannerInputBuildResult,
+  ConstructionPlannerPhaseInput,
+  ConstructionPlannerStage,
+} from "./construction-schema"
+import { toConstructionResourceSnapshot } from "./construction-schema"
+import { auditConstructionPlannerInput } from "./construction-planner-input-audit"
+
+export function buildConstructionPlannerInput(input: {
+  homeMapState: HomeMapState
+  constructionStyle: ButlerConstructionStyleVector
+  worldDay: number
+}): ConstructionPlannerInputBuildResult {
+  const resources = toConstructionResourceSnapshot(input.homeMapState.resources)
+  const phase = buildConstructionPlannerPhase({
+    resources,
+    worldDay: input.worldDay,
+    constructionStyle: input.constructionStyle,
+  })
+  const intents = buildButlerConstructionIntents({
+    homeMapState: input.homeMapState,
+    constructionStyle: input.constructionStyle,
+    phase,
+  })
+  const plannerInput: ConstructionPlannerInput = {
+    worldId: input.homeMapState.worldId,
+    ownerId: input.homeMapState.ownerId,
+    seed: input.homeMapState.seed,
+    homeMapState: input.homeMapState,
+    constructionStyle: input.constructionStyle,
+    resources,
+    phase,
+    intents,
+    existingPlanIds: input.homeMapState.constructionPlans.map((plan) => plan.id),
+    tags: [
+      "construction_planner_input",
+      "home_map_state_driven",
+      "butler_style_driven",
+      "resource_snapshot_driven",
+      "no_direct_map_mutation",
+      "no_default_companion_plan",
+    ],
+  }
+
+  return {
+    input: plannerInput,
+    audit: auditConstructionPlannerInput(plannerInput),
+  }
+}
+
+function buildConstructionPlannerPhase(input: {
+  resources: ConstructionPlannerInput["resources"]
+  worldDay: number
+  constructionStyle: ButlerConstructionStyleVector
+}): ConstructionPlannerPhaseInput {
+  const developmentPressure = clamp01(
+    input.resources.spacePressure / 100 +
+      (100 - input.resources.materialReadiness) / 260
+  )
+  const maintenancePressure = clamp01(
+    (100 - input.resources.groundHealth) / 140 +
+      input.resources.naturalGrowth / 260
+  )
+  const expansionReadiness = clamp01(
+    input.resources.materialReadiness / 120 +
+      input.constructionStyle.structuredBuilder / 3 +
+      input.constructionStyle.adaptivePlanner / 5
+  )
+
+  return {
+    stage: resolveConstructionPlannerStage({
+      resources: input.resources,
+      developmentPressure,
+      maintenancePressure,
+    }),
+    worldDay: input.worldDay,
+    developmentPressure,
+    maintenancePressure,
+    expansionReadiness,
+    tags: [
+      "construction_phase_input",
+      `development:${developmentPressure.toFixed(2)}`,
+      `maintenance:${maintenancePressure.toFixed(2)}`,
+      `expansion:${expansionReadiness.toFixed(2)}`,
+    ],
+  }
+}
+
+function resolveConstructionPlannerStage(input: {
+  resources: ConstructionPlannerInput["resources"]
+  developmentPressure: number
+  maintenancePressure: number
+}): ConstructionPlannerStage {
+  if (input.maintenancePressure >= 0.46 || input.resources.naturalGrowth >= 68) {
+    return "boundary_maintenance"
+  }
+
+  if (input.resources.spacePressure >= 38 || input.resources.materialReadiness >= 58) {
+    return "resource_organization"
+  }
+
+  if (input.resources.careReadiness >= 54 || input.developmentPressure >= 0.42) {
+    return "basic_living_support"
+  }
+
+  return "initial_stabilization"
+}
+
+function buildButlerConstructionIntents(input: {
+  homeMapState: HomeMapState
+  constructionStyle: ButlerConstructionStyleVector
+  phase: ConstructionPlannerPhaseInput
+}): ButlerConstructionIntentInput[] {
+  const intents = [
+    createIntent({
+      id: "stabilize-temporary-shelter",
+      source: "butler_autonomy",
+      goal: "stabilize_temporary_shelter",
+      targetZoneType: "temporary_shelter",
+      urgency: 0.48 + input.constructionStyle.protectiveKeeper * 0.28,
+      patience: 0.42 + input.constructionStyle.quietMaintainer * 0.28,
+      resourceSensitivity: 0.45 + input.constructionStyle.structuredBuilder * 0.24,
+      spaceSensitivity: 0.35 + input.constructionStyle.protectiveKeeper * 0.24,
+      reason: "管家优先确认临时住所仍能支撑初始家园的遮蔽、整理和基础管理。",
+      tags: ["temporary_shelter", "initial_stabilization"],
+    }),
+    createIntent({
+      id: "improve-initial-care",
+      source: "resource_pressure",
+      goal: "improve_initial_care",
+      targetZoneType: "initial_care",
+      urgency: 0.42 + input.constructionStyle.warmCaretaker * 0.34,
+      patience: 0.36 + input.constructionStyle.adaptivePlanner * 0.2,
+      resourceSensitivity: 0.5 + input.constructionStyle.warmCaretaker * 0.22,
+      spaceSensitivity: 0.32 + input.constructionStyle.structuredBuilder * 0.18,
+      reason: "初始照护点需要维持基础物资、观察和整理能力，但不代表宠物已进入。",
+      tags: ["initial_care", "basic_living_support", "no_pet_assumption"],
+    }),
+    createIntent({
+      id: "organize-storage-tools",
+      source: "resource_pressure",
+      goal: "organize_storage_tools",
+      targetZoneType: "storage_tools",
+      urgency: 0.34 + input.constructionStyle.structuredBuilder * 0.36,
+      patience: 0.44 + input.constructionStyle.adaptivePlanner * 0.16,
+      resourceSensitivity: 0.58 + input.constructionStyle.structuredBuilder * 0.24,
+      spaceSensitivity: 0.46 + input.homeMapState.resources.spacePressure / 220,
+      reason: "管家根据材料准备度和空间压力整理工具储备区，为后续建设计划提供秩序。",
+      tags: ["storage_tools", "resource_organization"],
+    }),
+    createIntent({
+      id: "maintain-natural-boundary",
+      source: "maintenance_need",
+      goal: "maintain_natural_boundary",
+      targetZoneType: "natural_boundary",
+      urgency: 0.26 + input.constructionStyle.protectiveKeeper * 0.25,
+      patience: 0.38 + input.constructionStyle.quietMaintainer * 0.2,
+      resourceSensitivity: 0.28 + input.homeMapState.resources.naturalGrowth / 240,
+      spaceSensitivity: 0.4 + input.constructionStyle.protectiveKeeper * 0.18,
+      reason: "自然边界用于维持家园边缘感、生态缓冲和非固定布局的长期可解释性。",
+      tags: ["natural_boundary", "boundary_maintenance"],
+    }),
+    createIntent({
+      id: "preserve-quiet-living",
+      source: "butler_autonomy",
+      goal: "preserve_quiet_living",
+      targetZoneType: "quiet_living",
+      urgency: 0.3 + input.constructionStyle.quietMaintainer * 0.34,
+      patience: 0.5 + input.constructionStyle.quietMaintainer * 0.26,
+      resourceSensitivity: 0.3 + input.constructionStyle.aestheticOrganizer * 0.18,
+      spaceSensitivity: 0.5 + input.constructionStyle.quietMaintainer * 0.18,
+      reason: "管家保留安静生活区的缓冲和留白，避免初始家园过早拥挤。",
+      tags: ["quiet_living", "living_buffer"],
+    }),
+    createIntent({
+      id: "prepare-future-expansion",
+      source: "world_phase",
+      goal: "prepare_future_expansion",
+      targetZoneType: "visual_center",
+      urgency: 0.18 + input.phase.expansionReadiness * 0.3,
+      patience: 0.48 + input.constructionStyle.adaptivePlanner * 0.26,
+      resourceSensitivity: 0.52 + input.phase.expansionReadiness * 0.18,
+      spaceSensitivity: 0.42 + input.phase.developmentPressure * 0.22,
+      reason: "仅预留未来扩展判断，不直接生成新对象，也不触发宠物进入。",
+      tags: ["future_expansion", "planning_only", "no_direct_map_mutation"],
+    }),
+  ]
+
+  return prioritizeIntentsByPhase(intents, input.phase.stage).filter((intent) =>
+    hasZone(input.homeMapState, intent.targetZoneType)
+  )
+}
+
+function prioritizeIntentsByPhase(
+  intents: ButlerConstructionIntentInput[],
+  stage: ConstructionPlannerStage
+): ButlerConstructionIntentInput[] {
+  const boostedGoal = {
+    initial_stabilization: "stabilize_temporary_shelter",
+    basic_living_support: "improve_initial_care",
+    resource_organization: "organize_storage_tools",
+    boundary_maintenance: "maintain_natural_boundary",
+  } satisfies Record<ConstructionPlannerStage, ConstructionIntentGoal>
+
+  return intents
+    .map((intent) =>
+      intent.goal === boostedGoal[stage]
+        ? {
+            ...intent,
+            urgency: clamp01(intent.urgency + 0.18),
+            tags: [...intent.tags, `phase_boost:${stage}`],
+          }
+        : intent
+    )
+    .sort((left, right) => right.urgency - left.urgency)
+}
+
+function createIntent(input: {
+  id: string
+  source: ConstructionIntentSource
+  goal: ConstructionIntentGoal
+  targetZoneType: HomeZoneType
+  urgency: number
+  patience: number
+  resourceSensitivity: number
+  spaceSensitivity: number
+  reason: string
+  tags: string[]
+}): ButlerConstructionIntentInput {
+  return {
+    intentId: input.id,
+    source: input.source,
+    goal: input.goal,
+    urgency: clamp01(input.urgency),
+    patience: clamp01(input.patience),
+    resourceSensitivity: clamp01(input.resourceSensitivity),
+    spaceSensitivity: clamp01(input.spaceSensitivity),
+    targetZoneType: input.targetZoneType,
+    reason: input.reason,
+    tags: ["construction_intent", ...input.tags],
+  }
+}
+
+function hasZone(homeMapState: HomeMapState, zoneType: HomeZoneType): boolean {
+  return homeMapState.zones.some((zone) => zone.type === zoneType)
+}
+
+function clamp01(value: number): number {
+  return Math.min(1, Math.max(0, value))
+}
