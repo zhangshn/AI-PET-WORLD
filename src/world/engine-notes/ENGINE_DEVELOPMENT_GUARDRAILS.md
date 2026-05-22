@@ -22,15 +22,15 @@
 6. FormalWorldView 只读渲染，不生成模型，不生成世界事实。
 7. Debug View 与 Formal World View 分离。
 8. 宠物后置，petState 必须可选。
-9. 当前正式 MVP 不再使用旧孵化器 / 胚胎 / 默认宠物开局路线。
+9. 当前正式 MVP 不再使用旧出生装置 / 默认宠物开局路线。
 10. 旧文档只能作为历史参考，不能作为当前实现依据。
 
 ## 3. 当前正式 MVP 红线
 
 当前正式 MVP 禁止：
 
-1. 重新引入旧孵化器作为正式设定。
-2. 重新引入 embryo / hatching / incubating 默认路线。
+1. 重新引入旧出生装置作为正式设定。
+2. 重新引入旧默认生命初始路线。
 3. 初始世界默认生成 pet actor。
 4. 初始世界默认生成 pet bed。
 5. 初始世界默认生成 pet_arrival / pet_rest。
@@ -191,34 +191,28 @@ PNG / WORLD_MAP_ASSETS 可以作为表现资源候选，但不能作为世界事
 | FORMAL-VIEW-03 | /world 已从真实 snapshot 构建 FormalVisualModel。 |
 | FORMAL-VIEW-04 | 默认 Formal，Debug 保留，Both 用于开发对照。 |
 | WORLD-GEN-00 | 世界生成链路审计已完成。 |
-| MVP-ALIGN-01 | 旧孵化器 / 默认宠物链路审计已完成。 |
+| MVP-ALIGN-01 | 旧路线 / 默认宠物链路审计已完成。 |
 | WORLD-GEN-01A/B | 正式首屏旧文案清理与默认 pet runtime 断开已完成。 |
-| MVP-ALIGN-02 | 正式链路中的旧孵化器 / 默认宠物 / pet_arrival / pet_rest 已清理。 |
-| MVP-ALIGN-03 | 当前文档体系对齐模块，禁止修改运行时代码。 |
+| MVP-ALIGN-02 | 正式链路中的旧路线 / 默认宠物 / pet_arrival / pet_rest 已清理。 |
+| MVP-ALIGN-03 | 文档体系对齐模块已完成。 |
+| WORLD-GEN-02 | worldSeed + personality layout input schema 已完成。 |
 
-## 10. MVP-ALIGN-03 文档体系红线
+## 10. WORLD-GEN-02 布局输入红线
 
-MVP-ALIGN-03 只处理文档体系：
+WORLD-GEN-02 已建立布局输入协议。
 
-1. 允许修复乱码计划文档。
-2. 允许清理 README 中的旧设定。
-3. 允许给旧 docs/mvp 加 legacy 声明。
-4. 允许给旧测试报告加 historical 声明。
-5. 允许新增模块完成文档。
+红线：
 
-MVP-ALIGN-03 禁止：
-
-1. 修改 placement-engine。
-2. 修改 initial-home-generator。
-3. 修改 initial-home-scene-recipe。
-4. 修改 HomeMapState schema。
-5. 修改 runtime-context schema。
-6. 修改 WorldEngine。
-7. 删除宠物未来能力。
-8. 新增 UI。
-9. 新增 mock。
-10. 读取 PNG / WORLD_MAP_ASSETS。
-11. 破坏 FormalVisualModel / FormalWorldView。
+1. layout input 不能包含旧出生装置路线。
+2. layout input 不能包含旧默认生命初始路线。
+3. layout input 不能包含 pet_arrival / pet_rest。
+4. layout input 不能默认生成 pet。
+5. layout input 只能影响世界布局候选、路径、住所、边界、安静区和装饰倾向。
+6. recipe 只能作为候选结构，不能成为固定最终画面。
+7. 所有布局差异必须由 seed、personality、resources、phase、variant 和规则稳定推导。
+8. 禁止 Math.random / Date.now / any 参与布局事实。
+9. 禁止 UI / CSS 决定布局事实。
+10. PlacementEngine 读取 layout input 后，仍必须通过 PlacementRules 验证。
 
 ## 11. 每轮开发必须回答
 
@@ -258,10 +252,10 @@ npm run build
 
 ## 13. 当前下一大模块
 
-MVP-ALIGN-03 完成后，进入：
+WORLD-GEN-02 完成后，进入：
 
 ```text
-WORLD-GEN-02：worldSeed + personality layout input schema
+WORLD-GEN-03：布局差异化验证与 debug audit
 ```
 
-WORLD-GEN-02 目标是继续推进自动生成世界规则，让不同 seed / 管家人格 / 资源状态产生稳定且可观察的布局差异。
+WORLD-GEN-03 目标是构建多 seed / 多人格 / 多资源组合对照，验证同一 input 稳定复现、不同 input 产生可观察差异。
