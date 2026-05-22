@@ -54,6 +54,7 @@
 | MVP-ALIGN-02 | 已完成 | 移除正式链路中的旧路线 / 默认宠物 / pet_arrival / pet_rest。 |
 | MVP-ALIGN-03 | 已完成 | 对齐文档体系，清理旧 README / legacy docs / 乱码计划文档。 |
 | WORLD-GEN-02 | 已完成 | 建立 worldSeed + personality layout input schema，并接入 PlacementEngine。 |
+| WORLD-GEN-03 | 已完成 | 建立多 seed / 多人格 / 多资源布局差异化验证与 debug audit。 |
 
 ## 4. 已废弃路线
 
@@ -107,6 +108,8 @@ HomeMapState / WorldState
 12. RenderableWorldSnapshot。
 13. FormalVisualModel。
 14. FormalWorldView。
+15. WorldLayoutVariationScenario。
+16. WorldLayoutVariationAudit。
 
 当前已完成中性化：
 
@@ -124,12 +127,19 @@ WORLD-GEN-02 已完成：
 3. 由初始资源映射 material / care / natural / ground / space 布局约束。
 4. PlacementEngine 开始读取 layout input 影响路径、住所、自然边界、安静生活区和装饰。
 
+WORLD-GEN-03 已完成：
+
+1. 定义多 seed / 多人格 / 多资源对照场景。
+2. 对同一场景重复生成 placement fingerprint，验证稳定复现。
+3. 对不同场景进行 variant、关键坐标、metrics 与 fingerprint 对比。
+4. 输出可复用 debug audit，不靠肉眼猜测布局差异。
+5. 保持 audit 工具只读生成层与 PlacementEngine，不接入 UI。
+
 仍未完成：
 
-1. 不同 seed / 管家人格 / 资源状态的系统化对照验证。
-2. ConstructionPlanner。
-3. ConstructionExecutor。
-4. MapDiff 驱动的长期建设变化。
+1. ConstructionPlanner。
+2. ConstructionExecutor。
+3. MapDiff 驱动的长期建设变化。
 
 ## 7. 宠物后置与旧路线清理现状
 
@@ -151,25 +161,26 @@ WORLD-GEN-02 已完成：
 | 旧 README / legacy docs 误导 | 已处理 | MVP-ALIGN-03 已标记或清理。 |
 | P8 总控文档乱码 | 已处理 | 已重写为 UTF-8 中文。 |
 | worldSeed + 人格布局输入 | 已处理 | WORLD-GEN-02 已建立 schema 并接入 PlacementEngine。 |
-| 布局差异是否足够可观察 | 未完成 | WORLD-GEN-03 进行生成对照与 debug audit。 |
+| 布局差异是否足够可观察 | 已处理 | WORLD-GEN-03 已建立差异化 audit 工具。 |
 | ConstructionPlanner / Executor | 未完成 | 后续 CONSTRUCTION 模块。 |
 | LifeEvent / CompanionDecision | 未完成 | 后续 LIFE-EVENT 模块。 |
 
 ## 9. 下一大模块计划
 
-WORLD-GEN-02 完成后，进入：
+WORLD-GEN-03 完成后，进入：
 
 ```text
-WORLD-GEN-03：布局差异化验证与 debug audit
+CONSTRUCTION-00：ConstructionPlanner 输入协议
 ```
 
-WORLD-GEN-03 目标：
+CONSTRUCTION-00 目标：
 
-1. 构建多个 seed / 管家人格 / 资源组合的生成对照。
-2. 验证同一 input 稳定复现。
-3. 验证不同 input 产生可观察差异。
-4. 输出布局差异 audit，而不是靠肉眼猜测。
-5. 为后续 ConstructionPlanner / MapDiff 演化提供验收基线。
+1. 定义管家建设意图输入协议。
+2. 读取管家人格、资源状态、世界阶段和 HomeMapState。
+3. 输出 ConstructionPlan 候选。
+4. 不直接修改 HomeMapState。
+5. 不生成 UI。
+6. 不接入宠物。
 
 ## 10. 当前最终结论
 
@@ -180,5 +191,7 @@ P8 Formal 视觉链路已完成并保留。
 当前不再回到旧出生装置 / 默认宠物开局路线。
 
 WORLD-GEN-02 已把世界生成从固定 recipe 推进到 `seed + personality + resources + phase + variant + placement rules` 的输入协议。
+
+WORLD-GEN-03 已把布局差异化从肉眼判断推进到稳定 fingerprint 与 pair audit。
 
 后续开发必须围绕规则生成、结构化世界事实、FormalVisualModel First、宠物后置和非固定布局差异化继续推进。
