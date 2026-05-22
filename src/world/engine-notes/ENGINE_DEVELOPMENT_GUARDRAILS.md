@@ -196,6 +196,7 @@ PNG / WORLD_MAP_ASSETS 可以作为表现资源候选，但不能作为世界事
 | MVP-ALIGN-02 | 正式链路中的旧路线 / 默认宠物 / pet_arrival / pet_rest 已清理。 |
 | MVP-ALIGN-03 | 文档体系对齐模块已完成。 |
 | WORLD-GEN-02 | worldSeed + personality layout input schema 已完成。 |
+| WORLD-GEN-03 | 布局差异化验证与 debug audit 已完成。 |
 
 ## 10. WORLD-GEN-02 布局输入红线
 
@@ -214,7 +215,24 @@ WORLD-GEN-02 已建立布局输入协议。
 9. 禁止 UI / CSS 决定布局事实。
 10. PlacementEngine 读取 layout input 后，仍必须通过 PlacementRules 验证。
 
-## 11. 每轮开发必须回答
+## 11. WORLD-GEN-03 差异化审计红线
+
+WORLD-GEN-03 已建立布局差异化验证工具。
+
+红线：
+
+1. scenario 只能作为 debug audit 输入，不能被当作正式玩家世界。
+2. audit 只能读取 generation / PlacementEngine 输出，不能改 HomeMapState。
+3. audit 不能接入 `/world`。
+4. audit 不能改 FormalWorldView。
+5. audit 不能生成 UI。
+6. audit 不能生成宠物。
+7. audit 必须验证同一 input repeated fingerprint 一致。
+8. audit 必须验证不同 input 有 variant / 坐标 / metrics / fingerprint 差异。
+9. audit 禁止 Math.random / Date.now / any。
+10. audit warning 不能被隐藏成通过。
+
+## 12. 每轮开发必须回答
 
 每轮开发开始前必须打印并确认：
 
@@ -233,7 +251,7 @@ WORLD-GEN-02 已建立布局输入协议。
 13. 完成后去哪里看。
 14. 如何验证。
 
-## 12. 验收门槛
+## 13. 验收门槛
 
 每轮必须通过：
 
@@ -250,12 +268,12 @@ npm run build
 3. 文档无旧路线冲突描述。
 4. legacy / historical 文档不能被当作当前最高依据。
 
-## 13. 当前下一大模块
+## 14. 当前下一大模块
 
-WORLD-GEN-02 完成后，进入：
+WORLD-GEN-03 完成后，进入：
 
 ```text
-WORLD-GEN-03：布局差异化验证与 debug audit
+CONSTRUCTION-00：ConstructionPlanner 输入协议
 ```
 
-WORLD-GEN-03 目标是构建多 seed / 多人格 / 多资源组合对照，验证同一 input 稳定复现、不同 input 产生可观察差异。
+CONSTRUCTION-00 目标是定义管家建设意图、资源状态、世界阶段与 HomeMapState 到 ConstructionPlan 候选的输入协议；该阶段仍不直接修改 HomeMapState，不做 UI，不接入宠物。
