@@ -2,15 +2,15 @@
 
 ## 1. 文档定位
 
-本文档是 AI-PET-WORLD 世界引擎、渲染层、视觉模型层和前端呈现层的开发红线。
+本文档是 AI-PET-WORLD 世界引擎、生成层、渲染层、视觉模型层和前端呈现层的开发红线。
 
 当前最高依据：
 
-1. AI-PET-WORLD MVP 完整计划书 v1.5。
-2. AI-PET-WORLD 人格驱动规则世界引擎设计文档 v1.3。
-3. AI-PET-WORLD MVP 整体架构设计文档 v1.0。
+1. `AI-PET-WORLD MVP完整计划书 v1.5`
+2. `AI-PET-WORLD 人格驱动规则世界引擎设计文档 v1.3`
+3. `AI-PET-WORLD MVP整体架构设计文档 v1.0`
 
-本文件优先级高于历史 P8-I0 / P8-I1 / P8-I2 / P8-I3 旧路线。
+若旧 README、旧 docs/mvp、旧测试报告与以上三份正式文档冲突，以三份正式文档为准。
 
 ## 2. 最高原则
 
@@ -19,11 +19,50 @@
 3. 布局由 seed、人格、资源、事件和规则共同生成，不能固定模板化。
 4. 自动生成内容必须进入结构化容器。
 5. FormalVisualModel 是正式视觉模型容器。
-6. FormalWorldView 只读渲染，不生成模型。
+6. FormalWorldView 只读渲染，不生成模型，不生成世界事实。
 7. Debug View 与 Formal World View 分离。
 8. 宠物后置，petState 必须可选。
+9. 当前正式 MVP 不再使用旧孵化器 / 胚胎 / 默认宠物开局路线。
+10. 旧文档只能作为历史参考，不能作为当前实现依据。
 
-## 3. 世界事实红线
+## 3. 当前正式 MVP 红线
+
+当前正式 MVP 禁止：
+
+1. 重新引入旧孵化器作为正式设定。
+2. 重新引入 embryo / hatching / incubating 默认路线。
+3. 初始世界默认生成 pet actor。
+4. 初始世界默认生成 pet bed。
+5. 初始世界默认生成 pet_arrival / pet_rest。
+6. 初始世界默认构造 PetRuntimeContext。
+7. 用 CSS 隐藏旧事实来替代清理正式链路。
+8. 把宠物素材定义当作初始世界事实。
+9. 让旧 docs/mvp 或旧测试报告覆盖三份正式文档。
+
+当前正式 MVP 允许开局出现：
+
+1. 管家。
+2. 第一片家园。
+3. 基础资源。
+4. 初始入口区。
+5. 初始照护区。
+6. 临时住所。
+7. 安静生活区。
+8. 工具储备区。
+9. 自然边界。
+10. 世界状态。
+
+宠物未来能力保留，但只能通过：
+
+```text
+LifeEvent
+-> CompanionDecision
+-> accept_companion
+```
+
+后置进入。
+
+## 4. 世界事实红线
 
 世界事实只能来自：
 
@@ -43,9 +82,7 @@
 5. debug scenario result 被当作正式世界事实。
 6. assetId / PNG 反向决定世界对象是否存在。
 
-## 4. 非固定布局红线
-
-禁止固定布局模板作为正式主路径。
+## 5. 非固定布局红线
 
 必须满足：
 
@@ -65,16 +102,9 @@
 4. 刷新后无规则随机变化。
 5. layout recipe 直接成为最终固定画面。
 
-## 5. Renderer 红线
+## 6. Renderer / FormalVisualModel / FormalWorldView 红线
 
-Renderer 可以读取：
-
-1. VisualState。
-2. RenderableWorldSnapshot。
-3. VisualPlacement。
-4. VisualActorGeometryProjection。
-5. DrawCommand。
-6. EntityGeometry。
+Renderer 可以读取 VisualState / RenderableWorldSnapshot / VisualPlacement / DrawCommand / EntityGeometry。
 
 Renderer 不能：
 
@@ -85,11 +115,7 @@ Renderer 不能：
 5. 读取 proposal 当现实。
 6. 读取 PNG / WORLD_MAP_ASSETS 作为正式世界事实来源。
 7. 为了视觉效果伪造对象。
-8. 参与 world-loop。
-9. 参与 persistence 决策。
-10. 参与 construction / placement 决策。
-
-## 6. FormalVisualModel 红线
+8. 参与 world-loop / persistence / construction / placement 决策。
 
 FormalVisualModel 必须来自：
 
@@ -97,27 +123,14 @@ FormalVisualModel 必须来自：
 VisualState / RenderableWorldSnapshot
 ```
 
-FormalVisualModel 可以包含：
-
-1. FormalCanvasModel。
-2. FormalWorldObjectModel。
-3. FormalActorModel。
-4. FormalEnvironmentModel。
-5. FormalHudSummary。
-
 FormalVisualModel 不能：
 
 1. 生成不存在的世界对象。
 2. 生成 placement。
-3. 修改 HomeMapState。
-4. 修改 WorldState。
-5. 读取 proposal 当现实。
-6. 伪造 actor。
-7. 伪造 pet。
-8. 绕过 canProject。
-9. 绕过 petState 可选规则。
-
-## 7. FormalWorldView 红线
+3. 修改 HomeMapState / WorldState / VisualState。
+4. 读取 proposal 当现实。
+5. 伪造 actor 或 pet。
+6. 绕过 petState 可选规则。
 
 FormalWorldView 只能只读 FormalVisualModel。
 
@@ -127,50 +140,25 @@ FormalWorldView 禁止：
 2. 生成 FormalActorVisualItem。
 3. buildFormalWorldVisualItems。
 4. buildFormalActorVisualItems。
-5. 决定树、房子、道路、设施、管家、宠物怎么长。
-6. 生成 actor。
-7. 生成 placement。
-8. 填默认 anchor。
-9. 修改 VisualState。
-10. 修改 HomeMapState。
-11. 读取 PNG / WORLD_MAP_ASSETS 作为正式世界事实来源。
-12. 显示 raw tags / source diagnostics / audit internals。
-13. 显示 F / C / S / I。
-14. 显示 collision / support / influence debug boxes。
-15. 显示紫微斗数原始术语。
-16. 在 petState 不存在时显示默认宠物。
+5. 决定树、房子、道路、设施、管家、宠物怎么存在。
+6. 生成 actor / placement。
+7. 填默认 anchor。
+8. 修改 VisualState / HomeMapState。
+9. 读取 PNG / WORLD_MAP_ASSETS 作为正式世界事实来源。
+10. 显示 raw tags / source diagnostics / audit internals。
+11. 在 petState 不存在时显示默认宠物。
 
-## 8. Debug View 红线
+## 7. Debug View 红线
 
 Debug View 可以显示工程信息，但不能伪装成最终玩家 UI。
 
-Debug View 可以显示：
-
-1. grid。
-2. raw tags。
-3. diagnostics。
-4. source labels。
-5. collision。
-6. support。
-7. influence。
-8. actor debug flags。
-9. anchorSource。
-10. reason strings。
+Debug View 可以显示 grid、raw tags、diagnostics、source labels、collision、support、influence、actor debug flags、anchorSource、reason strings。
 
 正式 /world 不能默认显示以上内容。
 
-## 9. PNG / WORLD_MAP_ASSETS 红线
+## 8. PNG / WORLD_MAP_ASSETS 红线
 
 PNG / WORLD_MAP_ASSETS 可以作为表现资源候选，但不能作为世界事实来源。
-
-禁止：
-
-1. 因为有 tree.png 就让树存在。
-2. 因为有 house.png 就让房子存在。
-3. 因为有 pet.png 就让宠物存在。
-4. 用 backgroundImage 作为正式世界对象主路径。
-5. 用 assetId 反推对象存在。
-6. 绕过 FormalVisualModel 直接贴图做正式世界。
 
 正确关系：
 
@@ -181,40 +169,58 @@ PNG / WORLD_MAP_ASSETS 可以作为表现资源候选，但不能作为世界事
 -> Renderer 选择表现资源
 ```
 
-## 10. 宠物后置红线
+禁止：
 
-1. petState 必须可选。
-2. 开局不能默认显示宠物。
-3. pet actor 不能默认生成。
-4. pet FormalActorModel 不能默认生成。
-5. 宠物必须通过 LifeEvent + CompanionDecision + accept_companion 进入。
-6. 宠物不能通过事件文本说人话。
-7. 没有 petState 时，worldEngine / Renderer / FormalVisualModel / FormalWorldView 必须正常运行。
+1. 因为有 tree.png 就让树存在。
+2. 因为有 house.png 就让房子存在。
+3. 因为有 pet.png 就让宠物存在。
+4. 用 backgroundImage 作为正式世界对象主路径。
+5. 用 assetId 反推对象存在。
+6. 绕过 FormalVisualModel 直接贴图做正式世界。
 
-## 11. P8-I Reset 红线
+## 9. 已完成阶段红线记录
 
-旧 P8-I0 / I1 / I2 / I3 FormalWorldView 路线已作废。
+| 阶段 | 当前结论 |
+|---|---|
+| P8-I-RESET | 旧 FormalWorldView 手写路线已作废，禁止恢复。 |
+| VISUAL-MODEL-00 | FormalVisualModel schema 已完成。 |
+| VISUAL-MODEL-01 | FormalVisualGenerator 纯函数层已完成。 |
+| FORMAL-VIEW-00 | FormalWorldView 只读组件已完成。 |
+| FORMAL-VIEW-01 | preview mock 只能用于开发预览，不能进入正式数据流。 |
+| FORMAL-VIEW-02 | /world 正式接入前检查已完成。 |
+| FORMAL-VIEW-03 | /world 已从真实 snapshot 构建 FormalVisualModel。 |
+| FORMAL-VIEW-04 | 默认 Formal，Debug 保留，Both 用于开发对照。 |
+| WORLD-GEN-00 | 世界生成链路审计已完成。 |
+| MVP-ALIGN-01 | 旧孵化器 / 默认宠物链路审计已完成。 |
+| WORLD-GEN-01A/B | 正式首屏旧文案清理与默认 pet runtime 断开已完成。 |
+| MVP-ALIGN-02 | 正式链路中的旧孵化器 / 默认宠物 / pet_arrival / pet_rest 已清理。 |
+| MVP-ALIGN-03 | 当前文档体系对齐模块，禁止修改运行时代码。 |
 
-禁止恢复旧路线：
+## 10. MVP-ALIGN-03 文档体系红线
 
-1. 禁止重新新增旧 FormalWorldView 组件。
-2. 禁止重新新增 formal-world-view.styles.module.css。
-3. 禁止组件内生成 FormalWorldVisualItem。
-4. 禁止组件内生成 FormalActorVisualItem。
-5. 禁止组件内 buildFormalWorldVisualItems。
-6. 禁止组件内 buildFormalActorVisualItems。
-7. 禁止在组件内写正式视觉模型生成逻辑。
-8. 未完成 VISUAL-MODEL-00 / VISUAL-MODEL-01 前，不允许重新创建 FormalWorldView。
+MVP-ALIGN-03 只处理文档体系：
 
-下一步必须从：
+1. 允许修复乱码计划文档。
+2. 允许清理 README 中的旧设定。
+3. 允许给旧 docs/mvp 加 legacy 声明。
+4. 允许给旧测试报告加 historical 声明。
+5. 允许新增模块完成文档。
 
-```text
-VISUAL-MODEL-00：FormalVisualModel schema
-```
+MVP-ALIGN-03 禁止：
 
-开始。
+1. 修改 placement-engine。
+2. 修改 initial-home-generator。
+3. 修改 initial-home-scene-recipe。
+4. 修改 HomeMapState schema。
+5. 修改 runtime-context schema。
+6. 修改 WorldEngine。
+7. 删除宠物未来能力。
+8. 新增 UI。
+9. 新增 mock。
+10. 读取 PNG / WORLD_MAP_ASSETS。
+11. 破坏 FormalVisualModel / FormalWorldView。
 
-## 12. 每轮开发必须回答
+## 11. 每轮开发必须回答
 
 每轮开发开始前必须打印并确认：
 
@@ -233,7 +239,7 @@ VISUAL-MODEL-00：FormalVisualModel schema
 13. 完成后去哪里看。
 14. 如何验证。
 
-## 13. 验收门槛
+## 12. 验收门槛
 
 每轮必须通过：
 
@@ -243,227 +249,19 @@ npx tsc --noEmit
 npm run build
 ```
 
-如果本轮只改文档，也仍然需要至少确认：
+如果本轮只改文档，也仍然需要确认：
 
 1. 文档为 UTF-8。
 2. 文档无乱码。
 3. 文档无旧路线冲突描述。
-4. 搜索 FormalWorldVisualItem / FormalActorVisualItem 不应出现在组件中。
-5. 搜索 WORLD_MAP_ASSETS / PNG 不应出现在正式主路径中。
+4. legacy / historical 文档不能被当作当前最高依据。
 
-## 14. 当前下一步
+## 13. 当前下一大模块
 
-当前下一步：
+MVP-ALIGN-03 完成后，进入：
 
 ```text
-VISUAL-MODEL-00：FormalVisualModel schema
+WORLD-GEN-02：worldSeed + personality layout input schema
 ```
 
-进入 VISUAL-MODEL-00 前，必须确认：
-
-1. P8_FORMAL_VISUAL_STAGE_PLAN.md 无乱码。
-2. ENGINE_DEVELOPMENT_GUARDRAILS.md 无乱码。
-3. 旧 P8-I0 / I1 / I2 / I3 文档不存在。
-4. src/app/world/components/formal-world-view/ 不存在。
-5. P8_I_ROUTE_RESET_TO_FORMAL_VISUAL_MODEL.md 存在。
-6. 总控文档明确下一步是 VISUAL-MODEL-00。
-
-## VISUAL-MODEL-00 FormalVisualModel Schema 红线
-
-1. VISUAL-MODEL-00 只定义 FormalVisualModel schema。
-2. 本阶段不能实现 FormalVisualGenerator。
-3. 本阶段不能实现 FormalWorldView。
-4. 本阶段不能新增 React 组件。
-5. 本阶段不能修改 /world 页面。
-6. 本阶段不能修改 ProceduralRendererView。
-7. 本阶段不能修改 renderer-schema.ts / renderer-gateway.ts。
-8. 本阶段不能修改 world-loop。
-9. 本阶段不能修改 actor-geometry / actor-runtime-projection。
-10. FormalVisualModel 不能生成世界事实。
-11. FormalVisualModel 不能生成 actor。
-12. FormalVisualModel 不能生成 placement。
-13. FormalVisualModel 不能填默认 anchor。
-14. FormalVisualModel 不能修改 HomeMapState / VisualState。
-15. FormalVisualModel 不能读取 PNG / WORLD_MAP_ASSETS，不能默认接入 pet。
-
-## VISUAL-MODEL-01 FormalVisualGenerator 红线
-
-1. FormalVisualGenerator 必须是纯函数。
-2. FormalVisualGenerator 只能从 RenderableWorldSnapshot / VisualState 派生 FormalVisualModel。
-3. FormalVisualGenerator 不能生成世界事实。
-4. FormalVisualGenerator 不能生成 placement。
-5. FormalVisualGenerator 不能生成 actor。
-6. FormalVisualGenerator 不能填默认 anchor。
-7. FormalVisualGenerator 不能修改输入对象。
-8. FormalVisualGenerator 不能修改 HomeMapState / VisualState。
-9. FormalVisualGenerator 不能读取 PNG。
-10. FormalVisualGenerator 不能读取 WORLD_MAP_ASSETS。
-11. FormalVisualGenerator 不能默认接入 pet。
-12. FormalVisualGenerator 不能写固定 UI 布局。
-13. FormalVisualGenerator 不能使用 Date.now / Math.random / any。
-14. 本阶段不能新增 FormalWorldView / React 组件 / CSS。
-15. 本阶段不能接入 /world 或修改 ProceduralRendererView / renderer schema / world-loop。
-
-## FORMAL-VIEW-00 FormalWorldView Readonly 红线
-
-1. FormalWorldView 只能接收 `model: FormalVisualModel`。
-2. FormalWorldView 不能接收 RenderableWorldSnapshot。
-3. FormalWorldView 不能接收 VisualState。
-4. FormalWorldView 不能调用 FormalVisualGenerator。
-5. FormalWorldView 不能生成 FormalVisualModel。
-6. FormalWorldView 不能生成 FormalWorldVisualItem / FormalActorVisualItem。
-7. FormalWorldView 不能生成 actor。
-8. FormalWorldView 不能生成 placement。
-9. FormalWorldView 不能填默认 anchor。
-10. FormalWorldView 不能修改 VisualState / HomeMapState。
-11. FormalWorldView 不能读取 PNG / WORLD_MAP_ASSETS。
-12. FormalWorldView 不能显示 raw tags / source diagnostics / audit internals。
-13. FormalWorldView 不能默认接入 pet。
-14. 本阶段不能接入 /world 页面。
-15. 本阶段不能修改 ProceduralRendererView 或现有 Debug Renderer。
-
-## FORMAL-VIEW-00 严格只读红线
-
-1. FormalWorldView 只能接收 `model: FormalVisualModel`。
-2. FormalWorldView 不能接收 RenderableWorldSnapshot。
-3. FormalWorldView 不能接收 VisualState。
-4. FormalWorldView 不能调用 FormalVisualGenerator。
-5. FormalWorldView 不能调用 `buildFormalVisualModel`。
-6. FormalWorldView 不能生成 FormalVisualModel。
-7. FormalWorldView 不能生成 FormalWorldVisualItem。
-8. FormalWorldView 不能生成 FormalActorVisualItem。
-9. FormalWorldView 不能写 `buildFormalWorldVisualItems`。
-10. FormalWorldView 不能写 `buildFormalActorVisualItems`。
-11. FormalWorldView 只能根据 FormalVisualModel 已存在的 geometry 渲染 point / line / polygon / multiPolygon。
-12. CSS 只能控制显示风格，不能决定对象存在。
-13. layer 排序只能用于显示层级，不能改变世界内容。
-14. FormalWorldView 不能生成世界事实。
-15. FormalWorldView 不能生成 placement。
-16. FormalWorldView 不能生成 actor。
-17. FormalWorldView 不能填默认 anchor。
-18. FormalWorldView 不能读取 PNG。
-19. FormalWorldView 不能读取 WORLD_MAP_ASSETS。
-20. FormalWorldView 不能默认接入 pet。
-21. FORMAL-VIEW-00 不能接入 /world 页面。
-
-## FORMAL-VIEW-01 preview harness 红线
-
-1. preview mock 只能用于开发预览。
-2. preview mock 不能进入正式数据流。
-3. preview mock 不能被 /world 引用。
-4. preview mock 不能被当作 HomeMapState 正式来源。
-5. preview mock 不能被当作 WorldState 正式来源。
-6. preview mock 不能被当作 VisualState 正式来源。
-7. preview mock 不能被当作 FormalVisualModel 正式来源。
-8. preview harness 不能修改 FormalVisualGenerator。
-9. preview harness 不能修改 FormalVisualModel schema。
-10. preview harness 不能修改 world-loop。
-11. preview harness 不能修改 HomeMapState。
-12. preview harness 不能生成真实世界事实。
-13. preview harness 不能生成真实 placement。
-14. preview harness 不能生成真实 actor。
-15. preview harness 不能读取 PNG。
-16. preview harness 不能读取 WORLD_MAP_ASSETS。
-17. preview harness 不能默认接入 pet。
-18. preview harness 不能被当作正式玩家 UI。
-
-## FORMAL-VIEW-02 /world 正式接入前检查红线
-
-1. 不允许把 preview mock 接入 /world。
-2. 不允许 /world 直接生成 FormalVisualModel mock。
-3. 不允许 /world 生成 world object。
-4. 不允许 /world 生成 placement。
-5. 不允许 /world 生成 actor。
-6. 不允许 /world 读取 PNG 作为世界事实。
-7. 不允许 /world 读取 WORLD_MAP_ASSETS 作为世界事实。
-8. 不允许 /world 默认显示 pet。
-9. /world 只能读取真实链路产生的 FormalVisualModel。
-10. /world 正式接入前必须确认真实 RenderableWorldSnapshot 来源。
-11. /world 正式接入前必须确认 FormalVisualModel 构建位置。
-12. /world 正式接入前必须确认 preview mock 不会被引用。
-13. /world 正式接入前必须确认 actorRuntimeGeometryProjections 真实链路。
-14. 未完成 FORMAL-VIEW-02 检查前，不允许进入正式 /world 接入。
-
-## FORMAL-VIEW-03 /world 只读接入红线
-
-1. /world 只能从 `runtimeState.currentRenderableSnapshot` 构建 FormalVisualModel。
-2. /world 必须调用 `buildFormalVisualModelFromSnapshot(runtimeState.currentRenderableSnapshot)`。
-3. /world 不能使用 preview mock。
-4. /world 不能 import `formal-world-view.preview`。
-5. /world 不能引用 `PREVIEW_FORMAL_VISUAL_MODEL`。
-6. /world 不能生成 world object。
-7. /world 不能生成 placement。
-8. /world 不能生成 actor。
-9. /world 不能填默认 anchor。
-10. /world 不能读取 PNG 作为世界事实。
-11. /world 不能读取 WORLD_MAP_ASSETS 作为世界事实。
-12. /world 不能默认接入 pet。
-13. Debug Renderer 未迁移前必须保留。
-14. FormalWorldView 只能接收真实链路生成的 FormalVisualModel。
-15. FORMAL-VIEW-03 不能修改 FormalVisualGenerator / FormalVisualModel schema / renderer / world-loop / HomeMapState。
-
-## FORMAL-VIEW-04 正式 / Debug 视图切换红线
-
-1. viewMode 只能控制 UI 显示。
-2. viewMode 不能进入 world-loop。
-3. viewMode 不能修改 HomeMapState。
-4. viewMode 不能生成 FormalVisualModel。
-5. viewMode 不能参与 FormalVisualModel 生成。
-6. viewMode 不能生成 world object。
-7. viewMode 不能生成 placement。
-8. viewMode 不能生成 actor。
-9. viewMode 不能写入持久化。
-10. Debug Renderer 不能被删除。
-11. FormalWorldView 不能使用 preview mock。
-12. /world 不能 import `formal-world-view.preview`。
-13. /world 不能引用 `PREVIEW_FORMAL_VISUAL_MODEL`。
-14. /world 不能读取 PNG / WORLD_MAP_ASSETS 作为世界事实。
-15. /world 不能默认接入 pet。
-
-## WORLD-GEN-00 世界生成链路审计红线
-
-WORLD-GEN-00 是审计阶段，不是实现阶段。
-
-红线：
-
-1. 审计阶段不能修改 UI。
-2. 审计阶段不能修改 placement-engine。
-3. 审计阶段不能修改 generation。
-4. 审计阶段不能生成正式 placement。
-5. 审计阶段不能伪造世界事实。
-6. 审计阶段不能默认接入 pet。
-7. 审计阶段不能把 PNG / assetId 当世界事实来源。
-8. 审计阶段不能修改 HomeMapState。
-9. 审计阶段不能修改 world-loop。
-10. 后续 WORLD-GEN 实现必须保证同一 seed 稳定。
-11. 后续 WORLD-GEN 实现必须保证不同人格 / seed / 资源状态产生可观察差异。
-12. 宠物必须后置，默认 pet placement / pet actor 必须作为风险审计。
-13. visualTendency 后续如接入，只能影响正式视觉模型或风格摘要，不能反向生成世界事实。
-
-## WORLD-GEN-01A/B 正式首屏文案与 pet runtime 红线
-
-红线：
-
-1. 正式 /world 文案不能再出现孵化器 / 胚胎 / incubator / embryo / hatching / incubating。
-2. /world 默认 Tick 不能构造 PetRuntimeContext。
-3. 未发生 LifeEvent / CompanionDecision / accept_companion 前，不能传入 petIntentContext。
-4. 本阶段不能删除宠物未来能力。
-5. 本阶段不能修改 placement-engine。
-6. 本阶段不能修改 initial-home-scene-recipe。
-7. 本阶段不能修改 FormalVisualModel / FormalWorldView 链路。
-8. 本阶段不能修改 pet-runtime-context-schema。
-9. 本阶段不能生成新的 placement。
-10. 本阶段不能默认接入 pet。
-
-## MVP-ALIGN-02 当前正式 MVP 红线
-
-1. 当前正式 MVP 不能再引入孵化器。
-2. 当前正式 MVP 不能再引入 embryo / hatching / incubating。
-3. 当前正式初始世界不能生成 pet actor。
-4. 当前正式初始世界不能生成 pet bed。
-5. 当前正式初始世界不能生成 pet_arrival / pet_rest。
-6. 宠物未来能力只能通过 LifeEvent / CompanionDecision / accept_companion 后置进入。
-7. 任何旧 docs/mvp 与三份正式文档冲突时，以三份正式文档为准。
-8. 不能用 CSS 隐藏旧事实来替代清理正式链路。
-9. 不能把宠物素材定义当作初始世界事实。
-10. 不能默认构造 PetRuntimeContext。
+WORLD-GEN-02 目标是继续推进自动生成世界规则，让不同 seed / 管家人格 / 资源状态产生稳定且可观察的布局差异。
