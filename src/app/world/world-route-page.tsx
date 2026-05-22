@@ -91,7 +91,7 @@ export default function WorldRoutePage() {
           <div className={styles.eyebrow}>AI-PET-WORLD</div>
           <h1 className={styles.title}>世界尚未创建</h1>
           <p className={styles.description}>
-            请先输入出生信息。系统会据此生成管家、孵化器和第一片家园。
+            请先输入出生信息。系统会据此生成管家、第一片家园与初始世界状态。
           </p>
           <Link className={styles.primaryLink} href="/create-world">
             创建世界
@@ -125,7 +125,7 @@ function WorldRuntimeShell(input: {
   const [persistenceState, setPersistenceState] =
     useState<WorldPersistenceUiState>(() =>
       buildInitialPersistenceUiState({ firstSceneModel })
-  )
+    )
   const [runtimeContextState, setRuntimeContextState] =
     useState<WorldRuntimeContextUiState>(() => ({
       status: "not_used",
