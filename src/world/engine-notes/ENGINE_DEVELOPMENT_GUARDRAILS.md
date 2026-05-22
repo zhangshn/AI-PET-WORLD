@@ -2,7 +2,7 @@
 
 ## 1. 文档定位
 
-本文档是 AI-PET-WORLD 世界引擎、生成层、渲染层、视觉模型层和前端呈现层的开发红线。
+本文档是 AI-PET-WORLD 世界引擎、生成层、建设层、渲染层、视觉模型层和前端呈现层的开发红线。
 
 当前最高依据：
 
@@ -22,22 +22,21 @@
 6. FormalWorldView 只读渲染，不生成模型，不生成世界事实。
 7. Debug View 与 Formal World View 分离。
 8. 宠物后置，petState 必须可选。
-9. 当前正式 MVP 不再使用旧出生装置 / 默认宠物开局路线。
+9. 当前正式 MVP 不再使用旧默认宠物开局路线。
 10. 旧文档只能作为历史参考，不能作为当前实现依据。
 
 ## 3. 当前正式 MVP 红线
 
 当前正式 MVP 禁止：
 
-1. 重新引入旧出生装置作为正式设定。
-2. 重新引入旧默认生命初始路线。
-3. 初始世界默认生成 pet actor。
-4. 初始世界默认生成 pet bed。
-5. 初始世界默认生成 pet_arrival / pet_rest。
-6. 初始世界默认构造 PetRuntimeContext。
-7. 用 CSS 隐藏旧事实来替代清理正式链路。
-8. 把宠物素材定义当作初始世界事实。
-9. 让旧 docs/mvp 或旧测试报告覆盖三份正式文档。
+1. 重新引入旧默认生命初始路线。
+2. 初始世界默认生成 pet actor。
+3. 初始世界默认生成 pet bed。
+4. 初始世界默认生成 pet_arrival / pet_rest。
+5. 初始世界默认构造 PetRuntimeContext。
+6. 用 CSS 隐藏旧事实来替代清理正式链路。
+7. 把宠物素材定义当作初始世界事实。
+8. 让旧 docs/mvp 或旧测试报告覆盖三份正式文档。
 
 当前正式 MVP 允许开局出现：
 
@@ -79,8 +78,9 @@ LifeEvent
 2. FormalWorldView 生成世界事实。
 3. UI 状态伪造世界对象。
 4. proposal / unvalidated diff 被当作现实。
-5. debug scenario result 被当作正式世界事实。
+5. debug scenario result 被当作正式玩家世界。
 6. assetId / PNG 反向决定世界对象是否存在。
+7. ConstructionExecutionResult 未经 SafeApply 就被当作已应用世界事实。
 
 ## 5. 非固定布局红线
 
@@ -199,6 +199,7 @@ PNG / WORLD_MAP_ASSETS 可以作为表现资源候选，但不能作为世界事
 | WORLD-GEN-03 | 布局差异化验证与 debug audit 已完成。 |
 | CONSTRUCTION-00 | ConstructionPlanner 输入协议与输入审计已完成。 |
 | CONSTRUCTION-01 | ConstructionPlanner 候选计划生成与候选审计已完成。 |
+| CONSTRUCTION-02 | ConstructionExecutor 与 MapDiff 候选生成协议已完成。 |
 
 ## 10. WORLD-GEN-02 布局输入红线
 
@@ -206,16 +207,15 @@ WORLD-GEN-02 已建立布局输入协议。
 
 红线：
 
-1. layout input 不能包含旧出生装置路线。
-2. layout input 不能包含旧默认生命初始路线。
-3. layout input 不能包含 pet_arrival / pet_rest。
-4. layout input 不能默认生成 pet。
-5. layout input 只能影响世界布局候选、路径、住所、边界、安静区和装饰倾向。
-6. recipe 只能作为候选结构，不能成为固定最终画面。
-7. 所有布局差异必须由 seed、personality、resources、phase、variant 和规则稳定推导。
-8. 禁止 Math.random / Date.now / any 参与布局事实。
-9. 禁止 UI / CSS 决定布局事实。
-10. PlacementEngine 读取 layout input 后，仍必须通过 PlacementRules 验证。
+1. layout input 不能包含旧默认生命初始路线。
+2. layout input 不能包含 pet_arrival / pet_rest。
+3. layout input 不能默认生成 pet。
+4. layout input 只能影响世界布局候选、路径、住所、边界、安静区和装饰倾向。
+5. recipe 只能作为候选结构，不能成为固定最终画面。
+6. 所有布局差异必须由 seed、personality、resources、phase、variant 和规则稳定推导。
+7. 禁止 Math.random / Date.now / any 参与布局事实。
+8. 禁止 UI / CSS 决定布局事实。
+9. PlacementEngine 读取 layout input 后，仍必须通过 PlacementRules 验证。
 
 ## 11. WORLD-GEN-03 差异化审计红线
 
@@ -247,7 +247,7 @@ CONSTRUCTION-00 已建立 ConstructionPlanner 输入协议。
 5. Planner input 不能生成 UI。
 6. Planner input 不能生成宠物、pet actor、pet bed。
 7. Planner input 不能包含 pet_arrival / pet_rest。
-8. Planner input 不能恢复旧出生装置路线。
+8. Planner input 不能恢复旧默认宠物开局路线。
 9. Planner input 必须保留 stable fingerprint audit。
 10. Planner input 禁止 Math.random / Date.now / any。
 
@@ -265,14 +265,33 @@ CONSTRUCTION-01 已建立 ConstructionPlanner 候选计划生成。
 6. 候选计划不能生成 UI。
 7. 候选计划不能生成宠物、pet actor、pet bed。
 8. 候选计划不能包含 pet_arrival / pet_rest。
-9. 候选计划不能恢复旧出生装置路线。
+9. 候选计划不能恢复旧默认宠物开局路线。
 10. 候选计划必须保留 stable output fingerprint audit。
 11. 候选计划 stage 的 mapDiffIds 必须为空。
 12. 候选计划 stage 的 progress 必须从 0 开始。
 13. 候选计划 stage 不能预先 completed。
 14. 候选计划禁止 Math.random / Date.now / any。
 
-## 14. 每轮开发必须回答
+## 14. CONSTRUCTION-02 执行候选红线
+
+CONSTRUCTION-02 已建立 ConstructionExecutor 与 MapDiff 候选生成协议。
+
+红线：
+
+1. Executor 可以生成 MapDiff 候选，但不能直接修改 HomeMapState。
+2. Executor 不能接 UI。
+3. Executor 不能接 FormalWorldView。
+4. Executor 不能读取 PNG / WORLD_MAP_ASSETS 决定世界事实。
+5. Executor 不能生成宠物、pet actor、pet bed。
+6. Executor 不能包含 pet_arrival / pet_rest。
+7. Executor 不能恢复旧默认宠物开局路线。
+8. Executor 不能使用 Math.random / Date.now / any。
+9. Executor 输出必须经过 audit。
+10. MapDiff 候选必须等待后续 SafeApply 阶段验证后才能应用。
+11. ConstructionExecutionResult 不能被直接当作 HomeMapState。
+12. `nextPlan` 是执行候选输出，不等同于已持久化状态。
+
+## 15. 每轮开发必须回答
 
 每轮开发开始前必须打印并确认：
 
@@ -291,7 +310,7 @@ CONSTRUCTION-01 已建立 ConstructionPlanner 候选计划生成。
 13. 完成后去哪里看。
 14. 如何验证。
 
-## 15. 验收门槛
+## 16. 验收门槛
 
 每轮必须通过：
 
@@ -308,29 +327,12 @@ npm run build
 3. 文档无旧路线冲突描述。
 4. legacy / historical 文档不能被当作当前最高依据。
 
-## 16. 当前下一大模块
+## 17. 当前下一大模块
 
-CONSTRUCTION-01 完成后，进入：
+CONSTRUCTION-02 完成后，进入：
 
 ```text
-CONSTRUCTION-02：ConstructionExecutor + MapDiff 协议
+CONSTRUCTION-03：MapDiff SafeApply 与 HomeMapState 更新协议
 ```
 
-CONSTRUCTION-02 目标是定义 ConstructionExecutor 输入协议，说明 ConstructionPlan 如何被转换为 MapDiff 候选；该阶段仍不做 UI，不接入宠物，不绕过 HomeMapState / MapDiff / FormalVisualModel 链路。
-
-## CONSTRUCTION-02 红线
-
-CONSTRUCTION-02 已建立 ConstructionExecutor 与 MapDiff 候选生成协议。
-
-红线：
-
-1. Executor 可以生成 MapDiff 候选，但不能直接修改 HomeMapState。
-2. Executor 不能接 UI。
-3. Executor 不能接 FormalWorldView。
-4. Executor 不能读取 PNG / WORLD_MAP_ASSETS 决定世界事实。
-5. Executor 不能生成宠物、pet actor、pet bed。
-6. Executor 不能包含 pet_arrival / pet_rest。
-7. Executor 不能恢复旧出生装置路线。
-8. Executor 不能使用 Math.random / Date.now / any。
-9. Executor 输出必须经过 audit。
-10. MapDiff 候选必须等待后续 SafeApply 阶段验证后才能应用。
+CONSTRUCTION-03 目标是定义 MapDiff SafeApply 输入协议，验证 MapDiff 候选是否可应用，并通过安全应用协议更新 HomeMapState；该阶段仍不做 UI，不接入宠物，不绕过 HomeMapState / MapDiff / FormalVisualModel 链路。
