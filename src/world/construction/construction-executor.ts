@@ -1,23 +1,24 @@
 /**
- * 当前文件职责：执行管家建设计划，生成只读 MapDiff。
+ * 当前文件职责：根据建设计划生成只读 MapDiff 候选。
  */
 
 import type {
   HomeZone,
-  MapCoordinate,
   MapDiff,
   MapPlacement,
 } from "@/world/map-state/home-map-state-schema"
 
+import { auditConstructionExecutionResult } from "./construction-execution-audit"
 import type {
   ConstructionExecutionInput,
   ConstructionExecutionResult,
   ConstructionPlan,
+  ConstructionProjectType,
   ConstructionStage,
   ConstructionStageType,
 } from "./construction-schema"
 
-const STAGE_ORDER: ConstructionStageType[] = [
+const STAGE_ORDER: readonly ConstructionStageType[] = [
   "planned",
   "preparing_ground",
   "placing_materials",
@@ -26,254 +27,338 @@ const STAGE_ORDER: ConstructionStageType[] = [
   "completed",
 ]
 
-function findTargetZone(input: ConstructionExecutionInput): HomeZone | null {
-  return input.homeMapState.zones.find(
-    (zone) => zone.type === input.plan.targetZoneType
-  ) ?? null
-}
+const STAGE_PROGRESS_INCREMENT = 35
 
-function getZoneCenter(zone: HomeZone): MapCoordinate {
-  return {
-    x: zone.bounds.x + zone.bounds.width / 2,
-    y: zone.bounds.y + zone.bounds.height / 2,
-  }
-}
-
-function offsetPoint(point: MapCoordinate, dx: number, dy: number): MapCoordinate {
-  return {
-    x: point.x + dx,
-    y: point.y + dy,
-  }
-}
-
-function buildPlacement(input: {
-  id: string
-  assetId: MapPlacement["assetId"]
-  point: MapCoordinate
-  layer: MapPlacement["layer"]
-  label: string
-  tags: string[]
-}): MapPlacement {
-  return {
-    id: input.id,
-    assetId: input.assetId,
-    x: input.point.x,
-    y: input.point.y,
-    layer: input.layer,
-    scale: 1,
-    alpha: 1,
-    label: input.label,
-    source: "construction_plan",
-    tags: input.tags,
-  }
-}
-
-function buildAddDiff(input: {
-  now: number
-  stage: ConstructionStageType
-  placement: MapPlacement
-  reason: string
-  tags: string[]
-}): MapDiff {
-  return {
-    id: `diff-${input.stage}-${input.placement.id}-${input.now}`,
-    operation: "add",
-    placementId: input.placement.id,
-    placement: input.placement,
-    reason: input.reason,
-    createdAt: input.now,
-    tags: ["construction_diff", input.stage, ...input.tags],
-  }
-}
-
-function buildStageDiffs(input: {
-  now: number
-  stage: ConstructionStageType
-  targetZone: HomeZone
-}): MapDiff[] {
-  const center = getZoneCenter(input.targetZone)
-
-  if (input.stage === "preparing_ground") {
-    const placement = buildPlacement({
-      id: `quiet-living-ground-marker-${input.now}`,
-      assetId: "surfaceGrassTuftLow01",
-      point: offsetPoint(center, -0.8, 0.4),
-      layer: "surface-decoration",
-      label: "已整理的生活区地面",
-      tags: ["construction_marker", "prepared_ground", "quiet_living_area"],
-    })
-
-    return [
-      buildAddDiff({
-        now: input.now,
-        stage: input.stage,
-        placement,
-        reason: "管家先整理安静生活区附近的地面。",
-        tags: ["quiet_living_area"],
-      }),
-    ]
-  }
-
-  if (input.stage === "placing_materials") {
-    const placement = buildPlacement({
-      id: `quiet-living-materials-${input.now}`,
-      assetId: "facilityStorageBoxClosed01",
-      point: offsetPoint(center, 0.9, 0.2),
-      layer: "facility",
-      label: "生活区整理材料",
-      tags: ["construction_material", "quiet_living_area", "storage"],
-    })
-
-    return [
-      buildAddDiff({
-        now: input.now,
-        stage: input.stage,
-        placement,
-        reason: "管家把基础材料放到安静生活区附近。",
-        tags: ["quiet_living_area"],
-      }),
-    ]
-  }
-
-  if (input.stage === "building") {
-    const placement = buildPlacement({
-      id: `quiet-living-support-${input.now}`,
-      assetId: "facilityLampOn01",
-      point: center,
-      layer: "facility",
-      label: "安静生活支撑点",
-      tags: ["living_support", "quiet_living_area", "home_order"],
-    })
-
-    return [
-      buildAddDiff({
-        now: input.now,
-        stage: input.stage,
-        placement,
-        reason: "管家整理基础生活支撑点，形成可见的生活秩序。",
-        tags: ["quiet_living_area"],
-      }),
-    ]
-  }
-
-  if (input.stage === "decorating") {
-    const placement = buildPlacement({
-      id: `quiet-living-decoration-${input.now}`,
-      assetId: "surfaceFlowerPatch01",
-      point: offsetPoint(center, 0.4, -0.7),
-      layer: "surface-decoration",
-      label: "生活区自然点缀",
-      tags: ["construction_decoration", "quiet_living_area", "natural_detail"],
-    })
-
-    return [
-      buildAddDiff({
-        now: input.now,
-        stage: input.stage,
-        placement,
-        reason: "管家为安静生活区增加自然点缀。",
-        tags: ["quiet_living_area"],
-      }),
-    ]
-  }
-
-  return []
-}
-
-function getNextStage(current: ConstructionStageType): ConstructionStageType {
-  const index = STAGE_ORDER.indexOf(current)
-  if (index < 0) return "planned"
-  return STAGE_ORDER[Math.min(index + 1, STAGE_ORDER.length - 1)]
-}
-
-function updateStages(input: {
-  stages: ConstructionStage[]
-  completedStage: ConstructionStageType
-  mapDiffIds: string[]
-}): ConstructionStage[] {
-  return input.stages.map((stage) => {
-    if (stage.type !== input.completedStage) return stage
-
-    return {
-      ...stage,
-      progress: 100,
-      mapDiffIds: [...stage.mapDiffIds, ...input.mapDiffIds],
-      completed: true,
-    }
+export function buildConstructionExecutionResult(
+  input: ConstructionExecutionInput
+): ConstructionExecutionResult {
+  const executableStage = resolveExecutableStage(input.plan.currentStage)
+  const targetPlacements = findExecutablePlacements({
+    input,
+    executableStage,
   })
-}
-
-function buildNextPlan(input: {
-  plan: ConstructionPlan
-  now: number
-  completedStage: ConstructionStageType
-  nextStage: ConstructionStageType
-  mapDiffIds: string[]
-}): ConstructionPlan {
-  return {
-    ...input.plan,
-    status: input.nextStage === "completed" ? "completed" : "active",
-    currentStage: input.nextStage,
-    stages: updateStages({
-      stages: input.plan.stages,
-      completedStage: input.completedStage,
-      mapDiffIds: input.mapDiffIds,
+  const mapDiffs = targetPlacements.map((placement, index) =>
+    buildConstructionUpdateMapDiff({
+      input,
+      placement,
+      executableStage,
+      index,
+    })
+  )
+  const nextPlan = buildNextPlan({
+    plan: input.plan,
+    now: input.now,
+    executableStage,
+    mapDiffIds: mapDiffs.map((diff) => diff.id),
+  })
+  const resultWithoutAudit: Omit<ConstructionExecutionResult, "audit"> = {
+    nextPlan,
+    mapDiffs,
+    messages: buildExecutionMessages({
+      input,
+      executableStage,
+      mapDiffs,
     }),
-    updatedAt: input.now,
+    tags: [
+      "construction_execution_result",
+      "construction_execution_candidate",
+      "map_diff_candidate_only",
+      "no_direct_home_map_state_mutation",
+      `plan:${input.plan.id}`,
+      `target:${input.plan.targetZoneType}`,
+      `stage:${executableStage}`,
+    ],
   }
-}
+  const audit = auditConstructionExecutionResult({
+    executionInput: input,
+    resultWithoutAudit,
+  })
 
-function buildStageMessage(stage: ConstructionStageType): string {
-  if (stage === "preparing_ground") return "管家开始整理安静生活区地面。"
-  if (stage === "placing_materials") return "管家放置了基础整理材料。"
-  if (stage === "building") return "管家整理了安静生活支撑点。"
-  if (stage === "decorating") return "安静生活区已经增加自然点缀。"
-  if (stage === "completed") return "安静生活区建设已经完成。"
-
-  return "管家确认安静生活区建设计划。"
+  return {
+    ...resultWithoutAudit,
+    audit,
+  }
 }
 
 export function advanceConstructionPlan(
   input: ConstructionExecutionInput
 ): ConstructionExecutionResult {
-  const targetZone = findTargetZone(input)
+  return buildConstructionExecutionResult(input)
+}
 
-  if (!targetZone) {
-    return {
-      nextPlan: input.plan,
-      mapDiffs: [],
-      messages: ["未找到安静生活区，建设计划暂时无法推进。"],
-      tags: ["construction_execution_blocked", "missing_quiet_living_zone"],
-    }
+function resolveExecutableStage(
+  currentStage: ConstructionStageType
+): ConstructionStageType {
+  if (currentStage === "planned") return "preparing_ground"
+  return currentStage
+}
+
+function findExecutablePlacements(input: {
+  input: ConstructionExecutionInput
+  executableStage: ConstructionStageType
+}): MapPlacement[] {
+  if (input.executableStage === "completed") return []
+  if (input.input.plan.projectType === "prepare_future_expansion") return []
+
+  const targetZone = findTargetZone(input.input)
+  const scopedPlacements = input.input.homeMapState.placements.filter((placement) =>
+    targetZone ? isPlacementInsideZone(placement, targetZone) : true
+  )
+  const projectPlacements = scopedPlacements.filter((placement) =>
+    matchesProjectPlacement(input.input.plan.projectType, placement)
+  )
+
+  if (projectPlacements.length > 0) {
+    return projectPlacements.slice(0, 3)
   }
 
-  if (input.plan.currentStage === "completed") {
-    return {
-      nextPlan: input.plan,
-      mapDiffs: [],
-      messages: ["安静生活区建设已经完成。"],
-      tags: ["construction_execution_noop", "already_completed"],
-    }
+  return scopedPlacements
+    .filter((placement) => placement.layer !== "actor")
+    .slice(0, 2)
+}
+
+function findTargetZone(input: ConstructionExecutionInput): HomeZone | undefined {
+  return input.homeMapState.zones.find(
+    (zone) => zone.type === input.plan.targetZoneType
+  )
+}
+
+function isPlacementInsideZone(placement: MapPlacement, zone: HomeZone): boolean {
+  const maxX = zone.bounds.x + zone.bounds.width
+  const maxY = zone.bounds.y + zone.bounds.height
+
+  return (
+    placement.x >= zone.bounds.x &&
+    placement.x <= maxX &&
+    placement.y >= zone.bounds.y &&
+    placement.y <= maxY
+  )
+}
+
+function matchesProjectPlacement(
+  projectType: ConstructionProjectType,
+  placement: MapPlacement
+): boolean {
+  if (projectType === "stabilize_temporary_shelter") {
+    return placement.layer === "structure" || hasTagToken(placement, "temporary_shelter")
   }
 
-  const nextStage = getNextStage(input.plan.currentStage)
-  const mapDiffs = buildStageDiffs({
-    now: input.now,
-    stage: nextStage,
-    targetZone,
+  if (projectType === "improve_initial_care") {
+    return placement.layer === "facility" || hasTagToken(placement, "initial_care")
+  }
+
+  if (projectType === "organize_storage_area") {
+    return placement.layer === "facility" || hasTagToken(placement, "storage_tools")
+  }
+
+  if (projectType === "maintain_natural_boundary") {
+    return placement.layer === "nature" || hasTagToken(placement, "natural_boundary")
+  }
+
+  if (projectType === "preserve_quiet_living") {
+    return hasTagToken(placement, "quiet_living") || placement.layer === "surface-decoration"
+  }
+
+  if (projectType === "decorate_home") {
+    return placement.layer === "surface-decoration"
+  }
+
+  return false
+}
+
+function hasTagToken(placement: MapPlacement, token: string): boolean {
+  return placement.tags.some((tag) => tag.includes(token))
+}
+
+function buildConstructionUpdateMapDiff(input: {
+  input: ConstructionExecutionInput
+  placement: MapPlacement
+  executableStage: ConstructionStageType
+  index: number
+}): MapDiff {
+  return {
+    id: buildMapDiffId({
+      plan: input.input.plan,
+      stage: input.executableStage,
+      placement: input.placement,
+      index: input.index,
+    }),
+    operation: "update",
+    placementId: input.placement.id,
+    patch: {
+      alpha: buildUpdatedAlpha(input.placement.alpha),
+      tags: buildUpdatedPlacementTags({
+        placement: input.placement,
+        plan: input.input.plan,
+        executableStage: input.executableStage,
+      }),
+    },
+    reason: buildMapDiffReason({
+      plan: input.input.plan,
+      executableStage: input.executableStage,
+    }),
+    createdAt: input.input.now,
+    tags: buildMapDiffTags({
+      plan: input.input.plan,
+      executableStage: input.executableStage,
+    }),
+  }
+}
+
+function buildMapDiffId(input: {
+  plan: ConstructionPlan
+  stage: ConstructionStageType
+  placement: MapPlacement
+  index: number
+}): string {
+  return [
+    "construction-candidate",
+    normalizeIdToken(input.plan.id),
+    input.stage,
+    normalizeIdToken(input.placement.id),
+    String(input.index),
+  ].join("-")
+}
+
+function normalizeIdToken(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+}
+
+function buildUpdatedAlpha(alpha: number): number {
+  return Math.min(1, Math.max(0.34, Number((alpha + 0.04).toFixed(2))))
+}
+
+function buildUpdatedPlacementTags(input: {
+  placement: MapPlacement
+  plan: ConstructionPlan
+  executableStage: ConstructionStageType
+}): string[] {
+  return uniqueTags([
+    ...input.placement.tags,
+    "construction_execution_touched",
+    `construction_plan:${input.plan.id}`,
+    `construction_project:${input.plan.projectType}`,
+    `construction_stage:${input.executableStage}`,
+  ])
+}
+
+function buildMapDiffReason(input: {
+  plan: ConstructionPlan
+  executableStage: ConstructionStageType
+}): string {
+  return [
+    input.plan.reason,
+    `执行阶段：${input.executableStage}`,
+    `目标区域：${input.plan.targetZoneType}`,
+  ].join(" / ")
+}
+
+function buildMapDiffTags(input: {
+  plan: ConstructionPlan
+  executableStage: ConstructionStageType
+}): string[] {
+  return [
+    "construction_execution_candidate",
+    `plan:${input.plan.id}`,
+    `target:${input.plan.targetZoneType}`,
+    `project:${input.plan.projectType}`,
+    `stage:${input.executableStage}`,
+    "no_direct_home_map_state_mutation",
+  ]
+}
+
+function buildNextPlan(input: {
+  plan: ConstructionPlan
+  now: number
+  executableStage: ConstructionStageType
+  mapDiffIds: string[]
+}): ConstructionPlan {
+  const nextStages = updateStages({
+    stages: input.plan.stages,
+    executableStage: input.executableStage,
+    mapDiffIds: input.mapDiffIds,
   })
-  const nextPlan = buildNextPlan({
-    plan: input.plan,
-    now: input.now,
-    completedStage: nextStage,
-    nextStage,
-    mapDiffIds: mapDiffs.map((diff) => diff.id),
-  })
+  const executedStage = nextStages.find(
+    (stage) => stage.type === input.executableStage
+  )
+  const currentStage =
+    executedStage && executedStage.completed
+      ? getNextStage(input.executableStage)
+      : input.executableStage
 
   return {
-    nextPlan,
-    mapDiffs,
-    messages: [buildStageMessage(nextStage)],
-    tags: ["construction_execution_result", `stage:${nextStage}`],
+    ...input.plan,
+    status: currentStage === "completed" ? "completed" : "active",
+    currentStage,
+    stages: nextStages,
+    updatedAt: input.now,
+    tags: uniqueTags([
+      ...input.plan.tags,
+      "construction_execution_candidate_plan",
+      "map_diff_candidate_generated",
+    ]),
   }
+}
+
+function updateStages(input: {
+  stages: ConstructionStage[]
+  executableStage: ConstructionStageType
+  mapDiffIds: string[]
+}): ConstructionStage[] {
+  return input.stages.map((stage) => {
+    if (stage.type !== input.executableStage) return stage
+
+    const progress = Math.min(
+      100,
+      stage.progress + (input.mapDiffIds.length > 0 ? STAGE_PROGRESS_INCREMENT : 0)
+    )
+
+    return {
+      ...stage,
+      progress,
+      mapDiffIds: uniqueTags([...stage.mapDiffIds, ...input.mapDiffIds]),
+      completed: progress >= 100,
+    }
+  })
+}
+
+function getNextStage(stage: ConstructionStageType): ConstructionStageType {
+  const currentIndex = STAGE_ORDER.indexOf(stage)
+  if (currentIndex < 0) return "planned"
+
+  return STAGE_ORDER[Math.min(currentIndex + 1, STAGE_ORDER.length - 1)]
+}
+
+function buildExecutionMessages(input: {
+  input: ConstructionExecutionInput
+  executableStage: ConstructionStageType
+  mapDiffs: MapDiff[]
+}): string[] {
+  if (input.input.plan.currentStage === "completed") {
+    return ["建设计划已经处于完成阶段，本轮不生成新的 MapDiff 候选。"]
+  }
+
+  if (input.input.plan.projectType === "prepare_future_expansion") {
+    return [
+      "未来扩展计划当前只记录观察判断，不生成新的世界对象或 MapDiff 候选。",
+    ]
+  }
+
+  if (input.mapDiffs.length === 0) {
+    return [
+      `未找到可执行的已有 placement：${input.input.plan.projectType} / ${input.input.plan.targetZoneType}。`,
+    ]
+  }
+
+  return [
+    `已为 ${input.input.plan.title} 生成 ${input.mapDiffs.length} 个 MapDiff 候选。`,
+  ]
+}
+
+function uniqueTags(tags: string[]): string[] {
+  return Array.from(new Set(tags))
 }

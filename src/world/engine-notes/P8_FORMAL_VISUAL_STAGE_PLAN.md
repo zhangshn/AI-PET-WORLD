@@ -228,3 +228,43 @@ CONSTRUCTION-00 已把建设系统推进到 `HomeMapState + 管家建设倾向 +
 CONSTRUCTION-01 已把建设系统推进到 `ConstructionPlannerInput -> ConstructionPlan[] 候选 -> CandidateAudit`。
 
 后续开发必须围绕规则生成、结构化世界事实、FormalVisualModel First、宠物后置和非固定布局差异化继续推进。
+
+## CONSTRUCTION-02 ConstructionExecutor + MapDiff 协议记录
+
+CONSTRUCTION-02 已完成 ConstructionExecutor 与 MapDiff 候选生成协议。
+
+当前链路推进为：
+
+```text
+HomeMapState
++ 管家建设倾向
++ 资源状态
++ 世界阶段
+-> ConstructionPlannerInput
+-> ConstructionPlan[] 候选
+-> ConstructionExecutionResult
+-> MapDiff[] 候选
+```
+
+本阶段完成：
+
+1. 新增 ConstructionExecutionAudit。
+2. 补齐 ConstructionExecutionResult.audit。
+3. 新增 ConstructionMapDiffCandidate / ConstructionExecutionBuildResult 协议容器。
+4. 实现 buildConstructionExecutionResult。
+5. Executor 根据 selected ConstructionPlan 生成 MapDiff 候选。
+6. MapDiff 候选只 update 已有 placement，不直接应用到 HomeMapState。
+7. 新增 ConstructionExecutionAudit 检查重复 diff id、placement 引用、createdAt、candidate tag、nextPlan id 与旧路线 token。
+
+仍未完成：
+
+1. SafeApply / MapDiff 验证与应用。
+2. MapDiff 驱动的 HomeMapState 更新。
+3. World loop 接入。
+4. LifeEvent / CompanionDecision。
+
+下一步进入：
+
+```text
+CONSTRUCTION-03：MapDiff SafeApply 与 HomeMapState 更新协议
+```

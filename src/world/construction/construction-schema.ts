@@ -160,11 +160,30 @@ export type ConstructionExecutionInput = {
   now: number
 }
 
+export type ConstructionMapDiffCandidate = MapDiff & {
+  tags: string[]
+}
+
+export type ConstructionExecutionAudit = {
+  stableExecutionFingerprint: string
+  planId: string
+  mapDiffIds: string[]
+  warnings: string[]
+  tags: string[]
+}
+
 export type ConstructionExecutionResult = {
   nextPlan: ConstructionPlan
   mapDiffs: MapDiff[]
   messages: string[]
+  audit: ConstructionExecutionAudit
   tags: string[]
+}
+
+export type ConstructionExecutionBuildResult = {
+  input: ConstructionExecutionInput
+  result: ConstructionExecutionResult
+  audit: ConstructionExecutionAudit
 }
 
 export function toConstructionResourceSnapshot(

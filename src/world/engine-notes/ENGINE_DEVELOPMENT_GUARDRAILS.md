@@ -317,3 +317,20 @@ CONSTRUCTION-02：ConstructionExecutor + MapDiff 协议
 ```
 
 CONSTRUCTION-02 目标是定义 ConstructionExecutor 输入协议，说明 ConstructionPlan 如何被转换为 MapDiff 候选；该阶段仍不做 UI，不接入宠物，不绕过 HomeMapState / MapDiff / FormalVisualModel 链路。
+
+## CONSTRUCTION-02 红线
+
+CONSTRUCTION-02 已建立 ConstructionExecutor 与 MapDiff 候选生成协议。
+
+红线：
+
+1. Executor 可以生成 MapDiff 候选，但不能直接修改 HomeMapState。
+2. Executor 不能接 UI。
+3. Executor 不能接 FormalWorldView。
+4. Executor 不能读取 PNG / WORLD_MAP_ASSETS 决定世界事实。
+5. Executor 不能生成宠物、pet actor、pet bed。
+6. Executor 不能包含 pet_arrival / pet_rest。
+7. Executor 不能恢复旧出生装置路线。
+8. Executor 不能使用 Math.random / Date.now / any。
+9. Executor 输出必须经过 audit。
+10. MapDiff 候选必须等待后续 SafeApply 阶段验证后才能应用。
