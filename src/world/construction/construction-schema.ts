@@ -139,6 +139,21 @@ export type ConstructionPlan = {
   tags: string[]
 }
 
+export type ConstructionPlanCandidateAudit = {
+  stableOutputFingerprint: string
+  candidatePlanIds: string[]
+  acceptedIntentIds: string[]
+  skippedIntentIds: string[]
+  warnings: string[]
+  tags: string[]
+}
+
+export type ConstructionPlanCandidateResult = {
+  plans: ConstructionPlan[]
+  audit: ConstructionPlanCandidateAudit
+  tags: string[]
+}
+
 export type ConstructionExecutionInput = {
   homeMapState: HomeMapState
   plan: ConstructionPlan
