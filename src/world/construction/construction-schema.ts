@@ -344,12 +344,25 @@ export type ConstructionRuntimeCycleBuildResult = {
   audit: ConstructionRuntimeCycleAudit
 }
 
-export type ConstructionRuntimeAdapterInput = ConstructionRuntimeCycleInput
+export type ConstructionMemoryPersistenceMode =
+  | "memory_commit"
+  | "memory_preview"
+  | "disabled"
+
+export type ConstructionRuntimeAdapterInput = ConstructionRuntimeCycleInput & {
+  memoryPersistenceMode?: ConstructionMemoryPersistenceMode
+}
+
+export type ConstructionRuntimeVerticalSliceInput =
+  ConstructionRuntimeAdapterInput
 
 export type ConstructionMemoryPersistenceMockResult = {
   mockPersistenceId: string
   proposalId: string | null
+  mode: ConstructionMemoryPersistenceMode
   didStore: boolean
+  shouldCommit: boolean
+  previewOnly: boolean
   storedWorldId: string
   storedUpdatedAt: number | null
   acceptedDiffIds: string[]
@@ -364,6 +377,72 @@ export type ConstructionVisualRefreshBridgeResult = {
   changedPlacementIds: string[]
   acceptedDiffIds: string[]
   reason: string
+  tags: string[]
+}
+
+export type ConstructionSnapshotRefreshRequest = {
+  requestId: string
+  worldId: string
+  ownerId: string
+  changedPlacementIds: string[]
+  acceptedDiffIds: string[]
+  reason: string
+  shouldRefreshSnapshot: boolean
+  shouldRebuildFormalVisualModel: boolean
+  stableRefreshFingerprint: string
+  tags: string[]
+}
+
+export type ConstructionSnapshotRefreshAudit = {
+  stableSnapshotRefreshFingerprint: string
+  sourceWorldId: string
+  changedPlacementIds: string[]
+  acceptedDiffIds: string[]
+  warnings: string[]
+  tags: string[]
+}
+
+export type ConstructionFormalVisualRefreshPrecheck = {
+  worldId: string
+  shouldRebuildFormalVisualModel: boolean
+  reason: string
+  audit: ConstructionSnapshotRefreshAudit
+  tags: string[]
+}
+
+export type ConstructionPersistenceAdapterRequest = {
+  requestId: string
+  proposalId: string | null
+  worldId: string
+  ownerId: string
+  seed: string
+  sourceUpdatedAt: number
+  nextUpdatedAt: number
+  acceptedDiffIds: string[]
+  shouldPersist: boolean
+  reason: string
+  tags: string[]
+}
+
+export type ConstructionPersistenceAdapterAudit = {
+  stablePersistenceFingerprint: string
+  sourceWorldId: string
+  sourceOwnerId: string
+  acceptedDiffIds: string[]
+  warnings: string[]
+  tags: string[]
+}
+
+export type ConstructionPersistenceAdapterDryRunResult = {
+  request: ConstructionPersistenceAdapterRequest
+  audit: ConstructionPersistenceAdapterAudit
+  canPersist: boolean
+  shouldPersist: boolean
+  rejectedReason: string | null
+  sourceWorldId: string
+  sourceUpdatedAt: number
+  nextUpdatedAt: number
+  acceptedDiffIds: string[]
   tags: string[]
 }
 
@@ -392,6 +471,14 @@ export type ConstructionPipelineReport = {
   shouldPersist: boolean
   shouldRefresh: boolean
   messages: string[]
+  sections: ConstructionPipelineReportSection[]
+  tags: string[]
+}
+
+export type ConstructionPipelineReportSection = {
+  title: string
+  status: "ok" | "warning" | "skipped"
+  lines: string[]
   tags: string[]
 }
 
@@ -402,6 +489,48 @@ export type ConstructionRuntimeAdapterResult = {
   visualRefreshBridgeResult: ConstructionVisualRefreshBridgeResult
   fullPipelineAudit: ConstructionFullPipelineAudit
   pipelineReport: ConstructionPipelineReport
+  messages: string[]
+  tags: string[]
+}
+
+export type ConstructionRuntimeVerticalSliceResult =
+  ConstructionRuntimeAdapterResult
+
+export type ConstructionRuntimeBridgeInput =
+  ConstructionRuntimeVerticalSliceInput & {
+    bridgeId: string
+  }
+
+export type ConstructionRuntimeBridgeAudit = {
+  stableRuntimeBridgeFingerprint: string
+  bridgeId: string
+  worldId: string
+  ownerId: string
+  selectedPlanId: string | null
+  warnings: string[]
+  tags: string[]
+}
+
+export type ConstructionRuntimeBridgeReport = {
+  reportId: string
+  bridgeId: string
+  shouldEnterRuntime: boolean
+  shouldPersist: boolean
+  shouldRefresh: boolean
+  hasAuditWarning: boolean
+  sections: ConstructionPipelineReportSection[]
+  messages: string[]
+  tags: string[]
+}
+
+export type ConstructionRuntimeBridgeResult = {
+  bridgeId: string
+  verticalSliceResult: ConstructionRuntimeVerticalSliceResult
+  shouldEnterRuntime: boolean
+  shouldPersist: boolean
+  shouldRefresh: boolean
+  audit: ConstructionRuntimeBridgeAudit
+  report: ConstructionRuntimeBridgeReport
   messages: string[]
   tags: string[]
 }

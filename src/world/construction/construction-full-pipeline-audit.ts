@@ -108,8 +108,18 @@ function auditMockPersistence(input: {
       : []
   }
 
-  if (proposal.shouldPersist !== input.memoryPersistenceMockResult.didStore) {
+  if (
+    input.memoryPersistenceMockResult.mode === "memory_commit" &&
+    proposal.shouldPersist !== input.memoryPersistenceMockResult.didStore
+  ) {
     return ["memory mock didStore 必须与 proposal.shouldPersist 对齐。"]
+  }
+
+  if (
+    input.memoryPersistenceMockResult.mode !== "memory_commit" &&
+    input.memoryPersistenceMockResult.didStore
+  ) {
+    return ["memory mock 只有 memory_commit 模式可以 didStore。"]
   }
 
   return []

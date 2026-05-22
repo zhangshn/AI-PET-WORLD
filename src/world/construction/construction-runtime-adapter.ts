@@ -20,6 +20,7 @@ export function buildConstructionRuntimeAdapterResult(
     buildConstructionMemoryPersistenceMockResult({
       proposal: runtimeCycleResult.persistenceProposal,
       nextHomeMapState: runtimeCycleResult.nextHomeMapState,
+      mode: input.memoryPersistenceMode,
     })
   const visualRefreshBridgeResult = buildConstructionVisualRefreshBridgeResult({
     signal: runtimeCycleResult.visualRefreshSignal,

@@ -417,3 +417,22 @@ CONSTRUCTION-FINAL-01 已完成建设系统可运行纵向闭环。
 10. 本阶段不能读取 PNG / WORLD_MAP_ASSETS 决定世界事实。
 11. 本阶段不能使用 Math.random / Date.now / any。
 12. 未进入真实 Runtime Bridge 前，Memory Mock / Visual Bridge / Pipeline Report 都不能被视为最终世界事实。
+
+## REMAINING CORE CLOSURE 红线
+
+本阶段已完成剩余核心闭环的 debug / dry-run / report 收口。
+
+红线：
+
+1. RuntimeBridge 只能作为真实 runtime 接入前桥接，不能自动注册 world-loop。
+2. PersistenceAdapter 当前只能 dry-run，不能写 DB、文件或外部 API。
+3. SnapshotRefreshRequest 只能作为刷新前请求，不能修改 Renderer / FormalVisualModel / UI。
+4. LifeEvent / CompanionDecision 当前只能生成后置候选，不能生成宠物、actor、placement。
+5. MVP Core Debug Runner 只能作为 TypeScript 调用入口，不能变成 UI 或 npm script。
+6. Memory Persistence Mock 不能当作真实持久化事实。
+7. Visual Refresh Bridge / SnapshotRefreshRequest 不能当作 UI model。
+8. 所有链路必须继续经过 HomeMapState / MapDiff / SafeApply。
+9. 禁止默认宠物开局、pet actor、pet bed、pet_arrival、pet_rest。
+10. 禁止 UI / CSS / PNG / WORLD_MAP_ASSETS 决定世界事实。
+11. 禁止使用 Math.random / Date.now / any。
+12. 禁止把 dry-run、mock、proposal、signal 当作最终世界事实。

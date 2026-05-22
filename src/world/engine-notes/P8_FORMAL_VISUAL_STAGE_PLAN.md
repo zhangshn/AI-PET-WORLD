@@ -416,3 +416,62 @@ HomeMapState
 ```text
 CONSTRUCTION-FINAL-02：Runtime Bridge 接入前一致性检查
 ```
+
+## REMAINING CORE CLOSURE 剩余核心闭环收口记录
+
+本阶段已完成 AI-PET-WORLD 剩余核心闭环的一次性工程收口。
+
+本次新增与补强：
+
+1. `runConstructionRuntimeVerticalSlice` 统一入口。
+2. Construction Runtime Bridge 与 bridge audit / report。
+3. Persistence Adapter dry-run 与 persistence audit。
+4. Snapshot Refresh Request 与 FormalVisual refresh precheck。
+5. LifeEvent / CompanionDecision 后置候选协议。
+6. MVP Core Debug Runner / Audit / Report。
+7. Memory Persistence Mock 支持 `memory_commit` / `memory_preview` / `disabled`。
+8. Construction Pipeline Report 新增人类可读 sections。
+9. `REMAINING_CORE_CLOSURE_REPORT.md` 收口文档。
+
+当前工程闭环为：
+
+```text
+HomeMapState
++ 管家建设倾向
++ 资源状态
++ 世界阶段
+-> ConstructionPlannerInput
+-> ConstructionPlan[] 候选
+-> ConstructionExecutionResult
+-> MapDiff[] 候选
+-> SafeApply
+-> nextHomeMapState
+-> ConstructionWorldLoopProtocolResult
+-> ConstructionRuntimeCycleResult
+-> PersistenceProposal
+-> VisualRefreshSignal
+-> RuntimeAdapter / VerticalSlice
+-> RuntimeBridge
+-> PersistenceAdapterDryRun
+-> SnapshotRefreshRequest
+-> LifeEventCandidate / CompanionDecisionCandidate
+-> MVP Core Audit
+-> MVP Core Report
+```
+
+当前仍未完成：
+
+1. 真正 UI 展示建设变化。
+2. 真正数据库持久化。
+3. 真正 world-loop scheduler。
+4. 真正宠物后置进入。
+5. 线上用户数据接入。
+6. integration tests。
+
+下一步不建议继续堆薄协议，应进入：
+
+```text
+MVP-CORE-TEST-00：核心闭环 integration tests
+```
+
+或根据产品优先级进入 persistence adapter 实现、world-loop scheduler、UI preview 接入前审计。
