@@ -474,3 +474,15 @@ CONSTRUCTION-FINAL-01 å·²å®Œæˆå»ºè®¾ç³»ç»Ÿå¯è¿è¡Œçºµå‘é—­ç¯ã€‚
 7. ³èÎïÈÔÈ»Ö»ÄÜÍ¨¹ı LifeEvent / CompanionDecision / accept_companion ºóÖÃ½øÈë£¬²»ÄÜÄ¬ÈÏ³öÏÖÔÚ³õÊ¼ÊÀ½ç»ò `/world` Ò³Ãæ¡£
 8. UI / CSS / PNG / WORLD_MAP_ASSETS ²»ÄÜ¾ö¶¨ÊÀ½çÊÂÊµ¡£
 9. ĞÂ´úÂë²»µÃÊ¹ÓÃ `Math.random`¡¢`Date.now` »ò `any` ÈÆ¹ıÎÈ¶¨Éó¼Æ¡£
+
+## VISUAL-DELIVERY-01 ºìÏß
+
+1. ÊÓ¾õÔöÇ¿²»ÄÜÉú³ÉÊÀ½çÊÂÊµ¡£
+2. CSS ²»ÄÜ¾ö¶¨¶ÔÏó´æÔÚ£¬Ö»ÄÜ±íÏÖ FormalVisualModel ÒÑÓĞ¶ÔÏó¡£
+3. FormalWorldView ²»ÄÜ´´½¨Ä£ĞÍÍâ¶ÔÏó¡¢placement »ò actor¡£
+4. FormalWorldView ²»ÄÜÄ¬ÈÏÏÔÊ¾³èÎï¡£
+5. FormalWorldView ²»ÄÜ´´½¨ pet actor / pet bed / pet_arrival / pet_rest¡£
+6. ÊÓ¾õ²ã²»ÄÜ¶ÁÈ¡ PNG / WORLD_MAP_ASSETS ×÷ÎªÊÂÊµÀ´Ô´¡£
+7. `/world` Ä¬ÈÏÖ÷ÊÓ¾õ±ØĞë¼ÌĞø×ß `RenderableWorldSnapshot -> FormalVisualModel -> FormalWorldView`¡£
+8. Debug Renderer ±ØĞë±£Áô£¬µ«²»ÄÜ×÷ÎªÄ¬ÈÏÕıÊ½Ö÷ÊÓ¾õ¡£
+9. ÊÓ¾õ½»¸¶²»ÄÜĞŞ¸ÄÊÀ½çÉú³É¡¢PlacementEngine¡¢Construction¡¢SafeApply »ò world-loop¡£

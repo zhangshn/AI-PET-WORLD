@@ -728,6 +728,13 @@ function MvpCorePanel(input: { model: MvpWorldViewModel }) {
           <strong>审计摘要</strong>
           <p>{model.auditSummary}</p>
         </article>
+        <article className={styles.mvpCoreCard}>
+          <span>Atmosphere</span>
+          <strong>{model.currentWorldPhaseLabel}</strong>
+          <p>
+            {model.atmosphereLabel}；伙伴状态：{model.companionStatusLabel}
+          </p>
+        </article>
       </div>
 
       <div className={styles.mvpCoreColumns}>

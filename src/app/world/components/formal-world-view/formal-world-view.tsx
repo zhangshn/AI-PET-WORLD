@@ -7,6 +7,7 @@ import type {
   FormalActorModel,
   FormalVisualLayer,
   FormalVisualModel,
+  FormalWorldObjectKind,
   FormalWorldObjectModel,
 } from "@/world/formal-visual-model/formal-visual-model-gateway"
 import type { Point2D, SpatialShape } from "@/world/spatial/spatial-gateway"
@@ -22,7 +23,11 @@ export function FormalWorldView(input: FormalWorldViewProps) {
 
   return (
     <section
-      className={styles.formalWorldShell}
+      className={[
+        styles.formalWorldShell,
+        getMoodClassName(model.canvas.mood),
+        getAtmosphereClassName(model.environment.atmosphere),
+      ].join(" ")}
       aria-label="AI-PET-WORLD formal world view"
     >
       <header className={styles.formalHeader}>
@@ -50,11 +55,13 @@ export function FormalWorldView(input: FormalWorldViewProps) {
             aria-label="formal world geometry"
             viewBox={`0 0 ${model.canvas.width} ${model.canvas.height}`}
           >
+            {renderFormalDefinitions()}
             {renderFormalObjects(model)}
             {model.actors.map((actorModel) =>
               renderFormalActor(model, actorModel)
             )}
           </svg>
+          <div className={styles.pixelVignette} />
         </div>
       </div>
 
@@ -71,7 +78,10 @@ export function FormalWorldView(input: FormalWorldViewProps) {
           label="伙伴状态"
           value={model.hudSummary.petStatusLabel}
         />
-        <FormalInfoCard label="环境" value={model.environment.weatherLabel} />
+        <FormalInfoCard
+          label="环境"
+          value={`${model.environment.mood} / ${model.environment.weatherLabel}`}
+        />
       </section>
 
       <section className={styles.formalNotes} aria-label="formal world notes">
@@ -88,6 +98,43 @@ export function FormalWorldView(input: FormalWorldViewProps) {
         )}
       </section>
     </section>
+  )
+}
+
+function renderFormalDefinitions(): ReactNode {
+  return (
+    <defs>
+      <pattern
+        id="formalPixelGrass"
+        width="16"
+        height="16"
+        patternUnits="userSpaceOnUse"
+      >
+        <rect width="16" height="16" fill="rgba(104, 158, 82, 0.66)" />
+        <rect x="2" y="3" width="3" height="3" fill="rgba(151, 192, 104, 0.48)" />
+        <rect x="10" y="9" width="3" height="3" fill="rgba(70, 130, 76, 0.42)" />
+      </pattern>
+      <pattern
+        id="formalPixelPath"
+        width="14"
+        height="14"
+        patternUnits="userSpaceOnUse"
+      >
+        <rect width="14" height="14" fill="rgba(156, 118, 78, 0.76)" />
+        <rect x="1" y="2" width="4" height="2" fill="rgba(202, 165, 108, 0.38)" />
+        <rect x="8" y="9" width="5" height="2" fill="rgba(112, 78, 50, 0.28)" />
+      </pattern>
+      <pattern
+        id="formalPixelStorage"
+        width="12"
+        height="12"
+        patternUnits="userSpaceOnUse"
+      >
+        <rect width="12" height="12" fill="rgba(135, 111, 73, 0.6)" />
+        <rect x="2" y="2" width="3" height="3" fill="rgba(216, 177, 104, 0.56)" />
+        <rect x="7" y="7" width="3" height="3" fill="rgba(92, 72, 50, 0.32)" />
+      </pattern>
+    </defs>
   )
 }
 
@@ -110,6 +157,7 @@ function renderFormalWorldObject(
       styles.formalShape,
       styles.formalObjectShape,
       getLayerClassName(objectModel.layer),
+      getObjectKindClassName(objectModel.kind),
       getStyleTokenClassName(objectModel.styleToken),
     ].join(" "),
     opacity: objectModel.opacity,
@@ -124,8 +172,14 @@ function renderFormalActor(
     return null
   }
 
+  const anchor = toCanvasPoint(actorModel.anchor, model.canvas.tileSize)
+
   return (
-    <g key={`actor-${actorModel.actorId}`} aria-label={actorModel.label}>
+    <g
+      key={`actor-${actorModel.actorId}`}
+      aria-label={actorModel.label}
+      className={styles.formalActorGroup}
+    >
       {actorModel.aura
         ? renderSpatialShape({
             id: `actor-${actorModel.actorId}-aura`,
@@ -137,7 +191,7 @@ function renderFormalActor(
               styles.formalActorAura,
               getStyleTokenClassName(actorModel.styleToken),
             ].join(" "),
-            opacity: 0.28,
+            opacity: 0.24,
           })
         : null}
       {renderSpatialShape({
@@ -150,8 +204,24 @@ function renderFormalActor(
           styles.formalActorBody,
           getStyleTokenClassName(actorModel.styleToken),
         ].join(" "),
-        opacity: 0.92,
+        opacity: 0.96,
       })}
+      <circle
+        className={styles.formalActorHead}
+        cx={anchor.x}
+        cy={anchor.y - model.canvas.tileSize * 0.18}
+        r={Math.max(4, model.canvas.tileSize * 0.16)}
+      >
+        <title>{actorModel.label}</title>
+      </circle>
+      <rect
+        className={styles.formalActorApron}
+        x={anchor.x - model.canvas.tileSize * 0.1}
+        y={anchor.y}
+        width={model.canvas.tileSize * 0.2}
+        height={model.canvas.tileSize * 0.28}
+        rx="2"
+      />
     </g>
   )
 }
@@ -174,7 +244,7 @@ function renderSpatialShape(input: {
         cy={point.y}
         key={input.id}
         opacity={input.opacity}
-        r={Math.max(3, input.tileSize * 0.16)}
+        r={Math.max(4, input.tileSize * 0.2)}
       >
         <title>{input.label}</title>
       </circle>
@@ -276,6 +346,22 @@ function getLayerClassName(layer: FormalVisualLayer): string {
   return styles.formalLayerUnknown
 }
 
+function getObjectKindClassName(kind: FormalWorldObjectKind): string {
+  if (kind === "terrain") return styles.formalKindTerrain
+  if (kind === "path") return styles.formalKindPath
+  if (kind === "shelter") return styles.formalKindShelter
+  if (kind === "structure") return styles.formalKindStructure
+  if (kind === "facility") return styles.formalKindFacility
+  if (kind === "tree") return styles.formalKindTree
+  if (kind === "bush") return styles.formalKindBush
+  if (kind === "surfaceDecoration") return styles.formalKindSurfaceDecoration
+  if (kind === "resource") return styles.formalKindResource
+  if (kind === "lifeTrace") return styles.formalKindLifeTrace
+  if (kind === "boundary") return styles.formalKindBoundary
+
+  return styles.formalKindUnknown
+}
+
 function getStyleTokenClassName(
   styleToken: FormalWorldObjectModel["styleToken"]
 ): string {
@@ -287,6 +373,26 @@ function getStyleTokenClassName(
   if (styleToken === "caretaking") return styles.formalStyleCaretaking
 
   return styles.formalStyleNeutral
+}
+
+function getMoodClassName(mood: FormalVisualModel["canvas"]["mood"]): string {
+  if (mood === "warm") return styles.formalMoodWarm
+  if (mood === "quiet") return styles.formalMoodQuiet
+  if (mood === "active") return styles.formalMoodActive
+  if (mood === "alert") return styles.formalMoodAlert
+
+  return styles.formalMoodCalm
+}
+
+function getAtmosphereClassName(
+  atmosphere: FormalVisualModel["environment"]["atmosphere"]
+): string {
+  if (atmosphere === "morning") return styles.formalAtmosphereMorning
+  if (atmosphere === "evening") return styles.formalAtmosphereEvening
+  if (atmosphere === "night") return styles.formalAtmosphereNight
+  if (atmosphere === "rain") return styles.formalAtmosphereRain
+
+  return styles.formalAtmosphereDay
 }
 
 function FormalInfoCard(input: { label: string; value: string }) {

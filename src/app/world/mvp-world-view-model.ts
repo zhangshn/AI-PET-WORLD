@@ -16,6 +16,9 @@ export type MvpWorldViewModel = {
   }>
   auditSummary: string
   formalVisualModel: FormalVisualModel | null
+  atmosphereLabel: string
+  currentWorldPhaseLabel: string
+  companionStatusLabel: string
   tags: string[]
 }
 
@@ -48,16 +51,42 @@ export function buildMvpWorldViewModel(
       `已接受 diff：${acceptedDiffCount}`,
       `已拒绝 diff：${rejectedDiffCount}`,
     ].join(" / "),
-    logItems: result.worldLogs.map((log) => `${log.title}: ${log.body}`),
-    pPhoneMessages: result.pPhoneData.messages.map((message) => ({
-      title: message.title,
-      body: message.body,
-    })),
+    logItems: [
+      `世界运行：当前有 ${result.nextHomeMapState.placements.length} 个可观察对象。`,
+      `建设链路：接受 ${acceptedDiffCount} 条 MapDiff，拒绝 ${rejectedDiffCount} 条。`,
+      `视觉刷新：${result.visualRefresh.reason}`,
+      `生命事件：${result.lifeEventCandidates
+        .map((candidate) => candidate.type)
+        .join("、")}`,
+    ],
+    pPhoneMessages: [
+      {
+        title: "家园摘要",
+        body: `当前世界已进入只读展示，${result.nextHomeMapState.placements.length} 个对象来自 HomeMapState。`,
+      },
+      {
+        title: "管家观察",
+        body:
+          selectedPlanId !== null
+            ? `我会优先观察 ${selectedPlanId} 的建设结果，并等待 SafeApply 与视觉刷新确认。`
+            : "我会继续观察家园资源、空间和阶段，等待合适的建设机会。",
+      },
+      {
+        title: "伙伴状态",
+        body: "伙伴入口保持后置等待，当前不会默认进入主世界。",
+      },
+    ],
     auditSummary:
       result.audit.warnings.length === 0
         ? "MVP pipeline audit 无警告。"
         : `MVP pipeline audit 警告：${result.audit.warnings.join("；")}`,
     formalVisualModel: result.formalVisualRefresh.formalVisualModel,
+    atmosphereLabel: "温暖、安静、自然",
+    currentWorldPhaseLabel:
+      result.nextHomeMapState.mapDiffs.length > 0
+        ? "家园正在运行"
+        : "第一片家园已建立",
+    companionStatusLabel: "后置等待，尚未接纳",
     tags: [
       "mvp_world_view_model",
       "readonly_projection",

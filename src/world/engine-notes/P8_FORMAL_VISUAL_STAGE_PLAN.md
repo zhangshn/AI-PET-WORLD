@@ -598,3 +598,23 @@ Player Birth Input
 ```
 
 后续产品化重点不再继续堆协议，优先进入真实 persistence adapter、world-loop scheduler、snapshot refresh adapter 与 integration tests。
+
+## VISUAL-DELIVERY-01 Formal World View Presentation 完成记录
+
+VISUAL-DELIVERY-01 已完成 `/world` 正式主视觉低保真像素家园表现交付。
+
+本阶段是视觉表现交付，不是世界事实生成：
+
+1. FormalWorldView 仍然只读 `FormalVisualModel`。
+2. `/world` 仍然通过真实 `RenderableWorldSnapshot -> buildFormalVisualModelFromSnapshot -> FormalWorldView` 链路展示正式主视觉。
+3. Debug 视图保留，但默认主视觉是 FormalWorldView。
+4. 本阶段没有修改世界生成、PlacementEngine、Construction、world-loop 或 FormalVisualGenerator。
+5. 本阶段没有默认显示宠物，没有创建 pet actor / pet bed / pet_arrival / pet_rest。
+
+下一步可以根据产品验收进入：
+
+```text
+VISUAL-DELIVERY-02：Formal World View interaction polish
+```
+
+或进入真实产品化链路：persistence adapter、world-loop scheduler、snapshot refresh adapter 与 integration tests。
