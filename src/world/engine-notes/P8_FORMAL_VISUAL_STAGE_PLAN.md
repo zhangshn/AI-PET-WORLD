@@ -33,7 +33,7 @@
 4. Debug View 与 Formal World View 必须分离。
 5. CSS 只能控制表现，不能决定世界事实。
 6. PNG / WORLD_MAP_ASSETS 只能作为表现资源，不能作为世界事实来源。
-7. 当前正式 MVP 不包含孵化器 / 胚胎 / 默认宠物开局路线。
+7. 当前正式 MVP 不包含旧出生装置 / 默认宠物开局路线。
 8. 宠物未来能力保留，但只能通过 LifeEvent / CompanionDecision / accept_companion 后置进入。
 
 ## 3. 已完成阶段总表
@@ -49,10 +49,11 @@
 | FORMAL-VIEW-03 | 已完成 | /world 从真实 snapshot 构建 FormalVisualModel。 |
 | FORMAL-VIEW-04 | 已完成 | 默认 Formal，Debug 保留，Both 用于开发对照。 |
 | WORLD-GEN-00 | 已完成 | 审计世界生成链路和旧宠物默认风险。 |
-| MVP-ALIGN-01 | 已完成 | 审计旧孵化器 / 默认宠物运行链路。 |
+| MVP-ALIGN-01 | 已完成 | 审计旧路线与默认宠物运行链路。 |
 | WORLD-GEN-01A/B | 已完成 | 修正正式首屏旧文案，断开 /world 默认 pet runtime。 |
-| MVP-ALIGN-02 | 已完成 | 移除正式链路中的旧孵化器 / 默认宠物 / pet_arrival / pet_rest。 |
-| MVP-ALIGN-03 | 当前阶段 | 对齐文档体系，清理旧 README / legacy docs / 乱码计划文档。 |
+| MVP-ALIGN-02 | 已完成 | 移除正式链路中的旧路线 / 默认宠物 / pet_arrival / pet_rest。 |
+| MVP-ALIGN-03 | 已完成 | 对齐文档体系，清理旧 README / legacy docs / 乱码计划文档。 |
+| WORLD-GEN-02 | 已完成 | 建立 worldSeed + personality layout input schema，并接入 PlacementEngine。 |
 
 ## 4. 已废弃路线
 
@@ -64,7 +65,7 @@
 4. 在组件内写 buildFormalActorVisualItems。
 5. 由前端组件决定树、房子、道路、设施、管家或宠物如何存在。
 6. 用 PNG / WORLD_MAP_ASSETS 反向决定世界对象是否存在。
-7. 默认生成孵化器、胚胎、宠物、宠物床、宠物抵达区、宠物休息区。
+7. 默认生成旧出生装置、宠物、宠物床、宠物抵达区、宠物休息区。
 
 ## 5. Formal 视觉链路现状
 
@@ -93,14 +94,19 @@ HomeMapState / WorldState
 当前已具备：
 
 1. worldSeed。
-2. InitialHomeGenerator。
-3. HomeMapState。
-4. Scene Recipe。
-5. PlacementEngine。
-6. Placement rules / layout rules。
-7. RenderableWorldSnapshot。
-8. FormalVisualModel。
-9. FormalWorldView。
+2. WorldLayoutGenerationInput。
+3. WorldLayoutPersonalityInput。
+4. WorldLayoutResourceInput。
+5. WorldLayoutPhaseInput。
+6. WorldLayoutVariantInput。
+7. InitialHomeGenerator。
+8. HomeMapState。
+9. Scene Recipe。
+10. PlacementEngine。
+11. Placement rules / layout rules。
+12. RenderableWorldSnapshot。
+13. FormalVisualModel。
+14. FormalWorldView。
 
 当前已完成中性化：
 
@@ -111,20 +117,26 @@ HomeMapState / WorldState
 5. 初始世界不再默认生成 pet 专属设施。
 6. 初始区域改为 entry_area / initial_care / temporary_shelter / quiet_living / storage_tools / natural_boundary。
 
+WORLD-GEN-02 已完成：
+
+1. 由 stable seed 派生 layout variant。
+2. 由管家建设人格映射 structure / care / protection / aesthetic / quiet / adaptability 布局倾向。
+3. 由初始资源映射 material / care / natural / ground / space 布局约束。
+4. PlacementEngine 开始读取 layout input 影响路径、住所、自然边界、安静生活区和装饰。
+
 仍未完成：
 
-1. personality layout input schema。
-2. 不同 seed / 管家人格 / 资源状态的可观察差异验证。
-3. ConstructionPlanner。
-4. ConstructionExecutor。
-5. MapDiff 驱动的长期建设变化。
+1. 不同 seed / 管家人格 / 资源状态的系统化对照验证。
+2. ConstructionPlanner。
+3. ConstructionExecutor。
+4. MapDiff 驱动的长期建设变化。
 
-## 7. 宠物后置与旧孵化器清理现状
+## 7. 宠物后置与旧路线清理现状
 
 当前正式 MVP 规则：
 
-1. 不再使用孵化器作为当前正式设定。
-2. 不再使用胚胎 / hatching / incubating 默认路线。
+1. 不再使用旧出生装置作为当前正式设定。
+2. 不再使用旧默认生命初始路线。
 3. 开局不默认出现宠物。
 4. 开局不默认出现 pet actor。
 5. 开局不默认出现 pet bed。
@@ -136,27 +148,28 @@ HomeMapState / WorldState
 
 | 问题 | 状态 | 处理方式 |
 |---|---:|---|
-| 旧 README 仍可能误导后续开发 | MVP-ALIGN-03 处理 | 清理或改写为当前正式设定。 |
-| 旧 docs/mvp 仍可能含旧路线 | MVP-ALIGN-03 处理 | 加 legacy 声明，不再作为最高依据。 |
-| 旧测试报告 / artifacts 仍有历史字段 | MVP-ALIGN-03 处理 | 标记 historical，不作为当前规则。 |
-| P8 总控文档曾出现乱码 | MVP-ALIGN-03 处理 | 本文件已重写为 UTF-8 中文。 |
-| worldSeed + 人格布局输入仍未完成 | 后续 WORLD-GEN-02 | 实现世界生成差异化输入协议。 |
+| 旧 README / legacy docs 误导 | 已处理 | MVP-ALIGN-03 已标记或清理。 |
+| P8 总控文档乱码 | 已处理 | 已重写为 UTF-8 中文。 |
+| worldSeed + 人格布局输入 | 已处理 | WORLD-GEN-02 已建立 schema 并接入 PlacementEngine。 |
+| 布局差异是否足够可观察 | 未完成 | WORLD-GEN-03 进行生成对照与 debug audit。 |
+| ConstructionPlanner / Executor | 未完成 | 后续 CONSTRUCTION 模块。 |
+| LifeEvent / CompanionDecision | 未完成 | 后续 LIFE-EVENT 模块。 |
 
 ## 9. 下一大模块计划
 
-MVP-ALIGN-03 完成后，进入：
+WORLD-GEN-02 完成后，进入：
 
 ```text
-WORLD-GEN-02：worldSeed + personality layout input schema
+WORLD-GEN-03：布局差异化验证与 debug audit
 ```
 
-WORLD-GEN-02 目标：
+WORLD-GEN-03 目标：
 
-1. 定义世界生成输入协议。
-2. 明确 seed、管家人格、constructionStyle、resources、world phase 如何影响布局。
-3. 让同一 seed + 同一状态稳定复现。
-4. 让不同 seed / 人格 / 资源状态产生可观察差异。
-5. 为后续 ConstructionPlanner / MapDiff 演化打基础。
+1. 构建多个 seed / 管家人格 / 资源组合的生成对照。
+2. 验证同一 input 稳定复现。
+3. 验证不同 input 产生可观察差异。
+4. 输出布局差异 audit，而不是靠肉眼猜测。
+5. 为后续 ConstructionPlanner / MapDiff 演化提供验收基线。
 
 ## 10. 当前最终结论
 
@@ -164,6 +177,8 @@ P8 Formal 视觉链路已完成并保留。
 
 当前不再回到前端手写世界内容路线。
 
-当前不再回到孵化器 / 胚胎 / 默认宠物开局路线。
+当前不再回到旧出生装置 / 默认宠物开局路线。
+
+WORLD-GEN-02 已把世界生成从固定 recipe 推进到 `seed + personality + resources + phase + variant + placement rules` 的输入协议。
 
 后续开发必须围绕规则生成、结构化世界事实、FormalVisualModel First、宠物后置和非固定布局差异化继续推进。
