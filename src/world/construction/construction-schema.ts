@@ -186,6 +186,42 @@ export type ConstructionExecutionBuildResult = {
   audit: ConstructionExecutionAudit
 }
 
+export type ConstructionSafeApplyInput = {
+  homeMapState: HomeMapState
+  executionResult: ConstructionExecutionResult
+  now: number
+}
+
+export type ConstructionSafeApplyRejectedDiff = {
+  diffId: string
+  reason: string
+  tags: string[]
+}
+
+export type ConstructionSafeApplyAudit = {
+  stableSafeApplyFingerprint: string
+  sourcePlanId: string
+  acceptedDiffIds: string[]
+  rejectedDiffIds: string[]
+  warnings: string[]
+  tags: string[]
+}
+
+export type ConstructionSafeApplyResult = {
+  nextHomeMapState: HomeMapState
+  acceptedDiffIds: string[]
+  rejectedDiffs: ConstructionSafeApplyRejectedDiff[]
+  messages: string[]
+  audit: ConstructionSafeApplyAudit
+  tags: string[]
+}
+
+export type ConstructionSafeApplyBuildResult = {
+  input: ConstructionSafeApplyInput
+  result: ConstructionSafeApplyResult
+  audit: ConstructionSafeApplyAudit
+}
+
 export function toConstructionResourceSnapshot(
   resources: HomeResourceState
 ): ConstructionPlannerResourceSnapshot {

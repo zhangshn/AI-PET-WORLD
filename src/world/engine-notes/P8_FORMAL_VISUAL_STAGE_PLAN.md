@@ -265,3 +265,49 @@ CONSTRUCTION-01 已把建设系统推进到 `ConstructionPlannerInput -> Constru
 CONSTRUCTION-02 已把建设系统推进到 `selected ConstructionPlan -> ConstructionExecutionResult -> MapDiff[] 候选`。
 
 后续开发必须围绕规则生成、结构化世界事实、FormalVisualModel First、宠物后置和非固定布局差异化继续推进。
+
+## CONSTRUCTION-03 MapDiff SafeApply 与 HomeMapState 更新协议记录
+
+CONSTRUCTION-03 已完成 MapDiff SafeApply 与 HomeMapState 更新协议。
+
+当前链路推进为：
+
+```text
+HomeMapState
++ 管家建设倾向
++ 资源状态
++ 世界阶段
+-> ConstructionPlannerInput
+-> ConstructionPlan[] 候选
+-> ConstructionExecutionResult
+-> MapDiff[] 候选
+-> SafeApply
+-> next HomeMapState
+```
+
+本阶段完成：
+
+1. 新增 ConstructionSafeApplyInput。
+2. 新增 ConstructionSafeApplyResult。
+3. 新增 ConstructionSafeApplyRejectedDiff。
+4. 新增 ConstructionSafeApplyAudit。
+5. 实现 buildConstructionSafeApplyResult。
+6. SafeApply 当前只接受 update 已存在 placement。
+7. SafeApply 当前拒绝 add / remove / move。
+8. SafeApply 返回新的 nextHomeMapState，不修改输入 HomeMapState 原对象。
+9. SafeApply 会追加 accepted MapDiff 到 HomeMapState.mapDiffs。
+10. SafeApply 会在已有 constructionPlans 中更新对应 plan summary，但不会强行新增 plan。
+11. 新增 SafeApply audit 检查 diff 覆盖率、HomeMapState identity、updatedAt、actor placement、禁止 token 与 stable fingerprint。
+
+仍未完成：
+
+1. World loop 接入。
+2. 持久化策略。
+3. RenderableWorldSnapshot / FormalVisualModel 刷新链路接入。
+4. LifeEvent / CompanionDecision。
+
+下一步进入：
+
+```text
+CONSTRUCTION-04：Construction World Loop 接入前协议
+```

@@ -336,3 +336,22 @@ CONSTRUCTION-03：MapDiff SafeApply 与 HomeMapState 更新协议
 ```
 
 CONSTRUCTION-03 目标是定义 MapDiff SafeApply 输入协议，验证 MapDiff 候选是否可应用，并通过安全应用协议更新 HomeMapState；该阶段仍不做 UI，不接入宠物，不绕过 HomeMapState / MapDiff / FormalVisualModel 链路。
+
+## CONSTRUCTION-03 红线
+
+CONSTRUCTION-03 已建立 MapDiff SafeApply 与 HomeMapState 更新协议。
+
+红线：
+
+1. SafeApply 可以返回 nextHomeMapState，但必须来自 MapDiff 验证。
+2. SafeApply 不能接 UI。
+3. SafeApply 不能接 FormalWorldView。
+4. SafeApply 不能读取 PNG / WORLD_MAP_ASSETS 决定世界事实。
+5. SafeApply 不能生成宠物、pet actor、pet bed。
+6. SafeApply 不能包含 pet_arrival / pet_rest。
+7. SafeApply 不能恢复旧默认宠物开局路线。
+8. SafeApply 不能使用 Math.random / Date.now / any。
+9. SafeApply 输出必须经过 audit。
+10. SafeApply 不能接受未经 ConstructionExecutionResult / audit 产生的 MapDiff。
+11. SafeApply 拒绝 add / remove，除非后续阶段明确开放并增加严格规则。
+12. SafeApply 必须保持 HomeMapState 的 worldId / ownerId / seed 不变。
