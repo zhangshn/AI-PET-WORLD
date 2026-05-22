@@ -198,6 +198,7 @@ PNG / WORLD_MAP_ASSETS 可以作为表现资源候选，但不能作为世界事
 | WORLD-GEN-02 | worldSeed + personality layout input schema 已完成。 |
 | WORLD-GEN-03 | 布局差异化验证与 debug audit 已完成。 |
 | CONSTRUCTION-00 | ConstructionPlanner 输入协议与输入审计已完成。 |
+| CONSTRUCTION-01 | ConstructionPlanner 候选计划生成与候选审计已完成。 |
 
 ## 10. WORLD-GEN-02 布局输入红线
 
@@ -250,7 +251,28 @@ CONSTRUCTION-00 已建立 ConstructionPlanner 输入协议。
 9. Planner input 必须保留 stable fingerprint audit。
 10. Planner input 禁止 Math.random / Date.now / any。
 
-## 13. 每轮开发必须回答
+## 13. CONSTRUCTION-01 候选计划红线
+
+CONSTRUCTION-01 已建立 ConstructionPlanner 候选计划生成。
+
+红线：
+
+1. 候选计划只能读取 ConstructionPlannerInput。
+2. 候选计划不能修改 HomeMapState。
+3. 候选计划不能生成 MapDiff。
+4. 候选计划不能接入 `/world`。
+5. 候选计划不能接入 FormalWorldView。
+6. 候选计划不能生成 UI。
+7. 候选计划不能生成宠物、pet actor、pet bed。
+8. 候选计划不能包含 pet_arrival / pet_rest。
+9. 候选计划不能恢复旧出生装置路线。
+10. 候选计划必须保留 stable output fingerprint audit。
+11. 候选计划 stage 的 mapDiffIds 必须为空。
+12. 候选计划 stage 的 progress 必须从 0 开始。
+13. 候选计划 stage 不能预先 completed。
+14. 候选计划禁止 Math.random / Date.now / any。
+
+## 14. 每轮开发必须回答
 
 每轮开发开始前必须打印并确认：
 
@@ -269,7 +291,7 @@ CONSTRUCTION-00 已建立 ConstructionPlanner 输入协议。
 13. 完成后去哪里看。
 14. 如何验证。
 
-## 14. 验收门槛
+## 15. 验收门槛
 
 每轮必须通过：
 
@@ -286,12 +308,12 @@ npm run build
 3. 文档无旧路线冲突描述。
 4. legacy / historical 文档不能被当作当前最高依据。
 
-## 15. 当前下一大模块
+## 16. 当前下一大模块
 
-CONSTRUCTION-00 完成后，进入：
+CONSTRUCTION-01 完成后，进入：
 
 ```text
-CONSTRUCTION-01：ConstructionPlanner 候选计划生成
+CONSTRUCTION-02：ConstructionExecutor + MapDiff 协议
 ```
 
-CONSTRUCTION-01 目标是读取 ConstructionPlannerInput，生成 ConstructionPlan 候选；该阶段仍不直接修改 HomeMapState，不生成 MapDiff，不做 UI，不接入宠物。
+CONSTRUCTION-02 目标是定义 ConstructionExecutor 输入协议，说明 ConstructionPlan 如何被转换为 MapDiff 候选；该阶段仍不做 UI，不接入宠物，不绕过 HomeMapState / MapDiff / FormalVisualModel 链路。
