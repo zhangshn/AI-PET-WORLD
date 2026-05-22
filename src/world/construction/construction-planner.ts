@@ -1,5 +1,5 @@
 /**
- * 当前文件职责：生成 MVP 第一版管家建设计划。
+ * 当前文件负责：生成 MVP 第一版管家建设计划。
  */
 
 import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
@@ -24,7 +24,7 @@ export function createInitialConstructionPlan(
 ): ConstructionPlan {
   return {
     id: "mvp-quiet-living-plan",
-    projectType: "improve_quiet_living",
+    projectType: "preserve_quiet_living",
     title: "整理安静生活区",
     reason:
       "管家观察到初始家园需要一个更稳定的安静生活区，因此先整理基础生活空间。",
