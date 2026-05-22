@@ -13,8 +13,12 @@ export type LifeEventCandidateKind =
 
 export type CompanionDecisionCandidateKind =
   | "no_companion_decision"
-  | "observe_world_first"
-  | "companion_opportunity_later"
+  | "wait_and_observe"
+  | "prepare_world_first"
+  | "eligible_later"
+
+export type LifeEventCandidateType = LifeEventCandidateKind
+export type CompanionDecisionCandidateType = CompanionDecisionCandidateKind
 
 export type LifeEventCandidate = {
   candidateId: string

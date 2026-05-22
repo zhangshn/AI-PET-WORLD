@@ -5,6 +5,8 @@
 import type { MapPlacement } from "@/world/map-state/home-map-state-schema"
 
 import type {
+  AiPetWorldMvpAudit,
+  AiPetWorldMvpPipelineResult,
   MvpCoreAudit,
   MvpCoreDebugRunnerInput,
   MvpCoreDebugRunnerResult,
@@ -45,6 +47,68 @@ export function auditMvpCoreDebugRunner(input: {
       "no_real_persistence",
     ],
   }
+}
+
+export function auditAiPetWorldMvpPipeline(
+  result: AiPetWorldMvpPipelineResult
+): AiPetWorldMvpAudit {
+  const warnings = [
+    ...result.butlerAudit.warnings,
+    ...result.initialWorld.audit.warnings,
+    ...result.runtimeTick.audit.warnings,
+    ...result.persistence.warnings,
+    ...result.visualRefresh.warnings,
+    ...result.formalVisualRefresh.warnings,
+    ...result.lifeEventCandidates.flatMap((candidate) =>
+      candidate.readyForCompanionDecision && candidate.kind !== "companion_opportunity_later"
+        ? [`Unexpected life event readiness: ${candidate.candidateId}`]
+        : []
+    ),
+    ...auditPipelineForbiddenTokens(result),
+  ]
+
+  return {
+    stableMvpFingerprint: [
+      result.butlerAudit.stableButlerFingerprint,
+      result.initialWorld.audit.stableInitialWorldFingerprint,
+      result.runtimeTick.audit.stableRuntimeFingerprint,
+      result.persistence.stablePersistenceFingerprint,
+      result.visualRefresh.snapshotRefreshRequestId,
+      result.formalVisualRefresh.formalVisualModel?.worldId ?? "no-formal-model",
+      result.worldLogs.map((log) => log.id).sort().join("+"),
+    ].join("::"),
+    worldId: result.nextHomeMapState.worldId,
+    ownerId: result.nextHomeMapState.ownerId,
+    warnings,
+    tags: [
+      "ai_pet_world_mvp_audit",
+      warnings.length === 0 ? "ai_pet_world_mvp_valid" : "ai_pet_world_mvp_warning",
+      "no_default_companion_entry",
+    ],
+  }
+}
+
+function auditPipelineForbiddenTokens(
+  result: AiPetWorldMvpPipelineResult
+): string[] {
+  const tokens = [
+    ...result.tags,
+    ...result.messages,
+    ...result.worldLogs.flatMap((log) => [log.id, log.title, log.body, ...log.tags]),
+    ...result.butlerExplanations.flatMap((item) => [
+      item.id,
+      item.title,
+      item.body,
+      ...item.tags,
+    ]),
+    ...result.nextHomeMapState.placements.flatMap(collectPlacementTokens),
+  ].map((token) => token.toLowerCase())
+
+  return FORBIDDEN_MVP_CORE_TOKENS.flatMap((token) =>
+    tokens.some((item) => item.includes(token))
+      ? [`AI-PET-WORLD MVP pipeline 包含禁止 token：${token}`]
+      : []
+  )
 }
 
 function auditLineage(input: {

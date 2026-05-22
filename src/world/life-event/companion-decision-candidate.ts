@@ -22,7 +22,7 @@ function buildCompanionDecisionCandidate(
   ) {
     return {
       candidateId: `${candidate.candidateId}-decision-later`,
-      kind: "companion_opportunity_later",
+      kind: "eligible_later",
       worldId: candidate.worldId,
       ownerId: candidate.ownerId,
       canEnterCompanionFlow: false,
@@ -39,14 +39,14 @@ function buildCompanionDecisionCandidate(
   if (candidate.kind === "observe_world_ready") {
     return {
       candidateId: `${candidate.candidateId}-decision-observe`,
-      kind: "observe_world_first",
+      kind: "wait_and_observe",
       worldId: candidate.worldId,
       ownerId: candidate.ownerId,
       canEnterCompanionFlow: false,
-      reason: "世界已可观察，但伙伴决策仍需后续生命关系事件确认。",
+      reason: "世界已可观察，但伙伴决策仍需等待并观察后续生命关系事件。",
       tags: [
         "companion_decision_candidate",
-        "observe_world_first",
+        "wait_and_observe",
         "not_default_companion",
         "no_actor_creation",
       ],

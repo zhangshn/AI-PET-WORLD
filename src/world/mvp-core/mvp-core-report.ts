@@ -3,6 +3,9 @@
  */
 
 import type {
+  AiPetWorldMvpAudit,
+  AiPetWorldMvpPipelineResult,
+  AiPetWorldMvpReport,
   MvpCoreAudit,
   MvpCoreDebugRunnerResult,
   MvpCoreReport,
@@ -32,6 +35,91 @@ export function buildMvpCoreReport(input: {
       "not_persisted_fact",
     ],
   }
+}
+
+export function buildAiPetWorldMvpReport(
+  result: AiPetWorldMvpPipelineResult,
+  audit: AiPetWorldMvpAudit
+): AiPetWorldMvpReport {
+  const sections: MvpCoreReportSection[] = [
+    {
+      title: "Butler",
+      status: result.butlerAudit.warnings.length === 0 ? "ok" : "warning",
+      lines: result.butlerReport.messages,
+      tags: ["section:butler"],
+    },
+    {
+      title: "Initial World",
+      status: result.initialWorld.audit.warnings.length === 0 ? "ok" : "warning",
+      lines: result.initialWorld.messages,
+      tags: ["section:initial_world"],
+    },
+    {
+      title: "Runtime Tick",
+      status: result.runtimeTick.audit.warnings.length === 0 ? "ok" : "warning",
+      lines: result.runtimeTick.report.messages,
+      tags: ["section:runtime_tick"],
+    },
+    {
+      title: "Persistence / Visual",
+      status:
+        result.persistence.warnings.length === 0 &&
+        result.visualRefresh.warnings.length === 0
+          ? "ok"
+          : "warning",
+      lines: [
+        result.persistence.reason,
+        result.visualRefresh.reason,
+        result.formalVisualRefresh.precheckReason,
+      ],
+      tags: ["section:persistence_visual"],
+    },
+    {
+      title: "LifeEvent / P-Phone",
+      status: "ok",
+      lines: [
+        `Life candidates: ${result.lifeEventCandidates.length}`,
+        `Companion decision candidates: ${result.companionDecisionCandidates.length}`,
+        `P-Phone messages: ${result.pPhoneData.messages.length}`,
+      ],
+      tags: ["section:life_event_pphone"],
+    },
+    {
+      title: "Audit",
+      status: audit.warnings.length === 0 ? "ok" : "warning",
+      lines:
+        audit.warnings.length === 0
+          ? ["AI-PET-WORLD MVP pipeline audit has no warnings."]
+          : audit.warnings,
+      tags: ["section:audit"],
+    },
+  ]
+
+  return {
+    reportId: `ai-pet-world-mvp-report-${normalizeIdToken(audit.stableMvpFingerprint).slice(0, 48)}`,
+    worldId: audit.worldId,
+    ownerId: audit.ownerId,
+    sections,
+    messages: sections.flatMap((section) => section.lines),
+    tags: [
+      "ai_pet_world_mvp_report",
+      "full_mvp_sections",
+      "not_persisted_fact",
+    ],
+  }
+}
+
+export function summarizeAiPetWorldMvpPipeline(
+  result: AiPetWorldMvpPipelineResult
+): string[] {
+  return [
+    `World: ${result.nextHomeMapState.worldId}`,
+    `Butler: ${result.butlerProfile.butlerId}`,
+    `Placements: ${result.nextHomeMapState.placements.length}`,
+    `Accepted diffs: ${result.runtimeTick.constructionResult.fullPipelineAudit.acceptedDiffIds.length}`,
+    `P-Phone messages: ${result.pPhoneData.messages.length}`,
+    `Warnings: ${result.audit.warnings.length}`,
+  ]
 }
 
 function buildMvpCoreReportSections(input: {

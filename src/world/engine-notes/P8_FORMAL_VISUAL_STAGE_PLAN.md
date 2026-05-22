@@ -526,3 +526,46 @@ MVP-CORE-TEST-00：MVP core integration tests
 ```
 
 或进入 persistence adapter / scheduler / snapshot refresh adapter 的产品化实现。
+
+## MVP REQUIRED FULL COMPLETION 记录
+
+本阶段已补齐 MVP 必交付完整闭环的硬性文件与入口。
+
+本次完成：
+
+1. Butler MVP 输入与人格映射。
+2. MVP Initial World Builder。
+3. MVP World Runtime Tick。
+4. MVP Persistence Dry Run。
+5. MVP Visual Refresh / Formal Visual Refresh。
+6. MVP World Log / Butler Explanation / P-Phone。
+7. LifeEvent / CompanionDecision 后置候选入口。
+8. MVP Core Pipeline 总入口。
+9. MVP Smoke Scenarios / Smoke Audit。
+10. /world MVP 只读 ViewModel。
+11. MVP_FULL_IMPLEMENTATION_REPORT.md。
+
+当前完整链路：
+
+```text
+BirthInput
+-> ButlerMvpProfile
+-> worldSeed
+-> InitialHomeGenerator
+-> HomeMapState
+-> MvpWorldRuntimeTick
+-> Construction vertical slice
+-> MapDiff / SafeApply
+-> nextHomeMapState
+-> MvpPersistenceDryRun
+-> MvpVisualRefresh
+-> MvpFormalVisualRefresh
+-> FormalVisualModel
+-> MvpWorldLog / ButlerExplanation / PPhoneData
+-> LifeEventCandidate / CompanionDecisionCandidate
+-> AiPetWorldMvpAudit
+-> AiPetWorldMvpReport
+-> MvpWorldViewModel
+```
+
+当前仍不是线上真实产品：真实数据库、真实 scheduler、宠物正式进入、线上用户数据仍需后续产品化。

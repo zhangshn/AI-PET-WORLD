@@ -449,3 +449,16 @@ CONSTRUCTION-FINAL-01 已完成建设系统可运行纵向闭环。
 8. 禁止使用 PNG / WORLD_MAP_ASSETS 作为世界事实来源。
 9. 禁止使用 Math.random / Date.now / any。
 10. 后续产品化必须优先补 integration tests、真实 persistence adapter、world-loop scheduler、snapshot refresh adapter。
+
+## MVP REQUIRED FULL COMPLETION 红线
+
+1. MVP pipeline 总入口必须经过 Butler -> InitialWorld -> RuntimeTick -> Persistence -> VisualRefresh -> FormalVisualRefresh -> Logs -> PPhone -> LifeEvent -> Audit -> Report。
+2. MVP ViewModel 只能读取 pipeline result，不能生成 world fact、placement 或 actor。
+3. Persistence dry-run 不能写真实数据库、文件或外部 API。
+4. FormalVisualRefresh 必须复用 FormalVisualGenerator，不能让 FormalWorldView 生成模型。
+5. LifeEvent / CompanionDecision 只能是后置候选，不能默认触发 companion。
+6. 禁止默认生成宠物、pet actor、pet bed、pet_arrival、pet_rest。
+7. 禁止恢复旧默认宠物开局路线。
+8. 禁止 UI / CSS / PNG / WORLD_MAP_ASSETS 决定世界事实。
+9. 禁止绕过 HomeMapState / MapDiff / SafeApply / FormalVisualModel。
+10. 禁止把 dry-run / audit / report 当作线上最终事实。

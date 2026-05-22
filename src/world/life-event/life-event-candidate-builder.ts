@@ -14,7 +14,7 @@ import type {
 export function buildLifeEventCandidateBuilderResult(
   input: LifeEventCandidateBuilderInput
 ): LifeEventCandidateBuilderResult {
-  const lifeEventCandidates = buildLifeEventCandidates(input)
+  const lifeEventCandidates = buildLifeEventCandidateList(input)
   const companionDecisionCandidates = buildCompanionDecisionCandidates({
     lifeEventCandidates,
   })
@@ -44,7 +44,13 @@ export function buildLifeEventCandidateBuilderResult(
   }
 }
 
-function buildLifeEventCandidates(
+export function buildLifeEventCandidates(
+  input: LifeEventCandidateBuilderInput
+): LifeEventCandidate[] {
+  return buildLifeEventCandidateList(input)
+}
+
+function buildLifeEventCandidateList(
   input: LifeEventCandidateBuilderInput
 ): LifeEventCandidate[] {
   const acceptedDiffCount =
