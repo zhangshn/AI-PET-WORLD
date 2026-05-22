@@ -2,7 +2,7 @@
 
 ## 1. 文档定位
 
-本文档是 P8 正式视觉阶段与后续世界生成模块的总控计划。
+本文档是 P8 正式视觉阶段与后续世界生成、建设模块的总控计划。
 
 当前最高依据：
 
@@ -25,6 +25,19 @@
 -> FormalWorldView 只读渲染
 ```
 
+建设链路当前推进为：
+
+```text
+HomeMapState
++ 管家建设倾向
++ 资源状态
++ 世界阶段
+-> ConstructionPlannerInput
+-> ConstructionPlan[] 候选
+-> ConstructionExecutionResult
+-> MapDiff[] 候选
+```
+
 核心原则：
 
 1. 世界内容必须由规则、状态、生成容器和可审计链路产生。
@@ -33,8 +46,9 @@
 4. Debug View 与 Formal World View 必须分离。
 5. CSS 只能控制表现，不能决定世界事实。
 6. PNG / WORLD_MAP_ASSETS 只能作为表现资源，不能作为世界事实来源。
-7. 当前正式 MVP 不包含旧出生装置 / 默认宠物开局路线。
+7. 当前正式 MVP 不包含旧默认宠物开局路线。
 8. 宠物未来能力保留，但只能通过 LifeEvent / CompanionDecision / accept_companion 后置进入。
+9. ConstructionExecutor 当前只生成 MapDiff 候选，不能直接应用到 HomeMapState。
 
 ## 3. 已完成阶段总表
 
@@ -57,6 +71,7 @@
 | WORLD-GEN-03 | 已完成 | 建立多 seed / 多人格 / 多资源布局差异化验证与 debug audit。 |
 | CONSTRUCTION-00 | 已完成 | 建立 ConstructionPlanner 输入协议与输入审计。 |
 | CONSTRUCTION-01 | 已完成 | 建立 ConstructionPlanner 候选计划生成与候选审计。 |
+| CONSTRUCTION-02 | 已完成 | 建立 ConstructionExecutor 与 MapDiff 候选生成协议。 |
 
 ## 4. 已废弃路线
 
@@ -68,7 +83,7 @@
 4. 在组件内写 buildFormalActorVisualItems。
 5. 由前端组件决定树、房子、道路、设施、管家或宠物如何存在。
 6. 用 PNG / WORLD_MAP_ASSETS 反向决定世界对象是否存在。
-7. 默认生成旧出生装置、宠物、宠物床、宠物抵达区、宠物休息区。
+7. 默认生成宠物、宠物床、宠物抵达区、宠物休息区。
 
 ## 5. Formal 视觉链路现状
 
@@ -91,8 +106,9 @@ HomeMapState / WorldState
 4. FormalVisualModel 保存正式玩家主视觉模型。
 5. FormalWorldView 只负责渲染 FormalVisualModel。
 6. Debug Renderer 只用于工程对照，不是最终玩家 UI。
+7. ConstructionExecutionResult 当前只是执行候选输出，不等同于已应用世界事实。
 
-## 6. 世界生成链路现状
+## 6. 世界生成与建设链路现状
 
 当前已具备：
 
@@ -117,6 +133,10 @@ HomeMapState / WorldState
 19. ConstructionPlannerInputAudit。
 20. ConstructionPlanCandidateResult。
 21. ConstructionPlanCandidateAudit。
+22. ConstructionExecutionInput。
+23. ConstructionExecutionResult。
+24. ConstructionExecutionAudit。
+25. MapDiff candidate generation。
 
 当前已完成中性化：
 
@@ -128,6 +148,7 @@ HomeMapState / WorldState
 6. 初始区域改为 entry_area / initial_care / temporary_shelter / quiet_living / storage_tools / natural_boundary。
 7. ConstructionPlanner 输入协议不生成宠物相关建设意图。
 8. ConstructionPlan 候选不生成宠物相关建设计划。
+9. ConstructionExecutor 不生成宠物相关 MapDiff。
 
 WORLD-GEN-02 已完成：
 
@@ -162,24 +183,35 @@ CONSTRUCTION-01 已完成：
 6. 候选 audit 检查 stable output fingerprint、重复 plan id、stage 边界和旧路线 token。
 7. 保持候选计划不生成 MapDiff、不修改 HomeMapState、不接入 UI、不接入宠物。
 
+CONSTRUCTION-02 已完成：
+
+1. 新增 ConstructionExecutionAudit。
+2. 补齐 ConstructionExecutionResult.audit。
+3. 新增 ConstructionMapDiffCandidate / ConstructionExecutionBuildResult 协议容器。
+4. 实现 buildConstructionExecutionResult。
+5. Executor 根据 selected ConstructionPlan 生成 MapDiff 候选。
+6. MapDiff 候选只 update 已有 placement，不直接应用到 HomeMapState。
+7. Execution audit 检查重复 diff id、placement 引用、createdAt、candidate tag、nextPlan id 与旧路线 token。
+8. 保持 Executor 不接 UI、不接宠物、不绕过 HomeMapState / MapDiff / FormalVisualModel 链路。
+
 仍未完成：
 
-1. ConstructionExecutor。
-2. MapDiff 协议与执行。
-3. MapDiff 驱动的长期建设变化。
+1. SafeApply / MapDiff 验证与应用。
+2. MapDiff 驱动的 HomeMapState 更新。
+3. World loop 接入。
+4. LifeEvent / CompanionDecision。
 
 ## 7. 宠物后置与旧路线清理现状
 
 当前正式 MVP 规则：
 
-1. 不再使用旧出生装置作为当前正式设定。
-2. 不再使用旧默认生命初始路线。
-3. 开局不默认出现宠物。
-4. 开局不默认出现 pet actor。
-5. 开局不默认出现 pet bed。
-6. 开局不出现 pet_arrival / pet_rest 初始区域。
-7. 宠物未来能力保留。
-8. 宠物只能通过 LifeEvent / CompanionDecision / accept_companion 后置进入。
+1. 不再使用旧默认生命初始路线。
+2. 开局不默认出现宠物。
+3. 开局不默认出现 pet actor。
+4. 开局不默认出现 pet bed。
+5. 开局不出现 pet_arrival / pet_rest 初始区域。
+6. 宠物未来能力保留。
+7. 宠物只能通过 LifeEvent / CompanionDecision / accept_companion 后置进入。
 
 ## 8. 当前遗留问题
 
@@ -191,23 +223,26 @@ CONSTRUCTION-01 已完成：
 | 布局差异是否足够可观察 | 已处理 | WORLD-GEN-03 已建立差异化 audit 工具。 |
 | ConstructionPlanner 输入协议 | 已处理 | CONSTRUCTION-00 已建立 planner input 与 audit。 |
 | ConstructionPlanner 候选计划生成 | 已处理 | CONSTRUCTION-01 已建立候选计划生成与 audit。 |
-| ConstructionExecutor / MapDiff | 未完成 | 后续 CONSTRUCTION-02。 |
+| ConstructionExecutor / MapDiff 候选 | 已处理 | CONSTRUCTION-02 已建立 executor 与 MapDiff 候选协议。 |
+| SafeApply / MapDiff 应用 | 未完成 | 后续 CONSTRUCTION-03。 |
+| HomeMapState 更新协议 | 未完成 | 后续 CONSTRUCTION-03。 |
+| World loop 接入 | 未完成 | SafeApply 后再接。 |
 | LifeEvent / CompanionDecision | 未完成 | 后续 LIFE-EVENT 模块。 |
 
 ## 9. 下一大模块计划
 
-CONSTRUCTION-01 完成后，进入：
+CONSTRUCTION-02 完成后，进入：
 
 ```text
-CONSTRUCTION-02：ConstructionExecutor + MapDiff 协议
+CONSTRUCTION-03：MapDiff SafeApply 与 HomeMapState 更新协议
 ```
 
-CONSTRUCTION-02 目标：
+CONSTRUCTION-03 目标：
 
-1. 定义 ConstructionExecutor 输入协议。
-2. 定义 ConstructionPlan 如何被执行为 MapDiff 候选。
-3. 明确 MapDiff 仍需规则验证后才能影响 HomeMapState。
-4. 不做 UI。
+1. 定义 MapDiff SafeApply 输入协议。
+2. 验证 MapDiff 候选是否可应用。
+3. 通过安全应用协议更新 HomeMapState。
+4. 保持 FormalVisualModel First，不让 UI 直接改变世界事实。
 5. 不接入宠物。
 6. 不绕过 HomeMapState / MapDiff / FormalVisualModel 链路。
 
@@ -217,7 +252,7 @@ P8 Formal 视觉链路已完成并保留。
 
 当前不再回到前端手写世界内容路线。
 
-当前不再回到旧出生装置 / 默认宠物开局路线。
+当前不再回到旧默认宠物开局路线。
 
 WORLD-GEN-02 已把世界生成从固定 recipe 推进到 `seed + personality + resources + phase + variant + placement rules` 的输入协议。
 
@@ -227,44 +262,6 @@ CONSTRUCTION-00 已把建设系统推进到 `HomeMapState + 管家建设倾向 +
 
 CONSTRUCTION-01 已把建设系统推进到 `ConstructionPlannerInput -> ConstructionPlan[] 候选 -> CandidateAudit`。
 
+CONSTRUCTION-02 已把建设系统推进到 `selected ConstructionPlan -> ConstructionExecutionResult -> MapDiff[] 候选`。
+
 后续开发必须围绕规则生成、结构化世界事实、FormalVisualModel First、宠物后置和非固定布局差异化继续推进。
-
-## CONSTRUCTION-02 ConstructionExecutor + MapDiff 协议记录
-
-CONSTRUCTION-02 已完成 ConstructionExecutor 与 MapDiff 候选生成协议。
-
-当前链路推进为：
-
-```text
-HomeMapState
-+ 管家建设倾向
-+ 资源状态
-+ 世界阶段
--> ConstructionPlannerInput
--> ConstructionPlan[] 候选
--> ConstructionExecutionResult
--> MapDiff[] 候选
-```
-
-本阶段完成：
-
-1. 新增 ConstructionExecutionAudit。
-2. 补齐 ConstructionExecutionResult.audit。
-3. 新增 ConstructionMapDiffCandidate / ConstructionExecutionBuildResult 协议容器。
-4. 实现 buildConstructionExecutionResult。
-5. Executor 根据 selected ConstructionPlan 生成 MapDiff 候选。
-6. MapDiff 候选只 update 已有 placement，不直接应用到 HomeMapState。
-7. 新增 ConstructionExecutionAudit 检查重复 diff id、placement 引用、createdAt、candidate tag、nextPlan id 与旧路线 token。
-
-仍未完成：
-
-1. SafeApply / MapDiff 验证与应用。
-2. MapDiff 驱动的 HomeMapState 更新。
-3. World loop 接入。
-4. LifeEvent / CompanionDecision。
-
-下一步进入：
-
-```text
-CONSTRUCTION-03：MapDiff SafeApply 与 HomeMapState 更新协议
-```
