@@ -98,7 +98,7 @@ export function buildWorldFirstSceneModel(input: {
   return {
     title: "世界已经启动",
     subtitle:
-      "管家、孵化器和第一片家园区域已经根据你的输入生成。这里是正式世界的第一幕，不是调试数据页。",
+      "管家和第一片家园区域已经根据你的输入生成。这里是正式世界的第一幕，不是调试数据页。",
     worldStatus: buildWorldStatus(runtime.styleSource),
     worldId: runtime.worldId,
     homeSummary: {
@@ -129,17 +129,20 @@ function buildMilestones(): WorldFirstSceneMilestone[] {
   return [
     {
       title: "管家已生成",
-      description: "管家会作为世界管理者观察家园，但不会替宠物做决定。",
-      status: "ready",
-    },
-    {
-      title: "孵化器已就位",
-      description: "前期核心任务是维持孵化器稳定，等待宠物正式出生。",
+      description:
+        "管家会作为世界管理者观察家园，并根据世界状态形成建设倾向。",
       status: "ready",
     },
     {
       title: "初始家园已形成",
-      description: "系统已经生成初始区域、照护点、临时住所和自然边界。",
+      description:
+        "系统已经生成初始区域、基础资源、临时住所和自然边界。",
+      status: "ready",
+    },
+    {
+      title: "世界状态已建立",
+      description:
+        "HomeMapState、VisualState 与 RenderableWorldSnapshot 已经建立。",
       status: "ready",
     },
     {

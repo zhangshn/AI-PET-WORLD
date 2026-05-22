@@ -21,15 +21,11 @@ import {
   type WorldFirstSceneModel,
 } from "@/world/runtime/world-first-scene-model"
 import {
+  buildButlerIntentContextFromRuntime,
   buildButlerRuntimeContextSummary,
   buildDefaultButlerRuntimeContext,
-  buildDefaultPetRuntimeContext,
-  buildPetRuntimeContextSummary,
-  buildRuntimeToIntentContext,
   validateButlerRuntimeContext,
-  validatePetRuntimeContext,
   type ButlerRuntimeContextSummary,
-  type PetRuntimeContextSummary,
 } from "@/world/runtime-context/runtime-context-gateway"
 import {
   applyWorldLoopStep,
@@ -58,7 +54,6 @@ type WorldRuntimeContextUiState = {
   status: "not_used" | "used_runtime_context" | "runtime_context_invalid"
   message: string
   butlerSummary?: ButlerRuntimeContextSummary
-  petSummary?: PetRuntimeContextSummary
   tags: string[]
 }
 
@@ -170,43 +165,26 @@ function WorldRuntimeShell(input: {
       now: tickNow,
       constructionStyle: worldCreationRuntime.butlerConstructionStyle,
     })
-    const petRuntimeContext = buildDefaultPetRuntimeContext({
-      worldId: runtimeState.worldId,
-      ownerId: runtimeState.ownerId,
-      tickIndex: nextTickIndex,
-      now: tickNow,
-      lifeStage: "embryo",
-    })
     const butlerValidation = validateButlerRuntimeContext({
       context: butlerRuntimeContext,
-      expectedWorldId: runtimeState.worldId,
-      expectedOwnerId: runtimeState.ownerId,
-    })
-    const petValidation = validatePetRuntimeContext({
-      context: petRuntimeContext,
       expectedWorldId: runtimeState.worldId,
       expectedOwnerId: runtimeState.ownerId,
     })
     const butlerSummary = buildButlerRuntimeContextSummary(
       butlerRuntimeContext
     )
-    const petSummary = buildPetRuntimeContextSummary(petRuntimeContext)
-    const canUseRuntimeContext =
-      butlerValidation.isValid && petValidation.isValid
-    const runtimeToIntentContext = buildRuntimeToIntentContext({
+    const canUseRuntimeContext = butlerValidation.isValid
+    const butlerIntentContext = buildButlerIntentContextFromRuntime({
       butlerRuntimeContext,
-      petRuntimeContext,
     })
     const stepResult = buildWorldLoopStep({
       runtimeState,
       now: tickNow,
       source: "manual_tick",
       butlerIntentContext: canUseRuntimeContext
-        ? runtimeToIntentContext.butler
+        ? butlerIntentContext
         : undefined,
-      petIntentContext: canUseRuntimeContext
-        ? runtimeToIntentContext.pet
-        : undefined,
+      petIntentContext: undefined,
     })
 
     setRuntimeState(
@@ -221,17 +199,18 @@ function WorldRuntimeShell(input: {
         ? "used_runtime_context"
         : "runtime_context_invalid",
       message: canUseRuntimeContext
-        ? "本次 Tick 已使用 ButlerRuntimeContext / PetRuntimeContext 转换后的 intent context。"
-        : [...butlerValidation.reasons, ...petValidation.reasons].join("；") ||
+        ? "本次 Tick 已使用 ButlerRuntimeContext 转换后的 intent context；宠物 runtime 后置等待。"
+        : butlerValidation.reasons.join("；") ||
           "runtime context 校验未通过。",
       butlerSummary,
-      petSummary,
       tags: [
         "world_runtime_context_ui_state",
         canUseRuntimeContext
           ? "used_runtime_context"
           : "runtime_context_invalid",
-        ...runtimeToIntentContext.tags,
+        "pet_runtime_context_not_constructed",
+        "pet_intent_context_deferred",
+        ...butlerIntentContext.tags,
       ],
     })
   }
@@ -435,15 +414,15 @@ function WorldRuntimeShell(input: {
             />
             <RuntimeInfoItem
               label="Pet Life Stage"
-              value={runtimeContextState.petSummary?.lifeStage ?? "not_used"}
+              value="后置等待"
             />
             <RuntimeInfoItem
               label="Pet Runtime Drive"
-              value={runtimeContextState.petSummary?.currentDrive ?? "not_used"}
+              value="后置等待"
             />
             <RuntimeInfoItem
               label="Pet Runtime Action"
-              value={runtimeContextState.petSummary?.currentAction ?? "not_used"}
+              value="后置等待"
             />
           </div>
           <p>
@@ -553,11 +532,7 @@ function WorldRuntimeShell(input: {
               />
               <RuntimeInfoItem
                 label="Pet Context Tick"
-                value={
-                  runtimeContextState.petSummary
-                    ? String(runtimeContextState.petSummary.tickIndex)
-                    : "not_used"
-                }
+                value="后置等待"
               />
             </div>
           ) : (

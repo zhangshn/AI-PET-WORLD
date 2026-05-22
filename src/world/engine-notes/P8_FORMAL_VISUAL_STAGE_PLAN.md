@@ -654,3 +654,25 @@ WORLD-GEN-01：宠物默认生成逻辑回滚 / 宠物后置对齐
 ```text
 WORLD-GEN-02：worldSeed + personality layout input schema
 ```
+
+## WORLD-GEN-01A/B 正式首屏文案修正与 pet runtime 断开记录
+
+WORLD-GEN-01A/B 已完成。
+
+当前确认：
+
+1. 已清理 `world-first-scene-model.ts` 正式首屏旧孵化器文案。
+2. 正式首屏不再使用孵化器 / 胚胎 / 等待宠物出生作为默认设定。
+3. `/world` 手动 Tick 不再默认构造 embryo pet runtime。
+4. `/world` 手动 Tick 不再调用 pet runtime validation / summary。
+5. `/world` 手动 Tick 不再向 `buildWorldLoopStep` 传入 petIntentContext。
+6. pet 未来能力未删除，只是从默认正式运行链路断开。
+7. 本阶段未修改 placement-engine。
+8. 本阶段未修改 initial-home-scene-recipe。
+9. 本阶段未修改 FormalVisualModel / FormalWorldView 链路。
+
+下一步进入：
+
+```text
+WORLD-GEN-01C：移除初始 pet actor / pet placement
+```

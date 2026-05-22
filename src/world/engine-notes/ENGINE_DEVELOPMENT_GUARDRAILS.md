@@ -439,3 +439,18 @@ WORLD-GEN-00 是审计阶段，不是实现阶段。
 11. 后续 WORLD-GEN 实现必须保证不同人格 / seed / 资源状态产生可观察差异。
 12. 宠物必须后置，默认 pet placement / pet actor 必须作为风险审计。
 13. visualTendency 后续如接入，只能影响正式视觉模型或风格摘要，不能反向生成世界事实。
+
+## WORLD-GEN-01A/B 正式首屏文案与 pet runtime 红线
+
+红线：
+
+1. 正式 /world 文案不能再出现孵化器 / 胚胎 / incubator / embryo / hatching / incubating。
+2. /world 默认 Tick 不能构造 PetRuntimeContext。
+3. 未发生 LifeEvent / CompanionDecision / accept_companion 前，不能传入 petIntentContext。
+4. 本阶段不能删除宠物未来能力。
+5. 本阶段不能修改 placement-engine。
+6. 本阶段不能修改 initial-home-scene-recipe。
+7. 本阶段不能修改 FormalVisualModel / FormalWorldView 链路。
+8. 本阶段不能修改 pet-runtime-context-schema。
+9. 本阶段不能生成新的 placement。
+10. 本阶段不能默认接入 pet。
