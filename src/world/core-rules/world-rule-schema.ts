@@ -18,9 +18,8 @@ export type WorldObjectType =
   | "house_foundation"
   | "road"
   | "bridge"
-  | "pet_bed"
   | "food_bowl"
-  | "incubator"
+  | "care_station"
 
 export type WorldRuleCheckReason =
   | "allowed"

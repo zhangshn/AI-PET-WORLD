@@ -135,7 +135,6 @@ function buildDefaultPetAnchor(): Point2D {
 }
 
 function mapButlerTaskToActorPose(task: string): ActorGeometryPose {
-  if (task === "watch_incubator") return "observing"
   if (task === "maintain_home") return "working"
   if (task === "plan_building") return "working"
   if (task === "care_pet") return "approaching"
@@ -162,7 +161,6 @@ function mapAttentionTargetToDirection(
   targetType?: string
 ): ActorAttentionDirection {
   if (targetType === "pet") return "east"
-  if (targetType === "incubator") return "north"
   if (targetType === "home") return "center"
   if (targetType === "nature") return "west"
   if (targetType === "facility") return "south"

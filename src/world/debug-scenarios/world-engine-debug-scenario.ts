@@ -137,7 +137,7 @@ function buildDebugPetIntentContext(input: {
       energy: 28,
       hunger: 72,
       mood: "curious",
-      currentZoneType: "pet_arrival",
+      currentZoneType: "entry_area",
       recentAction: "arrived",
       tags: ["mapdiff_debug_pet", "tired_hungry_pet"],
     }
@@ -158,7 +158,7 @@ function buildDebugPetIntentContext(input: {
     energy: 22,
     hunger: 38,
     mood: "quiet",
-    currentZoneType: "pet_rest",
+    currentZoneType: "quiet_living",
     recentAction: "resting",
     tags: ["mapdiff_debug_pet", "resting_pet"],
   }

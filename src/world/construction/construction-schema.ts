@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：定义管家建设计划与执行结果类型。
+ * 当前文件职责：定义管家建设计划与执行结果类型。
  */
 
 import type {
@@ -9,7 +9,8 @@ import type {
 } from "@/world/map-state/home-map-state-schema"
 
 export type ConstructionProjectType =
-  | "build_pet_rest_area"
+  | "improve_quiet_living"
+  | "improve_care_area"
   | "improve_food_water_area"
   | "organize_storage_area"
   | "improve_path"

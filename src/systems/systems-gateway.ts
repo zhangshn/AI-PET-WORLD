@@ -6,7 +6,6 @@ export { PetSystem } from "./petSystem"
 export { ButlerSystem } from "./butlerSystem"
 export { EventSystem } from "./eventSystem"
 export { HomeSystem } from "./homeSystem"
-export { IncubatorSystem } from "./incubatorSystem"
 
 export type {
   FoodOfferDecision,

@@ -6,7 +6,6 @@ import type { WorldEvent } from "../types/event"
 import { recordWorldEventForAiData } from "./event/event-ai-recorder"
 
 import {
-  buildIncubatorEvents,
   buildPetUpdateEvents,
   buildTimePeriodEvents,
   makeWorldEvent,
@@ -110,15 +109,6 @@ export class EventSystem {
       )
     }
 
-    this.appendEvents(
-      buildIncubatorEvents({
-        tick: input.tick,
-        day: input.day,
-        hour: input.hour,
-        prevIncubator: input.prevIncubator,
-        currentIncubator: input.currentIncubator,
-      })
-    )
   }
 }
 

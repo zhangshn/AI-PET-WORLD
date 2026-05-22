@@ -4,7 +4,7 @@
 
 export type StructureType =
   | "home"
-  | "incubator"
+  | "care_station"
   | "hospital"
   | "shop"
   | "park"

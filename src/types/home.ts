@@ -26,7 +26,7 @@ export type HomeEvolutionFocus =
 
 export type HomeSpaceId =
   | "empty_land"
-  | "incubator_area"
+  | "initial_care_area"
   | "temporary_shelter"
   | "garden_area"
   | "storage_area"
@@ -40,7 +40,7 @@ export type HomeSpaceStatus =
 
 export type HomeSpaceRole =
   | "origin"
-  | "incubation"
+  | "care"
   | "shelter"
   | "garden"
   | "storage"
@@ -76,7 +76,7 @@ export type HomeSpaceSummary = {
 }
 
 export type HomeFacilityId =
-  | "basic_incubator"
+  | "basic_care_station"
   | "shelter_bed"
   | "food_corner"
   | "water_corner"
@@ -92,7 +92,7 @@ export type HomeFacilityStatus =
   | "needs_maintenance"
 
 export type HomeFacilityRole =
-  | "incubation"
+  | "care"
   | "rest"
   | "food"
   | "water"
@@ -118,7 +118,7 @@ export type HomeFacilityState = {
 
 export type HomeLifecyclePhase =
   | "initial_empty_land"
-  | "incubator_care_phase"
+  | "initial_care_phase"
   | "temporary_shelter_phase"
   | "basic_living_phase"
   | "garden_opening_phase"
@@ -138,7 +138,7 @@ export type HomeLifecycleState = {
 }
 
 export type HomeGoalId =
-  | "stabilize_incubator"
+  | "stabilize_initial_care"
   | "build_temporary_shelter"
   | "complete_basic_living"
   | "open_garden_area"
@@ -152,7 +152,7 @@ export type HomeGoalPriority =
   | "urgent"
 
 export type HomeGoalTarget =
-  | "incubator"
+  | "care"
   | "space"
   | "facility"
   | "home"

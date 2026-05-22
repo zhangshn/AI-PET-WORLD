@@ -65,7 +65,7 @@ export const ziweiStarPreferenceBiases: Record<
     gardenStyleHints: ["warm_flower_patch"],
     shelterStyleHints: ["soft_canopy"],
     carePriorityHints: ["comfort_first"],
-    explanation: "天同强调柔和、舒适和亲近，倾向宠物床、食物角和圆润陪伴。",
+    explanation: "天同强调柔和、舒适和亲近，倾向安静生活角、食物角和圆润陪伴。",
   }),
   lianzhen: createPreferenceBias({
     archetypeScores: { protective_keeper: 68, aesthetic_organizer: 62 },

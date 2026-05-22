@@ -6,8 +6,6 @@ import type { ButlerMood, ButlerTask } from "./butler-schema"
 
 export function deriveButlerMood(task: ButlerTask): ButlerMood {
   switch (task) {
-    case "watching_incubator":
-      return "focused"
     case "building_home":
       return "busy"
     case "offering_food":

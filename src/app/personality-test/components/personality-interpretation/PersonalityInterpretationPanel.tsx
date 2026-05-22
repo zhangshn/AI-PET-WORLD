@@ -360,7 +360,7 @@ function BehaviorBiasPanel({
     {
       label: "照护优先级",
       value: bias.butlerBehaviorBias.carePriority,
-      description: "影响管家对孵化器、宠物和稳定照看的优先程度。",
+      description: "影响管家对照护点、未来宠物关系和稳定照看的优先程度。",
     },
     {
       label: "建设驱动力",

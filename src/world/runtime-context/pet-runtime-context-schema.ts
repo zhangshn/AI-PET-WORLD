@@ -5,9 +5,7 @@
 export const PET_RUNTIME_CONTEXT_VERSION = "pet_runtime_context_v0"
 
 export type PetRuntimeLifeStage =
-  | "embryo"
-  | "hatching"
-  | "newborn"
+  | "accepted"
   | "young"
   | "adult"
   | "unknown"
@@ -34,7 +32,6 @@ export type PetRuntimeDrive =
   | "none"
 
 export type PetRuntimeAction =
-  | "incubating"
   | "sleeping"
   | "resting"
   | "eating"
@@ -194,23 +191,18 @@ export type PetRuntimeContextSummary = {
 export function buildDefaultPetRuntimeContext(
   input: BuildDefaultPetRuntimeContextInput
 ): PetRuntimeContext {
-  const lifeStage = input.lifeStage ?? "embryo"
+  const lifeStage = input.lifeStage ?? "accepted"
   const petId = input.petId ?? `pet-${input.worldId}`
-  const isEmbryo = lifeStage === "embryo"
-  const energy = isEmbryo ? 40 : 60
-  const hunger = isEmbryo ? 0 : 35
-  const comfort = isEmbryo ? 60 : 55
-  const curiosity = isEmbryo ? 10 : 45
-  const trust = isEmbryo ? 20 : 30
+  const energy = 60
+  const hunger = 35
+  const comfort = 55
+  const curiosity = 45
+  const trust = 30
   const mood: PetRuntimeMood = "stable"
-  const currentDrive: PetRuntimeDrive = isEmbryo ? "none" : "observe"
-  const currentAction: PetRuntimeAction = isEmbryo
-    ? "incubating"
-    : "observing"
-  const healthState: PetRuntimeHealthState = isEmbryo ? "fragile" : "stable"
-  const relationState: PetRuntimeRelationState = isEmbryo
-    ? "unformed"
-    : "guarded"
+  const currentDrive: PetRuntimeDrive = "observe"
+  const currentAction: PetRuntimeAction = "observing"
+  const healthState: PetRuntimeHealthState = "stable"
+  const relationState: PetRuntimeRelationState = "guarded"
 
   return {
     version: PET_RUNTIME_CONTEXT_VERSION,
@@ -230,39 +222,34 @@ export function buildDefaultPetRuntimeContext(
     curiosity,
     trust,
     location: {
-      label: isEmbryo ? "孵化器" : "初始家园",
-      tags: ["default_pet_location", isEmbryo ? "incubator" : "home"],
+      label: "已接纳后的家园位置",
+      tags: ["default_pet_location", "accepted_companion_home"],
     },
     needSignals: [
       {
         id: `pet-need-${input.worldId}-${input.tickIndex}`,
-        type: isEmbryo ? "safety" : "environment",
+        type: "environment",
         urgency: "low",
-        score: isEmbryo ? 35 : 30,
-        reason: isEmbryo
-          ? "胚胎阶段主要需要稳定、安全的孵化环境。"
-          : "宠物正在观察初始家园环境。",
-        tags: ["default_pet_need_signal", lifeStage],
+        score: 30,
+        reason: "已接纳宠物正在观察当前家园环境。",
+        tags: ["default_pet_need_signal", lifeStage, "accepted_companion"],
       },
     ],
     observations: [
       {
         id: `pet-observation-${input.worldId}-${input.tickIndex}`,
         observedAt: input.now,
-        type: isEmbryo ? "body_state" : "world_state",
-        message: isEmbryo
-          ? "宠物仍处于孵化阶段，尚未形成完整外部行动。"
-          : "宠物已进入家园运行态，正在感知周围环境。",
+        type: "world_state",
+        message: "已接纳宠物进入家园运行态，正在感知周围环境。",
         source: "runtime",
-        tags: ["default_pet_observation", lifeStage],
+        tags: ["default_pet_observation", lifeStage, "accepted_companion"],
       },
     ],
     profileLink: {
       source: "default_profile",
-      summary: isEmbryo
-        ? "胚胎阶段暂不绑定完整宠物人格；出生后再生成稳定人格摘要。"
-        : "当前使用默认宠物运行时画像；后续可接入出生时刻生成的宠物人格摘要。",
-      tags: ["default_pet_profile_link", lifeStage],
+      summary:
+        "当前使用已接纳宠物的默认运行时画像；后续可接入生命关系事件生成的宠物人格摘要。",
+      tags: ["default_pet_profile_link", lifeStage, "accepted_companion"],
     },
     updatedAt: input.now,
     tags: [
@@ -322,17 +309,6 @@ export function validatePetRuntimeContext(
     )
   ) {
     reasons.push("宠物 runtime context need signal score 必须在 0 到 100 之间。")
-  }
-
-  if (
-    context.lifeStage === "embryo" &&
-    context.currentAction !== "incubating"
-  ) {
-    warnings.push("胚胎阶段宠物通常应处于 incubating 行为。")
-  }
-
-  if (context.lifeStage === "embryo" && context.currentDrive !== "none") {
-    warnings.push("胚胎阶段宠物通常不应拥有外部行动 drive。")
   }
 
   if (context.needSignals.length === 0) {

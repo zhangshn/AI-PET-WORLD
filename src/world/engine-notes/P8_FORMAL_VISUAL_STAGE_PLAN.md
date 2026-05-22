@@ -1,44 +1,44 @@
-# AI-PET-WORLD P8 正式视觉阶段总控计划
+﻿# AI-PET-WORLD P8 姝ｅ紡瑙嗚闃舵鎬绘帶璁″垝
 
-## 1. 文档定位
+## 1. 鏂囨。瀹氫綅
 
-本文档是 P8 正式视觉阶段的总控计划。
+鏈枃妗ｆ槸 P8 姝ｅ紡瑙嗚闃舵鐨勬€绘帶璁″垝銆?
 
-当前最高依据：
+褰撳墠鏈€楂樹緷鎹細
 
-1. AI-PET-WORLD MVP 完整计划书 v1.5。
-2. AI-PET-WORLD 人格驱动规则世界引擎设计文档 v1.3。
-3. AI-PET-WORLD MVP 整体架构设计文档 v1.0。
+1. AI-PET-WORLD MVP 瀹屾暣璁″垝涔?v1.5銆?
+2. AI-PET-WORLD 浜烘牸椹卞姩瑙勫垯涓栫晫寮曟搸璁捐鏂囨。 v1.3銆?
+3. AI-PET-WORLD MVP 鏁翠綋鏋舵瀯璁捐鏂囨。 v1.0銆?
 
-P8 阶段的核心目标不是让前端手写一个好看的世界页面，而是建立：
+P8 闃舵鐨勬牳蹇冪洰鏍囦笉鏄鍓嶇鎵嬪啓涓€涓ソ鐪嬬殑涓栫晫椤甸潰锛岃€屾槸寤虹珛锛?
 
 ```text
-世界事实
--> 渲染投影
+涓栫晫浜嬪疄
+-> 娓叉煋鎶曞奖
 -> FormalVisualModel
--> FormalWorldView 只读渲染
+-> FormalWorldView 鍙娓叉煋
 ```
 
-的正式链路。
+鐨勬寮忛摼璺€?
 
-## 2. 当前最高原则
+## 2. 褰撳墠鏈€楂樺師鍒?
 
-1. 世界不是前端画出来的，世界由规则和状态生成。
-2. 布局不是固定模板，布局由 worldSeed、管家人格、资源、事件、建设意图和空间规则共同生成。
-3. 正式视觉模型不是组件生成的，必须由 Formal Visual Generation Layer 生成。
-4. FormalWorldView 只能只读 FormalVisualModel。
-5. Debug View 与 Formal World View 必须分离。
-6. Renderer / FormalWorldView 不能生成世界事实。
-7. Renderer / FormalWorldView 不能生成 placement。
-8. Renderer / FormalWorldView 不能生成 actor。
-9. Renderer / FormalWorldView 不能读取 PNG / WORLD_MAP_ASSETS 作为正式世界事实来源。
-10. 宠物后置，petState 不存在时不能默认显示宠物。
+1. 涓栫晫涓嶆槸鍓嶇鐢诲嚭鏉ョ殑锛屼笘鐣岀敱瑙勫垯鍜岀姸鎬佺敓鎴愩€?
+2. 甯冨眬涓嶆槸鍥哄畾妯℃澘锛屽竷灞€鐢?worldSeed銆佺瀹朵汉鏍笺€佽祫婧愩€佷簨浠躲€佸缓璁炬剰鍥惧拰绌洪棿瑙勫垯鍏卞悓鐢熸垚銆?
+3. 姝ｅ紡瑙嗚妯″瀷涓嶆槸缁勪欢鐢熸垚鐨勶紝蹇呴』鐢?Formal Visual Generation Layer 鐢熸垚銆?
+4. FormalWorldView 鍙兘鍙 FormalVisualModel銆?
+5. Debug View 涓?Formal World View 蹇呴』鍒嗙銆?
+6. Renderer / FormalWorldView 涓嶈兘鐢熸垚涓栫晫浜嬪疄銆?
+7. Renderer / FormalWorldView 涓嶈兘鐢熸垚 placement銆?
+8. Renderer / FormalWorldView 涓嶈兘鐢熸垚 actor銆?
+9. Renderer / FormalWorldView 涓嶈兘璇诲彇 PNG / WORLD_MAP_ASSETS 浣滀负姝ｅ紡涓栫晫浜嬪疄鏉ユ簮銆?
+10. 瀹犵墿鍚庣疆锛宲etState 涓嶅瓨鍦ㄦ椂涓嶈兘榛樿鏄剧ず瀹犵墿銆?
 
-## 3. 已完成并保留的 P8-G 结论
+## 3. 宸插畬鎴愬苟淇濈暀鐨?P8-G 缁撹
 
-P8-G 已完成几何视觉纠偏与收口。
+P8-G 宸插畬鎴愬嚑浣曡瑙夌籂鍋忎笌鏀跺彛銆?
 
-保留链路：
+淇濈暀閾捐矾锛?
 
 ```text
 HomeMapState
@@ -52,70 +52,70 @@ HomeMapState
 -> Debug diagnostics
 ```
 
-P8-G 的有效结论：
+P8-G 鐨勬湁鏁堢粨璁猴細
 
-1. PNG / WORLD_MAP_ASSETS 不能作为正式 Renderer 主路径。
-2. Renderer 不能为了视觉效果生成 placement。
-3. Renderer 不能修改 HomeMapState。
-4. Renderer 不能读取 proposal 当现实。
-5. ShapeGrammar / EntityGeometry / VisualState 几何链路保留。
-6. Debug diagnostics 可以保留在 Debug View。
-7. Debug diagnostics 不能伪装成最终玩家 UI。
+1. PNG / WORLD_MAP_ASSETS 涓嶈兘浣滀负姝ｅ紡 Renderer 涓昏矾寰勩€?
+2. Renderer 涓嶈兘涓轰簡瑙嗚鏁堟灉鐢熸垚 placement銆?
+3. Renderer 涓嶈兘淇敼 HomeMapState銆?
+4. Renderer 涓嶈兘璇诲彇 proposal 褰撶幇瀹炪€?
+5. ShapeGrammar / EntityGeometry / VisualState 鍑犱綍閾捐矾淇濈暀銆?
+6. Debug diagnostics 鍙互淇濈暀鍦?Debug View銆?
+7. Debug diagnostics 涓嶈兘浼鎴愭渶缁堢帺瀹?UI銆?
 
-## 4. 已完成并保留的 P8-H 结论
+## 4. 宸插畬鎴愬苟淇濈暀鐨?P8-H 缁撹
 
-P8-H 已完成 Actor Geometry Debug 链路。
+P8-H 宸插畬鎴?Actor Geometry Debug 閾捐矾銆?
 
-保留链路：
+淇濈暀閾捐矾锛?
 
 ```text
 world-loop renderable state
 -> buildButlerRuntimeProjection
 -> buildActorGeometryProjectionFromRuntime
 -> VisualState.actorGeometryProjections
--> Renderer Debug View 只读显示
+-> Renderer Debug View 鍙鏄剧ず
 ```
 
-P8-H 的有效结论：
+P8-H 鐨勬湁鏁堢粨璁猴細
 
-1. butler actor projection 可以从 world snapshot 进入 VisualState。
-2. Renderer 可以只读显示 actor geometry。
-3. 当前 actor 图形是 Debug 几何占位。
-4. 当前 actor 图形不是最终玩家 UI。
-5. 当前 actor 图形不是最终角色美术。
-6. 当前 actor 图形不代表最终 autonomous movement。
-7. pet 没有被默认接入。
-8. Renderer 不生成 actor。
-9. Renderer 不填默认 anchor。
-10. Renderer 不修改 HomeMapState。
+1. butler actor projection 鍙互浠?world snapshot 杩涘叆 VisualState銆?
+2. Renderer 鍙互鍙鏄剧ず actor geometry銆?
+3. 褰撳墠 actor 鍥惧舰鏄?Debug 鍑犱綍鍗犱綅銆?
+4. 褰撳墠 actor 鍥惧舰涓嶆槸鏈€缁堢帺瀹?UI銆?
+5. 褰撳墠 actor 鍥惧舰涓嶆槸鏈€缁堣鑹茬編鏈€?
+6. 褰撳墠 actor 鍥惧舰涓嶄唬琛ㄦ渶缁?autonomous movement銆?
+7. pet 娌℃湁琚粯璁ゆ帴鍏ャ€?
+8. Renderer 涓嶇敓鎴?actor銆?
+9. Renderer 涓嶅～榛樿 anchor銆?
+10. Renderer 涓嶄慨鏀?HomeMapState銆?
 
-## 5. 已回滚的旧 P8-I 路线
+## 5. 宸插洖婊氱殑鏃?P8-I 璺嚎
 
-旧 P8-I0 / P8-I1 / P8-I2 / P8-I3 路线已作废。
+鏃?P8-I0 / P8-I1 / P8-I2 / P8-I3 璺嚎宸蹭綔搴熴€?
 
-作废原因：
+浣滃簾鍘熷洜锛?
 
-1. 旧路线让 FormalWorldView 组件承担正式视觉模型生成职责。
-2. 旧路线在组件内定义 FormalWorldVisualItem。
-3. 旧路线在组件内定义 FormalActorVisualItem。
-4. 旧路线在组件内实现 buildFormalWorldVisualItems。
-5. 旧路线在组件内实现 buildFormalActorVisualItems。
-6. 旧路线让组件决定地面、道路、建筑、树木、设施、管家如何显示。
-7. 这违反 MVP v1.5、规则世界引擎 v1.3 和整体架构 v1.0。
+1. 鏃ц矾绾胯 FormalWorldView 缁勪欢鎵挎媴姝ｅ紡瑙嗚妯″瀷鐢熸垚鑱岃矗銆?
+2. 鏃ц矾绾垮湪缁勪欢鍐呭畾涔?FormalWorldVisualItem銆?
+3. 鏃ц矾绾垮湪缁勪欢鍐呭畾涔?FormalActorVisualItem銆?
+4. 鏃ц矾绾垮湪缁勪欢鍐呭疄鐜?buildFormalWorldVisualItems銆?
+5. 鏃ц矾绾垮湪缁勪欢鍐呭疄鐜?buildFormalActorVisualItems銆?
+6. 鏃ц矾绾胯缁勪欢鍐冲畾鍦伴潰銆侀亾璺€佸缓绛戙€佹爲鏈ㄣ€佽鏂姐€佺瀹跺浣曟樉绀恒€?
+7. 杩欒繚鍙?MVP v1.5銆佽鍒欎笘鐣屽紩鎿?v1.3 鍜屾暣浣撴灦鏋?v1.0銆?
 
-已删除内容：
+宸插垹闄ゅ唴瀹癸細
 
-1. src/app/world/components/formal-world-view/formal-world-view.tsx。
-2. src/app/world/components/formal-world-view/formal-world-view.styles.module.css。
-3. src/app/world/components/formal-world-view/。
-4. src/world/engine-notes/P8_I0_FORMAL_WORLD_VIEW_PLAN.md。
-5. src/world/engine-notes/P8_I1_FORMAL_WORLD_VIEW_COMPONENT_SHELL.md。
-6. src/world/engine-notes/P8_I2_FORMAL_WORLD_CANVAS.md。
-7. src/world/engine-notes/P8_I3_FORMAL_ACTOR_PRESENTATION.md。
+1. src/app/world/components/formal-world-view/formal-world-view.tsx銆?
+2. src/app/world/components/formal-world-view/formal-world-view.styles.module.css銆?
+3. src/app/world/components/formal-world-view/銆?
+4. src/world/engine-notes/P8_I0_FORMAL_WORLD_VIEW_PLAN.md銆?
+5. src/world/engine-notes/P8_I1_FORMAL_WORLD_VIEW_COMPONENT_SHELL.md銆?
+6. src/world/engine-notes/P8_I2_FORMAL_WORLD_CANVAS.md銆?
+7. src/world/engine-notes/P8_I3_FORMAL_ACTOR_PRESENTATION.md銆?
 
-## 6. 当前正确正式路线
+## 6. 褰撳墠姝ｇ‘姝ｅ紡璺嚎
 
-从现在开始，正式视觉路线必须是：
+浠庣幇鍦ㄥ紑濮嬶紝姝ｅ紡瑙嗚璺嚎蹇呴』鏄細
 
 ```text
 HomeMapState / WorldState
@@ -123,438 +123,356 @@ HomeMapState / WorldState
 -> VisualState / RenderableWorldSnapshot
 -> FormalVisualGenerator
 -> FormalVisualModel
--> FormalWorldView 只读渲染
+-> FormalWorldView 鍙娓叉煋
 ```
 
-这条路线的核心是：
+杩欐潯璺嚎鐨勬牳蹇冩槸锛?
 
-1. HomeMapState 保存世界事实。
-2. MapDiff / EventLog 保存世界变化。
-3. VisualState / RenderableWorldSnapshot 保存可渲染投影。
-4. FormalVisualModel 保存正式玩家主视觉模型。
-5. FormalWorldView 只负责渲染 FormalVisualModel。
+1. HomeMapState 淇濆瓨涓栫晫浜嬪疄銆?
+2. MapDiff / EventLog 淇濆瓨涓栫晫鍙樺寲銆?
+3. VisualState / RenderableWorldSnapshot 淇濆瓨鍙覆鏌撴姇褰便€?
+4. FormalVisualModel 淇濆瓨姝ｅ紡鐜╁涓昏瑙夋ā鍨嬨€?
+5. FormalWorldView 鍙礋璐ｆ覆鏌?FormalVisualModel銆?
 
-## 7. FormalVisualModel 的定位
+## 7. FormalVisualModel 鐨勫畾浣?
 
-FormalVisualModel 是正式主视觉模型容器。
+FormalVisualModel 鏄寮忎富瑙嗚妯″瀷瀹瑰櫒銆?
 
-它可以包含：
+瀹冨彲浠ュ寘鍚細
 
-1. FormalCanvasModel。
-2. FormalWorldObjectModel。
-3. FormalActorModel。
-4. FormalEnvironmentModel。
-5. FormalHudSummary。
+1. FormalCanvasModel銆?
+2. FormalWorldObjectModel銆?
+3. FormalActorModel銆?
+4. FormalEnvironmentModel銆?
+5. FormalHudSummary銆?
 
-它不能：
+瀹冧笉鑳斤細
 
-1. 生成不存在的世界对象。
-2. 生成 placement。
-3. 修改 HomeMapState。
-4. 读取 proposal 当现实。
-5. 伪造 pet。
-6. 绕过 VisualState / RenderableWorldSnapshot。
+1. 鐢熸垚涓嶅瓨鍦ㄧ殑涓栫晫瀵硅薄銆?
+2. 鐢熸垚 placement銆?
+3. 淇敼 HomeMapState銆?
+4. 璇诲彇 proposal 褰撶幇瀹炪€?
+5. 浼€?pet銆?
+6. 缁曡繃 VisualState / RenderableWorldSnapshot銆?
 
-## 8. FormalWorldView 的边界
+## 8. FormalWorldView 鐨勮竟鐣?
 
-FormalWorldView 是只读渲染容器。
+FormalWorldView 鏄彧璇绘覆鏌撳鍣ㄣ€?
 
-FormalWorldView 可以：
+FormalWorldView 鍙互锛?
 
-1. 读取 FormalVisualModel。
-2. 渲染 FormalCanvasModel。
-3. 渲染 FormalWorldObjectModel。
-4. 渲染 FormalActorModel。
-5. 渲染 FormalEnvironmentModel。
-6. 渲染 FormalHudSummary。
+1. 璇诲彇 FormalVisualModel銆?
+2. 娓叉煋 FormalCanvasModel銆?
+3. 娓叉煋 FormalWorldObjectModel銆?
+4. 娓叉煋 FormalActorModel銆?
+5. 娓叉煋 FormalEnvironmentModel銆?
+6. 娓叉煋 FormalHudSummary銆?
 
-FormalWorldView 不能：
+FormalWorldView 涓嶈兘锛?
 
-1. 生成 FormalWorldVisualItem。
-2. 生成 FormalActorVisualItem。
-3. buildFormalWorldVisualItems。
-4. buildFormalActorVisualItems。
-5. 决定树、房子、道路、设施、管家、宠物怎么长。
-6. 生成 actor。
-7. 生成 placement。
-8. 填默认 anchor。
-9. 修改 VisualState。
-10. 修改 HomeMapState。
-11. 读取 PNG / WORLD_MAP_ASSETS 作为正式世界事实来源。
-12. 显示 raw tags / source diagnostics / F-C-S-I。
-13. 显示紫微斗数原始术语。
-14. petState 不存在时显示默认宠物。
+1. 鐢熸垚 FormalWorldVisualItem銆?
+2. 鐢熸垚 FormalActorVisualItem銆?
+3. buildFormalWorldVisualItems銆?
+4. buildFormalActorVisualItems銆?
+5. 鍐冲畾鏍戙€佹埧瀛愩€侀亾璺€佽鏂姐€佺瀹躲€佸疇鐗╂€庝箞闀裤€?
+6. 鐢熸垚 actor銆?
+7. 鐢熸垚 placement銆?
+8. 濉粯璁?anchor銆?
+9. 淇敼 VisualState銆?
+10. 淇敼 HomeMapState銆?
+11. 璇诲彇 PNG / WORLD_MAP_ASSETS 浣滀负姝ｅ紡涓栫晫浜嬪疄鏉ユ簮銆?
+12. 鏄剧ず raw tags / source diagnostics / F-C-S-I銆?
+13. 鏄剧ず绱井鏂楁暟鍘熷鏈銆?
+14. petState 涓嶅瓨鍦ㄦ椂鏄剧ず榛樿瀹犵墿銆?
 
-## 9. 非固定布局规则
+## 9. 闈炲浐瀹氬竷灞€瑙勫垯
 
-正式布局不能是固定模板。
+姝ｅ紡甯冨眬涓嶈兘鏄浐瀹氭ā鏉裤€?
 
-正确规则：
+姝ｇ‘瑙勫垯锛?
 
 ```text
-同一玩家 + 同一 worldSeed + 同一世界状态
--> 布局稳定可复现
+鍚屼竴鐜╁ + 鍚屼竴 worldSeed + 鍚屼竴涓栫晫鐘舵€?
+-> 甯冨眬绋冲畾鍙鐜?
 
-不同玩家 + 不同管家人格 + 不同 seed + 不同资源 / 事件状态
--> 布局出现可观察差异
+涓嶅悓鐜╁ + 涓嶅悓绠″浜烘牸 + 涓嶅悓 seed + 涓嶅悓璧勬簮 / 浜嬩欢鐘舵€?
+-> 甯冨眬鍑虹幇鍙瀵熷樊寮?
 ```
 
-布局可以使用 layout recipe 作为候选关系，但 recipe 不能成为固定画面。
+甯冨眬鍙互浣跨敤 layout recipe 浣滀负鍊欓€夊叧绯伙紝浣?recipe 涓嶈兘鎴愪负鍥哄畾鐢婚潰銆?
 
-最终布局必须经过：
+鏈€缁堝竷灞€蹇呴』缁忚繃锛?
 
-1. worldSeed。
-2. 管家人格。
-3. constructionStyle。
-4. visualTendency。
-5. resource state。
-6. construction plan。
-7. placement rules。
-8. spatial validation。
-9. MapDiff / HomeMapState 写入。
+1. worldSeed銆?
+2. 绠″浜烘牸銆?
+3. constructionStyle銆?
+4. visualTendency銆?
+5. resource state銆?
+6. construction plan銆?
+7. placement rules銆?
+8. spatial validation銆?
+9. MapDiff / HomeMapState 鍐欏叆銆?
 
-## 10. Debug View 与 Formal World View 边界
+## 10. Debug View 涓?Formal World View 杈圭晫
 
-Debug View 可以显示：
+Debug View 鍙互鏄剧ず锛?
 
-1. grid。
-2. raw tags。
-3. source diagnostics。
-4. Geometry Source Diagnostics。
-5. Actor Geometry Diagnostics。
-6. collision / support / influence。
-7. F / C / S / I。
-8. anchorSource。
-9. debug reason。
+1. grid銆?
+2. raw tags銆?
+3. source diagnostics銆?
+4. Geometry Source Diagnostics銆?
+5. Actor Geometry Diagnostics銆?
+6. collision / support / influence銆?
+7. F / C / S / I銆?
+8. anchorSource銆?
+9. debug reason銆?
 
-Formal World View 不能直接显示：
+Formal World View 涓嶈兘鐩存帴鏄剧ず锛?
 
-1. debug grid。
-2. raw tags。
-3. source labels。
-4. diagnostics。
-5. collision / support / influence boxes。
-6. F / C / S / I。
-7. actor debug flags。
-8. anchorSource 原始 tag。
-9. 紫微斗数原始术语。
+1. debug grid銆?
+2. raw tags銆?
+3. source labels銆?
+4. diagnostics銆?
+5. collision / support / influence boxes銆?
+6. F / C / S / I銆?
+7. actor debug flags銆?
+8. anchorSource 鍘熷 tag銆?
+9. 绱井鏂楁暟鍘熷鏈銆?
 
-## 11. 当前阶段状态
+## 11. 褰撳墠闃舵鐘舵€?
 
-当前阶段：
+褰撳墠闃舵锛?
 
 ```text
 P8-I-RESET-DOC-CLEANUP
 ```
 
-当前目标：
+褰撳墠鐩爣锛?
 
-1. 清理 P8 总控计划文档乱码。
-2. 清理 Guardrails 乱码。
-3. 对齐 MVP v1.5 / 引擎 v1.3 / 架构 v1.0。
-4. 准备进入 VISUAL-MODEL-00。
+1. 娓呯悊 P8 鎬绘帶璁″垝鏂囨。涔辩爜銆?
+2. 娓呯悊 Guardrails 涔辩爜銆?
+3. 瀵归綈 MVP v1.5 / 寮曟搸 v1.3 / 鏋舵瀯 v1.0銆?
+4. 鍑嗗杩涘叆 VISUAL-MODEL-00銆?
 
-## 12. 下一步
+## 12. 涓嬩竴姝?
 
-下一步进入：
-
-```text
-VISUAL-MODEL-00：FormalVisualModel schema
-```
-
-VISUAL-MODEL-00 目标：
-
-1. 新增 src/world/formal-visual-model/。
-2. 新增 formal-visual-model-schema.ts。
-3. 新增 formal-visual-model-gateway.ts。
-4. 只定义 FormalVisualModel 类型协议。
-5. 不写 FormalVisualGenerator。
-6. 不写 FormalWorldView。
-7. 不接 /world 页面。
-
-## 13. P8 当前最终结论
-
-P8 当前结论：
-
-1. P8-G / P8-H Debug Geometry 链路保留。
-2. 旧 P8-I FormalWorldView 手写视觉路线作废。
-3. 后续先做 FormalVisualModel 容器。
-4. 再做 FormalVisualGenerator。
-5. 最后做 FormalWorldView 只读渲染。
-6. 不允许再回到前端手写世界内容路线。
-
-## 14. VISUAL-MODEL-00 FormalVisualModel schema 完成记录
-
-VISUAL-MODEL-00 已完成 FormalVisualModel 正式视觉模型容器协议。
-
-本阶段新增：
-
-1. `src/world/formal-visual-model/formal-visual-model-schema.ts`。
-2. `src/world/formal-visual-model/formal-visual-model-gateway.ts`。
-3. `src/world/engine-notes/VISUAL_MODEL_00_FORMAL_VISUAL_MODEL_SCHEMA.md`。
-
-本阶段定义：
-
-1. FormalVisualModelVersion。
-2. FormalVisualModelSource。
-3. FormalVisualTraceSource。
-4. FormalVisualLayer。
-5. FormalWorldObjectKind。
-6. FormalActorKind。
-7. FormalVisualStyleToken。
-8. FormalCanvasMood。
-9. FormalAtmosphereTone。
-10. FormalActorPoseToken。
-11. FormalPetStatusToken。
-12. FormalVisualSourceTrace。
-13. FormalVisualAuditSummary。
-14. FormalCanvasModel。
-15. FormalWorldObjectModel。
-16. FormalActorModel。
-17. FormalEnvironmentModel。
-18. FormalHudSummary。
-19. FormalVisualModel。
-20. FormalVisualModelInput。
-21. FORMAL_VISUAL_MODEL_VERSION。
-
-本阶段规则：
-
-1. 只定义 schema。
-2. 不实现 FormalVisualGenerator。
-3. 不实现 FormalWorldView。
-4. 不新增 React 组件。
-5. 不接入 /world 页面。
-6. 不修改 ProceduralRendererView。
-7. 不修改 renderer-schema.ts / renderer-gateway.ts。
-8. 不修改 world-loop。
-9. 不生成 actor。
-10. 不生成 placement。
-11. 不填默认 anchor。
-12. 不修改 HomeMapState。
-13. 不读取 PNG / WORLD_MAP_ASSETS。
-14. 不默认接入 pet。
-15. 不写固定布局。
-
-下一步进入：
+涓嬩竴姝ヨ繘鍏ワ細
 
 ```text
-VISUAL-MODEL-01：FormalVisualGenerator 纯函数
+VISUAL-MODEL-00锛欶ormalVisualModel schema
 ```
 
-## 15. VISUAL-MODEL-01 FormalVisualGenerator 纯函数完成记录
+VISUAL-MODEL-00 鐩爣锛?
 
-VISUAL-MODEL-01 已完成 FormalVisualGenerator 纯函数层。
+1. 鏂板 src/world/formal-visual-model/銆?
+2. 鏂板 formal-visual-model-schema.ts銆?
+3. 鏂板 formal-visual-model-gateway.ts銆?
+4. 鍙畾涔?FormalVisualModel 绫诲瀷鍗忚銆?
+5. 涓嶅啓 FormalVisualGenerator銆?
+6. 涓嶅啓 FormalWorldView銆?
+7. 涓嶆帴 /world 椤甸潰銆?
 
-本阶段新增：
+## 13. P8 褰撳墠鏈€缁堢粨璁?
 
-1. `src/world/formal-visual-model/formal-visual-generator.ts`。
-2. `src/world/formal-visual-model/formal-world-object-model-builder.ts`。
-3. `src/world/formal-visual-model/formal-actor-model-builder.ts`。
-4. `src/world/formal-visual-model/formal-canvas-model-builder.ts`。
-5. `src/world/formal-visual-model/formal-environment-model-builder.ts`。
-6. `src/world/formal-visual-model/formal-hud-summary-builder.ts`。
-7. `src/world/engine-notes/VISUAL_MODEL_01_FORMAL_VISUAL_GENERATOR.md`。
+P8 褰撳墠缁撹锛?
 
-本阶段修改：
+1. P8-G / P8-H Debug Geometry 閾捐矾淇濈暀銆?
+2. 鏃?P8-I FormalWorldView 鎵嬪啓瑙嗚璺嚎浣滃簾銆?
+3. 鍚庣画鍏堝仛 FormalVisualModel 瀹瑰櫒銆?
+4. 鍐嶅仛 FormalVisualGenerator銆?
+5. 鏈€鍚庡仛 FormalWorldView 鍙娓叉煋銆?
+6. 涓嶅厑璁稿啀鍥炲埌鍓嶇鎵嬪啓涓栫晫鍐呭璺嚎銆?
 
-1. `formal-visual-model-gateway.ts` 导出 FormalVisualGenerator。
+## 14. VISUAL-MODEL-00 FormalVisualModel schema 瀹屾垚璁板綍
 
-本阶段规则：
+VISUAL-MODEL-00 宸插畬鎴?FormalVisualModel 姝ｅ紡瑙嗚妯″瀷瀹瑰櫒鍗忚銆?
 
-1. FormalVisualGenerator 是纯函数。
-2. 输入是 RenderableWorldSnapshot / VisualState。
-3. 输出是 FormalVisualModel。
-4. 不新增 FormalWorldView。
-5. 不新增 React 组件。
-6. 不新增 CSS。
-7. 不接入 /world 页面。
-8. 不修改 ProceduralRendererView。
-9. 不修改 renderer-schema.ts / renderer-gateway.ts。
-10. 不修改 world-loop。
-11. 不生成 actor。
-12. 不生成 placement。
-13. 不填默认 anchor。
-14. 不读取 PNG / WORLD_MAP_ASSETS。
-15. 不默认接入 pet。
-16. 不写固定布局。
+鏈樁娈垫柊澧烇細
 
-下一步进入：
+1. `src/world/formal-visual-model/formal-visual-model-schema.ts`銆?
+2. `src/world/formal-visual-model/formal-visual-model-gateway.ts`銆?
+3. `src/world/engine-notes/VISUAL_MODEL_00_FORMAL_VISUAL_MODEL_SCHEMA.md`銆?
+
+鏈樁娈靛畾涔夛細
+
+1. FormalVisualModelVersion銆?
+2. FormalVisualModelSource銆?
+3. FormalVisualTraceSource銆?
+4. FormalVisualLayer銆?
+5. FormalWorldObjectKind銆?
+6. FormalActorKind銆?
+7. FormalVisualStyleToken銆?
+8. FormalCanvasMood銆?
+9. FormalAtmosphereTone銆?
+10. FormalActorPoseToken銆?
+11. FormalPetStatusToken銆?
+12. FormalVisualSourceTrace銆?
+13. FormalVisualAuditSummary銆?
+14. FormalCanvasModel銆?
+15. FormalWorldObjectModel銆?
+16. FormalActorModel銆?
+17. FormalEnvironmentModel銆?
+18. FormalHudSummary銆?
+19. FormalVisualModel銆?
+20. FormalVisualModelInput銆?
+21. FORMAL_VISUAL_MODEL_VERSION銆?
+
+鏈樁娈佃鍒欙細
+
+1. 鍙畾涔?schema銆?
+2. 涓嶅疄鐜?FormalVisualGenerator銆?
+3. 涓嶅疄鐜?FormalWorldView銆?
+4. 涓嶆柊澧?React 缁勪欢銆?
+5. 涓嶆帴鍏?/world 椤甸潰銆?
+6. 涓嶄慨鏀?ProceduralRendererView銆?
+7. 涓嶄慨鏀?renderer-schema.ts / renderer-gateway.ts銆?
+8. 涓嶄慨鏀?world-loop銆?
+9. 涓嶇敓鎴?actor銆?
+10. 涓嶇敓鎴?placement銆?
+11. 涓嶅～榛樿 anchor銆?
+12. 涓嶄慨鏀?HomeMapState銆?
+13. 涓嶈鍙?PNG / WORLD_MAP_ASSETS銆?
+14. 涓嶉粯璁ゆ帴鍏?pet銆?
+15. 涓嶅啓鍥哄畾甯冨眬銆?
+
+涓嬩竴姝ヨ繘鍏ワ細
 
 ```text
-FORMAL-VIEW-00：FormalWorldView 只读 FormalVisualModel
+VISUAL-MODEL-01锛欶ormalVisualGenerator 绾嚱鏁?
 ```
 
-FORMAL-VIEW-00 目标是新增只读 FormalWorldView，让它只读取 FormalVisualModel 渲染玩家主视觉壳层。
+## 15. VISUAL-MODEL-01 FormalVisualGenerator 绾嚱鏁板畬鎴愯褰?
 
-FORMAL-VIEW-00 仍然不能：
+VISUAL-MODEL-01 宸插畬鎴?FormalVisualGenerator 绾嚱鏁板眰銆?
 
-1. 在组件内生成 FormalWorldVisualItem。
-2. 在组件内生成 FormalActorVisualItem。
-3. buildFormalWorldVisualItems。
-4. buildFormalActorVisualItems。
-5. 生成世界事实。
-6. 生成 placement。
-7. 生成 actor。
-8. 填默认 anchor。
-9. 读取 PNG / WORLD_MAP_ASSETS 作为正式世界事实来源。
-10. 默认显示 pet。
+鏈樁娈垫柊澧烇細
 
-## 16. FORMAL-VIEW-00 FormalWorldView 只读 FormalVisualModel 完成记录
+1. `src/world/formal-visual-model/formal-visual-generator.ts`銆?
+2. `src/world/formal-visual-model/formal-world-object-model-builder.ts`銆?
+3. `src/world/formal-visual-model/formal-actor-model-builder.ts`銆?
+4. `src/world/formal-visual-model/formal-canvas-model-builder.ts`銆?
+5. `src/world/formal-visual-model/formal-environment-model-builder.ts`銆?
+6. `src/world/formal-visual-model/formal-hud-summary-builder.ts`銆?
+7. `src/world/engine-notes/VISUAL_MODEL_01_FORMAL_VISUAL_GENERATOR.md`銆?
 
-FORMAL-VIEW-00 已新增只读 FormalWorldView 组件。
+鏈樁娈典慨鏀癸細
 
-本阶段新增：
+1. `formal-visual-model-gateway.ts` 瀵煎嚭 FormalVisualGenerator銆?
 
-1. `src/app/world/components/formal-world-view/formal-world-view.tsx`。
-2. `src/app/world/components/formal-world-view/formal-world-view.styles.module.css`。
-3. `src/app/world/components/formal-world-view/index.ts`。
-4. `src/world/engine-notes/FORMAL_VIEW_00_FORMAL_WORLD_VIEW_READONLY.md`。
+鏈樁娈佃鍒欙細
 
-本阶段规则：
+1. FormalVisualGenerator 鏄函鍑芥暟銆?
+2. 杈撳叆鏄?RenderableWorldSnapshot / VisualState銆?
+3. 杈撳嚭鏄?FormalVisualModel銆?
+4. 涓嶆柊澧?FormalWorldView銆?
+5. 涓嶆柊澧?React 缁勪欢銆?
+6. 涓嶆柊澧?CSS銆?
+7. 涓嶆帴鍏?/world 椤甸潰銆?
+8. 涓嶄慨鏀?ProceduralRendererView銆?
+9. 涓嶄慨鏀?renderer-schema.ts / renderer-gateway.ts銆?
+10. 涓嶄慨鏀?world-loop銆?
+11. 涓嶇敓鎴?actor銆?
+12. 涓嶇敓鎴?placement銆?
+13. 涓嶅～榛樿 anchor銆?
+14. 涓嶈鍙?PNG / WORLD_MAP_ASSETS銆?
+15. 涓嶉粯璁ゆ帴鍏?pet銆?
+16. 涓嶅啓鍥哄畾甯冨眬銆?
 
-1. FormalWorldView 只接收 `model: FormalVisualModel`。
-2. FormalWorldView 不接收 RenderableWorldSnapshot。
-3. FormalWorldView 不接收 VisualState。
-4. FormalWorldView 不调用 FormalVisualGenerator。
-5. FormalWorldView 不生成 FormalVisualModel。
-6. FormalWorldView 不生成 actor。
-7. FormalWorldView 不生成 placement。
-8. FormalWorldView 不填默认 anchor。
-9. FormalWorldView 不修改 VisualState / HomeMapState。
-10. FormalWorldView 不读取 PNG / WORLD_MAP_ASSETS。
-11. FormalWorldView 不显示 raw tags / source diagnostics / audit internals。
-12. FormalWorldView 不接入 /world 页面。
-13. FormalWorldView 不修改 ProceduralRendererView。
-14. FormalWorldView 不改变现有 Debug Renderer。
-
-下一步进入：
+涓嬩竴姝ヨ繘鍏ワ細
 
 ```text
-FORMAL-VIEW-01：FormalWorldView 接入演示入口或 debug preview
+FORMAL-VIEW-00锛欶ormalWorldView 鍙 FormalVisualModel
 ```
 
-## 17. FORMAL-VIEW-00 严格只读修订记录
+FORMAL-VIEW-00 鐩爣鏄柊澧炲彧璇?FormalWorldView锛岃瀹冨彧璇诲彇 FormalVisualModel 娓叉煋鐜╁涓昏瑙夊３灞傘€?
 
-FORMAL-VIEW-00 已完成严格只读修订。
+FORMAL-VIEW-00 浠嶇劧涓嶈兘锛?
 
-当前 FormalWorldView 只接收：
+1. 鍦ㄧ粍浠跺唴鐢熸垚 FormalWorldVisualItem銆?
+2. 鍦ㄧ粍浠跺唴鐢熸垚 FormalActorVisualItem銆?
+3. buildFormalWorldVisualItems銆?
+4. buildFormalActorVisualItems銆?
+5. 鐢熸垚涓栫晫浜嬪疄銆?
+6. 鐢熸垚 placement銆?
+7. 鐢熸垚 actor銆?
+8. 濉粯璁?anchor銆?
+9. 璇诲彇 PNG / WORLD_MAP_ASSETS 浣滀负姝ｅ紡涓栫晫浜嬪疄鏉ユ簮銆?
+10. 榛樿鏄剧ず pet銆?
+
+## 16. FORMAL-VIEW-00 FormalWorldView 鍙 FormalVisualModel 瀹屾垚璁板綍
+
+FORMAL-VIEW-00 宸叉柊澧炲彧璇?FormalWorldView 缁勪欢銆?
+鏈樁娈垫柊澧烇細
+
+1. `src/app/world/components/formal-world-view/formal-world-view.tsx`銆?2. `src/app/world/components/formal-world-view/formal-world-view.styles.module.css`銆?3. `src/app/world/components/formal-world-view/index.ts`銆?4. `src/world/engine-notes/FORMAL_VIEW_00_FORMAL_WORLD_VIEW_READONLY.md`銆?
+鏈樁娈佃鍒欙細
+
+1. FormalWorldView 鍙帴鏀?`model: FormalVisualModel`銆?2. FormalWorldView 涓嶆帴鏀?RenderableWorldSnapshot銆?3. FormalWorldView 涓嶆帴鏀?VisualState銆?4. FormalWorldView 涓嶈皟鐢?FormalVisualGenerator銆?5. FormalWorldView 涓嶇敓鎴?FormalVisualModel銆?6. FormalWorldView 涓嶇敓鎴?actor銆?7. FormalWorldView 涓嶇敓鎴?placement銆?8. FormalWorldView 涓嶅～榛樿 anchor銆?9. FormalWorldView 涓嶄慨鏀?VisualState / HomeMapState銆?10. FormalWorldView 涓嶈鍙?PNG / WORLD_MAP_ASSETS銆?11. FormalWorldView 涓嶆樉绀?raw tags / source diagnostics / audit internals銆?12. FormalWorldView 涓嶆帴鍏?/world 椤甸潰銆?13. FormalWorldView 涓嶄慨鏀?ProceduralRendererView銆?14. FormalWorldView 涓嶆敼鍙樼幇鏈?Debug Renderer銆?
+涓嬩竴姝ヨ繘鍏ワ細
+
+```text
+FORMAL-VIEW-01锛欶ormalWorldView 鎺ュ叆婕旂ず鍏ュ彛鎴?debug preview
+```
+
+## 17. FORMAL-VIEW-00 涓ユ牸鍙淇璁板綍
+
+FORMAL-VIEW-00 宸插畬鎴愪弗鏍煎彧璇讳慨璁€?
+褰撳墠 FormalWorldView 鍙帴鏀讹細
 
 ```ts
 model: FormalVisualModel
 ```
 
-本阶段新增：
+鏈樁娈垫柊澧烇細
 
-1. `src/app/world/components/formal-world-view/formal-world-view.tsx`。
-2. `src/app/world/components/formal-world-view/formal-world-view.styles.module.css`。
-3. `src/app/world/components/formal-world-view/index.ts`。
-4. `src/world/engine-notes/FORMAL_VIEW_00_FORMAL_WORLD_VIEW_READONLY.md`。
+1. `src/app/world/components/formal-world-view/formal-world-view.tsx`銆?2. `src/app/world/components/formal-world-view/formal-world-view.styles.module.css`銆?3. `src/app/world/components/formal-world-view/index.ts`銆?4. `src/world/engine-notes/FORMAL_VIEW_00_FORMAL_WORLD_VIEW_READONLY.md`銆?
+鏈樁娈电‘璁わ細
 
-本阶段确认：
-
-1. FormalWorldView 只读 `model.canvas`。
-2. FormalWorldView 只读 `model.objects`。
-3. FormalWorldView 只读 `model.actors`。
-4. FormalWorldView 只读 `model.environment`。
-5. FormalWorldView 只读 `model.hudSummary`。
-6. FormalWorldView 只根据 FormalVisualModel 已存在的 geometry 渲染 point / line / polygon / multiPolygon。
-7. layer 排序只用于显示层级，不改变世界内容。
-8. FormalWorldView 不调用 FormalVisualGenerator。
-9. FormalWorldView 不生成 FormalVisualModel。
-10. FormalWorldView 不生成 FormalWorldVisualItem / FormalActorVisualItem。
-11. FormalWorldView 不写 buildFormalWorldVisualItems / buildFormalActorVisualItems。
-12. FormalWorldView 不生成世界事实。
-13. FormalWorldView 不生成 placement。
-14. FormalWorldView 不生成 actor。
-15. FormalWorldView 不填默认 anchor。
-16. FormalWorldView 不读取 PNG / WORLD_MAP_ASSETS。
-17. FormalWorldView 不默认接入 pet。
-18. 本阶段不接入 /world 页面。
-
-下一步进入：
+1. FormalWorldView 鍙 `model.canvas`銆?2. FormalWorldView 鍙 `model.objects`銆?3. FormalWorldView 鍙 `model.actors`銆?4. FormalWorldView 鍙 `model.environment`銆?5. FormalWorldView 鍙 `model.hudSummary`銆?6. FormalWorldView 鍙牴鎹?FormalVisualModel 宸插瓨鍦ㄧ殑 geometry 娓叉煋 point / line / polygon / multiPolygon銆?7. layer 鎺掑簭鍙敤浜庢樉绀哄眰绾э紝涓嶆敼鍙樹笘鐣屽唴瀹广€?8. FormalWorldView 涓嶈皟鐢?FormalVisualGenerator銆?9. FormalWorldView 涓嶇敓鎴?FormalVisualModel銆?10. FormalWorldView 涓嶇敓鎴?FormalWorldVisualItem / FormalActorVisualItem銆?11. FormalWorldView 涓嶅啓 buildFormalWorldVisualItems / buildFormalActorVisualItems銆?12. FormalWorldView 涓嶇敓鎴愪笘鐣屼簨瀹炪€?13. FormalWorldView 涓嶇敓鎴?placement銆?14. FormalWorldView 涓嶇敓鎴?actor銆?15. FormalWorldView 涓嶅～榛樿 anchor銆?16. FormalWorldView 涓嶈鍙?PNG / WORLD_MAP_ASSETS銆?17. FormalWorldView 涓嶉粯璁ゆ帴鍏?pet銆?18. 鏈樁娈典笉鎺ュ叆 /world 椤甸潰銆?
+涓嬩竴姝ヨ繘鍏ワ細
 
 ```text
-FORMAL-VIEW-01：FormalWorldView preview harness
+FORMAL-VIEW-01锛欶ormalWorldView preview harness
 ```
 
-## 18. FORMAL-VIEW-01 FormalWorldView preview harness 完成记录
+## 18. FORMAL-VIEW-01 FormalWorldView preview harness 瀹屾垚璁板綍
 
-FORMAL-VIEW-01 已完成 preview harness。
+FORMAL-VIEW-01 宸插畬鎴?preview harness銆?
+鏈樁娈垫柊澧烇細
 
-本阶段新增：
+1. `src/app/world/components/formal-world-view/formal-world-view.preview.tsx`銆?2. `src/world/engine-notes/FORMAL_VIEW_01_FORMAL_WORLD_VIEW_PREVIEW_HARNESS.md`銆?
+鏈樁娈电‘璁わ細
 
-1. `src/app/world/components/formal-world-view/formal-world-view.preview.tsx`。
-2. `src/world/engine-notes/FORMAL_VIEW_01_FORMAL_WORLD_VIEW_PREVIEW_HARNESS.md`。
+1. preview harness 鍙敤浜庡紑鍙戦瑙堛€?2. preview harness 鐢ㄤ簬楠岃瘉 FormalVisualModel -> FormalWorldView 鐨勫彧璇绘覆鏌撴晥鏋溿€?3. preview mock 鍛藉悕涓?`PREVIEW_FORMAL_VISUAL_MODEL`銆?4. preview mock 鍙瓨鍦ㄤ簬 preview harness 鏂囦欢鍐呴儴銆?5. preview mock 甯︽湁 `preview_only` / `not_world_fact` / `not_persisted` auditTags銆?6. preview mock 涓嶆槸涓栫晫浜嬪疄銆?7. preview mock 涓嶈繘鍏ユ寮忔暟鎹祦銆?8. preview harness 涓嶇瓑浜庢寮?/world 鎺ュ叆銆?9. 鏈樁娈典笉淇敼 FormalVisualGenerator銆?10. 鏈樁娈典笉淇敼 FormalVisualModel schema銆?11. 鏈樁娈典笉淇敼 world-loop銆?12. 鏈樁娈典笉淇敼 HomeMapState銆?13. 鏈樁娈典笉鐢熸垚鐪熷疄 world object / placement / actor銆?14. 鏈樁娈典笉璇诲彇 PNG / WORLD_MAP_ASSETS銆?15. 鏈樁娈典笉榛樿鎺ュ叆 pet銆?
+涓嬩竴姝ユ槸 FORMAL-VIEW-02 鎴?/world 姝ｅ紡鎺ュ叆鍓嶆鏌ワ紝鍏蜂綋浠ュ悗鍐嶅畾銆?
+鍦ㄦ寮忓喅绛栧墠锛屼笉寰楁搮鑷帴鍏ユ寮?/world銆?
+## 19. FORMAL-VIEW-02 /world 姝ｅ紡鎺ュ叆鍓嶆鏌ヨ褰?
+FORMAL-VIEW-02 宸插畬鎴?/world 姝ｅ紡鎺ュ叆鍓嶆鏌ャ€?
+鏈樁娈垫柊澧烇細
 
-本阶段确认：
+1. `src/world/engine-notes/FORMAL_VIEW_02_WORLD_ROUTE_PREFLIGHT.md`銆?
+鏈樁娈电‘璁ゅ綋鍓嶅凡鏈夐摼璺細
 
-1. preview harness 只用于开发预览。
-2. preview harness 用于验证 FormalVisualModel -> FormalWorldView 的只读渲染效果。
-3. preview mock 命名为 `PREVIEW_FORMAL_VISUAL_MODEL`。
-4. preview mock 只存在于 preview harness 文件内部。
-5. preview mock 带有 `preview_only` / `not_world_fact` / `not_persisted` auditTags。
-6. preview mock 不是世界事实。
-7. preview mock 不进入正式数据流。
-8. preview harness 不等于正式 /world 接入。
-9. 本阶段不修改 FormalVisualGenerator。
-10. 本阶段不修改 FormalVisualModel schema。
-11. 本阶段不修改 world-loop。
-12. 本阶段不修改 HomeMapState。
-13. 本阶段不生成真实 world object / placement / actor。
-14. 本阶段不读取 PNG / WORLD_MAP_ASSETS。
-15. 本阶段不默认接入 pet。
+1. `buildVisualState`锛欻omeMapState / EnvironmentState / placementGeometryAudit / actor projection -> VisualState銆?2. `buildRenderableWorldSnapshot`锛歏isualState -> RenderableWorldSnapshot銆?3. `buildFormalVisualModelFromSnapshot`锛歊enderableWorldSnapshot -> FormalVisualModel銆?4. `FormalWorldView`锛欶ormalVisualModel -> 鍙娓叉煋銆?
+鏈樁娈电‘璁ゅ綋鍓?/world 鐘舵€侊細
 
-下一步是 FORMAL-VIEW-02 或 /world 正式接入前检查，具体以后再定。
-
-在正式决策前，不得擅自接入正式 /world。
-
-## 19. FORMAL-VIEW-02 /world 正式接入前检查记录
-
-FORMAL-VIEW-02 已完成 /world 正式接入前检查。
-
-本阶段新增：
-
-1. `src/world/engine-notes/FORMAL_VIEW_02_WORLD_ROUTE_PREFLIGHT.md`。
-
-本阶段确认当前已有链路：
-
-1. `buildVisualState`：HomeMapState / EnvironmentState / placementGeometryAudit / actor projection -> VisualState。
-2. `buildRenderableWorldSnapshot`：VisualState -> RenderableWorldSnapshot。
-3. `buildFormalVisualModelFromSnapshot`：RenderableWorldSnapshot -> FormalVisualModel。
-4. `FormalWorldView`：FormalVisualModel -> 只读渲染。
-
-本阶段确认当前 /world 状态：
-
-1. /world 已有真实 HomeMapState 来源。
-2. /world 已有真实 RenderableWorldSnapshot 来源。
-3. EnvironmentState 与 placementGeometryAudit 已在上游派生并进入 VisualState。
-4. /world 尚未构建真实 FormalVisualModel。
-5. /world 尚未接入 FormalWorldView。
-6. preview mock 未接入 /world，且不能接入 /world。
-7. actorRuntimeGeometryProjections 在正式切换前需要确认所有真实 snapshot 路径一致。
-8. 当前不应直接切换到 FormalWorldView。
-
-下一步只有在确认真实链路完整后，才允许进入：
+1. /world 宸叉湁鐪熷疄 HomeMapState 鏉ユ簮銆?2. /world 宸叉湁鐪熷疄 RenderableWorldSnapshot 鏉ユ簮銆?3. EnvironmentState 涓?placementGeometryAudit 宸插湪涓婃父娲剧敓骞惰繘鍏?VisualState銆?4. /world 灏氭湭鏋勫缓鐪熷疄 FormalVisualModel銆?5. /world 灏氭湭鎺ュ叆 FormalWorldView銆?6. preview mock 鏈帴鍏?/world锛屼笖涓嶈兘鎺ュ叆 /world銆?7. actorRuntimeGeometryProjections 鍦ㄦ寮忓垏鎹㈠墠闇€瑕佺‘璁ゆ墍鏈夌湡瀹?snapshot 璺緞涓€鑷淬€?8. 褰撳墠涓嶅簲鐩存帴鍒囨崲鍒?FormalWorldView銆?
+涓嬩竴姝ュ彧鏈夊湪纭鐪熷疄閾捐矾瀹屾暣鍚庯紝鎵嶅厑璁歌繘鍏ワ細
 
 ```text
-FORMAL-VIEW-03：/world 只读接入 FormalVisualModel
+FORMAL-VIEW-03锛?world 鍙鎺ュ叆 FormalVisualModel
 ```
 
-## 20. FORMAL-VIEW-03 /world 只读接入 FormalVisualModel 完成记录
+## 20. FORMAL-VIEW-03 /world 鍙鎺ュ叆 FormalVisualModel 瀹屾垚璁板綍
 
-FORMAL-VIEW-03 已完成 /world 只读接入 FormalVisualModel。
+FORMAL-VIEW-03 宸插畬鎴?/world 鍙鎺ュ叆 FormalVisualModel銆?
+鏈樁娈垫柊澧烇細
 
-本阶段新增：
+1. `src/world/engine-notes/FORMAL_VIEW_03_WORLD_ROUTE_READONLY_FORMAL_VISUAL_MODEL.md`銆?
+鏈樁娈典慨鏀癸細
 
-1. `src/world/engine-notes/FORMAL_VIEW_03_WORLD_ROUTE_READONLY_FORMAL_VISUAL_MODEL.md`。
-
-本阶段修改：
-
-1. `src/app/world/world-route-page.tsx`。
-2. `src/app/world/world-route-page.styles.module.css`。
-
-当前真实链路：
-
+1. `src/app/world/world-route-page.tsx`銆?2. `src/app/world/world-route-page.styles.module.css`銆?
+褰撳墠鐪熷疄閾捐矾锛?
 ```text
 runtimeState.currentRenderableSnapshot
 -> buildFormalVisualModelFromSnapshot
@@ -562,117 +480,69 @@ runtimeState.currentRenderableSnapshot
 -> FormalWorldView
 ```
 
-本阶段确认：
+鏈樁娈电‘璁わ細
 
-1. FormalVisualModel 只从 `runtimeState.currentRenderableSnapshot` 构建。
-2. `/world` 未使用 preview mock。
-3. `/world` 未引用 `PREVIEW_FORMAL_VISUAL_MODEL`。
-4. `/world` 未 import `formal-world-view.preview`。
-5. 本阶段未修改 FormalWorldView。
-6. 本阶段未修改 FormalVisualGenerator。
-7. 本阶段未修改 FormalVisualModel schema。
-8. 本阶段未修改 renderer。
-9. 本阶段未修改 world-loop。
-10. 本阶段未修改 HomeMapState。
-11. 本阶段未生成 world object / placement / actor。
-12. 本阶段未读取 PNG / WORLD_MAP_ASSETS。
-13. 本阶段未默认接入 pet。
-14. Debug Renderer 保留。
-15. FormalWorldView 读取真实链路生成的 FormalVisualModel。
-
-下一步进入：
+1. FormalVisualModel 鍙粠 `runtimeState.currentRenderableSnapshot` 鏋勫缓銆?2. `/world` 鏈娇鐢?preview mock銆?3. `/world` 鏈紩鐢?`PREVIEW_FORMAL_VISUAL_MODEL`銆?4. `/world` 鏈?import `formal-world-view.preview`銆?5. 鏈樁娈垫湭淇敼 FormalWorldView銆?6. 鏈樁娈垫湭淇敼 FormalVisualGenerator銆?7. 鏈樁娈垫湭淇敼 FormalVisualModel schema銆?8. 鏈樁娈垫湭淇敼 renderer銆?9. 鏈樁娈垫湭淇敼 world-loop銆?10. 鏈樁娈垫湭淇敼 HomeMapState銆?11. 鏈樁娈垫湭鐢熸垚 world object / placement / actor銆?12. 鏈樁娈垫湭璇诲彇 PNG / WORLD_MAP_ASSETS銆?13. 鏈樁娈垫湭榛樿鎺ュ叆 pet銆?14. Debug Renderer 淇濈暀銆?15. FormalWorldView 璇诲彇鐪熷疄閾捐矾鐢熸垚鐨?FormalVisualModel銆?
+涓嬩竴姝ヨ繘鍏ワ細
 
 ```text
-FORMAL-VIEW-04：正式 / Debug 视图切换策略或主视觉布局整理
+FORMAL-VIEW-04锛氭寮?/ Debug 瑙嗗浘鍒囨崲绛栫暐鎴栦富瑙嗚甯冨眬鏁寸悊
 ```
 
-## 21. FORMAL-VIEW-04 正式 / Debug 视图切换策略完成记录
+## 21. FORMAL-VIEW-04 姝ｅ紡 / Debug 瑙嗗浘鍒囨崲绛栫暐瀹屾垚璁板綍
 
-FORMAL-VIEW-04 已完成 Formal / Debug 视图切换策略。
+FORMAL-VIEW-04 宸插畬鎴?Formal / Debug 瑙嗗浘鍒囨崲绛栫暐銆?
+鏈樁娈垫柊澧烇細
 
-本阶段新增：
+1. `src/world/engine-notes/FORMAL_VIEW_04_FORMAL_DEBUG_VIEW_MODE.md`銆?
+鏈樁娈典慨鏀癸細
 
-1. `src/world/engine-notes/FORMAL_VIEW_04_FORMAL_DEBUG_VIEW_MODE.md`。
-
-本阶段修改：
-
-1. `src/app/world/world-route-page.tsx`。
-2. `src/app/world/world-route-page.styles.module.css`。
-
-当前 viewMode：
-
+1. `src/app/world/world-route-page.tsx`銆?2. `src/app/world/world-route-page.styles.module.css`銆?
+褰撳墠 viewMode锛?
 ```ts
 "formal" | "debug" | "both"
 ```
 
-本阶段确认：
+鏈樁娈电‘璁わ細
 
-1. 默认 viewMode 为 `"formal"`。
-2. Formal 模式只显示 FormalWorldView。
-3. Debug 模式只显示 ProceduralRendererView。
-4. Both 模式同时显示 FormalWorldView 与 ProceduralRendererView。
-5. Debug Renderer 保留。
-6. Both 模式只用于开发对照。
-7. viewMode 只是本地 UI 状态，不写入持久化。
-8. viewMode 不进入 world-loop。
-9. viewMode 不修改 HomeMapState。
-10. viewMode 不参与 FormalVisualModel 生成。
-11. FormalVisualModel 仍然来自 `runtimeState.currentRenderableSnapshot`。
-12. 本阶段未使用 preview mock。
-13. 本阶段未生成 world object / placement / actor。
-14. 本阶段未读取 PNG / WORLD_MAP_ASSETS。
-15. 本阶段未默认接入 pet。
+1. 榛樿 viewMode 涓?`"formal"`銆?2. Formal 妯″紡鍙樉绀?FormalWorldView銆?3. Debug 妯″紡鍙樉绀?ProceduralRendererView銆?4. Both 妯″紡鍚屾椂鏄剧ず FormalWorldView 涓?ProceduralRendererView銆?5. Debug Renderer 淇濈暀銆?6. Both 妯″紡鍙敤浜庡紑鍙戝鐓с€?7. viewMode 鍙槸鏈湴 UI 鐘舵€侊紝涓嶅啓鍏ユ寔涔呭寲銆?8. viewMode 涓嶈繘鍏?world-loop銆?9. viewMode 涓嶄慨鏀?HomeMapState銆?10. viewMode 涓嶅弬涓?FormalVisualModel 鐢熸垚銆?11. FormalVisualModel 浠嶇劧鏉ヨ嚜 `runtimeState.currentRenderableSnapshot`銆?12. 鏈樁娈垫湭浣跨敤 preview mock銆?13. 鏈樁娈垫湭鐢熸垚 world object / placement / actor銆?14. 鏈樁娈垫湭璇诲彇 PNG / WORLD_MAP_ASSETS銆?15. 鏈樁娈垫湭榛樿鎺ュ叆 pet銆?
+涓嬩竴姝ユ槸 WORLD-GEN-00 鎴?FORMAL-VIEW-05锛屽緟妫€鏌ュ悗鍐冲畾銆?
+## WORLD-GEN-00 涓栫晫鐢熸垚閾捐矾鐜扮姸瀹¤璁板綍
 
-下一步是 WORLD-GEN-00 或 FORMAL-VIEW-05，待检查后决定。
-
-## WORLD-GEN-00 世界生成链路现状审计记录
-
-WORLD-GEN-00 已开始并完成世界生成链路审计。
-
-当前确认：
-
-1. P8 Formal View 阶段已完成真实链路只读接入与 Formal / Debug 视图切换。
-2. 下一阶段进入 WORLD-GEN，回到 MVP v1.5 的世界自动生成主线。
-3. 本轮只审计，不改代码。
-4. 当前已有 worldSeed、InitialHomeGenerator、HomeMapState、MapDiff、PlacementEngine、layout recipe。
-5. 当前 placements 已经部分受到 seed 与 constructionStyle 影响，但还不是完整的非固定布局规则系统。
-6. 当前 constructionStyle 已进入初始生成链路。
-7. 当前没有发现明确 visualTendency 实现入口。
-8. 当前缺少不同 seed / 人格 / 资源状态产生可观察布局差异的验证机制。
-9. 当前初始生成中存在 pet actor / pet placement / pet-bed / pet_arrival 旧逻辑风险。
-10. pet 默认生成风险违反 MVP v1.5 宠物后置原则，本轮只记录，不删除。
-11. 后续 WORLD-GEN 不能把 PNG / assetId 当作世界事实来源。
-
-下一步优先建议进入：
+WORLD-GEN-00 宸插紑濮嬪苟瀹屾垚涓栫晫鐢熸垚閾捐矾瀹¤銆?
+褰撳墠纭锛?
+1. P8 Formal View 闃舵宸插畬鎴愮湡瀹為摼璺彧璇绘帴鍏ヤ笌 Formal / Debug 瑙嗗浘鍒囨崲銆?2. 涓嬩竴闃舵杩涘叆 WORLD-GEN锛屽洖鍒?MVP v1.5 鐨勪笘鐣岃嚜鍔ㄧ敓鎴愪富绾裤€?3. 鏈疆鍙璁★紝涓嶆敼浠ｇ爜銆?4. 褰撳墠宸叉湁 worldSeed銆両nitialHomeGenerator銆丠omeMapState銆丮apDiff銆丳lacementEngine銆乴ayout recipe銆?5. 褰撳墠 placements 宸茬粡閮ㄥ垎鍙楀埌 seed 涓?constructionStyle 褰卞搷锛屼絾杩樹笉鏄畬鏁寸殑闈炲浐瀹氬竷灞€瑙勫垯绯荤粺銆?6. 褰撳墠 constructionStyle 宸茶繘鍏ュ垵濮嬬敓鎴愰摼璺€?7. 褰撳墠娌℃湁鍙戠幇鏄庣‘ visualTendency 瀹炵幇鍏ュ彛銆?8. 褰撳墠缂哄皯涓嶅悓 seed / 浜烘牸 / 璧勬簮鐘舵€佷骇鐢熷彲瑙傚療甯冨眬宸紓鐨勯獙璇佹満鍒躲€?9. 褰撳墠鍒濆鐢熸垚涓瓨鍦?pet actor / pet placement / pet-bed / pet_arrival 鏃ч€昏緫椋庨櫓銆?10. pet 榛樿鐢熸垚椋庨櫓杩濆弽 MVP v1.5 瀹犵墿鍚庣疆鍘熷垯锛屾湰杞彧璁板綍锛屼笉鍒犻櫎銆?11. 鍚庣画 WORLD-GEN 涓嶈兘鎶?PNG / assetId 褰撲綔涓栫晫浜嬪疄鏉ユ簮銆?
+涓嬩竴姝ヤ紭鍏堝缓璁繘鍏ワ細
 
 ```text
-WORLD-GEN-01：宠物默认生成逻辑回滚 / 宠物后置对齐
+WORLD-GEN-01锛氬疇鐗╅粯璁ょ敓鎴愰€昏緫鍥炴粴 / 瀹犵墿鍚庣疆瀵归綈
 ```
 
-宠物默认生成风险处理后，再进入：
+瀹犵墿榛樿鐢熸垚椋庨櫓澶勭悊鍚庯紝鍐嶈繘鍏ワ細
 
 ```text
-WORLD-GEN-02：worldSeed + personality layout input schema
+WORLD-GEN-02锛歸orldSeed + personality layout input schema
 ```
 
-## WORLD-GEN-01A/B 正式首屏文案修正与 pet runtime 断开记录
+## WORLD-GEN-01A/B 姝ｅ紡棣栧睆鏂囨淇涓?pet runtime 鏂紑璁板綍
 
-WORLD-GEN-01A/B 已完成。
-
-当前确认：
-
-1. 已清理 `world-first-scene-model.ts` 正式首屏旧孵化器文案。
-2. 正式首屏不再使用孵化器 / 胚胎 / 等待宠物出生作为默认设定。
-3. `/world` 手动 Tick 不再默认构造 embryo pet runtime。
-4. `/world` 手动 Tick 不再调用 pet runtime validation / summary。
-5. `/world` 手动 Tick 不再向 `buildWorldLoopStep` 传入 petIntentContext。
-6. pet 未来能力未删除，只是从默认正式运行链路断开。
-7. 本阶段未修改 placement-engine。
-8. 本阶段未修改 initial-home-scene-recipe。
-9. 本阶段未修改 FormalVisualModel / FormalWorldView 链路。
-
-下一步进入：
+WORLD-GEN-01A/B 宸插畬鎴愩€?
+褰撳墠纭锛?
+1. 宸叉竻鐞?`world-first-scene-model.ts` 姝ｅ紡棣栧睆鏃у鍖栧櫒鏂囨銆?2. 姝ｅ紡棣栧睆涓嶅啀浣跨敤瀛靛寲鍣?/ 鑳氳儙 / 绛夊緟瀹犵墿鍑虹敓浣滀负榛樿璁惧畾銆?3. `/world` 鎵嬪姩 Tick 涓嶅啀榛樿鏋勯€?embryo pet runtime銆?4. `/world` 鎵嬪姩 Tick 涓嶅啀璋冪敤 pet runtime validation / summary銆?5. `/world` 鎵嬪姩 Tick 涓嶅啀鍚?`buildWorldLoopStep` 浼犲叆 petIntentContext銆?6. pet 鏈潵鑳藉姏鏈垹闄わ紝鍙槸浠庨粯璁ゆ寮忚繍琛岄摼璺柇寮€銆?7. 鏈樁娈垫湭淇敼 placement-engine銆?8. 鏈樁娈垫湭淇敼 initial-home-scene-recipe銆?9. 鏈樁娈垫湭淇敼 FormalVisualModel / FormalWorldView 閾捐矾銆?
+涓嬩竴姝ヨ繘鍏ワ細
 
 ```text
-WORLD-GEN-01C：移除初始 pet actor / pet placement
+WORLD-GEN-01C锛氱Щ闄ゅ垵濮?pet actor / pet placement
 ```
+## MVP-ALIGN-02 鏃у鍖栧櫒 / 榛樿瀹犵墿閾捐矾娓呯悊璁板綍
+
+MVP-ALIGN-02 宸插畬鎴愭棫瀛靛寲鍣?/ 榛樿瀹犵墿閾捐矾娓呯悊銆?
+鏈樁娈靛畬鎴愶細
+
+1. 绉婚櫎褰撳墠姝ｅ紡閾捐矾涓殑鏃у鍖栧櫒璺嚎銆?2. 绉婚櫎榛樿 pet actor銆?3. 绉婚櫎榛樿 pet placement銆?4. 绉婚櫎榛樿 pet 涓撳睘璁炬柦銆?5. 绉婚櫎 `pet_arrival` / `pet_rest` 鍒濆鍖哄煙銆?6. 鏂紑 IncubatorSystem 褰撳墠姝ｅ紡鍏ュ彛銆?7. 绉婚櫎 WorldState incubator 瀛楁銆?8. 娓呯悊 /world銆乺untime銆亀orld-first-scene 涓棫瀛靛寲鍣ㄦ寮忔枃妗堛€?9. 淇濈暀瀹犵墿鏈潵鑳藉姏锛屼絾瀹犵墿鍙兘閫氳繃 LifeEvent / CompanionDecision / accept_companion 鍚庣疆杩涘叆銆?
+涓嬩竴姝ヤ笉鍐嶅鐞嗗鍖栧櫒锛岃繘鍏ヤ笘鐣岀敓鎴愯鍒欏寮猴細
+
+```text
+WORLD-GEN-02锛歸orldSeed + personality layout input schema
+```
+

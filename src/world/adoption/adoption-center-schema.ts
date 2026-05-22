@@ -32,3 +32,19 @@ export type AdoptionState = {
   } | null
   tags: string[]
 }
+
+export function buildEmptyAdoptionState(): AdoptionState {
+  return {
+    hasPendingPet: false,
+    pendingPetName: "",
+    progress: 0,
+    readiness: 0,
+    status: "not_registered",
+    source: "system_assignment",
+    registeredAtTick: null,
+    assignedAtTick: null,
+    arrivedAtTick: null,
+    arrivalMomentForPersonality: null,
+    tags: ["adoption_state_empty", "companion_deferred"],
+  }
+}

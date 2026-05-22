@@ -1,11 +1,6 @@
-/**
- * 当前文件负责：根据管家行为执行快照，安全更新具体家园空间状态。
- *
- * 注意：
- * 这里只影响 homeSpaces。
- * 不控制宠物。
- * 不写宠物 learning。
- */
+﻿/**
+ * 褰撳墠鏂囦欢璐熻矗锛氭牴鎹瀹惰涓烘墽琛屽揩鐓э紝瀹夊叏鏇存柊鍏蜂綋瀹跺洯绌洪棿鐘舵€併€? *
+ * 娉ㄦ剰锛? * 杩欓噷鍙奖鍝?homeSpaces銆? * 涓嶆帶鍒跺疇鐗┿€? * 涓嶅啓瀹犵墿 learning銆? */
 
 import type {
   ButlerBehaviorExecution,
@@ -132,12 +127,12 @@ export function applyButlerHomeSpaceAction(
     }))
   }
 
-  if (execution.kind === "incubator_watch") {
-    spaces = updateSpaceById(spaces, "incubator_area", (space) => ({
+  if (execution.kind === "home_maintenance") {
+    spaces = updateSpaceById(spaces, "initial_care_area", (space) => ({
       ...space,
       stability: clamp(space.stability + 0.6 * power),
       comfort: clamp(space.comfort + 0.25 * power),
-      tags: addTag(space, "butler_incubator_watch"),
+      tags: addTag(space, "butler_home_maintenance"),
     }))
   }
 

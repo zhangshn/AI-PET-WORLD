@@ -11,10 +11,6 @@ import type {
 } from "@/types/home"
 
 import type {
-  IncubatorState,
-} from "@/types/incubator"
-
-import type {
   PetState,
 } from "@/types/pet"
 
@@ -54,7 +50,6 @@ export type RuntimeButlerAgentAuditInput = {
   tick: number
   butler: ButlerState
   pet: PetState | null
-  incubator: IncubatorState | null
   home: HomeState | null
   time: {
     day: number

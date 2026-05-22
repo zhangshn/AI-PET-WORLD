@@ -18,9 +18,6 @@ import type {
   HomeState,
 } from "@/types/home"
 import type {
-  IncubatorState,
-} from "@/types/incubator"
-import type {
   PetState,
 } from "@/types/pet"
 import type {
@@ -48,7 +45,6 @@ export type BuildMvpWorldCheckReportInput = {
   pet: PetState | null
   butler: ButlerState | null
   home: HomeState | null
-  incubator: IncubatorState | null
   adoptionState: AdoptionState | null
   worldRuntime: WorldRuntimeState | null
   ecology: WorldEcologyState | null
@@ -149,7 +145,7 @@ export function buildMvpWorldCheckReport(
     }),
     buildItem({
       id: "pre_arrival_adoption_valid",
-      title: "宠物抵达前领养状态有效",
+      title: "后置生命关系状态有效",
       status:
         input.pet || input.adoptionState?.status === "arrived"
           ? "pass"
@@ -162,7 +158,7 @@ export function buildMvpWorldCheckReport(
           : input.adoptionState?.hasPendingPet
             ? "宠物尚未抵达，领养中心仍有待送达宠物。"
             : "宠物尚未抵达，且当前没有待送达宠物标记。",
-      tags: ["mvp", "adoption", "pet_arrival"],
+      tags: ["mvp", "adoption", "companion_deferred"],
     }),
     buildItem({
       id: "pet_runtime_valid",

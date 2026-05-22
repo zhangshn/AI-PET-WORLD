@@ -10,12 +10,11 @@ import type {
 } from "../ai/gateway"
 import type { PetState } from "../types/pet"
 import type { HomeState } from "../types/home"
-import type { IncubatorState } from "../types/incubator"
 import type { WorldEvent } from "../types/event"
 import type { WorldEcologyState } from "../world/ecology/ecology-engine"
 import type { WorldRuntimeState } from "../world/runtime/world-runtime"
 import {
-  buildAdoptionStateFromIncubator,
+  buildEmptyAdoptionState,
   type AdoptionState,
 } from "../world/adoption/adoption-center-gateway"
 
@@ -41,7 +40,6 @@ import {
   ButlerSystem,
   EventSystem,
   HomeSystem,
-  IncubatorSystem,
 } from "../systems/systems-gateway"
 
 import {
@@ -67,7 +65,6 @@ export class WorldEngine {
   private butlerSystem: ButlerSystem
   private eventSystem: EventSystem
   private homeSystem: HomeSystem
-  private incubatorSystem: IncubatorSystem
   private worldProgressionSystem: WorldProgressionSystem
 
   private worldStimuli: WorldStimulus[] = []
@@ -84,7 +81,6 @@ export class WorldEngine {
     this.butlerSystem = new ButlerSystem()
     this.eventSystem = new EventSystem()
     this.homeSystem = new HomeSystem()
-    this.incubatorSystem = new IncubatorSystem()
     this.worldProgressionSystem = new WorldProgressionSystem()
 
     this.worldRuntime = this.createInitialRuntime()
@@ -134,7 +130,6 @@ export class WorldEngine {
       butlerSystem: this.butlerSystem,
       eventSystem: this.eventSystem,
       homeSystem: this.homeSystem,
-      incubatorSystem: this.incubatorSystem,
       worldProgressionSystem: this.worldProgressionSystem,
       worldStimuli: this.worldStimuli,
       worldRuntime: this.worldRuntime,
@@ -164,7 +159,6 @@ export class WorldEngine {
       pet: this.petSystem.getPet(),
       butler: this.butlerSystem.getState(),
       home: this.homeSystem.getHome(),
-      incubator: this.incubatorSystem.getIncubator(),
       worldRuntime: this.worldRuntime,
       ecology: this.worldRuntime.ecology,
       tags: [source],
@@ -178,7 +172,6 @@ export class WorldEngine {
         pet: this.petSystem.getPet(),
         butler: this.butlerSystem.getState(),
         home: this.homeSystem.getHome(),
-        incubator: this.incubatorSystem.getIncubator(),
         events: this.eventSystem.getEvents(),
       },
 
@@ -208,7 +201,6 @@ export class WorldEngine {
     this.petSystem.restore(snapshot.systems.pet, this.tick)
     this.butlerSystem.restore(snapshot.systems.butler)
     this.homeSystem.restore(snapshot.systems.home)
-    this.incubatorSystem.restore(snapshot.systems.incubator)
     this.eventSystem.restore(snapshot.systems.events)
     this.worldProgressionSystem.restore(snapshot.world.progression)
 
@@ -231,7 +223,7 @@ addOfflineCatchupReport(result: OfflineCatchupResult): void {
 
     const petStateText = pet
       ? `宠物目前保持${pet.action}，能量 ${pet.energy}，饥饿 ${pet.hunger}，情绪 ${pet.mood}。`
-      : "领养宠物的抵达准备仍是当前世界的主要照看对象。"
+      : "世界基础运行与家园维护仍是当前主要观察对象。"
 
     this.eventSystem.addInteractionEvent({
       tick: this.tick,
@@ -270,7 +262,6 @@ addOfflineCatchupReport(result: OfflineCatchupResult): void {
       petSystem: this.petSystem,
       butlerSystem: this.butlerSystem,
       homeSystem: this.homeSystem,
-      incubatorSystem: this.incubatorSystem,
     })
   }
 
@@ -289,7 +280,6 @@ addOfflineCatchupReport(result: OfflineCatchupResult): void {
         butler: currentState.butler,
 
         home: currentState.home,
-        incubator: currentState.incubator,
 
         events: this.eventSystem.getEvents(),
 
@@ -333,21 +323,8 @@ addOfflineCatchupReport(result: OfflineCatchupResult): void {
     return this.homeSystem.getHome()
   }
 
-  getIncubator(): IncubatorState {
-    return this.incubatorSystem.getIncubator()
-  }
-
   getAdoptionState(): AdoptionState {
-    const time = this.timeSystem.getTime()
-
-    return buildAdoptionStateFromIncubator(
-      this.incubatorSystem.getIncubator(),
-      {
-        tick: this.tick,
-        day: time.day,
-        hour: time.hour,
-      }
-    )
+    return buildEmptyAdoptionState()
   }
 
   getEvents(): WorldEvent[] {
@@ -378,7 +355,6 @@ addOfflineCatchupReport(result: OfflineCatchupResult): void {
     this.butlerSystem = new ButlerSystem()
     this.eventSystem = new EventSystem()
     this.homeSystem = new HomeSystem()
-    this.incubatorSystem = new IncubatorSystem()
     this.worldProgressionSystem = new WorldProgressionSystem()
     this.worldStimuli = []
     this.worldRuntime = this.createInitialRuntime()

@@ -5,7 +5,6 @@
 import type { TimeState } from "../../timeSystem"
 import type { EventSystem } from "@/systems/eventSystem"
 import type { ButlerState } from "@/types/butler"
-import type { IncubatorState } from "@/types/incubator"
 import type { PetState } from "@/types/pet"
 
 export type RunWorldEventUpdateInput = {
@@ -16,8 +15,6 @@ export type RunWorldEventUpdateInput = {
   currentPet: PetState | null
   prevButler: ButlerState
   currentButler: ButlerState
-  prevIncubator: IncubatorState
-  currentIncubator: IncubatorState
   eventSystem: EventSystem
 }
 
@@ -32,7 +29,5 @@ export function runWorldEventUpdate(input: RunWorldEventUpdateInput): void {
     currentPet: input.currentPet,
     prevButler: input.prevButler,
     currentButler: input.currentButler,
-    prevIncubator: input.prevIncubator,
-    currentIncubator: input.currentIncubator,
   })
 }

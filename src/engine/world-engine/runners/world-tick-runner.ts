@@ -14,7 +14,6 @@ import type {
   ButlerSystem,
   EventSystem,
   HomeSystem,
-  IncubatorSystem,
 } from "@/systems/systems-gateway"
 
 import {
@@ -44,7 +43,6 @@ export type RunWorldTickInput = {
   butlerSystem: ButlerSystem
   eventSystem: EventSystem
   homeSystem: HomeSystem
-  incubatorSystem: IncubatorSystem
   worldProgressionSystem: WorldProgressionSystem
   worldStimuli: WorldStimulus[]
   worldRuntime: WorldRuntimeState
@@ -74,7 +72,6 @@ function refreshTickState(input: RunWorldTickInput) {
     petSystem: input.petSystem,
     butlerSystem: input.butlerSystem,
     homeSystem: input.homeSystem,
-    incubatorSystem: input.incubatorSystem,
   })
 }
 
@@ -243,13 +240,11 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
 
   const prevPet = cloneSnapshot(previousState.pet)
   const prevButler = cloneSnapshot(previousState.butler)
-  const prevIncubator = cloneSnapshot(previousState.incubator)
 
   let currentState = refreshTickState(input)
 
   let currentHome = currentState.home
   let currentPet = currentState.pet
-  let currentIncubator = currentState.incubator
   let currentButler = currentState.butler
 
   const nextRuntime = stepWorldRuntime({
@@ -269,18 +264,9 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
 
   const nextStimuli = stimulusState.activeStimuli
 
-  input.incubatorSystem.update()
-
-  currentState = refreshTickState(input)
-  currentHome = currentState.home
-  currentPet = currentState.pet
-  currentIncubator = currentState.incubator
-  currentButler = currentState.butler
-
   input.butlerSystem.update({
     tick: input.tick,
     pet: currentPet,
-    incubator: currentIncubator,
     home: currentHome,
     homeGoals: currentHome?.homeGoals,
     time: input.currentTime,
@@ -290,14 +276,12 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
   currentState = refreshTickState(input)
   currentHome = currentState.home
   currentPet = currentState.pet
-  currentIncubator = currentState.incubator
   currentButler = currentState.butler
 
   logButlerAgentTrace({
     tick: input.tick,
     butler: currentButler,
     pet: currentPet,
-    incubator: currentIncubator,
     home: currentHome,
     time: input.currentTime,
   })
@@ -308,7 +292,6 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     butler: currentButler,
     petSystem: input.petSystem,
     butlerSystem: input.butlerSystem,
-    incubatorSystem: input.incubatorSystem,
     homeSystem: input.homeSystem,
     eventSystem: input.eventSystem,
   })
@@ -316,7 +299,6 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
   currentState = refreshTickState(input)
   currentHome = currentState.home
   currentPet = currentState.pet
-  currentIncubator = currentState.incubator
   currentButler = currentState.butler
 
   emitWorldProgressionNotices({
@@ -380,7 +362,6 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
   currentState = refreshTickState(input)
   currentHome = currentState.home
   currentPet = currentState.pet
-  currentIncubator = currentState.incubator
   currentButler = currentState.butler
 
   runWorldEventUpdate({
@@ -391,8 +372,6 @@ export function runWorldTick(input: RunWorldTickInput): RunWorldTickResult {
     currentPet,
     prevButler,
     currentButler,
-    prevIncubator,
-    currentIncubator,
     eventSystem: input.eventSystem,
   })
 

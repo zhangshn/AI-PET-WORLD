@@ -23,7 +23,6 @@ import type {
 
 export type ButlerBehaviorExecutionKind =
   | "idle_observation"
-  | "incubator_watch"
   | "home_building"
   | "home_maintenance"
   | "space_tidying"
@@ -33,7 +32,6 @@ export type ButlerBehaviorExecutionKind =
 
 export type ButlerBehaviorExecutionTarget =
   | "none"
-  | "incubator"
   | "home"
   | "garden"
   | "pet"

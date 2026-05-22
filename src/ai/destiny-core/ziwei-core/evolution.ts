@@ -4,12 +4,12 @@
  * Personality Core - Evolution
  *
  * 功能：
- * 1. 将基础人格结果与孵化阶段的成长信息进行融合
+ * 1. 将基础人格结果与早期成长阶段的成长信息进行融合
  * 2. 输出最终人格档案
  *
  * 设计目标：
  * - 让人格不是“出生瞬间突然出现”
- * - 而是“人格种子 + 孵化过程 + 出生时间”共同形成
+ * - 而是“人格种子 + 早期成长过程 + 出生时间”共同形成
  *
  * 说明：
  * - 这一层不负责出生输入计算
@@ -25,20 +25,20 @@ import type {
 } from "./schema"
 
 /**
- * 孵化阶段成长印记
+ * 早期成长阶段成长印记
  *
  * 字段说明：
  * - calmGrowth：
- *   孵化阶段整体是否更平稳、安静
+ *   早期成长阶段整体是否更平稳、安静
  *
  * - activeGrowth：
- *   孵化阶段是否更偏活跃发展
+ *   早期成长阶段是否更偏活跃发展
  *
  * - stableGrowth：
- *   孵化阶段整体是否更稳定
+ *   早期成长阶段整体是否更稳定
  *
  * - sensitiveGrowth：
- *   孵化阶段是否更容易产生波动
+ *   早期成长阶段是否更容易产生波动
  */
 export type IncubationImprint = {
   calmGrowth: number
@@ -162,19 +162,19 @@ function buildEvolutionSummaries(
   const summaries: string[] = []
 
   if (imprint.calmGrowth >= 60) {
-    summaries.push("孵化阶段表现出安静稳定的倾向")
+    summaries.push("早期成长阶段表现出安静稳定的倾向")
   }
 
   if (imprint.activeGrowth >= 60) {
-    summaries.push("孵化阶段积累了较强的行动倾向")
+    summaries.push("早期成长阶段积累了较强的行动倾向")
   }
 
   if (imprint.stableGrowth >= 60) {
-    summaries.push("孵化过程整体较稳定")
+    summaries.push("早期成长过程整体较稳定")
   }
 
   if (imprint.sensitiveGrowth >= 60) {
-    summaries.push("孵化阶段对环境变化较敏感")
+    summaries.push("早期成长阶段对环境变化较敏感")
   }
 
   return summaries
@@ -186,21 +186,21 @@ function buildEvolutionSummaries(
  *
  * 输入：
  * - seedProfile：
- *   胚胎阶段的人格种子
+ *   生命种子阶段的人格种子
  *
  * - birthProfile：
  *   根据出生时刻生成的基础人格
  *
  * - imprint：
- *   孵化过程形成的成长印记
+ *   早期成长过程形成的成长印记
  *
  * 输出：
  * - 最终人格档案
  *
  * 规则说明：
  * - 以出生时刻的人格为主
- * - 保留部分胚胎种子倾向
- * - 再叠加孵化阶段成长印记
+ * - 保留部分生命种子倾向
+ * - 再叠加早期成长阶段成长印记
  * ======================================================
  */
 export function evolveProfile(
@@ -214,8 +214,8 @@ export function evolveProfile(
   /**
    * 融合权重说明：
    * - 出生时刻人格：主导层
-   * - 胚胎种子人格：保留层
-   * - 孵化成长印记：微调层
+   * - 生命种子人格：保留层
+   * - 早期成长印记：微调层
    */
   const mergedTraits: PersonalityTraits = {
     activity:
@@ -278,7 +278,7 @@ export function evolveProfile(
     pattern: birthProfile.pattern,
 
     /**
-     * 摘要 = 出生时刻摘要 + 胚胎种子摘要 + 孵化成长摘要
+     * 摘要 = 出生时刻摘要 + 生命种子摘要 + 早期成长摘要
      */
     summaries: mergeSummaries(
       birthProfile.summaries,

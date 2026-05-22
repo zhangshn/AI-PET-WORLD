@@ -7,7 +7,6 @@ import type { WorldEvent } from "@/types/event"
 const SIMILAR_INTERACTION_COOLDOWN_TICKS = 3
 const RECOVERY_EVENT_COOLDOWN_TICKS = 4
 const BUTLER_OPPORTUNITY_COOLDOWN_TICKS = 3
-const INCUBATOR_CARE_COOLDOWN_TICKS = 2
 const HOME_CONSTRUCTION_COOLDOWN_TICKS = 3
 const HOME_COMPLETED_COOLDOWN_TICKS = 9999
 
@@ -52,13 +51,6 @@ export class EventDedupeRunner {
       ].join("::")
     }
 
-    if (interactionKind === "incubator_care") {
-      return [
-        event.type,
-        interactionKind,
-      ].join("::")
-    }
-
     if (interactionKind === "home_completed") {
       return [
         event.type,
@@ -88,10 +80,6 @@ export class EventDedupeRunner {
       return BUTLER_OPPORTUNITY_COOLDOWN_TICKS
     }
 
-    if (interactionKind === "incubator_care") {
-      return INCUBATOR_CARE_COOLDOWN_TICKS
-    }
-
     if (interactionKind === "home_construction") {
       return HOME_CONSTRUCTION_COOLDOWN_TICKS
     }
@@ -108,7 +96,6 @@ export class EventDedupeRunner {
       SIMILAR_INTERACTION_COOLDOWN_TICKS,
       RECOVERY_EVENT_COOLDOWN_TICKS,
       BUTLER_OPPORTUNITY_COOLDOWN_TICKS,
-      INCUBATOR_CARE_COOLDOWN_TICKS,
       HOME_CONSTRUCTION_COOLDOWN_TICKS
     )
 

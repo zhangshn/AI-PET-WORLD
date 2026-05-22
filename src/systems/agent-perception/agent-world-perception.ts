@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：把世界事实转换为生命体可感知的环境线索。
+ * 当前文件职责：把世界事实转换为生命体可感知的环境线索。
  */
 
 import type { HomeGoalState, HomeState } from "@/types/home"
@@ -72,14 +72,19 @@ function buildGoalSignal(goal: HomeGoalState): WorldSignal {
     id: `home_goal_${goal.id}`,
     intensity: clampSignalValue(intensity),
     facts: [goal.title, goal.reason],
-    tags: ["world_signal", "home_goal_signal", `home_goal_${goal.id}`, "perception_only"],
+    tags: [
+      "world_signal",
+      "home_goal_signal",
+      `home_goal_${goal.id}`,
+      "perception_only",
+    ],
   }
 
-  if (goal.id === "stabilize_incubator") {
+  if (goal.id === "stabilize_initial_care") {
     return {
       ...base,
       kind: "care_context",
-      summary: "孵化器区域需要保持稳定。",
+      summary: "初始照护区需要保持稳定。",
     }
   }
 
@@ -118,7 +123,12 @@ export function buildWorldSignalsFromHome(home: HomeState | null | undefined): W
       intensity: clampSignalValue(28 + home.lifecycle.phaseProgress * 0.25),
       summary: home.lifecycle.summary,
       facts: [home.lifecycle.mainGoal, home.lifecycle.nextGoal],
-      tags: ["world_signal", "home_lifecycle_signal", `home_phase_${home.lifecycle.phase}`, "perception_only"],
+      tags: [
+        "world_signal",
+        "home_lifecycle_signal",
+        `home_phase_${home.lifecycle.phase}`,
+        "perception_only",
+      ],
     })
   }
 

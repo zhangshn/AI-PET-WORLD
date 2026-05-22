@@ -217,7 +217,7 @@ function resolvePositionBias(scores: BiasScores): ZiweiDynamicPositionBias {
   const top = getTopBiases(scores)[0]
 
   if (top === "careBias") {
-    return "near_incubator"
+    return "near_care_station"
   }
 
   if (top === "protectBias") {

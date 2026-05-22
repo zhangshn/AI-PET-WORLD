@@ -27,7 +27,7 @@ function hasNestedRestoreShape(value: Record<string, unknown>): boolean {
   if (!isRecord(engine) || typeof engine.tick !== "number") return false
   if (!engine.time) return false
   if (!isRecord(systems)) return false
-  if (!systems.butler || !systems.home || !systems.incubator) return false
+  if (!systems.butler || !systems.home) return false
   if (!isRecord(world) || !world.runtime || !world.progression) return false
   if (!isRecord(aiData) || !Array.isArray(aiData.records)) return false
 
@@ -90,7 +90,6 @@ export function normalizeWorldSaveSnapshot(
     pet: snapshot.systems.pet,
     butler: snapshot.systems.butler,
     home: snapshot.systems.home,
-    incubator: snapshot.systems.incubator,
     worldRuntime: snapshot.world.runtime,
     ecology: snapshot.world.runtime.ecology,
     lastPlayedAt: snapshot.lastPlayedAt ?? snapshot.savedAt,

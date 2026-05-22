@@ -12,10 +12,10 @@ export type HomeMapSize = {
 
 export type HomeZoneType =
   | "visual_center"
-  | "pet_arrival"
+  | "entry_area"
   | "initial_care"
   | "temporary_shelter"
-  | "pet_rest"
+  | "quiet_living"
   | "storage_tools"
   | "natural_boundary"
 

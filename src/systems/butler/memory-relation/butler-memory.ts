@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：定义与维护管家的长期记忆结构。
+ * 当前文件职责：定义与维护管家的长期记忆结构。
  */
 
 import type {
@@ -20,7 +20,6 @@ export type ButlerMemoryType =
   | "observation"
   | "care_opportunity"
   | "home_building"
-  | "incubator_care"
   | "relation_signal"
   | "system_note"
 
@@ -54,15 +53,11 @@ export function createInitialButlerMemoryState(): ButlerMemoryState {
 }
 
 function clampMemoryValue(value: number): number {
-  if (!Number.isFinite(value)) {
-    return 0
-  }
-
+  if (!Number.isFinite(value)) return 0
   return Math.max(0, Math.min(100, Math.round(value)))
 }
 
 function mapTaskToMemoryType(task: ButlerTask): ButlerMemoryType {
-  if (task === "watching_incubator") return "incubator_care"
   if (task === "building_home") return "home_building"
   if (task.startsWith("offering_")) return "care_opportunity"
   if (task === "watching_pet") return "observation"
@@ -88,9 +83,6 @@ function buildTaskMemoryTags(trace: ButlerTaskDecisionTrace): string[] {
     `scores_${trace.scores.length}`,
     trace.context.hasPet ? "has_pet" : "no_pet",
     trace.context.hasTimelineSnapshot ? "has_timeline" : "no_timeline",
-    trace.context.incubatorCompleted
-      ? "incubator_completed"
-      : "incubator_running",
     trace.context.homeCompleted ? "home_completed" : "home_not_completed",
     trace.context.petLifePhase
       ? `life_phase_${trace.context.petLifePhase}`
@@ -121,12 +113,8 @@ function buildOpportunityFeedbackMemoryTags(
 }
 
 function buildTaskMemorySummary(trace: ButlerTaskDecisionTrace): string {
-  if (trace.selectedTask === "watching_incubator") {
-    return `管家记录：孵化器仍需要照看。本轮原因：${trace.reason}`
-  }
-
   if (trace.selectedTask === "building_home") {
-    return `管家记录：家园建设被推进。本轮原因：${trace.reason}`
+    return `管家记录：家园建设或维护被推进。本轮原因：${trace.reason}`
   }
 
   if (trace.selectedTask === "watching_pet") {
@@ -162,31 +150,14 @@ function buildOpportunityFeedbackMemorySummary(
   }
 
   if (feedback.accepted) {
-    if (feedback.type === "food_offer") {
-      return `管家记录：食物机会被宠物自主接受。原因：${reason}${valueText}`
-    }
-
-    if (feedback.type === "rest_offer") {
-      return `管家记录：休息机会被宠物自主接受。原因：${reason}${valueText}`
-    }
-
-    return `管家记录：靠近机会被宠物自主回应。原因：${reason}${valueText}`
+    return `管家记录：${feedback.type} 被宠物自主接受。原因：${reason}${valueText}`
   }
 
-  if (feedback.type === "food_offer") {
-    return `管家记录：食物机会没有被宠物接受。原因：${reason}${valueText}`
-  }
-
-  if (feedback.type === "rest_offer") {
-    return `管家记录：休息机会没有被宠物接受。原因：${reason}${valueText}`
-  }
-
-  return `管家记录：靠近机会没有被宠物回应，管家需要继续保留边界。原因：${reason}${valueText}`
+  return `管家记录：${feedback.type} 没有被宠物接受，管家需要继续保留边界。原因：${reason}${valueText}`
 }
 
 function deriveMemoryImportance(trace: ButlerTaskDecisionTrace): number {
   const baseByTask: Record<ButlerTask, number> = {
-    watching_incubator: 58,
     building_home: 48,
     watching_pet: 36,
     offering_food: 68,
@@ -215,7 +186,6 @@ function deriveMemoryEmotionalWeight(trace: ButlerTaskDecisionTrace): number {
   if (trace.selectedTask === "offering_rest") return 48
   if (trace.selectedTask === "offering_approach") return 60
   if (trace.selectedTask === "watching_pet") return 28
-  if (trace.selectedTask === "watching_incubator") return 34
 
   return 22
 }
@@ -258,6 +228,14 @@ function uniqueTags(tags: string[]): string[] {
   return Array.from(new Set(tags))
 }
 
+function buildMemoryEntryId(input: {
+  tick: number
+  type: ButlerMemoryType
+  sourceTask: ButlerTask
+}): string {
+  return `butler-memory-${input.tick}-${input.type}-${input.sourceTask}`
+}
+
 function shouldMergeWithLatestMemory(input: {
   latest: ButlerMemoryEntry | null
   entry: ButlerMemoryEntry
@@ -272,28 +250,6 @@ function shouldMergeWithLatestMemory(input: {
   if (input.latest.type !== input.entry.type) return false
   if (input.latest.sourceTask !== input.entry.sourceTask) return false
 
-  const latestFeedbackTag = input.latest.tags.find((tag) =>
-    tag.startsWith("opportunity_")
-  )
-  const nextFeedbackTag = input.entry.tags.find((tag) =>
-    tag.startsWith("opportunity_")
-  )
-
-  if (latestFeedbackTag || nextFeedbackTag) {
-    const latestAccepted = input.latest.tags.includes("opportunity_accepted")
-    const nextAccepted = input.entry.tags.includes("opportunity_accepted")
-    const latestRejected = input.latest.tags.includes("opportunity_rejected")
-    const nextRejected = input.entry.tags.includes("opportunity_rejected")
-    const latestExpired = input.latest.tags.includes("opportunity_expired")
-    const nextExpired = input.entry.tags.includes("opportunity_expired")
-
-    return (
-      latestAccepted === nextAccepted &&
-      latestRejected === nextRejected &&
-      latestExpired === nextExpired
-    )
-  }
-
   const latestHomeGoal = input.latest.tags.find((tag) =>
     tag.startsWith("home_goal_")
   )
@@ -302,30 +258,10 @@ function shouldMergeWithLatestMemory(input: {
   )
 
   if (latestHomeGoal || nextHomeGoal) {
-    return (
-      latestHomeGoal === nextHomeGoal &&
-      input.latest.tags.includes("behavior_execution") ===
-        input.entry.tags.includes("behavior_execution")
-    )
+    return latestHomeGoal === nextHomeGoal
   }
 
-  const latestLifePhase = input.latest.tags.find((tag) =>
-    tag.startsWith("life_phase_")
-  )
-  const nextLifePhase = input.entry.tags.find((tag) =>
-    tag.startsWith("life_phase_")
-  )
-
-  if (latestLifePhase !== nextLifePhase) return false
-
-  const latestHomeState = input.latest.tags.includes("home_completed")
-    ? "home_completed"
-    : "home_not_completed"
-  const nextHomeState = input.entry.tags.includes("home_completed")
-    ? "home_completed"
-    : "home_not_completed"
-
-  return latestHomeState === nextHomeState
+  return true
 }
 
 function mergeMemoryEntry(input: {
@@ -367,9 +303,11 @@ export function createButlerMemoryEntry(input: {
   tags?: string[]
 }): ButlerMemoryEntry {
   return {
-    id: `butler-memory-${input.tick}-${input.type}-${Math.random()
-      .toString(36)
-      .slice(2, 8)}`,
+    id: buildMemoryEntryId({
+      tick: input.tick,
+      type: input.type,
+      sourceTask: input.sourceTask,
+    }),
     tick: input.tick,
     lastUpdatedTick: input.tick,
     repeatCount: 1,
@@ -424,20 +362,10 @@ export function createButlerMemoryEntryFromBehaviorExecution(input: {
   const homeGoalTag =
     input.execution.tags.find((tag) => tag.startsWith("home_goal_")) ??
     "home_goal_unknown"
-
-  const type: ButlerMemoryType =
-    input.execution.kind === "incubator_watch"
-      ? "incubator_care"
-      : input.execution.canAffectHome
-        ? "home_building"
-        : "observation"
-
-  const importance = input.execution.canAffectHome
-    ? 62
-    : input.execution.kind === "incubator_watch"
-      ? 66
-      : 42
-
+  const type: ButlerMemoryType = input.execution.canAffectHome
+    ? "home_building"
+    : "observation"
+  const importance = input.execution.canAffectHome ? 62 : 42
   const emotionalWeight = isGoalDriven ? 38 : 24
 
   return createButlerMemoryEntry({
@@ -484,7 +412,6 @@ export function appendButlerMemoryEntry(input: {
       latest,
       entry: input.entry,
     })
-
     const entries = [
       mergedLatest,
       ...input.memory.entries.slice(1),
@@ -518,7 +445,6 @@ export function shouldRememberTaskDecision(input: {
   if (!input.trace) return false
 
   const latest = input.memory.latestEntry
-
   if (!latest) return true
 
   if (

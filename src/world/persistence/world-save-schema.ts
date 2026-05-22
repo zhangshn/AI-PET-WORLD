@@ -21,9 +21,6 @@ import type {
   HomeState,
 } from "@/types/home"
 import type {
-  IncubatorState,
-} from "@/types/incubator"
-import type {
   PetState,
 } from "@/types/pet"
 import type {
@@ -60,7 +57,6 @@ export type WorldSaveSnapshot = {
   pet: PetState | null
   butler: ButlerState
   home: HomeState
-  incubator: IncubatorState
   worldRuntime: WorldRuntimeState
   ecology: WorldEcologyState
   sceneMode?: "exterior" | "shelterInterior"
@@ -76,7 +72,6 @@ export type WorldSaveSnapshot = {
     pet: PetState | null
     butler: ButlerState
     home: HomeState
-    incubator: IncubatorState
     events: WorldEvent[]
   }
 

@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：创建并维护第一版世界功能区域。
+ * 当前文件职责：创建并维护第一版世界功能区域。
  */
 
 import type { WorldZone } from "./world-zone-types"
@@ -87,9 +87,9 @@ export function createDefaultWorldZones(): WorldZone[] {
       isActive: true,
     },
     {
-      id: "zone-incubator-01",
-      type: "incubator_zone",
-      name: "孵化器工作区",
+      id: "zone-care-01",
+      type: "care_zone",
+      name: "初始照护工作区",
       x: 330,
       y: 255,
       radius: 64,
@@ -121,51 +121,18 @@ export function createDefaultWorldZones(): WorldZone[] {
     {
       id: "zone-explore-01",
       type: "exploration_zone",
-      name: "探索区",
+      name: "探索边界",
       x: 760,
       y: 255,
-      radius: 96,
+      radius: 86,
       effect: {
         comfortBonus: -2,
         safetyBonus: -4,
         curiosityBonus: 24,
-        restBonus: -10,
+        restBonus: -8,
         stressModifier: 6,
       },
       isActive: true,
     },
   ]
-}
-
-export function findNearestWorldZone(input: {
-  zones: WorldZone[]
-  x: number
-  y: number
-  type?: WorldZone["type"]
-}): WorldZone | null {
-  const candidates = input.zones.filter((zone) => {
-    if (!zone.isActive) return false
-    if (input.type && zone.type !== input.type) return false
-    return true
-  })
-
-  if (candidates.length === 0) {
-    return null
-  }
-
-  let nearest = candidates[0]
-  let nearestDistance = Number.POSITIVE_INFINITY
-
-  for (const zone of candidates) {
-    const dx = zone.x - input.x
-    const dy = zone.y - input.y
-    const distance = Math.sqrt(dx * dx + dy * dy)
-
-    if (distance < nearestDistance) {
-      nearest = zone
-      nearestDistance = distance
-    }
-  }
-
-  return nearest
 }

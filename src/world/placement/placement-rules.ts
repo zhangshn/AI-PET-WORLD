@@ -117,7 +117,7 @@ export const PLACEMENT_RULES = {
   },
   ensureMaterialPileNearConstructionZone: {
     id: "ensure_material_pile_near_construction_zone",
-    description: "建设材料堆必须靠近建设区域但不贴宠物床。",
+    description: "建设材料堆必须靠近建设区域并避开主要生活点。",
     severity: "warn",
     tags: ["placement", "layout", "construction"],
   },
@@ -352,10 +352,10 @@ function validateCoreLivingCluster(
   recipe: InitialHomeSceneRecipe
 ): PlacementRuleResult {
   const coreAreaTypes = new Set([
-    "pet_arrival",
+    "entry_area",
     "initial_care",
     "temporary_shelter",
-    "pet_rest",
+    "quiet_living",
   ])
   const coreZones = recipe.areas.filter((area) =>
     coreAreaTypes.has(area.areaType)
@@ -525,27 +525,30 @@ function validateMaterialPileNearConstructionZone(
   placements: MapPlacement[],
   zones: HomeZone[]
 ): PlacementRuleResult {
-  const restZone = zones.find((zone) => zone.type === "pet_rest")
-  const petBed = placements.find((placement) => placement.id === "pet-bed")
+  const livingZone = zones.find((zone) => zone.type === "quiet_living")
+  const livingPoint = placements.find((placement) =>
+    placement.tags.includes("quiet_living")
+  )
   const materials = placements.filter((placement) =>
     placement.tags.includes("construction_material")
   )
   const affected = materials
     .filter((placement) => {
-      const tooFarFromRest = restZone
+      const tooFarFromLivingZone = livingZone
         ? !isPointNearZone(
             placement,
-            restZone,
+            livingZone,
             INITIAL_HOME_LAYOUT_RULES.constructionMaterial
               .materialTargetZoneMaxDistance
           )
         : false
-      const tooCloseToPetBed = petBed
-        ? getPlacementDistance(placement, petBed) <
-          INITIAL_HOME_LAYOUT_RULES.constructionMaterial.materialPetBedMinDistance
+      const tooCloseToLivingPoint = livingPoint
+        ? getPlacementDistance(placement, livingPoint) <
+          INITIAL_HOME_LAYOUT_RULES.constructionMaterial
+            .materialLivingPointMinDistance
         : false
 
-      return tooFarFromRest || tooCloseToPetBed
+      return tooFarFromLivingZone || tooCloseToLivingPoint
     })
     .map((placement) => placement.id)
 
@@ -553,8 +556,8 @@ function validateMaterialPileNearConstructionZone(
     "ensure_material_pile_near_construction_zone",
     affected.length === 0,
     affected.length === 0
-      ? "建设材料靠近目标区域且未贴住宠物床。"
-      : "建设材料距离目标区过远或贴住宠物床。",
+      ? "建设材料靠近目标区域且避开主要生活点。"
+      : "建设材料距离目标区过远或贴住主要生活点。",
     affected
   )
 }

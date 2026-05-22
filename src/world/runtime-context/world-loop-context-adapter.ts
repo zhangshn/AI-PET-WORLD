@@ -117,10 +117,6 @@ export function resolveButlerIntentTask(input: {
   runtimeTask: ButlerRuntimeContext["currentTask"]
   topNeedSignal?: ButlerRuntimeNeedSignal
 }): string {
-  if (input.topNeedSignal?.type === "incubator_care") {
-    return "watch_incubator"
-  }
-
   if (input.topNeedSignal?.type === "pet_care") {
     return "care_pet"
   }

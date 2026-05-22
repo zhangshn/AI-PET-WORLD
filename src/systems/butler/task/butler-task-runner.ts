@@ -1,10 +1,9 @@
 /**
- * 当前文件负责：根据孵化器、宠物、管家感知、Profile、Relation 与后天记忆判断管家的当前任务。
+ * 当前文件职责：根据宠物、家园、管家感知、Profile、Relation 与后天记忆判断管家的当前任务。
  */
 
 import type { GenderAwareBehaviorBias } from "@/ai/gateway"
 import type { HomeState } from "@/types/home"
-import type { IncubatorState } from "@/types/incubator"
 import type { PetState } from "@/types/pet"
 import type {
   ButlerWorldPerceptionSnapshot,
@@ -40,7 +39,6 @@ import type {
 
 type ButlerTaskContext = {
   pet: PetState | null
-  incubator: IncubatorState | null
   home: HomeState | null
   butlerWorldPerception: ButlerWorldPerceptionSnapshot | null
   time: ButlerSystemInput["time"]
@@ -78,15 +76,6 @@ function mergeTaskTuning(input: {
   }
 }
 
-function petExistsAndBorn(pet: PetState | null): boolean {
-  return !!pet
-}
-
-function isIncubatorCompleted(incubator: IncubatorState | null): boolean {
-  if (!incubator) return true
-  return incubator.progress >= 100 || incubator.status === "hatched"
-}
-
 function getCarePriority(context: ButlerTaskContext): number {
   const base = context.behaviorBias?.butlerBehaviorBias.carePriority ?? 50
   return clampScore(base + context.effectiveTuning.carePriorityOffset)
@@ -121,6 +110,7 @@ function hasConstructionPerception(context: ButlerTaskContext): boolean {
     signalKind === "signal_construction_context" ||
     signalKind === "signal_maintenance_context" ||
     signalKind === "signal_exploration_context" ||
+    goalTag === "home_goal_stabilize_initial_care" ||
     goalTag === "home_goal_build_temporary_shelter" ||
     goalTag === "home_goal_complete_basic_living" ||
     goalTag === "home_goal_maintain_home_facilities" ||
@@ -129,21 +119,20 @@ function hasConstructionPerception(context: ButlerTaskContext): boolean {
   )
 }
 
-function shouldPrioritizeNewbornPet(pet: PetState | null): boolean {
-  if (!pet) return false
-  return pet.lifeState.phase === "newborn" || pet.lifeState.phase === "adaptation"
+function petExists(pet: PetState | null): boolean {
+  return !!pet
 }
 
 function getPetEnergy(context: ButlerTaskContext): number | null {
-  return context.pet?.timelineSnapshot?.state.physical.energy ?? null
+  return context.pet?.timelineSnapshot?.state.physical.energy ?? context.pet?.energy ?? null
 }
 
 function getPetHunger(context: ButlerTaskContext): number | null {
-  return context.pet?.timelineSnapshot?.state.physical.hunger ?? null
+  return context.pet?.timelineSnapshot?.state.physical.hunger ?? context.pet?.hunger ?? null
 }
 
 function getPetEmotion(context: ButlerTaskContext): string | null {
-  return context.pet?.timelineSnapshot?.state.emotional.label ?? null
+  return context.pet?.timelineSnapshot?.state.emotional.label ?? context.pet?.mood ?? null
 }
 
 function getPetRelation(context: ButlerTaskContext): string | null {
@@ -172,44 +161,21 @@ function pushTuningScores(
   context: ButlerTaskContext,
   scores: ButlerTaskDecisionScore[]
 ) {
-  pushScore(
-    scores,
-    "experience_interpreter",
-    context.experienceInterpretation.mode === "profile_led" ? 1 : 0,
-    `关系事实解释模式=${context.experienceInterpretation.mode}，来源=${context.experienceInterpretation.profileSource}。`
-  )
-  pushScore(scores, "dominant_interpretation", 1, `dominantInterpretation=${context.experienceInterpretation.dominantInterpretation}。`)
-  pushScore(scores, "suggested_posture", 1, `suggestedPosture=${context.experienceInterpretation.suggestedPosture}。`)
-  pushScore(scores, "relation_care_priority", context.relationTuning.carePriorityOffset, "Relation / GoalExecutionMemory 作为事实输入，经 ButlerProfile / 八字解释后，对照护优先级形成轻量调参。")
-  pushScore(scores, "relation_observation_bias", context.relationTuning.observationBiasOffset, "Relation / GoalExecutionMemory 作为事实输入，经 ButlerProfile / 八字解释后，对观察倾向形成轻量调参。")
-  pushScore(scores, "relation_approach_sensitivity", context.relationTuning.approachSensitivityOffset, "Relation / GoalExecutionMemory 作为事实输入，经 ButlerProfile / 八字解释后，对靠近机会形成轻量调参。")
-  pushScore(scores, "butler_perception_signal", getPerceptionIntensity(context), context.butlerWorldPerception?.summary ?? "管家当前没有明确世界感知线索。")
-
-  for (const [index, reason] of context.experienceInterpretation.reasons.slice(0, 4).entries()) {
-    pushScore(scores, `experience_reason_${index + 1}`, 1, reason)
-  }
-
-  for (const [index, tag] of context.experienceInterpretation.interpretationTags
-    .filter((tag) => tag.startsWith("goal_memory_"))
-    .slice(0, 6)
-    .entries()) {
-    pushScore(scores, `goal_memory_tag_${index + 1}`, 1, tag)
-  }
+  pushScore(scores, "experience_interpreter", 1, `mode=${context.experienceInterpretation.mode}`)
+  pushScore(scores, "dominant_interpretation", 1, `dominant=${context.experienceInterpretation.dominantInterpretation}`)
+  pushScore(scores, "relation_care_priority", context.relationTuning.carePriorityOffset, "relation tuning affects care priority")
+  pushScore(scores, "relation_observation_bias", context.relationTuning.observationBiasOffset, "relation tuning affects observation")
+  pushScore(scores, "butler_perception_signal", getPerceptionIntensity(context), context.butlerWorldPerception?.summary ?? "no explicit world perception")
 }
 
 function pushEducationStrategyScores(
   context: ButlerTaskContext,
   scores: ButlerTaskDecisionScore[]
 ) {
-  pushScore(scores, "education_posture", 1, `educationPosture=${context.educationStrategy.posture}。`)
-  pushScore(scores, "education_food_intensity_offset", context.educationStrategy.foodIntensityOffset, "Education strategy 根据宠物机会反馈与关系状态，对食物机会强度形成轻量调整。")
-  pushScore(scores, "education_rest_intensity_offset", context.educationStrategy.restIntensityOffset, "Education strategy 根据宠物机会反馈与关系状态，对休息机会强度形成轻量调整。")
-  pushScore(scores, "education_approach_intensity_offset", context.educationStrategy.approachIntensityOffset, "Education strategy 根据宠物机会反馈与关系状态，对靠近机会强度形成轻量调整。")
-  pushScore(scores, "education_reason", 1, context.educationStrategy.reason)
-
-  for (const [index, tag] of context.educationStrategy.tags.slice(0, 6).entries()) {
-    pushScore(scores, `education_tag_${index + 1}`, 1, tag)
-  }
+  pushScore(scores, "education_posture", 1, `posture=${context.educationStrategy.posture}`)
+  pushScore(scores, "education_food_intensity_offset", context.educationStrategy.foodIntensityOffset, "education strategy food offset")
+  pushScore(scores, "education_rest_intensity_offset", context.educationStrategy.restIntensityOffset, "education strategy rest offset")
+  pushScore(scores, "education_approach_intensity_offset", context.educationStrategy.approachIntensityOffset, "education strategy approach offset")
 }
 
 function shouldOfferFood(
@@ -217,31 +183,16 @@ function shouldOfferFood(
   gates: ButlerTaskDecisionGate[],
   scores: ButlerTaskDecisionScore[]
 ): boolean {
-  const { pet } = context
-  if (!pet?.timelineSnapshot) {
-    pushGate(gates, "food_has_timeline", false, "宠物没有 timelineSnapshot，不能判断食物机会。")
+  const hunger = getPetHunger(context)
+  if (hunger === null) {
+    pushGate(gates, "food_has_pet_state", false, "no accepted pet state for food opportunity")
     return false
   }
 
-  const hunger = pet.timelineSnapshot.state.physical.hunger
-  const emotion = pet.timelineSnapshot.state.emotional.label
-  const carePriority = getCarePriority(context)
-  const foodSensitivity = context.effectiveTuning.foodSensitivityOffset
-  const directThreshold = 58 - Math.max(0, foodSensitivity) * 0.2
-  const emotionalThreshold =
-    48 - Math.max(0, carePriority - 50) * 0.08 - Math.max(0, foodSensitivity) * 0.15
-
-  pushScore(scores, "food_hunger", hunger, `当前饥饿=${hunger}，直接食物阈值=${directThreshold.toFixed(2)}。`)
-  pushScore(scores, "food_sensitivity", foodSensitivity, "Profile + Relation + GoalExecutionMemory 后的食物机会敏感度。")
-
-  if (hunger >= directThreshold) {
-    pushGate(gates, "food_direct_hunger", true, "饥饿达到直接提供食物机会阈值。")
-    return true
-  }
-
-  const emotionNeedsCare = emotion === "low" || emotion === "anxious" || emotion === "irritated"
-  const passed = hunger >= emotionalThreshold && emotionNeedsCare
-  pushGate(gates, "food_emotional_hunger", passed, `情绪=${emotion}，饥饿=${hunger}，情绪型食物阈值=${emotionalThreshold.toFixed(2)}。`)
+  const threshold = 58 - Math.max(0, context.effectiveTuning.foodSensitivityOffset) * 0.2
+  pushScore(scores, "food_hunger", hunger, `threshold=${threshold.toFixed(2)}`)
+  const passed = hunger >= threshold
+  pushGate(gates, "food_hunger_threshold", passed, "food opportunity only evaluates existing accepted pet state")
   return passed
 }
 
@@ -250,36 +201,20 @@ function shouldOfferRest(
   gates: ButlerTaskDecisionGate[],
   scores: ButlerTaskDecisionScore[]
 ): boolean {
-  const { pet, time } = context
-  if (!pet?.timelineSnapshot) {
-    pushGate(gates, "rest_has_timeline", false, "宠物没有 timelineSnapshot，不能判断休息机会。")
+  const energy = getPetEnergy(context)
+  if (energy === null) {
+    pushGate(gates, "rest_has_pet_state", false, "no accepted pet state for rest opportunity")
     return false
   }
 
-  const energy = pet.timelineSnapshot.state.physical.energy
-  const phaseTag = pet.timelineSnapshot.fortune.phaseTag
-  const hour = time.hour
-  const carePriority = getCarePriority(context)
-  const restSensitivity = context.effectiveTuning.restSensitivityOffset
-  const energyThreshold =
-    40 + Math.max(0, carePriority - 50) * 0.08 + Math.max(0, restSensitivity) * 0.2
-
-  pushScore(scores, "rest_energy", energy, `当前能量=${energy}，休息阈值=${energyThreshold.toFixed(2)}。`)
-  pushScore(scores, "rest_sensitivity", restSensitivity, "Profile + Relation + GoalExecutionMemory 后的休息机会敏感度。")
-
-  if (energy <= energyThreshold) {
-    pushGate(gates, "rest_low_energy", true, "能量低于休息阈值，提供休息机会。")
-    return true
-  }
-
-  if (phaseTag === "recovery_phase") {
-    pushGate(gates, "rest_recovery_phase", true, "当前处于 recovery_phase，提供休息机会。")
-    return true
-  }
-
-  const nightRest = (hour >= 22 || hour <= 5) && energy <= 65
-  pushGate(gates, "rest_night_energy", nightRest, `当前小时=${hour}，能量=${energy}，夜间且能量不高时可提供休息机会。`)
-  return nightRest
+  const threshold =
+    40 +
+    Math.max(0, getCarePriority(context) - 50) * 0.08 +
+    Math.max(0, context.effectiveTuning.restSensitivityOffset) * 0.2
+  pushScore(scores, "rest_energy", energy, `threshold=${threshold.toFixed(2)}`)
+  const passed = energy <= threshold
+  pushGate(gates, "rest_energy_threshold", passed, "rest opportunity only evaluates existing accepted pet state")
+  return passed
 }
 
 function shouldOfferApproach(
@@ -287,30 +222,16 @@ function shouldOfferApproach(
   gates: ButlerTaskDecisionGate[],
   scores: ButlerTaskDecisionScore[]
 ): boolean {
-  const { pet } = context
-  if (!pet?.timelineSnapshot) {
-    pushGate(gates, "approach_has_timeline", false, "宠物没有 timelineSnapshot，不能判断靠近机会。")
-    return false
-  }
-
-  const relation = pet.timelineSnapshot.state.relational.label
-  const emotion = pet.timelineSnapshot.state.emotional.label
-  const hunger = pet.timelineSnapshot.state.physical.hunger
-  const energy = pet.timelineSnapshot.state.physical.energy
-  const approachSensitivity = context.effectiveTuning.approachSensitivityOffset
-  const hungerLimit = 65 + Math.max(0, approachSensitivity) * 0.15
-  const energyLimit = 35 - Math.max(0, approachSensitivity) * 0.1
+  const relation = getPetRelation(context)
+  const energy = getPetEnergy(context)
+  const hunger = getPetHunger(context)
   const passed =
     (relation === "secure" || relation === "attached") &&
-    hunger < hungerLimit &&
-    energy > energyLimit &&
-    emotion !== "irritated" &&
-    emotion !== "anxious"
+    (energy ?? 0) > 35 &&
+    (hunger ?? 100) < 65
 
-  pushScore(scores, "approach_sensitivity", approachSensitivity, "Profile + Relation + GoalExecutionMemory 后的靠近机会敏感度。")
-  pushScore(scores, "approach_hunger", hunger, `当前饥饿=${hunger}，靠近允许饥饿上限=${hungerLimit.toFixed(2)}。`)
-  pushScore(scores, "approach_energy", energy, `当前能量=${energy}，靠近允许能量下限=${energyLimit.toFixed(2)}。`)
-  pushGate(gates, "approach_relation_state", passed, `关系=${relation}，情绪=${emotion}，饥饿=${hunger}，能量=${energy}。`)
+  pushScore(scores, "approach_sensitivity", context.effectiveTuning.approachSensitivityOffset, "approach opportunity sensitivity")
+  pushGate(gates, "approach_relation_state", passed, `relation=${relation ?? "none"}`)
   return passed
 }
 
@@ -320,21 +241,11 @@ function shouldObserveBeforeActing(
   scores: ButlerTaskDecisionScore[]
 ): boolean {
   const observationBias = context.effectiveTuning.observationBiasOffset
-  pushScore(scores, "observation_bias", observationBias, "Profile + Relation + GoalExecutionMemory 后的观察优先级调参。")
+  pushScore(scores, "observation_bias", observationBias, "observation tuning")
 
-  if (observationBias < 8) {
-    pushGate(gates, "observe_bias_threshold", false, "观察调参低于 8，不强制先观察。")
-    return false
-  }
-
-  if (context.pendingOpportunityCount > 0) {
-    pushGate(gates, "observe_pending_opportunity", true, "已有待处理机会，管家先观察。")
-    return true
-  }
-
-  const observing = context.pet?.action === "observing"
-  pushGate(gates, "observe_pet_action", observing, `宠物当前行为=${context.pet?.action ?? "none"}。`)
-  return observing
+  const passed = observationBias >= 8 && context.pendingOpportunityCount > 0
+  pushGate(gates, "observe_before_opportunity", passed, "butler can observe before handling pending opportunities")
+  return passed
 }
 
 function shouldBuildHome(
@@ -342,20 +253,13 @@ function shouldBuildHome(
   gates: ButlerTaskDecisionGate[],
   scores: ButlerTaskDecisionScore[]
 ): boolean {
-  const { home, pet, incubator } = context
-
-  if (!home) {
-    pushGate(gates, "build_has_home", false, "没有家园状态，不能建设。")
+  if (!context.home) {
+    pushGate(gates, "build_has_home", false, "no HomeState available")
     return false
   }
 
-  if (!isIncubatorCompleted(incubator)) {
-    pushGate(gates, "build_incubator_completed", false, "孵化器未完成，管家优先照看孵化器。")
-    return false
-  }
-
-  if (home.status === "completed") {
-    pushGate(gates, "build_home_not_completed", false, "家园已经完成，不需要继续建设。")
+  if (context.home.status === "completed") {
+    pushGate(gates, "build_home_not_completed", false, "home already completed")
     return false
   }
 
@@ -364,54 +268,21 @@ function shouldBuildHome(
     gates,
     "build_perception_context",
     perceptionAllowsConstruction,
-    context.butlerWorldPerception
-      ? `${context.butlerWorldPerception.summary} 该感知只作为建设倾向线索，不是命令。`
-      : "管家没有明确建设类感知线索。"
+    context.butlerWorldPerception?.summary ?? "no construction perception"
   )
-
-  if (!perceptionAllowsConstruction) {
-    return false
-  }
 
   const constructionDrive = clampScore(
     getConstructionDrive(context) + getPerceptionIntensity(context) * 0.08
   )
-  pushScore(
-    scores,
-    "construction_drive",
-    constructionDrive,
-    "旧行为偏置 + Profile + Relation + GoalExecutionMemory + ButlerWorldPerception 后的建设倾向。"
-  )
+  pushScore(scores, "construction_drive", constructionDrive, "home management drive")
 
-  if (!pet?.timelineSnapshot) {
-    pushGate(gates, "build_no_pet_timeline", true, "宠物尚无 timelineSnapshot，允许根据管家感知推进建设。")
-    return true
-  }
-
-  const energy = pet.timelineSnapshot.state.physical.energy
-  const hunger = pet.timelineSnapshot.state.physical.hunger
-
-  if (shouldPrioritizeNewbornPet(pet)) {
-    const passed = constructionDrive >= 72 && energy > 45 && hunger < 55
-    pushGate(gates, "build_newborn_guard", passed, `宠物处于 ${pet.lifeState.phase}，建设需要 constructionDrive>=72、energy>45、hunger<55。`)
-    return passed
-  }
-
-  if (energy <= 35 || hunger >= 65) {
-    const passed = constructionDrive >= 76
-    pushGate(gates, "build_low_state_guard", passed, `宠物能量=${energy}，饥饿=${hunger}，状态偏低时建设需要 constructionDrive>=76。`)
-    return passed
-  }
-
-  pushGate(gates, "build_default", true, "家园未完成，且管家感知到建设/维护/空间整理线索，宠物状态允许。")
-  return true
+  return perceptionAllowsConstruction || constructionDrive >= 55
 }
 
 function buildDecisionContext(context: ButlerTaskContext) {
   return {
     hasPet: !!context.pet,
     hasTimelineSnapshot: !!context.pet?.timelineSnapshot,
-    incubatorCompleted: isIncubatorCompleted(context.incubator),
     homeCompleted: context.home?.status === "completed",
     butlerPerceptionSummary: context.butlerWorldPerception?.summary ?? null,
     butlerPerceptionSignal: getPerceptionSignalKind(context),
@@ -476,7 +347,6 @@ function buildTaskContext(
 
   return {
     pet: input.pet,
-    incubator: input.incubator,
     home: input.home,
     butlerWorldPerception: input.butlerWorldPerception ?? null,
     time: input.time,
@@ -501,19 +371,7 @@ export function chooseButlerTask(
   pushTuningScores(context, scores)
   pushEducationStrategyScores(context, scores)
 
-  if (!isIncubatorCompleted(context.incubator)) {
-    commitDecisionTrace({
-      state,
-      context,
-      selectedTask: "watching_incubator",
-      reason: "孵化器尚未完成，管家优先照看孵化器。",
-      gates,
-      scores,
-    })
-    return "watching_incubator"
-  }
-
-  if (petExistsAndBorn(context.pet)) {
+  if (petExists(context.pet)) {
     const careTask = choosePetCareTask({ context, gates, scores })
 
     if (careTask) {
@@ -521,34 +379,24 @@ export function chooseButlerTask(
         state,
         context,
         selectedTask: careTask,
-        reason: "宠物已出生，管家根据宠物状态、ButlerProfile 与 Relation 事实解释选择照护或机会任务。",
+        reason: "宠物已通过后置关系进入系统，管家根据宠物状态选择照护或机会任务。",
         gates,
         scores,
       })
       return careTask
     }
 
-    if (shouldBuildHome(context, gates, scores)) {
+    if (!shouldBuildHome(context, gates, scores)) {
       commitDecisionTrace({
         state,
         context,
-        selectedTask: "building_home",
-        reason: "宠物状态没有触发照护任务，管家根据世界感知线索形成家园管理倾向。",
+        selectedTask: "watching_pet",
+        reason: "宠物已进入系统，但当前没有更强的家园建设任务，管家保持观察。",
         gates,
         scores,
       })
-      return "building_home"
+      return "watching_pet"
     }
-
-    commitDecisionTrace({
-      state,
-      context,
-      selectedTask: "watching_pet",
-      reason: "宠物已出生，但没有触发机会或感知驱动的建设任务，管家保持观察。",
-      gates,
-      scores,
-    })
-    return "watching_pet"
   }
 
   if (shouldBuildHome(context, gates, scores)) {
@@ -556,30 +404,18 @@ export function chooseButlerTask(
       state,
       context,
       selectedTask: "building_home",
-      reason: "宠物尚未出生且孵化器已完成，管家根据世界感知线索推进家园管理。",
+      reason: "管家根据世界感知与家园状态推进初始家园管理。",
       gates,
       scores,
     })
     return "building_home"
   }
 
-  if (context.pendingOpportunityCount > 0) {
-    commitDecisionTrace({
-      state,
-      context,
-      selectedTask: "watching_pet",
-      reason: "存在待处理机会，管家保持观察。",
-      gates,
-      scores,
-    })
-    return "watching_pet"
-  }
-
   commitDecisionTrace({
     state,
     context,
     selectedTask: "idle",
-    reason: "当前没有孵化器、宠物、家园感知或机会任务需要处理。",
+    reason: "当前没有宠物后置关系、家园感知或机会任务需要处理。",
     gates,
     scores,
   })

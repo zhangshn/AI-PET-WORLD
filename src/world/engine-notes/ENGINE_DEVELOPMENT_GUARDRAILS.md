@@ -454,3 +454,16 @@ WORLD-GEN-00 是审计阶段，不是实现阶段。
 8. 本阶段不能修改 pet-runtime-context-schema。
 9. 本阶段不能生成新的 placement。
 10. 本阶段不能默认接入 pet。
+
+## MVP-ALIGN-02 当前正式 MVP 红线
+
+1. 当前正式 MVP 不能再引入孵化器。
+2. 当前正式 MVP 不能再引入 embryo / hatching / incubating。
+3. 当前正式初始世界不能生成 pet actor。
+4. 当前正式初始世界不能生成 pet bed。
+5. 当前正式初始世界不能生成 pet_arrival / pet_rest。
+6. 宠物未来能力只能通过 LifeEvent / CompanionDecision / accept_companion 后置进入。
+7. 任何旧 docs/mvp 与三份正式文档冲突时，以三份正式文档为准。
+8. 不能用 CSS 隐藏旧事实来替代清理正式链路。
+9. 不能把宠物素材定义当作初始世界事实。
+10. 不能默认构造 PetRuntimeContext。

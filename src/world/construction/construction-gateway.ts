@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：提供 MVP 建设闭环入口。
+ * 当前文件职责：提供 MVP 建设闭环入口。
  */
 
 import type { HomeMapState, MapDiff } from "@/world/map-state/home-map-state-schema"
@@ -59,7 +59,7 @@ export type RunConstructionIntentDiffCycleResult = {
   tags: string[]
 }
 
-export function createMvpPetRestConstructionPlan(
+export function createMvpQuietLivingConstructionPlan(
   homeMapState: HomeMapState
 ): ConstructionPlan {
   return createInitialConstructionPlan(homeMapState)
@@ -75,18 +75,15 @@ export function runConstructionIntentDiffCycle(
     butler: input.butler,
     resources: input.homeMapState.resources,
   })
-
   const diffResult = buildMapDiffsFromConstructionIntents({
     homeMapState: input.homeMapState,
     intents: intentResult.intents,
     now: input.now,
   })
-
   const validationResult = validateMapDiffs({
     homeMapState: input.homeMapState,
     mapDiffs: diffResult.mapDiffs,
   })
-
   const nextHomeMapState = applyMapDiffs(
     input.homeMapState,
     validationResult.acceptedDiffs
@@ -133,27 +130,27 @@ export function advanceMvpConstruction(
 export function advanceMvpConstructionByWorldTick(
   input: AdvanceMvpConstructionByWorldTickInput
 ): AdvanceMvpConstructionByWorldTickResult {
-  const hasPetRestZone = input.homeMapState.zones.some(
-    (zone) => zone.type === "pet_rest"
+  const hasQuietLivingZone = input.homeMapState.zones.some(
+    (zone) => zone.type === "quiet_living"
   )
 
-  if (!hasPetRestZone) {
+  if (!hasQuietLivingZone) {
     return {
       homeMapState: input.homeMapState,
       plan: input.plan,
-      messages: ["未找到宠物休息区，自动建设暂时无法推进。"],
+      messages: ["未找到安静生活区，自动建设暂时无法推进。"],
       didAdvance: false,
     }
   }
 
   const plan =
-    input.plan ?? createMvpPetRestConstructionPlan(input.homeMapState)
+    input.plan ?? createMvpQuietLivingConstructionPlan(input.homeMapState)
 
   if (plan.currentStage === "completed") {
     return {
       homeMapState: input.homeMapState,
       plan,
-      messages: ["宠物休息角建设已经完成。"],
+      messages: ["安静生活区建设已经完成。"],
       didAdvance: false,
     }
   }

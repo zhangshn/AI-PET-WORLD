@@ -1,5 +1,5 @@
 /**
- * 当前文件负责把世界状态转换为逻辑可视化模型。
+ * 当前文件职责：把世界状态转换为逻辑可视化模型。
  */
 
 import type { ConstructionPlan } from "@/world/construction/construction-schema"
@@ -74,6 +74,6 @@ function buildTimeLabel(worldTick: number): string {
 
 function buildHomeStatus(plan: ConstructionPlan | null): string {
   if (!plan) return "初始家园观察中"
-  if (plan.currentStage === "completed") return "宠物休息角已完成"
-  return "宠物休息角建设中"
+  if (plan.currentStage === "completed") return "安静生活区已完成"
+  return "安静生活区建设中"
 }

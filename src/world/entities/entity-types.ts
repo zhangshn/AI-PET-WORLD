@@ -7,7 +7,7 @@ import type { WorldPosition } from "../map/world-map"
 export type WorldEntityKind =
   | "pet"
   | "butler"
-  | "incubator"
+  | "care_station"
   | "home"
   | "structure"
   | "vegetation"

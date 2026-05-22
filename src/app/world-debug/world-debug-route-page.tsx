@@ -12,7 +12,7 @@ import type { ConstructionPlan } from "@/world/construction/construction-schema"
 import {
   advanceMvpConstruction,
   advanceMvpConstructionByWorldTick,
-  createMvpPetRestConstructionPlan,
+  createMvpQuietLivingConstructionPlan,
 } from "@/world/construction/construction-gateway"
 import { generateInitialHomeMap } from "@/world/generation/initial-home-generator"
 import {
@@ -89,7 +89,7 @@ export default function WorldDebugRoutePage() {
   const handleAdvanceConstruction = useCallback(() => {
     const plan =
       currentConstructionPlan ??
-      createMvpPetRestConstructionPlan(currentHomeMapState)
+      createMvpQuietLivingConstructionPlan(currentHomeMapState)
     const result = advanceMvpConstruction(
       currentHomeMapState,
       plan,

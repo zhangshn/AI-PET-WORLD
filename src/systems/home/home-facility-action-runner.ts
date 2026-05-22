@@ -1,6 +1,5 @@
-/**
- * 当前文件负责：根据管家行为执行快照，安全推进家园设施。
- */
+﻿/**
+ * 褰撳墠鏂囦欢璐熻矗锛氭牴鎹瀹惰涓烘墽琛屽揩鐓э紝瀹夊叏鎺ㄨ繘瀹跺洯璁炬柦銆? */
 
 import type {
   ButlerBehaviorExecution,
@@ -85,12 +84,12 @@ export function applyButlerHomeFacilityAction(
   let facilities = syncHomeFacilities(input.home)
   const power = getActionPower(execution)
 
-  if (execution.kind === "incubator_watch") {
-    facilities = updateFacilityById(facilities, "basic_incubator", (facility) => ({
+  if (execution.kind === "home_maintenance") {
+    facilities = updateFacilityById(facilities, "basic_care_station", (facility) => ({
       ...facility,
       durability: clamp(facility.durability + 0.8 * power),
       usefulness: clamp(facility.usefulness + 0.4 * power),
-      tags: Array.from(new Set([...facility.tags, "butler_incubator_watch"])),
+      tags: Array.from(new Set([...facility.tags, "butler_home_maintenance"])),
     }))
   }
 

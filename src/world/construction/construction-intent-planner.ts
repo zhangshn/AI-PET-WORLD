@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：根据宠物、管家和资源状态生成建设意图。
+ * 当前文件职责：根据管家和资源状态生成建设意图。
  */
 
 import type {
@@ -14,31 +14,31 @@ export function buildConstructionIntents(
 ): ConstructionIntentPlannerResult {
   const intents: ConstructionIntent[] = []
 
-  if (input.pet.energy <= 35) {
+  if (input.resources.spacePressure >= 55) {
     intents.push(
       createIntent({
         input,
-        type: "improve_pet_rest",
-        source: "pet_need",
-        targetZoneType: "pet_rest",
-        urgency: normalizeUrgency(0.55 + (35 - input.pet.energy) / 60),
-        reason: "宠物最近精力偏低，管家倾向整理一个更安静稳定的休息角。",
+        type: "improve_quiet_living",
+        source: "world_resource",
+        targetZoneType: "quiet_living",
+        urgency: normalizeUrgency(0.45 + input.resources.spacePressure / 160),
+        reason: "当前家园空间压力上升，管家倾向整理一个更安静稳定的生活区。",
         preferredAssetTags: ["rest", "soft", "natural_detail"],
         expectedEffects: ["restComfortUp", "securityUp"],
       })
     )
   }
 
-  if (input.pet.hunger >= 65 || input.resources.careReadiness < 55) {
+  if (input.resources.careReadiness < 55) {
     intents.push(
       createIntent({
         input,
         type: "improve_care_area",
-        source: input.pet.hunger >= 65 ? "pet_need" : "world_resource",
+        source: "world_resource",
         targetZoneType: "initial_care",
-        urgency: normalizeUrgency(0.45 + input.pet.hunger / 120),
-        reason: "宠物照护需求上升，管家倾向整理食物与饮水附近的区域。",
-        preferredAssetTags: ["care", "food", "water", "soft"],
+        urgency: normalizeUrgency(0.45 + (55 - input.resources.careReadiness) / 120),
+        reason: "初始照护准备度偏低，管家倾向整理基础照护点。",
+        preferredAssetTags: ["care", "soft", "order"],
         expectedEffects: ["careReadinessUp"],
       })
     )
@@ -99,13 +99,13 @@ export function buildConstructionIntents(
     intents.push(
       createIntent({
         input,
-        type: "soften_arrival_area",
+        type: "soften_entry_area",
         source: "routine",
-        targetZoneType: "pet_arrival",
+        targetZoneType: "entry_area",
         urgency: 0.32,
-        reason: "管家进行例行维护，倾向轻微整理宠物抵达区周围环境。",
-        preferredAssetTags: ["arrival", "soft", "natural_detail"],
-        expectedEffects: ["arrivalComfortUp"],
+        reason: "管家进行例行维护，倾向轻微整理初始入口区周围环境。",
+        preferredAssetTags: ["entry", "soft", "natural_detail"],
+        expectedEffects: ["entryComfortUp"],
       })
     )
   }

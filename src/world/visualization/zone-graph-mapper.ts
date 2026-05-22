@@ -1,5 +1,5 @@
 /**
- * 当前文件负责把家园区域转换为关系图摘要。
+ * 当前文件职责：把家园区域转换为关系图摘要。
  */
 
 import type { ConstructionPlan } from "@/world/construction/construction-schema"
@@ -12,29 +12,29 @@ import type {
 import type { ZoneGraphSummary } from "./world-visualization-schema"
 
 const CORE_ZONE_TYPES: HomeZoneType[] = [
-  "pet_arrival",
+  "entry_area",
   "initial_care",
   "temporary_shelter",
-  "pet_rest",
+  "quiet_living",
   "storage_tools",
 ]
 
 const ZONE_LABELS: Record<HomeZoneType, string> = {
   visual_center: "核心活动范围",
-  pet_arrival: "宠物抵达区",
+  entry_area: "初始入口区",
   initial_care: "初始照护区",
   temporary_shelter: "临时住所区",
-  pet_rest: "宠物休息区",
+  quiet_living: "安静生活区",
   storage_tools: "储物工具区",
   natural_boundary: "自然边界区",
 }
 
 const ZONE_ROLES: Record<HomeZoneType, string> = {
   visual_center: "承载主要生活关系",
-  pet_arrival: "宠物进入家园后的第一落点",
-  initial_care: "食物、饮水和基础照护的中心",
-  temporary_shelter: "管家与宠物初期可依靠的住所",
-  pet_rest: "宠物恢复精力和安全感的安静区域",
+  entry_area: "进入家园后的第一落点",
+  initial_care: "基础照护与管理的中心",
+  temporary_shelter: "初期可依靠的住所",
+  quiet_living: "恢复秩序和安全感的安静区域",
   storage_tools: "材料、工具和临时资源整理区",
   natural_boundary: "形成外围缓冲与生态边界",
 }
@@ -53,9 +53,9 @@ export function buildZoneGraphSummary(
     ),
     edges: [
       {
-        from: "pet_arrival",
+        from: "entry_area",
         to: "initial_care",
-        label: "抵达后进入照护",
+        label: "入口连接照护",
       },
       {
         from: "initial_care",
@@ -64,8 +64,8 @@ export function buildZoneGraphSummary(
       },
       {
         from: "initial_care",
-        to: "pet_rest",
-        label: "宠物需求触发休息区",
+        to: "quiet_living",
+        label: "照护连接生活区",
       },
       {
         from: "storage_tools",
@@ -94,7 +94,7 @@ function getZoneStatus(
   constructionPlan: ConstructionPlan | null
 ): ZoneGraphSummary["nodes"][number]["status"] {
   if (!constructionPlan) {
-    return zoneType === "pet_arrival" || zoneType === "initial_care"
+    return zoneType === "entry_area" || zoneType === "initial_care"
       ? "active"
       : "quiet"
   }

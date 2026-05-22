@@ -17,7 +17,6 @@ export type ButlerRuntimeMood =
 
 export type ButlerRuntimeTask =
   | "observe_home"
-  | "watch_incubator"
   | "maintain_home"
   | "plan_building"
   | "care_pet"
@@ -27,7 +26,6 @@ export type ButlerRuntimeTask =
   | "idle"
 
 export type ButlerRuntimeAttentionTargetType =
-  | "incubator"
   | "pet"
   | "home"
   | "resource"
@@ -46,7 +44,6 @@ export type ButlerRuntimeConcernLevel =
 export type ButlerRuntimeObservationType =
   | "world_state"
   | "pet_state"
-  | "incubator_state"
   | "resource_state"
   | "construction_state"
   | "environment_state"
@@ -73,7 +70,6 @@ export type ButlerRuntimeObservation = {
 export type ButlerRuntimeNeedSignal = {
   id: string
   type:
-    | "incubator_care"
     | "pet_care"
     | "home_maintenance"
     | "space_organization"

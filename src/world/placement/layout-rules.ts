@@ -62,16 +62,16 @@ export const INITIAL_HOME_LAYOUT_RULES = {
   },
   constructionMaterial: {
     materialTargetZoneMaxDistance: 5,
-    materialPetBedMinDistance: 2,
+    materialLivingPointMinDistance: 2,
     materialPathMaxDistance: 3,
   },
 } as const
 
 const CORE_ZONE_TYPES = new Set([
-  "pet_arrival",
+  "entry_area",
   "initial_care",
   "temporary_shelter",
-  "pet_rest",
+  "quiet_living",
   "storage_tools",
 ])
 
@@ -95,10 +95,8 @@ export function isFunctionalCorePlacement(placement: MapPlacement): boolean {
   return (
     placement.tags.includes("core_living") ||
     placement.tags.includes("care") ||
-    placement.tags.includes("food") ||
-    placement.tags.includes("water") ||
     placement.tags.includes("rest") ||
-    placement.tags.includes("pet_bed") ||
+    placement.tags.includes("quiet_living") ||
     placement.tags.includes("storage") ||
     placement.tags.includes("temporary_shelter")
   )
@@ -126,7 +124,7 @@ export function isSupportPlacement(placement: MapPlacement): boolean {
     placement.tags.includes("ground_support") ||
     placement.tags.includes("temporary_shelter_support") ||
     placement.tags.includes("care_support") ||
-    placement.tags.includes("rest_support")
+    placement.tags.includes("quiet_living_support")
   )
 }
 

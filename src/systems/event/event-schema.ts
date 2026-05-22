@@ -6,7 +6,6 @@ import type { PersonalityProfile } from "@/ai/destiny-core/ziwei-core/schema"
 import type { ButlerState } from "@/types/butler"
 import type { WorldEvent, NarrativeType } from "@/types/event"
 import type { HomeState } from "@/types/home"
-import type { IncubatorState } from "@/types/incubator"
 import type { PetState, PetAction } from "@/types/pet"
 
 export type EventSystemUpdateInput = {
@@ -22,9 +21,6 @@ export type EventSystemUpdateInput = {
 
   prevButler: ButlerState
   currentButler: ButlerState
-
-  prevIncubator: IncubatorState
-  currentIncubator: IncubatorState
 }
 
 export type InteractionEventInput = {

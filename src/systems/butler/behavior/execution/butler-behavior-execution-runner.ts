@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：生成管家当前行为执行快照。
+ * 当前文件职责：生成管家当前行为执行快照。
  */
 
 import type {
@@ -59,22 +59,12 @@ function resolvePerceptionExecution(input: {
   const goalTag = getPerceivedHomeGoalTag(input.source)
   const bonus = Math.max(0, Math.min(18, signal.intensity * 0.18))
 
-  if (signal.kind === "care_context" || goalTag === "home_goal_stabilize_incubator") {
-    return {
-      kind: "incubator_watch",
-      target: "incubator",
-      intensity: clampIntensity(58 + bonus),
-      canAffectHome: false,
-      canAffectPet: false,
-      canContactPlayer: false,
-      summary: "管家感知到孵化器区域需要保持稳定。",
-      reason: `${perception.summary} 管家将其解释为照看倾向。`,
-      tags: [...input.baseTags, "perception_driven_execution", "goal_driven_execution", goalTag, "incubator_priority", "no_pet_control"],
-      createdAtTick: input.source.tick,
-    }
-  }
-
-  if (signal.kind === "maintenance_context" || goalTag === "home_goal_maintain_home_facilities") {
+  if (
+    signal.kind === "maintenance_context" ||
+    signal.kind === "care_context" ||
+    goalTag === "home_goal_stabilize_initial_care" ||
+    goalTag === "home_goal_maintain_home_facilities"
+  ) {
     return {
       kind: "home_maintenance",
       target: "home",
@@ -82,9 +72,17 @@ function resolvePerceptionExecution(input: {
       canAffectHome: true,
       canAffectPet: false,
       canContactPlayer: false,
-      summary: "管家感知到家园存在维护线索。",
-      reason: `${perception.summary} 管家将其解释为维护倾向。`,
-      tags: [...input.baseTags, "perception_driven_execution", "goal_driven_execution", goalTag, "home_maintenance", "home_effect_allowed", "no_pet_control"],
+      summary: "管家感知到家园存在维护或初始照护线索。",
+      reason: `${perception.summary} 管家将其解释为家园维护倾向。`,
+      tags: [
+        ...input.baseTags,
+        "perception_driven_execution",
+        "goal_driven_execution",
+        goalTag,
+        "home_maintenance",
+        "home_effect_allowed",
+        "no_pet_control",
+      ],
       createdAtTick: input.source.tick,
     }
   }
@@ -99,7 +97,15 @@ function resolvePerceptionExecution(input: {
       canContactPlayer: false,
       summary: "管家感知到家园基础空间正在成长。",
       reason: `${perception.summary} 管家将其解释为建设倾向。`,
-      tags: [...input.baseTags, "perception_driven_execution", "goal_driven_execution", goalTag, "home_building", "home_effect_allowed", "no_pet_control"],
+      tags: [
+        ...input.baseTags,
+        "perception_driven_execution",
+        "goal_driven_execution",
+        goalTag,
+        "home_building",
+        "home_effect_allowed",
+        "no_pet_control",
+      ],
       createdAtTick: input.source.tick,
     }
   }
@@ -114,7 +120,15 @@ function resolvePerceptionExecution(input: {
       canContactPlayer: false,
       summary: "管家感知到家园边界和开放空间正在变化。",
       reason: `${perception.summary} 管家将其解释为空间整理倾向。`,
-      tags: [...input.baseTags, "perception_driven_execution", "goal_driven_execution", goalTag, "space_tidying", "home_effect_allowed", "no_pet_control"],
+      tags: [
+        ...input.baseTags,
+        "perception_driven_execution",
+        "goal_driven_execution",
+        goalTag,
+        "space_tidying",
+        "home_effect_allowed",
+        "no_pet_control",
+      ],
       createdAtTick: input.source.tick,
     }
   }
@@ -126,10 +140,8 @@ export function buildButlerBehaviorExecution(
   input: BuildButlerBehaviorExecutionInput
 ): ButlerBehaviorExecution {
   const baseTags = buildBaseTags(input)
-
   const perceptionExecution =
     input.task === "building_home" ||
-    input.task === "watching_incubator" ||
     input.task === "idle" ||
     input.task === "watching_pet"
       ? resolvePerceptionExecution({ source: input, baseTags })
@@ -137,26 +149,13 @@ export function buildButlerBehaviorExecution(
 
   if (perceptionExecution) return perceptionExecution
 
-  if (input.task === "watching_incubator") {
-    return {
-      kind: "incubator_watch",
-      target: "incubator",
-      intensity: clampIntensity(58 + input.relation.careHistory * 0.4 + getPerceptionIntensity(input) * 0.05),
-      canAffectHome: false,
-      canAffectPet: false,
-      canContactPlayer: false,
-      summary: "管家正在优先看护孵化器，确认胚胎环境稳定。",
-      reason: "当前任务是 watching_incubator，管家形成孵化器照看执行快照。",
-      tags: [...baseTags, "incubator_priority", "no_pet_control"],
-      createdAtTick: input.tick,
-    }
-  }
-
   if (input.task === "building_home") {
     return {
       kind: "home_building",
       target: "home",
-      intensity: clampIntensity(46 + input.relation.careHistory * 0.25 + getPerceptionIntensity(input) * 0.05),
+      intensity: clampIntensity(
+        46 + input.relation.careHistory * 0.25 + getPerceptionIntensity(input) * 0.05
+      ),
       canAffectHome: true,
       canAffectPet: false,
       canContactPlayer: false,
@@ -167,16 +166,24 @@ export function buildButlerBehaviorExecution(
     }
   }
 
-  if (input.task === "offering_food" || input.task === "offering_rest" || input.task === "offering_approach") {
+  if (
+    input.task === "offering_food" ||
+    input.task === "offering_rest" ||
+    input.task === "offering_approach"
+  ) {
     return {
       kind: "care_opportunity_support",
       target: "pet",
-      intensity: clampIntensity(38 + input.relation.trustEstimate * 0.25 + (input.educationStrategy?.approachIntensityOffset ?? 0)),
+      intensity: clampIntensity(
+        38 +
+          input.relation.trustEstimate * 0.25 +
+          (input.educationStrategy?.approachIntensityOffset ?? 0)
+      ),
       canAffectHome: false,
       canAffectPet: false,
       canContactPlayer: false,
-      summary: "管家正在提供照看机会，但不会替宠物做决定。",
-      reason: "当前任务是照看机会类任务，宠物是否接受仍由宠物自主判断。",
+      summary: "管家正在提供照护机会，但不会替宠物做决定。",
+      reason: "当前任务是照护机会类任务，宠物是否接受仍由宠物自主判断。",
       tags: [...baseTags, "care_opportunity", "pet_self_acceptance_required"],
       createdAtTick: input.tick,
     }

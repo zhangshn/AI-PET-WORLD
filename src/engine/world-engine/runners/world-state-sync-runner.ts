@@ -1,31 +1,27 @@
-/**
- * 当前文件负责：统一从各系统读取当前世界状态，避免 worldEngine 中重复散落 getState/getHome/getPet/getIncubator 调用。
+﻿/**
+ * 褰撳墠鏂囦欢璐熻矗锛氱粺涓€浠庡悇绯荤粺璇诲彇褰撳墠涓栫晫鐘舵€侊紝閬垮厤 worldEngine 涓噸澶嶆暎钀?getState/getHome/getPet 璋冪敤銆?
  */
 
 import type { ButlerState } from "@/types/butler"
 import type { HomeState } from "@/types/home"
-import type { IncubatorState } from "@/types/incubator"
 import type { PetState } from "@/types/pet"
 
 import type {
   PetSystem,
   ButlerSystem,
   HomeSystem,
-  IncubatorSystem,
 } from "@/systems/systems-gateway"
 
 export type WorldSystemStateSnapshot = {
   pet: PetState | null
   butler: ButlerState
   home: HomeState
-  incubator: IncubatorState
 }
 
 export type RefreshWorldSystemStateInput = {
   petSystem: PetSystem
   butlerSystem: ButlerSystem
   homeSystem: HomeSystem
-  incubatorSystem: IncubatorSystem
 }
 
 export function refreshWorldSystemState(
@@ -35,6 +31,5 @@ export function refreshWorldSystemState(
     pet: input.petSystem.getPet(),
     butler: input.butlerSystem.getState(),
     home: input.homeSystem.getHome(),
-    incubator: input.incubatorSystem.getIncubator(),
   }
 }

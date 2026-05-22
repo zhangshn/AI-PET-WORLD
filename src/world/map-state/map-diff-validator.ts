@@ -286,9 +286,7 @@ function isProtectedPlacement(placement: MapPlacement): boolean {
     "core_living",
     "arrival_focus",
     "temporary_shelter",
-    "pet_bed",
     "butler",
-    "pet",
     "actor",
   ]
 

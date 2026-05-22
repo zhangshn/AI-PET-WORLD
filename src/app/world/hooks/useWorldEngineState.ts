@@ -38,9 +38,6 @@ import type {
   HomeState,
 } from "@/types/home"
 import type {
-  IncubatorState,
-} from "@/types/incubator"
-import type {
   PetState,
 } from "@/types/pet"
 import type {
@@ -63,7 +60,6 @@ export type WorldEngineViewState = {
   pet: PetState | null
   butler: ButlerState | null
   home: HomeState | null
-  incubator: IncubatorState | null
   adoptionState: AdoptionState
   events: WorldEvent[]
   stimuli: WorldStimulus[]
@@ -83,7 +79,6 @@ function readWorldEngineState() {
     pet: worldEngine.getPet(),
     butler: worldEngine.getButler(),
     home: worldEngine.getHome(),
-    incubator: worldEngine.getIncubator(),
     adoptionState: worldEngine.getAdoptionState(),
     events: worldEngine.getEvents(),
     stimuli: worldEngine.getWorldStimuli(),
@@ -117,9 +112,6 @@ export function useWorldEngineState(): WorldEngineViewState {
   const [home, setHome] = useState<HomeState | null>(() =>
     worldEngine.getHome()
   )
-  const [incubator, setIncubator] = useState<IncubatorState | null>(() =>
-    worldEngine.getIncubator()
-  )
   const [adoptionState, setAdoptionState] = useState<AdoptionState>(() =>
     worldEngine.getAdoptionState()
   )
@@ -151,7 +143,6 @@ export function useWorldEngineState(): WorldEngineViewState {
     setPet(nextState.pet)
     setButler(nextState.butler)
     setHome(nextState.home)
-    setIncubator(nextState.incubator)
     setAdoptionState(nextState.adoptionState)
     setEvents(nextState.events)
     setStimuli(nextState.stimuli)
@@ -255,7 +246,6 @@ export function useWorldEngineState(): WorldEngineViewState {
     pet,
     butler,
     home,
-    incubator,
     adoptionState,
     events,
     stimuli,

@@ -42,19 +42,14 @@ export const WORLD_OBJECT_RULES = {
     allowWaterOverlap: true,
     tags: ["path", "infrastructure"],
   },
-  pet_bed: {
-    objectType: "pet_bed",
-    allowedSurfaces: ["constructed_foundation", "wood", "grass"],
-    tags: ["facility", "rest"],
-  },
   food_bowl: {
     objectType: "food_bowl",
     allowedSurfaces: ["constructed_foundation", "wood", "grass"],
     tags: ["facility", "feeding"],
   },
-  incubator: {
-    objectType: "incubator",
+  care_station: {
+    objectType: "care_station",
     allowedSurfaces: ["constructed_foundation", "wood", "grass", "soil"],
-    tags: ["facility", "birth"],
+    tags: ["facility", "care"],
   },
 } as const satisfies Record<WorldObjectType, WorldObjectRule>

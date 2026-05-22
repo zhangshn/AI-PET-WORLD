@@ -45,7 +45,7 @@ export type WorldChangePlanRiskHint =
   | "space_sensitive"
   | "resource_sensitive"
   | "pet_sensitive"
-  | "incubator_sensitive"
+  | "initial_care_sensitive"
   | "geometry_sensitive"
   | "persistence_sensitive"
 

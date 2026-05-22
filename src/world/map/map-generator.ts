@@ -25,7 +25,7 @@ type HomeMapGenerationConfig = {
   width: number
   height: number
   tileSize: number
-  incubatorCenter: HomeMapPoint
+  careCenter: HomeMapPoint
   shelterCenter: HomeMapPoint
   homeBuildCenter: HomeMapPoint
   gardenCenter: HomeMapPoint
@@ -51,7 +51,7 @@ const DEFAULT_HOME_MAP_CONFIG: HomeMapGenerationConfig = {
   width: 80,
   height: 48,
   tileSize: 24,
-  incubatorCenter: { x: 16, y: 20 },
+  careCenter: { x: 16, y: 20 },
   shelterCenter: { x: 29, y: 22 },
   homeBuildCenter: { x: 48, y: 26 },
   gardenCenter: { x: 63, y: 36 },
@@ -197,7 +197,7 @@ function createPathTiles(
   const tiles = new Set<string>()
   const hub = { x: 36, y: 27 }
 
-  addPathBetweenPoints(tiles, config.incubatorCenter, config.shelterCenter)
+  addPathBetweenPoints(tiles, config.careCenter, config.shelterCenter)
   addPathBetweenPoints(tiles, config.shelterCenter, hub)
   addPathBetweenPoints(tiles, hub, config.homeBuildCenter)
   addPathBetweenPoints(tiles, hub, config.gardenCenter)
@@ -498,7 +498,7 @@ function isCoreSafeArea(
   y: number
 ): boolean {
   return (
-    getDistance({ x, y }, config.incubatorCenter) <= 6 ||
+    getDistance({ x, y }, config.careCenter) <= 6 ||
     getDistance({ x, y }, config.shelterCenter) <= 8 ||
     getDistance({ x, y }, config.homeBuildCenter) <= 8 ||
     getDistance({ x, y }, config.gardenCenter) <= 7 ||

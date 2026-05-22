@@ -119,7 +119,7 @@ function buildInitialConstructionPlans(
       targetZoneType: "temporary_shelter",
       status: "planned",
       progress: 8 + input.butlerConstructionStyle.structuredBuilder * 4,
-      reason: `由 ${recipe.name} 初始化，用于保证宠物抵达后的基础遮蔽。`,
+      reason: `由 ${recipe.name} 初始化，用于保证初始家园具备基础遮蔽与管理空间。`,
       tags: ["construction_plan", "temporary_shelter", "mvp_initial"],
     },
     {
@@ -128,7 +128,7 @@ function buildInitialConstructionPlans(
       targetZoneType: "initial_care",
       status: "planned",
       progress: 12 + input.butlerConstructionStyle.warmCaretaker * 5,
-      reason: "用于保证食物、水和宠物休息点有基础秩序。",
+      reason: "用于保证基础物资、照护点和生活区有基础秩序。",
       tags: ["construction_plan", "care_point", "mvp_initial"],
     },
   ]

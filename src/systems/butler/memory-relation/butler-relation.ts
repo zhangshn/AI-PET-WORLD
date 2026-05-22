@@ -1,6 +1,5 @@
-/**
- * 当前文件负责：定义与维护管家和宠物之间的长期关系状态。
- */
+﻿/**
+ * 褰撳墠鏂囦欢璐熻矗锛氬畾涔変笌缁存姢绠″鍜屽疇鐗╀箣闂寸殑闀挎湡鍏崇郴鐘舵€併€? */
 
 import type {
   ButlerOpportunityType,
@@ -308,8 +307,8 @@ function buildBehaviorExecutionMemoryTags(input: {
     tags.push("no_pet_control")
   }
 
-  if (input.memoryEntry.tags.includes("incubator_watch")) {
-    tags.push("relation_memory_incubator_watch")
+  if (input.memoryEntry.tags.includes("home_maintenance")) {
+    tags.push("relation_memory_home_maintenance")
   }
 
   if (input.memoryEntry.tags.includes("home_building")) {
@@ -525,7 +524,7 @@ function deriveBehaviorExecutionMemoryDelta(input: {
         ? 1
         : 0
 
-  if (entry.tags.includes("incubator_watch")) {
+  if (entry.tags.includes("home_maintenance")) {
     return {
       familiarity: input.relation.familiarity < 30 ? 1 : 0,
       trustEstimate: 0,

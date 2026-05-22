@@ -406,11 +406,9 @@ function isProtectedPlacement(placement: MapPlacement): boolean {
     tags: placement.tags,
     candidates: [
       "core_living",
-      "arrival_focus",
+      "entry_focus",
       "temporary_shelter",
-      "pet_bed",
       "butler",
-      "pet",
       "actor",
     ],
   })

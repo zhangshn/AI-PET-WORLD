@@ -310,9 +310,9 @@ function buildTargetForPlanType(
 
   if (planType === "rest_area") {
     return {
-      zoneType: "pet_rest",
+      zoneType: "quiet_living",
       preferredAssetTags: ["rest"],
-      tags: ["target:pet_rest", "plan:rest_area"],
+      tags: ["target:quiet_living", "plan:rest_area"],
     }
   }
 
@@ -562,7 +562,7 @@ function buildPlanRiskHints(input: {
   }
 
   if (input.planType === "build_shelter") {
-    hints.push("incubator_sensitive")
+    hints.push("initial_care_sensitive")
   }
 
   if (input.input.homeMapState.mapDiffs.length > 20) {

@@ -52,7 +52,7 @@ export type AgentSignal = {
 
   /**
    * 客观描述，不写主体解释。
-   * 例如：附近有树影移动、水声变强、孵化器稳定度下降。
+   * 例如：附近有树影移动、水声变强、照护点稳定度下降。
    */
   summary: string
 
@@ -212,7 +212,7 @@ export type AgentExpression = {
   /**
    * 可见表达。
    * 宠物可以是 observing / resting。
-   * 管家可以是 watching_incubator / preparing_food_opportunity。
+   * 管家可以是 observing_home / preparing_food_opportunity。
    */
   visibleExpression: string
 

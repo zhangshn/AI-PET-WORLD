@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：推进一个建设阶段并生成地图变化。
+ * 当前文件职责：执行管家建设计划，生成只读 MapDiff。
  */
 
 import type {
@@ -8,321 +8,59 @@ import type {
   MapDiff,
   MapPlacement,
 } from "@/world/map-state/home-map-state-schema"
-import {
-  createAddPlacementDiff,
-  createMovePlacementDiff,
-  createUpdatePlacementDiff,
-} from "@/world/map-state/map-diff-engine"
 
 import type {
   ConstructionExecutionInput,
   ConstructionExecutionResult,
   ConstructionPlan,
+  ConstructionStage,
   ConstructionStageType,
 } from "./construction-schema"
 
-const EXISTING_PET_BED_ID = "pet-bed"
-const CONSTRUCTION_PET_BED_ID = "construction-pet-bed-01"
+const STAGE_ORDER: ConstructionStageType[] = [
+  "planned",
+  "preparing_ground",
+  "placing_materials",
+  "building",
+  "decorating",
+  "completed",
+]
 
-export function advanceConstructionPlan(
-  input: ConstructionExecutionInput
-): ConstructionExecutionResult {
-  const targetZone = input.homeMapState.zones.find(
+function findTargetZone(input: ConstructionExecutionInput): HomeZone | null {
+  return input.homeMapState.zones.find(
     (zone) => zone.type === input.plan.targetZoneType
-  )
+  ) ?? null
+}
 
-  if (!targetZone) {
-    return {
-      nextPlan: input.plan,
-      mapDiffs: [],
-      messages: ["未找到宠物休息区，建设计划暂时无法推进。"],
-      tags: ["construction_blocked", "missing_target_zone"],
-    }
-  }
-
-  if (input.plan.currentStage === "completed") {
-    return {
-      nextPlan: input.plan,
-      mapDiffs: [],
-      messages: ["宠物休息角建设已经完成。"],
-      tags: ["construction_completed", "no_new_diff"],
-    }
-  }
-
-  const mapDiffs = buildStageDiffs(input, targetZone)
-  const nextStage = getNextStage(input.plan.currentStage)
-  const nextPlan = updatePlanAfterStage({
-    plan: input.plan,
-    currentStage: input.plan.currentStage,
-    nextStage,
-    mapDiffIds: mapDiffs.map((diff) => diff.id),
-    now: input.now,
-  })
-
+function getZoneCenter(zone: HomeZone): MapCoordinate {
   return {
-    nextPlan,
-    mapDiffs,
-    messages: [getStageMessage(input.plan.currentStage, mapDiffs)],
-    tags: ["construction_advanced", input.plan.currentStage, nextStage],
+    x: zone.bounds.x + zone.bounds.width / 2,
+    y: zone.bounds.y + zone.bounds.height / 2,
   }
 }
 
-function buildStageDiffs(
-  input: ConstructionExecutionInput,
-  targetZone: HomeZone
-): MapDiff[] {
-  if (input.plan.currentStage === "planned") {
-    return buildPreparingGroundDiffs(input, targetZone)
+function offsetPoint(point: MapCoordinate, dx: number, dy: number): MapCoordinate {
+  return {
+    x: point.x + dx,
+    y: point.y + dy,
   }
-
-  if (input.plan.currentStage === "preparing_ground") {
-    return buildPlacingMaterialsDiffs(input, targetZone)
-  }
-
-  if (input.plan.currentStage === "placing_materials") {
-    return buildPetBedConstructionDiffs(input, targetZone)
-  }
-
-  if (input.plan.currentStage === "building") {
-    return buildDecoratingDiffs(input, targetZone)
-  }
-
-  if (input.plan.currentStage === "decorating") {
-    return buildCompletionDiffs(input)
-  }
-
-  return []
 }
 
-function buildPreparingGroundDiffs(
-  input: ConstructionExecutionInput,
-  targetZone: HomeZone
-): MapDiff[] {
-  const targetPoints = [
-    { x: targetZone.bounds.x + 2, y: targetZone.bounds.y + 2 },
-    { x: targetZone.bounds.x + 3, y: targetZone.bounds.y + 2 },
-    { x: targetZone.bounds.x + 4, y: targetZone.bounds.y + 2 },
-  ]
-  const groundDiffs = targetPoints.flatMap((point, index) => {
-    const placement = input.homeMapState.placements.find(
-      (candidate) => candidate.id === `ground-${point.x}-${point.y}`
-    )
-
-    if (!placement) return []
-
-    return [
-      createUpdatePlacementDiff({
-        id: `diff-prepare-ground-${index + 1}-${input.now}`,
-        placementId: placement.id,
-        patch: {
-          label: "已整理的休息角地面",
-          tags: addTags(placement.tags, [
-            "construction_prepared_ground",
-            "pet_rest_area",
-          ]),
-        },
-        reason: "管家先整理宠物休息区附近的地面。",
-        createdAt: input.now,
-        tags: ["construction_diff", "preparing_ground"],
-      }),
-    ]
-  })
-
-  return [
-    ...groundDiffs,
-    createAddPlacementDiff({
-      id: `diff-add-prepared-ground-marker-${input.now}`,
-      placementId: "construction-prepared-ground-marker-01",
-      placement: createConstructionPlacement({
-        id: "construction-prepared-ground-marker-01",
-        assetId: "surfaceStoneSmall01",
-        x: targetZone.bounds.x + 2,
-        y: targetZone.bounds.y + 1,
-        label: "休息角整理标记",
-        tags: ["construction_marker", "prepared_ground", "pet_rest_area"],
-      }),
-      reason: "管家在宠物休息角放下整理标记，让地面整理变得可见。",
-      createdAt: input.now,
-      tags: ["construction_diff", "preparing_ground", "visible_change"],
-    }),
-  ]
-}
-
-function buildPlacingMaterialsDiffs(
-  input: ConstructionExecutionInput,
-  targetZone: HomeZone
-): MapDiff[] {
-  const materialPoint = getMaterialPilePoint(input, targetZone)
-
-  return [
-    createAddPlacementDiff({
-      id: `diff-add-material-pile-${input.now}`,
-      placementId: "material-pile-rest-area",
-      placement: createConstructionPlacement({
-        id: "material-pile-rest-area",
-        assetId: "facilityStorageBoxClosed01",
-        x: materialPoint.x,
-        y: materialPoint.y,
-        label: "休息角材料堆",
-        tags: ["construction_material", "pet_rest_area"],
-      }),
-      reason: "管家把整理休息角需要的基础材料放到附近。",
-      createdAt: input.now,
-      tags: ["construction_diff", "placing_materials"],
-    }),
-  ]
-}
-
-function buildPetBedConstructionDiffs(
-  input: ConstructionExecutionInput,
-  targetZone: HomeZone
-): MapDiff[] {
-  const targetPoint = getPetBedTargetPoint(targetZone)
-  const existingPetBed = input.homeMapState.placements.find(
-    (placement) => placement.id === EXISTING_PET_BED_ID
-  )
-
-  if (existingPetBed) {
-    return [
-      createMovePlacementDiff({
-        id: `diff-move-existing-pet-bed-${input.now}`,
-        placementId: EXISTING_PET_BED_ID,
-        patch: targetPoint,
-        reason: "管家把原有宠物床移动到更稳定的休息角位置。",
-        createdAt: input.now,
-        tags: ["construction_diff", "building", "reuse_existing_pet_bed"],
-      }),
-      createUpdatePlacementDiff({
-        id: `diff-update-existing-pet-bed-${input.now}`,
-        placementId: EXISTING_PET_BED_ID,
-        patch: {
-          label: "正在整理的宠物床",
-          tags: addTags(existingPetBed.tags, [
-            "construction_result",
-            "pet_rest_area",
-            "under_construction",
-          ]),
-        },
-        reason: "管家重新整理原有宠物床，不新增第二个宠物床。",
-        createdAt: input.now,
-        tags: ["construction_diff", "building", "reuse_existing_pet_bed"],
-      }),
-    ]
-  }
-
-  return [
-    createAddPlacementDiff({
-      id: `diff-add-construction-pet-bed-${input.now}`,
-      placementId: CONSTRUCTION_PET_BED_ID,
-      placement: createConstructionPlacement({
-        id: CONSTRUCTION_PET_BED_ID,
-        assetId: "facilityPetBedNeat01",
-        x: targetPoint.x,
-        y: targetPoint.y,
-        label: "正在整理的宠物床",
-        tags: [
-          "construction_result",
-          "pet_bed",
-          "pet_rest_area",
-          "under_construction",
-        ],
-      }),
-      reason: "管家放置新的宠物床，形成可见休息点。",
-      createdAt: input.now,
-      tags: ["construction_diff", "building", "new_pet_bed"],
-    }),
-  ]
-}
-
-function buildDecoratingDiffs(
-  input: ConstructionExecutionInput,
-  targetZone: HomeZone
-): MapDiff[] {
-  const [grassPoint, flowerPoint, stonePoint] = getRestDecorationPoints(
-    input,
-    targetZone
-  )
-  const decorations = [
-    {
-      id: "construction-rest-grass-tuft-01",
-      assetId: "surfaceGrassTuft01" as const,
-      x: grassPoint.x,
-      y: grassPoint.y,
-      label: "休息角小草丛",
-    },
-    {
-      id: "construction-rest-flower-01",
-      assetId: "surfaceFlowerPatch01" as const,
-      x: flowerPoint.x,
-      y: flowerPoint.y,
-      label: "休息角小花",
-    },
-    {
-      id: "construction-rest-stone-01",
-      assetId: "surfaceStoneSmall01" as const,
-      x: stonePoint.x,
-      y: stonePoint.y,
-      label: "休息角小石头",
-    },
-  ]
-
-  return decorations.map((decoration, index) =>
-    createAddPlacementDiff({
-      id: `diff-add-rest-decoration-${index + 1}-${input.now}`,
-      placementId: decoration.id,
-      placement: createConstructionPlacement({
-        ...decoration,
-        tags: ["construction_decoration", "pet_rest_area"],
-      }),
-      reason: "管家为宠物休息角增加自然点缀。",
-      createdAt: input.now,
-      tags: ["construction_diff", "decorating"],
-    })
-  )
-}
-
-function buildCompletionDiffs(input: ConstructionExecutionInput): MapDiff[] {
-  const targetPetBed = findConstructionTargetPetBed(input.homeMapState.placements)
-
-  if (!targetPetBed) return []
-
-  return [
-    createUpdatePlacementDiff({
-      id: `diff-complete-pet-bed-${input.now}`,
-      placementId: targetPetBed.id,
-      patch: {
-        label: "已完成的宠物休息角",
-        tags: addTags(removeTags(targetPetBed.tags, ["under_construction"]), [
-          "completed_construction",
-        ]),
-      },
-      reason: "管家确认宠物休息角已经完成。",
-      createdAt: input.now,
-      tags: ["construction_diff", "completed"],
-    }),
-  ]
-}
-
-function createConstructionPlacement(input: {
+function buildPlacement(input: {
   id: string
   assetId: MapPlacement["assetId"]
-  x: number
-  y: number
+  point: MapCoordinate
+  layer: MapPlacement["layer"]
   label: string
   tags: string[]
 }): MapPlacement {
   return {
     id: input.id,
     assetId: input.assetId,
-    x: input.x,
-    y: input.y,
-    layer:
-      input.assetId === "surfaceGrassTuft01" ||
-      input.assetId === "surfaceFlowerPatch01" ||
-      input.assetId === "surfaceStoneSmall01"
-        ? "surface-decoration"
-        : "facility",
-    scale: 0.9,
+    x: input.point.x,
+    y: input.point.y,
+    layer: input.layer,
+    scale: 1,
     alpha: 1,
     label: input.label,
     source: "construction_plan",
@@ -330,227 +68,212 @@ function createConstructionPlacement(input: {
   }
 }
 
-function updatePlanAfterStage(input: {
+function buildAddDiff(input: {
+  now: number
+  stage: ConstructionStageType
+  placement: MapPlacement
+  reason: string
+  tags: string[]
+}): MapDiff {
+  return {
+    id: `diff-${input.stage}-${input.placement.id}-${input.now}`,
+    operation: "add",
+    placementId: input.placement.id,
+    placement: input.placement,
+    reason: input.reason,
+    createdAt: input.now,
+    tags: ["construction_diff", input.stage, ...input.tags],
+  }
+}
+
+function buildStageDiffs(input: {
+  now: number
+  stage: ConstructionStageType
+  targetZone: HomeZone
+}): MapDiff[] {
+  const center = getZoneCenter(input.targetZone)
+
+  if (input.stage === "preparing_ground") {
+    const placement = buildPlacement({
+      id: `quiet-living-ground-marker-${input.now}`,
+      assetId: "surfaceGrassTuftLow01",
+      point: offsetPoint(center, -0.8, 0.4),
+      layer: "surface-decoration",
+      label: "已整理的生活区地面",
+      tags: ["construction_marker", "prepared_ground", "quiet_living_area"],
+    })
+
+    return [
+      buildAddDiff({
+        now: input.now,
+        stage: input.stage,
+        placement,
+        reason: "管家先整理安静生活区附近的地面。",
+        tags: ["quiet_living_area"],
+      }),
+    ]
+  }
+
+  if (input.stage === "placing_materials") {
+    const placement = buildPlacement({
+      id: `quiet-living-materials-${input.now}`,
+      assetId: "facilityStorageBoxClosed01",
+      point: offsetPoint(center, 0.9, 0.2),
+      layer: "facility",
+      label: "生活区整理材料",
+      tags: ["construction_material", "quiet_living_area", "storage"],
+    })
+
+    return [
+      buildAddDiff({
+        now: input.now,
+        stage: input.stage,
+        placement,
+        reason: "管家把基础材料放到安静生活区附近。",
+        tags: ["quiet_living_area"],
+      }),
+    ]
+  }
+
+  if (input.stage === "building") {
+    const placement = buildPlacement({
+      id: `quiet-living-support-${input.now}`,
+      assetId: "facilityLampOn01",
+      point: center,
+      layer: "facility",
+      label: "安静生活支撑点",
+      tags: ["living_support", "quiet_living_area", "home_order"],
+    })
+
+    return [
+      buildAddDiff({
+        now: input.now,
+        stage: input.stage,
+        placement,
+        reason: "管家整理基础生活支撑点，形成可见的生活秩序。",
+        tags: ["quiet_living_area"],
+      }),
+    ]
+  }
+
+  if (input.stage === "decorating") {
+    const placement = buildPlacement({
+      id: `quiet-living-decoration-${input.now}`,
+      assetId: "surfaceFlowerPatch01",
+      point: offsetPoint(center, 0.4, -0.7),
+      layer: "surface-decoration",
+      label: "生活区自然点缀",
+      tags: ["construction_decoration", "quiet_living_area", "natural_detail"],
+    })
+
+    return [
+      buildAddDiff({
+        now: input.now,
+        stage: input.stage,
+        placement,
+        reason: "管家为安静生活区增加自然点缀。",
+        tags: ["quiet_living_area"],
+      }),
+    ]
+  }
+
+  return []
+}
+
+function getNextStage(current: ConstructionStageType): ConstructionStageType {
+  const index = STAGE_ORDER.indexOf(current)
+  if (index < 0) return "planned"
+  return STAGE_ORDER[Math.min(index + 1, STAGE_ORDER.length - 1)]
+}
+
+function updateStages(input: {
+  stages: ConstructionStage[]
+  completedStage: ConstructionStageType
+  mapDiffIds: string[]
+}): ConstructionStage[] {
+  return input.stages.map((stage) => {
+    if (stage.type !== input.completedStage) return stage
+
+    return {
+      ...stage,
+      progress: 100,
+      mapDiffIds: [...stage.mapDiffIds, ...input.mapDiffIds],
+      completed: true,
+    }
+  })
+}
+
+function buildNextPlan(input: {
   plan: ConstructionPlan
-  currentStage: ConstructionStageType
+  now: number
+  completedStage: ConstructionStageType
   nextStage: ConstructionStageType
   mapDiffIds: string[]
-  now: number
 }): ConstructionPlan {
   return {
     ...input.plan,
     status: input.nextStage === "completed" ? "completed" : "active",
     currentStage: input.nextStage,
-    updatedAt: input.now,
-    stages: input.plan.stages.map((stage) => {
-      if (stage.type === input.currentStage) {
-        return {
-          ...stage,
-          progress: 100,
-          mapDiffIds: [...stage.mapDiffIds, ...input.mapDiffIds],
-          completed: true,
-        }
-      }
-
-      if (stage.type === input.nextStage && input.nextStage !== "completed") {
-        return {
-          ...stage,
-          progress: Math.max(stage.progress, 10),
-        }
-      }
-
-      return stage
+    stages: updateStages({
+      stages: input.plan.stages,
+      completedStage: input.completedStage,
+      mapDiffIds: input.mapDiffIds,
     }),
+    updatedAt: input.now,
   }
 }
 
-function getNextStage(stage: ConstructionStageType): ConstructionStageType {
-  if (stage === "planned") return "preparing_ground"
-  if (stage === "preparing_ground") return "placing_materials"
-  if (stage === "placing_materials") return "building"
-  if (stage === "building") return "decorating"
-  if (stage === "decorating") return "completed"
+function buildStageMessage(stage: ConstructionStageType): string {
+  if (stage === "preparing_ground") return "管家开始整理安静生活区地面。"
+  if (stage === "placing_materials") return "管家放置了基础整理材料。"
+  if (stage === "building") return "管家整理了安静生活支撑点。"
+  if (stage === "decorating") return "安静生活区已经增加自然点缀。"
+  if (stage === "completed") return "安静生活区建设已经完成。"
 
-  return "completed"
+  return "管家确认安静生活区建设计划。"
 }
 
-function getStageMessage(
-  stage: ConstructionStageType,
-  mapDiffs: MapDiff[]
-): string {
-  if (stage === "planned") return "管家开始整理宠物休息角地面。"
-  if (stage === "preparing_ground") return "管家把材料放到休息角附近。"
-  if (stage === "placing_materials") {
-    return mapDiffs.some((diff) => diff.placementId === EXISTING_PET_BED_ID)
-      ? "管家重新整理了原有宠物床的位置。"
-      : "管家放置了新的宠物床。"
+export function advanceConstructionPlan(
+  input: ConstructionExecutionInput
+): ConstructionExecutionResult {
+  const targetZone = findTargetZone(input)
+
+  if (!targetZone) {
+    return {
+      nextPlan: input.plan,
+      mapDiffs: [],
+      messages: ["未找到安静生活区，建设计划暂时无法推进。"],
+      tags: ["construction_execution_blocked", "missing_quiet_living_zone"],
+    }
   }
-  if (stage === "building") return "管家给休息角增加了自然点缀。"
-  if (stage === "decorating") return "宠物休息角已经完成。"
 
-  return "宠物休息角建设已经完成。"
-}
-
-function findConstructionTargetPetBed(
-  placements: MapPlacement[]
-): MapPlacement | undefined {
-  return (
-    placements.find((placement) => placement.id === EXISTING_PET_BED_ID) ??
-    placements.find((placement) => placement.id === CONSTRUCTION_PET_BED_ID)
-  )
-}
-
-function getPetBedTargetPoint(targetZone: HomeZone): { x: number; y: number } {
-  return {
-    x: targetZone.bounds.x + Math.floor(targetZone.bounds.width / 2),
-    y: targetZone.bounds.y + Math.floor(targetZone.bounds.height / 2),
+  if (input.plan.currentStage === "completed") {
+    return {
+      nextPlan: input.plan,
+      mapDiffs: [],
+      messages: ["安静生活区建设已经完成。"],
+      tags: ["construction_execution_noop", "already_completed"],
+    }
   }
-}
 
-function getMaterialPilePoint(
-  input: ConstructionExecutionInput,
-  targetZone: HomeZone
-): MapCoordinate {
-  const candidates = [
-    {
-      x: targetZone.bounds.x,
-      y: targetZone.bounds.y + targetZone.bounds.height - 1,
-    },
-    {
-      x: targetZone.bounds.x + 1,
-      y: targetZone.bounds.y + targetZone.bounds.height - 1,
-    },
-    { x: targetZone.bounds.x, y: targetZone.bounds.y + 1 },
-    {
-      x: targetZone.bounds.x + targetZone.bounds.width - 1,
-      y: targetZone.bounds.y + targetZone.bounds.height - 1,
-    },
-  ]
-
-  return pickSafeRestEdgePoint(input, candidates, {
-    minPetBedDistance: 2,
-    preferNearPathOrSupport: true,
+  const nextStage = getNextStage(input.plan.currentStage)
+  const mapDiffs = buildStageDiffs({
+    now: input.now,
+    stage: nextStage,
+    targetZone,
   })
-}
+  const nextPlan = buildNextPlan({
+    plan: input.plan,
+    now: input.now,
+    completedStage: nextStage,
+    nextStage,
+    mapDiffIds: mapDiffs.map((diff) => diff.id),
+  })
 
-function getRestDecorationPoints(
-  input: ConstructionExecutionInput,
-  targetZone: HomeZone
-): [MapCoordinate, MapCoordinate, MapCoordinate] {
-  const candidates = [
-    { x: targetZone.bounds.x, y: targetZone.bounds.y },
-    { x: targetZone.bounds.x + targetZone.bounds.width - 1, y: targetZone.bounds.y },
-    {
-      x: targetZone.bounds.x,
-      y: targetZone.bounds.y + targetZone.bounds.height - 1,
-    },
-    {
-      x: targetZone.bounds.x + targetZone.bounds.width - 1,
-      y: targetZone.bounds.y + targetZone.bounds.height - 1,
-    },
-    { x: targetZone.bounds.x + 1, y: targetZone.bounds.y },
-    {
-      x: targetZone.bounds.x + targetZone.bounds.width - 2,
-      y: targetZone.bounds.y + targetZone.bounds.height - 1,
-    },
-  ]
-  const used = new Set<string>()
-
-  return [0, 1, 2].map(() => {
-    const point =
-      candidates.find((candidate) => {
-        const key = `${candidate.x}:${candidate.y}`
-
-        return (
-          !used.has(key) &&
-          isSafeRestEdgePoint(input, candidate, {
-            minPetBedDistance: 1,
-            preferNearPathOrSupport: false,
-          })
-        )
-      }) ?? candidates[used.size % candidates.length]
-
-    used.add(`${point.x}:${point.y}`)
-
-    return point
-  }) as [MapCoordinate, MapCoordinate, MapCoordinate]
-}
-
-function pickSafeRestEdgePoint(
-  input: ConstructionExecutionInput,
-  candidates: MapCoordinate[],
-  options: {
-    minPetBedDistance: number
-    preferNearPathOrSupport: boolean
+  return {
+    nextPlan,
+    mapDiffs,
+    messages: [buildStageMessage(nextStage)],
+    tags: ["construction_execution_result", `stage:${nextStage}`],
   }
-): MapCoordinate {
-  return (
-    candidates.find((candidate) =>
-      isSafeRestEdgePoint(input, candidate, options)
-    ) ?? candidates[0]
-  )
-}
-
-function isSafeRestEdgePoint(
-  input: ConstructionExecutionInput,
-  point: MapCoordinate,
-  options: {
-    minPetBedDistance: number
-    preferNearPathOrSupport: boolean
-  }
-): boolean {
-  if (isPathPoint(input.homeMapState.placements, point)) return false
-
-  const petBed = findConstructionTargetPetBed(input.homeMapState.placements)
-
-  if (
-    petBed &&
-    getPlacementDistance(point, petBed) < options.minPetBedDistance
-  ) {
-    return false
-  }
-
-  if (options.preferNearPathOrSupport) {
-    return isNearPathOrSupport(input.homeMapState.placements, point)
-  }
-
-  return true
-}
-
-function isPathPoint(
-  placements: MapPlacement[],
-  point: MapCoordinate
-): boolean {
-  return placements.some(
-    (placement) =>
-      placement.layer === "path" && placement.x === point.x && placement.y === point.y
-  )
-}
-
-function isNearPathOrSupport(
-  placements: MapPlacement[],
-  point: MapCoordinate
-): boolean {
-  return placements.some(
-    (placement) =>
-      (placement.layer === "path" || placement.tags.includes("ground_support")) &&
-      getPlacementDistance(point, placement) <= 3
-  )
-}
-
-function getPlacementDistance(
-  first: MapCoordinate,
-  second: MapCoordinate
-): number {
-  return Math.abs(first.x - second.x) + Math.abs(first.y - second.y)
-}
-
-function addTags(currentTags: string[], nextTags: string[]): string[] {
-  return Array.from(new Set([...currentTags, ...nextTags]))
-}
-
-function removeTags(currentTags: string[], removedTags: string[]): string[] {
-  const removedTagSet = new Set(removedTags)
-
-  return currentTags.filter((tag) => !removedTagSet.has(tag))
 }

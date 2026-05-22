@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：登记世界地图可复用 PNG 素材。
+ * 当前文件职责：登记世界地图素材资源。
  */
 
 import type { WorldMapAssetDefinition } from "./world-map-asset-schema"
@@ -19,7 +19,7 @@ export const WORLD_MAP_ASSETS = {
     path: "/assets/generated/world/ground/ground_grass_variant_01.png",
     baseSize: 32,
     anchor: "top-left",
-    description: "基础草地变化 tile",
+    description: "草地变化 tile",
   },
   groundDirtBase01: {
     id: "groundDirtBase01",
@@ -35,7 +35,7 @@ export const WORLD_MAP_ASSETS = {
     path: "/assets/generated/world/paths/path_dirt_horizontal_01.png",
     baseSize: 32,
     anchor: "top-left",
-    description: "横向泥土小路 tile",
+    description: "横向泥路 tile",
   },
   pathDirtVertical01: {
     id: "pathDirtVertical01",
@@ -43,7 +43,7 @@ export const WORLD_MAP_ASSETS = {
     path: "/assets/generated/world/paths/path_dirt_vertical_01.png",
     baseSize: 32,
     anchor: "top-left",
-    description: "纵向泥土小路 tile",
+    description: "纵向泥路 tile",
   },
   pathDirtCornerLeftTop01: {
     id: "pathDirtCornerLeftTop01",
@@ -51,7 +51,7 @@ export const WORLD_MAP_ASSETS = {
     path: "/assets/generated/world/paths/path_dirt_corner_left_top_01.png",
     baseSize: 32,
     anchor: "top-left",
-    description: "泥土小路左上转角",
+    description: "泥路左上拐角",
   },
   pathDirtCornerRightTop01: {
     id: "pathDirtCornerRightTop01",
@@ -59,7 +59,7 @@ export const WORLD_MAP_ASSETS = {
     path: "/assets/generated/world/paths/path_dirt_corner_right_top_01.png",
     baseSize: 32,
     anchor: "top-left",
-    description: "泥土小路右上转角",
+    description: "泥路右上拐角",
   },
   pathDirtCornerLeftBottom01: {
     id: "pathDirtCornerLeftBottom01",
@@ -67,7 +67,7 @@ export const WORLD_MAP_ASSETS = {
     path: "/assets/generated/world/paths/path_dirt_corner_left_bottom_01.png",
     baseSize: 32,
     anchor: "top-left",
-    description: "泥土小路左下转角",
+    description: "泥路左下拐角",
   },
   pathDirtCornerRightBottom01: {
     id: "pathDirtCornerRightBottom01",
@@ -75,9 +75,8 @@ export const WORLD_MAP_ASSETS = {
     path: "/assets/generated/world/paths/path_dirt_corner_right_bottom_01.png",
     baseSize: 32,
     anchor: "top-left",
-    description: "泥土小路右下转角",
+    description: "泥路右下拐角",
   },
-  // TODO: P0 标准文件补齐后改为 edge_grass_dirt_top_01.png。
   edgeGrassDirtTop01: {
     id: "edgeGrassDirtTop01",
     category: "edge",
@@ -86,7 +85,6 @@ export const WORLD_MAP_ASSETS = {
     anchor: "top-left",
     description: "草地泥地上边缘",
   },
-  // TODO: P0 标准文件补齐后改为 edge_grass_dirt_bottom_01.png。
   edgeGrassDirtBottom01: {
     id: "edgeGrassDirtBottom01",
     category: "edge",
@@ -95,7 +93,6 @@ export const WORLD_MAP_ASSETS = {
     anchor: "top-left",
     description: "草地泥地下边缘",
   },
-  // TODO: P0 标准文件补齐后改为 edge_grass_dirt_left_01.png。
   edgeGrassDirtLeft01: {
     id: "edgeGrassDirtLeft01",
     category: "edge",
@@ -104,7 +101,6 @@ export const WORLD_MAP_ASSETS = {
     anchor: "top-left",
     description: "草地泥地左边缘",
   },
-  // TODO: P0 标准文件补齐后改为 edge_grass_dirt_right_01.png。
   edgeGrassDirtRight01: {
     id: "edgeGrassDirtRight01",
     category: "edge",
@@ -119,7 +115,7 @@ export const WORLD_MAP_ASSETS = {
     path: "/assets/generated/world/zones/zone_initial_empty_land_trace_01.png",
     baseSize: 128,
     anchor: "bottom-center",
-    description: "初始空地区域痕迹",
+    description: "初始空地痕迹",
   },
   arrivalPointGrassRingSoft01: {
     id: "arrivalPointGrassRingSoft01",
@@ -127,7 +123,7 @@ export const WORLD_MAP_ASSETS = {
     path: "/assets/generated/home/arrival-point/arrival_point_grass_ring_soft_01.png",
     baseSize: 128,
     anchor: "bottom-center",
-    description: "临时领养抵达点",
+    description: "初始入口草环",
   },
   buildingTempShelterCanvasTent01: {
     id: "buildingTempShelterCanvasTent01",
@@ -135,9 +131,8 @@ export const WORLD_MAP_ASSETS = {
     path: "/assets/generated/home/buildings/temp-shelter/building_temp_shelter_canvas_tent_01.png",
     baseSize: 128,
     anchor: "bottom-center",
-    description: "管家临时管理帐篷",
+    description: "临时住所帆布帐篷",
   },
-  // TODO: P0 标准文件补齐后确认临时住所素材最终路径。
   buildingTempShelter01: {
     id: "buildingTempShelter01",
     category: "structure",
@@ -152,9 +147,8 @@ export const WORLD_MAP_ASSETS = {
     path: "/assets/generated/home/arrival-point/arrival_point_grass_ring_soft_01.png",
     baseSize: 128,
     anchor: "bottom-center",
-    description: "宠物抵达点",
+    description: "后置生命关系阶段可使用的入口素材",
   },
-  // TODO: P0 标准文件补齐后替换为独立 initial care station 素材。
   buildingInitialCareStation01: {
     id: "buildingInitialCareStation01",
     category: "structure",
@@ -169,7 +163,7 @@ export const WORLD_MAP_ASSETS = {
     path: "/assets/generated/home/facilities/facility_food_bowl_full_01.png",
     baseSize: 64,
     anchor: "bottom-center",
-    description: "食物碗",
+    description: "基础食物容器素材",
   },
   facilityWaterBowlFull01: {
     id: "facilityWaterBowlFull01",
@@ -177,7 +171,7 @@ export const WORLD_MAP_ASSETS = {
     path: "/assets/generated/home/facilities/facility_water_bowl_full_01.png",
     baseSize: 64,
     anchor: "bottom-center",
-    description: "水盆",
+    description: "基础饮水容器素材",
   },
   facilityPetBedNeat01: {
     id: "facilityPetBedNeat01",
@@ -185,7 +179,7 @@ export const WORLD_MAP_ASSETS = {
     path: "/assets/generated/home/facilities/facility_pet_bed_neat_01.png",
     baseSize: 64,
     anchor: "bottom-center",
-    description: "宠物床",
+    description: "后置生命关系阶段可使用的休息素材",
   },
   facilityStorageBoxClosed01: {
     id: "facilityStorageBoxClosed01",
@@ -217,7 +211,7 @@ export const WORLD_MAP_ASSETS = {
     path: "/assets/generated/world/nature/nature_bush_round_low_01.png",
     baseSize: 64,
     anchor: "bottom-center",
-    description: "低矮圆形灌木",
+    description: "低矮灌木",
   },
   natureBushSmall01: {
     id: "natureBushSmall01",
@@ -233,7 +227,7 @@ export const WORLD_MAP_ASSETS = {
     path: "/assets/generated/world/surface/surface_grass_tuft_low_01.png",
     baseSize: 32,
     anchor: "bottom-center",
-    description: "低矮草丛装饰",
+    description: "低矮草丛",
   },
   surfaceGrassTuft01: {
     id: "surfaceGrassTuft01",
@@ -267,32 +261,29 @@ export const WORLD_MAP_ASSETS = {
     anchor: "bottom-center",
     description: "落叶",
   },
-  // TODO: P0 标准文件补齐后确认管家标准身体素材最终路径。
   butlerBodyStandard01: {
     id: "butlerBodyStandard01",
     category: "actor",
     path: "/assets/generated/world/actors/butler_body_standard_01.png",
     baseSize: 64,
     anchor: "bottom-center",
-    description: "管家占位",
+    description: "管家标准身体",
   },
-  // TODO: P0 标准文件补齐后确认宠物圆形身体素材最终路径。
   petPartBodyRound01: {
     id: "petPartBodyRound01",
     category: "actor",
     path: "/assets/generated/world/actors/pet_part_body_round_01.png",
     baseSize: 64,
     anchor: "bottom-center",
-    description: "宠物身体占位",
+    description: "后置宠物关系阶段可使用的身体素材",
   },
-  // TODO: P0 标准文件补齐后确认宠物正面 idle pose 素材最终路径。
   petPoseSkeletonIdleFront01: {
     id: "petPoseSkeletonIdleFront01",
     category: "actor",
     path: "/assets/generated/world/actors/pet_pose_skeleton_idle_front_01.png",
     baseSize: 64,
     anchor: "bottom-center",
-    description: "宠物正面待机占位",
+    description: "后置宠物关系阶段可使用的姿态素材",
   },
 } as const satisfies Record<string, WorldMapAssetDefinition>
 

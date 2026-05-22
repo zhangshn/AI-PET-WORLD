@@ -30,7 +30,6 @@ export type WorldEventType =
   | "pet_fortune_phase_changed"
   | "pet_trajectory_branch_changed"
   | "time_period_changed"
-  | "incubator_progress_changed"
 
 /**
  * ======================================================

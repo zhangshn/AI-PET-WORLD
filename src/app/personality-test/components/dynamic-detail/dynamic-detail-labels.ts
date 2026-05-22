@@ -14,7 +14,7 @@ export const DYNAMIC_BIAS_LABELS: Record<string, string> = {
 }
 
 export const POSITION_BIAS_LABELS: Record<string, string> = {
-  near_incubator: "靠近孵化器",
+  near_care_station: "靠近照护点",
   near_nest: "靠近巢穴",
   near_door: "靠近门口",
   near_desk: "靠近记录桌",

@@ -2,9 +2,7 @@
  * 当前文件负责：导出领养中心状态兼容入口。
  */
 
-export {
-  buildAdoptionStateFromIncubator,
-} from "./adoption-incubator-adapter"
+export { buildEmptyAdoptionState } from "./adoption-center-schema"
 
 export type {
   AdoptionSource,

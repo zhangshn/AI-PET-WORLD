@@ -8,7 +8,6 @@ import type { WorldStimulus } from "../../ai/gateway"
 import type { ButlerState } from "../../types/butler"
 import type { WorldEvent } from "../../types/event"
 import type { HomeState } from "../../types/home"
-import type { IncubatorState } from "../../types/incubator"
 import type { PetState } from "../../types/pet"
 
 import type { WorldEcologyState } from "../../world/ecology/ecology-engine"
@@ -24,7 +23,6 @@ export type WorldState = {
   butler: ButlerState
 
   home: HomeState
-  incubator: IncubatorState
 
   events: WorldEvent[]
   worldStimuli: WorldStimulus[]
@@ -43,7 +41,6 @@ export type BuildWorldStateInput = {
   butler: ButlerState
 
   home: HomeState
-  incubator: IncubatorState
 
   events: WorldEvent[]
 
@@ -64,7 +61,6 @@ export function buildWorldState(
     butler: input.butler,
 
     home: input.home,
-    incubator: input.incubator,
 
     events: input.events,
 

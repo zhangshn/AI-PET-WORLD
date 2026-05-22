@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：定义管家建设意图的数据协议。
+ * 当前文件职责：定义管家建设意图的数据协议。
  */
 
 import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
@@ -9,16 +9,15 @@ import type {
 } from "@/world/map-state/home-map-state-schema"
 
 export type ConstructionIntentType =
-  | "improve_pet_rest"
+  | "improve_quiet_living"
   | "improve_care_area"
   | "add_natural_boundary"
   | "organize_storage"
-  | "soften_arrival_area"
+  | "soften_entry_area"
   | "decorate_home"
 
 export type ConstructionIntentSource =
   | "butler_personality"
-  | "pet_need"
   | "world_resource"
   | "weather"
   | "event"
@@ -30,7 +29,7 @@ export type ConstructionExpectedEffect =
   | "securityUp"
   | "naturalBeautyUp"
   | "storageOrderUp"
-  | "arrivalComfortUp"
+  | "entryComfortUp"
 
 export type PetConstructionContext = {
   energy: number

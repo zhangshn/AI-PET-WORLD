@@ -29,7 +29,6 @@ export type ButlerTaskDecisionTrace = {
   context: {
     hasPet: boolean
     hasTimelineSnapshot: boolean
-    incubatorCompleted: boolean
     homeCompleted: boolean
     pendingOpportunityCount: number
     petEnergy: number | null

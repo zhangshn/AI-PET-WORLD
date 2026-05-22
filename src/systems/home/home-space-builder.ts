@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：建立家园空间实体的初始结构。
+ * 当前文件职责：建立家园空间实体的初始结构。
  */
 
 import type {
@@ -22,17 +22,17 @@ export function createInitialHomeSpaces(): HomeSpaceState[] {
       tags: ["origin", "empty_land", "starting_area"],
     },
     {
-      id: "incubator_area",
-      name: "孵化器区域",
-      role: "incubation",
+      id: "initial_care_area",
+      name: "初始照护区",
+      role: "care",
       status: "active",
       order: 2,
       progress: 100,
       comfort: 35,
       stability: 55,
       activity: 20,
-      description: "用于照看胚胎和观察孵化状态的核心区域。",
-      tags: ["incubator", "early_world", "care_priority"],
+      description: "用于安置基础照护与管理工作的核心区域。",
+      tags: ["initial_care", "early_world", "care_priority"],
     },
     {
       id: "temporary_shelter",
@@ -57,8 +57,8 @@ export function createInitialHomeSpaces(): HomeSpaceState[] {
       comfort: 20,
       stability: 20,
       activity: 10,
-      description: "未来可供宠物观察、靠近和探索的庭院区域。",
-      tags: ["garden", "future_space", "pet_observation"],
+      description: "未来可供观察、靠近和探索的开放家园区域。",
+      tags: ["garden", "future_space", "world_observation"],
     },
     {
       id: "storage_area",
@@ -83,7 +83,7 @@ export function createInitialHomeSpaces(): HomeSpaceState[] {
       comfort: 20,
       stability: 20,
       activity: 20,
-      description: "未来宠物和管家可能产生互动观察的开放区域。",
+      description: "未来可能承载观察、互动和世界活动的开放区域。",
       tags: ["activity", "interaction_space", "future_space"],
     },
   ]

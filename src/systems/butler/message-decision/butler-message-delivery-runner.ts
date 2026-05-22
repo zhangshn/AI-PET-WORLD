@@ -1,10 +1,6 @@
-/**
- * 当前文件负责：判断管家消息意图是否允许进入未来投递队列。
- *
- * 注意：
- * 这里不发送 P-Phone 消息。
- * 这里只做 delivery boundary 审计。
- */
+﻿/**
+ * 褰撳墠鏂囦欢璐熻矗锛氬垽鏂瀹舵秷鎭剰鍥炬槸鍚﹀厑璁歌繘鍏ユ湭鏉ユ姇閫掗槦鍒椼€? *
+ * 娉ㄦ剰锛? * 杩欓噷涓嶅彂閫?P-Phone 娑堟伅銆? * 杩欓噷鍙仛 delivery boundary 瀹¤銆? */
 
 import type {
   BuildButlerMessageDeliveryDecisionInput,
@@ -21,7 +17,6 @@ function isHomeGoalDecision(
   return (
     decision.reason === "home_goal_execution_observed" ||
     decision.reason === "home_goal_maintenance_observed" ||
-    decision.reason === "home_goal_incubator_observed" ||
     decision.tags.includes("home_goal_message_context") ||
     decision.tags.includes("goal_execution_memory")
   )
@@ -37,10 +32,6 @@ function isHighValueHomeGoalDecision(
   }
 
   if (decision.reason === "home_goal_maintenance_observed") {
-    return true
-  }
-
-  if (decision.reason === "home_goal_incubator_observed") {
     return true
   }
 

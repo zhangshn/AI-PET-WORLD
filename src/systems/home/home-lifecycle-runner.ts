@@ -1,9 +1,5 @@
 /**
- * 当前文件负责：根据家园状态、空间和设施推导家园生命周期阶段。
- *
- * 注意：
- * 生命周期阶段只描述家园发展状态。
- * 不直接控制宠物行为。
+ * 当前文件职责：根据家园状态、空间和设施推导家园生命周期阶段。
  */
 
 import type {
@@ -79,8 +75,8 @@ function resolvePhase(input: {
     return "temporary_shelter_phase"
   }
 
-  if (hasActiveFacility(facilities, "basic_incubator")) {
-    return "incubator_care_phase"
+  if (hasActiveFacility(facilities, "basic_care_station")) {
+    return "initial_care_phase"
   }
 
   return "initial_empty_land"
@@ -96,7 +92,7 @@ function resolvePhaseProgress(input: {
     return clamp(Math.min(100, home.progress * 2))
   }
 
-  if (phase === "incubator_care_phase") {
+  if (phase === "initial_care_phase") {
     return clamp(Math.max(20, home.progress * 2.5))
   }
 
@@ -127,16 +123,16 @@ function resolveGoalText(phase: HomeLifecyclePhase): {
   if (phase === "initial_empty_land") {
     return {
       mainGoal: "确认初始空地与世界边界。",
-      nextGoal: "稳定孵化器区域，并开始整理临时住所。",
+      nextGoal: "稳定初始照护区，并开始整理临时住所。",
       summary: "家园仍处于最初的空地阶段，管家正在确认最基础的秩序。",
     }
   }
 
-  if (phase === "incubator_care_phase") {
+  if (phase === "initial_care_phase") {
     return {
-      mainGoal: "优先维持孵化器稳定。",
-      nextGoal: "在不影响孵化器照看的前提下推进临时住所。",
-      summary: "当前家园的核心是孵化器照看，管家会优先保证胚胎环境稳定。",
+      mainGoal: "优先维持初始照护区稳定。",
+      nextGoal: "在保持基础照护与管理秩序的前提下推进临时住所。",
+      summary: "当前家园的核心是初始照护与基础管理，管家会优先保证世界运行稳定。",
     }
   }
 
@@ -183,12 +179,8 @@ export function resolveHomeLifecycle(home: HomeState): HomeLifecycleState {
     spaces,
     facilities,
   })
-
   const goal = resolveGoalText(phase)
-  const phaseProgress = resolvePhaseProgress({
-    phase,
-    home,
-  })
+  const phaseProgress = resolvePhaseProgress({ phase, home })
 
   const canSupportPetRest =
     hasActiveFacility(facilities, "shelter_bed") ||
@@ -227,10 +219,10 @@ export function resolveHomeLifecycle(home: HomeState): HomeLifecycleState {
     tags: Array.from(new Set([
       "home_lifecycle",
       `phase_${phase}`,
-      canSupportPetRest ? "supports_pet_rest" : "no_pet_rest_support",
+      canSupportPetRest ? "supports_future_companion_rest" : "no_future_companion_rest_support",
       canSupportFoodRoutine ? "supports_food_routine" : "no_food_routine_support",
       canSupportGardenActivity ? "supports_garden_activity" : "no_garden_activity",
-      canSupportPetExploration ? "supports_pet_exploration" : "no_pet_exploration_support",
+      canSupportPetExploration ? "supports_future_companion_exploration" : "no_future_companion_exploration_support",
     ])),
   }
 }

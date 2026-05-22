@@ -23,7 +23,7 @@ export type AiEntityType =
   | "butler"
   | "world"
   | "home"
-  | "incubator"
+  | "care_station"
   | "user"
   | "system"
 

@@ -6,7 +6,6 @@ export const WORLD_RUNTIME_LOG_CONFIG = {
   worldTick: true,
   ecology: false,
   stimulus: false,
-  incubator: true,
 
   petRuntime: true,
   petCognition: true,

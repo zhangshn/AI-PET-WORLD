@@ -139,7 +139,7 @@ export function createAreaSupportPlacements(
 ): MapPlacement[] {
   const shelter = requireArea(input.recipe, "temporary_shelter")
   const care = requireArea(input.recipe, "initial_care")
-  const petBedPoint = resolvePetBedPoint(input)
+  const quietLivingPoint = resolveQuietLivingPoint(input)
 
   return [
     ...createSoftSupportPlacements(
@@ -154,22 +154,28 @@ export function createAreaSupportPlacements(
     ...createSoftSupportPlacements(input, "care-support", care.center.x - 3, care.center.y - 1, 6, 3, [
       "care_support",
     ]),
-    ...createSoftSupportPlacements(input, "rest-support", petBedPoint.x - 2, petBedPoint.y - 1, 4, 2, [
-      "rest_support",
-    ]),
+    ...createSoftSupportPlacements(
+      input,
+      "quiet-living-support",
+      quietLivingPoint.x - 2,
+      quietLivingPoint.y - 1,
+      4,
+      2,
+      ["quiet_living_support"]
+    ),
   ]
 }
 
 export function createPathPlacements(input: PlacementRequest): MapPlacement[] {
-  const arrival = requireArea(input.recipe, "pet_arrival")
+  const entry = requireArea(input.recipe, "entry_area")
   const care = requireArea(input.recipe, "initial_care")
   const shelter = requireArea(input.recipe, "temporary_shelter")
-  const petBedPoint = resolvePetBedPoint(input)
+  const quietLivingPoint = resolveQuietLivingPoint(input)
   const route = buildCorePathRoute(input, [
-    arrival.center,
+    entry.center,
     care.center,
     shelter.center,
-    petBedPoint,
+    quietLivingPoint,
   ])
 
   const points = uniquePoints(
@@ -394,21 +400,10 @@ export function avoidCorePathPoints(
 }
 
 function createCoreStructurePlacements(input: PlacementRequest): MapPlacement[] {
-  const arrival = requireArea(input.recipe, "pet_arrival")
   const care = requireArea(input.recipe, "initial_care")
   const shelter = requireArea(input.recipe, "temporary_shelter")
 
   return [
-    createPlacement({
-      id: "pet-arrival-point",
-      assetId: "buildingPetArrivalPoint01",
-      x: arrival.center.x,
-      y: arrival.center.y,
-      layer: "structure",
-      label: "宠物抵达点",
-      scale: 0.92,
-      tags: ["arrival_focus", "core_living"],
-    }),
     createPlacement({
       id: "initial-care-station",
       assetId: "buildingInitialCareStation01",
@@ -437,31 +432,9 @@ function createFacilityPlacements(
   supportPlacements: MapPlacement[],
   pathPlacements: MapPlacement[]
 ): MapPlacement[] {
-  const care = requireArea(input.recipe, "initial_care")
-  const petBedPoint = resolvePetBedPoint(input)
   const storagePoint = resolveStoragePoint(input, supportPlacements, pathPlacements)
 
   return [
-    createPlacement({
-      id: "food-bowl",
-      assetId: "facilityFoodBowlFull01",
-      x: care.center.x - 1,
-      y: care.center.y,
-      layer: "facility",
-      label: "食物碗",
-      scale: 0.9,
-      tags: ["care", "food"],
-    }),
-    createPlacement({
-      id: "water-bowl",
-      assetId: "facilityWaterBowlFull01",
-      x: care.center.x + 1,
-      y: care.center.y,
-      layer: "facility",
-      label: "水盆",
-      scale: 0.9,
-      tags: ["care", "water"],
-    }),
     createPlacement({
       id: "storage-box",
       assetId: "facilityStorageBoxClosed01",
@@ -472,21 +445,10 @@ function createFacilityPlacements(
       scale: 0.82,
       tags: ["storage", "tools"],
     }),
-    createPlacement({
-      id: "pet-bed",
-      assetId: "facilityPetBedNeat01",
-      x: petBedPoint.x,
-      y: petBedPoint.y,
-      layer: "facility",
-      label: "宠物床",
-      scale: 0.96,
-      tags: ["rest", "pet_bed"],
-    }),
   ]
 }
 
 function createActorPlacements(input: PlacementRequest): MapPlacement[] {
-  const arrival = requireArea(input.recipe, "pet_arrival")
   const shelter = requireArea(input.recipe, "temporary_shelter")
 
   return [
@@ -499,16 +461,6 @@ function createActorPlacements(input: PlacementRequest): MapPlacement[] {
       label: "管家",
       scale: 0.78,
       tags: ["butler", "actor"],
-    }),
-    createPlacement({
-      id: "pet-near-arrival-point",
-      assetId: "petPoseSkeletonIdleFront01",
-      x: arrival.center.x + 4,
-      y: arrival.center.y + 1,
-      layer: "actor",
-      label: "宠物",
-      scale: 0.62,
-      tags: ["pet", "actor"],
     }),
   ]
 }
@@ -543,8 +495,8 @@ function pickGroundAssetId(
     : "groundGrassBase01"
 }
 
-function resolvePetBedPoint(input: PlacementRequest): MapCoordinate {
-  const rest = requireArea(input.recipe, "pet_rest")
+function resolveQuietLivingPoint(input: PlacementRequest): MapCoordinate {
+  const quietLiving = requireArea(input.recipe, "quiet_living")
   const care = requireArea(input.recipe, "initial_care")
   const shelter = requireArea(input.recipe, "temporary_shelter")
   const style = input.butlerConstructionStyle
@@ -552,24 +504,24 @@ function resolvePetBedPoint(input: PlacementRequest): MapCoordinate {
   const warmBias = style.warmCaretaker > 0.65 ? -1 : 0
   const quietBias = style.quietMaintainer > 0.6 ? 2 : 0
   const x = Math.round(
-    rest.center.x +
+    quietLiving.center.x +
       warmBias +
       adaptiveOffset *
-        (buildSeededNumber(input.seed, "pet-bed-x") > 0.5 ? 1 : -1)
+        (buildSeededNumber(input.seed, "quiet-living-x") > 0.5 ? 1 : -1)
   )
   const y = Math.round(
-    rest.center.y +
+    quietLiving.center.y +
       quietBias -
       (style.warmCaretaker > 0.72 ? 1 : 0) +
       adaptiveOffset *
-        (buildSeededNumber(input.seed, "pet-bed-y") > 0.5 ? 1 : -1)
+        (buildSeededNumber(input.seed, "quiet-living-y") > 0.5 ? 1 : -1)
   )
 
   return clampPointToMap(
     {
       x: Math.min(
         Math.max(x, Math.min(care.center.x, shelter.center.x)),
-        rest.center.x + 3
+        quietLiving.center.x + 3
       ),
       y,
     },

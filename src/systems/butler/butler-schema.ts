@@ -3,7 +3,6 @@
  */
 
 import type { PetState } from "@/types/pet"
-import type { IncubatorState } from "@/types/incubator"
 import type {
   HomeGoalState,
   HomeState,
@@ -50,7 +49,6 @@ import type {
 } from "./memory-relation/butler-relation"
 
 export type ButlerTask =
-  | "watching_incubator"
   | "building_home"
   | "watching_pet"
   | "offering_food"
@@ -163,7 +161,6 @@ export type ButlerState = {
 export type ButlerSystemInput = {
   tick: number
   pet: PetState | null
-  incubator: IncubatorState | null
   home: HomeState | null
   homeGoals?: HomeGoalState[]
   butlerWorldPerception?: ButlerWorldPerceptionSnapshot | null

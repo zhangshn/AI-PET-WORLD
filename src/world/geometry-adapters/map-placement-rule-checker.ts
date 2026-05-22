@@ -64,19 +64,8 @@ export function inferWorldObjectTypeFromPlacement(
     return "bridge"
   }
 
-  if (hasTag(normalizedTags, "pet_bed") || normalizedAssetId.includes("bed")) {
-    return "pet_bed"
-  }
-
   if (hasTag(normalizedTags, "food_bowl") || normalizedAssetId.includes("bowl")) {
     return "food_bowl"
-  }
-
-  if (
-    hasTag(normalizedTags, "incubator") ||
-    normalizedAssetId.includes("incubator")
-  ) {
-    return "incubator"
   }
 
   return null

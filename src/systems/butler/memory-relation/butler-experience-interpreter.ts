@@ -677,10 +677,10 @@ function interpretGoalExecutionMemory(input: {
       entry.tags.includes("home_goal_maintain_home_facilities")
   ).length
 
-  const incubatorCount = goalExecutionEntries.filter(
+  const initialCareCount = goalExecutionEntries.filter(
     (entry) =>
-      entry.tags.includes("incubator_watch") ||
-      entry.tags.includes("home_goal_stabilize_incubator")
+      entry.tags.includes("home_maintenance") ||
+      entry.tags.includes("home_goal_stabilize_initial_care")
   ).length
 
   const gardenCount = goalExecutionEntries.filter(
@@ -712,14 +712,14 @@ function interpretGoalExecutionMemory(input: {
     reasons.push("近期存在设施维护目标执行记忆，管家会更重视维护与观察。")
   }
 
-  if (incubatorCount > 0) {
+  if (initialCareCount > 0) {
     tuning = addTuning(tuning, {
       carePriorityOffset: 1,
       observationBiasOffset: 1,
     })
 
-    tags.push("goal_memory_incubator_care")
-    reasons.push("近期存在孵化器稳定目标执行记忆，管家会保留照看优先级。")
+    tags.push("goal_memory_initial_care")
+    reasons.push("近期存在初始照护或家园维护目标执行记忆，管家会保留基础管理优先级。")
   }
 
   if (gardenCount > 0) {

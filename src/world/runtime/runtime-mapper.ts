@@ -45,7 +45,7 @@ export function mapWorldEntityKindToRuntimeKind(
     case "butler":
       return "butler"
     case "structure":
-    case "incubator":
+    case "care_station":
     case "home":
       return "structure"
     case "vegetation":

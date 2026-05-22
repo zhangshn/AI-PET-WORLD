@@ -25,7 +25,7 @@ export type ZiweiDynamicInputErrorCode =
   | "invalid_gender"
 
 export type ZiweiDynamicPositionBias =
-  | "near_incubator"
+  | "near_care_station"
   | "near_nest"
   | "near_door"
   | "near_desk"

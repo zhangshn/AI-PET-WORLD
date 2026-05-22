@@ -8,7 +8,7 @@ export type WorldZoneType =
   | "warm_zone"
   | "quiet_zone"
   | "observation_zone"
-  | "incubator_zone"
+  | "care_zone"
   | "home_build_zone"
   | "exploration_zone"
 

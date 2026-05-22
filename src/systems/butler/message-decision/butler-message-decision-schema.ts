@@ -27,7 +27,6 @@ export type ButlerMessageDecisionReason =
   | "protective_boundary_pattern"
   | "home_goal_execution_observed"
   | "home_goal_maintenance_observed"
-  | "home_goal_incubator_observed"
   | "needs_player_attention"
 
 export type ButlerMessageDecision = {

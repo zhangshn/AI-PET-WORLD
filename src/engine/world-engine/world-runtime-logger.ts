@@ -11,7 +11,6 @@ import type {
   ButlerState,
 } from "@/systems/butler/butler-schema"
 import type { HomeState } from "@/types/home"
-import type { IncubatorState } from "@/types/incubator"
 import type { PetState } from "@/types/pet"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
@@ -66,14 +65,6 @@ export function logGeneratedWorldStimuli(stimuli: WorldStimulus[]) {
 
     console.log("🌍 世界刺激：", item.type, item.summary)
   }
-}
-
-export function logIncubatorState(incubator: IncubatorState) {
-  if (!WORLD_RUNTIME_LOG_CONFIG.incubator) return
-
-  console.log(
-    `孵化器状态：进度=${incubator.progress} 稳定度=${incubator.stability} 状态=${incubator.status}`
-  )
 }
 
 export function logPetRuntimeInactive() {
@@ -375,7 +366,6 @@ export function logButlerAgentTrace(input: {
   tick: number
   butler: ButlerState | null
   pet: PetState | null
-  incubator: IncubatorState | null
   home: HomeState | null
   time: {
     day: number
@@ -390,7 +380,6 @@ export function logButlerAgentTrace(input: {
     tick: input.tick,
     butler: input.butler,
     pet: input.pet,
-    incubator: input.incubator,
     home: input.home,
     time: input.time,
   })

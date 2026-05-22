@@ -158,7 +158,7 @@ function buildDebugPetContext(preset: ConstructionDebugPetPreset) {
       energy: 22,
       hunger: 38,
       mood: "quiet",
-      currentZoneType: "pet_rest" as const,
+      currentZoneType: "quiet_living" as const,
       recentAction: "resting",
       tags: ["mapdiff_debug_pet", "resting_pet"],
     }
@@ -168,7 +168,7 @@ function buildDebugPetContext(preset: ConstructionDebugPetPreset) {
     energy: 28,
     hunger: 72,
     mood: "curious",
-    currentZoneType: "pet_arrival" as const,
+    currentZoneType: "entry_area" as const,
     recentAction: "arrived",
     tags: ["mapdiff_debug_pet", "tired_hungry_pet"],
   }
@@ -353,7 +353,7 @@ function findProtectedPlacement(homeMapState: HomeMapState) {
         "core_living",
         "arrival_focus",
         "temporary_shelter",
-        "pet_bed",
+        "living_support",
         "butler",
         "pet",
         "actor",
