@@ -2,6 +2,7 @@
  * 当前文件职责：验证并安全应用建设 MapDiff 候选，支持管家建设 add/update。
  */
 
+import { buildWorldEcologyState } from "@/world/ecology/world-ecology-state"
 import type {
   HomeMapState,
   MapDiff,
@@ -63,6 +64,7 @@ export function buildConstructionSafeApplyResult(
       "construction_safe_apply_result",
       "map_diff_validated",
       "home_map_state_immutable_update",
+      "world_ecology_state_refreshed",
       "butler_construction_add_supported",
       "no_ui_integration",
       "no_world_loop_integration",
@@ -306,8 +308,7 @@ function applyAcceptedMapDiffs(input: {
   const addedPlacements = input.acceptedDiffs.flatMap((diff) =>
     diff.operation === "add" && diff.placement ? [diff.placement] : []
   )
-
-  return {
+  const nextHomeMapStateWithoutEcology: HomeMapState = {
     ...input.homeMapState,
     placements: [...updatedPlacements, ...addedPlacements],
     constructionPlans: input.homeMapState.constructionPlans.map((plan) =>
@@ -349,6 +350,21 @@ function applyAcceptedMapDiffs(input: {
       addedPlacements.length > 0
         ? "butler_construction_fact_added"
         : "construction_safe_apply_no_add",
+    ]),
+  }
+  const ecologyState = buildWorldEcologyState({
+    homeMapState: nextHomeMapStateWithoutEcology,
+    generatedAt: input.now,
+  })
+
+  return {
+    ...nextHomeMapStateWithoutEcology,
+    ecologyState,
+    tags: uniqueTags([
+      ...nextHomeMapStateWithoutEcology.tags,
+      "world_ecology_state_refreshed",
+      ecologyState.status,
+      ecologyState.biomeType,
     ]),
   }
 }
