@@ -4,6 +4,7 @@
 
 import { auditButlerAutonomousIntent } from "./audit"
 import { buildButlerConsciousState } from "./conscious-state"
+import { buildButlerAutonomyExplanations } from "./explanation"
 import { buildButlerGoals } from "./goal-generator"
 import { buildButlerSelectedIntent } from "./intent-ranking"
 import { buildButlerLearningEffectsFromSafeApply } from "./learning-update"
@@ -60,6 +61,15 @@ export function buildButlerAutonomyResult(
     worldId: input.worldId,
     ownerId: input.ownerId,
   })
+  const explanations = buildButlerAutonomyExplanations({
+    worldId: input.worldId,
+    now: input.now,
+    selectedIntent,
+    perception,
+    consciousState,
+    motivations,
+    memoryEffects,
+  })
 
   return {
     soulProfile,
@@ -70,17 +80,11 @@ export function buildButlerAutonomyResult(
     selectedIntent,
     memoryEffects,
     audit,
-    explanations: [
-      {
-        id: `butler-autonomy-explanation-${input.worldId}-${input.now}`,
-        title: "管家自主意识判断",
-        body: selectedIntent.reason,
-        tags: ["butler_autonomy_explanation", selectedIntent.kind],
-      },
-    ],
+    explanations,
     tags: [
       "butler_autonomy_result",
       "schema_phase_ready",
+      "explanation_layer_ready",
       learningEffects.length > 0
         ? "learning_feedback_ready"
         : "learning_feedback_waiting_for_world_result",
