@@ -1,0 +1,135 @@
+AI-PET-WORLD 人格驱动规则世界引擎设计文档
+完整升级版｜非固定布局 + 生成内容容器 + FormalVisualModel First
+v1.3｜生成日期：2026-05-21
+v1.3 升级重点
+在 v1.2 的世界自动生成、视觉模型自动生成、Renderer 只读渲染基础上，进一步写死“布局不能固定模板化”。
+明确同一玩家 seed 与同一状态下布局稳定，不同人格、seed、资源和事件状态下布局必须出现可观察差异。
+正式加入“自动生成内容容器”概念：HomeMapState、MapDiff/EventLog、VisualState/RenderableWorldSnapshot、FormalVisualModel。
+确认 MVP 阶段 UI 可以低保真，但不能由前端手写世界内容或固定布局。
+把“规则不是说明，而是产品本体”升级为开发红线：任何视觉呈现必须能追溯到规则和结构化数据。
+目录
+1. 版本修订说明
+2. 逻辑自检结论
+3. 最高原则
+4. 自动生成不是固定模板
+5. 生成内容容器
+6. 总体生成链路
+7. 非固定布局规则
+8. Formal Visual Generation Layer
+9. Renderer / FormalWorldView 边界
+10. MVP UI 边界
+11. 禁止事项与红线
+12. 阶段路线
+13. 验收标准
+14. 最终结论
+1. 版本修订说明
+本版本是在《AI-PET-WORLD 人格驱动规则世界引擎设计文档 v1.2》的基础上升级而来。文档名称保持不变，仅将版本号升级为 v1.3。
+v1.3 不改变 v1.2 的核心方向，而是补齐两个更容易在开发中被忽略的关键点：第一，布局不是固定模板；第二，自动生成内容必须有清晰容器。
+2. 逻辑自检结论
+本次升级前先进行逻辑自检，结论为：整体逻辑成立，可以出文档。原因如下：
+产品目标是自动生成世界，不是前端手写世界。
+自动生成必须确定性可复现，不是无约束随机。
+布局必须由 seed、人格、资源、世界状态、空间规则和建设意图共同决定。
+所有自动生成内容必须落入结构化容器，不能只存在于组件内部。
+FormalWorldView 只读渲染，不生成 FormalVisualModel。
+MVP 允许低保真视觉，但不允许固定布局或前端自由摆放。
+3. 最高原则
+世界不是前端画出来的，世界是规则和状态生成出来的。
+布局不是固定模板摆出来的，布局是 seed、人格、状态和规则计算出来的。
+画面不是组件自由设计出来的，画面由世界事实和 FormalVisualModel 派生出来。
+任何正式世界对象必须先成为 HomeMapState / WorldState / placements / MapDiff 的一部分，再进入视觉模型。
+Renderer / FormalWorldView 不是世界生成器，只是生成结果的只读呈现层。
+4. 自动生成不是固定模板
+AI-PET-WORLD 的自动生成既不是无约束随机，也不是固定布局模板。
+正确要求是：同一玩家、同一 worldSeed、同一世界状态下生成稳定布局；不同玩家、不同人格、不同资源与事件状态下，生成可观察差异。
+5. 生成内容容器
+项目必须用专门容器承接自动生成内容。容器不是 UI 状态，而是可保存、可验证、可追踪的数据层。
+6. 总体生成链路
+7. 非固定布局规则
+布局 recipe 可以存在，但 recipe 只能是规则候选，不是固定画面。最终布局必须经过 seed、人格、空间约束和规则验证。
+8. Formal Visual Generation Layer
+Formal Visual Generation Layer 负责从 VisualState / RenderableWorldSnapshot 派生 FormalVisualModel。它是正式视觉模型生成层，不是 UI。
+9. Renderer / FormalWorldView 边界
+Debug Renderer 可以显示 diagnostics、raw tags、F/C/S/I、collision 等工程信息，但只能在 Debug View 中。
+FormalWorldView 只能读取 FormalVisualModel。过渡期最多只读 RenderableWorldSnapshot，但不能生成正式视觉模型。
+FormalWorldView 不能定义 FormalWorldVisualItem / FormalActorVisualItem / buildFormalWorldVisualItems / buildFormalActorVisualItems。
+FormalWorldView 不能决定对象存在、对象位置、对象视觉结构、管家或宠物是否出现。
+10. MVP UI 边界
+MVP 阶段可以使用低保真温暖自然像素拼图风。MVP 不要求商业级最终美术，但要求实现方式必须正确。
+11. 禁止事项与红线
+禁止固定布局模板作为正式主路径。
+禁止 FormalWorldView 生成 FormalWorldVisualItem / FormalActorVisualItem。
+禁止组件决定树、道路、房屋、设施、管家、宠物的正式视觉模型。
+禁止读取 PNG / WORLD_MAP_ASSETS 作为正式世界事实来源。
+禁止 petState 不存在时显示默认宠物。
+禁止把 proposal / unvalidated diff 当现实渲染。
+禁止正式 UI 显示紫微斗数原始术语。
+12. 阶段路线
+13. 验收标准
+同一 seed 与同一世界状态下，布局稳定可复现。
+不同人格、seed、资源和事件状态下，布局出现可观察差异。
+所有世界对象能追溯到 HomeMapState / placements / MapDiff。
+FormalVisualModel 能追溯到 VisualState / RenderableWorldSnapshot。
+FormalWorldView 不生成世界对象、不生成 actor、不生成 placement、不生成正式视觉模型。
+MVP UI 可以低保真，但不能固定模板化。
+14. 最终结论
+AI-PET-WORLD 的世界不是一张画好的图，也不是一个固定页面。它是由人格、seed、资源、时间、空间、事件、建设规则和视觉模型生成层共同驱动的确定性自动生成世界。
+v1.3 将“非固定布局”和“自动生成内容容器”写入规则世界引擎，后续开发必须先做生成层和模型层，再做只读渲染层。
+
+[TABLE 1]
+修订项 | v1.2 已有基础 | v1.3 强化
+FormalVisualModel | 已定义为正式视觉模型输入。 | 明确它是自动生成内容的正式视觉容器，FormalWorldView 只能读取。
+布局生成 | 已说明确定性程序化生成。 | 进一步禁止固定布局模板作为正式主路径。
+MVP UI | 已区分 Debug View 与 Formal View。 | 明确低保真可接受，但必须由生成容器驱动。
+开发纪律 | 禁止前端手写世界。 | 新增每轮必须检查“是否固定布局、是否组件生成模型”。
+
+[TABLE 2]
+方式 | 问题 | 是否允许作为正式主路径
+固定模板布局 | 所有玩家地图近似相同，无法体现人格与世界状态差异。 | 禁止
+无约束随机布局 | 刷新不稳定，空间关系混乱，无法解释。 | 禁止
+模板 + 随机微调 | 可以用于候选 recipe，但不能成为最终事实来源。 | 仅可作为输入候选
+确定性规则生成 | 由 worldSeed、人格、资源、规则和状态生成，可复现可保存。 | 必须
+
+[TABLE 3]
+容器 | 存放内容 | 是否现实来源
+HomeMapState | 世界事实：zones、placements、resources、constructionPlans、mapDiffs、lifeEvents。 | 是
+MapDiff / EventLog | 世界变化过程：新增、删除、更新、事件、资源交易。 | 是
+WorldState | 运行状态：时间、天气、管家状态、petState?、recentEvents。 | 是
+VisualState / RenderableWorldSnapshot | 可渲染投影：从世界事实转换来的结构化渲染输入。 | 派生事实
+FormalVisualModel | 正式玩家主视觉模型：canvas、objects、actors、environment、hudSummary。 | 正式视觉输入
+FormalWorldView | 只读渲染容器，不存世界事实，不生成模型。 | 否
+
+[TABLE 4]
+玩家真实生命信息 / -> ButlerPersonalityProfile / -> constructionStyle / lifeRhythmBias / companionDecisionBias / visualTendency / -> worldSeed / -> InitialHomeGenerator / -> HomeMapState / -> PlacementEngine / MapDiff / EventLog / -> VisualState / RenderableWorldSnapshot / -> FormalVisualGenerator / -> FormalVisualModel / -> FormalWorldView 只读渲染
+
+[TABLE 5]
+输入因素 | 影响布局的方式
+worldSeed | 决定稳定性和可复现性，刷新不能随机变化。
+管家人格 | 影响住所位置、路径组织、资源区优先级、边界感和生命接触预留区。
+资源状态 | 影响建设位置、路径方向、采集点、储物区和维护优先级。
+天气 / 时间 / 阶段 | 影响行动频率、建设节奏、氛围和可见状态。
+ConstructionPlan | 决定新增对象、阶段建设和布局变更。
+Placement Rules | 约束承托、碰撞、路径连续、密度和区域关系。
+LifeEvent | 影响生命痕迹、接触点、准备区和未来宠物进入条件。
+
+[TABLE 6]
+允许做 | 禁止做
+从 VisualPlacement 生成 FormalWorldObjectModel。 | 生成不存在的世界对象。
+从 VisualActorGeometryProjection 生成 FormalActorModel。 | 伪造管家或宠物。
+根据 world phase、weather、visualTendency 生成 styleToken。 | 在组件中决定树、房子、道路、管家怎么长。
+生成玩家可读 hudSummary。 | 显示 raw tags、source labels、命理原始术语。
+
+[TABLE 7]
+可以 | 不可以
+低保真草地、道路、住所、资源区、管家占位。 | 每个玩家都使用同一固定布局。
+CSS / SVG / Canvas 作为渲染技术。 | 组件内部生成正式视觉模型。
+用 P0 素材表现 FormalVisualModel。 | PNG / assetId 反向决定世界事实。
+用 Debug View 检查网格和诊断。 | 正式 /world 默认显示 debug grid / 坐标标签。
+
+[TABLE 8]
+阶段 | 目标 | 边界
+P8-I-RESET | 删除旧 FormalWorldView 手写视觉路线。 | 不新增 UI。
+VISUAL-MODEL-00 | 定义 FormalVisualModel schema。 | 只定义模型，不渲染。
+VISUAL-MODEL-01 | 实现 FormalVisualGenerator。 | 从 VisualState 派生，不生成世界事实。
+FORMAL-VIEW-00 | FormalWorldView 只读 FormalVisualModel。 | 不生成模型。
+WORLD-GEN / CONSTRUCTION | 继续完善世界事实生成。 | 所有变化写入 MapDiff / HomeMapState。
