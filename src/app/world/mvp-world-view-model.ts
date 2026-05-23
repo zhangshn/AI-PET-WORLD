@@ -44,6 +44,17 @@ export type MvpWorldAcceptanceItem = {
   description: string
 }
 
+type MvpWorldConstructionObservability = {
+  summary: string
+  selectedPlanLabel: string
+  acceptedAddCount: number
+  acceptedUpdateCount: number
+  rejectedCount: number
+  resourceTransactionCount: number
+  acceptedPlacementLabels: string[]
+  logItems: string[]
+}
+
 export type MvpWorldViewModel = {
   worldSummary: string
   butlerSummary: string
@@ -103,6 +114,7 @@ export function buildMvpWorldViewModel(
     lifeEventSummary,
     warningCount: result.audit.warnings.length,
   })
+  const constructionObservability = buildConstructionObservability(result)
 
   return {
     worldSummary: [
@@ -117,21 +129,29 @@ export function buildMvpWorldViewModel(
       `生活节律：${result.butlerProfile.lifeRhythmBias}`,
     ].join(" / "),
     constructionSummary: [
-      `计划：${selectedPlanId ?? "未选择"}`,
-      `已接受 diff：${acceptedDiffCount}`,
-      `已拒绝 diff：${rejectedDiffCount}`,
+      `计划：${constructionObservability.selectedPlanLabel}`,
+      `新增 diff：${constructionObservability.acceptedAddCount}`,
+      `更新 diff：${constructionObservability.acceptedUpdateCount}`,
+      `拒绝 diff：${constructionObservability.rejectedCount}`,
     ].join(" / "),
     logItems: [
       `世界运行：当前有 ${result.nextHomeMapState.placements.length} 个可观察对象。`,
       `建设链路：接受 ${acceptedDiffCount} 条 MapDiff，拒绝 ${rejectedDiffCount} 条。`,
+      ...constructionObservability.logItems,
       `视觉刷新：${result.visualRefresh.reason}`,
       `生命事件：${lifeEventSummary.readinessLabel} / ${lifeEventSummary.candidateLabel}`,
       `伴生生命：${lifeEventSummary.decisionLabel}，${lifeEventSummary.nextCheckHint}`,
     ],
-    pPhoneMessages: result.pPhoneData.messages.map((message) => ({
-      title: message.title,
-      body: message.body,
-    })),
+    pPhoneMessages: [
+      ...result.pPhoneData.messages.map((message) => ({
+        title: message.title,
+        body: message.body,
+      })),
+      {
+        title: "管家建设审计",
+        body: constructionObservability.summary,
+      },
+    ],
     auditSummary:
       result.audit.warnings.length === 0 &&
       formalVisualDeliveryAudit.warnings.length === 0
@@ -144,8 +164,8 @@ export function buildMvpWorldViewModel(
     formalVisualDeliveryModel,
     lifeEventSummary,
     demoStatusLabel: demoChecklist.every((item) => item.status === "passed")
-    ? "MVP 演示闭环已形成"
-    : "MVP 演示闭环仍有提醒",
+      ? "MVP 演示闭环已形成"
+      : "MVP 演示闭环仍有提醒",
     demoChecklist,
     acceptanceStatusLabel: acceptanceItems.every(
       (item) => item.status === "passed"
@@ -163,6 +183,7 @@ export function buildMvpWorldViewModel(
       "mvp_world_view_model",
       "readonly_projection",
       "no_world_fact_generation",
+      "construction_observability_visible",
       "life_event_visible_summary",
       ...result.tags,
     ],
@@ -285,6 +306,58 @@ function toBlockerSourceLabel(source: string): string {
   return labels[source] ?? "世界状态"
 }
 
+function buildConstructionObservability(
+  result: AiPetWorldMvpPipelineResult
+): MvpWorldConstructionObservability {
+  const audit = result.runtimeTick.constructionResult.fullPipelineAudit
+  const protocol =
+    result.runtimeTick.constructionResult.runtimeCycleResult
+      .worldLoopProtocolResult
+  const acceptedDiffIds = new Set(audit.acceptedDiffIds)
+  const acceptedDiffs = result.nextHomeMapState.mapDiffs.filter((diff) =>
+    acceptedDiffIds.has(diff.id)
+  )
+  const acceptedAddDiffs = acceptedDiffs.filter(
+    (diff) => diff.operation === "add"
+  )
+  const acceptedUpdateDiffs = acceptedDiffs.filter(
+    (diff) => diff.operation === "update"
+  )
+  const acceptedPlacementLabels = acceptedAddDiffs.flatMap((diff) =>
+    diff.placement?.label ? [diff.placement.label] : []
+  )
+  const resourceTransactionCount =
+    result.nextHomeMapState.resources.recentTransactions?.length ?? 0
+  const selectedPlanLabel = protocol.selectedPlan
+    ? `${protocol.selectedPlan.title}（${protocol.selectedPlan.id}）`
+    : audit.selectedPlanId ?? "未选择"
+  const addedLabel =
+    acceptedPlacementLabels.length > 0
+      ? acceptedPlacementLabels.join("、")
+      : "暂无新增建设对象"
+
+  return {
+    summary: [
+      `当前计划：${selectedPlanLabel}`,
+      `SafeApply 接受新增 ${acceptedAddDiffs.length} 条、更新 ${acceptedUpdateDiffs.length} 条。`,
+      `资源交易记录 ${resourceTransactionCount} 条。`,
+      `新增对象：${addedLabel}。`,
+    ].join(" "),
+    selectedPlanLabel,
+    acceptedAddCount: acceptedAddDiffs.length,
+    acceptedUpdateCount: acceptedUpdateDiffs.length,
+    rejectedCount: audit.rejectedDiffIds.length,
+    resourceTransactionCount,
+    acceptedPlacementLabels,
+    logItems: [
+      `管家建设：当前选择 ${selectedPlanLabel}。`,
+      `MapDiff 类型：新增 ${acceptedAddDiffs.length} 条，更新 ${acceptedUpdateDiffs.length} 条，拒绝 ${audit.rejectedDiffIds.length} 条。`,
+      `资源连接：本轮记录 ${resourceTransactionCount} 条资源交易，建设事实必须经过资源与 SafeApply。`,
+      `建设结果：${addedLabel}。`,
+    ],
+  }
+}
+
 function buildDemoChecklist(input: {
   result: AiPetWorldMvpPipelineResult
   acceptedDiffCount: number
@@ -299,6 +372,13 @@ function buildDemoChecklist(input: {
   const hasHouseStyle = Boolean(input.result.nextHomeMapState.houseStyle)
   const hasLifeEventSummary = input.lifeEventSummary.readinessScore > 0
   const hasWarnings = input.result.audit.warnings.length > 0
+  const acceptedAddCount = input.result.nextHomeMapState.mapDiffs.filter(
+    (diff) =>
+      diff.operation === "add" &&
+      input.result.runtimeTick.constructionResult.fullPipelineAudit.acceptedDiffIds.includes(
+        diff.id
+      )
+  ).length
 
   return [
     {
@@ -327,7 +407,7 @@ function buildDemoChecklist(input: {
       title: "管家自主建设",
       status: hasConstructionPlan ? "passed" : "warning",
       description: "建设计划来自管家、资源、地貌和世界阶段，不是玩家按钮触发。",
-      evidence: `建设计划 ${input.result.nextHomeMapState.constructionPlans.length} 个，已接受变化 ${input.acceptedDiffCount}，等待确认 ${input.rejectedDiffCount}。`,
+      evidence: `建设计划 ${input.result.nextHomeMapState.constructionPlans.length} 个，新增建设 ${acceptedAddCount} 条，已接受变化 ${input.acceptedDiffCount}，等待确认 ${input.rejectedDiffCount}。`,
     },
     {
       id: "demo-house-style",
