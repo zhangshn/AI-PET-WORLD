@@ -4,6 +4,7 @@
 
 import type { WorldMapAssetId } from "@/world/map-assets/world-map-asset-registry"
 import type { HousePreference } from "@/world/house-style/house-style-schema"
+import type { WorldEcologyState } from "@/world/ecology/world-ecology-state"
 import type {
   ResourceAudit,
   ResourcePoolState,
@@ -117,6 +118,7 @@ export type HomeMapState = {
   zones: HomeZone[]
   placements: MapPlacement[]
   resources: HomeResourceState
+  ecologyState?: WorldEcologyState
   houseStyle?: HousePreference
   houseStyleHistory?: HousePreference[]
   constructionPlans: ConstructionPlanSummary[]
