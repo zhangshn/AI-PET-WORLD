@@ -3,18 +3,17 @@
  */
 
 import { auditButlerAutonomousIntent } from "./audit"
+import { buildButlerConsciousState } from "./conscious-state"
 import { buildButlerSoulProfileFromButlerProfile } from "./soul-profile-adapter"
 import { buildButlerWorldPerception } from "./world-perception"
 import type {
   ButlerAutonomousIntent,
   ButlerAutonomyInput,
   ButlerAutonomyResult,
-  ButlerConsciousState,
   ButlerGoal,
   ButlerMemoryEffect,
   ButlerMemoryState,
   ButlerMotivation,
-  ButlerWorldPerception,
 } from "./schema"
 
 export function buildButlerAutonomyResult(
@@ -25,7 +24,7 @@ export function buildButlerAutonomyResult(
     buildButlerSoulProfileFromButlerProfile(input.butlerProfile)
   const memoryState = input.butlerMemoryState ?? buildEmptyButlerMemoryState(input)
   const perception = buildButlerWorldPerception(input)
-  const consciousState = buildConsciousState({ input, perception })
+  const consciousState = buildButlerConsciousState({ input, perception })
   const motivations = buildMotivations({ input, perception, memoryState })
   const candidateGoals = buildGoals({ input, motivations })
   const selectedIntent = buildSelectedIntent({
@@ -90,47 +89,9 @@ function buildEmptyButlerMemoryState(input: ButlerAutonomyInput): ButlerMemorySt
   }
 }
 
-function buildConsciousState(input: {
-  input: ButlerAutonomyInput
-  perception: ButlerWorldPerception
-}): ButlerConsciousState {
-  const rejectedCount = input.input.recentSafeApplyResult?.rejectedDiffs.length ?? 0
-  const acceptedCount = input.input.recentSafeApplyResult?.acceptedDiffIds.length ?? 0
-  const focus = rejectedCount > 0
-    ? "recovering"
-    : input.perception.resourcePressure >= 60
-      ? "waiting"
-      : input.perception.boundaryMaintenanceNeed >= 55
-        ? "maintaining"
-        : "observing"
-  const emotionalTone = rejectedCount > 0
-    ? "frustrated"
-    : input.perception.resourcePressure >= 60
-      ? "cautious"
-      : input.perception.companionReadinessConcern >= 55
-        ? "protective"
-        : "calm"
-
-  return {
-    stateId: `butler-conscious-${input.input.worldId}-${input.input.now}`,
-    focus,
-    emotionalTone,
-    attentionLevel: clampScore(55 + input.perception.risks.length * 12),
-    cautionLevel: clampScore(
-      input.perception.resourcePressure + input.perception.spacePressure / 2 + rejectedCount * 12
-    ),
-    confidenceLevel: clampScore(55 + acceptedCount * 10 - rejectedCount * 14),
-    recoveryPressure: clampScore(rejectedCount * 25),
-    reason: rejectedCount > 0
-      ? "上一轮存在被拒绝的世界变化，管家会先恢复、观察并降低重复尝试。"
-      : "管家正在读取资源、生态、空间与建设状态，先形成自主判断。",
-    tags: ["butler_conscious_state", focus, emotionalTone],
-  }
-}
-
 function buildMotivations(input: {
   input: ButlerAutonomyInput
-  perception: ButlerWorldPerception
+  perception: ReturnType<typeof buildButlerWorldPerception>
   memoryState: ButlerMemoryState
 }): ButlerMotivation[] {
   return [
@@ -199,11 +160,11 @@ function buildGoal(
 
 function buildSelectedIntent(input: {
   input: ButlerAutonomyInput
-  perception: ButlerWorldPerception
+  perception: ReturnType<typeof buildButlerWorldPerception>
   motivations: ButlerMotivation[]
   candidateGoals: ButlerGoal[]
   memoryState: ButlerMemoryState
-  consciousState: ButlerConsciousState
+  consciousState: ReturnType<typeof buildButlerConsciousState>
 }): ButlerAutonomousIntent {
   const selectedGoal = [...input.candidateGoals].sort(
     (left, right) => right.priority - left.priority
