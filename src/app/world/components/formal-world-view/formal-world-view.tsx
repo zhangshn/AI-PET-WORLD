@@ -31,7 +31,7 @@ export function FormalWorldView(input: FormalWorldViewProps) {
       aria-label="AI-PET-WORLD formal world view"
     >
       <header className={styles.formalHeader}>
-        <div className={styles.eyebrow}>AI-PET-WORLD / FORMAL WORLD VIEW</div>
+        <div className={styles.eyebrow}>AI-PET-WORLD / WORLD VIEW</div>
         <h2>主世界视图</h2>
         <p>
           这里只读 FormalVisualModel 渲染玩家主视觉，不生成模型、世界事实、

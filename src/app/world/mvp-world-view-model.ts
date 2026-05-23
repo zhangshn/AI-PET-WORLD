@@ -3,6 +3,9 @@
  */
 
 import type { FormalVisualModel } from "@/world/formal-visual-model/formal-visual-model-gateway"
+import { auditFormalVisualDeliveryModel } from "@/world/formal-visual-model/formal-visual-audit"
+import { buildFormalVisualDeliveryModel } from "@/world/formal-visual-model/formal-visual-builder"
+import type { FormalVisualDeliveryModel } from "@/world/formal-visual-model/formal-visual-schema"
 import type { AiPetWorldMvpPipelineResult } from "@/world/mvp-core/mvp-core-schema"
 
 export type MvpWorldViewModel = {
@@ -16,6 +19,7 @@ export type MvpWorldViewModel = {
   }>
   auditSummary: string
   formalVisualModel: FormalVisualModel | null
+  formalVisualDeliveryModel: FormalVisualDeliveryModel
   atmosphereLabel: string
   currentWorldPhaseLabel: string
   companionStatusLabel: string
@@ -33,6 +37,19 @@ export function buildMvpWorldViewModel(
   const rejectedDiffCount =
     result.runtimeTick.constructionResult.fullPipelineAudit.rejectedDiffIds
       .length
+  const protocol =
+    result.runtimeTick.constructionResult.runtimeCycleResult
+      .worldLoopProtocolResult
+  const formalVisualDeliveryModel = buildFormalVisualDeliveryModel({
+    homeMapState: result.nextHomeMapState,
+    selectedPlan: protocol.selectedPlan,
+    acceptedDiffCount,
+    rejectedDiffCount,
+    warnings: result.audit.warnings,
+  })
+  const formalVisualDeliveryAudit = auditFormalVisualDeliveryModel(
+    formalVisualDeliveryModel
+  )
 
   return {
     worldSummary: [
@@ -77,10 +94,15 @@ export function buildMvpWorldViewModel(
       },
     ],
     auditSummary:
-      result.audit.warnings.length === 0
-        ? "MVP pipeline audit 无警告。"
-        : `MVP pipeline audit 警告：${result.audit.warnings.join("；")}`,
+      result.audit.warnings.length === 0 &&
+      formalVisualDeliveryAudit.warnings.length === 0
+        ? "主世界投影审计通过。"
+        : `主世界投影警告：${[
+            ...result.audit.warnings,
+            ...formalVisualDeliveryAudit.warnings,
+          ].join("；")}`,
     formalVisualModel: result.formalVisualRefresh.formalVisualModel,
+    formalVisualDeliveryModel,
     atmosphereLabel: "温暖、安静、自然",
     currentWorldPhaseLabel:
       result.nextHomeMapState.mapDiffs.length > 0

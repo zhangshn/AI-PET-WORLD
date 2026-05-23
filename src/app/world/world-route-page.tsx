@@ -46,6 +46,14 @@ import styles from "./world-route-page.styles.module.css"
 
 const CREATE_WORLD_INPUT_PENDING = "__ai_pet_world_create_input_pending__"
 const CREATE_WORLD_INPUT_EMPTY = "__ai_pet_world_create_input_empty__"
+const DEFAULT_WORLD_PREVIEW_INPUT: CreateWorldInput = {
+  year: 1991,
+  month: 6,
+  day: 18,
+  time: "08:00",
+  perspective: "unspecified",
+  createdAt: 1000,
+}
 
 type WorldPersistenceUiState = {
   status: "memory_only" | "restored" | "saved" | "restore_failed" | "save_failed"
@@ -73,7 +81,9 @@ export default function WorldRoutePage() {
 
   const createWorldInput = useMemo(() => {
     if (createWorldInputSnapshot === CREATE_WORLD_INPUT_PENDING) return null
-    if (createWorldInputSnapshot === CREATE_WORLD_INPUT_EMPTY) return null
+    if (createWorldInputSnapshot === CREATE_WORLD_INPUT_EMPTY) {
+      return DEFAULT_WORLD_PREVIEW_INPUT
+    }
 
     return parseCreateWorldInput(createWorldInputSnapshot)
   }, [createWorldInputSnapshot])
@@ -191,7 +201,7 @@ function WorldRuntimeShell(input: {
     () => buildMvpWorldViewModel(mvpPipelineResult),
     [mvpPipelineResult]
   )
-  const shouldShowFormalView = viewMode === "formal" || viewMode === "both"
+  const shouldShowFormalView = viewMode === "both"
   const shouldShowDebugView = viewMode === "debug" || viewMode === "both"
 
   function handleManualTick() {
@@ -342,6 +352,8 @@ function WorldRuntimeShell(input: {
         </div>
       </section>
 
+      <ProductWorldPanel model={mvpWorldViewModel} />
+
       {shouldShowFormalView ? (
         <section
           className={styles.formalWorldPanel}
@@ -351,8 +363,7 @@ function WorldRuntimeShell(input: {
             <div className={styles.eyebrow}>FORMAL WORLD VIEW</div>
             <h2>正式主视觉</h2>
             <p>
-              当前画面来自真实 RenderableWorldSnapshot 派生的
-              FormalVisualModel。FormalWorldView 只读渲染，不生成世界事实。
+              这里展示家园当前的形状、道路、自然边界和管家所在位置。画面只读取世界状态，不改变世界。
             </p>
           </div>
           <FormalWorldView model={formalVisualModel} />
@@ -690,6 +701,138 @@ function RuntimeInfoItem(input: { label: string; value: string }) {
         <span>{input.value}</span>
       </div>
     </div>
+  )
+}
+
+function ProductWorldPanel(input: { model: MvpWorldViewModel }) {
+  const delivery = input.model.formalVisualDeliveryModel
+  const mapSize = delivery.overview.mapSize
+  const maxCurrent = Math.max(
+    1,
+    ...delivery.resources.map((resource) => resource.max)
+  )
+
+  return (
+    <section className={styles.productWorldPanel} aria-label="主世界">
+      <header className={styles.productWorldHeader}>
+        <div>
+          <div className={styles.eyebrow}>WORLD / READ ONLY</div>
+          <h2>{delivery.overview.title}</h2>
+          <p>{delivery.overview.subtitle}</p>
+        </div>
+        <div className={styles.productStatusGrid}>
+          <RuntimeInfoItem label="阶段" value={delivery.overview.phaseLabel} />
+          <RuntimeInfoItem
+            label="世界对象"
+            value={String(delivery.overview.worldObjectCount)}
+          />
+          <RuntimeInfoItem
+            label="变化记录"
+            value={String(delivery.overview.mapDiffCount)}
+          />
+          <RuntimeInfoItem
+            label="伙伴"
+            value={delivery.overview.companionLabel}
+          />
+        </div>
+      </header>
+
+      <div className={styles.productWorldGrid}>
+        <article className={styles.productMapPanel}>
+          <h3>家园地图</h3>
+          <div
+            className={styles.lowFiMap}
+            style={{
+              aspectRatio: `${mapSize.columns} / ${mapSize.rows}`,
+            }}
+          >
+            {delivery.zones.map((zone) => (
+              <div
+                className={styles.mapZone}
+                data-zone={zone.zoneType}
+                key={zone.id}
+                style={{
+                  left: `${(zone.x / mapSize.columns) * 100}%`,
+                  top: `${(zone.y / mapSize.rows) * 100}%`,
+                  width: `${(zone.width / mapSize.columns) * 100}%`,
+                  height: `${(zone.height / mapSize.rows) * 100}%`,
+                }}
+              >
+                <span>{zone.label}</span>
+              </div>
+            ))}
+            {delivery.mapItems.map((item) => (
+              <div
+                className={styles.mapItem}
+                data-tone={item.visualTone}
+                key={item.id}
+                style={{
+                  left: `${(item.x / mapSize.columns) * 100}%`,
+                  top: `${(item.y / mapSize.rows) * 100}%`,
+                  opacity: item.opacity,
+                }}
+                title={item.label}
+              />
+            ))}
+          </div>
+        </article>
+
+        <article className={styles.productExplainPanel}>
+          <h3>管家建设解释</h3>
+          <div className={styles.productExplanation}>
+            <strong>{delivery.construction.title}</strong>
+            <span>{delivery.construction.statusLabel}</span>
+            <p>{delivery.construction.explanation}</p>
+            <p>
+              目标区域：{delivery.construction.targetLabel}；已应用变化：
+              {delivery.construction.acceptedDiffCount}；等待确认：
+              {delivery.construction.rejectedDiffCount}
+            </p>
+          </div>
+
+          <h3>房屋偏好</h3>
+          {delivery.houseStyle ? (
+            <div className={styles.productExplanation}>
+              <strong>{delivery.houseStyle.title}</strong>
+              <span>{delivery.houseStyle.scaleLabel}</span>
+              <p>{delivery.houseStyle.materialLabel}</p>
+              <p>{delivery.houseStyle.spatialLabel}</p>
+              <p>{delivery.houseStyle.explanation}</p>
+            </div>
+          ) : (
+            <p>管家还在观察资源和地貌，暂未形成房屋偏好。</p>
+          )}
+        </article>
+      </div>
+
+      <article className={styles.productResourcePanel}>
+        <h3>资源状态</h3>
+        <div className={styles.productResourceGrid}>
+          {delivery.resources.map((resource) => (
+            <div
+              className={styles.productResourceItem}
+              data-tone={resource.tone}
+              key={resource.key}
+            >
+              <div className={styles.resourceHeader}>
+                <strong>{resource.label}</strong>
+                <span>
+                  {resource.current} / {resource.max}
+                </span>
+              </div>
+              <div className={styles.productMeter}>
+                <span
+                  style={{
+                    width: `${Math.min(100, (resource.current / maxCurrent) * 100)}%`,
+                  }}
+                />
+              </div>
+              <p>{resource.explanation}</p>
+            </div>
+          ))}
+        </div>
+      </article>
+    </section>
   )
 }
 
