@@ -802,6 +802,8 @@ function ProductWorldPanel(input: { model: MvpWorldViewModel }) {
           ) : (
             <p>管家还在观察资源和地貌，暂未形成房屋偏好。</p>
           )}
+
+          <LifeEventProductPanel summary={input.model.lifeEventSummary} />
         </article>
       </div>
 
@@ -833,6 +835,111 @@ function ProductWorldPanel(input: { model: MvpWorldViewModel }) {
         </div>
       </article>
     </section>
+  )
+}
+
+function LifeEventProductPanel(input: {
+  summary: MvpWorldViewModel["lifeEventSummary"]
+}) {
+  const { summary } = input
+  const blockerText =
+    summary.blockers.length > 0
+      ? `${summary.blockers.length} 个等待项`
+      : "没有关键阻塞"
+
+  return (
+    <article className={styles.lifeEventPanel}>
+      <div className={styles.lifeEventHeader}>
+        <div>
+          <h3>{summary.title}</h3>
+          <p>
+            当前不会默认生成宠物或伙伴，只记录世界是否具备未来接纳条件。
+          </p>
+        </div>
+        <div className={styles.lifeEventScore}>
+          <strong>{summary.readinessScore}</strong>
+          <span>/ 100</span>
+        </div>
+      </div>
+
+      <div className={styles.lifeEventMetaGrid}>
+        <div className={styles.lifeEventReasonCard}>
+          <span>准备状态</span>
+          <strong>{summary.statusLabel}</strong>
+          <p>{summary.readinessLabel}</p>
+        </div>
+        <div className={styles.lifeEventReasonCard}>
+          <span>下一步</span>
+          <strong>{summary.recommendedNextStepLabel}</strong>
+          <p>{blockerText}</p>
+        </div>
+      </div>
+
+      <div className={styles.lifeEventReasonGrid}>
+        <div className={styles.lifeEventReasonCard}>
+          <span>生命事件候选</span>
+          <strong>{summary.candidateLabel}</strong>
+          <p>{summary.candidateReason}</p>
+        </div>
+        <div className={styles.lifeEventReasonCard}>
+          <span>管家判断</span>
+          <strong>{summary.decisionLabel}</strong>
+          <p>{summary.decisionReason}</p>
+          <p>{summary.nextCheckHint}</p>
+        </div>
+      </div>
+
+      <div className={styles.lifeEventReasonGrid}>
+        <div className={styles.lifeEventReasonCard}>
+          <span>资源理由</span>
+          {summary.resourceReasons.length > 0 ? (
+            <ul className={styles.lifeEventReasonList}>
+              {summary.resourceReasons.map((reason) => (
+                <li key={reason}>{reason}</li>
+              ))}
+            </ul>
+          ) : (
+            <p>当前没有资源理由。</p>
+          )}
+        </div>
+        <div className={styles.lifeEventReasonCard}>
+          <span>世界理由</span>
+          {summary.worldReasons.length > 0 ? (
+            <ul className={styles.lifeEventReasonList}>
+              {summary.worldReasons.map((reason) => (
+                <li key={reason}>{reason}</li>
+              ))}
+            </ul>
+          ) : (
+            <p>当前没有世界理由。</p>
+          )}
+        </div>
+      </div>
+
+      <div className={styles.lifeEventBlockerList}>
+        {summary.blockers.length > 0 ? (
+          summary.blockers.map((blocker) => (
+            <div
+              className={styles.lifeEventBlocker}
+              data-tone={blocker.tone}
+              key={`${blocker.sourceLabel}-${blocker.reason}`}
+            >
+              <strong>
+                {blocker.severityLabel} / {blocker.sourceLabel}
+              </strong>
+              <p>{blocker.reason}</p>
+            </div>
+          ))
+        ) : (
+          <div className={styles.lifeEventBlocker} data-tone="info">
+            <strong>后置观察</strong>
+            <p>
+              当前没有关键阻塞项，但 MVP 阶段仍不会让伴生生命默认进入世界。
+            </p>
+          </div>
+        )}
+      </div>
+    </article>
   )
 }
 

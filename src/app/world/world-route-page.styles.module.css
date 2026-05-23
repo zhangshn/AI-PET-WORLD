@@ -678,6 +678,145 @@
   display: block;
   height: 100%;
 }
+.lifeEventPanel {
+  background:
+    linear-gradient(180deg, rgba(47, 82, 42, 0.1), rgba(47, 82, 42, 0.06));
+  border: 1px solid rgba(47, 82, 42, 0.14);
+  border-radius: 12px;
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.lifeEventHeader {
+  align-items: start;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: 1fr auto;
+}
+
+.lifeEventHeader h3,
+.lifeEventHeader p {
+  margin: 0;
+}
+
+.lifeEventHeader h3 {
+  color: #20341e;
+  font-size: 18px;
+}
+
+.lifeEventHeader p {
+  color: rgba(32, 52, 30, 0.72);
+  font-size: 13px;
+  line-height: 1.65;
+  margin-top: 6px;
+}
+
+.lifeEventScore {
+  align-items: baseline;
+  background: rgba(255, 255, 247, 0.72);
+  border: 1px solid rgba(47, 82, 42, 0.14);
+  border-radius: 12px;
+  color: #20341e;
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  min-width: 84px;
+  padding: 12px;
+}
+
+.lifeEventScore strong {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.lifeEventScore span {
+  color: rgba(32, 52, 30, 0.58);
+  font-size: 13px;
+}
+
+.lifeEventMetaGrid,
+.lifeEventReasonGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.lifeEventReasonCard {
+  background: rgba(255, 255, 247, 0.58);
+  border: 1px solid rgba(47, 82, 42, 0.12);
+  border-radius: 10px;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.lifeEventReasonCard span {
+  color: rgba(32, 52, 30, 0.6);
+  font-size: 12px;
+}
+
+.lifeEventReasonCard strong {
+  color: #20341e;
+  font-size: 15px;
+}
+
+.lifeEventReasonCard p {
+  color: rgba(32, 52, 30, 0.72);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.lifeEventReasonList {
+  color: rgba(32, 52, 30, 0.72);
+  display: grid;
+  font-size: 13px;
+  gap: 4px;
+  line-height: 1.55;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.lifeEventReasonList li::before {
+  content: "· ";
+}
+
+.lifeEventBlockerList {
+  display: grid;
+  gap: 8px;
+}
+
+.lifeEventBlocker {
+  background: rgba(255, 255, 247, 0.58);
+  border: 1px solid rgba(47, 82, 42, 0.12);
+  border-left: 4px solid rgba(71, 129, 93, 0.88);
+  border-radius: 10px;
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+}
+
+.lifeEventBlocker[data-tone="warning"] {
+  border-left-color: #c2a66b;
+}
+
+.lifeEventBlocker[data-tone="blocking"] {
+  border-left-color: #b77554;
+}
+
+.lifeEventBlocker strong {
+  color: #20341e;
+  font-size: 14px;
+}
+
+.lifeEventBlocker p {
+  color: rgba(32, 52, 30, 0.72);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
 
 @media (max-width: 900px) {
   .summaryGrid,
@@ -687,7 +826,10 @@
   .productWorldHeader,
   .productWorldGrid,
   .productResourceGrid,
-  .productStatusGrid {
-    grid-template-columns: 1fr;
+  .productStatusGrid,
+  .lifeEventMetaGrid,
+  .lifeEventReasonGrid,
+  .lifeEventHeader {
+  grid-template-columns: 1fr;
   }
 }
