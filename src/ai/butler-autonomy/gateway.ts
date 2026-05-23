@@ -6,6 +6,7 @@ import { auditButlerAutonomousIntent } from "./audit"
 import { buildButlerConsciousState } from "./conscious-state"
 import { buildButlerGoals } from "./goal-generator"
 import { buildButlerSelectedIntent } from "./intent-ranking"
+import { buildButlerLearningEffectsFromSafeApply } from "./learning-update"
 import {
   buildButlerMemoryEffects,
   buildInitialButlerMemoryState,
@@ -44,10 +45,16 @@ export function buildButlerAutonomyResult(
     memoryState,
     consciousState,
   })
-  const memoryEffects = buildButlerMemoryEffects({
+  const directMemoryEffects = buildButlerMemoryEffects({
     selectedIntent,
     memoryState,
   })
+  const learningEffects = buildButlerLearningEffectsFromSafeApply({
+    selectedIntent,
+    memoryState,
+    safeApplyResult: input.recentSafeApplyResult,
+  })
+  const memoryEffects = [...directMemoryEffects, ...learningEffects]
   const audit = auditButlerAutonomousIntent({
     intent: selectedIntent,
     worldId: input.worldId,
@@ -74,6 +81,9 @@ export function buildButlerAutonomyResult(
     tags: [
       "butler_autonomy_result",
       "schema_phase_ready",
+      learningEffects.length > 0
+        ? "learning_feedback_ready"
+        : "learning_feedback_waiting_for_world_result",
       selectedIntent.kind,
       consciousState.focus,
       ...audit.tags,
