@@ -297,6 +297,15 @@
   padding: 16px;
 }
 
+.productMapPanel {
+  align-content: start;
+  grid-auto-rows: max-content;
+}
+
+.lowFiMap {
+  align-self: start;
+}
+
 .lowFiMap {
   background:
     linear-gradient(rgba(47, 82, 42, 0.08) 1px, transparent 1px),
@@ -818,6 +827,107 @@
   margin: 0;
 }
 
+.demoChecklistPanel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 247, 0.7), rgba(236, 242, 222, 0.66));
+  border: 1px solid rgba(47, 82, 42, 0.14);
+  border-radius: 14px;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.demoChecklistHeader {
+  align-items: start;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: 1fr auto;
+}
+
+.demoChecklistHeader h3,
+.demoChecklistHeader p {
+  margin: 0;
+}
+
+.demoChecklistHeader h3 {
+  color: #20341e;
+  font-size: 18px;
+}
+
+.demoChecklistHeader p {
+  color: rgba(32, 52, 30, 0.72);
+  font-size: 13px;
+  line-height: 1.65;
+  margin-top: 6px;
+}
+
+.demoChecklistHeader strong {
+  background: rgba(71, 129, 93, 0.12);
+  border: 1px solid rgba(71, 129, 93, 0.18);
+  border-radius: 999px;
+  color: #20341e;
+  font-size: 13px;
+  padding: 8px 12px;
+  white-space: nowrap;
+}
+
+.demoChecklistGrid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.demoChecklistItem {
+  background: rgba(255, 255, 247, 0.58);
+  border: 1px solid rgba(47, 82, 42, 0.12);
+  border-left: 4px solid rgba(71, 129, 93, 0.88);
+  border-radius: 10px;
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.demoChecklistItem[data-status="warning"] {
+  border-left-color: #c2a66b;
+}
+
+.demoChecklistItemHeader {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.demoChecklistItemHeader strong {
+  color: #20341e;
+  font-size: 14px;
+}
+
+.demoChecklistItemHeader span {
+  background: rgba(71, 129, 93, 0.12);
+  border-radius: 999px;
+  color: #20341e;
+  font-size: 12px;
+  padding: 4px 8px;
+}
+
+.demoChecklistItem[data-status="warning"] .demoChecklistItemHeader span {
+  background: rgba(194, 166, 107, 0.22);
+}
+
+.demoChecklistItem p {
+  color: rgba(32, 52, 30, 0.72);
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.demoChecklistItem small {
+  color: rgba(32, 52, 30, 0.56);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
 @media (max-width: 900px) {
   .summaryGrid,
   .contentGrid,
@@ -829,7 +939,9 @@
   .productStatusGrid,
   .lifeEventMetaGrid,
   .lifeEventReasonGrid,
-  .lifeEventHeader {
-  grid-template-columns: 1fr;
+  .lifeEventHeader,
+  .demoChecklistHeader,
+  .demoChecklistGrid {
+    grid-template-columns: 1fr;
   }
 }

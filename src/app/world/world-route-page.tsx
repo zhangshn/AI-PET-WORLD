@@ -834,6 +834,7 @@ function ProductWorldPanel(input: { model: MvpWorldViewModel }) {
           ))}
         </div>
       </article>
+      <MvpDemoChecklistPanel model={input.model} />
     </section>
   )
 }
@@ -938,6 +939,41 @@ function LifeEventProductPanel(input: {
             </p>
           </div>
         )}
+      </div>
+    </article>
+  )
+}
+
+function MvpDemoChecklistPanel(input: { model: MvpWorldViewModel }) {
+  const { model } = input
+
+  return (
+    <article className={styles.demoChecklistPanel}>
+      <div className={styles.demoChecklistHeader}>
+        <div>
+          <h3>MVP 演示闭环</h3>
+          <p>
+            这里用于最终验收：用户是否能从一个页面看懂世界生成、管家建设、资源状态、房屋偏好与伴生生命后置。
+          </p>
+        </div>
+        <strong>{model.demoStatusLabel}</strong>
+      </div>
+
+      <div className={styles.demoChecklistGrid}>
+        {model.demoChecklist.map((item) => (
+          <div
+            className={styles.demoChecklistItem}
+            data-status={item.status}
+            key={item.id}
+          >
+            <div className={styles.demoChecklistItemHeader}>
+              <strong>{item.title}</strong>
+              <span>{item.status === "passed" ? "通过" : "提醒"}</span>
+            </div>
+            <p>{item.description}</p>
+            <small>{item.evidence}</small>
+          </div>
+        ))}
       </div>
     </article>
   )

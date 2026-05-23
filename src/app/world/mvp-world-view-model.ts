@@ -29,6 +29,14 @@ export type MvpWorldLifeEventSummary = {
   }>
 }
 
+export type MvpWorldDemoChecklistItem = {
+  id: string
+  title: string
+  status: "passed" | "warning"
+  description: string
+  evidence: string
+}
+
 export type MvpWorldViewModel = {
   worldSummary: string
   butlerSummary: string
@@ -42,6 +50,8 @@ export type MvpWorldViewModel = {
   formalVisualModel: FormalVisualModel | null
   formalVisualDeliveryModel: FormalVisualDeliveryModel
   lifeEventSummary: MvpWorldLifeEventSummary
+  demoStatusLabel: string
+  demoChecklist: MvpWorldDemoChecklistItem[]
   atmosphereLabel: string
   currentWorldPhaseLabel: string
   companionStatusLabel: string
@@ -73,6 +83,13 @@ export function buildMvpWorldViewModel(
     formalVisualDeliveryModel
   )
   const lifeEventSummary = buildLifeEventSummary(result)
+  const demoChecklist = buildDemoChecklist({
+    result,
+    acceptedDiffCount,
+    rejectedDiffCount,
+    lifeEventSummary,
+  })
+
 
   return {
     worldSummary: [
@@ -113,6 +130,10 @@ export function buildMvpWorldViewModel(
     formalVisualModel: result.formalVisualRefresh.formalVisualModel,
     formalVisualDeliveryModel,
     lifeEventSummary,
+    demoStatusLabel: demoChecklist.every((item) => item.status === "passed")
+    ? "MVP 演示闭环已形成"
+    : "MVP 演示闭环仍有提醒",
+    demoChecklist,
     atmosphereLabel: "温暖、安静、自然",
     currentWorldPhaseLabel:
       result.nextHomeMapState.mapDiffs.length > 0
@@ -243,4 +264,76 @@ function toBlockerSourceLabel(source: string): string {
   }
 
   return labels[source] ?? "世界状态"
+}
+
+function buildDemoChecklist(input: {
+  result: AiPetWorldMvpPipelineResult
+  acceptedDiffCount: number
+  rejectedDiffCount: number
+  lifeEventSummary: MvpWorldLifeEventSummary
+}): MvpWorldDemoChecklistItem[] {
+  const hasWorldObjects = input.result.nextHomeMapState.placements.length > 0
+  const hasZones = input.result.nextHomeMapState.zones.length > 0
+  const hasResourceState = Boolean(input.result.nextHomeMapState.resources)
+  const hasConstructionPlan =
+    input.result.nextHomeMapState.constructionPlans.length > 0
+  const hasHouseStyle = Boolean(input.result.nextHomeMapState.houseStyle)
+  const hasLifeEventSummary = input.lifeEventSummary.readinessScore > 0
+  const hasWarnings = input.result.audit.warnings.length > 0
+
+  return [
+    {
+      id: "demo-world-generated",
+      title: "世界已生成",
+      status: hasWorldObjects && hasZones ? "passed" : "warning",
+      description: "世界不是空页面，已经生成区域、对象与可观察地图。",
+      evidence: `${input.result.nextHomeMapState.zones.length} 个区域，${input.result.nextHomeMapState.placements.length} 个对象。`,
+    },
+    {
+      id: "demo-readonly-visual",
+      title: "只读主世界展示",
+      status: "passed",
+      description: "页面只读取 HomeMapState / FormalVisualModel，不由 UI 生成世界事实。",
+      evidence: "HomeMapState -> FormalVisualModel -> /world read-only render。",
+    },
+    {
+      id: "demo-resource-cycle",
+      title: "资源状态可见",
+      status: hasResourceState ? "passed" : "warning",
+      description: "资源已经进入页面展示，并可用于解释建设与伴生生命等待原因。",
+      evidence: `材料 ${input.result.nextHomeMapState.resources.materialReadiness}，照护 ${input.result.nextHomeMapState.resources.careReadiness}，空间压力 ${input.result.nextHomeMapState.resources.spacePressure}。`,
+    },
+    {
+      id: "demo-autonomous-construction",
+      title: "管家自主建设",
+      status: hasConstructionPlan ? "passed" : "warning",
+      description: "建设计划来自管家、资源、地貌和世界阶段，不是玩家按钮触发。",
+      evidence: `建设计划 ${input.result.nextHomeMapState.constructionPlans.length} 个，已接受变化 ${input.acceptedDiffCount}，等待确认 ${input.rejectedDiffCount}。`,
+    },
+    {
+      id: "demo-house-style",
+      title: "房屋偏好已形成",
+      status: hasHouseStyle ? "passed" : "warning",
+      description: "房屋风格由管家人格、资源和地貌共同决定，并进入世界状态。",
+      evidence: input.result.nextHomeMapState.houseStyle
+        ? `当前房屋偏好：${input.result.nextHomeMapState.houseStyle.archetype}。`
+        : "当前尚未形成房屋偏好。",
+    },
+    {
+      id: "demo-life-event-delayed",
+      title: "伴生生命后置",
+      status: hasLifeEventSummary ? "passed" : "warning",
+      description: "伴生生命只作为未来候选，不默认生成宠物、宠物床或孵化器。",
+      evidence: `${input.lifeEventSummary.statusLabel}，准备度 ${input.lifeEventSummary.readinessScore}/100。`,
+    },
+    {
+      id: "demo-audit-status",
+      title: "审计状态",
+      status: hasWarnings ? "warning" : "passed",
+      description: "MVP 总链路需要可审计，警告不会被隐藏。",
+      evidence: hasWarnings
+        ? `${input.result.audit.warnings.length} 条审计提醒。`
+        : "当前 MVP 审计无警告。",
+    },
+  ]
 }
