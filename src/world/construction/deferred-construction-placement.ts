@@ -16,12 +16,14 @@ import type {
   ConstructionStageType,
 } from "./construction-schema"
 
-const DEFERRED_ADD_PROJECT_TYPES: readonly ConstructionProjectType[] = [
+const DEFERRED_ADD_PROJECT_TYPES = [
   "stabilize_temporary_shelter",
   "improve_initial_care",
   "organize_storage_area",
   "preserve_quiet_living",
-]
+] as const satisfies readonly ConstructionProjectType[]
+
+type DeferredAddProjectType = (typeof DEFERRED_ADD_PROJECT_TYPES)[number]
 
 type DeferredConstructionVisualSpec = {
   assetId: MapPlacement["assetId"]
@@ -34,8 +36,10 @@ type DeferredConstructionVisualSpec = {
 
 export function shouldCreateDeferredConstructionPlacement(
   projectType: ConstructionProjectType
-): boolean {
-  return DEFERRED_ADD_PROJECT_TYPES.includes(projectType)
+): projectType is DeferredAddProjectType {
+  return (DEFERRED_ADD_PROJECT_TYPES as readonly ConstructionProjectType[]).includes(
+    projectType
+  )
 }
 
 export function buildDeferredConstructionPlacement(input: {
@@ -46,10 +50,12 @@ export function buildDeferredConstructionPlacement(input: {
   if (input.executableStage === "completed") return null
   if (!shouldCreateDeferredConstructionPlacement(input.plan.projectType)) return null
 
-  const spec = getDeferredConstructionVisualSpec(input.plan.projectType)
+  const projectType = input.plan.projectType
+  const spec = getDeferredConstructionVisualSpec(projectType)
   const point = resolveDeferredConstructionPoint({
     homeMapState: input.homeMapState,
     plan: input.plan,
+    projectType,
   })
 
   return {
@@ -76,7 +82,7 @@ export function buildDeferredConstructionPlacement(input: {
 }
 
 function getDeferredConstructionVisualSpec(
-  projectType: ConstructionProjectType
+  projectType: DeferredAddProjectType
 ): DeferredConstructionVisualSpec {
   const specs = {
     stabilize_temporary_shelter: {
@@ -111,22 +117,21 @@ function getDeferredConstructionVisualSpec(
       alpha: 0.4,
       tags: ["quiet_living", "quiet_living_planning"],
     },
-  } satisfies Record<
-    (typeof DEFERRED_ADD_PROJECT_TYPES)[number],
-    DeferredConstructionVisualSpec
-  >
+  } satisfies Record<DeferredAddProjectType, DeferredConstructionVisualSpec>
 
-  return specs[projectType as (typeof DEFERRED_ADD_PROJECT_TYPES)[number]]
+  return specs[projectType]
 }
 
 function resolveDeferredConstructionPoint(input: {
   homeMapState: HomeMapState
   plan: ConstructionPlan
+  projectType: DeferredAddProjectType
 }): MapCoordinate {
   const anchor = resolveConstructionAnchor(input.homeMapState)
   const offset = resolveProjectOffset({
     homeMapState: input.homeMapState,
     plan: input.plan,
+    projectType: input.projectType,
   })
   const candidate = clampPoint(
     {
@@ -185,6 +190,7 @@ function resolveConstructionAnchor(homeMapState: HomeMapState): MapCoordinate {
 function resolveProjectOffset(input: {
   homeMapState: HomeMapState
   plan: ConstructionPlan
+  projectType: DeferredAddProjectType
 }): MapCoordinate {
   const direction = buildSeededNumber(
     input.homeMapState.seed,
@@ -201,12 +207,9 @@ function resolveProjectOffset(input: {
     improve_initial_care: { x: direction * (4 + shift), y: 4 },
     organize_storage_area: { x: direction * -(5 + shift), y: 3 },
     preserve_quiet_living: { x: direction * (8 + shift), y: 7 },
-  } satisfies Record<(typeof DEFERRED_ADD_PROJECT_TYPES)[number], MapCoordinate>
+  } satisfies Record<DeferredAddProjectType, MapCoordinate>
 
-  return offsets[input.plan.projectType as (typeof DEFERRED_ADD_PROJECT_TYPES)[number]] ?? {
-    x: direction * (4 + shift),
-    y: 3,
-  }
+  return offsets[input.projectType]
 }
 
 function clampPoint(point: MapCoordinate, homeMapState: HomeMapState): MapCoordinate {
