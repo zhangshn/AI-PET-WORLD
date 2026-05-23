@@ -225,6 +225,9 @@ function applyAcceptedMapDiffs(input: {
             status: input.nextPlan.status,
             progress: calculatePlanProgress(input.nextPlan),
             reason: input.nextPlan.reason,
+            houseStyle: input.nextPlan.houseStyle,
+            styleReason: input.nextPlan.styleReason,
+            styleTags: input.nextPlan.styleTags,
             tags: uniqueTags([
               ...plan.tags,
               ...input.nextPlan.tags,
@@ -235,6 +238,17 @@ function applyAcceptedMapDiffs(input: {
     ),
     mapDiffs: [...input.homeMapState.mapDiffs, ...input.acceptedDiffs],
     resources: acceptedResourceState,
+    houseStyle:
+      input.acceptedDiffs.length > 0
+        ? input.nextPlan.houseStyle
+        : input.homeMapState.houseStyle,
+    houseStyleHistory:
+      input.acceptedDiffs.length > 0
+        ? [
+            ...(input.homeMapState.houseStyleHistory ?? []),
+            input.nextPlan.houseStyle,
+          ].slice(-12)
+        : input.homeMapState.houseStyleHistory,
     updatedAt: input.now,
     tags: uniqueTags([
       ...input.homeMapState.tags,

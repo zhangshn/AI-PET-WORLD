@@ -3,6 +3,7 @@
  */
 
 import type { WorldMapAssetId } from "@/world/map-assets/world-map-asset-registry"
+import type { HousePreference } from "@/world/house-style/house-style-schema"
 import type {
   ResourceAudit,
   ResourcePoolState,
@@ -76,6 +77,9 @@ export type ConstructionPlanSummary = {
   status: "planned" | "active" | "paused" | "completed"
   progress: number
   reason: string
+  houseStyle?: HousePreference
+  styleReason?: string
+  styleTags?: string[]
   tags: string[]
 }
 
@@ -113,6 +117,8 @@ export type HomeMapState = {
   zones: HomeZone[]
   placements: MapPlacement[]
   resources: HomeResourceState
+  houseStyle?: HousePreference
+  houseStyleHistory?: HousePreference[]
   constructionPlans: ConstructionPlanSummary[]
   mapDiffs: MapDiff[]
   createdAt: number

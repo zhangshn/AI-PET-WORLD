@@ -68,6 +68,11 @@ export function buildConstructionPlanCandidateFingerprint(
         plan.currentStage,
         plan.priority,
         plan.reasonDrivers.join("+"),
+        plan.houseStyle.preferenceId,
+        plan.houseStyle.archetype,
+        plan.houseStyle.materialPreference,
+        plan.houseStyle.scalePreference,
+        plan.styleTags.join("+"),
         plan.resourceRequests
           .map((request) =>
             [
@@ -110,6 +115,15 @@ function auditRequiredCandidateFields(plans: ConstructionPlan[]): string[] {
     }
     if (plan.resourceRequests.length === 0) {
       warnings.push(`候选计划缺少资源交易请求：${plan.id}`)
+    }
+    if (!plan.houseStyle.preferenceId.trim()) {
+      warnings.push(`候选计划缺少房屋偏好 metadata：${plan.id}`)
+    }
+    if (!plan.styleReason.trim()) {
+      warnings.push(`候选计划缺少 styleReason：${plan.id}`)
+    }
+    if (plan.styleTags.length === 0) {
+      warnings.push(`候选计划缺少 styleTags：${plan.id}`)
     }
     if (plan.stages.length === 0) warnings.push(`候选计划缺少 stages：${plan.id}`)
     if (plan.priority < 0 || plan.priority > 100) {

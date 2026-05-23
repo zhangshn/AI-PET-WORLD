@@ -24,6 +24,8 @@ export type MvpSmokeAuditResult = {
   resourceCycleWarnings: string[]
   autonomousConstructionPassed: boolean
   autonomousConstructionWarnings: string[]
+  houseStylePassed: boolean
+  houseStyleWarnings: string[]
   warningCount: number
   forbiddenTokenWarnings: string[]
   results: AiPetWorldMvpPipelineResult[]
@@ -59,19 +61,23 @@ export function runMvpSmokeAudit(): MvpSmokeAuditResult {
   const autonomousConstructionWarnings = auditAutonomousConstruction(results)
   const autonomousConstructionPassed =
     autonomousConstructionWarnings.length === 0
+  const houseStyleWarnings = auditHouseStyle(results)
+  const houseStylePassed = houseStyleWarnings.length === 0
   const warningCount =
     results.reduce((total, result) => total + result.audit.warnings.length, 0) +
     forbiddenTokenWarnings.length +
     layoutVariationAudit.warnings.length +
     resourceCycleWarnings.length +
-    autonomousConstructionWarnings.length
+    autonomousConstructionWarnings.length +
+    houseStyleWarnings.length
   const passed =
     results.length >= 5 &&
     stableScenarioMatched &&
     forbiddenTokenWarnings.length === 0 &&
     layoutVariationPassed &&
     resourceCyclePassed &&
-    autonomousConstructionPassed
+    autonomousConstructionPassed &&
+    houseStylePassed
 
   return {
     scenarioCount: results.length,
@@ -83,6 +89,8 @@ export function runMvpSmokeAudit(): MvpSmokeAuditResult {
     resourceCycleWarnings,
     autonomousConstructionPassed,
     autonomousConstructionWarnings,
+    houseStylePassed,
+    houseStyleWarnings,
     warningCount,
     forbiddenTokenWarnings,
     results,
@@ -93,6 +101,7 @@ export function runMvpSmokeAudit(): MvpSmokeAuditResult {
       `Layout variation passed: ${String(layoutVariationPassed)}.`,
       `Resource cycle passed: ${String(resourceCyclePassed)}.`,
       `Autonomous construction passed: ${String(autonomousConstructionPassed)}.`,
+      `House style passed: ${String(houseStylePassed)}.`,
       `Forbidden token warnings: ${forbiddenTokenWarnings.length}.`,
     ].join(" "),
     messages: [
@@ -101,6 +110,7 @@ export function runMvpSmokeAudit(): MvpSmokeAuditResult {
       ...summarizeWorldLayoutVariationAudit(layoutVariationAudit),
       `Resource cycle passed: ${String(resourceCyclePassed)}`,
       `Autonomous construction passed: ${String(autonomousConstructionPassed)}`,
+      `House style passed: ${String(houseStylePassed)}`,
       `Forbidden token warnings: ${forbiddenTokenWarnings.length}`,
     ],
     tags: [
@@ -108,6 +118,52 @@ export function runMvpSmokeAudit(): MvpSmokeAuditResult {
       passed ? "mvp_smoke_passed" : "mvp_smoke_warning",
     ],
   }
+}
+
+function auditHouseStyle(results: AiPetWorldMvpPipelineResult[]): string[] {
+  const houseStyles = results.flatMap((result) => {
+    const protocol =
+      result.runtimeTick.constructionResult.runtimeCycleResult
+        .worldLoopProtocolResult
+
+    return protocol.selectedPlan?.houseStyle ? [protocol.selectedPlan.houseStyle] : []
+  })
+  const warnings: string[] = []
+
+  if (houseStyles.length !== results.length) {
+    warnings.push("MVP smoke audit missing house style on selected plans.")
+  }
+
+  const archetypes = new Set(houseStyles.map((style) => style.archetype))
+  const biomes = new Set(houseStyles.map((style) => style.sourceBiome))
+  const materialPreferences = new Set(
+    houseStyles.map((style) => style.materialPreference)
+  )
+  const scalePreferences = new Set(
+    houseStyles.map((style) => style.scalePreference)
+  )
+
+  if (archetypes.size < 2) {
+    warnings.push("House style smoke audit did not vary by butler personality.")
+  }
+  if (biomes.size < 4 || materialPreferences.size < 3) {
+    warnings.push("House style smoke audit did not reflect biome material differences.")
+  }
+  if (scalePreferences.size < 2) {
+    warnings.push("House style smoke audit did not reflect resource scale differences.")
+  }
+  if (
+    houseStyles.some(
+      (style) =>
+        style.personalityDrivers.length === 0 ||
+        style.resourceDrivers.length === 0 ||
+        style.styleTags.length === 0
+    )
+  ) {
+    warnings.push("House style smoke audit found incomplete structured metadata.")
+  }
+
+  return warnings
 }
 
 function auditAutonomousConstruction(

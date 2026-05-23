@@ -4,6 +4,7 @@
 
 import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
 import type { BiomeRule } from "@/world/ecology/ecology-schema"
+import type { HousePreference } from "@/world/house-style/house-style-schema"
 import type {
   HomeMapState,
   HomeResourceState,
@@ -103,6 +104,7 @@ export type ConstructionPlannerInput = {
   constructionStyle: ButlerConstructionStyleVector
   biomeRule: BiomeRule
   resourcePoolState: ResourcePoolState
+  housePreference: HousePreference
   resources: ConstructionPlannerResourceSnapshot
   phase: ConstructionPlannerPhaseInput
   intents: ButlerConstructionIntentInput[]
@@ -139,6 +141,9 @@ export type ConstructionPlan = {
   title: string
   reason: string
   reasonDrivers: string[]
+  houseStyle: HousePreference
+  styleReason: string
+  styleTags: string[]
   targetZoneType: HomeZoneType
   status: ConstructionPlanStatus
   currentStage: ConstructionStageType

@@ -8,6 +8,8 @@ import type {
   HomeMapState,
   HomeZoneType,
 } from "@/world/map-state/home-map-state-schema"
+import { buildHousePreference } from "@/world/house-style/house-preference-builder"
+import { auditHousePreference } from "@/world/house-style/house-style-audit"
 import { buildInitialResourcePoolState } from "@/world/resource-cycle/resource-cycle"
 
 import type {
@@ -42,6 +44,20 @@ export function buildConstructionPlannerInput(input: {
       tags: ["construction_runtime_resource_pool_fallback"],
     })
   const biomeRule = getBiomeRule(resourcePoolState.biomeType)
+  const housePreference = buildHousePreference({
+    worldId: input.homeMapState.worldId,
+    seed: input.homeMapState.seed,
+    constructionStyle: input.constructionStyle,
+    biomeType: biomeRule.biomeType,
+    resources,
+    maintenanceRisk: biomeRule.constructionModifiers.maintenanceRisk,
+    materialCostMultiplier:
+      biomeRule.constructionModifiers.materialCostMultiplier,
+    boundaryDensityBias: biomeRule.layoutModifiers.boundaryDensityBias,
+    shelterSafetyBias: biomeRule.layoutModifiers.shelterSafetyBias,
+    tags: ["construction_planner_house_style"],
+  })
+  const housePreferenceAudit = auditHousePreference(housePreference)
   const phase = buildConstructionPlannerPhase({
     resources,
     worldDay: input.worldDay,
@@ -62,6 +78,7 @@ export function buildConstructionPlannerInput(input: {
     constructionStyle: input.constructionStyle,
     biomeRule,
     resourcePoolState,
+    housePreference,
     resources,
     phase,
     intents,
@@ -73,6 +90,8 @@ export function buildConstructionPlannerInput(input: {
       "resource_snapshot_driven",
       "biome_rule_driven",
       "resource_pool_state_driven",
+      "house_preference_driven",
+      ...housePreferenceAudit.tags,
       "no_direct_map_mutation",
       "no_default_companion_plan",
     ],
