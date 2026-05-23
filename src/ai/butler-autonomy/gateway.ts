@@ -4,6 +4,7 @@
 
 import { auditButlerAutonomousIntent } from "./audit"
 import { buildButlerConsciousState } from "./conscious-state"
+import { buildButlerGoals } from "./goal-generator"
 import { buildButlerMotivations } from "./motivation-engine"
 import { buildButlerSoulProfileFromButlerProfile } from "./soul-profile-adapter"
 import { buildButlerWorldPerception } from "./world-perception"
@@ -32,7 +33,12 @@ export function buildButlerAutonomyResult(
     consciousState,
     memoryState,
   })
-  const candidateGoals = buildGoals({ input, motivations })
+  const candidateGoals = buildButlerGoals({
+    motivations,
+    perception,
+    consciousState,
+    memoryState,
+  })
   const selectedIntent = buildSelectedIntent({
     input,
     perception,
@@ -92,42 +98,6 @@ function buildEmptyButlerMemoryState(input: ButlerAutonomyInput): ButlerMemorySt
     },
     unresolvedConcerns: [],
     tags: ["butler_memory_seed", "empty_memory_state"],
-  }
-}
-
-function buildGoals(input: {
-  input: ButlerAutonomyInput
-  motivations: ButlerMotivation[]
-}): ButlerGoal[] {
-  const motivationByKind = new Map(
-    input.motivations.map((motivation) => [motivation.kind, motivation])
-  )
-
-  return [
-    buildGoal("wait_and_record", motivationByKind.get("resource_prudence")?.intensity ?? 50, false, "资源压力较高时，等待与记录是合法自主目标。"),
-    buildGoal("prepare_resources", motivationByKind.get("order")?.intensity ?? 50, true, "材料准备不足时，管家会先整理资源。"),
-    buildGoal("prepare_care", motivationByKind.get("care")?.intensity ?? 50, true, "照护准备不足时，管家会优先准备照护条件。"),
-    buildGoal("maintain_boundary", motivationByKind.get("safety")?.intensity ?? 50, true, "边界和土地状态会触发维护目标。"),
-    buildGoal("observe_world", 52, false, "管家可以先观察世界，不急于建设。"),
-    buildGoal("explain_to_player", motivationByKind.get("explanation")?.intensity ?? 48, false, "管家需要向玩家解释当前判断。"),
-  ]
-}
-
-function buildGoal(
-  kind: ButlerGoal["kind"],
-  priority: number,
-  constructionAllowed: boolean,
-  reason: string
-): ButlerGoal {
-  return {
-    goalId: `goal-${kind}`,
-    kind,
-    priority: clampScore(priority),
-    confidence: clampScore(50 + priority / 2),
-    constructionAllowed,
-    sourceMotivationIds: [`motivation-${kind}`],
-    reason,
-    tags: ["butler_goal", kind],
   }
 }
 
@@ -196,8 +166,4 @@ function buildMemoryEffects(input: {
   }
 
   return []
-}
-
-function clampScore(value: number): number {
-  return Math.max(0, Math.min(100, Math.round(value)))
 }
