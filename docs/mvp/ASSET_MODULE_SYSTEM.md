@@ -1,3 +1,5 @@
+> Status: historical archive. This document is kept for historical design context only and is no longer the highest authority for AI-PET-WORLD V2.0 MVP development. Future work follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md` and the four V2.0 product documents.
+
 # AI-PET-WORLD 素材模块系统文档 v1.0
 
 ## 0. 文档定位

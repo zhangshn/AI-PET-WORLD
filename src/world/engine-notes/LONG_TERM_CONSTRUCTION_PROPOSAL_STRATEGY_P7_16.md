@@ -1,3 +1,5 @@
+> Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
+
 # AI-PET-WORLD P7.16 长期建设 proposal 扩展策略
 
 ## 1. P7.16 的定位

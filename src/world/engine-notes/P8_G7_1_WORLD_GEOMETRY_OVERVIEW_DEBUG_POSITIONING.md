@@ -1,3 +1,5 @@
+> Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
+
 # AI-PET-WORLD P8-G7.1 World Geometry Overview Debug 定位修复
 
 1. 本阶段不新增功能，只修复 P8-G7 的命名与定位。

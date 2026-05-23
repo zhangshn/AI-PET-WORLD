@@ -1,3 +1,5 @@
+> Status: must follow V2.0 FormalVisualModel First. Assets and UI may express world facts, but must not generate world facts.
+
 # AI-PET-WORLD 像素美术风格规范 v0.1
 
 ## 1. 目标

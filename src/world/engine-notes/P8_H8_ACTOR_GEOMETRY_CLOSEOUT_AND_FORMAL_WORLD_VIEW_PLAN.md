@@ -1,3 +1,5 @@
+> Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
+
 # AI-PET-WORLD P8-H8 Actor Geometry 阶段收口与 Formal World View 分离规划
 
 ## 1. 阶段定位

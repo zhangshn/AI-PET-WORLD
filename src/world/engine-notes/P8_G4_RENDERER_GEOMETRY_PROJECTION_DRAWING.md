@@ -1,3 +1,5 @@
+> Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
+
 # AI-PET-WORLD P8-G4 Renderer 读取 Geometry Projection 绘制
 
 本阶段让 ProceduralRendererView 优先读取 VisualPlacement.footprint / collision / support / influence。

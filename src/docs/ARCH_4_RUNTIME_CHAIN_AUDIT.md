@@ -1,3 +1,5 @@
+> Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
+
 # ARCH-4 Runtime Chain Audit
 
 当前文件负责：审计 AI-PET-WORLD 在进入真实功能实现前的运行链路。

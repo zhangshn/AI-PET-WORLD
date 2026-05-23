@@ -1,3 +1,5 @@
+> Status: historical archive. This document is kept for historical design context only and is no longer the highest authority for AI-PET-WORLD V2.0 MVP development. Future work follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md` and the four V2.0 product documents.
+
 # AI-PET-WORLD 人格驱动规则世界引擎设计文档（历史参考）
 
 > LEGACY NOTICE / 历史文档声明

@@ -1,3 +1,5 @@
+> Status: must follow V2.0 FormalVisualModel First. Assets and UI may express world facts, but must not generate world facts.
+
 # AI-PET-WORLD 世界时间与资源规则定义 v0.1
 
 ## 1. 规则总原则

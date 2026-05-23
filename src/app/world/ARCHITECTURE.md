@@ -1,3 +1,5 @@
+> Status: must follow V2.0 FormalVisualModel First. Assets and UI may express world facts, but must not generate world facts.
+
 # app/world Architecture
 
 `src/app/world` 属于第 10 层：展示 / 交互层。

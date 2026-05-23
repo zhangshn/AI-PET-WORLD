@@ -1,3 +1,5 @@
+> Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
+
 # P-Phone Pre-Audit
 
 当前文件负责：审计 AI-PET-WORLD 在接入管家主动消息系统前的 P-Phone 旧链路和新链路边界。

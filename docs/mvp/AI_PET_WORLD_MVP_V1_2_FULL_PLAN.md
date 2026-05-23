@@ -1,3 +1,5 @@
+> Status: historical archive. This document is kept for historical design context only and is no longer the highest authority for AI-PET-WORLD V2.0 MVP development. Future work follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md` and the four V2.0 product documents.
+
 # AI-PET-WORLD MVP 完整计划书 v1.2
 
 完整版｜命理人格核心 + 世界生成与自主建设层 + 像素资产管线 + Renderer 数据驱动 UI

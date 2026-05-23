@@ -1,3 +1,5 @@
+> Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
+
 # CONSTRUCTION-01：ConstructionPlanner 候选计划生成
 
 ## 1. 模块定位

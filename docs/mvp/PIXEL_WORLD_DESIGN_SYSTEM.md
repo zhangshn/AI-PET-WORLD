@@ -1,3 +1,5 @@
+> Status: historical archive. This document is kept for historical design context only and is no longer the highest authority for AI-PET-WORLD V2.0 MVP development. Future work follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md` and the four V2.0 product documents.
+
 # AI-PET-WORLD 像素世界设计系统
 
 AI-PET-WORLD 的 UI 不由 AI 自由设计。UI 是世界数据的稳定显示器：它读取世界状态、地图状态、资源状态和 placement 结果，再把这些结果稳定地渲染成像素世界。

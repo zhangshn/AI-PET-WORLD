@@ -1,3 +1,5 @@
+> Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
+
 # AI-PET-WORLD MVP 全链路测试报告
 
 当前文件负责：记录依据 `AI-PET-WORLD_MVP_业务功能详细测试表_v2.xlsx` 执行的一轮 MVP 后台测试与肉眼验收证据。

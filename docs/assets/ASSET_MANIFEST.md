@@ -1,3 +1,5 @@
+> Status: must follow V2.0 FormalVisualModel First. Assets and UI may express world facts, but must not generate world facts.
+
 ﻿# AI-PET-WORLD Asset Manifest
 
 当前文件负责：登记 AI-PET-WORLD MVP 阶段已入库的像素素材。

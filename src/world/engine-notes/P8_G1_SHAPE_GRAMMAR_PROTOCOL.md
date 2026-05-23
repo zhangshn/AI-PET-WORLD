@@ -1,3 +1,5 @@
+> Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
+
 # AI-PET-WORLD P8-G1 点线面图形生成基础协议
 
 本阶段根据定版文档补齐“点、线、面组成图形”的基础层。
