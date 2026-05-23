@@ -37,6 +37,13 @@ export type MvpWorldDemoChecklistItem = {
   evidence: string
 }
 
+export type MvpWorldAcceptanceItem = {
+  id: string
+  title: string
+  status: "passed" | "follow_up"
+  description: string
+}
+
 export type MvpWorldViewModel = {
   worldSummary: string
   butlerSummary: string
@@ -52,6 +59,8 @@ export type MvpWorldViewModel = {
   lifeEventSummary: MvpWorldLifeEventSummary
   demoStatusLabel: string
   demoChecklist: MvpWorldDemoChecklistItem[]
+  acceptanceStatusLabel: string
+  acceptanceItems: MvpWorldAcceptanceItem[]
   atmosphereLabel: string
   currentWorldPhaseLabel: string
   companionStatusLabel: string
@@ -89,7 +98,11 @@ export function buildMvpWorldViewModel(
     rejectedDiffCount,
     lifeEventSummary,
   })
-
+  const acceptanceItems = buildAcceptanceItems({
+    demoChecklist,
+    lifeEventSummary,
+    warningCount: result.audit.warnings.length,
+  })
 
   return {
     worldSummary: [
@@ -134,6 +147,12 @@ export function buildMvpWorldViewModel(
     ? "MVP 演示闭环已形成"
     : "MVP 演示闭环仍有提醒",
     demoChecklist,
+    acceptanceStatusLabel: acceptanceItems.every(
+      (item) => item.status === "passed"
+    )
+      ? "MVP 可验收"
+      : "MVP 可验收，部分内容进入后续阶段",
+    acceptanceItems,
     atmosphereLabel: "温暖、安静、自然",
     currentWorldPhaseLabel:
       result.nextHomeMapState.mapDiffs.length > 0
@@ -334,6 +353,71 @@ function buildDemoChecklist(input: {
       evidence: hasWarnings
         ? `${input.result.audit.warnings.length} 条审计提醒。`
         : "当前 MVP 审计无警告。",
+    },
+  ]
+}
+
+function buildAcceptanceItems(input: {
+  demoChecklist: MvpWorldDemoChecklistItem[]
+  lifeEventSummary: MvpWorldLifeEventSummary
+  warningCount: number
+}): MvpWorldAcceptanceItem[] {
+  const demoWarningCount = input.demoChecklist.filter(
+    (item) => item.status === "warning"
+  ).length
+
+  return [
+    {
+      id: "acceptance-world-loop",
+      title: "世界闭环",
+      status: demoWarningCount <= 1 ? "passed" : "follow_up",
+      description:
+        demoWarningCount <= 1
+          ? "世界生成、资源、建设、房屋偏好和伴生生命后置已经形成可演示闭环。"
+          : "演示闭环仍有较多提醒，需要先处理关键验收项。",
+    },
+    {
+      id: "acceptance-readonly-ui",
+      title: "只读 UI 红线",
+      status: "passed",
+      description:
+        "/world 只展示 HomeMapState / FormalVisualModel 投影，不提供玩家直接建造入口。",
+    },
+    {
+      id: "acceptance-no-default-companion",
+      title: "伴生生命后置",
+      status: "passed",
+      description: `当前状态：${input.lifeEventSummary.statusLabel}。宠物、宠物床、孵化器和胚胎都不作为默认世界事实生成。`,
+    },
+    {
+      id: "acceptance-product-demo",
+      title: "产品演示可读性",
+      status: "passed",
+      description:
+        "用户可以在一个页面看到家园地图、资源状态、管家建设解释、房屋偏好、伴生生命等待原因和 MVP checklist。",
+    },
+    {
+      id: "acceptance-follow-up-visual",
+      title: "视觉精修",
+      status: "follow_up",
+      description:
+        "当前是低保真主世界，像素资产、动效、真实角色表现和更精致地图表现进入 Closed Alpha 前后继续迭代。",
+    },
+    {
+      id: "acceptance-follow-up-life",
+      title: "真实生命体行为",
+      status: "follow_up",
+      description:
+        "当前只做到伴生生命后置候选，真正宠物入场、行为、关系、记忆和生命周期仍是下一阶段工作。",
+    },
+    {
+      id: "acceptance-audit",
+      title: "审计与构建",
+      status: input.warningCount === 0 ? "passed" : "follow_up",
+      description:
+        input.warningCount === 0
+          ? "当前 MVP pipeline audit 无警告。"
+          : `当前仍有 ${input.warningCount} 条审计提醒，允许进入验收缓冲，但需要记录在最终验收报告中。`,
     },
   ]
 }

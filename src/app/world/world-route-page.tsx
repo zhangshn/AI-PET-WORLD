@@ -835,6 +835,7 @@ function ProductWorldPanel(input: { model: MvpWorldViewModel }) {
         </div>
       </article>
       <MvpDemoChecklistPanel model={input.model} />
+      <MvpAcceptancePanel model={input.model} />
     </section>
   )
 }
@@ -974,6 +975,57 @@ function MvpDemoChecklistPanel(input: { model: MvpWorldViewModel }) {
             <small>{item.evidence}</small>
           </div>
         ))}
+      </div>
+    </article>
+  )
+}
+
+function MvpAcceptancePanel(input: { model: MvpWorldViewModel }) {
+  const { model } = input
+  const passedCount = model.acceptanceItems.filter(
+    (item) => item.status === "passed"
+  ).length
+  const followUpCount = model.acceptanceItems.length - passedCount
+
+  return (
+    <article className={styles.acceptancePanel}>
+      <div className={styles.acceptanceHeader}>
+        <div>
+          <h3>MVP 最终验收</h3>
+          <p>
+            这不是新增功能，而是最终验收缓冲：确认当前版本是否已经能作为
+            AI-PET-WORLD V2.0 MVP 演示版本。
+          </p>
+        </div>
+        <div className={styles.acceptanceBadge}>
+          <strong>{model.acceptanceStatusLabel}</strong>
+          <span>
+            {passedCount} 项通过 / {followUpCount} 项后续
+          </span>
+        </div>
+      </div>
+
+      <div className={styles.acceptanceGrid}>
+        {model.acceptanceItems.map((item) => (
+          <div
+            className={styles.acceptanceItem}
+            data-status={item.status}
+            key={item.id}
+          >
+            <div className={styles.acceptanceItemHeader}>
+              <strong>{item.title}</strong>
+              <span>{item.status === "passed" ? "通过" : "后续"}</span>
+            </div>
+            <p>{item.description}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className={styles.acceptanceFooter}>
+        <strong>验收地址</strong>
+        <p>
+          打开 <code>http://localhost:3000/world</code>，确认世界地图、资源状态、管家建设解释、房屋偏好、伴生生命后置原因和本验收面板都能正常显示。
+        </p>
       </div>
     </article>
   )
