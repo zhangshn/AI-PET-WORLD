@@ -5,6 +5,7 @@
 import { auditButlerAutonomousIntent } from "./audit"
 import { buildButlerConsciousState } from "./conscious-state"
 import { buildButlerGoals } from "./goal-generator"
+import { buildButlerSelectedIntent } from "./intent-ranking"
 import { buildButlerMotivations } from "./motivation-engine"
 import { buildButlerSoulProfileFromButlerProfile } from "./soul-profile-adapter"
 import { buildButlerWorldPerception } from "./world-perception"
@@ -12,10 +13,8 @@ import type {
   ButlerAutonomousIntent,
   ButlerAutonomyInput,
   ButlerAutonomyResult,
-  ButlerGoal,
   ButlerMemoryEffect,
   ButlerMemoryState,
-  ButlerMotivation,
 } from "./schema"
 
 export function buildButlerAutonomyResult(
@@ -39,7 +38,7 @@ export function buildButlerAutonomyResult(
     consciousState,
     memoryState,
   })
-  const selectedIntent = buildSelectedIntent({
+  const selectedIntent = buildButlerSelectedIntent({
     input,
     perception,
     motivations,
@@ -98,46 +97,6 @@ function buildEmptyButlerMemoryState(input: ButlerAutonomyInput): ButlerMemorySt
     },
     unresolvedConcerns: [],
     tags: ["butler_memory_seed", "empty_memory_state"],
-  }
-}
-
-function buildSelectedIntent(input: {
-  input: ButlerAutonomyInput
-  perception: ReturnType<typeof buildButlerWorldPerception>
-  motivations: ButlerMotivation[]
-  candidateGoals: ButlerGoal[]
-  memoryState: ButlerMemoryState
-  consciousState: ReturnType<typeof buildButlerConsciousState>
-}): ButlerAutonomousIntent {
-  const selectedGoal = [...input.candidateGoals].sort(
-    (left, right) => right.priority - left.priority
-  )[0]
-
-  return {
-    intentId: `butler-intent-${input.input.worldId}-${input.input.now}`,
-    kind: selectedGoal.kind,
-    priority: selectedGoal.priority,
-    confidence: selectedGoal.confidence,
-    constructionAllowed: selectedGoal.constructionAllowed,
-    emotionalTone: input.consciousState.emotionalTone,
-    sourceMotivations: input.motivations
-      .filter((motivation) => motivation.intensity >= 45)
-      .map((motivation) => motivation.motivationId),
-    perceivedWorldFacts: input.perception.perceivedFacts,
-    memoryReferences: input.memoryState.recentEvents.slice(-3).map((event) => event.eventId),
-    reason: [
-      `管家选择 ${selectedGoal.kind}。`,
-      selectedGoal.reason,
-      input.perception.risks.length > 0
-        ? `当前风险：${input.perception.risks.join("、")}。`
-        : "当前没有高强度风险。",
-    ].join(""),
-    nextExpectedConsumer: selectedGoal.constructionAllowed
-      ? "construction_planner"
-      : selectedGoal.kind === "explain_to_player"
-        ? "p_phone"
-        : "memory_only",
-    tags: ["butler_autonomous_intent", selectedGoal.kind],
   }
 }
 
