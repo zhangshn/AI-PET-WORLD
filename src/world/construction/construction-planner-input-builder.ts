@@ -24,6 +24,13 @@ import type {
 import { toConstructionResourceSnapshot } from "./construction-schema"
 import { auditConstructionPlannerInput } from "./construction-planner-input-audit"
 
+const DEFERRED_BUTLER_CONSTRUCTION_TARGETS: readonly HomeZoneType[] = [
+  "temporary_shelter",
+  "initial_care",
+  "storage_tools",
+  "quiet_living",
+]
+
 export function buildConstructionPlannerInput(input: {
   homeMapState: HomeMapState
   constructionStyle: ButlerConstructionStyleVector
@@ -91,6 +98,7 @@ export function buildConstructionPlannerInput(input: {
       "biome_rule_driven",
       "resource_pool_state_driven",
       "house_preference_driven",
+      "deferred_butler_construction_target_supported",
       ...housePreferenceAudit.tags,
       "no_direct_map_mutation",
       "no_default_companion_plan",
@@ -179,8 +187,13 @@ function buildButlerConstructionIntents(input: {
       patience: 0.42 + input.constructionStyle.quietMaintainer * 0.28,
       resourceSensitivity: 0.45 + input.constructionStyle.structuredBuilder * 0.24,
       spaceSensitivity: 0.35 + input.constructionStyle.protectiveKeeper * 0.24,
-      reason: "管家优先确认临时住所仍能支撑初始家园的遮蔽、整理和基础管理。",
-      tags: ["temporary_shelter", "initial_stabilization"],
+      reason: "管家优先判断是否需要搭建临时住所；该目标不是初始世界事实，必须通过资源消耗与 MapDiff 后续进入世界。",
+      tags: [
+        "temporary_shelter",
+        "initial_stabilization",
+        "butler_construction_target",
+        "not_initial_world_fact",
+      ],
     }),
     createIntent({
       id: "improve-initial-care",
@@ -191,8 +204,14 @@ function buildButlerConstructionIntents(input: {
       patience: 0.36 + input.constructionStyle.adaptivePlanner * 0.2,
       resourceSensitivity: 0.5 + input.constructionStyle.warmCaretaker * 0.22,
       spaceSensitivity: 0.32 + input.constructionStyle.structuredBuilder * 0.18,
-      reason: "初始照护点需要维持基础物资、观察和整理能力，但不代表宠物已进入。",
-      tags: ["initial_care", "basic_living_support", "no_pet_assumption"],
+      reason: "照护点属于管家建设目标，不属于世界自然初始内容；管家会先确认材料、照护准备和空间条件。",
+      tags: [
+        "initial_care",
+        "basic_living_support",
+        "no_pet_assumption",
+        "butler_construction_target",
+        "not_initial_world_fact",
+      ],
     }),
     createIntent({
       id: "organize-storage-tools",
@@ -203,8 +222,13 @@ function buildButlerConstructionIntents(input: {
       patience: 0.44 + input.constructionStyle.adaptivePlanner * 0.16,
       resourceSensitivity: 0.58 + input.constructionStyle.structuredBuilder * 0.24,
       spaceSensitivity: 0.46 + input.homeMapState.resources.spacePressure / 220,
-      reason: "管家根据材料准备度和空间压力整理工具储备区，为后续建设计划提供秩序。",
-      tags: ["storage_tools", "resource_organization"],
+      reason: "管家根据材料准备度和空间压力判断是否整理工具储备区；储物区需要由管家后续建设生成。",
+      tags: [
+        "storage_tools",
+        "resource_organization",
+        "butler_construction_target",
+        "not_initial_world_fact",
+      ],
     }),
     createIntent({
       id: "maintain-natural-boundary",
@@ -215,8 +239,8 @@ function buildButlerConstructionIntents(input: {
       patience: 0.38 + input.constructionStyle.quietMaintainer * 0.2,
       resourceSensitivity: 0.28 + input.homeMapState.resources.naturalGrowth / 240,
       spaceSensitivity: 0.4 + input.constructionStyle.protectiveKeeper * 0.18,
-      reason: "自然边界用于维持家园边缘感、生态缓冲和非固定布局的长期可解释性。",
-      tags: ["natural_boundary", "boundary_maintenance"],
+      reason: "自然边界属于世界自然事实，管家只能维护、修剪或整理，不能把自然边界当作人工建筑。",
+      tags: ["natural_boundary", "boundary_maintenance", "world_nature_fact"],
     }),
     createIntent({
       id: "preserve-quiet-living",
@@ -227,8 +251,13 @@ function buildButlerConstructionIntents(input: {
       patience: 0.5 + input.constructionStyle.quietMaintainer * 0.26,
       resourceSensitivity: 0.3 + input.constructionStyle.aestheticOrganizer * 0.18,
       spaceSensitivity: 0.5 + input.constructionStyle.quietMaintainer * 0.18,
-      reason: "管家保留安静生活区的缓冲和留白，避免初始家园过早拥挤。",
-      tags: ["quiet_living", "living_buffer"],
+      reason: "安静生活区属于管家的后续空间规划，不应作为初始世界事实直接出现。",
+      tags: [
+        "quiet_living",
+        "living_buffer",
+        "butler_construction_target",
+        "not_initial_world_fact",
+      ],
     }),
     createIntent({
       id: "prepare-future-expansion",
@@ -252,7 +281,12 @@ function buildButlerConstructionIntents(input: {
         phase: input.phase,
       })
     )
-    .filter((intent) => hasZone(input.homeMapState, intent.targetZoneType))
+    .filter((intent) =>
+      isActionableConstructionTarget({
+        homeMapState: input.homeMapState,
+        targetZoneType: intent.targetZoneType,
+      })
+    )
 }
 
 function applyBiomeIntentModifiers(input: {
@@ -343,6 +377,23 @@ function createIntent(input: {
     reason: input.reason,
     tags: ["construction_intent", ...input.tags],
   }
+}
+
+function isActionableConstructionTarget(input: {
+  homeMapState: HomeMapState
+  targetZoneType: HomeZoneType
+}): boolean {
+  if (hasZone(input.homeMapState, input.targetZoneType)) {
+    return true
+  }
+
+  if (DEFERRED_BUTLER_CONSTRUCTION_TARGETS.includes(input.targetZoneType)) {
+    return true
+  }
+
+  return input.homeMapState.constructionPlans.some(
+    (plan) => plan.targetZoneType === input.targetZoneType
+  )
 }
 
 function hasZone(homeMapState: HomeMapState, zoneType: HomeZoneType): boolean {
