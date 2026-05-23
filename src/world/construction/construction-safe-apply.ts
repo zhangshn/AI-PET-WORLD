@@ -7,6 +7,10 @@ import type {
   MapDiff,
   MapPlacement,
 } from "@/world/map-state/home-map-state-schema"
+import {
+  auditResourcePoolState,
+  resourcePoolToHomeResourceSnapshot,
+} from "@/world/resource-cycle/resource-cycle"
 
 import { auditConstructionSafeApplyResult } from "./construction-safe-apply-audit"
 import type {
@@ -44,6 +48,7 @@ export function buildConstructionSafeApplyResult(
     homeMapState: input.homeMapState,
     acceptedDiffs,
     nextPlan: input.executionResult.nextPlan,
+    resourceCycleResult: input.executionResult.resourceCycleResult,
     now: input.now,
   })
   const resultWithoutAudit: Omit<ConstructionSafeApplyResult, "audit"> = {
@@ -200,8 +205,11 @@ function applyAcceptedMapDiffs(input: {
   homeMapState: HomeMapState
   acceptedDiffs: MapDiff[]
   nextPlan: ConstructionPlan
+  resourceCycleResult: ConstructionSafeApplyInput["executionResult"]["resourceCycleResult"]
   now: number
 }): HomeMapState {
+  const acceptedResourceState = buildAcceptedResourceState(input)
+
   return {
     ...input.homeMapState,
     placements: input.homeMapState.placements.map((placement) =>
@@ -226,11 +234,46 @@ function applyAcceptedMapDiffs(input: {
         : plan
     ),
     mapDiffs: [...input.homeMapState.mapDiffs, ...input.acceptedDiffs],
+    resources: acceptedResourceState,
     updatedAt: input.now,
     tags: uniqueTags([
       ...input.homeMapState.tags,
       "construction_safe_apply_v0",
       "map_diff_validated",
+    ]),
+  }
+}
+
+function buildAcceptedResourceState(input: {
+  homeMapState: HomeMapState
+  acceptedDiffs: MapDiff[]
+  nextPlan: ConstructionPlan
+  resourceCycleResult: ConstructionSafeApplyInput["executionResult"]["resourceCycleResult"]
+}): HomeMapState["resources"] {
+  if (input.acceptedDiffs.length === 0) {
+    return input.homeMapState.resources
+  }
+
+  const resourcePoolState = input.resourceCycleResult?.resourcePool
+  const resourceTransactions = input.resourceCycleResult?.transactions ?? []
+
+  if (!resourcePoolState || input.nextPlan.status === "paused") {
+    return input.homeMapState.resources
+  }
+
+  return {
+    ...input.homeMapState.resources,
+    ...resourcePoolToHomeResourceSnapshot(resourcePoolState),
+    resourcePoolState,
+    recentTransactions: [
+      ...(input.homeMapState.resources.recentTransactions ?? []),
+      ...resourceTransactions,
+    ].slice(-20),
+    resourceAudit: auditResourcePoolState(resourcePoolState),
+    tags: uniqueTags([
+      ...input.homeMapState.resources.tags,
+      "construction_resource_transaction_applied",
+      `construction_plan:${input.nextPlan.id}`,
     ]),
   }
 }

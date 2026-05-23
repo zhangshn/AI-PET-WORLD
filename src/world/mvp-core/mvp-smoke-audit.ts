@@ -22,6 +22,8 @@ export type MvpSmokeAuditResult = {
   layoutVariationAudit: WorldLayoutVariationAudit
   resourceCyclePassed: boolean
   resourceCycleWarnings: string[]
+  autonomousConstructionPassed: boolean
+  autonomousConstructionWarnings: string[]
   warningCount: number
   forbiddenTokenWarnings: string[]
   results: AiPetWorldMvpPipelineResult[]
@@ -54,17 +56,22 @@ export function runMvpSmokeAudit(): MvpSmokeAuditResult {
   const forbiddenTokenWarnings = auditForbiddenTokens(results)
   const resourceCycleWarnings = auditResourceCycle(results)
   const resourceCyclePassed = resourceCycleWarnings.length === 0
+  const autonomousConstructionWarnings = auditAutonomousConstruction(results)
+  const autonomousConstructionPassed =
+    autonomousConstructionWarnings.length === 0
   const warningCount =
     results.reduce((total, result) => total + result.audit.warnings.length, 0) +
     forbiddenTokenWarnings.length +
     layoutVariationAudit.warnings.length +
-    resourceCycleWarnings.length
+    resourceCycleWarnings.length +
+    autonomousConstructionWarnings.length
   const passed =
     results.length >= 5 &&
     stableScenarioMatched &&
     forbiddenTokenWarnings.length === 0 &&
     layoutVariationPassed &&
-    resourceCyclePassed
+    resourceCyclePassed &&
+    autonomousConstructionPassed
 
   return {
     scenarioCount: results.length,
@@ -74,6 +81,8 @@ export function runMvpSmokeAudit(): MvpSmokeAuditResult {
     layoutVariationAudit,
     resourceCyclePassed,
     resourceCycleWarnings,
+    autonomousConstructionPassed,
+    autonomousConstructionWarnings,
     warningCount,
     forbiddenTokenWarnings,
     results,
@@ -83,6 +92,7 @@ export function runMvpSmokeAudit(): MvpSmokeAuditResult {
       `Stable seed matched: ${String(stableScenarioMatched)}.`,
       `Layout variation passed: ${String(layoutVariationPassed)}.`,
       `Resource cycle passed: ${String(resourceCyclePassed)}.`,
+      `Autonomous construction passed: ${String(autonomousConstructionPassed)}.`,
       `Forbidden token warnings: ${forbiddenTokenWarnings.length}.`,
     ].join(" "),
     messages: [
@@ -90,6 +100,7 @@ export function runMvpSmokeAudit(): MvpSmokeAuditResult {
       `Stable seed matched: ${String(stableScenarioMatched)}`,
       ...summarizeWorldLayoutVariationAudit(layoutVariationAudit),
       `Resource cycle passed: ${String(resourceCyclePassed)}`,
+      `Autonomous construction passed: ${String(autonomousConstructionPassed)}`,
       `Forbidden token warnings: ${forbiddenTokenWarnings.length}`,
     ],
     tags: [
@@ -97,6 +108,62 @@ export function runMvpSmokeAudit(): MvpSmokeAuditResult {
       passed ? "mvp_smoke_passed" : "mvp_smoke_warning",
     ],
   }
+}
+
+function auditAutonomousConstruction(
+  results: AiPetWorldMvpPipelineResult[]
+): string[] {
+  return results.flatMap((result) => {
+    const protocol =
+      result.runtimeTick.constructionResult.runtimeCycleResult
+        .worldLoopProtocolResult
+    const executionResult = protocol.executionResult
+    const safeApplyResult = protocol.safeApplyResult
+    const warnings: string[] = []
+
+    if (!protocol.selectedPlan) {
+      warnings.push(`${result.initialWorld.homeMapState.worldId}: no autonomous plan selected.`)
+    }
+
+    if (!executionResult) {
+      warnings.push(`${result.initialWorld.homeMapState.worldId}: no construction execution result.`)
+      return warnings
+    }
+
+    if (executionResult.resourceTransactions.length === 0) {
+      warnings.push(`${result.initialWorld.homeMapState.worldId}: no construction resource transactions.`)
+    }
+
+    if (
+      executionResult.resourceTransactions.some(
+        (transaction) => transaction.status === "blocked"
+      ) &&
+      executionResult.mapDiffs.length > 0
+    ) {
+      warnings.push(`${result.initialWorld.homeMapState.worldId}: blocked construction still produced MapDiff.`)
+    }
+
+    if (!safeApplyResult) {
+      warnings.push(`${result.initialWorld.homeMapState.worldId}: no construction safe apply result.`)
+      return warnings
+    }
+
+    if (
+      executionResult.mapDiffs.length > 0 &&
+      safeApplyResult.acceptedDiffIds.length === 0
+    ) {
+      warnings.push(`${result.initialWorld.homeMapState.worldId}: MapDiff proposal was not accepted.`)
+    }
+
+    if (
+      safeApplyResult.acceptedDiffIds.length > 0 &&
+      !safeApplyResult.nextHomeMapState.resources.resourcePoolState
+    ) {
+      warnings.push(`${result.initialWorld.homeMapState.worldId}: accepted construction did not keep resource pool state.`)
+    }
+
+    return warnings
+  })
 }
 
 function auditResourceCycle(results: AiPetWorldMvpPipelineResult[]): string[] {

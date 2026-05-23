@@ -3,12 +3,19 @@
  */
 
 import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
+import type { BiomeRule } from "@/world/ecology/ecology-schema"
 import type {
   HomeMapState,
   HomeResourceState,
   HomeZoneType,
   MapDiff,
 } from "@/world/map-state/home-map-state-schema"
+import type {
+  ResourceCycleResult,
+  ResourcePoolState,
+  ResourceTransaction,
+  ResourceTransactionRequest,
+} from "@/world/resource-cycle/resource-schema"
 
 export type ConstructionProjectType =
   | "stabilize_temporary_shelter"
@@ -94,6 +101,8 @@ export type ConstructionPlannerInput = {
   seed: string
   homeMapState: HomeMapState
   constructionStyle: ButlerConstructionStyleVector
+  biomeRule: BiomeRule
+  resourcePoolState: ResourcePoolState
   resources: ConstructionPlannerResourceSnapshot
   phase: ConstructionPlannerPhaseInput
   intents: ButlerConstructionIntentInput[]
@@ -129,10 +138,12 @@ export type ConstructionPlan = {
   projectType: ConstructionProjectType
   title: string
   reason: string
+  reasonDrivers: string[]
   targetZoneType: HomeZoneType
   status: ConstructionPlanStatus
   currentStage: ConstructionStageType
   priority: number
+  resourceRequests: ResourceTransactionRequest[]
   stages: ConstructionStage[]
   createdAt: number
   updatedAt: number
@@ -174,6 +185,8 @@ export type ConstructionExecutionAudit = {
 
 export type ConstructionExecutionResult = {
   nextPlan: ConstructionPlan
+  resourceCycleResult: ResourceCycleResult | null
+  resourceTransactions: ResourceTransaction[]
   mapDiffs: MapDiff[]
   messages: string[]
   audit: ConstructionExecutionAudit

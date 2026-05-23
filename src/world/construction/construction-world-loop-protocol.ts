@@ -54,9 +54,8 @@ export function buildConstructionWorldLoopProtocolResult(
     }),
     tags: [
       "construction_world_loop_protocol_result",
-      "pre_world_loop_only",
+      "runtime_tick_integrated",
       "planner_candidate_executor_safe_apply_chain",
-      "no_runtime_integration",
       "no_ui_integration",
       "no_default_companion_entry",
     ],

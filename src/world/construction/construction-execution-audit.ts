@@ -31,6 +31,7 @@ export function auditConstructionExecutionResult(input: {
     ...auditMapDiffPlacementReferences(input),
     ...auditMapDiffCreatedAt(input),
     ...auditMapDiffTags(input.resultWithoutAudit.mapDiffs),
+    ...auditResourceTransactions(input.resultWithoutAudit),
     ...auditNextPlan(input),
     ...auditForbiddenTokens(input),
   ]
@@ -49,6 +50,30 @@ export function auditConstructionExecutionResult(input: {
       "no_direct_home_map_state_mutation",
     ],
   }
+}
+
+function auditResourceTransactions(
+  result: Omit<ConstructionExecutionResult, "audit">
+): string[] {
+  if (result.nextPlan.resourceRequests.length === 0) {
+    return [`ConstructionExecutionResult 缺少资源交易计划：${result.nextPlan.id}`]
+  }
+
+  if (result.resourceTransactions.length === 0) {
+    return [`ConstructionExecutionResult 缺少资源交易结果：${result.nextPlan.id}`]
+  }
+
+  return result.resourceTransactions.flatMap((transaction) => {
+    const warnings: string[] = []
+
+    if (!transaction.transactionId.trim()) warnings.push("资源交易缺少 transactionId。")
+    if (!transaction.reason.trim()) warnings.push("资源交易缺少 reason。")
+    if (transaction.after < 0) {
+      warnings.push(`资源交易不能扣成负数：${transaction.transactionId}`)
+    }
+
+    return warnings
+  })
 }
 
 function auditDuplicateMapDiffIds(mapDiffs: MapDiff[]): string[] {
@@ -191,6 +216,19 @@ function buildConstructionExecutionFingerprint(input: {
     input.executionInput.plan.currentStage,
     String(input.executionInput.now),
     fingerprintPlan(input.resultWithoutAudit.nextPlan),
+    input.resultWithoutAudit.resourceTransactions
+      .map((transaction) =>
+        [
+          transaction.transactionId,
+          transaction.resourceKey,
+          transaction.amount,
+          transaction.before,
+          transaction.after,
+          transaction.status,
+        ].join(":")
+      )
+      .sort()
+      .join("|"),
     input.resultWithoutAudit.mapDiffs.map(fingerprintMapDiff).sort().join("|"),
     input.resultWithoutAudit.tags.slice().sort().join("+"),
   ].join("::")

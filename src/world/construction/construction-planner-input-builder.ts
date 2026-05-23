@@ -3,10 +3,12 @@
  */
 
 import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
+import { getBiomeRule, selectBiomeType } from "@/world/ecology/biome-rules"
 import type {
   HomeMapState,
   HomeZoneType,
 } from "@/world/map-state/home-map-state-schema"
+import { buildInitialResourcePoolState } from "@/world/resource-cycle/resource-cycle"
 
 import type {
   ButlerConstructionIntentInput,
@@ -26,14 +28,30 @@ export function buildConstructionPlannerInput(input: {
   worldDay: number
 }): ConstructionPlannerInputBuildResult {
   const resources = toConstructionResourceSnapshot(input.homeMapState.resources)
+  const resourcePoolState =
+    input.homeMapState.resources.resourcePoolState ??
+    buildInitialResourcePoolState({
+      worldId: input.homeMapState.worldId,
+      regionId: "construction-runtime-fallback",
+      seed: input.homeMapState.seed,
+      biomeType: selectBiomeType({
+        requestedBiomeType: undefined,
+        seed: input.homeMapState.seed,
+      }),
+      currentOverrides: resources,
+      tags: ["construction_runtime_resource_pool_fallback"],
+    })
+  const biomeRule = getBiomeRule(resourcePoolState.biomeType)
   const phase = buildConstructionPlannerPhase({
     resources,
     worldDay: input.worldDay,
     constructionStyle: input.constructionStyle,
+    biomeRule,
   })
   const intents = buildButlerConstructionIntents({
     homeMapState: input.homeMapState,
     constructionStyle: input.constructionStyle,
+    biomeRule,
     phase,
   })
   const plannerInput: ConstructionPlannerInput = {
@@ -42,6 +60,8 @@ export function buildConstructionPlannerInput(input: {
     seed: input.homeMapState.seed,
     homeMapState: input.homeMapState,
     constructionStyle: input.constructionStyle,
+    biomeRule,
+    resourcePoolState,
     resources,
     phase,
     intents,
@@ -51,6 +71,8 @@ export function buildConstructionPlannerInput(input: {
       "home_map_state_driven",
       "butler_style_driven",
       "resource_snapshot_driven",
+      "biome_rule_driven",
+      "resource_pool_state_driven",
       "no_direct_map_mutation",
       "no_default_companion_plan",
     ],
@@ -66,6 +88,7 @@ function buildConstructionPlannerPhase(input: {
   resources: ConstructionPlannerInput["resources"]
   worldDay: number
   constructionStyle: ButlerConstructionStyleVector
+  biomeRule: ConstructionPlannerInput["biomeRule"]
 }): ConstructionPlannerPhaseInput {
   const developmentPressure = clamp01(
     input.resources.spacePressure / 100 +
@@ -73,7 +96,8 @@ function buildConstructionPlannerPhase(input: {
   )
   const maintenancePressure = clamp01(
     (100 - input.resources.groundHealth) / 140 +
-      input.resources.naturalGrowth / 260
+      input.resources.naturalGrowth / 260 +
+      input.biomeRule.constructionModifiers.maintenanceRisk / 4
   )
   const expansionReadiness = clamp01(
     input.resources.materialReadiness / 120 +
@@ -123,6 +147,7 @@ function resolveConstructionPlannerStage(input: {
 function buildButlerConstructionIntents(input: {
   homeMapState: HomeMapState
   constructionStyle: ButlerConstructionStyleVector
+  biomeRule: ConstructionPlannerInput["biomeRule"]
   phase: ConstructionPlannerPhaseInput
 }): ButlerConstructionIntentInput[] {
   const intents = [
@@ -200,9 +225,55 @@ function buildButlerConstructionIntents(input: {
     }),
   ]
 
-  return prioritizeIntentsByPhase(intents, input.phase.stage).filter((intent) =>
-    hasZone(input.homeMapState, intent.targetZoneType)
-  )
+  return prioritizeIntentsByPhase(intents, input.phase.stage)
+    .map((intent) =>
+      applyBiomeIntentModifiers({
+        intent,
+        biomeRule: input.biomeRule,
+        phase: input.phase,
+      })
+    )
+    .filter((intent) => hasZone(input.homeMapState, intent.targetZoneType))
+}
+
+function applyBiomeIntentModifiers(input: {
+  intent: ButlerConstructionIntentInput
+  biomeRule: ConstructionPlannerInput["biomeRule"]
+  phase: ConstructionPlannerPhaseInput
+}): ButlerConstructionIntentInput {
+  const maintenanceRisk = input.biomeRule.constructionModifiers.maintenanceRisk
+  const materialCostMultiplier =
+    input.biomeRule.constructionModifiers.materialCostMultiplier
+  const biomeBoost =
+    input.intent.goal === "maintain_natural_boundary"
+      ? maintenanceRisk * 0.16
+      : input.intent.goal === "organize_storage_tools"
+        ? materialCostMultiplier > 1
+          ? 0.08
+          : 0.03
+        : input.intent.goal === "stabilize_temporary_shelter"
+          ? input.biomeRule.layoutModifiers.shelterSafetyBias * 0.16
+          : 0
+
+  return {
+    ...input.intent,
+    urgency: clamp01(input.intent.urgency + biomeBoost),
+    resourceSensitivity: clamp01(
+      input.intent.resourceSensitivity + materialCostMultiplier / 20
+    ),
+    reason: [
+      input.intent.reason,
+      `Biome:${input.biomeRule.biomeType}.`,
+      `Resource pressure:${input.phase.developmentPressure.toFixed(2)}.`,
+      `Maintenance:${input.phase.maintenancePressure.toFixed(2)}.`,
+    ].join(" "),
+    tags: [
+      ...input.intent.tags,
+      `biome:${input.biomeRule.biomeType}`,
+      `material_cost:${materialCostMultiplier.toFixed(2)}`,
+      `maintenance_risk:${maintenanceRisk.toFixed(2)}`,
+    ],
+  }
 }
 
 function prioritizeIntentsByPhase(

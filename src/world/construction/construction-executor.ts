@@ -7,6 +7,11 @@ import type {
   MapDiff,
   MapPlacement,
 } from "@/world/map-state/home-map-state-schema"
+import {
+  buildInitialResourcePoolState,
+  runResourceCycle,
+} from "@/world/resource-cycle/resource-cycle"
+import type { ResourcePoolState } from "@/world/resource-cycle/resource-schema"
 
 import { auditConstructionExecutionResult } from "./construction-execution-audit"
 import type {
@@ -33,26 +38,46 @@ export function buildConstructionExecutionResult(
   input: ConstructionExecutionInput
 ): ConstructionExecutionResult {
   const executableStage = resolveExecutableStage(input.plan.currentStage)
+  const resourceCycleResult = runResourceCycle({
+    resourcePool: buildExecutionResourcePool(input),
+    cycleId: `construction:${input.plan.id}:${executableStage}`,
+    reason: input.plan.reason,
+    includeNaturalRegeneration: false,
+    requests: input.plan.resourceRequests,
+    tags: [
+      "construction_resource_cycle",
+      `plan:${input.plan.id}`,
+      `stage:${executableStage}`,
+    ],
+  })
+  const blockedByResources = resourceCycleResult.transactions.some(
+    (transaction) => transaction.status === "blocked"
+  )
   const targetPlacements = findExecutablePlacements({
     input,
     executableStage,
   })
-  const mapDiffs = targetPlacements.map((placement, index) =>
-    buildConstructionUpdateMapDiff({
-      input,
-      placement,
-      executableStage,
-      index,
-    })
-  )
+  const mapDiffs = blockedByResources
+    ? []
+    : targetPlacements.map((placement, index) =>
+        buildConstructionUpdateMapDiff({
+          input,
+          placement,
+          executableStage,
+          index,
+        })
+      )
   const nextPlan = buildNextPlan({
     plan: input.plan,
     now: input.now,
     executableStage,
     mapDiffIds: mapDiffs.map((diff) => diff.id),
+    blockedByResources,
   })
   const resultWithoutAudit: Omit<ConstructionExecutionResult, "audit"> = {
     nextPlan,
+    resourceCycleResult,
+    resourceTransactions: resourceCycleResult.transactions,
     mapDiffs,
     messages: buildExecutionMessages({
       input,
@@ -63,6 +88,7 @@ export function buildConstructionExecutionResult(
       "construction_execution_result",
       "construction_execution_candidate",
       "map_diff_candidate_only",
+      "resource_transaction_checked",
       "no_direct_home_map_state_mutation",
       `plan:${input.plan.id}`,
       `target:${input.plan.targetZoneType}`,
@@ -78,6 +104,27 @@ export function buildConstructionExecutionResult(
     ...resultWithoutAudit,
     audit,
   }
+}
+
+function buildExecutionResourcePool(
+  input: ConstructionExecutionInput
+): ResourcePoolState {
+  return (
+    input.homeMapState.resources.resourcePoolState ??
+    buildInitialResourcePoolState({
+      worldId: input.homeMapState.worldId,
+      regionId: "construction-execution-fallback",
+      seed: input.homeMapState.seed,
+      currentOverrides: {
+        groundHealth: input.homeMapState.resources.groundHealth,
+        naturalGrowth: input.homeMapState.resources.naturalGrowth,
+        materialReadiness: input.homeMapState.resources.materialReadiness,
+        careReadiness: input.homeMapState.resources.careReadiness,
+        spacePressure: input.homeMapState.resources.spacePressure,
+      },
+      tags: ["construction_execution_resource_pool_fallback"],
+    })
+  )
 }
 
 export function advanceConstructionPlan(
@@ -276,7 +323,21 @@ function buildNextPlan(input: {
   now: number
   executableStage: ConstructionStageType
   mapDiffIds: string[]
+  blockedByResources: boolean
 }): ConstructionPlan {
+  if (input.blockedByResources) {
+    return {
+      ...input.plan,
+      status: "paused",
+      updatedAt: input.now,
+      tags: uniqueTags([
+        ...input.plan.tags,
+        "construction_waiting_for_resources",
+        "resource_transaction_blocked",
+      ]),
+    }
+  }
+
   const nextStages = updateStages({
     stages: input.plan.stages,
     executableStage: input.executableStage,
@@ -338,6 +399,23 @@ function buildExecutionMessages(input: {
   executableStage: ConstructionStageType
   mapDiffs: MapDiff[]
 }): string[] {
+  const blockedTransactions = input.input.plan.resourceRequests.filter((request) => {
+    const resource = input.input.homeMapState.resources.resourcePoolState?.resources[
+      request.resourceKey
+    ]
+
+    return resource ? resource.current + request.amount < resource.min : false
+  })
+
+  if (blockedTransactions.length > 0) {
+    return [
+      `建设计划 ${input.input.plan.id} 因资源不足暂停，未生成 MapDiff。`,
+      ...blockedTransactions.map(
+        (request) => `资源不足：${request.resourceKey} / ${request.amount}`
+      ),
+    ]
+  }
+
   if (input.input.plan.currentStage === "completed") {
     return ["建设计划已经处于完成阶段，本轮不生成新的 MapDiff 候选。"]
   }

@@ -67,6 +67,17 @@ export function buildConstructionPlanCandidateFingerprint(
         plan.status,
         plan.currentStage,
         plan.priority,
+        plan.reasonDrivers.join("+"),
+        plan.resourceRequests
+          .map((request) =>
+            [
+              request.transactionId,
+              request.resourceKey,
+              request.amount,
+              request.source,
+            ].join(":")
+          )
+          .join("+"),
         plan.createdAt,
         plan.updatedAt,
         plan.tags.join("+"),
@@ -94,6 +105,12 @@ function auditRequiredCandidateFields(plans: ConstructionPlan[]): string[] {
     if (!plan.id.trim()) warnings.push("候选计划缺少 id。")
     if (!plan.title.trim()) warnings.push(`候选计划缺少 title：${plan.id}`)
     if (!plan.reason.trim()) warnings.push(`候选计划缺少 reason：${plan.id}`)
+    if (plan.reasonDrivers.length === 0) {
+      warnings.push(`候选计划缺少 reasonDrivers：${plan.id}`)
+    }
+    if (plan.resourceRequests.length === 0) {
+      warnings.push(`候选计划缺少资源交易请求：${plan.id}`)
+    }
     if (plan.stages.length === 0) warnings.push(`候选计划缺少 stages：${plan.id}`)
     if (plan.priority < 0 || plan.priority > 100) {
       warnings.push(`候选计划 priority 越界：${plan.id}`)

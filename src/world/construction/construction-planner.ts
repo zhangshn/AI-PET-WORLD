@@ -140,10 +140,17 @@ export function createInitialConstructionPlan(
     title: "整理安静生活区",
     reason:
       "管家观察到初始家园需要一个更稳定的安静生活区，因此先整理基础生活空间。",
+    reasonDrivers: [
+      "personality:quiet_maintainer",
+      "world_phase:legacy_initial_plan",
+      "resource:legacy_initial_plan",
+      "biome:legacy_initial_plan",
+    ],
     targetZoneType: "quiet_living",
     status: "planned",
     currentStage: "planned",
     priority: 72,
+    resourceRequests: [],
     stages: DEFAULT_STAGE_TYPES.map((type) =>
       createStage(type, "安静生活区")
     ),
@@ -166,10 +173,17 @@ function createPlanFromIntent(
     projectType: spec.projectType,
     title: spec.title,
     reason: `${spec.reason} ${intent.reason}`,
+    reasonDrivers: buildReasonDrivers({ plannerInput, intent }),
     targetZoneType: intent.targetZoneType,
     status: "planned",
     currentStage: "planned",
     priority,
+    resourceRequests: buildConstructionResourceRequests({
+      plannerInput,
+      intent,
+      planId: candidateId,
+      projectType: spec.projectType,
+    }),
     stages: DEFAULT_STAGE_TYPES.map((type) =>
       createStage(type, spec.stageTopic)
     ),
@@ -180,6 +194,8 @@ function createPlanFromIntent(
       "planner_input_driven",
       `intent:${intent.intentId}`,
       `phase:${plannerInput.phase.stage}`,
+      `biome:${plannerInput.biomeRule.biomeType}`,
+      "resource_transaction_planned",
       ...spec.tags,
     ],
   }
@@ -205,6 +221,149 @@ function calculatePlanPriority(
       basePriority + urgencyScore + resourceScore + spaceScore + phaseScore + pressureScore
     )
   )
+}
+
+function buildConstructionResourceRequests(input: {
+  plannerInput: ConstructionPlannerInput
+  intent: ButlerConstructionIntentInput
+  planId: string
+  projectType: ConstructionProjectType
+}): ConstructionPlan["resourceRequests"] {
+  const multiplier =
+    input.plannerInput.biomeRule.constructionModifiers.materialCostMultiplier
+  const baseCost = getProjectBaseCost(input.projectType)
+  const materialCost = -roundResourceCost(baseCost.materialReadiness * multiplier)
+  const careCost = -roundResourceCost(baseCost.careReadiness)
+  const groundCost = -roundResourceCost(
+    baseCost.groundHealth *
+      (1 + input.plannerInput.biomeRule.constructionModifiers.maintenanceRisk / 2)
+  )
+  const requests: ConstructionPlan["resourceRequests"] = [
+    {
+      transactionId: `${input.planId}:material-cost`,
+      resourceKey: "materialReadiness",
+      amount: materialCost,
+      reason: buildResourceRequestReason(input, "material"),
+      source: "construction_cost",
+      tags: ["construction_resource_cost", input.projectType],
+    },
+  ]
+
+  if (careCost < 0) {
+    requests.push({
+      transactionId: `${input.planId}:care-cost`,
+      resourceKey: "careReadiness",
+      amount: careCost,
+      reason: buildResourceRequestReason(input, "care"),
+      source: "construction_cost",
+      tags: ["construction_resource_cost", input.projectType],
+    })
+  }
+
+  if (groundCost < 0) {
+    requests.push({
+      transactionId: `${input.planId}:ground-cost`,
+      resourceKey: "groundHealth",
+      amount: groundCost,
+      reason: buildResourceRequestReason(input, "ground"),
+      source: "construction_cost",
+      tags: ["construction_resource_cost", input.projectType],
+    })
+  }
+
+  return requests
+}
+
+function getProjectBaseCost(
+  projectType: ConstructionProjectType
+): {
+  materialReadiness: number
+  careReadiness: number
+  groundHealth: number
+} {
+  const costs = {
+    stabilize_temporary_shelter: {
+      materialReadiness: 8,
+      careReadiness: 2,
+      groundHealth: 2,
+    },
+    improve_initial_care: {
+      materialReadiness: 5,
+      careReadiness: 6,
+      groundHealth: 1,
+    },
+    organize_storage_area: {
+      materialReadiness: 6,
+      careReadiness: 1,
+      groundHealth: 1,
+    },
+    improve_path: {
+      materialReadiness: 4,
+      careReadiness: 0,
+      groundHealth: 3,
+    },
+    maintain_natural_boundary: {
+      materialReadiness: 3,
+      careReadiness: 2,
+      groundHealth: 4,
+    },
+    preserve_quiet_living: {
+      materialReadiness: 4,
+      careReadiness: 3,
+      groundHealth: 1,
+    },
+    prepare_future_expansion: {
+      materialReadiness: 1,
+      careReadiness: 0,
+      groundHealth: 0,
+    },
+    decorate_home: {
+      materialReadiness: 3,
+      careReadiness: 1,
+      groundHealth: 0,
+    },
+  } satisfies Record<
+    ConstructionProjectType,
+    { materialReadiness: number; careReadiness: number; groundHealth: number }
+  >
+
+  return costs[projectType]
+}
+
+function buildResourceRequestReason(
+  input: {
+    plannerInput: ConstructionPlannerInput
+    intent: ButlerConstructionIntentInput
+    projectType: ConstructionProjectType
+  },
+  costType: "material" | "care" | "ground"
+): string {
+  return [
+    `personality:${input.intent.intentId}`,
+    `world:${input.plannerInput.phase.stage}`,
+    `resource:${costType}`,
+    `biome:${input.plannerInput.biomeRule.biomeType}`,
+  ].join(" / ")
+}
+
+function buildReasonDrivers(input: {
+  plannerInput: ConstructionPlannerInput
+  intent: ButlerConstructionIntentInput
+}): string[] {
+  return [
+    `personality:structured-${input.plannerInput.constructionStyle.structuredBuilder.toFixed(2)}`,
+    `personality:care-${input.plannerInput.constructionStyle.warmCaretaker.toFixed(2)}`,
+    `personality:protect-${input.plannerInput.constructionStyle.protectiveKeeper.toFixed(2)}`,
+    `world_phase:${input.plannerInput.phase.stage}`,
+    `resource:material-${input.plannerInput.resources.materialReadiness}`,
+    `resource:space-${input.plannerInput.resources.spacePressure}`,
+    `biome:${input.plannerInput.biomeRule.biomeType}`,
+    `intent:${input.intent.intentId}`,
+  ]
+}
+
+function roundResourceCost(value: number): number {
+  return Math.max(0, Math.round(value))
 }
 
 function buildPlanId(intent: ButlerConstructionIntentInput): string {

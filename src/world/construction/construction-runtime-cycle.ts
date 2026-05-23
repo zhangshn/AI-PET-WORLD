@@ -46,7 +46,8 @@ export function buildConstructionRuntimeCycleResult(
     ],
     tags: [
       "construction_runtime_cycle_result",
-      "runtime_boundary_only",
+      "runtime_tick_integrated",
+      "autonomous_construction_runtime",
       "no_direct_persistence",
       "no_ui_integration",
       "no_default_companion_entry",
