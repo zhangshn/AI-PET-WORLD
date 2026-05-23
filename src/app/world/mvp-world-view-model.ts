@@ -8,6 +8,11 @@ import { buildFormalVisualDeliveryModel } from "@/world/formal-visual-model/form
 import type { FormalVisualDeliveryModel } from "@/world/formal-visual-model/formal-visual-schema"
 import type { AiPetWorldMvpPipelineResult } from "@/world/mvp-core/mvp-core-schema"
 
+import {
+  buildConstructionObservability,
+  type MvpWorldConstructionObservability,
+} from "./construction-observability"
+
 export type MvpWorldLifeEventSummary = {
   title: string
   statusLabel: string
@@ -44,21 +49,11 @@ export type MvpWorldAcceptanceItem = {
   description: string
 }
 
-type MvpWorldConstructionObservability = {
-  summary: string
-  selectedPlanLabel: string
-  acceptedAddCount: number
-  acceptedUpdateCount: number
-  rejectedCount: number
-  resourceTransactionCount: number
-  acceptedPlacementLabels: string[]
-  logItems: string[]
-}
-
 export type MvpWorldViewModel = {
   worldSummary: string
   butlerSummary: string
   constructionSummary: string
+  constructionAudit: MvpWorldConstructionObservability
   logItems: string[]
   pPhoneMessages: Array<{
     title: string
@@ -103,6 +98,7 @@ export function buildMvpWorldViewModel(
     formalVisualDeliveryModel
   )
   const lifeEventSummary = buildLifeEventSummary(result)
+  const constructionAudit = buildConstructionObservability(result)
   const demoChecklist = buildDemoChecklist({
     result,
     acceptedDiffCount,
@@ -114,7 +110,6 @@ export function buildMvpWorldViewModel(
     lifeEventSummary,
     warningCount: result.audit.warnings.length,
   })
-  const constructionObservability = buildConstructionObservability(result)
 
   return {
     worldSummary: [
@@ -129,15 +124,16 @@ export function buildMvpWorldViewModel(
       `生活节律：${result.butlerProfile.lifeRhythmBias}`,
     ].join(" / "),
     constructionSummary: [
-      `计划：${constructionObservability.selectedPlanLabel}`,
-      `新增 diff：${constructionObservability.acceptedAddCount}`,
-      `更新 diff：${constructionObservability.acceptedUpdateCount}`,
-      `拒绝 diff：${constructionObservability.rejectedCount}`,
+      `计划：${constructionAudit.selectedPlanLabel}`,
+      `新增 diff：${constructionAudit.acceptedAddCount}`,
+      `更新 diff：${constructionAudit.acceptedUpdateCount}`,
+      `拒绝 diff：${constructionAudit.rejectedCount}`,
     ].join(" / "),
+    constructionAudit,
     logItems: [
       `世界运行：当前有 ${result.nextHomeMapState.placements.length} 个可观察对象。`,
       `建设链路：接受 ${acceptedDiffCount} 条 MapDiff，拒绝 ${rejectedDiffCount} 条。`,
-      ...constructionObservability.logItems,
+      ...constructionAudit.logItems,
       `视觉刷新：${result.visualRefresh.reason}`,
       `生命事件：${lifeEventSummary.readinessLabel} / ${lifeEventSummary.candidateLabel}`,
       `伴生生命：${lifeEventSummary.decisionLabel}，${lifeEventSummary.nextCheckHint}`,
@@ -147,10 +143,7 @@ export function buildMvpWorldViewModel(
         title: message.title,
         body: message.body,
       })),
-      {
-        title: "管家建设审计",
-        body: constructionObservability.summary,
-      },
+      ...constructionAudit.pPhoneMessages,
     ],
     auditSummary:
       result.audit.warnings.length === 0 &&
@@ -184,7 +177,9 @@ export function buildMvpWorldViewModel(
       "readonly_projection",
       "no_world_fact_generation",
       "construction_observability_visible",
+      "construction_audit_panel_ready",
       "life_event_visible_summary",
+      ...constructionAudit.tags,
       ...result.tags,
     ],
   }
@@ -304,58 +299,6 @@ function toBlockerSourceLabel(source: string): string {
   }
 
   return labels[source] ?? "世界状态"
-}
-
-function buildConstructionObservability(
-  result: AiPetWorldMvpPipelineResult
-): MvpWorldConstructionObservability {
-  const audit = result.runtimeTick.constructionResult.fullPipelineAudit
-  const protocol =
-    result.runtimeTick.constructionResult.runtimeCycleResult
-      .worldLoopProtocolResult
-  const acceptedDiffIds = new Set(audit.acceptedDiffIds)
-  const acceptedDiffs = result.nextHomeMapState.mapDiffs.filter((diff) =>
-    acceptedDiffIds.has(diff.id)
-  )
-  const acceptedAddDiffs = acceptedDiffs.filter(
-    (diff) => diff.operation === "add"
-  )
-  const acceptedUpdateDiffs = acceptedDiffs.filter(
-    (diff) => diff.operation === "update"
-  )
-  const acceptedPlacementLabels = acceptedAddDiffs.flatMap((diff) =>
-    diff.placement?.label ? [diff.placement.label] : []
-  )
-  const resourceTransactionCount =
-    result.nextHomeMapState.resources.recentTransactions?.length ?? 0
-  const selectedPlanLabel = protocol.selectedPlan
-    ? `${protocol.selectedPlan.title}（${protocol.selectedPlan.id}）`
-    : audit.selectedPlanId ?? "未选择"
-  const addedLabel =
-    acceptedPlacementLabels.length > 0
-      ? acceptedPlacementLabels.join("、")
-      : "暂无新增建设对象"
-
-  return {
-    summary: [
-      `当前计划：${selectedPlanLabel}`,
-      `SafeApply 接受新增 ${acceptedAddDiffs.length} 条、更新 ${acceptedUpdateDiffs.length} 条。`,
-      `资源交易记录 ${resourceTransactionCount} 条。`,
-      `新增对象：${addedLabel}。`,
-    ].join(" "),
-    selectedPlanLabel,
-    acceptedAddCount: acceptedAddDiffs.length,
-    acceptedUpdateCount: acceptedUpdateDiffs.length,
-    rejectedCount: audit.rejectedDiffIds.length,
-    resourceTransactionCount,
-    acceptedPlacementLabels,
-    logItems: [
-      `管家建设：当前选择 ${selectedPlanLabel}。`,
-      `MapDiff 类型：新增 ${acceptedAddDiffs.length} 条，更新 ${acceptedUpdateDiffs.length} 条，拒绝 ${audit.rejectedDiffIds.length} 条。`,
-      `资源连接：本轮记录 ${resourceTransactionCount} 条资源交易，建设事实必须经过资源与 SafeApply。`,
-      `建设结果：${addedLabel}。`,
-    ],
-  }
 }
 
 function buildDemoChecklist(input: {
