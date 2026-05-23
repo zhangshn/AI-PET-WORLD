@@ -76,8 +76,6 @@ export type MvpWorldViewModel = {
 export function buildMvpWorldViewModel(
   result: AiPetWorldMvpPipelineResult
 ): MvpWorldViewModel {
-  const selectedPlanId =
-    result.runtimeTick.constructionResult.fullPipelineAudit.selectedPlanId
   const acceptedDiffCount =
     result.runtimeTick.constructionResult.fullPipelineAudit.acceptedDiffIds
       .length
