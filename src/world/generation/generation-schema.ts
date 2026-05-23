@@ -3,6 +3,7 @@
  */
 
 import type { WorldMapAssetId } from "@/world/map-assets/world-map-asset-registry"
+import type { BiomeType } from "@/world/ecology/ecology-schema"
 import type {
   HomeMapSize,
   HomeMapState,
@@ -53,7 +54,7 @@ export type WorldLayoutPhaseInput = {
   expansionReadiness: number
 }
 
-export type WorldLayoutBiomeType = "grassland" | "forest" | "desert" | "oasis"
+export type WorldLayoutBiomeType = BiomeType
 
 export type WorldLayoutBiomeInput = {
   biomeType: WorldLayoutBiomeType

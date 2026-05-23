@@ -2,7 +2,10 @@
  * 当前文件职责：定义 MVP 核心 debug runner 的输入、审计与报告协议。
  */
 
-import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
+import type {
+  ButlerConstructionStyleVector,
+  WorldLayoutBiomeType,
+} from "@/world/generation/generation-schema"
 import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
 import type {
   ButlerMvpAudit,
@@ -124,6 +127,7 @@ export type AiPetWorldMvpPipelineInput = {
   worldDay: number
   now: number
   seed: string
+  biomeType?: WorldLayoutBiomeType
   runMode: "debug" | "preview" | "mvp"
   persistenceMode: MvpPersistenceMode
   visualMode: "refresh_request" | "formal_precheck" | "disabled"

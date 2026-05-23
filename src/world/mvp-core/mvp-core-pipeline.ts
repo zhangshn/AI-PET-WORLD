@@ -52,6 +52,7 @@ export function runAiPetWorldMvpPipeline(
     butlerProfile: butlerBuildResult.profile,
     worldDay: input.worldDay,
     now: input.now,
+    biomeType: input.biomeType,
     tags: input.tags,
   })
   const runtimeTick = runMvpWorldRuntimeTick({

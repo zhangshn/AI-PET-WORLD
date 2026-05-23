@@ -3,6 +3,11 @@
  */
 
 import type { WorldMapAssetId } from "@/world/map-assets/world-map-asset-registry"
+import type {
+  ResourceAudit,
+  ResourcePoolState,
+  ResourceTransaction,
+} from "@/world/resource-cycle/resource-schema"
 
 export type HomeMapSize = {
   columns: number
@@ -58,6 +63,9 @@ export type HomeResourceState = {
   materialReadiness: number
   careReadiness: number
   spacePressure: number
+  resourcePoolState?: ResourcePoolState
+  recentTransactions?: ResourceTransaction[]
+  resourceAudit?: ResourceAudit
   tags: string[]
 }
 

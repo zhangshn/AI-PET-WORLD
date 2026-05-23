@@ -8,8 +8,15 @@ import type {
   HomeResourceState,
   HomeZone,
 } from "@/world/map-state/home-map-state-schema"
+import { selectBiomeType } from "@/world/ecology/biome-rules"
+import type { BiomeType } from "@/world/ecology/ecology-schema"
 import { buildInitialHomePlacements } from "@/world/placement/placement-engine"
 import { INITIAL_HOME_PLACEMENT_RULE_SET } from "@/world/placement/placement-rules"
+import {
+  auditResourcePoolState,
+  buildInitialResourcePoolState,
+  resourcePoolToHomeResourceSnapshot,
+} from "@/world/resource-cycle/resource-cycle"
 
 import type {
   InitialHomeAreaRecipe,
@@ -37,9 +44,17 @@ export function generateInitialHomeMapResult(
     birthSignature: input.birthSignature,
     worldSalt: input.worldSalt,
   })
-  const resources = buildInitialResources(input)
+  const biomeType = selectBiomeType({
+    requestedBiomeType: input.biomeType,
+    seed,
+  })
+  const generationInput = {
+    ...input,
+    biomeType,
+  }
+  const resources = buildInitialResources(input, biomeType, seed)
   const layoutBuildResult = buildWorldLayoutGenerationInput({
-    generationInput: input,
+    generationInput,
     seed,
     resources,
   })
@@ -127,7 +142,9 @@ function toHomeZone(
 }
 
 function buildInitialResources(
-  input: InitialHomeGenerationInput
+  input: InitialHomeGenerationInput,
+  biomeType: BiomeType,
+  seed: string
 ): HomeResourceState {
   const warmth =
     input.butlerConstructionStyle.warmCaretaker +
@@ -135,16 +152,34 @@ function buildInitialResources(
   const structure =
     input.butlerConstructionStyle.structuredBuilder +
     input.butlerConstructionStyle.protectiveKeeper
-
-  return {
-    groundHealth: 78,
-    naturalGrowth: 46,
-    materialReadiness: Math.min(100, 24 + structure * 8),
-    careReadiness: Math.min(100, 48 + warmth * 7),
-    spacePressure: 18,
+  const resourcePoolState = buildInitialResourcePoolState({
+    worldId: input.worldId,
+    regionId: "initial-home",
+    seed,
+    biomeType,
+    currentOverrides: {
+      groundHealth: 78,
+      naturalGrowth: 46,
+      materialReadiness: Math.min(100, 24 + structure * 8),
+      careReadiness: Math.min(100, 48 + warmth * 7),
+      spacePressure: 18,
+    },
     tags: [
       "mvp_initial_resources",
-      "default_resource_state",
+      input.biomeType ? `requested_biome:${input.biomeType}` : "seed_biome",
+    ],
+  })
+  const resourceAudit = auditResourcePoolState(resourcePoolState)
+
+  return {
+    ...resourcePoolToHomeResourceSnapshot(resourcePoolState),
+    resourcePoolState,
+    recentTransactions: resourcePoolState.transactions,
+    resourceAudit,
+    tags: [
+      "mvp_initial_resources",
+      "resource_pool_state_snapshot",
+      biomeType,
       input.biomeType ? `requested_biome:${input.biomeType}` : "seed_biome",
     ],
   }

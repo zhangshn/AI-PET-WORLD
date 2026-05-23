@@ -3,6 +3,7 @@
  */
 
 import type { ButlerMvpProfile } from "@/world/butler/butler-mvp-schema"
+import type { WorldLayoutBiomeType } from "@/world/generation/generation-schema"
 import { generateInitialHomeMap } from "@/world/generation/initial-home-generator"
 import { buildStableWorldSeed } from "@/world/generation/world-seed"
 import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
@@ -19,6 +20,7 @@ export type MvpInitialWorldInput = {
   butlerProfile: ButlerMvpProfile
   worldDay: number
   now: number
+  biomeType?: WorldLayoutBiomeType
   tags: string[]
 }
 
@@ -51,6 +53,7 @@ export function buildMvpInitialWorld(
     birthSignature,
     worldSalt: input.seed,
     butlerConstructionStyle: input.butlerProfile.constructionStyle,
+    biomeType: input.biomeType,
     now: input.now,
   })
   const resultWithoutAudit = {

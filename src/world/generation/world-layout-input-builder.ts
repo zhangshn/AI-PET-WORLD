@@ -18,6 +18,7 @@ import type {
   WorldLayoutShelterBias,
   WorldLayoutVariantInput,
 } from "./generation-schema"
+import { getBiomeRule, selectBiomeType } from "@/world/ecology/biome-rules"
 import { buildSeededNumber, pickSeededItem } from "./world-seed"
 
 export function buildWorldLayoutGenerationInput(input: {
@@ -50,8 +51,6 @@ export function buildWorldLayoutGenerationInput(input: {
   const biome = buildLayoutBiomeInput({
     requestedBiomeType: generationInput.biomeType,
     seed,
-    personality,
-    resources,
   })
   const constraints = buildLayoutConstraints({ biome, resources })
   const candidates = buildLayoutCandidates({
@@ -216,95 +215,31 @@ function buildLayoutVariantInput(input: {
 function buildLayoutBiomeInput(input: {
   requestedBiomeType: WorldLayoutBiomeType | undefined
   seed: string
-  personality: WorldLayoutGenerationInput["personality"]
-  resources: WorldLayoutResourceInput
 }): WorldLayoutBiomeInput {
-  const biomeType =
-    input.requestedBiomeType ??
-    pickSeededItem(
-      ["grassland", "forest", "desert", "oasis"] as const,
-      input.seed,
-      "layout-biome"
-    )
-
-  const profile = {
-    grassland: {
-      resourceCaps: {
-        materialReadiness: 72,
-        careReadiness: 76,
-        naturalGrowth: 70,
-        groundHealth: 86,
-        spacePressure: 62,
-      },
-      regenerationBias: { material: 0.7, care: 0.75, natural: 0.8, ground: 0.8 },
-      layoutModifiers: {
-        compactnessBias: 0,
-        boundaryDensityBias: 0,
-        pathFlexibilityBias: 0,
-        shelterSafetyBias: 0,
-      },
-      constructionModifiers: { materialCostMultiplier: 1, maintenanceRisk: 0.24 },
-      visualTokens: ["open_ground", "soft_grass", "mvp_starting_biome"],
-    },
-    forest: {
-      resourceCaps: {
-        materialReadiness: 82,
-        careReadiness: 70,
-        naturalGrowth: 92,
-        groundHealth: 82,
-        spacePressure: 72,
-      },
-      regenerationBias: { material: 0.9, care: 0.68, natural: 1, ground: 0.72 },
-      layoutModifiers: {
-        compactnessBias: 0.08,
-        boundaryDensityBias: 0.18,
-        pathFlexibilityBias: 0.08,
-        shelterSafetyBias: 0.06,
-      },
-      constructionModifiers: { materialCostMultiplier: 0.92, maintenanceRisk: 0.4 },
-      visualTokens: ["forest_edge", "dense_boundary", "wood_rich"],
-    },
-    desert: {
-      resourceCaps: {
-        materialReadiness: 64,
-        careReadiness: 58,
-        naturalGrowth: 42,
-        groundHealth: 62,
-        spacePressure: 55,
-      },
-      regenerationBias: { material: 0.55, care: 0.5, natural: 0.35, ground: 0.45 },
-      layoutModifiers: {
-        compactnessBias: 0.16,
-        boundaryDensityBias: -0.12,
-        pathFlexibilityBias: -0.06,
-        shelterSafetyBias: 0.16,
-      },
-      constructionModifiers: { materialCostMultiplier: 1.18, maintenanceRisk: 0.52 },
-      visualTokens: ["dry_ground", "water_stress", "shade_priority"],
-    },
-    oasis: {
-      resourceCaps: {
-        materialReadiness: 70,
-        careReadiness: 90,
-        naturalGrowth: 86,
-        groundHealth: 78,
-        spacePressure: 78,
-      },
-      regenerationBias: { material: 0.68, care: 1, natural: 0.92, ground: 0.7 },
-      layoutModifiers: {
-        compactnessBias: 0.12,
-        boundaryDensityBias: 0.1,
-        pathFlexibilityBias: 0.12,
-        shelterSafetyBias: 0.02,
-      },
-      constructionModifiers: { materialCostMultiplier: 1.04, maintenanceRisk: 0.34 },
-      visualTokens: ["water_adjacent", "life_event_ready_later", "space_pressure"],
-    },
-  }[biomeType]
+  const biomeType = selectBiomeType({
+    requestedBiomeType: input.requestedBiomeType,
+    seed: input.seed,
+  })
+  const rule = getBiomeRule(biomeType)
 
   return {
     biomeType,
-    ...profile,
+    resourceCaps: {
+      materialReadiness: rule.resources.materialReadiness.max,
+      careReadiness: rule.resources.careReadiness.max,
+      naturalGrowth: rule.resources.naturalGrowth.max,
+      groundHealth: rule.resources.groundHealth.max,
+      spacePressure: rule.resources.spacePressure.max,
+    },
+    regenerationBias: {
+      material: rule.resources.materialReadiness.regenPerTick,
+      care: rule.resources.careReadiness.regenPerTick,
+      natural: rule.resources.naturalGrowth.regenPerTick,
+      ground: rule.resources.groundHealth.regenPerTick,
+    },
+    layoutModifiers: rule.layoutModifiers,
+    constructionModifiers: rule.constructionModifiers,
+    visualTokens: rule.visualTokens,
   }
 }
 
