@@ -4,6 +4,7 @@
 
 import { auditButlerAutonomousIntent } from "./audit"
 import { buildButlerConsciousState } from "./conscious-state"
+import { buildButlerMotivations } from "./motivation-engine"
 import { buildButlerSoulProfileFromButlerProfile } from "./soul-profile-adapter"
 import { buildButlerWorldPerception } from "./world-perception"
 import type {
@@ -25,7 +26,12 @@ export function buildButlerAutonomyResult(
   const memoryState = input.butlerMemoryState ?? buildEmptyButlerMemoryState(input)
   const perception = buildButlerWorldPerception(input)
   const consciousState = buildButlerConsciousState({ input, perception })
-  const motivations = buildMotivations({ input, perception, memoryState })
+  const motivations = buildButlerMotivations({
+    soulProfile,
+    perception,
+    consciousState,
+    memoryState,
+  })
   const candidateGoals = buildGoals({ input, motivations })
   const selectedIntent = buildSelectedIntent({
     input,
@@ -86,39 +92,6 @@ function buildEmptyButlerMemoryState(input: ButlerAutonomyInput): ButlerMemorySt
     },
     unresolvedConcerns: [],
     tags: ["butler_memory_seed", "empty_memory_state"],
-  }
-}
-
-function buildMotivations(input: {
-  input: ButlerAutonomyInput
-  perception: ReturnType<typeof buildButlerWorldPerception>
-  memoryState: ButlerMemoryState
-}): ButlerMotivation[] {
-  return [
-    buildMotivation("resource_prudence", input.perception.resourcePressure, "资源压力影响管家谨慎程度。", ["resource_pressure"]),
-    buildMotivation("care", input.perception.careNeed, "照护准备影响管家是否准备照护环境。", ["care_need"]),
-    buildMotivation("order", input.perception.storageNeed, "材料准备不足会提高整理和储备动机。", ["storage_need"]),
-    buildMotivation("safety", input.perception.boundaryMaintenanceNeed, "土地和边界状态会提高安全维护动机。", ["boundary_need"]),
-    buildMotivation("waiting", input.memoryState.learnedPreferences.waitingBias, "记忆中的等待倾向会影响本轮节奏。", ["memory_waiting_bias"]),
-    buildMotivation("explanation", 48, "正式世界需要让用户理解管家为什么这样做。", ["explainability"]),
-  ]
-}
-
-function buildMotivation(
-  kind: ButlerMotivation["kind"],
-  intensity: number,
-  reason: string,
-  tags: string[]
-): ButlerMotivation {
-  return {
-    motivationId: `motivation-${kind}`,
-    kind,
-    intensity: clampScore(intensity),
-    sourceSoulFactors: [],
-    sourceWorldFactors: tags,
-    sourceMemoryFactors: [],
-    reason,
-    tags: ["butler_motivation", kind, ...tags],
   }
 }
 
