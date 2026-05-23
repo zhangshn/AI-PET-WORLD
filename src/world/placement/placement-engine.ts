@@ -1,5 +1,5 @@
-/**
- * 当前文件负责：根据 Scene Recipe 与布局输入输出稳定地图摆放结果。
+﻿/**
+ * 褰撳墠鏂囦欢璐熻矗锛氭牴鎹?Scene Recipe 涓庡竷灞€杈撳叆杈撳嚭绋冲畾鍦板浘鎽嗘斁缁撴灉銆?
  */
 
 import type {
@@ -26,6 +26,7 @@ import {
 } from "./layout-rules"
 import type {
   CreatePlacementInput,
+  PlacementProposal,
   PlacementRequest,
   PlacementResult,
 } from "./placement-schema"
@@ -76,16 +77,76 @@ export function buildInitialHomePlacements(
       : result.affectedPlacementIds
   )
 
+  const proposals = buildPlacementProposals({
+    placements,
+    rejectedPlacementIds,
+    layoutInput: input.layoutInput,
+  })
+
   return {
     placements: sortPlacements(
-      placements.filter((placement) => !rejectedPlacementIds.includes(placement.id))
+      proposals
+        .filter((proposal) => proposal.accepted)
+        .map((proposal) => proposal.placement)
     ),
+    proposals,
     ruleResults,
     rejectedPlacementIds,
     warnings: ruleResults
       .filter((result) => !result.passed)
       .map((result) => result.message),
   }
+}
+
+function buildPlacementProposals(input: {
+  placements: MapPlacement[]
+  rejectedPlacementIds: string[]
+  layoutInput: WorldLayoutGenerationInput
+}): PlacementProposal[] {
+  return input.placements.map((placement) => {
+    const accepted = !input.rejectedPlacementIds.includes(placement.id)
+    const score = buildPlacementProposalScore(placement, input.layoutInput)
+
+    return {
+      proposalId: `proposal-${placement.id}`,
+      placement,
+      score,
+      accepted,
+      rejectedReason: accepted ? undefined : "placement_rule_rejected",
+      tags: [
+        "placement_proposal",
+        accepted ? "accepted" : "rejected",
+        input.layoutInput.selectedCandidate.candidateId,
+        input.layoutInput.biome.biomeType,
+        ...placement.tags,
+      ],
+    }
+  })
+}
+
+function buildPlacementProposalScore(
+  placement: MapPlacement,
+  layoutInput: WorldLayoutGenerationInput
+): number {
+  const layerBaseScore = {
+    ground: 0.5,
+    path: 0.72,
+    edge: 0.62,
+    zone: 0.6,
+    structure: 0.9,
+    facility: 0.82,
+    nature: 0.68 + layoutInput.biome.layoutModifiers.boundaryDensityBias,
+    "surface-decoration": 0.58 + layoutInput.personality.aestheticPreference / 5,
+    actor: 0.86,
+    atmosphere: 0.5,
+  }[placement.layer]
+
+  return Number(
+    Math.max(
+      0,
+      Math.min(1, layerBaseScore + layoutInput.selectedCandidate.score / 20)
+    ).toFixed(3)
+  )
 }
 
 export function validatePlacements(
@@ -128,7 +189,7 @@ export function createGroundTilePlacements(
       x,
       y,
       layer: "ground",
-      label: "基础草地",
+      label: "鍩虹鑽夊湴",
       source: "placement_engine",
       tags: ["base_ground_tile", "tilemap_ground"],
     })
@@ -138,8 +199,8 @@ export function createGroundTilePlacements(
 export function createAreaSupportPlacements(
   input: PlacementRequest
 ): MapPlacement[] {
-  const shelter = requireArea(input.recipe, "temporary_shelter")
-  const care = requireArea(input.recipe, "initial_care")
+  const shelter = requireArea(input, "temporary_shelter")
+  const care = requireArea(input, "initial_care")
   const quietLivingPoint = resolveQuietLivingPoint(input)
   const supportScale = getSupportScale(input.layoutInput)
 
@@ -169,9 +230,9 @@ export function createAreaSupportPlacements(
 }
 
 export function createPathPlacements(input: PlacementRequest): MapPlacement[] {
-  const entry = requireArea(input.recipe, "entry_area")
-  const care = requireArea(input.recipe, "initial_care")
-  const shelter = requireArea(input.recipe, "temporary_shelter")
+  const entry = requireArea(input, "entry_area")
+  const care = requireArea(input, "initial_care")
+  const shelter = requireArea(input, "temporary_shelter")
   const quietLivingPoint = resolveQuietLivingPoint(input)
   const route = buildCorePathRoute(input, [
     entry.center,
@@ -200,7 +261,7 @@ export function createPathPlacements(input: PlacementRequest): MapPlacement[] {
       x: point.x,
       y: point.y,
       layer: "path",
-      label: "连续泥土小路",
+      label: "杩炵画娉ュ湡灏忚矾",
       source: "scene_recipe",
       tags: ["main_path", "core_connection", input.layoutInput.variant.pathStyle],
     })
@@ -211,7 +272,7 @@ export function createNatureBoundaryPlacements(
   input: PlacementRequest,
   existingPlacements: MapPlacement[] = []
 ): MapPlacement[] {
-  const area = requireArea(input.recipe, "natural_boundary")
+  const area = requireArea(input, "natural_boundary")
   const protective = input.layoutInput.personality.protectionPreference
   const naturalGrowth = input.layoutInput.resources.naturalGrowth / 100
   const natureBiasBoost = getNatureBiasBoost(input.layoutInput)
@@ -270,7 +331,7 @@ export function createNatureBoundaryPlacements(
       x: point.x,
       y: point.y,
       layer: "nature",
-      label: isTree ? "自然边界小树" : "自然边界灌木",
+      label: isTree ? "鑷劧杈圭晫灏忔爲" : "鑷劧杈圭晫鐏屾湪",
       scale: isTree ? 1 : 0.9,
       tags: [
         "nature_boundary",
@@ -309,7 +370,7 @@ export function createSurfaceDecorationPlacements(
     input.seed,
     "surface-decoration-edge"
   )
-  const boundaryArea = requireArea(input.recipe, "natural_boundary")
+  const boundaryArea = requireArea(input, "natural_boundary")
   const boundaryTransitionPoints = createSeededAreaPoints(
     boundaryArea,
     input.seed,
@@ -349,7 +410,7 @@ export function createSurfaceDecorationPlacements(
       x: point.x,
       y: point.y,
       layer: "surface-decoration",
-      label: "自然地表装饰",
+      label: "鑷劧鍦拌〃瑁呴グ",
       scale: 0.82,
       tags: [
         "surface_decoration",
@@ -421,8 +482,8 @@ export function avoidCorePathPoints(
 }
 
 function createCoreStructurePlacements(input: PlacementRequest): MapPlacement[] {
-  const care = requireArea(input.recipe, "initial_care")
-  const shelter = requireArea(input.recipe, "temporary_shelter")
+  const care = requireArea(input, "initial_care")
+  const shelter = requireArea(input, "temporary_shelter")
   const shelterPoint = resolveShelterPoint(input, shelter.center)
 
   return [
@@ -432,7 +493,7 @@ function createCoreStructurePlacements(input: PlacementRequest): MapPlacement[] 
       x: care.center.x,
       y: care.center.y + 1,
       layer: "structure",
-      label: "初始照护点",
+      label: "Initial care station",
       scale: 0.72,
       alpha: 0.86,
       tags: ["care_station", "core_living"],
@@ -443,7 +504,7 @@ function createCoreStructurePlacements(input: PlacementRequest): MapPlacement[] 
       x: shelterPoint.x,
       y: shelterPoint.y,
       layer: "structure",
-      label: "临时住所",
+      label: "涓存椂浣忔墍",
       tags: [
         "temporary_shelter",
         "core_living",
@@ -467,7 +528,7 @@ function createFacilityPlacements(
       x: storagePoint.x,
       y: storagePoint.y,
       layer: "facility",
-      label: "储物箱",
+      label: "Storage box",
       scale: 0.82,
       tags: ["storage", "tools", input.layoutInput.variant.pathStyle],
     }),
@@ -475,7 +536,7 @@ function createFacilityPlacements(
 }
 
 function createActorPlacements(input: PlacementRequest): MapPlacement[] {
-  const shelter = requireArea(input.recipe, "temporary_shelter")
+  const shelter = requireArea(input, "temporary_shelter")
   const shelterPoint = resolveShelterPoint(input, shelter.center)
 
   return [
@@ -485,7 +546,7 @@ function createActorPlacements(input: PlacementRequest): MapPlacement[] {
       x: shelterPoint.x - 5,
       y: shelterPoint.y + 4,
       layer: "actor",
-      label: "管家",
+      label: "绠″",
       scale: 0.78,
       tags: ["butler", "actor"],
     }),
@@ -524,9 +585,9 @@ function pickGroundAssetId(
 }
 
 function resolveQuietLivingPoint(input: PlacementRequest): MapCoordinate {
-  const quietLiving = requireArea(input.recipe, "quiet_living")
-  const care = requireArea(input.recipe, "initial_care")
-  const shelter = requireArea(input.recipe, "temporary_shelter")
+  const quietLiving = requireArea(input, "quiet_living")
+  const care = requireArea(input, "initial_care")
+  const shelter = requireArea(input, "temporary_shelter")
   const style = input.layoutInput.personality
   const adaptiveOffset = getAdaptiveOffset(style.adaptabilityPreference)
   const warmBias = style.carePreference > 0.65 ? -1 : 0
@@ -564,8 +625,8 @@ function resolveShelterPoint(
   input: PlacementRequest,
   basePoint: MapCoordinate
 ): MapCoordinate {
-  const storage = requireArea(input.recipe, "storage_tools")
-  const visualCenter = requireArea(input.recipe, "visual_center")
+  const storage = requireArea(input, "storage_tools")
+  const visualCenter = requireArea(input, "visual_center")
   const bias = input.layoutInput.variant.shelterBias
 
   if (bias === "edge_protected") {
@@ -602,8 +663,8 @@ function resolveStoragePoint(
   supportPlacements: MapPlacement[],
   pathPlacements: MapPlacement[]
 ): MapCoordinate {
-  const storage = requireArea(input.recipe, "storage_tools")
-  const shelter = requireArea(input.recipe, "temporary_shelter")
+  const storage = requireArea(input, "storage_tools")
+  const shelter = requireArea(input, "temporary_shelter")
   const clusterOffset = input.layoutInput.personality.structurePreference > 0.62 ? 1 : 0
   const candidates = [
     { x: storage.center.x + 2 - clusterOffset, y: storage.center.y + 1 },
@@ -807,7 +868,7 @@ function createSoftSupportPlacements(
       x,
       y,
       layer: "ground",
-      label: "泥地承托",
+      label: "娉ュ湴鎵挎墭",
       source: "scene_recipe",
       tags: ["ground_support", ...tags],
     })
@@ -871,16 +932,33 @@ function getPathAssetId(
 }
 
 function requireArea(
-  recipe: InitialHomeSceneRecipe,
+  input: PlacementRequest,
   areaType: HomeZoneType
 ): InitialHomeAreaRecipe {
-  const area = recipe.areas.find((candidate) => candidate.areaType === areaType)
+  const area = input.recipe.areas.find((candidate) => candidate.areaType === areaType)
 
   if (!area) {
     throw new Error(`Missing initial home area: ${areaType}`)
   }
 
-  return area
+  const offset = input.layoutInput.selectedCandidate.zoneOffsets[area.areaType] ?? {
+    x: 0,
+    y: 0,
+  }
+
+  return {
+    ...area,
+    center: {
+      x: area.center.x + offset.x,
+      y: area.center.y + offset.y,
+    },
+    tags: [
+      ...area.tags,
+      "layout_candidate_area",
+      input.layoutInput.selectedCandidate.candidateId,
+      input.layoutInput.biome.biomeType,
+    ],
+  }
 }
 
 function sortPlacements(placements: MapPlacement[]): MapPlacement[] {

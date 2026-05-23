@@ -43,6 +43,10 @@ export type WorldLayoutVariationScenarioAudit = {
   scenarioId: string
   scenarioName: string
   stableSeed: string
+  biomeType: WorldLayoutGenerationInput["biome"]["biomeType"]
+  selectedCandidateId: string
+  candidateCount: number
+  constraintCount: number
   layoutVariantId: string
   pathStyle: WorldLayoutGenerationInput["variant"]["pathStyle"]
   shelterBias: WorldLayoutGenerationInput["variant"]["shelterBias"]
@@ -52,6 +56,7 @@ export type WorldLayoutVariationScenarioAudit = {
   isStableAcrossRepeatedBuild: boolean
   fingerprint: string
   repeatedFingerprint: string
+  zoneFingerprint: string
   metrics: WorldLayoutVariationMetrics
   warnings: string[]
   rejectedPlacementIds: string[]
@@ -134,6 +139,10 @@ function buildScenarioAudit(
     scenarioId: scenario.id,
     scenarioName: scenario.name,
     stableSeed: firstBuild.layoutInput.seed,
+    biomeType: firstBuild.layoutInput.biome.biomeType,
+    selectedCandidateId: firstBuild.layoutInput.selectedCandidate.candidateId,
+    candidateCount: firstBuild.layoutInput.candidates.length,
+    constraintCount: firstBuild.layoutInput.constraints.length,
     layoutVariantId: firstBuild.layoutInput.variant.variantId,
     pathStyle: firstBuild.layoutInput.variant.pathStyle,
     shelterBias: firstBuild.layoutInput.variant.shelterBias,
@@ -143,6 +152,7 @@ function buildScenarioAudit(
     isStableAcrossRepeatedBuild,
     fingerprint,
     repeatedFingerprint,
+    zoneFingerprint: buildZoneFingerprint(firstBuild.zones),
     metrics,
     warnings: [
       ...firstBuild.warnings,
@@ -162,6 +172,7 @@ function buildScenarioAudit(
 function buildScenarioPlacements(scenario: WorldLayoutVariationScenario): {
   layoutInput: WorldLayoutGenerationInput
   placements: MapPlacement[]
+  zones: HomeZone[]
   warnings: string[]
   rejectedPlacementIds: string[]
 } {
@@ -178,7 +189,9 @@ function buildScenarioPlacements(scenario: WorldLayoutVariationScenario): {
   const inputAudit = auditWorldLayoutGenerationInput(
     layoutBuildResult.layoutInput
   )
-  const zones = INITIAL_HOME_SCENE_RECIPE.areas.map(toHomeZone)
+  const zones = INITIAL_HOME_SCENE_RECIPE.areas.map((area) =>
+    toHomeZone(area, layoutBuildResult.layoutInput)
+  )
   const placementResult = buildInitialHomePlacements({
     worldId: scenario.generationInput.worldId,
     ownerId: scenario.generationInput.ownerId,
@@ -193,6 +206,7 @@ function buildScenarioPlacements(scenario: WorldLayoutVariationScenario): {
   return {
     layoutInput: layoutBuildResult.layoutInput,
     placements: placementResult.placements,
+    zones,
     warnings: [...inputAudit.warnings, ...placementResult.warnings],
     rejectedPlacementIds: placementResult.rejectedPlacementIds,
   }
@@ -252,6 +266,12 @@ function buildVariantDifferences(
   comparedScenario: WorldLayoutVariationScenarioAudit
 ): string[] {
   return [
+    baseScenario.biomeType === comparedScenario.biomeType
+      ? null
+      : `biome:${baseScenario.biomeType}->${comparedScenario.biomeType}`,
+    baseScenario.selectedCandidateId === comparedScenario.selectedCandidateId
+      ? null
+      : `candidate:${baseScenario.selectedCandidateId}->${comparedScenario.selectedCandidateId}`,
     baseScenario.pathStyle === comparedScenario.pathStyle
       ? null
       : `pathStyle:${baseScenario.pathStyle}->${comparedScenario.pathStyle}`,
@@ -406,6 +426,33 @@ function buildPlacementFingerprint(placements: MapPlacement[]): string {
     .join("|")
 }
 
+export function buildInitialHomeLayoutFingerprint(input: {
+  zones: HomeZone[]
+  placements: MapPlacement[]
+}): string {
+  return [
+    buildZoneFingerprint(input.zones),
+    buildPlacementFingerprint(input.placements),
+  ].join("::")
+}
+
+function buildZoneFingerprint(zones: HomeZone[]): string {
+  return zones
+    .map((zone) =>
+      [
+        zone.id,
+        zone.type,
+        zone.bounds.x,
+        zone.bounds.y,
+        zone.bounds.width,
+        zone.bounds.height,
+        zone.tags.join("+"),
+      ].join(":")
+    )
+    .sort()
+    .join("|")
+}
+
 function findPlacement(
   placements: MapPlacement[],
   id: string
@@ -419,21 +466,34 @@ function coordinateOf(placement: MapPlacement | undefined): string {
   return `${placement.x},${placement.y}`
 }
 
-function toHomeZone(area: InitialHomeAreaRecipe): HomeZone {
+function toHomeZone(
+  area: InitialHomeAreaRecipe,
+  layoutInput: WorldLayoutGenerationInput
+): HomeZone {
+  const offset = layoutInput.selectedCandidate.zoneOffsets[area.areaType] ?? {
+    x: 0,
+    y: 0,
+  }
+
   return {
     id: area.id,
     type: area.areaType,
     name: area.name,
     purpose: area.purpose,
-    bounds: getAreaBounds(area),
-    tags: area.tags,
+    bounds: getAreaBounds(area, offset),
+    tags: [
+      ...area.tags,
+      "layout_candidate_zone",
+      layoutInput.selectedCandidate.candidateId,
+      layoutInput.biome.biomeType,
+    ],
   }
 }
 
-function getAreaBounds(area: InitialHomeAreaRecipe) {
+function getAreaBounds(area: InitialHomeAreaRecipe, offset: { x: number; y: number }) {
   return {
-    x: area.center.x - Math.floor(area.size.width / 2),
-    y: area.center.y - Math.floor(area.size.height / 2),
+    x: area.center.x + offset.x - Math.floor(area.size.width / 2),
+    y: area.center.y + offset.y - Math.floor(area.size.height / 2),
     width: area.size.width,
     height: area.size.height,
   }

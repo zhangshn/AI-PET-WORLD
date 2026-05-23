@@ -28,6 +28,7 @@ export const WORLD_LAYOUT_VARIATION_SCENARIOS: readonly WorldLayoutVariationScen
       ownerId: "owner-structured-direct",
       birthSignature: "1990-01-03-chen",
       worldSalt: "world-gen-03-alpha",
+      biomeType: "grassland",
       now: FIXED_WORLD_GEN_03_NOW,
       butlerConstructionStyle: {
         structuredBuilder: 0.88,
@@ -56,6 +57,7 @@ export const WORLD_LAYOUT_VARIATION_SCENARIOS: readonly WorldLayoutVariationScen
       ownerId: "owner-adaptive-curved",
       birthSignature: "1994-06-18-wei",
       worldSalt: "world-gen-03-beta",
+      biomeType: "oasis",
       now: FIXED_WORLD_GEN_03_NOW,
       butlerConstructionStyle: {
         structuredBuilder: 0.35,
@@ -84,6 +86,7 @@ export const WORLD_LAYOUT_VARIATION_SCENARIOS: readonly WorldLayoutVariationScen
       ownerId: "owner-protective-boundary",
       birthSignature: "1988-11-08-xu",
       worldSalt: "world-gen-03-gamma",
+      biomeType: "forest",
       now: FIXED_WORLD_GEN_03_NOW,
       butlerConstructionStyle: {
         structuredBuilder: 0.48,
@@ -112,6 +115,7 @@ export const WORLD_LAYOUT_VARIATION_SCENARIOS: readonly WorldLayoutVariationScen
       ownerId: "owner-aesthetic-soft",
       birthSignature: "1992-03-26-you",
       worldSalt: "world-gen-03-delta",
+      biomeType: "oasis",
       now: FIXED_WORLD_GEN_03_NOW,
       butlerConstructionStyle: {
         structuredBuilder: 0.41,
@@ -140,6 +144,7 @@ export const WORLD_LAYOUT_VARIATION_SCENARIOS: readonly WorldLayoutVariationScen
       ownerId: "owner-quiet-retreat",
       birthSignature: "1996-09-14-hai",
       worldSalt: "world-gen-03-epsilon",
+      biomeType: "forest",
       now: FIXED_WORLD_GEN_03_NOW,
       butlerConstructionStyle: {
         structuredBuilder: 0.36,
@@ -168,6 +173,7 @@ export const WORLD_LAYOUT_VARIATION_SCENARIOS: readonly WorldLayoutVariationScen
       ownerId: "owner-compact-resource",
       birthSignature: "1991-12-02-chou",
       worldSalt: "world-gen-03-zeta",
+      biomeType: "desert",
       now: FIXED_WORLD_GEN_03_NOW,
       butlerConstructionStyle: {
         structuredBuilder: 0.62,

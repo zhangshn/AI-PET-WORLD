@@ -69,9 +69,19 @@ export type PlacementRequest = {
 
 export type PlacementResult = {
   placements: MapPlacement[]
+  proposals: PlacementProposal[]
   ruleResults: PlacementRuleResult[]
   rejectedPlacementIds: string[]
   warnings: string[]
+}
+
+export type PlacementProposal = {
+  proposalId: string
+  placement: MapPlacement
+  score: number
+  accepted: boolean
+  rejectedReason?: string
+  tags: string[]
 }
 
 export type CreatePlacementInput = {

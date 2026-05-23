@@ -1,5 +1,6 @@
 /**
- * 当前文件负责：审计世界布局生成输入是否符合当前 MVP 边界。
+ * Current file responsibility: audit world layout generation input against
+ * the V2.0 MVP world-generation boundaries.
  */
 
 import type {
@@ -10,6 +11,9 @@ import type {
 const FORBIDDEN_LAYOUT_TOKENS = [
   "pet_arrival",
   "pet_rest",
+  "pet_actor",
+  "pet-bed",
+  "pet bed",
   "incubator",
   "embryo",
   "hatching",
@@ -26,6 +30,7 @@ export function auditWorldLayoutGenerationInput(
 
   return {
     selectedVariant: input.variant,
+    selectedCandidateId: input.selectedCandidate.candidateId,
     personalityDrivers: [
       `structure:${input.personality.structurePreference.toFixed(2)}`,
       `care:${input.personality.carePreference.toFixed(2)}`,
@@ -41,16 +46,28 @@ export function auditWorldLayoutGenerationInput(
       `ground:${input.resources.groundHealth}`,
       `space:${input.resources.spacePressure}`,
     ],
+    biomeDrivers: [
+      `biome:${input.biome.biomeType}`,
+      `materialCap:${input.biome.resourceCaps.materialReadiness}`,
+      `careCap:${input.biome.resourceCaps.careReadiness}`,
+      `naturalCap:${input.biome.resourceCaps.naturalGrowth}`,
+      `groundCap:${input.biome.resourceCaps.groundHealth}`,
+      `spaceCap:${input.biome.resourceCaps.spacePressure}`,
+      ...input.biome.visualTokens.map((token) => `visual:${token}`),
+    ],
     phaseDrivers: [
       `phase:${input.phase.phase}`,
       `development:${input.phase.developmentPressure.toFixed(2)}`,
       `expansion:${input.phase.expansionReadiness.toFixed(2)}`,
     ],
+    constraintDrivers: input.constraints.map((constraint) => constraint.id),
     stableSeed: input.seed,
     warnings,
     tags: [
       "world_layout_generation_audit",
       warnings.length === 0 ? "layout_input_valid" : "layout_input_warning",
+      "layout_candidate_audit",
+      "biome_constraint_audit",
       "no_default_companion_layout",
     ],
   }
@@ -59,9 +76,18 @@ export function auditWorldLayoutGenerationInput(
 function auditRequiredFields(input: WorldLayoutGenerationInput): string[] {
   const warnings: string[] = []
 
-  if (!input.seed.trim()) warnings.push("layout input 缺少 stable seed。")
-  if (!input.variant.variantId.trim()) warnings.push("layout input 缺少 variantId。")
-  if (input.tags.length === 0) warnings.push("layout input 缺少 tags。")
+  if (!input.seed.trim()) warnings.push("layout input missing stable seed.")
+  if (!input.variant.variantId.trim()) warnings.push("layout input missing variantId.")
+  if (!input.selectedCandidate.candidateId.trim()) {
+    warnings.push("layout input missing selected candidate.")
+  }
+  if (input.candidates.length === 0) {
+    warnings.push("layout input missing layout candidates.")
+  }
+  if (input.constraints.length === 0) {
+    warnings.push("layout input missing layout constraints.")
+  }
+  if (input.tags.length === 0) warnings.push("layout input missing tags.")
 
   return warnings
 }
@@ -71,7 +97,7 @@ function auditForbiddenTokens(input: WorldLayoutGenerationInput): string[] {
 
   return FORBIDDEN_LAYOUT_TOKENS.flatMap((token) =>
     serialized.includes(token)
-      ? [`layout input 包含禁止 token：${token}`]
+      ? [`layout input contains forbidden token: ${token}`]
       : []
   )
 }

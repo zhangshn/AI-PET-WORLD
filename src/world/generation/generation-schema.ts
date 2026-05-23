@@ -26,6 +26,7 @@ export type WorldGenerationInput = {
   birthSignature: string
   worldSalt: string
   butlerConstructionStyle: ButlerConstructionStyleVector
+  biomeType?: WorldLayoutBiomeType
   now: number
 }
 
@@ -52,6 +53,43 @@ export type WorldLayoutPhaseInput = {
   expansionReadiness: number
 }
 
+export type WorldLayoutBiomeType = "grassland" | "forest" | "desert" | "oasis"
+
+export type WorldLayoutBiomeInput = {
+  biomeType: WorldLayoutBiomeType
+  resourceCaps: {
+    materialReadiness: number
+    careReadiness: number
+    naturalGrowth: number
+    groundHealth: number
+    spacePressure: number
+  }
+  regenerationBias: {
+    material: number
+    care: number
+    natural: number
+    ground: number
+  }
+  layoutModifiers: {
+    compactnessBias: number
+    boundaryDensityBias: number
+    pathFlexibilityBias: number
+    shelterSafetyBias: number
+  }
+  constructionModifiers: {
+    materialCostMultiplier: number
+    maintenanceRisk: number
+  }
+  visualTokens: string[]
+}
+
+export type WorldLayoutConstraint = {
+  id: string
+  description: string
+  severity: "info" | "warn" | "block"
+  tags: string[]
+}
+
 export type WorldLayoutPathStyle = "direct" | "curved" | "clustered"
 export type WorldLayoutShelterBias =
   | "near_center"
@@ -71,6 +109,15 @@ export type WorldLayoutVariantInput = {
   quietAreaBias: WorldLayoutQuietAreaBias
 }
 
+export type WorldLayoutCandidate = {
+  candidateId: string
+  variant: WorldLayoutVariantInput
+  zoneOffsets: Partial<Record<InitialHomeAreaType, MapCoordinate>>
+  score: number
+  scoreReasons: string[]
+  tags: string[]
+}
+
 export type WorldLayoutGenerationInput = {
   worldId: string
   ownerId: string
@@ -79,16 +126,23 @@ export type WorldLayoutGenerationInput = {
   worldSalt: string
   personality: WorldLayoutPersonalityInput
   resources: WorldLayoutResourceInput
+  biome: WorldLayoutBiomeInput
   phase: WorldLayoutPhaseInput
   variant: WorldLayoutVariantInput
+  selectedCandidate: WorldLayoutCandidate
+  candidates: WorldLayoutCandidate[]
+  constraints: WorldLayoutConstraint[]
   tags: string[]
 }
 
 export type WorldLayoutGenerationAudit = {
   selectedVariant: WorldLayoutVariantInput
+  selectedCandidateId: string
   personalityDrivers: string[]
   resourceDrivers: string[]
+  biomeDrivers: string[]
   phaseDrivers: string[]
+  constraintDrivers: string[]
   stableSeed: string
   warnings: string[]
   tags: string[]

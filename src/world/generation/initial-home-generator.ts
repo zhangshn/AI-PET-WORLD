@@ -46,7 +46,9 @@ export function generateInitialHomeMapResult(
   const layoutAudit = auditWorldLayoutGenerationInput(
     layoutBuildResult.layoutInput
   )
-  const zones = recipe.areas.map(toHomeZone)
+  const zones = recipe.areas.map((area) =>
+    toHomeZone(area, layoutBuildResult.layoutInput)
+  )
   const placementResult = buildInitialHomePlacements({
     worldId: input.worldId,
     ownerId: input.ownerId,
@@ -78,6 +80,9 @@ export function generateInitialHomeMapResult(
         "layout_input_driven",
         "personality_layout_input",
         "stable_world_seed",
+        "layout_candidate_driven_zones",
+        layoutBuildResult.layoutInput.biome.biomeType,
+        layoutBuildResult.layoutInput.selectedCandidate.candidateId,
         layoutBuildResult.layoutInput.variant.variantId,
       ],
     },
@@ -92,19 +97,32 @@ export function generateInitialHomeMapResult(
   }
 }
 
-function toHomeZone(area: InitialHomeAreaRecipe): HomeZone {
+function toHomeZone(
+  area: InitialHomeAreaRecipe,
+  layoutInput: ReturnType<typeof buildWorldLayoutGenerationInput>["layoutInput"]
+): HomeZone {
+  const offset = layoutInput.selectedCandidate.zoneOffsets[area.areaType] ?? {
+    x: 0,
+    y: 0,
+  }
+
   return {
     id: area.id,
     type: area.areaType,
     name: area.name,
     purpose: area.purpose,
     bounds: {
-      x: area.center.x - Math.floor(area.size.width / 2),
-      y: area.center.y - Math.floor(area.size.height / 2),
+      x: area.center.x + offset.x - Math.floor(area.size.width / 2),
+      y: area.center.y + offset.y - Math.floor(area.size.height / 2),
       width: area.size.width,
       height: area.size.height,
     },
-    tags: area.tags,
+    tags: [
+      ...area.tags,
+      "layout_candidate_zone",
+      layoutInput.selectedCandidate.candidateId,
+      layoutInput.biome.biomeType,
+    ],
   }
 }
 
@@ -124,7 +142,11 @@ function buildInitialResources(
     materialReadiness: Math.min(100, 24 + structure * 8),
     careReadiness: Math.min(100, 48 + warmth * 7),
     spacePressure: 18,
-    tags: ["mvp_initial_resources", "default_resource_state"],
+    tags: [
+      "mvp_initial_resources",
+      "default_resource_state",
+      input.biomeType ? `requested_biome:${input.biomeType}` : "seed_biome",
+    ],
   }
 }
 

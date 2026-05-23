@@ -5,11 +5,19 @@
 import type { AiPetWorldMvpPipelineResult } from "./mvp-core-schema"
 import { runAiPetWorldMvpPipeline } from "./mvp-core-pipeline"
 import { buildMvpSmokeScenarioInputs } from "./mvp-smoke-scenarios"
+import {
+  assertWorldLayoutVariationAuditPassed,
+  buildWorldLayoutVariationAudit,
+  summarizeWorldLayoutVariationAudit,
+  type WorldLayoutVariationAudit,
+} from "@/world/generation/world-layout-variation-audit"
 
 export type MvpSmokeAuditResult = {
   scenarioCount: number
   passed: boolean
   stableScenarioMatched: boolean
+  layoutVariationPassed: boolean
+  layoutVariationAudit: WorldLayoutVariationAudit
   warningCount: number
   forbiddenTokenWarnings: string[]
   results: AiPetWorldMvpPipelineResult[]
@@ -33,22 +41,29 @@ const FORBIDDEN_SMOKE_TOKENS = [
 export function runMvpSmokeAudit(): MvpSmokeAuditResult {
   const inputs = buildMvpSmokeScenarioInputs()
   const results = inputs.map(runAiPetWorldMvpPipeline)
+  const layoutVariationAudit = buildWorldLayoutVariationAudit()
+  const layoutVariationPassed =
+    assertWorldLayoutVariationAuditPassed(layoutVariationAudit)
   const stableScenarioMatched =
     results[0]?.initialWorld.homeMapState.seed ===
     results[1]?.initialWorld.homeMapState.seed
   const forbiddenTokenWarnings = auditForbiddenTokens(results)
   const warningCount =
     results.reduce((total, result) => total + result.audit.warnings.length, 0) +
-    forbiddenTokenWarnings.length
+    forbiddenTokenWarnings.length +
+    layoutVariationAudit.warnings.length
   const passed =
     results.length >= 3 &&
     stableScenarioMatched &&
-    forbiddenTokenWarnings.length === 0
+    forbiddenTokenWarnings.length === 0 &&
+    layoutVariationPassed
 
   return {
     scenarioCount: results.length,
     passed,
     stableScenarioMatched,
+    layoutVariationPassed,
+    layoutVariationAudit,
     warningCount,
     forbiddenTokenWarnings,
     results,
@@ -56,11 +71,13 @@ export function runMvpSmokeAudit(): MvpSmokeAuditResult {
       `MVP smoke audit ${passed ? "passed" : "has warnings"}.`,
       `Scenarios: ${results.length}.`,
       `Stable seed matched: ${String(stableScenarioMatched)}.`,
+      `Layout variation passed: ${String(layoutVariationPassed)}.`,
       `Forbidden token warnings: ${forbiddenTokenWarnings.length}.`,
     ].join(" "),
     messages: [
       `Smoke scenarios: ${results.length}`,
       `Stable seed matched: ${String(stableScenarioMatched)}`,
+      ...summarizeWorldLayoutVariationAudit(layoutVariationAudit),
       `Forbidden token warnings: ${forbiddenTokenWarnings.length}`,
     ],
     tags: [
