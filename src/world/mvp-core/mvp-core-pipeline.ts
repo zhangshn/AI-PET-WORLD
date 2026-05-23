@@ -130,6 +130,8 @@ export function runAiPetWorldMvpPipeline(
     worldId: input.worldId,
     logs: worldLogs,
     butlerExplanations,
+    lifeEventCandidates: lifeEventResult.lifeEventCandidates,
+    companionDecisionCandidates: lifeEventResult.companionDecisionCandidates,
     warningCount:
       butlerAudit.warnings.length +
       initialWorld.audit.warnings.length +
@@ -177,6 +179,7 @@ export function runAiPetWorldMvpPipeline(
       "ai_pet_world_mvp_pipeline_result",
       "full_mvp_required_completion",
       "no_default_companion_entry",
+      "life_event_01",
       ...input.tags,
     ],
   }
