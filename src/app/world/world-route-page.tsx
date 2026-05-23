@@ -739,7 +739,16 @@ function ProductWorldPanel(input: { model: MvpWorldViewModel }) {
 
       <div className={styles.productWorldGrid}>
         <article className={styles.productMapPanel}>
-          <h3>家园地图</h3>
+          <div className={styles.productMapHeader}>
+            <div>
+              <h3>家园地图</h3>
+              <p>
+                地图由 HomeMapState 投影而来：UI 只读展示，不生成世界事实。
+              </p>
+            </div>
+            <span>{mapSize.columns} × {mapSize.rows}</span>
+          </div>
+
           <div
             className={styles.lowFiMap}
             style={{
@@ -761,19 +770,37 @@ function ProductWorldPanel(input: { model: MvpWorldViewModel }) {
                 <span>{zone.label}</span>
               </div>
             ))}
-            {delivery.mapItems.map((item) => (
-              <div
-                className={styles.mapItem}
-                data-tone={item.visualTone}
-                key={item.id}
-                style={{
-                  left: `${(item.x / mapSize.columns) * 100}%`,
-                  top: `${(item.y / mapSize.rows) * 100}%`,
-                  opacity: item.opacity,
-                }}
-                title={item.label}
-              />
-            ))}
+
+            {delivery.mapItems.map((item) => {
+              const shouldShowMapItemLabel =
+                item.visualTone !== "path" && item.visualTone !== "atmosphere"
+
+              return (
+                <div
+                  className={styles.mapItem}
+                  data-tone={item.visualTone}
+                  key={item.id}
+                  style={{
+                    left: `${(item.x / mapSize.columns) * 100}%`,
+                    top: `${(item.y / mapSize.rows) * 100}%`,
+                    opacity: item.opacity,
+                  }}
+                  title={item.label}
+                >
+                  {shouldShowMapItemLabel ? (
+                    <span className={styles.mapItemLabel}>{item.label}</span>
+                  ) : null}
+                </div>
+              )
+            })}
+          </div>
+
+          <div className={styles.mapLegend} aria-label="地图图例">
+            <MapLegendItem tone="home" label="住所" />
+            <MapLegendItem tone="path" label="道路" />
+            <MapLegendItem tone="care" label="照护点" />
+            <MapLegendItem tone="nature" label="自然边界" />
+            <MapLegendItem tone="work" label="储物/工作" />
           </div>
         </article>
 
@@ -837,6 +864,18 @@ function ProductWorldPanel(input: { model: MvpWorldViewModel }) {
       <MvpDemoChecklistPanel model={input.model} />
       <MvpAcceptancePanel model={input.model} />
     </section>
+  )
+}
+
+function MapLegendItem(input: {
+  tone: "home" | "path" | "care" | "nature" | "work"
+  label: string
+}) {
+  return (
+    <div className={styles.mapLegendItem}>
+      <span className={styles.mapLegendSwatch} data-tone={input.tone} />
+      <strong>{input.label}</strong>
+    </div>
   )
 }
 
