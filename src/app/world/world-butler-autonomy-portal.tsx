@@ -1,7 +1,7 @@
 "use client"
 
 /**
- * 当前文件职责：把 AI 管家自主意识面板插入 /world 主世界只读展示区。
+ * 当前文件职责：在 debug 模式下挂载 AI 管家自主意识面板。
  */
 
 import { useEffect, useMemo, useState } from "react"
@@ -28,6 +28,7 @@ const DEFAULT_WORLD_PREVIEW_INPUT: CreateWorldInput = {
 }
 
 export function WorldButlerAutonomyPortal() {
+  const [isDebugMode, setIsDebugMode] = useState(false)
   const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
     null
   )
@@ -35,6 +36,15 @@ export function WorldButlerAutonomyPortal() {
     useState<CreateWorldInput>(DEFAULT_WORLD_PREVIEW_INPUT)
 
   useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search)
+    setIsDebugMode(
+      searchParams.get("debug") === "1" || searchParams.get("debug") === "true"
+    )
+  }, [])
+
+  useEffect(() => {
+    if (!isDebugMode) return
+
     const storedInput = window.localStorage.getItem(CREATE_WORLD_STORAGE_KEY)
     if (!storedInput) return
 
@@ -43,9 +53,14 @@ export function WorldButlerAutonomyPortal() {
     } catch {
       setCreateWorldInput(DEFAULT_WORLD_PREVIEW_INPUT)
     }
-  }, [])
+  }, [isDebugMode])
 
   useEffect(() => {
+    if (!isDebugMode) {
+      setPortalContainer(null)
+      return
+    }
+
     let frameId = 0
     let container: HTMLDivElement | null = null
     let isMounted = true
@@ -82,9 +97,11 @@ export function WorldButlerAutonomyPortal() {
       container?.remove()
       setPortalContainer(null)
     }
-  }, [])
+  }, [isDebugMode])
 
   const summary = useMemo(() => {
+    if (!isDebugMode) return null
+
     const firstSceneModel = buildWorldFirstSceneModel({ createWorldInput })
     const homeMapState = firstSceneModel.homeMapState
     const mvpPipelineResult = runAiPetWorldMvpPipeline({
@@ -104,15 +121,16 @@ export function WorldButlerAutonomyPortal() {
       visualMode: "formal_precheck",
       tags: [
         "world_route_butler_autonomy_portal",
+        "debug_only_panel",
         "read_only_world_view",
         "no_default_companion_entry",
       ],
     })
 
     return buildMvpWorldViewModel(mvpPipelineResult).butlerAutonomyProbe
-  }, [createWorldInput])
+  }, [createWorldInput, isDebugMode])
 
-  if (!portalContainer) return null
+  if (!portalContainer || !summary) return null
 
   return createPortal(
     <ButlerAutonomyPanel summary={summary} />,
