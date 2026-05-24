@@ -461,7 +461,7 @@ function buildAcceptanceItems(input: {
       title: "真实宠物事实行为",
       status: "follow_up",
       description:
-        "当前只做到小镇领养观察候选，真正宠物入场、行为、关系、记忆和生命周期仍是下一阶段工作。",
+        "当前只做到小镇领养观察与管家领养意愿预检查，真正宠物入场、行为、关系、记忆和生命周期仍是下一阶段工作。",
     },
     {
       id: "acceptance-audit",

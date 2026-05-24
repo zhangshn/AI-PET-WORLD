@@ -1080,7 +1080,7 @@ function MvpCorePanel(input: { model: MvpWorldViewModel }) {
         <h2>MVP 核心闭环</h2>
         <p>
           这里读取 MVP 总入口输出：管家人格、初始世界、建设运行、持久化
-          dry-run、视觉刷新预检、日志、P-Phone 和小镇领养观察候选。
+          dry-run、视觉刷新预检、日志、P-Phone、小镇领养观察与管家领养意愿预检查。
         </p>
       </div>
 

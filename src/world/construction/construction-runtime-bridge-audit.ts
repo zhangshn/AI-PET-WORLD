@@ -11,6 +11,7 @@ import type {
   ConstructionRuntimeVerticalSliceResult,
 } from "./construction-schema"
 
+// These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
 const FORBIDDEN_RUNTIME_BRIDGE_TOKENS = [
   "pet_arrival",
   "pet_rest",

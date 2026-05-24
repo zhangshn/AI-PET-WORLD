@@ -35,6 +35,7 @@ export type MvpSmokeAuditResult = {
   tags: string[]
 }
 
+// These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
 const FORBIDDEN_SMOKE_TOKENS = [
   "pet_arrival",
   "pet_rest",
