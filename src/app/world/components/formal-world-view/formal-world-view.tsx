@@ -14,12 +14,16 @@ import type { Point2D, SpatialShape } from "@/world/spatial/spatial-gateway"
 
 import styles from "./formal-world-view.styles.module.css"
 
+export type FormalWorldViewPresentationMode = "debug" | "product"
+
 export type FormalWorldViewProps = {
   model: FormalVisualModel
+  presentationMode?: FormalWorldViewPresentationMode
 }
 
 export function FormalWorldView(input: FormalWorldViewProps) {
   const { model } = input
+  const copy = getFormalWorldViewCopy(input.presentationMode ?? "debug")
 
   return (
     <section
@@ -31,12 +35,9 @@ export function FormalWorldView(input: FormalWorldViewProps) {
       aria-label="AI-PET-WORLD formal world view"
     >
       <header className={styles.formalHeader}>
-        <div className={styles.eyebrow}>AI-PET-WORLD / WORLD VIEW</div>
-        <h2>主世界视图</h2>
-        <p>
-          这里只读 FormalVisualModel 渲染玩家主视觉，不生成模型、世界事实、
-          placement 或 actor。
-        </p>
+        <div className={styles.eyebrow}>{copy.eyebrow}</div>
+        <h2>{copy.title}</h2>
+        <p>{copy.description}</p>
       </header>
 
       <div className={styles.formalCanvasShell}>
@@ -99,6 +100,28 @@ export function FormalWorldView(input: FormalWorldViewProps) {
       </section>
     </section>
   )
+}
+
+function getFormalWorldViewCopy(mode: FormalWorldViewPresentationMode): {
+  eyebrow: string
+  title: string
+  description: string
+} {
+  if (mode === "product") {
+    return {
+      eyebrow: "AI-PET-WORLD / HOME VIEW",
+      title: "家园主世界",
+      description:
+        "这里展示家园当前的地貌、道路、自然边界与管家位置。画面会随着世界状态自然更新。",
+    }
+  }
+
+  return {
+    eyebrow: "AI-PET-WORLD / WORLD VIEW",
+    title: "主世界视图",
+    description:
+      "这里只读 FormalVisualModel 渲染玩家主视觉，不生成模型、世界事实、placement 或 actor。",
+  }
 }
 
 function renderFormalDefinitions(): ReactNode {
