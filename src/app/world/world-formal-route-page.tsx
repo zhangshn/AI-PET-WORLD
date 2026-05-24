@@ -187,7 +187,10 @@ function FormalProductWorldPanel(input: {
             这里展示家园当前的形状、道路、自然边界和管家所在位置。画面只读取世界状态，不改变世界。
           </p>
         </div>
-        <FormalWorldView model={input.formalVisualModel} />
+        <FormalWorldView
+          model={input.formalVisualModel}
+          presentationMode="product"
+        />
       </section>
 
       <div className={styles.productWorldGrid}>
