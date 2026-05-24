@@ -9,6 +9,7 @@ import {
   readWorldRuntimeSaveRecord,
   writeWorldRuntimeSaveRecord,
 } from "./world-runtime-store"
+import { auditWorldRuntimeTick } from "./world-runtime-audit"
 import { runOneRuntimeTick } from "./world-runtime-tick-runner"
 import type {
   WorldRuntimeSaveRecord,
@@ -45,7 +46,43 @@ export async function loadOrCreateRuntimeWorld(input?: {
 export async function runAndPersistOneRuntimeTick(input?: {
   now?: number
 }): Promise<WorldRuntimeTickResult> {
-  const saveRecord = await loadOrCreateRuntimeWorld(input)
+  const readResult = await readWorldRuntimeSaveRecord()
+  if (readResult.status !== "found" || !readResult.record) {
+    const initialRecord = buildInitialRuntimeSaveRecord({
+      now: input?.now ?? Date.now(),
+    })
+    const writeResult = await writeWorldRuntimeSaveRecord({
+      record: initialRecord,
+    })
+    const audit = auditWorldRuntimeTick({
+      nextHomeMapState: initialRecord.homeMapState,
+      events: initialRecord.recentEvents,
+      storeWriteSucceeded: writeResult.ok,
+    })
+
+    return {
+      previousSaveRecord: initialRecord,
+      nextSaveRecord: initialRecord,
+      runtimeTick: null,
+      events: initialRecord.recentEvents,
+      audit,
+      persisted: writeResult.ok,
+      messages: [
+        "Runtime save was empty; created tick 0 HomeMapState.",
+        writeResult.message,
+        ...writeResult.warnings,
+        ...audit.warnings,
+      ],
+      tags: [
+        "world_runtime_tick_result",
+        "runtime_initial_save_created",
+        ...writeResult.tags,
+        ...audit.tags,
+      ],
+    }
+  }
+
+  const saveRecord = readResult.record
   const tickResultWithoutPersistence = runOneRuntimeTick({
     saveRecord,
     now: input?.now ?? Date.now(),

@@ -18,8 +18,8 @@ export async function WorldLiveRuntimePage() {
   )
   const lastEvent = saveRecord.recentEvents[saveRecord.recentEvents.length - 1]
   const acceptedDiffCount =
-    runtimeResult.runtimeTick.constructionResult.fullPipelineAudit.acceptedDiffIds
-      .length
+    runtimeResult.runtimeTick?.constructionResult.fullPipelineAudit
+      .acceptedDiffIds.length ?? 0
 
   return (
     <main className={styles.worldPage} aria-label="AI-PET-WORLD">
@@ -54,8 +54,9 @@ export async function WorldLiveRuntimePage() {
           <div className={styles.eyebrow}>LIVE RUNTIME</div>
           <h2>World state saved</h2>
           <p>
-            This request loaded the previous runtime save, ran one world tick,
-            and persisted the next HomeMapState only after audit and SafeApply.
+            This request reads the runtime save. If the save already exists, it
+            runs one world tick and persists the next HomeMapState only after
+            audit and SafeApply.
           </p>
         </div>
         <div className={styles.productStatusGrid}>

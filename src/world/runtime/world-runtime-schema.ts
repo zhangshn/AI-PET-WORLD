@@ -43,7 +43,7 @@ export type WorldRuntimeAudit = {
 export type WorldRuntimeTickResult = {
   previousSaveRecord: WorldRuntimeSaveRecord
   nextSaveRecord: WorldRuntimeSaveRecord
-  runtimeTick: MvpWorldRuntimeTickResult
+  runtimeTick: MvpWorldRuntimeTickResult | null
   events: WorldRuntimeEventLog[]
   audit: WorldRuntimeAudit
   persisted: boolean
