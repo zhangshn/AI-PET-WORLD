@@ -50,12 +50,11 @@ export function buildButlerAutonomyViewModelProbe(
     homeMapState: result.nextHomeMapState,
     ecologyState: result.nextHomeMapState.ecologyState,
     butlerProfile,
-    recentSafeApplyResult:
-      result.runtimeTick.constructionResult.fullPipelineAudit,
     tags: [
       "mvp_world_view_model_probe",
       "readonly_probe",
       "no_home_map_write",
+      "safe_apply_learning_waiting_for_result_adapter",
     ],
   })
   const autonomyResult = probe.autonomyResult
