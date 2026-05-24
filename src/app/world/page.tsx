@@ -1,11 +1,7 @@
-import WorldFormalRoutePage from "./world-formal-route-page"
-import { WorldButlerAutonomyPortal } from "./world-butler-autonomy-portal"
+import { WorldLiveRuntimePage } from "./world-live-runtime-page"
 
-export default function Page() {
-  return (
-    <>
-      <WorldFormalRoutePage />
-      <WorldButlerAutonomyPortal />
-    </>
-  )
+export const dynamic = "force-dynamic"
+
+export default async function Page() {
+  return <WorldLiveRuntimePage />
 }

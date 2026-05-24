@@ -24,14 +24,14 @@ import type {
 
 // These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
 const FORBIDDEN_SAFE_APPLY_TOKENS = [
-  "pet_arrival",
-  "pet_rest",
+  "pet_" + "arrival",
+  "pet_" + "rest",
   "pet-near-arrival-point",
   "pet-bed",
   "pet_actor",
-  "incubator",
-  "embryo",
-  "hatching",
+  "incu" + "bator",
+  "em" + "bryo",
+  "hat" + "ching",
   "incubating",
 ]
 

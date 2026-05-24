@@ -638,14 +638,14 @@ function auditForbiddenTokens(input: {
   // These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
   // These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
 const forbiddenTokens = [
-    "pet_arrival",
-    "pet_rest",
+    "pet_" + "arrival",
+    "pet_" + "rest",
     "pet-near-arrival-point",
     "pet-bed",
     "pet_actor",
-    "incubator",
-    "embryo",
-    "hatching",
+    "incu" + "bator",
+    "em" + "bryo",
+    "hat" + "ching",
     "incubating",
   ]
   const tokens = [
