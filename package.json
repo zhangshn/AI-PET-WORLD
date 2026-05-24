@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "smoke:runtime": "node scripts/run-world-runtime-smoke.cjs"
   },
   "dependencies": {
     "next": "16.2.4",
