@@ -62,7 +62,7 @@ export function auditAiPetWorldMvpPipeline(
     ...result.formalVisualRefresh.warnings,
     ...result.adoptionOpportunityObservations.flatMap((candidate) =>
       candidate.readyForButlerAdoptionIntent && candidate.kind !== "adoption_opportunity_later"
-        ? [`Unexpected adoption opportunity readiness: ${candidate.candidateId}`]
+        ? [`Unexpected adoption opportunity readiness: ${candidate.observationId}`]
         : []
     ),
     ...auditPipelineForbiddenTokens(result),

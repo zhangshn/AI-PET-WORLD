@@ -100,7 +100,7 @@ function buildDecision(input: {
   tags: string[]
 }): ButlerAdoptionIntent {
   return {
-    intentId: `${input.observation.candidateId}-intent-${input.suffix}`,
+    intentId: `${input.observation.observationId}-intent-${input.suffix}`,
     type: input.type,
     kind: input.type,
     worldId: input.observation.worldId,

@@ -44,7 +44,7 @@ export function auditAdoptionOpportunityObservations(input: {
     worldId: input.builderInput.homeMapState.worldId,
     ownerId: input.builderInput.homeMapState.ownerId,
     adoptionOpportunityObservationIds: input.adoptionOpportunityObservations.map(
-      (candidate) => candidate.candidateId
+      (candidate) => candidate.observationId
     ),
     butlerAdoptionIntentIds: input.butlerAdoptionIntents.map(
       (candidate) => candidate.intentId
@@ -75,21 +75,21 @@ function auditCandidateCompleteness(
 
   candidates.forEach((candidate) => {
     if (!candidate.readiness.readinessId.trim()) {
-      warnings.push(`Adoption opportunity observation ${candidate.candidateId} missing readiness.`)
+      warnings.push(`Adoption opportunity observation ${candidate.observationId} missing readiness.`)
     }
     if (candidate.resourceReasons.length === 0) {
       warnings.push(
-        `Adoption opportunity observation ${candidate.candidateId} missing resource reasons.`
+        `Adoption opportunity observation ${candidate.observationId} missing resource reasons.`
       )
     }
     if (candidate.worldReasons.length === 0) {
       warnings.push(
-        `Adoption opportunity observation ${candidate.candidateId} missing world reasons.`
+        `Adoption opportunity observation ${candidate.observationId} missing world reasons.`
       )
     }
     if (candidate.readiness.score < 0 || candidate.readiness.score > 100) {
       warnings.push(
-        `Adoption opportunity observation ${candidate.candidateId} readiness score out of range.`
+        `Adoption opportunity observation ${candidate.observationId} readiness score out of range.`
       )
     }
   })
@@ -126,7 +126,7 @@ function auditReadinessConsistency(input: {
       candidate.readyForButlerAdoptionIntent
     ) {
       warnings.push(
-        `Adoption opportunity observation ${candidate.candidateId} is ready despite blocking blockers.`
+        `Adoption opportunity observation ${candidate.observationId} is ready despite blocking blockers.`
       )
     }
 
@@ -135,7 +135,7 @@ function auditReadinessConsistency(input: {
       candidate.readiness.status === "visit"
     ) {
       warnings.push(
-        `Adoption opportunity observation ${candidate.candidateId} should not be no_event when readiness is visit.`
+        `Adoption opportunity observation ${candidate.observationId} should not be no_event when readiness is visit.`
       )
     }
   })
@@ -162,7 +162,7 @@ function auditForbiddenTokens(input: {
   const tokens = [
     ...input.builderInput.tags,
     ...input.adoptionOpportunityObservations.flatMap((candidate) => [
-      candidate.candidateId,
+      candidate.observationId,
       candidate.type,
       candidate.kind,
       candidate.reason,
@@ -204,7 +204,7 @@ function buildStableTownAdoptionFingerprint(input: {
     input.adoptionOpportunityObservations
       .map(
         (candidate) =>
-          `${candidate.candidateId}:${candidate.kind}:${candidate.readiness.score}:${candidate.readiness.status}`
+          `${candidate.observationId}:${candidate.kind}:${candidate.readiness.score}:${candidate.readiness.status}`
       )
       .sort()
       .join("+"),
