@@ -126,7 +126,7 @@ function buildPrepareCareGoal(input: {
     constructionAllowed: true,
     sourceMotivationIds: ["motivation-care"],
     reason:
-      "照护目标只代表管家准备照护条件，不代表默认生成宠物、宠物床、孵化器或胚胎。",
+      "照护目标只代表管家准备基础生活与关系条件，不代表默认生成宠物或宠物专属设施。",
     tags: ["care_preparation", "future_life_boundary", "no_default_pet"],
   })
 }
