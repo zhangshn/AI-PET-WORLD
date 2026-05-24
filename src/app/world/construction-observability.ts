@@ -143,7 +143,7 @@ export function buildConstructionObservability(
       `建设结果：${addedLabel}。`,
       `自然世界：${naturalWorldSummary}。`,
       `边界审计：自然地貌、花草树木、昆虫迹象、小动物活动和自然资源归世界；住所、照护、储物、安静生活区归管家建设链路。`,
-      `红线审计：伙伴、宠物床、孵化器、胚胎仍保持后置，不作为默认世界事实写入。`,
+      `红线审计：默认宠物、宠物专属设施与伴生生命实体仍保持后置，不作为默认世界事实写入。`,
     ],
     pPhoneMessages: [
       {
@@ -160,7 +160,7 @@ export function buildConstructionObservability(
       },
       {
         title: "MVP 红线确认",
-        body: "当前链路不默认生成宠物、宠物床、孵化器或胚胎，伴生生命仍是后置候选。",
+        body: "当前链路不默认生成宠物或宠物专属设施，伴生生命仍是后置候选。",
       },
     ],
     tags: [
@@ -255,7 +255,7 @@ function buildBoundaryItems(input: {
       title: "伴生生命后置",
       statusLabel: "保持后置",
       description:
-        "宠物、宠物床、孵化器和胚胎不在 MVP 初始世界默认生成。",
+        "默认宠物、宠物专属设施和伴生生命实体不在 MVP 初始世界默认生成。",
       tone: "passed",
     },
   ]
