@@ -1,5 +1,5 @@
 /**
- * 当前文件职责：从世界、资源与建设状态生成小镇领养观察候选。
+ * 当前文件职责：从世界、资源与建设状态生成小镇领养机会观察。
  */
 // These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
@@ -89,7 +89,7 @@ export function auditAdoptionOpportunityObservations(input: {
   const ownerId = input.adoptionOpportunityObservations[0]?.ownerId ?? "unknown-owner"
   const readinessScore = input.adoptionOpportunityObservations[0]?.readiness.score ?? 0
   const blockers = input.adoptionOpportunityObservations.flatMap(
-    (candidate) => candidate.blockers
+    (observation) => observation.blockers
   )
   const warnings = [
     ...input.warnings,
@@ -105,11 +105,11 @@ export function auditAdoptionOpportunityObservations(input: {
       ownerId,
       String(readinessScore),
       input.adoptionOpportunityObservations
-        .map((candidate) => `${candidate.candidateId}:${candidate.type}`)
+        .map((observation) => `${observation.observationId}:${observation.type}`)
         .sort()
         .join("+"),
       butlerAdoptionIntents
-        .map((candidate) => `${candidate.intentId}:${candidate.type}`)
+        .map((intent) => `${intent.intentId}:${intent.type}`)
         .sort()
         .join("+"),
       blockers
@@ -121,10 +121,10 @@ export function auditAdoptionOpportunityObservations(input: {
     worldId,
     ownerId,
     adoptionOpportunityObservationIds: input.adoptionOpportunityObservations.map(
-      (candidate) => candidate.candidateId
+      (observation) => observation.observationId
     ),
     butlerAdoptionIntentIds: butlerAdoptionIntents.map(
-      (candidate) => candidate.intentId
+      (intent) => intent.intentId
     ),
     readinessScore,
     blockerCount: blockers.length,
@@ -161,7 +161,7 @@ function buildAdoptionOpportunityObservationList(input: {
 
   if (blockingCount > 0) {
     return [
-      buildCandidate({
+      buildObservation({
         input: input.input,
         readiness: input.readiness,
         suffix: "dependency-not-ready",
@@ -180,7 +180,7 @@ function buildAdoptionOpportunityObservationList(input: {
 
   if (input.readiness.status === "visit") {
     return [
-      buildCandidate({
+      buildObservation({
         input: input.input,
         readiness: input.readiness,
         suffix: "world-observable",
@@ -190,14 +190,14 @@ function buildAdoptionOpportunityObservationList(input: {
           "家园已经形成可观察的稳定结构，可以记录世界成熟度，但仍不生成领养机会观察。",
         tags: ["observe_world_ready", "world_ready_observation"],
       }),
-      buildCandidate({
+      buildObservation({
         input: input.input,
         readiness: input.readiness,
         suffix: "future-opportunity",
         type: "adoption_opportunity_later",
         readyForButlerAdoptionIntent: true,
         reason:
-          "世界资源、空间与建设状态已接近可接纳阶段，记录为未来未来领养机会。",
+          "世界资源、空间与建设状态已接近可接纳阶段，管家未来可能主动前往小镇了解领养信息。",
         tags: [
           "adoption_opportunity_later",
           "future_opportunity_only",
@@ -209,7 +209,7 @@ function buildAdoptionOpportunityObservationList(input: {
 
   if (input.readiness.status === "observable") {
     return [
-      buildCandidate({
+      buildObservation({
         input: input.input,
         readiness: input.readiness,
         suffix: "observe-and-wait",
@@ -217,7 +217,7 @@ function buildAdoptionOpportunityObservationList(input: {
         readyForButlerAdoptionIntent: false,
         reason:
           warningCount > 0
-            ? "世界已经可以观察，但仍有资源或空间提醒，需要继续等待。"
+            ? "管家正在评估资源、空间和照护能力，因此选择继续等待。"
             : "世界已经可以观察，小镇领养机会继续保持后置观察。",
         tags: ["observe_world_ready", "wait"],
       }),
@@ -226,14 +226,14 @@ function buildAdoptionOpportunityObservationList(input: {
 
   if (input.readiness.status === "preparing") {
     return [
-      buildCandidate({
+      buildObservation({
         input: input.input,
         readiness: input.readiness,
         suffix: "preparing",
         type: "adoption_opportunity_later",
         readyForButlerAdoptionIntent: false,
         reason:
-          "家园正在准备中，未来可能出现未来领养机会，但当前不能进入领养审查流程。",
+          "家园正在准备中，管家暂未产生领养意愿，当前不能进入领养审查流程。",
         tags: [
           "adoption_opportunity_later",
           "consider",
@@ -244,13 +244,13 @@ function buildAdoptionOpportunityObservationList(input: {
   }
 
   return [
-    buildCandidate({
+    buildObservation({
       input: input.input,
       readiness: input.readiness,
       suffix: "no-event",
       type: "no_event",
       readyForButlerAdoptionIntent: false,
-      reason: "当前世界尚未达到领养机会观察门槛。",
+      reason: "管家暂未产生领养意愿，当前世界尚未达到领养机会观察门槛。",
       tags: ["no_event", "town_adoption_precheck_waiting"],
     }),
   ]
@@ -505,7 +505,7 @@ function buildTownAdoptionBlockers(input: {
   return blockers
 }
 
-function buildCandidate(input: {
+function buildObservation(input: {
   input: TownAdoptionPrecheckBuilderInput
   readiness: TownAdoptionReadinessSnapshot
   suffix: string
@@ -515,7 +515,7 @@ function buildCandidate(input: {
   tags: string[]
 }): AdoptionOpportunityObservation {
   return {
-    candidateId: [
+    observationId: [
       "town-adoption",
       normalizeIdToken(input.input.homeMapState.worldId),
       String(input.input.now),
@@ -648,19 +648,19 @@ function auditForbiddenTokens(input: {
     "incubating",
   ]
   const tokens = [
-    ...input.adoptionOpportunityObservations.flatMap((candidate) => [
-      candidate.candidateId,
-      candidate.type,
-      candidate.kind,
-      candidate.reason,
-      ...candidate.tags,
+    ...input.adoptionOpportunityObservations.flatMap((observation) => [
+      observation.observationId,
+      observation.type,
+      observation.kind,
+      observation.reason,
+      ...observation.tags,
     ]),
-    ...input.butlerAdoptionIntents.flatMap((candidate) => [
-      candidate.intentId,
-      candidate.type,
-      candidate.kind,
-      candidate.reason,
-      ...candidate.tags,
+    ...input.butlerAdoptionIntents.flatMap((intent) => [
+      intent.intentId,
+      intent.type,
+      intent.kind,
+      intent.reason,
+      ...intent.tags,
     ]),
   ].map((token) => token.toLowerCase())
 
