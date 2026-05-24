@@ -36,30 +36,37 @@ export function WorldButlerAutonomyPortal() {
     useState<CreateWorldInput>(DEFAULT_WORLD_PREVIEW_INPUT)
 
   useEffect(() => {
-    const searchParams = new URLSearchParams(window.location.search)
-    setIsDebugMode(
-      searchParams.get("debug") === "1" || searchParams.get("debug") === "true"
-    )
+    const frameId = window.requestAnimationFrame(() => {
+      const searchParams = new URLSearchParams(window.location.search)
+      setIsDebugMode(
+        searchParams.get("debug") === "1" ||
+          searchParams.get("debug") === "true"
+      )
+    })
+
+    return () => window.cancelAnimationFrame(frameId)
   }, [])
 
   useEffect(() => {
     if (!isDebugMode) return
 
-    const storedInput = window.localStorage.getItem(CREATE_WORLD_STORAGE_KEY)
-    if (!storedInput) return
+    const frameId = window.requestAnimationFrame(() => {
+      const storedInput = window.localStorage.getItem(CREATE_WORLD_STORAGE_KEY)
+      if (!storedInput) return
 
-    try {
-      setCreateWorldInput(parseCreateWorldInput(storedInput))
-    } catch {
-      setCreateWorldInput(DEFAULT_WORLD_PREVIEW_INPUT)
-    }
+      try {
+        const parsedInput = parseCreateWorldInput(storedInput)
+        setCreateWorldInput(parsedInput ?? DEFAULT_WORLD_PREVIEW_INPUT)
+      } catch {
+        setCreateWorldInput(DEFAULT_WORLD_PREVIEW_INPUT)
+      }
+    })
+
+    return () => window.cancelAnimationFrame(frameId)
   }, [isDebugMode])
 
   useEffect(() => {
-    if (!isDebugMode) {
-      setPortalContainer(null)
-      return
-    }
+    if (!isDebugMode) return
 
     let frameId = 0
     let container: HTMLDivElement | null = null
@@ -89,7 +96,7 @@ export function WorldButlerAutonomyPortal() {
       setPortalContainer(container)
     }
 
-    attachPortal()
+    frameId = window.requestAnimationFrame(attachPortal)
 
     return () => {
       isMounted = false
