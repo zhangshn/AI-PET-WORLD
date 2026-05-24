@@ -9,6 +9,10 @@ import type { FormalVisualDeliveryModel } from "@/world/formal-visual-model/form
 import type { AiPetWorldMvpPipelineResult } from "@/world/mvp-core/mvp-core-schema"
 
 import {
+  buildButlerAutonomyViewModelProbe,
+  type MvpWorldButlerAutonomyProbeSummary,
+} from "./butler-autonomy-viewmodel-probe"
+import {
   buildConstructionObservability,
   type MvpWorldConstructionObservability,
 } from "./construction-observability"
@@ -54,6 +58,7 @@ export type MvpWorldViewModel = {
   butlerSummary: string
   constructionSummary: string
   constructionAudit: MvpWorldConstructionObservability
+  butlerAutonomyProbe: MvpWorldButlerAutonomyProbeSummary
   logItems: string[]
   pPhoneMessages: Array<{
     title: string
@@ -97,12 +102,27 @@ export function buildMvpWorldViewModel(
   )
   const lifeEventSummary = buildLifeEventSummary(result)
   const constructionAudit = buildConstructionObservability(result)
-  const demoChecklist = buildDemoChecklist({
-    result,
-    acceptedDiffCount,
-    rejectedDiffCount,
-    lifeEventSummary,
-  })
+  const butlerAutonomyProbe = buildButlerAutonomyViewModelProbe(result)
+  const demoChecklist = [
+    ...buildDemoChecklist({
+      result,
+      acceptedDiffCount,
+      rejectedDiffCount,
+      lifeEventSummary,
+    }),
+    {
+      id: "demo-butler-autonomy-core",
+      title: "AI 管家自主意识链路",
+      status: butlerAutonomyProbe.checklist.every(
+        (item) => item.status === "passed"
+      )
+        ? "passed"
+        : "warning",
+      description:
+        "管家已经通过 AI 总入口形成灵魂底盘、世界感知、意识状态、动机、目标、主意图、审计和解释。",
+      evidence: `${butlerAutonomyProbe.statusLabel}；主意图 ${butlerAutonomyProbe.selectedIntentLabel}。`,
+    } satisfies MvpWorldDemoChecklistItem,
+  ]
   const acceptanceItems = buildAcceptanceItems({
     demoChecklist,
     lifeEventSummary,
@@ -128,9 +148,12 @@ export function buildMvpWorldViewModel(
       `拒绝 diff：${constructionAudit.rejectedCount}`,
     ].join(" / "),
     constructionAudit,
+    butlerAutonomyProbe,
     logItems: [
       `世界运行：当前有 ${result.nextHomeMapState.placements.length} 个可观察对象。`,
       `建设链路：接受 ${acceptedDiffCount} 条 MapDiff，拒绝 ${rejectedDiffCount} 条。`,
+      `AI 管家：${butlerAutonomyProbe.statusLabel}，主意图 ${butlerAutonomyProbe.selectedIntentLabel}。`,
+      ...butlerAutonomyProbe.logItems,
       ...constructionAudit.logItems,
       `视觉刷新：${result.visualRefresh.reason}`,
       `生命事件：${lifeEventSummary.readinessLabel} / ${lifeEventSummary.candidateLabel}`,
@@ -142,6 +165,11 @@ export function buildMvpWorldViewModel(
         body: message.body,
       })),
       ...constructionAudit.pPhoneMessages,
+      {
+        title: "管家自主意识",
+        body: butlerAutonomyProbe.explanationBodies[0] ??
+          butlerAutonomyProbe.selectedIntentReason,
+      },
     ],
     auditSummary:
       result.audit.warnings.length === 0 &&
@@ -176,7 +204,9 @@ export function buildMvpWorldViewModel(
       "no_world_fact_generation",
       "construction_observability_visible",
       "construction_audit_panel_ready",
+      "butler_autonomy_probe_attached",
       "life_event_visible_summary",
+      ...butlerAutonomyProbe.tags,
       ...constructionAudit.tags,
       ...result.tags,
     ],
