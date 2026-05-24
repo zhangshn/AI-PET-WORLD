@@ -1,3 +1,5 @@
+> 历史归档：本文件不得作为 V2.6 当前产品、架构或开发依据。
+
 > Status: historical archive. This document is kept for historical design context only and is no longer the highest authority for AI-PET-WORLD V2.0 MVP development. Future work follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md` and the four V2.0 product documents.
 
 # AI-PET-WORLD 素材模块系统文档 v1.0
@@ -410,7 +412,7 @@ Asset Lab 是开发工具，不是正式游戏 UI。
 宠物：
 
 - 64x64。
-- 圆形生命体。
+- 圆形宠物事实。
 - 身体、耳朵、眼睛、尾巴、脚、阴影。
 - 第一批 idle / walk / eat / sleep / alert。
 

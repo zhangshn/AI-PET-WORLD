@@ -125,7 +125,7 @@ export const BIOME_RULES: Record<BiomeType, BiomeRule> = {
       shelterSafetyBias: 0.02,
     },
     constructionModifiers: { materialCostMultiplier: 1.04, maintenanceRisk: 0.34 },
-    visualTokens: ["water_adjacent", "life_event_ready_later", "space_pressure"],
+    visualTokens: ["water_adjacent", "town_adoption_precheck_ready_later", "space_pressure"],
     tags: ["biome_rule", "oasis", "care_growth_resource_profile"],
   },
 }

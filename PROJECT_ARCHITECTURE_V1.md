@@ -1,3 +1,5 @@
+> 历史归档：本文件不得作为 V2.6 当前产品、架构或开发依据。
+
 > Status: historical archive. This document is kept for historical design context only and is no longer the highest authority for AI-PET-WORLD V2.0 MVP development. Future work follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md` and the four V2.0 product documents.
 
 # AI-PET-WORLD Architecture V1（历史参考）
@@ -20,7 +22,7 @@
 2. FormalVisualModel First。
 3. FormalWorldView 只能只读 FormalVisualModel。
 4. 初始世界只允许以管家、第一片家园、基础资源、临时住所、初始照护区、安静生活区、工具储备区、自然边界和世界状态作为开局事实。
-5. 宠物未来能力保留，但只能通过 LifeEvent / CompanionDecision / accept_companion 后置进入。
+5. 宠物未来能力保留，但只能通过 TownAdoptionPrecheck / ButlerAdoptionIntent / adoption_safe_apply 后置进入。
 6. 后续重点是 worldSeed + personality layout input schema，以及长期 Construction / MapDiff 世界演化。
 
 ## 使用方式

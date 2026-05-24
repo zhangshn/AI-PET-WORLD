@@ -1,3 +1,5 @@
+> 历史归档：本文件不得作为 V2.6 当前产品、架构或开发依据。
+
 > Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
 
 # AI-PET-WORLD MVP 必交付完整实现报告
@@ -10,7 +12,7 @@
 
 | 类型 | 状态 | 说明 |
 |---|---:|---|
-| 工程闭环 | 已完成 | MVP 总入口可以串起管家、初始世界、建设运行、持久化 dry-run、视觉刷新、日志、P-Phone、生命事件候选、审计与报告 |
+| 工程闭环 | 已完成 | MVP 总入口可以串起管家、初始世界、建设运行、持久化 dry-run、视觉刷新、日志、P-Phone、领养候选观察、审计与报告 |
 | debug 闭环 | 已完成 | Smoke Audit 与页面调试视图可用于检查链路 |
 | dry-run 闭环 | 已完成 | 持久化与视觉刷新均为前置请求或内存模拟，不写真实数据库 |
 | 只读展示闭环 | 已完成 | /world 默认展示 FormalWorldView，并显示 MVP 只读 ViewModel |
@@ -28,7 +30,7 @@
 | MVP Visual Refresh | 已完成 | `buildMvpVisualRefresh` |
 | MVP Formal Visual Refresh | 已完成 | `buildMvpFormalVisualRefresh` |
 | WorldLog / ButlerExplanation / P-Phone | 已完成 | `buildMvpWorldLogEntries` / `buildMvpPPhoneData` |
-| LifeEvent / CompanionDecision 后置候选 | 已完成 | `buildLifeEventCandidates` / `buildCompanionDecisionCandidates` |
+| TownAdoptionPrecheck / ButlerAdoptionIntent 后置候选 | 已完成 | `buildTownAdoptionCandidates` / `buildButlerAdoptionIntentCandidates` |
 | MVP Core Pipeline 总入口 | 已完成 | `runAiPetWorldMvpPipeline` |
 | MVP Smoke Scenarios / Smoke Audit | 已完成 | `runMvpSmokeAudit` |
 | /world MVP 只读 ViewModel | 已完成 | `buildMvpWorldViewModel` |
@@ -49,8 +51,8 @@ Player Birth Input
 -> WorldLog
 -> ButlerExplanation
 -> P-Phone Data
--> LifeEvent Candidate
--> CompanionDecision Candidate
+-> TownAdoptionPrecheck Candidate
+-> ButlerAdoptionIntent Candidate
 -> MVP Audit
 -> MVP Report
 -> /world Readonly ViewModel
@@ -87,7 +89,7 @@ Player Birth Input
 | 真实数据库持久化 | 当前只有 dry-run / memory preview | 实现 persistence adapter 并接入账号数据 |
 | 真实定时 world-loop | 当前只提供手动 Tick 与协议桥 | 实现 scheduler bridge 与后台 tick 策略 |
 | 真实线上用户数据 | 当前是本地浏览器输入与 localStorage | 接入用户系统与后端存储 |
-| 宠物正式进入 | 当前只有后置候选入口 | 实现 LifeEvent -> CompanionDecision -> accept_companion |
+| 宠物正式进入 | 当前只有后置候选入口 | 实现 TownAdoptionPrecheck -> ButlerAdoptionIntent -> adoption_safe_apply |
 | 集成测试 | 当前通过 lint / tsc / build 与 smoke audit 入口 | 补充自动化 integration tests |
 
 ## 7. 如何验证

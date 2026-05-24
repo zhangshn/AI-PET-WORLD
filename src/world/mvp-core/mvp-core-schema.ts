@@ -20,10 +20,10 @@ import type {
   ConstructionFormalVisualRefreshPrecheck,
 } from "@/world/construction/construction-schema"
 import type {
-  CompanionDecisionCandidate,
-  LifeEventCandidate,
-  LifeEventCandidateBuilderResult,
-} from "@/world/life-event/life-event-schema"
+  ButlerAdoptionIntentCandidate,
+  TownAdoptionCandidate,
+  TownAdoptionPrecheckBuilderResult,
+} from "@/world/adoption/town-adoption-precheck-schema"
 
 import type { MvpButlerExplanationEntry as PipelineButlerExplanationEntry } from "./mvp-butler-explanation"
 import type { MvpFormalVisualRefreshResult } from "./mvp-formal-visual-refresh"
@@ -72,7 +72,7 @@ export type MvpCoreDebugRunnerResult = {
   persistenceDryRunResult: ConstructionPersistenceAdapterDryRunResult
   snapshotRefreshRequest: ConstructionSnapshotRefreshRequest
   formalVisualRefreshPrecheck: ConstructionFormalVisualRefreshPrecheck
-  lifeEventResult: LifeEventCandidateBuilderResult
+  townAdoptionResult: TownAdoptionPrecheckBuilderResult
   audit: MvpCoreAudit
   report: MvpCoreReport
   messages: string[]
@@ -164,8 +164,8 @@ export type AiPetWorldMvpPipelineResult = {
   worldLogs: PipelineWorldLogEntry[]
   butlerExplanations: PipelineButlerExplanationEntry[]
   pPhoneData: PipelinePPhoneData
-  lifeEventCandidates: LifeEventCandidate[]
-  companionDecisionCandidates: CompanionDecisionCandidate[]
+  townAdoptionCandidates: TownAdoptionCandidate[]
+  butlerAdoptionIntentCandidates: ButlerAdoptionIntentCandidate[]
   audit: AiPetWorldMvpAudit
   report: AiPetWorldMvpReport
   nextHomeMapState: HomeMapState

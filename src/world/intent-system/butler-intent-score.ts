@@ -61,7 +61,7 @@ function buildMaintainCandidate(
   input: BuildButlerIntentDecisionInput
 ): IntentCandidate {
   const habitatStress = 100 - input.environment.ecology.habitatStability
-  const lowPetEnergy = input.pet.energy < 35
+  const lowPetEnergy = Boolean(input.pet && input.pet.energy < 35)
   const score = clampPercent(
     input.butler.constructionStyle.protectiveKeeper * 0.35 +
       habitatStress * 0.35 +
@@ -154,7 +154,9 @@ function buildExpandCandidate(
 function buildObserveCandidate(
   input: BuildButlerIntentDecisionInput
 ): IntentCandidate {
-  const quietMood = includesAny(input.pet.mood, ["quiet", "resting"])
+  const quietMood = Boolean(
+    input.pet && includesAny(input.pet.mood, ["quiet", "resting"])
+  )
   const lowBuildReadiness = input.environment.materials.buildReadiness < 45
   const score = clampPercent(
     42 +
@@ -181,7 +183,7 @@ function buildRestCandidate(
   input: BuildButlerIntentDecisionInput
 ): IntentCandidate {
   const tiredButler = includesAny(input.butler.mood, ["tired", "fatigue"])
-  const lowPetEnergy = input.pet.energy < 25
+  const lowPetEnergy = Boolean(input.pet && input.pet.energy < 25)
   const score = clampPercent(
     22 +
       (tiredButler ? 38 : 0) +

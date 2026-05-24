@@ -58,7 +58,7 @@ function buildMvpPPhoneData(input: {
       "mvp_p_phone_data",
       "player_readable_summary",
       "not_world_fact",
-      "no_companion_default_entry",
+      "no_direct_adoption_entry",
     ],
   }
 }
@@ -116,14 +116,14 @@ function buildWorldLogEntries(
       tags: ["world_log", "persistence_dry_run"],
     },
     {
-      id: "world-log-life-event",
-      title: "生命事件后置候选",
+      id: "world-log-town-adoption",
+      title: "小镇领养观察候选",
       body:
-        result.lifeEventResult.lifeEventCandidates[0]?.reason ??
-        "当前没有生命事件候选。",
+        result.townAdoptionResult.townAdoptionCandidates[0]?.reason ??
+        "当前没有领养候选观察。",
       severity:
-        result.lifeEventResult.audit.warnings.length > 0 ? "warning" : "info",
-      tags: ["world_log", "life_event_candidate"],
+        result.townAdoptionResult.audit.warnings.length > 0 ? "warning" : "info",
+      tags: ["world_log", "town_adoption_precheck_candidate"],
     },
   ]
 }

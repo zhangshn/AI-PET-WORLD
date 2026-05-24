@@ -905,7 +905,7 @@
   display: block;
   height: 100%;
 }
-.lifeEventPanel {
+.adoptionPanel {
   background:
     linear-gradient(180deg, rgba(47, 82, 42, 0.1), rgba(47, 82, 42, 0.06));
   border: 1px solid rgba(47, 82, 42, 0.14);
@@ -915,31 +915,31 @@
   padding: 14px;
 }
 
-.lifeEventHeader {
+.adoptionHeader {
   align-items: start;
   display: grid;
   gap: 12px;
   grid-template-columns: 1fr auto;
 }
 
-.lifeEventHeader h3,
-.lifeEventHeader p {
+.adoptionHeader h3,
+.adoptionHeader p {
   margin: 0;
 }
 
-.lifeEventHeader h3 {
+.adoptionHeader h3 {
   color: #20341e;
   font-size: 18px;
 }
 
-.lifeEventHeader p {
+.adoptionHeader p {
   color: rgba(32, 52, 30, 0.72);
   font-size: 13px;
   line-height: 1.65;
   margin-top: 6px;
 }
 
-.lifeEventScore {
+.adoptionScore {
   align-items: baseline;
   background: rgba(255, 255, 247, 0.72);
   border: 1px solid rgba(47, 82, 42, 0.14);
@@ -952,24 +952,24 @@
   padding: 12px;
 }
 
-.lifeEventScore strong {
+.adoptionScore strong {
   font-size: 28px;
   line-height: 1;
 }
 
-.lifeEventScore span {
+.adoptionScore span {
   color: rgba(32, 52, 30, 0.58);
   font-size: 13px;
 }
 
-.lifeEventMetaGrid,
-.lifeEventReasonGrid {
+.adoptionMetaGrid,
+.adoptionReasonGrid {
   display: grid;
   gap: 10px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.lifeEventReasonCard {
+.adoptionReasonCard {
   background: rgba(255, 255, 247, 0.58);
   border: 1px solid rgba(47, 82, 42, 0.12);
   border-radius: 10px;
@@ -978,24 +978,24 @@
   padding: 12px;
 }
 
-.lifeEventReasonCard span {
+.adoptionReasonCard span {
   color: rgba(32, 52, 30, 0.6);
   font-size: 12px;
 }
 
-.lifeEventReasonCard strong {
+.adoptionReasonCard strong {
   color: #20341e;
   font-size: 15px;
 }
 
-.lifeEventReasonCard p {
+.adoptionReasonCard p {
   color: rgba(32, 52, 30, 0.72);
   font-size: 13px;
   line-height: 1.6;
   margin: 0;
 }
 
-.lifeEventReasonList {
+.adoptionReasonList {
   color: rgba(32, 52, 30, 0.72);
   display: grid;
   font-size: 13px;
@@ -1006,16 +1006,16 @@
   padding: 0;
 }
 
-.lifeEventReasonList li::before {
+.adoptionReasonList li::before {
   content: "· ";
 }
 
-.lifeEventBlockerList {
+.adoptionBlockerList {
   display: grid;
   gap: 8px;
 }
 
-.lifeEventBlocker {
+.adoptionBlocker {
   background: rgba(255, 255, 247, 0.58);
   border: 1px solid rgba(47, 82, 42, 0.12);
   border-left: 4px solid rgba(71, 129, 93, 0.88);
@@ -1025,20 +1025,20 @@
   padding: 12px;
 }
 
-.lifeEventBlocker[data-tone="warning"] {
+.adoptionBlocker[data-tone="warning"] {
   border-left-color: #c2a66b;
 }
 
-.lifeEventBlocker[data-tone="blocking"] {
+.adoptionBlocker[data-tone="blocking"] {
   border-left-color: #b77554;
 }
 
-.lifeEventBlocker strong {
+.adoptionBlocker strong {
   color: #20341e;
   font-size: 14px;
 }
 
-.lifeEventBlocker p {
+.adoptionBlocker p {
   color: rgba(32, 52, 30, 0.72);
   font-size: 13px;
   line-height: 1.6;
@@ -1289,9 +1289,9 @@
   .productWorldGrid,
   .productResourceGrid,
   .productStatusGrid,
-  .lifeEventMetaGrid,
-  .lifeEventReasonGrid,
-  .lifeEventHeader,
+  .adoptionMetaGrid,
+  .adoptionReasonGrid,
+  .adoptionHeader,
   .demoChecklistHeader,
   .demoChecklistGrid,
   .acceptanceHeader,

@@ -1,3 +1,5 @@
+> 历史归档：本文件不得作为 V2.6 当前产品、架构或开发依据。
+
 > Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
 
 # AI-PET-WORLD MVP-ALIGN-03 文档体系对齐模块
@@ -66,9 +68,9 @@ MVP-ALIGN-03 是文档体系对齐模块。
 宠物未来能力保留，但只能通过：
 
 ```text
-LifeEvent
--> CompanionDecision
--> accept_companion
+TownAdoptionPrecheck
+-> ButlerAdoptionIntent
+-> adoption_safe_apply
 ```
 
 后置进入。
@@ -96,9 +98,9 @@ LifeEvent
 | ConstructionPlanner | 未完成 | CONSTRUCTION 模块 |
 | ConstructionExecutor | 未完成 | CONSTRUCTION 模块 |
 | MapDiff 驱动长期建设变化 | 未完成 | WORLD-EVOLUTION / CONSTRUCTION 模块 |
-| LifeEvent | 未完成 | LIFE-EVENT 模块 |
-| CompanionDecision | 未完成 | LIFE-EVENT 模块 |
-| accept_companion 后置宠物接入 | 未完成 | PET 后置接入模块 |
+| TownAdoptionPrecheck | 未完成 | LIFE-EVENT 模块 |
+| ButlerAdoptionIntent | 未完成 | LIFE-EVENT 模块 |
+| adoption_safe_apply 后置宠物接入 | 未完成 | PET 后置接入模块 |
 
 ## 7. 剩余旧词处理规则
 

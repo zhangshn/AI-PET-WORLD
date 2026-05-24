@@ -1,6 +1,7 @@
 /**
  * 当前文件职责：审计主世界只读视觉投影是否越界生成事实。
  */
+// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type {
   FormalVisualDeliveryAudit,

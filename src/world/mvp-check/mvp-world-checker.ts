@@ -158,7 +158,7 @@ export function buildMvpWorldCheckReport(
           : input.adoptionState?.hasCandidate
             ? "Adoption center has an observable candidate, not a pet world fact."
             : "Adoption center has no observable candidate yet.",
-      tags: ["mvp", "adoption", "companion_deferred"],
+      tags: ["mvp", "adoption", "adoption_deferred"],
     }),
     buildItem({
       id: "pet_runtime_valid",

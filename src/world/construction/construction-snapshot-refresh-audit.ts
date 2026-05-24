@@ -1,6 +1,7 @@
 /**
  * 当前文件职责：审计建设链路触发 RenderableWorldSnapshot 刷新前请求。
  */
+// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type {
   ConstructionSnapshotRefreshAudit,

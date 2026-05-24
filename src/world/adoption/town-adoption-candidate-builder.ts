@@ -1,54 +1,55 @@
 /**
- * 当前文件职责：从世界、资源与建设状态生成生命事件后置候选。
+ * 当前文件职责：从世界、资源与建设状态生成小镇领养观察候选。
  */
+// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
-import { buildCompanionDecisionCandidates as buildCompanionDecisionCandidateList } from "./companion-decision-candidate"
-import { auditLifeEventCandidates as auditLifeEventCandidateList } from "./life-event-audit"
-import { buildLifeEventReport as buildLifeEventReportModel } from "./life-event-report"
+import { buildButlerAdoptionIntentCandidates as buildButlerAdoptionIntentCandidateList } from "./butler-adoption-intent-candidate"
+import { auditTownAdoptionCandidates as auditTownAdoptionCandidateList } from "./town-adoption-precheck-audit"
+import { buildTownAdoptionPrecheckReport as buildTownAdoptionPrecheckReportModel } from "./town-adoption-precheck-report"
 import type {
-  CompanionDecisionCandidate,
-  LifeEventAudit,
-  LifeEventBlocker,
-  LifeEventCandidate,
-  LifeEventCandidateBuilderInput,
-  LifeEventCandidateBuilderResult,
-  LifeEventReadinessSnapshot,
-  LifeEventReport,
-  LifeEventResourceReadiness,
-  LifeEventWorldReadiness,
-} from "./life-event-schema"
+  ButlerAdoptionIntentCandidate,
+  TownAdoptionPrecheckAudit,
+  TownAdoptionBlocker,
+  TownAdoptionCandidate,
+  TownAdoptionPrecheckBuilderInput,
+  TownAdoptionPrecheckBuilderResult,
+  TownAdoptionReadinessSnapshot,
+  TownAdoptionPrecheckReport,
+  TownAdoptionResourceReadiness,
+  TownAdoptionWorldReadiness,
+} from "./town-adoption-precheck-schema"
 
-export function buildLifeEventCandidateBuilderResult(
-  input: LifeEventCandidateBuilderInput
-): LifeEventCandidateBuilderResult {
-  const readiness = buildLifeEventReadinessSnapshot(input)
-  const lifeEventCandidates = buildLifeEventCandidateList({
+export function buildTownAdoptionPrecheckBuilderResult(
+  input: TownAdoptionPrecheckBuilderInput
+): TownAdoptionPrecheckBuilderResult {
+  const readiness = buildTownAdoptionReadinessSnapshot(input)
+  const townAdoptionCandidates = buildTownAdoptionCandidateList({
     input,
     readiness,
   })
-  const companionDecisionCandidates = buildCompanionDecisionCandidateList({
-    lifeEventCandidates,
+  const butlerAdoptionIntentCandidates = buildButlerAdoptionIntentCandidateList({
+    townAdoptionCandidates,
   })
-  const audit = auditLifeEventCandidateList({
+  const audit = auditTownAdoptionCandidateList({
     builderInput: input,
-    lifeEventCandidates,
-    companionDecisionCandidates,
+    townAdoptionCandidates,
+    butlerAdoptionIntentCandidates,
   })
-  const report = buildLifeEventReportModel({
-    lifeEventCandidates,
-    companionDecisionCandidates,
+  const report = buildTownAdoptionPrecheckReportModel({
+    townAdoptionCandidates,
+    butlerAdoptionIntentCandidates,
     audit,
   })
 
   return {
-    lifeEventCandidates,
-    companionDecisionCandidates,
+    townAdoptionCandidates,
+    butlerAdoptionIntentCandidates,
     audit,
     report,
     messages: report.messages,
     tags: [
-      "life_event_candidate_builder_result",
-      "life_event_01",
+      "town_adoption_precheck_candidate_builder_result",
+      "town_adoption_precheck_01",
       "town_adoption_deferred_only",
       "no_actor_creation",
       "no_home_map_state_mutation",
@@ -57,57 +58,57 @@ export function buildLifeEventCandidateBuilderResult(
   }
 }
 
-export function buildLifeEventCandidates(
-  input: LifeEventCandidateBuilderInput
-): LifeEventCandidate[] {
-  const readiness = buildLifeEventReadinessSnapshot(input)
+export function buildTownAdoptionCandidates(
+  input: TownAdoptionPrecheckBuilderInput
+): TownAdoptionCandidate[] {
+  const readiness = buildTownAdoptionReadinessSnapshot(input)
 
-  return buildLifeEventCandidateList({
+  return buildTownAdoptionCandidateList({
     input,
     readiness,
   })
 }
 
-export function buildCompanionDecisionCandidates(input: {
-  lifeEventCandidates: LifeEventCandidate[]
+export function buildButlerAdoptionIntentCandidates(input: {
+  townAdoptionCandidates: TownAdoptionCandidate[]
   tags?: string[]
-}): CompanionDecisionCandidate[] {
-  return buildCompanionDecisionCandidateList({
-    lifeEventCandidates: input.lifeEventCandidates,
+}): ButlerAdoptionIntentCandidate[] {
+  return buildButlerAdoptionIntentCandidateList({
+    townAdoptionCandidates: input.townAdoptionCandidates,
   })
 }
 
-export function auditLifeEventCandidates(input: {
-  lifeEventCandidates: LifeEventCandidate[]
+export function auditTownAdoptionCandidates(input: {
+  townAdoptionCandidates: TownAdoptionCandidate[]
   warnings: string[]
-}): LifeEventAudit {
-  const companionDecisionCandidates = buildCompanionDecisionCandidateList({
-    lifeEventCandidates: input.lifeEventCandidates,
+}): TownAdoptionPrecheckAudit {
+  const butlerAdoptionIntentCandidates = buildButlerAdoptionIntentCandidateList({
+    townAdoptionCandidates: input.townAdoptionCandidates,
   })
-  const worldId = input.lifeEventCandidates[0]?.worldId ?? "unknown-world"
-  const ownerId = input.lifeEventCandidates[0]?.ownerId ?? "unknown-owner"
-  const readinessScore = input.lifeEventCandidates[0]?.readiness.score ?? 0
-  const blockers = input.lifeEventCandidates.flatMap(
+  const worldId = input.townAdoptionCandidates[0]?.worldId ?? "unknown-world"
+  const ownerId = input.townAdoptionCandidates[0]?.ownerId ?? "unknown-owner"
+  const readinessScore = input.townAdoptionCandidates[0]?.readiness.score ?? 0
+  const blockers = input.townAdoptionCandidates.flatMap(
     (candidate) => candidate.blockers
   )
   const warnings = [
     ...input.warnings,
     ...auditForbiddenTokens({
-      lifeEventCandidates: input.lifeEventCandidates,
-      companionDecisionCandidates,
+      townAdoptionCandidates: input.townAdoptionCandidates,
+      butlerAdoptionIntentCandidates,
     }),
   ]
 
   return {
-    stableLifeEventFingerprint: [
+    stableTownAdoptionFingerprint: [
       worldId,
       ownerId,
       String(readinessScore),
-      input.lifeEventCandidates
+      input.townAdoptionCandidates
         .map((candidate) => `${candidate.candidateId}:${candidate.type}`)
         .sort()
         .join("+"),
-      companionDecisionCandidates
+      butlerAdoptionIntentCandidates
         .map((candidate) => `${candidate.candidateId}:${candidate.type}`)
         .sort()
         .join("+"),
@@ -119,38 +120,38 @@ export function auditLifeEventCandidates(input: {
     ].join("::"),
     worldId,
     ownerId,
-    lifeEventCandidateIds: input.lifeEventCandidates.map(
+    townAdoptionCandidateIds: input.townAdoptionCandidates.map(
       (candidate) => candidate.candidateId
     ),
-    companionDecisionCandidateIds: companionDecisionCandidates.map(
+    butlerAdoptionIntentCandidateIds: butlerAdoptionIntentCandidates.map(
       (candidate) => candidate.candidateId
     ),
     readinessScore,
     blockerCount: blockers.length,
     warnings,
     tags: [
-      "life_event_candidate_audit",
+      "town_adoption_precheck_candidate_audit",
       "compat_export_from_candidate_builder",
       "town_adoption_deferred_only",
       warnings.length === 0
-        ? "life_event_candidates_valid"
-        : "life_event_candidates_warning",
+        ? "town_adoption_precheck_candidates_valid"
+        : "town_adoption_precheck_candidates_warning",
     ],
   }
 }
 
-export function buildLifeEventReport(input: {
-  lifeEventCandidates: LifeEventCandidate[]
-  companionDecisionCandidates: CompanionDecisionCandidate[]
-  audit: LifeEventAudit
-}): LifeEventReport {
-  return buildLifeEventReportModel(input)
+export function buildTownAdoptionPrecheckReport(input: {
+  townAdoptionCandidates: TownAdoptionCandidate[]
+  butlerAdoptionIntentCandidates: ButlerAdoptionIntentCandidate[]
+  audit: TownAdoptionPrecheckAudit
+}): TownAdoptionPrecheckReport {
+  return buildTownAdoptionPrecheckReportModel(input)
 }
 
-function buildLifeEventCandidateList(input: {
-  input: LifeEventCandidateBuilderInput
-  readiness: LifeEventReadinessSnapshot
-}): LifeEventCandidate[] {
+function buildTownAdoptionCandidateList(input: {
+  input: TownAdoptionPrecheckBuilderInput
+  readiness: TownAdoptionReadinessSnapshot
+}): TownAdoptionCandidate[] {
   const blockingCount = input.readiness.blockers.filter(
     (blocker) => blocker.severity === "blocking"
   ).length
@@ -165,7 +166,7 @@ function buildLifeEventCandidateList(input: {
         readiness: input.readiness,
         suffix: "dependency-not-ready",
         type: "construction_dependency_not_ready",
-        readyForCompanionDecision: false,
+        readyForButlerAdoptionIntent: false,
         reason:
           "家园仍存在关键准备项，小镇领养机会保持后置，不进入世界事实。",
         tags: [
@@ -184,9 +185,9 @@ function buildLifeEventCandidateList(input: {
         readiness: input.readiness,
         suffix: "world-observable",
         type: "observe_world_ready",
-        readyForCompanionDecision: false,
+        readyForButlerAdoptionIntent: false,
         reason:
-          "家园已经形成可观察的稳定结构，可以记录世界成熟度，但仍不生成伴生生命。",
+          "家园已经形成可观察的稳定结构，可以记录世界成熟度，但仍不生成领养候选。",
         tags: ["observe_world_ready", "world_ready_observation"],
       }),
       buildCandidate({
@@ -194,9 +195,9 @@ function buildLifeEventCandidateList(input: {
         readiness: input.readiness,
         suffix: "future-opportunity",
         type: "adoption_candidate_later",
-        readyForCompanionDecision: true,
+        readyForButlerAdoptionIntent: true,
         reason:
-          "世界资源、空间与建设状态已接近可接纳阶段，记录为未来伴生生命机会。",
+          "世界资源、空间与建设状态已接近可接纳阶段，记录为未来未来领养机会。",
         tags: [
           "adoption_candidate_later",
           "future_opportunity_only",
@@ -213,7 +214,7 @@ function buildLifeEventCandidateList(input: {
         readiness: input.readiness,
         suffix: "observe-and-wait",
         type: "observe_world_ready",
-        readyForCompanionDecision: false,
+        readyForButlerAdoptionIntent: false,
         reason:
           warningCount > 0
             ? "世界已经可以观察，但仍有资源或空间提醒，需要继续等待。"
@@ -230,9 +231,9 @@ function buildLifeEventCandidateList(input: {
         readiness: input.readiness,
         suffix: "preparing",
         type: "adoption_candidate_later",
-        readyForCompanionDecision: false,
+        readyForButlerAdoptionIntent: false,
         reason:
-          "家园正在准备中，未来可能出现伴生生命机会，但当前不能进入伙伴流程。",
+          "家园正在准备中，未来可能出现未来领养机会，但当前不能进入领养审查流程。",
         tags: [
           "adoption_candidate_later",
           "prepare_world_first",
@@ -248,19 +249,19 @@ function buildLifeEventCandidateList(input: {
       readiness: input.readiness,
       suffix: "no-event",
       type: "no_event",
-      readyForCompanionDecision: false,
-      reason: "当前世界尚未达到生命事件候选门槛。",
-      tags: ["no_event", "life_event_waiting"],
+      readyForButlerAdoptionIntent: false,
+      reason: "当前世界尚未达到领养候选观察门槛。",
+      tags: ["no_event", "town_adoption_precheck_waiting"],
     }),
   ]
 }
 
-function buildLifeEventReadinessSnapshot(
-  input: LifeEventCandidateBuilderInput
-): LifeEventReadinessSnapshot {
+function buildTownAdoptionReadinessSnapshot(
+  input: TownAdoptionPrecheckBuilderInput
+): TownAdoptionReadinessSnapshot {
   const resourceReadiness = buildResourceReadiness(input)
   const worldReadiness = buildWorldReadiness(input)
-  const blockers = buildLifeEventBlockers({
+  const blockers = buildTownAdoptionBlockers({
     resourceReadiness,
     worldReadiness,
     input,
@@ -275,7 +276,7 @@ function buildLifeEventReadinessSnapshot(
 
   return {
     readinessId: [
-      "life-event-readiness",
+      "town-adoption-readiness",
       normalizeIdToken(input.homeMapState.worldId),
       String(input.now),
     ].join("-"),
@@ -293,9 +294,9 @@ function buildLifeEventReadinessSnapshot(
       worldReadiness,
     }),
     tags: [
-      "life_event_readiness_snapshot",
-      `life_event_status:${status}`,
-      `life_event_score:${score}`,
+      "town_adoption_precheck_readiness_snapshot",
+      `town_adoption_precheck_status:${status}`,
+      `town_adoption_precheck_score:${score}`,
       "no_world_fact_generation",
       "no_actor_creation",
     ],
@@ -303,8 +304,8 @@ function buildLifeEventReadinessSnapshot(
 }
 
 function buildResourceReadiness(
-  input: LifeEventCandidateBuilderInput
-): LifeEventResourceReadiness {
+  input: TownAdoptionPrecheckBuilderInput
+): TownAdoptionResourceReadiness {
   const resources = input.homeMapState.resources
   const materialReadiness = normalizeResourceValue(resources.materialReadiness)
   const careReadiness = normalizeResourceValue(resources.careReadiness)
@@ -349,8 +350,8 @@ function buildResourceReadiness(
 }
 
 function buildWorldReadiness(
-  input: LifeEventCandidateBuilderInput
-): LifeEventWorldReadiness {
+  input: TownAdoptionPrecheckBuilderInput
+): TownAdoptionWorldReadiness {
   const acceptedDiffCount =
     input.constructionBridgeResult?.verticalSliceResult.fullPipelineAudit
       .acceptedDiffIds.length ?? 0
@@ -411,12 +412,12 @@ function buildWorldReadiness(
   }
 }
 
-function buildLifeEventBlockers(input: {
-  resourceReadiness: LifeEventResourceReadiness
-  worldReadiness: LifeEventWorldReadiness
-  input: LifeEventCandidateBuilderInput
-}): LifeEventBlocker[] {
-  const blockers: LifeEventBlocker[] = []
+function buildTownAdoptionBlockers(input: {
+  resourceReadiness: TownAdoptionResourceReadiness
+  worldReadiness: TownAdoptionWorldReadiness
+  input: TownAdoptionPrecheckBuilderInput
+}): TownAdoptionBlocker[] {
+  const blockers: TownAdoptionBlocker[] = []
 
   if (input.resourceReadiness.materialReadiness < 34) {
     blockers.push(
@@ -495,7 +496,7 @@ function buildLifeEventBlockers(input: {
       buildBlocker({
         source: "audit",
         severity: "blocking",
-        reason: `建设审计仍有 ${constructionWarnings.length} 条警告，生命事件保持后置。`,
+        reason: `建设审计仍有 ${constructionWarnings.length} 条警告，小镇领养观察保持后置。`,
         key: "construction_audit_warning",
       })
     )
@@ -505,17 +506,17 @@ function buildLifeEventBlockers(input: {
 }
 
 function buildCandidate(input: {
-  input: LifeEventCandidateBuilderInput
-  readiness: LifeEventReadinessSnapshot
+  input: TownAdoptionPrecheckBuilderInput
+  readiness: TownAdoptionReadinessSnapshot
   suffix: string
-  type: LifeEventCandidate["type"]
-  readyForCompanionDecision: boolean
+  type: TownAdoptionCandidate["type"]
+  readyForButlerAdoptionIntent: boolean
   reason: string
   tags: string[]
-}): LifeEventCandidate {
+}): TownAdoptionCandidate {
   return {
     candidateId: [
-      "life-event",
+      "town-adoption",
       normalizeIdToken(input.input.homeMapState.worldId),
       String(input.input.now),
       input.suffix,
@@ -524,15 +525,15 @@ function buildCandidate(input: {
     kind: input.type,
     worldId: input.input.homeMapState.worldId,
     ownerId: input.input.homeMapState.ownerId,
-    readyForCompanionDecision: input.readyForCompanionDecision,
+    readyForButlerAdoptionIntent: input.readyForButlerAdoptionIntent,
     readiness: input.readiness,
     reason: input.reason,
     resourceReasons: input.readiness.resourceReadiness.reasons,
     worldReasons: input.readiness.worldReadiness.reasons,
     blockers: input.readiness.blockers,
     tags: [
-      "life_event_candidate",
-      "life_event_01",
+      "town_adoption_precheck_candidate",
+      "town_adoption_precheck_01",
       "delayed_entry_only",
       "no_actor_creation",
       "no_home_map_state_mutation",
@@ -544,17 +545,17 @@ function buildCandidate(input: {
 
 function buildBlocker(input: {
   key: string
-  severity: LifeEventBlocker["severity"]
+  severity: TownAdoptionBlocker["severity"]
   reason: string
-  source: LifeEventBlocker["source"]
-}): LifeEventBlocker {
+  source: TownAdoptionBlocker["source"]
+}): TownAdoptionBlocker {
   return {
-    blockerId: `life-event-blocker:${input.key}`,
+    blockerId: `town-adoption-blocker:${input.key}`,
     severity: input.severity,
     reason: input.reason,
     source: input.source,
     tags: [
-      "life_event_blocker",
+      "town_adoption_precheck_blocker",
       `blocker_source:${input.source}`,
       `blocker_severity:${input.severity}`,
       `blocker_key:${input.key}`,
@@ -564,8 +565,8 @@ function buildBlocker(input: {
 
 function selectReadinessStatus(input: {
   score: number
-  blockers: LifeEventBlocker[]
-}): LifeEventReadinessSnapshot["status"] {
+  blockers: TownAdoptionBlocker[]
+}): TownAdoptionReadinessSnapshot["status"] {
   const hasBlocking = input.blockers.some(
     (blocker) => blocker.severity === "blocking"
   )
@@ -578,11 +579,11 @@ function selectReadinessStatus(input: {
 }
 
 function selectRecommendedNextStep(input: {
-  status: LifeEventReadinessSnapshot["status"]
-  blockers: LifeEventBlocker[]
-  resourceReadiness: LifeEventResourceReadiness
-  worldReadiness: LifeEventWorldReadiness
-}): LifeEventReadinessSnapshot["recommendedNextStep"] {
+  status: TownAdoptionReadinessSnapshot["status"]
+  blockers: TownAdoptionBlocker[]
+  resourceReadiness: TownAdoptionResourceReadiness
+  worldReadiness: TownAdoptionWorldReadiness
+}): TownAdoptionReadinessSnapshot["recommendedNextStep"] {
   if (
     input.blockers.some(
       (blocker) =>
@@ -610,7 +611,7 @@ function selectRecommendedNextStep(input: {
 }
 
 function hasZoneOrPlanSignal(input: {
-  input: LifeEventCandidateBuilderInput
+  input: TownAdoptionPrecheckBuilderInput
   keywords: string[]
 }): boolean {
   const zoneTokens = input.input.homeMapState.zones.flatMap((zone) => [
@@ -631,9 +632,10 @@ function hasZoneOrPlanSignal(input: {
 }
 
 function auditForbiddenTokens(input: {
-  lifeEventCandidates: LifeEventCandidate[]
-  companionDecisionCandidates: CompanionDecisionCandidate[]
+  townAdoptionCandidates: TownAdoptionCandidate[]
+  butlerAdoptionIntentCandidates: ButlerAdoptionIntentCandidate[]
 }): string[] {
+  // These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
   const forbiddenTokens = [
     "pet_arrival",
     "pet_rest",
@@ -646,14 +648,14 @@ function auditForbiddenTokens(input: {
     "incubating",
   ]
   const tokens = [
-    ...input.lifeEventCandidates.flatMap((candidate) => [
+    ...input.townAdoptionCandidates.flatMap((candidate) => [
       candidate.candidateId,
       candidate.type,
       candidate.kind,
       candidate.reason,
       ...candidate.tags,
     ]),
-    ...input.companionDecisionCandidates.flatMap((candidate) => [
+    ...input.butlerAdoptionIntentCandidates.flatMap((candidate) => [
       candidate.candidateId,
       candidate.type,
       candidate.kind,
@@ -664,7 +666,7 @@ function auditForbiddenTokens(input: {
 
   return forbiddenTokens.flatMap((token) =>
     tokens.some((item) => item.includes(token))
-      ? [`LifeEvent candidate contains forbidden token: ${token}`]
+      ? [`TownAdoptionPrecheck candidate contains forbidden token: ${token}`]
       : []
   )
 }

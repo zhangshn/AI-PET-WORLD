@@ -173,8 +173,8 @@ function FormalProductWorldPanel(input: {
             value={String(delivery.overview.mapDiffCount)}
           />
           <RuntimeInfoItem
-            label="伙伴"
-            value={delivery.overview.companionLabel}
+            label="领养"
+            value={delivery.overview.townAdoptionLabel}
           />
         </div>
       </header>
@@ -219,7 +219,7 @@ function FormalProductWorldPanel(input: {
           )}
         </article>
 
-        <LifeEventProductPanel summary={input.model.lifeEventSummary} />
+        <AdoptionProductPanel summary={input.model.adoptionSummary} />
       </div>
 
       <article className={styles.productResourcePanel}>
@@ -253,8 +253,8 @@ function FormalProductWorldPanel(input: {
   )
 }
 
-function LifeEventProductPanel(input: {
-  summary: MvpWorldViewModel["lifeEventSummary"]
+function AdoptionProductPanel(input: {
+  summary: MvpWorldViewModel["adoptionSummary"]
 }) {
   const { summary } = input
   const blockerText =
@@ -263,34 +263,34 @@ function LifeEventProductPanel(input: {
       : "没有关键阻塞"
 
   return (
-    <article className={styles.lifeEventPanel}>
-      <div className={styles.lifeEventHeader}>
+    <article className={styles.adoptionPanel}>
+      <div className={styles.adoptionHeader}>
         <div>
           <h3>{summary.title}</h3>
           <p>
-            当前不会默认生成宠物或伙伴，只记录世界是否具备未来接纳条件。
+            当前不会默认生成宠物事实，只记录世界是否具备未来接纳条件。
           </p>
         </div>
-        <div className={styles.lifeEventScore}>
+        <div className={styles.adoptionScore}>
           <strong>{summary.readinessScore}</strong>
           <span>/ 100</span>
         </div>
       </div>
 
-      <div className={styles.lifeEventMetaGrid}>
-        <div className={styles.lifeEventReasonCard}>
+      <div className={styles.adoptionMetaGrid}>
+        <div className={styles.adoptionReasonCard}>
           <span>准备状态</span>
           <strong>{summary.statusLabel}</strong>
           <p>{summary.readinessLabel}</p>
         </div>
-        <div className={styles.lifeEventReasonCard}>
+        <div className={styles.adoptionReasonCard}>
           <span>下一步</span>
           <strong>{summary.recommendedNextStepLabel}</strong>
           <p>{blockerText}</p>
         </div>
       </div>
 
-      <div className={styles.lifeEventReasonCard}>
+      <div className={styles.adoptionReasonCard}>
         <span>管家判断</span>
         <strong>{summary.decisionLabel}</strong>
         <p>{summary.decisionReason}</p>

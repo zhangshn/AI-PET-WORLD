@@ -1,6 +1,7 @@
 /**
  * 当前文件负责：审计建设循环接入前协议输出。
  */
+// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type {
   ConstructionWorldLoopAudit,

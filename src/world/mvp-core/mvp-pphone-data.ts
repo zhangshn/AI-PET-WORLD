@@ -3,9 +3,9 @@
  */
 
 import type {
-  CompanionDecisionCandidate,
-  LifeEventCandidate,
-} from "@/world/life-event/life-event-schema"
+  ButlerAdoptionIntentCandidate,
+  TownAdoptionCandidate,
+} from "@/world/adoption/town-adoption-precheck-schema"
 
 import type { MvpButlerExplanationEntry } from "./mvp-butler-explanation"
 import type { MvpWorldLogEntry } from "./mvp-world-log"
@@ -28,14 +28,14 @@ export function buildMvpPPhoneData(input: {
   worldId: string
   logs: MvpWorldLogEntry[]
   butlerExplanations: MvpButlerExplanationEntry[]
-  lifeEventCandidates?: LifeEventCandidate[]
-  companionDecisionCandidates?: CompanionDecisionCandidate[]
+  townAdoptionCandidates?: TownAdoptionCandidate[]
+  butlerAdoptionIntentCandidates?: ButlerAdoptionIntentCandidate[]
   warningCount: number
 }): MvpPPhoneData {
-  const lifeEventMessages = buildLifeEventMessages({
+  const townAdoptionMessages = buildTownAdoptionMessages({
     worldId: input.worldId,
-    lifeEventCandidates: input.lifeEventCandidates ?? [],
-    companionDecisionCandidates: input.companionDecisionCandidates ?? [],
+    townAdoptionCandidates: input.townAdoptionCandidates ?? [],
+    butlerAdoptionIntentCandidates: input.butlerAdoptionIntentCandidates ?? [],
   })
 
   return {
@@ -55,35 +55,35 @@ export function buildMvpPPhoneData(input: {
         body: item.body,
         tags: ["mvp_pphone_message", ...item.tags],
       })),
-      ...lifeEventMessages,
+      ...townAdoptionMessages,
     ],
     tags: [
       "mvp_pphone_data",
       "read_only_summary",
       "not_world_fact",
       "no_default_adoption_entry",
-      "life_event_01_summary",
+      "town_adoption_precheck_01_summary",
     ],
   }
 }
 
-function buildLifeEventMessages(input: {
+function buildTownAdoptionMessages(input: {
   worldId: string
-  lifeEventCandidates: LifeEventCandidate[]
-  companionDecisionCandidates: CompanionDecisionCandidate[]
+  townAdoptionCandidates: TownAdoptionCandidate[]
+  butlerAdoptionIntentCandidates: ButlerAdoptionIntentCandidate[]
 }): MvpPPhoneMessage[] {
-  const primaryLifeEvent = input.lifeEventCandidates[0]
-  const primaryDecision = input.companionDecisionCandidates[0]
+  const primaryTownAdoptionCandidate = input.townAdoptionCandidates[0]
+  const primaryDecision = input.butlerAdoptionIntentCandidates[0]
 
-  if (!primaryLifeEvent && !primaryDecision) {
+  if (!primaryTownAdoptionCandidate && !primaryDecision) {
     return [
       {
-        id: `phone-life-event-${normalizeIdToken(input.worldId)}-empty`,
+        id: `phone-town-adoption-${normalizeIdToken(input.worldId)}-empty`,
         title: "小镇领养观察",
-        body: "当前没有伴生生命候选，世界会继续观察资源、空间和建设状态。",
+        body: "当前没有领养候选，世界会继续观察资源、空间和建设状态。",
         tags: [
           "mvp_pphone_message",
-          "life_event_01",
+          "town_adoption_precheck_01",
           "no_adoption_intent",
           "read_only_summary",
         ],
@@ -91,7 +91,7 @@ function buildLifeEventMessages(input: {
     ]
   }
 
-  const readiness = primaryLifeEvent?.readiness ?? primaryDecision?.readiness
+  const readiness = primaryTownAdoptionCandidate?.readiness ?? primaryDecision?.readiness
   const readinessText = readiness
     ? `准备度 ${readiness.score}/100，状态：${toReadinessLabel(readiness.status)}。`
     : "准备度暂未计算。"
@@ -100,33 +100,33 @@ function buildLifeEventMessages(input: {
       ? `等待原因：${readiness.blockers
           .map((blocker) => blocker.reason)
           .join("；")}`
-      : "当前没有关键阻塞项，但伴生生命仍保持后置。"
+      : "当前没有关键阻塞项，但领养候选仍保持后置。"
 
   return [
     {
-      id: `phone-life-event-${normalizeIdToken(input.worldId)}-candidate`,
+      id: `phone-town-adoption-${normalizeIdToken(input.worldId)}-candidate`,
       title: "小镇领养观察",
       body: [
         readinessText,
-        primaryLifeEvent?.reason ?? "当前没有生命事件候选。",
+        primaryTownAdoptionCandidate?.reason ?? "当前没有领养候选观察。",
         blockerText,
       ].join(" "),
       tags: [
         "mvp_pphone_message",
-        "life_event_01",
+        "town_adoption_precheck_01",
         "town_adoption_deferred_only",
         "read_only_summary",
       ],
     },
     {
-      id: `phone-life-event-${normalizeIdToken(input.worldId)}-decision`,
+      id: `phone-town-adoption-${normalizeIdToken(input.worldId)}-decision`,
       title: "管家判断",
       body:
         primaryDecision?.reason ??
         "管家会继续观察家园建设、资源状态与空间压力。",
       tags: [
         "mvp_pphone_message",
-        "life_event_01",
+        "town_adoption_precheck_01",
         "butler_adoption_intent_candidate",
         "no_actor_creation",
       ],
@@ -135,14 +135,14 @@ function buildLifeEventMessages(input: {
 }
 
 function toReadinessLabel(
-  status: LifeEventCandidate["readiness"]["status"]
+  status: TownAdoptionCandidate["readiness"]["status"]
 ): string {
   const labels = {
     not_ready: "尚未准备好",
     preparing: "准备中",
     observable: "可以观察",
     eligible_later: "未来可记录机会",
-  } satisfies Record<LifeEventCandidate["readiness"]["status"], string>
+  } satisfies Record<TownAdoptionCandidate["readiness"]["status"], string>
 
   return labels[status]
 }

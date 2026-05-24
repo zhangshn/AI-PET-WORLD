@@ -40,7 +40,7 @@ export function buildFormalVisualDeliveryModel(input: {
       mapSize: input.homeMapState.mapSize,
       worldObjectCount: input.homeMapState.placements.length,
       mapDiffCount: input.homeMapState.mapDiffs.length,
-      companionLabel: "伙伴入口后置等待",
+      townAdoptionLabel: "小镇领养尚未开放",
     },
     zones: input.homeMapState.zones.map(toZoneSummary),
     mapItems: input.homeMapState.placements

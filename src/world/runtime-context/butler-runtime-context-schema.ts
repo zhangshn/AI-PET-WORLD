@@ -83,7 +83,7 @@ export type ButlerRuntimeNeedSignal = {
 }
 
 export type ButlerRuntimeProfileLink = {
-  source: "player_birth_profile" | "default_profile" | "runtime_generated"
+  source: "player_birth_profile" | "accepted_adoption_profile" | "runtime_generated"
   profileId?: string
   summary: string
   tags: string[]
@@ -196,10 +196,10 @@ export function buildDefaultButlerRuntimeContext(
       },
     ],
     profileLink: {
-      source: "default_profile",
+      source: "accepted_adoption_profile",
       summary:
         "当前使用默认管家运行时画像；后续可接入玩家生命数据生成的管家人格摘要。",
-      tags: ["default_profile_link"],
+      tags: ["accepted_adoption_profile_link"],
     },
     updatedAt: input.now,
     tags: [

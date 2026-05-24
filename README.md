@@ -10,6 +10,8 @@ V2.6 is the current highest development basis. Older V2.0 / V2.5 / MVP documents
 - System architecture and AI source: `AI-PET-WORLD_V2.6_02_系统架构与AI核心设计主文档_完整版_2026-05-24`
 - MVP execution and acceptance source: `AI-PET-WORLD_V2.6_03_MVP执行计划与验收主文档_完整版_2026-05-24`
 - Existing repository V2 documents remain useful as archive/context: [src/docs/v2/AI_PET_WORLD_V2_DOCUMENT_INDEX.md](src/docs/v2/AI_PET_WORLD_V2_DOCUMENT_INDEX.md)
+- Active V2.6 guardrails: [src/docs/v2/V2_DEVELOPMENT_GUARDRAILS.md](src/docs/v2/V2_DEVELOPMENT_GUARDRAILS.md)
+- Active forbidden-token audit list: [src/docs/v2/V2_FORBIDDEN_TOKENS.md](src/docs/v2/V2_FORBIDDEN_TOKENS.md)
 
 ## V2.6 Product Red Lines
 

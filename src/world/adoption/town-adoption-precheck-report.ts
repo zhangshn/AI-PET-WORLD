@@ -1,35 +1,35 @@
 /**
- * 当前文件职责：生成生命事件与伴生生命后置候选报告。
+ * 当前文件职责：生成小镇领养观察与小镇领养观察候选报告。
  */
 
 import type {
-  CompanionDecisionCandidate,
-  LifeEventAudit,
-  LifeEventCandidate,
-  LifeEventReport,
-  LifeEventReportSection,
-} from "./life-event-schema"
+  ButlerAdoptionIntentCandidate,
+  TownAdoptionPrecheckAudit,
+  TownAdoptionCandidate,
+  TownAdoptionPrecheckReport,
+  TownAdoptionPrecheckReportSection,
+} from "./town-adoption-precheck-schema"
 
-export function buildLifeEventReport(input: {
-  lifeEventCandidates: LifeEventCandidate[]
-  companionDecisionCandidates: CompanionDecisionCandidate[]
-  audit: LifeEventAudit
-}): LifeEventReport {
-  const sections = buildLifeEventReportSections(input)
+export function buildTownAdoptionPrecheckReport(input: {
+  townAdoptionCandidates: TownAdoptionCandidate[]
+  butlerAdoptionIntentCandidates: ButlerAdoptionIntentCandidate[]
+  audit: TownAdoptionPrecheckAudit
+}): TownAdoptionPrecheckReport {
+  const sections = buildTownAdoptionPrecheckReportSections(input)
 
   return {
     reportId: [
-      "life-event-report",
+      "town-adoption-report",
       normalizeIdToken(input.audit.worldId),
-      normalizeIdToken(input.audit.stableLifeEventFingerprint).slice(0, 48),
+      normalizeIdToken(input.audit.stableTownAdoptionFingerprint).slice(0, 48),
     ].join("-"),
     worldId: input.audit.worldId,
     ownerId: input.audit.ownerId,
     sections,
     messages: sections.flatMap((section) => section.lines),
     tags: [
-      "life_event_report",
-      "life_event_01",
+      "town_adoption_precheck_report",
+      "town_adoption_precheck_01",
       "town_adoption_deferred_only",
       "not_ui_model",
       "no_actor_creation",
@@ -37,36 +37,36 @@ export function buildLifeEventReport(input: {
   }
 }
 
-function buildLifeEventReportSections(input: {
-  lifeEventCandidates: LifeEventCandidate[]
-  companionDecisionCandidates: CompanionDecisionCandidate[]
-  audit: LifeEventAudit
-}): LifeEventReportSection[] {
+function buildTownAdoptionPrecheckReportSections(input: {
+  townAdoptionCandidates: TownAdoptionCandidate[]
+  butlerAdoptionIntentCandidates: ButlerAdoptionIntentCandidate[]
+  audit: TownAdoptionPrecheckAudit
+}): TownAdoptionPrecheckReportSection[] {
   return [
-    buildReadinessSection(input.lifeEventCandidates),
-    buildLifeEventCandidateSection(input.lifeEventCandidates),
-    buildCompanionDecisionSection(input.companionDecisionCandidates),
-    buildBlockerSection(input.lifeEventCandidates),
+    buildReadinessSection(input.townAdoptionCandidates),
+    buildTownAdoptionCandidateSection(input.townAdoptionCandidates),
+    buildButlerAdoptionIntentSection(input.butlerAdoptionIntentCandidates),
+    buildBlockerSection(input.townAdoptionCandidates),
     buildAuditSection(input.audit),
   ]
 }
 
 function buildReadinessSection(
-  candidates: LifeEventCandidate[]
-): LifeEventReportSection {
+  candidates: TownAdoptionCandidate[]
+): TownAdoptionPrecheckReportSection {
   const readiness = candidates[0]?.readiness
 
   if (!readiness) {
     return {
-      title: "生命事件准备度",
+      title: "小镇领养准备度",
       status: "skipped",
-      lines: ["当前没有可计算的生命事件准备度。"],
-      tags: ["section:life_event_readiness"],
+      lines: ["当前没有可计算的小镇领养准备度。"],
+      tags: ["section:town_adoption_precheck_readiness"],
     }
   }
 
   return {
-    title: "生命事件准备度",
+    title: "小镇领养准备度",
     status: readiness.status === "not_ready" ? "warning" : "ok",
     lines: [
       `当前准备度：${readiness.score} / 100。`,
@@ -76,49 +76,49 @@ function buildReadinessSection(
       `世界：${readiness.worldReadiness.reasons.join("；")}。`,
     ],
     tags: [
-      "section:life_event_readiness",
-      `life_event_status:${readiness.status}`,
+      "section:town_adoption_precheck_readiness",
+      `town_adoption_precheck_status:${readiness.status}`,
     ],
   }
 }
 
-function buildLifeEventCandidateSection(
-  candidates: LifeEventCandidate[]
-): LifeEventReportSection {
+function buildTownAdoptionCandidateSection(
+  candidates: TownAdoptionCandidate[]
+): TownAdoptionPrecheckReportSection {
   return {
-    title: "生命事件候选",
+    title: "领养候选观察",
     status: candidates.length > 0 ? "ok" : "skipped",
     lines:
       candidates.length > 0
         ? candidates.map(
             (candidate) =>
-              `${toLifeEventKindLabel(candidate.kind)}：${candidate.reason}`
+              `${toTownAdoptionKindLabel(candidate.kind)}：${candidate.reason}`
           )
-        : ["当前没有生命事件候选。"],
-    tags: ["section:life_event_candidate"],
+        : ["当前没有领养候选观察。"],
+    tags: ["section:town_adoption_precheck_candidate"],
   }
 }
 
-function buildCompanionDecisionSection(
-  candidates: CompanionDecisionCandidate[]
-): LifeEventReportSection {
+function buildButlerAdoptionIntentSection(
+  candidates: ButlerAdoptionIntentCandidate[]
+): TownAdoptionPrecheckReportSection {
   return {
-    title: "伴生生命决策",
+    title: "管家领养意愿",
     status: candidates.length > 0 ? "ok" : "skipped",
     lines:
       candidates.length > 0
         ? candidates.map(
             (candidate) =>
-              `${toCompanionDecisionLabel(candidate.kind)}：${candidate.reason} ${candidate.nextCheckHint}`
+              `${toButlerAdoptionIntentLabel(candidate.kind)}：${candidate.reason} ${candidate.nextCheckHint}`
           )
-        : ["当前没有伴生生命决策候选。"],
+        : ["当前没有管家领养意愿候选。"],
     tags: ["section:butler_adoption_intent_candidate"],
   }
 }
 
 function buildBlockerSection(
-  candidates: LifeEventCandidate[]
-): LifeEventReportSection {
+  candidates: TownAdoptionCandidate[]
+): TownAdoptionPrecheckReportSection {
   const blockers = candidates.flatMap((candidate) => candidate.blockers)
 
   return {
@@ -130,19 +130,19 @@ function buildBlockerSection(
             (blocker) =>
               `${toBlockerSeverityLabel(blocker.severity)} / ${toBlockerSourceLabel(blocker.source)}：${blocker.reason}`
           )
-        : ["当前没有关键阻塞项，伴生生命仍保持后置观察。"],
-    tags: ["section:life_event_blockers"],
+        : ["当前没有关键阻塞项，领养候选仍保持后置观察。"],
+    tags: ["section:town_adoption_precheck_blockers"],
   }
 }
 
-function buildAuditSection(audit: LifeEventAudit): LifeEventReportSection {
+function buildAuditSection(audit: TownAdoptionPrecheckAudit): TownAdoptionPrecheckReportSection {
   return {
-    title: "LifeEvent Audit",
+    title: "TownAdoptionPrecheck Audit",
     status: audit.warnings.length === 0 ? "ok" : "warning",
     lines:
       audit.warnings.length === 0
         ? [
-            `LifeEvent audit 通过。准备度 ${audit.readinessScore}，阻塞项 ${audit.blockerCount}。`,
+            `TownAdoptionPrecheck audit 通过。准备度 ${audit.readinessScore}，阻塞项 ${audit.blockerCount}。`,
           ]
         : audit.warnings,
     tags: ["section:audit"],
@@ -150,20 +150,20 @@ function buildAuditSection(audit: LifeEventAudit): LifeEventReportSection {
 }
 
 function toReadinessLabel(
-  status: LifeEventCandidate["readiness"]["status"]
+  status: TownAdoptionCandidate["readiness"]["status"]
 ): string {
   const labels = {
     not_ready: "尚未准备好",
     preparing: "准备中",
     observable: "可以观察",
     eligible_later: "未来可记录机会",
-  } satisfies Record<LifeEventCandidate["readiness"]["status"], string>
+  } satisfies Record<TownAdoptionCandidate["readiness"]["status"], string>
 
   return labels[status]
 }
 
 function toRecommendedNextStepLabel(
-  step: LifeEventCandidate["readiness"]["recommendedNextStep"]
+  step: TownAdoptionCandidate["readiness"]["recommendedNextStep"]
 ): string {
   const labels = {
     wait: "继续等待",
@@ -172,46 +172,46 @@ function toRecommendedNextStepLabel(
     observe_world: "观察世界稳定性",
     record_future_opportunity: "记录未来机会",
   } satisfies Record<
-    LifeEventCandidate["readiness"]["recommendedNextStep"],
+    TownAdoptionCandidate["readiness"]["recommendedNextStep"],
     string
   >
 
   return labels[step]
 }
 
-function toLifeEventKindLabel(kind: LifeEventCandidate["kind"]): string {
+function toTownAdoptionKindLabel(kind: TownAdoptionCandidate["kind"]): string {
   const labels = {
     no_event: "暂无事件",
     observe_world_ready: "世界可观察",
-    adoption_candidate_later: "未来伴生机会",
+    adoption_candidate_later: "未来领养机会",
     construction_dependency_not_ready: "建设条件未满足",
-  } satisfies Record<LifeEventCandidate["kind"], string>
+  } satisfies Record<TownAdoptionCandidate["kind"], string>
 
   return labels[kind]
 }
 
-function toCompanionDecisionLabel(
-  kind: CompanionDecisionCandidate["kind"]
+function toButlerAdoptionIntentLabel(
+  kind: ButlerAdoptionIntentCandidate["kind"]
 ): string {
   const labels = {
     no_adoption_intent: "暂无决策",
     wait_and_observe: "等待观察",
     prepare_world_first: "先准备世界",
     eligible_later: "未来可评估",
-  } satisfies Record<CompanionDecisionCandidate["kind"], string>
+  } satisfies Record<ButlerAdoptionIntentCandidate["kind"], string>
 
   return labels[kind]
 }
 
 function toBlockerSeverityLabel(
-  severity: LifeEventCandidate["blockers"][number]["severity"]
+  severity: TownAdoptionCandidate["blockers"][number]["severity"]
 ): string {
   const labels = {
     info: "提示",
     warning: "提醒",
     blocking: "阻塞",
   } satisfies Record<
-    LifeEventCandidate["blockers"][number]["severity"],
+    TownAdoptionCandidate["blockers"][number]["severity"],
     string
   >
 
@@ -219,7 +219,7 @@ function toBlockerSeverityLabel(
 }
 
 function toBlockerSourceLabel(
-  source: LifeEventCandidate["blockers"][number]["source"]
+  source: TownAdoptionCandidate["blockers"][number]["source"]
 ): string {
   const labels = {
     resource: "资源",
@@ -228,7 +228,7 @@ function toBlockerSourceLabel(
     world_stability: "世界稳定",
     safety_boundary: "安全边界",
     audit: "审计",
-  } satisfies Record<LifeEventCandidate["blockers"][number]["source"], string>
+  } satisfies Record<TownAdoptionCandidate["blockers"][number]["source"], string>
 
   return labels[source]
 }

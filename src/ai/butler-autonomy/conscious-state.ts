@@ -58,7 +58,7 @@ function buildFocus(input: {
   if (input.rejectedCount > 0) return "recovering"
   if (input.perception.resourcePressure >= 60) return "waiting"
   if (input.perception.boundaryMaintenanceNeed >= 55) return "maintaining"
-  if (input.perception.companionReadinessConcern >= 60) return "protecting"
+  if (input.perception.adoptionReadinessConcern >= 60) return "protecting"
   return "observing"
 }
 
@@ -68,7 +68,7 @@ function buildEmotionalTone(input: {
 }): ButlerConsciousState["emotionalTone"] {
   if (input.rejectedCount > 0) return "frustrated"
   if (input.perception.resourcePressure >= 60) return "cautious"
-  if (input.perception.companionReadinessConcern >= 55) return "protective"
+  if (input.perception.adoptionReadinessConcern >= 55) return "protective"
   if (input.perception.risks.length >= 2) return "focused"
   return "calm"
 }

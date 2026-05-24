@@ -1,6 +1,7 @@
 /**
  * 当前文件职责：审计建设纵向闭环进入运行时桥接层之前的边界。
  */
+// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type { MapPlacement } from "@/world/map-state/home-map-state-schema"
 

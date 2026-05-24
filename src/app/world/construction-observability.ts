@@ -251,8 +251,8 @@ function buildBoundaryItems(input: {
       tone: input.rejectedCount > 0 ? "warning" : "passed",
     },
     {
-      id: "companion-deferred",
-      title: "伴生生命后置",
+      id: "adoption-deferred",
+      title: "小镇领养观察",
       statusLabel: "保持后置",
       description:
         "宠物与宠物专属设施不在初始世界生成；未来必须来自小镇领养中心候选、管家审查与 SafeApply。",
@@ -394,8 +394,8 @@ function buildNaturalWorldItems(
       title: "小动物活动",
       statusLabel: hasSmallAnimalSignal ? "可作为自然候选" : "后续观察",
       description: hasSmallAnimalSignal
-        ? "小动物活动可作为自然世界候选，但不等同于宠物或伴生生命入场。"
-        : "小动物活动仍然是世界生态后续层，不会绕过伴生生命后置红线。",
+        ? "小动物活动可作为自然世界候选，但不等同于宠物或宠物领养入场。"
+        : "小动物活动仍然是世界生态后续层，不会绕过领养审查红线。",
       tone: hasSmallAnimalSignal ? "passed" : "follow_up",
     },
     {

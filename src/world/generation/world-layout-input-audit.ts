@@ -2,6 +2,7 @@
  * Current file responsibility: audit world layout generation input against
  * the V2.0 MVP world-generation boundaries.
  */
+// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type {
   WorldLayoutGenerationAudit,
@@ -68,7 +69,7 @@ export function auditWorldLayoutGenerationInput(
       warnings.length === 0 ? "layout_input_valid" : "layout_input_warning",
       "layout_candidate_audit",
       "biome_constraint_audit",
-      "no_default_companion_layout",
+      "no_direct_adoption_layout",
     ],
   }
 }

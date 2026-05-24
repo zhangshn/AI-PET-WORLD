@@ -1,6 +1,7 @@
 /**
  * 当前文件负责：审计 ConstructionPlanner 输入是否符合当前 MVP 边界。
  */
+// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type {
   ButlerConstructionIntentInput,
@@ -38,7 +39,7 @@ export function auditConstructionPlannerInput(
       "construction_planner_input_audit",
       warnings.length === 0 ? "construction_input_valid" : "construction_input_warning",
       "no_direct_map_mutation",
-      "no_default_companion_plan",
+      "no_direct_adoption_plan",
     ],
   }
 }

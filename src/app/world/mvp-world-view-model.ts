@@ -17,7 +17,7 @@ import {
   type MvpWorldConstructionObservability,
 } from "./construction-observability"
 
-export type MvpWorldLifeEventSummary = {
+export type MvpWorldAdoptionSummary = {
   title: string
   statusLabel: string
   readinessLabel: string
@@ -67,14 +67,14 @@ export type MvpWorldViewModel = {
   auditSummary: string
   formalVisualModel: FormalVisualModel | null
   formalVisualDeliveryModel: FormalVisualDeliveryModel
-  lifeEventSummary: MvpWorldLifeEventSummary
+  adoptionSummary: MvpWorldAdoptionSummary
   demoStatusLabel: string
   demoChecklist: MvpWorldDemoChecklistItem[]
   acceptanceStatusLabel: string
   acceptanceItems: MvpWorldAcceptanceItem[]
   atmosphereLabel: string
   currentWorldPhaseLabel: string
-  companionStatusLabel: string
+  townAdoptionStatusLabel: string
   tags: string[]
 }
 
@@ -100,7 +100,7 @@ export function buildMvpWorldViewModel(
   const formalVisualDeliveryAudit = auditFormalVisualDeliveryModel(
     formalVisualDeliveryModel
   )
-  const lifeEventSummary = buildLifeEventSummary(result)
+  const adoptionSummary = buildTownAdoptionPrecheckSummary(result)
   const constructionAudit = buildConstructionObservability(result)
   const butlerAutonomyProbe = buildButlerAutonomyViewModelProbe(result)
   const demoChecklist = [
@@ -108,7 +108,7 @@ export function buildMvpWorldViewModel(
       result,
       acceptedDiffCount,
       rejectedDiffCount,
-      lifeEventSummary,
+      adoptionSummary,
     }),
     {
       id: "demo-butler-autonomy-core",
@@ -125,7 +125,7 @@ export function buildMvpWorldViewModel(
   ]
   const acceptanceItems = buildAcceptanceItems({
     demoChecklist,
-    lifeEventSummary,
+    adoptionSummary,
     warningCount: result.audit.warnings.length,
   })
 
@@ -156,8 +156,8 @@ export function buildMvpWorldViewModel(
       ...butlerAutonomyProbe.logItems,
       ...constructionAudit.logItems,
       `视觉刷新：${result.visualRefresh.reason}`,
-      `生命事件：${lifeEventSummary.readinessLabel} / ${lifeEventSummary.candidateLabel}`,
-      `伴生生命：${lifeEventSummary.decisionLabel}，${lifeEventSummary.nextCheckHint}`,
+      `小镇领养观察：${adoptionSummary.readinessLabel} / ${adoptionSummary.candidateLabel}`,
+      `领养候选：${adoptionSummary.decisionLabel}，${adoptionSummary.nextCheckHint}`,
     ],
     pPhoneMessages: [
       ...result.pPhoneData.messages.map((message) => ({
@@ -181,7 +181,7 @@ export function buildMvpWorldViewModel(
           ].join("；")}`,
     formalVisualModel: result.formalVisualRefresh.formalVisualModel,
     formalVisualDeliveryModel,
-    lifeEventSummary,
+    adoptionSummary,
     demoStatusLabel: demoChecklist.every((item) => item.status === "passed")
       ? "MVP 演示闭环已形成"
       : "MVP 演示闭环仍有提醒",
@@ -197,7 +197,7 @@ export function buildMvpWorldViewModel(
       result.nextHomeMapState.mapDiffs.length > 0
         ? "家园正在运行"
         : "第一片家园已建立",
-    companionStatusLabel: lifeEventSummary.statusLabel,
+    townAdoptionStatusLabel: adoptionSummary.statusLabel,
     tags: [
       "mvp_world_view_model",
       "readonly_projection",
@@ -205,7 +205,7 @@ export function buildMvpWorldViewModel(
       "construction_observability_visible",
       "construction_audit_panel_ready",
       "butler_autonomy_probe_attached",
-      "life_event_visible_summary",
+      "town_adoption_precheck_visible_summary",
       ...butlerAutonomyProbe.tags,
       ...constructionAudit.tags,
       ...result.tags,
@@ -213,11 +213,11 @@ export function buildMvpWorldViewModel(
   }
 }
 
-function buildLifeEventSummary(
+function buildTownAdoptionPrecheckSummary(
   result: AiPetWorldMvpPipelineResult
-): MvpWorldLifeEventSummary {
-  const candidate = result.lifeEventCandidates[0]
-  const decision = result.companionDecisionCandidates[0]
+): MvpWorldAdoptionSummary {
+  const candidate = result.townAdoptionCandidates[0]
+  const decision = result.butlerAdoptionIntentCandidates[0]
   const readiness = candidate?.readiness ?? decision?.readiness
   const readinessScore = readiness?.score ?? 0
   const blockers = candidate?.blockers ?? decision?.blockers ?? []
@@ -239,12 +239,12 @@ function buildLifeEventSummary(
       ? toRecommendedNextStepLabel(readiness.recommendedNextStep)
       : "继续等待",
     candidateLabel: candidate
-      ? toLifeEventKindLabel(candidate.kind)
+      ? toTownAdoptionKindLabel(candidate.kind)
       : "暂无事件",
     candidateReason:
-      candidate?.reason ?? "当前没有生命事件候选，世界会继续观察。",
+      candidate?.reason ?? "当前没有领养候选观察，世界会继续观察。",
     decisionLabel: decision
-      ? toCompanionDecisionLabel(decision.kind)
+      ? toButlerAdoptionIntentLabel(decision.kind)
       : "暂无决策",
     decisionReason:
       decision?.reason ?? "管家会继续观察资源、空间和建设状态。",
@@ -284,18 +284,18 @@ function toRecommendedNextStepLabel(step: string): string {
   return labels[step] ?? "继续等待"
 }
 
-function toLifeEventKindLabel(kind: string): string {
+function toTownAdoptionKindLabel(kind: string): string {
   const labels: Record<string, string> = {
     no_event: "暂无事件",
     observe_world_ready: "世界可观察",
-    adoption_candidate_later: "未来伴生机会",
+    adoption_candidate_later: "未来领养机会",
     construction_dependency_not_ready: "建设条件未满足",
   }
 
-  return labels[kind] ?? "生命事件候选"
+  return labels[kind] ?? "领养候选观察"
 }
 
-function toCompanionDecisionLabel(kind: string): string {
+function toButlerAdoptionIntentLabel(kind: string): string {
   const labels: Record<string, string> = {
     no_adoption_intent: "暂无决策",
     wait_and_observe: "等待观察",
@@ -333,7 +333,7 @@ function buildDemoChecklist(input: {
   result: AiPetWorldMvpPipelineResult
   acceptedDiffCount: number
   rejectedDiffCount: number
-  lifeEventSummary: MvpWorldLifeEventSummary
+  adoptionSummary: MvpWorldAdoptionSummary
 }): MvpWorldDemoChecklistItem[] {
   const hasWorldObjects = input.result.nextHomeMapState.placements.length > 0
   const hasZones = input.result.nextHomeMapState.zones.length > 0
@@ -341,7 +341,7 @@ function buildDemoChecklist(input: {
   const hasConstructionPlan =
     input.result.nextHomeMapState.constructionPlans.length > 0
   const hasHouseStyle = Boolean(input.result.nextHomeMapState.houseStyle)
-  const hasLifeEventSummary = input.lifeEventSummary.readinessScore > 0
+  const hasAdoptionSummary = input.adoptionSummary.readinessScore > 0
   const hasWarnings = input.result.audit.warnings.length > 0
   const acceptedAddCount = input.result.nextHomeMapState.mapDiffs.filter(
     (diff) =>
@@ -370,7 +370,7 @@ function buildDemoChecklist(input: {
       id: "demo-resource-cycle",
       title: "资源状态可见",
       status: hasResourceState ? "passed" : "warning",
-      description: "资源已经进入页面展示，并可用于解释建设与伴生生命等待原因。",
+      description: "资源已经进入页面展示，并可用于解释建设与小镇领养等待原因。",
       evidence: `材料 ${input.result.nextHomeMapState.resources.materialReadiness}，照护 ${input.result.nextHomeMapState.resources.careReadiness}，空间压力 ${input.result.nextHomeMapState.resources.spacePressure}。`,
     },
     {
@@ -390,11 +390,11 @@ function buildDemoChecklist(input: {
         : "当前尚未形成房屋偏好。",
     },
     {
-      id: "demo-life-event-delayed",
-      title: "伴生生命后置",
-      status: hasLifeEventSummary ? "passed" : "warning",
+      id: "demo-town-adoption-delayed",
+      title: "小镇领养观察",
+      status: hasAdoptionSummary ? "passed" : "warning",
       description: "宠物只作为未来小镇领养候选，不会在开局生成宠物事实或宠物专属设施。",
-      evidence: `${input.lifeEventSummary.statusLabel}，准备度 ${input.lifeEventSummary.readinessScore}/100。`,
+      evidence: `${input.adoptionSummary.statusLabel}，准备度 ${input.adoptionSummary.readinessScore}/100。`,
     },
     {
       id: "demo-audit-status",
@@ -410,7 +410,7 @@ function buildDemoChecklist(input: {
 
 function buildAcceptanceItems(input: {
   demoChecklist: MvpWorldDemoChecklistItem[]
-  lifeEventSummary: MvpWorldLifeEventSummary
+  adoptionSummary: MvpWorldAdoptionSummary
   warningCount: number
 }): MvpWorldAcceptanceItem[] {
   const demoWarningCount = input.demoChecklist.filter(
@@ -424,7 +424,7 @@ function buildAcceptanceItems(input: {
       status: demoWarningCount <= 1 ? "passed" : "follow_up",
       description:
         demoWarningCount <= 1
-          ? "世界生成、资源、建设、房屋偏好和伴生生命后置已经形成可演示闭环。"
+          ? "世界生成、资源、建设、房屋偏好和小镇领养观察已经形成可演示闭环。"
           : "演示闭环仍有较多提醒，需要先处理关键验收项。",
     },
     {
@@ -435,17 +435,17 @@ function buildAcceptanceItems(input: {
         "/world 只展示 HomeMapState / FormalVisualModel 投影，不提供玩家直接建造入口。",
     },
     {
-      id: "acceptance-no-default-companion",
-      title: "伴生生命后置",
+      id: "acceptance-no-direct-adoption",
+      title: "小镇领养观察",
       status: "passed",
-      description: `当前状态：${input.lifeEventSummary.statusLabel}。宠物只有在小镇领养中心候选、管家审查与 SafeApply 通过后，才会成为世界事实。`,
+      description: `当前状态：${input.adoptionSummary.statusLabel}。宠物只有在小镇领养中心候选、管家审查与 SafeApply 通过后，才会成为世界事实。`,
     },
     {
       id: "acceptance-product-demo",
       title: "产品演示可读性",
       status: "passed",
       description:
-        "用户可以在一个页面看到家园地图、资源状态、管家建设解释、房屋偏好、伴生生命等待原因和 MVP checklist。",
+        "用户可以在一个页面看到家园地图、资源状态、管家建设解释、房屋偏好、小镇领养等待原因和 MVP checklist。",
     },
     {
       id: "acceptance-follow-up-visual",
@@ -456,10 +456,10 @@ function buildAcceptanceItems(input: {
     },
     {
       id: "acceptance-follow-up-life",
-      title: "真实生命体行为",
+      title: "真实宠物事实行为",
       status: "follow_up",
       description:
-        "当前只做到伴生生命后置候选，真正宠物入场、行为、关系、记忆和生命周期仍是下一阶段工作。",
+        "当前只做到小镇领养观察候选，真正宠物入场、行为、关系、记忆和生命周期仍是下一阶段工作。",
     },
     {
       id: "acceptance-audit",

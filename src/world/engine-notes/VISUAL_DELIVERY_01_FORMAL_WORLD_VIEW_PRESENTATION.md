@@ -1,3 +1,5 @@
+> 历史归档：本文件不得作为 V2.6 当前产品、架构或开发依据。
+
 > Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
 
 # AI-PET-WORLD VISUAL-DELIVERY-01 Formal World View Presentation
@@ -27,7 +29,7 @@
 | `src/app/world/components/formal-world-view/formal-world-view.styles.module.css` | 新增低保真像素家园视觉样式 |
 | `src/app/world/world-route-page.tsx` | 使用增强后的 ViewModel 字段展示 MVP 摘要 |
 | `src/app/world/world-route-page.styles.module.css` | 调整页面为更温暖的产品化主视觉层级 |
-| `src/app/world/mvp-world-view-model.ts` | 增加只读氛围、阶段和伙伴状态摘要 |
+| `src/app/world/mvp-world-view-model.ts` | 增加只读氛围、阶段和领养状态摘要 |
 
 ## 本轮不改哪些文件
 

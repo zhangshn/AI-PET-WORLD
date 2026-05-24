@@ -75,14 +75,14 @@ export function buildAiPetWorldMvpReport(
       tags: ["section:persistence_visual"],
     },
     {
-      title: "LifeEvent / P-Phone",
+      title: "TownAdoptionPrecheck / P-Phone",
       status: "ok",
       lines: [
-        `Life candidates: ${result.lifeEventCandidates.length}`,
-        `Companion decision candidates: ${result.companionDecisionCandidates.length}`,
+        `Life candidates: ${result.townAdoptionCandidates.length}`,
+        `Adoption decision candidates: ${result.butlerAdoptionIntentCandidates.length}`,
         `P-Phone messages: ${result.pPhoneData.messages.length}`,
       ],
-      tags: ["section:life_event_pphone"],
+      tags: ["section:town_adoption_precheck_pphone"],
     },
     {
       title: "Audit",
@@ -178,12 +178,12 @@ function buildMvpCoreReportSections(input: {
       tags: ["section:snapshot_refresh"],
     },
     {
-      title: "LifeEvent / CompanionDecision Candidate",
-      status: result.lifeEventResult.audit.warnings.length === 0
+      title: "TownAdoptionPrecheck / ButlerAdoptionIntent Candidate",
+      status: result.townAdoptionResult.audit.warnings.length === 0
         ? "ok"
         : "warning",
-      lines: result.lifeEventResult.report.messages,
-      tags: ["section:life_event_companion_decision"],
+      lines: result.townAdoptionResult.report.messages,
+      tags: ["section:town_adoption_precheck_butler_adoption_intent"],
     },
     {
       title: "Warnings",

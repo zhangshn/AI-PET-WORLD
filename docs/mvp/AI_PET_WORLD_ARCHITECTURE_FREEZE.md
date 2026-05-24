@@ -1,3 +1,5 @@
+> 历史归档：本文件不得作为 V2.6 当前产品、架构或开发依据。
+
 > Status: historical archive. This document is kept for historical design context only and is no longer the highest authority for AI-PET-WORLD V2.0 MVP development. Future work follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md` and the four V2.0 product documents.
 
 # AI-PET-WORLD 架构冻结文档 v1.0（历史参考）
@@ -21,7 +23,7 @@
 3. FormalWorldView 只能只读 FormalVisualModel。
 4. 当前正式 MVP 不再使用旧孵化器 / 胚胎 / 默认宠物开局路线。
 5. 初始世界只允许以管家、第一片家园、基础资源、临时住所、初始照护区、安静生活区、工具储备区、自然边界和世界状态作为开局事实。
-6. 宠物未来能力保留，但只能通过 LifeEvent / CompanionDecision / accept_companion 后置进入。
+6. 宠物未来能力保留，但只能通过 TownAdoptionPrecheck / ButlerAdoptionIntent / adoption_safe_apply 后置进入。
 7. Debug View 与 Formal World View 必须分离。
 
 ## 使用方式

@@ -1,6 +1,7 @@
 /**
  * 当前文件职责：审计 MVP 管家人格映射结果。
  */
+// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type { ButlerMvpAudit, ButlerMvpBuildResult } from "./butler-mvp-schema"
 

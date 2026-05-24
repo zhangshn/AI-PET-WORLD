@@ -150,7 +150,7 @@ function resolveButlerBoundaryResponse(butler: ButlerState | null): string {
   if (!butler) return "not_observed"
 
   if (butler.task === "offering_rest") return "boundary_waiting"
-  if (butler.task === "offering_approach") return "companion_response"
+  if (butler.task === "offering_approach") return "supportive_response"
   if (butler.task === "watching_pet") return "boundary_waiting"
 
   return "observing"

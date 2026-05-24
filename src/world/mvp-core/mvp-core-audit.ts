@@ -1,6 +1,7 @@
 /**
  * 当前文件职责：审计 MVP 核心 debug runner 的完整 dry-run 输出。
  */
+// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type { MapPlacement } from "@/world/map-state/home-map-state-schema"
 
@@ -59,8 +60,8 @@ export function auditAiPetWorldMvpPipeline(
     ...result.persistence.warnings,
     ...result.visualRefresh.warnings,
     ...result.formalVisualRefresh.warnings,
-    ...result.lifeEventCandidates.flatMap((candidate) =>
-      candidate.readyForCompanionDecision && candidate.kind !== "adoption_candidate_later"
+    ...result.townAdoptionCandidates.flatMap((candidate) =>
+      candidate.readyForButlerAdoptionIntent && candidate.kind !== "adoption_candidate_later"
         ? [`Unexpected life event readiness: ${candidate.candidateId}`]
         : []
     ),
@@ -147,8 +148,8 @@ function auditNestedWarnings(
     ...result.formalVisualRefreshPrecheck.audit.warnings.map(
       (warning) => `Snapshot refresh warning: ${warning}`
     ),
-    ...result.lifeEventResult.audit.warnings.map(
-      (warning) => `LifeEvent warning: ${warning}`
+    ...result.townAdoptionResult.audit.warnings.map(
+      (warning) => `TownAdoptionPrecheck warning: ${warning}`
     ),
   ]
 }
@@ -192,7 +193,7 @@ function buildStableMvpCoreFingerprint(input: {
     input.resultWithoutAudit.persistenceDryRunResult.audit
       .stablePersistenceFingerprint,
     input.resultWithoutAudit.snapshotRefreshRequest.stableRefreshFingerprint,
-    input.resultWithoutAudit.lifeEventResult.audit.stableLifeEventFingerprint,
+    input.resultWithoutAudit.townAdoptionResult.audit.stableTownAdoptionFingerprint,
     fingerprintPlacements(nextHomeMapState.placements),
   ].join("::")
 }

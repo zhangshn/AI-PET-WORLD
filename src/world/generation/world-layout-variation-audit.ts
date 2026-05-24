@@ -120,7 +120,7 @@ export function buildWorldLayoutVariationAudit(
       "stable_seed_replay_check",
       "observable_difference_check",
       "no_ui_world_fact_generation",
-      "no_default_companion_layout",
+      "no_direct_adoption_layout",
     ],
   }
 }

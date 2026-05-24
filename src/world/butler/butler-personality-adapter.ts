@@ -22,7 +22,7 @@ export function buildButlerMvpProfile(
     displayName: "管家",
     constructionStyle,
     lifeRhythmBias: buildLifeRhythmBias(input.birthHour),
-    companionDecisionBias:
+    adoptionIntentBias:
       constructionStyle.protectiveKeeper >= constructionStyle.warmCaretaker
         ? "prepare_world_first"
         : "wait_and_observe",
@@ -31,7 +31,7 @@ export function buildButlerMvpProfile(
     tags: [
       "butler_mvp_profile",
       "player_life_projection_manager",
-      "not_companion_caretaker_script",
+      "not_direct_pet_caretaker_script",
       "no_default_adoption_entry",
     ],
   }

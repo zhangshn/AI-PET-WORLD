@@ -1,3 +1,5 @@
+> 历史归档：本文件不得作为 V2.6 当前产品、架构或开发依据。
+
 > Status: must follow V2.0 FormalVisualModel First. Assets and UI may express world facts, but must not generate world facts.
 
 # AI-PET-WORLD 视觉生成管线 v0.1

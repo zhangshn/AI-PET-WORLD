@@ -1,6 +1,7 @@
 /**
  * 当前文件职责：审计房屋偏好是否满足 V2.0 人格与世界事实约束。
  */
+// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type {
   HouseArchetype,

@@ -1,3 +1,5 @@
+> 历史归档：本文件不得作为 V2.6 当前产品、架构或开发依据。
+
 > Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
 
 # AI-PET-WORLD CONSTRUCTION-FINAL-01 Construction Usable Runtime Vertical Slice
@@ -78,7 +80,7 @@ HomeMapState
 | 真实 world-loop 接入 | 本阶段只做可运行闭环，不注册 loop | 后续 Runtime Bridge 阶段 |
 | 真实 persistence 写入 | 本阶段只做 memory mock | 后续 Persistence 阶段 |
 | 真实 FormalVisualModel 刷新 | 本阶段只做 bridge request | 后续 Visual Refresh 阶段 |
-| 宠物后置进入 | 本阶段不接宠物 | 后续 LifeEvent / CompanionDecision |
+| 宠物后置进入 | 本阶段不接宠物 | 后续 TownAdoptionPrecheck / ButlerAdoptionIntent |
 
 ## 6. 本轮改哪些文件
 

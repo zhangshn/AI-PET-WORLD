@@ -1,6 +1,6 @@
-# AI-PET-WORLD V2.0 Development Guardrails
+# AI-PET-WORLD V2.6 Development Guardrails
 
-> Status: V2.0 active guardrails. These rules apply to all future AI-PET-WORLD MVP code, document, and visual work.
+> Status: V2.6 active guardrails. These rules apply to all current AI-PET-WORLD MVP code, document, and visual work.
 
 ## 1. World Facts Come Before Visuals
 
@@ -58,9 +58,9 @@ The butler may:
 - Maintain homes, roads, resources, and boundaries.
 - Wait when resources or readiness are insufficient.
 
-## 5. Pets And Companion Life Must Be Deferred
+## 5. Pets Must Enter Only Through Town Adoption
 
-Pets and companion life are not default starting assets. They may only enter through LifeEvent and CompanionDecision chains.
+Pets are not default starting assets. They may only enter through the town adoption chain: TownReadiness -> AdoptionCenterState -> AdoptionCandidate -> ButlerAdoptionIntent -> AdoptionReview -> AdoptionSafeApply / MapDiff / SafeApply.
 
 Initial worlds must not default to:
 
@@ -69,7 +69,7 @@ Initial worlds must not default to:
 - `pet_arrival`
 - `pet_rest`
 
-Companion life may be represented as future possibility, candidate, blocker, or readiness state, but not as established world fact unless an explicit accepted companion event exists.
+Adoption may be represented as future possibility, candidate, blocker, or readiness state, but not as an established pet fact unless AdoptionReview and AdoptionSafeApply have passed.
 
 ## 6. Resources Must Not Appear From Nowhere
 
@@ -96,7 +96,7 @@ Personality must affect more than text. It must influence:
 - Construction order
 - House preferences
 - Maintenance priorities
-- LifeEvent tendencies
+- ButlerAdoptionIntent and AdoptionReview tendencies
 - Visual projection
 
 Failure case: different personalities produce the same map and plan while only changing labels, colors, or explanation copy.

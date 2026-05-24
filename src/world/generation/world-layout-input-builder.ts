@@ -102,7 +102,7 @@ export function buildWorldLayoutGenerationInput(input: {
       tags: [
         "world_layout_generation_audit",
         "stable_seed_verified",
-        "no_default_companion_layout",
+        "no_direct_adoption_layout",
       ],
     },
   }
@@ -255,10 +255,10 @@ function buildLayoutConstraints(input: {
       tags: ["biome_constraint", input.biome.biomeType],
     },
     {
-      id: "no_default_companion_fact",
-      description: "Initial layout must not create pet or companion facts.",
+      id: "no_direct_adoption_fact",
+      description: "Initial layout must not create pet facts or adoption facts.",
       severity: "block",
-      tags: ["no_default_pet", "life_event_deferred"],
+      tags: ["no_default_pet", "town_adoption_precheck_deferred"],
     },
     {
       id: "state_before_visual",

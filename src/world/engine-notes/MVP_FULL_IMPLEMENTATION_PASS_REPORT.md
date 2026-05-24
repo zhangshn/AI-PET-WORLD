@@ -1,3 +1,5 @@
+> 历史归档：本文件不得作为 V2.6 当前产品、架构或开发依据。
+
 > Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
 
 # AI-PET-WORLD MVP Full Implementation Pass Report
@@ -6,7 +8,7 @@
 
 本阶段是 MVP 全量一次性实现 pass。
 
-本阶段目标不是再新增薄协议，而是把当前仓库中已经存在的世界生成、建设、SafeApply、dry-run 持久化、视觉刷新请求、FormalVisualModel、FormalWorldView、P-Phone 数据、WorldLog、LifeEvent 后置候选和审计报告串成一个可运行、可展示、可验证的 MVP 闭环。
+本阶段目标不是再新增薄协议，而是把当前仓库中已经存在的世界生成、建设、SafeApply、dry-run 持久化、视觉刷新请求、FormalVisualModel、FormalWorldView、P-Phone 数据、WorldLog、TownAdoptionPrecheck 后置候选和审计报告串成一个可运行、可展示、可验证的 MVP 闭环。
 
 ## 2. 本次完成内容
 
@@ -20,7 +22,7 @@
 | Construction vertical slice | 已接通 | MVP core runner 调用 Construction Runtime Bridge |
 | Persistence dry-run | 已接通 | MVP core runner 输出 PersistenceAdapterDryRunResult |
 | Snapshot refresh request | 已接通 | MVP core runner 输出 SnapshotRefreshRequest / Precheck |
-| LifeEvent 后置候选 | 已接通 | MVP core runner 输出 LifeEvent / CompanionDecision candidate |
+| TownAdoptionPrecheck 后置候选 | 已接通 | MVP core runner 输出 TownAdoptionPrecheck / ButlerAdoptionIntent candidate |
 | P-Phone 数据 | 已新增 | `MvpPPhoneData` 只读展示状态、日志和管家解释 |
 | WorldLog / ButlerExplanation | 已新增 | `mvp-presentation-model.ts` 生成玩家可读摘要 |
 | MVP 页面展示 | 已新增 | `/world` 新增 MVP Core dry-run panel |
@@ -47,7 +49,7 @@ HomeMapState
 -> PersistenceAdapterDryRun
 -> SnapshotRefreshRequest
 -> FormalVisualRefreshPrecheck
--> LifeEventCandidate / CompanionDecisionCandidate
+-> TownAdoptionCandidate / ButlerAdoptionIntentCandidate
 -> MvpPresentationModel
 -> /world MVP Core panel
 ```
@@ -70,7 +72,7 @@ HomeMapState
 | 真正数据库持久化 | 当前只有 dry-run / memory mock | 实现 persistence adapter |
 | 真正 world-loop scheduler | 当前不自动注册真实 scheduler | 实现 scheduler bridge |
 | 将建设结果自动刷新正式 snapshot | 当前输出 refresh request，不自动改 renderer | 实现 snapshot refresh adapter |
-| 真实宠物后置进入 | 当前只有 LifeEvent / CompanionDecision 候选 | 实现后置 LifeEvent 产品流 |
+| 真实宠物后置进入 | 当前只有 TownAdoptionPrecheck / ButlerAdoptionIntent 候选 | 实现后置 TownAdoptionPrecheck 产品流 |
 | 自动化 integration tests | 本阶段先完成闭环实现 | 新增 MVP core integration tests |
 | 线上用户数据 | 当前仍是 localStorage / 本地 dry-run | 接真实账户与 persistence |
 
@@ -96,4 +98,4 @@ MVP 当前已经形成一个可运行、可展示、可验证、可审计的本�
 2. persistence adapter 实现。
 3. world-loop scheduler bridge。
 4. snapshot refresh adapter。
-5. LifeEvent 后置入口产品化。
+5. TownAdoptionPrecheck 后置入口产品化。

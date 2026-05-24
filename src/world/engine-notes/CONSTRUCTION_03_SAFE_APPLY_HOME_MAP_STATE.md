@@ -1,3 +1,5 @@
+> 历史归档：本文件不得作为 V2.6 当前产品、架构或开发依据。
+
 > Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
 
 # AI-PET-WORLD CONSTRUCTION-03 MapDiff SafeApply 与 HomeMapState 更新协议
@@ -54,7 +56,7 @@ CONSTRUCTION-03 不改 FormalWorldView。
 | world-loop 接入 | 本阶段只做协议层 | CONSTRUCTION-04 |
 | 持久化策略 | 需要 world-loop 接入前后统一规划 | 后续阶段 |
 | RenderableWorldSnapshot / FormalVisualModel 刷新链路 | 需要 HomeMapState 更新进入正式循环后再接 | 后续阶段 |
-| LifeEvent / CompanionDecision | 宠物后置系统不是本阶段范围 | 后续生命事件模块 |
+| TownAdoptionPrecheck / ButlerAdoptionIntent | 宠物后置系统不是本阶段范围 | 后续小镇领养观察模块 |
 
 ## 5. 本轮改哪些文件
 

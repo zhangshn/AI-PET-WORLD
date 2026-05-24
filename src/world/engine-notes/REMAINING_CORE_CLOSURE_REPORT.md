@@ -1,3 +1,5 @@
+> 历史归档：本文件不得作为 V2.6 当前产品、架构或开发依据。
+
 > Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
 
 # AI-PET-WORLD Remaining Core Closure Report
@@ -43,8 +45,8 @@
 | Persistence Audit | `construction-persistence-audit.ts` | 审计 dry-run 请求 |
 | Snapshot Refresh Request | `construction-snapshot-refresh-request.ts` | 生成 snapshot refresh 前置请求与 FormalVisual precheck |
 | Snapshot Refresh Audit | `construction-snapshot-refresh-audit.ts` | 审计刷新请求 |
-| LifeEvent 后置候选 | `src/world/life-event/*` | 只生成后置候选，不生成宠物 |
-| MVP Core Debug Runner | `src/world/mvp-core/*` | 串联 Construction / RuntimeBridge / Persistence / Snapshot / LifeEvent |
+| TownAdoptionPrecheck 后置候选 | `src/world/town-adoption/*` | 只生成后置候选，不生成宠物 |
+| MVP Core Debug Runner | `src/world/mvp-core/*` | 串联 Construction / RuntimeBridge / Persistence / Snapshot / TownAdoptionPrecheck |
 
 ## 4. 当前链路
 
@@ -68,7 +70,7 @@ HomeMapState
 -> RuntimeBridge
 -> PersistenceAdapterDryRun
 -> SnapshotRefreshRequest
--> LifeEventCandidate / CompanionDecisionCandidate
+-> TownAdoptionCandidate / ButlerAdoptionIntentCandidate
 -> MVP Core Audit
 -> MVP Core Report
 ```
@@ -80,7 +82,7 @@ HomeMapState
 | 真正 UI 展示建设变化 | 本阶段禁止修改 UI | UI preview 接入前审计 |
 | 真正数据库持久化 | 本阶段只允许 dry-run | persistence adapter 实现 |
 | 真正 world-loop 定时运行 | 本阶段不注册 scheduler | world-loop scheduler |
-| 真正宠物后置进入 | 本阶段只允许候选协议 | life-event 后置入口产品化 |
+| 真正宠物后置进入 | 本阶段只允许候选协议 | town-adoption 后置入口产品化 |
 | 线上用户数据接入 | 当前仍是本地工程闭环 | integration tests + persistence |
 
 ## 6. 禁止事项
@@ -102,7 +104,7 @@ HomeMapState
 | 2 | persistence adapter 实现 | 从 dry-run 推进到真实存储前审计 |
 | 3 | world-loop scheduler | 把 runtime bridge 接入真实调度 |
 | 4 | UI preview 接入前审计 | 确认 /world 展示建设变化的边界 |
-| 5 | life-event 后置入口 | 伙伴进入必须继续后置、审计、不可默认 |
+| 5 | town-adoption 后置入口 | 伙伴进入必须继续后置、审计、不可默认 |
 
 ## 8. 当前结论
 

@@ -1,6 +1,7 @@
 /**
  * 当前文件职责：运行 MVP pipeline smoke audit。
  */
+// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type { AiPetWorldMvpPipelineResult } from "./mvp-core-schema"
 import { runAiPetWorldMvpPipeline } from "./mvp-core-pipeline"

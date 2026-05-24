@@ -1,3 +1,5 @@
+> åŽ†å²å½’æ¡£ï¼šæœ¬æ–‡ä»¶ä¸å¾—ä½œä¸º V2.6 å½“å‰äº§å“ã€æž¶æž„æˆ–å¼€å‘ä¾æ®ã€‚
+
 > Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
 
 # AI-PET-WORLD P8 æ­£å¼è§†è§‰é˜¶æ®µæ€»æŽ§è®¡åˆ’
@@ -52,7 +54,7 @@ HomeMapState
 5. CSS åªèƒ½æŽ§åˆ¶è¡¨çŽ°ï¼Œä¸èƒ½å†³å®šä¸–ç•Œäº‹å®žã€‚
 6. PNG / WORLD_MAP_ASSETS åªèƒ½ä½œä¸ºè¡¨çŽ°èµ„æºï¼Œä¸èƒ½ä½œä¸ºä¸–ç•Œäº‹å®žæ¥æºã€‚
 7. å½“å‰æ­£å¼ MVP ä¸åŒ…å«æ—§é»˜è®¤å® ç‰©å¼€å±€è·¯çº¿ã€‚
-8. å® ç‰©æœªæ¥èƒ½åŠ›ä¿ç•™ï¼Œä½†åªèƒ½é€šè¿‡ LifeEvent / CompanionDecision / accept_companion åŽç½®è¿›å…¥ã€‚
+8. å® ç‰©æœªæ¥èƒ½åŠ›ä¿ç•™ï¼Œä½†åªèƒ½é€šè¿‡ TownAdoptionPrecheck / ButlerAdoptionIntent / adoption_safe_apply åŽç½®è¿›å…¥ã€‚
 9. ConstructionWorldLoopProtocol å½“å‰åªæ˜¯æŽ¥å…¥å‰åè®®ï¼Œä¸èƒ½ç­‰åŒäºŽå·²æŽ¥å…¥çœŸå®ž world-loopã€‚
 
 ## 3. å·²å®Œæˆé˜¶æ®µæ€»è¡¨
@@ -240,7 +242,7 @@ CONSTRUCTION-04 å·²å®Œæˆï¼š
 1. çœŸå®ž world-loop æŽ¥å…¥ã€‚
 2. æŒä¹…åŒ–ç­–ç•¥ã€‚
 3. RenderableWorldSnapshot / FormalVisualModel åˆ·æ–°é“¾è·¯æŽ¥å…¥ã€‚
-4. LifeEvent / CompanionDecisionã€‚
+4. TownAdoptionPrecheck / ButlerAdoptionIntentã€‚
 
 ## 7. å® ç‰©åŽç½®ä¸Žæ—§è·¯çº¿æ¸…ç†çŽ°çŠ¶
 
@@ -252,7 +254,7 @@ CONSTRUCTION-04 å·²å®Œæˆï¼š
 4. å¼€å±€ä¸é»˜è®¤å‡ºçŽ° pet bedã€‚
 5. å¼€å±€ä¸å‡ºçŽ° pet_arrival / pet_rest åˆå§‹åŒºåŸŸã€‚
 6. å® ç‰©æœªæ¥èƒ½åŠ›ä¿ç•™ã€‚
-7. å® ç‰©åªèƒ½é€šè¿‡ LifeEvent / CompanionDecision / accept_companion åŽç½®è¿›å…¥ã€‚
+7. å® ç‰©åªèƒ½é€šè¿‡ TownAdoptionPrecheck / ButlerAdoptionIntent / adoption_safe_apply åŽç½®è¿›å…¥ã€‚
 
 ## 8. å½“å‰é—ç•™é—®é¢˜
 
@@ -270,7 +272,7 @@ CONSTRUCTION-04 å·²å®Œæˆï¼š
 | çœŸå®ž world-loop æŽ¥å…¥ | æœªå®Œæˆ | åŽç»­ CONSTRUCTION-05ã€‚ |
 | æŒä¹…åŒ–ç­–ç•¥ | æœªå®Œæˆ | åŽç»­ Persistence æ¨¡å—ã€‚ |
 | RenderableWorldSnapshot / FormalVisualModel åˆ·æ–°é“¾è·¯ | æœªå®Œæˆ | åŽç»­è§†è§‰åˆ·æ–°é“¾è·¯ã€‚ |
-| LifeEvent / CompanionDecision | æœªå®Œæˆ | åŽç»­ LIFE-EVENT æ¨¡å—ã€‚ |
+| TownAdoptionPrecheck / ButlerAdoptionIntent | æœªå®Œæˆ | åŽç»­ LIFE-EVENT æ¨¡å—ã€‚ |
 
 ## 9. ä¸‹ä¸€å¤§æ¨¡å—è®¡åˆ’
 
@@ -356,7 +358,7 @@ HomeMapState
 1. çœŸå®ž world-loop æŽ¥å…¥ã€‚
 2. çœŸå®ž persistence å†™å…¥ã€‚
 3. RenderableWorldSnapshot / FormalVisualModel åˆ·æ–°å®žçŽ°ã€‚
-4. LifeEvent / CompanionDecisionã€‚
+4. TownAdoptionPrecheck / ButlerAdoptionIntentã€‚
 5. å® ç‰©åŽç½®è¿›å…¥æ­£å¼é“¾è·¯ã€‚
 
 ä¸‹ä¸€æ­¥è¿›å…¥ï¼š
@@ -429,7 +431,7 @@ CONSTRUCTION-FINAL-02ï¼šRuntime Bridge æŽ¥å…¥å‰ä¸€è‡´æ€§æ£€æŸ¥
 2. Construction Runtime Bridge ä¸Ž bridge audit / reportã€‚
 3. Persistence Adapter dry-run ä¸Ž persistence auditã€‚
 4. Snapshot Refresh Request ä¸Ž FormalVisual refresh precheckã€‚
-5. LifeEvent / CompanionDecision åŽç½®å€™é€‰åè®®ã€‚
+5. TownAdoptionPrecheck / ButlerAdoptionIntent åŽç½®å€™é€‰åè®®ã€‚
 6. MVP Core Debug Runner / Audit / Reportã€‚
 7. Memory Persistence Mock æ”¯æŒ `memory_commit` / `memory_preview` / `disabled`ã€‚
 8. Construction Pipeline Report æ–°å¢žäººç±»å¯è¯» sectionsã€‚
@@ -456,7 +458,7 @@ HomeMapState
 -> RuntimeBridge
 -> PersistenceAdapterDryRun
 -> SnapshotRefreshRequest
--> LifeEventCandidate / CompanionDecisionCandidate
+-> TownAdoptionCandidate / ButlerAdoptionIntentCandidate
 -> MVP Core Audit
 -> MVP Core Report
 ```
@@ -490,7 +492,7 @@ MVP-CORE-TEST-00ï¼šæ ¸å¿ƒé—­çŽ¯ integration tests
 4. `MvpWorldLogEntry`ã€‚
 5. `MvpButlerExplanation`ã€‚
 6. MVP Core Report sections åœ¨é¡µé¢å¯è§ã€‚
-7. Persistence dry-run / Snapshot refresh request / LifeEvent candidate åœ¨ MVP é¢æ¿ä¸­å¯è¯»å±•ç¤ºã€‚
+7. Persistence dry-run / Snapshot refresh request / TownAdoptionPrecheck candidate åœ¨ MVP é¢æ¿ä¸­å¯è¯»å±•ç¤ºã€‚
 
 å½“å‰ MVP é—­çŽ¯ï¼š
 
@@ -507,7 +509,7 @@ HomeMapState
 -> Construction Runtime Bridge
 -> PersistenceAdapterDryRun
 -> SnapshotRefreshRequest
--> LifeEventCandidate / CompanionDecisionCandidate
+-> TownAdoptionCandidate / ButlerAdoptionIntentCandidate
 -> MvpPresentationModel
 -> /world MVP Core panel
 ```
@@ -541,7 +543,7 @@ MVP-CORE-TEST-00ï¼šMVP core integration tests
 4. MVP Persistence Dry Runã€‚
 5. MVP Visual Refresh / Formal Visual Refreshã€‚
 6. MVP World Log / Butler Explanation / P-Phoneã€‚
-7. LifeEvent / CompanionDecision åŽç½®å€™é€‰å…¥å£ã€‚
+7. TownAdoptionPrecheck / ButlerAdoptionIntent åŽç½®å€™é€‰å…¥å£ã€‚
 8. MVP Core Pipeline æ€»å…¥å£ã€‚
 9. MVP Smoke Scenarios / Smoke Auditã€‚
 10. /world MVP åªè¯» ViewModelã€‚
@@ -564,7 +566,7 @@ BirthInput
 -> MvpFormalVisualRefresh
 -> FormalVisualModel
 -> MvpWorldLog / ButlerExplanation / PPhoneData
--> LifeEventCandidate / CompanionDecisionCandidate
+-> TownAdoptionCandidate / ButlerAdoptionIntentCandidate
 -> AiPetWorldMvpAudit
 -> AiPetWorldMvpReport
 -> MvpWorldViewModel
@@ -572,17 +574,17 @@ BirthInput
 
 å½“å‰ä»ä¸æ˜¯çº¿ä¸ŠçœŸå®žäº§å“ï¼šçœŸå®žæ•°æ®åº“ã€çœŸå®ž schedulerã€å® ç‰©æ­£å¼è¿›å…¥ã€çº¿ä¸Šç”¨æˆ·æ•°æ®ä»éœ€åŽç»­äº§å“åŒ–ã€‚
 
-## MVP Ò³Ãæ¿ÉÓÃ»¯ÊÕ¿Ú¼ÇÂ¼
+## MVP Ò³ï¿½ï¿½ï¿½ï¿½Ã»ï¿½ï¿½Õ¿Ú¼ï¿½Â¼
 
-±¾ÂÖÒÑ°Ñ MVP ±Ø½»¸¶±Õ»·´Ó¡°Èë¿Ú´æÔÚ¡±ÍÆ½øµ½¡°Ò³Ãæ¿ÉÓÃÕ¹Ê¾¡±£º
+ï¿½ï¿½ï¿½ï¿½ï¿½Ñ°ï¿½ MVP ï¿½Ø½ï¿½ï¿½ï¿½ï¿½Õ»ï¿½ï¿½Ó¡ï¿½ï¿½ï¿½Ú´ï¿½ï¿½Ú¡ï¿½ï¿½Æ½ï¿½ï¿½ï¿½ï¿½ï¿½Ò³ï¿½ï¿½ï¿½ï¿½ï¿½Õ¹Ê¾ï¿½ï¿½ï¿½ï¿½
 
-1. `/create-world` ÒÑÐÞ¸´Îª¿É¶ÁÖÐÎÄÊäÈëÒ³£¬²¢Ê¹ÓÃÎÈ¶¨ÊäÈëÊ±¼ä´Á£¬²»Ê¹ÓÃ `Date.now`¡£
-2. `/world` Ä¬ÈÏÕ¹Ê¾ FormalWorldView£¬±£Áô Debug ÊÓÍ¼ÇÐ»»¡£
-3. `/world` ÒÑ½ÓÈë `runAiPetWorldMvpPipeline` Óë `buildMvpWorldViewModel`£¬Õ¹Ê¾ MVP ×ÜÈë¿ÚµÄÖ»¶ÁÕªÒª¡¢ÈÕÖ¾¡¢P-Phone¡¢½¨ÉèÕªÒªºÍÉó¼ÆÕªÒª¡£
-4. FormalWorldView ÈÔÈ»Ö»¶Á `FormalVisualModel`£¬²»Éú³ÉÊÀ½çÊÂÊµ¡£
-5. ÊÀ½çÊ×ÆÁÄ£ÐÍÎÄ°¸ÒÑÐÞ¸´ÎªÕýÊ½ MVP ÎÄ°¸£¬²»»Ö¸´¾ÉÄ¬ÈÏ³èÎï¿ª¾ÖÂ·Ïß¡£
+1. `/create-world` ï¿½ï¿½ï¿½Þ¸ï¿½Îªï¿½É¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò³ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½ï¿½È¶ï¿½ï¿½ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½ `Date.now`ï¿½ï¿½
+2. `/world` Ä¬ï¿½ï¿½Õ¹Ê¾ FormalWorldViewï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Debug ï¿½ï¿½Í¼ï¿½Ð»ï¿½ï¿½ï¿½
+3. `/world` ï¿½Ñ½ï¿½ï¿½ï¿½ `runAiPetWorldMvpPipeline` ï¿½ï¿½ `buildMvpWorldViewModel`ï¿½ï¿½Õ¹Ê¾ MVP ï¿½ï¿½ï¿½ï¿½Úµï¿½Ö»ï¿½ï¿½ÕªÒªï¿½ï¿½ï¿½ï¿½Ö¾ï¿½ï¿½P-Phoneï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ÕªÒªï¿½ï¿½ï¿½ï¿½ï¿½ÕªÒªï¿½ï¿½
+4. FormalWorldView ï¿½ï¿½È»Ö»ï¿½ï¿½ `FormalVisualModel`ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½
+5. ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä£ï¿½ï¿½ï¿½Ä°ï¿½ï¿½ï¿½ï¿½Þ¸ï¿½Îªï¿½ï¿½Ê½ MVP ï¿½Ä°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¸ï¿½ï¿½ï¿½Ä¬ï¿½Ï³ï¿½ï¿½ï¿ªï¿½ï¿½Â·ï¿½ß¡ï¿½
 
-µ±Ç°Á´Â·£º
+ï¿½ï¿½Ç°ï¿½ï¿½Â·ï¿½ï¿½
 
 ```text
 Player Birth Input
@@ -593,30 +595,30 @@ Player Birth Input
 -> Persistence Dry Run
 -> Visual Refresh / Formal Visual Refresh
 -> WorldLog / ButlerExplanation / P-Phone
--> LifeEvent / CompanionDecision Candidate
+-> TownAdoptionPrecheck / ButlerAdoptionIntent Candidate
 -> MVP Audit / MVP Report
 -> MvpWorldViewModel
--> /world FormalWorldView Ö»¶ÁÕ¹Ê¾
+-> /world FormalWorldView Ö»ï¿½ï¿½Õ¹Ê¾
 ```
 
-ºóÐø²úÆ·»¯ÖØµã²»ÔÙ¼ÌÐø¶ÑÐ­Òé£¬ÓÅÏÈ½øÈëÕæÊµ persistence adapter¡¢world-loop scheduler¡¢snapshot refresh adapter Óë integration tests¡£
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ·ï¿½ï¿½ï¿½Øµã²»ï¿½Ù¼ï¿½ï¿½ï¿½ï¿½ï¿½Ð­ï¿½é£¬ï¿½ï¿½ï¿½È½ï¿½ï¿½ï¿½ï¿½ï¿½Êµ persistence adapterï¿½ï¿½world-loop schedulerï¿½ï¿½snapshot refresh adapter ï¿½ï¿½ integration testsï¿½ï¿½
 
-## VISUAL-DELIVERY-01 Formal World View Presentation Íê³É¼ÇÂ¼
+## VISUAL-DELIVERY-01 Formal World View Presentation ï¿½ï¿½É¼ï¿½Â¼
 
-VISUAL-DELIVERY-01 ÒÑÍê³É `/world` ÕýÊ½Ö÷ÊÓ¾õµÍ±£ÕæÏñËØ¼ÒÔ°±íÏÖ½»¸¶¡£
+VISUAL-DELIVERY-01 ï¿½ï¿½ï¿½ï¿½ï¿½ `/world` ï¿½ï¿½Ê½ï¿½ï¿½ï¿½Ó¾ï¿½ï¿½Í±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø¼ï¿½Ô°ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½ï¿½ï¿½
 
-±¾½×¶ÎÊÇÊÓ¾õ±íÏÖ½»¸¶£¬²»ÊÇÊÀ½çÊÂÊµÉú³É£º
+ï¿½ï¿½ï¿½×¶ï¿½ï¿½ï¿½ï¿½Ó¾ï¿½ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½ï¿½É£ï¿½
 
-1. FormalWorldView ÈÔÈ»Ö»¶Á `FormalVisualModel`¡£
-2. `/world` ÈÔÈ»Í¨¹ýÕæÊµ `RenderableWorldSnapshot -> buildFormalVisualModelFromSnapshot -> FormalWorldView` Á´Â·Õ¹Ê¾ÕýÊ½Ö÷ÊÓ¾õ¡£
-3. Debug ÊÓÍ¼±£Áô£¬µ«Ä¬ÈÏÖ÷ÊÓ¾õÊÇ FormalWorldView¡£
-4. ±¾½×¶ÎÃ»ÓÐÐÞ¸ÄÊÀ½çÉú³É¡¢PlacementEngine¡¢Construction¡¢world-loop »ò FormalVisualGenerator¡£
-5. ±¾½×¶ÎÃ»ÓÐÄ¬ÈÏÏÔÊ¾³èÎï£¬Ã»ÓÐ´´½¨ pet actor / pet bed / pet_arrival / pet_rest¡£
+1. FormalWorldView ï¿½ï¿½È»Ö»ï¿½ï¿½ `FormalVisualModel`ï¿½ï¿½
+2. `/world` ï¿½ï¿½È»Í¨ï¿½ï¿½ï¿½ï¿½Êµ `RenderableWorldSnapshot -> buildFormalVisualModelFromSnapshot -> FormalWorldView` ï¿½ï¿½Â·Õ¹Ê¾ï¿½ï¿½Ê½ï¿½ï¿½ï¿½Ó¾ï¿½ï¿½ï¿½
+3. Debug ï¿½ï¿½Í¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ä¬ï¿½ï¿½ï¿½ï¿½ï¿½Ó¾ï¿½ï¿½ï¿½ FormalWorldViewï¿½ï¿½
+4. ï¿½ï¿½ï¿½×¶ï¿½Ã»ï¿½ï¿½ï¿½Þ¸ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½É¡ï¿½PlacementEngineï¿½ï¿½Constructionï¿½ï¿½world-loop ï¿½ï¿½ FormalVisualGeneratorï¿½ï¿½
+5. ï¿½ï¿½ï¿½×¶ï¿½Ã»ï¿½ï¿½Ä¬ï¿½ï¿½ï¿½ï¿½Ê¾ï¿½ï¿½ï¿½ï£¬Ã»ï¿½Ð´ï¿½ï¿½ï¿½ pet actor / pet bed / pet_arrival / pet_restï¿½ï¿½
 
-ÏÂÒ»²½¿ÉÒÔ¸ù¾Ý²úÆ·ÑéÊÕ½øÈë£º
+ï¿½ï¿½Ò»ï¿½ï¿½ï¿½ï¿½ï¿½Ô¸ï¿½ï¿½Ý²ï¿½Æ·ï¿½ï¿½ï¿½Õ½ï¿½ï¿½ë£º
 
 ```text
-VISUAL-DELIVERY-02£ºFormal World View interaction polish
+VISUAL-DELIVERY-02ï¿½ï¿½Formal World View interaction polish
 ```
 
-»ò½øÈëÕæÊµ²úÆ·»¯Á´Â·£ºpersistence adapter¡¢world-loop scheduler¡¢snapshot refresh adapter Óë integration tests¡£
+ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Êµï¿½ï¿½Æ·ï¿½ï¿½ï¿½ï¿½Â·ï¿½ï¿½persistence adapterï¿½ï¿½world-loop schedulerï¿½ï¿½snapshot refresh adapter ï¿½ï¿½ integration testsï¿½ï¿½

@@ -8,7 +8,7 @@ import {
   buildConstructionFormalVisualRefreshPrecheck,
   buildConstructionSnapshotRefreshRequest,
 } from "@/world/construction/construction-snapshot-refresh-request"
-import { buildLifeEventCandidateBuilderResult } from "@/world/life-event/life-event-candidate-builder"
+import { buildTownAdoptionPrecheckBuilderResult } from "@/world/adoption/town-adoption-candidate-builder"
 
 import { auditMvpCoreDebugRunner } from "./mvp-core-audit"
 import { buildMvpCoreReport } from "./mvp-core-report"
@@ -58,14 +58,14 @@ export function runMvpCoreDebugRunner(
     buildConstructionFormalVisualRefreshPrecheck({
       request: snapshotRefreshRequest,
     })
-  const lifeEventResult = buildLifeEventCandidateBuilderResult({
+  const townAdoptionResult = buildTownAdoptionPrecheckBuilderResult({
     homeMapState:
       constructionBridgeResult.verticalSliceResult.nextHomeMapState,
     constructionBridgeResult,
     now: input.now,
     tags: [
       ...input.tags,
-      "mvp_core_life_event_candidate",
+      "mvp_core_town_adoption_precheck_candidate",
     ],
   })
   const resultWithoutAuditAndReport: Omit<
@@ -76,14 +76,14 @@ export function runMvpCoreDebugRunner(
     persistenceDryRunResult,
     snapshotRefreshRequest,
     formalVisualRefreshPrecheck,
-    lifeEventResult,
+    townAdoptionResult,
     messages: [
       ...constructionBridgeResult.messages,
       persistenceDryRunResult.rejectedReason ??
         "Persistence adapter dry-run is ready.",
       snapshotRefreshRequest.reason,
       formalVisualRefreshPrecheck.reason,
-      ...lifeEventResult.messages,
+      ...townAdoptionResult.messages,
     ],
     tags: [
       "mvp_core_debug_runner_result",

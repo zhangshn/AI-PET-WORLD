@@ -126,7 +126,7 @@ export function buildConstructionPlanCandidates(
       "planner_input_driven",
       "no_map_diff_generated",
       "no_home_map_state_mutation",
-      "no_default_companion_plan",
+      "no_direct_adoption_plan",
     ],
   }
 }

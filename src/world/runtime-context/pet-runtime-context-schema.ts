@@ -62,7 +62,7 @@ export type PetRuntimeNeedType =
   | "food"
   | "rest"
   | "safety"
-  | "companionship"
+  | "social_contact"
   | "exploration"
   | "health"
   | "environment"
@@ -105,7 +105,7 @@ export type PetRuntimeLocationState = {
 }
 
 export type PetRuntimeProfileLink = {
-  source: "birth_time_profile" | "default_profile" | "runtime_generated"
+  source: "birth_time_profile" | "accepted_adoption_profile" | "runtime_generated"
   profileId?: string
   summary: string
   tags: string[]
@@ -141,7 +141,7 @@ export type PetRuntimeContext = {
   tags: string[]
 }
 
-export type BuildDefaultPetRuntimeContextInput = {
+export type BuildAcceptedAdoptionPetRuntimeContextInput = {
   worldId: string
   ownerId: string
   tickIndex: number
@@ -188,8 +188,8 @@ export type PetRuntimeContextSummary = {
   tags: string[]
 }
 
-export function buildDefaultPetRuntimeContext(
-  input: BuildDefaultPetRuntimeContextInput
+export function buildAcceptedAdoptionPetRuntimeContext(
+  input: BuildAcceptedAdoptionPetRuntimeContextInput
 ): PetRuntimeContext {
   const lifeStage = input.lifeStage ?? "accepted"
   const petId = input.petId ?? `pet-${input.worldId}`
@@ -223,7 +223,7 @@ export function buildDefaultPetRuntimeContext(
     trust,
     location: {
       label: "已接纳后的家园位置",
-      tags: ["default_pet_location", "accepted_companion_home"],
+      tags: ["accepted_adoption_pet_location", "accepted_adoption_home"],
     },
     needSignals: [
       {
@@ -232,7 +232,7 @@ export function buildDefaultPetRuntimeContext(
         urgency: "low",
         score: 30,
         reason: "已接纳宠物正在观察当前家园环境。",
-        tags: ["default_pet_need_signal", lifeStage, "accepted_companion"],
+        tags: ["accepted_adoption_pet_need_signal", lifeStage, "accepted_adoption_pet"],
       },
     ],
     observations: [
@@ -242,19 +242,19 @@ export function buildDefaultPetRuntimeContext(
         type: "world_state",
         message: "已接纳宠物进入家园运行态，正在感知周围环境。",
         source: "runtime",
-        tags: ["default_pet_observation", lifeStage, "accepted_companion"],
+        tags: ["accepted_adoption_pet_observation", lifeStage, "accepted_adoption_pet"],
       },
     ],
     profileLink: {
-      source: "default_profile",
+      source: "accepted_adoption_profile",
       summary:
         "当前使用已接纳宠物的默认运行时画像；后续可接入生命关系事件生成的宠物人格摘要。",
-      tags: ["default_pet_profile_link", lifeStage, "accepted_companion"],
+      tags: ["accepted_adoption_pet_profile_link", lifeStage, "accepted_adoption_pet"],
     },
     updatedAt: input.now,
     tags: [
       "pet_runtime_context_v0",
-      "default_pet_runtime_context",
+      "accepted_adoption_pet_runtime_context",
       `world:${input.worldId}`,
       `owner:${input.ownerId}`,
       `life_stage:${lifeStage}`,

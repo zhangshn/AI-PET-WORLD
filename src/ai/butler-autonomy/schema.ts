@@ -131,7 +131,7 @@ export type ButlerWorldPerception = {
   storageNeed: number
   quietSpaceNeed: number
   boundaryMaintenanceNeed: number
-  companionReadinessConcern: number
+  adoptionReadinessConcern: number
   perceivedFacts: string[]
   risks: string[]
   opportunities: string[]

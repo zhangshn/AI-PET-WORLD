@@ -1,3 +1,4 @@
+// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 import type { HomeMapState, MapDiff } from "@/world/map-state/home-map-state-schema"
 
 export type TownReadiness = "not_visible" | "hinted" | "road_pending" | "observable" | "stable"
@@ -113,7 +114,7 @@ export function auditV26Redlines(
     blocked.push("Player signal attempted to directly add a pet world fact.")
   }
 
-  const petFactRequested = Boolean(input.adoptionCandidate) || hasPetActor(input.homeMapState)
+  const petFactRequested = hasPetActor(input.homeMapState)
   const reviewAccepted = input.adoptionReview?.status === "accepted"
   const safeApplied = input.adoptionSafeApply?.status === "applied"
 

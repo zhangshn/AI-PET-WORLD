@@ -7,7 +7,6 @@ import { buildPlacementGeometryAuditReport } from "@/world/geometry-audit/geomet
 import {
   buildButlerIntentDecision,
   type ButlerIntentContext,
-  type PetIntentContext,
   type WorldIntentContext,
 } from "@/world/intent-system/intent-gateway"
 import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
@@ -104,7 +103,7 @@ export function buildWorldLoopStep(
   })
   const intentDecision = buildButlerIntentDecision({
     butler: input.butlerIntentContext ?? buildDefaultButlerIntentContext(),
-    pet: input.petIntentContext ?? buildDefaultPetIntentContext(),
+    pet: input.petIntentContext,
     environment: environmentState,
     world: buildWorldIntentContext({
       runtimeState: input.runtimeState,
@@ -357,17 +356,6 @@ function buildDefaultButlerIntentContext(): ButlerIntentContext {
       adaptivePlanner: 55,
     },
     tags: ["world_loop_default_butler_context"],
-  }
-}
-
-function buildDefaultPetIntentContext(): PetIntentContext {
-  return {
-    energy: 60,
-    hunger: 35,
-    mood: "stable",
-    currentZoneType: "initial_care",
-    recentAction: "observing",
-    tags: ["world_loop_default_pet_context"],
   }
 }
 

@@ -1,6 +1,6 @@
-# AI-PET-WORLD V2.0 Module Execution Template
+# AI-PET-WORLD V2.6 Module Execution Template
 
-> Status: V2.0 active execution template. Every future module should use this format before and after implementation.
+> Status: V2.6 active execution template. Every current module should use this format before and after implementation.
 
 ## Start-Of-Round Declaration
 
@@ -50,12 +50,12 @@ HomeMapState -> MapDiff -> SafeApply -> EventLog -> FormalVisualModel
 
 If the module only changes documents, UI presentation, or visual projection, say that it does not generate world facts.
 
-## Required Pet/Companion Statement
+## Required Pet/Adoption Statement
 
-Every round must state whether it affects pets or companion life.
+Every round must state whether it affects pets or town adoption.
 
 Default rule:
 
 ```txt
-No accepted LifeEvent / CompanionDecision means no pet actor, no pet bed, no pet_arrival, and no pet_rest in formal world facts.
+No accepted AdoptionReview plus AdoptionSafeApply means no pet actor, no pet bed, no pet_arrival, and no pet_rest in formal world facts.
 ```

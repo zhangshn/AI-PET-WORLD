@@ -1,6 +1,7 @@
 /**
  * 当前文件职责：审计管家自主意识输出是否越过世界事实边界。
  */
+// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type {
   ButlerAutonomousIntent,

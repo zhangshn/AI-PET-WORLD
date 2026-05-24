@@ -1,3 +1,5 @@
+> 历史归档：本文件不得作为 V2.6 当前产品、架构或开发依据。
+
 # AI-PET-WORLD V2.0 AI 核心架构对齐文档
 
 生成日期：2026-05-23  
@@ -109,7 +111,7 @@ AI-PET-WORLD 是一个由生命信息人格映射驱动的长期运行 AI 自主
 | 空间约束 | 建设需要位置，空间压力会影响接纳生命和扩张 |
 | 生态约束 | 花草树木、昆虫迹象、小动物活动来自自然条件，不是管家建出来 |
 | 审计约束 | 世界变化必须通过 HomeMapState、MapDiff、SafeApply |
-| 生命约束 | 宠物/伴生生命必须后置，不能默认生成 |
+| 生命约束 | 宠物/领养候选必须后置，不能默认生成 |
 
 正确关系：
 
@@ -445,7 +447,7 @@ export type ButlerWorldPerception = {
   storageNeed: number;
   quietSpaceNeed: number;
   boundaryMaintenanceNeed: number;
-  companionReadinessConcern: number;
+  adoptionReadinessConcern: number;
   perceivedFacts: string[];
   risks: string[];
   opportunities: string[];

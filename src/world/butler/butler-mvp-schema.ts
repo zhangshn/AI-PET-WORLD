@@ -25,7 +25,7 @@ export type ButlerMvpProfile = {
   displayName: string
   constructionStyle: ButlerConstructionStyleVector
   lifeRhythmBias: "morning" | "day" | "evening" | "night" | "balanced"
-  companionDecisionBias: "wait_and_observe" | "prepare_world_first"
+  adoptionIntentBias: "wait_and_observe" | "prepare_world_first"
   explanationTone: "calm" | "warm" | "structured" | "protective"
   visualTendency: "ordered" | "warmNatural" | "protective" | "quiet"
   tags: string[]

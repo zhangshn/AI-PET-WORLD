@@ -1,3 +1,5 @@
+> 历史归档：本文件不得作为 V2.6 当前产品、架构或开发依据。
+
 > Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
 
 # AI-PET-WORLD CONSTRUCTION-05 Runtime Boundary + Persistence Proposal + Visual Refresh Pre-Integration
@@ -52,8 +54,8 @@ CONSTRUCTION-05 是建设链路进入真实 runtime / persistence / visual refre
 | 真实 world-loop 接入 | 本阶段只定义 runtime boundary | CONSTRUCTION-06 |
 | 真实 persistence 写入 | 本阶段只生成 proposal | 后续 persistence 实现 |
 | RenderableWorldSnapshot / FormalVisualModel 刷新实现 | 本阶段只生成 signal | 后续视觉刷新链路 |
-| LifeEvent / CompanionDecision | 本阶段不接宠物 | 后续宠物后置模块 |
-| 宠物后置进入正式链路 | 本阶段不接 adoption / LifeEvent | 后续生命关系阶段 |
+| TownAdoptionPrecheck / ButlerAdoptionIntent | 本阶段不接宠物 | 后续宠物后置模块 |
+| 宠物后置进入正式链路 | 本阶段不接 adoption / TownAdoptionPrecheck | 后续生命关系阶段 |
 
 ## 5. 本轮改哪些文件
 

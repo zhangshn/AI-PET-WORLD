@@ -1,3 +1,5 @@
+> 历史归档：本文件不得作为 V2.6 当前产品、架构或开发依据。
+
 > Status: phase record. This document is kept for development traceability. Current development follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md`.
 
 # CONSTRUCTION-04：Construction World Loop 接入前协议
@@ -57,7 +59,7 @@ HomeMapState
 | 持久化策略 | 需要单独设计保存时机和失败回滚 | 后续 Persistence 模块 |
 | RenderableWorldSnapshot 刷新 | 本阶段不接渲染链路 | 后续视觉刷新链路 |
 | FormalVisualModel 刷新 | 本阶段不改 FormalVisualModel | 后续视觉刷新链路 |
-| LifeEvent / CompanionDecision | 宠物后置系统不是本阶段范围 | 后续生命事件模块 |
+| TownAdoptionPrecheck / ButlerAdoptionIntent | 宠物后置系统不是本阶段范围 | 后续小镇领养观察模块 |
 
 ## 5. 本轮改哪些文件
 

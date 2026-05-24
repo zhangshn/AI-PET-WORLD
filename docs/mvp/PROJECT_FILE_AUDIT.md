@@ -1,3 +1,5 @@
+> 历史归档：本文件不得作为 V2.6 当前产品、架构或开发依据。
+
 > Status: historical archive. This document is kept for historical design context only and is no longer the highest authority for AI-PET-WORLD V2.0 MVP development. Future work follows `src/docs/AI_PET_WORLD_V2_MVP_EXECUTION_PLAN_2026-05-23.md` and the four V2.0 product documents.
 
 # AI-PET-WORLD 项目文件审计报告（历史参考）
@@ -22,7 +24,7 @@
 4. 初始世界不能默认生成 pet actor。
 5. 初始世界不能默认生成 pet bed。
 6. 初始世界不能生成 pet_arrival / pet_rest 初始区域。
-7. 宠物未来能力保留，但只能通过 LifeEvent / CompanionDecision / accept_companion 后置进入。
+7. 宠物未来能力保留，但只能通过 TownAdoptionPrecheck / ButlerAdoptionIntent / adoption_safe_apply 后置进入。
 8. FormalWorldView 只能只读 FormalVisualModel，不生成世界事实。
 
 ## 使用方式

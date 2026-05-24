@@ -101,7 +101,7 @@ export function buildConstructionPlannerInput(input: {
       "deferred_butler_construction_target_supported",
       ...housePreferenceAudit.tags,
       "no_direct_map_mutation",
-      "no_default_companion_plan",
+      "no_direct_adoption_plan",
     ],
   }
 

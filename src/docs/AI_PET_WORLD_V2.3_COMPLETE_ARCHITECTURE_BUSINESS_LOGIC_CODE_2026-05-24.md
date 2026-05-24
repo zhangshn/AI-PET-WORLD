@@ -1,3 +1,5 @@
+> 历史归档：本文件不得作为 V2.6 当前产品、架构或开发依据。
+
 # AI-PET-WORLD V2.3 完整架构图：业务架构 + 逻辑架构 + 代码架构
 
 日期：2026-05-24  
@@ -10,7 +12,7 @@
 
 本版不是替代 V2.0 主文档、AI Core 架构文档和 V2.2 Agent Guardrails 文档，而是把三类架构合并到同一套图中：
 
-1. 业务架构：玩家、管家、世界、伴生生命、业务闭环、产品价值和红线。
+1. 业务架构：玩家、管家、世界、领养候选、业务闭环、产品价值和红线。
 2. 逻辑架构：紫微灵魂、记忆学习、世界感知、动机、目标、意图、规划、执行、审计、反馈。
 3. 代码架构：`src/ai`、`src/world`、`src/app/world`、`src/docs` 的模块关系和依赖方向。
 
@@ -30,7 +32,7 @@ V2.3 完整图分为五张：
 | 图 | 说明 |
 | --- | --- |
 | 完整全景架构图 | 把业务、AI、世界事实、审计、表现和代码落点放在同一张图里 |
-| 业务架构图 | 说明用户、管家、世界、宠物/伴生生命、商业闭环和产品红线 |
+| 业务架构图 | 说明用户、管家、世界、宠物/领养候选、商业闭环和产品红线 |
 | 逻辑架构图 | 说明从紫微灵魂、感知、动机、目标到 SafeApply 和学习反馈的完整闭环 |
 | 代码架构图 | 说明代码目录、Gateway、模块依赖和禁止反向依赖 |
 | 数据流与红线图 | 说明事实容器、候选计划、审计事务、只读视觉之间的边界 |
@@ -86,7 +88,7 @@ flowchart TB
   Player[玩家: 源头但非建造者] --> Create
   Butler[AI 管家: 自主管理者] --> Change
   World[规则生态世界] --> Change
-  Life[宠物/伴生生命: 后置事件] -.-> Change
+  Life[宠物/领养候选: 后置事件] -.-> Change
 ```
 
 ### 3.3 逻辑架构
@@ -128,7 +130,7 @@ flowchart LR
   Construction --> Map
   Generation[src/world/generation] --> Map
   Generation --> Ecology[src/world/ecology]
-  Life[src/world/life-event] --> Map
+  Life[src/world/town-adoption] --> Map
   Docs[src/docs] --> Audit[Smoke Audit / Guardrails]
 ```
 

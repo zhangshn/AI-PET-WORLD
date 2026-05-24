@@ -1,30 +1,30 @@
 /**
- * 当前文件职责：定义生命事件与伴生生命后置入口候选协议。
+ * 当前文件职责：定义小镇领养观察与小镇领养观察入口候选协议。
  */
 
 import type { ConstructionRuntimeBridgeResult } from "@/world/construction/construction-schema"
 import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
 
-export type LifeEventCandidateKind =
+export type TownAdoptionCandidateKind =
   | "no_event"
   | "observe_world_ready"
   | "adoption_candidate_later"
   | "construction_dependency_not_ready"
 
-export type CompanionDecisionCandidateKind =
+export type ButlerAdoptionIntentCandidateKind =
   | "no_adoption_intent"
   | "wait_and_observe"
   | "prepare_world_first"
   | "eligible_later"
 
-export type LifeEventCandidateType = LifeEventCandidateKind
-export type CompanionDecisionCandidateType = CompanionDecisionCandidateKind
+export type TownAdoptionCandidateType = TownAdoptionCandidateKind
+export type ButlerAdoptionIntentCandidateType = ButlerAdoptionIntentCandidateKind
 
-export type LifeEventBlockerSeverity = "info" | "warning" | "blocking"
+export type TownAdoptionBlockerSeverity = "info" | "warning" | "blocking"
 
-export type LifeEventBlocker = {
+export type TownAdoptionBlocker = {
   blockerId: string
-  severity: LifeEventBlockerSeverity
+  severity: TownAdoptionBlockerSeverity
   reason: string
   source:
     | "resource"
@@ -36,7 +36,7 @@ export type LifeEventBlocker = {
   tags: string[]
 }
 
-export type LifeEventResourceReadiness = {
+export type TownAdoptionResourceReadiness = {
   materialReadiness: number
   careReadiness: number
   groundHealth: number
@@ -47,7 +47,7 @@ export type LifeEventResourceReadiness = {
   reasons: string[]
 }
 
-export type LifeEventWorldReadiness = {
+export type TownAdoptionWorldReadiness = {
   acceptedDiffCount: number
   mapDiffCount: number
   constructionPlanCount: number
@@ -60,15 +60,15 @@ export type LifeEventWorldReadiness = {
   reasons: string[]
 }
 
-export type LifeEventReadinessSnapshot = {
+export type TownAdoptionReadinessSnapshot = {
   readinessId: string
   worldId: string
   ownerId: string
   score: number
   status: "not_ready" | "preparing" | "observable" | "eligible_later"
-  resourceReadiness: LifeEventResourceReadiness
-  worldReadiness: LifeEventWorldReadiness
-  blockers: LifeEventBlocker[]
+  resourceReadiness: TownAdoptionResourceReadiness
+  worldReadiness: TownAdoptionWorldReadiness
+  blockers: TownAdoptionBlocker[]
   recommendedNextStep:
     | "wait"
     | "prepare_resources"
@@ -78,75 +78,75 @@ export type LifeEventReadinessSnapshot = {
   tags: string[]
 }
 
-export type LifeEventCandidate = {
+export type TownAdoptionCandidate = {
   candidateId: string
-  type: LifeEventCandidateType
-  kind: LifeEventCandidateKind
+  type: TownAdoptionCandidateType
+  kind: TownAdoptionCandidateKind
   worldId: string
   ownerId: string
-  readyForCompanionDecision: boolean
-  readiness: LifeEventReadinessSnapshot
+  readyForButlerAdoptionIntent: boolean
+  readiness: TownAdoptionReadinessSnapshot
   reason: string
   resourceReasons: string[]
   worldReasons: string[]
-  blockers: LifeEventBlocker[]
+  blockers: TownAdoptionBlocker[]
   tags: string[]
 }
 
-export type CompanionDecisionCandidate = {
+export type ButlerAdoptionIntentCandidate = {
   candidateId: string
-  type: CompanionDecisionCandidateType
-  kind: CompanionDecisionCandidateKind
+  type: ButlerAdoptionIntentCandidateType
+  kind: ButlerAdoptionIntentCandidateKind
   worldId: string
   ownerId: string
-  canEnterCompanionFlow: boolean
-  readiness: LifeEventReadinessSnapshot
+  canEnterAdoptionReview: boolean
+  readiness: TownAdoptionReadinessSnapshot
   reason: string
-  blockers: LifeEventBlocker[]
+  blockers: TownAdoptionBlocker[]
   nextCheckHint: string
   tags: string[]
 }
 
-export type LifeEventAudit = {
-  stableLifeEventFingerprint: string
+export type TownAdoptionPrecheckAudit = {
+  stableTownAdoptionFingerprint: string
   worldId: string
   ownerId: string
-  lifeEventCandidateIds: string[]
-  companionDecisionCandidateIds: string[]
+  townAdoptionCandidateIds: string[]
+  butlerAdoptionIntentCandidateIds: string[]
   readinessScore: number
   blockerCount: number
   warnings: string[]
   tags: string[]
 }
 
-export type LifeEventReport = {
+export type TownAdoptionPrecheckReport = {
   reportId: string
   worldId: string
   ownerId: string
-  sections: LifeEventReportSection[]
+  sections: TownAdoptionPrecheckReportSection[]
   messages: string[]
   tags: string[]
 }
 
-export type LifeEventReportSection = {
+export type TownAdoptionPrecheckReportSection = {
   title: string
   status: "ok" | "warning" | "skipped"
   lines: string[]
   tags: string[]
 }
 
-export type LifeEventCandidateBuilderInput = {
+export type TownAdoptionPrecheckBuilderInput = {
   homeMapState: HomeMapState
   constructionBridgeResult?: ConstructionRuntimeBridgeResult
   now: number
   tags: string[]
 }
 
-export type LifeEventCandidateBuilderResult = {
-  lifeEventCandidates: LifeEventCandidate[]
-  companionDecisionCandidates: CompanionDecisionCandidate[]
-  audit: LifeEventAudit
-  report: LifeEventReport
+export type TownAdoptionPrecheckBuilderResult = {
+  townAdoptionCandidates: TownAdoptionCandidate[]
+  butlerAdoptionIntentCandidates: ButlerAdoptionIntentCandidate[]
+  audit: TownAdoptionPrecheckAudit
+  report: TownAdoptionPrecheckReport
   messages: string[]
   tags: string[]
 }

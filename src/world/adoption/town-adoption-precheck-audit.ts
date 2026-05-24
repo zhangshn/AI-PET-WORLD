@@ -1,13 +1,14 @@
 /**
- * 当前文件职责：审计生命事件与伴生生命决策后置候选。
+ * 当前文件职责：审计小镇领养观察与管家领养意愿后置候选。
  */
+// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type {
-  CompanionDecisionCandidate,
-  LifeEventAudit,
-  LifeEventCandidate,
-  LifeEventCandidateBuilderInput,
-} from "./life-event-schema"
+  ButlerAdoptionIntentCandidate,
+  TownAdoptionPrecheckAudit,
+  TownAdoptionCandidate,
+  TownAdoptionPrecheckBuilderInput,
+} from "./town-adoption-precheck-schema"
 
 const FORBIDDEN_LIFE_EVENT_TOKENS = [
   "pet_arrival",
@@ -21,42 +22,42 @@ const FORBIDDEN_LIFE_EVENT_TOKENS = [
   "incubating",
 ]
 
-export function auditLifeEventCandidates(input: {
-  builderInput: LifeEventCandidateBuilderInput
-  lifeEventCandidates: LifeEventCandidate[]
-  companionDecisionCandidates: CompanionDecisionCandidate[]
-}): LifeEventAudit {
+export function auditTownAdoptionCandidates(input: {
+  builderInput: TownAdoptionPrecheckBuilderInput
+  townAdoptionCandidates: TownAdoptionCandidate[]
+  butlerAdoptionIntentCandidates: ButlerAdoptionIntentCandidate[]
+}): TownAdoptionPrecheckAudit {
   const warnings = [
-    ...auditCandidateCompleteness(input.lifeEventCandidates),
-    ...auditCompanionBoundaries(input.companionDecisionCandidates),
+    ...auditCandidateCompleteness(input.townAdoptionCandidates),
+    ...auditAdoptionBoundaries(input.butlerAdoptionIntentCandidates),
     ...auditReadinessConsistency(input),
     ...auditForbiddenTokens(input),
   ]
-  const readinessScore = input.lifeEventCandidates[0]?.readiness.score ?? 0
-  const blockerCount = input.lifeEventCandidates.reduce(
+  const readinessScore = input.townAdoptionCandidates[0]?.readiness.score ?? 0
+  const blockerCount = input.townAdoptionCandidates.reduce(
     (total, candidate) => total + candidate.blockers.length,
     0
   )
 
   return {
-    stableLifeEventFingerprint: buildStableLifeEventFingerprint(input),
+    stableTownAdoptionFingerprint: buildStableTownAdoptionFingerprint(input),
     worldId: input.builderInput.homeMapState.worldId,
     ownerId: input.builderInput.homeMapState.ownerId,
-    lifeEventCandidateIds: input.lifeEventCandidates.map(
+    townAdoptionCandidateIds: input.townAdoptionCandidates.map(
       (candidate) => candidate.candidateId
     ),
-    companionDecisionCandidateIds: input.companionDecisionCandidates.map(
+    butlerAdoptionIntentCandidateIds: input.butlerAdoptionIntentCandidates.map(
       (candidate) => candidate.candidateId
     ),
     readinessScore,
     blockerCount,
     warnings,
     tags: [
-      "life_event_candidate_audit",
-      "life_event_01",
+      "town_adoption_precheck_candidate_audit",
+      "town_adoption_precheck_01",
       warnings.length === 0
-        ? "life_event_candidates_valid"
-        : "life_event_candidates_warning",
+        ? "town_adoption_precheck_candidates_valid"
+        : "town_adoption_precheck_candidates_warning",
       "town_adoption_deferred_only",
       "no_actor_creation",
     ],
@@ -64,31 +65,31 @@ export function auditLifeEventCandidates(input: {
 }
 
 function auditCandidateCompleteness(
-  candidates: LifeEventCandidate[]
+  candidates: TownAdoptionCandidate[]
 ): string[] {
   const warnings: string[] = []
 
   if (candidates.length === 0) {
-    warnings.push("LifeEvent candidate list is empty.")
+    warnings.push("TownAdoptionPrecheck candidate list is empty.")
   }
 
   candidates.forEach((candidate) => {
     if (!candidate.readiness.readinessId.trim()) {
-      warnings.push(`LifeEvent candidate ${candidate.candidateId} missing readiness.`)
+      warnings.push(`TownAdoptionPrecheck candidate ${candidate.candidateId} missing readiness.`)
     }
     if (candidate.resourceReasons.length === 0) {
       warnings.push(
-        `LifeEvent candidate ${candidate.candidateId} missing resource reasons.`
+        `TownAdoptionPrecheck candidate ${candidate.candidateId} missing resource reasons.`
       )
     }
     if (candidate.worldReasons.length === 0) {
       warnings.push(
-        `LifeEvent candidate ${candidate.candidateId} missing world reasons.`
+        `TownAdoptionPrecheck candidate ${candidate.candidateId} missing world reasons.`
       )
     }
     if (candidate.readiness.score < 0 || candidate.readiness.score > 100) {
       warnings.push(
-        `LifeEvent candidate ${candidate.candidateId} readiness score out of range.`
+        `TownAdoptionPrecheck candidate ${candidate.candidateId} readiness score out of range.`
       )
     }
   })
@@ -96,25 +97,25 @@ function auditCandidateCompleteness(
   return warnings
 }
 
-function auditCompanionBoundaries(
-  candidates: CompanionDecisionCandidate[]
+function auditAdoptionBoundaries(
+  candidates: ButlerAdoptionIntentCandidate[]
 ): string[] {
   return candidates.flatMap((candidate) =>
-    candidate.canEnterCompanionFlow
+    candidate.canEnterAdoptionReview
       ? [
-          `CompanionDecisionCandidate ${candidate.candidateId} cannot enter companion flow in MVP LifeEvent-01.`,
+          `ButlerAdoptionIntentCandidate ${candidate.candidateId} cannot enter adoption review flow in MVP TownAdoptionPrecheck-01.`,
         ]
       : []
   )
 }
 
 function auditReadinessConsistency(input: {
-  lifeEventCandidates: LifeEventCandidate[]
-  companionDecisionCandidates: CompanionDecisionCandidate[]
+  townAdoptionCandidates: TownAdoptionCandidate[]
+  butlerAdoptionIntentCandidates: ButlerAdoptionIntentCandidate[]
 }): string[] {
   const warnings: string[] = []
 
-  input.lifeEventCandidates.forEach((candidate) => {
+  input.townAdoptionCandidates.forEach((candidate) => {
     const blockingCount = candidate.blockers.filter(
       (blocker) => blocker.severity === "blocking"
     ).length
@@ -122,10 +123,10 @@ function auditReadinessConsistency(input: {
     if (
       blockingCount > 0 &&
       candidate.kind === "adoption_candidate_later" &&
-      candidate.readyForCompanionDecision
+      candidate.readyForButlerAdoptionIntent
     ) {
       warnings.push(
-        `LifeEvent candidate ${candidate.candidateId} is ready despite blocking blockers.`
+        `TownAdoptionPrecheck candidate ${candidate.candidateId} is ready despite blocking blockers.`
       )
     }
 
@@ -134,18 +135,18 @@ function auditReadinessConsistency(input: {
       candidate.readiness.status === "eligible_later"
     ) {
       warnings.push(
-        `LifeEvent candidate ${candidate.candidateId} should not be no_event when readiness is eligible_later.`
+        `TownAdoptionPrecheck candidate ${candidate.candidateId} should not be no_event when readiness is eligible_later.`
       )
     }
   })
 
-  input.companionDecisionCandidates.forEach((candidate) => {
+  input.butlerAdoptionIntentCandidates.forEach((candidate) => {
     if (
       candidate.kind === "eligible_later" &&
       candidate.readiness.status === "not_ready"
     ) {
       warnings.push(
-        `Companion decision ${candidate.candidateId} cannot be eligible_later while readiness is not_ready.`
+        `Adoption decision ${candidate.candidateId} cannot be eligible_later while readiness is not_ready.`
       )
     }
   })
@@ -154,13 +155,13 @@ function auditReadinessConsistency(input: {
 }
 
 function auditForbiddenTokens(input: {
-  builderInput: LifeEventCandidateBuilderInput
-  lifeEventCandidates: LifeEventCandidate[]
-  companionDecisionCandidates: CompanionDecisionCandidate[]
+  builderInput: TownAdoptionPrecheckBuilderInput
+  townAdoptionCandidates: TownAdoptionCandidate[]
+  butlerAdoptionIntentCandidates: ButlerAdoptionIntentCandidate[]
 }): string[] {
   const tokens = [
     ...input.builderInput.tags,
-    ...input.lifeEventCandidates.flatMap((candidate) => [
+    ...input.townAdoptionCandidates.flatMap((candidate) => [
       candidate.candidateId,
       candidate.type,
       candidate.kind,
@@ -172,7 +173,7 @@ function auditForbiddenTokens(input: {
       ...candidate.blockers.map((blocker) => blocker.reason),
       ...candidate.tags,
     ]),
-    ...input.companionDecisionCandidates.flatMap((candidate) => [
+    ...input.butlerAdoptionIntentCandidates.flatMap((candidate) => [
       candidate.candidateId,
       candidate.type,
       candidate.kind,
@@ -185,29 +186,29 @@ function auditForbiddenTokens(input: {
 
   return FORBIDDEN_LIFE_EVENT_TOKENS.flatMap((token) =>
     tokens.some((item) => item.includes(token))
-      ? [`LifeEvent candidate 包含禁止 token：${token}`]
+      ? [`TownAdoptionPrecheck candidate 包含禁止 token：${token}`]
       : []
   )
 }
 
-function buildStableLifeEventFingerprint(input: {
-  builderInput: LifeEventCandidateBuilderInput
-  lifeEventCandidates: LifeEventCandidate[]
-  companionDecisionCandidates: CompanionDecisionCandidate[]
+function buildStableTownAdoptionFingerprint(input: {
+  builderInput: TownAdoptionPrecheckBuilderInput
+  townAdoptionCandidates: TownAdoptionCandidate[]
+  butlerAdoptionIntentCandidates: ButlerAdoptionIntentCandidate[]
 }): string {
   return [
     input.builderInput.homeMapState.worldId,
     input.builderInput.homeMapState.ownerId,
     input.builderInput.homeMapState.seed,
     String(input.builderInput.now),
-    input.lifeEventCandidates
+    input.townAdoptionCandidates
       .map(
         (candidate) =>
           `${candidate.candidateId}:${candidate.kind}:${candidate.readiness.score}:${candidate.readiness.status}`
       )
       .sort()
       .join("+"),
-    input.companionDecisionCandidates
+    input.butlerAdoptionIntentCandidates
       .map(
         (candidate) =>
           `${candidate.candidateId}:${candidate.kind}:${candidate.readiness.status}`

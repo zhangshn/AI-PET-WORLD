@@ -219,10 +219,10 @@ export function resolveHomeLifecycle(home: HomeState): HomeLifecycleState {
     tags: Array.from(new Set([
       "home_lifecycle",
       `phase_${phase}`,
-      canSupportPetRest ? "supports_future_companion_rest" : "no_future_companion_rest_support",
+      canSupportPetRest ? "supports_future_adoption_pet_recovery" : "no_future_adoption_pet_recovery_support",
       canSupportFoodRoutine ? "supports_food_routine" : "no_food_routine_support",
       canSupportGardenActivity ? "supports_garden_activity" : "no_garden_activity",
-      canSupportPetExploration ? "supports_future_companion_exploration" : "no_future_companion_exploration_support",
+      canSupportPetExploration ? "supports_future_adoption_pet_exploration" : "no_future_adoption_pet_exploration_support",
     ])),
   }
 }

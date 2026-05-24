@@ -30,7 +30,7 @@ export function buildMvpButlerExplanations(input: {
       tags: [
         "mvp_butler_explanation",
         "observation_management_tone",
-        "not_companion_dialogue",
+        "not_direct_pet_dialogue",
       ],
     },
   ]

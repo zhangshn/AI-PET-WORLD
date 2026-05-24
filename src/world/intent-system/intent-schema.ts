@@ -61,7 +61,7 @@ export type IntentDecision = {
 
 export type BuildButlerIntentDecisionInput = {
   butler: ButlerIntentContext
-  pet: PetIntentContext
+  pet?: PetIntentContext
   environment: EnvironmentState
   world: WorldIntentContext
 }

@@ -81,7 +81,7 @@ export type FormalVisualOverview = {
   mapSize: HomeMapSize
   worldObjectCount: number
   mapDiffCount: number
-  companionLabel: string
+  townAdoptionLabel: string
 }
 
 export type FormalVisualDeliveryModel = {

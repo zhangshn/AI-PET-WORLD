@@ -64,7 +64,7 @@ function buildCareMotivation(input: {
     kind: "care",
     intensity,
     sourceSoulFactors: ["careDrive"],
-    sourceWorldFactors: ["careNeed", "companionReadinessConcern"],
+    sourceWorldFactors: ["careNeed", "adoptionReadinessConcern"],
     sourceMemoryFactors: ["careBias"],
     reason: "照护需求、管家照护倾向和记忆中的照护偏置共同形成照护动机。",
     tags: ["care_need", "future_life_boundary"],

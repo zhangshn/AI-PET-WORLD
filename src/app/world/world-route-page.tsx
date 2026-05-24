@@ -249,7 +249,7 @@ function WorldRuntimeShell(input: {
         ? "used_runtime_context"
         : "runtime_context_invalid",
       message: canUseRuntimeContext
-        ? "本次 Tick 已使用管家 runtime context；伙伴入口仍保持后置等待。"
+        ? "本次 Tick 已使用管家 runtime context；小镇领养入口仍保持后置等待。"
         : butlerValidation.reasons.join("；") ||
           "runtime context 校验未通过。",
       butlerSummary,
@@ -441,11 +441,11 @@ function WorldRuntimeShell(input: {
               label="Butler Task"
               value={runtimeContextState.butlerSummary?.currentTask ?? "未使用"}
             />
-            <RuntimeInfoItem label="Companion" value="后置等待" />
+            <RuntimeInfoItem label="Adoption" value="后置等待" />
           </div>
           <p>
             RuntimeWorldState 已建立；手动 Tick 会走管家意图、MapDiff、
-            SafeApply 和快照刷新链路。这里不会默认接入伙伴，也不会绕过世界事实容器。
+            SafeApply 和快照刷新链路。这里不会默认接入宠物，也不会绕过世界事实容器。
           </p>
           <p>{persistenceState.message}</p>
           <p>{runtimeContextState.message}</p>
@@ -731,8 +731,8 @@ function ProductWorldPanel(input: { model: MvpWorldViewModel }) {
             value={String(delivery.overview.mapDiffCount)}
           />
           <RuntimeInfoItem
-            label="伙伴"
-            value={delivery.overview.companionLabel}
+            label="领养"
+            value={delivery.overview.townAdoptionLabel}
           />
         </div>
       </header>
@@ -830,7 +830,7 @@ function ProductWorldPanel(input: { model: MvpWorldViewModel }) {
             <p>管家还在观察资源和地貌，暂未形成房屋偏好。</p>
           )}
 
-          <LifeEventProductPanel summary={input.model.lifeEventSummary} />
+          <AdoptionProductPanel summary={input.model.adoptionSummary} />
         </article>
       </div>
 
@@ -879,8 +879,8 @@ function MapLegendItem(input: {
   )
 }
 
-function LifeEventProductPanel(input: {
-  summary: MvpWorldViewModel["lifeEventSummary"]
+function AdoptionProductPanel(input: {
+  summary: MvpWorldViewModel["adoptionSummary"]
 }) {
   const { summary } = input
   const blockerText =
@@ -889,40 +889,40 @@ function LifeEventProductPanel(input: {
       : "没有关键阻塞"
 
   return (
-    <article className={styles.lifeEventPanel}>
-      <div className={styles.lifeEventHeader}>
+    <article className={styles.adoptionPanel}>
+      <div className={styles.adoptionHeader}>
         <div>
           <h3>{summary.title}</h3>
           <p>
-            当前不会默认生成宠物或伙伴，只记录世界是否具备未来接纳条件。
+            当前不会默认生成宠物事实，只记录世界是否具备未来接纳条件。
           </p>
         </div>
-        <div className={styles.lifeEventScore}>
+        <div className={styles.adoptionScore}>
           <strong>{summary.readinessScore}</strong>
           <span>/ 100</span>
         </div>
       </div>
 
-      <div className={styles.lifeEventMetaGrid}>
-        <div className={styles.lifeEventReasonCard}>
+      <div className={styles.adoptionMetaGrid}>
+        <div className={styles.adoptionReasonCard}>
           <span>准备状态</span>
           <strong>{summary.statusLabel}</strong>
           <p>{summary.readinessLabel}</p>
         </div>
-        <div className={styles.lifeEventReasonCard}>
+        <div className={styles.adoptionReasonCard}>
           <span>下一步</span>
           <strong>{summary.recommendedNextStepLabel}</strong>
           <p>{blockerText}</p>
         </div>
       </div>
 
-      <div className={styles.lifeEventReasonGrid}>
-        <div className={styles.lifeEventReasonCard}>
-          <span>生命事件候选</span>
+      <div className={styles.adoptionReasonGrid}>
+        <div className={styles.adoptionReasonCard}>
+          <span>领养候选观察</span>
           <strong>{summary.candidateLabel}</strong>
           <p>{summary.candidateReason}</p>
         </div>
-        <div className={styles.lifeEventReasonCard}>
+        <div className={styles.adoptionReasonCard}>
           <span>管家判断</span>
           <strong>{summary.decisionLabel}</strong>
           <p>{summary.decisionReason}</p>
@@ -930,11 +930,11 @@ function LifeEventProductPanel(input: {
         </div>
       </div>
 
-      <div className={styles.lifeEventReasonGrid}>
-        <div className={styles.lifeEventReasonCard}>
+      <div className={styles.adoptionReasonGrid}>
+        <div className={styles.adoptionReasonCard}>
           <span>资源理由</span>
           {summary.resourceReasons.length > 0 ? (
-            <ul className={styles.lifeEventReasonList}>
+            <ul className={styles.adoptionReasonList}>
               {summary.resourceReasons.map((reason) => (
                 <li key={reason}>{reason}</li>
               ))}
@@ -943,10 +943,10 @@ function LifeEventProductPanel(input: {
             <p>当前没有资源理由。</p>
           )}
         </div>
-        <div className={styles.lifeEventReasonCard}>
+        <div className={styles.adoptionReasonCard}>
           <span>世界理由</span>
           {summary.worldReasons.length > 0 ? (
-            <ul className={styles.lifeEventReasonList}>
+            <ul className={styles.adoptionReasonList}>
               {summary.worldReasons.map((reason) => (
                 <li key={reason}>{reason}</li>
               ))}
@@ -957,11 +957,11 @@ function LifeEventProductPanel(input: {
         </div>
       </div>
 
-      <div className={styles.lifeEventBlockerList}>
+      <div className={styles.adoptionBlockerList}>
         {summary.blockers.length > 0 ? (
           summary.blockers.map((blocker) => (
             <div
-              className={styles.lifeEventBlocker}
+              className={styles.adoptionBlocker}
               data-tone={blocker.tone}
               key={`${blocker.sourceLabel}-${blocker.reason}`}
             >
@@ -972,10 +972,10 @@ function LifeEventProductPanel(input: {
             </div>
           ))
         ) : (
-          <div className={styles.lifeEventBlocker} data-tone="info">
+          <div className={styles.adoptionBlocker} data-tone="info">
             <strong>后置观察</strong>
             <p>
-              当前没有关键阻塞项，但 MVP 阶段仍不会让伴生生命默认进入世界。
+              当前没有关键阻塞项，但 MVP 阶段仍不会让领养候选默认进入世界。
             </p>
           </div>
         )}
@@ -993,7 +993,7 @@ function MvpDemoChecklistPanel(input: { model: MvpWorldViewModel }) {
         <div>
           <h3>MVP 演示闭环</h3>
           <p>
-            这里用于最终验收：用户是否能从一个页面看懂世界生成、管家建设、资源状态、房屋偏好与伴生生命后置。
+            这里用于最终验收：用户是否能从一个页面看懂世界生成、管家建设、资源状态、房屋偏好与小镇领养观察。
           </p>
         </div>
         <strong>{model.demoStatusLabel}</strong>
@@ -1063,7 +1063,7 @@ function MvpAcceptancePanel(input: { model: MvpWorldViewModel }) {
       <div className={styles.acceptanceFooter}>
         <strong>验收地址</strong>
         <p>
-          打开 <code>http://localhost:3000/world</code>，确认世界地图、资源状态、管家建设解释、房屋偏好、伴生生命后置原因和本验收面板都能正常显示。
+          打开 <code>http://localhost:3000/world</code>，确认世界地图、资源状态、管家建设解释、房屋偏好、小镇领养等待原因和本验收面板都能正常显示。
         </p>
       </div>
     </article>
@@ -1080,7 +1080,7 @@ function MvpCorePanel(input: { model: MvpWorldViewModel }) {
         <h2>MVP 核心闭环</h2>
         <p>
           这里读取 MVP 总入口输出：管家人格、初始世界、建设运行、持久化
-          dry-run、视觉刷新预检、日志、P-Phone 和生命事件后置候选。
+          dry-run、视觉刷新预检、日志、P-Phone 和小镇领养观察候选。
         </p>
       </div>
 
@@ -1109,7 +1109,7 @@ function MvpCorePanel(input: { model: MvpWorldViewModel }) {
           <span>Atmosphere</span>
           <strong>{model.currentWorldPhaseLabel}</strong>
           <p>
-            {model.atmosphereLabel}；伙伴状态：{model.companionStatusLabel}
+            {model.atmosphereLabel}；领养状态：{model.townAdoptionStatusLabel}
           </p>
         </article>
       </div>

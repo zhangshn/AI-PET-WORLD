@@ -1,6 +1,7 @@
 /**
  * 当前文件职责：验证并安全应用建设 MapDiff 候选，支持管家建设 add/update。
  */
+// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import { buildWorldEcologyState } from "@/world/ecology/world-ecology-state"
 import type {

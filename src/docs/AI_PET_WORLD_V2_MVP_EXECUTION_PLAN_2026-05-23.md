@@ -1,3 +1,5 @@
+> 历史归档：本文件不得作为 V2.6 当前产品、架构或开发依据。
+
 # AI-PET-WORLD V2.0 MVP 完整执行计划书
 
 生成日期：2026-05-23  
@@ -39,7 +41,7 @@ AI-PET-WORLD V2.0 MVP 的目标不是做完整商业产品，而是完成一个�
 -> SafeApply 审计并应用变化
 -> FormalVisualModel 派生只读视觉
 -> /world 展示家园、日志、管家解释、P-Phone 信息
--> LifeEvent 保持后置，不默认生成宠物
+-> TownAdoptionPrecheck 保持后置，不默认生成宠物
 ```
 
 MVP 成功标准：
@@ -89,9 +91,9 @@ State / Rule / Intent
 - 正式玩法中出现“建造房子”“放置道路”“摆放宠物床”一类玩家直接建造行为。
 - 把管家变成执行玩家建造命令的 NPC。
 
-### 2.3 宠物和伴生生命必须后置
+### 2.3 宠物和领养候选必须后置
 
-宠物/伴生生命不是开局默认资产，而是 LifeEvent 与 CompanionDecision 后置链路的可能结果。
+宠物/领养候选不是开局默认资产，而是 TownAdoptionPrecheck 与 ButlerAdoptionIntent 后置链路的可能结果。
 
 禁止：
 
@@ -103,7 +105,7 @@ State / Rule / Intent
 
 允许：
 
-- LifeEvent 生成 `no_event`、`observe_world_ready`、`adoption_candidate_later`、`eligible_later` 等候选状态。
+- TownAdoptionPrecheck 生成 `no_event`、`observe_world_ready`、`adoption_candidate_later`、`eligible_later` 等候选状态。
 - P-Phone 或管家解释“未来可能出现新的生命关系”，但不能承诺必然出现。
 
 ### 2.4 资源不能凭空增加
@@ -134,7 +136,7 @@ State / Rule / Intent
 - 建设顺序
 - 房屋偏好
 - 维护优先级
-- LifeEvent 倾向
+- TownAdoptionPrecheck 倾向
 - 视觉风格投影
 
 失败表现：
@@ -167,7 +169,7 @@ Debug 页面可以展示内部标签，但必须与正式 `/world` 分离。
 - `npx tsc --noEmit` 通过。
 - `npm run build` 通过。
 - 已有 `/create-world`、`/world`、`/world-debug`、`/personality-test` 等页面。
-- 已有 `HomeMapState`、`MapDiff`、`SafeApply`、`ConstructionPlanner`、`WorldLoop`、`FormalVisualModel`、`LifeEvent` 等核心模块。
+- 已有 `HomeMapState`、`MapDiff`、`SafeApply`、`ConstructionPlanner`、`WorldLoop`、`FormalVisualModel`、`TownAdoptionPrecheck` 等核心模块。
 
 ### 3.2 需要收口的问题
 
@@ -177,7 +179,7 @@ Debug 页面可以展示内部标签，但必须与正式 `/world` 分离。
 - Construction 已有很多模块，但资源成本、地貌限制、维护压力和 runtime tick 的产品闭环还要收紧。
 - HousePreference / HouseArchetype 没有形成独立清晰的工程入口。
 - FormalWorldView 已有，但 `/world` 仍偏工程演示，需要产品化。
-- LifeEvent 已有候选链路，但宠物后置红线需要强验收。
+- TownAdoptionPrecheck 已有候选链路，但宠物后置红线需要强验收。
 - Smoke audit 需要形成稳定命令或明确执行入口。
 
 ## 4. 总周期
@@ -197,7 +199,7 @@ Debug 页面可以展示内部标签，但必须与正式 `/world` 分离。
 | D9-D11 | 3 | CONSTRUCTION-05 | 自主建设接入 Runtime Tick |
 | D12-D13 | 2 | HOUSE-STYLE-00 | 人格驱动房屋偏好 |
 | D14-D17 | 4 | VISUAL-DELIVERY-02 | 主世界视觉产品化 |
-| D18-D20 | 3 | LIFE-EVENT-01 | 伴生生命后置增强 |
+| D18-D20 | 3 | LIFE-EVENT-01 | 小镇领养观察增强 |
 | D21 | 1 | MVP-DEMO-00 | Demo 闭环打通 |
 | D22-D24 | 3 | MVP-ACCEPTANCE-00 | 验收缓冲与修补 |
 
@@ -460,7 +462,7 @@ Debug 页面可以展示内部标签，但必须与正式 `/world` 分离。
 - 不同人格/地貌/资源差异可见。
 - 页面移动端和桌面端不出现明显遮挡、溢出、重叠。
 
-### 5.7 LIFE-EVENT-01：伴生生命后置增强
+### 5.7 LIFE-EVENT-01：小镇领养观察增强
 
 优先级：P1  
 周期：D18-D20  
@@ -468,12 +470,12 @@ Debug 页面可以展示内部标签，但必须与正式 `/world` 分离。
 
 目标：
 
-- 完善 LifeEvent 和 CompanionDecision，使伴生生命成为后置可能性，而不是默认路线。
+- 完善 TownAdoptionPrecheck 和 ButlerAdoptionIntent，使领养候选成为后置可能性，而不是默认路线。
 - 资源、空间、关系倾向、世界稳定度都会影响是否等待、准备或接纳。
 
 允许修改：
 
-- `src/world/life-event/*`
+- `src/world/town-adoption/*`
 - `src/world/mvp-core/*`
 - P-Phone / ViewModel 相关只读展示
 
@@ -486,8 +488,8 @@ Debug 页面可以展示内部标签，但必须与正式 `/world` 分离。
 
 关键交付：
 
-- `LifeEventCandidate` 增强
-- `CompanionDecisionCandidate` 增强
+- `TownAdoptionCandidate` 增强
+- `ButlerAdoptionIntentCandidate` 增强
 - readiness / blockers / reasons
 - no default pet audit
 - P-Phone 解释
@@ -496,7 +498,7 @@ Debug 页面可以展示内部标签，但必须与正式 `/world` 分离。
 
 - 初始世界无 pet actor、pet bed、pet_arrival。
 - 资源不足、空间不足、关系倾向不匹配时返回等待或准备。
-- 只有明确 `accept_companion` 才能进入宠物/伴生生命事实链路。
+- 只有明确 `adoption_safe_apply` 才能进入宠物/领养候选事实链路。
 
 ### 5.8 MVP-DEMO-00：MVP 可演示闭环
 
@@ -540,7 +542,7 @@ Debug 页面可以展示内部标签，但必须与正式 `/world` 分离。
 -> MapDiff/SafeApply 改变世界
 -> FormalWorldView 显示变化
 -> P-Phone / 日志解释原因
--> LifeEvent 仍保持后置
+-> TownAdoptionPrecheck 仍保持后置
 ```
 
 ### 5.9 MVP-ACCEPTANCE-00：验收缓冲与修补
@@ -722,7 +724,7 @@ npm run smoke:mvp
 - `src/world/ecology/*`
 - `src/world/construction/*`
 - `src/world/world-loop/*`
-- `src/world/life-event/*`
+- `src/world/town-adoption/*`
 
 职责：
 
@@ -839,7 +841,7 @@ AI-PET-WORLD V2.0 MVP 的开发核心不是“多做功能”，而是保证每�
 建设由管家自主发起
 变化经 MapDiff / SafeApply 审计
 视觉只读呈现事实
-宠物和伴生生命后置
+宠物和小镇领养观察
 世界能长期演化
 ```
 

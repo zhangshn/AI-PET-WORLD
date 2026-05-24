@@ -373,7 +373,7 @@ export class ButlerSystem {
         `管家记录：${feedback.petName}出现边界/短程探索行为。` +
         `管家回应=${feedback.butlerResponse}。原因：${feedback.reason}`,
       emotionalWeight:
-        feedback.butlerResponse === "companion_response"
+        feedback.butlerResponse === "supportive_response"
           ? 66
           : feedback.butlerResponse === "protective_response"
             ? 78
@@ -397,7 +397,7 @@ export class ButlerSystem {
 
     const familiarityDelta = feedback.butlerResponse === "not_observed" ? 0 : 1
     const trustDelta =
-      feedback.butlerResponse === "companion_response"
+      feedback.butlerResponse === "supportive_response"
         ? 2
         : feedback.butlerResponse === "boundary_waiting"
           ? 1
@@ -405,7 +405,7 @@ export class ButlerSystem {
             ? 1
             : 0
     const careDelta =
-      feedback.butlerResponse === "companion_response" ||
+      feedback.butlerResponse === "supportive_response" ||
       feedback.butlerResponse === "protective_response"
         ? 1
         : 0

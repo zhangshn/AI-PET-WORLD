@@ -1,10 +1,10 @@
-# AI-PET-WORLD V2.0 Forbidden Tokens
+# AI-PET-WORLD V2.6 Forbidden Tokens
 
-> Status: V2.0 active audit list. Use this list when reviewing initial world generation, formal UI, visual projection, and world-state changes.
+> Status: V2.6 active audit list. Use this list when reviewing initial world generation, formal UI, visual projection, and world-state changes.
 
 ## Forbidden In Formal Initial World
 
-The following tokens must not appear in the formal initial world unless the context is audit, documentation, tests, or an explicitly deferred/accepted later event:
+The following tokens must not appear in the formal initial world. They may appear only inside forbidden-token audit lists, historical archives, or tests that explicitly assert these old routes are blocked:
 
 - `pet_arrival`
 - `pet_rest`
@@ -42,5 +42,5 @@ The following implementation patterns are forbidden for formal world generation:
 
 If a forbidden token appears in code or content, classify the context before changing it:
 
-- Allowed: documentation, audit, tests, historical reports, explicit LifeEvent or CompanionDecision candidate handling
+- Allowed: forbidden-token audit lists, tests that assert blocking, historical archives with V2.6 archive notice
 - Not allowed: formal initial world facts, formal UI, default actor projection, default placement generation

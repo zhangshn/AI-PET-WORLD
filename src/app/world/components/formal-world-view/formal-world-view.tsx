@@ -76,7 +76,7 @@ export function FormalWorldView(input: FormalWorldViewProps) {
           value={model.hudSummary.butlerStatusLabel}
         />
         <FormalInfoCard
-          label="伙伴状态"
+          label="领养状态"
           value={model.hudSummary.petStatusLabel}
         />
         <FormalInfoCard

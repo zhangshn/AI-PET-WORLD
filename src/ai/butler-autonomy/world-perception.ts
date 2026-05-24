@@ -42,7 +42,7 @@ export function buildButlerWorldPerception(
     resources.spacePressure > 50 ? resources.spacePressure : 35
   )
   const boundaryMaintenanceNeed = clampScore(100 - resources.groundHealth)
-  const companionReadinessConcern = clampScore(
+  const adoptionReadinessConcern = clampScore(
     Math.round((resourcePressure + resources.spacePressure + careNeed) / 3)
   )
 
@@ -58,7 +58,7 @@ export function buildButlerWorldPerception(
     storageNeed,
     quietSpaceNeed,
     boundaryMaintenanceNeed,
-    companionReadinessConcern,
+    adoptionReadinessConcern,
     perceivedFacts: [
       `生态状态 ${ecologyState.status}`,
       `地貌 ${ecologyState.biomeType}`,
