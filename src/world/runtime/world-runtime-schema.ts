@@ -17,6 +17,18 @@ export type WorldRuntimeEventLog = {
   tags: string[]
 }
 
+export type WorldRuntimeActionSummary = {
+  tick: number
+  actionSignature: string
+  projectId?: string
+  targetZoneType?: string
+  stage?: string
+  acceptedDiffCount: number
+  resourceTransactionCount: number
+  createdAt: string
+  tags: string[]
+}
+
 export type WorldRuntimeSaveRecord = {
   version: WorldRuntimeVersion
   worldId: string
@@ -25,6 +37,8 @@ export type WorldRuntimeSaveRecord = {
   savedAt: string
   homeMapState: HomeMapState
   recentEvents: WorldRuntimeEventLog[]
+  recentActionSignatures?: string[]
+  lastRuntimeAction?: WorldRuntimeActionSummary | null
   tags: string[]
 }
 

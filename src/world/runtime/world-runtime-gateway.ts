@@ -152,6 +152,8 @@ function buildInitialRuntimeSaveRecord(input: {
         tags: ["world_runtime_event", "initial_home_map_state"],
       },
     ],
+    recentActionSignatures: [],
+    lastRuntimeAction: null,
     tags: [
       "world_runtime_save_record",
       "local_mvp_only",

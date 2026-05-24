@@ -47,7 +47,10 @@ export function buildConstructionExecutionResult(
     cycleId: `construction:${input.plan.id}:${executableStage}`,
     reason: input.plan.reason,
     includeNaturalRegeneration: false,
-    requests: input.plan.resourceRequests,
+    requests: buildRuntimeResourceRequests({
+      input,
+      executableStage,
+    }),
     tags: [
       "construction_resource_cycle",
       `plan:${input.plan.id}`,
@@ -104,6 +107,33 @@ export function buildConstructionExecutionResult(
     ...resultWithoutAudit,
     audit,
   }
+}
+
+function buildRuntimeResourceRequests(input: {
+  input: ConstructionExecutionInput
+  executableStage: ConstructionStageType
+}): ConstructionPlan["resourceRequests"] {
+  const tickToken = `tick-${input.input.worldDay ?? "unknown"}`
+
+  return input.input.plan.resourceRequests.map((request, index) => {
+    const baseTransactionId =
+      request.transactionId ??
+      `${input.input.plan.id}:${request.resourceKey}:${index.toString(36)}`
+
+    return {
+      ...request,
+      transactionId: [
+        normalizeIdToken(baseTransactionId),
+        input.executableStage,
+        tickToken,
+      ].join(":"),
+      tags: uniqueTags([
+        ...(request.tags ?? []),
+        `stage:${input.executableStage}`,
+        tickToken,
+      ]),
+    }
+  })
 }
 
 export function advanceConstructionPlan(
@@ -264,6 +294,7 @@ function buildConstructionAddMapDiff(input: {
       "construction-add",
       normalizeIdToken(input.input.plan.id),
       input.executableStage,
+      `tick-${input.input.worldDay ?? "unknown"}`,
       normalizeIdToken(input.placement.id),
     ].join("-"),
     operation: "add",
@@ -293,6 +324,7 @@ function buildConstructionUpdateMapDiff(input: {
       "construction-candidate",
       normalizeIdToken(input.input.plan.id),
       input.executableStage,
+      `tick-${input.input.worldDay ?? "unknown"}`,
       normalizeIdToken(input.placement.id),
       String(input.index),
     ].join("-"),

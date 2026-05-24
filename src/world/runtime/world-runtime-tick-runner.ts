@@ -6,7 +6,9 @@ import { buildButlerMvpProfile } from "@/world/butler/butler-personality-adapter
 import { runMvpWorldRuntimeTick } from "@/world/mvp-core/mvp-world-runtime-tick"
 
 import { auditWorldRuntimeTick } from "./world-runtime-audit"
+import { auditWorldRuntimeContinuity } from "./world-runtime-continuity-audit"
 import type {
+  WorldRuntimeActionSummary,
   WorldRuntimeEventLog,
   WorldRuntimeSaveRecord,
   WorldRuntimeTickInput,
@@ -57,7 +59,16 @@ export function runOneRuntimeTick(
       runtimeTick.constructionResult.fullPipelineAudit.acceptedDiffIds.length,
     warningCount: runtimeTick.audit.warnings.length,
   })
+  const actionSummary = buildRuntimeActionSummary({
+    tick: nextTick,
+    createdAt: nowIso,
+    runtimeTick,
+  })
   const recentEvents = [...input.saveRecord.recentEvents, event].slice(-20)
+  const recentActionSignatures = [
+    ...(input.saveRecord.recentActionSignatures ?? []),
+    actionSummary.actionSignature,
+  ].slice(-10)
   const nextSaveRecord: WorldRuntimeSaveRecord = {
     version: "v2.6-runtime-00",
     worldId: input.saveRecord.worldId,
@@ -66,6 +77,8 @@ export function runOneRuntimeTick(
     savedAt: nowIso,
     homeMapState: runtimeTick.nextHomeMapState,
     recentEvents,
+    recentActionSignatures,
+    lastRuntimeAction: actionSummary,
     tags: [
       "world_runtime_save_record",
       "safe_apply_output",
@@ -76,22 +89,80 @@ export function runOneRuntimeTick(
     nextHomeMapState: nextSaveRecord.homeMapState,
     events: [event],
   })
+  const continuityAudit = auditWorldRuntimeContinuity({
+    previousSaveRecord: input.saveRecord,
+    nextSaveRecord,
+    runtimeTick,
+  })
+  const combinedAudit = {
+    ok: audit.ok && continuityAudit.blockingWarnings.length === 0,
+    warnings: [
+      ...audit.warnings,
+      ...continuityAudit.warnings,
+      ...continuityAudit.blockingWarnings,
+    ],
+    tags: [...audit.tags, ...continuityAudit.tags],
+  }
 
   return {
     previousSaveRecord: input.saveRecord,
     nextSaveRecord,
     runtimeTick,
     events: [event],
-    audit,
+    audit: combinedAudit,
     messages: [
       "Live world runtime tick completed.",
       ...runtimeTick.messages,
-      ...audit.warnings,
+      ...combinedAudit.warnings,
     ],
     tags: [
       "world_runtime_tick_result",
       "map_diff_safe_apply_driven",
       "no_pet_fact_created",
+      ...continuityAudit.tags,
+    ],
+  }
+}
+
+function buildRuntimeActionSummary(input: {
+  tick: number
+  createdAt: string
+  runtimeTick: NonNullable<WorldRuntimeTickResult["runtimeTick"]>
+}): WorldRuntimeActionSummary {
+  const protocolResult =
+    input.runtimeTick.constructionResult.runtimeCycleResult
+      .worldLoopProtocolResult
+  const selectedPlan = protocolResult.selectedPlan
+  const acceptedDiffIds =
+    input.runtimeTick.constructionResult.fullPipelineAudit.acceptedDiffIds
+  const acceptedDiffs = protocolResult.safeApplyResult
+    ? protocolResult.executionResult?.mapDiffs.filter((diff) =>
+        acceptedDiffIds.includes(diff.id)
+      ) ?? []
+    : []
+  const placementTokens = acceptedDiffs
+    .map((diff) => `${diff.operation}:${diff.placementId}`)
+    .sort()
+  const actionSignature = [
+    `project:${selectedPlan?.id ?? "none"}`,
+    `target:${selectedPlan?.targetZoneType ?? "none"}`,
+    `stage:${selectedPlan?.currentStage ?? "none"}`,
+    `placements:${placementTokens.join("+") || "none"}`,
+  ].join("|")
+
+  return {
+    tick: input.tick,
+    actionSignature,
+    projectId: selectedPlan?.id,
+    targetZoneType: selectedPlan?.targetZoneType,
+    stage: selectedPlan?.currentStage,
+    acceptedDiffCount: acceptedDiffIds.length,
+    resourceTransactionCount:
+      protocolResult.executionResult?.resourceTransactions.length ?? 0,
+    createdAt: input.createdAt,
+    tags: [
+      "world_runtime_action_summary",
+      acceptedDiffIds.length > 0 ? "safe_apply_action" : "observe_or_wait_action",
     ],
   }
 }

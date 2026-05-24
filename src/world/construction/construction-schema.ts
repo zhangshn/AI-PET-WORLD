@@ -174,6 +174,7 @@ export type ConstructionExecutionInput = {
   homeMapState: HomeMapState
   plan: ConstructionPlan
   now: number
+  worldDay?: number
 }
 
 export type ConstructionMapDiffCandidate = MapDiff & {

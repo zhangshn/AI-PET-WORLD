@@ -27,12 +27,13 @@ export function buildConstructionWorldLoopProtocolResult(
     preferredPlanId: input.preferredPlanId,
   })
   const executionResult = selectedPlan
-    ? buildConstructionExecutionResult({
-        homeMapState: input.homeMapState,
-        plan: selectedPlan,
-        now: input.now,
-      })
-    : null
+      ? buildConstructionExecutionResult({
+          homeMapState: input.homeMapState,
+          plan: selectedPlan,
+          now: input.now,
+          worldDay: input.worldDay,
+        })
+      : null
   const safeApplyResult = executionResult
     ? buildConstructionSafeApplyResult({
         homeMapState: input.homeMapState,
