@@ -186,7 +186,7 @@ function WorldRuntimeShell(input: {
         tags: [
           "world_route_mvp_pipeline_preview",
           "read_only_world_view",
-          "no_default_companion_entry",
+          "no_default_adoption_entry",
         ],
       }),
     [

@@ -22,7 +22,7 @@
  */
 export type WorldEventType =
   | "interaction"
-  | "pet_hatched"
+  | "pet_adoption_applied"
   | "pet_action_changed"
   | "pet_action_narrative"
   | "pet_action_end"

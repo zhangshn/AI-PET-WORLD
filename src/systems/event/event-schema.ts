@@ -35,7 +35,7 @@ export type InteractionEventInput = {
   payload?: Record<string, unknown>
 }
 
-export type PetHatchedEventInput = {
+export type PetAdoptionAppliedEventInput = {
   tick: number
   day: number
   hour: number

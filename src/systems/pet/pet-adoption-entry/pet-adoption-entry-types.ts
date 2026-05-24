@@ -1,12 +1,12 @@
 /**
- * 当前文件负责：定义宠物出生阶段使用的类型。
+ * 当前文件负责：定义宠物通过领养审查进入世界前使用的类型。
  */
 
 import type { PetGenderPerspective } from "@/types/pet"
 
-export type PetBirthGenderSeedInput = {
+export type PetAdoptionGenderSeedInput = {
   petName: string
-  birthInput: {
+  adoptionReviewInput: {
     year: number
     month: number
     day: number
@@ -21,7 +21,7 @@ export type PetBirthGenderSeedInput = {
   }
 }
 
-export type PetBirthGenderResult = {
+export type PetAdoptionGenderResult = {
   genderPerspective: PetGenderPerspective
   seed: string
   score: number

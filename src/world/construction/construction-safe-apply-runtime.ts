@@ -68,7 +68,7 @@ export function buildConstructionSafeApplyResult(
       "butler_construction_add_supported",
       "no_ui_integration",
       "no_world_loop_integration",
-      "no_default_companion_entry",
+      "no_default_adoption_entry",
     ],
   }
   const audit = auditConstructionSafeApplyResult({

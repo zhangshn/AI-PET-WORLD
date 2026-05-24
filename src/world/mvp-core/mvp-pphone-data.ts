@@ -61,7 +61,7 @@ export function buildMvpPPhoneData(input: {
       "mvp_pphone_data",
       "read_only_summary",
       "not_world_fact",
-      "no_default_companion_entry",
+      "no_default_adoption_entry",
       "life_event_01_summary",
     ],
   }
@@ -79,12 +79,12 @@ function buildLifeEventMessages(input: {
     return [
       {
         id: `phone-life-event-${normalizeIdToken(input.worldId)}-empty`,
-        title: "伴生生命入口",
+        title: "小镇领养观察",
         body: "当前没有伴生生命候选，世界会继续观察资源、空间和建设状态。",
         tags: [
           "mvp_pphone_message",
           "life_event_01",
-          "no_companion_decision",
+          "no_adoption_intent",
           "read_only_summary",
         ],
       },
@@ -105,7 +105,7 @@ function buildLifeEventMessages(input: {
   return [
     {
       id: `phone-life-event-${normalizeIdToken(input.worldId)}-candidate`,
-      title: "伴生生命入口",
+      title: "小镇领养观察",
       body: [
         readinessText,
         primaryLifeEvent?.reason ?? "当前没有生命事件候选。",
@@ -114,7 +114,7 @@ function buildLifeEventMessages(input: {
       tags: [
         "mvp_pphone_message",
         "life_event_01",
-        "delayed_companion_entry_only",
+        "town_adoption_deferred_only",
         "read_only_summary",
       ],
     },
@@ -127,7 +127,7 @@ function buildLifeEventMessages(input: {
       tags: [
         "mvp_pphone_message",
         "life_event_01",
-        "companion_decision_candidate",
+        "butler_adoption_intent_candidate",
         "no_actor_creation",
       ],
     },

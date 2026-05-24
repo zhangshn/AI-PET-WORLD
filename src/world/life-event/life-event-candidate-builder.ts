@@ -49,7 +49,7 @@ export function buildLifeEventCandidateBuilderResult(
     tags: [
       "life_event_candidate_builder_result",
       "life_event_01",
-      "delayed_companion_entry_only",
+      "town_adoption_deferred_only",
       "no_actor_creation",
       "no_home_map_state_mutation",
       "resource_space_construction_readiness",
@@ -131,7 +131,7 @@ export function auditLifeEventCandidates(input: {
     tags: [
       "life_event_candidate_audit",
       "compat_export_from_candidate_builder",
-      "delayed_companion_entry_only",
+      "town_adoption_deferred_only",
       warnings.length === 0
         ? "life_event_candidates_valid"
         : "life_event_candidates_warning",
@@ -167,7 +167,7 @@ function buildLifeEventCandidateList(input: {
         type: "construction_dependency_not_ready",
         readyForCompanionDecision: false,
         reason:
-          "家园仍存在关键准备项，伴生生命入口保持后置，不进入世界事实。",
+          "家园仍存在关键准备项，小镇领养机会保持后置，不进入世界事实。",
         tags: [
           "construction_dependency_not_ready",
           "resource_or_space_blocked",
@@ -193,12 +193,12 @@ function buildLifeEventCandidateList(input: {
         input: input.input,
         readiness: input.readiness,
         suffix: "future-opportunity",
-        type: "companion_opportunity_later",
+        type: "adoption_candidate_later",
         readyForCompanionDecision: true,
         reason:
           "世界资源、空间与建设状态已接近可接纳阶段，记录为未来伴生生命机会。",
         tags: [
-          "companion_opportunity_later",
+          "adoption_candidate_later",
           "future_opportunity_only",
           "no_actor_creation",
         ],
@@ -217,7 +217,7 @@ function buildLifeEventCandidateList(input: {
         reason:
           warningCount > 0
             ? "世界已经可以观察，但仍有资源或空间提醒，需要继续等待。"
-            : "世界已经可以观察，伴生生命入口继续保持后置观察。",
+            : "世界已经可以观察，小镇领养机会继续保持后置观察。",
         tags: ["observe_world_ready", "wait_and_observe"],
       }),
     ]
@@ -229,12 +229,12 @@ function buildLifeEventCandidateList(input: {
         input: input.input,
         readiness: input.readiness,
         suffix: "preparing",
-        type: "companion_opportunity_later",
+        type: "adoption_candidate_later",
         readyForCompanionDecision: false,
         reason:
           "家园正在准备中，未来可能出现伴生生命机会，但当前不能进入伙伴流程。",
         tags: [
-          "companion_opportunity_later",
+          "adoption_candidate_later",
           "prepare_world_first",
           "not_ready_yet",
         ],
@@ -423,7 +423,7 @@ function buildLifeEventBlockers(input: {
       buildBlocker({
         source: "resource",
         severity: "blocking",
-        reason: "材料准备度过低，不能让伴生生命入口进入世界事实。",
+        reason: "材料准备度过低，不能让小镇领养机会进入世界事实。",
         key: "material_low",
       })
     )

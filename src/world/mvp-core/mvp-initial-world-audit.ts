@@ -34,7 +34,7 @@ export function auditMvpInitialWorld(result: {
     tags: [
       "mvp_initial_world_audit",
       warnings.length === 0 ? "mvp_initial_world_valid" : "mvp_initial_world_warning",
-      "no_default_companion_entry",
+      "no_default_adoption_entry",
     ],
   }
 }

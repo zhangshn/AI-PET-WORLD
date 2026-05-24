@@ -178,7 +178,7 @@ export function runAiPetWorldMvpPipeline(
     tags: [
       "ai_pet_world_mvp_pipeline_result",
       "full_mvp_required_completion",
-      "no_default_companion_entry",
+      "no_default_adoption_entry",
       "life_event_01",
       ...input.tags,
     ],

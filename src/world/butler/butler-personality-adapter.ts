@@ -32,7 +32,7 @@ export function buildButlerMvpProfile(
       "butler_mvp_profile",
       "player_life_projection_manager",
       "not_companion_caretaker_script",
-      "no_default_companion_entry",
+      "no_default_adoption_entry",
     ],
   }
 

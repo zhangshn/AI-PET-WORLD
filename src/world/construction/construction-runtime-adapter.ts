@@ -58,7 +58,7 @@ export function buildConstructionRuntimeAdapterResult(
       "visual_refresh_bridge_only",
       "no_real_world_loop_registration",
       "no_ui_render",
-      "no_default_companion_entry",
+      "no_default_adoption_entry",
     ],
   }
 }

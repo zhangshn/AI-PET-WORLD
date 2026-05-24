@@ -80,7 +80,7 @@ export function buildFormalVisualDeliveryModel(input: {
       "read_only_projection",
       "home_map_state_projection",
       "no_world_fact_generation",
-      "no_default_companion_entry",
+      "no_default_adoption_entry",
     ],
   }
 }

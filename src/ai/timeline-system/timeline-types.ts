@@ -219,7 +219,7 @@ export interface PhysicalState {
    * 后续可和：
    * - 睡眠
    * - 安静停留
-   * - 孵化后恢复
+   * - adoption accepted runtime recovery
    * - 某些事件修复
    * 联动。
    */

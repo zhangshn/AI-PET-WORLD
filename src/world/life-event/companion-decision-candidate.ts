@@ -33,7 +33,7 @@ function buildCompanionDecisionCandidate(
     })
   }
 
-  if (candidate.kind === "companion_opportunity_later") {
+  if (candidate.kind === "adoption_candidate_later") {
     return buildDecision({
       candidate,
       suffix: "eligible-later",
@@ -51,7 +51,7 @@ function buildCompanionDecisionCandidate(
       tags: [
         "eligible_later",
         "future_opportunity_only",
-        "not_default_companion",
+        "not_default_adoption",
         "no_actor_creation",
       ],
     })
@@ -69,7 +69,7 @@ function buildCompanionDecisionCandidate(
       tags: [
         "wait_and_observe",
         "world_observable",
-        "not_default_companion",
+        "not_default_adoption",
         "no_actor_creation",
       ],
     })
@@ -78,13 +78,13 @@ function buildCompanionDecisionCandidate(
   return buildDecision({
     candidate,
     suffix: "none",
-    type: "no_companion_decision",
+    type: "no_adoption_intent",
     canEnterCompanionFlow: false,
     reason: "当前没有伴生生命决策候选。",
     nextCheckHint: "等待世界形成更稳定的资源、空间和建设状态。",
     tags: [
-      "no_companion_decision",
-      "not_default_companion",
+      "no_adoption_intent",
+      "not_default_adoption",
       "no_actor_creation",
     ],
   })
@@ -111,10 +111,10 @@ function buildDecision(input: {
     blockers: input.candidate.blockers,
     nextCheckHint: input.nextCheckHint,
     tags: [
-      "companion_decision_candidate",
+      "butler_adoption_intent_candidate",
       "life_event_01",
       "delayed_entry_only",
-      "not_default_companion",
+      "not_default_adoption",
       "no_actor_creation",
       ...input.tags,
     ],

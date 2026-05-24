@@ -20,7 +20,7 @@ export type ButlerMessageDecisionPriority =
 
 export type ButlerMessageDecisionReason =
   | "none"
-  | "first_pet_birth_observation"
+  | "first_pet_adoption_observation"
   | "education_strategy_changed"
   | "repeated_rejection_observed"
   | "stable_care_progress"

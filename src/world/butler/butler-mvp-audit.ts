@@ -36,7 +36,7 @@ export function auditButlerMvpProfile(
     tags: [
       "butler_mvp_audit",
       warnings.length === 0 ? "butler_mvp_valid" : "butler_mvp_warning",
-      "no_default_companion_entry",
+      "no_default_adoption_entry",
     ],
   }
 }

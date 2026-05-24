@@ -332,7 +332,7 @@ function BehaviorBiasPanel({
     {
       label: "初生主动性",
       value: bias.petBehaviorBias.newbornActivity,
-      description: "影响宠物出生后是否更容易主动活动、试探环境。",
+      description: "影响宠物通过领养审查进入世界后是否更容易主动活动、试探环境。",
     },
     {
       label: "观察需求",

@@ -50,11 +50,13 @@ export class PetSystem {
   private lastDecisionReason: ActionDecisionReason | null = null
   private lastFeedingTick = -9999
 
-  hatchPetWithLifeProfileBundle(input: {
+  activatePetAfterAdoptionReview(input: {
     name: string
     genderPerspective: PetGenderPerspective
     lifeProfile: LifePersonalityProfileBundle
     timelineSnapshot: PetTimelineSnapshot
+    adoptionReviewId: string
+    adoptionSafeApplyId: string
   }) {
     if (this.pet) return
 
@@ -63,19 +65,27 @@ export class PetSystem {
       genderPerspective,
       lifeProfile,
       timelineSnapshot,
+      adoptionReviewId,
+      adoptionSafeApplyId,
     } = input
+
+    if (!adoptionReviewId || !adoptionSafeApplyId) {
+      throw new Error(
+        "Pet runtime can only start after AdoptionReview and AdoptionSafeApply pass."
+      )
+    }
 
     const personalityProfile = lifeProfile.ziweiProfile
     const consciousnessProfile = lifeProfile.consciousnessProfile
 
     if (!personalityProfile) {
       throw new Error(
-        "宠物出生需要出生时辰生成紫微人格；无时辰模式只用于测试页、玩家或管家资料。"
+        "Adopted pet runtime needs a resolved personality profile before entering HomeMapState."
       )
     }
 
     if (!consciousnessProfile) {
-      throw new Error("宠物出生需要意识核心。")
+      throw new Error("Adopted pet runtime needs a consciousness profile.")
     }
 
     const memoryState = buildInitialPetMemoryState()

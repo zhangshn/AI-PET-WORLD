@@ -103,7 +103,7 @@ State / Rule / Intent
 
 允许：
 
-- LifeEvent 生成 `no_event`、`observe_world_ready`、`companion_opportunity_later`、`eligible_later` 等候选状态。
+- LifeEvent 生成 `no_event`、`observe_world_ready`、`adoption_candidate_later`、`eligible_later` 等候选状态。
 - P-Phone 或管家解释“未来可能出现新的生命关系”，但不能承诺必然出现。
 
 ### 2.4 资源不能凭空增加

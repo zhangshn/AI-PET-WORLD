@@ -8,7 +8,7 @@ export type {
   InteractionEventInput,
   MakeWorldEventInput,
   MakeWorldEventResult,
-  PetHatchedEventInput,
+  PetAdoptionAppliedEventInput,
   PetStateLike,
 } from "./event-schema"
 

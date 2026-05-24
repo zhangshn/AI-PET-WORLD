@@ -59,7 +59,7 @@ export function auditConstructionWorldLoopProtocol(input: {
         : "construction_world_loop_protocol_warning",
       "pre_world_loop_only",
       "no_ui_integration",
-      "no_default_companion_entry",
+      "no_default_adoption_entry",
     ],
   }
 }

@@ -77,7 +77,7 @@ export default function WorldFormalRoutePage() {
         "world_formal_route_page",
         "formal_product_view",
         "no_debug_panels",
-        "no_default_companion_entry",
+        "no_default_adoption_entry",
       ],
     })
 
@@ -201,7 +201,7 @@ function FormalProductWorldPanel(input: {
             <span>{delivery.construction.statusLabel}</span>
             <p>{delivery.construction.explanation}</p>
             <p>
-              管家会先观察资源、空间和孵化环境，再决定是否整理、等待或推进家园建设。玩家不会直接点击建造。
+              管家会先观察资源、空间、小镇远景与未来领养条件，再决定是否整理、等待或推进家园建设。玩家不会直接点击建造或直接领养。
             </p>
           </div>
 

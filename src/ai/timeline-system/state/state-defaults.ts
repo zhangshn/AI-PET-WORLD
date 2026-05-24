@@ -9,7 +9,7 @@
  *
  * 它的核心任务是：
  * 1. 给每种状态提供一份稳定、可运行的默认值
- * 2. 给宠物出生后进入时间线系统时，提供第一份状态快照
+ * 2. 给宠物通过领养审查进入世界后进入时间线系统时，提供第一份状态快照
  * 3. 给后续 state-updater.ts 提供统一起点
  * 4. 给 timeline-gateway.ts 提供基础初始化方法
  *
@@ -337,7 +337,7 @@ export const DEFAULT_RELATIONAL_STATE: RelationalState = {
 /* -------------------------------------------------------------------------- */
 
 /**
- * 默认宠物状态
+ * Pet runtime fallback state after accepted adoption
  *
  * 这是把五大状态默认值打包后的总结构。
  *

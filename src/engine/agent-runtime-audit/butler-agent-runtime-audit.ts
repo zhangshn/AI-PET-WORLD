@@ -116,7 +116,7 @@ function buildReasonLines(input: RuntimeButlerAgentAuditInput): string[] {
     `当前任务：${input.butler.task}`,
     `当前心情：${input.butler.mood}`,
     `家园状态：${input.home?.status ?? "unknown"}`,
-    input.pet ? "宠物已通过后置关系进入系统。" : "当前没有默认宠物运行态。",
+    input.pet ? "宠物已通过后置领养审查进入系统。" : "当前没有宠物运行态；未来需通过小镇领养中心审查。",
     trace ? `任务选择原因：${trace.reason}` : "暂无任务选择审计。",
   ]
 }

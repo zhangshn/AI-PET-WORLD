@@ -12,7 +12,7 @@ import {
   type ContinuityState,
   type EventSystemUpdateInput,
   type InteractionEventInput,
-  type PetHatchedEventInput,
+  type PetAdoptionAppliedEventInput,
   type PetStateLike,
 } from "./event/event-gateway"
 
@@ -72,14 +72,14 @@ export class EventSystem {
     this.appendEvents([event])
   }
 
-  addPetHatchedEvent(input: PetHatchedEventInput): void {
+  addPetAdoptionAppliedEvent(input: PetAdoptionAppliedEventInput): void {
     const event = makeWorldEvent({
       tick: input.tick,
       day: input.day,
       hour: input.hour,
-      type: "pet_hatched",
+      type: "pet_adoption_applied",
       petName: input.petName,
-      message: `${input.petName}破壳出生了。`,
+      message: `${input.petName} has entered the home after adoption review and safe apply.`,
     })
 
     this.appendEvents([event])

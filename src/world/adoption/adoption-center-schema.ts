@@ -3,29 +3,29 @@
  */
 
 export type AdoptionStatus =
-  | "not_registered"
-  | "registered"
-  | "reviewing"
-  | "assigned"
-  | "preparing_arrival"
-  | "ready_to_arrive"
-  | "arrived"
+  | "town_not_visible"
+  | "center_not_visible"
+  | "center_observable"
+  | "candidate_observable"
+  | "butler_reviewing"
+  | "waiting"
+  | "rejected"
+  | "accepted_applied"
 
-export type AdoptionSource =
-  | "town_adoption_center"
-  | "system_assignment"
+export type AdoptionSource = "town_adoption_center"
 
 export type AdoptionState = {
-  hasPendingPet: boolean
-  pendingPetName: string
+  hasCandidate: boolean
+  candidateName: string
   progress: number
   readiness: number
   status: AdoptionStatus
   source: AdoptionSource
   registeredAtTick: number | null
-  assignedAtTick: number | null
-  arrivedAtTick: number | null
-  arrivalMomentForPersonality?: {
+  reviewStartedAtTick: number | null
+  acceptedAtTick: number | null
+  appliedAtTick: number | null
+  adoptionMomentForPersonality?: {
     day: number
     hour: number
     tick: number
@@ -35,16 +35,21 @@ export type AdoptionState = {
 
 export function buildEmptyAdoptionState(): AdoptionState {
   return {
-    hasPendingPet: false,
-    pendingPetName: "",
+    hasCandidate: false,
+    candidateName: "",
     progress: 0,
     readiness: 0,
-    status: "not_registered",
-    source: "system_assignment",
+    status: "town_not_visible",
+    source: "town_adoption_center",
     registeredAtTick: null,
-    assignedAtTick: null,
-    arrivedAtTick: null,
-    arrivalMomentForPersonality: null,
-    tags: ["adoption_state_empty", "companion_deferred"],
+    reviewStartedAtTick: null,
+    acceptedAtTick: null,
+    appliedAtTick: null,
+    adoptionMomentForPersonality: null,
+    tags: [
+      "adoption_state_empty",
+      "town_adoption_center_deferred",
+      "no_pet_fact_before_review",
+    ],
   }
 }

@@ -8,8 +8,8 @@
  * 2. 输出最终人格档案
  *
  * 设计目标：
- * - 让人格不是“出生瞬间突然出现”
- * - 而是“人格种子 + 早期成长过程 + 出生时间”共同形成
+ * - 让人格不是由宠物进场瞬间凭空生成
+ * - 而是由稳定输入、早期成长过程与用户授权信息共同形成
  *
  * 说明：
  * - 这一层不负责出生输入计算
@@ -40,7 +40,7 @@ import type {
  * - sensitiveGrowth：
  *   早期成长阶段是否更容易产生波动
  */
-export type IncubationImprint = {
+export type AdoptionImprint = {
   calmGrowth: number
   activeGrowth: number
   stableGrowth: number
@@ -123,7 +123,7 @@ function clampCoreValue(value: number): number {
 function mergeCorePersonality(
   seedCore: CorePersonality,
   birthCore: CorePersonality,
-  imprint: IncubationImprint
+  imprint: AdoptionImprint
 ): CorePersonality {
   return {
     activity: clampCoreValue(
@@ -157,7 +157,7 @@ function mergeCorePersonality(
  * ======================================================
  */
 function buildEvolutionSummaries(
-  imprint: IncubationImprint
+  imprint: AdoptionImprint
 ): string[] {
   const summaries: string[] = []
 
@@ -206,7 +206,7 @@ function buildEvolutionSummaries(
 export function evolveProfile(
   seedProfile: PersonalityProfile,
   birthProfile: PersonalityProfile,
-  imprint: IncubationImprint
+  imprint: AdoptionImprint
 ): PersonalityProfile {
   const seedTraits = seedProfile.traits
   const birthTraits = birthProfile.traits

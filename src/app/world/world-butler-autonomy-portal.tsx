@@ -130,7 +130,7 @@ export function WorldButlerAutonomyPortal() {
         "world_route_butler_autonomy_portal",
         "debug_only_panel",
         "read_only_world_view",
-        "no_default_companion_entry",
+        "no_default_adoption_entry",
       ],
     })
 

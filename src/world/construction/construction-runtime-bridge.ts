@@ -53,7 +53,7 @@ export function buildConstructionRuntimeBridgeResult(
       "no_world_loop_registration",
       "no_real_persistence",
       "no_ui_render",
-      "no_default_companion_entry",
+      "no_default_adoption_entry",
     ],
   }
 }

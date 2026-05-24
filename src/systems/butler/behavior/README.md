@@ -48,7 +48,7 @@ execution 当前只负责把已经形成的任务、关系、教育策略转换�
 规则：
 
 - homeGoals 只影响行为执行快照，不负责选择任务
-- `building_home` / `watching_incubator` / `idle` / `watching_pet` 可以被家园目标修正执行倾向
+- `building_home` / `watching_town_adoption_conditions` / `idle` / `watching_pet` 可以被家园目标修正执行倾向
 - `offering_food` / `offering_rest` / `offering_approach` 不会被 homeGoals 覆盖
 - 管家仍不能控制宠物
 - behavior execution 不直接调用 homeSystem

@@ -974,7 +974,7 @@ Butler Message：默认关闭
 本轮完成：
 
 - `ENABLE_LEGACY_BUTLER_EVENT_MESSAGES = false`
-- `pet_hatched` 不再自动生成管家短信
+- `pet_adoption_applied` 不再自动生成管家短信
 - `offline_catchup` 不再自动生成管家短信
 - `dual_agent_interaction` 不再自动生成管家短信
 - 旧 event policy 不再写入 butler AiMessage
@@ -1073,7 +1073,7 @@ homeSystem.build
 当前最小空间包括：
 
 - `empty_land`
-- `incubator_area`
+- `adoption_condition_area`
 - `temporary_shelter`
 - `garden_area`
 - `storage_area`
@@ -1165,7 +1165,7 @@ HomeState.spaceSummary
 - `home_building` 主要推进 `temporary_shelter`
 - `home_maintenance` 修复舒适度 / 稳定度最低的可用空间
 - `space_tidying` 提升 `storage_area / activity_area` 的稳定度和秩序感
-- `incubator_watch` 轻微提升 `incubator_area` 稳定度
+- `adoption_condition_watch` 轻微提升 `adoption_condition_area` 稳定度
 
 当前边界：
 
@@ -1207,7 +1207,7 @@ HomeState comfort / stability / expansion / gardenProgress
 当前阶段：
 
 - initial_empty_land
-- incubator_care_phase
+- adoption_readiness_phase
 - temporary_shelter_phase
 - basic_living_phase
 - garden_opening_phase
@@ -1311,7 +1311,7 @@ HomeState.homeGoals
 
 当前目标：
 
-- stabilize_incubator
+- stabilize_adoption_readiness
 - build_temporary_shelter
 - complete_basic_living
 - open_garden_area
@@ -1345,7 +1345,7 @@ HomeState.homeGoals
 
 当前设施包括：
 
-- basic_incubator
+- basic_adoption_readiness
 - shelter_bed
 - food_corner
 - water_corner

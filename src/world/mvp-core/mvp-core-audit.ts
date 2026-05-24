@@ -60,7 +60,7 @@ export function auditAiPetWorldMvpPipeline(
     ...result.visualRefresh.warnings,
     ...result.formalVisualRefresh.warnings,
     ...result.lifeEventCandidates.flatMap((candidate) =>
-      candidate.readyForCompanionDecision && candidate.kind !== "companion_opportunity_later"
+      candidate.readyForCompanionDecision && candidate.kind !== "adoption_candidate_later"
         ? [`Unexpected life event readiness: ${candidate.candidateId}`]
         : []
     ),
@@ -83,7 +83,7 @@ export function auditAiPetWorldMvpPipeline(
     tags: [
       "ai_pet_world_mvp_audit",
       warnings.length === 0 ? "ai_pet_world_mvp_valid" : "ai_pet_world_mvp_warning",
-      "no_default_companion_entry",
+      "no_default_adoption_entry",
     ],
   }
 }

@@ -3,10 +3,10 @@
  */
 
 export {
-  resolvePetBirthGender,
-  type PetBirthGenderResult,
-  type PetBirthGenderSeedInput,
-} from "./pet-birth/pet-birth-gateway"
+  resolvePetAdoptionGender,
+  type PetAdoptionGenderResult,
+  type PetAdoptionGenderSeedInput,
+} from "./pet-adoption-entry/pet-adoption-entry-gateway"
 
 export {
   driveSystem,

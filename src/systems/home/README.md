@@ -7,10 +7,10 @@
 当前 Home System 遵循用户最新三份正式文档：
 
 1. 不默认生成宠物。
-2. 不默认生成宠物床。
+2. 不在世界启动时生成宠物专属休息设施。
 3. 不默认生成宠物抵达区或宠物休息区。
 4. 不默认生成旧出生装置。
-5. 宠物相关空间和设施只能通过后置 LifeEvent / CompanionDecision / accept_companion 或后续建设计划进入。
+5. 宠物相关空间和设施只能通过小镇领养中心候选、管家领养意愿、AdoptionReview、AdoptionSafeApply / SafeApply 或后续建设计划进入。
 6. Home System 只描述家园空间、设施、生命周期和目标，不控制宠物自主行为。
 
 ## Home Spaces
@@ -86,9 +86,9 @@ homeSpaces 用于让正式 world 页面 / 未来像素地图读取空间结构�
 
 当前正式最小家园设施系统可以包含：
 
-- resting_mat 或 shelter_bed：中性住所设施，不是宠物床
-- food_corner：基础生活物资点，不是默认宠物设施
-- water_corner：基础生活物资点，不是默认宠物设施
+- resting_mat 或 shelter_bed：中性住所设施，不是宠物专属设施
+- food_corner：基础生活物资点，不是宠物专属设施
+- water_corner：基础生活物资点，不是宠物专属设施
 - storage_box
 - garden_patch
 - observation_spot

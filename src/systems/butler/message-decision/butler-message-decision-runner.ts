@@ -14,7 +14,7 @@ const MESSAGE_DECISION_COOLDOWN_TICKS: Record<
   number
 > = {
   none: 0,
-  first_pet_birth_observation: 18,
+  first_pet_adoption_observation: 18,
   education_strategy_changed: 12,
   repeated_rejection_observed: 16,
   stable_care_progress: 24,
@@ -174,7 +174,7 @@ function buildDraftText(input: {
     return "我认为这件事需要你看一看，但我不会把它当成命令，只会把当前判断告诉你。"
   }
 
-  if (input.reason === "first_pet_birth_observation") {
+  if (input.reason === "first_pet_adoption_observation") {
     return "它刚来到这个世界，我会先保持观察，让它自己适应周围环境。"
   }
 

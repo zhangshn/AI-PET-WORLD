@@ -344,7 +344,7 @@ export const PET_CORE_BOUNDARY_SUMMARY = {
   corePrinciple:
     "宠物和管家都是 autonomous agent；世界只产生 signal，不直接决定行为。",
   infantPrinciple:
-    "宠物出生时没有生活记忆，幼儿期行为必须经过状态、感知、记忆、学习、驱动、目标和行为链。",
+    "宠物通过领养审查进入世界时没有生活记忆，早期行为必须经过状态、感知、记忆、学习、驱动、目标和行为链。",
   safetyPrinciple:
     "核心算法通过 gateway / layer / tuning 封装，避免 UI、测试页和临时业务逻辑直接污染核心。",
   reusableDirection:

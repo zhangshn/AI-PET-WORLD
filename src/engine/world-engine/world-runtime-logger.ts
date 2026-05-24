@@ -398,7 +398,7 @@ export function logButlerAgentTrace(input: {
   }
 }
 
-export function logPetBirthProfile(input: {
+export function logPetAdoptionProfile(input: {
   petName: string
   birthInput: {
     year: number

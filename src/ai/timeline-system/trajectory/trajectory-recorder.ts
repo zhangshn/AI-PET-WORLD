@@ -439,7 +439,7 @@ export function recordBirthEvent(
   },
   limit: number = DEFAULT_TIMELINE_HISTORY_LIMIT
 ): LifeTrajectory {
-  const petLabel = input.petName ? `${input.petName} 出生` : "宠物出生";
+  const petLabel = input.petName ? `${input.petName} adopted` : "pet adopted";
 
   return recordTimelineEvent(
     trajectory,

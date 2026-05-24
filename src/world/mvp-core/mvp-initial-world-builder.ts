@@ -74,7 +74,7 @@ export function buildMvpInitialWorld(
       "mvp_initial_world_result",
       "initial_home_generator_driven",
       "home_map_state_source",
-      "no_default_companion_entry",
+      "no_default_adoption_entry",
       ...input.tags,
     ],
   }

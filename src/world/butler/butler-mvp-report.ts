@@ -39,7 +39,7 @@ export function buildButlerMvpReport(
     tags: [
       "butler_mvp_report",
       "not_ui_world_fact",
-      "no_default_companion_entry",
+      "no_default_adoption_entry",
     ],
   }
 }

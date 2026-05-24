@@ -85,7 +85,7 @@ export function runMvpWorldRuntimeTick(
     tags: [
       "mvp_world_runtime_tick_result",
       "construction_vertical_slice_driven",
-      "no_default_companion_entry",
+      "no_default_adoption_entry",
     ],
   }
 }

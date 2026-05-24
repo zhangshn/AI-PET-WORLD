@@ -147,17 +147,17 @@ export function buildMvpWorldCheckReport(
       id: "pre_arrival_adoption_valid",
       title: "后置生命关系状态有效",
       status:
-        input.pet || input.adoptionState?.status === "arrived"
+        input.pet || input.adoptionState?.status === "accepted_applied"
           ? "pass"
-          : input.adoptionState?.hasPendingPet
+          : input.adoptionState?.hasCandidate
             ? "pass"
             : "warn",
       message:
-        input.pet || input.adoptionState?.status === "arrived"
-          ? "宠物已抵达家园，并可作为建立关系的命格时刻。"
-          : input.adoptionState?.hasPendingPet
-            ? "宠物尚未抵达，领养中心仍有待送达宠物。"
-            : "宠物尚未抵达，且当前没有待送达宠物标记。",
+        input.pet || input.adoptionState?.status === "accepted_applied"
+          ? "Pet has entered after adoption review and safe apply."
+          : input.adoptionState?.hasCandidate
+            ? "Adoption center has an observable candidate, not a pet world fact."
+            : "Adoption center has no observable candidate yet.",
       tags: ["mvp", "adoption", "companion_deferred"],
     }),
     buildItem({
@@ -175,7 +175,7 @@ export function buildMvpWorldCheckReport(
           : "fail",
       message: input.pet
         ? `宠物 ${input.pet.name}：${input.pet.action} / ${input.pet.mood}。`
-        : "宠物尚未出生，跳过出生后运行检查。",
+        : "Pet has not entered through accepted adoption yet; runtime check is skipped.",
       tags: ["mvp", "pet"],
     }),
     buildItem({

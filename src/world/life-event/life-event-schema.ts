@@ -8,11 +8,11 @@ import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
 export type LifeEventCandidateKind =
   | "no_event"
   | "observe_world_ready"
-  | "companion_opportunity_later"
+  | "adoption_candidate_later"
   | "construction_dependency_not_ready"
 
 export type CompanionDecisionCandidateKind =
-  | "no_companion_decision"
+  | "no_adoption_intent"
   | "wait_and_observe"
   | "prepare_world_first"
   | "eligible_later"

@@ -57,7 +57,7 @@ export function auditLifeEventCandidates(input: {
       warnings.length === 0
         ? "life_event_candidates_valid"
         : "life_event_candidates_warning",
-      "delayed_companion_entry_only",
+      "town_adoption_deferred_only",
       "no_actor_creation",
     ],
   }
@@ -121,7 +121,7 @@ function auditReadinessConsistency(input: {
 
     if (
       blockingCount > 0 &&
-      candidate.kind === "companion_opportunity_later" &&
+      candidate.kind === "adoption_candidate_later" &&
       candidate.readyForCompanionDecision
     ) {
       warnings.push(

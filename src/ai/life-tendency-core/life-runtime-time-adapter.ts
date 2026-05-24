@@ -42,7 +42,7 @@ export interface BuildLifeRuntimeTimeFromWorldInput {
 
   /**
    * 世界 Day 1 对应的真实公历日期。
-   * 测试 / MVP 可以先用宠物出生日期作为世界起始日期。
+   * 测试 / MVP 可以先用宠物领养审查日期作为世界起始日期。
    */
   worldStartDate: LifeRuntimeWorldStartDate
 

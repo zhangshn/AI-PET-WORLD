@@ -566,7 +566,7 @@ PPhoneButlerDeliveryReadbackResult
 本轮完成：
 
 - 新增 `ENABLE_LEGACY_BUTLER_EVENT_MESSAGES = false`
-- 默认关闭 `pet_hatched / offline_catchup / dual_agent_interaction` 自动生成管家短信
+- 默认关闭 `pet_adoption_applied / offline_catchup / dual_agent_interaction` 自动生成管家短信
 - 旧 event policy 不再写入 butler AiMessage
 - World Notice 保持事件来源
 - World Notice 仍可写入 AiMessage

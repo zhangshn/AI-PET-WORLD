@@ -57,7 +57,7 @@ export function buildConstructionWorldLoopProtocolResult(
       "runtime_tick_integrated",
       "planner_candidate_executor_safe_apply_chain",
       "no_ui_integration",
-      "no_default_companion_entry",
+      "no_default_adoption_entry",
     ],
   }
   const audit = auditConstructionWorldLoopProtocol({

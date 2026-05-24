@@ -49,7 +49,7 @@ function resolveEventVisibility(
     return "world_notice"
   }
 
-  if (event.type === "pet_hatched") {
+  if (event.type === "pet_adoption_applied") {
     return "message_candidate"
   }
 
@@ -68,7 +68,7 @@ function resolveEventVisibility(
 
 function resolveEventImportance(event: WorldEvent): AiImportance {
   if (isWorldNoticeCandidate(event)) return "high"
-  if (event.type === "pet_hatched") return "medium"
+  if (event.type === "pet_adoption_applied") return "medium"
   if (event.type === "interaction") return "medium"
 
   return "debug"

@@ -173,14 +173,6 @@ export const WORLD_MAP_ASSETS = {
     anchor: "bottom-center",
     description: "基础饮水容器素材",
   },
-  facilityPetBedNeat01: {
-    id: "facilityPetBedNeat01",
-    category: "facility",
-    path: "/assets/generated/home/facilities/facility_pet_bed_neat_01.png",
-    baseSize: 64,
-    anchor: "bottom-center",
-    description: "后置生命关系阶段可使用的休息素材",
-  },
   facilityStorageBoxClosed01: {
     id: "facilityStorageBoxClosed01",
     category: "facility",

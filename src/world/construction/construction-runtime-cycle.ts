@@ -50,7 +50,7 @@ export function buildConstructionRuntimeCycleResult(
       "autonomous_construction_runtime",
       "no_direct_persistence",
       "no_ui_integration",
-      "no_default_companion_entry",
+      "no_default_adoption_entry",
       `run_reason:${input.runReason}`,
     ],
   }

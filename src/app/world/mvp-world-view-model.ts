@@ -227,7 +227,7 @@ function buildLifeEventSummary(
     candidate?.worldReasons ?? readiness?.worldReadiness.reasons ?? []
 
   return {
-    title: "伴生生命入口",
+    title: "小镇领养观察",
     statusLabel: readiness
       ? toReadinessLabel(readiness.status)
       : "后置等待",
@@ -288,7 +288,7 @@ function toLifeEventKindLabel(kind: string): string {
   const labels: Record<string, string> = {
     no_event: "暂无事件",
     observe_world_ready: "世界可观察",
-    companion_opportunity_later: "未来伴生机会",
+    adoption_candidate_later: "未来伴生机会",
     construction_dependency_not_ready: "建设条件未满足",
   }
 
@@ -297,7 +297,7 @@ function toLifeEventKindLabel(kind: string): string {
 
 function toCompanionDecisionLabel(kind: string): string {
   const labels: Record<string, string> = {
-    no_companion_decision: "暂无决策",
+    no_adoption_intent: "暂无决策",
     wait_and_observe: "等待观察",
     prepare_world_first: "先准备世界",
     eligible_later: "未来可评估",
@@ -393,7 +393,7 @@ function buildDemoChecklist(input: {
       id: "demo-life-event-delayed",
       title: "伴生生命后置",
       status: hasLifeEventSummary ? "passed" : "warning",
-      description: "伴生生命只作为未来候选，不默认生成宠物、宠物床或孵化器。",
+      description: "宠物只作为未来小镇领养候选，不会在开局生成宠物事实或宠物专属设施。",
       evidence: `${input.lifeEventSummary.statusLabel}，准备度 ${input.lifeEventSummary.readinessScore}/100。`,
     },
     {
@@ -438,7 +438,7 @@ function buildAcceptanceItems(input: {
       id: "acceptance-no-default-companion",
       title: "伴生生命后置",
       status: "passed",
-      description: `当前状态：${input.lifeEventSummary.statusLabel}。宠物、宠物床、孵化器和胚胎都不作为默认世界事实生成。`,
+      description: `当前状态：${input.lifeEventSummary.statusLabel}。宠物只有在小镇领养中心候选、管家审查与 SafeApply 通过后，才会成为世界事实。`,
     },
     {
       id: "acceptance-product-demo",

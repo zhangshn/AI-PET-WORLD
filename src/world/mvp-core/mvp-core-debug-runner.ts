@@ -91,7 +91,7 @@ export function runMvpCoreDebugRunner(
       "no_ui_render",
       "no_real_persistence",
       "no_world_loop_registration",
-      "delayed_companion_entry_only",
+      "town_adoption_deferred_only",
     ],
   }
   const audit = auditMvpCoreDebugRunner({

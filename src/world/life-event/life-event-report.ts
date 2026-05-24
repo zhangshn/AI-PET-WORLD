@@ -30,7 +30,7 @@ export function buildLifeEventReport(input: {
     tags: [
       "life_event_report",
       "life_event_01",
-      "delayed_companion_entry_only",
+      "town_adoption_deferred_only",
       "not_ui_model",
       "no_actor_creation",
     ],
@@ -112,7 +112,7 @@ function buildCompanionDecisionSection(
               `${toCompanionDecisionLabel(candidate.kind)}：${candidate.reason} ${candidate.nextCheckHint}`
           )
         : ["当前没有伴生生命决策候选。"],
-    tags: ["section:companion_decision_candidate"],
+    tags: ["section:butler_adoption_intent_candidate"],
   }
 }
 
@@ -183,7 +183,7 @@ function toLifeEventKindLabel(kind: LifeEventCandidate["kind"]): string {
   const labels = {
     no_event: "暂无事件",
     observe_world_ready: "世界可观察",
-    companion_opportunity_later: "未来伴生机会",
+    adoption_candidate_later: "未来伴生机会",
     construction_dependency_not_ready: "建设条件未满足",
   } satisfies Record<LifeEventCandidate["kind"], string>
 
@@ -194,7 +194,7 @@ function toCompanionDecisionLabel(
   kind: CompanionDecisionCandidate["kind"]
 ): string {
   const labels = {
-    no_companion_decision: "暂无决策",
+    no_adoption_intent: "暂无决策",
     wait_and_observe: "等待观察",
     prepare_world_first: "先准备世界",
     eligible_later: "未来可评估",
