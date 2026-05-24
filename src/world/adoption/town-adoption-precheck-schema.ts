@@ -1,5 +1,5 @@
 /**
- * 当前文件职责：定义小镇领养观察与小镇领养观察入口候选协议。
+ * 当前文件职责：定义小镇领养观察、管家领养意愿与审计协议。
  */
 
 import type { ConstructionRuntimeBridgeResult } from "@/world/construction/construction-schema"
@@ -81,7 +81,7 @@ export type TownAdoptionReadinessSnapshot = {
 }
 
 export type AdoptionOpportunityObservation = {
-  candidateId: string
+  observationId: string
   type: AdoptionOpportunityObservationType
   kind: AdoptionOpportunityObservationKind
   worldId: string
