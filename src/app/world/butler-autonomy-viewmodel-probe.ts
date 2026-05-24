@@ -37,6 +37,7 @@ export function buildButlerAutonomyViewModelProbe(
       month: birthInput.birthMonth,
       day: birthInput.birthDay,
       hour: birthInput.birthHour,
+      minute: 0,
     },
     mappingMode: "self_projection",
     displayName: result.butlerProfile.displayName,
@@ -44,8 +45,8 @@ export function buildButlerAutonomyViewModelProbe(
   const probe = runButlerAutonomyDevProbe({
     worldId: result.nextHomeMapState.worldId,
     ownerId: result.nextHomeMapState.ownerId,
-    now: result.runtimeTick.now,
-    worldDay: result.runtimeTick.worldDay,
+    now: result.nextHomeMapState.updatedAt,
+    worldDay: 1,
     homeMapState: result.nextHomeMapState,
     ecologyState: result.nextHomeMapState.ecologyState,
     butlerProfile,
