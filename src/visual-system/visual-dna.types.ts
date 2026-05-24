@@ -28,7 +28,7 @@ export type ButlerSilhouette =
 
 export type PetMatchType =
   | "stable_attached"
-  | "soft_companion"
+  | "gentle_social"
   | "alert_guardian"
   | "curious_playful"
   | "quiet_observer"

@@ -80,7 +80,7 @@ export const ziweiPairPreferenceBiases: Record<
   }),
   tianji_tianliang: createPreferenceBias({
     archetypeScores: { warm_caretaker: 58, protective_keeper: 56 },
-    petMatchScores: { soft_companion: 54, alert_guardian: 42 },
+    petMatchScores: { gentle_social: 54, alert_guardian: 42 },
     visualScores: { warmth: 58, protection: 58 },
     colorToneHints: ["earth_warm", "wood_green"],
     homeStyleHints: ["warm_care_first", "protected_boundary"],
@@ -113,7 +113,7 @@ export const ziweiPairPreferenceBiases: Record<
   }),
   taiyang_tianliang: createPreferenceBias({
     archetypeScores: { warm_caretaker: 72 },
-    petMatchScores: { soft_companion: 62 },
+    petMatchScores: { gentle_social: 62 },
     visualScores: { warmth: 76, protection: 42 },
     colorToneHints: ["earth_warm", "fire_bright"],
     homeStyleHints: ["warm_care_first"],
@@ -168,7 +168,7 @@ export const ziweiPairPreferenceBiases: Record<
   }),
   tiantong_taiyin: createPreferenceBias({
     archetypeScores: { warm_caretaker: 90 },
-    petMatchScores: { soft_companion: 82 },
+    petMatchScores: { gentle_social: 82 },
     visualScores: { warmth: 92, stability: 46 },
     colorToneHints: ["earth_warm", "moon_soft"],
     homeStyleHints: ["warm_care_first"],
@@ -190,7 +190,7 @@ export const ziweiPairPreferenceBiases: Record<
   }),
   tiantong_tianliang: createPreferenceBias({
     archetypeScores: { warm_caretaker: 68, protective_keeper: 56 },
-    petMatchScores: { soft_companion: 62, alert_guardian: 42 },
+    petMatchScores: { gentle_social: 62, alert_guardian: 42 },
     visualScores: { warmth: 68, protection: 58 },
     colorToneHints: ["earth_warm", "wood_green"],
     homeStyleHints: ["warm_care_first", "protected_boundary"],
@@ -245,7 +245,7 @@ export const ziweiPairPreferenceBiases: Record<
   }),
   tianfu_tianxiang: createPreferenceBias({
     archetypeScores: { structured_builder: 62, warm_caretaker: 58 },
-    petMatchScores: { stable_attached: 54, soft_companion: 52 },
+    petMatchScores: { stable_attached: 54, gentle_social: 52 },
     visualScores: { order: 66, warmth: 54, stability: 58 },
     colorToneHints: ["metal_clear", "earth_warm"],
     homeStyleHints: ["orderly_structured", "warm_care_first"],
@@ -256,7 +256,7 @@ export const ziweiPairPreferenceBiases: Record<
   }),
   taiyin_tianliang: createPreferenceBias({
     archetypeScores: { warm_caretaker: 64, quiet_maintainer: 60 },
-    petMatchScores: { soft_companion: 60, quiet_observer: 54 },
+    petMatchScores: { gentle_social: 60, quiet_observer: 54 },
     visualScores: { warmth: 62, stability: 60, protection: 46 },
     colorToneHints: ["moon_soft", "earth_warm"],
     homeStyleHints: ["warm_care_first", "quiet_minimal"],

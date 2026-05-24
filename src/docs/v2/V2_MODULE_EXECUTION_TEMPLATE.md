@@ -57,5 +57,5 @@ Every round must state whether it affects pets or town adoption.
 Default rule:
 
 ```txt
-No accepted AdoptionReview plus AdoptionSafeApply means no pet actor, no pet bed, no pet_arrival, and no pet_rest in formal world facts.
+No accepted AdoptionReview plus AdoptionSafeApply means no startup pet actor, pet facility, or blocked startup pet route token in formal world facts.
 ```

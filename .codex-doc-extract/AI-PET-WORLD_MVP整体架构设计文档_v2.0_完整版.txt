@@ -1,3 +1,5 @@
+> 历史归档：本文件不得作为 V2.6 当前产品、架构或开发依据。
+
 AI-PET-WORLD
 MVP 整体架构设计文档
 V2.0 完整版｜从生命信息到 HomeMapState、MapDiff、World Loop 与只读渲染

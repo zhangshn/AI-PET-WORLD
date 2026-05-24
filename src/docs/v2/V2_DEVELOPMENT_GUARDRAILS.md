@@ -32,7 +32,7 @@ Forbidden examples:
 
 ## 3. The Player Is Not The Direct Builder
 
-The player is the world source, observer, and companion. The player is not the direct builder of homes, roads, facilities, communities, or towns.
+The player is the world source, observer, and limited responder. The player is not the direct builder of homes, roads, facilities, communities, or towns.
 
 Allowed:
 
@@ -62,12 +62,7 @@ The butler may:
 
 Pets are not default starting assets. They may only enter through the town adoption chain: TownReadiness -> AdoptionCenterState -> AdoptionCandidate -> ButlerAdoptionIntent -> AdoptionReview -> AdoptionSafeApply / MapDiff / SafeApply.
 
-Initial worlds must not default to:
-
-- `pet actor`
-- `pet bed`
-- `pet_arrival`
-- `pet_rest`
+Initial worlds must not default to any blocked startup pet fact. The exact blocked token list is maintained in [V2_FORBIDDEN_TOKENS.md](./V2_FORBIDDEN_TOKENS.md).
 
 Adoption may be represented as future possibility, candidate, blocker, or readiness state, but not as an established pet fact unless AdoptionReview and AdoptionSafeApply have passed.
 

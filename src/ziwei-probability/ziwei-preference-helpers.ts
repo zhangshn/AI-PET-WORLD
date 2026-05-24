@@ -29,7 +29,7 @@ export const ziweiVisualArchetypes: ZiweiVisualArchetype[] = [
 
 export const petMatchTypes: PetMatchType[] = [
   "stable_attached",
-  "soft_companion",
+  "gentle_social",
   "alert_guardian",
   "curious_playful",
   "quiet_observer",
@@ -54,7 +54,7 @@ export function createPetMatchScores(
 ): PetMatchScoreMap {
   return {
     stable_attached: scores.stable_attached ?? 0,
-    soft_companion: scores.soft_companion ?? 0,
+    gentle_social: scores.gentle_social ?? 0,
     alert_guardian: scores.alert_guardian ?? 0,
     curious_playful: scores.curious_playful ?? 0,
     quiet_observer: scores.quiet_observer ?? 0,

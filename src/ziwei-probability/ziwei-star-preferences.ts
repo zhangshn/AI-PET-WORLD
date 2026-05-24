@@ -36,7 +36,7 @@ export const ziweiStarPreferenceBiases: Record<
   }),
   taiyang: createPreferenceBias({
     archetypeScores: { aesthetic_organizer: 64, warm_caretaker: 62 },
-    petMatchScores: { curious_playful: 68, soft_companion: 46 },
+    petMatchScores: { curious_playful: 68, gentle_social: 46 },
     visualScores: { warmth: 70, decoration: 58, nature: 42 },
     colorToneHints: ["fire_bright", "earth_warm"],
     homeStyleHints: ["flowered_aesthetic", "warm_care_first"],
@@ -58,7 +58,7 @@ export const ziweiStarPreferenceBiases: Record<
   }),
   tiantong: createPreferenceBias({
     archetypeScores: { warm_caretaker: 88 },
-    petMatchScores: { soft_companion: 84, stable_attached: 48 },
+    petMatchScores: { gentle_social: 84, stable_attached: 48 },
     visualScores: { warmth: 88, stability: 44, decoration: 38 },
     colorToneHints: ["earth_warm", "moon_soft"],
     homeStyleHints: ["warm_care_first"],
@@ -91,7 +91,7 @@ export const ziweiStarPreferenceBiases: Record<
   }),
   taiyin: createPreferenceBias({
     archetypeScores: { warm_caretaker: 70, quiet_maintainer: 68 },
-    petMatchScores: { soft_companion: 68, quiet_observer: 62 },
+    petMatchScores: { gentle_social: 68, quiet_observer: 62 },
     visualScores: { warmth: 64, stability: 64, decoration: 40 },
     colorToneHints: ["moon_soft", "water_quiet"],
     homeStyleHints: ["warm_care_first", "quiet_minimal"],
@@ -124,7 +124,7 @@ export const ziweiStarPreferenceBiases: Record<
   }),
   tianxiang: createPreferenceBias({
     archetypeScores: { structured_builder: 64, warm_caretaker: 62 },
-    petMatchScores: { stable_attached: 58, soft_companion: 56 },
+    petMatchScores: { stable_attached: 58, gentle_social: 56 },
     visualScores: { order: 70, warmth: 58, stability: 56 },
     colorToneHints: ["metal_clear", "earth_warm"],
     homeStyleHints: ["orderly_structured", "warm_care_first"],
@@ -135,7 +135,7 @@ export const ziweiStarPreferenceBiases: Record<
   }),
   tianliang: createPreferenceBias({
     archetypeScores: { protective_keeper: 70, warm_caretaker: 66 },
-    petMatchScores: { soft_companion: 62, alert_guardian: 58 },
+    petMatchScores: { gentle_social: 62, alert_guardian: 58 },
     visualScores: { protection: 78, warmth: 66, stability: 62 },
     colorToneHints: ["wood_green", "earth_warm"],
     homeStyleHints: ["protected_boundary", "warm_care_first"],

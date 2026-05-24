@@ -4,6 +4,8 @@
 
 ## Forbidden In Formal Initial World
 
+These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
+
 The following tokens must not appear in the formal initial world. They may appear only inside forbidden-token audit lists, historical archives, or tests that explicitly assert these old routes are blocked:
 
 - `pet_arrival`
