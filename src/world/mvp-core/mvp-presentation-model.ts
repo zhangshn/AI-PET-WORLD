@@ -117,7 +117,7 @@ function buildWorldLogEntries(
     },
     {
       id: "world-log-town-adoption",
-      title: "小镇领养观察候选",
+      title: "管家领养意愿预检查",
       body:
         result.townAdoptionResult.adoptionOpportunityObservations[0]?.reason ??
         "当前没有领养机会观察。",
