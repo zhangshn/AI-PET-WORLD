@@ -45,6 +45,6 @@ export function resolvePetAdoptionGender(
     seed,
     score,
     reason:
-      "Pet adoption gender perspective is derived from candidate name, adoption review input, world tick, and world time; the same adoption input produces the same result.",
+      "Pet adoption gender perspective is derived from observation name, adoption review input, world tick, and world time; the same adoption input produces the same result.",
   }
 }

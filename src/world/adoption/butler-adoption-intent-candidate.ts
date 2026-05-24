@@ -1,55 +1,55 @@
 /**
- * 当前文件职责：从领养候选观察生成管家领养意愿后置候选。
+ * 当前文件职责：从领养机会观察生成管家领养意愿后置候选。
  */
 
 import type {
-  ButlerAdoptionIntentCandidate,
-  TownAdoptionCandidate,
+  ButlerAdoptionIntent,
+  AdoptionOpportunityObservation,
 } from "./town-adoption-precheck-schema"
 
-export function buildButlerAdoptionIntentCandidates(input: {
-  townAdoptionCandidates: TownAdoptionCandidate[]
-}): ButlerAdoptionIntentCandidate[] {
-  return input.townAdoptionCandidates.map(buildButlerAdoptionIntentCandidate)
+export function buildButlerAdoptionIntents(input: {
+  adoptionOpportunityObservations: AdoptionOpportunityObservation[]
+}): ButlerAdoptionIntent[] {
+  return input.adoptionOpportunityObservations.map(buildButlerAdoptionIntent)
 }
 
-function buildButlerAdoptionIntentCandidate(
-  candidate: TownAdoptionCandidate
-): ButlerAdoptionIntentCandidate {
-  if (candidate.kind === "construction_dependency_not_ready") {
+function buildButlerAdoptionIntent(
+  observation: AdoptionOpportunityObservation
+): ButlerAdoptionIntent {
+  if (observation.kind === "construction_dependency_not_ready") {
     return buildDecision({
-      candidate,
+      observation,
       suffix: "prepare-first",
-      type: "prepare_world_first",
+      type: "consider",
       canEnterAdoptionReview: false,
       reason:
         "家园准备条件尚未满足，管家会优先继续建设、整理资源和降低空间压力。",
       nextCheckHint: "等待下一次建设 Tick 后重新评估。",
       tags: [
-        "prepare_world_first",
+        "consider",
         "construction_dependency_not_ready",
         "resource_space_first",
       ],
     })
   }
 
-  if (candidate.kind === "adoption_candidate_later") {
+  if (observation.kind === "adoption_opportunity_later") {
     return buildDecision({
-      candidate,
+      observation,
       suffix: "eligible-later",
-      type: "eligible_later",
+      type: "visit",
       canEnterAdoptionReview: false,
       reason:
-        candidate.readyForButlerAdoptionIntent &&
-        candidate.readiness.status === "eligible_later"
+        observation.readyForButlerAdoptionIntent &&
+        observation.readiness.status === "visit"
           ? "世界已记录未来未来领养机会，但 MVP 阶段仍保持后置，不创建宠物事实。"
           : "未来可能出现未来领养机会，但当前仍需要继续准备。",
       nextCheckHint:
-        candidate.readiness.status === "eligible_later"
+        observation.readiness.status === "visit"
           ? "后续 TownAdoptionPrecheck 阶段可以基于候选进入更细的生命入口判断。"
           : "继续观察资源、照护准备和空间压力。",
       tags: [
-        "eligible_later",
+        "visit",
         "future_opportunity_only",
         "not_default_adoption",
         "no_actor_creation",
@@ -57,17 +57,17 @@ function buildButlerAdoptionIntentCandidate(
     })
   }
 
-  if (candidate.kind === "observe_world_ready") {
+  if (observation.kind === "observe_world_ready") {
     return buildDecision({
-      candidate,
+      observation,
       suffix: "wait-and-observe",
-      type: "wait_and_observe",
+      type: "wait",
       canEnterAdoptionReview: false,
       reason:
         "世界已经具备可观察状态，但管家领养意愿仍保持等待，避免默认生成宠物事实。",
       nextCheckHint: "继续观察建设变化、资源稳定性和管家照护倾向。",
       tags: [
-        "wait_and_observe",
+        "wait",
         "world_observable",
         "not_default_adoption",
         "no_actor_creation",
@@ -76,14 +76,14 @@ function buildButlerAdoptionIntentCandidate(
   }
 
   return buildDecision({
-    candidate,
+    observation,
     suffix: "none",
-    type: "no_adoption_intent",
+    type: "wait",
     canEnterAdoptionReview: false,
-    reason: "当前没有管家领养意愿候选。",
+    reason: "当前没有管家领养意愿。",
     nextCheckHint: "等待世界形成更稳定的资源、空间和建设状态。",
     tags: [
-      "no_adoption_intent",
+      "wait",
       "not_default_adoption",
       "no_actor_creation",
     ],
@@ -91,27 +91,27 @@ function buildButlerAdoptionIntentCandidate(
 }
 
 function buildDecision(input: {
-  candidate: TownAdoptionCandidate
+  observation: AdoptionOpportunityObservation
   suffix: string
-  type: ButlerAdoptionIntentCandidate["type"]
+  type: ButlerAdoptionIntent["type"]
   canEnterAdoptionReview: boolean
   reason: string
   nextCheckHint: string
   tags: string[]
-}): ButlerAdoptionIntentCandidate {
+}): ButlerAdoptionIntent {
   return {
-    candidateId: `${input.candidate.candidateId}-decision-${input.suffix}`,
+    intentId: `${input.observation.candidateId}-intent-${input.suffix}`,
     type: input.type,
     kind: input.type,
-    worldId: input.candidate.worldId,
-    ownerId: input.candidate.ownerId,
+    worldId: input.observation.worldId,
+    ownerId: input.observation.ownerId,
     canEnterAdoptionReview: input.canEnterAdoptionReview,
-    readiness: input.candidate.readiness,
+    readiness: input.observation.readiness,
     reason: input.reason,
-    blockers: input.candidate.blockers,
+    blockers: input.observation.blockers,
     nextCheckHint: input.nextCheckHint,
     tags: [
-      "butler_adoption_intent_candidate",
+      "butler_adoption_intent",
       "town_adoption_precheck_01",
       "delayed_entry_only",
       "not_default_adoption",

@@ -215,7 +215,7 @@ Commercial v1 | 商业化 | 订阅、存档、世界持续运行 | 所有长期�
 世界自己变化 | 过一段时间或手动 Tick 后家园出现变化 | MapDiff + SafeApply + VisualRefresh
 资源紧张 | 管家解释暂缓扩建，先整理资源 | ResourcePressure + Plan scoring
 不同朋友截图不同 | 朋友的家园路径/住所/边界明显不同 | seed/personality/biome/resource variation
-没有宠物也合理 | 系统显示伴生生命尚未进入主世界 | LifeEvent no_event/wait_and_observe
+没有宠物也合理 | 系统显示伴生生命尚未进入主世界 | LifeEvent no_event/wait
 未来出现机会 | P-Phone 提示世界可能出现新的生命关系 | LifeEventCandidate
 
 [TABLE 17]

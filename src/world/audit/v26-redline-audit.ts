@@ -15,7 +15,7 @@ export type AdoptionCenterState = {
   tags: string[]
 }
 
-export type AdoptionCandidate = {
+export type AdoptionOpportunityObservation = {
   candidateId: string
   displayName: string
   tags: string[]
@@ -47,7 +47,7 @@ export type V26RedlineAuditInput = {
   isInitialWorld?: boolean
   townState?: TownState
   adoptionCenterState?: AdoptionCenterState
-  adoptionCandidate?: AdoptionCandidate | null
+  adoptionOpportunityObservation?: AdoptionOpportunityObservation | null
   butlerAdoptionIntent?: ButlerAdoptionIntent | null
   adoptionReview?: AdoptionReview | null
   adoptionSafeApply?: AdoptionSafeApply | null
@@ -135,8 +135,8 @@ export function auditV26Redlines(
         "Insufficient resources, space, or care capacity must return wait/reject."
       )
     }
-  } else if (input.adoptionCandidate) {
-    warnings.push("Adoption candidate exists without ButlerAdoptionIntent.")
+  } else if (input.adoptionOpportunityObservation) {
+    warnings.push("Adoption opportunity observation exists without ButlerAdoptionIntent.")
   }
 
   return {

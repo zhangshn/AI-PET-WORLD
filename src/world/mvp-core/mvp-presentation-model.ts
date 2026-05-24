@@ -119,11 +119,11 @@ function buildWorldLogEntries(
       id: "world-log-town-adoption",
       title: "小镇领养观察候选",
       body:
-        result.townAdoptionResult.townAdoptionCandidates[0]?.reason ??
-        "当前没有领养候选观察。",
+        result.townAdoptionResult.adoptionOpportunityObservations[0]?.reason ??
+        "当前没有领养机会观察。",
       severity:
         result.townAdoptionResult.audit.warnings.length > 0 ? "warning" : "info",
-      tags: ["world_log", "town_adoption_precheck_candidate"],
+      tags: ["world_log", "town_adoption_precheck_observation"],
     },
   ]
 }

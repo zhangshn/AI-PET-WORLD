@@ -145,7 +145,7 @@ HomeMapState / WorldState
 22. ConstructionExecutionInput。
 23. ConstructionExecutionResult。
 24. ConstructionExecutionAudit。
-25. MapDiff candidate generation。
+25. MapDiff observation generation。
 26. ConstructionSafeApplyInput。
 27. ConstructionSafeApplyResult。
 28. ConstructionSafeApplyAudit。
@@ -204,11 +204,11 @@ CONSTRUCTION-02 已完成：
 
 1. 新增 ConstructionExecutionAudit。
 2. 补齐 ConstructionExecutionResult.audit。
-3. 新增 ConstructionMapDiffCandidate / ConstructionExecutionBuildResult 协议容器。
+3. 新增 ConstructionMapDiffObservation / ConstructionExecutionBuildResult 协议容器。
 4. 实现 buildConstructionExecutionResult。
 5. Executor 根据 selected ConstructionPlan 生成 MapDiff 候选。
 6. MapDiff 候选只 update 已有 placement，不直接应用到 HomeMapState。
-7. Execution audit 检查重复 diff id、placement 引用、createdAt、candidate tag、nextPlan id 与旧路线 token。
+7. Execution audit 检查重复 diff id、placement 引用、createdAt、observation tag、nextPlan id 与旧路线 token。
 8. 保持 Executor 不接 UI、不接宠物、不绕过 HomeMapState / MapDiff / FormalVisualModel 链路。
 
 CONSTRUCTION-03 已完成：
@@ -458,7 +458,7 @@ HomeMapState
 -> RuntimeBridge
 -> PersistenceAdapterDryRun
 -> SnapshotRefreshRequest
--> TownAdoptionCandidate / ButlerAdoptionIntentCandidate
+-> AdoptionOpportunityObservation / ButlerAdoptionIntent
 -> MVP Core Audit
 -> MVP Core Report
 ```
@@ -492,7 +492,7 @@ MVP-CORE-TEST-00：核心闭环 integration tests
 4. `MvpWorldLogEntry`。
 5. `MvpButlerExplanation`。
 6. MVP Core Report sections 在页面可见。
-7. Persistence dry-run / Snapshot refresh request / TownAdoptionPrecheck candidate 在 MVP 面板中可读展示。
+7. Persistence dry-run / Snapshot refresh request / Adoption opportunity observation 在 MVP 面板中可读展示。
 
 当前 MVP 闭环：
 
@@ -509,7 +509,7 @@ HomeMapState
 -> Construction Runtime Bridge
 -> PersistenceAdapterDryRun
 -> SnapshotRefreshRequest
--> TownAdoptionCandidate / ButlerAdoptionIntentCandidate
+-> AdoptionOpportunityObservation / ButlerAdoptionIntent
 -> MvpPresentationModel
 -> /world MVP Core panel
 ```
@@ -566,7 +566,7 @@ BirthInput
 -> MvpFormalVisualRefresh
 -> FormalVisualModel
 -> MvpWorldLog / ButlerExplanation / PPhoneData
--> TownAdoptionCandidate / ButlerAdoptionIntentCandidate
+-> AdoptionOpportunityObservation / ButlerAdoptionIntent
 -> AiPetWorldMvpAudit
 -> AiPetWorldMvpReport
 -> MvpWorldViewModel
@@ -595,7 +595,7 @@ Player Birth Input
 -> Persistence Dry Run
 -> Visual Refresh / Formal Visual Refresh
 -> WorldLog / ButlerExplanation / P-Phone
--> TownAdoptionPrecheck / ButlerAdoptionIntent Candidate
+-> TownAdoptionPrecheck / ButlerAdoptionIntent
 -> MVP Audit / MVP Report
 -> MvpWorldViewModel
 -> /world FormalWorldView ֻ��չʾ

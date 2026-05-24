@@ -111,7 +111,7 @@ export function runAiPetWorldMvpPipeline(
   const worldLogs = buildMvpWorldLogEntries({
     runtimeTick,
     visualRefresh,
-    townAdoptionCandidates: townAdoptionResult.townAdoptionCandidates,
+    adoptionOpportunityObservations: townAdoptionResult.adoptionOpportunityObservations,
   })
   const butlerExplanations = buildMvpButlerExplanations({
     butlerProfile: butlerBuildResult.profile,
@@ -130,8 +130,8 @@ export function runAiPetWorldMvpPipeline(
     worldId: input.worldId,
     logs: worldLogs,
     butlerExplanations,
-    townAdoptionCandidates: townAdoptionResult.townAdoptionCandidates,
-    butlerAdoptionIntentCandidates: townAdoptionResult.butlerAdoptionIntentCandidates,
+    adoptionOpportunityObservations: townAdoptionResult.adoptionOpportunityObservations,
+    butlerAdoptionIntents: townAdoptionResult.butlerAdoptionIntents,
     warningCount:
       butlerAudit.warnings.length +
       initialWorld.audit.warnings.length +
@@ -169,8 +169,8 @@ export function runAiPetWorldMvpPipeline(
     worldLogs,
     butlerExplanations,
     pPhoneData,
-    townAdoptionCandidates: townAdoptionResult.townAdoptionCandidates,
-    butlerAdoptionIntentCandidates: townAdoptionResult.butlerAdoptionIntentCandidates,
+    adoptionOpportunityObservations: townAdoptionResult.adoptionOpportunityObservations,
+    butlerAdoptionIntents: townAdoptionResult.butlerAdoptionIntents,
     audit: draftAudit,
     report: draftReport,
     nextHomeMapState: runtimeTick.nextHomeMapState,

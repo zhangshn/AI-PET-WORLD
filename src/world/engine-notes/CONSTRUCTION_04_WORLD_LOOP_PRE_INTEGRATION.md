@@ -100,7 +100,7 @@ HomeMapState
 ## 8. 红线
 
 1. World loop protocol 只能作为接入前协议，不能自动注册到真实 world-loop。
-2. 只能通过 planner -> candidate -> executor -> safeApply 生成 nextHomeMapState。
+2. 只能通过 planner -> observation -> executor -> safeApply 生成 nextHomeMapState。
 3. 不能跳过 SafeApply。
 4. 不能直接修改输入 HomeMapState。
 5. 不能接 UI。

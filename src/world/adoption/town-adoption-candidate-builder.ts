@@ -3,14 +3,14 @@
  */
 // These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
-import { buildButlerAdoptionIntentCandidates as buildButlerAdoptionIntentCandidateList } from "./butler-adoption-intent-candidate"
-import { auditTownAdoptionCandidates as auditTownAdoptionCandidateList } from "./town-adoption-precheck-audit"
+import { buildButlerAdoptionIntents as buildButlerAdoptionIntentList } from "./butler-adoption-intent-candidate"
+import { auditAdoptionOpportunityObservations as auditAdoptionOpportunityObservationList } from "./town-adoption-precheck-audit"
 import { buildTownAdoptionPrecheckReport as buildTownAdoptionPrecheckReportModel } from "./town-adoption-precheck-report"
 import type {
-  ButlerAdoptionIntentCandidate,
+  ButlerAdoptionIntent,
   TownAdoptionPrecheckAudit,
   TownAdoptionBlocker,
-  TownAdoptionCandidate,
+  AdoptionOpportunityObservation,
   TownAdoptionPrecheckBuilderInput,
   TownAdoptionPrecheckBuilderResult,
   TownAdoptionReadinessSnapshot,
@@ -23,32 +23,32 @@ export function buildTownAdoptionPrecheckBuilderResult(
   input: TownAdoptionPrecheckBuilderInput
 ): TownAdoptionPrecheckBuilderResult {
   const readiness = buildTownAdoptionReadinessSnapshot(input)
-  const townAdoptionCandidates = buildTownAdoptionCandidateList({
+  const adoptionOpportunityObservations = buildAdoptionOpportunityObservationList({
     input,
     readiness,
   })
-  const butlerAdoptionIntentCandidates = buildButlerAdoptionIntentCandidateList({
-    townAdoptionCandidates,
+  const butlerAdoptionIntents = buildButlerAdoptionIntentList({
+    adoptionOpportunityObservations,
   })
-  const audit = auditTownAdoptionCandidateList({
+  const audit = auditAdoptionOpportunityObservationList({
     builderInput: input,
-    townAdoptionCandidates,
-    butlerAdoptionIntentCandidates,
+    adoptionOpportunityObservations,
+    butlerAdoptionIntents,
   })
   const report = buildTownAdoptionPrecheckReportModel({
-    townAdoptionCandidates,
-    butlerAdoptionIntentCandidates,
+    adoptionOpportunityObservations,
+    butlerAdoptionIntents,
     audit,
   })
 
   return {
-    townAdoptionCandidates,
-    butlerAdoptionIntentCandidates,
+    adoptionOpportunityObservations,
+    butlerAdoptionIntents,
     audit,
     report,
     messages: report.messages,
     tags: [
-      "town_adoption_precheck_candidate_builder_result",
+      "town_adoption_precheck_opportunity_observation_builder_result",
       "town_adoption_precheck_01",
       "town_adoption_deferred_only",
       "no_actor_creation",
@@ -58,44 +58,44 @@ export function buildTownAdoptionPrecheckBuilderResult(
   }
 }
 
-export function buildTownAdoptionCandidates(
+export function buildAdoptionOpportunityObservations(
   input: TownAdoptionPrecheckBuilderInput
-): TownAdoptionCandidate[] {
+): AdoptionOpportunityObservation[] {
   const readiness = buildTownAdoptionReadinessSnapshot(input)
 
-  return buildTownAdoptionCandidateList({
+  return buildAdoptionOpportunityObservationList({
     input,
     readiness,
   })
 }
 
-export function buildButlerAdoptionIntentCandidates(input: {
-  townAdoptionCandidates: TownAdoptionCandidate[]
+export function buildButlerAdoptionIntents(input: {
+  adoptionOpportunityObservations: AdoptionOpportunityObservation[]
   tags?: string[]
-}): ButlerAdoptionIntentCandidate[] {
-  return buildButlerAdoptionIntentCandidateList({
-    townAdoptionCandidates: input.townAdoptionCandidates,
+}): ButlerAdoptionIntent[] {
+  return buildButlerAdoptionIntentList({
+    adoptionOpportunityObservations: input.adoptionOpportunityObservations,
   })
 }
 
-export function auditTownAdoptionCandidates(input: {
-  townAdoptionCandidates: TownAdoptionCandidate[]
+export function auditAdoptionOpportunityObservations(input: {
+  adoptionOpportunityObservations: AdoptionOpportunityObservation[]
   warnings: string[]
 }): TownAdoptionPrecheckAudit {
-  const butlerAdoptionIntentCandidates = buildButlerAdoptionIntentCandidateList({
-    townAdoptionCandidates: input.townAdoptionCandidates,
+  const butlerAdoptionIntents = buildButlerAdoptionIntentList({
+    adoptionOpportunityObservations: input.adoptionOpportunityObservations,
   })
-  const worldId = input.townAdoptionCandidates[0]?.worldId ?? "unknown-world"
-  const ownerId = input.townAdoptionCandidates[0]?.ownerId ?? "unknown-owner"
-  const readinessScore = input.townAdoptionCandidates[0]?.readiness.score ?? 0
-  const blockers = input.townAdoptionCandidates.flatMap(
+  const worldId = input.adoptionOpportunityObservations[0]?.worldId ?? "unknown-world"
+  const ownerId = input.adoptionOpportunityObservations[0]?.ownerId ?? "unknown-owner"
+  const readinessScore = input.adoptionOpportunityObservations[0]?.readiness.score ?? 0
+  const blockers = input.adoptionOpportunityObservations.flatMap(
     (candidate) => candidate.blockers
   )
   const warnings = [
     ...input.warnings,
     ...auditForbiddenTokens({
-      townAdoptionCandidates: input.townAdoptionCandidates,
-      butlerAdoptionIntentCandidates,
+      adoptionOpportunityObservations: input.adoptionOpportunityObservations,
+      butlerAdoptionIntents,
     }),
   ]
 
@@ -104,12 +104,12 @@ export function auditTownAdoptionCandidates(input: {
       worldId,
       ownerId,
       String(readinessScore),
-      input.townAdoptionCandidates
+      input.adoptionOpportunityObservations
         .map((candidate) => `${candidate.candidateId}:${candidate.type}`)
         .sort()
         .join("+"),
-      butlerAdoptionIntentCandidates
-        .map((candidate) => `${candidate.candidateId}:${candidate.type}`)
+      butlerAdoptionIntents
+        .map((candidate) => `${candidate.intentId}:${candidate.type}`)
         .sort()
         .join("+"),
       blockers
@@ -120,38 +120,38 @@ export function auditTownAdoptionCandidates(input: {
     ].join("::"),
     worldId,
     ownerId,
-    townAdoptionCandidateIds: input.townAdoptionCandidates.map(
+    adoptionOpportunityObservationIds: input.adoptionOpportunityObservations.map(
       (candidate) => candidate.candidateId
     ),
-    butlerAdoptionIntentCandidateIds: butlerAdoptionIntentCandidates.map(
-      (candidate) => candidate.candidateId
+    butlerAdoptionIntentIds: butlerAdoptionIntents.map(
+      (candidate) => candidate.intentId
     ),
     readinessScore,
     blockerCount: blockers.length,
     warnings,
     tags: [
-      "town_adoption_precheck_candidate_audit",
-      "compat_export_from_candidate_builder",
+      "town_adoption_precheck_opportunity_observation_audit",
+      "compat_export_from_opportunity_observation_builder",
       "town_adoption_deferred_only",
       warnings.length === 0
-        ? "town_adoption_precheck_candidates_valid"
-        : "town_adoption_precheck_candidates_warning",
+        ? "town_adoption_precheck_opportunities_valid"
+        : "town_adoption_precheck_opportunities_warning",
     ],
   }
 }
 
 export function buildTownAdoptionPrecheckReport(input: {
-  townAdoptionCandidates: TownAdoptionCandidate[]
-  butlerAdoptionIntentCandidates: ButlerAdoptionIntentCandidate[]
+  adoptionOpportunityObservations: AdoptionOpportunityObservation[]
+  butlerAdoptionIntents: ButlerAdoptionIntent[]
   audit: TownAdoptionPrecheckAudit
 }): TownAdoptionPrecheckReport {
   return buildTownAdoptionPrecheckReportModel(input)
 }
 
-function buildTownAdoptionCandidateList(input: {
+function buildAdoptionOpportunityObservationList(input: {
   input: TownAdoptionPrecheckBuilderInput
   readiness: TownAdoptionReadinessSnapshot
-}): TownAdoptionCandidate[] {
+}): AdoptionOpportunityObservation[] {
   const blockingCount = input.readiness.blockers.filter(
     (blocker) => blocker.severity === "blocking"
   ).length
@@ -172,13 +172,13 @@ function buildTownAdoptionCandidateList(input: {
         tags: [
           "construction_dependency_not_ready",
           "resource_or_space_blocked",
-          "prepare_world_first",
+          "consider",
         ],
       }),
     ]
   }
 
-  if (input.readiness.status === "eligible_later") {
+  if (input.readiness.status === "visit") {
     return [
       buildCandidate({
         input: input.input,
@@ -187,19 +187,19 @@ function buildTownAdoptionCandidateList(input: {
         type: "observe_world_ready",
         readyForButlerAdoptionIntent: false,
         reason:
-          "家园已经形成可观察的稳定结构，可以记录世界成熟度，但仍不生成领养候选。",
+          "家园已经形成可观察的稳定结构，可以记录世界成熟度，但仍不生成领养机会观察。",
         tags: ["observe_world_ready", "world_ready_observation"],
       }),
       buildCandidate({
         input: input.input,
         readiness: input.readiness,
         suffix: "future-opportunity",
-        type: "adoption_candidate_later",
+        type: "adoption_opportunity_later",
         readyForButlerAdoptionIntent: true,
         reason:
           "世界资源、空间与建设状态已接近可接纳阶段，记录为未来未来领养机会。",
         tags: [
-          "adoption_candidate_later",
+          "adoption_opportunity_later",
           "future_opportunity_only",
           "no_actor_creation",
         ],
@@ -219,7 +219,7 @@ function buildTownAdoptionCandidateList(input: {
           warningCount > 0
             ? "世界已经可以观察，但仍有资源或空间提醒，需要继续等待。"
             : "世界已经可以观察，小镇领养机会继续保持后置观察。",
-        tags: ["observe_world_ready", "wait_and_observe"],
+        tags: ["observe_world_ready", "wait"],
       }),
     ]
   }
@@ -230,13 +230,13 @@ function buildTownAdoptionCandidateList(input: {
         input: input.input,
         readiness: input.readiness,
         suffix: "preparing",
-        type: "adoption_candidate_later",
+        type: "adoption_opportunity_later",
         readyForButlerAdoptionIntent: false,
         reason:
           "家园正在准备中，未来可能出现未来领养机会，但当前不能进入领养审查流程。",
         tags: [
-          "adoption_candidate_later",
-          "prepare_world_first",
+          "adoption_opportunity_later",
+          "consider",
           "not_ready_yet",
         ],
       }),
@@ -250,7 +250,7 @@ function buildTownAdoptionCandidateList(input: {
       suffix: "no-event",
       type: "no_event",
       readyForButlerAdoptionIntent: false,
-      reason: "当前世界尚未达到领养候选观察门槛。",
+      reason: "当前世界尚未达到领养机会观察门槛。",
       tags: ["no_event", "town_adoption_precheck_waiting"],
     }),
   ]
@@ -509,11 +509,11 @@ function buildCandidate(input: {
   input: TownAdoptionPrecheckBuilderInput
   readiness: TownAdoptionReadinessSnapshot
   suffix: string
-  type: TownAdoptionCandidate["type"]
+  type: AdoptionOpportunityObservation["type"]
   readyForButlerAdoptionIntent: boolean
   reason: string
   tags: string[]
-}): TownAdoptionCandidate {
+}): AdoptionOpportunityObservation {
   return {
     candidateId: [
       "town-adoption",
@@ -532,12 +532,12 @@ function buildCandidate(input: {
     worldReasons: input.readiness.worldReadiness.reasons,
     blockers: input.readiness.blockers,
     tags: [
-      "town_adoption_precheck_candidate",
+      "town_adoption_precheck_observation",
       "town_adoption_precheck_01",
       "delayed_entry_only",
       "no_actor_creation",
       "no_home_map_state_mutation",
-      `candidate_type:${input.type}`,
+      `observation_type:${input.type}`,
       ...input.tags,
     ],
   }
@@ -575,7 +575,7 @@ function selectReadinessStatus(input: {
   if (input.score < 56) return "preparing"
   if (input.score < 74) return "observable"
 
-  return "eligible_later"
+  return "visit"
 }
 
 function selectRecommendedNextStep(input: {
@@ -604,7 +604,7 @@ function selectRecommendedNextStep(input: {
     return "continue_construction"
   }
 
-  if (input.status === "eligible_later") return "record_future_opportunity"
+  if (input.status === "visit") return "record_future_opportunity"
   if (input.status === "observable") return "observe_world"
 
   return "wait"
@@ -632,8 +632,8 @@ function hasZoneOrPlanSignal(input: {
 }
 
 function auditForbiddenTokens(input: {
-  townAdoptionCandidates: TownAdoptionCandidate[]
-  butlerAdoptionIntentCandidates: ButlerAdoptionIntentCandidate[]
+  adoptionOpportunityObservations: AdoptionOpportunityObservation[]
+  butlerAdoptionIntents: ButlerAdoptionIntent[]
 }): string[] {
   // These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
   const forbiddenTokens = [
@@ -648,15 +648,15 @@ function auditForbiddenTokens(input: {
     "incubating",
   ]
   const tokens = [
-    ...input.townAdoptionCandidates.flatMap((candidate) => [
+    ...input.adoptionOpportunityObservations.flatMap((candidate) => [
       candidate.candidateId,
       candidate.type,
       candidate.kind,
       candidate.reason,
       ...candidate.tags,
     ]),
-    ...input.butlerAdoptionIntentCandidates.flatMap((candidate) => [
-      candidate.candidateId,
+    ...input.butlerAdoptionIntents.flatMap((candidate) => [
+      candidate.intentId,
       candidate.type,
       candidate.kind,
       candidate.reason,
@@ -666,7 +666,7 @@ function auditForbiddenTokens(input: {
 
   return forbiddenTokens.flatMap((token) =>
     tokens.some((item) => item.includes(token))
-      ? [`TownAdoptionPrecheck candidate contains forbidden token: ${token}`]
+      ? [`Adoption opportunity observation contains forbidden token: ${token}`]
       : []
   )
 }

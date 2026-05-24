@@ -60,11 +60,11 @@ The butler may:
 
 ## 5. Pets Must Enter Only Through Town Adoption
 
-Pets are not default starting assets. They may only enter through the town adoption chain: TownReadiness -> AdoptionCenterState -> AdoptionCandidate -> ButlerAdoptionIntent -> AdoptionReview -> AdoptionSafeApply / MapDiff / SafeApply.
+Pets are not default starting assets. They may only enter through the town adoption chain: TownReadiness -> AdoptionCenterState -> AdoptionOpportunityObservation -> ButlerAdoptionIntent -> AdoptionReview -> AdoptionSafeApply / MapDiff / SafeApply.
 
 Initial worlds must not default to any blocked startup pet fact. The exact blocked token list is maintained in [V2_FORBIDDEN_TOKENS.md](./V2_FORBIDDEN_TOKENS.md).
 
-Adoption may be represented as future possibility, candidate, blocker, or readiness state, but not as an established pet fact unless AdoptionReview and AdoptionSafeApply have passed.
+Adoption may be represented as future possibility, opportunity observation, blocker, or readiness state, but not as an established pet fact unless AdoptionReview and AdoptionSafeApply have passed.
 
 ## 6. Resources Must Not Appear From Nowhere
 

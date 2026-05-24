@@ -10,7 +10,7 @@
 2. 不在世界启动时生成宠物专属休息设施。
 3. 不默认生成宠物抵达区或宠物休息区。
 4. 不默认生成旧出生装置。
-5. 宠物相关空间和设施只能通过小镇领养中心候选、管家领养意愿、AdoptionReview、AdoptionSafeApply / SafeApply 或后续建设计划进入。
+5. 宠物相关空间和设施只能通过小镇领养中心可观察信息、管家领养意愿、AdoptionReview、AdoptionSafeApply / SafeApply 或后续建设计划进入。
 6. Home System 只描述家园空间、设施、生命周期和目标，不控制宠物自主行为。
 
 ## Home Spaces

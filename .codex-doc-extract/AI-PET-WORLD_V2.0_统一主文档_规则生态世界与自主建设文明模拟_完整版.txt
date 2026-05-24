@@ -119,7 +119,7 @@ WorldCreationInput
 -> Biome / Region Rules
 -> ResourcePool Initialization
 -> Personality Layout Input
--> Layout Candidate Graph
+-> Layout Observation Graph
 -> Placement Engine
 -> Spatial Validation
 -> HomeMapState
@@ -507,7 +507,7 @@ adaptivePlanner | 适应和弹性规划倾向。 | 更重视可变结构、迂�
 房屋风格 | homeStylePreference | HouseArchetype | quietMaintainer 高 -> 安静木屋/低密度庭院。
 资源策略 | resourceManagementBias | ResourcePlan | structuredBuilder 高 -> 建储物区和材料分类。
 社区倾向 | settlementBias | SettlementAction | warmCaretaker 高 -> 更容易形成共享照护点。
-生命关系 | companionDecisionBias | CompanionDecisionCandidate | protectiveKeeper 高且资源低 -> 延迟接纳。
+生命关系 | companionDecisionBias | CompanionDecisionObservation | protectiveKeeper 高且资源低 -> 延迟接纳。
 视觉倾向 | visualTendency | FormalVisualStyleToken | aestheticOrganizer 高 -> 花草和路径细节更多。
 
 [TABLE 20]
@@ -623,7 +623,7 @@ Persistence | 保存世界状态。 | memory dry-run / local storage，后续真
 阶段 | 说明 | 是否生成宠物
 observe_world_ready | 系统观察世界是否具备生命接纳基础。 | 否
 companion_opportunity_later | 未来可能出现伴生体机会。 | 否
-companion_decision_candidate | 管家根据人格和资源生成候选判断。 | 否
+companion_decision_observation | 管家根据人格和资源生成候选判断。 | 否
 accept_companion | 玩家/管家/世界条件共同满足，接纳生命。 | 是，且必须生成 PetPersonalityProfile。
 defer_or_decline | 资源、性格或世界状态不适合。 | 否
 
@@ -836,7 +836,7 @@ town_ecology | 公共设施长期运行。 | TownEcologyState。 | 生态工程�
 世界日志 | 今天管家整理了某个区域。 | ConstructionPlan / MapDiff / SafeApply。
 P-Phone | 管家摘要、世界消息、提醒。 | WorldLog 和 ButlerExplanation 的产品化投影。
 手动 Tick(debug) | 开发时推进世界。 | world-loop preview，不是正式玩家操作。
-生命事件弹出 | 未来可能出现新的生命关系。 | LifeEventCandidate / CompanionDecision。
+生命事件弹出 | 未来可能出现新的生命关系。 | LifeEventObservation / CompanionDecision。
 回访世界 | 世界有变化。 | 离线结算、资源循环、维护、建设。
 
 [TABLE 52]

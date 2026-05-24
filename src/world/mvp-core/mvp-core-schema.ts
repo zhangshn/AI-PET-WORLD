@@ -20,8 +20,8 @@ import type {
   ConstructionFormalVisualRefreshPrecheck,
 } from "@/world/construction/construction-schema"
 import type {
-  ButlerAdoptionIntentCandidate,
-  TownAdoptionCandidate,
+  ButlerAdoptionIntent,
+  AdoptionOpportunityObservation,
   TownAdoptionPrecheckBuilderResult,
 } from "@/world/adoption/town-adoption-precheck-schema"
 
@@ -164,8 +164,8 @@ export type AiPetWorldMvpPipelineResult = {
   worldLogs: PipelineWorldLogEntry[]
   butlerExplanations: PipelineButlerExplanationEntry[]
   pPhoneData: PipelinePPhoneData
-  townAdoptionCandidates: TownAdoptionCandidate[]
-  butlerAdoptionIntentCandidates: ButlerAdoptionIntentCandidate[]
+  adoptionOpportunityObservations: AdoptionOpportunityObservation[]
+  butlerAdoptionIntents: ButlerAdoptionIntent[]
   audit: AiPetWorldMvpAudit
   report: AiPetWorldMvpReport
   nextHomeMapState: HomeMapState

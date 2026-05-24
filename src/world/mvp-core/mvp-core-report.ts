@@ -78,8 +78,8 @@ export function buildAiPetWorldMvpReport(
       title: "TownAdoptionPrecheck / P-Phone",
       status: "ok",
       lines: [
-        `Life candidates: ${result.townAdoptionCandidates.length}`,
-        `Adoption decision candidates: ${result.butlerAdoptionIntentCandidates.length}`,
+        `Adoption opportunity observations: ${result.adoptionOpportunityObservations.length}`,
+        `Butler adoption intents: ${result.butlerAdoptionIntents.length}`,
         `P-Phone messages: ${result.pPhoneData.messages.length}`,
       ],
       tags: ["section:town_adoption_precheck_pphone"],
@@ -178,7 +178,7 @@ function buildMvpCoreReportSections(input: {
       tags: ["section:snapshot_refresh"],
     },
     {
-      title: "TownAdoptionPrecheck / ButlerAdoptionIntent Candidate",
+      title: "TownAdoptionPrecheck / ButlerAdoptionIntent",
       status: result.townAdoptionResult.audit.warnings.length === 0
         ? "ok"
         : "warning",

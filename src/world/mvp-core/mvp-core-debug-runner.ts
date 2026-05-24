@@ -65,7 +65,7 @@ export function runMvpCoreDebugRunner(
     now: input.now,
     tags: [
       ...input.tags,
-      "mvp_core_town_adoption_precheck_candidate",
+      "mvp_core_town_adoption_precheck_observation",
     ],
   })
   const resultWithoutAuditAndReport: Omit<

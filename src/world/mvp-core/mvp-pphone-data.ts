@@ -3,8 +3,8 @@
  */
 
 import type {
-  ButlerAdoptionIntentCandidate,
-  TownAdoptionCandidate,
+  ButlerAdoptionIntent,
+  AdoptionOpportunityObservation,
 } from "@/world/adoption/town-adoption-precheck-schema"
 
 import type { MvpButlerExplanationEntry } from "./mvp-butler-explanation"
@@ -28,14 +28,14 @@ export function buildMvpPPhoneData(input: {
   worldId: string
   logs: MvpWorldLogEntry[]
   butlerExplanations: MvpButlerExplanationEntry[]
-  townAdoptionCandidates?: TownAdoptionCandidate[]
-  butlerAdoptionIntentCandidates?: ButlerAdoptionIntentCandidate[]
+  adoptionOpportunityObservations?: AdoptionOpportunityObservation[]
+  butlerAdoptionIntents?: ButlerAdoptionIntent[]
   warningCount: number
 }): MvpPPhoneData {
   const townAdoptionMessages = buildTownAdoptionMessages({
     worldId: input.worldId,
-    townAdoptionCandidates: input.townAdoptionCandidates ?? [],
-    butlerAdoptionIntentCandidates: input.butlerAdoptionIntentCandidates ?? [],
+    adoptionOpportunityObservations: input.adoptionOpportunityObservations ?? [],
+    butlerAdoptionIntents: input.butlerAdoptionIntents ?? [],
   })
 
   return {
@@ -69,29 +69,29 @@ export function buildMvpPPhoneData(input: {
 
 function buildTownAdoptionMessages(input: {
   worldId: string
-  townAdoptionCandidates: TownAdoptionCandidate[]
-  butlerAdoptionIntentCandidates: ButlerAdoptionIntentCandidate[]
+  adoptionOpportunityObservations: AdoptionOpportunityObservation[]
+  butlerAdoptionIntents: ButlerAdoptionIntent[]
 }): MvpPPhoneMessage[] {
-  const primaryTownAdoptionCandidate = input.townAdoptionCandidates[0]
-  const primaryDecision = input.butlerAdoptionIntentCandidates[0]
+  const primaryAdoptionOpportunityObservation = input.adoptionOpportunityObservations[0]
+  const primaryDecision = input.butlerAdoptionIntents[0]
 
-  if (!primaryTownAdoptionCandidate && !primaryDecision) {
+  if (!primaryAdoptionOpportunityObservation && !primaryDecision) {
     return [
       {
         id: `phone-town-adoption-${normalizeIdToken(input.worldId)}-empty`,
         title: "小镇领养观察",
-        body: "当前没有领养候选，世界会继续观察资源、空间和建设状态。",
+        body: "当前没有领养机会观察，世界会继续观察资源、空间和建设状态。",
         tags: [
           "mvp_pphone_message",
           "town_adoption_precheck_01",
-          "no_adoption_intent",
+          "wait",
           "read_only_summary",
         ],
       },
     ]
   }
 
-  const readiness = primaryTownAdoptionCandidate?.readiness ?? primaryDecision?.readiness
+  const readiness = primaryAdoptionOpportunityObservation?.readiness ?? primaryDecision?.readiness
   const readinessText = readiness
     ? `准备度 ${readiness.score}/100，状态：${toReadinessLabel(readiness.status)}。`
     : "准备度暂未计算。"
@@ -100,15 +100,15 @@ function buildTownAdoptionMessages(input: {
       ? `等待原因：${readiness.blockers
           .map((blocker) => blocker.reason)
           .join("；")}`
-      : "当前没有关键阻塞项，但领养候选仍保持后置。"
+      : "当前没有关键阻塞项，但领养机会观察仍保持后置。"
 
   return [
     {
-      id: `phone-town-adoption-${normalizeIdToken(input.worldId)}-candidate`,
+      id: `phone-town-adoption-${normalizeIdToken(input.worldId)}-opportunity`,
       title: "小镇领养观察",
       body: [
         readinessText,
-        primaryTownAdoptionCandidate?.reason ?? "当前没有领养候选观察。",
+        primaryAdoptionOpportunityObservation?.reason ?? "当前没有领养机会观察。",
         blockerText,
       ].join(" "),
       tags: [
@@ -127,7 +127,7 @@ function buildTownAdoptionMessages(input: {
       tags: [
         "mvp_pphone_message",
         "town_adoption_precheck_01",
-        "butler_adoption_intent_candidate",
+        "butler_adoption_intent",
         "no_actor_creation",
       ],
     },
@@ -135,14 +135,14 @@ function buildTownAdoptionMessages(input: {
 }
 
 function toReadinessLabel(
-  status: TownAdoptionCandidate["readiness"]["status"]
+  status: AdoptionOpportunityObservation["readiness"]["status"]
 ): string {
   const labels = {
     not_ready: "尚未准备好",
     preparing: "准备中",
     observable: "可以观察",
-    eligible_later: "未来可记录机会",
-  } satisfies Record<TownAdoptionCandidate["readiness"]["status"], string>
+    visit: "未来可记录机会",
+  } satisfies Record<AdoptionOpportunityObservation["readiness"]["status"], string>
 
   return labels[status]
 }

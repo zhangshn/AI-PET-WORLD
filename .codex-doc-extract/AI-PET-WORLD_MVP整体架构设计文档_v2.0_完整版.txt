@@ -99,7 +99,7 @@ P-Phone 显示管家解释：资源不足，先整理储备区。
 15.4 伴生生命机会被延后
 LifeEvent 候选检测到 companion_opportunity_later。
 CompanionDecision 读取资源、空间、管家关系倾向。
-资源不足或保护倾向高时返回 wait_and_observe。
+资源不足或保护倾向高时返回 wait。
 不生成宠物 actor，只生成日志和解释。
 16. Smoke Audit 场景设计
 17. 持久化与离线运行边界
@@ -161,7 +161,7 @@ ConstructionIntent | goal, urgency, patience, resourceSensitivity, targetZoneTyp
 ConstructionPlan | projectType, targetZoneType, stages, priority, requiredResources | 候选建设计划
 MapDiff | diffId, operation, targetId, before, after, reason, source | 世界变化差分
 SafeApplyResult | acceptedDiffs, rejectedDiffs, nextHomeMapState, warnings | 安全应用结果
-LifeEventCandidate | type, reason, blockers, readiness, tags | 后置生命事件候选
+LifeEventObservation | type, reason, blockers, readiness, tags | 后置生命事件候选
 FormalVisualModel | canvas, objects, actors, environment, hudSummary | 正式视觉模型
 
 [TABLE 6]

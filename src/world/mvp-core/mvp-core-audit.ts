@@ -60,9 +60,9 @@ export function auditAiPetWorldMvpPipeline(
     ...result.persistence.warnings,
     ...result.visualRefresh.warnings,
     ...result.formalVisualRefresh.warnings,
-    ...result.townAdoptionCandidates.flatMap((candidate) =>
-      candidate.readyForButlerAdoptionIntent && candidate.kind !== "adoption_candidate_later"
-        ? [`Unexpected life event readiness: ${candidate.candidateId}`]
+    ...result.adoptionOpportunityObservations.flatMap((candidate) =>
+      candidate.readyForButlerAdoptionIntent && candidate.kind !== "adoption_opportunity_later"
+        ? [`Unexpected adoption opportunity readiness: ${candidate.candidateId}`]
         : []
     ),
     ...auditPipelineForbiddenTokens(result),

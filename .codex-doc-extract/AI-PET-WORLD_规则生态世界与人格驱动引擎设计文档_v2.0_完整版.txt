@@ -188,7 +188,7 @@ adaptive_field_home | adaptivePlanner 高 | 可变临时结构、模块化扩展
 no_event | 世界尚未出现生命关系机会 | 否 | 管家专注于建设、维护和观察
 observe_world_ready | 世界环境逐步稳定，可观察未来机会 | 否 | 记录“世界正在稳定”
 companion_opportunity_later | 未来可能出现伴生生命机会 | 否 | 提示后置可能性，不承诺
-eligible_later | 资源/空间/关系条件接近可接纳 | 否，仍需决策 | 管家解释其观察与等待理由
+visit | 资源/空间/关系条件接近可接纳 | 否，仍需决策 | 管家解释其观察与等待理由
 accept_companion | 后续正式接受伴生生命 | 是，进入宠物/伴生体系统 | 生成 PetPersonalityProfile 与 actor 投影
 
 [TABLE 11]

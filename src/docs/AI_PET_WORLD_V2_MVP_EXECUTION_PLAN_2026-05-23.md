@@ -91,9 +91,9 @@ State / Rule / Intent
 - 正式玩法中出现“建造房子”“放置道路”“摆放宠物床”一类玩家直接建造行为。
 - 把管家变成执行玩家建造命令的 NPC。
 
-### 2.3 宠物和领养候选必须后置
+### 2.3 宠物和领养机会观察必须后置
 
-宠物/领养候选不是开局默认资产，而是 TownAdoptionPrecheck 与 ButlerAdoptionIntent 后置链路的可能结果。
+宠物/领养机会观察不是开局默认资产，而是 TownAdoptionPrecheck 与 ButlerAdoptionIntent 后置链路的可能结果。
 
 禁止：
 
@@ -105,7 +105,7 @@ State / Rule / Intent
 
 允许：
 
-- TownAdoptionPrecheck 生成 `no_event`、`observe_world_ready`、`adoption_candidate_later`、`eligible_later` 等候选状态。
+- TownAdoptionPrecheck 生成 `no_event`、`observe_world_ready`、`adoption_opportunity_later`、`visit` 等候选状态。
 - P-Phone 或管家解释“未来可能出现新的生命关系”，但不能承诺必然出现。
 
 ### 2.4 资源不能凭空增加
@@ -401,7 +401,7 @@ Debug 页面可以展示内部标签，但必须与正式 `/world` 分离。
 - `HousePreference`
 - `HouseArchetype`
 - `buildHousePreferenceFromButlerProfile`
-- house candidate scoring
+- house observation scoring
 - house style visual projection
 
 建议房屋原型：
@@ -470,7 +470,7 @@ Debug 页面可以展示内部标签，但必须与正式 `/world` 分离。
 
 目标：
 
-- 完善 TownAdoptionPrecheck 和 ButlerAdoptionIntent，使领养候选成为后置可能性，而不是默认路线。
+- 完善 TownAdoptionPrecheck 和 ButlerAdoptionIntent，使领养机会观察成为后置可能性，而不是默认路线。
 - 资源、空间、关系倾向、世界稳定度都会影响是否等待、准备或接纳。
 
 允许修改：
@@ -488,8 +488,8 @@ Debug 页面可以展示内部标签，但必须与正式 `/world` 分离。
 
 关键交付：
 
-- `TownAdoptionCandidate` 增强
-- `ButlerAdoptionIntentCandidate` 增强
+- `AdoptionOpportunityObservation` 增强
+- `ButlerAdoptionIntent` 增强
 - readiness / blockers / reasons
 - no default pet audit
 - P-Phone 解释
@@ -498,7 +498,7 @@ Debug 页面可以展示内部标签，但必须与正式 `/world` 分离。
 
 - 初始世界无 pet actor、pet bed、pet_arrival。
 - 资源不足、空间不足、关系倾向不匹配时返回等待或准备。
-- 只有明确 `adoption_safe_apply` 才能进入宠物/领养候选事实链路。
+- 只有明确 `adoption_safe_apply` 才能进入宠物/领养机会观察事实链路。
 
 ### 5.8 MVP-DEMO-00：MVP 可演示闭环
 

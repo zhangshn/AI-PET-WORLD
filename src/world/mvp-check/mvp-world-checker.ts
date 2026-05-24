@@ -149,15 +149,15 @@ export function buildMvpWorldCheckReport(
       status:
         input.pet || input.adoptionState?.status === "accepted_applied"
           ? "pass"
-          : input.adoptionState?.hasCandidate
+          : input.adoptionState?.hasOpportunityObservation
             ? "pass"
             : "warn",
       message:
         input.pet || input.adoptionState?.status === "accepted_applied"
           ? "Pet has entered after adoption review and safe apply."
-          : input.adoptionState?.hasCandidate
+          : input.adoptionState?.hasOpportunityObservation
             ? "Adoption center has an observable candidate, not a pet world fact."
-            : "Adoption center has no observable candidate yet.",
+            : "Adoption center has no observable observation yet.",
       tags: ["mvp", "adoption", "adoption_deferred"],
     }),
     buildItem({

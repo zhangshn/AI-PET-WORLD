@@ -6,7 +6,7 @@ V2.6 rules:
 
 - The initial world has no pet world fact.
 - The town and adoption center are not fully open at startup.
-- The adoption center can expose candidates, but candidates are not `HomeMapState` pet actors.
+- The adoption center can expose observable information, but it must not push pets into `HomeMapState`.
 - The butler may wait, reject, or form adoption intent based on personality, resources, space, relationship memory, and care capacity.
 - A pet can enter `HomeMapState` only after `AdoptionReview` and `AdoptionSafeApply` pass through `MapDiff` / `SafeApply` / audit.
 - Player signals can bias observation, but cannot directly claim or create a pet.

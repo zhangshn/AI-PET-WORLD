@@ -5,20 +5,22 @@
 import type { ConstructionRuntimeBridgeResult } from "@/world/construction/construction-schema"
 import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
 
-export type TownAdoptionCandidateKind =
+export type AdoptionOpportunityObservationKind =
   | "no_event"
   | "observe_world_ready"
-  | "adoption_candidate_later"
+  | "adoption_opportunity_later"
   | "construction_dependency_not_ready"
 
-export type ButlerAdoptionIntentCandidateKind =
-  | "no_adoption_intent"
-  | "wait_and_observe"
-  | "prepare_world_first"
-  | "eligible_later"
+export type ButlerAdoptionIntentKind =
+  | "wait"
+  | "ignore"
+  | "consider"
+  | "visit"
+  | "adopt"
+  | "reject"
 
-export type TownAdoptionCandidateType = TownAdoptionCandidateKind
-export type ButlerAdoptionIntentCandidateType = ButlerAdoptionIntentCandidateKind
+export type AdoptionOpportunityObservationType = AdoptionOpportunityObservationKind
+export type ButlerAdoptionIntentType = ButlerAdoptionIntentKind
 
 export type TownAdoptionBlockerSeverity = "info" | "warning" | "blocking"
 
@@ -65,7 +67,7 @@ export type TownAdoptionReadinessSnapshot = {
   worldId: string
   ownerId: string
   score: number
-  status: "not_ready" | "preparing" | "observable" | "eligible_later"
+  status: "not_ready" | "preparing" | "observable" | "visit"
   resourceReadiness: TownAdoptionResourceReadiness
   worldReadiness: TownAdoptionWorldReadiness
   blockers: TownAdoptionBlocker[]
@@ -78,10 +80,10 @@ export type TownAdoptionReadinessSnapshot = {
   tags: string[]
 }
 
-export type TownAdoptionCandidate = {
+export type AdoptionOpportunityObservation = {
   candidateId: string
-  type: TownAdoptionCandidateType
-  kind: TownAdoptionCandidateKind
+  type: AdoptionOpportunityObservationType
+  kind: AdoptionOpportunityObservationKind
   worldId: string
   ownerId: string
   readyForButlerAdoptionIntent: boolean
@@ -93,10 +95,10 @@ export type TownAdoptionCandidate = {
   tags: string[]
 }
 
-export type ButlerAdoptionIntentCandidate = {
-  candidateId: string
-  type: ButlerAdoptionIntentCandidateType
-  kind: ButlerAdoptionIntentCandidateKind
+export type ButlerAdoptionIntent = {
+  intentId: string
+  type: ButlerAdoptionIntentType
+  kind: ButlerAdoptionIntentKind
   worldId: string
   ownerId: string
   canEnterAdoptionReview: boolean
@@ -111,8 +113,8 @@ export type TownAdoptionPrecheckAudit = {
   stableTownAdoptionFingerprint: string
   worldId: string
   ownerId: string
-  townAdoptionCandidateIds: string[]
-  butlerAdoptionIntentCandidateIds: string[]
+  adoptionOpportunityObservationIds: string[]
+  butlerAdoptionIntentIds: string[]
   readinessScore: number
   blockerCount: number
   warnings: string[]
@@ -143,8 +145,8 @@ export type TownAdoptionPrecheckBuilderInput = {
 }
 
 export type TownAdoptionPrecheckBuilderResult = {
-  townAdoptionCandidates: TownAdoptionCandidate[]
-  butlerAdoptionIntentCandidates: ButlerAdoptionIntentCandidate[]
+  adoptionOpportunityObservations: AdoptionOpportunityObservation[]
+  butlerAdoptionIntents: ButlerAdoptionIntent[]
   audit: TownAdoptionPrecheckAudit
   report: TownAdoptionPrecheckReport
   messages: string[]

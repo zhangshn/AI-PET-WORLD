@@ -3,16 +3,16 @@
  */
 
 import type {
-  ButlerAdoptionIntentCandidate,
+  ButlerAdoptionIntent,
   TownAdoptionPrecheckAudit,
-  TownAdoptionCandidate,
+  AdoptionOpportunityObservation,
   TownAdoptionPrecheckReport,
   TownAdoptionPrecheckReportSection,
 } from "./town-adoption-precheck-schema"
 
 export function buildTownAdoptionPrecheckReport(input: {
-  townAdoptionCandidates: TownAdoptionCandidate[]
-  butlerAdoptionIntentCandidates: ButlerAdoptionIntentCandidate[]
+  adoptionOpportunityObservations: AdoptionOpportunityObservation[]
+  butlerAdoptionIntents: ButlerAdoptionIntent[]
   audit: TownAdoptionPrecheckAudit
 }): TownAdoptionPrecheckReport {
   const sections = buildTownAdoptionPrecheckReportSections(input)
@@ -38,21 +38,21 @@ export function buildTownAdoptionPrecheckReport(input: {
 }
 
 function buildTownAdoptionPrecheckReportSections(input: {
-  townAdoptionCandidates: TownAdoptionCandidate[]
-  butlerAdoptionIntentCandidates: ButlerAdoptionIntentCandidate[]
+  adoptionOpportunityObservations: AdoptionOpportunityObservation[]
+  butlerAdoptionIntents: ButlerAdoptionIntent[]
   audit: TownAdoptionPrecheckAudit
 }): TownAdoptionPrecheckReportSection[] {
   return [
-    buildReadinessSection(input.townAdoptionCandidates),
-    buildTownAdoptionCandidateSection(input.townAdoptionCandidates),
-    buildButlerAdoptionIntentSection(input.butlerAdoptionIntentCandidates),
-    buildBlockerSection(input.townAdoptionCandidates),
+    buildReadinessSection(input.adoptionOpportunityObservations),
+    buildAdoptionOpportunityObservationSection(input.adoptionOpportunityObservations),
+    buildButlerAdoptionIntentSection(input.butlerAdoptionIntents),
+    buildBlockerSection(input.adoptionOpportunityObservations),
     buildAuditSection(input.audit),
   ]
 }
 
 function buildReadinessSection(
-  candidates: TownAdoptionCandidate[]
+  candidates: AdoptionOpportunityObservation[]
 ): TownAdoptionPrecheckReportSection {
   const readiness = candidates[0]?.readiness
 
@@ -82,25 +82,25 @@ function buildReadinessSection(
   }
 }
 
-function buildTownAdoptionCandidateSection(
-  candidates: TownAdoptionCandidate[]
+function buildAdoptionOpportunityObservationSection(
+  candidates: AdoptionOpportunityObservation[]
 ): TownAdoptionPrecheckReportSection {
   return {
-    title: "领养候选观察",
+    title: "领养机会观察",
     status: candidates.length > 0 ? "ok" : "skipped",
     lines:
       candidates.length > 0
         ? candidates.map(
             (candidate) =>
-              `${toTownAdoptionKindLabel(candidate.kind)}：${candidate.reason}`
+              `${toAdoptionOpportunityKindLabel(candidate.kind)}：${candidate.reason}`
           )
-        : ["当前没有领养候选观察。"],
-    tags: ["section:town_adoption_precheck_candidate"],
+        : ["当前没有领养机会观察。"],
+    tags: ["section:town_adoption_precheck_observation"],
   }
 }
 
 function buildButlerAdoptionIntentSection(
-  candidates: ButlerAdoptionIntentCandidate[]
+  candidates: ButlerAdoptionIntent[]
 ): TownAdoptionPrecheckReportSection {
   return {
     title: "管家领养意愿",
@@ -111,13 +111,13 @@ function buildButlerAdoptionIntentSection(
             (candidate) =>
               `${toButlerAdoptionIntentLabel(candidate.kind)}：${candidate.reason} ${candidate.nextCheckHint}`
           )
-        : ["当前没有管家领养意愿候选。"],
-    tags: ["section:butler_adoption_intent_candidate"],
+        : ["当前没有管家领养意愿。"],
+    tags: ["section:butler_adoption_intent"],
   }
 }
 
 function buildBlockerSection(
-  candidates: TownAdoptionCandidate[]
+  candidates: AdoptionOpportunityObservation[]
 ): TownAdoptionPrecheckReportSection {
   const blockers = candidates.flatMap((candidate) => candidate.blockers)
 
@@ -130,7 +130,7 @@ function buildBlockerSection(
             (blocker) =>
               `${toBlockerSeverityLabel(blocker.severity)} / ${toBlockerSourceLabel(blocker.source)}：${blocker.reason}`
           )
-        : ["当前没有关键阻塞项，领养候选仍保持后置观察。"],
+        : ["当前没有关键阻塞项，领养机会观察仍保持后置观察。"],
     tags: ["section:town_adoption_precheck_blockers"],
   }
 }
@@ -150,20 +150,20 @@ function buildAuditSection(audit: TownAdoptionPrecheckAudit): TownAdoptionPreche
 }
 
 function toReadinessLabel(
-  status: TownAdoptionCandidate["readiness"]["status"]
+  status: AdoptionOpportunityObservation["readiness"]["status"]
 ): string {
   const labels = {
     not_ready: "尚未准备好",
     preparing: "准备中",
     observable: "可以观察",
-    eligible_later: "未来可记录机会",
-  } satisfies Record<TownAdoptionCandidate["readiness"]["status"], string>
+    visit: "未来可记录机会",
+  } satisfies Record<AdoptionOpportunityObservation["readiness"]["status"], string>
 
   return labels[status]
 }
 
 function toRecommendedNextStepLabel(
-  step: TownAdoptionCandidate["readiness"]["recommendedNextStep"]
+  step: AdoptionOpportunityObservation["readiness"]["recommendedNextStep"]
 ): string {
   const labels = {
     wait: "继续等待",
@@ -172,46 +172,48 @@ function toRecommendedNextStepLabel(
     observe_world: "观察世界稳定性",
     record_future_opportunity: "记录未来机会",
   } satisfies Record<
-    TownAdoptionCandidate["readiness"]["recommendedNextStep"],
+    AdoptionOpportunityObservation["readiness"]["recommendedNextStep"],
     string
   >
 
   return labels[step]
 }
 
-function toTownAdoptionKindLabel(kind: TownAdoptionCandidate["kind"]): string {
+function toAdoptionOpportunityKindLabel(kind: AdoptionOpportunityObservation["kind"]): string {
   const labels = {
     no_event: "暂无事件",
     observe_world_ready: "世界可观察",
-    adoption_candidate_later: "未来领养机会",
+    adoption_opportunity_later: "未来领养机会",
     construction_dependency_not_ready: "建设条件未满足",
-  } satisfies Record<TownAdoptionCandidate["kind"], string>
+  } satisfies Record<AdoptionOpportunityObservation["kind"], string>
 
   return labels[kind]
 }
 
 function toButlerAdoptionIntentLabel(
-  kind: ButlerAdoptionIntentCandidate["kind"]
+  kind: ButlerAdoptionIntent["kind"]
 ): string {
   const labels = {
-    no_adoption_intent: "暂无决策",
-    wait_and_observe: "等待观察",
-    prepare_world_first: "先准备世界",
-    eligible_later: "未来可评估",
-  } satisfies Record<ButlerAdoptionIntentCandidate["kind"], string>
+    wait: "等待观察",
+    ignore: "暂不关注",
+    consider: "继续评估",
+    visit: "主动了解领养信息",
+    adopt: "产生领养意愿",
+    reject: "拒绝领养",
+  } satisfies Record<ButlerAdoptionIntent["kind"], string>
 
   return labels[kind]
 }
 
 function toBlockerSeverityLabel(
-  severity: TownAdoptionCandidate["blockers"][number]["severity"]
+  severity: AdoptionOpportunityObservation["blockers"][number]["severity"]
 ): string {
   const labels = {
     info: "提示",
     warning: "提醒",
     blocking: "阻塞",
   } satisfies Record<
-    TownAdoptionCandidate["blockers"][number]["severity"],
+    AdoptionOpportunityObservation["blockers"][number]["severity"],
     string
   >
 
@@ -219,7 +221,7 @@ function toBlockerSeverityLabel(
 }
 
 function toBlockerSourceLabel(
-  source: TownAdoptionCandidate["blockers"][number]["source"]
+  source: AdoptionOpportunityObservation["blockers"][number]["source"]
 ): string {
   const labels = {
     resource: "资源",
@@ -228,7 +230,7 @@ function toBlockerSourceLabel(
     world_stability: "世界稳定",
     safety_boundary: "安全边界",
     audit: "审计",
-  } satisfies Record<TownAdoptionCandidate["blockers"][number]["source"], string>
+  } satisfies Record<AdoptionOpportunityObservation["blockers"][number]["source"], string>
 
   return labels[source]
 }

@@ -70,7 +70,7 @@ HomeMapState
 -> RuntimeBridge
 -> PersistenceAdapterDryRun
 -> SnapshotRefreshRequest
--> TownAdoptionCandidate / ButlerAdoptionIntentCandidate
+-> AdoptionOpportunityObservation / ButlerAdoptionIntent
 -> MVP Core Audit
 -> MVP Core Report
 ```

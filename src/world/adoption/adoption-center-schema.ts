@@ -6,7 +6,7 @@ export type AdoptionStatus =
   | "town_not_visible"
   | "center_not_visible"
   | "center_observable"
-  | "candidate_observable"
+  | "opportunity_observable"
   | "butler_reviewing"
   | "waiting"
   | "rejected"
@@ -15,8 +15,8 @@ export type AdoptionStatus =
 export type AdoptionSource = "town_adoption_center"
 
 export type AdoptionState = {
-  hasCandidate: boolean
-  candidateName: string
+  hasOpportunityObservation: boolean
+  opportunityObservationLabel: string
   progress: number
   readiness: number
   status: AdoptionStatus
@@ -35,8 +35,8 @@ export type AdoptionState = {
 
 export function buildEmptyAdoptionState(): AdoptionState {
   return {
-    hasCandidate: false,
-    candidateName: "",
+    hasOpportunityObservation: false,
+    opportunityObservationLabel: "",
     progress: 0,
     readiness: 0,
     status: "town_not_visible",

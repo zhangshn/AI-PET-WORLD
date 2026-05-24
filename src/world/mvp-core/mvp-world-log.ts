@@ -2,7 +2,7 @@
  * 当前文件职责：生成 MVP 世界日志条目。
  */
 
-import type { TownAdoptionCandidate } from "@/world/adoption/town-adoption-precheck-schema"
+import type { AdoptionOpportunityObservation } from "@/world/adoption/town-adoption-precheck-schema"
 
 import type { MvpVisualRefreshResult } from "./mvp-visual-refresh"
 import type { MvpWorldRuntimeTickResult } from "./mvp-world-runtime-tick"
@@ -17,7 +17,7 @@ export type MvpWorldLogEntry = {
 export function buildMvpWorldLogEntries(input: {
   runtimeTick: MvpWorldRuntimeTickResult
   visualRefresh: MvpVisualRefreshResult
-  townAdoptionCandidates: TownAdoptionCandidate[]
+  adoptionOpportunityObservations: AdoptionOpportunityObservation[]
 }): MvpWorldLogEntry[] {
   return [
     {
@@ -34,9 +34,9 @@ export function buildMvpWorldLogEntries(input: {
     },
     {
       id: "mvp-log-town-adoption",
-      title: "领养候选观察",
-      body: input.townAdoptionCandidates[0]?.reason ?? "当前没有领养候选观察。",
-      tags: ["mvp_world_log", "town_adoption_precheck_candidate"],
+      title: "领养机会观察",
+      body: input.adoptionOpportunityObservations[0]?.reason ?? "当前没有领养机会观察。",
+      tags: ["mvp_world_log", "town_adoption_precheck_observation"],
     },
   ]
 }

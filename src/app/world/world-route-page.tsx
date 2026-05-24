@@ -918,9 +918,9 @@ function AdoptionProductPanel(input: {
 
       <div className={styles.adoptionReasonGrid}>
         <div className={styles.adoptionReasonCard}>
-          <span>领养候选观察</span>
-          <strong>{summary.candidateLabel}</strong>
-          <p>{summary.candidateReason}</p>
+          <span>领养机会观察</span>
+          <strong>{summary.adoptionOpportunityLabel}</strong>
+          <p>{summary.adoptionOpportunityReason}</p>
         </div>
         <div className={styles.adoptionReasonCard}>
           <span>管家判断</span>
@@ -975,7 +975,7 @@ function AdoptionProductPanel(input: {
           <div className={styles.adoptionBlocker} data-tone="info">
             <strong>后置观察</strong>
             <p>
-              当前没有关键阻塞项，但 MVP 阶段仍不会让领养候选默认进入世界。
+              当前没有关键阻塞项，但 MVP 阶段仍不会让领养机会观察默认进入世界。
             </p>
           </div>
         )}

@@ -160,7 +160,7 @@ export function buildConstructionObservability(
       },
       {
         title: "MVP 红线确认",
-        body: "当前链路不会在世界启动时生成宠物或宠物专属设施，未来只记录小镇领养候选与管家审查结果。",
+        body: "当前链路不会在世界启动时生成宠物或宠物专属设施，未来只记录小镇领养机会观察与管家审查结果。",
       },
     ],
     tags: [
@@ -255,7 +255,7 @@ function buildBoundaryItems(input: {
       title: "小镇领养观察",
       statusLabel: "保持后置",
       description:
-        "宠物与宠物专属设施不在初始世界生成；未来必须来自小镇领养中心候选、管家审查与 SafeApply。",
+        "宠物与宠物专属设施不在初始世界生成；未来必须来自小镇领养中心可观察信息、管家审查与 SafeApply。",
       tone: "passed",
     },
   ]

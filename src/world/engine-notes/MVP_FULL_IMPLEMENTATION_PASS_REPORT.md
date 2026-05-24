@@ -22,7 +22,7 @@
 | Construction vertical slice | 已接通 | MVP core runner 调用 Construction Runtime Bridge |
 | Persistence dry-run | 已接通 | MVP core runner 输出 PersistenceAdapterDryRunResult |
 | Snapshot refresh request | 已接通 | MVP core runner 输出 SnapshotRefreshRequest / Precheck |
-| TownAdoptionPrecheck 后置候选 | 已接通 | MVP core runner 输出 TownAdoptionPrecheck / ButlerAdoptionIntent candidate |
+| TownAdoptionPrecheck 后置候选 | 已接通 | MVP core runner 输出 TownAdoptionPrecheck / ButlerAdoptionIntent |
 | P-Phone 数据 | 已新增 | `MvpPPhoneData` 只读展示状态、日志和管家解释 |
 | WorldLog / ButlerExplanation | 已新增 | `mvp-presentation-model.ts` 生成玩家可读摘要 |
 | MVP 页面展示 | 已新增 | `/world` 新增 MVP Core dry-run panel |
@@ -49,7 +49,7 @@ HomeMapState
 -> PersistenceAdapterDryRun
 -> SnapshotRefreshRequest
 -> FormalVisualRefreshPrecheck
--> TownAdoptionCandidate / ButlerAdoptionIntentCandidate
+-> AdoptionOpportunityObservation / ButlerAdoptionIntent
 -> MvpPresentationModel
 -> /world MVP Core panel
 ```

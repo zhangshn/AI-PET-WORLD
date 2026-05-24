@@ -24,8 +24,8 @@ export function buildButlerMvpProfile(
     lifeRhythmBias: buildLifeRhythmBias(input.birthHour),
     adoptionIntentBias:
       constructionStyle.protectiveKeeper >= constructionStyle.warmCaretaker
-        ? "prepare_world_first"
-        : "wait_and_observe",
+        ? "consider"
+        : "wait",
     explanationTone: buildExplanationTone(constructionStyle),
     visualTendency: buildVisualTendency(constructionStyle),
     tags: [

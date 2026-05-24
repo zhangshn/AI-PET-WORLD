@@ -332,7 +332,7 @@ CONSTRUCTION-04 已建立 Construction World Loop 接入前协议。
 7. World loop protocol 不能恢复旧默认宠物开局路线。
 8. World loop protocol 不能使用 Math.random / Date.now / any。
 9. World loop protocol 输出必须经过 protocol audit。
-10. World loop protocol 必须按 planner -> candidate -> executor -> SafeApply 链路运行。
+10. World loop protocol 必须按 planner -> observation -> executor -> SafeApply 链路运行。
 11. World loop protocol 不能跳过 SafeApply 直接返回修改后的 HomeMapState。
 12. World loop protocol result 不能等同于已持久化 runtime 状态。
 
@@ -448,7 +448,7 @@ CONSTRUCTION-FINAL-01 已完成建设系统可运行纵向闭环。
 3. P-Phone / WorldLog / ButlerExplanation 是玩家可读摘要，不是 HomeMapState。
 4. Persistence dry-run 不能当作真实持久化。
 5. Snapshot refresh request 不能当作 Renderer / FormalVisualModel 自动刷新。
-6. TownAdoptionPrecheck / ButlerAdoptionIntent candidate 不能默认触发宠物进入。
+6. TownAdoptionPrecheck / ButlerAdoptionIntent 不能默认触发宠物进入。
 7. UI 不得生成 pet actor、pet bed、pet_arrival、pet_rest。
 8. 禁止使用 PNG / WORLD_MAP_ASSETS 作为世界事实来源。
 9. 禁止使用 Math.random / Date.now / any。

@@ -23,8 +23,8 @@ export type MvpWorldAdoptionSummary = {
   readinessLabel: string
   readinessScore: number
   recommendedNextStepLabel: string
-  candidateLabel: string
-  candidateReason: string
+  adoptionOpportunityLabel: string
+  adoptionOpportunityReason: string
   decisionLabel: string
   decisionReason: string
   nextCheckHint: string
@@ -156,8 +156,8 @@ export function buildMvpWorldViewModel(
       ...butlerAutonomyProbe.logItems,
       ...constructionAudit.logItems,
       `视觉刷新：${result.visualRefresh.reason}`,
-      `小镇领养观察：${adoptionSummary.readinessLabel} / ${adoptionSummary.candidateLabel}`,
-      `领养候选：${adoptionSummary.decisionLabel}，${adoptionSummary.nextCheckHint}`,
+      `小镇领养观察：${adoptionSummary.readinessLabel} / ${adoptionSummary.adoptionOpportunityLabel}`,
+      `领养机会观察：${adoptionSummary.decisionLabel}，${adoptionSummary.nextCheckHint}`,
     ],
     pPhoneMessages: [
       ...result.pPhoneData.messages.map((message) => ({
@@ -216,15 +216,15 @@ export function buildMvpWorldViewModel(
 function buildTownAdoptionPrecheckSummary(
   result: AiPetWorldMvpPipelineResult
 ): MvpWorldAdoptionSummary {
-  const candidate = result.townAdoptionCandidates[0]
-  const decision = result.butlerAdoptionIntentCandidates[0]
-  const readiness = candidate?.readiness ?? decision?.readiness
+  const observation = result.adoptionOpportunityObservations[0]
+  const decision = result.butlerAdoptionIntents[0]
+  const readiness = observation?.readiness ?? decision?.readiness
   const readinessScore = readiness?.score ?? 0
-  const blockers = candidate?.blockers ?? decision?.blockers ?? []
+  const blockers = observation?.blockers ?? decision?.blockers ?? []
   const resourceReasons =
-    candidate?.resourceReasons ?? readiness?.resourceReadiness.reasons ?? []
+    observation?.resourceReasons ?? readiness?.resourceReadiness.reasons ?? []
   const worldReasons =
-    candidate?.worldReasons ?? readiness?.worldReadiness.reasons ?? []
+    observation?.worldReasons ?? readiness?.worldReadiness.reasons ?? []
 
   return {
     title: "小镇领养观察",
@@ -238,11 +238,11 @@ function buildTownAdoptionPrecheckSummary(
     recommendedNextStepLabel: readiness
       ? toRecommendedNextStepLabel(readiness.recommendedNextStep)
       : "继续等待",
-    candidateLabel: candidate
-      ? toTownAdoptionKindLabel(candidate.kind)
+    adoptionOpportunityLabel: observation
+      ? toAdoptionOpportunityKindLabel(observation.kind)
       : "暂无事件",
-    candidateReason:
-      candidate?.reason ?? "当前没有领养候选观察，世界会继续观察。",
+    adoptionOpportunityReason:
+      observation?.reason ?? "当前没有领养机会观察，世界会继续观察。",
     decisionLabel: decision
       ? toButlerAdoptionIntentLabel(decision.kind)
       : "暂无决策",
@@ -266,7 +266,7 @@ function toReadinessLabel(status: string): string {
     not_ready: "尚未准备好",
     preparing: "准备中",
     observable: "可以观察",
-    eligible_later: "未来可记录机会",
+    visit: "未来可记录机会",
   }
 
   return labels[status] ?? "后置等待"
@@ -284,26 +284,28 @@ function toRecommendedNextStepLabel(step: string): string {
   return labels[step] ?? "继续等待"
 }
 
-function toTownAdoptionKindLabel(kind: string): string {
+function toAdoptionOpportunityKindLabel(kind: string): string {
   const labels: Record<string, string> = {
     no_event: "暂无事件",
     observe_world_ready: "世界可观察",
-    adoption_candidate_later: "未来领养机会",
+    adoption_opportunity_later: "未来领养机会",
     construction_dependency_not_ready: "建设条件未满足",
   }
 
-  return labels[kind] ?? "领养候选观察"
+  return labels[kind] ?? "领养机会观察"
 }
 
 function toButlerAdoptionIntentLabel(kind: string): string {
   const labels: Record<string, string> = {
-    no_adoption_intent: "暂无决策",
-    wait_and_observe: "等待观察",
-    prepare_world_first: "先准备世界",
-    eligible_later: "未来可评估",
+    wait: "等待观察",
+    ignore: "暂不关注",
+    consider: "继续评估",
+    visit: "主动了解领养信息",
+    adopt: "产生领养意愿",
+    reject: "拒绝领养",
   }
 
-  return labels[kind] ?? "后置等待"
+  return labels[kind] ?? "等待观察"
 }
 
 function toBlockerSeverityLabel(severity: string): string {
@@ -393,7 +395,7 @@ function buildDemoChecklist(input: {
       id: "demo-town-adoption-delayed",
       title: "小镇领养观察",
       status: hasAdoptionSummary ? "passed" : "warning",
-      description: "宠物只作为未来小镇领养候选，不会在开局生成宠物事实或宠物专属设施。",
+      description: "宠物不会默认进入世界；只有管家自主产生领养意愿并通过审计后，才会进入家园。",
       evidence: `${input.adoptionSummary.statusLabel}，准备度 ${input.adoptionSummary.readinessScore}/100。`,
     },
     {
@@ -438,7 +440,7 @@ function buildAcceptanceItems(input: {
       id: "acceptance-no-direct-adoption",
       title: "小镇领养观察",
       status: "passed",
-      description: `当前状态：${input.adoptionSummary.statusLabel}。宠物只有在小镇领养中心候选、管家审查与 SafeApply 通过后，才会成为世界事实。`,
+      description: `当前状态：${input.adoptionSummary.statusLabel}。宠物只有在小镇领养中心可观察信息、管家审查与 SafeApply 通过后，才会成为世界事实。`,
     },
     {
       id: "acceptance-product-demo",

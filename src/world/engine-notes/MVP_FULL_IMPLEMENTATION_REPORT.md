@@ -12,7 +12,7 @@
 
 | 类型 | 状态 | 说明 |
 |---|---:|---|
-| 工程闭环 | 已完成 | MVP 总入口可以串起管家、初始世界、建设运行、持久化 dry-run、视觉刷新、日志、P-Phone、领养候选观察、审计与报告 |
+| 工程闭环 | 已完成 | MVP 总入口可以串起管家、初始世界、建设运行、持久化 dry-run、视觉刷新、日志、P-Phone、领养机会观察、审计与报告 |
 | debug 闭环 | 已完成 | Smoke Audit 与页面调试视图可用于检查链路 |
 | dry-run 闭环 | 已完成 | 持久化与视觉刷新均为前置请求或内存模拟，不写真实数据库 |
 | 只读展示闭环 | 已完成 | /world 默认展示 FormalWorldView，并显示 MVP 只读 ViewModel |
@@ -30,7 +30,7 @@
 | MVP Visual Refresh | 已完成 | `buildMvpVisualRefresh` |
 | MVP Formal Visual Refresh | 已完成 | `buildMvpFormalVisualRefresh` |
 | WorldLog / ButlerExplanation / P-Phone | 已完成 | `buildMvpWorldLogEntries` / `buildMvpPPhoneData` |
-| TownAdoptionPrecheck / ButlerAdoptionIntent 后置候选 | 已完成 | `buildTownAdoptionCandidates` / `buildButlerAdoptionIntentCandidates` |
+| TownAdoptionPrecheck / ButlerAdoptionIntent 后置候选 | 已完成 | `buildAdoptionOpportunityObservations` / `buildButlerAdoptionIntents` |
 | MVP Core Pipeline 总入口 | 已完成 | `runAiPetWorldMvpPipeline` |
 | MVP Smoke Scenarios / Smoke Audit | 已完成 | `runMvpSmokeAudit` |
 | /world MVP 只读 ViewModel | 已完成 | `buildMvpWorldViewModel` |
@@ -52,7 +52,7 @@ Player Birth Input
 -> ButlerExplanation
 -> P-Phone Data
 -> TownAdoptionPrecheck Candidate
--> ButlerAdoptionIntent Candidate
+-> ButlerAdoptionIntent
 -> MVP Audit
 -> MVP Report
 -> /world Readonly ViewModel
