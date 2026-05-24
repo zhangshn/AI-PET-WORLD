@@ -81,6 +81,12 @@ import {
   buildLifeRuntimeTimeFromWorld,
 } from "./life-tendency-core/life-tendency-gateway"
 
+import type {
+  ButlerAutonomyInput,
+  ButlerAutonomyResult,
+} from "./butler-autonomy/schema"
+import { buildButlerAutonomyResult } from "./butler-autonomy/gateway"
+
 export function buildAiCurrentLifeRuntimeBundle(
   input: BuildCurrentLifeTendencyFromRuntimeInput
 ): CurrentLifeRuntimeBundle {
@@ -155,6 +161,12 @@ export function buildAiCurrentLifeTendency(
   input: BuildCurrentLifeTendencyFromRuntimeInput
 ): CurrentLifeTendencyProfile {
   return buildCurrentLifeTendencyFromRuntime(input)
+}
+
+export function buildAiButlerAutonomy(
+  input: ButlerAutonomyInput
+): ButlerAutonomyResult {
+  return buildButlerAutonomyResult(input)
 }
 
 export {
@@ -378,3 +390,33 @@ export type {
   ButlerProfileInput,
   ButlerProfileSource,
 } from "./personality-core/butler-profile-core/butler-profile-gateway"
+
+export type {
+  ButlerAutonomousIntent,
+  ButlerAutonomousIntentKind,
+  ButlerAutonomyAudit,
+  ButlerAutonomyAuditSeverity,
+  ButlerAutonomyAuditWarning,
+  ButlerAutonomyConsumer,
+  ButlerAutonomyExplanation,
+  ButlerAutonomyInput,
+  ButlerAutonomyResult,
+  ButlerConsciousFocus,
+  ButlerConsciousState,
+  ButlerEmotionalTone,
+  ButlerExplanationTone,
+  ButlerGoal,
+  ButlerGoalKind,
+  ButlerMemoryEffect,
+  ButlerMemoryEmotionalMark,
+  ButlerMemoryEvent,
+  ButlerMemoryEventKind,
+  ButlerMemoryLearnedPreferences,
+  ButlerMemoryState,
+  ButlerMotivation,
+  ButlerMotivationKind,
+  ButlerRhythmBias,
+  ButlerSoulProfile,
+  ButlerSoulSource,
+  ButlerWorldPerception,
+} from "./butler-autonomy/schema"
