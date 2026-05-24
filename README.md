@@ -6,9 +6,9 @@ AI-PET-WORLD is a V2.6 MVP project for a butler-first autonomous world simulatio
 
 V2.6 is the current highest development basis for AI-PET-WORLD.
 
-- Current highest product source: AI-PET-WORLD_V2.6_01 ??????? ??? 2026-05-24.
-- Current highest architecture and AI source: AI-PET-WORLD_V2.6_02 ????? AI ??????? ??? 2026-05-24.
-- Current highest MVP execution and acceptance source: AI-PET-WORLD_V2.6_03 MVP ?????????? ??? 2026-05-24.
+- Current highest product source: AI-PET-WORLD_V2.6_01 产品业务主文档 完整版 2026-05-24.
+- Current highest architecture and AI source: AI-PET-WORLD_V2.6_02 系统架构与 AI 核心设计主文档 完整版 2026-05-24.
+- Current highest MVP execution and acceptance source: AI-PET-WORLD_V2.6_03 MVP 执行计划与验收主文档 完整版 2026-05-24.
 - Older V2.0 / V2.3 / V2.5 / V1.2 / MVP / engine-notes / .codex-doc-extract files are historical references only and must not override V2.6.
 - Codex must not use old documents to restore incubator, embryo, default pet, pet_arrival, pet_rest, LifeEvent, CompanionDecision, companion-life, adoption-candidate, or candidate-pet routes.
 - The current pet-entry subject is ButlerAdoptionIntent: the butler autonomously forms adoption intent.
