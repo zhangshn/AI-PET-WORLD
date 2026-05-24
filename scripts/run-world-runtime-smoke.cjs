@@ -25,6 +25,12 @@ const forbiddenTokens = [
   "candidateLabel",
   "candidateReason",
 ]
+const motivationTypes = [
+  "continue_construction",
+  "maintain_home",
+  "wait_for_resources",
+  "observe_world",
+]
 
 async function main() {
   const fs = await import("node:fs")
@@ -126,6 +132,13 @@ async function main() {
     )
   }
 
+  if (record.recentMotivationTypes !== undefined) {
+    assert(
+      Array.isArray(record.recentMotivationTypes),
+      "recentMotivationTypes exists but is not an array."
+    )
+  }
+
   if (record.lastRuntimeAction !== undefined && record.lastRuntimeAction !== null) {
     assert(
       typeof record.lastRuntimeAction.actionSignature === "string" &&
@@ -135,6 +148,31 @@ async function main() {
     assert(
       typeof record.lastRuntimeAction.tick === "number",
       "lastRuntimeAction.tick is missing."
+    )
+  }
+
+  if (
+    record.lastButlerRuntimeDecision !== undefined &&
+    record.lastButlerRuntimeDecision !== null
+  ) {
+    assert(
+      motivationTypes.includes(
+        record.lastButlerRuntimeDecision.selectedMotivation
+      ),
+      `Invalid selectedMotivation: ${record.lastButlerRuntimeDecision.selectedMotivation}`
+    )
+    assert(
+      typeof record.lastButlerRuntimeDecision.shouldRunConstructionTick ===
+        "boolean",
+      "lastButlerRuntimeDecision.shouldRunConstructionTick is not boolean."
+    )
+    assert(
+      Array.isArray(record.lastButlerRuntimeDecision.scores),
+      "lastButlerRuntimeDecision.scores is not an array."
+    )
+    assert(
+      Array.isArray(record.lastButlerRuntimeDecision.reasons),
+      "lastButlerRuntimeDecision.reasons is not an array."
     )
   }
 
@@ -148,6 +186,12 @@ async function main() {
   console.log("MapDiff ids: ok")
   console.log("Resource transaction ids: ok")
   console.log("Runtime action continuity: ok")
+  console.log("Butler motivation: ok")
+  console.log(
+    `Selected motivation: ${
+      record.lastButlerRuntimeDecision?.selectedMotivation ?? "none"
+    }`
+  )
   console.log("Result: PASS")
 }
 

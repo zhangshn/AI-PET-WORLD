@@ -19,7 +19,7 @@ export type WorldRuntimeContinuityAudit = {
 export function auditWorldRuntimeContinuity(input: {
   previousSaveRecord: WorldRuntimeSaveRecord
   nextSaveRecord: WorldRuntimeSaveRecord
-  runtimeTick: NonNullable<WorldRuntimeTickResult["runtimeTick"]>
+  runtimeTick: WorldRuntimeTickResult["runtimeTick"]
 }): WorldRuntimeContinuityAudit {
   const previousMapDiffCount = input.previousSaveRecord.homeMapState.mapDiffs.length
   const previousPoolTransactionCount =
@@ -53,29 +53,31 @@ export function auditWorldRuntimeContinuity(input: {
     }),
     ...auditRepeatedAddPlacementHistory(nextMapDiffs),
   ]
-  const blockingWarnings = [
-    ...auditNewDuplicateMapDiffIds({
-      previousMapDiffs: input.previousSaveRecord.homeMapState.mapDiffs,
-      newMapDiffs,
-    }),
-    ...auditNewDuplicateTransactionIds({
-      label: "resourcePoolState",
-      previousTransactions:
-        input.previousSaveRecord.homeMapState.resources.resourcePoolState
-          ?.transactions ?? [],
-      newTransactions: newPoolTransactions,
-    }),
-    ...auditNewDuplicateTransactionIds({
-      label: "recentTransactions",
-      previousTransactions:
-        input.previousSaveRecord.homeMapState.resources.recentTransactions ?? [],
-      newTransactions: newRecentTransactions,
-    }),
-    ...auditNewRepeatedAddPlacement({
-      previousMapDiffs: input.previousSaveRecord.homeMapState.mapDiffs,
-      newMapDiffs,
-    }),
-  ]
+  const blockingWarnings = input.runtimeTick
+    ? [
+        ...auditNewDuplicateMapDiffIds({
+          previousMapDiffs: input.previousSaveRecord.homeMapState.mapDiffs,
+          newMapDiffs,
+        }),
+        ...auditNewDuplicateTransactionIds({
+          label: "resourcePoolState",
+          previousTransactions:
+            input.previousSaveRecord.homeMapState.resources.resourcePoolState
+              ?.transactions ?? [],
+          newTransactions: newPoolTransactions,
+        }),
+        ...auditNewDuplicateTransactionIds({
+          label: "recentTransactions",
+          previousTransactions:
+            input.previousSaveRecord.homeMapState.resources.recentTransactions ?? [],
+          newTransactions: newRecentTransactions,
+        }),
+        ...auditNewRepeatedAddPlacement({
+          previousMapDiffs: input.previousSaveRecord.homeMapState.mapDiffs,
+          newMapDiffs,
+        }),
+      ]
+    : []
 
   if (
     blockingWarnings.some((warning) => warning.includes("add placement")) &&

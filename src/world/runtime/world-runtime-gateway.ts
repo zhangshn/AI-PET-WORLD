@@ -154,6 +154,8 @@ function buildInitialRuntimeSaveRecord(input: {
     ],
     recentActionSignatures: [],
     lastRuntimeAction: null,
+    recentMotivationTypes: [],
+    lastButlerRuntimeDecision: null,
     tags: [
       "world_runtime_save_record",
       "local_mvp_only",

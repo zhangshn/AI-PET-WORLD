@@ -4,6 +4,10 @@
 
 import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
 import type { MvpWorldRuntimeTickResult } from "@/world/mvp-core/mvp-world-runtime-tick"
+import type {
+  ButlerRuntimeDecision,
+  ButlerRuntimeMotivationType,
+} from "./butler-runtime-motivation-schema"
 
 export type WorldRuntimeVersion = "v2.6-runtime-00"
 
@@ -39,6 +43,8 @@ export type WorldRuntimeSaveRecord = {
   recentEvents: WorldRuntimeEventLog[]
   recentActionSignatures?: string[]
   lastRuntimeAction?: WorldRuntimeActionSummary | null
+  lastButlerRuntimeDecision?: ButlerRuntimeDecision | null
+  recentMotivationTypes?: ButlerRuntimeMotivationType[]
   tags: string[]
 }
 

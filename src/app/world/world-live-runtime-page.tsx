@@ -34,6 +34,10 @@ export async function WorldLiveRuntimePage() {
         <div className={styles.statusStrip}>
           <span>Live Runtime Tick: {saveRecord.tick}</span>
           <span>Last saved at: {saveRecord.savedAt}</span>
+          <span>
+            Butler motivation:{" "}
+            {saveRecord.lastButlerRuntimeDecision?.selectedMotivation ?? "none"}
+          </span>
         </div>
 
         <div className={styles.summaryGrid}>

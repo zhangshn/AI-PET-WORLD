@@ -5,6 +5,8 @@
 import { buildButlerMvpProfile } from "@/world/butler/butler-personality-adapter"
 import { runMvpWorldRuntimeTick } from "@/world/mvp-core/mvp-world-runtime-tick"
 
+import { selectButlerRuntimeMotivation } from "./butler-runtime-motivation-selector"
+import type { ButlerRuntimeDecision } from "./butler-runtime-motivation-schema"
 import { auditWorldRuntimeTick } from "./world-runtime-audit"
 import { auditWorldRuntimeContinuity } from "./world-runtime-continuity-audit"
 import type {
@@ -28,6 +30,11 @@ export function runOneRuntimeTick(
 ): Omit<WorldRuntimeTickResult, "persisted"> {
   const nextTick = input.saveRecord.tick + 1
   const nowIso = new Date(input.now).toISOString()
+  const decision = selectButlerRuntimeMotivation({
+    saveRecord: input.saveRecord,
+    nextTick,
+    now: input.now,
+  })
   const butlerBuildResult = buildButlerMvpProfile({
     playerId: input.saveRecord.ownerId,
     ownerId: input.saveRecord.ownerId,
@@ -36,34 +43,49 @@ export function runOneRuntimeTick(
     ...DEFAULT_BIRTH_INPUT,
     tags: ["world_runtime_tick_butler_profile"],
   })
-  const runtimeTick = runMvpWorldRuntimeTick({
-    homeMapState: input.saveRecord.homeMapState,
-    butlerProfile: butlerBuildResult.profile,
-    constructionStyle: butlerBuildResult.profile.constructionStyle,
-    worldDay: nextTick,
-    now: input.now,
-    tickReason: "scheduled_tick",
-    persistenceMode: "proposal_only",
-    visualMode: "signal_only",
-    tags: [
-      "live_world_runtime_tick",
-      "server_side_runtime",
-      "safe_apply_required",
-      ...input.tags,
-    ],
-  })
+  const runtimeTick = decision.shouldRunConstructionTick
+    ? runMvpWorldRuntimeTick({
+        homeMapState: input.saveRecord.homeMapState,
+        butlerProfile: butlerBuildResult.profile,
+        constructionStyle: butlerBuildResult.profile.constructionStyle,
+        worldDay: nextTick,
+        now: input.now,
+        tickReason:
+          decision.selectedMotivation === "maintain_home"
+            ? "maintenance_check"
+            : "scheduled_tick",
+        persistenceMode: "proposal_only",
+        visualMode: "signal_only",
+        tags: [
+          "live_world_runtime_tick",
+          "server_side_runtime",
+          "safe_apply_required",
+          `motivation:${decision.selectedMotivation}`,
+          ...input.tags,
+        ],
+      })
+    : null
+  const acceptedDiffCount =
+    runtimeTick?.constructionResult.fullPipelineAudit.acceptedDiffIds.length ?? 0
+  const runtimeWarnings = runtimeTick?.audit.warnings ?? []
   const event = buildRuntimeEvent({
     tick: nextTick,
     createdAt: nowIso,
-    acceptedDiffCount:
-      runtimeTick.constructionResult.fullPipelineAudit.acceptedDiffIds.length,
-    warningCount: runtimeTick.audit.warnings.length,
+    acceptedDiffCount,
+    warningCount: runtimeWarnings.length,
+    decision,
   })
-  const actionSummary = buildRuntimeActionSummary({
+  const actionSummary = runtimeTick
+    ? buildRuntimeActionSummaryFromTick({
     tick: nextTick,
     createdAt: nowIso,
     runtimeTick,
-  })
+      })
+    : buildRuntimeActionSummaryFromDecision({
+        tick: nextTick,
+        createdAt: nowIso,
+        decision,
+      })
   const recentEvents = [...input.saveRecord.recentEvents, event].slice(-20)
   const recentActionSignatures = [
     ...(input.saveRecord.recentActionSignatures ?? []),
@@ -75,14 +97,21 @@ export function runOneRuntimeTick(
     ownerId: input.saveRecord.ownerId,
     tick: nextTick,
     savedAt: nowIso,
-    homeMapState: runtimeTick.nextHomeMapState,
+    homeMapState: runtimeTick?.nextHomeMapState ?? input.saveRecord.homeMapState,
     recentEvents,
     recentActionSignatures,
     lastRuntimeAction: actionSummary,
+    recentMotivationTypes: [
+      ...(input.saveRecord.recentMotivationTypes ?? []),
+      decision.selectedMotivation,
+    ].slice(-10),
+    lastButlerRuntimeDecision: decision,
     tags: [
       "world_runtime_save_record",
-      "safe_apply_output",
-      "home_map_state_persisted_after_tick",
+      runtimeTick ? "safe_apply_output" : "butler_observe_or_wait_output",
+      runtimeTick
+        ? "home_map_state_persisted_after_tick"
+        : "home_map_state_kept_stable_after_tick",
     ],
   }
   const audit = auditWorldRuntimeTick({
@@ -112,19 +141,21 @@ export function runOneRuntimeTick(
     audit: combinedAudit,
     messages: [
       "Live world runtime tick completed.",
-      ...runtimeTick.messages,
+      ...decision.reasons,
+      ...(runtimeTick?.messages ?? []),
       ...combinedAudit.warnings,
     ],
     tags: [
       "world_runtime_tick_result",
-      "map_diff_safe_apply_driven",
+      runtimeTick ? "map_diff_safe_apply_driven" : "butler_motivation_only_tick",
       "no_pet_fact_created",
+      `motivation:${decision.selectedMotivation}`,
       ...continuityAudit.tags,
     ],
   }
 }
 
-function buildRuntimeActionSummary(input: {
+function buildRuntimeActionSummaryFromTick(input: {
   tick: number
   createdAt: string
   runtimeTick: NonNullable<WorldRuntimeTickResult["runtimeTick"]>
@@ -167,16 +198,37 @@ function buildRuntimeActionSummary(input: {
   }
 }
 
+function buildRuntimeActionSummaryFromDecision(input: {
+  tick: number
+  createdAt: string
+  decision: ButlerRuntimeDecision
+}): WorldRuntimeActionSummary {
+  return {
+    tick: input.tick,
+    actionSignature: [
+      `motivation:${input.decision.selectedMotivation}`,
+      `tick:${input.tick}`,
+      "state:no_safe_construction",
+    ].join("|"),
+    acceptedDiffCount: 0,
+    resourceTransactionCount: 0,
+    createdAt: input.createdAt,
+    tags: [
+      "world_runtime_action_summary",
+      "butler_motivation_only",
+      `motivation:${input.decision.selectedMotivation}`,
+    ],
+  }
+}
+
 function buildRuntimeEvent(input: {
   tick: number
   createdAt: string
   acceptedDiffCount: number
   warningCount: number
+  decision: ButlerRuntimeDecision
 }): WorldRuntimeEventLog {
-  const changedText =
-    input.acceptedDiffCount > 0
-      ? `This tick wrote ${input.acceptedDiffCount} world change(s) through SafeApply.`
-      : "The butler observed resources, space, and construction state without forcing a world change."
+  const changedText = buildRuntimeEventBody(input)
 
   return {
     id: `runtime-event-${input.tick}`,
@@ -190,6 +242,30 @@ function buildRuntimeEvent(input: {
       "butler_autonomous_action",
       "safe_apply_checked",
       "no_pet_fact_created",
+      `motivation:${input.decision.selectedMotivation}`,
     ],
   }
+}
+
+function buildRuntimeEventBody(input: {
+  acceptedDiffCount: number
+  warningCount: number
+  decision: ButlerRuntimeDecision
+}): string {
+  if (input.acceptedDiffCount > 0) {
+    return [
+      `The butler chose ${input.decision.selectedMotivation}.`,
+      `This tick wrote ${input.acceptedDiffCount} world change(s) through SafeApply.`,
+    ].join(" ")
+  }
+
+  if (input.decision.selectedMotivation === "wait_for_resources") {
+    return "The butler judged current resources insufficient and waited without forcing a HomeMapState change."
+  }
+
+  if (input.decision.selectedMotivation === "observe_world") {
+    return "The butler observed world state without writing new facts to HomeMapState."
+  }
+
+  return "The butler kept the home stable without forcing a world change."
 }
