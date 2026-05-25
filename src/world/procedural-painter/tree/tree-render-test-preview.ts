@@ -96,7 +96,9 @@ function composeSvgPreview(
   options: Required<PixelTreeSvgPreviewOptions> & { width: number; height: number },
 ): string {
   const background = buildBackgroundSvg(options.width, options.height, options.background);
+  const baseBack = buildTreeBaseBackSvg(test);
   const commands = test.commands.map(commandToSvg).join("\n");
+  const baseFront = buildTreeBaseFrontSvg(test);
   const debugLabel = options.showDebugLabel
     ? `<text x="16" y="28" font-size="12" fill="#d8ead8" font-family="monospace">${escapeSvgText(
         `${test.fact.biome} g${test.fact.growth} h${test.fact.health} m${test.fact.moisture}`,
@@ -109,7 +111,9 @@ function composeSvgPreview(
     )}">`,
     `<title>${escapeSvgText(options.title)}</title>`,
     background,
+    baseBack,
     commands,
+    baseFront,
     debugLabel,
     "</svg>",
   ].join("\n");
@@ -142,6 +146,82 @@ function buildBackgroundSvg(
     `<rect x="0" y="0" width="${width}" height="${height}" fill="#17231f"/>`,
     `<ellipse cx="${width / 2}" cy="${height - 54}" rx="${width * 0.34}" ry="26" fill="#263f2f" opacity="0.82"/>`,
   ].join("\n");
+}
+
+function buildTreeBaseBackSvg(test: PixelTreeRenderTestResult): string {
+  const colors = resolveBaseColors(test.fact.biome);
+  const baseX = test.structure.anchor.x + test.structure.trunk.lean;
+  const baseY = test.structure.anchor.y;
+  const baseWidth = Math.max(28, Math.round(test.decision.trunkWidth * 2.55));
+  const marks = buildSeededBaseMarks(test, colors, "back");
+
+  return [
+    `<ellipse cx="${round(baseX)}" cy="${round(baseY + 5)}" rx="${round(baseWidth * 1.25)}" ry="13" fill="${colors.soil}" opacity="0.48"/>`,
+    `<ellipse cx="${round(baseX + 2)}" cy="${round(baseY + 7)}" rx="${round(baseWidth * 0.7)}" ry="5" fill="${colors.dark}" opacity="0.46"/>`,
+    `<line x1="${round(baseX - baseWidth * 0.4)}" y1="${round(baseY + 2)}" x2="${round(baseX - 5)}" y2="${round(baseY + 7)}" stroke="${colors.root}" stroke-width="3" stroke-linecap="square" opacity="0.68"/>`,
+    `<line x1="${round(baseX + 5)}" y1="${round(baseY + 2)}" x2="${round(baseX + baseWidth * 0.42)}" y2="${round(baseY + 8)}" stroke="${colors.root}" stroke-width="3" stroke-linecap="square" opacity="0.68"/>`,
+    marks,
+  ].join("\n");
+}
+
+function buildTreeBaseFrontSvg(test: PixelTreeRenderTestResult): string {
+  const colors = resolveBaseColors(test.fact.biome);
+  const marks = buildSeededBaseMarks(test, colors, "front");
+  return marks;
+}
+
+function buildSeededBaseMarks(
+  test: PixelTreeRenderTestResult,
+  colors: ReturnType<typeof resolveBaseColors>,
+  stage: "back" | "front",
+): string {
+  const random = createSeededRandom(`${test.fact.worldSeed}:${test.fact.id}:base:${stage}`);
+  const baseX = test.structure.anchor.x + test.structure.trunk.lean;
+  const baseY = test.structure.anchor.y;
+  const baseWidth = Math.max(28, Math.round(test.decision.trunkWidth * 2.55));
+  const grassCount = stage === "front" ? 16 : 10;
+  const debrisCount = stage === "front" ? 5 : 4;
+  const parts: string[] = [];
+
+  for (let index = 0; index < grassCount; index += 1) {
+    const x = baseX + Math.round((random() - 0.5) * baseWidth * 2.1);
+    const height = Math.round(4 + random() * (test.fact.biome === "desert" ? 5 : 10));
+    const y = baseY + Math.round((random() - 0.12) * 16) - height;
+    const color = random() > 0.62 ? colors.grassLight : colors.grass;
+    parts.push(`<rect x="${round(x)}" y="${round(y)}" width="2" height="${height}" fill="${color}" opacity="0.9"/>`);
+  }
+
+  for (let index = 0; index < debrisCount; index += 1) {
+    const size = random() > 0.68 ? 3 : 2;
+    const x = baseX + Math.round((random() - 0.5) * baseWidth * 2.1);
+    const y = baseY + Math.round(3 + random() * 18);
+    parts.push(`<rect x="${round(x)}" y="${round(y)}" width="${size}" height="${size}" fill="${colors.debris}" opacity="0.72"/>`);
+  }
+
+  return parts.join("\n");
+}
+
+function resolveBaseColors(biome: PixelTreeWorldFact["biome"]): {
+  soil: string;
+  dark: string;
+  root: string;
+  grass: string;
+  grassLight: string;
+  debris: string;
+} {
+  if (biome === "desert") {
+    return { soil: "#6b5635", dark: "#2f2519", root: "#75512b", grass: "#8b8c4d", grassLight: "#b4aa63", debris: "#c2a567" };
+  }
+
+  if (biome === "oasis") {
+    return { soil: "#2e6149", dark: "#163228", root: "#6e4a2d", grass: "#54ad77", grassLight: "#91d7a1", debris: "#7fc38d" };
+  }
+
+  if (biome === "forest") {
+    return { soil: "#2b4c31", dark: "#142319", root: "#6b4527", grass: "#3f7d3c", grassLight: "#7ab85c", debris: "#a98145" };
+  }
+
+  return { soil: "#365d35", dark: "#1c2d1e", root: "#784d2a", grass: "#5a9b45", grassLight: "#9fd36a", debris: "#b08c45" };
 }
 
 function commandToSvg(command: PixelTreeDrawCommand): string {
@@ -179,4 +259,27 @@ function escapeSvgText(value: string): string {
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
+}
+
+function createSeededRandom(seed: string): () => number {
+  let state = hashString(seed);
+
+  return () => {
+    state += 0x6d2b79f5;
+    let mixed = state;
+    mixed = Math.imul(mixed ^ (mixed >>> 15), mixed | 1);
+    mixed ^= mixed + Math.imul(mixed ^ (mixed >>> 7), mixed | 61);
+    return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function hashString(value: string): number {
+  let hash = 2166136261;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return hash >>> 0;
 }
