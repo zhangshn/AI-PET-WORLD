@@ -13,6 +13,7 @@ import {
   buildPixelTreeBiomeSvgGallery,
   buildPixelTreeSvgPreview,
 } from "@/world/procedural-painter/tree/tree-render-test-preview";
+import { addTreeVolumePreviewLayer } from "@/world/procedural-painter/tree/tree-volume-preview-layer";
 
 const BIOME_OPTIONS: PixelTreeBiome[] = ["forest", "grassland", "desert", "oasis"];
 
@@ -43,6 +44,11 @@ export default function TreeRenderTestClient() {
         showDebugLabel: true,
       }),
     [fact],
+  );
+
+  const livePreviewSvg = useMemo(
+    () => addTreeVolumePreviewLayer(preview.svg, preview.test),
+    [preview],
   );
 
   function updateBiome(event: ChangeEvent<HTMLSelectElement>) {
@@ -136,12 +142,12 @@ export default function TreeRenderTestClient() {
           <article style={styles.card}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>实时树预览</h2>
-              <p style={styles.cardText}>同一组参数和 seed 会稳定生成同一棵树。</p>
+              <p style={styles.cardText}>同一组参数和 seed 会稳定生成同一棵树，并叠加体积实验层。</p>
             </div>
             <Image
               alt="Procedural pixel tree preview"
               height={320}
-              src={toSvgDataUri(preview.svg)}
+              src={toSvgDataUri(livePreviewSvg)}
               style={styles.previewImage}
               unoptimized
               width={320}
