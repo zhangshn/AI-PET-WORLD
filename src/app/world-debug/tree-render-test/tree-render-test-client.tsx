@@ -2,6 +2,7 @@
 
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
   buildDefaultPixelTreeFact,
@@ -137,10 +138,13 @@ export default function TreeRenderTestClient() {
               <h2 style={styles.cardTitle}>实时树预览</h2>
               <p style={styles.cardText}>同一组参数和 seed 会稳定生成同一棵树。</p>
             </div>
-            <img
+            <Image
               alt="Procedural pixel tree preview"
+              height={320}
               src={toSvgDataUri(preview.svg)}
               style={styles.previewImage}
+              unoptimized
+              width={320}
             />
           </article>
 
@@ -149,10 +153,13 @@ export default function TreeRenderTestClient() {
               <h2 style={styles.cardTitle}>四种地貌样例</h2>
               <p style={styles.cardText}>forest / grassland / desert / oasis 会生成不同树形、颜色和密度。</p>
             </div>
-            <img
+            <Image
               alt="Procedural pixel tree biome gallery"
+              height={300}
               src={toSvgDataUri(biomeGallerySvg)}
               style={styles.galleryImage}
+              unoptimized
+              width={960}
             />
           </article>
         </section>
