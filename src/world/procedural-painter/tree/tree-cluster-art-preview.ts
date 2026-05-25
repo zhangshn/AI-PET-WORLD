@@ -420,12 +420,6 @@ function stampLeafMass(mass: LeafMass, random: () => number): Block[] {
   const totalHeight = mass.rows.length * rowStep;
   const topY = Math.round(mass.cy - totalHeight / 2);
 
-  mass.rows.forEach((baseWidth) => {
-    const width = Math.max(2, Math.round(baseWidth * mass.scaleX));
-    const y = topY + blocks.length * 0;
-    void y;
-  });
-
   mass.rows.forEach((baseWidth, rowIndex) => {
     const width = Math.max(2, Math.round(baseWidth * mass.scaleX));
     const y = topY + rowIndex * rowStep;
