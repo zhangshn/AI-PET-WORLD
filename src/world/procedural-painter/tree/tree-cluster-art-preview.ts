@@ -4,6 +4,7 @@ import type { PixelTreeBiome, PixelTreeWorldFact } from "./tree-render-test-modu
 
 type GrowthStage = "seedling" | "sapling" | "young" | "growing" | "mature";
 type HealthStage = "withered" | "depleted" | "stressed" | "healthy" | "thriving";
+type AgeStage = "new" | "young_age" | "adult_age" | "old_age";
 type Block = { x: number; y: number; w: number; h: number; color: string; opacity?: number };
 type Palette = {
   bg: string; ground: string; groundDark: string; trunkDark: string; trunk: string; trunkLight: string;
@@ -11,7 +12,7 @@ type Palette = {
   edgeChip: string; grass: string; grassLight: string;
 };
 type TreeConfig = {
-  baseX: number; baseY: number; growth: GrowthStage; health: HealthStage;
+  baseX: number; baseY: number; growth: GrowthStage; health: HealthStage; age: number; ageStage: AgeStage;
   trunkWidth: number; trunkHeight: number; crownScale: number; crownSpread: number;
 };
 type LeafMass = { cx: number; cy: number; rows: number[]; color: string; sx: number; sy: number; jitter: number };
@@ -32,10 +33,11 @@ export function buildPixelClusterTreeSvg(fact: PixelTreeWorldFact): string {
   const clean = normalizeFact(fact);
   const growth = resolveGrowthStage(clean.growth);
   const health = resolveHealthStage(clean.health);
-  const random = seededRandom(`${clean.worldSeed}:${clean.id}:tree-health-v1:${growth}:${health}`);
+  const ageStage = resolveAgeStage(clean.age);
+  const random = seededRandom(`${clean.worldSeed}:${clean.id}:tree-age-v1:${growth}:${health}:${ageStage}`);
   const palette = paletteFor(clean.biome, health);
-  const config = buildConfig(clean, growth, health);
-  const label = `${clean.biome} ${growth}/${health} g${clean.growth} h${clean.health} m${clean.moisture}`;
+  const config = buildConfig(clean, growth, health, ageStage);
+  const label = `${clean.biome} ${growth}/${health}/${ageStage} g${clean.growth} h${clean.health} m${clean.moisture} a${clean.age}`;
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320" shape-rendering="crispEdges" role="img" aria-label="pixel tree health preview">`,
@@ -66,19 +68,30 @@ function resolveHealthStage(health: number): HealthStage {
   return "thriving";
 }
 
-function buildConfig(fact: PixelTreeWorldFact, growth: GrowthStage, health: HealthStage): TreeConfig {
+function resolveAgeStage(age: number): AgeStage {
+  if (age <= 8) return "new";
+  if (age <= 36) return "young_age";
+  if (age <= 96) return "adult_age";
+  return "old_age";
+}
+
+function buildConfig(fact: PixelTreeWorldFact, growth: GrowthStage, health: HealthStage, ageStage: AgeStage): TreeConfig {
   const g = fact.growth / 100;
   const m = fact.moisture / 100;
+  const ageRate = clamp(fact.age / 120, 0, 1);
   const biomeScale = fact.biome === "desert" ? 0.72 : fact.biome === "grassland" ? 1.03 : fact.biome === "oasis" ? 1.06 : 1;
   const healthScale = health === "withered" ? 0.46 : health === "depleted" ? 0.62 : health === "stressed" ? 0.82 : health === "healthy" ? 0.96 : 1.04;
   const trunkScale = health === "withered" ? 0.84 : health === "depleted" ? 0.92 : 1;
   const spread = fact.biome === "grassland" ? 1.12 : fact.biome === "forest" ? 1.02 : 1;
-  const base = { baseX: 48, baseY: 82, growth, health, crownSpread: spread };
+  const ageWidth = growth === "seedling" ? 0 : growth === "sapling" ? Math.round(ageRate) : growth === "young" ? Math.round(ageRate * 2) : Math.round(ageRate * 5);
+  const ageHeight = growth === "seedling" ? 0 : growth === "sapling" ? Math.round(ageRate) : growth === "young" ? Math.round(ageRate * 2) : Math.round(ageRate * 3);
+  const ageCrown = growth === "seedling" ? 1 : 1 + ageRate * 0.04;
+  const base = { baseX: 48, baseY: 82, growth, health, age: fact.age, ageStage, crownSpread: spread };
 
   if (growth === "seedling") return { ...base, trunkWidth: 2, trunkHeight: Math.round((8 + g * 12) * trunkScale), crownScale: (0.34 + m * 0.04) * healthScale };
-  if (growth === "sapling") return { ...base, trunkWidth: Math.max(2, Math.round((3 + g * 3) * trunkScale)), trunkHeight: Math.round((13 + g * 18) * trunkScale), crownScale: (0.48 + g * 0.36 + m * 0.06) * biomeScale * healthScale };
-  if (growth === "young") return { ...base, trunkWidth: Math.max(3, Math.round((4 + g * 4) * trunkScale)), trunkHeight: Math.round((17 + g * 19) * trunkScale), crownScale: (0.62 + g * 0.34 + m * 0.07) * biomeScale * healthScale };
-  return { ...base, trunkWidth: Math.max(4, Math.round((6 + g * 4) * trunkScale)), trunkHeight: Math.round((22 + g * 14) * trunkScale), crownScale: (0.86 + g * 0.3 + m * 0.08) * biomeScale * healthScale };
+  if (growth === "sapling") return { ...base, trunkWidth: Math.max(2, Math.round((3 + g * 3) * trunkScale) + ageWidth), trunkHeight: Math.round((13 + g * 18) * trunkScale) + ageHeight, crownScale: (0.48 + g * 0.36 + m * 0.06) * biomeScale * healthScale * ageCrown };
+  if (growth === "young") return { ...base, trunkWidth: Math.max(3, Math.round((4 + g * 4) * trunkScale) + ageWidth), trunkHeight: Math.round((17 + g * 19) * trunkScale) + ageHeight, crownScale: (0.62 + g * 0.34 + m * 0.07) * biomeScale * healthScale * ageCrown };
+  return { ...base, trunkWidth: Math.max(4, Math.round((6 + g * 4) * trunkScale) + ageWidth), trunkHeight: Math.round((22 + g * 14) * trunkScale) + ageHeight, crownScale: (0.86 + g * 0.3 + m * 0.08) * biomeScale * healthScale * ageCrown };
 }
 
 function buildCrown(config: TreeConfig, fact: PixelTreeWorldFact, palette: Palette, random: () => number): Block[] {
@@ -221,17 +234,32 @@ function renderTrunk(config: TreeConfig, palette: Palette): string {
   const dark = Math.max(1, Math.round(config.trunkWidth * 0.28));
   const light = Math.max(1, Math.round(config.trunkWidth * 0.18));
   const lightHeight = config.health === "withered" || config.health === "depleted" ? Math.round(config.trunkHeight * 0.42) : Math.round(config.trunkHeight * 0.56);
-  return [
+  const rings = Math.min(7, Math.floor(config.age / 20));
+  const parts = [
     pixelRect(x, y, config.trunkWidth, config.trunkHeight, palette.trunkDark),
     pixelRect(x + dark, y + 1, Math.max(1, config.trunkWidth - dark - 1), Math.max(1, config.trunkHeight - 2), palette.trunk),
     pixelRect(x + config.trunkWidth - light - 1, y + 5, light, Math.max(1, lightHeight), palette.trunkLight),
-  ].join("\n");
+  ];
+
+  if (config.age >= 24) {
+    parts.push(pixelRect(x - 1, y + config.trunkHeight - 2, 1, 2, palette.trunkDark));
+    parts.push(pixelRect(x + config.trunkWidth, y + config.trunkHeight - 2, 1, 2, palette.trunkDark));
+  }
+
+  for (let index = 0; index < rings; index += 1) {
+    const ringY = y + 5 + index * Math.max(3, Math.floor(config.trunkHeight / Math.max(1, rings + 1)));
+    const ringX = x + 1 + (index % Math.max(1, config.trunkWidth - 2));
+    parts.push(pixelRect(ringX, ringY, Math.max(1, Math.min(3, config.trunkWidth - 2)), 1, index % 2 === 0 ? palette.trunkDark : palette.trunkLight, 0.64));
+  }
+
+  return parts.join("\n");
 }
 
 function renderBranches(config: TreeConfig, palette: Palette, random: () => number): string {
   if (config.growth === "seedling") return "";
-  const count = config.health === "withered" ? 7 : config.health === "depleted" ? 6 : config.growth === "sapling" ? 2 : config.growth === "young" ? 3 : 4;
-  const maxLength = config.health === "withered" ? 18 : config.health === "depleted" ? 15 : config.growth === "sapling" ? 5 : config.growth === "young" ? 8 : 13;
+  const ageBranchBonus = config.ageStage === "old_age" ? 2 : config.ageStage === "adult_age" ? 1 : 0;
+  const count = config.health === "withered" ? 7 : config.health === "depleted" ? 6 : config.growth === "sapling" ? 2 : config.growth === "young" ? 3 : 4 + ageBranchBonus;
+  const maxLength = config.health === "withered" ? 18 : config.health === "depleted" ? 15 : config.growth === "sapling" ? 5 : config.growth === "young" ? 8 : 13 + ageBranchBonus;
   const opacity = config.health === "withered" ? 0.78 : config.health === "depleted" ? 0.62 : 0.42;
   const originY = config.baseY - config.trunkHeight + Math.round(7 * config.crownScale);
 
@@ -245,8 +273,9 @@ function renderBranches(config: TreeConfig, palette: Palette, random: () => numb
 }
 
 function renderGround(config: TreeConfig, fact: PixelTreeWorldFact, palette: Palette, random: () => number): string {
+  const ageShadow = Math.round(clamp(config.age / 120, 0, 1) * 10);
   const base = config.growth === "seedling" ? 64 : config.growth === "sapling" ? 78 : 108;
-  const shadow = config.growth === "seedling" ? 14 : config.growth === "sapling" ? 24 : Math.round(44 * config.crownScale);
+  const shadow = (config.growth === "seedling" ? 14 : config.growth === "sapling" ? 24 : Math.round(44 * config.crownScale)) + ageShadow;
   const opacity = config.health === "withered" ? 0.58 : config.health === "depleted" ? 0.68 : 0.82;
   const blocks = [`<ellipse cx="160" cy="266" rx="${base}" ry="26" fill="${palette.ground}" opacity="${opacity}"/>`, `<ellipse cx="${sx(config.baseX + 2)}" cy="${sy(config.baseY + 3)}" rx="${shadow}" ry="15" fill="${palette.groundDark}" opacity="0.32"/>`];
   const healthCount = config.health === "withered" ? 0.18 : config.health === "depleted" ? 0.36 : config.health === "stressed" ? 0.62 : 1;
