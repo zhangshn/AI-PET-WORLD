@@ -152,7 +152,6 @@ function renderTreeShadow(tree: SceneTree, p: ScenePalette): string {
 }
 
 function renderTreeBackLayer(tree: SceneTree, biome: PixelTreeBiome, p: ScenePalette, random: () => number): string {
-  const trunkWidth = Math.round((5 + tree.growth * 0.045 + tree.age * 0.03) * tree.scale);
   const trunkHeight = Math.round((42 + tree.growth * 0.26 + tree.age * 0.04) * tree.scale);
   const crownScale = (0.72 + tree.growth * 0.006 + tree.age * 0.0008) * tree.scale;
   const crownY = tree.y - trunkHeight - Math.round(14 * tree.scale);
