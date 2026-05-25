@@ -9,10 +9,7 @@ import {
   type PixelTreeBiome,
   type PixelTreeWorldFact,
 } from "@/world/procedural-painter/tree/tree-render-test-module";
-import {
-  buildPixelTreeBiomeSvgGallery,
-  buildPixelTreeSvgPreview,
-} from "@/world/procedural-painter/tree/tree-render-test-preview";
+import { buildPixelTreeSvgPreview } from "@/world/procedural-painter/tree/tree-render-test-preview";
 import { buildPixelClusterTreeSvg } from "@/world/procedural-painter/tree/tree-cluster-art-preview";
 import { buildTreeSceneIntegrationSvg } from "@/world/procedural-painter/tree/tree-scene-integration-preview";
 
@@ -29,8 +26,6 @@ const DEFAULT_FACT = buildDefaultPixelTreeFact({
   age: 28,
   worldSeed: "ai_pet_world_interactive_tree_seed_001",
 });
-
-const biomeGallerySvg = buildPixelTreeBiomeSvgGallery();
 
 export default function TreeRenderTestClient() {
   const [fact, setFact] = useState<PixelTreeWorldFact>(DEFAULT_FACT);
