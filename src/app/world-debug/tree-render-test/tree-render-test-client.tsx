@@ -13,7 +13,7 @@ import {
   buildPixelTreeBiomeSvgGallery,
   buildPixelTreeSvgPreview,
 } from "@/world/procedural-painter/tree/tree-render-test-preview";
-import { addTreeVolumePreviewLayer } from "@/world/procedural-painter/tree/tree-volume-preview-layer";
+import { buildPixelClusterTreeSvg } from "@/world/procedural-painter/tree/tree-cluster-art-preview";
 
 const BIOME_OPTIONS: PixelTreeBiome[] = ["forest", "grassland", "desert", "oasis"];
 
@@ -46,10 +46,7 @@ export default function TreeRenderTestClient() {
     [fact],
   );
 
-  const livePreviewSvg = useMemo(
-    () => addTreeVolumePreviewLayer(preview.svg, preview.test),
-    [preview],
-  );
+  const livePreviewSvg = useMemo(() => buildPixelClusterTreeSvg(fact), [fact]);
 
   function updateBiome(event: ChangeEvent<HTMLSelectElement>) {
     setFact((current) => ({
@@ -142,7 +139,7 @@ export default function TreeRenderTestClient() {
           <article style={styles.card}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>实时树预览</h2>
-              <p style={styles.cardText}>同一组参数和 seed 会稳定生成同一棵树，并叠加体积实验层。</p>
+              <p style={styles.cardText}>当前左侧使用 mask + zone + cluster 的像素美术语法实验。</p>
             </div>
             <Image
               alt="Procedural pixel tree preview"
