@@ -4,7 +4,8 @@ import type { PixelTreeRenderTestResult } from "./tree-render-test-module";
 
 export function addTreeVolumePreviewLayer(
   svg: string,
-  _test: PixelTreeRenderTestResult,
+  test: PixelTreeRenderTestResult,
 ): string {
+  void test;
   return svg;
 }
