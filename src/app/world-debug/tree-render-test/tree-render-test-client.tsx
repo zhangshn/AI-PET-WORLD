@@ -14,6 +14,7 @@ import {
   buildPixelTreeSvgPreview,
 } from "@/world/procedural-painter/tree/tree-render-test-preview";
 import { buildPixelClusterTreeSvg } from "@/world/procedural-painter/tree/tree-cluster-art-preview";
+import { buildTreeSceneIntegrationSvg } from "@/world/procedural-painter/tree/tree-scene-integration-preview";
 
 const BIOME_OPTIONS: PixelTreeBiome[] = ["forest", "grassland", "desert", "oasis"];
 
@@ -47,6 +48,7 @@ export default function TreeRenderTestClient() {
   );
 
   const livePreviewSvg = useMemo(() => buildPixelClusterTreeSvg(fact), [fact]);
+  const scenePreviewSvg = useMemo(() => buildTreeSceneIntegrationSvg(fact), [fact]);
 
   function updateBiome(event: ChangeEvent<HTMLSelectElement>) {
     setFact((current) => ({
@@ -89,7 +91,7 @@ export default function TreeRenderTestClient() {
         <p style={styles.kicker}>WORLD DEBUG / PROCEDURAL PAINTER</p>
         <h1 style={styles.title}>Tree Render Test</h1>
         <p style={styles.description}>
-          这个页面只测试“树的规则绘制脑子”：TreeFact → Perception → VisualDecision → Structure → DrawCommands → SVG。
+          这个页面只测试“树的规则绘制脑子”：TreeFact → 生长/健康/树龄规则 → 像素结构 → 场景融合。
           它不写入世界事实，不调用外部 AI，不使用贴图资产。
         </p>
       </section>
@@ -139,7 +141,7 @@ export default function TreeRenderTestClient() {
           <article style={styles.card}>
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>实时树预览</h2>
-              <p style={styles.cardText}>当前左侧使用 mask + zone + cluster 的像素美术语法实验。</p>
+              <p style={styles.cardText}>单体树：验证生长、健康、树龄如何改变树本身。</p>
             </div>
             <Image
               alt="Procedural pixel tree preview"
@@ -153,14 +155,14 @@ export default function TreeRenderTestClient() {
 
           <article style={styles.card}>
             <div style={styles.cardHeader}>
-              <h2 style={styles.cardTitle}>四种地貌样例</h2>
-              <p style={styles.cardText}>forest / grassland / desert / oasis 会生成不同树形、颜色和密度。</p>
+              <h2 style={styles.cardTitle}>场景融合预览</h2>
+              <p style={styles.cardText}>测试 tile 地面、接地阴影、前景草遮挡、宠物占位和 y-sort 层次。</p>
             </div>
             <Image
-              alt="Procedural pixel tree biome gallery"
-              height={300}
-              src={toSvgDataUri(biomeGallerySvg)}
-              style={styles.galleryImage}
+              alt="Tree scene integration preview"
+              height={360}
+              src={toSvgDataUri(scenePreviewSvg)}
+              style={styles.sceneImage}
               unoptimized
               width={960}
             />
@@ -269,7 +271,7 @@ const styles = {
   },
   previewGrid: {
     display: "grid",
-    gridTemplateColumns: "minmax(320px, 440px) minmax(520px, 1fr)",
+    gridTemplateColumns: "minmax(320px, 440px) minmax(620px, 1fr)",
     gap: "20px",
   },
   card: {
@@ -360,7 +362,7 @@ const styles = {
     imageRendering: "pixelated",
     background: "#17231f",
   },
-  galleryImage: {
+  sceneImage: {
     display: "block",
     width: "100%",
     height: "auto",
