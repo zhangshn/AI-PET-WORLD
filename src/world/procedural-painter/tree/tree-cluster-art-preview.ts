@@ -54,14 +54,14 @@ const SIZE = 3;
 const OX = 16;
 const OY = 18;
 
-const BIG_MASS_ROWS = [6, 12, 18, 23, 27, 28, 26, 22, 17, 10, 5];
-const MID_MASS_ROWS = [5, 10, 15, 19, 21, 20, 17, 12, 7];
-const SMALL_MASS_ROWS = [3, 7, 11, 14, 15, 12, 8, 4];
-const UNDER_MASS_ROWS = [12, 20, 26, 29, 26, 18, 10];
+const WIDE_MASS_ROWS = [4, 9, 15, 21, 27, 32, 34, 33, 29, 23, 16, 9, 4];
+const MAIN_MASS_ROWS = [5, 11, 17, 22, 25, 26, 24, 20, 14, 8, 3];
+const SMALL_MASS_ROWS = [3, 7, 12, 16, 18, 16, 11, 6, 2];
+const UNDER_MASS_ROWS = [8, 15, 23, 29, 31, 27, 19, 10, 4];
 
 export function buildPixelClusterTreeSvg(fact: PixelTreeWorldFact): string {
   const clean = normalizeFact(fact);
-  const random = seededRandom(`${clean.worldSeed}:${clean.id}:sketch-tree-algorithm-v1`);
+  const random = seededRandom(`${clean.worldSeed}:${clean.id}:sketch-tree-algorithm-v2`);
   const palette = paletteFor(clean.biome);
   const config = buildArtConfig(clean);
   const crownBlocks = buildCrownBlocks(config, clean, palette, random);
@@ -73,8 +73,8 @@ export function buildPixelClusterTreeSvg(fact: PixelTreeWorldFact): string {
       `${clean.biome} sketch g${clean.growth} h${clean.health} m${clean.moisture}`,
     )}</text>`,
     renderGround(config, clean, palette, random),
-    renderTrunk(config, palette),
     renderBranches(config, palette, random),
+    renderTrunk(config, palette),
     renderBlocks(crownBlocks),
     renderFrontGrass(config, clean, palette, random),
     `</svg>`,
@@ -84,16 +84,16 @@ export function buildPixelClusterTreeSvg(fact: PixelTreeWorldFact): string {
 function buildArtConfig(fact: PixelTreeWorldFact): TreeArtConfig {
   const growthRate = fact.growth / 100;
   const moistureRate = fact.moisture / 100;
-  const biomeScale = fact.biome === "desert" ? 0.72 : fact.biome === "grassland" ? 1.05 : fact.biome === "oasis" ? 1.08 : 1;
-  const crownSpread = fact.biome === "grassland" ? 1.18 : fact.biome === "forest" ? 1.04 : 1;
+  const biomeScale = fact.biome === "desert" ? 0.72 : fact.biome === "grassland" ? 1.03 : fact.biome === "oasis" ? 1.06 : 1;
+  const crownSpread = fact.biome === "grassland" ? 1.12 : fact.biome === "forest" ? 1.02 : 1;
 
   return {
     baseX: 48,
     baseY: 82,
     trunkWidth: Math.round(6 + growthRate * 4),
     trunkHeight: Math.round((22 + growthRate * 14) * (fact.biome === "desert" ? 0.82 : 1)),
-    crownScale: (0.76 + growthRate * 0.34 + moistureRate * 0.08) * biomeScale,
-    crownLift: fact.biome === "desert" ? -2 : fact.biome === "forest" ? 2 : 0,
+    crownScale: (0.86 + growthRate * 0.3 + moistureRate * 0.08) * biomeScale,
+    crownLift: fact.biome === "desert" ? -2 : fact.biome === "forest" ? 1 : 0,
     crownSpread,
   };
 }
@@ -105,7 +105,7 @@ function buildCrownBlocks(
   random: () => number,
 ): Block[] {
   const centerX = config.baseX;
-  const centerY = config.baseY - config.trunkHeight - Math.round(8 * config.crownScale) - config.crownLift;
+  const centerY = config.baseY - config.trunkHeight - Math.round(2 * config.crownScale) - config.crownLift;
   const sx = config.crownScale * config.crownSpread;
   const sy = config.crownScale;
   const blocks: Block[] = [];
@@ -113,11 +113,50 @@ function buildCrownBlocks(
   blocks.push(
     ...stampLeafMass({
       cx: centerX + Math.round(7 * sx),
-      cy: centerY + Math.round(2 * sy),
-      rows: BIG_MASS_ROWS,
+      cy: centerY + Math.round(0 * sy),
+      rows: WIDE_MASS_ROWS,
       color: palette.leafBack,
-      scaleX: sx,
+      scaleX: sx * 0.92,
+      scaleY: sy * 0.92,
+      opacity: 1,
+      jitter: 2,
+    }, random),
+  );
+
+  blocks.push(
+    ...stampLeafMass({
+      cx: centerX - Math.round(2 * sx),
+      cy: centerY + Math.round(1 * sy),
+      rows: MAIN_MASS_ROWS,
+      color: palette.leaf,
+      scaleX: sx * 1.08,
       scaleY: sy,
+      opacity: 1,
+      jitter: 1,
+    }, random),
+  );
+
+  blocks.push(
+    ...stampLeafMass({
+      cx: centerX - Math.round(14 * sx),
+      cy: centerY + Math.round(3 * sy),
+      rows: MAIN_MASS_ROWS,
+      color: palette.leaf,
+      scaleX: sx * 0.82,
+      scaleY: sy * 0.9,
+      opacity: 1,
+      jitter: 2,
+    }, random),
+  );
+
+  blocks.push(
+    ...stampLeafMass({
+      cx: centerX + Math.round(18 * sx),
+      cy: centerY + Math.round(3 * sy),
+      rows: MAIN_MASS_ROWS,
+      color: palette.leafDark,
+      scaleX: sx * 0.84,
+      scaleY: sy * 0.9,
       opacity: 1,
       jitter: 2,
     }, random),
@@ -126,37 +165,11 @@ function buildCrownBlocks(
   blocks.push(
     ...stampLeafMass({
       cx: centerX - Math.round(9 * sx),
-      cy: centerY + Math.round(4 * sy),
-      rows: MID_MASS_ROWS,
-      color: palette.leaf,
-      scaleX: sx * 0.94,
-      scaleY: sy,
-      opacity: 1,
-      jitter: 2,
-    }, random),
-  );
-
-  blocks.push(
-    ...stampLeafMass({
-      cx: centerX + Math.round(16 * sx),
-      cy: centerY + Math.round(5 * sy),
-      rows: MID_MASS_ROWS,
-      color: palette.leafDark,
-      scaleX: sx * 0.88,
-      scaleY: sy * 0.96,
-      opacity: 1,
-      jitter: 2,
-    }, random),
-  );
-
-  blocks.push(
-    ...stampLeafMass({
-      cx: centerX - Math.round(12 * sx),
-      cy: centerY - Math.round(5 * sy),
+      cy: centerY - Math.round(7 * sy),
       rows: SMALL_MASS_ROWS,
       color: palette.leafLight,
-      scaleX: sx * 0.82,
-      scaleY: sy * 0.86,
+      scaleX: sx * 0.9,
+      scaleY: sy * 0.88,
       opacity: 1,
       jitter: 1,
     }, random),
@@ -164,12 +177,12 @@ function buildCrownBlocks(
 
   blocks.push(
     ...stampLeafMass({
-      cx: centerX + Math.round(2 * sx),
+      cx: centerX + Math.round(1 * sx),
       cy: centerY + Math.round(9 * sy),
       rows: UNDER_MASS_ROWS,
       color: palette.leafUnder,
-      scaleX: sx,
-      scaleY: sy * 0.84,
+      scaleX: sx * 0.94,
+      scaleY: sy * 0.82,
       opacity: 1,
       jitter: 1,
     }, random),
@@ -183,7 +196,7 @@ function buildCrownBlocks(
 
 function stampLeafMass(mass: LeafMass, random: () => number): Block[] {
   const blocks: Block[] = [];
-  const rowStep = Math.max(1, Math.round(mass.scaleY));
+  const rowStep = Math.max(1, Math.round(mass.scaleY * 1.32));
   const totalHeight = mass.rows.length * rowStep;
   const topY = Math.round(mass.cy - totalHeight / 2);
 
@@ -202,7 +215,7 @@ function stampLeafMass(mass: LeafMass, random: () => number): Block[] {
       opacity: mass.opacity,
     });
 
-    if (random() > 0.72 && width > 10) {
+    if (random() > 0.78 && width > 12) {
       const chipSide = random() > 0.5 ? -1 : 1;
       blocks.push({
         x: chipSide < 0 ? x - 2 : x + width,
@@ -229,12 +242,12 @@ function addLeafAccentClusters(
   random: () => number,
 ): void {
   const healthRate = fact.health / 100;
-  const clusterCount = Math.round(10 + healthRate * 12);
+  const clusterCount = Math.round(12 + healthRate * 12);
 
   for (let index = 0; index < clusterCount; index += 1) {
-    const lightSide = random() > 0.42;
-    const x = centerX + Math.round((lightSide ? -16 + random() * 18 : -8 + random() * 34) * scaleX);
-    const y = centerY + Math.round((lightSide ? -9 + random() * 16 : -2 + random() * 19) * scaleY);
+    const lightSide = random() > 0.44;
+    const x = centerX + Math.round((lightSide ? -18 + random() * 19 : -4 + random() * 32) * scaleX);
+    const y = centerY + Math.round((lightSide ? -12 + random() * 16 : -4 + random() * 21) * scaleY);
     const color = lightSide ? palette.leafLight : random() > 0.48 ? palette.leafDark : palette.edgeChip;
     const template = random() > 0.55 ? [[0, 0], [1, 0], [0, 1]] : [[0, 0], [1, 0], [2, 0], [1, 1]];
 
@@ -250,11 +263,10 @@ function addLeafAccentClusters(
   }
 }
 
-function carveSmallAirGaps(
-  blocks: Block[], centerX: number, centerY: number, sx: number, sy: number, random: () => number): void {
-  for (let index = 0; index < 5; index += 1) {
-    const x = centerX + Math.round((-9 + random() * 24) * sx);
-    const y = centerY + Math.round((2 + random() * 12) * sy);
+function carveSmallAirGaps(blocks: Block[], centerX: number, centerY: number, sx: number, sy: number, random: () => number): void {
+  for (let index = 0; index < 4; index += 1) {
+    const x = centerX + Math.round((-6 + random() * 22) * sx);
+    const y = centerY + Math.round((4 + random() * 11) * sy);
     const width = random() > 0.5 ? 3 : 2;
 
     blocks.push({
@@ -263,7 +275,7 @@ function carveSmallAirGaps(
       w: width,
       h: 1,
       color: "#17231f",
-      opacity: 0.72,
+      opacity: 0.58,
     });
   }
 }
@@ -283,16 +295,16 @@ function renderTrunk(config: TreeArtConfig, palette: Palette): string {
 
 function renderBranches(config: TreeArtConfig, palette: Palette, random: () => number): string {
   const parts: string[] = [];
-  const originY = config.baseY - config.trunkHeight + Math.round(5 * config.crownScale);
+  const originY = config.baseY - config.trunkHeight + Math.round(7 * config.crownScale);
 
   for (let index = 0; index < 4; index += 1) {
     const side = index % 2 === 0 ? -1 : 1;
-    const startY = originY + index * 4;
-    const endX = config.baseX + side * Math.round(8 + random() * 9);
-    const endY = startY - Math.round(4 + random() * 7);
+    const startY = originY + index * 3;
+    const endX = config.baseX + side * Math.round(6 + random() * 7);
+    const endY = startY - Math.round(3 + random() * 5);
 
     parts.push(
-      `<line x1="${sx(config.baseX)}" y1="${sy(startY)}" x2="${sx(endX)}" y2="${sy(endY)}" stroke="${palette.branch}" stroke-width="4" stroke-linecap="square" opacity="0.64"/>`,
+      `<line x1="${sx(config.baseX)}" y1="${sy(startY)}" x2="${sx(endX)}" y2="${sy(endY)}" stroke="${palette.branch}" stroke-width="3" stroke-linecap="square" opacity="0.42"/>`,
     );
   }
 
