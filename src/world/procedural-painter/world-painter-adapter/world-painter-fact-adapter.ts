@@ -64,6 +64,7 @@ export function adaptHomeMapStateToSceneComposerFact(
       moisture,
       decorationDensity,
       roadShape,
+      hasRoadFact: Boolean(pathPlacements),
       worldSeed: `${homeMapState.seed}:${homeMapState.worldId}:world-painter-v1`,
     },
     sourceSummary: {
