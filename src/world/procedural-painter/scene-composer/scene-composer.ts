@@ -1,3 +1,5 @@
+// 该文件提供像素世界场景组合器的正式组合入口。
+
 import {
   SCENE_HEIGHT,
   SCENE_TILE_SIZE,
@@ -27,7 +29,7 @@ export function buildDefaultSceneComposerFact(
 ): SceneComposerFact {
   return normalizeSceneComposerFact({
     ...DEFAULT_SCENE_COMPOSER_FACT,
-    ...input,
+    ...removeUndefinedSceneComposerFields(input),
   });
 }
 
@@ -72,4 +74,36 @@ export function normalizeSceneComposerFact(
     decorationDensity: clamp(Math.round(fact.decorationDensity), 0, 100),
     roadShape: clamp(Math.round(fact.roadShape), 0, 100),
   };
+}
+
+function removeUndefinedSceneComposerFields(
+  input: Partial<SceneComposerFact>
+): Partial<SceneComposerFact> {
+  const clean: Partial<SceneComposerFact> = {};
+
+  if (input.id !== undefined) {
+    clean.id = input.id;
+  }
+
+  if (input.biome !== undefined) {
+    clean.biome = input.biome;
+  }
+
+  if (input.moisture !== undefined) {
+    clean.moisture = input.moisture;
+  }
+
+  if (input.decorationDensity !== undefined) {
+    clean.decorationDensity = input.decorationDensity;
+  }
+
+  if (input.roadShape !== undefined) {
+    clean.roadShape = input.roadShape;
+  }
+
+  if (input.worldSeed !== undefined) {
+    clean.worldSeed = input.worldSeed;
+  }
+
+  return clean;
 }
