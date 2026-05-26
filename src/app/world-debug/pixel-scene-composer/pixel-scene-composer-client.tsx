@@ -5,27 +5,29 @@
 import Image from "next/image";
 import { useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
 import {
-  buildDefaultPixelSceneFact,
-  buildPixelWorldSceneSvg,
-  composePixelWorldScene,
-  type PixelSceneBiome,
-  type PixelSceneWorldFact,
-} from "@/world/procedural-painter/scene/scene-composer-test-module";
+  buildDefaultSceneComposerFact,
+  buildSceneSvg,
+  composeScene,
+} from "@/world/procedural-painter/scene-composer/scene-composer-gateway";
+import type {
+  SceneComposerBiome,
+  SceneComposerFact,
+} from "@/world/procedural-painter/scene-composer/scene-composer-schema";
 
-const BIOME_OPTIONS: PixelSceneBiome[] = ["forest", "grassland", "desert", "oasis"];
+const BIOME_OPTIONS: SceneComposerBiome[] = ["forest", "grassland", "desert", "oasis"];
 
-const DEFAULT_FACT = buildDefaultPixelSceneFact();
+const DEFAULT_FACT = buildDefaultSceneComposerFact();
 
 export default function PixelSceneComposerClient() {
-  const [fact, setFact] = useState<PixelSceneWorldFact>(DEFAULT_FACT);
-  const sceneSvg = useMemo(() => buildPixelWorldSceneSvg(fact), [fact]);
-  const plan = useMemo(() => composePixelWorldScene(fact), [fact]);
+  const [fact, setFact] = useState<SceneComposerFact>(DEFAULT_FACT);
+  const sceneSvg = useMemo(() => buildSceneSvg(fact), [fact]);
+  const plan = useMemo(() => composeScene(fact), [fact]);
 
   function updateBiome(event: ChangeEvent<HTMLSelectElement>) {
-    setFact((current) => ({ ...current, biome: event.target.value as PixelSceneBiome }));
+    setFact((current) => ({ ...current, biome: event.target.value as SceneComposerBiome }));
   }
 
-  function updateNumberField(field: "moisture" | "density" | "pathCurve") {
+  function updateNumberField(field: "moisture" | "decorationDensity" | "roadShape") {
     return (event: ChangeEvent<HTMLInputElement>) => {
       setFact((current) => ({ ...current, [field]: Number(event.target.value) }));
     };
@@ -72,8 +74,8 @@ export default function PixelSceneComposerClient() {
           </label>
 
           <RangeControl label="moisture" value={fact.moisture} onChange={updateNumberField("moisture")} />
-          <RangeControl label="density" value={fact.density} onChange={updateNumberField("density")} />
-          <RangeControl label="pathCurve" value={fact.pathCurve} onChange={updateNumberField("pathCurve")} />
+          <RangeControl label="decorationDensity" value={fact.decorationDensity} onChange={updateNumberField("decorationDensity")} />
+          <RangeControl label="roadShape" value={fact.roadShape} onChange={updateNumberField("roadShape")} />
 
           <label style={styles.fieldGroup}>
             <span style={styles.fieldLabel}>worldSeed</span>
@@ -113,7 +115,8 @@ export default function PixelSceneComposerClient() {
             <dl style={styles.debugList}>
               <DebugRow label="biome" value={plan.biome} />
               <DebugRow label="moisture" value={plan.moisture} />
-              <DebugRow label="density" value={plan.density} />
+              <DebugRow label="decorationDensity" value={plan.decorationDensity} />
+              <DebugRow label="roadShape" value={plan.roadShape} />
               <DebugRow label="grass tiles" value={plan.summary.grassTiles} />
               <DebugRow label="path tiles" value={plan.summary.pathTiles} />
               <DebugRow label="edge tiles" value={plan.summary.edgeTiles} />
