@@ -114,10 +114,13 @@ export function buildDefaultPixelSceneFact(input: Partial<PixelSceneWorldFact> =
 
 export function composePixelWorldScene(fact: PixelSceneWorldFact): PixelSceneCompositionPlan {
   const clean = normalizeFact(fact);
-  const random = seededRandom(`${clean.worldSeed}:${clean.id}:scene-composer-v1:${clean.biome}:${clean.moisture}:${clean.density}:${clean.pathCurve}`);
-  const tiles = buildTiles(clean, random);
-  const grassTufts = buildGrassTufts(clean, tiles, random);
-  const objects = buildSceneObjects(clean, tiles, random);
+  const stableBaseSeed = `${clean.worldSeed}:${clean.id}:scene-composer-v2:${clean.biome}:${clean.pathCurve}`;
+  const tileRandom = seededRandom(`${stableBaseSeed}:tiles`);
+  const grassRandom = seededRandom(`${stableBaseSeed}:grass:${clean.density}`);
+  const objectRandom = seededRandom(`${stableBaseSeed}:objects:${clean.density}`);
+  const tiles = buildTiles(clean, tileRandom);
+  const grassTufts = buildGrassTufts(clean, tiles, grassRandom);
+  const objects = buildSceneObjects(clean, tiles, objectRandom);
 
   return {
     width: WIDTH,
@@ -229,8 +232,7 @@ function buildGrassTufts(fact: PixelSceneWorldFact, tiles: Tile[], random: () =>
 function buildSceneObjects(fact: PixelSceneWorldFact, tiles: Tile[], random: () => number): SceneObject[] {
   const grassTiles = tiles.filter((tile) => tile.kind === "grass" && tile.y > 64 && tile.y < HEIGHT - 48);
   const densityRate = fact.density / 100;
-  const moistureRate = fact.moisture / 100;
-  const objectCount = fact.biome === "desert" ? 8 : Math.round(10 + densityRate * 16 + moistureRate * 8);
+  const objectCount = fact.biome === "desert" ? Math.round(4 + densityRate * 7) : Math.round(10 + densityRate * 18);
   const objects: SceneObject[] = [];
 
   const actorTile = tiles.find((tile) => tile.kind === "path" && tile.x > 260 && tile.x < 360 && tile.y > 200) ?? tiles.find((tile) => tile.kind === "path");
@@ -253,7 +255,7 @@ function buildSceneObjects(fact: PixelSceneWorldFact, tiles: Tile[], random: () 
       continue;
     }
 
-    if (roll < treeChanceFor(fact)) {
+    if (roll < treeChanceFor(fact.biome)) {
       objects.push({
         id: `tree_${index}`,
         kind: "tree",
@@ -276,16 +278,16 @@ function buildSceneObjects(fact: PixelSceneWorldFact, tiles: Tile[], random: () 
   return objects;
 }
 
-function treeChanceFor(fact: PixelSceneWorldFact): number {
-  if (fact.biome === "desert") {
-    return fact.moisture > 55 ? 0.22 : 0.08;
+function treeChanceFor(biome: PixelSceneBiome): number {
+  if (biome === "desert") {
+    return 0.12;
   }
 
-  if (fact.biome === "grassland") {
+  if (biome === "grassland") {
     return 0.18;
   }
 
-  if (fact.biome === "oasis") {
+  if (biome === "oasis") {
     return 0.28;
   }
 
