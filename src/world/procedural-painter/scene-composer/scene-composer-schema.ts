@@ -9,6 +9,7 @@ export type SceneComposerFact = {
   decorationDensity: number;
   roadShape: number;
   worldSeed: string;
+  hasRoadFact?: boolean;
 };
 
 export type SceneTileKind = "grass" | "path" | "edge";
@@ -113,6 +114,7 @@ export type SceneCompositionPlan = {
   moisture: number;
   decorationDensity: number;
   roadShape: number;
+  hasRoadFact: boolean;
   tiles: SceneTile[];
   grassTufts: SceneGrassTuft[];
   objects: SceneObject[];
