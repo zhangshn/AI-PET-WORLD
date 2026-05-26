@@ -32,9 +32,21 @@ export function adaptHomeMapStateToSceneComposerFact(
   input: WorldPainterFactAdapterInput
 ): WorldPainterFactAdapterResult {
   const homeMapState = input.homeMapState
-  const naturalPlacements = countPlacementsByLayerOrTag(homeMapState.placements, "nature", "world_nature_fact")
-  const pathPlacements = countPlacementsByLayerOrTag(homeMapState.placements, "path", "path")
-  const structurePlacements = countPlacementsByLayerOrTag(homeMapState.placements, "structure", "structure")
+  const naturalPlacements = countPlacementsByLayerOrTag(
+    homeMapState.placements,
+    "nature",
+    "world_nature_fact"
+  )
+  const pathPlacements = countPlacementsByLayerOrTag(
+    homeMapState.placements,
+    "path",
+    "path"
+  )
+  const structurePlacements = countPlacementsByLayerOrTag(
+    homeMapState.placements,
+    "structure",
+    "structure"
+  )
   const biome = resolveSceneBiome(homeMapState)
   const moisture = resolveMoisture(homeMapState)
   const decorationDensity = resolveDecorationDensity({
@@ -43,7 +55,7 @@ export function adaptHomeMapStateToSceneComposerFact(
     pathPlacements,
     structurePlacements,
   })
-  const roadShape = resolveRoadShape({ homeMapState, pathPlacements })
+  const roadShape = resolveRoadShape({ homeMapState })
 
   return {
     sceneFact: {
@@ -70,12 +82,7 @@ export function adaptHomeMapStateToSceneComposerFact(
 function resolveSceneBiome(homeMapState: HomeMapState): SceneComposerBiome {
   const biomeType = homeMapState.ecologyState?.biomeType
 
-  if (
-    biomeType === "forest" ||
-    biomeType === "grassland" ||
-    biomeType === "desert" ||
-    biomeType === "oasis"
-  ) {
+  if (isSceneBiome(biomeType)) {
     return biomeType
   }
 
@@ -122,7 +129,9 @@ function resolveDecorationDensity(input: {
 }): number {
   const resources = input.homeMapState.resources
   const worldObjectSignal =
-    input.naturalPlacements * 7 + input.pathPlacements * 3 + input.structurePlacmentsCorrection()
+    input.naturalPlacements * 7 +
+    input.pathPlacements * 3 +
+    input.structurePlacements * 2
 
   const value = Math.round(
     resources.naturalGrowth * 0.56 +
@@ -134,28 +143,39 @@ function resolveDecorationDensity(input: {
   return clamp(value, 8, 100)
 }
 
-function resolveRoadShape(input: {
-  homeMapState: HomeMapState
-  pathPlacements: number
-}): number {
+function resolveRoadShape(input: { homeMapState: HomeMapState }): number {
   const pathPlacements = input.homeMapState.placements.filter(
     (placement) => placement.layer === "path" || placement.tags.includes("path")
   )
 
   if (pathPlacements.length > 0) {
-    const averageX = pathPlacements.reduce((sum, placement) => sum + placement.x, 0) / pathPlacements.length
-    const averageY = pathPlacements.reduce((sum, placement) => sum + placement.y, 0) / pathPlacements.length
-    const mapWidth = Math.max(1, input.homeMapState.mapSize.columns * input.homeMapState.mapSize.tileSize)
-    const mapHeight = Math.max(1, input.homeMapState.mapSize.rows * input.homeMapState.mapSize.tileSize)
+    const averageX =
+      pathPlacements.reduce((sum, placement) => sum + placement.x, 0) /
+      pathPlacements.length
+    const averageY =
+      pathPlacements.reduce((sum, placement) => sum + placement.y, 0) /
+      pathPlacements.length
+    const mapWidth = Math.max(
+      1,
+      input.homeMapState.mapSize.columns * input.homeMapState.mapSize.tileSize
+    )
+    const mapHeight = Math.max(
+      1,
+      input.homeMapState.mapSize.rows * input.homeMapState.mapSize.tileSize
+    )
     const xSignal = averageX / mapWidth
     const ySignal = averageY / mapHeight
 
     return clamp(Math.round((xSignal * 0.64 + ySignal * 0.36) * 100), 0, 100)
   }
 
-  const base = stableUnit(`${input.homeMapState.seed}:${input.homeMapState.worldId}:road-shape`)
+  const base = stableUnit(
+    `${input.homeMapState.seed}:${input.homeMapState.worldId}:road-shape`
+  )
   const resourceBias =
-    (input.homeMapState.resources.groundHealth - input.homeMapState.resources.spacePressure) / 220
+    (input.homeMapState.resources.groundHealth -
+      input.homeMapState.resources.spacePressure) /
+    220
 
   return clamp(Math.round((base * 0.7 + 0.15 + resourceBias) * 100), 0, 100)
 }
@@ -170,7 +190,7 @@ function countPlacementsByLayerOrTag(
   ).length
 }
 
-function isSceneBiome(value: string): value is SceneComposerBiome {
+function isSceneBiome(value: unknown): value is SceneComposerBiome {
   return (
     value === "forest" ||
     value === "grassland" ||
