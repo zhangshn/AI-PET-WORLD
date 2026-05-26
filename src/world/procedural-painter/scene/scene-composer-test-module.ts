@@ -133,11 +133,12 @@ export function buildDefaultPixelSceneFact(input: Partial<PixelSceneWorldFact> =
 
 export function composePixelWorldScene(fact: PixelSceneWorldFact): PixelSceneCompositionPlan {
   const clean = normalizeFact(fact);
-  const layoutSeed = `${clean.worldSeed}:${clean.id}:scene-composer-v5:${clean.biome}`;
-  const pathSamples = buildPathSamples(clean);
-  const tiles = buildTiles(clean, pathSamples, layoutSeed);
+  const layoutSeed = `${clean.worldSeed}:${clean.id}:scene-composer-v6:${clean.biome}`;
+  const permanentTrees = buildPermanentTreeAnchors(clean, layoutSeed);
+  const pathSamples = buildPathSamples(clean, permanentTrees);
+  const tiles = buildTiles(clean, pathSamples, permanentTrees, layoutSeed);
   const grassTufts = buildGrassTufts(clean, tiles, pathSamples, layoutSeed);
-  const objects = buildSceneObjects(clean, tiles, pathSamples, layoutSeed);
+  const objects = buildSceneObjects(clean, tiles, pathSamples, permanentTrees, layoutSeed);
 
   return {
     width: WIDTH,
@@ -176,19 +177,20 @@ export function buildPixelWorldSceneSvg(fact: PixelSceneWorldFact): string {
     objectsByDepth.map((object) => renderObjectShadow(object, palette)).join("\n"),
     objectsByDepth.map((object) => renderSceneObject(object, palette)).join("\n"),
     plan.grassTufts.filter((tuft) => tuft.layer !== "back").map((tuft) => renderGrassTuft(tuft, palette)).join("\n"),
-    `<text x="18" y="28" font-size="13" fill="#e6f4e6" font-family="monospace">${escapeText(plan.biome)} moisture=${plan.moisture} decorationDensity=${plan.density} pathCurve=${normalizeFact(fact).pathCurve}</text>`,
+    `<text x="18" y="28" font-size="13" fill="#e6f4e6" font-family="monospace">${escapeText(plan.biome)} moisture=${plan.moisture} decorDensity=${plan.density} roadShape=${normalizeFact(fact).pathCurve}</text>`,
     `</svg>`,
   ].join("\n");
 }
 
-function buildPathSamples(fact: PixelSceneWorldFact): PathSample[] {
+function buildPathSamples(fact: PixelSceneWorldFact, permanentTrees: Anchor[]): PathSample[] {
   const pathWidth = resolvePathWidth(fact.biome);
 
   return Array.from({ length: COLUMNS }, (_, column) => {
     const curve = (fact.pathCurve - 50) / 50;
     const wave = Math.sin((column / COLUMNS) * Math.PI * 1.35 + curve * 0.8) * (1.2 + Math.abs(curve) * 1.5);
     const slope = 11.5 - column * 0.12;
-    const center = slope + wave + curve * 2.2;
+    const baseCenter = slope + wave + curve * 2.2;
+    const center = applyTreeAvoidance(baseCenter, column, permanentTrees);
 
     return {
       column,
@@ -200,7 +202,33 @@ function buildPathSamples(fact: PixelSceneWorldFact): PathSample[] {
   });
 }
 
-function buildTiles(fact: PixelSceneWorldFact, pathSamples: PathSample[], layoutSeed: string): Tile[] {
+function applyTreeAvoidance(baseCenter: number, column: number, permanentTrees: Anchor[]): number {
+  let center = baseCenter;
+
+  permanentTrees.forEach((tree) => {
+    const treeColumn = Math.round(tree.x / TILE_SIZE);
+    const columnDistance = Math.abs(column - treeColumn);
+
+    if (columnDistance > 2.5) {
+      return;
+    }
+
+    const treeRow = tree.y / TILE_SIZE;
+    const rowDistance = Math.abs(center - treeRow);
+
+    if (rowDistance > 3.1) {
+      return;
+    }
+
+    const influence = (1 - columnDistance / 2.6) * (1 - Math.min(rowDistance, 3.1) / 3.1);
+    const direction = center <= treeRow ? -1 : 1;
+    center += direction * influence * 2.2;
+  });
+
+  return clamp(center, 4.5, ROWS - 3.2);
+}
+
+function buildTiles(fact: PixelSceneWorldFact, pathSamples: PathSample[], permanentTrees: Anchor[], layoutSeed: string): Tile[] {
   const pathWidth = resolvePathWidth(fact.biome);
   const tiles: Tile[] = [];
 
@@ -208,7 +236,9 @@ function buildTiles(fact: PixelSceneWorldFact, pathSamples: PathSample[], layout
     for (let column = 0; column < COLUMNS; column += 1) {
       const center = pathSamples[column]?.center ?? 0;
       const distance = Math.abs(row - center);
-      const kind: TileKind = distance <= pathWidth ? "path" : distance <= pathWidth + 0.95 ? "edge" : "grass";
+      const protectedRoot = isProtectedTreeRoot(column, row, permanentTrees);
+      const rawKind: TileKind = distance <= pathWidth ? "path" : distance <= pathWidth + 0.95 ? "edge" : "grass";
+      const kind: TileKind = protectedRoot ? "grass" : rawKind;
       const variant = Math.floor(stableUnit(`${layoutSeed}:tile:${column}:${row}`) * 4);
       const edgeMask = kind === "edge" ? row < center ? "top" : "bottom" : undefined;
 
@@ -245,7 +275,7 @@ function buildGrassTufts(fact: PixelSceneWorldFact, tiles: Tile[], pathSamples: 
       y: anchor.y,
       height: Math.round(3 + anchor.scaleRoll * (4 + moistureRate * 10)),
       light: anchor.roll > 0.56 - moistureRate * 0.18,
-      layer: anchor.y > 292 ? "front" : anchor.roll > 0.65 ? "middle" : "back",
+      layer: layerFor(anchor.y),
     });
   });
 
@@ -268,29 +298,30 @@ function buildGrassTufts(fact: PixelSceneWorldFact, tiles: Tile[], pathSamples: 
   return tufts;
 }
 
-function buildSceneObjects(fact: PixelSceneWorldFact, tiles: Tile[], pathSamples: PathSample[], layoutSeed: string): SceneObject[] {
+function buildSceneObjects(
+  fact: PixelSceneWorldFact,
+  tiles: Tile[],
+  pathSamples: PathSample[],
+  permanentTrees: Anchor[],
+  layoutSeed: string,
+): SceneObject[] {
   const densityRate = fact.density / 100;
   const biomeFactor = fact.biome === "desert" ? 0.36 : fact.biome === "grassland" ? 0.78 : fact.biome === "oasis" ? 0.9 : 1;
   const includeRate = clamp(densityRate * biomeFactor, 0, 1);
   const objects: SceneObject[] = [];
-  const actorTile = tiles.find((tile) => tile.kind === "path" && tile.x > 260 && tile.x < 360 && tile.y > 200) ?? tiles.find((tile) => tile.kind === "path");
+  const actorTile = resolveActorTile(tiles);
 
   if (actorTile) {
     objects.push({ id: "actor_preview", kind: "actor", x: actorTile.x + 12, y: actorTile.y + 22, scale: 1, layer: "middle" });
   }
 
-  buildAnchors(`${layoutSeed}:permanent-trees`, permanentTreeCountFor(fact.biome), 36, WIDTH - 36, 116, HEIGHT - 48).forEach((anchor) => {
-    const tile = findTileAt(tiles, anchor.x, anchor.y);
-    if (!tile || tile.kind !== "grass") {
-      return;
-    }
-
+  permanentTrees.forEach((anchor) => {
     objects.push(buildTreeFromAnchor(anchor, fact));
   });
 
   buildAnchors(`${layoutSeed}:small-decor`, fact.biome === "desert" ? 26 : 44, 18, WIDTH - 36, 92, HEIGHT - 42).forEach((anchor) => {
     const tile = findTileAt(tiles, anchor.x, anchor.y);
-    if (anchor.rank > includeRate || !tile || tile.kind !== "grass") {
+    if (anchor.rank > includeRate || !tile || tile.kind !== "grass" || overlapsPermanentTree(anchor, permanentTrees)) {
       return;
     }
 
@@ -299,7 +330,7 @@ function buildSceneObjects(fact: PixelSceneWorldFact, tiles: Tile[], pathSamples
 
   buildRoadsideObjectAnchors(pathSamples, `${layoutSeed}:roadside-decor`).forEach((anchor) => {
     const tile = findTileAt(tiles, anchor.x, anchor.y);
-    if (anchor.rank > includeRate || !tile || tile.kind === "path") {
+    if (anchor.rank > includeRate || !tile || tile.kind === "path" || overlapsPermanentTree(anchor, permanentTrees)) {
       return;
     }
 
@@ -307,6 +338,10 @@ function buildSceneObjects(fact: PixelSceneWorldFact, tiles: Tile[], pathSamples
   });
 
   return objects;
+}
+
+function buildPermanentTreeAnchors(fact: PixelSceneWorldFact, layoutSeed: string): Anchor[] {
+  return buildAnchors(`${layoutSeed}:permanent-trees`, permanentTreeCountFor(fact.biome), 42, WIDTH - 46, 120, HEIGHT - 54);
 }
 
 function buildTreeFromAnchor(anchor: Anchor, fact: PixelSceneWorldFact): SceneObject {
@@ -425,6 +460,22 @@ function resolvePathWidth(biome: PixelSceneBiome): number {
   }
 
   return 1.3;
+}
+
+function resolveActorTile(tiles: Tile[]): Tile | undefined {
+  return tiles.find((tile) => tile.kind === "path" && tile.x > 260 && tile.x < 360 && tile.y > 200) ?? tiles.find((tile) => tile.kind === "path");
+}
+
+function isProtectedTreeRoot(column: number, row: number, permanentTrees: Anchor[]): boolean {
+  return permanentTrees.some((tree) => {
+    const treeColumn = tree.x / TILE_SIZE;
+    const treeRow = tree.y / TILE_SIZE;
+    return Math.abs(column - treeColumn) < 1.1 && Math.abs(row - treeRow) < 1.1;
+  });
+}
+
+function overlapsPermanentTree(anchor: Anchor, permanentTrees: Anchor[]): boolean {
+  return permanentTrees.some((tree) => Math.abs(anchor.x - tree.x) < 34 && Math.abs(anchor.y - tree.y) < 28);
 }
 
 function renderTile(tile: Tile, p: Palette): string {
