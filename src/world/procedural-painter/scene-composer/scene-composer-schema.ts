@@ -17,6 +17,54 @@ export type SceneObjectKind = "tree" | "bush" | "stone" | "flower" | "actor";
 
 export type SceneObjectLayer = "back" | "middle" | "front";
 
+export type ScenePalette = {
+  bg: string;
+  grassA: string;
+  grassB: string;
+  grassC: string;
+  grassDark: string;
+  grassLight: string;
+  pathA: string;
+  pathB: string;
+  pathDark: string;
+  pathLight: string;
+  shadow: string;
+  trunkDark: string;
+  trunk: string;
+  trunkLight: string;
+  leafDark: string;
+  leaf: string;
+  leafLight: string;
+  leafUnder: string;
+  bushDark: string;
+  bush: string;
+  bushLight: string;
+  stone: string;
+  stoneLight: string;
+  flower: string;
+  actorDark: string;
+  actor: string;
+};
+
+export type PathSample = {
+  column: number;
+  center: number;
+  x: number;
+  topY: number;
+  bottomY: number;
+};
+
+export type SceneAnchor = {
+  id: string;
+  x: number;
+  y: number;
+  rank: number;
+  roll: number;
+  scaleRoll: number;
+  ageRoll: number;
+  healthRoll: number;
+};
+
 export type SceneTile = {
   id: string;
   x: number;
