@@ -10,6 +10,8 @@ export function WorldPainterReadonlyPreview(input: {
 }) {
   const sceneFact = input.adapterResult.sceneFact
   const summary = input.adapterResult.sourceSummary
+  const hasPathPlacements = summary.pathPlacements > 0
+  const roadShapeValue = hasPathPlacements ? String(sceneFact.roadShape) : "none"
 
   return (
     <section className={styles.worldPainterPanel} aria-label="World Painter readonly preview">
@@ -29,7 +31,7 @@ export function WorldPainterReadonlyPreview(input: {
             label="decorationDensity"
             value={String(sceneFact.decorationDensity)}
           />
-          <WorldPainterFactItem label="roadShape" value={String(sceneFact.roadShape)} />
+          <WorldPainterFactItem label="roadShape" value={roadShapeValue} />
         </div>
       </div>
 
