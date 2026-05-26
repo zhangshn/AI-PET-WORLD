@@ -2,7 +2,7 @@ import Image from "next/image"
 
 import type { WorldPainterFactAdapterResult } from "@/world/procedural-painter/world-painter-adapter/world-painter-fact-adapter"
 
-import styles from "../world-route-page.styles.module.css"
+import styles from "./world-painter-readonly-preview.module.css"
 
 export function WorldPainterReadonlyPreview(input: {
   adapterResult: WorldPainterFactAdapterResult
@@ -15,7 +15,7 @@ export function WorldPainterReadonlyPreview(input: {
     <section className={styles.worldPainterPanel} aria-label="World Painter readonly preview">
       <div className={styles.worldPainterHeader}>
         <div>
-          <div className={styles.eyebrow}>WORLD PAINTER / READONLY PREVIEW</div>
+          <div className={styles.worldPainterEyebrow}>WORLD PAINTER / READONLY PREVIEW</div>
           <h2>Pixel world generated from saved facts</h2>
           <p>
             This preview reads the current HomeMapState through a read-only adapter.
