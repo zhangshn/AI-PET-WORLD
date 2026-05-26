@@ -27,9 +27,9 @@ type Palette = {
   pathDark: string;
   pathLight: string;
   shadow: string;
-  treeTrunkDark: string;
-  treeTrunk: string;
-  treeTrunkLight: string;
+  trunkDark: string;
+  trunk: string;
+  trunkLight: string;
   leafDark: string;
   leaf: string;
   leafLight: string;
@@ -73,7 +73,7 @@ type SceneObject = {
   age?: number;
 };
 
-type CandidateAnchor = {
+type Anchor = {
   id: string;
   x: number;
   y: number;
@@ -133,7 +133,7 @@ export function buildDefaultPixelSceneFact(input: Partial<PixelSceneWorldFact> =
 
 export function composePixelWorldScene(fact: PixelSceneWorldFact): PixelSceneCompositionPlan {
   const clean = normalizeFact(fact);
-  const layoutSeed = `${clean.worldSeed}:${clean.id}:scene-composer-v4:${clean.biome}`;
+  const layoutSeed = `${clean.worldSeed}:${clean.id}:scene-composer-v5:${clean.biome}`;
   const pathSamples = buildPathSamples(clean);
   const tiles = buildTiles(clean, pathSamples, layoutSeed);
   const grassTufts = buildGrassTufts(clean, tiles, pathSamples, layoutSeed);
@@ -176,7 +176,7 @@ export function buildPixelWorldSceneSvg(fact: PixelSceneWorldFact): string {
     objectsByDepth.map((object) => renderObjectShadow(object, palette)).join("\n"),
     objectsByDepth.map((object) => renderSceneObject(object, palette)).join("\n"),
     plan.grassTufts.filter((tuft) => tuft.layer !== "back").map((tuft) => renderGrassTuft(tuft, palette)).join("\n"),
-    `<text x="18" y="28" font-size="13" fill="#e6f4e6" font-family="monospace">${escapeText(plan.biome)} moisture=${plan.moisture} density=${plan.density} pathCurve=${normalizeFact(fact).pathCurve}</text>`,
+    `<text x="18" y="28" font-size="13" fill="#e6f4e6" font-family="monospace">${escapeText(plan.biome)} moisture=${plan.moisture} decorationDensity=${plan.density} pathCurve=${normalizeFact(fact).pathCurve}</text>`,
     `</svg>`,
   ].join("\n");
 }
@@ -231,11 +231,9 @@ function buildGrassTufts(fact: PixelSceneWorldFact, tiles: Tile[], pathSamples: 
   const densityRate = fact.density / 100;
   const biomeFactor = fact.biome === "desert" ? 0.32 : fact.biome === "oasis" ? 1.16 : fact.biome === "grassland" ? 1.12 : 1;
   const includeRate = clamp(densityRate * biomeFactor, 0, 1);
-  const ambientAnchors = buildAnchors(`${layoutSeed}:ambient-grass`, 260, 6, WIDTH - 12, 84, HEIGHT - 14);
-  const roadsideAnchors = buildRoadsideGrassAnchors(pathSamples, `${layoutSeed}:roadside-grass`);
   const tufts: GrassTuft[] = [];
 
-  ambientAnchors.forEach((anchor) => {
+  buildAnchors(`${layoutSeed}:ambient-grass`, 260, 6, WIDTH - 12, 84, HEIGHT - 14).forEach((anchor) => {
     const tile = findTileAt(tiles, anchor.x, anchor.y);
     if (anchor.rank > includeRate || !tile || tile.kind === "path") {
       return;
@@ -251,7 +249,7 @@ function buildGrassTufts(fact: PixelSceneWorldFact, tiles: Tile[], pathSamples: 
     });
   });
 
-  roadsideAnchors.forEach((anchor) => {
+  buildRoadsideGrassAnchors(pathSamples, `${layoutSeed}:roadside-grass`).forEach((anchor) => {
     const tile = findTileAt(tiles, anchor.x, anchor.y);
     if (anchor.rank > includeRate || !tile || tile.kind === "path") {
       return;
@@ -281,45 +279,53 @@ function buildSceneObjects(fact: PixelSceneWorldFact, tiles: Tile[], pathSamples
     objects.push({ id: "actor_preview", kind: "actor", x: actorTile.x + 12, y: actorTile.y + 22, scale: 1, layer: "middle" });
   }
 
-  buildAnchors(`${layoutSeed}:ambient-objects`, fact.biome === "desert" ? 34 : 54, 18, WIDTH - 36, 92, HEIGHT - 42).forEach((anchor) => {
+  buildAnchors(`${layoutSeed}:permanent-trees`, permanentTreeCountFor(fact.biome), 36, WIDTH - 36, 116, HEIGHT - 48).forEach((anchor) => {
+    const tile = findTileAt(tiles, anchor.x, anchor.y);
+    if (!tile || tile.kind !== "grass") {
+      return;
+    }
+
+    objects.push(buildTreeFromAnchor(anchor, fact));
+  });
+
+  buildAnchors(`${layoutSeed}:small-decor`, fact.biome === "desert" ? 26 : 44, 18, WIDTH - 36, 92, HEIGHT - 42).forEach((anchor) => {
     const tile = findTileAt(tiles, anchor.x, anchor.y);
     if (anchor.rank > includeRate || !tile || tile.kind !== "grass") {
       return;
     }
 
-    objects.push(buildObjectFromAnchor(anchor, fact, false));
+    objects.push(buildSmallObjectFromAnchor(anchor, fact, false));
   });
 
-  buildRoadsideObjectAnchors(pathSamples, `${layoutSeed}:roadside-objects`).forEach((anchor) => {
+  buildRoadsideObjectAnchors(pathSamples, `${layoutSeed}:roadside-decor`).forEach((anchor) => {
     const tile = findTileAt(tiles, anchor.x, anchor.y);
     if (anchor.rank > includeRate || !tile || tile.kind === "path") {
       return;
     }
 
-    objects.push(buildObjectFromAnchor(anchor, fact, true));
+    objects.push(buildSmallObjectFromAnchor(anchor, fact, true));
   });
 
   return objects;
 }
 
-function buildObjectFromAnchor(anchor: CandidateAnchor, fact: PixelSceneWorldFact, roadside: boolean): SceneObject {
-  const treeChance = roadside ? 0.05 : treeChanceFor(fact.biome);
-  const bushChance = roadside ? 0.48 : 0.58;
-  const stoneChance = roadside ? 0.78 : 0.78;
-  const layer: SceneObjectLayer = anchor.y < 210 ? "back" : anchor.y > 300 ? "front" : "middle";
+function buildTreeFromAnchor(anchor: Anchor, fact: PixelSceneWorldFact): SceneObject {
+  return {
+    id: `permanent_tree_${anchor.id}`,
+    kind: "tree",
+    x: anchor.x,
+    y: anchor.y,
+    scale: 0.76 + anchor.scaleRoll * 0.42,
+    layer: layerFor(anchor.y),
+    health: clamp(Math.round(58 + fact.moisture * 0.36 + anchor.healthRoll * 22), 20, 100),
+    age: clamp(Math.round(22 + anchor.ageRoll * 88), 0, 120),
+  };
+}
 
-  if (anchor.roll < treeChance) {
-    return {
-      id: `${roadside ? "roadside" : "ambient"}_tree_${anchor.id}`,
-      kind: "tree",
-      x: anchor.x,
-      y: anchor.y,
-      scale: 0.72 + anchor.scaleRoll * 0.42,
-      layer,
-      health: clamp(Math.round(58 + fact.moisture * 0.36 + anchor.healthRoll * 22), 20, 100),
-      age: clamp(Math.round(22 + anchor.ageRoll * 88), 0, 120),
-    };
-  }
+function buildSmallObjectFromAnchor(anchor: Anchor, fact: PixelSceneWorldFact, roadside: boolean): SceneObject {
+  const bushChance = roadside ? 0.42 : fact.biome === "forest" ? 0.52 : 0.4;
+  const stoneChance = roadside ? 0.78 : 0.72;
+  const layer = layerFor(anchor.y);
 
   if (anchor.roll < bushChance) {
     return { id: `${roadside ? "roadside" : "ambient"}_bush_${anchor.id}`, kind: "bush", x: anchor.x, y: anchor.y, scale: 0.72 + anchor.scaleRoll * 0.45, layer };
@@ -332,23 +338,23 @@ function buildObjectFromAnchor(anchor: CandidateAnchor, fact: PixelSceneWorldFac
   return { id: `${roadside ? "roadside" : "ambient"}_flower_${anchor.id}`, kind: "flower", x: anchor.x, y: anchor.y, scale: 0.72 + anchor.scaleRoll * 0.32, layer };
 }
 
-function treeChanceFor(biome: PixelSceneBiome): number {
+function permanentTreeCountFor(biome: PixelSceneBiome): number {
   if (biome === "desert") {
-    return 0.12;
+    return 1;
   }
 
   if (biome === "grassland") {
-    return 0.18;
+    return 2;
   }
 
   if (biome === "oasis") {
-    return 0.28;
+    return 3;
   }
 
-  return 0.34;
+  return 5;
 }
 
-function buildAnchors(seed: string, count: number, minX: number, maxX: number, minY: number, maxY: number): CandidateAnchor[] {
+function buildAnchors(seed: string, count: number, minX: number, maxX: number, minY: number, maxY: number): Anchor[] {
   return Array.from({ length: count }, (_, index) => ({
     id: `${index}`,
     x: Math.round(minX + stableUnit(`${seed}:x:${index}`) * (maxX - minX)),
@@ -361,13 +367,13 @@ function buildAnchors(seed: string, count: number, minX: number, maxX: number, m
   }));
 }
 
-function buildRoadsideGrassAnchors(pathSamples: PathSample[], seed: string): CandidateAnchor[] {
+function buildRoadsideGrassAnchors(pathSamples: PathSample[], seed: string): Anchor[] {
   return pathSamples.flatMap((sample) => {
     if (sample.column % 2 !== 0) {
       return [];
     }
 
-    return ["top", "bottom"].map((side, sideIndex) => {
+    return (["top", "bottom"] as const).map((side, sideIndex) => {
       const offset = Math.round((stableUnit(`${seed}:offset:${sample.column}:${side}`) - 0.5) * 14);
       const y = side === "top" ? sample.topY - 4 - offset : sample.bottomY + 4 + offset;
 
@@ -385,13 +391,13 @@ function buildRoadsideGrassAnchors(pathSamples: PathSample[], seed: string): Can
   });
 }
 
-function buildRoadsideObjectAnchors(pathSamples: PathSample[], seed: string): CandidateAnchor[] {
+function buildRoadsideObjectAnchors(pathSamples: PathSample[], seed: string): Anchor[] {
   return pathSamples.flatMap((sample) => {
     if (sample.column % 4 !== 1) {
       return [];
     }
 
-    return ["top", "bottom"].map((side, sideIndex) => {
+    return (["top", "bottom"] as const).map((side, sideIndex) => {
       const offset = Math.round((stableUnit(`${seed}:offset:${sample.column}:${side}`) - 0.5) * 18);
       const y = side === "top" ? sample.topY - 10 - offset : sample.bottomY + 10 + offset;
 
@@ -423,8 +429,7 @@ function resolvePathWidth(biome: PixelSceneBiome): number {
 
 function renderTile(tile: Tile, p: Palette): string {
   if (tile.kind === "path") {
-    const color = tile.variant % 2 === 0 ? p.pathA : p.pathB;
-    return `<rect x="${tile.x}" y="${tile.y}" width="${TILE_SIZE}" height="${TILE_SIZE}" fill="${color}"/>`;
+    return `<rect x="${tile.x}" y="${tile.y}" width="${TILE_SIZE}" height="${TILE_SIZE}" fill="${tile.variant % 2 === 0 ? p.pathA : p.pathB}"/>`;
   }
 
   if (tile.kind === "edge") {
@@ -508,9 +513,9 @@ function renderTree(object: SceneObject, p: Palette): string {
   const crownScale = scale * (0.9 + (object.health ?? 80) * 0.002);
 
   return [
-    `<rect x="${trunkX}" y="${trunkY}" width="${trunkWidth}" height="${trunkHeight}" fill="${p.treeTrunkDark}"/>`,
-    `<rect x="${trunkX + Math.max(2, Math.round(trunkWidth * 0.28))}" y="${trunkY + 4}" width="${Math.max(4, Math.round(trunkWidth * 0.54))}" height="${trunkHeight - 6}" fill="${p.treeTrunk}"/>`,
-    `<rect x="${trunkX + trunkWidth - 4}" y="${trunkY + 12}" width="3" height="${Math.round(trunkHeight * 0.52)}" fill="${p.treeTrunkLight}"/>`,
+    `<rect x="${trunkX}" y="${trunkY}" width="${trunkWidth}" height="${trunkHeight}" fill="${p.trunkDark}"/>`,
+    `<rect x="${trunkX + Math.max(2, Math.round(trunkWidth * 0.28))}" y="${trunkY + 4}" width="${Math.max(4, Math.round(trunkWidth * 0.54))}" height="${trunkHeight - 6}" fill="${p.trunk}"/>`,
+    `<rect x="${trunkX + trunkWidth - 4}" y="${trunkY + 12}" width="3" height="${Math.round(trunkHeight * 0.52)}" fill="${p.trunkLight}"/>`,
     renderLeafCluster(object.x + Math.round(20 * scale), crownY + Math.round(20 * scale), crownScale, p.leafDark, [4, 10, 18, 24, 25, 20, 11]),
     renderLeafCluster(object.x - Math.round(8 * scale), crownY + Math.round(14 * scale), crownScale, p.leaf, [5, 13, 22, 28, 27, 20, 9]),
     renderLeafCluster(object.x - Math.round(23 * scale), crownY + Math.round(21 * scale), crownScale * 0.78, p.leaf, [4, 10, 16, 20, 18, 10]),
@@ -593,9 +598,9 @@ function paletteFor(biome: PixelSceneBiome, moisture: number): Palette {
       pathDark: "#8a6334",
       pathLight: "#e3bd68",
       shadow: "#1b2117",
-      treeTrunkDark: "#6b4b2b",
-      treeTrunk: "#9b7445",
-      treeTrunkLight: "#c79a5e",
+      trunkDark: "#6b4b2b",
+      trunk: "#9b7445",
+      trunkLight: "#c79a5e",
       leafDark: dry ? "#565532" : wet ? "#465431" : "#4f5c30",
       leaf: dry ? "#8e8b4c" : wet ? "#768c52" : "#88904e",
       leafLight: dry ? "#bdb468" : wet ? "#9eae6b" : "#bdbb6b",
@@ -624,9 +629,9 @@ function paletteFor(biome: PixelSceneBiome, moisture: number): Palette {
       pathDark: "#4f5b36",
       pathLight: "#b9c878",
       shadow: "#102019",
-      treeTrunkDark: "#604028",
-      treeTrunk: "#936139",
-      treeTrunkLight: "#bf8953",
+      trunkDark: "#604028",
+      trunk: "#936139",
+      trunkLight: "#bf8953",
       leafDark: dry ? "#37684c" : wet ? "#0e5c45" : "#1c634e",
       leaf: dry ? "#6f9d70" : wet ? "#2f946e" : "#4b9d77",
       leafLight: dry ? "#a1c48d" : wet ? "#7fc79d" : "#8ed0a0",
@@ -654,9 +659,9 @@ function paletteFor(biome: PixelSceneBiome, moisture: number): Palette {
     pathDark: "#805d2f",
     pathLight: "#d5a75b",
     shadow: "#111b15",
-    treeTrunkDark: "#5a351f",
-    treeTrunk: "#8a5a31",
-    treeTrunkLight: "#b87a3a",
+    trunkDark: "#5a351f",
+    trunk: "#8a5a31",
+    trunkLight: "#b87a3a",
     leafDark: dry ? "#354c2b" : wet ? "#0c4825" : "#154526",
     leaf: dry ? "#668a45" : wet ? "#2f8a3d" : "#3f873d",
     leafLight: dry ? "#9fb563" : wet ? "#68b85a" : "#7ec35c",
@@ -670,6 +675,18 @@ function paletteFor(biome: PixelSceneBiome, moisture: number): Palette {
     actorDark: "#6c4930",
     actor: "#b89260",
   };
+}
+
+function layerFor(y: number): SceneObjectLayer {
+  if (y < 210) {
+    return "back";
+  }
+
+  if (y > 300) {
+    return "front";
+  }
+
+  return "middle";
 }
 
 function normalizeFact(fact: PixelSceneWorldFact): PixelSceneWorldFact {
