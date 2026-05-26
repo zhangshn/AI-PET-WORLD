@@ -98,7 +98,7 @@
 
 1. WorldState / HomeMapState
    - 真实世界事实
-   - 例如房屋、孵化器、长期树木、道路、宠物、管家位置
+   - 例如房屋、长期树木、道路、宠物、管家位置、生活痕迹
 
 2. SceneCompositionPlan
    - 把世界事实翻译成场景组合计划
@@ -135,11 +135,11 @@
    - object painter
    - layer / y-sort system
 3. 新增初始家园场景验证：
-   - 空地
-   - 孵化器
+   - 家园空地
    - 管家占位
    - 初始路径/活动痕迹
    - 稀疏植被
+   - 生活对象占位
 4. 后续再接入 HomeMapState / worldEngine，而不是直接把测试 SVG 当正式世界。
 
 ## 当前状态
