@@ -14,14 +14,15 @@ export function WorldPainterReadonlyPreview(input: {
   const roadShapeValue = hasPathPlacements ? String(sceneFact.roadShape) : "none"
 
   return (
-    <section className={styles.worldPainterPanel} aria-label="World Painter readonly preview">
+    <section className={styles.worldPainterPanel} aria-label="Pixel World View fact-bound candidate">
       <div className={styles.worldPainterHeader}>
         <div>
-          <div className={styles.worldPainterEyebrow}>WORLD PAINTER / READONLY PREVIEW</div>
-          <h2>Pixel world generated from saved facts</h2>
+          <div className={styles.worldPainterEyebrow}>PIXEL WORLD VIEW / FACT-BOUND CANDIDATE</div>
+          <h2>Pixel world generated from HomeMapState</h2>
           <p>
-            This preview reads the current HomeMapState through a read-only adapter.
-            It does not create placements, world facts, pets, or runtime changes.
+            This candidate view reads saved HomeMapState facts and binds visible
+            placements into the pixel scene. It does not create placements,
+            pets, or runtime changes.
           </p>
         </div>
         <div className={styles.worldPainterFactGrid}>
@@ -60,6 +61,14 @@ export function WorldPainterReadonlyPreview(input: {
             <WorldPainterFactItem
               label="structure placements"
               value={String(summary.structurePlacements)}
+            />
+            <WorldPainterFactItem
+              label="bound fact objects"
+              value={String(summary.boundFactObjects)}
+            />
+            <WorldPainterFactItem
+              label="skipped fact objects"
+              value={String(summary.skippedFactObjects)}
             />
             <WorldPainterFactItem label="map diffs" value={String(summary.mapDiffs)} />
             <WorldPainterFactItem

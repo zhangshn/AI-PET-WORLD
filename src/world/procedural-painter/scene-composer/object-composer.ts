@@ -88,6 +88,23 @@ export function buildSceneObjects(
   return objects;
 }
 
+export function mergeFactAndGeneratedObjects(input: {
+  factObjects: SceneObject[]
+  generatedObjects: SceneObject[]
+}): SceneObject[] {
+  const filteredGeneratedObjects = input.generatedObjects.filter(
+    (generatedObject) =>
+      !input.factObjects.some((factObject) =>
+        isTooCloseToFactObject({
+          factObject,
+          generatedObject,
+        })
+      )
+  )
+
+  return [...input.factObjects, ...filteredGeneratedObjects]
+}
+
 export function buildSceneAnchors(
   seed: string,
   count: number,
@@ -191,4 +208,25 @@ function permanentTreeCountFor(biome: SceneComposerBiome): number {
   }
 
   return 5;
+}
+
+function isTooCloseToFactObject(input: {
+  factObject: SceneObject
+  generatedObject: SceneObject
+}): boolean {
+  const distance = Math.hypot(
+    input.factObject.x - input.generatedObject.x,
+    input.factObject.y - input.generatedObject.y
+  )
+
+  return distance < resolveFactObjectAvoidanceRadius(input.generatedObject.kind)
+}
+
+function resolveFactObjectAvoidanceRadius(kind: SceneObject["kind"]): number {
+  if (kind === "tree") return 54
+  if (kind === "bush") return 32
+  if (kind === "stone") return 24
+  if (kind === "flower") return 18
+
+  return 36
 }

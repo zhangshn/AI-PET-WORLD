@@ -9,6 +9,7 @@ import {
   clamp,
   stableUnit,
 } from "@/world/procedural-painter/scene-composer/scene-composer-random"
+import { adaptPlacementsToSceneObjects } from "./placement-to-scene-object-adapter"
 
 export type WorldPainterFactAdapterInput = {
   homeMapState: HomeMapState
@@ -21,6 +22,8 @@ export type WorldPainterFactAdapterResult = {
     naturalPlacements: number
     pathPlacements: number
     structurePlacements: number
+    boundFactObjects: number
+    skippedFactObjects: number
     mapDiffs: number
     groundHealth: number
     naturalGrowth: number
@@ -56,6 +59,9 @@ export function adaptHomeMapStateToSceneComposerFact(
     structurePlacements,
   })
   const roadShape = resolveRoadShape({ homeMapState })
+  const placementAdapterResult = adaptPlacementsToSceneObjects({
+    homeMapState,
+  })
 
   return {
     sceneFact: {
@@ -65,6 +71,7 @@ export function adaptHomeMapStateToSceneComposerFact(
       decorationDensity,
       roadShape,
       hasRoadFact: Boolean(pathPlacements),
+      factObjects: placementAdapterResult.boundObjects,
       worldSeed: `${homeMapState.seed}:${homeMapState.worldId}:world-painter-v1`,
     },
     sourceSummary: {
@@ -72,6 +79,8 @@ export function adaptHomeMapStateToSceneComposerFact(
       naturalPlacements,
       pathPlacements,
       structurePlacements,
+      boundFactObjects: placementAdapterResult.boundObjects.length,
+      skippedFactObjects: placementAdapterResult.skippedPlacements.length,
       mapDiffs: homeMapState.mapDiffs.length,
       groundHealth: homeMapState.resources.groundHealth,
       naturalGrowth: homeMapState.resources.naturalGrowth,

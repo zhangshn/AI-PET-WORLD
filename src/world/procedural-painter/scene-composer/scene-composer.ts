@@ -5,7 +5,10 @@ import {
   SCENE_TILE_SIZE,
   SCENE_WIDTH,
 } from "./scene-composer-constants";
-import { buildSceneObjects } from "./object-composer";
+import {
+  buildSceneObjects,
+  mergeFactAndGeneratedObjects,
+} from "./object-composer";
 import { buildRoadSamples } from "./road-composer";
 import { clamp } from "./scene-composer-random";
 import { buildSceneTiles } from "./terrain-composer";
@@ -40,7 +43,12 @@ export function composeScene(fact: SceneComposerFact): SceneCompositionPlan {
   const pathSamples = buildRoadSamples(clean);
   const tiles = buildSceneTiles(clean, pathSamples, layoutSeed);
   const grassTufts = buildSceneGrassTufts(clean, tiles, pathSamples, layoutSeed);
-  const objects = buildSceneObjects(clean, tiles, pathSamples, layoutSeed);
+  const factObjects = clean.factObjects ?? [];
+  const generatedObjects = buildSceneObjects(clean, tiles, pathSamples, layoutSeed);
+  const objects = mergeFactAndGeneratedObjects({
+    factObjects,
+    generatedObjects,
+  });
 
   return {
     width: SCENE_WIDTH,
@@ -53,6 +61,8 @@ export function composeScene(fact: SceneComposerFact): SceneCompositionPlan {
     hasRoadFact: clean.hasRoadFact ?? true,
     tiles,
     grassTufts,
+    factObjects,
+    generatedObjects,
     objects,
     summary: {
       grassTiles: tiles.filter((tile) => tile.kind === "grass").length,
@@ -76,6 +86,7 @@ export function normalizeSceneComposerFact(
     decorationDensity: clamp(Math.round(fact.decorationDensity), 0, 100),
     roadShape: clamp(Math.round(fact.roadShape), 0, 100),
     hasRoadFact: fact.hasRoadFact ?? true,
+    factObjects: fact.factObjects ?? [],
   };
 }
 
@@ -110,6 +121,10 @@ function removeUndefinedSceneComposerFields(
 
   if (input.hasRoadFact !== undefined) {
     clean.hasRoadFact = input.hasRoadFact;
+  }
+
+  if (input.factObjects !== undefined) {
+    clean.factObjects = input.factObjects;
   }
 
   return clean;

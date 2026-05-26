@@ -10,6 +10,7 @@ export type SceneComposerFact = {
   roadShape: number;
   worldSeed: string;
   hasRoadFact?: boolean;
+  factObjects?: SceneObject[];
 };
 
 export type SceneTileKind = "grass" | "path" | "edge";
@@ -117,6 +118,8 @@ export type SceneCompositionPlan = {
   hasRoadFact: boolean;
   tiles: SceneTile[];
   grassTufts: SceneGrassTuft[];
+  factObjects: SceneObject[];
+  generatedObjects: SceneObject[];
   objects: SceneObject[];
   summary: SceneCompositionSummary;
 };
