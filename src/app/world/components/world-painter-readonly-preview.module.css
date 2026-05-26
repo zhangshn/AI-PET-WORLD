@@ -1,7 +1,5 @@
 .worldPainterPanel {
-  background:
-    radial-gradient(circle at 18% 14%, rgba(207, 230, 151, 0.14), transparent 30%),
-    linear-gradient(180deg, rgba(23, 43, 27, 0.86), rgba(13, 27, 18, 0.82));
+  background: linear-gradient(180deg, rgba(23, 43, 27, 0.86), rgba(13, 27, 18, 0.82));
   border: 1px solid rgba(230, 234, 180, 0.18);
   border-radius: 20px;
   box-shadow: 0 18px 40px rgba(9, 22, 12, 0.22);
@@ -51,12 +49,14 @@
 }
 
 .worldPainterPreviewGrid {
+  align-items: start;
   display: grid;
   gap: 16px;
   grid-template-columns: minmax(0, 1.45fr) minmax(260px, 0.55fr);
 }
 
 .worldPainterSceneFrame {
+  align-self: start;
   background: rgba(8, 18, 11, 0.64);
   border: 1px solid rgba(230, 234, 180, 0.14);
   border-radius: 16px;
