@@ -22,6 +22,7 @@ const DEFAULT_SCENE_COMPOSER_FACT: SceneComposerFact = {
   decorationDensity: 72,
   roadShape: 58,
   worldSeed: "ai_pet_world_scene_composer_seed_001",
+  hasRoadFact: true,
 };
 
 export function buildDefaultSceneComposerFact(
@@ -49,6 +50,7 @@ export function composeScene(fact: SceneComposerFact): SceneCompositionPlan {
     moisture: clean.moisture,
     decorationDensity: clean.decorationDensity,
     roadShape: clean.roadShape,
+    hasRoadFact: clean.hasRoadFact ?? true,
     tiles,
     grassTufts,
     objects,
@@ -73,6 +75,7 @@ export function normalizeSceneComposerFact(
     moisture: clamp(Math.round(fact.moisture), 0, 100),
     decorationDensity: clamp(Math.round(fact.decorationDensity), 0, 100),
     roadShape: clamp(Math.round(fact.roadShape), 0, 100),
+    hasRoadFact: fact.hasRoadFact ?? true,
   };
 }
 
@@ -103,6 +106,10 @@ function removeUndefinedSceneComposerFields(
 
   if (input.worldSeed !== undefined) {
     clean.worldSeed = input.worldSeed;
+  }
+
+  if (input.hasRoadFact !== undefined) {
+    clean.hasRoadFact = input.hasRoadFact;
   }
 
   return clean;
