@@ -18,14 +18,16 @@ export function buildSceneTiles(
   layoutSeed: string
 ): SceneTile[] {
   const pathWidth = resolveRoadWidth(fact.biome);
+  const hasRoadFact = fact.hasRoadFact ?? true;
   const tiles: SceneTile[] = [];
 
   for (let row = 0; row < SCENE_ROWS; row += 1) {
     for (let column = 0; column < SCENE_COLUMNS; column += 1) {
       const center = pathSamples[column]?.center ?? 0;
       const distance = Math.abs(row - center);
-      const kind: SceneTileKind =
-        distance <= pathWidth
+      const kind: SceneTileKind = !hasRoadFact
+        ? "grass"
+        : distance <= pathWidth
           ? "path"
           : distance <= pathWidth + 0.95
             ? "edge"
