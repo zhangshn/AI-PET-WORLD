@@ -10,9 +10,19 @@ import type {
   SceneTile,
 } from "./scene-composer-schema";
 
-export function renderScenePlanToSvg(plan: SceneCompositionPlan): string {
+export type SceneSvgRendererOptions = {
+  showDebugOverlay?: boolean;
+};
+
+export function renderScenePlanToSvg(
+  plan: SceneCompositionPlan,
+  options: SceneSvgRendererOptions = {}
+): string {
   const palette = buildScenePalette(plan.biome, plan.moisture);
   const objectsByDepth = [...plan.objects].sort((left, right) => left.y - right.y);
+  const debugOverlay = options.showDebugOverlay
+    ? `<text x="18" y="28" font-size="13" fill="#e6f4e6" font-family="monospace">${escapeText(plan.biome)} moisture=${plan.moisture} decorationDensity=${plan.decorationDensity} roadShape=${plan.roadShape} road=${plan.hasRoadFact ? "saved" : "none"}</text>`
+    : "";
 
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${plan.width}" height="${plan.height}" viewBox="0 0 ${plan.width} ${plan.height}" shape-rendering="crispEdges" role="img" aria-label="AI-PET-WORLD pixel scene composer preview">`,
@@ -29,9 +39,9 @@ export function renderScenePlanToSvg(plan: SceneCompositionPlan): string {
       .filter((tuft) => tuft.layer !== "back")
       .map((tuft) => renderGrassTuft(tuft, palette))
       .join("\n"),
-    `<text x="18" y="28" font-size="13" fill="#e6f4e6" font-family="monospace">${escapeText(plan.biome)} moisture=${plan.moisture} decorationDensity=${plan.decorationDensity} roadShape=${plan.roadShape}</text>`,
+    debugOverlay,
     `</svg>`,
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 function renderTile(tile: SceneTile, p: ScenePalette): string {
