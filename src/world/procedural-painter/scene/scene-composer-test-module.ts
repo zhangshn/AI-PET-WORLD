@@ -50,7 +50,7 @@ type Tile = {
   y: number;
   kind: TileKind;
   variant: number;
-  edgeMask?: string;
+  edgeMask?: "top" | "bottom";
 };
 
 type GrassTuft = {
@@ -71,6 +71,25 @@ type SceneObject = {
   layer: SceneObjectLayer;
   health?: number;
   age?: number;
+};
+
+type CandidateAnchor = {
+  id: string;
+  x: number;
+  y: number;
+  rank: number;
+  roll: number;
+  scaleRoll: number;
+  ageRoll: number;
+  healthRoll: number;
+};
+
+type PathSample = {
+  column: number;
+  center: number;
+  x: number;
+  topY: number;
+  bottomY: number;
 };
 
 export type PixelSceneCompositionPlan = {
@@ -114,13 +133,11 @@ export function buildDefaultPixelSceneFact(input: Partial<PixelSceneWorldFact> =
 
 export function composePixelWorldScene(fact: PixelSceneWorldFact): PixelSceneCompositionPlan {
   const clean = normalizeFact(fact);
-  const layoutSeed = `${clean.worldSeed}:${clean.id}:scene-composer-v3:${clean.biome}`;
-  const tileRandom = seededRandom(`${layoutSeed}:tile-variants`);
-  const grassRandom = seededRandom(`${layoutSeed}:grass-anchors`);
-  const objectRandom = seededRandom(`${layoutSeed}:object-anchors`);
-  const tiles = buildTiles(clean, tileRandom);
-  const grassTufts = buildGrassTufts(clean, tiles, grassRandom);
-  const objects = buildSceneObjects(clean, tiles, objectRandom);
+  const layoutSeed = `${clean.worldSeed}:${clean.id}:scene-composer-v4:${clean.biome}`;
+  const pathSamples = buildPathSamples(clean);
+  const tiles = buildTiles(clean, pathSamples, layoutSeed);
+  const grassTufts = buildGrassTufts(clean, tiles, pathSamples, layoutSeed);
+  const objects = buildSceneObjects(clean, tiles, pathSamples, layoutSeed);
 
   return {
     width: WIDTH,
@@ -164,23 +181,35 @@ export function buildPixelWorldSceneSvg(fact: PixelSceneWorldFact): string {
   ].join("\n");
 }
 
-function buildTiles(fact: PixelSceneWorldFact, random: () => number): Tile[] {
-  const pathCenters = Array.from({ length: COLUMNS }, (_, column) => {
+function buildPathSamples(fact: PixelSceneWorldFact): PathSample[] {
+  const pathWidth = resolvePathWidth(fact.biome);
+
+  return Array.from({ length: COLUMNS }, (_, column) => {
     const curve = (fact.pathCurve - 50) / 50;
     const wave = Math.sin((column / COLUMNS) * Math.PI * 1.35 + curve * 0.8) * (1.2 + Math.abs(curve) * 1.5);
     const slope = 11.5 - column * 0.12;
-    return slope + wave + curve * 2.2;
-  });
+    const center = slope + wave + curve * 2.2;
 
-  const pathWidth = fact.biome === "desert" ? 1.9 : fact.biome === "grassland" ? 1.45 : 1.3;
+    return {
+      column,
+      center,
+      x: column * TILE_SIZE + TILE_SIZE / 2,
+      topY: Math.round((center - pathWidth - 0.8) * TILE_SIZE),
+      bottomY: Math.round((center + pathWidth + 1.35) * TILE_SIZE),
+    };
+  });
+}
+
+function buildTiles(fact: PixelSceneWorldFact, pathSamples: PathSample[], layoutSeed: string): Tile[] {
+  const pathWidth = resolvePathWidth(fact.biome);
   const tiles: Tile[] = [];
 
   for (let row = 0; row < ROWS; row += 1) {
     for (let column = 0; column < COLUMNS; column += 1) {
-      const center = pathCenters[column] ?? 0;
+      const center = pathSamples[column]?.center ?? 0;
       const distance = Math.abs(row - center);
       const kind: TileKind = distance <= pathWidth ? "path" : distance <= pathWidth + 0.95 ? "edge" : "grass";
-      const variant = Math.floor(random() * 4);
+      const variant = Math.floor(stableUnit(`${layoutSeed}:tile:${column}:${row}`) * 4);
       const edgeMask = kind === "edge" ? row < center ? "top" : "bottom" : undefined;
 
       tiles.push({
@@ -197,90 +226,110 @@ function buildTiles(fact: PixelSceneWorldFact, random: () => number): Tile[] {
   return tiles;
 }
 
-function buildGrassTufts(fact: PixelSceneWorldFact, tiles: Tile[], random: () => number): GrassTuft[] {
+function buildGrassTufts(fact: PixelSceneWorldFact, tiles: Tile[], pathSamples: PathSample[], layoutSeed: string): GrassTuft[] {
   const moistureRate = fact.moisture / 100;
   const densityRate = fact.density / 100;
-  const biomeFactor = fact.biome === "desert" ? 0.34 : fact.biome === "oasis" ? 1.25 : fact.biome === "grassland" ? 1.18 : 1;
-  const includeRate = clamp((0.1 + moistureRate * 0.34) * densityRate * biomeFactor, 0, 0.86);
-  const candidateCount = 260;
+  const biomeFactor = fact.biome === "desert" ? 0.32 : fact.biome === "oasis" ? 1.16 : fact.biome === "grassland" ? 1.12 : 1;
+  const includeRate = clamp(densityRate * biomeFactor, 0, 1);
+  const ambientAnchors = buildAnchors(`${layoutSeed}:ambient-grass`, 260, 6, WIDTH - 12, 84, HEIGHT - 14);
+  const roadsideAnchors = buildRoadsideGrassAnchors(pathSamples, `${layoutSeed}:roadside-grass`);
   const tufts: GrassTuft[] = [];
 
-  for (let index = 0; index < candidateCount; index += 1) {
-    const x = 6 + Math.round(random() * (WIDTH - 12));
-    const y = 84 + Math.round(random() * (HEIGHT - 98));
-    const includeRoll = random();
-    const tile = findTileAt(tiles, x, y);
-
-    if (includeRoll > includeRate || !tile || tile.kind === "path") {
-      continue;
+  ambientAnchors.forEach((anchor) => {
+    const tile = findTileAt(tiles, anchor.x, anchor.y);
+    if (anchor.rank > includeRate || !tile || tile.kind === "path") {
+      return;
     }
 
-    const height = Math.round(3 + random() * (4 + moistureRate * 10));
-    const layer: SceneObjectLayer = y > 292 ? "front" : random() > 0.65 ? "middle" : "back";
+    tufts.push({
+      id: `grass_${anchor.id}`,
+      x: anchor.x,
+      y: anchor.y,
+      height: Math.round(3 + anchor.scaleRoll * (4 + moistureRate * 10)),
+      light: anchor.roll > 0.56 - moistureRate * 0.18,
+      layer: anchor.y > 292 ? "front" : anchor.roll > 0.65 ? "middle" : "back",
+    });
+  });
+
+  roadsideAnchors.forEach((anchor) => {
+    const tile = findTileAt(tiles, anchor.x, anchor.y);
+    if (anchor.rank > includeRate || !tile || tile.kind === "path") {
+      return;
+    }
 
     tufts.push({
-      id: `grass_${index}`,
-      x,
-      y,
-      height,
-      light: random() > 0.56 - moistureRate * 0.18,
-      layer,
+      id: `road_grass_${anchor.id}`,
+      x: anchor.x,
+      y: anchor.y,
+      height: Math.round(3 + anchor.scaleRoll * (5 + moistureRate * 8)),
+      light: anchor.roll > 0.48 - moistureRate * 0.16,
+      layer: anchor.y > 292 ? "front" : "middle",
     });
-  }
+  });
 
   return tufts;
 }
 
-function buildSceneObjects(fact: PixelSceneWorldFact, tiles: Tile[], random: () => number): SceneObject[] {
+function buildSceneObjects(fact: PixelSceneWorldFact, tiles: Tile[], pathSamples: PathSample[], layoutSeed: string): SceneObject[] {
   const densityRate = fact.density / 100;
-  const biomeFactor = fact.biome === "desert" ? 0.4 : fact.biome === "grassland" ? 0.82 : fact.biome === "oasis" ? 0.92 : 1;
-  const includeRate = clamp((0.22 + densityRate * 0.62) * biomeFactor, 0.08, 0.86);
-  const candidateCount = fact.biome === "desert" ? 34 : 52;
+  const biomeFactor = fact.biome === "desert" ? 0.36 : fact.biome === "grassland" ? 0.78 : fact.biome === "oasis" ? 0.9 : 1;
+  const includeRate = clamp(densityRate * biomeFactor, 0, 1);
   const objects: SceneObject[] = [];
-
   const actorTile = tiles.find((tile) => tile.kind === "path" && tile.x > 260 && tile.x < 360 && tile.y > 200) ?? tiles.find((tile) => tile.kind === "path");
+
   if (actorTile) {
     objects.push({ id: "actor_preview", kind: "actor", x: actorTile.x + 12, y: actorTile.y + 22, scale: 1, layer: "middle" });
   }
 
-  for (let index = 0; index < candidateCount; index += 1) {
-    const x = 18 + Math.round(random() * (WIDTH - 36));
-    const y = 92 + Math.round(random() * (HEIGHT - 128));
-    const includeRoll = random();
-    const roll = random();
-    const scaleRoll = random();
-    const tile = findTileAt(tiles, x, y);
-
-    if (includeRoll > includeRate || !tile || tile.kind !== "grass") {
-      continue;
+  buildAnchors(`${layoutSeed}:ambient-objects`, fact.biome === "desert" ? 34 : 54, 18, WIDTH - 36, 92, HEIGHT - 42).forEach((anchor) => {
+    const tile = findTileAt(tiles, anchor.x, anchor.y);
+    if (anchor.rank > includeRate || !tile || tile.kind !== "grass") {
+      return;
     }
 
-    const nearExisting = objects.some((object) => Math.abs(object.x - x) < 42 && Math.abs(object.y - y) < 36);
-    if (nearExisting && roll < 0.72) {
-      continue;
+    objects.push(buildObjectFromAnchor(anchor, fact, false));
+  });
+
+  buildRoadsideObjectAnchors(pathSamples, `${layoutSeed}:roadside-objects`).forEach((anchor) => {
+    const tile = findTileAt(tiles, anchor.x, anchor.y);
+    if (anchor.rank > includeRate || !tile || tile.kind === "path") {
+      return;
     }
 
-    if (roll < treeChanceFor(fact.biome)) {
-      objects.push({
-        id: `tree_${index}`,
-        kind: "tree",
-        x,
-        y,
-        scale: 0.72 + scaleRoll * 0.42,
-        layer: y < 210 ? "back" : y > 300 ? "front" : "middle",
-        health: clamp(Math.round(58 + fact.moisture * 0.36 + random() * 22), 20, 100),
-        age: clamp(Math.round(22 + random() * 88), 0, 120),
-      });
-    } else if (roll < 0.58) {
-      objects.push({ id: `bush_${index}`, kind: "bush", x, y, scale: 0.72 + scaleRoll * 0.45, layer: y < 210 ? "back" : "middle" });
-    } else if (roll < 0.78) {
-      objects.push({ id: `stone_${index}`, kind: "stone", x, y, scale: 0.78 + scaleRoll * 0.36, layer: "middle" });
-    } else {
-      objects.push({ id: `flower_${index}`, kind: "flower", x, y, scale: 0.72 + scaleRoll * 0.32, layer: "middle" });
-    }
-  }
+    objects.push(buildObjectFromAnchor(anchor, fact, true));
+  });
 
   return objects;
+}
+
+function buildObjectFromAnchor(anchor: CandidateAnchor, fact: PixelSceneWorldFact, roadside: boolean): SceneObject {
+  const treeChance = roadside ? 0.05 : treeChanceFor(fact.biome);
+  const bushChance = roadside ? 0.48 : 0.58;
+  const stoneChance = roadside ? 0.78 : 0.78;
+  const layer: SceneObjectLayer = anchor.y < 210 ? "back" : anchor.y > 300 ? "front" : "middle";
+
+  if (anchor.roll < treeChance) {
+    return {
+      id: `${roadside ? "roadside" : "ambient"}_tree_${anchor.id}`,
+      kind: "tree",
+      x: anchor.x,
+      y: anchor.y,
+      scale: 0.72 + anchor.scaleRoll * 0.42,
+      layer,
+      health: clamp(Math.round(58 + fact.moisture * 0.36 + anchor.healthRoll * 22), 20, 100),
+      age: clamp(Math.round(22 + anchor.ageRoll * 88), 0, 120),
+    };
+  }
+
+  if (anchor.roll < bushChance) {
+    return { id: `${roadside ? "roadside" : "ambient"}_bush_${anchor.id}`, kind: "bush", x: anchor.x, y: anchor.y, scale: 0.72 + anchor.scaleRoll * 0.45, layer };
+  }
+
+  if (anchor.roll < stoneChance) {
+    return { id: `${roadside ? "roadside" : "ambient"}_stone_${anchor.id}`, kind: "stone", x: anchor.x, y: anchor.y, scale: 0.78 + anchor.scaleRoll * 0.36, layer };
+  }
+
+  return { id: `${roadside ? "roadside" : "ambient"}_flower_${anchor.id}`, kind: "flower", x: anchor.x, y: anchor.y, scale: 0.72 + anchor.scaleRoll * 0.32, layer };
 }
 
 function treeChanceFor(biome: PixelSceneBiome): number {
@@ -297,6 +346,79 @@ function treeChanceFor(biome: PixelSceneBiome): number {
   }
 
   return 0.34;
+}
+
+function buildAnchors(seed: string, count: number, minX: number, maxX: number, minY: number, maxY: number): CandidateAnchor[] {
+  return Array.from({ length: count }, (_, index) => ({
+    id: `${index}`,
+    x: Math.round(minX + stableUnit(`${seed}:x:${index}`) * (maxX - minX)),
+    y: Math.round(minY + stableUnit(`${seed}:y:${index}`) * (maxY - minY)),
+    rank: stableUnit(`${seed}:rank:${index}`),
+    roll: stableUnit(`${seed}:kind:${index}`),
+    scaleRoll: stableUnit(`${seed}:scale:${index}`),
+    ageRoll: stableUnit(`${seed}:age:${index}`),
+    healthRoll: stableUnit(`${seed}:health:${index}`),
+  }));
+}
+
+function buildRoadsideGrassAnchors(pathSamples: PathSample[], seed: string): CandidateAnchor[] {
+  return pathSamples.flatMap((sample) => {
+    if (sample.column % 2 !== 0) {
+      return [];
+    }
+
+    return ["top", "bottom"].map((side, sideIndex) => {
+      const offset = Math.round((stableUnit(`${seed}:offset:${sample.column}:${side}`) - 0.5) * 14);
+      const y = side === "top" ? sample.topY - 4 - offset : sample.bottomY + 4 + offset;
+
+      return {
+        id: `${sample.column}_${side}`,
+        x: Math.round(sample.x + (stableUnit(`${seed}:x:${sample.column}:${side}`) - 0.5) * 18),
+        y: clamp(y, 84, HEIGHT - 14),
+        rank: stableUnit(`${seed}:rank:${sample.column}:${side}`),
+        roll: stableUnit(`${seed}:kind:${sample.column}:${side}`),
+        scaleRoll: stableUnit(`${seed}:scale:${sample.column}:${side}`),
+        ageRoll: stableUnit(`${seed}:age:${sample.column}:${sideIndex}`),
+        healthRoll: stableUnit(`${seed}:health:${sample.column}:${sideIndex}`),
+      };
+    });
+  });
+}
+
+function buildRoadsideObjectAnchors(pathSamples: PathSample[], seed: string): CandidateAnchor[] {
+  return pathSamples.flatMap((sample) => {
+    if (sample.column % 4 !== 1) {
+      return [];
+    }
+
+    return ["top", "bottom"].map((side, sideIndex) => {
+      const offset = Math.round((stableUnit(`${seed}:offset:${sample.column}:${side}`) - 0.5) * 18);
+      const y = side === "top" ? sample.topY - 10 - offset : sample.bottomY + 10 + offset;
+
+      return {
+        id: `${sample.column}_${side}`,
+        x: Math.round(sample.x + (stableUnit(`${seed}:x:${sample.column}:${side}`) - 0.5) * 22),
+        y: clamp(y, 92, HEIGHT - 42),
+        rank: stableUnit(`${seed}:rank:${sample.column}:${side}`),
+        roll: stableUnit(`${seed}:kind:${sample.column}:${side}`),
+        scaleRoll: stableUnit(`${seed}:scale:${sample.column}:${side}`),
+        ageRoll: stableUnit(`${seed}:age:${sample.column}:${sideIndex}`),
+        healthRoll: stableUnit(`${seed}:health:${sample.column}:${sideIndex}`),
+      };
+    });
+  });
+}
+
+function resolvePathWidth(biome: PixelSceneBiome): number {
+  if (biome === "desert") {
+    return 1.9;
+  }
+
+  if (biome === "grassland") {
+    return 1.45;
+  }
+
+  return 1.3;
 }
 
 function renderTile(tile: Tile, p: Palette): string {
@@ -565,15 +687,13 @@ function findTileAt(tiles: Tile[], x: number, y: number): Tile | undefined {
   return tiles.find((tile) => tile.x === column * TILE_SIZE && tile.y === row * TILE_SIZE);
 }
 
-function seededRandom(seed: string): () => number {
-  let state = hash(seed);
-  return () => {
-    state += 0x6d2b79f5;
-    let mixed = state;
-    mixed = Math.imul(mixed ^ (mixed >>> 15), mixed | 1);
-    mixed ^= mixed + Math.imul(mixed ^ (mixed >>> 7), mixed | 61);
-    return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
-  };
+function stableUnit(value: string): number {
+  let state = hash(value);
+  state += 0x6d2b79f5;
+  let mixed = state;
+  mixed = Math.imul(mixed ^ (mixed >>> 15), mixed | 1);
+  mixed ^= mixed + Math.imul(mixed ^ (mixed >>> 7), mixed | 61);
+  return ((mixed ^ (mixed >>> 14)) >>> 0) / 4294967296;
 }
 
 function hash(value: string): number {
