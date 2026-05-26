@@ -20,26 +20,27 @@ const DEFAULT_FACT = buildDefaultSceneComposerFact();
 
 export default function PixelSceneComposerClient() {
   const [fact, setFact] = useState<SceneComposerFact>(DEFAULT_FACT);
-  const sceneSvg = useMemo(() => buildSceneSvg(fact), [fact]);
-  const plan = useMemo(() => composeScene(fact), [fact]);
+  const safeFact = useMemo(() => normalizeSceneComposerFact(fact), [fact]);
+  const sceneSvg = useMemo(() => buildSceneSvg(safeFact), [safeFact]);
+  const plan = useMemo(() => composeScene(safeFact), [safeFact]);
 
   function updateBiome(event: ChangeEvent<HTMLSelectElement>) {
-    setFact((current) => ({ ...current, biome: event.target.value as SceneComposerBiome }));
+    setFact((current) => ({ ...normalizeSceneComposerFact(current), biome: event.target.value as SceneComposerBiome }));
   }
 
   function updateNumberField(field: "moisture" | "decorationDensity" | "roadShape") {
     return (event: ChangeEvent<HTMLInputElement>) => {
-      setFact((current) => ({ ...current, [field]: Number(event.target.value) }));
+      setFact((current) => ({ ...normalizeSceneComposerFact(current), [field]: Number(event.target.value) }));
     };
   }
 
   function updateSeed(event: ChangeEvent<HTMLInputElement>) {
-    setFact((current) => ({ ...current, worldSeed: event.target.value }));
+    setFact((current) => ({ ...normalizeSceneComposerFact(current), worldSeed: event.target.value }));
   }
 
   function randomizeSeed() {
     const suffix = Math.random().toString(36).slice(2, 10);
-    setFact((current) => ({ ...current, worldSeed: `ai_pet_world_scene_seed_${suffix}` }));
+    setFact((current) => ({ ...normalizeSceneComposerFact(current), worldSeed: `ai_pet_world_scene_seed_${suffix}` }));
   }
 
   function resetFact() {
@@ -64,7 +65,7 @@ export default function PixelSceneComposerClient() {
 
           <label style={styles.fieldGroup}>
             <span style={styles.fieldLabel}>biome</span>
-            <select value={fact.biome} onChange={updateBiome} style={styles.selectInput}>
+            <select value={safeFact.biome} onChange={updateBiome} style={styles.selectInput}>
               {BIOME_OPTIONS.map((biome) => (
                 <option key={biome} value={biome}>
                   {biome}
@@ -73,13 +74,13 @@ export default function PixelSceneComposerClient() {
             </select>
           </label>
 
-          <RangeControl label="moisture" value={fact.moisture} onChange={updateNumberField("moisture")} />
-          <RangeControl label="decorationDensity" value={fact.decorationDensity} onChange={updateNumberField("decorationDensity")} />
-          <RangeControl label="roadShape" value={fact.roadShape} onChange={updateNumberField("roadShape")} />
+          <RangeControl label="moisture" value={safeFact.moisture} onChange={updateNumberField("moisture")} />
+          <RangeControl label="decorationDensity" value={safeFact.decorationDensity} onChange={updateNumberField("decorationDensity")} />
+          <RangeControl label="roadShape" value={safeFact.roadShape} onChange={updateNumberField("roadShape")} />
 
           <label style={styles.fieldGroup}>
             <span style={styles.fieldLabel}>worldSeed</span>
-            <input value={fact.worldSeed} onChange={updateSeed} style={styles.textInput} />
+            <input value={safeFact.worldSeed} onChange={updateSeed} style={styles.textInput} />
           </label>
 
           <div style={styles.buttonRow}>
@@ -162,6 +163,36 @@ function DebugRow({ label, value }: { label: string; value: string | number }) {
 
 function toSvgDataUri(svg: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function normalizeSceneComposerFact(
+  fact: SceneComposerFact & {
+    density?: number;
+    pathCurve?: number;
+  }
+): SceneComposerFact {
+  return {
+    id: fact.id ?? DEFAULT_FACT.id,
+    biome: BIOME_OPTIONS.includes(fact.biome) ? fact.biome : DEFAULT_FACT.biome,
+    moisture: normalizeRangeValue(fact.moisture, DEFAULT_FACT.moisture),
+    decorationDensity: normalizeRangeValue(
+      fact.decorationDensity ?? fact.density,
+      DEFAULT_FACT.decorationDensity
+    ),
+    roadShape: normalizeRangeValue(
+      fact.roadShape ?? fact.pathCurve,
+      DEFAULT_FACT.roadShape
+    ),
+    worldSeed: fact.worldSeed ?? DEFAULT_FACT.worldSeed,
+  };
+}
+
+function normalizeRangeValue(value: number | undefined, fallback: number): number {
+  if (value === undefined || !Number.isFinite(value)) {
+    return fallback;
+  }
+
+  return Math.min(100, Math.max(0, Math.round(value)));
 }
 
 const styles = {
