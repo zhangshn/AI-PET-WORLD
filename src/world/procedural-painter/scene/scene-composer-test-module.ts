@@ -114,10 +114,10 @@ export function buildDefaultPixelSceneFact(input: Partial<PixelSceneWorldFact> =
 
 export function composePixelWorldScene(fact: PixelSceneWorldFact): PixelSceneCompositionPlan {
   const clean = normalizeFact(fact);
-  const stableBaseSeed = `${clean.worldSeed}:${clean.id}:scene-composer-v2:${clean.biome}:${clean.pathCurve}`;
-  const tileRandom = seededRandom(`${stableBaseSeed}:tiles`);
-  const grassRandom = seededRandom(`${stableBaseSeed}:grass:${clean.density}`);
-  const objectRandom = seededRandom(`${stableBaseSeed}:objects:${clean.density}`);
+  const layoutSeed = `${clean.worldSeed}:${clean.id}:scene-composer-v3:${clean.biome}`;
+  const tileRandom = seededRandom(`${layoutSeed}:tile-variants`);
+  const grassRandom = seededRandom(`${layoutSeed}:grass-anchors`);
+  const objectRandom = seededRandom(`${layoutSeed}:object-anchors`);
   const tiles = buildTiles(clean, tileRandom);
   const grassTufts = buildGrassTufts(clean, tiles, grassRandom);
   const objects = buildSceneObjects(clean, tiles, objectRandom);
@@ -198,21 +198,23 @@ function buildTiles(fact: PixelSceneWorldFact, random: () => number): Tile[] {
 }
 
 function buildGrassTufts(fact: PixelSceneWorldFact, tiles: Tile[], random: () => number): GrassTuft[] {
-  const grassTiles = tiles.filter((tile) => tile.kind !== "path");
   const moistureRate = fact.moisture / 100;
   const densityRate = fact.density / 100;
   const biomeFactor = fact.biome === "desert" ? 0.34 : fact.biome === "oasis" ? 1.25 : fact.biome === "grassland" ? 1.18 : 1;
-  const count = Math.round(grassTiles.length * (0.12 + moistureRate * 0.28) * densityRate * biomeFactor);
+  const includeRate = clamp((0.1 + moistureRate * 0.34) * densityRate * biomeFactor, 0, 0.86);
+  const candidateCount = 260;
   const tufts: GrassTuft[] = [];
 
-  for (let index = 0; index < count; index += 1) {
-    const tile = grassTiles[Math.floor(random() * grassTiles.length)];
-    if (!tile) {
+  for (let index = 0; index < candidateCount; index += 1) {
+    const x = 6 + Math.round(random() * (WIDTH - 12));
+    const y = 84 + Math.round(random() * (HEIGHT - 98));
+    const includeRoll = random();
+    const tile = findTileAt(tiles, x, y);
+
+    if (includeRoll > includeRate || !tile || tile.kind === "path") {
       continue;
     }
 
-    const x = tile.x + 3 + Math.round(random() * (TILE_SIZE - 6));
-    const y = tile.y + 6 + Math.round(random() * (TILE_SIZE - 3));
     const height = Math.round(3 + random() * (4 + moistureRate * 10));
     const layer: SceneObjectLayer = y > 292 ? "front" : random() > 0.65 ? "middle" : "back";
 
@@ -230,9 +232,10 @@ function buildGrassTufts(fact: PixelSceneWorldFact, tiles: Tile[], random: () =>
 }
 
 function buildSceneObjects(fact: PixelSceneWorldFact, tiles: Tile[], random: () => number): SceneObject[] {
-  const grassTiles = tiles.filter((tile) => tile.kind === "grass" && tile.y > 64 && tile.y < HEIGHT - 48);
   const densityRate = fact.density / 100;
-  const objectCount = fact.biome === "desert" ? Math.round(4 + densityRate * 7) : Math.round(10 + densityRate * 18);
+  const biomeFactor = fact.biome === "desert" ? 0.4 : fact.biome === "grassland" ? 0.82 : fact.biome === "oasis" ? 0.92 : 1;
+  const includeRate = clamp((0.22 + densityRate * 0.62) * biomeFactor, 0.08, 0.86);
+  const candidateCount = fact.biome === "desert" ? 34 : 52;
   const objects: SceneObject[] = [];
 
   const actorTile = tiles.find((tile) => tile.kind === "path" && tile.x > 260 && tile.x < 360 && tile.y > 200) ?? tiles.find((tile) => tile.kind === "path");
@@ -240,17 +243,19 @@ function buildSceneObjects(fact: PixelSceneWorldFact, tiles: Tile[], random: () 
     objects.push({ id: "actor_preview", kind: "actor", x: actorTile.x + 12, y: actorTile.y + 22, scale: 1, layer: "middle" });
   }
 
-  for (let index = 0; index < objectCount; index += 1) {
-    const tile = grassTiles[Math.floor(random() * grassTiles.length)];
-    if (!tile) {
+  for (let index = 0; index < candidateCount; index += 1) {
+    const x = 18 + Math.round(random() * (WIDTH - 36));
+    const y = 92 + Math.round(random() * (HEIGHT - 128));
+    const includeRoll = random();
+    const roll = random();
+    const scaleRoll = random();
+    const tile = findTileAt(tiles, x, y);
+
+    if (includeRoll > includeRate || !tile || tile.kind !== "grass") {
       continue;
     }
 
-    const x = tile.x + 8 + Math.round(random() * 12);
-    const y = tile.y + 18 + Math.round(random() * 6);
-    const roll = random();
     const nearExisting = objects.some((object) => Math.abs(object.x - x) < 42 && Math.abs(object.y - y) < 36);
-
     if (nearExisting && roll < 0.72) {
       continue;
     }
@@ -261,17 +266,17 @@ function buildSceneObjects(fact: PixelSceneWorldFact, tiles: Tile[], random: () 
         kind: "tree",
         x,
         y,
-        scale: 0.72 + random() * 0.42,
+        scale: 0.72 + scaleRoll * 0.42,
         layer: y < 210 ? "back" : y > 300 ? "front" : "middle",
         health: clamp(Math.round(58 + fact.moisture * 0.36 + random() * 22), 20, 100),
-        age: clamp(Math.round(22 + fact.density * 0.7 + random() * 46), 0, 120),
+        age: clamp(Math.round(22 + random() * 88), 0, 120),
       });
     } else if (roll < 0.58) {
-      objects.push({ id: `bush_${index}`, kind: "bush", x, y, scale: 0.72 + random() * 0.45, layer: y < 210 ? "back" : "middle" });
+      objects.push({ id: `bush_${index}`, kind: "bush", x, y, scale: 0.72 + scaleRoll * 0.45, layer: y < 210 ? "back" : "middle" });
     } else if (roll < 0.78) {
-      objects.push({ id: `stone_${index}`, kind: "stone", x, y, scale: 0.78 + random() * 0.36, layer: "middle" });
+      objects.push({ id: `stone_${index}`, kind: "stone", x, y, scale: 0.78 + scaleRoll * 0.36, layer: "middle" });
     } else {
-      objects.push({ id: `flower_${index}`, kind: "flower", x, y, scale: 0.72 + random() * 0.32, layer: "middle" });
+      objects.push({ id: `flower_${index}`, kind: "flower", x, y, scale: 0.72 + scaleRoll * 0.32, layer: "middle" });
     }
   }
 
@@ -327,7 +332,7 @@ function renderTileDecorations(tiles: Tile[], p: Palette, moisture: number): str
       }
 
       const accent = index % 5 === 0 ? p.grassLight : p.grassDark;
-      const opacity = index % 5 === 0 ? 0.32 + wetRate * 0.32 : 0.22 + wetRate * 0.2;
+      const opacity = index % 5 === 0 ? 0.22 + wetRate * 0.22 : 0.18 + wetRate * 0.18;
       return `<rect x="${tile.x + 5 + (index % 3) * 5}" y="${tile.y + 8 + (index % 4) * 3}" width="3" height="3" fill="${accent}" opacity="${opacity}"/>`;
     })
     .join("\n");
@@ -456,26 +461,26 @@ function paletteFor(biome: PixelSceneBiome, moisture: number): Palette {
   if (biome === "desert") {
     return {
       bg: "#17231f",
-      grassA: dry ? "#746939" : "#817e40",
-      grassB: dry ? "#887744" : wet ? "#8c9b55" : "#8a8848",
-      grassC: dry ? "#625a31" : wet ? "#667d46" : "#706f3d",
-      grassDark: dry ? "#4d482b" : "#5a6135",
-      grassLight: dry ? "#aa9653" : wet ? "#c6ca6b" : "#b8aa5c",
-      pathA: dry ? "#c98a35" : "#a98543",
-      pathB: dry ? "#d99b42" : "#b9914b",
+      grassA: dry ? "#8a7c47" : wet ? "#697849" : "#817e40",
+      grassB: dry ? "#9b884c" : wet ? "#748858" : "#8a8848",
+      grassC: dry ? "#71683b" : wet ? "#52663e" : "#706f3d",
+      grassDark: dry ? "#625833" : wet ? "#3f5132" : "#5a6135",
+      grassLight: dry ? "#b8a45e" : wet ? "#96a96a" : "#b0a85c",
+      pathA: dry ? "#cf9346" : wet ? "#9c7c3f" : "#b58a42",
+      pathB: dry ? "#dda34f" : wet ? "#aa8848" : "#c2964a",
       pathDark: "#8a6334",
       pathLight: "#e3bd68",
       shadow: "#1b2117",
       treeTrunkDark: "#6b4b2b",
       treeTrunk: "#9b7445",
       treeTrunkLight: "#c79a5e",
-      leafDark: dry ? "#4a4f2b" : "#5b6634",
-      leaf: dry ? "#838746" : "#8f9f54",
-      leafLight: dry ? "#bbb463" : "#d1d174",
-      leafUnder: dry ? "#33391f" : "#424d28",
-      bushDark: "#4e552f",
-      bush: "#7d8849",
-      bushLight: "#b7b85f",
+      leafDark: dry ? "#565532" : wet ? "#465431" : "#4f5c30",
+      leaf: dry ? "#8e8b4c" : wet ? "#768c52" : "#88904e",
+      leafLight: dry ? "#bdb468" : wet ? "#9eae6b" : "#bdbb6b",
+      leafUnder: dry ? "#3f3e25" : wet ? "#344229" : "#384020",
+      bushDark: dry ? "#5c5c35" : wet ? "#435631" : "#4e552f",
+      bush: dry ? "#88894d" : wet ? "#6f8b54" : "#7d8849",
+      bushLight: dry ? "#bdbb68" : wet ? "#95aa69" : "#b7b85f",
       stone: "#6a6245",
       stoneLight: "#9a8f62",
       flower: "#e9d783",
@@ -487,26 +492,26 @@ function paletteFor(biome: PixelSceneBiome, moisture: number): Palette {
   if (biome === "oasis") {
     return {
       bg: "#17231f",
-      grassA: dry ? "#447448" : wet ? "#2e9b62" : "#3f8559",
-      grassB: dry ? "#4f8352" : wet ? "#35af70" : "#479466",
-      grassC: dry ? "#315f3e" : wet ? "#237d56" : "#2f6d4d",
-      grassDark: dry ? "#25513a" : "#146846",
-      grassLight: dry ? "#8fc57d" : wet ? "#9cefb5" : "#87d69a",
-      pathA: dry ? "#9d8145" : "#6d7947",
-      pathB: dry ? "#b19150" : "#778753",
+      grassA: dry ? "#5f814e" : wet ? "#246f52" : "#3f8559",
+      grassB: dry ? "#6d9258" : wet ? "#2e8060" : "#479466",
+      grassC: dry ? "#466b42" : wet ? "#1c5c49" : "#2f6d4d",
+      grassDark: dry ? "#36543a" : wet ? "#104634" : "#25513a",
+      grassLight: dry ? "#9fbf7f" : wet ? "#78b894" : "#87d69a",
+      pathA: dry ? "#a88c50" : wet ? "#5b6844" : "#7d7748",
+      pathB: dry ? "#b99b5b" : wet ? "#69774d" : "#8b8551",
       pathDark: "#4f5b36",
       pathLight: "#b9c878",
       shadow: "#102019",
       treeTrunkDark: "#604028",
       treeTrunk: "#936139",
       treeTrunkLight: "#bf8953",
-      leafDark: dry ? "#246045" : "#137053",
-      leaf: dry ? "#5c9869" : "#45bd85",
-      leafLight: dry ? "#96c988" : "#a2eebc",
-      leafUnder: dry ? "#255142" : "#105241",
-      bushDark: "#1a6b4f",
-      bush: "#4fb77e",
-      bushLight: "#9deab4",
+      leafDark: dry ? "#37684c" : wet ? "#0e5c45" : "#1c634e",
+      leaf: dry ? "#6f9d70" : wet ? "#2f946e" : "#4b9d77",
+      leafLight: dry ? "#a1c48d" : wet ? "#7fc79d" : "#8ed0a0",
+      leafUnder: dry ? "#315641" : wet ? "#0d4034" : "#16483b",
+      bushDark: dry ? "#286547" : wet ? "#0f543d" : "#1a6b4f",
+      bush: dry ? "#63a06f" : wet ? "#359368" : "#4fb77e",
+      bushLight: dry ? "#a3cf8c" : wet ? "#7fc79d" : "#9deab4",
       stone: "#48665d",
       stoneLight: "#78a090",
       flower: "#f48be5",
@@ -517,26 +522,26 @@ function paletteFor(biome: PixelSceneBiome, moisture: number): Palette {
 
   return {
     bg: "#17231f",
-    grassA: dry ? "#476934" : wet ? "#38a443" : "#3f7d3c",
-    grassB: dry ? "#58783d" : wet ? "#48b751" : "#4f8d43",
-    grassC: dry ? "#35512b" : wet ? "#2e7f39" : "#336936",
-    grassDark: dry ? "#264026" : wet ? "#166028" : "#28572c",
-    grassLight: dry ? "#8faf5a" : wet ? "#91e66a" : "#7fc360",
-    pathA: dry ? "#b57f34" : "#a57934",
-    pathB: dry ? "#c48d3b" : "#b3843b",
+    grassA: dry ? "#667e43" : wet ? "#1f7336" : "#3f7d3c",
+    grassB: dry ? "#758d4e" : wet ? "#2a8541" : "#4f8d43",
+    grassC: dry ? "#4d6338" : wet ? "#185a2d" : "#336936",
+    grassDark: dry ? "#38482b" : wet ? "#0d3f1f" : "#28572c",
+    grassLight: dry ? "#9daf62" : wet ? "#67a95a" : "#7fc360",
+    pathA: dry ? "#c09243" : wet ? "#956f32" : "#a57934",
+    pathB: dry ? "#ce9d4b" : wet ? "#a47d3a" : "#b3843b",
     pathDark: "#805d2f",
     pathLight: "#d5a75b",
     shadow: "#111b15",
     treeTrunkDark: "#5a351f",
     treeTrunk: "#8a5a31",
     treeTrunkLight: "#b87a3a",
-    leafDark: dry ? "#244021" : wet ? "#0f5a2d" : "#154526",
-    leaf: dry ? "#507d38" : wet ? "#46a84a" : "#3f873d",
-    leafLight: dry ? "#91b65d" : wet ? "#93df68" : "#7ec35c",
-    leafUnder: dry ? "#1b3320" : wet ? "#0e3f22" : "#10351e",
-    bushDark: dry ? "#2d5129" : "#17612f",
-    bush: dry ? "#5e913d" : "#3da248",
-    bushLight: dry ? "#9fc15d" : "#8fdb65",
+    leafDark: dry ? "#354c2b" : wet ? "#0c4825" : "#154526",
+    leaf: dry ? "#668a45" : wet ? "#2f8a3d" : "#3f873d",
+    leafLight: dry ? "#9fb563" : wet ? "#68b85a" : "#7ec35c",
+    leafUnder: dry ? "#263b25" : wet ? "#0a321b" : "#10351e",
+    bushDark: dry ? "#3c5c31" : wet ? "#0e4c26" : "#17612f",
+    bush: dry ? "#6f984a" : wet ? "#2c8941" : "#3da248",
+    bushLight: dry ? "#a7bd65" : wet ? "#69b85b" : "#8fdb65",
     stone: "#536354",
     stoneLight: "#81927d",
     flower: biome === "grassland" ? "#f5f0a8" : "#e8f0db",
@@ -552,6 +557,12 @@ function normalizeFact(fact: PixelSceneWorldFact): PixelSceneWorldFact {
     density: clamp(Math.round(fact.density), 0, 100),
     pathCurve: clamp(Math.round(fact.pathCurve), 0, 100),
   };
+}
+
+function findTileAt(tiles: Tile[], x: number, y: number): Tile | undefined {
+  const column = Math.floor(x / TILE_SIZE);
+  const row = Math.floor(y / TILE_SIZE);
+  return tiles.find((tile) => tile.x === column * TILE_SIZE && tile.y === row * TILE_SIZE);
 }
 
 function seededRandom(seed: string): () => number {
