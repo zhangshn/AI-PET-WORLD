@@ -1,5 +1,8 @@
 import { FormalWorldView } from "@/app/world/components/formal-world-view"
+import { WorldPainterReadonlyPreview } from "@/app/world/components/world-painter-readonly-preview"
 import { buildFormalVisualModelFromSnapshot } from "@/world/formal-visual-model/formal-visual-model-gateway"
+import { buildSceneSvg } from "@/world/procedural-painter/scene-composer/scene-composer-gateway"
+import { adaptHomeMapStateToSceneComposerFact } from "@/world/procedural-painter/world-painter-adapter/world-painter-fact-adapter"
 import { buildWorldLoopRenderableState } from "@/world/world-loop/world-loop-gateway"
 import { runAndPersistOneRuntimeTick } from "@/world/runtime/world-runtime-gateway"
 
@@ -16,6 +19,10 @@ export async function WorldLiveRuntimePage() {
   const formalVisualModel = buildFormalVisualModelFromSnapshot(
     renderableState.renderableWorldSnapshot
   )
+  const worldPainterAdapterResult = adaptHomeMapStateToSceneComposerFact({
+    homeMapState,
+  })
+  const worldPainterSceneSvg = buildSceneSvg(worldPainterAdapterResult.sceneFact)
   const lastEvent = saveRecord.recentEvents[saveRecord.recentEvents.length - 1]
   const acceptedDiffCount =
     runtimeResult.runtimeTick?.constructionResult.fullPipelineAudit
@@ -78,6 +85,11 @@ export async function WorldLiveRuntimePage() {
           />
         </div>
       </section>
+
+      <WorldPainterReadonlyPreview
+        adapterResult={worldPainterAdapterResult}
+        sceneSvg={worldPainterSceneSvg}
+      />
 
       <section className={styles.formalWorldPanel} aria-label="Home world view">
         <div className={styles.formalWorldPanelHeader}>
