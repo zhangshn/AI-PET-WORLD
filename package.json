@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "smoke:runtime": "node scripts/run-world-runtime-smoke.cjs",
-    "smoke:space": "node scripts/run-world-space-smoke.cjs"
+    "smoke:space": "node scripts/run-world-space-smoke.cjs",
+    "smoke:trace": "node scripts/run-world-trace-smoke.cjs"
   },
   "dependencies": {
     "next": "16.2.4",

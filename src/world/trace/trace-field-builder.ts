@@ -19,10 +19,18 @@ import {
 import { summarizeTraceField } from "./trace-summary"
 import type {
   TraceArea,
+  TraceAudit,
+  TraceEffects,
+  TraceEvidenceLevel,
   TraceFact,
   TraceField,
+  TraceScope,
   TraceSourceKind,
+  TraceSourceReliability,
+  TraceTargetRef,
   TraceType,
+  TraceVisualHints,
+  TraceVisualKind,
 } from "./trace-schema"
 
 export type BuildTraceFieldFromWorldInput = {
@@ -214,6 +222,59 @@ function buildTraceFact(input: {
     updatedAt: input.homeMapState.updatedAt,
   })
   const area = buildTraceArea(input.cells)
+  const target = buildTraceTarget(input)
+  const scope = buildTraceScope({
+    cells: input.cells,
+    relatedPlacementIds: input.relatedPlacementIds,
+    regionKind: input.regionKind,
+    target,
+  })
+  const fallback = input.cells.some((cell) => cell.regionSource === "fallback")
+  const evidenceLevel = resolveEvidenceLevel({
+    confidence: resolveConfidence({
+      strength,
+      cellCount: input.cells.length,
+      sourceKind: input.sourceKind,
+    }),
+    sourceKind: input.sourceKind,
+    fallback,
+  })
+  const sourceReliability = resolveSourceReliability({
+    sourceKind: input.sourceKind,
+    fallback,
+  })
+  const derivedFrom = buildDerivedFrom({
+    cells: input.cells,
+    relatedPlacementIds: input.relatedPlacementIds,
+    sourceKind: input.sourceKind,
+  })
+  const generationReason = buildGenerationReason({
+    type: input.type,
+    sourceKind: input.sourceKind,
+    regionKind: input.regionKind,
+    strength,
+  })
+  const warnings = buildTraceWarnings({
+    fallback,
+    relatedPlacementIds: input.relatedPlacementIds,
+  })
+  const confidence = resolveConfidence({
+    strength,
+    cellCount: input.cells.length,
+    sourceKind: input.sourceKind,
+  })
+  const audit: TraceAudit = {
+    evidenceLevel,
+    sourceReliability,
+    derivedFrom,
+    generationReason,
+    warnings,
+    tags: uniqueStrings([
+      "trace_audit",
+      `evidence:${evidenceLevel}`,
+      `reliability:${sourceReliability}`,
+    ]),
+  }
 
   return {
     id: `trace_${input.homeMapState.worldId}_${input.type}_${input.regionKind}`,
@@ -228,18 +289,45 @@ function buildTraceFact(input: {
     strength,
     strengthLevel: resolveTraceStrengthLevel(strength),
     age,
-    confidence: resolveConfidence({
-      strength,
-      cellCount: input.cells.length,
-      sourceKind: input.sourceKind,
-    }),
+    confidence,
     area,
+    target,
+    anchor: {
+      primary: target,
+      secondary: buildSecondaryTargets(input.relatedPlacementIds),
+      fallback,
+      reason: generationReason,
+    },
+    scope,
     relatedCellIds: input.cells.map((cell) => cell.id),
     relatedPlacementIds: input.relatedPlacementIds,
     regionKinds: [input.regionKind],
     terrainKinds: uniqueTerrainKinds(input.cells),
+    effects: buildTraceEffects({
+      type: input.type,
+      strength,
+      ecologyHealthHint: input.ecologyHealthHint,
+    }),
+    visualHints: buildTraceVisualHints({
+      type: input.type,
+      strength,
+      lifecyclePhase: resolveTraceLifecyclePhase({
+        strength,
+        age,
+        sourceKind: input.sourceKind,
+        ecologyHealthHint: input.ecologyHealthHint,
+      }),
+      terrainKinds: uniqueTerrainKinds(input.cells),
+    }),
+    evidenceLevel,
+    sourceReliability,
+    derivedFrom,
     createdAtTick: input.homeMapState.createdAt || 0,
     updatedAtTick: input.homeMapState.updatedAt || 0,
+    lastReinforcedTick: input.homeMapState.updatedAt || 0,
+    generationReason,
+    warnings,
+    audit,
     tags: uniqueStrings([
       ...input.tags,
       `region:${input.regionKind}`,
@@ -247,6 +335,308 @@ function buildTraceFact(input: {
       `source:${input.sourceKind}`,
     ]),
   }
+}
+
+function buildTraceTarget(input: {
+  homeMapState: HomeMapState
+  type: TraceType
+  cells: SpaceCell[]
+  relatedPlacementIds: string[]
+  regionKind: SpaceRegionKind
+}): TraceTargetRef {
+  const firstCell = input.cells[0]
+  const regionId = firstCell?.regionId ?? `region:${input.regionKind}`
+  const regionName = firstCell?.regionName ?? input.regionKind
+
+  if (
+    input.relatedPlacementIds.length > 0 &&
+    (input.type === "construction_maintenance" ||
+      input.type === "relationship_interaction")
+  ) {
+    return {
+      kind: "placement",
+      id: input.relatedPlacementIds[0],
+      label: `Placement ${input.relatedPlacementIds[0]}`,
+    }
+  }
+
+  return {
+    kind: "region",
+    id: regionId,
+    label: regionName,
+  }
+}
+
+function buildSecondaryTargets(placementIds: string[]): TraceTargetRef[] {
+  return placementIds.map((placementId) => ({
+    kind: "placement",
+    id: placementId,
+    label: `Placement ${placementId}`,
+  }))
+}
+
+function buildTraceScope(input: {
+  cells: SpaceCell[]
+  relatedPlacementIds: string[]
+  regionKind: SpaceRegionKind
+  target: TraceTargetRef
+}): TraceScope {
+  const targetKinds = uniqueStrings([
+    input.target.kind,
+    ...input.relatedPlacementIds.map(() => "placement"),
+  ]) as TraceScope["targetKinds"]
+
+  return {
+    kind: input.relatedPlacementIds.length > 0 ? "object_level" : "region_level",
+    targetKinds,
+    cellIds: input.cells.map((cell) => cell.id),
+    placementIds: input.relatedPlacementIds,
+    regionKinds: [input.regionKind],
+    terrainKinds: uniqueTerrainKinds(input.cells),
+  }
+}
+
+function buildTraceEffects(input: {
+  type: TraceType
+  strength: number
+  ecologyHealthHint?: number
+}): TraceEffects {
+  const weight = Number((input.strength / 100).toFixed(2))
+  const ecologyStress =
+    input.ecologyHealthHint === undefined
+      ? 0
+      : Number(((50 - input.ecologyHealthHint) / 100).toFixed(2))
+
+  if (input.type === "movement") {
+    return emptyEffects({
+      movementCostDelta: -4 * weight,
+      familiarityDelta: 8 * weight,
+      memoryWeightDelta: 5 * weight,
+      visualIntensityDelta: 10 * weight,
+    })
+  }
+
+  if (input.type === "ecology_change") {
+    return emptyEffects({
+      ecologyHealthDelta: ecologyStress * 10,
+      maintenancePriorityDelta: 6 * weight,
+      memoryWeightDelta: 4 * weight,
+      visualIntensityDelta: 8 * weight,
+    })
+  }
+
+  if (input.type === "construction_maintenance") {
+    return emptyEffects({
+      maintenancePriorityDelta: 8 * weight,
+      safetyFeelingDelta: 3 * weight,
+      visualIntensityDelta: 6 * weight,
+    })
+  }
+
+  if (input.type === "relationship_interaction") {
+    return emptyEffects({
+      safetyFeelingDelta: 5 * weight,
+      relationshipWeightDelta: 8 * weight,
+      memoryWeightDelta: 6 * weight,
+      visualIntensityDelta: 4 * weight,
+    })
+  }
+
+  if (input.type === "emotion_attention") {
+    return emptyEffects({
+      safetyFeelingDelta: 4 * weight,
+      relationshipWeightDelta: 5 * weight,
+      memoryWeightDelta: 7 * weight,
+      visualIntensityDelta: 7 * weight,
+    })
+  }
+
+  if (input.type === "time_passage") {
+    return emptyEffects({
+      maintenancePriorityDelta: 4 * weight,
+      visualIntensityDelta: 5 * weight,
+      memoryWeightDelta: 3 * weight,
+    })
+  }
+
+  return emptyEffects({
+    familiarityDelta: 5 * weight,
+    behaviorProbabilityDelta: 3 * weight,
+    memoryWeightDelta: 4 * weight,
+    visualIntensityDelta: 5 * weight,
+  })
+}
+
+function emptyEffects(
+  overrides: Partial<TraceEffects> = {}
+): TraceEffects {
+  return {
+    movementCostDelta: 0,
+    familiarityDelta: 0,
+    ecologyHealthDelta: 0,
+    safetyFeelingDelta: 0,
+    maintenancePriorityDelta: 0,
+    behaviorProbabilityDelta: 0,
+    memoryWeightDelta: 0,
+    visualIntensityDelta: 0,
+    relationshipWeightDelta: 0,
+    ...overrides,
+  }
+}
+
+function buildTraceVisualHints(input: {
+  type: TraceType
+  strength: number
+  lifecyclePhase: TraceFact["lifecyclePhase"]
+  terrainKinds: SpaceTerrainKind[]
+}): TraceVisualHints {
+  const visualKind = resolveVisualKind(input)
+  const intensity = clamp(Math.round(input.strength), 0, 100)
+
+  return {
+    visualKind,
+    intensity,
+    opacityHint: Number((intensity / 100).toFixed(2)),
+    layerHint: visualKind === "none" ? "none" : "surface",
+    textureHint: visualKind === "none" ? undefined : visualKind,
+    colorMoodHint: resolveColorMoodHint(input.type),
+    animationHint: input.type === "emotion_attention" ? "pulse" : "none",
+    displayPriority: resolveDisplayPriority(input.type, input.strength),
+    userFacingLabel: resolveUserFacingLabel(input.type),
+    productSafeDescription: resolveProductSafeDescription(input.type),
+  }
+}
+
+function resolveVisualKind(input: {
+  type: TraceType
+  lifecyclePhase: TraceFact["lifecyclePhase"]
+  terrainKinds: SpaceTerrainKind[]
+}): TraceVisualKind {
+  if (input.lifecyclePhase === "repaired") return "repaired_ground"
+  if (input.lifecyclePhase === "covered") return "faded_area"
+  if (input.type === "movement") return "worn_ground"
+  if (input.type === "ecology_change") {
+    return input.terrainKinds.includes("wetland") ? "moss" : "exposed_soil"
+  }
+  if (input.type === "construction_maintenance") return "maintained_area"
+  if (input.type === "relationship_interaction") return "comfort_spot"
+  if (input.type === "behavior_activity") return "waiting_spot"
+  if (input.type === "emotion_attention") return "attention_glow"
+  if (input.type === "time_passage") return "faded_area"
+  if (input.type === "spatial_use") return "flattened_grass"
+
+  return "none"
+}
+
+function resolveColorMoodHint(type: TraceType): string {
+  if (type === "ecology_change") return "earth"
+  if (type === "relationship_interaction") return "warm"
+  if (type === "emotion_attention") return "soft_focus"
+  if (type === "time_passage") return "muted"
+
+  return "natural"
+}
+
+function resolveDisplayPriority(type: TraceType, strength: number): number {
+  const typePriority =
+    type === "event_impact"
+      ? 18
+      : type === "emotion_attention"
+        ? 14
+        : type === "movement"
+          ? 12
+          : 8
+
+  return clamp(typePriority + Math.round(strength / 12), 0, 30)
+}
+
+function resolveUserFacingLabel(type: TraceType): string {
+  if (type === "spatial_use") return "Spatial use trace"
+  if (type === "movement") return "Movement trace"
+  if (type === "ecology_change") return "Ecology change trace"
+  if (type === "behavior_activity") return "Behavior activity trace"
+  if (type === "construction_maintenance") return "Construction maintenance trace"
+  if (type === "relationship_interaction") return "Relationship interaction trace"
+  if (type === "emotion_attention") return "Emotion attention trace"
+  if (type === "time_passage") return "Time passage trace"
+
+  return "Event impact trace"
+}
+
+function resolveProductSafeDescription(type: TraceType): string {
+  if (type === "movement") return "A derived hint for frequently used ground."
+  if (type === "ecology_change") return "A derived hint for ecological change."
+  if (type === "emotion_attention") return "A derived hint for attention."
+
+  return `A derived ${type} trace hint.`
+}
+
+function resolveEvidenceLevel(input: {
+  confidence: number
+  sourceKind: TraceSourceKind
+  fallback: boolean
+}): TraceEvidenceLevel {
+  if (input.fallback) return "low"
+  if (
+    input.confidence >= 72 ||
+    input.sourceKind === "movement_compatibility_input"
+  ) {
+    return "high"
+  }
+
+  return input.confidence >= 42 ? "medium" : "low"
+}
+
+function resolveSourceReliability(input: {
+  sourceKind: TraceSourceKind
+  fallback: boolean
+}): TraceSourceReliability {
+  if (input.fallback) return "fallback"
+  if (
+    input.sourceKind === "movement_compatibility_input" ||
+    input.sourceKind === "placement_state"
+  ) {
+    return "observed"
+  }
+  if (input.sourceKind === "world_event") return "explicit"
+
+  return "derived"
+}
+
+function buildDerivedFrom(input: {
+  cells: SpaceCell[]
+  relatedPlacementIds: string[]
+  sourceKind: TraceSourceKind
+}): string[] {
+  return uniqueStrings([
+    "HomeMapState",
+    "SpaceGrid",
+    `source:${input.sourceKind}`,
+    ...input.cells.map((cell) => `cell:${cell.id}`),
+    ...input.relatedPlacementIds.map((placementId) => `placement:${placementId}`),
+  ])
+}
+
+function buildGenerationReason(input: {
+  type: TraceType
+  sourceKind: TraceSourceKind
+  regionKind: SpaceRegionKind
+  strength: number
+}): string {
+  return `${input.type} trace derived from ${input.sourceKind} in ${input.regionKind} with strength ${input.strength}.`
+}
+
+function buildTraceWarnings(input: {
+  fallback: boolean
+  relatedPlacementIds: string[]
+}): string[] {
+  return [
+    input.fallback ? "Trace uses fallback region projection." : "",
+    "createdAtTick and updatedAtTick mirror HomeMapState timestamps until persisted trace ticks exist.",
+    input.relatedPlacementIds.length === 0
+      ? "Trace has no direct placement anchor."
+      : "",
+  ].filter(Boolean)
 }
 
 function resolveMovementCompatibilityPlacementIds(input: {

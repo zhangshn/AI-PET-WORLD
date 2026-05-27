@@ -40,6 +40,15 @@ export function resolveTraceLifecyclePhase(input: {
     return "covered"
   }
 
+  if (
+    input.sourceKind === "world_event" &&
+    input.age > 0 &&
+    strength >= 35 &&
+    strength < 55
+  ) {
+    return "transformed"
+  }
+
   if (input.age > 60 && strength < 30) {
     return "decaying"
   }

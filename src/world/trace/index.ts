@@ -1,12 +1,23 @@
 export type {
   TraceArea,
+  TraceAnchor,
+  TraceAudit,
+  TraceEffects,
+  TraceEvidenceLevel,
   TraceFact,
   TraceField,
   TraceFieldSummary,
   TraceLifecyclePhase,
+  TraceScope,
+  TraceScopeKind,
   TraceSourceKind,
+  TraceSourceReliability,
   TraceStrengthLevel,
+  TraceTargetKind,
+  TraceTargetRef,
   TraceType,
+  TraceVisualHints,
+  TraceVisualKind,
 } from "./trace-schema"
 export {
   buildTraceFieldFromWorld,

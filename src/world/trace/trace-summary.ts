@@ -13,6 +13,7 @@ const LIFECYCLE_PHASES: TraceLifecyclePhase[] = [
   "decaying",
   "covered",
   "repaired",
+  "transformed",
   "deposited",
 ]
 
@@ -21,7 +22,14 @@ const SOURCE_KINDS: TraceSourceKind[] = [
   "movement_compatibility_input",
   "ecology_state",
   "placement_state",
+  "butler_behavior",
+  "pet_behavior",
+  "world_event",
   "world_event_placeholder",
+  "time_passage",
+  "user_attention",
+  "relationship_state",
+  "memory_projection",
   "unknown",
 ]
 
@@ -44,6 +52,7 @@ export function summarizeTraceField(
       traces,
       "relationship_interaction"
     ),
+    emotionAttentionTraces: countType(traces, "emotion_attention"),
     timePassageTraces: countType(traces, "time_passage"),
     eventImpactTraces: countType(traces, "event_impact"),
     weakTraces: traces.filter((trace) => trace.strengthLevel === "weak").length,
