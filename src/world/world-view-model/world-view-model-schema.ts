@@ -55,6 +55,8 @@ export type WorldViewTile = {
   passable: boolean
 }
 
+export type WorldViewObjectSource = "world_fact" | "derived_visual_only"
+
 export type WorldViewObject = {
   id: string
   kind: WorldViewObjectKind
@@ -66,6 +68,8 @@ export type WorldViewObject = {
   health: number
   growthStage: string
   label: string
+  source: WorldViewObjectSource
+  tags: string[]
 }
 
 export type WorldViewTrace = {
