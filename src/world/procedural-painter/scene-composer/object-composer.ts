@@ -13,12 +13,11 @@ import {
   type EcologyRuleInput,
   type EcologyObjectProfile,
 } from "./ecology-object-rules";
-import { buildRoadsideObjectAnchors } from "./road-composer";
+import { buildTraceEdgeObjectAnchors } from "./trace-edge-composer";
 import { clamp, stableUnit } from "./scene-composer-random";
 import { findSceneTileAt } from "./terrain-composer";
 import type { SceneTraceInfluenceField } from "./trace-composer";
 import type {
-  PathSample,
   SceneAnchor,
   SceneComposerBiome,
   SceneComposerFact,
@@ -26,6 +25,7 @@ import type {
   SceneObjectKind,
   SceneObjectLayer,
   SceneTile,
+  SceneTraceSample,
 } from "./scene-composer-schema";
 
 export type SceneObjectBuildResult = {
@@ -36,7 +36,7 @@ export type SceneObjectBuildResult = {
 export function buildSceneObjects(
   fact: SceneComposerFact,
   tiles: SceneTile[],
-  pathSamples: PathSample[],
+  traceSamples: SceneTraceSample[],
   layoutSeed: string,
   traceField?: SceneTraceInfluenceField
 ): SceneObjectBuildResult {
@@ -128,7 +128,7 @@ export function buildSceneObjects(
     );
   });
 
-  buildRoadsideObjectAnchors(pathSamples, `${layoutSeed}:roadside-decor`).forEach(
+  buildTraceEdgeObjectAnchors(traceSamples, `${layoutSeed}:trace-edge-decor`).forEach(
     (anchor) => {
       const tile = findSceneTileAt(tiles, anchor.x, anchor.y);
       const movementInfluence =
@@ -205,7 +205,6 @@ export function buildSceneObjects(
         layer: resolveSceneLayer(anchor.y),
         ...profileToObjectFields(profile),
       });
-      return;
     }
   });
 
@@ -283,30 +282,31 @@ function buildSmallObjectFromAnchor(
   anchor: SceneAnchor,
   fact: SceneComposerFact,
   ecologyInput: EcologyRuleInput,
-  roadside: boolean
+  traceEdge: boolean
 ): SceneObject {
   const ecologyLift = ecologyInput.ecologyInfluence / 100;
   const movementPressure = ecologyInput.movementInfluence / 100;
   const bushChance = clamp(
-    (roadside ? 0.42 : fact.biome === "forest" ? 0.52 : 0.4) +
+    (traceEdge ? 0.42 : fact.biome === "forest" ? 0.52 : 0.4) +
       ecologyLift * 0.16 -
       movementPressure * 0.18,
     0.18,
     0.68
   );
   const stoneChance = clamp(
-    (roadside ? 0.78 : 0.72) +
+    (traceEdge ? 0.78 : 0.72) +
       (fact.biome === "desert" ? 0.12 : 0) +
       movementPressure * 0.08,
     bushChance + 0.1,
     0.88
   );
   const layer = resolveSceneLayer(anchor.y);
+  const prefix = traceEdge ? "trace_edge" : "ambient";
 
   if (anchor.roll < bushChance) {
     const profile = resolveBushEcologyProfile(ecologyInput);
     return {
-      id: `${roadside ? "roadside" : "ambient"}_bush_${anchor.id}`,
+      id: `${prefix}_bush_${anchor.id}`,
       kind: "bush",
       x: anchor.x,
       y: anchor.y,
@@ -319,7 +319,7 @@ function buildSmallObjectFromAnchor(
   if (anchor.roll < stoneChance) {
     const profile = resolveStoneEcologyProfile(ecologyInput);
     return {
-      id: `${roadside ? "roadside" : "ambient"}_stone_${anchor.id}`,
+      id: `${prefix}_stone_${anchor.id}`,
       kind: "stone",
       x: anchor.x,
       y: anchor.y,
@@ -331,7 +331,7 @@ function buildSmallObjectFromAnchor(
 
   const profile = resolveFlowerEcologyProfile(ecologyInput);
   return {
-    id: `${roadside ? "roadside" : "ambient"}_flower_${anchor.id}`,
+    id: `${prefix}_flower_${anchor.id}`,
     kind: "flower",
     x: anchor.x,
     y: anchor.y,
