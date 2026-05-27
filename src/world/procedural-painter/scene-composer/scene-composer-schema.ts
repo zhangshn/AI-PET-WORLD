@@ -129,7 +129,17 @@ export type SceneObject = {
 
 export type SceneCompositionSummary = {
   grassTiles: number;
+  longUsedAreaTiles: number;
+  traceEdgeTiles: number;
+  /**
+   * @deprecated Legacy visual tile name compatibility only.
+   * This is not a formal business concept; use longUsedAreaTiles.
+   */
   pathTiles: number;
+  /**
+   * @deprecated Legacy visual edge name compatibility only.
+   * Use traceEdgeTiles, or describe it as ecology transition.
+   */
   edgeTiles: number;
   grassTufts: number;
   trees: number;

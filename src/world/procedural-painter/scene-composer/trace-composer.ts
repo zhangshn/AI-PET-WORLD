@@ -5,6 +5,7 @@ import type {
   SceneTraceSample,
 } from "./scene-composer-schema";
 
+// Movement trace wrapper around the legacy sample builder.
 export function buildMovementTraceSamples(
   fact: SceneComposerFact
 ): SceneTraceSample[] {

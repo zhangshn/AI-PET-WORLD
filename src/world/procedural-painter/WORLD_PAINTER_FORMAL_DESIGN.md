@@ -48,7 +48,7 @@ The world space base is responsible for:
 - Passability.
 - Movement cost.
 
-AI-PET-WORLD V2.6 does not define an independent formal road/path business architecture. Passability and movement cost belong to the space base. Long-term results of repeated movement belong to the trace system.
+AI-PET-WORLD V2.6 does not define an independent formal travel-network business architecture. Passability and movement cost belong to the space base. Long-term results of repeated movement belong to the trace system.
 
 ## 4. Trace Facts
 
@@ -64,7 +64,7 @@ The current World Painter contract exposes movement trace with:
 - `traceFacts`: trace fact records available to the composer.
 - `traceSamples` / `traceField`: renderable movement-trace samples prepared for internal composition.
 
-Trace data can influence terrain transition, long-used area visuals, grass distribution, small-object placement, and painter layering. It must not be expanded into a separate road system.
+Trace data can influence terrain transition, long-used area visuals, grass distribution, small-object placement, and painter layering. It must not be expanded into a separate travel-network system.
 
 ## 5. Scene Composition
 
@@ -121,9 +121,10 @@ Temporary compatibility rules:
 - Legacy `hasRoadFact` may be read only to fill missing `hasTraceFact`.
 - Legacy HomeMapState placement layer/tag `"path"` may be read as movement trace input during migration.
 - Compatibility outputs may backfill deprecated `roadShape` and `hasRoadFact` only for old callers.
+- `pathTiles` and `edgeTiles` are deprecated visual compatibility names and should not be treated as formal business concepts.
 - `road-composer.ts` may remain as an internal implementation detail until all rendering helpers are renamed.
 
-No new formal code should describe movement trace as a road system.
+No new formal code should describe movement trace as a travel-network system.
 
 ## 10. Acceptance Rules
 
@@ -131,10 +132,10 @@ This module is a contract migration and documentation alignment module. It is no
 
 Acceptance requires:
 
-1. Formal business documentation no longer treats road/path as architecture.
+1. Formal business documentation keeps legacy travel-network wording only in compatibility notes.
 2. Public scene composer contracts expose `traceShape`, `traceDensity`, `hasTraceFact`, and `traceFacts`.
-3. Deprecated `roadShape` and `hasRoadFact` remain only as compatibility fields.
+3. Deprecated legacy shape and fact flags remain only as compatibility fields.
 4. `/world` remains read-only and runnable.
 5. `/world-debug/pixel-scene-composer` remains runnable.
-6. UI copy describes movement trace, trace shape, trace density, long-used area, or trace field instead of a road system.
+6. UI copy describes movement trace, trace shape, trace density, long-used area, or trace field instead of a travel-network system.
 7. `npm run lint`, `npx tsc --noEmit`, and `npm run build` pass.

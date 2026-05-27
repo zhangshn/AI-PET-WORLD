@@ -53,7 +53,7 @@ export default function PixelSceneComposerClient() {
         <p style={styles.kicker}>WORLD DEBUG / PIXEL SCENE COMPOSER</p>
         <h1 style={styles.title}>Pixel Scene Composer</h1>
         <p style={styles.description}>
-          这个页面测试“素材如何组合成世界”：地面 tile、路径、边缘过渡、草簇、树、灌木、石头、花和角色占位。
+          这个页面测试“素材如何组合成世界”：地面 tile、移动痕迹、生态过渡、草簇、树、灌木、石头、花和角色占位。
           它不写入正式世界事实，只验证组合规则能不能减少贴图感。
         </p>
       </section>
@@ -61,7 +61,7 @@ export default function PixelSceneComposerClient() {
       <section style={styles.layout}>
         <aside style={styles.controlPanel}>
           <h2 style={styles.cardTitle}>场景事实参数</h2>
-          <p style={styles.cardText}>调整这些参数，观察组合算法如何改变地貌、路径、植被密度和场景层级。</p>
+          <p style={styles.cardText}>调整这些参数，观察组合算法如何改变地貌、移动痕迹、植被密度和场景层级。</p>
 
           <label style={styles.fieldGroup}>
             <span style={styles.fieldLabel}>biome</span>
@@ -98,7 +98,7 @@ export default function PixelSceneComposerClient() {
             <div style={styles.cardHeader}>
               <h2 style={styles.cardTitle}>组合场景预览</h2>
               <p style={styles.cardText}>
-                目标不是单个素材好看，而是验证 tile、路径、边缘、草和对象能否组成一个整体。
+                目标不是单个素材好看，而是验证 tile、移动痕迹、生态过渡、草和对象能否组成一个整体。
               </p>
             </div>
             <Image
@@ -120,8 +120,8 @@ export default function PixelSceneComposerClient() {
               <DebugRow label="trace shape" value={plan.traceShape} />
               <DebugRow label="trace density" value={plan.traceDensity} />
               <DebugRow label="grass tiles" value={plan.summary.grassTiles} />
-              <DebugRow label="long-used area tiles" value={plan.summary.pathTiles} />
-              <DebugRow label="edge tiles" value={plan.summary.edgeTiles} />
+              <DebugRow label="long-used area tiles" value={plan.summary.longUsedAreaTiles} />
+              <DebugRow label="trace edge tiles" value={plan.summary.traceEdgeTiles} />
               <DebugRow label="grass tufts" value={plan.summary.grassTufts} />
               <DebugRow label="trees" value={plan.summary.trees} />
               <DebugRow label="bushes" value={plan.summary.bushes} />
@@ -169,6 +169,7 @@ function toSvgDataUri(svg: string): string {
 function normalizeSceneComposerFact(
   fact: SceneComposerFact & {
     density?: number;
+    /** @deprecated Legacy debug compatibility. Use traceShape. */
     pathCurve?: number;
   }
 ): SceneComposerFact {

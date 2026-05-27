@@ -63,6 +63,8 @@ export function composeScene(fact: SceneComposerFact): SceneCompositionPlan {
     factObjects,
     generatedObjects,
   });
+  const longUsedAreaTiles = tiles.filter((tile) => tile.kind === "path").length;
+  const traceEdgeTiles = tiles.filter((tile) => tile.kind === "edge").length;
 
   return {
     width: SCENE_WIDTH,
@@ -87,8 +89,11 @@ export function composeScene(fact: SceneComposerFact): SceneCompositionPlan {
     objects,
     summary: {
       grassTiles: tiles.filter((tile) => tile.kind === "grass").length,
-      pathTiles: tiles.filter((tile) => tile.kind === "path").length,
-      edgeTiles: tiles.filter((tile) => tile.kind === "edge").length,
+      longUsedAreaTiles,
+      traceEdgeTiles,
+      // Deprecated compatibility: legacy visual tile summary names.
+      pathTiles: longUsedAreaTiles,
+      edgeTiles: traceEdgeTiles,
       grassTufts: grassTufts.length,
       trees: objects.filter((object) => object.kind === "tree").length,
       bushes: objects.filter((object) => object.kind === "bush").length,
