@@ -1,3 +1,4 @@
+import { ButlerMemoryBiasSurface } from "@/app/world/components/butler-memory-bias-surface"
 import { FormalWorldView } from "@/app/world/components/formal-world-view"
 import { FormalTraceSurfaceSummary } from "@/app/world/components/formal-trace-surface-summary"
 import { WorldPainterReadonlyPreview } from "@/app/world/components/world-painter-readonly-preview"
@@ -94,13 +95,7 @@ export async function WorldLiveRuntimePage() {
 
       <section className={styles.contentGrid} aria-label="World surface signals">
         <FormalTraceSurfaceSummary formalVisualModel={formalVisualModel} />
-        <article className={styles.panel}>
-          <h2>Observation note</h2>
-          <p>
-            World traces are read from the formal visual projection. This view
-            does not create traces, change movement, or write new world facts.
-          </p>
-        </article>
+        <ButlerMemoryBiasSurface saveRecord={saveRecord} />
       </section>
 
       <section className={styles.formalWorldPanel} aria-label="Home world view">
