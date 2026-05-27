@@ -182,27 +182,19 @@ export default function PixelSceneComposerClient() {
         <aside style={styles.controlPanel}>
           <h2 style={styles.cardTitle}>场景事实参数</h2>
           <p style={styles.cardText}>调整这些参数，观察组合算法如何改变地貌、移动痕迹、植被密度和场景层级。</p>
-
           <label style={styles.fieldGroup}>
             <span style={styles.fieldLabel}>biome</span>
             <select value={safeFact.biome} onChange={updateBiome} style={styles.selectInput}>
-              {BIOME_OPTIONS.map((biome) => (
-                <option key={biome} value={biome}>
-                  {biome}
-                </option>
-              ))}
+              {BIOME_OPTIONS.map((biome) => <option key={biome} value={biome}>{biome}</option>)}
             </select>
           </label>
-
           <RangeControl label="moisture" value={safeFact.moisture} onChange={updateNumberField("moisture")} />
           <RangeControl label="decorationDensity" value={safeFact.decorationDensity} onChange={updateNumberField("decorationDensity")} />
           <RangeControl label="traceShape" value={safeFact.traceShape} onChange={updateNumberField("traceShape")} />
-
           <label style={styles.fieldGroup}>
             <span style={styles.fieldLabel}>worldSeed</span>
             <input value={safeFact.worldSeed} onChange={updateSeed} style={styles.textInput} />
           </label>
-
           <div style={styles.buttonRow}>
             <button type="button" onClick={randomizeSeed} style={styles.button}>随机 seed</button>
             <button type="button" onClick={resetFact} style={styles.secondaryButton}>重置</button>
@@ -236,9 +228,7 @@ export default function PixelSceneComposerClient() {
                     </div>
                     <div style={styles.ruleSourceBox}>
                       <strong>规则来源</strong>
-                      <ul style={styles.compactList}>
-                        {section.ruleSources.map((source) => <li key={source}>{source}</li>)}
-                      </ul>
+                      <ul style={styles.compactList}>{section.ruleSources.map((source) => <li key={source}>{source}</li>)}</ul>
                     </div>
                   </section>
                 ))}
@@ -390,9 +380,7 @@ function drawTilePreview(context: CanvasRenderingContext2D, id: string) {
 function drawTracePreview(context: CanvasRenderingContext2D, id: string) {
   const color = id === "trace_exposed_soil" ? "#895f3a" : id === "trace_worn_ground" ? "#7c673f" : id === "trace_maintained_area" ? "#bfd47f" : id === "trace_repaired_ground" ? "#accb70" : id === "trace_waiting_spot" ? "#8297bb" : id === "trace_attention_glow" ? "#f1d46a" : "#5e8545";
   context.fillStyle = color;
-  for (let index = 0; index < 14; index += 1) {
-    context.fillRect(42 + ((index * 19) % 102), 62 + ((index * 13) % 64), 24 - (index % 3) * 4, 7);
-  }
+  for (let index = 0; index < 14; index += 1) context.fillRect(42 + ((index * 19) % 102), 62 + ((index * 13) % 64), 24 - (index % 3) * 4, 7);
   if (id === "trace_attention_glow") {
     context.fillStyle = "rgba(255,255,255,0.28)";
     context.fillRect(90, 84, 12, 12);
@@ -402,38 +390,158 @@ function drawTracePreview(context: CanvasRenderingContext2D, id: string) {
 
 function drawObjectPreview(context: CanvasRenderingContext2D, id: string) {
   if (id === "tree") {
-    context.fillStyle = "rgba(14,30,18,0.28)"; context.fillRect(60, 126, 74, 14);
-    context.fillStyle = "#744f2f"; context.fillRect(88, 82, 18, 52);
-    context.fillStyle = "#2f6136"; context.fillRect(54, 50, 86, 46);
-    context.fillStyle = "#5fa456"; context.fillRect(72, 34, 54, 36); return;
+    drawSceneQualityTree(context, 96, 118, 1.18);
+    return;
   }
   if (id === "bush" || id === "grass_tuft") {
-    context.fillStyle = "#366f35"; context.fillRect(56, 102, 82, 34);
-    context.fillStyle = "#65a657"; context.fillRect(72, 78, 48, 38); context.fillRect(46, 94, 38, 30); return;
+    drawSceneQualityBush(context, 96, 126, id === "grass_tuft" ? 0.82 : 1);
+    return;
   }
   if (id === "stone") {
-    context.fillStyle = "#68716f"; context.fillRect(58, 98, 78, 34);
-    context.fillStyle = "#a4aaa4"; context.fillRect(78, 82, 42, 18); return;
+    drawSceneQualityStone(context, 96, 118);
+    return;
   }
   if (id === "flower") {
-    context.fillStyle = "#4f8f45"; context.fillRect(92, 92, 8, 46);
-    context.fillStyle = "#d87d86"; context.fillRect(76, 70, 40, 24);
-    context.fillStyle = "#ead66b"; context.fillRect(88, 76, 16, 14); return;
+    drawSceneQualityFlower(context, 96, 124);
+    return;
   }
   if (id === "mushroom") {
-    context.fillStyle = "#f1d9bc"; context.fillRect(88, 94, 16, 40);
-    context.fillStyle = "#c75f5f"; context.fillRect(64, 70, 64, 28);
-    context.fillStyle = "#f7d5d5"; context.fillRect(82, 76, 10, 8); context.fillRect(106, 82, 8, 6); return;
+    drawSceneQualityMushroom(context, 96, 126);
+    return;
   }
-  context.fillStyle = "#263321"; context.fillRect(76, 96, 18, 18); context.fillRect(106, 104, 16, 16);
-  context.fillStyle = "#f5df6e"; context.fillRect(96, 72, 12, 12);
+  drawInsectSignal(context, 96, 108);
+}
+
+function drawSceneQualityTree(context: CanvasRenderingContext2D, x: number, y: number, scale: number) {
+  const s = scale;
+  context.fillStyle = "rgba(9, 24, 14, 0.34)";
+  context.fillRect(x - 43 * s, y + 20 * s, 86 * s, 14 * s);
+  context.fillStyle = "rgba(8, 22, 13, 0.26)";
+  context.fillRect(x - 28 * s, y + 29 * s, 56 * s, 8 * s);
+  context.fillStyle = "#774b2c";
+  context.fillRect(x - 8 * s, y - 16 * s, 16 * s, 52 * s);
+  context.fillStyle = "#9b6938";
+  context.fillRect(x - 4 * s, y - 14 * s, 6 * s, 47 * s);
+  context.fillStyle = "#173a25";
+  context.fillRect(x - 47 * s, y - 56 * s, 92 * s, 28 * s);
+  context.fillRect(x - 36 * s, y - 72 * s, 74 * s, 30 * s);
+  context.fillRect(x - 22 * s, y - 88 * s, 48 * s, 22 * s);
+  context.fillStyle = "#245f34";
+  context.fillRect(x - 58 * s, y - 42 * s, 90 * s, 22 * s);
+  context.fillRect(x - 42 * s, y - 62 * s, 92 * s, 26 * s);
+  context.fillRect(x - 24 * s, y - 78 * s, 64 * s, 22 * s);
+  context.fillStyle = "#3e8a44";
+  context.fillRect(x - 38 * s, y - 70 * s, 50 * s, 14 * s);
+  context.fillRect(x + 5 * s, y - 58 * s, 34 * s, 12 * s);
+  context.fillStyle = "#75b45e";
+  context.fillRect(x - 20 * s, y - 86 * s, 26 * s, 8 * s);
+  context.fillRect(x + 16 * s, y - 65 * s, 18 * s, 6 * s);
+}
+
+function drawSceneQualityBush(context: CanvasRenderingContext2D, x: number, y: number, scale: number) {
+  const s = scale;
+  context.fillStyle = "rgba(9, 24, 14, 0.26)";
+  context.fillRect(x - 39 * s, y + 16 * s, 78 * s, 10 * s);
+  context.fillStyle = "#1f4c2b";
+  context.fillRect(x - 36 * s, y - 4 * s, 72 * s, 24 * s);
+  context.fillRect(x - 24 * s, y - 20 * s, 46 * s, 28 * s);
+  context.fillStyle = "#347b3c";
+  context.fillRect(x - 48 * s, y + 4 * s, 36 * s, 20 * s);
+  context.fillRect(x - 16 * s, y - 28 * s, 46 * s, 22 * s);
+  context.fillRect(x + 18 * s, y - 4 * s, 34 * s, 22 * s);
+  context.fillStyle = "#70b65d";
+  context.fillRect(x - 10 * s, y - 30 * s, 18 * s, 7 * s);
+  context.fillRect(x + 26 * s, y - 2 * s, 11 * s, 5 * s);
+}
+
+function drawSceneQualityStone(context: CanvasRenderingContext2D, x: number, y: number) {
+  context.fillStyle = "rgba(9, 20, 14, 0.26)";
+  context.fillRect(x - 36, y + 16, 72, 10);
+  context.fillStyle = "#59615f";
+  context.fillRect(x - 34, y - 2, 72, 24);
+  context.fillStyle = "#7f8781";
+  context.fillRect(x - 20, y - 18, 50, 20);
+  context.fillStyle = "#abb2ab";
+  context.fillRect(x - 12, y - 14, 22, 8);
+}
+
+function drawSceneQualityFlower(context: CanvasRenderingContext2D, x: number, y: number) {
+  context.fillStyle = "#3f8742";
+  context.fillRect(x - 3, y - 28, 6, 34);
+  context.fillRect(x - 16, y - 10, 16, 5);
+  context.fillStyle = "#e47b8d";
+  context.fillRect(x - 17, y - 45, 14, 14);
+  context.fillRect(x + 4, y - 45, 14, 14);
+  context.fillRect(x - 7, y - 56, 14, 14);
+  context.fillStyle = "#f1d766";
+  context.fillRect(x - 5, y - 43, 10, 10);
+}
+
+function drawSceneQualityMushroom(context: CanvasRenderingContext2D, x: number, y: number) {
+  context.fillStyle = "#f2d7b7";
+  context.fillRect(x - 8, y - 28, 16, 34);
+  context.fillStyle = "#b94f55";
+  context.fillRect(x - 34, y - 52, 68, 24);
+  context.fillRect(x - 22, y - 64, 44, 18);
+  context.fillStyle = "#f6d4d2";
+  context.fillRect(x - 16, y - 54, 9, 7);
+  context.fillRect(x + 10, y - 58, 8, 6);
+}
+
+function drawInsectSignal(context: CanvasRenderingContext2D, x: number, y: number) {
+  context.fillStyle = "#111d13";
+  context.fillRect(x - 22, y + 10, 14, 14);
+  context.fillRect(x + 14, y + 3, 12, 12);
+  context.fillStyle = "#f3dd68";
+  context.fillRect(x - 4, y - 26, 10, 10);
+  context.fillRect(x + 20, y - 16, 6, 6);
+  context.fillStyle = "#9fceaa";
+  context.fillRect(x - 28, y - 8, 4, 18);
+  context.fillRect(x + 32, y - 10, 4, 16);
 }
 
 function drawSpritePreview(context: CanvasRenderingContext2D, id: string) {
-  context.fillStyle = "rgba(16,26,38,0.28)"; context.fillRect(66, 138, 60, 12);
-  context.fillStyle = id === "future_pet_gated" ? "#7b6a58" : "#f1d6b0"; context.fillRect(86, 60, 22, 22);
-  context.fillStyle = id === "butler_maintain" ? "#718953" : id === "butler_observe" ? "#5368b2" : "#445c8e"; context.fillRect(80, 84, 34, 52);
-  context.fillStyle = id === "future_pet_gated" ? "#c95f5f" : "#e8f0df"; context.fillRect(106, 96, 18, 22);
+  if (id === "future_pet_gated") {
+    drawLockedFuturePet(context, 96, 120);
+    return;
+  }
+  drawButlerPreview(context, 96, 121, id);
+}
+
+function drawButlerPreview(context: CanvasRenderingContext2D, x: number, y: number, id: string) {
+  context.fillStyle = "rgba(12, 22, 20, 0.32)";
+  context.fillRect(x - 30, y + 22, 60, 10);
+  context.fillStyle = "#23334a";
+  context.fillRect(x - 15, y - 28, 30, 46);
+  context.fillStyle = id === "butler_maintain" ? "#607b56" : id === "butler_wait" ? "#566892" : "#4e65b2";
+  context.fillRect(x - 18, y - 30, 36, 42);
+  context.fillStyle = "#2e4478";
+  context.fillRect(x - 18, y + 4, 15, 31);
+  context.fillRect(x + 3, y + 4, 15, 31);
+  context.fillStyle = "#f0d2a8";
+  context.fillRect(x - 12, y - 61, 24, 24);
+  context.fillStyle = "#3a2f27";
+  context.fillRect(x - 14, y - 66, 28, 9);
+  context.fillRect(x - 15, y - 59, 7, 12);
+  context.fillStyle = "#1c241f";
+  context.fillRect(x - 6, y - 51, 4, 4);
+  context.fillRect(x + 6, y - 51, 4, 4);
+  context.fillStyle = "#f4f1dd";
+  if (id === "butler_observe") context.fillRect(x + 18, y - 22, 17, 22);
+  if (id === "butler_maintain") context.fillRect(x + 19, y + 2, 20, 8);
+  if (id === "butler_wait") context.fillRect(x - 34, y - 18, 15, 18);
+}
+
+function drawLockedFuturePet(context: CanvasRenderingContext2D, x: number, y: number) {
+  context.fillStyle = "rgba(12, 22, 20, 0.3)";
+  context.fillRect(x - 34, y + 18, 68, 10);
+  context.fillStyle = "#74685d";
+  context.fillRect(x - 22, y - 22, 44, 30);
+  context.fillStyle = "#9b8b76";
+  context.fillRect(x - 12, y - 36, 24, 18);
+  context.fillStyle = "#c45f5f";
+  context.fillRect(x - 18, y - 52, 36, 8);
+  context.fillRect(x - 22, y - 44, 44, 8);
 }
 
 function drawAtmospherePreview(context: CanvasRenderingContext2D, id: string) {
@@ -445,9 +553,13 @@ function drawAtmospherePreview(context: CanvasRenderingContext2D, id: string) {
 }
 
 function drawUiPreview(context: CanvasRenderingContext2D, id: string) {
-  context.fillStyle = "rgba(246,241,201,0.9)"; context.fillRect(42, 54, 108, 86);
-  context.fillStyle = "#496a42"; context.fillRect(58, 78, id === "ui_new_record" ? 54 : 76, 10); context.fillRect(58, 100, 58, 8);
-  context.fillStyle = "#9fceaa"; context.fillRect(58, 116, 34, 12);
+  context.fillStyle = "rgba(246,241,201,0.9)";
+  context.fillRect(42, 54, 108, 86);
+  context.fillStyle = "#496a42";
+  context.fillRect(58, 78, id === "ui_new_record" ? 54 : 76, 10);
+  context.fillRect(58, 100, 58, 8);
+  context.fillStyle = "#9fceaa";
+  context.fillRect(58, 116, 34, 12);
 }
 
 function RangeControl({ label, value, onChange }: { label: string; value: number; onChange: (event: ChangeEvent<HTMLInputElement>) => void; }) {
