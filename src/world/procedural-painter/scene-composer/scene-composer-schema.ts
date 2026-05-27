@@ -72,6 +72,14 @@ export type ScenePalette = {
   grassC: string;
   grassDark: string;
   grassLight: string;
+  soilA: string;
+  soilB: string;
+  soilDark: string;
+  soilLight: string;
+  pressedGrass: string;
+  wornGrass: string;
+  recoveryGrass: string;
+  ecologyBlend: string;
   pathA: string;
   pathB: string;
   pathDark: string;
@@ -97,6 +105,27 @@ export type ScenePalette = {
 /** @deprecated Use SceneTraceSample. */
 export type PathSample = SceneTraceSample;
 
+export type SceneTileVisualKind =
+  | "grass"
+  | "pressed_grass"
+  | "worn_grass"
+  | "exposed_soil"
+  | "ecology_transition"
+  | "recovery_growth";
+
+export type SceneTraceVisualSource =
+  | "none"
+  | "movement"
+  | "spatial_use"
+  | "ecology";
+
+export type SceneTraceVisualStage =
+  | "none"
+  | "weak"
+  | "medium"
+  | "strong"
+  | "recovery";
+
 export type SceneAnchor = {
   id: string;
   x: number;
@@ -112,9 +141,17 @@ export type SceneTile = {
   id: string;
   x: number;
   y: number;
+  /**
+   * @deprecated "path" and "edge" are retained for renderer compatibility.
+   * visualKind is the formal M5 trace visual semantic.
+   */
   kind: SceneTileKind;
   variant: number;
   edgeMask?: "top" | "bottom";
+  visualKind?: SceneTileVisualKind;
+  traceVisualIntensity?: number;
+  traceVisualSource?: SceneTraceVisualSource;
+  traceVisualStage?: SceneTraceVisualStage;
 };
 
 export type SceneGrassTuft = {
@@ -157,6 +194,11 @@ export type SceneCompositionSummary = {
   ecologyInfluencedTiles: number;
   traceSuppressedGrassTufts: number;
   traceAvoidedGeneratedObjects: number;
+  pressedGrassTiles: number;
+  wornGrassTiles: number;
+  exposedSoilTiles: number;
+  ecologyTransitionTiles: number;
+  recoveryGrowthTiles: number;
   grassTufts: number;
   trees: number;
   bushes: number;

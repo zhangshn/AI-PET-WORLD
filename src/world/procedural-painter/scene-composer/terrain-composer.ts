@@ -3,13 +3,16 @@ import {
   SCENE_ROWS,
   SCENE_TILE_SIZE,
 } from "./scene-composer-constants";
-import { stableUnit } from "./scene-composer-random";
+import { clamp, stableUnit } from "./scene-composer-random";
 import type { SceneTraceInfluenceField } from "./trace-composer";
 import type {
   PathSample,
   SceneComposerFact,
   SceneTile,
   SceneTileKind,
+  SceneTileVisualKind,
+  SceneTraceVisualSource,
+  SceneTraceVisualStage,
 } from "./scene-composer-schema";
 
 export function buildSceneTiles(
@@ -45,6 +48,11 @@ export function buildSceneTiles(
             // "edge" is deprecated renderer compatibility for trace edge / ecology transition tile.
             ? "edge"
             : "grass";
+      const traceVisual = resolveTraceVisual({
+        movementInfluence,
+        spatialUseInfluence,
+        ecologyInfluence,
+      });
       const variant = Math.floor(
         stableUnit(`${layoutSeed}:tile:${column}:${row}`) * 4
       );
@@ -59,11 +67,83 @@ export function buildSceneTiles(
         kind,
         variant,
         edgeMask,
+        ...traceVisual,
       });
     }
   }
 
   return tiles;
+}
+
+function resolveTraceVisual(input: {
+  movementInfluence: number;
+  spatialUseInfluence: number;
+  ecologyInfluence: number;
+}): {
+  visualKind: SceneTileVisualKind;
+  traceVisualIntensity: number;
+  traceVisualSource: SceneTraceVisualSource;
+  traceVisualStage: SceneTraceVisualStage;
+} {
+  const movementInfluence = clamp(Math.round(input.movementInfluence), 0, 100);
+  const spatialUseInfluence = clamp(Math.round(input.spatialUseInfluence), 0, 100);
+  const ecologyInfluence = clamp(Math.round(input.ecologyInfluence), 0, 100);
+
+  if (movementInfluence >= 72) {
+    return {
+      visualKind: "exposed_soil",
+      traceVisualIntensity: movementInfluence,
+      traceVisualSource: "movement",
+      traceVisualStage: "strong",
+    };
+  }
+
+  if (movementInfluence >= 52) {
+    return {
+      visualKind: "worn_grass",
+      traceVisualIntensity: movementInfluence,
+      traceVisualSource: "movement",
+      traceVisualStage: "medium",
+    };
+  }
+
+  if (movementInfluence >= 28) {
+    return {
+      visualKind: "pressed_grass",
+      traceVisualIntensity: movementInfluence,
+      traceVisualSource: "movement",
+      traceVisualStage: "weak",
+    };
+  }
+
+  if (ecologyInfluence >= 45) {
+    return {
+      visualKind: "ecology_transition",
+      traceVisualIntensity: ecologyInfluence,
+      traceVisualSource: "ecology",
+      traceVisualStage: "medium",
+    };
+  }
+
+  if (spatialUseInfluence >= 38) {
+    return {
+      visualKind: "pressed_grass",
+      traceVisualIntensity: spatialUseInfluence,
+      traceVisualSource: "spatial_use",
+      traceVisualStage: "weak",
+    };
+  }
+
+  return {
+    visualKind: "grass",
+    traceVisualIntensity: Math.max(
+      movementInfluence,
+      spatialUseInfluence,
+      ecologyInfluence
+    ),
+    traceVisualSource: "none",
+    traceVisualStage: "none",
+  };
 }
 
 export function findSceneTileAt(

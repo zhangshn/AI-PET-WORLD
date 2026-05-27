@@ -126,6 +126,10 @@ export default function PixelSceneComposerClient() {
               <DebugRow label="movement influenced tiles" value={plan.summary.movementInfluencedTiles} />
               <DebugRow label="spatial use influenced tiles" value={plan.summary.spatialUseInfluencedTiles} />
               <DebugRow label="ecology influenced tiles" value={plan.summary.ecologyInfluencedTiles} />
+              <DebugRow label="pressed grass tiles" value={plan.summary.pressedGrassTiles} />
+              <DebugRow label="worn grass tiles" value={plan.summary.wornGrassTiles} />
+              <DebugRow label="exposed soil tiles" value={plan.summary.exposedSoilTiles} />
+              <DebugRow label="ecology transition tiles" value={plan.summary.ecologyTransitionTiles} />
               <DebugRow label="suppressed grass tufts" value={plan.summary.traceSuppressedGrassTufts} />
               <DebugRow label="avoided generated objects" value={plan.summary.traceAvoidedGeneratedObjects} />
               <DebugRow label="grass tufts" value={plan.summary.grassTufts} />

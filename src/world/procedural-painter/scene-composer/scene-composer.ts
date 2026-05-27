@@ -74,6 +74,21 @@ export function composeScene(fact: SceneComposerFact): SceneCompositionPlan {
   });
   const longUsedAreaTiles = tiles.filter((tile) => tile.kind === "path").length;
   const traceEdgeTiles = tiles.filter((tile) => tile.kind === "edge").length;
+  const pressedGrassTiles = tiles.filter(
+    (tile) => tile.visualKind === "pressed_grass"
+  ).length;
+  const wornGrassTiles = tiles.filter(
+    (tile) => tile.visualKind === "worn_grass"
+  ).length;
+  const exposedSoilTiles = tiles.filter(
+    (tile) => tile.visualKind === "exposed_soil"
+  ).length;
+  const ecologyTransitionTiles = tiles.filter(
+    (tile) => tile.visualKind === "ecology_transition"
+  ).length;
+  const recoveryGrowthTiles = tiles.filter(
+    (tile) => tile.visualKind === "recovery_growth"
+  ).length;
 
   return {
     width: SCENE_WIDTH,
@@ -110,6 +125,11 @@ export function composeScene(fact: SceneComposerFact): SceneCompositionPlan {
       traceSuppressedGrassTufts: grassTuftResult.traceSuppressedGrassTufts,
       traceAvoidedGeneratedObjects:
         generatedObjectResult.traceAvoidedGeneratedObjects,
+      pressedGrassTiles,
+      wornGrassTiles,
+      exposedSoilTiles,
+      ecologyTransitionTiles,
+      recoveryGrowthTiles,
       grassTufts: grassTufts.length,
       trees: objects.filter((object) => object.kind === "tree").length,
       bushes: objects.filter((object) => object.kind === "bush").length,

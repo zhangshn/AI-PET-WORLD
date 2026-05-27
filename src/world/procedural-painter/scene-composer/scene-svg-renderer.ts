@@ -45,24 +45,113 @@ export function renderScenePlanToSvg(
 }
 
 function renderTile(tile: SceneTile, p: ScenePalette): string {
-  if (tile.kind === "path") {
-    return `<rect x="${tile.x}" y="${tile.y}" width="${SCENE_TILE_SIZE}" height="${SCENE_TILE_SIZE}" fill="${tile.variant % 2 === 0 ? p.pathA : p.pathB}"/>`;
+  if (tile.visualKind === "pressed_grass") {
+    return renderPressedGrassTile(tile, p);
   }
 
-  if (tile.kind === "edge") {
-    const base = tile.variant % 2 === 0 ? p.grassB : p.grassA;
-    const edgeY = tile.edgeMask === "top" ? tile.y + 14 : tile.y;
-    return [
-      `<rect x="${tile.x}" y="${tile.y}" width="${SCENE_TILE_SIZE}" height="${SCENE_TILE_SIZE}" fill="${base}"/>`,
-      `<rect x="${tile.x}" y="${edgeY}" width="${SCENE_TILE_SIZE}" height="10" fill="${p.pathA}" opacity="0.9"/>`,
-      `<rect x="${tile.x + 3}" y="${edgeY + 1}" width="6" height="3" fill="${p.grassLight}" opacity="0.72"/>`,
-      `<rect x="${tile.x + 15}" y="${edgeY + 5}" width="6" height="3" fill="${p.grassDark}" opacity="0.5"/>`,
-    ].join("\n");
+  if (tile.visualKind === "worn_grass") {
+    return renderWornGrassTile(tile, p);
   }
 
+  if (tile.visualKind === "exposed_soil") {
+    return renderExposedSoilTile(tile, p);
+  }
+
+  if (tile.visualKind === "ecology_transition") {
+    return renderEcologyTransitionTile(tile, p);
+  }
+
+  if (tile.visualKind === "recovery_growth") {
+    return renderRecoveryGrowthTile(tile, p);
+  }
+
+  if (!tile.visualKind && tile.kind === "path") {
+    return renderWornGrassTile(tile, p);
+  }
+
+  if (!tile.visualKind && tile.kind === "edge") {
+    return renderEcologyTransitionTile(tile, p);
+  }
+
+  return renderGrassTile(tile, p);
+}
+
+function renderGrassTile(tile: SceneTile, p: ScenePalette): string {
   const color =
     tile.variant === 0 ? p.grassA : tile.variant === 1 ? p.grassB : p.grassC;
   return `<rect x="${tile.x}" y="${tile.y}" width="${SCENE_TILE_SIZE}" height="${SCENE_TILE_SIZE}" fill="${color}"/>`;
+}
+
+function renderPressedGrassTile(tile: SceneTile, p: ScenePalette): string {
+  return [
+    renderGrassTile(tile, p),
+    `<rect x="${tile.x + tileOffset(tile, 0, 4)}" y="${tile.y + 5}" width="8" height="3" fill="${p.pressedGrass}" opacity="0.74"/>`,
+    `<rect x="${tile.x + 3}" y="${tile.y + tileOffset(tile, 1, 13)}" width="12" height="3" fill="${p.grassDark}" opacity="0.34"/>`,
+    `<rect x="${tile.x + 14}" y="${tile.y + tileOffset(tile, 2, 9)}" width="5" height="3" fill="${p.wornGrass}" opacity="0.34"/>`,
+  ].join("\n");
+}
+
+function renderWornGrassTile(tile: SceneTile, p: ScenePalette): string {
+  return [
+    `<rect x="${tile.x}" y="${tile.y}" width="${SCENE_TILE_SIZE}" height="${SCENE_TILE_SIZE}" fill="${tile.variant % 2 === 0 ? p.wornGrass : p.pressedGrass}"/>`,
+    renderTraceSpeckles(tile, p, 3, false),
+    `<rect x="${tile.x + 5}" y="${tile.y + tileOffset(tile, 3, 8)}" width="11" height="3" fill="${p.grassDark}" opacity="0.28"/>`,
+  ].join("\n");
+}
+
+function renderExposedSoilTile(tile: SceneTile, p: ScenePalette): string {
+  return [
+    `<rect x="${tile.x}" y="${tile.y}" width="${SCENE_TILE_SIZE}" height="${SCENE_TILE_SIZE}" fill="${tile.variant % 2 === 0 ? p.pressedGrass : p.wornGrass}"/>`,
+    renderTraceSpeckles(tile, p, 5, true),
+    `<rect x="${tile.x + tileOffset(tile, 4, 3)}" y="${tile.y + 16}" width="9" height="3" fill="${p.grassDark}" opacity="0.24"/>`,
+  ].join("\n");
+}
+
+function renderEcologyTransitionTile(tile: SceneTile, p: ScenePalette): string {
+  return [
+    renderGrassTile(tile, p),
+    `<rect x="${tile.x + tileOffset(tile, 5, 2)}" y="${tile.y + 4}" width="10" height="4" fill="${p.ecologyBlend}" opacity="0.56"/>`,
+    `<rect x="${tile.x + 12}" y="${tile.y + tileOffset(tile, 6, 13)}" width="8" height="3" fill="${p.grassLight}" opacity="0.38"/>`,
+    `<rect x="${tile.x + 4}" y="${tile.y + tileOffset(tile, 7, 17)}" width="5" height="3" fill="${p.recoveryGrass}" opacity="0.42"/>`,
+  ].join("\n");
+}
+
+function renderRecoveryGrowthTile(tile: SceneTile, p: ScenePalette): string {
+  return [
+    renderGrassTile(tile, p),
+    `<rect x="${tile.x + 5}" y="${tile.y + 13}" width="4" height="7" fill="${p.recoveryGrass}" opacity="0.72"/>`,
+    `<rect x="${tile.x + 14}" y="${tile.y + 7}" width="3" height="6" fill="${p.grassLight}" opacity="0.58"/>`,
+    `<rect x="${tile.x + 18}" y="${tile.y + 16}" width="3" height="5" fill="${p.recoveryGrass}" opacity="0.54"/>`,
+  ].join("\n");
+}
+
+function renderTraceSpeckles(
+  tile: SceneTile,
+  p: ScenePalette,
+  count: number,
+  exposed: boolean
+): string {
+  return Array.from({ length: count }, (_, index) => {
+    const x = tile.x + 2 + tileOffset(tile, index * 2, 16);
+    const y = tile.y + 3 + tileOffset(tile, index * 2 + 1, 14);
+    const width = exposed && index % 2 === 0 ? 7 : 4;
+    const height = exposed ? 3 : 2;
+    const color =
+      index % 3 === 0 ? p.soilDark : index % 2 === 0 ? p.soilA : p.soilB;
+    const opacity = exposed ? 0.62 : 0.38;
+    return `<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="${color}" opacity="${opacity}"/>`;
+  }).join("\n");
+}
+
+function tileOffset(tile: SceneTile, salt: number, range: number): number {
+  const value = `${tile.id}:${tile.x}:${tile.y}:${salt}`;
+  let hash = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash = (hash * 31 + value.charCodeAt(index)) % 9973;
+  }
+
+  return hash % Math.max(1, range);
 }
 
 function renderTileDecorations(
@@ -72,12 +161,23 @@ function renderTileDecorations(
 ): string {
   const wetRate = moisture / 100;
   return tiles
-    .filter((tile) => tile.kind !== "edge")
     .map((tile, index) => {
-      if (tile.kind === "path") {
+      if (
+        tile.visualKind === "worn_grass" ||
+        tile.visualKind === "exposed_soil" ||
+        (!tile.visualKind && tile.kind === "path")
+      ) {
         return index % 7 === 0
-          ? `<rect x="${tile.x + 7}" y="${tile.y + 12}" width="6" height="3" fill="${p.pathDark}" opacity="0.52"/>`
-          : `<rect x="${tile.x + 15}" y="${tile.y + 7}" width="3" height="3" fill="${p.pathLight}" opacity="0.45"/>`;
+          ? `<rect x="${tile.x + 7}" y="${tile.y + 12}" width="6" height="3" fill="${p.soilDark}" opacity="0.38"/>`
+          : `<rect x="${tile.x + 15}" y="${tile.y + 7}" width="3" height="3" fill="${p.soilLight}" opacity="0.28"/>`;
+      }
+
+      if (
+        tile.visualKind === "ecology_transition" ||
+        tile.visualKind === "recovery_growth" ||
+        (!tile.visualKind && tile.kind === "edge")
+      ) {
+        return `<rect x="${tile.x + 6 + (index % 2) * 7}" y="${tile.y + 9 + (index % 3) * 4}" width="3" height="4" fill="${p.recoveryGrass}" opacity="${0.28 + wetRate * 0.22}"/>`;
       }
 
       const accent = index % 5 === 0 ? p.grassLight : p.grassDark;
