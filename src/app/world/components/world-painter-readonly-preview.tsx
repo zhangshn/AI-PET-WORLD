@@ -89,6 +89,34 @@ export function WorldPainterReadonlyPreview(input: {
               label="space pressure"
               value={String(summary.spacePressure)}
             />
+            <WorldPainterFactItem
+              label="space cells"
+              value={String(summary.spaceCells)}
+            />
+            <WorldPainterFactItem
+              label="passable cells"
+              value={String(summary.passableCells)}
+            />
+            <WorldPainterFactItem
+              label="blocked cells"
+              value={String(summary.blockedCells)}
+            />
+            <WorldPainterFactItem
+              label="restricted cells"
+              value={String(summary.restrictedCells)}
+            />
+            <WorldPainterFactItem
+              label="occupied cells"
+              value={String(summary.occupiedCells)}
+            />
+            <WorldPainterFactItem
+              label="avg movement cost"
+              value={String(summary.averageMovementCost)}
+            />
+            <WorldPainterFactItem
+              label="avg trace strength"
+              value={String(summary.averageTraceStrength)}
+            />
           </div>
         </div>
       </div>

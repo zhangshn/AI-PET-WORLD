@@ -9,6 +9,7 @@ import {
   clamp,
   stableUnit,
 } from "@/world/procedural-painter/scene-composer/scene-composer-random"
+import { buildSpaceGridFromHomeMapState } from "@/world/space"
 import { adaptPlacementsToSceneObjects } from "./placement-to-scene-object-adapter"
 
 export type WorldPainterFactAdapterInput = {
@@ -28,6 +29,13 @@ export type WorldPainterFactAdapterResult = {
     groundHealth: number
     naturalGrowth: number
     spacePressure: number
+    spaceCells: number
+    passableCells: number
+    blockedCells: number
+    restrictedCells: number
+    occupiedCells: number
+    averageMovementCost: number
+    averageTraceStrength: number
   }
 }
 
@@ -63,6 +71,10 @@ export function adaptHomeMapStateToSceneComposerFact(
   const placementAdapterResult = adaptPlacementsToSceneObjects({
     homeMapState,
   })
+  const spaceGrid = buildSpaceGridFromHomeMapState({
+    homeMapState,
+  })
+  const spaceSummary = spaceGrid.summary
 
   return {
     sceneFact: {
@@ -95,6 +107,13 @@ export function adaptHomeMapStateToSceneComposerFact(
       groundHealth: homeMapState.resources.groundHealth,
       naturalGrowth: homeMapState.resources.naturalGrowth,
       spacePressure: homeMapState.resources.spacePressure,
+      spaceCells: spaceSummary.totalCells,
+      passableCells: spaceSummary.passableCells,
+      blockedCells: spaceSummary.blockedCells,
+      restrictedCells: spaceSummary.restrictedCells,
+      occupiedCells: spaceSummary.occupiedCells,
+      averageMovementCost: spaceSummary.averageMovementCost,
+      averageTraceStrength: spaceSummary.averageTraceStrength,
     },
   }
 }
