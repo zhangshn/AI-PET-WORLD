@@ -2,16 +2,16 @@ import {
   SCENE_HEIGHT,
   SCENE_WIDTH,
 } from "./scene-composer-constants";
-import { buildRoadsideGrassAnchors } from "./road-composer";
+import { buildTraceEdgeGrassAnchors } from "./trace-edge-composer";
 import { clamp } from "./scene-composer-random";
 import { buildSceneAnchors, resolveSceneLayer } from "./object-composer";
 import { findSceneTileAt } from "./terrain-composer";
 import type { SceneTraceInfluenceField } from "./trace-composer";
 import type {
-  PathSample,
   SceneComposerFact,
   SceneGrassTuft,
   SceneTile,
+  SceneTraceSample,
 } from "./scene-composer-schema";
 
 export type SceneGrassTuftBuildResult = {
@@ -22,7 +22,7 @@ export type SceneGrassTuftBuildResult = {
 export function buildSceneGrassTufts(
   fact: SceneComposerFact,
   tiles: SceneTile[],
-  pathSamples: PathSample[],
+  traceSamples: SceneTraceSample[],
   layoutSeed: string,
   traceField?: SceneTraceInfluenceField
 ): SceneGrassTuftBuildResult {
@@ -93,7 +93,7 @@ export function buildSceneGrassTufts(
     });
   });
 
-  buildRoadsideGrassAnchors(pathSamples, `${layoutSeed}:roadside-grass`).forEach(
+  buildTraceEdgeGrassAnchors(traceSamples, `${layoutSeed}:trace-edge-grass`).forEach(
     (anchor) => {
       const tile = findSceneTileAt(tiles, anchor.x, anchor.y);
       const movementInfluence =
@@ -123,7 +123,7 @@ export function buildSceneGrassTufts(
       }
 
       tufts.push({
-        id: `road_grass_${anchor.id}`,
+        id: `trace_edge_grass_${anchor.id}`,
         x: anchor.x,
         y: anchor.y,
         height: Math.max(
