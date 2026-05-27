@@ -1,4 +1,7 @@
-import type { WorldRuntimeEventLog, WorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-schema"
+import type {
+  WorldRuntimeEventLog,
+  WorldRuntimeSaveRecord,
+} from "@/world/runtime/world-runtime-schema"
 
 import type { WorldViewModel } from "./world-view-model-schema"
 
@@ -18,38 +21,112 @@ export function buildPPhoneView(input: {
 
   return {
     unreadCount: 1,
-    latestMessageTitle: localizeEventTitle(latestEvent),
-    latestMessageBody: localizeEventBody(latestEvent),
+    latestMessageTitle: localizeEventTitle({
+      event: latestEvent,
+      saveRecord: input.saveRecord,
+    }),
+    latestMessageBody: localizeEventBody({
+      event: latestEvent,
+      saveRecord: input.saveRecord,
+    }),
   }
 }
 
-function localizeEventTitle(event: WorldRuntimeEventLog): string {
-  if (event.title === "World runtime continued") return "世界继续运行"
-  if (event.title.toLowerCase().includes("butler")) return "管家更新了判断"
-  if (event.title.toLowerCase().includes("trace")) return "世界留下了新的痕迹"
+function localizeEventTitle(input: {
+  event: WorldRuntimeEventLog
+  saveRecord: WorldRuntimeSaveRecord
+}): string {
+  const intent = input.saveRecord.lastButlerRuntimeIntent
 
-  return event.title || "世界记录"
+  if (input.event.tags.includes("m7_butler_trace_closure")) {
+    if (intent?.kind === "resource_wait") return "管家留下了等待痕迹"
+    if (intent?.kind === "observation") return "管家记录了一次观察"
+    if (intent?.kind === "maintenance") return "管家完成了一次维护判断"
+    if (intent?.kind === "construction") return "管家完成了一次建设判断"
+
+    return "管家留下了新的行动记录"
+  }
+
+  if (input.event.title === "World runtime continued") return "世界继续运行"
+  if (input.event.title.toLowerCase().includes("butler")) return "管家更新了判断"
+  if (input.event.title.toLowerCase().includes("trace")) return "世界留下了新的痕迹"
+
+  return input.event.title || "世界记录"
 }
 
-function localizeEventBody(event: WorldRuntimeEventLog): string {
+function localizeEventBody(input: {
+  event: WorldRuntimeEventLog
+  saveRecord: WorldRuntimeSaveRecord
+}): string {
+  const intent = input.saveRecord.lastButlerRuntimeIntent
+  const validation = input.saveRecord.lastButlerWorldRuleValidation
+  const trace = findCurrentButlerTrace(input.saveRecord)
+  const memorySeedCount = input.saveRecord.traceMemorySeedField?.summary.totalSeeds ?? 0
+
+  if (input.event.tags.includes("m7_butler_trace_closure") && intent && validation) {
+    const validationText = validation.ok
+      ? "这次行动已经通过世界规则验证。"
+      : "这次行动被世界规则拦下，没有写入新的世界事实。"
+    const homeMapText =
+      intent.kind === "resource_wait" || intent.kind === "observation"
+        ? "管家没有强行改写 HomeMapState，只把经过验证的行为沉淀为痕迹。"
+        : "如果要改变家园结构，仍然必须经过 SafeApply。"
+    const traceText = trace
+      ? `本轮痕迹类型：${traceTypeToText(trace.type)}。`
+      : "本轮没有找到可公开展示的新痕迹。"
+    const memoryText =
+      memorySeedCount > 0
+        ? `当前可参考的记忆种子：${memorySeedCount} 条。`
+        : "当前还没有稳定记忆种子。"
+
+    return `${validationText}${homeMapText}${traceText}${memoryText}`
+  }
+
   if (
-    event.body.includes("resources insufficient") ||
-    event.body.includes("waited without forcing")
+    input.event.body.includes("resources insufficient") ||
+    input.event.body.includes("waited without forcing")
   ) {
     return "管家判断当前资源不足，因此暂时等待，没有强行改变家园。"
   }
 
-  if (event.body.includes("trace") || event.body.includes("Trace")) {
+  if (input.event.body.includes("trace") || input.event.body.includes("Trace")) {
     return "世界运行后，部分区域的痕迹状态被继续观察和沉淀。"
   }
 
-  if (event.body.includes("construction")) {
+  if (input.event.body.includes("construction")) {
     return "管家重新评估了建设节奏，并等待规则允许后的下一步。"
   }
 
-  if (event.body.includes("Audit")) {
+  if (input.event.body.includes("Audit")) {
     return "世界完成了一次运行记录，管家保持谨慎观察。"
   }
 
-  return event.body || "世界继续保持可观察状态。"
+  return input.event.body || "世界继续保持可观察状态。"
+}
+
+function findCurrentButlerTrace(saveRecord: WorldRuntimeSaveRecord) {
+  const intent = saveRecord.lastButlerRuntimeIntent
+  const validation = saveRecord.lastButlerWorldRuleValidation
+
+  return saveRecord.traceField?.traces.find(
+    (trace) =>
+      trace.sourceKind === "butler_behavior" &&
+      trace.updatedAtTick === saveRecord.tick &&
+      trace.tags.includes("m7_butler_trace_closure") &&
+      trace.tags.includes("not_pet_trace") &&
+      (!intent || trace.derivedFrom.includes(intent.id)) &&
+      (!validation || trace.derivedFrom.includes(validation.id))
+  )
+}
+
+function traceTypeToText(type: string): string {
+  if (type === "time_passage") return "等待留下的时间痕迹"
+  if (type === "spatial_use") return "空间使用痕迹"
+  if (type === "construction_maintenance") return "维护痕迹"
+  if (type === "ecology_change") return "生态变化痕迹"
+  if (type === "emotion_attention") return "注意力痕迹"
+  if (type === "behavior_activity") return "行为活动痕迹"
+  if (type === "movement") return "移动痕迹"
+
+  return "世界事件痕迹"
 }
