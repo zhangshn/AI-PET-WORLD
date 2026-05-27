@@ -10,6 +10,10 @@ import {
   stableUnit,
 } from "@/world/procedural-painter/scene-composer/scene-composer-random"
 import { buildSpaceGridFromHomeMapState } from "@/world/space"
+import {
+  adaptTraceFieldToSceneTraceFacts,
+  buildTraceFieldFromWorld,
+} from "@/world/trace"
 import { adaptPlacementsToSceneObjects } from "./placement-to-scene-object-adapter"
 
 export type WorldPainterFactAdapterInput = {
@@ -36,6 +40,15 @@ export type WorldPainterFactAdapterResult = {
     occupiedCells: number
     averageMovementCost: number
     averageTraceStrength: number
+    traceFacts: number
+    spatialUseTraces: number
+    movementTraces: number
+    ecologyChangeTraces: number
+    weakTraces: number
+    mediumTraces: number
+    strongTraces: number
+    landmarkTraces: number
+    averageTraceFactStrength: number
   }
 }
 
@@ -67,7 +80,6 @@ export function adaptHomeMapStateToSceneComposerFact(
     structurePlacements,
   })
   const traceShape = resolveTraceShape({ homeMapState })
-  const hasTraceFact = Boolean(movementTracePlacements)
   const placementAdapterResult = adaptPlacementsToSceneObjects({
     homeMapState,
   })
@@ -75,6 +87,15 @@ export function adaptHomeMapStateToSceneComposerFact(
     homeMapState,
   })
   const spaceSummary = spaceGrid.summary
+  const traceField = buildTraceFieldFromWorld({
+    homeMapState,
+    spaceGrid,
+  })
+  const traceSummary = traceField.summary
+  const sceneTraceFacts = adaptTraceFieldToSceneTraceFacts({
+    traceField,
+  })
+  const hasTraceFact = traceSummary.totalTraces > 0
 
   return {
     sceneFact: {
@@ -86,9 +107,10 @@ export function adaptHomeMapStateToSceneComposerFact(
       traceDensity: resolveTraceDensity({
         decorationDensity,
         movementTracePlacements,
+        averageTraceFactStrength: traceSummary.averageStrength,
       }),
       hasTraceFact,
-      traceFacts: [],
+      traceFacts: sceneTraceFacts,
       // Deprecated compatibility: legacy composer callers still read these.
       roadShape: traceShape,
       hasRoadFact: hasTraceFact,
@@ -114,6 +136,15 @@ export function adaptHomeMapStateToSceneComposerFact(
       occupiedCells: spaceSummary.occupiedCells,
       averageMovementCost: spaceSummary.averageMovementCost,
       averageTraceStrength: spaceSummary.averageTraceStrength,
+      traceFacts: traceSummary.totalTraces,
+      spatialUseTraces: traceSummary.spatialUseTraces,
+      movementTraces: traceSummary.movementTraces,
+      ecologyChangeTraces: traceSummary.ecologyChangeTraces,
+      weakTraces: traceSummary.weakTraces,
+      mediumTraces: traceSummary.mediumTraces,
+      strongTraces: traceSummary.strongTraces,
+      landmarkTraces: traceSummary.landmarkTraces,
+      averageTraceFactStrength: traceSummary.averageStrength,
     },
   }
 }
@@ -224,9 +255,14 @@ function resolveTraceShape(input: { homeMapState: HomeMapState }): number {
 function resolveTraceDensity(input: {
   decorationDensity: number
   movementTracePlacements: number
+  averageTraceFactStrength: number
 }): number {
   return clamp(
-    Math.round(input.decorationDensity * 0.72 + input.movementTracePlacements * 6),
+    Math.round(
+      input.decorationDensity * 0.52 +
+        input.movementTracePlacements * 4 +
+        input.averageTraceFactStrength * 0.36
+    ),
     0,
     100
   )

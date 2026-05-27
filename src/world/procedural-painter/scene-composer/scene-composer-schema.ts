@@ -2,13 +2,14 @@
 
 export type SceneComposerBiome = "forest" | "grassland" | "desert" | "oasis";
 
-export type SceneTraceKind = "movement";
+export type SceneTraceKind = "movement" | "spatial_use" | "ecology" | "world";
 
 export type SceneTraceFact = {
   id: string;
   kind: SceneTraceKind;
   strength: number;
   age: number;
+  radius?: number;
   x?: number;
   y?: number;
 };

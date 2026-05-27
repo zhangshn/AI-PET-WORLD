@@ -117,6 +117,42 @@ export function WorldPainterReadonlyPreview(input: {
               label="avg trace strength"
               value={String(summary.averageTraceStrength)}
             />
+            <WorldPainterFactItem
+              label="trace facts"
+              value={String(summary.traceFacts)}
+            />
+            <WorldPainterFactItem
+              label="spatial use traces"
+              value={String(summary.spatialUseTraces)}
+            />
+            <WorldPainterFactItem
+              label="movement traces"
+              value={String(summary.movementTraces)}
+            />
+            <WorldPainterFactItem
+              label="ecology change traces"
+              value={String(summary.ecologyChangeTraces)}
+            />
+            <WorldPainterFactItem
+              label="weak traces"
+              value={String(summary.weakTraces)}
+            />
+            <WorldPainterFactItem
+              label="medium traces"
+              value={String(summary.mediumTraces)}
+            />
+            <WorldPainterFactItem
+              label="strong traces"
+              value={String(summary.strongTraces)}
+            />
+            <WorldPainterFactItem
+              label="landmark traces"
+              value={String(summary.landmarkTraces)}
+            />
+            <WorldPainterFactItem
+              label="avg trace fact strength"
+              value={String(summary.averageTraceFactStrength)}
+            />
           </div>
         </div>
       </div>
