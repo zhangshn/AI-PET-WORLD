@@ -11,6 +11,13 @@ import {
   runTraceLifecycleTick,
 } from "@/world/trace"
 
+import {
+  buildButlerRuntimeIntent,
+  validateButlerRuntimeIntent,
+  type ButlerRuntimeIntent,
+  type ButlerWorldRuleValidation,
+} from "./butler-runtime-intent"
+import { applyButlerRuntimeTraceClosure } from "./butler-runtime-trace-closure"
 import { selectButlerRuntimeMotivation } from "./butler-runtime-motivation-selector"
 import type { ButlerRuntimeDecision } from "./butler-runtime-motivation-schema"
 import { auditWorldRuntimeTick } from "./world-runtime-audit"
@@ -74,23 +81,45 @@ export function runOneRuntimeTick(
   const acceptedDiffCount =
     runtimeTick?.constructionResult.fullPipelineAudit.acceptedDiffIds.length ?? 0
   const runtimeWarnings = runtimeTick?.audit.warnings ?? []
+  const intent = buildButlerRuntimeIntent({
+    saveRecord: input.saveRecord,
+    decision,
+    nextTick,
+    createdAt: nowIso,
+    acceptedDiffCount,
+  })
+  const worldRuleValidation = validateButlerRuntimeIntent({
+    intent,
+    decision,
+    runtimeTick,
+    acceptedDiffCount,
+  })
   const event = buildRuntimeEvent({
     tick: nextTick,
     createdAt: nowIso,
     acceptedDiffCount,
-    warningCount: runtimeWarnings.length,
+    warningCount:
+      runtimeWarnings.length +
+      worldRuleValidation.warnings.length +
+      worldRuleValidation.blockingWarnings.length,
     decision,
+    intent,
+    worldRuleValidation,
   })
   const actionSummary = runtimeTick
     ? buildRuntimeActionSummaryFromTick({
-    tick: nextTick,
-    createdAt: nowIso,
-    runtimeTick,
+        tick: nextTick,
+        createdAt: nowIso,
+        runtimeTick,
+        intent,
+        worldRuleValidation,
       })
     : buildRuntimeActionSummaryFromDecision({
         tick: nextTick,
         createdAt: nowIso,
         decision,
+        intent,
+        worldRuleValidation,
       })
   const recentEvents = [...input.saveRecord.recentEvents, event].slice(-20)
   const recentActionSignatures = [
@@ -113,12 +142,20 @@ export function runOneRuntimeTick(
     homeMapState: nextHomeMapState,
     spaceGrid,
   })
+  const traceClosureResult = applyButlerRuntimeTraceClosure({
+    traceField: traceLifecycleResult.nextTraceField,
+    spaceGrid,
+    decision,
+    intent,
+    validation: worldRuleValidation,
+    currentTick: nextTick,
+  })
   const traceInfluencedSpaceGrid = buildSpaceGridFromHomeMapState({
     homeMapState: nextHomeMapState,
-    traceField: traceLifecycleResult.nextTraceField,
+    traceField: traceClosureResult.nextTraceField,
   })
   const traceMemorySeedField = buildTraceMemorySeedFieldFromTraceField({
-    traceField: traceLifecycleResult.nextTraceField,
+    traceField: traceClosureResult.nextTraceField,
     currentTick: nextTick,
   })
   const nextSaveRecord: WorldRuntimeSaveRecord = {
@@ -136,7 +173,9 @@ export function runOneRuntimeTick(
       decision.selectedMotivation,
     ].slice(-10),
     lastButlerRuntimeDecision: decision,
-    traceField: traceLifecycleResult.nextTraceField,
+    lastButlerRuntimeIntent: intent,
+    lastButlerWorldRuleValidation: worldRuleValidation,
+    traceField: traceClosureResult.nextTraceField,
     traceMemorySeedField,
     traceInfluenceSummary: traceInfluencedSpaceGrid.traceInfluenceSummary,
     tags: [
@@ -145,6 +184,13 @@ export function runOneRuntimeTick(
       runtimeTick
         ? "home_map_state_persisted_after_tick"
         : "home_map_state_kept_stable_after_tick",
+      "m7_butler_trace_closure",
+      worldRuleValidation.ok
+        ? "butler_world_rule_validation_passed"
+        : "butler_world_rule_validation_blocked",
+      traceClosureResult.createdTrace
+        ? "butler_trace_fact_persisted"
+        : "butler_trace_fact_not_created",
     ],
   }
   const audit = auditWorldRuntimeTick({
@@ -157,13 +203,24 @@ export function runOneRuntimeTick(
     runtimeTick,
   })
   const combinedAudit = {
-    ok: audit.ok && continuityAudit.blockingWarnings.length === 0,
+    ok:
+      audit.ok &&
+      continuityAudit.blockingWarnings.length === 0 &&
+      worldRuleValidation.blockingWarnings.length === 0,
     warnings: [
       ...audit.warnings,
       ...continuityAudit.warnings,
       ...continuityAudit.blockingWarnings,
+      ...worldRuleValidation.warnings,
+      ...worldRuleValidation.blockingWarnings,
+      ...traceClosureResult.warnings,
     ],
-    tags: [...audit.tags, ...continuityAudit.tags],
+    tags: [
+      ...audit.tags,
+      ...continuityAudit.tags,
+      ...worldRuleValidation.tags,
+      ...traceClosureResult.tags,
+    ],
   }
 
   return {
@@ -175,9 +232,14 @@ export function runOneRuntimeTick(
     messages: [
       "Live world runtime tick completed.",
       ...decision.reasons,
+      intent.reason,
+      ...worldRuleValidation.warnings,
+      ...worldRuleValidation.blockingWarnings,
       ...(runtimeTick?.messages ?? []),
       ...traceLifecycleResult.messages,
       ...traceLifecycleResult.warnings,
+      ...traceClosureResult.messages,
+      ...traceClosureResult.warnings,
       `Trace influence projected for ${
         traceInfluencedSpaceGrid.traceInfluenceSummary?.totalInfluencedCells ?? 0
       } cells.`,
@@ -187,9 +249,15 @@ export function runOneRuntimeTick(
     tags: [
       "world_runtime_tick_result",
       runtimeTick ? "map_diff_safe_apply_driven" : "butler_motivation_only_tick",
+      "m7_butler_trace_closure",
+      "butler_intent_world_rule_validated",
+      traceClosureResult.createdTrace
+        ? "butler_trace_closure_persisted"
+        : "butler_trace_closure_skipped",
       "no_pet_fact_created",
       `motivation:${decision.selectedMotivation}`,
       ...traceLifecycleResult.tags,
+      ...traceClosureResult.tags,
       "trace_influence_summary_persisted",
       "trace_memory_seed_field_persisted",
       ...continuityAudit.tags,
@@ -201,6 +269,8 @@ function buildRuntimeActionSummaryFromTick(input: {
   tick: number
   createdAt: string
   runtimeTick: NonNullable<WorldRuntimeTickResult["runtimeTick"]>
+  intent: ButlerRuntimeIntent
+  worldRuleValidation: ButlerWorldRuleValidation
 }): WorldRuntimeActionSummary {
   const protocolResult =
     input.runtimeTick.constructionResult.runtimeCycleResult
@@ -220,6 +290,8 @@ function buildRuntimeActionSummaryFromTick(input: {
     `project:${selectedPlan?.id ?? "none"}`,
     `target:${selectedPlan?.targetZoneType ?? "none"}`,
     `stage:${selectedPlan?.currentStage ?? "none"}`,
+    `intent:${input.intent.kind}`,
+    `validation:${input.worldRuleValidation.ok ? "ok" : "blocked"}`,
     `placements:${placementTokens.join("+") || "none"}`,
   ].join("|")
 
@@ -235,7 +307,12 @@ function buildRuntimeActionSummaryFromTick(input: {
     createdAt: input.createdAt,
     tags: [
       "world_runtime_action_summary",
+      "m7_butler_trace_closure",
       acceptedDiffIds.length > 0 ? "safe_apply_action" : "observe_or_wait_action",
+      `intent_kind:${input.intent.kind}`,
+      input.worldRuleValidation.ok
+        ? "world_rule_validation_passed"
+        : "world_rule_validation_blocked",
     ],
   }
 }
@@ -244,11 +321,15 @@ function buildRuntimeActionSummaryFromDecision(input: {
   tick: number
   createdAt: string
   decision: ButlerRuntimeDecision
+  intent: ButlerRuntimeIntent
+  worldRuleValidation: ButlerWorldRuleValidation
 }): WorldRuntimeActionSummary {
   return {
     tick: input.tick,
     actionSignature: [
       `motivation:${input.decision.selectedMotivation}`,
+      `intent:${input.intent.kind}`,
+      `validation:${input.worldRuleValidation.ok ? "ok" : "blocked"}`,
       `tick:${input.tick}`,
       "state:no_safe_construction",
     ].join("|"),
@@ -258,7 +339,12 @@ function buildRuntimeActionSummaryFromDecision(input: {
     tags: [
       "world_runtime_action_summary",
       "butler_motivation_only",
+      "m7_butler_trace_closure",
       `motivation:${input.decision.selectedMotivation}`,
+      `intent_kind:${input.intent.kind}`,
+      input.worldRuleValidation.ok
+        ? "world_rule_validation_passed"
+        : "world_rule_validation_blocked",
     ],
   }
 }
@@ -269,6 +355,8 @@ function buildRuntimeEvent(input: {
   acceptedDiffCount: number
   warningCount: number
   decision: ButlerRuntimeDecision
+  intent: ButlerRuntimeIntent
+  worldRuleValidation: ButlerWorldRuleValidation
 }): WorldRuntimeEventLog {
   const changedText = buildRuntimeEventBody(input)
 
@@ -283,8 +371,13 @@ function buildRuntimeEvent(input: {
       "world_runtime_event",
       "butler_autonomous_action",
       "safe_apply_checked",
+      "m7_butler_trace_closure",
+      input.worldRuleValidation.ok
+        ? "world_rule_validation_passed"
+        : "world_rule_validation_blocked",
       "no_pet_fact_created",
       `motivation:${input.decision.selectedMotivation}`,
+      `intent_kind:${input.intent.kind}`,
     ],
   }
 }
@@ -293,21 +386,28 @@ function buildRuntimeEventBody(input: {
   acceptedDiffCount: number
   warningCount: number
   decision: ButlerRuntimeDecision
+  intent: ButlerRuntimeIntent
+  worldRuleValidation: ButlerWorldRuleValidation
 }): string {
+  if (!input.worldRuleValidation.ok) {
+    return `The butler chose ${input.decision.selectedMotivation}, but world rule validation blocked the intent.`
+  }
+
   if (input.acceptedDiffCount > 0) {
     return [
       `The butler chose ${input.decision.selectedMotivation}.`,
       `This tick wrote ${input.acceptedDiffCount} world change(s) through SafeApply.`,
+      "The accepted action was also converted into validated trace closure.",
     ].join(" ")
   }
 
   if (input.decision.selectedMotivation === "wait_for_resources") {
-    return "The butler judged current resources insufficient and waited without forcing a HomeMapState change."
+    return "The butler judged current resources insufficient and waited without forcing a HomeMapState change, then left a validated waiting trace."
   }
 
   if (input.decision.selectedMotivation === "observe_world") {
-    return "The butler observed world state without writing new facts to HomeMapState."
+    return "The butler observed world state without writing new HomeMapState facts, then left a validated attention trace."
   }
 
-  return "The butler kept the home stable without forcing a world change."
+  return `The butler kept the home stable through ${input.intent.kind} without forcing an unsafe world change.`
 }
