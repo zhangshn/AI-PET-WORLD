@@ -5,7 +5,7 @@ import {
   SCENE_TILE_SIZE,
   SCENE_WIDTH,
 } from "./scene-composer-constants";
-import { buildRoadSamples } from "./road-composer";
+import { buildLegacyDebugTraceSamples } from "./trace-edge-composer";
 import { clamp, stableUnit } from "./scene-composer-random";
 import type {
   SceneComposerFact,
@@ -63,9 +63,7 @@ export function buildTraceSamples(
   }
 
   if (input.allowLegacyDebugFallback) {
-    // Deprecated compatibility fallback: this reuses the legacy visual sample
-    // builder only for explicit debug compatibility, never for formal /world.
-    return buildRoadSamples({
+    return buildLegacyDebugTraceSamples({
       id: "trace_legacy_debug_fallback",
       biome: input.biome,
       moisture: 50,
