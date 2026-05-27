@@ -20,20 +20,20 @@ export function FormalTraceSurfaceSummary(input: {
   })
 
   return (
-    <article className={styles.panel} aria-label="World trace summary">
-      <h2>World traces</h2>
+    <article className={styles.panel} aria-label="世界痕迹摘要">
+      <h2>世界痕迹</h2>
       <div className={styles.resourceList}>
         <RuntimeInfoItem
-          label="Observed traces"
-          value={visibleTraceCount > 0 ? String(visibleTraceCount) : "quiet"}
+          label="可见痕迹"
+          value={visibleTraceCount > 0 ? String(visibleTraceCount) : "安静"}
         />
-        <RuntimeInfoItem label="Presence" value={averageIntensityLabel} />
+        <RuntimeInfoItem label="痕迹强度" value={averageIntensityLabel} />
         <RuntimeInfoItem
-          label="Main signs"
+          label="主要迹象"
           value={
             mainVisualKinds.length > 0
-              ? mainVisualKinds.join(", ")
-              : "none yet"
+              ? mainVisualKinds.join("、")
+              : "暂未形成"
           }
         />
       </div>
@@ -74,27 +74,27 @@ function getMainVisualKinds(
 }
 
 function toAverageIntensityLabel(value: number): string {
-  if (value >= 70) return "clear"
-  if (value >= 38) return "noticeable"
-  if (value > 0) return "light"
+  if (value >= 70) return "清晰"
+  if (value >= 38) return "明显"
+  if (value > 0) return "轻微"
 
-  return "quiet"
+  return "安静"
 }
 
 function toVisualKindLabel(visualKind: TraceVisualKind): string {
-  if (visualKind === "flattened_grass") return "soft ground use"
-  if (visualKind === "exposed_soil") return "exposed soil"
-  if (visualKind === "worn_ground") return "worn ground"
-  if (visualKind === "moss") return "moss"
-  if (visualKind === "mushroom") return "mushroom growth"
-  if (visualKind === "repaired_ground") return "repaired ground"
-  if (visualKind === "maintained_area") return "maintained areas"
-  if (visualKind === "faded_area") return "faded areas"
-  if (visualKind === "waiting_spot") return "waiting spots"
-  if (visualKind === "comfort_spot") return "comfort spots"
-  if (visualKind === "attention_glow") return "attention signs"
+  if (visualKind === "flattened_grass") return "草地压痕"
+  if (visualKind === "exposed_soil") return "裸露土壤"
+  if (visualKind === "worn_ground") return "地面磨痕"
+  if (visualKind === "moss") return "苔藓"
+  if (visualKind === "mushroom") return "蘑菇生长"
+  if (visualKind === "repaired_ground") return "修复地面"
+  if (visualKind === "maintained_area") return "维护区域"
+  if (visualKind === "faded_area") return "褪色区域"
+  if (visualKind === "waiting_spot") return "等待位置"
+  if (visualKind === "comfort_spot") return "安心位置"
+  if (visualKind === "attention_glow") return "关注迹象"
 
-  return "quiet ground"
+  return "安静地面"
 }
 
 function buildUserFacingSummary(
@@ -102,18 +102,18 @@ function buildUserFacingSummary(
   averageIntensityLabel: string
 ): string {
   if (visibleTraceCount <= 0) {
-    return "The world is quiet for now. No clear surface traces are visible from the current saved state."
+    return "当前家园还很安静，暂时没有清晰可见的表层痕迹。"
   }
 
-  if (averageIntensityLabel === "clear") {
-    return "The world has several clear living traces. Some areas are visibly shaped by repeated use."
+  if (averageIntensityLabel === "清晰") {
+    return "家园里已经出现几处清晰的生活痕迹，一些区域正在被反复使用慢慢塑形。"
   }
 
-  if (averageIntensityLabel === "noticeable") {
-    return "The world has started to show noticeable traces of use and care."
+  if (averageIntensityLabel === "明显") {
+    return "家园已经开始出现明显的使用和照料痕迹。"
   }
 
-  return "The world already holds a few light traces. The butler can continue observing how they settle."
+  return "家园已经留下几处轻微痕迹，管家会继续观察它们如何稳定下来。"
 }
 
 function buildUserFacingTraceNotes(input: {
@@ -123,18 +123,18 @@ function buildUserFacingTraceNotes(input: {
 }): string[] {
   if (input.visibleTraceCount <= 0) {
     return [
-      "No clear surface traces are visible yet.",
-      "Future runtime ticks may leave readable changes in the world.",
+      "当前还没有清晰的表层痕迹。",
+      "未来的显式 runtime Tick 可能会让世界留下可读变化。",
     ]
   }
 
   return [
-    "These traces come from world runtime, not direct player placement.",
+    "这些痕迹来自世界运行，不是玩家直接摆放生成。",
     input.mainVisualKinds.length > 0
-      ? `Most visible signs are ${input.mainVisualKinds.join(", ")}.`
-      : "The visible signs are still soft and early.",
-    input.averageIntensityLabel === "light"
-      ? "Some traces are still light, so the butler will keep watching them."
-      : "The trace surface is stable enough to be noticed in the formal world view.",
+      ? `最明显的迹象是${input.mainVisualKinds.join("、")}。`
+      : "当前迹象还很轻，只能作为早期观察。",
+    input.averageIntensityLabel === "轻微"
+      ? "部分痕迹仍然很轻，管家会继续观察它们。"
+      : "这些痕迹已经稳定到可以进入正式世界视图。",
   ].slice(0, 3)
 }
