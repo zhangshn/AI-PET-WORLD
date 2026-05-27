@@ -10,6 +10,10 @@ import type {
   ButlerRuntimeDecision,
   ButlerRuntimeMotivationType,
 } from "./butler-runtime-motivation-schema"
+import type {
+  ButlerRuntimeIntent,
+  ButlerWorldRuleValidation,
+} from "./butler-runtime-intent"
 
 export type WorldRuntimeVersion = "v2.6-runtime-00"
 
@@ -46,6 +50,8 @@ export type WorldRuntimeSaveRecord = {
   recentActionSignatures?: string[]
   lastRuntimeAction?: WorldRuntimeActionSummary | null
   lastButlerRuntimeDecision?: ButlerRuntimeDecision | null
+  lastButlerRuntimeIntent?: ButlerRuntimeIntent | null
+  lastButlerWorldRuleValidation?: ButlerWorldRuleValidation | null
   recentMotivationTypes?: ButlerRuntimeMotivationType[]
   traceField?: TraceField
   traceMemorySeedField?: TraceMemorySeedField
