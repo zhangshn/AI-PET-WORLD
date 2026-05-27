@@ -160,12 +160,14 @@ function resolveIntentTarget(input: {
   const focusRegion = input.decision.traceContext.memorySeedFocusRegions
     .map(coerceRegionKind)
     .find((regionKind): regionKind is SpaceRegionKind => Boolean(regionKind))
-  const observationRegion = input.decision.traceContext.preferredObservationRegions[0]
+  const observationRegion = coerceRegionKind(
+    input.decision.traceContext.preferredObservationRegions[0] ?? ""
+  )
   const activePlan = input.saveRecord.homeMapState.constructionPlans.find(
     (plan) => plan.status === "active" || plan.status === "planned"
   )
   const planRegion = activePlan ? zoneTypeToRegionKind(activePlan.targetZoneType) : undefined
-  const regionKind = focusRegion ?? observationRegion ?? planRegion ?? "home"
+  const regionKind: SpaceRegionKind = focusRegion ?? observationRegion ?? planRegion ?? "home"
 
   return {
     kind: "region",
