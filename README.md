@@ -1,23 +1,23 @@
-﻿# AI-PET-WORLD
+# AI-PET-WORLD
 
-当前项目唯一有效的 V2.6 正式文档入口：
+当前项目文档已经重置为 V2.6 正式口径。
+
+唯一有效入口：
 
 - `docs/v2_6/README.md`
-- `docs/v2_6/AI_PET_WORLD_V2_6_BUSINESS_ARCHITECTURE.md`
-- `docs/v2_6/AI_PET_WORLD_V2_6_RULE_BASED_AI_PIXEL_IMPLEMENTATION.md`
-- `docs/v2_6/AI_PET_WORLD_V2_6_AUTONOMOUS_WORLD_GENERATION_ALGORITHM.md`
-- `docs/v2_6/AI_PET_WORLD_V2_6_PIXEL_WORLD_RENDERING_ALGORITHM.md`
-- `docs/v2_6/AI_PET_WORLD_V2_6_MODULE_PROGRESS.md`
 
-后续任务必须以 `docs/v2_6` 为准。
+当前标准来源：
 
-当前红线：
+- `AI-PET-WORLD V2.6｜完整业务架构总图（强化版｜含正式像素主世界绘制方案）`
+- `AI-PET-WORLD V2.6｜无大数据训练阶段：规则型 AI 自主世界与像素表现落地方案`
+- `AI-PET-WORLD V2.6｜正式像素主世界绘制算法`
 
-- `/world` 是 PixelWorldView，不是 SVG、Debug composer、WorldPainterReadonlyPreview、FormalWorldView 或 ProceduralRendererView。
-- Pixel Scene Composer 只作为 `/world-debug` 规则实验室。
+红线：
+
+- `/world` 是 PixelWorldView。
+- Pixel Scene Composer 是 `/world-debug` 规则实验室。
 - WorldViewModel 是正式表现模型。
 - PixelWorldView 只读 WorldViewModel。
 - 当前阶段不训练大模型。
 - 不设置独立 road/path 架构。
 - 宠物不默认进入世界。
-

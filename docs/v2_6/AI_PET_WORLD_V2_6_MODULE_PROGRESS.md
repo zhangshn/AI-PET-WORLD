@@ -1,4 +1,6 @@
-﻿# AI-PET-WORLD V2.6｜模块进度表
+# AI-PET-WORLD V2.6｜模块进度表
+
+> 本进度表只依据《完整业务架构总图（强化版）》与《无大数据训练阶段：规则型 AI 自主世界与像素表现落地方案》。
 
 | 模块 | 进度 | 状态 | 说明 |
 |---|---:|---|---|
@@ -21,3 +23,15 @@
 
 当前不能直接进入 M7。必须先执行 WORLD-PIXEL-RULE-MAPPER-00，把 Pixel Scene Composer 验证过的规则沉淀为正式 WorldViewModel mapper，并确保 PixelWorldView 只读 WorldViewModel 绘制。
 
+## WORLD-PIXEL-RULE-MAPPER-00 必须完成
+
+- `SpaceGrid → tiles`
+- `TraceField → traces`
+- `HomeMapState placements → objects`
+- `ButlerState / decision → actors`
+- `Resources / ecology / trace influence → atmosphere`
+- `/world` 不引用 `buildSceneSvg`
+- `/world` 不引用 `WorldPainterReadonlyPreview`
+- `/world` 不引用 `FormalWorldView`
+- `/world` 不引用 `ProceduralRendererView`
+- `/world` 不把 Debug composer 搬进正式页
