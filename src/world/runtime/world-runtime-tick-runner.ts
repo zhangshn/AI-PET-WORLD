@@ -4,6 +4,11 @@
 
 import { buildButlerMvpProfile } from "@/world/butler/butler-personality-adapter"
 import { runMvpWorldRuntimeTick } from "@/world/mvp-core/mvp-world-runtime-tick"
+import { buildSpaceGridFromHomeMapState } from "@/world/space"
+import {
+  buildTraceFieldFromWorld,
+  runTraceLifecycleTick,
+} from "@/world/trace"
 
 import { selectButlerRuntimeMotivation } from "./butler-runtime-motivation-selector"
 import type { ButlerRuntimeDecision } from "./butler-runtime-motivation-schema"
@@ -91,13 +96,29 @@ export function runOneRuntimeTick(
     ...(input.saveRecord.recentActionSignatures ?? []),
     actionSummary.actionSignature,
   ].slice(-10)
+  const nextHomeMapState =
+    runtimeTick?.nextHomeMapState ?? input.saveRecord.homeMapState
+  const spaceGrid = buildSpaceGridFromHomeMapState({
+    homeMapState: nextHomeMapState,
+  })
+  const derivedTraceField = buildTraceFieldFromWorld({
+    homeMapState: nextHomeMapState,
+    spaceGrid,
+  })
+  const traceLifecycleResult = runTraceLifecycleTick({
+    previousTraceField: input.saveRecord.traceField,
+    derivedTraceField,
+    currentTick: nextTick,
+    homeMapState: nextHomeMapState,
+    spaceGrid,
+  })
   const nextSaveRecord: WorldRuntimeSaveRecord = {
     version: "v2.6-runtime-00",
     worldId: input.saveRecord.worldId,
     ownerId: input.saveRecord.ownerId,
     tick: nextTick,
     savedAt: nowIso,
-    homeMapState: runtimeTick?.nextHomeMapState ?? input.saveRecord.homeMapState,
+    homeMapState: nextHomeMapState,
     recentEvents,
     recentActionSignatures,
     lastRuntimeAction: actionSummary,
@@ -106,6 +127,7 @@ export function runOneRuntimeTick(
       decision.selectedMotivation,
     ].slice(-10),
     lastButlerRuntimeDecision: decision,
+    traceField: traceLifecycleResult.nextTraceField,
     tags: [
       "world_runtime_save_record",
       runtimeTick ? "safe_apply_output" : "butler_observe_or_wait_output",
@@ -143,6 +165,8 @@ export function runOneRuntimeTick(
       "Live world runtime tick completed.",
       ...decision.reasons,
       ...(runtimeTick?.messages ?? []),
+      ...traceLifecycleResult.messages,
+      ...traceLifecycleResult.warnings,
       ...combinedAudit.warnings,
     ],
     tags: [
@@ -150,6 +174,7 @@ export function runOneRuntimeTick(
       runtimeTick ? "map_diff_safe_apply_driven" : "butler_motivation_only_tick",
       "no_pet_fact_created",
       `motivation:${decision.selectedMotivation}`,
+      ...traceLifecycleResult.tags,
       ...continuityAudit.tags,
     ],
   }

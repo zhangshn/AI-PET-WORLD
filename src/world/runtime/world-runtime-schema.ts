@@ -4,6 +4,7 @@
 
 import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
 import type { MvpWorldRuntimeTickResult } from "@/world/mvp-core/mvp-world-runtime-tick"
+import type { TraceField } from "@/world/trace"
 import type {
   ButlerRuntimeDecision,
   ButlerRuntimeMotivationType,
@@ -45,6 +46,7 @@ export type WorldRuntimeSaveRecord = {
   lastRuntimeAction?: WorldRuntimeActionSummary | null
   lastButlerRuntimeDecision?: ButlerRuntimeDecision | null
   recentMotivationTypes?: ButlerRuntimeMotivationType[]
+  traceField?: TraceField
   tags: string[]
 }
 

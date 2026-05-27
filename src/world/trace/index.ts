@@ -31,3 +31,7 @@ export {
 } from "./trace-lifecycle"
 export { summarizeTraceField } from "./trace-summary"
 export { adaptTraceFieldToSceneTraceFacts } from "./trace-scene-adapter"
+export {
+  runTraceLifecycleTick,
+  type TraceLifecycleTickResult,
+} from "./trace-tick"

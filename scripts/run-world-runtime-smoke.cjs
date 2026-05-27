@@ -119,6 +119,7 @@ async function main() {
     beforeTick: record.tick,
     beforeMtimeMs: beforeReadBoundaryStat.mtimeMs,
   })
+  const traceFieldAudit = auditOptionalTraceField(record.traceField)
 
   assert(
     record.version === "v2.6-runtime-00",
@@ -149,6 +150,7 @@ async function main() {
     `Duplicate recentTransactions transaction ids found: ${duplicateRecentTransactionIds.join(", ")}`
   )
   assert(readBoundaryResult.ok, readBoundaryResult.message)
+  assert(traceFieldAudit.ok, traceFieldAudit.message)
 
   if (record.recentActionSignatures !== undefined) {
     assert(
@@ -214,11 +216,62 @@ async function main() {
   console.log("Butler motivation: ok")
   console.log("World read boundary: ok")
   console.log(
+    `TraceField: ${record.traceField ? "ok" : "not persisted yet"}`
+  )
+  console.log(
     `Selected motivation: ${
       record.lastButlerRuntimeDecision?.selectedMotivation ?? "none"
     }`
   )
   console.log("Result: PASS")
+}
+
+function auditOptionalTraceField(traceField) {
+  if (traceField === undefined) {
+    return {
+      ok: true,
+      message: "TraceField is optional and not persisted yet.",
+    }
+  }
+
+  if (
+    !traceField ||
+    typeof traceField.worldId !== "string" ||
+    !Array.isArray(traceField.traces) ||
+    !traceField.summary ||
+    typeof traceField.summary.totalTraces !== "number"
+  ) {
+    return {
+      ok: false,
+      message: "Persisted traceField exists but has an invalid shape.",
+    }
+  }
+
+  const malformedTrace = traceField.traces.find(
+    (trace) =>
+      !trace ||
+      typeof trace.id !== "string" ||
+      typeof trace.type !== "string" ||
+      typeof trace.lifecyclePhase !== "string" ||
+      typeof trace.strength !== "number" ||
+      !trace.target ||
+      !trace.scope ||
+      !trace.effects ||
+      !trace.visualHints ||
+      !trace.audit
+  )
+
+  if (malformedTrace) {
+    return {
+      ok: false,
+      message: `Persisted TraceFact is invalid: ${malformedTrace.id ?? "unknown"}.`,
+    }
+  }
+
+  return {
+    ok: true,
+    message: "Persisted traceField is valid.",
+  }
 }
 
 function findDuplicates(values) {
