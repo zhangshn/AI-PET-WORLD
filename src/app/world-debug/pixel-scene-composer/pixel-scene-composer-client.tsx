@@ -1,4 +1,4 @@
-// 该组件用于交互式测试像素世界组合算法。
+// 该组件用于交互式测试像素世界组合算法，并集中展示规则资产库。
 
 "use client";
 
@@ -17,6 +17,59 @@ import type {
 const BIOME_OPTIONS: SceneComposerBiome[] = ["forest", "grassland", "desert", "oasis"];
 
 const DEFAULT_FACT = buildDefaultSceneComposerFact();
+
+type AssetLibrarySection = {
+  title: string;
+  purpose: string;
+  assets: string[];
+  ruleSources: string[];
+};
+
+const ASSET_LIBRARY_SECTIONS: AssetLibrarySection[] = [
+  {
+    title: "Tile Layer｜地面资产",
+    purpose: "负责把 SpaceGrid、生态健康、湿度、空间压力和痕迹强度转成稳定地表表现。",
+    assets: ["grass", "pressed_grass", "worn_grass", "exposed_soil", "ecology_transition", "recovery_growth", "soil", "built", "boundary"],
+    ruleSources: ["SpaceGrid.cells", "terrainKind", "regionKind", "traceStrength", "ecologyHealthHint", "moistureHint"],
+  },
+  {
+    title: "Trace Layer｜痕迹资产",
+    purpose: "负责把世界长期运行留下的痕迹转成可见地表变化，而不是装饰贴图。",
+    assets: ["草地压低", "裸土", "磨损地面", "维护痕迹", "恢复痕迹", "等待点", "关注点"],
+    ruleSources: ["TraceField", "TraceLifecycle", "TraceInfluence", "TraceVisualProjection", "MemorySeed"],
+  },
+  {
+    title: "Object Layer｜自然对象资产",
+    purpose: "负责树、灌木、石头、花、蘑菇和小生态信号的世界表现。",
+    assets: ["tree", "bush", "stone", "flower", "mushroom", "insect_signal", "grass_tuft"],
+    ruleSources: ["HomeMapState.placements", "derived_visual_only", "world seed", "naturalGrowth", "spacePressure"],
+  },
+  {
+    title: "Sprite Layer｜生命主体资产",
+    purpose: "负责管家与未来宠物的像素主体表现。宠物未正式入场前不能默认显示。",
+    assets: ["butler.observe", "butler.wait", "butler.maintain", "future_pet.gated"],
+    ruleSources: ["ButlerState", "lastButlerRuntimeDecision", "existing actor fact only"],
+  },
+  {
+    title: "Atmosphere Layer｜氛围资产",
+    purpose: "负责让时间线、生态状态和世界阶段影响整体光照与氛围。",
+    assets: ["calm", "warm", "recovering", "busy", "clear", "soft", "damp"],
+    ruleSources: ["groundHealth", "careReadiness", "spacePressure", "world phase"],
+  },
+  {
+    title: "UI Overlay｜轻 UI 资产",
+    purpose: "只承载管家一句话、P-Phone 与必要状态，不替代主世界画面。",
+    assets: ["管家一句话", "P-Phone 最近记录", "新记录提示"],
+    ruleSources: ["WorldViewModel.butlerExplanation", "WorldViewModel.pPhone"],
+  },
+];
+
+const RULE_LIBRARY = [
+  "规则资产库不是大数据训练模型；当前阶段用显式规则、权重参数、世界种子、痕迹反馈和小样本日志迭代。",
+  "正式 /world 只读 WorldViewModel；资产库和调参实验统一留在 /world-debug/pixel-scene-composer。",
+  "derived_visual_only 只能进入 WorldViewModel，必须带 not_world_fact / no_runtime_write，不能写入 HomeMapState。",
+  "Pixel Scene Composer 验证的是组合规则，不是正式产品页；后续新增资产先在这里观察，再沉淀到正式 mapper。",
+];
 
 export default function PixelSceneComposerClient() {
   const [fact, setFact] = useState<SceneComposerFact>(DEFAULT_FACT);
@@ -50,11 +103,11 @@ export default function PixelSceneComposerClient() {
   return (
     <main style={styles.page}>
       <section style={styles.header}>
-        <p style={styles.kicker}>WORLD DEBUG / PIXEL SCENE COMPOSER</p>
+        <p style={styles.kicker}>WORLD DEBUG / PIXEL SCENE COMPOSER / ASSET LIBRARY</p>
         <h1 style={styles.title}>Pixel Scene Composer</h1>
         <p style={styles.description}>
-          这个页面测试“素材如何组合成世界”：地面 tile、移动痕迹、生态过渡、草簇、树、灌木、石头、花和角色占位。
-          它不写入正式世界事实，只验证组合规则能不能减少贴图感。
+          这里是像素世界组合规则实验室，也是规则资产库入口。它用于观察地面 tile、痕迹、生态过渡、自然对象、生命主体和图层关系如何组合成世界。
+          它不写入正式世界事实，不推进 runtime Tick，不替代正式 /world。
         </p>
       </section>
 
@@ -109,6 +162,43 @@ export default function PixelSceneComposerClient() {
               unoptimized
               width={768}
             />
+          </article>
+
+          <article style={styles.card}>
+            <h2 style={styles.cardTitle}>规则资产库</h2>
+            <p style={styles.cardText}>
+              后续新增 tile、trace、object、sprite、atmosphere 资产都先放在这里观察。进入正式 /world 前，必须沉淀为 WorldViewModel mapper 或 PixelWorld renderer 规则。
+            </p>
+            <div style={styles.assetLibraryGrid}>
+              {ASSET_LIBRARY_SECTIONS.map((section) => (
+                <section key={section.title} style={styles.assetCard}>
+                  <h3 style={styles.assetTitle}>{section.title}</h3>
+                  <p style={styles.assetPurpose}>{section.purpose}</p>
+                  <div style={styles.assetTagGroup}>
+                    {section.assets.map((asset) => (
+                      <span key={asset} style={styles.assetTag}>{asset}</span>
+                    ))}
+                  </div>
+                  <div style={styles.ruleSourceBox}>
+                    <strong>规则来源</strong>
+                    <ul style={styles.compactList}>
+                      {section.ruleSources.map((source) => (
+                        <li key={source}>{source}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </section>
+              ))}
+            </div>
+          </article>
+
+          <article style={styles.card}>
+            <h2 style={styles.cardTitle}>规则边界</h2>
+            <ul style={styles.ruleList}>
+              {RULE_LIBRARY.map((rule) => (
+                <li key={rule} style={styles.ruleItem}>{rule}</li>
+              ))}
+            </ul>
           </article>
 
           <article style={styles.card}>
@@ -361,6 +451,71 @@ const styles = {
     borderRadius: "18px",
     imageRendering: "pixelated",
     background: "#17231f",
+  },
+  assetLibraryGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
+    gap: "14px",
+    marginTop: "18px",
+  },
+  assetCard: {
+    display: "grid",
+    gap: "10px",
+    padding: "14px",
+    border: "1px solid rgba(191, 225, 196, 0.16)",
+    borderRadius: "18px",
+    background: "rgba(255, 255, 255, 0.045)",
+  },
+  assetTitle: {
+    margin: 0,
+    fontSize: "16px",
+    color: "#eef7ef",
+  },
+  assetPurpose: {
+    margin: 0,
+    color: "#b9cabb",
+    fontSize: "13px",
+    lineHeight: 1.6,
+  },
+  assetTagGroup: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "6px",
+  },
+  assetTag: {
+    padding: "3px 7px",
+    borderRadius: "999px",
+    color: "#14301d",
+    background: "#9fceaa",
+    fontSize: "11px",
+    fontWeight: 800,
+  },
+  ruleSourceBox: {
+    padding: "10px",
+    borderRadius: "12px",
+    background: "rgba(9, 20, 17, 0.55)",
+    color: "#d8ead8",
+    fontSize: "12px",
+    lineHeight: 1.55,
+  },
+  compactList: {
+    margin: "6px 0 0",
+    paddingLeft: "18px",
+  },
+  ruleList: {
+    display: "grid",
+    gap: "10px",
+    margin: "12px 0 0",
+    padding: 0,
+    listStyle: "none",
+  },
+  ruleItem: {
+    padding: "12px 14px",
+    borderRadius: "14px",
+    color: "#d8ead8",
+    background: "rgba(255, 255, 255, 0.055)",
+    fontSize: "13px",
+    lineHeight: 1.6,
   },
   debugList: {
     display: "grid",
