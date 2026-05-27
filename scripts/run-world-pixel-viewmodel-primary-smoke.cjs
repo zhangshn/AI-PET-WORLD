@@ -6,14 +6,22 @@ async function main() {
   const ts = await import("typescript")
   const repoRoot = process.cwd()
   const localRequire = moduleApi.createRequire(__filename)
+  const packageJsonPath = path.join(repoRoot, "package.json")
   const savePath = path.join(repoRoot, ".runtime", "world-state", "default-world.json")
   const pagePath = path.join(repoRoot, "src", "app", "world", "world-live-runtime-page.tsx")
-  const viewModelPath = path.join(
+  const viewModelGatewayPath = path.join(
     repoRoot,
     "src",
     "world",
     "world-view-model",
     "world-view-model-gateway.ts"
+  )
+  const viewModelSchemaPath = path.join(
+    repoRoot,
+    "src",
+    "world",
+    "world-view-model",
+    "world-view-model-schema.ts"
   )
   const pixelViewPath = path.join(
     repoRoot,
@@ -33,19 +41,9 @@ async function main() {
     "pixel-world-view",
     "pixel-world-canvas.client.tsx"
   )
-  const pixelViewStylePath = path.join(
-    repoRoot,
-    "src",
-    "app",
-    "world",
-    "components",
-    "pixel-world-view",
-    "pixel-world-view.module.css"
-  )
-  const runtimeSmokePath = path.join(repoRoot, "scripts", "run-world-runtime-smoke.cjs")
 
   function fail(message) {
-    console.log("WORLD PIXEL PRIMARY SMOKE")
+    console.log("WORLD PIXEL VIEWMODEL PRIMARY SMOKE")
     console.log(message)
     console.log("Result: FAIL")
     process.exit(1)
@@ -102,107 +100,78 @@ async function main() {
   }
 
   if (!fs.existsSync(savePath)) fail("Runtime save file not found.")
-  if (!fs.existsSync(viewModelPath)) fail("WorldViewModel gateway file is missing.")
+  if (!fs.existsSync(viewModelGatewayPath)) fail("WorldViewModel gateway is missing.")
+  if (!fs.existsSync(viewModelSchemaPath)) fail("WorldViewModel schema is missing.")
   if (!fs.existsSync(pixelViewPath)) fail("PixelWorldView component is missing.")
   if (!fs.existsSync(pixelCanvasPath)) fail("PixelWorld canvas component is missing.")
-  if (!fs.existsSync(pixelViewStylePath)) fail("PixelWorldView CSS module is missing.")
 
+  const packageJson = parseJson(fs.readFileSync(packageJsonPath, "utf8"), "package.json is invalid.")
   const beforeRaw = fs.readFileSync(savePath, "utf8")
   const beforeHash = crypto.createHash("sha256").update(beforeRaw).digest("hex")
   const record = parseJson(beforeRaw, "Runtime save file is not valid JSON.")
   const pageSource = fs.readFileSync(pagePath, "utf8")
-  const viewModelSource = fs.readFileSync(viewModelPath, "utf8")
+  const viewModelGatewaySource = fs.readFileSync(viewModelGatewayPath, "utf8")
+  const viewModelSchemaSource = fs.readFileSync(viewModelSchemaPath, "utf8")
   const pixelViewSource = fs.readFileSync(pixelViewPath, "utf8")
   const pixelCanvasSource = fs.readFileSync(pixelCanvasPath, "utf8")
-  const runtimeSmokeSource = fs.readFileSync(runtimeSmokePath, "utf8")
-
-  const requiredPageTokens = [
-    "readWorldRuntimeForView",
-    "buildWorldViewModelForPixelWorld",
-    "PixelWorldView",
-  ]
-  const forbiddenPageTokens = [
+  const combinedPixelSource = `${pixelViewSource}\n${pixelCanvasSource}`
+  const combinedModelSource = `${viewModelGatewaySource}\n${viewModelSchemaSource}`
+  const forbiddenTokens = [
     "buildSceneSvg",
     "WorldPainterReadonlyPreview",
-    "data:image/svg+xml",
     "FormalWorldView",
     "formalWorldPanel",
-    "ProceduralRendererView",
-    "runAndPersistOneRuntimeTick",
-    "writeWorldRuntimeSaveRecord",
-    "handleManualTick",
-    "handleManualSave",
-    "Audit Trail",
-    "SummaryCard",
-    "styles.heroPanel",
-    "styles.summaryGrid",
-    "styles.viewModePanel",
-  ]
-  const forbiddenPixelViewTokens = [
-    "<svg",
     "data:image/svg+xml",
-    "next/image",
-    "buildSceneSvg",
-  ]
-  const requiredCanvasTokens = [
-    "<canvas",
-    "drawTileLayer",
-    "drawTraceLayer",
-    "drawObjectLayer",
-    "drawSpriteLayer",
-    "drawAtmosphereLayer",
-  ]
-  const requiredViewModelTokens = [
-    "buildSpaceGridFromHomeMapState",
-    "buildTraceFieldFromWorld",
-    "composeScene",
-    "no_world_fact_generation",
-    "buildWorldViewActors",
+    "movementChannel",
+    "roadGraph",
+    "pathGraph",
+    "openai",
+    "llm",
   ]
 
-  requiredPageTokens.forEach((token) =>
-    assert(pageSource.includes(token), `/world page is missing ${token}.`)
-  )
-  forbiddenPageTokens.forEach((token) =>
-    assert(!pageSource.includes(token), `/world page still contains ${token}.`)
-  )
-  forbiddenPixelViewTokens.forEach((token) =>
-    assert(
-      !pixelViewSource.includes(token) && !pixelCanvasSource.includes(token),
-      `PixelWorldView source still contains ${token}.`
-    )
-  )
-  requiredCanvasTokens.forEach((token) =>
-    assert(
-      pixelCanvasSource.includes(token),
-      `PixelWorld canvas source is missing ${token}.`
-    )
-  )
-  requiredViewModelTokens.forEach((token) =>
-    assert(
-      viewModelSource.includes(token),
-      `WorldViewModel gateway is missing required token: ${token}.`
-    )
-  )
   assert(
-    runtimeSmokeSource.includes("World read boundary: ok"),
-    "Runtime smoke no longer reports read-boundary validation."
+    packageJson.scripts?.["smoke:world-pixel-viewmodel-primary"] ===
+      "node scripts/run-world-pixel-viewmodel-primary-smoke.cjs",
+    "package.json does not contain smoke:world-pixel-viewmodel-primary."
+  )
+  assert(pageSource.includes("readWorldRuntimeForView"), "/world no longer uses readWorldRuntimeForView.")
+  assert(
+    pageSource.includes("buildWorldViewModelForPixelWorld"),
+    "/world does not use buildWorldViewModelForPixelWorld."
+  )
+  assert(pageSource.includes("PixelWorldView"), "/world does not render PixelWorldView.")
+  forbiddenTokens.slice(0, 5).forEach((token) =>
+    assert(!pageSource.includes(token), `/world page contains forbidden token ${token}.`)
+  )
+  assert(!combinedPixelSource.includes("<svg"), "PixelWorldView contains SVG markup.")
+  assert(!combinedPixelSource.includes("data:image/svg+xml"), "PixelWorldView contains SVG data uri.")
+  assert(!combinedPixelSource.includes("buildSceneSvg"), "PixelWorldView references buildSceneSvg.")
+  assert(pixelCanvasSource.includes("<canvas"), "PixelWorldView does not use canvas.")
+  assert(viewModelSchemaSource.includes("tiles:"), "WorldViewModel schema missing tiles.")
+  assert(viewModelSchemaSource.includes("objects:"), "WorldViewModel schema missing objects.")
+  assert(viewModelSchemaSource.includes("traces:"), "WorldViewModel schema missing traces.")
+  assert(viewModelSchemaSource.includes("actors:"), "WorldViewModel schema missing actors.")
+  forbiddenTokens.slice(5).forEach((token) =>
+    assert(
+      !combinedPixelSource.includes(token) && !combinedModelSource.includes(token),
+      `Pixel ViewModel path contains forbidden token ${token}.`
+    )
   )
 
   installTypeScriptRequireHook()
-  const { buildWorldViewModelForPixelWorld } = localRequire(viewModelPath)
+  const { buildWorldViewModelForPixelWorld } = localRequire(viewModelGatewayPath)
   const model = buildWorldViewModelForPixelWorld({
     saveRecord: record,
     isPersisted: true,
   })
 
-  assert(Array.isArray(model.tiles) && model.tiles.length > 0, "WorldViewModel has no tiles.")
-  assert(Array.isArray(model.objects) && model.objects.length > 0, "WorldViewModel has no objects.")
-  assert(Array.isArray(model.traces) && model.traces.length > 0, "WorldViewModel has no traces.")
-  assert(Array.isArray(model.actors) && model.actors.length > 0, "WorldViewModel has no actors.")
+  assert(model.tiles.length > 0, "WorldViewModel output has no tiles.")
+  assert(model.objects.length > 0, "WorldViewModel output has no objects.")
+  assert(model.traces.length > 0, "WorldViewModel output has no traces.")
+  assert(model.actors.length > 0, "WorldViewModel output has no actors.")
   assert(
     model.actors.some((actor) => actor.kind === "butler" && actor.visible),
-    "WorldViewModel has no visible butler actor."
+    "WorldViewModel output has no visible butler actor."
   )
   assert(
     !model.actors.some((actor) => actor.kind === "pet" && actor.visible) ||
@@ -213,27 +182,26 @@ async function main() {
             placement.id.toLowerCase().includes("pet") ||
             placement.label.toLowerCase().includes("pet"))
       ),
-    "WorldViewModel generated a visible pet without existing pet facts."
+    "WorldViewModel generated visible pet without pet facts."
   )
 
   const afterRaw = fs.readFileSync(savePath, "utf8")
   const afterHash = crypto.createHash("sha256").update(afterRaw).digest("hex")
-  const afterRecord = parseJson(afterRaw, "Runtime save after pixel primary smoke is not valid JSON.")
+  const afterRecord = parseJson(afterRaw, "Runtime save after pixel viewmodel smoke is not valid JSON.")
 
-  assert(afterRecord.tick === record.tick, "Pixel primary smoke changed runtime tick.")
-  assert(afterHash === beforeHash, "Pixel primary smoke changed runtime save hash.")
+  assert(afterRecord.tick === record.tick, "Pixel ViewModel smoke changed runtime tick.")
+  assert(afterHash === beforeHash, "Pixel ViewModel smoke changed runtime hash.")
 
-  console.log("WORLD PIXEL PRIMARY SMOKE")
+  console.log("WORLD PIXEL VIEWMODEL PRIMARY SMOKE")
   console.log(`Runtime tick: ${record.tick}`)
   console.log(`Tiles: ${model.tiles.length}`)
   console.log(`Objects: ${model.objects.length}`)
   console.log(`Traces: ${model.traces.length}`)
   console.log(`Actors: ${model.actors.length}`)
-  console.log("PixelWorldView primary surface: ok")
-  console.log("Canvas pixel renderer: ok")
-  console.log("SVG renderer removed from /world: ok")
+  console.log("WorldViewModel shape: ok")
+  console.log("Canvas PixelWorldView: ok")
   console.log("Runtime read boundary: ok")
-  console.log("Butler actor visible: ok")
+  console.log("No default pet fact: ok")
   console.log("Result: PASS")
 }
 

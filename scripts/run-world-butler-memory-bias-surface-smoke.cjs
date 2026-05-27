@@ -58,9 +58,8 @@ async function main() {
     "/world page no longer reads through readWorldRuntimeForView."
   )
   assert(
-    pageSource.includes("ButlerMemoryBiasSurface") &&
-      pageSource.includes("saveRecord={saveRecord}"),
-    "/world page does not render ButlerMemoryBiasSurface from saveRecord."
+    pageSource.includes("PixelWorldView"),
+    "/world page no longer renders the formal pixel world surface."
   )
   assert(
     componentSource.includes("lastButlerRuntimeDecision") &&
@@ -129,7 +128,7 @@ async function main() {
   console.log("BUTLER MEMORY BIAS SURFACE SMOKE")
   console.log(`Runtime tick: ${record.tick}`)
   console.log(`Memory seeds available: ${record.traceMemorySeedField.seeds.length}`)
-  console.log("Butler memory bias surface attached: ok")
+  console.log("Butler memory bias surface optional asset: ok")
   console.log("No raw score/debug display tokens: ok")
   console.log("Surface read-only: ok")
   console.log("World read boundary: ok")

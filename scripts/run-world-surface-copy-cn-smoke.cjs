@@ -5,9 +5,15 @@ async function main() {
   const repoRoot = process.cwd()
   const savePath = path.join(repoRoot, ".runtime", "world-state", "default-world.json")
   const pagePath = path.join(repoRoot, "src", "app", "world", "world-live-runtime-page.tsx")
-  const traceSummaryPath = path.join(repoRoot, "src", "app", "world", "components", "formal-trace-surface-summary.tsx")
-  const butlerBiasPath = path.join(repoRoot, "src", "app", "world", "components", "butler-memory-bias-surface.tsx")
-  const naturalExplanationPath = path.join(repoRoot, "src", "app", "world", "components", "butler-natural-explanation.tsx")
+  const pixelViewPath = path.join(
+    repoRoot,
+    "src",
+    "app",
+    "world",
+    "components",
+    "pixel-world-view",
+    "pixel-world-view.tsx"
+  )
   const runtimeSmokePath = path.join(repoRoot, "scripts", "run-world-runtime-smoke.cjs")
 
   function fail(message) {
@@ -35,25 +41,15 @@ async function main() {
   const beforeHash = crypto.createHash("sha256").update(beforeRaw).digest("hex")
   const record = parseJson(beforeRaw, "Runtime save file is not valid JSON.")
   const pageSource = fs.readFileSync(pagePath, "utf8")
-  const traceSummarySource = fs.readFileSync(traceSummaryPath, "utf8")
-  const butlerBiasSource = fs.readFileSync(butlerBiasPath, "utf8")
-  const naturalExplanationSource = fs.readFileSync(naturalExplanationPath, "utf8")
+  const pixelViewSource = fs.readFileSync(pixelViewPath, "utf8")
   const runtimeSmokeSource = fs.readFileSync(runtimeSmokePath, "utf8")
-  const combinedSurfaceSource = [
-    pageSource,
-    traceSummarySource,
-    butlerBiasSource,
-    naturalExplanationSource,
-  ].join("\n")
+  const combinedSurfaceSource = [pageSource, pixelViewSource].join("\n")
 
   const requiredChineseCopy = [
-    "当前家园",
-    "世界状态",
-    "管家观察",
-    "世界痕迹",
-    "管家判断",
-    "资源状态",
-    "只读",
+    "像素主世界",
+    "世界记录",
+    "管家",
+    "新记录",
   ]
   const missingChineseCopy = requiredChineseCopy.filter(
     (copy) => !combinedSurfaceSource.includes(copy)
@@ -64,21 +60,18 @@ async function main() {
   )
 
   const staleEnglishCopy = [
-    "Current world",
-    "World traces",
-    "Butler reasoning",
-    "Resource state",
-    "Current saved world",
-    "World surface signals",
-    "Current posture",
-    "Memory bias",
-    "Observed traces",
-    "Main signs",
+    "Hero",
+    "SummaryCard",
+    "Audit Trail",
+    "MVP",
+    "WorldPainterReadonlyPreview",
+    "FormalWorldView",
+    "ProceduralRendererView",
   ]
   const staleHits = staleEnglishCopy.filter((copy) =>
     combinedSurfaceSource.includes(copy)
   )
-  assert(staleHits.length === 0, `Stale English surface copy remains: ${staleHits.join(", ")}`)
+  assert(staleHits.length === 0, `Stale/debug surface copy remains: ${staleHits.join(", ")}`)
 
   const forbiddenTokens = [
     "runAndPersistOneRuntimeTick",
@@ -119,8 +112,8 @@ async function main() {
 
   console.log("WORLD SURFACE COPY CN SMOKE")
   console.log(`Runtime tick: ${record.tick}`)
-  console.log("Chinese surface copy: ok")
-  console.log("No stale English surface copy: ok")
+  console.log("Chinese pixel surface copy: ok")
+  console.log("No debug surface copy: ok")
   console.log("No raw/runtime display tokens: ok")
   console.log("Surface read-only: ok")
   console.log("World read boundary: ok")

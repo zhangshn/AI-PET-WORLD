@@ -38,8 +38,7 @@ async function main() {
   const runtimeSmokeSource = fs.readFileSync(runtimeSmokePath, "utf8")
 
   assert(pageSource.includes("readWorldRuntimeForView"), "/world page does not use readWorldRuntimeForView.")
-  assert(pageSource.includes("ButlerNaturalExplanation"), "/world page does not render ButlerNaturalExplanation.")
-  assert(pageSource.includes("saveRecord={saveRecord}"), "ButlerNaturalExplanation is not driven by saveRecord.")
+  assert(pageSource.includes("PixelWorldView"), "/world page no longer renders PixelWorldView.")
   assert(componentSource.includes("lastButlerRuntimeDecision"), "Component does not read saved butler decision.")
   assert(componentSource.includes("memorySeedConsumeScore"), "Component does not read memory seed consume score.")
   assert(componentSource.includes("我会"), "Component does not include natural butler wording.")
@@ -63,7 +62,7 @@ async function main() {
   console.log("BUTLER NATURAL EXPLANATION SMOKE")
   console.log(`Runtime tick: ${record.tick}`)
   console.log(`Selected motivation: ${record.lastButlerRuntimeDecision.selectedMotivation}`)
-  console.log("Natural explanation attached: ok")
+  console.log("Natural explanation optional asset: ok")
   console.log("No raw score display: ok")
   console.log("Explanation read-only: ok")
   console.log("World read boundary: ok")

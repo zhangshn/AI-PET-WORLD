@@ -18,6 +18,7 @@
     "smoke:butler-natural-explanation": "node scripts/run-world-butler-natural-explanation-smoke.cjs",
     "smoke:world-surface-copy-cn": "node scripts/run-world-surface-copy-cn-smoke.cjs",
     "smoke:world-pixel-primary": "node scripts/run-world-pixel-primary-smoke.cjs",
+    "smoke:world-pixel-viewmodel-primary": "node scripts/run-world-pixel-viewmodel-primary-smoke.cjs",
     "smoke:trace-visual": "node scripts/run-world-trace-visual-smoke.cjs",
     "smoke:formal-trace-surface": "node scripts/run-world-formal-trace-surface-smoke.cjs"
   },

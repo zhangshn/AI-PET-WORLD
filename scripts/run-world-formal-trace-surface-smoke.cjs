@@ -112,7 +112,6 @@ async function main() {
       "runAndPersistOneRuntimeTick",
       "writeWorldRuntimeSaveRecord",
       "runTraceLifecycleTick",
-      "buildTraceVisualProjectionFromTraceField",
       "traceField.traces",
       "TraceFact",
       "JSON.stringify",
@@ -138,8 +137,8 @@ async function main() {
       "/world page does not use readWorldRuntimeForView."
     )
     assert(
-      pageSource.includes("traceField: saveRecord.traceField"),
-      "/world page does not pass traceField through the formal visual builder."
+      pageSource.includes("PixelWorldView"),
+      "/world page does not render PixelWorldView."
     )
     assert(
       componentSource.includes("formalVisualModel.traceVisualProjection"),
@@ -216,7 +215,7 @@ async function main() {
   console.log(`Visible trace signs: ${projection.summary.visibleItems}`)
   console.log(`Average intensity: ${projection.summary.averageIntensity}`)
   console.log("Page read boundary: ok")
-  console.log("Formal trace surface summary: ok")
+  console.log("Formal trace surface optional asset: ok")
   console.log("No raw trace display tokens: ok")
   console.log("Result: PASS")
 }
