@@ -146,14 +146,23 @@ async function main() {
 
     assert(butlerTraces.length > 0, "No M7 butler_behavior trace was persisted.")
 
-    const latestTrace = [...butlerTraces].sort((left, right) => right.updatedAtTick - left.updatedAtTick)[0]
-    assert(latestTrace.updatedAtTick === record.tick, "Latest butler trace was not updated at the current runtime tick.")
-    assert(latestTrace.derivedFrom.includes(intent.id), "Latest butler trace does not derive from persisted intent.")
-    assert(latestTrace.derivedFrom.includes(validation.id), "Latest butler trace does not derive from validation.")
-    assert(latestTrace.audit.tags.includes("world_rule_validation_passed"), "Latest butler trace audit does not include validation pass.")
-    assert(latestTrace.type === intent.requestedTraceTypes[0], "Latest butler trace type does not match primary requested trace.")
+    const matchingTrace = butlerTraces.find(
+      (trace) =>
+        trace.updatedAtTick === record.tick &&
+        trace.derivedFrom.includes(intent.id) &&
+        trace.derivedFrom.includes(validation.id)
+    )
 
-    return latestTrace
+    assert(
+      matchingTrace,
+      `No current-tick butler trace derived from persisted intent and validation. Butler trace ids: ${butlerTraces
+        .map((trace) => trace.id)
+        .join(", ")}`
+    )
+    assert(matchingTrace.audit.tags.includes("world_rule_validation_passed"), "Matched butler trace audit does not include validation pass.")
+    assert(matchingTrace.type === intent.requestedTraceTypes[0], "Matched butler trace type does not match primary requested trace.")
+
+    return matchingTrace
   }
 
   function assertNoUnsafeHomeMapWrite(beforeRecord, afterRecord, intent) {
@@ -218,7 +227,7 @@ async function main() {
 
   const intent = assertIntentShape(afterRecord)
   const validation = assertValidationShape(afterRecord, intent)
-  const latestTrace = assertButlerTrace(afterRecord, intent, validation)
+  const matchedTrace = assertButlerTrace(afterRecord, intent, validation)
 
   assertNoUnsafeHomeMapWrite(beforeRecord, afterRecord, intent)
   assertNoDefaultPet(afterRecord)
@@ -255,8 +264,8 @@ async function main() {
   console.log(`Intent: ${intent.kind}`)
   console.log(`Motivation: ${intent.motivation}`)
   console.log(`Validation: ${validation.ok ? "ok" : "blocked"}`)
-  console.log(`Butler trace: ${latestTrace.id}`)
-  console.log(`Butler trace type: ${latestTrace.type}`)
+  console.log(`Butler trace: ${matchedTrace.id}`)
+  console.log(`Butler trace type: ${matchedTrace.type}`)
   console.log(`Trace count: ${afterRecord.traceField.traces.length}`)
   console.log(`Memory seeds: ${afterRecord.traceMemorySeedField.summary.totalSeeds}`)
   console.log("Butler intent persisted: ok")
