@@ -67,6 +67,7 @@ function buildMotivationScores(input: {
   const recentHeavyCost = recentTransactions
     .slice(-3)
     .reduce((total, transaction) => total + Math.abs(transaction.amount), 0)
+  const traceContext = buildTraceContext(input.saveRecord)
   const resourcePressure =
     (lowMaterial ? 24 : 0) +
     (lowCare ? 18 : 0) +
@@ -85,6 +86,7 @@ function buildMotivationScores(input: {
           : hasConstructionPlans
             ? 12
             : 0,
+      traceContextScore: traceContext.highMaintenanceTraceCount > 0 ? 4 : 0,
       riskPenalty: repeatedActionRisk ? 28 : 0,
       reasons: [
         hasConstructionPlans
@@ -93,14 +95,22 @@ function buildMotivationScores(input: {
         lastAction && lastAction.acceptedDiffCount > 0
           ? "The previous runtime action changed the world through SafeApply."
           : "The previous runtime action did not write a world change.",
+        traceContext.highMaintenanceTraceCount > 0
+          ? "Trace context reports maintained or stressed areas, but it remains advisory."
+          : "Trace context does not require construction continuity.",
       ],
-      tags: ["butler_motivation_score", "continue_construction"],
+      tags: [
+        "butler_motivation_score",
+        "continue_construction",
+        ...traceContext.tags,
+      ],
     }),
     buildScore({
       type: "maintain_home",
       baseScore: 30,
       resourceScore: lowCare || lowGround ? 10 : 4,
       continuityScore: hasPlacements ? 18 : 0,
+      traceContextScore: Math.min(10, traceContext.highMaintenanceTraceCount * 2),
       riskPenalty: repeatedActionRisk ? 8 : 0,
       reasons: [
         hasPlacements
@@ -109,14 +119,18 @@ function buildMotivationScores(input: {
         lowCare || lowGround
           ? "Care or ground condition suggests a lower-risk maintenance posture."
           : "Home condition is stable enough for light maintenance.",
+        traceContext.highMaintenanceTraceCount > 0
+          ? "Trace influence provides maintenance hints without creating a world fact."
+          : "No persisted trace maintenance hint is available.",
       ],
-      tags: ["butler_motivation_score", "maintain_home"],
+      tags: ["butler_motivation_score", "maintain_home", ...traceContext.tags],
     }),
     buildScore({
       type: "wait_for_resources",
       baseScore: 24,
       resourceScore: resourcePressure,
       continuityScore: denseTransactions ? 12 : 0,
+      traceContextScore: traceContext.tracePressure > 60 ? 4 : 0,
       riskPenalty: 0,
       reasons: [
         resourcePressure > 0
@@ -125,22 +139,29 @@ function buildMotivationScores(input: {
         denseTransactions
           ? "Recent transactions are dense enough to avoid forcing another change."
           : "Recent transaction density is acceptable.",
+        traceContext.tracePressure > 60
+          ? "Trace influence pressure suggests avoiding forced changes."
+          : "Trace influence pressure does not require waiting.",
       ],
-      tags: ["butler_motivation_score", "wait_for_resources"],
+      tags: ["butler_motivation_score", "wait_for_resources", ...traceContext.tags],
     }),
     buildScore({
       type: "observe_world",
       baseScore: 22,
       resourceScore: resourcePressure > 30 ? 8 : 0,
       continuityScore: repeatedActionRisk ? 30 : 6,
+      traceContextScore: traceContext.familiarRegionCount > 0 ? 6 : 0,
       riskPenalty: 0,
       reasons: [
         repeatedActionRisk
           ? "Recent action signatures repeat, so observation is safer."
           : "Observation remains available as the stable fallback.",
         "Observation does not force a new HomeMapState fact.",
+        traceContext.familiarRegionCount > 0
+          ? "Trace influence offers familiar regions for observation context only."
+          : "No familiar trace region is available for observation context.",
       ],
-      tags: ["butler_motivation_score", "observe_world"],
+      tags: ["butler_motivation_score", "observe_world", ...traceContext.tags],
     }),
   ]
 }
@@ -151,8 +172,39 @@ function buildScore(input: Omit<ButlerRuntimeMotivationScore, "finalScore">) {
     finalScore:
       input.baseScore +
       input.resourceScore +
-      input.continuityScore -
+      input.continuityScore +
+      input.traceContextScore -
       input.riskPenalty,
+  }
+}
+
+function buildTraceContext(saveRecord: WorldRuntimeSaveRecord): {
+  tracePressure: number
+  familiarRegionCount: number
+  highMaintenanceTraceCount: number
+  tags: string[]
+} {
+  const summary = saveRecord.traceInfluenceSummary
+
+  if (!summary) {
+    return {
+      tracePressure: 0,
+      familiarRegionCount: 0,
+      highMaintenanceTraceCount: 0,
+      tags: ["trace_context:not_available"],
+    }
+  }
+
+  return {
+    tracePressure: Math.round(summary.averageTraceInfluenceStrength),
+    familiarRegionCount: summary.familiarRegionCount,
+    highMaintenanceTraceCount: summary.highMaintenanceTraceCount,
+    tags: [
+      "trace_context:read_only",
+      `trace_pressure:${Math.round(summary.averageTraceInfluenceStrength)}`,
+      `familiar_regions:${summary.familiarRegionCount}`,
+      `maintenance_trace_hints:${summary.highMaintenanceTraceCount}`,
+    ],
   }
 }
 

@@ -136,6 +136,12 @@ async function main() {
 
   const { buildSpaceGridFromHomeMapState } = localRequire(spaceBuilderPath)
   const spaceGrid = buildSpaceGridFromHomeMapState({ homeMapState })
+  const traceInfluencedSpaceGrid = record.traceField
+    ? buildSpaceGridFromHomeMapState({
+        homeMapState,
+        traceField: record.traceField,
+      })
+    : null
 
   assert(Array.isArray(spaceGrid.cells), "SpaceGrid.cells is not an array.")
   assert(spaceGrid.cells.length > 0, "SpaceGrid has no cells.")
@@ -205,6 +211,26 @@ async function main() {
   assertNoMovementMotherArchitecture()
   assertReadBoundaryStillPresent()
 
+  if (traceInfluencedSpaceGrid) {
+    assert(
+      traceInfluencedSpaceGrid.cells.length === spaceGrid.cells.length,
+      "Trace-influenced SpaceGrid changed the cell count."
+    )
+    assert(
+      traceInfluencedSpaceGrid.traceInfluenceSummary,
+      "Trace-influenced SpaceGrid is missing traceInfluenceSummary."
+    )
+    assert(
+      traceInfluencedSpaceGrid.cells.every(
+        (cell) =>
+          cell.passability !== "blocked" ||
+          cell.passable === false ||
+          cell.movementCost >= 999
+      ),
+      "Trace influence made a blocked cell passable."
+    )
+  }
+
   const afterRaw = fs.readFileSync(savePath, "utf8")
   const afterStat = fs.statSync(savePath)
   const afterRecord = parseJson(
@@ -232,6 +258,11 @@ async function main() {
   console.log(`Fallback cells: ${fallbackCells}`)
   console.log(`Occupied cells: ${occupiedCells.length}`)
   console.log(`Boundary cells: ${boundaryCells.length}`)
+  console.log(
+    `Trace-influenced cells: ${
+      traceInfluencedSpaceGrid?.summary.traceInfluencedCells ?? 0
+    }`
+  )
   console.log(`Current tick: ${record.tick}`)
   console.log("Read-only build: ok")
   console.log("Movement cost audit factors: ok")

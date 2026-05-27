@@ -222,6 +222,17 @@ async function main() {
     `Second tick did not increment from ${firstRecord.tick} to ${firstRecord.tick + 1}.`
   )
   assertTraceField(secondRecord.traceField, "Second tick")
+  assert(
+    secondRecord.traceMemorySeedField &&
+      secondRecord.traceMemorySeedField.summary &&
+      typeof secondRecord.traceMemorySeedField.summary.totalSeeds === "number",
+    "Second tick did not persist a valid traceMemorySeedField."
+  )
+  assert(
+    secondRecord.traceInfluenceSummary &&
+      typeof secondRecord.traceInfluenceSummary.totalInfluencedCells === "number",
+    "Second tick did not persist a valid traceInfluenceSummary."
+  )
 
   const retainedTrace = secondRecord.traceField.traces.find((trace) =>
     firstTraceIds.has(trace.id)
@@ -290,6 +301,12 @@ async function main() {
   console.log(`Tick after second explicit tick: ${secondRecord.tick}`)
   console.log(`Trace count after first tick: ${firstRecord.traceField.traces.length}`)
   console.log(`Trace count after second tick: ${secondRecord.traceField.traces.length}`)
+  console.log(
+    `Memory seeds after second tick: ${secondRecord.traceMemorySeedField.summary.totalSeeds}`
+  )
+  console.log(
+    `Trace-influenced cells after second tick: ${secondRecord.traceInfluenceSummary.totalInfluencedCells}`
+  )
   console.log(`Retained trace id: ${retainedTrace.id}`)
   console.log(`Lifecycle phases: ${Array.from(lifecyclePhases).join(", ")}`)
   console.log("TraceField persisted by explicit runtime tick: ok")

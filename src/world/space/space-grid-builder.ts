@@ -4,9 +4,11 @@ import type {
   MapPlacement,
 } from "@/world/map-state/home-map-state-schema"
 import { clamp } from "@/world/procedural-painter/scene-composer/scene-composer-random"
+import type { TraceField } from "@/world/trace"
 
 import type {
   SpaceCell,
+  SpaceFamiliarityLevel,
   SpaceGrid,
   SpaceMovementCostFactor,
   SpaceOccupancy,
@@ -20,9 +22,11 @@ import type {
   SpaceTraceStrength,
 } from "./space-schema"
 import { summarizeSpaceGrid } from "./space-summary"
+import { buildTraceInfluenceForSpaceGrid } from "./space-trace-influence"
 
 export type BuildSpaceGridFromHomeMapStateInput = {
   homeMapState: HomeMapState
+  traceField?: TraceField
 }
 
 type IndexedPlacement = {
@@ -159,6 +163,10 @@ export function buildSpaceGridFromHomeMapState(
         occupancyIds: occupancy.map((item) => item.placementId),
         traceStrength,
         traceLevel: resolveTraceLevel(traceStrength),
+        traceInfluenceStrength: 0,
+        traceInfluenceFactors: [],
+        familiarity: 0,
+        familiarityLevel: "unknown",
         humidity: moistureHint,
         ecologyHealth: ecologyHealthHint,
         moistureHint,
@@ -167,7 +175,7 @@ export function buildSpaceGridFromHomeMapState(
     }
   }
 
-  const partialGrid: SpaceGrid = {
+  const partialGridWithoutTrace: SpaceGrid = {
     id: `space_grid_${homeMapState.worldId}`,
     worldId: homeMapState.worldId,
     columns,
@@ -179,11 +187,91 @@ export function buildSpaceGridFromHomeMapState(
     regions: buildSpaceRegions(cells),
     summary: emptySummary(),
   }
+  const traceInfluence = buildTraceInfluenceForSpaceGrid({
+    spaceGrid: partialGridWithoutTrace,
+    traceField: input.traceField,
+  })
+  const influencedCells = applyTraceInfluenceToCells({
+    cells,
+    traceInfluenceByCellId: traceInfluence.traceInfluenceByCellId,
+  })
+  const partialGrid: SpaceGrid = {
+    ...partialGridWithoutTrace,
+    cells: influencedCells,
+    regions: buildSpaceRegions(influencedCells),
+    traceInfluenceSummary: input.traceField ? traceInfluence.summary : undefined,
+  }
 
   return {
     ...partialGrid,
     summary: summarizeSpaceGrid(partialGrid),
   }
+}
+
+function applyTraceInfluenceToCells(input: {
+  cells: SpaceCell[]
+  traceInfluenceByCellId: ReturnType<
+    typeof buildTraceInfluenceForSpaceGrid
+  >["traceInfluenceByCellId"]
+}): SpaceCell[] {
+  return input.cells.map((cell) => {
+    const influence = input.traceInfluenceByCellId[cell.id]
+
+    if (!influence) return cell
+
+    const movementCostBeforeTrace = cell.movementCost
+    const canApplyMovementDelta =
+      cell.passability !== "blocked" && cell.passability !== "unknown"
+    const movementCostAfterTrace = canApplyMovementDelta
+      ? clamp(movementCostBeforeTrace + influence.movementCostDelta, 12, 180)
+      : movementCostBeforeTrace
+    const familiarity = clamp(
+      Math.round((cell.familiarity ?? 0) + influence.familiarityDelta),
+      0,
+      100
+    )
+    const traceStrength = clamp(
+      Math.max(cell.traceStrength, influence.strength),
+      0,
+      100
+    )
+    const movementCostFactors =
+      canApplyMovementDelta && influence.factors.length > 0
+        ? [
+            ...cell.movementCostFactors,
+            {
+              source: "trace_effect" as const,
+              amount: movementCostAfterTrace - movementCostBeforeTrace,
+              reason: `trace_effect:${influence.factors
+                .map((factor) => factor.traceId)
+                .join("+")}`,
+            },
+          ]
+        : cell.movementCostFactors
+
+    return {
+      ...cell,
+      movementCost: movementCostAfterTrace,
+      movementCostFactors,
+      traceStrength,
+      traceLevel: resolveTraceLevel(traceStrength),
+      traceInfluenceStrength: influence.strength,
+      traceInfluenceFactors: influence.factors,
+      movementCostBeforeTrace,
+      movementCostAfterTrace,
+      familiarity,
+      familiarityLevel: resolveFamiliarityLevel(familiarity),
+    }
+  })
+}
+
+function resolveFamiliarityLevel(value: number): SpaceFamiliarityLevel {
+  if (value >= 72) return "habitual"
+  if (value >= 52) return "trusted"
+  if (value >= 28) return "familiar"
+  if (value > 0) return "noticed"
+
+  return "unknown"
 }
 
 function indexPlacement(
@@ -877,8 +965,10 @@ function emptySummary() {
     blockedCells: 0,
     restrictedCells: 0,
     occupiedCells: 0,
+    traceInfluencedCells: 0,
     averageMovementCost: 0,
     averageTraceStrength: 0,
+    averageFamiliarity: 0,
     regionCounts: {
       home: 0,
       yard: 0,

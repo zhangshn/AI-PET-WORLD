@@ -52,6 +52,9 @@ export function summarizeSpaceGrid(spaceGrid: SpaceGrid): SpaceGridSummary {
   const occupiedCells = spaceGrid.cells.filter(
     (cell) => cell.occupancyKind !== "empty"
   ).length
+  const traceInfluencedCells = spaceGrid.cells.filter(
+    (cell) => cell.traceInfluenceStrength > 0
+  ).length
   const costCells = spaceGrid.cells.filter(
     (cell) => cell.passability !== "blocked" && cell.passability !== "unknown"
   )
@@ -62,11 +65,15 @@ export function summarizeSpaceGrid(spaceGrid: SpaceGrid): SpaceGridSummary {
     blockedCells,
     restrictedCells,
     occupiedCells,
+    traceInfluencedCells,
     averageMovementCost: average(
       costCells.map((cell) => cell.movementCost)
     ),
     averageTraceStrength: average(
       spaceGrid.cells.map((cell) => cell.traceStrength)
+    ),
+    averageFamiliarity: average(
+      spaceGrid.cells.map((cell) => cell.familiarity ?? 0)
     ),
     regionCounts: countByKind(REGION_KINDS, (kind) =>
       spaceGrid.cells.filter((cell) => cell.regionKind === kind).length

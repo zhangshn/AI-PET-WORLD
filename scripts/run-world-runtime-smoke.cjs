@@ -120,6 +120,12 @@ async function main() {
     beforeMtimeMs: beforeReadBoundaryStat.mtimeMs,
   })
   const traceFieldAudit = auditOptionalTraceField(record.traceField)
+  const traceMemorySeedAudit = auditOptionalTraceMemorySeedField(
+    record.traceMemorySeedField
+  )
+  const traceInfluenceAudit = auditOptionalTraceInfluenceSummary(
+    record.traceInfluenceSummary
+  )
 
   assert(
     record.version === "v2.6-runtime-00",
@@ -151,6 +157,8 @@ async function main() {
   )
   assert(readBoundaryResult.ok, readBoundaryResult.message)
   assert(traceFieldAudit.ok, traceFieldAudit.message)
+  assert(traceMemorySeedAudit.ok, traceMemorySeedAudit.message)
+  assert(traceInfluenceAudit.ok, traceInfluenceAudit.message)
 
   if (record.recentActionSignatures !== undefined) {
     assert(
@@ -219,11 +227,74 @@ async function main() {
     `TraceField: ${record.traceField ? "ok" : "not persisted yet"}`
   )
   console.log(
+    `TraceMemorySeedField: ${
+      record.traceMemorySeedField ? "ok" : "not persisted yet"
+    }`
+  )
+  console.log(
+    `TraceInfluenceSummary: ${
+      record.traceInfluenceSummary ? "ok" : "not persisted yet"
+    }`
+  )
+  console.log(
     `Selected motivation: ${
       record.lastButlerRuntimeDecision?.selectedMotivation ?? "none"
     }`
   )
   console.log("Result: PASS")
+}
+
+function auditOptionalTraceMemorySeedField(traceMemorySeedField) {
+  if (traceMemorySeedField === undefined) {
+    return {
+      ok: true,
+      message: "TraceMemorySeedField is optional and not persisted yet.",
+    }
+  }
+
+  if (
+    !traceMemorySeedField ||
+    typeof traceMemorySeedField.worldId !== "string" ||
+    !Array.isArray(traceMemorySeedField.seeds) ||
+    !traceMemorySeedField.summary ||
+    typeof traceMemorySeedField.summary.totalSeeds !== "number"
+  ) {
+    return {
+      ok: false,
+      message: "Persisted traceMemorySeedField exists but has an invalid shape.",
+    }
+  }
+
+  return {
+    ok: true,
+    message: "Persisted traceMemorySeedField is valid.",
+  }
+}
+
+function auditOptionalTraceInfluenceSummary(traceInfluenceSummary) {
+  if (traceInfluenceSummary === undefined) {
+    return {
+      ok: true,
+      message: "TraceInfluenceSummary is optional and not persisted yet.",
+    }
+  }
+
+  if (
+    !traceInfluenceSummary ||
+    typeof traceInfluenceSummary.totalInfluencedCells !== "number" ||
+    typeof traceInfluenceSummary.averageTraceInfluenceStrength !== "number" ||
+    !Array.isArray(traceInfluenceSummary.tags)
+  ) {
+    return {
+      ok: false,
+      message: "Persisted traceInfluenceSummary exists but has an invalid shape.",
+    }
+  }
+
+  return {
+    ok: true,
+    message: "Persisted traceInfluenceSummary is valid.",
+  }
 }
 
 function auditOptionalTraceField(traceField) {

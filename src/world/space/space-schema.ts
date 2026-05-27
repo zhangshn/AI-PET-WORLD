@@ -43,6 +43,13 @@ export type SpaceOccupancyKind =
 
 export type SpaceTraceStrength = "none" | "weak" | "medium" | "strong"
 
+export type SpaceFamiliarityLevel =
+  | "unknown"
+  | "noticed"
+  | "familiar"
+  | "trusted"
+  | "habitual"
+
 export type SpaceRegionSource =
   | "home_map_zone"
   | "boundary"
@@ -78,8 +85,42 @@ export type SpaceMovementCostFactor = {
     | "humidity"
     | "ecology_health"
     | "trace_strength"
+    | "trace_effect"
   amount: number
   reason: string
+}
+
+export type SpaceTraceInfluenceFactor = {
+  traceId: string
+  traceType: string
+  lifecyclePhase: string
+  movementCostDelta: number
+  familiarityDelta: number
+  visualIntensityDelta: number
+  strength: number
+  reason: string
+}
+
+export type SpaceTraceInfluence = {
+  cellId: string
+  strength: number
+  movementCostDelta: number
+  familiarityDelta: number
+  visualIntensityDelta: number
+  factors: SpaceTraceInfluenceFactor[]
+}
+
+export type SpaceTraceInfluenceSummary = {
+  totalInfluencedCells: number
+  averageTraceInfluenceStrength: number
+  averageFamiliarity: number
+  highMaintenanceTraceCount: number
+  familiarRegionCount: number
+  preferredObservationRegions: SpaceRegionKind[]
+  highTraceMovementCostRegions: SpaceRegionKind[]
+  maintenancePriorityHints: string[]
+  warnings: string[]
+  tags: string[]
 }
 
 export type SpaceBounds = {
@@ -112,9 +153,14 @@ export type SpaceCell = SpaceCoordinate & {
   occupancyIds: string[]
   traceStrength: number
   traceLevel: SpaceTraceStrength
+  traceInfluenceStrength: number
+  traceInfluenceFactors: SpaceTraceInfluenceFactor[]
+  movementCostBeforeTrace?: number
+  movementCostAfterTrace?: number
   humidity?: number
   ecologyHealth?: number
   familiarity?: number
+  familiarityLevel?: SpaceFamiliarityLevel
   moistureHint: number
   ecologyHealthHint: number
 }
@@ -140,8 +186,10 @@ export type SpaceGridSummary = {
   blockedCells: number
   restrictedCells: number
   occupiedCells: number
+  traceInfluencedCells: number
   averageMovementCost: number
   averageTraceStrength: number
+  averageFamiliarity: number
   regionCounts: Record<SpaceRegionKind, number>
   terrainCounts: Record<SpaceTerrainKind, number>
   occupancyCounts: Record<SpaceOccupancyKind, number>
@@ -158,4 +206,5 @@ export type SpaceGrid = {
   cells: SpaceCell[]
   regions: SpaceRegion[]
   summary: SpaceGridSummary
+  traceInfluenceSummary?: SpaceTraceInfluenceSummary
 }

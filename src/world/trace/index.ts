@@ -35,3 +35,10 @@ export {
   runTraceLifecycleTick,
   type TraceLifecycleTickResult,
 } from "./trace-tick"
+export {
+  buildTraceMemorySeedFieldFromTraceField,
+  type TraceMemorySeed,
+  type TraceMemorySeedField,
+  type TraceMemorySeedFieldSummary,
+  type TraceMemorySeedKind,
+} from "./trace-memory-seed"

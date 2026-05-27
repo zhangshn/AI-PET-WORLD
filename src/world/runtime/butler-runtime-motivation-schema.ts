@@ -13,6 +13,7 @@ export type ButlerRuntimeMotivationScore = {
   baseScore: number
   resourceScore: number
   continuityScore: number
+  traceContextScore: number
   riskPenalty: number
   finalScore: number
   reasons: string[]

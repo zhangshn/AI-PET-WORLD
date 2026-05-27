@@ -7,6 +7,7 @@ import { runMvpWorldRuntimeTick } from "@/world/mvp-core/mvp-world-runtime-tick"
 import { buildSpaceGridFromHomeMapState } from "@/world/space"
 import {
   buildTraceFieldFromWorld,
+  buildTraceMemorySeedFieldFromTraceField,
   runTraceLifecycleTick,
 } from "@/world/trace"
 
@@ -112,6 +113,14 @@ export function runOneRuntimeTick(
     homeMapState: nextHomeMapState,
     spaceGrid,
   })
+  const traceInfluencedSpaceGrid = buildSpaceGridFromHomeMapState({
+    homeMapState: nextHomeMapState,
+    traceField: traceLifecycleResult.nextTraceField,
+  })
+  const traceMemorySeedField = buildTraceMemorySeedFieldFromTraceField({
+    traceField: traceLifecycleResult.nextTraceField,
+    currentTick: nextTick,
+  })
   const nextSaveRecord: WorldRuntimeSaveRecord = {
     version: "v2.6-runtime-00",
     worldId: input.saveRecord.worldId,
@@ -128,6 +137,8 @@ export function runOneRuntimeTick(
     ].slice(-10),
     lastButlerRuntimeDecision: decision,
     traceField: traceLifecycleResult.nextTraceField,
+    traceMemorySeedField,
+    traceInfluenceSummary: traceInfluencedSpaceGrid.traceInfluenceSummary,
     tags: [
       "world_runtime_save_record",
       runtimeTick ? "safe_apply_output" : "butler_observe_or_wait_output",
@@ -167,6 +178,10 @@ export function runOneRuntimeTick(
       ...(runtimeTick?.messages ?? []),
       ...traceLifecycleResult.messages,
       ...traceLifecycleResult.warnings,
+      `Trace influence projected for ${
+        traceInfluencedSpaceGrid.traceInfluenceSummary?.totalInfluencedCells ?? 0
+      } cells.`,
+      `Trace memory seeds available: ${traceMemorySeedField.summary.totalSeeds}.`,
       ...combinedAudit.warnings,
     ],
     tags: [
@@ -175,6 +190,8 @@ export function runOneRuntimeTick(
       "no_pet_fact_created",
       `motivation:${decision.selectedMotivation}`,
       ...traceLifecycleResult.tags,
+      "trace_influence_summary_persisted",
+      "trace_memory_seed_field_persisted",
       ...continuityAudit.tags,
     ],
   }

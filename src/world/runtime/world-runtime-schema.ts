@@ -4,7 +4,8 @@
 
 import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
 import type { MvpWorldRuntimeTickResult } from "@/world/mvp-core/mvp-world-runtime-tick"
-import type { TraceField } from "@/world/trace"
+import type { SpaceTraceInfluenceSummary } from "@/world/space"
+import type { TraceField, TraceMemorySeedField } from "@/world/trace"
 import type {
   ButlerRuntimeDecision,
   ButlerRuntimeMotivationType,
@@ -47,6 +48,8 @@ export type WorldRuntimeSaveRecord = {
   lastButlerRuntimeDecision?: ButlerRuntimeDecision | null
   recentMotivationTypes?: ButlerRuntimeMotivationType[]
   traceField?: TraceField
+  traceMemorySeedField?: TraceMemorySeedField
+  traceInfluenceSummary?: SpaceTraceInfluenceSummary
   tags: string[]
 }
 
