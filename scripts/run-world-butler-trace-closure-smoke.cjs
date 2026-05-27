@@ -127,7 +127,10 @@ async function main() {
     assert(validation.tags.includes("trace_write_requires_validation"), "Validation does not guard trace writing.")
     assert(validation.tags.includes("event_write_requires_validation"), "Validation does not guard event writing.")
     assert(validation.tags.includes("memory_seed_requires_trace_quality"), "Validation does not guard memory seed quality.")
-    assert(validation.ok === validation.blockingWarnings.length === 0, "Validation ok flag does not match blocking warnings.")
+    assert(
+      validation.ok === (validation.blockingWarnings.length === 0),
+      "Validation ok flag does not match blocking warnings."
+    )
 
     return validation
   }
