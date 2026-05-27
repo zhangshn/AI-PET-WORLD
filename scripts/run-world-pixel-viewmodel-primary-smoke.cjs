@@ -81,20 +81,59 @@ async function main() {
   assert(pageSource.includes("buildWorldViewModelForPixelWorld"), "/world does not build WorldViewModel.")
   assert(pageSource.includes("PixelWorldView"), "/world does not render PixelWorldView.")
   assert(canvasSource.includes("<canvas"), "PixelWorldView does not use canvas.")
-  assert(!pageSource.includes("buildSceneSvg"), "/world still references buildSceneSvg.")
-  assert(!pageSource.includes("WorldPainterReadonlyPreview"), "/world still references WorldPainterReadonlyPreview.")
-  assert(!pageSource.includes("pixel-scene-composer"), "/world imports the debug composer page.")
-  assert(modelSources.includes("composeScene"), "WorldViewModel does not use Scene Composer rules.")
-  assert(modelSources.includes("buildDefaultSceneComposerFact"), "WorldViewModel does not build formal SceneComposerFact.")
-  assert(!modelSources.includes("buildSceneSvg"), "WorldViewModel must not use Scene Composer SVG renderer.")
-  assert(!modelSources.includes("data:image/svg+xml"), "WorldViewModel must not output SVG data URIs.")
-  assert(!modelSources.includes("WorldPainterReadonlyPreview"), "WorldViewModel still imports world painter preview.")
-  assert(!modelSources.includes("world-painter-adapter"), "WorldViewModel still imports world painter adapter.")
+
+  const forbiddenTokens = [
+    "buildSceneSvg",
+    "data:image/svg+xml",
+    "WorldPainterReadonlyPreview",
+    "FormalWorldView",
+    "ProceduralRendererView",
+    "scene-composer-gateway",
+    "composeScene",
+    "buildDefaultSceneComposerFact",
+    "adaptHomeMapStateToSceneComposerFact",
+    "world-painter-adapter",
+    "scene_composer_rules_primary",
+    "composer_scene_plan_to_world_view_model",
+    "roadGraph",
+    "pathGraph",
+  ]
+
+  forbiddenTokens.forEach((token) =>
+    assert(
+      !pageSource.includes(token) && !modelSources.includes(token) && !canvasSource.includes(token),
+      `Formal WorldViewModel path still contains forbidden token: ${token}.`
+    )
+  )
+
+  const requiredModelTokens = [
+    "buildSpaceGridFromHomeMapState",
+    "buildTraceFieldFromWorld",
+    "buildWorldViewTilesFromSpaceGrid",
+    "buildWorldViewObjectsFromHomeMapState",
+    "mapTraceFieldToWorldViewTraces",
+    "buildWorldViewActors",
+    "buildWorldViewAtmosphere",
+    "world_pixel_rule_mapper_00",
+    "no_scene_composer_gateway_in_world_view_model",
+    "no_world_fact_generation",
+    "runtime_read_only_projection",
+    "no_default_pet_actor",
+    "pet_actor_requires_existing_fact",
+  ]
+
+  requiredModelTokens.forEach((token) =>
+    assert(modelSources.includes(token), `WorldViewModel is missing required rule-mapper token: ${token}.`)
+  )
+
   assert(schemaSource.includes("WorldViewObjectSource"), "WorldViewObject has no source provenance.")
-  assert(modelSources.includes("scene_composer_rules_primary"), "WorldViewModel is not tagged as Scene Composer rules primary.")
   assert(modelSources.includes("derived_visual_only"), "WorldViewModel has no derived visual-only rule assets.")
   assert(modelSources.includes("not_world_fact"), "Derived visuals are not marked as non-facts.")
   assert(modelSources.includes("no_runtime_write"), "Derived visuals are not marked as read-only projection.")
+  assert(canvasSource.includes("drawTileTraceSurface"), "Pixel canvas does not draw tile trace surfaces.")
+  assert(canvasSource.includes("drawGroundTrace"), "Pixel canvas does not draw ground traces.")
+  assert(canvasSource.includes("drawSurfaceTrace"), "Pixel canvas does not draw surface traces.")
+  assert(canvasSource.includes("drawAttentionTrace"), "Pixel canvas does not draw attention traces.")
 
   installTypeScriptRequireHook()
   const { buildWorldViewModelForPixelWorld } = localRequire(viewModelGatewayPath)
@@ -102,13 +141,12 @@ async function main() {
   const derivedVisualObjects = model.objects.filter((object) => object.source === "derived_visual_only")
   const factObjects = model.objects.filter((object) => object.source === "world_fact")
 
-  assert(model.canvas.width === 768, "WorldViewModel canvas width is not Scene Composer width 768.")
-  assert(model.canvas.height === 432, "WorldViewModel canvas height is not Scene Composer height 432.")
-  assert(model.tiles.length > 0, "WorldViewModel output has no tiles.")
+  assert(model.canvas.width === record.homeMapState.mapSize.columns * record.homeMapState.mapSize.tileSize, "WorldViewModel canvas width does not come from HomeMapState / SpaceGrid.")
+  assert(model.canvas.height === record.homeMapState.mapSize.rows * record.homeMapState.mapSize.tileSize, "WorldViewModel canvas height does not come from HomeMapState / SpaceGrid.")
+  assert(model.tiles.length === record.homeMapState.mapSize.columns * record.homeMapState.mapSize.rows, "WorldViewModel tiles are not generated from SpaceGrid cells.")
+  assert(model.tiles.some((tile) => tile.kind === "grass" || tile.kind === "pressed_grass" || tile.kind === "worn_grass"), "WorldViewModel output has no natural ground tiles.")
   assert(model.objects.length > 0, "WorldViewModel output has no objects.")
   assert(derivedVisualObjects.length > 0, "WorldViewModel output has no derived visual-only objects.")
-  assert(model.objects.some((object) => object.kind === "tree"), "WorldViewModel output has no Scene Composer trees.")
-  assert(model.objects.some((object) => object.kind === "bush"), "WorldViewModel output has no Scene Composer bush or grass tuft visuals.")
   assert(
     derivedVisualObjects.every((object) => object.tags.includes("not_world_fact") && object.tags.includes("no_runtime_write")),
     "Derived visual objects are not clearly marked as non-facts."
@@ -140,10 +178,10 @@ async function main() {
   console.log(`Objects: ${model.objects.length}`)
   console.log(`World fact objects: ${factObjects.length}`)
   console.log(`Derived visual-only objects: ${derivedVisualObjects.length}`)
-  console.log(`Trees: ${model.objects.filter((object) => object.kind === "tree").length}`)
   console.log(`Traces: ${model.traces.length}`)
   console.log(`Actors: ${model.actors.length}`)
-  console.log("Scene Composer rules projection: ok")
+  console.log("World pixel rule mapper: ok")
+  console.log("No Scene Composer gateway in WorldViewModel: ok")
   console.log("No SVG renderer in /world: ok")
   console.log("Runtime read boundary: ok")
   console.log("No default pet fact: ok")
