@@ -7,9 +7,7 @@
 import { useMemo, useState, useSyncExternalStore } from "react"
 import Link from "next/link"
 
-import { FormalWorldView } from "@/app/world/components/formal-world-view"
 import { ProceduralRendererView } from "@/app/world/components/procedural-renderer/procedural-renderer-view"
-import { buildFormalVisualModelFromSnapshot } from "@/world/formal-visual-model/formal-visual-model-gateway"
 import { runAiPetWorldMvpPipeline } from "@/world/mvp-core/mvp-core-gateway"
 import {
   buildWorldCreationRuntime,
@@ -156,13 +154,6 @@ function WorldRuntimeShell(input: {
     ? lastStepResult.nextHomeMapState.mapDiffs.length -
       lastStepResult.previousHomeMapState.mapDiffs.length
     : 0
-  const formalVisualModel = useMemo(
-    () =>
-      buildFormalVisualModelFromSnapshot(
-        runtimeState.currentRenderableSnapshot
-      ),
-    [runtimeState.currentRenderableSnapshot]
-  )
   const mvpPipelineResult = useMemo(
     () =>
       runAiPetWorldMvpPipeline({
@@ -366,7 +357,10 @@ function WorldRuntimeShell(input: {
               这里展示家园当前的形状、道路、自然边界和管家所在位置。画面只读取世界状态，不改变世界。
             </p>
           </div>
-          <FormalWorldView model={formalVisualModel} />
+          <p>
+            FormalWorldView debug asset is not mounted here; the formal /world
+            surface now uses PixelWorldView.
+          </p>
         </section>
       ) : null}
 
