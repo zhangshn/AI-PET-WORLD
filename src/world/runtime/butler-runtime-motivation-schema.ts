@@ -20,12 +20,30 @@ export type ButlerRuntimeMotivationScore = {
   tags: string[]
 }
 
+export type ButlerTraceMotivationContext = {
+  tracePressure: number
+  familiarRegionCount: number
+  highMaintenanceTraceCount: number
+  preferredObservationRegions: string[]
+  highTraceMovementCostRegions: string[]
+  memorySeedCount: number
+  butlerMemoryHintCount: number
+  ecologyMemoryHintCount: number
+  relationshipMemoryHintCount: number
+  traceAttentionScore: number
+  maintenanceHintScore: number
+  observationHintScore: number
+  warnings: string[]
+  tags: string[]
+}
+
 export type ButlerRuntimeDecision = {
   tick: number
   selectedMotivation: ButlerRuntimeMotivationType
   shouldRunConstructionTick: boolean
   tickReason: ButlerRuntimeMotivationType
   scores: ButlerRuntimeMotivationScore[]
+  traceContext: ButlerTraceMotivationContext
   reasons: string[]
   createdAt: string
   tags: string[]

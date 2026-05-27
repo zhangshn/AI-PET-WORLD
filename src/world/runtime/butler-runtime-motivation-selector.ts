@@ -7,6 +7,7 @@ import type {
   ButlerRuntimeDecision,
   ButlerRuntimeMotivationScore,
   ButlerRuntimeMotivationType,
+  ButlerTraceMotivationContext,
 } from "./butler-runtime-motivation-schema"
 
 const MOTIVATION_PRIORITY: Record<ButlerRuntimeMotivationType, number> = {
@@ -21,7 +22,11 @@ export function selectButlerRuntimeMotivation(input: {
   nextTick: number
   now: number
 }): ButlerRuntimeDecision {
-  const scores = buildMotivationScores(input)
+  const traceContext = buildTraceContext(input.saveRecord)
+  const scores = buildMotivationScores({
+    ...input,
+    traceContext,
+  })
   const selected = [...scores].sort(sortScores)[0]
   const selectedMotivation = selected.type
 
@@ -33,11 +38,13 @@ export function selectButlerRuntimeMotivation(input: {
       selectedMotivation === "maintain_home",
     tickReason: selectedMotivation,
     scores,
+    traceContext,
     reasons: selected.reasons,
     createdAt: new Date(input.now).toISOString(),
     tags: [
       "butler_runtime_decision",
       `motivation:${selectedMotivation}`,
+      ...traceContext.tags,
       selectedMotivation === "continue_construction" ||
       selectedMotivation === "maintain_home"
         ? "construction_tick_allowed"
@@ -50,6 +57,7 @@ function buildMotivationScores(input: {
   saveRecord: WorldRuntimeSaveRecord
   nextTick: number
   now: number
+  traceContext: ButlerTraceMotivationContext
 }): ButlerRuntimeMotivationScore[] {
   const resources = input.saveRecord.homeMapState.resources
   const recentTransactions = resources.recentTransactions ?? []
@@ -67,7 +75,7 @@ function buildMotivationScores(input: {
   const recentHeavyCost = recentTransactions
     .slice(-3)
     .reduce((total, transaction) => total + Math.abs(transaction.amount), 0)
-  const traceContext = buildTraceContext(input.saveRecord)
+  const traceContext = input.traceContext
   const resourcePressure =
     (lowMaterial ? 24 : 0) +
     (lowCare ? 18 : 0) +
@@ -86,7 +94,10 @@ function buildMotivationScores(input: {
           : hasConstructionPlans
             ? 12
             : 0,
-      traceContextScore: traceContext.highMaintenanceTraceCount > 0 ? 4 : 0,
+      traceContextScore:
+        resourcePressure > 24
+          ? 0
+          : Math.min(4, traceContext.butlerMemoryHintCount + 2),
       riskPenalty: repeatedActionRisk ? 28 : 0,
       reasons: [
         hasConstructionPlans
@@ -95,9 +106,9 @@ function buildMotivationScores(input: {
         lastAction && lastAction.acceptedDiffCount > 0
           ? "The previous runtime action changed the world through SafeApply."
           : "The previous runtime action did not write a world change.",
-        traceContext.highMaintenanceTraceCount > 0
-          ? "Trace context reports maintained or stressed areas, but it remains advisory."
-          : "Trace context does not require construction continuity.",
+        traceContext.butlerMemoryHintCount > 0
+          ? "Trace memory seeds are present but treated as construction continuity hints only."
+          : "Trace memory seeds do not require construction continuity.",
       ],
       tags: [
         "butler_motivation_score",
@@ -110,7 +121,11 @@ function buildMotivationScores(input: {
       baseScore: 30,
       resourceScore: lowCare || lowGround ? 10 : 4,
       continuityScore: hasPlacements ? 18 : 0,
-      traceContextScore: Math.min(10, traceContext.highMaintenanceTraceCount * 2),
+      traceContextScore: Math.min(
+        12,
+        traceContext.maintenanceHintScore +
+          traceContext.ecologyMemoryHintCount * 2
+      ),
       riskPenalty: repeatedActionRisk ? 8 : 0,
       reasons: [
         hasPlacements
@@ -122,6 +137,9 @@ function buildMotivationScores(input: {
         traceContext.highMaintenanceTraceCount > 0
           ? "Trace influence provides maintenance hints without creating a world fact."
           : "No persisted trace maintenance hint is available.",
+        traceContext.ecologyMemoryHintCount > 0
+          ? "Trace memory seeds suggest ecological attention, but they are hints only."
+          : "Trace memory seeds do not add ecological maintenance pressure.",
       ],
       tags: ["butler_motivation_score", "maintain_home", ...traceContext.tags],
     }),
@@ -130,7 +148,11 @@ function buildMotivationScores(input: {
       baseScore: 24,
       resourceScore: resourcePressure,
       continuityScore: denseTransactions ? 12 : 0,
-      traceContextScore: traceContext.tracePressure > 60 ? 4 : 0,
+      traceContextScore:
+        traceContext.tracePressure > 60 ||
+        traceContext.highTraceMovementCostRegions.length > 0
+          ? 5
+          : 0,
       riskPenalty: 0,
       reasons: [
         resourcePressure > 0
@@ -142,6 +164,9 @@ function buildMotivationScores(input: {
         traceContext.tracePressure > 60
           ? "Trace influence pressure suggests avoiding forced changes."
           : "Trace influence pressure does not require waiting.",
+        traceContext.highTraceMovementCostRegions.length > 0
+          ? "High trace movement cost regions support a cautious wait posture."
+          : "Trace movement costs do not add waiting pressure.",
       ],
       tags: ["butler_motivation_score", "wait_for_resources", ...traceContext.tags],
     }),
@@ -150,7 +175,7 @@ function buildMotivationScores(input: {
       baseScore: 22,
       resourceScore: resourcePressure > 30 ? 8 : 0,
       continuityScore: repeatedActionRisk ? 30 : 6,
-      traceContextScore: traceContext.familiarRegionCount > 0 ? 6 : 0,
+      traceContextScore: Math.min(8, traceContext.observationHintScore),
       riskPenalty: 0,
       reasons: [
         repeatedActionRisk
@@ -160,6 +185,9 @@ function buildMotivationScores(input: {
         traceContext.familiarRegionCount > 0
           ? "Trace influence offers familiar regions for observation context only."
           : "No familiar trace region is available for observation context.",
+        traceContext.relationshipMemoryHintCount > 0
+          ? "Relationship memory seed hints are noted without changing action rules."
+          : "No relationship trace memory hint is available.",
       ],
       tags: ["butler_motivation_score", "observe_world", ...traceContext.tags],
     }),
@@ -178,34 +206,73 @@ function buildScore(input: Omit<ButlerRuntimeMotivationScore, "finalScore">) {
   }
 }
 
-function buildTraceContext(saveRecord: WorldRuntimeSaveRecord): {
-  tracePressure: number
-  familiarRegionCount: number
-  highMaintenanceTraceCount: number
-  tags: string[]
-} {
-  const summary = saveRecord.traceInfluenceSummary
-
-  if (!summary) {
-    return {
-      tracePressure: 0,
-      familiarRegionCount: 0,
-      highMaintenanceTraceCount: 0,
-      tags: ["trace_context:not_available"],
-    }
-  }
+function buildTraceContext(
+  saveRecord: WorldRuntimeSaveRecord
+): ButlerTraceMotivationContext {
+  const influenceSummary = saveRecord.traceInfluenceSummary
+  const seedSummary = saveRecord.traceMemorySeedField?.summary
+  const tracePressure = Math.round(
+    influenceSummary?.averageTraceInfluenceStrength ?? 0
+  )
+  const familiarRegionCount = influenceSummary?.familiarRegionCount ?? 0
+  const highMaintenanceTraceCount =
+    influenceSummary?.highMaintenanceTraceCount ?? 0
+  const memorySeedCount = seedSummary?.totalSeeds ?? 0
+  const butlerMemoryHintCount = seedSummary?.butlerMemoryHints ?? 0
+  const ecologyMemoryHintCount = seedSummary?.ecologyMemoryHints ?? 0
+  const relationshipMemoryHintCount = seedSummary?.relationshipMemoryHints ?? 0
+  const traceAttentionScore = clampScore(
+    Math.round(tracePressure / 20) + memorySeedCount
+  )
+  const maintenanceHintScore = clampScore(
+    Math.min(8, highMaintenanceTraceCount * 2) +
+      Math.min(4, ecologyMemoryHintCount * 2) +
+      Math.min(3, butlerMemoryHintCount)
+  )
+  const observationHintScore = clampScore(
+    Math.min(6, familiarRegionCount * 2) +
+      Math.min(3, relationshipMemoryHintCount)
+  )
+  const warnings = [
+    influenceSummary ? "" : "Trace influence summary is not persisted yet.",
+    saveRecord.traceMemorySeedField
+      ? ""
+      : "Trace memory seed field is not persisted yet.",
+  ].filter(Boolean)
 
   return {
-    tracePressure: Math.round(summary.averageTraceInfluenceStrength),
-    familiarRegionCount: summary.familiarRegionCount,
-    highMaintenanceTraceCount: summary.highMaintenanceTraceCount,
+    tracePressure,
+    familiarRegionCount,
+    highMaintenanceTraceCount,
+    preferredObservationRegions:
+      influenceSummary?.preferredObservationRegions ?? [],
+    highTraceMovementCostRegions:
+      influenceSummary?.highTraceMovementCostRegions ?? [],
+    memorySeedCount,
+    butlerMemoryHintCount,
+    ecologyMemoryHintCount,
+    relationshipMemoryHintCount,
+    traceAttentionScore,
+    maintenanceHintScore,
+    observationHintScore,
+    warnings,
     tags: [
-      "trace_context:read_only",
-      `trace_pressure:${Math.round(summary.averageTraceInfluenceStrength)}`,
-      `familiar_regions:${summary.familiarRegionCount}`,
-      `maintenance_trace_hints:${summary.highMaintenanceTraceCount}`,
+      "trace_context_read",
+      "trace_influence_scoring_hint",
+      "trace_memory_seed_hint",
+      "trace_not_direct_action",
+      "safe_apply_still_required",
+      `trace_pressure:${tracePressure}`,
+      `familiar_regions:${familiarRegionCount}`,
+      `maintenance_trace_hints:${highMaintenanceTraceCount}`,
+      `memory_seeds:${memorySeedCount}`,
+      warnings.length > 0 ? "trace_context_incomplete" : "trace_context_complete",
     ],
   }
+}
+
+function clampScore(value: number): number {
+  return Math.max(0, Math.min(12, value))
 }
 
 function sortScores(

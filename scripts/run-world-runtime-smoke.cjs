@@ -206,9 +206,22 @@ async function main() {
       "lastButlerRuntimeDecision.scores is not an array."
     )
     assert(
+      record.lastButlerRuntimeDecision.scores.every(
+        (score) => typeof score.traceContextScore === "number"
+      ),
+      "lastButlerRuntimeDecision.scores is missing traceContextScore."
+    )
+    assert(
       Array.isArray(record.lastButlerRuntimeDecision.reasons),
       "lastButlerRuntimeDecision.reasons is not an array."
     )
+    if (record.lastButlerRuntimeDecision.traceContext !== undefined) {
+      assert(
+        typeof record.lastButlerRuntimeDecision.traceContext.tracePressure ===
+          "number",
+        "lastButlerRuntimeDecision.traceContext.tracePressure is invalid."
+      )
+    }
   }
 
   console.log("LIVE WORLD RUNTIME SMOKE")
