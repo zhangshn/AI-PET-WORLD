@@ -10,6 +10,13 @@ import type {
 } from "./trace-schema"
 import { clamp } from "@/world/procedural-painter/scene-composer/scene-composer-random"
 
+const MAX_MEMORY_SEEDS_PER_FIELD = 3
+const FULL_SEED_STRENGTH_THRESHOLD = 55
+const FULL_SEED_CONFIDENCE_THRESHOLD = 45
+const EARLY_HINT_STRENGTH_THRESHOLD = 30
+const EARLY_HINT_CONFIDENCE_THRESHOLD = 35
+const EARLY_HINT_MIN_AGE = 2
+
 export type TraceMemorySeedKind =
   | "world_memory_seed"
   | "butler_memory_hint"
@@ -83,15 +90,23 @@ export function buildTraceMemorySeedFieldFromTraceField(input: {
   const seedCandidates = traceField.traces.map((trace) =>
     buildSeedCandidate({ trace, worldId: traceField.worldId })
   )
-  const seeds = seedCandidates
-    .filter((candidate): candidate is TraceMemorySeed => Boolean(candidate))
+  const acceptedSeeds = seedCandidates.filter(
+    (candidate): candidate is TraceMemorySeed => Boolean(candidate)
+  )
+  const seeds = acceptedSeeds
+    .slice(0, MAX_MEMORY_SEEDS_PER_FIELD)
     .map((seed) => ({
       ...seed,
       updatedAtTick: input.currentTick,
     }))
-  const skipReasons = traceField.traces
-    .filter((trace) => !buildSeedCandidate({ trace, worldId: traceField.worldId }))
-    .map((trace) => `trace:${trace.id}:quality_below_seed_threshold`)
+  const skipReasons = [
+    ...traceField.traces
+      .filter((trace) => !buildSeedCandidate({ trace, worldId: traceField.worldId }))
+      .map((trace) => `trace:${trace.id}:quality_below_seed_threshold`),
+    ...acceptedSeeds
+      .slice(MAX_MEMORY_SEEDS_PER_FIELD)
+      .map((seed) => `trace:${seed.traceId}:seed_cap_deferred`),
+  ]
 
   return {
     id: `trace_memory_seed_field_${traceField.worldId}`,
@@ -109,6 +124,7 @@ export function buildTraceMemorySeedFieldFromTraceField(input: {
     tags: [
       "trace_memory_seed_field",
       "derived_from_persisted_trace_field",
+      "threshold_tuned_low_volume_seed_hint",
       "not_formal_memory_system",
     ],
   }
@@ -141,22 +157,29 @@ function buildSeedCandidate(input: {
       `trace_type:${input.trace.type}`,
       `lifecycle:${input.trace.lifecyclePhase}`,
       `target:${input.trace.target.kind}`,
+      quality.reason,
       ...input.trace.regionKinds.map((regionKind) => `region:${regionKind}`),
     ]),
-    summary: `Memory seed candidate from ${input.trace.type} trace ${input.trace.id}.`,
+    summary: `Memory seed candidate from ${input.trace.type} trace.`,
     createdAtTick: input.trace.createdAtTick,
     updatedAtTick: input.trace.updatedAtTick,
     audit: {
       sourceReliability: input.trace.sourceReliability,
       evidenceLevel: input.trace.evidenceLevel,
       reason: quality.reason,
-      warnings: input.trace.sourceReliability === "fallback"
-        ? ["Fallback source kept at reduced memory weight."]
-        : [],
-      tags: ["trace_memory_seed_audit", "seed_not_formal_memory"],
+      warnings: [
+        input.trace.sourceReliability === "fallback"
+          ? "Fallback source kept at reduced memory weight."
+          : "",
+        quality.reason === "trace_meets_early_memory_hint_threshold"
+          ? "Early hint only; not promoted to formal memory."
+          : "",
+      ].filter(Boolean),
+      tags: ["trace_memory_seed_audit", "seed_not_formal_memory", quality.reason],
     },
     tags: [
       "trace_memory_seed",
+      quality.reason,
       "not_butler_memory",
       "not_pet_memory",
       "not_world_learning",
@@ -176,27 +199,43 @@ function evaluateTraceSeedQuality(trace: TraceFact): {
     "deposited",
   ]
 
-  if (trace.strength < 55) {
-    return { accepted: false, reason: "strength_below_threshold" }
-  }
-
   if (!stablePhases.includes(trace.lifecyclePhase)) {
     return { accepted: false, reason: "lifecycle_not_stable_enough" }
-  }
-
-  if (trace.confidence < 45) {
-    return { accepted: false, reason: "confidence_below_threshold" }
   }
 
   if (trace.relatedCellIds.length === 0) {
     return { accepted: false, reason: "no_related_cells" }
   }
 
-  if (trace.evidenceLevel === "low" && trace.age < 3) {
-    return { accepted: false, reason: "low_evidence_not_stable_yet" }
+  if (trace.strength >= FULL_SEED_STRENGTH_THRESHOLD) {
+    if (trace.confidence < FULL_SEED_CONFIDENCE_THRESHOLD) {
+      return { accepted: false, reason: "confidence_below_full_seed_threshold" }
+    }
+
+    if (trace.evidenceLevel === "low" && trace.age < 3) {
+      return { accepted: false, reason: "low_evidence_not_stable_yet" }
+    }
+
+    return { accepted: true, reason: "trace_meets_memory_seed_threshold" }
   }
 
-  return { accepted: true, reason: "trace_meets_memory_seed_threshold" }
+  if (trace.strength < EARLY_HINT_STRENGTH_THRESHOLD) {
+    return { accepted: false, reason: "strength_below_early_hint_threshold" }
+  }
+
+  if (trace.confidence < EARLY_HINT_CONFIDENCE_THRESHOLD) {
+    return { accepted: false, reason: "confidence_below_early_hint_threshold" }
+  }
+
+  if (trace.age < EARLY_HINT_MIN_AGE) {
+    return { accepted: false, reason: "trace_too_young_for_early_hint" }
+  }
+
+  if (trace.sourceReliability === "fallback") {
+    return { accepted: false, reason: "fallback_trace_not_promoted_to_early_hint" }
+  }
+
+  return { accepted: true, reason: "trace_meets_early_memory_hint_threshold" }
 }
 
 function calculateMemoryWeight(trace: TraceFact): number {
@@ -209,6 +248,7 @@ function calculateMemoryWeight(trace: TraceFact): number {
           ? 8
           : 4
   const reliabilityPenalty = trace.sourceReliability === "fallback" ? 18 : 0
+  const earlyHintPenalty = trace.strength < FULL_SEED_STRENGTH_THRESHOLD ? 8 : 0
   const ageBonus = clamp(Math.round(trace.age * 0.25), 0, 12)
 
   return clamp(
@@ -218,7 +258,8 @@ function calculateMemoryWeight(trace: TraceFact): number {
         trace.effects.memoryWeightDelta +
         lifecycleBonus +
         ageBonus -
-        reliabilityPenalty
+        reliabilityPenalty -
+        earlyHintPenalty
     ),
     0,
     100
@@ -297,7 +338,7 @@ function countKind(
 
 function average(values: number[]): number {
   if (values.length === 0) return 0
-  return values.reduce((total, value) => total + value, 0) / values.length
+  return values.reduce((total, value) => value + total, 0) / values.length
 }
 
 function roundMetric(value: number): number {
