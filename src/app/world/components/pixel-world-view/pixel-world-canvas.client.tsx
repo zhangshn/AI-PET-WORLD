@@ -24,8 +24,6 @@ export function PixelWorldCanvas(input: { model: WorldViewModel }) {
     const ratio = window.devicePixelRatio || 1
     canvas.width = input.model.canvas.width * ratio
     canvas.height = input.model.canvas.height * ratio
-    canvas.style.width = `${input.model.canvas.width}px`
-    canvas.style.height = `${input.model.canvas.height}px`
     context.setTransform(ratio, 0, 0, ratio, 0, 0)
     context.imageSmoothingEnabled = false
 
@@ -35,6 +33,8 @@ export function PixelWorldCanvas(input: { model: WorldViewModel }) {
   return (
     <canvas
       ref={canvasRef}
+      width={input.model.canvas.width}
+      height={input.model.canvas.height}
       className={styles.pixelWorldCanvas}
       aria-label="pixel world canvas tile layer trace layer object layer sprite layer atmosphere layer"
       role="img"
@@ -60,10 +60,7 @@ function drawTileLayer(
   tiles.forEach((tile) => {
     context.fillStyle = resolveTileColor(tile)
     context.fillRect(tile.x, tile.y, tile.width, tile.height)
-    context.fillStyle = "rgba(255, 255, 255, 0.06)"
-    context.fillRect(tile.x, tile.y, tile.width, 2)
-    context.fillStyle = "rgba(36, 72, 40, 0.12)"
-    context.fillRect(tile.x, tile.y + tile.height - 2, tile.width, 2)
+    drawTileVariation(context, tile)
 
     if (!tile.passable) {
       context.fillStyle = "rgba(35, 55, 38, 0.26)"
@@ -77,14 +74,26 @@ function drawTraceLayer(
   traces: WorldViewTrace[]
 ) {
   traces.forEach((trace) => {
-    const size = trace.radius * 2
+    const size = Math.max(8, trace.radius * 2)
     const x = trace.x - trace.radius
     const y = trace.y - trace.radius
     context.globalAlpha = trace.opacity
     context.fillStyle = resolveTraceColor(trace)
-    context.fillRect(x, y, size, Math.max(6, size * 0.42))
+    const block = Math.max(4, Math.round(size / 8))
+
+    for (let index = 0; index < 9; index += 1) {
+      const offsetX = deterministicOffset(`${trace.id}:x:${index}`, size)
+      const offsetY = deterministicOffset(`${trace.id}:y:${index}`, size * 0.56)
+      context.fillRect(
+        x + offsetX,
+        y + offsetY,
+        block + (index % 3) * 2,
+        Math.max(3, block * 0.8)
+      )
+    }
+
     context.fillStyle = "rgba(255, 255, 255, 0.08)"
-    context.fillRect(x + 4, y + 4, Math.max(4, size - 8), 4)
+    context.fillRect(x + block, y + block, Math.max(4, size - block * 2), 3)
     context.globalAlpha = 1
   })
 }
@@ -94,7 +103,13 @@ function drawObjectLayer(
   objects: WorldViewObject[]
 ) {
   const orderedObjects = [...objects].sort(
-    (left, right) => layerOrder(left.layer) - layerOrder(right.layer)
+    (left, right) => {
+      if (layerOrder(left.layer) !== layerOrder(right.layer)) {
+        return layerOrder(left.layer) - layerOrder(right.layer)
+      }
+
+      return left.y - right.y
+    }
   )
 
   orderedObjects.forEach((object) => {
@@ -150,12 +165,16 @@ function drawAtmosphereLayer(
 
 function drawTree(context: CanvasRenderingContext2D, x: number, y: number, scale: number) {
   const unit = 10 * scale
+  context.fillStyle = "rgba(38, 58, 36, 0.2)"
+  context.fillRect(x - unit * 0.9, y - unit * 0.18, unit * 1.9, unit * 0.28)
   context.fillStyle = "#744f2f"
   context.fillRect(x - unit * 0.22, y - unit * 0.9, unit * 0.44, unit * 0.9)
   context.fillStyle = "#3f743d"
   context.fillRect(x - unit * 0.9, y - unit * 1.75, unit * 1.8, unit * 1.1)
   context.fillStyle = "#65a657"
   context.fillRect(x - unit * 0.55, y - unit * 1.95, unit * 1.1, unit * 0.7)
+  context.fillStyle = "#2f5f33"
+  context.fillRect(x - unit * 1.05, y - unit * 1.25, unit * 0.45, unit * 0.42)
 }
 
 function drawBush(context: CanvasRenderingContext2D, x: number, y: number, scale: number) {
@@ -245,6 +264,33 @@ function resolveTileColor(tile: WorldViewTile): string {
   return tile.traceIntensity > 48 ? "#76af5e" : "#7dbd68"
 }
 
+function drawTileVariation(context: CanvasRenderingContext2D, tile: WorldViewTile) {
+  const inset = 3 + (tile.variant % 3)
+  const bright = tile.variant % 2 === 0
+
+  context.fillStyle = bright
+    ? "rgba(255, 255, 255, 0.055)"
+    : "rgba(32, 72, 38, 0.07)"
+  context.fillRect(
+    tile.x + inset,
+    tile.y + ((tile.variant * 5) % Math.max(1, tile.height - 5)),
+    Math.max(4, tile.width * 0.32),
+    3
+  )
+
+  if (tile.kind === "boundary") {
+    context.fillStyle = "rgba(26, 44, 30, 0.28)"
+    for (let offset = 0; offset < tile.width; offset += 8) {
+      context.fillRect(tile.x + offset, tile.y, 4, tile.height)
+    }
+  }
+
+  if (tile.kind === "pressed_grass" || tile.kind === "worn_grass") {
+    context.fillStyle = "rgba(64, 92, 45, 0.16)"
+    context.fillRect(tile.x + 4, tile.y + tile.height * 0.52, tile.width - 8, 3)
+  }
+}
+
 function resolveTraceColor(trace: WorldViewTrace): string {
   if (trace.visualKind === "exposed_soil") return "#895f3a"
   if (trace.visualKind === "worn_ground") return "#81693f"
@@ -282,4 +328,19 @@ function layerOrder(layer: WorldViewObject["layer"]): number {
   if (layer === "front") return 3
 
   return 2
+}
+
+function deterministicOffset(seed: string, range: number): number {
+  return deterministicHash(seed) % Math.max(1, Math.round(range))
+}
+
+function deterministicHash(value: string): number {
+  let hash = 2166136261
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+
+  return Math.abs(hash >>> 0)
 }

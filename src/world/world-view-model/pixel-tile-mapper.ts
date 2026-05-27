@@ -1,79 +1,116 @@
-import type { SceneTile } from "@/world/procedural-painter/scene-composer/scene-composer-schema"
-import type { SpaceGrid } from "@/world/space"
+import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
+import type { SpaceCell, SpaceGrid } from "@/world/space"
+import type { TraceField, TraceType } from "@/world/trace"
 
 import type { WorldViewTile, WorldViewTileKind } from "./world-view-model-schema"
 
-export function mapSceneTilesToWorldViewTiles(input: {
-  tiles: SceneTile[]
-  tileSize: number
+export function buildWorldViewTilesFromSpaceGrid(input: {
   spaceGrid: SpaceGrid
+  homeMapState: HomeMapState
+  traceField?: TraceField
 }): WorldViewTile[] {
-  return input.tiles.map((tile) =>
-    mapSceneTileToWorldViewTile({
-      tile,
-      tileSize: input.tileSize,
-      spaceGrid: input.spaceGrid,
-    })
-  )
+  const tileSize = input.spaceGrid.tileSize || input.homeMapState.mapSize.tileSize
+  const traceTypeByCellId = buildTraceTypeByCellId(input.traceField)
+
+  return input.spaceGrid.cells.map((cell) => {
+    const traceType = traceTypeByCellId[cell.id]
+
+    return {
+      id: `world_view_tile_${cell.id}`,
+      x: cell.column * tileSize,
+      y: cell.row * tileSize,
+      width: tileSize,
+      height: tileSize,
+      kind: resolveTileKind({
+        cell,
+        traceType,
+      }),
+      variant: stableVariant({
+        worldId: input.homeMapState.worldId,
+        cellId: cell.id,
+        tick: 0,
+      }),
+      traceIntensity: Math.max(
+        cell.traceStrength,
+        cell.traceInfluenceStrength ?? 0
+      ),
+      traceSource: traceType ?? cell.traceLevel,
+      passable: cell.passable,
+    }
+  })
 }
 
-function mapSceneTileToWorldViewTile(input: {
-  tile: SceneTile
-  tileSize: number
-  spaceGrid: SpaceGrid
-}): WorldViewTile {
-  const relatedCell = findNearestSpaceCell(input.spaceGrid, input.tile)
-  const visualKind = input.tile.visualKind ?? "grass"
-  const kind =
-    relatedCell?.regionKind === "boundary"
-      ? "boundary"
-      : relatedCell?.terrainKind === "built"
-        ? "built"
-        : relatedCell?.terrainKind === "soil"
-          ? "soil"
-          : mapSceneTileVisualKind(visualKind)
+function resolveTileKind(input: {
+  cell: SpaceCell
+  traceType?: TraceType
+}): WorldViewTileKind {
+  const { cell, traceType } = input
 
-  return {
-    id: input.tile.id,
-    x: input.tile.x,
-    y: input.tile.y,
-    width: input.tileSize,
-    height: input.tileSize,
-    kind,
-    variant: input.tile.variant,
-    traceIntensity: input.tile.traceVisualIntensity ?? relatedCell?.traceStrength ?? 0,
-    traceSource: input.tile.traceVisualSource ?? relatedCell?.traceLevel ?? "none",
-    passable: relatedCell?.passable ?? true,
+  if (cell.regionKind === "boundary") return "boundary"
+  if (cell.terrainKind === "built") return "built"
+  if (cell.terrainKind === "soil") return "soil"
+  if (traceType === "ecology_change") {
+    return cell.ecologyHealthHint >= 62 ? "recovery_growth" : "ecology_transition"
   }
-}
 
-function mapSceneTileVisualKind(value: string): WorldViewTileKind {
-  if (value === "pressed_grass") return "pressed_grass"
-  if (value === "worn_grass") return "worn_grass"
-  if (value === "exposed_soil") return "exposed_soil"
-  if (value === "ecology_transition") return "ecology_transition"
-  if (value === "recovery_growth") return "recovery_growth"
+  if (
+    cell.traceStrength >= 72 &&
+    (traceType === "movement" || traceType === "spatial_use")
+  ) {
+    return cell.ecologyHealthHint < 44 ? "exposed_soil" : "worn_grass"
+  }
+
+  if (cell.traceStrength >= 44 || cell.traceInfluenceStrength >= 44) {
+    return "pressed_grass"
+  }
+
+  if (cell.ecologyHealthHint < 38) return "ecology_transition"
+  if (cell.ecologyHealthHint > 74 && cell.humidity && cell.humidity > 54) {
+    return "recovery_growth"
+  }
 
   return "grass"
 }
 
-function findNearestSpaceCell(spaceGrid: SpaceGrid, tile: SceneTile) {
-  const centerX = tile.x + spaceGrid.tileSize / 2
-  const centerY = tile.y + spaceGrid.tileSize / 2
+function buildTraceTypeByCellId(
+  traceField: TraceField | undefined
+): Record<string, TraceType> {
+  if (!traceField) return {}
 
-  return spaceGrid.cells.reduce(
-    (nearest, cell) => {
-      const distance = Math.hypot(cell.x - centerX, cell.y - centerY)
-
-      if (!nearest || distance < nearest.distance) {
-        return {
-          cell,
-          distance,
-        }
+  return traceField.traces.reduce<Record<string, TraceType>>((result, trace) => {
+    trace.relatedCellIds.forEach((cellId) => {
+      if (!result[cellId] || trace.strength >= 54) {
+        result[cellId] = trace.type
       }
+    })
 
-      return nearest
-    },
-    null as { cell: SpaceGrid["cells"][number]; distance: number } | null
-  )?.cell
+    trace.scope.cellIds.forEach((cellId) => {
+      if (!result[cellId] || trace.strength >= 54) {
+        result[cellId] = trace.type
+      }
+    })
+
+    return result
+  }, {})
+}
+
+function stableVariant(input: {
+  worldId: string
+  cellId: string
+  tick: number
+}): number {
+  return deterministicHash(
+    `${input.worldId}:${input.cellId}:world_view_tile:${input.tick}`
+  ) % 8
+}
+
+function deterministicHash(value: string): number {
+  let hash = 2166136261
+
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+
+  return Math.abs(hash >>> 0)
 }

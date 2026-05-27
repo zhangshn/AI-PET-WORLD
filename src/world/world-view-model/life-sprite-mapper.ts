@@ -24,7 +24,12 @@ export function buildWorldViewActors(input: {
 
   return {
     actors: [butler.actor, ...petActors],
-    tags: [butler.tag],
+    tags: [
+      butler.tag,
+      "butler_sprite_from_world_fact_or_safe_fallback",
+      "no_default_pet_actor",
+      "pet_actor_requires_existing_fact",
+    ],
   }
 }
 

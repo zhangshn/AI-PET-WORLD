@@ -18,6 +18,7 @@
 .pixelWorldStageFrame {
   justify-self: center;
   overflow: auto;
+  max-height: min(68dvh, 720px);
   border: 3px solid rgba(54, 88, 48, 0.72);
   background: #90b368;
   box-shadow:
@@ -27,7 +28,9 @@
 
 .pixelWorldCanvas {
   display: block;
+  width: auto;
   max-width: 100%;
+  max-height: min(68dvh, 720px);
   height: auto;
   image-rendering: pixelated;
 }

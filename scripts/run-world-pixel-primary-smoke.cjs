@@ -15,6 +15,7 @@ async function main() {
     "world-view-model",
     "world-view-model-gateway.ts"
   )
+  const viewModelDir = path.join(repoRoot, "src", "world", "world-view-model")
   const pixelViewPath = path.join(
     repoRoot,
     "src",
@@ -111,7 +112,11 @@ async function main() {
   const beforeHash = crypto.createHash("sha256").update(beforeRaw).digest("hex")
   const record = parseJson(beforeRaw, "Runtime save file is not valid JSON.")
   const pageSource = fs.readFileSync(pagePath, "utf8")
-  const viewModelSource = fs.readFileSync(viewModelPath, "utf8")
+  const viewModelSources = fs
+    .readdirSync(viewModelDir)
+    .filter((fileName) => fileName.endsWith(".ts"))
+    .map((fileName) => fs.readFileSync(path.join(viewModelDir, fileName), "utf8"))
+    .join("\n")
   const pixelViewSource = fs.readFileSync(pixelViewPath, "utf8")
   const pixelCanvasSource = fs.readFileSync(pixelCanvasPath, "utf8")
   const runtimeSmokeSource = fs.readFileSync(runtimeSmokePath, "utf8")
@@ -144,6 +149,19 @@ async function main() {
     "next/image",
     "buildSceneSvg",
   ]
+  const forbiddenFormalPathTokens = [
+    "scene-composer-gateway",
+    "adaptHomeMapStateToSceneComposerFact",
+    "world-painter-adapter",
+    "buildSceneSvg",
+    "data:image/svg+xml",
+    "WorldPainterReadonlyPreview",
+    "FormalWorldView",
+    "formalWorldPanel",
+    "movementChannel",
+    "roadGraph",
+    "pathGraph",
+  ]
   const requiredCanvasTokens = [
     "<canvas",
     "drawTileLayer",
@@ -155,7 +173,6 @@ async function main() {
   const requiredViewModelTokens = [
     "buildSpaceGridFromHomeMapState",
     "buildTraceFieldFromWorld",
-    "composeScene",
     "no_world_fact_generation",
     "buildWorldViewActors",
   ]
@@ -180,8 +197,17 @@ async function main() {
   )
   requiredViewModelTokens.forEach((token) =>
     assert(
-      viewModelSource.includes(token),
+      viewModelSources.includes(token),
       `WorldViewModel gateway is missing required token: ${token}.`
+    )
+  )
+  forbiddenFormalPathTokens.forEach((token) =>
+    assert(
+      !pageSource.includes(token) &&
+        !viewModelSources.includes(token) &&
+        !pixelViewSource.includes(token) &&
+        !pixelCanvasSource.includes(token),
+      `Formal pixel path contains forbidden token: ${token}.`
     )
   )
   assert(

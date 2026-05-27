@@ -16,6 +16,7 @@ async function main() {
     "world-view-model",
     "world-view-model-gateway.ts"
   )
+  const viewModelDir = path.join(repoRoot, "src", "world", "world-view-model")
   const viewModelSchemaPath = path.join(
     repoRoot,
     "src",
@@ -110,18 +111,24 @@ async function main() {
   const beforeHash = crypto.createHash("sha256").update(beforeRaw).digest("hex")
   const record = parseJson(beforeRaw, "Runtime save file is not valid JSON.")
   const pageSource = fs.readFileSync(pagePath, "utf8")
-  const viewModelGatewaySource = fs.readFileSync(viewModelGatewayPath, "utf8")
   const viewModelSchemaSource = fs.readFileSync(viewModelSchemaPath, "utf8")
+  const viewModelSources = fs
+    .readdirSync(viewModelDir)
+    .filter((fileName) => fileName.endsWith(".ts"))
+    .map((fileName) => fs.readFileSync(path.join(viewModelDir, fileName), "utf8"))
+    .join("\n")
   const pixelViewSource = fs.readFileSync(pixelViewPath, "utf8")
   const pixelCanvasSource = fs.readFileSync(pixelCanvasPath, "utf8")
   const combinedPixelSource = `${pixelViewSource}\n${pixelCanvasSource}`
-  const combinedModelSource = `${viewModelGatewaySource}\n${viewModelSchemaSource}`
   const forbiddenTokens = [
     "buildSceneSvg",
     "WorldPainterReadonlyPreview",
     "FormalWorldView",
     "formalWorldPanel",
     "data:image/svg+xml",
+    "scene-composer-gateway",
+    "adaptHomeMapStateToSceneComposerFact",
+    "world-painter-adapter",
     "movementChannel",
     "roadGraph",
     "pathGraph",
@@ -133,6 +140,14 @@ async function main() {
     packageJson.scripts?.["smoke:world-pixel-viewmodel-primary"] ===
       "node scripts/run-world-pixel-viewmodel-primary-smoke.cjs",
     "package.json does not contain smoke:world-pixel-viewmodel-primary."
+  )
+  assert(
+    !packageJson.scripts?.["smoke:formal-trace-layer"],
+    "package.json restored smoke:formal-trace-layer."
+  )
+  assert(
+    !packageJson.scripts?.["smoke:world-surface-hierarchy"],
+    "package.json restored smoke:world-surface-hierarchy."
   )
   assert(pageSource.includes("readWorldRuntimeForView"), "/world no longer uses readWorldRuntimeForView.")
   assert(
@@ -153,7 +168,7 @@ async function main() {
   assert(viewModelSchemaSource.includes("actors:"), "WorldViewModel schema missing actors.")
   forbiddenTokens.slice(5).forEach((token) =>
     assert(
-      !combinedPixelSource.includes(token) && !combinedModelSource.includes(token),
+      !combinedPixelSource.includes(token) && !viewModelSources.includes(token),
       `Pixel ViewModel path contains forbidden token ${token}.`
     )
   )
