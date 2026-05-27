@@ -9,21 +9,21 @@
 | M3 世界痕迹模型 v0 | 100% | 完成 | TraceFact / TraceField / TraceLifecycle 已建立 |
 | M4 Trace-aware Scene Composer | 100% | 完成 | movement / spatial_use / ecology influence 已分层 |
 | M5 痕迹视觉表现 v0 | 100% | 完成 | pressed_grass / worn_grass / exposed_soil / ecology_transition 已建立 |
-| M6 生态对象规则深化 | 90%～100% | 基本完成 | 生态对象规则主体完成，需本地构建确认 |
-| M6.5 legacy 命名清理 | 70%～100% | 进行中 | 需本地构建确认 |
-| WORLD-PIXEL-RULE-MAPPER-00 | 0% | 下一步 | 必须先做，不能直接进入 M7 |
-| M7 管家行为 → 痕迹闭环 | 0% | 未开始 | 等 WORLD-PIXEL-RULE-MAPPER-00 后再进入 |
+| M6 生态对象规则深化 | 100% | 完成 | 生态对象规则主体已通过 lint / tsc / build 间接验收 |
+| M6.5 legacy 命名清理 | 100% | 完成 | legacy road/path 业务口径已降级为兼容命名，正式文档与正式链路不再使用 |
+| WORLD-PIXEL-RULE-MAPPER-00 | 90% | 基本完成 | 正式 `/world` 已接入 SpaceGrid / TraceField / HomeMapState / ButlerState → WorldViewModel → PixelWorldView；lint、tsc、build、pixel smoke 已通过 |
+| M7 管家行为 → 痕迹闭环 | 0% | 未开始 | 下一阶段，进入前需先做 WORLD-PIXEL-RULE-MAPPER-00 收尾检查 |
 | M8 管家记忆与学习 | 0% | 未开始 | 后置 |
 | M9 世界学习 v0 | 0% | 未开始 | 后置 |
 | M10 宠物学习预留 | 0% | 未开始 | 后置 |
-| M11 主世界正式体验整理 | 进行中 | 进行中 | `/world` 已有 PixelWorldView 外壳，但 mapper 需修 |
+| M11 主世界正式体验整理 | 进行中 | 进行中 | `/world` 已有正式 PixelWorldView 主链路，后续继续整理视觉体验与 UI overlay |
 | M12 构建与质量验收 | 持续 | 持续 | 每个模块后必须 lint / tsc / build / smoke |
 
 ## 当前路线
 
-当前不能直接进入 M7。必须先执行 WORLD-PIXEL-RULE-MAPPER-00，把 Pixel Scene Composer 验证过的规则沉淀为正式 WorldViewModel mapper，并确保 PixelWorldView 只读 WorldViewModel 绘制。
+WORLD-PIXEL-RULE-MAPPER-00 已完成主链路、Canvas 绘制增强与 smoke 守卫，当前可进入收尾检查。收尾检查通过后，再进入 M7 管家行为 → 痕迹闭环。
 
-## WORLD-PIXEL-RULE-MAPPER-00 必须完成
+## WORLD-PIXEL-RULE-MAPPER-00 已完成内容
 
 - `SpaceGrid → tiles`
 - `TraceField → traces`
@@ -35,3 +35,5 @@
 - `/world` 不引用 `FormalWorldView`
 - `/world` 不引用 `ProceduralRendererView`
 - `/world` 不把 Debug composer 搬进正式页
+- `PixelWorldView` 使用 Canvas，只读 `WorldViewModel`
+- smoke 已守卫默认宠物不生成、runtime 不写入、tick 不推进
