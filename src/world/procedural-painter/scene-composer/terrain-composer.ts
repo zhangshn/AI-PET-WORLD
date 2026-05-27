@@ -4,7 +4,7 @@ import {
   SCENE_TILE_SIZE,
 } from "./scene-composer-constants";
 import { stableUnit } from "./scene-composer-random";
-import { resolveRoadWidth } from "./road-composer";
+import type { SceneTraceInfluenceField } from "./trace-composer";
 import type {
   PathSample,
   SceneComposerFact,
@@ -15,21 +15,26 @@ import type {
 export function buildSceneTiles(
   fact: SceneComposerFact,
   traceSamples: PathSample[],
-  layoutSeed: string
+  layoutSeed: string,
+  traceField?: SceneTraceInfluenceField
 ): SceneTile[] {
-  const pathWidth = resolveRoadWidth(fact.biome);
   const hasTraceFact = fact.hasTraceFact ?? fact.hasRoadFact ?? true;
   const tiles: SceneTile[] = [];
 
   for (let row = 0; row < SCENE_ROWS; row += 1) {
     for (let column = 0; column < SCENE_COLUMNS; column += 1) {
+      const tileCenterX = column * SCENE_TILE_SIZE + SCENE_TILE_SIZE / 2;
+      const tileCenterY = row * SCENE_TILE_SIZE + SCENE_TILE_SIZE / 2;
+      const influence = traceField?.influenceAt(tileCenterX, tileCenterY) ?? 0;
       const center = traceSamples[column]?.center ?? 0;
-      const distance = Math.abs(row - center);
+      const fallbackDistance = Math.abs(row - center);
       const kind: SceneTileKind = !hasTraceFact
         ? "grass"
-        : distance <= pathWidth
+        : influence >= 52 || fallbackDistance <= 0.9
+          // "path" is deprecated renderer compatibility for long-used area tile.
           ? "path"
-          : distance <= pathWidth + 0.95
+          : influence >= 24 || fallbackDistance <= 1.75
+            // "edge" is deprecated renderer compatibility for trace edge / ecology transition tile.
             ? "edge"
             : "grass";
       const variant = Math.floor(

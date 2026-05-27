@@ -122,6 +122,9 @@ export default function PixelSceneComposerClient() {
               <DebugRow label="grass tiles" value={plan.summary.grassTiles} />
               <DebugRow label="long-used area tiles" value={plan.summary.longUsedAreaTiles} />
               <DebugRow label="trace edge tiles" value={plan.summary.traceEdgeTiles} />
+              <DebugRow label="trace influenced tiles" value={plan.summary.traceInfluencedTiles} />
+              <DebugRow label="suppressed grass tufts" value={plan.summary.traceSuppressedGrassTufts} />
+              <DebugRow label="avoided generated objects" value={plan.summary.traceAvoidedGeneratedObjects} />
               <DebugRow label="grass tufts" value={plan.summary.grassTufts} />
               <DebugRow label="trees" value={plan.summary.trees} />
               <DebugRow label="bushes" value={plan.summary.bushes} />

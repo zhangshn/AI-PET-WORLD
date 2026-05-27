@@ -50,15 +50,24 @@ export function composeScene(fact: SceneComposerFact): SceneCompositionPlan {
     fact: clean,
     samples: traceSamples,
   });
-  const tiles = buildSceneTiles(clean, traceSamples, layoutSeed);
-  const grassTufts = buildSceneGrassTufts(clean, tiles, traceSamples, layoutSeed);
-  const factObjects = clean.factObjects ?? [];
-  const generatedObjects = buildSceneObjects(
+  const tiles = buildSceneTiles(clean, traceSamples, layoutSeed, traceField);
+  const grassTuftResult = buildSceneGrassTufts(
     clean,
     tiles,
     traceSamples,
-    layoutSeed
+    layoutSeed,
+    traceField
   );
+  const grassTufts = grassTuftResult.grassTufts;
+  const factObjects = clean.factObjects ?? [];
+  const generatedObjectResult = buildSceneObjects(
+    clean,
+    tiles,
+    traceSamples,
+    layoutSeed,
+    traceField
+  );
+  const generatedObjects = generatedObjectResult.generatedObjects;
   const objects = mergeFactAndGeneratedObjects({
     factObjects,
     generatedObjects,
@@ -94,6 +103,10 @@ export function composeScene(fact: SceneComposerFact): SceneCompositionPlan {
       // Deprecated compatibility: legacy visual tile summary names.
       pathTiles: longUsedAreaTiles,
       edgeTiles: traceEdgeTiles,
+      traceInfluencedTiles: traceField.influencedTiles ?? 0,
+      traceSuppressedGrassTufts: grassTuftResult.traceSuppressedGrassTufts,
+      traceAvoidedGeneratedObjects:
+        generatedObjectResult.traceAvoidedGeneratedObjects,
       grassTufts: grassTufts.length,
       trees: objects.filter((object) => object.kind === "tree").length,
       bushes: objects.filter((object) => object.kind === "bush").length,

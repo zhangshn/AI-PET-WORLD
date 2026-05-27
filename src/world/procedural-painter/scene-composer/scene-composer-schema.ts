@@ -29,6 +29,9 @@ export type SceneTraceField = {
   hasTraceFact: boolean;
   facts: SceneTraceFact[];
   samples: SceneTraceSample[];
+  averageInfluence?: number;
+  maxInfluence?: number;
+  influencedTiles?: number;
 };
 
 export type SceneComposerFact = {
@@ -142,6 +145,9 @@ export type SceneCompositionSummary = {
    * Use traceEdgeTiles, or describe it as ecology transition.
    */
   edgeTiles: number;
+  traceInfluencedTiles: number;
+  traceSuppressedGrassTufts: number;
+  traceAvoidedGeneratedObjects: number;
   grassTufts: number;
   trees: number;
   bushes: number;

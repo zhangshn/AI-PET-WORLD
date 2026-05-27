@@ -5,6 +5,7 @@ import {
 import { buildRoadsideObjectAnchors } from "./road-composer";
 import { clamp, stableUnit } from "./scene-composer-random";
 import { findSceneTileAt } from "./terrain-composer";
+import type { SceneTraceInfluenceField } from "./trace-composer";
 import type {
   PathSample,
   SceneAnchor,
@@ -15,17 +16,24 @@ import type {
   SceneTile,
 } from "./scene-composer-schema";
 
+export type SceneObjectBuildResult = {
+  generatedObjects: SceneObject[];
+  traceAvoidedGeneratedObjects: number;
+};
+
 export function buildSceneObjects(
   fact: SceneComposerFact,
   tiles: SceneTile[],
   pathSamples: PathSample[],
-  layoutSeed: string
-): SceneObject[] {
+  layoutSeed: string,
+  traceField?: SceneTraceInfluenceField
+): SceneObjectBuildResult {
   const densityRate = fact.decorationDensity / 100;
   const biomeFactor =
     fact.biome === "desert" ? 0.36 : fact.biome === "grassland" ? 0.78 : fact.biome === "oasis" ? 0.9 : 1;
   const includeRate = clamp(densityRate * biomeFactor, 0, 1);
   const objects: SceneObject[] = [];
+  let traceAvoidedGeneratedObjects = 0;
   const actorTile =
     tiles.find(
       (tile) => tile.kind === "path" && tile.x > 260 && tile.x < 360 && tile.y > 200
@@ -51,7 +59,13 @@ export function buildSceneObjects(
     SCENE_HEIGHT - 48
   ).forEach((anchor) => {
     const tile = findSceneTileAt(tiles, anchor.x, anchor.y);
+    const influence = traceField?.influenceAt(anchor.x, anchor.y) ?? 0;
     if (!tile || tile.kind !== "grass") {
+      return;
+    }
+
+    if (influence >= 78) {
+      traceAvoidedGeneratedObjects += 1;
       return;
     }
 
@@ -67,7 +81,13 @@ export function buildSceneObjects(
     SCENE_HEIGHT - 42
   ).forEach((anchor) => {
     const tile = findSceneTileAt(tiles, anchor.x, anchor.y);
+    const influence = traceField?.influenceAt(anchor.x, anchor.y) ?? 0;
     if (anchor.rank > includeRate || !tile || tile.kind !== "grass") {
+      return;
+    }
+
+    if (influence >= 64) {
+      traceAvoidedGeneratedObjects += 1;
       return;
     }
 
@@ -77,7 +97,13 @@ export function buildSceneObjects(
   buildRoadsideObjectAnchors(pathSamples, `${layoutSeed}:roadside-decor`).forEach(
     (anchor) => {
       const tile = findSceneTileAt(tiles, anchor.x, anchor.y);
+      const influence = traceField?.influenceAt(anchor.x, anchor.y) ?? 0;
       if (anchor.rank > includeRate || !tile || tile.kind === "path") {
+        return;
+      }
+
+      if (influence >= 74) {
+        traceAvoidedGeneratedObjects += 1;
         return;
       }
 
@@ -85,7 +111,10 @@ export function buildSceneObjects(
     }
   );
 
-  return objects;
+  return {
+    generatedObjects: objects,
+    traceAvoidedGeneratedObjects,
+  };
 }
 
 export function mergeFactAndGeneratedObjects(input: {
