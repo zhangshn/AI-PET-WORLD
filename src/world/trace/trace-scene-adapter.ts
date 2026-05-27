@@ -4,6 +4,10 @@ import type {
 } from "@/world/procedural-painter/scene-composer/scene-composer-schema"
 
 import type { TraceFact, TraceField, TraceType } from "./trace-schema"
+import {
+  buildTraceVisualProjectionFromTraceField,
+  type TraceVisualProjection,
+} from "./trace-visual-projection"
 
 export function adaptTraceFieldToSceneTraceFacts(input: {
   traceField: TraceField
@@ -23,6 +27,13 @@ export function adaptTraceFieldToSceneTraceFacts(input: {
       strength: trace.strength,
       age: trace.age,
     }))
+}
+
+export function adaptTraceFieldToTraceVisualProjection(input: {
+  traceField?: TraceField
+  includeHidden?: boolean
+}): TraceVisualProjection {
+  return buildTraceVisualProjectionFromTraceField(input)
 }
 
 function compareTracePriority(left: TraceFact, right: TraceFact): number {

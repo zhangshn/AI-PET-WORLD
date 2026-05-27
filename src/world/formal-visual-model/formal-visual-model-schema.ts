@@ -9,6 +9,7 @@ import type {
   VisualState,
 } from "@/world/rendering/renderer-gateway"
 import type { Point2D, SpatialShape } from "@/world/spatial/spatial-gateway"
+import type { TraceVisualProjection } from "@/world/trace"
 
 export type FormalVisualModelVersion = "formal_visual_model_v0"
 
@@ -184,6 +185,7 @@ export type FormalVisualModel = {
   actors: FormalActorModel[]
   environment: FormalEnvironmentModel
   hudSummary: FormalHudSummary
+  traceVisualProjection?: TraceVisualProjection
   audit: FormalVisualAuditSummary
   auditTags: string[]
 }
@@ -193,6 +195,7 @@ export type FormalVisualModelInput = {
   visualState: VisualState
   placements: VisualPlacement[]
   actorGeometryProjections: VisualActorGeometryProjection[]
+  traceVisualProjection?: TraceVisualProjection
 }
 
 export const FORMAL_VISUAL_MODEL_VERSION: FormalVisualModelVersion =

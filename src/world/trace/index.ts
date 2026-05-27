@@ -19,6 +19,14 @@ export type {
   TraceVisualHints,
   TraceVisualKind,
 } from "./trace-schema"
+export type {
+  TraceVisualIntensity,
+  TraceVisualLayer,
+  TraceVisualProjection,
+  TraceVisualProjectionItem,
+  TraceVisualProjectionSummary,
+  TraceVisualSource,
+} from "./trace-visual-projection"
 export {
   buildTraceFieldFromWorld,
   type BuildTraceFieldFromWorldInput,
@@ -30,7 +38,10 @@ export {
   resolveTraceStrengthLevel,
 } from "./trace-lifecycle"
 export { summarizeTraceField } from "./trace-summary"
-export { adaptTraceFieldToSceneTraceFacts } from "./trace-scene-adapter"
+export {
+  adaptTraceFieldToSceneTraceFacts,
+  adaptTraceFieldToTraceVisualProjection,
+} from "./trace-scene-adapter"
 export {
   runTraceLifecycleTick,
   type TraceLifecycleTickResult,
@@ -42,3 +53,4 @@ export {
   type TraceMemorySeedFieldSummary,
   type TraceMemorySeedKind,
 } from "./trace-memory-seed"
+export { buildTraceVisualProjectionFromTraceField } from "./trace-visual-projection"

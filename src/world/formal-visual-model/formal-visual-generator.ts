@@ -3,6 +3,8 @@
  */
 
 import type { RenderableWorldSnapshot } from "@/world/rendering/renderer-gateway"
+import type { TraceField, TraceVisualProjection } from "@/world/trace"
+import { buildTraceVisualProjectionFromTraceField } from "@/world/trace"
 
 import { buildFormalActorModels } from "./formal-actor-model-builder"
 import { buildFormalCanvasModel } from "./formal-canvas-model-builder"
@@ -17,9 +19,13 @@ import {
 import { buildFormalWorldObjectModels } from "./formal-world-object-model-builder"
 
 export function buildFormalVisualModelFromSnapshot(
-  snapshot: RenderableWorldSnapshot
+  snapshot: RenderableWorldSnapshot,
+  options?: {
+    traceField?: TraceField
+    traceVisualProjection?: TraceVisualProjection
+  }
 ): FormalVisualModel {
-  return buildFormalVisualModel(buildFormalVisualModelInput(snapshot))
+  return buildFormalVisualModel(buildFormalVisualModelInput(snapshot, options))
 }
 
 export function buildFormalVisualModel(
@@ -42,25 +48,41 @@ export function buildFormalVisualModel(
       actorModels: actors,
       objectModels: objects,
     }),
+    traceVisualProjection: input.traceVisualProjection,
     audit,
     auditTags: [
       "formal_visual_model_v0",
       "formal_visual_generator_pure_function",
+      input.traceVisualProjection
+        ? "trace_visual_projection_attached"
+        : "trace_visual_projection_absent",
       ...snapshot.tags.map((tag) => `snapshot_tag:${tag}`),
     ],
   }
 }
 
 function buildFormalVisualModelInput(
-  snapshot: RenderableWorldSnapshot
+  snapshot: RenderableWorldSnapshot,
+  options?: {
+    traceField?: TraceField
+    traceVisualProjection?: TraceVisualProjection
+  }
 ): FormalVisualModelInput {
   const visualState = snapshot.visualState
+  const traceVisualProjection =
+    options?.traceVisualProjection ??
+    (options?.traceField
+      ? buildTraceVisualProjectionFromTraceField({
+          traceField: options.traceField,
+        })
+      : undefined)
 
   return {
     snapshot,
     visualState,
     placements: visualState.placements,
     actorGeometryProjections: visualState.actorGeometryProjections,
+    traceVisualProjection,
   }
 }
 
@@ -102,6 +124,14 @@ function buildFormalVisualWarnings(input: FormalVisualModelInput): string[] {
 
   if (nonProjectableActorCount > 0) {
     warnings.push(`actor_projection_skipped:${nonProjectableActorCount}`)
+  }
+
+  if (input.traceVisualProjection?.warnings.length) {
+    warnings.push(
+      ...input.traceVisualProjection.warnings.map(
+        (warning) => `trace_visual_projection:${warning}`
+      )
+    )
   }
 
   return warnings
