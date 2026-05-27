@@ -1,4 +1,5 @@
 import { FormalWorldView } from "@/app/world/components/formal-world-view"
+import { FormalTraceSurfaceSummary } from "@/app/world/components/formal-trace-surface-summary"
 import { WorldPainterReadonlyPreview } from "@/app/world/components/world-painter-readonly-preview"
 import { buildFormalVisualModelFromSnapshot } from "@/world/formal-visual-model/formal-visual-model-gateway"
 import { buildSceneSvg } from "@/world/procedural-painter/scene-composer/scene-composer-gateway"
@@ -17,7 +18,10 @@ export async function WorldLiveRuntimePage() {
     now: homeMapState.updatedAt,
   })
   const formalVisualModel = buildFormalVisualModelFromSnapshot(
-    renderableState.renderableWorldSnapshot
+    renderableState.renderableWorldSnapshot,
+    {
+      traceField: saveRecord.traceField,
+    }
   )
   const worldPainterAdapterResult = adaptHomeMapStateToSceneComposerFact({
     homeMapState,
@@ -87,6 +91,17 @@ export async function WorldLiveRuntimePage() {
         adapterResult={worldPainterAdapterResult}
         sceneSvg={worldPainterSceneSvg}
       />
+
+      <section className={styles.contentGrid} aria-label="World surface signals">
+        <FormalTraceSurfaceSummary formalVisualModel={formalVisualModel} />
+        <article className={styles.panel}>
+          <h2>Observation note</h2>
+          <p>
+            World traces are read from the formal visual projection. This view
+            does not create traces, change movement, or write new world facts.
+          </p>
+        </article>
+      </section>
 
       <section className={styles.formalWorldPanel} aria-label="Home world view">
         <div className={styles.formalWorldPanelHeader}>
