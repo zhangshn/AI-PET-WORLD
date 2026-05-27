@@ -1,4 +1,5 @@
 import { ButlerMemoryBiasSurface } from "@/app/world/components/butler-memory-bias-surface"
+import { ButlerNaturalExplanation } from "@/app/world/components/butler-natural-explanation"
 import { FormalWorldView } from "@/app/world/components/formal-world-view"
 import { FormalTraceSurfaceSummary } from "@/app/world/components/formal-trace-surface-summary"
 import { WorldPainterReadonlyPreview } from "@/app/world/components/world-painter-readonly-preview"
@@ -87,6 +88,8 @@ export async function WorldLiveRuntimePage() {
           />
         </div>
       </section>
+
+      <ButlerNaturalExplanation saveRecord={saveRecord} />
 
       <WorldPainterReadonlyPreview
         adapterResult={worldPainterAdapterResult}
