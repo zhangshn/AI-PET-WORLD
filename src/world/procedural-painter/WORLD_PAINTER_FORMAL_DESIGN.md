@@ -110,7 +110,7 @@ Renderer converts `SceneCompositionPlan` into SVG, Canvas, Pixi, or another visu
 
 ## 9. Compatibility / Technical Debt
 
-Earlier visual tests used road/path wording and fields such as `roadShape`, `hasRoadFact`, visual tile kind `"path"`, and helper names in `road-composer.ts`.
+Earlier visual tests used road/path wording and fields such as `roadShape`, `hasRoadFact`, and visual tile kind `"path"`.
 
 Those names are historical test semantics only. They are not formal V2.6 business concepts and must not be extended as a road/path architecture.
 
@@ -122,7 +122,8 @@ Temporary compatibility rules:
 - Legacy HomeMapState placement layer/tag `"path"` may be read as movement trace input during migration.
 - Compatibility outputs may backfill deprecated `roadShape` and `hasRoadFact` only for old callers.
 - `pathTiles` and `edgeTiles` are deprecated visual compatibility names and should not be treated as formal business concepts.
-- `road-composer.ts` may remain as an internal implementation detail until all rendering helpers are renamed.
+- `trace-edge-composer.ts` is the formal helper module for trace-edge sampling and edge-adjacent decoration anchors.
+- `road-composer.ts` remains only as a deprecated compatibility wrapper for older debug imports.
 
 No new formal code should describe movement trace as a travel-network system.
 
