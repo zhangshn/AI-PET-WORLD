@@ -13,6 +13,7 @@
     "smoke:trace-tick": "node scripts/run-world-trace-tick-smoke.cjs",
     "smoke:trace-influence": "node scripts/run-world-trace-influence-smoke.cjs",
     "smoke:butler-trace-motivation": "node scripts/run-world-butler-trace-motivation-smoke.cjs",
+    "smoke:butler-memory-seed-consume": "node scripts/run-world-butler-memory-seed-consume-smoke.cjs",
     "smoke:trace-visual": "node scripts/run-world-trace-visual-smoke.cjs",
     "smoke:formal-trace-surface": "node scripts/run-world-formal-trace-surface-smoke.cjs",
     "smoke:formal-trace-layer": "node scripts/run-world-formal-trace-layer-smoke.cjs"
