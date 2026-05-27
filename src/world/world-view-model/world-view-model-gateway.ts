@@ -2,6 +2,7 @@ import type { WorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-schem
 import { buildSpaceGridFromHomeMapState } from "@/world/space"
 import { buildTraceFieldFromWorld } from "@/world/trace"
 
+import { buildButlerExplanationView } from "./butler-explanation-mapper"
 import { buildPPhoneView } from "./p-phone-view-mapper"
 import { mapTraceFieldToWorldViewTraces } from "./trace-pixel-mapper"
 import { buildWorldViewActors } from "./world-actor-mapper"
@@ -67,7 +68,9 @@ export function buildWorldViewModelForPixelWorld(input: {
       traceField,
       saveRecord,
     }),
-    butlerExplanation: buildButlerExplanation(saveRecord),
+    butlerExplanation: buildButlerExplanationView({
+      saveRecord,
+    }),
     pPhone: buildPPhoneView({
       saveRecord,
     }),
@@ -75,6 +78,7 @@ export function buildWorldViewModelForPixelWorld(input: {
       "world_view_model",
       "pixel_world_primary",
       "world_pixel_rule_mapper_00",
+      "m7_butler_trace_closure_explanation",
       "space_grid_to_world_view_tiles",
       "trace_field_to_world_view_traces",
       "home_map_state_to_world_view_objects",
@@ -88,38 +92,5 @@ export function buildWorldViewModelForPixelWorld(input: {
       "no_default_pet_actor",
       "pet_actor_requires_existing_fact",
     ],
-  }
-}
-
-function buildButlerExplanation(saveRecord: WorldRuntimeSaveRecord): {
-  title: string
-  body: string
-} {
-  const motivation = saveRecord.lastButlerRuntimeDecision?.selectedMotivation
-
-  if (motivation === "maintain_home") {
-    return {
-      title: "管家正在照看家园",
-      body: "它会优先观察地面、资源和痕迹变化，再决定下一步维护。",
-    }
-  }
-
-  if (motivation === "observe_world") {
-    return {
-      title: "管家正在观察世界",
-      body: "它把世界里的变化当成信号，而不是直接替用户改写事实。",
-    }
-  }
-
-  if (motivation === "continue_construction") {
-    return {
-      title: "管家正在评估建设",
-      body: "建设只会在资源与规则允许时继续推进。",
-    }
-  }
-
-  return {
-    title: "管家正在等待",
-    body: "当前更适合先积累资源与观察变化。",
   }
 }
