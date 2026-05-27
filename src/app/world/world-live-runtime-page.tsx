@@ -63,9 +63,51 @@ export async function WorldLiveRuntimePage() {
         </div>
       </section>
 
+      <section className={styles.formalWorldPanel} aria-label="家园正式视图">
+        <div className={styles.formalWorldPanelHeader}>
+          <div className={styles.eyebrow}>正式家园视图</div>
+          <h2>当前保存的世界画面</h2>
+          <p>
+            画面来自已保存 HomeMapState 的正式投影。它只展示世界状态，
+            不创建物件，也不生成新的世界事实。
+          </p>
+        </div>
+        <FormalWorldView model={formalVisualModel} presentationMode="product" />
+      </section>
+
+      <section className={styles.contentGrid} aria-label="家园第一层理解">
+        <ButlerNaturalExplanation saveRecord={saveRecord} />
+        <article className={styles.panel}>
+          <h2>关键状态</h2>
+          <div className={styles.resourceList}>
+            <RuntimeInfoItem
+              label="材料"
+              value={String(homeMapState.resources.materialReadiness)}
+            />
+            <RuntimeInfoItem
+              label="照料"
+              value={String(homeMapState.resources.careReadiness)}
+            />
+            <RuntimeInfoItem
+              label="地面"
+              value={String(homeMapState.resources.groundHealth)}
+            />
+            <RuntimeInfoItem
+              label="空间压力"
+              value={String(homeMapState.resources.spacePressure)}
+            />
+          </div>
+        </article>
+      </section>
+
+      <section className={styles.contentGrid} aria-label="世界表层信号">
+        <FormalTraceSurfaceSummary formalVisualModel={formalVisualModel} />
+        <ButlerMemoryBiasSurface saveRecord={saveRecord} />
+      </section>
+
       <section className={styles.viewModePanel} aria-label="世界观察状态">
         <div>
-          <div className={styles.eyebrow}>世界状态</div>
+          <div className={styles.eyebrow}>运行边界</div>
           <h2>当前保存的家园</h2>
           <p>
             主世界入口只读取当前 runtime 存档。世界 Tick 只会在显式脚本、
@@ -86,30 +128,6 @@ export async function WorldLiveRuntimePage() {
             value={String(homeMapState.mapDiffs.length)}
           />
         </div>
-      </section>
-
-      <ButlerNaturalExplanation saveRecord={saveRecord} />
-
-      <WorldPainterReadonlyPreview
-        adapterResult={worldPainterAdapterResult}
-        sceneSvg={worldPainterSceneSvg}
-      />
-
-      <section className={styles.contentGrid} aria-label="世界表层信号">
-        <FormalTraceSurfaceSummary formalVisualModel={formalVisualModel} />
-        <ButlerMemoryBiasSurface saveRecord={saveRecord} />
-      </section>
-
-      <section className={styles.formalWorldPanel} aria-label="家园正式视图">
-        <div className={styles.formalWorldPanelHeader}>
-          <div className={styles.eyebrow}>正式家园视图</div>
-          <h2>当前保存的世界画面</h2>
-          <p>
-            画面来自已保存 HomeMapState 的正式投影。它只展示世界状态，
-            不创建物件，也不生成新的世界事实。
-          </p>
-        </div>
-        <FormalWorldView model={formalVisualModel} presentationMode="product" />
       </section>
 
       <section className={styles.contentGrid}>
@@ -133,27 +151,18 @@ export async function WorldLiveRuntimePage() {
         </article>
 
         <article className={styles.panel}>
-          <h2>资源状态</h2>
-          <div className={styles.resourceList}>
-            <RuntimeInfoItem
-              label="材料"
-              value={String(homeMapState.resources.materialReadiness)}
-            />
-            <RuntimeInfoItem
-              label="照料"
-              value={String(homeMapState.resources.careReadiness)}
-            />
-            <RuntimeInfoItem
-              label="地面"
-              value={String(homeMapState.resources.groundHealth)}
-            />
-            <RuntimeInfoItem
-              label="空间压力"
-              value={String(homeMapState.resources.spacePressure)}
-            />
-          </div>
+          <h2>只读画面预览</h2>
+          <p>
+            下面的画面来自只读 painter 预览，用于对照正式家园视图。
+            它不会创建物件，也不会推进世界。
+          </p>
         </article>
       </section>
+
+      <WorldPainterReadonlyPreview
+        adapterResult={worldPainterAdapterResult}
+        sceneSvg={worldPainterSceneSvg}
+      />
     </main>
   )
 }
