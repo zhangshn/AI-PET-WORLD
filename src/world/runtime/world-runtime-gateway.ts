@@ -13,6 +13,7 @@ import { auditWorldRuntimeTick } from "./world-runtime-audit"
 import { runOneRuntimeTick } from "./world-runtime-tick-runner"
 import type {
   WorldRuntimeSaveRecord,
+  WorldRuntimeStoreReadResult,
   WorldRuntimeTickResult,
 } from "./world-runtime-schema"
 
@@ -41,6 +42,60 @@ export async function loadOrCreateRuntimeWorld(input?: {
   await writeWorldRuntimeSaveRecord({ record: initialRecord })
 
   return initialRecord
+}
+
+export type WorldRuntimeViewReadResult = {
+  saveRecord: WorldRuntimeSaveRecord
+  readResult: WorldRuntimeStoreReadResult
+  isPersisted: boolean
+  messages: string[]
+  tags: string[]
+}
+
+export async function readWorldRuntimeForView(input?: {
+  now?: number
+}): Promise<WorldRuntimeViewReadResult> {
+  const readResult = await readWorldRuntimeSaveRecord()
+
+  if (readResult.status === "found" && readResult.record) {
+    return {
+      saveRecord: readResult.record,
+      readResult,
+      isPersisted: true,
+      messages: [
+        "Runtime save record loaded for read-only world view.",
+        readResult.message,
+      ],
+      tags: [
+        "world_runtime_view_read",
+        "read_only",
+        "persisted_save_loaded",
+        ...readResult.tags,
+      ],
+    }
+  }
+
+  const initialRecord = buildInitialRuntimeSaveRecord({
+    now: input?.now ?? Date.now(),
+  })
+
+  return {
+    saveRecord: initialRecord,
+    readResult,
+    isPersisted: false,
+    messages: [
+      "Runtime save record was not found; built an in-memory read-only initial world view.",
+      readResult.message,
+      ...readResult.warnings,
+    ],
+    tags: [
+      "world_runtime_view_read",
+      "read_only",
+      "in_memory_initial_world",
+      "no_runtime_save_write",
+      ...readResult.tags,
+    ],
+  }
 }
 
 export async function runAndPersistOneRuntimeTick(input?: {

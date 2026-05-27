@@ -42,6 +42,20 @@ async function main() {
     "world-state",
     "default-world.json"
   )
+  const worldPagePath = path.join(
+    repoRoot,
+    "src",
+    "app",
+    "world",
+    "world-live-runtime-page.tsx"
+  )
+  const runtimeGatewayPath = path.join(
+    repoRoot,
+    "src",
+    "world",
+    "runtime",
+    "world-runtime-gateway.ts"
+  )
   const displayPath = path.relative(repoRoot, savePath).replaceAll(path.sep, "/")
 
   function fail(message) {
@@ -65,6 +79,7 @@ async function main() {
   }
 
   const raw = fs.readFileSync(savePath, "utf8")
+  const beforeReadBoundaryStat = fs.statSync(savePath)
   let record
 
   try {
@@ -95,6 +110,15 @@ async function main() {
   const duplicateRecentTransactionIds = findDuplicates(
     recentTransactions.map((transaction) => transaction.transactionId)
   )
+  const readBoundaryResult = auditWorldReadBoundary({
+    fs,
+    savePath,
+    worldPagePath,
+    runtimeGatewayPath,
+    beforeRaw: raw,
+    beforeTick: record.tick,
+    beforeMtimeMs: beforeReadBoundaryStat.mtimeMs,
+  })
 
   assert(
     record.version === "v2.6-runtime-00",
@@ -124,6 +148,7 @@ async function main() {
     duplicateRecentTransactionIds.length === 0,
     `Duplicate recentTransactions transaction ids found: ${duplicateRecentTransactionIds.join(", ")}`
   )
+  assert(readBoundaryResult.ok, readBoundaryResult.message)
 
   if (record.recentActionSignatures !== undefined) {
     assert(
@@ -187,6 +212,7 @@ async function main() {
   console.log("Resource transaction ids: ok")
   console.log("Runtime action continuity: ok")
   console.log("Butler motivation: ok")
+  console.log("World read boundary: ok")
   console.log(
     `Selected motivation: ${
       record.lastButlerRuntimeDecision?.selectedMotivation ?? "none"
@@ -206,6 +232,94 @@ function findDuplicates(values) {
   })
 
   return Array.from(duplicates)
+}
+
+function auditWorldReadBoundary(input) {
+  const worldPageSource = input.fs.readFileSync(input.worldPagePath, "utf8")
+  const runtimeGatewaySource = input.fs.readFileSync(
+    input.runtimeGatewayPath,
+    "utf8"
+  )
+
+  if (!worldPageSource.includes("readWorldRuntimeForView")) {
+    return {
+      ok: false,
+      message: "/world page does not import readWorldRuntimeForView.",
+    }
+  }
+
+  if (worldPageSource.includes("runAndPersistOneRuntimeTick")) {
+    return {
+      ok: false,
+      message: "/world page still references runAndPersistOneRuntimeTick.",
+    }
+  }
+
+  const readOnlyFunctionSource = extractFunctionSource(
+    runtimeGatewaySource,
+    "readWorldRuntimeForView"
+  )
+
+  if (!readOnlyFunctionSource) {
+    return {
+      ok: false,
+      message: "readWorldRuntimeForView was not found in runtime gateway.",
+    }
+  }
+
+  const forbiddenReadOnlyCalls = [
+    "runOneRuntimeTick",
+    "runAndPersistOneRuntimeTick",
+    "writeWorldRuntimeSaveRecord",
+  ].filter((token) => readOnlyFunctionSource.includes(token))
+
+  if (forbiddenReadOnlyCalls.length > 0) {
+    return {
+      ok: false,
+      message: `readWorldRuntimeForView contains write/tick calls: ${forbiddenReadOnlyCalls.join(", ")}`,
+    }
+  }
+
+  const afterRaw = input.fs.readFileSync(input.savePath, "utf8")
+  const afterStat = input.fs.statSync(input.savePath)
+  let afterRecord
+
+  try {
+    afterRecord = JSON.parse(afterRaw)
+  } catch (error) {
+    return {
+      ok: false,
+      message: `Runtime save became invalid during read-boundary check: ${error.message}`,
+    }
+  }
+
+  if (afterRecord.tick !== input.beforeTick) {
+    return {
+      ok: false,
+      message: `Read-boundary check changed tick from ${input.beforeTick} to ${afterRecord.tick}.`,
+    }
+  }
+
+  if (afterRaw !== input.beforeRaw || afterStat.mtimeMs !== input.beforeMtimeMs) {
+    return {
+      ok: false,
+      message: "Read-boundary check changed the runtime save file.",
+    }
+  }
+
+  return {
+    ok: true,
+    message: "World read boundary is stable.",
+  }
+}
+
+function extractFunctionSource(source, functionName) {
+  const start = source.indexOf(`export async function ${functionName}`)
+  if (start < 0) return ""
+
+  const nextExport = source.indexOf("\nexport ", start + 1)
+
+  return source.slice(start, nextExport < 0 ? source.length : nextExport)
 }
 
 main().catch((error) => {
