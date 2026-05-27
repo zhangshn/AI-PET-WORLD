@@ -14,18 +14,18 @@ import type {
 
 export function buildSceneTiles(
   fact: SceneComposerFact,
-  pathSamples: PathSample[],
+  traceSamples: PathSample[],
   layoutSeed: string
 ): SceneTile[] {
   const pathWidth = resolveRoadWidth(fact.biome);
-  const hasRoadFact = fact.hasRoadFact ?? true;
+  const hasTraceFact = fact.hasTraceFact ?? fact.hasRoadFact ?? true;
   const tiles: SceneTile[] = [];
 
   for (let row = 0; row < SCENE_ROWS; row += 1) {
     for (let column = 0; column < SCENE_COLUMNS; column += 1) {
-      const center = pathSamples[column]?.center ?? 0;
+      const center = traceSamples[column]?.center ?? 0;
       const distance = Math.abs(row - center);
-      const kind: SceneTileKind = !hasRoadFact
+      const kind: SceneTileKind = !hasTraceFact
         ? "grass"
         : distance <= pathWidth
           ? "path"

@@ -15,7 +15,7 @@ export function buildRoadSamples(fact: SceneComposerFact): PathSample[] {
   const pathWidth = resolveRoadWidth(fact.biome);
 
   return Array.from({ length: SCENE_COLUMNS }, (_, column) => {
-    const curve = (fact.roadShape - 50) / 50;
+    const curve = ((fact.traceShape ?? fact.roadShape ?? 50) - 50) / 50;
     const wave =
       Math.sin((column / SCENE_COLUMNS) * Math.PI * 1.35 + curve * 0.8) *
       (1.2 + Math.abs(curve) * 1.5);

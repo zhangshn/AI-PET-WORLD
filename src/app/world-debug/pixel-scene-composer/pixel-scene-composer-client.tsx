@@ -28,7 +28,7 @@ export default function PixelSceneComposerClient() {
     setFact((current) => ({ ...normalizeSceneComposerFact(current), biome: event.target.value as SceneComposerBiome }));
   }
 
-  function updateNumberField(field: "moisture" | "decorationDensity" | "roadShape") {
+  function updateNumberField(field: "moisture" | "decorationDensity" | "traceShape") {
     return (event: ChangeEvent<HTMLInputElement>) => {
       setFact((current) => ({ ...normalizeSceneComposerFact(current), [field]: Number(event.target.value) }));
     };
@@ -76,7 +76,7 @@ export default function PixelSceneComposerClient() {
 
           <RangeControl label="moisture" value={safeFact.moisture} onChange={updateNumberField("moisture")} />
           <RangeControl label="decorationDensity" value={safeFact.decorationDensity} onChange={updateNumberField("decorationDensity")} />
-          <RangeControl label="roadShape" value={safeFact.roadShape} onChange={updateNumberField("roadShape")} />
+          <RangeControl label="traceShape" value={safeFact.traceShape} onChange={updateNumberField("traceShape")} />
 
           <label style={styles.fieldGroup}>
             <span style={styles.fieldLabel}>worldSeed</span>
@@ -117,9 +117,10 @@ export default function PixelSceneComposerClient() {
               <DebugRow label="biome" value={plan.biome} />
               <DebugRow label="moisture" value={plan.moisture} />
               <DebugRow label="decorationDensity" value={plan.decorationDensity} />
-              <DebugRow label="roadShape" value={plan.roadShape} />
+              <DebugRow label="trace shape" value={plan.traceShape} />
+              <DebugRow label="trace density" value={plan.traceDensity} />
               <DebugRow label="grass tiles" value={plan.summary.grassTiles} />
-              <DebugRow label="path tiles" value={plan.summary.pathTiles} />
+              <DebugRow label="long-used area tiles" value={plan.summary.pathTiles} />
               <DebugRow label="edge tiles" value={plan.summary.edgeTiles} />
               <DebugRow label="grass tufts" value={plan.summary.grassTufts} />
               <DebugRow label="trees" value={plan.summary.trees} />
@@ -179,11 +180,20 @@ function normalizeSceneComposerFact(
       fact.decorationDensity ?? fact.density,
       DEFAULT_FACT.decorationDensity
     ),
-    roadShape: normalizeRangeValue(
-      fact.roadShape ?? fact.pathCurve,
-      DEFAULT_FACT.roadShape
+    traceShape: normalizeRangeValue(
+      fact.traceShape ?? fact.roadShape ?? fact.pathCurve,
+      DEFAULT_FACT.traceShape
+    ),
+    traceDensity: normalizeRangeValue(
+      fact.traceDensity,
+      DEFAULT_FACT.traceDensity
     ),
     worldSeed: fact.worldSeed ?? DEFAULT_FACT.worldSeed,
+    hasTraceFact: fact.hasTraceFact ?? DEFAULT_FACT.hasTraceFact,
+    traceFacts: fact.traceFacts ?? DEFAULT_FACT.traceFacts,
+    includeActorPlaceholder:
+      fact.includeActorPlaceholder ?? DEFAULT_FACT.includeActorPlaceholder,
+    factObjects: fact.factObjects ?? DEFAULT_FACT.factObjects,
   };
 }
 

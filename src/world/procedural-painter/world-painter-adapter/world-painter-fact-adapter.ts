@@ -20,7 +20,7 @@ export type WorldPainterFactAdapterResult = {
   sourceSummary: {
     worldId: string
     naturalPlacements: number
-    pathPlacements: number
+    movementTracePlacements: number
     structurePlacements: number
     boundFactObjects: number
     skippedFactObjects: number
@@ -40,7 +40,7 @@ export function adaptHomeMapStateToSceneComposerFact(
     "nature",
     "world_nature_fact"
   )
-  const pathPlacements = countPlacementsByLayerOrTag(
+  const movementTracePlacements = countPlacementsByLayerOrTag(
     homeMapState.placements,
     "path",
     "path"
@@ -55,10 +55,11 @@ export function adaptHomeMapStateToSceneComposerFact(
   const decorationDensity = resolveDecorationDensity({
     homeMapState,
     naturalPlacements,
-    pathPlacements,
+    movementTracePlacements,
     structurePlacements,
   })
-  const roadShape = resolveRoadShape({ homeMapState })
+  const traceShape = resolveTraceShape({ homeMapState })
+  const hasTraceFact = Boolean(movementTracePlacements)
   const placementAdapterResult = adaptPlacementsToSceneObjects({
     homeMapState,
   })
@@ -69,15 +70,24 @@ export function adaptHomeMapStateToSceneComposerFact(
       biome,
       moisture,
       decorationDensity,
-      roadShape,
-      hasRoadFact: Boolean(pathPlacements),
+      traceShape,
+      traceDensity: resolveTraceDensity({
+        decorationDensity,
+        movementTracePlacements,
+      }),
+      hasTraceFact,
+      traceFacts: [],
+      // Deprecated compatibility: legacy composer callers still read these.
+      roadShape: traceShape,
+      hasRoadFact: hasTraceFact,
+      includeActorPlaceholder: false,
       factObjects: placementAdapterResult.boundObjects,
       worldSeed: `${homeMapState.seed}:${homeMapState.worldId}:world-painter-v1`,
     },
     sourceSummary: {
       worldId: homeMapState.worldId,
       naturalPlacements,
-      pathPlacements,
+      movementTracePlacements,
       structurePlacements,
       boundFactObjects: placementAdapterResult.boundObjects.length,
       skippedFactObjects: placementAdapterResult.skippedPlacements.length,
@@ -134,13 +144,13 @@ function resolveMoisture(homeMapState: HomeMapState): number {
 function resolveDecorationDensity(input: {
   homeMapState: HomeMapState
   naturalPlacements: number
-  pathPlacements: number
+  movementTracePlacements: number
   structurePlacements: number
 }): number {
   const resources = input.homeMapState.resources
   const worldObjectSignal =
     input.naturalPlacements * 7 +
-    input.pathPlacements * 3 +
+    input.movementTracePlacements * 3 +
     input.structurePlacements * 2
 
   const value = Math.round(
@@ -153,18 +163,20 @@ function resolveDecorationDensity(input: {
   return clamp(value, 8, 100)
 }
 
-function resolveRoadShape(input: { homeMapState: HomeMapState }): number {
-  const pathPlacements = input.homeMapState.placements.filter(
+function resolveTraceShape(input: { homeMapState: HomeMapState }): number {
+  // Deprecated compatibility: current HomeMapState may still store movement traces
+  // with the old path layer or tag.
+  const tracePlacements = input.homeMapState.placements.filter(
     (placement) => placement.layer === "path" || placement.tags.includes("path")
   )
 
-  if (pathPlacements.length > 0) {
+  if (tracePlacements.length > 0) {
     const averageX =
-      pathPlacements.reduce((sum, placement) => sum + placement.x, 0) /
-      pathPlacements.length
+      tracePlacements.reduce((sum, placement) => sum + placement.x, 0) /
+      tracePlacements.length
     const averageY =
-      pathPlacements.reduce((sum, placement) => sum + placement.y, 0) /
-      pathPlacements.length
+      tracePlacements.reduce((sum, placement) => sum + placement.y, 0) /
+      tracePlacements.length
     const mapWidth = Math.max(
       1,
       input.homeMapState.mapSize.columns * input.homeMapState.mapSize.tileSize
@@ -180,7 +192,7 @@ function resolveRoadShape(input: { homeMapState: HomeMapState }): number {
   }
 
   const base = stableUnit(
-    `${input.homeMapState.seed}:${input.homeMapState.worldId}:road-shape`
+    `${input.homeMapState.seed}:${input.homeMapState.worldId}:trace-shape`
   )
   const resourceBias =
     (input.homeMapState.resources.groundHealth -
@@ -188,6 +200,17 @@ function resolveRoadShape(input: { homeMapState: HomeMapState }): number {
     220
 
   return clamp(Math.round((base * 0.7 + 0.15 + resourceBias) * 100), 0, 100)
+}
+
+function resolveTraceDensity(input: {
+  decorationDensity: number
+  movementTracePlacements: number
+}): number {
+  return clamp(
+    Math.round(input.decorationDensity * 0.72 + input.movementTracePlacements * 6),
+    0,
+    100
+  )
 }
 
 function countPlacementsByLayerOrTag(

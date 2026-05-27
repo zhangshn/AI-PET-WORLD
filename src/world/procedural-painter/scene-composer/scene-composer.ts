@@ -1,4 +1,4 @@
-// 该文件提供像素世界场景组合器的正式组合入口。
+// This file provides the formal composition entry for pixel world scenes.
 
 import {
   SCENE_HEIGHT,
@@ -9,9 +9,12 @@ import {
   buildSceneObjects,
   mergeFactAndGeneratedObjects,
 } from "./object-composer";
-import { buildRoadSamples } from "./road-composer";
 import { clamp } from "./scene-composer-random";
 import { buildSceneTiles } from "./terrain-composer";
+import {
+  buildMovementTraceField,
+  buildMovementTraceSamples,
+} from "./trace-composer";
 import { buildSceneGrassTufts } from "./vegetation-composer";
 import type {
   SceneComposerFact,
@@ -23,9 +26,11 @@ const DEFAULT_SCENE_COMPOSER_FACT: SceneComposerFact = {
   biome: "forest",
   moisture: 74,
   decorationDensity: 72,
-  roadShape: 58,
+  traceShape: 58,
+  traceDensity: 72,
   worldSeed: "ai_pet_world_scene_composer_seed_001",
-  hasRoadFact: true,
+  hasTraceFact: true,
+  includeActorPlaceholder: true,
 };
 
 export function buildDefaultSceneComposerFact(
@@ -40,11 +45,20 @@ export function buildDefaultSceneComposerFact(
 export function composeScene(fact: SceneComposerFact): SceneCompositionPlan {
   const clean = normalizeSceneComposerFact(fact);
   const layoutSeed = `${clean.worldSeed}:${clean.id}:scene-composer-v5:${clean.biome}`;
-  const pathSamples = buildRoadSamples(clean);
-  const tiles = buildSceneTiles(clean, pathSamples, layoutSeed);
-  const grassTufts = buildSceneGrassTufts(clean, tiles, pathSamples, layoutSeed);
+  const traceSamples = buildMovementTraceSamples(clean);
+  const traceField = buildMovementTraceField({
+    fact: clean,
+    samples: traceSamples,
+  });
+  const tiles = buildSceneTiles(clean, traceSamples, layoutSeed);
+  const grassTufts = buildSceneGrassTufts(clean, tiles, traceSamples, layoutSeed);
   const factObjects = clean.factObjects ?? [];
-  const generatedObjects = buildSceneObjects(clean, tiles, pathSamples, layoutSeed);
+  const generatedObjects = buildSceneObjects(
+    clean,
+    tiles,
+    traceSamples,
+    layoutSeed
+  );
   const objects = mergeFactAndGeneratedObjects({
     factObjects,
     generatedObjects,
@@ -57,8 +71,15 @@ export function composeScene(fact: SceneComposerFact): SceneCompositionPlan {
     biome: clean.biome,
     moisture: clean.moisture,
     decorationDensity: clean.decorationDensity,
-    roadShape: clean.roadShape,
-    hasRoadFact: clean.hasRoadFact ?? true,
+    traceShape: clean.traceShape,
+    traceDensity: clean.traceDensity,
+    hasTraceFact: clean.hasTraceFact ?? true,
+    traceFacts: clean.traceFacts ?? [],
+    traceSamples,
+    traceField,
+    // Deprecated compatibility: retained until legacy debug consumers migrate.
+    roadShape: clean.traceShape,
+    hasRoadFact: clean.hasTraceFact ?? true,
     tiles,
     grassTufts,
     factObjects,
@@ -80,12 +101,22 @@ export function composeScene(fact: SceneComposerFact): SceneCompositionPlan {
 export function normalizeSceneComposerFact(
   fact: SceneComposerFact
 ): SceneComposerFact {
+  const traceShape = fact.traceShape ?? fact.roadShape ?? 50;
+  const hasTraceFact = fact.hasTraceFact ?? fact.hasRoadFact ?? true;
+  const traceDensity = fact.traceDensity ?? fact.decorationDensity;
+
   return {
     ...fact,
     moisture: clamp(Math.round(fact.moisture), 0, 100),
     decorationDensity: clamp(Math.round(fact.decorationDensity), 0, 100),
-    roadShape: clamp(Math.round(fact.roadShape), 0, 100),
-    hasRoadFact: fact.hasRoadFact ?? true,
+    traceShape: clamp(Math.round(traceShape), 0, 100),
+    traceDensity: clamp(Math.round(traceDensity), 0, 100),
+    hasTraceFact,
+    traceFacts: fact.traceFacts ?? [],
+    // Deprecated compatibility: legacy callers may still read these fields.
+    roadShape: clamp(Math.round(traceShape), 0, 100),
+    hasRoadFact: hasTraceFact,
+    includeActorPlaceholder: fact.includeActorPlaceholder ?? true,
     factObjects: fact.factObjects ?? [],
   };
 }
@@ -111,16 +142,36 @@ function removeUndefinedSceneComposerFields(
     clean.decorationDensity = input.decorationDensity;
   }
 
-  if (input.roadShape !== undefined) {
-    clean.roadShape = input.roadShape;
+  if (input.traceShape !== undefined) {
+    clean.traceShape = input.traceShape;
+  }
+
+  if (input.traceDensity !== undefined) {
+    clean.traceDensity = input.traceDensity;
   }
 
   if (input.worldSeed !== undefined) {
     clean.worldSeed = input.worldSeed;
   }
 
+  if (input.hasTraceFact !== undefined) {
+    clean.hasTraceFact = input.hasTraceFact;
+  }
+
+  if (input.traceFacts !== undefined) {
+    clean.traceFacts = input.traceFacts;
+  }
+
+  if (input.roadShape !== undefined) {
+    clean.roadShape = input.roadShape;
+  }
+
   if (input.hasRoadFact !== undefined) {
     clean.hasRoadFact = input.hasRoadFact;
+  }
+
+  if (input.includeActorPlaceholder !== undefined) {
+    clean.includeActorPlaceholder = input.includeActorPlaceholder;
   }
 
   if (input.factObjects !== undefined) {

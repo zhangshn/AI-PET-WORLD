@@ -21,7 +21,7 @@ export type PixelSceneWorldFact = {
 
 export type PixelSceneCompositionPlan = Omit<
   SceneCompositionPlan,
-  "decorationDensity" | "roadShape"
+  "decorationDensity" | "traceShape"
 > & {
   density: number;
 };
@@ -34,7 +34,7 @@ export function buildDefaultPixelSceneFact(
     biome: input.biome,
     moisture: input.moisture,
     decorationDensity: input.density,
-    roadShape: input.pathCurve,
+    traceShape: input.pathCurve,
     worldSeed: input.worldSeed,
   });
 
@@ -62,8 +62,11 @@ function toSceneComposerFact(fact: PixelSceneWorldFact) {
     biome: fact.biome,
     moisture: fact.moisture,
     decorationDensity: fact.density,
-    roadShape: fact.pathCurve,
+    traceShape: fact.pathCurve,
+    traceDensity: fact.density,
     worldSeed: fact.worldSeed,
+    hasTraceFact: true,
+    traceFacts: [],
   };
 }
 
@@ -75,7 +78,7 @@ function fromSceneComposerFact(
     biome: fact.biome,
     moisture: fact.moisture,
     density: fact.decorationDensity,
-    pathCurve: fact.roadShape,
+    pathCurve: fact.traceShape,
     worldSeed: fact.worldSeed,
   };
 }

@@ -1,18 +1,54 @@
-// 该文件定义像素世界场景组合器的正式输入与输出结构。
+// This file defines the formal input and output contracts for pixel scene composition.
 
 export type SceneComposerBiome = "forest" | "grassland" | "desert" | "oasis";
+
+export type SceneTraceKind = "movement";
+
+export type SceneTraceFact = {
+  id: string;
+  kind: SceneTraceKind;
+  strength: number;
+  age: number;
+  x?: number;
+  y?: number;
+};
+
+export type SceneTraceSample = {
+  column: number;
+  center: number;
+  x: number;
+  topY: number;
+  bottomY: number;
+};
+
+export type SceneTraceField = {
+  kind: SceneTraceKind;
+  traceShape: number;
+  traceDensity: number;
+  hasTraceFact: boolean;
+  facts: SceneTraceFact[];
+  samples: SceneTraceSample[];
+};
 
 export type SceneComposerFact = {
   id: string;
   biome: SceneComposerBiome;
   moisture: number;
   decorationDensity: number;
-  roadShape: number;
+  traceShape: number;
+  traceDensity: number;
   worldSeed: string;
+  hasTraceFact?: boolean;
+  traceFacts?: SceneTraceFact[];
+  /** @deprecated Use traceShape. Kept only for legacy caller compatibility. */
+  roadShape?: number;
+  /** @deprecated Use hasTraceFact. Kept only for legacy caller compatibility. */
   hasRoadFact?: boolean;
+  includeActorPlaceholder?: boolean;
   factObjects?: SceneObject[];
 };
 
+/** @deprecated The visual tile name is retained for renderer compatibility. */
 export type SceneTileKind = "grass" | "path" | "edge";
 
 export type SceneObjectKind = "tree" | "bush" | "stone" | "flower" | "actor";
@@ -48,13 +84,8 @@ export type ScenePalette = {
   actor: string;
 };
 
-export type PathSample = {
-  column: number;
-  center: number;
-  x: number;
-  topY: number;
-  bottomY: number;
-};
+/** @deprecated Use SceneTraceSample. */
+export type PathSample = SceneTraceSample;
 
 export type SceneAnchor = {
   id: string;
@@ -114,8 +145,16 @@ export type SceneCompositionPlan = {
   biome: SceneComposerBiome;
   moisture: number;
   decorationDensity: number;
-  roadShape: number;
-  hasRoadFact: boolean;
+  traceShape: number;
+  traceDensity: number;
+  hasTraceFact: boolean;
+  traceFacts: SceneTraceFact[];
+  traceSamples: SceneTraceSample[];
+  traceField: SceneTraceField;
+  /** @deprecated Use traceShape. Kept only for legacy caller compatibility. */
+  roadShape?: number;
+  /** @deprecated Use hasTraceFact. Kept only for legacy caller compatibility. */
+  hasRoadFact?: boolean;
   tiles: SceneTile[];
   grassTufts: SceneGrassTuft[];
   factObjects: SceneObject[];

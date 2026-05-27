@@ -10,8 +10,10 @@ export function WorldPainterReadonlyPreview(input: {
 }) {
   const sceneFact = input.adapterResult.sceneFact
   const summary = input.adapterResult.sourceSummary
-  const hasPathPlacements = summary.pathPlacements > 0
-  const roadShapeValue = hasPathPlacements ? String(sceneFact.roadShape) : "none"
+  const hasMovementTracePlacements = summary.movementTracePlacements > 0
+  const traceShapeValue = hasMovementTracePlacements
+    ? String(sceneFact.traceShape)
+    : "none"
 
   return (
     <section className={styles.worldPainterPanel} aria-label="Pixel World View fact-bound candidate">
@@ -32,7 +34,11 @@ export function WorldPainterReadonlyPreview(input: {
             label="decorationDensity"
             value={String(sceneFact.decorationDensity)}
           />
-          <WorldPainterFactItem label="roadShape" value={roadShapeValue} />
+          <WorldPainterFactItem label="trace shape" value={traceShapeValue} />
+          <WorldPainterFactItem
+            label="trace density"
+            value={String(sceneFact.traceDensity)}
+          />
         </div>
       </div>
 
@@ -55,8 +61,8 @@ export function WorldPainterReadonlyPreview(input: {
               value={String(summary.naturalPlacements)}
             />
             <WorldPainterFactItem
-              label="path placements"
-              value={String(summary.pathPlacements)}
+              label="movement trace placements"
+              value={String(summary.movementTracePlacements)}
             />
             <WorldPainterFactItem
               label="structure placements"

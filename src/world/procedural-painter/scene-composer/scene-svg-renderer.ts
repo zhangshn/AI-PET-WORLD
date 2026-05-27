@@ -21,7 +21,7 @@ export function renderScenePlanToSvg(
   const palette = buildScenePalette(plan.biome, plan.moisture);
   const objectsByDepth = [...plan.objects].sort((left, right) => left.y - right.y);
   const debugOverlay = options.showDebugOverlay
-    ? `<text x="18" y="28" font-size="13" fill="#e6f4e6" font-family="monospace">${escapeText(plan.biome)} moisture=${plan.moisture} decorationDensity=${plan.decorationDensity} roadShape=${plan.roadShape} road=${plan.hasRoadFact ? "saved" : "none"}</text>`
+    ? `<text x="18" y="28" font-size="13" fill="#e6f4e6" font-family="monospace">${escapeText(plan.biome)} moisture=${plan.moisture} decorationDensity=${plan.decorationDensity} traceShape=${plan.traceShape} trace=${plan.hasTraceFact ? "saved" : "none"}</text>`
     : "";
 
   return [

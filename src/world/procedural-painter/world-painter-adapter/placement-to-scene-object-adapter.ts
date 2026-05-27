@@ -58,6 +58,14 @@ export function adaptPlacementsToSceneObjects(input: {
       return
     }
 
+    if (kind === "skip_actor") {
+      skippedPlacements.push({
+        placementId: placement.id,
+        reason: "actor painter not ready",
+      })
+      return
+    }
+
     if (!kind) {
       skippedPlacements.push({
         placementId: placement.id,
@@ -140,7 +148,7 @@ function mapPlacementToScenePosition(input: {
 
 function resolveSceneObjectKind(
   placement: MapPlacement
-): SceneObjectKind | "skip_path" | "skip_structure" | null {
+): SceneObjectKind | "skip_path" | "skip_structure" | "skip_actor" | null {
   const tokens = [
     placement.id,
     placement.assetId,
@@ -161,8 +169,11 @@ function resolveSceneObjectKind(
     return null
   }
 
-  if (placement.layer === "actor" || hasAnyToken(tokens, ["butler", "steward", "keeper"])) {
-    return "actor"
+  if (
+    placement.layer === "actor" ||
+    hasAnyToken(tokens, ["butler", "steward", "keeper", "character", "avatar", "npc"])
+  ) {
+    return "skip_actor"
   }
 
   if (placement.layer === "path" || hasAnyToken(tokens, ["path", "road", "trail"])) {

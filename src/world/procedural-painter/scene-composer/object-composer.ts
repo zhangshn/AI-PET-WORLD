@@ -31,7 +31,7 @@ export function buildSceneObjects(
       (tile) => tile.kind === "path" && tile.x > 260 && tile.x < 360 && tile.y > 200
     ) ?? tiles.find((tile) => tile.kind === "path");
 
-  if (actorTile) {
+  if (fact.includeActorPlaceholder !== false && actorTile) {
     objects.push({
       id: "actor_preview",
       kind: "actor",
