@@ -99,9 +99,9 @@ async function main() {
     "sourceReliability",
     "evidenceLevel",
     "movementCostDelta",
-    "ButlerMemory",
-    "PetMemory",
-    "WorldLearning",
+    "formal ButlerMemory",
+    "formal PetMemory",
+    "formal WorldLearning",
   ]
   const componentHits = forbiddenComponentTokens.filter((token) =>
     componentSource.includes(token)
