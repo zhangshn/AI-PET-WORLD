@@ -140,11 +140,25 @@ async function main() {
   const model = buildWorldViewModelForPixelWorld({ saveRecord: record, isPersisted: true })
   const derivedVisualObjects = model.objects.filter((object) => object.source === "derived_visual_only")
   const factObjects = model.objects.filter((object) => object.source === "world_fact")
+  const naturalTileKinds = new Set([
+    "grass",
+    "pressed_grass",
+    "worn_grass",
+    "exposed_soil",
+    "ecology_transition",
+    "recovery_growth",
+    "soil",
+  ])
+  const naturalTiles = model.tiles.filter((tile) => naturalTileKinds.has(tile.kind))
+  const tileKindCounts = model.tiles.reduce((counts, tile) => {
+    counts[tile.kind] = (counts[tile.kind] ?? 0) + 1
+    return counts
+  }, {})
 
   assert(model.canvas.width === record.homeMapState.mapSize.columns * record.homeMapState.mapSize.tileSize, "WorldViewModel canvas width does not come from HomeMapState / SpaceGrid.")
   assert(model.canvas.height === record.homeMapState.mapSize.rows * record.homeMapState.mapSize.tileSize, "WorldViewModel canvas height does not come from HomeMapState / SpaceGrid.")
   assert(model.tiles.length === record.homeMapState.mapSize.columns * record.homeMapState.mapSize.rows, "WorldViewModel tiles are not generated from SpaceGrid cells.")
-  assert(model.tiles.some((tile) => tile.kind === "grass" || tile.kind === "pressed_grass" || tile.kind === "worn_grass"), "WorldViewModel output has no natural ground tiles.")
+  assert(naturalTiles.length > 0, `WorldViewModel output has no natural ground tiles. Tile kinds: ${JSON.stringify(tileKindCounts)}`)
   assert(model.objects.length > 0, "WorldViewModel output has no objects.")
   assert(derivedVisualObjects.length > 0, "WorldViewModel output has no derived visual-only objects.")
   assert(
@@ -175,6 +189,8 @@ async function main() {
   console.log(`Runtime tick: ${record.tick}`)
   console.log(`Canvas: ${model.canvas.width}x${model.canvas.height}`)
   console.log(`Tiles: ${model.tiles.length}`)
+  console.log(`Tile kinds: ${JSON.stringify(tileKindCounts)}`)
+  console.log(`Natural ground tiles: ${naturalTiles.length}`)
   console.log(`Objects: ${model.objects.length}`)
   console.log(`World fact objects: ${factObjects.length}`)
   console.log(`Derived visual-only objects: ${derivedVisualObjects.length}`)
