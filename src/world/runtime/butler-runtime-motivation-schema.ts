@@ -30,6 +30,14 @@ export type ButlerTraceMotivationContext = {
   butlerMemoryHintCount: number
   ecologyMemoryHintCount: number
   relationshipMemoryHintCount: number
+  memorySeedWeight: number
+  butlerMemoryWeight: number
+  ecologyMemoryWeight: number
+  regionMemoryWeight: number
+  relationshipMemoryWeight: number
+  memorySeedConsumeScore: number
+  memorySeedFocusKinds: string[]
+  memorySeedFocusRegions: string[]
   traceAttentionScore: number
   maintenanceHintScore: number
   observationHintScore: number
