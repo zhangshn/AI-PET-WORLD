@@ -11,8 +11,11 @@ const REGION_KINDS: SpaceRegionKind[] = [
   "yard",
   "nature",
   "structure",
+  "town_connection",
+  "blocked",
   "boundary",
   "unopened",
+  "locked",
   "unknown",
 ]
 

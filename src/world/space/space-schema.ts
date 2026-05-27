@@ -10,8 +10,11 @@ export type SpaceRegionKind =
   | "yard"
   | "nature"
   | "structure"
+  | "town_connection"
+  | "blocked"
   | "boundary"
   | "unopened"
+  | "locked"
   | "unknown"
 
 export type SpaceTerrainKind =
@@ -40,6 +43,45 @@ export type SpaceOccupancyKind =
 
 export type SpaceTraceStrength = "none" | "weak" | "medium" | "strong"
 
+export type SpaceRegionSource =
+  | "home_map_zone"
+  | "boundary"
+  | "placement"
+  | "fallback"
+
+export type SpacePassabilitySource =
+  | "terrain"
+  | "placement"
+  | "boundary"
+  | "blocked_region"
+  | "unopened_region"
+  | "locked_region"
+  | "unknown"
+
+export type SpaceOccupancy = {
+  objectId: string
+  objectType: SpaceOccupancyKind
+  placementId: string
+  blocksMovement: boolean
+  blocksVision: boolean
+  layer: string
+  source: "placement"
+  tags: string[]
+}
+
+export type SpaceMovementCostFactor = {
+  source:
+    | "terrain"
+    | "passability"
+    | "occupancy"
+    | "space_pressure"
+    | "humidity"
+    | "ecology_health"
+    | "trace_strength"
+  amount: number
+  reason: string
+}
+
 export type SpaceBounds = {
   minX: number
   minY: number
@@ -51,14 +93,28 @@ export type SpaceCell = SpaceCoordinate & {
   id: string
   row: number
   column: number
+  coordinate: SpaceCoordinate
+  regionId: string
+  regionType: SpaceRegionKind
+  regionName?: string
+  regionSource: SpaceRegionSource
   regionKind: SpaceRegionKind
   terrainKind: SpaceTerrainKind
   passability: SpacePassability
+  passable: boolean
+  blockedReason?: string
+  passabilitySource: SpacePassabilitySource
+  baseMoveCost: number
   movementCost: number
+  movementCostFactors: SpaceMovementCostFactor[]
   occupancyKind: SpaceOccupancyKind
+  occupancy: SpaceOccupancy[]
   occupancyIds: string[]
   traceStrength: number
   traceLevel: SpaceTraceStrength
+  humidity?: number
+  ecologyHealth?: number
+  familiarity?: number
   moistureHint: number
   ecologyHealthHint: number
 }
@@ -67,6 +123,9 @@ export type SpaceRegion = {
   id: string
   kind: SpaceRegionKind
   label: string
+  source: SpaceRegionSource
+  zoneIds: string[]
+  fallback: boolean
   bounds: SpaceBounds
   cellIds: string[]
   passableCells: number
