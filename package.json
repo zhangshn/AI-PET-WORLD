@@ -15,6 +15,7 @@
     "smoke:butler-trace-motivation": "node scripts/run-world-butler-trace-motivation-smoke.cjs",
     "smoke:butler-memory-seed-consume": "node scripts/run-world-butler-memory-seed-consume-smoke.cjs",
     "smoke:butler-memory-bias-surface": "node scripts/run-world-butler-memory-bias-surface-smoke.cjs",
+    "smoke:butler-natural-explanation": "node scripts/run-world-butler-natural-explanation-smoke.cjs",
     "smoke:trace-visual": "node scripts/run-world-trace-visual-smoke.cjs",
     "smoke:formal-trace-surface": "node scripts/run-world-formal-trace-surface-smoke.cjs",
     "smoke:formal-trace-layer": "node scripts/run-world-formal-trace-layer-smoke.cjs"
