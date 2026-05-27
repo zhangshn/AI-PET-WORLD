@@ -252,6 +252,88 @@
   stroke: rgba(112, 148, 70, 0.64);
 }
 
+.formalTraceLayer {
+  pointer-events: none;
+}
+
+.formalTraceItem {
+  pointer-events: none;
+  mix-blend-mode: multiply;
+}
+
+.formalTraceItem ellipse {
+  vector-effect: non-scaling-stroke;
+  stroke-width: 1.2;
+}
+
+.formalTraceFlattenedGrass ellipse {
+  fill: rgba(156, 188, 98, 0.42);
+  stroke: rgba(92, 128, 65, 0.42);
+  stroke-dasharray: 6 5;
+}
+
+.formalTraceExposedSoil ellipse {
+  fill: rgba(154, 111, 70, 0.36);
+  stroke: rgba(105, 75, 50, 0.38);
+}
+
+.formalTraceWornGround ellipse {
+  fill: rgba(139, 118, 82, 0.34);
+  stroke: rgba(94, 78, 55, 0.36);
+  stroke-dasharray: 8 4;
+}
+
+.formalTraceMoss ellipse {
+  fill: rgba(72, 132, 74, 0.32);
+  stroke: rgba(38, 94, 56, 0.34);
+}
+
+.formalTraceMushroom ellipse {
+  fill: rgba(214, 188, 156, 0.38);
+  stroke: rgba(142, 96, 82, 0.4);
+}
+
+.formalTraceRepairedGround ellipse {
+  fill: rgba(180, 206, 126, 0.34);
+  stroke: rgba(102, 146, 78, 0.36);
+  stroke-dasharray: 4 4;
+}
+
+.formalTraceMaintainedArea ellipse {
+  fill: rgba(190, 214, 142, 0.32);
+  stroke: rgba(112, 154, 82, 0.4);
+}
+
+.formalTraceFadedArea ellipse {
+  fill: rgba(206, 202, 164, 0.26);
+  stroke: rgba(132, 132, 104, 0.28);
+  stroke-dasharray: 3 6;
+}
+
+.formalTraceWaitingSpot ellipse {
+  fill: rgba(170, 190, 218, 0.28);
+  stroke: rgba(92, 112, 164, 0.36);
+}
+
+.formalTraceComfortSpot ellipse {
+  fill: rgba(226, 198, 138, 0.32);
+  stroke: rgba(154, 114, 66, 0.36);
+}
+
+.formalTraceAttentionGlow {
+  mix-blend-mode: screen;
+}
+
+.formalTraceAttentionGlow ellipse {
+  fill: rgba(255, 224, 126, 0.34);
+  stroke: rgba(214, 168, 72, 0.34);
+}
+
+.formalTraceUnknown ellipse {
+  fill: rgba(188, 188, 160, 0.24);
+  stroke: rgba(120, 128, 104, 0.3);
+}
+
 .formalLayerActor {
   fill: rgba(78, 104, 176, 0.58);
   stroke: rgba(45, 64, 128, 0.86);

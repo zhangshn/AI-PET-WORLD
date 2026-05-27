@@ -11,6 +11,7 @@ import type {
   FormalWorldObjectModel,
 } from "@/world/formal-visual-model/formal-visual-model-gateway"
 import type { Point2D, SpatialShape } from "@/world/spatial/spatial-gateway"
+import type { TraceVisualKind } from "@/world/trace"
 
 import styles from "./formal-world-view.styles.module.css"
 
@@ -58,6 +59,7 @@ export function FormalWorldView(input: FormalWorldViewProps) {
           >
             {renderFormalDefinitions()}
             {renderFormalObjects(model)}
+            {renderFormalTraceLayer(model)}
             {model.actors.map((actorModel) =>
               renderFormalActor(model, actorModel)
             )}
@@ -165,6 +167,51 @@ function renderFormalObjects(model: FormalVisualModel): ReactNode {
   return [...model.objects]
     .sort((left, right) => getLayerOrder(left.layer) - getLayerOrder(right.layer))
     .map((objectModel) => renderFormalWorldObject(model, objectModel))
+}
+
+function renderFormalTraceLayer(model: FormalVisualModel): ReactNode {
+  const items = (model.traceVisualProjection?.items ?? [])
+    .filter((item) => item.visible)
+    .slice(0, 16)
+
+  if (items.length === 0) {
+    return null
+  }
+
+  return (
+    <g className={styles.formalTraceLayer} aria-label="world surface traces">
+      {items.map((item, index) => {
+        const radius = Math.max(
+          model.canvas.tileSize * 0.2,
+          Math.min(item.area.radius, model.canvas.tileSize * 2.6)
+        )
+        const opacity = Math.max(0.08, Math.min(0.44, item.opacityHint))
+        const className = [
+          styles.formalTraceItem,
+          getTraceVisualClassName(item.visualKind),
+        ].join(" ")
+        const label = item.productSafeDescription || "world surface trace"
+
+        return (
+          <g
+            className={className}
+            key={`formal-trace-layer-item-${index}`}
+            opacity={opacity}
+            transform={`rotate(${getTraceVisualRotation(item.visualKind, index)} ${item.area.x} ${item.area.y})`}
+          >
+            <ellipse
+              cx={item.area.x}
+              cy={item.area.y}
+              rx={radius}
+              ry={Math.max(model.canvas.tileSize * 0.12, radius * 0.44)}
+            >
+              <title>{label}</title>
+            </ellipse>
+          </g>
+        )
+      })}
+    </g>
+  )
 }
 
 function renderFormalWorldObject(
@@ -396,6 +443,33 @@ function getStyleTokenClassName(
   if (styleToken === "caretaking") return styles.formalStyleCaretaking
 
   return styles.formalStyleNeutral
+}
+
+function getTraceVisualClassName(visualKind: TraceVisualKind): string {
+  if (visualKind === "flattened_grass") return styles.formalTraceFlattenedGrass
+  if (visualKind === "exposed_soil") return styles.formalTraceExposedSoil
+  if (visualKind === "worn_ground") return styles.formalTraceWornGround
+  if (visualKind === "moss") return styles.formalTraceMoss
+  if (visualKind === "mushroom") return styles.formalTraceMushroom
+  if (visualKind === "repaired_ground") return styles.formalTraceRepairedGround
+  if (visualKind === "maintained_area") return styles.formalTraceMaintainedArea
+  if (visualKind === "faded_area") return styles.formalTraceFadedArea
+  if (visualKind === "waiting_spot") return styles.formalTraceWaitingSpot
+  if (visualKind === "comfort_spot") return styles.formalTraceComfortSpot
+  if (visualKind === "attention_glow") return styles.formalTraceAttentionGlow
+
+  return styles.formalTraceUnknown
+}
+
+function getTraceVisualRotation(
+  visualKind: TraceVisualKind,
+  index: number
+): number {
+  if (visualKind === "attention_glow") return 0
+  if (visualKind === "comfort_spot") return 0
+  if (visualKind === "mushroom") return 0
+
+  return (index % 6) * 11 - 26
 }
 
 function getMoodClassName(mood: FormalVisualModel["canvas"]["mood"]): string {
