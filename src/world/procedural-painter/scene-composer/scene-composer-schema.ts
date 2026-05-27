@@ -61,9 +61,33 @@ export type SceneComposerFact = {
 /** @deprecated The visual tile name is retained for renderer compatibility. */
 export type SceneTileKind = "grass" | "path" | "edge";
 
-export type SceneObjectKind = "tree" | "bush" | "stone" | "flower" | "actor";
+export type SceneObjectKind =
+  | "tree"
+  | "bush"
+  | "stone"
+  | "flower"
+  | "mushroom"
+  | "insect_signal"
+  | "actor";
 
 export type SceneObjectLayer = "back" | "middle" | "front";
+
+export type SceneObjectEcologyRole =
+  | "canopy"
+  | "understory"
+  | "ground_cover"
+  | "stone_anchor"
+  | "flower_patch"
+  | "fungi"
+  | "micro_life"
+  | "placeholder";
+
+export type SceneObjectGrowthStage =
+  | "sprout"
+  | "young"
+  | "mature"
+  | "old"
+  | "declining";
 
 export type ScenePalette = {
   bg: string;
@@ -98,6 +122,9 @@ export type ScenePalette = {
   stone: string;
   stoneLight: string;
   flower: string;
+  mushroomCap: string;
+  mushroomStem: string;
+  insectSignal: string;
   actorDark: string;
   actor: string;
 };
@@ -172,6 +199,12 @@ export type SceneObject = {
   layer: SceneObjectLayer;
   health?: number;
   age?: number;
+  ecologyRole?: SceneObjectEcologyRole;
+  moistureAffinity?: number;
+  traceSensitivity?: number;
+  ecologyHealth?: number;
+  growthStage?: SceneObjectGrowthStage;
+  stressLevel?: number;
 };
 
 export type SceneCompositionSummary = {
@@ -204,6 +237,13 @@ export type SceneCompositionSummary = {
   bushes: number;
   stones: number;
   flowers: number;
+  mushrooms: number;
+  insectSignals: number;
+  healthyTrees: number;
+  stressedTrees: number;
+  matureTrees: number;
+  decliningObjects: number;
+  ecologyObjects: number;
 };
 
 export type SceneCompositionPlan = {

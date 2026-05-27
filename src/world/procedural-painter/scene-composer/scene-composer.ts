@@ -89,6 +89,8 @@ export function composeScene(fact: SceneComposerFact): SceneCompositionPlan {
   const recoveryGrowthTiles = tiles.filter(
     (tile) => tile.visualKind === "recovery_growth"
   ).length;
+  const trees = objects.filter((object) => object.kind === "tree");
+  const ecologyObjects = objects.filter((object) => object.kind !== "actor");
 
   return {
     width: SCENE_WIDTH,
@@ -131,10 +133,23 @@ export function composeScene(fact: SceneComposerFact): SceneCompositionPlan {
       ecologyTransitionTiles,
       recoveryGrowthTiles,
       grassTufts: grassTufts.length,
-      trees: objects.filter((object) => object.kind === "tree").length,
+      trees: trees.length,
       bushes: objects.filter((object) => object.kind === "bush").length,
       stones: objects.filter((object) => object.kind === "stone").length,
       flowers: objects.filter((object) => object.kind === "flower").length,
+      mushrooms: objects.filter((object) => object.kind === "mushroom").length,
+      insectSignals: objects.filter((object) => object.kind === "insect_signal")
+        .length,
+      healthyTrees: trees.filter((object) => (object.health ?? 0) >= 72).length,
+      stressedTrees: trees.filter((object) => (object.stressLevel ?? 0) >= 55)
+        .length,
+      matureTrees: trees.filter((object) => object.growthStage === "mature")
+        .length,
+      decliningObjects: ecologyObjects.filter(
+        (object) =>
+          object.growthStage === "declining" || (object.stressLevel ?? 0) >= 72
+      ).length,
+      ecologyObjects: ecologyObjects.length,
     },
   };
 }

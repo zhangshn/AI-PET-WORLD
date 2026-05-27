@@ -41,6 +41,9 @@ export function buildScenePalette(
       stone: "#6a6245",
       stoneLight: "#9a8f62",
       flower: "#e9d783",
+      mushroomCap: dry ? "#9d6a4f" : "#b68168",
+      mushroomStem: dry ? "#c7b27b" : "#d5cda2",
+      insectSignal: wet ? "#d8f0a6" : "#f0d77f",
       actorDark: "#604131",
       actor: "#a87b54",
     };
@@ -80,6 +83,9 @@ export function buildScenePalette(
       stone: "#48665d",
       stoneLight: "#78a090",
       flower: "#f48be5",
+      mushroomCap: dry ? "#a87072" : "#d58aa0",
+      mushroomStem: dry ? "#c9bf92" : "#e0dcbc",
+      insectSignal: wet ? "#b9ffd2" : "#f0e58b",
       actorDark: "#426a5c",
       actor: "#95c7b0",
     };
@@ -118,6 +124,9 @@ export function buildScenePalette(
     stone: "#536354",
     stoneLight: "#81927d",
     flower: biome === "grassland" ? "#f5f0a8" : "#e8f0db",
+    mushroomCap: dry ? "#9a6650" : wet ? "#bd7785" : "#ad735f",
+    mushroomStem: dry ? "#c2af78" : wet ? "#d8d1a9" : "#d0c08f",
+    insectSignal: wet ? "#bdf7a0" : biome === "grassland" ? "#fff18c" : "#d9ed8f",
     actorDark: "#6c4930",
     actor: "#b89260",
   };

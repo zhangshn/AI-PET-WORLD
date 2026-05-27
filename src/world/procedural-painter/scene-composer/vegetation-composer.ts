@@ -84,7 +84,10 @@ export function buildSceneGrassTufts(
             heightFactor
         )
       ),
-      light: anchor.roll > 0.56 - moistureRate * 0.18,
+      light:
+        ecologyInfluence >= 44
+          ? anchor.roll > 0.46 - moistureRate * 0.16
+          : anchor.roll > 0.56 - moistureRate * 0.18,
       layer:
         anchor.y > 292 ? "front" : anchor.roll > 0.65 ? "middle" : "back",
     });
@@ -130,7 +133,10 @@ export function buildSceneGrassTufts(
               heightFactor
           )
         ),
-        light: anchor.roll > 0.48 - moistureRate * 0.16,
+        light:
+          ecologyInfluence >= 44
+            ? anchor.roll > 0.4 - moistureRate * 0.14
+            : anchor.roll > 0.48 - moistureRate * 0.16,
         layer: anchor.y > 292 ? "front" : "middle",
       });
     }

@@ -137,6 +137,13 @@ export default function PixelSceneComposerClient() {
               <DebugRow label="bushes" value={plan.summary.bushes} />
               <DebugRow label="stones" value={plan.summary.stones} />
               <DebugRow label="flowers" value={plan.summary.flowers} />
+              <DebugRow label="mushrooms" value={plan.summary.mushrooms} />
+              <DebugRow label="insect signals" value={plan.summary.insectSignals} />
+              <DebugRow label="healthy trees" value={plan.summary.healthyTrees} />
+              <DebugRow label="stressed trees" value={plan.summary.stressedTrees} />
+              <DebugRow label="mature trees" value={plan.summary.matureTrees} />
+              <DebugRow label="declining objects" value={plan.summary.decliningObjects} />
+              <DebugRow label="ecology objects" value={plan.summary.ecologyObjects} />
             </dl>
           </article>
         </section>

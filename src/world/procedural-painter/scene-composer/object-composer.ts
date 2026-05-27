@@ -2,6 +2,17 @@ import {
   SCENE_HEIGHT,
   SCENE_WIDTH,
 } from "./scene-composer-constants";
+import {
+  resolveBushEcologyProfile,
+  resolveFlowerEcologyProfile,
+  resolveObjectEcologyRole,
+  resolveStoneEcologyProfile,
+  resolveTreeEcologyProfile,
+  shouldSpawnInsectSignal,
+  shouldSpawnMushroom,
+  type EcologyRuleInput,
+  type EcologyObjectProfile,
+} from "./ecology-object-rules";
 import { buildRoadsideObjectAnchors } from "./road-composer";
 import { clamp, stableUnit } from "./scene-composer-random";
 import { findSceneTileAt } from "./terrain-composer";
@@ -12,6 +23,7 @@ import type {
   SceneComposerBiome,
   SceneComposerFact,
   SceneObject,
+  SceneObjectKind,
   SceneObjectLayer,
   SceneTile,
 } from "./scene-composer-schema";
@@ -61,16 +73,18 @@ export function buildSceneObjects(
     const tile = findSceneTileAt(tiles, anchor.x, anchor.y);
     const movementInfluence =
       traceField?.movementInfluenceAt(anchor.x, anchor.y) ?? 0;
+    const ecologyInput = buildEcologyRuleInput(fact, anchor, traceField);
+    const profile = resolveTreeEcologyProfile(ecologyInput);
     if (!tile || tile.kind !== "grass") {
       return;
     }
 
-    if (movementInfluence >= 82) {
+    if (movementInfluence >= 82 || anchor.rank > includeRate + profile.ecologyHealth * 0.002) {
       traceAvoidedGeneratedObjects += 1;
       return;
     }
 
-    objects.push(buildTreeFromAnchor(anchor, fact));
+    objects.push(buildTreeFromAnchor(anchor, profile));
   });
 
   buildSceneAnchors(
@@ -88,7 +102,10 @@ export function buildSceneObjects(
       traceField?.spatialUseInfluenceAt(anchor.x, anchor.y) ?? 0;
     const ecologyInfluence = traceField?.ecologyInfluenceAt(anchor.x, anchor.y) ?? 0;
     const weightedIncludeRate = clamp(
-      includeRate - spatialUseInfluence * 0.001 - ecologyInfluence * 0.0006,
+      includeRate +
+        ecologyInfluence * 0.0022 -
+        spatialUseInfluence * 0.0014 -
+        movementInfluence * 0.0028,
       0,
       1
     );
@@ -101,7 +118,14 @@ export function buildSceneObjects(
       return;
     }
 
-    objects.push(buildSmallObjectFromAnchor(anchor, fact, false));
+    objects.push(
+      buildSmallObjectFromAnchor(
+        anchor,
+        fact,
+        buildEcologyRuleInput(fact, anchor, traceField),
+        false
+      )
+    );
   });
 
   buildRoadsideObjectAnchors(pathSamples, `${layoutSeed}:roadside-decor`).forEach(
@@ -111,8 +135,13 @@ export function buildSceneObjects(
         traceField?.movementInfluenceAt(anchor.x, anchor.y) ?? 0;
       const spatialUseInfluence =
         traceField?.spatialUseInfluenceAt(anchor.x, anchor.y) ?? 0;
+      const ecologyInfluence =
+        traceField?.ecologyInfluenceAt(anchor.x, anchor.y) ?? 0;
       const weightedIncludeRate = clamp(
-        includeRate - spatialUseInfluence * 0.001,
+        includeRate +
+          ecologyInfluence * 0.0016 -
+          spatialUseInfluence * 0.001 -
+          movementInfluence * 0.002,
         0,
         1
       );
@@ -125,9 +154,60 @@ export function buildSceneObjects(
         return;
       }
 
-      objects.push(buildSmallObjectFromAnchor(anchor, fact, true));
+      objects.push(
+        buildSmallObjectFromAnchor(
+          anchor,
+          fact,
+          buildEcologyRuleInput(fact, anchor, traceField),
+          true
+        )
+      );
     }
   );
+
+  buildSceneAnchors(
+    `${layoutSeed}:micro-ecology`,
+    fact.biome === "desert" ? 8 : 24,
+    24,
+    SCENE_WIDTH - 24,
+    112,
+    SCENE_HEIGHT - 28
+  ).forEach((anchor) => {
+    const tile = findSceneTileAt(tiles, anchor.x, anchor.y);
+    if (!tile || tile.kind === "path") {
+      return;
+    }
+
+    const ecologyInput = buildEcologyRuleInput(fact, anchor, traceField, objects);
+
+    if (shouldSpawnInsectSignal(ecologyInput)) {
+      const profile = resolveInsectSignalProfile(ecologyInput);
+      objects.push({
+        id: `insect_signal_${anchor.id}`,
+        kind: "insect_signal",
+        x: anchor.x,
+        y: anchor.y - Math.round(8 + anchor.scaleRoll * 12),
+        scale: clamp(0.58 + anchor.scaleRoll * 0.34, 0.5, 0.95),
+        layer: "middle",
+        ...profileToObjectFields(profile),
+      });
+      return;
+    }
+
+    if (shouldSpawnMushroom(ecologyInput)) {
+      const profile = resolveMushroomProfile(ecologyInput);
+      objects.push({
+        id: `mushroom_${anchor.id}`,
+        kind: "mushroom",
+        x: anchor.x,
+        y: anchor.y,
+        scale: clamp(0.52 + anchor.scaleRoll * 0.42 + profile.scaleBias * 0.08, 0.46, 0.96),
+        layer: resolveSceneLayer(anchor.y),
+        ...profileToObjectFields(profile),
+      });
+      return;
+    }
+  });
 
   return {
     generatedObjects: objects,
@@ -186,58 +266,78 @@ export function resolveSceneLayer(y: number): SceneObjectLayer {
 
 function buildTreeFromAnchor(
   anchor: SceneAnchor,
-  fact: SceneComposerFact
+  profile: EcologyObjectProfile
 ): SceneObject {
   return {
     id: `permanent_tree_${anchor.id}`,
     kind: "tree",
     x: anchor.x,
     y: anchor.y,
-    scale: 0.76 + anchor.scaleRoll * 0.42,
+    scale: clamp((0.76 + anchor.scaleRoll * 0.42) * profile.scaleBias, 0.62, 1.28),
     layer: resolveSceneLayer(anchor.y),
-    health: clamp(Math.round(58 + fact.moisture * 0.36 + anchor.healthRoll * 22), 20, 100),
-    age: clamp(Math.round(22 + anchor.ageRoll * 88), 0, 120),
+    ...profileToObjectFields(profile),
   };
 }
 
 function buildSmallObjectFromAnchor(
   anchor: SceneAnchor,
   fact: SceneComposerFact,
+  ecologyInput: EcologyRuleInput,
   roadside: boolean
 ): SceneObject {
-  const bushChance = roadside ? 0.42 : fact.biome === "forest" ? 0.52 : 0.4;
-  const stoneChance = roadside ? 0.78 : 0.72;
+  const ecologyLift = ecologyInput.ecologyInfluence / 100;
+  const movementPressure = ecologyInput.movementInfluence / 100;
+  const bushChance = clamp(
+    (roadside ? 0.42 : fact.biome === "forest" ? 0.52 : 0.4) +
+      ecologyLift * 0.16 -
+      movementPressure * 0.18,
+    0.18,
+    0.68
+  );
+  const stoneChance = clamp(
+    (roadside ? 0.78 : 0.72) +
+      (fact.biome === "desert" ? 0.12 : 0) +
+      movementPressure * 0.08,
+    bushChance + 0.1,
+    0.88
+  );
   const layer = resolveSceneLayer(anchor.y);
 
   if (anchor.roll < bushChance) {
+    const profile = resolveBushEcologyProfile(ecologyInput);
     return {
       id: `${roadside ? "roadside" : "ambient"}_bush_${anchor.id}`,
       kind: "bush",
       x: anchor.x,
       y: anchor.y,
-      scale: 0.72 + anchor.scaleRoll * 0.45,
+      scale: clamp((0.72 + anchor.scaleRoll * 0.45) * profile.scaleBias, 0.54, 1.18),
       layer,
+      ...profileToObjectFields(profile),
     };
   }
 
   if (anchor.roll < stoneChance) {
+    const profile = resolveStoneEcologyProfile(ecologyInput);
     return {
       id: `${roadside ? "roadside" : "ambient"}_stone_${anchor.id}`,
       kind: "stone",
       x: anchor.x,
       y: anchor.y,
-      scale: 0.78 + anchor.scaleRoll * 0.36,
+      scale: clamp((0.78 + anchor.scaleRoll * 0.36) * profile.scaleBias, 0.66, 1.22),
       layer,
+      ...profileToObjectFields(profile),
     };
   }
 
+  const profile = resolveFlowerEcologyProfile(ecologyInput);
   return {
     id: `${roadside ? "roadside" : "ambient"}_flower_${anchor.id}`,
     kind: "flower",
     x: anchor.x,
     y: anchor.y,
-    scale: 0.72 + anchor.scaleRoll * 0.32,
+    scale: clamp((0.72 + anchor.scaleRoll * 0.32) * profile.scaleBias, 0.48, 1.08),
     layer,
+    ...profileToObjectFields(profile),
   };
 }
 
@@ -274,6 +374,88 @@ function resolveFactObjectAvoidanceRadius(kind: SceneObject["kind"]): number {
   if (kind === "bush") return 32
   if (kind === "stone") return 24
   if (kind === "flower") return 18
+  if (kind === "mushroom") return 14
+  if (kind === "insect_signal") return 12
 
   return 36
+}
+
+function buildEcologyRuleInput(
+  fact: SceneComposerFact,
+  anchor: SceneAnchor,
+  traceField?: SceneTraceInfluenceField,
+  existingObjects: SceneObject[] = []
+): EcologyRuleInput {
+  return {
+    biome: fact.biome,
+    moisture: fact.moisture,
+    anchor,
+    movementInfluence: traceField?.movementInfluenceAt(anchor.x, anchor.y) ?? 0,
+    spatialUseInfluence:
+      traceField?.spatialUseInfluenceAt(anchor.x, anchor.y) ?? 0,
+    ecologyInfluence: traceField?.ecologyInfluenceAt(anchor.x, anchor.y) ?? 0,
+    nearCanopy: hasNearbyObject(existingObjects, anchor, "tree", 82),
+    nearUnderstory: hasNearbyObject(existingObjects, anchor, "bush", 54),
+    nearFlowerPatch: hasNearbyObject(existingObjects, anchor, "flower", 48),
+  };
+}
+
+function profileToObjectFields(profile: EcologyObjectProfile): Pick<
+  SceneObject,
+  | "health"
+  | "age"
+  | "ecologyRole"
+  | "moistureAffinity"
+  | "traceSensitivity"
+  | "ecologyHealth"
+  | "growthStage"
+  | "stressLevel"
+> {
+  return {
+    health: profile.health,
+    age: profile.age,
+    ecologyRole: profile.ecologyRole,
+    moistureAffinity: profile.moistureAffinity,
+    traceSensitivity: profile.traceSensitivity,
+    ecologyHealth: profile.ecologyHealth,
+    growthStage: profile.growthStage,
+    stressLevel: profile.stressLevel,
+  };
+}
+
+function resolveMushroomProfile(input: EcologyRuleInput): EcologyObjectProfile {
+  const profile = resolveFlowerEcologyProfile(input);
+
+  return {
+    ...profile,
+    ecologyRole: resolveObjectEcologyRole("mushroom"),
+    growthStage: profile.growthStage === "old" ? "mature" : profile.growthStage,
+    traceSensitivity: 88,
+    scaleBias: clamp(0.82 + input.moisture * 0.003 + input.ecologyInfluence * 0.002, 0.62, 1.1),
+  };
+}
+
+function resolveInsectSignalProfile(input: EcologyRuleInput): EcologyObjectProfile {
+  const profile = resolveFlowerEcologyProfile(input);
+
+  return {
+    ...profile,
+    ecologyRole: resolveObjectEcologyRole("insect_signal"),
+    growthStage: "mature",
+    traceSensitivity: 94,
+    scaleBias: 1,
+  };
+}
+
+function hasNearbyObject(
+  objects: SceneObject[],
+  anchor: SceneAnchor,
+  kind: SceneObjectKind,
+  radius: number
+): boolean {
+  return objects.some(
+    (object) =>
+      object.kind === kind &&
+      Math.hypot(object.x - anchor.x, object.y - anchor.y) <= radius
+  );
 }

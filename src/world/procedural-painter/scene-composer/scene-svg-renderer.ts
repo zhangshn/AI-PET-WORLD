@@ -196,7 +196,11 @@ function renderGrassTuft(tuft: SceneGrassTuft, p: ScenePalette): string {
 }
 
 function renderObjectShadow(object: SceneObject, p: ScenePalette): string {
-  if (object.kind === "flower") {
+  if (
+    object.kind === "flower" ||
+    object.kind === "mushroom" ||
+    object.kind === "insect_signal"
+  ) {
     return "";
   }
 
@@ -210,29 +214,53 @@ function renderSceneObject(object: SceneObject, p: ScenePalette): string {
   if (object.kind === "bush") return renderBush(object, p);
   if (object.kind === "stone") return renderStone(object, p);
   if (object.kind === "flower") return renderFlower(object, p);
+  if (object.kind === "mushroom") return renderMushroom(object, p);
+  if (object.kind === "insect_signal") return renderInsectSignal(object, p);
 
   return renderActor(object, p);
 }
 
 function renderTree(object: SceneObject, p: ScenePalette): string {
-  const scale = object.scale;
-  const trunkWidth = Math.round((9 + (object.age ?? 40) * 0.04) * scale);
-  const trunkHeight = Math.round((45 + (object.age ?? 40) * 0.08) * scale);
+  const health = object.health ?? 80;
+  const stressLevel = object.stressLevel ?? 0;
+  const stageScale =
+    object.growthStage === "sprout"
+      ? 0.48
+      : object.growthStage === "young"
+        ? 0.72
+        : object.growthStage === "old"
+          ? 1.08
+          : object.growthStage === "declining"
+            ? 0.86
+            : 1;
+  const scale = object.scale * stageScale;
+  const trunkWidth = Math.round((8 + (object.age ?? 40) * 0.035) * scale);
+  const trunkHeight = Math.round((38 + (object.age ?? 40) * 0.075) * scale);
   const trunkX = Math.round(object.x - trunkWidth / 2);
   const trunkY = Math.round(object.y - trunkHeight);
   const crownY = trunkY - Math.round(36 * scale);
-  const crownScale = scale * (0.9 + (object.health ?? 80) * 0.002);
+  const crownScale = scale * (0.82 + health * 0.0022 - stressLevel * 0.0018);
+  const leafMain = health < 42 ? p.leafDark : p.leaf;
+  const leafHighlight = stressLevel > 62 || health < 46 ? p.leaf : p.leafLight;
+  const leafRows =
+    object.growthStage === "declining"
+      ? [3, 8, 14, 18, 14, 7]
+      : object.growthStage === "young"
+        ? [4, 10, 16, 18, 14, 6]
+        : [5, 13, 22, 28, 27, 20, 9];
 
   return [
     `<rect x="${trunkX}" y="${trunkY}" width="${trunkWidth}" height="${trunkHeight}" fill="${p.trunkDark}"/>`,
     `<rect x="${trunkX + Math.max(2, Math.round(trunkWidth * 0.28))}" y="${trunkY + 4}" width="${Math.max(4, Math.round(trunkWidth * 0.54))}" height="${trunkHeight - 6}" fill="${p.trunk}"/>`,
     `<rect x="${trunkX + trunkWidth - 4}" y="${trunkY + 12}" width="3" height="${Math.round(trunkHeight * 0.52)}" fill="${p.trunkLight}"/>`,
     renderLeafCluster(object.x + Math.round(20 * scale), crownY + Math.round(20 * scale), crownScale, p.leafDark, [4, 10, 18, 24, 25, 20, 11]),
-    renderLeafCluster(object.x - Math.round(8 * scale), crownY + Math.round(14 * scale), crownScale, p.leaf, [5, 13, 22, 28, 27, 20, 9]),
-    renderLeafCluster(object.x - Math.round(23 * scale), crownY + Math.round(21 * scale), crownScale * 0.78, p.leaf, [4, 10, 16, 20, 18, 10]),
-    renderLeafCluster(object.x - Math.round(12 * scale), crownY + Math.round(4 * scale), crownScale * 0.68, p.leafLight, [3, 7, 13, 15, 10, 4]),
+    renderLeafCluster(object.x - Math.round(8 * scale), crownY + Math.round(14 * scale), crownScale, leafMain, leafRows),
+    renderLeafCluster(object.x - Math.round(23 * scale), crownY + Math.round(21 * scale), crownScale * 0.78, leafMain, [4, 10, 16, 20, 18, 10]),
+    stressLevel > 66
+      ? ""
+      : renderLeafCluster(object.x - Math.round(12 * scale), crownY + Math.round(4 * scale), crownScale * 0.68, leafHighlight, [3, 7, 13, 15, 10, 4]),
     renderLeafCluster(object.x + Math.round(1 * scale), crownY + Math.round(40 * scale), crownScale * 0.86, p.leafUnder, [5, 14, 22, 24, 17, 8]),
-  ].join("\n");
+  ].filter(Boolean).join("\n");
 }
 
 function renderLeafCluster(
@@ -255,12 +283,20 @@ function renderLeafCluster(
 }
 
 function renderBush(object: SceneObject, p: ScenePalette): string {
-  const scale = object.scale;
+  const health = object.health ?? object.ecologyHealth ?? 72;
+  const stressLevel = object.stressLevel ?? 0;
+  const scale =
+    object.scale *
+    (object.growthStage === "declining" ? 0.82 : 0.92 + health * 0.0015);
+  const main = health < 42 ? p.bushDark : p.bush;
+  const light = stressLevel > 58 ? p.bush : p.bushLight;
   return [
     renderLeafCluster(object.x, object.y - Math.round(13 * scale), scale * 0.72, p.bushDark, [3, 7, 12, 13, 8, 3]),
-    renderLeafCluster(object.x - Math.round(11 * scale), object.y - Math.round(10 * scale), scale * 0.58, p.bush, [3, 8, 11, 8, 3]),
-    renderLeafCluster(object.x + Math.round(9 * scale), object.y - Math.round(11 * scale), scale * 0.56, p.bush, [3, 8, 10, 7, 3]),
-    `<rect x="${Math.round(object.x - 5 * scale)}" y="${Math.round(object.y - 24 * scale)}" width="6" height="3" fill="${p.bushLight}"/>`,
+    renderLeafCluster(object.x - Math.round(11 * scale), object.y - Math.round(10 * scale), scale * 0.58, main, [3, 8, 11, 8, 3]),
+    renderLeafCluster(object.x + Math.round(9 * scale), object.y - Math.round(11 * scale), scale * 0.56, main, [3, 8, 10, 7, 3]),
+    stressLevel > 70
+      ? ""
+      : `<rect x="${Math.round(object.x - 5 * scale)}" y="${Math.round(object.y - 24 * scale)}" width="6" height="3" fill="${light}"/>`,
   ].join("\n");
 }
 
@@ -269,20 +305,51 @@ function renderStone(object: SceneObject, p: ScenePalette): string {
   const height = Math.round(9 * object.scale);
   const x = Math.round(object.x - width / 2);
   const y = Math.round(object.y - height);
+  const stressLevel = object.stressLevel ?? 0;
   return [
     `<rect x="${x}" y="${y + 3}" width="${width}" height="${height}" fill="${p.stone}"/>`,
-    `<rect x="${x + 4}" y="${y}" width="${Math.max(5, width - 8)}" height="4" fill="${p.stoneLight}"/>`,
+    `<rect x="${x + 4}" y="${y}" width="${Math.max(5, width - 8)}" height="4" fill="${stressLevel > 50 ? p.soilLight : p.stoneLight}"/>`,
   ].join("\n");
 }
 
 function renderFlower(object: SceneObject, p: ScenePalette): string {
   const x = Math.round(object.x);
   const y = Math.round(object.y);
+  const health = object.health ?? object.ecologyHealth ?? 72;
+  const stressLevel = object.stressLevel ?? 0;
+  const bloomSize = stressLevel > 60 ? 2 : health > 72 ? 4 : 3;
+  const bloomColor = health > 72 ? p.insectSignal : p.flower;
   return [
     `<rect x="${x}" y="${y - 9}" width="3" height="9" fill="${p.grassDark}"/>`,
-    `<rect x="${x - 3}" y="${y - 12}" width="3" height="3" fill="${p.flower}"/>`,
-    `<rect x="${x + 3}" y="${y - 12}" width="3" height="3" fill="${p.flower}"/>`,
-    `<rect x="${x}" y="${y - 15}" width="3" height="3" fill="${p.flower}"/>`,
+    `<rect x="${x - bloomSize}" y="${y - 12}" width="${bloomSize}" height="${bloomSize}" fill="${bloomColor}"/>`,
+    `<rect x="${x + 3}" y="${y - 12}" width="${bloomSize}" height="${bloomSize}" fill="${bloomColor}"/>`,
+    `<rect x="${x}" y="${y - 15}" width="${bloomSize}" height="${bloomSize}" fill="${bloomColor}"/>`,
+  ].join("\n");
+}
+
+function renderMushroom(object: SceneObject, p: ScenePalette): string {
+  const x = Math.round(object.x);
+  const y = Math.round(object.y);
+  const scale = object.scale;
+  const capWidth = Math.max(5, Math.round(9 * scale));
+  const stemHeight = Math.max(4, Math.round(7 * scale));
+
+  return [
+    `<rect x="${x - Math.round(capWidth / 2)}" y="${y - stemHeight - 5}" width="${capWidth}" height="5" fill="${p.mushroomCap}"/>`,
+    `<rect x="${x - 2}" y="${y - stemHeight}" width="4" height="${stemHeight}" fill="${p.mushroomStem}"/>`,
+    `<rect x="${x + 1}" y="${y - stemHeight - 4}" width="2" height="2" fill="${p.soilLight}" opacity="0.55"/>`,
+  ].join("\n");
+}
+
+function renderInsectSignal(object: SceneObject, p: ScenePalette): string {
+  const x = Math.round(object.x);
+  const y = Math.round(object.y);
+  const opacity = 0.42 + ((object.ecologyHealth ?? 60) / 100) * 0.32;
+
+  return [
+    `<rect x="${x}" y="${y}" width="2" height="2" fill="${p.insectSignal}" opacity="${opacity}"/>`,
+    `<rect x="${x + 5}" y="${y - 3}" width="2" height="2" fill="${p.insectSignal}" opacity="${opacity * 0.82}"/>`,
+    `<rect x="${x - 4}" y="${y + 4}" width="2" height="2" fill="${p.insectSignal}" opacity="${opacity * 0.68}"/>`,
   ].join("\n");
 }
 
