@@ -49,8 +49,21 @@ export function buildSceneGrassTufts(
     SCENE_HEIGHT - 14
   ).forEach((anchor) => {
     const tile = findSceneTileAt(tiles, anchor.x, anchor.y);
-    const influence = traceField?.influenceAt(anchor.x, anchor.y) ?? 0;
-    const suppression = influence >= 68 ? 1 : influence >= 34 ? 0.46 : 0;
+    const movementInfluence = traceField?.movementInfluenceAt(anchor.x, anchor.y) ?? 0;
+    const spatialUseInfluence =
+      traceField?.spatialUseInfluenceAt(anchor.x, anchor.y) ?? 0;
+    const ecologyInfluence = traceField?.ecologyInfluenceAt(anchor.x, anchor.y) ?? 0;
+    const suppression = clamp(
+      movementInfluence * 0.012 + spatialUseInfluence * 0.003,
+      0,
+      0.92
+    );
+    const heightFactor = clamp(
+      1 - movementInfluence * 0.004 - spatialUseInfluence * 0.0015 +
+        ecologyInfluence * 0.001,
+      0.42,
+      1.16
+    );
     if (anchor.rank > includeRate || !tile || tile.kind === "path") {
       return;
     }
@@ -68,7 +81,7 @@ export function buildSceneGrassTufts(
         2,
         Math.round(
           (3 + anchor.scaleRoll * (4 + moistureRate * 10)) *
-            (influence >= 34 ? 0.66 : 1)
+            heightFactor
         )
       ),
       light: anchor.roll > 0.56 - moistureRate * 0.18,
@@ -80,8 +93,23 @@ export function buildSceneGrassTufts(
   buildRoadsideGrassAnchors(pathSamples, `${layoutSeed}:roadside-grass`).forEach(
     (anchor) => {
       const tile = findSceneTileAt(tiles, anchor.x, anchor.y);
-      const influence = traceField?.influenceAt(anchor.x, anchor.y) ?? 0;
-      const suppression = influence >= 78 ? 0.72 : influence >= 48 ? 0.3 : 0;
+      const movementInfluence =
+        traceField?.movementInfluenceAt(anchor.x, anchor.y) ?? 0;
+      const spatialUseInfluence =
+        traceField?.spatialUseInfluenceAt(anchor.x, anchor.y) ?? 0;
+      const ecologyInfluence =
+        traceField?.ecologyInfluenceAt(anchor.x, anchor.y) ?? 0;
+      const suppression = clamp(
+        movementInfluence * 0.008 + spatialUseInfluence * 0.002,
+        0,
+        0.7
+      );
+      const heightFactor = clamp(
+        1 - movementInfluence * 0.003 - spatialUseInfluence * 0.001 +
+          ecologyInfluence * 0.001,
+        0.48,
+        1.14
+      );
       if (anchor.rank > includeRate || !tile || tile.kind === "path") {
         return;
       }
@@ -99,7 +127,7 @@ export function buildSceneGrassTufts(
           2,
           Math.round(
             (3 + anchor.scaleRoll * (5 + moistureRate * 8)) *
-              (influence >= 48 ? 0.72 : 1)
+              heightFactor
           )
         ),
         light: anchor.roll > 0.48 - moistureRate * 0.16,

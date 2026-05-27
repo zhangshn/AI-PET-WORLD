@@ -15,6 +15,9 @@ import type {
 } from "./scene-composer-schema";
 
 export type SceneTraceInfluenceField = SceneTraceField & {
+  movementInfluenceAt: (x: number, y: number) => number;
+  spatialUseInfluenceAt: (x: number, y: number) => number;
+  ecologyInfluenceAt: (x: number, y: number) => number;
   influenceAt: (x: number, y: number) => number;
 };
 
@@ -26,48 +29,128 @@ export type BuildTraceSamplesInput = {
   traceFacts: SceneTraceFact[];
   worldSeed: string;
   biome: SceneComposerFact["biome"];
+  allowLegacyDebugFallback?: boolean;
 };
+
+export function filterMovementTraceFacts(
+  traceFacts: SceneTraceFact[]
+): SceneTraceFact[] {
+  return traceFacts.filter((traceFact) => traceFact.kind === "movement");
+}
+
+export function filterEcologyTraceFacts(
+  traceFacts: SceneTraceFact[]
+): SceneTraceFact[] {
+  return traceFacts.filter((traceFact) => traceFact.kind === "ecology");
+}
+
+export function filterSpatialUseTraceFacts(
+  traceFacts: SceneTraceFact[]
+): SceneTraceFact[] {
+  return traceFacts.filter((traceFact) => traceFact.kind === "spatial_use");
+}
 
 export function buildTraceSamples(
   input: BuildTraceSamplesInput
 ): SceneTraceSample[] {
-  if (input.traceFacts.length > 0) {
-    return buildTraceFactSamples(input);
+  const movementFacts = filterMovementTraceFacts(input.traceFacts);
+
+  if (movementFacts.length > 0) {
+    return buildTraceFactSamples({
+      ...input,
+      traceFacts: movementFacts,
+    });
   }
 
-  // Deprecated compatibility fallback: this reuses the legacy visual sample
-  // builder only when no formal trace facts are available.
-  return buildRoadSamples({
-    id: "trace_fallback",
-    biome: input.biome,
-    moisture: 50,
-    decorationDensity: input.traceDensity,
-    traceShape: input.traceShape,
-    traceDensity: input.traceDensity,
-    worldSeed: input.worldSeed,
-    hasTraceFact: input.traceDensity > 0,
-    traceFacts: [],
-    roadShape: input.traceShape,
-  });
+  if (input.allowLegacyDebugFallback) {
+    // Deprecated compatibility fallback: this reuses the legacy visual sample
+    // builder only for explicit debug compatibility, never for formal /world.
+    return buildRoadSamples({
+      id: "trace_legacy_debug_fallback",
+      biome: input.biome,
+      moisture: 50,
+      decorationDensity: input.traceDensity,
+      traceShape: input.traceShape,
+      traceDensity: input.traceDensity,
+      worldSeed: input.worldSeed,
+      hasTraceFact: false,
+      traceFacts: [],
+      roadShape: input.traceShape,
+    });
+  }
+
+  return [];
 }
 
 export function buildTraceInfluenceField(
   input: BuildTraceSamplesInput
 ): SceneTraceInfluenceField {
   const samples = buildTraceSamples(input);
-  const influences = buildTileInfluences(input, samples);
+  const movementFacts = filterMovementTraceFacts(input.traceFacts);
+  const spatialUseFacts = filterSpatialUseTraceFacts(input.traceFacts);
+  const ecologyFacts = filterEcologyTraceFacts(input.traceFacts);
+  const worldFacts = input.traceFacts.filter((traceFact) => traceFact.kind === "world");
+  const movementInfluences = buildTileInfluences((x, y) =>
+    resolveFactsInfluenceAt(input, movementFacts, x, y)
+  );
+  const spatialUseInfluences = buildTileInfluences((x, y) =>
+    resolveFactsInfluenceAt(input, spatialUseFacts, x, y)
+  );
+  const ecologyInfluences = buildTileInfluences((x, y) =>
+    resolveFactsInfluenceAt(input, ecologyFacts, x, y)
+  );
+  const combinedInfluences = buildTileInfluences((x, y) =>
+    resolveCombinedInfluenceAt({
+      input,
+      movementFacts,
+      spatialUseFacts,
+      ecologyFacts,
+      worldFacts,
+      x,
+      y,
+    })
+  );
 
   return {
     kind: "movement",
     traceShape: input.traceShape,
     traceDensity: input.traceDensity,
-    hasTraceFact: input.traceFacts.length > 0 || input.traceDensity > 0,
+    hasTraceFact: input.traceFacts.length > 0,
     facts: input.traceFacts,
     samples,
-    averageInfluence: average(influences),
-    maxInfluence: influences.length > 0 ? Math.max(...influences) : 0,
-    influencedTiles: influences.filter((influence) => influence >= 24).length,
-    influenceAt: (x, y) => resolveInfluenceAt(input, samples, x, y),
+    averageInfluence: average(combinedInfluences),
+    maxInfluence:
+      combinedInfluences.length > 0 ? Math.max(...combinedInfluences) : 0,
+    influencedTiles: combinedInfluences.filter((influence) => influence >= 24)
+      .length,
+    movementInfluencedTiles: movementInfluences.filter(
+      (influence) => influence >= 24
+    ).length,
+    spatialUseInfluencedTiles: spatialUseInfluences.filter(
+      (influence) => influence >= 24
+    ).length,
+    ecologyInfluencedTiles: ecologyInfluences.filter(
+      (influence) => influence >= 24
+    ).length,
+    averageMovementInfluence: average(movementInfluences),
+    averageEcologyInfluence: average(ecologyInfluences),
+    averageSpatialUseInfluence: average(spatialUseInfluences),
+    movementInfluenceAt: (x, y) =>
+      resolveFactsInfluenceAt(input, movementFacts, x, y),
+    spatialUseInfluenceAt: (x, y) =>
+      resolveFactsInfluenceAt(input, spatialUseFacts, x, y),
+    ecologyInfluenceAt: (x, y) =>
+      resolveFactsInfluenceAt(input, ecologyFacts, x, y),
+    influenceAt: (x, y) =>
+      resolveCombinedInfluenceAt({
+        input,
+        movementFacts,
+        spatialUseFacts,
+        ecologyFacts,
+        worldFacts,
+        x,
+        y,
+      }),
   };
 }
 
@@ -176,23 +259,20 @@ function resolveSampleHalfWidth(input: BuildTraceSamplesInput, x: number): numbe
         ? 0
         : ((radius - distanceX) / radius) * traceFact.strength;
     return Math.max(strength, localStrength);
-  }, input.traceFacts.length > 0 ? 0 : input.traceDensity);
+  }, 0);
 
   return clamp(Math.round(18 + maxInfluence * 0.22), 18, 46);
 }
 
 function buildTileInfluences(
-  input: BuildTraceSamplesInput,
-  samples: SceneTraceSample[]
+  influenceAt: (x: number, y: number) => number
 ): number[] {
   const influences: number[] = [];
 
   for (let row = 0; row < SCENE_ROWS; row += 1) {
     for (let column = 0; column < SCENE_COLUMNS; column += 1) {
       influences.push(
-        resolveInfluenceAt(
-          input,
-          samples,
+        influenceAt(
           column * SCENE_TILE_SIZE + SCENE_TILE_SIZE / 2,
           row * SCENE_TILE_SIZE + SCENE_TILE_SIZE / 2
         )
@@ -203,45 +283,79 @@ function buildTileInfluences(
   return influences;
 }
 
-function resolveInfluenceAt(
+function resolveCombinedInfluenceAt(input: {
+  input: BuildTraceSamplesInput;
+  movementFacts: SceneTraceFact[];
+  spatialUseFacts: SceneTraceFact[];
+  ecologyFacts: SceneTraceFact[];
+  worldFacts: SceneTraceFact[];
+  x: number;
+  y: number;
+}): number {
+  const movementInfluence = resolveFactsInfluenceAt(
+    input.input,
+    input.movementFacts,
+    input.x,
+    input.y
+  );
+  const spatialUseInfluence = resolveFactsInfluenceAt(
+    input.input,
+    input.spatialUseFacts,
+    input.x,
+    input.y
+  );
+  const ecologyInfluence = resolveFactsInfluenceAt(
+    input.input,
+    input.ecologyFacts,
+    input.x,
+    input.y
+  );
+  const worldInfluence = resolveFactsInfluenceAt(
+    input.input,
+    input.worldFacts,
+    input.x,
+    input.y
+  );
+
+  return clamp(
+    Math.round(
+      Math.max(
+        movementInfluence,
+        spatialUseInfluence * 0.58,
+        ecologyInfluence * 0.52,
+        worldInfluence * 0.36
+      )
+    ),
+    0,
+    100
+  );
+}
+
+function resolveFactsInfluenceAt(
   input: BuildTraceSamplesInput,
-  samples: SceneTraceSample[],
+  traceFacts: SceneTraceFact[],
   x: number,
   y: number
 ): number {
-  if (input.traceFacts.length > 0) {
-    return clamp(
-      Math.round(
-        input.traceFacts.reduce((strength, traceFact, index) => {
-          const point = resolveTraceFactPoint(input, traceFact, index);
-          const radius = resolveTraceFactRadius(input, traceFact, index);
-          const distance = Math.hypot(point.x - x, point.y - y);
-          if (distance > radius) {
-            return strength;
-          }
-
-          const localStrength =
-            traceFact.strength * Math.pow((radius - distance) / radius, 1.35);
-          return Math.max(strength, localStrength);
-        }, 0)
-      ),
-      0,
-      100
-    );
-  }
-
-  const column = clamp(Math.floor(x / SCENE_TILE_SIZE), 0, samples.length - 1);
-  const sample = samples[column];
-  if (!sample) {
+  if (traceFacts.length === 0) {
     return 0;
   }
 
-  const centerY = sample.center * SCENE_TILE_SIZE;
-  const distance = Math.abs(y - centerY);
-  const radius = clamp(28 + input.traceDensity * 0.24, 28, 56);
-
   return clamp(
-    Math.round(input.traceDensity * Math.max(0, (radius - distance) / radius)),
+    Math.round(
+      traceFacts.reduce((strength, traceFact, index) => {
+        const point = resolveTraceFactPoint(input, traceFact, index);
+        const radius = resolveTraceFactRadius(input, traceFact, index);
+        const distance = Math.hypot(point.x - x, point.y - y);
+        if (distance > radius) {
+          return strength;
+        }
+
+        const localStrength =
+          traceFact.strength * Math.pow((radius - distance) / radius, 1.35);
+        return Math.max(strength, localStrength);
+      }, 0)
+    ),
     0,
     100
   );

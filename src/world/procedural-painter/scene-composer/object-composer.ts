@@ -59,12 +59,13 @@ export function buildSceneObjects(
     SCENE_HEIGHT - 48
   ).forEach((anchor) => {
     const tile = findSceneTileAt(tiles, anchor.x, anchor.y);
-    const influence = traceField?.influenceAt(anchor.x, anchor.y) ?? 0;
+    const movementInfluence =
+      traceField?.movementInfluenceAt(anchor.x, anchor.y) ?? 0;
     if (!tile || tile.kind !== "grass") {
       return;
     }
 
-    if (influence >= 78) {
+    if (movementInfluence >= 82) {
       traceAvoidedGeneratedObjects += 1;
       return;
     }
@@ -81,12 +82,21 @@ export function buildSceneObjects(
     SCENE_HEIGHT - 42
   ).forEach((anchor) => {
     const tile = findSceneTileAt(tiles, anchor.x, anchor.y);
-    const influence = traceField?.influenceAt(anchor.x, anchor.y) ?? 0;
-    if (anchor.rank > includeRate || !tile || tile.kind !== "grass") {
+    const movementInfluence =
+      traceField?.movementInfluenceAt(anchor.x, anchor.y) ?? 0;
+    const spatialUseInfluence =
+      traceField?.spatialUseInfluenceAt(anchor.x, anchor.y) ?? 0;
+    const ecologyInfluence = traceField?.ecologyInfluenceAt(anchor.x, anchor.y) ?? 0;
+    const weightedIncludeRate = clamp(
+      includeRate - spatialUseInfluence * 0.001 - ecologyInfluence * 0.0006,
+      0,
+      1
+    );
+    if (anchor.rank > weightedIncludeRate || !tile || tile.kind !== "grass") {
       return;
     }
 
-    if (influence >= 64) {
+    if (movementInfluence >= 72) {
       traceAvoidedGeneratedObjects += 1;
       return;
     }
@@ -97,12 +107,20 @@ export function buildSceneObjects(
   buildRoadsideObjectAnchors(pathSamples, `${layoutSeed}:roadside-decor`).forEach(
     (anchor) => {
       const tile = findSceneTileAt(tiles, anchor.x, anchor.y);
-      const influence = traceField?.influenceAt(anchor.x, anchor.y) ?? 0;
-      if (anchor.rank > includeRate || !tile || tile.kind === "path") {
+      const movementInfluence =
+        traceField?.movementInfluenceAt(anchor.x, anchor.y) ?? 0;
+      const spatialUseInfluence =
+        traceField?.spatialUseInfluenceAt(anchor.x, anchor.y) ?? 0;
+      const weightedIncludeRate = clamp(
+        includeRate - spatialUseInfluence * 0.001,
+        0,
+        1
+      );
+      if (anchor.rank > weightedIncludeRate || !tile || tile.kind === "path") {
         return;
       }
 
-      if (influence >= 74) {
+      if (movementInfluence >= 78) {
         traceAvoidedGeneratedObjects += 1;
         return;
       }

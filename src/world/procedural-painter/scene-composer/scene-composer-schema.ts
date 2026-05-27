@@ -32,6 +32,12 @@ export type SceneTraceField = {
   averageInfluence?: number;
   maxInfluence?: number;
   influencedTiles?: number;
+  movementInfluencedTiles?: number;
+  spatialUseInfluencedTiles?: number;
+  ecologyInfluencedTiles?: number;
+  averageMovementInfluence?: number;
+  averageEcologyInfluence?: number;
+  averageSpatialUseInfluence?: number;
 };
 
 export type SceneComposerFact = {
@@ -146,6 +152,9 @@ export type SceneCompositionSummary = {
    */
   edgeTiles: number;
   traceInfluencedTiles: number;
+  movementInfluencedTiles: number;
+  spatialUseInfluencedTiles: number;
+  ecologyInfluencedTiles: number;
   traceSuppressedGrassTufts: number;
   traceAvoidedGeneratedObjects: number;
   grassTufts: number;

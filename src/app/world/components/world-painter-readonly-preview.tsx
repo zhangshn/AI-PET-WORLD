@@ -10,10 +10,10 @@ export function WorldPainterReadonlyPreview(input: {
 }) {
   const sceneFact = input.adapterResult.sceneFact
   const summary = input.adapterResult.sourceSummary
-  const hasMovementTracePlacements = summary.movementTracePlacements > 0
-  const traceShapeValue = hasMovementTracePlacements
+  const hasMovementTraceFacts = sceneFact.hasTraceFact !== false && summary.movementTraces > 0
+  const traceShapeValue = hasMovementTraceFacts
     ? String(sceneFact.traceShape)
-    : "none"
+    : "inactive"
 
   return (
     <section className={styles.worldPainterPanel} aria-label="Pixel World View fact-bound candidate">

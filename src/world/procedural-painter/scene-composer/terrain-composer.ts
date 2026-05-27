@@ -25,23 +25,32 @@ export function buildSceneTiles(
     for (let column = 0; column < SCENE_COLUMNS; column += 1) {
       const tileCenterX = column * SCENE_TILE_SIZE + SCENE_TILE_SIZE / 2;
       const tileCenterY = row * SCENE_TILE_SIZE + SCENE_TILE_SIZE / 2;
-      const influence = traceField?.influenceAt(tileCenterX, tileCenterY) ?? 0;
-      const center = traceSamples[column]?.center ?? 0;
-      const fallbackDistance = Math.abs(row - center);
+      const movementInfluence =
+        traceField?.movementInfluenceAt(tileCenterX, tileCenterY) ?? 0;
+      const spatialUseInfluence =
+        traceField?.spatialUseInfluenceAt(tileCenterX, tileCenterY) ?? 0;
+      const ecologyInfluence =
+        traceField?.ecologyInfluenceAt(tileCenterX, tileCenterY) ?? 0;
+      const ecologyTransitionInfluence = Math.max(
+        movementInfluence >= 24 && movementInfluence < 52 ? movementInfluence : 0,
+        ecologyInfluence * 0.58,
+        spatialUseInfluence * 0.42
+      );
       const kind: SceneTileKind = !hasTraceFact
         ? "grass"
-        : influence >= 52 || fallbackDistance <= 0.9
+        : movementInfluence >= 52
           // "path" is deprecated renderer compatibility for long-used area tile.
           ? "path"
-          : influence >= 24 || fallbackDistance <= 1.75
+          : ecologyTransitionInfluence >= 34
             // "edge" is deprecated renderer compatibility for trace edge / ecology transition tile.
             ? "edge"
             : "grass";
       const variant = Math.floor(
         stableUnit(`${layoutSeed}:tile:${column}:${row}`) * 4
       );
+      const transitionCenter = traceSamples[column]?.center ?? SCENE_ROWS / 2;
       const edgeMask =
-        kind === "edge" ? (row < center ? "top" : "bottom") : undefined;
+        kind === "edge" ? (row < transitionCenter ? "top" : "bottom") : undefined;
 
       tiles.push({
         id: `tile_${column}_${row}`,
