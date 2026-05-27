@@ -68,8 +68,8 @@ async function main() {
     "ButlerMemoryBiasSurface does not read decision trace context."
   )
   assert(
-    componentSource.includes("not direct orders") ||
-      componentSource.includes("hints only"),
+    componentSource.includes("不是直接命令") ||
+      componentSource.includes("只是提示"),
     "ButlerMemoryBiasSurface does not explain memory bias as non-direct action."
   )
 
