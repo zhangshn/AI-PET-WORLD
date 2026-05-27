@@ -1,6 +1,5 @@
 import { ButlerMemoryBiasSurface } from "@/app/world/components/butler-memory-bias-surface"
 import { ButlerNaturalExplanation } from "@/app/world/components/butler-natural-explanation"
-import { FormalWorldView } from "@/app/world/components/formal-world-view"
 import { FormalTraceSurfaceSummary } from "@/app/world/components/formal-trace-surface-summary"
 import { WorldPainterReadonlyPreview } from "@/app/world/components/world-painter-readonly-preview"
 import { buildFormalVisualModelFromSnapshot } from "@/world/formal-visual-model/formal-visual-model-gateway"
@@ -37,8 +36,8 @@ export async function WorldLiveRuntimePage() {
         <div className={styles.eyebrow}>AI-PET-WORLD / 世界观察</div>
         <h1 className={styles.title}>当前家园</h1>
         <p className={styles.description}>
-          这里读取已经保存的家园状态和正式视觉投影。页面只负责观察，
-          不推进世界时间，也不写入新的世界事实。
+          这里读取已经保存的家园状态、生态事实和痕迹投影。主画面来自事实绑定的像素世界，
+          页面只负责观察，不推进世界时间，也不写入新的世界事实。
         </p>
 
         <div className={styles.statusStrip}>
@@ -63,17 +62,10 @@ export async function WorldLiveRuntimePage() {
         </div>
       </section>
 
-      <section className={styles.formalWorldPanel} aria-label="家园正式视图">
-        <div className={styles.formalWorldPanelHeader}>
-          <div className={styles.eyebrow}>正式家园视图</div>
-          <h2>当前保存的世界画面</h2>
-          <p>
-            画面来自已保存 HomeMapState 的正式投影。它只展示世界状态，
-            不创建物件，也不生成新的世界事实。
-          </p>
-        </div>
-        <FormalWorldView model={formalVisualModel} presentationMode="product" />
-      </section>
+      <WorldPainterReadonlyPreview
+        adapterResult={worldPainterAdapterResult}
+        sceneSvg={worldPainterSceneSvg}
+      />
 
       <section className={styles.contentGrid} aria-label="家园第一层理解">
         <ButlerNaturalExplanation saveRecord={saveRecord} />
@@ -149,20 +141,7 @@ export async function WorldLiveRuntimePage() {
           </div>
           <p>{lastEvent?.body ?? "世界正在等待下一次显式 Tick。"}</p>
         </article>
-
-        <article className={styles.panel}>
-          <h2>只读画面预览</h2>
-          <p>
-            下面的画面来自只读 painter 预览，用于对照正式家园视图。
-            它不会创建物件，也不会推进世界。
-          </p>
-        </article>
       </section>
-
-      <WorldPainterReadonlyPreview
-        adapterResult={worldPainterAdapterResult}
-        sceneSvg={worldPainterSceneSvg}
-      />
     </main>
   )
 }
