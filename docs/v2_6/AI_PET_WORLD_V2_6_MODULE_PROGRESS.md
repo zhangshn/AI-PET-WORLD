@@ -12,7 +12,7 @@
 | M6 生态对象规则深化 | 100% | 完成 | 生态对象规则主体已通过 lint / tsc / build 间接验收 |
 | M6.5 legacy 命名清理 | 100% | 完成 | legacy road/path 业务口径已降级为兼容命名，正式文档与正式链路不再使用 |
 | WORLD-PIXEL-RULE-MAPPER-00 | 100% | 完成 | 正式 `/world` 已接入 SpaceGrid / TraceField / HomeMapState / ButlerState → WorldViewModel → PixelWorldView；lint、tsc、build、pixel smoke 已通过；正式链路已无 Debug/SVG/Scene Composer 主链路残留 |
-| M7 管家行为 → 痕迹闭环 | 35% | 进行中 | v0 已接入：Butler decision → intent → world rule validation → trace closure → TraceField / MemorySeedField；lint、tsc、build、runtime smoke、trace-tick smoke、butler-trace-motivation smoke 已通过 |
+| M7 管家行为 → 痕迹闭环 | 55% | 进行中 | v0 已接入并补守卫：Butler decision → intent → world rule validation → trace closure → TraceField / MemorySeedField；closure smoke 已通过，确认不默认生成宠物、不绕过 SafeApply、不让 observe/wait 写 HomeMapState |
 | M8 管家记忆与学习 | 0% | 未开始 | 后置 |
 | M9 世界学习 v0 | 0% | 未开始 | 后置 |
 | M10 宠物学习预留 | 0% | 未开始 | 后置 |
@@ -21,7 +21,9 @@
 
 ## 当前路线
 
-WORLD-PIXEL-RULE-MAPPER-00 已完成并收口。M7 管家行为 → 痕迹闭环已经进入实现阶段，当前完成 v0：管家运行决策可以转成正式意图，经过世界规则验证后沉淀为 TraceFact，并进入 TraceField / MemorySeedField。下一步继续补 M7 守卫 smoke 与事件/审计表达。
+WORLD-PIXEL-RULE-MAPPER-00 已完成并收口。M7 管家行为 → 痕迹闭环已经进入中段：管家运行决策可以转成正式意图，经过世界规则验证后沉淀为 TraceFact，并进入 TraceField / MemorySeedField。当前新增 `smoke:butler-trace-closure` 用于守卫这条链路。
+
+下一步继续 M7 的事件与审计表达，让 `/world` 和 P-Phone 能更清楚地解释：管家为什么等待、为什么维护、为什么没有强行改写 HomeMapState，以及它留下了什么痕迹。
 
 ## WORLD-PIXEL-RULE-MAPPER-00 完成内容
 
@@ -61,7 +63,9 @@ ButlerState / runtime decision
 - `TraceField → TraceMemorySeedField`
 - `lastButlerRuntimeIntent` 持久化
 - `lastButlerWorldRuleValidation` 持久化
+- `smoke:butler-trace-closure` 已新增并通过
 - `observe_world / wait_for_resources` 不写 HomeMapState diff，但允许留下验证后的行为痕迹
 - `continue_construction / maintain_home` 仍必须通过 SafeApply 才能写 HomeMapState diff
+- 明确守卫 `no_pet_fact_created`，M7 不默认生成宠物
 
 M7 不负责改画图算法，不负责默认生成宠物，不负责世界学习。M7 只负责把管家的正式行为结果接入世界事实变化与痕迹沉淀。
