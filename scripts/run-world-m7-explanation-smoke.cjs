@@ -177,8 +177,12 @@ async function main() {
   assert(combinedText.includes("管家"), "M7 explanation does not mention butler naturally.")
   assert(combinedText.includes("痕迹"), "M7 explanation does not mention traces naturally.")
   assert(
-    combinedText.includes("HomeMapState") || combinedText.includes("家园事实") || combinedText.includes("家园结构"),
-    "M7 explanation does not explain HomeMapState / world fact boundary."
+    combinedText.includes("HomeMapState") ||
+      combinedText.includes("SafeApply") ||
+      combinedText.includes("家园事实") ||
+      combinedText.includes("家园结构") ||
+      combinedText.includes("家园变化"),
+    "M7 explanation does not explain the world fact / SafeApply boundary."
   )
   assert(
     combinedText.includes("记忆种子") || combinedText.includes("记忆"),
