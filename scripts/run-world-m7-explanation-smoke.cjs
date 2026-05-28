@@ -64,8 +64,9 @@ async function main() {
     const pPhoneSource = fs.readFileSync(pPhoneMapperPath, "utf8")
     const pixelViewSource = fs.readFileSync(pixelViewPath, "utf8")
     const combinedSource = [gatewaySource, explanationSource, pPhoneSource, pixelViewSource].join("\n")
+    const modelSource = [gatewaySource, explanationSource, pPhoneSource].join("\n")
 
-    const requiredTokens = [
+    const requiredModelTokens = [
       "buildButlerExplanationView",
       "lastButlerRuntimeAuditSummary",
       "userFacingSummary",
@@ -75,14 +76,19 @@ async function main() {
       "m7_butler_trace_closure",
       "not_pet_trace",
       "HomeMapState",
-      "P-Phone",
+      "buildPPhoneView",
       "model.butlerExplanation.title",
       "model.pPhone.latestMessageTitle",
     ]
 
-    requiredTokens.forEach((token) =>
-      assert(combinedSource.includes(token), `M7 explanation path is missing required token: ${token}.`)
+    requiredModelTokens.forEach((token) =>
+      assert(modelSource.includes(token), `M7 explanation model path is missing required token: ${token}.`)
     )
+
+    assert(pixelViewSource.includes("data-surface-state=\"cleared\""), "M11 formal PixelWorldView is no longer a cleared surface.")
+    assert(!pixelViewSource.includes("P-Phone"), "M11 cleared formal surface must not restore the old P-Phone card copy.")
+    assert(!pixelViewSource.includes("管家说明"), "M11 cleared formal surface must not restore the old butler explanation card copy.")
+    assert(!pixelViewSource.includes("当前记录"), "M11 cleared formal surface must not restore the old current record card copy.")
 
     const forbiddenTokens = [
       "JSON.stringify",
@@ -115,7 +121,7 @@ async function main() {
     assert(record.traceMemorySeedField, "Runtime record is missing TraceMemorySeedField.")
     assert(
       record.recentEvents.some((event) => event.tags.includes("m7_butler_trace_closure")),
-      "Runtime record has no M7 trace closure event."
+      "Runtime record has no M7 trace closure event. Run smoke:m7-closeout or smoke:m7-audit-summary first."
     )
   }
 
@@ -166,8 +172,8 @@ async function main() {
   assert(model.tags.includes("m7_butler_trace_closure_explanation"), "WorldViewModel is missing M7 explanation tag.")
   assert(model.butlerExplanation.body.includes(summary.userFacingSummary), "Butler explanation does not use audit summary userFacingSummary.")
   assert(model.butlerExplanation.body.includes(summary.traceId), "Butler explanation does not expose audit summary trace pointer.")
-  assert(model.pPhone.latestMessageBody.includes(`当前可参考的记忆种子：${summary.memorySeedCount} 条。`), "P-Phone does not use audit summary memory seed count.")
-  assert(model.pPhone.latestMessageBody.includes("世界规则验证"), "P-Phone does not explain validation from summary path.")
+  assert(model.pPhone.latestMessageBody.includes(`当前可参考的记忆种子：${summary.memorySeedCount} 条。`), "P-Phone model does not use audit summary memory seed count.")
+  assert(model.pPhone.latestMessageBody.includes("世界规则验证"), "P-Phone model does not explain validation from summary path.")
   assert(combinedText.includes("管家"), "M7 explanation does not mention butler naturally.")
   assert(combinedText.includes("痕迹"), "M7 explanation does not mention traces naturally.")
   assert(
@@ -180,7 +186,7 @@ async function main() {
   )
   assert(
     model.pPhone.latestMessageBody.includes("世界规则验证") || model.pPhone.latestMessageBody.includes("SafeApply"),
-    "P-Phone does not explain validation / SafeApply boundary."
+    "P-Phone model does not explain validation / SafeApply boundary."
   )
   assert(!combinedText.includes("finalScore"), "M7 explanation exposes finalScore.")
   assert(!combinedText.includes("riskPenalty"), "M7 explanation exposes riskPenalty.")
@@ -199,9 +205,10 @@ async function main() {
   console.log(`Motivation: ${record.lastButlerRuntimeIntent.motivation}`)
   console.log(`Trace: ${currentButlerTrace.id}`)
   console.log(`Butler title: ${model.butlerExplanation.title}`)
-  console.log(`P-Phone title: ${model.pPhone.latestMessageTitle}`)
+  console.log(`P-Phone model title: ${model.pPhone.latestMessageTitle}`)
   console.log("M7 explanation reads audit summary first: ok")
   console.log("M7 explanation reads persisted intent / validation / trace / memory seed: ok")
+  console.log("M11 cleared surface does not restore old explanation cards: ok")
   console.log("No raw debug score display: ok")
   console.log("Explanation read-only: ok")
   console.log("Result: PASS")
