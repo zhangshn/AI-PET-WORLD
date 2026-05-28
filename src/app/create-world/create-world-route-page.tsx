@@ -25,9 +25,12 @@ export default function CreateWorldRoutePage() {
   const [time, setTime] = useState("08:00")
   const [perspective, setPerspective] =
     useState<CreateWorldPerspective>("unspecified")
+  const [isCreating, setIsCreating] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    setErrorMessage("")
 
     const createWorldInput = buildCreateWorldInput({
       year,
@@ -37,13 +40,41 @@ export default function CreateWorldRoutePage() {
       perspective,
     })
 
-    if (!createWorldInput) return
+    if (!createWorldInput) {
+      setErrorMessage("请检查出生信息是否完整。")
+      return
+    }
 
-    window.localStorage.setItem(
-      CREATE_WORLD_STORAGE_KEY,
-      serializeCreateWorldInput(createWorldInput)
-    )
-    router.push("/world")
+    setIsCreating(true)
+
+    try {
+      const response = await fetch("/api/world/create", {
+        body: serializeCreateWorldInput(createWorldInput),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        method: "POST",
+      })
+      const result = (await response.json().catch(() => null)) as {
+        ok?: boolean
+        message?: string
+      } | null
+
+      if (!response.ok || !result?.ok) {
+        setErrorMessage(result?.message ?? "世界暂时没有创建成功，请稍后再试。")
+        setIsCreating(false)
+        return
+      }
+
+      window.localStorage.setItem(
+        CREATE_WORLD_STORAGE_KEY,
+        serializeCreateWorldInput(createWorldInput)
+      )
+      router.push("/world")
+    } catch {
+      setErrorMessage("世界暂时没有创建成功，请稍后再试。")
+      setIsCreating(false)
+    }
   }
 
   return (
@@ -53,10 +84,13 @@ export default function CreateWorldRoutePage() {
         <h1 className={styles.title}>创建你的第一片家园</h1>
         <p className={styles.description}>
           输入出生信息后，系统会生成管家人格、世界种子和第一片家园。
-          宠物不会默认出现；世界会先围绕管家、资源、住所和自主建设运行。
+          宠物不会默认出现；这个世界会先围绕管家、资源和家园痕迹自主运行。
+        </p>
+        <p className={styles.notice}>
+          进入世界后，你会先观察管家的判断和家园变化；你不是直接操控者，而是这个世界的源头。
         </p>
 
-        <fieldset className={styles.fieldset}>
+        <fieldset className={styles.fieldset} disabled={isCreating}>
           <legend className={styles.legend}>出生信息</legend>
           <div className={styles.fieldGrid}>
             <label className={styles.field}>
@@ -129,8 +163,14 @@ export default function CreateWorldRoutePage() {
           </div>
         </fieldset>
 
-        <button className={styles.enterButton} type="submit">
-          进入世界
+        {errorMessage ? <p className={styles.errorMessage}>{errorMessage}</p> : null}
+
+        <button
+          className={styles.enterButton}
+          disabled={isCreating}
+          type="submit"
+        >
+          {isCreating ? "正在创建世界" : "进入世界"}
         </button>
       </form>
     </main>
