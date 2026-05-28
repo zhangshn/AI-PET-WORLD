@@ -20,7 +20,7 @@
 | M9 世界学习 v0 | 0% | 后置 | MVP 阶段不做 |
 | M10 宠物学习预留 | 0% | 后置 | MVP 阶段不做 |
 | M11 主页清空 | 100% | 完成 | `/world` 已保持 cleared 状态；旧画布、当前记录卡片、管家说明卡片、P-Phone 卡片已从正式主页移除 |
-| M11 验收整理 | 30% | 进行中 | 当前正在整理验收边界、smoke 注册情况、Debug 地址与用途、create-world → runtime save → `/world` 路径、M7 闭环与 WorldViewModel 主链路 |
+| M11 验收整理 | 60% | 进行中 | 已完成 handoff 复读、关键文件静态核对、smoke 注册情况整理、Debug 地址用途整理；仍待用户本地运行 lint / tsc / build / smoke 完成命令级复核 |
 | M11 核心资源库 / 验算库 | 0% | 后续 | 验收整理完成后再进入；不是当前第一步 |
 | M11 正式画图算法重整 | 0% | 后续 | 核心资源库 / 验算库边界明确后再开始；未来 `/world` 是端游式像素主世界，不是网页卡片页 |
 | M12 构建与质量验收 | 持续 | 持续 | 每个模块后必须 lint / tsc / build / 对应 smoke |
@@ -49,15 +49,25 @@ M11｜验收整理
 
 | 验收项 | 当前口径 | 状态 |
 |---|---|---|
-| `/world` cleared 状态 | 正式主页保持清空，不恢复旧画布或网页卡片主页 | 待本地命令复核 |
-| 旧主页卡片移除 | 不恢复当前记录卡片、管家说明卡片、P-Phone 卡片、顶部说明卡 | 待本地命令复核 |
+| `/world` cleared 状态 | 正式主页保持清空，不恢复旧画布或网页卡片主页 | 静态核对通过；待本地 smoke 复核 |
+| 旧主页卡片移除 | 不恢复当前记录卡片、管家说明卡片、P-Phone 卡片、顶部说明卡 | 静态核对通过；待本地 smoke 复核 |
 | Debug Composer 定位 | `/world-debug/pixel-scene-composer` 只作为 Debug 视觉参考库 | 已锁定口径 |
-| create-world 路径 | `/create-world` → runtime save → `/world` 可验收 | 待本地命令复核 |
-| M7 闭环 | 管家行为 → 验证 → 痕迹 → 记忆种子 → 解释链路不被破坏 | 待本地命令复核 |
-| WorldViewModel 主链路 | 正式表现模型主链路继续存在，但当前不恢复画面 | 待本地命令复核 |
+| create-world 路径 | `/create-world` → runtime save → `/world` 可验收 | 待本地 node smoke 复核 |
+| M7 闭环 | 管家行为 → 验证 → 痕迹 → 记忆种子 → 解释链路不被破坏 | 待本地 smoke 复核 |
+| WorldViewModel 主链路 | 正式表现模型主链路继续存在，但当前不恢复画面 | 静态核对通过；待本地 smoke 复核 |
 | smoke 注册情况 | 区分 package.json 已注册命令与 node 直接运行脚本 | 已整理 |
 | Debug 地址用途 | 明确 Debug 页面用途，不进入正式 `/world` | 已整理 |
 | 孵化器旧链条 | 不恢复 incubator / embryo / hatch / hatch progress | 已锁定口径 |
+
+## M11 本轮静态核对记录
+
+| 核对对象 | 核对结果 | 说明 |
+|---|---|---|
+| `docs/v2_6/AI_PET_WORLD_V2_6_HANDOFF_M11_MVP_CLOSEOUT.md` | 通过 | 当前阶段锁定为 M11 验收整理；明确不恢复 `/world` 画面、不进入 M8 / M9 / M10 |
+| `src/app/world/components/pixel-world-view/pixel-world-view.tsx` | 通过 | `PixelWorldView` 当前只保留 `data-surface-state="cleared"` 的 cleared surface |
+| `src/app/world/world-live-runtime-page.tsx` | 通过 | `/world` 仍通过 `readWorldRuntimeForView` 读取 runtime，并构建 `buildWorldViewModelForPixelWorld`；页面层不推进 runtime tick |
+| `package.json` | 通过 | M11 formal surface、M7 closeout / explanation / audit-summary、butler trace closure、WorldViewModel primary smoke 已注册 |
+| `scripts/run-world-m11-create-world-flow-smoke.cjs` | 待命令复核 | 当前不注册 npm alias，继续按 handoff 要求用 node 直接跑 |
 
 ## 当前 smoke / 验收命令整理
 
@@ -78,7 +88,7 @@ npm run smoke:world-pixel-viewmodel-primary
 node scripts/run-world-m11-create-world-flow-smoke.cjs
 ```
 
-说明：`smoke:m11-create-world-flow` 当前尚未注册进 `package.json`。M11 验收整理阶段可以继续用 node 直接跑；是否补注册应作为独立整理项处理，不影响当前 create-world flow 验收。
+说明：`smoke:m11-create-world-flow` 当前尚未注册进 `package.json`。M11 验收整理阶段继续用 node 直接跑；是否补注册应作为独立整理项处理，不影响当前 create-world flow 验收。
 
 ## Debug 地址和用途
 
