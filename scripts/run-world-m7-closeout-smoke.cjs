@@ -8,6 +8,7 @@ async function main() {
   const localRequire = moduleApi.createRequire(__filename)
   const savePath = path.join(repoRoot, ".runtime", "world-state", "default-world.json")
   const runtimeDir = path.join(repoRoot, "src", "world", "runtime")
+  const runtimeGatewayPath = path.join(runtimeDir, "world-runtime-gateway.ts")
   const viewModelDir = path.join(repoRoot, "src", "world", "world-view-model")
   const viewModelGatewayPath = path.join(viewModelDir, "world-view-model-gateway.ts")
   const worldPagePath = path.join(repoRoot, "src", "app", "world", "world-live-runtime-page.tsx")
@@ -22,6 +23,10 @@ async function main() {
 
   function assert(condition, message) {
     if (!condition) fail(message)
+  }
+
+  function hashText(raw) {
+    return crypto.createHash("sha256").update(raw).digest("hex")
   }
 
   function parseJson(raw, message) {
@@ -126,6 +131,48 @@ async function main() {
     )
   }
 
+  function hasM7CloseoutFacts(record) {
+    return Boolean(
+      record.lastButlerRuntimeIntent &&
+        record.lastButlerWorldRuleValidation &&
+        record.lastButlerRuntimeAuditSummary &&
+        record.traceField &&
+        record.traceMemorySeedField &&
+        record.traceInfluenceSummary
+    )
+  }
+
+  async function ensureM7CloseoutRecord(record) {
+    if (hasM7CloseoutFacts(record)) {
+      return {
+        record,
+        bootstrap: null,
+      }
+    }
+
+    const beforeTick = record.tick
+    const { runAndPersistOneRuntimeTick } = localRequire(runtimeGatewayPath)
+    const result = await runAndPersistOneRuntimeTick({ now: Date.now() })
+
+    assert(result.persisted, "M7 closeout bootstrap tick was not persisted.")
+    assert(result.nextSaveRecord.lastButlerRuntimeIntent, "M7 closeout bootstrap did not persist intent.")
+    assert(result.nextSaveRecord.lastButlerWorldRuleValidation, "M7 closeout bootstrap did not persist world rule validation.")
+    assert(result.nextSaveRecord.lastButlerRuntimeAuditSummary, "M7 closeout bootstrap did not persist audit summary.")
+
+    const bootstrappedRaw = fs.readFileSync(savePath, "utf8")
+    const bootstrappedRecord = parseJson(bootstrappedRaw, "Runtime save after M7 closeout bootstrap is not valid JSON.")
+
+    assert(bootstrappedRecord.tick === beforeTick + 1, "M7 closeout bootstrap did not advance exactly one explicit runtime tick.")
+
+    return {
+      record: bootstrappedRecord,
+      bootstrap: {
+        beforeTick,
+        afterTick: bootstrappedRecord.tick,
+      },
+    }
+  }
+
   function findCurrentButlerTrace(record) {
     const intent = record.lastButlerRuntimeIntent
     const validation = record.lastButlerWorldRuleValidation
@@ -187,6 +234,7 @@ async function main() {
   }
 
   if (!fs.existsSync(savePath)) fail("Runtime save file not found.")
+  if (!fs.existsSync(runtimeGatewayPath)) fail("Runtime gateway is missing.")
   if (!fs.existsSync(viewModelGatewayPath)) fail("WorldViewModel gateway is missing.")
   if (!fs.existsSync(worldPagePath)) fail("World page is missing.")
   if (!fs.existsSync(pixelCanvasPath)) fail("Pixel canvas component is missing.")
@@ -194,9 +242,12 @@ async function main() {
   installTypeScriptRequireHook()
   assertStaticCloseoutContract()
 
+  const initialRaw = fs.readFileSync(savePath, "utf8")
+  const initialRecord = parseJson(initialRaw, "Runtime save file is not valid JSON.")
+  const ensured = await ensureM7CloseoutRecord(initialRecord)
+  const record = ensured.record
   const beforeRaw = fs.readFileSync(savePath, "utf8")
-  const beforeHash = crypto.createHash("sha256").update(beforeRaw).digest("hex")
-  const record = parseJson(beforeRaw, "Runtime save file is not valid JSON.")
+  const beforeHash = hashText(beforeRaw)
   const { intent, validation, summary } = assertRuntimeCloseout(record)
 
   const { buildWorldViewModelForPixelWorld } = localRequire(viewModelGatewayPath)
@@ -213,7 +264,7 @@ async function main() {
   assert(model.actors.some((actor) => actor.kind === "butler" && actor.visible), "WorldViewModel has no visible butler actor.")
   assert(!model.actors.some((actor) => actor.kind === "pet" && actor.visible), "WorldViewModel generated a default visible pet actor.")
   assert(model.butlerExplanation.body.includes(summary.userFacingSummary), "Butler explanation does not read audit summary first.")
-  assert(model.pPhone.latestMessageBody.includes(`当前可参考的记忆种子：${summary.memorySeedCount} 条。`), "P-Phone does not read audit summary memory seed count.")
+  assert(model.pPhone.latestMessageBody.includes(`当前可参考的记忆种子：${summary.memorySeedCount} 条。`), "P-Phone model does not read audit summary memory seed count.")
   assert(explanationText.includes("管家"), "Closeout explanation does not mention butler.")
   assert(explanationText.includes("痕迹"), "Closeout explanation does not mention trace.")
   assert(explanationText.includes("HomeMapState") || explanationText.includes("家园事实") || explanationText.includes("家园结构"), "Closeout explanation does not mention HomeMapState/world fact boundary.")
@@ -222,13 +273,17 @@ async function main() {
   assert(!explanationText.includes("JSON"), "Closeout explanation exposes serialized debug data.")
 
   const afterRaw = fs.readFileSync(savePath, "utf8")
-  const afterHash = crypto.createHash("sha256").update(afterRaw).digest("hex")
+  const afterHash = hashText(afterRaw)
   const afterRecord = parseJson(afterRaw, "Runtime save after M7 closeout smoke is not valid JSON.")
 
-  assert(afterRecord.tick === record.tick, "M7 closeout smoke changed runtime tick.")
-  assert(afterHash === beforeHash, "M7 closeout smoke changed runtime save hash.")
+  assert(afterRecord.tick === record.tick, "M7 closeout read-only projection changed runtime tick.")
+  assert(afterHash === beforeHash, "M7 closeout read-only projection changed runtime save hash.")
 
   console.log("M7 CLOSEOUT SMOKE")
+  if (ensured.bootstrap) {
+    console.log("This smoke bootstrapped one explicit runtime tick because the current save had no M7 closeout facts.")
+    console.log(`Bootstrap tick: ${ensured.bootstrap.beforeTick} -> ${ensured.bootstrap.afterTick}`)
+  }
   console.log(`Runtime tick: ${record.tick}`)
   console.log(`Intent: ${intent.kind}`)
   console.log(`Motivation: ${intent.motivation}`)
@@ -239,10 +294,10 @@ async function main() {
   console.log(`Memory seeds: ${summary.memorySeedCount}`)
   console.log("Runtime intent / validation / audit summary: ok")
   console.log("Trace closure pointer: ok")
-  console.log("Audit-summary-first explanation: ok")
+  console.log("Audit-summary-first explanation model: ok")
   console.log("No default pet fact: ok")
   console.log("Formal /world renderer guard: ok")
-  console.log("Read-only closeout: ok")
+  console.log("Read-only closeout projection: ok")
   console.log("Result: PASS")
 }
 
