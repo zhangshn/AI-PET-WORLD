@@ -1,14 +1,20 @@
-# AI-PET-WORLD V2.6｜M11 / MVP 收口交接文档
+# AI-PET-WORLD V2.6｜M11 验收整理交接文档
 
-> 新聊天窗口必须先阅读本文档，再继续工作。本文档用于防止新窗口把 Debug 视觉参考库、正式画图算法、核心验算库、主页 UI 和未来端游形态混在一起。
+> 新聊天窗口必须先阅读本文档，再继续工作。本文档用于防止新窗口把 Debug 视觉参考库、正式画图算法、核心验算库、主页 UI、旧孵化器业务链条和未来端游形态混在一起。
 
 ---
 
 ## 0. 当前一句话结论
 
-当前项目已经完成底层自主世界闭环与 M7 管家行为 → 痕迹闭环。现在进入 M11：MVP 收口与正式主世界体验整理。
+当前项目已经完成底层自主世界闭环与 M7 管家行为 → 痕迹闭环。现在处于：
 
-但是：`/world` 当前已经被刻意清空，因为旧主页画图结果与卡片布局方向不对。下一步不是继续修卡片，也不是马上恢复画面，而是先整理正式画图算法与核心资源库 / 验算库边界。
+```txt
+M11｜验收整理阶段
+```
+
+不是继续扩功能，不是恢复 `/world` 画面，不是重新做网页卡片 UI，也不是立刻进入 M8 / M9 / M10。
+
+当前 `/world` 已经被刻意清空，因为旧主页画图结果与网页卡片布局方向不对。现在最优先任务是：验收、整理、确认当前边界，再决定正式画图算法重整方案。
 
 ---
 
@@ -28,7 +34,10 @@
 | M8 管家记忆与学习 | 后置 | MVP 阶段不做 |
 | M9 世界学习 v0 | 后置 | MVP 阶段不做 |
 | M10 宠物学习预留 | 后置 | MVP 阶段不做 |
-| M11 主世界正式体验整理 | 当前阶段 | 主页已清空；下一步是正式画图算法与核心验算库边界整理 |
+| M11 主页清空 | 完成 | 错误画面、当前记录卡片、管家说明卡片、P-Phone 卡片已从正式主页移除 |
+| M11 验收整理 | 当前阶段 | 先验收当前状态、整理 smoke、整理 Debug 边界、整理下一阶段计划 |
+| M11 正式画图算法重整 | 后续阶段 | 验收整理完成后再做 |
+| M11 核心资源库 / 验算库 | 后续阶段 | 不是当前第一步；应在验收整理后建立，用于验证正式算法输出 |
 
 ---
 
@@ -40,12 +49,12 @@
 
 清空原因：
 
-- 旧主页画图算法/布局出现右侧大片空白。
+- 旧主页画图算法 / 布局出现右侧大片空白。
 - 当前视觉不是正式主世界目标。
 - 卡片式网页布局不是未来方向。
 - 错误画面不能继续作为 MVP 正式入口。
 
-当前 `/world` 应保持 cleared 状态，直到正式画图算法重新定义并通过验收。
+当前 `/world` 应保持 cleared 状态，直到验收整理完成，并且正式画图算法重新定义且通过验收。
 
 ### 2.2 未来不是网页卡片页
 
@@ -66,6 +75,23 @@ Web 只是当前 MVP 的最快技术载体，不代表最终产品形态。
 
 禁止继续围绕“顶部说明 + 右上状态卡 + 底部两张说明卡”做设计。这些卡片未来不要。
 
+### 2.3 孵化器旧概念已废弃
+
+当前 V2.6 正式业务链条里，不再使用旧的孵化器 / embryo / hatch / hatch progress / incubator care 作为当前 MVP 主线。
+
+新窗口如果从旧记忆里提取到：
+
+```txt
+孵化器
+胚胎
+孵化进度
+hatch
+incubator
+watch incubator
+```
+
+必须视为旧业务残留，不能写进当前计划、代码、文档或 UI。当前标准是：宠物不是默认资产；MVP 阶段不做宠物入场、宠物学习和复杂宠物系统。宠物未来作为独立生命进入世界，但不是当前 M11 验收整理范围。
+
 ---
 
 ## 3. 三套东西必须分开，不能混
@@ -74,7 +100,7 @@ Web 只是当前 MVP 的最快技术载体，不代表最终产品形态。
 
 正式世界生成算法负责世界事实和运行逻辑，不负责 Debug 视觉展示。
 
-核心输入/事实：
+核心输入 / 事实：
 
 ```txt
 WorldRuntimeSaveRecord
@@ -109,6 +135,7 @@ create-world input
 - 不允许 Scene Composer 直接替代正式世界生成。
 - 不允许 road/path 重新成为正式架构。
 - 长期移动和空间使用结果只能进入痕迹体系。
+- 不允许旧孵化器链条重新进入当前 MVP。
 
 ### 3.2 正式画图算法
 
@@ -126,7 +153,7 @@ not_world_fact / no_runtime_write 必须明确
 最终呈现要接近沉浸式像素森林/家园，而不是工程预览框
 ```
 
-正式画图下一步要重新整理：
+正式画图重整内容后置到验收整理之后：
 
 ```txt
 1. viewport / camera / cover 展示策略
@@ -157,21 +184,52 @@ visual reference only
 正式 /world 渲染来源
 ```
 
-当前页面已经改成“视觉参考”口径。它可以用来观察：
+它可以用来观察：
 
-- tile 视觉效果
-- trace 视觉效果
-- tree / bush / stone / flower / mushroom / grass_tuft 等对象观感
-- atmosphere 观感
-- UI overlay 参考
+- tile 视觉效果。
+- trace 视觉效果。
+- tree / bush / stone / flower / mushroom / grass_tuft 等对象观感。
+- atmosphere 观感。
+- UI overlay 参考。
 
 但它不验证世界事实是否正确，不写 runtime save，不推进 runtime tick，不替代 `/world`。
 
 ---
 
-## 4. 核心资源库 / 核心验算库：还没有正式建立
+## 4. 当前阶段：M11 验收整理
 
-下一步必须建立真正的核心资源库 / 验算库。
+当前第一优先级不是新建功能，而是验收整理。
+
+M11 验收整理要确认：
+
+```txt
+1. /world 是否保持 cleared 状态
+2. 旧画布、当前记录卡片、管家说明卡片、P-Phone 卡片是否已从正式主页移除
+3. pixel-scene-composer 是否只作为 Debug 视觉参考库
+4. create-world → runtime save → /world 路径是否可验收
+5. M7 管家行为闭环是否没有被破坏
+6. WorldViewModel 主链路是否没有被破坏
+7. 所有 smoke 哪些已注册，哪些需要 node 直接跑
+8. Debug 地址和定位是否清楚
+9. 下一阶段正式画图算法重整之前的禁止事项是否明确
+10. 孵化器旧概念是否没有进入当前业务链条
+```
+
+验收整理完成之后，才进入：
+
+```txt
+正式核心资源库 / 验算库
+→ 正式画图算法重整
+→ 端游式 /world 主世界恢复
+```
+
+注意：核心资源库 / 验算库是后续阶段，不是当前第一步。
+
+---
+
+## 5. 核心资源库 / 核心验算库：后续阶段，不是当前第一步
+
+核心资源库 / 验算库还没有正式建立。它后续要服务于正式算法验收，不服务于 Debug composer。
 
 它的定位不是看图好不好看，而是验证正式算法输出是否正确。
 
@@ -191,9 +249,7 @@ not_world_fact / no_runtime_write 是否齐全
 生态对象是否按正式规则生成
 ```
 
-核心验算库应该服务于正式算法，不服务于 Debug composer。
-
-建议下一步新增文档：
+建议验收整理完成后再新增文档：
 
 ```txt
 docs/v2_6/AI_PET_WORLD_V2_6_FORMAL_CORE_RESOURCE_VALIDATION_LIBRARY.md
@@ -207,7 +263,7 @@ smoke:m11-core-resource-validation
 
 ---
 
-## 5. `/world-debug/pixel-scene-composer` 当前定位
+## 6. `/world-debug/pixel-scene-composer` 当前定位
 
 地址：
 
@@ -237,9 +293,9 @@ Debug 视觉参考库 / 像素组合预览实验室
 
 ---
 
-## 6. 当前关键文件
+## 7. 当前关键文件
 
-### 6.1 正式 `/world` 入口
+### 7.1 正式 `/world` 入口
 
 ```txt
 src/app/world/page.tsx
@@ -251,7 +307,7 @@ src/app/world/components/pixel-world-view/pixel-world-canvas.client.tsx
 
 当前状态：`pixel-world-view.tsx` 已清空正式主页展示，只保留 cleared surface。
 
-### 6.2 WorldViewModel 正式表现模型
+### 7.2 WorldViewModel 正式表现模型
 
 ```txt
 src/world/world-view-model/world-view-model-gateway.ts
@@ -259,9 +315,9 @@ src/world/world-view-model/world-view-model-schema.ts
 src/world/world-view-model/*mapper*.ts
 ```
 
-当前状态：正式主链路存在，但画图算法需要重整后再恢复主页展示。
+当前状态：正式主链路存在，但画图算法需要验收整理后再重整。
 
-### 6.3 Runtime / M7 管家闭环
+### 7.3 Runtime / M7 管家闭环
 
 ```txt
 src/world/runtime/world-runtime-gateway.ts
@@ -273,7 +329,7 @@ src/world/runtime/butler-runtime-audit-summary.ts
 
 当前状态：M7 已完成，不要重新设计它。
 
-### 6.4 create-world → runtime save
+### 7.4 create-world → runtime save
 
 ```txt
 src/app/create-world/create-world-route-page.tsx
@@ -282,9 +338,9 @@ src/world/runtime/world-runtime-gateway.ts
 scripts/run-world-m11-create-world-flow-smoke.cjs
 ```
 
-当前状态：创建页已经开始接入正式 runtime save。注意：`package.json` 目前尚未注册 `smoke:m11-create-world-flow`，需要用 node 直接跑或补注册。
+当前状态：创建页已经开始接入正式 runtime save。注意：`package.json` 目前尚未注册 `smoke:m11-create-world-flow`，需要用 node 直接跑或在验收整理阶段补注册。
 
-### 6.5 Debug 视觉参考库
+### 7.5 Debug 视觉参考库
 
 ```txt
 src/app/world-debug/pixel-scene-composer/pixel-scene-composer-client.tsx
@@ -294,7 +350,7 @@ src/app/world-debug/pixel-scene-composer/pixel-scene-composer-client.tsx
 
 ---
 
-## 7. Debug 地址清单
+## 8. Debug 地址清单
 
 本地开发地址：
 
@@ -317,19 +373,19 @@ http://localhost:3000/world-debug/visual-change-verification
 | 地址 | 用途 |
 |---|---|
 | `/create-world` | MVP 创建世界入口 |
-| `/world` | 正式主世界入口；当前已清空，等待正式画图算法重整 |
+| `/world` | 正式主世界入口；当前已清空，等待验收整理完成后再进入正式画图算法重整 |
 | `/personality-test` | 命理 / 人格调试页，允许显示内部信息 |
 | `/world-debug` | 世界 Debug 入口 |
 | `/world-debug/pixel-scene-composer` | Debug 视觉参考库，不是正式算法库 |
 | `/world-debug/mapdiff` | MapDiff 调试 |
-| `/world-debug/procedural-renderer` | 旧实验/调试，不得搬进正式 `/world` |
+| `/world-debug/procedural-renderer` | 旧实验 / 调试，不得搬进正式 `/world` |
 | `/world-debug/proposal-audit` | Proposal / audit 调试 |
 | `/world-debug/tree-render-test` | 树渲染测试 |
 | `/world-debug/visual-change-verification` | 视觉变化验证 |
 
 ---
 
-## 8. 当前 smoke / 验收命令
+## 9. 当前 smoke / 验收命令
 
 基础验收：
 
@@ -371,24 +427,67 @@ node scripts/run-world-m11-create-world-flow-smoke.cjs
 
 ---
 
-## 9. 新窗口下一步建议顺序
+## 10. 新窗口下一步建议顺序
 
-不要直接恢复 `/world` 画面。按下面顺序走：
+不要直接恢复 `/world` 画面。不要直接进入核心资源库开发。先做 M11 验收整理。
 
 ```txt
-1. 先跑 lint / tsc / build / smoke:m11-formal-surface，确认清空主页没有破坏主链路。
-2. 跑 node scripts/run-world-m11-create-world-flow-smoke.cjs，确认 create-world → runtime save → /world 仍然成立。
-3. 把 smoke:m11-create-world-flow 注册进 package.json。
-4. 建立正式核心资源库 / 验算库文档。
-5. 为核心验算库新增 smoke，验证正式算法输出，不验证 Debug composer 视觉效果。
-6. 重新设计正式画图算法：viewport / camera / cover / 坐标定位 / 自然密度 / 痕迹覆盖。
-7. 通过 smoke 后，再恢复 `/world` 的正式画面。
-8. 恢复画面时必须是端游式主世界，不要回到网页卡片布局。
+1. 先打印当前进度表。
+2. 说明本轮只做 M11 验收整理，不做新功能。
+3. 跑 lint / tsc / build / smoke:m11-formal-surface，确认清空主页没有破坏主链路。
+4. 跑 node scripts/run-world-m11-create-world-flow-smoke.cjs，确认 create-world → runtime save → /world 仍然成立。
+5. 跑 M7 smoke，确认管家闭环没有被破坏。
+6. 跑 world-pixel-viewmodel-primary，确认正式 WorldViewModel 主链路仍存在。
+7. 整理当前验收结果，更新模块进度文档。
+8. 只有验收整理完成后，再进入核心资源库 / 验算库文档与正式画图算法重整。
 ```
 
 ---
 
-## 10. 禁止事项
+## 11. 新窗口回复格式规则
+
+每次回复必须先显示进度表，再说计划，再给指令。
+
+固定格式：
+
+```txt
+一、当前阶段进度表
+用表格展示：模块 / 进度 / 状态 / 说明。
+
+二、本轮目标
+只写一个大模块目标，不拆成一堆小任务。
+
+三、本轮不做什么
+明确不做 M8 / M9 / M10，不恢复卡片主页，不恢复旧画面，不做宠物、小镇、多用户等。
+
+四、执行方案
+只给一个大模块级方案。
+
+五、验收命令
+给完整命令：git pull、lint、tsc、build、对应 smoke。
+
+六、如果要交给 Codex
+必须说明：Codex 只在用户本地修改，用户手动上传；不要说 Codex 会直接推 GitHub。
+```
+
+---
+
+## 12. Codex 使用规则
+
+如果后续交给 Codex：
+
+```txt
+Codex 在用户本地项目修改代码。
+用户手动检查、运行命令、git add、commit、push 或上传。
+不要写“我已经让 Codex 推到 GitHub”。
+不要让 Codex 直接替用户远程提交。
+```
+
+本聊天里的 ChatGPT 可以在 GitHub 上直接改文件，但交给 Codex 的指令必须按本地执行口径写。
+
+---
+
+## 13. 禁止事项
 
 新窗口绝对不要做：
 
@@ -398,6 +497,7 @@ node scripts/run-world-m11-create-world-flow-smoke.cjs
 - 不要继续做网页卡片式主页。
 - 不要恢复顶部说明卡、当前记录卡、管家说明卡、P-Phone 卡片。
 - 不要默认生成宠物。
+- 不要恢复孵化器、胚胎、hatch、incubator 等旧业务链条。
 - 不要恢复 road/path 正式架构。
 - 不要进入 M8 / M9 / M10。
 - 不要做小镇、公园、医院、多用户世界。
@@ -407,7 +507,7 @@ node scripts/run-world-m11-create-world-flow-smoke.cjs
 
 ---
 
-## 11. 未来 `/world` 视觉目标
+## 14. 未来 `/world` 视觉目标
 
 未来 `/world` 应该是：
 
@@ -444,16 +544,17 @@ Web MVP 是技术载体，目标体验按端游主世界设计
 
 ---
 
-## 12. 交接结论
+## 15. 交接结论
 
 当前项目不要再扩功能，也不要马上恢复画面。
 
 当前最重要的下一步是：
 
 ```txt
-正式核心资源库 / 验算库
+M11 验收整理
+→ 核心资源库 / 验算库
 → 正式画图算法重整
 → 端游式 /world 主世界恢复
 ```
 
-只有当正式算法边界清楚，并且 smoke 能验证结果正确时，才恢复 `/world` 画面。
+只有当验收整理完成、正式算法边界清楚，并且 smoke 能验证结果正确时，才恢复 `/world` 画面。
