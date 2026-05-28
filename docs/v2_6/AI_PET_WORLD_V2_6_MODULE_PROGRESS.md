@@ -12,18 +12,18 @@
 | M6 生态对象规则深化 | 100% | 完成 | 生态对象规则主体已通过 lint / tsc / build 间接验收 |
 | M6.5 legacy 命名清理 | 100% | 完成 | legacy road/path 业务口径已降级为兼容命名，正式文档与正式链路不再使用 |
 | WORLD-PIXEL-RULE-MAPPER-00 | 100% | 完成 | 正式 `/world` 已接入 SpaceGrid / TraceField / HomeMapState / ButlerState → WorldViewModel → PixelWorldView；lint、tsc、build、pixel smoke 已通过；正式链路已无 Debug/SVG/Scene Composer 主链路残留 |
-| M7 管家行为 → 痕迹闭环 | 92% | 收口中 | 已完成完整主链路：Butler decision → intent → world rule validation → trace closure → TraceField / MemorySeedField → lastButlerRuntimeAuditSummary → /world explanation / P-Phone explanation；closeout、explanation、audit-summary、pixel viewmodel smoke 已通过 |
-| M8 管家记忆与学习 | 0% | 未开始 | 后置 |
-| M9 世界学习 v0 | 0% | 未开始 | 后置 |
-| M10 宠物学习预留 | 0% | 未开始 | 后置 |
-| M11 主世界正式体验整理 | 进行中 | 进行中 | `/world` 已有正式 PixelWorldView 主链路，后续继续整理视觉体验与 UI overlay |
+| M7 管家行为 → 痕迹闭环 | 100% | 完成 | 已完成并收口：Butler decision → intent → world rule validation → trace closure → TraceField / MemorySeedField → lastButlerRuntimeAuditSummary → /world explanation / P-Phone explanation；closeout 文档已写入，相关 smoke 已通过 |
+| M8 管家记忆与学习 | 0% | 未开始 | 后置，不在 M7 范围内 |
+| M9 世界学习 v0 | 0% | 未开始 | 后置，不在 M7 范围内 |
+| M10 宠物学习预留 | 0% | 未开始 | 后置，不在 M7 范围内 |
+| M11 主世界正式体验整理 | 进行中 | 进行中 | `/world` 已有正式 PixelWorldView 主链路，下一步进入 MVP 收口与正式体验整理 |
 | M12 构建与质量验收 | 持续 | 持续 | 每个模块后必须 lint / tsc / build / smoke |
 
 ## 当前路线
 
-WORLD-PIXEL-RULE-MAPPER-00 已完成并收口。M7 管家行为 → 痕迹闭环已经进入最终收口阶段：管家运行决策可以转成正式意图，经过世界规则验证后沉淀为 TraceFact，并进入 TraceField / MemorySeedField；显式 runtime tick 后会持久化 `lastButlerRuntimeAuditSummary`，用于记录本轮动机、意图、验证、HomeMapState 写入边界、Trace 写入结果、MemorySeed 数量和安全守卫；前台 `/world` 与 P-Phone 已优先读取该结构化摘要生成解释。
+WORLD-PIXEL-RULE-MAPPER-00 已完成并收口。M7 管家行为 → 痕迹闭环已完成并写入收口报告。
 
-下一步只做 M7 最终文档收口与一次完整验收，不继续扩功能；通过后 M7 可标记为完成，并进入 MVP 收口路线。
+当前项目不建议继续大跳 M8 / M9 扩功能。下一阶段进入 MVP 收口路线：固定正式 `/world` 主链路，整理 `create-world → /world` 的最短用户路径，检查正式 UI 是否仍有 Debug / 工程表达残留，并准备一个可演示、可部署、可让真实用户打开体验的 Web MVP。
 
 ## WORLD-PIXEL-RULE-MAPPER-00 完成内容
 
@@ -41,7 +41,7 @@ WORLD-PIXEL-RULE-MAPPER-00 已完成并收口。M7 管家行为 → 痕迹闭环
 - `PixelWorldView` 使用 Canvas，只读 `WorldViewModel`
 - smoke 已守卫默认宠物不生成、runtime 不写入、tick 不推进
 
-## M7 管家行为 → 痕迹闭环
+## M7 管家行为 → 痕迹闭环完成内容
 
 目标链路：
 
@@ -57,7 +57,7 @@ ButlerState / runtime decision
 → 下一轮 RuntimeSaveRecord
 ```
 
-当前已完成：
+已完成：
 
 - `ButlerRuntimeDecision → ButlerRuntimeIntent`
 - `ButlerRuntimeIntent → ButlerWorldRuleValidation`
@@ -68,6 +68,7 @@ ButlerState / runtime decision
 - `lastButlerRuntimeAuditSummary` 持久化
 - `/world` 管家解释优先读取 `lastButlerRuntimeAuditSummary`
 - `P-Phone` 优先读取 `lastButlerRuntimeAuditSummary`
+- `AI_PET_WORLD_V2_6_M7_BUTLER_TRACE_CLOSURE_CLOSEOUT.md` 已新增
 - `smoke:butler-trace-closure` 已新增并通过
 - `smoke:m7-explanation` 已新增并通过，已守卫 audit-summary-first 解释路径
 - `smoke:m7-audit-summary` 已新增并通过
