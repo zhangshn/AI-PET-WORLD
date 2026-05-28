@@ -20,24 +20,24 @@
 | M9 世界学习 v0 | 0% | 后置 | MVP 阶段不做 |
 | M10 宠物学习预留 | 0% | 后置 | MVP 阶段不做 |
 | M11 主页清空 | 100% | 完成 | `/world` 已保持 cleared 状态；旧画布、当前记录卡片、管家说明卡片、P-Phone 卡片已从正式主页移除 |
-| M11 验收整理 | 60% | 进行中 | 已完成 handoff 复读、关键文件静态核对、smoke 注册情况整理、Debug 地址用途整理；仍待用户本地运行 lint / tsc / build / smoke 完成命令级复核 |
-| M11 核心资源库 / 验算库 | 0% | 后续 | 验收整理完成后再进入；不是当前第一步 |
+| M11 验收整理 | 100% | 完成 | 已完成 handoff 复读、关键文件静态核对、smoke 注册情况整理、Debug 地址用途整理与本地命令级验收；当前可进入下一阶段准备，但仍不得直接恢复 `/world` 画面 |
+| M11 核心资源库 / 验算库 | 0% | 后续 | 验收整理完成后再进入；下一步优先建立正式核心资源库 / 验算库边界 |
 | M11 正式画图算法重整 | 0% | 后续 | 核心资源库 / 验算库边界明确后再开始；未来 `/world` 是端游式像素主世界，不是网页卡片页 |
 | M12 构建与质量验收 | 持续 | 持续 | 每个模块后必须 lint / tsc / build / 对应 smoke |
 
 ## 当前路线
 
-当前项目已经完成 M1-M6.5、WORLD-PIXEL-RULE-MAPPER-00 与 M7 管家行为 → 痕迹闭环。
+当前项目已经完成 M1-M6.5、WORLD-PIXEL-RULE-MAPPER-00、M7 管家行为 → 痕迹闭环与 M11 验收整理。
 
 当前准确阶段是：
 
 ```txt
-M11｜验收整理
+M11｜验收整理完成
 ```
 
-当前第一优先级不是恢复 `/world` 画面，也不是继续扩功能，而是确认当前状态没有被旧画面、旧卡片主页、Debug Composer、孵化器旧链条或未来阶段能力污染。
+当前已经确认：`/world` 保持 cleared，旧画布和旧卡片主页没有恢复，Debug Composer 没有进入正式 `/world`，create-world → runtime save → `/world` 路径可验收，M7 闭环和 WorldViewModel 主链路没有被破坏。
 
-验收整理完成后，才进入：
+下一步才进入：
 
 ```txt
 核心资源库 / 验算库
@@ -49,12 +49,12 @@ M11｜验收整理
 
 | 验收项 | 当前口径 | 状态 |
 |---|---|---|
-| `/world` cleared 状态 | 正式主页保持清空，不恢复旧画布或网页卡片主页 | 静态核对通过；待本地 smoke 复核 |
-| 旧主页卡片移除 | 不恢复当前记录卡片、管家说明卡片、P-Phone 卡片、顶部说明卡 | 静态核对通过；待本地 smoke 复核 |
+| `/world` cleared 状态 | 正式主页保持清空，不恢复旧画布或网页卡片主页 | 已通过本地 smoke |
+| 旧主页卡片移除 | 不恢复当前记录卡片、管家说明卡片、P-Phone 卡片、顶部说明卡 | 已通过本地 smoke |
 | Debug Composer 定位 | `/world-debug/pixel-scene-composer` 只作为 Debug 视觉参考库 | 已锁定口径 |
-| create-world 路径 | `/create-world` → runtime save → `/world` 可验收 | 待本地 node smoke 复核 |
-| M7 闭环 | 管家行为 → 验证 → 痕迹 → 记忆种子 → 解释链路不被破坏 | 待本地 smoke 复核 |
-| WorldViewModel 主链路 | 正式表现模型主链路继续存在，但当前不恢复画面 | 静态核对通过；待本地 smoke 复核 |
+| create-world 路径 | `/create-world` → runtime save → `/world` 可验收 | 已通过 node smoke |
+| M7 闭环 | 管家行为 → 验证 → 痕迹 → 记忆种子 → 解释链路不被破坏 | 已通过本地 smoke |
+| WorldViewModel 主链路 | 正式表现模型主链路继续存在，但当前不恢复画面 | 已通过本地 smoke |
 | smoke 注册情况 | 区分 package.json 已注册命令与 node 直接运行脚本 | 已整理 |
 | Debug 地址用途 | 明确 Debug 页面用途，不进入正式 `/world` | 已整理 |
 | 孵化器旧链条 | 不恢复 incubator / embryo / hatch / hatch progress | 已锁定口径 |
@@ -67,7 +67,23 @@ M11｜验收整理
 | `src/app/world/components/pixel-world-view/pixel-world-view.tsx` | 通过 | `PixelWorldView` 当前只保留 `data-surface-state="cleared"` 的 cleared surface |
 | `src/app/world/world-live-runtime-page.tsx` | 通过 | `/world` 仍通过 `readWorldRuntimeForView` 读取 runtime，并构建 `buildWorldViewModelForPixelWorld`；页面层不推进 runtime tick |
 | `package.json` | 通过 | M11 formal surface、M7 closeout / explanation / audit-summary、butler trace closure、WorldViewModel primary smoke 已注册 |
-| `scripts/run-world-m11-create-world-flow-smoke.cjs` | 待命令复核 | 当前不注册 npm alias，继续按 handoff 要求用 node 直接跑 |
+| `scripts/run-world-m11-create-world-flow-smoke.cjs` | 通过 | 当前不注册 npm alias，继续按 handoff 要求用 node 直接跑 |
+
+## M11 命令级验收记录
+
+| 命令 | 结果 | 说明 |
+|---|---|---|
+| `git pull` | PASS | 已拉取最新 smoke 修正 |
+| `npm run lint` | PASS | ESLint 通过 |
+| `npx tsc --noEmit` | PASS | TypeScript 类型检查通过 |
+| `npm run build` | PASS | Next.js 16.2.4 build 通过 |
+| `npm run smoke:m11-formal-surface` | PASS | `/world` cleared、旧画布/卡片移除、无默认宠物、read-only surface 通过 |
+| `node scripts/run-world-m11-create-world-flow-smoke.cjs` | PASS | create-world API 写入 runtime save，`/world` 可读取创建后的 runtime save |
+| `npm run smoke:m7-closeout` | PASS | fresh runtime 可自举一次显式 tick 并完成 M7 closeout 验收 |
+| `npm run smoke:m7-explanation` | PASS | explanation / pPhone model 链路通过；M11 cleared surface 未恢复旧说明卡片 |
+| `npm run smoke:m7-audit-summary` | PASS | audit summary 持久化、trace pointer、safeguards、read-only view 通过 |
+| `npm run smoke:butler-trace-closure` | PASS | Butler trace closure、no default pet、read-only view 通过 |
+| `npm run smoke:world-pixel-viewmodel-primary` | PASS | WorldViewModel 主链路、无 Scene Composer gateway、无 SVG renderer、无默认宠物通过 |
 
 ## 当前 smoke / 验收命令整理
 
@@ -120,7 +136,7 @@ node scripts/run-world-m11-create-world-flow-smoke.cjs
 - `WorldViewModel` 不直接依赖 `scene-composer-gateway`
 - smoke 已守卫默认宠物不生成、runtime 不写入、tick 不推进
 
-注意：以上是正式表现模型主链路能力，不代表当前 `/world` 已恢复正式像素画面。当前 `/world` 必须继续保持 cleared，直到验收整理完成并进入后续正式画图算法重整。
+注意：以上是正式表现模型主链路能力，不代表当前 `/world` 已恢复正式像素画面。当前 `/world` 必须继续保持 cleared，直到后续正式画图算法重整完成并通过验收。
 
 ## M7 管家行为 → 痕迹闭环完成内容
 
@@ -134,7 +150,7 @@ ButlerState / runtime decision
 → Trace / Event / Resource / HomeMapState diff
 → MemorySeed
 → ButlerRuntimeAuditSummary
-→ /world explanation / P-Phone explanation
+→ explanation / pPhone model
 → 下一轮 RuntimeSaveRecord
 ```
 
@@ -157,6 +173,28 @@ ButlerState / runtime decision
 - `continue_construction / maintain_home` 仍必须通过 SafeApply 才能写 HomeMapState diff
 - 明确守卫 `no_pet_fact_created`，M7 不默认生成宠物
 - 明确守卫正式 `/world` 不回退 SVG / Scene Composer / Debug 主链路
+
+## 下一阶段入口
+
+M11 验收整理完成后，下一阶段不是直接恢复 `/world` 画面，而是先建立：
+
+```txt
+核心资源库 / 验算库
+```
+
+该阶段目标是验证正式算法输出是否正确，包括但不限于：
+
+- SpaceGrid 是否正确。
+- SpaceCell terrainKind / regionKind / traceStrength 是否正确。
+- HomeMapState placements 是否正确。
+- TraceField 是否正确。
+- TraceMemorySeedField 是否正确。
+- WorldViewModel tiles / objects / traces / actors 是否正确。
+- derived_visual_only 是否只读。
+- not_world_fact / no_runtime_write 是否齐全。
+- 默认宠物是否没有出现。
+- 坐标定位是否正确。
+- 生态对象是否按正式规则生成。
 
 ## M11 禁止事项
 
