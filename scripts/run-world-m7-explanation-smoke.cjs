@@ -67,8 +67,10 @@ async function main() {
 
     const requiredTokens = [
       "buildButlerExplanationView",
-      "lastButlerRuntimeIntent",
-      "lastButlerWorldRuleValidation",
+      "lastButlerRuntimeAuditSummary",
+      "userFacingSummary",
+      "buildSummaryBody",
+      "buildSummaryMessage",
       "traceMemorySeedField",
       "m7_butler_trace_closure",
       "not_pet_trace",
@@ -108,6 +110,7 @@ async function main() {
     assert(record.lastButlerRuntimeDecision, "Runtime record is missing lastButlerRuntimeDecision.")
     assert(record.lastButlerRuntimeIntent, "Runtime record is missing lastButlerRuntimeIntent.")
     assert(record.lastButlerWorldRuleValidation, "Runtime record is missing lastButlerWorldRuleValidation.")
+    assert(record.lastButlerRuntimeAuditSummary, "Runtime record is missing lastButlerRuntimeAuditSummary.")
     assert(record.traceField, "Runtime record is missing TraceField.")
     assert(record.traceMemorySeedField, "Runtime record is missing TraceMemorySeedField.")
     assert(
@@ -145,8 +148,10 @@ async function main() {
   const record = parseJson(beforeRaw, "Runtime save file is not valid JSON.")
   assertM7RuntimeFacts(record)
 
+  const summary = record.lastButlerRuntimeAuditSummary
   const currentButlerTrace = findCurrentButlerTrace(record)
   assert(currentButlerTrace, "No current M7 butler behavior trace is available for explanation.")
+  assert(summary.traceId === currentButlerTrace.id, "Audit summary traceId does not point to current butler trace.")
 
   const { buildWorldViewModelForPixelWorld } = localRequire(viewModelGatewayPath)
   const model = buildWorldViewModelForPixelWorld({ saveRecord: record, isPersisted: true })
@@ -159,6 +164,10 @@ async function main() {
   ].join("\n")
 
   assert(model.tags.includes("m7_butler_trace_closure_explanation"), "WorldViewModel is missing M7 explanation tag.")
+  assert(model.butlerExplanation.body.includes(summary.userFacingSummary), "Butler explanation does not use audit summary userFacingSummary.")
+  assert(model.butlerExplanation.body.includes(summary.traceId), "Butler explanation does not expose audit summary trace pointer.")
+  assert(model.pPhone.latestMessageBody.includes(`当前可参考的记忆种子：${summary.memorySeedCount} 条。`), "P-Phone does not use audit summary memory seed count.")
+  assert(model.pPhone.latestMessageBody.includes("世界规则验证"), "P-Phone does not explain validation from summary path.")
   assert(combinedText.includes("管家"), "M7 explanation does not mention butler naturally.")
   assert(combinedText.includes("痕迹"), "M7 explanation does not mention traces naturally.")
   assert(
@@ -191,6 +200,7 @@ async function main() {
   console.log(`Trace: ${currentButlerTrace.id}`)
   console.log(`Butler title: ${model.butlerExplanation.title}`)
   console.log(`P-Phone title: ${model.pPhone.latestMessageTitle}`)
+  console.log("M7 explanation reads audit summary first: ok")
   console.log("M7 explanation reads persisted intent / validation / trace / memory seed: ok")
   console.log("No raw debug score display: ok")
   console.log("Explanation read-only: ok")
