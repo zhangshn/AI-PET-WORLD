@@ -2,7 +2,7 @@
 
 > 本进度表只依据《完整业务架构总图（强化版）》与《无大数据训练阶段：规则型 AI 自主世界与像素表现落地方案》以及 `AI_PET_WORLD_V2_6_HANDOFF_M11_MVP_CLOSEOUT.md`。
 >
-> 当前准确阶段：M11｜核心资源库 / 验算库启动阶段。
+> 当前准确阶段：M11｜核心资源库 / 验算库第一批验收通过。
 > 当前不是恢复 `/world` 画面，不是网页卡片主页整理，不是进入 M8 / M9 / M10。
 
 | 模块 | 进度 | 状态 | 说明 |
@@ -21,13 +21,13 @@
 | M10 宠物学习预留 | 0% | 后置 | MVP 阶段不做 |
 | M11 主页清空 | 100% | 完成 | `/world` 已保持 cleared 状态；旧画布、当前记录卡片、管家说明卡片、P-Phone 卡片已从正式主页移除 |
 | M11 验收整理 | 100% | 完成 | 已完成 handoff 复读、关键文件静态核对、smoke 注册情况整理、Debug 地址用途整理与本地命令级验收 |
-| M11 核心资源库 / 验算库 | 35% | 进行中 | 已新增正式验算库文档、只读核心资源验算 smoke、package smoke 注册；待本地 lint / tsc / build / smoke 验收 |
-| M11 正式画图算法重整 | 0% | 后续 | 核心资源库 / 验算库边界明确并通过验收后再开始；未来 `/world` 是端游式像素主世界，不是网页卡片页 |
+| M11 核心资源库 / 验算库 | 60% | 进行中 | 第一批正式验算库文档、只读核心资源验算 smoke、package smoke 注册与本地命令级验收已通过；下一步扩展 SpaceCell / 坐标 / 生态对象验算细项 |
+| M11 正式画图算法重整 | 0% | 后续 | 核心资源库 / 验算库边界继续补齐并通过验收后再开始；未来 `/world` 是端游式像素主世界，不是网页卡片页 |
 | M12 构建与质量验收 | 持续 | 持续 | 每个模块后必须 lint / tsc / build / 对应 smoke |
 
 ## 当前路线
 
-当前项目已经完成 M1-M6.5、WORLD-PIXEL-RULE-MAPPER-00、M7 管家行为 → 痕迹闭环与 M11 验收整理。
+当前项目已经完成 M1-M6.5、WORLD-PIXEL-RULE-MAPPER-00、M7 管家行为 → 痕迹闭环、M11 验收整理，以及核心资源库 / 验算库第一批只读验收。
 
 当前准确阶段是：
 
@@ -35,7 +35,7 @@
 M11｜核心资源库 / 验算库
 ```
 
-当前已启动正式核心资源库 / 验算库，目标是验证正式算法输出是否正确，而不是恢复 `/world` 画面。
+当前目标是继续补齐正式算法输出验算，而不是恢复 `/world` 画面。
 
 后续路线仍然是：
 
@@ -64,26 +64,55 @@ M11｜核心资源库 / 验算库
 | 对象 | 当前结果 | 说明 |
 |---|---|---|
 | 正式验算库文档 | 已新增 | `docs/v2_6/AI_PET_WORLD_V2_6_FORMAL_CORE_RESOURCE_VALIDATION_LIBRARY.md` |
-| 核心资源验算 smoke | 已新增 | `scripts/run-world-m11-core-resource-validation-smoke.cjs` |
-| npm smoke 注册 | 已新增 | `npm run smoke:m11-core-resource-validation` |
-| 验算方式 | 只读 | 不推进 runtime tick，不写 runtime save，不改 HomeMapState |
-| `/world` 状态 | 保持 cleared | 当前阶段不恢复正式画面 |
+| 核心资源验算 smoke | 已新增并通过 | `scripts/run-world-m11-core-resource-validation-smoke.cjs` |
+| npm smoke 注册 | 已新增并通过 | `npm run smoke:m11-core-resource-validation` |
+| 验算方式 | 只读并已验收 | 不推进 runtime tick，不写 runtime save，不改 HomeMapState |
+| `/world` 状态 | 保持 cleared 并已验收 | 当前阶段不恢复正式画面 |
+| 全量回归 | 已通过 | lint / tsc / build / M11 / M7 / WorldViewModel smoke 全部 PASS |
+
+## M11 核心资源库 / 验算库命令级验收记录
+
+| 命令 | 结果 | 说明 |
+|---|---|---|
+| `git pull` | PASS | 已拉取核心资源库 / 验算库提交 |
+| `npm run lint` | PASS | ESLint 通过 |
+| `npx tsc --noEmit` | PASS | TypeScript 类型检查通过 |
+| `npm run build` | PASS | Next.js 16.2.4 build 通过 |
+| `npm run smoke:m11-core-resource-validation` | PASS | Runtime save / HomeMapState / TraceField / WorldViewModel 只读验算通过 |
+| `npm run smoke:m11-formal-surface` | PASS | `/world` cleared、旧画布/卡片移除、无默认宠物、read-only surface 通过 |
+| `node scripts/run-world-m11-create-world-flow-smoke.cjs` | PASS | create-world API 写入 runtime save，`/world` 可读取创建后的 runtime save |
+| `npm run smoke:m7-closeout` | PASS | fresh runtime 可自举一次显式 tick 并完成 M7 closeout 验收 |
+| `npm run smoke:m7-explanation` | PASS | explanation / pPhone model 链路通过；M11 cleared surface 未恢复旧说明卡片 |
+| `npm run smoke:m7-audit-summary` | PASS | audit summary 持久化、trace pointer、safeguards、read-only view 通过 |
+| `npm run smoke:butler-trace-closure` | PASS | Butler trace closure、no default pet、read-only view 通过 |
+| `npm run smoke:world-pixel-viewmodel-primary` | PASS | WorldViewModel 主链路、无 Scene Composer gateway、无 SVG renderer、无默认宠物通过 |
 
 ## 核心资源库 / 验算库第一批验算范围
 
 | 验算对象 | 验算目标 | 当前口径 |
 |---|---|---|
-| WorldRuntimeSaveRecord | runtime save 存在、version / worldId / ownerId / tick 基础字段正确 | 事实源 |
-| HomeMapState | mapSize / zones / placements / constructionPlans / mapDiffs 可读 | 世界事实 |
-| SpaceGrid / canvas | columns × rows × tileSize 映射到 WorldViewModel canvas | 空间底座 |
-| TraceField | traces 作为痕迹投影来源 | 痕迹事实 |
-| TraceMemorySeedField | 记忆种子字段存在 | 后续学习输入 |
-| TraceInfluenceSummary | 痕迹影响摘要存在 | 行为 / 表现影响输入 |
-| WorldViewModel tiles | tile 数量等于 columns × rows | 表现投影 |
-| WorldViewModel objects | world_fact 与 derived_visual_only 分离 | 事实 / 视觉派生隔离 |
-| derived_visual_only | 必须带 `not_world_fact` 与 `no_runtime_write` | 只读视觉派生 |
-| WorldViewModel actors | 管家可见；默认宠物不得出现 | 生命表现边界 |
-| formal `/world` path | 不引用 Debug Composer / SVG / procedural renderer | 正式入口隔离 |
+| WorldRuntimeSaveRecord | runtime save 存在、version / worldId / ownerId / tick 基础字段正确 | 已验收 |
+| HomeMapState | mapSize / zones / placements / constructionPlans / mapDiffs 可读 | 已验收 |
+| SpaceGrid / canvas | columns × rows × tileSize 映射到 WorldViewModel canvas | 已验收 |
+| TraceField | traces 作为痕迹投影来源 | 已验收 |
+| TraceMemorySeedField | 记忆种子字段存在 | 已验收 |
+| TraceInfluenceSummary | 痕迹影响摘要存在 | 已验收 |
+| WorldViewModel tiles | tile 数量等于 columns × rows | 已验收 |
+| WorldViewModel objects | world_fact 与 derived_visual_only 分离 | 已验收 |
+| derived_visual_only | 必须带 `not_world_fact` 与 `no_runtime_write` | 已验收 |
+| WorldViewModel actors | 管家可见；默认宠物不得出现 | 已验收 |
+| formal `/world` path | 不引用 Debug Composer / SVG / procedural renderer | 已验收 |
+
+## 下一批核心验算细项
+
+下一步继续补齐，不恢复 `/world` 画面：
+
+- SpaceCell terrainKind / regionKind / traceStrength 验算。
+- 坐标定位与对象边界验算。
+- 生态对象来源与分布规则验算。
+- Trace visualKind / layer / intensity 验算。
+- actor 坐标、可见性、默认宠物禁用验算深化。
+- create-world flow 的 npm smoke 注册是否需要独立补齐。
 
 ## 当前 smoke / 验收命令整理
 
