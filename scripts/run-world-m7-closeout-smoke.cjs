@@ -267,7 +267,14 @@ async function main() {
   assert(model.pPhone.latestMessageBody.includes(`当前可参考的记忆种子：${summary.memorySeedCount} 条。`), "P-Phone model does not read audit summary memory seed count.")
   assert(explanationText.includes("管家"), "Closeout explanation does not mention butler.")
   assert(explanationText.includes("痕迹"), "Closeout explanation does not mention trace.")
-  assert(explanationText.includes("HomeMapState") || explanationText.includes("家园事实") || explanationText.includes("家园结构"), "Closeout explanation does not mention HomeMapState/world fact boundary.")
+  assert(
+    explanationText.includes("HomeMapState") ||
+      explanationText.includes("SafeApply") ||
+      explanationText.includes("家园事实") ||
+      explanationText.includes("家园结构") ||
+      explanationText.includes("家园变化"),
+    "Closeout explanation does not mention the world fact / SafeApply boundary."
+  )
   assert(!explanationText.includes("finalScore"), "Closeout explanation exposes finalScore.")
   assert(!explanationText.includes("riskPenalty"), "Closeout explanation exposes riskPenalty.")
   assert(!explanationText.includes("JSON"), "Closeout explanation exposes serialized debug data.")
