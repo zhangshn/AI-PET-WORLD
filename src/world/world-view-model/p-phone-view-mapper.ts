@@ -10,6 +10,15 @@ export function buildPPhoneView(input: {
 }): WorldViewModel["pPhone"] {
   const latestEvent =
     input.saveRecord.recentEvents[input.saveRecord.recentEvents.length - 1]
+  const summary = input.saveRecord.lastButlerRuntimeAuditSummary
+
+  if (summary) {
+    return {
+      unreadCount: 1,
+      latestMessageTitle: buildSummaryTitle(summary.intentKind),
+      latestMessageBody: buildSummaryMessage({ saveRecord: input.saveRecord }),
+    }
+  }
 
   if (!latestEvent) {
     return {
@@ -30,6 +39,45 @@ export function buildPPhoneView(input: {
       saveRecord: input.saveRecord,
     }),
   }
+}
+
+function buildSummaryTitle(intentKind: string): string {
+  if (intentKind === "resource_wait") return "管家留下了等待痕迹"
+  if (intentKind === "observation") return "管家记录了一次观察"
+  if (intentKind === "maintenance") return "管家完成了一次维护判断"
+  if (intentKind === "construction") return "管家完成了一次建设判断"
+
+  return "管家留下了新的行动记录"
+}
+
+function buildSummaryMessage(input: {
+  saveRecord: WorldRuntimeSaveRecord
+}): string {
+  const summary = input.saveRecord.lastButlerRuntimeAuditSummary
+
+  if (!summary) return "世界正在整理本轮管家记录。"
+
+  const validationText =
+    summary.validationStatus === "passed"
+      ? "这次行动已经通过世界规则验证。"
+      : "这次行动被世界规则拦下，没有写入新的世界事实。"
+  const writeText =
+    summary.homeMapWriteStatus === "not_requested"
+      ? "管家没有强行改写 HomeMapState，只把经过验证的行为沉淀为痕迹。"
+      : summary.homeMapWriteStatus === "safe_apply_written"
+        ? "本轮有家园变化通过 SafeApply 写入。"
+        : summary.homeMapWriteStatus === "safe_apply_no_diff"
+          ? "本轮保留 SafeApply 边界，但没有新的家园变化写入。"
+          : "本轮家园变化被世界规则拦下，没有写入。"
+  const traceText = summary.traceId
+    ? `本轮痕迹类型：${traceTypeToText(summary.traceType ?? "")}。`
+    : "本轮没有找到可公开展示的新痕迹。"
+  const memoryText =
+    summary.memorySeedCount > 0
+      ? `当前可参考的记忆种子：${summary.memorySeedCount} 条。`
+      : "当前还没有稳定记忆种子。"
+
+  return `${validationText}${writeText}${traceText}${memoryText}`
 }
 
 function localizeEventTitle(input: {
