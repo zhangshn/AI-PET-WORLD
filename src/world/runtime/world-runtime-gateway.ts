@@ -5,6 +5,7 @@
 import { buildButlerMvpProfile } from "@/world/butler/butler-personality-adapter"
 import { buildMvpInitialWorld } from "@/world/mvp-core/mvp-initial-world-builder"
 
+import { buildButlerRuntimeAuditSummary } from "./butler-runtime-audit-summary"
 import {
   readWorldRuntimeSaveRecord,
   writeWorldRuntimeSaveRecord,
@@ -143,30 +144,98 @@ export async function runAndPersistOneRuntimeTick(input?: {
     now: input?.now ?? Date.now(),
     tags: ["run_and_persist_one_runtime_tick"],
   })
-  const writeResult = tickResultWithoutPersistence.audit.ok
+  const enrichedNextSaveRecord = attachButlerRuntimeAuditSummary({
+    nextSaveRecord: tickResultWithoutPersistence.nextSaveRecord,
+  })
+  const enrichedTickResult = {
+    ...tickResultWithoutPersistence,
+    nextSaveRecord: enrichedNextSaveRecord,
+    audit: {
+      ...tickResultWithoutPersistence.audit,
+      tags: [
+        ...tickResultWithoutPersistence.audit.tags,
+        enrichedNextSaveRecord.lastButlerRuntimeAuditSummary
+          ? "butler_runtime_audit_summary_persisted"
+          : "butler_runtime_audit_summary_unavailable",
+      ],
+    },
+    messages: [
+      ...tickResultWithoutPersistence.messages,
+      enrichedNextSaveRecord.lastButlerRuntimeAuditSummary?.userFacingSummary ??
+        "Butler runtime audit summary was not available for this tick.",
+    ],
+    tags: [
+      ...tickResultWithoutPersistence.tags,
+      enrichedNextSaveRecord.lastButlerRuntimeAuditSummary
+        ? "butler_runtime_audit_summary_persisted"
+        : "butler_runtime_audit_summary_unavailable",
+    ],
+  }
+  const writeResult = enrichedTickResult.audit.ok
     ? await writeWorldRuntimeSaveRecord({
-        record: tickResultWithoutPersistence.nextSaveRecord,
+        record: enrichedTickResult.nextSaveRecord,
       })
     : {
         ok: false,
         path: "",
         message: "Runtime audit blocked persistence.",
-        warnings: tickResultWithoutPersistence.audit.warnings,
+        warnings: enrichedTickResult.audit.warnings,
         tags: ["world_runtime_store_write", "blocked_by_audit"],
       }
 
   return {
-    ...tickResultWithoutPersistence,
+    ...enrichedTickResult,
     persisted: writeResult.ok,
     messages: [
-      ...tickResultWithoutPersistence.messages,
+      ...enrichedTickResult.messages,
       writeResult.message,
       ...writeResult.warnings,
     ],
     tags: [
-      ...tickResultWithoutPersistence.tags,
+      ...enrichedTickResult.tags,
       ...writeResult.tags,
       writeResult.ok ? "runtime_save_persisted" : "runtime_save_not_persisted",
+    ],
+  }
+}
+
+function attachButlerRuntimeAuditSummary(input: {
+  nextSaveRecord: WorldRuntimeSaveRecord
+}): WorldRuntimeSaveRecord {
+  const record = input.nextSaveRecord
+  const decision = record.lastButlerRuntimeDecision
+  const intent = record.lastButlerRuntimeIntent
+  const validation = record.lastButlerWorldRuleValidation
+
+  if (!decision || !intent || !validation) {
+    return record
+  }
+
+  const createdTrace =
+    record.traceField?.traces.find(
+      (trace) =>
+        trace.sourceKind === "butler_behavior" &&
+        trace.updatedAtTick === record.tick &&
+        trace.derivedFrom.includes(intent.id) &&
+        trace.derivedFrom.includes(validation.id)
+    ) ?? null
+  const summary = buildButlerRuntimeAuditSummary({
+    tick: record.tick,
+    createdAt: record.savedAt,
+    decision,
+    intent,
+    validation,
+    acceptedDiffCount: record.lastRuntimeAction?.acceptedDiffCount ?? 0,
+    createdTrace,
+    memorySeedCount: record.traceMemorySeedField?.summary.totalSeeds ?? 0,
+  })
+
+  return {
+    ...record,
+    lastButlerRuntimeAuditSummary: summary,
+    tags: [
+      ...record.tags,
+      "butler_runtime_audit_summary_persisted",
     ],
   }
 }
@@ -211,6 +280,9 @@ function buildInitialRuntimeSaveRecord(input: {
     lastRuntimeAction: null,
     recentMotivationTypes: [],
     lastButlerRuntimeDecision: null,
+    lastButlerRuntimeIntent: null,
+    lastButlerWorldRuleValidation: null,
+    lastButlerRuntimeAuditSummary: null,
     tags: [
       "world_runtime_save_record",
       "local_mvp_only",
