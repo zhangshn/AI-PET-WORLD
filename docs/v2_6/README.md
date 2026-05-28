@@ -20,6 +20,7 @@
 | `AI_PET_WORLD_V2_6_RULE_BASED_AI_PIXEL_IMPLEMENTATION.md` | 无大数据训练阶段规则型 AI 自主世界与像素表现落地方案，按上传标准写入 |
 | `AI_PET_WORLD_V2_6_PIXEL_WORLD_RENDERING_ALGORITHM.md` | 正式像素主世界绘制算法，保留并对齐上传标准 |
 | `AI_PET_WORLD_V2_6_MODULE_PROGRESS.md` | 当前模块进度与下一步路线 |
+| `AI_PET_WORLD_V2_6_M7_BUTLER_TRACE_CLOSURE_CLOSEOUT.md` | M7 管家行为 → 痕迹闭环收口报告 |
 
 ## 红线
 
@@ -30,4 +31,4 @@
 - 当前阶段不训练大模型。
 - 不设置独立 road/path 架构，长期移动结果归入痕迹体系。
 - 宠物不默认进入世界。
-- 管家行为闭环、宠物学习、世界学习尚未完成，不得写成已完成能力。
+- 管家行为闭环已完成；宠物学习、世界学习尚未完成，不得写成已完成能力。
