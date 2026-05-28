@@ -13,17 +13,17 @@
 | M6.5 legacy 命名清理 | 100% | 完成 | legacy road/path 业务口径已降级为兼容命名，正式文档与正式链路不再使用 |
 | WORLD-PIXEL-RULE-MAPPER-00 | 100% | 完成 | 正式 `/world` 已接入 SpaceGrid / TraceField / HomeMapState / ButlerState → WorldViewModel → PixelWorldView；lint、tsc、build、pixel smoke 已通过；正式链路已无 Debug/SVG/Scene Composer 主链路残留 |
 | M7 管家行为 → 痕迹闭环 | 100% | 完成 | 已完成并收口：Butler decision → intent → world rule validation → trace closure → TraceField / MemorySeedField → lastButlerRuntimeAuditSummary → /world explanation / P-Phone explanation；closeout 文档已写入，相关 smoke 已通过 |
-| M8 管家记忆与学习 | 0% | 未开始 | 后置，不在 M7 范围内 |
-| M9 世界学习 v0 | 0% | 未开始 | 后置，不在 M7 范围内 |
-| M10 宠物学习预留 | 0% | 未开始 | 后置，不在 M7 范围内 |
-| M11 主世界正式体验整理 | 进行中 | 进行中 | `/world` 已有正式 PixelWorldView 主链路，下一步进入 MVP 收口与正式体验整理 |
+| M8 管家记忆与学习 | 0% | 未开始 | 后置，不在 MVP 收口范围内 |
+| M9 世界学习 v0 | 0% | 未开始 | 后置，不在 MVP 收口范围内 |
+| M10 宠物学习预留 | 0% | 未开始 | 后置，不在 MVP 收口范围内 |
+| M11 主世界正式体验整理 | 20% | 进行中 | 第一轮已完成：`/world` 增加正式用户可见顶部说明、世界状态、只读说明；`smoke:m11-formal-surface` 已通过，确认无用户可见后台词、不默认生成宠物、不回退旧渲染 |
 | M12 构建与质量验收 | 持续 | 持续 | 每个模块后必须 lint / tsc / build / smoke |
 
 ## 当前路线
 
-WORLD-PIXEL-RULE-MAPPER-00 已完成并收口。M7 管家行为 → 痕迹闭环已完成并写入收口报告。
+WORLD-PIXEL-RULE-MAPPER-00 已完成并收口。M7 管家行为 → 痕迹闭环已完成并写入收口报告。M11 已进入 MVP 收口路线，第一轮正式世界表层已通过验收。
 
-当前项目不建议继续大跳 M8 / M9 扩功能。下一阶段进入 MVP 收口路线：固定正式 `/world` 主链路，整理 `create-world → /world` 的最短用户路径，检查正式 UI 是否仍有 Debug / 工程表达残留，并准备一个可演示、可部署、可让真实用户打开体验的 Web MVP。
+下一步继续整理 `create-world → /world` 的最短用户路径，重点检查输入页文案、创建结果是否被正式主世界读取、是否仍有 Debug / 工程表达残留，并准备一个可演示、可部署、可让真实用户打开体验的 Web MVP。
 
 ## WORLD-PIXEL-RULE-MAPPER-00 完成内容
 
@@ -78,4 +78,15 @@ ButlerState / runtime decision
 - 明确守卫 `no_pet_fact_created`，M7 不默认生成宠物
 - 明确守卫正式 `/world` 不回退 SVG / Scene Composer / Debug 主链路
 
-M7 不负责改画图算法，不负责默认生成宠物，不负责世界学习。M7 只负责把管家的正式行为结果接入世界事实变化、痕迹沉淀、结构化审计摘要和前台解释。
+## M11 主世界正式体验整理当前完成内容
+
+- `/world` 顶部增加正式用户可见说明。
+- `/world` 显示当前运行记录次数。
+- `/world` 明确提示打开页面只读取世界，不强行推进时间。
+- 保留正式 PixelWorldView 主链路。
+- 保留管家说明与 P-Phone 两个用户可理解入口。
+- `smoke:m11-formal-surface` 已新增并通过。
+- 已守卫用户可见文案不暴露 TraceField、AuditSummary、WorldViewModel、SafeApply 等后台词。
+- 已守卫不默认生成宠物。
+
+M11 不负责扩展 M8 / M9 / M10，不负责新增小镇、公园、医院、多用户或复杂宠物系统。M11 只负责把当前自主世界闭环整理成可体验的 MVP。
