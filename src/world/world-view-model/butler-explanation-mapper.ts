@@ -10,6 +10,15 @@ export function buildButlerExplanationView(input: {
   saveRecord: WorldRuntimeSaveRecord
 }): ButlerExplanationView {
   const { saveRecord } = input
+  const summary = saveRecord.lastButlerRuntimeAuditSummary
+
+  if (summary) {
+    return {
+      title: buildSummaryTitle(summary.intentKind),
+      body: buildSummaryBody({ saveRecord }),
+    }
+  }
+
   const decision = saveRecord.lastButlerRuntimeDecision
   const intent = saveRecord.lastButlerRuntimeIntent
   const validation = saveRecord.lastButlerWorldRuleValidation
@@ -71,6 +80,45 @@ export function buildButlerExplanationView(input: {
       memorySeedCount,
     }),
   }
+}
+
+function buildSummaryTitle(intentKind: string): string {
+  if (intentKind === "resource_wait") return "管家选择等待资源稳定"
+  if (intentKind === "observation") return "管家选择继续观察"
+  if (intentKind === "maintenance") return "管家正在维护家园"
+  if (intentKind === "construction") return "管家正在评估建设"
+
+  return "管家更新了判断"
+}
+
+function buildSummaryBody(input: {
+  saveRecord: WorldRuntimeSaveRecord
+}): string {
+  const summary = input.saveRecord.lastButlerRuntimeAuditSummary
+
+  if (!summary) return "管家正在整理本轮世界记录。"
+
+  const boundaryText =
+    summary.homeMapWriteStatus === "not_requested"
+      ? "本轮没有请求改写 HomeMapState。"
+      : summary.homeMapWriteStatus === "safe_apply_written"
+        ? "本轮有家园变化通过 SafeApply 写入。"
+        : summary.homeMapWriteStatus === "safe_apply_no_diff"
+          ? "本轮保留 SafeApply 边界，但没有新的家园变化写入。"
+          : "本轮家园变化被世界规则拦下，没有写入。"
+  const traceText = summary.traceId
+    ? `它留下了${traceTypeToText(summary.traceType ?? "")}，痕迹编号 ${summary.traceId}。`
+    : "本轮没有形成新的可见行为痕迹。"
+  const validationText =
+    summary.validationStatus === "passed"
+      ? "这次行动已经通过世界规则验证。"
+      : "这次行动没有通过世界规则验证。"
+  const memoryText =
+    summary.memorySeedCount > 0
+      ? `当前有 ${summary.memorySeedCount} 条记忆种子可供后续判断参考。`
+      : "当前还没有稳定记忆种子。"
+
+  return `${summary.userFacingSummary}${validationText}${boundaryText}${traceText}${memoryText}`
 }
 
 function findCurrentButlerTrace(
