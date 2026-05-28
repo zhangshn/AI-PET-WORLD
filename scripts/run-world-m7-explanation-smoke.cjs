@@ -77,8 +77,8 @@ async function main() {
       "not_pet_trace",
       "HomeMapState",
       "buildPPhoneView",
-      "model.butlerExplanation.title",
-      "model.pPhone.latestMessageTitle",
+      "butlerExplanation: buildButlerExplanationView",
+      "pPhone: buildPPhoneView",
     ]
 
     requiredModelTokens.forEach((token) =>
