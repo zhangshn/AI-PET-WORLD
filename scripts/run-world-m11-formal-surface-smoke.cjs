@@ -32,15 +32,6 @@ async function main() {
     }
   }
 
-  function extractUserFacingStringLiterals(source) {
-    const matches = source.matchAll(/(?<![A-Za-z0-9_$])(?:"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'|`([^`\\]*(?:\\.[^`\\]*)*)`)/g)
-
-    return Array.from(matches)
-      .map((match) => match[1] ?? match[2] ?? match[3] ?? "")
-      .filter((value) => /[\u4e00-\u9fa5]/.test(value))
-      .join("\n")
-  }
-
   function installTypeScriptRequireHook() {
     const moduleConstructor = moduleApi.default
     const originalResolveFilename = moduleConstructor._resolveFilename
@@ -76,36 +67,29 @@ async function main() {
     const combinedSource = [pixelViewSource, pixelViewCss, createWorldSource, worldPageSource].join("\n")
 
     const requiredTokens = [
-      "你的自主像素家园正在运行",
-      "行动会经过世界规则验证",
-      "打开页面只会读取世界",
-      "当前记录",
-      "第 {model.tick} 次运行",
-      "管家说明",
-      "P-Phone",
-      "进入世界",
-      "宠物不会默认出现",
-      "router.push(\"/world\")",
-      "readWorldRuntimeForView",
       "PixelWorldView",
+      "data-surface-state=\"cleared\"",
+      "readWorldRuntimeForView",
+      "buildWorldViewModelForPixelWorld",
+      "router.push(\"/world\")",
+      "宠物不会默认出现",
     ]
 
     requiredTokens.forEach((token) =>
-      assert(combinedSource.includes(token), `M11 formal surface is missing required token: ${token}.`)
+      assert(combinedSource.includes(token), `M11 cleared formal surface is missing required token: ${token}.`)
     )
 
-    const userFacingText = extractUserFacingStringLiterals([pixelViewSource, createWorldSource].join("\n"))
-    const forbiddenUserFacingTokens = [
-      "TraceField",
-      "AuditSummary",
-      "ButlerRuntimeAuditSummary",
-      "WorldViewModel",
-      "SafeApply",
-      "finalScore",
-      "riskPenalty",
-      "debugScore",
-      "rawScore",
-      "JSON.stringify",
+    const forbiddenSurfaceTokens = [
+      "PixelWorldCanvas",
+      "pixelWorldStageFrame",
+      "worldStatusCard",
+      "worldSurfaceNotes",
+      "butlerExplanation",
+      "pPhoneEntry",
+      "当前记录",
+      "管家说明",
+      "P-Phone",
+      "你的自主像素家园正在运行",
       "buildSceneSvg",
       "scene-composer-gateway",
       "WorldPainterReadonlyPreview",
@@ -116,33 +100,13 @@ async function main() {
       "roadGraph",
       "pathGraph",
     ]
-    const forbiddenUserFacingHits = forbiddenUserFacingTokens.filter((token) =>
-      userFacingText.includes(token)
+    const forbiddenHits = forbiddenSurfaceTokens.filter((token) =>
+      [pixelViewSource, pixelViewCss].join("\n").includes(token)
     )
 
     assert(
-      forbiddenUserFacingHits.length === 0,
-      `M11 user-facing copy contains forbidden/debug/backend tokens: ${forbiddenUserFacingHits.join(", ")}`
-    )
-
-    const forbiddenFormalSourceTokens = [
-      "buildSceneSvg",
-      "scene-composer-gateway",
-      "WorldPainterReadonlyPreview",
-      "FormalWorldView",
-      "ProceduralRendererView",
-      "pet_default",
-      "createPet",
-      "roadGraph",
-      "pathGraph",
-    ]
-    const formalSourceHits = forbiddenFormalSourceTokens.filter((token) =>
-      [pixelViewSource, createWorldSource].join("\n").includes(token)
-    )
-
-    assert(
-      formalSourceHits.length === 0,
-      `M11 user-facing source contains forbidden renderer/pet tokens: ${formalSourceHits.join(", ")}`
+      forbiddenHits.length === 0,
+      `M11 cleared /world surface still contains removed card/canvas/debug tokens: ${forbiddenHits.join(", ")}`
     )
   }
 
@@ -164,11 +128,7 @@ async function main() {
 
   assert(model.tags.includes("runtime_read_only_projection"), "WorldViewModel is missing read-only projection tag.")
   assert(model.tags.includes("pixel_world_primary"), "WorldViewModel is missing pixel primary tag.")
-  assert(model.actors.some((actor) => actor.kind === "butler" && actor.visible), "Formal surface has no visible butler actor.")
-  assert(!model.actors.some((actor) => actor.kind === "pet" && actor.visible), "Formal surface generated a default pet actor.")
-  assert(model.butlerExplanation.title.includes("管家"), "Formal butler explanation title does not mention butler.")
-  assert(model.pPhone.latestMessageTitle.length > 0, "P-Phone title is empty.")
-  assert(model.pPhone.latestMessageBody.includes("痕迹") || model.pPhone.latestMessageBody.includes("世界"), "P-Phone body does not explain world activity.")
+  assert(!model.actors.some((actor) => actor.kind === "pet" && actor.visible), "Formal cleared surface generated a default pet actor.")
 
   const afterRaw = fs.readFileSync(savePath, "utf8")
   const afterHash = crypto.createHash("sha256").update(afterRaw).digest("hex")
@@ -179,12 +139,9 @@ async function main() {
 
   console.log("M11 FORMAL WORLD SURFACE SMOKE")
   console.log(`Runtime tick: ${record.tick}`)
-  console.log(`Canvas: ${model.canvas.width}x${model.canvas.height}`)
-  console.log(`Actors: ${model.actors.length}`)
-  console.log(`Traces: ${model.traces.length}`)
-  console.log("Formal world header copy: ok")
-  console.log("Create-world to /world path: ok")
-  console.log("No user-facing debug/backend copy: ok")
+  console.log("/world homepage cleared: ok")
+  console.log("Removed canvas/cards from formal homepage: ok")
+  console.log("Create-world to /world path still present: ok")
   console.log("No default pet fact: ok")
   console.log("Read-only formal surface: ok")
   console.log("Result: PASS")
