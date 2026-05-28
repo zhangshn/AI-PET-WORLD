@@ -32,6 +32,15 @@ async function main() {
     }
   }
 
+  function extractUserFacingStringLiterals(source) {
+    const matches = source.matchAll(/(?<![A-Za-z0-9_$])(?:"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'|`([^`\\]*(?:\\.[^`\\]*)*)`)/g)
+
+    return Array.from(matches)
+      .map((match) => match[1] ?? match[2] ?? match[3] ?? "")
+      .filter((value) => /[\u4e00-\u9fa5]/.test(value))
+      .join("\n")
+  }
+
   function installTypeScriptRequireHook() {
     const moduleConstructor = moduleApi.default
     const originalResolveFilename = moduleConstructor._resolveFilename
@@ -85,7 +94,8 @@ async function main() {
       assert(combinedSource.includes(token), `M11 formal surface is missing required token: ${token}.`)
     )
 
-    const forbiddenUserSurfaceTokens = [
+    const userFacingText = extractUserFacingStringLiterals([pixelViewSource, createWorldSource].join("\n"))
+    const forbiddenUserFacingTokens = [
       "TraceField",
       "AuditSummary",
       "ButlerRuntimeAuditSummary",
@@ -106,12 +116,33 @@ async function main() {
       "roadGraph",
       "pathGraph",
     ]
-    const userSurfaceSource = [pixelViewSource, createWorldSource].join("\n")
-    const forbiddenHits = forbiddenUserSurfaceTokens.filter((token) => userSurfaceSource.includes(token))
+    const forbiddenUserFacingHits = forbiddenUserFacingTokens.filter((token) =>
+      userFacingText.includes(token)
+    )
 
     assert(
-      forbiddenHits.length === 0,
-      `M11 user-facing surface contains forbidden/debug/backend tokens: ${forbiddenHits.join(", ")}`
+      forbiddenUserFacingHits.length === 0,
+      `M11 user-facing copy contains forbidden/debug/backend tokens: ${forbiddenUserFacingHits.join(", ")}`
+    )
+
+    const forbiddenFormalSourceTokens = [
+      "buildSceneSvg",
+      "scene-composer-gateway",
+      "WorldPainterReadonlyPreview",
+      "FormalWorldView",
+      "ProceduralRendererView",
+      "pet_default",
+      "createPet",
+      "roadGraph",
+      "pathGraph",
+    ]
+    const formalSourceHits = forbiddenFormalSourceTokens.filter((token) =>
+      [pixelViewSource, createWorldSource].join("\n").includes(token)
+    )
+
+    assert(
+      formalSourceHits.length === 0,
+      `M11 user-facing source contains forbidden renderer/pet tokens: ${formalSourceHits.join(", ")}`
     )
   }
 
@@ -153,7 +184,7 @@ async function main() {
   console.log(`Traces: ${model.traces.length}`)
   console.log("Formal world header copy: ok")
   console.log("Create-world to /world path: ok")
-  console.log("No user-facing debug/backend tokens: ok")
+  console.log("No user-facing debug/backend copy: ok")
   console.log("No default pet fact: ok")
   console.log("Read-only formal surface: ok")
   console.log("Result: PASS")
