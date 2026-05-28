@@ -32,10 +32,10 @@
   background: rgba(15, 28, 18, 0.72);
   border: 1px solid rgba(198, 226, 159, 0.16);
   display: grid;
-  gap: 22px;
+  gap: 18px;
   padding: clamp(24px, 4vw, 42px);
   position: relative;
-  width: min(440px, 100%);
+  width: min(460px, 100%);
 }
 
 .brand {
@@ -53,17 +53,28 @@
   margin: 0;
 }
 
-.description {
+.description,
+.notice {
   color: rgba(237, 244, 223, 0.72);
   font-size: 14px;
   line-height: 1.7;
-  margin: -10px 0 0;
+  margin: -6px 0 0;
+}
+
+.notice {
+  border-left: 3px solid rgba(200, 223, 143, 0.56);
+  color: rgba(237, 244, 223, 0.82);
+  padding-left: 12px;
 }
 
 .fieldset {
   border: 0;
   margin: 0;
   padding: 0;
+}
+
+.fieldset:disabled {
+  opacity: 0.64;
 }
 
 .legend {
@@ -112,6 +123,13 @@
   border-color: rgba(198, 226, 159, 0.48);
 }
 
+.errorMessage {
+  color: #ffd1a1;
+  font-size: 13px;
+  line-height: 1.5;
+  margin: -4px 0 0;
+}
+
 .enterButton {
   background: #c8df8f;
   border: 0;
@@ -124,8 +142,13 @@
   margin-top: 2px;
 }
 
-.enterButton:hover {
+.enterButton:hover:not(:disabled) {
   background: #d6eba4;
+}
+
+.enterButton:disabled {
+  cursor: wait;
+  opacity: 0.72;
 }
 
 @media (max-width: 560px) {
