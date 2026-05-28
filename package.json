@@ -16,6 +16,7 @@
     "smoke:butler-trace-closure": "node scripts/run-world-butler-trace-closure-smoke.cjs",
     "smoke:m7-explanation": "node scripts/run-world-m7-explanation-smoke.cjs",
     "smoke:m7-audit-summary": "node scripts/run-world-m7-audit-summary-smoke.cjs",
+    "smoke:m7-closeout": "node scripts/run-world-m7-closeout-smoke.cjs",
     "smoke:butler-memory-seed-consume": "node scripts/run-world-butler-memory-seed-consume-smoke.cjs",
     "smoke:butler-memory-bias-surface": "node scripts/run-world-butler-memory-bias-surface-smoke.cjs",
     "smoke:butler-natural-explanation": "node scripts/run-world-butler-natural-explanation-smoke.cjs",
