@@ -3,6 +3,10 @@
  */
 
 import { buildButlerMvpProfile } from "@/world/butler/butler-personality-adapter"
+import {
+  buildWorldCreationRuntime,
+  type CreateWorldInput,
+} from "@/world/creation/world-creation-runtime"
 import { buildMvpInitialWorld } from "@/world/mvp-core/mvp-initial-world-builder"
 
 import { buildButlerRuntimeAuditSummary } from "./butler-runtime-audit-summary"
@@ -28,6 +32,38 @@ const DEFAULT_RUNTIME_INPUT = {
   birthDay: 18,
   birthHour: 8,
   timezone: "Asia/Shanghai",
+}
+
+export type WorldRuntimeCreateResult = {
+  saveRecord: WorldRuntimeSaveRecord
+  persisted: boolean
+  messages: string[]
+  tags: string[]
+}
+
+export async function createRuntimeWorldFromCreateWorldInput(input: {
+  createWorldInput: CreateWorldInput
+}): Promise<WorldRuntimeCreateResult> {
+  const saveRecord = buildRuntimeSaveRecordFromCreateWorldInput({
+    createWorldInput: input.createWorldInput,
+  })
+  const writeResult = await writeWorldRuntimeSaveRecord({ record: saveRecord })
+
+  return {
+    saveRecord,
+    persisted: writeResult.ok,
+    messages: [
+      "Runtime world created from create-world input.",
+      writeResult.message,
+      ...writeResult.warnings,
+    ],
+    tags: [
+      "world_runtime_create_result",
+      "m11_create_world_to_world_path",
+      writeResult.ok ? "runtime_save_persisted" : "runtime_save_not_persisted",
+      ...writeResult.tags,
+    ],
+  }
 }
 
 export async function loadOrCreateRuntimeWorld(input?: {
@@ -233,9 +269,83 @@ function attachButlerRuntimeAuditSummary(input: {
   return {
     ...record,
     lastButlerRuntimeAuditSummary: summary,
+    tags: [...record.tags, "butler_runtime_audit_summary_persisted"],
+  }
+}
+
+function buildRuntimeSaveRecordFromCreateWorldInput(input: {
+  createWorldInput: CreateWorldInput
+}): WorldRuntimeSaveRecord {
+  const creationRuntime = buildWorldCreationRuntime({
+    createWorldInput: input.createWorldInput,
+  })
+  const butlerBuildResult = buildButlerMvpProfile({
+    playerId: creationRuntime.ownerId,
+    ownerId: creationRuntime.ownerId,
+    worldId: creationRuntime.worldId,
+    seed: creationRuntime.worldSalt,
+    birthYear: input.createWorldInput.year,
+    birthMonth: input.createWorldInput.month,
+    birthDay: input.createWorldInput.day,
+    birthHour: parseBirthHour(input.createWorldInput.time),
+    timezone: "Asia/Shanghai",
     tags: [
-      ...record.tags,
-      "butler_runtime_audit_summary_persisted",
+      "world_runtime_created_from_create_world_input",
+      `style_source:${creationRuntime.styleSource}`,
+    ],
+  })
+  const initialWorld = buildMvpInitialWorld({
+    worldId: creationRuntime.worldId,
+    ownerId: creationRuntime.ownerId,
+    seed: creationRuntime.worldSalt,
+    butlerProfile: butlerBuildResult.profile,
+    worldDay: 0,
+    now: creationRuntime.now,
+    tags: [
+      "world_runtime_created_from_create_world_input",
+      "m11_create_world_to_world_path",
+      "no_default_pet_fact",
+    ],
+  })
+  const savedAt = new Date(creationRuntime.now).toISOString()
+
+  return {
+    version: "v2.6-runtime-00",
+    worldId: initialWorld.homeMapState.worldId,
+    ownerId: initialWorld.homeMapState.ownerId,
+    tick: 0,
+    savedAt,
+    homeMapState: initialWorld.homeMapState,
+    recentEvents: [
+      {
+        id: "runtime-event-0",
+        tick: 0,
+        title: "World created",
+        body: "A new autonomous pixel home was created from the user world input. The pet is not created by default.",
+        source: "runtime",
+        createdAt: savedAt,
+        tags: [
+          "world_runtime_event",
+          "m11_create_world_to_world_path",
+          "created_from_create_world_input",
+          "no_default_pet_fact",
+        ],
+      },
+    ],
+    recentActionSignatures: [],
+    lastRuntimeAction: null,
+    recentMotivationTypes: [],
+    lastButlerRuntimeDecision: null,
+    lastButlerRuntimeIntent: null,
+    lastButlerWorldRuleValidation: null,
+    lastButlerRuntimeAuditSummary: null,
+    tags: [
+      "world_runtime_save_record",
+      "local_mvp_only",
+      "initial_home_map_state",
+      "m11_create_world_to_world_path",
+      "created_from_create_world_input",
+      "no_default_pet_fact",
     ],
   }
 }
@@ -289,4 +399,11 @@ function buildInitialRuntimeSaveRecord(input: {
       "initial_home_map_state",
     ],
   }
+}
+
+function parseBirthHour(time: string): number {
+  const [hourText] = time.split(":")
+  const hour = Number(hourText)
+
+  return Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : 8
 }
