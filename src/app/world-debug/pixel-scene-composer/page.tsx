@@ -1,7 +1,7 @@
-// 该页面用于承载像素世界组合算法测试组件。
+// 该页面用于通过合并后的像素视觉 Debug 实验室打开组合预览视图。
 
-import PixelSceneComposerClient from "./pixel-scene-composer-client";
+import PixelVisualLabClient from "../pixel-visual-lab/pixel-visual-lab-client";
 
 export default function PixelSceneComposerPage() {
-  return <PixelSceneComposerClient />;
+  return <PixelVisualLabClient initialMode="composer" />;
 }
