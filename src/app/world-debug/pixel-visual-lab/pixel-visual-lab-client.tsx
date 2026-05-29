@@ -22,17 +22,9 @@ export default function PixelVisualLabClient({
         <p style={styles.kicker}>WORLD DEBUG / PIXEL VISUAL LAB / VISUAL ONLY</p>
         <h1 style={styles.title}>Pixel Visual Lab</h1>
         <p style={styles.description}>
-          这里只合并视觉 Debug 页面，用于观察像素组合、树木绘制、场景融合和图层效果。
-          本页不读取 runtime，不写入世界事实，不推进 Tick，不替代正式 /world，也不参与核心资源库验算。
+          视觉算法测试台：只看像素组合和树木绘制是否能接上后台算法输出。
+          本页不读取 runtime，不写入世界事实，不推进 Tick，不替代正式 /world。
         </p>
-      </section>
-
-      <section style={styles.boundaryPanel}>
-        <strong>当前边界：</strong>
-        <span>只做视觉 Debug 合并。</span>
-        <span>不进入正式 /world。</span>
-        <span>不改变正式世界数据。</span>
-        <span>不新增正式画图算法。</span>
       </section>
 
       <nav aria-label="Pixel visual debug sections" style={styles.tabs}>
@@ -42,7 +34,7 @@ export default function PixelVisualLabClient({
           onClick={() => setMode("composer")}
           style={mode === "composer" ? styles.activeTab : styles.tab}
         >
-          Pixel Scene Composer
+          场景组合
         </button>
         <button
           type="button"
@@ -50,7 +42,7 @@ export default function PixelVisualLabClient({
           onClick={() => setMode("tree")}
           style={mode === "tree" ? styles.activeTab : styles.tab}
         >
-          Tree Render Test
+          树木绘制
         </button>
       </nav>
 
@@ -64,7 +56,7 @@ export default function PixelVisualLabClient({
 const styles = {
   page: {
     minHeight: "100vh",
-    padding: "32px",
+    padding: "28px",
     color: "#eef7ef",
     background:
       "radial-gradient(circle at 18% 8%, rgba(83, 146, 103, 0.26), transparent 34%), linear-gradient(135deg, #0f1715 0%, #182521 58%, #0d1312 100%)",
@@ -72,8 +64,8 @@ const styles = {
       "ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
   },
   header: {
-    maxWidth: "1100px",
-    marginBottom: "18px",
+    maxWidth: "1000px",
+    marginBottom: "16px",
   },
   kicker: {
     margin: "0 0 8px",
@@ -83,38 +75,25 @@ const styles = {
     letterSpacing: "0.16em",
   },
   title: {
-    margin: "0 0 14px",
-    fontSize: "44px",
+    margin: "0 0 10px",
+    fontSize: "40px",
     lineHeight: 1,
   },
   description: {
     margin: 0,
-    maxWidth: "980px",
+    maxWidth: "920px",
     color: "#c7d8ca",
-    fontSize: "16px",
-    lineHeight: 1.75,
-  },
-  boundaryPanel: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "10px",
-    alignItems: "center",
-    marginBottom: "18px",
-    padding: "14px 16px",
-    border: "1px solid rgba(191, 225, 196, 0.16)",
-    borderRadius: "18px",
-    color: "#cfe4d2",
-    background: "rgba(8, 18, 15, 0.52)",
-    fontSize: "13px",
+    fontSize: "15px",
+    lineHeight: 1.65,
   },
   tabs: {
     display: "flex",
     flexWrap: "wrap",
     gap: "10px",
-    marginBottom: "18px",
+    marginBottom: "16px",
   },
   tab: {
-    padding: "11px 16px",
+    padding: "10px 16px",
     border: "1px solid rgba(191, 225, 196, 0.2)",
     borderRadius: "999px",
     color: "#d9eadb",
@@ -123,7 +102,7 @@ const styles = {
     cursor: "pointer",
   },
   activeTab: {
-    padding: "11px 16px",
+    padding: "10px 16px",
     border: 0,
     borderRadius: "999px",
     color: "#102119",
@@ -134,7 +113,7 @@ const styles = {
   contentFrame: {
     overflow: "hidden",
     border: "1px solid rgba(191, 225, 196, 0.14)",
-    borderRadius: "28px",
+    borderRadius: "24px",
     background: "rgba(4, 10, 8, 0.45)",
   },
 } satisfies Record<string, CSSProperties>;
