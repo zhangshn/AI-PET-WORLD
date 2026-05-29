@@ -19,7 +19,7 @@ M11｜核心资源库 / 验算库深化 + 历史错误口径清理阶段
 当前优先级是：
 
 ```txt
-清理历史错误口径
+完成 docs 错误口径清理
 → 锁定当前业务原则
 → 补齐核心资源库 / 验算库
 → closeout
@@ -67,7 +67,13 @@ P-Phone 通信入口
 | M7 管家行为 → 痕迹闭环 | 完成 | 管家动机、意图、验证、痕迹、记忆种子、审计摘要、解释链路完成 |
 | M11 主页清空 | 完成 | `/world` 保持 cleared；旧画布、旧网页卡片、旧说明卡已从正式主页移除 |
 | M11 验收整理 | 完成 | smoke、Debug 边界、create-world 路径、M7 回归、WorldViewModel 主链路已完成验收 |
-| M11 历史错误口径清理 | 进行中 | 源码旧生命周期扫描已清空，正在清理 docs 错误描述 |
+| M11 源码历史错误口径清理 | 完成 | 旧生命周期 token 扫描已清空 |
+| M11 旧页面运行链路隔离 | 完成 | `useWorldEngineState.ts` 已 inert 化，页面不再通过旧 hook 推进 tick / snapshot / offline catchup |
+| M11 旧 worldEngine 隔离 | 完成 | `src/engine/worldEngine.ts` 已变成 legacy inert facade，不再实例化 PetSystem，不再运行 old tick |
+| M11 旧 world-engine gateway 收窄 | 完成 | 不再公开旧完整 tick、旧 pet runtime、旧 pet cognition、旧 butler opportunity runner |
+| M11 旧完整 world tick runner 隔离 | 完成 | `world-tick-runner.ts` 已 inert 化，即使误 import 也不会触发旧 pet runtime / cognition / opportunity 链 |
+| M11 PetSystem 当前主链路隔离 | 完成 | `PetSystem / petSystem / runPetRuntime / runPetCognition / runButlerOpportunities` 当前无源码可触发入口 |
+| M11 文档错误口径清理 | 进行中 | Handoff 与模块进度表已同步；后续继续检查 docs/v2_6 其他文件 |
 | M11 核心资源库 / 验算库 | 进行中 | Runtime / HomeMapState / SpaceGrid / SpaceCell / TraceField / WorldViewModel / 生态对象已验收 |
 | M11 正式画图算法重整 | 后续 | 验算库 closeout 后再开始 |
 | M12 构建与质量验收 | 持续 | 每个阶段后必须 lint / tsc / build / 对应 smoke |
@@ -136,7 +142,59 @@ UI 不得生成世界事实。
 
 ---
 
-## 6. 核心资源库 / 验算库当前完成范围
+## 6. 旧运行链路隔离记录
+
+当前已完成以下隔离：
+
+```txt
+src/app/world/hooks/useWorldEngineState.ts
+→ inert placeholder
+→ 不再 import worldEngine
+→ 不再 setInterval 推进 tick
+→ 不再读写旧 snapshot
+→ 不再 offline catchup
+
+src/engine/worldEngine.ts
+→ legacy inert facade
+→ 保留导出名
+→ 不再 new PetSystem
+→ 不再 runWorldTick
+→ getPet 固定 null
+→ getWorldRuntime 固定 null
+
+src/systems/systems-gateway.ts
+→ 不再公开 PetSystem
+→ 不再公开 FoodOfferDecision
+
+src/engine/world-engine/world-engine-gateway.ts
+→ 不再公开旧完整 runWorldTick
+→ 不再公开 refreshWorldSystemState
+→ 不再公开 runManagementInteractions
+→ 不再公开 runPetRuntime
+→ 不再公开 runPetCognition
+→ 不再公开 runButlerOpportunities
+
+src/engine/world-engine/runners/world-tick-runner.ts
+→ inert placeholder
+→ 不再 import PetSystem
+→ 不再 import runPetRuntime
+→ 不再 import runPetCognition
+→ 不再 import runButlerOpportunities
+→ 不再执行旧完整 world tick
+```
+
+当前搜索结果：
+
+```txt
+PetSystem / petSystem / runPetRuntime / runPetCognition / runButlerOpportunities
+→ 无源码可触发入口命中
+```
+
+说明：这不是删除未来生命能力，而是切断当前 M11 主链路中旧运行入口，避免旧页面、旧 tick、旧 PetSystem 链路被误恢复。
+
+---
+
+## 7. 核心资源库 / 验算库当前完成范围
 
 | 验算对象 | 当前结果 |
 |---|---|
@@ -170,7 +228,7 @@ create-world smoke npm 注册
 
 ---
 
-## 7. 当前 smoke / 验收命令
+## 8. 当前 smoke / 验收命令
 
 ### 基础验收
 
@@ -197,14 +255,14 @@ npm run smoke:world-pixel-viewmodel-primary
 
 ---
 
-## 8. Debug 地址和用途
+## 9. Debug 地址和用途
 
 | 地址 | 用途 | 边界 |
 |---|---|---|
 | `/create-world` | MVP 创建世界入口 | 允许进入正式 runtime save 路径 |
 | `/world` | 正式主世界入口 | 当前保持 cleared，不恢复旧画面或网页卡片主页 |
 | `/personality-test` | 命理 / 人格调试页 | 允许显示内部调试信息 |
-| `/world-debug` | 世界 Debug 入口 | 只服务开发验证 |
+| `/world-debug` | 世界 Debug 入口 | 只服务开发验证；当前不再接旧 worldEngine hook |
 | `/world-debug/mapdiff` | MapDiff 调试 | 不进入正式 `/world` |
 | `/world-debug/pixel-scene-composer` | Debug 视觉参考库 / 像素组合预览实验室 | 不是核心资源库、正式算法库或正式验算库 |
 | `/world-debug/procedural-renderer` | 旧实验 / 调试 | 不得搬进正式 `/world` |
@@ -214,7 +272,7 @@ npm run smoke:world-pixel-viewmodel-primary
 
 ---
 
-## 9. 当前阶段禁止事项
+## 10. 当前阶段禁止事项
 
 - 不做 M8 / M9 / M10。
 - 不做宠物学习。
@@ -233,7 +291,7 @@ npm run smoke:world-pixel-viewmodel-primary
 
 ---
 
-## 10. 下一步计划
+## 11. 下一步计划
 
 ```txt
 1. 完成 docs 错误口径清理。
