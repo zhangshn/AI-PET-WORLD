@@ -2,7 +2,7 @@
 
 > 本进度表只依据当前仓库、当前 M11 交接文档与当前业务口径维护。
 >
-> 当前准确阶段：M11｜核心资源库 / 验算库深化 + 历史错误口径清理阶段。
+> 当前准确阶段：M11｜核心资源库 / 验算库深化阶段。
 >
 > 当前不是恢复 `/world` 画面，不是网页卡片主页整理，不是进入 M8 / M9 / M10。
 
@@ -33,7 +33,7 @@
 | M11 旧完整 world tick runner 隔离 | 100% | 完成 | `world-tick-runner.ts` 已 inert 化，即使误 import 也不会触发旧 pet runtime / cognition / opportunity 链路 |
 | M11 PetSystem 当前主链路隔离 | 100% | 完成 | `PetSystem / petSystem / runPetRuntime / runPetCognition / runButlerOpportunities` 当前搜索无源码可触发入口 |
 | M11 create-world flow smoke 注册 | 100% | 完成 | `smoke:m11-create-world-flow` 已注册，并已修复运行后恢复 runtime save 的副作用 |
-| M11 文档错误口径清理 | 95% | 进行中 | Handoff 与模块进度表已重写；旧口径补扫无明显错误命中 |
+| M11 文档错误口径清理 | 100% | 完成 | Handoff 与模块进度表已重写；旧口径补扫无明显错误命中 |
 | M11 核心资源库 / 验算库 | 82% | 进行中 | Runtime / HomeMapState / SpaceGrid / SpaceCell / TraceField / WorldViewModel / 生态对象已验收；下一步补 Actor / P-Phone / UI 自动生成输入边界 |
 | M11 正式画图算法重整 | 0% | 后续 | 核心资源库 / 验算库 closeout 后再开始；未来 `/world` 是端游式像素主世界，不是网页卡片页 |
 | M12 构建与质量验收 | 持续 | 持续 | 每个阶段后必须 lint / tsc / build / 对应 smoke |
@@ -57,6 +57,7 @@ M11 验收整理
 旧完整 world tick runner 隔离
 PetSystem 当前主链路隔离
 create-world flow smoke npm 注册与副作用修复
+M11 文档错误口径清理
 核心资源库 / 验算库第一批只读验收
 SpaceCell / 坐标 / Trace 投影深化验算
 生态对象来源与分布规则验算
@@ -65,14 +66,13 @@ SpaceCell / 坐标 / Trace 投影深化验算
 当前准确阶段是：
 
 ```txt
-M11｜文档错误口径清理 + 核心资源库 / 验算库深化
+M11｜核心资源库 / 验算库深化
 ```
 
 后续路线：
 
 ```txt
-文档错误口径清理
-→ 当前业务逻辑聊天确认
+当前业务逻辑聊天确认
 → 正确业务文档写入
 → 核心资源库 / 验算库补齐
 → 核心资源库 / 验算库 closeout
@@ -120,6 +120,7 @@ P-Phone 通信入口
 | 旧 world-engine gateway 收窄 | 不再公开旧完整 tick 与旧 pet runner 入口 | 已完成 |
 | 旧完整 world tick runner 隔离 | 即使误 import `runWorldTick` 也不再触发旧 pet runtime / cognition / opportunity 链 | 已完成 |
 | PetSystem 当前主链路隔离 | 当前搜索无源码可触发入口 | 已完成 |
+| 文档错误口径清理 | Handoff 与模块进度表已收口；旧口径补扫无明显错误命中 | 已完成 |
 
 ---
 
