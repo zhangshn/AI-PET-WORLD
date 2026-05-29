@@ -73,7 +73,8 @@ P-Phone 通信入口
 | M11 旧 world-engine gateway 收窄 | 完成 | 不再公开旧完整 tick、旧 pet runtime、旧 pet cognition、旧 butler opportunity runner |
 | M11 旧完整 world tick runner 隔离 | 完成 | `world-tick-runner.ts` 已 inert 化，即使误 import 也不会触发旧 pet runtime / cognition / opportunity 链 |
 | M11 PetSystem 当前主链路隔离 | 完成 | `PetSystem / petSystem / runPetRuntime / runPetCognition / runButlerOpportunities` 当前无源码可触发入口 |
-| M11 文档错误口径清理 | 进行中 | Handoff 与模块进度表已同步；后续继续检查 docs/v2_6 其他文件 |
+| M11 create-world flow smoke 注册 | 完成 | `smoke:m11-create-world-flow` 已注册，并已修复运行后恢复 runtime save 的副作用 |
+| M11 文档错误口径清理 | 进行中 | Handoff 与模块进度表已同步；旧口径补扫无明显错误命中 |
 | M11 核心资源库 / 验算库 | 进行中 | Runtime / HomeMapState / SpaceGrid / SpaceCell / TraceField / WorldViewModel / 生态对象已验收 |
 | M11 正式画图算法重整 | 后续 | 验算库 closeout 后再开始 |
 | M12 构建与质量验收 | 持续 | 每个阶段后必须 lint / tsc / build / 对应 smoke |
@@ -222,7 +223,6 @@ PetSystem / petSystem / runPetRuntime / runPetCognition / runButlerOpportunities
 Actor 表现输入边界
 P-Phone 数据入口边界
 UI 自动生成输入边界
-create-world smoke npm 注册
 核心资源库 / 验算库 closeout
 ```
 
@@ -238,6 +238,8 @@ npm run lint
 npx tsc --noEmit
 npm run build
 npm run smoke:m11-core-resource-validation
+npm run smoke:m11-create-world-flow
+npm run smoke:m11-core-resource-validation
 ```
 
 ### 全量回归
@@ -245,7 +247,8 @@ npm run smoke:m11-core-resource-validation
 ```powershell
 npm run smoke:m11-formal-surface
 npm run smoke:m11-core-resource-validation
-node scripts/run-world-m11-create-world-flow-smoke.cjs
+npm run smoke:m11-create-world-flow
+npm run smoke:m11-core-resource-validation
 npm run smoke:m7-closeout
 npm run smoke:m7-explanation
 npm run smoke:m7-audit-summary
@@ -259,7 +262,7 @@ npm run smoke:world-pixel-viewmodel-primary
 
 | 地址 | 用途 | 边界 |
 |---|---|---|
-| `/create-world` | MVP 创建世界入口 | 允许进入正式 runtime save 路径 |
+| `/create-world` | MVP 创建世界入口 | 允许进入正式 runtime save 路径；smoke 会恢复本地 runtime save |
 | `/world` | 正式主世界入口 | 当前保持 cleared，不恢复旧画面或网页卡片主页 |
 | `/personality-test` | 命理 / 人格调试页 | 允许显示内部调试信息 |
 | `/world-debug` | 世界 Debug 入口 | 只服务开发验证；当前不再接旧 worldEngine hook |
@@ -298,9 +301,8 @@ npm run smoke:world-pixel-viewmodel-primary
 2. 在聊天中确认当前业务逻辑，不直接写项目。
 3. 经确认后写入新的当前业务原则文档。
 4. 回到核心资源库 / 验算库：补 Actor / P-Phone / UI 自动生成输入验算。
-5. 注册 create-world smoke npm 命令。
-6. 完成核心资源库 / 验算库 closeout。
-7. 开始正式画图算法重整。
-8. 恢复端游式 /world 主世界。
-9. MVP closeout。
+5. 完成核心资源库 / 验算库 closeout。
+6. 开始正式画图算法重整。
+7. 恢复端游式 /world 主世界。
+8. MVP closeout。
 ```
