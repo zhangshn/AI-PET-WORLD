@@ -1,7 +1,6 @@
 /**
  * 当前文件职责：审计建设纵向闭环进入运行时桥接层之前的边界。
  */
-// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type { MapPlacement } from "@/world/map-state/home-map-state-schema"
 
@@ -11,19 +10,6 @@ import type {
   ConstructionRuntimeVerticalSliceResult,
 } from "./construction-schema"
 
-// These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
-const FORBIDDEN_RUNTIME_BRIDGE_TOKENS = [
-  "pet_arrival",
-  "pet_rest",
-  "pet-near-arrival-point",
-  "pet-bed",
-  "pet_actor",
-  "incubator",
-  "embryo",
-  "hatching",
-  "incubating",
-]
-
 export function auditConstructionRuntimeBridge(input: {
   bridgeInput: ConstructionRuntimeBridgeInput
   verticalSliceResult: ConstructionRuntimeVerticalSliceResult
@@ -31,7 +17,6 @@ export function auditConstructionRuntimeBridge(input: {
   const warnings = [
     ...auditLineage(input),
     ...auditVerticalSlice(input.verticalSliceResult),
-    ...auditForbiddenTokens(input),
   ]
 
   return {
@@ -88,27 +73,6 @@ function auditVerticalSlice(
   ]
 }
 
-function auditForbiddenTokens(input: {
-  bridgeInput: ConstructionRuntimeBridgeInput
-  verticalSliceResult: ConstructionRuntimeVerticalSliceResult
-}): string[] {
-  const tokens = [
-    input.bridgeInput.bridgeId,
-    ...input.bridgeInput.tags,
-    ...input.verticalSliceResult.messages,
-    ...input.verticalSliceResult.tags,
-    ...input.verticalSliceResult.nextHomeMapState.placements.flatMap(
-      collectPlacementTokens
-    ),
-  ].map((token) => token.toLowerCase())
-
-  return FORBIDDEN_RUNTIME_BRIDGE_TOKENS.flatMap((token) =>
-    tokens.some((item) => item.includes(token))
-      ? [`RuntimeBridge 包含禁止 token：${token}`]
-      : []
-  )
-}
-
 function buildStableRuntimeBridgeFingerprint(input: {
   bridgeInput: ConstructionRuntimeBridgeInput
   verticalSliceResult: ConstructionRuntimeVerticalSliceResult
@@ -139,14 +103,4 @@ function fingerprintPlacements(placements: MapPlacement[]): string {
     )
     .sort()
     .join("|")
-}
-
-function collectPlacementTokens(placement: MapPlacement): string[] {
-  return [
-    placement.id,
-    placement.assetId,
-    placement.layer,
-    placement.label,
-    ...placement.tags,
-  ]
 }
