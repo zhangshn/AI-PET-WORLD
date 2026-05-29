@@ -1,7 +1,7 @@
-// 该页面用于承载程序化树木绘制测试组件。
+// 该页面用于通过合并后的像素视觉 Debug 实验室打开树木测试视图。
 
-import TreeRenderTestClient from "./tree-render-test-client";
+import PixelVisualLabClient from "../pixel-visual-lab/pixel-visual-lab-client";
 
 export default function TreeRenderTestPage() {
-  return <TreeRenderTestClient />;
+  return <PixelVisualLabClient initialMode="tree" />;
 }
