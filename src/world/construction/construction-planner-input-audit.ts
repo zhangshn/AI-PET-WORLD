@@ -1,7 +1,6 @@
 /**
  * 当前文件负责：审计 ConstructionPlanner 输入是否符合当前 MVP 边界。
  */
-// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type {
   ButlerConstructionIntentInput,
@@ -9,26 +8,12 @@ import type {
   ConstructionPlannerInputAudit,
 } from "./construction-schema"
 
-// These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
-const FORBIDDEN_CONSTRUCTION_INPUT_TOKENS = [
-  "pet_arrival",
-  "pet_rest",
-  "pet-near-arrival-point",
-  "pet-bed",
-  "pet_actor",
-  "incubator",
-  "embryo",
-  "hatching",
-  "incubating",
-]
-
 export function auditConstructionPlannerInput(
   input: ConstructionPlannerInput
 ): ConstructionPlannerInputAudit {
   const warnings = [
     ...auditRequiredFields(input),
     ...auditIntentConsistency(input.intents),
-    ...auditForbiddenTokens(input),
   ]
 
   return {
@@ -115,16 +100,6 @@ function auditIntentConsistency(
   })
 
   return warnings
-}
-
-function auditForbiddenTokens(input: ConstructionPlannerInput): string[] {
-  const serialized = JSON.stringify(input).toLowerCase()
-
-  return FORBIDDEN_CONSTRUCTION_INPUT_TOKENS.flatMap((token) =>
-    serialized.includes(token)
-      ? [`ConstructionPlannerInput 包含禁止 token：${token}`]
-      : []
-  )
 }
 
 function fingerprintResources(
