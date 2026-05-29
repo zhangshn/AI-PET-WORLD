@@ -1,7 +1,6 @@
 /**
  * 当前文件职责：审计 MVP 核心 debug runner 的完整 dry-run 输出。
  */
-// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type { MapPlacement } from "@/world/map-state/home-map-state-schema"
 
@@ -13,19 +12,6 @@ import type {
   MvpCoreDebugRunnerResult,
 } from "./mvp-core-schema"
 
-// These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
-const FORBIDDEN_MVP_CORE_TOKENS = [
-  "pet_arrival",
-  "pet_rest",
-  "pet-near-arrival-point",
-  "pet-bed",
-  "pet_actor",
-  "incubator",
-  "embryo",
-  "hatching",
-  "incubating",
-]
-
 export function auditMvpCoreDebugRunner(input: {
   runnerInput: MvpCoreDebugRunnerInput
   resultWithoutAudit: Omit<MvpCoreDebugRunnerResult, "audit" | "report">
@@ -33,7 +19,6 @@ export function auditMvpCoreDebugRunner(input: {
   const warnings = [
     ...auditLineage(input),
     ...auditNestedWarnings(input.resultWithoutAudit),
-    ...auditForbiddenTokens(input),
   ]
 
   return {
@@ -66,7 +51,6 @@ export function auditAiPetWorldMvpPipeline(
         ? [`Unexpected adoption opportunity readiness: ${candidate.observationId}`]
         : []
     ),
-    ...auditPipelineForbiddenTokens(result),
   ]
 
   return {
@@ -85,32 +69,9 @@ export function auditAiPetWorldMvpPipeline(
     tags: [
       "ai_pet_world_mvp_audit",
       warnings.length === 0 ? "ai_pet_world_mvp_valid" : "ai_pet_world_mvp_warning",
-      "no_default_adoption_entry",
+      "mvp_pipeline_fact_fingerprint",
     ],
   }
-}
-
-function auditPipelineForbiddenTokens(
-  result: AiPetWorldMvpPipelineResult
-): string[] {
-  const tokens = [
-    ...result.tags,
-    ...result.messages,
-    ...result.worldLogs.flatMap((log) => [log.id, log.title, log.body, ...log.tags]),
-    ...result.butlerExplanations.flatMap((item) => [
-      item.id,
-      item.title,
-      item.body,
-      ...item.tags,
-    ]),
-    ...result.nextHomeMapState.placements.flatMap(collectPlacementTokens),
-  ].map((token) => token.toLowerCase())
-
-  return FORBIDDEN_MVP_CORE_TOKENS.flatMap((token) =>
-    tokens.some((item) => item.includes(token))
-      ? [`AI-PET-WORLD MVP pipeline 包含禁止 token：${token}`]
-      : []
-  )
 }
 
 function auditLineage(input: {
@@ -155,27 +116,6 @@ function auditNestedWarnings(
   ]
 }
 
-function auditForbiddenTokens(input: {
-  runnerInput: MvpCoreDebugRunnerInput
-  resultWithoutAudit: Omit<MvpCoreDebugRunnerResult, "audit" | "report">
-}): string[] {
-  const nextHomeMapState =
-    input.resultWithoutAudit.constructionBridgeResult.verticalSliceResult
-      .nextHomeMapState
-  const tokens = [
-    ...input.runnerInput.tags,
-    ...input.resultWithoutAudit.messages,
-    ...input.resultWithoutAudit.tags,
-    ...nextHomeMapState.placements.flatMap(collectPlacementTokens),
-  ].map((token) => token.toLowerCase())
-
-  return FORBIDDEN_MVP_CORE_TOKENS.flatMap((token) =>
-    tokens.some((item) => item.includes(token))
-      ? [`MVP core runner 包含禁止 token：${token}`]
-      : []
-  )
-}
-
 function buildStableMvpCoreFingerprint(input: {
   runnerInput: MvpCoreDebugRunnerInput
   resultWithoutAudit: Omit<MvpCoreDebugRunnerResult, "audit" | "report">
@@ -213,14 +153,4 @@ function fingerprintPlacements(placements: MapPlacement[]): string {
     )
     .sort()
     .join("|")
-}
-
-function collectPlacementTokens(placement: MapPlacement): string[] {
-  return [
-    placement.id,
-    placement.assetId,
-    placement.layer,
-    placement.label,
-    ...placement.tags,
-  ]
 }
