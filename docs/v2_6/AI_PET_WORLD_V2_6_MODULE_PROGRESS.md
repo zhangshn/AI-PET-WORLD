@@ -27,7 +27,10 @@
 | M11 主页清空 | 100% | 完成 | `/world` 保持 cleared；旧画布、当前记录卡片、管家说明卡片、P-Phone 卡片已从正式主页移除 |
 | M11 验收整理 | 100% | 完成 | 已完成 handoff、关键文件核对、smoke 注册整理、Debug 地址用途整理与本地命令级验收 |
 | M11 源码历史错误口径清理 | 100% | 完成 | 源码中旧生命周期 token 扫描已清空；当前搜索无命中 |
-| M11 文档错误口径清理 | 60% | 进行中 | Handoff 已重写，模块进度表正在同步；后续继续检查 docs/v2_6 其他文件 |
+| M11 旧页面运行链路隔离 | 100% | 完成 | `useWorldEngineState.ts` 已 inert 化，页面不再通过旧 hook 推进 runtime tick / snapshot / offline catchup |
+| M11 旧 worldEngine 隔离 | 100% | 完成 | `src/engine/worldEngine.ts` 已变为 legacy inert facade，不再实例化 PetSystem，不再运行 old tick |
+| M11 旧 world-engine gateway 收窄 | 100% | 完成 | `world-engine-gateway.ts` 不再公开旧完整 tick、旧 pet runtime、旧 pet cognition、旧 butler opportunity runner |
+| M11 文档错误口径清理 | 80% | 进行中 | Handoff 与模块进度表已重写；后续继续检查 docs/v2_6 其他文件 |
 | M11 核心资源库 / 验算库 | 82% | 进行中 | Runtime / HomeMapState / SpaceGrid / SpaceCell / TraceField / WorldViewModel / 生态对象已验收；下一步补 Actor / P-Phone / UI 自动生成输入边界 |
 | M11 正式画图算法重整 | 0% | 后续 | 核心资源库 / 验算库 closeout 后再开始；未来 `/world` 是端游式像素主世界，不是网页卡片页 |
 | M12 构建与质量验收 | 持续 | 持续 | 每个阶段后必须 lint / tsc / build / 对应 smoke |
@@ -45,6 +48,9 @@ M7 管家行为 → 痕迹闭环
 M11 主页清空
 M11 验收整理
 源码历史错误口径清理
+旧页面运行链路隔离
+旧 worldEngine 隔离
+旧 world-engine gateway 收窄
 核心资源库 / 验算库第一批只读验收
 SpaceCell / 坐标 / Trace 投影深化验算
 生态对象来源与分布规则验算
@@ -103,6 +109,9 @@ P-Phone 通信入口
 | smoke 注册情况 | 区分 package.json 已注册命令与 node 直接运行脚本 | 已整理 |
 | Debug 地址用途 | 明确 Debug 页面用途，不进入正式 `/world` | 已整理 |
 | 源码历史错误口径清理 | 旧生命周期 token 扫描已清空 | 已完成 |
+| 旧页面运行链路隔离 | 旧 `/world` hook 不再推进 tick、不再读写旧 snapshot、不再 offline catchup | 已完成 |
+| 旧 worldEngine 隔离 | 保留导出名但 inert 化，不再运行旧 PetSystem / old tick | 已完成 |
+| 旧 world-engine gateway 收窄 | 不再公开旧完整 tick 与旧 pet runner 入口 | 已完成 |
 
 ---
 
@@ -132,7 +141,44 @@ P-Phone 通信入口
 
 ---
 
-## 6. 下一批核心验算细项
+## 6. 旧运行链路隔离记录
+
+当前已完成以下隔离：
+
+```txt
+src/app/world/hooks/useWorldEngineState.ts
+→ inert placeholder
+→ 不再 import worldEngine
+→ 不再 setInterval 推进 tick
+→ 不再读写旧 snapshot
+→ 不再 offline catchup
+
+src/engine/worldEngine.ts
+→ legacy inert facade
+→ 保留导出名
+→ 不再 new PetSystem
+→ 不再 runWorldTick
+→ getPet 固定 null
+→ getWorldRuntime 固定 null
+
+src/systems/systems-gateway.ts
+→ 不再公开 PetSystem
+→ 不再公开 FoodOfferDecision
+
+src/engine/world-engine/world-engine-gateway.ts
+→ 不再公开旧完整 runWorldTick
+→ 不再公开 refreshWorldSystemState
+→ 不再公开 runManagementInteractions
+→ 不再公开 runPetRuntime
+→ 不再公开 runPetCognition
+→ 不再公开 runButlerOpportunities
+```
+
+说明：这不是删除未来生命能力，而是切断当前 M11 主链路中旧运行入口，避免旧页面、旧 tick、旧 PetSystem 链路被误恢复。
+
+---
+
+## 7. 下一批核心验算细项
 
 下一步继续补齐，不恢复 `/world` 画面：
 
@@ -146,7 +192,7 @@ create-world flow npm smoke 注册
 
 ---
 
-## 7. 当前 smoke / 验收命令整理
+## 8. 当前 smoke / 验收命令整理
 
 ### 基础验收
 
@@ -198,14 +244,14 @@ node scripts/run-world-m11-create-world-flow-smoke.cjs
 
 ---
 
-## 8. Debug 地址和用途
+## 9. Debug 地址和用途
 
 | 地址 | 用途 | 边界 |
 |---|---|---|
 | `/create-world` | MVP 创建世界入口 | 允许进入正式 runtime save 路径 |
 | `/world` | 正式主世界入口 | 当前必须保持 cleared，不恢复旧画面或网页卡片主页 |
 | `/personality-test` | 命理 / 人格调试页 | 允许显示内部调试信息 |
-| `/world-debug` | 世界 Debug 入口 | 只服务开发验证 |
+| `/world-debug` | 世界 Debug 入口 | 只服务开发验证；当前不再接旧 worldEngine hook |
 | `/world-debug/mapdiff` | MapDiff 调试 | 不进入正式 `/world` |
 | `/world-debug/pixel-scene-composer` | Debug 视觉参考库 / 像素组合预览实验室 | 不是核心资源库、正式算法库或正式验算库 |
 | `/world-debug/procedural-renderer` | 旧实验 / 调试 | 不得搬进正式 `/world` |
@@ -215,7 +261,7 @@ node scripts/run-world-m11-create-world-flow-smoke.cjs
 
 ---
 
-## 9. WORLD-PIXEL-RULE-MAPPER-00 完成内容
+## 10. WORLD-PIXEL-RULE-MAPPER-00 完成内容
 
 - `SpaceGrid → tiles`
 - `TraceField → traces`
@@ -234,7 +280,7 @@ node scripts/run-world-m11-create-world-flow-smoke.cjs
 
 ---
 
-## 10. M7 管家行为 → 痕迹闭环完成内容
+## 11. M7 管家行为 → 痕迹闭环完成内容
 
 目标链路：
 
@@ -271,7 +317,7 @@ ButlerState / runtime decision
 
 ---
 
-## 11. M11 / 当前阶段禁止事项
+## 12. M11 / 当前阶段禁止事项
 
 - 不做 M8 / M9 / M10。
 - 不做宠物学习。
