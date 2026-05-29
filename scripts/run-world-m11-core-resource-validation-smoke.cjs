@@ -15,6 +15,42 @@ async function main() {
   const viewModelSchemaPath = path.join(viewModelDir, "world-view-model-schema.ts")
   const runtimeSchemaPath = path.join(repoRoot, "src", "world", "runtime", "world-runtime-schema.ts")
   const homeMapSchemaPath = path.join(repoRoot, "src", "world", "map-state", "home-map-state-schema.ts")
+  const spaceIndexPath = path.join(repoRoot, "src", "world", "space", "index.ts")
+  const spaceSchemaPath = path.join(repoRoot, "src", "world", "space", "space-schema.ts")
+  const spaceBuilderPath = path.join(repoRoot, "src", "world", "space", "space-grid-builder.ts")
+
+  const REGION_KINDS = new Set([
+    "home",
+    "yard",
+    "nature",
+    "structure",
+    "town_connection",
+    "blocked",
+    "boundary",
+    "unopened",
+    "locked",
+    "unknown",
+  ])
+  const TERRAIN_KINDS = new Set([
+    "grass",
+    "soil",
+    "forest_floor",
+    "sand",
+    "wetland",
+    "stone",
+    "built",
+    "unknown",
+  ])
+  const PASSABILITY_KINDS = new Set(["passable", "blocked", "restricted", "unknown"])
+  const TRACE_LEVELS = new Set(["none", "weak", "medium", "strong"])
+  const OCCUPANCY_KINDS = new Set([
+    "empty",
+    "natural_object",
+    "structure_object",
+    "life_object",
+    "event_anchor",
+    "unknown",
+  ])
 
   function fail(message) {
     console.log("M11 CORE RESOURCE VALIDATION SMOKE")
@@ -81,6 +117,8 @@ async function main() {
     const viewModelSources = readDirectorySources(viewModelDir)
     const runtimeSchemaSource = fs.readFileSync(runtimeSchemaPath, "utf8")
     const homeMapSchemaSource = fs.readFileSync(homeMapSchemaPath, "utf8")
+    const spaceSchemaSource = fs.readFileSync(spaceSchemaPath, "utf8")
+    const spaceBuilderSource = fs.readFileSync(spaceBuilderPath, "utf8")
     const formalSources = [worldPageSource, pixelViewSource, viewModelSources].join("\n")
 
     const requiredTokens = [
@@ -91,6 +129,17 @@ async function main() {
       "TraceInfluenceSummary",
       "WorldViewModel",
       "WorldViewObjectSource",
+      "SpaceCell",
+      "SpaceGrid",
+      "SpaceRegion",
+      "regionKind",
+      "terrainKind",
+      "passability",
+      "passable",
+      "traceStrength",
+      "traceLevel",
+      "movementCost",
+      "buildSpaceGridFromHomeMapState",
       "world_fact",
       "derived_visual_only",
       "not_world_fact",
@@ -107,6 +156,8 @@ async function main() {
     const combinedValidationSources = [
       runtimeSchemaSource,
       homeMapSchemaSource,
+      spaceSchemaSource,
+      spaceBuilderSource,
       viewModelSchemaSource,
       viewModelSources,
       worldPageSource,
@@ -179,6 +230,73 @@ async function main() {
     assert(petPlacements.length === 0, "Core validation found a default pet placement in HomeMapState.")
   }
 
+  function assertSpaceGrid(record, spaceGrid, model) {
+    const expectedTileCount = record.homeMapState.mapSize.columns * record.homeMapState.mapSize.rows
+    const expectedWidth = record.homeMapState.mapSize.columns * record.homeMapState.mapSize.tileSize
+    const expectedHeight = record.homeMapState.mapSize.rows * record.homeMapState.mapSize.tileSize
+    const tileById = new Map(model.tiles.map((tile) => [tile.id, tile]))
+    const regionCountTotal = Object.values(spaceGrid.summary.regionCounts).reduce((sum, value) => sum + value, 0)
+    const terrainCountTotal = Object.values(spaceGrid.summary.terrainCounts).reduce((sum, value) => sum + value, 0)
+    const occupancyCountTotal = Object.values(spaceGrid.summary.occupancyCounts).reduce((sum, value) => sum + value, 0)
+    const passableCells = spaceGrid.cells.filter((cell) => cell.passability === "passable").length
+    const blockedCells = spaceGrid.cells.filter((cell) => cell.passability === "blocked").length
+    const restrictedCells = spaceGrid.cells.filter((cell) => cell.passability === "restricted").length
+    const occupiedCells = spaceGrid.cells.filter((cell) => cell.occupancyKind !== "empty").length
+    const traceInfluencedCells = spaceGrid.cells.filter((cell) => cell.traceInfluenceStrength > 0).length
+    const boundaryCells = spaceGrid.cells.filter((cell) => cell.regionKind === "boundary")
+
+    assert(spaceGrid.worldId === record.worldId, "SpaceGrid worldId does not match runtime record.")
+    assert(spaceGrid.columns === record.homeMapState.mapSize.columns, "SpaceGrid columns do not match HomeMapState.")
+    assert(spaceGrid.rows === record.homeMapState.mapSize.rows, "SpaceGrid rows do not match HomeMapState.")
+    assert(spaceGrid.tileSize === record.homeMapState.mapSize.tileSize, "SpaceGrid tileSize does not match HomeMapState.")
+    assert(spaceGrid.width === expectedWidth, "SpaceGrid width does not match HomeMapState.")
+    assert(spaceGrid.height === expectedHeight, "SpaceGrid height does not match HomeMapState.")
+    assert(spaceGrid.cells.length === expectedTileCount, "SpaceGrid cell count does not match map size.")
+    assert(spaceGrid.regions.length > 0, "SpaceGrid has no regions.")
+    assert(boundaryCells.length > 0, "SpaceGrid has no boundary cells.")
+    assert(spaceGrid.summary.totalCells === expectedTileCount, "SpaceGrid summary totalCells does not match cell count.")
+    assert(spaceGrid.summary.passableCells === passableCells, "SpaceGrid summary passableCells mismatch.")
+    assert(spaceGrid.summary.blockedCells === blockedCells, "SpaceGrid summary blockedCells mismatch.")
+    assert(spaceGrid.summary.restrictedCells === restrictedCells, "SpaceGrid summary restrictedCells mismatch.")
+    assert(spaceGrid.summary.occupiedCells === occupiedCells, "SpaceGrid summary occupiedCells mismatch.")
+    assert(spaceGrid.summary.traceInfluencedCells === traceInfluencedCells, "SpaceGrid summary traceInfluencedCells mismatch.")
+    assert(regionCountTotal === expectedTileCount, "SpaceGrid regionCounts total does not match cell count.")
+    assert(terrainCountTotal === expectedTileCount, "SpaceGrid terrainCounts total does not match cell count.")
+    assert(occupancyCountTotal === expectedTileCount, "SpaceGrid occupancyCounts total does not match cell count.")
+
+    spaceGrid.cells.forEach((cell) => {
+      const tile = tileById.get(`world_view_tile_${cell.id}`)
+
+      assert(tile, `WorldViewModel is missing tile for ${cell.id}.`)
+      assert(cell.id === `space_cell_${cell.column}_${cell.row}`, `SpaceCell id is not coordinate-stable: ${cell.id}.`)
+      assert(Number.isInteger(cell.row) && cell.row >= 0 && cell.row < spaceGrid.rows, `SpaceCell row out of range: ${cell.id}.`)
+      assert(Number.isInteger(cell.column) && cell.column >= 0 && cell.column < spaceGrid.columns, `SpaceCell column out of range: ${cell.id}.`)
+      assert(cell.x === cell.column * spaceGrid.tileSize + spaceGrid.tileSize / 2, `SpaceCell x center mismatch: ${cell.id}.`)
+      assert(cell.y === cell.row * spaceGrid.tileSize + spaceGrid.tileSize / 2, `SpaceCell y center mismatch: ${cell.id}.`)
+      assert(cell.coordinate.x === cell.x && cell.coordinate.y === cell.y, `SpaceCell coordinate copy mismatch: ${cell.id}.`)
+      assert(REGION_KINDS.has(cell.regionKind), `SpaceCell regionKind is invalid: ${cell.regionKind}.`)
+      assert(cell.regionType === cell.regionKind, `SpaceCell regionType does not mirror regionKind: ${cell.id}.`)
+      assert(TERRAIN_KINDS.has(cell.terrainKind), `SpaceCell terrainKind is invalid: ${cell.terrainKind}.`)
+      assert(PASSABILITY_KINDS.has(cell.passability), `SpaceCell passability is invalid: ${cell.passability}.`)
+      assert(TRACE_LEVELS.has(cell.traceLevel), `SpaceCell traceLevel is invalid: ${cell.traceLevel}.`)
+      assert(OCCUPANCY_KINDS.has(cell.occupancyKind), `SpaceCell occupancyKind is invalid: ${cell.occupancyKind}.`)
+      assert(cell.traceStrength >= 0 && cell.traceStrength <= 100, `SpaceCell traceStrength out of range: ${cell.id}.`)
+      assert(cell.traceInfluenceStrength >= 0 && cell.traceInfluenceStrength <= 100, `SpaceCell traceInfluenceStrength out of range: ${cell.id}.`)
+      assert(cell.moistureHint >= 0 && cell.moistureHint <= 100, `SpaceCell moistureHint out of range: ${cell.id}.`)
+      assert(cell.ecologyHealthHint >= 0 && cell.ecologyHealthHint <= 100, `SpaceCell ecologyHealthHint out of range: ${cell.id}.`)
+      assert(cell.passable === (cell.passability === "passable"), `SpaceCell passable boolean does not match passability: ${cell.id}.`)
+      assert(cell.passability !== "blocked" || cell.movementCost === 999, `Blocked SpaceCell movementCost must be 999: ${cell.id}.`)
+      assert(cell.passability === "blocked" || (cell.movementCost >= 12 && cell.movementCost <= 180), `SpaceCell movementCost out of expected range: ${cell.id}.`)
+      assert(cell.movementCostFactors.length > 0, `SpaceCell has no movementCostFactors: ${cell.id}.`)
+      assert(cell.occupancyIds.length === cell.occupancy.length, `SpaceCell occupancyIds do not match occupancy: ${cell.id}.`)
+      assert(tile.x === cell.column * spaceGrid.tileSize, `WorldViewTile x does not match SpaceCell column: ${cell.id}.`)
+      assert(tile.y === cell.row * spaceGrid.tileSize, `WorldViewTile y does not match SpaceCell row: ${cell.id}.`)
+      assert(tile.width === spaceGrid.tileSize && tile.height === spaceGrid.tileSize, `WorldViewTile size does not match SpaceGrid tileSize: ${cell.id}.`)
+      assert(tile.passable === cell.passable, `WorldViewTile passable does not mirror SpaceCell passable: ${cell.id}.`)
+      assert(tile.traceIntensity === Math.round(Math.max(cell.traceStrength, cell.traceInfluenceStrength)), `WorldViewTile traceIntensity does not mirror SpaceCell trace strength: ${cell.id}.`)
+    })
+  }
+
   function assertWorldViewModel(record, model) {
     const expectedTileCount = record.homeMapState.mapSize.columns * record.homeMapState.mapSize.rows
     const expectedWidth = record.homeMapState.mapSize.columns * record.homeMapState.mapSize.tileSize
@@ -218,6 +336,9 @@ async function main() {
   if (!fs.existsSync(viewModelSchemaPath)) fail("WorldViewModel schema is missing.")
   if (!fs.existsSync(runtimeSchemaPath)) fail("Runtime schema is missing.")
   if (!fs.existsSync(homeMapSchemaPath)) fail("HomeMapState schema is missing.")
+  if (!fs.existsSync(spaceIndexPath)) fail("Space index is missing.")
+  if (!fs.existsSync(spaceSchemaPath)) fail("Space schema is missing.")
+  if (!fs.existsSync(spaceBuilderPath)) fail("SpaceGrid builder is missing.")
 
   assertStaticValidationLibraryContract()
   installTypeScriptRequireHook()
@@ -231,10 +352,16 @@ async function main() {
   assertRuntimeRecord(record)
   assertHomeMapState(record)
 
+  const { buildSpaceGridFromHomeMapState } = localRequire(spaceIndexPath)
   const { buildWorldViewModelForPixelWorld } = localRequire(viewModelGatewayPath)
+  const spaceGrid = buildSpaceGridFromHomeMapState({
+    homeMapState: record.homeMapState,
+    traceField: record.traceField,
+  })
   const model = buildWorldViewModelForPixelWorld({ saveRecord: record, isPersisted: true })
 
   assertWorldViewModel(record, model)
+  assertSpaceGrid(record, spaceGrid, model)
 
   const afterRaw = fs.readFileSync(savePath, "utf8")
   const afterHash = hashText(afterRaw)
@@ -248,6 +375,8 @@ async function main() {
   console.log(`Runtime tick: ${record.tick}`)
   console.log(`World: ${record.worldId}`)
   console.log(`Canvas: ${model.canvas.width}x${model.canvas.height}`)
+  console.log(`Space cells: ${spaceGrid.cells.length}`)
+  console.log(`Space regions: ${spaceGrid.regions.length}`)
   console.log(`Tiles: ${model.tiles.length}`)
   console.log(`World fact objects: ${model.objects.filter((object) => object.source === "world_fact").length}`)
   console.log(`Derived visual-only objects: ${model.objects.filter((object) => object.source === "derived_visual_only").length}`)
@@ -255,6 +384,7 @@ async function main() {
   console.log(`Actors: ${model.actors.length}`)
   console.log("Runtime save read-only: ok")
   console.log("HomeMapState fact source: ok")
+  console.log("SpaceCell validation: ok")
   console.log("TraceField projection: ok")
   console.log("WorldViewModel validation: ok")
   console.log("No default pet fact: ok")
