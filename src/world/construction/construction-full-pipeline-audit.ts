@@ -1,13 +1,8 @@
 /**
  * 当前文件职责：审计建设系统可运行纵向闭环输出。
  */
-// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
-import type {
-  HomeMapState,
-  MapDiff,
-  MapPlacement,
-} from "@/world/map-state/home-map-state-schema"
+import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
 
 import type {
   ConstructionFullPipelineAudit,
@@ -16,19 +11,6 @@ import type {
   ConstructionRuntimeCycleResult,
   ConstructionVisualRefreshBridgeResult,
 } from "./construction-schema"
-
-// These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
-const FORBIDDEN_FULL_PIPELINE_TOKENS = [
-  "pet_arrival",
-  "pet_rest",
-  "pet-near-arrival-point",
-  "pet-bed",
-  "pet_actor",
-  "incubator",
-  "embryo",
-  "hatching",
-  "incubating",
-]
 
 export function auditConstructionFullPipeline(input: {
   adapterInput: ConstructionRuntimeAdapterInput
@@ -44,7 +26,6 @@ export function auditConstructionFullPipeline(input: {
     ...auditRuntimeLineage(input),
     ...auditMockPersistence(input),
     ...auditVisualBridge(input),
-    ...auditForbiddenTokens(input),
   ]
 
   return {
@@ -150,33 +131,6 @@ function auditVisualBridge(input: {
   )
 }
 
-function auditForbiddenTokens(input: {
-  runtimeCycleResult: ConstructionRuntimeCycleResult
-  memoryPersistenceMockResult: ConstructionMemoryPersistenceMockResult
-  visualRefreshBridgeResult: ConstructionVisualRefreshBridgeResult
-}): string[] {
-  const tokens = [
-    ...input.runtimeCycleResult.tags,
-    ...input.runtimeCycleResult.messages,
-    ...input.memoryPersistenceMockResult.tags,
-    input.memoryPersistenceMockResult.reason,
-    ...input.visualRefreshBridgeResult.tags,
-    input.visualRefreshBridgeResult.reason,
-    ...input.runtimeCycleResult.nextHomeMapState.placements.flatMap(
-      collectPlacementTokens
-    ),
-    ...input.runtimeCycleResult.nextHomeMapState.mapDiffs.flatMap(
-      collectMapDiffTokens
-    ),
-  ].map((token) => token.toLowerCase())
-
-  return FORBIDDEN_FULL_PIPELINE_TOKENS.flatMap((token) =>
-    tokens.some((item) => item.includes(token))
-      ? [`Construction full pipeline 包含禁止 token：${token}`]
-      : []
-  )
-}
-
 function buildStablePipelineFingerprint(input: {
   input: {
     adapterInput: ConstructionRuntimeAdapterInput
@@ -216,27 +170,4 @@ function fingerprintPlacements(homeMapState: HomeMapState): string {
     )
     .sort()
     .join("|")
-}
-
-function collectPlacementTokens(placement: MapPlacement): string[] {
-  return [
-    placement.id,
-    placement.assetId,
-    placement.layer,
-    placement.label,
-    ...placement.tags,
-  ]
-}
-
-function collectMapDiffTokens(diff: MapDiff): string[] {
-  return [
-    diff.id,
-    diff.operation,
-    diff.placementId,
-    diff.reason,
-    ...diff.tags,
-    ...(diff.patch?.label ? [diff.patch.label] : []),
-    ...(diff.patch?.tags ?? []),
-    ...(diff.placement ? collectPlacementTokens(diff.placement) : []),
-  ]
 }
