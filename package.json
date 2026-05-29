@@ -24,6 +24,7 @@
     "smoke:m11-p-phone-input-boundary": "node scripts/run-world-m11-p-phone-input-boundary-smoke.cjs",
     "smoke:m11-ui-auto-generation-input-boundary": "node scripts/run-world-m11-ui-auto-generation-input-boundary-smoke.cjs",
     "smoke:m11-core-resource-closeout": "node scripts/run-world-m11-core-resource-closeout-smoke.cjs",
+    "smoke:world-debug-pixel-visual-lab": "node scripts/run-world-debug-pixel-visual-lab-smoke.cjs",
     "smoke:butler-memory-seed-consume": "node scripts/run-world-butler-memory-seed-consume-smoke.cjs",
     "smoke:butler-memory-bias-surface": "node scripts/run-world-butler-memory-bias-surface-smoke.cjs",
     "smoke:butler-natural-explanation": "node scripts/run-world-butler-natural-explanation-smoke.cjs",
