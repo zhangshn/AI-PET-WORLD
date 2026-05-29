@@ -61,14 +61,7 @@ function buildSummaryMessage(input: {
     summary.validationStatus === "passed"
       ? "这次行动已经通过世界规则验证。"
       : "这次行动被世界规则拦下，没有写入新的世界事实。"
-  const writeText =
-    summary.homeMapWriteStatus === "not_requested"
-      ? "管家没有强行改写 HomeMapState，只把经过验证的行为沉淀为痕迹。"
-      : summary.homeMapWriteStatus === "safe_apply_written"
-        ? "本轮有家园变化通过 SafeApply 写入。"
-        : summary.homeMapWriteStatus === "safe_apply_no_diff"
-          ? "本轮保留 SafeApply 边界，但没有新的家园变化写入。"
-          : "本轮家园变化被世界规则拦下，没有写入。"
+  const writeText = buildHomeWriteText(summary.homeMapWriteStatus)
   const traceText = summary.traceId
     ? `本轮痕迹类型：${traceTypeToText(summary.traceType ?? "")}。`
     : "本轮没有找到可公开展示的新痕迹。"
@@ -78,6 +71,22 @@ function buildSummaryMessage(input: {
       : "当前还没有稳定记忆种子。"
 
   return `${validationText}${writeText}${traceText}${memoryText}`
+}
+
+function buildHomeWriteText(homeMapWriteStatus: string): string {
+  if (homeMapWriteStatus === "not_requested") {
+    return "管家没有强行改写家园事实，只把经过验证的行为沉淀为痕迹。"
+  }
+
+  if (homeMapWriteStatus === "safe_apply_written") {
+    return "本轮有家园变化通过正式写入边界，已经进入世界记录。"
+  }
+
+  if (homeMapWriteStatus === "safe_apply_no_diff") {
+    return "本轮保留正式写入边界，但没有新的家园变化进入世界记录。"
+  }
+
+  return "本轮家园变化被世界规则拦下，没有写入。"
 }
 
 function localizeEventTitle(input: {
@@ -117,8 +126,8 @@ function localizeEventBody(input: {
       : "这次行动被世界规则拦下，没有写入新的世界事实。"
     const homeMapText =
       intent.kind === "resource_wait" || intent.kind === "observation"
-        ? "管家没有强行改写 HomeMapState，只把经过验证的行为沉淀为痕迹。"
-        : "如果要改变家园结构，仍然必须经过 SafeApply。"
+        ? "管家没有强行改写家园事实，只把经过验证的行为沉淀为痕迹。"
+        : "如果要改变家园结构，仍然必须通过正式写入边界。"
     const traceText = trace
       ? `本轮痕迹类型：${traceTypeToText(trace.type)}。`
       : "本轮没有找到可公开展示的新痕迹。"
