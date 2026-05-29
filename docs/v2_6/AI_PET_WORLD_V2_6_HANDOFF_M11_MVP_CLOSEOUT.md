@@ -19,10 +19,9 @@ M11｜核心资源库 / 验算库深化阶段
 当前优先级是：
 
 ```txt
-当前业务逻辑聊天确认
-→ 正确业务文档写入
-→ 补齐核心资源库 / 验算库
-→ closeout
+P-Phone 数据入口边界验算
+→ UI 自动生成输入边界验算
+→ 核心资源库 / 验算库 closeout
 → 正式画图算法重整
 → 端游式 /world 主世界恢复
 ```
@@ -50,6 +49,12 @@ P-Phone 通信入口
 
 用户创建的是世界。管家是世界里的核心自主行动者。系统工程重点是让世界事实、空间、资源、痕迹、管家行为和未来 UI 自动生成算法形成稳定闭环。
 
+当前业务原则已写入：
+
+```txt
+docs/v2_6/AI_PET_WORLD_V2_6_CURRENT_BUSINESS_PRINCIPLES.md
+```
+
 ---
 
 ## 2. 当前模块进度
@@ -75,7 +80,9 @@ P-Phone 通信入口
 | M11 PetSystem 当前主链路隔离 | 完成 | `PetSystem / petSystem / runPetRuntime / runPetCognition / runButlerOpportunities` 当前无源码可触发入口 |
 | M11 create-world flow smoke 注册 | 完成 | `smoke:m11-create-world-flow` 已注册，并已修复运行后恢复 runtime save 的副作用 |
 | M11 文档错误口径清理 | 完成 | Handoff 与模块进度表已收口；旧口径补扫无明显错误命中 |
-| M11 核心资源库 / 验算库 | 进行中 | Runtime / HomeMapState / SpaceGrid / SpaceCell / TraceField / WorldViewModel / 生态对象已验收 |
+| M11 当前业务原则文档 | 完成 | 当前业务原则文档已新增，锁定 AI 世界 / AI 管家 / P-Phone / 非默认宠物等当前业务原则 |
+| M11 Actor 表现输入边界验算 | 完成 | `smoke:m11-actor-input-boundary` 已注册并通过；未验证 pet placement 不进入 actors，未来 pet entry 需要正式验证标签 |
+| M11 核心资源库 / 验算库 | 进行中 | Runtime / HomeMapState / SpaceGrid / SpaceCell / TraceField / WorldViewModel / 生态对象 / Actor 表现输入边界已验收 |
 | M11 正式画图算法重整 | 后续 | 验算库 closeout 后再开始 |
 | M12 构建与质量验收 | 持续 | 每个阶段后必须 lint / tsc / build / 对应 smoke |
 
@@ -140,6 +147,10 @@ create-world input
 UI 不得生成世界事实。
 
 `derived_visual_only` 只能作为只读视觉派生，不得写回 HomeMapState。
+
+Actor 表现输入必须来自 WorldViewModel，不得由 UI 或 Debug Composer 自行生成。
+
+当前只允许管家 actor 作为可见正式 actor。未来 pet actor 必须经过正式入场验证标签后才能进入表现层。
 
 ---
 
@@ -215,12 +226,21 @@ PetSystem / petSystem / runPetRuntime / runPetCognition / runButlerOpportunities
 | derived_visual_only 只读边界 | 已验收 |
 | 生态对象来源与分布规则 | 已验收 |
 | WorldViewModel actors 基础存在性 | 已验收 |
+| Actor 表现输入边界 | 已验收 |
 | formal `/world` Debug 隔离 | 已验收 |
+
+Actor 表现输入边界当前结论：
+
+```txt
+当前只显示管家 actor。
+未验证 pet placement 不进入 WorldViewModel actors。
+未来 pet entry 必须经过正式验证标签。
+Actor 投影只读，不写 runtime save / HomeMapState。
+```
 
 下一步验算不恢复 UI，只补输入边界：
 
 ```txt
-Actor 表现输入边界
 P-Phone 数据入口边界
 UI 自动生成输入边界
 核心资源库 / 验算库 closeout
@@ -240,6 +260,7 @@ npm run build
 npm run smoke:m11-core-resource-validation
 npm run smoke:m11-create-world-flow
 npm run smoke:m11-core-resource-validation
+npm run smoke:m11-actor-input-boundary
 ```
 
 ### 全量回归
@@ -249,6 +270,7 @@ npm run smoke:m11-formal-surface
 npm run smoke:m11-core-resource-validation
 npm run smoke:m11-create-world-flow
 npm run smoke:m11-core-resource-validation
+npm run smoke:m11-actor-input-boundary
 npm run smoke:m7-closeout
 npm run smoke:m7-explanation
 npm run smoke:m7-audit-summary
@@ -297,11 +319,10 @@ npm run smoke:world-pixel-viewmodel-primary
 ## 11. 下一步计划
 
 ```txt
-1. 当前业务逻辑聊天确认。
-2. 经确认后写入新的当前业务原则文档。
-3. 回到核心资源库 / 验算库：补 Actor / P-Phone / UI 自动生成输入验算。
-4. 完成核心资源库 / 验算库 closeout。
-5. 开始正式画图算法重整。
-6. 恢复端游式 /world 主世界。
-7. MVP closeout。
+1. P-Phone 数据入口边界验算。
+2. UI 自动生成输入边界验算。
+3. 完成核心资源库 / 验算库 closeout。
+4. 开始正式画图算法重整。
+5. 恢复端游式 /world 主世界。
+6. MVP closeout。
 ```
