@@ -1,12 +1,10 @@
 /**
  * 当前文件职责：审计 Construction SafeApply 的输入与输出边界。
  */
-// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type {
   HomeMapState,
   MapDiff,
-  MapPlacement,
 } from "@/world/map-state/home-map-state-schema"
 
 import type {
@@ -14,19 +12,6 @@ import type {
   ConstructionSafeApplyInput,
   ConstructionSafeApplyResult,
 } from "./construction-schema"
-
-// These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
-const FORBIDDEN_SAFE_APPLY_AUDIT_TOKENS = [
-  "pet_arrival",
-  "pet_rest",
-  "pet-near-arrival-point",
-  "pet-bed",
-  "pet_actor",
-  "incubator",
-  "embryo",
-  "hatching",
-  "incubating",
-]
 
 export function auditConstructionSafeApplyResult(input: {
   safeApplyInput: ConstructionSafeApplyInput
@@ -46,7 +31,6 @@ export function auditConstructionSafeApplyResult(input: {
     ...auditStableHomeMapIdentity(input),
     ...auditUpdatedAt(input),
     ...auditActorPlacementUpdates(input),
-    ...auditForbiddenTokens(input),
   ]
 
   return {
@@ -175,34 +159,6 @@ function auditActorPlacementUpdates(input: {
   })
 }
 
-function auditForbiddenTokens(input: {
-  safeApplyInput: ConstructionSafeApplyInput
-  resultWithoutAudit: Omit<ConstructionSafeApplyResult, "audit">
-}): string[] {
-  const tokens = [
-    input.safeApplyInput.executionResult.audit.planId,
-    ...input.resultWithoutAudit.tags,
-    ...input.resultWithoutAudit.messages,
-    ...input.resultWithoutAudit.rejectedDiffs.flatMap((diff) => [
-      diff.diffId,
-      diff.reason,
-      ...diff.tags,
-    ]),
-    ...input.resultWithoutAudit.nextHomeMapState.placements.flatMap(
-      collectPlacementTokens
-    ),
-    ...input.resultWithoutAudit.nextHomeMapState.mapDiffs.flatMap(
-      collectMapDiffTokens
-    ),
-  ].map((token) => token.toLowerCase())
-
-  return FORBIDDEN_SAFE_APPLY_AUDIT_TOKENS.flatMap((token) =>
-    tokens.some((item) => item.includes(token))
-      ? [`ConstructionSafeApplyResult 包含禁止 token：${token}`]
-      : []
-  )
-}
-
 function buildStableSafeApplyFingerprint(input: {
   safeApplyInput: ConstructionSafeApplyInput
   resultWithoutAudit: Omit<ConstructionSafeApplyResult, "audit">
@@ -258,27 +214,4 @@ function fingerprintMapDiffs(mapDiffs: MapDiff[]): string {
     )
     .sort()
     .join("|")
-}
-
-function collectPlacementTokens(placement: MapPlacement): string[] {
-  return [
-    placement.id,
-    placement.assetId,
-    placement.layer,
-    placement.label,
-    ...placement.tags,
-  ]
-}
-
-function collectMapDiffTokens(diff: MapDiff): string[] {
-  return [
-    diff.id,
-    diff.operation,
-    diff.placementId,
-    diff.reason,
-    ...diff.tags,
-    ...(diff.patch?.label ? [diff.patch.label] : []),
-    ...(diff.patch?.tags ?? []),
-    ...(diff.placement ? collectPlacementTokens(diff.placement) : []),
-  ]
 }
