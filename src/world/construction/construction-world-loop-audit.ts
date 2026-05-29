@@ -1,26 +1,12 @@
 /**
  * 当前文件负责：审计建设循环接入前协议输出。
  */
-// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type {
   ConstructionWorldLoopAudit,
   ConstructionWorldLoopProtocolInput,
   ConstructionWorldLoopProtocolResult,
 } from "./construction-schema"
-
-// These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
-const FORBIDDEN_WORLD_LOOP_PROTOCOL_TOKENS = [
-  "pet_arrival",
-  "pet_rest",
-  "pet-near-arrival-point",
-  "pet-bed",
-  "pet_actor",
-  "incubator",
-  "embryo",
-  "hatching",
-  "incubating",
-]
 
 export function auditConstructionWorldLoopProtocol(input: {
   protocolInput: ConstructionWorldLoopProtocolInput
@@ -34,7 +20,6 @@ export function auditConstructionWorldLoopProtocol(input: {
     ...auditStableHomeMapIdentity(input),
     ...auditSelectedPlan(input),
     ...auditSafeApplyLineage(input),
-    ...auditForbiddenTokens(input),
     ...buildNestedWarningSummaries({
       plannerWarningCount,
       candidateWarningCount,
@@ -176,49 +161,6 @@ function buildNestedWarningSummaries(input: {
   return warnings
 }
 
-function auditForbiddenTokens(input: {
-  protocolInput: ConstructionWorldLoopProtocolInput
-  resultWithoutAudit: Omit<ConstructionWorldLoopProtocolResult, "audit">
-}): string[] {
-  const tokens = [
-    ...input.protocolInput.tags,
-    ...input.resultWithoutAudit.tags,
-    ...input.resultWithoutAudit.messages,
-    ...(input.resultWithoutAudit.selectedPlan
-      ? [
-          input.resultWithoutAudit.selectedPlan.id,
-          input.resultWithoutAudit.selectedPlan.title,
-          input.resultWithoutAudit.selectedPlan.reason,
-          input.resultWithoutAudit.selectedPlan.projectType,
-          input.resultWithoutAudit.selectedPlan.targetZoneType,
-          ...input.resultWithoutAudit.selectedPlan.tags,
-        ]
-      : []),
-    ...input.resultWithoutAudit.nextHomeMapState.placements.flatMap((placement) => [
-      placement.id,
-      placement.assetId,
-      placement.layer,
-      placement.label,
-      ...placement.tags,
-    ]),
-    ...input.resultWithoutAudit.nextHomeMapState.mapDiffs.flatMap((diff) => [
-      diff.id,
-      diff.operation,
-      diff.placementId,
-      diff.reason,
-      ...diff.tags,
-      ...(diff.patch?.label ? [diff.patch.label] : []),
-      ...(diff.patch?.tags ?? []),
-    ]),
-  ].map((token) => token.toLowerCase())
-
-  return FORBIDDEN_WORLD_LOOP_PROTOCOL_TOKENS.flatMap((token) =>
-    tokens.some((item) => item.includes(token))
-      ? [`ConstructionWorldLoopProtocolResult 包含禁止 token：${token}`]
-      : []
-  )
-}
-
 function buildWorldLoopProtocolFingerprint(input: {
   protocolInput: ConstructionWorldLoopProtocolInput
   resultWithoutAudit: Omit<ConstructionWorldLoopProtocolResult, "audit">
@@ -262,9 +204,7 @@ function fingerprintHomeMapState(homeMapState: ConstructionWorldLoopProtocolResu
       .sort()
       .join("|"),
     homeMapState.mapDiffs
-      .map((diff) =>
-        [diff.id, diff.operation, diff.placementId, String(diff.createdAt)].join(":")
-      )
+      .map((diff) => [diff.id, diff.operation, diff.placementId].join(":"))
       .sort()
       .join("|"),
   ].join("::")
