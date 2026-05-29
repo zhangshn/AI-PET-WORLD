@@ -51,6 +51,14 @@ async function main() {
     "event_anchor",
     "unknown",
   ])
+  const ECOLOGY_OBJECT_KINDS = new Set([
+    "tree",
+    "bush",
+    "stone",
+    "flower",
+    "mushroom",
+    "insect_signal",
+  ])
 
   function fail(message) {
     console.log("M11 CORE RESOURCE VALIDATION SMOKE")
@@ -140,6 +148,8 @@ async function main() {
       "traceLevel",
       "movementCost",
       "buildSpaceGridFromHomeMapState",
+      "resolveDerivedObjectKind",
+      "rule_asset_projection",
       "world_fact",
       "derived_visual_only",
       "not_world_fact",
@@ -297,6 +307,69 @@ async function main() {
     })
   }
 
+  function assertEcologyObjects(record, spaceGrid, model) {
+    const cellById = new Map(spaceGrid.cells.map((cell) => [cell.id, cell]))
+    const factObjects = model.objects.filter((object) => object.source === "world_fact")
+    const derivedObjects = model.objects.filter((object) => object.source === "derived_visual_only")
+    const derivedEcologyObjects = derivedObjects.filter((object) => ECOLOGY_OBJECT_KINDS.has(object.kind))
+    const derivedKindCounts = derivedEcologyObjects.reduce((counts, object) => {
+      counts[object.kind] = (counts[object.kind] ?? 0) + 1
+      return counts
+    }, {})
+
+    assert(derivedObjects.length > 0, "WorldViewModel has no derived visual ecology objects.")
+    assert(derivedObjects.length === derivedEcologyObjects.length, "Derived visual objects include non-ecology object kinds.")
+    assert(Object.keys(derivedKindCounts).length >= 2, "Derived ecology objects are not diverse enough for validation.")
+
+    factObjects.forEach((object) => {
+      assert(object.tags.includes("world_fact"), `World fact object missing world_fact tag: ${object.id}.`)
+      assert(object.tags.includes("home_map_placement"), `World fact object missing home_map_placement tag: ${object.id}.`)
+      assert(!object.tags.includes("derived_visual_only"), `World fact object was tagged as derived visual: ${object.id}.`)
+      assert(!object.tags.includes("no_runtime_write"), `World fact object was tagged no_runtime_write: ${object.id}.`)
+      assert(object.x >= 0 && object.x <= model.canvas.width, `World fact object x out of canvas: ${object.id}.`)
+      assert(object.y >= 0 && object.y <= model.canvas.height, `World fact object y out of canvas: ${object.id}.`)
+      assert(object.label.length > 0, `World fact object has empty label: ${object.id}.`)
+    })
+
+    derivedEcologyObjects.forEach((object) => {
+      const match = object.id.match(/^derived_visual_(tree|bush|stone|flower|mushroom|insect_signal)_(space_cell_\d+_\d+)$/)
+      const sourceCell = match ? cellById.get(match[2]) : null
+
+      assert(match, `Derived ecology object id does not encode kind and source SpaceCell: ${object.id}.`)
+      assert(sourceCell, `Derived ecology object source SpaceCell is missing: ${object.id}.`)
+      assert(object.kind === match[1], `Derived ecology object kind does not match id: ${object.id}.`)
+      assert(object.tags.includes("derived_visual_only"), `Derived ecology object missing derived_visual_only tag: ${object.id}.`)
+      assert(object.tags.includes("not_world_fact"), `Derived ecology object missing not_world_fact tag: ${object.id}.`)
+      assert(object.tags.includes("rule_asset_projection"), `Derived ecology object missing rule_asset_projection tag: ${object.id}.`)
+      assert(object.tags.includes("no_runtime_write"), `Derived ecology object missing no_runtime_write tag: ${object.id}.`)
+      assert(object.tags.includes(`region_${sourceCell.regionKind}`), `Derived ecology object region tag does not match source SpaceCell: ${object.id}.`)
+      assert(object.tags.includes(`terrain_${sourceCell.terrainKind}`), `Derived ecology object terrain tag does not match source SpaceCell: ${object.id}.`)
+      assert(!object.tags.includes("home_map_placement"), `Derived ecology object leaked home_map_placement tag: ${object.id}.`)
+      assert(sourceCell.passable, `Derived ecology object is attached to a non-passable SpaceCell: ${object.id}.`)
+      assert(!["boundary", "blocked", "locked", "unopened"].includes(sourceCell.regionKind), `Derived ecology object is attached to invalid region: ${object.id}.`)
+      assert(sourceCell.terrainKind !== "built" && sourceCell.terrainKind !== "stone", `Derived ecology object is attached to invalid terrain: ${object.id}.`)
+      assert(sourceCell.occupancyKind === "empty", `Derived ecology object is attached to occupied SpaceCell: ${object.id}.`)
+      assert(object.x >= 0 && object.x <= model.canvas.width, `Derived ecology object x out of canvas: ${object.id}.`)
+      assert(object.y >= 0 && object.y <= model.canvas.height, `Derived ecology object y out of canvas: ${object.id}.`)
+      assert(object.scale >= 0.46 && object.scale <= 1.36, `Derived ecology object scale out of range: ${object.id}.`)
+      assert(object.opacity >= 0.42 && object.opacity <= 0.9, `Derived ecology object opacity out of range: ${object.id}.`)
+      assert(object.health >= 26 && object.health <= 96, `Derived ecology object health out of range: ${object.id}.`)
+      assert(["declining", "young", "mature"].includes(object.growthStage), `Derived ecology object growthStage invalid: ${object.id}.`)
+      assert(object.label.length > 0, `Derived ecology object has empty label: ${object.id}.`)
+
+      if (object.kind === "tree") assert(object.layer === "back", `Derived tree must be on back layer: ${object.id}.`)
+      if (["flower", "mushroom", "insect_signal"].includes(object.kind)) assert(object.layer === "front", `Derived ${object.kind} must be on front layer: ${object.id}.`)
+      if (["bush", "stone"].includes(object.kind)) assert(object.layer === "middle", `Derived ${object.kind} must be on middle layer: ${object.id}.`)
+    })
+
+    const derivedIdsInHomeMap = derivedEcologyObjects.filter((object) =>
+      record.homeMapState.placements.some((placement) => placement.id === object.id)
+    )
+    assert(derivedIdsInHomeMap.length === 0, "Derived ecology objects were written back into HomeMapState placements.")
+
+    return derivedKindCounts
+  }
+
   function assertWorldViewModel(record, model) {
     const expectedTileCount = record.homeMapState.mapSize.columns * record.homeMapState.mapSize.rows
     const expectedWidth = record.homeMapState.mapSize.columns * record.homeMapState.mapSize.tileSize
@@ -362,6 +435,7 @@ async function main() {
 
   assertWorldViewModel(record, model)
   assertSpaceGrid(record, spaceGrid, model)
+  const derivedKindCounts = assertEcologyObjects(record, spaceGrid, model)
 
   const afterRaw = fs.readFileSync(savePath, "utf8")
   const afterHash = hashText(afterRaw)
@@ -380,11 +454,13 @@ async function main() {
   console.log(`Tiles: ${model.tiles.length}`)
   console.log(`World fact objects: ${model.objects.filter((object) => object.source === "world_fact").length}`)
   console.log(`Derived visual-only objects: ${model.objects.filter((object) => object.source === "derived_visual_only").length}`)
+  console.log(`Derived ecology kinds: ${JSON.stringify(derivedKindCounts)}`)
   console.log(`Traces: ${model.traces.length}`)
   console.log(`Actors: ${model.actors.length}`)
   console.log("Runtime save read-only: ok")
   console.log("HomeMapState fact source: ok")
   console.log("SpaceCell validation: ok")
+  console.log("Ecology object validation: ok")
   console.log("TraceField projection: ok")
   console.log("WorldViewModel validation: ok")
   console.log("No default pet fact: ok")
