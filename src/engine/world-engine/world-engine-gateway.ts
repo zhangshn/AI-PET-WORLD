@@ -1,12 +1,9 @@
 /**
- * 当前文件负责：统一导出世界引擎运行步骤模块的公开入口。
+ * 当前文件负责：统一导出当前 M11 主链路可使用的世界引擎运行步骤入口。
  */
 
 export { runWorldRuntime } from "./runners/world-runtime-runner"
 export { runWorldStimulus } from "./runners/world-stimulus-runner"
-export { runPetCognition } from "./runners/pet-cognition-runner"
-export { runPetRuntime } from "./runners/pet-runtime-runner"
-export { runButlerOpportunities } from "./runners/butler-opportunity-runner"
 export { runHomeConstruction } from "./runners/home-construction-runner"
 export { runManagementInteractions } from "./runners/management-interaction-runner"
 
