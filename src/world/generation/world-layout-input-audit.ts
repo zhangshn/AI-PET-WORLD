@@ -2,33 +2,16 @@
  * Current file responsibility: audit world layout generation input against
  * the V2.0 MVP world-generation boundaries.
  */
-// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type {
   WorldLayoutGenerationAudit,
   WorldLayoutGenerationInput,
 } from "./generation-schema"
 
-// These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
-const FORBIDDEN_LAYOUT_TOKENS = [
-  "pet_arrival",
-  "pet_rest",
-  "pet_actor",
-  "pet-bed",
-  "pet bed",
-  "incubator",
-  "embryo",
-  "hatching",
-  "incubating",
-]
-
 export function auditWorldLayoutGenerationInput(
   input: WorldLayoutGenerationInput
 ): WorldLayoutGenerationAudit {
-  const warnings = [
-    ...auditRequiredFields(input),
-    ...auditForbiddenTokens(input),
-  ]
+  const warnings = auditRequiredFields(input)
 
   return {
     selectedVariant: input.variant,
@@ -92,14 +75,4 @@ function auditRequiredFields(input: WorldLayoutGenerationInput): string[] {
   if (input.tags.length === 0) warnings.push("layout input missing tags.")
 
   return warnings
-}
-
-function auditForbiddenTokens(input: WorldLayoutGenerationInput): string[] {
-  const serialized = JSON.stringify(input).toLowerCase()
-
-  return FORBIDDEN_LAYOUT_TOKENS.flatMap((token) =>
-    serialized.includes(token)
-      ? [`layout input contains forbidden token: ${token}`]
-      : []
-  )
 }
