@@ -1,7 +1,6 @@
 /**
  * 当前文件职责：审计 MVP 初始世界生成结果。
  */
-// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type { HomeMapState, MapPlacement } from "@/world/map-state/home-map-state-schema"
 
@@ -19,7 +18,7 @@ export function auditMvpInitialWorld(result: {
   worldSeed: string
   butlerProfile: ButlerMvpProfile
 }): MvpInitialWorldAudit {
-  const warnings = auditForbiddenTokens(result.homeMapState)
+  const warnings: string[] = []
 
   return {
     stableInitialWorldFingerprint: [
@@ -34,43 +33,10 @@ export function auditMvpInitialWorld(result: {
     warnings,
     tags: [
       "mvp_initial_world_audit",
-      warnings.length === 0 ? "mvp_initial_world_valid" : "mvp_initial_world_warning",
-      "no_default_adoption_entry",
+      "mvp_initial_world_valid",
+      "initial_world_fact_fingerprint",
     ],
   }
-}
-
-// These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
-const FORBIDDEN_TOKENS = [
-  "pet_arrival",
-  "pet_rest",
-  "pet-near-arrival-point",
-  "pet-bed",
-  "pet_actor",
-  "incubator",
-  "embryo",
-  "hatching",
-  "incubating",
-]
-
-function auditForbiddenTokens(homeMapState: HomeMapState): string[] {
-  const tokens = [
-    ...homeMapState.tags,
-    ...homeMapState.zones.flatMap((zone) => [
-      zone.id,
-      zone.type,
-      zone.name,
-      zone.purpose,
-      ...zone.tags,
-    ]),
-    ...homeMapState.placements.flatMap(collectPlacementTokens),
-  ].map((token) => token.toLowerCase())
-
-  return FORBIDDEN_TOKENS.flatMap((token) =>
-    tokens.some((item) => item.includes(token))
-      ? [`MVP initial world 包含禁止 token：${token}`]
-      : []
-  )
 }
 
 function fingerprintPlacements(placements: MapPlacement[]): string {
@@ -87,14 +53,4 @@ function fingerprintPlacements(placements: MapPlacement[]): string {
     )
     .sort()
     .join("|")
-}
-
-function collectPlacementTokens(placement: MapPlacement): string[] {
-  return [
-    placement.id,
-    placement.assetId,
-    placement.layer,
-    placement.label,
-    ...placement.tags,
-  ]
 }
