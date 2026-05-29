@@ -31,7 +31,7 @@ export default function PixelVisualLabClient({
         <strong>当前边界：</strong>
         <span>只做视觉 Debug 合并。</span>
         <span>不进入正式 /world。</span>
-        <span>不改变 WorldViewModel。</span>
+        <span>不改变正式世界数据。</span>
         <span>不新增正式画图算法。</span>
       </section>
 
