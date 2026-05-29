@@ -21,13 +21,13 @@
 | M10 宠物学习预留 | 0% | 后置 | MVP 阶段不做 |
 | M11 主页清空 | 100% | 完成 | `/world` 已保持 cleared 状态；旧画布、当前记录卡片、管家说明卡片、P-Phone 卡片已从正式主页移除 |
 | M11 验收整理 | 100% | 完成 | 已完成 handoff 复读、关键文件静态核对、smoke 注册情况整理、Debug 地址用途整理与本地命令级验收 |
-| M11 核心资源库 / 验算库 | 70% | 进行中 | 第一批只读验算与第二批 SpaceCell / 坐标 / Trace 投影深化验算均已通过；下一步扩展生态对象来源与分布规则验算 |
+| M11 核心资源库 / 验算库 | 82% | 进行中 | 第一批只读验算、SpaceCell / 坐标 / Trace 投影深化验算、生态对象来源与分布规则验算均已通过；下一步扩展 Actor 表现边界验算 |
 | M11 正式画图算法重整 | 0% | 后续 | 核心资源库 / 验算库边界继续补齐并通过验收后再开始；未来 `/world` 是端游式像素主世界，不是网页卡片页 |
 | M12 构建与质量验收 | 持续 | 持续 | 每个模块后必须 lint / tsc / build / 对应 smoke |
 
 ## 当前路线
 
-当前项目已经完成 M1-M6.5、WORLD-PIXEL-RULE-MAPPER-00、M7 管家行为 → 痕迹闭环、M11 验收整理、核心资源库 / 验算库第一批只读验收，以及 SpaceCell / 坐标 / Trace 投影深化验算。
+当前项目已经完成 M1-M6.5、WORLD-PIXEL-RULE-MAPPER-00、M7 管家行为 → 痕迹闭环、M11 验收整理、核心资源库 / 验算库第一批只读验收、SpaceCell / 坐标 / Trace 投影深化验算，以及生态对象来源与分布规则验算。
 
 当前准确阶段是：
 
@@ -78,7 +78,7 @@ M11｜核心资源库 / 验算库
 | `npm run lint` | PASS | ESLint 通过 |
 | `npx tsc --noEmit` | PASS | TypeScript 类型检查通过 |
 | `npm run build` | PASS | Next.js 16.2.4 build 通过 |
-| `npm run smoke:m11-core-resource-validation` | PASS | Runtime save / HomeMapState / TraceField / WorldViewModel / SpaceCell 只读验算通过 |
+| `npm run smoke:m11-core-resource-validation` | PASS | Runtime save / HomeMapState / TraceField / WorldViewModel / SpaceCell / 生态对象只读验算通过 |
 | `npm run smoke:m11-formal-surface` | PASS | `/world` cleared、旧画布/卡片移除、无默认宠物、read-only surface 通过 |
 | `node scripts/run-world-m11-create-world-flow-smoke.cjs` | PASS | create-world API 写入 runtime save，`/world` 可读取创建后的 runtime save |
 | `npm run smoke:m7-closeout` | PASS | fresh runtime 可自举一次显式 tick 并完成 M7 closeout 验收 |
@@ -105,6 +105,9 @@ M11｜核心资源库 / 验算库
 | WorldViewModel tile traceIntensity | traceIntensity 来自 SpaceCell traceStrength / traceInfluenceStrength | 已验收 |
 | WorldViewModel objects | world_fact 与 derived_visual_only 分离 | 已验收 |
 | derived_visual_only | 必须带 `not_world_fact` 与 `no_runtime_write` | 已验收 |
+| 生态对象来源 | tree / bush / stone / flower / mushroom / insect_signal 只能作为视觉派生或 HomeMapState 事实映射出现 | 已验收 |
+| 生态对象分布 | 派生生态对象必须落在合法 SpaceCell，不能落在 boundary / blocked / locked / unopened / occupied / built / stone 单元 | 已验收 |
+| 生态对象标签 | 派生生态对象必须带 `rule_asset_projection`、`region_*`、`terrain_*`，且不得写回 HomeMapState | 已验收 |
 | WorldViewModel actors | 管家可见；默认宠物不得出现 | 已验收 |
 | formal `/world` path | 不引用 Debug Composer / SVG / procedural renderer | 已验收 |
 
@@ -112,10 +115,9 @@ M11｜核心资源库 / 验算库
 
 下一步继续补齐，不恢复 `/world` 画面：
 
-- 生态对象来源与分布规则验算。
-- Trace visualKind / layer / intensity 验算。
-- actor 坐标、可见性、默认宠物禁用验算深化。
+- Actor 坐标、可见性、默认宠物禁用验算深化。
 - create-world flow 的 npm smoke 注册是否需要独立补齐。
+- 核心资源库 / 验算库 closeout。
 
 ## 当前 smoke / 验收命令整理
 
