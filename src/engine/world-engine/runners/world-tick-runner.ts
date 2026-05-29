@@ -8,9 +8,9 @@ import type { ButlerState } from "@/types/butler"
 import type { PetState } from "@/types/pet"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 import type { WorldProgressionSystem } from "@/world/progression/world-progression-gateway"
+import type { PetSystem } from "@/systems/petSystem"
 
 import type {
-  PetSystem,
   ButlerSystem,
   EventSystem,
   HomeSystem,
