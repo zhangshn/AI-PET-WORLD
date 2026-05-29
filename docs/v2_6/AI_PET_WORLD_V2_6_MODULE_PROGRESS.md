@@ -2,7 +2,7 @@
 
 > 本进度表只依据《完整业务架构总图（强化版）》与《无大数据训练阶段：规则型 AI 自主世界与像素表现落地方案》以及 `AI_PET_WORLD_V2_6_HANDOFF_M11_MVP_CLOSEOUT.md`。
 >
-> 当前准确阶段：M11｜核心资源库 / 验算库第一批验收通过。
+> 当前准确阶段：M11｜核心资源库 / 验算库深化阶段。
 > 当前不是恢复 `/world` 画面，不是网页卡片主页整理，不是进入 M8 / M9 / M10。
 
 | 模块 | 进度 | 状态 | 说明 |
@@ -21,13 +21,13 @@
 | M10 宠物学习预留 | 0% | 后置 | MVP 阶段不做 |
 | M11 主页清空 | 100% | 完成 | `/world` 已保持 cleared 状态；旧画布、当前记录卡片、管家说明卡片、P-Phone 卡片已从正式主页移除 |
 | M11 验收整理 | 100% | 完成 | 已完成 handoff 复读、关键文件静态核对、smoke 注册情况整理、Debug 地址用途整理与本地命令级验收 |
-| M11 核心资源库 / 验算库 | 60% | 进行中 | 第一批正式验算库文档、只读核心资源验算 smoke、package smoke 注册与本地命令级验收已通过；下一步扩展 SpaceCell / 坐标 / 生态对象验算细项 |
+| M11 核心资源库 / 验算库 | 70% | 进行中 | 第一批只读验算与第二批 SpaceCell / 坐标 / Trace 投影深化验算均已通过；下一步扩展生态对象来源与分布规则验算 |
 | M11 正式画图算法重整 | 0% | 后续 | 核心资源库 / 验算库边界继续补齐并通过验收后再开始；未来 `/world` 是端游式像素主世界，不是网页卡片页 |
 | M12 构建与质量验收 | 持续 | 持续 | 每个模块后必须 lint / tsc / build / 对应 smoke |
 
 ## 当前路线
 
-当前项目已经完成 M1-M6.5、WORLD-PIXEL-RULE-MAPPER-00、M7 管家行为 → 痕迹闭环、M11 验收整理，以及核心资源库 / 验算库第一批只读验收。
+当前项目已经完成 M1-M6.5、WORLD-PIXEL-RULE-MAPPER-00、M7 管家行为 → 痕迹闭环、M11 验收整理、核心资源库 / 验算库第一批只读验收，以及 SpaceCell / 坐标 / Trace 投影深化验算。
 
 当前准确阶段是：
 
@@ -78,7 +78,7 @@ M11｜核心资源库 / 验算库
 | `npm run lint` | PASS | ESLint 通过 |
 | `npx tsc --noEmit` | PASS | TypeScript 类型检查通过 |
 | `npm run build` | PASS | Next.js 16.2.4 build 通过 |
-| `npm run smoke:m11-core-resource-validation` | PASS | Runtime save / HomeMapState / TraceField / WorldViewModel 只读验算通过 |
+| `npm run smoke:m11-core-resource-validation` | PASS | Runtime save / HomeMapState / TraceField / WorldViewModel / SpaceCell 只读验算通过 |
 | `npm run smoke:m11-formal-surface` | PASS | `/world` cleared、旧画布/卡片移除、无默认宠物、read-only surface 通过 |
 | `node scripts/run-world-m11-create-world-flow-smoke.cjs` | PASS | create-world API 写入 runtime save，`/world` 可读取创建后的 runtime save |
 | `npm run smoke:m7-closeout` | PASS | fresh runtime 可自举一次显式 tick 并完成 M7 closeout 验收 |
@@ -87,17 +87,22 @@ M11｜核心资源库 / 验算库
 | `npm run smoke:butler-trace-closure` | PASS | Butler trace closure、no default pet、read-only view 通过 |
 | `npm run smoke:world-pixel-viewmodel-primary` | PASS | WorldViewModel 主链路、无 Scene Composer gateway、无 SVG renderer、无默认宠物通过 |
 
-## 核心资源库 / 验算库第一批验算范围
+## 核心资源库 / 验算库已完成验算范围
 
 | 验算对象 | 验算目标 | 当前口径 |
 |---|---|---|
 | WorldRuntimeSaveRecord | runtime save 存在、version / worldId / ownerId / tick 基础字段正确 | 已验收 |
 | HomeMapState | mapSize / zones / placements / constructionPlans / mapDiffs 可读 | 已验收 |
 | SpaceGrid / canvas | columns × rows × tileSize 映射到 WorldViewModel canvas | 已验收 |
+| SpaceCell 坐标 | id / row / column / x / y / coordinate 稳定映射 | 已验收 |
+| SpaceCell 类型 | regionKind / terrainKind / passability / traceLevel / occupancyKind 合法 | 已验收 |
+| SpaceCell passability | passable 布尔值、blocked movementCost、非 blocked cost 范围 | 已验收 |
+| SpaceGrid summary | regionCounts / terrainCounts / occupancyCounts / passable / blocked / restricted 计数 | 已验收 |
 | TraceField | traces 作为痕迹投影来源 | 已验收 |
 | TraceMemorySeedField | 记忆种子字段存在 | 已验收 |
 | TraceInfluenceSummary | 痕迹影响摘要存在 | 已验收 |
-| WorldViewModel tiles | tile 数量等于 columns × rows | 已验收 |
+| WorldViewModel tiles | tile 数量等于 columns × rows，并一一映射 SpaceCell | 已验收 |
+| WorldViewModel tile traceIntensity | traceIntensity 来自 SpaceCell traceStrength / traceInfluenceStrength | 已验收 |
 | WorldViewModel objects | world_fact 与 derived_visual_only 分离 | 已验收 |
 | derived_visual_only | 必须带 `not_world_fact` 与 `no_runtime_write` | 已验收 |
 | WorldViewModel actors | 管家可见；默认宠物不得出现 | 已验收 |
@@ -107,8 +112,6 @@ M11｜核心资源库 / 验算库
 
 下一步继续补齐，不恢复 `/world` 画面：
 
-- SpaceCell terrainKind / regionKind / traceStrength 验算。
-- 坐标定位与对象边界验算。
 - 生态对象来源与分布规则验算。
 - Trace visualKind / layer / intensity 验算。
 - actor 坐标、可见性、默认宠物禁用验算深化。
