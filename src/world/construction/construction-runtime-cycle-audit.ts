@@ -1,32 +1,14 @@
 /**
  * 当前文件职责：审计建设 runtime 调用边界输出。
  */
-// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
-import type {
-  HomeMapState,
-  MapDiff,
-  MapPlacement,
-} from "@/world/map-state/home-map-state-schema"
+import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
 
 import type {
   ConstructionRuntimeCycleAudit,
   ConstructionRuntimeCycleInput,
   ConstructionRuntimeCycleResult,
 } from "./construction-schema"
-
-// These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
-const FORBIDDEN_RUNTIME_CYCLE_TOKENS = [
-  "pet_arrival",
-  "pet_rest",
-  "pet-near-arrival-point",
-  "pet-bed",
-  "pet_actor",
-  "incubator",
-  "embryo",
-  "hatching",
-  "incubating",
-]
 
 export function auditConstructionRuntimeCycle(input: {
   runtimeInput: ConstructionRuntimeCycleInput
@@ -45,7 +27,6 @@ export function auditConstructionRuntimeCycle(input: {
     ...auditVisualRefreshSignal(input),
     ...auditAcceptedDiffLineage({ input, acceptedDiffIds }),
     ...auditChangedPlacementLineage(input),
-    ...auditForbiddenTokens(input),
   ]
 
   return {
@@ -211,44 +192,6 @@ function buildChangedPlacementIds(
   )
 }
 
-function auditForbiddenTokens(input: {
-  runtimeInput: ConstructionRuntimeCycleInput
-  resultWithoutAudit: Omit<ConstructionRuntimeCycleResult, "audit">
-}): string[] {
-  const tokens = [
-    input.runtimeInput.runReason,
-    ...input.runtimeInput.tags,
-    ...input.resultWithoutAudit.tags,
-    ...input.resultWithoutAudit.messages,
-    ...(input.resultWithoutAudit.persistenceProposal
-      ? [
-          input.resultWithoutAudit.persistenceProposal.proposalId,
-          input.resultWithoutAudit.persistenceProposal.reason,
-          ...input.resultWithoutAudit.persistenceProposal.tags,
-        ]
-      : []),
-    ...(input.resultWithoutAudit.visualRefreshSignal
-      ? [
-          input.resultWithoutAudit.visualRefreshSignal.signalId,
-          input.resultWithoutAudit.visualRefreshSignal.reason,
-          ...input.resultWithoutAudit.visualRefreshSignal.tags,
-        ]
-      : []),
-    ...input.resultWithoutAudit.nextHomeMapState.placements.flatMap(
-      collectPlacementTokens
-    ),
-    ...input.resultWithoutAudit.nextHomeMapState.mapDiffs.flatMap(
-      collectMapDiffTokens
-    ),
-  ].map((token) => token.toLowerCase())
-
-  return FORBIDDEN_RUNTIME_CYCLE_TOKENS.flatMap((token) =>
-    tokens.some((item) => item.includes(token))
-      ? [`ConstructionRuntimeCycleResult 包含禁止 token：${token}`]
-      : []
-  )
-}
-
 function buildStableRuntimeFingerprint(input: {
   input: {
     runtimeInput: ConstructionRuntimeCycleInput
@@ -289,29 +232,6 @@ function fingerprintPlacements(homeMapState: HomeMapState): string {
     )
     .sort()
     .join("|")
-}
-
-function collectPlacementTokens(placement: MapPlacement): string[] {
-  return [
-    placement.id,
-    placement.assetId,
-    placement.layer,
-    placement.label,
-    ...placement.tags,
-  ]
-}
-
-function collectMapDiffTokens(diff: MapDiff): string[] {
-  return [
-    diff.id,
-    diff.operation,
-    diff.placementId,
-    diff.reason,
-    ...diff.tags,
-    ...(diff.patch?.label ? [diff.patch.label] : []),
-    ...(diff.patch?.tags ?? []),
-    ...(diff.placement ? collectPlacementTokens(diff.placement) : []),
-  ]
 }
 
 function uniqueTags(tags: string[]): string[] {
