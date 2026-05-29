@@ -1,7 +1,6 @@
 /**
  * 当前文件职责：审计管家自主意识输出是否越过世界事实边界。
  */
-// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type {
   ButlerAutonomousIntent,
@@ -9,11 +8,7 @@ import type {
   ButlerAutonomyAuditWarning,
 } from "./schema"
 
-const FORBIDDEN_INTENT_TAG_TOKENS = [
-  "pet_actor",
-  "pet_bed",
-  "incubator",
-  "embryo",
+const WORLD_FACT_BOUNDARY_TAG_TOKENS = [
   "direct_home_map_write",
   "ui_generates_fact",
 ]
@@ -54,16 +49,16 @@ function buildWarnings(
     ...intent.perceivedWorldFacts,
     ...intent.memoryReferences,
   ].map((token) => token.toLowerCase())
-  const forbiddenHits = FORBIDDEN_INTENT_TAG_TOKENS.filter((token) =>
+  const boundaryHits = WORLD_FACT_BOUNDARY_TAG_TOKENS.filter((token) =>
     normalizedTokens.some((item) => item.includes(token))
   )
 
-  if (forbiddenHits.length > 0) {
+  if (boundaryHits.length > 0) {
     warnings.push({
-      id: "forbidden-autonomy-token",
+      id: "world-fact-boundary-token",
       severity: "blocking",
-      message: `管家意图包含当前禁止 token：${forbiddenHits.join("、")}。`,
-      tags: ["forbidden_token", "autonomy_guardrail", ...forbiddenHits],
+      message: `管家意图包含越界世界事实 token：${boundaryHits.join("、")}。`,
+      tags: ["world_fact_boundary", "autonomy_guardrail", ...boundaryHits],
     })
   }
 
