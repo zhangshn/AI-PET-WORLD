@@ -1,33 +1,16 @@
 /**
  * 当前文件职责：审计建设链路触发 RenderableWorldSnapshot 刷新前请求。
  */
-// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type {
   ConstructionSnapshotRefreshAudit,
   ConstructionSnapshotRefreshRequest,
 } from "./construction-schema"
 
-// These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
-const FORBIDDEN_SNAPSHOT_REFRESH_TOKENS = [
-  "pet_arrival",
-  "pet_rest",
-  "pet-near-arrival-point",
-  "pet-bed",
-  "pet_actor",
-  "incubator",
-  "embryo",
-  "hatching",
-  "incubating",
-]
-
 export function auditConstructionSnapshotRefreshRequest(input: {
   request: ConstructionSnapshotRefreshRequest
 }): ConstructionSnapshotRefreshAudit {
-  const warnings = [
-    ...auditRefreshFlags(input.request),
-    ...auditForbiddenTokens(input.request),
-  ]
+  const warnings = auditRefreshFlags(input.request)
 
   return {
     stableSnapshotRefreshFingerprint:
@@ -60,20 +43,4 @@ function auditRefreshFlags(
   }
 
   return warnings
-}
-
-function auditForbiddenTokens(
-  request: ConstructionSnapshotRefreshRequest
-): string[] {
-  const tokens = [
-    request.requestId,
-    request.reason,
-    ...request.tags,
-  ].map((token) => token.toLowerCase())
-
-  return FORBIDDEN_SNAPSHOT_REFRESH_TOKENS.flatMap((token) =>
-    tokens.some((item) => item.includes(token))
-      ? [`SnapshotRefreshRequest 包含禁止 token：${token}`]
-      : []
-  )
 }
