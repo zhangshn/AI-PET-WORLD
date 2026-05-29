@@ -1,15 +1,10 @@
 /**
- * 当前文件负责：统一导出 systems 层对外可使用的系统类与系统类型。
+ * 当前文件负责：统一导出当前 M11 主链路可使用的 systems 层系统类与系统类型。
  */
 
-export { PetSystem } from "./petSystem"
 export { ButlerSystem } from "./butlerSystem"
 export { EventSystem } from "./eventSystem"
 export { HomeSystem } from "./homeSystem"
-
-export type {
-  FoodOfferDecision,
-} from "./pet/pet-gateway"
 
 export type {
   ButlerBoundaryInteractionFeedback,
