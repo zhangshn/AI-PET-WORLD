@@ -5,7 +5,6 @@
 export { runWorldRuntime } from "./runners/world-runtime-runner"
 export { runWorldStimulus } from "./runners/world-stimulus-runner"
 export { runHomeConstruction } from "./runners/home-construction-runner"
-export { runManagementInteractions } from "./runners/management-interaction-runner"
 
 export type {
   RunHomeConstructionInput,
@@ -21,19 +20,7 @@ export type {
   StepWorldRuntimeInput,
 } from "./runners/world-runtime-step-runner"
 
-export { refreshWorldSystemState } from "./runners/world-state-sync-runner"
-export type {
-  RefreshWorldSystemStateInput,
-  WorldSystemStateSnapshot,
-} from "./runners/world-state-sync-runner"
-
 export { runWorldEventUpdate } from "./runners/world-event-update-runner"
 export type {
   RunWorldEventUpdateInput,
 } from "./runners/world-event-update-runner"
-
-export { runWorldTick } from "./runners/world-tick-runner"
-export type {
-  RunWorldTickInput,
-  RunWorldTickResult,
-} from "./runners/world-tick-runner"
