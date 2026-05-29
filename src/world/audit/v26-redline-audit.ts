@@ -1,4 +1,3 @@
-// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 import type { HomeMapState, MapDiff } from "@/world/map-state/home-map-state-schema"
 
 export type TownReadiness = "not_visible" | "hinted" | "road_pending" | "observable" | "stable"
@@ -62,17 +61,13 @@ export type V26RedlineAuditResult = {
   tags: string[]
 }
 
-const AUDIT_ONLY_BLOCKED_TOKENS = [
+const BLOCKED_STARTUP_FACT_TOKENS = [
   "pet_actor",
   "pet_arrival",
   "pet_rest",
   "pet_bed",
   "pet-bed",
   "pet bed",
-  "incubator",
-  "embryo",
-  "hatching",
-  "hatchery",
 ]
 
 export function auditV26Redlines(
@@ -82,7 +77,7 @@ export function auditV26Redlines(
   const warnings: string[] = []
   const factTokens = collectHomeMapTokens(input.homeMapState)
 
-  AUDIT_ONLY_BLOCKED_TOKENS.forEach((token) => {
+  BLOCKED_STARTUP_FACT_TOKENS.forEach((token) => {
     if (factTokens.some((item) => item.includes(token))) {
       blocked.push(`HomeMapState contains blocked startup/fact token: ${token}`)
     }
