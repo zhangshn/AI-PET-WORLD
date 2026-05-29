@@ -2,9 +2,9 @@
 
 > 本进度表只依据当前仓库、当前 M11 交接文档与当前业务口径维护。
 >
-> 当前准确阶段：M11｜核心资源库 / 验算库深化阶段。
+> 当前准确阶段：M11｜核心资源库 / 验算库 closeout 已完成，准备进入正式画图算法重整。
 >
-> 当前不是恢复 `/world` 画面，不是网页卡片主页整理，不是进入 M8 / M9 / M10。
+> 当前不是恢复旧 `/world` 画面，不是网页卡片主页整理，不是进入 M8 / M9 / M10。
 
 ---
 
@@ -38,8 +38,8 @@
 | M11 Actor 表现输入边界验算 | 100% | 完成 | `smoke:m11-actor-input-boundary` 已注册并通过；未验证 pet placement 不进入 WorldViewModel actors，正式未来 pet entry 需要验证标签 |
 | M11 P-Phone 数据入口边界验算 | 100% | 完成 | `smoke:m11-p-phone-input-boundary` 已注册并通过；P-Phone 只读正式模型、不暴露后台词、不恢复旧卡片 |
 | M11 UI 自动生成输入边界验算 | 100% | 完成 | `smoke:m11-ui-auto-generation-input-boundary` 已注册并通过；正式 UI 只读 WorldViewModel、不生成世界事实、不恢复旧卡片、不触发 runtime 写入 |
-| M11 核心资源库 / 验算库 | 94% | 进行中 | Runtime / HomeMapState / SpaceGrid / SpaceCell / TraceField / WorldViewModel / 生态对象 / Actor / P-Phone / UI 输入边界已验收；下一步进入 closeout |
-| M11 正式画图算法重整 | 0% | 后续 | 核心资源库 / 验算库 closeout 后再开始；未来 `/world` 是端游式像素主世界，不是网页卡片页 |
+| M11 核心资源库 / 验算库 closeout | 100% | 完成 | `smoke:m11-core-resource-closeout` 已注册并通过；M11 核心资源、WorldViewModel、Actor、P-Phone、UI 输入边界、正式 `/world` cleared 边界已完成总验收 |
+| M11 正式画图算法重整 | 0% | 下一步 | 核心资源库 / 验算库已完成 closeout；下一阶段开始重整正式画图算法，未来 `/world` 是端游式像素主世界，不是网页卡片页 |
 | M12 构建与质量验收 | 持续 | 持续 | 每个阶段后必须 lint / tsc / build / 对应 smoke |
 
 ---
@@ -69,19 +69,19 @@ SpaceCell / 坐标 / Trace 投影深化验算
 Actor 表现输入边界验算
 P-Phone 数据入口边界验算
 UI 自动生成输入边界验算
+核心资源库 / 验算库 closeout
 ```
 
 当前准确阶段是：
 
 ```txt
-M11｜核心资源库 / 验算库深化
+M11｜核心资源库 / 验算库 closeout 已完成
 ```
 
 后续路线：
 
 ```txt
-核心资源库 / 验算库 closeout
-→ 正式画图算法重整
+正式画图算法重整
 → 端游式 /world 主世界恢复
 → MVP closeout
 ```
@@ -103,7 +103,7 @@ UI 自动生成算法
 P-Phone 通信入口
 ```
 
-当前工程重点不是扩功能，而是把世界事实链路、管家自主行为链路、资源与空间算法、WorldViewModel、验算库和未来 UI 自动生成输入边界打稳。
+当前工程重点不是扩功能，而是让世界事实链路、管家自主行为链路、资源与空间算法、WorldViewModel、验算库和未来 UI 自动生成输入边界成为正式画图算法的稳定输入。
 
 ---
 
@@ -120,6 +120,7 @@ P-Phone 通信入口
 | Actor 表现输入边界 | 当前只显示管家 actor；未验证 pet placement 不显示；未来 pet entry 必须带正式验证标签 | 已通过 npm smoke |
 | P-Phone 数据入口边界 | P-Phone 只读正式模型；不暴露后台词；不恢复旧 P-Phone 卡片；不推进 runtime | 已通过 npm smoke |
 | UI 自动生成输入边界 | 正式 UI 只读 WorldViewModel；不生成世界事实；不恢复旧卡片；不触发 runtime 写入 | 已通过 npm smoke |
+| 核心资源库 / 验算库 closeout | M11 核心资源、WorldViewModel、Actor、P-Phone、UI 输入边界、正式 `/world` cleared 边界完成总验收 | 已通过 npm smoke |
 | smoke 注册情况 | M11 / M7 / WorldViewModel smoke 已注册为 npm 命令 | 已整理 |
 | Debug 地址用途 | 明确 Debug 页面用途，不进入正式 `/world` | 已整理 |
 | 源码历史错误口径清理 | 旧生命周期 token 扫描已清空 | 已完成 |
@@ -132,7 +133,7 @@ P-Phone 通信入口
 
 ---
 
-## 5. 核心资源库 / 验算库当前完成范围
+## 5. 核心资源库 / 验算库完成范围
 
 | 验算对象 | 验算目标 | 当前口径 |
 |---|---|---|
@@ -157,6 +158,7 @@ P-Phone 通信入口
 | Actor 输入边界 | 未验证 pet placement 被拦截；正式未来 pet entry 需要 `formal_life_entry_validated / pet_world_entry_validated / actor_input_boundary_validated` | 已验收 |
 | P-Phone 输入边界 | 只读 `WorldViewModel.pPhone`；用户文案不暴露 HomeMapState / SafeApply / TraceField / AuditSummary / WorldViewModel 等后台词；正式 `/world` 不恢复旧 P-Phone 卡片 | 已验收 |
 | UI 自动生成输入边界 | 正式 `/world` 只把 WorldViewModel 传给 PixelWorldView；PixelWorldView 当前保持 cleared；未来 UI 不得直接读写 runtime、不得生成世界事实、不得恢复旧卡片或 Debug 来源 | 已验收 |
+| closeout 总验收 | package smoke 注册、文档 closeout 状态、WorldViewModel 边界、正式 UI 边界、无默认宠物、只读投影 | 已验收 |
 | formal `/world` path | 不引用 Debug Composer / SVG / procedural renderer | 已验收 |
 
 ---
@@ -213,12 +215,25 @@ PetSystem / petSystem / runPetRuntime / runPetCognition / runButlerOpportunities
 
 ---
 
-## 7. 下一批核心验算细项
+## 7. 下一批核心工作
 
-下一步继续补齐，不恢复 `/world` 画面：
+下一步不恢复旧 `/world`，不做网页卡片主页，而是进入：
 
 ```txt
-核心资源库 / 验算库 closeout
+正式画图算法重整
+```
+
+正式画图算法重整必须继续基于已经 closeout 的正式输入：
+
+```txt
+WorldRuntimeSaveRecord
+HomeMapState
+SpaceGrid / SpaceCell / SpaceRegion
+TraceField / TraceMemorySeedField / TraceInfluenceSummary
+ButlerRuntimeDecision / ButlerRuntimeIntent / ButlerWorldRuleValidation
+ButlerRuntimeAuditSummary
+WorldViewModel
+Actor / P-Phone / UI 输入边界
 ```
 
 ---
@@ -238,6 +253,7 @@ npm run smoke:m11-core-resource-validation
 npm run smoke:m11-actor-input-boundary
 npm run smoke:m11-p-phone-input-boundary
 npm run smoke:m11-ui-auto-generation-input-boundary
+npm run smoke:m11-core-resource-closeout
 ```
 
 ### 全量回归
@@ -250,6 +266,7 @@ npm run smoke:m11-core-resource-validation
 npm run smoke:m11-actor-input-boundary
 npm run smoke:m11-p-phone-input-boundary
 npm run smoke:m11-ui-auto-generation-input-boundary
+npm run smoke:m11-core-resource-closeout
 npm run smoke:m7-closeout
 npm run smoke:m7-explanation
 npm run smoke:m7-audit-summary
@@ -266,6 +283,7 @@ npm run smoke:m11-create-world-flow
 npm run smoke:m11-actor-input-boundary
 npm run smoke:m11-p-phone-input-boundary
 npm run smoke:m11-ui-auto-generation-input-boundary
+npm run smoke:m11-core-resource-closeout
 ```
 
 ### 已注册在 `package.json` 的 M7 / WorldViewModel smoke
@@ -314,6 +332,7 @@ npm run smoke:world-pixel-viewmodel-primary
 - Actor 表现输入边界已守卫：未验证 pet placement 不进入 actors，未来 pet entry 必须经过正式验证标签
 - P-Phone 数据入口边界已守卫：只读正式模型、不暴露后台词、不恢复旧 P-Phone 卡片
 - UI 自动生成输入边界已守卫：正式 UI 只读 WorldViewModel，不生成世界事实，不恢复旧卡片或 Debug 来源
+- 核心资源库 / 验算库 closeout 已完成：正式画图算法可以从 WorldViewModel 主链路继续重整
 
 注意：以上是正式表现模型主链路能力，不代表当前 `/world` 已恢复正式像素画面。当前 `/world` 必须继续保持 cleared，直到后续正式画图算法重整完成并通过验收。
 
