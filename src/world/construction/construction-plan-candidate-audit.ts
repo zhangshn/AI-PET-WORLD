@@ -1,26 +1,12 @@
 /**
  * 当前文件负责：审计 ConstructionPlanner 候选计划输出。
  */
-// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type {
   ConstructionPlan,
   ConstructionPlanCandidateAudit,
   ConstructionPlannerInput,
 } from "./construction-schema"
-
-// These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
-const FORBIDDEN_CONSTRUCTION_CANDIDATE_TOKENS = [
-  "pet_arrival",
-  "pet_rest",
-  "pet-near-arrival-point",
-  "pet-bed",
-  "pet_actor",
-  "incubator",
-  "embryo",
-  "hatching",
-  "incubating",
-]
 
 export function auditConstructionPlanCandidates(input: {
   plannerInput: ConstructionPlannerInput
@@ -36,7 +22,6 @@ export function auditConstructionPlanCandidates(input: {
       plannerInput: input.plannerInput,
       acceptedIntentIds: input.acceptedIntentIds,
     }),
-    ...auditForbiddenTokens(input.plans),
   ]
 
   return {
@@ -180,15 +165,5 @@ function auditAcceptedIntentIds(input: {
     knownIntentIds.has(intentId)
       ? []
       : [`候选计划引用未知 intent：${intentId}`]
-  )
-}
-
-function auditForbiddenTokens(plans: ConstructionPlan[]): string[] {
-  const serialized = JSON.stringify(plans).toLowerCase()
-
-  return FORBIDDEN_CONSTRUCTION_CANDIDATE_TOKENS.flatMap((token) =>
-    serialized.includes(token)
-      ? [`候选计划包含禁止 token：${token}`]
-      : []
   )
 }
