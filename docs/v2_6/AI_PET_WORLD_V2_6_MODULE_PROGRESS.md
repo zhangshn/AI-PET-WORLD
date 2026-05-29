@@ -30,7 +30,9 @@
 | M11 旧页面运行链路隔离 | 100% | 完成 | `useWorldEngineState.ts` 已 inert 化，页面不再通过旧 hook 推进 runtime tick / snapshot / offline catchup |
 | M11 旧 worldEngine 隔离 | 100% | 完成 | `src/engine/worldEngine.ts` 已变为 legacy inert facade，不再实例化 PetSystem，不再运行 old tick |
 | M11 旧 world-engine gateway 收窄 | 100% | 完成 | `world-engine-gateway.ts` 不再公开旧完整 tick、旧 pet runtime、旧 pet cognition、旧 butler opportunity runner |
-| M11 文档错误口径清理 | 80% | 进行中 | Handoff 与模块进度表已重写；后续继续检查 docs/v2_6 其他文件 |
+| M11 旧完整 world tick runner 隔离 | 100% | 完成 | `world-tick-runner.ts` 已 inert 化，即使误 import 也不会触发旧 pet runtime / cognition / opportunity 链路 |
+| M11 PetSystem 当前主链路隔离 | 100% | 完成 | `PetSystem / petSystem / runPetRuntime / runPetCognition / runButlerOpportunities` 当前搜索无源码可触发入口 |
+| M11 文档错误口径清理 | 85% | 进行中 | Handoff 与模块进度表已重写；后续继续检查 docs/v2_6 其他文件 |
 | M11 核心资源库 / 验算库 | 82% | 进行中 | Runtime / HomeMapState / SpaceGrid / SpaceCell / TraceField / WorldViewModel / 生态对象已验收；下一步补 Actor / P-Phone / UI 自动生成输入边界 |
 | M11 正式画图算法重整 | 0% | 后续 | 核心资源库 / 验算库 closeout 后再开始；未来 `/world` 是端游式像素主世界，不是网页卡片页 |
 | M12 构建与质量验收 | 持续 | 持续 | 每个阶段后必须 lint / tsc / build / 对应 smoke |
@@ -51,6 +53,8 @@ M11 验收整理
 旧页面运行链路隔离
 旧 worldEngine 隔离
 旧 world-engine gateway 收窄
+旧完整 world tick runner 隔离
+PetSystem 当前主链路隔离
 核心资源库 / 验算库第一批只读验收
 SpaceCell / 坐标 / Trace 投影深化验算
 生态对象来源与分布规则验算
@@ -112,6 +116,8 @@ P-Phone 通信入口
 | 旧页面运行链路隔离 | 旧 `/world` hook 不再推进 tick、不再读写旧 snapshot、不再 offline catchup | 已完成 |
 | 旧 worldEngine 隔离 | 保留导出名但 inert 化，不再运行旧 PetSystem / old tick | 已完成 |
 | 旧 world-engine gateway 收窄 | 不再公开旧完整 tick 与旧 pet runner 入口 | 已完成 |
+| 旧完整 world tick runner 隔离 | 即使误 import `runWorldTick` 也不再触发旧 pet runtime / cognition / opportunity 链 | 已完成 |
+| PetSystem 当前主链路隔离 | 当前搜索无源码可触发入口 | 已完成 |
 
 ---
 
@@ -172,6 +178,21 @@ src/engine/world-engine/world-engine-gateway.ts
 → 不再公开 runPetRuntime
 → 不再公开 runPetCognition
 → 不再公开 runButlerOpportunities
+
+src/engine/world-engine/runners/world-tick-runner.ts
+→ inert placeholder
+→ 不再 import PetSystem
+→ 不再 import runPetRuntime
+→ 不再 import runPetCognition
+→ 不再 import runButlerOpportunities
+→ 不再执行旧完整 world tick
+```
+
+当前搜索结果：
+
+```txt
+PetSystem / petSystem / runPetRuntime / runPetCognition / runButlerOpportunities
+→ 无源码可触发入口命中
 ```
 
 说明：这不是删除未来生命能力，而是切断当前 M11 主链路中旧运行入口，避免旧页面、旧 tick、旧 PetSystem 链路被误恢复。
