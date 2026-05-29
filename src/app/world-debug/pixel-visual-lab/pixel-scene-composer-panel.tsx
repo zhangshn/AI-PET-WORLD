@@ -33,13 +33,13 @@ type VisualReferenceSection = {
   title: string;
   purpose: string;
   references: PixelVisualReference[];
-  formalInputs: string[];
+  visualInputs: string[];
 };
 
 const VISUAL_REFERENCE_SECTIONS: VisualReferenceSection[] = [
   {
     title: "Tile Layer｜地面视觉参考",
-    purpose: "只观察地面表现效果；正式地面仍由 SpaceGrid 与 WorldViewModel 计算结果决定。",
+    purpose: "只观察地面表现效果；正式地面规则后续再进入正式画图算法阶段。",
     references: [
       buildReference("grass", "grass", "tile", "基础草地表现参考。"),
       buildReference("pressed_grass", "pressed_grass", "tile", "草地被压低的表现参考。"),
@@ -48,18 +48,18 @@ const VISUAL_REFERENCE_SECTIONS: VisualReferenceSection[] = [
       buildReference("ecology_transition", "ecology_transition", "tile", "生态过渡地面表现参考。"),
       buildReference("boundary", "boundary", "tile", "世界边界表现参考。"),
     ],
-    formalInputs: ["SpaceGrid.cells", "terrainKind", "regionKind", "TraceField projection"],
+    visualInputs: ["地面格子参考", "地形颜色参考", "区域过渡参考", "痕迹强弱参考"],
   },
   {
     title: "Trace Layer｜痕迹视觉参考",
-    purpose: "只观察痕迹如何被看见；正式痕迹事实必须来自 TraceField。",
+    purpose: "只观察痕迹如何被看见；这里不验证痕迹事实。",
     references: [
       buildReference("trace_pressed_grass", "草地压低", "trace", "movement / spatial_use 痕迹的可见表现参考。"),
       buildReference("trace_exposed_soil", "裸土", "trace", "高强度使用后的裸土痕迹表现参考。"),
       buildReference("trace_worn_ground", "磨损地面", "trace", "反复经过、等待或使用后的磨损表现参考。"),
       buildReference("trace_maintained_area", "维护痕迹", "trace", "管家维护行为的区域提示参考。"),
     ],
-    formalInputs: ["TraceField", "TraceLifecycle", "TraceInfluence", "MemorySeed"],
+    visualInputs: ["压低草地参考", "裸土参考", "磨损地面参考", "维护区域参考"],
   },
   {
     title: "Object Layer｜自然对象视觉参考",
@@ -72,7 +72,7 @@ const VISUAL_REFERENCE_SECTIONS: VisualReferenceSection[] = [
       buildReference("mushroom", "mushroom", "object", "蘑菇表现参考。"),
       buildReference("grass_tuft", "grass_tuft", "object", "草簇表现参考。"),
     ],
-    formalInputs: ["HomeMapState.placements", "derived_visual_only", "world seed", "naturalGrowth"],
+    visualInputs: ["树木密度参考", "灌木密度参考", "石头分布参考", "草花点缀参考"],
   },
   {
     title: "Sprite / Atmosphere / UI｜综合参考",
@@ -84,7 +84,7 @@ const VISUAL_REFERENCE_SECTIONS: VisualReferenceSection[] = [
       buildReference("atmosphere_calm", "calm", "atmosphere", "平稳氛围表现参考。"),
       buildReference("ui_butler_line", "管家一句话", "ui", "管家自然解释参考。"),
     ],
-    formalInputs: ["WorldViewModel.actors", "WorldViewModel.atmosphere", "WorldViewModel.pPhone"],
+    visualInputs: ["管家姿态参考", "未来生命占位参考", "氛围色调参考", "轻量 UI 参考"],
   },
 ];
 
@@ -92,7 +92,7 @@ const DEBUG_BOUNDARIES = [
   "本面板是视觉 Debug 组合预览，不是正式核心验算库。",
   "本面板只观察视觉组合效果，不验证世界事实是否正确。",
   "本面板的参数、seed、SVG 预览和视觉参考项不能写入 runtime save。",
-  "如果某个视觉参考要进入 /world，必须先沉淀到正式 mapper，并通过对应 smoke 验收。",
+  "如果某个视觉参考要进入 /world，必须先进入后续正式画图算法阶段。",
 ];
 
 const FLAT_REFERENCES = VISUAL_REFERENCE_SECTIONS.flatMap((section) => section.references);
@@ -190,8 +190,8 @@ export default function PixelSceneComposerPanel() {
                       ))}
                     </div>
                     <div style={styles.ruleSourceBox}>
-                      <strong>正式输入参考</strong>
-                      <ul style={styles.compactList}>{section.formalInputs.map((source) => <li key={source}>{source}</li>)}</ul>
+                      <strong>视觉输入参考</strong>
+                      <ul style={styles.compactList}>{section.visualInputs.map((source) => <li key={source}>{source}</li>)}</ul>
                     </div>
                   </section>
                 ))}
@@ -229,18 +229,18 @@ function buildReference(id: string, label: string, layer: PixelReferenceLayer, d
 }
 
 function referenceSourcesForLayer(layer: PixelReferenceLayer): string[] {
-  if (layer === "tile") return ["SpaceGrid.cells", "terrainKind", "traceStrength", "ecologyHealthHint"];
-  if (layer === "trace") return ["TraceField", "TraceLifecycle", "TraceInfluence", "MemorySeed"];
-  if (layer === "object") return ["HomeMapState.placements", "derived_visual_only", "world seed", "naturalGrowth"];
-  if (layer === "sprite") return ["ButlerState", "lastButlerRuntimeDecision", "existing actor fact only"];
-  if (layer === "atmosphere") return ["groundHealth", "careReadiness", "spacePressure", "world phase"];
-  return ["WorldViewModel.butlerExplanation", "WorldViewModel.pPhone"];
+  if (layer === "tile") return ["地面格子", "地形色块", "草地压痕", "生态过渡"];
+  if (layer === "trace") return ["草地压低", "裸土显露", "磨损边缘", "维护提示"];
+  if (layer === "object") return ["树木", "灌木", "石头", "花草点缀"];
+  if (layer === "sprite") return ["管家姿态", "等待姿态", "观察姿态", "未来生命占位"];
+  if (layer === "atmosphere") return ["光照", "氛围色", "空间压力", "平静程度"];
+  return ["短句提示", "轻量面板", "视觉叠层"];
 }
 
 function boundaryTagsForLayer(layer: PixelReferenceLayer): string[] {
-  if (layer === "object") return ["visual_reference_only", "derived_visual_only", "no_runtime_write"];
-  if (layer === "sprite") return ["visual_reference_only", "no_default_pet_actor", "existing_fact_required"];
-  if (layer === "trace") return ["visual_reference_only", "trace_projection", "not_decoration"];
+  if (layer === "object") return ["visual_reference_only", "visual_decoration", "no_runtime_write"];
+  if (layer === "sprite") return ["visual_reference_only", "no_default_life", "placeholder_only"];
+  if (layer === "trace") return ["visual_reference_only", "trace_look", "not_decoration"];
   return ["visual_reference_only", "read_only"];
 }
 
