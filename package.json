@@ -21,6 +21,7 @@
     "smoke:m11-core-resource-validation": "node scripts/run-world-m11-core-resource-validation-smoke.cjs",
     "smoke:m11-create-world-flow": "node scripts/run-world-m11-create-world-flow-smoke.cjs",
     "smoke:m11-actor-input-boundary": "node scripts/run-world-m11-actor-input-boundary-smoke.cjs",
+    "smoke:m11-p-phone-input-boundary": "node scripts/run-world-m11-p-phone-input-boundary-smoke.cjs",
     "smoke:butler-memory-seed-consume": "node scripts/run-world-butler-memory-seed-consume-smoke.cjs",
     "smoke:butler-memory-bias-surface": "node scripts/run-world-butler-memory-bias-surface-smoke.cjs",
     "smoke:butler-natural-explanation": "node scripts/run-world-butler-natural-explanation-smoke.cjs",
