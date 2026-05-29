@@ -12,10 +12,28 @@ async function main() {
   const createWorldApiPath = path.join(repoRoot, "src", "app", "api", "world", "create", "route.ts")
   const worldPagePath = path.join(repoRoot, "src", "app", "world", "world-live-runtime-page.tsx")
   const viewModelGatewayPath = path.join(repoRoot, "src", "world", "world-view-model", "world-view-model-gateway.ts")
+  let shouldRestoreRuntimeSave = false
+  let hadRuntimeSaveBeforeSmoke = false
+  let runtimeSaveBeforeSmoke = ""
+
+  function restoreRuntimeSave() {
+    if (!shouldRestoreRuntimeSave) return
+
+    if (hadRuntimeSaveBeforeSmoke) {
+      fs.writeFileSync(savePath, runtimeSaveBeforeSmoke, "utf8")
+      return
+    }
+
+    if (fs.existsSync(savePath)) {
+      fs.unlinkSync(savePath)
+    }
+  }
 
   function fail(message) {
+    restoreRuntimeSave()
     console.log("M11 CREATE-WORLD FLOW SMOKE")
     console.log(message)
+    console.log("Runtime save restored after smoke: ok")
     console.log("Result: FAIL")
     process.exit(1)
   }
@@ -157,7 +175,11 @@ async function main() {
   installTypeScriptRequireHook()
   assertStaticFlowContract()
 
-  const beforeRaw = fs.existsSync(savePath) ? fs.readFileSync(savePath, "utf8") : ""
+  hadRuntimeSaveBeforeSmoke = fs.existsSync(savePath)
+  runtimeSaveBeforeSmoke = hadRuntimeSaveBeforeSmoke ? fs.readFileSync(savePath, "utf8") : ""
+  shouldRestoreRuntimeSave = true
+
+  const beforeRaw = runtimeSaveBeforeSmoke
   const beforeHash = crypto.createHash("sha256").update(beforeRaw).digest("hex")
   const beforeRecord = beforeRaw ? parseJson(beforeRaw, "Existing runtime save is not valid JSON.") : null
 
@@ -204,6 +226,9 @@ async function main() {
   assert(afterRecord.tick === 0, "Create-world flow should not advance runtime tick.")
   assert(afterHash !== beforeHash || beforeRecord?.worldId === afterRecord.worldId, "Create-world flow did not update runtime save.")
 
+  restoreRuntimeSave()
+  shouldRestoreRuntimeSave = false
+
   console.log("M11 CREATE-WORLD FLOW SMOKE")
   console.log(`Created world: ${result.saveRecord.worldId}`)
   console.log(`Owner: ${result.saveRecord.ownerId}`)
@@ -213,6 +238,7 @@ async function main() {
   console.log("/world reads created runtime save: ok")
   console.log("No default pet fact: ok")
   console.log("No user-facing backend/debug copy: ok")
+  console.log("Runtime save restored after smoke: ok")
   console.log("Result: PASS")
 }
 
