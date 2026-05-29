@@ -1,93 +1,100 @@
-const fs = require("node:fs")
-const path = require("node:path")
+async function main() {
+  const fs = await import("node:fs")
+  const path = await import("node:path")
 
-const repoRoot = process.cwd()
+  const repoRoot = process.cwd()
 
-function fail(message) {
+  function fail(message) {
+    console.log("PIXEL VISUAL LAB SMOKE")
+    console.log(message)
+    console.log("Result: FAIL")
+    process.exit(1)
+  }
+
+  function assert(condition, message) {
+    if (!condition) fail(message)
+  }
+
+  function readFile(filePath, label) {
+    assert(fs.existsSync(filePath), `${label} is missing.`)
+    return fs.readFileSync(filePath, "utf8")
+  }
+
+  const newVisualLabDir = path.join(
+    repoRoot,
+    "src",
+    "app",
+    "world-debug",
+    "pixel-visual-lab"
+  )
+  const newVisualLabPagePath = path.join(newVisualLabDir, "page.tsx")
+  const newVisualLabClientPath = path.join(newVisualLabDir, "pixel-visual-lab-client.tsx")
+  const composerPanelPath = path.join(newVisualLabDir, "pixel-scene-composer-panel.tsx")
+  const treePanelPath = path.join(newVisualLabDir, "tree-render-test-panel.tsx")
+
+  const removedVisualDebugPaths = [
+    path.join(repoRoot, "src", "app", "world-debug", "tree-render-test", "page.tsx"),
+    path.join(repoRoot, "src", "app", "world-debug", "tree-render-test", "tree-render-test-client.tsx"),
+    path.join(repoRoot, "src", "app", "world-debug", "pixel-scene-composer", "page.tsx"),
+    path.join(repoRoot, "src", "app", "world-debug", "pixel-scene-composer", "pixel-scene-composer-client.tsx"),
+  ]
+
+  removedVisualDebugPaths.forEach((filePath) => {
+    assert(!fs.existsSync(filePath), `Old visual debug file still exists: ${path.relative(repoRoot, filePath)}`)
+  })
+
+  const pageSource = readFile(newVisualLabPagePath, "pixel-visual-lab page")
+  const clientSource = readFile(newVisualLabClientPath, "pixel-visual-lab client")
+  const composerSource = readFile(composerPanelPath, "pixel scene composer panel")
+  const treeSource = readFile(treePanelPath, "tree render test panel")
+  const combinedVisualSource = [pageSource, clientSource, composerSource, treeSource].join("\n")
+
+  const requiredTokens = [
+    "PixelVisualLabClient",
+    "PixelSceneComposerPanel",
+    "TreeRenderTestPanel",
+    "VISUAL ONLY",
+    "不读取 runtime",
+    "不写入世界事实",
+    "不推进 Tick",
+    "不替代正式 /world",
+  ]
+
+  requiredTokens.forEach((token) => {
+    assert(combinedVisualSource.includes(token), `Pixel visual lab is missing required token: ${token}`)
+  })
+
+  const forbiddenRuntimeTokens = [
+    "readWorldRuntimeForView",
+    "writeWorldRuntimeSaveRecord",
+    "runAndPersistOneRuntimeTick",
+    "runTraceLifecycleTick",
+    "WorldViewModel",
+    "HomeMapState",
+    "PetSystem",
+    "createPet",
+    "pet_default",
+  ]
+  const forbiddenRuntimeHits = forbiddenRuntimeTokens.filter((token) =>
+    combinedVisualSource.includes(token)
+  )
+
+  assert(
+    forbiddenRuntimeHits.length === 0,
+    `Pixel visual lab should stay visual-only but contains: ${forbiddenRuntimeHits.join(", ")}`
+  )
+
   console.log("PIXEL VISUAL LAB SMOKE")
-  console.log(message)
-  console.log("Result: FAIL")
+  console.log("Unified visual debug page exists: ok")
+  console.log("Old tree-render-test route removed: ok")
+  console.log("Old pixel-scene-composer route removed: ok")
+  console.log("Composer panel moved into visual lab: ok")
+  console.log("Tree panel moved into visual lab: ok")
+  console.log("Visual lab does not touch runtime/world facts: ok")
+  console.log("Result: PASS")
+}
+
+main().catch((error) => {
+  console.error(error)
   process.exit(1)
-}
-
-function assert(condition, message) {
-  if (!condition) fail(message)
-}
-
-function readFile(filePath, label) {
-  assert(fs.existsSync(filePath), `${label} is missing.`)
-  return fs.readFileSync(filePath, "utf8")
-}
-
-const newVisualLabDir = path.join(
-  repoRoot,
-  "src",
-  "app",
-  "world-debug",
-  "pixel-visual-lab"
-)
-const newVisualLabPagePath = path.join(newVisualLabDir, "page.tsx")
-const newVisualLabClientPath = path.join(newVisualLabDir, "pixel-visual-lab-client.tsx")
-const composerPanelPath = path.join(newVisualLabDir, "pixel-scene-composer-panel.tsx")
-const treePanelPath = path.join(newVisualLabDir, "tree-render-test-panel.tsx")
-
-const removedVisualDebugPaths = [
-  path.join(repoRoot, "src", "app", "world-debug", "tree-render-test", "page.tsx"),
-  path.join(repoRoot, "src", "app", "world-debug", "tree-render-test", "tree-render-test-client.tsx"),
-  path.join(repoRoot, "src", "app", "world-debug", "pixel-scene-composer", "page.tsx"),
-  path.join(repoRoot, "src", "app", "world-debug", "pixel-scene-composer", "pixel-scene-composer-client.tsx"),
-]
-
-removedVisualDebugPaths.forEach((filePath) => {
-  assert(!fs.existsSync(filePath), `Old visual debug file still exists: ${path.relative(repoRoot, filePath)}`)
 })
-
-const pageSource = readFile(newVisualLabPagePath, "pixel-visual-lab page")
-const clientSource = readFile(newVisualLabClientPath, "pixel-visual-lab client")
-const composerSource = readFile(composerPanelPath, "pixel scene composer panel")
-const treeSource = readFile(treePanelPath, "tree render test panel")
-const combinedVisualSource = [pageSource, clientSource, composerSource, treeSource].join("\n")
-
-const requiredTokens = [
-  "PixelVisualLabClient",
-  "PixelSceneComposerPanel",
-  "TreeRenderTestPanel",
-  "VISUAL ONLY",
-  "不读取 runtime",
-  "不写入世界事实",
-  "不推进 Tick",
-  "不替代正式 /world",
-]
-
-requiredTokens.forEach((token) => {
-  assert(combinedVisualSource.includes(token), `Pixel visual lab is missing required token: ${token}`)
-})
-
-const forbiddenRuntimeTokens = [
-  "readWorldRuntimeForView",
-  "writeWorldRuntimeSaveRecord",
-  "runAndPersistOneRuntimeTick",
-  "runTraceLifecycleTick",
-  "WorldViewModel",
-  "HomeMapState",
-  "PetSystem",
-  "createPet",
-  "pet_default",
-]
-const forbiddenRuntimeHits = forbiddenRuntimeTokens.filter((token) =>
-  combinedVisualSource.includes(token)
-)
-
-assert(
-  forbiddenRuntimeHits.length === 0,
-  `Pixel visual lab should stay visual-only but contains: ${forbiddenRuntimeHits.join(", ")}`
-)
-
-console.log("PIXEL VISUAL LAB SMOKE")
-console.log("Unified visual debug page exists: ok")
-console.log("Old tree-render-test route removed: ok")
-console.log("Old pixel-scene-composer route removed: ok")
-console.log("Composer panel moved into visual lab: ok")
-console.log("Tree panel moved into visual lab: ok")
-console.log("Visual lab does not touch runtime/world facts: ok")
-console.log("Result: PASS")
