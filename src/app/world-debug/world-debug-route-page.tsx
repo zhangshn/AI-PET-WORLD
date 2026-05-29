@@ -7,7 +7,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { WorldLogicDashboard } from "@/app/world/components/logic-visualization/WorldLogicDashboard"
-import { useWorldEngineState } from "@/app/world/hooks/useWorldEngineState"
 import type { ConstructionPlan } from "@/world/construction/construction-schema"
 import {
   advanceMvpConstruction,
@@ -26,6 +25,7 @@ import { buildWorldVisualizationModel } from "@/world/visualization/build-world-
 const WORLD_ID = "mvp-visible-world"
 const OWNER_ID = "local-player"
 const DEFAULT_CONSTRUCTION_MESSAGE = "管家建设尚未开始。"
+const DEBUG_TICK_INTERVAL_MS = 2000
 
 const DEFAULT_CONSTRUCTION_STYLE = {
   structuredBuilder: 0.56,
@@ -37,9 +37,9 @@ const DEFAULT_CONSTRUCTION_STYLE = {
 }
 
 export default function WorldDebugRoutePage() {
-  const worldState = useWorldEngineState()
-  const lastAutoConstructionTickRef = useRef<number | null>(worldState.tick)
-  const hydrationStartTickRef = useRef(worldState.tick)
+  const [debugTick, setDebugTick] = useState(0)
+  const lastAutoConstructionTickRef = useRef<number | null>(debugTick)
+  const hydrationStartTickRef = useRef(debugTick)
 
   const initialHomeMapState = useMemo(
     () =>
@@ -72,7 +72,7 @@ export default function WorldDebugRoutePage() {
         homeMapState: currentHomeMapState,
         constructionPlan: currentConstructionPlan,
         constructionMessage,
-        worldTick: worldState.tick,
+        worldTick: debugTick,
         lastAutoConstructionTick,
         localSnapshotLoaded,
       }),
@@ -80,9 +80,9 @@ export default function WorldDebugRoutePage() {
       constructionMessage,
       currentConstructionPlan,
       currentHomeMapState,
+      debugTick,
       lastAutoConstructionTick,
       localSnapshotLoaded,
-      worldState.tick,
     ]
   )
 
@@ -106,12 +106,22 @@ export default function WorldDebugRoutePage() {
       worldId: WORLD_ID,
       ownerId: OWNER_ID,
     })
-    lastAutoConstructionTickRef.current = worldState.tick
+    lastAutoConstructionTickRef.current = debugTick
     setCurrentHomeMapState(initialHomeMapState)
     setCurrentConstructionPlan(null)
     setConstructionMessage(DEFAULT_CONSTRUCTION_MESSAGE)
     setLastAutoConstructionTick(null)
-  }, [initialHomeMapState, worldState.tick])
+  }, [debugTick, initialHomeMapState])
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setDebugTick((tick) => tick + 1)
+    }, DEBUG_TICK_INTERVAL_MS)
+
+    return () => {
+      window.clearInterval(interval)
+    }
+  }, [])
 
   useEffect(() => {
     const snapshot = loadHomeMapLocalSnapshot({
@@ -163,14 +173,14 @@ export default function WorldDebugRoutePage() {
 
   useEffect(() => {
     if (!localSnapshotLoaded) return
-    if (lastAutoConstructionTickRef.current === worldState.tick) return
+    if (lastAutoConstructionTickRef.current === debugTick) return
 
-    lastAutoConstructionTickRef.current = worldState.tick
+    lastAutoConstructionTickRef.current = debugTick
 
     const result = advanceMvpConstructionByWorldTick({
       homeMapState: currentHomeMapState,
       plan: currentConstructionPlan,
-      worldTick: worldState.tick,
+      worldTick: debugTick,
       now: Date.now(),
     })
 
@@ -180,13 +190,13 @@ export default function WorldDebugRoutePage() {
       setCurrentHomeMapState(result.homeMapState)
       setCurrentConstructionPlan(result.plan)
       setConstructionMessage(result.messages[0] ?? "")
-      setLastAutoConstructionTick(worldState.tick)
+      setLastAutoConstructionTick(debugTick)
     }, 0)
   }, [
     currentConstructionPlan,
     currentHomeMapState,
+    debugTick,
     localSnapshotLoaded,
-    worldState.tick,
   ])
 
   return (
