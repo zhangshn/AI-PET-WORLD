@@ -75,10 +75,11 @@ async function main() {
       "traceMemorySeedField",
       "m7_butler_trace_closure",
       "not_pet_trace",
-      "HomeMapState",
       "buildPPhoneView",
       "butlerExplanation: buildButlerExplanationView",
       "pPhone: buildPPhoneView",
+      "家园事实",
+      "正式写入边界",
     ]
 
     requiredModelTokens.forEach((token) =>
@@ -169,6 +170,25 @@ async function main() {
     model.pPhone.latestMessageBody,
   ].join("\n")
 
+  const pPhoneText = [
+    model.pPhone.latestMessageTitle,
+    model.pPhone.latestMessageBody,
+  ].join("\n")
+
+  const forbiddenPPhoneTokens = [
+    "HomeMapState",
+    "SafeApply",
+    "TraceField",
+    "AuditSummary",
+    "WorldViewModel",
+    "rawScore",
+    "finalScore",
+    "riskPenalty",
+    "debugScore",
+    "JSON",
+  ]
+  const forbiddenPPhoneHits = forbiddenPPhoneTokens.filter((token) => pPhoneText.includes(token))
+
   assert(model.tags.includes("m7_butler_trace_closure_explanation"), "WorldViewModel is missing M7 explanation tag.")
   assert(model.butlerExplanation.body.includes(summary.userFacingSummary), "Butler explanation does not use audit summary userFacingSummary.")
   assert(model.butlerExplanation.body.includes(summary.traceId), "Butler explanation does not expose audit summary trace pointer.")
@@ -177,20 +197,23 @@ async function main() {
   assert(combinedText.includes("管家"), "M7 explanation does not mention butler naturally.")
   assert(combinedText.includes("痕迹"), "M7 explanation does not mention traces naturally.")
   assert(
-    combinedText.includes("HomeMapState") ||
-      combinedText.includes("SafeApply") ||
-      combinedText.includes("家园事实") ||
+    combinedText.includes("家园事实") ||
       combinedText.includes("家园结构") ||
-      combinedText.includes("家园变化"),
-    "M7 explanation does not explain the world fact / SafeApply boundary."
+      combinedText.includes("家园变化") ||
+      combinedText.includes("正式写入边界"),
+    "M7 explanation does not explain the world fact / write boundary."
   )
   assert(
     combinedText.includes("记忆种子") || combinedText.includes("记忆"),
     "M7 explanation does not explain memory seed continuity."
   )
   assert(
-    model.pPhone.latestMessageBody.includes("世界规则验证") || model.pPhone.latestMessageBody.includes("SafeApply"),
-    "P-Phone model does not explain validation / SafeApply boundary."
+    model.pPhone.latestMessageBody.includes("世界规则验证") || model.pPhone.latestMessageBody.includes("正式写入边界"),
+    "P-Phone model does not explain validation / formal write boundary."
+  )
+  assert(
+    forbiddenPPhoneHits.length === 0,
+    `P-Phone model exposes backend/debug tokens: ${forbiddenPPhoneHits.join(", ")}`
   )
   assert(!combinedText.includes("finalScore"), "M7 explanation exposes finalScore.")
   assert(!combinedText.includes("riskPenalty"), "M7 explanation exposes riskPenalty.")
@@ -214,6 +237,7 @@ async function main() {
   console.log("M7 explanation reads persisted intent / validation / trace / memory seed: ok")
   console.log("M11 cleared surface does not restore old explanation cards: ok")
   console.log("No raw debug score display: ok")
+  console.log("P-Phone user-facing boundary: ok")
   console.log("Explanation read-only: ok")
   console.log("Result: PASS")
 }
