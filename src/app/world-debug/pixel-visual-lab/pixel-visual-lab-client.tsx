@@ -4,8 +4,8 @@
 
 import { useState, type CSSProperties } from "react";
 
-import PixelSceneComposerClient from "../pixel-scene-composer/pixel-scene-composer-client";
-import TreeRenderTestClient from "../tree-render-test/tree-render-test-client";
+import PixelSceneComposerPanel from "./pixel-scene-composer-panel";
+import TreeRenderTestPanel from "./tree-render-test-panel";
 
 export type PixelVisualLabMode = "composer" | "tree";
 
@@ -55,7 +55,7 @@ export default function PixelVisualLabClient({
       </nav>
 
       <section style={styles.contentFrame}>
-        {mode === "composer" ? <PixelSceneComposerClient /> : <TreeRenderTestClient />}
+        {mode === "composer" ? <PixelSceneComposerPanel /> : <TreeRenderTestPanel />}
       </section>
     </main>
   );
