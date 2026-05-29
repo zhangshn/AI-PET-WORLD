@@ -1,4 +1,4 @@
-import type { HomeMapState, HomeZone } from "@/world/map-state/home-map-state-schema"
+import type { HomeMapState, HomeZone, MapPlacement } from "@/world/map-state/home-map-state-schema"
 import type { WorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-schema"
 import type { SpaceGrid } from "@/world/space"
 
@@ -6,6 +6,12 @@ import type {
   WorldViewActor,
   WorldViewActorPose,
 } from "./world-view-model-schema"
+
+const FORMAL_PET_ENTRY_TAGS = new Set([
+  "formal_life_entry_validated",
+  "pet_world_entry_validated",
+  "actor_input_boundary_validated",
+])
 
 export function buildWorldViewActors(input: {
   homeMapState: HomeMapState
@@ -78,10 +84,8 @@ function buildPetActors(input: { homeMapState: HomeMapState }): WorldViewActor[]
     .filter(
       (placement) =>
         placement.layer === "actor" &&
-        (placement.tags.includes("pet") ||
-          placement.id.toLowerCase().includes("pet") ||
-          placement.label.toLowerCase().includes("pet") ||
-          placement.label.includes("宠物"))
+        isPetPlacement(placement) &&
+        hasFormalPetEntryTag(placement)
     )
     .map((placement) => {
       const point = placementToPixelPoint({
@@ -101,6 +105,19 @@ function buildPetActors(input: { homeMapState: HomeMapState }): WorldViewActor[]
         visible: true,
       }
     })
+}
+
+function isPetPlacement(placement: MapPlacement): boolean {
+  return (
+    placement.tags.includes("pet") ||
+    placement.id.toLowerCase().includes("pet") ||
+    placement.label.toLowerCase().includes("pet") ||
+    placement.label.includes("宠物")
+  )
+}
+
+function hasFormalPetEntryTag(placement: MapPlacement): boolean {
+  return placement.tags.some((tag) => FORMAL_PET_ENTRY_TAGS.has(tag))
 }
 
 function findButlerFallbackZone(homeMapState: HomeMapState): HomeZone | undefined {
