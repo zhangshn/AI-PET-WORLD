@@ -2,7 +2,7 @@
 
 > 本进度表只依据当前仓库、当前 M11 交接文档与当前业务口径维护。
 >
-> 当前准确阶段：M11｜核心资源库 / 验算库 closeout 已完成，准备进入正式画图算法重整。
+> 当前准确阶段：M11｜核心资源库 / 验算库 closeout 已完成，视觉算法 Debug 已合并，准备进入正式画图算法重整。
 >
 > 当前不是恢复旧 `/world` 画面，不是网页卡片主页整理，不是进入 M8 / M9 / M10。
 
@@ -15,7 +15,7 @@
 | M1 移动痕迹契约迁移 | 100% | 完成 | road/path 正式架构已移除，movement trace / trace field 成为正式口径 |
 | M2 世界空间底座 v0 | 100% | 完成 | SpaceGrid / SpaceCell / SpaceRegion 已建立 |
 | M3 世界痕迹模型 v0 | 100% | 完成 | TraceFact / TraceField / TraceLifecycle 已建立 |
-| M4 Trace-aware Scene Composer | 100% | 完成但降级为 Debug 参考 | 只能作为 `/world-debug/pixel-scene-composer` 的视觉参考，不是核心资源库、正式算法库或正式验算库 |
+| M4 Trace-aware Scene Composer | 100% | 完成但降级为视觉参考 | 视觉参考能力已统一收口到 `/world-debug/pixel-visual-lab`，不是核心资源库、正式算法库或正式验算库 |
 | M5 痕迹视觉表现 v0 | 100% | 完成 | pressed_grass / worn_grass / exposed_soil / ecology_transition 已建立 |
 | M6 生态对象规则深化 | 100% | 完成 | 生态对象派生规则已有基础；正式画图算法需要在核心资源库 / 验算库完成后重整 |
 | M6.5 legacy 命名清理 | 100% | 完成 | legacy road/path 业务口径已降级为兼容命名，正式文档与正式链路不再使用 |
@@ -39,7 +39,8 @@
 | M11 P-Phone 数据入口边界验算 | 100% | 完成 | `smoke:m11-p-phone-input-boundary` 已注册并通过；P-Phone 只读正式模型、不暴露后台词、不恢复旧卡片 |
 | M11 UI 自动生成输入边界验算 | 100% | 完成 | `smoke:m11-ui-auto-generation-input-boundary` 已注册并通过；正式 UI 只读 WorldViewModel、不生成世界事实、不恢复旧卡片、不触发 runtime 写入 |
 | M11 核心资源库 / 验算库 closeout | 100% | 完成 | `smoke:m11-core-resource-closeout` 已注册并通过；M11 核心资源、WorldViewModel、Actor、P-Phone、UI 输入边界、正式 `/world` cleared 边界已完成总验收 |
-| M11 正式画图算法重整 | 0% | 下一步 | 核心资源库 / 验算库已完成 closeout；下一阶段开始重整正式画图算法，未来 `/world` 是端游式像素主世界，不是网页卡片页 |
+| M11 视觉算法 Debug 合并 | 100% | 完成 | 旧 `/world-debug/pixel-scene-composer` 与 `/world-debug/tree-render-test` 已删除；只保留 `/world-debug/pixel-visual-lab`，并通过 `smoke:world-debug-pixel-visual-lab` 验收 |
+| M11 正式画图算法重整 | 0% | 下一步 | 核心资源库 / 验算库已完成 closeout；视觉算法 Debug 已合并为单一测试台；下一阶段开始重整正式画图算法，未来 `/world` 是端游式像素主世界，不是网页卡片页 |
 | M12 构建与质量验收 | 持续 | 持续 | 每个阶段后必须 lint / tsc / build / 对应 smoke |
 
 ---
@@ -70,12 +71,13 @@ Actor 表现输入边界验算
 P-Phone 数据入口边界验算
 UI 自动生成输入边界验算
 核心资源库 / 验算库 closeout
+视觉算法 Debug 页面合并与简化
 ```
 
 当前准确阶段是：
 
 ```txt
-M11｜核心资源库 / 验算库 closeout 已完成
+M11｜核心资源库 / 验算库 closeout 已完成，视觉算法 Debug 已合并
 ```
 
 后续路线：
@@ -113,7 +115,7 @@ P-Phone 通信入口
 |---|---|---|
 | `/world` cleared 状态 | 正式主页保持清空，不恢复旧画布或网页卡片主页 | 已通过本地 smoke |
 | 旧主页卡片移除 | 不恢复当前记录卡片、管家说明卡片、P-Phone 卡片、顶部说明卡 | 已通过本地 smoke |
-| Debug Composer 定位 | `/world-debug/pixel-scene-composer` 只作为 Debug 视觉参考库 | 已锁定口径 |
+| 视觉算法 Debug 合并 | 旧 `pixel-scene-composer` 与 `tree-render-test` 独立页面已删除，只保留 `/world-debug/pixel-visual-lab` | 已通过 npm smoke |
 | create-world 路径 | `/create-world` → runtime save → `/world` 可验收 | 已通过 npm smoke；smoke 运行后会恢复 runtime save |
 | M7 闭环 | 管家行为 → 验证 → 痕迹 → 记忆种子 → 解释链路不被破坏 | 已通过本地 smoke |
 | WorldViewModel 主链路 | 正式表现模型主链路继续存在，但当前不恢复画面 | 已通过本地 smoke |
@@ -121,7 +123,7 @@ P-Phone 通信入口
 | P-Phone 数据入口边界 | P-Phone 只读正式模型；不暴露后台词；不恢复旧 P-Phone 卡片；不推进 runtime | 已通过 npm smoke |
 | UI 自动生成输入边界 | 正式 UI 只读 WorldViewModel；不生成世界事实；不恢复旧卡片；不触发 runtime 写入 | 已通过 npm smoke |
 | 核心资源库 / 验算库 closeout | M11 核心资源、WorldViewModel、Actor、P-Phone、UI 输入边界、正式 `/world` cleared 边界完成总验收 | 已通过 npm smoke |
-| smoke 注册情况 | M11 / M7 / WorldViewModel smoke 已注册为 npm 命令 | 已整理 |
+| smoke 注册情况 | M11 / M7 / WorldViewModel / 视觉算法 Debug smoke 已注册为 npm 命令 | 已整理 |
 | Debug 地址用途 | 明确 Debug 页面用途，不进入正式 `/world` | 已整理 |
 | 源码历史错误口径清理 | 旧生命周期 token 扫描已清空 | 已完成 |
 | 旧页面运行链路隔离 | 旧 `/world` hook 不再推进 tick、不再读写旧 snapshot、不再 offline catchup | 已完成 |
@@ -159,7 +161,8 @@ P-Phone 通信入口
 | P-Phone 输入边界 | 只读 `WorldViewModel.pPhone`；用户文案不暴露 HomeMapState / SafeApply / TraceField / AuditSummary / WorldViewModel 等后台词；正式 `/world` 不恢复旧 P-Phone 卡片 | 已验收 |
 | UI 自动生成输入边界 | 正式 `/world` 只把 WorldViewModel 传给 PixelWorldView；PixelWorldView 当前保持 cleared；未来 UI 不得直接读写 runtime、不得生成世界事实、不得恢复旧卡片或 Debug 来源 | 已验收 |
 | closeout 总验收 | package smoke 注册、文档 closeout 状态、WorldViewModel 边界、正式 UI 边界、无默认宠物、只读投影 | 已验收 |
-| formal `/world` path | 不引用 Debug Composer / SVG / procedural renderer | 已验收 |
+| 视觉算法 Debug 合并 | 只保留 `/world-debug/pixel-visual-lab`；旧视觉 Debug 独立页面已删除；页面不读 runtime、不写世界事实、不推进 Tick | 已验收 |
+| formal `/world` path | 不引用视觉 Debug 页面 / SVG Debug 预览 / procedural renderer | 已验收 |
 
 ---
 
@@ -236,6 +239,14 @@ WorldViewModel
 Actor / P-Phone / UI 输入边界
 ```
 
+视觉算法 Debug 只作为效果测试台：
+
+```txt
+/world-debug/pixel-visual-lab
+```
+
+它不能直接搬进正式 `/world`，也不能替代正式画图算法。
+
 ---
 
 ## 8. 当前 smoke / 验收命令整理
@@ -254,6 +265,7 @@ npm run smoke:m11-actor-input-boundary
 npm run smoke:m11-p-phone-input-boundary
 npm run smoke:m11-ui-auto-generation-input-boundary
 npm run smoke:m11-core-resource-closeout
+npm run smoke:world-debug-pixel-visual-lab
 ```
 
 ### 全量回归
@@ -267,6 +279,7 @@ npm run smoke:m11-actor-input-boundary
 npm run smoke:m11-p-phone-input-boundary
 npm run smoke:m11-ui-auto-generation-input-boundary
 npm run smoke:m11-core-resource-closeout
+npm run smoke:world-debug-pixel-visual-lab
 npm run smoke:m7-closeout
 npm run smoke:m7-explanation
 npm run smoke:m7-audit-summary
@@ -274,7 +287,7 @@ npm run smoke:butler-trace-closure
 npm run smoke:world-pixel-viewmodel-primary
 ```
 
-### 已注册在 `package.json` 的 M11 smoke
+### 已注册在 `package.json` 的 M11 / 视觉 Debug smoke
 
 ```powershell
 npm run smoke:m11-formal-surface
@@ -284,6 +297,7 @@ npm run smoke:m11-actor-input-boundary
 npm run smoke:m11-p-phone-input-boundary
 npm run smoke:m11-ui-auto-generation-input-boundary
 npm run smoke:m11-core-resource-closeout
+npm run smoke:world-debug-pixel-visual-lab
 ```
 
 ### 已注册在 `package.json` 的 M7 / WorldViewModel smoke
@@ -307,11 +321,17 @@ npm run smoke:world-pixel-viewmodel-primary
 | `/personality-test` | 命理 / 人格调试页 | 允许显示内部调试信息 |
 | `/world-debug` | 世界 Debug 入口 | 只服务开发验证；当前不再接旧 worldEngine hook |
 | `/world-debug/mapdiff` | MapDiff 调试 | 不进入正式 `/world` |
-| `/world-debug/pixel-scene-composer` | Debug 视觉参考库 / 像素组合预览实验室 | 不是核心资源库、正式算法库或正式验算库 |
+| `/world-debug/pixel-visual-lab` | 唯一视觉算法 Debug 测试台 | 合并场景组合与树木绘制；不读 runtime、不写世界事实、不推进 Tick、不进入正式 `/world` |
 | `/world-debug/procedural-renderer` | 旧实验 / 调试 | 不得搬进正式 `/world` |
 | `/world-debug/proposal-audit` | Proposal / audit 调试 | 不得暴露到正式 UI |
-| `/world-debug/tree-render-test` | 树渲染测试 | 仅作调试 |
 | `/world-debug/visual-change-verification` | 视觉变化验证 | 仅作调试 |
+
+已删除的旧视觉 Debug 独立页面：
+
+```txt
+/world-debug/pixel-scene-composer
+/world-debug/tree-render-test
+```
 
 ---
 
@@ -326,13 +346,14 @@ npm run smoke:world-pixel-viewmodel-primary
 - `/world` 不引用 `WorldPainterReadonlyPreview`
 - `/world` 不引用 `FormalWorldView`
 - `/world` 不引用 `ProceduralRendererView`
-- `/world` 不把 Debug Composer 搬进正式页
+- `/world` 不把视觉算法 Debug 页面搬进正式页
 - `WorldViewModel` 不直接依赖 `scene-composer-gateway`
 - smoke 已守卫 runtime 不写入、tick 不推进
 - Actor 表现输入边界已守卫：未验证 pet placement 不进入 actors，未来 pet entry 必须经过正式验证标签
 - P-Phone 数据入口边界已守卫：只读正式模型、不暴露后台词、不恢复旧 P-Phone 卡片
 - UI 自动生成输入边界已守卫：正式 UI 只读 WorldViewModel，不生成世界事实，不恢复旧卡片或 Debug 来源
 - 核心资源库 / 验算库 closeout 已完成：正式画图算法可以从 WorldViewModel 主链路继续重整
+- 视觉算法 Debug 已合并完成：只保留 `/world-debug/pixel-visual-lab`，作为效果测试台
 
 注意：以上是正式表现模型主链路能力，不代表当前 `/world` 已恢复正式像素画面。当前 `/world` 必须继续保持 cleared，直到后续正式画图算法重整完成并通过验收。
 
@@ -383,8 +404,8 @@ ButlerState / runtime decision
 - 不做多用户正式运行。
 - 不恢复网页卡片主页。
 - 不恢复旧 `/world` 画面。
-- 不把 Debug Composer 搬进 `/world`。
-- 不把 Debug Composer 叫成核心资源库。
+- 不把视觉算法 Debug 页面搬进 `/world`。
+- 不把视觉算法 Debug 页面叫成核心资源库。
 - 不把 Scene Composer 当正式画图算法。
 - 不恢复历史旧生命入口路线。
 - 不恢复 road/path 正式架构。
