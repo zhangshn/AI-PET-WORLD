@@ -32,7 +32,8 @@
 | M11 旧 world-engine gateway 收窄 | 100% | 完成 | `world-engine-gateway.ts` 不再公开旧完整 tick、旧 pet runtime、旧 pet cognition、旧 butler opportunity runner |
 | M11 旧完整 world tick runner 隔离 | 100% | 完成 | `world-tick-runner.ts` 已 inert 化，即使误 import 也不会触发旧 pet runtime / cognition / opportunity 链路 |
 | M11 PetSystem 当前主链路隔离 | 100% | 完成 | `PetSystem / petSystem / runPetRuntime / runPetCognition / runButlerOpportunities` 当前搜索无源码可触发入口 |
-| M11 文档错误口径清理 | 85% | 进行中 | Handoff 与模块进度表已重写；后续继续检查 docs/v2_6 其他文件 |
+| M11 create-world flow smoke 注册 | 100% | 完成 | `smoke:m11-create-world-flow` 已注册，并已修复运行后恢复 runtime save 的副作用 |
+| M11 文档错误口径清理 | 95% | 进行中 | Handoff 与模块进度表已重写；旧口径补扫无明显错误命中 |
 | M11 核心资源库 / 验算库 | 82% | 进行中 | Runtime / HomeMapState / SpaceGrid / SpaceCell / TraceField / WorldViewModel / 生态对象已验收；下一步补 Actor / P-Phone / UI 自动生成输入边界 |
 | M11 正式画图算法重整 | 0% | 后续 | 核心资源库 / 验算库 closeout 后再开始；未来 `/world` 是端游式像素主世界，不是网页卡片页 |
 | M12 构建与质量验收 | 持续 | 持续 | 每个阶段后必须 lint / tsc / build / 对应 smoke |
@@ -55,6 +56,7 @@ M11 验收整理
 旧 world-engine gateway 收窄
 旧完整 world tick runner 隔离
 PetSystem 当前主链路隔离
+create-world flow smoke npm 注册与副作用修复
 核心资源库 / 验算库第一批只读验收
 SpaceCell / 坐标 / Trace 投影深化验算
 生态对象来源与分布规则验算
@@ -107,10 +109,10 @@ P-Phone 通信入口
 | `/world` cleared 状态 | 正式主页保持清空，不恢复旧画布或网页卡片主页 | 已通过本地 smoke |
 | 旧主页卡片移除 | 不恢复当前记录卡片、管家说明卡片、P-Phone 卡片、顶部说明卡 | 已通过本地 smoke |
 | Debug Composer 定位 | `/world-debug/pixel-scene-composer` 只作为 Debug 视觉参考库 | 已锁定口径 |
-| create-world 路径 | `/create-world` → runtime save → `/world` 可验收 | 已通过 node smoke |
+| create-world 路径 | `/create-world` → runtime save → `/world` 可验收 | 已通过 npm smoke；smoke 运行后会恢复 runtime save |
 | M7 闭环 | 管家行为 → 验证 → 痕迹 → 记忆种子 → 解释链路不被破坏 | 已通过本地 smoke |
 | WorldViewModel 主链路 | 正式表现模型主链路继续存在，但当前不恢复画面 | 已通过本地 smoke |
-| smoke 注册情况 | 区分 package.json 已注册命令与 node 直接运行脚本 | 已整理 |
+| smoke 注册情况 | M11 / M7 / WorldViewModel smoke 已注册为 npm 命令 | 已整理 |
 | Debug 地址用途 | 明确 Debug 页面用途，不进入正式 `/world` | 已整理 |
 | 源码历史错误口径清理 | 旧生命周期 token 扫描已清空 | 已完成 |
 | 旧页面运行链路隔离 | 旧 `/world` hook 不再推进 tick、不再读写旧 snapshot、不再 offline catchup | 已完成 |
@@ -207,7 +209,6 @@ PetSystem / petSystem / runPetRuntime / runPetCognition / runButlerOpportunities
 Actor 表现输入边界验算
 P-Phone 数据入口边界验算
 UI 自动生成输入边界验算
-create-world flow npm smoke 注册
 核心资源库 / 验算库 closeout
 ```
 
@@ -223,6 +224,8 @@ npm run lint
 npx tsc --noEmit
 npm run build
 npm run smoke:m11-core-resource-validation
+npm run smoke:m11-create-world-flow
+npm run smoke:m11-core-resource-validation
 ```
 
 ### 全量回归
@@ -230,7 +233,8 @@ npm run smoke:m11-core-resource-validation
 ```powershell
 npm run smoke:m11-formal-surface
 npm run smoke:m11-core-resource-validation
-node scripts/run-world-m11-create-world-flow-smoke.cjs
+npm run smoke:m11-create-world-flow
+npm run smoke:m11-core-resource-validation
 npm run smoke:m7-closeout
 npm run smoke:m7-explanation
 npm run smoke:m7-audit-summary
@@ -243,6 +247,7 @@ npm run smoke:world-pixel-viewmodel-primary
 ```powershell
 npm run smoke:m11-formal-surface
 npm run smoke:m11-core-resource-validation
+npm run smoke:m11-create-world-flow
 ```
 
 ### 已注册在 `package.json` 的 M7 / WorldViewModel smoke
@@ -255,21 +260,13 @@ npm run smoke:butler-trace-closure
 npm run smoke:world-pixel-viewmodel-primary
 ```
 
-### 当前需要 node 直接跑的 smoke
-
-```powershell
-node scripts/run-world-m11-create-world-flow-smoke.cjs
-```
-
-说明：`smoke:m11-create-world-flow` 当前尚未注册进 `package.json`。是否补注册作为独立整理项处理。
-
 ---
 
 ## 9. Debug 地址和用途
 
 | 地址 | 用途 | 边界 |
 |---|---|---|
-| `/create-world` | MVP 创建世界入口 | 允许进入正式 runtime save 路径 |
+| `/create-world` | MVP 创建世界入口 | 允许进入正式 runtime save 路径；smoke 会恢复本地 runtime save |
 | `/world` | 正式主世界入口 | 当前必须保持 cleared，不恢复旧画面或网页卡片主页 |
 | `/personality-test` | 命理 / 人格调试页 | 允许显示内部调试信息 |
 | `/world-debug` | 世界 Debug 入口 | 只服务开发验证；当前不再接旧 worldEngine hook |
