@@ -36,6 +36,14 @@ async function main() {
     }
   }
 
+  function extractStringLiterals(source) {
+    const matches = source.matchAll(/(?<![A-Za-z0-9_$])(?:"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'|`([^`\\]*(?:\\.[^`\\]*)*)`)/g)
+
+    return Array.from(matches)
+      .map((match) => match[1] ?? match[2] ?? match[3] ?? "")
+      .join("\n")
+  }
+
   function installTypeScriptRequireHook() {
     const moduleConstructor = moduleApi.default
     const originalResolveFilename = moduleConstructor._resolveFilename
@@ -65,6 +73,7 @@ async function main() {
 
   function assertStaticPPhoneBoundaryContract() {
     const pPhoneSource = fs.readFileSync(pPhoneMapperPath, "utf8")
+    const pPhoneUserFacingText = extractStringLiterals(pPhoneSource)
     const worldPageSource = fs.readFileSync(worldPagePath, "utf8")
     const pixelViewSource = fs.readFileSync(pixelViewPath, "utf8")
     const formalSurfaceSource = `${worldPageSource}\n${pixelViewSource}`
@@ -82,7 +91,7 @@ async function main() {
       assert(pPhoneSource.includes(token), `P-Phone mapper is missing required user-facing boundary token: ${token}.`)
     )
 
-    const forbiddenPPhoneSourceTokens = [
+    const forbiddenPPhoneCopyTokens = [
       "HomeMapState",
       "SafeApply",
       "TraceField",
@@ -92,9 +101,25 @@ async function main() {
       "finalScore",
       "riskPenalty",
       "debugScore",
+      "JSON",
+    ]
+    const forbiddenPPhoneCopyHits = forbiddenPPhoneCopyTokens.filter((token) =>
+      pPhoneUserFacingText.includes(token)
+    )
+
+    assert(
+      forbiddenPPhoneCopyHits.length === 0,
+      `P-Phone user-facing copy contains backend/debug tokens: ${forbiddenPPhoneCopyHits.join(", ")}`
+    )
+
+    const forbiddenPPhoneSourceTokens = [
       "JSON.stringify",
       "runAndPersistOneRuntimeTick",
       "writeWorldRuntimeSaveRecord",
+      "rawScore",
+      "finalScore",
+      "riskPenalty",
+      "debugScore",
     ]
     const forbiddenPPhoneSourceHits = forbiddenPPhoneSourceTokens.filter((token) =>
       pPhoneSource.includes(token)
@@ -102,7 +127,7 @@ async function main() {
 
     assert(
       forbiddenPPhoneSourceHits.length === 0,
-      `P-Phone mapper contains backend/debug/write tokens: ${forbiddenPPhoneSourceHits.join(", ")}`
+      `P-Phone mapper contains debug/write tokens: ${forbiddenPPhoneSourceHits.join(", ")}`
     )
 
     assert(pixelViewSource.includes("data-surface-state=\"cleared\""), "Formal PixelWorldView is no longer cleared.")
