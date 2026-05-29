@@ -4,9 +4,9 @@
 
 import type { TimeState } from "../../timeSystem"
 import type { ButlerState } from "@/types/butler"
+import type { PetSystem } from "@/systems/petSystem"
 
 import type {
-  PetSystem,
   ButlerSystem,
   EventSystem,
   HomeSystem,
