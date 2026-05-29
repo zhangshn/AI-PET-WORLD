@@ -1,7 +1,6 @@
 /**
  * 当前文件职责：审计 ConstructionExecutor 输出的 MapDiff 候选。
  */
-// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type { MapDiff } from "@/world/map-state/home-map-state-schema"
 
@@ -10,19 +9,6 @@ import type {
   ConstructionExecutionInput,
   ConstructionExecutionResult,
 } from "./construction-schema"
-
-// These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
-const FORBIDDEN_CONSTRUCTION_EXECUTION_TOKENS = [
-  "pet_arrival",
-  "pet_rest",
-  "pet-near-arrival-point",
-  "pet-bed",
-  "pet_actor",
-  "incubator",
-  "embryo",
-  "hatching",
-  "incubating",
-]
 
 export function auditConstructionExecutionResult(input: {
   executionInput: ConstructionExecutionInput
@@ -35,7 +21,6 @@ export function auditConstructionExecutionResult(input: {
     ...auditMapDiffTags(input.resultWithoutAudit.mapDiffs),
     ...auditResourceTransactions(input.resultWithoutAudit),
     ...auditNextPlan(input),
-    ...auditForbiddenTokens(input),
   ]
 
   return {
@@ -102,26 +87,13 @@ function auditMapDiffPlacementReferences(input: {
 
   return input.resultWithoutAudit.mapDiffs.flatMap((diff) => {
     if (diff.operation === "add") {
-      return auditAddDiffBoundary(diff)
+      return diff.placement ? [] : [`add MapDiff 缺少 placement：${diff.id}`]
     }
 
     return knownPlacementIds.has(diff.placementId)
       ? []
       : [`MapDiff 引用了不存在的 placement：${diff.id} / ${diff.placementId}`]
   })
-}
-
-function auditAddDiffBoundary(diff: MapDiff): string[] {
-  const warnings: string[] = []
-
-  if (!diff.placement) {
-    warnings.push(`add MapDiff 缺少 placement：${diff.id}`)
-  }
-  if (containsForbiddenToken(collectMapDiffTokens(diff))) {
-    warnings.push(`add MapDiff 包含旧路线 token：${diff.id}`)
-  }
-
-  return warnings
 }
 
 function auditMapDiffCreatedAt(input: {
@@ -152,58 +124,6 @@ function auditNextPlan(input: {
     : [
         `nextPlan.id 必须等于输入 plan.id：${input.resultWithoutAudit.nextPlan.id}`,
       ]
-}
-
-function auditForbiddenTokens(input: {
-  executionInput: ConstructionExecutionInput
-  resultWithoutAudit: Omit<ConstructionExecutionResult, "audit">
-}): string[] {
-  const tokens = [
-    input.executionInput.plan.id,
-    input.executionInput.plan.projectType,
-    input.executionInput.plan.title,
-    input.executionInput.plan.reason,
-    input.executionInput.plan.targetZoneType,
-    ...input.executionInput.plan.tags,
-    ...input.resultWithoutAudit.tags,
-    ...input.resultWithoutAudit.messages,
-    ...input.resultWithoutAudit.mapDiffs.flatMap(collectMapDiffTokens),
-  ].map((token) => token.toLowerCase())
-
-  return FORBIDDEN_CONSTRUCTION_EXECUTION_TOKENS.flatMap((token) =>
-    tokens.some((item) => item.includes(token))
-      ? [`ConstructionExecutionResult 包含禁止 token：${token}`]
-      : []
-  )
-}
-
-function containsForbiddenToken(tokens: string[]): boolean {
-  const normalizedTokens = tokens.map((token) => token.toLowerCase())
-
-  return FORBIDDEN_CONSTRUCTION_EXECUTION_TOKENS.some((token) =>
-    normalizedTokens.some((item) => item.includes(token))
-  )
-}
-
-function collectMapDiffTokens(diff: MapDiff): string[] {
-  return [
-    diff.id,
-    diff.operation,
-    diff.placementId,
-    diff.reason,
-    ...diff.tags,
-    ...(diff.patch?.label ? [diff.patch.label] : []),
-    ...(diff.patch?.tags ?? []),
-    ...(diff.placement
-      ? [
-          diff.placement.id,
-          diff.placement.assetId,
-          diff.placement.layer,
-          diff.placement.label,
-          ...diff.placement.tags,
-        ]
-      : []),
-  ]
 }
 
 function buildConstructionExecutionFingerprint(input: {
