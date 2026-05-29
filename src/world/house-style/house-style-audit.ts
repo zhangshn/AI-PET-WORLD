@@ -1,7 +1,6 @@
 /**
  * 当前文件职责：审计房屋偏好是否满足 V2.0 人格与世界事实约束。
  */
-// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type {
   HouseArchetype,
@@ -18,26 +17,10 @@ const REQUIRED_ARCHETYPES: readonly HouseArchetype[] = [
   "adaptive_modular_home",
 ]
 
-// These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
-const FORBIDDEN_HOUSE_STYLE_TOKENS = [
-  "pet_arrival",
-  "pet_rest",
-  "pet-near-arrival-point",
-  "pet-bed",
-  "pet_actor",
-  "incubator",
-  "embryo",
-  "hatching",
-  "incubating",
-]
-
 export function auditHousePreference(
   preference: HousePreference
 ): HousePreferenceAudit {
-  const warnings = [
-    ...auditRequiredFields(preference),
-    ...auditForbiddenTokens(preference),
-  ]
+  const warnings = auditRequiredFields(preference)
 
   return {
     auditId: `house-style-audit:${preference.preferenceId}`,
@@ -76,14 +59,4 @@ function auditRequiredFields(preference: HousePreference): string[] {
   }
 
   return warnings
-}
-
-function auditForbiddenTokens(preference: HousePreference): string[] {
-  const serialized = JSON.stringify(preference).toLowerCase()
-
-  return FORBIDDEN_HOUSE_STYLE_TOKENS.flatMap((token) =>
-    serialized.includes(token)
-      ? [`HousePreference contains forbidden token: ${token}.`]
-      : []
-  )
 }
