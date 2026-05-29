@@ -16,16 +16,14 @@ import type {
   HomeSystem,
 } from "@/systems/systems-gateway"
 
-import {
-  runWorldStimulus,
-  runPetCognition,
-  runPetRuntime,
-  runButlerOpportunities,
-  runManagementInteractions,
-  refreshWorldSystemState,
-  stepWorldRuntime,
-  runWorldEventUpdate,
-} from "../world-engine-gateway"
+import { runWorldStimulus } from "./world-stimulus-runner"
+import { runPetCognition } from "./pet-cognition-runner"
+import { runPetRuntime } from "./pet-runtime-runner"
+import { runButlerOpportunities } from "./butler-opportunity-runner"
+import { runManagementInteractions } from "./management-interaction-runner"
+import { refreshWorldSystemState } from "./world-state-sync-runner"
+import { stepWorldRuntime } from "./world-runtime-step-runner"
+import { runWorldEventUpdate } from "./world-event-update-runner"
 
 import {
   runLifeRuntimeLog,
