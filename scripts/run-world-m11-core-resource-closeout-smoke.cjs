@@ -83,6 +83,7 @@ async function main() {
       "smoke:m11-actor-input-boundary",
       "smoke:m11-p-phone-input-boundary",
       "smoke:m11-ui-auto-generation-input-boundary",
+      "smoke:m11-core-resource-closeout",
       "smoke:m7-closeout",
       "smoke:m7-explanation",
       "smoke:m7-audit-summary",
@@ -105,8 +106,10 @@ async function main() {
       "M11 Actor 表现输入边界验算 | 100% | 完成",
       "M11 P-Phone 数据入口边界验算 | 100% | 完成",
       "M11 UI 自动生成输入边界验算 | 100% | 完成",
-      "M11 核心资源库 / 验算库 | 94% | 进行中",
-      "核心资源库 / 验算库 closeout",
+      "M11 核心资源库 / 验算库 closeout | 100% | 完成",
+      "M11 正式画图算法重整 | 0% | 下一步",
+      "核心资源库 / 验算库 closeout 已完成",
+      "正式画图算法重整",
       "AI 世界",
       "AI 管家",
       "P-Phone 通信入口",
@@ -119,6 +122,7 @@ async function main() {
     )
 
     const forbiddenDocPhrases = [
+      "M11 核心资源库 / 验算库 | 94% | 进行中",
       "UI 自动生成输入边界验算\n→ 核心资源库 / 验算库 closeout",
       "P-Phone 数据入口边界验算\n→ UI 自动生成输入边界验算",
       "create-world smoke npm 注册",
