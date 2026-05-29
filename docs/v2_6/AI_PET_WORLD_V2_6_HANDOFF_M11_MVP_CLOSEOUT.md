@@ -11,7 +11,7 @@
 AI-PET-WORLD 当前处于：
 
 ```txt
-M11｜核心资源库 / 验算库深化 + 历史错误口径清理阶段
+M11｜核心资源库 / 验算库深化阶段
 ```
 
 当前不是新功能开发，不是恢复 `/world` 画面，不是网页卡片主页整理，也不是进入 M8 / M9 / M10。
@@ -19,8 +19,8 @@ M11｜核心资源库 / 验算库深化 + 历史错误口径清理阶段
 当前优先级是：
 
 ```txt
-完成 docs 错误口径清理
-→ 锁定当前业务原则
+当前业务逻辑聊天确认
+→ 正确业务文档写入
 → 补齐核心资源库 / 验算库
 → closeout
 → 正式画图算法重整
@@ -74,7 +74,7 @@ P-Phone 通信入口
 | M11 旧完整 world tick runner 隔离 | 完成 | `world-tick-runner.ts` 已 inert 化，即使误 import 也不会触发旧 pet runtime / cognition / opportunity 链 |
 | M11 PetSystem 当前主链路隔离 | 完成 | `PetSystem / petSystem / runPetRuntime / runPetCognition / runButlerOpportunities` 当前无源码可触发入口 |
 | M11 create-world flow smoke 注册 | 完成 | `smoke:m11-create-world-flow` 已注册，并已修复运行后恢复 runtime save 的副作用 |
-| M11 文档错误口径清理 | 进行中 | Handoff 与模块进度表已同步；旧口径补扫无明显错误命中 |
+| M11 文档错误口径清理 | 完成 | Handoff 与模块进度表已收口；旧口径补扫无明显错误命中 |
 | M11 核心资源库 / 验算库 | 进行中 | Runtime / HomeMapState / SpaceGrid / SpaceCell / TraceField / WorldViewModel / 生态对象已验收 |
 | M11 正式画图算法重整 | 后续 | 验算库 closeout 后再开始 |
 | M12 构建与质量验收 | 持续 | 每个阶段后必须 lint / tsc / build / 对应 smoke |
@@ -297,12 +297,11 @@ npm run smoke:world-pixel-viewmodel-primary
 ## 11. 下一步计划
 
 ```txt
-1. 完成 docs 错误口径清理。
-2. 在聊天中确认当前业务逻辑，不直接写项目。
-3. 经确认后写入新的当前业务原则文档。
-4. 回到核心资源库 / 验算库：补 Actor / P-Phone / UI 自动生成输入验算。
-5. 完成核心资源库 / 验算库 closeout。
-6. 开始正式画图算法重整。
-7. 恢复端游式 /world 主世界。
-8. MVP closeout。
+1. 当前业务逻辑聊天确认。
+2. 经确认后写入新的当前业务原则文档。
+3. 回到核心资源库 / 验算库：补 Actor / P-Phone / UI 自动生成输入验算。
+4. 完成核心资源库 / 验算库 closeout。
+5. 开始正式画图算法重整。
+6. 恢复端游式 /world 主世界。
+7. MVP closeout。
 ```
