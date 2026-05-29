@@ -310,10 +310,7 @@ function resolveObjectKind(placement: MapPlacement): WorldViewObjectKind {
     return "insect_signal"
   }
 
-  if (
-    placement.layer === "facility" ||
-    tokens.some((token) => token.includes("facility") || token.includes("incubator"))
-  ) {
+  if (placement.layer === "facility" || tokens.some((token) => token.includes("facility"))) {
     return "facility"
   }
 
