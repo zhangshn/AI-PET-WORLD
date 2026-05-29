@@ -34,7 +34,9 @@
 | M11 PetSystem 当前主链路隔离 | 100% | 完成 | `PetSystem / petSystem / runPetRuntime / runPetCognition / runButlerOpportunities` 当前搜索无源码可触发入口 |
 | M11 create-world flow smoke 注册 | 100% | 完成 | `smoke:m11-create-world-flow` 已注册，并已修复运行后恢复 runtime save 的副作用 |
 | M11 文档错误口径清理 | 100% | 完成 | Handoff 与模块进度表已重写；旧口径补扫无明显错误命中 |
-| M11 核心资源库 / 验算库 | 82% | 进行中 | Runtime / HomeMapState / SpaceGrid / SpaceCell / TraceField / WorldViewModel / 生态对象已验收；下一步补 Actor / P-Phone / UI 自动生成输入边界 |
+| M11 当前业务原则文档 | 100% | 完成 | `AI_PET_WORLD_V2_6_CURRENT_BUSINESS_PRINCIPLES.md` 已新增，锁定 AI 世界 / AI 管家 / P-Phone / 非默认宠物等当前业务原则 |
+| M11 Actor 表现输入边界验算 | 100% | 完成 | `smoke:m11-actor-input-boundary` 已注册并通过；未验证 pet placement 不进入 WorldViewModel actors，正式未来 pet entry 需要验证标签 |
+| M11 核心资源库 / 验算库 | 87% | 进行中 | Runtime / HomeMapState / SpaceGrid / SpaceCell / TraceField / WorldViewModel / 生态对象 / Actor 表现输入边界已验收；下一步补 P-Phone / UI 自动生成输入边界 |
 | M11 正式画图算法重整 | 0% | 后续 | 核心资源库 / 验算库 closeout 后再开始；未来 `/world` 是端游式像素主世界，不是网页卡片页 |
 | M12 构建与质量验收 | 持续 | 持续 | 每个阶段后必须 lint / tsc / build / 对应 smoke |
 
@@ -58,9 +60,11 @@ M11 验收整理
 PetSystem 当前主链路隔离
 create-world flow smoke npm 注册与副作用修复
 M11 文档错误口径清理
+当前业务原则文档写入
 核心资源库 / 验算库第一批只读验收
 SpaceCell / 坐标 / Trace 投影深化验算
 生态对象来源与分布规则验算
+Actor 表现输入边界验算
 ```
 
 当前准确阶段是：
@@ -72,9 +76,8 @@ M11｜核心资源库 / 验算库深化
 后续路线：
 
 ```txt
-当前业务逻辑聊天确认
-→ 正确业务文档写入
-→ 核心资源库 / 验算库补齐
+P-Phone 数据入口边界验算
+→ UI 自动生成输入边界验算
 → 核心资源库 / 验算库 closeout
 → 正式画图算法重整
 → 端游式 /world 主世界恢复
@@ -112,6 +115,7 @@ P-Phone 通信入口
 | create-world 路径 | `/create-world` → runtime save → `/world` 可验收 | 已通过 npm smoke；smoke 运行后会恢复 runtime save |
 | M7 闭环 | 管家行为 → 验证 → 痕迹 → 记忆种子 → 解释链路不被破坏 | 已通过本地 smoke |
 | WorldViewModel 主链路 | 正式表现模型主链路继续存在，但当前不恢复画面 | 已通过本地 smoke |
+| Actor 表现输入边界 | 当前只显示管家 actor；未验证 pet placement 不显示；未来 pet entry 必须带正式验证标签 | 已通过 npm smoke |
 | smoke 注册情况 | M11 / M7 / WorldViewModel smoke 已注册为 npm 命令 | 已整理 |
 | Debug 地址用途 | 明确 Debug 页面用途，不进入正式 `/world` | 已整理 |
 | 源码历史错误口径清理 | 旧生命周期 token 扫描已清空 | 已完成 |
@@ -145,7 +149,8 @@ P-Phone 通信入口
 | 生态对象来源 | 生态对象只能作为视觉派生或 HomeMapState 事实映射出现 | 已验收 |
 | 生态对象分布 | 派生生态对象必须落在合法 SpaceCell，不能落在无效或占用单元 | 已验收 |
 | 生态对象标签 | 派生生态对象必须带 `rule_asset_projection`、`region_*`、`terrain_*`，且不得写回 HomeMapState | 已验收 |
-| WorldViewModel actors | 管家基础可见性已验收 | 已验收 |
+| WorldViewModel actors 基础存在性 | 当前必须有且只有可见管家 actor | 已验收 |
+| Actor 输入边界 | 未验证 pet placement 被拦截；正式未来 pet entry 需要 `formal_life_entry_validated / pet_world_entry_validated / actor_input_boundary_validated` | 已验收 |
 | formal `/world` path | 不引用 Debug Composer / SVG / procedural renderer | 已验收 |
 
 ---
@@ -207,7 +212,6 @@ PetSystem / petSystem / runPetRuntime / runPetCognition / runButlerOpportunities
 下一步继续补齐，不恢复 `/world` 画面：
 
 ```txt
-Actor 表现输入边界验算
 P-Phone 数据入口边界验算
 UI 自动生成输入边界验算
 核心资源库 / 验算库 closeout
@@ -227,6 +231,7 @@ npm run build
 npm run smoke:m11-core-resource-validation
 npm run smoke:m11-create-world-flow
 npm run smoke:m11-core-resource-validation
+npm run smoke:m11-actor-input-boundary
 ```
 
 ### 全量回归
@@ -236,6 +241,7 @@ npm run smoke:m11-formal-surface
 npm run smoke:m11-core-resource-validation
 npm run smoke:m11-create-world-flow
 npm run smoke:m11-core-resource-validation
+npm run smoke:m11-actor-input-boundary
 npm run smoke:m7-closeout
 npm run smoke:m7-explanation
 npm run smoke:m7-audit-summary
@@ -249,6 +255,7 @@ npm run smoke:world-pixel-viewmodel-primary
 npm run smoke:m11-formal-surface
 npm run smoke:m11-core-resource-validation
 npm run smoke:m11-create-world-flow
+npm run smoke:m11-actor-input-boundary
 ```
 
 ### 已注册在 `package.json` 的 M7 / WorldViewModel smoke
@@ -294,6 +301,7 @@ npm run smoke:world-pixel-viewmodel-primary
 - `/world` 不把 Debug Composer 搬进正式页
 - `WorldViewModel` 不直接依赖 `scene-composer-gateway`
 - smoke 已守卫 runtime 不写入、tick 不推进
+- Actor 表现输入边界已守卫：未验证 pet placement 不进入 actors，未来 pet entry 必须经过正式验证标签
 
 注意：以上是正式表现模型主链路能力，不代表当前 `/world` 已恢复正式像素画面。当前 `/world` 必须继续保持 cleared，直到后续正式画图算法重整完成并通过验收。
 
