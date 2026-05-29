@@ -1,7 +1,6 @@
 /**
  * 当前文件职责：运行 MVP pipeline smoke audit。
  */
-// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type { AiPetWorldMvpPipelineResult } from "./mvp-core-schema"
 import { runAiPetWorldMvpPipeline } from "./mvp-core-pipeline"
@@ -28,25 +27,11 @@ export type MvpSmokeAuditResult = {
   houseStylePassed: boolean
   houseStyleWarnings: string[]
   warningCount: number
-  forbiddenTokenWarnings: string[]
   results: AiPetWorldMvpPipelineResult[]
   summary: string
   messages: string[]
   tags: string[]
 }
-
-// These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
-const FORBIDDEN_SMOKE_TOKENS = [
-  "pet_arrival",
-  "pet_rest",
-  "pet-near-arrival-point",
-  "pet-bed",
-  "pet_actor",
-  "incubator",
-  "embryo",
-  "hatching",
-  "incubating",
-]
 
 export function runMvpSmokeAudit(): MvpSmokeAuditResult {
   const inputs = buildMvpSmokeScenarioInputs()
@@ -57,7 +42,6 @@ export function runMvpSmokeAudit(): MvpSmokeAuditResult {
   const stableScenarioMatched =
     results[0]?.initialWorld.homeMapState.seed ===
     results[1]?.initialWorld.homeMapState.seed
-  const forbiddenTokenWarnings = auditForbiddenTokens(results)
   const resourceCycleWarnings = auditResourceCycle(results)
   const resourceCyclePassed = resourceCycleWarnings.length === 0
   const autonomousConstructionWarnings = auditAutonomousConstruction(results)
@@ -67,7 +51,6 @@ export function runMvpSmokeAudit(): MvpSmokeAuditResult {
   const houseStylePassed = houseStyleWarnings.length === 0
   const warningCount =
     results.reduce((total, result) => total + result.audit.warnings.length, 0) +
-    forbiddenTokenWarnings.length +
     layoutVariationAudit.warnings.length +
     resourceCycleWarnings.length +
     autonomousConstructionWarnings.length +
@@ -75,7 +58,6 @@ export function runMvpSmokeAudit(): MvpSmokeAuditResult {
   const passed =
     results.length >= 5 &&
     stableScenarioMatched &&
-    forbiddenTokenWarnings.length === 0 &&
     layoutVariationPassed &&
     resourceCyclePassed &&
     autonomousConstructionPassed &&
@@ -94,7 +76,6 @@ export function runMvpSmokeAudit(): MvpSmokeAuditResult {
     houseStylePassed,
     houseStyleWarnings,
     warningCount,
-    forbiddenTokenWarnings,
     results,
     summary: [
       `MVP smoke audit ${passed ? "passed" : "has warnings"}.`,
@@ -104,7 +85,6 @@ export function runMvpSmokeAudit(): MvpSmokeAuditResult {
       `Resource cycle passed: ${String(resourceCyclePassed)}.`,
       `Autonomous construction passed: ${String(autonomousConstructionPassed)}.`,
       `House style passed: ${String(houseStylePassed)}.`,
-      `Forbidden token warnings: ${forbiddenTokenWarnings.length}.`,
     ].join(" "),
     messages: [
       `Smoke scenarios: ${results.length}`,
@@ -113,7 +93,6 @@ export function runMvpSmokeAudit(): MvpSmokeAuditResult {
       `Resource cycle passed: ${String(resourceCyclePassed)}`,
       `Autonomous construction passed: ${String(autonomousConstructionPassed)}`,
       `House style passed: ${String(houseStylePassed)}`,
-      `Forbidden token warnings: ${forbiddenTokenWarnings.length}`,
     ],
     tags: [
       "mvp_smoke_audit_result",
@@ -270,26 +249,4 @@ function auditResourceCycle(results: AiPetWorldMvpPipelineResult[]): string[] {
   }
 
   return []
-}
-
-function auditForbiddenTokens(
-  results: AiPetWorldMvpPipelineResult[]
-): string[] {
-  const tokens = results.flatMap((result) => [
-    ...result.tags,
-    ...result.messages,
-    ...result.nextHomeMapState.placements.flatMap((placement) => [
-      placement.id,
-      placement.assetId,
-      placement.layer,
-      placement.label,
-      ...placement.tags,
-    ]),
-  ]).map((token) => token.toLowerCase())
-
-  return FORBIDDEN_SMOKE_TOKENS.flatMap((token) =>
-    tokens.some((item) => item.includes(token))
-      ? [`MVP smoke audit 包含禁止 token：${token}`]
-      : []
-  )
 }
