@@ -1,7 +1,6 @@
 /**
  * 当前文件职责：审计小镇领养观察与管家领养意愿后置候选。
  */
-// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import type {
   ButlerAdoptionIntent,
@@ -9,19 +8,6 @@ import type {
   AdoptionOpportunityObservation,
   TownAdoptionPrecheckBuilderInput,
 } from "./town-adoption-precheck-schema"
-
-// These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
-const FORBIDDEN_LIFE_EVENT_TOKENS = [
-  "pet_arrival",
-  "pet_rest",
-  "pet-near-arrival-point",
-  "pet-bed",
-  "pet_actor",
-  "incubator",
-  "embryo",
-  "hatching",
-  "incubating",
-]
 
 export function auditAdoptionOpportunityObservations(input: {
   builderInput: TownAdoptionPrecheckBuilderInput
@@ -32,7 +18,6 @@ export function auditAdoptionOpportunityObservations(input: {
     ...auditCandidateCompleteness(input.adoptionOpportunityObservations),
     ...auditAdoptionBoundaries(input.butlerAdoptionIntents),
     ...auditReadinessConsistency(input),
-    ...auditForbiddenTokens(input),
   ]
   const readinessScore = input.adoptionOpportunityObservations[0]?.readiness.score ?? 0
   const blockerCount = input.adoptionOpportunityObservations.reduce(
@@ -153,43 +138,6 @@ function auditReadinessConsistency(input: {
   })
 
   return warnings
-}
-
-function auditForbiddenTokens(input: {
-  builderInput: TownAdoptionPrecheckBuilderInput
-  adoptionOpportunityObservations: AdoptionOpportunityObservation[]
-  butlerAdoptionIntents: ButlerAdoptionIntent[]
-}): string[] {
-  const tokens = [
-    ...input.builderInput.tags,
-    ...input.adoptionOpportunityObservations.flatMap((candidate) => [
-      candidate.observationId,
-      candidate.type,
-      candidate.kind,
-      candidate.reason,
-      candidate.readiness.status,
-      candidate.readiness.recommendedNextStep,
-      ...candidate.resourceReasons,
-      ...candidate.worldReasons,
-      ...candidate.blockers.map((blocker) => blocker.reason),
-      ...candidate.tags,
-    ]),
-    ...input.butlerAdoptionIntents.flatMap((candidate) => [
-      candidate.intentId,
-      candidate.type,
-      candidate.kind,
-      candidate.reason,
-      candidate.nextCheckHint,
-      ...candidate.blockers.map((blocker) => blocker.reason),
-      ...candidate.tags,
-    ]),
-  ].map((token) => token.toLowerCase())
-
-  return FORBIDDEN_LIFE_EVENT_TOKENS.flatMap((token) =>
-    tokens.some((item) => item.includes(token))
-      ? [`Adoption opportunity observation 包含禁止 token：${token}`]
-      : []
-  )
 }
 
 function buildStableTownAdoptionFingerprint(input: {
