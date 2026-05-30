@@ -12,6 +12,7 @@ async function main() {
   const formalSvgRendererPath = path.join(repoRoot, "src", "world", "formal-pixel-renderer", "formal-pixel-svg-renderer.ts")
   const formalTreeRecipePath = path.join(repoRoot, "src", "world", "formal-pixel-renderer", "formal-tree-recipe.ts")
   const formalGroundRecipePath = path.join(repoRoot, "src", "world", "formal-pixel-renderer", "formal-ground-recipe.ts")
+  const sharedTreeRecipePath = path.join(repoRoot, "src", "world", "procedural-painter", "scene-composer", "scene-composer-tree-recipe.ts")
 
   function fail(message) {
     console.log("FORMAL PIXEL SVG RENDERER SMOKE")
@@ -68,7 +69,8 @@ async function main() {
     const source = readRequiredFile(formalSvgRendererPath, "formal-pixel-svg-renderer.ts")
     const treeRecipeSource = readRequiredFile(formalTreeRecipePath, "formal-tree-recipe.ts")
     const groundRecipeSource = readRequiredFile(formalGroundRecipePath, "formal-ground-recipe.ts")
-    const combinedSource = `${source}\n${treeRecipeSource}\n${groundRecipeSource}`
+    const sharedTreeRecipeSource = readRequiredFile(sharedTreeRecipePath, "scene-composer-tree-recipe.ts")
+    const combinedSource = `${source}\n${treeRecipeSource}\n${groundRecipeSource}\n${sharedTreeRecipeSource}`
     const forbiddenTokens = [
       "readWorldRuntimeForView",
       "writeWorldRuntimeSaveRecord",
@@ -89,10 +91,13 @@ async function main() {
     assert(source.includes("renderFormalGroundTile"), "Formal SVG renderer does not use formal ground recipe.")
     assert(treeRecipeSource.includes("formal_tree_recipe_v1"), "Formal tree recipe marker is missing.")
     assert(treeRecipeSource.includes("data-visual-scope=\"tree_only\""), "Formal tree recipe should be marked tree_only.")
-    assert(treeRecipeSource.includes("renderTreeShadow"), "Formal tree recipe should keep tree shadow.")
+    assert(treeRecipeSource.includes("data-tree-algorithm=\"scene_composer_tree_recipe\""), "Formal tree recipe should use scene composer tree recipe.")
+    assert(treeRecipeSource.includes("renderSceneComposerTreeShadow"), "Formal tree recipe should keep scene composer tree shadow.")
+    assert(treeRecipeSource.includes("renderSceneComposerTreeObject"), "Formal tree recipe should render scene composer tree object.")
+    assert(sharedTreeRecipeSource.includes("renderSceneComposerTreeShadow"), "Shared scene composer tree recipe should expose tree shadow.")
+    assert(sharedTreeRecipeSource.includes("renderSceneComposerTreeObject"), "Shared scene composer tree recipe should expose tree object.")
     assert(!treeRecipeSource.includes("renderFrontGrass"), "Formal tree recipe should not render front grass.")
     assert(!treeRecipeSource.includes("renderTreeGround"), "Formal tree recipe should not render tree ground.")
-    assert(!treeRecipeSource.includes("grassLight"), "Formal tree recipe should not own grass colors.")
     assert(groundRecipeSource.includes("formal_ground_recipe_v1"), "Formal ground recipe marker is missing.")
     assert(source.includes("shape-rendering=\"crispEdges\""), "Formal SVG renderer is missing crisp pixel rendering.")
     assert(source.includes("data-formal-pixel-renderer=\"v0\""), "Formal SVG renderer is missing formal renderer marker.")
@@ -123,6 +128,7 @@ async function main() {
   assert(svg.includes("data-object-kind=\"tree\""), "Formal SVG output is missing tree object rendering.")
   assert(svg.includes("data-formal-recipe=\"formal_tree_recipe_v1\""), "Formal SVG output does not use formal tree recipe.")
   assert(svg.includes("data-visual-scope=\"tree_only\""), "Formal SVG output does not mark trees as tree_only.")
+  assert(svg.includes("data-tree-algorithm=\"scene_composer_tree_recipe\""), "Formal SVG output does not use scene composer tree recipe.")
   assert(svg.includes("data-formal-recipe=\"formal_ground_recipe_v1\""), "Formal SVG output does not use formal ground recipe.")
 
   console.log("FORMAL PIXEL SVG RENDERER SMOKE")
@@ -135,6 +141,7 @@ async function main() {
   console.log("Five SVG groups: ok")
   console.log("Formal ground recipe: ok")
   console.log("Formal tree recipe: ok")
+  console.log("Scene composer tree recipe: ok")
   console.log("Formal tree-only boundary: ok")
   console.log("Visible butler actor: ok")
   console.log("No pet actor SVG: ok")
