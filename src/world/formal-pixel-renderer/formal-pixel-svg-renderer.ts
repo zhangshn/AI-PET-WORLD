@@ -144,8 +144,12 @@ function tileColor(tile: FormalPixelTileRenderItem): string {
 
 function traceColor(trace: FormalPixelTraceRenderItem): string {
   if (trace.visualKind === "exposed_soil") return "#7d5a35"
-  if (trace.visualKind === "worn_grass") return "#5f713a"
-  if (trace.visualKind === "pressed_grass") return "#315f32"
+  if (trace.visualKind === "worn_ground") return "#5f713a"
+  if (trace.visualKind === "flattened_grass") return "#315f32"
+  if (trace.visualKind === "repaired_ground") return "#4f8a42"
+  if (trace.visualKind === "maintained_area") return "#6f8f50"
+  if (trace.visualKind === "waiting_spot" || trace.visualKind === "comfort_spot") return "#6f7d57"
+  if (trace.visualKind === "attention_glow") return "#d7d889"
   return "#6c7b46"
 }
 
