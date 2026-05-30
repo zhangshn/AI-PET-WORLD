@@ -2,6 +2,7 @@
 
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
 
 import { renderFormalGroundTile } from "@/world/formal-pixel-renderer/formal-ground-recipe";
@@ -85,12 +86,12 @@ export default function GroundTileTestPanel() {
       <section style={styles.previewPanel}>
         <article style={styles.card}>
           <h2 style={styles.panelTitle}>单 Tile 预览</h2>
-          <img alt="Formal ground tile preview" src={toSvgDataUri(singleTileSvg)} style={styles.singleImage} />
+          <Image alt="Formal ground tile preview" height={256} src={toSvgDataUri(singleTileSvg)} style={styles.singleImage} unoptimized width={256} />
         </article>
 
         <article style={styles.card}>
           <h2 style={styles.panelTitle}>Tile Patch 组合预览</h2>
-          <img alt="Formal ground tile patch preview" src={toSvgDataUri(patchSvg)} style={styles.patchImage} />
+          <Image alt="Formal ground tile patch preview" height={256} src={toSvgDataUri(patchSvg)} style={styles.patchImage} unoptimized width={384} />
         </article>
 
         <article style={styles.card}>
