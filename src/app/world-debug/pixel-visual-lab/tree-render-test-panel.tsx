@@ -1,4 +1,4 @@
-// 该组件用于在统一视觉 Debug 实验室中观察程序化树木绘制参数。
+// 该组件用于在统一视觉 Debug 实验室中观察单棵树木绘制参数。
 
 "use client";
 
@@ -12,7 +12,6 @@ import {
 } from "@/world/procedural-painter/tree/tree-render-test-module";
 import { buildPixelTreeSvgPreview } from "@/world/procedural-painter/tree/tree-render-test-preview";
 import { buildPixelClusterTreeSvg } from "@/world/procedural-painter/tree/tree-cluster-art-preview";
-import { buildTreeSceneIntegrationSvg } from "@/world/procedural-painter/tree/tree-scene-integration-preview";
 
 const BIOME_OPTIONS: PixelTreeBiome[] = ["forest", "grassland", "desert", "oasis"];
 
@@ -44,7 +43,6 @@ export default function TreeRenderTestPanel() {
   );
 
   const livePreviewSvg = useMemo(() => buildPixelClusterTreeSvg(fact), [fact]);
-  const scenePreviewSvg = useMemo(() => buildTreeSceneIntegrationSvg(fact), [fact]);
 
   function updateBiome(event: ChangeEvent<HTMLSelectElement>) {
     setFact((current) => ({
@@ -117,17 +115,11 @@ export default function TreeRenderTestPanel() {
       </aside>
 
       <section style={styles.previewPanel}>
-        <section style={styles.previewGrid}>
-          <article style={styles.card}>
-            <h2 style={styles.panelTitle}>单树预览</h2>
-            <Image alt="Procedural pixel tree preview" height={320} src={toSvgDataUri(livePreviewSvg)} style={styles.previewImage} unoptimized width={320} />
-          </article>
-
-          <article style={styles.card}>
-            <h2 style={styles.panelTitle}>场景融合</h2>
-            <Image alt="Tree scene integration preview" height={360} src={toSvgDataUri(scenePreviewSvg)} style={styles.sceneImage} unoptimized width={960} />
-          </article>
-        </section>
+        <article style={styles.card}>
+          <h2 style={styles.panelTitle}>单树预览</h2>
+          <p style={styles.note}>只测试树本体。允许投影阴影，不包含草地、草根、前景草或场景融合。</p>
+          <Image alt="Procedural single pixel tree preview" height={320} src={toSvgDataUri(livePreviewSvg)} style={styles.previewImage} unoptimized width={320} />
+        </article>
 
         <article style={styles.card}>
           <h2 style={styles.panelTitle}>算法输出摘要</h2>
@@ -169,9 +161,9 @@ const styles = {
   panel: { display: "grid", gridTemplateColumns: "300px minmax(0, 1fr)", gap: "18px", padding: "20px", color: "#eef7ef" },
   controlPanel: { position: "sticky", top: "20px", alignSelf: "start", padding: "18px", border: "1px solid rgba(191, 225, 196, 0.18)", borderRadius: "20px", background: "rgba(8, 18, 15, 0.64)" },
   previewPanel: { display: "grid", gap: "18px" },
-  previewGrid: { display: "grid", gridTemplateColumns: "minmax(320px, 420px) minmax(620px, 1fr)", gap: "18px" },
   card: { padding: "18px", border: "1px solid rgba(191, 225, 196, 0.18)", borderRadius: "20px", background: "rgba(8, 18, 15, 0.58)" },
   panelTitle: { margin: "0 0 14px", fontSize: "18px" },
+  note: { margin: "0 0 14px", color: "#aebfb2", fontSize: "13px", lineHeight: 1.6 },
   fieldGroup: { display: "grid", gap: "8px", marginTop: "16px" },
   fieldLabel: { color: "#d8ead8", fontSize: "13px", fontWeight: 700 },
   selectInput: { width: "100%", padding: "10px 12px", border: "1px solid rgba(191, 225, 196, 0.24)", borderRadius: "12px", color: "#eef7ef", background: "#17231f" },
@@ -181,7 +173,6 @@ const styles = {
   button: { padding: "10px 14px", border: 0, borderRadius: "12px", color: "#102119", background: "#9fceaa", fontWeight: 800, cursor: "pointer" },
   secondaryButton: { padding: "10px 14px", border: "1px solid rgba(191, 225, 196, 0.24)", borderRadius: "12px", color: "#d8ead8", background: "rgba(255, 255, 255, 0.06)", fontWeight: 800, cursor: "pointer" },
   previewImage: { display: "block", width: "100%", maxWidth: "360px", height: "auto", margin: "0 auto", borderRadius: "16px", imageRendering: "pixelated", background: "#17231f" },
-  sceneImage: { display: "block", width: "100%", height: "auto", borderRadius: "16px", imageRendering: "pixelated", background: "#17231f" },
   debugList: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: "10px", margin: 0 },
   debugRow: { padding: "10px", borderRadius: "12px", background: "rgba(255, 255, 255, 0.055)" },
 } satisfies Record<string, CSSProperties>;
