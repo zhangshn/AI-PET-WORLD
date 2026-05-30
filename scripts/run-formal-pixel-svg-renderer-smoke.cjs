@@ -10,6 +10,7 @@ async function main() {
   const viewModelGatewayPath = path.join(repoRoot, "src", "world", "world-view-model", "world-view-model-gateway.ts")
   const formalRendererIndexPath = path.join(repoRoot, "src", "world", "formal-pixel-renderer", "index.ts")
   const formalSvgRendererPath = path.join(repoRoot, "src", "world", "formal-pixel-renderer", "formal-pixel-svg-renderer.ts")
+  const formalTreeRecipePath = path.join(repoRoot, "src", "world", "formal-pixel-renderer", "formal-tree-recipe.ts")
 
   function fail(message) {
     console.log("FORMAL PIXEL SVG RENDERER SMOKE")
@@ -64,6 +65,7 @@ async function main() {
 
   function assertStaticBoundary() {
     const source = readRequiredFile(formalSvgRendererPath, "formal-pixel-svg-renderer.ts")
+    const treeRecipeSource = readRequiredFile(formalTreeRecipePath, "formal-tree-recipe.ts")
     const forbiddenTokens = [
       "readWorldRuntimeForView",
       "writeWorldRuntimeSaveRecord",
@@ -76,10 +78,12 @@ async function main() {
       "createPet",
       "pet_default",
     ]
-    const forbiddenHits = forbiddenTokens.filter((token) => source.includes(token))
+    const forbiddenHits = forbiddenTokens.filter((token) => `${source}\n${treeRecipeSource}`.includes(token))
 
     assert(forbiddenHits.length === 0, `Formal SVG renderer contains forbidden token: ${forbiddenHits.join(", ")}`)
     assert(source.includes("buildFormalPixelSvg"), "Formal SVG renderer does not export buildFormalPixelSvg.")
+    assert(source.includes("renderFormalTreeObject"), "Formal SVG renderer does not use formal tree recipe.")
+    assert(treeRecipeSource.includes("formal_tree_recipe_v1"), "Formal tree recipe marker is missing.")
     assert(source.includes("shape-rendering=\"crispEdges\""), "Formal SVG renderer is missing crisp pixel rendering.")
     assert(source.includes("data-formal-pixel-renderer=\"v0\""), "Formal SVG renderer is missing formal renderer marker.")
   }
@@ -107,6 +111,7 @@ async function main() {
   assert(svg.includes("data-actor-kind=\"butler\""), "Formal SVG output is missing visible butler actor.")
   assert(!svg.includes("data-actor-kind=\"pet\""), "Formal SVG output should not contain a pet actor.")
   assert(svg.includes("data-object-kind=\"tree\""), "Formal SVG output is missing tree object rendering.")
+  assert(svg.includes("data-formal-recipe=\"formal_tree_recipe_v1\""), "Formal SVG output does not use formal tree recipe.")
 
   console.log("FORMAL PIXEL SVG RENDERER SMOKE")
   console.log(`World: ${renderModel.worldId}`)
@@ -116,6 +121,7 @@ async function main() {
   console.log(`Objects: ${renderModel.layers.objects.items.length}`)
   console.log("SVG marker: ok")
   console.log("Five SVG groups: ok")
+  console.log("Formal tree recipe: ok")
   console.log("Visible butler actor: ok")
   console.log("No pet actor SVG: ok")
   console.log("Static dependency boundary: ok")
