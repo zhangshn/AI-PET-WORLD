@@ -32,6 +32,7 @@ async function main() {
   const composerPanelPath = path.join(newVisualLabDir, "pixel-scene-composer-panel.tsx")
   const groundPanelPath = path.join(newVisualLabDir, "ground-tile-test-panel.tsx")
   const treePanelPath = path.join(newVisualLabDir, "tree-render-test-panel.tsx")
+  const treePreviewPath = path.join(repoRoot, "src", "world", "procedural-painter", "tree", "tree-cluster-art-preview.ts")
 
   const removedVisualDebugPaths = [
     path.join(repoRoot, "src", "app", "world-debug", "tree-render-test", "page.tsx"),
@@ -49,6 +50,7 @@ async function main() {
   const composerSource = readFile(composerPanelPath, "pixel scene composer panel")
   const groundSource = readFile(groundPanelPath, "ground tile test panel")
   const treeSource = readFile(treePanelPath, "tree render test panel")
+  const treePreviewSource = readFile(treePreviewPath, "tree cluster preview")
   const combinedVisualSource = [pageSource, clientSource, composerSource, groundSource, treeSource].join("\n")
 
   const requiredTokens = [
@@ -59,6 +61,8 @@ async function main() {
     "VISUAL ONLY",
     "地面绘制",
     "formal_ground_recipe_v1",
+    "单树预览",
+    "不包含草地、草根、前景草或场景融合",
     "不读取 runtime",
     "不写入世界事实",
     "不推进 Tick",
@@ -68,6 +72,12 @@ async function main() {
   requiredTokens.forEach((token) => {
     assert(combinedVisualSource.includes(token), `Pixel visual lab is missing required token: ${token}`)
   })
+
+  assert(treePreviewSource.includes("data-visual-scope=\"tree_only\""), "Tree preview should be marked tree_only.")
+  assert(treePreviewSource.includes("renderTreeShadow"), "Tree preview should keep tree shadow.")
+  assert(!treeSource.includes("buildTreeSceneIntegrationSvg"), "Tree panel should not render scene integration.")
+  assert(!treePreviewSource.includes("renderFrontGrass"), "Tree preview should not render front grass.")
+  assert(!treePreviewSource.includes("renderGround("), "Tree preview should not render ground as part of tree-only preview.")
 
   const forbiddenRuntimeTokens = [
     "readWorldRuntimeForView",
@@ -95,7 +105,8 @@ async function main() {
   console.log("Old pixel-scene-composer route removed: ok")
   console.log("Composer panel moved into visual lab: ok")
   console.log("Ground tile panel added to visual lab: ok")
-  console.log("Tree panel moved into visual lab: ok")
+  console.log("Tree panel is tree-only: ok")
+  console.log("Tree shadow kept without grass/ground: ok")
   console.log("Visual lab does not touch runtime/world facts: ok")
   console.log("Result: PASS")
 }
