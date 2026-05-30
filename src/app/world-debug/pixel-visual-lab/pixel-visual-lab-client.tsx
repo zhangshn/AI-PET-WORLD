@@ -4,10 +4,11 @@
 
 import { useState, type CSSProperties } from "react";
 
+import GroundTileTestPanel from "./ground-tile-test-panel";
 import PixelSceneComposerPanel from "./pixel-scene-composer-panel";
 import TreeRenderTestPanel from "./tree-render-test-panel";
 
-export type PixelVisualLabMode = "composer" | "tree";
+export type PixelVisualLabMode = "composer" | "ground" | "tree";
 
 export default function PixelVisualLabClient({
   initialMode = "composer",
@@ -22,7 +23,7 @@ export default function PixelVisualLabClient({
         <p style={styles.kicker}>WORLD DEBUG / PIXEL VISUAL LAB / VISUAL ONLY</p>
         <h1 style={styles.title}>Pixel Visual Lab</h1>
         <p style={styles.description}>
-          视觉算法测试台：只看像素组合和树木绘制是否能接上后台算法输出。
+          视觉算法测试台：先单独测试每个视觉内容，再测试场景组合，最后把验证过的算法抽成 formal recipe。
           本页不读取 runtime，不写入世界事实，不推进 Tick，不替代正式 /world。
         </p>
       </section>
@@ -38,6 +39,14 @@ export default function PixelVisualLabClient({
         </button>
         <button
           type="button"
+          aria-pressed={mode === "ground"}
+          onClick={() => setMode("ground")}
+          style={mode === "ground" ? styles.activeTab : styles.tab}
+        >
+          地面绘制
+        </button>
+        <button
+          type="button"
           aria-pressed={mode === "tree"}
           onClick={() => setMode("tree")}
           style={mode === "tree" ? styles.activeTab : styles.tab}
@@ -47,7 +56,9 @@ export default function PixelVisualLabClient({
       </nav>
 
       <section style={styles.contentFrame}>
-        {mode === "composer" ? <PixelSceneComposerPanel /> : <TreeRenderTestPanel />}
+        {mode === "composer" ? <PixelSceneComposerPanel /> : null}
+        {mode === "ground" ? <GroundTileTestPanel /> : null}
+        {mode === "tree" ? <TreeRenderTestPanel /> : null}
       </section>
     </main>
   );
