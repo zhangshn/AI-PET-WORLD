@@ -1,12 +1,12 @@
 // 该文件用于把正式像素渲染模型转换成 SVG 像素画面。
 
+import { renderFormalGroundTile } from "./formal-ground-recipe"
 import { renderFormalTreeObject } from "./formal-tree-recipe"
 import type {
   FormalPixelActorRenderItem,
   FormalPixelAtmosphereRenderItem,
   FormalPixelObjectRenderItem,
   FormalPixelRenderModel,
-  FormalPixelTileRenderItem,
   FormalPixelTraceRenderItem,
 } from "./formal-pixel-renderer-schema"
 
@@ -14,19 +14,13 @@ export function buildFormalPixelSvg(model: FormalPixelRenderModel): string {
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" width="${model.canvas.width}" height="${model.canvas.height}" viewBox="0 0 ${model.canvas.width} ${model.canvas.height}" shape-rendering="crispEdges" data-formal-pixel-renderer="v0" data-world-id="${escapeText(model.worldId)}" data-tick="${model.tick}">`,
     `<rect x="0" y="0" width="${model.canvas.width}" height="${model.canvas.height}" fill="#17231f"/>`,
-    `<g data-layer="tile">${model.layers.tiles.items.map(renderTile).join("\n")}</g>`,
+    `<g data-layer="tile">${model.layers.tiles.items.map(renderFormalGroundTile).join("\n")}</g>`,
     `<g data-layer="trace">${model.layers.traces.items.map(renderTrace).join("\n")}</g>`,
     `<g data-layer="object">${model.layers.objects.items.map(renderObject).join("\n")}</g>`,
     `<g data-layer="actor">${model.layers.actors.items.map(renderActor).join("\n")}</g>`,
     `<g data-layer="atmosphere">${model.layers.atmosphere.items.map((item) => renderAtmosphere(item, model.canvas.width, model.canvas.height)).join("\n")}</g>`,
     `</svg>`,
   ].join("\n")
-}
-
-function renderTile(tile: FormalPixelTileRenderItem): string {
-  const fill = tileColor(tile)
-  const opacity = tile.passable ? 1 : 0.92
-  return `<rect data-id="${escapeText(tile.id)}" x="${tile.x}" y="${tile.y}" width="${tile.width}" height="${tile.height}" fill="${fill}" opacity="${opacity}"/>`
 }
 
 function renderTrace(trace: FormalPixelTraceRenderItem): string {
@@ -99,23 +93,6 @@ function renderAtmosphere(atmosphere: FormalPixelAtmosphereRenderItem, width: nu
   return `<rect data-id="${escapeText(atmosphere.id)}" x="0" y="0" width="${width}" height="${height}" fill="${fill}" opacity="${clamp(atmosphere.opacity * weatherOpacity, 0, 0.18)}"/>`
 }
 
-function tileColor(tile: FormalPixelTileRenderItem): string {
-  const colors: Record<FormalPixelTileRenderItem["kind"], string> = {
-    grass: "#3f7d3c",
-    pressed_grass: "#376f36",
-    worn_grass: "#556b35",
-    exposed_soil: "#7a5b37",
-    ecology_transition: "#476f48",
-    recovery_growth: "#4f8a42",
-    soil: "#6f5130",
-    built: "#695949",
-    boundary: "#18231f",
-  }
-  const base = colors[tile.kind]
-  if (tile.traceIntensity <= 0) return base
-  return tile.traceIntensity >= 70 ? darken(base, 34) : tile.traceIntensity >= 35 ? darken(base, 20) : darken(base, 8)
-}
-
 function traceColor(trace: FormalPixelTraceRenderItem): string {
   if (trace.visualKind === "exposed_soil") return "#7d5a35"
   if (trace.visualKind === "worn_ground") return "#5f713a"
@@ -125,18 +102,6 @@ function traceColor(trace: FormalPixelTraceRenderItem): string {
   if (trace.visualKind === "waiting_spot" || trace.visualKind === "comfort_spot") return "#6f7d57"
   if (trace.visualKind === "attention_glow") return "#d7d889"
   return "#6c7b46"
-}
-
-function darken(hex: string, amount: number): string {
-  const value = hex.replace("#", "")
-  const r = Math.max(0, Number.parseInt(value.slice(0, 2), 16) - amount)
-  const g = Math.max(0, Number.parseInt(value.slice(2, 4), 16) - amount)
-  const b = Math.max(0, Number.parseInt(value.slice(4, 6), 16) - amount)
-  return `#${toHex(r)}${toHex(g)}${toHex(b)}`
-}
-
-function toHex(value: number): string {
-  return value.toString(16).padStart(2, "0")
 }
 
 function clamp(value: number, min: number, max: number): number {
