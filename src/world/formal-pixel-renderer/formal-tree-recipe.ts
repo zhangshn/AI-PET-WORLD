@@ -12,8 +12,7 @@ type TreeBlock = {
 }
 
 type TreePalette = {
-  ground: string
-  groundDark: string
+  shadowDark: string
   trunkDark: string
   trunk: string
   trunkLight: string
@@ -23,8 +22,6 @@ type TreePalette = {
   leaf: string
   leafLight: string
   leafUnder: string
-  grass: string
-  grassLight: string
 }
 
 type LeafMass = {
@@ -68,12 +65,11 @@ export function renderFormalTreeObject(object: FormalPixelObjectRenderItem): str
   })
 
   return [
-    `<g data-id="${escapeText(object.id)}" data-object-kind="tree" data-formal-recipe="formal_tree_recipe_v1" opacity="${object.opacity}">`,
-    renderTreeGround(baseX, baseY, crownScale, palette, random),
+    `<g data-id="${escapeText(object.id)}" data-object-kind="tree" data-formal-recipe="formal_tree_recipe_v1" data-visual-scope="tree_only" opacity="${object.opacity}">`,
+    renderTreeShadow(baseX, baseY, crownScale, palette),
     renderBranches(baseX, baseY, trunkHeight, crownScale, palette, random),
     renderTrunk(baseX, baseY, trunkWidth, trunkHeight, palette),
     renderBlocks(crownBlocks),
-    renderFrontGrass(baseX, baseY, trunkWidth, scale, palette, random),
     `</g>`,
   ].join("\n")
 }
@@ -141,18 +137,8 @@ function addLeafAccents(blocks: TreeBlock[], cx: number, cy: number, sx: number,
   }
 }
 
-function renderTreeGround(baseX: number, baseY: number, crownScale: number, palette: TreePalette, random: () => number): string {
-  const grassBlocks = Array.from({ length: 12 }, () => {
-    const x = baseX + Math.round((random() - 0.5) * 58 * crownScale)
-    const y = baseY + Math.round(random() * 7)
-    return rect(x, y, 2, 2, random() > 0.5 ? palette.grassLight : palette.grass, 0.78)
-  })
-
-  return [
-    `<ellipse cx="${baseX}" cy="${baseY + 6}" rx="${Math.round(36 * crownScale)}" ry="12" fill="${palette.ground}" opacity="0.44"/>`,
-    `<ellipse cx="${baseX + 2}" cy="${baseY + 2}" rx="${Math.round(26 * crownScale)}" ry="8" fill="${palette.groundDark}" opacity="0.34"/>`,
-    ...grassBlocks,
-  ].join("\n")
+function renderTreeShadow(baseX: number, baseY: number, crownScale: number, palette: TreePalette): string {
+  return `<ellipse cx="${baseX + 2}" cy="${baseY + 2}" rx="${Math.round(26 * crownScale)}" ry="8" fill="${palette.shadowDark}" opacity="0.34"/>`
 }
 
 function renderBranches(baseX: number, baseY: number, trunkHeight: number, crownScale: number, palette: TreePalette, random: () => number): string {
@@ -179,17 +165,6 @@ function renderTrunk(baseX: number, baseY: number, trunkWidth: number, trunkHeig
   ].join("\n")
 }
 
-function renderFrontGrass(baseX: number, baseY: number, trunkWidth: number, scale: number, palette: TreePalette, random: () => number): string {
-  const count = Math.max(6, Math.round(12 * scale))
-
-  return Array.from({ length: count }, () => {
-    const height = Math.round(4 + random() * 9)
-    const x = baseX + Math.round((random() - 0.5) * Math.max(18, trunkWidth * 8))
-    const y = baseY + Math.round((random() - 0.2) * 7) - height
-    return rect(x, y, 2, height, random() > 0.62 ? palette.grassLight : palette.grass)
-  }).join("\n")
-}
-
 function renderBlocks(blocks: TreeBlock[]): string {
   return blocks.map((block) => rect(block.x, block.y, block.w, block.h, block.color, block.opacity)).join("\n")
 }
@@ -200,14 +175,14 @@ function rect(x: number, y: number, w: number, h: number, color: string, opacity
 
 function paletteFor(health: number): TreePalette {
   if (health < 38) {
-    return { ground: "#243325", groundDark: "#1c2117", trunkDark: "#56381f", trunk: "#87623a", trunkLight: "#b4894d", branch: "#654527", leafBack: "#515b32", leafDark: "#3d4f2c", leaf: "#74834b", leafLight: "#aaa45f", leafUnder: "#2f3d25", grass: "#747a43", grassLight: "#9ea05a" }
+    return { shadowDark: "#1c2117", trunkDark: "#56381f", trunk: "#87623a", trunkLight: "#b4894d", branch: "#654527", leafBack: "#515b32", leafDark: "#3d4f2c", leaf: "#74834b", leafLight: "#aaa45f", leafUnder: "#2f3d25" }
   }
 
   if (health < 78) {
-    return { ground: "#253b2b", groundDark: "#192519", trunkDark: "#5c3b21", trunk: "#8d6236", trunkLight: "#b98646", branch: "#684527", leafBack: "#365331", leafDark: "#284b2a", leaf: "#608c45", leafLight: "#a5b963", leafUnder: "#203b24", grass: "#657d3d", grassLight: "#96ae5c" }
+    return { shadowDark: "#192519", trunkDark: "#5c3b21", trunk: "#8d6236", trunkLight: "#b98646", branch: "#684527", leafBack: "#365331", leafDark: "#284b2a", leaf: "#608c45", leafLight: "#a5b963", leafUnder: "#203b24" }
   }
 
-  return { ground: "#263f2f", groundDark: "#142319", trunkDark: "#5a351f", trunk: "#8a5a31", trunkLight: "#b87a3a", branch: "#6b4527", leafBack: "#1f5130", leafDark: "#154526", leaf: "#3f873d", leafLight: "#7ec35c", leafUnder: "#10351e", grass: "#3f7d3c", grassLight: "#7ab85c" }
+  return { shadowDark: "#142319", trunkDark: "#5a351f", trunk: "#8a5a31", trunkLight: "#b87a3a", branch: "#6b4527", leafBack: "#1f5130", leafDark: "#154526", leaf: "#3f873d", leafLight: "#7ec35c", leafUnder: "#10351e" }
 }
 
 function maturityFactor(growthStage: string): number {
