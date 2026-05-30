@@ -33,6 +33,7 @@ async function main() {
   const groundPanelPath = path.join(newVisualLabDir, "ground-tile-test-panel.tsx")
   const treePanelPath = path.join(newVisualLabDir, "tree-render-test-panel.tsx")
   const treePreviewPath = path.join(repoRoot, "src", "world", "procedural-painter", "tree", "tree-cluster-art-preview.ts")
+  const sharedTreeRecipePath = path.join(repoRoot, "src", "world", "procedural-painter", "scene-composer", "scene-composer-tree-recipe.ts")
 
   const removedVisualDebugPaths = [
     path.join(repoRoot, "src", "app", "world-debug", "tree-render-test", "page.tsx"),
@@ -51,6 +52,7 @@ async function main() {
   const groundSource = readFile(groundPanelPath, "ground tile test panel")
   const treeSource = readFile(treePanelPath, "tree render test panel")
   const treePreviewSource = readFile(treePreviewPath, "tree cluster preview")
+  const sharedTreeRecipeSource = readFile(sharedTreeRecipePath, "scene composer tree recipe")
   const combinedVisualSource = [pageSource, clientSource, composerSource, groundSource, treeSource].join("\n")
 
   const requiredTokens = [
@@ -74,7 +76,11 @@ async function main() {
   })
 
   assert(treePreviewSource.includes("data-visual-scope=\"tree_only\""), "Tree preview should be marked tree_only.")
-  assert(treePreviewSource.includes("renderTreeShadow"), "Tree preview should keep tree shadow.")
+  assert(treePreviewSource.includes("data-tree-algorithm=\"scene_composer_tree_recipe\""), "Tree preview should use the scene composer tree recipe.")
+  assert(treePreviewSource.includes("renderSceneComposerTreeShadow"), "Tree preview should keep scene composer tree shadow.")
+  assert(treePreviewSource.includes("renderSceneComposerTreeObject"), "Tree preview should render the scene composer tree object.")
+  assert(sharedTreeRecipeSource.includes("renderSceneComposerTreeShadow"), "Shared scene composer tree recipe should expose tree shadow.")
+  assert(sharedTreeRecipeSource.includes("renderSceneComposerTreeObject"), "Shared scene composer tree recipe should expose tree object.")
   assert(!treeSource.includes("buildTreeSceneIntegrationSvg"), "Tree panel should not render scene integration.")
   assert(!treePreviewSource.includes("renderFrontGrass"), "Tree preview should not render front grass.")
   assert(!treePreviewSource.includes("renderGround("), "Tree preview should not render ground as part of tree-only preview.")
@@ -105,7 +111,7 @@ async function main() {
   console.log("Old pixel-scene-composer route removed: ok")
   console.log("Composer panel moved into visual lab: ok")
   console.log("Ground tile panel added to visual lab: ok")
-  console.log("Tree panel is tree-only: ok")
+  console.log("Tree panel uses scene composer tree recipe: ok")
   console.log("Tree shadow kept without grass/ground: ok")
   console.log("Visual lab does not touch runtime/world facts: ok")
   console.log("Result: PASS")
