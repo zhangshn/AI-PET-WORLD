@@ -1,6 +1,7 @@
 // 该文件用于统一导出正式像素渲染模型能力。
 
 export { buildFormalPixelRenderModel } from "./formal-pixel-renderer-gateway"
+export { buildFormalPixelSvg } from "./formal-pixel-svg-renderer"
 export type {
   FormalPixelActorLayer,
   FormalPixelActorRenderItem,
