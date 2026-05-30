@@ -1,5 +1,6 @@
 // 该文件用于把正式像素渲染模型转换成 SVG 像素画面。
 
+import { renderFormalTreeObject } from "./formal-tree-recipe"
 import type {
   FormalPixelActorRenderItem,
   FormalPixelAtmosphereRenderItem,
@@ -35,7 +36,7 @@ function renderTrace(trace: FormalPixelTraceRenderItem): string {
 }
 
 function renderObject(object: FormalPixelObjectRenderItem): string {
-  if (object.kind === "tree") return renderTreeObject(object)
+  if (object.kind === "tree") return renderFormalTreeObject(object)
   if (object.kind === "bush") return renderBushObject(object)
   if (object.kind === "stone") return renderStoneObject(object)
   if (object.kind === "flower") return renderFlowerObject(object)
@@ -43,33 +44,6 @@ function renderObject(object: FormalPixelObjectRenderItem): string {
   if (object.kind === "structure" || object.kind === "facility") return renderStructureObject(object)
 
   return renderSignalObject(object)
-}
-
-function renderTreeObject(object: FormalPixelObjectRenderItem): string {
-  const size = Math.max(8, Math.round(18 * object.scale))
-  const trunkWidth = Math.max(4, Math.round(size * 0.22))
-  const trunkHeight = Math.max(8, Math.round(size * 0.72))
-  const crownWidth = Math.max(14, Math.round(size * 1.28))
-  const crownHeight = Math.max(12, Math.round(size * 0.92))
-  const x = Math.round(object.x)
-  const y = Math.round(object.y)
-  const palette = object.health >= 80
-    ? { leaf: "#3f873d", light: "#7ec35c", dark: "#154526", trunk: "#8a5a31", trunkDark: "#5a351f" }
-    : object.health >= 45
-      ? { leaf: "#608c45", light: "#a5b963", dark: "#284b2a", trunk: "#8d6236", trunkDark: "#5c3b21" }
-      : { leaf: "#74834b", light: "#aaa45f", dark: "#3d4f2c", trunk: "#87623a", trunkDark: "#56381f" }
-
-  return [
-    `<g data-id="${escapeText(object.id)}" data-object-kind="tree" opacity="${object.opacity}">`,
-    `<ellipse cx="${x}" cy="${y + 5}" rx="${Math.round(crownWidth * 0.42)}" ry="${Math.max(3, Math.round(crownHeight * 0.18))}" fill="#142319" opacity="0.28"/>`,
-    `<rect x="${x - Math.round(trunkWidth / 2)}" y="${y - trunkHeight}" width="${trunkWidth}" height="${trunkHeight}" fill="${palette.trunkDark}"/>`,
-    `<rect x="${x - Math.round(trunkWidth / 2) + 1}" y="${y - trunkHeight + 1}" width="${Math.max(1, trunkWidth - 2)}" height="${Math.max(1, trunkHeight - 2)}" fill="${palette.trunk}"/>`,
-    `<rect x="${x - Math.round(crownWidth / 2)}" y="${y - trunkHeight - crownHeight + 2}" width="${crownWidth}" height="${Math.round(crownHeight * 0.58)}" fill="${palette.dark}"/>`,
-    `<rect x="${x - Math.round(crownWidth * 0.42)}" y="${y - trunkHeight - crownHeight}" width="${Math.round(crownWidth * 0.84)}" height="${Math.round(crownHeight * 0.7)}" fill="${palette.leaf}"/>`,
-    `<rect x="${x - Math.round(crownWidth * 0.28)}" y="${y - trunkHeight - crownHeight + 3}" width="${Math.round(crownWidth * 0.38)}" height="${Math.max(3, Math.round(crownHeight * 0.18))}" fill="${palette.light}"/>`,
-    `<rect x="${x + Math.round(crownWidth * 0.12)}" y="${y - trunkHeight - Math.round(crownHeight * 0.46)}" width="${Math.round(crownWidth * 0.26)}" height="${Math.max(3, Math.round(crownHeight * 0.16))}" fill="${palette.dark}"/>`,
-    `</g>`,
-  ].join("\n")
 }
 
 function renderBushObject(object: FormalPixelObjectRenderItem): string {
