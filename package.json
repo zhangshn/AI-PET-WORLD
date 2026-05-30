@@ -27,6 +27,7 @@
     "smoke:world-debug-pixel-visual-lab": "node scripts/run-world-debug-pixel-visual-lab-smoke.cjs",
     "smoke:formal-pixel-renderer-contract": "node scripts/run-formal-pixel-renderer-contract-smoke.cjs",
     "smoke:formal-pixel-renderer-readonly": "node scripts/run-formal-pixel-renderer-readonly-smoke.cjs",
+    "smoke:formal-pixel-svg-renderer": "node scripts/run-formal-pixel-svg-renderer-smoke.cjs",
     "smoke:butler-memory-seed-consume": "node scripts/run-world-butler-memory-seed-consume-smoke.cjs",
     "smoke:butler-memory-bias-surface": "node scripts/run-world-butler-memory-bias-surface-smoke.cjs",
     "smoke:butler-natural-explanation": "node scripts/run-world-butler-natural-explanation-smoke.cjs",
