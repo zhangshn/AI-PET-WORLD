@@ -30,6 +30,7 @@ async function main() {
   const newVisualLabPagePath = path.join(newVisualLabDir, "page.tsx")
   const newVisualLabClientPath = path.join(newVisualLabDir, "pixel-visual-lab-client.tsx")
   const composerPanelPath = path.join(newVisualLabDir, "pixel-scene-composer-panel.tsx")
+  const groundPanelPath = path.join(newVisualLabDir, "ground-tile-test-panel.tsx")
   const treePanelPath = path.join(newVisualLabDir, "tree-render-test-panel.tsx")
 
   const removedVisualDebugPaths = [
@@ -46,14 +47,18 @@ async function main() {
   const pageSource = readFile(newVisualLabPagePath, "pixel-visual-lab page")
   const clientSource = readFile(newVisualLabClientPath, "pixel-visual-lab client")
   const composerSource = readFile(composerPanelPath, "pixel scene composer panel")
+  const groundSource = readFile(groundPanelPath, "ground tile test panel")
   const treeSource = readFile(treePanelPath, "tree render test panel")
-  const combinedVisualSource = [pageSource, clientSource, composerSource, treeSource].join("\n")
+  const combinedVisualSource = [pageSource, clientSource, composerSource, groundSource, treeSource].join("\n")
 
   const requiredTokens = [
     "PixelVisualLabClient",
     "PixelSceneComposerPanel",
+    "GroundTileTestPanel",
     "TreeRenderTestPanel",
     "VISUAL ONLY",
+    "地面绘制",
+    "formal_ground_recipe_v1",
     "不读取 runtime",
     "不写入世界事实",
     "不推进 Tick",
@@ -89,6 +94,7 @@ async function main() {
   console.log("Old tree-render-test route removed: ok")
   console.log("Old pixel-scene-composer route removed: ok")
   console.log("Composer panel moved into visual lab: ok")
+  console.log("Ground tile panel added to visual lab: ok")
   console.log("Tree panel moved into visual lab: ok")
   console.log("Visual lab does not touch runtime/world facts: ok")
   console.log("Result: PASS")
