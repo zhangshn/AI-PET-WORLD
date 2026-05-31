@@ -9,3 +9,4 @@ export * from "./pixel-part-library";
 export * from "./pixel-object-recipes";
 export * from "./pixel-object-validator";
 export * from "./pixel-primitive-svg-renderer";
+export * from "./natural-recipes";
