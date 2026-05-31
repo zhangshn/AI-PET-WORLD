@@ -4,7 +4,7 @@ import { buildPixelObjectRecipe } from "../pixel-object-recipes";
 import type { PixelObjectRecipeResult } from "../pixel-primitive-schema";
 import { buildNaturalGrassTileQualityRecipe } from "./grass-tile-quality";
 import { buildNaturalInsectSignalQualityRecipe } from "./insect-signal-quality";
-import { buildNaturalStoneQualityRecipe } from "./stone-quality";
+import { buildNaturalStoneV3Recipe } from "./stone-v3";
 
 export type NaturalPixelObjectKind = "tree" | "grass_tile" | "stone" | "insect";
 
@@ -12,7 +12,7 @@ export const NATURAL_PIXEL_OBJECT_KINDS: NaturalPixelObjectKind[] = ["tree", "gr
 
 export function buildNaturalObjectQualityRecipe(kind: NaturalPixelObjectKind): PixelObjectRecipeResult {
   if (kind === "grass_tile") return buildNaturalGrassTileQualityRecipe();
-  if (kind === "stone") return buildNaturalStoneQualityRecipe();
+  if (kind === "stone") return buildNaturalStoneV3Recipe();
   if (kind === "insect") return buildNaturalInsectSignalQualityRecipe();
   return buildPixelObjectRecipe("tree");
 }
