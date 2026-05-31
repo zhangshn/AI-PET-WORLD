@@ -21,6 +21,7 @@ async function main() {
   }
 
   const primitiveDir = path.join(repoRoot, "src", "world", "pixel-primitives")
+  const naturalRecipeDir = path.join(primitiveDir, "natural-recipes")
   const schemaPath = path.join(primitiveDir, "pixel-primitive-schema.ts")
   const stylePath = path.join(primitiveDir, "pixel-style-foundation.ts")
   const semanticPath = path.join(primitiveDir, "semantic-structure-library.ts")
@@ -31,6 +32,8 @@ async function main() {
   const validatorPath = path.join(primitiveDir, "pixel-object-validator.ts")
   const rendererPath = path.join(primitiveDir, "pixel-primitive-svg-renderer.ts")
   const indexPath = path.join(primitiveDir, "index.ts")
+  const naturalIndexPath = path.join(naturalRecipeDir, "index.ts")
+  const stoneV3Path = path.join(naturalRecipeDir, "stone-v3.ts")
   const panelPath = path.join(repoRoot, "src", "app", "world-debug", "pixel-visual-lab", "pixel-primitive-library-panel.tsx")
   const clientPath = path.join(repoRoot, "src", "app", "world-debug", "pixel-visual-lab", "pixel-visual-lab-client.tsx")
 
@@ -45,6 +48,8 @@ async function main() {
     readFile(validatorPath, "pixel object validator"),
     readFile(rendererPath, "pixel primitive svg renderer"),
     readFile(indexPath, "pixel primitives index"),
+    readFile(naturalIndexPath, "natural recipe index"),
+    readFile(stoneV3Path, "stone v3 recipe"),
     readFile(panelPath, "pixel primitive library panel"),
     readFile(clientPath, "pixel visual lab client"),
   ]
@@ -62,6 +67,12 @@ async function main() {
     "PIXEL_SHAPE_LIBRARY",
     "PIXEL_PART_LIBRARY",
     "buildPixelObjectRecipe",
+    "buildNaturalObjectQualityRecipe",
+    "buildNaturalStoneV3Recipe",
+    "natural_stone_v3_procedural_art_recipe",
+    "shapeFilterEdgeNoise",
+    "textureFilterDithering",
+    "environmentFilterBleeding",
     "renderPixelObjectToSvg",
     "validatePixelObjectRecipe",
     "像素原型库",
@@ -104,6 +115,8 @@ async function main() {
   console.log("Semantic structures exist: ok")
   console.log("Primitive / shape / part libraries exist: ok")
   console.log("Object recipes exist: ok")
+  console.log("Natural stone v3 recipe exists: ok")
+  console.log("Stone v3 filters exist: ok")
   console.log("Validator exists: ok")
   console.log("SVG renderer exists: ok")
   console.log("Pixel Visual Lab tab exists: ok")
