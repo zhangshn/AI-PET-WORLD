@@ -160,6 +160,76 @@ AI 生成代码进入项目前，至少检查：
 - promotion gate 规则
 - WorldViewModel / PixelWorldView 映射规则
 
+### 3.7 当前外部 AI 使用范围
+
+当前阶段，AI-PET-WORLD 使用的外部 AI 工具仅限于 ChatGPT 辅助开发。
+
+当前允许用途：
+
+- 架构讨论
+- 代码生成与重构建议
+- 文档整理
+- 错误日志分析
+- 测试与 smoke 脚本辅助
+- 版权治理、学习模块和像素绘制方案讨论
+
+当前不使用外部 AI 工具直接生成：
+
+- 正式游戏美术素材
+- 正式像素 sprite
+- 正式宣传图
+- 正式音乐或音效
+- 用户训练数据
+- 互联网学习数据集
+
+当前对 ChatGPT 辅助开发的留痕方式为：
+
+- Git commit 记录
+- 项目文档
+- 关键决策摘要
+- 人工审查后的代码
+- lint / typecheck / build / smoke 验证记录
+
+不要求把完整私密对话原文提交到仓库。
+
+未来如接入第三方图像 AI、音频 AI、语音 AI、代码托管 AI、在线模型 API 或其他外部 AI 服务，必须另行记录：
+
+```txt
+工具 / 服务名称
+提供方
+使用日期
+使用用途
+是否进入正式项目
+是否允许商用
+是否需要署名或 notice
+是否上传用户数据
+是否被用于供应商训练
+是否有平台条款限制
+```
+
+### 3.8 自研 AI 与外部 AI 的区别
+
+AI-PET-WORLD 自研 AI 模块不按第三方 AI 工具登记。
+
+自研 AI 模块包括：
+
+- 管家行为与解释系统
+- 宠物行为系统
+- 世界 runtime
+- learning-core
+- pixel primitive / recipe / scene composition
+- P-Phone 反馈解释系统
+
+自研 AI 模块必须记录：
+
+- 模块版本
+- 算法来源
+- 学习数据来源
+- 用户反馈使用范围
+- 是否处理用户数据
+- 是否接入外部模型或 API
+- 是否可回滚
+
 ---
 
 ## 4. 来源四问检查表
@@ -257,10 +327,13 @@ AI 生成代码进入项目前，至少检查：
 
 正式上线前必须输出：
 
-- dependency license list
+- direct dependency license list
+- transitive dependency license list
 - third-party notice
 - 明确不可商用依赖清理结果
 - 字体 / 图标 / 音频 / 图片授权记录
+
+License audit 必须检查 `package.json` 以及锁文件中的传递依赖。
 
 ---
 
@@ -289,7 +362,9 @@ AI 生成代码进入项目前，至少检查：
 
 ### 6.3 AI 概念图的定位
 
-AI 概念图可以用于：
+当前阶段不使用外部 AI 图像工具生成正式游戏素材。
+
+未来如使用外部 AI 图像工具生成概念图，AI 概念图仅可用于：
 
 - 风格探索
 - 色板参考
@@ -302,6 +377,7 @@ AI 概念图可以用于：
 AI 概念图进入正式素材前，必须经过：
 
 ```txt
+外部 AI 工具记录
 来源记录
 人工审核
 相似性检查
@@ -430,7 +506,70 @@ prefer_more_life_signals
 
 ---
 
-## 10. Promotion Gate 晋升规则
+## 10. 本地存储与 Git 提交边界
+
+当前未接入数据库时，学习样本可暂存在：
+
+```txt
+.runtime/learning/feedback-samples.json
+.runtime/learning/recipe-weight-drafts.json
+.runtime/learning/pixel-visual-preferences.json
+.runtime/learning/promotion-candidates.json
+```
+
+要求：
+
+- 不提交用户隐私数据
+- 不提交敏感个人数据
+- 不提交第三方素材原图
+- 不提交未授权训练数据
+- 开发期可使用本地 JSON
+- 上线多用户阶段必须迁移到数据库或合规存储服务
+
+`.runtime/learning/*.json` 默认不得提交 Git。需要提交格式说明时，只提交脱敏 example / schema / mock 文件。
+
+---
+
+## 11. Prompt、对话记录与敏感信息边界
+
+AI 辅助开发应保留审查摘要、方案文档、测试记录和 Git commit，而不是直接提交完整私密对话。
+
+禁止提交到仓库：
+
+- 完整私密对话原文
+- 账号信息
+- API key
+- `.env` 文件
+- 用户隐私数据
+- 商业敏感内容
+- 未公开发行策略
+- 生产环境密钥
+
+允许提交：
+
+- 脱敏后的方案摘要
+- 人工审查结论
+- 架构决策记录
+- 测试结果
+- smoke 输出摘要
+
+---
+
+## 12. 密钥、API 与第三方服务治理
+
+未来如接入 OpenAI API、图像生成 API、语音 API、数据库、支付、Steamworks、邮件服务或对象存储，必须遵守：
+
+- API key 不得提交 Git
+- `.env` 文件不得提交 Git
+- 日志不得输出密钥
+- Debug 页面不得展示密钥
+- 错误信息不得暴露密钥
+- 生产密钥不得存入仓库
+- 第三方 API 必须记录服务条款、数据保留策略和商用边界
+
+---
+
+## 13. Promotion Gate 晋升规则
 
 学习结果、候选素材、recipe 变体进入正式使用前，必须经过 Promotion Gate。
 
@@ -456,31 +595,19 @@ global_candidate
 formal_global
 ```
 
----
-
-## 11. 本地存储阶段治理
-
-当前未接入数据库时，学习样本可暂存在：
+Promotion Gate 必须支持：
 
 ```txt
-.runtime/learning/feedback-samples.json
-.runtime/learning/recipe-weight-drafts.json
-.runtime/learning/pixel-visual-preferences.json
-.runtime/learning/promotion-candidates.json
+promote
+revoke
+rollback
+quarantine
+replace
 ```
-
-要求：
-
-- 不提交用户隐私数据
-- 不提交敏感个人数据
-- 不提交第三方素材原图
-- 不提交未授权训练数据
-- 开发期可使用本地 JSON
-- 上线多用户阶段必须迁移到数据库或合规存储服务
 
 ---
 
-## 12. 上线前版权检查清单
+## 14. 上线前版权检查清单
 
 上线前必须检查：
 
@@ -490,7 +617,10 @@ formal_global
 - [ ] 关键 AI 生成代码已经人工审查
 - [ ] 未粘贴未知来源大段代码
 - [ ] 关键核心算法已按本项目架构重写
-- [ ] 所有 npm 依赖许可证
+- [ ] 当前外部 AI 使用范围已记录
+- [ ] 未来如使用第三方 AI 图像 / 音频 / 语音工具，已单独登记
+- [ ] 所有 npm 直接依赖许可证
+- [ ] 所有 npm 传递依赖许可证
 - [ ] 所有字体授权
 - [ ] 所有图标授权
 - [ ] 所有音乐授权
@@ -505,16 +635,19 @@ formal_global
 - [ ] 是否有 LICENSE / NOTICE 文件
 - [ ] 学习模块是否禁止未授权互联网训练
 - [ ] 用户反馈是否只影响允许范围
+- [ ] `.runtime/learning/*.json` 是否未提交真实学习数据
+- [ ] `.env`、API key、生产密钥是否未提交 Git
 - [ ] Promotion Gate 是否阻止未审核结果进入正式世界
 
 ---
 
-## 13. 当前阶段结论
+## 15. 当前阶段结论
 
 AI-PET-WORLD 当前阶段应采用：
 
 ```txt
-自有规则
+ChatGPT 辅助开发
++ 自有规则
 + 程序化像素生成
 + 本地反馈学习
 + 用户 P-Phone 个人偏好反馈
@@ -527,6 +660,7 @@ AI-PET-WORLD 当前阶段应采用：
 ```txt
 互联网图片抓取
 未授权素材训练
+第三方 AI 图像 / 音频素材直接进入正式项目
 自动全局学习
 直接 AI 生图进入正式主世界
 未审核用户反馈改写世界
