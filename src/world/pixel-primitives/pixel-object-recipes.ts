@@ -3,7 +3,7 @@
 import { PIXEL_PALETTE } from "./pixel-style-foundation";
 import { validatePixelObjectRecipe } from "./pixel-object-validator";
 import { getPixelSemanticStructure } from "./semantic-structure-library";
-import type { PixelBlock, PixelObjectKind, PixelObjectRecipeResult, PixelPartId, PixelPrimitiveKind, PixelShapeId } from "./pixel-primitive-schema";
+import type { PixelBlock, PixelObjectKind, PixelObjectRecipeResult, PixelPartId, PixelShapeId } from "./pixel-primitive-schema";
 
 type DraftPixelObject = Omit<PixelObjectRecipeResult, "validation">;
 
