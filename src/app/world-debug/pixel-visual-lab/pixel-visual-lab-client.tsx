@@ -5,13 +5,14 @@
 import { useState, type CSSProperties } from "react";
 
 import GroundTileTestPanel from "./ground-tile-test-panel";
+import PixelPrimitiveLibraryPanel from "./pixel-primitive-library-panel";
 import PixelSceneComposerPanel from "./pixel-scene-composer-panel";
 import TreeRenderTestPanel from "./tree-render-test-panel";
 
-export type PixelVisualLabMode = "composer" | "ground" | "tree";
+export type PixelVisualLabMode = "primitive" | "composer" | "ground" | "tree";
 
 export default function PixelVisualLabClient({
-  initialMode = "composer",
+  initialMode = "primitive",
 }: {
   initialMode?: PixelVisualLabMode;
 }) {
@@ -23,12 +24,20 @@ export default function PixelVisualLabClient({
         <p style={styles.kicker}>WORLD DEBUG / PIXEL VISUAL LAB / VISUAL ONLY</p>
         <h1 style={styles.title}>Pixel Visual Lab</h1>
         <p style={styles.description}>
-          视觉算法测试台：先单独测试每个视觉内容，再测试场景组合，最后把验证过的算法抽成 formal recipe。
+          视觉算法测试台：先测试语义结构、像素形状和像素块，再单独测试每个视觉内容，最后测试场景组合。
           本页不读取 runtime，不写入世界事实，不推进 Tick，不替代正式 /world。
         </p>
       </section>
 
       <nav aria-label="Pixel visual debug sections" style={styles.tabs}>
+        <button
+          type="button"
+          aria-pressed={mode === "primitive"}
+          onClick={() => setMode("primitive")}
+          style={mode === "primitive" ? styles.activeTab : styles.tab}
+        >
+          像素原型库
+        </button>
         <button
           type="button"
           aria-pressed={mode === "composer"}
@@ -56,6 +65,7 @@ export default function PixelVisualLabClient({
       </nav>
 
       <section style={styles.contentFrame}>
+        {mode === "primitive" ? <PixelPrimitiveLibraryPanel /> : null}
         {mode === "composer" ? <PixelSceneComposerPanel /> : null}
         {mode === "ground" ? <GroundTileTestPanel /> : null}
         {mode === "tree" ? <TreeRenderTestPanel /> : null}
