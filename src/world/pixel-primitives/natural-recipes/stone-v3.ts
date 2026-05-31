@@ -37,7 +37,6 @@ export function buildNaturalStoneV3Recipe(): PixelObjectRecipeResult {
     usedPrimitives: Array.from(new Set(blocks.map((item) => item.primitiveKind))),
     usedShapes: shapes,
     usedParts: parts,
-    validation: { status: "pass", messages: [] },
   };
 
   return { ...draft, validation: validatePixelObjectRecipe(draft) };
