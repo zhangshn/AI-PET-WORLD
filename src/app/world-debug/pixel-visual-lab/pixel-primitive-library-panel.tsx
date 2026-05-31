@@ -7,19 +7,17 @@ import { useMemo, useState, type CSSProperties } from "react";
 
 import {
   PIXEL_PALETTE,
-  buildPixelObjectRecipe,
+  buildNaturalObjectQualityRecipe,
   getPixelSemanticStructure,
   listPixelPrimitiveDefinitions,
   listPixelShapeDefinitions,
   renderPixelObjectToDataUri,
-  type PixelObjectKind,
+  type NaturalPixelObjectKind,
   type PixelPrimitiveDefinition,
   type PixelShapeDefinition,
 } from "@/world/pixel-primitives";
 
-const NATURAL_PIXEL_OBJECT_KINDS = ["tree", "grass_tile", "stone", "insect"] as const satisfies readonly PixelObjectKind[];
-
-type NaturalPixelObjectKind = (typeof NATURAL_PIXEL_OBJECT_KINDS)[number];
+const NATURAL_PIXEL_OBJECT_KINDS = ["tree", "grass_tile", "stone", "insect"] as const satisfies readonly NaturalPixelObjectKind[];
 
 const NATURAL_PIXEL_SHAPE_IDS = new Set([
   "leaf_row",
@@ -52,7 +50,7 @@ export default function PixelPrimitiveLibraryPanel() {
     () => listPixelShapeDefinitions().filter((shape) => NATURAL_PIXEL_SHAPE_IDS.has(shape.id)),
     []
   );
-  const result = useMemo(() => buildPixelObjectRecipe(selectedKind), [selectedKind]);
+  const result = useMemo(() => buildNaturalObjectQualityRecipe(selectedKind), [selectedKind]);
   const semantic = getPixelSemanticStructure(selectedKind);
   const svgDataUri = useMemo(() => renderPixelObjectToDataUri(result), [result]);
 
@@ -117,7 +115,7 @@ export default function PixelPrimitiveLibraryPanel() {
           <div style={styles.cardHeader}>
             <div>
               <h2 style={styles.panelTitle}>自然物单体预览：{result.label}</h2>
-              <p style={styles.description}>Golden Recipe：{result.goldenAlgorithm ?? "pixel_object_recipe_v1"}</p>
+              <p style={styles.description}>Quality Recipe：{result.recipeId}</p>
             </div>
             <span style={result.validation.status === "pass" ? styles.passBadge : styles.failBadge}>
               Validator: {result.validation.status.toUpperCase()}
