@@ -47,7 +47,7 @@ export const PIXEL_PALETTE = {
 export const PIXEL_OBJECT_SIZE_LIMITS = {
   tree: { minWidth: 56, maxWidth: 150, minHeight: 80, maxHeight: 180 },
   grass_tile: { minWidth: 48, maxWidth: 96, minHeight: 48, maxHeight: 96 },
-  stone: { minWidth: 16, maxWidth: 54, minHeight: 12, maxHeight: 40 },
-  insect: { minWidth: 10, maxWidth: 34, minHeight: 8, maxHeight: 26 },
-  butler: { minWidth: 18, maxWidth: 46, minHeight: 34, maxHeight: 78 },
+  stone: { minWidth: 16, maxWidth: 64, minHeight: 12, maxHeight: 54 },
+  insect: { minWidth: 10, maxWidth: 38, minHeight: 8, maxHeight: 30 },
+  butler: { minWidth: 18, maxWidth: 48, minHeight: 34, maxHeight: 90 },
 } as const;
