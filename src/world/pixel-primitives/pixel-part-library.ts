@@ -31,7 +31,7 @@ export const PIXEL_PART_LIBRARY: Record<PixelPartId, PixelPartDefinition> = {
   butler_cloth: { id: "butler_cloth", label: "管家服装", semanticRole: "覆盖身体的服装面板。", shapeIds: ["cloth_panel", "highlight_chip"] },
   butler_arm: { id: "butler_arm", label: "管家手臂", semanticRole: "身体两侧的手臂。", shapeIds: ["arm_strip"] },
   butler_head: { id: "butler_head", label: "管家头部", semanticRole: "身体上方的头部。", shapeIds: ["head_block"] },
-  butler_hair_or_hat: { id: "butler_hair_or_hat", label: "管家发型或帽子", semanticRole: "头部上方的简单发型或帽子占位。", shapeIds: ["wide_block" as never] },
+  butler_hair_or_hat: { id: "butler_hair_or_hat", label: "管家发型或帽子", semanticRole: "头部上方的简单发型或帽子占位。", shapeIds: ["cloth_panel"] },
   butler_accessory: { id: "butler_accessory", label: "管家配饰", semanticRole: "后续人格视觉差异的配饰占位。", shapeIds: ["highlight_chip"] },
 };
 
