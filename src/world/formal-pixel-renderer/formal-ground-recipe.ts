@@ -19,7 +19,7 @@ export function renderFormalGroundTile(tile: FormalPixelTileRenderItem): string 
   const edge = tile.kind === "boundary" ? renderBoundaryEdge(tile, palette) : ""
 
   return [
-    `<g data-id="${escapeText(tile.id)}" data-tile-kind="${tile.kind}" data-formal-recipe="formal_ground_recipe_v1">`,
+    `<g data-id="${escapeText(tile.id)}" data-tile-kind="${tile.kind}" data-formal-recipe="formal_ground_recipe">`,
     `<rect x="${tile.x}" y="${tile.y}" width="${tile.width}" height="${tile.height}" fill="${palette.base}" opacity="${tile.passable ? 1 : 0.94}"/>`,
     details,
     traceDetails,

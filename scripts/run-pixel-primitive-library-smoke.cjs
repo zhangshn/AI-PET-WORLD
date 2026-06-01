@@ -151,7 +151,7 @@ async function main() {
   assert(forbiddenHits.length === 0, `Pixel primitive library should stay visual-only but contains: ${forbiddenHits.join(", ")}`)
 
   assert(combined.includes("scene_composer_tree_recipe"), "Tree recipe should mark scene_composer_tree_recipe as golden algorithm.")
-  assert(combined.includes("formal_ground_recipe_v1"), "Grass tile recipe should mark formal_ground_recipe_v1 as golden algorithm.")
+  assert(combined.includes("formal_ground_recipe"), "Grass tile recipe should mark formal_ground_recipe as golden algorithm.")
   assert(!combined.includes("pixel-learning"), "Pixel primitive library should not include pixel-learning module yet.")
 
   console.log("PIXEL PRIMITIVE LIBRARY SMOKE")

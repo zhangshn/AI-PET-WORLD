@@ -97,7 +97,7 @@ export default function GroundTileTestPanel() {
         <article style={styles.card}>
           <h2 style={styles.panelTitle}>算法输出摘要</h2>
           <dl style={styles.debugList}>
-            <DebugRow label="recipe" value="formal_ground_recipe_v1" />
+            <DebugRow label="recipe" value="formal_ground_recipe" />
             <DebugRow label="tileKind" value={tileKind} />
             <DebugRow label="traceIntensity" value={traceIntensity} />
             <DebugRow label="variant" value={variant} />
@@ -137,7 +137,7 @@ function buildSingleTileSvg(kind: WorldViewTileKind, traceIntensity: number, var
   const tile = buildTile({ id: `${seed}_single_${kind}_${variant}_${traceIntensity}`, kind, x: 48, y: 48, size: 160, traceIntensity, variant });
 
   return [
-    `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" shape-rendering="crispEdges" data-visual-lab-panel="ground-tile" data-formal-recipe="formal_ground_recipe_v1">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" shape-rendering="crispEdges" data-visual-lab-panel="ground-tile" data-formal-recipe="formal_ground_recipe">`,
     `<rect x="0" y="0" width="256" height="256" fill="#17231f"/>`,
     renderFormalGroundTile(tile),
     `</svg>`,
@@ -167,7 +167,7 @@ function buildTilePatchSvg(kind: WorldViewTileKind, traceIntensity: number, vari
   });
 
   return [
-    `<svg xmlns="http://www.w3.org/2000/svg" width="384" height="256" viewBox="0 0 384 256" shape-rendering="crispEdges" data-visual-lab-panel="ground-patch" data-formal-recipe="formal_ground_recipe_v1">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="384" height="256" viewBox="0 0 384 256" shape-rendering="crispEdges" data-visual-lab-panel="ground-patch" data-formal-recipe="formal_ground_recipe">`,
     `<rect x="0" y="0" width="384" height="256" fill="#17231f"/>`,
     ...tiles.map(renderFormalGroundTile),
     `</svg>`,

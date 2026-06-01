@@ -35,7 +35,7 @@ export function buildNaturalGrassTileRecipe(): PixelObjectRecipeResult {
     label: "草地",
     recipeId: "natural_grass_tile_recipe",
     recipeVersion: "procedural-grass-tile",
-    goldenAlgorithm: "formal_ground_recipe_v1",
+    goldenAlgorithm: "formal_ground_recipe",
     semanticStructureId: getPixelSemanticStructure("grass_tile").id,
     anchor: { type: "tile_origin", x: 62, y: 62 },
     bounds: { x: 62, y: 62, width: 88, height: 88 },

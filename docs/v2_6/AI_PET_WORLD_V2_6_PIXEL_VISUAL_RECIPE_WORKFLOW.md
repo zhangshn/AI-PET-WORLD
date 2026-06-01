@@ -247,7 +247,7 @@ scene composition
 每个 recipe 必须有 marker，例如：
 
 ```txt
-formal_ground_recipe_v1
+formal_ground_recipe
 formal_tree_recipe_v1
 formal_trace_recipe_v1
 formal_bush_recipe_v1
@@ -264,7 +264,7 @@ smoke 必须检查 marker，防止退回 placeholder。
 
 ```txt
 formal_tree_recipe_v1
-formal_ground_recipe_v1
+formal_ground_recipe
 ```
 
 但视觉上仍需要以 Debug 测试台为准继续调试。

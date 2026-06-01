@@ -42,7 +42,7 @@ MVP 阶段采用：
 
 ```txt
 scene_composer_tree_recipe
-formal_ground_recipe_v1
+formal_ground_recipe
 layer + anchor + bounds + y-sort 场景拼接逻辑
 ```
 
@@ -600,7 +600,7 @@ tree semantic structure
 
 ### 12.2 grass recipe
 
-当前地面继续沿用 `formal_ground_recipe_v1`。
+当前地面继续沿用 `formal_ground_recipe`。
 
 后续逐步拆解为：
 

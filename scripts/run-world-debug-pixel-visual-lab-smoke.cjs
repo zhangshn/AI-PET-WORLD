@@ -62,7 +62,7 @@ async function main() {
     "TreeRenderTestPanel",
     "VISUAL ONLY",
     "地面绘制",
-    "formal_ground_recipe_v1",
+    "formal_ground_recipe",
     "单树预览",
     "不包含草地、草根、前景草或场景融合",
     "不读取 runtime",

@@ -98,7 +98,7 @@ async function main() {
     assert(sharedTreeRecipeSource.includes("renderSceneComposerTreeObject"), "Shared scene composer tree recipe should expose tree object.")
     assert(!treeRecipeSource.includes("renderFrontGrass"), "Formal tree recipe should not render front grass.")
     assert(!treeRecipeSource.includes("renderTreeGround"), "Formal tree recipe should not render tree ground.")
-    assert(groundRecipeSource.includes("formal_ground_recipe_v1"), "Formal ground recipe marker is missing.")
+    assert(groundRecipeSource.includes("formal_ground_recipe"), "Formal ground recipe marker is missing.")
     assert(source.includes("shape-rendering=\"crispEdges\""), "Formal SVG renderer is missing crisp pixel rendering.")
     assert(source.includes("data-formal-pixel-renderer=\"v0\""), "Formal SVG renderer is missing formal renderer marker.")
   }
@@ -129,7 +129,7 @@ async function main() {
   assert(svg.includes("data-formal-recipe=\"formal_tree_recipe_v1\""), "Formal SVG output does not use formal tree recipe.")
   assert(svg.includes("data-visual-scope=\"tree_only\""), "Formal SVG output does not mark trees as tree_only.")
   assert(svg.includes("data-tree-algorithm=\"scene_composer_tree_recipe\""), "Formal SVG output does not use scene composer tree recipe.")
-  assert(svg.includes("data-formal-recipe=\"formal_ground_recipe_v1\""), "Formal SVG output does not use formal ground recipe.")
+  assert(svg.includes("data-formal-recipe=\"formal_ground_recipe\""), "Formal SVG output does not use formal ground recipe.")
 
   console.log("FORMAL PIXEL SVG RENDERER SMOKE")
   console.log(`World: ${renderModel.worldId}`)

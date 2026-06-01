@@ -82,7 +82,7 @@ function buildGrassTileRecipe(): DraftPixelObject {
     label: "草地 Tile",
     recipeId: "pixel_object_grass_tile_recipe_v1",
     recipeVersion: "1.0.0",
-    goldenAlgorithm: "formal_ground_recipe_v1",
+    goldenAlgorithm: "formal_ground_recipe",
     parts,
     shapes,
     blocks,
