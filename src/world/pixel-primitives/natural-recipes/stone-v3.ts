@@ -487,7 +487,7 @@ function quantizeGridToBlocks(grid: StoneGrid, template: StoneTemplate): PixelBl
           height: template.cellSize,
           color: colorForTone(tone, template),
           opacity: opacityForTone(tone),
-          layer: layerForTone(tone),
+          layer: layerForTone(),
         })
       );
 
