@@ -25,6 +25,7 @@
     "smoke:m11-ui-auto-generation-input-boundary": "node scripts/run-world-m11-ui-auto-generation-input-boundary-smoke.cjs",
     "smoke:m11-core-resource-closeout": "node scripts/run-world-m11-core-resource-closeout-smoke.cjs",
     "smoke:world-debug-pixel-visual-lab": "node scripts/run-world-debug-pixel-visual-lab-smoke.cjs",
+    "smoke:pixel-worldview-contract": "node scripts/run-pixel-worldview-contract-smoke.cjs",
     "smoke:pixel-primitive-library": "node scripts/run-pixel-primitive-library-smoke.cjs",
     "smoke:formal-pixel-renderer-contract": "node scripts/run-formal-pixel-renderer-contract-smoke.cjs",
     "smoke:formal-pixel-renderer-readonly": "node scripts/run-formal-pixel-renderer-readonly-smoke.cjs",
