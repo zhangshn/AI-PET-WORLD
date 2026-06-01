@@ -10,7 +10,7 @@ export type NaturalPixelObjectKind = "tree" | "grass_tile" | "stone" | "insect";
 
 export const NATURAL_PIXEL_OBJECT_KINDS: NaturalPixelObjectKind[] = ["tree", "grass_tile", "stone", "insect"];
 
-export function buildNaturalObjectQualityRecipe(kind: NaturalPixelObjectKind): PixelObjectRecipeResult {
+export function buildNaturalObjectRecipe(kind: NaturalPixelObjectKind): PixelObjectRecipeResult {
   if (kind === "tree") return buildNaturalTreeObjectRecipe();
   if (kind === "grass_tile") return buildNaturalGrassTileRecipe();
   if (kind === "stone") return buildNaturalStoneObjectRecipe();

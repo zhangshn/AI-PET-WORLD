@@ -7,7 +7,7 @@ import { useMemo, useState, type CSSProperties } from "react";
 
 import {
   PIXEL_PALETTE,
-  buildNaturalObjectQualityRecipe,
+  buildNaturalObjectRecipe,
   getPixelSemanticStructure,
   listPixelPrimitiveDefinitions,
   listPixelShapeDefinitions,
@@ -50,7 +50,7 @@ export default function PixelPrimitiveLibraryPanel() {
     () => listPixelShapeDefinitions().filter((shape) => NATURAL_PIXEL_SHAPE_IDS.has(shape.id)),
     []
   );
-  const result = useMemo(() => buildNaturalObjectQualityRecipe(selectedKind), [selectedKind]);
+  const result = useMemo(() => buildNaturalObjectRecipe(selectedKind), [selectedKind]);
   const semantic = getPixelSemanticStructure(selectedKind);
   const svgDataUri = useMemo(() => renderPixelObjectToDataUri(result), [result]);
 

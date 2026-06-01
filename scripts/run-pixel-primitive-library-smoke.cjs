@@ -68,6 +68,8 @@ async function main() {
   assert(naturalIndexSource.includes("buildNaturalGrassTileRecipe"), "Natural recipe index should use the stable grass tile builder.")
   assert(naturalIndexSource.includes("buildNaturalInsectSignalRecipe"), "Natural recipe index should use the stable insect signal builder.")
   assert(naturalIndexSource.includes("buildNaturalTreeObjectRecipe"), "Natural recipe index should use the stable tree builder.")
+  assert(naturalIndexSource.includes("buildNaturalObjectRecipe"), "Natural recipe index should export the stable natural object builder.")
+  assert(!naturalIndexSource.includes(["buildNaturalObject", "QualityRecipe"].join("")), "Natural recipe index should not export the legacy natural object builder.")
   assert(!naturalIndexSource.includes("buildPixelObjectRecipe"), "Natural recipe index should not use the legacy pixel object builder.")
   assert(pixelArtIndexSource.includes("./recipes/stone-object-recipe"), "Pixel art recipe public exports should include the stone object recipe.")
   assert(pixelArtIndexSource.includes("./recipes/grass-tile-recipe"), "Pixel art recipe public exports should include the grass tile recipe.")
@@ -114,7 +116,7 @@ async function main() {
     "PIXEL_SHAPE_LIBRARY",
     "PIXEL_PART_LIBRARY",
     "buildPixelObjectRecipe",
-    "buildNaturalObjectQualityRecipe",
+    "buildNaturalObjectRecipe",
     "buildNaturalStoneObjectRecipe",
     "buildNaturalGrassTileRecipe",
     "buildNaturalInsectSignalRecipe",
