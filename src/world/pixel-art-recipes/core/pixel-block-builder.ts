@@ -2,9 +2,13 @@
 
 import type { PixelBlock } from "../../pixel-primitives/pixel-primitive-schema";
 
-type PixelBlockInput = Omit<PixelBlock, "id">;
+export type PixelBlockInput = Omit<PixelBlock, "id">;
 
-export function createPixelBlockBuilder(prefix: string): { block: (input: PixelBlockInput) => PixelBlock } {
+export type PixelBlockBuilder = {
+  block: (input: PixelBlockInput) => PixelBlock;
+};
+
+export function createPixelBlockBuilder(prefix: string): PixelBlockBuilder {
   let counter = 0;
 
   return {
