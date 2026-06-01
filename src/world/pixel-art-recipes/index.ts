@@ -13,3 +13,5 @@ export * from "./filters/shape-noise-filter";
 export * from "./filters/texture-dither-filter";
 
 export * from "./recipes/stone-object-recipe";
+export * from "./recipes/grass-tile-recipe";
+export * from "./recipes/insect-signal-recipe";

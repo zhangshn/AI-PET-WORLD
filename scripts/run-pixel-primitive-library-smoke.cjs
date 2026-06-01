@@ -36,22 +36,41 @@ async function main() {
   const naturalIndexPath = path.join(naturalRecipeDir, "index.ts")
   const pixelArtIndexPath = path.join(pixelArtRecipeDir, "index.ts")
   const stoneObjectRecipePath = path.join(pixelArtRecipeDir, "recipes", "stone-object-recipe.ts")
+  const grassTileRecipePath = path.join(pixelArtRecipeDir, "recipes", "grass-tile-recipe.ts")
+  const insectSignalRecipePath = path.join(pixelArtRecipeDir, "recipes", "insect-signal-recipe.ts")
   const stoneObjectRecipeModuleDir = path.join(pixelArtRecipeDir, "recipes", "stone-object")
   const legacyStoneRecipeFile = ["stone", "v3.ts"].join("-")
   const legacyStoneBuilder = ["buildNaturalStone", "V3Recipe"].join("")
-  const legacyStoneRecipePath = path.join(naturalRecipeDir, legacyStoneRecipeFile)
+  const legacyGrassRecipeFile = ["grass-tile", "quality.ts"].join("-")
+  const legacyGrassBuilder = ["buildNaturalGrassTile", "QualityRecipe"].join("")
+  const legacyInsectRecipeFile = ["insect-signal", "quality.ts"].join("-")
+  const legacyInsectBuilder = ["buildNaturalInsectSignal", "QualityRecipe"].join("")
+  const legacyNaturalRecipeFiles = [legacyStoneRecipeFile, legacyGrassRecipeFile, legacyInsectRecipeFile]
+  const legacyNaturalBuilders = [legacyStoneBuilder, legacyGrassBuilder, legacyInsectBuilder]
   const panelPath = path.join(repoRoot, "src", "app", "world-debug", "pixel-visual-lab", "pixel-primitive-library-panel.tsx")
   const clientPath = path.join(repoRoot, "src", "app", "world-debug", "pixel-visual-lab", "pixel-visual-lab-client.tsx")
 
   const naturalIndexSource = readFile(naturalIndexPath, "natural recipe index")
   const pixelArtIndexSource = readFile(pixelArtIndexPath, "pixel art recipe index")
   const stoneObjectRecipeSource = readFile(stoneObjectRecipePath, "natural stone object recipe")
-  assert(!fs.existsSync(legacyStoneRecipePath), "Legacy stone recipe should be removed.")
-  assert(!naturalIndexSource.includes(legacyStoneBuilder), "Natural recipe index should not use the legacy stone builder.")
-  assert(!naturalIndexSource.includes(legacyStoneRecipeFile), "Natural recipe index should not use the legacy stone path.")
+  const grassTileRecipeSource = readFile(grassTileRecipePath, "natural grass tile recipe")
+  const insectSignalRecipeSource = readFile(insectSignalRecipePath, "natural insect signal recipe")
+  legacyNaturalRecipeFiles.forEach((fileName) => {
+    assert(!fs.existsSync(path.join(naturalRecipeDir, fileName)), `Legacy natural recipe should be removed: ${fileName}`)
+    assert(!naturalIndexSource.includes(fileName), `Natural recipe index should not use the legacy path: ${fileName}`)
+  })
+  legacyNaturalBuilders.forEach((builderName) => {
+    assert(!naturalIndexSource.includes(builderName), `Natural recipe index should not use the legacy builder: ${builderName}`)
+  })
   assert(naturalIndexSource.includes("buildNaturalStoneObjectRecipe"), "Natural recipe index should use the stable stone builder.")
+  assert(naturalIndexSource.includes("buildNaturalGrassTileRecipe"), "Natural recipe index should use the stable grass tile builder.")
+  assert(naturalIndexSource.includes("buildNaturalInsectSignalRecipe"), "Natural recipe index should use the stable insect signal builder.")
   assert(pixelArtIndexSource.includes("./recipes/stone-object-recipe"), "Pixel art recipe public exports should include the stone object recipe.")
+  assert(pixelArtIndexSource.includes("./recipes/grass-tile-recipe"), "Pixel art recipe public exports should include the grass tile recipe.")
+  assert(pixelArtIndexSource.includes("./recipes/insect-signal-recipe"), "Pixel art recipe public exports should include the insect signal recipe.")
   assert(stoneObjectRecipeSource.includes("buildNaturalStoneObjectRecipe"), "Stone object recipe should export its stable builder.")
+  assert(grassTileRecipeSource.includes("buildNaturalGrassTileRecipe"), "Grass tile recipe should export its stable builder.")
+  assert(insectSignalRecipeSource.includes("buildNaturalInsectSignalRecipe"), "Insect signal recipe should export its stable builder.")
 
   const sources = [
     readFile(schemaPath, "pixel primitive schema"),
@@ -67,6 +86,8 @@ async function main() {
     naturalIndexSource,
     pixelArtIndexSource,
     stoneObjectRecipeSource,
+    grassTileRecipeSource,
+    insectSignalRecipeSource,
     readFile(path.join(stoneObjectRecipeModuleDir, "stone-object-details.ts"), "stone object details"),
     readFile(path.join(stoneObjectRecipeModuleDir, "stone-object-environment.ts"), "stone object environment"),
     readFile(panelPath, "pixel primitive library panel"),
@@ -88,7 +109,11 @@ async function main() {
     "buildPixelObjectRecipe",
     "buildNaturalObjectQualityRecipe",
     "buildNaturalStoneObjectRecipe",
+    "buildNaturalGrassTileRecipe",
+    "buildNaturalInsectSignalRecipe",
     "natural_stone_object_recipe",
+    "natural_grass_tile_recipe",
+    "natural_insect_signal_recipe",
     "applyShapeNoiseFilter",
     "applyTextureDitherFilter",
     "buildForegroundGrassBlend",
@@ -135,7 +160,9 @@ async function main() {
   console.log("Primitive / shape / part libraries exist: ok")
   console.log("Object recipes exist: ok")
   console.log("Natural stone object recipe exists: ok")
-  console.log("Legacy stone recipe removed: ok")
+  console.log("Natural grass tile recipe exists: ok")
+  console.log("Natural insect signal recipe exists: ok")
+  console.log("Legacy natural recipe files removed: ok")
   console.log("Pixel art recipe public exports exist: ok")
   console.log("Validator exists: ok")
   console.log("SVG renderer exists: ok")
