@@ -6,3 +6,6 @@ export * from "./pixel-worldview-validator";
 export * from "./pixel-worldview-source";
 export * from "./pixel-worldview-mapper";
 export * from "./pixel-worldview-mock-snapshot";
+export * from "./pixel-worldview-render-types";
+export * from "./pixel-worldview-render-planner";
+export * from "./pixel-worldview-render-validator";
