@@ -1,8 +1,7 @@
-// 该文件用于测试 V4 程序化像素美术石头 recipe。
+// 该文件用于生成自然石头像素对象 recipe。
 
-import { PIXEL_PALETTE } from "../pixel-style-foundation";
-import { validatePixelObjectRecipe } from "../pixel-object-validator";
-import { getPixelSemanticStructure } from "../semantic-structure-library";
+import { PIXEL_PALETTE } from "../../pixel-primitives/pixel-style-foundation";
+import { validatePixelObjectRecipe } from "../../pixel-primitives/pixel-object-validator";
 import type {
   PixelBlock,
   PixelLayerKind,
@@ -10,10 +9,26 @@ import type {
   PixelPartId,
   PixelPrimitiveKind,
   PixelShapeId,
-} from "../pixel-primitive-schema";
+} from "../../pixel-primitives/pixel-primitive-schema";
+import { getPixelSemanticStructure } from "../../pixel-primitives/semantic-structure-library";
+import { clamp, mixHex } from "../core/color-utils";
+import {
+  cloneGrid,
+  findBottomFilledY,
+  findGridBounds,
+  isGridEdge,
+  type PixelArtGrid,
+} from "../core/grid-utils";
+import { cloneMask, createMask, fillSmallGaps, type PixelArtMask } from "../core/mask-utils";
+import { createPixelBlockBuilder, type PixelBlockBuilder } from "../core/pixel-block-builder";
+import { quantizeGridToPixelBlocks } from "../core/quantize-grid";
+import { noiseAt } from "../core/seeded-noise";
+import { buildContactShadowBlocks } from "../filters/contact-shadow-filter";
+import { buildForegroundGrassBlend } from "../filters/environment-blend-filter";
+import { applyShapeNoiseFilter } from "../filters/shape-noise-filter";
+import { applyTextureDitherFilter } from "../filters/texture-dither-filter";
 
 type DraftPixelObject = Omit<PixelObjectRecipeResult, "validation">;
-type BlockInput = Omit<PixelBlock, "id">;
 
 type StoneTone =
   | "outline"
@@ -27,13 +42,7 @@ type StoneTone =
   | "textureLight"
   | "textureDark";
 
-type StoneCell = {
-  filled: boolean;
-  tone: StoneTone;
-};
-
-type StoneMask = boolean[][];
-type StoneGrid = StoneCell[][];
+type StoneGrid = PixelArtGrid<StoneTone>;
 
 type StoneTemplate = {
   seed: string;
@@ -46,17 +55,8 @@ type StoneTemplate = {
   environmentTintStrength: number;
 };
 
-type MaskBounds = {
-  minX: number;
-  maxX: number;
-  minY: number;
-  maxY: number;
-};
-
-let blockCounter = 0;
-
 const STONE_TEMPLATE: StoneTemplate = {
-  seed: "natural_stone_v4_boulder_seed",
+  seed: "natural_stone_boulder_seed",
   originX: 78,
   originY: 92,
   cellSize: 2,
@@ -66,24 +66,44 @@ const STONE_TEMPLATE: StoneTemplate = {
   environmentTintStrength: 0.07,
 };
 
-export function buildNaturalStoneV3Recipe(): PixelObjectRecipeResult {
-  blockCounter = 0;
-
+export function buildNaturalStoneObjectRecipe(): PixelObjectRecipeResult {
   const template = STONE_TEMPLATE;
+  const blockBuilder = createPixelBlockBuilder("stone_object_block");
 
   const rawMask = generateSilhouetteMask(template);
-  const shapedMask = shapeFilterEdgeNoise(rawMask, template);
+  const shapedMask = stabilizeRockBase(
+    applyShapeNoiseFilter(rawMask, {
+      seed: template.seed,
+    }),
+    template
+  );
   const baseGrid = buildGridFromMask(shapedMask);
   const litGrid = applyLightingField(baseGrid, template);
-  const texturedGrid = textureFilterDithering(litGrid, template);
+  const texturedGrid = applyTextureField(litGrid, template);
   const crackedGrid = applyCrackField(texturedGrid, template);
   const highlightedGrid = applyHighlightField(crackedGrid, template);
   const environmentGrid = applyEnvironmentTintField(highlightedGrid, template);
 
   const blocks = [
-    ...buildContactAo(environmentGrid, template),
-    ...quantizeGridToBlocks(environmentGrid, template),
-    ...environmentFilterBleeding(environmentGrid, template),
+    ...buildContactShadowBlocks({
+      grid: environmentGrid,
+      originX: template.originX,
+      originY: template.originY,
+      cellSize: template.cellSize,
+      blockBuilder,
+    }),
+    ...quantizeGridToPixelBlocks({
+      grid: environmentGrid,
+      originX: template.originX,
+      originY: template.originY,
+      cellSize: template.cellSize,
+      blockBuilder,
+      resolveColor: (tone) => colorForTone(tone, template),
+      resolveOpacity: opacityForTone,
+      resolveLayer: layerForTone,
+      resolvePrimitive: primitiveForTone,
+    }),
+    ...buildEnvironmentBlendBlocks(environmentGrid, template, blockBuilder),
   ];
 
   const parts: PixelPartId[] = [
@@ -103,9 +123,9 @@ export function buildNaturalStoneV3Recipe(): PixelObjectRecipeResult {
 
   const draft: DraftPixelObject = {
     kind: "stone",
-    label: "V4 石头",
-    recipeId: "natural_stone_v3_procedural_art_recipe",
-    recipeVersion: "4.0.0-quality-pass-01",
+    label: "石头",
+    recipeId: "natural_stone_object_recipe",
+    recipeVersion: "asset-grid-quality-pass",
     semanticStructureId: getPixelSemanticStructure("stone").id,
     anchor: {
       type: "center_bottom",
@@ -130,7 +150,7 @@ export function buildNaturalStoneV3Recipe(): PixelObjectRecipeResult {
   };
 }
 
-function generateSilhouetteMask(template: StoneTemplate): StoneMask {
+function generateSilhouetteMask(template: StoneTemplate): PixelArtMask {
   const mask = createMask(template.gridWidth, template.gridHeight, false);
   const centerX = template.gridWidth * 0.5;
   const centerY = template.gridHeight * 0.5;
@@ -141,12 +161,10 @@ function generateSilhouetteMask(template: StoneTemplate): StoneMask {
     for (let x = 0; x < template.gridWidth; x += 1) {
       const nx = (x - centerX) / radiusX;
       const ny = (y - centerY) / radiusY;
-
       const ridge = buildRidgeFractal(template, x, y);
       const upperCompression = y < template.gridHeight * 0.24 ? 0.1 : 0;
       const bottomWeight = y > template.gridHeight * 0.72 ? -0.15 : 0;
       const sideChip = x < template.gridWidth * 0.16 || x > template.gridWidth * 0.84 ? 0.05 : 0;
-
       const ellipseValue = nx * nx + (ny + ridge + upperCompression) * (ny + ridge + upperCompression);
       const localNoise = (noiseAt(template.seed, x, y, 3) - 0.5) * 0.16;
 
@@ -156,7 +174,7 @@ function generateSilhouetteMask(template: StoneTemplate): StoneMask {
     }
   }
 
-  return stabilizeRockBase(fillSmallGaps(mask, template), template);
+  return stabilizeRockBase(fillSmallGaps(mask), template);
 }
 
 function buildRidgeFractal(template: StoneTemplate, x: number, y: number): number {
@@ -167,35 +185,23 @@ function buildRidgeFractal(template: StoneTemplate, x: number, y: number): numbe
   return low + mid + high;
 }
 
-function shapeFilterEdgeNoise(mask: StoneMask, template: StoneTemplate): StoneMask {
+function stabilizeRockBase(mask: PixelArtMask, template: StoneTemplate): PixelArtMask {
   const next = cloneMask(mask);
+  const baseY = template.gridHeight - 3;
+  const centerX = template.gridWidth * 0.5;
 
-  for (let y = 1; y < template.gridHeight - 1; y += 1) {
-    for (let x = 1; x < template.gridWidth - 1; x += 1) {
-      if (!mask[y][x]) continue;
-      if (!isMaskEdge(mask, x, y)) continue;
-
-      const n = noiseAt(template.seed, x, y, 11);
-      const bottomProtected = y > template.gridHeight * 0.78;
-
-      if (!bottomProtected && n < 0.14) {
-        next[y][x] = false;
-      }
-
-      if (n > 0.91) {
-        const pushX = n > 0.955 ? 1 : -1;
-        const pushY = n > 0.975 ? -1 : 0;
-        const targetX = clamp(x + pushX, 0, template.gridWidth - 1);
-        const targetY = clamp(y + pushY, 0, template.gridHeight - 1);
-        next[targetY][targetX] = true;
-      }
+  for (let x = 0; x < template.gridWidth; x += 1) {
+    const distance = Math.abs(x - centerX) / centerX;
+    if (distance < 0.74) {
+      next[baseY][x] = true;
+      next[baseY - 1][x] = true;
     }
   }
 
-  return stabilizeRockBase(fillSmallGaps(next, template), template);
+  return next;
 }
 
-function buildGridFromMask(mask: StoneMask): StoneGrid {
+function buildGridFromMask(mask: PixelArtMask): StoneGrid {
   return mask.map((row) =>
     row.map((filled) => ({
       filled,
@@ -216,7 +222,6 @@ function applyLightingField(grid: StoneGrid, template: StoneTemplate): StoneGrid
       const topBoundary = topPlaneBoundary(template, x);
       const frontBoundary = frontPlaneBoundary(template, x);
       const rightBoundary = rightPlaneBoundary(template, y);
-
       const topPlane = y <= topBoundary;
       const frontPlane = y > topBoundary && y <= frontBoundary;
       const leftLightPlane = x < template.gridWidth * 0.5 && y < template.gridHeight * 0.62;
@@ -242,35 +247,17 @@ function applyLightingField(grid: StoneGrid, template: StoneTemplate): StoneGrid
   return next;
 }
 
-function textureFilterDithering(grid: StoneGrid, template: StoneTemplate): StoneGrid {
-  const next = cloneGrid(grid);
-
-  for (let y = 1; y < template.gridHeight - 1; y += 1) {
-    for (let x = 1; x < template.gridWidth - 1; x += 1) {
-      const cell = next[y][x];
-      if (!cell.filled) continue;
-
-      const nearBoundary = isNearPlaneBoundary(template, x, y);
-      const nearEdge = isGridEdge(grid, x, y);
-      if (!nearBoundary && !nearEdge) continue;
-
-      const n = noiseAt(template.seed, x, y, 101);
-      const localPeak = isLocalNoisePeak(template, x, y, 101);
-      const threshold = nearBoundary ? 0.58 : 0.74;
-
-      if (n <= threshold || !localPeak) continue;
-
-      if (cell.tone === "light") {
-        cell.tone = "textureLight";
-      } else if (cell.tone === "main") {
-        cell.tone = n > 0.78 ? "textureLight" : "textureDark";
-      } else if (cell.tone === "dark" || cell.tone === "ambientDark") {
-        cell.tone = n > 0.7 ? "textureDark" : "main";
-      }
-    }
-  }
-
-  return next;
+function applyTextureField(grid: StoneGrid, template: StoneTemplate): StoneGrid {
+  return applyTextureDitherFilter(grid, {
+    seed: template.seed,
+    boundaryChecker: (x, y) => isNearPlaneBoundary(template, x, y),
+    toneResolver: ({ tone, noise }) => {
+      if (tone === "light") return "textureLight";
+      if (tone === "main") return noise > 0.78 ? "textureLight" : "textureDark";
+      if (tone === "dark" || tone === "ambientDark") return noise > 0.7 ? "textureDark" : "main";
+      return tone;
+    },
+  });
 }
 
 function applyCrackField(grid: StoneGrid, template: StoneTemplate): StoneGrid {
@@ -331,14 +318,16 @@ function applyHighlightField(grid: StoneGrid, template: StoneTemplate): StoneGri
   for (let y = 1; y < template.gridHeight - 1; y += 1) {
     for (let x = 1; x < template.gridWidth - 1; x += 1) {
       const cell = next[y][x];
-      if (!cell.filled) continue;
-      if (cell.tone === "crack") continue;
+      if (!cell.filled || cell.tone === "crack") continue;
 
       const upperLeft = x < template.gridWidth * 0.6 && y < template.gridHeight * 0.46;
       const edgeLight = isGridEdge(grid, x, y) && x < template.gridWidth * 0.64;
-      const n = noiseAt(template.seed, x, y, 61);
+      const noise = noiseAt(template.seed, x, y, 61);
 
-      if ((upperLeft && (cell.tone === "light" || cell.tone === "textureLight") && n > 0.83) || (edgeLight && n > 0.93)) {
+      if (
+        (upperLeft && (cell.tone === "light" || cell.tone === "textureLight") && noise > 0.83) ||
+        (edgeLight && noise > 0.93)
+      ) {
         cell.tone = "highlight";
       }
     }
@@ -360,8 +349,8 @@ function applyEnvironmentTintField(grid: StoneGrid, template: StoneTemplate): St
       const cell = next[y]?.[x];
       if (!cell?.filled) continue;
 
-      const n = noiseAt(template.seed, x, y, 121);
-      if ((cell.tone === "dark" || cell.tone === "main" || cell.tone === "textureDark") && n > 0.42) {
+      const noise = noiseAt(template.seed, x, y, 121);
+      if ((cell.tone === "dark" || cell.tone === "main" || cell.tone === "textureDark") && noise > 0.42) {
         cell.tone = "ambientDark";
       }
     }
@@ -370,74 +359,40 @@ function applyEnvironmentTintField(grid: StoneGrid, template: StoneTemplate): St
   return next;
 }
 
-function buildContactAo(grid: StoneGrid, template: StoneTemplate): PixelBlock[] {
-  const bounds = findGridBounds(grid);
-  if (!bounds) return [];
-
-  const x = template.originX + bounds.minX * template.cellSize - 5;
-  const y = template.originY + (bounds.maxY + 1) * template.cellSize - 1;
-  const width = (bounds.maxX - bounds.minX + 1) * template.cellSize + 10;
-
+function buildEnvironmentBlendBlocks(
+  grid: StoneGrid,
+  template: StoneTemplate,
+  blockBuilder: PixelBlockBuilder
+): PixelBlock[] {
   return [
-    b({
-      primitiveKind: "shadow_block",
-      x,
-      y,
-      width,
-      height: 8,
-      color: PIXEL_PALETTE.shadow,
-      opacity: 0.42,
-      layer: "shadow",
+    ...buildForegroundGrassBlend(grid, blockBuilder, {
+      seed: template.seed,
+      originX: template.originX,
+      originY: template.originY,
+      cellSize: template.cellSize,
+      grassLightColor: PIXEL_PALETTE.grassLight,
+      grassDarkColor: PIXEL_PALETTE.grassDark,
     }),
-    b({
-      primitiveKind: "shadow_block",
-      x: x + Math.round(width * 0.18),
-      y: y - 2,
-      width: Math.round(width * 0.62),
-      height: 5,
-      color: PIXEL_PALETTE.shadow,
-      opacity: 0.26,
-      layer: "shadow",
-    }),
+    ...buildForegroundGrassNoise(grid, template, blockBuilder),
   ];
 }
 
-function environmentFilterBleeding(grid: StoneGrid, template: StoneTemplate): PixelBlock[] {
+function buildForegroundGrassNoise(
+  grid: StoneGrid,
+  template: StoneTemplate,
+  blockBuilder: PixelBlockBuilder
+): PixelBlock[] {
   const blocks: PixelBlock[] = [];
   const bounds = findGridBounds(grid);
   if (!bounds) return blocks;
 
-  for (let x = bounds.minX; x <= bounds.maxX; x += 2) {
-    const bottomY = findBottomFilledY(grid, x);
-    if (bottomY === null) continue;
-
-    const n = noiseAt(template.seed, x, bottomY, 71);
-    if (n < 0.4) continue;
-
-    const grassHeight = 4 + Math.round(n * 8);
-    const grassColor = n > 0.68 ? PIXEL_PALETTE.grassLight : PIXEL_PALETTE.grassDark;
-
-    blocks.push(
-      b({
-        primitiveKind: "tall_block",
-        x: template.originX + x * template.cellSize,
-        y: template.originY + (bottomY + 1) * template.cellSize - grassHeight,
-        width: 3,
-        height: grassHeight,
-        color: grassColor,
-        opacity: 0.72,
-        layer: "foreground",
-      })
-    );
-  }
-
-  for (let i = 0; i < 5; i += 1) {
-    const x = bounds.minX + Math.round(noiseAt(template.seed, i, 0, 81) * (bounds.maxX - bounds.minX));
+  for (let index = 0; index < 5; index += 1) {
+    const x = bounds.minX + Math.round(noiseAt(template.seed, index, 0, 81) * (bounds.maxX - bounds.minX));
     const bottomY = findBottomFilledY(grid, x);
     if (bottomY === null) continue;
 
     blocks.push(
-      b({
+      blockBuilder.block({
         primitiveKind: "noise_block",
         x: template.originX + x * template.cellSize,
         y: template.originY + (bottomY + 1) * template.cellSize - 2,
@@ -448,51 +403,6 @@ function environmentFilterBleeding(grid: StoneGrid, template: StoneTemplate): Pi
         layer: "foreground",
       })
     );
-  }
-
-  return blocks;
-}
-
-function quantizeGridToBlocks(grid: StoneGrid, template: StoneTemplate): PixelBlock[] {
-  const blocks: PixelBlock[] = [];
-
-  for (let y = 0; y < template.gridHeight; y += 1) {
-    let x = 0;
-
-    while (x < template.gridWidth) {
-      const cell = grid[y][x];
-
-      if (!cell.filled) {
-        x += 1;
-        continue;
-      }
-
-      const tone = cell.tone;
-      let run = 1;
-
-      while (
-        x + run < template.gridWidth &&
-        grid[y][x + run].filled &&
-        grid[y][x + run].tone === tone
-      ) {
-        run += 1;
-      }
-
-      blocks.push(
-        b({
-          primitiveKind: primitiveForTone(tone, run * template.cellSize, template.cellSize),
-          x: template.originX + x * template.cellSize,
-          y: template.originY + y * template.cellSize,
-          width: run * template.cellSize,
-          height: template.cellSize,
-          color: colorForTone(tone, template),
-          opacity: opacityForTone(tone),
-          layer: layerForTone(),
-        })
-      );
-
-      x += run;
-    }
   }
 
   return blocks;
@@ -517,120 +427,6 @@ function isNearPlaneBoundary(template: StoneTemplate, x: number, y: number): boo
   const front = Math.abs(y - frontPlaneBoundary(template, x)) <= 1;
   const right = Math.abs(x - rightPlaneBoundary(template, y)) <= 1;
   return top || front || right;
-}
-
-function isLocalNoisePeak(template: StoneTemplate, x: number, y: number, salt: number): boolean {
-  const current = noiseAt(template.seed, x, y, salt);
-  const neighborValues = [
-    noiseAt(template.seed, x - 1, y, salt),
-    noiseAt(template.seed, x + 1, y, salt),
-    noiseAt(template.seed, x, y - 1, salt),
-    noiseAt(template.seed, x, y + 1, salt),
-  ];
-
-  return neighborValues.filter((value) => value > current).length <= 1;
-}
-
-function stabilizeRockBase(mask: StoneMask, template: StoneTemplate): StoneMask {
-  const next = cloneMask(mask);
-  const baseY = template.gridHeight - 3;
-  const centerX = template.gridWidth * 0.5;
-
-  for (let x = 0; x < template.gridWidth; x += 1) {
-    const distance = Math.abs(x - centerX) / centerX;
-    if (distance < 0.74) {
-      next[baseY][x] = true;
-      next[baseY - 1][x] = true;
-    }
-  }
-
-  return next;
-}
-
-function fillSmallGaps(mask: StoneMask, template: StoneTemplate): StoneMask {
-  const next = cloneMask(mask);
-
-  for (let y = 1; y < template.gridHeight - 1; y += 1) {
-    for (let x = 1; x < template.gridWidth - 1; x += 1) {
-      if (mask[y][x]) continue;
-
-      const filledNeighbors = [
-        mask[y - 1][x],
-        mask[y + 1][x],
-        mask[y][x - 1],
-        mask[y][x + 1],
-      ].filter(Boolean).length;
-
-      if (filledNeighbors >= 3) {
-        next[y][x] = true;
-      }
-    }
-  }
-
-  return next;
-}
-
-function findGridBounds(grid: StoneGrid): MaskBounds | null {
-  let minX = Number.POSITIVE_INFINITY;
-  let maxX = Number.NEGATIVE_INFINITY;
-  let minY = Number.POSITIVE_INFINITY;
-  let maxY = Number.NEGATIVE_INFINITY;
-
-  grid.forEach((row, y) => {
-    row.forEach((cell, x) => {
-      if (!cell.filled) return;
-      minX = Math.min(minX, x);
-      maxX = Math.max(maxX, x);
-      minY = Math.min(minY, y);
-      maxY = Math.max(maxY, y);
-    });
-  });
-
-  if (!Number.isFinite(minX)) return null;
-
-  return { minX, maxX, minY, maxY };
-}
-
-function findBottomFilledY(grid: StoneGrid, x: number): number | null {
-  for (let y = grid.length - 1; y >= 0; y -= 1) {
-    if (grid[y]?.[x]?.filled) return y;
-  }
-
-  return null;
-}
-
-function isMaskEdge(mask: StoneMask, x: number, y: number): boolean {
-  if (!mask[y][x]) return false;
-
-  return [
-    mask[y - 1]?.[x],
-    mask[y + 1]?.[x],
-    mask[y]?.[x - 1],
-    mask[y]?.[x + 1],
-  ].some((item) => !item);
-}
-
-function isGridEdge(grid: StoneGrid, x: number, y: number): boolean {
-  if (!grid[y][x].filled) return false;
-
-  return [
-    grid[y - 1]?.[x],
-    grid[y + 1]?.[x],
-    grid[y]?.[x - 1],
-    grid[y]?.[x + 1],
-  ].some((item) => !item?.filled);
-}
-
-function createMask(width: number, height: number, value: boolean): StoneMask {
-  return Array.from({ length: height }, () => Array.from({ length: width }, () => value));
-}
-
-function cloneMask(mask: StoneMask): StoneMask {
-  return mask.map((row) => [...row]);
-}
-
-function cloneGrid(grid: StoneGrid): StoneGrid {
-  return grid.map((row) => row.map((cell) => ({ ...cell })));
 }
 
 function primitiveForTone(tone: StoneTone, width: number, height: number): PixelPrimitiveKind {
@@ -678,58 +474,4 @@ function opacityForTone(tone: StoneTone): number {
 
 function layerForTone(): PixelLayerKind {
   return "object";
-}
-
-function mixHex(baseHex: string, tintHex: string, amount: number): string {
-  const base = hexToRgb(baseHex);
-  const tint = hexToRgb(tintHex);
-
-  const r = Math.round(base.r * (1 - amount) + tint.r * amount);
-  const g = Math.round(base.g * (1 - amount) + tint.g * amount);
-  const bValue = Math.round(base.b * (1 - amount) + tint.b * amount);
-
-  return rgbToHex(r, g, bValue);
-}
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-  const normalized = hex.replace("#", "");
-
-  return {
-    r: Number.parseInt(normalized.slice(0, 2), 16),
-    g: Number.parseInt(normalized.slice(2, 4), 16),
-    b: Number.parseInt(normalized.slice(4, 6), 16),
-  };
-}
-
-function rgbToHex(r: number, g: number, bValue: number): string {
-  return `#${toHex(r)}${toHex(g)}${toHex(bValue)}`;
-}
-
-function toHex(value: number): string {
-  return clamp(value, 0, 255).toString(16).padStart(2, "0");
-}
-
-function noiseAt(seed: string, x: number, y: number, salt: number): number {
-  const hash = hashString(`${seed}:${x}:${y}:${salt}`);
-  return (hash % 10000) / 10000;
-}
-
-function hashString(value: string): number {
-  let hash = 2166136261;
-
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-
-  return hash >>> 0;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
-function b(input: BlockInput): PixelBlock {
-  blockCounter += 1;
-  return { id: `stone_v4_block_${blockCounter}`, ...input };
 }

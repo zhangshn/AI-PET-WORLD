@@ -11,3 +11,5 @@ export * from "./filters/contact-shadow-filter";
 export * from "./filters/environment-blend-filter";
 export * from "./filters/shape-noise-filter";
 export * from "./filters/texture-dither-filter";
+
+export * from "./recipes/stone-object-recipe";
