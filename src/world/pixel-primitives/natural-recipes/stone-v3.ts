@@ -676,7 +676,7 @@ function opacityForTone(tone: StoneTone): number {
   return 1;
 }
 
-function layerForTone(_tone: StoneTone): PixelLayerKind {
+function layerForTone(): PixelLayerKind {
   return "object";
 }
 
