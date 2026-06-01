@@ -36,6 +36,7 @@ async function main() {
   const naturalIndexPath = path.join(naturalRecipeDir, "index.ts")
   const pixelArtIndexPath = path.join(pixelArtRecipeDir, "index.ts")
   const stoneObjectRecipePath = path.join(pixelArtRecipeDir, "recipes", "stone-object-recipe.ts")
+  const stoneObjectRecipeModuleDir = path.join(pixelArtRecipeDir, "recipes", "stone-object")
   const legacyStoneRecipeFile = ["stone", "v3.ts"].join("-")
   const legacyStoneBuilder = ["buildNaturalStone", "V3Recipe"].join("")
   const legacyStoneRecipePath = path.join(naturalRecipeDir, legacyStoneRecipeFile)
@@ -66,6 +67,8 @@ async function main() {
     naturalIndexSource,
     pixelArtIndexSource,
     stoneObjectRecipeSource,
+    readFile(path.join(stoneObjectRecipeModuleDir, "stone-object-details.ts"), "stone object details"),
+    readFile(path.join(stoneObjectRecipeModuleDir, "stone-object-environment.ts"), "stone object environment"),
     readFile(panelPath, "pixel primitive library panel"),
     readFile(clientPath, "pixel visual lab client"),
   ]
