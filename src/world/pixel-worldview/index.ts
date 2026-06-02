@@ -24,4 +24,7 @@ export * from "./world-formal-pixelworldview-renderer-contract";
 export * from "./world-formal-pixelworldview-renderer-contract-validator";
 export * from "./world-formal-pixelworldview-renderer-contract-demo";
 export * from "./world-formal-pixelworldview-renderer-plan";
+export * from "./world-formal-pixelworldview-renderer-shell";
+export * from "./world-formal-pixelworldview-renderer-shell-validator";
+export * from "./world-formal-pixelworldview-renderer-shell-demo";
 export * from "./world-view-model-to-pixel-worldview-source";
