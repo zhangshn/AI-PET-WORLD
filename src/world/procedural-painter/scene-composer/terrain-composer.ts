@@ -6,7 +6,7 @@ import {
 import { clamp, stableUnit } from "./scene-composer-random";
 import type { SceneTraceInfluenceField } from "./trace-composer";
 import type {
-  PathSample,
+  SceneTraceSample,
   SceneComposerFact,
   SceneTile,
   SceneTileKind,
@@ -17,11 +17,11 @@ import type {
 
 export function buildSceneTiles(
   fact: SceneComposerFact,
-  traceSamples: PathSample[],
+  traceSamples: SceneTraceSample[],
   layoutSeed: string,
   traceField?: SceneTraceInfluenceField
 ): SceneTile[] {
-  const hasTraceFact = fact.hasTraceFact ?? fact.hasRoadFact ?? true;
+  const hasTraceFact = fact.hasTraceFact ?? true;
   const tiles: SceneTile[] = [];
 
   for (let row = 0; row < SCENE_ROWS; row += 1) {
@@ -42,10 +42,8 @@ export function buildSceneTiles(
       const kind: SceneTileKind = !hasTraceFact
         ? "grass"
         : movementInfluence >= 52
-          // "path" is deprecated renderer compatibility for long-used area tile.
           ? "path"
           : ecologyTransitionInfluence >= 34
-            // "edge" is deprecated renderer compatibility for trace edge / ecology transition tile.
             ? "edge"
             : "grass";
       const traceVisual = resolveTraceVisual({

@@ -130,13 +130,13 @@ function toSvgDataUri(svg: string): string {
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
-function normalizeSceneComposerFact(fact: SceneComposerFact & { density?: number; pathCurve?: number; roadShape?: number }): SceneComposerFact {
+function normalizeSceneComposerFact(fact: SceneComposerFact & { density?: number }): SceneComposerFact {
   return {
     id: fact.id ?? DEFAULT_FACT.id,
     biome: BIOME_OPTIONS.includes(fact.biome) ? fact.biome : DEFAULT_FACT.biome,
     moisture: normalizeRangeValue(fact.moisture, DEFAULT_FACT.moisture),
     decorationDensity: normalizeRangeValue(fact.decorationDensity ?? fact.density, DEFAULT_FACT.decorationDensity),
-    traceShape: normalizeRangeValue(fact.traceShape ?? fact.roadShape ?? fact.pathCurve, DEFAULT_FACT.traceShape),
+    traceShape: normalizeRangeValue(fact.traceShape, DEFAULT_FACT.traceShape),
     traceDensity: normalizeRangeValue(fact.traceDensity, DEFAULT_FACT.traceDensity),
     worldSeed: fact.worldSeed ?? DEFAULT_FACT.worldSeed,
     hasTraceFact: fact.hasTraceFact ?? DEFAULT_FACT.hasTraceFact,

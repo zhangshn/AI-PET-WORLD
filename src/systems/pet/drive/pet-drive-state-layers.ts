@@ -12,7 +12,7 @@ import {
   getEmotionalLabel,
   getEnergy,
   getHunger,
-  getLegacyDriveHint,
+  getDriveHint,
   getPhaseTag,
   getRelationalLabel,
 } from "./pet-drive-context"
@@ -238,9 +238,9 @@ export function applyRhythmLayer(context: DriveLayerContext) {
   }
 }
 
-export function applyLegacyDriveHintLayer(context: DriveLayerContext) {
+export function applyDriveHintLayer(context: DriveLayerContext) {
   const { input, scores, reasons } = context
-  const hint = getLegacyDriveHint(input)
+  const hint = getDriveHint(input)
 
   if (!hint) return
 

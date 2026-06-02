@@ -105,9 +105,6 @@ export function composeScene(fact: SceneComposerFact): SceneCompositionPlan {
     traceFacts: clean.traceFacts ?? [],
     traceSamples,
     traceField,
-    // Deprecated compatibility: retained until legacy debug consumers migrate.
-    roadShape: clean.traceShape,
-    hasRoadFact: traceField.hasTraceFact,
     tiles,
     grassTufts,
     factObjects,
@@ -117,9 +114,6 @@ export function composeScene(fact: SceneComposerFact): SceneCompositionPlan {
       grassTiles: tiles.filter((tile) => tile.kind === "grass").length,
       longUsedAreaTiles,
       traceEdgeTiles,
-      // Deprecated compatibility: legacy visual tile summary names.
-      pathTiles: longUsedAreaTiles,
-      edgeTiles: traceEdgeTiles,
       traceInfluencedTiles: traceField.influencedTiles ?? 0,
       movementInfluencedTiles: traceField.movementInfluencedTiles ?? 0,
       spatialUseInfluencedTiles: traceField.spatialUseInfluencedTiles ?? 0,
@@ -157,8 +151,8 @@ export function composeScene(fact: SceneComposerFact): SceneCompositionPlan {
 export function normalizeSceneComposerFact(
   fact: SceneComposerFact
 ): SceneComposerFact {
-  const traceShape = fact.traceShape ?? fact.roadShape ?? 50;
-  const hasTraceFact = fact.hasTraceFact ?? fact.hasRoadFact ?? true;
+  const traceShape = fact.traceShape ?? 50;
+  const hasTraceFact = fact.hasTraceFact ?? true;
   const traceDensity = fact.traceDensity ?? fact.decorationDensity;
 
   return {
@@ -169,9 +163,6 @@ export function normalizeSceneComposerFact(
     traceDensity: clamp(Math.round(traceDensity), 0, 100),
     hasTraceFact,
     traceFacts: fact.traceFacts ?? [],
-    // Deprecated compatibility: legacy callers may still read these fields.
-    roadShape: clamp(Math.round(traceShape), 0, 100),
-    hasRoadFact: hasTraceFact,
     includeActorPlaceholder: fact.includeActorPlaceholder ?? true,
     factObjects: fact.factObjects ?? [],
   };
@@ -216,14 +207,6 @@ function removeUndefinedSceneComposerFields(
 
   if (input.traceFacts !== undefined) {
     clean.traceFacts = input.traceFacts;
-  }
-
-  if (input.roadShape !== undefined) {
-    clean.roadShape = input.roadShape;
-  }
-
-  if (input.hasRoadFact !== undefined) {
-    clean.hasRoadFact = input.hasRoadFact;
   }
 
   if (input.includeActorPlaceholder !== undefined) {

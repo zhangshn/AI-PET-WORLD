@@ -33,7 +33,7 @@ import {
   applyCrossDriveSuppression,
   applyEmotionAndRelationLayer,
   applyExternalStimuliLayer,
-  applyLegacyDriveHintLayer,
+  applyDriveHintLayer,
   applyPhysicalLayer,
   applyRhythmLayer,
 } from "./pet-drive-state-layers"
@@ -74,7 +74,7 @@ export class DriveSystem {
     applyPhysicalLayer(context)
     applyEmotionAndRelationLayer(context)
     applyRhythmLayer(context)
-    applyLegacyDriveHintLayer(context)
+    applyDriveHintLayer(context)
     applyExternalStimuliLayer(context)
     applyCrossDriveSuppression(context)
 

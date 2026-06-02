@@ -13,7 +13,7 @@ import type {
 } from "@/engine/timeSystem"
 import type {
   ButlerState,
-} from "@/types/butler"
+} from "@/systems/butler/butler-schema"
 import type {
   WorldEvent,
 } from "@/types/event"

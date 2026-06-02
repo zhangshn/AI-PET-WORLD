@@ -4,7 +4,7 @@
 
 import type { TimeState } from "../../timeSystem"
 import type { EventSystem } from "@/systems/eventSystem"
-import type { ButlerState } from "@/types/butler"
+import type { ButlerState } from "@/systems/butler/butler-schema"
 import type { PetState } from "@/types/pet"
 
 export type RunWorldEventUpdateInput = {

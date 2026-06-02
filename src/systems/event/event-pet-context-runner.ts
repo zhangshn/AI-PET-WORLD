@@ -12,7 +12,7 @@ export function getPetEventKey(pet: PetStateLike): string {
   return pet.id || pet.name
 }
 
-export function getLegacyDrivePrimary(pet: PetStateLike): string | null {
+export function getDrivePrimary(pet: PetStateLike): string | null {
   return pet.timelineSnapshot?.state.drive.primary ?? null
 }
 
@@ -24,7 +24,7 @@ export function getSourceDriveFromPet(pet: PetStateLike): string | null {
     return dominant
   }
 
-  return getLegacyDrivePrimary(pet)
+  return getDrivePrimary(pet)
 }
 
 export function getPhaseTag(pet: PetStateLike): string | null {

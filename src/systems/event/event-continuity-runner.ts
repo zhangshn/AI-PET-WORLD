@@ -9,7 +9,7 @@ import type {
   PetStateLike,
 } from "./event-schema"
 import {
-  getLegacyDrivePrimary,
+  getDrivePrimary,
   getPetEventKey,
 } from "./event-pet-context-runner"
 
@@ -66,7 +66,7 @@ export function buildEnhancedActionEventPayload(params: {
     petKey: getPetEventKey(params.pet),
     prevAction: params.prevAction,
     currentAction: params.currentAction,
-    drivePrimary: getLegacyDrivePrimary(params.pet),
+    drivePrimary: getDrivePrimary(params.pet),
     sourceDrive: params.sourceDrive,
     narrativeType: params.narrativeType,
     continuityId: params.continuityId,

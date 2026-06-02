@@ -25,7 +25,7 @@ export {
   getEmotionalLabel,
   getEventAction,
   getEventMood,
-  getLegacyDrivePrimary,
+  getDrivePrimary,
   getNarrativeTypeByAction,
   getPetEventKey,
   getPhaseTag,

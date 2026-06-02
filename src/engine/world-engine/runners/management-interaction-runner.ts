@@ -3,7 +3,7 @@
  */
 
 import type { TimeState } from "../../timeSystem"
-import type { ButlerState } from "@/types/butler"
+import type { ButlerState } from "@/systems/butler/butler-schema"
 import type { PetSystem } from "@/systems/petSystem"
 
 import type {

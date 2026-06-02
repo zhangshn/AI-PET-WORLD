@@ -70,7 +70,7 @@ export function getBranchTag(input: DriveSystemInput): string {
   return snapshot?.trajectory.branchTag ?? "balanced"
 }
 
-export function getLegacyDriveHint(input: DriveSystemInput): string | null {
+export function getDriveHint(input: DriveSystemInput): string | null {
   const snapshot = getSnapshot(input)
 
   return snapshot?.state.drive.primary ?? null

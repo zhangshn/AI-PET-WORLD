@@ -111,9 +111,6 @@ export function adaptHomeMapStateToSceneComposerFact(
       }),
       hasTraceFact,
       traceFacts: sceneTraceFacts,
-      // Deprecated compatibility: legacy composer callers still read these.
-      roadShape: traceShape,
-      hasRoadFact: hasTraceFact,
       includeActorPlaceholder: false,
       factObjects: placementAdapterResult.boundObjects,
       worldSeed: `${homeMapState.seed}:${homeMapState.worldId}:world-painter-v1`,

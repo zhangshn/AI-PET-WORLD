@@ -2,7 +2,7 @@
  * 当前文件负责：定义人格解释核心的公共类型。
  */
 
-import type { BaziProfile } from "../../destiny-core/bazi-core/bazi-types"
+import type { BaziProfile } from "../../destiny-core/bazi-core/bazi-schema"
 import type { PersonalityProfile, SectorName, StarId } from "../../destiny-core/ziwei-core/ziwei-core-schema"
 
 export type GenderPerspective = "male" | "female"

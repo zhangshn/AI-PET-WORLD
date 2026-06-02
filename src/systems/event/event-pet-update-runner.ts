@@ -16,7 +16,7 @@ import {
   getEmotionalLabel,
   getEventAction,
   getEventMood,
-  getLegacyDrivePrimary,
+  getDrivePrimary,
   getNarrativeTypeByAction,
   getPetEventKey,
   getPhaseTag,
@@ -102,7 +102,7 @@ export function buildPetUpdateEvents(
           petKey,
           prevAction,
           currentAction,
-          drivePrimary: getLegacyDrivePrimary(currentPet),
+          drivePrimary: getDrivePrimary(currentPet),
           sourceDrive: getSourceDriveFromPet(currentPet),
         },
       })
@@ -118,7 +118,7 @@ export function buildPetUpdateEvents(
   ) {
     const narrativeType = getNarrativeTypeByAction(currentAction, currentPet)
     const intensity = getActionEventIntensity(currentPet)
-    const drivePrimary = getLegacyDrivePrimary(currentPet)
+    const drivePrimary = getDrivePrimary(currentPet)
     const sourceDrive = getSourceDriveFromPet(currentPet)
 
     const existing = continuityByPetKey.get(petKey)

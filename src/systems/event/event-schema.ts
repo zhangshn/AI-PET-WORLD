@@ -3,7 +3,7 @@
  */
 
 import type { PersonalityProfile } from "@/ai/destiny-core/ziwei-core/ziwei-core-schema"
-import type { ButlerState } from "@/types/butler"
+import type { ButlerState } from "@/systems/butler/butler-schema"
 import type { WorldEvent, NarrativeType } from "@/types/event"
 import type { HomeState } from "@/types/home"
 import type { PetState, PetAction } from "@/types/pet"

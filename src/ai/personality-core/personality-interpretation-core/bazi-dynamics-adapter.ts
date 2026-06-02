@@ -2,7 +2,7 @@
  * 当前文件负责：把八字动力结果适配为人格解释核心的辅助动力。
  */
 
-import type { BaziProfile } from "../../destiny-core/bazi-core/bazi-types"
+import type { BaziProfile } from "../../destiny-core/bazi-core/bazi-schema"
 
 import type {
   BaziDynamicsSupportItem,

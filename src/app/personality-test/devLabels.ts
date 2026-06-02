@@ -52,8 +52,6 @@ export const SECTOR_LABELS: Record<string, string> = {
 /**
  * 兼容旧测试页命名
  */
-export const DEV_SECTOR_LABELS = SECTOR_LABELS
-
 /**
  * ======================================================
  * 14 主星中文映射
@@ -103,8 +101,6 @@ export const TRAIT_LABELS: Record<string, string> = {
 /**
  * 兼容旧测试页命名
  */
-export const DEV_TRAIT_LABELS = TRAIT_LABELS
-
 /**
  * ======================================================
  * 获取宫位中文
@@ -128,10 +124,6 @@ export function getStarLabel(star?: string): string {
 /**
  * 兼容旧测试页命名
  */
-export function getDevStarLabel(star?: string): string {
-  return getStarLabel(star)
-}
-
 /**
  * ======================================================
  * 多星转字符串

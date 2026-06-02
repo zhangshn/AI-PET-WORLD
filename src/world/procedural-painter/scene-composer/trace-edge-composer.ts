@@ -1,38 +1,12 @@
 import {
-  SCENE_COLUMNS,
   SCENE_HEIGHT,
-  SCENE_TILE_SIZE,
 } from "./scene-composer-constants";
 import { clamp, stableUnit } from "./scene-composer-random";
 import type {
   SceneAnchor,
   SceneComposerBiome,
-  SceneComposerFact,
   SceneTraceSample,
 } from "./scene-composer-schema";
-
-export function buildLegacyDebugTraceSamples(
-  fact: SceneComposerFact
-): SceneTraceSample[] {
-  const traceHalfWidth = resolveTraceFallbackHalfWidth(fact.biome);
-
-  return Array.from({ length: SCENE_COLUMNS }, (_, column) => {
-    const curve = ((fact.traceShape ?? fact.roadShape ?? 50) - 50) / 50;
-    const wave =
-      Math.sin((column / SCENE_COLUMNS) * Math.PI * 1.35 + curve * 0.8) *
-      (1.2 + Math.abs(curve) * 1.5);
-    const slope = 11.5 - column * 0.12;
-    const center = slope + wave + curve * 2.2;
-
-    return {
-      column,
-      center,
-      x: column * SCENE_TILE_SIZE + SCENE_TILE_SIZE / 2,
-      topY: Math.round((center - traceHalfWidth - 0.8) * SCENE_TILE_SIZE),
-      bottomY: Math.round((center + traceHalfWidth + 1.35) * SCENE_TILE_SIZE),
-    };
-  });
-}
 
 export function resolveTraceFallbackHalfWidth(
   biome: SceneComposerBiome

@@ -12,13 +12,16 @@ export {
 
 export {
   clearWorldSnapshot,
-  clearWorldSnapshotFromLocal,
+  clearWorldSnapshot as clearWorldSnapshotFromLocal,
   getWorldSaveStorageKey,
   hasWorldSnapshot,
-  loadWorldSnapshotFromLocal,
   loadWorldSnapshot,
-  normalizeWorldSaveSnapshot,
+  loadWorldSnapshot as loadWorldSnapshotFromLocal,
   saveWorldSnapshot,
-  saveWorldSnapshotToLocal,
+  saveWorldSnapshot as saveWorldSnapshotToLocal,
+} from "./world-save-storage"
+
+export {
+  normalizeWorldSaveSnapshot,
   validateWorldSaveSnapshot,
-} from "./world-save-store"
+} from "./world-save-validator"

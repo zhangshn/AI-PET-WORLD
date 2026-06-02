@@ -5,7 +5,6 @@ import {
   SCENE_TILE_SIZE,
   SCENE_WIDTH,
 } from "./scene-composer-constants";
-import { buildLegacyDebugTraceSamples } from "./trace-edge-composer";
 import { clamp, stableUnit } from "./scene-composer-random";
 import type {
   SceneComposerFact,
@@ -29,7 +28,6 @@ export type BuildTraceSamplesInput = {
   traceFacts: SceneTraceFact[];
   worldSeed: string;
   biome: SceneComposerFact["biome"];
-  allowLegacyDebugFallback?: boolean;
 };
 
 export function filterMovementTraceFacts(
@@ -59,21 +57,6 @@ export function buildTraceSamples(
     return buildTraceFactSamples({
       ...input,
       traceFacts: movementFacts,
-    });
-  }
-
-  if (input.allowLegacyDebugFallback) {
-    return buildLegacyDebugTraceSamples({
-      id: "trace_legacy_debug_fallback",
-      biome: input.biome,
-      moisture: 50,
-      decorationDensity: input.traceDensity,
-      traceShape: input.traceShape,
-      traceDensity: input.traceDensity,
-      worldSeed: input.worldSeed,
-      hasTraceFact: false,
-      traceFacts: [],
-      roadShape: input.traceShape,
     });
   }
 

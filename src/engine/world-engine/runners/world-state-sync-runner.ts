@@ -2,7 +2,7 @@
  * 当前文件职责：统一从各系统读取当前世界状态。
  */
 
-import type { ButlerState } from "@/types/butler"
+import type { ButlerState } from "@/systems/butler/butler-schema"
 import type { HomeState } from "@/types/home"
 import type { PetState } from "@/types/pet"
 import type { PetSystem } from "@/systems/petSystem"

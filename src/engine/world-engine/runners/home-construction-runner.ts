@@ -7,7 +7,7 @@
  */
 
 import type { GenderAwareBehaviorBias } from "@/ai/ai-system-gateway"
-import type { ButlerState } from "@/types/butler"
+import type { ButlerState } from "@/systems/butler/butler-schema"
 import type { HomeState } from "@/types/home"
 import type { PetState } from "@/types/pet"
 

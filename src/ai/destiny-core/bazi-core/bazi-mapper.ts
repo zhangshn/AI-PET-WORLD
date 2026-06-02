@@ -52,7 +52,7 @@ export function mapElementsToBehaviorBias(
   }
 }
 
-export function mapElementsToLegacyDynamics(
+export function mapElementsToDynamics(
   elementScores: WuXingScore
 ): BaziDynamicsVector {
   const vector = mapElementsToDynamicVector(elementScores)
@@ -73,7 +73,7 @@ export function mapElementsToLegacyDynamics(
 export function mapWuXingToDynamics(
   distribution: WuXingScore
 ): BaziDynamicsVector {
-  return mapElementsToLegacyDynamics(distribution)
+  return mapElementsToDynamics(distribution)
 }
 
 export function buildBaziDynamicsSummary(input: {

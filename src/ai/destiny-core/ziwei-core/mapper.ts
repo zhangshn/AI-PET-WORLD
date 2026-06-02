@@ -956,14 +956,6 @@ export function mapBirthPatternToPersonalityProfile(
 
 /**
  * ======================================================
- * 兼容导出
- * ======================================================
- */
-export const buildProfileFromPattern = mapBirthPatternToPersonalityProfile
-export const mapBirthPattern = mapBirthPatternToPersonalityProfile
-
-/**
- * ======================================================
  * 对外公开人格结果
  * ======================================================
  *

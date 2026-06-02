@@ -530,25 +530,6 @@ export function convertSolarToLunarInfo(
 
 /**
  * ======================================================
- * 旧兼容函数：命宫索引
- * ======================================================
- *
- * 注意：
- * 当前新版主排盘逻辑已经主要使用 ziwei-engine.ts。
- * 这里保留此函数只是为了兼容旧测试或旧代码。
- * ======================================================
- */
-export function calculatePrimarySectorIndex(
-  lunarMonth: number,
-  timeBranchNumber: number
-): number {
-  const monthIndex = lunarMonth - 1
-  const hourIndex = timeBranchNumber - 1
-  return ((monthIndex - hourIndex) % 12 + 12) % 12
-}
-
-/**
- * ======================================================
  * 时辰中文标签
  * ======================================================
  */

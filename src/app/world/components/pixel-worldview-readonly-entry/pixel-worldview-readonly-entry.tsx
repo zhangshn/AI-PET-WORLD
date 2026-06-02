@@ -1,8 +1,6 @@
 // 该组件用于展示正式像素主世界只读入口。
 import type { WorldViewModel } from "@/world/world-view-model";
 import {
-  buildWorldFormalPixelWorldRendererContract,
-  buildWorldFormalPixelWorldRendererShellState,
   buildPixelWorldPixelBufferFrame,
   buildPixelWorldRenderPlan,
   buildPixelWorldRendererFrame,
@@ -12,8 +10,6 @@ import {
   validatePixelWorldRenderPlan,
   validatePixelWorldRendererFrame,
   validatePixelWorldViewModel,
-  validateWorldFormalPixelWorldRendererContract,
-  validateWorldFormalPixelWorldRendererShellState,
 } from "@/world/pixel-worldview";
 import { FormalPixiPixelWorldRendererClient } from "../formal-pixi-pixel-world-renderer/formal-pixi-pixel-world-renderer.client";
 
@@ -30,15 +26,6 @@ export function PixelWorldViewReadonlyEntry(input: { worldViewModel: WorldViewMo
     frame: rendererResult.frame,
   });
   const bufferValidation = validatePixelWorldPixelBufferFrame(bufferResult.buffer);
-  const rendererContract = buildWorldFormalPixelWorldRendererContract({
-    buffer: bufferResult.buffer,
-  });
-  const rendererContractValidation = validateWorldFormalPixelWorldRendererContract(rendererContract);
-  const rendererShell = buildWorldFormalPixelWorldRendererShellState({
-    contract: rendererContract,
-  });
-  const rendererShellValidation = validateWorldFormalPixelWorldRendererShellState(rendererShell);
-
   return (
     <main style={styles.page}>
       <header>
@@ -54,7 +41,6 @@ export function PixelWorldViewReadonlyEntry(input: { worldViewModel: WorldViewMo
         <p>worldId: {input.worldViewModel.worldId}</p>
         <p>tick: {input.worldViewModel.tick}</p>
         <p>buffer cells: {bufferResult.buffer.cellCount}</p>
-        <p>renderer shell status: {rendererShell.status}</p>
         <p>model validation: {modelValidation.status}</p>
         <p>renderPlan validation: {renderPlanValidation.status}</p>
         <p>buffer validation: {bufferValidation.status}</p>
@@ -110,13 +96,6 @@ export function PixelWorldViewReadonlyEntry(input: { worldViewModel: WorldViewMo
           <p>cellCount: {bufferResult.buffer.cellCount}</p>
         </section>
 
-        <section>
-          <h2>Formal Renderer Shell</h2>
-          <p>renderer contract ready: {rendererContract.status}</p>
-          <p>readonly shell: {rendererShell.status}</p>
-          <p>renderer contract validation: {rendererContractValidation.status}</p>
-          <p>renderer shell validation: {rendererShellValidation.status}</p>
-        </section>
       </details>
 
       <section style={styles.card}>

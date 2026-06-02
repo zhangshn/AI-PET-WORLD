@@ -10,7 +10,7 @@ import type {
 } from "@/ai/ai-system-gateway"
 import type {
   ButlerState,
-} from "@/types/butler"
+} from "@/systems/butler/butler-schema"
 import type {
   WorldEvent,
 } from "@/types/event"
@@ -31,7 +31,7 @@ import type {
 } from "@/world/runtime/world-runtime"
 import type {
   AdoptionState,
-} from "@/world/adoption/adoption-center-gateway"
+} from "@/world/adoption/adoption-center-schema"
 
 import type {
   MvpCheckItem,

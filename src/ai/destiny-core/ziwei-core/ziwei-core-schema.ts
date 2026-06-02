@@ -72,9 +72,7 @@ export type SectorStars = Record<SectorName, StarId[]>
 
 export type BranchPalaceStars = Record<BranchPalace, StarId[]>
 
-export type PersonalityEngineName =
-  | "legacy-core-symbol"
-  | "star-pair-engine"
+export type PersonalityEngineName = "star-pair-engine"
 
 export interface BorrowedPalaceInfo {
   palace: BranchPalace

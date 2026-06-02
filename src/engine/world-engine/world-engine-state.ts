@@ -5,7 +5,7 @@
 import type { TimeState } from "../timeSystem"
 import type { WorldStimulus } from "../../ai/ai-system-gateway"
 
-import type { ButlerState } from "../../types/butler"
+import type { ButlerState } from "../../systems/butler/butler-schema"
 import type { WorldEvent } from "../../types/event"
 import type { HomeState } from "../../types/home"
 import type { PetState } from "../../types/pet"

@@ -15,16 +15,16 @@ import {
 } from "./personality-test-constants"
 
 import {
-  DEV_SECTOR_LABELS,
-  getDevStarLabel
+  SECTOR_LABELS,
+  getStarLabel
 } from "./devLabels"
 
 export function getSectorLabel(sector: SectorName): string {
-  return DEV_SECTOR_LABELS?.[sector] || SECTOR_LABELS_FALLBACK[sector] || sector
+  return SECTOR_LABELS?.[sector] || SECTOR_LABELS_FALLBACK[sector] || sector
 }
 
 export function getStarDisplay(starId: StarId): string {
-  return `${starId}（${getDevStarLabel(starId)}）`
+  return `${starId}（${getStarLabel(starId)}）`
 }
 
 export function clampHour(hour: number): number {

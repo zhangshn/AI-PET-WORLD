@@ -12,7 +12,7 @@ import { analyzeBaziElements } from "./bazi-elements"
 import {
   mapElementsToBehaviorBias,
   mapElementsToDynamicVector,
-  mapElementsToLegacyDynamics
+  mapElementsToDynamics
 } from "./bazi-mapper"
 import {
   buildBaziBehaviorTags,
@@ -32,7 +32,7 @@ export function buildBaziProfile(input: BaziInput): BaziProfile {
     elementAnalysis.elementScores
   )
 
-  const dynamics = mapElementsToLegacyDynamics(
+  const dynamics = mapElementsToDynamics(
     elementAnalysis.elementScores
   )
 
