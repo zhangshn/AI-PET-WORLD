@@ -57,9 +57,15 @@ PixiJS renderer 已经存在，但当前主要绘制矩形色块。正式画面�
 保留：
 
 - `node_modules` 本地依赖缓存。
-- `art-assets` 原始素材与裁切来源。
-- `public/assets/generated` 当前生成素材。
 - 有实现内容的世界、人格、渲染和 smoke 验证代码。
+
+2026-06-02 二次清理：
+
+- 已删除 `art-assets` 参考图和裁切压缩包。
+- 已删除 `public/assets/generated` 旧静态 PNG 素材。
+- 已删除应用 favicon。
+- 已删除历史阶段 closeout、旧进度表、旧 renderer 计划和重复视觉工作流文档。
+- 地图资产注册表只保留语义 ID、类别、尺寸和锚点，不再保留静态 PNG 路径。
 
 ## 6. 下一步工程重点
 

@@ -29,7 +29,6 @@ export type WorldMapAssetCanvasMeta = {
 export type WorldMapAssetDefinition = {
   id: string
   category: WorldMapAssetCategory
-  path: string
   baseSize: WorldMapAssetSize
   anchor: WorldMapAssetAnchor
   description: string

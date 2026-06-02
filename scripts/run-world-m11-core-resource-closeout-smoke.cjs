@@ -9,8 +9,8 @@ async function main() {
   const localRequire = moduleApi.createRequire(__filename)
   const packagePath = path.join(repoRoot, "package.json")
   const savePath = path.join(repoRoot, ".runtime", "world-state", "default-world.json")
-  const moduleProgressPath = path.join(repoRoot, "docs", "v2_6", "AI_PET_WORLD_V2_6_MODULE_PROGRESS.md")
-  const handoffPath = path.join(repoRoot, "docs", "v2_6", "AI_PET_WORLD_V2_6_HANDOFF_M11_MVP_CLOSEOUT.md")
+  const businessArchitecturePath = path.join(repoRoot, "docs", "v2_6", "AI_PET_WORLD_V2_6_BUSINESS_ARCHITECTURE.md")
+  const projectAuditPath = path.join(repoRoot, "docs", "v2_6", "AI_PET_WORLD_V2_6_PROJECT_AUDIT_2026_06_02.md")
   const businessPrinciplesPath = path.join(repoRoot, "docs", "v2_6", "AI_PET_WORLD_V2_6_CURRENT_BUSINESS_PRINCIPLES.md")
   const worldPagePath = path.join(repoRoot, "src", "app", "world", "world-live-runtime-page.tsx")
   const pixelViewPath = path.join(
@@ -105,24 +105,18 @@ async function main() {
   }
 
   function assertDocsCloseoutState() {
-    const moduleProgress = readRequiredFile(moduleProgressPath, "MODULE_PROGRESS.md")
-    const handoff = readRequiredFile(handoffPath, "HANDOFF_M11_MVP_CLOSEOUT.md")
+    const businessArchitecture = readRequiredFile(businessArchitecturePath, "BUSINESS_ARCHITECTURE.md")
+    const projectAudit = readRequiredFile(projectAuditPath, "PROJECT_AUDIT_2026_06_02.md")
     const principles = readRequiredFile(businessPrinciplesPath, "CURRENT_BUSINESS_PRINCIPLES.md")
-    const docs = `${moduleProgress}\n${handoff}\n${principles}`
+    const docs = `${businessArchitecture}\n${projectAudit}\n${principles}`
 
     const requiredTokens = [
-      "M11 Actor 表现输入边界验算 | 100% | 完成",
-      "M11 P-Phone 数据入口边界验算 | 100% | 完成",
-      "M11 UI 自动生成输入边界验算 | 100% | 完成",
-      "M11 核心资源库 / 验算库 closeout | 100% | 完成",
-      "M11 正式画图算法重整 | 进行中 | 进行中",
-      "核心资源库 / 验算库 closeout 已完成",
-      "正式画图算法重整",
       "AI 世界",
       "AI 管家",
       "P-Phone 通信入口",
       "宠物不是默认资产",
       "未来 `/world` 是端游式像素主世界",
+      "当前卡点不是“完全没有画面”，而是“画面仍然停留在工程预览”",
     ]
 
     requiredTokens.forEach((token) =>

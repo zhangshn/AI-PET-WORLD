@@ -10,7 +10,7 @@
 2. `AI-PET-WORLD V2.6｜无大数据训练阶段：规则型 AI 自主世界与像素表现落地方案`
 3. `AI-PET-WORLD V2.6｜正式像素主世界绘制算法`
 
-旧 engine-notes、旧 procedural renderer、旧 debug view、旧 MVP closeout、旧 doc / docx / xmind / txt 导出文档全部删除，不再作为当前开发依据。
+旧 engine-notes、旧阶段 closeout、旧进度表、旧 renderer 计划、旧素材工作流、旧 doc / docx / xmind / txt 导出文档全部删除，不再作为当前开发依据。
 
 ## 当前保留文档
 
@@ -20,14 +20,7 @@
 | `AI_PET_WORLD_V2_6_CURRENT_BUSINESS_PRINCIPLES.md` | 当前确认业务原则；后续产品与工程判断首先对照本文 |
 | `AI_PET_WORLD_V2_6_RULE_BASED_AI_PIXEL_IMPLEMENTATION.md` | 无大数据训练阶段规则型 AI 自主世界与像素表现落地方案，按上传标准写入 |
 | `AI_PET_WORLD_V2_6_PIXEL_WORLD_RENDERING_ALGORITHM.md` | 正式像素主世界绘制算法，保留并对齐上传标准 |
-| `AI_PET_WORLD_V2_6_MODULE_PROGRESS.md` | 当前模块进度与下一步路线 |
 | `AI_PET_WORLD_V2_6_PROJECT_AUDIT_2026_06_02.md` | 2026-06-02 项目审查、文档差距、清理结果与当前画面卡点 |
-| `AI_PET_WORLD_V2_6_PIXEL_VISUAL_RECIPE_WORKFLOW.md` | 对象级像素配方工作流 |
-| `AI_PET_WORLD_V2_6_FORMAL_PIXEL_RENDERER_REWORK_PLAN.md` | 正式 renderer 重整阶段计划；部分里程碑已完成 |
-| `AI_PET_WORLD_V2_6_M11_FORMAL_PIXEL_WORLD_VISUAL_TARGET.md` | M11 正式像素主世界视觉目标 |
-| `AI_PET_WORLD_V2_6_FORMAL_CORE_RESOURCE_VALIDATION_LIBRARY.md` | 核心资源验算库阶段记录 |
-| `AI_PET_WORLD_V2_6_M7_BUTLER_TRACE_CLOSURE_CLOSEOUT.md` | M7 管家行为 → 痕迹闭环收口报告 |
-| `AI_PET_WORLD_V2_6_HANDOFF_M11_MVP_CLOSEOUT.md` | M11 / MVP 历史收口交接文档；当前状态以审查记录和模块进度为准 |
 
 补充设计文档：
 
@@ -43,6 +36,7 @@
 - WorldViewModel 是正式表现模型。
 - PixelWorldView 只读 WorldViewModel。
 - 当前阶段不训练大模型。
+- 当前正式画面不依赖仓库内静态 PNG 素材，旧参考图、裁切包和生成图已经清理。
 - 不设置独立 road/path 架构，长期移动结果归入痕迹体系。
 - 宠物不默认进入世界。
 - 管家行为闭环已完成；宠物学习、世界学习尚未完成，不得写成已完成能力。

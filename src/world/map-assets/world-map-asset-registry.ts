@@ -8,7 +8,6 @@ export const WORLD_MAP_ASSETS = {
   groundGrassBase01: {
     id: "groundGrassBase01",
     category: "ground",
-    path: "/assets/generated/world/ground/ground_grass_base_01.png",
     baseSize: 32,
     anchor: "top-left",
     description: "基础草地 tile",
@@ -16,7 +15,6 @@ export const WORLD_MAP_ASSETS = {
   groundGrassBase02: {
     id: "groundGrassBase02",
     category: "ground",
-    path: "/assets/generated/world/ground/ground_grass_variant_01.png",
     baseSize: 32,
     anchor: "top-left",
     description: "草地变化 tile",
@@ -24,7 +22,6 @@ export const WORLD_MAP_ASSETS = {
   groundDirtBase01: {
     id: "groundDirtBase01",
     category: "ground",
-    path: "/assets/generated/world/ground/ground_dirt_base_01.png",
     baseSize: 32,
     anchor: "top-left",
     description: "基础泥地 tile",
@@ -32,7 +29,6 @@ export const WORLD_MAP_ASSETS = {
   pathDirtHorizontal01: {
     id: "pathDirtHorizontal01",
     category: "path",
-    path: "/assets/generated/world/paths/path_dirt_horizontal_01.png",
     baseSize: 32,
     anchor: "top-left",
     description: "横向泥路 tile",
@@ -40,7 +36,6 @@ export const WORLD_MAP_ASSETS = {
   pathDirtVertical01: {
     id: "pathDirtVertical01",
     category: "path",
-    path: "/assets/generated/world/paths/path_dirt_vertical_01.png",
     baseSize: 32,
     anchor: "top-left",
     description: "纵向泥路 tile",
@@ -48,7 +43,6 @@ export const WORLD_MAP_ASSETS = {
   pathDirtCornerLeftTop01: {
     id: "pathDirtCornerLeftTop01",
     category: "path",
-    path: "/assets/generated/world/paths/path_dirt_corner_left_top_01.png",
     baseSize: 32,
     anchor: "top-left",
     description: "泥路左上拐角",
@@ -56,7 +50,6 @@ export const WORLD_MAP_ASSETS = {
   pathDirtCornerRightTop01: {
     id: "pathDirtCornerRightTop01",
     category: "path",
-    path: "/assets/generated/world/paths/path_dirt_corner_right_top_01.png",
     baseSize: 32,
     anchor: "top-left",
     description: "泥路右上拐角",
@@ -64,7 +57,6 @@ export const WORLD_MAP_ASSETS = {
   pathDirtCornerLeftBottom01: {
     id: "pathDirtCornerLeftBottom01",
     category: "path",
-    path: "/assets/generated/world/paths/path_dirt_corner_left_bottom_01.png",
     baseSize: 32,
     anchor: "top-left",
     description: "泥路左下拐角",
@@ -72,7 +64,6 @@ export const WORLD_MAP_ASSETS = {
   pathDirtCornerRightBottom01: {
     id: "pathDirtCornerRightBottom01",
     category: "path",
-    path: "/assets/generated/world/paths/path_dirt_corner_right_bottom_01.png",
     baseSize: 32,
     anchor: "top-left",
     description: "泥路右下拐角",
@@ -80,7 +71,6 @@ export const WORLD_MAP_ASSETS = {
   edgeGrassDirtTop01: {
     id: "edgeGrassDirtTop01",
     category: "edge",
-    path: "/assets/generated/world/edges/edge_grass_dirt_grass_top_01.png",
     baseSize: 32,
     anchor: "top-left",
     description: "草地泥地上边缘",
@@ -88,7 +78,6 @@ export const WORLD_MAP_ASSETS = {
   edgeGrassDirtBottom01: {
     id: "edgeGrassDirtBottom01",
     category: "edge",
-    path: "/assets/generated/world/edges/edge_grass_dirt_dirt_top_01.png",
     baseSize: 32,
     anchor: "top-left",
     description: "草地泥地下边缘",
@@ -96,7 +85,6 @@ export const WORLD_MAP_ASSETS = {
   edgeGrassDirtLeft01: {
     id: "edgeGrassDirtLeft01",
     category: "edge",
-    path: "/assets/generated/world/edges/edge_grass_dirt_grass_left_01.png",
     baseSize: 32,
     anchor: "top-left",
     description: "草地泥地左边缘",
@@ -104,7 +92,6 @@ export const WORLD_MAP_ASSETS = {
   edgeGrassDirtRight01: {
     id: "edgeGrassDirtRight01",
     category: "edge",
-    path: "/assets/generated/world/edges/edge_grass_dirt_dirt_left_01.png",
     baseSize: 32,
     anchor: "top-left",
     description: "草地泥地右边缘",
@@ -112,7 +99,6 @@ export const WORLD_MAP_ASSETS = {
   zoneInitialEmptyLandTrace01: {
     id: "zoneInitialEmptyLandTrace01",
     category: "zone",
-    path: "/assets/generated/world/zones/zone_initial_empty_land_trace_01.png",
     baseSize: 128,
     anchor: "bottom-center",
     description: "初始空地痕迹",
@@ -120,7 +106,6 @@ export const WORLD_MAP_ASSETS = {
   arrivalPointGrassRingSoft01: {
     id: "arrivalPointGrassRingSoft01",
     category: "structure",
-    path: "/assets/generated/home/arrival-point/arrival_point_grass_ring_soft_01.png",
     baseSize: 128,
     anchor: "bottom-center",
     description: "初始入口草环",
@@ -128,7 +113,6 @@ export const WORLD_MAP_ASSETS = {
   buildingTempShelterCanvasTent01: {
     id: "buildingTempShelterCanvasTent01",
     category: "structure",
-    path: "/assets/generated/home/buildings/temp-shelter/building_temp_shelter_canvas_tent_01.png",
     baseSize: 128,
     anchor: "bottom-center",
     description: "临时住所帆布帐篷",
@@ -136,7 +120,6 @@ export const WORLD_MAP_ASSETS = {
   buildingTempShelter01: {
     id: "buildingTempShelter01",
     category: "structure",
-    path: "/assets/generated/home/buildings/temp-shelter/building_temp_shelter_basic_tent_01.png",
     baseSize: 128,
     anchor: "bottom-center",
     description: "临时住所",
@@ -144,7 +127,6 @@ export const WORLD_MAP_ASSETS = {
   buildingPetArrivalPoint01: {
     id: "buildingPetArrivalPoint01",
     category: "structure",
-    path: "/assets/generated/home/arrival-point/arrival_point_grass_ring_soft_01.png",
     baseSize: 128,
     anchor: "bottom-center",
     description: "后置生命关系阶段可使用的入口素材",
@@ -152,7 +134,6 @@ export const WORLD_MAP_ASSETS = {
   buildingInitialCareStation01: {
     id: "buildingInitialCareStation01",
     category: "structure",
-    path: "/assets/generated/world/zones/zone_initial_care_soft_grass_01.png",
     baseSize: 128,
     anchor: "bottom-center",
     description: "初始照护点",
@@ -160,7 +141,6 @@ export const WORLD_MAP_ASSETS = {
   facilityFoodBowlFull01: {
     id: "facilityFoodBowlFull01",
     category: "facility",
-    path: "/assets/generated/home/facilities/facility_food_bowl_full_01.png",
     baseSize: 64,
     anchor: "bottom-center",
     description: "基础食物容器素材",
@@ -168,7 +148,6 @@ export const WORLD_MAP_ASSETS = {
   facilityWaterBowlFull01: {
     id: "facilityWaterBowlFull01",
     category: "facility",
-    path: "/assets/generated/home/facilities/facility_water_bowl_full_01.png",
     baseSize: 64,
     anchor: "bottom-center",
     description: "基础饮水容器素材",
@@ -176,7 +155,6 @@ export const WORLD_MAP_ASSETS = {
   facilityStorageBoxClosed01: {
     id: "facilityStorageBoxClosed01",
     category: "facility",
-    path: "/assets/generated/home/facilities/facility_storage_box_closed_01.png",
     baseSize: 64,
     anchor: "bottom-center",
     description: "储物箱",
@@ -184,7 +162,6 @@ export const WORLD_MAP_ASSETS = {
   facilityLampOn01: {
     id: "facilityLampOn01",
     category: "facility",
-    path: "/assets/generated/home/facilities/facility_lamp_on_01.png",
     baseSize: 64,
     anchor: "bottom-center",
     description: "临时小灯",
@@ -192,7 +169,6 @@ export const WORLD_MAP_ASSETS = {
   natureTreeSmall01: {
     id: "natureTreeSmall01",
     category: "nature",
-    path: "/assets/generated/world/nature/nature_tree_small_round_01.png",
     baseSize: 64,
     anchor: "bottom-center",
     description: "小树",
@@ -200,7 +176,6 @@ export const WORLD_MAP_ASSETS = {
   natureBushRoundLow01: {
     id: "natureBushRoundLow01",
     category: "nature",
-    path: "/assets/generated/world/nature/nature_bush_round_low_01.png",
     baseSize: 64,
     anchor: "bottom-center",
     description: "低矮灌木",
@@ -208,7 +183,6 @@ export const WORLD_MAP_ASSETS = {
   natureBushSmall01: {
     id: "natureBushSmall01",
     category: "nature",
-    path: "/assets/generated/world/nature/nature_bush_round_low_01.png",
     baseSize: 64,
     anchor: "bottom-center",
     description: "小灌木",
@@ -216,7 +190,6 @@ export const WORLD_MAP_ASSETS = {
   surfaceGrassTuftLow01: {
     id: "surfaceGrassTuftLow01",
     category: "surface_decoration",
-    path: "/assets/generated/world/surface/surface_grass_tuft_low_01.png",
     baseSize: 32,
     anchor: "bottom-center",
     description: "低矮草丛",
@@ -224,7 +197,6 @@ export const WORLD_MAP_ASSETS = {
   surfaceGrassTuft01: {
     id: "surfaceGrassTuft01",
     category: "surface_decoration",
-    path: "/assets/generated/world/surface/surface_grass_tuft_low_01.png",
     baseSize: 32,
     anchor: "bottom-center",
     description: "草丛",
@@ -232,7 +204,6 @@ export const WORLD_MAP_ASSETS = {
   surfaceStoneSmall01: {
     id: "surfaceStoneSmall01",
     category: "surface_decoration",
-    path: "/assets/generated/world/surface/surface_stone_small_01.png",
     baseSize: 32,
     anchor: "bottom-center",
     description: "小石头",
@@ -240,7 +211,6 @@ export const WORLD_MAP_ASSETS = {
   surfaceFlowerPatch01: {
     id: "surfaceFlowerPatch01",
     category: "surface_decoration",
-    path: "/assets/generated/world/surface/surface_flower_patch_white_01.png",
     baseSize: 32,
     anchor: "bottom-center",
     description: "小花",
@@ -248,7 +218,6 @@ export const WORLD_MAP_ASSETS = {
   surfaceFallenLeaf01: {
     id: "surfaceFallenLeaf01",
     category: "surface_decoration",
-    path: "/assets/generated/world/surface/surface_fallen_leaf_green_01.png",
     baseSize: 32,
     anchor: "bottom-center",
     description: "落叶",
@@ -256,7 +225,6 @@ export const WORLD_MAP_ASSETS = {
   butlerBodyStandard01: {
     id: "butlerBodyStandard01",
     category: "actor",
-    path: "/assets/generated/world/actors/butler_body_standard_01.png",
     baseSize: 64,
     anchor: "bottom-center",
     description: "管家标准身体",
@@ -264,7 +232,6 @@ export const WORLD_MAP_ASSETS = {
   petPartBodyRound01: {
     id: "petPartBodyRound01",
     category: "actor",
-    path: "/assets/generated/world/actors/pet_part_body_round_01.png",
     baseSize: 64,
     anchor: "bottom-center",
     description: "后置宠物关系阶段可使用的身体素材",
@@ -272,7 +239,6 @@ export const WORLD_MAP_ASSETS = {
   petPoseSkeletonIdleFront01: {
     id: "petPoseSkeletonIdleFront01",
     category: "actor",
-    path: "/assets/generated/world/actors/pet_pose_skeleton_idle_front_01.png",
     baseSize: 64,
     anchor: "bottom-center",
     description: "后置宠物关系阶段可使用的姿态素材",
@@ -280,7 +246,3 @@ export const WORLD_MAP_ASSETS = {
 } as const satisfies Record<string, WorldMapAssetDefinition>
 
 export type WorldMapAssetId = keyof typeof WORLD_MAP_ASSETS
-
-export function getWorldMapAssetPath(assetId: WorldMapAssetId): string {
-  return WORLD_MAP_ASSETS[assetId].path
-}
