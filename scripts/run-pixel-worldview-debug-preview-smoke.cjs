@@ -130,6 +130,11 @@ async function main() {
     "不使用 canvas / SVG",
     "backgroundColor",
     '"#ff00ff"',
+    "Buffer Grid Preview",
+    "按纯数据缓冲区坐标展示调试网格信息",
+    "sourceCommandId",
+    "width",
+    "height",
   ]
 
   requiredTokens.forEach((token) => {
@@ -178,6 +183,7 @@ async function main() {
   console.log("Buffer layers exist: ok")
   console.log("Buffer cells exist: ok")
   console.log("Buffer color preview exists: ok")
+  console.log("Buffer grid preview exists: ok")
   console.log("Runtime boundary: ok")
   console.log("No SVG or canvas renderer dependency: ok")
   console.log("No default pet generation: ok")

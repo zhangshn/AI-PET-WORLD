@@ -212,6 +212,38 @@ export default function PixelWorldViewDebugPreviewPage() {
           </div>
         ))}
       </section>
+
+      <section style={styles.card}>
+        <h2>Buffer Grid Preview</h2>
+        <p>按纯数据缓冲区坐标展示调试网格信息；这不是正式渲染器，不使用 canvas / SVG。</p>
+        {buffer.layers.map((layer) => (
+          <div key={layer.layer} style={styles.gridLayer}>
+            <h3>
+              {layer.layer} | cells {layer.cells.length} | visibleCount {layer.visibleCount} | hiddenCount{" "}
+              {layer.hiddenCount}
+            </h3>
+            <div style={styles.gridCards}>
+              {layer.cells.map((cell) => (
+                <div key={cell.id} style={styles.gridCard}>
+                  <div
+                    style={{
+                      ...styles.gridSwatch,
+                      backgroundColor: cell.colorHint ?? "#ff00ff",
+                    }}
+                  />
+                  <p>
+                    {cell.id} | {cell.kind} | {cell.layer} | sourceCommandId {cell.sourceCommandId} | x {cell.x} | y{" "}
+                    {cell.y} | width {cell.width} | height {cell.height} | visible {String(cell.visible)} | opacity{" "}
+                    {cell.opacity} | colorHint {displayOptional(cell.colorHint)} | recipeId{" "}
+                    {displayOptional(cell.recipeId)} | text {displayOptional(cell.text)} | stateTags{" "}
+                    {displayOptional(cell.stateTags?.join(", "))}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
     </main>
   );
 }
@@ -263,6 +295,26 @@ const styles = {
   colorSwatch: {
     width: 24,
     height: 24,
+    flexShrink: 0,
+    border: "1px solid #d8ead8",
+  },
+  gridLayer: {
+    marginTop: 16,
+  },
+  gridCards: {
+    display: "grid",
+    gap: 8,
+  },
+  gridCard: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+    padding: 8,
+    border: "1px solid #3f6861",
+  },
+  gridSwatch: {
+    width: 16,
+    height: 16,
     flexShrink: 0,
     border: "1px solid #d8ead8",
   },
