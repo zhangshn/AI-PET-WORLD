@@ -33,6 +33,8 @@
     "smoke:pixel-worldview-renderer-boundary": "node scripts/run-pixel-worldview-renderer-boundary-smoke.cjs",
     "smoke:pixel-worldview-buffer": "node scripts/run-pixel-worldview-buffer-smoke.cjs",
     "smoke:pixel-worldview-buffer-palette": "node scripts/run-pixel-worldview-buffer-palette-smoke.cjs",
+    "audit:world-formal-entry": "node scripts/run-world-formal-entry-audit.cjs",
+    "smoke:world-formal-entry-audit": "node scripts/run-world-formal-entry-audit-smoke.cjs",
     "smoke:pixel-primitive-library": "node scripts/run-pixel-primitive-library-smoke.cjs",
     "smoke:formal-pixel-renderer-contract": "node scripts/run-formal-pixel-renderer-contract-smoke.cjs",
     "smoke:formal-pixel-renderer-readonly": "node scripts/run-formal-pixel-renderer-readonly-smoke.cjs",
