@@ -20,5 +20,8 @@ export * from "./pixel-worldview-buffer-validator";
 export * from "./pixel-worldview-buffer-demo";
 export * from "./world-formal-entry-audit";
 export * from "./world-formal-entry-cleanup-plan";
+export * from "./world-formal-pixelworldview-renderer-contract";
+export * from "./world-formal-pixelworldview-renderer-contract-validator";
+export * from "./world-formal-pixelworldview-renderer-contract-demo";
 export * from "./world-formal-pixelworldview-renderer-plan";
 export * from "./world-view-model-to-pixel-worldview-source";
