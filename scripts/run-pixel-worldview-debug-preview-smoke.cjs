@@ -56,6 +56,10 @@ async function main() {
     path.join(repoRoot, "src", "world", "pixel-worldview", "pixel-worldview-buffer-types.ts"),
     "PixelWorldView buffer types"
   )
+  const bufferPaletteSource = readFile(
+    path.join(repoRoot, "src", "world", "pixel-worldview", "pixel-worldview-buffer-palette.ts"),
+    "PixelWorldView buffer palette"
+  )
   const bufferBuilderSource = readFile(
     path.join(repoRoot, "src", "world", "pixel-worldview", "pixel-worldview-buffer-builder.ts"),
     "PixelWorldView buffer builder"
@@ -75,6 +79,7 @@ async function main() {
     renderTypesSource,
     rendererBoundarySource,
     bufferTypesSource,
+    bufferPaletteSource,
     bufferBuilderSource,
     bufferValidatorSource,
     packageSource,
@@ -119,6 +124,12 @@ async function main() {
     "actor_marker",
     "overlay_marker",
     "colorHint",
+    "Buffer Color Preview",
+    "纯数据像素缓冲区",
+    "不是正式渲染器",
+    "不使用 canvas / SVG",
+    "backgroundColor",
+    '"#ff00ff"',
   ]
 
   requiredTokens.forEach((token) => {
@@ -166,6 +177,7 @@ async function main() {
   console.log("Render commands exist: ok")
   console.log("Buffer layers exist: ok")
   console.log("Buffer cells exist: ok")
+  console.log("Buffer color preview exists: ok")
   console.log("Runtime boundary: ok")
   console.log("No SVG or canvas renderer dependency: ok")
   console.log("No default pet generation: ok")

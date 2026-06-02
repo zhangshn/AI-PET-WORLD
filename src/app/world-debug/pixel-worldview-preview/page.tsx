@@ -182,6 +182,36 @@ export default function PixelWorldViewDebugPreviewPage() {
           </p>
         ))}
       </section>
+
+      <section style={styles.card}>
+        <h2>Buffer Color Preview</h2>
+        <p>使用 colorHint 展示纯数据像素缓冲区的调试色块；这不是正式渲染器，不使用 canvas / SVG。</p>
+        {buffer.layers.map((layer) => (
+          <div key={layer.layer} style={styles.colorLayer}>
+            <h3>
+              {layer.layer} | cells {layer.cells.length} | visibleCount {layer.visibleCount} | hiddenCount{" "}
+              {layer.hiddenCount}
+            </h3>
+            <div style={styles.colorGrid}>
+              {layer.cells.map((cell) => (
+                <div key={cell.id} style={styles.colorCell}>
+                  <div
+                    style={{
+                      ...styles.colorSwatch,
+                      backgroundColor: cell.colorHint ?? "#ff00ff",
+                    }}
+                  />
+                  <p>
+                    {cell.kind} | {cell.layer} | sourceCommandId {cell.sourceCommandId} | colorHint{" "}
+                    {displayOptional(cell.colorHint)} | recipeId {displayOptional(cell.recipeId)} | text{" "}
+                    {displayOptional(cell.text)} | stateTags {displayOptional(cell.stateTags?.join(", "))}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </section>
     </main>
   );
 }
@@ -217,5 +247,23 @@ const styles = {
   },
   fail: {
     color: "#d7c08a",
+  },
+  colorLayer: {
+    marginTop: 16,
+  },
+  colorGrid: {
+    display: "grid",
+    gap: 12,
+  },
+  colorCell: {
+    display: "flex",
+    alignItems: "center",
+    gap: 12,
+  },
+  colorSwatch: {
+    width: 24,
+    height: 24,
+    flexShrink: 0,
+    border: "1px solid #d8ead8",
   },
 } as const;
