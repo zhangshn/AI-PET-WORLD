@@ -19,3 +19,4 @@ export * from "./pixel-worldview-buffer-builder";
 export * from "./pixel-worldview-buffer-validator";
 export * from "./pixel-worldview-buffer-demo";
 export * from "./world-formal-entry-audit";
+export * from "./world-formal-entry-cleanup-plan";
