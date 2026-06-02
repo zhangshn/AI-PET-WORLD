@@ -36,8 +36,29 @@ async function main() {
     path.join(repoRoot, "src", "world", "pixel-worldview", "pixel-worldview-model.ts"),
     "PixelWorldView empty model factory"
   )
+  const renderPlannerSource = readFile(
+    path.join(repoRoot, "src", "world", "pixel-worldview", "pixel-worldview-render-planner.ts"),
+    "PixelWorldView render planner"
+  )
+  const renderValidatorSource = readFile(
+    path.join(repoRoot, "src", "world", "pixel-worldview", "pixel-worldview-render-validator.ts"),
+    "PixelWorldView render validator"
+  )
+  const renderTypesSource = readFile(
+    path.join(repoRoot, "src", "world", "pixel-worldview", "pixel-worldview-render-types.ts"),
+    "PixelWorldView render types"
+  )
   const packageSource = readFile(path.join(repoRoot, "package.json"), "package.json")
-  const combined = [pageSource, mockSource, validatorSource, modelSource, packageSource].join("\n")
+  const combined = [
+    pageSource,
+    mockSource,
+    validatorSource,
+    modelSource,
+    renderPlannerSource,
+    renderValidatorSource,
+    renderTypesSource,
+    packageSource,
+  ].join("\n")
 
   const requiredTokens = [
     "PixelWorldView Debug Preview",
@@ -51,6 +72,19 @@ async function main() {
     "overlays",
     "overlay_p_phone",
     "actor_mock_butler",
+    "buildPixelWorldRenderPlan",
+    "validatePixelWorldRenderPlan",
+    "Render Plan",
+    "Layer Summaries",
+    "Render Commands",
+    "renderPlan.commands",
+    "layerSummaries",
+    "fill_tile",
+    "draw_trace_patch",
+    "place_object_recipe",
+    "draw_actor_marker",
+    "apply_atmosphere_tint",
+    "draw_overlay_label",
   ]
 
   requiredTokens.forEach((token) => {
@@ -85,8 +119,11 @@ async function main() {
   console.log("PIXEL WORLDVIEW DEBUG PREVIEW SMOKE")
   console.log("PixelWorldView debug preview page exists: ok")
   console.log("Minimal view model is used: ok")
-  console.log("Validator is used: ok")
+  console.log("ViewModel validator is used: ok")
+  console.log("Render plan builder is used: ok")
+  console.log("Render plan validator is used: ok")
   console.log("Layer summaries exist: ok")
+  console.log("Render commands exist: ok")
   console.log("Runtime boundary: ok")
   console.log("No SVG or canvas renderer dependency: ok")
   console.log("No default pet generation: ok")

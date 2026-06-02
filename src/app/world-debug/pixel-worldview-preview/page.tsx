@@ -1,7 +1,9 @@
 // 该页面用于预览 PixelWorldView 的只读调试模型。
 
 import {
+  buildPixelWorldRenderPlan,
   createMinimalPixelWorldViewModel,
+  validatePixelWorldRenderPlan,
   validatePixelWorldViewModel,
 } from "@/world/pixel-worldview";
 
@@ -11,13 +13,15 @@ export const metadata = {
 
 export default function PixelWorldViewDebugPreviewPage() {
   const model = createMinimalPixelWorldViewModel();
-  const validation = validatePixelWorldViewModel(model);
+  const modelValidation = validatePixelWorldViewModel(model);
+  const renderPlan = buildPixelWorldRenderPlan(model);
+  const renderValidation = validatePixelWorldRenderPlan(renderPlan);
 
   return (
     <main style={styles.page}>
       <header>
         <h1>PixelWorldView Debug Preview</h1>
-        <p>只读 Debug 预览，不读取 runtime，不接正式 /world。</p>
+        <p>只读 Debug 预览，不读取 runtime，不接正式 /world，不执行渲染。</p>
       </header>
 
       <section style={styles.card}>
@@ -28,10 +32,10 @@ export default function PixelWorldViewDebugPreviewPage() {
           canvas: {model.canvas.width} x {model.canvas.height}, tileSize {model.canvas.tileSize}
         </p>
         <p>
-          validation: {renderStatusBadge(validation.status)}
+          model validation: {renderStatusBadge(modelValidation.status)}
         </p>
         <ul>
-          {validation.messages.map((message) => (
+          {modelValidation.messages.map((message) => (
             <li key={message}>{message}</li>
           ))}
         </ul>
@@ -89,6 +93,43 @@ export default function PixelWorldViewDebugPreviewPage() {
           </p>
         ))}
       </section>
+
+      <section style={styles.card}>
+        <h2>Render Plan</h2>
+        <p>worldId: {renderPlan.worldId}</p>
+        <p>tick: {renderPlan.tick}</p>
+        <p>commands: {renderPlan.commands.length}</p>
+        <p>
+          render validation: {renderStatusBadge(renderValidation.status)}
+        </p>
+        <ul>
+          {renderValidation.messages.map((message) => (
+            <li key={message}>{message}</li>
+          ))}
+        </ul>
+      </section>
+
+      <section style={styles.card}>
+        <h2>Layer Summaries</h2>
+        {renderPlan.layerSummaries.map((summary) => (
+          <p key={summary.layer}>
+            {summary.layer} | count {summary.count}
+          </p>
+        ))}
+      </section>
+
+      <section style={styles.card}>
+        <h2>Render Commands</h2>
+        {renderEmptyText(renderPlan.commands.length)}
+        {renderPlan.commands.map((command) => (
+          <p key={command.id}>
+            {command.id} | {command.layer} | {command.kind} | sourceId {command.sourceId} | visible{" "}
+            {String(command.visible)} | sortY {displayOptional(command.sortY)} | recipeId{" "}
+            {displayOptional(command.recipeId)} | opacity {displayOptional(command.opacity)} | text{" "}
+            {displayOptional(command.text)} | stateTags {displayOptional(command.stateTags?.join(", "))}
+          </p>
+        ))}
+      </section>
     </main>
   );
 }
@@ -99,6 +140,10 @@ function renderStatusBadge(status: "pass" | "fail") {
 
 function renderEmptyText(itemsLength: number) {
   return itemsLength === 0 ? <p>empty</p> : null;
+}
+
+function displayOptional(value: string | number | undefined) {
+  return value ?? "-";
 }
 
 const styles = {
