@@ -2,6 +2,7 @@
 import type { PixelWorldLayerKind } from "./pixel-worldview-types";
 import type { PixelWorldRenderCommand, PixelWorldRenderPlan } from "./pixel-worldview-render-types";
 import type { PixelWorldRendererFrame } from "./pixel-worldview-renderer-types";
+import { resolvePixelWorldBufferColorHint } from "./pixel-worldview-buffer-palette";
 import type {
   PixelWorldBufferBuildResult,
   PixelWorldBufferCell,
@@ -48,7 +49,12 @@ function mapCommandToCell(command: PixelWorldRenderCommand, plan: PixelWorldRend
     sourceCommandId: command.id,
     visible: command.visible,
     opacity: command.opacity ?? 1,
-    colorHint: resolveColorHint(kind),
+    colorHint: resolvePixelWorldBufferColorHint({
+      layer: command.layer,
+      kind,
+      recipeId: command.recipeId,
+      text: command.text,
+    }),
     recipeId: command.recipeId,
     text: command.text,
     stateTags: command.stateTags,
@@ -62,15 +68,6 @@ function resolveBufferCellKind(command: PixelWorldRenderCommand): PixelWorldBuff
   if (command.kind === "draw_actor_marker") return "actor_marker";
   if (command.kind === "apply_atmosphere_tint") return "atmosphere";
   return "overlay_marker";
-}
-
-function resolveColorHint(kind: PixelWorldBufferCellKind): string {
-  if (kind === "tile") return "#5f8f4e";
-  if (kind === "trace") return "#8a6a3f";
-  if (kind === "object_marker") return "#4f6f3f";
-  if (kind === "actor_marker") return "#d6b26f";
-  if (kind === "atmosphere") return "#8fb6ff";
-  return "#ffffff";
 }
 
 function buildBufferLayers(cells: PixelWorldBufferCell[]): PixelWorldBufferLayer[] {

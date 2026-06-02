@@ -37,6 +37,12 @@ export function validatePixelWorldPixelBufferFrame(buffer: PixelWorldPixelBuffer
       if (cell.opacity < 0 || cell.opacity > 1) messages.push(`${cell.id}.opacity 必须在 0 到 1 之间。`);
       if (typeof cell.visible !== "boolean") messages.push(`${cell.id}.visible 必须是 boolean。`);
       if ((cell.kind as string) === "pet") messages.push("buffer cell 不允许使用 pet kind。");
+      if (cell.colorHint !== undefined && typeof cell.colorHint !== "string") {
+        messages.push(`${cell.id}.colorHint 必须是字符串。`);
+      }
+      if (cell.colorHint !== undefined && !cell.colorHint.startsWith("#")) {
+        messages.push(`${cell.id}.colorHint 必须以 # 开头。`);
+      }
     });
   });
 
