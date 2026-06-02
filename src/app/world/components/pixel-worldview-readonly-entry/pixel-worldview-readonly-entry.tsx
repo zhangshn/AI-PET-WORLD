@@ -32,30 +32,74 @@ export function PixelWorldViewReadonlyEntry(input: { worldViewModel: WorldViewMo
         <h1>AI-PET-WORLD</h1>
         <p>PixelWorldView 正式只读入口</p>
         <p>当前页面只读世界事实，不推进 Tick，不写入 runtime，不生成默认宠物。</p>
+        <p>非正式渲染器预览，后续将接入真正 PixelWorldView renderer。</p>
       </header>
 
       <section style={styles.card}>
-        <h2>World Summary</h2>
-        <p>worldId: {pixelModel.worldId}</p>
-        <p>tick: {pixelModel.tick}</p>
+        <h2>World Runtime Projection</h2>
+        <p>worldId: {input.worldViewModel.worldId}</p>
+        <p>tick: {input.worldViewModel.tick}</p>
+        <p>savedAt: {input.worldViewModel.savedAt}</p>
+        <p>ownerId: {input.worldViewModel.ownerId}</p>
         <p>
-          canvas: {pixelModel.canvas.width} x {pixelModel.canvas.height}, tileSize {pixelModel.canvas.tileSize}
+          canvas: {input.worldViewModel.canvas.width} x {input.worldViewModel.canvas.height}, tileSize{" "}
+          {input.worldViewModel.canvas.tileSize}
         </p>
+        <p>WorldViewModel tags: {input.worldViewModel.tags.length}</p>
+      </section>
+
+      <section style={styles.card}>
+        <h2>PixelWorldView Model</h2>
         <p>
           tiles {pixelModel.tiles.length} | traces {pixelModel.traces.length} | objects {pixelModel.objects.length} |
           actors {pixelModel.actors.length} | atmosphere {pixelModel.atmosphere.length} | overlays{" "}
           {pixelModel.overlays.length}
         </p>
-        <p>render commands: {renderPlan.commands.length}</p>
-        <p>buffer cells: {bufferResult.buffer.cellCount}</p>
+        <p>model validation: {modelValidation.status}</p>
       </section>
 
       <section style={styles.card}>
-        <h2>Readonly Chain Validation</h2>
-        <p>model: {modelValidation.status}</p>
-        <p>render plan: {renderPlanValidation.status}</p>
-        <p>renderer frame: {rendererValidation.status}</p>
-        <p>pixel buffer: {bufferValidation.status}</p>
+        <h2>Render Plan</h2>
+        <p>render commands: {renderPlan.commands.length}</p>
+        <p>renderPlan validation: {renderPlanValidation.status}</p>
+        {renderPlan.layerSummaries.map((summary) => (
+          <p key={summary.layer}>
+            layer {summary.layer}: {summary.count}
+          </p>
+        ))}
+      </section>
+
+      <section style={styles.card}>
+        <h2>Renderer Frame</h2>
+        <p>frameId: {rendererResult.frame.frameId}</p>
+        <p>mode: {rendererResult.frame.mode}</p>
+        <p>target: {rendererResult.frame.target}</p>
+        <p>sourcePlanCommandCount: {rendererResult.frame.sourcePlanCommandCount}</p>
+        <p>renderer validation: {rendererValidation.status}</p>
+        {rendererResult.frame.layers.map((layer) => (
+          <p key={layer.layer}>
+            layer {layer.layer}: commands {layer.commandIds.length}, visible {layer.visibleCount}, hidden{" "}
+            {layer.hiddenCount}
+          </p>
+        ))}
+        <h3>Safety</h3>
+        <p>allowSvg: {String(rendererResult.frame.safety.allowSvg)}</p>
+        <p>allowCanvasDom: {String(rendererResult.frame.safety.allowCanvasDom)}</p>
+        <p>allowCssGeometry: {String(rendererResult.frame.safety.allowCssGeometry)}</p>
+        <p>allowRuntimeWrite: {String(rendererResult.frame.safety.allowRuntimeWrite)}</p>
+        <p>allowDefaultPet: {String(rendererResult.frame.safety.allowDefaultPet)}</p>
+      </section>
+
+      <section style={styles.card}>
+        <h2>Pixel Buffer</h2>
+        <p>bufferId: {bufferResult.buffer.bufferId}</p>
+        <p>cellCount: {bufferResult.buffer.cellCount}</p>
+        <p>buffer validation: {bufferValidation.status}</p>
+        {bufferResult.buffer.layers.map((layer) => (
+          <p key={layer.layer}>
+            layer {layer.layer}: cells {layer.cells.length}, visible {layer.visibleCount}, hidden {layer.hiddenCount}
+          </p>
+        ))}
       </section>
 
       <section style={styles.card}>
@@ -66,7 +110,7 @@ export function PixelWorldViewReadonlyEntry(input: { worldViewModel: WorldViewMo
       </section>
 
       <section style={styles.card}>
-        <h2>管家解释</h2>
+        <h2>Butler Explanation</h2>
         <p>{input.worldViewModel.butlerExplanation.title}</p>
         <p>{input.worldViewModel.butlerExplanation.body}</p>
       </section>
