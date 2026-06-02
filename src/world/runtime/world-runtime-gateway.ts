@@ -59,7 +59,7 @@ export async function createRuntimeWorldFromCreateWorldInput(input: {
     ],
     tags: [
       "world_runtime_create_result",
-      "m11_create_world_to_world_path",
+      "create_world_to_world_flow",
       writeResult.ok ? "runtime_save_persisted" : "runtime_save_not_persisted",
       ...writeResult.tags,
     ],
@@ -303,7 +303,7 @@ function buildRuntimeSaveRecordFromCreateWorldInput(input: {
     now: creationRuntime.now,
     tags: [
       "world_runtime_created_from_create_world_input",
-      "m11_create_world_to_world_path",
+      "create_world_to_world_flow",
       "no_default_pet_fact",
     ],
   })
@@ -326,7 +326,7 @@ function buildRuntimeSaveRecordFromCreateWorldInput(input: {
         createdAt: savedAt,
         tags: [
           "world_runtime_event",
-          "m11_create_world_to_world_path",
+          "create_world_to_world_flow",
           "created_from_create_world_input",
           "no_default_pet_fact",
         ],
@@ -343,7 +343,7 @@ function buildRuntimeSaveRecordFromCreateWorldInput(input: {
       "world_runtime_save_record",
       "local_mvp_only",
       "initial_home_map_state",
-      "m11_create_world_to_world_path",
+      "create_world_to_world_flow",
       "created_from_create_world_input",
       "no_default_pet_fact",
     ],

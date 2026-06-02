@@ -131,7 +131,7 @@ function findCurrentButlerTrace(
     (trace) =>
       trace.sourceKind === "butler_behavior" &&
       trace.updatedAtTick === saveRecord.tick &&
-      trace.tags.includes("m7_butler_trace_closure") &&
+      trace.tags.includes("butler_trace_closure") &&
       trace.tags.includes("not_pet_trace") &&
       (!intent || trace.derivedFrom.includes(intent.id)) &&
       (!validation || trace.derivedFrom.includes(validation.id))

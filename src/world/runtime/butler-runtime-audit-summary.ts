@@ -101,7 +101,7 @@ export function buildButlerRuntimeAuditSummary(input: {
     createdAt: input.createdAt,
     tags: [
       "butler_runtime_audit_summary",
-      "m7_butler_trace_closure",
+      "butler_trace_closure",
       input.validation.ok
         ? "world_rule_validation_passed"
         : "world_rule_validation_blocked",
@@ -156,7 +156,7 @@ function buildSafeguards(input: {
     input.traceWriteStatus === "created"
       ? "本轮行为只沉淀为管家行为痕迹。"
       : "本轮没有强行创建行为痕迹。",
-    "M7 不默认生成宠物事实。",
+    "管家痕迹闭环不默认生成宠物事实。",
     input.validation.memorySeedAllowed
       ? "记忆种子只来自可审计的痕迹结果。"
       : "记忆种子写入被世界规则限制。",

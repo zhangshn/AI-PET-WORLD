@@ -8,7 +8,7 @@ import type {
 } from "./world-view-model-schema"
 
 const FORMAL_PET_ENTRY_TAGS = new Set([
-  "formal_life_entry_validated",
+  "life_entry_validated",
   "pet_world_entry_validated",
   "actor_input_boundary_validated",
 ])
@@ -85,7 +85,7 @@ function buildPetActors(input: { homeMapState: HomeMapState }): WorldViewActor[]
       (placement) =>
         placement.layer === "actor" &&
         isPetPlacement(placement) &&
-        hasFormalPetEntryTag(placement)
+        hasValidatedPetEntryTag(placement)
     )
     .map((placement) => {
       const point = placementToPixelPoint({
@@ -116,7 +116,7 @@ function isPetPlacement(placement: MapPlacement): boolean {
   )
 }
 
-function hasFormalPetEntryTag(placement: MapPlacement): boolean {
+function hasValidatedPetEntryTag(placement: MapPlacement): boolean {
   return placement.tags.some((tag) => FORMAL_PET_ENTRY_TAGS.has(tag))
 }
 

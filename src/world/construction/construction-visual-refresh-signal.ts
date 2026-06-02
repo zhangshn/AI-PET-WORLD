@@ -48,7 +48,7 @@ export function buildConstructionVisualRefreshSignal(input: {
     tags: [
       "construction_visual_refresh_signal",
       "signal_only",
-      "no_formal_visual_model_mutation",
+      "no_world_projection_mutation",
       "no_ui_render",
       `run_reason:${input.runtimeInput.runReason}`,
     ],

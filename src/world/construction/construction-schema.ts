@@ -399,36 +399,6 @@ export type ConstructionVisualRefreshBridgeResult = {
   tags: string[]
 }
 
-export type ConstructionSnapshotRefreshRequest = {
-  requestId: string
-  worldId: string
-  ownerId: string
-  changedPlacementIds: string[]
-  acceptedDiffIds: string[]
-  reason: string
-  shouldRefreshSnapshot: boolean
-  shouldRebuildFormalVisualModel: boolean
-  stableRefreshFingerprint: string
-  tags: string[]
-}
-
-export type ConstructionSnapshotRefreshAudit = {
-  stableSnapshotRefreshFingerprint: string
-  sourceWorldId: string
-  changedPlacementIds: string[]
-  acceptedDiffIds: string[]
-  warnings: string[]
-  tags: string[]
-}
-
-export type ConstructionFormalVisualRefreshPrecheck = {
-  worldId: string
-  shouldRebuildFormalVisualModel: boolean
-  reason: string
-  audit: ConstructionSnapshotRefreshAudit
-  tags: string[]
-}
-
 export type ConstructionPersistenceAdapterRequest = {
   requestId: string
   proposalId: string | null

@@ -11,7 +11,7 @@ import {
   validatePixelWorldRendererFrame,
   validatePixelWorldViewModel,
 } from "@/world/pixel-worldview";
-import { FormalPixiPixelWorldRendererClient } from "../formal-pixi-pixel-world-renderer/formal-pixi-pixel-world-renderer.client";
+import { PixiPixelWorldRendererClient } from "../pixi-pixel-world-renderer/pixi-pixel-world-renderer.client";
 
 export function PixelWorldViewReadonlyEntry(input: { worldViewModel: WorldViewModel }) {
   const source = mapWorldViewModelToPixelWorldSourceSnapshot(input.worldViewModel);
@@ -34,7 +34,7 @@ export function PixelWorldViewReadonlyEntry(input: { worldViewModel: WorldViewMo
         <p>当前页面只读世界事实，不推进 Tick，不写入 runtime，不生成默认宠物。</p>
       </header>
 
-      <FormalPixiPixelWorldRendererClient buffer={bufferResult.buffer} />
+      <PixiPixelWorldRendererClient buffer={bufferResult.buffer} />
 
       <section style={styles.card}>
         <h2>World Summary</h2>

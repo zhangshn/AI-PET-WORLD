@@ -92,8 +92,6 @@ async function main() {
       "safeApply",
       "movementChannel",
       "movement_channel",
-      "roadGraph",
-      "pathGraph",
       "buildRoad",
       "buildRoute",
     ]

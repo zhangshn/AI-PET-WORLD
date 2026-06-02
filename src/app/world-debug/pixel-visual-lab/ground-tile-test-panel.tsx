@@ -5,8 +5,8 @@
 import Image from "next/image";
 import { useMemo, useState, type ChangeEvent, type CSSProperties } from "react";
 
-import { renderFormalGroundTile } from "@/world/formal-pixel-renderer/formal-ground-recipe";
-import type { FormalPixelTileRenderItem } from "@/world/formal-pixel-renderer/formal-pixel-renderer-schema";
+import { renderGroundTilePreview } from "@/world/ground-tile-svg-preview/ground-tile-svg-preview";
+import type { GroundTilePreviewRenderItem } from "@/world/ground-tile-svg-preview/ground-tile-svg-preview-schema";
 import type { WorldViewTileKind } from "@/world/world-view-model/world-view-model-schema";
 
 const TILE_KINDS: WorldViewTileKind[] = [
@@ -86,18 +86,18 @@ export default function GroundTileTestPanel() {
       <section style={styles.previewPanel}>
         <article style={styles.card}>
           <h2 style={styles.panelTitle}>单 Tile 预览</h2>
-          <Image alt="Formal ground tile preview" height={256} src={toSvgDataUri(singleTileSvg)} style={styles.singleImage} unoptimized width={256} />
+          <Image alt="Ground tile preview" height={256} src={toSvgDataUri(singleTileSvg)} style={styles.singleImage} unoptimized width={256} />
         </article>
 
         <article style={styles.card}>
           <h2 style={styles.panelTitle}>Tile Patch 组合预览</h2>
-          <Image alt="Formal ground tile patch preview" height={256} src={toSvgDataUri(patchSvg)} style={styles.patchImage} unoptimized width={384} />
+          <Image alt="Ground tile patch preview" height={256} src={toSvgDataUri(patchSvg)} style={styles.patchImage} unoptimized width={384} />
         </article>
 
         <article style={styles.card}>
           <h2 style={styles.panelTitle}>算法输出摘要</h2>
           <dl style={styles.debugList}>
-            <DebugRow label="recipe" value="formal_ground_recipe" />
+            <DebugRow label="recipe" value="ground_tile_recipe" />
             <DebugRow label="tileKind" value={tileKind} />
             <DebugRow label="traceIntensity" value={traceIntensity} />
             <DebugRow label="variant" value={variant} />
@@ -137,9 +137,9 @@ function buildSingleTileSvg(kind: WorldViewTileKind, traceIntensity: number, var
   const tile = buildTile({ id: `${seed}_single_${kind}_${variant}_${traceIntensity}`, kind, x: 48, y: 48, size: 160, traceIntensity, variant });
 
   return [
-    `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" shape-rendering="crispEdges" data-visual-lab-panel="ground-tile" data-formal-recipe="formal_ground_recipe">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256" shape-rendering="crispEdges" data-visual-lab-panel="ground-tile" data-ground-tile-recipe="ground_tile_recipe">`,
     `<rect x="0" y="0" width="256" height="256" fill="#17231f"/>`,
-    renderFormalGroundTile(tile),
+    renderGroundTilePreview(tile),
     `</svg>`,
   ].join("\n");
 }
@@ -167,9 +167,9 @@ function buildTilePatchSvg(kind: WorldViewTileKind, traceIntensity: number, vari
   });
 
   return [
-    `<svg xmlns="http://www.w3.org/2000/svg" width="384" height="256" viewBox="0 0 384 256" shape-rendering="crispEdges" data-visual-lab-panel="ground-patch" data-formal-recipe="formal_ground_recipe">`,
+    `<svg xmlns="http://www.w3.org/2000/svg" width="384" height="256" viewBox="0 0 384 256" shape-rendering="crispEdges" data-visual-lab-panel="ground-patch" data-ground-tile-recipe="ground_tile_recipe">`,
     `<rect x="0" y="0" width="384" height="256" fill="#17231f"/>`,
-    ...tiles.map(renderFormalGroundTile),
+    ...tiles.map(renderGroundTilePreview),
     `</svg>`,
   ].join("\n");
 }
@@ -182,7 +182,7 @@ function buildTile(input: {
   size: number;
   traceIntensity: number;
   variant: number;
-}): FormalPixelTileRenderItem {
+}): GroundTilePreviewRenderItem {
   return {
     id: input.id,
     layerKind: "tile",

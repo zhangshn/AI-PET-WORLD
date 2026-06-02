@@ -125,7 +125,7 @@ export function buildTraceMemorySeedFieldFromTraceField(input: {
       "trace_memory_seed_field",
       "derived_from_persisted_trace_field",
       "threshold_tuned_low_volume_seed_hint",
-      "not_formal_memory_system",
+      "not_persisted_memory_system",
     ],
   }
 }
@@ -172,10 +172,10 @@ function buildSeedCandidate(input: {
           ? "Fallback source kept at reduced memory weight."
           : "",
         quality.reason === "trace_meets_early_memory_hint_threshold"
-          ? "Early hint only; not promoted to formal memory."
+          ? "Early hint only; not promoted to persisted memory."
           : "",
       ].filter(Boolean),
-      tags: ["trace_memory_seed_audit", "seed_not_formal_memory", quality.reason],
+      tags: ["trace_memory_seed_audit", "seed_not_persisted_memory", quality.reason],
     },
     tags: [
       "trace_memory_seed",
@@ -325,7 +325,7 @@ function emptySeedField(input: {
       skipReasons: [input.reason],
     }),
     warnings: [input.reason],
-    tags: ["trace_memory_seed_field", "empty", "not_formal_memory_system"],
+    tags: ["trace_memory_seed_field", "empty", "not_persisted_memory_system"],
   }
 }
 

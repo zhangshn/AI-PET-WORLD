@@ -5,9 +5,9 @@
 import { Application, Container, Graphics } from "pixi.js";
 import { useEffect, useRef } from "react";
 import type { PixelWorldPixelBufferFrame } from "@/world/pixel-worldview";
-import styles from "./formal-pixi-pixel-world-renderer.module.css";
+import styles from "./pixi-pixel-world-renderer.module.css";
 
-export function FormalPixiPixelWorldRendererClient(input: {
+export function PixiPixelWorldRendererClient(input: {
   buffer: PixelWorldPixelBufferFrame;
 }) {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -76,7 +76,7 @@ export function FormalPixiPixelWorldRendererClient(input: {
         只消费 PixelWorldPixelBufferFrame，不读取 runtime，不生成默认宠物。
       </p>
       <div className={styles.stageFrame}>
-        <div ref={mountRef} className={styles.mount} aria-label="Formal Pixi PixelWorldView canvas mount" />
+        <div ref={mountRef} className={styles.mount} aria-label="Pixi PixelWorldView canvas mount" />
       </div>
       <div className={styles.statusBar}>
         <span className={styles.statusItem}>worldId: {input.buffer.worldId}</span>

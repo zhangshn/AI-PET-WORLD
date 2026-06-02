@@ -17,7 +17,7 @@ export async function POST(request: Request) {
       {
         ok: false,
         message: "创建世界失败，请检查输入信息。",
-        tags: ["m11_create_world_to_world_path", "invalid_create_world_input"],
+        tags: ["create_world_to_world_flow", "invalid_create_world_input"],
       },
       { status: 400 }
     )
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     tick: result.saveRecord.tick,
     message: "世界已经创建完成。",
     tags: [
-      "m11_create_world_to_world_path",
+      "create_world_to_world_flow",
       "runtime_save_persisted",
       "no_default_pet_fact",
     ],

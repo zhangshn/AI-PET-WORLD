@@ -39,7 +39,7 @@ export function applyButlerRuntimeTraceClosure(input: {
       messages: ["Butler trace closure skipped because world rule validation blocked trace writing."],
       warnings: input.validation.blockingWarnings,
       tags: [
-        "m7_butler_trace_closure",
+        "butler_trace_closure",
         "butler_trace_closure_skipped",
         "world_rule_validation_blocked",
       ],
@@ -72,7 +72,7 @@ export function applyButlerRuntimeTraceClosure(input: {
     ],
     warnings: [],
     tags: [
-      "m7_butler_trace_closure",
+      "butler_trace_closure",
       "butler_trace_fact_created",
       "world_rule_validation_passed",
       `trace_type:${trace.type}`,
@@ -189,7 +189,7 @@ function buildButlerRuntimeTrace(input: {
     },
     tags: uniqueStrings([
       "butler_runtime_trace",
-      "m7_butler_trace_closure",
+      "butler_trace_closure",
       "world_rule_validation_passed",
       "not_pet_trace",
       `intent_kind:${input.intent.kind}`,

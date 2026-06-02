@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：统一导出当前 M11 主链路可使用的 systems 层系统类与系统类型。
+ * 当前文件负责：统一导出当前正式主链路可使用的 systems 层系统类与系统类型。
  */
 
 export { ButlerSystem } from "./butlerSystem"

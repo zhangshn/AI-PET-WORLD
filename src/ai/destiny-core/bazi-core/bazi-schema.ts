@@ -147,7 +147,6 @@ export type BaziProfile = {
   behaviorBias: BaziBehaviorBias
 
   /**
-   * 兼容早期八字动力字段。
    */
   rawScore: WuXingScore
   distribution: WuXingDistribution

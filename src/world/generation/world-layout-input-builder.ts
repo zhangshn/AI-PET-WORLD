@@ -264,7 +264,7 @@ function buildLayoutConstraints(input: {
       id: "state_before_visual",
       description: "Layout decisions must enter HomeMapState before rendering.",
       severity: "block",
-      tags: ["home_map_state_first", "formal_visual_model_readonly"],
+      tags: ["home_map_state_first", "world_projection_readonly"],
     },
   ]
 

@@ -27,9 +27,8 @@
  *    - confidence
  *    - sensitivity
  *
- * 2. pairTraits 只是兼容层，可选
  *    - 当前如果 mapper 只吃 pairCorePersonality，也可以不写 pairTraits
- *    - 后续如果某些旧系统临时还会用到，可保留 pairTraits
+ *    - 需要行为层细化时，可以填写 pairTraits
  *
  * 3. 组合名称最终不要写死在这里做展示名
  *    - 展示层应优先通过 labels.ts 动态生成
@@ -68,7 +67,7 @@ import type {
  *   这是正式人格输出源
  *
  * - pairTraits
- *   行为层兼容 traits，可选
+ *   行为层 traits，可选
  *   当前阶段可以不写，后续由 mapper 用 pairCorePersonality 再映射也可以
  *
  * - summaryText
@@ -110,7 +109,6 @@ export interface PairProfile {
   pairCorePersonality: CorePersonality
 
   /**
-   * 行为层 traits（兼容层，可选）
    *
    * 说明：
    * - 当前不是必填

@@ -21,7 +21,7 @@ export function buildConstructionVisualRefreshBridgeResult(input: {
       tags: [
         "construction_visual_refresh_bridge",
         "bridge_only",
-        "no_formal_visual_model_mutation",
+        "no_world_projection_mutation",
         "no_renderer_mutation",
         "no_ui_render",
       ],
@@ -35,12 +35,12 @@ export function buildConstructionVisualRefreshBridgeResult(input: {
     changedPlacementIds: input.signal.changedPlacementIds,
     acceptedDiffIds: input.signal.acceptedDiffIds,
     reason: input.signal.shouldRefresh
-      ? "视觉刷新桥接建议后续刷新 RenderableWorldSnapshot / FormalVisualModel。"
+      ? "视觉刷新桥接建议后续刷新 RenderableWorldSnapshot。"
       : "视觉刷新桥接未满足刷新条件。",
     tags: [
       "construction_visual_refresh_bridge",
       "bridge_only",
-      "no_formal_visual_model_mutation",
+      "no_world_projection_mutation",
       "no_renderer_mutation",
       "no_ui_render",
       input.signal.shouldRefresh ? "refresh_request_ready" : "refresh_request_skipped",

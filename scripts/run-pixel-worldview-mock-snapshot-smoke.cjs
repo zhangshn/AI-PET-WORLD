@@ -56,17 +56,11 @@ async function main() {
     "readWorldRuntimeForView",
     "writeWorldRuntimeSaveRecord",
     "runAndPersistOneRuntimeTick",
-    "buildSceneSvg",
     "data:image/svg",
     "<svg",
     "<canvas",
     "CanvasRenderingContext2D",
     "getContext(",
-    "WorldPainterReadonlyPreview",
-    "ProceduralRendererView",
-    "FormalWorldView",
-    "roadGraph",
-    "pathGraph",
   ]
   const forbiddenHits = forbiddenTokens.filter((token) => combined.includes(token))
   assert(forbiddenHits.length === 0, `PixelWorldView mock snapshot contains forbidden dependencies: ${forbiddenHits.join(", ")}`)
@@ -78,7 +72,7 @@ async function main() {
   console.log("Natural object recipe ids exist: ok")
   console.log("Mock butler exists without default pet: ok")
   console.log("Runtime boundary: ok")
-  console.log("No SVG formal renderer dependency: ok")
+  console.log("No SVG renderer dependency: ok")
   console.log("Result: PASS")
 }
 

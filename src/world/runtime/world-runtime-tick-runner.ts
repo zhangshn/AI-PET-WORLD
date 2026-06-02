@@ -184,7 +184,7 @@ export function runOneRuntimeTick(
       runtimeTick
         ? "home_map_state_persisted_after_tick"
         : "home_map_state_kept_stable_after_tick",
-      "m7_butler_trace_closure",
+      "butler_trace_closure",
       worldRuleValidation.ok
         ? "butler_world_rule_validation_passed"
         : "butler_world_rule_validation_blocked",
@@ -249,7 +249,7 @@ export function runOneRuntimeTick(
     tags: [
       "world_runtime_tick_result",
       runtimeTick ? "map_diff_safe_apply_driven" : "butler_motivation_only_tick",
-      "m7_butler_trace_closure",
+      "butler_trace_closure",
       "butler_intent_world_rule_validated",
       traceClosureResult.createdTrace
         ? "butler_trace_closure_persisted"
@@ -307,7 +307,7 @@ function buildRuntimeActionSummaryFromTick(input: {
     createdAt: input.createdAt,
     tags: [
       "world_runtime_action_summary",
-      "m7_butler_trace_closure",
+      "butler_trace_closure",
       acceptedDiffIds.length > 0 ? "safe_apply_action" : "observe_or_wait_action",
       `intent_kind:${input.intent.kind}`,
       input.worldRuleValidation.ok
@@ -339,7 +339,7 @@ function buildRuntimeActionSummaryFromDecision(input: {
     tags: [
       "world_runtime_action_summary",
       "butler_motivation_only",
-      "m7_butler_trace_closure",
+      "butler_trace_closure",
       `motivation:${input.decision.selectedMotivation}`,
       `intent_kind:${input.intent.kind}`,
       input.worldRuleValidation.ok
@@ -371,7 +371,7 @@ function buildRuntimeEvent(input: {
       "world_runtime_event",
       "butler_autonomous_action",
       "safe_apply_checked",
-      "m7_butler_trace_closure",
+      "butler_trace_closure",
       input.worldRuleValidation.ok
         ? "world_rule_validation_passed"
         : "world_rule_validation_blocked",

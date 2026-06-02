@@ -95,7 +95,7 @@ function localizeEventTitle(input: {
 }): string {
   const intent = input.saveRecord.lastButlerRuntimeIntent
 
-  if (input.event.tags.includes("m7_butler_trace_closure")) {
+  if (input.event.tags.includes("butler_trace_closure")) {
     if (intent?.kind === "resource_wait") return "管家留下了等待痕迹"
     if (intent?.kind === "observation") return "管家记录了一次观察"
     if (intent?.kind === "maintenance") return "管家完成了一次维护判断"
@@ -120,7 +120,7 @@ function localizeEventBody(input: {
   const trace = findCurrentButlerTrace(input.saveRecord)
   const memorySeedCount = input.saveRecord.traceMemorySeedField?.summary.totalSeeds ?? 0
 
-  if (input.event.tags.includes("m7_butler_trace_closure") && intent && validation) {
+  if (input.event.tags.includes("butler_trace_closure") && intent && validation) {
     const validationText = validation.ok
       ? "这次行动已经通过世界规则验证。"
       : "这次行动被世界规则拦下，没有写入新的世界事实。"
@@ -169,7 +169,7 @@ function findCurrentButlerTrace(saveRecord: WorldRuntimeSaveRecord) {
     (trace) =>
       trace.sourceKind === "butler_behavior" &&
       trace.updatedAtTick === saveRecord.tick &&
-      trace.tags.includes("m7_butler_trace_closure") &&
+      trace.tags.includes("butler_trace_closure") &&
       trace.tags.includes("not_pet_trace") &&
       (!intent || trace.derivedFrom.includes(intent.id)) &&
       (!validation || trace.derivedFrom.includes(validation.id))

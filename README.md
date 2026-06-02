@@ -1,26 +1,34 @@
 # AI-PET-WORLD
 
-当前项目文档已经重置为 V2.6 正式口径。
+AI-PET-WORLD 是一个由 AI 管家自主运行、由规则驱动持续演化的像素世界。
 
-唯一有效入口：
+## 当前业务
 
-- `docs/v2_6/README.md`
+```txt
+用户注册
+→ 提交出生年月日等生命信息
+→ 紫微斗数映射管家的灵魂与长期人格
+→ 系统生成个人世界
+→ 管家自主观察、判断、建设、沟通和成长
+→ 用户通过 P-Phone 与管家建立长期关系
+```
 
-当前标准来源：
+用户可以提出建议，但不能直接控制管家。未来小镇和城市由不同玩家的管家在规则约束下共同建设。
 
-- `AI-PET-WORLD V2.6｜完整业务架构总图（强化版｜含正式像素主世界绘制方案）`
-- `AI-PET-WORLD V2.6｜无大数据训练阶段：规则型 AI 自主世界与像素表现落地方案`
-- `AI-PET-WORLD V2.6｜正式像素主世界绘制算法`
+## 当前画面链路
 
-红线：
+```txt
+WorldRuntimeSaveRecord
+→ WorldViewModel
+→ PixelWorldView
+→ Pixel Buffer
+→ PixiJS
+```
 
-- 用户注册并提交出生年月日等生命信息后，系统通过紫微斗数映射管家初始灵魂与人格倾向。
-- 玩家通过 P-Phone 与管家沟通，可以提出建议，但不能直接控制管家；管家可以拒绝建议。
-- 世界与未来小镇由规则约束下的管家自主行为持续生成，不是玩家手动摆放。
-- `/world` 是 PixelWorldView。
-- Pixel Scene Composer 是 `/world-debug` 规则实验室。
-- WorldViewModel 是正式表现模型。
-- PixelWorldView 只读 WorldViewModel。
-- 当前阶段不训练大模型。
-- 不设置独立 road/path 架构。
-- 宠物不默认进入世界。
+画面只表现世界事实，不创造世界事实。
+
+## 文档
+
+- `docs/v2_6/AI_PET_WORLD_V2_6_CURRENT_BUSINESS_PRINCIPLES.md`
+- `docs/v2_6/AI_PET_WORLD_CURRENT_ARCHITECTURE.md`
+- `docs/v2_6/AI_PET_WORLD_PIXEL_GENERATION.md`

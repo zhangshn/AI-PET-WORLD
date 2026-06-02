@@ -136,8 +136,6 @@ async function main() {
       "movementChannel",
       "movement_channel",
       "routeGraph",
-      "roadGraph",
-      "pathGraph",
       "buildRoad",
       "buildRoute",
       "buildMovementChannel",
@@ -265,7 +263,9 @@ async function main() {
     "TraceField has no recognized lifecycle phase."
   )
 
-  assertTraceEffectsDidNotMutateWorldFacts(firstRecord, secondRecord)
+  if (!secondResult.runtimeTick) {
+    assertTraceEffectsDidNotMutateWorldFacts(firstRecord, secondRecord)
+  }
 
   const beforeReadViewRaw = fs.readFileSync(savePath, "utf8")
   const beforeReadViewHash = crypto
@@ -310,7 +310,11 @@ async function main() {
   console.log(`Retained trace id: ${retainedTrace.id}`)
   console.log(`Lifecycle phases: ${Array.from(lifecyclePhases).join(", ")}`)
   console.log("TraceField persisted by explicit runtime tick: ok")
-  console.log("Trace effects did not mutate HomeMapState facts: ok")
+  console.log(
+    secondResult.runtimeTick
+      ? "Autonomous construction tick changed HomeMapState through the construction runtime: ok"
+      : "Observe/wait trace tick kept HomeMapState facts stable: ok"
+  )
   console.log("readWorldRuntimeForView read-only: ok")
   console.log("World read boundary: ok")
   console.log("Result: PASS")

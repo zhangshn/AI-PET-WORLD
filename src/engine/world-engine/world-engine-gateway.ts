@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：统一导出当前 M11 主链路可使用的世界引擎运行步骤入口。
+ * 当前文件负责：统一导出当前正式主链路可使用的世界引擎运行步骤入口。
  */
 
 export { runWorldRuntime } from "./runners/world-runtime-runner"

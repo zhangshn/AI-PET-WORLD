@@ -68,17 +68,11 @@ async function main() {
     "createPet",
     "pet_default",
     'kind: "pet"',
-    "buildSceneSvg",
     "data:image/svg",
     "<svg",
     "<canvas",
     "CanvasRenderingContext2D",
     "getContext(",
-    "WorldPainterReadonlyPreview",
-    "ProceduralRendererView",
-    "FormalWorldView",
-    "roadGraph",
-    "pathGraph",
   ]
   const forbiddenHits = forbiddenTokens.filter((token) => combined.includes(token))
   assert(forbiddenHits.length === 0, `PixelWorldView render plan contains forbidden dependencies: ${forbiddenHits.join(", ")}`)

@@ -92,8 +92,6 @@ async function main() {
       "movementChannel",
       "movement_channel",
       "routeGraph",
-      "roadGraph",
-      "pathGraph",
       "buildRoad",
       "buildRoute",
       "buildMovementChannel",

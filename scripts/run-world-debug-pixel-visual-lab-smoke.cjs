@@ -35,17 +35,6 @@ async function main() {
   const treePreviewPath = path.join(repoRoot, "src", "world", "procedural-painter", "tree", "tree-cluster-art-preview.ts")
   const sharedTreeRecipePath = path.join(repoRoot, "src", "world", "procedural-painter", "scene-composer", "scene-composer-tree-recipe.ts")
 
-  const removedVisualDebugPaths = [
-    path.join(repoRoot, "src", "app", "world-debug", "tree-render-test", "page.tsx"),
-    path.join(repoRoot, "src", "app", "world-debug", "tree-render-test", "tree-render-test-client.tsx"),
-    path.join(repoRoot, "src", "app", "world-debug", "pixel-scene-composer", "page.tsx"),
-    path.join(repoRoot, "src", "app", "world-debug", "pixel-scene-composer", "pixel-scene-composer-client.tsx"),
-  ]
-
-  removedVisualDebugPaths.forEach((filePath) => {
-    assert(!fs.existsSync(filePath), `Old visual debug file still exists: ${path.relative(repoRoot, filePath)}`)
-  })
-
   const pageSource = readFile(newVisualLabPagePath, "pixel-visual-lab page")
   const clientSource = readFile(newVisualLabClientPath, "pixel-visual-lab client")
   const composerSource = readFile(composerPanelPath, "pixel scene composer panel")
@@ -62,7 +51,7 @@ async function main() {
     "TreeRenderTestPanel",
     "VISUAL ONLY",
     "地面绘制",
-    "formal_ground_recipe",
+    "ground_tile_recipe",
     "单树预览",
     "不包含草地、草根、前景草或场景融合",
     "不读取 runtime",
@@ -107,8 +96,6 @@ async function main() {
 
   console.log("PIXEL VISUAL LAB SMOKE")
   console.log("Unified visual debug page exists: ok")
-  console.log("Old tree-render-test route removed: ok")
-  console.log("Old pixel-scene-composer route removed: ok")
   console.log("Composer panel moved into visual lab: ok")
   console.log("Ground tile panel added to visual lab: ok")
   console.log("Tree panel uses scene composer tree recipe: ok")

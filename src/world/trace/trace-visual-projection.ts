@@ -97,7 +97,7 @@ export function buildTraceVisualProjectionFromTraceField(input: {
     tags: [
       "trace_visual_projection",
       "read_only_projection",
-      "formal_visual_projection_input",
+      "world_visual_projection_input",
       "no_world_fact_generation",
     ],
   }

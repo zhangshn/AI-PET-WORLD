@@ -192,7 +192,7 @@ function buildMotivationScores(input: {
           ? "Trace influence offers familiar regions for observation context only."
           : "No familiar trace region is available for observation context.",
         traceContext.memorySeedCount > 0
-          ? "Trace memory seeds are consumed as observation bias, not formal memory."
+          ? "Trace memory seeds are consumed as observation bias, not persisted memory."
           : "No trace memory seed is available for observation context.",
       ],
       tags: ["butler_motivation_score", "observe_world", ...traceContext.tags],
@@ -295,7 +295,7 @@ function buildTraceContext(
       "trace_influence_scoring_hint",
       "trace_memory_seed_hint",
       "trace_memory_seed_consumed_as_bias",
-      "trace_seed_not_formal_memory",
+      "trace_seed_not_persisted_memory",
       "trace_not_direct_action",
       "safe_apply_still_required",
       `trace_pressure:${tracePressure}`,

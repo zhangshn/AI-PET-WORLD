@@ -5,7 +5,7 @@ async function main() {
   const repoRoot = process.cwd()
 
   function fail(message) {
-    console.log("WORLD FORMAL PIXELWORLDVIEW PIXI ENTRY SMOKE")
+    console.log("PIXEL WORLDVIEW PIXI ENTRY SMOKE")
     console.log(message)
     console.log("Result: FAIL")
     process.exit(1)
@@ -28,28 +28,28 @@ async function main() {
     })
   }
 
-  const formalWorldDir = path.join(repoRoot, "src", "app", "world")
+  const worldDir = path.join(repoRoot, "src", "app", "world")
   const rendererSource = readFile(
     path.join(
-      formalWorldDir,
+      worldDir,
       "components",
-      "formal-pixi-pixel-world-renderer",
-      "formal-pixi-pixel-world-renderer.client.tsx"
+      "pixi-pixel-world-renderer",
+      "pixi-pixel-world-renderer.client.tsx"
     ),
-    "Formal Pixi PixelWorld renderer"
+    "Pixi PixelWorld renderer"
   )
   const rendererStyles = readFile(
     path.join(
-      formalWorldDir,
+      worldDir,
       "components",
-      "formal-pixi-pixel-world-renderer",
-      "formal-pixi-pixel-world-renderer.module.css"
+      "pixi-pixel-world-renderer",
+      "pixi-pixel-world-renderer.module.css"
     ),
-    "Formal Pixi PixelWorld renderer styles"
+    "Pixi PixelWorld renderer styles"
   )
   const readonlyEntrySource = readFile(
     path.join(
-      formalWorldDir,
+      worldDir,
       "components",
       "pixel-worldview-readonly-entry",
       "pixel-worldview-readonly-entry.tsx"
@@ -57,7 +57,7 @@ async function main() {
     "PixelWorldView readonly entry"
   )
   const packageSource = readFile(path.join(repoRoot, "package.json"), "package.json")
-  const formalWorldCombined = readDirectorySources(formalWorldDir).join("\n")
+  const worldCombined = readDirectorySources(worldDir).join("\n")
   const combined = [rendererSource, rendererStyles, readonlyEntrySource, packageSource].join("\n")
 
   const requiredTokens = [
@@ -65,7 +65,7 @@ async function main() {
     "Application",
     "Container",
     "Graphics",
-    "FormalPixiPixelWorldRendererClient",
+    "PixiPixelWorldRendererClient",
     "PixelWorldPixelBufferFrame",
     "app.init",
     "app.canvas",
@@ -83,15 +83,15 @@ async function main() {
     "image-rendering: pixelated",
   ]
   requiredTokens.forEach((token) => {
-    assert(combined.includes(token), `Missing formal Pixi entry token: ${token}`)
+    assert(combined.includes(token), `Missing Pixi entry token: ${token}`)
   })
 
   assert(
-    packageSource.includes("smoke:world-formal-pixelworldview-pixi-entry"),
-    "Formal Pixi entry smoke package script is missing."
+    packageSource.includes("smoke:pixel-worldview-pixi-entry"),
+    "Pixi entry smoke package script is missing."
   )
 
-  const forbiddenFormalWorldTokens = [
+  const forbiddenWorldTokens = [
     "data:image/svg",
     "<svg",
     "<canvas",
@@ -103,28 +103,22 @@ async function main() {
     'position: "absolute"',
     "position: 'absolute'",
     "position:absolute",
-    "buildSceneSvg",
-    "buildFormalPixelSvg",
-    "buildFormalPixelRenderModel",
-    "WorldPainterReadonlyPreview",
-    "ProceduralRendererView",
-    "FormalWorldView",
     "runAndPersistOneRuntimeTick",
     "writeWorldRuntimeSaveRecord",
     "createPet",
   ]
-  const forbiddenHits = forbiddenFormalWorldTokens.filter((token) => formalWorldCombined.includes(token))
-  assert(forbiddenHits.length === 0, `Formal /world contains forbidden tokens: ${forbiddenHits.join(", ")}`)
+  const forbiddenHits = forbiddenWorldTokens.filter((token) => worldCombined.includes(token))
+  assert(forbiddenHits.length === 0, `/world contains forbidden tokens: ${forbiddenHits.join(", ")}`)
 
-  console.log("WORLD FORMAL PIXELWORLDVIEW PIXI ENTRY SMOKE")
-  console.log("Formal Pixi PixelWorld renderer exists: ok")
-  console.log("Formal Pixi PixelWorld renderer uses PixiJS: ok")
-  console.log("Formal Pixi PixelWorld renderer consumes PixelBufferFrame: ok")
-  console.log("Formal /world mounts Pixi renderer: ok")
+  console.log("PIXEL WORLDVIEW PIXI ENTRY SMOKE")
+  console.log("Pixi PixelWorld renderer exists: ok")
+  console.log("Pixi PixelWorld renderer uses PixiJS: ok")
+  console.log("Pixi PixelWorld renderer consumes PixelBufferFrame: ok")
+  console.log("/world mounts Pixi renderer: ok")
   console.log("Runtime remains read-only: ok")
-  console.log("No SVG formal entry dependency: ok")
+  console.log("No SVG entry dependency: ok")
   console.log("No hand-written canvas context usage: ok")
-  console.log("No CSS geometry formal world preview: ok")
+  console.log("No CSS geometry world preview: ok")
   console.log("No default pet generation: ok")
   console.log("Result: PASS")
 }

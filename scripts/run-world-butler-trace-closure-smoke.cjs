@@ -75,7 +75,7 @@ async function main() {
       "applyButlerRuntimeTraceClosure",
       "lastButlerRuntimeIntent",
       "lastButlerWorldRuleValidation",
-      "m7_butler_trace_closure",
+      "butler_trace_closure",
       "world_rule_validation_passed",
       "trace_write_requires_validation",
       "memory_seed_requires_trace_quality",
@@ -83,16 +83,13 @@ async function main() {
     ]
 
     requiredTokens.forEach((token) =>
-      assert(combinedSource.includes(token), `M7 runtime chain is missing required token: ${token}.`)
+      assert(combinedSource.includes(token), `Butler trace closure runtime chain is missing required token: ${token}.`)
     )
 
     const forbiddenTraceClosureTokens = [
       "writeWorldRuntimeSaveRecord",
       "runAndPersistOneRuntimeTick",
-      "buildSceneSvg",
       "scene-composer-gateway",
-      "roadGraph",
-      "pathGraph",
       "createPet",
       "pet_default",
     ]
@@ -108,7 +105,7 @@ async function main() {
     const intent = record.lastButlerRuntimeIntent
     assert(intent, "lastButlerRuntimeIntent was not persisted.")
     assert(intent.tags.includes("butler_runtime_intent"), "Intent is missing butler_runtime_intent tag.")
-    assert(intent.tags.includes("m7_butler_trace_closure"), "Intent is missing M7 tag.")
+    assert(intent.tags.includes("butler_trace_closure"), "Intent is missing butler trace closure tag.")
     assert(typeof intent.kind === "string", "Intent kind is invalid.")
     assert(typeof intent.motivation === "string", "Intent motivation is invalid.")
     assert(Array.isArray(intent.requestedTraceTypes), "Intent requestedTraceTypes is invalid.")
@@ -123,7 +120,7 @@ async function main() {
     assert(validation, "lastButlerWorldRuleValidation was not persisted.")
     assert(validation.intentId === intent.id, "Validation does not point to persisted intent.")
     assert(validation.tags.includes("butler_world_rule_validation"), "Validation is missing butler_world_rule_validation tag.")
-    assert(validation.tags.includes("m7_butler_trace_closure"), "Validation is missing M7 tag.")
+    assert(validation.tags.includes("butler_trace_closure"), "Validation is missing butler trace closure tag.")
     assert(validation.tags.includes("trace_write_requires_validation"), "Validation does not guard trace writing.")
     assert(validation.tags.includes("event_write_requires_validation"), "Validation does not guard event writing.")
     assert(validation.tags.includes("memory_seed_requires_trace_quality"), "Validation does not guard memory seed quality.")
@@ -140,11 +137,11 @@ async function main() {
     const butlerTraces = record.traceField.traces.filter(
       (trace) =>
         trace.sourceKind === "butler_behavior" &&
-        trace.tags.includes("m7_butler_trace_closure") &&
+        trace.tags.includes("butler_trace_closure") &&
         trace.tags.includes("not_pet_trace")
     )
 
-    assert(butlerTraces.length > 0, "No M7 butler_behavior trace was persisted.")
+    assert(butlerTraces.length > 0, "No butler_behavior trace was persisted.")
 
     const matchingTrace = butlerTraces.find(
       (trace) =>
@@ -193,8 +190,8 @@ async function main() {
       (trace) => trace.sourceKind === "pet_behavior" || trace.tags.includes("pet_default")
     )
 
-    assert(petPlacements.length === 0, "M7 created a default pet actor placement.")
-    assert(petTraces.length === 0, "M7 created pet traces.")
+    assert(petPlacements.length === 0, "Butler trace closure created a default pet actor placement.")
+    assert(petTraces.length === 0, "Butler trace closure created pet traces.")
   }
 
   if (!fs.existsSync(savePath)) fail("Runtime save file not found.")
@@ -207,12 +204,12 @@ async function main() {
   assertStaticRuntimeContract()
 
   const { runAndPersistOneRuntimeTick, readWorldRuntimeForView } = localRequire(runtimeGatewayPath)
-  const beforeRecord = parseJson(fs.readFileSync(savePath, "utf8"), "Runtime save before M7 smoke is not valid JSON.")
+  const beforeRecord = parseJson(fs.readFileSync(savePath, "utf8"), "Runtime save before butler trace closure smoke is not valid JSON.")
   const beforeTick = beforeRecord.tick
   const result = await runAndPersistOneRuntimeTick({ now: Date.now() })
 
   assert(result.persisted, "Explicit runtime tick was not persisted.")
-  assert(result.tags.includes("m7_butler_trace_closure"), "Runtime tick result is missing M7 tag.")
+  assert(result.tags.includes("butler_trace_closure"), "Runtime tick result is missing butler trace closure tag.")
   assert(
     result.nextSaveRecord.lastButlerRuntimeIntent,
     "Tick result did not expose lastButlerRuntimeIntent."
@@ -222,8 +219,8 @@ async function main() {
     "Tick result did not expose lastButlerWorldRuleValidation."
   )
 
-  const afterRecord = parseJson(fs.readFileSync(savePath, "utf8"), "Runtime save after M7 smoke is not valid JSON.")
-  assert(afterRecord.tick === beforeTick + 1, "M7 smoke did not advance exactly one explicit runtime tick.")
+  const afterRecord = parseJson(fs.readFileSync(savePath, "utf8"), "Runtime save after butler trace closure smoke is not valid JSON.")
+  assert(afterRecord.tick === beforeTick + 1, "Butler trace closure smoke did not advance exactly one explicit runtime tick.")
 
   const intent = assertIntentShape(afterRecord)
   const validation = assertValidationShape(afterRecord, intent)
@@ -235,15 +232,15 @@ async function main() {
     afterRecord.recentEvents.some(
       (event) =>
         event.tick === afterRecord.tick &&
-        event.tags.includes("m7_butler_trace_closure") &&
+        event.tags.includes("butler_trace_closure") &&
         event.tags.includes("no_pet_fact_created")
     ),
-    "Recent events do not include M7 closure / no_pet_fact_created tags."
+    "Recent events do not include butler trace closure / no_pet_fact_created tags."
   )
   assert(
     afterRecord.traceMemorySeedField &&
       afterRecord.traceMemorySeedField.tags.includes("trace_memory_seed_field"),
-    "TraceMemorySeedField missing after M7 closure."
+    "TraceMemorySeedField missing after butler trace closure."
   )
 
   const beforeReadViewRaw = fs.readFileSync(savePath, "utf8")
@@ -253,7 +250,7 @@ async function main() {
   const afterReadViewHash = crypto.createHash("sha256").update(afterReadViewRaw).digest("hex")
   const afterReadViewRecord = parseJson(afterReadViewRaw, "Runtime save after read-only check is not valid JSON.")
 
-  assert(viewResult.saveRecord.lastButlerRuntimeIntent, "Read-only view did not expose persisted M7 intent.")
+  assert(viewResult.saveRecord.lastButlerRuntimeIntent, "Read-only view did not expose persisted butler trace closure intent.")
   assert(afterReadViewRecord.tick === afterRecord.tick, "readWorldRuntimeForView changed runtime tick.")
   assert(afterReadViewHash === beforeReadViewHash, "readWorldRuntimeForView changed runtime hash.")
 

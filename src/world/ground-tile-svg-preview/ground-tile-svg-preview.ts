@@ -1,6 +1,6 @@
 // 该文件用于生成正式像素世界中的地面绘制片段。
 
-import type { FormalPixelTileRenderItem } from "./formal-pixel-renderer-schema"
+import type { GroundTilePreviewRenderItem } from "./ground-tile-svg-preview-schema"
 
 type GroundPalette = {
   base: string
@@ -10,8 +10,8 @@ type GroundPalette = {
   soil: string
 }
 
-export function renderFormalGroundTile(tile: FormalPixelTileRenderItem): string {
-  const random = seededRandom(`${tile.id}:${tile.kind}:${tile.variant}:${tile.traceIntensity}:formal-ground-v1`)
+export function renderGroundTilePreview(tile: GroundTilePreviewRenderItem): string {
+  const random = seededRandom(`${tile.id}:${tile.kind}:${tile.variant}:${tile.traceIntensity}:ground-tile-v1`)
   const palette = paletteFor(tile)
   const detailCount = detailCountFor(tile)
   const details = Array.from({ length: detailCount }, () => renderGroundDetail(tile, palette, random)).join("\n")
@@ -19,7 +19,7 @@ export function renderFormalGroundTile(tile: FormalPixelTileRenderItem): string 
   const edge = tile.kind === "boundary" ? renderBoundaryEdge(tile, palette) : ""
 
   return [
-    `<g data-id="${escapeText(tile.id)}" data-tile-kind="${tile.kind}" data-formal-recipe="formal_ground_recipe">`,
+    `<g data-id="${escapeText(tile.id)}" data-tile-kind="${tile.kind}" data-ground-tile-recipe="ground_tile_recipe">`,
     `<rect x="${tile.x}" y="${tile.y}" width="${tile.width}" height="${tile.height}" fill="${palette.base}" opacity="${tile.passable ? 1 : 0.94}"/>`,
     details,
     traceDetails,
@@ -28,7 +28,7 @@ export function renderFormalGroundTile(tile: FormalPixelTileRenderItem): string 
   ].filter(Boolean).join("\n")
 }
 
-function renderGroundDetail(tile: FormalPixelTileRenderItem, palette: GroundPalette, random: () => number): string {
+function renderGroundDetail(tile: GroundTilePreviewRenderItem, palette: GroundPalette, random: () => number): string {
   const unit = Math.max(2, Math.round(tile.width / 8))
   const x = tile.x + Math.round(random() * Math.max(1, tile.width - unit))
   const y = tile.y + Math.round(random() * Math.max(1, tile.height - unit))
@@ -51,7 +51,7 @@ function renderGroundDetail(tile: FormalPixelTileRenderItem, palette: GroundPale
   return `<rect x="${x}" y="${y}" width="${unit}" height="${unit}" fill="${color}" opacity="${opacity}"/>`
 }
 
-function renderTraceTint(tile: FormalPixelTileRenderItem, palette: GroundPalette, random: () => number): string {
+function renderTraceTint(tile: GroundTilePreviewRenderItem, palette: GroundPalette, random: () => number): string {
   const strength = clamp(tile.traceIntensity / 100, 0, 1)
   const width = Math.max(3, Math.round(tile.width * (0.28 + strength * 0.36)))
   const height = Math.max(2, Math.round(tile.height * (0.08 + strength * 0.14)))
@@ -62,14 +62,14 @@ function renderTraceTint(tile: FormalPixelTileRenderItem, palette: GroundPalette
   return `<rect x="${x}" y="${y}" width="${width}" height="${height}" fill="${color}" opacity="${0.18 + strength * 0.28}"/>`
 }
 
-function renderBoundaryEdge(tile: FormalPixelTileRenderItem, palette: GroundPalette): string {
+function renderBoundaryEdge(tile: GroundTilePreviewRenderItem, palette: GroundPalette): string {
   return [
     `<rect x="${tile.x}" y="${tile.y}" width="${tile.width}" height="2" fill="${palette.light}" opacity="0.18"/>`,
     `<rect x="${tile.x}" y="${tile.y + tile.height - 2}" width="${tile.width}" height="2" fill="${palette.dark}" opacity="0.48"/>`,
   ].join("\n")
 }
 
-function detailCountFor(tile: FormalPixelTileRenderItem): number {
+function detailCountFor(tile: GroundTilePreviewRenderItem): number {
   if (tile.kind === "boundary") return 1
   if (tile.kind === "built") return 2
   if (tile.kind === "exposed_soil" || tile.kind === "soil") return 3
@@ -78,7 +78,7 @@ function detailCountFor(tile: FormalPixelTileRenderItem): number {
   return 3
 }
 
-function pickDetailColor(tile: FormalPixelTileRenderItem, palette: GroundPalette, random: () => number): string {
+function pickDetailColor(tile: GroundTilePreviewRenderItem, palette: GroundPalette, random: () => number): string {
   if (tile.kind === "exposed_soil" || tile.kind === "soil") {
     return random() > 0.62 ? palette.light : random() > 0.32 ? palette.dark : palette.accent
   }
@@ -94,8 +94,8 @@ function pickDetailColor(tile: FormalPixelTileRenderItem, palette: GroundPalette
   return random() > 0.64 ? palette.light : random() > 0.34 ? palette.dark : palette.accent
 }
 
-function paletteFor(tile: FormalPixelTileRenderItem): GroundPalette {
-  const palettes: Record<FormalPixelTileRenderItem["kind"], GroundPalette> = {
+function paletteFor(tile: GroundTilePreviewRenderItem): GroundPalette {
+  const palettes: Record<GroundTilePreviewRenderItem["kind"], GroundPalette> = {
     grass: { base: "#3f7d3c", dark: "#326832", light: "#69a64c", accent: "#4d8d3f", soil: "#675234" },
     pressed_grass: { base: "#376f36", dark: "#2a5a2d", light: "#5d9147", accent: "#456f3b", soil: "#665238" },
     worn_grass: { base: "#556b35", dark: "#46592f", light: "#738846", accent: "#6d6a3b", soil: "#745939" },

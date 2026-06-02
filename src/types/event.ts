@@ -116,7 +116,7 @@ export interface WorldEvent {
    *
    * 说明：
    * - continuityStep 等非核心字段继续放这里
-   * - 用于调试 / 兼容 / 临时扩展
+   * - 用于调试与可选扩展
    */
   payload?: Record<string, unknown>
 }

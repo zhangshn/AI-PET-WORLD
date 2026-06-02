@@ -103,8 +103,6 @@ async function main() {
       "WorldLearning",
       "movementChannel",
       "movement_channel",
-      "roadGraph",
-      "pathGraph",
       "buildRoad",
       "buildRoute",
     ]
@@ -126,8 +124,8 @@ async function main() {
       "Selector does not tag memory seed consumption as bias."
     )
     assert(
-      selectorSource.includes("trace_seed_not_formal_memory"),
-      "Selector does not tag seeds as non-formal memory."
+      selectorSource.includes("trace_seed_not_persisted_memory"),
+      "Selector does not tag seeds as non-persisted memory."
     )
     assert(
       schemaSource.includes("memorySeedConsumeScore") &&
@@ -192,11 +190,11 @@ async function main() {
     "Decision does not mark memory seeds as consumed bias."
   )
   assert(
-    decision.tags.includes("trace_seed_not_formal_memory") ||
+    decision.tags.includes("trace_seed_not_persisted_memory") ||
       decision.scores.some((score) =>
-        score.tags.includes("trace_seed_not_formal_memory")
+        score.tags.includes("trace_seed_not_persisted_memory")
       ),
-    "Decision does not mark seeds as non-formal memory."
+    "Decision does not mark seeds as non-persisted memory."
   )
 
   const lowResourceRecord = {
@@ -240,7 +238,7 @@ async function main() {
   console.log(`Selected motivation: ${decision.selectedMotivation}`)
   console.log(`Low-resource synthetic motivation: ${lowResourceDecision.selectedMotivation}`)
   console.log("Memory seed consumed as bias: ok")
-  console.log("Memory seed did not become formal memory: ok")
+  console.log("Memory seed did not become persisted memory: ok")
   console.log("Selector read-only: ok")
   console.log("World read boundary: ok")
   console.log("Result: PASS")

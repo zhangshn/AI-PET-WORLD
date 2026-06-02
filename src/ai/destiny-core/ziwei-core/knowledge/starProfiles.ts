@@ -11,7 +11,6 @@
  *    - dependency
  *    - confidence
  *    - sensitivity
- * 3. 同时保留 baseTraits 作为行为层兼容输出
  *
  * 说明：
  * - star_00 = 空宫
@@ -57,9 +56,8 @@ export interface StarProfile {
   baseCorePersonality: CorePersonality
 
   /**
-   * 行为层兼容 traits
+   * 行为层 traits
    * 说明：
-   * - 当前先保留，方便旧系统兼容
    * - 长期真正核心仍然是 baseCorePersonality
    */
   baseTraits: Partial<PersonalityTraits>
@@ -75,7 +73,7 @@ export interface StarProfile {
  * 工具函数：把 5 维核心人格映射为基础行为层 traits
  *
  * 这是 knowledge 层里的静态映射，
- * 用于让单星资料自带一个兼容版行为轮廓。
+ * 用于让单星资料自带行为轮廓。
  * ======================================================
  */
 function mapCoreToBaseTraits(core: CorePersonality): Partial<PersonalityTraits> {

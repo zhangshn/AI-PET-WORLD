@@ -79,7 +79,7 @@ export function buildButlerRuntimeIntent(input: {
     createdAt: input.createdAt,
     tags: [
       "butler_runtime_intent",
-      "m7_butler_trace_closure",
+      "butler_trace_closure",
       `intent_kind:${kind}`,
       `motivation:${input.decision.selectedMotivation}`,
       allowsHomeMapDiff ? "home_map_diff_may_be_requested" : "home_map_diff_not_requested",
@@ -133,7 +133,7 @@ export function validateButlerRuntimeIntent(input: {
     warnings,
     tags: [
       "butler_world_rule_validation",
-      "m7_butler_trace_closure",
+      "butler_trace_closure",
       ok ? "world_rule_validation_passed" : "world_rule_validation_blocked",
       input.intent.allowsHomeMapDiff ? "safe_apply_required_for_home_map_diff" : "home_map_diff_forbidden",
       input.acceptedDiffCount > 0 ? "safe_apply_accepted_diffs" : "no_home_map_diff_written",

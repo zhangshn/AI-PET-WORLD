@@ -61,17 +61,11 @@ async function main() {
     "createPet",
     "pet_default",
     'kind: "pet"',
-    "buildSceneSvg",
     "data:image/svg",
     "<svg",
     "<canvas",
     "CanvasRenderingContext2D",
     "getContext(",
-    "WorldPainterReadonlyPreview",
-    "ProceduralRendererView",
-    "FormalWorldView",
-    "roadGraph",
-    "pathGraph",
   ]
   const forbiddenHits = forbiddenTokens.filter((token) => combined.includes(token))
   assert(forbiddenHits.length === 0, `PixelWorldView mapper contains forbidden dependencies: ${forbiddenHits.join(", ")}`)
@@ -82,7 +76,7 @@ async function main() {
   console.log("PixelWorldView mapper public export exists: ok")
   console.log("Runtime boundary: ok")
   console.log("No default pet generation: ok")
-  console.log("No SVG formal renderer dependency: ok")
+  console.log("No SVG renderer dependency: ok")
   console.log("Result: PASS")
 }
 

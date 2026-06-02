@@ -211,8 +211,6 @@ function resolveDecorationDensity(input: {
 }
 
 function resolveTraceShape(input: { homeMapState: HomeMapState }): number {
-  // Deprecated compatibility: current HomeMapState may still store movement traces
-  // with the old path layer or tag.
   const tracePlacements = input.homeMapState.placements.filter(
     (placement) => placement.layer === "path" || placement.tags.includes("path")
   )
