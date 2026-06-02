@@ -43,9 +43,18 @@ async function main() {
     path.join(repoRoot, "src", "world", "pixel-worldview", "world-view-model-to-pixel-worldview-source.ts"),
     "PixelWorldView source adapter"
   )
+  const pixiRendererSource = readFile(
+    path.join(
+      formalWorldDir,
+      "components",
+      "formal-pixi-pixel-world-renderer",
+      "formal-pixi-pixel-world-renderer.client.tsx"
+    ),
+    "Formal Pixi PixelWorld renderer"
+  )
   const packageSource = readFile(path.join(repoRoot, "package.json"), "package.json")
   const formalWorldCombined = readDirectorySources(formalWorldDir).join("\n")
-  const combined = [livePageSource, readonlyEntrySource, sourceAdapterSource, packageSource].join("\n")
+  const combined = [livePageSource, readonlyEntrySource, sourceAdapterSource, pixiRendererSource, packageSource].join("\n")
 
   const requiredTokens = [
     "PixelWorldViewReadonlyEntry",
@@ -62,9 +71,9 @@ async function main() {
     "validateWorldFormalPixelWorldRendererContract",
     "buildWorldFormalPixelWorldRendererShellState",
     "validateWorldFormalPixelWorldRendererShellState",
-    "buildWorldFormalPixelWorldRendererAdapterPacket",
-    "validateWorldFormalPixelWorldRendererAdapterPacket",
-    "PixelWorldView 正式只读入口",
+    "FormalPixiPixelWorldRendererClient",
+    "PixelWorldView 正式像素世界",
+    "正式 PixiJS PixelWorldView Renderer",
     "World Runtime Projection",
     "PixelWorldView Model",
     "Render Plan",
@@ -73,18 +82,12 @@ async function main() {
     "Formal Renderer Shell",
     "renderer contract ready",
     "readonly shell",
-    "Formal Renderer Adapter",
-    "renderer adapter ready",
-    "readonly adapter",
-    "buffer only input",
     "Safety",
     "P-Phone",
     "Butler Explanation",
     "不推进 Tick",
     "不写入 runtime",
     "不生成默认宠物",
-    "非正式渲染器预览",
-    "后续将接入真正 PixelWorldView renderer",
   ]
   requiredTokens.forEach((token) => {
     assert(combined.includes(token), `Missing required token: ${token}`)

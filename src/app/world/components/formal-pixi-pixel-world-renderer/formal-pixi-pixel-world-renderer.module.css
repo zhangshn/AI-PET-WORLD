@@ -1,0 +1,38 @@
+.shell {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid #3f6861;
+  background: #1f302a;
+  color: #d8ead8;
+}
+
+.heading {
+  margin: 0;
+}
+
+.description {
+  margin: 8px 0 0;
+}
+
+.stageFrame {
+  margin-top: 12px;
+  overflow: auto;
+  border: 1px solid #5a847a;
+  background: #12201c;
+}
+
+.mount {
+  min-height: 240px;
+  image-rendering: pixelated;
+}
+
+.statusBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.statusItem {
+  color: #b9d7cf;
+}

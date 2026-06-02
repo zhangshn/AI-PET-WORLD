@@ -1,7 +1,6 @@
 // 该组件用于展示正式像素主世界只读入口。
 import type { WorldViewModel } from "@/world/world-view-model";
 import {
-  buildWorldFormalPixelWorldRendererAdapterPacket,
   buildWorldFormalPixelWorldRendererContract,
   buildWorldFormalPixelWorldRendererShellState,
   buildPixelWorldPixelBufferFrame,
@@ -14,9 +13,9 @@ import {
   validatePixelWorldRendererFrame,
   validatePixelWorldViewModel,
   validateWorldFormalPixelWorldRendererContract,
-  validateWorldFormalPixelWorldRendererAdapterPacket,
   validateWorldFormalPixelWorldRendererShellState,
 } from "@/world/pixel-worldview";
+import { FormalPixiPixelWorldRendererClient } from "../formal-pixi-pixel-world-renderer/formal-pixi-pixel-world-renderer.client";
 
 export function PixelWorldViewReadonlyEntry(input: { worldViewModel: WorldViewModel }) {
   const source = mapWorldViewModelToPixelWorldSourceSnapshot(input.worldViewModel);
@@ -39,150 +38,86 @@ export function PixelWorldViewReadonlyEntry(input: { worldViewModel: WorldViewMo
     contract: rendererContract,
   });
   const rendererShellValidation = validateWorldFormalPixelWorldRendererShellState(rendererShell);
-  const rendererAdapter = buildWorldFormalPixelWorldRendererAdapterPacket({
-    buffer: bufferResult.buffer,
-    contract: rendererContract,
-    shell: rendererShell,
-  });
-  const rendererAdapterValidation = validateWorldFormalPixelWorldRendererAdapterPacket(rendererAdapter);
 
   return (
     <main style={styles.page}>
       <header>
         <h1>AI-PET-WORLD</h1>
-        <p>PixelWorldView 正式只读入口</p>
+        <p>PixelWorldView 正式像素世界</p>
         <p>当前页面只读世界事实，不推进 Tick，不写入 runtime，不生成默认宠物。</p>
-        <p>非正式渲染器预览，后续将接入真正 PixelWorldView renderer。</p>
       </header>
 
+      <FormalPixiPixelWorldRendererClient buffer={bufferResult.buffer} />
+
       <section style={styles.card}>
-        <h2>World Runtime Projection</h2>
+        <h2>World Summary</h2>
         <p>worldId: {input.worldViewModel.worldId}</p>
         <p>tick: {input.worldViewModel.tick}</p>
-        <p>savedAt: {input.worldViewModel.savedAt}</p>
-        <p>ownerId: {input.worldViewModel.ownerId}</p>
-        <p>
-          canvas: {input.worldViewModel.canvas.width} x {input.worldViewModel.canvas.height}, tileSize{" "}
-          {input.worldViewModel.canvas.tileSize}
-        </p>
-        <p>WorldViewModel tags: {input.worldViewModel.tags.length}</p>
-      </section>
-
-      <section style={styles.card}>
-        <h2>PixelWorldView Model</h2>
-        <p>
-          tiles {pixelModel.tiles.length} | traces {pixelModel.traces.length} | objects {pixelModel.objects.length} |
-          actors {pixelModel.actors.length} | atmosphere {pixelModel.atmosphere.length} | overlays{" "}
-          {pixelModel.overlays.length}
-        </p>
+        <p>buffer cells: {bufferResult.buffer.cellCount}</p>
+        <p>renderer shell status: {rendererShell.status}</p>
         <p>model validation: {modelValidation.status}</p>
-      </section>
-
-      <section style={styles.card}>
-        <h2>Render Plan</h2>
-        <p>render commands: {renderPlan.commands.length}</p>
         <p>renderPlan validation: {renderPlanValidation.status}</p>
-        {renderPlan.layerSummaries.map((summary) => (
-          <p key={summary.layer}>
-            layer {summary.layer}: {summary.count}
-          </p>
-        ))}
-      </section>
-
-      <section style={styles.card}>
-        <h2>Renderer Frame</h2>
-        <p>frameId: {rendererResult.frame.frameId}</p>
-        <p>mode: {rendererResult.frame.mode}</p>
-        <p>target: {rendererResult.frame.target}</p>
-        <p>sourcePlanCommandCount: {rendererResult.frame.sourcePlanCommandCount}</p>
-        <p>renderer validation: {rendererValidation.status}</p>
-        {rendererResult.frame.layers.map((layer) => (
-          <p key={layer.layer}>
-            layer {layer.layer}: commands {layer.commandIds.length}, visible {layer.visibleCount}, hidden{" "}
-            {layer.hiddenCount}
-          </p>
-        ))}
-        <h3>Safety</h3>
-        <p>allowSvg: {String(rendererResult.frame.safety.allowSvg)}</p>
-        <p>allowCanvasDom: {String(rendererResult.frame.safety.allowCanvasDom)}</p>
-        <p>allowCssGeometry: {String(rendererResult.frame.safety.allowCssGeometry)}</p>
-        <p>allowRuntimeWrite: {String(rendererResult.frame.safety.allowRuntimeWrite)}</p>
-        <p>allowDefaultPet: {String(rendererResult.frame.safety.allowDefaultPet)}</p>
-      </section>
-
-      <section style={styles.card}>
-        <h2>Pixel Buffer</h2>
-        <p>bufferId: {bufferResult.buffer.bufferId}</p>
-        <p>cellCount: {bufferResult.buffer.cellCount}</p>
         <p>buffer validation: {bufferValidation.status}</p>
-        {bufferResult.buffer.layers.map((layer) => (
-          <p key={layer.layer}>
-            layer {layer.layer}: cells {layer.cells.length}, visible {layer.visibleCount}, hidden {layer.hiddenCount}
-          </p>
-        ))}
       </section>
 
-      <section style={styles.card}>
-        <h2>Formal Renderer Shell</h2>
-        <p>renderer contract ready: {rendererContract.status}</p>
-        <p>readonly shell: {rendererShell.status}</p>
-        <p>id: {rendererShell.id}</p>
-        <p>mode: {rendererShell.mode}</p>
-        <p>sourceContractId: {rendererShell.sourceContractId}</p>
-        <p>sourceBufferId: {rendererShell.sourceBufferId}</p>
-        <p>sourceCellCount: {rendererShell.sourceCellCount}</p>
-        <p>renderer contract validation: {rendererContractValidation.status}</p>
-        <p>renderer shell validation: {rendererShellValidation.status}</p>
-        {rendererShell.readinessNotes.map((note) => (
-          <p key={note}>{note}</p>
-        ))}
-        {rendererShell.layerStates.map((layer) => (
-          <p key={layer.layer}>
-            layer {layer.layer}: order {layer.requiredOrder}, accepted cell kinds {layer.acceptedCellKindCount}
+      <details style={styles.card}>
+        <summary>工程状态</summary>
+        <section>
+          <h2>World Runtime Projection</h2>
+          <p>savedAt: {input.worldViewModel.savedAt}</p>
+          <p>ownerId: {input.worldViewModel.ownerId}</p>
+          <p>
+            canvas: {input.worldViewModel.canvas.width} x {input.worldViewModel.canvas.height}, tileSize{" "}
+            {input.worldViewModel.canvas.tileSize}
           </p>
-        ))}
-        <h3>Shell Safety</h3>
-        <p>runtimeReadonly: {String(rendererShell.safety.runtimeReadonly)}</p>
-        <p>noDefaultPet: {String(rendererShell.safety.noDefaultPet)}</p>
-        <p>noSvg: {String(rendererShell.safety.noSvg)}</p>
-        <p>noCanvasDom: {String(rendererShell.safety.noCanvasDom)}</p>
-        <p>noCssGeometry: {String(rendererShell.safety.noCssGeometry)}</p>
-        <p>noDebugPanelImport: {String(rendererShell.safety.noDebugPanelImport)}</p>
-        <p>不绘制世界，不读取 runtime，不生成默认宠物。</p>
-        <p>不使用 SVG，不使用 canvas，不使用 CSS 几何模拟世界。</p>
-      </section>
+          <p>WorldViewModel tags: {input.worldViewModel.tags.length}</p>
+        </section>
 
-      <section style={styles.card}>
-        <h2>Formal Renderer Adapter</h2>
-        <p>renderer adapter ready: {rendererAdapter.status}</p>
-        <p>readonly adapter: {rendererAdapter.mode}</p>
-        <p>buffer only input: {String(rendererAdapter.safety.bufferOnlyInput)}</p>
-        <p>id: {rendererAdapter.id}</p>
-        <p>sourceBufferId: {rendererAdapter.sourceBufferId}</p>
-        <p>sourceContractId: {rendererAdapter.sourceContractId}</p>
-        <p>sourceShellId: {rendererAdapter.sourceShellId}</p>
-        <p>sourceCellCount: {rendererAdapter.sourceCellCount}</p>
-        <p>renderer adapter validation: {rendererAdapterValidation.status}</p>
-        {rendererAdapter.adapterNotes.map((note) => (
-          <p key={note}>{note}</p>
-        ))}
-        {rendererAdapter.layers.map((layer) => (
-          <p key={layer.layer}>
-            layer {layer.layer}: order {layer.requiredOrder}, cells {layer.cells.length}, visible {layer.visibleCount},
-            hidden {layer.hiddenCount}
+        <section>
+          <h2>PixelWorldView Model</h2>
+          <p>
+            tiles {pixelModel.tiles.length} | traces {pixelModel.traces.length} | objects {pixelModel.objects.length} |
+            actors {pixelModel.actors.length} | atmosphere {pixelModel.atmosphere.length} | overlays{" "}
+            {pixelModel.overlays.length}
           </p>
-        ))}
-        <h3>Adapter Safety</h3>
-        <p>runtimeReadonly: {String(rendererAdapter.safety.runtimeReadonly)}</p>
-        <p>noDefaultPet: {String(rendererAdapter.safety.noDefaultPet)}</p>
-        <p>noSvg: {String(rendererAdapter.safety.noSvg)}</p>
-        <p>noCanvasDom: {String(rendererAdapter.safety.noCanvasDom)}</p>
-        <p>noCssGeometry: {String(rendererAdapter.safety.noCssGeometry)}</p>
-        <p>noDebugPanelImport: {String(rendererAdapter.safety.noDebugPanelImport)}</p>
-        <p>bufferOnlyInput: {String(rendererAdapter.safety.bufferOnlyInput)}</p>
-        <p>不绘制世界，不读取 runtime，不生成默认宠物。</p>
-        <p>不使用 SVG，不使用 canvas，不使用 CSS 几何模拟世界。</p>
-      </section>
+        </section>
+
+        <section>
+          <h2>Render Plan</h2>
+          <p>render commands: {renderPlan.commands.length}</p>
+          {renderPlan.layerSummaries.map((summary) => (
+            <p key={summary.layer}>
+              layer {summary.layer}: {summary.count}
+            </p>
+          ))}
+        </section>
+
+        <section>
+          <h2>Renderer Frame</h2>
+          <p>frameId: {rendererResult.frame.frameId}</p>
+          <p>mode: {rendererResult.frame.mode}</p>
+          <p>target: {rendererResult.frame.target}</p>
+          <p>sourcePlanCommandCount: {rendererResult.frame.sourcePlanCommandCount}</p>
+          <p>renderer validation: {rendererValidation.status}</p>
+          <h3>Safety</h3>
+          <p>allowRuntimeWrite: {String(rendererResult.frame.safety.allowRuntimeWrite)}</p>
+          <p>allowDefaultPet: {String(rendererResult.frame.safety.allowDefaultPet)}</p>
+        </section>
+
+        <section>
+          <h2>Pixel Buffer</h2>
+          <p>bufferId: {bufferResult.buffer.bufferId}</p>
+          <p>cellCount: {bufferResult.buffer.cellCount}</p>
+        </section>
+
+        <section>
+          <h2>Formal Renderer Shell</h2>
+          <p>renderer contract ready: {rendererContract.status}</p>
+          <p>readonly shell: {rendererShell.status}</p>
+          <p>renderer contract validation: {rendererContractValidation.status}</p>
+          <p>renderer shell validation: {rendererShellValidation.status}</p>
+        </section>
+      </details>
 
       <section style={styles.card}>
         <h2>P-Phone</h2>
