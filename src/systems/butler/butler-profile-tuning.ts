@@ -2,7 +2,7 @@
  * 当前文件负责：把管家 Profile 转换成任务选择层可读取的轻量调参。
  */
 
-import type { ButlerProfile } from "@/ai/gateway"
+import type { ButlerProfile } from "@/ai/ai-system-gateway"
 
 export type ButlerProfileTaskTuning = {
   carePriorityOffset: number

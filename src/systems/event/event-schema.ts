@@ -2,7 +2,7 @@
  * 当前文件负责：定义事件系统内部使用的输入类型与连续叙事状态类型。
  */
 
-import type { PersonalityProfile } from "@/ai/destiny-core/ziwei-core/schema"
+import type { PersonalityProfile } from "@/ai/destiny-core/ziwei-core/ziwei-core-schema"
 import type { ButlerState } from "@/types/butler"
 import type { WorldEvent, NarrativeType } from "@/types/event"
 import type { HomeState } from "@/types/home"

@@ -5,7 +5,7 @@
 import type {
   CorePersonality,
   PersonalityTraits
-} from "../../schema"
+} from "../../ziwei-core-schema"
 
 export function clampUnit(value: number): number {
   if (!Number.isFinite(value)) {

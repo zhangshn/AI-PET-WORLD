@@ -5,9 +5,9 @@
 import type {
   BirthPattern,
   BranchPalace
-} from "../../../ai/destiny-core/ziwei-core/schema"
+} from "../../../ai/destiny-core/ziwei-core/ziwei-core-schema"
 
-import { ZIWEI_LAYOUT } from "../constants"
+import { ZIWEI_LAYOUT } from "../personality-test-constants"
 
 import { ZiweiPalaceCell } from "./chart/ZiweiPalaceCell"
 

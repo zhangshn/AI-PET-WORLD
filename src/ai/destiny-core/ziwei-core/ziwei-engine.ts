@@ -78,7 +78,7 @@ import type {
   LunarBirthInfo,
   StarId,
   ZiweiEngineResult
-} from "./schema"
+} from "./ziwei-core-schema"
 
 /**
  * ======================================================

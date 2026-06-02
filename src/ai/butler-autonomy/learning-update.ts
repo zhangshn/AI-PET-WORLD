@@ -9,7 +9,7 @@ import type {
   ButlerMemoryEffect,
   ButlerMemoryLearnedPreferences,
   ButlerMemoryState,
-} from "./schema"
+} from "./butler-autonomy-schema"
 
 export function buildButlerLearningEffectsFromSafeApply(input: {
   selectedIntent: ButlerAutonomousIntent

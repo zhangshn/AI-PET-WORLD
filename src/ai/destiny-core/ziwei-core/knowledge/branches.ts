@@ -2,7 +2,7 @@
  * 当前文件负责：定义紫微核心使用的地支顺序与展示资料。
  */
 
-import type { BranchPalace } from "../schema"
+import type { BranchPalace } from "../ziwei-core-schema"
 
 export const ZIWEI_BRANCH_ORDER: BranchPalace[] = [
   "yin",

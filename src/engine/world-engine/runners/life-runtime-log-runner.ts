@@ -6,11 +6,11 @@ import type {
   BuildCurrentLifeRuntimeBundleFromWorldInput,
   CurrentLifeRuntimeBundle,
   LifeTendencyRuntimeGender,
-} from "@/ai/gateway"
+} from "@/ai/ai-system-gateway"
 
 import {
   buildAiCurrentLifeRuntimeBundleFromWorld,
-} from "@/ai/gateway"
+} from "@/ai/ai-system-gateway"
 
 import type { TimeState } from "../../timeSystem"
 import type { PetState } from "@/types/pet"

@@ -14,7 +14,7 @@ import type {
   BirthPattern,
   BranchPalace,
   PersonalityProfile
-} from "../../../ai/destiny-core/ziwei-core/schema"
+} from "../../../ai/destiny-core/ziwei-core/ziwei-core-schema"
 
 import type {
   ZiweiDynamicChart,
@@ -29,7 +29,7 @@ import type {
 import type {
   ActiveDynamicFlow,
   DynamicGenderInput
-} from "../types"
+} from "../personality-test-types"
 
 import type { ZiweiChartFlowMarker } from "../components/chart/ziwei-chart-types"
 import type { ZiweiDynamicTimeSelection } from "../components/ZiweiDynamicTimeTable"

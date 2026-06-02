@@ -3,7 +3,7 @@
  */
 
 import type { BaziProfile } from "../../destiny-core/bazi-core/bazi-types"
-import type { PersonalityProfile, SectorName, StarId } from "../../destiny-core/ziwei-core/schema"
+import type { PersonalityProfile, SectorName, StarId } from "../../destiny-core/ziwei-core/ziwei-core-schema"
 
 export type GenderPerspective = "male" | "female"
 

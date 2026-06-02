@@ -9,7 +9,7 @@ import type {
   BirthInput,
   BirthPattern,
   PersonalityProfile
-} from "./schema"
+} from "./ziwei-core-schema"
 
 /**
  * 根据出生输入构建底盘。

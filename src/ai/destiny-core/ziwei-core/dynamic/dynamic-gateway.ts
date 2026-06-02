@@ -6,7 +6,7 @@ import type {
   BirthPattern,
   BranchPalace,
   PersonalityProfile
-} from "../schema"
+} from "../ziwei-core-schema"
 
 import {
   buildZiweiDynamicChart

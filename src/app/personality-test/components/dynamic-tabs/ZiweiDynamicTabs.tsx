@@ -2,7 +2,7 @@
  * 当前文件负责：组装紫微动态层切换按钮组。
  */
 
-import type { ActiveDynamicFlow } from "../../types"
+import type { ActiveDynamicFlow } from "../../personality-test-types"
 
 import { ZiweiDynamicTabButton } from "./ZiweiDynamicTabButton"
 import { ZIWEI_DYNAMIC_TAB_CONFIGS } from "./ziwei-dynamic-tabs-config"

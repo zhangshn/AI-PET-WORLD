@@ -2,7 +2,7 @@ import type { TimeState } from "@/engine/timeSystem"
 import type { PetState, PetAction } from "@/types/pet"
 import type { WorldZone } from "@/world/ecology/world-zone-types"
 
-import { updatePetAiState, stepPetBehaviorProcess } from "@/ai/gateway"
+import { updatePetAiState, stepPetBehaviorProcess } from "@/ai/ai-system-gateway"
 import { updatePetMemoryState } from "@/ai/memory-core/memory-gateway"
 import { logPetDecisionTrace } from "@/engine/world-engine/world-runtime-logger"
 import { buildPetPerceptionDriveBias } from "@/systems/agent-perception/agent-world-perception"

@@ -10,7 +10,7 @@
  * ======================================================
  */
 
-import type { PersonalityProfile } from "../../destiny-core/ziwei-core/schema"
+import type { PersonalityProfile } from "../../destiny-core/ziwei-core/ziwei-core-schema"
 import type {
   AttachmentApproachStyle,
   ConsciousnessArchetype,

@@ -2,7 +2,7 @@
  * 当前文件负责：展示 personality-test 页面的顶部总览区。
  */
 
-import type { ActiveDynamicFlow } from "../../types"
+import type { ActiveDynamicFlow } from "../../personality-test-types"
 import type { PersonalityTestRuntimeTime } from "../../runtime-time/personality-test-runtime-time-types"
 
 function Chip({

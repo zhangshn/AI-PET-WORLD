@@ -2,13 +2,13 @@
  * 当前文件负责：构建 Timeline 测试操作日志。
  */
 
-import type { PetTimelineSnapshot } from "../../../../ai/gateway"
+import type { PetTimelineSnapshot } from "../../../../ai/ai-system-gateway"
 
 import type {
   DiffItem,
   TimelineClock,
   TimelineLogEntry
-} from "./timeline-types"
+} from "./timeline-test-types"
 
 export function buildTimelineLogEntry(params: {
   label: string

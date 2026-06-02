@@ -6,24 +6,24 @@ import { useMemo } from "react"
 
 import {
   buildAiCurrentLifeTendency
-} from "../../../../ai/gateway"
+} from "../../../../ai/ai-system-gateway"
 
 import type {
   CurrentLifeTendencyProfile,
   LifeTendencyRuntimeGender,
   LifeTendencyScoreItem
-} from "../../../../ai/gateway"
+} from "../../../../ai/ai-system-gateway"
 
 import type {
   BirthPattern,
   PersonalityProfile
-} from "../../../../ai/destiny-core/ziwei-core/schema"
+} from "../../../../ai/destiny-core/ziwei-core/ziwei-core-schema"
 
 import type {
   BaziProfile
 } from "../../../../ai/destiny-core/bazi-core/bazi-gateway"
 
-import type { DynamicGenderInput } from "../../types"
+import type { DynamicGenderInput } from "../../personality-test-types"
 import type { PersonalityTestRuntimeTime } from "../../runtime-time/personality-test-runtime-time-types"
 
 function resolveRuntimeGender(

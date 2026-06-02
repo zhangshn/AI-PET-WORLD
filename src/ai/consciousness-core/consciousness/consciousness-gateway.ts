@@ -5,7 +5,7 @@
  * ======================================================
  */
 
-import type { PersonalityProfile } from "../../destiny-core/ziwei-core/schema"
+import type { PersonalityProfile } from "../../destiny-core/ziwei-core/ziwei-core-schema"
 import type { ZiweiConsciousnessKernel } from "./consciousness-types"
 import { buildZiweiConsciousnessKernel } from "./ziwei-consciousness-builder"
 

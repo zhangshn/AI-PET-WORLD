@@ -2,7 +2,7 @@
  * 当前文件负责：定义紫微结构到现代生命功能的主规则。
  */
 
-import type { SectorName } from "../../destiny-core/ziwei-core/schema"
+import type { SectorName } from "../../destiny-core/ziwei-core/ziwei-core-schema"
 
 import type {
   ZiweiLifeFunctionKey,

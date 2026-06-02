@@ -13,7 +13,15 @@ async function main() {
   const handoffPath = path.join(repoRoot, "docs", "v2_6", "AI_PET_WORLD_V2_6_HANDOFF_M11_MVP_CLOSEOUT.md")
   const businessPrinciplesPath = path.join(repoRoot, "docs", "v2_6", "AI_PET_WORLD_V2_6_CURRENT_BUSINESS_PRINCIPLES.md")
   const worldPagePath = path.join(repoRoot, "src", "app", "world", "world-live-runtime-page.tsx")
-  const pixelViewPath = path.join(repoRoot, "src", "app", "world", "components", "pixel-world-view", "pixel-world-view.tsx")
+  const pixelViewPath = path.join(
+    repoRoot,
+    "src",
+    "app",
+    "world",
+    "components",
+    "pixel-worldview-readonly-entry",
+    "pixel-worldview-readonly-entry.tsx"
+  )
   const viewModelGatewayPath = path.join(repoRoot, "src", "world", "world-view-model", "world-view-model-gateway.ts")
   const actorMapperPath = path.join(repoRoot, "src", "world", "world-view-model", "world-actor-mapper.ts")
   const pPhoneMapperPath = path.join(repoRoot, "src", "world", "world-view-model", "p-phone-view-mapper.ts")
@@ -107,7 +115,7 @@ async function main() {
       "M11 P-Phone 数据入口边界验算 | 100% | 完成",
       "M11 UI 自动生成输入边界验算 | 100% | 完成",
       "M11 核心资源库 / 验算库 closeout | 100% | 完成",
-      "M11 正式画图算法重整 | 0% | 下一步",
+      "M11 正式画图算法重整 | 进行中 | 进行中",
       "核心资源库 / 验算库 closeout 已完成",
       "正式画图算法重整",
       "AI 世界",
@@ -135,7 +143,7 @@ async function main() {
 
   function assertStaticSourceBoundary() {
     const worldPageSource = readRequiredFile(worldPagePath, "world-live-runtime-page.tsx")
-    const pixelViewSource = readRequiredFile(pixelViewPath, "pixel-world-view.tsx")
+    const pixelViewSource = readRequiredFile(pixelViewPath, "pixel-worldview-readonly-entry.tsx")
     const viewModelSource = readRequiredFile(viewModelGatewayPath, "world-view-model-gateway.ts")
     const actorMapperSource = readRequiredFile(actorMapperPath, "world-actor-mapper.ts")
     const pPhoneSource = readRequiredFile(pPhoneMapperPath, "p-phone-view-mapper.ts")
@@ -143,8 +151,8 @@ async function main() {
 
     assert(worldPageSource.includes("readWorldRuntimeForView"), "Formal /world page no longer reads runtime through readWorldRuntimeForView.")
     assert(worldPageSource.includes("buildWorldViewModelForPixelWorld"), "Formal /world page no longer builds WorldViewModel.")
-    assert(worldPageSource.includes("<PixelWorldView model={worldViewModel} />"), "Formal /world page no longer passes WorldViewModel into PixelWorldView.")
-    assert(pixelViewSource.includes("data-surface-state=\"cleared\""), "PixelWorldView is no longer a cleared surface.")
+    assert(worldPageSource.includes("<PixelWorldViewReadonlyEntry worldViewModel={worldViewModel} />"), "Formal /world page no longer passes WorldViewModel into the readonly PixelWorldView entry.")
+    assert(pixelViewSource.includes("<FormalPixiPixelWorldRendererClient buffer={bufferResult.buffer} />"), "PixelWorldView no longer mounts the formal PixiJS renderer.")
     assert(viewModelSource.includes("ui_auto_generation_input_boundary"), "WorldViewModel is missing UI auto-generation boundary tag.")
     assert(viewModelSource.includes("formal_ui_reads_world_view_model_only"), "WorldViewModel is missing formal UI read boundary tag.")
     assert(actorMapperSource.includes("FORMAL_PET_ENTRY_TAGS"), "Actor mapper is missing formal pet entry boundary.")
@@ -160,7 +168,6 @@ async function main() {
       "WorldPainterReadonlyPreview",
       "FormalWorldView",
       "ProceduralRendererView",
-      "P-Phone",
       "当前记录",
       "管家说明",
       "pet_default",

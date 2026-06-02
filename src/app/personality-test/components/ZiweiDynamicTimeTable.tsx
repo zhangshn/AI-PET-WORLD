@@ -4,8 +4,8 @@
  * 当前文件负责：组装紫微动态层的大运、流年、流月、流日、流时测试时间表。
  */
 
-import type { ActiveDynamicFlow } from "../types"
-import { BRANCH_LABELS } from "../constants"
+import type { ActiveDynamicFlow } from "../personality-test-types"
+import { BRANCH_LABELS } from "../personality-test-constants"
 
 import {
   getDayLabel,

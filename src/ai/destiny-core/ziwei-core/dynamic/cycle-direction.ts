@@ -2,7 +2,7 @@
  * 当前文件负责：根据出生年干与性别判断大运顺逆。
  */
 
-import type { HeavenlyStem } from "../schema"
+import type { HeavenlyStem } from "../ziwei-core-schema"
 
 import { getHeavenlyStemPolarity } from "../knowledge/stems"
 

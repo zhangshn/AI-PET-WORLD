@@ -9,7 +9,7 @@ import type {
   ButlerMemoryEffect,
   ButlerMotivation,
   ButlerWorldPerception,
-} from "./schema"
+} from "./butler-autonomy-schema"
 
 export function buildButlerAutonomyExplanations(input: {
   worldId: string

@@ -4,7 +4,7 @@
 
 import { useMemo, useState } from "react"
 
-import type { BranchPalace } from "../../../ai/destiny-core/ziwei-core/schema"
+import type { BranchPalace } from "../../../ai/destiny-core/ziwei-core/ziwei-core-schema"
 
 import {
   clampSolarDay,

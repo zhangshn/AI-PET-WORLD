@@ -27,7 +27,7 @@ import type {
   CorePersonality,
   PersonalityTraits,
   StarId
-} from "../schema"
+} from "../ziwei-core-schema"
 
 /**
  * ======================================================

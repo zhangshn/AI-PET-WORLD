@@ -31,7 +31,7 @@ export const BUTLER_CORE_PUBLIC_GATEWAYS: ButlerCoreBoundaryModule[] = [
   },
   {
     layer: "public_gateway",
-    path: "src/ai/gateway.ts",
+    path: "src/ai/ai-system-gateway.ts",
     role: "AI 核心统一公开入口。",
     accessRule:
       "世界引擎、测试页、系统层应优先通过该 gateway 访问 AI 核心能力。",
@@ -110,7 +110,7 @@ export const BUTLER_CORE_EDUCATION_MODULES: ButlerCoreBoundaryModule[] = [
   },
   {
     layer: "education",
-    path: "src/systems/butler/butler-opportunity-runner.ts",
+    path: "src/systems/butler/butler-pet-opportunity-runner.ts",
     role: "当前管家机会创建与冷却混合模块。",
     accessRule:
       "当前保留旧实现；后续逐步拆分到 education / behavior。管家机会只能成为宠物判断输入。",

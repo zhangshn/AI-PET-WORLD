@@ -7,7 +7,7 @@ import { buildWorldEcologyState } from "@/world/ecology/world-ecology-state"
 import type {
   ButlerAutonomyInput,
   ButlerWorldPerception,
-} from "./schema"
+} from "./butler-autonomy-schema"
 
 export function buildButlerWorldPerception(
   input: ButlerAutonomyInput

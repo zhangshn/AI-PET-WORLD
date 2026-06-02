@@ -3,7 +3,7 @@
  */
 
 import type { TimeState } from "../timeSystem"
-import type { WorldStimulus } from "../../ai/gateway"
+import type { WorldStimulus } from "../../ai/ai-system-gateway"
 
 import type { ButlerState } from "../../types/butler"
 import type { WorldEvent } from "../../types/event"

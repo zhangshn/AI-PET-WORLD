@@ -2,7 +2,7 @@
  * 当前文件负责：读取宠物事件叙事所需的上下文字段。
  */
 
-import type { PetEventStyleInput } from "@/ai/event-style/schema"
+import type { PetEventStyleInput } from "@/ai/event-style/event-style-schema"
 import type { NarrativeType } from "@/types/event"
 import type { HomeState } from "@/types/home"
 import type { PetAction, PetMood } from "@/types/pet"

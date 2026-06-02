@@ -6,7 +6,7 @@ import type {
   ButlerAutonomyInput,
   ButlerConsciousState,
   ButlerWorldPerception,
-} from "./schema"
+} from "./butler-autonomy-schema"
 
 export function buildButlerConsciousState(input: {
   input: ButlerAutonomyInput

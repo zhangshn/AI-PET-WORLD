@@ -2,7 +2,7 @@
  * 当前文件负责：定义 personality-test 页面统一动态时间结构。
  */
 
-import type { BranchPalace } from "../../../ai/destiny-core/ziwei-core/schema"
+import type { BranchPalace } from "../../../ai/destiny-core/ziwei-core/ziwei-core-schema"
 
 export interface PersonalityTestRuntimeTime {
   /**

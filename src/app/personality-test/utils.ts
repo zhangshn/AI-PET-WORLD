@@ -6,13 +6,13 @@ import type {
   BranchPalace,
   SectorName,
   StarId
-} from "../../ai/destiny-core/ziwei-core/schema"
+} from "../../ai/destiny-core/ziwei-core/ziwei-core-schema"
 
 import {
   BRANCH_LABELS,
   SECTOR_LABELS_FALLBACK,
   TIME_BRANCH_BY_HOUR
-} from "./constants"
+} from "./personality-test-constants"
 
 import {
   DEV_SECTOR_LABELS,

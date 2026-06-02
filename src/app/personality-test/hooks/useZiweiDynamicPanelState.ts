@@ -5,12 +5,12 @@
 import type {
   BirthPattern,
   PersonalityProfile
-} from "../../../ai/destiny-core/ziwei-core/schema"
+} from "../../../ai/destiny-core/ziwei-core/ziwei-core-schema"
 
 import type {
   ActiveDynamicFlow,
   DynamicGenderInput
-} from "../types"
+} from "../personality-test-types"
 
 import type { PersonalityTestRuntimeTime } from "../runtime-time/personality-test-runtime-time-types"
 import type { ZiweiDynamicTimeSelection } from "../components/ZiweiDynamicTimeTable"

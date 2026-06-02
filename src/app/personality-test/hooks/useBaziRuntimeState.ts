@@ -10,7 +10,7 @@ import {
 } from "../../../ai/destiny-core/bazi-core/bazi-gateway"
 
 import type { BaziProfile } from "../../../ai/destiny-core/bazi-core/bazi-gateway"
-import type { DynamicGenderInput } from "../types"
+import type { DynamicGenderInput } from "../personality-test-types"
 
 function resolveBaziRuntimeGender(
   dynamicGender: DynamicGenderInput

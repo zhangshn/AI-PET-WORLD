@@ -5,7 +5,7 @@
 import type {
   CurrentLifeRuntimeBundle,
   LifeTendencyScores,
-} from "../../../ai/gateway"
+} from "../../../ai/ai-system-gateway"
 
 import type {
   DriveLayerContext,

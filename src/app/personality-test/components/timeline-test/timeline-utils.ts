@@ -2,11 +2,11 @@
  * 当前文件负责：提供 Timeline 测试使用的时间推进与快照差异工具。
  */
 
-import type { PetTimelineSnapshot } from "../../../../ai/gateway"
+import type { PetTimelineSnapshot } from "../../../../ai/ai-system-gateway"
 import type {
   DiffItem,
   TimelineClock
-} from "./timeline-types"
+} from "./timeline-test-types"
 
 export function clampHour(hour: number): number {
   return ((hour % 24) + 24) % 24

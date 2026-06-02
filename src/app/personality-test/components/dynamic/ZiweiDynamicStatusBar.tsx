@@ -9,9 +9,9 @@ import type {
 import {
   BRANCH_FULL_LABELS,
   BRANCH_LABELS
-} from "../../constants"
+} from "../../personality-test-constants"
 
-import type { DynamicGenderInput } from "../../types"
+import type { DynamicGenderInput } from "../../personality-test-types"
 import { ValueLine } from "../common/ValueLine"
 import type { ZiweiDynamicTimeSelection } from "../ZiweiDynamicTimeTable"
 

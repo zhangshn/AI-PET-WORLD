@@ -9,7 +9,7 @@
 
 import type {
   ButlerProfile,
-} from "@/ai/gateway"
+} from "@/ai/ai-system-gateway"
 import type {
   ZiweiConsciousnessKernel,
 } from "@/ai/consciousness-core/consciousness/consciousness-gateway"

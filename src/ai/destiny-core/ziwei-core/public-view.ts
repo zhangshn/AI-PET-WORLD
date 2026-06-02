@@ -2,7 +2,7 @@
  * 当前文件负责：将紫微原始人格资料转换为公开展示视图。
  */
 
-import type { PersonalityProfile } from "./schema"
+import type { PersonalityProfile } from "./ziwei-core-schema"
 
 export type PublicPersonalityView = {
   innateTemperament: string

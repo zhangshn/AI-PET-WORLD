@@ -2,7 +2,7 @@
  * 当前文件负责：提供紫微动态时间表使用的中文标签。
  */
 
-import type { BranchPalace } from "../../../../ai/destiny-core/ziwei-core/schema"
+import type { BranchPalace } from "../../../../ai/destiny-core/ziwei-core/ziwei-core-schema"
 
 export const TIME_BRANCH_ORDER: BranchPalace[] = [
   "zi",

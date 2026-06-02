@@ -4,7 +4,7 @@
 
 import type {
   BranchPalace
-} from "../destiny-core/ziwei-core/schema"
+} from "../destiny-core/ziwei-core/ziwei-core-schema"
 
 import {
   clampSolarDay,

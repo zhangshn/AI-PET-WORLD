@@ -7,7 +7,7 @@ import type { ZiweiDynamicInfluence } from "../../../../ai/destiny-core/ziwei-co
 import {
   BRANCH_FULL_LABELS,
   DYNAMIC_FLOW_LABELS
-} from "../../constants"
+} from "../../personality-test-constants"
 
 export function DynamicDebugFlows({
   influence

@@ -8,7 +8,7 @@ import { getStarProfile } from "../knowledge/starProfiles"
 import type {
   CorePersonality,
   PersonalityTraits
-} from "../schema"
+} from "../ziwei-core-schema"
 
 import type {
   ZiweiDynamicChart,

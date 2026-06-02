@@ -7,7 +7,7 @@ import type {
 } from "@/ai/data-core/ai-data-types"
 import type {
   WorldStimulus,
-} from "@/ai/gateway"
+} from "@/ai/ai-system-gateway"
 import type {
   TimeState,
 } from "@/engine/timeSystem"

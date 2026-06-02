@@ -5,7 +5,7 @@
 import type {
   PetTimelineSnapshot,
   StateUpdateEvent
-} from "../../../../ai/gateway"
+} from "../../../../ai/ai-system-gateway"
 
 import { InfoCard } from "../common/InfoCard"
 
@@ -18,7 +18,7 @@ import type {
   DiffItem,
   TimelineClock,
   TimelineLogEntry
-} from "./timeline-types"
+} from "./timeline-test-types"
 
 export function TimelineTestPanel({
   timelineClock,

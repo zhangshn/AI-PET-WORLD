@@ -7,7 +7,7 @@ import type { ZiweiFlowResult } from "../../../../ai/destiny-core/ziwei-core/dyn
 import {
   BRANCH_FULL_LABELS,
   DYNAMIC_FLOW_LABELS
-} from "../../constants"
+} from "../../personality-test-constants"
 
 import {
   getSectorLabel,

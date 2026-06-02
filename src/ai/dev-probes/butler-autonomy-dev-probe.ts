@@ -6,7 +6,7 @@ import {
   buildAiButlerAutonomy,
   type ButlerAutonomyInput,
   type ButlerAutonomyResult,
-} from "@/ai/gateway"
+} from "@/ai/ai-system-gateway"
 
 export type ButlerAutonomyDevProbeStatus = "passed" | "warning"
 

@@ -7,7 +7,7 @@ import type {
   ZiweiFlowResult
 } from "../../../../ai/destiny-core/ziwei-core/dynamic/dynamic-schema"
 
-import type { ActiveDynamicFlow } from "../../types"
+import type { ActiveDynamicFlow } from "../../personality-test-types"
 
 export function getActiveFlowResult(
   chart: ZiweiDynamicChart,

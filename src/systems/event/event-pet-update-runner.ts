@@ -2,7 +2,7 @@
  * 当前文件负责：根据宠物前后状态变化生成宠物相关世界事件。
  */
 
-import { buildPetEvent } from "@/ai/gateway"
+import { buildPetEvent } from "@/ai/ai-system-gateway"
 import type { WorldEvent } from "@/types/event"
 import type { ContinuityState, PetStateLike } from "./event-schema"
 import {
@@ -24,7 +24,7 @@ import {
   makeWorldEvent,
   shouldEmitActionNarrativeEvent,
   shouldResetContinuity,
-} from "./event-gateway"
+} from "./world-event-system-gateway"
 
 export type BuildPetUpdateEventsInput = {
   tick: number

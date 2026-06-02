@@ -47,7 +47,7 @@
  * ======================================================
  */
 
-import type { SectorName } from "./schema"
+import type { SectorName } from "./ziwei-core-schema"
 
 /**
  * ======================================================

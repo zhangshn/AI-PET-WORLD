@@ -2,7 +2,7 @@
  * 当前文件负责：从 drive 输入中读取人格、意识、状态与时间上下文。
  */
 
-import type { PersonalityTraits } from "../../../ai/destiny-core/ziwei-core/schema"
+import type { PersonalityTraits } from "../../../ai/destiny-core/ziwei-core/ziwei-core-schema"
 import type { ConsciousnessBias } from "../../../ai/consciousness-core/consciousness/consciousness-gateway"
 import type { PetState } from "../../../types/pet"
 import type { DriveSystemInput } from "./pet-drive-types"

@@ -2,7 +2,7 @@
  * 当前文件职责：根据宠物、家园、管家感知、Profile、Relation 与后天记忆判断管家的当前任务。
  */
 
-import type { GenderAwareBehaviorBias } from "@/ai/gateway"
+import type { GenderAwareBehaviorBias } from "@/ai/ai-system-gateway"
 import type { HomeState } from "@/types/home"
 import type { PetState } from "@/types/pet"
 import type {

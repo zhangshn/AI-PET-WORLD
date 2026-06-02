@@ -2,7 +2,7 @@
  * 当前文件负责：展示 Timeline 当前快照与本次变化。
  */
 
-import type { PetTimelineSnapshot } from "../../../../ai/gateway"
+import type { PetTimelineSnapshot } from "../../../../ai/ai-system-gateway"
 
 import { ValueLine } from "../common/ValueLine"
 
@@ -15,7 +15,7 @@ import {
   RELATIONAL_LABELS
 } from "./timeline-labels"
 
-import type { DiffItem } from "./timeline-types"
+import type { DiffItem } from "./timeline-test-types"
 
 export function TimelineSnapshotView({
   timelineSnapshot,

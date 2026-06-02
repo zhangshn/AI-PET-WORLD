@@ -11,7 +11,7 @@ import type {
   PersonalityInterpretationProfile,
 } from "../personality-interpretation-core/interpretation-gateway"
 import type { PublicPersonalityView } from "../../destiny-core/ziwei-core/public-view"
-import type { PersonalityProfile } from "../../destiny-core/ziwei-core/schema"
+import type { PersonalityProfile } from "../../destiny-core/ziwei-core/ziwei-core-schema"
 
 export type LifeProfileSubjectType =
   | "pet"

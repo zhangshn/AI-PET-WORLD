@@ -2,7 +2,7 @@
  * 当前文件负责：定义五行局对应的起运岁数。
  */
 
-import type { ElementGate } from "../schema"
+import type { ElementGate } from "../ziwei-core-schema"
 
 export const ELEMENT_GATE_START_AGE: Record<ElementGate, number> = {
   water_2: 2,

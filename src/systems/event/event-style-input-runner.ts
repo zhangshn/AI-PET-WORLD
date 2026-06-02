@@ -2,7 +2,7 @@
  * 当前文件负责：构建宠物事件叙事系统所需的样式输入。
  */
 
-import type { PetEventStyleInput } from "@/ai/event-style/schema"
+import type { PetEventStyleInput } from "@/ai/event-style/event-style-schema"
 import type { NarrativeType } from "@/types/event"
 import type { HomeState } from "@/types/home"
 import type { PetAction, PetMood } from "@/types/pet"

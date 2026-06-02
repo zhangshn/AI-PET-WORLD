@@ -5,9 +5,9 @@
 import {
   buildPetBehaviorProcess,
   buildPetStimulusCognition,
-} from "../../../ai/gateway"
+} from "../../../ai/ai-system-gateway"
 
-import type { WorldStimulus } from "../../../ai/gateway"
+import type { WorldStimulus } from "../../../ai/ai-system-gateway"
 import type { PetCognitionRecord } from "../../../types/cognition"
 import type { PetState } from "../../../types/pet"
 

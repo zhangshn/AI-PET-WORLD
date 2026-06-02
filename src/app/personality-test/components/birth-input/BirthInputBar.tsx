@@ -2,7 +2,7 @@
  * 当前文件负责：组装人格测试页顶部的出生年月日时与性别输入栏。
  */
 
-import type { DynamicGenderInput } from "../../types"
+import type { DynamicGenderInput } from "../../personality-test-types"
 
 import { BirthDayInput } from "./BirthDayInput"
 import { BirthGenderInput } from "./BirthGenderInput"

@@ -2,7 +2,7 @@
  * 当前文件负责：先按男女视角进入紫微结构，再映射生命功能结果。
  */
 
-import type { PersonalityProfile, SectorName, StarId } from "../../destiny-core/ziwei-core/schema"
+import type { PersonalityProfile, SectorName, StarId } from "../../destiny-core/ziwei-core/ziwei-core-schema"
 
 import {
   getGenderAwareZiweiTraitWeights,

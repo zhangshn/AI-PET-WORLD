@@ -5,9 +5,9 @@
 import type {
   BranchPalace,
   SectorName
-} from "../../../../ai/destiny-core/ziwei-core/schema"
+} from "../../../../ai/destiny-core/ziwei-core/ziwei-core-schema"
 
-import { BRANCH_LABELS } from "../../constants"
+import { BRANCH_LABELS } from "../../personality-test-constants"
 import { getSectorLabel } from "../../utils"
 
 export function ZiweiPalaceHeader({

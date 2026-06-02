@@ -6,7 +6,7 @@ import type {
   BranchPalace,
   SectorName,
   StarId
-} from "../schema"
+} from "../ziwei-core-schema"
 
 export type ZiweiGender = "male" | "female"
 

@@ -15,7 +15,7 @@ import {
   type BaziRuntimeModifiers
 } from "../../../../ai/destiny-core/bazi-core/bazi-gateway"
 
-import type { DynamicGenderInput } from "../../types"
+import type { DynamicGenderInput } from "../../personality-test-types"
 import type { PersonalityTestRuntimeTime } from "../../runtime-time/personality-test-runtime-time-types"
 
 import { InfoCard } from "../common/InfoCard"

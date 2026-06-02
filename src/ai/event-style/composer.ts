@@ -11,7 +11,7 @@
  * ======================================================
  */
 
-import type { PetEventStyleInput } from "./schema"
+import type { PetEventStyleInput } from "./event-style-schema"
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)]

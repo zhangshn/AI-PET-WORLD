@@ -8,7 +8,7 @@ import type {
   ButlerMotivation,
   ButlerSoulProfile,
   ButlerWorldPerception,
-} from "./schema"
+} from "./butler-autonomy-schema"
 
 export function buildButlerMotivations(input: {
   soulProfile: ButlerSoulProfile

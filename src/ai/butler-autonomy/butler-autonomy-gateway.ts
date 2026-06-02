@@ -15,7 +15,7 @@ import {
 import { buildButlerMotivations } from "./motivation-engine"
 import { buildButlerSoulProfileFromButlerProfile } from "./soul-profile-adapter"
 import { buildButlerWorldPerception } from "./world-perception"
-import type { ButlerAutonomyInput, ButlerAutonomyResult } from "./schema"
+import type { ButlerAutonomyInput, ButlerAutonomyResult } from "./butler-autonomy-schema"
 
 export function buildButlerAutonomyResult(
   input: ButlerAutonomyInput

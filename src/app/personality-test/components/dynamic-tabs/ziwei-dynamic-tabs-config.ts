@@ -2,7 +2,7 @@
  * 当前文件负责：定义紫微动态层切换按钮配置。
  */
 
-import type { ActiveDynamicFlow } from "../../types"
+import type { ActiveDynamicFlow } from "../../personality-test-types"
 
 export type ZiweiDynamicTabConfig = {
   flow: ActiveDynamicFlow

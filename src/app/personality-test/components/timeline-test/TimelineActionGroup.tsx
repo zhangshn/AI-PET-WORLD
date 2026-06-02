@@ -2,7 +2,7 @@
  * 当前文件负责：展示 Timeline 测试面板中的操作按钮组。
  */
 
-import type { StateUpdateEvent } from "../../../../ai/gateway"
+import type { StateUpdateEvent } from "../../../../ai/ai-system-gateway"
 
 import { TimelineActionButton } from "./TimelineActionButton"
 

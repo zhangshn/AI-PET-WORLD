@@ -12,7 +12,7 @@ import type {
   SectorName,
   SectorStars,
   StarId
-} from "./schema"
+} from "./ziwei-core-schema"
 
 import { convertSolarToLunarInfo } from "./lunar"
 import { calculateZiweiEngine, getOppositePalace } from "./ziwei-engine"

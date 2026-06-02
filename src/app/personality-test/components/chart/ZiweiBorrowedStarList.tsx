@@ -5,7 +5,7 @@
 import type {
   BranchPalace,
   StarId
-} from "../../../../ai/destiny-core/ziwei-core/schema"
+} from "../../../../ai/destiny-core/ziwei-core/ziwei-core-schema"
 
 import { getStarDisplay } from "../../utils"
 

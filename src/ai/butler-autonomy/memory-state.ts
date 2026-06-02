@@ -8,7 +8,7 @@ import type {
   ButlerMemoryEffect,
   ButlerMemoryEvent,
   ButlerMemoryState,
-} from "./schema"
+} from "./butler-autonomy-schema"
 
 export function buildInitialButlerMemoryState(
   input: ButlerAutonomyInput

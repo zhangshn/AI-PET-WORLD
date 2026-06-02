@@ -63,7 +63,7 @@ import type {
   PersonalityProfile,
   PersonalityTraits,
   StarId
-} from "./schema"
+} from "./ziwei-core-schema"
 
 import {
   BORROWED_STAR_WEIGHT,
@@ -73,7 +73,7 @@ import {
   MIN_TRAIT_VALUE,
   PRIMARY_STAR_WEIGHT,
   SUPPORT_STAR_WEIGHT
-} from "./constants"
+} from "./ziwei-core-constants"
 
 /**
  * ======================================================

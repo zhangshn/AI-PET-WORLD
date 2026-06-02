@@ -2,13 +2,13 @@
  * 当前文件负责：根据当前点击的动态层级生成时间表底部说明。
  */
 
-import type { ActiveDynamicFlow } from "../../types"
+import type { ActiveDynamicFlow } from "../../personality-test-types"
 import type { ZiweiDynamicTimeSelection } from "./ziwei-time-types"
 
 import {
   BRANCH_LABELS,
   DYNAMIC_FLOW_LABELS
-} from "../../constants"
+} from "../../personality-test-constants"
 
 import {
   getDayLabel,

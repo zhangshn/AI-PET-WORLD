@@ -2,7 +2,7 @@
  * 当前文件负责：维护家园状态，并调度家园建造进度更新。
  */
 
-import type { GenderAwareBehaviorBias } from "../ai/gateway"
+import type { GenderAwareBehaviorBias } from "../ai/ai-system-gateway"
 import type {
   ButlerBehaviorExecution,
 } from "./butler/butler-gateway"

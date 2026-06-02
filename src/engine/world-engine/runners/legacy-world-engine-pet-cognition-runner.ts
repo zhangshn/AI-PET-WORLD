@@ -2,7 +2,7 @@
  * 当前文件负责：封装宠物感知世界刺激、生成认知结果并写入事件系统的流程。
  */
 
-import type { WorldStimulus } from "@/ai/gateway"
+import type { WorldStimulus } from "@/ai/ai-system-gateway"
 import type { TimeState } from "../../timeSystem"
 import type { PetSystem } from "@/systems/petSystem"
 import type { EventSystem } from "@/systems/eventSystem"

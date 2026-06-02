@@ -6,7 +6,7 @@
  * 管家可以影响家园，但不能借此控制宠物。
  */
 
-import type { GenderAwareBehaviorBias } from "@/ai/gateway"
+import type { GenderAwareBehaviorBias } from "@/ai/ai-system-gateway"
 import type { ButlerState } from "@/types/butler"
 import type { HomeState } from "@/types/home"
 import type { PetState } from "@/types/pet"

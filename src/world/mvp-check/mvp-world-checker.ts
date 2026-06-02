@@ -7,7 +7,7 @@ import type {
 } from "@/engine/timeSystem"
 import type {
   WorldStimulus,
-} from "@/ai/gateway"
+} from "@/ai/ai-system-gateway"
 import type {
   ButlerState,
 } from "@/types/butler"

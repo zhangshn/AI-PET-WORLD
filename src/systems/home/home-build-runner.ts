@@ -2,7 +2,7 @@
  * 当前文件负责：根据建造投入与人格行为偏置推进家园状态。
  */
 
-import type { GenderAwareBehaviorBias } from "@/ai/gateway"
+import type { GenderAwareBehaviorBias } from "@/ai/ai-system-gateway"
 import type { HomeState } from "@/types/home"
 import { resolveEvolutionFocus } from "./home-evolution-runner"
 import { resolveConstructionStage } from "./home-stage-runner"

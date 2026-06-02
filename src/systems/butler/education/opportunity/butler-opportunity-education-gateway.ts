@@ -14,4 +14,4 @@ export {
   hasPendingOpportunity,
   markOpportunityCreated,
   removeExpiredOpportunities,
-} from "../../butler-opportunity-runner"
+} from "../../butler-pet-opportunity-runner"

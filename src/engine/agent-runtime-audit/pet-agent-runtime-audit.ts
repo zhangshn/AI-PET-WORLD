@@ -10,12 +10,12 @@ import {
   buildAgentMemoryImpact,
   buildAgentPerception,
   buildAgentSignal,
-} from "@/ai/gateway"
+} from "@/ai/ai-system-gateway"
 
 import type {
   AgentCycleTrace,
   AgentIntentionType,
-} from "@/ai/gateway"
+} from "@/ai/ai-system-gateway"
 
 import type {
   RuntimePetAgentAuditInput,

@@ -9,7 +9,7 @@ import type {
   PersonalityTraits,
   SectorName,
   StarId
-} from "../../schema"
+} from "../../ziwei-core-schema"
 
 import type {
   ZiweiDynamicInfluence,

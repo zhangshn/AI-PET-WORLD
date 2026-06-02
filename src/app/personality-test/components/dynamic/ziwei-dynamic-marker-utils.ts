@@ -6,7 +6,7 @@ import type {
   ZiweiDynamicChart
 } from "../../../../ai/destiny-core/ziwei-core/dynamic/dynamic-schema"
 
-import type { ActiveDynamicFlow } from "../../types"
+import type { ActiveDynamicFlow } from "../../personality-test-types"
 import type { ZiweiChartFlowMarker } from "../chart/ziwei-chart-types"
 
 function shouldShowMarker(params: {

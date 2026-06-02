@@ -10,7 +10,7 @@ import type {
 import type {
   ButlerProfile,
   GenderAwareBehaviorBias,
-} from "@/ai/gateway"
+} from "@/ai/ai-system-gateway"
 
 import type {
   ButlerWorldPerceptionSnapshot,

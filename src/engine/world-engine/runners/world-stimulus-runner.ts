@@ -5,7 +5,7 @@
 import {
   buildWorldStimuli,
   type WorldStimulus,
-} from "@/ai/gateway"
+} from "@/ai/ai-system-gateway"
 
 import type { TimeState } from "../../timeSystem"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"

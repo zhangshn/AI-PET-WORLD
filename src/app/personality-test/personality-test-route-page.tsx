@@ -27,7 +27,7 @@ import { TestDashboardNotice } from "./components/dashboard/TestDashboardNotice"
 import { TestDashboardPanel } from "./components/dashboard/TestDashboardPanel"
 import { TestDashboardSection } from "./components/dashboard/TestDashboardSection"
 
-import type { ActiveDynamicFlow } from "./types"
+import type { ActiveDynamicFlow } from "./personality-test-types"
 import type { BaziRuntimeActiveLevel } from "./components/bazi-runtime-panel/bazi-runtime-panel-types"
 
 import { PersonalityTestRuntimeTimePanel } from "./runtime-time/PersonalityTestRuntimeTimePanel"

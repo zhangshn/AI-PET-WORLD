@@ -9,9 +9,9 @@ import type {
   CurrentLifeRuntimeBundle,
   LifePersonalityProfileBundle,
   PetTimelineSnapshot,
-} from "../ai/gateway"
+} from "../ai/ai-system-gateway"
 import type { ButlerOpportunity } from "./butlerSystem"
-import type { WorldStimulus } from "../ai/gateway"
+import type { WorldStimulus } from "../ai/ai-system-gateway"
 import type { PetCognitionRecord } from "../types/cognition"
 import type { WorldZone } from "../world/ecology/world-zone-types"
 

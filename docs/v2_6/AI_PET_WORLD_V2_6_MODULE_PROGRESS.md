@@ -2,7 +2,7 @@
 
 > 本进度表只依据当前仓库、当前 M11 交接文档与当前业务口径维护。
 >
-> 当前准确阶段：M11｜核心资源库 / 验算库 closeout 已完成，视觉算法 Debug 已合并，准备进入正式画图算法重整。
+> 当前准确阶段：只读 PixiJS PixelWorldView 已接入 `/world`，正在从矩形色块工程预览进入对象级正式像素画面生成。
 >
 > 当前不是恢复旧 `/world` 画面，不是网页卡片主页整理，不是进入 M8 / M9 / M10。
 
@@ -40,7 +40,7 @@
 | M11 UI 自动生成输入边界验算 | 100% | 完成 | `smoke:m11-ui-auto-generation-input-boundary` 已注册并通过；正式 UI 只读 WorldViewModel、不生成世界事实、不恢复旧卡片、不触发 runtime 写入 |
 | M11 核心资源库 / 验算库 closeout | 100% | 完成 | `smoke:m11-core-resource-closeout` 已注册并通过；M11 核心资源、WorldViewModel、Actor、P-Phone、UI 输入边界、正式 `/world` cleared 边界已完成总验收 |
 | M11 视觉算法 Debug 合并 | 100% | 完成 | 旧 `/world-debug/pixel-scene-composer` 与 `/world-debug/tree-render-test` 已删除；只保留 `/world-debug/pixel-visual-lab`，并通过 `smoke:world-debug-pixel-visual-lab` 验收 |
-| M11 正式画图算法重整 | 0% | 下一步 | 核心资源库 / 验算库已完成 closeout；视觉算法 Debug 已合并为单一测试台；下一阶段开始重整正式画图算法，未来 `/world` 是端游式像素主世界，不是网页卡片页 |
+| M11 正式画图算法重整 | 进行中 | 进行中 | `/world` 已接入只读 PixiJS PixelWorldView；当前仍以矩形色块缓冲区为主，下一步深化对象配方、管家 Sprite、建筑与生态变化表现 |
 | M12 构建与质量验收 | 持续 | 持续 | 每个阶段后必须 lint / tsc / build / 对应 smoke |
 
 ---
@@ -77,14 +77,19 @@ UI 自动生成输入边界验算
 当前准确阶段是：
 
 ```txt
-M11｜核心资源库 / 验算库 closeout 已完成，视觉算法 Debug 已合并
+只读 PixiJS PixelWorldView 已接入 /world
+→ 当前仍是矩形色块工程预览
+→ 正在进入对象级正式像素画面生成
 ```
 
 后续路线：
 
 ```txt
-正式画图算法重整
-→ 端游式 /world 主世界恢复
+对象级像素配方深化
+→ 管家 Sprite 与动作表现
+→ 建筑与生态变化表现
+→ 去除正式 /world 工程状态卡片
+→ 端游式 /world 主世界体验收口
 → MVP closeout
 ```
 
@@ -159,7 +164,7 @@ P-Phone 通信入口
 | WorldViewModel actors 基础存在性 | 当前必须有且只有可见管家 actor | 已验收 |
 | Actor 输入边界 | 未验证 pet placement 被拦截；正式未来 pet entry 需要 `formal_life_entry_validated / pet_world_entry_validated / actor_input_boundary_validated` | 已验收 |
 | P-Phone 输入边界 | 只读 `WorldViewModel.pPhone`；用户文案不暴露 HomeMapState / SafeApply / TraceField / AuditSummary / WorldViewModel 等后台词；正式 `/world` 不恢复旧 P-Phone 卡片 | 已验收 |
-| UI 自动生成输入边界 | 正式 `/world` 只把 WorldViewModel 传给 PixelWorldView；PixelWorldView 当前保持 cleared；未来 UI 不得直接读写 runtime、不得生成世界事实、不得恢复旧卡片或 Debug 来源 | 已验收 |
+| UI 自动生成输入边界 | 正式 `/world` 只把 WorldViewModel 传给只读 PixelWorldView；未来 UI 不得直接读写 runtime、不得生成世界事实、不得恢复 Debug 来源 | 已验收 |
 | closeout 总验收 | package smoke 注册、文档 closeout 状态、WorldViewModel 边界、正式 UI 边界、无默认宠物、只读投影 | 已验收 |
 | 视觉算法 Debug 合并 | 只保留 `/world-debug/pixel-visual-lab`；旧视觉 Debug 独立页面已删除；页面不读 runtime、不写世界事实、不推进 Tick | 已验收 |
 | formal `/world` path | 不引用视觉 Debug 页面 / SVG Debug 预览 / procedural renderer | 已验收 |

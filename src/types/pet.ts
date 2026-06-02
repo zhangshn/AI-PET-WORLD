@@ -9,7 +9,7 @@ import type {
   PersonalityProfile,
   PetTimelineSnapshot,
   PublicPersonalityView,
-} from "../ai/gateway"
+} from "../ai/ai-system-gateway"
 
 import type {
   ZiweiConsciousnessKernel,

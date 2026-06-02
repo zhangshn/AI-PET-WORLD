@@ -7,7 +7,7 @@ import type {
   BranchPalace,
   SectorName,
   StarId
-} from "../schema"
+} from "../ziwei-core-schema"
 
 import { getElementGateStartAge } from "../knowledge/elementGates"
 import { getZiweiDynamicFlowWeight } from "../knowledge/dynamicWeights"

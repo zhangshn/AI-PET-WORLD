@@ -4,7 +4,7 @@
 
 import type { ButlerProfile } from "@/ai/personality-core/butler-profile-core/butler-profile-gateway"
 
-import type { ButlerSoulProfile } from "./schema"
+import type { ButlerSoulProfile } from "./butler-autonomy-schema"
 
 export function buildButlerSoulProfileFromButlerProfile(
   profile: ButlerProfile

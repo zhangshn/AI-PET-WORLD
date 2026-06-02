@@ -22,7 +22,7 @@ import type {
   CorePersonality,
   PersonalityProfile,
   PersonalityTraits
-} from "./schema"
+} from "./ziwei-core-schema"
 
 /**
  * 早期成长阶段成长印记

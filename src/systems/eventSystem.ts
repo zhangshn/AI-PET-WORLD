@@ -14,7 +14,7 @@ import {
   type InteractionEventInput,
   type PetAdoptionAppliedEventInput,
   type PetStateLike,
-} from "./event/event-gateway"
+} from "./event/world-event-system-gateway"
 
 import { EventDedupeRunner } from "./event/event-dedupe-runner"
 

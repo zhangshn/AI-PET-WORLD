@@ -3,7 +3,7 @@
  */
 
 import { formatClock } from "./timeline-utils"
-import type { TimelineLogEntry } from "./timeline-types"
+import type { TimelineLogEntry } from "./timeline-test-types"
 
 export function TimelineLogList({
   timelineLogs

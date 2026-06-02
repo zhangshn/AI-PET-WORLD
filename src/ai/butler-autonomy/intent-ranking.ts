@@ -10,7 +10,7 @@ import type {
   ButlerMemoryState,
   ButlerMotivation,
   ButlerWorldPerception,
-} from "./schema"
+} from "./butler-autonomy-schema"
 
 export function buildButlerSelectedIntent(input: {
   input: ButlerAutonomyInput

@@ -10,14 +10,14 @@ import {
   buildAgentMemoryImpact,
   buildAgentPerception,
   buildAgentSignal,
-} from "@/ai/gateway"
+} from "@/ai/ai-system-gateway"
 
 import type {
   AgentCycleTrace,
   AgentIntentionType,
   AgentSignalCategory,
   AgentSignalSource,
-} from "@/ai/gateway"
+} from "@/ai/ai-system-gateway"
 
 import type {
   ButlerTask,

@@ -8,7 +8,7 @@
 
 import type {
   CurrentLifeRuntimeBundle,
-} from "@/ai/gateway"
+} from "@/ai/ai-system-gateway"
 
 export type LifeLineInfluenceFocus =
   | "explore"

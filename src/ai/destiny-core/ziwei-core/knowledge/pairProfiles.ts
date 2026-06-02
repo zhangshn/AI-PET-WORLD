@@ -14,7 +14,7 @@
  * ======================================================
  */
 
-import { PersonalityTraits } from "../schema"
+import { PersonalityTraits } from "../ziwei-core-schema"
 
 export type PairProfile = {
   pairId: string

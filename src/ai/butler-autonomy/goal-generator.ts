@@ -8,7 +8,7 @@ import type {
   ButlerMemoryState,
   ButlerMotivation,
   ButlerWorldPerception,
-} from "./schema"
+} from "./butler-autonomy-schema"
 
 export function buildButlerGoals(input: {
   motivations: ButlerMotivation[]

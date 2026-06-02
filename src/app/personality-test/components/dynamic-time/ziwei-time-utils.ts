@@ -2,7 +2,7 @@
  * 当前文件负责：提供紫微动态时间表使用的时间计算工具。
  */
 
-import type { ActiveDynamicFlow } from "../../types"
+import type { ActiveDynamicFlow } from "../../personality-test-types"
 
 const DYNAMIC_FLOW_ORDER: ActiveDynamicFlow[] = [
   "natal",

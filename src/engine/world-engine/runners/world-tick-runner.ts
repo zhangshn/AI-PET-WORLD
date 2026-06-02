@@ -5,7 +5,7 @@
  */
 
 import type { TimeState } from "../../timeSystem"
-import type { WorldStimulus } from "@/ai/gateway"
+import type { WorldStimulus } from "@/ai/ai-system-gateway"
 import type { WorldRuntimeState } from "@/world/runtime/world-runtime"
 
 export type RunWorldTickInput = {

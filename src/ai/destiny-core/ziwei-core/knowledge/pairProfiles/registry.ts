@@ -47,7 +47,7 @@
  * ======================================================
  */
 
-import type { PairProfile } from "./types"
+import type { PairProfile } from "./pair-profile-types"
 
 import { ziweiPairs } from "./ziweiPairs"
 import { tanlangPairs } from "./tanlangPairs"

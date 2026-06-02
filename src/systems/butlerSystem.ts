@@ -7,7 +7,7 @@ import {
   getOpportunityRule,
 } from "../ai/consciousness-core/autonomy-core/autonomy-gateway"
 
-import type { ButlerProfile } from "../ai/gateway"
+import type { ButlerProfile } from "../ai/ai-system-gateway"
 
 import {
   buildButlerWorldPerception,

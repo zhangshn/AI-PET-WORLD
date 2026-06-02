@@ -7,9 +7,9 @@ import type { ReactNode } from "react"
 import type {
   LifePersonalityProfileBundle,
   PersonalityInterpretationProfile,
-} from "../../../../ai/gateway"
+} from "../../../../ai/ai-system-gateway"
 
-import type { DynamicGenderInput } from "../../types"
+import type { DynamicGenderInput } from "../../personality-test-types"
 import { InfoCard } from "../common/InfoCard"
 
 type BiasItem = {

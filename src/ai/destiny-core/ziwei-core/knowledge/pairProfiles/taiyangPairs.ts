@@ -14,6 +14,6 @@
  * ======================================================
  */
 
-import type { PairProfile } from "./types"
+import type { PairProfile } from "./pair-profile-types"
 
 export const taiyangPairs: PairProfile[] = []

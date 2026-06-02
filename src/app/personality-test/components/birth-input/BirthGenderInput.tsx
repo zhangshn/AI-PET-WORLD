@@ -2,7 +2,7 @@
  * 当前文件负责：展示动态层使用的性别输入。
  */
 
-import type { DynamicGenderInput } from "../../types"
+import type { DynamicGenderInput } from "../../personality-test-types"
 import { ComboInput } from "../common/ComboInput"
 
 export function BirthGenderInput({

@@ -2,7 +2,7 @@
  * 当前文件负责：根据生命人格档案里的建设偏置判断家园成长方向。
  */
 
-import type { GenderAwareBehaviorBias } from "@/ai/gateway"
+import type { GenderAwareBehaviorBias } from "@/ai/ai-system-gateway"
 import type { HomeEvolutionFocus } from "@/types/home"
 
 export function resolveEvolutionFocus(

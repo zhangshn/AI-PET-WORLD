@@ -5,7 +5,7 @@
 import type {
   LifePersonalityProfileBundle,
   WorldStimulus,
-} from "@/ai/gateway"
+} from "@/ai/ai-system-gateway"
 import type { TimeState } from "@/engine/timeSystem"
 import type {
   ButlerState,

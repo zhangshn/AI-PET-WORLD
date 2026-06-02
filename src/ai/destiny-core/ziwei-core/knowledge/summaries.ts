@@ -5,7 +5,7 @@
  * ======================================================
  */
 
-import { PersonalityTraits } from "../schema"
+import { PersonalityTraits } from "../ziwei-core-schema"
 
 export function buildTraitSummaries(traits: PersonalityTraits): string[] {
   const summaries: string[] = []

@@ -6,7 +6,7 @@ import type {
   ButlerAutonomousIntent,
   ButlerAutonomyAudit,
   ButlerAutonomyAuditWarning,
-} from "./schema"
+} from "./butler-autonomy-schema"
 
 const WORLD_FACT_BOUNDARY_TAG_TOKENS = [
   "direct_home_map_write",

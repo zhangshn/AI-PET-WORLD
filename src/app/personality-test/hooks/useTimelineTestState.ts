@@ -8,13 +8,13 @@ import {
   updatePetAiState,
   type PetTimelineSnapshot,
   type StateUpdateEvent
-} from "../../../ai/gateway"
+} from "../../../ai/ai-system-gateway"
 
 import type {
   DiffItem,
   TimelineClock,
   TimelineLogEntry
-} from "../components/timeline-test/timeline-types"
+} from "../components/timeline-test/timeline-test-types"
 
 import {
   advanceClock,

@@ -70,7 +70,7 @@ import type {
   HeavenlyStem,
   LunarBirthInfo,
   TimeBranch
-} from "./schema"
+} from "./ziwei-core-schema"
 
 /**
  * ======================================================

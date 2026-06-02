@@ -670,10 +670,9 @@
       - runtime tick 已能沉淀 traceField、traceMemorySeedField 与 traceInfluenceSummary
       - 管家记忆已有局部雏形：但仍需纳入统一记忆模块与角色记忆生命周期
     - 当前代码风险
-      - /world 正式入口仍在调用 buildSceneSvg，并通过 WorldPainterReadonlyPreview 展示 SVG data-uri
-      - FormalWorldView 仍以 svg / polygon / polyline / circle / ellipse 几何方式渲染，不能作为正式像素主世界
-      - 旧 world-route-page 仍保留视图模式、Debug 视图、双视图、手动 Tick、手动保存和审计卡片，必须迁入 /world-debug
-      - 正式页面仍有 Hero、summary card、resource list、audit 信息倾向，容易再次变成 Debug 卡片页
+      - /world 已接入只读 PixiJS PixelWorldView，但当前仍以矩形色块缓冲区为主，不是完成态正式画面
+      - 对象级像素配方、管家 Sprite、建筑生长表现和生态变化表现仍需深化
+      - 正式页面仍有工程状态卡片、P-Phone 卡片和管家解释卡片，需要收口为端游式主世界轻 Overlay
       - butler-personality-adapter 目前是 MVP hash 映射，不是完整统一生命人格算法接入
     - 当前已经明确
       - 坐标不是生成算法，而是定位底座
@@ -683,18 +682,18 @@
       - 管家和宠物共享底层人格算法，差异来自输入源、角色表达、行为集合和记忆上下文
       - 正式 /world 必须回到像素主世界，不继续做 SVG / CSS / procedural renderer 正式主视觉
     - 当前未完成
-      - PixelWorldView 正式主世界组件
-      - WorldViewModel 到像素 Tile / Object / Sprite / Trace Layer 的映射
-      - SVG / procedural renderer / FormalGeometry 从正式 /world 迁移到 /world-debug
+      - PixelWorldView 正式主世界产品化收口
+      - 对象级 Tile / Object / Sprite / Trace Layer 像素配方深化
+      - 管家 Sprite、动作、朝向、状态与人格差异表现
+      - 建筑生长与生态变化表现
       - 完整记忆模块：共享生命周期 + 管家记忆 + 宠物记忆 + 世界记忆
       - 统一生命人格算法到管家 / 宠物角色适配层的正式接入
       - P-Phone 作为关系入口的正式轻 UI
     - 下一阶段
-      - 清理 /world：只保留正式像素主世界入口，不展示 Debug 卡片和 SVG 预览
-      - 建立 /world-debug：承接手动 Tick、审计、SVG、procedural renderer、FormalGeometry 和内部字段
-      - 建立 PixelWorldView：读取 WorldViewModel，表现草地、树、石头、痕迹、管家主体和未来宠物主体
-      - 建立 pixel-tile-mapper / trace-pixel-mapper / life-sprite-mapper
+      - 深化 PixelWorldView：读取 WorldViewModel，表现草地、树、石头、痕迹、管家主体和未来宠物主体
+      - 深化 pixel-tile-mapper / trace-pixel-mapper / life-sprite-mapper
       - 把痕迹表现接入像素地表：踩低草、裸土、维护痕迹、恢复草、等待点、舒适点
+      - 去除正式 /world 工程状态卡片，只保留必要轻 Overlay
     - 下一阶段落地：正式像素主世界
       - 先不继续优化卡片或旧 SVG / CSS 视图
       - 优先建立 WorldViewModel → PixelWorldView 正式链路

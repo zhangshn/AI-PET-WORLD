@@ -2,7 +2,7 @@
  * 当前文件负责：定义天干阴阳属性。
  */
 
-import type { HeavenlyStem } from "../schema"
+import type { HeavenlyStem } from "../ziwei-core-schema"
 
 export type HeavenlyStemPolarity = "yang" | "yin"
 

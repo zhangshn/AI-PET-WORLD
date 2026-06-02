@@ -2,7 +2,7 @@
  * 当前文件负责：作为 AI-PET-WORLD 全部 AI 子系统统一总入口。
  */
 
-import type { PersonalityProfile } from "./destiny-core/ziwei-core/schema"
+import type { PersonalityProfile } from "./destiny-core/ziwei-core/ziwei-core-schema"
 
 import type { PublicPersonalityView } from "./destiny-core/ziwei-core/public-view"
 import { buildPublicPersonalityView } from "./destiny-core/ziwei-core/public-view"
@@ -20,8 +20,8 @@ import type {
   PlayerRelationInput,
 } from "./timeline-system/state/state-updater"
 
-import type { PetEventStyleInput } from "./event-style/schema"
-import { buildPetEventMessage } from "./event-style/event-gateway"
+import type { PetEventStyleInput } from "./event-style/event-style-schema"
+import { buildPetEventMessage } from "./event-style/ai-event-style-gateway"
 
 import type {
   BuildGenderPerspectiveComparisonInput,
@@ -84,8 +84,8 @@ import {
 import type {
   ButlerAutonomyInput,
   ButlerAutonomyResult,
-} from "./butler-autonomy/schema"
-import { buildButlerAutonomyResult } from "./butler-autonomy/gateway"
+} from "./butler-autonomy/butler-autonomy-schema"
+import { buildButlerAutonomyResult } from "./butler-autonomy/butler-autonomy-gateway"
 
 export function buildAiCurrentLifeRuntimeBundle(
   input: BuildCurrentLifeTendencyFromRuntimeInput
@@ -206,7 +206,7 @@ export function stepPetBehaviorProcess(
   return stepBehaviorProcess(input)
 }
 
-export type { BirthInput, PersonalityProfile } from "./destiny-core/ziwei-core/schema"
+export type { BirthInput, PersonalityProfile } from "./destiny-core/ziwei-core/ziwei-core-schema"
 
 export { buildPersonalityProfile } from "./destiny-core/ziwei-core/ziwei-gateway"
 
@@ -282,7 +282,7 @@ export type {
   PlayerRelationInput,
 } from "./timeline-system/state/state-updater"
 
-export type { PetEventStyleInput } from "./event-style/schema"
+export type { PetEventStyleInput } from "./event-style/event-style-schema"
 
 export type {
   ZiweiConsciousnessKernel,
@@ -419,4 +419,4 @@ export type {
   ButlerSoulProfile,
   ButlerSoulSource,
   ButlerWorldPerception,
-} from "./butler-autonomy/schema"
+} from "./butler-autonomy/butler-autonomy-schema"

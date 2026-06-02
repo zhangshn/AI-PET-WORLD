@@ -1,5 +1,7 @@
 # AI-PET-WORLD V2.6｜M11 当前交接文档
 
+> 状态说明（2026-06-02）：本文保留为 M11 closeout 历史交接记录。仓库当前已经继续向前推进：`/world` 已接入只读 PixiJS PixelWorldView，不再处于 cleared 状态。当前准确状态请先读 `AI_PET_WORLD_V2_6_PROJECT_AUDIT_2026_06_02.md` 与 `AI_PET_WORLD_V2_6_MODULE_PROGRESS.md`。
+>
 > 本文档只记录当前项目真实状态与下一步工作边界。
 > 当前业务核心是 AI 世界、AI 管家、世界规则、层级划分、运行算法、世界资源与 UI 自动生成算法。
 > 后续工作必须以当前仓库与当前文档为准，不再引用历史讨论中的旧路线。

@@ -2,13 +2,13 @@
  * 当前文件负责：展示紫微命盘的出生与本命摘要。
  */
 
-import type { BirthPattern } from "../../../../ai/destiny-core/ziwei-core/schema"
+import type { BirthPattern } from "../../../../ai/destiny-core/ziwei-core/ziwei-core-schema"
 
 import {
   BRANCH_FULL_LABELS,
   BRANCH_LABELS,
   ELEMENT_GATE_LABELS
-} from "../../constants"
+} from "../../personality-test-constants"
 
 import { ValueLine } from "../common/ValueLine"
 

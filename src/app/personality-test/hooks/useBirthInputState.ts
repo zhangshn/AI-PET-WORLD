@@ -4,7 +4,7 @@
 
 import { useMemo, useState } from "react"
 
-import type { DynamicGenderInput } from "../types"
+import type { DynamicGenderInput } from "../personality-test-types"
 import { parseBirthHourInput } from "../components/birth-input/birth-input-utils"
 
 export function useBirthInputState() {

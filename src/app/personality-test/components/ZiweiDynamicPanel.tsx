@@ -7,20 +7,20 @@
 import type {
   BirthPattern,
   PersonalityProfile
-} from "../../../ai/destiny-core/ziwei-core/schema"
+} from "../../../ai/destiny-core/ziwei-core/ziwei-core-schema"
 
 import type {
   ActiveDynamicFlow,
   DynamicGenderInput
-} from "../types"
+} from "../personality-test-types"
 
 import type { PersonalityTestRuntimeTime } from "../runtime-time/personality-test-runtime-time-types"
 import type { ZiweiDynamicTimeSelection } from "./ZiweiDynamicTimeTable"
 
 import { InfoCard } from "./common/InfoCard"
 import { ZiweiChartBoard } from "./ZiweiChartBoard"
-import { ZiweiDynamicDetail } from "./ZiweiDynamicDetail"
-import { ZiweiDynamicTabs } from "./ZiweiDynamicTabs"
+import { ZiweiDynamicDetail } from "./dynamic-detail/ZiweiDynamicDetail"
+import { ZiweiDynamicTabs } from "./dynamic-tabs/ZiweiDynamicTabs"
 import { ZiweiDynamicTimeTable } from "./ZiweiDynamicTimeTable"
 
 import { ZiweiBirthSummary } from "./dynamic/ZiweiBirthSummary"

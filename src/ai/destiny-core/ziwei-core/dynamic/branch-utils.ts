@@ -2,7 +2,7 @@
  * 当前文件负责：提供紫微动态层使用的地支移动工具。
  */
 
-import type { BranchPalace } from "../schema"
+import type { BranchPalace } from "../ziwei-core-schema"
 
 import {
   ZIWEI_BRANCH_ORDER,

@@ -4,7 +4,7 @@
 
 import type {
   LifeTendencyScores,
-} from "../../../ai/gateway"
+} from "../../../ai/ai-system-gateway"
 
 import type {
   PetAction,

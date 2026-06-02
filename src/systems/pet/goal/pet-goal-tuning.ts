@@ -4,7 +4,7 @@
 
 import type {
   LifeTendencyKey,
-} from "../../../ai/gateway"
+} from "../../../ai/ai-system-gateway"
 
 import type {
   DriveType,

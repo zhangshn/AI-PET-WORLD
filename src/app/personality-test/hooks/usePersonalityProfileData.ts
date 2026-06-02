@@ -8,7 +8,7 @@ import {
   buildLifePersonalityProfile,
   type GenderPerspective,
   type LifePersonalityProfileBundle,
-} from "../../../ai/gateway"
+} from "../../../ai/ai-system-gateway"
 
 import { buildBaziProfile } from "../../../ai/destiny-core/bazi-core/bazi-gateway"
 import { buildPetTimelineSnapshot } from "../../../ai/timeline-system/timeline-gateway"
@@ -17,7 +17,7 @@ import {
   INITIAL_TIMELINE_CLOCK,
 } from "./useTimelineTestState"
 
-import type { DynamicGenderInput } from "../types"
+import type { DynamicGenderInput } from "../personality-test-types"
 import type { BirthInputState } from "./personality-test-state-types"
 
 function resolveGenderPerspective(

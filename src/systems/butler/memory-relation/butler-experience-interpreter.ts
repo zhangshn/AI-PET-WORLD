@@ -2,7 +2,7 @@
  * 当前文件负责：由 ButlerProfile / 八字管家人格解释关系事实与机会反馈。
  */
 
-import type { ButlerProfile } from "@/ai/gateway"
+import type { ButlerProfile } from "@/ai/ai-system-gateway"
 
 import type { ButlerMemoryState } from "./butler-memory"
 import type { ButlerRelationState } from "./butler-relation"

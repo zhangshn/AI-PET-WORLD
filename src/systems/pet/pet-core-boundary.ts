@@ -32,7 +32,7 @@ export const PET_CORE_PUBLIC_GATEWAYS: PetCoreBoundaryModule[] = [
   },
   {
     layer: "public_gateway",
-    path: "src/ai/gateway.ts",
+    path: "src/ai/ai-system-gateway.ts",
     role: "AI 核心统一公开入口。",
     accessRule:
       "世界引擎、测试页、系统层应优先通过该 gateway 访问 AI 核心能力。",

@@ -5,7 +5,7 @@
 import { ValueLine } from "../common/ValueLine"
 
 import { formatClock } from "./timeline-utils"
-import type { TimelineClock } from "./timeline-types"
+import type { TimelineClock } from "./timeline-test-types"
 
 export function TimelineCurrentHeader({
   timelineClock,

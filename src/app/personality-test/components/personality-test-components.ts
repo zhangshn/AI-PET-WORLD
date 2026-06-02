@@ -2,7 +2,7 @@
  * 当前文件负责：统一导出 personality-test 页面组件。
  */
 
-export { BaziProfilePanel } from "./bazi-panel/BaziProfilePanel"
+export { BaziProfilePanel } from "./bazi-panel/BaziChartDataPanel"
 export { BaziRuntimePanel } from "./bazi-runtime-panel/BaziRuntimePanel"
 export { BirthInputBar } from "./birth-input/BirthInputBar"
 export { PublicViewPanel } from "./debug/PublicViewPanel"

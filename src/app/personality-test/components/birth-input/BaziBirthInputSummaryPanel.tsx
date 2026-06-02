@@ -2,7 +2,7 @@
  * 当前文件负责：展示八字动力底盘。
  */
 
-import { WUXING_LABELS } from "../../constants"
+import { WUXING_LABELS } from "../../personality-test-constants"
 import { InfoCard } from "../common/InfoCard"
 import { ValueLine } from "../common/ValueLine"
 

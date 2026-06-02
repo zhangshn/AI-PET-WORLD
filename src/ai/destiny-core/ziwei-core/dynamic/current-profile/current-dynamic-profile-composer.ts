@@ -6,7 +6,7 @@ import type {
   CorePersonality,
   PersonalityProfile,
   PersonalityTraits
-} from "../../schema"
+} from "../../ziwei-core-schema"
 
 import type {
   ZiweiDynamicChart,

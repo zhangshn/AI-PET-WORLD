@@ -4,9 +4,9 @@
 
 import { useMemo, useState } from "react"
 
-import type { BirthPattern } from "../../../ai/destiny-core/ziwei-core/schema"
+import type { BirthPattern } from "../../../ai/destiny-core/ziwei-core/ziwei-core-schema"
 
-import type { ActiveDynamicFlow } from "../types"
+import type { ActiveDynamicFlow } from "../personality-test-types"
 
 import {
   getTimeBranchFromHour,
