@@ -1,8 +1,6 @@
-/**
- * 当前文件职责：验证 P8.2 几何 / 程序化视觉预览能否显示 P7.23 世界变化结果。
- */
+// 该文件用于验证程序化视觉预览能否显示世界变化结果。
 
-import { ProceduralRendererView } from "@/app/world/components/procedural-renderer/procedural-renderer-view"
+import { ProceduralRendererView } from "@/app/world-debug/components/procedural-renderer/procedural-renderer-view"
 import type {
   ButlerIntentType,
   IntentDecision,

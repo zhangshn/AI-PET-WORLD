@@ -1,12 +1,10 @@
 "use client"
 
-/**
- * 当前文件负责 /world-debug 开发验证入口。
- */
+// 该文件用于提供 /world-debug 开发验证入口。
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
-import { WorldLogicDashboard } from "@/app/world/components/logic-visualization/WorldLogicDashboard"
+import { WorldLogicDashboard } from "@/app/world-debug/components/logic-visualization/WorldLogicDashboard"
 import type { ConstructionPlan } from "@/world/construction/construction-schema"
 import {
   advanceMvpConstruction,

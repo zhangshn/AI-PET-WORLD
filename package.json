@@ -39,6 +39,7 @@
     "smoke:world-formal-entry-cleanup-plan": "node scripts/run-world-formal-entry-cleanup-plan-smoke.cjs",
     "smoke:world-formal-entry-cleanup-execution": "node scripts/run-world-formal-entry-cleanup-execution-smoke.cjs",
     "smoke:world-formal-pixelworldview-readonly-preview": "node scripts/run-world-formal-pixelworldview-readonly-preview-smoke.cjs",
+    "smoke:world-formal-entry-legacy-quarantine": "node scripts/run-world-formal-entry-legacy-quarantine-smoke.cjs",
     "smoke:pixel-primitive-library": "node scripts/run-pixel-primitive-library-smoke.cjs",
     "smoke:formal-pixel-renderer-contract": "node scripts/run-formal-pixel-renderer-contract-smoke.cjs",
     "smoke:formal-pixel-renderer-readonly": "node scripts/run-formal-pixel-renderer-readonly-smoke.cjs",
