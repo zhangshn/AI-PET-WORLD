@@ -1,8 +1,11 @@
 // 该页面用于预览 PixelWorldView 的只读调试模型。
 
 import {
+  buildPixelWorldPixelBufferFrame,
   buildPixelWorldRenderPlan,
+  buildPixelWorldRendererFrame,
   createMinimalPixelWorldViewModel,
+  validatePixelWorldPixelBufferFrame,
   validatePixelWorldRenderPlan,
   validatePixelWorldViewModel,
 } from "@/world/pixel-worldview";
@@ -16,6 +19,13 @@ export default function PixelWorldViewDebugPreviewPage() {
   const modelValidation = validatePixelWorldViewModel(model);
   const renderPlan = buildPixelWorldRenderPlan(model);
   const renderValidation = validatePixelWorldRenderPlan(renderPlan);
+  const rendererResult = buildPixelWorldRendererFrame({ plan: renderPlan });
+  const bufferResult = buildPixelWorldPixelBufferFrame({
+    plan: renderPlan,
+    frame: rendererResult.frame,
+  });
+  const buffer = bufferResult.buffer;
+  const bufferValidation = validatePixelWorldPixelBufferFrame(buffer);
 
   return (
     <main style={styles.page}>
@@ -127,6 +137,48 @@ export default function PixelWorldViewDebugPreviewPage() {
             {String(command.visible)} | sortY {displayOptional(command.sortY)} | recipeId{" "}
             {displayOptional(command.recipeId)} | opacity {displayOptional(command.opacity)} | text{" "}
             {displayOptional(command.text)} | stateTags {displayOptional(command.stateTags?.join(", "))}
+          </p>
+        ))}
+      </section>
+
+      <section style={styles.card}>
+        <h2>Pixel Buffer</h2>
+        <p>bufferId: {buffer.bufferId}</p>
+        <p>worldId: {buffer.worldId}</p>
+        <p>tick: {buffer.tick}</p>
+        <p>
+          canvas: {buffer.canvas.width} x {buffer.canvas.height}, tileSize {buffer.canvas.tileSize}
+        </p>
+        <p>cellCount: {buffer.cellCount}</p>
+        <p>
+          buffer validation: {renderStatusBadge(bufferValidation.status)}
+        </p>
+        <ul>
+          {bufferValidation.messages.map((message) => (
+            <li key={message}>{message}</li>
+          ))}
+        </ul>
+      </section>
+
+      <section style={styles.card}>
+        <h2>Buffer Layers</h2>
+        {buffer.layers.map((layer) => (
+          <p key={layer.layer}>
+            {layer.layer} | cells {layer.cells.length} | visibleCount {layer.visibleCount} | hiddenCount{" "}
+            {layer.hiddenCount}
+          </p>
+        ))}
+      </section>
+
+      <section style={styles.card}>
+        <h2>Buffer Cells</h2>
+        {renderEmptyText(buffer.cellCount)}
+        {buffer.layers.flatMap((layer) => layer.cells).map((cell) => (
+          <p key={cell.id}>
+            {cell.id} | {cell.layer} | {cell.kind} | sourceCommandId {cell.sourceCommandId} | visible{" "}
+            {String(cell.visible)} | opacity {cell.opacity} | x {cell.x} | y {cell.y} | width {cell.width} | height{" "}
+            {cell.height} | colorHint {displayOptional(cell.colorHint)} | recipeId {displayOptional(cell.recipeId)} |
+            text {displayOptional(cell.text)} | stateTags {displayOptional(cell.stateTags?.join(", "))}
           </p>
         ))}
       </section>

@@ -48,6 +48,22 @@ async function main() {
     path.join(repoRoot, "src", "world", "pixel-worldview", "pixel-worldview-render-types.ts"),
     "PixelWorldView render types"
   )
+  const rendererBoundarySource = readFile(
+    path.join(repoRoot, "src", "world", "pixel-worldview", "pixel-worldview-renderer-boundary.ts"),
+    "PixelWorldView renderer boundary"
+  )
+  const bufferTypesSource = readFile(
+    path.join(repoRoot, "src", "world", "pixel-worldview", "pixel-worldview-buffer-types.ts"),
+    "PixelWorldView buffer types"
+  )
+  const bufferBuilderSource = readFile(
+    path.join(repoRoot, "src", "world", "pixel-worldview", "pixel-worldview-buffer-builder.ts"),
+    "PixelWorldView buffer builder"
+  )
+  const bufferValidatorSource = readFile(
+    path.join(repoRoot, "src", "world", "pixel-worldview", "pixel-worldview-buffer-validator.ts"),
+    "PixelWorldView buffer validator"
+  )
   const packageSource = readFile(path.join(repoRoot, "package.json"), "package.json")
   const combined = [
     pageSource,
@@ -57,6 +73,10 @@ async function main() {
     renderPlannerSource,
     renderValidatorSource,
     renderTypesSource,
+    rendererBoundarySource,
+    bufferTypesSource,
+    bufferBuilderSource,
+    bufferValidatorSource,
     packageSource,
   ].join("\n")
 
@@ -85,6 +105,20 @@ async function main() {
     "draw_actor_marker",
     "apply_atmosphere_tint",
     "draw_overlay_label",
+    "buildPixelWorldRendererFrame",
+    "buildPixelWorldPixelBufferFrame",
+    "validatePixelWorldPixelBufferFrame",
+    "Pixel Buffer",
+    "Buffer Layers",
+    "Buffer Cells",
+    "buffer.cellCount",
+    "buffer.layers",
+    "buffer_cell_",
+    "pixel_world_buffer_",
+    "object_marker",
+    "actor_marker",
+    "overlay_marker",
+    "colorHint",
   ]
 
   requiredTokens.forEach((token) => {
@@ -126,8 +160,12 @@ async function main() {
   console.log("ViewModel validator is used: ok")
   console.log("Render plan builder is used: ok")
   console.log("Render plan validator is used: ok")
+  console.log("Pixel buffer builder is used: ok")
+  console.log("Pixel buffer validator is used: ok")
   console.log("Layer summaries exist: ok")
   console.log("Render commands exist: ok")
+  console.log("Buffer layers exist: ok")
+  console.log("Buffer cells exist: ok")
   console.log("Runtime boundary: ok")
   console.log("No SVG or canvas renderer dependency: ok")
   console.log("No default pet generation: ok")
