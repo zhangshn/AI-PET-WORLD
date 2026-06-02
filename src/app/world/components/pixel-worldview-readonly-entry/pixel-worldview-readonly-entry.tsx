@@ -1,6 +1,7 @@
 // 该组件用于展示正式像素主世界只读入口。
 import type { WorldViewModel } from "@/world/world-view-model";
 import {
+  buildWorldFormalPixelWorldRendererAdapterPacket,
   buildWorldFormalPixelWorldRendererContract,
   buildWorldFormalPixelWorldRendererShellState,
   buildPixelWorldPixelBufferFrame,
@@ -13,6 +14,7 @@ import {
   validatePixelWorldRendererFrame,
   validatePixelWorldViewModel,
   validateWorldFormalPixelWorldRendererContract,
+  validateWorldFormalPixelWorldRendererAdapterPacket,
   validateWorldFormalPixelWorldRendererShellState,
 } from "@/world/pixel-worldview";
 
@@ -37,6 +39,12 @@ export function PixelWorldViewReadonlyEntry(input: { worldViewModel: WorldViewMo
     contract: rendererContract,
   });
   const rendererShellValidation = validateWorldFormalPixelWorldRendererShellState(rendererShell);
+  const rendererAdapter = buildWorldFormalPixelWorldRendererAdapterPacket({
+    buffer: bufferResult.buffer,
+    contract: rendererContract,
+    shell: rendererShell,
+  });
+  const rendererAdapterValidation = validateWorldFormalPixelWorldRendererAdapterPacket(rendererAdapter);
 
   return (
     <main style={styles.page}>
@@ -140,6 +148,38 @@ export function PixelWorldViewReadonlyEntry(input: { worldViewModel: WorldViewMo
         <p>noCanvasDom: {String(rendererShell.safety.noCanvasDom)}</p>
         <p>noCssGeometry: {String(rendererShell.safety.noCssGeometry)}</p>
         <p>noDebugPanelImport: {String(rendererShell.safety.noDebugPanelImport)}</p>
+        <p>不绘制世界，不读取 runtime，不生成默认宠物。</p>
+        <p>不使用 SVG，不使用 canvas，不使用 CSS 几何模拟世界。</p>
+      </section>
+
+      <section style={styles.card}>
+        <h2>Formal Renderer Adapter</h2>
+        <p>renderer adapter ready: {rendererAdapter.status}</p>
+        <p>readonly adapter: {rendererAdapter.mode}</p>
+        <p>buffer only input: {String(rendererAdapter.safety.bufferOnlyInput)}</p>
+        <p>id: {rendererAdapter.id}</p>
+        <p>sourceBufferId: {rendererAdapter.sourceBufferId}</p>
+        <p>sourceContractId: {rendererAdapter.sourceContractId}</p>
+        <p>sourceShellId: {rendererAdapter.sourceShellId}</p>
+        <p>sourceCellCount: {rendererAdapter.sourceCellCount}</p>
+        <p>renderer adapter validation: {rendererAdapterValidation.status}</p>
+        {rendererAdapter.adapterNotes.map((note) => (
+          <p key={note}>{note}</p>
+        ))}
+        {rendererAdapter.layers.map((layer) => (
+          <p key={layer.layer}>
+            layer {layer.layer}: order {layer.requiredOrder}, cells {layer.cells.length}, visible {layer.visibleCount},
+            hidden {layer.hiddenCount}
+          </p>
+        ))}
+        <h3>Adapter Safety</h3>
+        <p>runtimeReadonly: {String(rendererAdapter.safety.runtimeReadonly)}</p>
+        <p>noDefaultPet: {String(rendererAdapter.safety.noDefaultPet)}</p>
+        <p>noSvg: {String(rendererAdapter.safety.noSvg)}</p>
+        <p>noCanvasDom: {String(rendererAdapter.safety.noCanvasDom)}</p>
+        <p>noCssGeometry: {String(rendererAdapter.safety.noCssGeometry)}</p>
+        <p>noDebugPanelImport: {String(rendererAdapter.safety.noDebugPanelImport)}</p>
+        <p>bufferOnlyInput: {String(rendererAdapter.safety.bufferOnlyInput)}</p>
         <p>不绘制世界，不读取 runtime，不生成默认宠物。</p>
         <p>不使用 SVG，不使用 canvas，不使用 CSS 几何模拟世界。</p>
       </section>

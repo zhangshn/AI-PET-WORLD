@@ -46,6 +46,8 @@
     "smoke:world-formal-pixelworldview-renderer-contract": "node scripts/run-world-formal-pixelworldview-renderer-contract-smoke.cjs",
     "shell:world-formal-pixelworldview-renderer": "node scripts/run-world-formal-pixelworldview-renderer-shell.cjs",
     "smoke:world-formal-pixelworldview-renderer-shell": "node scripts/run-world-formal-pixelworldview-renderer-shell-smoke.cjs",
+    "adapter:world-formal-pixelworldview-renderer": "node scripts/run-world-formal-pixelworldview-renderer-adapter.cjs",
+    "smoke:world-formal-pixelworldview-renderer-adapter": "node scripts/run-world-formal-pixelworldview-renderer-adapter-smoke.cjs",
     "smoke:pixel-primitive-library": "node scripts/run-pixel-primitive-library-smoke.cjs",
     "smoke:formal-pixel-renderer-contract": "node scripts/run-formal-pixel-renderer-contract-smoke.cjs",
     "smoke:formal-pixel-renderer-readonly": "node scripts/run-formal-pixel-renderer-readonly-smoke.cjs",
