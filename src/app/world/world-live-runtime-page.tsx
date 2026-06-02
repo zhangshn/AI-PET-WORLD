@@ -1,7 +1,6 @@
-import { FormalPixelSvgView } from "@/app/world/components/formal-pixel-svg-view/formal-pixel-svg-view"
-import { buildFormalPixelRenderModel } from "@/world/formal-pixel-renderer"
 import { readWorldRuntimeForView } from "@/world/runtime/world-runtime-gateway"
 import { buildWorldViewModelForPixelWorld } from "@/world/world-view-model"
+import { PixelWorldViewReadonlyEntry } from "./components/pixel-worldview-readonly-entry/pixel-worldview-readonly-entry"
 
 export async function WorldLiveRuntimePage() {
   const runtimeView = await readWorldRuntimeForView()
@@ -10,7 +9,5 @@ export async function WorldLiveRuntimePage() {
     saveRecord,
     isPersisted: runtimeView.isPersisted,
   })
-  const formalPixelRenderModel = buildFormalPixelRenderModel(worldViewModel)
-
-  return <FormalPixelSvgView model={formalPixelRenderModel} />
+  return <PixelWorldViewReadonlyEntry worldViewModel={worldViewModel} />
 }

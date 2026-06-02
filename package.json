@@ -37,6 +37,7 @@
     "smoke:world-formal-entry-audit": "node scripts/run-world-formal-entry-audit-smoke.cjs",
     "plan:world-formal-entry-cleanup": "node scripts/run-world-formal-entry-cleanup-plan.cjs",
     "smoke:world-formal-entry-cleanup-plan": "node scripts/run-world-formal-entry-cleanup-plan-smoke.cjs",
+    "smoke:world-formal-entry-cleanup-execution": "node scripts/run-world-formal-entry-cleanup-execution-smoke.cjs",
     "smoke:pixel-primitive-library": "node scripts/run-pixel-primitive-library-smoke.cjs",
     "smoke:formal-pixel-renderer-contract": "node scripts/run-formal-pixel-renderer-contract-smoke.cjs",
     "smoke:formal-pixel-renderer-readonly": "node scripts/run-formal-pixel-renderer-readonly-smoke.cjs",
