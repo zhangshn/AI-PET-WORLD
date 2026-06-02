@@ -45,6 +45,7 @@ async function main() {
   assert(indexSource.includes("./pixel-worldview-mock-snapshot"), "PixelWorldView mock snapshot public export is missing.")
 
   const forbiddenTokens = [
+    "src/app/world/",
     'kind: "pet"',
     "pet_default",
     "createPet",
@@ -57,6 +58,10 @@ async function main() {
     "runAndPersistOneRuntimeTick",
     "buildSceneSvg",
     "data:image/svg",
+    "<svg",
+    "<canvas",
+    "CanvasRenderingContext2D",
+    "getContext(",
     "WorldPainterReadonlyPreview",
     "ProceduralRendererView",
     "FormalWorldView",

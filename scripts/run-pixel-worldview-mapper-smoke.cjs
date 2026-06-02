@@ -50,6 +50,7 @@ async function main() {
   assert(indexSource.includes("./pixel-worldview-mapper"), "PixelWorldView mapper public export is missing.")
 
   const forbiddenTokens = [
+    "src/app/world/",
     "WorldRuntimeSaveRecord",
     "HomeMapState",
     "TraceField",
@@ -59,8 +60,13 @@ async function main() {
     "runAndPersistOneRuntimeTick",
     "createPet",
     "pet_default",
+    'kind: "pet"',
     "buildSceneSvg",
     "data:image/svg",
+    "<svg",
+    "<canvas",
+    "CanvasRenderingContext2D",
+    "getContext(",
     "WorldPainterReadonlyPreview",
     "ProceduralRendererView",
     "FormalWorldView",

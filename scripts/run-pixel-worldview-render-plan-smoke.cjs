@@ -57,6 +57,7 @@ async function main() {
   assert(indexSource.includes("./pixel-worldview-render-validator"), "PixelWorldView render validator public export is missing.")
 
   const forbiddenTokens = [
+    "src/app/world/",
     "WorldRuntimeSaveRecord",
     "HomeMapState",
     "TraceField",
@@ -66,6 +67,7 @@ async function main() {
     "runAndPersistOneRuntimeTick",
     "createPet",
     "pet_default",
+    'kind: "pet"',
     "buildSceneSvg",
     "data:image/svg",
     "<svg",

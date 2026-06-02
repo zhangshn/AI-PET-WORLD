@@ -95,6 +95,10 @@ async function main() {
 
   const forbiddenTokens = [
     "src/app/world/",
+    "WorldRuntimeSaveRecord",
+    "HomeMapState",
+    "TraceField",
+    "ButlerState",
     "readWorldRuntimeForView",
     "writeWorldRuntimeSaveRecord",
     "runAndPersistOneRuntimeTick",
