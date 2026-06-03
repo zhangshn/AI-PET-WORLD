@@ -1,5 +1,5 @@
 /**
- * 当前文件职责：验证并安全应用建设 MapDiff 候选，支持管家建设 add/update�?
+ * 当前文件职责：验证并安全应用建设 MapDiff 候选，支持管家建设 add/update。
  */
 
 import { buildWorldEcologyState } from "@/world/ecology/world-ecology-state"
@@ -106,23 +106,23 @@ function getMapDiffRejectionReason(input: {
   diff: MapDiff
 }): string | null {
   if (!input.input.executionResult.audit.tags.includes("construction_execution_audit")) {
-    return "MapDiff 必须来自已审计的 ConstructionExecutionResult�?
+    return "MapDiff 必须来自已审计的 ConstructionExecutionResult。"
   }
 
   if (input.input.executionResult.audit.warnings.length > 0) {
-    return "ConstructionExecutionResult audit 存在 warning，SafeApply 暂不接受�?
+    return "ConstructionExecutionResult audit 存在 warning，SafeApply 暂不接受。"
   }
 
   if (!input.input.executionResult.audit.mapDiffIds.includes(input.diff.id)) {
-    return "MapDiff 不在 ConstructionExecutionAudit.mapDiffIds 中�?
+    return "MapDiff 不在 ConstructionExecutionAudit.mapDiffIds 中。"
   }
 
   if (!input.diff.tags.includes("construction_execution_candidate")) {
-    return "MapDiff 缺少 construction_execution_candidate tag�?
+    return "MapDiff 缺少 construction_execution_candidate tag。"
   }
 
   if (containsForbiddenToken(collectMapDiffTokens(input.diff))) {
-    return "MapDiff 包含当前正式链路禁止 token�?
+    return "MapDiff 包含当前正式链路禁止 token。"
   }
 
   if (input.diff.operation === "add") {
@@ -140,7 +140,7 @@ function getMapDiffRejectionReason(input: {
   }
 
   if (input.diff.operation === "remove") {
-    return "SafeApply 暂不允许 remove MapDiff，避免误删世界事实�?
+    return "SafeApply 暂不允许 remove MapDiff，避免误删世界事实。"
   }
 
   return `SafeApply 暂不允许 ${input.diff.operation} MapDiff。`
@@ -151,35 +151,35 @@ function validateAddDiff(input: {
   diff: MapDiff
 }): string | null {
   if (!input.diff.placement) {
-    return "add MapDiff 必须包含 placement�?
+    return "add MapDiff 必须包含 placement。"
   }
 
   if (!input.diff.placementId.trim()) {
-    return "add MapDiff 缺少 placementId�?
+    return "add MapDiff 缺少 placementId。"
   }
 
   if (input.diff.placement.id !== input.diff.placementId) {
-    return "add MapDiff �?placement.id 必须等于 placementId�?
+    return "add MapDiff 的 placement.id 必须等于 placementId。"
   }
 
   if (!input.diff.tags.includes("butler_adds_construction_fact")) {
-    return "add MapDiff 必须来自管家建设事实写入链路�?
+    return "add MapDiff 必须来自管家建设事实写入链路。"
   }
 
   if (input.diff.placement.source !== "construction_plan") {
-    return "add placement 必须来自 construction_plan�?
+    return "add placement 必须来自 construction_plan。"
   }
 
   if (!input.diff.placement.tags.includes("butler_construction_result")) {
-    return "add placement 必须标记�?butler_construction_result�?
+    return "add placement 必须标记为 butler_construction_result。"
   }
 
   if (input.diff.placement.tags.includes("not_initial_world_fact") === false) {
-    return "add placement 必须标记�?not_initial_world_fact�?
+    return "add placement 必须标记为 not_initial_world_fact。"
   }
 
   if (input.diff.placement.layer === "actor") {
-    return "SafeApply 不允许通过建设 add actor placement�?
+    return "SafeApply 不允许通过建设 add actor placement。"
   }
 
   if (
@@ -187,7 +187,7 @@ function validateAddDiff(input: {
       (placement) => placement.id === input.diff.placementId
     )
   ) {
-    return "add MapDiff �?placementId 已存在�?
+    return "add MapDiff 的 placementId 已存在。"
   }
 
   return validatePlacement(input.homeMapState, input.diff.placement)
@@ -198,7 +198,7 @@ function validateUpdateDiff(input: {
   diff: MapDiff
 }): string | null {
   if (!input.diff.placementId.trim()) {
-    return "update MapDiff 缺少 placementId�?
+    return "update MapDiff 缺少 placementId。"
   }
 
   const placement = input.homeMapState.placements.find(
@@ -206,11 +206,11 @@ function validateUpdateDiff(input: {
   )
 
   if (!placement) {
-    return "update MapDiff 引用了不存在�?placement�?
+    return "update MapDiff 引用了不存在的 placement。"
   }
 
   if (placement.layer === "actor") {
-    return "SafeApply 不允许把 actor placement 当成建设更新对象�?
+    return "SafeApply 不允许把 actor placement 当成建设更新对象。"
   }
 
   return validatePatch({
@@ -224,23 +224,23 @@ function validatePlacement(
   placement: MapPlacement
 ): string | null {
   if (!isWithinRange(placement.x, 0, homeMapState.mapSize.columns)) {
-    return "add placement.x 超出 mapSize 范围�?
+    return "add placement.x 超出 mapSize 范围。"
   }
 
   if (!isWithinRange(placement.y, 0, homeMapState.mapSize.rows)) {
-    return "add placement.y 超出 mapSize 范围�?
+    return "add placement.y 超出 mapSize 范围。"
   }
 
   if (placement.scale <= 0) {
-    return "add placement.scale 必须大于 0�?
+    return "add placement.scale 必须大于 0。"
   }
 
   if (!isWithinRange(placement.alpha, 0, 1)) {
-    return "add placement.alpha 必须�?0 �?1�?
+    return "add placement.alpha 必须在 0 到 1。"
   }
 
   if (containsForbiddenToken(collectPlacementTokens(placement))) {
-    return "add placement 包含当前正式链路禁止 token�?
+    return "add placement 包含当前正式链路禁止 token。"
   }
 
   return null
@@ -255,33 +255,33 @@ function validatePatch(input: {
   if (!patch) return null
 
   if (patch.alpha !== undefined && !isWithinRange(patch.alpha, 0, 1)) {
-    return "patch.alpha 必须�?0 �?1�?
+    return "patch.alpha 必须在 0 到 1。"
   }
 
   if (patch.scale !== undefined && patch.scale <= 0) {
-    return "patch.scale 必须大于 0�?
+    return "patch.scale 必须大于 0。"
   }
 
   if (
     patch.x !== undefined &&
     !isWithinRange(patch.x, 0, input.homeMapState.mapSize.columns)
   ) {
-    return "patch.x 超出 mapSize 范围�?
+    return "patch.x 超出 mapSize 范围。"
   }
 
   if (
     patch.y !== undefined &&
     !isWithinRange(patch.y, 0, input.homeMapState.mapSize.rows)
   ) {
-    return "patch.y 超出 mapSize 范围�?
+    return "patch.y 超出 mapSize 范围。"
   }
 
   if (patch.tags && containsForbiddenToken(patch.tags)) {
-    return "patch.tags 包含当前正式链路禁止 token�?
+    return "patch.tags 包含当前正式链路禁止 token。"
   }
 
   if (patch.label && containsForbiddenToken([patch.label])) {
-    return "patch.label 包含当前正式链路禁止 token�?
+    return "patch.label 包含当前正式链路禁止 token。"
   }
 
   return null
@@ -462,9 +462,9 @@ function buildSafeApplyMessages(input: {
   ).length
 
   return [
-    `SafeApply 接受 ${input.acceptedDiffs.length} �?MapDiff。`,
+    `SafeApply 接受 ${input.acceptedDiffs.length} 个 MapDiff。`,
     `其中新增 ${addCount} 个，更新 ${updateCount} 个。`,
-    `SafeApply 拒绝 ${input.rejectedDiffs.length} �?MapDiff。`,
+    `SafeApply 拒绝 ${input.rejectedDiffs.length} 个 MapDiff。`,
   ]
 }
 
