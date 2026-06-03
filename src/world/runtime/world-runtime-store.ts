@@ -13,25 +13,38 @@ import type {
   WorldRuntimeStoreWriteResult,
 } from "./world-runtime-schema"
 
-const RUNTIME_DIR = path.join(process.cwd(), ".runtime", "world-state")
-const DEFAULT_WORLD_FILE = "default-world.json"
+const RUNTIME_DIR = path.join(".runtime", "world-state")
+const LATEST_WORLD_FILE = "latest-world.json"
 
 export function getDefaultWorldRuntimeSavePath(): string {
-  return path.join(RUNTIME_DIR, DEFAULT_WORLD_FILE)
+  return path.join(RUNTIME_DIR, LATEST_WORLD_FILE)
 }
 
 export async function readWorldRuntimeSaveRecord(
-  filePath = getDefaultWorldRuntimeSavePath()
+  filePath?: string
 ): Promise<WorldRuntimeStoreReadResult> {
+  const resolvedFilePath = filePath ?? (await resolveLatestWorldRuntimeSavePath())
+
+  if (!resolvedFilePath) {
+    return {
+      status: "empty",
+      record: null,
+      path: getDefaultWorldRuntimeSavePath(),
+      message: "No runtime save record found.",
+      warnings: [],
+      tags: ["world_runtime_store_read", "empty"],
+    }
+  }
+
   try {
-    const raw = await readFile(filePath, "utf8")
+    const raw = await readFile(resolvedFilePath, "utf8")
     const parsed = JSON.parse(raw) as Partial<WorldRuntimeSaveRecord>
 
     if (!isWorldRuntimeSaveRecord(parsed)) {
       return {
         status: "invalid",
         record: null,
-        path: filePath,
+        path: resolvedFilePath,
         message: "Runtime save record exists but is not valid.",
         warnings: ["Invalid runtime save record shape."],
         tags: ["world_runtime_store_read", "invalid"],
@@ -41,7 +54,7 @@ export async function readWorldRuntimeSaveRecord(
     return {
       status: "found",
       record: parsed,
-      path: filePath,
+      path: resolvedFilePath,
       message: "Runtime save record loaded.",
       warnings: [],
       tags: ["world_runtime_store_read", "found"],
@@ -51,7 +64,7 @@ export async function readWorldRuntimeSaveRecord(
       return {
         status: "empty",
         record: null,
-        path: filePath,
+        path: resolvedFilePath,
         message: "No runtime save record found.",
         warnings: [],
         tags: ["world_runtime_store_read", "empty"],
@@ -61,7 +74,7 @@ export async function readWorldRuntimeSaveRecord(
     return {
       status: "failed",
       record: null,
-      path: filePath,
+      path: resolvedFilePath,
       message: "Runtime save record could not be read.",
       warnings: [error instanceof Error ? error.message : String(error)],
       tags: ["world_runtime_store_read", "failed"],
@@ -73,13 +86,19 @@ export async function writeWorldRuntimeSaveRecord(input: {
   record: WorldRuntimeSaveRecord
   filePath?: string
 }): Promise<WorldRuntimeStoreWriteResult> {
-  const filePath = input.filePath ?? getDefaultWorldRuntimeSavePath()
+  const filePath = input.filePath ?? getWorldRuntimeSavePath(input.record)
   const tempPath = `${filePath}.tmp`
 
   try {
     await mkdir(path.dirname(filePath), { recursive: true })
     await writeFile(tempPath, `${JSON.stringify(input.record, null, 2)}\n`, "utf8")
     await rename(tempPath, filePath)
+    if (!input.filePath) {
+      await writeLatestWorldRuntimeIndex({
+        record: input.record,
+        filePath,
+      })
+    }
 
     return {
       ok: true,
@@ -99,6 +118,51 @@ export async function writeWorldRuntimeSaveRecord(input: {
   }
 }
 
+function getWorldRuntimeSavePath(record: WorldRuntimeSaveRecord): string {
+  return path.join(RUNTIME_DIR, record.ownerId, `${record.worldId}.json`)
+}
+
+async function resolveLatestWorldRuntimeSavePath(): Promise<string | null> {
+  try {
+    const raw = await readFile(getDefaultWorldRuntimeSavePath(), "utf8")
+    const parsed = JSON.parse(raw) as Partial<{
+      path: string
+      ownerId: string
+      worldId: string
+    }>
+
+    if (typeof parsed.path !== "string") return null
+
+    return parsed.path
+  } catch (error) {
+    if (isNodeFileError(error) && error.code === "ENOENT") {
+      return null
+    }
+
+    throw error
+  }
+}
+
+async function writeLatestWorldRuntimeIndex(input: {
+  record: WorldRuntimeSaveRecord
+  filePath: string
+}): Promise<void> {
+  const indexPath = getDefaultWorldRuntimeSavePath()
+  const tempPath = `${indexPath}.tmp`
+  const index = {
+    version: "v2.6-runtime-00",
+    ownerId: input.record.ownerId,
+    worldId: input.record.worldId,
+    path: input.filePath,
+    updatedAt: input.record.savedAt,
+    tags: ["world_runtime_latest_index"],
+  }
+
+  await mkdir(path.dirname(indexPath), { recursive: true })
+  await writeFile(tempPath, `${JSON.stringify(index, null, 2)}\n`, "utf8")
+  await rename(tempPath, indexPath)
+}
+
 function isWorldRuntimeSaveRecord(
   value: Partial<WorldRuntimeSaveRecord>
 ): value is WorldRuntimeSaveRecord {
@@ -108,6 +172,12 @@ function isWorldRuntimeSaveRecord(
     typeof value.ownerId === "string" &&
     typeof value.tick === "number" &&
     typeof value.savedAt === "string" &&
+    Boolean(value.butlerProfile) &&
+    Boolean(value.butlerRuntimeProfile) &&
+    Boolean(value.butlerBirthInput) &&
+    typeof value.butlerMappingMode === "string" &&
+    Boolean(value.butlerConstructionStyle) &&
+    typeof value.worldCreationStyleSource === "string" &&
     Boolean(value.homeMapState) &&
     Array.isArray(value.recentEvents) &&
     Array.isArray(value.tags)

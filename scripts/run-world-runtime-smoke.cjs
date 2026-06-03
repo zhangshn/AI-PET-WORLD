@@ -36,12 +36,16 @@ async function main() {
   const fs = await import("node:fs")
   const path = await import("node:path")
   const repoRoot = process.cwd()
-  const savePath = path.join(
+  const latestIndexPath = path.join(
     repoRoot,
     ".runtime",
     "world-state",
-    "default-world.json"
+    "latest-world.json"
   )
+  const savePath = resolveRuntimeSavePath({
+    fs,
+    latestIndexPath,
+  })
   const worldPagePath = path.join(
     repoRoot,
     "src",
@@ -56,7 +60,9 @@ async function main() {
     "runtime",
     "world-runtime-gateway.ts"
   )
-  const displayPath = path.relative(repoRoot, savePath).replaceAll(path.sep, "/")
+  const displayPath = savePath
+    ? path.relative(repoRoot, savePath).replaceAll(path.sep, "/")
+    : path.relative(repoRoot, latestIndexPath).replaceAll(path.sep, "/")
 
   function fail(message) {
     console.log("LIVE WORLD RUNTIME SMOKE")
@@ -72,9 +78,9 @@ async function main() {
     }
   }
 
-  if (!fs.existsSync(savePath)) {
+  if (!savePath || !fs.existsSync(savePath)) {
     fail(
-      "Runtime save file not found. Open /world once or run dev and refresh /world to create it."
+      "Runtime save file not found. Create a world through /create-world before running this smoke."
     )
   }
 
@@ -255,6 +261,18 @@ async function main() {
     }`
   )
   console.log("Result: PASS")
+}
+
+function resolveRuntimeSavePath(input) {
+  if (!input.fs.existsSync(input.latestIndexPath)) return null
+
+  try {
+    const index = JSON.parse(input.fs.readFileSync(input.latestIndexPath, "utf8"))
+
+    return typeof index.path === "string" ? index.path : null
+  } catch {
+    return null
+  }
 }
 
 function auditOptionalTraceMemorySeedField(traceMemorySeedField) {

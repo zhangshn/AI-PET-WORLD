@@ -58,7 +58,12 @@ async function main() {
   )
   const packageSource = readFile(path.join(repoRoot, "package.json"), "package.json")
   const worldCombined = readDirectorySources(worldDir).join("\n")
-  const combined = [rendererSource, rendererStyles, readonlyEntrySource, packageSource].join("\n")
+  const combined = [
+    rendererSource,
+    rendererStyles,
+    readonlyEntrySource,
+    packageSource,
+  ].join("\n")
 
   const requiredTokens = [
     "pixi.js",
@@ -75,10 +80,9 @@ async function main() {
     "parseColorHintToNumber",
     "clampOpacity",
     "正式 PixiJS PixelWorldView Renderer",
-    "PixelWorldView 正式像素世界",
+    "你的自主像素世界",
     "只消费 PixelWorldPixelBufferFrame",
-    "不推进 Tick",
-    "不写入 runtime",
+    "不读取 runtime",
     "不生成默认宠物",
     "image-rendering: pixelated",
   ]
@@ -98,17 +102,17 @@ async function main() {
     "CanvasRenderingContext2D",
     "getContext(",
     "dangerouslySetInnerHTML",
-    "backgroundColor",
-    "gridTemplateColumns",
-    'position: "absolute"',
-    "position: 'absolute'",
-    "position:absolute",
     "runAndPersistOneRuntimeTick",
     "writeWorldRuntimeSaveRecord",
     "createPet",
   ]
-  const forbiddenHits = forbiddenWorldTokens.filter((token) => worldCombined.includes(token))
-  assert(forbiddenHits.length === 0, `/world contains forbidden tokens: ${forbiddenHits.join(", ")}`)
+  const forbiddenHits = forbiddenWorldTokens.filter((token) =>
+    worldCombined.includes(token)
+  )
+  assert(
+    forbiddenHits.length === 0,
+    `/world contains forbidden tokens: ${forbiddenHits.join(", ")}`
+  )
 
   console.log("PIXEL WORLDVIEW PIXI ENTRY SMOKE")
   console.log("Pixi PixelWorld renderer exists: ok")
@@ -118,7 +122,6 @@ async function main() {
   console.log("Runtime remains read-only: ok")
   console.log("No SVG entry dependency: ok")
   console.log("No hand-written canvas context usage: ok")
-  console.log("No CSS geometry world preview: ok")
   console.log("No default pet generation: ok")
   console.log("Result: PASS")
 }

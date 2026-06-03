@@ -1,131 +1,132 @@
-// 该组件用于展示正式像素主世界只读入口。
-import type { WorldViewModel } from "@/world/world-view-model";
+import type { WorldViewModel } from "@/world/world-view-model"
 import {
   buildPixelWorldPixelBufferFrame,
   buildPixelWorldRenderPlan,
   buildPixelWorldRendererFrame,
   mapPixelWorldViewModelFromSnapshot,
   mapWorldViewModelToPixelWorldSourceSnapshot,
-  validatePixelWorldPixelBufferFrame,
-  validatePixelWorldRenderPlan,
-  validatePixelWorldRendererFrame,
-  validatePixelWorldViewModel,
-} from "@/world/pixel-worldview";
-import { PixiPixelWorldRendererClient } from "../pixi-pixel-world-renderer/pixi-pixel-world-renderer.client";
+} from "@/world/pixel-worldview"
 
-export function PixelWorldViewReadonlyEntry(input: { worldViewModel: WorldViewModel }) {
-  const source = mapWorldViewModelToPixelWorldSourceSnapshot(input.worldViewModel);
-  const pixelModel = mapPixelWorldViewModelFromSnapshot(source);
-  const modelValidation = validatePixelWorldViewModel(pixelModel);
-  const renderPlan = buildPixelWorldRenderPlan(pixelModel);
-  const renderPlanValidation = validatePixelWorldRenderPlan(renderPlan);
-  const rendererResult = buildPixelWorldRendererFrame({ plan: renderPlan });
-  const rendererValidation = validatePixelWorldRendererFrame(rendererResult.frame);
+import { PixiPixelWorldRendererClient } from "../pixi-pixel-world-renderer/pixi-pixel-world-renderer.client"
+
+export function PixelWorldViewReadonlyEntry(input: {
+  worldViewModel: WorldViewModel
+}) {
+  const source = mapWorldViewModelToPixelWorldSourceSnapshot(
+    input.worldViewModel
+  )
+  const pixelModel = mapPixelWorldViewModelFromSnapshot(source)
+  const renderPlan = buildPixelWorldRenderPlan(pixelModel)
+  const rendererResult = buildPixelWorldRendererFrame({ plan: renderPlan })
   const bufferResult = buildPixelWorldPixelBufferFrame({
     plan: renderPlan,
     frame: rendererResult.frame,
-  });
-  const bufferValidation = validatePixelWorldPixelBufferFrame(bufferResult.buffer);
+  })
+
   return (
     <main style={styles.page}>
-      <header>
-        <h1>AI-PET-WORLD</h1>
-        <p>PixelWorldView 正式像素世界</p>
-        <p>当前页面只读世界事实，不推进 Tick，不写入 runtime，不生成默认宠物。</p>
-      </header>
+      <section style={styles.worldPanel}>
+        <header style={styles.header}>
+          <div>
+            <div style={styles.brand}>AI-PET-WORLD</div>
+            <h1 style={styles.title}>你的自主像素世界</h1>
+          </div>
+          <div style={styles.status}>Tick {input.worldViewModel.tick}</div>
+        </header>
 
-      <PixiPixelWorldRendererClient buffer={bufferResult.buffer} />
-
-      <section style={styles.card}>
-        <h2>World Summary</h2>
-        <p>worldId: {input.worldViewModel.worldId}</p>
-        <p>tick: {input.worldViewModel.tick}</p>
-        <p>buffer cells: {bufferResult.buffer.cellCount}</p>
-        <p>model validation: {modelValidation.status}</p>
-        <p>renderPlan validation: {renderPlanValidation.status}</p>
-        <p>buffer validation: {bufferValidation.status}</p>
+        <PixiPixelWorldRendererClient buffer={bufferResult.buffer} />
       </section>
 
-      <details style={styles.card}>
-        <summary>工程状态</summary>
-        <section>
-          <h2>World Runtime Projection</h2>
-          <p>savedAt: {input.worldViewModel.savedAt}</p>
-          <p>ownerId: {input.worldViewModel.ownerId}</p>
-          <p>
-            canvas: {input.worldViewModel.canvas.width} x {input.worldViewModel.canvas.height}, tileSize{" "}
-            {input.worldViewModel.canvas.tileSize}
+      <aside style={styles.sidePanel}>
+        <section style={styles.card}>
+          <h2 style={styles.cardTitle}>P-Phone</h2>
+          <p style={styles.messageTitle}>
+            {input.worldViewModel.pPhone.latestMessageTitle}
           </p>
-          <p>WorldViewModel tags: {input.worldViewModel.tags.length}</p>
-        </section>
-
-        <section>
-          <h2>PixelWorldView Model</h2>
-          <p>
-            tiles {pixelModel.tiles.length} | traces {pixelModel.traces.length} | objects {pixelModel.objects.length} |
-            actors {pixelModel.actors.length} | atmosphere {pixelModel.atmosphere.length} | overlays{" "}
-            {pixelModel.overlays.length}
+          <p style={styles.body}>
+            {input.worldViewModel.pPhone.latestMessageBody}
           </p>
         </section>
 
-        <section>
-          <h2>Render Plan</h2>
-          <p>render commands: {renderPlan.commands.length}</p>
-          {renderPlan.layerSummaries.map((summary) => (
-            <p key={summary.layer}>
-              layer {summary.layer}: {summary.count}
-            </p>
-          ))}
+        <section style={styles.card}>
+          <h2 style={styles.cardTitle}>管家说明</h2>
+          <p style={styles.messageTitle}>
+            {input.worldViewModel.butlerExplanation.title}
+          </p>
+          <p style={styles.body}>
+            {input.worldViewModel.butlerExplanation.body}
+          </p>
         </section>
 
-        <section>
-          <h2>Renderer Frame</h2>
-          <p>frameId: {rendererResult.frame.frameId}</p>
-          <p>mode: {rendererResult.frame.mode}</p>
-          <p>target: {rendererResult.frame.target}</p>
-          <p>sourcePlanCommandCount: {rendererResult.frame.sourcePlanCommandCount}</p>
-          <p>renderer validation: {rendererValidation.status}</p>
-          <h3>Safety</h3>
-          <p>allowRuntimeWrite: {String(rendererResult.frame.safety.allowRuntimeWrite)}</p>
-          <p>allowDefaultPet: {String(rendererResult.frame.safety.allowDefaultPet)}</p>
+        <section style={styles.card}>
+          <h2 style={styles.cardTitle}>世界状态</h2>
+          <p style={styles.body}>世界：{input.worldViewModel.worldId}</p>
+          <p style={styles.body}>最近保存：{input.worldViewModel.savedAt}</p>
         </section>
-
-        <section>
-          <h2>Pixel Buffer</h2>
-          <p>bufferId: {bufferResult.buffer.bufferId}</p>
-          <p>cellCount: {bufferResult.buffer.cellCount}</p>
-        </section>
-
-      </details>
-
-      <section style={styles.card}>
-        <h2>P-Phone</h2>
-        <p>{input.worldViewModel.pPhone.latestMessageTitle}</p>
-        <p>{input.worldViewModel.pPhone.latestMessageBody}</p>
-        <p>unreadCount: {input.worldViewModel.pPhone.unreadCount}</p>
-      </section>
-
-      <section style={styles.card}>
-        <h2>Butler Explanation</h2>
-        <p>{input.worldViewModel.butlerExplanation.title}</p>
-        <p>{input.worldViewModel.butlerExplanation.body}</p>
-      </section>
+      </aside>
     </main>
-  );
+  )
 }
 
 const styles = {
   page: {
-    minHeight: "100vh",
-    padding: 24,
     background: "#17231f",
     color: "#d8ead8",
-    fontFamily: "monospace",
+    display: "grid",
+    gap: 20,
+    gridTemplateColumns: "minmax(0, 1fr) 340px",
+    minHeight: "100vh",
+    padding: 24,
+  },
+  worldPanel: {
+    background: "#13201c",
+    border: "1px solid #31554e",
+    minWidth: 0,
+    padding: 16,
+  },
+  header: {
+    alignItems: "center",
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  brand: {
+    color: "rgba(216, 234, 216, 0.68)",
+    fontSize: 13,
+  },
+  title: {
+    fontSize: 28,
+    margin: "4px 0 0",
+  },
+  status: {
+    border: "1px solid #3f6861",
+    color: "#c8df8f",
+    padding: "8px 10px",
+  },
+  sidePanel: {
+    display: "grid",
+    alignContent: "start",
+    gap: 16,
   },
   card: {
-    marginTop: 16,
-    padding: 16,
-    border: "1px solid #3f6861",
     background: "#1f302a",
+    border: "1px solid #3f6861",
+    padding: 16,
   },
-} as const;
+  cardTitle: {
+    color: "#c8df8f",
+    fontSize: 16,
+    margin: "0 0 10px",
+  },
+  messageTitle: {
+    color: "#f0f7df",
+    fontWeight: 700,
+    lineHeight: 1.6,
+    margin: "0 0 8px",
+  },
+  body: {
+    color: "rgba(216, 234, 216, 0.82)",
+    lineHeight: 1.7,
+    margin: "0 0 6px",
+  },
+} as const

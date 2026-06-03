@@ -56,7 +56,9 @@ function serializeBody(value: unknown): string | null {
   if (!value || typeof value !== "object") return null
 
   try {
-    return serializeCreateWorldInput(value as Parameters<typeof serializeCreateWorldInput>[0])
+    return serializeCreateWorldInput(
+      value as Parameters<typeof serializeCreateWorldInput>[0]
+    )
   } catch {
     return null
   }

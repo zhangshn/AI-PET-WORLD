@@ -3,12 +3,70 @@
  */
 
 import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
+import type { ButlerProfile } from "@/ai/personality-core/butler-profile-core/butler-profile-gateway"
 
 import type {
   ButlerMvpBirthInput,
   ButlerMvpBuildResult,
   ButlerMvpProfile,
 } from "./butler-mvp-schema"
+
+export function buildButlerMvpProfileFromLifeCore(input: {
+  playerId: string
+  ownerId: string
+  worldId: string
+  butlerProfile: ButlerProfile
+  constructionStyle: ButlerConstructionStyleVector
+  tags: string[]
+}): ButlerMvpBuildResult {
+  const birthHour = input.butlerProfile.birth.hour
+  const profile: ButlerMvpProfile = {
+    playerId: input.playerId,
+    ownerId: input.ownerId,
+    worldId: input.worldId,
+    butlerId: `butler:${input.ownerId}`,
+    displayName: input.butlerProfile.identity.displayName,
+    constructionStyle: input.constructionStyle,
+    lifeRhythmBias:
+      typeof birthHour === "number" ? buildLifeRhythmBias(birthHour) : "balanced",
+    adoptionIntentBias:
+      input.constructionStyle.protectiveKeeper >=
+      input.constructionStyle.warmCaretaker
+        ? "consider"
+        : "wait",
+    explanationTone: buildExplanationTone(input.constructionStyle),
+    visualTendency: buildVisualTendency(input.constructionStyle),
+    tags: [
+      "butler_runtime_profile",
+      "life_profile_core_driven",
+      "mvp_executor_compatibility_layer",
+      "no_default_adoption_entry",
+    ],
+  }
+
+  return {
+    input: {
+      playerId: input.playerId,
+      ownerId: input.ownerId,
+      worldId: input.worldId,
+      birthYear: input.butlerProfile.birth.year,
+      birthMonth: input.butlerProfile.birth.month,
+      birthDay: input.butlerProfile.birth.day,
+      birthHour: birthHour ?? -1,
+      timezone: "Asia/Shanghai",
+      seed: input.worldId,
+      tags: input.tags,
+    },
+    profile,
+    messages: ["管家运行时人格已从正式人格核心快照派生。"],
+    tags: [
+      "butler_mvp_build_result",
+      "life_profile_core_driven",
+      "mvp_executor_compatibility_layer",
+      ...input.tags,
+    ],
+  }
+}
 
 export function buildButlerMvpProfile(
   input: ButlerMvpBirthInput

@@ -3,6 +3,13 @@
  */
 
 import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
+import type { ButlerProfile } from "@/ai/personality-core/butler-profile-core/butler-profile-gateway"
+import type {
+  ButlerMvpBirthInput,
+  ButlerMvpProfile,
+} from "@/world/butler/butler-mvp-schema"
+import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
+import type { WorldCreationStyleSource } from "@/world/creation/world-creation-schema"
 import type { MvpWorldRuntimeTickResult } from "@/world/mvp-core/mvp-world-runtime-tick"
 import type { SpaceTraceInfluenceSummary } from "@/world/space"
 import type { TraceField, TraceMemorySeedField } from "@/world/trace"
@@ -46,6 +53,12 @@ export type WorldRuntimeSaveRecord = {
   ownerId: string
   tick: number
   savedAt: string
+  butlerProfile: ButlerProfile
+  butlerRuntimeProfile: ButlerMvpProfile
+  butlerBirthInput: ButlerMvpBirthInput
+  butlerMappingMode: ButlerProfile["identity"]["mappingMode"]
+  butlerConstructionStyle: ButlerConstructionStyleVector
+  worldCreationStyleSource: WorldCreationStyleSource
   homeMapState: HomeMapState
   recentEvents: WorldRuntimeEventLog[]
   recentActionSignatures?: string[]

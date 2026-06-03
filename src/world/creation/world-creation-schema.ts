@@ -3,6 +3,11 @@
  */
 
 import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
+import type {
+  ButlerProfile,
+  ButlerProfileBirthInput,
+  ButlerMappingMode,
+} from "@/ai/personality-core/butler-profile-core/butler-profile-gateway"
 
 export type CreateWorldPerspective = "unspecified" | "female" | "male"
 
@@ -14,7 +19,8 @@ export type CreateWorldInput = {
   year: number
   month: number
   day: number
-  time: string
+  time: string | null
+  hasBirthHour: boolean
   perspective: CreateWorldPerspective
   createdAt: number
 }
@@ -28,6 +34,9 @@ export type WorldCreationRuntimeResult = {
   ownerId: string
   birthSignature: string
   worldSalt: string
+  butlerProfile: ButlerProfile
+  butlerBirthInput: ButlerProfileBirthInput
+  butlerMappingMode: ButlerMappingMode
   butlerConstructionStyle: ButlerConstructionStyleVector
   now: number
   styleSource: WorldCreationStyleSource

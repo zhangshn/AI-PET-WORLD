@@ -2,7 +2,6 @@
  * Runs one live-world tick from an existing HomeMapState.
  */
 
-import { buildButlerMvpProfile } from "@/world/butler/butler-personality-adapter"
 import { runMvpWorldRuntimeTick } from "@/world/mvp-core/mvp-world-runtime-tick"
 import { buildSpaceGridFromHomeMapState } from "@/world/space"
 import {
@@ -30,14 +29,6 @@ import type {
   WorldRuntimeTickResult,
 } from "./world-runtime-schema"
 
-const DEFAULT_BIRTH_INPUT = {
-  birthYear: 1991,
-  birthMonth: 6,
-  birthDay: 18,
-  birthHour: 8,
-  timezone: "Asia/Shanghai",
-}
-
 export function runOneRuntimeTick(
   input: WorldRuntimeTickInput
 ): Omit<WorldRuntimeTickResult, "persisted"> {
@@ -48,19 +39,11 @@ export function runOneRuntimeTick(
     nextTick,
     now: input.now,
   })
-  const butlerBuildResult = buildButlerMvpProfile({
-    playerId: input.saveRecord.ownerId,
-    ownerId: input.saveRecord.ownerId,
-    worldId: input.saveRecord.worldId,
-    seed: input.saveRecord.homeMapState.seed,
-    ...DEFAULT_BIRTH_INPUT,
-    tags: ["world_runtime_tick_butler_profile"],
-  })
   const runtimeTick = decision.shouldRunConstructionTick
     ? runMvpWorldRuntimeTick({
         homeMapState: input.saveRecord.homeMapState,
-        butlerProfile: butlerBuildResult.profile,
-        constructionStyle: butlerBuildResult.profile.constructionStyle,
+        butlerProfile: input.saveRecord.butlerRuntimeProfile,
+        constructionStyle: input.saveRecord.butlerConstructionStyle,
         worldDay: nextTick,
         now: input.now,
         tickReason:
@@ -164,6 +147,12 @@ export function runOneRuntimeTick(
     ownerId: input.saveRecord.ownerId,
     tick: nextTick,
     savedAt: nowIso,
+    butlerProfile: input.saveRecord.butlerProfile,
+    butlerRuntimeProfile: input.saveRecord.butlerRuntimeProfile,
+    butlerBirthInput: input.saveRecord.butlerBirthInput,
+    butlerMappingMode: input.saveRecord.butlerMappingMode,
+    butlerConstructionStyle: input.saveRecord.butlerConstructionStyle,
+    worldCreationStyleSource: input.saveRecord.worldCreationStyleSource,
     homeMapState: nextHomeMapState,
     recentEvents,
     recentActionSignatures,
@@ -196,6 +185,7 @@ export function runOneRuntimeTick(
   const audit = auditWorldRuntimeTick({
     nextHomeMapState: nextSaveRecord.homeMapState,
     events: [event],
+    expectedTick: nextSaveRecord.tick,
   })
   const continuityAudit = auditWorldRuntimeContinuity({
     previousSaveRecord: input.saveRecord,
@@ -363,8 +353,8 @@ function buildRuntimeEvent(input: {
   return {
     id: `runtime-event-${input.tick}`,
     tick: input.tick,
-    title: "World runtime continued",
-    body: `${changedText} Audit warnings: ${input.warningCount}.`,
+    title: "世界继续运行",
+    body: `${changedText} 本轮规则提示：${input.warningCount} 条。`,
     source: input.acceptedDiffCount > 0 ? "safe_apply" : "butler",
     createdAt: input.createdAt,
     tags: [
@@ -390,24 +380,24 @@ function buildRuntimeEventBody(input: {
   worldRuleValidation: ButlerWorldRuleValidation
 }): string {
   if (!input.worldRuleValidation.ok) {
-    return `The butler chose ${input.decision.selectedMotivation}, but world rule validation blocked the intent.`
+    return `管家产生了 ${input.decision.selectedMotivation} 动机，但世界规则校验阻止了这次意图写入。`
   }
 
   if (input.acceptedDiffCount > 0) {
     return [
-      `The butler chose ${input.decision.selectedMotivation}.`,
-      `This tick wrote ${input.acceptedDiffCount} world change(s) through SafeApply.`,
-      "The accepted action was also converted into validated trace closure.",
+      `管家选择了 ${input.decision.selectedMotivation}。`,
+      `本轮有 ${input.acceptedDiffCount} 个世界变化通过 SafeApply 写入家园。`,
+      "已接受的行动也被转化为经过校验的世界痕迹。",
     ].join(" ")
   }
 
   if (input.decision.selectedMotivation === "wait_for_resources") {
-    return "The butler judged current resources insufficient and waited without forcing a HomeMapState change, then left a validated waiting trace."
+    return "管家判断当前资源不足，因此没有强行改写家园事实，只留下经过校验的等待痕迹。"
   }
 
   if (input.decision.selectedMotivation === "observe_world") {
-    return "The butler observed world state without writing new HomeMapState facts, then left a validated attention trace."
+    return "管家先观察世界状态，没有写入新的家园事实，只留下经过校验的关注痕迹。"
   }
 
-  return `The butler kept the home stable through ${input.intent.kind} without forcing an unsafe world change.`
+  return `管家通过 ${input.intent.kind} 维持家园稳定，没有强行制造不安全的世界变化。`
 }

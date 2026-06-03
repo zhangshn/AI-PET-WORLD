@@ -6,12 +6,15 @@ async function main() {
   const ts = await import("typescript")
   const repoRoot = process.cwd()
   const localRequire = moduleApi.createRequire(__filename)
-  const savePath = path.join(
-    repoRoot,
-    ".runtime",
-    "world-state",
-    "default-world.json"
-  )
+  const savePath = resolveRuntimeSavePath({
+    fs,
+    latestIndexPath: path.join(
+      repoRoot,
+      ".runtime",
+      "world-state",
+      "latest-world.json"
+    ),
+  })
   const runtimeGatewayPath = path.join(
     repoRoot,
     "src",
@@ -176,7 +179,7 @@ async function main() {
     )
   }
 
-  if (!fs.existsSync(savePath)) {
+  if (!savePath || !fs.existsSync(savePath)) {
     fail("Runtime save file not found.")
   }
 
@@ -318,6 +321,18 @@ async function main() {
   console.log("readWorldRuntimeForView read-only: ok")
   console.log("World read boundary: ok")
   console.log("Result: PASS")
+}
+
+function resolveRuntimeSavePath(input) {
+  if (!input.fs.existsSync(input.latestIndexPath)) return null
+
+  try {
+    const index = JSON.parse(input.fs.readFileSync(input.latestIndexPath, "utf8"))
+
+    return typeof index.path === "string" ? index.path : null
+  } catch {
+    return null
+  }
 }
 
 main().catch((error) => {

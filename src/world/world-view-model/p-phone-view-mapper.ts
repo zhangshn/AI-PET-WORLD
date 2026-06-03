@@ -104,7 +104,7 @@ function localizeEventTitle(input: {
     return "管家留下了新的行动记录"
   }
 
-  if (input.event.title === "World runtime continued") return "世界继续运行"
+  if (input.event.title === "世界继续运行") return "世界继续运行"
   if (input.event.title.toLowerCase().includes("butler")) return "管家更新了判断"
   if (input.event.title.toLowerCase().includes("trace")) return "世界留下了新的痕迹"
 
@@ -118,7 +118,8 @@ function localizeEventBody(input: {
   const intent = input.saveRecord.lastButlerRuntimeIntent
   const validation = input.saveRecord.lastButlerWorldRuleValidation
   const trace = findCurrentButlerTrace(input.saveRecord)
-  const memorySeedCount = input.saveRecord.traceMemorySeedField?.summary.totalSeeds ?? 0
+  const memorySeedCount =
+    input.saveRecord.traceMemorySeedField?.summary.totalSeeds ?? 0
 
   if (input.event.tags.includes("butler_trace_closure") && intent && validation) {
     const validationText = validation.ok
@@ -139,23 +140,16 @@ function localizeEventBody(input: {
     return `${validationText}${homeMapText}${traceText}${memoryText}`
   }
 
-  if (
-    input.event.body.includes("resources insufficient") ||
-    input.event.body.includes("waited without forcing")
-  ) {
+  if (input.event.body.includes("资源不足")) {
     return "管家判断当前资源不足，因此暂时等待，没有强行改变家园。"
   }
 
-  if (input.event.body.includes("trace") || input.event.body.includes("Trace")) {
+  if (input.event.body.includes("痕迹")) {
     return "世界运行后，部分区域的痕迹状态被继续观察和沉淀。"
   }
 
-  if (input.event.body.includes("construction")) {
+  if (input.event.body.includes("建设")) {
     return "管家重新评估了建设节奏，并等待规则允许后的下一步。"
-  }
-
-  if (input.event.body.includes("Audit")) {
-    return "世界完成了一次运行记录，管家保持谨慎观察。"
   }
 
   return input.event.body || "世界继续保持可观察状态。"

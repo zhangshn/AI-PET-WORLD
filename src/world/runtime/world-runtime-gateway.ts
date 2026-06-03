@@ -2,7 +2,7 @@
  * Unified entry for the local MVP live-world runtime.
  */
 
-import { buildButlerMvpProfile } from "@/world/butler/butler-personality-adapter"
+import { buildButlerMvpProfileFromLifeCore } from "@/world/butler/butler-personality-adapter"
 import {
   buildWorldCreationRuntime,
   type CreateWorldInput,
@@ -23,15 +23,13 @@ import type {
 } from "./world-runtime-schema"
 
 const DEFAULT_RUNTIME_INPUT = {
-  playerId: "local-player",
-  ownerId: "local-owner",
-  worldId: "default-world",
-  seed: "ai-pet-world-v2-6-local-runtime",
-  birthYear: 1991,
-  birthMonth: 6,
-  birthDay: 18,
-  birthHour: 8,
-  timezone: "Asia/Shanghai",
+  year: 1991,
+  month: 6,
+  day: 18,
+  time: "08:00",
+  hasBirthHour: true,
+  perspective: "male" as const,
+  createdAt: 19910618081,
 }
 
 export type WorldRuntimeCreateResult = {
@@ -128,7 +126,7 @@ export async function readWorldRuntimeForView(input?: {
     tags: [
       "world_runtime_view_read",
       "read_only",
-      "in_memory_initial_world",
+      "missing_runtime_save_create_world_prompt",
       "no_runtime_save_write",
       ...readResult.tags,
     ],
@@ -149,6 +147,7 @@ export async function runAndPersistOneRuntimeTick(input?: {
     const audit = auditWorldRuntimeTick({
       nextHomeMapState: initialRecord.homeMapState,
       events: initialRecord.recentEvents,
+      expectedTick: initialRecord.tick,
       storeWriteSucceeded: writeResult.ok,
     })
 
@@ -279,16 +278,12 @@ function buildRuntimeSaveRecordFromCreateWorldInput(input: {
   const creationRuntime = buildWorldCreationRuntime({
     createWorldInput: input.createWorldInput,
   })
-  const butlerBuildResult = buildButlerMvpProfile({
+  const butlerBuildResult = buildButlerMvpProfileFromLifeCore({
     playerId: creationRuntime.ownerId,
     ownerId: creationRuntime.ownerId,
     worldId: creationRuntime.worldId,
-    seed: creationRuntime.worldSalt,
-    birthYear: input.createWorldInput.year,
-    birthMonth: input.createWorldInput.month,
-    birthDay: input.createWorldInput.day,
-    birthHour: parseBirthHour(input.createWorldInput.time),
-    timezone: "Asia/Shanghai",
+    butlerProfile: creationRuntime.butlerProfile,
+    constructionStyle: creationRuntime.butlerConstructionStyle,
     tags: [
       "world_runtime_created_from_create_world_input",
       `style_source:${creationRuntime.styleSource}`,
@@ -315,13 +310,19 @@ function buildRuntimeSaveRecordFromCreateWorldInput(input: {
     ownerId: initialWorld.homeMapState.ownerId,
     tick: 0,
     savedAt,
+    butlerProfile: creationRuntime.butlerProfile,
+    butlerRuntimeProfile: butlerBuildResult.profile,
+    butlerBirthInput: butlerBuildResult.input,
+    butlerMappingMode: creationRuntime.butlerMappingMode,
+    butlerConstructionStyle: creationRuntime.butlerConstructionStyle,
+    worldCreationStyleSource: creationRuntime.styleSource,
     homeMapState: initialWorld.homeMapState,
     recentEvents: [
       {
         id: "runtime-event-0",
         tick: 0,
-        title: "World created",
-        body: "A new autonomous pixel home was created from the user world input. The pet is not created by default.",
+        title: "世界已创建",
+        body: "管家人格、世界种子和第一片家园已经根据出生信息生成。宠物不会默认出现。",
         source: "runtime",
         createdAt: savedAt,
         tags: [
@@ -353,14 +354,27 @@ function buildRuntimeSaveRecordFromCreateWorldInput(input: {
 function buildInitialRuntimeSaveRecord(input: {
   now: number
 }): WorldRuntimeSaveRecord {
-  const butlerBuildResult = buildButlerMvpProfile({
-    ...DEFAULT_RUNTIME_INPUT,
-    tags: ["world_runtime_initial_butler_profile"],
+  const creationRuntime = buildWorldCreationRuntime({
+    createWorldInput: {
+      ...DEFAULT_RUNTIME_INPUT,
+      createdAt: input.now,
+    },
+  })
+  const butlerBuildResult = buildButlerMvpProfileFromLifeCore({
+    playerId: creationRuntime.ownerId,
+    ownerId: creationRuntime.ownerId,
+    worldId: creationRuntime.worldId,
+    butlerProfile: creationRuntime.butlerProfile,
+    constructionStyle: creationRuntime.butlerConstructionStyle,
+    tags: [
+      "world_runtime_initial_butler_profile",
+      `style_source:${creationRuntime.styleSource}`,
+    ],
   })
   const initialWorld = buildMvpInitialWorld({
-    worldId: DEFAULT_RUNTIME_INPUT.worldId,
-    ownerId: DEFAULT_RUNTIME_INPUT.ownerId,
-    seed: DEFAULT_RUNTIME_INPUT.seed,
+    worldId: creationRuntime.worldId,
+    ownerId: creationRuntime.ownerId,
+    seed: creationRuntime.worldSalt,
     butlerProfile: butlerBuildResult.profile,
     worldDay: 0,
     now: input.now,
@@ -374,13 +388,19 @@ function buildInitialRuntimeSaveRecord(input: {
     ownerId: initialWorld.homeMapState.ownerId,
     tick: 0,
     savedAt,
+    butlerProfile: creationRuntime.butlerProfile,
+    butlerRuntimeProfile: butlerBuildResult.profile,
+    butlerBirthInput: butlerBuildResult.input,
+    butlerMappingMode: creationRuntime.butlerMappingMode,
+    butlerConstructionStyle: creationRuntime.butlerConstructionStyle,
+    worldCreationStyleSource: creationRuntime.styleSource,
     homeMapState: initialWorld.homeMapState,
     recentEvents: [
       {
         id: "runtime-event-0",
         tick: 0,
-        title: "Runtime world initialized",
-        body: "Initial HomeMapState was created for the local MVP runtime.",
+        title: "世界已初始化",
+        body: "本地世界已生成第一片家园，后续变化将由管家意图和规则校验驱动。",
         source: "runtime",
         createdAt: savedAt,
         tags: ["world_runtime_event", "initial_home_map_state"],
@@ -401,9 +421,3 @@ function buildInitialRuntimeSaveRecord(input: {
   }
 }
 
-function parseBirthHour(time: string): number {
-  const [hourText] = time.split(":")
-  const hour = Number(hourText)
-
-  return Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : 8
-}

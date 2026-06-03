@@ -1,9 +1,5 @@
 "use client"
 
-/**
- * 当前文件职责：提供创建世界的玩家输入入口。
- */
-
 import type { FormEvent } from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -23,6 +19,7 @@ export default function CreateWorldRoutePage() {
   const [month, setMonth] = useState("1")
   const [day, setDay] = useState("1")
   const [time, setTime] = useState("08:00")
+  const [hasBirthHour, setHasBirthHour] = useState(true)
   const [perspective, setPerspective] =
     useState<CreateWorldPerspective>("unspecified")
   const [isCreating, setIsCreating] = useState(false)
@@ -37,11 +34,12 @@ export default function CreateWorldRoutePage() {
       month,
       day,
       time,
+      hasBirthHour,
       perspective,
     })
 
     if (!createWorldInput) {
-      setErrorMessage("请检查出生信息是否完整。")
+      setErrorMessage("请检查出生日期是否真实有效。")
       return
     }
 
@@ -83,8 +81,8 @@ export default function CreateWorldRoutePage() {
         <div className={styles.brand}>AI-PET-WORLD</div>
         <h1 className={styles.title}>创建你的第一片家园</h1>
         <p className={styles.description}>
-          输入出生信息后，系统会生成管家人格、世界种子和第一片家园。
-          宠物不会默认出现；这个世界会先围绕管家、资源和家园痕迹自主运行。
+          输入出生信息后，系统会生成管家人格、世界种子和第一片家园。宠物不会默认出现；
+          这个世界会先围绕管家、资源和家园痕迹自主运行。
         </p>
         <p className={styles.notice}>
           进入世界后，你会先观察管家的判断和家园变化；你不是直接操控者，而是这个世界的源头。
@@ -139,11 +137,21 @@ export default function CreateWorldRoutePage() {
               <span className={styles.label}>出生时间</span>
               <input
                 className={styles.input}
+                disabled={!hasBirthHour}
                 onChange={(event) => setTime(event.target.value)}
-                required
+                required={hasBirthHour}
                 type="time"
                 value={time}
               />
+            </label>
+
+            <label className={styles.checkboxField}>
+              <input
+                checked={!hasBirthHour}
+                onChange={(event) => setHasBirthHour(!event.target.checked)}
+                type="checkbox"
+              />
+              <span>我不知道出生时间，使用日期模式生成管家人格</span>
             </label>
 
             <label className={styles.fieldWide}>
@@ -182,39 +190,35 @@ function buildCreateWorldInput(input: {
   month: string
   day: string
   time: string
+  hasBirthHour: boolean
   perspective: CreateWorldPerspective
 }): CreateWorldInput | null {
   const yearValue = Number(input.year)
   const monthValue = Number(input.month)
   const dayValue = Number(input.day)
 
-  if (!Number.isInteger(yearValue) || yearValue < 1900 || yearValue > 2100) {
+  if (!isValidCalendarDate(yearValue, monthValue, dayValue)) {
     return null
   }
 
-  if (!Number.isInteger(monthValue) || monthValue < 1 || monthValue > 12) {
+  if (input.hasBirthHour && !isValidTime(input.time)) {
     return null
   }
 
-  if (!Number.isInteger(dayValue) || dayValue < 1 || dayValue > 31) {
-    return null
-  }
-
-  if (!/^\d{2}:\d{2}$/.test(input.time)) {
-    return null
-  }
+  const normalizedTime = input.hasBirthHour ? input.time : null
 
   return {
     year: yearValue,
     month: monthValue,
     day: dayValue,
-    time: input.time,
+    time: normalizedTime,
+    hasBirthHour: input.hasBirthHour,
     perspective: input.perspective,
     createdAt: buildStableCreateWorldCreatedAt({
       year: yearValue,
       month: monthValue,
       day: dayValue,
-      time: input.time,
+      time: normalizedTime,
       perspective: input.perspective,
     }),
   }
@@ -224,12 +228,12 @@ function buildStableCreateWorldCreatedAt(input: {
   year: number
   month: number
   day: number
-  time: string
+  time: string | null
   perspective: CreateWorldPerspective
 }): number {
-  const [hourText, minuteText] = input.time.split(":")
-  const hour = Number(hourText)
-  const minute = Number(minuteText)
+  const birthTime = input.time ? parseTime(input.time) : null
+  const hour = birthTime?.hour ?? 0
+  const minute = birthTime?.minute ?? 0
   const perspectiveOffset =
     input.perspective === "female" ? 2 : input.perspective === "male" ? 1 : 0
 
@@ -241,4 +245,35 @@ function buildStableCreateWorldCreatedAt(input: {
     Math.floor(minute / 10) +
     perspectiveOffset
   )
+}
+
+function isValidCalendarDate(year: number, month: number, day: number): boolean {
+  if (!Number.isInteger(year) || year < 1900 || year > 2100) return false
+  if (!Number.isInteger(month) || month < 1 || month > 12) return false
+  if (!Number.isInteger(day) || day < 1 || day > 31) return false
+
+  const date = new Date(Date.UTC(year, month - 1, day))
+
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  )
+}
+
+function isValidTime(value: string): boolean {
+  return parseTime(value) !== null
+}
+
+function parseTime(value: string): { hour: number; minute: number } | null {
+  if (!/^\d{2}:\d{2}$/.test(value)) return null
+
+  const [hourText, minuteText] = value.split(":")
+  const hour = Number(hourText)
+  const minute = Number(minuteText)
+
+  if (!Number.isInteger(hour) || hour < 0 || hour > 23) return null
+  if (!Number.isInteger(minute) || minute < 0 || minute > 59) return null
+
+  return { hour, minute }
 }
