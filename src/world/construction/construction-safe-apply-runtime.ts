@@ -69,7 +69,7 @@ export function buildConstructionSafeApplyResult(
       "world_ecology_state_refreshed",
       "butler_construction_add_supported",
       "no_ui_integration",
-      "no_world_loop_integration",
+      "no_external_runtime_loop_integration",
       "no_default_adoption_entry",
     ],
   }

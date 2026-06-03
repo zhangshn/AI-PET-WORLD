@@ -3,15 +3,15 @@
  */
 
 import type {
-  ConstructionWorldLoopAudit,
-  ConstructionWorldLoopProtocolInput,
-  ConstructionWorldLoopProtocolResult,
+  ConstructionRuntimeCommitAudit,
+  ConstructionRuntimeCommitInput,
+  ConstructionRuntimeCommitResult,
 } from "./construction-schema"
 
-export function auditConstructionWorldLoopProtocol(input: {
-  protocolInput: ConstructionWorldLoopProtocolInput
-  resultWithoutAudit: Omit<ConstructionWorldLoopProtocolResult, "audit">
-}): ConstructionWorldLoopAudit {
+export function auditConstructionRuntimeCommit(input: {
+  protocolInput: ConstructionRuntimeCommitInput
+  resultWithoutAudit: Omit<ConstructionRuntimeCommitResult, "audit">
+}): ConstructionRuntimeCommitAudit {
   const plannerWarningCount = input.resultWithoutAudit.plannerInputResult.audit.warnings.length
   const candidateWarningCount = input.resultWithoutAudit.candidateResult.audit.warnings.length
   const executionWarningCount = input.resultWithoutAudit.executionResult?.audit.warnings.length ?? 0
@@ -29,7 +29,7 @@ export function auditConstructionWorldLoopProtocol(input: {
   ]
 
   return {
-    stableWorldLoopFingerprint: buildWorldLoopProtocolFingerprint(input),
+    stableRuntimeCommitFingerprint: buildRuntimeCommitFingerprint(input),
     selectedPlanId: input.resultWithoutAudit.selectedPlan?.id ?? null,
     plannerWarningCount,
     candidateWarningCount,
@@ -40,11 +40,11 @@ export function auditConstructionWorldLoopProtocol(input: {
       input.resultWithoutAudit.safeApplyResult?.rejectedDiffs.map((diff) => diff.diffId) ?? [],
     warnings,
     tags: [
-      "construction_world_loop_protocol_audit",
+      "construction_runtime_commit_audit",
       warnings.length === 0
-        ? "construction_world_loop_protocol_valid"
-        : "construction_world_loop_protocol_warning",
-      "pre_world_loop_only",
+        ? "construction_runtime_commit_valid"
+        : "construction_runtime_commit_warning",
+      "pre_runtime_commit_only",
       "no_ui_integration",
       "no_default_adoption_entry",
     ],
@@ -52,8 +52,8 @@ export function auditConstructionWorldLoopProtocol(input: {
 }
 
 function auditStableHomeMapIdentity(input: {
-  protocolInput: ConstructionWorldLoopProtocolInput
-  resultWithoutAudit: Omit<ConstructionWorldLoopProtocolResult, "audit">
+  protocolInput: ConstructionRuntimeCommitInput
+  resultWithoutAudit: Omit<ConstructionRuntimeCommitResult, "audit">
 }): string[] {
   const before = input.protocolInput.homeMapState
   const after = input.resultWithoutAudit.nextHomeMapState
@@ -73,8 +73,8 @@ function auditStableHomeMapIdentity(input: {
 }
 
 function auditSelectedPlan(input: {
-  protocolInput: ConstructionWorldLoopProtocolInput
-  resultWithoutAudit: Omit<ConstructionWorldLoopProtocolResult, "audit">
+  protocolInput: ConstructionRuntimeCommitInput
+  resultWithoutAudit: Omit<ConstructionRuntimeCommitResult, "audit">
 }): string[] {
   const selectedPlan = input.resultWithoutAudit.selectedPlan
 
@@ -102,8 +102,8 @@ function auditSelectedPlan(input: {
 }
 
 function auditSafeApplyLineage(input: {
-  protocolInput: ConstructionWorldLoopProtocolInput
-  resultWithoutAudit: Omit<ConstructionWorldLoopProtocolResult, "audit">
+  protocolInput: ConstructionRuntimeCommitInput
+  resultWithoutAudit: Omit<ConstructionRuntimeCommitResult, "audit">
 }): string[] {
   const selectedPlan = input.resultWithoutAudit.selectedPlan
   const executionResult = input.resultWithoutAudit.executionResult
@@ -161,9 +161,9 @@ function buildNestedWarningSummaries(input: {
   return warnings
 }
 
-function buildWorldLoopProtocolFingerprint(input: {
-  protocolInput: ConstructionWorldLoopProtocolInput
-  resultWithoutAudit: Omit<ConstructionWorldLoopProtocolResult, "audit">
+function buildRuntimeCommitFingerprint(input: {
+  protocolInput: ConstructionRuntimeCommitInput
+  resultWithoutAudit: Omit<ConstructionRuntimeCommitResult, "audit">
 }): string {
   return [
     input.protocolInput.homeMapState.worldId,
@@ -184,7 +184,7 @@ function buildWorldLoopProtocolFingerprint(input: {
   ].join("::")
 }
 
-function fingerprintHomeMapState(homeMapState: ConstructionWorldLoopProtocolResult["nextHomeMapState"]): string {
+function fingerprintHomeMapState(homeMapState: ConstructionRuntimeCommitResult["nextHomeMapState"]): string {
   return [
     homeMapState.worldId,
     homeMapState.ownerId,

@@ -48,7 +48,7 @@ export function auditConstructionFullPipeline(input: {
         ? "construction_full_pipeline_valid"
         : "construction_full_pipeline_warning",
       "vertical_slice_only",
-      "no_real_world_loop_registration",
+      "no_external_runtime_loop_registration",
       "no_real_persistence",
       "no_ui_render",
     ],

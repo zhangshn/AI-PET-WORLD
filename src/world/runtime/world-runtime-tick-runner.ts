@@ -274,7 +274,7 @@ function buildRuntimeActionSummaryFromTick(input: {
 }): WorldRuntimeActionSummary {
   const protocolResult =
     input.runtimeTick.constructionResult.runtimeCycleResult
-      .worldLoopProtocolResult
+      .runtimeCommitResult
   const selectedPlan = protocolResult.selectedPlan
   const acceptedDiffIds =
     input.runtimeTick.constructionResult.fullPipelineAudit.acceptedDiffIds

@@ -5,7 +5,7 @@
 import { buildConstructionPersistenceProposal } from "./construction-persistence-proposal"
 import { auditConstructionRuntimeCycle } from "./construction-runtime-cycle-audit"
 import { buildConstructionVisualRefreshSignal } from "./construction-visual-refresh-signal"
-import { buildConstructionWorldLoopProtocolResult } from "./construction-world-loop-protocol"
+import { buildConstructionRuntimeCommitResult } from "./construction-runtime-commit-protocol"
 import type {
   ConstructionRuntimeCycleInput,
   ConstructionRuntimeCycleResult,
@@ -14,7 +14,7 @@ import type {
 export function buildConstructionRuntimeCycleResult(
   input: ConstructionRuntimeCycleInput
 ): ConstructionRuntimeCycleResult {
-  const worldLoopProtocolResult = buildConstructionWorldLoopProtocolResult({
+  const runtimeCommitResult = buildConstructionRuntimeCommitResult({
     homeMapState: input.homeMapState,
     constructionStyle: input.constructionStyle,
     worldDay: input.worldDay,
@@ -28,19 +28,19 @@ export function buildConstructionRuntimeCycleResult(
   })
   const persistenceProposal = buildConstructionPersistenceProposal({
     runtimeInput: input,
-    worldLoopProtocolResult,
+    runtimeCommitResult,
   })
   const visualRefreshSignal = buildConstructionVisualRefreshSignal({
     runtimeInput: input,
-    worldLoopProtocolResult,
+    runtimeCommitResult,
   })
   const resultWithoutAudit: Omit<ConstructionRuntimeCycleResult, "audit"> = {
-    nextHomeMapState: worldLoopProtocolResult.nextHomeMapState,
-    worldLoopProtocolResult,
+    nextHomeMapState: runtimeCommitResult.nextHomeMapState,
+    runtimeCommitResult,
     persistenceProposal,
     visualRefreshSignal,
     messages: [
-      ...worldLoopProtocolResult.messages,
+      ...runtimeCommitResult.messages,
       ...(persistenceProposal ? [persistenceProposal.reason] : []),
       ...(visualRefreshSignal ? [visualRefreshSignal.reason] : []),
     ],

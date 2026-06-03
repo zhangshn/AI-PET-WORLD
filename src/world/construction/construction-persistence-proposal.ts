@@ -5,24 +5,24 @@
 import type {
   ConstructionPersistenceProposal,
   ConstructionRuntimeCycleInput,
-  ConstructionWorldLoopProtocolResult,
+  ConstructionRuntimeCommitResult,
 } from "./construction-schema"
 
 export function buildConstructionPersistenceProposal(input: {
   runtimeInput: ConstructionRuntimeCycleInput
-  worldLoopProtocolResult: ConstructionWorldLoopProtocolResult
+  runtimeCommitResult: ConstructionRuntimeCommitResult
 }): ConstructionPersistenceProposal | null {
   if (input.runtimeInput.persistenceMode === "disabled") {
     return null
   }
 
-  const safeApplyResult = input.worldLoopProtocolResult.safeApplyResult
+  const safeApplyResult = input.runtimeCommitResult.safeApplyResult
   const acceptedDiffIds = safeApplyResult?.acceptedDiffIds ?? []
   const rejectedDiffIds =
     safeApplyResult?.rejectedDiffs.map((diff) => diff.diffId) ?? []
-  const sourcePlanId = input.worldLoopProtocolResult.selectedPlan?.id ?? null
+  const sourcePlanId = input.runtimeCommitResult.selectedPlan?.id ?? null
   const shouldPersist =
-    input.worldLoopProtocolResult.audit.warnings.length === 0 &&
+    input.runtimeCommitResult.audit.warnings.length === 0 &&
     Boolean(safeApplyResult) &&
     (safeApplyResult?.audit.warnings.length ?? 0) === 0 &&
     acceptedDiffIds.length > 0
@@ -39,13 +39,13 @@ export function buildConstructionPersistenceProposal(input: {
     sourcePlanId,
     shouldPersist,
     baseUpdatedAt: input.runtimeInput.homeMapState.updatedAt,
-    nextUpdatedAt: input.worldLoopProtocolResult.nextHomeMapState.updatedAt,
+    nextUpdatedAt: input.runtimeCommitResult.nextHomeMapState.updatedAt,
     acceptedDiffIds,
     rejectedDiffIds,
     reason: buildPersistenceReason({
       shouldPersist,
       acceptedDiffIds,
-      protocolWarnings: input.worldLoopProtocolResult.audit.warnings.length,
+      protocolWarnings: input.runtimeCommitResult.audit.warnings.length,
       safeApplyWarnings: safeApplyResult?.audit.warnings.length ?? 0,
       hasSafeApplyResult: Boolean(safeApplyResult),
     }),

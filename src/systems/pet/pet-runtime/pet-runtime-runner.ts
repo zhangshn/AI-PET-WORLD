@@ -4,7 +4,6 @@ import type { WorldZone } from "@/world/ecology/world-zone-types"
 
 import { updatePetAiState, stepPetBehaviorProcess } from "@/ai/ai-system-gateway"
 import { updatePetMemoryState } from "@/ai/memory-core/memory-gateway"
-import { logPetDecisionTrace } from "@/engine/world-engine/world-runtime-logger"
 import { buildPetPerceptionDriveBias } from "@/systems/agent-perception/agent-world-perception"
 
 import { recordPetRuntimeDecision } from "./pet-runtime-ai-recorder"
@@ -167,33 +166,6 @@ export function runPetRuntimeTick(input: RunPetRuntimeTickInput): RunPetRuntimeT
 
   const finalAction = stabilityResult.action
   const previousAction = pet.action
-
-  logPetDecisionTrace({
-    tick: input.currentTick,
-    petName: pet.name,
-    previousAction,
-    rawAction,
-    expressedAction,
-    finalAction,
-    actionSelectionReason: actionSelection.reason,
-    expressionReason: expressionResult.reason,
-    expressionSummary: expressionResult.summary,
-    stabilityReason: stabilityResult.reason,
-    driveDominant: driveSnapshot.dominant,
-    driveDominantScore: driveSnapshot.dominantScore,
-    driveValues: driveSnapshot.values,
-    driveReasons: driveSnapshot.reasons,
-    goalType: nextGoal.type,
-    goalPriority: nextGoal.priority,
-    goalSource: nextGoal.source,
-    goalSummary: nextGoal.summary,
-    goalLifeTendencyHint: nextGoal.lifeTendencyHint ?? null,
-    goalDriveAlignment: nextGoal.driveAlignment ?? null,
-    energy: pet.energy,
-    hunger: pet.hunger,
-    mood: currentSnapshot.state.emotional.label,
-    lifePhase: pet.lifeState.phase,
-  })
 
   recordPetRuntimeDecision({
     tick: input.currentTick,

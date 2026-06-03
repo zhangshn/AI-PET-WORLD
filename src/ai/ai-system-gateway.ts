@@ -44,12 +44,6 @@ import {
 } from "./consciousness-core/autonomy-core/autonomy-gateway"
 
 import type {
-  WorldStimulusSystemState,
-  BuildWorldStimuliInput,
-} from "./world-stimulus-system/stimulus-gateway"
-import { buildNextWorldStimulusState } from "./world-stimulus-system/stimulus-gateway"
-
-import type {
   BuildCognitionInput,
   CognitionResult,
 } from "./cognition-layer/cognition-gateway"
@@ -182,12 +176,6 @@ export {
   buildLifePersonalityProfile,
 } from "./personality-core/life-profile-core/life-profile-gateway"
 
-export function buildWorldStimuli(
-  input: BuildWorldStimuliInput
-): WorldStimulusSystemState {
-  return buildNextWorldStimulusState(input)
-}
-
 export function buildPetStimulusCognition(
   input: BuildCognitionInput
 ): CognitionResult {
@@ -316,19 +304,14 @@ export type {
 } from "./consciousness-core/autonomy-core/autonomy-gateway"
 
 export type {
-  WorldStimulus,
-  WorldStimulusCategory,
-  WorldStimulusIntensity,
-  WorldStimulusSystemState,
-  WorldStimulusType,
-  BuildWorldStimuliInput,
-} from "./world-stimulus-system/stimulus-gateway"
-
-export type {
   BuildCognitionInput,
   CognitionResult,
   StimulusInterpretation,
   StimulusReactionTendency,
+  WorldStimulus,
+  WorldStimulusCategory,
+  WorldStimulusIntensity,
+  WorldStimulusType,
 } from "./cognition-layer/cognition-gateway"
 
 export type {

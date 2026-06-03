@@ -12,4 +12,8 @@ export type {
   CognitionResult,
   StimulusInterpretation,
   StimulusReactionTendency,
+  WorldStimulus,
+  WorldStimulusCategory,
+  WorldStimulusIntensity,
+  WorldStimulusType,
 } from "./cognition-types"

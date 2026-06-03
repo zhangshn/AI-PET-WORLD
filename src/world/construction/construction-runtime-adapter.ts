@@ -56,7 +56,7 @@ export function buildConstructionRuntimeAdapterResult(
       "usable_runtime_vertical_slice",
       "memory_persistence_mock_only",
       "visual_refresh_bridge_only",
-      "no_real_world_loop_registration",
+      "no_external_runtime_loop_registration",
       "no_ui_render",
       "no_default_adoption_entry",
     ],

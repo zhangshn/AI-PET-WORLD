@@ -50,7 +50,7 @@ export function buildConstructionRuntimeBridgeResult(
     tags: [
       "construction_runtime_bridge_result",
       "runtime_bridge_pre_integration",
-      "no_world_loop_registration",
+      "no_external_runtime_loop_registration",
       "no_real_persistence",
       "no_ui_render",
       "no_default_adoption_entry",
@@ -97,7 +97,7 @@ function buildRuntimeBridgeReport(input: {
       : input.warnings.map((warning) => `Runtime bridge warning: ${warning}`),
     tags: [
       "construction_runtime_bridge_report",
-      "not_world_loop_registration",
+      "not_external_runtime_loop_registration",
       input.warnings.length === 0
         ? "runtime_bridge_valid"
         : "runtime_bridge_warning",

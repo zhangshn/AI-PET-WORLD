@@ -5,23 +5,23 @@
 import type {
   ConstructionRuntimeCycleInput,
   ConstructionVisualRefreshSignal,
-  ConstructionWorldLoopProtocolResult,
+  ConstructionRuntimeCommitResult,
 } from "./construction-schema"
 
 export function buildConstructionVisualRefreshSignal(input: {
   runtimeInput: ConstructionRuntimeCycleInput
-  worldLoopProtocolResult: ConstructionWorldLoopProtocolResult
+  runtimeCommitResult: ConstructionRuntimeCommitResult
 }): ConstructionVisualRefreshSignal | null {
   if (input.runtimeInput.visualRefreshMode === "disabled") {
     return null
   }
 
-  const safeApplyResult = input.worldLoopProtocolResult.safeApplyResult
+  const safeApplyResult = input.runtimeCommitResult.safeApplyResult
   const acceptedDiffIds = safeApplyResult?.acceptedDiffIds ?? []
-  const sourcePlanId = input.worldLoopProtocolResult.selectedPlan?.id ?? null
-  const changedPlacementIds = buildChangedPlacementIds(input.worldLoopProtocolResult)
+  const sourcePlanId = input.runtimeCommitResult.selectedPlan?.id ?? null
+  const changedPlacementIds = buildChangedPlacementIds(input.runtimeCommitResult)
   const shouldRefresh =
-    input.worldLoopProtocolResult.audit.warnings.length === 0 &&
+    input.runtimeCommitResult.audit.warnings.length === 0 &&
     Boolean(safeApplyResult) &&
     (safeApplyResult?.audit.warnings.length ?? 0) === 0 &&
     acceptedDiffIds.length > 0
@@ -41,7 +41,7 @@ export function buildConstructionVisualRefreshSignal(input: {
     reason: buildVisualRefreshReason({
       shouldRefresh,
       acceptedDiffIds,
-      protocolWarnings: input.worldLoopProtocolResult.audit.warnings.length,
+      protocolWarnings: input.runtimeCommitResult.audit.warnings.length,
       safeApplyWarnings: safeApplyResult?.audit.warnings.length ?? 0,
       hasSafeApplyResult: Boolean(safeApplyResult),
     }),
@@ -56,14 +56,14 @@ export function buildConstructionVisualRefreshSignal(input: {
 }
 
 function buildChangedPlacementIds(
-  worldLoopProtocolResult: ConstructionWorldLoopProtocolResult
+  runtimeCommitResult: ConstructionRuntimeCommitResult
 ): string[] {
   const acceptedDiffIds = new Set(
-    worldLoopProtocolResult.safeApplyResult?.acceptedDiffIds ?? []
+    runtimeCommitResult.safeApplyResult?.acceptedDiffIds ?? []
   )
 
   return uniqueTags(
-    (worldLoopProtocolResult.executionResult?.mapDiffs ?? [])
+    (runtimeCommitResult.executionResult?.mapDiffs ?? [])
       .filter((diff) => acceptedDiffIds.has(diff.id))
       .map((diff) => diff.placementId)
   )

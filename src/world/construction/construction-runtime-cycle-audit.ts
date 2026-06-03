@@ -15,10 +15,10 @@ export function auditConstructionRuntimeCycle(input: {
   resultWithoutAudit: Omit<ConstructionRuntimeCycleResult, "audit">
 }): ConstructionRuntimeCycleAudit {
   const acceptedDiffIds =
-    input.resultWithoutAudit.worldLoopProtocolResult.safeApplyResult
+    input.resultWithoutAudit.runtimeCommitResult.safeApplyResult
       ?.acceptedDiffIds ?? []
   const rejectedDiffIds =
-    input.resultWithoutAudit.worldLoopProtocolResult.safeApplyResult
+    input.resultWithoutAudit.runtimeCommitResult.safeApplyResult
       ?.rejectedDiffs.map((diff) => diff.diffId) ?? []
   const warnings = [
     ...auditStableHomeMapIdentity(input),
@@ -38,7 +38,7 @@ export function auditConstructionRuntimeCycle(input: {
     sourceWorldId: input.runtimeInput.homeMapState.worldId,
     sourceOwnerId: input.runtimeInput.homeMapState.ownerId,
     selectedPlanId:
-      input.resultWithoutAudit.worldLoopProtocolResult.audit.selectedPlanId,
+      input.resultWithoutAudit.runtimeCommitResult.audit.selectedPlanId,
     acceptedDiffIds,
     rejectedDiffIds,
     persistenceProposalId:
@@ -86,8 +86,8 @@ function auditProtocolLineage(input: {
   const result = input.resultWithoutAudit
   const warnings: string[] = []
 
-  if (result.nextHomeMapState !== result.worldLoopProtocolResult.nextHomeMapState) {
-    warnings.push("RuntimeCycle.nextHomeMapState 必须来自 worldLoopProtocolResult。")
+  if (result.nextHomeMapState !== result.runtimeCommitResult.nextHomeMapState) {
+    warnings.push("RuntimeCycle.nextHomeMapState 必须来自 runtimeCommitResult。")
   }
 
   return warnings
@@ -99,7 +99,7 @@ function auditPersistenceProposal(input: {
 }): string[] {
   const proposal = input.resultWithoutAudit.persistenceProposal
   const protocolWarnings =
-    input.resultWithoutAudit.worldLoopProtocolResult.audit.warnings.length
+    input.resultWithoutAudit.runtimeCommitResult.audit.warnings.length
   const warnings: string[] = []
 
   if (input.runtimeInput.persistenceMode === "proposal_only" && !proposal) {
@@ -111,7 +111,7 @@ function auditPersistenceProposal(input: {
   }
 
   if (proposal?.shouldPersist && protocolWarnings > 0) {
-    warnings.push("worldLoopProtocolResult 有 warning 时 proposal 不能 shouldPersist。")
+    warnings.push("runtimeCommitResult 有 warning 时 proposal 不能 shouldPersist。")
   }
 
   return warnings
@@ -123,7 +123,7 @@ function auditVisualRefreshSignal(input: {
 }): string[] {
   const signal = input.resultWithoutAudit.visualRefreshSignal
   const protocolWarnings =
-    input.resultWithoutAudit.worldLoopProtocolResult.audit.warnings.length
+    input.resultWithoutAudit.runtimeCommitResult.audit.warnings.length
   const warnings: string[] = []
 
   if (input.runtimeInput.visualRefreshMode === "signal_only" && !signal) {
@@ -135,7 +135,7 @@ function auditVisualRefreshSignal(input: {
   }
 
   if (signal?.shouldRefresh && protocolWarnings > 0) {
-    warnings.push("worldLoopProtocolResult 有 warning 时 signal 不能 shouldRefresh。")
+    warnings.push("runtimeCommitResult 有 warning 时 signal 不能 shouldRefresh。")
   }
 
   return warnings
@@ -149,7 +149,7 @@ function auditAcceptedDiffLineage(input: {
   acceptedDiffIds: string[]
 }): string[] {
   const safeApplyAcceptedDiffIds = new Set(
-    input.input.resultWithoutAudit.worldLoopProtocolResult.safeApplyResult
+    input.input.resultWithoutAudit.runtimeCommitResult.safeApplyResult
       ?.acceptedDiffIds ?? []
   )
 
@@ -182,11 +182,11 @@ function buildChangedPlacementIds(
   result: Omit<ConstructionRuntimeCycleResult, "audit">
 ): string[] {
   const acceptedDiffIds = new Set(
-    result.worldLoopProtocolResult.safeApplyResult?.acceptedDiffIds ?? []
+    result.runtimeCommitResult.safeApplyResult?.acceptedDiffIds ?? []
   )
 
   return uniqueTags(
-    (result.worldLoopProtocolResult.executionResult?.mapDiffs ?? [])
+    (result.runtimeCommitResult.executionResult?.mapDiffs ?? [])
       .filter((diff) => acceptedDiffIds.has(diff.id))
       .map((diff) => diff.placementId)
   )
@@ -209,7 +209,7 @@ function buildStableRuntimeFingerprint(input: {
     runtimeInput.homeMapState.seed,
     String(runtimeInput.now),
     runtimeInput.runReason,
-    result.worldLoopProtocolResult.audit.selectedPlanId ?? "none",
+    result.runtimeCommitResult.audit.selectedPlanId ?? "none",
     input.acceptedDiffIds.slice().sort().join("+"),
     input.rejectedDiffIds.slice().sort().join("+"),
     result.persistenceProposal?.proposalId ?? "none",

@@ -241,7 +241,7 @@ export type ConstructionSafeApplyBuildResult = {
   audit: ConstructionSafeApplyAudit
 }
 
-export type ConstructionWorldLoopProtocolInput = {
+export type ConstructionRuntimeCommitInput = {
   homeMapState: HomeMapState
   constructionStyle: ButlerConstructionStyleVector
   worldDay: number
@@ -250,8 +250,8 @@ export type ConstructionWorldLoopProtocolInput = {
   tags: string[]
 }
 
-export type ConstructionWorldLoopAudit = {
-  stableWorldLoopFingerprint: string
+export type ConstructionRuntimeCommitAudit = {
+  stableRuntimeCommitFingerprint: string
   selectedPlanId: string | null
   plannerWarningCount: number
   candidateWarningCount: number
@@ -263,7 +263,7 @@ export type ConstructionWorldLoopAudit = {
   tags: string[]
 }
 
-export type ConstructionWorldLoopProtocolResult = {
+export type ConstructionRuntimeCommitResult = {
   nextHomeMapState: HomeMapState
   plannerInputResult: ConstructionPlannerInputBuildResult
   candidateResult: ConstructionPlanCandidateResult
@@ -271,14 +271,14 @@ export type ConstructionWorldLoopProtocolResult = {
   executionResult: ConstructionExecutionResult | null
   safeApplyResult: ConstructionSafeApplyResult | null
   messages: string[]
-  audit: ConstructionWorldLoopAudit
+  audit: ConstructionRuntimeCommitAudit
   tags: string[]
 }
 
-export type ConstructionWorldLoopProtocolBuildResult = {
-  input: ConstructionWorldLoopProtocolInput
-  result: ConstructionWorldLoopProtocolResult
-  audit: ConstructionWorldLoopAudit
+export type ConstructionRuntimeCommitBuildResult = {
+  input: ConstructionRuntimeCommitInput
+  result: ConstructionRuntimeCommitResult
+  audit: ConstructionRuntimeCommitAudit
 }
 
 export type ConstructionRuntimeRunReason =
@@ -349,7 +349,7 @@ export type ConstructionRuntimeCycleAudit = {
 
 export type ConstructionRuntimeCycleResult = {
   nextHomeMapState: HomeMapState
-  worldLoopProtocolResult: ConstructionWorldLoopProtocolResult
+  runtimeCommitResult: ConstructionRuntimeCommitResult
   persistenceProposal: ConstructionPersistenceProposal | null
   visualRefreshSignal: ConstructionVisualRefreshSignal | null
   messages: string[]

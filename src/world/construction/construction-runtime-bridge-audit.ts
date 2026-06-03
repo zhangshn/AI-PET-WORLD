@@ -32,7 +32,7 @@ export function auditConstructionRuntimeBridge(input: {
       warnings.length === 0
         ? "construction_runtime_bridge_valid"
         : "construction_runtime_bridge_warning",
-      "no_world_loop_registration",
+      "no_external_runtime_loop_registration",
       "no_real_persistence",
       "no_ui_render",
     ],

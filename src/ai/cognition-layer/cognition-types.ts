@@ -2,7 +2,54 @@
  * 当前文件负责：定义 AI 认知层核心类型、世界刺激解释结果，以及 AI 主观理解结构。
  */
 
-import type { WorldStimulus } from "../world-stimulus-system/stimulus-types"
+export type WorldStimulusType =
+  | "entity_motion"
+  | "tree_presence"
+  | "flower_scent"
+  | "water_sound"
+  | "butterfly"
+  | "shadow_motion"
+  | "quiet_zone"
+  | "breeze"
+  | "temperature_drop"
+  | "warm_zone"
+  | "falling_leaf"
+  | "distant_sound"
+  | "light_shift"
+  | "sound"
+  | "smell"
+  | "movement"
+  | "object"
+  | "weather"
+  | "social"
+  | "world"
+
+export type WorldStimulusCategory =
+  | "environment"
+  | "social"
+  | "resource"
+  | "safety"
+  | "curiosity"
+  | "comfort"
+
+export type WorldStimulusIntensity = "low" | "medium" | "high"
+
+export type WorldStimulus = {
+  id: string
+  type: WorldStimulusType
+  category: WorldStimulusCategory
+  label: string
+  description: string
+  intensity: WorldStimulusIntensity
+  worldPosition: {
+    x: number
+    y: number
+  }
+  spatialRadius: number
+  createdAtTick: number
+  expiresAtTick?: number
+  tags: string[]
+}
 
 export type StimulusInterpretation =
   | "safe"

@@ -6,16 +6,16 @@ import { buildConstructionPlanCandidates } from "./construction-planner"
 import { buildConstructionPlannerInput } from "./construction-planner-input-builder"
 import { buildConstructionExecutionResult } from "./construction-executor"
 import { buildConstructionSafeApplyResult } from "./construction-safe-apply"
-import { auditConstructionWorldLoopProtocol } from "./construction-world-loop-audit"
+import { auditConstructionRuntimeCommit } from "./construction-runtime-commit-audit"
 import type {
   ConstructionPlan,
-  ConstructionWorldLoopProtocolInput,
-  ConstructionWorldLoopProtocolResult,
+  ConstructionRuntimeCommitInput,
+  ConstructionRuntimeCommitResult,
 } from "./construction-schema"
 
-export function buildConstructionWorldLoopProtocolResult(
-  input: ConstructionWorldLoopProtocolInput
-): ConstructionWorldLoopProtocolResult {
+export function buildConstructionRuntimeCommitResult(
+  input: ConstructionRuntimeCommitInput
+): ConstructionRuntimeCommitResult {
   const plannerInputResult = buildConstructionPlannerInput({
     homeMapState: input.homeMapState,
     constructionStyle: input.constructionStyle,
@@ -41,7 +41,7 @@ export function buildConstructionWorldLoopProtocolResult(
         now: input.now,
       })
     : null
-  const resultWithoutAudit: Omit<ConstructionWorldLoopProtocolResult, "audit"> = {
+  const resultWithoutAudit: Omit<ConstructionRuntimeCommitResult, "audit"> = {
     nextHomeMapState: safeApplyResult?.nextHomeMapState ?? input.homeMapState,
     plannerInputResult,
     candidateResult,
@@ -54,14 +54,14 @@ export function buildConstructionWorldLoopProtocolResult(
       safeApplyResult,
     }),
     tags: [
-      "construction_world_loop_protocol_result",
+      "construction_runtime_commit_result",
       "runtime_tick_integrated",
       "planner_candidate_executor_safe_apply_chain",
       "no_ui_integration",
       "no_default_adoption_entry",
     ],
   }
-  const audit = auditConstructionWorldLoopProtocol({
+  const audit = auditConstructionRuntimeCommit({
     protocolInput: input,
     resultWithoutAudit,
   })
