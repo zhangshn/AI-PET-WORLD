@@ -5,6 +5,7 @@
 import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
 
 import type { WorldRuntimeAudit, WorldRuntimeEventLog } from "./world-runtime-schema"
+import { findWorldRuntimeForbiddenTokenHits } from "./world-runtime-forbidden-token-policy"
 
 export function auditWorldRuntimeTick(input: {
   nextHomeMapState: HomeMapState
@@ -39,8 +40,11 @@ export function auditWorldRuntimeTick(input: {
       warnings.push(`Runtime event ${event.id} has empty body.`)
     }
 
-    if (containsForbiddenOfficialToken(event.body)) {
-      warnings.push(`Runtime event ${event.id} contains forbidden official world token.`)
+    const forbiddenTokenHits = findWorldRuntimeForbiddenTokenHits(event.body)
+    if (forbiddenTokenHits.length > 0) {
+      warnings.push(
+        `Runtime event ${event.id} contains forbidden official world token: ${forbiddenTokenHits.join(", ")}.`
+      )
     }
   }
 
@@ -54,11 +58,4 @@ export function auditWorldRuntimeTick(input: {
       "safe_apply_required",
     ],
   }
-}
-
-function containsForbiddenOfficialToken(value: string): boolean {
-  const forbiddenTokens = ["pet", "incubator", "embryo"]
-  const normalizedValue = value.toLowerCase()
-
-  return forbiddenTokens.some((token) => normalizedValue.includes(token))
 }

@@ -9,7 +9,7 @@ import {
   serializeCreateWorldInput,
   type CreateWorldInput,
   type CreateWorldPerspective,
-} from "@/world/creation/world-creation-runtime"
+} from "@/world/creation/world-creation-client-schema"
 
 import styles from "./create-world-route-page.styles.module.css"
 
@@ -48,9 +48,7 @@ export default function CreateWorldRoutePage() {
     try {
       const response = await fetch("/api/world/create", {
         body: serializeCreateWorldInput(createWorldInput),
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         method: "POST",
       })
       const result = (await response.json().catch(() => null)) as {
@@ -93,76 +91,32 @@ export default function CreateWorldRoutePage() {
           <div className={styles.fieldGrid}>
             <label className={styles.field}>
               <span className={styles.label}>出生年</span>
-              <input
-                className={styles.input}
-                inputMode="numeric"
-                max="2100"
-                min="1900"
-                onChange={(event) => setYear(event.target.value)}
-                required
-                type="number"
-                value={year}
-              />
+              <input className={styles.input} inputMode="numeric" max="2100" min="1900" onChange={(event) => setYear(event.target.value)} required type="number" value={year} />
             </label>
 
             <label className={styles.field}>
               <span className={styles.label}>出生月</span>
-              <input
-                className={styles.input}
-                inputMode="numeric"
-                max="12"
-                min="1"
-                onChange={(event) => setMonth(event.target.value)}
-                required
-                type="number"
-                value={month}
-              />
+              <input className={styles.input} inputMode="numeric" max="12" min="1" onChange={(event) => setMonth(event.target.value)} required type="number" value={month} />
             </label>
 
             <label className={styles.field}>
               <span className={styles.label}>出生日</span>
-              <input
-                className={styles.input}
-                inputMode="numeric"
-                max="31"
-                min="1"
-                onChange={(event) => setDay(event.target.value)}
-                required
-                type="number"
-                value={day}
-              />
+              <input className={styles.input} inputMode="numeric" max="31" min="1" onChange={(event) => setDay(event.target.value)} required type="number" value={day} />
             </label>
 
             <label className={styles.field}>
               <span className={styles.label}>出生时间</span>
-              <input
-                className={styles.input}
-                disabled={!hasBirthHour}
-                onChange={(event) => setTime(event.target.value)}
-                required={hasBirthHour}
-                type="time"
-                value={time}
-              />
+              <input className={styles.input} disabled={!hasBirthHour} onChange={(event) => setTime(event.target.value)} required={hasBirthHour} type="time" value={time} />
             </label>
 
             <label className={styles.checkboxField}>
-              <input
-                checked={!hasBirthHour}
-                onChange={(event) => setHasBirthHour(!event.target.checked)}
-                type="checkbox"
-              />
+              <input checked={!hasBirthHour} onChange={(event) => setHasBirthHour(!event.target.checked)} type="checkbox" />
               <span>我不知道出生时间，使用日期模式生成管家人格</span>
             </label>
 
             <label className={styles.fieldWide}>
               <span className={styles.label}>视角</span>
-              <select
-                className={styles.select}
-                onChange={(event) =>
-                  setPerspective(event.target.value as CreateWorldPerspective)
-                }
-                value={perspective}
-              >
+              <select className={styles.select} onChange={(event) => setPerspective(event.target.value as CreateWorldPerspective)} value={perspective}>
                 <option value="unspecified">不指定</option>
                 <option value="female">女性视角</option>
                 <option value="male">男性视角</option>
@@ -173,11 +127,7 @@ export default function CreateWorldRoutePage() {
 
         {errorMessage ? <p className={styles.errorMessage}>{errorMessage}</p> : null}
 
-        <button
-          className={styles.enterButton}
-          disabled={isCreating}
-          type="submit"
-        >
+        <button className={styles.enterButton} disabled={isCreating} type="submit">
           {isCreating ? "正在创建世界" : "进入世界"}
         </button>
       </form>
@@ -197,13 +147,8 @@ function buildCreateWorldInput(input: {
   const monthValue = Number(input.month)
   const dayValue = Number(input.day)
 
-  if (!isValidCalendarDate(yearValue, monthValue, dayValue)) {
-    return null
-  }
-
-  if (input.hasBirthHour && !isValidTime(input.time)) {
-    return null
-  }
+  if (!isValidCalendarDate(yearValue, monthValue, dayValue)) return null
+  if (input.hasBirthHour && !isValidTime(input.time)) return null
 
   const normalizedTime = input.hasBirthHour ? input.time : null
 

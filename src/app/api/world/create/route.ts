@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server"
 
-import {
-  parseCreateWorldInput,
-  serializeCreateWorldInput,
-} from "@/world/creation/world-creation-runtime"
+import { serializeCreateWorldInput } from "@/world/creation/world-creation-client-schema"
+import { parseCreateWorldInput } from "@/world/creation/world-creation-runtime"
 import { createRuntimeWorldFromCreateWorldInput } from "@/world/runtime/world-runtime-gateway"
 
 export async function POST(request: Request) {
@@ -16,7 +14,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: "创建世界失败，请检查输入信息。",
+        message: "Create world failed. Please check the birth input.",
         tags: ["create_world_to_world_flow", "invalid_create_world_input"],
       },
       { status: 400 }
@@ -31,7 +29,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         ok: false,
-        message: "世界暂时没有保存成功，请稍后再试。",
+        message: "World save did not persist. Please try again later.",
         tags: result.tags,
       },
       { status: 500 }
@@ -43,7 +41,7 @@ export async function POST(request: Request) {
     worldId: result.saveRecord.worldId,
     ownerId: result.saveRecord.ownerId,
     tick: result.saveRecord.tick,
-    message: "世界已经创建完成。",
+    message: "World created and persisted.",
     tags: [
       "create_world_to_world_flow",
       "runtime_save_persisted",

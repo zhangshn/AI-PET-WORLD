@@ -1,30 +1,3 @@
-const forbiddenTokens = [
-  "\u5b75\u5316\u5668",
-  "\u80da\u80ce",
-  "\u5b75\u5316",
-  "\u5019\u9009\u5ba0\u7269",
-  "\u9886\u517b\u5019\u9009",
-  "\u9886\u517b\u4e2d\u5fc3\u5019\u9009",
-  "\u5c0f\u9547\u9886\u517b\u89c2\u5bdf\u5019\u9009",
-  "\u4f34\u751f\u751f\u547d",
-  "\u751f\u547d\u4e8b\u4ef6",
-  "\u9ed8\u8ba4\u5ba0\u7269",
-  "\u521d\u59cb\u5ba0\u7269",
-  "\u5f00\u5c40\u5ba0\u7269",
-  "incubator",
-  "embryo",
-  "hatching",
-  "pet_arrival",
-  "pet_bed",
-  "pet_rest",
-  "LifeEvent",
-  "CompanionDecision",
-  "adoptionCandidate",
-  "AdoptionCandidate",
-  "townAdoptionCandidates",
-  "candidateLabel",
-  "candidateReason",
-]
 const motivationTypes = [
   "continue_construction",
   "maintain_home",
@@ -36,6 +9,11 @@ async function main() {
   const fs = await import("node:fs")
   const path = await import("node:path")
   const repoRoot = process.cwd()
+  const forbiddenTokens = readForbiddenTokens({
+    fs,
+    path,
+    repoRoot,
+  })
   const latestIndexPath = path.join(
     repoRoot,
     ".runtime",
@@ -273,6 +251,18 @@ function resolveRuntimeSavePath(input) {
   } catch {
     return null
   }
+}
+
+function readForbiddenTokens(input) {
+  const policyPath = input.path.join(
+    input.repoRoot,
+    "src",
+    "world",
+    "runtime",
+    "world-runtime-forbidden-tokens.json"
+  )
+
+  return JSON.parse(input.fs.readFileSync(policyPath, "utf8"))
 }
 
 function auditOptionalTraceMemorySeedField(traceMemorySeedField) {

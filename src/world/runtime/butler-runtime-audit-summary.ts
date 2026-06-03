@@ -109,7 +109,7 @@ export function buildButlerRuntimeAuditSummary(input: {
       `intent_kind:${input.intent.kind}`,
       `home_map_write:${homeMapWriteStatus}`,
       `trace_write:${traceWriteStatus}`,
-      "no_default_pet_fact",
+      "no_pet_fact",
       "safe_apply_boundary_recorded",
       "memory_seed_count_recorded",
     ],
@@ -156,7 +156,7 @@ function buildSafeguards(input: {
     input.traceWriteStatus === "created"
       ? "本轮行为只沉淀为管家行为痕迹。"
       : "本轮没有强行创建行为痕迹。",
-    "管家痕迹闭环不默认生成宠物事实。",
+    "管家痕迹闭环不默认生成伴生对象事实。",
     input.validation.memorySeedAllowed
       ? "记忆种子只来自可审计的痕迹结果。"
       : "记忆种子写入被世界规则限制。",
@@ -218,6 +218,7 @@ function intentKindToText(kind: ButlerRuntimeIntentKind): string {
   if (kind === "resource_wait") return "等待资源稳定"
   if (kind === "observation") return "继续观察世界"
   if (kind === "maintenance") return "维护家园"
+
   return "评估建设"
 }
 

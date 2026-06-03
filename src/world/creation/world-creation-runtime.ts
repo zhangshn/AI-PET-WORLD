@@ -11,6 +11,10 @@ import {
 import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
 
 import { buildButlerConstructionStyleFromLifeCore } from "./life-core-to-world-style"
+export {
+  CREATE_WORLD_STORAGE_KEY,
+  serializeCreateWorldInput,
+} from "./world-creation-client-schema"
 import type {
   CreateWorldInput,
   CreateWorldPerspective,
@@ -26,8 +30,6 @@ export type {
   WorldCreationRuntimeResult,
   WorldCreationStyleSource,
 } from "./world-creation-schema"
-
-export const CREATE_WORLD_STORAGE_KEY = "ai-pet-world:create-world-input"
 
 export function parseCreateWorldInput(
   rawValue: string | null
@@ -71,10 +73,6 @@ export function parseCreateWorldInput(
   } catch {
     return null
   }
-}
-
-export function serializeCreateWorldInput(input: CreateWorldInput): string {
-  return JSON.stringify(input)
 }
 
 export function buildWorldCreationRuntime(

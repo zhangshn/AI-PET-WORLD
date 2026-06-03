@@ -7,13 +7,20 @@
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises"
 import path from "node:path"
 
+import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
+
 import type {
+  WorldRuntimeEventLog,
   WorldRuntimeSaveRecord,
   WorldRuntimeStoreReadResult,
   WorldRuntimeStoreWriteResult,
 } from "./world-runtime-schema"
 
-const RUNTIME_DIR = path.join(".runtime", "world-state")
+const RUNTIME_DIR = path.join(
+  /*turbopackIgnore: true*/ process.cwd(),
+  ".runtime",
+  "world-state"
+)
 const LATEST_WORLD_FILE = "latest-world.json"
 
 export function getDefaultWorldRuntimeSavePath(): string {
@@ -178,9 +185,81 @@ function isWorldRuntimeSaveRecord(
     typeof value.butlerMappingMode === "string" &&
     Boolean(value.butlerConstructionStyle) &&
     typeof value.worldCreationStyleSource === "string" &&
-    Boolean(value.homeMapState) &&
-    Array.isArray(value.recentEvents) &&
+    isHomeMapStateShape(value.homeMapState) &&
+    isWorldRuntimeEventLogArray(value.recentEvents) &&
     Array.isArray(value.tags)
+  )
+}
+
+function isHomeMapStateShape(value: unknown): value is HomeMapState {
+  if (!value || typeof value !== "object") return false
+
+  const record = value as Partial<HomeMapState>
+
+  return (
+    typeof record.worldId === "string" &&
+    typeof record.ownerId === "string" &&
+    typeof record.seed === "string" &&
+    isHomeMapSizeShape(record.mapSize) &&
+    Array.isArray(record.zones) &&
+    Array.isArray(record.placements) &&
+    isHomeResourceStateShape(record.resources) &&
+    Array.isArray(record.constructionPlans) &&
+    Array.isArray(record.mapDiffs) &&
+    typeof record.createdAt === "number" &&
+    typeof record.updatedAt === "number" &&
+    Array.isArray(record.tags)
+  )
+}
+
+function isHomeMapSizeShape(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false
+
+  const record = value as Partial<HomeMapState["mapSize"]>
+
+  return (
+    typeof record.columns === "number" &&
+    typeof record.rows === "number" &&
+    typeof record.tileSize === "number"
+  )
+}
+
+function isHomeResourceStateShape(value: unknown): boolean {
+  if (!value || typeof value !== "object") return false
+
+  const record = value as Partial<HomeMapState["resources"]>
+
+  return (
+    typeof record.groundHealth === "number" &&
+    typeof record.naturalGrowth === "number" &&
+    typeof record.materialReadiness === "number" &&
+    typeof record.careReadiness === "number" &&
+    typeof record.spacePressure === "number" &&
+    Array.isArray(record.tags)
+  )
+}
+
+function isWorldRuntimeEventLogArray(
+  value: unknown
+): value is WorldRuntimeEventLog[] {
+  return Array.isArray(value) && value.every(isWorldRuntimeEventLogShape)
+}
+
+function isWorldRuntimeEventLogShape(
+  value: unknown
+): value is WorldRuntimeEventLog {
+  if (!value || typeof value !== "object") return false
+
+  const record = value as Partial<WorldRuntimeEventLog>
+
+  return (
+    typeof record.id === "string" &&
+    typeof record.tick === "number" &&
+    typeof record.title === "string" &&
+    typeof record.body === "string" &&
+    typeof record.source === "string" &&
+    typeof record.createdAt === "string" &&
+    Array.isArray(record.tags)
   )
 }
 

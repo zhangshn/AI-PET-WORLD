@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：定义 AI-PET-WORLD 自有 AI 数据层的基础类型。
+ * 当前文件职责：定义 AI-PET-WORLD 自有 AI 数据层的基础类型。
  */
 
 export type AiDataRecordKind =
@@ -10,7 +10,7 @@ export type AiDataRecordKind =
   | "user_feedback"
 
 export type AiDataSource =
-  | "world_engine"
+  | "world_runtime"
   | "pet_system"
   | "butler_system"
   | "event_system"

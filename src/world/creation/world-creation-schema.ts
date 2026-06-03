@@ -8,22 +8,16 @@ import type {
   ButlerProfileBirthInput,
   ButlerMappingMode,
 } from "@/ai/personality-core/butler-profile-core/butler-profile-gateway"
+import type { CreateWorldInput } from "./world-creation-client-schema"
 
-export type CreateWorldPerspective = "unspecified" | "female" | "male"
+export type {
+  CreateWorldInput,
+  CreateWorldPerspective,
+} from "./world-creation-client-schema"
 
 export type WorldCreationStyleSource =
   | "life_profile_core"
   | "deterministic_fallback"
-
-export type CreateWorldInput = {
-  year: number
-  month: number
-  day: number
-  time: string | null
-  hasBirthHour: boolean
-  perspective: CreateWorldPerspective
-  createdAt: number
-}
 
 export type WorldCreationRuntimeInput = {
   createWorldInput: CreateWorldInput

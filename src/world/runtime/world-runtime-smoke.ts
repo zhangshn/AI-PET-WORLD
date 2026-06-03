@@ -3,7 +3,7 @@
  */
 
 import {
-  loadOrCreateRuntimeWorld,
+  loadOrCreateRuntimeWorldForSmokeOnly,
   runAndPersistOneRuntimeTick,
 } from "./world-runtime-gateway"
 
@@ -13,9 +13,9 @@ export async function runWorldRuntimeSmoke(): Promise<{
   nextTick: number
   warnings: string[]
 }> {
-  const initial = await loadOrCreateRuntimeWorld()
+  const initial = await loadOrCreateRuntimeWorldForSmokeOnly()
   const result = await runAndPersistOneRuntimeTick()
-  const reloaded = await loadOrCreateRuntimeWorld()
+  const reloaded = await loadOrCreateRuntimeWorldForSmokeOnly()
   const warnings = [
     ...result.audit.warnings,
     ...(reloaded.tick < result.nextSaveRecord.tick

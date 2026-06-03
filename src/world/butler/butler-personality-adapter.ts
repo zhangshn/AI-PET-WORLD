@@ -1,12 +1,11 @@
 /**
- * 当前文件职责：把玩家出生输入映射为 MVP 管家人格档案。
+ * 当前文件职责：把正式管家人格核心快照转换为 runtime 执行器需要的管家档案。
  */
 
-import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
 import type { ButlerProfile } from "@/ai/personality-core/butler-profile-core/butler-profile-gateway"
+import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
 
 import type {
-  ButlerMvpBirthInput,
   ButlerMvpBuildResult,
   ButlerMvpProfile,
 } from "./butler-mvp-schema"
@@ -39,7 +38,7 @@ export function buildButlerMvpProfileFromLifeCore(input: {
     tags: [
       "butler_runtime_profile",
       "life_profile_core_driven",
-      "mvp_executor_compatibility_layer",
+      "runtime_executor_compatibility_layer",
       "no_default_adoption_entry",
     ],
   }
@@ -60,81 +59,12 @@ export function buildButlerMvpProfileFromLifeCore(input: {
     profile,
     messages: ["管家运行时人格已从正式人格核心快照派生。"],
     tags: [
-      "butler_mvp_build_result",
+      "butler_runtime_profile_build_result",
       "life_profile_core_driven",
-      "mvp_executor_compatibility_layer",
+      "runtime_executor_compatibility_layer",
       ...input.tags,
     ],
   }
-}
-
-export function buildButlerMvpProfile(
-  input: ButlerMvpBirthInput
-): ButlerMvpBuildResult {
-  const constructionStyle = buildConstructionStyle(input)
-  const profile: ButlerMvpProfile = {
-    playerId: input.playerId,
-    ownerId: input.ownerId,
-    worldId: input.worldId,
-    butlerId: `butler:${input.ownerId}`,
-    displayName: "管家",
-    constructionStyle,
-    lifeRhythmBias: buildLifeRhythmBias(input.birthHour),
-    adoptionIntentBias:
-      constructionStyle.protectiveKeeper >= constructionStyle.warmCaretaker
-        ? "consider"
-        : "wait",
-    explanationTone: buildExplanationTone(constructionStyle),
-    visualTendency: buildVisualTendency(constructionStyle),
-    tags: [
-      "butler_mvp_profile",
-      "player_life_projection_manager",
-      "not_direct_pet_caretaker_script",
-      "no_default_adoption_entry",
-    ],
-  }
-
-  return {
-    input,
-    profile,
-    messages: ["管家人格档案已根据玩家输入生成。"],
-    tags: [
-      "butler_mvp_build_result",
-      "deterministic_profile_mapping",
-      ...input.tags,
-    ],
-  }
-}
-
-function buildConstructionStyle(
-  input: ButlerMvpBirthInput
-): ButlerConstructionStyleVector {
-  const source = [
-    input.playerId,
-    input.ownerId,
-    input.worldId,
-    input.seed,
-    String(input.birthYear),
-    String(input.birthMonth),
-    String(input.birthDay),
-    String(input.birthHour),
-    input.timezone,
-  ].join("|")
-
-  return {
-    structuredBuilder: buildStyleValue(source, "structuredBuilder"),
-    warmCaretaker: buildStyleValue(source, "warmCaretaker"),
-    protectiveKeeper: buildStyleValue(source, "protectiveKeeper"),
-    aestheticOrganizer: buildStyleValue(source, "aestheticOrganizer"),
-    quietMaintainer: buildStyleValue(source, "quietMaintainer"),
-    adaptivePlanner: buildStyleValue(source, "adaptivePlanner"),
-  }
-}
-
-function buildStyleValue(source: string, salt: string): number {
-  const unit = hashToUnit(`${source}:${salt}`)
-
-  return Number((0.32 + unit * 0.56).toFixed(3))
 }
 
 function buildLifeRhythmBias(
@@ -172,19 +102,4 @@ function buildVisualTendency(
   if (style.warmCaretaker >= 0.72) return "warmNatural"
 
   return "ordered"
-}
-
-function hashToUnit(value: string): number {
-  return hashText(value) / 0xffffffff
-}
-
-function hashText(value: string): number {
-  let hash = 2166136261
-
-  for (let index = 0; index < value.length; index += 1) {
-    hash ^= value.charCodeAt(index)
-    hash = Math.imul(hash, 16777619)
-  }
-
-  return hash >>> 0
 }

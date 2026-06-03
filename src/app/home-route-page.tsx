@@ -1,7 +1,7 @@
 import Link from "next/link"
 
 /**
- * 当前文件负责：AI-PET-WORLD 正式首页入口。
+ * 当前文件职责：AI-PET-WORLD 正式首页入口。
  */
 
 export default function HomeRoutePage() {
@@ -18,64 +18,64 @@ export default function HomeRoutePage() {
           </p>
 
           <h1 className="mb-8 text-5xl font-black leading-tight tracking-tight md:text-7xl">
-            一个会自己运转的
+            AI 管家驱动的
             <br />
-            AI 生命世界
+            自主像素世界
           </h1>
 
           <p className="mx-auto mb-12 max-w-2xl text-lg leading-8 text-zinc-400">
-            宠物拥有自主意识、时间流动、情绪变化与长期成长轨迹。
-            你不是传统养成游戏里的操作者，而是这个世界的观察者。
+            你提交出生信息，系统将紫微斗数映射为管家的灵魂与长期人格。
+            管家会自主观察、建设、沟通和成长；你不是直接操作者，而是这个世界的源头与长期关系参与者。
           </p>
 
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Link
-              href="/world"
+              href="/create-world"
               className="rounded-2xl bg-white px-8 py-4 text-base font-bold text-black shadow-[0_0_40px_rgba(255,255,255,0.12)] transition-transform hover:scale-105"
             >
-              进入世界
+              创建世界
             </Link>
 
             <Link
-              href="/personality-test"
+              href="/world"
               className="rounded-2xl border border-zinc-700 px-8 py-4 text-base font-bold text-zinc-300 transition-colors hover:border-zinc-400 hover:text-white"
             >
-              人格实验室
+              进入世界
             </Link>
           </div>
 
           <div className="mt-16 grid gap-4 text-left md:grid-cols-3">
             <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur">
               <p className="mb-3 text-sm font-bold text-zinc-300">
-                自主生命
+                管家灵魂
               </p>
               <p className="text-sm leading-6 text-zinc-500">
-                宠物不是按钮触发的动画，而是根据状态、时间、刺激与个体差异自主行动。
+                出生信息不是装饰标签，而是管家长期人格、观察方式、建设偏好和沟通节奏的源头。
               </p>
             </div>
 
             <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur">
               <p className="mb-3 text-sm font-bold text-zinc-300">
-                持续世界
+                自主世界
               </p>
               <p className="text-sm leading-6 text-zinc-500">
-                世界会持续推进，环境、事件、行为和生命阶段共同构成可观察的变化。
+                世界由规则、资源、空间、生态、痕迹和记忆持续推进，画面只表现事实，不创造事实。
               </p>
             </div>
 
             <div className="rounded-3xl border border-white/10 bg-white/[0.03] p-6 backdrop-blur">
               <p className="mb-3 text-sm font-bold text-zinc-300">
-                观察体验
+                P-Phone 关系
               </p>
               <p className="text-sm leading-6 text-zinc-500">
-                用户主要通过管家与世界建立连接，观察宠物如何自然成长，而不是直接控制宠物。
+                你通过游戏手机与管家沟通。建议不是命令，管家可以接受、延后、调整或拒绝。
               </p>
             </div>
           </div>
 
           <div className="mt-12 text-sm leading-7 text-zinc-600">
-            <p>当前阶段：Alpha 世界验证</p>
-            <p>当前目标：让用户在 3 分钟内感知“这个世界是活的”。</p>
+            <p>当前阶段：Alpha 世界主链验证</p>
+            <p>当前目标：让出生信息真正贯穿管家、世界生成和后续运行。</p>
           </div>
         </div>
       </section>

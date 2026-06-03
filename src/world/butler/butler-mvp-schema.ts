@@ -37,25 +37,3 @@ export type ButlerMvpBuildResult = {
   messages: string[]
   tags: string[]
 }
-
-export type ButlerMvpAudit = {
-  stableButlerFingerprint: string
-  butlerId: string
-  warnings: string[]
-  tags: string[]
-}
-
-export type ButlerMvpReport = {
-  reportId: string
-  butlerId: string
-  summary: string
-  sections: ButlerMvpReportSection[]
-  messages: string[]
-  tags: string[]
-}
-
-export type ButlerMvpReportSection = {
-  title: string
-  lines: string[]
-  tags: string[]
-}

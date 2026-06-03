@@ -1,5 +1,5 @@
 /**
- * Unified entry for the local MVP live-world runtime.
+ * Unified entry for the local file live-world runtime.
  */
 
 import { buildButlerMvpProfileFromLifeCore } from "@/world/butler/butler-personality-adapter"
@@ -64,7 +64,7 @@ export async function createRuntimeWorldFromCreateWorldInput(input: {
   }
 }
 
-export async function loadOrCreateRuntimeWorld(input?: {
+export async function loadOrCreateRuntimeWorldForSmokeOnly(input?: {
   now?: number
 }): Promise<WorldRuntimeSaveRecord> {
   const readResult = await readWorldRuntimeSaveRecord()
@@ -342,7 +342,7 @@ function buildRuntimeSaveRecordFromCreateWorldInput(input: {
     lastButlerRuntimeAuditSummary: null,
     tags: [
       "world_runtime_save_record",
-      "local_mvp_only",
+      "local_file_runtime_store",
       "initial_home_map_state",
       "create_world_to_world_flow",
       "created_from_create_world_input",
@@ -415,7 +415,8 @@ function buildInitialRuntimeSaveRecord(input: {
     lastButlerRuntimeAuditSummary: null,
     tags: [
       "world_runtime_save_record",
-      "local_mvp_only",
+      "local_file_runtime_store",
+      "smoke_default_runtime_input",
       "initial_home_map_state",
     ],
   }
