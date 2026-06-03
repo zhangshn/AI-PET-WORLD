@@ -158,14 +158,7 @@ function resolveSceneObjectKind(
     ...placement.tags,
   ].map((token) => token.toLowerCase())
 
-  if (
-    hasAnyToken(tokens, [
-      "incu" + "bator",
-      "em" + "bryo",
-      "hat" + "ching",
-      "pet_" + "arrival",
-    ])
-  ) {
+  if (hasAnyToken(tokens, ["pet_" + "arrival"])) {
     return null
   }
 
