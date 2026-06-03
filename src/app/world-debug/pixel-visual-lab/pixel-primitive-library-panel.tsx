@@ -17,7 +17,7 @@ import {
   type PixelShapeDefinition,
 } from "@/world/pixel-primitives";
 
-const NATURAL_PIXEL_OBJECT_KINDS = ["tree", "grass_tile", "stone", "insect"] as const satisfies readonly NaturalPixelObjectKind[];
+const NATURAL_PIXEL_OBJECT_KINDS = ["tree", "bush", "flower", "mushroom", "grass_tile", "stone", "insect"] as const satisfies readonly NaturalPixelObjectKind[];
 
 const NATURAL_PIXEL_SHAPE_IDS = new Set([
   "leaf_row",
@@ -37,6 +37,9 @@ const NATURAL_PIXEL_SHAPE_IDS = new Set([
 ]);
 
 const OBJECT_LABELS: Record<NaturalPixelObjectKind, string> = {
+  bush: "灌木",
+  flower: "花",
+  mushroom: "蘑菇",
   tree: "树木",
   grass_tile: "草地",
   stone: "石头",

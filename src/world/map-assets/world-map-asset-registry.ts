@@ -1,5 +1,5 @@
 /**
- * 当前文件职责：登记世界地图素材资源。
+ * 当前文件职责：登记当前自主世界使用的基础地图素材资源。
  */
 
 import type { WorldMapAssetDefinition } from "./world-map-asset-schema"
@@ -124,13 +124,6 @@ export const WORLD_MAP_ASSETS = {
     anchor: "bottom-center",
     description: "临时住所",
   },
-  buildingPetArrivalPoint01: {
-    id: "buildingPetArrivalPoint01",
-    category: "structure",
-    baseSize: 128,
-    anchor: "bottom-center",
-    description: "后置生命关系阶段可使用的入口素材",
-  },
   buildingInitialCareStation01: {
     id: "buildingInitialCareStation01",
     category: "structure",
@@ -228,20 +221,6 @@ export const WORLD_MAP_ASSETS = {
     baseSize: 64,
     anchor: "bottom-center",
     description: "管家标准身体",
-  },
-  petPartBodyRound01: {
-    id: "petPartBodyRound01",
-    category: "actor",
-    baseSize: 64,
-    anchor: "bottom-center",
-    description: "后置宠物关系阶段可使用的身体素材",
-  },
-  petPoseSkeletonIdleFront01: {
-    id: "petPoseSkeletonIdleFront01",
-    category: "actor",
-    baseSize: 64,
-    anchor: "bottom-center",
-    description: "后置宠物关系阶段可使用的姿态素材",
   },
 } as const satisfies Record<string, WorldMapAssetDefinition>
 

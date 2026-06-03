@@ -1,5 +1,5 @@
-/**
- * 当前文件职责：把建设纵向闭环包装为真实运行时接入前桥接结果。
+﻿/**
+ * 褰撳墠鏂囦欢鑱岃矗锛氭妸寤鸿绾靛悜闂幆鍖呰涓虹湡瀹炶繍琛屾椂鎺ュ叆鍓嶆ˉ鎺ョ粨鏋溿€?
  */
 
 import { auditConstructionRuntimeBridge } from "./construction-runtime-bridge-audit"
@@ -53,7 +53,7 @@ export function buildConstructionRuntimeBridgeResult(
       "no_external_runtime_loop_registration",
       "no_real_persistence",
       "no_ui_render",
-      "no_default_adoption_entry",
+      "no_unplanned_life_entry",
     ],
   }
 }

@@ -1,5 +1,5 @@
 /**
- * 当前文件职责：根据管家和资源状态生成建设意图。
+ * 当前文件职责：根据管家风格、世界照护上下文和资源状态生成建设意图。
  */
 
 import type {
@@ -29,15 +29,15 @@ export function buildConstructionIntents(
     )
   }
 
-  if (input.resources.careReadiness < 55) {
+  if (input.worldCare.careReadiness < 55) {
     intents.push(
       createIntent({
         input,
         type: "improve_care_area",
         source: "world_resource",
         targetZoneType: "initial_care",
-        urgency: normalizeUrgency(0.45 + (55 - input.resources.careReadiness) / 120),
-        reason: "初始照护准备度偏低，管家倾向整理基础照护点。",
+        urgency: normalizeUrgency(0.45 + (55 - input.worldCare.careReadiness) / 120),
+        reason: "基础照护准备度偏低，管家倾向整理基础照护点。",
         preferredAssetTags: ["care", "soft", "order"],
         expectedEffects: ["careReadinessUp"],
       })

@@ -1,6 +1,5 @@
-/**
- * 当前文件职责：定义 V2.0 MVP 地貌规则与资源约束协议。
- */
+﻿/**
+ * 褰撳墠鏂囦欢鑱岃矗锛氬畾涔?V2.0 runtime 鍦拌矊瑙勫垯涓庤祫婧愮害鏉熷崗璁€? */
 
 import type { ResourceKey } from "@/world/resource-cycle/resource-schema"
 

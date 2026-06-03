@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+﻿import { NextResponse } from "next/server"
 
 import { serializeCreateWorldInput } from "@/world/creation/world-creation-client-schema"
 import { parseCreateWorldInput } from "@/world/creation/world-creation-runtime"
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     tags: [
       "create_world_to_world_flow",
       "runtime_save_persisted",
-      "no_default_pet_fact",
+      "no_unplanned_life_fact",
     ],
   })
 }

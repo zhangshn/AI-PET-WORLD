@@ -31,9 +31,14 @@ export function resolvePixelWorldBufferColorHint(input: {
   kind: PixelWorldBufferCellKind;
   recipeId?: string;
   text?: string;
+  colorHint?: string;
 }): string {
+  if (input.colorHint && /^#[0-9a-f]{6}$/i.test(input.colorHint)) {
+    return input.colorHint;
+  }
   if (input.kind === "tile") return PIXEL_WORLD_BUFFER_PALETTE.grass_tile.color;
   if (input.kind === "trace") return PIXEL_WORLD_BUFFER_PALETTE.pressed_trace.color;
+  if (input.kind === "object_block") return PIXEL_WORLD_BUFFER_PALETTE.natural_object.color;
   if (input.kind === "object_marker") return PIXEL_WORLD_BUFFER_PALETTE.natural_object.color;
   if (input.kind === "actor_marker") return PIXEL_WORLD_BUFFER_PALETTE.actor_marker.color;
   if (input.kind === "atmosphere") return PIXEL_WORLD_BUFFER_PALETTE.atmosphere_tint.color;

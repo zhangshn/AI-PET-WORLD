@@ -1,5 +1,5 @@
-/**
- * 当前文件负责：审计 ConstructionPlanner 输入是否符合当前 MVP 边界。
+﻿/**
+ * 褰撳墠鏂囦欢璐熻矗锛氬璁?ConstructionPlanner 杈撳叆鏄惁绗﹀悎褰撳墠 runtime 杈圭晫銆?
  */
 
 import type {
@@ -25,7 +25,7 @@ export function auditConstructionPlannerInput(
       "construction_planner_input_audit",
       warnings.length === 0 ? "construction_input_valid" : "construction_input_warning",
       "no_direct_map_mutation",
-      "no_direct_adoption_plan",
+      "no_direct_life_plan",
     ],
   }
 }
@@ -78,24 +78,24 @@ function auditIntentConsistency(
   intents.forEach((intent) => {
     if (!intent.intentId.trim()) warnings.push("存在空 intentId。")
     if (seenIntentIds.has(intent.intentId)) {
-      warnings.push(`重复 intentId：${intent.intentId}`)
+      warnings.push(`閲嶅 intentId锛?{intent.intentId}`)
     }
     seenIntentIds.add(intent.intentId)
 
     if (!intent.reason.trim()) {
-      warnings.push(`intent 缺少 reason：${intent.intentId}`)
+      warnings.push(`intent 缂哄皯 reason锛?{intent.intentId}`)
     }
     if (intent.urgency < 0 || intent.urgency > 1) {
-      warnings.push(`intent urgency 越界：${intent.intentId}`)
+      warnings.push(`intent urgency 瓒婄晫锛?{intent.intentId}`)
     }
     if (intent.patience < 0 || intent.patience > 1) {
-      warnings.push(`intent patience 越界：${intent.intentId}`)
+      warnings.push(`intent patience 瓒婄晫锛?{intent.intentId}`)
     }
     if (intent.resourceSensitivity < 0 || intent.resourceSensitivity > 1) {
-      warnings.push(`intent resourceSensitivity 越界：${intent.intentId}`)
+      warnings.push(`intent resourceSensitivity 瓒婄晫锛?{intent.intentId}`)
     }
     if (intent.spaceSensitivity < 0 || intent.spaceSensitivity > 1) {
-      warnings.push(`intent spaceSensitivity 越界：${intent.intentId}`)
+      warnings.push(`intent spaceSensitivity 瓒婄晫锛?{intent.intentId}`)
     }
   })
 

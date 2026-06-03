@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   HomeMapState,
   MapPlacement,
 } from "@/world/map-state/home-map-state-schema"
@@ -158,7 +158,7 @@ function resolveSceneObjectKind(
     ...placement.tags,
   ].map((token) => token.toLowerCase())
 
-  if (hasAnyToken(tokens, ["pet_" + "arrival"])) {
+  if (hasAnyToken(tokens, ["unplanned_life_arrival"])) {
     return null
   }
 

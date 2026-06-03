@@ -16,3 +16,7 @@ export * from "./recipes/stone-object-recipe";
 export * from "./recipes/grass-tile-recipe";
 export * from "./recipes/insect-signal-recipe";
 export * from "./recipes/tree-object-recipe";
+export * from "./recipes/bush-object-recipe";
+export * from "./recipes/flower-object-recipe";
+export * from "./recipes/mushroom-object-recipe";
+export * from "./recipes/world-asset-object-recipes";

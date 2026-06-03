@@ -1,6 +1,5 @@
-/**
- * 当前文件负责：定义通用生命人格档案核心类型。
- */
+﻿/**
+ * 褰撳墠鏂囦欢璐熻矗锛氬畾涔夐€氱敤鐢熷懡浜烘牸妗ｆ鏍稿績绫诲瀷銆? */
 
 import type { BaziProfile } from "../../destiny-core/bazi-core/bazi-gateway"
 import type { ZiweiConsciousnessKernel } from "../../consciousness-core/consciousness/consciousness-gateway"
@@ -14,7 +13,6 @@ import type { PublicPersonalityView } from "../../destiny-core/ziwei-core/public
 import type { PersonalityProfile } from "../../destiny-core/ziwei-core/ziwei-core-schema"
 
 export type LifeProfileSubjectType =
-  | "pet"
   | "butler"
   | "player"
   | "npc"

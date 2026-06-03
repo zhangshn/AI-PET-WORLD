@@ -1,16 +1,16 @@
-/**
- * Minimal local MVP runtime protocol for a saveable, resumable V2.6 world.
+﻿/**
+ * Minimal local runtime runtime protocol for a saveable, resumable V2.6 world.
  */
 
 import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
 import type { ButlerProfile } from "@/ai/personality-core/butler-profile-core/butler-profile-gateway"
 import type {
-  ButlerMvpBirthInput,
-  ButlerMvpProfile,
-} from "@/world/butler/butler-mvp-schema"
+  ButlerRuntimeProfileBirthInput,
+  ButlerRuntimeProfile,
+} from "@/world/butler/butler-runtime-profile-schema"
 import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
 import type { WorldCreationStyleSource } from "@/world/creation/world-creation-schema"
-import type { MvpWorldRuntimeTickResult } from "@/world/mvp-core/mvp-world-runtime-tick"
+import type { WorldRuntimeConstructionTickResult } from "@/world/runtime-core/world-runtime-construction-tick"
 import type { SpaceTraceInfluenceSummary } from "@/world/space"
 import type { TraceField, TraceMemorySeedField } from "@/world/trace"
 import type { ButlerRuntimeAuditSummary } from "./butler-runtime-audit-summary"
@@ -54,8 +54,8 @@ export type WorldRuntimeSaveRecord = {
   tick: number
   savedAt: string
   butlerProfile: ButlerProfile
-  butlerRuntimeProfile: ButlerMvpProfile
-  butlerBirthInput: ButlerMvpBirthInput
+  butlerRuntimeProfile: ButlerRuntimeProfile
+  butlerBirthInput: ButlerRuntimeProfileBirthInput
   butlerMappingMode: ButlerProfile["identity"]["mappingMode"]
   butlerConstructionStyle: ButlerConstructionStyleVector
   worldCreationStyleSource: WorldCreationStyleSource
@@ -89,7 +89,7 @@ export type WorldRuntimeAudit = {
 export type WorldRuntimeTickResult = {
   previousSaveRecord: WorldRuntimeSaveRecord
   nextSaveRecord: WorldRuntimeSaveRecord
-  runtimeTick: MvpWorldRuntimeTickResult | null
+  runtimeTick: WorldRuntimeConstructionTickResult | null
   events: WorldRuntimeEventLog[]
   audit: WorldRuntimeAudit
   persisted: boolean
@@ -113,3 +113,4 @@ export type WorldRuntimeStoreWriteResult = {
   warnings: string[]
   tags: string[]
 }
+

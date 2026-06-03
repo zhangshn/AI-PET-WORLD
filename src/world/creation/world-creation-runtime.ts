@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Converts create-world input into deterministic world creation runtime data.
  */
 
@@ -90,7 +90,7 @@ export function buildWorldCreationRuntime(
     worldId: `world-${stableToken}`,
     ownerId: `owner-${stableToken}`,
     birthSignature,
-    worldSalt: `local-mvp-${input.createWorldInput.createdAt}`,
+    worldSalt: `local-runtime-${input.createWorldInput.createdAt}`,
     butlerProfile: styleResult.butlerProfile,
     butlerBirthInput: styleResult.butlerBirthInput,
     butlerMappingMode: styleResult.butlerMappingMode,

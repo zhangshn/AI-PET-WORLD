@@ -1,5 +1,5 @@
 /**
- * 当前文件职责：提供 MVP 建设闭环入口。
+ * 当前文件职责：提供 runtime 管家建设闭环入口。
  */
 
 import type { HomeMapState, MapDiff } from "@/world/map-state/home-map-state-schema"
@@ -9,31 +9,27 @@ import {
   validateMapDiffs,
 } from "@/world/map-state/map-diff-validator"
 
-import {
-  buildMapDiffsFromConstructionIntents,
-} from "./construction-diff-planner"
-import {
-  buildConstructionIntents,
-} from "./construction-intent-planner"
+import { buildMapDiffsFromConstructionIntents } from "./construction-diff-planner"
+import { buildConstructionIntents } from "./construction-intent-planner"
 import type {
   ButlerConstructionContext,
   ConstructionIntent,
-  PetConstructionContext,
+  WorldCareConstructionContext,
 } from "./construction-intent-schema"
 import type { ConstructionPlan } from "./construction-schema"
 import { advanceConstructionPlan } from "./construction-executor"
 import { createInitialConstructionPlan } from "./construction-planner"
 
-export const MVP_CONSTRUCTION_AUTO_ADVANCE_TICK_INTERVAL = 3
+export const RUNTIME_CONSTRUCTION_AUTO_ADVANCE_TICK_INTERVAL = 3
 
-export type AdvanceMvpConstructionByWorldTickInput = {
+export type AdvanceRuntimeConstructionByWorldTickInput = {
   homeMapState: HomeMapState
   plan: ConstructionPlan | null
   worldTick: number
   now: number
 }
 
-export type AdvanceMvpConstructionByWorldTickResult = {
+export type AdvanceRuntimeConstructionByWorldTickResult = {
   homeMapState: HomeMapState
   plan: ConstructionPlan | null
   messages: string[]
@@ -42,7 +38,7 @@ export type AdvanceMvpConstructionByWorldTickResult = {
 
 export type RunConstructionIntentDiffCycleInput = {
   homeMapState: HomeMapState
-  pet: PetConstructionContext
+  worldCare: WorldCareConstructionContext
   butler: ButlerConstructionContext
   worldTick: number
   now: number
@@ -59,7 +55,7 @@ export type RunConstructionIntentDiffCycleResult = {
   tags: string[]
 }
 
-export function createMvpQuietLivingConstructionPlan(
+export function createRuntimeQuietLivingConstructionPlan(
   homeMapState: HomeMapState
 ): ConstructionPlan {
   return createInitialConstructionPlan(homeMapState)
@@ -71,7 +67,7 @@ export function runConstructionIntentDiffCycle(
   const intentResult = buildConstructionIntents({
     worldTick: input.worldTick,
     now: input.now,
-    pet: input.pet,
+    worldCare: input.worldCare,
     butler: input.butler,
     resources: input.homeMapState.resources,
   })
@@ -105,7 +101,7 @@ export function runConstructionIntentDiffCycle(
   }
 }
 
-export function advanceMvpConstruction(
+export function advanceRuntimeConstruction(
   homeMapState: HomeMapState,
   plan: ConstructionPlan,
   now: number
@@ -127,9 +123,9 @@ export function advanceMvpConstruction(
   }
 }
 
-export function advanceMvpConstructionByWorldTick(
-  input: AdvanceMvpConstructionByWorldTickInput
-): AdvanceMvpConstructionByWorldTickResult {
+export function advanceRuntimeConstructionByWorldTick(
+  input: AdvanceRuntimeConstructionByWorldTickInput
+): AdvanceRuntimeConstructionByWorldTickResult {
   const hasQuietLivingZone = input.homeMapState.zones.some(
     (zone) => zone.type === "quiet_living"
   )
@@ -144,7 +140,7 @@ export function advanceMvpConstructionByWorldTick(
   }
 
   const plan =
-    input.plan ?? createMvpQuietLivingConstructionPlan(input.homeMapState)
+    input.plan ?? createRuntimeQuietLivingConstructionPlan(input.homeMapState)
 
   if (plan.currentStage === "completed") {
     return {
@@ -155,7 +151,7 @@ export function advanceMvpConstructionByWorldTick(
     }
   }
 
-  if (input.worldTick % MVP_CONSTRUCTION_AUTO_ADVANCE_TICK_INTERVAL !== 0) {
+  if (input.worldTick % RUNTIME_CONSTRUCTION_AUTO_ADVANCE_TICK_INTERVAL !== 0) {
     return {
       homeMapState: input.homeMapState,
       plan,
@@ -164,7 +160,7 @@ export function advanceMvpConstructionByWorldTick(
     }
   }
 
-  const result = advanceMvpConstruction(input.homeMapState, plan, input.now)
+  const result = advanceRuntimeConstruction(input.homeMapState, plan, input.now)
 
   return {
     ...result,

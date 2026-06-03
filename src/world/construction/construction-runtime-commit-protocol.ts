@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：串联建设输入、候选计划、执行候选与 SafeApply 协议。
  */
 
@@ -58,7 +58,7 @@ export function buildConstructionRuntimeCommitResult(
       "runtime_tick_integrated",
       "planner_candidate_executor_safe_apply_chain",
       "no_ui_integration",
-      "no_default_adoption_entry",
+      "no_unplanned_life_entry",
     ],
   }
   const audit = auditConstructionRuntimeCommit({

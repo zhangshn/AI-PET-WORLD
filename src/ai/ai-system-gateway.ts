@@ -1,27 +1,14 @@
-/**
- * 当前文件负责：作为 AI-PET-WORLD 全部 AI 子系统统一总入口。
+﻿/**
+ * Current AI entry for the active AI-PET-WORLD business line.
+ *
+ * This gateway only exposes the current butler/world creation capabilities.
+ * Legacy actor timeline, behavior, memory, and event exports were removed
+ * with the old runtime line.
  */
 
 import type { PersonalityProfile } from "./destiny-core/ziwei-core/ziwei-core-schema"
-
 import type { PublicPersonalityView } from "./destiny-core/ziwei-core/public-view"
 import { buildPublicPersonalityView } from "./destiny-core/ziwei-core/public-view"
-
-import type {
-  PetTimelineSnapshot,
-  TimelineBehaviorShiftInput,
-} from "./timeline-system/timeline-gateway"
-import {
-  updatePetTimelineSnapshot,
-} from "./timeline-system/timeline-gateway"
-
-import type {
-  StateUpdateEvent,
-  PlayerRelationInput,
-} from "./timeline-system/state/state-updater"
-
-import type { PetEventStyleInput } from "./event-style/event-style-schema"
-import { buildPetEventMessage } from "./event-style/ai-event-style-gateway"
 
 import type {
   BuildGenderPerspectiveComparisonInput,
@@ -35,30 +22,13 @@ import {
 } from "./personality-core/personality-interpretation-core/interpretation-gateway"
 
 import {
-  getWorldAutonomyRuleset,
+  entityOwnsFinalDecision,
   getEntityAutonomyPolicy,
   getOpportunityRule,
-  entityOwnsFinalDecision,
-  opportunityRequiresSelfAcceptance,
+  getWorldAutonomyRuleset,
   opportunityCanDirectlyResolveOutcome,
+  opportunityRequiresSelfAcceptance,
 } from "./consciousness-core/autonomy-core/autonomy-gateway"
-
-import type {
-  BuildCognitionInput,
-  CognitionResult,
-} from "./cognition-layer/cognition-gateway"
-import { buildStimulusCognition } from "./cognition-layer/cognition-gateway"
-
-import type {
-  ActiveBehaviorProcess,
-  BuildBehaviorProcessInput,
-  StepBehaviorProcessInput,
-  StepBehaviorProcessResult,
-} from "./behavior-core/behavior-gateway"
-import {
-  buildBehaviorProcessFromCognition,
-  stepBehaviorProcess,
-} from "./behavior-core/behavior-gateway"
 
 import type {
   BuildCurrentLifeRuntimeBundleFromWorldInput,
@@ -67,7 +37,6 @@ import type {
   CurrentLifeTendencyProfile,
   LifeTendencyRuntimeTime,
 } from "./life-tendency-core/life-tendency-gateway"
-
 import {
   buildCurrentLifeRuntimeBundle,
   buildCurrentLifeRuntimeBundleFromWorld,
@@ -99,44 +68,10 @@ export function buildAiCurrentLifeRuntimeBundleFromWorld(
   return buildCurrentLifeRuntimeBundleFromWorld(input)
 }
 
-export type UpdatePetAiStateInput = {
-  currentSnapshot: PetTimelineSnapshot
-  time: {
-    day: number
-    hour: number
-    period?: string
-  }
-  events?: StateUpdateEvent[]
-  behaviorShift?: TimelineBehaviorShiftInput
-  tickDelta?: number
-  shouldRefreshTrajectory?: boolean
-  playerRelation?: PlayerRelationInput
-}
-
-export function updatePetAiState(
-  input: UpdatePetAiStateInput
-): PetTimelineSnapshot {
-  return updatePetTimelineSnapshot({
-    currentSnapshot: input.currentSnapshot,
-    day: input.time.day,
-    hour: input.time.hour,
-    period: input.time.period,
-    events: input.events,
-    behaviorShift: input.behaviorShift,
-    tickDelta: input.tickDelta,
-    shouldRefreshTrajectory: input.shouldRefreshTrajectory,
-    playerRelation: input.playerRelation,
-  })
-}
-
 export function buildPublicPersonality(
   profile: PersonalityProfile
 ): PublicPersonalityView {
   return buildPublicPersonalityView(profile)
-}
-
-export function buildPetEvent(input: PetEventStyleInput): string {
-  return buildPetEventMessage(input)
 }
 
 export function buildAiPersonalityInterpretation(
@@ -164,37 +99,20 @@ export function buildAiButlerAutonomy(
 }
 
 export {
-  getWorldAutonomyRuleset,
+  entityOwnsFinalDecision,
   getEntityAutonomyPolicy,
   getOpportunityRule,
-  entityOwnsFinalDecision,
-  opportunityRequiresSelfAcceptance,
+  getWorldAutonomyRuleset,
   opportunityCanDirectlyResolveOutcome,
+  opportunityRequiresSelfAcceptance,
 }
 
-export {
-  buildLifePersonalityProfile,
-} from "./personality-core/life-profile-core/life-profile-gateway"
+export { buildLifePersonalityProfile } from "./personality-core/life-profile-core/life-profile-gateway"
 
-export function buildPetStimulusCognition(
-  input: BuildCognitionInput
-): CognitionResult {
-  return buildStimulusCognition(input)
-}
-
-export function buildPetBehaviorProcess(
-  input: BuildBehaviorProcessInput
-): ActiveBehaviorProcess | null {
-  return buildBehaviorProcessFromCognition(input)
-}
-
-export function stepPetBehaviorProcess(
-  input: StepBehaviorProcessInput
-): StepBehaviorProcessResult {
-  return stepBehaviorProcess(input)
-}
-
-export type { BirthInput, PersonalityProfile } from "./destiny-core/ziwei-core/ziwei-core-schema"
+export type {
+  BirthInput,
+  PersonalityProfile,
+} from "./destiny-core/ziwei-core/ziwei-core-schema"
 
 export { buildPersonalityProfile } from "./destiny-core/ziwei-core/ziwei-gateway"
 
@@ -257,72 +175,16 @@ export type {
 } from "./life-tendency-core/life-tendency-gateway"
 
 export type {
-  PetTimelineSnapshot,
-  TimelineBehaviorShiftInput,
-} from "./timeline-system/timeline-gateway"
-
-export {
-  buildPetTimelineSnapshot,
-} from "./timeline-system/timeline-gateway"
-
-export type {
-  StateUpdateEvent,
-  PlayerRelationInput,
-} from "./timeline-system/state/state-updater"
-
-export type { PetEventStyleInput } from "./event-style/event-style-schema"
-
-export type {
-  ZiweiConsciousnessKernel,
-  ConsciousnessArchetype,
-  ConsciousnessBias,
-  ConsciousnessCoreDrive,
-} from "./consciousness-core/consciousness/consciousness-gateway"
-
-export type {
-  PetMemoryState,
-  MemoryActionRecord,
-  MemoryEventKind,
-  MemoryEventRecord,
-  MemoryPreferenceBias,
-  MemoryRelationImpression,
-  MemorySelfImpression,
-  MemoryWorldImpression,
-  UpdateMemoryInput,
-} from "./memory-core/memory-gateway"
-
-export type {
+  AutonomousBehaviorChainRule,
   AutonomousEntityType,
   AutonomyConstraint,
   AutonomyConstraintCode,
   AutonomyDecisionStage,
-  AutonomousBehaviorChainRule,
   BehaviorOpportunityType,
   EntityAutonomyPolicy,
   OpportunityRule,
   WorldAutonomyRuleset,
 } from "./consciousness-core/autonomy-core/autonomy-gateway"
-
-export type {
-  BuildCognitionInput,
-  CognitionResult,
-  StimulusInterpretation,
-  StimulusReactionTendency,
-  WorldStimulus,
-  WorldStimulusCategory,
-  WorldStimulusIntensity,
-  WorldStimulusType,
-} from "./cognition-layer/cognition-gateway"
-
-export type {
-  ActiveBehaviorProcess,
-  BehaviorDelta,
-  BehaviorProcessStage,
-  BehaviorProcessType,
-  BuildBehaviorProcessInput,
-  StepBehaviorProcessInput,
-  StepBehaviorProcessResult,
-} from "./behavior-core/behavior-gateway"
 
 export {
   buildAgentCycleTrace,
@@ -355,9 +217,7 @@ export type {
   AutonomousAgentKind,
 } from "./consciousness-core/agent-core/agent-gateway"
 
-export {
-  buildButlerProfile,
-} from "./personality-core/butler-profile-core/butler-profile-gateway"
+export { buildButlerProfile } from "./personality-core/butler-profile-core/butler-profile-gateway"
 
 export type {
   ButlerBirthTimeMode,

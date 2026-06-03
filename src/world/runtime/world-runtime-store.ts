@@ -1,5 +1,5 @@
-/**
- * Local MVP-only file store for the live world runtime.
+﻿/**
+ * Local runtime-only file store for the live world runtime.
  *
  * Server-side only. Do not import this module from Client Components.
  */

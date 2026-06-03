@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   WorldRuntimeEventLog,
   WorldRuntimeSaveRecord,
 } from "@/world/runtime/world-runtime-schema"
@@ -164,7 +164,7 @@ function findCurrentButlerTrace(saveRecord: WorldRuntimeSaveRecord) {
       trace.sourceKind === "butler_behavior" &&
       trace.updatedAtTick === saveRecord.tick &&
       trace.tags.includes("butler_trace_closure") &&
-      trace.tags.includes("not_pet_trace") &&
+      trace.tags.includes("butler_trace_only") &&
       (!intent || trace.derivedFrom.includes(intent.id)) &&
       (!validation || trace.derivedFrom.includes(validation.id))
   )

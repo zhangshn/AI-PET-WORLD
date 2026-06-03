@@ -1,4 +1,4 @@
-import type { TraceFact } from "@/world/trace"
+﻿import type { TraceFact } from "@/world/trace"
 
 import type {
   ButlerRuntimeDecision,
@@ -109,7 +109,7 @@ export function buildButlerRuntimeAuditSummary(input: {
       `intent_kind:${input.intent.kind}`,
       `home_map_write:${homeMapWriteStatus}`,
       `trace_write:${traceWriteStatus}`,
-      "no_pet_fact",
+      "no_unplanned_life_fact",
       "safe_apply_boundary_recorded",
       "memory_seed_count_recorded",
     ],

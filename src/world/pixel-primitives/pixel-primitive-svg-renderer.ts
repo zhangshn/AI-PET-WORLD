@@ -22,6 +22,11 @@ export function renderPixelObjectToDataUri(result: PixelObjectRecipeResult): str
 
 function renderPixelBlock(block: PixelBlock): string {
   const opacity = block.opacity >= 1 ? "" : ` opacity="${block.opacity.toFixed(2)}"`;
+
+  if (block.primitiveKind === "shadow_block") {
+    return `<ellipse data-primitive-kind="${escapeAttribute(block.primitiveKind)}" data-layer="${escapeAttribute(block.layer)}" cx="${block.x + block.width / 2}" cy="${block.y + block.height / 2}" rx="${block.width / 2}" ry="${block.height / 2}" fill="${block.color}"${opacity}/>`;
+  }
+
   return `<rect data-primitive-kind="${escapeAttribute(block.primitiveKind)}" data-layer="${escapeAttribute(block.layer)}" x="${block.x}" y="${block.y}" width="${block.width}" height="${block.height}" fill="${block.color}"${opacity}/>`;
 }
 

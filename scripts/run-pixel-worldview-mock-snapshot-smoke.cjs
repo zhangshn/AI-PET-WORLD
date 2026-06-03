@@ -1,4 +1,4 @@
-async function main() {
+﻿async function main() {
   const fs = await import("node:fs")
   const path = await import("node:path")
 
@@ -46,9 +46,9 @@ async function main() {
 
   const forbiddenTokens = [
     "src/app/world/",
-    'kind: "pet"',
-    "pet_default",
-    "createPet",
+    'kind: "unplanned_life"',
+    "unplanned_life_default",
+    "createUnplannedLife",
     "WorldRuntimeSaveRecord",
     "HomeMapState",
     "TraceField",
@@ -70,7 +70,7 @@ async function main() {
   console.log("Minimal source snapshot factory exists: ok")
   console.log("Minimal view model factory exists: ok")
   console.log("Natural object recipe ids exist: ok")
-  console.log("Mock butler exists without default pet: ok")
+  console.log("Mock butler exists without unplanned life actor: ok")
   console.log("Runtime boundary: ok")
   console.log("No SVG renderer dependency: ok")
   console.log("Result: PASS")

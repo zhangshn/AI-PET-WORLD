@@ -1,4 +1,4 @@
-async function main() {
+﻿async function main() {
   const fs = await import("node:fs")
   const path = await import("node:path")
 
@@ -58,9 +58,9 @@ async function main() {
     "readWorldRuntimeForView",
     "writeWorldRuntimeSaveRecord",
     "runAndPersistOneRuntimeTick",
-    "createPet",
-    "pet_default",
-    'kind: "pet"',
+    "createUnplannedLife",
+    "unplanned_life_default",
+    'kind: "unplanned_life"',
     "data:image/svg",
     "<svg",
     "<canvas",
@@ -78,7 +78,7 @@ async function main() {
   console.log("Package smoke script exists: ok")
   console.log("Runtime boundary: ok")
   console.log("No SVG renderer dependency: ok")
-  console.log("No default pet generation: ok")
+  console.log("No unplanned life generation: ok")
   console.log("Result: PASS")
 }
 

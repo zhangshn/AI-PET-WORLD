@@ -1,4 +1,4 @@
-async function main() {
+﻿async function main() {
   const fs = await import("node:fs")
   const path = await import("node:path")
 
@@ -83,7 +83,7 @@ async function main() {
     "你的自主像素世界",
     "只消费 PixelWorldPixelBufferFrame",
     "不读取 runtime",
-    "不生成默认宠物",
+    "不生成未规划生命体",
     "image-rendering: pixelated",
   ]
   requiredTokens.forEach((token) => {
@@ -104,7 +104,7 @@ async function main() {
     "dangerouslySetInnerHTML",
     "runAndPersistOneRuntimeTick",
     "writeWorldRuntimeSaveRecord",
-    "createPet",
+    "createUnplannedLife",
   ]
   const forbiddenHits = forbiddenWorldTokens.filter((token) =>
     worldCombined.includes(token)
@@ -122,7 +122,7 @@ async function main() {
   console.log("Runtime remains read-only: ok")
   console.log("No SVG entry dependency: ok")
   console.log("No hand-written canvas context usage: ok")
-  console.log("No default pet generation: ok")
+  console.log("No unplanned life generation: ok")
   console.log("Result: PASS")
 }
 

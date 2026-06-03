@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   TraceField,
   TraceFieldSummary,
   TraceLifecyclePhase,
@@ -23,7 +23,7 @@ const SOURCE_KINDS: TraceSourceKind[] = [
   "ecology_state",
   "placement_state",
   "butler_behavior",
-  "pet_behavior",
+  "unplanned_life_behavior",
   "world_event",
   "world_event_placeholder",
   "time_passage",

@@ -1,5 +1,5 @@
-/**
- * 当前文件职责：提供建设系统 runtime 调用边界协议。
+﻿/**
+ * 褰撳墠鏂囦欢鑱岃矗锛氭彁渚涘缓璁剧郴缁?runtime 璋冪敤杈圭晫鍗忚銆?
  */
 
 import { buildConstructionPersistenceProposal } from "./construction-persistence-proposal"
@@ -50,7 +50,7 @@ export function buildConstructionRuntimeCycleResult(
       "autonomous_construction_runtime",
       "no_direct_persistence",
       "no_ui_integration",
-      "no_default_adoption_entry",
+      "no_unplanned_life_entry",
       `run_reason:${input.runReason}`,
     ],
   }

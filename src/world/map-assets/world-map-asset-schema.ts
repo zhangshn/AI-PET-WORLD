@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：定义世界地图素材注册表的数据结构。
+ * 当前文件职责：定义世界地图素材注册表的数据结构。
  */
 
 export type WorldMapAssetCategory =

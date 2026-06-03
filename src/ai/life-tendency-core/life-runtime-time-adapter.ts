@@ -1,6 +1,5 @@
-/**
- * 当前文件负责：把世界时间转换为生命趋向核心可读取的运行时间。
- */
+﻿/**
+ * 褰撳墠鏂囦欢璐熻矗锛氭妸涓栫晫鏃堕棿杞崲涓虹敓鍛借秼鍚戞牳蹇冨彲璇诲彇鐨勮繍琛屾椂闂淬€? */
 
 import type {
   BranchPalace
@@ -17,14 +16,11 @@ import type {
 
 export interface LifeRuntimeWorldTimeInput {
   /**
-   * 世界当前第几天。
-   * 约定：Day 1 是世界起始日期当天。
-   */
+   * 涓栫晫褰撳墠绗嚑澶┿€?   * 绾﹀畾锛欴ay 1 鏄笘鐣岃捣濮嬫棩鏈熷綋澶┿€?   */
   day: number
 
   /**
-   * 世界当前小时。
-   */
+   * 涓栫晫褰撳墠灏忔椂銆?   */
   hour: number
 }
 
@@ -36,20 +32,15 @@ export interface LifeRuntimeWorldStartDate {
 
 export interface BuildLifeRuntimeTimeFromWorldInput {
   /**
-   * 世界当前时间。
-   */
+   * 涓栫晫褰撳墠鏃堕棿銆?   */
   worldTime: LifeRuntimeWorldTimeInput
 
   /**
-   * 世界 Day 1 对应的真实公历日期。
-   * 测试 / MVP 可以先用宠物领养审查日期作为世界起始日期。
-   */
+   * 涓栫晫 Day 1 瀵瑰簲鐨勭湡瀹炲叕鍘嗘棩鏈熴€?   * 娴嬭瘯 / runtime 鍙互鍏堢敤瀹犵墿棰嗗吇瀹℃煡鏃ユ湡浣滀负涓栫晫璧峰鏃ユ湡銆?   */
   worldStartDate: LifeRuntimeWorldStartDate
 
   /**
-   * 生命体出生公历日期。
-   * 用于计算当前年龄。
-   */
+   * 鐢熷懡浣撳嚭鐢熷叕鍘嗘棩鏈熴€?   * 鐢ㄤ簬璁＄畻褰撳墠骞撮緞銆?   */
   birthDate: LifeRuntimeWorldStartDate
 }
 

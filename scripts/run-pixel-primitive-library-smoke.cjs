@@ -1,4 +1,4 @@
-async function main() {
+﻿async function main() {
   const fs = await import("node:fs")
   const path = await import("node:path")
 
@@ -138,8 +138,8 @@ async function main() {
     "WorldViewModel",
     "HomeMapState",
     "PetSystem",
-    "createPet",
-    "pet_default",
+    "createUnplannedLife",
+    "unplanned_life_default",
   ]
   const forbiddenHits = forbiddenRuntimeTokens.filter((token) => combined.includes(token))
   assert(forbiddenHits.length === 0, `Pixel primitive library should stay visual-only but contains: ${forbiddenHits.join(", ")}`)

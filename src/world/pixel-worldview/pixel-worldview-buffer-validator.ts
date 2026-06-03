@@ -1,4 +1,4 @@
-// 该文件用于校验正式像素主世界纯数据像素缓冲区边界。
+// 当前文件职责：校验正式像素主世界纯数据像素缓冲区边界。
 import type { PixelWorldLayerKind } from "./pixel-worldview-types";
 import type { PixelWorldPixelBufferFrame } from "./pixel-worldview-buffer-types";
 
@@ -36,7 +36,6 @@ export function validatePixelWorldPixelBufferFrame(buffer: PixelWorldPixelBuffer
       if (cell.height <= 0) messages.push(`${cell.id}.height 必须大于 0。`);
       if (cell.opacity < 0 || cell.opacity > 1) messages.push(`${cell.id}.opacity 必须在 0 到 1 之间。`);
       if (typeof cell.visible !== "boolean") messages.push(`${cell.id}.visible 必须是 boolean。`);
-      if ((cell.kind as string) === "pet") messages.push("buffer cell 不允许使用 pet kind。");
       if (cell.colorHint !== undefined && typeof cell.colorHint !== "string") {
         messages.push(`${cell.id}.colorHint 必须是字符串。`);
       }

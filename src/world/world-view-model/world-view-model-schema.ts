@@ -23,7 +23,7 @@ export type WorldViewObjectKind =
 
 export type WorldViewLayer = "back" | "middle" | "front"
 
-export type WorldViewActorKind = "butler" | "pet"
+export type WorldViewActorKind = "butler"
 
 export type WorldViewActorPose =
   | "observe"

@@ -1,5 +1,4 @@
-// 该文件用于定义正式像素主世界视图模型类型。
-
+// 当前文件职责：定义正式像素主世界视图模型类型。
 export type PixelWorldLayerKind =
   | "tile"
   | "trace"
@@ -23,7 +22,7 @@ export type PixelWorldObjectKind =
   | "building"
   | "facility";
 
-export type PixelWorldActorKind = "butler" | "pet";
+export type PixelWorldActorKind = "butler";
 
 export type PixelWorldTraceKind =
   | "footprint"

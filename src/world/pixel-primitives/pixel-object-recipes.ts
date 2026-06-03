@@ -14,6 +14,16 @@ let blockCounter = 0;
 export function buildPixelObjectRecipe(kind: PixelObjectKind): PixelObjectRecipeResult {
   const draft = kind === "tree"
     ? buildTreeRecipe()
+    : kind === "bush"
+      ? buildBushRecipe()
+      : kind === "flower"
+        ? buildFlowerRecipe()
+        : kind === "mushroom"
+          ? buildMushroomRecipe()
+          : kind === "structure"
+            ? buildStructureRecipe()
+            : kind === "facility"
+              ? buildFacilityRecipe()
     : kind === "grass_tile"
       ? buildGrassTileRecipe()
       : kind === "stone"
@@ -28,7 +38,7 @@ export function buildPixelObjectRecipe(kind: PixelObjectKind): PixelObjectRecipe
   };
 }
 
-export const PIXEL_OBJECT_KINDS: PixelObjectKind[] = ["tree", "grass_tile", "stone", "insect", "butler"];
+export const PIXEL_OBJECT_KINDS: PixelObjectKind[] = ["tree", "bush", "flower", "mushroom", "structure", "facility", "grass_tile", "stone", "insect", "butler"];
 
 function buildTreeRecipe(): DraftPixelObject {
   const parts: PixelPartId[] = [
@@ -64,6 +74,140 @@ function buildTreeRecipe(): DraftPixelObject {
     blocks,
     anchor: { type: "root_bottom", x: 104, y: 158 },
     bounds: { x: 36, y: 30, width: 128, height: 140 },
+  });
+}
+
+function buildBushRecipe(): DraftPixelObject {
+  const parts: PixelPartId[] = ["bush_shadow", "bush_dark", "bush_main", "bush_highlight"];
+  const shapes: PixelShapeId[] = ["shadow_patch", "leaf_cluster", "leaf_row", "highlight_chip"];
+  const blocks = [
+    block({ primitiveKind: "shadow_block", x: 72, y: 132, width: 60, height: 10, color: PIXEL_PALETTE.shadow, opacity: 0.32, layer: "shadow" }),
+    ...leafCluster(106, 118, 0.72, PIXEL_PALETTE.leafDark, [3, 7, 12, 13, 8, 3]),
+    ...leafCluster(94, 122, 0.58, PIXEL_PALETTE.leaf, [3, 8, 11, 8, 3]),
+    ...leafCluster(116, 121, 0.56, PIXEL_PALETTE.leaf, [3, 8, 10, 7, 3]),
+    block({ primitiveKind: "highlight_block", x: 98, y: 106, width: 8, height: 3, color: PIXEL_PALETTE.leafLight, opacity: 0.92, layer: "object" }),
+  ];
+
+  return objectDraft({
+    kind: "bush",
+    label: "灌木",
+    recipeId: "pixel_object_bush_recipe_v1",
+    recipeVersion: "1.0.0",
+    goldenAlgorithm: "scene_composer_bush_recipe",
+    parts,
+    shapes,
+    blocks,
+    anchor: { type: "center_bottom", x: 104, y: 136 },
+    bounds: { x: 66, y: 94, width: 78, height: 50 },
+  });
+}
+
+function buildFlowerRecipe(): DraftPixelObject {
+  const parts: PixelPartId[] = ["flower_shadow", "flower_stem", "flower_leaf", "flower_bloom", "flower_highlight"];
+  const shapes: PixelShapeId[] = ["shadow_patch", "grass_chip", "highlight_chip"];
+  const blocks = [
+    block({ primitiveKind: "shadow_block", x: 96, y: 134, width: 18, height: 5, color: PIXEL_PALETTE.shadow, opacity: 0.22, layer: "shadow" }),
+    block({ primitiveKind: "tall_block", x: 104, y: 112, width: 3, height: 22, color: PIXEL_PALETTE.grassDark, opacity: 1, layer: "object" }),
+    block({ primitiveKind: "wide_block", x: 96, y: 124, width: 8, height: 3, color: PIXEL_PALETTE.grassLight, opacity: 0.9, layer: "object" }),
+    block({ primitiveKind: "wide_block", x: 108, y: 121, width: 8, height: 3, color: PIXEL_PALETTE.grassLight, opacity: 0.9, layer: "object" }),
+    block({ primitiveKind: "square_block", x: 98, y: 106, width: 6, height: 6, color: PIXEL_PALETTE.highlight, opacity: 1, layer: "object" }),
+    block({ primitiveKind: "square_block", x: 108, y: 106, width: 6, height: 6, color: PIXEL_PALETTE.highlight, opacity: 1, layer: "object" }),
+    block({ primitiveKind: "square_block", x: 103, y: 100, width: 6, height: 6, color: PIXEL_PALETTE.highlight, opacity: 1, layer: "object" }),
+    block({ primitiveKind: "dot_block", x: 105, y: 108, width: 4, height: 4, color: PIXEL_PALETTE.leafLight, opacity: 1, layer: "object" }),
+  ];
+
+  return objectDraft({
+    kind: "flower",
+    label: "花",
+    recipeId: "pixel_object_flower_recipe_v1",
+    recipeVersion: "1.0.0",
+    goldenAlgorithm: "scene_composer_flower_recipe",
+    parts,
+    shapes,
+    blocks,
+    anchor: { type: "center_bottom", x: 106, y: 136 },
+    bounds: { x: 96, y: 100, width: 20, height: 39 },
+  });
+}
+
+function buildMushroomRecipe(): DraftPixelObject {
+  const parts: PixelPartId[] = ["mushroom_shadow", "mushroom_stem", "mushroom_cap", "mushroom_spot", "mushroom_under"];
+  const shapes: PixelShapeId[] = ["shadow_patch", "trunk_strip", "stone_cluster", "highlight_chip"];
+  const blocks = [
+    block({ primitiveKind: "shadow_block", x: 92, y: 134, width: 28, height: 6, color: PIXEL_PALETTE.shadow, opacity: 0.24, layer: "shadow" }),
+    block({ primitiveKind: "tall_block", x: 103, y: 118, width: 7, height: 18, color: PIXEL_PALETTE.skin, opacity: 1, layer: "object" }),
+    block({ primitiveKind: "wide_block", x: 94, y: 110, width: 27, height: 7, color: PIXEL_PALETTE.trunkLight, opacity: 1, layer: "object" }),
+    block({ primitiveKind: "wide_block", x: 98, y: 105, width: 19, height: 7, color: PIXEL_PALETTE.trunk, opacity: 1, layer: "object" }),
+    block({ primitiveKind: "wide_block", x: 98, y: 116, width: 18, height: 4, color: PIXEL_PALETTE.trunkDark, opacity: 0.68, layer: "object" }),
+    block({ primitiveKind: "dot_block", x: 103, y: 108, width: 3, height: 3, color: PIXEL_PALETTE.highlight, opacity: 0.9, layer: "object" }),
+    block({ primitiveKind: "dot_block", x: 112, y: 111, width: 3, height: 3, color: PIXEL_PALETTE.highlight, opacity: 0.82, layer: "object" }),
+  ];
+
+  return objectDraft({
+    kind: "mushroom",
+    label: "蘑菇",
+    recipeId: "pixel_object_mushroom_recipe_v1",
+    recipeVersion: "1.0.0",
+    goldenAlgorithm: "scene_composer_mushroom_recipe",
+    parts,
+    shapes,
+    blocks,
+    anchor: { type: "center_bottom", x: 106, y: 137 },
+    bounds: { x: 92, y: 105, width: 29, height: 35 },
+  });
+}
+
+function buildStructureRecipe(): DraftPixelObject {
+  const parts: PixelPartId[] = ["structure_shadow", "structure_base", "structure_wall", "structure_roof", "structure_door", "structure_window"];
+  const shapes: PixelShapeId[] = ["shadow_patch", "stone_cluster", "cloth_panel", "highlight_chip"];
+  const blocks = [
+    block({ primitiveKind: "shadow_block", x: 74, y: 142, width: 70, height: 10, color: PIXEL_PALETTE.shadow, opacity: 0.28, layer: "shadow" }),
+    block({ primitiveKind: "wide_block", x: 78, y: 132, width: 62, height: 10, color: PIXEL_PALETTE.stoneDark, opacity: 1, layer: "object" }),
+    block({ primitiveKind: "wide_block", x: 84, y: 104, width: 50, height: 30, color: PIXEL_PALETTE.cloth, opacity: 1, layer: "object" }),
+    block({ primitiveKind: "wide_block", x: 78, y: 94, width: 62, height: 12, color: PIXEL_PALETTE.trunkDark, opacity: 1, layer: "object" }),
+    block({ primitiveKind: "wide_block", x: 86, y: 86, width: 46, height: 10, color: PIXEL_PALETTE.trunk, opacity: 1, layer: "object" }),
+    block({ primitiveKind: "tall_block", x: 102, y: 116, width: 10, height: 18, color: PIXEL_PALETTE.clothDark, opacity: 1, layer: "object" }),
+    block({ primitiveKind: "square_block", x: 90, y: 110, width: 8, height: 8, color: PIXEL_PALETTE.clothLight, opacity: 0.9, layer: "object" }),
+    block({ primitiveKind: "square_block", x: 120, y: 110, width: 8, height: 8, color: PIXEL_PALETTE.clothLight, opacity: 0.9, layer: "object" }),
+  ];
+
+  return objectDraft({
+    kind: "structure",
+    label: "建筑",
+    recipeId: "pixel_object_structure_recipe_v1",
+    recipeVersion: "1.0.0",
+    goldenAlgorithm: "world_structure_block_recipe",
+    parts,
+    shapes,
+    blocks,
+    anchor: { type: "center_bottom", x: 109, y: 146 },
+    bounds: { x: 74, y: 86, width: 70, height: 66 },
+  });
+}
+
+function buildFacilityRecipe(): DraftPixelObject {
+  const parts: PixelPartId[] = ["facility_shadow", "facility_base", "facility_body", "facility_accent", "facility_tool"];
+  const shapes: PixelShapeId[] = ["shadow_patch", "stone_cluster", "cloth_panel", "highlight_chip", "leg_line"];
+  const blocks = [
+    block({ primitiveKind: "shadow_block", x: 82, y: 136, width: 48, height: 8, color: PIXEL_PALETTE.shadow, opacity: 0.24, layer: "shadow" }),
+    block({ primitiveKind: "wide_block", x: 86, y: 128, width: 40, height: 8, color: PIXEL_PALETTE.stoneDark, opacity: 1, layer: "object" }),
+    block({ primitiveKind: "wide_block", x: 90, y: 108, width: 32, height: 22, color: PIXEL_PALETTE.cloth, opacity: 1, layer: "object" }),
+    block({ primitiveKind: "highlight_block", x: 114, y: 112, width: 5, height: 14, color: PIXEL_PALETTE.clothLight, opacity: 0.88, layer: "object" }),
+    block({ primitiveKind: "line_block", x: 84, y: 116, width: 12, height: 3, color: PIXEL_PALETTE.trunkLight, opacity: 1, layer: "object" }),
+    block({ primitiveKind: "dot_block", x: 98, y: 113, width: 4, height: 4, color: PIXEL_PALETTE.highlight, opacity: 0.92, layer: "object" }),
+  ];
+
+  return objectDraft({
+    kind: "facility",
+    label: "设施",
+    recipeId: "pixel_object_facility_recipe_v1",
+    recipeVersion: "1.0.0",
+    goldenAlgorithm: "world_facility_block_recipe",
+    parts,
+    shapes,
+    blocks,
+    anchor: { type: "center_bottom", x: 106, y: 140 },
+    bounds: { x: 82, y: 108, width: 48, height: 36 },
   });
 }
 

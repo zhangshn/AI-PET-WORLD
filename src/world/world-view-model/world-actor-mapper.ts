@@ -1,4 +1,8 @@
-import type { HomeMapState, HomeZone, MapPlacement } from "@/world/map-state/home-map-state-schema"
+import type {
+  HomeMapState,
+  HomeZone,
+  MapPlacement,
+} from "@/world/map-state/home-map-state-schema"
 import type { WorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-schema"
 import type { SpaceGrid } from "@/world/space"
 
@@ -7,23 +11,12 @@ import type {
   WorldViewActorPose,
 } from "./world-view-model-schema"
 
-const FORMAL_PET_ENTRY_TAGS = new Set([
-  "life_entry_validated",
-  "pet_world_entry_validated",
-  "actor_input_boundary_validated",
-])
-
 export function buildWorldViewActors(input: {
   homeMapState: HomeMapState
   spaceGrid: SpaceGrid
   saveRecord: WorldRuntimeSaveRecord
 }): WorldViewActor[] {
-  return [
-    buildButlerActor(input),
-    ...buildPetActors({
-      homeMapState: input.homeMapState,
-    }),
-  ]
+  return [buildButlerActor(input)]
 }
 
 function buildButlerActor(input: {
@@ -31,14 +24,7 @@ function buildButlerActor(input: {
   spaceGrid: SpaceGrid
   saveRecord: WorldRuntimeSaveRecord
 }): WorldViewActor {
-  const actorPlacement = input.homeMapState.placements.find(
-    (placement) =>
-      placement.layer === "actor" &&
-      (placement.tags.includes("butler") ||
-        placement.id.toLowerCase().includes("butler") ||
-        placement.label.toLowerCase().includes("butler") ||
-        placement.label.includes("管家"))
-  )
+  const actorPlacement = input.homeMapState.placements.find(isButlerPlacement)
 
   if (actorPlacement) {
     const point = placementToPixelPoint({
@@ -63,8 +49,14 @@ function buildButlerActor(input: {
   const fallbackPoint = fallbackZone
     ? centerOfZone(fallbackZone, input.homeMapState)
     : input.spaceGrid.cells.find((cell) => cell.passable)?.coordinate ?? {
-        x: input.homeMapState.mapSize.columns * input.homeMapState.mapSize.tileSize * 0.5,
-        y: input.homeMapState.mapSize.rows * input.homeMapState.mapSize.tileSize * 0.5,
+        x:
+          input.homeMapState.mapSize.columns *
+          input.homeMapState.mapSize.tileSize *
+          0.5,
+        y:
+          input.homeMapState.mapSize.rows *
+          input.homeMapState.mapSize.tileSize *
+          0.5,
       }
 
   return {
@@ -79,48 +71,19 @@ function buildButlerActor(input: {
   }
 }
 
-function buildPetActors(input: { homeMapState: HomeMapState }): WorldViewActor[] {
-  return input.homeMapState.placements
-    .filter(
-      (placement) =>
-        placement.layer === "actor" &&
-        isPetPlacement(placement) &&
-        hasValidatedPetEntryTag(placement)
-    )
-    .map((placement) => {
-      const point = placementToPixelPoint({
-        x: placement.x,
-        y: placement.y,
-        homeMapState: input.homeMapState,
-      })
-
-      return {
-        id: `pet_actor_${placement.id}`,
-        kind: "pet" as const,
-        x: point.x,
-        y: point.y,
-        layer: "front" as const,
-        pose: "idle" as const,
-        label: placement.label,
-        visible: true,
-      }
-    })
-}
-
-function isPetPlacement(placement: MapPlacement): boolean {
+function isButlerPlacement(placement: MapPlacement): boolean {
   return (
-    placement.tags.includes("pet") ||
-    placement.id.toLowerCase().includes("pet") ||
-    placement.label.toLowerCase().includes("pet") ||
-    placement.label.includes("宠物")
+    placement.layer === "actor" &&
+    (placement.tags.includes("butler") ||
+      placement.id.toLowerCase().includes("butler") ||
+      placement.label.toLowerCase().includes("butler") ||
+      placement.label.includes("管家"))
   )
 }
 
-function hasValidatedPetEntryTag(placement: MapPlacement): boolean {
-  return placement.tags.some((tag) => FORMAL_PET_ENTRY_TAGS.has(tag))
-}
-
-function findButlerFallbackZone(homeMapState: HomeMapState): HomeZone | undefined {
+function findButlerFallbackZone(
+  homeMapState: HomeMapState
+): HomeZone | undefined {
   return (
     homeMapState.zones.find((zone) => zone.type === "visual_center") ??
     homeMapState.zones.find((zone) => zone.type === "entry_area") ??

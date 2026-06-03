@@ -1,4 +1,4 @@
-async function main() {
+﻿async function main() {
   const fs = await import("node:fs")
   const path = await import("node:path")
 
@@ -82,8 +82,8 @@ async function main() {
     "WorldViewModel",
     "HomeMapState",
     "PetSystem",
-    "createPet",
-    "pet_default",
+    "createUnplannedLife",
+    "unplanned_life_default",
   ]
   const forbiddenRuntimeHits = forbiddenRuntimeTokens.filter((token) =>
     combinedVisualSource.includes(token)

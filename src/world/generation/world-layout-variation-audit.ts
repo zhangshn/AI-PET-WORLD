@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：生成 WORLD-GEN-03 布局差异化审计结果。
  */
 
@@ -120,7 +120,7 @@ export function buildWorldLayoutVariationAudit(
       "stable_seed_replay_check",
       "observable_difference_check",
       "no_ui_world_fact_generation",
-      "no_direct_adoption_layout",
+      "no_direct_life_layout",
     ],
   }
 }

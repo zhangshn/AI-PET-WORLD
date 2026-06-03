@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ======================================================
  * AI-PET-WORLD
  * Autonomy Core Rules
@@ -43,7 +43,7 @@ export const WORLD_AUTONOMY_RULESET: WorldAutonomyRuleset = {
       isEnabled: true,
     },
     {
-      code: "BUTLER_CANNOT_REPLACE_PET_MIND",
+      code: "BUTLER_CANNOT_REPLACE_OTHER_MIND",
       title: "管家不能替宠物做决定",
       description:
         "管家是玩家映射体/平行主体，是管理者与关系主体，不是宠物的大脑。",
@@ -87,15 +87,6 @@ export const WORLD_AUTONOMY_RULESET: WorldAutonomyRuleset = {
   ],
 
   entityPolicies: [
-    {
-      entityType: "pet",
-      ownsFinalDecision: true,
-      acceptsExternalInputAsOfferOnly: true,
-      allowExternalIntentOverride: false,
-      allowExternalResultOverride: false,
-      requiresAutonomousBehaviorChain: true,
-      requiresMemoryWriteback: true,
-    },
     {
       entityType: "butler",
       ownsFinalDecision: true,

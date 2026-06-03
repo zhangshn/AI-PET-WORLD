@@ -1,5 +1,4 @@
-// 该文件用于校验正式像素主世界视图模型边界。
-
+// 当前文件职责：校验正式像素主世界视图模型边界。
 import type { PixelWorldViewModel } from "./pixel-worldview-types";
 
 export function validatePixelWorldViewModel(model: PixelWorldViewModel): {
@@ -19,10 +18,6 @@ export function validatePixelWorldViewModel(model: PixelWorldViewModel): {
   validateLayers(model.actors, "sprite", "actors", messages);
   validateLayers(model.atmosphere, "atmosphere", "atmosphere", messages);
   validateLayers(model.overlays, "ui", "overlays", messages);
-
-  if (model.actors.some((actor) => actor.kind === "pet" && actor.visible)) {
-    messages.push("默认宠物 actor 必须保持不可见。");
-  }
 
   return {
     status: messages.length === 0 ? "pass" : "fail",

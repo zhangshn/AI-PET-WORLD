@@ -1,6 +1,5 @@
-/**
- * 当前文件负责：从世界生成输入派生稳定的布局生成输入。
- */
+﻿/**
+ * 褰撳墠鏂囦欢璐熻矗锛氫粠涓栫晫鐢熸垚杈撳叆娲剧敓绋冲畾鐨勫竷灞€鐢熸垚杈撳叆銆? */
 
 import type {
   InitialHomeGenerationInput,
@@ -102,7 +101,7 @@ export function buildWorldLayoutGenerationInput(input: {
       tags: [
         "world_layout_generation_audit",
         "stable_seed_verified",
-        "no_direct_adoption_layout",
+        "no_direct_life_layout",
       ],
     },
   }
@@ -255,10 +254,10 @@ function buildLayoutConstraints(input: {
       tags: ["biome_constraint", input.biome.biomeType],
     },
     {
-      id: "no_direct_adoption_fact",
-      description: "Initial layout must not create pet facts or adoption facts.",
+      id: "no_direct_life_fact",
+      description: "Initial layout must not create unplanned life facts or legacy relation facts.",
       severity: "block",
-      tags: ["no_default_pet", "town_adoption_precheck_deferred"],
+      tags: ["no_unplanned_life", "future_town_life_precheck_deferred"],
     },
     {
       id: "state_before_visual",

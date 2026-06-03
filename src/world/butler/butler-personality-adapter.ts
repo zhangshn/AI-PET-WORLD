@@ -6,20 +6,20 @@ import type { ButlerProfile } from "@/ai/personality-core/butler-profile-core/bu
 import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
 
 import type {
-  ButlerMvpBuildResult,
-  ButlerMvpProfile,
-} from "./butler-mvp-schema"
+  ButlerRuntimeProfileBuildResult,
+  ButlerRuntimeProfile,
+} from "./butler-runtime-profile-schema"
 
-export function buildButlerMvpProfileFromLifeCore(input: {
+export function buildButlerRuntimeProfileFromLifeCore(input: {
   playerId: string
   ownerId: string
   worldId: string
   butlerProfile: ButlerProfile
   constructionStyle: ButlerConstructionStyleVector
   tags: string[]
-}): ButlerMvpBuildResult {
+}): ButlerRuntimeProfileBuildResult {
   const birthHour = input.butlerProfile.birth.hour
-  const profile: ButlerMvpProfile = {
+  const profile: ButlerRuntimeProfile = {
     playerId: input.playerId,
     ownerId: input.ownerId,
     worldId: input.worldId,
@@ -28,18 +28,18 @@ export function buildButlerMvpProfileFromLifeCore(input: {
     constructionStyle: input.constructionStyle,
     lifeRhythmBias:
       typeof birthHour === "number" ? buildLifeRhythmBias(birthHour) : "balanced",
-    adoptionIntentBias:
+    worldCareBias:
       input.constructionStyle.protectiveKeeper >=
       input.constructionStyle.warmCaretaker
-        ? "consider"
-        : "wait",
+        ? "prepare_carefully"
+        : "observe_first",
     explanationTone: buildExplanationTone(input.constructionStyle),
     visualTendency: buildVisualTendency(input.constructionStyle),
     tags: [
       "butler_runtime_profile",
       "life_profile_core_driven",
       "runtime_executor_compatibility_layer",
-      "no_default_adoption_entry",
+      "no_unplanned_life_entry",
     ],
   }
 
@@ -69,7 +69,7 @@ export function buildButlerMvpProfileFromLifeCore(input: {
 
 function buildLifeRhythmBias(
   birthHour: number
-): ButlerMvpProfile["lifeRhythmBias"] {
+): ButlerRuntimeProfile["lifeRhythmBias"] {
   if (birthHour >= 5 && birthHour < 11) return "morning"
   if (birthHour >= 11 && birthHour < 17) return "day"
   if (birthHour >= 17 && birthHour < 22) return "evening"
@@ -80,9 +80,9 @@ function buildLifeRhythmBias(
 
 function buildExplanationTone(
   style: ButlerConstructionStyleVector
-): ButlerMvpProfile["explanationTone"] {
+): ButlerRuntimeProfile["explanationTone"] {
   const entries: Array<{
-    tone: ButlerMvpProfile["explanationTone"]
+    tone: ButlerRuntimeProfile["explanationTone"]
     value: number
   }> = [
     { tone: "structured", value: style.structuredBuilder },
@@ -96,7 +96,7 @@ function buildExplanationTone(
 
 function buildVisualTendency(
   style: ButlerConstructionStyleVector
-): ButlerMvpProfile["visualTendency"] {
+): ButlerRuntimeProfile["visualTendency"] {
   if (style.protectiveKeeper >= 0.72) return "protective"
   if (style.quietMaintainer >= 0.72) return "quiet"
   if (style.warmCaretaker >= 0.72) return "warmNatural"

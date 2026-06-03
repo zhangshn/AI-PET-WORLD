@@ -1,6 +1,5 @@
-/**
- * 当前文件职责：提供稳定、可审计的地貌资源规则。
- */
+﻿/**
+ * 褰撳墠鏂囦欢鑱岃矗锛氭彁渚涚ǔ瀹氥€佸彲瀹¤鐨勫湴璨岃祫婧愯鍒欍€? */
 
 import type { BiomeRule, BiomeType } from "./ecology-schema"
 
@@ -38,7 +37,7 @@ export const BIOME_RULES: Record<BiomeType, BiomeRule> = {
       shelterSafetyBias: 0,
     },
     constructionModifiers: { materialCostMultiplier: 1, maintenanceRisk: 0.24 },
-    visualTokens: ["open_ground", "soft_grass", "mvp_starting_biome"],
+    visualTokens: ["open_ground", "soft_grass", "runtime_starting_biome"],
     tags: ["biome_rule", "grassland", "balanced_resource_profile"],
   },
   forest: {
@@ -125,7 +124,7 @@ export const BIOME_RULES: Record<BiomeType, BiomeRule> = {
       shelterSafetyBias: 0.02,
     },
     constructionModifiers: { materialCostMultiplier: 1.04, maintenanceRisk: 0.34 },
-    visualTokens: ["water_adjacent", "town_adoption_precheck_ready_later", "space_pressure"],
+    visualTokens: ["water_adjacent", "future_town_life_precheck_ready_later", "space_pressure"],
     tags: ["biome_rule", "oasis", "care_growth_resource_profile"],
   },
 }

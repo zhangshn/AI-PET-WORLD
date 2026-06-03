@@ -1,8 +1,8 @@
-/**
+﻿/**
  * Runs one live-world tick from an existing HomeMapState.
  */
 
-import { runMvpWorldRuntimeTick } from "@/world/mvp-core/mvp-world-runtime-tick"
+import { runWorldRuntimeConstructionTick } from "@/world/runtime-core/world-runtime-construction-tick"
 import { buildSpaceGridFromHomeMapState } from "@/world/space"
 import {
   buildTraceFieldFromWorld,
@@ -40,7 +40,7 @@ export function runOneRuntimeTick(
     now: input.now,
   })
   const runtimeTick = decision.shouldRunConstructionTick
-    ? runMvpWorldRuntimeTick({
+    ? runWorldRuntimeConstructionTick({
         homeMapState: input.saveRecord.homeMapState,
         butlerProfile: input.saveRecord.butlerRuntimeProfile,
         constructionStyle: input.saveRecord.butlerConstructionStyle,
@@ -244,7 +244,7 @@ export function runOneRuntimeTick(
       traceClosureResult.createdTrace
         ? "butler_trace_closure_persisted"
         : "butler_trace_closure_skipped",
-      "no_pet_fact_created",
+      "no_unplanned_life_fact_created",
       `motivation:${decision.selectedMotivation}`,
       ...traceLifecycleResult.tags,
       ...traceClosureResult.tags,
@@ -365,7 +365,7 @@ function buildRuntimeEvent(input: {
       input.worldRuleValidation.ok
         ? "world_rule_validation_passed"
         : "world_rule_validation_blocked",
-      "no_pet_fact_created",
+      "no_unplanned_life_fact_created",
       `motivation:${input.decision.selectedMotivation}`,
       `intent_kind:${input.intent.kind}`,
     ],

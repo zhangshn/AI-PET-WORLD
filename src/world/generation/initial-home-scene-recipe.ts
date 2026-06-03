@@ -1,12 +1,12 @@
 /**
- * 当前文件负责：定义 MVP 初始家园 Scene Recipe。
+ * Defines the current initial home scene recipe.
  */
 
 import type { InitialHomeSceneRecipe } from "./generation-schema"
 
 export const INITIAL_HOME_SCENE_RECIPE: InitialHomeSceneRecipe = {
-  id: "mvp-initial-home-scene-recipe",
-  name: "MVP 初始家园 Scene Recipe",
+  id: "runtime-initial-home-scene-recipe",
+  name: "Runtime 初始家园 Scene Recipe",
   mapSize: {
     columns: 80,
     rows: 48,
@@ -21,7 +21,7 @@ export const INITIAL_HOME_SCENE_RECIPE: InitialHomeSceneRecipe = {
       id: "visual-center-area",
       areaType: "visual_center",
       name: "视觉中心范围",
-      purpose: "集中展示初始入口区、初始照护区、临时住所区与路径关系。",
+      purpose: "集中展示初始入口区、照护区、临时住所区与路径关系。",
       center: { x: 40, y: 24 },
       size: { width: 45, height: 21 },
       requiredAssets: [
@@ -48,24 +48,22 @@ export const INITIAL_HOME_SCENE_RECIPE: InitialHomeSceneRecipe = {
       forbiddenTags: ["old_birth_device"],
       density: "low",
       pathConnections: ["initial_care"],
-      supportRules: ["抵达点必须落在草地或区域痕迹上"],
+      supportRules: ["抵达点必须落在草地或区域痕迹中"],
       tags: ["recipe_area", "entry_area"],
     },
     {
       id: "initial-care-area",
       areaType: "initial_care",
       name: "初始照护区",
-      purpose: "提供最初的食物、水、照护与观察能力。",
+      purpose: "提供最初的水、整理、观察与基础生活支持。",
       center: { x: 35, y: 29 },
       size: { width: 10, height: 7 },
-      requiredAssets: [
-        "buildingInitialCareStation01",
-      ],
+      requiredAssets: ["buildingInitialCareStation01"],
       optionalAssets: ["surfaceFlowerPatch01", "facilityStorageBoxClosed01"],
       forbiddenTags: ["old_birth_device"],
       density: "medium",
       pathConnections: ["entry_area", "temporary_shelter"],
-      supportRules: ["照护设施必须有泥地或踩踏痕迹承托"],
+      supportRules: ["照护设施必须有泥地或踏痕承托"],
       tags: ["recipe_area", "care"],
     },
     {
@@ -136,7 +134,7 @@ export const INITIAL_HOME_SCENE_RECIPE: InitialHomeSceneRecipe = {
   ],
   tags: [
     "scene_recipe",
-    "mvp_initial_home",
+    "runtime_initial_home",
     "placement_engine_required",
     "no_ai_free_layout",
   ],

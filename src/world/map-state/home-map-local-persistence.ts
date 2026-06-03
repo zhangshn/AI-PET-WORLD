@@ -1,6 +1,5 @@
-/**
- * 当前文件负责：保存和读取 MVP 家园地图本地快照。
- */
+﻿/**
+ * 褰撳墠鏂囦欢璐熻矗锛氫繚瀛樺拰璇诲彇 runtime 瀹跺洯鍦板浘鏈湴蹇収銆? */
 
 import type { ConstructionPlan } from "@/world/construction/construction-schema"
 

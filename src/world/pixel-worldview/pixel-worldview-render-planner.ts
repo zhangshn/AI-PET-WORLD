@@ -15,14 +15,30 @@ import type {
   PixelWorldRenderLayerSummary,
   PixelWorldRenderPlan,
 } from "./pixel-worldview-render-types";
+import type { VisualGenerationPlan } from "@/world/visual-generation";
 
 const LAYER_ORDER: PixelWorldLayerKind[] = ["tile", "trace", "object", "sprite", "atmosphere", "ui"];
 
-export function buildPixelWorldRenderPlan(model: PixelWorldViewModel): PixelWorldRenderPlan {
+export function buildPixelWorldRenderPlan(
+  model: PixelWorldViewModel,
+  input?: { visualGenerationPlan?: VisualGenerationPlan }
+): PixelWorldRenderPlan {
+  const visualObjectRecipeBySourceId = new Map(
+    (input?.visualGenerationPlan?.objectRecipes ?? []).map((recipe) => [
+      recipe.sourceObjectId,
+      recipe,
+    ])
+  );
   const commands = sortRenderCommands([
     ...model.tiles.map((tile) => mapTileCommand(tile, model.canvas.tileSize)),
     ...model.traces.map(mapTraceCommand),
-    ...model.objects.map(mapObjectCommand),
+    ...model.objects.flatMap((object) => {
+      const visualRecipe = visualObjectRecipeBySourceId.get(object.id);
+
+      return visualRecipe
+        ? mapObjectBlockCommands(object, visualRecipe)
+        : [mapObjectCommand(object)];
+    }),
     ...model.actors.map(mapActorCommand),
     ...model.atmosphere.map(mapAtmosphereCommand),
     ...model.overlays.map(mapOverlayCommand),
@@ -35,6 +51,35 @@ export function buildPixelWorldRenderPlan(model: PixelWorldViewModel): PixelWorl
     commands,
     layerSummaries: buildLayerSummaries(commands),
   };
+}
+
+function mapObjectBlockCommands(
+  object: PixelWorldObject,
+  recipe: VisualGenerationPlan["objectRecipes"][number]
+): PixelWorldRenderCommand[] {
+  return recipe.blocks.map((block, index) => ({
+    id: `render_object_block_${object.id}_${index}_${block.id}`,
+    layer: "object",
+    kind: "draw_object_block",
+    sourceId: object.id,
+    bounds: {
+      x: block.x,
+      y: block.y,
+      width: block.width,
+      height: block.height,
+    },
+    sortY: block.y + block.height,
+    recipeId: recipe.recipeId,
+    colorHint: block.color,
+    opacity: block.opacity,
+    visible: object.visible && block.opacity > 0,
+    stateTags: [
+      ...recipe.stateTags,
+      ...block.stateTags,
+      "visual_generation_block",
+      "object_recipe_block",
+    ],
+  }));
 }
 
 function mapTileCommand(tile: PixelWorldTile, tileSize: number): PixelWorldRenderCommand {

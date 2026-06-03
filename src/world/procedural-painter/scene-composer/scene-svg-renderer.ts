@@ -1,7 +1,11 @@
-import {
-  SCENE_TILE_SIZE,
-} from "./scene-composer-constants";
+// 该文件用于把场景组合计划渲染为 SVG 预览。
+
+import { SCENE_TILE_SIZE } from "./scene-composer-constants";
 import { buildScenePalette } from "./scene-composer-palette";
+import {
+  renderSceneComposerTreeObject,
+  renderSceneComposerTreeShadow,
+} from "./scene-composer-tree-recipe";
 import type {
   SceneCompositionPlan,
   SceneGrassTuft,
@@ -204,13 +208,17 @@ function renderObjectShadow(object: SceneObject, p: ScenePalette): string {
     return "";
   }
 
-  const rx = Math.round((object.kind === "tree" ? 34 : object.kind === "actor" ? 12 : 16) * object.scale);
-  const ry = Math.round((object.kind === "tree" ? 10 : 6) * object.scale);
+  if (object.kind === "tree") {
+    return renderSceneComposerTreeShadow(object, p);
+  }
+
+  const rx = Math.round((object.kind === "actor" ? 12 : 16) * object.scale);
+  const ry = Math.round(6 * object.scale);
   return `<ellipse cx="${object.x}" cy="${object.y + 2}" rx="${rx}" ry="${ry}" fill="${p.shadow}" opacity="0.42"/>`;
 }
 
 function renderSceneObject(object: SceneObject, p: ScenePalette): string {
-  if (object.kind === "tree") return renderTree(object, p);
+  if (object.kind === "tree") return renderSceneComposerTreeObject(object, p);
   if (object.kind === "bush") return renderBush(object, p);
   if (object.kind === "stone") return renderStone(object, p);
   if (object.kind === "flower") return renderFlower(object, p);
@@ -218,49 +226,6 @@ function renderSceneObject(object: SceneObject, p: ScenePalette): string {
   if (object.kind === "insect_signal") return renderInsectSignal(object, p);
 
   return renderActor(object, p);
-}
-
-function renderTree(object: SceneObject, p: ScenePalette): string {
-  const health = object.health ?? 80;
-  const stressLevel = object.stressLevel ?? 0;
-  const stageScale =
-    object.growthStage === "sprout"
-      ? 0.48
-      : object.growthStage === "young"
-        ? 0.72
-        : object.growthStage === "old"
-          ? 1.08
-          : object.growthStage === "declining"
-            ? 0.86
-            : 1;
-  const scale = object.scale * stageScale;
-  const trunkWidth = Math.round((8 + (object.age ?? 40) * 0.035) * scale);
-  const trunkHeight = Math.round((38 + (object.age ?? 40) * 0.075) * scale);
-  const trunkX = Math.round(object.x - trunkWidth / 2);
-  const trunkY = Math.round(object.y - trunkHeight);
-  const crownY = trunkY - Math.round(36 * scale);
-  const crownScale = scale * (0.82 + health * 0.0022 - stressLevel * 0.0018);
-  const leafMain = health < 42 ? p.leafDark : p.leaf;
-  const leafHighlight = stressLevel > 62 || health < 46 ? p.leaf : p.leafLight;
-  const leafRows =
-    object.growthStage === "declining"
-      ? [3, 8, 14, 18, 14, 7]
-      : object.growthStage === "young"
-        ? [4, 10, 16, 18, 14, 6]
-        : [5, 13, 22, 28, 27, 20, 9];
-
-  return [
-    `<rect x="${trunkX}" y="${trunkY}" width="${trunkWidth}" height="${trunkHeight}" fill="${p.trunkDark}"/>`,
-    `<rect x="${trunkX + Math.max(2, Math.round(trunkWidth * 0.28))}" y="${trunkY + 4}" width="${Math.max(4, Math.round(trunkWidth * 0.54))}" height="${trunkHeight - 6}" fill="${p.trunk}"/>`,
-    `<rect x="${trunkX + trunkWidth - 4}" y="${trunkY + 12}" width="3" height="${Math.round(trunkHeight * 0.52)}" fill="${p.trunkLight}"/>`,
-    renderLeafCluster(object.x + Math.round(20 * scale), crownY + Math.round(20 * scale), crownScale, p.leafDark, [4, 10, 18, 24, 25, 20, 11]),
-    renderLeafCluster(object.x - Math.round(8 * scale), crownY + Math.round(14 * scale), crownScale, leafMain, leafRows),
-    renderLeafCluster(object.x - Math.round(23 * scale), crownY + Math.round(21 * scale), crownScale * 0.78, leafMain, [4, 10, 16, 20, 18, 10]),
-    stressLevel > 66
-      ? ""
-      : renderLeafCluster(object.x - Math.round(12 * scale), crownY + Math.round(4 * scale), crownScale * 0.68, leafHighlight, [3, 7, 13, 15, 10, 4]),
-    renderLeafCluster(object.x + Math.round(1 * scale), crownY + Math.round(40 * scale), crownScale * 0.86, p.leafUnder, [5, 14, 22, 24, 17, 8]),
-  ].filter(Boolean).join("\n");
 }
 
 function renderLeafCluster(

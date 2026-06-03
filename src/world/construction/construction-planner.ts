@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：根据 ConstructionPlannerInput 生成建设候选计划。
  */
 
@@ -44,7 +44,7 @@ const PLAN_SPEC_BY_GOAL = {
     reason: "管家根据基础物资、观察和整理需求，提出改善初始照护点的建设候选。",
     stageTopic: "初始照护点",
     basePriority: 60,
-    tags: ["initial_care", "basic_living_support", "no_pet_assumption"],
+    tags: ["initial_care", "basic_living_support", "no_unplanned_life_assumption"],
   },
   organize_storage_tools: {
     projectType: "organize_storage_area",
@@ -126,7 +126,7 @@ export function buildConstructionPlanCandidates(
       "planner_input_driven",
       "no_map_diff_generated",
       "no_home_map_state_mutation",
-      "no_direct_adoption_plan",
+      "no_direct_life_plan",
     ],
   }
 }
@@ -135,7 +135,7 @@ export function createInitialConstructionPlan(
   homeMapState: HomeMapState
 ): ConstructionPlan {
   return {
-    id: "mvp-quiet-living-plan",
+    id: "runtime-quiet-living-plan",
     projectType: "preserve_quiet_living",
     title: "整理安静生活区",
     reason:
@@ -179,7 +179,7 @@ export function createInitialConstructionPlan(
     ),
     createdAt: homeMapState.updatedAt,
     updatedAt: homeMapState.updatedAt,
-    tags: ["mvp_construction_plan", "quiet_living_area", "no_ai_api"],
+    tags: ["runtime_construction_plan", "quiet_living_area", "no_ai_api"],
   }
 }
 

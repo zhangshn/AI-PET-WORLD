@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   SpaceRegionKind,
   SpaceTerrainKind,
 } from "@/world/space"
@@ -30,7 +30,7 @@ export type TraceSourceKind =
   | "ecology_state"
   | "placement_state"
   | "butler_behavior"
-  | "pet_behavior"
+  | "unplanned_life_behavior"
   | "world_event"
   | "world_event_placeholder"
   | "time_passage"

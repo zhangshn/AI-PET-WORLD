@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：审计建设循环接入前协议输出。
  */
 
@@ -46,7 +46,7 @@ export function auditConstructionRuntimeCommit(input: {
         : "construction_runtime_commit_warning",
       "pre_runtime_commit_only",
       "no_ui_integration",
-      "no_default_adoption_entry",
+      "no_unplanned_life_entry",
     ],
   }
 }

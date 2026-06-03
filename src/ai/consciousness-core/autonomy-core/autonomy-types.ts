@@ -1,23 +1,17 @@
-/**
+﻿/**
  * ======================================================
  * AI-PET-WORLD
  * Autonomy Core Types
  * ======================================================
  *
- * 当前文件负责：
- * 1. 定义自主规则层的核心类型
- * 2. 为全世界主体提供统一的“自主行为宪法”结构
- *
- * 说明：
- * - autonomy-core 不是直接执行行为的系统
- * - autonomy-core 是所有行为系统都必须遵守的外部规则层
- * - 后续 butler / pet / npc / future player projection
- *   都应共享这一层
- * ======================================================
+ * 褰撳墠鏂囦欢璐熻矗锛? * 1. 瀹氫箟鑷富瑙勫垯灞傜殑鏍稿績绫诲瀷
+ * 2. 涓哄叏涓栫晫涓讳綋鎻愪緵缁熶竴鐨勨€滆嚜涓昏涓哄娉曗€濈粨鏋? *
+ * 璇存槑锛? * - autonomy-core 涓嶆槸鐩存帴鎵ц琛屼负鐨勭郴缁? * - autonomy-core 鏄墍鏈夎涓虹郴缁熼兘蹇呴』閬靛畧鐨勫閮ㄨ鍒欏眰
+ * - 鍚庣画 butler / npc / future player projection
+ *   閮藉簲鍏变韩杩欎竴灞? * ======================================================
  */
 
 export type AutonomousEntityType =
-  | "pet"
   | "butler"
   | "npc"
   | "player_projection"
@@ -45,7 +39,7 @@ export type BehaviorOpportunityType =
 export type AutonomyConstraintCode =
   | "SELF_FINAL_DECISION"
   | "OUTSIDE_CAN_ONLY_OFFER"
-  | "BUTLER_CANNOT_REPLACE_PET_MIND"
+  | "BUTLER_CANNOT_REPLACE_OTHER_MIND"
   | "WORLD_IS_REFERENCE_NOT_COMMAND"
   | "ALL_ACTIONS_REQUIRE_AUTONOMOUS_CHAIN"
   | "ACTION_RESULT_MUST_WRITE_TO_MEMORY"
@@ -63,32 +57,29 @@ export type EntityAutonomyPolicy = {
   entityType: AutonomousEntityType
 
   /**
-   * 主体是否拥有最终行为决定权
+   * 涓讳綋鏄惁鎷ユ湁鏈€缁堣涓哄喅瀹氭潈
    */
   ownsFinalDecision: boolean
 
   /**
-   * 外部输入是否只能以“机会/提议”的形式进入
+   * 澶栭儴杈撳叆鏄惁鍙兘浠モ€滄満浼?鎻愯鈥濈殑褰㈠紡杩涘叆
    */
   acceptsExternalInputAsOfferOnly: boolean
 
   /**
-   * 外部主体是否允许直接改写其内部意图
-   */
+   * 澶栭儴涓讳綋鏄惁鍏佽鐩存帴鏀瑰啓鍏跺唴閮ㄦ剰鍥?   */
   allowExternalIntentOverride: boolean
 
   /**
-   * 外部主体是否允许直接结算其行为结果
-   */
+   * 澶栭儴涓讳綋鏄惁鍏佽鐩存帴缁撶畻鍏惰涓虹粨鏋?   */
   allowExternalResultOverride: boolean
 
   /**
-   * 行为是否必须经过完整自主链
-   */
+   * 琛屼负鏄惁蹇呴』缁忚繃瀹屾暣鑷富閾?   */
   requiresAutonomousBehaviorChain: boolean
 
   /**
-   * 行为结果是否必须写回记忆
+   * 琛屼负缁撴灉鏄惁蹇呴』鍐欏洖璁板繂
    */
   requiresMemoryWriteback: boolean
 }
@@ -104,13 +95,13 @@ export type OpportunityRule = {
   description: string
 
   /**
-   * 此类机会是否可以直接结算结果
-   * 在自主世界里，默认应该为 false
+   * 姝ょ被鏈轰細鏄惁鍙互鐩存帴缁撶畻缁撴灉
+   * 鍦ㄨ嚜涓讳笘鐣岄噷锛岄粯璁ゅ簲璇ヤ负 false
    */
   canDirectlyResolveOutcome: boolean
 
   /**
-   * 此类机会是否必须交给主体自行判断接受与否
+   * 姝ょ被鏈轰細鏄惁蹇呴』浜ょ粰涓讳綋鑷鍒ゆ柇鎺ュ彈涓庡惁
    */
   requiresSelfAcceptance: boolean
 }

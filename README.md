@@ -1,6 +1,6 @@
 # AI-PET-WORLD
 
-AI-PET-WORLD 是一个由 AI 管家自主运行、由世界规则驱动持续演化的像素世界。
+AI-PET-WORLD 是一个由 AI 管家自主运行、由世界规则驱动并持续演化的像素世界。
 
 ## 当前业务主链
 
@@ -22,15 +22,20 @@ AI-PET-WORLD 是一个由 AI 管家自主运行、由世界规则驱动持续演
 ```txt
 WorldRuntimeSaveRecord
 -> WorldViewModel
--> PixelWorldView
--> Pixel Buffer
+-> VisualGenerationPlan
+-> PixelWorldRenderPlan
+-> PixelWorldPixelBufferFrame
+-> VisualJudgeReport
+-> VisualCorrectionPlan
 -> PixiJS
 ```
 
-画面只表现世界事实，不创造世界事实。正式 `/world` 不推进 tick、不写 runtime、不生成默认宠物。
+画面只表现世界事实，不创造世界事实。正式 `/world` 不推进 tick、不写 runtime、不生成默认内容。
 
 ## 文档
 
 - `docs/v2_6/AI_PET_WORLD_V2_6_CURRENT_BUSINESS_PRINCIPLES.md`
 - `docs/v2_6/AI_PET_WORLD_CURRENT_ARCHITECTURE.md`
 - `docs/v2_6/AI_PET_WORLD_PIXEL_GENERATION.md`
+- `docs/v2_6/AI_PET_WORLD_VISUAL_GENERATION_AND_JUDGE_PLAN.md`
+- `docs/legal/AI_PET_WORLD_COPYRIGHT_AND_LICENSE_POLICY.md`

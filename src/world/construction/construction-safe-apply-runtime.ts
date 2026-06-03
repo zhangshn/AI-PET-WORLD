@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件职责：验证并安全应用建设 MapDiff 候选，支持管家建设 add/update。
  */
 
@@ -22,11 +22,11 @@ import type {
 } from "./construction-schema"
 
 const FORBIDDEN_SAFE_APPLY_TOKENS = [
-  "pet_" + "arrival",
-  "pet_" + "rest",
-  "pet-near-arrival-point",
-  "pet-bed",
-  "pet_actor",
+  "unplanned_life_arrival",
+  "unplanned_life_rest",
+  "unplanned_life_near_arrival_point",
+  "unplanned_life_bed",
+  "unplanned_life_actor",
 ]
 
 export function buildConstructionSafeApplyResult(
@@ -64,7 +64,7 @@ export function buildConstructionSafeApplyResult(
       "butler_construction_add_supported",
       "no_ui_integration",
       "no_external_runtime_loop_integration",
-      "no_default_adoption_entry",
+      "no_unplanned_life_entry",
     ],
   }
   const audit = auditConstructionSafeApplyResult({

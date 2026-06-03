@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件职责：把客观世界状态转成管家的主观世界感知。
  */
 
@@ -42,7 +42,7 @@ export function buildButlerWorldPerception(
     resources.spacePressure > 50 ? resources.spacePressure : 35
   )
   const boundaryMaintenanceNeed = clampScore(100 - resources.groundHealth)
-  const adoptionReadinessConcern = clampScore(
+  const worldReadinessConcern = clampScore(
     Math.round((resourcePressure + resources.spacePressure + careNeed) / 3)
   )
 
@@ -58,7 +58,7 @@ export function buildButlerWorldPerception(
     storageNeed,
     quietSpaceNeed,
     boundaryMaintenanceNeed,
-    adoptionReadinessConcern,
+    worldReadinessConcern,
     perceivedFacts: [
       `生态状态 ${ecologyState.status}`,
       `地貌 ${ecologyState.biomeType}`,

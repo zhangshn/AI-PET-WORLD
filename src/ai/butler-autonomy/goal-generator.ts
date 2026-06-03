@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件职责：把管家的内在动机转换为可排序的自主目标候选。
  */
 
@@ -127,7 +127,7 @@ function buildPrepareCareGoal(input: {
     sourceMotivationIds: ["motivation-care"],
     reason:
       "照护目标只代表管家准备基础生活与关系条件，不代表默认生成宠物或宠物专属设施。",
-    tags: ["care_preparation", "future_life_boundary", "no_default_pet"],
+    tags: ["care_preparation", "future_life_boundary", "no_unplanned_life"],
   })
 }
 

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：审计 ConstructionPlanner 候选计划输出。
  */
 
@@ -37,7 +37,7 @@ export function auditConstructionPlanCandidates(input: {
       warnings.length === 0 ? "candidate_output_valid" : "candidate_output_warning",
       "no_map_diff_generated",
       "no_home_map_state_mutation",
-      "no_direct_adoption_plan",
+      "no_direct_life_plan",
     ],
   }
 }

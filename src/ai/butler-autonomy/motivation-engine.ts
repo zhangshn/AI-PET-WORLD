@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件职责：根据灵魂底盘、世界感知、意识状态和记忆生成管家内在动机。
  */
 
@@ -64,7 +64,7 @@ function buildCareMotivation(input: {
     kind: "care",
     intensity,
     sourceSoulFactors: ["careDrive"],
-    sourceWorldFactors: ["careNeed", "adoptionReadinessConcern"],
+    sourceWorldFactors: ["careNeed", "worldReadinessConcern"],
     sourceMemoryFactors: ["careBias"],
     reason: "照护需求、管家照护倾向和记忆中的照护偏置共同形成照护动机。",
     tags: ["care_need", "future_life_boundary"],

@@ -33,11 +33,22 @@ import {
   resolveStonePrimitive,
 } from "./stone-object/stone-object-style";
 import { STONE_OBJECT_TEMPLATE } from "./stone-object/stone-object-template";
+import type { StoneTemplate } from "./stone-object/stone-object-types";
 
 type DraftPixelObject = Omit<PixelObjectRecipeResult, "validation">;
 
-export function buildNaturalStoneObjectRecipe(): PixelObjectRecipeResult {
-  const template = STONE_OBJECT_TEMPLATE;
+export type NaturalStoneObjectRecipeInput = {
+  sourceObjectId?: string;
+  x?: number;
+  y?: number;
+  scale?: number;
+  deterministicKey?: string;
+};
+
+export function buildNaturalStoneObjectRecipe(
+  input: NaturalStoneObjectRecipeInput = {}
+): PixelObjectRecipeResult {
+  const template = buildStoneTemplate(input);
   const blockBuilder = createPixelBlockBuilder("stone_object_block");
 
   const rawMask = generateStoneSilhouetteMask(template);
@@ -117,5 +128,28 @@ export function buildNaturalStoneObjectRecipe(): PixelObjectRecipeResult {
   return {
     ...draft,
     validation: validatePixelObjectRecipe(draft),
+  };
+}
+
+function buildStoneTemplate(input: NaturalStoneObjectRecipeInput): StoneTemplate {
+  const scale = Math.max(0.5, Math.min(1.6, input.scale ?? 1));
+  const cellSize = Math.max(1, Math.round(STONE_OBJECT_TEMPLATE.cellSize * scale));
+  const width = STONE_OBJECT_TEMPLATE.gridWidth * cellSize;
+  const height = STONE_OBJECT_TEMPLATE.gridHeight * cellSize;
+  const originX =
+    input.x === undefined
+      ? STONE_OBJECT_TEMPLATE.originX
+      : Math.round(input.x - width / 2);
+  const originY =
+    input.y === undefined
+      ? STONE_OBJECT_TEMPLATE.originY
+      : Math.round(input.y - height);
+
+  return {
+    ...STONE_OBJECT_TEMPLATE,
+    seed: input.deterministicKey ?? STONE_OBJECT_TEMPLATE.seed,
+    originX,
+    originY,
+    cellSize,
   };
 }

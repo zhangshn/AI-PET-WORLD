@@ -1,6 +1,5 @@
-/**
- * 当前文件负责：定义地图摆放规则与校验函数。
- */
+﻿/**
+ * 褰撳墠鏂囦欢璐熻矗锛氬畾涔夊湴鍥炬憜鏀捐鍒欎笌鏍￠獙鍑芥暟銆? */
 
 import type { InitialHomeSceneRecipe } from "@/world/generation/generation-schema"
 import type {
@@ -75,7 +74,7 @@ export const PLACEMENT_RULES = {
   },
   avoidEmptyCentralGrass: {
     id: "avoid_empty_central_grass",
-    description: "中央不能大面积空草地。",
+    description: "中央不能出现大面积空草地。",
     severity: "warn",
     tags: ["placement", "visual_center"],
   },
@@ -111,7 +110,7 @@ export const PLACEMENT_RULES = {
   },
   ensureDecorationNearEdge: {
     id: "ensure_decoration_near_edge",
-    description: "地表装饰应靠近边缘或承托过渡。",
+    description: "地表装饰应靠近边缘、承托或过渡区域。",
     severity: "warn",
     tags: ["placement", "layout", "decoration"],
   },
@@ -341,7 +340,7 @@ function validateNaturalBoundaryDensity(
     "higher_natural_boundary_density",
     natureCount >= 14,
     natureCount >= 14
-      ? "自然边界密度满足 MVP 要求。"
+      ? "自然边界密度满足 runtime 要求。"
       : "自然边界密度不足。",
     []
   )
@@ -557,7 +556,7 @@ function validateMaterialPileNearConstructionZone(
     affected.length === 0,
     affected.length === 0
       ? "建设材料靠近目标区域且避开主要生活点。"
-      : "建设材料距离目标区过远或贴住主要生活点。",
+      : "建设材料距离目标区域过远或贴住主要生活点。",
     affected
   )
 }

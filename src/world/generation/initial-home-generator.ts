@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：整合 seed、布局输入、自然世界事实与 Placement Engine 生成 HomeMapState。
  */
 
@@ -123,7 +123,7 @@ export function generateInitialHomeMapResult(
     createdAt: input.now,
     updatedAt: input.now,
     tags: [
-      "mvp_initial_home",
+      "runtime_initial_home",
       "world_nature_initial_state",
       "scene_recipe_natural_boundary_only",
       "placement_engine_driven",
@@ -367,7 +367,7 @@ function buildInitialResources(
       spacePressure: 18,
     },
     tags: [
-      "mvp_initial_resources",
+      "runtime_initial_resources",
       input.biomeType ? `requested_biome:${input.biomeType}` : "seed_biome",
     ],
   })
@@ -379,7 +379,7 @@ function buildInitialResources(
     recentTransactions: resourcePoolState.transactions,
     resourceAudit,
     tags: [
-      "mvp_initial_resources",
+      "runtime_initial_resources",
       "resource_pool_state_snapshot",
       biomeType,
       input.biomeType ? `requested_biome:${input.biomeType}` : "seed_biome",

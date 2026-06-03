@@ -1,4 +1,4 @@
-async function main() {
+﻿async function main() {
   const crypto = await import("node:crypto")
   const fs = await import("node:fs")
   const moduleApi = await import("node:module")
@@ -87,7 +87,7 @@ async function main() {
       "world_rule_validation_passed",
       "trace_write_requires_validation",
       "memory_seed_requires_trace_quality",
-      "not_pet_trace",
+      "butler_trace_only",
     ]
 
     requiredTokens.forEach((token) =>
@@ -98,8 +98,8 @@ async function main() {
       "writeWorldRuntimeSaveRecord",
       "runAndPersistOneRuntimeTick",
       "scene-composer-gateway",
-      "createPet",
-      "pet_default",
+      "createUnplannedLife",
+      "unplanned_life_default",
     ]
     const traceClosureHits = forbiddenTraceClosureTokens.filter((token) => traceClosureSource.includes(token))
 
@@ -146,7 +146,7 @@ async function main() {
       (trace) =>
         trace.sourceKind === "butler_behavior" &&
         trace.tags.includes("butler_trace_closure") &&
-        trace.tags.includes("not_pet_trace")
+        trace.tags.includes("butler_trace_only")
     )
 
     assert(butlerTraces.length > 0, "No butler_behavior trace was persisted.")
@@ -188,18 +188,20 @@ async function main() {
     )
   }
 
-  function assertNoDefaultPet(record) {
-    const petPlacements = record.homeMapState.placements.filter(
+  function assertNoUnplannedLife(record) {
+    const unplannedLifePlacements = record.homeMapState.placements.filter(
       (placement) =>
         placement.layer === "actor" &&
-        (placement.tags.includes("pet") || placement.id.toLowerCase().includes("pet") || placement.label.toLowerCase().includes("pet") || placement.label.includes("宠物"))
+        (placement.tags.includes("unplanned_life") ||
+          placement.id.toLowerCase().includes("unplanned_life") ||
+          placement.label.toLowerCase().includes("unplanned_life"))
     )
-    const petTraces = record.traceField.traces.filter(
-      (trace) => trace.sourceKind === "pet_behavior" || trace.tags.includes("pet_default")
+    const unplannedLifeTraces = record.traceField.traces.filter(
+      (trace) => trace.sourceKind === "unplanned_life_behavior" || trace.tags.includes("unplanned_life_default")
     )
 
-    assert(petPlacements.length === 0, "Butler trace closure created a default pet actor placement.")
-    assert(petTraces.length === 0, "Butler trace closure created pet traces.")
+    assert(unplannedLifePlacements.length === 0, "Butler trace closure created an unplanned life actor placement.")
+    assert(unplannedLifeTraces.length === 0, "Butler trace closure created unplanned life traces.")
   }
 
   if (!savePath || !fs.existsSync(savePath)) fail("Runtime save file not found.")
@@ -235,15 +237,15 @@ async function main() {
   const matchedTrace = assertButlerTrace(afterRecord, intent, validation)
 
   assertNoUnsafeHomeMapWrite(beforeRecord, afterRecord, intent)
-  assertNoDefaultPet(afterRecord)
+  assertNoUnplannedLife(afterRecord)
   assert(
     afterRecord.recentEvents.some(
       (event) =>
         event.tick === afterRecord.tick &&
         event.tags.includes("butler_trace_closure") &&
-        event.tags.includes("no_pet_fact_created")
+        event.tags.includes("no_unplanned_life_fact_created")
     ),
-    "Recent events do not include butler trace closure / no_pet_fact_created tags."
+    "Recent events do not include butler trace closure / no_unplanned_life_fact_created tags."
   )
   assert(
     afterRecord.traceMemorySeedField &&
@@ -277,7 +279,7 @@ async function main() {
   console.log("World rule validation persisted: ok")
   console.log("Butler behavior trace persisted: ok")
   console.log("No unsafe HomeMapState write: ok")
-  console.log("No default pet fact: ok")
+  console.log("No unplanned life fact: ok")
   console.log("readWorldRuntimeForView read-only: ok")
   console.log("Result: PASS")
 }

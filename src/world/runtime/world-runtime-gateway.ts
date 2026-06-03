@@ -1,13 +1,13 @@
-/**
+﻿/**
  * Unified entry for the local file live-world runtime.
  */
 
-import { buildButlerMvpProfileFromLifeCore } from "@/world/butler/butler-personality-adapter"
+import { buildButlerRuntimeProfileFromLifeCore } from "@/world/butler/butler-personality-adapter"
 import {
   buildWorldCreationRuntime,
   type CreateWorldInput,
 } from "@/world/creation/world-creation-runtime"
-import { buildMvpInitialWorld } from "@/world/mvp-core/mvp-initial-world-builder"
+import { buildInitialRuntimeWorld } from "@/world/runtime-core/initial-runtime-world-builder"
 
 import { buildButlerRuntimeAuditSummary } from "./butler-runtime-audit-summary"
 import {
@@ -278,7 +278,7 @@ function buildRuntimeSaveRecordFromCreateWorldInput(input: {
   const creationRuntime = buildWorldCreationRuntime({
     createWorldInput: input.createWorldInput,
   })
-  const butlerBuildResult = buildButlerMvpProfileFromLifeCore({
+  const butlerBuildResult = buildButlerRuntimeProfileFromLifeCore({
     playerId: creationRuntime.ownerId,
     ownerId: creationRuntime.ownerId,
     worldId: creationRuntime.worldId,
@@ -289,7 +289,7 @@ function buildRuntimeSaveRecordFromCreateWorldInput(input: {
       `style_source:${creationRuntime.styleSource}`,
     ],
   })
-  const initialWorld = buildMvpInitialWorld({
+  const initialWorld = buildInitialRuntimeWorld({
     worldId: creationRuntime.worldId,
     ownerId: creationRuntime.ownerId,
     seed: creationRuntime.worldSalt,
@@ -299,7 +299,7 @@ function buildRuntimeSaveRecordFromCreateWorldInput(input: {
     tags: [
       "world_runtime_created_from_create_world_input",
       "create_world_to_world_flow",
-      "no_default_pet_fact",
+      "no_unplanned_life_fact",
     ],
   })
   const savedAt = new Date(creationRuntime.now).toISOString()
@@ -322,14 +322,14 @@ function buildRuntimeSaveRecordFromCreateWorldInput(input: {
         id: "runtime-event-0",
         tick: 0,
         title: "世界已创建",
-        body: "管家人格、世界种子和第一片家园已经根据出生信息生成。宠物不会默认出现。",
+        body: "管家人格、世界种子和第一片家园已经根据出生信息生成。",
         source: "runtime",
         createdAt: savedAt,
         tags: [
           "world_runtime_event",
           "create_world_to_world_flow",
           "created_from_create_world_input",
-          "no_default_pet_fact",
+          "no_unplanned_life_fact",
         ],
       },
     ],
@@ -346,7 +346,7 @@ function buildRuntimeSaveRecordFromCreateWorldInput(input: {
       "initial_home_map_state",
       "create_world_to_world_flow",
       "created_from_create_world_input",
-      "no_default_pet_fact",
+      "no_unplanned_life_fact",
     ],
   }
 }
@@ -360,7 +360,7 @@ function buildInitialRuntimeSaveRecord(input: {
       createdAt: input.now,
     },
   })
-  const butlerBuildResult = buildButlerMvpProfileFromLifeCore({
+  const butlerBuildResult = buildButlerRuntimeProfileFromLifeCore({
     playerId: creationRuntime.ownerId,
     ownerId: creationRuntime.ownerId,
     worldId: creationRuntime.worldId,
@@ -371,7 +371,7 @@ function buildInitialRuntimeSaveRecord(input: {
       `style_source:${creationRuntime.styleSource}`,
     ],
   })
-  const initialWorld = buildMvpInitialWorld({
+  const initialWorld = buildInitialRuntimeWorld({
     worldId: creationRuntime.worldId,
     ownerId: creationRuntime.ownerId,
     seed: creationRuntime.worldSalt,
@@ -399,7 +399,7 @@ function buildInitialRuntimeSaveRecord(input: {
       {
         id: "runtime-event-0",
         tick: 0,
-        title: "世界已初始化",
+        title: "涓栫晫宸插垵濮嬪寲",
         body: "本地世界已生成第一片家园，后续变化将由管家意图和规则校验驱动。",
         source: "runtime",
         createdAt: savedAt,

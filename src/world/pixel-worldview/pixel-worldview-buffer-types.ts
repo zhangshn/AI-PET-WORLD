@@ -5,6 +5,7 @@ export type PixelWorldBufferCellKind =
   | "tile"
   | "trace"
   | "object_marker"
+  | "object_block"
   | "actor_marker"
   | "atmosphere"
   | "overlay_marker";

@@ -1,6 +1,6 @@
-/**
+﻿/**
  * Current file responsibility: audit world layout generation input against
- * the V2.0 MVP world-generation boundaries.
+ * the V2.0 runtime world-generation boundaries.
  */
 
 import type {
@@ -53,7 +53,7 @@ export function auditWorldLayoutGenerationInput(
       warnings.length === 0 ? "layout_input_valid" : "layout_input_warning",
       "layout_candidate_audit",
       "biome_constraint_audit",
-      "no_direct_adoption_layout",
+      "no_direct_life_layout",
     ],
   }
 }

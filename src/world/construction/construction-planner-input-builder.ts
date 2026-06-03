@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件负责：从 HomeMapState 与管家建设倾向构建 ConstructionPlanner 输入。
  */
 
@@ -101,7 +101,7 @@ export function buildConstructionPlannerInput(input: {
       "deferred_butler_construction_target_supported",
       ...housePreferenceAudit.tags,
       "no_direct_map_mutation",
-      "no_direct_adoption_plan",
+      "no_direct_life_plan",
     ],
   }
 
@@ -208,7 +208,7 @@ function buildButlerConstructionIntents(input: {
       tags: [
         "initial_care",
         "basic_living_support",
-        "no_pet_assumption",
+        "no_unplanned_life_assumption",
         "butler_construction_target",
         "not_initial_world_fact",
       ],

@@ -1,5 +1,5 @@
 /**
- * 当前文件职责：定义管家建设意图的数据协议。
+ * 当前文件职责：定义管家自主建设意图的数据协议。
  */
 
 import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
@@ -31,9 +31,9 @@ export type ConstructionExpectedEffect =
   | "storageOrderUp"
   | "entryComfortUp"
 
-export type PetConstructionContext = {
-  energy: number
-  hunger: number
+export type WorldCareConstructionContext = {
+  careReadiness: number
+  resourcePressure: number
   mood?: string
   currentZoneType?: HomeZoneType
   recentAction?: string
@@ -63,7 +63,7 @@ export type ConstructionIntent = {
 export type ConstructionIntentPlannerInput = {
   worldTick: number
   now: number
-  pet: PetConstructionContext
+  worldCare: WorldCareConstructionContext
   butler: ButlerConstructionContext
   resources: HomeResourceState
 }

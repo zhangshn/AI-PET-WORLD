@@ -1,20 +1,19 @@
-/**
+﻿/**
  * ======================================================
  * AI-PET-WORLD
  * Personality Core - Evolution
  *
- * 功能：
- * 1. 将基础人格结果与早期成长阶段的成长信息进行融合
- * 2. 输出最终人格档案
+ * 鍔熻兘锛?
+ * 1. 灏嗗熀纭€浜烘牸缁撴灉涓庢棭鏈熸垚闀块樁娈电殑鎴愰暱淇℃伅杩涜铻嶅悎
+ * 2. 杈撳嚭鏈€缁堜汉鏍兼。妗?
  *
- * 设计目标：
- * - 让人格不是由宠物进场瞬间凭空生成
- * - 而是由稳定输入、早期成长过程与用户授权信息共同形成
+ * 璁捐鐩爣锛? * - 璁╀汉鏍间笉鏄敱瀹犵墿杩涘満鐬棿鍑┖鐢熸垚
+ * - 鑰屾槸鐢辩ǔ瀹氳緭鍏ャ€佹棭鏈熸垚闀胯繃绋嬩笌鐢ㄦ埛鎺堟潈淇℃伅鍏卞悓褰㈡垚
  *
- * 说明：
- * - 这一层不负责出生输入计算
- * - 不负责基础结构生成
- * - 只负责“如何把成长影响融合进最终人格”
+ * 璇存槑锛?
+ * - 杩欎竴灞備笉璐熻矗鍑虹敓杈撳叆璁＄畻
+ * - 涓嶈礋璐ｅ熀纭€缁撴瀯鐢熸垚
+ * - 鍙礋璐ｂ€滃浣曟妸鎴愰暱褰卞搷铻嶅悎杩涙渶缁堜汉鏍尖€?
  * ======================================================
  */
 
@@ -25,20 +24,20 @@ import type {
 } from "./ziwei-core-schema"
 
 /**
- * 早期成长阶段成长印记
+ * 鏃╂湡鎴愰暱闃舵鎴愰暱鍗拌
  *
- * 字段说明：
- * - calmGrowth：
- *   早期成长阶段整体是否更平稳、安静
+ * 瀛楁璇存槑锛?
+ * - calmGrowth锛?
+ *   鏃╂湡鎴愰暱闃舵鏁翠綋鏄惁鏇村钩绋炽€佸畨闈?
  *
- * - activeGrowth：
- *   早期成长阶段是否更偏活跃发展
+ * - activeGrowth锛?
+ *   鏃╂湡鎴愰暱闃舵鏄惁鏇村亸娲昏穬鍙戝睍
  *
- * - stableGrowth：
- *   早期成长阶段整体是否更稳定
+ * - stableGrowth锛?
+ *   鏃╂湡鎴愰暱闃舵鏁翠綋鏄惁鏇寸ǔ瀹?
  *
- * - sensitiveGrowth：
- *   早期成长阶段是否更容易产生波动
+ * - sensitiveGrowth锛?
+ *   鏃╂湡鎴愰暱闃舵鏄惁鏇村鏄撲骇鐢熸尝鍔?
  */
 export type AdoptionImprint = {
   calmGrowth: number
@@ -49,7 +48,7 @@ export type AdoptionImprint = {
 
 /**
  * ======================================================
- * 限制单个数值范围
+ * 闄愬埗鍗曚釜鏁板€艰寖鍥?
  * ======================================================
  */
 function clampValue(value: number): number {
@@ -60,7 +59,7 @@ function clampValue(value: number): number {
 
 /**
  * ======================================================
- * 限制 traits 范围
+ * 闄愬埗 traits 鑼冨洿
  * ======================================================
  */
 function clampTraits(traits: PersonalityTraits): PersonalityTraits {
@@ -79,11 +78,11 @@ function clampTraits(traits: PersonalityTraits): PersonalityTraits {
 
 /**
  * ======================================================
- * 合并两组摘要
+ * 鍚堝苟涓ょ粍鎽樿
  *
- * 说明：
- * - 去重
- * - 保留顺序
+ * 璇存槑锛?
+ * - 鍘婚噸
+ * - 淇濈暀椤哄簭
  * ======================================================
  */
 function mergeSummaries(base: string[], extra: string[]): string[] {
@@ -153,7 +152,7 @@ function mergeCorePersonality(
 
 /**
  * ======================================================
- * 根据成长印记构造补充摘要
+ * 鏍规嵁鎴愰暱鍗拌鏋勯€犺ˉ鍏呮憳瑕?
  * ======================================================
  */
 function buildEvolutionSummaries(
@@ -162,19 +161,19 @@ function buildEvolutionSummaries(
   const summaries: string[] = []
 
   if (imprint.calmGrowth >= 60) {
-    summaries.push("早期成长阶段表现出安静稳定的倾向")
+    summaries.push("鏃╂湡鎴愰暱闃舵琛ㄧ幇鍑哄畨闈欑ǔ瀹氱殑鍊惧悜")
   }
 
   if (imprint.activeGrowth >= 60) {
-    summaries.push("早期成长阶段积累了较强的行动倾向")
+    summaries.push("鏃╂湡鎴愰暱闃舵绉疮浜嗚緝寮虹殑琛屽姩鍊惧悜")
   }
 
   if (imprint.stableGrowth >= 60) {
-    summaries.push("早期成长过程整体较稳定")
+    summaries.push("早期成长过程整体较稳定。")
   }
 
   if (imprint.sensitiveGrowth >= 60) {
-    summaries.push("早期成长阶段对环境变化较敏感")
+    summaries.push("鏃╂湡鎴愰暱闃舵瀵圭幆澧冨彉鍖栬緝鏁忔劅")
   }
 
   return summaries
@@ -182,25 +181,25 @@ function buildEvolutionSummaries(
 
 /**
  * ======================================================
- * 融合人格
+ * 铻嶅悎浜烘牸
  *
- * 输入：
- * - seedProfile：
- *   生命种子阶段的人格种子
+ * 杈撳叆锛?
+ * - seedProfile锛?
+ *   鐢熷懡绉嶅瓙闃舵鐨勪汉鏍肩瀛?
  *
- * - birthProfile：
- *   根据出生时刻生成的基础人格
+ * - birthProfile锛?
+ *   鏍规嵁鍑虹敓鏃跺埢鐢熸垚鐨勫熀纭€浜烘牸
  *
- * - imprint：
- *   早期成长过程形成的成长印记
+ * - imprint锛?
+ *   鏃╂湡鎴愰暱杩囩▼褰㈡垚鐨勬垚闀垮嵃璁?
  *
- * 输出：
- * - 最终人格档案
+ * 杈撳嚭锛?
+ * - 鏈€缁堜汉鏍兼。妗?
  *
- * 规则说明：
- * - 以出生时刻的人格为主
- * - 保留部分生命种子倾向
- * - 再叠加早期成长阶段成长印记
+ * 瑙勫垯璇存槑锛?
+ * - 浠ュ嚭鐢熸椂鍒荤殑浜烘牸涓轰富
+ * - 淇濈暀閮ㄥ垎鐢熷懡绉嶅瓙鍊惧悜
+ * - 鍐嶅彔鍔犳棭鏈熸垚闀块樁娈垫垚闀垮嵃璁?
  * ======================================================
  */
 export function evolveProfile(
@@ -212,10 +211,10 @@ export function evolveProfile(
   const birthTraits = birthProfile.traits
 
   /**
-   * 融合权重说明：
-   * - 出生时刻人格：主导层
-   * - 生命种子人格：保留层
-   * - 早期成长印记：微调层
+   * 铻嶅悎鏉冮噸璇存槑锛?
+   * - 鍑虹敓鏃跺埢浜烘牸锛氫富瀵煎眰
+   * - 鐢熷懡绉嶅瓙浜烘牸锛氫繚鐣欏眰
+   * - 鏃╂湡鎴愰暱鍗拌锛氬井璋冨眰
    */
   const mergedTraits: PersonalityTraits = {
     activity:
@@ -272,13 +271,13 @@ export function evolveProfile(
 
   return {
     /**
-     * 当前 MVP 方案：
-     * pattern 先保留“出生时刻结构”作为最终结构
+     * 褰撳墠 runtime 鏂规锛?
+     * pattern 鍏堜繚鐣欌€滃嚭鐢熸椂鍒荤粨鏋勨€濅綔涓烘渶缁堢粨鏋?
      */
     pattern: birthProfile.pattern,
 
     /**
-     * 摘要 = 出生时刻摘要 + 生命种子摘要 + 早期成长摘要
+     * 鎽樿 = 鍑虹敓鏃跺埢鎽樿 + 鐢熷懡绉嶅瓙鎽樿 + 鏃╂湡鎴愰暱鎽樿
      */
     summaries: mergeSummaries(
       birthProfile.summaries,
@@ -286,7 +285,7 @@ export function evolveProfile(
     ),
 
     /**
-     * traits 使用融合后的最终结果
+     * traits 浣跨敤铻嶅悎鍚庣殑鏈€缁堢粨鏋?
      */
     traits: normalizedTraits,
     corePersonality: mergedCorePersonality,

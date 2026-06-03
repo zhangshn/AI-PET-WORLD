@@ -1,4 +1,4 @@
-async function main() {
+﻿async function main() {
   const fs = await import("node:fs")
   const path = await import("node:path")
 
@@ -43,6 +43,7 @@ async function main() {
     "buffer_cell_",
     "pixel_world_buffer_",
     "object_marker",
+    "object_block",
     "actor_marker",
     "overlay_marker",
     "colorHint",
@@ -69,9 +70,9 @@ async function main() {
     "readWorldRuntimeForView",
     "writeWorldRuntimeSaveRecord",
     "runAndPersistOneRuntimeTick",
-    "createPet",
-    "pet_default",
-    'kind: "pet"',
+    "createUnplannedLife",
+    "unplanned_life_default",
+    'kind: "unplanned_life"',
     "data:image/svg",
     "<svg",
     "<canvas",
@@ -89,7 +90,7 @@ async function main() {
   console.log("PixelWorldView buffer public exports exist: ok")
   console.log("Runtime boundary: ok")
   console.log("No SVG or canvas renderer dependency: ok")
-  console.log("No default pet generation: ok")
+  console.log("No unplanned life generation: ok")
   console.log("Result: PASS")
 }
 

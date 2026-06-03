@@ -54,6 +54,7 @@ function mapCommandToCell(command: PixelWorldRenderCommand, plan: PixelWorldRend
       kind,
       recipeId: command.recipeId,
       text: command.text,
+      colorHint: command.colorHint,
     }),
     recipeId: command.recipeId,
     text: command.text,
@@ -64,6 +65,7 @@ function mapCommandToCell(command: PixelWorldRenderCommand, plan: PixelWorldRend
 function resolveBufferCellKind(command: PixelWorldRenderCommand): PixelWorldBufferCellKind {
   if (command.kind === "fill_tile") return "tile";
   if (command.kind === "draw_trace_patch") return "trace";
+  if (command.kind === "draw_object_block") return "object_block";
   if (command.kind === "place_object_recipe") return "object_marker";
   if (command.kind === "draw_actor_marker") return "actor_marker";
   if (command.kind === "apply_atmosphere_tint") return "atmosphere";

@@ -1,5 +1,6 @@
 import { readWorldRuntimeForView } from "@/world/runtime/world-runtime-gateway"
 import { buildWorldViewModelForPixelWorld } from "@/world/world-view-model"
+
 import { PixelWorldViewReadonlyEntry } from "./components/pixel-worldview-readonly-entry/pixel-worldview-readonly-entry"
 
 export async function WorldLiveRuntimePage() {
@@ -28,6 +29,7 @@ export async function WorldLiveRuntimePage() {
     saveRecord,
     isPersisted: runtimeView.isPersisted,
   })
+
   return <PixelWorldViewReadonlyEntry worldViewModel={worldViewModel} />
 }
 

@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   SpaceRegionKind,
 } from "@/world/space"
 import type {
@@ -181,7 +181,7 @@ function buildSeedCandidate(input: {
       "trace_memory_seed",
       quality.reason,
       "not_butler_memory",
-      "not_pet_memory",
+      "butler_memory_only",
       "not_world_learning",
     ],
   }

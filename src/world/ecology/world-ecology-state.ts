@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件职责：从 HomeMapState 生成只读世界生态状态。
  */
 
@@ -121,7 +121,7 @@ function buildWildTraceFact(homeMapState: HomeMapState): WorldEcologyFact {
     status: strength >= 65 ? "emerging" : strength >= 40 ? "observable" : "latent",
     strength: clampScore(strength),
     reason: "野外活动迹象是生态背景，不等同于宠物或伙伴入场。",
-    tags: ["wild_trace", "ecology_signal", "no_pet_spawn"],
+    tags: ["wild_trace", "ecology_signal", "no_unplanned_actor_spawn"],
   }
 }
 

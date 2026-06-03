@@ -1,5 +1,4 @@
-// 该文件用于校验正式像素主世界渲染命令计划边界。
-
+// 当前文件职责：校验正式像素主世界渲染命令计划边界。
 import type { PixelWorldLayerKind } from "./pixel-worldview-types";
 import type { PixelWorldRenderPlan } from "./pixel-worldview-render-types";
 
@@ -34,14 +33,11 @@ export function validatePixelWorldRenderPlan(plan: PixelWorldRenderPlan): {
       (command.kind === "fill_tile" ||
         command.kind === "draw_trace_patch" ||
         command.kind === "place_object_recipe" ||
+        command.kind === "draw_object_block" ||
         command.kind === "draw_actor_marker") &&
       !command.bounds
     ) {
       messages.push(`render command ${command.id} 缺少 bounds。`);
-    }
-
-    if ((command.kind as string) === "draw_pet") {
-      messages.push("render plan 不允许 draw_pet command。");
     }
   });
 

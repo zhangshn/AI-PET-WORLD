@@ -6,6 +6,7 @@ export type PixelWorldRenderCommandKind =
   | "fill_tile"
   | "draw_trace_patch"
   | "place_object_recipe"
+  | "draw_object_block"
   | "draw_actor_marker"
   | "apply_atmosphere_tint"
   | "draw_overlay_label";
@@ -22,6 +23,7 @@ export type PixelWorldRenderCommand = {
   tileX?: number;
   tileY?: number;
   recipeId?: string;
+  colorHint?: string;
   text?: string;
   stateTags?: string[];
 };

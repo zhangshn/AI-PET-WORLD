@@ -1,4 +1,4 @@
-import type { SpaceCell, SpaceGrid, SpaceRegionKind } from "@/world/space"
+﻿import type { SpaceCell, SpaceGrid, SpaceRegionKind } from "@/world/space"
 import {
   normalizeTraceStrength,
   resolveTraceLifecyclePhase,
@@ -191,7 +191,7 @@ function buildButlerRuntimeTrace(input: {
       "butler_runtime_trace",
       "butler_trace_closure",
       "world_rule_validation_passed",
-      "not_pet_trace",
+      "butler_trace_only",
       `intent_kind:${input.intent.kind}`,
       `motivation:${input.decision.selectedMotivation}`,
       `type:${traceType}`,

@@ -1,5 +1,5 @@
-/**
- * 当前文件职责：提供建设系统可运行纵向闭环适配入口。
+﻿/**
+ * 褰撳墠鏂囦欢鑱岃矗锛氭彁渚涘缓璁剧郴缁熷彲杩愯绾靛悜闂幆閫傞厤鍏ュ彛銆?
  */
 
 import { auditConstructionFullPipeline } from "./construction-full-pipeline-audit"
@@ -58,7 +58,7 @@ export function buildConstructionRuntimeAdapterResult(
       "visual_refresh_bridge_only",
       "no_external_runtime_loop_registration",
       "no_ui_render",
-      "no_default_adoption_entry",
+      "no_unplanned_life_entry",
     ],
   }
 }

@@ -1,4 +1,4 @@
-import type { WorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-schema"
+﻿import type { WorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-schema"
 import { buildSpaceGridFromHomeMapState } from "@/world/space"
 import { buildTraceFieldFromWorld } from "@/world/trace"
 
@@ -92,8 +92,8 @@ export function buildWorldViewModelForPixelWorld(input: {
       "runtime_read_only_projection",
       input.isPersisted ? "runtime_save_persisted" : "runtime_save_fallback",
       saveRecord.traceField ? "persisted_trace_field_used" : "derived_trace_field_used_read_only",
-      "no_default_pet_actor",
-      "pet_actor_requires_existing_fact",
+      "no_unplanned_life_actor",
+      "life_actor_requires_existing_fact",
     ],
   }
 }

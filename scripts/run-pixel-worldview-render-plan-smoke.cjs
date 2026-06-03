@@ -1,4 +1,4 @@
-async function main() {
+﻿async function main() {
   const fs = await import("node:fs")
   const path = await import("node:path")
 
@@ -36,6 +36,7 @@ async function main() {
     "fill_tile",
     "draw_trace_patch",
     "place_object_recipe",
+    "draw_object_block",
     "draw_actor_marker",
     "apply_atmosphere_tint",
     "draw_overlay_label",
@@ -43,6 +44,7 @@ async function main() {
     "render_tile_",
     "render_trace_",
     "render_object_",
+    "render_object_block_",
     "render_actor_",
     "render_atmosphere_",
     "render_overlay_",
@@ -65,9 +67,9 @@ async function main() {
     "readWorldRuntimeForView",
     "writeWorldRuntimeSaveRecord",
     "runAndPersistOneRuntimeTick",
-    "createPet",
-    "pet_default",
-    'kind: "pet"',
+    "createUnplannedLife",
+    "unplanned_life_default",
+    'kind: "unplanned_life"',
     "data:image/svg",
     "<svg",
     "<canvas",
@@ -84,7 +86,7 @@ async function main() {
   console.log("PixelWorldView render public exports exist: ok")
   console.log("Runtime boundary: ok")
   console.log("No SVG or canvas renderer dependency: ok")
-  console.log("No default pet generation: ok")
+  console.log("No unplanned life generation: ok")
   console.log("Result: PASS")
 }
 

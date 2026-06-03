@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 当前文件职责：根据管家的世界感知与最近结果生成当前意识状态。
  */
 
@@ -58,7 +58,7 @@ function buildFocus(input: {
   if (input.rejectedCount > 0) return "recovering"
   if (input.perception.resourcePressure >= 60) return "waiting"
   if (input.perception.boundaryMaintenanceNeed >= 55) return "maintaining"
-  if (input.perception.adoptionReadinessConcern >= 60) return "protecting"
+  if (input.perception.worldReadinessConcern >= 60) return "protecting"
   return "observing"
 }
 
@@ -68,7 +68,7 @@ function buildEmotionalTone(input: {
 }): ButlerConsciousState["emotionalTone"] {
   if (input.rejectedCount > 0) return "frustrated"
   if (input.perception.resourcePressure >= 60) return "cautious"
-  if (input.perception.adoptionReadinessConcern >= 55) return "protective"
+  if (input.perception.worldReadinessConcern >= 55) return "protective"
   if (input.perception.risks.length >= 2) return "focused"
   return "calm"
 }
