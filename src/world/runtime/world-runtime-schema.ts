@@ -114,3 +114,18 @@ export type WorldRuntimeStoreWriteResult = {
   tags: string[]
 }
 
+export type WorldRuntimeStoreAdapterKind =
+  | "local_file_runtime_store"
+  | "database_runtime_store"
+  | "browser_local_runtime_store"
+
+export type WorldRuntimeStoreAdapter = {
+  kind: WorldRuntimeStoreAdapterKind
+  read(input?: { filePath?: string }): Promise<WorldRuntimeStoreReadResult>
+  write(input: {
+    record: WorldRuntimeSaveRecord
+    filePath?: string
+  }): Promise<WorldRuntimeStoreWriteResult>
+  getDefaultSavePath(): string
+}
+

@@ -1,7 +1,8 @@
 ﻿/**
  * Local runtime-only file store for the live world runtime.
  *
- * Server-side only. Do not import this module from Client Components.
+ * Server-side adapter implementation. Formal runtime code should import
+ * world-runtime-store-adapter instead of depending on this implementation.
  */
 
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises"
@@ -12,22 +13,47 @@ import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
 import type {
   WorldRuntimeEventLog,
   WorldRuntimeSaveRecord,
+  WorldRuntimeStoreAdapter,
   WorldRuntimeStoreReadResult,
   WorldRuntimeStoreWriteResult,
 } from "./world-runtime-schema"
 
 const RUNTIME_DIR = path.join(
-  /*turbopackIgnore: true*/ process.cwd(),
-  ".runtime",
-  "world-state"
+  process.cwd(),
+  "data",
+  "world-runtime"
 )
 const LATEST_WORLD_FILE = "latest-world.json"
 
+export const localFileRuntimeStore: WorldRuntimeStoreAdapter = {
+  kind: "local_file_runtime_store",
+  read: (input) => readLocalFileWorldRuntimeSaveRecord(input?.filePath),
+  write: (input) => writeLocalFileWorldRuntimeSaveRecord(input),
+  getDefaultSavePath: () => getDefaultLocalFileWorldRuntimeSavePath(),
+}
+
 export function getDefaultWorldRuntimeSavePath(): string {
-  return path.join(RUNTIME_DIR, LATEST_WORLD_FILE)
+  return localFileRuntimeStore.getDefaultSavePath()
 }
 
 export async function readWorldRuntimeSaveRecord(
+  filePath?: string
+): Promise<WorldRuntimeStoreReadResult> {
+  return localFileRuntimeStore.read({ filePath })
+}
+
+export async function writeWorldRuntimeSaveRecord(input: {
+  record: WorldRuntimeSaveRecord
+  filePath?: string
+}): Promise<WorldRuntimeStoreWriteResult> {
+  return localFileRuntimeStore.write(input)
+}
+
+function getDefaultLocalFileWorldRuntimeSavePath(): string {
+  return path.join(RUNTIME_DIR, LATEST_WORLD_FILE)
+}
+
+async function readLocalFileWorldRuntimeSaveRecord(
   filePath?: string
 ): Promise<WorldRuntimeStoreReadResult> {
   const resolvedFilePath = filePath ?? (await resolveLatestWorldRuntimeSavePath())
@@ -36,7 +62,7 @@ export async function readWorldRuntimeSaveRecord(
     return {
       status: "empty",
       record: null,
-      path: getDefaultWorldRuntimeSavePath(),
+      path: getDefaultLocalFileWorldRuntimeSavePath(),
       message: "No runtime save record found.",
       warnings: [],
       tags: ["world_runtime_store_read", "empty"],
@@ -89,7 +115,7 @@ export async function readWorldRuntimeSaveRecord(
   }
 }
 
-export async function writeWorldRuntimeSaveRecord(input: {
+async function writeLocalFileWorldRuntimeSaveRecord(input: {
   record: WorldRuntimeSaveRecord
   filePath?: string
 }): Promise<WorldRuntimeStoreWriteResult> {
@@ -131,7 +157,7 @@ function getWorldRuntimeSavePath(record: WorldRuntimeSaveRecord): string {
 
 async function resolveLatestWorldRuntimeSavePath(): Promise<string | null> {
   try {
-    const raw = await readFile(getDefaultWorldRuntimeSavePath(), "utf8")
+    const raw = await readFile(getDefaultLocalFileWorldRuntimeSavePath(), "utf8")
     const parsed = JSON.parse(raw) as Partial<{
       path: string
       ownerId: string
@@ -154,7 +180,7 @@ async function writeLatestWorldRuntimeIndex(input: {
   record: WorldRuntimeSaveRecord
   filePath: string
 }): Promise<void> {
-  const indexPath = getDefaultWorldRuntimeSavePath()
+  const indexPath = getDefaultLocalFileWorldRuntimeSavePath()
   const tempPath = `${indexPath}.tmp`
   const index = {
     version: "v2.6-runtime-00",

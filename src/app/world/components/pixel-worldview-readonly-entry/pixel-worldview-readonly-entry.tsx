@@ -6,8 +6,15 @@ import {
   mapPixelWorldViewModelFromSnapshot,
   mapWorldViewModelToPixelWorldSourceSnapshot,
 } from "@/world/pixel-worldview"
-import type { VisualCorrectionPlan, VisualJudgeReport } from "@/world/visual-judge"
-import { buildVisualCorrectionPlan, judgePixelWorldVisual } from "@/world/visual-judge"
+import type {
+  VisualCorrectionPlan,
+  VisualDisplayGateDecision,
+  VisualJudgeReport,
+} from "@/world/visual-judge"
+import {
+  buildVisualDisplayGateDecision,
+  buildVisualFactManifestFromWorldViewModel,
+} from "@/world/visual-judge"
 import { buildVisualGenerationPlan } from "@/world/visual-generation"
 import {
   VISUAL_STYLE_SAFETY_POLICY,
@@ -19,13 +26,14 @@ import { PixiPixelWorldRendererClient } from "../pixi-pixel-world-renderer/pixi-
 export function PixelWorldViewReadonlyEntry(input: {
   worldViewModel: WorldViewModel
 }) {
-  const source = mapWorldViewModelToPixelWorldSourceSnapshot(
-    input.worldViewModel
-  )
+  const source = mapWorldViewModelToPixelWorldSourceSnapshot(input.worldViewModel)
   const pixelModel = mapPixelWorldViewModelFromSnapshot(source)
   const visualGenerationPlan = buildVisualGenerationPlan({
     worldViewModel: input.worldViewModel,
   })
+  const visualFactManifest = buildVisualFactManifestFromWorldViewModel(
+    input.worldViewModel
+  )
   const renderPlan = buildPixelWorldRenderPlan(pixelModel, {
     visualGenerationPlan,
   })
@@ -37,12 +45,14 @@ export function PixelWorldViewReadonlyEntry(input: {
     plan: renderPlan,
     frame: rendererResult.frame,
   })
-  const visualJudgeReport = judgePixelWorldVisual({
+  const displayGate = buildVisualDisplayGateDecision({
     visualGenerationPlan,
     renderPlan,
     pixelBufferFrame: bufferResult.buffer,
+    visualFactManifest,
   })
-  const visualCorrectionPlan = buildVisualCorrectionPlan(visualJudgeReport)
+  const playerVisibleBuffer =
+    displayGate.correctedPixelBufferFrame ?? bufferResult.buffer
 
   return (
     <main style={styles.page}>
@@ -55,11 +65,13 @@ export function PixelWorldViewReadonlyEntry(input: {
           <div style={styles.tickBadge}>Tick {input.worldViewModel.tick}</div>
         </header>
 
-        <PixiPixelWorldRendererClient buffer={bufferResult.buffer} />
-        <VisualJudgePanel
-          correctionPlan={visualCorrectionPlan}
-          report={visualJudgeReport}
-        />
+        {displayGate.canShowToPlayer ? (
+          <PixiPixelWorldRendererClient buffer={playerVisibleBuffer} />
+        ) : (
+          <VisualDisplayBlockedPanel gate={displayGate} />
+        )}
+
+        <VisualJudgePanel gate={displayGate} />
 
         <footer style={styles.bottomHud}>
           <div style={styles.butlerHint}>
@@ -76,17 +88,34 @@ export function PixelWorldViewReadonlyEntry(input: {
   )
 }
 
-function VisualJudgePanel(input: {
-  correctionPlan: VisualCorrectionPlan
-  report: VisualJudgeReport
+function VisualDisplayBlockedPanel(input: {
+  gate: VisualDisplayGateDecision
 }) {
-  const topFindings = input.report.findings.slice(0, 4)
-  const topActions = input.correctionPlan.actions.slice(0, 3)
+  return (
+    <section style={styles.blockedPanel}>
+      <div style={styles.blockedEyebrow}>Visual Display Gate</div>
+      <h2 style={styles.blockedTitle}>画面暂不展示给玩家</h2>
+      <p style={styles.blockedBody}>
+        当前画面没有通过视觉判断。系统只会生成视觉表达层面的修正计划，
+        不会改写 runtime 中的世界事实。
+      </p>
+      <div style={styles.blockedMeta}>
+        <span>状态：{input.gate.status}</span>
+        <span>剩余失败：{input.gate.review.remainingFailCount}</span>
+        <span>阻塞原因：{input.gate.review.blockReasons.length}</span>
+      </div>
+    </section>
+  )
+}
+
+function VisualJudgePanel(input: {
+  gate: VisualDisplayGateDecision
+}) {
+  const report = input.gate.report
+  const correctionPlan = input.gate.correctionPlan
+  const topFindings = report.findings.slice(0, 4)
+  const topActions = correctionPlan.actions.slice(0, 3)
   const referenceGuidelines = listVisualReferenceGuidelines().slice(0, 4)
-  const displayGateLabel = input.report.ok ? "允许展示给玩家" : "禁止直接展示"
-  const displayGateDetail = input.report.ok
-    ? "当前画面通过基础视觉审查，可以作为本 tick 的玩家可见画面。"
-    : "当前画面需要先执行视觉修正计划，只修画面表达，不篡改世界事实。"
 
   return (
     <aside style={styles.visualJudgePanel}>
@@ -95,91 +124,149 @@ function VisualJudgePanel(input: {
           <div style={styles.visualJudgeEyebrow}>Visual Judge</div>
           <h2 style={styles.visualJudgeTitle}>视觉审查</h2>
         </div>
-        <span style={badgeStyleForSeverity(input.report.severity)}>
-          {input.report.severity.toUpperCase()}
+        <span style={badgeStyleForSeverity(input.gate.review.finalSeverity)}>
+          {input.gate.review.finalSeverity.toUpperCase()}
         </span>
       </div>
 
       <section style={styles.displayGateSection}>
         <div style={styles.displayGateHeader}>
           <span>展示闸门</span>
-          <strong>{displayGateLabel}</strong>
+          <strong>{displayGateLabel(input.gate)}</strong>
         </div>
-        <p style={styles.displayGateText}>{displayGateDetail}</p>
+        <p style={styles.displayGateText}>{input.gate.reason}</p>
       </section>
 
       <div style={styles.visualJudgeScoreRow}>
-        <strong style={styles.visualJudgeScore}>{input.report.score}</strong>
+        <strong style={styles.visualJudgeScore}>{report.score}</strong>
         <span style={styles.visualJudgeScoreLabel}>分 / 不改世界事实</span>
       </div>
 
       <p style={styles.visualJudgeSummary}>
-        {input.report.ok
-          ? "当前画面通过基础视觉审查。"
-          : `发现 ${input.report.findings.length} 个视觉问题，等待视觉修正计划处理。`}
+        {report.ok
+          ? "原始画面通过视觉审查，可以作为本 tick 的玩家可见画面。"
+          : `原始画面发现 ${report.findings.length} 个视觉问题，已进入视觉修正与复审闭环。`}
       </p>
 
-      <section style={styles.visualSafetySection}>
-        <div style={styles.visualSafetyHeader}>视觉参考安全</div>
-        <p style={styles.visualSafetyText}>
-          允许参考真实世界的抽象视觉原则；禁止复制参考图、模仿名艺术家、复刻 IP 或重建具体截图。
-        </p>
-        <div style={styles.visualSafetyTags}>
-          {VISUAL_STYLE_SAFETY_POLICY.requiredOutputTags.map((tag) => (
-            <span key={tag} style={styles.visualSafetyTag}>
-              {tag}
-            </span>
-          ))}
-        </div>
-        <ul style={styles.referenceGuidelineList}>
-          {referenceGuidelines.map((guideline) => (
-            <li key={guideline.id} style={styles.referenceGuidelineItem}>
-              {guideline.category}: {guideline.allowedUse}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section style={styles.visualCorrectionSection}>
-        <div style={styles.visualCorrectionHeader}>
-          <span>Visual Correction Plan</span>
-          <strong>{input.correctionPlan.actionCount}</strong>
-        </div>
-        <p style={styles.visualCorrectionBoundary}>
-          Visual-only plan. Runtime facts stay unchanged.
-        </p>
-        {topActions.length > 0 ? (
-          <ol style={styles.visualCorrectionList}>
-            {topActions.map((action) => (
-              <li key={action.id} style={styles.visualCorrectionAction}>
-                <strong>{action.type}</strong>
-                <span>{action.reason}</span>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <div style={styles.visualCorrectionEmpty}>No visual-only actions.</div>
-        )}
-      </section>
-
-      {topFindings.length > 0 ? (
-        <ul style={styles.visualJudgeList}>
-          {topFindings.map((finding) => (
-            <li key={finding.id} style={styles.visualJudgeFinding}>
-              <span style={findingSeverityStyle(finding.severity)}>
-                {finding.severity}
-              </span>
-              <span style={styles.visualJudgeFindingText}>
-                {finding.message}
-              </span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div style={styles.visualJudgeEmpty}>没有基础规则失败项。</div>
-      )}
+      <VisualGateReviewSection gate={input.gate} />
+      <VisualSafetySection guidelines={referenceGuidelines} />
+      <VisualCorrectionSection correctionPlan={correctionPlan} actions={topActions} />
+      <VisualFindingSection findings={topFindings} />
     </aside>
   )
+}
+
+function VisualGateReviewSection(input: {
+  gate: VisualDisplayGateDecision
+}) {
+  const review = input.gate.review
+
+  return (
+    <section style={styles.gateReviewSection}>
+      <div style={styles.gateReviewHeader}>
+        <span>复审闭环</span>
+        <strong>{review.finalSeverity}</strong>
+      </div>
+      <div style={styles.gateReviewGrid}>
+        <span>原始：{review.originalSeverity}</span>
+        <span>剩余问题：{review.remainingFindingCount}</span>
+        <span>剩余失败：{review.remainingFailCount}</span>
+        <span>已解决：{review.resolvedFindingCount}</span>
+        <span>视觉生成 cell：{review.generatedVisualOnlyCellCount}</span>
+      </div>
+      <div style={styles.gateReviewTags}>
+        {review.phases.map((phase) => (
+          <span key={phase} style={styles.gateReviewTag}>
+            {phase}
+          </span>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function VisualSafetySection(input: {
+  guidelines: ReturnType<typeof listVisualReferenceGuidelines>
+}) {
+  return (
+    <section style={styles.visualSafetySection}>
+      <div style={styles.visualSafetyHeader}>视觉参考安全</div>
+      <p style={styles.visualSafetyText}>
+        允许参考真实世界的抽象视觉原则；禁止复制参考图、模仿名艺术家、
+        复制 IP 或重建具体截图。
+      </p>
+      <div style={styles.visualSafetyTags}>
+        {VISUAL_STYLE_SAFETY_POLICY.requiredOutputTags.map((tag) => (
+          <span key={tag} style={styles.visualSafetyTag}>
+            {tag}
+          </span>
+        ))}
+      </div>
+      <ul style={styles.referenceGuidelineList}>
+        {input.guidelines.map((guideline) => (
+          <li key={guideline.id} style={styles.referenceGuidelineItem}>
+            {guideline.category}: {guideline.allowedUse}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function VisualCorrectionSection(input: {
+  correctionPlan: VisualCorrectionPlan
+  actions: VisualCorrectionPlan["actions"]
+}) {
+  return (
+    <section style={styles.visualCorrectionSection}>
+      <div style={styles.visualCorrectionHeader}>
+        <span>Visual Correction Plan</span>
+        <strong>{input.correctionPlan.actionCount}</strong>
+      </div>
+      <p style={styles.visualCorrectionBoundary}>
+        Visual-only plan. Runtime facts stay unchanged.
+      </p>
+      {input.actions.length > 0 ? (
+        <ol style={styles.visualCorrectionList}>
+          {input.actions.map((action) => (
+            <li key={action.id} style={styles.visualCorrectionAction}>
+              <strong>{action.type}</strong>
+              <span>{action.reason}</span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <div style={styles.visualCorrectionEmpty}>No visual-only actions.</div>
+      )}
+    </section>
+  )
+}
+
+function VisualFindingSection(input: {
+  findings: VisualJudgeReport["findings"]
+}) {
+  if (input.findings.length === 0) {
+    return <div style={styles.visualJudgeEmpty}>没有基础规则失败项。</div>
+  }
+
+  return (
+    <ul style={styles.visualJudgeList}>
+      {input.findings.map((finding) => (
+        <li key={finding.id} style={styles.visualJudgeFinding}>
+          <span style={findingSeverityStyle(finding.severity)}>
+            {finding.severity}
+          </span>
+          <span style={styles.visualJudgeFindingText}>{finding.message}</span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+function displayGateLabel(gate: VisualDisplayGateDecision): string {
+  if (gate.status === "allow_display") return "允许展示给玩家"
+  if (gate.status === "requires_visual_correction") return "需要视觉修正"
+  return "禁止直接展示"
 }
 
 function badgeStyleForSeverity(severity: VisualJudgeReport["severity"]) {
@@ -236,6 +323,39 @@ const styles = {
     color: "#c8df8f",
     fontSize: 13,
     padding: "8px 10px",
+  },
+  blockedPanel: {
+    alignContent: "center",
+    background: "rgba(10, 20, 17, 0.78)",
+    border: "1px solid rgba(202, 104, 82, 0.42)",
+    display: "grid",
+    gap: 10,
+    minHeight: 480,
+    padding: 24,
+  },
+  blockedEyebrow: {
+    color: "#ffb39f",
+    fontSize: 12,
+    fontWeight: 900,
+    letterSpacing: "0.14em",
+    textTransform: "uppercase",
+  },
+  blockedTitle: {
+    fontSize: 28,
+    margin: 0,
+  },
+  blockedBody: {
+    color: "rgba(216, 234, 216, 0.76)",
+    lineHeight: 1.8,
+    maxWidth: 620,
+    margin: 0,
+  },
+  blockedMeta: {
+    color: "rgba(216, 234, 216, 0.66)",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 12,
+    fontSize: 12,
   },
   bottomHud: {
     alignItems: "end",
@@ -361,6 +481,41 @@ const styles = {
     fontSize: 12,
     lineHeight: 1.55,
     margin: 0,
+  },
+  gateReviewSection: {
+    background: "rgba(200, 223, 143, 0.07)",
+    border: "1px solid rgba(200, 223, 143, 0.2)",
+    display: "grid",
+    gap: 8,
+    padding: 9,
+  },
+  gateReviewHeader: {
+    alignItems: "center",
+    color: "#c8df8f",
+    display: "flex",
+    fontSize: 11,
+    fontWeight: 900,
+    justifyContent: "space-between",
+    textTransform: "uppercase",
+  },
+  gateReviewGrid: {
+    color: "rgba(216, 234, 216, 0.72)",
+    display: "grid",
+    fontSize: 11,
+    gap: 5,
+    gridTemplateColumns: "1fr 1fr",
+  },
+  gateReviewTags: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 5,
+  },
+  gateReviewTag: {
+    background: "rgba(159, 206, 170, 0.1)",
+    border: "1px solid rgba(159, 206, 170, 0.16)",
+    color: "rgba(216, 234, 216, 0.78)",
+    fontSize: 10,
+    padding: "3px 5px",
   },
   visualSafetySection: {
     background: "rgba(255, 255, 255, 0.035)",

@@ -72,6 +72,8 @@
     "Graphics",
     "PixiPixelWorldRendererClient",
     "PixelWorldPixelBufferFrame",
+    "buildVisualFactManifestFromWorldViewModel",
+    "visualFactManifest",
     "app.init",
     "app.canvas",
     "appendChild",

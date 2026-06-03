@@ -10,8 +10,8 @@
     fs,
     latestIndexPath: path.join(
       repoRoot,
-      ".runtime",
-      "world-state",
+      "data",
+      "world-runtime",
       "latest-world.json"
     ),
   })

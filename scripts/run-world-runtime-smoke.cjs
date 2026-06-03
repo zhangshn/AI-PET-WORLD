@@ -1,4 +1,4 @@
-const motivationTypes = [
+﻿const motivationTypes = [
   "continue_construction",
   "maintain_home",
   "wait_for_resources",
@@ -16,8 +16,8 @@ async function main() {
   })
   const latestIndexPath = path.join(
     repoRoot,
-    ".runtime",
-    "world-state",
+    "data",
+    "world-runtime",
     "latest-world.json"
   )
   const savePath = resolveRuntimeSavePath({

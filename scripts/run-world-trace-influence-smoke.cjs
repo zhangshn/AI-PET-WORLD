@@ -1,4 +1,4 @@
-async function main() {
+﻿async function main() {
   const crypto = await import("node:crypto")
   const fs = await import("node:fs")
   const moduleApi = await import("node:module")
@@ -10,8 +10,8 @@ async function main() {
     fs,
     latestIndexPath: path.join(
       repoRoot,
-      ".runtime",
-      "world-state",
+      "data",
+      "world-runtime",
       "latest-world.json"
     ),
   })

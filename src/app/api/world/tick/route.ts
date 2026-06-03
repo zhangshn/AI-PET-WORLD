@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { runAndPersistOneRuntimeTick } from "@/world/runtime/world-runtime-gateway"
-import { readWorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-store"
+import { readWorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-store-adapter"
 
 export async function POST() {
   const readResult = await readWorldRuntimeSaveRecord()

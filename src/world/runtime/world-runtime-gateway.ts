@@ -1,5 +1,5 @@
 ﻿/**
- * Unified entry for the local file live-world runtime.
+ * Unified entry for the live-world runtime.
  */
 
 import { buildButlerRuntimeProfileFromLifeCore } from "@/world/butler/butler-personality-adapter"
@@ -13,7 +13,7 @@ import { buildButlerRuntimeAuditSummary } from "./butler-runtime-audit-summary"
 import {
   readWorldRuntimeSaveRecord,
   writeWorldRuntimeSaveRecord,
-} from "./world-runtime-store"
+} from "./world-runtime-store-adapter"
 import { auditWorldRuntimeTick } from "./world-runtime-audit"
 import { runOneRuntimeTick } from "./world-runtime-tick-runner"
 import type {
