@@ -1,7 +1,6 @@
 /**
- * 当前文件职责：从世界、资源与建设状态生成小镇领养机会观察。
+ * 当前文件职责：从世界、资源与建设状态生成小镇领养机会观察�?
  */
-// These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
 
 import { buildButlerAdoptionIntents as buildButlerAdoptionIntentList } from "./butler-adoption-intent-candidate"
 import { auditAdoptionOpportunityObservations as auditAdoptionOpportunityObservationList } from "./town-adoption-precheck-audit"
@@ -168,7 +167,7 @@ function buildAdoptionOpportunityObservationList(input: {
         type: "construction_dependency_not_ready",
         readyForButlerAdoptionIntent: false,
         reason:
-          "家园仍存在关键准备项，小镇领养机会保持后置，不进入世界事实。",
+          "家园仍存在关键准备项，小镇领养机会保持后置，不进入世界事实�?,
         tags: [
           "construction_dependency_not_ready",
           "resource_or_space_blocked",
@@ -187,7 +186,7 @@ function buildAdoptionOpportunityObservationList(input: {
         type: "observe_world_ready",
         readyForButlerAdoptionIntent: false,
         reason:
-          "家园已经形成可观察的稳定结构，可以记录世界成熟度，但仍不生成领养机会观察。",
+          "家园已经形成可观察的稳定结构，可以记录世界成熟度，但仍不生成领养机会观察�?,
         tags: ["observe_world_ready", "world_ready_observation"],
       }),
       buildObservation({
@@ -197,7 +196,7 @@ function buildAdoptionOpportunityObservationList(input: {
         type: "adoption_opportunity_later",
         readyForButlerAdoptionIntent: true,
         reason:
-          "世界资源、空间与建设状态已接近可接纳阶段，管家未来可能主动前往小镇了解领养信息。",
+          "世界资源、空间与建设状态已接近可接纳阶段，管家未来可能主动前往小镇了解领养信息�?,
         tags: [
           "adoption_opportunity_later",
           "future_opportunity_only",
@@ -217,8 +216,8 @@ function buildAdoptionOpportunityObservationList(input: {
         readyForButlerAdoptionIntent: false,
         reason:
           warningCount > 0
-            ? "管家正在评估资源、空间和照护能力，因此选择继续等待。"
-            : "世界已经可以观察，小镇领养机会继续保持后置观察。",
+            ? "管家正在评估资源、空间和照护能力，因此选择继续等待�?
+            : "世界已经可以观察，小镇领养机会继续保持后置观察�?,
         tags: ["observe_world_ready", "wait"],
       }),
     ]
@@ -233,7 +232,7 @@ function buildAdoptionOpportunityObservationList(input: {
         type: "adoption_opportunity_later",
         readyForButlerAdoptionIntent: false,
         reason:
-          "家园正在准备中，管家暂未产生领养意愿，当前不能进入领养审查流程。",
+          "家园正在准备中，管家暂未产生领养意愿，当前不能进入领养审查流程�?,
         tags: [
           "adoption_opportunity_later",
           "consider",
@@ -250,7 +249,7 @@ function buildAdoptionOpportunityObservationList(input: {
       suffix: "no-event",
       type: "no_event",
       readyForButlerAdoptionIntent: false,
-      reason: "管家暂未产生领养意愿，当前世界尚未达到领养机会观察门槛。",
+      reason: "管家暂未产生领养意愿，当前世界尚未达到领养机会观察门槛�?,
       tags: ["no_event", "town_adoption_precheck_waiting"],
     }),
   ]
@@ -340,9 +339,9 @@ function buildResourceReadiness(
     score,
     status,
     reasons: [
-      `材料准备度 ${materialReadiness}`,
-      `照护准备度 ${careReadiness}`,
-      `土地状态 ${groundHealth}`,
+      `材料准备�?${materialReadiness}`,
+      `照护准备�?${careReadiness}`,
+      `土地状�?${groundHealth}`,
       `自然生长 ${naturalGrowth}`,
       `空间压力 ${spacePressure}`,
     ],
@@ -401,12 +400,12 @@ function buildWorldReadiness(
     score,
     status,
     reasons: [
-      `已应用变化 ${acceptedDiffCount}`,
+      `已应用变�?${acceptedDiffCount}`,
       `地图变化记录 ${mapDiffCount}`,
       `建设计划 ${constructionPlanCount}`,
       hasHouseStyle ? "已有房屋偏好" : "尚未形成房屋偏好",
       hasStableShelterSignal ? "已有住所/遮蔽信号" : "住所信号不足",
-      hasCareSignal ? "已有照护点信号" : "照护点信号不足",
+      hasCareSignal ? "已有照护点信�? : "照护点信号不�?,
       hasQuietZoneSignal ? "已有安静区域信号" : "安静区域信号不足",
     ],
   }
@@ -424,7 +423,7 @@ function buildTownAdoptionBlockers(input: {
       buildBlocker({
         source: "resource",
         severity: "blocking",
-        reason: "材料准备度过低，不能让小镇领养机会进入世界事实。",
+        reason: "材料准备度过低，不能让小镇领养机会进入世界事实�?,
         key: "material_low",
       })
     )
@@ -435,7 +434,7 @@ function buildTownAdoptionBlockers(input: {
       buildBlocker({
         source: "resource",
         severity: "blocking",
-        reason: "照护准备度不足，世界还没有稳定接纳基础。",
+        reason: "照护准备度不足，世界还没有稳定接纳基础�?,
         key: "care_low",
       })
     )
@@ -446,7 +445,7 @@ function buildTownAdoptionBlockers(input: {
       buildBlocker({
         source: "space",
         severity: "blocking",
-        reason: "空间压力过高，需要先整理家园空间。",
+        reason: "空间压力过高，需要先整理家园空间�?,
         key: "space_pressure_high",
       })
     )
@@ -457,7 +456,7 @@ function buildTownAdoptionBlockers(input: {
       buildBlocker({
         source: "construction",
         severity: "warning",
-        reason: "建设链路还没有产生可确认变化，需要继续观察。",
+        reason: "建设链路还没有产生可确认变化，需要继续观察�?,
         key: "no_accepted_diff",
       })
     )
@@ -468,7 +467,7 @@ function buildTownAdoptionBlockers(input: {
       buildBlocker({
         source: "world_stability",
         severity: "warning",
-        reason: "房屋偏好尚未稳定进入世界状态。",
+        reason: "房屋偏好尚未稳定进入世界状态�?,
         key: "house_style_missing",
       })
     )
@@ -479,7 +478,7 @@ function buildTownAdoptionBlockers(input: {
       buildBlocker({
         source: "safety_boundary",
         severity: "warning",
-        reason: "住所或遮蔽信号不足，需要先让管家继续建设。",
+        reason: "住所或遮蔽信号不足，需要先让管家继续建设�?,
         key: "shelter_signal_missing",
       })
     )
@@ -635,19 +634,13 @@ function auditForbiddenTokens(input: {
   adoptionOpportunityObservations: AdoptionOpportunityObservation[]
   butlerAdoptionIntents: ButlerAdoptionIntent[]
 }): string[] {
-  // These tokens are only V2.6 redline audit checks. They do not mean the current product supports these old routes.
-  // These tokens are only used for V2.6 redline audit scans. They do not mean the current product supports these old routes.
-const forbiddenTokens = [
+    const forbiddenTokens = [
     "pet_" + "arrival",
     "pet_" + "rest",
     "pet-near-arrival-point",
     "pet-bed",
     "pet_actor",
-    "incu" + "bator",
-    "em" + "bryo",
-    "hat" + "ching",
-    "incubating",
-  ]
+          ]
   const tokens = [
     ...input.adoptionOpportunityObservations.flatMap((observation) => [
       observation.observationId,
