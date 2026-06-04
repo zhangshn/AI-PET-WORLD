@@ -1,64 +1,73 @@
-# AI-PET-WORLD V2.6 当前业务原则
+# AI-PET-WORLD v2.6 Current Business Principles
 
-本文只描述当前正式定义，不记录旧方案。
+Status: Current formal definition only. Old plans are not retained as active references.
 
-## 1. 一句话定义
+## 1. Product Definition
 
-AI-PET-WORLD 是以 AI 管家为核心自主行动者、由世界规则驱动并持续演化的像素世界。
+AI-PET-WORLD is an autonomous pixel world driven by AI butlers and world rules.
 
-## 2. 用户进入世界
+The user enters by registration and birth information. Birth date and optional birth time are mapped through the life/personality system, including Zi Wei Dou Shu inspired signals, into the butler's long-term soul/personality core.
+
+The butler is not a pet and not a command executor. The butler is an autonomous world actor.
+
+## 2. User And Butler
+
+The user can communicate with the butler, express preferences, ask questions, and make suggestions.
+
+User suggestions are not commands. The butler may accept, delay, modify, or reject suggestions according to personality, memory, resources, space, rules, relationships, and current world pressure.
+
+P-Phone is a future relationship channel, not the current world-first screen.
+
+## 3. Autonomous World
+
+The world is not a dashboard and not a decorative background. It has facts, resources, space, ecology, traces, events, memory, and time.
+
+All formal world changes must pass through world rules and become traceable world facts.
+
+The visual system may express world facts, but it must not create new world facts.
+
+## 4. Construction And Future Towns
+
+Construction is autonomous. It comes from butler decisions, world rules, resources, space, stage goals, traces, long-term pressure, and future multiplayer-town systems.
+
+Future towns and cities will be built by multiple players' butlers under shared world rules.
+
+Hospitals, parks, roads, public facilities, and city systems are future world-development results, not current web UI cards.
+
+## 5. Current World-First Stage
+
+Current priority:
+
+- Draw the world.
+- Build terrain readability.
+- Build trees, stones, structures, roads, traces, and ecology visuals.
+- Enforce visual review before display.
+
+Deferred:
+
+- Butler status UI.
+- P-Phone full UI.
+- Town/city management UI.
+- Player-facing debug panels.
+
+## 6. Formal Display Rule
+
+The formal `/world` page is a read-only game-world renderer.
+
+It must not:
+
+- Advance runtime tick.
+- Create a default world.
+- Write runtime facts.
+- Show dashboard cards.
+- Show unreviewed visual frames.
+
+Current and future display gate:
 
 ```txt
-用户注册
--> 提交出生年月日与可选出生时辰
--> 紫微斗数 / 生命人格核心映射管家的灵魂与长期人格倾向
--> 系统创建个人世界
--> 管家进入世界并自主运行
--> 世界依据规则、资源、空间、痕迹、记忆和时间线持续演化
+finalSeverity === "pass" -> display
+finalSeverity === "warn" -> do not display
+finalSeverity === "fail" -> do not display
 ```
 
-紫微斗数不是一次性测试页，也不是装饰标签。它必须进入管家的长期人格核心，影响观察方式、沟通方式、关系倾向、建设偏好和决策倾向，但不能绕过规则直接改写世界事实。
-
-## 3. 用户与管家
-
-用户是世界的起点和长期关系参与者，不是管家的直接操作者。
-
-用户通过游戏内 P-Phone 与管家联系，可以沟通、询问、表达偏好和提出建议。建议不是命令。管家应结合自身人格、记忆、关系、资源、空间和规则，自主决定接受、延后、调整或拒绝，并可以解释原因。
-
-## 4. 自主世界
-
-世界不是背景图，也不是等待点击的功能卡片。世界具有事实、资源、空间、生态、痕迹、记忆、事件和时间线。
-
-所有正式世界变化必须经过规则验证，并沉淀为可追踪的世界事实、痕迹、事件或记忆。画面只表现世界，不创造世界事实。
-
-## 5. 建设与未来小镇
-
-建设不是玩家点击摆放。管家可以依据人格、资源、空间、阶段、痕迹和长期目标，自主建设、维护、调整或等待。
-
-未来的小镇和城市由不同玩家的管家在规则、资源、关系、机构和长期事件约束下共同建设与演化。公园、医院、未来公共设施和其他设施是世界发展结果，不是预制网页按钮。
-
-## 6. P-Phone
-
-P-Phone 是正式体验中的关系入口，可以承载用户与管家联系、管家主动联系、短信、电话、语音、世界通知、关系记录以及未来世界机构服务。
-
-它的核心不是控制管家，而是建立用户与 AI 世界的长期关系通道。
-
-## 7. 正式画面
-
-正式 `/world` 是端游式像素主世界，只读世界表现模型，不推进 tick，不写 runtime，不生成未规划生命体。PixiJS 负责把语义化像素数据绘制为画面。
-
-Debug Composer、SVG 预览、几何诊断和工程日志只能存在于 `/world-debug` 或测试脚本中。
-
-## 8. 当前卡点
-
-当前重点是画面自动生成质量：对象级像素配方、管家 sprite 与动作、建筑和生态变化表现仍需要继续深化。
-
-工程判断应始终优先检查：
-
-```txt
-是否服务于管家自主判断？
-是否经过世界规则验证？
-是否沉淀为可追踪世界事实或表现输入？
-是否避免把用户变成直接操作者？
-是否避免把正式 /world 拉回 Debug 页面或网页卡片？
-```
+No review pass means no player-visible world frame.

@@ -1,4 +1,4 @@
-// 该文件用于把正式像素主世界视图模型转换为渲染命令计划。
+import type { VisualGenerationPlan } from "@/world/visual-generation";
 
 import type {
   PixelWorldActor,
@@ -15,7 +15,6 @@ import type {
   PixelWorldRenderLayerSummary,
   PixelWorldRenderPlan,
 } from "./pixel-worldview-render-types";
-import type { VisualGenerationPlan } from "@/world/visual-generation";
 
 const LAYER_ORDER: PixelWorldLayerKind[] = ["tile", "trace", "object", "sprite", "atmosphere", "ui"];
 
@@ -30,7 +29,7 @@ export function buildPixelWorldRenderPlan(
     ])
   );
   const commands = sortRenderCommands([
-    ...model.tiles.map((tile) => mapTileCommand(tile, model.canvas.tileSize)),
+    ...model.tiles.flatMap((tile) => mapTileCommands(tile, model.canvas.tileSize)),
     ...model.traces.map(mapTraceCommand),
     ...model.objects.flatMap((object) => {
       const visualRecipe = visualObjectRecipeBySourceId.get(object.id);
@@ -82,8 +81,12 @@ function mapObjectBlockCommands(
   }));
 }
 
-function mapTileCommand(tile: PixelWorldTile, tileSize: number): PixelWorldRenderCommand {
-  return {
+function mapTileCommands(tile: PixelWorldTile, tileSize: number): PixelWorldRenderCommand[] {
+  const seed = stableTileSeed(tile);
+  const baseColor = resolveTileBaseColor(tile);
+  const detailColor = resolveTileDetailColor(tile, seed);
+  const shadowColor = resolveTileShadowColor(tile);
+  const commands: PixelWorldRenderCommand[] = [{
     id: `render_tile_${tile.id}`,
     layer: "tile",
     kind: "fill_tile",
@@ -98,7 +101,72 @@ function mapTileCommand(tile: PixelWorldTile, tileSize: number): PixelWorldRende
     tileY: tile.tileY,
     visible: true,
     opacity: 1,
-  };
+    colorHint: baseColor,
+    stateTags: [
+      "ground_base",
+      `tile_kind:${tile.kind}`,
+      tile.walkable ? "walkable" : "blocked",
+    ],
+  }];
+
+  const detailCount = tile.kind === "empty" ? 0 : 2 + (seed % 3);
+  for (let index = 0; index < detailCount; index += 1) {
+    const chipSeed = seed + index * 37;
+    const chipWidth = clampInt(Math.round(tileSize * (0.1 + (chipSeed % 3) * 0.035)), 3, 10);
+    const chipHeight = clampInt(Math.round(tileSize * (0.035 + (chipSeed % 2) * 0.025)), 2, 6);
+    const chipX = tile.x + clampInt((chipSeed * 7) % Math.max(1, tileSize - chipWidth), 1, tileSize - chipWidth);
+    const chipY = tile.y + clampInt((chipSeed * 11) % Math.max(1, tileSize - chipHeight), 1, tileSize - chipHeight);
+
+    commands.push({
+      id: `render_tile_detail_${tile.id}_${index}`,
+      layer: "tile",
+      kind: "fill_tile",
+      sourceId: tile.id,
+      bounds: {
+        x: chipX,
+        y: chipY,
+        width: chipWidth,
+        height: chipHeight,
+      },
+      tileX: tile.tileX,
+      tileY: tile.tileY,
+      visible: true,
+      opacity: 0.18 + (chipSeed % 4) * 0.04,
+      colorHint: index % 2 === 0 ? detailColor : shadowColor,
+      stateTags: [
+        "ground_detail",
+        "world_surface_texture",
+        `tile_kind:${tile.kind}`,
+      ],
+    });
+  }
+
+  if ((tile.pressure ?? 0) > 35 || tile.kind === "pressed_grass" || tile.kind === "worn_grass") {
+    commands.push({
+      id: `render_tile_pressure_trace_${tile.id}`,
+      layer: "tile",
+      kind: "fill_tile",
+      sourceId: tile.id,
+      bounds: {
+        x: tile.x + Math.round(tileSize * 0.16),
+        y: tile.y + Math.round(tileSize * 0.58),
+        width: Math.round(tileSize * 0.68),
+        height: Math.max(3, Math.round(tileSize * 0.08)),
+      },
+      tileX: tile.tileX,
+      tileY: tile.tileY,
+      visible: true,
+      opacity: 0.26,
+      colorHint: "#6f7f52",
+      stateTags: [
+        "ground_pressure_trace",
+        "worn_grass",
+        "world_surface_texture",
+      ],
+    });
+  }
+
+  return commands;
 }
 
 function mapTraceCommand(trace: PixelWorldTrace): PixelWorldRenderCommand {
@@ -106,7 +174,7 @@ function mapTraceCommand(trace: PixelWorldTrace): PixelWorldRenderCommand {
     id: `render_trace_${trace.id}`,
     layer: "trace",
     kind: "draw_trace_patch",
-    sourceId: trace.id,
+    sourceId: trace.sourceId ?? trace.id,
     bounds: trace.bounds,
     sortY: trace.bounds.y + trace.bounds.height,
     opacity: trace.opacity,
@@ -190,4 +258,41 @@ function buildLayerSummaries(commands: PixelWorldRenderCommand[]): PixelWorldRen
 
 function layerOrderOf(layer: PixelWorldLayerKind): number {
   return LAYER_ORDER.indexOf(layer);
+}
+
+function stableTileSeed(tile: PixelWorldTile): number {
+  return Math.abs(tile.tileX * 73856093 + tile.tileY * 19349663 + tile.variant.length * 83492791);
+}
+
+function resolveTileBaseColor(tile: PixelWorldTile): string {
+  if (tile.kind === "soil") return "#766a47";
+  if (tile.kind === "worn_grass") return "#6e8454";
+  if (tile.kind === "pressed_grass") return "#668052";
+  if (tile.kind === "empty") return "#4f6a4f";
+
+  const ecology = tile.ecologyHealth ?? 62;
+  if (ecology > 76) return "#659760";
+  if (ecology < 38) return "#6f7d55";
+
+  return "#5f8f60";
+}
+
+function resolveTileDetailColor(tile: PixelWorldTile, seed: number): string {
+  if (tile.kind === "soil") return seed % 2 === 0 ? "#8a7650" : "#5f563d";
+  if (tile.kind === "worn_grass" || tile.kind === "pressed_grass") {
+    return seed % 2 === 0 ? "#7f905f" : "#556f49";
+  }
+
+  return seed % 2 === 0 ? "#78aa6f" : "#4f7c4d";
+}
+
+function resolveTileShadowColor(tile: PixelWorldTile): string {
+  if (tile.kind === "soil") return "#5f5439";
+  if (tile.moisture && tile.moisture > 68) return "#4d765b";
+
+  return "#4f744b";
+}
+
+function clampInt(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
 }

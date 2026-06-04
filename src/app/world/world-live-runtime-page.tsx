@@ -9,15 +9,15 @@ export async function WorldLiveRuntimePage() {
   if (!runtimeView.isPersisted) {
     return (
       <main style={emptyWorldStyles.page}>
-        <section style={emptyWorldStyles.card}>
+        <section style={emptyWorldStyles.panel}>
           <div style={emptyWorldStyles.brand}>AI-PET-WORLD</div>
-          <h1 style={emptyWorldStyles.title}>世界尚未创建</h1>
+          <h1 style={emptyWorldStyles.title}>World not created</h1>
           <p style={emptyWorldStyles.body}>
-            正式世界需要先由出生信息生成管家人格、世界种子和第一片家园。
-            这里不会展示默认世界，也不会偷偷写入 runtime。
+            Create a formal world first. This screen will not generate a default
+            runtime or rewrite world facts.
           </p>
           <a href="/create-world" style={emptyWorldStyles.link}>
-            去创建世界
+            Create world
           </a>
         </section>
       </main>
@@ -36,15 +36,17 @@ export async function WorldLiveRuntimePage() {
 const emptyWorldStyles = {
   page: {
     alignItems: "center",
-    background: "#17231f",
+    background:
+      "radial-gradient(circle at 50% 22%, #21362e 0, #14231e 48%, #09110f 100%)",
     color: "#d8ead8",
     display: "flex",
+    justifyContent: "center",
     minHeight: "100vh",
     padding: 24,
   },
-  card: {
-    background: "#1f302a",
-    border: "1px solid #3f6861",
+  panel: {
+    background: "rgba(10, 20, 17, 0.38)",
+    border: "1px solid rgba(143, 190, 159, 0.22)",
     maxWidth: 520,
     padding: 28,
   },

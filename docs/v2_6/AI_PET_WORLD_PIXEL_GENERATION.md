@@ -1,67 +1,72 @@
-# AI-PET-WORLD 像素自动生成原则
+# AI-PET-WORLD Pixel Generation
 
-## 1. 定位
+Status: Current formal pixel generation rules.
 
-像素系统负责把世界事实转换为可绘制的像素表达。它不是世界事实生成器，也不是美术自由绘图器。
+## 1. Role
+
+Pixel generation converts world facts into visual expression.
+
+It does not create world facts. It does not copy external images. It does not imitate another game's recognizable visual identity.
 
 ```txt
-世界事实
--> 语义对象
--> 像素配方
--> 渲染计划
--> 像素缓冲区
--> 视觉判断
--> 展示
+World facts
+-> WorldViewModel
+-> VisualGenerationPlan
+-> PixelWorldRenderPlan
+-> PixelWorldPixelBufferFrame
+-> VisualJudgeReport
+-> VisualCorrectionPlan
+-> Display gate
 ```
 
-## 2. 当前基础对象
+## 2. Current Scope
 
-当前阶段只实现基础世界表达：
+Current pixel generation focuses on:
 
-- 地面：草地、泥地、磨损草地、踩踏草地。
-- 自然对象：树、灌木、花、蘑菇、石头、昆虫信号。
-- 基础设施：临时住所、初始照护点、储物箱、小灯。
-- Actor：管家。
-- 痕迹：脚印、踩踏、维护、恢复、等待点。
+- Terrain.
+- Ground texture.
+- Trees.
+- Bushes, flowers, mushrooms, stones, and ecology signals.
+- Basic structures/facilities.
+- Roads/traces.
+- Atmosphere and ecology transition.
 
-后续小镇、城市、道路和多玩家管家共建内容，必须继续沿用同一条视觉生成与视觉判断链路。
+P-Phone, butler status UI, and management panels are deferred from the world-first screen.
 
-## 3. 生成规则
+## 3. Generation Rules
 
-像素生成必须满足：
+Pixel generation must:
 
-- 只根据输入世界事实生成画面。
-- 不新增不存在的建筑、角色、设施或事件。
-- 不复制真实网络图片或受版权保护素材。
-- 可以参考真实世界的抽象视觉原则，例如比例、遮挡、明暗、材质层次和色彩关系。
-- 对象必须带有稳定 id、来源 id、配方 id 和状态标签，便于审计。
+- Use only current world-view input.
+- Preserve source IDs and recipe IDs.
+- Keep every visible cell traceable.
+- Use project-owned palettes and recipes.
+- Generate visual-only correction cells only inside corrected pixel buffers.
 
-## 4. AI 如何“画”像素图
+Pixel generation must not:
 
-在当前工程中，AI 不是直接随意输出一张不可解释的图片，而是生成可审计的数据结构：
+- Add buildings, actors, events, or roads that do not exist as world facts.
+- Store or copy external reference images.
+- Display debug blocks as formal art.
+- Display large flat placeholder rectangles as approved world visuals.
+
+## 4. AI Drawing Logic
+
+AI drawing in this project is data-first:
 
 ```txt
-object recipe
+semantic object
+-> pixel recipe
 -> semantic blocks
--> render commands
--> pixel buffer cells
--> visual judge report
+-> render command
+-> pixel buffer cell
+-> visual review
 ```
 
-这让系统可以知道每个像素块来自哪个世界对象、哪个配方、哪个渲染命令，以及是否通过视觉判断。
+The renderer is not allowed to invent facts. It only draws approved pixel buffer frames.
 
-## 5. 视觉判断
+## 5. Display Rule
 
-视觉判断系统检查：
+Only a reviewed `pass` frame may be displayed.
 
-- 世界事实一致性
-- 可读性
-- 遮挡关系
-- 画面密度
-- 对象比例
-- 调色板一致性
-- 侵权风险
-- debug 内容泄漏
-- 未规划生命体或旧内容泄漏
-
-不合格时生成 `VisualCorrectionPlan`，只修视觉表达，不改 runtime 世界事实。
+Warn and fail frames must be blocked in test and production.

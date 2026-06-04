@@ -1,4 +1,3 @@
-// 该文件用于把像素主世界渲染命令计划转换成纯数据像素缓冲区。
 import type { PixelWorldLayerKind } from "./pixel-worldview-types";
 import type { PixelWorldRenderCommand, PixelWorldRenderPlan } from "./pixel-worldview-render-types";
 import type { PixelWorldRendererFrame } from "./pixel-worldview-renderer-types";
@@ -46,6 +45,7 @@ function mapCommandToCell(command: PixelWorldRenderCommand, plan: PixelWorldRend
     y: bounds.y,
     width: bounds.width,
     height: bounds.height,
+    sourceId: command.sourceId,
     sourceCommandId: command.id,
     visible: command.visible,
     opacity: command.opacity ?? 1,

@@ -1,5 +1,3 @@
-// 该文件用于创建正式像素主世界视图模型的安全初始结构。
-
 import type { PixelWorldViewModel } from "./pixel-worldview-types";
 
 export function createEmptyPixelWorldViewModel(input: {
@@ -22,14 +20,6 @@ export function createEmptyPixelWorldViewModel(input: {
     objects: [],
     actors: [],
     atmosphere: [],
-    overlays: [
-      {
-        id: "overlay_p_phone",
-        layer: "ui",
-        kind: "p_phone",
-        text: "P-Phone",
-        visible: true,
-      },
-    ],
+    overlays: [],
   };
 }

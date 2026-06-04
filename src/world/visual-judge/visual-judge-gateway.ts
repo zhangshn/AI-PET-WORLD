@@ -27,6 +27,10 @@ import {
   auditVisualStyleSafety,
   visualStyleSafetyPolicyTags,
 } from "./visual-style-safety-policy";
+import {
+  aiVisualStandardPolicyTags,
+  judgeAIVisualStandard,
+} from "./ai-visual-standard-policy";
 
 const MAX_OBJECT_BLOCK_AREA_RATIO = 0.075;
 const MAX_CENTER_BLOCK_AREA_RATIO = 0.035;
@@ -48,6 +52,7 @@ export function judgePixelWorldVisual(input: VisualJudgeInput): VisualJudgeRepor
     ...judgeStructureAccessReadability(input),
     ...judgePathConnectivity(input),
     ...judgeEcologyCoherence(input),
+    ...judgeAIVisualStandard(input),
     ...judgePlayerVisualFocus(input),
     ...judgeBusinessVisualBoundary(input),
     ...judgeStyleSafetyBoundary(input),
@@ -68,6 +73,7 @@ export function judgePixelWorldVisual(input: VisualJudgeInput): VisualJudgeRepor
       "visual_reference_abstract_principles_only",
       "copyright_safety_boundary",
       ...visualStyleSafetyPolicyTags(),
+      ...aiVisualStandardPolicyTags(),
       failCount === 0 ? "visual_judge_no_failures" : "visual_judge_failures",
       warnCount === 0 ? "visual_judge_no_warnings" : "visual_judge_warnings",
     ],
@@ -206,7 +212,7 @@ export function buildVisualDisplayGateDecision(input: VisualJudgeInput): VisualD
 
   return {
     status,
-    canShowToPlayer: status === "allow_display",
+    canShowToPlayer: finalReport.severity === "pass",
     reason: buildVisualDisplayGateReason(status, review),
     review,
     report,
@@ -421,7 +427,7 @@ function buildVisualDisplayGateReason(
   }
 
   if (status === "requires_visual_correction") {
-    return `Visual output has ${review.remainingFindingCount} warning-level findings after review and requires visual-only correction before final display.`;
+    return `Visual output is blocked with ${review.remainingFindingCount} warning-level finding(s); test-stage display requires a full pass.`;
   }
 
   return `Visual output is blocked with ${review.remainingFailCount} remaining fail findings: ${review.blockReasons.join(", ") || "unknown"}.`;
@@ -546,7 +552,7 @@ function judgeObjectReadability(input: VisualJudgeInput): VisualJudgeFinding[] {
     const visibleRecipeCells = visibleCells(input).filter(
       (cell) =>
         cell.kind === "object_block" &&
-        cell.sourceCommandId.includes(`render_object_block_${recipe.sourceObjectId}`)
+        objectSourceIdForCell(cell) === recipe.sourceObjectId
     );
     const visibleArea = visibleRecipeCells.reduce((sum, cell) => sum + cellArea(cell), 0);
     const findings: VisualJudgeFinding[] = [];
@@ -644,8 +650,9 @@ function judgeWorldFactConsistency(input: VisualJudgeInput): VisualJudgeFinding[
 
   visibleCells(input)
     .filter((cell) => cell.kind === "object_block")
+    .filter((cell) => !isVisualOnlyGeneratedCell(cell))
     .forEach((cell) => {
-      const sourceId = extractObjectSourceIdFromCommandId(cell.sourceCommandId);
+      const sourceId = objectSourceIdForCell(cell);
 
       if (!sourceId || !sourceObjectIds.has(sourceId)) {
         findings.push(finding({
@@ -733,26 +740,28 @@ function judgeVisualFactManifestCoverage(input: VisualJudgeInput): VisualJudgeFi
       }
     });
 
-  visibleCells(input).forEach((cell) => {
-    const sourceId =
-      cell.kind === "object_block"
-        ? extractObjectSourceIdFromCommandId(cell.sourceCommandId)
-        : sourceIdFromNonObjectCommandId(cell.sourceCommandId);
+  visibleCells(input)
+    .filter((cell) => !isVisualOnlyGeneratedCell(cell))
+    .forEach((cell) => {
+      const sourceId =
+        cell.kind === "object_block"
+          ? objectSourceIdForCell(cell)
+          : sourceIdForCell(cell);
 
-    if (!sourceId || sourceId.startsWith("overlay_")) return;
+      if (!sourceId || sourceId.startsWith("overlay_")) return;
 
-    if (!manifestBySourceId.has(sourceId)) {
-      findings.push(finding({
-        id: `visual_judge_missing_fact_manifest_cell_${cell.id}`,
-        severity: "fail",
-        category: "world_fact_consistency",
-        message: `Pixel buffer cell ${cell.id} has no source entry in the visual fact manifest.`,
-        sourceId,
-        suggestedFix: "Remove orphan visual cells or regenerate the pixel buffer from the current render plan.",
-        tags: ["world_fact_manifest", "missing_buffer_source"],
-      }));
-    }
-  });
+      if (!manifestBySourceId.has(sourceId)) {
+        findings.push(finding({
+          id: `visual_judge_missing_fact_manifest_cell_${cell.id}`,
+          severity: "fail",
+          category: "world_fact_consistency",
+          message: `Pixel buffer cell ${cell.id} has no source entry in the visual fact manifest.`,
+          sourceId,
+          suggestedFix: "Remove orphan visual cells or regenerate the pixel buffer from the current render plan.",
+          tags: ["world_fact_manifest", "missing_buffer_source"],
+        }));
+      }
+    });
 
   return findings;
 }
@@ -932,6 +941,11 @@ function judgeEcologyCoherence(input: VisualJudgeInput): VisualJudgeFinding[] {
       (command.sourceId.includes("ecology") ||
         (command.stateTags ?? []).some((tag) => tag.includes("ecology")))
   );
+  const ecologyTintCells = visibleCells(input).filter(
+    (cell) =>
+      cell.layer === "atmosphere" &&
+      (cell.stateTags ?? []).some((tag) => tag.includes("ecology_tint_signal"))
+  );
 
   const findings: VisualJudgeFinding[] = [];
 
@@ -946,7 +960,11 @@ function judgeEcologyCoherence(input: VisualJudgeInput): VisualJudgeFinding[] {
     }));
   }
 
-  if (ecologyTaggedCells.length > 0 && ecologyTintCommands.length === 0) {
+  if (
+    ecologyTaggedCells.length > 0 &&
+    ecologyTintCommands.length === 0 &&
+    ecologyTintCells.length === 0
+  ) {
     findings.push(finding({
       id: "visual_judge_ecology_signal_without_atmosphere",
       severity: "warn",
@@ -1098,6 +1116,20 @@ function visibleCells(input: VisualJudgeInput): PixelWorldBufferCell[] {
     .filter((cell) => cell.visible && cell.opacity > 0);
 }
 
+function isVisualOnlyGeneratedCell(cell: PixelWorldBufferCell): boolean {
+  const tags = cell.stateTags ?? [];
+
+  return tags.includes("visual_only") || tags.includes("visual_correction_generated");
+}
+
+function sourceIdForCell(cell: PixelWorldBufferCell): string | null {
+  return cell.sourceId ?? sourceIdFromNonObjectCommandId(cell.sourceCommandId);
+}
+
+function objectSourceIdForCell(cell: PixelWorldBufferCell): string | null {
+  return cell.sourceId ?? extractObjectSourceIdFromCommandId(cell.sourceCommandId);
+}
+
 function visibleObjectCellsForSource(
   input: VisualJudgeInput,
   sourceObjectId: string
@@ -1105,7 +1137,7 @@ function visibleObjectCellsForSource(
   return visibleCells(input).filter(
     (cell) =>
       cell.kind === "object_block" &&
-      extractObjectSourceIdFromCommandId(cell.sourceCommandId) === sourceObjectId
+      objectSourceIdForCell(cell) === sourceObjectId
   );
 }
 
@@ -1348,6 +1380,12 @@ function correctionIntentTypeForFinding(
   if (findingItem.category === "access_readability") return "add_access_trace_cue";
   if (findingItem.category === "path_connectivity") return "reconnect_path_visuals";
   if (findingItem.category === "ecology_coherence") return "cluster_ecology_transition";
+  if (
+    findingItem.category === "composition" &&
+    findingItem.tags.includes("ai_visual_standard")
+  ) {
+    return "strengthen_world_composition";
+  }
   if (findingItem.category === "player_focus") return "protect_player_focus_area";
   if (findingItem.category === "business_rule") return "remove_forbidden_visual_token";
   if (findingItem.category === "style_safety") return "remove_forbidden_visual_token";
@@ -1409,6 +1447,13 @@ function correctionParametersForIntent(
       moveStrategy: "cluster_near_ecology_source",
     };
   }
+  if (intentType === "strengthen_world_composition") {
+    return {
+      preferredLayer: "trace",
+      preferredCue: "foreground_worn_grass_and_terrain_transition_visual_only",
+      moveStrategy: "rebalance_foreground_middle_background",
+    };
+  }
   if (intentType === "protect_player_focus_area") {
     return {
       opacityMultiplier: 0.62,
@@ -1430,6 +1475,12 @@ function correctionTypeForFinding(findingItem: VisualJudgeFinding): VisualCorrec
   if (findingItem.category === "access_readability") return "generate_visual_cue";
   if (findingItem.category === "path_connectivity") return "generate_visual_cue";
   if (findingItem.category === "ecology_coherence") return "generate_visual_cue";
+  if (
+    findingItem.category === "composition" &&
+    findingItem.tags.includes("ai_visual_standard")
+  ) {
+    return "generate_visual_cue";
+  }
   if (findingItem.category === "player_focus") return "reduce_visual_density";
   if (findingItem.category === "business_rule") return "remove_forbidden_visual_token";
   if (findingItem.category === "style_safety") return "remove_forbidden_visual_token";
@@ -1445,7 +1496,7 @@ function resolveActionForCell(
     actionByTarget.get(cell.id) ??
     actionByTarget.get(cell.sourceCommandId) ??
     (cell.recipeId ? actionByTarget.get(cell.recipeId) : undefined) ??
-    actionByTarget.get(extractObjectSourceIdFromCommandId(cell.sourceCommandId) ?? "") ??
+    actionByTarget.get(objectSourceIdForCell(cell) ?? "") ??
     null
   );
 }
@@ -1639,33 +1690,40 @@ function buildTraceConnectorCueCells(input: {
   const sorted = [...traceCells].sort((left, right) => left.x + left.y - (right.x + right.y));
   const first = sorted[0];
   const last = sorted[sorted.length - 1];
-  const midpoint = {
-    x: Math.round((first.x + last.x) / 2),
-    y: Math.round((first.y + last.y) / 2),
-  };
+  const steps = clampNumber(
+    Math.ceil(cellDistance(first, last) / (input.pixelBufferFrame.canvas.tileSize * 0.8)),
+    4,
+    18
+  );
 
-  return [
-    createVisualOnlyCell({
-      id: `visual_only_trace_connector_${input.intent.id}`,
+  return Array.from({ length: steps }, (_, index) => {
+    const progress = steps === 1 ? 0 : index / (steps - 1);
+    const x = Math.round(first.x + (last.x - first.x) * progress);
+    const y = Math.round(first.y + (last.y - first.y) * progress);
+
+    return createVisualOnlyCell({
+      id: `visual_only_trace_connector_${input.intent.id}_${index}`,
       layer: "trace",
       kind: "trace",
-      x: clampNumber(midpoint.x, 0, input.pixelBufferFrame.canvas.width - 8),
-      y: clampNumber(midpoint.y, 0, input.pixelBufferFrame.canvas.height - 6),
-      width: 8,
-      height: 6,
-      sourceCommandId: `render_trace_visual_correction_connector_${input.intent.id}`,
-      colorHint: "#66774d",
-      opacity: 0.48,
+      x: clampNumber(x, 0, input.pixelBufferFrame.canvas.width - 14),
+      y: clampNumber(y, 0, input.pixelBufferFrame.canvas.height - 8),
+      width: 14,
+      height: 8,
+      sourceId: `visual_only_trace_connector_${input.intent.id}`,
+      sourceCommandId: `render_trace_visual_correction_connector_${input.intent.id}_${index}`,
+      colorHint: index % 2 === 0 ? "#66774d" : "#70845a",
+      opacity: 0.5,
       stateTags: [
         "visual_only",
         "visual_correction_generated",
         "trace_connector",
         "path_connectivity",
+        "worn_grass",
         input.intent.id,
         input.action.id,
       ],
-    }),
-  ];
+    });
+  });
 }
 
 function buildEcologyClusterCueCells(input: {
@@ -1692,6 +1750,27 @@ function buildEcologyClusterCueCells(input: {
   };
 
   return [
+    createVisualOnlyCell({
+      id: `visual_only_ecology_tint_${input.intent.id}`,
+      layer: "atmosphere",
+      kind: "atmosphere",
+      x: 0,
+      y: 0,
+      width: input.pixelBufferFrame.canvas.width,
+      height: input.pixelBufferFrame.canvas.height,
+      sourceId: `visual_only_ecology_tint_${input.intent.id}`,
+      sourceCommandId: `render_atmosphere_visual_correction_ecology_tint_${input.intent.id}`,
+      colorHint: "#6aa36a",
+      opacity: 0.08,
+      stateTags: [
+        "visual_only",
+        "visual_correction_generated",
+        "ecology_tint_signal",
+        "ecology_coherence",
+        input.intent.id,
+        input.action.id,
+      ],
+    }),
     createVisualOnlyCell({
       id: `visual_only_ecology_cluster_${input.intent.id}`,
       layer: "trace",
@@ -1723,6 +1802,7 @@ function createVisualOnlyCell(input: {
   y: number;
   width: number;
   height: number;
+  sourceId?: string;
   sourceCommandId: string;
   colorHint: string;
   opacity: number;
@@ -1737,6 +1817,7 @@ function createVisualOnlyCell(input: {
     y: input.y,
     width: input.width,
     height: input.height,
+    sourceId: input.sourceId,
     sourceCommandId: input.sourceCommandId,
     visible: true,
     opacity: input.opacity,
@@ -1786,7 +1867,7 @@ function objectCellsForSourceInFrame(
         cell.visible &&
         cell.opacity > 0 &&
         cell.kind === "object_block" &&
-        extractObjectSourceIdFromCommandId(cell.sourceCommandId) === sourceObjectId
+        objectSourceIdForCell(cell) === sourceObjectId
     );
 }
 

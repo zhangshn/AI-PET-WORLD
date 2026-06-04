@@ -1,5 +1,3 @@
-// 该文件用于把输入快照转换成正式像素主世界视图模型。
-
 import { createEmptyPixelWorldViewModel } from "./pixel-worldview-model";
 import type {
   PixelWorldActor,
@@ -58,6 +56,7 @@ function mapTrace(trace: PixelWorldSourceTrace, index: number): PixelWorldTrace 
 
   return {
     id: trace.id ?? `trace_${index}_${trace.kind}`,
+    sourceId: trace.sourceId,
     layer: "trace",
     kind: trace.kind,
     bounds: trace.bounds,

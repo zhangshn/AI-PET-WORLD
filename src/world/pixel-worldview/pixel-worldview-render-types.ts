@@ -1,5 +1,3 @@
-// 该文件用于定义正式像素主世界渲染命令计划类型。
-
 import type { PixelWorldBounds, PixelWorldCanvas, PixelWorldLayerKind } from "./pixel-worldview-types";
 
 export type PixelWorldRenderCommandKind =

@@ -179,6 +179,7 @@ async function main() {
 
   const advancedReviewReport = judgePixelWorldVisual(createAdvancedVisualReviewInput())
   const advancedCorrectionPlan = buildVisualCorrectionPlan(advancedReviewReport)
+  const advancedGateDecision = buildVisualDisplayGateDecision(createAdvancedVisualReviewInput())
   const advancedApplyResult = applyVisualCorrectionPlanToPixelBufferFrame({
     pixelBufferFrame: createAdvancedVisualReviewInput().pixelBufferFrame,
     correctionPlan: advancedCorrectionPlan,
@@ -190,6 +191,8 @@ async function main() {
   assert(advancedCorrectionPlan.intents.some((intent) => intent.type === "add_access_trace_cue"), "Access readability finding should create access trace intent.")
   assert(advancedCorrectionPlan.intents.some((intent) => intent.type === "protect_player_focus_area"), "Player focus finding should create focus protection intent.")
   assert(advancedCorrectionPlan.actions.some((action) => action.type === "generate_visual_cue"), "Advanced visual intents should create visual cue generation actions.")
+  assert(!advancedGateDecision.canShowToPlayer, "Warning-level visual review should block test-stage player display.")
+  assert(advancedGateDecision.status === "requires_visual_correction", "Warning-level visual review should require correction before display.")
   assert(advancedApplyResult.generatedCellIds.length >= 4, "Advanced visual correction should generate visual-only buffer cells.")
   assert(advancedApplyResult.affectsRuntimeFacts === false, "Advanced visual correction must not affect runtime facts.")
   assert(

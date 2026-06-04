@@ -1,5 +1,3 @@
-// 该文件用于定义正式像素主世界视图模型的输入快照类型。
-
 import type {
   PixelWorldActorKind,
   PixelWorldAnchor,
@@ -25,6 +23,7 @@ export type PixelWorldSourceTile = {
 
 export type PixelWorldSourceTrace = {
   id?: string;
+  sourceId?: string;
   kind: PixelWorldTraceKind;
   bounds: PixelWorldBounds;
   strength?: number;

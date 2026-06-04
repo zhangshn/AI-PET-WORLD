@@ -1,4 +1,3 @@
-// 该文件用于解析像素主世界纯数据缓冲区的颜色提示。
 import type { PixelWorldLayerKind } from "./pixel-worldview-types";
 import type { PixelWorldBufferCellKind } from "./pixel-worldview-buffer-types";
 

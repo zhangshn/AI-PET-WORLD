@@ -1,4 +1,3 @@
-// 该文件用于定义正式像素主世界的纯数据像素缓冲区类型。
 import type { PixelWorldCanvas, PixelWorldLayerKind } from "./pixel-worldview-types";
 
 export type PixelWorldBufferCellKind =
@@ -18,6 +17,7 @@ export type PixelWorldBufferCell = {
   y: number;
   width: number;
   height: number;
+  sourceId?: string;
   sourceCommandId: string;
   visible: boolean;
   opacity: number;

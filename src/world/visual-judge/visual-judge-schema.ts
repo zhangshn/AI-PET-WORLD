@@ -60,6 +60,7 @@ export type VisualCorrectionIntentType =
   | "add_access_trace_cue"
   | "reconnect_path_visuals"
   | "cluster_ecology_transition"
+  | "strengthen_world_composition"
   | "protect_player_focus_area"
   | "remove_forbidden_visual_token";
 

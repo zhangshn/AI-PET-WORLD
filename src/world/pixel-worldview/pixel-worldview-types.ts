@@ -1,4 +1,3 @@
-// 当前文件职责：定义正式像素主世界视图模型类型。
 export type PixelWorldLayerKind =
   | "tile"
   | "trace"
@@ -69,6 +68,7 @@ export type PixelWorldTile = {
 
 export type PixelWorldTrace = {
   id: string;
+  sourceId?: string;
   layer: "trace";
   kind: PixelWorldTraceKind;
   bounds: PixelWorldBounds;

@@ -81,11 +81,8 @@
     "fill",
     "parseColorHintToNumber",
     "clampOpacity",
-    "正式 PixiJS PixelWorldView Renderer",
-    "你的自主像素世界",
-    "只消费 PixelWorldPixelBufferFrame",
-    "不读取 runtime",
-    "不生成未规划生命体",
+    "Tick",
+    "VisualGateDebugStrip",
     "image-rendering: pixelated",
   ]
   requiredTokens.forEach((token) => {
@@ -107,6 +104,7 @@
     "runAndPersistOneRuntimeTick",
     "writeWorldRuntimeSaveRecord",
     "createUnplannedLife",
+    "P-Phone",
   ]
   const forbiddenHits = forbiddenWorldTokens.filter((token) =>
     worldCombined.includes(token)

@@ -1,38 +1,23 @@
 .shell {
-  margin-top: 16px;
-  padding: 16px;
-  border: 1px solid #3f6861;
-  background: #1f302a;
-  color: #d8ead8;
-}
-
-.heading {
-  margin: 0;
-}
-
-.description {
-  margin: 8px 0 0;
-}
-
-.stageFrame {
-  margin-top: 12px;
-  overflow: auto;
-  border: 1px solid #5a847a;
-  background: #12201c;
-}
-
-.mount {
-  min-height: 240px;
+  display: grid;
+  place-items: center;
+  width: min(100vw, 1840px);
+  height: min(100vh, 920px);
   image-rendering: pixelated;
 }
 
-.statusBar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 12px;
+.mount {
+  display: grid;
+  place-items: center;
+  image-rendering: pixelated;
 }
 
-.statusItem {
-  color: #b9d7cf;
+.mount canvas {
+  display: block;
+  image-rendering: pixelated;
+  max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 40px);
+  width: auto;
+  height: auto;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.36);
 }

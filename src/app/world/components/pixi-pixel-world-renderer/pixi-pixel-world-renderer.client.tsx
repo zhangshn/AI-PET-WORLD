@@ -70,21 +70,11 @@ export function PixiPixelWorldRendererClient(input: {
 
   return (
     <section className={styles.shell}>
-      <h2 className={styles.heading}>正式 PixiJS PixelWorldView Renderer</h2>
-      <p className={styles.description}>
-        只消费 PixelWorldPixelBufferFrame，不读取 runtime，不生成未规划生命体。
-      </p>
-      <div className={styles.stageFrame}>
-        <div
-          ref={mountRef}
-          className={styles.mount}
-          aria-label="Pixi PixelWorldView canvas mount"
-        />
-      </div>
-      <div className={styles.statusBar}>
-        <span className={styles.statusItem}>tick: {input.buffer.tick}</span>
-        <span className={styles.statusItem}>pixels: {input.buffer.cellCount}</span>
-      </div>
+      <div
+        ref={mountRef}
+        className={styles.mount}
+        aria-label="Pixi PixelWorldView canvas mount"
+      />
     </section>
   )
 }
