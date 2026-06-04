@@ -238,7 +238,11 @@ export function applyVisualCorrectionPlanToPixelBufferFrame(input: {
 }): VisualCorrectionApplyResult {
   const actionByTarget = new Map(
     input.correctionPlan.actions
-      .filter((action) => action.type !== "generate_visual_cue")
+      .filter(
+        (action) =>
+          action.type !== "generate_visual_cue" &&
+          action.type !== "crop_to_story_viewport"
+      )
       .map((action) => [action.targetId, action])
   );
   const intentById = new Map(
@@ -294,12 +298,27 @@ export function applyVisualCorrectionPlanToPixelBufferFrame(input: {
     correctedLayers = addGeneratedCellsToLayers(correctedLayers, generatedCells);
   });
 
-  const correctedPixelBufferFrame = {
+  let correctedPixelBufferFrame: PixelWorldPixelBufferFrame = {
     ...input.pixelBufferFrame,
     bufferId: `${input.pixelBufferFrame.bufferId}_visual_corrected`,
     layers: correctedLayers,
     cellCount: correctedLayers.reduce((sum, layer) => sum + layer.cells.length, 0),
   };
+  const cropActions = input.correctionPlan.actions.filter(
+    (action) => action.type === "crop_to_story_viewport"
+  );
+
+  cropActions.forEach((action) => {
+    const croppedFrame = cropPixelBufferFrameToStoryViewport(correctedPixelBufferFrame);
+    if (!croppedFrame) return;
+
+    correctedPixelBufferFrame = croppedFrame;
+    appliedActionIds.add(action.id);
+    skippedActionIds.delete(action.id);
+    correctedPixelBufferFrame.layers
+      .flatMap((layer) => layer.cells)
+      .forEach((cell) => changedCellIds.add(cell.id));
+  });
 
   return {
     correctedPixelBufferFrame,
@@ -315,6 +334,9 @@ export function applyVisualCorrectionPlanToPixelBufferFrame(input: {
       generatedCellIds.size > 0
         ? "visual_only_cells_generated"
         : "visual_only_cells_not_generated",
+      cropActions.length > 0
+        ? "story_viewport_crop_requested"
+        : "story_viewport_crop_not_requested",
       appliedActionIds.size > 0
         ? "visual_correction_applied"
         : "visual_correction_no_matching_cells",
@@ -548,12 +570,22 @@ function judgeIllegalLargeBlocks(input: VisualJudgeInput): VisualJudgeFinding[] 
 }
 
 function judgeObjectReadability(input: VisualJudgeInput): VisualJudgeFinding[] {
+  const storyViewportFrame = isStoryViewportFrame(input.pixelBufferFrame);
+
   return input.visualGenerationPlan.objectRecipes.flatMap((recipe) => {
     const visibleRecipeCells = visibleCells(input).filter(
       (cell) =>
         cell.kind === "object_block" &&
         objectSourceIdForCell(cell) === recipe.sourceObjectId
     );
+
+    if (
+      storyViewportFrame &&
+      !visibleRecipeCells.some(isStoryViewportAnchorCell)
+    ) {
+      return [];
+    }
+
     const visibleArea = visibleRecipeCells.reduce((sum, cell) => sum + cellArea(cell), 0);
     const findings: VisualJudgeFinding[] = [];
 
@@ -1116,6 +1148,17 @@ function visibleCells(input: VisualJudgeInput): PixelWorldBufferCell[] {
     .filter((cell) => cell.visible && cell.opacity > 0);
 }
 
+function isStoryViewportFrame(frame: PixelWorldPixelBufferFrame): boolean {
+  return (
+    frame.bufferId.includes("story_viewport_corrected") ||
+    frame.layers.some((layer) =>
+      layer.cells.some((cell) =>
+        (cell.stateTags ?? []).includes("story_viewport_crop_projection")
+      )
+    )
+  );
+}
+
 function isVisualOnlyGeneratedCell(cell: PixelWorldBufferCell): boolean {
   const tags = cell.stateTags ?? [];
 
@@ -1370,6 +1413,7 @@ function buildCorrectionAction(input: {
 function correctionIntentTypeForFinding(
   findingItem: VisualJudgeFinding
 ): VisualCorrectionIntent["type"] {
+  if (isStoryFrameTooZoomedOutFinding(findingItem)) return "crop_to_story_viewport";
   if (findingItem.category === "illegal_debug_visual") return "hide_invalid_visual";
   if (findingItem.category === "density") return "reduce_visual_density";
   if (findingItem.category === "readability") return "resize_for_readability";
@@ -1454,6 +1498,12 @@ function correctionParametersForIntent(
       moveStrategy: "rebalance_foreground_middle_background",
     };
   }
+  if (intentType === "crop_to_story_viewport") {
+    return {
+      moveStrategy: "crop_read_only_pixel_buffer_to_player_story_viewport",
+      preferredCue: "story_viewport",
+    };
+  }
   if (intentType === "protect_player_focus_area") {
     return {
       opacityMultiplier: 0.62,
@@ -1465,6 +1515,7 @@ function correctionParametersForIntent(
 }
 
 function correctionTypeForFinding(findingItem: VisualJudgeFinding): VisualCorrectionActionType {
+  if (isStoryFrameTooZoomedOutFinding(findingItem)) return "crop_to_story_viewport";
   if (findingItem.category === "illegal_debug_visual") return "remove_visual_block";
   if (findingItem.category === "density") return "reduce_visual_density";
   if (findingItem.category === "readability") return "resize_visual_object";
@@ -1486,6 +1537,13 @@ function correctionTypeForFinding(findingItem: VisualJudgeFinding): VisualCorrec
   if (findingItem.category === "style_safety") return "remove_forbidden_visual_token";
 
   return "reposition_visual_object";
+}
+
+function isStoryFrameTooZoomedOutFinding(findingItem: VisualJudgeFinding): boolean {
+  return (
+    findingItem.id === "visual_judge_ai_standard_story_frame_too_zoomed_out" ||
+    findingItem.tags.includes("story_frame_too_zoomed_out")
+  );
 }
 
 function resolveActionForCell(
@@ -1854,6 +1912,187 @@ function addGeneratedCellsToLayers(
       hiddenCount: cells.filter((cell) => !cell.visible).length,
     };
   });
+}
+
+function cropPixelBufferFrameToStoryViewport(
+  frame: PixelWorldPixelBufferFrame
+): PixelWorldPixelBufferFrame | null {
+  const visibleFrameCells = frame.layers
+    .flatMap((layer) => layer.cells)
+    .filter((cell) => cell.visible && cell.opacity > 0);
+  const primaryStoryCells = visibleFrameCells.filter(isPrimaryStoryViewportAnchorCell);
+  const activeStoryCells =
+    primaryStoryCells.length > 0
+      ? primaryStoryCells
+      : visibleFrameCells.filter(isActiveStoryViewportAnchorCell);
+  const storyCells =
+    activeStoryCells.length > 0
+      ? activeStoryCells
+      : visibleFrameCells.filter(isStoryViewportAnchorCell);
+
+  if (storyCells.length === 0) return null;
+
+  const storyBounds = boundsForCells(storyCells);
+  const viewport = buildStoryViewportBounds({
+    frame,
+    storyBounds,
+  });
+  const croppedLayers = frame.layers.map<PixelWorldBufferLayer>((layer) => {
+    const cells = layer.cells
+      .map((cell) => cropCellToViewport(cell, viewport))
+      .filter((cell): cell is PixelWorldBufferCell => Boolean(cell));
+
+    return {
+      ...layer,
+      cells,
+      visibleCount: cells.filter((cell) => cell.visible).length,
+      hiddenCount: cells.filter((cell) => !cell.visible).length,
+    };
+  });
+
+  return {
+    ...frame,
+    bufferId: `${frame.bufferId}_story_viewport_corrected`,
+    canvas: {
+      ...frame.canvas,
+      width: viewport.width,
+      height: viewport.height,
+    },
+    layers: croppedLayers,
+    cellCount: croppedLayers.reduce((sum, layer) => sum + layer.cells.length, 0),
+  };
+}
+
+function buildStoryViewportBounds(input: {
+  frame: PixelWorldPixelBufferFrame;
+  storyBounds: { x: number; y: number; width: number; height: number };
+}): { x: number; y: number; width: number; height: number } {
+  const canvas = input.frame.canvas;
+  const padding = canvas.tileSize * 7;
+  const minWidth = Math.min(canvas.width, 1024);
+  const minHeight = Math.min(canvas.height, 720);
+  const maxWidth = Math.min(canvas.width, 1280);
+  const maxHeight = Math.min(canvas.height, 768);
+  const desiredWidth = clampNumber(
+    Math.round(input.storyBounds.width + padding * 2),
+    minWidth,
+    maxWidth
+  );
+  const desiredHeight = clampNumber(
+    Math.round(input.storyBounds.height + padding * 2),
+    minHeight,
+    maxHeight
+  );
+  const centerX = input.storyBounds.x + input.storyBounds.width / 2;
+  const centerY = input.storyBounds.y + input.storyBounds.height / 2;
+  const x = clampNumber(
+    Math.round(centerX - desiredWidth / 2),
+    0,
+    Math.max(0, canvas.width - desiredWidth)
+  );
+  const y = clampNumber(
+    Math.round(centerY - desiredHeight / 2),
+    0,
+    Math.max(0, canvas.height - desiredHeight)
+  );
+
+  return {
+    x,
+    y,
+    width: desiredWidth,
+    height: desiredHeight,
+  };
+}
+
+function cropCellToViewport(
+  cell: PixelWorldBufferCell,
+  viewport: { x: number; y: number; width: number; height: number }
+): PixelWorldBufferCell | null {
+  const left = Math.max(cell.x, viewport.x);
+  const top = Math.max(cell.y, viewport.y);
+  const right = Math.min(cell.x + cell.width, viewport.x + viewport.width);
+  const bottom = Math.min(cell.y + cell.height, viewport.y + viewport.height);
+
+  if (right <= left || bottom <= top) return null;
+
+  return {
+    ...cell,
+    id: `${cell.id}_story_viewport`,
+    x: left - viewport.x,
+    y: top - viewport.y,
+    width: right - left,
+    height: bottom - top,
+    stateTags: [...(cell.stateTags ?? []), "story_viewport_crop_projection"],
+  };
+}
+
+function isStoryViewportAnchorCell(cell: PixelWorldBufferCell): boolean {
+  const tags = cell.stateTags ?? [];
+  const sourceTokens = [
+    cell.id,
+    cell.sourceId ?? "",
+    cell.sourceCommandId,
+    cell.recipeId ?? "",
+    ...tags,
+  ];
+
+  return sourceTokens.some((token) =>
+    [
+      "story_staging_trace",
+      "story_trace_role",
+      "construction",
+      "under_construction",
+      "foundation",
+      "scaffold",
+      "story_anchor",
+    ].some((storyToken) => token.includes(storyToken))
+  );
+}
+
+function isActiveStoryViewportAnchorCell(cell: PixelWorldBufferCell): boolean {
+  const tags = cell.stateTags ?? [];
+  const sourceTokens = [
+    cell.id,
+    cell.sourceId ?? "",
+    cell.sourceCommandId,
+    cell.recipeId ?? "",
+    ...tags,
+  ];
+
+  return sourceTokens.some((token) =>
+    [
+      "story_staging_trace",
+      "construction",
+      "under_construction",
+      "foundation",
+      "scaffold",
+      "worked_ground",
+      "access_path",
+    ].some((storyToken) => token.includes(storyToken))
+  );
+}
+
+function isPrimaryStoryViewportAnchorCell(cell: PixelWorldBufferCell): boolean {
+  const tags = cell.stateTags ?? [];
+  const sourceTokens = [
+    cell.id,
+    cell.sourceId ?? "",
+    cell.sourceCommandId,
+    cell.recipeId ?? "",
+    ...tags,
+  ];
+
+  return sourceTokens.some((token) =>
+    [
+      "foundation",
+      "scaffold",
+      "under_construction",
+      "worked_ground",
+      "story_work_yard",
+      "story_material_cluster",
+      "construction_material_readability",
+    ].some((storyToken) => token.includes(storyToken))
+  );
 }
 
 function objectCellsForSourceInFrame(

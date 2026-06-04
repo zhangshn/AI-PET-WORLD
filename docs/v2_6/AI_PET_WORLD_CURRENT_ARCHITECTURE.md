@@ -32,6 +32,7 @@ The `/world` page is read-only. It must not write runtime, create a default worl
 ```txt
 WorldRuntimeSaveRecord
 -> WorldViewModel
+-> Story composition projection from existing world facts
 -> VisualFactManifest
 -> VisualGenerationPlan
 -> PixelWorldRenderPlan
@@ -52,6 +53,12 @@ Visual review must not:
 - Modify runtime facts.
 - Add nonexistent buildings, actors, roads, resources, or events.
 - Display unapproved frames.
+
+WorldViewModel may create read-only visual projections from existing facts, such as construction staging traces, worked ground, or access paths. These projections:
+
+- Must derive from an existing world fact source id.
+- Must not create new runtime placements, buildings, resources, events, or ticks.
+- Must remain part of the display/read model only.
 
 Current display gate:
 

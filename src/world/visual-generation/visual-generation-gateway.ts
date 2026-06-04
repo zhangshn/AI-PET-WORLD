@@ -91,16 +91,17 @@ function buildVisualObjectRecipesForObject(
   }
   if (object.opacity <= 0) return []
 
+  const visualScale = resolveVisualObjectScale(object)
   const deterministicKey = `${object.kind}:${object.id}:${safeNumber(
-    object.scale
+    visualScale
   )}:${safeNumber(object.health)}:${object.growthStage}`
   const recipe =
     object.kind === "tree"
       ? buildNaturalTreeObjectRecipe({
           sourceObjectId: object.id,
-          x: object.x + Math.round(12 * object.scale),
-          y: object.y + Math.round(32 * object.scale),
-          scale: object.scale,
+          x: object.x + Math.round(12 * visualScale),
+          y: object.y + Math.round(32 * visualScale),
+          scale: visualScale,
           health: object.health,
           growthStage: object.growthStage,
           stressLevel: object.tags.includes("stressed") ? 72 : 0,
@@ -110,9 +111,9 @@ function buildVisualObjectRecipesForObject(
       : object.kind === "bush"
         ? buildNaturalBushObjectRecipe({
             sourceObjectId: object.id,
-            x: object.x + Math.round(12 * object.scale),
-            y: object.y + Math.round(24 * object.scale),
-            scale: object.scale,
+            x: object.x + Math.round(12 * visualScale),
+            y: object.y + Math.round(24 * visualScale),
+            scale: visualScale,
             health: object.health,
             growthStage: object.growthStage,
             stressLevel: object.tags.includes("stressed") ? 72 : 0,
@@ -122,9 +123,9 @@ function buildVisualObjectRecipesForObject(
         : object.kind === "flower"
           ? buildNaturalFlowerObjectRecipe({
               sourceObjectId: object.id,
-              x: object.x + Math.round(12 * object.scale),
-              y: object.y + Math.round(22 * object.scale),
-              scale: object.scale,
+              x: object.x + Math.round(12 * visualScale),
+              y: object.y + Math.round(22 * visualScale),
+              scale: visualScale,
               health: object.health,
               growthStage: object.growthStage,
               stressLevel: object.tags.includes("stressed") ? 72 : 0,
@@ -134,9 +135,9 @@ function buildVisualObjectRecipesForObject(
           : object.kind === "mushroom"
             ? buildNaturalMushroomObjectRecipe({
                 sourceObjectId: object.id,
-                x: object.x + Math.round(12 * object.scale),
-                y: object.y + Math.round(22 * object.scale),
-                scale: object.scale,
+                x: object.x + Math.round(12 * visualScale),
+                y: object.y + Math.round(22 * visualScale),
+                scale: visualScale,
                 health: object.health,
                 growthStage: object.growthStage,
                 stressLevel: object.tags.includes("stressed") ? 72 : 0,
@@ -146,9 +147,9 @@ function buildVisualObjectRecipesForObject(
             : object.kind === "structure"
               ? buildWorldStructureObjectRecipe({
                   sourceObjectId: object.id,
-                  x: object.x + Math.round(18 * object.scale),
-                  y: object.y + Math.round(40 * object.scale),
-                  scale: object.scale,
+                  x: object.x + Math.round(18 * visualScale),
+                  y: object.y + Math.round(40 * visualScale),
+                  scale: visualScale,
                   health: object.health,
                   growthStage: object.growthStage,
                   stressLevel: object.tags.includes("stressed") ? 72 : 0,
@@ -158,9 +159,9 @@ function buildVisualObjectRecipesForObject(
               : object.kind === "facility"
                 ? buildWorldFacilityObjectRecipe({
                     sourceObjectId: object.id,
-                    x: object.x + Math.round(14 * object.scale),
-                    y: object.y + Math.round(32 * object.scale),
-                    scale: object.scale,
+                    x: object.x + Math.round(14 * visualScale),
+                    y: object.y + Math.round(32 * visualScale),
+                    scale: visualScale,
                     health: object.health,
                     growthStage: object.growthStage,
                     stressLevel: object.tags.includes("stressed") ? 72 : 0,
@@ -170,21 +171,46 @@ function buildVisualObjectRecipesForObject(
         : object.kind === "stone"
           ? buildNaturalStoneObjectRecipe({
               sourceObjectId: object.id,
-              x: object.x + Math.round(12 * object.scale),
-              y: object.y + Math.round(26 * object.scale),
-              scale: object.scale,
-              deterministicKey: `stone:${object.id}:${safeNumber(object.scale)}:${safeNumber(
+              x: object.x + Math.round(12 * visualScale),
+              y: object.y + Math.round(26 * visualScale),
+              scale: visualScale,
+              deterministicKey: `stone:${object.id}:${safeNumber(visualScale)}:${safeNumber(
                 object.health
               )}:${object.growthStage}`,
             })
           : buildNaturalInsectSignalRecipe({
             sourceObjectId: object.id,
-            x: object.x + Math.round(12 * object.scale),
-            y: object.y + Math.round(16 * object.scale),
-            scale: object.scale,
+            x: object.x + Math.round(12 * visualScale),
+            y: object.y + Math.round(16 * visualScale),
+            scale: visualScale,
           })
 
   return [mapPixelObjectRecipeToVisualObjectRecipe({ object, recipe, deterministicKey })]
+}
+
+function resolveVisualObjectScale(object: WorldViewObject): number {
+  if (!isWorldStoryAnchorObject(object)) return object.scale
+
+  const storyScale =
+    object.kind === "facility"
+      ? Math.max(1.22, object.scale * 2.2)
+      : Math.max(1.16, object.scale * 1.45)
+
+  return Number(Math.min(object.kind === "facility" ? 1.65 : 1.45, storyScale).toFixed(2))
+}
+
+function isWorldStoryAnchorObject(object: WorldViewObject): boolean {
+  if (object.kind !== "facility" && object.kind !== "structure") return false
+
+  return object.tags.some(
+    (tag) =>
+      tag === "butler_construction_result" ||
+      tag === "construction_plan_add_diff" ||
+      tag.startsWith("construction_stage:") ||
+      tag.startsWith("construction_project:") ||
+      tag.includes("care_station") ||
+      tag.includes("under_construction")
+  )
 }
 
 function buildObjectMigrationSummary(input: {

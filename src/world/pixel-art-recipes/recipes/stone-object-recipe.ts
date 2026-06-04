@@ -1,5 +1,4 @@
-// 该文件用于生成自然石头像素对象 recipe。
-
+﻿// Builds the stable natural stone pixel object recipe used by VisualGeneration.
 import { validatePixelObjectRecipe } from "../../pixel-primitives/pixel-object-validator";
 import type {
   PixelObjectRecipeResult,
@@ -104,7 +103,7 @@ export function buildNaturalStoneObjectRecipe(
 
   const draft: DraftPixelObject = {
     kind: "stone",
-    label: "石头",
+    label: "stone",
     recipeId: "natural_stone_object_recipe",
     recipeVersion: "asset-grid-quality-pass",
     semanticStructureId: getPixelSemanticStructure("stone").id,

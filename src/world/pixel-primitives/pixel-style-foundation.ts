@@ -1,5 +1,3 @@
-// 该文件用于定义像素原型库的基础色板与风格规则。
-
 import type { PixelLayerKind } from "./pixel-primitive-schema";
 
 export const PIXEL_STYLE_FOUNDATION_ID = "pixel_style_foundation_v1";

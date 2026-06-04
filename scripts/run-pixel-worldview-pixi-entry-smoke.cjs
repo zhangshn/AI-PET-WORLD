@@ -93,6 +93,14 @@
     packageSource.includes("smoke:pixel-worldview-pixi-entry"),
     "Pixi entry smoke package script is missing."
   )
+  assert(
+    packageSource.includes("smoke:world-view-model"),
+    "WorldViewModel smoke package script is missing."
+  )
+  assert(
+    worldCombined.includes("buildWorldViewModelForPixelWorld"),
+    "/world no longer builds from WorldViewModel."
+  )
 
   const forbiddenWorldTokens = [
     "data:image/svg",

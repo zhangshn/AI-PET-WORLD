@@ -6,7 +6,6 @@ import {
   mapPixelWorldViewModelFromSnapshot,
   mapWorldViewModelToPixelWorldSourceSnapshot,
 } from "@/world/pixel-worldview"
-import type { VisualDisplayGateDecision } from "@/world/visual-judge"
 import {
   buildVisualDisplayGateDecision,
   buildVisualFactManifestFromWorldViewModel,
@@ -58,42 +57,20 @@ export function PixelWorldViewReadonlyEntry(input: {
           {displayGate.canShowToPlayer ? (
             <PixiPixelWorldRendererClient buffer={playerVisibleBuffer} />
           ) : (
-            <VisualDisplayBlockedPanel gate={displayGate} />
+            <VisualDisplayBlockedPanel />
           )}
         </section>
-
-        {displayGate.status !== "allow_display" ? (
-          <VisualGateDebugStrip gate={displayGate} />
-        ) : null}
       </section>
     </main>
   )
 }
 
-function VisualDisplayBlockedPanel(input: {
-  gate: VisualDisplayGateDecision
-}) {
+function VisualDisplayBlockedPanel() {
   return (
     <section style={styles.blockedPanel}>
-      <div style={styles.blockedTitle}>Visual frame blocked</div>
-      <p style={styles.blockedText}>
-        {input.gate.review.remainingFailCount} visual review issue(s) remain.
-        The renderer will correct presentation only, without changing world facts.
-      </p>
+      <div style={styles.blockedTitle}>Visual review in progress</div>
+      <p style={styles.blockedText}>World frame is not ready for display.</p>
     </section>
-  )
-}
-
-function VisualGateDebugStrip(input: {
-  gate: VisualDisplayGateDecision
-}) {
-  return (
-    <aside style={styles.debugStrip}>
-      <span>gate: {input.gate.status}</span>
-      <span>final: {input.gate.review.finalSeverity}</span>
-      <span>fixed: {input.gate.review.resolvedFindingCount}</span>
-      <span>visual cells: {input.gate.review.generatedVisualOnlyCellCount}</span>
-    </aside>
   )
 }
 
@@ -140,33 +117,23 @@ const styles = {
     placeItems: "center",
     padding: 20,
   },
-  debugStrip: {
-    bottom: 12,
-    color: "rgba(216, 234, 216, 0.38)",
-    display: "flex",
-    fontSize: 10,
-    gap: 10,
-    left: 14,
-    pointerEvents: "none",
-    position: "absolute",
-    zIndex: 2,
-  },
   blockedPanel: {
-    background: "rgba(10, 20, 17, 0.78)",
-    border: "1px solid rgba(202, 104, 82, 0.42)",
+    background: "rgba(10, 20, 17, 0.66)",
+    border: "1px solid rgba(216, 234, 216, 0.14)",
     display: "grid",
-    gap: 10,
-    maxWidth: 520,
-    padding: 24,
+    gap: 8,
+    padding: "18px 22px",
   },
   blockedTitle: {
-    color: "#ffb39f",
-    fontSize: 24,
-    fontWeight: 800,
+    color: "rgba(216, 234, 216, 0.82)",
+    fontSize: 14,
+    fontWeight: 700,
+    letterSpacing: "0.08em",
+    textTransform: "uppercase",
   },
   blockedText: {
-    color: "rgba(216, 234, 216, 0.76)",
-    lineHeight: 1.7,
+    color: "rgba(216, 234, 216, 0.48)",
+    fontSize: 12,
     margin: 0,
   },
 } as const

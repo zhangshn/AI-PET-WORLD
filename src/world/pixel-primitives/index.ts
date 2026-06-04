@@ -1,5 +1,3 @@
-// 该文件用于统一导出像素原型库能力。
-
 export * from "./pixel-primitive-schema";
 export * from "./pixel-style-foundation";
 export * from "./semantic-structure-library";

@@ -63,12 +63,28 @@ async function main() {
   installTypeScriptRequireHook()
 
   const visualJudgeDir = path.join(repoRoot, "src", "world", "visual-judge")
+  const worldViewModelDir = path.join(repoRoot, "src", "world", "world-view-model")
   const schemaSource = readFile(path.join(visualJudgeDir, "visual-judge-schema.ts"), "visual judge schema")
   const gatewaySource = readFile(path.join(visualJudgeDir, "visual-judge-gateway.ts"), "visual judge gateway")
+  const aiVisualStandardSource = readFile(
+    path.join(visualJudgeDir, "ai-visual-standard-policy.ts"),
+    "AI visual standard policy"
+  )
+  const storyCompositionSource = readFile(
+    path.join(worldViewModelDir, "world-story-composition-mapper.ts"),
+    "world story composition mapper"
+  )
   const indexSource = readFile(path.join(visualJudgeDir, "index.ts"), "visual judge index")
   const packageSource = readFile(path.join(repoRoot, "package.json"), "package.json")
-  const combined = [schemaSource, gatewaySource, indexSource, packageSource].join("\n")
-  const moduleSource = [schemaSource, gatewaySource, indexSource].join("\n")
+  const combined = [
+    schemaSource,
+    gatewaySource,
+    aiVisualStandardSource,
+    storyCompositionSource,
+    indexSource,
+    packageSource,
+  ].join("\n")
+  const moduleSource = [schemaSource, gatewaySource, aiVisualStandardSource, indexSource].join("\n")
 
   const requiredTokens = [
     "VisualJudgeReport",
@@ -102,6 +118,23 @@ async function main() {
     "visual_judge_does_not_modify_runtime",
     "marker_fallback",
     "object_block",
+    "AI_VISUAL_PUBLIC_EVIDENCE_RULE_TABLE",
+    "pixel_cluster_readability",
+    "foreground_midground_background_depth",
+    "environment_art_serves_world_state",
+    "focal_story_and_quiet_space",
+    "world_story_anchor_dominance",
+    "weak_world_story_anchor",
+    "story_anchor_too_small_for_screen",
+    "story_frame_too_zoomed_out",
+    "crop_to_story_viewport",
+    "story_viewport_crop_projection",
+    "player_scale_readability_required",
+    "playable_world_not_test_map",
+    "world_view_story_staging_trace",
+    "silhouette_contrast_shape_readability",
+    "non_text_contrast_and_graphical_clarity",
+    "style_safety_no_copying",
   ]
 
   requiredTokens.forEach((token) => {

@@ -140,7 +140,289 @@ function buildDerivedVisualObjects(input: {
     })
   }
 
-  return derivedObjects
+  return [
+    ...derivedObjects,
+    ...buildForegroundCompositionObjects({
+      homeMapState: input.homeMapState,
+      spaceGrid: input.spaceGrid,
+      existingObjects: derivedObjects,
+    }),
+  ]
+}
+
+function buildForegroundCompositionObjects(input: {
+  homeMapState: HomeMapState
+  spaceGrid: SpaceGrid
+  existingObjects: WorldViewObject[]
+}): WorldViewObject[] {
+  const tileSize = input.spaceGrid.tileSize || input.homeMapState.mapSize.tileSize
+  const compositionCells = input.spaceGrid.cells
+    .filter((cell) => cell.row >= Math.floor(input.spaceGrid.rows * 0.48))
+    .filter((cell) => isDerivedVisualCandidate(cell))
+    .filter((cell) => cell.regionKind !== "boundary")
+
+  if (compositionCells.length === 0) return []
+
+  const existingLowerCount = input.existingObjects.filter(
+    (object) => object.y >= input.spaceGrid.height * 0.48
+  ).length
+  const targetCount = Math.max(
+    22,
+    Math.min(36, Math.round(input.spaceGrid.columns * 0.36))
+  )
+  const neededCount = Math.max(0, targetCount - existingLowerCount)
+
+  if (neededCount === 0) return []
+
+  return selectForegroundCompositionCells({
+    cells: compositionCells,
+    neededCount,
+    seed: input.homeMapState.seed,
+    columns: input.spaceGrid.columns,
+    rows: input.spaceGrid.rows,
+  })
+    .map(({ cell }, index) => {
+      const kind = resolveForegroundCompositionKind({
+        cell,
+        seed: input.homeMapState.seed,
+        index,
+      })
+      const point = resolveDerivedObjectPoint({
+        cell,
+        seed: `${input.homeMapState.seed}:foreground:${index}`,
+        tileSize,
+      })
+      const health = resolveDerivedObjectHealth({
+        cell,
+        groundHealth: input.homeMapState.resources.groundHealth,
+        naturalGrowth: input.homeMapState.resources.naturalGrowth,
+      })
+
+      return {
+        id: `derived_foreground_${kind}_${cell.id}`,
+        kind,
+        x: point.x,
+        y: point.y,
+        layer: resolveDerivedLayer(kind),
+        scale: resolveForegroundCompositionScale({
+          kind,
+          seed: `${input.homeMapState.seed}:foreground`,
+          cellId: cell.id,
+        }),
+        opacity: resolveDerivedOpacity({
+          cell,
+          health,
+        }),
+        health,
+        growthStage: health < 48 ? "declining" : health > 78 ? "mature" : "young",
+        label: labelForObjectKind(kind),
+        source: "derived_visual_only",
+        tags: [
+          "derived_visual_only",
+          "not_world_fact",
+          "rule_asset_projection",
+          "foreground_composition_projection",
+          "fact_backed_visual_projection",
+          "no_runtime_write",
+          `region_${cell.regionKind}`,
+          `terrain_${cell.terrainKind}`,
+        ],
+      }
+    })
+}
+
+function selectForegroundCompositionCells(input: {
+  cells: SpaceCell[]
+  neededCount: number
+  seed: string
+  columns: number
+  rows: number
+}): Array<{ cell: SpaceCell; score: number }> {
+  const selectedIds = new Set<string>()
+  const selected: Array<{ cell: SpaceCell; score: number }> = []
+  const anchors = selectForegroundClusterAnchors(input)
+
+  anchors.forEach((anchor, anchorIndex) => {
+    if (selected.length >= input.neededCount) return
+
+    const clusterTarget = anchorIndex % 2 === 0 ? 5 : 4
+    const clusterCells = selectCellsNearAnchor({
+      ...input,
+      anchor,
+      selectedIds,
+      target: clusterTarget,
+      clusterIndex: anchorIndex,
+    })
+
+    clusterCells.forEach((item) => {
+      if (selected.length >= input.neededCount) return
+
+      selectedIds.add(item.cell.id)
+      selected.push(item)
+    })
+  })
+
+  if (selected.length >= input.neededCount) return selected.slice(0, input.neededCount)
+
+  const remaining = scoreForegroundCells({
+    ...input,
+    bandName: "fallback",
+  }).filter((item) => !selectedIds.has(item.cell.id))
+
+  return [...selected, ...remaining].slice(0, input.neededCount)
+}
+
+function selectForegroundClusterAnchors(input: {
+  cells: SpaceCell[]
+  neededCount: number
+  seed: string
+  columns: number
+  rows: number
+}): Array<{ cell: SpaceCell; score: number }> {
+  const clusterCount = Math.max(4, Math.min(7, Math.ceil(input.neededCount / 5)))
+  const bands = [
+    { name: "mid", minRatio: 0.5, maxRatio: 0.66, quota: Math.ceil(clusterCount * 0.28) },
+    { name: "lower", minRatio: 0.66, maxRatio: 0.84, quota: Math.ceil(clusterCount * 0.5) },
+    { name: "edge", minRatio: 0.84, maxRatio: 0.96, quota: clusterCount },
+  ]
+  const anchors: Array<{ cell: SpaceCell; score: number }> = []
+
+  bands.forEach((band) => {
+    const candidates = scoreForegroundCells({
+      ...input,
+      bandName: `cluster_anchor_${band.name}`,
+    }).filter(({ cell }) => {
+      const yRatio = (cell.row + 0.5) / input.rows
+
+      return yRatio >= band.minRatio && yRatio < band.maxRatio
+    })
+
+    for (const candidate of candidates) {
+      if (anchors.length >= band.quota) break
+      if (anchors.some((anchor) => cellGridDistance(anchor.cell, candidate.cell) < 9)) continue
+
+      anchors.push(candidate)
+    }
+  })
+
+  return anchors.slice(0, clusterCount)
+}
+
+function selectCellsNearAnchor(input: {
+  cells: SpaceCell[]
+  seed: string
+  columns: number
+  rows: number
+  anchor: { cell: SpaceCell; score: number }
+  selectedIds: Set<string>
+  target: number
+  clusterIndex: number
+}): Array<{ cell: SpaceCell; score: number }> {
+  return scoreForegroundCells({
+    cells: input.cells,
+    seed: `${input.seed}:cluster:${input.clusterIndex}`,
+    columns: input.columns,
+    rows: input.rows,
+    bandName: "near_anchor",
+  })
+    .filter((item) => !input.selectedIds.has(item.cell.id))
+    .filter((item) => {
+      const columnDistance = Math.abs(item.cell.column - input.anchor.cell.column)
+      const rowDistance = Math.abs(item.cell.row - input.anchor.cell.row)
+
+      return columnDistance <= 4 && rowDistance <= 3
+    })
+    .sort((left, right) => {
+      const leftDistance = cellGridDistance(left.cell, input.anchor.cell)
+      const rightDistance = cellGridDistance(right.cell, input.anchor.cell)
+
+      if (leftDistance !== rightDistance) return leftDistance - rightDistance
+      return right.score - left.score
+    })
+    .slice(0, input.target)
+}
+
+function scoreForegroundCells(input: {
+  cells: SpaceCell[]
+  seed: string
+  columns: number
+  rows: number
+  bandName: string
+}): Array<{ cell: SpaceCell; score: number }> {
+  return input.cells
+    .map((cell) => ({
+      cell,
+      score: foregroundCompositionScore({
+        cell,
+        seed: `${input.seed}:${input.bandName}`,
+        columns: input.columns,
+        rows: input.rows,
+      }),
+    }))
+    .sort((left, right) => right.score - left.score)
+}
+
+function foregroundCompositionScore(input: {
+  cell: SpaceCell
+  seed: string
+  columns: number
+  rows: number
+}): number {
+  const xRatio = (input.cell.column + 0.5) / input.columns
+  const yRatio = (input.cell.row + 0.5) / input.rows
+  const compositionBandScore = 1 - Math.abs(yRatio - 0.74) * 1.24
+  const sideBalanceScore = 1 - Math.abs(xRatio - 0.5) * 0.72
+  const rhythm = stableUnit(`${input.seed}:${input.cell.id}:foreground_rhythm`)
+  const ecologyScore = clamp01(input.cell.ecologyHealthHint / 100)
+  const moistureScore = clamp01(input.cell.moistureHint / 100)
+  const traceRelief = 1 - clamp01(input.cell.traceStrength / 100) * 0.28
+
+  return (
+    compositionBandScore * 0.34 +
+    sideBalanceScore * 0.2 +
+    ecologyScore * 0.18 +
+    moistureScore * 0.1 +
+    traceRelief * 0.08 +
+    rhythm * 0.1
+  )
+}
+
+function resolveForegroundCompositionKind(input: {
+  cell: SpaceCell
+  seed: string
+  index: number
+}): WorldViewObjectKind {
+  const roll = stableUnit(`${input.seed}:${input.cell.id}:foreground_kind`)
+
+  if (input.index % 3 === 0) return "stone"
+  if (input.index % 3 === 1) return "bush"
+  if (input.cell.moistureHint > 62 && roll < 0.36) return "mushroom"
+  if (input.cell.ecologyHealthHint > 68 && roll < 0.52) return "bush"
+  if (roll < 0.5) return "flower"
+
+  return "bush"
+}
+
+function resolveForegroundCompositionScale(input: {
+  kind: WorldViewObjectKind
+  seed: string
+  cellId: string
+}): number {
+  const roll = stableUnit(`${input.seed}:${input.cellId}:foreground_scale`)
+  const base =
+    input.kind === "stone"
+      ? 0.86
+      : input.kind === "bush"
+        ? 0.82
+        : input.kind === "mushroom"
+          ? 0.58
+          : 0.52
+
+  return Number(Math.max(0.5, Math.min(1.08, base + roll * 0.18)).toFixed(2))
+}
+
+function cellGridDistance(left: SpaceCell, right: SpaceCell): number {
+  return Math.hypot(left.column - right.column, left.row - right.row)
 }
 
 function isDerivedVisualCandidate(cell: SpaceCell): boolean {
@@ -276,28 +558,14 @@ function isRenderablePlacement(placement: MapPlacement): boolean {
   return true
 }
 
-function resolveObjectKind(placement: MapPlacement): WorldViewObjectKind {
+function resolveCleanObjectKind(placement: MapPlacement): WorldViewObjectKind {
   const tokens = placementTokens(placement)
 
-  if (tokens.some((token) => token.includes("tree") || token.includes("树"))) {
-    return "tree"
-  }
-
-  if (tokens.some((token) => token.includes("bush") || token.includes("灌木"))) {
-    return "bush"
-  }
-
-  if (tokens.some((token) => token.includes("stone") || token.includes("rock") || token.includes("石"))) {
-    return "stone"
-  }
-
-  if (tokens.some((token) => token.includes("flower") || token.includes("花"))) {
-    return "flower"
-  }
-
-  if (tokens.some((token) => token.includes("mushroom") || token.includes("蘑菇"))) {
-    return "mushroom"
-  }
+  if (tokens.some((token) => token.includes("tree"))) return "tree"
+  if (tokens.some((token) => token.includes("bush"))) return "bush"
+  if (tokens.some((token) => token.includes("stone") || token.includes("rock"))) return "stone"
+  if (tokens.some((token) => token.includes("flower"))) return "flower"
+  if (tokens.some((token) => token.includes("mushroom"))) return "mushroom"
 
   if (
     tokens.some(
@@ -332,6 +600,9 @@ function resolveObjectKind(placement: MapPlacement): WorldViewObjectKind {
   return "facility"
 }
 
+function resolveObjectKind(placement: MapPlacement): WorldViewObjectKind {
+  return resolveCleanObjectKind(placement)
+}
 function resolveObjectLayer(input: {
   placement: MapPlacement
   kind: WorldViewObjectKind
@@ -404,17 +675,19 @@ function placementTokens(placement: MapPlacement): string[] {
 }
 
 function labelForObjectKind(kind: WorldViewObjectKind): string {
-  if (kind === "tree") return "树"
-  if (kind === "bush") return "灌木"
-  if (kind === "stone") return "石头"
-  if (kind === "flower") return "花"
-  if (kind === "mushroom") return "蘑菇"
-  if (kind === "insect_signal") return "生态信号"
-  if (kind === "structure") return "建筑"
+  const labels: Record<WorldViewObjectKind, string> = {
+    tree: "tree",
+    bush: "bush",
+    stone: "stone",
+    flower: "flower",
+    mushroom: "mushroom",
+    insect_signal: "ecology signal",
+    structure: "structure",
+    facility: "facility",
+  }
 
-  return "设施"
+  return labels[kind]
 }
-
 function layerOrder(layer: WorldViewLayer): number {
   if (layer === "back") return 1
   if (layer === "front") return 3

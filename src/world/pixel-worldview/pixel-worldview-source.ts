@@ -29,6 +29,7 @@ export type PixelWorldSourceTrace = {
   strength?: number;
   opacity?: number;
   age?: number;
+  stateTags?: string[];
 };
 
 export type PixelWorldSourceObject = {

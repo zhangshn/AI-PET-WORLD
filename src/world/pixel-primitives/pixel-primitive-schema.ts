@@ -1,5 +1,3 @@
-// 该文件用于定义像素原型库的核心类型。
-
 export type PixelPrimitiveKind =
   | "square_block"
   | "wide_block"

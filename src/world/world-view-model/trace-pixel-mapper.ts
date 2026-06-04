@@ -23,6 +23,14 @@ export function mapTraceFieldToWorldViewTraces(input: {
             : trace.visualHints.layerHint === "ground"
               ? "ground"
               : "surface",
+        sourceId: trace.id,
+        tags: [
+          "trace_field_fact",
+          `trace_type:${trace.type}`,
+          `trace_source:${trace.sourceKind}`,
+          trace.lifecyclePhase,
+          ...trace.tags,
+        ],
       },
     ]
   })

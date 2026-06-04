@@ -34,6 +34,36 @@ Post-correction review
 Display only if pass
 ```
 
+## 2.1 MVP Visual Target
+
+MVP must already follow the final world-art standard.
+
+The world screen must not be accepted as MVP if it still looks like:
+
+- A flat green field.
+- Random scattered trees, stones, flowers, or bushes.
+- A tiny construction marker without readable work-site structure.
+- A path that does not guide the eye to the active world story.
+- A test map with no foreground/middle/background rhythm.
+
+The accepted MVP target is:
+
+```txt
+World facts
+-> choose active story focal point
+-> compose scene zones
+   - focal construction/work yard
+   - readable path
+   - material/support area
+   - natural frame
+   - terrain depth and edge variation
+-> generate pixel clusters
+-> visual judge
+-> display only after pass
+```
+
+This is a project-owned quality bar. It must not copy any external image or named game style.
+
 ## 3. Visual Judge Categories
 
 Current review categories:

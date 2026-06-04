@@ -81,6 +81,8 @@ export type WorldViewTrace = {
   intensity: number
   opacity: number
   layer: WorldViewTraceLayer
+  sourceId?: string
+  tags?: string[]
 }
 
 export type WorldViewActor = {

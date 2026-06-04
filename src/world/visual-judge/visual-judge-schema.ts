@@ -47,6 +47,7 @@ export type VisualCorrectionActionType =
   | "replace_visual_recipe"
   | "reposition_visual_object"
   | "generate_visual_cue"
+  | "crop_to_story_viewport"
   | "promote_actor_sprite"
   | "remove_forbidden_visual_token";
 
@@ -61,6 +62,7 @@ export type VisualCorrectionIntentType =
   | "reconnect_path_visuals"
   | "cluster_ecology_transition"
   | "strengthen_world_composition"
+  | "crop_to_story_viewport"
   | "protect_player_focus_area"
   | "remove_forbidden_visual_token";
 

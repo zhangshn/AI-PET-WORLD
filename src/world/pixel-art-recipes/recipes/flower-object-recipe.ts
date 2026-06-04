@@ -1,4 +1,4 @@
-// Builds the stable natural flower pixel object recipe used by VisualGeneration.
+﻿// Builds the stable natural flower pixel object recipe used by VisualGeneration.
 
 import { PIXEL_PALETTE } from "../../pixel-primitives/pixel-style-foundation";
 import { validatePixelObjectRecipe } from "../../pixel-primitives/pixel-object-validator";
@@ -108,7 +108,7 @@ export function buildNaturalFlowerObjectRecipe(
   const shapes: PixelShapeId[] = ["shadow_patch", "grass_chip", "highlight_chip"];
   const draft: DraftPixelObject = {
     kind: "flower",
-    label: "花",
+    label: "flower",
     recipeId: "natural_flower_object_recipe",
     recipeVersion: "scene-composer-flower-recipe",
     goldenAlgorithm: "scene_composer_flower_recipe",

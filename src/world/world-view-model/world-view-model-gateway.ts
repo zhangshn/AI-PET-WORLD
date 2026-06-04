@@ -8,6 +8,7 @@ import { mapTraceFieldToWorldViewTraces } from "./trace-pixel-mapper"
 import { buildWorldViewActors } from "./world-actor-mapper"
 import { buildWorldViewAtmosphere } from "./world-atmosphere-mapper"
 import { buildWorldViewObjectsFromHomeMapState } from "./world-object-mapper"
+import { buildWorldStoryCompositionTraces } from "./world-story-composition-mapper"
 import { buildWorldViewTilesFromSpaceGrid } from "./world-tile-mapper"
 import type { WorldViewModel } from "./world-view-model-schema"
 
@@ -34,30 +35,39 @@ export function buildWorldViewModelForPixelWorld(input: {
           homeMapState,
           traceField,
         })
+  const canvas = {
+    width: spaceGrid.width,
+    height: spaceGrid.height,
+    tileSize: spaceGrid.tileSize,
+    columns: spaceGrid.columns,
+    rows: spaceGrid.rows,
+  }
+  const objects = buildWorldViewObjectsFromHomeMapState({
+    homeMapState,
+    spaceGrid,
+    traceField,
+  })
+  const traces = [
+    ...mapTraceFieldToWorldViewTraces({
+      traces: traceField.traces,
+    }),
+    ...buildWorldStoryCompositionTraces({
+      objects,
+      canvas,
+    }),
+  ]
 
   return {
     worldId: saveRecord.worldId,
     ownerId: saveRecord.ownerId,
     tick: saveRecord.tick,
     savedAt: saveRecord.savedAt,
-    canvas: {
-      width: spaceGrid.width,
-      height: spaceGrid.height,
-      tileSize: spaceGrid.tileSize,
-      columns: spaceGrid.columns,
-      rows: spaceGrid.rows,
-    },
+    canvas,
     tiles: buildWorldViewTilesFromSpaceGrid({
       spaceGrid,
     }),
-    objects: buildWorldViewObjectsFromHomeMapState({
-      homeMapState,
-      spaceGrid,
-      traceField,
-    }),
-    traces: mapTraceFieldToWorldViewTraces({
-      traces: traceField.traces,
-    }),
+    objects,
+    traces,
     actors: buildWorldViewActors({
       homeMapState,
       spaceGrid,
@@ -89,6 +99,8 @@ export function buildWorldViewModelForPixelWorld(input: {
       "no_svg_renderer_in_world",
       "no_scene_composer_gateway_in_world_view_model",
       "no_world_fact_generation",
+      "world_story_composition_trace_projection",
+      "story_traces_are_read_only_world_fact_projection",
       "runtime_read_only_projection",
       input.isPersisted ? "runtime_save_persisted" : "runtime_save_fallback",
       saveRecord.traceField ? "persisted_trace_field_used" : "derived_trace_field_used_read_only",

@@ -117,7 +117,7 @@ export function buildNaturalMushroomObjectRecipe(
   const shapes: PixelShapeId[] = ["shadow_patch", "trunk_strip", "stone_cluster", "highlight_chip"];
   const draft: DraftPixelObject = {
     kind: "mushroom",
-    label: "蘑菇",
+    label: "mushroom",
     recipeId: "natural_mushroom_object_recipe",
     recipeVersion: "scene-composer-mushroom-recipe",
     goldenAlgorithm: "scene_composer_mushroom_recipe",

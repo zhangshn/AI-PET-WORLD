@@ -63,6 +63,7 @@ function mapTrace(trace: PixelWorldSourceTrace, index: number): PixelWorldTrace 
     strength,
     opacity: trace.opacity ?? clamp01(strength),
     age: trace.age,
+    stateTags: trace.stateTags,
   };
 }
 

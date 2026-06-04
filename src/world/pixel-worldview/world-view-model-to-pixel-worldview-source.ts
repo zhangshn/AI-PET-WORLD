@@ -100,6 +100,19 @@ function mapTraceToReadableSegments(input: {
   canvasHeight: number;
 }): PixelWorldSourceTrace[] {
   const { trace, tileSize } = input;
+  const tags = trace.tags ?? [];
+  const storyRole = tags.find((tag) => tag.startsWith("story_trace_role:"))?.slice("story_trace_role:".length);
+
+  if (tags.includes("story_staging_trace")) {
+    return mapStoryTraceToReadableSegments({
+      trace,
+      tileSize,
+      canvasWidth: input.canvasWidth,
+      canvasHeight: input.canvasHeight,
+      storyRole,
+    });
+  }
+
   const segmentCount = Math.max(3, Math.min(10, Math.ceil(trace.radius / 12) + Math.ceil(trace.intensity / 28)));
   const kind = mapTraceKind(trace.visualKind);
   const seed = stableHash(`${trace.id}:${trace.x}:${trace.y}:${trace.radius}`);
@@ -134,13 +147,138 @@ function mapTraceToReadableSegments(input: {
       },
       strength: trace.intensity / 100,
       opacity: trace.opacity,
+      stateTags: tags,
     };
   });
 }
 
+function mapStoryTraceToReadableSegments(input: {
+  trace: WorldViewTrace;
+  tileSize: number;
+  canvasWidth: number;
+  canvasHeight: number;
+  storyRole?: string;
+}): PixelWorldSourceTrace[] {
+  if (input.storyRole === "access_path") {
+    return mapStoryAccessPathSegments(input);
+  }
+
+  return mapStoryAreaSegments(input);
+}
+
+function mapStoryAreaSegments(input: {
+  trace: WorldViewTrace;
+  tileSize: number;
+  canvasWidth: number;
+  canvasHeight: number;
+  storyRole?: string;
+}): PixelWorldSourceTrace[] {
+  const { trace, tileSize } = input;
+  const kind = mapTraceKind(trace.visualKind);
+  const width =
+    input.storyRole === "foundation_pad"
+      ? Math.round(tileSize * 5.8)
+      : input.storyRole === "worked_ground"
+        ? Math.round(tileSize * 4.8)
+        : Math.round(tileSize * 3.6);
+  const height =
+    input.storyRole === "foundation_pad"
+      ? Math.round(tileSize * 2.2)
+      : input.storyRole === "worked_ground"
+        ? Math.round(tileSize * 1.8)
+        : Math.round(tileSize * 1.2);
+  const offsets =
+    input.storyRole === "foundation_pad"
+      ? [
+          { x: 0, y: 0, w: 1, h: 1 },
+          { x: -0.35, y: 0.48, w: 0.42, h: 0.5 },
+          { x: 0.32, y: 0.42, w: 0.36, h: 0.45 },
+        ]
+      : [
+          { x: 0, y: 0, w: 1, h: 1 },
+          { x: -0.28, y: 0.36, w: 0.34, h: 0.42 },
+          { x: 0.28, y: -0.28, w: 0.28, h: 0.32 },
+        ];
+
+  return offsets.map((offset, index) => {
+    const segmentWidth = Math.max(10, Math.round(width * offset.w));
+    const segmentHeight = Math.max(6, Math.round(height * offset.h));
+    const x = Math.round(trace.x + width * offset.x - segmentWidth / 2);
+    const y = Math.round(trace.y + height * offset.y - segmentHeight / 2);
+
+    return {
+      id: `${trace.id}_area_${index}`,
+      sourceId: trace.sourceId ?? trace.id,
+      kind,
+      bounds: {
+        x: clampInt(x, 0, Math.max(0, input.canvasWidth - segmentWidth)),
+        y: clampInt(y, 0, Math.max(0, input.canvasHeight - segmentHeight)),
+        width: segmentWidth,
+        height: segmentHeight,
+      },
+      strength: trace.intensity / 100,
+      opacity: trace.opacity,
+      stateTags: trace.tags,
+    };
+  });
+}
+
+function mapStoryAccessPathSegments(input: {
+  trace: WorldViewTrace;
+  tileSize: number;
+  canvasWidth: number;
+  canvasHeight: number;
+}): PixelWorldSourceTrace[] {
+  const { trace, tileSize } = input;
+  const kind = mapTraceKind(trace.visualKind);
+  const segmentWidth = Math.round(tileSize * 2.6);
+  const segmentHeight = Math.round(tileSize * 0.58);
+  const crossWidth = Math.round(tileSize * 1.1);
+  const crossHeight = Math.round(tileSize * 0.42);
+
+  return [
+    {
+      id: `${trace.id}_path_main`,
+      sourceId: trace.sourceId ?? trace.id,
+      kind,
+      bounds: {
+        x: clampInt(Math.round(trace.x - segmentWidth / 2), 0, Math.max(0, input.canvasWidth - segmentWidth)),
+        y: clampInt(Math.round(trace.y - segmentHeight / 2), 0, Math.max(0, input.canvasHeight - segmentHeight)),
+        width: segmentWidth,
+        height: segmentHeight,
+      },
+      strength: trace.intensity / 100,
+      opacity: trace.opacity,
+      stateTags: trace.tags,
+    },
+    {
+      id: `${trace.id}_path_edge`,
+      sourceId: trace.sourceId ?? trace.id,
+      kind,
+      bounds: {
+        x: clampInt(Math.round(trace.x - crossWidth / 2 + tileSize * 0.55), 0, Math.max(0, input.canvasWidth - crossWidth)),
+        y: clampInt(Math.round(trace.y + segmentHeight * 0.45), 0, Math.max(0, input.canvasHeight - crossHeight)),
+        width: crossWidth,
+        height: crossHeight,
+      },
+      strength: trace.intensity / 100,
+      opacity: Math.max(0.12, trace.opacity * 0.72),
+      stateTags: trace.tags,
+    },
+  ];
+}
+
 function mapTileKind(kind: WorldViewTileKind): PixelWorldTileKind {
-  if (kind === "grass" || kind === "pressed_grass" || kind === "worn_grass" || kind === "soil") return kind;
-  if (kind === "exposed_soil" || kind === "built") return "soil";
+  if (
+    kind === "grass" ||
+    kind === "pressed_grass" ||
+    kind === "worn_grass" ||
+    kind === "soil" ||
+    kind === "ecology_transition" ||
+    kind === "recovery_growth" ||
+    kind === "built"
+  ) return kind;
+  if (kind === "exposed_soil") return "soil";
   if (kind === "boundary") return "empty";
   return "grass";
 }

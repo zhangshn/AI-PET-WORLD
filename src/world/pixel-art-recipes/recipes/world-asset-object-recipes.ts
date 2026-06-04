@@ -108,7 +108,7 @@ export function buildWorldStructureObjectRecipe(
 
   return finishDraft({
     kind: "structure",
-    label: "建筑",
+    label: "structure",
     recipeId: "world_structure_object_recipe",
     recipeVersion: "world-asset-structure-recipe",
     goldenAlgorithm: "world_structure_block_recipe",
@@ -123,11 +123,18 @@ export function buildWorldFacilityObjectRecipe(
   input: WorldAssetObjectRecipeInput = {}
 ): PixelObjectRecipeResult {
   const blockBuilder = createPixelBlockBuilder("facility_object_block");
-  const scale = clamp(input.scale ?? 1, 0.58, 1.35);
+  const scale = clamp(input.scale ?? 1, 0.58, 1.7);
   const centerX = Math.round(input.x ?? 108);
   const baseY = Math.round(input.y ?? 140);
   const health = clamp(input.health ?? 74, 0, 100);
   const muted = health < 46 || (input.stressLevel ?? 0) > 60;
+  const underConstruction = (input.stateTags ?? []).some(
+    (tag) =>
+      tag === "butler_construction_result" ||
+      tag === "construction_plan_add_diff" ||
+      tag.startsWith("construction_stage:") ||
+      tag.includes("under_construction")
+  );
   const width = Math.max(24, Math.round(42 * scale));
   const bodyHeight = Math.max(16, Math.round(28 * scale));
   const left = centerX - Math.round(width / 2);
@@ -160,7 +167,7 @@ export function buildWorldFacilityObjectRecipe(
       y: bodyTop,
       width: width - Math.round(8 * scale),
       height: bodyHeight,
-      color: PIXEL_PALETTE.cloth,
+      color: underConstruction ? PIXEL_PALETTE.stone : PIXEL_PALETTE.cloth,
       opacity: muted ? 0.78 : 1,
       layer: "object",
     }),
@@ -170,7 +177,7 @@ export function buildWorldFacilityObjectRecipe(
       y: bodyTop + Math.round(5 * scale),
       width: Math.max(4, Math.round(6 * scale)),
       height: Math.max(10, Math.round(18 * scale)),
-      color: PIXEL_PALETTE.clothLight,
+      color: underConstruction ? PIXEL_PALETTE.stoneLight : PIXEL_PALETTE.clothLight,
       opacity: muted ? 0.54 : 0.88,
       layer: "object",
     }),
@@ -180,7 +187,7 @@ export function buildWorldFacilityObjectRecipe(
       y: bodyTop + Math.round(11 * scale),
       width: Math.max(8, Math.round(14 * scale)),
       height: Math.max(2, Math.round(3 * scale)),
-      color: PIXEL_PALETTE.trunkLight,
+      color: underConstruction ? PIXEL_PALETTE.trunk : PIXEL_PALETTE.trunkLight,
       opacity: muted ? 0.7 : 1,
       layer: "object",
     }),
@@ -194,11 +201,22 @@ export function buildWorldFacilityObjectRecipe(
       opacity: muted ? 0.58 : 0.92,
       layer: "object",
     }),
+    ...buildFacilityConstructionCueBlocks({
+      blockBuilder,
+      centerX,
+      baseY,
+      left,
+      bodyTop,
+      width,
+      scale,
+      muted,
+      enabled: underConstruction,
+    }),
   ];
 
   return finishDraft({
     kind: "facility",
-    label: "设施",
+    label: "facility",
     recipeId: "world_facility_object_recipe",
     recipeVersion: "world-asset-facility-recipe",
     goldenAlgorithm: "world_facility_block_recipe",
@@ -207,6 +225,221 @@ export function buildWorldFacilityObjectRecipe(
     anchor: { type: "center_bottom", x: centerX, y: baseY },
     blocks,
   });
+}
+
+function buildFacilityConstructionCueBlocks(input: {
+  blockBuilder: ReturnType<typeof createPixelBlockBuilder>;
+  centerX: number;
+  baseY: number;
+  left: number;
+  bodyTop: number;
+  width: number;
+  scale: number;
+  muted: boolean;
+  enabled: boolean;
+}): PixelBlock[] {
+  if (!input.enabled) return [];
+
+  const foundationWidth = input.width + Math.round(26 * input.scale);
+  const foundationLeft = input.centerX - Math.round(foundationWidth / 2);
+  const scaffoldHeight = Math.max(20, Math.round(32 * input.scale));
+  const scaffoldTop = input.bodyTop - Math.round(7 * input.scale);
+  const wallTop = input.baseY - Math.round(36 * input.scale);
+  const wallThickness = Math.max(5, Math.round(7 * input.scale));
+  const wallInset = Math.max(8, Math.round(11 * input.scale));
+
+  return [
+    input.blockBuilder.block({
+      primitiveKind: "wide_block",
+      x: foundationLeft,
+      y: input.baseY - Math.round(4 * input.scale),
+      width: foundationWidth,
+      height: Math.max(5, Math.round(8 * input.scale)),
+      color: PIXEL_PALETTE.soilDark,
+      opacity: input.muted ? 0.58 : 0.78,
+      layer: "object",
+    }),
+    input.blockBuilder.block({
+      primitiveKind: "wide_block",
+      x: foundationLeft + wallInset,
+      y: wallTop,
+      width: foundationWidth - wallInset * 2,
+      height: wallThickness,
+      color: PIXEL_PALETTE.stoneLight,
+      opacity: input.muted ? 0.56 : 0.82,
+      layer: "object",
+    }),
+    input.blockBuilder.block({
+      primitiveKind: "wide_block",
+      x: foundationLeft + wallInset,
+      y: input.baseY - Math.round(18 * input.scale),
+      width: foundationWidth - wallInset * 2,
+      height: wallThickness,
+      color: PIXEL_PALETTE.stoneDark,
+      opacity: input.muted ? 0.58 : 0.86,
+      layer: "object",
+    }),
+    input.blockBuilder.block({
+      primitiveKind: "tall_block",
+      x: foundationLeft + wallInset,
+      y: wallTop,
+      width: wallThickness,
+      height: Math.max(18, Math.round(24 * input.scale)),
+      color: PIXEL_PALETTE.stone,
+      opacity: input.muted ? 0.56 : 0.84,
+      layer: "object",
+    }),
+    input.blockBuilder.block({
+      primitiveKind: "tall_block",
+      x: foundationLeft + foundationWidth - wallInset - wallThickness,
+      y: wallTop,
+      width: wallThickness,
+      height: Math.max(18, Math.round(24 * input.scale)),
+      color: PIXEL_PALETTE.stone,
+      opacity: input.muted ? 0.56 : 0.84,
+      layer: "object",
+    }),
+    input.blockBuilder.block({
+      primitiveKind: "wide_block",
+      x: foundationLeft + wallInset + Math.round(10 * input.scale),
+      y: wallTop + Math.round(10 * input.scale),
+      width: foundationWidth - wallInset * 2 - Math.round(20 * input.scale),
+      height: Math.max(8, Math.round(12 * input.scale)),
+      color: PIXEL_PALETTE.soil,
+      opacity: input.muted ? 0.38 : 0.58,
+      layer: "object",
+    }),
+    input.blockBuilder.block({
+      primitiveKind: "wide_block",
+      x: input.centerX - Math.round(9 * input.scale),
+      y: input.baseY - Math.round(17 * input.scale),
+      width: Math.max(14, Math.round(18 * input.scale)),
+      height: Math.max(4, Math.round(5 * input.scale)),
+      color: PIXEL_PALETTE.trunkLight,
+      opacity: input.muted ? 0.5 : 0.78,
+      layer: "object",
+    }),
+    input.blockBuilder.block({
+      primitiveKind: "wide_block",
+      x: input.centerX - Math.round(13 * input.scale),
+      y: input.baseY - Math.round(11 * input.scale),
+      width: Math.max(20, Math.round(26 * input.scale)),
+      height: Math.max(4, Math.round(5 * input.scale)),
+      color: PIXEL_PALETTE.trunk,
+      opacity: input.muted ? 0.48 : 0.74,
+      layer: "object",
+    }),
+    input.blockBuilder.block({
+      primitiveKind: "wide_block",
+      x: foundationLeft + Math.round(6 * input.scale),
+      y: input.baseY - Math.round(14 * input.scale),
+      width: foundationWidth - Math.round(12 * input.scale),
+      height: Math.max(4, Math.round(5 * input.scale)),
+      color: PIXEL_PALETTE.stone,
+      opacity: input.muted ? 0.56 : 0.82,
+      layer: "object",
+    }),
+    input.blockBuilder.block({
+      primitiveKind: "wide_block",
+      x: foundationLeft + Math.round(11 * input.scale),
+      y: input.baseY - Math.round(24 * input.scale),
+      width: foundationWidth - Math.round(22 * input.scale),
+      height: Math.max(4, Math.round(6 * input.scale)),
+      color: PIXEL_PALETTE.soil,
+      opacity: input.muted ? 0.44 : 0.66,
+      layer: "object",
+    }),
+    input.blockBuilder.block({
+      primitiveKind: "tall_block",
+      x: input.left - Math.round(10 * input.scale),
+      y: scaffoldTop,
+      width: Math.max(3, Math.round(5 * input.scale)),
+      height: scaffoldHeight,
+      color: PIXEL_PALETTE.trunkDark,
+      opacity: input.muted ? 0.58 : 0.82,
+      layer: "object",
+    }),
+    input.blockBuilder.block({
+      primitiveKind: "tall_block",
+      x: input.left + input.width + Math.round(5 * input.scale),
+      y: scaffoldTop,
+      width: Math.max(3, Math.round(5 * input.scale)),
+      height: scaffoldHeight,
+      color: PIXEL_PALETTE.trunkDark,
+      opacity: input.muted ? 0.58 : 0.82,
+      layer: "object",
+    }),
+    input.blockBuilder.block({
+      primitiveKind: "tall_block",
+      x: input.centerX - Math.round(3 * input.scale),
+      y: scaffoldTop + Math.round(3 * input.scale),
+      width: Math.max(3, Math.round(4 * input.scale)),
+      height: scaffoldHeight - Math.round(5 * input.scale),
+      color: PIXEL_PALETTE.trunk,
+      opacity: input.muted ? 0.5 : 0.74,
+      layer: "object",
+    }),
+    input.blockBuilder.block({
+      primitiveKind: "line_block",
+      x: input.left - Math.round(12 * input.scale),
+      y: scaffoldTop + Math.round(9 * input.scale),
+      width: input.width + Math.round(24 * input.scale),
+      height: Math.max(2, Math.round(4 * input.scale)),
+      color: PIXEL_PALETTE.trunkLight,
+      opacity: input.muted ? 0.56 : 0.8,
+      layer: "object",
+    }),
+    input.blockBuilder.block({
+      primitiveKind: "line_block",
+      x: input.left - Math.round(8 * input.scale),
+      y: scaffoldTop + Math.round(19 * input.scale),
+      width: input.width + Math.round(17 * input.scale),
+      height: Math.max(2, Math.round(3 * input.scale)),
+      color: PIXEL_PALETTE.trunkLight,
+      opacity: input.muted ? 0.42 : 0.64,
+      layer: "object",
+    }),
+    input.blockBuilder.block({
+      primitiveKind: "highlight_block",
+      x: input.left + Math.round(input.width * 0.18),
+      y: input.baseY - Math.round(22 * input.scale),
+      width: Math.max(10, Math.round(16 * input.scale)),
+      height: Math.max(3, Math.round(5 * input.scale)),
+      color: PIXEL_PALETTE.highlight,
+      opacity: input.muted ? 0.48 : 0.74,
+      layer: "object",
+    }),
+    input.blockBuilder.block({
+      primitiveKind: "wide_block",
+      x: foundationLeft + Math.round(4 * input.scale),
+      y: input.baseY - Math.round(19 * input.scale),
+      width: Math.max(12, Math.round(20 * input.scale)),
+      height: Math.max(5, Math.round(7 * input.scale)),
+      color: PIXEL_PALETTE.stoneDark,
+      opacity: input.muted ? 0.5 : 0.74,
+      layer: "object",
+    }),
+    input.blockBuilder.block({
+      primitiveKind: "wide_block",
+      x: foundationLeft + Math.round(9 * input.scale),
+      y: input.baseY - Math.round(25 * input.scale),
+      width: Math.max(10, Math.round(18 * input.scale)),
+      height: Math.max(4, Math.round(6 * input.scale)),
+      color: PIXEL_PALETTE.stone,
+      opacity: input.muted ? 0.48 : 0.72,
+      layer: "object",
+    }),
+    input.blockBuilder.block({
+      primitiveKind: "dot_block",
+      x: foundationLeft + foundationWidth - Math.round(19 * input.scale),
+      y: input.baseY - Math.round(26 * input.scale),
+      width: Math.max(4, Math.round(6 * input.scale)),
+      height: Math.max(4, Math.round(6 * input.scale)),
+      color: PIXEL_PALETTE.highlight,
+      opacity: input.muted ? 0.44 : 0.68,
+      layer: "object",
+    }),
+  ];
 }
 
 function buildWindowBlocks(input: {

@@ -11,6 +11,9 @@ export type PixelWorldTileKind =
   | "soil"
   | "worn_grass"
   | "pressed_grass"
+  | "ecology_transition"
+  | "recovery_growth"
+  | "built"
   | "empty";
 
 export type PixelWorldObjectKind =
@@ -75,6 +78,7 @@ export type PixelWorldTrace = {
   strength: number;
   opacity: number;
   age?: number;
+  stateTags?: string[];
 };
 
 export type PixelWorldObject = {

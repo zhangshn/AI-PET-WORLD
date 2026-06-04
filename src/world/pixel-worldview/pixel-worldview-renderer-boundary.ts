@@ -1,4 +1,3 @@
-// 该文件用于把像素主世界渲染命令计划转换成安全的渲染器帧。
 import type { PixelWorldLayerKind } from "./pixel-worldview-types";
 import type { PixelWorldRenderCommand } from "./pixel-worldview-render-types";
 import type {

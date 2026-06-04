@@ -95,7 +95,7 @@ export function buildNaturalBushObjectRecipe(
   const shapes: PixelShapeId[] = ["shadow_patch", "leaf_cluster", "leaf_row", "highlight_chip"];
   const draft: DraftPixelObject = {
     kind: "bush",
-    label: "灌木",
+    label: "bush",
     recipeId: "natural_bush_object_recipe",
     recipeVersion: "scene-composer-bush-recipe",
     goldenAlgorithm: "scene_composer_bush_recipe",
