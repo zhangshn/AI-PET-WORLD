@@ -1,5 +1,6 @@
 /**
- * 当前文件职责：定义世界地图素材注册表的数据结构。
+ * Defines world fact asset identifiers used by runtime placement data.
+ * These are semantic world assets, not renderer sprites or programmatic drawing assets.
  */
 
 export type WorldMapAssetCategory =
@@ -17,20 +18,10 @@ export type WorldMapAssetAnchor = "top-left" | "bottom-center" | "center"
 
 export type WorldMapAssetSize = 24 | 32 | 64 | 128
 
-export type WorldMapAssetCanvasMeta = {
-  sourceRect?: {
-    x: number
-    y: number
-    width: number
-    height: number
-  }
-}
-
 export type WorldMapAssetDefinition = {
   id: string
   category: WorldMapAssetCategory
   baseSize: WorldMapAssetSize
   anchor: WorldMapAssetAnchor
   description: string
-  canvas?: WorldMapAssetCanvasMeta
 }

@@ -1,6 +1,3 @@
-﻿/**
- * 褰撳墠鏂囦欢璐熻矗锛氭妸涓栫晫鏃堕棿杞崲涓虹敓鍛借秼鍚戞牳蹇冨彲璇诲彇鐨勮繍琛屾椂闂淬€? */
-
 import type {
   BranchPalace
 } from "../destiny-core/ziwei-core/ziwei-core-schema"
@@ -15,12 +12,10 @@ import type {
 } from "./life-tendency-runtime-gateway"
 
 export interface LifeRuntimeWorldTimeInput {
-  /**
-   * 涓栫晫褰撳墠绗嚑澶┿€?   * 绾﹀畾锛欴ay 1 鏄笘鐣岃捣濮嬫棩鏈熷綋澶┿€?   */
+
   day: number
 
-  /**
-   * 涓栫晫褰撳墠灏忔椂銆?   */
+
   hour: number
 }
 
@@ -31,16 +26,13 @@ export interface LifeRuntimeWorldStartDate {
 }
 
 export interface BuildLifeRuntimeTimeFromWorldInput {
-  /**
-   * 涓栫晫褰撳墠鏃堕棿銆?   */
+
   worldTime: LifeRuntimeWorldTimeInput
 
-  /**
-   * 涓栫晫 Day 1 瀵瑰簲鐨勭湡瀹炲叕鍘嗘棩鏈熴€?   * 娴嬭瘯 / runtime 鍙互鍏堢敤瀹犵墿棰嗗吇瀹℃煡鏃ユ湡浣滀负涓栫晫璧峰鏃ユ湡銆?   */
+
   worldStartDate: LifeRuntimeWorldStartDate
 
-  /**
-   * 鐢熷懡浣撳嚭鐢熷叕鍘嗘棩鏈熴€?   * 鐢ㄤ簬璁＄畻褰撳墠骞撮緞銆?   */
+
   birthDate: LifeRuntimeWorldStartDate
 }
 

@@ -1,66 +1,117 @@
-# AI-PET-WORLD Current Architecture
+# AI-PET-WORLD 当前正式架构
 
-Status: Current formal architecture only.
+状态：只保留当前正式架构。旧方案、冻结方案、旧视觉链路不再作为实现依据。
 
-## 1. Main Chain
+## 1. 主链路
 
 ```txt
-Registration and birth information
--> Life/personality mapping
--> Butler soul/personality core
--> World creation
+用户注册与出生信息
+-> 生命/人格映射
+-> 管家灵魂与人格核心
+-> 世界创建
 -> Runtime save record
--> World rules and autonomous decisions
--> World facts, traces, ecology, construction
--> World view model
--> Visual generation
--> Visual review
--> Display gate
--> PixiJS world renderer
+-> 世界规则与自主决策
+-> 世界事实、痕迹、生态、建设
+-> VisualFactManifest
+-> SceneIntent
+-> AI Painter Director
+-> CompositionPlan
+-> TerrainPlan
+-> AssetPlan
+-> MotionPlan
+-> PromptPackage
+-> AI Image Generation Model
+-> AiImageCandidate
+-> VisualJudge
+-> VisualFix
+-> ApprovedFrame
+-> Runtime Render
+-> Player Display
 ```
 
-## 2. Runtime Boundary
+## 2. Runtime 边界
 
-The formal runtime save is `WorldRuntimeSaveRecord`.
+正式 runtime 存档是 `WorldRuntimeSaveRecord`。
 
-Runtime writes may only happen through validated runtime/world-rule paths.
+Runtime 写入只能通过已经验证的 runtime/world-rule 路径发生。
 
-The `/world` page is read-only. It must not write runtime, create a default world, or advance tick.
+`/world` 页面是只读入口，不能写 runtime，不能创建默认世界，不能推进 tick。
 
-## 3. Visual Chain
+## 3. 正式视觉链路
+
+正式视觉结果只能来自 AI 生成的位图候选图。
+
+程序 SVG、Canvas、primitive map、对象直绘、占位块、debug HTML 都不属于正式视觉链路，不能作为预览、fallback、候选图或 ApprovedFrame。
 
 ```txt
 WorldRuntimeSaveRecord
--> WorldViewModel
--> Story composition projection from existing world facts
 -> VisualFactManifest
--> VisualGenerationPlan
--> PixelWorldRenderPlan
--> PixelWorldPixelBufferFrame
--> VisualJudgeReport
--> VisualCorrectionPlan
--> post-correction review
+-> SceneIntent
+-> CompositionPlan
+-> TerrainPlan
+-> AssetPlan
+-> MotionPlan
+-> PromptPackage
+-> AiImageCandidate
+-> VisualReviewReport
+-> VisualFixPlan
+-> ApprovedFrame
 -> Player Display Gate
--> PixiJS
 ```
 
-## 4. Visual Review Boundary
+## 4. 正式目录结构
 
-Visual review checks expression quality and fact consistency. It may generate visual-only correction plans.
+正式视觉目录只允许使用 `src/world/world-visual-painter`。
 
-Visual review must not:
+```txt
+src/world/world-visual-painter/
+  index.ts
+  world-visual-painter-schema.ts
+  world-visual-painter-gateway.ts
+  authorized-data/
+  visual-fact-manifest/
+  scene-intent/
+  composition-plan/
+  terrain-plan/
+  asset-plan/
+  motion-plan/
+  prompt-package/
+  ai-image-provider/
+  ai-image-candidate/
+  visual-review/
+  visual-fix/
+  approved-frame/
+  visual-rule-dataset/
+  visual-target-policy/
+```
 
-- Modify runtime facts.
-- Add nonexistent buildings, actors, roads, resources, or events.
-- Display unapproved frames.
+职责划分：
 
-WorldViewModel may create read-only visual projections from existing facts, such as construction staging traces, worked ground, or access paths. These projections:
+- `authorized-data`：登记允许训练、提炼规则或提示参考的数据来源和授权状态。
+- `visual-fact-manifest`：从 `WorldRuntimeSaveRecord` 提取视觉可读事实清单。
+- `scene-intent`：决定当前画面的故事焦点和必须表达的世界事实。
+- `composition-plan`：制定主焦点、前景、中景、背景和边缘包围。
+- `terrain-plan`：制定草地、路径、水岸、高差等地形表达。
+- `asset-plan`：制定建设资产、自然资产、材料资产和占位禁止规则。
+- `motion-plan`：制定后续人物、动物、施工、水面、树叶等动态层。
+- `prompt-package`：把世界事实和视觉规则整理成 AI 图像生成输入。
+- `ai-image-provider`：读取图像生成供应商配置并构建生成请求。
+- `ai-image-candidate`：登记隐藏的 AI 位图候选图。
+- `visual-review`：审核事实一致性、视觉质量和原创安全。
+- `visual-fix`：生成只修视觉表达、不改世界事实的修正计划。
+- `approved-frame`：只代表审核通过后的可展示画面。
 
-- Must derive from an existing world fact source id.
-- Must not create new runtime placements, buildings, resources, events, or ticks.
-- Must remain part of the display/read model only.
+## 5. 视觉审核边界
 
-Current display gate:
+视觉审核只检查表达质量、事实一致性和原创安全，可以生成视觉修正计划。
+
+视觉审核不能：
+
+- 修改 runtime 事实。
+- 添加不存在的建筑、角色、道路、资源或事件。
+- 展示未通过审核的 frame。
+
+当前展示门禁：
 
 ```txt
 pass -> display
@@ -68,21 +119,19 @@ warn -> block
 fail -> block
 ```
 
-## 5. Current UI Boundary
+## 6. 当前 UI 边界
 
-The current formal `/world` screen is world-first:
+当前正式 `/world` 页面是世界优先入口：
 
-- No dashboard.
-- No right-side cards.
-- No butler status UI.
-- No P-Phone UI.
-- No debug panel after pass.
+- 不做 dashboard。
+- 不做右侧卡片。
+- 不做管家状态 UI。
+- 不做 P-Phone UI。
+- 通过审核前不展示 debug panel。
+- 没有 ApprovedFrame 时只展示中文阻断页。
 
-Debug routes may contain cards and diagnostic panels, but formal `/world` may not.
+## 7. 正式入口
 
-## 6. Development Entrypoints
-
-- `/world`: formal read-only world display.
-- `/create-world`: world creation.
-- `/api/world/tick`: explicit runtime tick.
-- `/world-debug/*`: debug-only tools.
+- `/world`：正式只读世界显示入口。
+- `/create-world`：世界创建入口。
+- `/api/world/tick`：显式 runtime tick 入口。

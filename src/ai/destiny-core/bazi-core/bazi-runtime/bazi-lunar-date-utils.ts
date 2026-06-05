@@ -269,7 +269,7 @@ export function getBaziLunarInfoBySolar(input: {
   const relatedYearText =
     parts.find((part) => (part.type as string) === "relatedYear")?.value ?? ""
   const monthText =
-    parts.find((part) => part.type === "month")?.value ?? "农历月待换算"
+    parts.find((part) => part.type === "month")?.value ?? ""
   const dayText = parts.find((part) => part.type === "day")?.value ?? ""
 
   const parsedYear = Number(relatedYearText.replace(/\D/g, ""))

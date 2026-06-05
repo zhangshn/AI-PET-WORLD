@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Runs one live-world tick from an existing HomeMapState.
  */
 
@@ -51,7 +51,7 @@ export function runOneRuntimeTick(
             ? "maintenance_check"
             : "scheduled_tick",
         persistenceMode: "proposal_only",
-        visualMode: "signal_only",
+        painterMode: "signal_only",
         tags: [
           "live_world_runtime_tick",
           "server_side_runtime",
@@ -277,11 +277,11 @@ function buildRuntimeActionSummaryFromTick(input: {
     .map((diff) => `${diff.operation}:${diff.placementId}`)
     .sort()
   const actionSignature = [
+    `tick:${input.tick}`,
     `project:${selectedPlan?.id ?? "none"}`,
-    `target:${selectedPlan?.targetZoneType ?? "none"}`,
     `stage:${selectedPlan?.currentStage ?? "none"}`,
     `intent:${input.intent.kind}`,
-    `validation:${input.worldRuleValidation.ok ? "ok" : "blocked"}`,
+    `world_rule:${input.worldRuleValidation.ok ? "passed" : "blocked"}`,
     `placements:${placementTokens.join("+") || "none"}`,
   ].join("|")
 
@@ -319,7 +319,7 @@ function buildRuntimeActionSummaryFromDecision(input: {
     actionSignature: [
       `motivation:${input.decision.selectedMotivation}`,
       `intent:${input.intent.kind}`,
-      `validation:${input.worldRuleValidation.ok ? "ok" : "blocked"}`,
+      `world_rule:${input.worldRuleValidation.ok ? "passed" : "blocked"}`,
       `tick:${input.tick}`,
       "state:no_safe_construction",
     ].join("|"),

@@ -1,6 +1,3 @@
-﻿/**
- * 褰撳墠鏂囦欢璐熻矗锛氫粠涓栫晫鐢熸垚杈撳叆娲剧敓绋冲畾鐨勫竷灞€鐢熸垚杈撳叆銆? */
-
 import type {
   InitialHomeGenerationInput,
   WorldLayoutGenerationBuildResult,

@@ -1,7 +1,3 @@
-/**
- * 当前文件职责：审计建设系统可运行纵向闭环输出。
- */
-
 import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
 
 import type {
@@ -9,23 +5,21 @@ import type {
   ConstructionMemoryPersistenceMockResult,
   ConstructionRuntimeAdapterInput,
   ConstructionRuntimeCycleResult,
-  ConstructionVisualRefreshBridgeResult,
+  ConstructionPainterRefreshBridgeResult,
 } from "./construction-schema"
 
 export function auditConstructionFullPipeline(input: {
   adapterInput: ConstructionRuntimeAdapterInput
   runtimeCycleResult: ConstructionRuntimeCycleResult
   memoryPersistenceMockResult: ConstructionMemoryPersistenceMockResult
-  visualRefreshBridgeResult: ConstructionVisualRefreshBridgeResult
+  painterRefreshBridgeResult: ConstructionPainterRefreshBridgeResult
 }): ConstructionFullPipelineAudit {
-  const acceptedDiffIds =
-    input.runtimeCycleResult.audit.acceptedDiffIds
-  const rejectedDiffIds =
-    input.runtimeCycleResult.audit.rejectedDiffIds
+  const acceptedDiffIds = input.runtimeCycleResult.audit.acceptedDiffIds
+  const rejectedDiffIds = input.runtimeCycleResult.audit.rejectedDiffIds
   const warnings = [
     ...auditRuntimeLineage(input),
     ...auditMockPersistence(input),
-    ...auditVisualBridge(input),
+    ...auditPainterRefreshBridge(input),
   ]
 
   return {
@@ -40,7 +34,7 @@ export function auditConstructionFullPipeline(input: {
     acceptedDiffIds,
     rejectedDiffIds,
     shouldPersist: input.memoryPersistenceMockResult.didStore,
-    shouldRefresh: input.visualRefreshBridgeResult.shouldRequestRefresh,
+    shouldRefresh: input.painterRefreshBridgeResult.shouldRequestRefresh,
     warnings,
     tags: [
       "construction_full_pipeline_audit",
@@ -64,16 +58,16 @@ function auditRuntimeLineage(input: {
   const after = input.runtimeCycleResult.nextHomeMapState
 
   if (before.worldId !== after.worldId) {
-    warnings.push("FullPipeline 不能修改 worldId。")
+    warnings.push("完整建设流水线不能修改 worldId。")
   }
   if (before.ownerId !== after.ownerId) {
-    warnings.push("FullPipeline 不能修改 ownerId。")
+    warnings.push("完整建设流水线不能修改 ownerId。")
   }
   if (before.seed !== after.seed) {
-    warnings.push("FullPipeline 不能修改 seed。")
+    warnings.push("完整建设流水线不能修改 seed。")
   }
   if (input.runtimeCycleResult.audit.warnings.length > 0) {
-    warnings.push("RuntimeCycle audit 仍有 warning。")
+    warnings.push("RuntimeCycle 审计仍然存在 warning。")
   }
 
   return warnings
@@ -87,7 +81,7 @@ function auditMockPersistence(input: {
 
   if (!proposal) {
     return input.memoryPersistenceMockResult.didStore
-      ? ["没有 persistenceProposal 时 memory mock 不能 didStore。"]
+      ? ["没有 persistenceProposal 时，memory mock 不能执行存储。"]
       : []
   }
 
@@ -95,39 +89,39 @@ function auditMockPersistence(input: {
     input.memoryPersistenceMockResult.mode === "memory_commit" &&
     proposal.shouldPersist !== input.memoryPersistenceMockResult.didStore
   ) {
-    return ["memory mock didStore 必须与 proposal.shouldPersist 对齐。"]
+    return ["memory mock 的 didStore 必须与 proposal.shouldPersist 对齐。"]
   }
 
   if (
     input.memoryPersistenceMockResult.mode !== "memory_commit" &&
     input.memoryPersistenceMockResult.didStore
   ) {
-    return ["memory mock 只有 memory_commit 模式可以 didStore。"]
+    return ["memory mock 只有在 memory_commit 模式下才能存储。"]
   }
 
   return []
 }
 
-function auditVisualBridge(input: {
+function auditPainterRefreshBridge(input: {
   runtimeCycleResult: ConstructionRuntimeCycleResult
-  visualRefreshBridgeResult: ConstructionVisualRefreshBridgeResult
+  painterRefreshBridgeResult: ConstructionPainterRefreshBridgeResult
 }): string[] {
-  const signal = input.runtimeCycleResult.visualRefreshSignal
+  const signal = input.runtimeCycleResult.painterRefreshSignal
 
   if (!signal) {
-    return input.visualRefreshBridgeResult.shouldRequestRefresh
-      ? ["没有 visualRefreshSignal 时 bridge 不能 shouldRequestRefresh。"]
+    return input.painterRefreshBridgeResult.shouldRequestRefresh
+      ? ["没有 painterRefreshSignal 时，Painter 刷新桥不能请求刷新。"]
       : []
   }
 
-  if (signal.shouldRefresh !== input.visualRefreshBridgeResult.shouldRequestRefresh) {
-    return ["visual bridge shouldRequestRefresh 必须与 signal.shouldRefresh 对齐。"]
+  if (signal.shouldRefresh !== input.painterRefreshBridgeResult.shouldRequestRefresh) {
+    return ["Painter 刷新桥的 shouldRequestRefresh 必须与 signal.shouldRefresh 对齐。"]
   }
 
   return signal.changedPlacementIds.flatMap((placementId) =>
-    input.visualRefreshBridgeResult.changedPlacementIds.includes(placementId)
+    input.painterRefreshBridgeResult.changedPlacementIds.includes(placementId)
       ? []
-      : [`visual bridge 缺少 changedPlacementId：${placementId}`]
+      : [`Painter 刷新桥缺少 changedPlacementId：${placementId}`]
   )
 }
 
@@ -136,7 +130,7 @@ function buildStablePipelineFingerprint(input: {
     adapterInput: ConstructionRuntimeAdapterInput
     runtimeCycleResult: ConstructionRuntimeCycleResult
     memoryPersistenceMockResult: ConstructionMemoryPersistenceMockResult
-    visualRefreshBridgeResult: ConstructionVisualRefreshBridgeResult
+    painterRefreshBridgeResult: ConstructionPainterRefreshBridgeResult
   }
   acceptedDiffIds: string[]
   rejectedDiffIds: string[]
@@ -151,7 +145,7 @@ function buildStablePipelineFingerprint(input: {
     input.acceptedDiffIds.slice().sort().join("+"),
     input.rejectedDiffIds.slice().sort().join("+"),
     input.input.memoryPersistenceMockResult.mockPersistenceId,
-    input.input.visualRefreshBridgeResult.bridgeId,
+    input.input.painterRefreshBridgeResult.bridgeId,
     fingerprintPlacements(input.input.runtimeCycleResult.nextHomeMapState),
   ].join("::")
 }

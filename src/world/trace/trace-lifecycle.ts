@@ -1,4 +1,4 @@
-import { clamp } from "@/world/procedural-painter/scene-composer/scene-composer-random"
+import { clamp } from "@/shared/math/clamp"
 
 import type {
   TraceLifecyclePhase,

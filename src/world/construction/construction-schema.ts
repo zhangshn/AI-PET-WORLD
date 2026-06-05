@@ -1,5 +1,5 @@
-/**
- * 当前文件负责：定义 ConstructionPlanner 输入协议与建设计划类型。
+﻿/**
+
  */
 
 import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
@@ -291,7 +291,7 @@ export type ConstructionPersistenceMode =
   | "proposal_only"
   | "disabled"
 
-export type ConstructionVisualRefreshMode =
+export type ConstructionPainterRefreshMode =
   | "signal_only"
   | "disabled"
 
@@ -303,7 +303,7 @@ export type ConstructionRuntimeCycleInput = {
   preferredPlanId?: string
   runReason: ConstructionRuntimeRunReason
   persistenceMode: ConstructionPersistenceMode
-  visualRefreshMode: ConstructionVisualRefreshMode
+  painterRefreshMode: ConstructionPainterRefreshMode
   tags: string[]
 }
 
@@ -322,7 +322,7 @@ export type ConstructionPersistenceProposal = {
   tags: string[]
 }
 
-export type ConstructionVisualRefreshSignal = {
+export type ConstructionPainterRefreshSignal = {
   signalId: string
   worldId: string
   ownerId: string
@@ -342,7 +342,7 @@ export type ConstructionRuntimeCycleAudit = {
   acceptedDiffIds: string[]
   rejectedDiffIds: string[]
   persistenceProposalId: string | null
-  visualRefreshSignalId: string | null
+  painterRefreshSignalId: string | null
   warnings: string[]
   tags: string[]
 }
@@ -351,7 +351,7 @@ export type ConstructionRuntimeCycleResult = {
   nextHomeMapState: HomeMapState
   runtimeCommitResult: ConstructionRuntimeCommitResult
   persistenceProposal: ConstructionPersistenceProposal | null
-  visualRefreshSignal: ConstructionVisualRefreshSignal | null
+  painterRefreshSignal: ConstructionPainterRefreshSignal | null
   messages: string[]
   audit: ConstructionRuntimeCycleAudit
   tags: string[]
@@ -389,7 +389,7 @@ export type ConstructionMemoryPersistenceMockResult = {
   tags: string[]
 }
 
-export type ConstructionVisualRefreshBridgeResult = {
+export type ConstructionPainterRefreshBridgeResult = {
   bridgeId: string
   signalId: string | null
   shouldRequestRefresh: boolean
@@ -475,7 +475,7 @@ export type ConstructionRuntimeAdapterResult = {
   nextHomeMapState: HomeMapState
   runtimeCycleResult: ConstructionRuntimeCycleResult
   memoryPersistenceMockResult: ConstructionMemoryPersistenceMockResult
-  visualRefreshBridgeResult: ConstructionVisualRefreshBridgeResult
+  painterRefreshBridgeResult: ConstructionPainterRefreshBridgeResult
   fullPipelineAudit: ConstructionFullPipelineAudit
   pipelineReport: ConstructionPipelineReport
   messages: string[]

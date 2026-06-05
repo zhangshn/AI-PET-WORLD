@@ -97,24 +97,24 @@ export function validateButlerRuntimeIntent(input: {
 }): ButlerWorldRuleValidation {
   const blockingWarnings = [
     input.acceptedDiffCount > 0 && !input.intent.allowsHomeMapDiff
-      ? "Intent attempted to accept HomeMapState diffs without diff permission."
+      ? "Intent 没有 diff 权限，但尝试接受 HomeMapState diff。"
       : "",
     input.acceptedDiffCount > 0 && !input.runtimeTick
-      ? "Accepted diffs were reported without a runtime tick."
+      ? "存在已接受 diff，但没有对应 runtime tick。"
       : "",
     input.decision.selectedMotivation === "observe_world" && input.acceptedDiffCount > 0
-      ? "Observation intent must not write HomeMapState diffs."
+      ? "观察类 intent 不能写入 HomeMapState diff。"
       : "",
     input.decision.selectedMotivation === "wait_for_resources" && input.acceptedDiffCount > 0
-      ? "Resource wait intent must not write HomeMapState diffs."
+      ? "等待资源类 intent 不能写入 HomeMapState diff。"
       : "",
   ].filter(Boolean)
   const warnings = [
     input.intent.requestedTraceTypes.length === 0
-      ? "Intent did not request any trace type."
+      ? "Intent 没有请求任何 trace type。"
       : "",
     input.decision.traceContext.warnings.length > 0
-      ? `Trace context warnings: ${input.decision.traceContext.warnings.join(" | ")}`
+      ? `Trace 上下文 warning：${input.decision.traceContext.warnings.join(" | ")}`
       : "",
   ].filter(Boolean)
   const ok = blockingWarnings.length === 0
@@ -173,12 +173,12 @@ function resolveIntentTarget(input: {
     kind: "region",
     regionKind,
     reason: focusRegion
-      ? "Trace memory seed focus selected the intent region."
+      ? "Trace memory seed focus 选择了 intent 区域。"
       : observationRegion
-        ? "Trace influence selected a preferred observation region."
+        ? "Trace influence 选择了优先观察区域。"
         : activePlan
-          ? "Active construction plan selected the intent region."
-          : "Default home region selected for stable butler intent.",
+          ? "当前建设计划选择了 intent 区域。"
+          : "默认选择 home 区域，以保持管家 intent 稳定。",
   }
 }
 
@@ -209,10 +209,10 @@ function buildIntentReason(input: {
   target: ButlerRuntimeIntentTarget
 }): string {
   return [
-    `Selected motivation: ${input.decision.selectedMotivation}.`,
+    `已选择动机：${input.decision.selectedMotivation}。`,
     input.acceptedDiffCount > 0
-      ? `SafeApply accepted ${input.acceptedDiffCount} HomeMapState diff(s).`
-      : "No HomeMapState diff was accepted for this intent.",
+      ? `SafeApply 已接受 ${input.acceptedDiffCount} 个 HomeMapState diff。`
+      : "本次 intent 没有接受 HomeMapState diff。",
     input.target.reason,
   ].join(" ")
 }

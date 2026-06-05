@@ -180,7 +180,7 @@ function buildStableCreateWorldCreatedAt(input: {
   const hour = birthTime?.hour ?? 0
   const minute = birthTime?.minute ?? 0
   const perspectiveOffset =
-    input.perspective === "female" ? 2 : input.perspective === "male" ? 1 : 0
+    input.perspective === "female" ? 1 : 0
 
   return (
     input.year * 10_000_000 +

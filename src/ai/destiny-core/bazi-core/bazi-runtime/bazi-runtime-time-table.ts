@@ -1,5 +1,5 @@
 /**
- * 当前文件负责：构建八字动态时间表数据（大运、流年、流月、流日、流时）。
+ * 构建八字动态运行层时间表数据：大运、流年、流月、流日、流时。
  */
 
 import { calculateBaziChart } from "../bazi-calculator"
@@ -176,11 +176,11 @@ function buildLiuYueOptions(params: {
     const fallbackStart = mapped
       ? null
       : findSolarByBaziLunarDate({
-        lunarYear: activeLunarYear,
-        lunarMonth,
-        lunarDay: 1,
-        includeLeapMonth: true,
-      })
+          lunarYear: activeLunarYear,
+          lunarMonth,
+          lunarDay: 1,
+          includeLeapMonth: true,
+        })
 
     const targetYear =
       mapped?.solarYear ?? fallbackStart?.solarYear ?? params.selection.currentYear
@@ -273,7 +273,7 @@ function buildLiuShiOptions(
       level: "liuShi",
       hour: option.hour,
       branch: option.branch,
-      title: `${option.title} · ${chart.hourPillar?.label ?? "未知"}`,
+      title: option.title,
       subtitle: `${option.hour}:00`,
       pillarLabel: chart.hourPillar?.label ?? "未知",
       active: selection.currentHour === option.hour,
@@ -301,10 +301,10 @@ function buildSelectedSummary(params: {
   const hourText =
     params.selection.currentHour === null
       ? "时辰未知"
-      : `${params.selection.currentHour}:00（${chart.hourPillar?.label ?? "未知"}）`
+      : `${params.selection.currentHour}:00 · ${chart.hourPillar?.label ?? "未知"}`
 
   return [
-    `当前选择：农历 ${params.currentLunar.lunarYear}年${params.currentLunar.fullLabel}`,
+    `当前选择：农历 ${params.currentLunar.lunarYear}年 ${params.currentLunar.fullLabel}`,
     `公历 ${params.selection.currentYear}-${params.selection.currentMonth}-${safeDay}`,
     `流年 ${chart.yearPillar.label}`,
     `流月 ${chart.monthPillar.label}`,

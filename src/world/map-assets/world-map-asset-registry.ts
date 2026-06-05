@@ -1,5 +1,5 @@
 /**
- * 当前文件职责：登记当前自主世界使用的基础地图素材资源。
+ * Registers semantic world asset IDs used by runtime facts.
  */
 
 import type { WorldMapAssetDefinition } from "./world-map-asset-schema"
@@ -10,63 +10,63 @@ export const WORLD_MAP_ASSETS = {
     category: "ground",
     baseSize: 32,
     anchor: "top-left",
-    description: "基础草地 tile",
+    description: "基础草地",
   },
   groundGrassBase02: {
     id: "groundGrassBase02",
     category: "ground",
     baseSize: 32,
     anchor: "top-left",
-    description: "草地变化 tile",
+    description: "草地变化",
   },
   groundDirtBase01: {
     id: "groundDirtBase01",
     category: "ground",
     baseSize: 32,
     anchor: "top-left",
-    description: "基础泥地 tile",
+    description: "基础泥地",
   },
   pathDirtHorizontal01: {
     id: "pathDirtHorizontal01",
     category: "path",
     baseSize: 32,
     anchor: "top-left",
-    description: "横向泥路 tile",
+    description: "横向泥路",
   },
   pathDirtVertical01: {
     id: "pathDirtVertical01",
     category: "path",
     baseSize: 32,
     anchor: "top-left",
-    description: "纵向泥路 tile",
+    description: "纵向泥路",
   },
   pathDirtCornerLeftTop01: {
     id: "pathDirtCornerLeftTop01",
     category: "path",
     baseSize: 32,
     anchor: "top-left",
-    description: "泥路左上拐角",
+    description: "泥路左上转角",
   },
   pathDirtCornerRightTop01: {
     id: "pathDirtCornerRightTop01",
     category: "path",
     baseSize: 32,
     anchor: "top-left",
-    description: "泥路右上拐角",
+    description: "泥路右上转角",
   },
   pathDirtCornerLeftBottom01: {
     id: "pathDirtCornerLeftBottom01",
     category: "path",
     baseSize: 32,
     anchor: "top-left",
-    description: "泥路左下拐角",
+    description: "泥路左下转角",
   },
   pathDirtCornerRightBottom01: {
     id: "pathDirtCornerRightBottom01",
     category: "path",
     baseSize: 32,
     anchor: "top-left",
-    description: "泥路右下拐角",
+    description: "泥路右下转角",
   },
   edgeGrassDirtTop01: {
     id: "edgeGrassDirtTop01",
@@ -110,12 +110,12 @@ export const WORLD_MAP_ASSETS = {
     anchor: "bottom-center",
     description: "初始入口草环",
   },
-  buildingTempShelterCanvasTent01: {
-    id: "buildingTempShelterCanvasTent01",
+  buildingTempShelterTent01: {
+    id: "buildingTempShelterTent01",
     category: "structure",
     baseSize: 128,
     anchor: "bottom-center",
-    description: "临时住所帆布帐篷",
+    description: "临时住所帐篷",
   },
   buildingTempShelter01: {
     id: "buildingTempShelter01",
@@ -136,14 +136,14 @@ export const WORLD_MAP_ASSETS = {
     category: "facility",
     baseSize: 64,
     anchor: "bottom-center",
-    description: "基础食物容器素材",
+    description: "基础食物容器",
   },
   facilityWaterBowlFull01: {
     id: "facilityWaterBowlFull01",
     category: "facility",
     baseSize: 64,
     anchor: "bottom-center",
-    description: "基础饮水容器素材",
+    description: "基础饮水容器",
   },
   facilityStorageBoxClosed01: {
     id: "facilityStorageBoxClosed01",

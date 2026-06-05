@@ -20,7 +20,7 @@ export function auditWorldRuntimeConstructionTick(result: {
   const warnings = [
     ...auditLineage(result),
     ...result.constructionWarnings.map(
-      (warning) => `Construction warning: ${warning}`
+      (warning) => `建设 warning：${warning}`
     ),
   ]
 
@@ -50,13 +50,13 @@ function auditLineage(result: {
   const warnings: string[] = []
 
   if (result.inputHomeMapState.worldId !== result.nextHomeMapState.worldId) {
-    warnings.push("Runtime tick cannot change worldId.")
+    warnings.push("Runtime tick 不能修改 worldId。")
   }
   if (result.inputHomeMapState.ownerId !== result.nextHomeMapState.ownerId) {
-    warnings.push("Runtime tick cannot change ownerId.")
+    warnings.push("Runtime tick 不能修改 ownerId。")
   }
   if (result.inputHomeMapState.seed !== result.nextHomeMapState.seed) {
-    warnings.push("Runtime tick cannot change seed.")
+    warnings.push("Runtime tick 不能修改 seed。")
   }
 
   return warnings

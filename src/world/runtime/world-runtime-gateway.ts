@@ -399,7 +399,7 @@ function buildInitialRuntimeSaveRecord(input: {
       {
         id: "runtime-event-0",
         tick: 0,
-        title: "涓栫晫宸插垵濮嬪寲",
+        title: "World initialized",
         body: "本地世界已生成第一片家园，后续变化将由管家意图和规则校验驱动。",
         source: "runtime",
         createdAt: savedAt,

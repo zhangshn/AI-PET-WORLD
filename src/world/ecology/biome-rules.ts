@@ -1,6 +1,3 @@
-﻿/**
- * 褰撳墠鏂囦欢鑱岃矗锛氭彁渚涚ǔ瀹氥€佸彲瀹¤鐨勫湴璨岃祫婧愯鍒欍€? */
-
 import type { BiomeRule, BiomeType } from "./ecology-schema"
 
 export const BIOME_TYPES: readonly BiomeType[] = [

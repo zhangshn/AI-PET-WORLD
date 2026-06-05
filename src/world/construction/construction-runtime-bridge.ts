@@ -1,5 +1,5 @@
 ﻿/**
- * 褰撳墠鏂囦欢鑱岃矗锛氭妸寤鸿绾靛悜闂幆鍖呰涓虹湡瀹炶繍琛屾椂鎺ュ叆鍓嶆ˉ鎺ョ粨鏋溿€?
+
  */
 
 import { auditConstructionRuntimeBridge } from "./construction-runtime-bridge-audit"
@@ -25,7 +25,7 @@ export function buildConstructionRuntimeBridgeResult(
     verticalSliceResult.memoryPersistenceMockResult.didStore
   const shouldRefresh =
     shouldEnterRuntime &&
-    verticalSliceResult.visualRefreshBridgeResult.shouldRequestRefresh
+    verticalSliceResult.painterRefreshBridgeResult.shouldRequestRefresh
   const report = buildRuntimeBridgeReport({
     input,
     shouldEnterRuntime,

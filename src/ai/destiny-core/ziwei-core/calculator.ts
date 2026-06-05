@@ -182,7 +182,7 @@ export function calculateBirthPattern(
 
   const birthKey =
     `${input.year}-${input.month}-${input.day}-` +
-    `${input.hour}-${input.minute ?? 0}`
+    `${input.hour ?? "unknown"}`
 
   return {
     birthKey,

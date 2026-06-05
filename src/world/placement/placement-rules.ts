@@ -1,6 +1,3 @@
-﻿/**
- * 褰撳墠鏂囦欢璐熻矗锛氬畾涔夊湴鍥炬憜鏀捐鍒欎笌鏍￠獙鍑芥暟銆? */
-
 import type { InitialHomeSceneRecipe } from "@/world/generation/generation-schema"
 import type {
   HomeZone,

@@ -1,12 +1,12 @@
-﻿/**
- * 褰撳墠鏂囦欢鑱岃矗锛氳繍琛?World runtime construction tick銆?
+/**
+
  */
 
 import type { ButlerRuntimeProfile } from "@/world/butler/butler-runtime-profile-schema"
 import type {
   ConstructionPersistenceMode,
   ConstructionRuntimeVerticalSliceResult,
-  ConstructionVisualRefreshMode,
+  ConstructionPainterRefreshMode,
 } from "@/world/construction/construction-schema"
 import { runConstructionRuntimeVerticalSlice } from "@/world/construction/construction-runtime-vertical-slice"
 import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
@@ -29,7 +29,7 @@ export type WorldRuntimeConstructionTickInput = {
   now: number
   tickReason: "manual_debug" | "scheduled_tick" | "world_recovery" | "maintenance_check"
   persistenceMode: ConstructionPersistenceMode
-  visualMode: ConstructionVisualRefreshMode
+  painterMode: ConstructionPainterRefreshMode
   tags: string[]
 }
 
@@ -53,7 +53,7 @@ export function runWorldRuntimeConstructionTick(
     now: input.now,
     runReason: input.tickReason,
     persistenceMode: input.persistenceMode,
-    visualRefreshMode: input.visualMode,
+    painterRefreshMode: input.painterMode,
     memoryPersistenceMode: "memory_preview",
     tags: [
       ...input.tags,

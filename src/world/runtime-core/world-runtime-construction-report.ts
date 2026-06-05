@@ -1,6 +1,3 @@
-﻿/**
- * 褰撳墠鏂囦欢鑱岃矗锛氱敓鎴?World runtime construction tick 鎶ュ憡銆? */
-
 import type { ConstructionRuntimeVerticalSliceResult } from "@/world/construction/construction-schema"
 
 import type { WorldRuntimeConstructionAudit } from "./world-runtime-construction-audit"

@@ -1,6 +1,3 @@
-/**
- * 当前文件职责：把正式管家人格核心快照转换为 runtime 执行器需要的管家档案。
- */
 
 import type { ButlerProfile } from "@/ai/personality-core/butler-profile-core/butler-profile-gateway"
 import type { ButlerConstructionStyleVector } from "@/world/generation/generation-schema"
@@ -57,7 +54,7 @@ export function buildButlerRuntimeProfileFromLifeCore(input: {
       tags: input.tags,
     },
     profile,
-    messages: ["管家运行时人格已从正式人格核心快照派生。"],
+    messages: ["Butler runtime profile was derived from the formal personality core."],
     tags: [
       "butler_runtime_profile_build_result",
       "life_profile_core_driven",

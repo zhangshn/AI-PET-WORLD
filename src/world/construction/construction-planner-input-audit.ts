@@ -1,5 +1,5 @@
 ﻿/**
- * 褰撳墠鏂囦欢璐熻矗锛氬璁?ConstructionPlanner 杈撳叆鏄惁绗﹀悎褰撳墠 runtime 杈圭晫銆?
+
  */
 
 import type {
@@ -78,24 +78,24 @@ function auditIntentConsistency(
   intents.forEach((intent) => {
     if (!intent.intentId.trim()) warnings.push("存在空 intentId。")
     if (seenIntentIds.has(intent.intentId)) {
-      warnings.push(`閲嶅 intentId锛?{intent.intentId}`)
+      warnings.push(`Duplicate intentId: ${intent.intentId}`)
     }
     seenIntentIds.add(intent.intentId)
 
     if (!intent.reason.trim()) {
-      warnings.push(`intent 缂哄皯 reason锛?{intent.intentId}`)
+      warnings.push(`Duplicate intentId: ${intent.intentId}`)
     }
     if (intent.urgency < 0 || intent.urgency > 1) {
-      warnings.push(`intent urgency 瓒婄晫锛?{intent.intentId}`)
+      warnings.push(`Duplicate intentId: ${intent.intentId}`)
     }
     if (intent.patience < 0 || intent.patience > 1) {
-      warnings.push(`intent patience 瓒婄晫锛?{intent.intentId}`)
+      warnings.push(`Duplicate intentId: ${intent.intentId}`)
     }
     if (intent.resourceSensitivity < 0 || intent.resourceSensitivity > 1) {
-      warnings.push(`intent resourceSensitivity 瓒婄晫锛?{intent.intentId}`)
+      warnings.push(`Duplicate intentId: ${intent.intentId}`)
     }
     if (intent.spaceSensitivity < 0 || intent.spaceSensitivity > 1) {
-      warnings.push(`intent spaceSensitivity 瓒婄晫锛?{intent.intentId}`)
+      warnings.push(`Duplicate intentId: ${intent.intentId}`)
     }
   })
 

@@ -1,10 +1,10 @@
 ﻿/**
- * 褰撳墠鏂囦欢鑱岃矗锛氭彁渚涘缓璁剧郴缁?runtime 璋冪敤杈圭晫鍗忚銆?
+
  */
 
 import { buildConstructionPersistenceProposal } from "./construction-persistence-proposal"
 import { auditConstructionRuntimeCycle } from "./construction-runtime-cycle-audit"
-import { buildConstructionVisualRefreshSignal } from "./construction-visual-refresh-signal"
+import { buildConstructionPainterRefreshSignal } from "./construction-painter-refresh-signal"
 import { buildConstructionRuntimeCommitResult } from "./construction-runtime-commit-protocol"
 import type {
   ConstructionRuntimeCycleInput,
@@ -30,7 +30,7 @@ export function buildConstructionRuntimeCycleResult(
     runtimeInput: input,
     runtimeCommitResult,
   })
-  const visualRefreshSignal = buildConstructionVisualRefreshSignal({
+  const painterRefreshSignal = buildConstructionPainterRefreshSignal({
     runtimeInput: input,
     runtimeCommitResult,
   })
@@ -38,11 +38,11 @@ export function buildConstructionRuntimeCycleResult(
     nextHomeMapState: runtimeCommitResult.nextHomeMapState,
     runtimeCommitResult,
     persistenceProposal,
-    visualRefreshSignal,
+    painterRefreshSignal,
     messages: [
       ...runtimeCommitResult.messages,
       ...(persistenceProposal ? [persistenceProposal.reason] : []),
-      ...(visualRefreshSignal ? [visualRefreshSignal.reason] : []),
+      ...(painterRefreshSignal ? [painterRefreshSignal.reason] : []),
     ],
     tags: [
       "construction_runtime_cycle_result",

@@ -86,7 +86,7 @@ function getDeferredConstructionVisualSpec(
 ): DeferredConstructionVisualSpec {
   const specs = {
     stabilize_temporary_shelter: {
-      assetId: "buildingTempShelterCanvasTent01",
+      assetId: "buildingTempShelterTent01",
       layer: "structure",
       label: "临时住所建设中",
       scale: 0.72,

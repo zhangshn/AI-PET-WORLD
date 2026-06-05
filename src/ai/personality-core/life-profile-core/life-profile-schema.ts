@@ -1,6 +1,3 @@
-﻿/**
- * 褰撳墠鏂囦欢璐熻矗锛氬畾涔夐€氱敤鐢熷懡浜烘牸妗ｆ鏍稿績绫诲瀷銆? */
-
 import type { BaziProfile } from "../../destiny-core/bazi-core/bazi-gateway"
 import type { ZiweiConsciousnessKernel } from "../../consciousness-core/consciousness/consciousness-gateway"
 import type {

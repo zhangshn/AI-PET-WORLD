@@ -171,7 +171,7 @@ function buildRuntimeCommitFingerprint(input: {
     input.protocolInput.homeMapState.seed,
     `worldDay:${input.protocolInput.worldDay}`,
     `now:${input.protocolInput.now}`,
-    `selected:${input.resultWithoutAudit.selectedPlan?.id ?? "none"}`,
+    `selectedPlan:${input.resultWithoutAudit.selectedPlan?.id ?? "none"}`,
     `planner:${input.resultWithoutAudit.plannerInputResult.audit.stableInputFingerprint}`,
     `candidate:${input.resultWithoutAudit.candidateResult.audit.stableOutputFingerprint}`,
     `execution:${

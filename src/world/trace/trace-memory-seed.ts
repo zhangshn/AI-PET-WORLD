@@ -8,7 +8,7 @@ import type {
   TraceTargetRef,
   TraceType,
 } from "./trace-schema"
-import { clamp } from "@/world/procedural-painter/scene-composer/scene-composer-random"
+import { clamp } from "@/shared/math/clamp"
 
 const MAX_MEMORY_SEEDS_PER_FIELD = 3
 const FULL_SEED_STRENGTH_THRESHOLD = 55

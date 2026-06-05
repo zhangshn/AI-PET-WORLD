@@ -1,5 +1,5 @@
 ﻿/**
- * 褰撳墠鏂囦欢璐熻矗锛氭牴鎹?Scene Recipe 涓庡竷灞€杈撳叆杈撳嚭绋冲畾鍦板浘鎽嗘斁缁撴灉銆?
+
  */
 
 import type {
@@ -326,7 +326,7 @@ export function createNatureBoundaryPlacements(
     const isTree = index < treeCount
 
     return createPlacement({
-      id: `${isTree ? "boundary-tree" : "boundary-bush"}-${index + 1}`,
+      id: `nature-boundary-${isTree ? "tree" : "bush"}-${index.toString(36)}`,
       assetId: isTree ? "natureTreeSmall01" : "natureBushSmall01",
       x: point.x,
       y: point.y,

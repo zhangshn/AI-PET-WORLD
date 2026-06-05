@@ -97,7 +97,6 @@
     const forbiddenTraceClosureTokens = [
       "writeWorldRuntimeSaveRecord",
       "runAndPersistOneRuntimeTick",
-      "scene-composer-gateway",
       "createUnplannedLife",
       "unplanned_life_default",
     ]

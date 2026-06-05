@@ -113,7 +113,7 @@ function buildRuntimeResourceRequests(input: {
   input: ConstructionExecutionInput
   executableStage: ConstructionStageType
 }): ConstructionPlan["resourceRequests"] {
-  const tickToken = `tick-${input.input.worldDay ?? "unknown"}`
+  const tickToken = `time-${String(input.input.now)}`
 
   return input.input.plan.resourceRequests.map((request, index) => {
     const baseTransactionId =
@@ -294,7 +294,7 @@ function buildConstructionAddMapDiff(input: {
       "construction-add",
       normalizeIdToken(input.input.plan.id),
       input.executableStage,
-      `tick-${input.input.worldDay ?? "unknown"}`,
+      `time-${String(input.input.now)}`,
       normalizeIdToken(input.placement.id),
     ].join("-"),
     operation: "add",
@@ -324,7 +324,7 @@ function buildConstructionUpdateMapDiff(input: {
       "construction-candidate",
       normalizeIdToken(input.input.plan.id),
       input.executableStage,
-      `tick-${input.input.worldDay ?? "unknown"}`,
+      `time-${String(input.input.now)}`,
       normalizeIdToken(input.placement.id),
       String(input.index),
     ].join("-"),

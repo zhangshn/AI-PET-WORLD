@@ -2,7 +2,7 @@ import type {
   HomeMapState,
   MapPlacement,
 } from "@/world/map-state/home-map-state-schema"
-import { clamp } from "@/world/procedural-painter/scene-composer/scene-composer-random"
+import { clamp } from "@/shared/math/clamp"
 import type {
   SpaceCell,
   SpaceGrid,

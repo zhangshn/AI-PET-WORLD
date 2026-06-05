@@ -48,7 +48,7 @@ The project may use user-approved target examples as a quality bar, but must con
 Target quality example
 -> abstract composition requirements
 -> AI-PET-WORLD scene composition algorithm
--> visual judge metrics
+-> visual review metrics
 -> display only after pass
 ```
 
@@ -56,7 +56,7 @@ The system must not copy any specific screenshot, layout, asset, tree shape, wat
 
 For MVP, a frame that still looks like a flat green test field with scattered objects does not pass the product bar, even if the technical renderer works.
 
-## 1.1 How The AI Draws And Judges
+## 1.1 How The AI Draws And reviews
 
 For AI-PET-WORLD, AI drawing is not "place random assets until the screen is full".
 
@@ -67,7 +67,7 @@ Public visual knowledge
 -> abstract design principles
 -> AI-PET-WORLD-owned visual rules
 -> deterministic generation algorithms
--> visual judge metrics
+-> visual review metrics
 -> blocked unless final review is pass
 ```
 
@@ -79,7 +79,7 @@ When an AI draws a good game frame, it reasons in this order:
 4. Pixel clusters fourth: details should support clusters and rhythm, not become random single-pixel noise.
 5. Palette and contrast last: color must support hierarchy, material identity, and gameplay readability.
 
-Therefore the visual judge must reject frames that are technically rendered but do not read as an intentional playable world.
+Therefore the visual review must reject frames that are technically rendered but do not read as an intentional playable world.
 
 This means the following frame types cannot pass:
 
@@ -114,15 +114,15 @@ External material
 -> Principle extraction
 -> Own rule vocabulary
 -> Own pixel recipes
--> Own visual review
+-> own visual review
 ```
 
 ## 2.1 Public Evidence To Project Rule Table
 
-This table is the formal bridge between public material and AI-PET-WORLD's own visual judge.
+This table is the formal bridge between public material and AI-PET-WORLD's own visual review.
 The project uses the sources only as principle inputs. No screenshot, layout, asset, logo, character, or proprietary style is copied.
 
-| Public principle input | Abstract AI principle | AI-PET-WORLD rule | Algorithm / judge condition | Current failure meaning |
+| Public principle input | Abstract AI principle | AI-PET-WORLD rule | Algorithm / review condition | Current failure meaning |
 |---|---|---|---|---|
 | Pixel-art education commonly prioritizes readability and cluster clarity over noisy detail. Reference: [Pixel Art Daily - What Makes Good Pixel Art](https://www.pixelartdaily.com/blog/what-makes-good-pixel-art) and [Pixel Art Daily - Fix Messy Pixel Art](https://www.pixelartdaily.com/blog/how-to-fix-messy-pixel-art). | A pixel scene must read at game scale before detail matters. | Objects and terrain marks must form readable clusters, not random specks. | Check semantic block count, visible area, oversized flat blocks, fragmented traces, micro-scatter ratio, and anchor-group ratio. | A field of tiny scattered bushes, flowers, or stones is blocked even if object count is high. |
 | Environment and composition guidance separates foreground, middleground, and background to create depth and scale. Reference: [Muddy Colors - Composition Basics: Value Structure](https://www.muddycolors.com/2012/08/composition-basics-value-structure/) and [Frozenbyte Level Art: Composition](https://wiki.frozenbyte.com/index.php/Level_Art%3A_Composition). | A world frame needs layered spatial rhythm. | The world canvas must have readable foreground, middle area, and upper/background area. | Measure meaningful content distribution in top/middle/lower bands; fail dead lower world and top-heavy imbalance. | A flat top-heavy map with an empty lower play area is blocked. |
@@ -248,13 +248,13 @@ Project rules:
 
 - The current formal `/world` page is a world renderer, not a dashboard.
 - No right-side status cards in the world-first stage.
-- No visual judge panel on the player world screen.
+- No visual review panel on the player world screen.
 - Debug information may appear only when the frame is blocked or in debug routes.
 - P-Phone returns later as an in-world interaction layer, not as a web card.
 
 Review conditions:
 
-- Formal world page must mount Pixi canvas.
+- Formal world page must not mount any old renderer before WorldVisualPainter produces an approved frame.
 - Formal world page must not depend on SVG, hand-written canvas context, or debug HTML blocks.
 - Formal world page must not display phone/butler/status cards during world-first stage.
 
@@ -283,7 +283,7 @@ For visual generation and review, "AI algorithm authority" means:
 - AI extracts abstract principles from public materials.
 - The project owner approves the rule direction.
 - The rules are encoded as deterministic project policies.
-- The renderer and visual judge follow those policies.
+- The renderer and visual review follow those policies.
 - Any displayed world frame must pass the visual gate.
 
 It does not mean:
@@ -295,13 +295,13 @@ It does not mean:
 
 ## 5. AI Visual Rubric
 
-The project rule is: how the AI judges a good game image must be converted into explicit review axes.
+The project rule is: how the AI reviews a good game image must be converted into explicit review axes.
 
-When the AI looks at a world frame, it does not only ask whether the pixels exist. It asks whether the image reads as an intentional playable world. AI-PET-WORLD converts that judgement into these formal axes:
+When the AI looks at a world frame, it does not only ask whether the pixels exist. It asks whether the image reads as an intentional playable world. AI-PET-WORLD converts that review into these formal axes:
 
 ### 5.1 Composition Balance
 
-AI judgement:
+AI review:
 
 - Does the frame have foreground, middle ground, and background rhythm?
 - Is the content concentrated in one corner or one band?
@@ -321,7 +321,7 @@ Project algorithm:
 
 ### 5.2 Visual Readability
 
-AI judgement:
+AI review:
 
 - Can a player immediately understand what the object is?
 - Can the player read roads, traces, terrain transitions, and construction footprints?
@@ -338,7 +338,7 @@ Project algorithm:
 
 ### 5.3 Texture Versus World Fact
 
-AI judgement:
+AI review:
 
 - Does the image contain real world information, or only decorative noise?
 - Does surface texture support the world, or is it hiding an empty scene?
@@ -352,7 +352,7 @@ Project algorithm:
 
 ### 5.4 Palette And Contrast Discipline
 
-AI judgement:
+AI review:
 
 - Do important objects separate from the ground?
 - Is the image using a coherent palette instead of arbitrary colors?
@@ -366,7 +366,7 @@ Project algorithm:
 
 ### 5.5 Style And Copyright Safety
 
-AI judgement:
+AI review:
 
 - Is the image using general visual principles, or copying a specific external work?
 - Does the generated image look like AI-PET-WORLD rather than another game?
@@ -375,14 +375,14 @@ Project algorithm:
 
 - Public references are used only as abstract principles.
 - No external screenshots, assets, UI layouts, logos, character designs, or named styles are stored or copied.
-- The visual judge checks for reference leakage and forbidden style tokens.
+- The visual review checks for reference leakage and forbidden style tokens.
 
 ### 5.6 Display Decision
 
 The visual gate uses the rubric as a blocker, not as decoration.
 
 ```txt
-AI judgement axis
+AI review axis
 -> measurable project metric
 -> finding
 -> correction intent
@@ -418,7 +418,7 @@ The rule is:
 Original frame fails
 -> create visual-only correction plan
 -> generate corrected pixel buffer
--> run visual judge again
+-> run visual review again
 -> display corrected frame only if finalSeverity === "pass"
 ```
 

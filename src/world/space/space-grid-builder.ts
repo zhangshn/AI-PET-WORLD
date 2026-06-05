@@ -3,7 +3,7 @@ import type {
   HomeZone,
   MapPlacement,
 } from "@/world/map-state/home-map-state-schema"
-import { clamp } from "@/world/procedural-painter/scene-composer/scene-composer-random"
+import { clamp } from "@/shared/math/clamp"
 import type { TraceField } from "@/world/trace"
 
 import type {
@@ -431,7 +431,7 @@ function resolveFallbackRegion(input: {
   const yRatio = (input.row + 0.5) / input.rows
   const centerDistance = Math.hypot(xRatio - 0.5, yRatio - 0.5)
   const kind: SpaceRegionKind =
-    centerDistance < 0.18 ? "home" : centerDistance < 0.36 ? "yard" : "nature"
+    centerDistance < 0.18 ? "home" : centerDistance < 0.34 ? "yard" : "nature"
 
   return {
     regionId: `fallback:${kind}`,
@@ -496,7 +496,7 @@ function resolveTerrainKind(input: {
   const resources = input.homeMapState.resources
 
   if (biomeType === "desert") return "sand"
-  if (biomeType === "oasis") return resources.groundHealth < 42 ? "wetland" : "grass"
+  if (biomeType === "oasis") return "wetland"
   if (biomeType === "forest") return "forest_floor"
 
   if (resources.spacePressure > 76) return "soil"
@@ -937,7 +937,7 @@ function hasAnyToken(
 ): boolean {
   const itemTokens = [
     item.id,
-    "assetId" in item ? item.assetId : "",
+    "assetId", "kind",
     "label" in item ? item.label : item.name,
     "layer" in item ? item.layer : item.type,
     ...item.tags,

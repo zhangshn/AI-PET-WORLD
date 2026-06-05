@@ -1,7 +1,3 @@
-/**
- * 当前文件职责：审计建设 runtime 调用边界输出。
- */
-
 import type { HomeMapState } from "@/world/map-state/home-map-state-schema"
 
 import type {
@@ -24,7 +20,7 @@ export function auditConstructionRuntimeCycle(input: {
     ...auditStableHomeMapIdentity(input),
     ...auditProtocolLineage(input),
     ...auditPersistenceProposal(input),
-    ...auditVisualRefreshSignal(input),
+    ...auditPainterRefreshSignal(input),
     ...auditAcceptedDiffLineage({ input, acceptedDiffIds }),
     ...auditChangedPlacementLineage(input),
   ]
@@ -43,8 +39,8 @@ export function auditConstructionRuntimeCycle(input: {
     rejectedDiffIds,
     persistenceProposalId:
       input.resultWithoutAudit.persistenceProposal?.proposalId ?? null,
-    visualRefreshSignalId:
-      input.resultWithoutAudit.visualRefreshSignal?.signalId ?? null,
+    painterRefreshSignalId:
+      input.resultWithoutAudit.painterRefreshSignal?.signalId ?? null,
     warnings,
     tags: [
       "construction_runtime_cycle_audit",
@@ -111,31 +107,31 @@ function auditPersistenceProposal(input: {
   }
 
   if (proposal?.shouldPersist && protocolWarnings > 0) {
-    warnings.push("runtimeCommitResult 有 warning 时 proposal 不能 shouldPersist。")
+    warnings.push("runtimeCommitResult 存在 warning 时，proposal 不能 shouldPersist。")
   }
 
   return warnings
 }
 
-function auditVisualRefreshSignal(input: {
+function auditPainterRefreshSignal(input: {
   runtimeInput: ConstructionRuntimeCycleInput
   resultWithoutAudit: Omit<ConstructionRuntimeCycleResult, "audit">
 }): string[] {
-  const signal = input.resultWithoutAudit.visualRefreshSignal
+  const signal = input.resultWithoutAudit.painterRefreshSignal
   const protocolWarnings =
     input.resultWithoutAudit.runtimeCommitResult.audit.warnings.length
   const warnings: string[] = []
 
-  if (input.runtimeInput.visualRefreshMode === "signal_only" && !signal) {
-    warnings.push("visualRefreshMode 为 signal_only 时必须生成 visualRefreshSignal。")
+  if (input.runtimeInput.painterRefreshMode === "signal_only" && !signal) {
+    warnings.push("painterRefreshMode 为 signal_only 时必须生成 painterRefreshSignal。")
   }
 
-  if (input.runtimeInput.visualRefreshMode === "disabled" && signal) {
-    warnings.push("visualRefreshMode 为 disabled 时 visualRefreshSignal 必须为 null。")
+  if (input.runtimeInput.painterRefreshMode === "disabled" && signal) {
+    warnings.push("painterRefreshMode 为 disabled 时 painterRefreshSignal 必须为 null。")
   }
 
   if (signal?.shouldRefresh && protocolWarnings > 0) {
-    warnings.push("runtimeCommitResult 有 warning 时 signal 不能 shouldRefresh。")
+    warnings.push("runtimeCommitResult 存在 warning 时，signal 不能 shouldRefresh。")
   }
 
   return warnings
@@ -164,7 +160,7 @@ function auditChangedPlacementLineage(input: {
   runtimeInput: ConstructionRuntimeCycleInput
   resultWithoutAudit: Omit<ConstructionRuntimeCycleResult, "audit">
 }): string[] {
-  const signal = input.resultWithoutAudit.visualRefreshSignal
+  const signal = input.resultWithoutAudit.painterRefreshSignal
   if (!signal) return []
 
   const changedPlacementIds = new Set(
@@ -174,7 +170,7 @@ function auditChangedPlacementLineage(input: {
   return signal.changedPlacementIds.flatMap((placementId) =>
     changedPlacementIds.has(placementId)
       ? []
-      : [`changedPlacementIds 必须来自 accepted diff 对应 placementId：${placementId}`]
+      : [`changedPlacementIds 必须来自已接受 diff 对应的 placementId：${placementId}`]
   )
 }
 
@@ -213,7 +209,7 @@ function buildStableRuntimeFingerprint(input: {
     input.acceptedDiffIds.slice().sort().join("+"),
     input.rejectedDiffIds.slice().sort().join("+"),
     result.persistenceProposal?.proposalId ?? "none",
-    result.visualRefreshSignal?.signalId ?? "none",
+    result.painterRefreshSignal?.signalId ?? "none",
     fingerprintPlacements(result.nextHomeMapState),
   ].join("::")
 }

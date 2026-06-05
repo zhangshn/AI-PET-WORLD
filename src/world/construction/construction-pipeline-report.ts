@@ -1,20 +1,16 @@
-/**
- * 当前文件职责：生成建设系统纵向闭环的人类可读报告。
- */
-
-import type {
+﻿import type {
   ConstructionFullPipelineAudit,
   ConstructionMemoryPersistenceMockResult,
   ConstructionPipelineReport,
   ConstructionPipelineReportSection,
   ConstructionRuntimeCycleResult,
-  ConstructionVisualRefreshBridgeResult,
+  ConstructionPainterRefreshBridgeResult,
 } from "./construction-schema"
 
 export function buildConstructionPipelineReport(input: {
   runtimeCycleResult: ConstructionRuntimeCycleResult
   memoryPersistenceMockResult: ConstructionMemoryPersistenceMockResult
-  visualRefreshBridgeResult: ConstructionVisualRefreshBridgeResult
+  painterRefreshBridgeResult: ConstructionPainterRefreshBridgeResult
   fullPipelineAudit: ConstructionFullPipelineAudit
 }): ConstructionPipelineReport {
   const sections = buildReportSections(input)
@@ -28,7 +24,7 @@ export function buildConstructionPipelineReport(input: {
     acceptedDiffCount: input.fullPipelineAudit.acceptedDiffIds.length,
     rejectedDiffCount: input.fullPipelineAudit.rejectedDiffIds.length,
     changedPlacementCount:
-      input.visualRefreshBridgeResult.changedPlacementIds.length,
+      input.painterRefreshBridgeResult.changedPlacementIds.length,
     shouldPersist: input.fullPipelineAudit.shouldPersist,
     shouldRefresh: input.fullPipelineAudit.shouldRefresh,
     messages: buildReportMessages(input),
@@ -49,62 +45,62 @@ export function buildConstructionPipelineReport(input: {
 function buildReportSections(input: {
   runtimeCycleResult: ConstructionRuntimeCycleResult
   memoryPersistenceMockResult: ConstructionMemoryPersistenceMockResult
-  visualRefreshBridgeResult: ConstructionVisualRefreshBridgeResult
+  painterRefreshBridgeResult: ConstructionPainterRefreshBridgeResult
   fullPipelineAudit: ConstructionFullPipelineAudit
 }): ConstructionPipelineReportSection[] {
   return [
     {
-      title: "Construction",
+      title: "建设执行",
       status: input.runtimeCycleResult.audit.warnings.length === 0 ? "ok" : "warning",
       lines: [
-        `Selected plan: ${input.fullPipelineAudit.selectedPlanId ?? "none"}`,
-        `Accepted diffs: ${input.fullPipelineAudit.acceptedDiffIds.length}`,
-        `Rejected diffs: ${input.fullPipelineAudit.rejectedDiffIds.length}`,
+        `执行状态：${input.runtimeCycleResult.audit.warnings.length === 0 ? "通过" : "有警告"}`,
+        `已接受 diff：${input.fullPipelineAudit.acceptedDiffIds.length}`,
+        `已拒绝 diff：${input.fullPipelineAudit.rejectedDiffIds.length}`,
       ],
       tags: ["section:construction"],
     },
     {
-      title: "Memory Persistence Mock",
+      title: "记忆持久化预演",
       status: input.memoryPersistenceMockResult.didStore
         ? "ok"
         : input.memoryPersistenceMockResult.previewOnly
           ? "skipped"
           : "skipped",
       lines: [
-        `Mode: ${input.memoryPersistenceMockResult.mode}`,
-        `Did store: ${String(input.memoryPersistenceMockResult.didStore)}`,
+        `模式：${input.memoryPersistenceMockResult.mode}`,
+        `是否存储：${String(input.memoryPersistenceMockResult.didStore)}`,
         input.memoryPersistenceMockResult.reason,
       ],
       tags: ["section:memory_persistence_mock"],
     },
     {
-      title: "Visual Refresh Bridge",
-      status: input.visualRefreshBridgeResult.shouldRequestRefresh ? "ok" : "skipped",
+      title: "Painter 刷新桥",
+      status: input.painterRefreshBridgeResult.shouldRequestRefresh ? "ok" : "skipped",
       lines: [
-        `Should refresh: ${String(
-          input.visualRefreshBridgeResult.shouldRequestRefresh
+        `是否请求刷新：${String(
+          input.painterRefreshBridgeResult.shouldRequestRefresh
         )}`,
-        `Changed placements: ${input.visualRefreshBridgeResult.changedPlacementIds.length}`,
-        input.visualRefreshBridgeResult.reason,
+        `变化 placement 数：${input.painterRefreshBridgeResult.changedPlacementIds.length}`,
+        input.painterRefreshBridgeResult.reason,
       ],
-      tags: ["section:visual_refresh_bridge"],
+      tags: ["section:painter_refresh_bridge"],
     },
     {
-      title: "Audit",
+      title: "审计",
       status: input.fullPipelineAudit.warnings.length === 0 ? "ok" : "warning",
       lines:
         input.fullPipelineAudit.warnings.length === 0
-          ? ["Full pipeline audit has no warnings."]
+          ? ["完整建设流水线审计没有 warning。"]
           : input.fullPipelineAudit.warnings,
       tags: ["section:audit"],
     },
     {
-      title: "Next Step",
+      title: "下一步",
       status: input.fullPipelineAudit.warnings.length === 0 ? "ok" : "warning",
       lines: [
         input.fullPipelineAudit.warnings.length === 0
-          ? "This result may proceed to dry-run persistence and snapshot refresh precheck."
-          : "Resolve audit warnings before product integration.",
+          ? "该结果可以进入持久化预演与 Painter 刷新预检查。"
+          : "进入产品集成前必须先处理审计 warning。",
       ],
       tags: ["section:next_step"],
     },
@@ -114,15 +110,15 @@ function buildReportSections(input: {
 function buildReportMessages(input: {
   runtimeCycleResult: ConstructionRuntimeCycleResult
   memoryPersistenceMockResult: ConstructionMemoryPersistenceMockResult
-  visualRefreshBridgeResult: ConstructionVisualRefreshBridgeResult
+  painterRefreshBridgeResult: ConstructionPainterRefreshBridgeResult
   fullPipelineAudit: ConstructionFullPipelineAudit
 }): string[] {
   return [
     ...input.runtimeCycleResult.messages,
     input.memoryPersistenceMockResult.reason,
-    input.visualRefreshBridgeResult.reason,
+    input.painterRefreshBridgeResult.reason,
     ...input.fullPipelineAudit.warnings.map(
-      (warning) => `Pipeline audit warning: ${warning}`
+      (warning) => `流水线审计 warning：${warning}`
     ),
   ]
 }

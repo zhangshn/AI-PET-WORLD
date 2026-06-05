@@ -223,7 +223,7 @@ function resolveIntentTraceStrength(input: {
   decision: ButlerRuntimeDecision
   validation: ButlerWorldRuleValidation
 }): number {
-  const base = input.intent.kind === "maintenance" ? 56 : input.intent.kind === "construction" ? 62 : 42
+  const base = input.intent.kind === "maintenance" ? 62 : input.intent.kind === "construction" ? 52 : 42
   const tracePressure = input.decision.traceContext.tracePressure
   const validationBonus = input.validation.ok ? 8 : -24
   const memoryBonus = Math.min(10, input.decision.traceContext.memorySeedConsumeScore)
