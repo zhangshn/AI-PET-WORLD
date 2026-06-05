@@ -1,5 +1,8 @@
 ﻿import { readWorldRuntimeForView } from "@/world/runtime/world-runtime-gateway"
-import { buildWorldVisualPainterDecision } from "@/world/world-visual-painter"
+import {
+  buildWorldVisualPainterDecision,
+  readLatestWorldVisualApprovedFrameRecord,
+} from "@/world/world-visual-painter"
 
 export async function WorldLiveRuntimePage() {
   const runtimeView = await readWorldRuntimeForView()
@@ -31,11 +34,13 @@ export async function WorldLiveRuntimePage() {
   const painterDecision = buildWorldVisualPainterDecision({
     saveRecord: runtimeView.saveRecord,
   })
+  const approvedFrameReadResult = await readLatestWorldVisualApprovedFrameRecord({
+    ownerId: runtimeView.saveRecord.ownerId,
+    worldId: runtimeView.saveRecord.worldId,
+  })
+  const approvedFrame = approvedFrameReadResult.record?.approvedFrame ?? null
 
-  if (
-    painterDecision.approvedFrame &&
-    painterDecision.approvedFrame.canShowToPlayer
-  ) {
+  if (approvedFrame?.canShowToPlayer) {
     return (
       <main style={runtimeWorldStyles.page}>
         <div style={runtimeWorldStyles.stage}>
@@ -51,7 +56,7 @@ export async function WorldLiveRuntimePage() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               alt="已审核通过的 AI 世界画面"
-              src={painterDecision.approvedFrame.imageUrl}
+              src={approvedFrame.imageUrl}
               style={runtimeWorldStyles.approvedImage}
             />
           </div>

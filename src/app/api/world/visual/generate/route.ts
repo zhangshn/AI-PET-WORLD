@@ -4,6 +4,7 @@ import { readWorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-store-
 import {
   buildWorldVisualPainterDecision,
   runWorldVisualAiImageGenerationRequest,
+  writeWorldVisualCandidateRecord,
 } from "@/world/world-visual-painter"
 
 export async function POST() {
@@ -47,18 +48,35 @@ export async function POST() {
     factManifest: decision.factManifest,
     promptPackage: decision.promptPackage,
   })
+  const writeResult = generationResult.candidate
+    ? await writeWorldVisualCandidateRecord({
+        ownerId: readResult.record.ownerId,
+        worldId: readResult.record.worldId,
+        tick: readResult.record.tick,
+        candidate: generationResult.candidate,
+        promptPackage: decision.promptPackage,
+        factManifest: decision.factManifest,
+      })
+    : null
 
   return NextResponse.json(
     {
       ok: generationResult.ok,
       candidate: generationResult.candidate,
+      persisted: writeResult?.ok ?? false,
+      candidatePath: writeResult?.path ?? null,
+      persistenceWarnings: writeResult?.warnings ?? [],
       error: generationResult.error,
       canShowToPlayer: false,
       displayRule: "候选图仍然隐藏，必须通过 Visual Judge 后才能生成 ApprovedFrame。",
       displayRuleEn:
         "The candidate remains hidden and must pass Visual Judge before ApprovedFrame can be created.",
-      tags: ["world_visual_generate_api", ...generationResult.tags],
+      tags: [
+        "world_visual_generate_api",
+        ...(writeResult?.tags ?? []),
+        ...generationResult.tags,
+      ],
     },
-    { status: generationResult.ok ? 200 : 502 }
+    { status: generationResult.ok && writeResult?.ok !== false ? 200 : 502 }
   )
 }

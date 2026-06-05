@@ -30,7 +30,7 @@ export function buildWorldVisualSceneIntent(
     mainStory: {
       zh: activeConstruction
         ? `画面必须表达真实世界事实：当前焦点是“${activeConstruction.title}”，施工区域、自然环境、路径和材料都要服务于这个建设故事。`
-        : "画面必须表达真实世界事实：当前世界还没有通过审核的主建设画面，因此只能生成世界基础意图，不能展示旧地图。",
+        : "画面必须表达真实世界事实：当前还没有通过审核的主建设画面，因此只能生成世界基础意图，不能展示未审核画面。",
       en: activeConstruction
         ? `The image must express real world facts: the current focus is ${activeConstruction.title}, and construction, nature, paths, and materials must support that story.`
         : "The image must express real world facts: no reviewed construction image exists yet, so only a foundation scene intent may be generated.",
@@ -53,14 +53,14 @@ export function buildWorldVisualSceneIntent(
     ],
     mayShow: [
       {
-        zh: "可展示原创像素资产：树木、灌木、石块、水岸、材料堆、临时住所、施工痕迹。",
-        en: "Original pixel assets such as trees, shrubs, rocks, shoreline, material piles, temporary shelter, and construction traces.",
+        zh: "可展示原创像素视觉内容：树木、灌木、石块、水岸、材料堆、临时住所、施工痕迹。",
+        en: "Original pixel visual content such as trees, shrubs, rocks, shoreline, material piles, temporary shelter, and construction traces.",
       },
     ],
     mustNotShow: [
       {
-        zh: "不能展示未审核占位方块、脏路径、旧散点地图或旧渲染器结果。",
-        en: "Do not show unreviewed placeholder blocks, muddy paths, old scatter maps, or output from the removed renderer.",
+        zh: "不能展示未审核占位方块、脏路径、随机散点画面或任何未通过审核的视觉结果。",
+        en: "Do not show unreviewed placeholder blocks, muddy paths, random scatter views, or any visual result that has not passed review.",
       },
     ],
     sourceFactIds: manifest.sourceFactIds,

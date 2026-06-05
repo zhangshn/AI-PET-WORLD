@@ -18,7 +18,7 @@ export function buildWorldVisualApprovedFrame(input: {
 
   return {
     frameId: `approved-frame-${input.factManifest.worldId}-${input.factManifest.tick}`,
-    approvedAt: `tick-${input.factManifest.tick}`,
+    approvedAt: new Date().toISOString(),
     sourceImageCandidateId: input.aiImageCandidate.candidateId,
     reviewScore: input.reviewReport.score,
     imageUrl: input.aiImageCandidate.imageUrl,

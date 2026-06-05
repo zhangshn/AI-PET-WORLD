@@ -1,49 +1,55 @@
 # AI-PET-WORLD
 
-AI-PET-WORLD 是一个由 AI 管家和世界规则共同驱动的自主像素世界。
+AI-PET-WORLD is an autonomous world game driven by an AI butler, world rules, and an AI visual pipeline.
 
-用户通过注册和出生信息进入世界。出生年月日与可选出生时辰会进入紫微斗数 / 生命人格核心，映射为管家的长期人格、沟通方式、建设偏好和决策倾向。管家不是被玩家直接操控的单位，而是世界中的自主行动者。
+The user enters birth data during registration. The project maps the birth data through Zi Wei Dou Shu and related destiny/personality logic into the butler's long-term personality, communication style, construction preference, and decision bias.
 
-## 当前正式主链
+The butler is not a directly controlled unit. The butler is an autonomous actor inside the world.
 
-```txt
-用户注册
--> 提交出生信息
--> 紫微斗数 / 生命人格核心生成管家灵魂
--> 创建个人世界
--> 管家自主观察、判断、建设、沟通和成长
--> 用户通过 P-Phone 与管家建立长期关系
-```
-
-用户可以提出建议，但建议不是命令。管家会结合人格、记忆、资源、空间、痕迹和世界规则，自主决定接受、延后、调整或拒绝。
-
-## 视觉主链
-
-画面只表达世界事实，不创造世界事实。
+## Current Main Chain
 
 ```txt
-WorldRuntimeSaveRecord
--> WorldViewModel
--> VisualGenerationPlan
--> PixelWorldRenderPlan
--> PixelWorldPixelBufferFrame
--> VisualJudgeReport
--> VisualCorrectionPlan
--> PixiJS
+User registration
+-> Birth data
+-> Destiny/personality mapping
+-> Butler soul/personality
+-> Personal world creation
+-> Autonomous runtime world facts
+-> AI Painter visual generation
+-> VisualJudge
+-> ApprovedFrame
+-> Player world view
 ```
 
-视觉判断系统可以修正视觉表达，例如密度、遮挡、比例、可读性、版权风险和风格一致性，但不能篡改 runtime 里的世界事实。
+## Visual Rule
 
-## Runtime 存储边界
+The world page can only show `ApprovedFrame`.
 
-正式 runtime 通过 `RuntimeStoreAdapter` 访问存储。
+No candidate image, sketch, debug view, or programmatic drawing may be shown to the player.
 
-当前开发和 smoke 测试使用 `LocalFileRuntimeStore`，落盘目录为 `data/world-runtime`。生产环境不会默认启用本地文件存储；上线前必须接入正式 `DatabaseRuntimeStore`。
+Current formal visual handoff document:
 
-## 文档
+```txt
+docs/GPT_HANDOFF.md
+```
 
-- `docs/v2_6/AI_PET_WORLD_V2_6_CURRENT_BUSINESS_PRINCIPLES.md`
-- `docs/v2_6/AI_PET_WORLD_CURRENT_ARCHITECTURE.md`
-- `docs/v2_6/AI_PET_WORLD_PIXEL_GENERATION.md`
-- `docs/v2_6/AI_PET_WORLD_VISUAL_GENERATION_AND_JUDGE_PLAN.md`
-- `docs/legal/AI_PET_WORLD_COPYRIGHT_AND_LICENSE_POLICY.md`
+## Current API
+
+```txt
+POST /api/world/create
+POST /api/world/tick
+POST /api/world/visual/generate
+GET  /api/world/visual/candidate
+POST /api/world/visual/judge
+GET  /world
+```
+
+## Local MVP Persistence
+
+```txt
+data/world-runtime/
+data/world-visual-candidates/
+data/world-approved-frames/
+```
+
+Local file persistence is for MVP development only. Production needs a database adapter.
