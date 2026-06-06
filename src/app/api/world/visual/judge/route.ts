@@ -8,6 +8,7 @@ import {
   buildWorldVisualReviewReport,
   readLatestWorldVisualCandidateRecord,
   writeWorldVisualApprovedFrameRecord,
+  writeWorldVisualFixPlanRecord,
 } from "@/world/world-visual-painter"
 
 export async function POST() {
@@ -60,6 +61,14 @@ export async function POST() {
     factManifest,
     reviewReport,
   })
+  const fixPlanWriteResult = await writeWorldVisualFixPlanRecord({
+    ownerId: runtimeReadResult.record.ownerId,
+    worldId: runtimeReadResult.record.worldId,
+    tick: runtimeReadResult.record.tick,
+    fixPlan,
+    reviewReport,
+    factManifest,
+  })
   const writeResult = approvedFrame
     ? await writeWorldVisualApprovedFrameRecord({
         ownerId: runtimeReadResult.record.ownerId,
@@ -76,6 +85,9 @@ export async function POST() {
       reviewReport,
       approvedFrame,
       fixPlan,
+      fixPlanPersisted: fixPlanWriteResult.ok,
+      fixPlanPath: fixPlanWriteResult.path,
+      fixPlanPersistenceWarnings: fixPlanWriteResult.warnings,
       persisted: writeResult?.ok ?? false,
       approvedFramePath: writeResult?.path ?? null,
       persistenceWarnings: writeResult?.warnings ?? [],
@@ -89,6 +101,7 @@ export async function POST() {
       tags: [
         "world_visual_judge_api",
         ...(writeResult?.tags ?? []),
+        ...fixPlanWriteResult.tags,
         ...reviewReport.tags,
       ],
     },
