@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer"
+
 import type {
   WorldVisualAiImageCandidate,
   WorldVisualFactManifest,
@@ -6,11 +8,28 @@ import type {
 } from "../world-visual-painter-schema"
 import { WORLD_VISUAL_MVP_TARGET_POLICY } from "../visual-target-policy"
 
-export function buildWorldVisualReviewReport(input: {
+const MIN_IMAGE_WIDTH = 1024
+const MIN_IMAGE_HEIGHT = 768
+const MAX_IMAGE_BYTES = 16 * 1024 * 1024
+const FETCH_TIMEOUT_MS = 8000
+
+type ImageInspectionResult = {
+  ok: boolean
+  format: WorldVisualAiImageCandidate["imageFormat"] | null
+  width: number | null
+  height: number | null
+  contentType: string | null
+  byteLength: number
+  error: string | null
+  errorZh: string | null
+}
+
+export async function buildWorldVisualReviewReport(input: {
   factManifest: WorldVisualFactManifest
   aiImageCandidate: WorldVisualAiImageCandidate | null
-}): WorldVisualReviewReport {
-  const checks = buildReviewChecks(input)
+}): Promise<WorldVisualReviewReport> {
+  const inspection = await inspectCandidateImage(input.aiImageCandidate)
+  const checks = buildReviewChecks({ ...input, inspection })
   const score = Math.round(
     checks.reduce((sum, check) => sum + check.score, 0) / checks.length
   )
@@ -28,8 +47,8 @@ export function buildWorldVisualReviewReport(input: {
             en: "The AI bitmap candidate passed Visual Judge and may enter ApprovedFrame building. It remains hidden until ApprovedFrame exists.",
           }
         : {
-            zh: "视觉审核未通过：缺少真正的 AI 位图候选图，或候选图未满足事实一致性、原创安全、画面质量要求，因此禁止展示。",
-            en: "Visual review failed: a real AI bitmap candidate is missing, or the candidate does not meet fact consistency, originality safety, and visual quality requirements.",
+            zh: "视觉审核未通过：候选图缺失、图片本体无效、格式伪装、尺寸不合格、事实链缺失或授权不合格，因此禁止展示。",
+            en: "Visual review failed: the candidate is missing, the image bytes are invalid, the format is spoofed, the size is invalid, fact links are incomplete, or license confirmation is missing.",
           },
     score,
     checks,
@@ -37,6 +56,10 @@ export function buildWorldVisualReviewReport(input: {
       {
         zh: "必须有 AI 图像生成模型或授权导入流程产出的 PNG/WebP/JPG 位图候选图。",
         en: "A PNG/WebP/JPG bitmap candidate from an AI image model or authorized import flow is required.",
+      },
+      {
+        zh: "候选图必须能读取真实图片本体，禁止 SVG、HTML、JSON、文本或格式伪装文件。",
+        en: "The candidate must expose real image bytes. SVG, HTML, JSON, text, and spoofed files are forbidden.",
       },
       {
         zh: "候选图不能篡改世界事实，只能补充视觉细节。",
@@ -52,6 +75,7 @@ export function buildWorldVisualReviewReport(input: {
     tags: [
       "visual_review",
       status,
+      "real_image_bytes_required",
       "ai_bitmap_candidate_required",
       "display_blocked_until_approved_frame",
       "no_programmatic_renderer",
@@ -62,13 +86,14 @@ export function buildWorldVisualReviewReport(input: {
 function buildReviewChecks(input: {
   factManifest: WorldVisualFactManifest
   aiImageCandidate: WorldVisualAiImageCandidate | null
+  inspection: ImageInspectionResult
 }): WorldVisualReviewCheck[] {
   const candidate = input.aiImageCandidate
-  const hasAiBitmapCandidate =
+  const hasCandidateMetadata =
     Boolean(candidate) &&
     candidate?.canShowToPlayer === false &&
-    candidate.width >= 1024 &&
-    candidate.height >= 768 &&
+    candidate.width >= MIN_IMAGE_WIDTH &&
+    candidate.height >= MIN_IMAGE_HEIGHT &&
     ["png", "webp", "jpg"].includes(candidate.imageFormat)
   const candidateHasAllowedLicense =
     candidate === null
@@ -80,20 +105,70 @@ function buildReviewChecks(input: {
       ? false
       : candidate.promptPackageId.length > 0 &&
         candidate.sourceFactIds.length === input.factManifest.sourceFactIds.length
+  const imageBytesAreValid = input.inspection.ok
+  const imageMatchesMetadata =
+    candidate !== null &&
+    imageBytesAreValid &&
+    input.inspection.format === candidate.imageFormat &&
+    input.inspection.width === candidate.width &&
+    input.inspection.height === candidate.height
+  const imageSizeIsAcceptable =
+    imageBytesAreValid &&
+    (input.inspection.width ?? 0) >= MIN_IMAGE_WIDTH &&
+    (input.inspection.height ?? 0) >= MIN_IMAGE_HEIGHT
 
   return [
     check(
-      "ai_image_candidate",
-      hasAiBitmapCandidate,
-      hasAiBitmapCandidate ? 92 : 0,
-      "AI 位图候选图",
-      "AI image candidate",
-      hasAiBitmapCandidate
-        ? "已存在隐藏的 AI 位图候选图。"
-        : "还没有 AI 图像生成模型产出的 PNG/WebP/JPG。",
-      hasAiBitmapCandidate
-        ? "A hidden AI bitmap candidate exists."
-        : "No PNG/WebP/JPG from an AI image model exists."
+      "ai_image_candidate_metadata",
+      hasCandidateMetadata,
+      hasCandidateMetadata ? 90 : 0,
+      "AI 位图候选图元数据",
+      "AI image candidate metadata",
+      hasCandidateMetadata
+        ? "候选图元数据存在，并声明为合格尺寸的 PNG/WebP/JPG。"
+        : "候选图元数据缺失，或格式/尺寸不符合 MVP 展示要求。",
+      hasCandidateMetadata
+        ? "Candidate metadata exists and declares a PNG/WebP/JPG at the required size."
+        : "Candidate metadata is missing or its format/size does not meet MVP display requirements."
+    ),
+    check(
+      "real_image_bytes",
+      imageBytesAreValid,
+      imageBytesAreValid ? 94 : 0,
+      "真实图片本体",
+      "Real image bytes",
+      imageBytesAreValid
+        ? `已读取真实图片本体，格式 ${input.inspection.format}，尺寸 ${input.inspection.width}x${input.inspection.height}。`
+        : input.inspection.errorZh ?? "无法读取真实图片本体。",
+      imageBytesAreValid
+        ? `Real image bytes were read as ${input.inspection.format}, ${input.inspection.width}x${input.inspection.height}.`
+        : input.inspection.error ?? "Real image bytes could not be read."
+    ),
+    check(
+      "image_metadata_matches_bytes",
+      imageMatchesMetadata,
+      imageMatchesMetadata ? 92 : 0,
+      "图片声明与本体一致",
+      "Image metadata matches bytes",
+      imageMatchesMetadata
+        ? "候选图声明的格式和尺寸与图片本体一致。"
+        : "候选图声明的格式或尺寸与图片本体不一致，可能是伪装文件或错误结果。",
+      imageMatchesMetadata
+        ? "The declared format and dimensions match the actual image bytes."
+        : "The declared format or dimensions do not match the actual image bytes, which may indicate spoofing or a bad result."
+    ),
+    check(
+      "mvp_image_size",
+      imageSizeIsAcceptable,
+      imageSizeIsAcceptable ? 90 : 0,
+      "MVP 图片尺寸",
+      "MVP image size",
+      imageSizeIsAcceptable
+        ? "图片本体达到 MVP 静态世界画面的最低尺寸要求。"
+        : `图片本体必须至少达到 ${MIN_IMAGE_WIDTH}x${MIN_IMAGE_HEIGHT}。`,
+      imageSizeIsAcceptable
+        ? "The image bytes meet the minimum MVP static world frame size."
+        : `The image bytes must be at least ${MIN_IMAGE_WIDTH}x${MIN_IMAGE_HEIGHT}.`
     ),
     check(
       "candidate_fact_link",
@@ -124,6 +199,284 @@ function buildReviewChecks(input: {
   ]
 }
 
+async function inspectCandidateImage(
+  candidate: WorldVisualAiImageCandidate | null
+): Promise<ImageInspectionResult> {
+  if (!candidate) {
+    return failedInspection("缺少 AI 位图候选图。", "AI bitmap candidate is missing.")
+  }
+
+  const bytesResult = await readCandidateImageBytes(candidate.imageUrl)
+  if (!bytesResult.ok) return bytesResult
+
+  if (bytesResult.byteLength > MAX_IMAGE_BYTES) {
+    return failedInspection(
+      "候选图片过大，当前 MVP 审核拒绝超过 16MB 的图片。",
+      "Candidate image is too large. MVP review rejects images above 16MB.",
+      bytesResult.contentType,
+      bytesResult.byteLength
+    )
+  }
+
+  const parsed = parseImageBytes(bytesResult.bytes)
+  if (!parsed) {
+    return failedInspection(
+      "候选图不是可识别的 PNG、JPG 或 WebP 位图，可能是 SVG、HTML、JSON、文本或伪装文件。",
+      "Candidate is not a recognized PNG, JPG, or WebP bitmap. It may be SVG, HTML, JSON, text, or a spoofed file.",
+      bytesResult.contentType,
+      bytesResult.byteLength
+    )
+  }
+
+  if (!isAllowedContentType(bytesResult.contentType, parsed.format)) {
+    return failedInspection(
+      `候选图 Content-Type 不合格：${bytesResult.contentType ?? "unknown"}。`,
+      `Candidate Content-Type is not allowed: ${bytesResult.contentType ?? "unknown"}.`,
+      bytesResult.contentType,
+      bytesResult.byteLength
+    )
+  }
+
+  return {
+    ok: true,
+    format: parsed.format,
+    width: parsed.width,
+    height: parsed.height,
+    contentType: bytesResult.contentType,
+    byteLength: bytesResult.byteLength,
+    error: null,
+    errorZh: null,
+  }
+}
+
+async function readCandidateImageBytes(
+  imageUrl: string
+): Promise<
+  | (ImageInspectionResult & { ok: false })
+  | {
+      ok: true
+      bytes: Uint8Array
+      contentType: string | null
+      byteLength: number
+    }
+> {
+  if (imageUrl.startsWith("data:")) {
+    return readDataUrlBytes(imageUrl)
+  }
+
+  let url: URL
+  try {
+    url = new URL(imageUrl)
+  } catch {
+    return failedInspection(
+      "候选图 imageUrl 不是有效 URL。",
+      "Candidate imageUrl is not a valid URL."
+    )
+  }
+
+  if (!["http:", "https:"].includes(url.protocol)) {
+    return failedInspection(
+      "候选图只允许 http、https 或 data:image URL，禁止本地文件路径。",
+      "Candidate image URL may only use http, https, or data:image. Local file paths are forbidden."
+    )
+  }
+
+  try {
+    const response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+    if (!response.ok) {
+      return failedInspection(
+        `候选图无法访问，HTTP 状态：${response.status}。`,
+        `Candidate image is not reachable. HTTP status: ${response.status}.`
+      )
+    }
+
+    const contentType = normalizeContentType(response.headers.get("content-type"))
+    if (contentType && isForbiddenContentType(contentType)) {
+      return failedInspection(
+        `候选图 Content-Type 被禁止：${contentType}。`,
+        `Candidate Content-Type is forbidden: ${contentType}.`,
+        contentType
+      )
+    }
+
+    const bytes = new Uint8Array(await response.arrayBuffer())
+    return { ok: true, bytes, contentType, byteLength: bytes.byteLength }
+  } catch (error) {
+    return failedInspection(
+      `读取候选图失败：${error instanceof Error ? error.message : String(error)}`,
+      `Reading candidate image failed: ${error instanceof Error ? error.message : String(error)}`
+    )
+  }
+}
+
+function readDataUrlBytes(
+  imageUrl: string
+): ReturnType<typeof readCandidateImageBytes> {
+  const match = /^data:([^;,]+)(;base64)?,(.*)$/i.exec(imageUrl)
+  if (!match) {
+    return Promise.resolve(
+      failedInspection("候选图 data URL 格式无效。", "Candidate data URL is invalid.")
+    )
+  }
+
+  const contentType = normalizeContentType(match[1])
+  if (!contentType || isForbiddenContentType(contentType)) {
+    return Promise.resolve(
+      failedInspection(
+        `候选图 data URL Content-Type 被禁止：${contentType ?? "unknown"}。`,
+        `Candidate data URL Content-Type is forbidden: ${contentType ?? "unknown"}.`,
+        contentType
+      )
+    )
+  }
+
+  const encoded = match[3]
+  const bytes = match[2]
+    ? Buffer.from(encoded, "base64")
+    : Buffer.from(decodeURIComponent(encoded), "utf8")
+  return Promise.resolve({
+    ok: true,
+    bytes: new Uint8Array(bytes),
+    contentType,
+    byteLength: bytes.byteLength,
+  })
+}
+
+function parseImageBytes(
+  bytes: Uint8Array
+): { format: WorldVisualAiImageCandidate["imageFormat"]; width: number; height: number } | null {
+  const png = parsePngDimensions(bytes)
+  if (png) return { format: "png", ...png }
+
+  const jpg = parseJpegDimensions(bytes)
+  if (jpg) return { format: "jpg", ...jpg }
+
+  const webp = parseWebpDimensions(bytes)
+  if (webp) return { format: "webp", ...webp }
+
+  return null
+}
+
+function parsePngDimensions(bytes: Uint8Array): { width: number; height: number } | null {
+  const signature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
+  if (bytes.length < 24 || !signature.every((byte, index) => bytes[index] === byte)) {
+    return null
+  }
+
+  return {
+    width: readUint32Be(bytes, 16),
+    height: readUint32Be(bytes, 20),
+  }
+}
+
+function parseJpegDimensions(bytes: Uint8Array): { width: number; height: number } | null {
+  if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return null
+
+  let offset = 2
+  while (offset + 9 < bytes.length) {
+    if (bytes[offset] !== 0xff) return null
+    const marker = bytes[offset + 1]
+    const length = readUint16Be(bytes, offset + 2)
+    if (length < 2) return null
+
+    if (
+      (marker >= 0xc0 && marker <= 0xc3) ||
+      (marker >= 0xc5 && marker <= 0xc7) ||
+      (marker >= 0xc9 && marker <= 0xcb) ||
+      (marker >= 0xcd && marker <= 0xcf)
+    ) {
+      return {
+        height: readUint16Be(bytes, offset + 5),
+        width: readUint16Be(bytes, offset + 7),
+      }
+    }
+
+    offset += 2 + length
+  }
+
+  return null
+}
+
+function parseWebpDimensions(bytes: Uint8Array): { width: number; height: number } | null {
+  if (
+    bytes.length < 30 ||
+    readAscii(bytes, 0, 4) !== "RIFF" ||
+    readAscii(bytes, 8, 4) !== "WEBP"
+  ) {
+    return null
+  }
+
+  const chunk = readAscii(bytes, 12, 4)
+  if (chunk === "VP8X" && bytes.length >= 30) {
+    return {
+      width: 1 + readUint24Le(bytes, 24),
+      height: 1 + readUint24Le(bytes, 27),
+    }
+  }
+
+  if (chunk === "VP8 " && bytes.length >= 30) {
+    return {
+      width: readUint16Le(bytes, 26) & 0x3fff,
+      height: readUint16Le(bytes, 28) & 0x3fff,
+    }
+  }
+
+  if (chunk === "VP8L" && bytes.length >= 25) {
+    const b0 = bytes[21]
+    const b1 = bytes[22]
+    const b2 = bytes[23]
+    const b3 = bytes[24]
+    return {
+      width: 1 + (((b1 & 0x3f) << 8) | b0),
+      height: 1 + (((b3 & 0x0f) << 10) | (b2 << 2) | ((b1 & 0xc0) >> 6)),
+    }
+  }
+
+  return null
+}
+
+function isAllowedContentType(
+  contentType: string | null,
+  format: WorldVisualAiImageCandidate["imageFormat"]
+): boolean {
+  if (!contentType) return true
+  if (format === "png") return contentType === "image/png"
+  if (format === "jpg") return contentType === "image/jpeg"
+  return contentType === "image/webp"
+}
+
+function isForbiddenContentType(contentType: string): boolean {
+  return (
+    contentType.includes("svg") ||
+    contentType.startsWith("text/") ||
+    contentType.includes("html") ||
+    contentType.includes("json") ||
+    contentType.includes("xml")
+  )
+}
+
+function normalizeContentType(contentType: string | null): string | null {
+  return contentType?.split(";")[0]?.trim().toLowerCase() || null
+}
+
+function failedInspection(
+  errorZh: string,
+  error: string,
+  contentType: string | null = null,
+  byteLength = 0
+): ImageInspectionResult & { ok: false } {
+  return {
+    ok: false,
+    format: null,
+    width: null,
+    height: null,
+    contentType,
+    byteLength,
+    error,
+    errorZh,
+  }
+}
+
 function check(
   id: string,
   passed: boolean,
@@ -149,17 +502,38 @@ function buildFixInstructions(
   return checks
     .filter((check) => !check.passed)
     .map((check) => {
-      if (check.id === "ai_image_candidate") {
+      if (check.id === "ai_image_candidate_metadata") {
         return {
-          zh: "接入 AI 图像生成模型或授权人工导入流程，生成真正的位图候选图。",
-          en: "Connect an AI image model or authorized manual import flow to produce a real bitmap candidate.",
+          zh: "接入 AI 图像生成模型或授权导入流程，并要求返回完整候选图元数据。",
+          en: "Connect an AI image model or authorized import flow and require complete candidate metadata.",
+        }
+      }
+
+      if (check.id === "real_image_bytes") {
+        return {
+          zh: "重新生成或导入真实 PNG/WebP/JPG 位图，禁止 SVG、HTML、JSON、文本或占位结果。",
+          en: "Regenerate or import a real PNG/WebP/JPG bitmap. SVG, HTML, JSON, text, and placeholder results are forbidden.",
+        }
+      }
+
+      if (check.id === "image_metadata_matches_bytes") {
+        return {
+          zh: "修正 provider 返回值，确保声明的格式和尺寸与图片本体一致。",
+          en: "Fix the provider response so declared format and dimensions match the actual image bytes.",
+        }
+      }
+
+      if (check.id === "mvp_image_size") {
+        return {
+          zh: `重新生成至少 ${MIN_IMAGE_WIDTH}x${MIN_IMAGE_HEIGHT} 的静态世界画面。`,
+          en: `Regenerate a static world frame of at least ${MIN_IMAGE_WIDTH}x${MIN_IMAGE_HEIGHT}.`,
         }
       }
 
       if (check.id === "candidate_fact_link") {
         return {
-          zh: "候选图必须绑定 sourceFactIds 和 promptPackageId。",
-          en: "The candidate must bind sourceFactIds and promptPackageId.",
+          zh: "候选图必须绑定 sourceFactIds 和 promptPackageId，不能脱离世界事实。",
+          en: "The candidate must bind sourceFactIds and promptPackageId, and must not detach from world facts.",
         }
       }
 
@@ -175,4 +549,29 @@ function buildFixInstructions(
         en: `Fix ${check.label.en}: ${check.evidence.en}`,
       }
     })
+}
+
+function readAscii(bytes: Uint8Array, offset: number, length: number): string {
+  return String.fromCharCode(...bytes.slice(offset, offset + length))
+}
+
+function readUint16Be(bytes: Uint8Array, offset: number): number {
+  return (bytes[offset] << 8) | bytes[offset + 1]
+}
+
+function readUint16Le(bytes: Uint8Array, offset: number): number {
+  return bytes[offset] | (bytes[offset + 1] << 8)
+}
+
+function readUint24Le(bytes: Uint8Array, offset: number): number {
+  return bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16)
+}
+
+function readUint32Be(bytes: Uint8Array, offset: number): number {
+  return (
+    ((bytes[offset] << 24) >>> 0) +
+    (bytes[offset + 1] << 16) +
+    (bytes[offset + 2] << 8) +
+    bytes[offset + 3]
+  )
 }

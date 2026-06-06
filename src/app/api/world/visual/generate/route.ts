@@ -24,7 +24,7 @@ export async function POST() {
     )
   }
 
-  const decision = buildWorldVisualPainterDecision({
+  const decision = await buildWorldVisualPainterDecision({
     saveRecord: readResult.record,
   })
 
@@ -68,7 +68,8 @@ export async function POST() {
       persistenceWarnings: writeResult?.warnings ?? [],
       error: generationResult.error,
       canShowToPlayer: false,
-      displayRule: "候选图仍然隐藏，必须通过 Visual Judge 后才能生成 ApprovedFrame。",
+      displayRule:
+        "候选图仍然隐藏，必须通过 Visual Judge 后才能生成 ApprovedFrame。",
       displayRuleEn:
         "The candidate remains hidden and must pass Visual Judge before ApprovedFrame can be created.",
       tags: [

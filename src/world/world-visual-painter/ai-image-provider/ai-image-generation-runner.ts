@@ -28,7 +28,10 @@ export async function runWorldVisualAiImageGenerationRequest(input: {
     })
 
     if (!response.ok) {
-      return failedResult(`图像生成服务返回失败状态：${response.status}`, `Image generation service returned status ${response.status}.`)
+      return failedResult(
+        `图像生成服务返回失败状态：${response.status}`,
+        `Image generation service returned status ${response.status}.`
+      )
     }
 
     const payload = (await response.json()) as ProviderImageResponse
@@ -41,8 +44,8 @@ export async function runWorldVisualAiImageGenerationRequest(input: {
 
     if (!candidate) {
       return failedResult(
-        "图像生成服务没有返回合格的 imageUrl、授权信息或原创确认。",
-        "The image generation service did not return a valid imageUrl, license, or originality confirmation."
+        "图像生成服务没有显式返回合格的 imageUrl、imageFormat、width、height、授权信息或原创确认。",
+        "The image generation service did not explicitly return valid imageUrl, imageFormat, width, height, license, or originality confirmation."
       )
     }
 
@@ -71,15 +74,20 @@ function buildCandidateFromProviderResponse(input: {
   promptPackage: WorldVisualPromptPackage
 }): WorldVisualAiImageCandidate | null {
   const imageUrl = input.payload.imageUrl?.trim()
-  const imageFormat = input.payload.imageFormat ?? input.request.body.imageFormat
-  const width = input.payload.width ?? input.request.body.width
-  const height = input.payload.height ?? input.request.body.height
+  const imageFormat = input.payload.imageFormat
+  const width = input.payload.width
+  const height = input.payload.height
   const license = input.payload.license
   const originalityConfirmed = input.payload.originalityConfirmed === true
 
   if (!imageUrl || !license || !originalityConfirmed) return null
-  if (!["png", "webp", "jpg"].includes(imageFormat)) return null
-  if (!["self_owned", "cc0", "commercial_license"].includes(license)) return null
+  if (!isSupportedImageFormat(imageFormat)) return null
+  if (!Number.isInteger(width) || !Number.isInteger(height)) return null
+  if (typeof width !== "number" || typeof height !== "number") return null
+  if (width < 1024 || height < 768) return null
+  if (!["self_owned", "cc0", "commercial_license"].includes(license)) {
+    return null
+  }
 
   return {
     candidateId: `ai-image-candidate-${input.factManifest.worldId}-${input.factManifest.tick}-${input.request.providerKind}`,
@@ -120,4 +128,10 @@ function failedResult(
     error: { zh, en },
     tags: ["ai_image_generation_result", "failed", "display_blocked"],
   }
+}
+
+function isSupportedImageFormat(
+  value: unknown
+): value is WorldVisualAiImageCandidate["imageFormat"] {
+  return value === "png" || value === "webp" || value === "jpg"
 }

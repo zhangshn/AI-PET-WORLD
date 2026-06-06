@@ -37,9 +37,9 @@ const REQUIRED_AI_PAINTER_CHAIN: WorldVisualPainterStage[] = [
   "approved_frame",
 ]
 
-export function buildWorldVisualPainterDecision(
+export async function buildWorldVisualPainterDecision(
   input: BuildWorldVisualPainterDecisionInput
-): WorldVisualPainterDecision {
+): Promise<WorldVisualPainterDecision> {
   const factManifest = buildWorldVisualFactManifest(input)
   const authorizedDataManifest = buildWorldVisualAuthorizedDataManifest()
   const factManifestAudit = auditWorldVisualFactManifest(factManifest)
@@ -68,7 +68,7 @@ export function buildWorldVisualPainterDecision(
     promptPackage,
     providerStatus: aiImageProviderStatus,
   })
-  const reviewReport = buildWorldVisualReviewReport({
+  const reviewReport = await buildWorldVisualReviewReport({
     factManifest,
     aiImageCandidate,
   })
@@ -92,8 +92,8 @@ export function buildWorldVisualPainterDecision(
           en: "The AI bitmap candidate passed review and produced ApprovedFrame, so it may enter Runtime Render.",
         }
       : {
-          zh: "正式世界画面必须由 AI 图像生成模型根据 Prompt Package 和世界事实产出位图候选图，并通过 Visual Judge 后生成 ApprovedFrame。当前还没有 AI 位图候选图，禁止展示。",
-          en: "Formal world rendering requires an AI-generated bitmap candidate from the Prompt Package and world facts, then a Visual Judge pass before ApprovedFrame exists. No AI bitmap candidate exists now, so display is blocked.",
+          zh: "正式世界画面必须由 AI 图像生成模型根据 Prompt Package 和世界事实产出位图候选图，并通过 Visual Judge 后生成 ApprovedFrame。当前还没有合格 AI 位图候选图，禁止展示。",
+          en: "Formal world rendering requires an AI-generated bitmap candidate from the Prompt Package and world facts, then a Visual Judge pass before ApprovedFrame exists. No qualified AI bitmap candidate exists now, so display is blocked.",
         },
     mvpTargetPolicy: WORLD_VISUAL_MVP_TARGET_POLICY,
     ruleDataset: WORLD_VISUAL_MVP_RULE_DATASET,

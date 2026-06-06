@@ -47,7 +47,7 @@ export async function POST() {
   const factManifest = buildWorldVisualFactManifest({
     saveRecord: runtimeReadResult.record,
   })
-  const reviewReport = buildWorldVisualReviewReport({
+  const reviewReport = await buildWorldVisualReviewReport({
     factManifest,
     aiImageCandidate: candidateReadResult.record.candidate,
   })
@@ -82,7 +82,7 @@ export async function POST() {
       canShowToPlayer: Boolean(approvedFrame && writeResult?.ok),
       displayRule: approvedFrame
         ? "ApprovedFrame 已生成，可以进入 /world 展示阶段。"
-        : "审核未通过，禁止展示，必须按 VisualFix 修正后重新生成候选图。",
+        : "审核未通过，禁止展示；必须按 VisualFix 修正后重新生成候选图。",
       displayRuleEn: approvedFrame
         ? "ApprovedFrame exists and may enter /world display."
         : "Review failed. Display is blocked until VisualFix is applied and a new candidate passes review.",

@@ -1,4 +1,4 @@
-﻿import { readWorldRuntimeForView } from "@/world/runtime/world-runtime-gateway"
+import { readWorldRuntimeForView } from "@/world/runtime/world-runtime-gateway"
 import {
   buildWorldVisualPainterDecision,
   readLatestWorldVisualApprovedFrameRecord,
@@ -31,7 +31,7 @@ export async function WorldLiveRuntimePage() {
     )
   }
 
-  const painterDecision = buildWorldVisualPainterDecision({
+  const painterDecision = await buildWorldVisualPainterDecision({
     saveRecord: runtimeView.saveRecord,
   })
   const approvedFrameReadResult = await readLatestWorldVisualApprovedFrameRecord({
