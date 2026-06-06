@@ -380,26 +380,97 @@ export type WorldVisualAiImageProviderStatus = {
   tags: string[]
 }
 
+export type WorldVisualImageOutputSize = {
+  width: number
+  height: number
+  imageFormat: "png" | "webp" | "jpg"
+}
+
+export type WorldVisualControlSketch = {
+  controlSketchId: string
+  type: "composition_control_only"
+  canShowToPlayer: false
+  cannotApprove: true
+  reason: WorldVisualBilingualText
+  outputSize: WorldVisualImageOutputSize
+  semanticLayout: {
+    focalArea: WorldVisualBilingualText
+    terrainAnchor: WorldVisualBilingualText
+    assetAnchor: WorldVisualBilingualText
+    motionNote: WorldVisualBilingualText
+  }
+  compositionHints: string[]
+  forbiddenUse: string[]
+  sourceFactIds: string[]
+  tags: string[]
+}
+
+export type WorldVisualImageStyle = {
+  styleTarget: string
+  camera: "top_down_world_view"
+  frameType: "static_world_frame"
+  qualityTarget: "mvp_approved_candidate"
+  canShowToPlayer: false
+}
+
+export type WorldVisualImageGenerationSafety = {
+  noProgrammaticRenderer: true
+  noSvgAsFinalFrame: true
+  noCanvasAsFinalFrame: true
+  noPrimitiveMapAsFinalFrame: true
+  noPlaceholderFrame: true
+  noUnlicensedThirdPartyCopy: true
+  noAddedWorldFacts: true
+  mustPassVisualJudge: true
+}
+
+export type WorldVisualAiImageGenerationRequestBody = {
+  positivePrompt: string
+  negativePrompt: string
+  width: number
+  height: number
+  imageFormat: "png" | "webp" | "jpg"
+  promptPackage: {
+    packageId: string
+    modelRole: "ai_image_generation_model"
+    positivePromptZh: string
+    positivePromptEn: string
+    negativePromptZh: string
+    negativePromptEn: string
+    compositionGuide: WorldVisualBilingualText
+    terrainGuide: WorldVisualBilingualText
+    assetGuide: WorldVisualBilingualText
+    motionGuide: WorldVisualBilingualText
+    sourceFactIds: string[]
+    ruleDataIds: string[]
+    canShowToPlayer: false
+  }
+  controlSketch: WorldVisualControlSketch
+  outputSize: WorldVisualImageOutputSize
+  imageStyle: WorldVisualImageStyle
+  safety: WorldVisualImageGenerationSafety
+  metadata: {
+    worldId: string
+    tick: number
+    promptPackageId: string
+    sourceFactIds: string[]
+    ruleDataIds: string[]
+    controlSketchId: string
+    canShowToPlayer: false
+    cannotApprove: true
+  }
+}
+
 export type WorldVisualAiImageGenerationRequest = {
   requestId: string
-  providerKind: Exclude<WorldVisualAiImageProviderKind, "not_configured" | "manual_import">
+  providerKind: Exclude<
+    WorldVisualAiImageProviderKind,
+    "not_configured" | "manual_import"
+  >
   endpoint: string
   method: "POST"
   headers: Record<string, string>
-  body: {
-    positivePrompt: string
-    negativePrompt: string
-    width: number
-    height: number
-    imageFormat: "png" | "webp" | "jpg"
-    metadata: {
-      worldId: string
-      tick: number
-      promptPackageId: string
-      sourceFactIds: string[]
-      ruleDataIds: string[]
-    }
-  }
+  body: WorldVisualAiImageGenerationRequestBody
   canShowToPlayer: false
   tags: string[]
 }
