@@ -28,6 +28,41 @@ export async function POST() {
     saveRecord: readResult.record,
   })
 
+  if (decision.aiImageCandidate && decision.promptPackage) {
+    const writeResult = await writeWorldVisualCandidateRecord({
+      ownerId: readResult.record.ownerId,
+      worldId: readResult.record.worldId,
+      tick: readResult.record.tick,
+      candidate: decision.aiImageCandidate,
+      promptPackage: decision.promptPackage,
+      factManifest: decision.factManifest,
+    })
+
+    return NextResponse.json(
+      {
+        ok: writeResult.ok,
+        candidate: decision.aiImageCandidate,
+        persisted: writeResult.ok,
+        candidatePath: writeResult.path ?? null,
+        persistenceWarnings: writeResult.warnings ?? [],
+        error: writeResult.ok
+          ? null
+          : "隐藏候选图写入失败，禁止进入 VisualJudge。",
+        canShowToPlayer: false,
+        displayRule:
+          "候选图已隐藏保存，必须通过 Visual Judge 后才能生成 ApprovedFrame。",
+        displayRuleEn:
+          "The candidate was persisted as hidden and must pass Visual Judge before ApprovedFrame can be created.",
+        tags: [
+          "world_visual_generate_api",
+          "hidden_candidate_persisted",
+          ...(writeResult.tags ?? []),
+        ],
+      },
+      { status: writeResult.ok ? 200 : 500 }
+    )
+  }
+
   if (!decision.aiImageGenerationRequest || !decision.promptPackage) {
     return NextResponse.json(
       {
