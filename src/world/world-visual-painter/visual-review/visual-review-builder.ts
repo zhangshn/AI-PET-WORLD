@@ -13,6 +13,32 @@ const MIN_IMAGE_HEIGHT = 768
 const MAX_IMAGE_BYTES = 16 * 1024 * 1024
 const FETCH_TIMEOUT_MS = 8000
 
+const REQUIRED_STYLE_QUALITY_TAGS = [
+  "bright_healing_detailed_top_down_pixel_style",
+  "clear_world_focal_point",
+] as const
+
+const REQUIRED_WORLD_STRUCTURE_TAGS = [
+  "terrain_layer_depth",
+  "path_logic",
+  "natural_boundary",
+  "material_construction_relation",
+] as const
+
+const REQUIRED_ARTIFACT_REJECTION_TAGS = [
+  "no_placeholder_blocks",
+  "no_dirty_paths",
+  "no_random_scatter",
+  "no_garbled_text",
+  "no_watermark",
+  "no_ui_card",
+] as const
+
+const REQUIRED_FACT_AND_RIGHTS_TAGS = [
+  "no_added_world_facts",
+  "copyright_safe",
+] as const
+
 type ImageInspectionResult = {
   ok: boolean
   format: WorldVisualAiImageCandidate["imageFormat"] | null
@@ -47,8 +73,8 @@ export async function buildWorldVisualReviewReport(input: {
             en: "The AI bitmap candidate passed Visual Judge and may enter ApprovedFrame building. It remains hidden until ApprovedFrame exists.",
           }
         : {
-            zh: "视觉审核未通过：候选图缺失、图片本体无效、格式伪装、尺寸不合格、事实链缺失或授权不合格，因此禁止展示。",
-            en: "Visual review failed: the candidate is missing, the image bytes are invalid, the format is spoofed, the size is invalid, fact links are incomplete, or license confirmation is missing.",
+            zh: "视觉审核未通过：候选图缺失、图片本体无效、格式伪装、尺寸不合格、事实链缺失、授权不合格或缺少正式视觉质量证明，因此禁止展示。",
+            en: "Visual review failed: the candidate is missing, the image bytes are invalid, the format is spoofed, the size is invalid, fact links are incomplete, license confirmation is missing, or formal visual quality proof is incomplete.",
           },
     score,
     checks,
@@ -62,12 +88,20 @@ export async function buildWorldVisualReviewReport(input: {
         en: "The candidate must expose real image bytes. SVG, HTML, JSON, text, and spoofed files are forbidden.",
       },
       {
-        zh: "候选图不能篡改世界事实，只能补充视觉细节。",
-        en: "The candidate must not rewrite world facts and may only add visual detail.",
+        zh: "候选图必须符合明亮、治愈、精细、俯视像素风，并具有清晰世界主焦点。",
+        en: "The candidate must match a bright, healing, detailed top-down pixel style with a clear world focal point.",
       },
       {
-        zh: "候选图不能复制未授权第三方作品，只能使用授权数据或抽象设计原则。",
-        en: "The candidate must not copy unlicensed third-party works and may only use licensed data or abstract design principles.",
+        zh: "候选图必须具备地形层次、路径逻辑、自然边界、材料/施工关系。",
+        en: "The candidate must include terrain layering, path logic, natural boundaries, and material/construction relationships.",
+      },
+      {
+        zh: "候选图不得出现占位块、脏路径、随机散点、乱码、水印或 UI 卡片。",
+        en: "The candidate must not contain placeholder blocks, dirty paths, random scatter, garbled text, watermarks, or UI cards.",
+      },
+      {
+        zh: "候选图不能新增世界事实，不能复制未授权第三方作品，只能使用授权数据或抽象设计原则。",
+        en: "The candidate must not add world facts or copy unlicensed third-party work, and may only use licensed data or abstract design principles.",
       },
       WORLD_VISUAL_MVP_TARGET_POLICY.displayGate,
     ],
@@ -76,6 +110,7 @@ export async function buildWorldVisualReviewReport(input: {
       "visual_review",
       status,
       "real_image_bytes_required",
+      "visual_quality_assertions_required",
       "ai_bitmap_candidate_required",
       "display_blocked_until_approved_frame",
       "no_programmatic_renderer",
@@ -116,6 +151,22 @@ function buildReviewChecks(input: {
     imageBytesAreValid &&
     (input.inspection.width ?? 0) >= MIN_IMAGE_WIDTH &&
     (input.inspection.height ?? 0) >= MIN_IMAGE_HEIGHT
+  const styleQuality = buildTagGroupResult(
+    candidate,
+    REQUIRED_STYLE_QUALITY_TAGS
+  )
+  const worldStructureQuality = buildTagGroupResult(
+    candidate,
+    REQUIRED_WORLD_STRUCTURE_TAGS
+  )
+  const artifactRejectionQuality = buildTagGroupResult(
+    candidate,
+    REQUIRED_ARTIFACT_REJECTION_TAGS
+  )
+  const factAndRightsQuality = buildTagGroupResult(
+    candidate,
+    REQUIRED_FACT_AND_RIGHTS_TAGS
+  )
 
   return [
     check(
@@ -195,6 +246,58 @@ function buildReviewChecks(input: {
       candidateHasAllowedLicense
         ? "The candidate is confirmed as self-owned, CC0, or commercially licensed, and not a direct copy of an unlicensed work."
         : "The candidate lacks allowed license confirmation and cannot enter ApprovedFrame."
+    ),
+    check(
+      "visual_style_quality",
+      styleQuality.passed,
+      styleQuality.passed ? 88 : 0,
+      "视觉风格质量",
+      "Visual style quality",
+      styleQuality.passed
+        ? "候选图声明满足明亮、治愈、精细、俯视像素风，并具有清晰世界主焦点。"
+        : `候选图缺少视觉风格质量证明：${styleQuality.missingTags.join(", ")}。`,
+      styleQuality.passed
+        ? "The candidate declares bright, healing, detailed top-down pixel style and a clear world focal point."
+        : `The candidate is missing visual style quality proof: ${styleQuality.missingTags.join(", ")}.`
+    ),
+    check(
+      "world_structure_quality",
+      worldStructureQuality.passed,
+      worldStructureQuality.passed ? 88 : 0,
+      "世界结构质量",
+      "World structure quality",
+      worldStructureQuality.passed
+        ? "候选图声明具备地形层次、路径逻辑、自然边界、材料/施工关系。"
+        : `候选图缺少世界结构质量证明：${worldStructureQuality.missingTags.join(", ")}。`,
+      worldStructureQuality.passed
+        ? "The candidate declares terrain layering, path logic, natural boundaries, and material/construction relationships."
+        : `The candidate is missing world structure quality proof: ${worldStructureQuality.missingTags.join(", ")}.`
+    ),
+    check(
+      "visual_artifact_rejection",
+      artifactRejectionQuality.passed,
+      artifactRejectionQuality.passed ? 90 : 0,
+      "视觉污染排除",
+      "Visual artifact rejection",
+      artifactRejectionQuality.passed
+        ? "候选图声明没有占位块、脏路径、随机散点、乱码、水印或 UI 卡片。"
+        : `候选图缺少视觉污染排除证明：${artifactRejectionQuality.missingTags.join(", ")}。`,
+      artifactRejectionQuality.passed
+        ? "The candidate declares no placeholder blocks, dirty paths, random scatter, garbled text, watermarks, or UI cards."
+        : `The candidate is missing visual artifact rejection proof: ${artifactRejectionQuality.missingTags.join(", ")}.`
+    ),
+    check(
+      "fact_and_rights_quality",
+      factAndRightsQuality.passed,
+      factAndRightsQuality.passed ? 92 : 0,
+      "事实与版权安全",
+      "Fact and rights safety",
+      factAndRightsQuality.passed
+        ? "候选图声明没有新增世界事实，并满足版权安全要求。"
+        : `候选图缺少事实与版权安全证明：${factAndRightsQuality.missingTags.join(", ")}。`,
+      factAndRightsQuality.passed
+        ? "The candidate declares no added world facts and satisfies copyright safety requirements."
+        : `The candidate is missing fact and rights safety proof: ${factAndRightsQuality.missingTags.join(", ")}.`
     ),
   ]
 }
@@ -282,7 +385,9 @@ async function readCandidateImageBytes(
   }
 
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
+    const response = await fetch(url, {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    })
     if (!response.ok) {
       return failedInspection(
         `候选图无法访问，HTTP 状态：${response.status}。`,
@@ -496,6 +601,19 @@ function check(
   }
 }
 
+function buildTagGroupResult(
+  candidate: WorldVisualAiImageCandidate | null,
+  requiredTags: readonly string[]
+): { passed: boolean; missingTags: string[] } {
+  const candidateTags = new Set(candidate?.tags ?? [])
+  const missingTags = requiredTags.filter((tag) => !candidateTags.has(tag))
+
+  return {
+    passed: missingTags.length === 0,
+    missingTags,
+  }
+}
+
 function buildFixInstructions(
   checks: WorldVisualReviewCheck[]
 ): WorldVisualReviewReport["fixInstructions"] {
@@ -518,8 +636,8 @@ function buildFixInstructions(
 
       if (check.id === "image_metadata_matches_bytes") {
         return {
-          zh: "修正 provider 返回值，确保声明的格式和尺寸与图片本体一致。",
-          en: "Fix the provider response so declared format and dimensions match the actual image bytes.",
+          zh: "修正图像生成模型返回值，确保声明的格式和尺寸与图片本体一致。",
+          en: "Fix the image generation model response so declared format and dimensions match the actual image bytes.",
         }
       }
 
@@ -541,6 +659,34 @@ function buildFixInstructions(
         return {
           zh: "候选图必须确认来源为自有、CC0 或商业授权，并确认没有直接复制未授权第三方作品。",
           en: "The candidate must be confirmed as self-owned, CC0, or commercially licensed, and must not directly copy unlicensed third-party work.",
+        }
+      }
+
+      if (check.id === "visual_style_quality") {
+        return {
+          zh: "候选图必须补齐明亮治愈、精细俯视像素风、清晰世界主焦点等视觉风格质量证明。",
+          en: "The candidate must provide proof for bright healing detailed top-down pixel style and clear world focal point.",
+        }
+      }
+
+      if (check.id === "world_structure_quality") {
+        return {
+          zh: "候选图必须补齐地形层次、路径逻辑、自然边界、材料/施工关系等世界结构质量证明。",
+          en: "The candidate must provide proof for terrain layering, path logic, natural boundaries, and material/construction relationships.",
+        }
+      }
+
+      if (check.id === "visual_artifact_rejection") {
+        return {
+          zh: "候选图必须补齐无占位块、无脏路径、无随机散点、无乱码、无水印、无 UI 卡片等污染排除证明。",
+          en: "The candidate must provide proof that it has no placeholder blocks, dirty paths, random scatter, garbled text, watermarks, or UI cards.",
+        }
+      }
+
+      if (check.id === "fact_and_rights_quality") {
+        return {
+          zh: "候选图必须补齐无新增世界事实与版权安全证明。",
+          en: "The candidate must provide proof of no added world facts and copyright safety.",
         }
       }
 
