@@ -1,7 +1,10 @@
 import type {
   WorldVisualAiImageGenerationRequest,
+  WorldVisualAiImageGenerationRequestBody,
   WorldVisualAiImageProviderStatus,
+  WorldVisualControlSketch,
   WorldVisualFactManifest,
+  WorldVisualImageOutputSize,
   WorldVisualPromptPackage,
 } from "../world-visual-painter-schema"
 
@@ -58,7 +61,7 @@ function buildRequest(input: {
     headers.authorization = input.authorization
   }
 
-  const outputSize = {
+  const outputSize: WorldVisualImageOutputSize = {
     width: OUTPUT_WIDTH,
     height: OUTPUT_HEIGHT,
     imageFormat: OUTPUT_FORMAT,
@@ -70,7 +73,7 @@ function buildRequest(input: {
     outputSize,
   })
 
-  const body = {
+  const body: WorldVisualAiImageGenerationRequestBody = {
     positivePrompt: input.promptPackage.positivePrompt.en,
     negativePrompt: input.promptPackage.negativePrompt.en,
     width: outputSize.width,
@@ -146,12 +149,8 @@ function buildRequest(input: {
 function buildCompositionControlSketch(input: {
   factManifest: WorldVisualFactManifest
   promptPackage: WorldVisualPromptPackage
-  outputSize: {
-    width: number
-    height: number
-    imageFormat: "png"
-  }
-}) {
+  outputSize: WorldVisualImageOutputSize
+}): WorldVisualControlSketch {
   return {
     controlSketchId: `control-sketch-${input.factManifest.worldId}-${input.factManifest.tick}`,
     type: "composition_control_only",
