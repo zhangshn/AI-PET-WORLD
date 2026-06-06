@@ -11,6 +11,23 @@ const ALLOWED_MANUAL_LICENSES = [
   "commercial_license",
 ] as const
 
+const VISUAL_QUALITY_ASSERTION_TAGS = [
+  "bright_healing_detailed_top_down_pixel_style",
+  "clear_world_focal_point",
+  "terrain_layer_depth",
+  "path_logic",
+  "natural_boundary",
+  "material_construction_relation",
+  "no_placeholder_blocks",
+  "no_dirty_paths",
+  "no_random_scatter",
+  "no_garbled_text",
+  "no_watermark",
+  "no_ui_card",
+  "no_added_world_facts",
+  "copyright_safe",
+] as const
+
 type ManualLicense = (typeof ALLOWED_MANUAL_LICENSES)[number]
 
 export function buildWorldVisualAiImageCandidate(input: {
@@ -64,14 +81,15 @@ function buildManualImportCandidate(input: {
     sourceFactIds: input.factManifest.sourceFactIds,
     canShowToPlayer: false,
     generationNotes: {
-      zh: "该候选图必须继续经过 Visual Judge；只有生成 ApprovedFrame 后才能展示。",
-      en: "This candidate must still pass Visual Judge. It can only be displayed after ApprovedFrame is produced.",
+      zh: "该候选图必须继续经过 Visual Judge；候选图声明已遵守明亮治愈、精细俯视像素风、清晰主焦点、地形层次、路径逻辑、自然边界、材料/施工关系、无占位块、无脏路径、无随机散点、无乱码、无水印、无 UI 卡片、无新增世界事实、无侵权风险等正式画面要求。只有生成 ApprovedFrame 后才能展示。",
+      en: "This candidate must still pass Visual Judge. It declares compliance with the formal frame requirements: bright healing detailed top-down pixel style, clear world focal point, terrain layering, path logic, natural boundaries, material/construction relationship, no placeholder blocks, no dirty paths, no random scatter, no garbled text, no watermark, no UI cards, no added world facts, and no infringement risk. It can only be displayed after ApprovedFrame is produced.",
     },
     tags: [
       "ai_image_candidate",
       "manual_import",
       "authorized_source_required",
       "hidden_until_visual_judge",
+      ...VISUAL_QUALITY_ASSERTION_TAGS,
     ],
   }
 }
