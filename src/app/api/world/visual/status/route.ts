@@ -106,6 +106,8 @@ export async function GET() {
           exists: Boolean(approvedFrameRecord),
           frameId: approvedFrame?.frameId ?? null,
           reviewScore: approvedFrame?.reviewScore ?? null,
+          imageUrl: approvedFrame?.imageUrl ?? null,
+          imageUrlAudit: buildImageUrlAudit(approvedFrame?.imageUrl ?? null),
           approvedFrameRecordCanShowToPlayer:
             approvedFrameRecord?.canShowToPlayer ?? null,
           approvedFrameCanShowToPlayer:
@@ -181,6 +183,64 @@ export async function GET() {
     },
     { status: 200 }
   )
+}
+function buildImageUrlAudit(imageUrl: string | null) {
+  if (!imageUrl) {
+    return {
+      scheme: null,
+      allowed: false,
+      canBeFetchedByRuntimeRender: false,
+      reason: "missing_image_url",
+      reasonZh: "当前没有 ApprovedFrame imageUrl。",
+      reasonEn: "There is no ApprovedFrame imageUrl.",
+      tags: ["image_url_audit", "missing_image_url"],
+    }
+  }
+
+  if (imageUrl.startsWith("data:image/")) {
+    return {
+      scheme: "data:image",
+      allowed: true,
+      canBeFetchedByRuntimeRender: true,
+      reason: "data_image_url_allowed",
+      reasonZh: "ApprovedFrame 使用 data:image URL，Runtime Render 可以展示。",
+      reasonEn:
+        "The ApprovedFrame uses a data:image URL. Runtime Render can display it.",
+      tags: ["image_url_audit", "data_image_url_allowed"],
+    }
+  }
+
+  try {
+    const url = new URL(imageUrl)
+    const allowed = url.protocol === "http:" || url.protocol === "https:"
+
+    return {
+      scheme: url.protocol.replace(":", ""),
+      allowed,
+      canBeFetchedByRuntimeRender: allowed,
+      reason: allowed ? "network_image_url_allowed" : "scheme_not_allowed",
+      reasonZh: allowed
+        ? "ApprovedFrame 使用 http/https URL，Runtime Render 可以尝试展示。"
+        : "ApprovedFrame imageUrl 协议不被允许。",
+      reasonEn: allowed
+        ? "The ApprovedFrame uses an http/https URL. Runtime Render can try displaying it."
+        : "The ApprovedFrame imageUrl uses a disallowed scheme.",
+      tags: [
+        "image_url_audit",
+        allowed ? "network_image_url_allowed" : "scheme_not_allowed",
+      ],
+    }
+  } catch {
+    return {
+      scheme: "invalid",
+      allowed: false,
+      canBeFetchedByRuntimeRender: false,
+      reason: "invalid_image_url",
+      reasonZh: "ApprovedFrame imageUrl 不是有效 URL。",
+      reasonEn: "The ApprovedFrame imageUrl is not a valid URL.",
+      tags: ["image_url_audit", "invalid_image_url"],
+    }
+  }
 }
 function buildGenerationAcceptanceChecklist(input: {
   providerKind: string
