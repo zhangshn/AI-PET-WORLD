@@ -56,18 +56,34 @@ type LocalImageModelGenerateRequestBody = Partial<{
     mustNotCopyUnlicensedThirdPartyWorks: boolean
     canShowToPlayer: boolean
   }>
+  positivePrompt: string
+  negativePrompt: string
+  width: number
+  height: number
+  imageFormat: "png" | "webp" | "jpg"
   promptPackage: unknown
   controlSketch: Partial<{
     canShowToPlayer: boolean
     cannotApprove: boolean
   }>
+  outputSize: Partial<{
+    width: number
+    height: number
+    imageFormat: "png" | "webp" | "jpg"
+  }>
+  imageStyle: unknown
+  safety: unknown
   responseContract: Partial<{
     requiredFields: string[]
     canShowToPlayer: boolean
     mustPersistAsAiImageCandidate: boolean
     mustPassVisualJudge: boolean
   }>
+  visualFixHints: unknown[]
   metadata: Partial<{
+    worldId: string
+    tick: number
+    promptPackageId: string
     sourceFactIds: string[]
     canShowToPlayer: boolean
     cannotApprove: boolean
@@ -150,9 +166,11 @@ export async function POST(request: Request) {
     )
     }
 
+  const engineRequestBody = buildEngineRequestBody(requestBody)
+
   const engineResult = await callLocalImageEngine({
     endpoint: engineEndpoint,
-    requestBody,
+    requestBody: engineRequestBody,
   })
 
   if (!engineResult.ok) {
@@ -314,6 +332,70 @@ function buildEngineHeaders(): Record<string, string> {
   }
 
   return headers
+}
+
+function buildEngineRequestBody(requestBody: unknown): unknown {
+  const mode = readEngineRequestMode()
+
+  if (mode === "world_visual_body") {
+    return requestBody
+  }
+
+  if (!isRecord(requestBody)) {
+    return requestBody
+  }
+
+  const body = requestBody as LocalImageModelGenerateRequestBody
+
+  if (mode === "prompt_only") {
+    return {
+      prompt: body.positivePrompt,
+      negativePrompt: body.negativePrompt,
+      width: body.width ?? body.outputSize?.width,
+      height: body.height ?? body.outputSize?.height,
+      imageFormat: body.imageFormat ?? body.outputSize?.imageFormat,
+      responseContract: body.responseContract,
+      safety: {
+        noProgrammaticRenderer: true,
+        noPlaceholderFrame: true,
+        noUnlicensedThirdPartyCopy: true,
+        noAddedWorldFacts: true,
+      },
+    }
+  }
+
+  return {
+    modelTask: body.modelTask,
+    prompt: body.positivePrompt,
+    negativePrompt: body.negativePrompt,
+    width: body.width ?? body.outputSize?.width,
+    height: body.height ?? body.outputSize?.height,
+    imageFormat: body.imageFormat ?? body.outputSize?.imageFormat,
+    promptPackage: body.promptPackage,
+    controlSketch: body.controlSketch,
+    imageStyle: body.imageStyle,
+    safety: body.safety,
+    responseContract: body.responseContract,
+    visualFixHints: body.visualFixHints,
+    metadata: body.metadata,
+  }
+}
+
+function readEngineRequestMode():
+  | "world_visual_body"
+  | "prompt_only"
+  | "prompt_package" {
+  const mode = process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_REQUEST_MODE?.trim()
+
+  if (
+    mode === "world_visual_body" ||
+    mode === "prompt_only" ||
+    mode === "prompt_package"
+  ) {
+    return mode
+  }
+
+  return "world_visual_body"
 }
 
 function applyConfiguredEngineSafetyDefaults(

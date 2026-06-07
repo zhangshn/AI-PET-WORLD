@@ -10,6 +10,9 @@ export async function GET() {
     process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_LICENSE?.trim() ?? null
   const configuredOriginalityConfirmed =
     process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ORIGINALITY_CONFIRMED === "true"
+  const configuredRequestMode =
+    process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_REQUEST_MODE?.trim() ??
+    "world_visual_body"
 
   const engineConfigured = Boolean(engineEndpoint)
 
@@ -36,6 +39,7 @@ export async function GET() {
         configuredEngineLicense === "cc0" ||
         configuredEngineLicense === "commercial_license",
       originalityDefaultConfirmed: configuredOriginalityConfirmed,
+      requestMode: configuredRequestMode,
       timeoutMs: 120000,
     },
       engineIntegrationContract: {
@@ -44,24 +48,30 @@ export async function GET() {
         licenseDefaultEnv: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_LICENSE",
         originalityConfirmedDefaultEnv:
           "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ORIGINALITY_CONFIRMED",
+        requestModeEnv: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_REQUEST_MODE",
+        supportedRequestModes: [
+          "world_visual_body",
+          "prompt_only",
+          "prompt_package",
+        ],
         method: "POST",
         requestContentType: "application/json",
         requestBody:
-          "真实图像引擎会收到完整的 WorldVisualAiImageGenerationRequestBody。",
+          "默认 world_visual_body 模式会收到完整 WorldVisualAiImageGenerationRequestBody；prompt_only 模式只收到 prompt、negativePrompt、width、height、imageFormat；prompt_package 模式会收到 prompt、PromptPackage、ControlSketch、VisualFixHints 与 metadata。",
         requestBodyEn:
-          "The real image engine receives the full WorldVisualAiImageGenerationRequestBody.",
+          "By default, world_visual_body mode receives the full WorldVisualAiImageGenerationRequestBody. prompt_only mode receives prompt, negativePrompt, width, height, and imageFormat. prompt_package mode receives prompt, PromptPackage, ControlSketch, VisualFixHints, and metadata.",
         requiredResponseShape: {
-  imageUrl:
-    "http(s) URL or data:image URL. Alias supported: url. If imageUrl is missing, the adapter may build it from imageBase64/base64/b64_json plus imageFormat.",
-  imageBase64:
-    "optional real bitmap base64. Supported aliases: imageBase64, base64, b64_json.",
-  imageFormat:
-    "png | webp | jpg. Alias supported: format. The adapter also normalizes jpeg to jpg.",
-  width: "number",
-  height: "number",
-  license: "self_owned | cc0 | commercial_license",
-  originalityConfirmed: true,
-        },
+        imageUrl:
+          "http(s) URL or data:image URL. Alias supported: url. If imageUrl is missing, the adapter may build it from imageBase64/base64/b64_json plus imageFormat.",
+        imageBase64:
+          "optional real bitmap base64. Supported aliases: imageBase64, base64, b64_json.",
+        imageFormat:
+          "png | webp | jpg. Alias supported: format. The adapter also normalizes jpeg to jpg.",
+        width: "number",
+        height: "number",
+        license: "self_owned | cc0 | commercial_license",
+        originalityConfirmed: true,
+              },
         supportedResponseContainers: [
           "direct fields",
           "result",
@@ -95,6 +105,10 @@ export async function GET() {
           {
             zh: "如果真实图像引擎返回 base64，必须是真实 PNG/WebP/JPG 图片字节的 base64，适配层会转成 data:image URL 后交给 VisualJudge 审核。",
             en: "If the real image engine returns base64, it must be real PNG/WebP/JPG image bytes encoded as base64. The adapter will convert it into a data:image URL for VisualJudge review.",
+          },
+          {
+            zh: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_REQUEST_MODE 只改变发送给真实图像引擎的请求体形状，不改变 responseContract、VisualJudge 或 ApprovedFrame 硬闸门。",
+            en: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_REQUEST_MODE only changes the request body shape sent to the real image engine. It does not change responseContract, VisualJudge, or ApprovedFrame hard gates.",
           },
         ],
       },
