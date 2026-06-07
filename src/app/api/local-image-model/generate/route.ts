@@ -11,12 +11,17 @@ type LocalImageEngineResponse = Partial<{
 
 type LocalImageEngineRawResponse = LocalImageEngineResponse &
   Partial<{
+    url: string
+    format: string
     imageBase64: string
     base64: string
     b64_json: string
     result: unknown
     image: unknown
     output: unknown
+    data: unknown
+    images: unknown
+    outputs: unknown
   }>
 
 type ValidatedLocalImageEngineResponse = {
@@ -297,28 +302,72 @@ function buildEngineHeaders(): Record<string, string> {
 function extractEngineImagePayload(
   payload: LocalImageEngineRawResponse
 ): LocalImageEngineResponse | null {
-  const directPayload = pickEngineImagePayload(payload)
+  const rootDefaults = pickEngineImageMetadata(payload)
+  const directPayload = pickEngineImagePayload(payload, rootDefaults)
   if (directPayload) return directPayload
 
-  const nestedPayloads = [payload.result, payload.image, payload.output]
+  const nestedPayloads = collectNestedPayloads([
+    payload.result,
+    payload.image,
+    payload.output,
+    payload.data,
+    payload.images,
+    payload.outputs,
+  ])
 
   for (const nestedPayload of nestedPayloads) {
-    const pickedPayload = pickEngineImagePayload(nestedPayload)
+    const pickedPayload = pickEngineImagePayload(nestedPayload, rootDefaults)
     if (pickedPayload) return pickedPayload
   }
 
   return null
 }
 
-function pickEngineImagePayload(value: unknown): LocalImageEngineResponse | null {
+function collectNestedPayloads(values: unknown[]): unknown[] {
+  const collected: unknown[] = []
+
+  for (const value of values) {
+    if (value === undefined || value === null) continue
+
+    if (Array.isArray(value)) {
+      collected.push(...value)
+      continue
+    }
+
+    collected.push(value)
+  }
+
+  return collected
+}
+
+function pickEngineImagePayload(
+  value: unknown,
+  defaults: LocalImageEngineResponse | null
+): LocalImageEngineResponse | null {
+  if (typeof value === "string" && value.trim().length > 0) {
+    return {
+      imageUrl: buildDataImageUrl({
+        imageBase64: value.trim(),
+        imageFormat: defaults?.imageFormat,
+      }),
+      imageFormat: defaults?.imageFormat,
+      width: defaults?.width,
+      height: defaults?.height,
+      license: defaults?.license,
+      originalityConfirmed: defaults?.originalityConfirmed,
+    }
+  }
+
   if (!isRecord(value)) return null
 
   const hasAnyKnownField =
     "imageUrl" in value ||
+    "url" in value ||
     "imageBase64" in value ||
     "base64" in value ||
     "b64_json" in value ||
     "imageFormat" in value ||
+    "format" in value ||
     "width" in value ||
     "height" in value ||
     "license" in value ||
@@ -326,33 +375,50 @@ function pickEngineImagePayload(value: unknown): LocalImageEngineResponse | null
 
   if (!hasAnyKnownField) return null
 
-  const imageUrl = value["imageUrl"]
+  const imageUrl = readString(value["imageUrl"]) ?? readString(value["url"])
   const imageBase64 =
     readString(value["imageBase64"]) ??
     readString(value["base64"]) ??
     readString(value["b64_json"])
-  const imageFormat = readEngineImageFormat(value["imageFormat"])
-  const width = value["width"]
-  const height = value["height"]
-  const license = readEngineImageLicense(value["license"])
-  const originalityConfirmed = value["originalityConfirmed"]
+  const imageFormat =
+    readEngineImageFormat(value["imageFormat"]) ??
+    readEngineImageFormat(value["format"]) ??
+    defaults?.imageFormat
+  const width = readNumber(value["width"]) ?? defaults?.width
+  const height = readNumber(value["height"]) ?? defaults?.height
+  const license = readEngineImageLicense(value["license"]) ?? defaults?.license
+  const originalityConfirmed =
+    readBoolean(value["originalityConfirmed"]) ??
+    defaults?.originalityConfirmed
 
   return {
     imageUrl:
-      typeof imageUrl === "string"
-        ? imageUrl
-        : buildDataImageUrl({
-            imageBase64,
-            imageFormat,
-          }),
+      imageUrl ??
+      buildDataImageUrl({
+        imageBase64,
+        imageFormat,
+      }),
     imageFormat,
-    width: typeof width === "number" ? width : undefined,
-    height: typeof height === "number" ? height : undefined,
+    width,
+    height,
     license,
-    originalityConfirmed:
-      typeof originalityConfirmed === "boolean"
-        ? originalityConfirmed
-        : undefined,
+    originalityConfirmed,
+  }
+}
+
+function pickEngineImageMetadata(
+  value: unknown
+): LocalImageEngineResponse | null {
+  if (!isRecord(value)) return null
+
+  return {
+    imageFormat:
+      readEngineImageFormat(value["imageFormat"]) ??
+      readEngineImageFormat(value["format"]),
+    width: readNumber(value["width"]),
+    height: readNumber(value["height"]),
+    license: readEngineImageLicense(value["license"]),
+    originalityConfirmed: readBoolean(value["originalityConfirmed"]),
   }
 }
 
@@ -360,6 +426,14 @@ function readString(value: unknown): string | null {
   return typeof value === "string" && value.trim().length > 0
     ? value.trim()
     : null
+}
+
+function readNumber(value: unknown): number | undefined {
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined
+}
+
+function readBoolean(value: unknown): boolean | undefined {
+  return typeof value === "boolean" ? value : undefined
 }
 
 function buildDataImageUrl(input: {
@@ -380,6 +454,10 @@ function readEngineImageFormat(
 ): LocalImageEngineResponse["imageFormat"] | undefined {
   if (value === "png" || value === "webp" || value === "jpg") {
     return value
+  }
+
+  if (value === "jpeg") {
+    return "jpg"
   }
 
   return undefined

@@ -39,16 +39,26 @@ export async function GET() {
         requestBodyEn:
           "The real image engine receives the full WorldVisualAiImageGenerationRequestBody.",
         requiredResponseShape: {
-        imageUrl:
-            "http(s) URL or data:image URL. If imageUrl is missing, the adapter may build it from imageBase64/base64/b64_json plus imageFormat.",
-        imageBase64:
-            "optional real bitmap base64. Supported aliases: imageBase64, base64, b64_json.",
-        imageFormat: "png | webp | jpg",
-        width: "number",
-        height: "number",
-        license: "self_owned | cc0 | commercial_license",
-        originalityConfirmed: true,
+  imageUrl:
+    "http(s) URL or data:image URL. Alias supported: url. If imageUrl is missing, the adapter may build it from imageBase64/base64/b64_json plus imageFormat.",
+  imageBase64:
+    "optional real bitmap base64. Supported aliases: imageBase64, base64, b64_json.",
+  imageFormat:
+    "png | webp | jpg. Alias supported: format. The adapter also normalizes jpeg to jpg.",
+  width: "number",
+  height: "number",
+  license: "self_owned | cc0 | commercial_license",
+  originalityConfirmed: true,
         },
+        supportedResponseContainers: [
+          "direct fields",
+          "result",
+          "image",
+          "output",
+          "data[0]",
+          "images[0]",
+          "outputs[0]",
+        ],
         hardRules: [
           {
             zh: "真实图像引擎必须生成真实 PNG/WebP/JPG 位图，不能返回 SVG、HTML、JSON、调试图、占位图或程序绘图结果。",
