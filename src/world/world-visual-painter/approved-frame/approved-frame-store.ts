@@ -194,22 +194,30 @@ async function writeLatestWorldVisualApprovedFrameIndex(input: {
   const indexPath = getLatestWorldVisualApprovedFrameIndexPath(input.record)
   const tempPath = `${indexPath}.tmp`
   const index = {
-    version: "world-approved-frame-index-v1",
-    ownerId: input.record.ownerId,
-    worldId: input.record.worldId,
-    tick: input.record.tick,
-    frameId: input.record.approvedFrame.frameId,
-    sourceAiImageCandidateId: input.record.sourceAiImageCandidateId,
-    sourcePromptPackageId: input.record.sourcePromptPackageId,
-    sourceAiImageGenerationRequestId:
-      input.record.sourceAiImageGenerationRequestId,
-    sourceControlSketchId: input.record.sourceControlSketchId,
-    sourceVisualFixPlanId: input.record.sourceVisualFixPlanId,
-    sourceVisualFixHintCount: input.record.sourceVisualFixHintCount,
-    path: input.filePath,
-    updatedAt: input.record.savedAt,
-    tags: ["world_visual_approved_frame_latest_index"],
-  }
+  version: "world-approved-frame-index-v1",
+  ownerId: input.record.ownerId,
+  worldId: input.record.worldId,
+  tick: input.record.tick,
+  frameId: input.record.approvedFrame.frameId,
+  sourceAiImageCandidateId: input.record.sourceAiImageCandidateId,
+  sourcePromptPackageId: input.record.sourcePromptPackageId,
+  sourceAiImageGenerationRequestId:
+    input.record.sourceAiImageGenerationRequestId,
+  sourceControlSketchId: input.record.sourceControlSketchId,
+  sourceVisualFixPlanId: input.record.sourceVisualFixPlanId,
+  sourceVisualFixHintCount: input.record.sourceVisualFixHintCount,
+  sourceImageSha256: input.record.approvedFrame.sourceImageSha256,
+  sourceImageByteLength: input.record.approvedFrame.sourceImageByteLength,
+  sourceImageContentType: input.record.approvedFrame.sourceImageContentType,
+  sourceImagePayloadQualityPassed:
+    input.record.approvedFrame.sourceImagePayloadQualityPassed,
+  path: input.filePath,
+  updatedAt: input.record.savedAt,
+  tags: [
+    "world_visual_approved_frame_latest_index",
+    "image_byte_fingerprint_bound",
+  ],
+}
 
   await mkdir(path.dirname(indexPath), { recursive: true })
   await writeFile(tempPath, `${JSON.stringify(index, null, 2)}\n`, "utf8")
