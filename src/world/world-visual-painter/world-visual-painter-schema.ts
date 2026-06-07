@@ -424,6 +424,25 @@ export type WorldVisualImageGenerationSafety = {
   mustPassVisualJudge: true
 }
 
+export type WorldVisualImageGenerationResponseContract = {
+  requiredFields: Array<
+    | "imageUrl"
+    | "imageFormat"
+    | "width"
+    | "height"
+    | "license"
+    | "originalityConfirmed"
+  >
+  allowedImageFormats: Array<"png" | "webp" | "jpg">
+  allowedLicenses: Array<"self_owned" | "cc0" | "commercial_license">
+  minimumWidth: number
+  minimumHeight: number
+  canShowToPlayer: false
+  mustPersistAsAiImageCandidate: true
+  mustPassVisualJudge: true
+  tags: string[]
+}
+
 export type WorldVisualImageGenerationFixHint = {
   sourceCheckId: string
   actionType: WorldVisualFixAction["actionType"]
@@ -461,6 +480,7 @@ export type WorldVisualAiImageGenerationRequestBody = {
   outputSize: WorldVisualImageOutputSize
   imageStyle: WorldVisualImageStyle
   safety: WorldVisualImageGenerationSafety
+  responseContract: WorldVisualImageGenerationResponseContract
   visualFixHints: WorldVisualImageGenerationFixHint[]
   metadata: {
     worldId: string
