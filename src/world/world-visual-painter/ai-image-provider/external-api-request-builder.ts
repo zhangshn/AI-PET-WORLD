@@ -4,6 +4,8 @@ import type {
   WorldVisualAiImageProviderStatus,
   WorldVisualControlSketch,
   WorldVisualFactManifest,
+  WorldVisualFixPlan,
+  WorldVisualImageGenerationFixHint,
   WorldVisualImageOutputSize,
   WorldVisualPromptPackage,
 } from "../world-visual-painter-schema"
@@ -16,6 +18,7 @@ export function buildWorldVisualExternalApiRequest(input: {
   factManifest: WorldVisualFactManifest
   promptPackage: WorldVisualPromptPackage
   providerStatus: WorldVisualAiImageProviderStatus
+  latestFixPlan: WorldVisualFixPlan | null
 }): WorldVisualAiImageGenerationRequest | null {
   if (!input.providerStatus.canGenerateAutomatically) return null
 
@@ -53,6 +56,7 @@ function buildRequest(input: {
   providerKind: "external_api" | "local_model"
   factManifest: WorldVisualFactManifest
   promptPackage: WorldVisualPromptPackage
+  latestFixPlan: WorldVisualFixPlan | null
 }): WorldVisualAiImageGenerationRequest {
   const headers: Record<string, string> = {
     "content-type": "application/json",
@@ -72,6 +76,7 @@ function buildRequest(input: {
     promptPackage: input.promptPackage,
     outputSize,
   })
+  const visualFixHints = buildVisualFixHints(input.latestFixPlan)
 
   const body: WorldVisualAiImageGenerationRequestBody = {
     positivePrompt: input.promptPackage.positivePrompt.en,
@@ -114,6 +119,7 @@ function buildRequest(input: {
       noAddedWorldFacts: true,
       mustPassVisualJudge: true,
     },
+    visualFixHints,
     metadata: {
       worldId: input.factManifest.worldId,
       tick: input.factManifest.tick,
@@ -121,6 +127,8 @@ function buildRequest(input: {
       sourceFactIds: input.factManifest.sourceFactIds,
       ruleDataIds: input.promptPackage.ruleDataIds,
       controlSketchId: controlSketch.controlSketchId,
+      visualFixPlanId: input.latestFixPlan?.planId ?? null,
+      visualFixHintCount: visualFixHints.length,
       canShowToPlayer: false,
       cannotApprove: true,
     },
@@ -139,6 +147,7 @@ function buildRequest(input: {
       input.providerKind,
       "prompt_package_bound",
       "control_sketch_bound",
+      "visual_fix_hints_bound",
       "control_sketch_not_player_visible",
       "not_player_visible",
       "approved_frame_required",
@@ -190,4 +199,29 @@ function buildCompositionControlSketch(input: {
       "ai_image_model_input_only",
     ],
   }
+}
+
+function buildVisualFixHints(
+  latestFixPlan: WorldVisualFixPlan | null
+): WorldVisualImageGenerationFixHint[] {
+  if (!latestFixPlan || latestFixPlan.status !== "required") return []
+
+  return latestFixPlan.actions.map((action) => ({
+    sourceCheckId: action.sourceCheckId,
+    actionType: action.actionType,
+    priority: action.priority,
+    instructionZh: action.instruction.zh,
+    instructionEn: action.instruction.en,
+    expectedResultZh: action.expectedResult.zh,
+    expectedResultEn: action.expectedResult.en,
+    changesWorldFacts: false,
+    tags: [
+      "visual_fix_hint",
+      action.sourceCheckId,
+      action.actionType,
+      action.priority,
+      "world_facts_locked",
+      "regeneration_hint",
+    ],
+  }))
 }

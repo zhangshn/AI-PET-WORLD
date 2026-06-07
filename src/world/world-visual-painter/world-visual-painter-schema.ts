@@ -424,6 +424,18 @@ export type WorldVisualImageGenerationSafety = {
   mustPassVisualJudge: true
 }
 
+export type WorldVisualImageGenerationFixHint = {
+  sourceCheckId: string
+  actionType: WorldVisualFixAction["actionType"]
+  priority: WorldVisualFixAction["priority"]
+  instructionZh: string
+  instructionEn: string
+  expectedResultZh: string
+  expectedResultEn: string
+  changesWorldFacts: false
+  tags: string[]
+}
+
 export type WorldVisualAiImageGenerationRequestBody = {
   positivePrompt: string
   negativePrompt: string
@@ -449,6 +461,7 @@ export type WorldVisualAiImageGenerationRequestBody = {
   outputSize: WorldVisualImageOutputSize
   imageStyle: WorldVisualImageStyle
   safety: WorldVisualImageGenerationSafety
+  visualFixHints: WorldVisualImageGenerationFixHint[]
   metadata: {
     worldId: string
     tick: number
@@ -456,6 +469,8 @@ export type WorldVisualAiImageGenerationRequestBody = {
     sourceFactIds: string[]
     ruleDataIds: string[]
     controlSketchId: string
+    visualFixPlanId: string | null
+    visualFixHintCount: number
     canShowToPlayer: false
     cannotApprove: true
   }

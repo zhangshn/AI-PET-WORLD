@@ -15,7 +15,10 @@ import {
   auditWorldVisualFactManifest,
   buildWorldVisualFactManifest,
 } from "./visual-fact-manifest"
-import { buildWorldVisualFixPlan } from "./visual-fix"
+import {
+  buildWorldVisualFixPlan,
+  readLatestWorldVisualFixPlanRecord,
+} from "./visual-fix"
 import { buildWorldVisualReviewReport } from "./visual-review"
 import { WORLD_VISUAL_MVP_RULE_DATASET } from "./visual-rule-dataset"
 import { WORLD_VISUAL_MVP_TARGET_POLICY } from "./visual-target-policy"
@@ -58,10 +61,19 @@ export async function buildWorldVisualPainterDecision(
     motionPlan,
     ruleDataset: WORLD_VISUAL_MVP_RULE_DATASET,
   })
+  const latestFixPlanReadResult = await readLatestWorldVisualFixPlanRecord({
+    ownerId: input.saveRecord.ownerId,
+    worldId: input.saveRecord.worldId,
+  })
+  const latestFixPlan =
+    latestFixPlanReadResult.status === "found" && latestFixPlanReadResult.record
+      ? latestFixPlanReadResult.record.fixPlan
+      : null
   const aiImageGenerationRequest = buildWorldVisualExternalApiRequest({
     factManifest,
     promptPackage,
     providerStatus: aiImageProviderStatus,
+    latestFixPlan,
   })
   const aiImageCandidate = buildWorldVisualAiImageCandidate({
     factManifest,
@@ -92,8 +104,8 @@ export async function buildWorldVisualPainterDecision(
           en: "The AI bitmap candidate passed review and produced ApprovedFrame, so it may enter Runtime Render.",
         }
       : {
-          zh: "正式世界画面必须由 AI 图像生成模型根据 Prompt Package 和世界事实产出位图候选图，并通过 Visual Judge 后生成 ApprovedFrame。当前还没有合格 AI 位图候选图，禁止展示。",
-          en: "Formal world rendering requires an AI-generated bitmap candidate from the Prompt Package and world facts, then a Visual Judge pass before ApprovedFrame exists. No qualified AI bitmap candidate exists now, so display is blocked.",
+          zh: "正式世界画面必须由 AI 图像生成模型根据 Prompt Package、世界事实和最近一次 VisualFix 修正提示产出位图候选图，并通过 Visual Judge 后生成 ApprovedFrame。当前还没有合格 AI 位图候选图，禁止展示。",
+          en: "Formal world rendering requires an AI-generated bitmap candidate from the Prompt Package, world facts, and the latest VisualFix hints, then a Visual Judge pass before ApprovedFrame exists. No qualified AI bitmap candidate exists now, so display is blocked.",
         },
     mvpTargetPolicy: WORLD_VISUAL_MVP_TARGET_POLICY,
     ruleDataset: WORLD_VISUAL_MVP_RULE_DATASET,
@@ -117,6 +129,7 @@ export async function buildWorldVisualPainterDecision(
       "world_visual_painter",
       "ai_image_model_required",
       "prompt_package_ready",
+      latestFixPlan ? "latest_visual_fix_plan_loaded" : "no_latest_visual_fix_plan",
       "ai_image_candidate_required",
       "approved_frame_required",
       "pass_required_for_display",
