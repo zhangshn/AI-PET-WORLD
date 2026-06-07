@@ -8,7 +8,6 @@ import {
 } from "@/world/world-visual-painter"
 import type {
   WorldVisualAiImageGenerationResult,
-  WorldVisualCandidateStoreWriteResult,
   WorldVisualPainterDecision,
 } from "@/world/world-visual-painter"
 
