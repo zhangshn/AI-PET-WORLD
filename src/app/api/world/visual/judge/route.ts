@@ -76,6 +76,7 @@ export async function POST() {
         tick: runtimeReadResult.record.tick,
         approvedFrame,
         reviewReport,
+        sourceCandidateRecord: candidateReadResult.record,
       })
     : null
 

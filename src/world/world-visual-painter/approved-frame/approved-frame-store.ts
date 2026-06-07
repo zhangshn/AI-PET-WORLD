@@ -5,6 +5,7 @@ import type {
   WorldVisualApprovedFrame,
   WorldVisualReviewReport,
 } from "../world-visual-painter-schema"
+import type { WorldVisualCandidateRecord } from "../ai-image-candidate"
 
 const APPROVED_FRAME_DIR = path.join(
   process.cwd(),
@@ -20,6 +21,14 @@ export type WorldVisualApprovedFrameRecord = {
   savedAt: string
   approvedFrame: WorldVisualApprovedFrame
   reviewReport: WorldVisualReviewReport
+  sourceCandidateRecord: WorldVisualCandidateRecord
+  sourceAiImageCandidateId: string
+  sourcePromptPackageId: string
+  sourceAiImageGenerationRequestId: string | null
+  sourceControlSketchId: string | null
+  sourceVisualFixPlanId: string | null
+  sourceVisualFixHintCount: number
+  sourceFactIds: string[]
   canShowToPlayer: true
   tags: string[]
 }
@@ -47,7 +56,9 @@ export async function writeWorldVisualApprovedFrameRecord(input: {
   tick: number
   approvedFrame: WorldVisualApprovedFrame
   reviewReport: WorldVisualReviewReport
+  sourceCandidateRecord: WorldVisualCandidateRecord
 }): Promise<WorldVisualApprovedFrameStoreWriteResult> {
+  const request = input.sourceCandidateRecord.aiImageGenerationRequest
   const record: WorldVisualApprovedFrameRecord = {
     version: "world-approved-frame-v1",
     ownerId: input.ownerId,
@@ -56,11 +67,23 @@ export async function writeWorldVisualApprovedFrameRecord(input: {
     savedAt: new Date().toISOString(),
     approvedFrame: input.approvedFrame,
     reviewReport: input.reviewReport,
+    sourceCandidateRecord: input.sourceCandidateRecord,
+    sourceAiImageCandidateId: input.sourceCandidateRecord.candidate.candidateId,
+    sourcePromptPackageId: input.sourceCandidateRecord.promptPackage.packageId,
+    sourceAiImageGenerationRequestId: request?.requestId ?? null,
+    sourceControlSketchId: request?.body.controlSketch.controlSketchId ?? null,
+    sourceVisualFixPlanId: request?.body.metadata.visualFixPlanId ?? null,
+    sourceVisualFixHintCount: request?.body.visualFixHints.length ?? 0,
+    sourceFactIds: input.sourceCandidateRecord.sourceFactIds,
     canShowToPlayer: true,
     tags: [
       "world_visual_approved_frame_record",
       "player_visible_allowed",
       "visual_review_passed",
+      "source_candidate_record_bound",
+      request
+        ? "ai_image_generation_request_bound"
+        : "no_ai_image_generation_request",
     ],
   }
   const filePath = getWorldVisualApprovedFrameRecordPath(record)
@@ -105,13 +128,14 @@ export async function readLatestWorldVisualApprovedFrameRecord(input: {
 
     const raw = await readFile(index.path, "utf8")
     const parsed = JSON.parse(raw) as Partial<WorldVisualApprovedFrameRecord>
-    if (!isWorldVisualApprovedFrameRecord(parsed)) {
+    const normalized = normalizeWorldVisualApprovedFrameRecord(parsed)
+    if (!normalized) {
       return invalidRead(index.path, "Approved frame record shape is invalid.")
     }
 
     return {
       status: "found",
-      record: parsed,
+      record: normalized,
       path: index.path,
       message: "Approved frame record loaded.",
       warnings: [],
@@ -175,6 +199,13 @@ async function writeLatestWorldVisualApprovedFrameIndex(input: {
     worldId: input.record.worldId,
     tick: input.record.tick,
     frameId: input.record.approvedFrame.frameId,
+    sourceAiImageCandidateId: input.record.sourceAiImageCandidateId,
+    sourcePromptPackageId: input.record.sourcePromptPackageId,
+    sourceAiImageGenerationRequestId:
+      input.record.sourceAiImageGenerationRequestId,
+    sourceControlSketchId: input.record.sourceControlSketchId,
+    sourceVisualFixPlanId: input.record.sourceVisualFixPlanId,
+    sourceVisualFixHintCount: input.record.sourceVisualFixHintCount,
     path: input.filePath,
     updatedAt: input.record.savedAt,
     tags: ["world_visual_approved_frame_latest_index"],
@@ -199,20 +230,47 @@ function invalidRead(
   }
 }
 
-function isWorldVisualApprovedFrameRecord(
+function normalizeWorldVisualApprovedFrameRecord(
   value: Partial<WorldVisualApprovedFrameRecord>
-): value is WorldVisualApprovedFrameRecord {
-  return (
-    value.version === "world-approved-frame-v1" &&
-    typeof value.ownerId === "string" &&
-    typeof value.worldId === "string" &&
-    typeof value.tick === "number" &&
-    typeof value.savedAt === "string" &&
-    Boolean(value.approvedFrame) &&
-    Boolean(value.reviewReport) &&
-    value.canShowToPlayer === true &&
-    Array.isArray(value.tags)
-  )
+): WorldVisualApprovedFrameRecord | null {
+  if (
+    value.version !== "world-approved-frame-v1" ||
+    typeof value.ownerId !== "string" ||
+    typeof value.worldId !== "string" ||
+    typeof value.tick !== "number" ||
+    typeof value.savedAt !== "string" ||
+    !value.approvedFrame ||
+    !value.reviewReport ||
+    !value.sourceCandidateRecord ||
+    typeof value.sourceAiImageCandidateId !== "string" ||
+    typeof value.sourcePromptPackageId !== "string" ||
+    !Array.isArray(value.sourceFactIds) ||
+    value.canShowToPlayer !== true ||
+    !Array.isArray(value.tags)
+  ) {
+    return null
+  }
+
+  return {
+    version: value.version,
+    ownerId: value.ownerId,
+    worldId: value.worldId,
+    tick: value.tick,
+    savedAt: value.savedAt,
+    approvedFrame: value.approvedFrame,
+    reviewReport: value.reviewReport,
+    sourceCandidateRecord: value.sourceCandidateRecord,
+    sourceAiImageCandidateId: value.sourceAiImageCandidateId,
+    sourcePromptPackageId: value.sourcePromptPackageId,
+    sourceAiImageGenerationRequestId:
+      value.sourceAiImageGenerationRequestId ?? null,
+    sourceControlSketchId: value.sourceControlSketchId ?? null,
+    sourceVisualFixPlanId: value.sourceVisualFixPlanId ?? null,
+    sourceVisualFixHintCount: value.sourceVisualFixHintCount ?? 0,
+    sourceFactIds: value.sourceFactIds,
+    canShowToPlayer: value.canShowToPlayer,
+    tags: value.tags,
+  }
 }
 
 function safeFileToken(value: string): string {
