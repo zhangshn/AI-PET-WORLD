@@ -18,6 +18,44 @@ type ValidatedLocalImageEngineResponse = {
   originalityConfirmed: true
 }
 
+type LocalImageModelGenerateRequestBody = Partial<{
+  modelTask: Partial<{
+    taskKind: string
+    outputPurpose: string
+    mustReturnResponseContract: boolean
+    mustNotDisplayDirectly: boolean
+    mustNotRewriteWorldFacts: boolean
+    mustNotUseProgrammaticRenderer: boolean
+    mustNotCopyUnlicensedThirdPartyWorks: boolean
+    canShowToPlayer: boolean
+  }>
+  promptPackage: unknown
+  controlSketch: Partial<{
+    canShowToPlayer: boolean
+    cannotApprove: boolean
+  }>
+  responseContract: Partial<{
+    requiredFields: string[]
+    canShowToPlayer: boolean
+    mustPersistAsAiImageCandidate: boolean
+    mustPassVisualJudge: boolean
+  }>
+  metadata: Partial<{
+    sourceFactIds: string[]
+    canShowToPlayer: boolean
+    cannotApprove: boolean
+  }>
+}>
+
+const REQUIRED_RESPONSE_FIELDS = [
+  "imageUrl",
+  "imageFormat",
+  "width",
+  "height",
+  "license",
+  "originalityConfirmed",
+]
+
 const ENGINE_TIMEOUT_MS = 120_000
 
 export async function POST(request: Request) {
@@ -63,6 +101,27 @@ export async function POST(request: Request) {
       { status: 400 }
     )
   }
+
+    const requestValidation = validateAdapterGenerationRequest(requestBody)
+
+    if (!requestValidation.ok) {
+    return NextResponse.json(
+        {
+        ok: false,
+        status: "local_image_model_request_invalid",
+        error: requestValidation.error,
+        canShowToPlayer: false,
+        tags: [
+            "local_image_model_generate",
+            "request_invalid",
+            "blocked_before_real_engine",
+            "does_not_generate",
+            "not_player_visible",
+        ],
+        },
+        { status: 422 }
+    )
+    }
 
   const engineResult = await callLocalImageEngine({
     endpoint: engineEndpoint,
@@ -197,6 +256,111 @@ function buildEngineHeaders(): Record<string, string> {
   }
 
   return headers
+}
+
+function validateAdapterGenerationRequest(
+  requestBody: unknown
+): { ok: true } | { ok: false; error: { zh: string; en: string } } {
+  if (!isRecord(requestBody)) {
+    return {
+      ok: false,
+      error: {
+        zh: "本地图像模型适配器收到的请求体不是对象。",
+        en: "The local image model adapter received a request body that is not an object.",
+      },
+    }
+  }
+
+  const body = requestBody as LocalImageModelGenerateRequestBody
+  const modelTask = body.modelTask
+  const responseContract = body.responseContract
+  const metadata = body.metadata
+  const controlSketch = body.controlSketch
+
+  const modelTaskIsValid =
+    modelTask?.taskKind === "generate_hidden_world_bitmap_candidate" &&
+    modelTask.outputPurpose === "hidden_ai_image_candidate" &&
+    modelTask.mustReturnResponseContract === true &&
+    modelTask.mustNotDisplayDirectly === true &&
+    modelTask.mustNotRewriteWorldFacts === true &&
+    modelTask.mustNotUseProgrammaticRenderer === true &&
+    modelTask.mustNotCopyUnlicensedThirdPartyWorks === true &&
+    modelTask.canShowToPlayer === false
+
+  if (!modelTaskIsValid) {
+    return {
+      ok: false,
+      error: {
+        zh: "本地图像模型适配器拒绝请求：modelTask 不符合隐藏候选图生成契约。",
+        en: "The local image model adapter rejected the request: modelTask does not match the hidden candidate generation contract.",
+      },
+    }
+  }
+
+  if (!body.promptPackage) {
+    return {
+      ok: false,
+      error: {
+        zh: "本地图像模型适配器拒绝请求：缺少 PromptPackage。",
+        en: "The local image model adapter rejected the request: PromptPackage is missing.",
+      },
+    }
+  }
+
+  if (
+    !controlSketch ||
+    controlSketch.canShowToPlayer !== false ||
+    controlSketch.cannotApprove !== true
+  ) {
+    return {
+      ok: false,
+      error: {
+        zh: "本地图像模型适配器拒绝请求：ControlSketch 必须禁止展示并禁止 Approved。",
+        en: "The local image model adapter rejected the request: ControlSketch must be non-displayable and cannot be approved.",
+      },
+    }
+  }
+
+  const responseContractIsValid =
+    Boolean(responseContract) &&
+    REQUIRED_RESPONSE_FIELDS.every((field) =>
+      responseContract?.requiredFields?.includes(field)
+    ) &&
+    responseContract?.canShowToPlayer === false &&
+    responseContract?.mustPersistAsAiImageCandidate === true &&
+    responseContract?.mustPassVisualJudge === true
+
+  if (!responseContractIsValid) {
+    return {
+      ok: false,
+      error: {
+        zh: "本地图像模型适配器拒绝请求：responseContract 不完整或不满足隐藏候选图与 VisualJudge 硬闸门。",
+        en: "The local image model adapter rejected the request: responseContract is incomplete or does not satisfy the hidden candidate and VisualJudge hard gate.",
+      },
+    }
+  }
+
+  if (
+    !metadata ||
+    !Array.isArray(metadata.sourceFactIds) ||
+    metadata.sourceFactIds.length === 0 ||
+    metadata.canShowToPlayer !== false ||
+    metadata.cannotApprove !== true
+  ) {
+    return {
+      ok: false,
+      error: {
+        zh: "本地图像模型适配器拒绝请求：metadata 缺少世界事实来源链或展示闸门不正确。",
+        en: "The local image model adapter rejected the request: metadata is missing source fact links or has incorrect display gates.",
+      },
+    }
+  }
+
+  return { ok: true }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
 function validateEngineResponse(
