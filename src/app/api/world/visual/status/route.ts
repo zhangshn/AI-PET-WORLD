@@ -5,6 +5,7 @@ import {
   readLatestWorldVisualApprovedFrameRecord,
   readLatestWorldVisualCandidateRecord,
   readLatestWorldVisualFixPlanRecord,
+  readWorldVisualAiImageProviderStatus,
 } from "@/world/world-visual-painter"
 
 export async function GET() {
@@ -35,6 +36,7 @@ export async function GET() {
 
   const ownerId = runtimeReadResult.record.ownerId
   const worldId = runtimeReadResult.record.worldId
+  const providerStatus = readWorldVisualAiImageProviderStatus()
 
   const [candidateReadResult, fixPlanReadResult, approvedFrameReadResult] =
     await Promise.all([
@@ -56,13 +58,20 @@ export async function GET() {
     {
       ok: true,
       status: canRuntimeRender ? "runtime_render_ready" : "blocked",
-      runtime: {
-        ownerId,
-        worldId,
-        tick: runtimeReadResult.record.tick,
-        hasRuntimeWorld: true,
-      },
-      pipeline: {
+    runtime: {
+      ownerId,
+      worldId,
+      tick: runtimeReadResult.record.tick,
+      hasRuntimeWorld: true,
+    },
+    provider: {
+      providerKind: providerStatus.providerKind,
+      configured: providerStatus.configured,
+      canGenerateAutomatically: providerStatus.canGenerateAutomatically,
+      canUseManualImport: providerStatus.canUseManualImport,
+      reason: providerStatus.reason,
+    },
+    pipeline: {
         candidate: {
           status: candidateReadResult.status,
           exists: Boolean(candidateRecord),
@@ -146,6 +155,10 @@ export async function GET() {
         hasCandidate: Boolean(candidateRecord),
         hasFixPlan: Boolean(fixPlanRecord),
         canRuntimeRender,
+        providerKind: providerStatus.providerKind,
+        providerConfigured: providerStatus.configured,
+        canGenerateAutomatically: providerStatus.canGenerateAutomatically,
+        canUseManualImport: providerStatus.canUseManualImport,
       }),
       canShowToPlayer: canRuntimeRender,
       tags: [
@@ -164,6 +177,10 @@ function buildNextStep(input: {
   hasCandidate: boolean
   hasFixPlan: boolean
   canRuntimeRender: boolean
+  providerKind: string
+  providerConfigured: boolean
+  canGenerateAutomatically: boolean
+  canUseManualImport: boolean
 }) {
   if (input.canRuntimeRender) {
     return {
@@ -173,11 +190,38 @@ function buildNextStep(input: {
     }
   }
 
-  if (!input.hasCandidate) {
+  if (!input.providerConfigured) {
+    return {
+      zh: "图像生成入口尚未配置。下一步查看 GET /api/world/visual/provider。",
+      en: "The image generation entry is not configured yet. Next check GET /api/world/visual/provider.",
+      endpoint: "GET /api/world/visual/provider",
+    }
+  }
+
+  if (input.providerKind === "local_model" && !input.hasCandidate) {
+    return {
+      zh: "本地图像模型已配置。下一步先检查 GET /api/world/visual/provider-health 和 GET /api/world/visual/provider-dry-run，再调用 generate。",
+      en: "The local image model is configured. Next check GET /api/world/visual/provider-health and GET /api/world/visual/provider-dry-run, then call generate.",
+      endpoint: "GET /api/world/visual/provider-health",
+    }
+  }
+
+  if (
+    !input.hasCandidate &&
+    (input.canGenerateAutomatically || input.canUseManualImport)
+  ) {
     return {
       zh: "还没有隐藏候选图。下一步调用 POST /api/world/visual/generate。",
       en: "No hidden candidate exists. Next call POST /api/world/visual/generate.",
       endpoint: "POST /api/world/visual/generate",
+    }
+  }
+
+  if (!input.hasCandidate) {
+    return {
+      zh: "还没有隐藏候选图，但当前 provider 不可生成也不可授权导入。先检查 provider 配置。",
+      en: "No hidden candidate exists, but the current provider cannot generate or import. Check provider configuration first.",
+      endpoint: "GET /api/world/visual/provider",
     }
   }
 
