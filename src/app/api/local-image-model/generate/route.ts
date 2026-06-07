@@ -12,10 +12,22 @@ type LocalImageEngineResponse = Partial<{
 type LocalImageEngineRawResponse = LocalImageEngineResponse &
   Partial<{
     url: string
+    image_url: string
     format: string
+    image_format: string
+    mimeType: string
+    mime_type: string
+    contentType: string
+    content_type: string
+    licence: string
+    originality_confirmed: boolean
+    original: boolean
     imageBase64: string
     base64: string
     b64_json: string
+    size: unknown
+    dimensions: unknown
+    metadata: unknown
     result: unknown
     image: unknown
     output: unknown
@@ -313,6 +325,7 @@ function extractEngineImagePayload(
     payload.data,
     payload.images,
     payload.outputs,
+    payload.metadata,
   ])
 
   for (const nestedPayload of nestedPayloads) {
@@ -335,6 +348,17 @@ function collectNestedPayloads(values: unknown[]): unknown[] {
     }
 
     collected.push(value)
+
+    if (isRecord(value)) {
+      for (const nestedKey of ["result", "image", "output", "data", "metadata"]) {
+        const nestedValue = value[nestedKey]
+        if (Array.isArray(nestedValue)) {
+          collected.push(...nestedValue)
+        } else if (nestedValue !== undefined && nestedValue !== null) {
+          collected.push(nestedValue)
+        }
+      }
+    }
   }
 
   return collected
@@ -362,33 +386,69 @@ function pickEngineImagePayload(
 
   const hasAnyKnownField =
     "imageUrl" in value ||
+    "image_url" in value ||
     "url" in value ||
     "imageBase64" in value ||
     "base64" in value ||
     "b64_json" in value ||
     "imageFormat" in value ||
+    "image_format" in value ||
     "format" in value ||
+    "mimeType" in value ||
+    "mime_type" in value ||
+    "contentType" in value ||
+    "content_type" in value ||
     "width" in value ||
     "height" in value ||
+    "w" in value ||
+    "h" in value ||
+    "size" in value ||
+    "dimensions" in value ||
     "license" in value ||
-    "originalityConfirmed" in value
+    "licence" in value ||
+    "originalityConfirmed" in value ||
+    "originality_confirmed" in value ||
+    "original" in value
 
   if (!hasAnyKnownField) return null
 
-  const imageUrl = readString(value["imageUrl"]) ?? readString(value["url"])
+  const imageUrl =
+    readString(value["imageUrl"]) ??
+    readString(value["image_url"]) ??
+    readString(value["url"])
   const imageBase64 =
     readString(value["imageBase64"]) ??
     readString(value["base64"]) ??
     readString(value["b64_json"])
   const imageFormat =
     readEngineImageFormat(value["imageFormat"]) ??
+    readEngineImageFormat(value["image_format"]) ??
     readEngineImageFormat(value["format"]) ??
+    readEngineImageFormat(value["mimeType"]) ??
+    readEngineImageFormat(value["mime_type"]) ??
+    readEngineImageFormat(value["contentType"]) ??
+    readEngineImageFormat(value["content_type"]) ??
     defaults?.imageFormat
-  const width = readNumber(value["width"]) ?? defaults?.width
-  const height = readNumber(value["height"]) ?? defaults?.height
-  const license = readEngineImageLicense(value["license"]) ?? defaults?.license
+  const width =
+    readNumber(value["width"]) ??
+    readNumber(value["w"]) ??
+    readNestedNumber(value["size"], ["width", "w"]) ??
+    readNestedNumber(value["dimensions"], ["width", "w"]) ??
+    defaults?.width
+  const height =
+    readNumber(value["height"]) ??
+    readNumber(value["h"]) ??
+    readNestedNumber(value["size"], ["height", "h"]) ??
+    readNestedNumber(value["dimensions"], ["height", "h"]) ??
+    defaults?.height
+  const license =
+    readEngineImageLicense(value["license"]) ??
+    readEngineImageLicense(value["licence"]) ??
+    defaults?.license
   const originalityConfirmed =
     readBoolean(value["originalityConfirmed"]) ??
+    readBoolean(value["originality_confirmed"]) ??
+    readBoolean(value["original"]) ??
     defaults?.originalityConfirmed
 
   return {
@@ -414,11 +474,29 @@ function pickEngineImageMetadata(
   return {
     imageFormat:
       readEngineImageFormat(value["imageFormat"]) ??
-      readEngineImageFormat(value["format"]),
-    width: readNumber(value["width"]),
-    height: readNumber(value["height"]),
-    license: readEngineImageLicense(value["license"]),
-    originalityConfirmed: readBoolean(value["originalityConfirmed"]),
+      readEngineImageFormat(value["image_format"]) ??
+      readEngineImageFormat(value["format"]) ??
+      readEngineImageFormat(value["mimeType"]) ??
+      readEngineImageFormat(value["mime_type"]) ??
+      readEngineImageFormat(value["contentType"]) ??
+      readEngineImageFormat(value["content_type"]),
+    width:
+      readNumber(value["width"]) ??
+      readNumber(value["w"]) ??
+      readNestedNumber(value["size"], ["width", "w"]) ??
+      readNestedNumber(value["dimensions"], ["width", "w"]),
+    height:
+      readNumber(value["height"]) ??
+      readNumber(value["h"]) ??
+      readNestedNumber(value["size"], ["height", "h"]) ??
+      readNestedNumber(value["dimensions"], ["height", "h"]),
+    license:
+      readEngineImageLicense(value["license"]) ??
+      readEngineImageLicense(value["licence"]),
+    originalityConfirmed:
+      readBoolean(value["originalityConfirmed"]) ??
+      readBoolean(value["originality_confirmed"]) ??
+      readBoolean(value["original"]),
   }
 }
 
@@ -429,11 +507,39 @@ function readString(value: unknown): string | null {
 }
 
 function readNumber(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined
+  if (typeof value === "number" && Number.isFinite(value)) return value
+
+  if (typeof value === "string" && value.trim().length > 0) {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : undefined
+  }
+
+  return undefined
+}
+
+function readNestedNumber(
+  value: unknown,
+  keys: string[]
+): number | undefined {
+  if (!isRecord(value)) return undefined
+
+  for (const key of keys) {
+    const nestedNumber = readNumber(value[key])
+    if (nestedNumber !== undefined) return nestedNumber
+  }
+
+  return undefined
 }
 
 function readBoolean(value: unknown): boolean | undefined {
-  return typeof value === "boolean" ? value : undefined
+  if (typeof value === "boolean") return value
+
+  if (typeof value === "string") {
+    if (value === "true") return true
+    if (value === "false") return false
+  }
+
+  return undefined
 }
 
 function buildDataImageUrl(input: {
@@ -452,11 +558,25 @@ function buildDataImageUrl(input: {
 function readEngineImageFormat(
   value: unknown
 ): LocalImageEngineResponse["imageFormat"] | undefined {
-  if (value === "png" || value === "webp" || value === "jpg") {
-    return value
+  const normalized =
+    typeof value === "string" ? value.trim().toLowerCase() : null
+
+  if (
+    normalized === "png" ||
+    normalized === "image/png" ||
+    normalized === "webp" ||
+    normalized === "image/webp" ||
+    normalized === "jpg" ||
+    normalized === "image/jpg"
+  ) {
+    return normalized.includes("webp")
+      ? "webp"
+      : normalized.includes("png")
+        ? "png"
+        : "jpg"
   }
 
-  if (value === "jpeg") {
+  if (normalized === "jpeg" || normalized === "image/jpeg") {
     return "jpg"
   }
 
