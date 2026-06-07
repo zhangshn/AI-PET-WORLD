@@ -62,6 +62,8 @@ export async function GET() {
         visualFixPlanId: request?.body.metadata.visualFixPlanId ?? null,
         visualFixHintCount: visualFixHints.length,
         sourceFactIds: record.sourceFactIds,
+        imageUrl: record.candidate.imageUrl,
+        imageUrlAudit: buildImageUrlAudit(record.candidate.imageUrl),
         imageFormat: record.candidate.imageFormat,
         width: record.candidate.width,
         height: record.candidate.height,
@@ -109,4 +111,51 @@ export async function GET() {
     },
     { status: 200 }
   )
+}
+
+function buildImageUrlAudit(imageUrl: string) {
+  if (imageUrl.startsWith("data:image/")) {
+    return {
+      scheme: "data:image",
+      allowed: true,
+      canBeFetchedByVisualJudge: true,
+      reason: "data_image_url_allowed",
+      reasonZh: "候选图使用 data:image URL，VisualJudge 可以读取图片本体。",
+      reasonEn:
+        "The candidate uses a data:image URL. VisualJudge can read the image bytes.",
+      tags: ["image_url_audit", "data_image_url_allowed"],
+    }
+  }
+
+  try {
+    const url = new URL(imageUrl)
+    const allowed = url.protocol === "http:" || url.protocol === "https:"
+
+    return {
+      scheme: url.protocol.replace(":", ""),
+      allowed,
+      canBeFetchedByVisualJudge: allowed,
+      reason: allowed ? "network_image_url_allowed" : "scheme_not_allowed",
+      reasonZh: allowed
+        ? "候选图使用 http/https URL，VisualJudge 可以尝试读取图片本体。"
+        : "候选图 imageUrl 协议不被允许。",
+      reasonEn: allowed
+        ? "The candidate uses an http/https URL. VisualJudge can try reading the image bytes."
+        : "The candidate imageUrl uses a disallowed scheme.",
+      tags: [
+        "image_url_audit",
+        allowed ? "network_image_url_allowed" : "scheme_not_allowed",
+      ],
+    }
+  } catch {
+    return {
+      scheme: "invalid",
+      allowed: false,
+      canBeFetchedByVisualJudge: false,
+      reason: "invalid_image_url",
+      reasonZh: "候选图 imageUrl 不是有效 URL。",
+      reasonEn: "The candidate imageUrl is not a valid URL.",
+      tags: ["image_url_audit", "invalid_image_url"],
+    }
+  }
 }
