@@ -61,6 +61,9 @@ export async function GET() {
   const fixPlanRecord = fixPlanReadResult.record
   const approvedFrameRecord = approvedFrameReadResult.record
   const approvedFrame = approvedFrameRecord?.approvedFrame ?? null
+  const approvedFrameDoubleGatePassed =
+    approvedFrameRecord?.canShowToPlayer === true &&
+    approvedFrame?.canShowToPlayer === true
 
   const checks: IntegrityCheck[] = [
     check(
@@ -94,7 +97,7 @@ export async function GET() {
     check(
       "candidate_has_generation_request_when_generated",
       !candidateRecord ||
-        candidate.providerKind === "manual_import" ||
+        candidate?.providerKind === "manual_import" ||
         Boolean(request),
       "medium",
       "自动生成候选图应绑定 AiImageGenerationRequest；manual_import 可以没有自动请求。",
@@ -124,9 +127,7 @@ export async function GET() {
     ),
     check(
       "approved_frame_record_gate_if_exists",
-      !approvedFrameRecord ||
-        (approvedFrameRecord.canShowToPlayer === true &&
-          approvedFrame?.canShowToPlayer === true),
+      !approvedFrameRecord || approvedFrameDoubleGatePassed,
       "high",
       "ApprovedFrameRecord 与 ApprovedFrame 必须同时允许展示。",
       "ApprovedFrameRecord and ApprovedFrame must both allow display.",
@@ -144,9 +145,8 @@ export async function GET() {
     ),
     check(
       "runtime_render_blocked_without_approved_frame",
-      Boolean(approvedFrameRecord && approvedFrame)
-        ? approvedFrameRecord.canShowToPlayer === true &&
-            approvedFrame.canShowToPlayer === true
+      approvedFrameRecord && approvedFrame
+        ? approvedFrameDoubleGatePassed
         : true,
       "high",
       approvedFrameRecord
@@ -185,11 +185,7 @@ export async function GET() {
       checks,
       failedChecks,
       highSeverityFailedCount: highSeverityFailedChecks.length,
-      canShowToPlayer: Boolean(
-        approvedFrameRecord?.canShowToPlayer === true &&
-          approvedFrame?.canShowToPlayer === true &&
-          ok
-      ),
+      canShowToPlayer: Boolean(approvedFrameDoubleGatePassed && ok),
       displayRule:
         "Runtime Render 只能展示通过完整链路自检且拥有 ApprovedFrame 的图片。",
       displayRuleEn:
