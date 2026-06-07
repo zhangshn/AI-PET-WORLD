@@ -1,4 +1,5 @@
 import { Buffer } from "node:buffer"
+import { createHash } from "node:crypto"
 
 import type {
   WorldVisualAiImageCandidate,
@@ -48,6 +49,7 @@ type ImageInspectionResult = {
   height: number | null
   contentType: string | null
   byteLength: number
+  sha256: string | null
   error: string | null
   errorZh: string | null
 }
@@ -88,6 +90,10 @@ export async function buildWorldVisualReviewReport(input: {
       {
         zh: "候选图必须能读取真实图片本体，禁止 SVG、HTML、JSON、文本或格式伪装文件。",
         en: "The candidate must expose real image bytes. SVG, HTML, JSON, text, and spoofed files are forbidden.",
+      },
+      {
+        zh: "候选图必须生成可审计的图片字节指纹，用于证明 VisualJudge 审核的是同一份图片本体。",
+        en: "The candidate must produce an auditable image byte fingerprint proving which exact image bytes VisualJudge reviewed.",
       },
       {
         zh: "候选图图片本体必须达到基础有效载荷体量，禁止极低字节量的空白图、占位图或伪装压缩图。",
@@ -147,6 +153,8 @@ function buildReviewChecks(input: {
       : candidate.promptPackageId.length > 0 &&
         candidate.sourceFactIds.length === input.factManifest.sourceFactIds.length
   const imageBytesAreValid = input.inspection.ok
+  const imageHasByteFingerprint =
+  imageBytesAreValid && typeof input.inspection.sha256 === "string"
   const imageMatchesMetadata =
     candidate !== null &&
     imageBytesAreValid &&
@@ -206,6 +214,19 @@ function buildReviewChecks(input: {
       imageBytesAreValid
         ? `Real image bytes were read as ${input.inspection.format}, ${input.inspection.width}x${input.inspection.height}.`
         : input.inspection.error ?? "Real image bytes could not be read."
+    ),
+    check(
+      "image_byte_fingerprint",
+      imageHasByteFingerprint,
+      imageHasByteFingerprint ? 92 : 0,
+      "图片字节指纹",
+      "Image byte fingerprint",
+      imageHasByteFingerprint
+        ? `已生成图片本体 sha256 指纹：${input.inspection.sha256}。`
+        : "无法生成图片本体 sha256 指纹，不能证明审核对象稳定。",
+      imageHasByteFingerprint
+        ? `Image byte sha256 fingerprint generated: ${input.inspection.sha256}.`
+        : "Image byte sha256 fingerprint could not be generated, so the reviewed object cannot be proven stable."
     ),
     check(
       "image_metadata_matches_bytes",
@@ -383,6 +404,7 @@ async function inspectCandidateImage(
     height: parsed.height,
     contentType: bytesResult.contentType,
     byteLength: bytesResult.byteLength,
+    sha256: buildImageByteSha256(bytesResult.bytes),
     error: null,
     errorZh: null,
   }
@@ -600,6 +622,10 @@ function normalizeContentType(contentType: string | null): string | null {
   return contentType?.split(";")[0]?.trim().toLowerCase() || null
 }
 
+function buildImageByteSha256(bytes: Uint8Array): string {
+  return createHash("sha256").update(bytes).digest("hex")
+}
+
 function failedInspection(
   errorZh: string,
   error: string,
@@ -613,6 +639,7 @@ function failedInspection(
     height: null,
     contentType,
     byteLength,
+    sha256: null,
     error,
     errorZh,
   }
@@ -667,6 +694,13 @@ function buildFixInstructions(
         return {
           zh: "重新生成或导入真实 PNG/WebP/JPG 位图，禁止 SVG、HTML、JSON、文本或占位结果。",
           en: "Regenerate or import a real PNG/WebP/JPG bitmap. SVG, HTML, JSON, text, and placeholder results are forbidden.",
+        }
+      }
+      
+      if (check.id === "image_byte_fingerprint") {
+        return {
+          zh: "重新生成或重新导入可稳定读取的真实 PNG/WebP/JPG 位图，确保 VisualJudge 能生成图片本体 sha256 指纹。",
+          en: "Regenerate or re-import a stable readable PNG/WebP/JPG bitmap so VisualJudge can generate an image byte sha256 fingerprint.",
         }
       }
 

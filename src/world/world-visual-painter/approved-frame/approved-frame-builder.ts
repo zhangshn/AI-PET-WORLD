@@ -10,6 +10,7 @@ const MIN_APPROVAL_SCORE = 88
 const REQUIRED_REVIEW_CHECK_IDS = [
   "ai_image_candidate_metadata",
   "real_image_bytes",
+  "image_byte_fingerprint",
   "image_metadata_matches_bytes",
   "mvp_image_size",
   "bitmap_payload_quality",

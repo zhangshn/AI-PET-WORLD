@@ -79,6 +79,21 @@ function buildActionsForFailedCheck(
     ]
   }
 
+  if (check.id === "image_byte_fingerprint") {
+    return [
+      action(
+        "fix-image-byte-fingerprint",
+        check.id,
+        "generate_ai_image_candidate",
+        "high",
+        "重新生成或重新导入可稳定读取的真实 PNG/WebP/JPG 位图，确保 VisualJudge 能生成图片本体 sha256 指纹，证明审核对象没有漂移。",
+        "Regenerate or re-import a stable readable PNG/WebP/JPG bitmap so VisualJudge can generate an image byte sha256 fingerprint and prove the reviewed object did not drift.",
+        "候选图图片本体具备可审计字节指纹。",
+        "The candidate image bytes have an auditable fingerprint."
+      ),
+    ]
+  }
+
   if (check.id === "image_metadata_matches_bytes") {
     return [
       action(
