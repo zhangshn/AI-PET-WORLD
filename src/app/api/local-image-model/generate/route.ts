@@ -11,6 +11,9 @@ type LocalImageEngineResponse = Partial<{
 
 type LocalImageEngineRawResponse = LocalImageEngineResponse &
   Partial<{
+    imageBase64: string
+    base64: string
+    b64_json: string
     result: unknown
     image: unknown
     output: unknown
@@ -312,6 +315,9 @@ function pickEngineImagePayload(value: unknown): LocalImageEngineResponse | null
 
   const hasAnyKnownField =
     "imageUrl" in value ||
+    "imageBase64" in value ||
+    "base64" in value ||
+    "b64_json" in value ||
     "imageFormat" in value ||
     "width" in value ||
     "height" in value ||
@@ -321,23 +327,52 @@ function pickEngineImagePayload(value: unknown): LocalImageEngineResponse | null
   if (!hasAnyKnownField) return null
 
   const imageUrl = value["imageUrl"]
-  const imageFormat = value["imageFormat"]
+  const imageBase64 =
+    readString(value["imageBase64"]) ??
+    readString(value["base64"]) ??
+    readString(value["b64_json"])
+  const imageFormat = readEngineImageFormat(value["imageFormat"])
   const width = value["width"]
   const height = value["height"]
-  const license = value["license"]
+  const license = readEngineImageLicense(value["license"])
   const originalityConfirmed = value["originalityConfirmed"]
 
   return {
-    imageUrl: typeof imageUrl === "string" ? imageUrl : undefined,
-    imageFormat: readEngineImageFormat(imageFormat),
+    imageUrl:
+      typeof imageUrl === "string"
+        ? imageUrl
+        : buildDataImageUrl({
+            imageBase64,
+            imageFormat,
+          }),
+    imageFormat,
     width: typeof width === "number" ? width : undefined,
     height: typeof height === "number" ? height : undefined,
-    license: readEngineImageLicense(license),
+    license,
     originalityConfirmed:
       typeof originalityConfirmed === "boolean"
         ? originalityConfirmed
         : undefined,
   }
+}
+
+function readString(value: unknown): string | null {
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : null
+}
+
+function buildDataImageUrl(input: {
+  imageBase64: string | null
+  imageFormat: LocalImageEngineResponse["imageFormat"] | undefined
+}): string | undefined {
+  if (!input.imageBase64 || !input.imageFormat) return undefined
+
+  if (input.imageBase64.startsWith("data:image/")) {
+    return input.imageBase64
+  }
+
+  return `data:image/${input.imageFormat};base64,${input.imageBase64}`
 }
 
 function readEngineImageFormat(

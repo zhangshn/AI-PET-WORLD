@@ -39,12 +39,15 @@ export async function GET() {
         requestBodyEn:
           "The real image engine receives the full WorldVisualAiImageGenerationRequestBody.",
         requiredResponseShape: {
-          imageUrl: "http(s) URL or data:image URL",
-          imageFormat: "png | webp | jpg",
-          width: "number",
-          height: "number",
-          license: "self_owned | cc0 | commercial_license",
-          originalityConfirmed: true,
+        imageUrl:
+            "http(s) URL or data:image URL. If imageUrl is missing, the adapter may build it from imageBase64/base64/b64_json plus imageFormat.",
+        imageBase64:
+            "optional real bitmap base64. Supported aliases: imageBase64, base64, b64_json.",
+        imageFormat: "png | webp | jpg",
+        width: "number",
+        height: "number",
+        license: "self_owned | cc0 | commercial_license",
+        originalityConfirmed: true,
         },
         hardRules: [
           {
@@ -62,6 +65,10 @@ export async function GET() {
           {
             zh: "license 必须是 self_owned、cc0 或 commercial_license，originalityConfirmed 必须为 true。",
             en: "license must be self_owned, cc0, or commercial_license, and originalityConfirmed must be true.",
+          },
+          {
+            zh: "如果真实图像引擎返回 base64，必须是真实 PNG/WebP/JPG 图片字节的 base64，适配层会转成 data:image URL 后交给 VisualJudge 审核。",
+            en: "If the real image engine returns base64, it must be real PNG/WebP/JPG image bytes encoded as base64. The adapter will convert it into a data:image URL for VisualJudge review.",
           },
         ],
       },
