@@ -297,6 +297,10 @@ function buildGenerationResultAudit(
     ],
     error: generationResult.error,
     candidateId: generationResult.candidate?.candidateId ?? null,
+    imageUrl: generationResult.candidate?.imageUrl ?? null,
+    imageUrlAudit: buildImageUrlAudit(
+      generationResult.candidate?.imageUrl ?? null
+    ),
     imageFormat: generationResult.candidate?.imageFormat ?? null,
     width: generationResult.candidate?.width ?? null,
     height: generationResult.candidate?.height ?? null,
@@ -309,6 +313,65 @@ function buildGenerationResultAudit(
     displayRuleEn:
       "The model response must first become a hidden AiImageCandidate and then enter VisualJudge.",
     tags: generationResult.tags,
+  }
+}
+
+function buildImageUrlAudit(imageUrl: string | null) {
+  if (!imageUrl) {
+    return {
+      scheme: null,
+      allowed: false,
+      canBeFetchedByVisualJudge: false,
+      reason: "missing_image_url",
+      reasonZh: "模型没有返回 imageUrl。",
+      reasonEn: "The model did not return imageUrl.",
+      tags: ["image_url_audit", "missing_image_url"],
+    }
+  }
+
+  if (imageUrl.startsWith("data:image/")) {
+    return {
+      scheme: "data:image",
+      allowed: true,
+      canBeFetchedByVisualJudge: true,
+      reason: "data_image_url_allowed",
+      reasonZh: "模型返回 data:image URL，VisualJudge 可以读取图片本体。",
+      reasonEn:
+        "The model returned a data:image URL. VisualJudge can read the image bytes.",
+      tags: ["image_url_audit", "data_image_url_allowed"],
+    }
+  }
+
+  try {
+    const url = new URL(imageUrl)
+    const allowed = url.protocol === "http:" || url.protocol === "https:"
+
+    return {
+      scheme: url.protocol.replace(":", ""),
+      allowed,
+      canBeFetchedByVisualJudge: allowed,
+      reason: allowed ? "network_image_url_allowed" : "scheme_not_allowed",
+      reasonZh: allowed
+        ? "模型返回 http/https URL，VisualJudge 可以尝试读取图片本体。"
+        : "模型返回的 imageUrl 协议不被允许。",
+      reasonEn: allowed
+        ? "The model returned an http/https URL. VisualJudge can try reading the image bytes."
+        : "The model returned a disallowed imageUrl scheme.",
+      tags: [
+        "image_url_audit",
+        allowed ? "network_image_url_allowed" : "scheme_not_allowed",
+      ],
+    }
+  } catch {
+    return {
+      scheme: "invalid",
+      allowed: false,
+      canBeFetchedByVisualJudge: false,
+      reason: "invalid_image_url",
+      reasonZh: "模型返回的 imageUrl 不是有效 URL。",
+      reasonEn: "The model returned an invalid imageUrl.",
+      tags: ["image_url_audit", "invalid_image_url"],
+    }
   }
 }
 
