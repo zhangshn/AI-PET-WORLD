@@ -130,6 +130,16 @@ export async function GET() {
           tags: approvedFrameReadResult.tags,
         },
       },
+      generationAcceptanceChecklist: buildGenerationAcceptanceChecklist({
+        providerKind: providerStatus.providerKind,
+        providerConfigured: providerStatus.configured,
+        canGenerateAutomatically: providerStatus.canGenerateAutomatically,
+        canUseManualImport: providerStatus.canUseManualImport,
+        hasCandidate: Boolean(candidateRecord),
+        hasFixPlan: Boolean(fixPlanRecord),
+        hasApprovedFrame: Boolean(approvedFrameRecord),
+        canRuntimeRender,
+      }),
       runtimeRenderGate: {
         canRuntimeRender,
         required: [
@@ -171,6 +181,103 @@ export async function GET() {
     },
     { status: 200 }
   )
+}
+function buildGenerationAcceptanceChecklist(input: {
+  providerKind: string
+  providerConfigured: boolean
+  canGenerateAutomatically: boolean
+  canUseManualImport: boolean
+  hasCandidate: boolean
+  hasFixPlan: boolean
+  hasApprovedFrame: boolean
+  canRuntimeRender: boolean
+}) {
+  return [
+    {
+      id: "provider_configured",
+      passed: input.providerConfigured,
+      zh: "图像生成入口已配置。",
+      en: "Image generation provider is configured.",
+      endpoint: "GET /api/world/visual/provider",
+      requiredBeforeGenerate: true,
+      tags: ["provider", input.providerConfigured ? "passed" : "pending"],
+    },
+    {
+      id: "local_model_health_checked",
+      passed: input.providerKind !== "local_model" || input.providerConfigured,
+      zh: "如果使用本地图像模型，先检查 health。",
+      en: "If using local_model, check health first.",
+      endpoint:
+        input.providerKind === "local_model"
+          ? "GET /api/world/visual/provider-health"
+          : null,
+      requiredBeforeGenerate: input.providerKind === "local_model",
+      tags: [
+        "provider_health",
+        input.providerKind === "local_model" ? "local_model" : "not_local_model",
+      ],
+    },
+    {
+      id: "local_model_dry_run_checked",
+      passed: input.providerKind !== "local_model" || input.providerConfigured,
+      zh: "如果使用本地图像模型，先执行 dry-run 契约探针。",
+      en: "If using local_model, run the dry-run contract probe first.",
+      endpoint:
+        input.providerKind === "local_model"
+          ? "GET /api/world/visual/provider-dry-run"
+          : null,
+      requiredBeforeGenerate: input.providerKind === "local_model",
+      tags: [
+        "provider_dry_run",
+        input.providerKind === "local_model" ? "local_model" : "not_local_model",
+      ],
+    },
+    {
+      id: "candidate_generated",
+      passed: input.hasCandidate,
+      zh: "隐藏 AiImageCandidate 已生成并保存。",
+      en: "Hidden AiImageCandidate has been generated and persisted.",
+      endpoint:
+        input.canGenerateAutomatically || input.canUseManualImport
+          ? "POST /api/world/visual/generate"
+          : "GET /api/world/visual/provider",
+      requiredBeforeGenerate: false,
+      tags: ["candidate", input.hasCandidate ? "passed" : "pending"],
+    },
+    {
+      id: "visual_judge_ran",
+      passed: input.hasFixPlan || input.hasApprovedFrame,
+      zh: "VisualJudge 已经运行，产生 VisualFixPlan 或 ApprovedFrame。",
+      en: "VisualJudge has run and produced either VisualFixPlan or ApprovedFrame.",
+      endpoint: input.hasCandidate ? "POST /api/world/visual/judge" : null,
+      requiredBeforeGenerate: false,
+      tags: [
+        "visual_judge",
+        input.hasFixPlan || input.hasApprovedFrame ? "passed" : "pending",
+      ],
+    },
+    {
+      id: "approved_frame_ready",
+      passed: input.hasApprovedFrame,
+      zh: "ApprovedFrame 已生成。",
+      en: "ApprovedFrame has been created.",
+      endpoint: "GET /api/world/visual/approved",
+      requiredBeforeGenerate: false,
+      tags: ["approved_frame", input.hasApprovedFrame ? "passed" : "pending"],
+    },
+    {
+      id: "runtime_render_ready",
+      passed: input.canRuntimeRender,
+      zh: "Runtime Render 可以展示 ApprovedFrame。",
+      en: "Runtime Render may display ApprovedFrame.",
+      endpoint: "/world",
+      requiredBeforeGenerate: false,
+      tags: [
+        "runtime_render",
+        input.canRuntimeRender ? "passed" : "blocked",
+      ],
+    },
+  ]
 }
 
 function buildNextStep(input: {
