@@ -186,6 +186,14 @@ function validateProviderImageResponse(input: {
     )
   }
 
+  if (!isAllowedImageUrl(imageUrl)) {
+    return failedValidation(
+      "图像生成模型返回的 imageUrl 协议不被允许。只允许 http、https 或 data:image URL，禁止本地文件路径。",
+      "The image generation model returned a disallowed imageUrl scheme. Only http, https, or data:image URLs are allowed. Local file paths are forbidden.",
+      ["response_contract_failed", "invalid_image_url_scheme"]
+    )
+  }
+
   if (!isAllowedImageFormat(imageFormat, input.contract)) {
     return failedValidation(
       `图像生成模型返回的 imageFormat 不被允许：${String(imageFormat)}。`,
@@ -280,6 +288,17 @@ function failedResult(
     candidate: null,
     error: { zh, en },
     tags: ["ai_image_generation_result", "failed", "display_blocked", ...tags],
+  }
+}
+
+function isAllowedImageUrl(imageUrl: string): boolean {
+  if (imageUrl.startsWith("data:image/")) return true
+
+  try {
+    const url = new URL(imageUrl)
+    return url.protocol === "http:" || url.protocol === "https:"
+  } catch {
+    return false
   }
 }
 

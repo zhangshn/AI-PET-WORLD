@@ -73,7 +73,7 @@ export async function GET() {
             "worldId, tick, promptPackageId, sourceFactIds, controlSketchId, visualFixPlanId",
         },
         requiredResponseShape: {
-          imageUrl: "string",
+          imageUrl: "http(s) URL or data:image URL",
           imageFormat: "png | webp | jpg",
           width: "number",
           height: "number",
@@ -82,8 +82,8 @@ export async function GET() {
         },
         responseRules: [
           {
-            zh: "返回结果必须是真实 PNG/WebP/JPG 位图 URL，不能是 SVG、HTML、JSON、调试图或占位图。",
-            en: "The response must point to a real PNG/WebP/JPG bitmap URL, not SVG, HTML, JSON, debug images, or placeholders.",
+            zh: "返回结果必须是真实 PNG/WebP/JPG 位图的 http、https 或 data:image URL，不能是本地文件路径、SVG、HTML、JSON、调试图或占位图。",
+            en: "The response must point to a real PNG/WebP/JPG bitmap through an http, https, or data:image URL, not a local file path, SVG, HTML, JSON, debug image, or placeholder.",
           },
           {
             zh: "返回结果只会保存为隐藏 AiImageCandidate，不能直接展示给玩家。",

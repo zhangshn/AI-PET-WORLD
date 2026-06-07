@@ -270,6 +270,7 @@ function buildGenerationResultAudit(
     [
       "missing_required_fields",
       "empty_image_url",
+      "invalid_image_url_scheme",
       "invalid_image_format",
       "invalid_width",
       "invalid_height",
