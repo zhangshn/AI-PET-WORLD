@@ -1,14 +1,12 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useState } from "react"
 
 type VisualAction = {
   id: string
   title: string
-  description: string
   method: "GET" | "POST"
   path: string
-  group: "准备" | "生成" | "审核" | "展示"
 }
 
 type ActionResult = {
@@ -19,7 +17,5 @@ type ActionResult = {
 }
 
 const ACTIONS: VisualAction[] = [
-  {
-    id: "provider",
-    title: "Provider 状态",
-    description: "查看图像
+  { id: "provider", title: "Provider 状态", method: "GET", path: "/api/world/visual/provider" },
+  { id: "provider-health", title: "本地模型 Health", method: "GET", path: "/api
