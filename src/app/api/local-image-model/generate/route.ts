@@ -198,7 +198,9 @@ if (!normalizedPayload) {
   )
 }
 
-const validation = validateEngineResponse(normalizedPayload)
+const payloadWithConfiguredDefaults =
+  applyConfiguredEngineSafetyDefaults(normalizedPayload)
+const validation = validateEngineResponse(payloadWithConfiguredDefaults)
 
 if (!validation.ok) {
   return NextResponse.json(
@@ -208,11 +210,14 @@ if (!validation.ok) {
       error: validation.error,
       payload: engineResult.payload,
       normalizedPayload,
+      payloadWithConfiguredDefaults,
+      configuredSafetyDefaults: readConfiguredEngineSafetyDefaults(),
       canShowToPlayer: false,
       tags: [
         "local_image_model_generate",
         "engine_response_invalid",
         "engine_response_normalized",
+        "configured_safety_defaults_checked",
         "response_contract_failed_before_runner",
         "not_player_visible",
       ],
@@ -309,6 +314,53 @@ function buildEngineHeaders(): Record<string, string> {
   }
 
   return headers
+}
+
+function applyConfiguredEngineSafetyDefaults(
+  payload: LocalImageEngineResponse
+): LocalImageEngineResponse {
+  const configuredDefaults = readConfiguredEngineSafetyDefaults()
+
+  return {
+    ...payload,
+    license: payload.license ?? configuredDefaults.license ?? undefined,
+    originalityConfirmed:
+      payload.originalityConfirmed ??
+      configuredDefaults.originalityConfirmed ??
+      undefined,
+  }
+}
+
+function readConfiguredEngineSafetyDefaults(): {
+  license: LocalImageEngineResponse["license"] | null
+  originalityConfirmed: true | null
+} {
+  return {
+    license: readConfiguredEngineLicense(
+      process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_LICENSE
+    ),
+    originalityConfirmed:
+      process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ORIGINALITY_CONFIRMED ===
+      "true"
+        ? true
+        : null,
+  }
+}
+
+function readConfiguredEngineLicense(
+  value: string | undefined
+): LocalImageEngineResponse["license"] | null {
+  const normalized = value?.trim()
+
+  if (
+    normalized === "self_owned" ||
+    normalized === "cc0" ||
+    normalized === "commercial_license"
+  ) {
+    return normalized
+  }
+
+  return null
 }
 
 function extractEngineImagePayload(

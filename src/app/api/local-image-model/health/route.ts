@@ -6,6 +6,10 @@ export async function GET() {
   const engineApiKeyConfigured = Boolean(
     process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_API_KEY?.trim()
   )
+  const configuredEngineLicense =
+    process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_LICENSE?.trim() ?? null
+  const configuredOriginalityConfirmed =
+    process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ORIGINALITY_CONFIRMED === "true"
 
   const engineConfigured = Boolean(engineEndpoint)
 
@@ -24,14 +28,22 @@ export async function GET() {
       supportsWebp: true,
       supportsJpg: true,
       engine: {
-        configured: engineConfigured,
-        endpointConfigured: engineConfigured,
-        apiKeyConfigured: engineApiKeyConfigured,
-        timeoutMs: 120000,
-      },
+      configured: engineConfigured,
+      endpointConfigured: engineConfigured,
+      apiKeyConfigured: engineApiKeyConfigured,
+      licenseDefaultConfigured:
+        configuredEngineLicense === "self_owned" ||
+        configuredEngineLicense === "cc0" ||
+        configuredEngineLicense === "commercial_license",
+      originalityDefaultConfirmed: configuredOriginalityConfirmed,
+      timeoutMs: 120000,
+    },
       engineIntegrationContract: {
         endpointEnv: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ENDPOINT",
         apiKeyEnv: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_API_KEY",
+        licenseDefaultEnv: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_LICENSE",
+        originalityConfirmedDefaultEnv:
+          "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ORIGINALITY_CONFIRMED",
         method: "POST",
         requestContentType: "application/json",
         requestBody:
@@ -75,6 +87,10 @@ export async function GET() {
           {
             zh: "license 必须是 self_owned、cc0 或 commercial_license，originalityConfirmed 必须为 true。",
             en: "license must be self_owned, cc0, or commercial_license, and originalityConfirmed must be true.",
+          },
+          {
+            zh: "如果真实图像引擎本身不返回 license 或 originalityConfirmed，适配层只会在显式配置 AI_PET_WORLD_LOCAL_IMAGE_ENGINE_LICENSE 与 AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ORIGINALITY_CONFIRMED=true 时补齐；否则生成会失败。",
+            en: "If the real image engine does not return license or originalityConfirmed, the adapter only fills them when AI_PET_WORLD_LOCAL_IMAGE_ENGINE_LICENSE and AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ORIGINALITY_CONFIRMED=true are explicitly configured; otherwise generation fails.",
           },
           {
             zh: "如果真实图像引擎返回 base64，必须是真实 PNG/WebP/JPG 图片字节的 base64，适配层会转成 data:image URL 后交给 VisualJudge 审核。",
