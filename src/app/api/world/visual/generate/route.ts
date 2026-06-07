@@ -6,6 +6,7 @@ import {
   runWorldVisualAiImageGenerationRequest,
   writeWorldVisualCandidateRecord,
 } from "@/world/world-visual-painter"
+import type { WorldVisualPainterDecision } from "@/world/world-visual-painter"
 
 export async function POST() {
   const readResult = await readWorldRuntimeSaveRecord()
@@ -27,6 +28,7 @@ export async function POST() {
   const decision = await buildWorldVisualPainterDecision({
     saveRecord: readResult.record,
   })
+  const generationInputAudit = buildGenerationInputAudit(decision)
 
   if (decision.aiImageCandidate && decision.promptPackage) {
     const writeResult = await writeWorldVisualCandidateRecord({
@@ -43,6 +45,7 @@ export async function POST() {
       {
         ok: writeResult.ok,
         candidate: decision.aiImageCandidate,
+        generationInputAudit,
         persisted: writeResult.ok,
         candidatePath: writeResult.path ?? null,
         persistenceWarnings: writeResult.warnings ?? [],
@@ -57,6 +60,7 @@ export async function POST() {
         tags: [
           "world_visual_generate_api",
           "hidden_candidate_persisted",
+          "generation_input_audit_attached",
           ...(writeResult.tags ?? []),
         ],
       },
@@ -71,9 +75,14 @@ export async function POST() {
         message: decision.aiImageProviderStatus.reason.zh,
         messageEn: decision.aiImageProviderStatus.reason.en,
         provider: decision.aiImageProviderStatus,
+        generationInputAudit,
         displayRule: "没有 ApprovedFrame 前禁止展示。",
         displayRuleEn: "Display is blocked until ApprovedFrame exists.",
-        tags: ["world_visual_generate_api", "provider_not_ready"],
+        tags: [
+          "world_visual_generate_api",
+          "provider_not_ready",
+          "generation_input_audit_attached",
+        ],
       },
       { status: 409 }
     )
@@ -100,6 +109,7 @@ export async function POST() {
     {
       ok: generationResult.ok,
       candidate: generationResult.candidate,
+      generationInputAudit,
       persisted: writeResult?.ok ?? false,
       candidatePath: writeResult?.path ?? null,
       persistenceWarnings: writeResult?.warnings ?? [],
@@ -111,10 +121,51 @@ export async function POST() {
         "The candidate remains hidden and must pass Visual Judge before ApprovedFrame can be created.",
       tags: [
         "world_visual_generate_api",
+        "generation_input_audit_attached",
         ...(writeResult?.tags ?? []),
         ...generationResult.tags,
       ],
     },
     { status: generationResult.ok && writeResult?.ok !== false ? 200 : 502 }
   )
+}
+
+function buildGenerationInputAudit(decision: WorldVisualPainterDecision) {
+  const request = decision.aiImageGenerationRequest
+  const controlSketch = request?.body.controlSketch ?? null
+  const visualFixHints = request?.body.visualFixHints ?? []
+
+  return {
+    hasPromptPackage: Boolean(decision.promptPackage),
+    hasAiImageGenerationRequest: Boolean(request),
+    requestId: request?.requestId ?? null,
+    providerKind: request?.providerKind ?? decision.aiImageProviderStatus.providerKind,
+    hasControlSketch: Boolean(controlSketch),
+    controlSketchId: controlSketch?.controlSketchId ?? null,
+    controlSketchCanShowToPlayer: controlSketch?.canShowToPlayer ?? null,
+    controlSketchCannotApprove: controlSketch?.cannotApprove ?? null,
+    hasVisualFixHints: visualFixHints.length > 0,
+    visualFixPlanId: request?.body.metadata.visualFixPlanId ?? null,
+    visualFixHintCount: visualFixHints.length,
+    visualFixHints: visualFixHints.map((hint) => ({
+      sourceCheckId: hint.sourceCheckId,
+      actionType: hint.actionType,
+      priority: hint.priority,
+      changesWorldFacts: hint.changesWorldFacts,
+      instructionZh: hint.instructionZh,
+      instructionEn: hint.instructionEn,
+      expectedResultZh: hint.expectedResultZh,
+      expectedResultEn: hint.expectedResultEn,
+      tags: hint.tags,
+    })),
+    safety: request?.body.safety ?? null,
+    imageStyle: request?.body.imageStyle ?? null,
+    outputSize: request?.body.outputSize ?? null,
+    sourceFactIds: decision.factManifest.sourceFactIds,
+    canShowToPlayer: false,
+    displayRule:
+      "生成请求只用于 AI Image Generation Model，ControlSketch 和候选图都不能直接展示。",
+    displayRuleEn:
+      "The generation request is only for the AI Image Generation Model. ControlSketch and candidates must not be displayed directly.",
+  }
 }
