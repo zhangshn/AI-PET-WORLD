@@ -66,15 +66,16 @@ export async function WorldLiveRuntimePage() {
               style={runtimeWorldStyles.approvedImage}
             />
           </div>
-          <div style={runtimeWorldStyles.provenance}>
-            <span>Review {approvedFrameRecord.approvedFrame.reviewScore}</span>
-            <span>
-              Candidate {approvedFrameRecord.sourceAiImageCandidateId}
-            </span>
-            <span>
-              Prompt {approvedFrameRecord.sourcePromptPackageId}
-            </span>
-          </div>
+            <div style={runtimeWorldStyles.provenance}>
+              <span>Review {approvedFrame.reviewScore}</span>
+              <span>Candidate {approvedFrameRecord.sourceAiImageCandidateId}</span>
+              <span>Prompt {approvedFrameRecord.sourcePromptPackageId}</span>
+              <span>Image {approvedFrame.sourceImageSha256.slice(0, 12)}</span>
+              <span>
+                Payload{" "}
+                {approvedFrame.sourceImagePayloadQualityPassed ? "passed" : "blocked"}
+              </span>
+            </div>
         </div>
       </main>
     )
@@ -114,11 +115,19 @@ export async function WorldLiveRuntimePage() {
             <span>
               只有 ApprovedFrameRecord 与 ApprovedFrame 同时允许展示时，Runtime Render 才会显示图片。
             </span>
+            <span>
+              当前展示入口只读取 data/world-approved-frames/latest-approved-frame.json。
+            </span>
           </div>
           <div style={blockedWorldStyles.metaItem}>
             <span style={blockedWorldStyles.metaLabel}>Display gate / 展示闸门</span>
             <span>未生成 AI 位图候选图并通过审核前禁止展示</span>
-            <span>Blocked until an AI bitmap candidate passes review and becomes ApprovedFrame</span>
+            <span>
+              流程：generate → hidden candidate → judge → ApprovedFrame → /world
+            </span>
+            <span>
+              Blocked until an AI bitmap candidate passes review and becomes ApprovedFrame
+            </span>
           </div>
           <div style={blockedWorldStyles.metaItem}>
             <span style={blockedWorldStyles.metaLabel}>Fact audit / 事实审计</span>
