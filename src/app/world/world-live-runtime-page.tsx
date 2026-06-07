@@ -38,15 +38,21 @@ export async function WorldLiveRuntimePage() {
     ownerId: runtimeView.saveRecord.ownerId,
     worldId: runtimeView.saveRecord.worldId,
   })
-  const approvedFrame = approvedFrameReadResult.record?.approvedFrame ?? null
+  const approvedFrameRecord = approvedFrameReadResult.record
+  const approvedFrame = approvedFrameRecord?.approvedFrame ?? null
+  const canRuntimeRender =
+    approvedFrameReadResult.status === "found" &&
+    approvedFrameRecord?.canShowToPlayer === true &&
+    approvedFrame?.canShowToPlayer === true
 
-  if (approvedFrame?.canShowToPlayer) {
+  if (canRuntimeRender && approvedFrameRecord && approvedFrame) {
     return (
       <main style={runtimeWorldStyles.page}>
         <div style={runtimeWorldStyles.stage}>
           <div style={runtimeWorldStyles.hud}>
             <span>AI-PET-WORLD</span>
             <span>Tick {painterDecision.factManifest.tick}</span>
+            <span>ApprovedFrame</span>
           </div>
           <div
             aria-label="已审核通过的世界画面"
@@ -59,6 +65,15 @@ export async function WorldLiveRuntimePage() {
               src={approvedFrame.imageUrl}
               style={runtimeWorldStyles.approvedImage}
             />
+          </div>
+          <div style={runtimeWorldStyles.provenance}>
+            <span>Review {approvedFrameRecord.approvedFrame.reviewScore}</span>
+            <span>
+              Candidate {approvedFrameRecord.sourceAiImageCandidateId}
+            </span>
+            <span>
+              Prompt {approvedFrameRecord.sourcePromptPackageId}
+            </span>
           </div>
         </div>
       </main>
@@ -92,6 +107,13 @@ export async function WorldLiveRuntimePage() {
           <div style={blockedWorldStyles.metaItem}>
             <span style={blockedWorldStyles.metaLabel}>Current stage / 当前阶段</span>
             <span>{painterDecision.currentStage}</span>
+          </div>
+          <div style={blockedWorldStyles.metaItem}>
+            <span style={blockedWorldStyles.metaLabel}>ApprovedFrame / 审核帧</span>
+            <span>读取状态：{approvedFrameReadResult.status}</span>
+            <span>
+              只有 ApprovedFrameRecord 与 ApprovedFrame 同时允许展示时，Runtime Render 才会显示图片。
+            </span>
           </div>
           <div style={blockedWorldStyles.metaItem}>
             <span style={blockedWorldStyles.metaLabel}>Display gate / 展示闸门</span>
@@ -193,6 +215,7 @@ const runtimeWorldStyles = {
     color: "rgba(235, 248, 218, 0.78)",
     display: "flex",
     fontSize: 12,
+    gap: 12,
     justifyContent: "space-between",
     left: 14,
     letterSpacing: "0.08em",
@@ -216,13 +239,32 @@ const runtimeWorldStyles = {
     objectFit: "cover",
     width: "100%",
   },
+  provenance: {
+    alignItems: "center",
+    background: "rgba(0, 0, 0, 0.36)",
+    bottom: 12,
+    color: "rgba(235, 248, 218, 0.72)",
+    display: "flex",
+    fontSize: 11,
+    gap: 12,
+    left: 12,
+    maxWidth: "calc(100% - 24px)",
+    overflow: "hidden",
+    padding: "8px 10px",
+    pointerEvents: "none",
+    position: "absolute",
+    right: 12,
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    zIndex: 2,
+  },
 } as const
 
 const blockedWorldStyles = {
   page: {
     alignItems: "center",
     background:
-      "radial-gradient(circle at 50% 22%, #182b24 0, #0d1815 54%, #060c0a 100%)",
+      "linear-gradient(180deg, #10251d 0%, #08120f 58%, #050908 100%)",
     color: "#d8ead8",
     display: "flex",
     justifyContent: "center",
@@ -230,59 +272,61 @@ const blockedWorldStyles = {
     padding: 24,
   },
   panel: {
-    background: "rgba(8, 16, 14, 0.72)",
-    border: "1px solid rgba(216, 234, 216, 0.14)",
-    maxWidth: 720,
+    background: "rgba(8, 17, 14, 0.76)",
+    border: "1px solid rgba(151, 194, 156, 0.18)",
+    maxWidth: 920,
     padding: 28,
   },
   brand: {
     color: "rgba(216, 234, 216, 0.68)",
     fontSize: 13,
-    letterSpacing: "0.08em",
-    marginBottom: 12,
+    letterSpacing: "0.12em",
+    marginBottom: 10,
   },
   tick: {
-    color: "#c8df8f",
-    fontSize: 12,
-    marginBottom: 14,
+    color: "rgba(216, 234, 216, 0.58)",
+    fontSize: 13,
+    marginBottom: 18,
   },
   title: {
-    fontSize: 30,
-    margin: "0 0 12px",
+    fontSize: 34,
+    margin: "0 0 16px",
   },
   titleSub: {
-    color: "rgba(216, 234, 216, 0.78)",
+    color: "rgba(216, 234, 216, 0.66)",
     display: "block",
-    fontSize: 20,
+    fontSize: 18,
     marginTop: 8,
   },
   body: {
-    color: "rgba(216, 234, 216, 0.62)",
     lineHeight: 1.8,
-    margin: "0 0 12px",
+    margin: "0 0 14px",
   },
   metaGrid: {
-    borderTop: "1px solid rgba(216, 234, 216, 0.12)",
     display: "grid",
     gap: 12,
-    marginTop: 22,
-    paddingTop: 18,
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    marginTop: 24,
   },
   metaItem: {
-    color: "rgba(216, 234, 216, 0.72)",
-    display: "grid",
-    gap: 4,
-    fontSize: 13,
+    background: "rgba(255, 255, 255, 0.045)",
+    border: "1px solid rgba(255, 255, 255, 0.08)",
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+    padding: 14,
   },
   metaLabel: {
-    color: "#c8df8f",
-    fontSize: 11,
+    color: "rgba(216, 234, 216, 0.52)",
+    fontSize: 12,
     letterSpacing: "0.08em",
     textTransform: "uppercase",
   },
   note: {
-    color: "rgba(216, 234, 216, 0.55)",
+    borderTop: "1px solid rgba(255, 255, 255, 0.08)",
+    color: "rgba(216, 234, 216, 0.74)",
     lineHeight: 1.8,
-    margin: "18px 0 0",
+    margin: "24px 0 0",
+    paddingTop: 18,
   },
 } as const
