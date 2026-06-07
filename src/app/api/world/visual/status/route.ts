@@ -113,6 +113,11 @@ export async function GET() {
             approvedFrameRecord?.sourceVisualFixPlanId ?? null,
           sourceVisualFixHintCount:
             approvedFrameRecord?.sourceVisualFixHintCount ?? 0,
+          sourceImageSha256: approvedFrame?.sourceImageSha256 ?? null,
+          sourceImageByteLength: approvedFrame?.sourceImageByteLength ?? null,
+          sourceImageContentType: approvedFrame?.sourceImageContentType ?? null,
+          sourceImagePayloadQualityPassed:
+            approvedFrame?.sourceImagePayloadQualityPassed ?? null,
           tags: approvedFrameReadResult.tags,
         },
       },

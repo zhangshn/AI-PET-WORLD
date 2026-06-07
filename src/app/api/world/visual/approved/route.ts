@@ -81,6 +81,10 @@ export async function GET() {
         imageFormat: record.approvedFrame.imageFormat,
         width: record.approvedFrame.width,
         height: record.approvedFrame.height,
+        sourceImageSha256: record.approvedFrame.sourceImageSha256,
+        sourceImageByteLength: record.approvedFrame.sourceImageByteLength,
+        sourceImageContentType: record.approvedFrame.sourceImageContentType,
+        sourceImagePayloadQualityPassed:record.approvedFrame.sourceImagePayloadQualityPassed,
       },
       sourceCandidateAudit: {
         candidateId: record.sourceCandidateRecord.candidate.candidateId,

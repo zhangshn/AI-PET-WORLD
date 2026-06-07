@@ -40,6 +40,9 @@ export function buildWorldVisualApprovedFrame(input: {
   if (input.reviewReport.canShowToPlayer !== false) return null
   if (input.reviewReport.score < MIN_APPROVAL_SCORE) return null
   if (!requiredReviewChecksPassed(input.reviewReport)) return null
+  if (!imageInspectionSummaryCanApprove(input.reviewReport)) return null
+
+  const imageInspectionSummary = input.reviewReport.imageInspectionSummary
 
   return {
     frameId: `approved-frame-${input.factManifest.worldId}-${input.factManifest.tick}`,
@@ -50,10 +53,15 @@ export function buildWorldVisualApprovedFrame(input: {
     imageFormat: input.aiImageCandidate.imageFormat,
     width: input.aiImageCandidate.width,
     height: input.aiImageCandidate.height,
+    sourceImageSha256: imageInspectionSummary.sha256,
+    sourceImageByteLength: imageInspectionSummary.byteLength,
+    sourceImageContentType: imageInspectionSummary.contentType,
+    sourceImagePayloadQualityPassed:
+      imageInspectionSummary.payloadQualityPassed,
     canShowToPlayer: true,
     approvalReason: {
-      zh: "AI 位图候选图已通过完整 VisualJudge 硬闸门：真实图片本体、格式尺寸、事实链、授权原创、视觉质量与污染排除均通过，允许进入 Runtime Render 展示阶段。",
-      en: "The AI bitmap candidate passed the full VisualJudge hard gate: real image bytes, format and size, fact links, license and originality, visual quality, and artifact rejection all passed. It may enter Runtime Render.",
+      zh: "AI 位图候选图已通过完整 VisualJudge 硬闸门：真实图片本体、图片字节指纹、格式尺寸、事实链、授权原创、视觉质量与污染排除均通过，允许进入 Runtime Render 展示阶段。",
+      en: "The AI bitmap candidate passed the full VisualJudge hard gate: real image bytes, image byte fingerprint, format and size, fact links, license and originality, visual quality, and artifact rejection all passed. It may enter Runtime Render.",
     },
     sourceFactIds: input.factManifest.sourceFactIds,
     tags: [
@@ -63,6 +71,7 @@ export function buildWorldVisualApprovedFrame(input: {
       "world_facts_preserved",
       "visual_review_passed",
       "hard_gate_passed",
+      "image_byte_fingerprint_bound",
       "not_from_programmatic_renderer",
       "not_from_control_sketch",
     ],
@@ -78,6 +87,21 @@ function requiredReviewChecksPassed(
 
   return REQUIRED_REVIEW_CHECK_IDS.every(
     (checkId) => checkMap.get(checkId) === true
+  )
+}
+
+function imageInspectionSummaryCanApprove(
+  reviewReport: WorldVisualReviewReport
+): reviewReport is WorldVisualReviewReport & {
+  imageInspectionSummary: WorldVisualReviewReport["imageInspectionSummary"] & {
+    sha256: string
+  }
+} {
+  return (
+    reviewReport.imageInspectionSummary.ok === true &&
+    reviewReport.imageInspectionSummary.payloadQualityPassed === true &&
+    typeof reviewReport.imageInspectionSummary.sha256 === "string" &&
+    reviewReport.imageInspectionSummary.sha256.length === 64
   )
 }
 

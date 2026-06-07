@@ -560,6 +560,10 @@ export type WorldVisualApprovedFrame = {
   imageFormat: "png" | "webp" | "jpg"
   width: number
   height: number
+  sourceImageSha256: string
+  sourceImageByteLength: number
+  sourceImageContentType: string | null
+  sourceImagePayloadQualityPassed: boolean
   canShowToPlayer: true
   approvalReason: WorldVisualBilingualText
   sourceFactIds: string[]
