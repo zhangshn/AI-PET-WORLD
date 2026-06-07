@@ -16,6 +16,15 @@ type IntegrityCheck = {
   tags: string[]
 }
 
+const REQUIRED_RESPONSE_CONTRACT_FIELDS = [
+  "imageUrl",
+  "imageFormat",
+  "width",
+  "height",
+  "license",
+  "originalityConfirmed",
+] as const
+
 export async function GET() {
   const runtimeReadResult = await readWorldRuntimeSaveRecord()
 
@@ -57,6 +66,7 @@ export async function GET() {
   const candidateRecord = candidateReadResult.record
   const candidate = candidateRecord?.candidate ?? null
   const request = candidateRecord?.aiImageGenerationRequest ?? null
+  const responseContract = request?.body.responseContract ?? null
   const controlSketch = request?.body.controlSketch ?? null
   const fixPlanRecord = fixPlanReadResult.record
   const approvedFrameRecord = approvedFrameReadResult.record
@@ -105,6 +115,36 @@ export async function GET() {
       ["candidate", "ai_image_generation_request"]
     ),
     check(
+      "generation_request_has_response_contract_when_present",
+      !request || Boolean(responseContract),
+      "high",
+      "AiImageGenerationRequest 必须携带 responseContract，明确模型返回字段契约。",
+      "AiImageGenerationRequest must carry responseContract to define the model response contract.",
+      ["ai_image_generation_request", "response_contract"]
+    ),
+    check(
+      "response_contract_requires_all_candidate_fields",
+      !responseContract ||
+        REQUIRED_RESPONSE_CONTRACT_FIELDS.every((field) =>
+          responseContract.requiredFields.includes(field)
+        ),
+      "high",
+      "responseContract 必须要求 imageUrl、imageFormat、width、height、license、originalityConfirmed。",
+      "responseContract must require imageUrl, imageFormat, width, height, license, and originalityConfirmed.",
+      ["response_contract", "required_fields"]
+    ),
+    check(
+      "response_contract_requires_hidden_candidate_and_judge",
+      !responseContract ||
+        (responseContract.canShowToPlayer === false &&
+          responseContract.mustPersistAsAiImageCandidate === true &&
+          responseContract.mustPassVisualJudge === true),
+      "high",
+      "responseContract 必须要求模型结果保存为隐藏 AiImageCandidate，并通过 VisualJudge 后才能展示。",
+      "responseContract must require the model result to be persisted as a hidden AiImageCandidate and pass VisualJudge before display.",
+      ["response_contract", "hidden_candidate_required", "visual_judge_required"]
+    ),
+    check(
       "control_sketch_never_displayable",
       !controlSketch ||
         (controlSketch.canShowToPlayer === false &&
@@ -145,9 +185,7 @@ export async function GET() {
     ),
     check(
       "runtime_render_blocked_without_approved_frame",
-      approvedFrameRecord && approvedFrame
-        ? approvedFrameDoubleGatePassed
-        : true,
+      approvedFrameRecord && approvedFrame ? approvedFrameDoubleGatePassed : true,
       "high",
       approvedFrameRecord
         ? "存在 ApprovedFrame 时，Runtime Render 必须通过双重展示闸门。"
@@ -193,6 +231,7 @@ export async function GET() {
       tags: [
         "world_visual_integrity_api",
         ok ? "integrity_passed" : "integrity_failed",
+        "response_contract_checked",
         "status_only",
         "does_not_generate",
         "does_not_modify_world_facts",
