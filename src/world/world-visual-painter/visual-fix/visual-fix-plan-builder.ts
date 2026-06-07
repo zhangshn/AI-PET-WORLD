@@ -109,6 +109,21 @@ function buildActionsForFailedCheck(
     ]
   }
 
+if (check.id === "bitmap_payload_quality") {
+  return [
+    action(
+      "fix-bitmap-payload-quality",
+      check.id,
+      "generate_ai_image_candidate",
+      "high",
+      "重新生成真实、有细节、有足够信息量的 PNG/WebP/JPG 位图，避免极低字节量空白图、占位图、调试图或伪装压缩图进入候选图。",
+      "Regenerate a real, detailed PNG/WebP/JPG bitmap with enough information payload. Tiny blank images, placeholders, debug images, and spoofed compressed results must not enter the candidate stage.",
+      "候选图图片本体具备基础信息量，能继续进入 VisualJudge 的质量审核。",
+      "The candidate image payload has enough baseline information and can continue through VisualJudge quality review."
+    ),
+  ]
+}
+
   if (check.id === "candidate_fact_link") {
     return [
       action(

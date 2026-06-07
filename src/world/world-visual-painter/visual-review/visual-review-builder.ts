@@ -10,6 +10,8 @@ import { WORLD_VISUAL_MVP_TARGET_POLICY } from "../visual-target-policy"
 
 const MIN_IMAGE_WIDTH = 1024
 const MIN_IMAGE_HEIGHT = 768
+const MIN_IMAGE_BYTES = 24 * 1024
+const MIN_IMAGE_BYTES_PER_MEGAPIXEL = 12 * 1024
 const MAX_IMAGE_BYTES = 16 * 1024 * 1024
 const FETCH_TIMEOUT_MS = 8000
 
@@ -88,6 +90,10 @@ export async function buildWorldVisualReviewReport(input: {
         en: "The candidate must expose real image bytes. SVG, HTML, JSON, text, and spoofed files are forbidden.",
       },
       {
+        zh: "候选图图片本体必须达到基础有效载荷体量，禁止极低字节量的空白图、占位图或伪装压缩图。",
+        en: "The candidate image payload must be substantial enough. Tiny blank images, placeholders, or spoofed compressed images are forbidden.",
+      },
+      {
         zh: "候选图必须符合明亮、治愈、精细、俯视像素风，并具有清晰世界主焦点。",
         en: "The candidate must match a bright, healing, detailed top-down pixel style with a clear world focal point.",
       },
@@ -151,6 +157,12 @@ function buildReviewChecks(input: {
     imageBytesAreValid &&
     (input.inspection.width ?? 0) >= MIN_IMAGE_WIDTH &&
     (input.inspection.height ?? 0) >= MIN_IMAGE_HEIGHT
+  const minimumPayloadBytes = getMinimumImageByteLength(
+  input.inspection.width,
+  input.inspection.height
+  )
+  const bitmapPayloadIsSubstantial =
+    imageBytesAreValid && input.inspection.byteLength >= minimumPayloadBytes  
   const styleQuality = buildTagGroupResult(
     candidate,
     REQUIRED_STYLE_QUALITY_TAGS
@@ -220,6 +232,19 @@ function buildReviewChecks(input: {
       imageSizeIsAcceptable
         ? "The image bytes meet the minimum MVP static world frame size."
         : `The image bytes must be at least ${MIN_IMAGE_WIDTH}x${MIN_IMAGE_HEIGHT}.`
+    ),
+    check(
+      "bitmap_payload_quality",
+      bitmapPayloadIsSubstantial,
+      bitmapPayloadIsSubstantial ? 86 : 0,
+      "图片本体基础质量",
+      "Bitmap payload quality",
+      bitmapPayloadIsSubstantial
+        ? `图片本体有效载荷达到基础质量门槛：${input.inspection.byteLength} bytes。`
+        : `图片本体有效载荷过低：${input.inspection.byteLength} bytes，最低要求 ${minimumPayloadBytes} bytes。可能是空白图、占位图或伪装压缩图。`,
+      bitmapPayloadIsSubstantial
+        ? `The image payload passes the baseline quality gate: ${input.inspection.byteLength} bytes.`
+        : `The image payload is too small: ${input.inspection.byteLength} bytes, minimum ${minimumPayloadBytes} bytes. It may be a blank image, placeholder, or spoofed compressed result.`
     ),
     check(
       "candidate_fact_link",
@@ -300,6 +325,17 @@ function buildReviewChecks(input: {
         : `The candidate is missing fact and rights safety proof: ${factAndRightsQuality.missingTags.join(", ")}.`
     ),
   ]
+}
+
+function getMinimumImageByteLength(
+  width: number | null,
+  height: number | null
+): number {
+  const pixelCount = Math.max(0, width ?? 0) * Math.max(0, height ?? 0)
+  const megapixels = pixelCount / 1_000_000
+  const scaledMinimum = Math.ceil(megapixels * MIN_IMAGE_BYTES_PER_MEGAPIXEL)
+
+  return Math.max(MIN_IMAGE_BYTES, scaledMinimum)
 }
 
 async function inspectCandidateImage(
@@ -645,6 +681,13 @@ function buildFixInstructions(
         return {
           zh: `重新生成至少 ${MIN_IMAGE_WIDTH}x${MIN_IMAGE_HEIGHT} 的静态世界画面。`,
           en: `Regenerate a static world frame of at least ${MIN_IMAGE_WIDTH}x${MIN_IMAGE_HEIGHT}.`,
+        }
+      }
+
+      if (check.id === "bitmap_payload_quality") {
+        return {
+          zh: "重新生成真实、有细节、有足够信息量的 PNG/WebP/JPG 位图，禁止极低字节量空白图、占位图或伪装压缩图。",
+          en: "Regenerate a real, detailed PNG/WebP/JPG bitmap with enough information payload. Tiny blank images, placeholders, and spoofed compressed results are forbidden.",
         }
       }
 

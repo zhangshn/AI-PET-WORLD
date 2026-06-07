@@ -12,6 +12,7 @@ const REQUIRED_REVIEW_CHECK_IDS = [
   "real_image_bytes",
   "image_metadata_matches_bytes",
   "mvp_image_size",
+  "bitmap_payload_quality",
   "candidate_fact_link",
   "candidate_license",
   "visual_style_quality",
