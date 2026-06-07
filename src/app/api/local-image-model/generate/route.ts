@@ -9,6 +9,13 @@ type LocalImageEngineResponse = Partial<{
   originalityConfirmed: boolean
 }>
 
+type LocalImageEngineRawResponse = LocalImageEngineResponse &
+  Partial<{
+    result: unknown
+    image: unknown
+    output: unknown
+  }>
+
 type ValidatedLocalImageEngineResponse = {
   imageUrl: string
   imageFormat: "png" | "webp" | "jpg"
@@ -146,26 +153,53 @@ export async function POST(request: Request) {
     )
   }
 
-  const validation = validateEngineResponse(engineResult.payload)
+const normalizedPayload = extractEngineImagePayload(engineResult.payload)
 
-  if (!validation.ok) {
-    return NextResponse.json(
-      {
-        ok: false,
-        status: "local_image_engine_response_invalid",
-        error: validation.error,
-        payload: engineResult.payload,
-        canShowToPlayer: false,
-        tags: [
-          "local_image_model_generate",
-          "engine_response_invalid",
-          "response_contract_failed_before_runner",
-          "not_player_visible",
-        ],
+if (!normalizedPayload) {
+  return NextResponse.json(
+    {
+      ok: false,
+      status: "local_image_engine_response_invalid",
+      error: {
+        zh: "真实图像引擎返回结果中找不到可归一化的图片字段。需要直接返回 imageUrl/imageFormat/width/height/license/originalityConfirmed，或放在 result、image、output 字段中。",
+        en: "The real image engine response does not contain a normalizable image payload. It must return imageUrl/imageFormat/width/height/license/originalityConfirmed directly, or inside result, image, or output.",
       },
-      { status: 502 }
-    )
-  }
+      payload: engineResult.payload,
+      canShowToPlayer: false,
+      tags: [
+        "local_image_model_generate",
+        "engine_response_invalid",
+        "engine_response_not_normalizable",
+        "response_contract_failed_before_runner",
+        "not_player_visible",
+      ],
+    },
+    { status: 502 }
+  )
+}
+
+const validation = validateEngineResponse(normalizedPayload)
+
+if (!validation.ok) {
+  return NextResponse.json(
+    {
+      ok: false,
+      status: "local_image_engine_response_invalid",
+      error: validation.error,
+      payload: engineResult.payload,
+      normalizedPayload,
+      canShowToPlayer: false,
+      tags: [
+        "local_image_model_generate",
+        "engine_response_invalid",
+        "engine_response_normalized",
+        "response_contract_failed_before_runner",
+        "not_player_visible",
+      ],
+    },
+    { status: 502 }
+  )
+}
 
   return NextResponse.json(
     {
@@ -184,7 +218,7 @@ async function callLocalImageEngine(input: {
   endpoint: string
   requestBody: unknown
 }): Promise<
-  | { ok: true; payload: LocalImageEngineResponse }
+  | { ok: true; payload: LocalImageEngineRawResponse }
   | { ok: false; error: { zh: string; en: string } }
 > {
   const controller = new AbortController()
@@ -209,8 +243,7 @@ async function callLocalImageEngine(input: {
         },
       }
     }
-
-    const payload = (await response.json()) as LocalImageEngineResponse
+    const payload = (await response.json()) as LocalImageEngineRawResponse
 
     if (!response.ok) {
       return {
@@ -256,6 +289,79 @@ function buildEngineHeaders(): Record<string, string> {
   }
 
   return headers
+}
+
+function extractEngineImagePayload(
+  payload: LocalImageEngineRawResponse
+): LocalImageEngineResponse | null {
+  const directPayload = pickEngineImagePayload(payload)
+  if (directPayload) return directPayload
+
+  const nestedPayloads = [payload.result, payload.image, payload.output]
+
+  for (const nestedPayload of nestedPayloads) {
+    const pickedPayload = pickEngineImagePayload(nestedPayload)
+    if (pickedPayload) return pickedPayload
+  }
+
+  return null
+}
+
+function pickEngineImagePayload(value: unknown): LocalImageEngineResponse | null {
+  if (!isRecord(value)) return null
+
+  const hasAnyKnownField =
+    "imageUrl" in value ||
+    "imageFormat" in value ||
+    "width" in value ||
+    "height" in value ||
+    "license" in value ||
+    "originalityConfirmed" in value
+
+  if (!hasAnyKnownField) return null
+
+  const imageUrl = value["imageUrl"]
+  const imageFormat = value["imageFormat"]
+  const width = value["width"]
+  const height = value["height"]
+  const license = value["license"]
+  const originalityConfirmed = value["originalityConfirmed"]
+
+  return {
+    imageUrl: typeof imageUrl === "string" ? imageUrl : undefined,
+    imageFormat: readEngineImageFormat(imageFormat),
+    width: typeof width === "number" ? width : undefined,
+    height: typeof height === "number" ? height : undefined,
+    license: readEngineImageLicense(license),
+    originalityConfirmed:
+      typeof originalityConfirmed === "boolean"
+        ? originalityConfirmed
+        : undefined,
+  }
+}
+
+function readEngineImageFormat(
+  value: unknown
+): LocalImageEngineResponse["imageFormat"] | undefined {
+  if (value === "png" || value === "webp" || value === "jpg") {
+    return value
+  }
+
+  return undefined
+}
+
+function readEngineImageLicense(
+  value: unknown
+): LocalImageEngineResponse["license"] | undefined {
+  if (
+    value === "self_owned" ||
+    value === "cc0" ||
+    value === "commercial_license"
+  ) {
+    return value
+  }
+
+  return undefined
 }
 
 function validateAdapterGenerationRequest(
