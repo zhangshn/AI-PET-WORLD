@@ -99,7 +99,9 @@ const REQUIRED_RESPONSE_FIELDS = [
   "originalityConfirmed",
 ]
 
-const ENGINE_TIMEOUT_MS = 120_000
+const DEFAULT_ENGINE_TIMEOUT_MS = 120_000
+const MIN_ENGINE_TIMEOUT_MS = 10_000
+const MAX_ENGINE_TIMEOUT_MS = 600_000
 
 export async function POST(request: Request) {
   const engineEndpoint =
@@ -265,7 +267,8 @@ async function callLocalImageEngine(input: {
   | { ok: false; error: { zh: string; en: string } }
 > {
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), ENGINE_TIMEOUT_MS)
+  const timeoutMs = readEngineTimeoutMs()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
 
   try {
     const response = await fetch(input.endpoint, {
@@ -308,15 +311,30 @@ async function callLocalImageEngine(input: {
       error: {
         zh: `真实图像引擎请求失败：${
           error instanceof Error ? error.message : String(error)
-        }`,
+        }。当前超时配置为 ${readEngineTimeoutMs()}ms。`,
         en: `The real image engine request failed: ${
           error instanceof Error ? error.message : String(error)
-        }`,
+        }. Current timeout is ${readEngineTimeoutMs()}ms.`,
       },
     }
   } finally {
     clearTimeout(timeout)
   }
+}
+
+function readEngineTimeoutMs(): number {
+  const rawValue = process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_TIMEOUT_MS?.trim()
+  const parsedValue = rawValue ? Number(rawValue) : DEFAULT_ENGINE_TIMEOUT_MS
+
+  if (
+    Number.isInteger(parsedValue) &&
+    parsedValue >= MIN_ENGINE_TIMEOUT_MS &&
+    parsedValue <= MAX_ENGINE_TIMEOUT_MS
+  ) {
+    return parsedValue
+  }
+
+  return DEFAULT_ENGINE_TIMEOUT_MS
 }
 
 function buildEngineHeaders(): Record<string, string> {

@@ -1,5 +1,24 @@
 import { NextResponse } from "next/server"
 
+const DEFAULT_ENGINE_TIMEOUT_MS = 120_000
+const MIN_ENGINE_TIMEOUT_MS = 10_000
+const MAX_ENGINE_TIMEOUT_MS = 600_000
+
+function readEngineTimeoutMs(): number {
+  const rawValue = process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_TIMEOUT_MS?.trim()
+  const parsedValue = rawValue ? Number(rawValue) : DEFAULT_ENGINE_TIMEOUT_MS
+
+  if (
+    Number.isInteger(parsedValue) &&
+    parsedValue >= MIN_ENGINE_TIMEOUT_MS &&
+    parsedValue <= MAX_ENGINE_TIMEOUT_MS
+  ) {
+    return parsedValue
+  }
+
+  return DEFAULT_ENGINE_TIMEOUT_MS
+}
+
 export async function GET() {
   const engineEndpoint =
     process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ENDPOINT?.trim() ?? null
@@ -13,6 +32,7 @@ export async function GET() {
   const configuredRequestMode =
     process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_REQUEST_MODE?.trim() ??
     "world_visual_body"
+  const engineTimeoutMs = readEngineTimeoutMs()
 
   const engineConfigured = Boolean(engineEndpoint)
 
@@ -40,7 +60,7 @@ export async function GET() {
         configuredEngineLicense === "commercial_license",
       originalityDefaultConfirmed: configuredOriginalityConfirmed,
       requestMode: configuredRequestMode,
-      timeoutMs: 120000,
+      timeoutMs: engineTimeoutMs,
     },
       engineIntegrationContract: {
         endpointEnv: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ENDPOINT",
@@ -49,6 +69,12 @@ export async function GET() {
         originalityConfirmedDefaultEnv:
           "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ORIGINALITY_CONFIRMED",
         requestModeEnv: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_REQUEST_MODE",
+        timeoutMsEnv: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_TIMEOUT_MS",
+        timeoutRangeMs: {
+          default: DEFAULT_ENGINE_TIMEOUT_MS,
+          min: MIN_ENGINE_TIMEOUT_MS,
+          max: MAX_ENGINE_TIMEOUT_MS,
+        },
         supportedRequestModes: [
           "world_visual_body",
           "prompt_only",
