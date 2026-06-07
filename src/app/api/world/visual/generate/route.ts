@@ -6,7 +6,10 @@ import {
   runWorldVisualAiImageGenerationRequest,
   writeWorldVisualCandidateRecord,
 } from "@/world/world-visual-painter"
-import type { WorldVisualPainterDecision } from "@/world/world-visual-painter"
+import type {
+  WorldVisualAiImageGenerationResult,
+  WorldVisualPainterDecision,
+} from "@/world/world-visual-painter"
 
 export async function POST() {
   const readResult = await readWorldRuntimeSaveRecord()
@@ -46,6 +49,14 @@ export async function POST() {
         ok: writeResult.ok,
         candidate: decision.aiImageCandidate,
         generationInputAudit,
+        generationResultAudit: {
+          attemptedProviderCall: false,
+          reason: "已有隐藏 AiImageCandidate，由当前决策链直接登记候选图。",
+          reasonEn:
+            "A hidden AiImageCandidate already exists in the current decision chain and was registered directly.",
+          responseContractPassed: null,
+          responseContractFailureTags: [],
+        },
         persisted: writeResult.ok,
         candidatePath: writeResult.path ?? null,
         persistenceWarnings: writeResult.warnings ?? [],
@@ -61,6 +72,7 @@ export async function POST() {
           "world_visual_generate_api",
           "hidden_candidate_persisted",
           "generation_input_audit_attached",
+          "generation_result_audit_attached",
           ...(writeResult.tags ?? []),
         ],
       },
@@ -76,12 +88,21 @@ export async function POST() {
         messageEn: decision.aiImageProviderStatus.reason.en,
         provider: decision.aiImageProviderStatus,
         generationInputAudit,
+        generationResultAudit: {
+          attemptedProviderCall: false,
+          reason: "图像生成入口尚未就绪，未调用 AI Image Generation Model。",
+          reasonEn:
+            "The image generation entry is not ready, so the AI Image Generation Model was not called.",
+          responseContractPassed: null,
+          responseContractFailureTags: [],
+        },
         displayRule: "没有 ApprovedFrame 前禁止展示。",
         displayRuleEn: "Display is blocked until ApprovedFrame exists.",
         tags: [
           "world_visual_generate_api",
           "provider_not_ready",
           "generation_input_audit_attached",
+          "generation_result_audit_attached",
         ],
       },
       { status: 409 }
@@ -93,6 +114,7 @@ export async function POST() {
     factManifest: decision.factManifest,
     promptPackage: decision.promptPackage,
   })
+  const generationResultAudit = buildGenerationResultAudit(generationResult)
   const writeResult = generationResult.candidate
     ? await writeWorldVisualCandidateRecord({
         ownerId: readResult.record.ownerId,
@@ -110,6 +132,7 @@ export async function POST() {
       ok: generationResult.ok,
       candidate: generationResult.candidate,
       generationInputAudit,
+      generationResultAudit,
       persisted: writeResult?.ok ?? false,
       candidatePath: writeResult?.path ?? null,
       persistenceWarnings: writeResult?.warnings ?? [],
@@ -122,6 +145,7 @@ export async function POST() {
       tags: [
         "world_visual_generate_api",
         "generation_input_audit_attached",
+        "generation_result_audit_attached",
         ...(writeResult?.tags ?? []),
         ...generationResult.tags,
       ],
@@ -134,6 +158,7 @@ function buildGenerationInputAudit(decision: WorldVisualPainterDecision) {
   const request = decision.aiImageGenerationRequest
   const controlSketch = request?.body.controlSketch ?? null
   const visualFixHints = request?.body.visualFixHints ?? []
+  const responseContract = request?.body.responseContract ?? null
 
   return {
     hasPromptPackage: Boolean(decision.promptPackage),
@@ -158,6 +183,21 @@ function buildGenerationInputAudit(decision: WorldVisualPainterDecision) {
       expectedResultEn: hint.expectedResultEn,
       tags: hint.tags,
     })),
+    responseContract,
+    responseContractAudit: responseContract
+      ? {
+          requiredFields: responseContract.requiredFields,
+          allowedImageFormats: responseContract.allowedImageFormats,
+          allowedLicenses: responseContract.allowedLicenses,
+          minimumWidth: responseContract.minimumWidth,
+          minimumHeight: responseContract.minimumHeight,
+          canShowToPlayer: responseContract.canShowToPlayer,
+          mustPersistAsAiImageCandidate:
+            responseContract.mustPersistAsAiImageCandidate,
+          mustPassVisualJudge: responseContract.mustPassVisualJudge,
+          tags: responseContract.tags,
+        }
+      : null,
     safety: request?.body.safety ?? null,
     imageStyle: request?.body.imageStyle ?? null,
     outputSize: request?.body.outputSize ?? null,
@@ -167,5 +207,56 @@ function buildGenerationInputAudit(decision: WorldVisualPainterDecision) {
       "生成请求只用于 AI Image Generation Model，ControlSketch 和候选图都不能直接展示。",
     displayRuleEn:
       "The generation request is only for the AI Image Generation Model. ControlSketch and candidates must not be displayed directly.",
+  }
+}
+
+function buildGenerationResultAudit(
+  generationResult: WorldVisualAiImageGenerationResult
+) {
+  const responseContractFailureTags = generationResult.tags.filter((tag) =>
+    tag.startsWith("response_contract_failed")
+  )
+  const responseContractDetailTags = generationResult.tags.filter((tag) =>
+    [
+      "missing_required_fields",
+      "empty_image_url",
+      "invalid_image_format",
+      "invalid_width",
+      "invalid_height",
+      "image_size_below_contract",
+      "invalid_license",
+      "originality_not_confirmed",
+      "unsafe_contract_gate",
+    ].includes(tag)
+  )
+
+  return {
+    attemptedProviderCall: true,
+    ok: generationResult.ok,
+    candidateCreated: Boolean(generationResult.candidate),
+    responseContractPassed: generationResult.tags.includes(
+      "response_contract_passed"
+    ),
+    responseContractFailed: generationResult.tags.includes(
+      "response_contract_failed"
+    ),
+    responseContractFailureTags: [
+      ...responseContractFailureTags,
+      ...responseContractDetailTags,
+    ],
+    error: generationResult.error,
+    candidateId: generationResult.candidate?.candidateId ?? null,
+    imageFormat: generationResult.candidate?.imageFormat ?? null,
+    width: generationResult.candidate?.width ?? null,
+    height: generationResult.candidate?.height ?? null,
+    license: generationResult.candidate?.license ?? null,
+    originalityConfirmed:
+      generationResult.candidate?.originalityConfirmed ?? null,
+    canShowToPlayer: false,
+    displayRule:
+      "模型返回结果必须先变成隐藏 AiImageCandidate，再进入 VisualJudge。",
+    displayRuleEn:
+      "The model response must first become a hidden AiImageCandidate and then enter VisualJudge.",
+    tags: generationResult.tags,
   }
 }
