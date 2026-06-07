@@ -119,6 +119,10 @@ export async function GET() {
 }
 
 function getHealthEndpoint(): string | null {
+  const explicitEndpoint =
+    process.env.AI_PET_WORLD_LOCAL_IMAGE_MODEL_HEALTH_ENDPOINT?.trim()
+  if (explicitEndpoint) return normalizeEndpoint(explicitEndpoint)
+
   const endpoint = process.env.AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT?.trim()
   if (!endpoint) return null
 
@@ -128,6 +132,14 @@ function getHealthEndpoint(): string | null {
 
     url.pathname = `${url.pathname.replace(/\/+$/, "")}/health`
     return url.toString()
+  } catch {
+    return null
+  }
+}
+
+function normalizeEndpoint(endpoint: string): string | null {
+  try {
+    return new URL(endpoint).toString()
   } catch {
     return null
   }

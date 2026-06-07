@@ -15,6 +15,12 @@ export async function GET() {
     hasLocalModelEndpoint: Boolean(
       process.env.AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT?.trim()
     ),
+    hasLocalModelHealthEndpoint: Boolean(
+      process.env.AI_PET_WORLD_LOCAL_IMAGE_MODEL_HEALTH_ENDPOINT?.trim()
+    ),
+    hasLocalModelDryRunEndpoint: Boolean(
+      process.env.AI_PET_WORLD_LOCAL_IMAGE_MODEL_DRY_RUN_ENDPOINT?.trim()
+    ),
     hasManualImageUrl: Boolean(process.env.AI_PET_WORLD_MANUAL_IMAGE_URL?.trim()),
     hasManualImageWidth: Boolean(
       process.env.AI_PET_WORLD_MANUAL_IMAGE_WIDTH?.trim()
@@ -39,6 +45,8 @@ export async function GET() {
       environmentAudit,
       localModelIntegrationContract: {
         endpointEnv: "AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT",
+        healthEndpointEnv: "AI_PET_WORLD_LOCAL_IMAGE_MODEL_HEALTH_ENDPOINT",
+        dryRunEndpointEnv: "AI_PET_WORLD_LOCAL_IMAGE_MODEL_DRY_RUN_ENDPOINT",
         providerEnv: "AI_PET_WORLD_IMAGE_PROVIDER=local_model",
         method: "POST",
         requestContentType: "application/json",
@@ -100,6 +108,20 @@ export async function GET() {
           {
             zh: "返回结果必须通过 Runner responseContract 校验、VisualJudge 图片审核、ApprovedFrame 硬闸门后，/world 才能展示。",
             en: "The response must pass Runner responseContract validation, VisualJudge image review, and ApprovedFrame hard gate before /world can display it.",
+          },
+        ],
+        endpointRules: [
+          {
+            zh: "正式生成会 POST 到 AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT。",
+            en: "Formal generation posts to AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT.",
+          },
+          {
+            zh: "health 优先读取 AI_PET_WORLD_LOCAL_IMAGE_MODEL_HEALTH_ENDPOINT；未配置时从主 endpoint 推导 /health。",
+            en: "health prefers AI_PET_WORLD_LOCAL_IMAGE_MODEL_HEALTH_ENDPOINT; when missing, it derives /health from the main endpoint.",
+          },
+          {
+            zh: "dry-run 优先读取 AI_PET_WORLD_LOCAL_IMAGE_MODEL_DRY_RUN_ENDPOINT；未配置时从主 endpoint 推导 /dry-run。",
+            en: "dry-run prefers AI_PET_WORLD_LOCAL_IMAGE_MODEL_DRY_RUN_ENDPOINT; when missing, it derives /dry-run from the main endpoint.",
           },
         ],
       },

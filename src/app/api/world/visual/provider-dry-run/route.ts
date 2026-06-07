@@ -214,6 +214,10 @@ export async function GET() {
 }
 
 function getDryRunEndpoint(): string | null {
+  const explicitEndpoint =
+    process.env.AI_PET_WORLD_LOCAL_IMAGE_MODEL_DRY_RUN_ENDPOINT?.trim()
+  if (explicitEndpoint) return normalizeEndpoint(explicitEndpoint)
+
   const endpoint = process.env.AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT?.trim()
   if (!endpoint) return null
 
@@ -223,6 +227,14 @@ function getDryRunEndpoint(): string | null {
 
     url.pathname = `${url.pathname.replace(/\/+$/, "")}/dry-run`
     return url.toString()
+  } catch {
+    return null
+  }
+}
+
+function normalizeEndpoint(endpoint: string): string | null {
+  try {
+    return new URL(endpoint).toString()
   } catch {
     return null
   }
