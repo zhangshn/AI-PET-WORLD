@@ -310,11 +310,28 @@ export type WorldVisualReviewCheck = {
   tags: string[]
 }
 
+export type WorldVisualImageInspectionSummary = {
+  ok: boolean
+  format: "png" | "webp" | "jpg" | null
+  width: number | null
+  height: number | null
+  contentType: string | null
+  byteLength: number
+  minimumPayloadBytes: number
+  payloadQualityPassed: boolean
+  sha256: string | null
+  error: string | null
+  errorZh: string | null
+  canShowToPlayer: false
+  tags: string[]
+}
+
 export type WorldVisualReviewReport = {
   status: "not_run" | "failed" | "passed_candidate"
   canShowToPlayer: false
   reason: WorldVisualBilingualText
   score: number
+  imageInspectionSummary: WorldVisualImageInspectionSummary
   checks: WorldVisualReviewCheck[]
   requiredChecks: WorldVisualBilingualText[]
   fixInstructions: WorldVisualBilingualText[]

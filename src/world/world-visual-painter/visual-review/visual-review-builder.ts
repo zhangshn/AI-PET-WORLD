@@ -4,6 +4,7 @@ import { createHash } from "node:crypto"
 import type {
   WorldVisualAiImageCandidate,
   WorldVisualFactManifest,
+  WorldVisualImageInspectionSummary,
   WorldVisualReviewCheck,
   WorldVisualReviewReport,
 } from "../world-visual-painter-schema"
@@ -81,6 +82,7 @@ export async function buildWorldVisualReviewReport(input: {
             en: "Visual review failed: the candidate is missing, the image bytes are invalid, the format is spoofed, the size is invalid, fact links are incomplete, license confirmation is missing, or formal visual quality proof is incomplete.",
           },
     score,
+    imageInspectionSummary: buildImageInspectionSummary(inspection),
     checks,
     requiredChecks: [
       {
@@ -126,6 +128,41 @@ export async function buildWorldVisualReviewReport(input: {
       "ai_bitmap_candidate_required",
       "display_blocked_until_approved_frame",
       "no_programmatic_renderer",
+    ],
+  }
+}
+
+function buildImageInspectionSummary(
+  inspection: ImageInspectionResult
+): WorldVisualImageInspectionSummary {
+  const minimumPayloadBytes = getMinimumImageByteLength(
+    inspection.width,
+    inspection.height
+  )
+  const payloadQualityPassed =
+    inspection.ok && inspection.byteLength >= minimumPayloadBytes
+
+  return {
+    ok: inspection.ok,
+    format: inspection.format,
+    width: inspection.width,
+    height: inspection.height,
+    contentType: inspection.contentType,
+    byteLength: inspection.byteLength,
+    minimumPayloadBytes,
+    payloadQualityPassed,
+    sha256: inspection.sha256,
+    error: inspection.error,
+    errorZh: inspection.errorZh,
+    canShowToPlayer: false,
+    tags: [
+      "image_inspection_summary",
+      inspection.ok ? "inspection_ok" : "inspection_failed",
+      payloadQualityPassed
+        ? "payload_quality_passed"
+        : "payload_quality_failed",
+      inspection.sha256 ? "sha256_present" : "sha256_missing",
+      "not_player_visible",
     ],
   }
 }
