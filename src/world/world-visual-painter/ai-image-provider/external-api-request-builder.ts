@@ -79,6 +79,27 @@ function buildRequest(input: {
   const visualFixHints = buildVisualFixHints(input.latestFixPlan)
 
   const body: WorldVisualAiImageGenerationRequestBody = {
+    modelTask: {
+      taskKind: "generate_hidden_world_bitmap_candidate",
+      modelRole: "ai_image_generation_model",
+      outputPurpose: "hidden_ai_image_candidate",
+      worldFrameKind: "static_top_down_pixel_world_frame",
+      mustReturnResponseContract: true,
+      mustNotDisplayDirectly: true,
+      mustNotRewriteWorldFacts: true,
+      mustNotUseProgrammaticRenderer: true,
+      mustNotCopyUnlicensedThirdPartyWorks: true,
+      canShowToPlayer: false,
+      tags: [
+        "ai_image_generation_model_task",
+        "hidden_candidate_output",
+        "static_top_down_pixel_world_frame",
+        "response_contract_required",
+        "visual_judge_required",
+        "world_facts_locked",
+        "not_player_visible",
+      ],
+    },
     positivePrompt: input.promptPackage.positivePrompt.en,
     negativePrompt: input.promptPackage.negativePrompt.en,
     width: outputSize.width,
@@ -172,6 +193,7 @@ function buildRequest(input: {
     tags: [
       "ai_image_generation_request",
       input.providerKind,
+      "model_task_bound",
       "prompt_package_bound",
       "control_sketch_bound",
       "response_contract_bound",

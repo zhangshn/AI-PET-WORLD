@@ -472,7 +472,22 @@ export type WorldVisualImageGenerationFixHint = {
   tags: string[]
 }
 
+export type WorldVisualImageGenerationModelTask = {
+  taskKind: "generate_hidden_world_bitmap_candidate"
+  modelRole: "ai_image_generation_model"
+  outputPurpose: "hidden_ai_image_candidate"
+  worldFrameKind: "static_top_down_pixel_world_frame"
+  mustReturnResponseContract: true
+  mustNotDisplayDirectly: true
+  mustNotRewriteWorldFacts: true
+  mustNotUseProgrammaticRenderer: true
+  mustNotCopyUnlicensedThirdPartyWorks: true
+  canShowToPlayer: false
+  tags: string[]
+}
+
 export type WorldVisualAiImageGenerationRequestBody = {
+  modelTask: WorldVisualImageGenerationModelTask
   positivePrompt: string
   negativePrompt: string
   width: number

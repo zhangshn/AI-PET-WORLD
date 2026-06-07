@@ -164,7 +164,26 @@ function buildGenerationInputAudit(decision: WorldVisualPainterDecision) {
     hasPromptPackage: Boolean(decision.promptPackage),
     hasAiImageGenerationRequest: Boolean(request),
     requestId: request?.requestId ?? null,
-    providerKind: request?.providerKind ?? decision.aiImageProviderStatus.providerKind,
+    providerKind:
+      request?.providerKind ?? decision.aiImageProviderStatus.providerKind,
+    modelTask: request?.body.modelTask ?? null,
+    modelTaskAudit: request?.body.modelTask
+       ? {
+        taskKind: request.body.modelTask.taskKind,
+        outputPurpose: request.body.modelTask.outputPurpose,
+        worldFrameKind: request.body.modelTask.worldFrameKind,
+        mustReturnResponseContract:
+          request.body.modelTask.mustReturnResponseContract,
+        mustNotDisplayDirectly: request.body.modelTask.mustNotDisplayDirectly,
+        mustNotRewriteWorldFacts: request.body.modelTask.mustNotRewriteWorldFacts,
+        mustNotUseProgrammaticRenderer:
+          request.body.modelTask.mustNotUseProgrammaticRenderer,
+        mustNotCopyUnlicensedThirdPartyWorks:
+          request.body.modelTask.mustNotCopyUnlicensedThirdPartyWorks,
+        canShowToPlayer: request.body.modelTask.canShowToPlayer,
+        tags: request.body.modelTask.tags,
+      }
+    : null,
     hasControlSketch: Boolean(controlSketch),
     controlSketchId: controlSketch?.controlSketchId ?? null,
     controlSketchCanShowToPlayer: controlSketch?.canShowToPlayer ?? null,

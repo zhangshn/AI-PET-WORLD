@@ -69,7 +69,9 @@ export async function GET() {
       generationRequestAudit: {
         hasAiImageGenerationRequest: Boolean(request),
         requestId: request?.requestId ?? null,
-        providerKind: request?.providerKind ?? decision.aiImageProviderStatus.providerKind,
+        providerKind:
+          request?.providerKind ?? decision.aiImageProviderStatus.providerKind,
+        modelTask: request?.body.modelTask ?? null,
         endpointConfigured: Boolean(request?.endpoint),
         method: request?.method ?? null,
         hasPromptPackage: Boolean(decision.promptPackage),
