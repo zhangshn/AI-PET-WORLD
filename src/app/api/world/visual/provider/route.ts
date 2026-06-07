@@ -37,6 +37,72 @@ export async function GET() {
       ok: true,
       providerStatus,
       environmentAudit,
+      localModelIntegrationContract: {
+        endpointEnv: "AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT",
+        providerEnv: "AI_PET_WORLD_IMAGE_PROVIDER=local_model",
+        method: "POST",
+        requestContentType: "application/json",
+        requestBodyShape: {
+          modelTask: {
+            taskKind: "generate_hidden_world_bitmap_candidate",
+            modelRole: "ai_image_generation_model",
+            outputPurpose: "hidden_ai_image_candidate",
+            worldFrameKind: "static_top_down_pixel_world_frame",
+            mustReturnResponseContract: true,
+            mustNotDisplayDirectly: true,
+            mustNotRewriteWorldFacts: true,
+            mustNotUseProgrammaticRenderer: true,
+            mustNotCopyUnlicensedThirdPartyWorks: true,
+            canShowToPlayer: false,
+          },
+          positivePrompt: "string",
+          negativePrompt: "string",
+          width: "number",
+          height: "number",
+          imageFormat: "png | webp | jpg",
+          promptPackage: "WorldVisualPromptPackage excerpt",
+          controlSketch: "composition_control_only, not player visible",
+          outputSize: "requested output size",
+          imageStyle: "top-down pixel world frame style target",
+          safety: "hard visual safety flags",
+          responseContract:
+            "required response fields and display gate contract",
+          visualFixHints:
+            "previous VisualFix actions, empty array when not needed",
+          metadata:
+            "worldId, tick, promptPackageId, sourceFactIds, controlSketchId, visualFixPlanId",
+        },
+        requiredResponseShape: {
+          imageUrl: "string",
+          imageFormat: "png | webp | jpg",
+          width: "number",
+          height: "number",
+          license: "self_owned | cc0 | commercial_license",
+          originalityConfirmed: "true",
+        },
+        responseRules: [
+          {
+            zh: "返回结果必须是真实 PNG/WebP/JPG 位图 URL，不能是 SVG、HTML、JSON、调试图或占位图。",
+            en: "The response must point to a real PNG/WebP/JPG bitmap URL, not SVG, HTML, JSON, debug images, or placeholders.",
+          },
+          {
+            zh: "返回结果只会保存为隐藏 AiImageCandidate，不能直接展示给玩家。",
+            en: "The response is only persisted as a hidden AiImageCandidate and must not be displayed directly.",
+          },
+          {
+            zh: "模型不得改写世界事实，只能根据 PromptPackage、ControlSketch、VisualFixHints 改善视觉表达。",
+            en: "The model must not rewrite world facts, and may only improve visual expression from PromptPackage, ControlSketch, and VisualFixHints.",
+          },
+          {
+            zh: "模型必须确认授权与原创安全：license 必须是 self_owned、cc0 或 commercial_license，originalityConfirmed 必须为 true。",
+            en: "The model must confirm license and originality safety: license must be self_owned, cc0, or commercial_license, and originalityConfirmed must be true.",
+          },
+          {
+            zh: "返回结果必须通过 Runner responseContract 校验、VisualJudge 图片审核、ApprovedFrame 硬闸门后，/world 才能展示。",
+            en: "The response must pass Runner responseContract validation, VisualJudge image review, and ApprovedFrame hard gate before /world can display it.",
+          },
+        ],
+      },
       generationGate: {
         canGenerateAutomatically: providerStatus.canGenerateAutomatically,
         canUseManualImport: providerStatus.canUseManualImport,
@@ -66,6 +132,7 @@ export async function GET() {
         providerStatus.canUseManualImport
           ? "manual_import_available"
           : "manual_import_unavailable",
+        "local_model_contract_exposed",
         "status_only",
         "does_not_generate",
         "does_not_modify_world_facts",
@@ -76,7 +143,9 @@ export async function GET() {
   )
 }
 
-function buildNextStep(providerStatus: ReturnType<typeof readWorldVisualAiImageProviderStatus>) {
+function buildNextStep(
+  providerStatus: ReturnType<typeof readWorldVisualAiImageProviderStatus>
+) {
   if (providerStatus.canGenerateAutomatically) {
     return {
       zh: "图像生成入口已就绪。下一步调用 POST /api/world/visual/generate 生成隐藏候选图。",
