@@ -3,6 +3,7 @@ import path from "node:path"
 
 import type {
   WorldVisualAiImageCandidate,
+  WorldVisualAiImageGenerationRequest,
   WorldVisualFactManifest,
   WorldVisualPromptPackage,
 } from "../world-visual-painter-schema"
@@ -21,6 +22,7 @@ export type WorldVisualCandidateRecord = {
   savedAt: string
   candidate: WorldVisualAiImageCandidate
   promptPackage: WorldVisualPromptPackage
+  aiImageGenerationRequest: WorldVisualAiImageGenerationRequest | null
   sourceFactIds: string[]
   canShowToPlayer: false
   tags: string[]
@@ -50,6 +52,7 @@ export async function writeWorldVisualCandidateRecord(input: {
   candidate: WorldVisualAiImageCandidate
   promptPackage: WorldVisualPromptPackage
   factManifest: WorldVisualFactManifest
+  aiImageGenerationRequest?: WorldVisualAiImageGenerationRequest | null
 }): Promise<WorldVisualCandidateStoreWriteResult> {
   const record: WorldVisualCandidateRecord = {
     version: "world-visual-candidate-v1",
@@ -59,11 +62,15 @@ export async function writeWorldVisualCandidateRecord(input: {
     savedAt: new Date().toISOString(),
     candidate: input.candidate,
     promptPackage: input.promptPackage,
+    aiImageGenerationRequest: input.aiImageGenerationRequest ?? null,
     sourceFactIds: input.factManifest.sourceFactIds,
     canShowToPlayer: false,
     tags: [
       "world_visual_candidate_record",
       "hidden_candidate",
+      input.aiImageGenerationRequest
+        ? "ai_image_generation_request_bound"
+        : "no_ai_image_generation_request",
       "approved_frame_required",
     ],
   }
@@ -112,13 +119,14 @@ export async function readLatestWorldVisualCandidateRecord(input: {
 
     const raw = await readFile(index.path, "utf8")
     const parsed = JSON.parse(raw) as Partial<WorldVisualCandidateRecord>
-    if (!isWorldVisualCandidateRecord(parsed)) {
+    const normalized = normalizeWorldVisualCandidateRecord(parsed)
+    if (!normalized) {
       return invalidRead(index.path, "Visual candidate record shape is invalid.")
     }
 
     return {
       status: "found",
-      record: parsed,
+      record: normalized,
       path: index.path,
       message: "Visual candidate record loaded.",
       warnings: [],
@@ -182,6 +190,7 @@ async function writeLatestWorldVisualCandidateIndex(input: {
     worldId: input.record.worldId,
     tick: input.record.tick,
     candidateId: input.record.candidate.candidateId,
+    hasAiImageGenerationRequest: Boolean(input.record.aiImageGenerationRequest),
     path: input.filePath,
     updatedAt: input.record.savedAt,
     tags: ["world_visual_candidate_latest_index"],
@@ -206,21 +215,37 @@ function invalidRead(
   }
 }
 
-function isWorldVisualCandidateRecord(
+function normalizeWorldVisualCandidateRecord(
   value: Partial<WorldVisualCandidateRecord>
-): value is WorldVisualCandidateRecord {
-  return (
-    value.version === "world-visual-candidate-v1" &&
-    typeof value.ownerId === "string" &&
-    typeof value.worldId === "string" &&
-    typeof value.tick === "number" &&
-    typeof value.savedAt === "string" &&
-    Boolean(value.candidate) &&
-    Boolean(value.promptPackage) &&
-    Array.isArray(value.sourceFactIds) &&
-    value.canShowToPlayer === false &&
-    Array.isArray(value.tags)
-  )
+): WorldVisualCandidateRecord | null {
+  if (
+    value.version !== "world-visual-candidate-v1" ||
+    typeof value.ownerId !== "string" ||
+    typeof value.worldId !== "string" ||
+    typeof value.tick !== "number" ||
+    typeof value.savedAt !== "string" ||
+    !value.candidate ||
+    !value.promptPackage ||
+    !Array.isArray(value.sourceFactIds) ||
+    value.canShowToPlayer !== false ||
+    !Array.isArray(value.tags)
+  ) {
+    return null
+  }
+
+  return {
+    version: value.version,
+    ownerId: value.ownerId,
+    worldId: value.worldId,
+    tick: value.tick,
+    savedAt: value.savedAt,
+    candidate: value.candidate,
+    promptPackage: value.promptPackage,
+    aiImageGenerationRequest: value.aiImageGenerationRequest ?? null,
+    sourceFactIds: value.sourceFactIds,
+    canShowToPlayer: value.canShowToPlayer,
+    tags: value.tags,
+  }
 }
 
 function safeFileToken(value: string): string {

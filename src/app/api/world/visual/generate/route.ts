@@ -36,6 +36,7 @@ export async function POST() {
       candidate: decision.aiImageCandidate,
       promptPackage: decision.promptPackage,
       factManifest: decision.factManifest,
+      aiImageGenerationRequest: decision.aiImageGenerationRequest,
     })
 
     return NextResponse.json(
@@ -91,6 +92,7 @@ export async function POST() {
         candidate: generationResult.candidate,
         promptPackage: decision.promptPackage,
         factManifest: decision.factManifest,
+        aiImageGenerationRequest: decision.aiImageGenerationRequest,
       })
     : null
 
