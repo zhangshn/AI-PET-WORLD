@@ -61,6 +61,9 @@ export async function POST() {
           reasonEn:
             "A hidden AiImageCandidate already exists in the current decision chain and was registered directly.",
           responseContractPassed: null,
+          responseContractFailed: false,
+          responseContractNotConfirmed: false,
+          localModelImplementationNotConnected: false,
           responseContractFailureTags: [],
         },
         pipelineNextStep: buildPipelineNextStep({
@@ -69,6 +72,7 @@ export async function POST() {
           persisted: writeResult.ok,
           providerCalled: false,
           responseContractFailed: false,
+          localModelImplementationNotConnected: false,
         }),
         persisted: writeResult.ok,
         candidatePath: writeResult.path ?? null,
@@ -108,6 +112,9 @@ export async function POST() {
           reasonEn:
             "The image generation entry is not ready, so the AI Image Generation Model was not called.",
           responseContractPassed: null,
+          responseContractFailed: false,
+          responseContractNotConfirmed: false,
+          localModelImplementationNotConnected: false,
           responseContractFailureTags: [],
         },
         pipelineNextStep: {
@@ -161,6 +168,8 @@ export async function POST() {
         persisted,
         providerCalled: true,
         responseContractFailed: generationResultAudit.responseContractFailed,
+        localModelImplementationNotConnected:
+          generationResultAudit.localModelImplementationNotConnected,
       }),
       persisted,
       candidatePath: writeResult?.path ?? null,
@@ -280,6 +289,12 @@ function buildGenerationResultAudit(
       "unsafe_contract_gate",
     ].includes(tag)
   )
+  const localModelImplementationNotConnected = generationResult.tags.includes(
+    "local_model_implementation_not_connected"
+  )
+  const responseContractNotConfirmed = generationResult.tags.includes(
+    "response_contract_not_confirmed"
+  )
 
   return {
     attemptedProviderCall: true,
@@ -291,6 +306,8 @@ function buildGenerationResultAudit(
     responseContractFailed: generationResult.tags.includes(
       "response_contract_failed"
     ),
+    responseContractNotConfirmed,
+    localModelImplementationNotConnected,
     responseContractFailureTags: [
       ...responseContractFailureTags,
       ...responseContractDetailTags,
@@ -381,6 +398,7 @@ function buildPipelineNextStep(input: {
   persisted: boolean
   providerCalled: boolean
   responseContractFailed: boolean
+  localModelImplementationNotConnected: boolean
 }) {
   if (input.generationOk && input.candidateCreated && input.persisted) {
     return {
@@ -395,6 +413,22 @@ function buildPipelineNextStep(input: {
       zh: "图像模型已返回合格候选图，但候选图保存失败。先修复 data/world-visual-candidates 写入问题，禁止进入 VisualJudge。",
       en: "The image model returned a valid candidate, but persistence failed. Fix data/world-visual-candidates persistence before VisualJudge.",
       endpoint: null,
+    }
+  }
+
+  if (input.localModelImplementationNotConnected) {
+    return {
+      zh: "本地图像模型入口已收到正式生成请求，但真实 local image model implementation 尚未接入。下一步应连接真实 local image model，并确认它返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
+      en: "The local image model entry received the formal generation request, but no real local image model implementation is connected. Next connect a real local image model and confirm it returns imageUrl / imageFormat / width / height / license / originalityConfirmed.",
+      endpoint: "GET /api/world/visual/provider-dry-run",
+      requiredResponseShape: [
+        "imageUrl",
+        "imageFormat",
+        "width",
+        "height",
+        "license",
+        "originalityConfirmed",
+      ],
     }
   }
 
