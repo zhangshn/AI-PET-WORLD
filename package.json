@@ -4,8 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "image-engine": "node tools/local-image-engine/server.mjs",
-    "real-image-upstream": "node tools/real-image-upstream/server.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
