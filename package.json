@@ -10,7 +10,7 @@
     "check:encoding": "node scripts/check-source-encoding.mjs",
     "inspect:visual-painter": "node scripts/inspect-world-visual-painter.mjs",
     "verify:local-image-model": "node scripts/verify-local-image-model-contract.mjs",
-    "local-image-model:contract-server": "python services/local-image-model/server.py",
+    "local-image-model:contract-server": "node services/local-image-model/server.mjs",
     "smoke:runtime": "node scripts/run-world-runtime-smoke.cjs",
     "smoke:space": "node scripts/run-world-space-smoke.cjs",
     "smoke:trace": "node scripts/run-world-trace-smoke.cjs",
