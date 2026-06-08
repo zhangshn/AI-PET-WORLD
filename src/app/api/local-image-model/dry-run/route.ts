@@ -89,10 +89,11 @@ export async function POST(request: Request) {
 
   const understandsWorldFactsLocked =
     Array.isArray(metadata?.sourceFactIds) &&
+    metadata.sourceFactIds.length > 0 &&
     metadata?.canShowToPlayer === false &&
     metadata?.cannotApprove === true
 
-  const ok =
+  const requestContractValid =
     body.dryRun === true &&
     understandsModelTask &&
     understandsPromptPackage &&
@@ -101,41 +102,82 @@ export async function POST(request: Request) {
     understandsVisualFixHints &&
     understandsWorldFactsLocked
 
+  if (!requestContractValid) {
+    return NextResponse.json(
+      {
+        ok: false,
+        status: "local_image_model_dry_run_request_invalid",
+        model: "ai-pet-world-local-image-model-adapter",
+        version: "mvp-adapter-1",
+        requestContractValid,
+        understandsModelTask,
+        understandsPromptPackage,
+        understandsControlSketch,
+        understandsResponseContract,
+        understandsVisualFixHints,
+        understandsWorldFactsLocked,
+        requiredResponseShape: REQUIRED_RESPONSE_FIELDS,
+        willReturnImageUrl: false,
+        willReturnImageFormat: false,
+        willReturnWidth: false,
+        willReturnHeight: false,
+        willReturnLicense: false,
+        willReturnOriginalityConfirmed: false,
+        willPersistOnlyAsHiddenCandidate: false,
+        message: "本地图像模型 dry-run 请求契约检查未通过。",
+        messageEn: "The local image model dry-run request contract check failed.",
+        canShowToPlayer: false,
+        tags: [
+          "local_image_model_dry_run",
+          "request_contract_failed",
+          "does_not_generate",
+          "not_player_visible",
+        ],
+      },
+      { status: 422 }
+    )
+  }
+
   return NextResponse.json(
     {
-      ok,
-      status: ok
-        ? "local_image_model_dry_run_passed"
-        : "local_image_model_dry_run_failed",
+      ok: false,
+      status: "local_image_model_implementation_not_connected",
       model: "ai-pet-world-local-image-model-adapter",
       version: "mvp-adapter-1",
+      requestContractValid,
       understandsModelTask,
       understandsPromptPackage,
       understandsControlSketch,
       understandsResponseContract,
       understandsVisualFixHints,
       understandsWorldFactsLocked,
-      willReturnImageUrl: true,
-      willReturnImageFormat: true,
-      willReturnWidth: true,
-      willReturnHeight: true,
-      willReturnLicense: true,
-      willReturnOriginalityConfirmed: true,
-      willPersistOnlyAsHiddenCandidate: true,
-      message: ok
-        ? "本地图像模型 dry-run 契约检查通过。"
-        : "本地图像模型 dry-run 契约检查未通过。",
-      messageEn: ok
-        ? "The local image model dry-run contract check passed."
-        : "The local image model dry-run contract check failed.",
+      requiredResponseShape: REQUIRED_RESPONSE_FIELDS,
+      willReturnImageUrl: false,
+      willReturnImageFormat: false,
+      willReturnWidth: false,
+      willReturnHeight: false,
+      willReturnLicense: false,
+      willReturnOriginalityConfirmed: false,
+      willPersistOnlyAsHiddenCandidate: false,
+      message:
+        "本地图像模型适配器理解正式视觉请求契约，但当前没有接入真实 local image model implementation，因此不能承诺返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
+      messageEn:
+        "The local image model adapter understands the formal visual request contract, but no real local image model implementation is connected, so it cannot promise imageUrl / imageFormat / width / height / license / originalityConfirmed.",
+      nextStep: {
+        zh: "根据 GPT_HANDOFF.md，下一步应连接真实 local image model；真实模型的 dry-run 必须声明会返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
+        en: "According to GPT_HANDOFF.md, next connect a real local image model; the real model dry-run must declare that it will return imageUrl / imageFormat / width / height / license / originalityConfirmed.",
+      },
       canShowToPlayer: false,
       tags: [
         "local_image_model_dry_run",
-        ok ? "contract_passed" : "contract_failed",
+        "implementation_not_connected",
+        "request_contract_checked",
+        "required_response_shape_exposed",
         "does_not_generate",
+        "fake_image_forbidden",
         "not_player_visible",
       ],
     },
-    { status: ok ? 200 : 422 }
+    { status: 501 }
   )
 }
