@@ -8,6 +8,15 @@ import {
   readWorldVisualAiImageProviderStatus,
 } from "@/world/world-visual-painter"
 
+const REQUIRED_RESPONSE_SHAPE = [
+  "imageUrl",
+  "imageFormat",
+  "width",
+  "height",
+  "license",
+  "originalityConfirmed",
+]
+
 export async function GET() {
   const runtimeReadResult = await readWorldRuntimeSaveRecord()
 
@@ -20,6 +29,7 @@ export async function GET() {
         messageEn:
           "Runtime world has not been created, so visual pipeline status cannot be read.",
         readStatus: runtimeReadResult.status,
+        requiredResponseShape: REQUIRED_RESPONSE_SHAPE,
         canShowToPlayer: false,
         runtimeRenderGate: {
           canRuntimeRender: false,
@@ -28,7 +38,16 @@ export async function GET() {
           reasonEn:
             "Runtime world is missing, so Runtime Render must remain blocked.",
         },
-        tags: ["world_visual_status_api", "runtime_save_required"],
+        nextStep: {
+          zh: "先创建世界，再读取视觉链路状态。",
+          en: "Create the world first, then read visual pipeline status.",
+          endpoint: "/create-world",
+        },
+        tags: [
+          "world_visual_status_api",
+          "runtime_save_required",
+          "display_blocked",
+        ],
       },
       { status: 409 }
     )
@@ -49,6 +68,7 @@ export async function GET() {
   const fixPlanRecord = fixPlanReadResult.record
   const approvedFrameRecord = approvedFrameReadResult.record
   const approvedFrame = approvedFrameRecord?.approvedFrame ?? null
+
   const canRuntimeRender =
     approvedFrameReadResult.status === "found" &&
     approvedFrameRecord?.canShowToPlayer === true &&
@@ -58,27 +78,27 @@ export async function GET() {
     {
       ok: true,
       status: canRuntimeRender ? "runtime_render_ready" : "blocked",
-    runtime: {
-      ownerId,
-      worldId,
-      tick: runtimeReadResult.record.tick,
-      hasRuntimeWorld: true,
-    },
-    provider: {
-      providerKind: providerStatus.providerKind,
-      configured: providerStatus.configured,
-      canGenerateAutomatically: providerStatus.canGenerateAutomatically,
-      canUseManualImport: providerStatus.canUseManualImport,
-      reason: providerStatus.reason,
-    },
-    pipeline: {
+      runtime: {
+        ownerId,
+        worldId,
+        tick: runtimeReadResult.record.tick,
+        hasRuntimeWorld: true,
+      },
+      provider: {
+        providerKind: providerStatus.providerKind,
+        configured: providerStatus.configured,
+        canGenerateAutomatically: providerStatus.canGenerateAutomatically,
+        canUseManualImport: providerStatus.canUseManualImport,
+        reason: providerStatus.reason,
+      },
+      requiredResponseShape: REQUIRED_RESPONSE_SHAPE,
+      pipeline: {
         candidate: {
           status: candidateReadResult.status,
           exists: Boolean(candidateRecord),
           candidateId: candidateRecord?.candidate.candidateId ?? null,
           providerKind: candidateRecord?.candidate.providerKind ?? null,
-          canShowToPlayer:
-            candidateRecord?.candidate.canShowToPlayer ?? null,
+          canShowToPlayer: candidateRecord?.candidate.canShowToPlayer ?? null,
           hasPromptPackage: Boolean(candidateRecord?.promptPackage),
           hasAiImageGenerationRequest: Boolean(
             candidateRecord?.aiImageGenerationRequest
@@ -176,6 +196,7 @@ export async function GET() {
       tags: [
         "world_visual_status_api",
         canRuntimeRender ? "runtime_render_ready" : "display_blocked",
+        "required_response_shape_exposed",
         "status_only",
         "does_not_generate",
         "does_not_modify_world_facts",
@@ -184,6 +205,7 @@ export async function GET() {
     { status: 200 }
   )
 }
+
 function buildImageUrlAudit(imageUrl: string | null) {
   if (!imageUrl) {
     return {
@@ -242,6 +264,7 @@ function buildImageUrlAudit(imageUrl: string | null) {
     }
   }
 }
+
 function buildGenerationAcceptanceChecklist(input: {
   providerKind: string
   providerConfigured: boolean
@@ -252,7 +275,21 @@ function buildGenerationAcceptanceChecklist(input: {
   hasApprovedFrame: boolean
   canRuntimeRender: boolean
 }) {
+  const localModelSelected = input.providerKind === "local_model"
+
   return [
+    {
+      id: "provider_selected",
+      passed: input.providerKind !== "not_configured",
+      zh: "图像生成入口类型已选择。",
+      en: "Image generation provider kind is selected.",
+      endpoint: "GET /api/world/visual/provider",
+      requiredBeforeGenerate: true,
+      tags: [
+        "provider",
+        input.providerKind !== "not_configured" ? "passed" : "pending",
+      ],
+    },
     {
       id: "provider_configured",
       passed: input.providerConfigured,
@@ -263,33 +300,52 @@ function buildGenerationAcceptanceChecklist(input: {
       tags: ["provider", input.providerConfigured ? "passed" : "pending"],
     },
     {
-      id: "local_model_health_checked",
-      passed: input.providerKind !== "local_model" || input.providerConfigured,
-      zh: "如果使用本地图像模型，先检查 health。",
-      en: "If using local_model, check health first.",
-      endpoint:
-        input.providerKind === "local_model"
-          ? "GET /api/world/visual/provider-health"
-          : null,
-      requiredBeforeGenerate: input.providerKind === "local_model",
+      id: "required_response_shape_known",
+      passed: true,
+      zh: "正式视觉链路要求 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
+      en: "The formal visual pipeline requires imageUrl / imageFormat / width / height / license / originalityConfirmed.",
+      endpoint: "GET /api/world/visual/provider",
+      requiredBeforeGenerate: true,
+      requiredResponseShape: REQUIRED_RESPONSE_SHAPE,
+      tags: ["response_contract", "passed"],
+    },
+    {
+      id: "local_model_health_required",
+      passed: !localModelSelected,
+      zh: localModelSelected
+        ? "当前使用 local_model，生成前需要先调用 provider-health。"
+        : "当前不是 local_model，不需要本地图像模型 health 检查。",
+      en: localModelSelected
+        ? "local_model is selected, so provider-health should be called before generation."
+        : "The current provider is not local_model, so local model health is not required.",
+      endpoint: localModelSelected
+        ? "GET /api/world/visual/provider-health"
+        : null,
+      requiredBeforeGenerate: localModelSelected,
       tags: [
         "provider_health",
-        input.providerKind === "local_model" ? "local_model" : "not_local_model",
+        localModelSelected ? "local_model" : "not_local_model",
+        localModelSelected ? "pending_external_check" : "not_required",
       ],
     },
     {
-      id: "local_model_dry_run_checked",
-      passed: input.providerKind !== "local_model" || input.providerConfigured,
-      zh: "如果使用本地图像模型，先执行 dry-run 契约探针。",
-      en: "If using local_model, run the dry-run contract probe first.",
-      endpoint:
-        input.providerKind === "local_model"
-          ? "GET /api/world/visual/provider-dry-run"
-          : null,
-      requiredBeforeGenerate: input.providerKind === "local_model",
+      id: "local_model_dry_run_required",
+      passed: !localModelSelected,
+      zh: localModelSelected
+        ? "当前使用 local_model，生成前需要先调用 provider-dry-run 确认 6 个返回字段。"
+        : "当前不是 local_model，不需要本地图像模型 dry-run。",
+      en: localModelSelected
+        ? "local_model is selected, so provider-dry-run should be called before generation to confirm the six response fields."
+        : "The current provider is not local_model, so local model dry-run is not required.",
+      endpoint: localModelSelected
+        ? "GET /api/world/visual/provider-dry-run"
+        : null,
+      requiredBeforeGenerate: localModelSelected,
+      requiredResponseShape: localModelSelected ? REQUIRED_RESPONSE_SHAPE : null,
       tags: [
         "provider_dry_run",
-        input.providerKind === "local_model" ? "local_model" : "not_local_model",
+        localModelSelected ? "local_model" : "not_local_model",
+        localModelSelected ? "pending_external_check" : "not_required",
       ],
     },
     {
@@ -358,18 +414,29 @@ function buildNextStep(input: {
   }
 
   if (!input.providerConfigured) {
+    if (input.providerKind === "local_model") {
+      return {
+        zh: "当前已选择 local_model，但入口尚未配置完成。下一步检查 GET /api/world/visual/provider，并配置真实 local image model endpoint。",
+        en: "local_model is selected, but the entry is not fully configured. Next check GET /api/world/visual/provider and configure a real local image model endpoint.",
+        endpoint: "GET /api/world/visual/provider",
+        requiredResponseShape: REQUIRED_RESPONSE_SHAPE,
+      }
+    }
+
     return {
       zh: "图像生成入口尚未配置。下一步查看 GET /api/world/visual/provider。",
       en: "The image generation entry is not configured yet. Next check GET /api/world/visual/provider.",
       endpoint: "GET /api/world/visual/provider",
+      requiredResponseShape: REQUIRED_RESPONSE_SHAPE,
     }
   }
 
   if (input.providerKind === "local_model" && !input.hasCandidate) {
     return {
-      zh: "本地图像模型已配置。下一步先检查 GET /api/world/visual/provider-health 和 GET /api/world/visual/provider-dry-run，再调用 generate。",
-      en: "The local image model is configured. Next check GET /api/world/visual/provider-health and GET /api/world/visual/provider-dry-run, then call generate.",
+      zh: "本地图像模型入口已配置。下一步先检查 GET /api/world/visual/provider-health 和 GET /api/world/visual/provider-dry-run，确认模型理解正式请求契约并会返回 6 个字段，再调用 generate。",
+      en: "The local image model entry is configured. Next check GET /api/world/visual/provider-health and GET /api/world/visual/provider-dry-run to confirm it understands the formal request contract and will return the six fields, then call generate.",
       endpoint: "GET /api/world/visual/provider-health",
+      requiredResponseShape: REQUIRED_RESPONSE_SHAPE,
     }
   }
 
@@ -381,6 +448,7 @@ function buildNextStep(input: {
       zh: "还没有隐藏候选图。下一步调用 POST /api/world/visual/generate。",
       en: "No hidden candidate exists. Next call POST /api/world/visual/generate.",
       endpoint: "POST /api/world/visual/generate",
+      requiredResponseShape: REQUIRED_RESPONSE_SHAPE,
     }
   }
 
@@ -389,6 +457,7 @@ function buildNextStep(input: {
       zh: "还没有隐藏候选图，但当前 provider 不可生成也不可授权导入。先检查 provider 配置。",
       en: "No hidden candidate exists, but the current provider cannot generate or import. Check provider configuration first.",
       endpoint: "GET /api/world/visual/provider",
+      requiredResponseShape: REQUIRED_RESPONSE_SHAPE,
     }
   }
 
@@ -404,5 +473,6 @@ function buildNextStep(input: {
     zh: "已有 VisualFixPlan。下一步重新调用 POST /api/world/visual/generate，让修复提示进入下一次生成请求。",
     en: "A VisualFixPlan exists. Next call POST /api/world/visual/generate again so fix hints enter the next generation request.",
     endpoint: "POST /api/world/visual/generate",
+    requiredResponseShape: REQUIRED_RESPONSE_SHAPE,
   }
 }
