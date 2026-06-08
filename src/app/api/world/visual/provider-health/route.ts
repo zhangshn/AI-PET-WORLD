@@ -4,6 +4,15 @@ import { readWorldVisualAiImageProviderStatus } from "@/world/world-visual-paint
 
 const PROVIDER_HEALTH_TIMEOUT_MS = 5000
 
+const REQUIRED_RESPONSE_SHAPE = [
+  "imageUrl",
+  "imageFormat",
+  "width",
+  "height",
+  "license",
+  "originalityConfirmed",
+]
+
 type ProviderHealthPayload = Partial<{
   ok: boolean
   status: string
@@ -39,27 +48,21 @@ export async function GET() {
           "status_only",
           "does_not_generate",
           "does_not_modify_world_facts",
+          "not_player_visible",
         ],
       },
       { status: 409 }
     )
   }
 
-    if (!endpoint) {
+  if (!endpoint) {
     return NextResponse.json(
       {
         ok: false,
         status: "local_model_endpoint_missing",
         providerStatus,
         missingEnv: "AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT",
-        requiredResponseShape: [
-          "imageUrl",
-          "imageFormat",
-          "width",
-          "height",
-          "license",
-          "originalityConfirmed",
-        ],
+        requiredResponseShape: REQUIRED_RESPONSE_SHAPE,
         message:
           "当前已选择 local_model，但缺少 AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT，因此不能检查本地图像模型，也不能自动生成隐藏候选图。",
         messageEn:
@@ -103,28 +106,34 @@ export async function GET() {
         supportsWebp: "boolean",
         supportsJpg: "boolean",
       },
+      requiredResponseShape: REQUIRED_RESPONSE_SHAPE,
       safetyAudit: {
         canShowToPlayer: false,
         displayRule:
           "provider-health 只检查本地图像模型是否可用，不生成图片，不保存候选图，不展示任何画面。",
         displayRuleEn:
           "provider-health only checks whether the local image model is available. It does not generate images, persist candidates, or display any frame.",
+        candidateRule:
+          "即使 health 检查通过，模型返回结果也只能进入隐藏 AiImageCandidate，并必须通过 VisualJudge 与 ApprovedFrame 后才能展示。",
+        candidateRuleEn:
+          "Even if health passes, model output may only enter hidden AiImageCandidate and must pass VisualJudge and ApprovedFrame before display.",
       },
       nextStep: healthResult.ok
         ? {
-            zh: "本地图像模型健康检查通过。下一步调用 POST /api/world/visual/generate 生成隐藏候选图。",
-            en: "The local image model health check passed. Next call POST /api/world/visual/generate to create a hidden candidate.",
-            endpoint: "POST /api/world/visual/generate",
+            zh: "本地图像模型健康检查通过。下一步调用 provider-dry-run，确认模型理解正式视觉请求契约与 6 个返回字段。",
+            en: "The local image model health check passed. Next call provider-dry-run to confirm the model understands the formal visual request contract and the six response fields.",
+            endpoint: "GET /api/world/visual/provider-dry-run",
           }
         : {
-            zh: "本地图像模型健康检查未通过。先修复 endpoint 或模型服务返回格式。",
-            en: "The local image model health check failed. Fix the endpoint or model service response shape first.",
+            zh: "本地图像模型健康检查未通过。先修复 endpoint 或模型服务健康响应。",
+            en: "The local image model health check failed. Fix the endpoint or model health response first.",
             endpoint: null,
           },
       canShowToPlayer: false,
       tags: [
         "world_visual_provider_health_api",
         healthResult.ok ? "local_model_ready" : "local_model_unhealthy",
+        "required_response_shape_exposed",
         "status_only",
         "does_not_generate",
         "does_not_modify_world_facts",
@@ -203,6 +212,7 @@ async function fetchLocalModelHealth(endpoint: string) {
         payload?.supportsWebp === true ||
         payload?.supportsJpg === true,
     }
+
     const ok =
       payload?.ok === true &&
       capabilityAudit.supportsWorldVisualPainter &&
