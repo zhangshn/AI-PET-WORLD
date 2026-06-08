@@ -311,6 +311,20 @@ function assert(condition, message) {
   }
 }
 
+function assertValidUrl(value, name) {
+  assert(Boolean(value), `${name} is missing.`)
+
+  try {
+    const url = new URL(value)
+    assert(
+      url.protocol === "http:" || url.protocol === "https:",
+      `${name} must be an http or https URL.`
+    )
+  } catch {
+    throw new Error(`${name} is not a valid URL: ${String(value)}`)
+  }
+}
+
 function assertAll(checks, message) {
   const failed = Object.entries(checks)
     .filter(([, passed]) => passed !== true)
