@@ -280,7 +280,7 @@ async function callLocalImageEngine(input: {
       signal: controller.signal,
     })
 
-    const contentType = response.headers.get("content-type")
+    const contentType = response.headers.get("content-type") ?? ""
 
     if (!response.ok) {
       return {
