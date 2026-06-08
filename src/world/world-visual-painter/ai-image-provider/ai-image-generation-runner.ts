@@ -16,6 +16,19 @@ type ProviderImageResponse = Partial<{
   originalityConfirmed: boolean
 }>
 
+type ProviderErrorResponse = Partial<{
+  ok: boolean
+  status: string
+  message: string
+  messageEn: string
+  error: {
+    zh?: string
+    en?: string
+  }
+  canShowToPlayer: boolean
+  tags: string[]
+}>
+
 type ProviderResponseValidationResult =
   | {
       ok: true
@@ -62,15 +75,31 @@ export async function runWorldVisualAiImageGenerationRequest(input: {
       body: JSON.stringify(input.request.body),
     })
 
+    const contentType = response.headers.get("content-type")
+    const payload = contentType?.includes("application/json")
+      ? ((await response.json()) as ProviderImageResponse & ProviderErrorResponse)
+      : null
+
     if (!response.ok) {
+      return buildFailedProviderHttpResult({
+        httpStatus: response.status,
+        contentType,
+        payload,
+      })
+    }
+
+    if (!payload) {
       return failedResult(
-        `图像生成服务返回失败状态：${response.status}`,
-        `Image generation service returned status ${response.status}.`,
-        ["provider_http_error"]
+        "图像生成服务没有返回 JSON，无法校验 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
+        "The image generation service did not return JSON, so imageUrl / imageFormat / width / height / license / originalityConfirmed cannot be validated.",
+        [
+          "provider_invalid_response",
+          "provider_response_not_json",
+          "response_contract_failed",
+        ]
       )
     }
 
-    const payload = (await response.json()) as ProviderImageResponse
     const candidateResult = buildCandidateFromProviderResponse({
       payload,
       request: input.request,
@@ -102,6 +131,48 @@ export async function runWorldVisualAiImageGenerationRequest(input: {
       ["provider_request_failed"]
     )
   }
+}
+
+function buildFailedProviderHttpResult(input: {
+  httpStatus: number
+  contentType: string | null
+  payload: (ProviderImageResponse & ProviderErrorResponse) | null
+}): WorldVisualAiImageGenerationResult {
+  const providerStatus = input.payload?.status
+  const implementationNotConnected =
+    providerStatus === "local_image_model_implementation_not_connected"
+
+  if (implementationNotConnected) {
+    return failedResult(
+      "本地图像模型适配入口已收到正式视觉生成请求，但真实 local image model implementation 尚未接入；因此不能生成隐藏候选图，也不会返回假图或占位图。",
+      "The local image model adapter received the formal visual generation request, but no real local image model implementation is connected; therefore no hidden candidate can be generated and no fake image or placeholder will be returned.",
+      [
+        "provider_http_error",
+        "local_model_implementation_not_connected",
+        "candidate_not_created",
+        "fake_image_forbidden",
+        "response_contract_not_confirmed",
+      ]
+    )
+  }
+
+  const providerMessageZh =
+    input.payload?.error?.zh ??
+    input.payload?.message ??
+    `图像生成服务返回失败状态：${input.httpStatus}`
+  const providerMessageEn =
+    input.payload?.error?.en ??
+    input.payload?.messageEn ??
+    `Image generation service returned status ${input.httpStatus}.`
+
+  return failedResult(providerMessageZh, providerMessageEn, [
+    "provider_http_error",
+    `provider_http_status_${input.httpStatus}`,
+    input.contentType?.includes("application/json")
+      ? "provider_error_json_received"
+      : "provider_error_body_not_json",
+    ...(input.payload?.tags ?? []),
+  ])
 }
 
 function buildCandidateFromProviderResponse(input: {
@@ -202,7 +273,7 @@ function validateProviderImageResponse(input: {
     )
   }
 
-  if (!Number.isInteger(width) || typeof width !== "number") {
+  if (typeof width !== "number" || !Number.isInteger(width)) {
     return failedValidation(
       "图像生成模型返回的 width 不是整数。",
       "The image generation model returned a width that is not an integer.",
@@ -210,7 +281,7 @@ function validateProviderImageResponse(input: {
     )
   }
 
-  if (!Number.isInteger(height) || typeof height !== "number") {
+  if (typeof height !== "number" || !Number.isInteger(height)) {
     return failedValidation(
       "图像生成模型返回的 height 不是整数。",
       "The image generation model returned a height that is not an integer.",
