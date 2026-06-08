@@ -45,23 +45,40 @@ export async function GET() {
     )
   }
 
-  if (!endpoint) {
+    if (!endpoint) {
     return NextResponse.json(
       {
         ok: false,
         status: "local_model_endpoint_missing",
         providerStatus,
+        missingEnv: "AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT",
+        requiredResponseShape: [
+          "imageUrl",
+          "imageFormat",
+          "width",
+          "height",
+          "license",
+          "originalityConfirmed",
+        ],
         message:
-          "缺少 AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT，不能检查本地图像模型。",
+          "当前已选择 local_model，但缺少 AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT，因此不能检查本地图像模型，也不能自动生成隐藏候选图。",
         messageEn:
-          "AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT is missing, so the local image model cannot be checked.",
+          "local_model is selected, but AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT is missing, so the local image model cannot be checked and hidden candidate generation is blocked.",
+        nextStep: {
+          zh: "根据 GPT_HANDOFF.md，下一步应连接真实 local image model，并确认它返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
+          en: "According to GPT_HANDOFF.md, next connect a real local image model and confirm it returns imageUrl / imageFormat / width / height / license / originalityConfirmed.",
+          endpoint: null,
+        },
         canShowToPlayer: false,
         tags: [
           "world_visual_provider_health_api",
           "local_model_endpoint_missing",
+          "local_model_generation_blocked",
+          "required_response_shape_exposed",
           "status_only",
           "does_not_generate",
           "does_not_modify_world_facts",
+          "not_player_visible",
         ],
       },
       { status: 409 }
