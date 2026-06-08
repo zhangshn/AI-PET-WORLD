@@ -1,7 +1,7 @@
 import { Buffer } from "node:buffer"
 import { createHash, randomUUID } from "node:crypto"
 import { createReadStream } from "node:fs"
-import { mkdir, readFile, stat, writeFile } from "node:fs/promises"
+import { mkdir, stat, writeFile } from "node:fs/promises"
 import { createServer } from "node:http"
 import { extname, join, normalize, resolve } from "node:path"
 
