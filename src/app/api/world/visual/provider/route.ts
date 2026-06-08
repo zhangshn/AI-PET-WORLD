@@ -184,9 +184,79 @@ function buildNextStep(
     }
   }
 
+  if (providerStatus.providerKind === "local_model") {
+    return {
+      zh: "当前已选择 local_model，但缺少 AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT。下一步应连接真实 local image model，并确认返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
+      en: "local_model is selected, but AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT is missing. Next connect a real local image model and confirm it returns imageUrl / imageFormat / width / height / license / originalityConfirmed.",
+      endpoint: null,
+      requiredEnv: "AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT",
+      requiredResponseShape: [
+        "imageUrl",
+        "imageFormat",
+        "width",
+        "height",
+        "license",
+        "originalityConfirmed",
+      ],
+    }
+  }
+
+  if (providerStatus.providerKind === "external_api") {
+    return {
+      zh: "当前已选择 external_api，但缺少 AI_PET_WORLD_IMAGE_API_ENDPOINT 或 AI_PET_WORLD_IMAGE_API_KEY。下一步应连接真实 image provider，并确认返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
+      en: "external_api is selected, but AI_PET_WORLD_IMAGE_API_ENDPOINT or AI_PET_WORLD_IMAGE_API_KEY is missing. Next connect a real image provider and confirm it returns imageUrl / imageFormat / width / height / license / originalityConfirmed.",
+      endpoint: null,
+      requiredEnv: [
+        "AI_PET_WORLD_IMAGE_API_ENDPOINT",
+        "AI_PET_WORLD_IMAGE_API_KEY",
+      ],
+      requiredResponseShape: [
+        "imageUrl",
+        "imageFormat",
+        "width",
+        "height",
+        "license",
+        "originalityConfirmed",
+      ],
+    }
+  }
+
+  if (providerStatus.providerKind === "manual_import") {
+    return {
+      zh: "当前已选择 manual_import，但缺少授权图片导入字段。下一步应提供 imageUrl / imageFormat / width / height / license / originalityConfirmed，并确保图片不会绕过 Candidate 与 VisualJudge。",
+      en: "manual_import is selected, but authorized image import fields are missing. Next provide imageUrl / imageFormat / width / height / license / originalityConfirmed and ensure the image does not bypass Candidate or VisualJudge.",
+      endpoint: null,
+      requiredEnv: [
+        "AI_PET_WORLD_MANUAL_IMAGE_URL",
+        "AI_PET_WORLD_MANUAL_IMAGE_WIDTH",
+        "AI_PET_WORLD_MANUAL_IMAGE_HEIGHT",
+        "AI_PET_WORLD_MANUAL_IMAGE_FORMAT",
+        "AI_PET_WORLD_MANUAL_IMAGE_LICENSE",
+        "AI_PET_WORLD_MANUAL_IMAGE_ORIGINALITY_CONFIRMED",
+      ],
+      requiredResponseShape: [
+        "imageUrl",
+        "imageFormat",
+        "width",
+        "height",
+        "license",
+        "originalityConfirmed",
+      ],
+    }
+  }
+
   return {
-    zh: "当前没有可用图像生成入口，也没有启用授权导入流程。需要先配置 AI_PET_WORLD_IMAGE_PROVIDER。",
-    en: "No image generation entry is available and authorized import flow is enabled. Configure AI_PET_WORLD_IMAGE_PROVIDER first.",
+    zh: "当前没有可用图像生成入口，也没有启用授权导入流程。下一步应按 GPT_HANDOFF.md 连接真实 image provider 或 local image model，并确认返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
+    en: "No image generation entry is available and authorized import flow is not enabled. Next, follow GPT_HANDOFF.md to connect a real image provider or local image model and confirm it returns imageUrl / imageFormat / width / height / license / originalityConfirmed.",
     endpoint: null,
+    requiredEnv: "AI_PET_WORLD_IMAGE_PROVIDER",
+    requiredResponseShape: [
+      "imageUrl",
+      "imageFormat",
+      "width",
+      "height",
+      "license",
+      "originalityConfirmed",
+    ],
   }
 }
