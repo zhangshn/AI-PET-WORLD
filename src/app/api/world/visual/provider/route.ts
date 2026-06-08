@@ -2,10 +2,6 @@ import { NextResponse } from "next/server"
 
 import { readWorldVisualAiImageProviderStatus } from "@/world/world-visual-painter"
 
-const DEFAULT_ENGINE_TIMEOUT_MS = 120_000
-const MIN_ENGINE_TIMEOUT_MS = 10_000
-const MAX_ENGINE_TIMEOUT_MS = 600_000
-
 export async function GET() {
   const providerStatus = readWorldVisualAiImageProviderStatus()
 
@@ -42,25 +38,15 @@ export async function GET() {
       process.env.AI_PET_WORLD_MANUAL_IMAGE_ORIGINALITY_CONFIRMED === "true",
   }
 
-  const localImageEngineAudit = buildLocalImageEngineAudit()
-
   return NextResponse.json(
     {
       ok: true,
       providerStatus,
       environmentAudit,
-      localImageEngineAudit,
       localModelIntegrationContract: {
         endpointEnv: "AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT",
         healthEndpointEnv: "AI_PET_WORLD_LOCAL_IMAGE_MODEL_HEALTH_ENDPOINT",
         dryRunEndpointEnv: "AI_PET_WORLD_LOCAL_IMAGE_MODEL_DRY_RUN_ENDPOINT",
-        engineEndpointEnv: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ENDPOINT",
-        engineApiKeyEnv: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_API_KEY",
-        engineLicenseDefaultEnv: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_LICENSE",
-        engineOriginalityConfirmedDefaultEnv:
-          "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ORIGINALITY_CONFIRMED",
-        engineRequestModeEnv: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_REQUEST_MODE",
-        engineTimeoutMsEnv: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_TIMEOUT_MS",
         providerEnv: "AI_PET_WORLD_IMAGE_PROVIDER=local_model",
         method: "POST",
         requestContentType: "application/json",
@@ -138,20 +124,6 @@ export async function GET() {
             en: "dry-run prefers AI_PET_WORLD_LOCAL_IMAGE_MODEL_DRY_RUN_ENDPOINT; when missing, it derives /dry-run from the main endpoint.",
           },
         ],
-        engineRules: [
-          {
-            zh: "主项目调用 AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT；本地模型适配器再调用 AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ENDPOINT。",
-            en: "The main project calls AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT; the local model adapter then calls AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ENDPOINT.",
-          },
-          {
-            zh: "真实图像引擎可以直接返回 imageUrl，也可以返回 base64 / b64_json，适配器会归一化后交给 Runner 与 VisualJudge。",
-            en: "The real image engine may return imageUrl or base64 / b64_json. The adapter normalizes it before Runner and VisualJudge.",
-          },
-          {
-            zh: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_REQUEST_MODE 只改变发给真实引擎的请求体形状，不改变 responseContract、VisualJudge 或 ApprovedFrame 硬闸门。",
-            en: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_REQUEST_MODE only changes the request body shape sent to the real engine. It does not change responseContract, VisualJudge, or ApprovedFrame hard gates.",
-          },
-        ],
       },
       generationGate: {
         canGenerateAutomatically: providerStatus.canGenerateAutomatically,
@@ -214,96 +186,7 @@ function buildNextStep(
 
   return {
     zh: "当前没有可用图像生成入口，也没有启用授权导入流程。需要先配置 AI_PET_WORLD_IMAGE_PROVIDER。",
-    en: "No image generation entry is available and authorized import flow is not enabled. Configure AI_PET_WORLD_IMAGE_PROVIDER first.",
+    en: "No image generation entry is available and authorized import flow is enabled. Configure AI_PET_WORLD_IMAGE_PROVIDER first.",
     endpoint: null,
   }
-}
-
-function buildLocalImageEngineAudit() {
-  const engineEndpoint =
-    process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ENDPOINT?.trim() ?? null
-  const engineApiKeyConfigured = Boolean(
-    process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_API_KEY?.trim()
-  )
-  const configuredLicense =
-    process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_LICENSE?.trim() ?? null
-  const originalityConfirmed =
-    process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ORIGINALITY_CONFIRMED === "true"
-  const requestMode = readEngineRequestMode()
-  const timeoutMs = readEngineTimeoutMs()
-  const licenseDefaultConfigured = isAllowedEngineLicense(configuredLicense)
-
-  return {
-    engineEndpointConfigured: Boolean(engineEndpoint),
-    engineApiKeyConfigured,
-    licenseDefaultConfigured,
-    configuredLicense: licenseDefaultConfigured ? configuredLicense : null,
-    originalityDefaultConfirmed: originalityConfirmed,
-    requestMode,
-    timeoutMs,
-    timeoutRangeMs: {
-      default: DEFAULT_ENGINE_TIMEOUT_MS,
-      min: MIN_ENGINE_TIMEOUT_MS,
-      max: MAX_ENGINE_TIMEOUT_MS,
-    },
-    adapterGenerateReady: Boolean(engineEndpoint),
-    safetyDefaultsReady:
-      licenseDefaultConfigured && originalityConfirmed === true,
-    note: {
-      zh: "adapterGenerateReady 只代表适配器能调用真实引擎；最终图片仍必须通过 responseContract、VisualJudge 与 ApprovedFrame。",
-      en: "adapterGenerateReady only means the adapter can call the real engine. The final image must still pass responseContract, VisualJudge, and ApprovedFrame.",
-    },
-    tags: [
-      "local_image_engine_audit",
-      engineEndpoint ? "engine_endpoint_configured" : "engine_endpoint_missing",
-      engineApiKeyConfigured ? "engine_api_key_configured" : "engine_api_key_missing",
-      licenseDefaultConfigured
-        ? "engine_license_default_configured"
-        : "engine_license_default_missing",
-      originalityConfirmed
-        ? "engine_originality_default_confirmed"
-        : "engine_originality_default_missing",
-      `request_mode_${requestMode}`,
-    ],
-  }
-}
-
-function readEngineRequestMode():
-  | "world_visual_body"
-  | "prompt_only"
-  | "prompt_package" {
-  const mode = process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_REQUEST_MODE?.trim()
-
-  if (
-    mode === "world_visual_body" ||
-    mode === "prompt_only" ||
-    mode === "prompt_package"
-  ) {
-    return mode
-  }
-
-  return "world_visual_body"
-}
-
-function readEngineTimeoutMs(): number {
-  const rawValue = process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_TIMEOUT_MS?.trim()
-  const parsedValue = rawValue ? Number(rawValue) : DEFAULT_ENGINE_TIMEOUT_MS
-
-  if (
-    Number.isInteger(parsedValue) &&
-    parsedValue >= MIN_ENGINE_TIMEOUT_MS &&
-    parsedValue <= MAX_ENGINE_TIMEOUT_MS
-  ) {
-    return parsedValue
-  }
-
-  return DEFAULT_ENGINE_TIMEOUT_MS
-}
-
-function isAllowedEngineLicense(value: string | null): boolean {
-  return (
-    value === "self_owned" ||
-    value === "cc0" ||
-    value === "commercial_license"
-  )
 }
