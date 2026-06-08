@@ -98,6 +98,11 @@ export async function GET() {
         license: "self_owned | cc0 | commercial_license",
         originalityConfirmed: true,
               },
+        supportedRawImageResponse: {
+          contentTypes: ["image/png", "image/webp", "image/jpeg"],
+          behavior:
+            "The adapter converts raw image bytes into data:image URL and parses width/height before responseContract validation.",
+        },
         supportedResponseContainers: [
           "direct fields",
           "result",
@@ -135,6 +140,10 @@ export async function GET() {
           {
             zh: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_REQUEST_MODE 只改变发送给真实图像引擎的请求体形状，不改变 responseContract、VisualJudge 或 ApprovedFrame 硬闸门。",
             en: "AI_PET_WORLD_LOCAL_IMAGE_ENGINE_REQUEST_MODE only changes the request body shape sent to the real image engine. It does not change responseContract, VisualJudge, or ApprovedFrame hard gates.",
+          },
+          {
+            zh: "真实图像引擎可以直接返回 image/png、image/webp 或 image/jpeg 二进制；适配层会转成 data:image URL，并解析宽高后继续执行 responseContract 与 VisualJudge。",
+            en: "The real image engine may return image/png, image/webp, or image/jpeg bytes directly. The adapter converts them into data:image URL, parses width and height, and then continues responseContract and VisualJudge.",
           },
         ],
       },

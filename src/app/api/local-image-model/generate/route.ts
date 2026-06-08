@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer"
+
 import { NextResponse } from "next/server"
 
 type LocalImageEngineResponse = Partial<{
@@ -280,17 +282,6 @@ async function callLocalImageEngine(input: {
 
     const contentType = response.headers.get("content-type")
 
-    if (!contentType?.includes("application/json")) {
-      return {
-        ok: false,
-        error: {
-          zh: "真实图像引擎没有返回 JSON。",
-          en: "The real image engine did not return JSON.",
-        },
-      }
-    }
-    const payload = (await response.json()) as LocalImageEngineRawResponse
-
     if (!response.ok) {
       return {
         ok: false,
@@ -301,9 +292,49 @@ async function callLocalImageEngine(input: {
       }
     }
 
+    if (contentType?.includes("application/json")) {
+      const payload = (await response.json()) as LocalImageEngineRawResponse
+
+      return {
+        ok: true,
+        payload,
+      }
+    }
+
+    if (isSupportedImageContentType(contentType)) {
+      const imageFormat = readImageFormatFromContentType(contentType)
+      const imageBytes = new Uint8Array(await response.arrayBuffer())
+      const dimensions = parseImageDimensions(imageBytes, imageFormat)
+
+      if (!dimensions) {
+        return {
+          ok: false,
+          error: {
+            zh: "真实图像引擎返回了图片二进制，但适配器无法解析图片宽高。",
+            en: "The real image engine returned image bytes, but the adapter could not parse image width and height.",
+          },
+        }
+      }
+
+      return {
+        ok: true,
+        payload: {
+          imageUrl: `data:image/${imageFormat};base64,${Buffer.from(
+            imageBytes
+          ).toString("base64")}`,
+          imageFormat,
+          width: dimensions.width,
+          height: dimensions.height,
+        },
+      }
+    }
+
     return {
-      ok: true,
-      payload,
+      ok: false,
+      error: {
+        zh: "真实图像引擎没有返回 JSON 或支持的图片二进制 Content-Type。",
+        en: "The real image engine did not return JSON or a supported image binary Content-Type.",
+      },
     }
   } catch (error) {
     return {
@@ -320,6 +351,177 @@ async function callLocalImageEngine(input: {
   } finally {
     clearTimeout(timeout)
   }
+}
+
+function isSupportedImageContentType(contentType: string | null): boolean {
+  return (
+    contentType?.includes("image/png") === true ||
+    contentType?.includes("image/webp") === true ||
+    contentType?.includes("image/jpeg") === true ||
+    contentType?.includes("image/jpg") === true
+  )
+}
+
+function readImageFormatFromContentType(
+  contentType: string
+): LocalImageEngineResponse["imageFormat"] {
+  if (contentType.includes("image/png")) return "png"
+  if (contentType.includes("image/webp")) return "webp"
+
+  return "jpg"
+}
+
+function parseImageDimensions(
+  bytes: Uint8Array,
+  imageFormat: LocalImageEngineResponse["imageFormat"]
+): { width: number; height: number } | null {
+  if (imageFormat === "png") return parsePngDimensions(bytes)
+  if (imageFormat === "jpg") return parseJpegDimensions(bytes)
+  if (imageFormat === "webp") return parseWebpDimensions(bytes)
+
+  return null
+}
+
+function parsePngDimensions(
+  bytes: Uint8Array
+): { width: number; height: number } | null {
+  if (bytes.length < 24) return null
+
+  const isPng =
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47
+
+  if (!isPng) return null
+
+  return {
+    width: readUInt32BE(bytes, 16),
+    height: readUInt32BE(bytes, 20),
+  }
+}
+
+function parseJpegDimensions(
+  bytes: Uint8Array
+): { width: number; height: number } | null {
+  if (bytes.length < 4 || bytes[0] !== 0xff || bytes[1] !== 0xd8) return null
+
+  let offset = 2
+
+  while (offset < bytes.length) {
+    if (bytes[offset] !== 0xff) {
+      offset += 1
+      continue
+    }
+
+    const marker = bytes[offset + 1]
+    const segmentLength = readUInt16BE(bytes, offset + 2)
+
+    if (
+      marker === 0xc0 ||
+      marker === 0xc1 ||
+      marker === 0xc2 ||
+      marker === 0xc3 ||
+      marker === 0xc5 ||
+      marker === 0xc6 ||
+      marker === 0xc7 ||
+      marker === 0xc9 ||
+      marker === 0xca ||
+      marker === 0xcb ||
+      marker === 0xcd ||
+      marker === 0xce ||
+      marker === 0xcf
+    ) {
+      return {
+        height: readUInt16BE(bytes, offset + 5),
+        width: readUInt16BE(bytes, offset + 7),
+      }
+    }
+
+    if (!Number.isFinite(segmentLength) || segmentLength <= 0) return null
+    offset += 2 + segmentLength
+  }
+
+  return null
+}
+
+function parseWebpDimensions(
+  bytes: Uint8Array
+): { width: number; height: number } | null {
+  if (bytes.length < 30) return null
+  if (readAscii(bytes, 0, 4) !== "RIFF" || readAscii(bytes, 8, 4) !== "WEBP") {
+    return null
+  }
+
+  let offset = 12
+
+  while (offset + 8 <= bytes.length) {
+    const chunkType = readAscii(bytes, offset, 4)
+    const chunkSize = readUInt32LE(bytes, offset + 4)
+    const chunkDataOffset = offset + 8
+
+    if (chunkType === "VP8X" && chunkDataOffset + 10 <= bytes.length) {
+      return {
+        width: readUInt24LE(bytes, chunkDataOffset + 4) + 1,
+        height: readUInt24LE(bytes, chunkDataOffset + 7) + 1,
+      }
+    }
+
+    if (chunkType === "VP8 " && chunkDataOffset + 10 <= bytes.length) {
+      return {
+        width: readUInt16LE(bytes, chunkDataOffset + 6) & 0x3fff,
+        height: readUInt16LE(bytes, chunkDataOffset + 8) & 0x3fff,
+      }
+    }
+
+    if (chunkType === "VP8L" && chunkDataOffset + 5 <= bytes.length) {
+      const b0 = bytes[chunkDataOffset + 1]
+      const b1 = bytes[chunkDataOffset + 2]
+      const b2 = bytes[chunkDataOffset + 3]
+      const b3 = bytes[chunkDataOffset + 4]
+
+      return {
+        width: 1 + (((b1 & 0x3f) << 8) | b0),
+        height: 1 + (((b3 & 0x0f) << 10) | (b2 << 2) | ((b1 & 0xc0) >> 6)),
+      }
+    }
+
+    offset += 8 + chunkSize + (chunkSize % 2)
+  }
+
+  return null
+}
+
+function readAscii(bytes: Uint8Array, offset: number, length: number): string {
+  return String.fromCharCode(...bytes.slice(offset, offset + length))
+}
+
+function readUInt16BE(bytes: Uint8Array, offset: number): number {
+  return (bytes[offset] << 8) | bytes[offset + 1]
+}
+
+function readUInt16LE(bytes: Uint8Array, offset: number): number {
+  return bytes[offset] | (bytes[offset + 1] << 8)
+}
+
+function readUInt24LE(bytes: Uint8Array, offset: number): number {
+  return bytes[offset] | (bytes[offset + 1] << 8) | (bytes[offset + 2] << 16)
+}
+
+function readUInt32BE(bytes: Uint8Array, offset: number): number {
+  return (
+    bytes[offset] * 16_777_216 +
+    ((bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3])
+  )
+}
+
+function readUInt32LE(bytes: Uint8Array, offset: number): number {
+  return (
+    bytes[offset] |
+    (bytes[offset + 1] << 8) |
+    (bytes[offset + 2] << 16) |
+    (bytes[offset + 3] << 24)
+  )
 }
 
 function readEngineTimeoutMs(): number {
