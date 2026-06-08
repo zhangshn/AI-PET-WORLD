@@ -1,6 +1,12 @@
-// 当前文件作用：提供 AI-PET-WORLD 真实 local image model 的本地契约服务入口；未接入真实模型前不生成图片、不返回假图。
+// 当前文件作用：提供 AI-PET-WORLD 自研 local image model 的本地契约服务入口，并把真实图像生成能力委托给 implementation。
 
 import http from "node:http"
+
+import {
+  generateLocalImageCandidate,
+  readLocalImageModelImplementationHealth,
+  runLocalImageModelImplementationDryRun,
+} from "./implementation.mjs"
 
 const HOST = "127.0.0.1"
 const PORT = 7001
@@ -79,29 +85,29 @@ async function readJsonBody(request) {
 }
 
 function handleHealth(response) {
+  const implementationHealth = readLocalImageModelImplementationHealth({
+    requiredResponseFields: REQUIRED_RESPONSE_FIELDS,
+  })
+
   createJsonResponse(response, 200, {
-    ok: false,
-    status: "local_image_model_implementation_not_connected",
-    model: "ai-pet-world-local-image-model-contract-server",
-    version: "contract-shell-1",
-    supportsWorldVisualPainter: true,
-    supportsResponseContract: true,
-    supportsHiddenCandidateOutput: true,
-    supportsPng: true,
-    supportsWebp: true,
-    supportsJpg: true,
-    requiredResponseShape: REQUIRED_RESPONSE_FIELDS,
-    message: "local image model 契约服务已启动，但真实图像生成模型尚未接入。",
-    messageEn:
-      "The local image model contract service is running, but no real image generation model is connected.",
-    canShowToPlayer: false,
-    tags: [
-      "local_image_model_contract_server",
-      "implementation_not_connected",
-      "does_not_generate",
-      "fake_image_forbidden",
-      "not_player_visible",
-    ],
+    ...implementationHealth,
+    contractServer: {
+      ok: true,
+      status: "local_image_model_contract_server_ready",
+      model: "ai-pet-world-local-image-model-contract-server",
+      version: "contract-shell-2",
+      endpoints: {
+        health: "/health",
+        dryRun: "/dry-run",
+        generate: "/generate",
+      },
+      canShowToPlayer: false,
+      tags: [
+        "local_image_model_contract_server",
+        "contract_server_ready",
+        "not_player_visible",
+      ],
+    },
   })
 }
 
@@ -121,15 +127,15 @@ async function handleDryRun(request, response) {
   }
 
   const requestBody = bodyResult.payload?.requestBody
-  const audit = validateGenerationRequest(requestBody)
+  const requestAudit = validateGenerationRequest(requestBody)
 
-  if (!audit.requestContractValid) {
+  if (!requestAudit.requestContractValid) {
     createJsonResponse(response, 422, {
       ok: false,
       status: "local_image_model_dry_run_request_invalid",
       model: "ai-pet-world-local-image-model-contract-server",
-      version: "contract-shell-1",
-      ...audit,
+      version: "contract-shell-2",
+      ...requestAudit,
       requiredResponseShape: REQUIRED_RESPONSE_FIELDS,
       willReturnImageUrl: false,
       willReturnImageFormat: false,
@@ -151,38 +157,13 @@ async function handleDryRun(request, response) {
     return
   }
 
-  createJsonResponse(response, 501, {
-    ok: false,
-    status: "local_image_model_implementation_not_connected",
-    model: "ai-pet-world-local-image-model-contract-server",
-    version: "contract-shell-1",
-    ...audit,
-    requiredResponseShape: REQUIRED_RESPONSE_FIELDS,
-    willReturnImageUrl: false,
-    willReturnImageFormat: false,
-    willReturnWidth: false,
-    willReturnHeight: false,
-    willReturnLicense: false,
-    willReturnOriginalityConfirmed: false,
-    willPersistOnlyAsHiddenCandidate: false,
-    message:
-      "契约服务理解正式视觉请求，但真实 local image model implementation 尚未接入，因此不能声明会返回 6 个图片字段。",
-    messageEn:
-      "The contract service understands the formal visual request, but no real local image model implementation is connected, so it cannot declare the six image fields.",
-    nextStep: {
-      zh: "接入真实 local image model 后，dry-run 必须返回 ok=true，并声明会返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
-      en: "After connecting a real local image model, dry-run must return ok=true and declare imageUrl / imageFormat / width / height / license / originalityConfirmed.",
-    },
-    canShowToPlayer: false,
-    tags: [
-      "local_image_model_dry_run",
-      "implementation_not_connected",
-      "request_contract_checked",
-      "does_not_generate",
-      "fake_image_forbidden",
-      "not_player_visible",
-    ],
+  const dryRunResult = await runLocalImageModelImplementationDryRun({
+    requestBody,
+    requestAudit,
+    requiredResponseFields: REQUIRED_RESPONSE_FIELDS,
   })
+
+  createJsonResponse(response, dryRunResult.ok ? 200 : 501, dryRunResult)
 }
 
 async function handleGenerate(request, response) {
@@ -200,15 +181,16 @@ async function handleGenerate(request, response) {
     return
   }
 
-  const audit = validateGenerationRequest(bodyResult.payload)
+  const requestBody = bodyResult.payload
+  const requestAudit = validateGenerationRequest(requestBody)
 
-  if (!audit.requestContractValid) {
+  if (!requestAudit.requestContractValid) {
     createJsonResponse(response, 422, {
       ok: false,
       status: "local_image_model_generate_request_invalid",
       model: "ai-pet-world-local-image-model-contract-server",
-      version: "contract-shell-1",
-      ...audit,
+      version: "contract-shell-2",
+      ...requestAudit,
       requiredResponseShape: REQUIRED_RESPONSE_FIELDS,
       message: "正式生成请求契约检查未通过。",
       messageEn: "The formal generate request contract check failed.",
@@ -223,31 +205,13 @@ async function handleGenerate(request, response) {
     return
   }
 
-  createJsonResponse(response, 501, {
-    ok: false,
-    status: "local_image_model_implementation_not_connected",
-    model: "ai-pet-world-local-image-model-contract-server",
-    version: "contract-shell-1",
-    ...audit,
-    requiredResponseShape: REQUIRED_RESPONSE_FIELDS,
-    message:
-      "真实 local image model implementation 尚未接入。不会返回假图、占位图、SVG、HTML、JSON 调试图或程序绘图结果。",
-    messageEn:
-      "No real local image model implementation is connected. This service will not return fake images, placeholders, SVG, HTML, debug JSON images, or programmatic render results.",
-    nextStep: {
-      zh: "下一步接入真实图像生成模型，使 /generate 返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
-      en: "Next connect a real image generation model so /generate returns imageUrl / imageFormat / width / height / license / originalityConfirmed.",
-    },
-    canShowToPlayer: false,
-    tags: [
-      "local_image_model_generate",
-      "implementation_not_connected",
-      "request_contract_checked",
-      "does_not_generate",
-      "fake_image_forbidden",
-      "not_player_visible",
-    ],
+  const generateResult = await generateLocalImageCandidate({
+    requestBody,
+    requestAudit,
+    requiredResponseFields: REQUIRED_RESPONSE_FIELDS,
   })
+
+  createJsonResponse(response, generateResult.ok ? 200 : 501, generateResult)
 }
 
 function validateGenerationRequest(requestBody) {
@@ -370,6 +334,7 @@ server.listen(PORT, HOST, () => {
   console.log(`[local-image-model] health:   http://localhost:${PORT}/health`)
   console.log(`[local-image-model] dry-run:  http://localhost:${PORT}/dry-run`)
   console.log(`[local-image-model] generate: http://localhost:${PORT}/generate`)
+  console.log("[local-image-model] implementation entry: ./implementation.mjs")
   console.log("[local-image-model] real image model implementation: not connected")
   console.log("[local-image-model] fake image output: forbidden")
 })
