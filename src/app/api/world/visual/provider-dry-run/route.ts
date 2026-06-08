@@ -62,17 +62,34 @@ export async function GET() {
         ok: false,
         status: "local_model_endpoint_missing",
         providerStatus,
+        missingEnv: "AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT",
+        requiredResponseShape: [
+          "imageUrl",
+          "imageFormat",
+          "width",
+          "height",
+          "license",
+          "originalityConfirmed",
+        ],
         message:
-          "缺少 AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT，不能执行本地图像模型 dry-run。",
+          "当前已选择 local_model，但缺少 AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT，因此不能执行本地图像模型 dry-run，也不能确认模型是否会返回正式视觉链路所需的 6 个字段。",
         messageEn:
-          "AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT is missing, so local image model dry-run cannot run.",
+          "local_model is selected, but AI_PET_WORLD_LOCAL_IMAGE_MODEL_ENDPOINT is missing, so local image model dry-run cannot run and the required six response fields cannot be confirmed.",
+        nextStep: {
+          zh: "根据 GPT_HANDOFF.md，下一步应连接真实 local image model，并通过 dry-run 确认它理解 modelTask、PromptPackage、ControlSketch、responseContract，且会返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
+          en: "According to GPT_HANDOFF.md, next connect a real local image model and use dry-run to confirm it understands modelTask, PromptPackage, ControlSketch, responseContract, and will return imageUrl / imageFormat / width / height / license / originalityConfirmed.",
+          endpoint: null,
+        },
         canShowToPlayer: false,
         tags: [
           "world_visual_provider_dry_run_api",
           "local_model_endpoint_missing",
+          "local_model_dry_run_blocked",
+          "required_response_shape_exposed",
           "status_only",
           "does_not_generate",
           "does_not_modify_world_facts",
+          "not_player_visible",
         ],
       },
       { status: 409 }
