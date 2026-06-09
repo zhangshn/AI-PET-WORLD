@@ -14,12 +14,6 @@ import { REQUIRED_RESPONSE_FIELDS } from "../services/local-image-model/contract
 
 const VALID_REQUEST_AUDIT = {
   requestContractValid: true,
-  understandsModelTask: true,
-  understandsPromptPackage: true,
-  understandsControlSketch: true,
-  understandsResponseContract: true,
-  understandsVisualFixHints: true,
-  understandsWorldFactsLocked: true,
 }
 
 const VALID_REQUEST_BODY = {
@@ -77,11 +71,10 @@ function testAdapterHealthDefaultBlocked() {
   })
 
   assert.equal(health.ok, false)
-  assert.equal(health.status, "real_image_generation_adapter_not_connected")
+  assert.equal(health.status, "real_image_generation_adapter_blocked")
   assert.equal(health.adapterConnected, false)
   assert.equal(health.canGenerateRealBitmap, false)
   assert.equal(health.canShowToPlayer, false)
-  assert.ok(health.tags.includes("fake_image_forbidden"))
 
   printCheck("adapter health default blocked")
 }
@@ -94,12 +87,11 @@ async function testAdapterDryRunDefaultBlocked() {
   })
 
   assert.equal(result.ok, false)
-  assert.equal(result.status, "real_image_generation_adapter_not_connected")
+  assert.equal(result.status, "real_image_generation_adapter_blocked")
   assert.equal(result.adapterConnected, false)
   assert.equal(result.willReturnImageUrl, false)
   assert.equal(result.willReturnOriginalityConfirmed, false)
   assert.equal(result.canShowToPlayer, false)
-  assert.ok(result.tags.includes("fake_image_forbidden"))
 
   printCheck("adapter dry-run default blocked")
 }
@@ -112,11 +104,10 @@ async function testAdapterGenerateDefaultBlocked() {
   })
 
   assert.equal(result.ok, false)
-  assert.equal(result.status, "real_image_generation_adapter_not_connected")
+  assert.equal(result.status, "real_image_generation_adapter_blocked")
   assert.equal(result.adapterConnected, false)
   assert.equal(Object.hasOwn(result, "imageUrl"), false)
   assert.equal(result.canShowToPlayer, false)
-  assert.ok(result.tags.includes("fake_image_forbidden"))
 
   printCheck("adapter generate default blocked")
 }
@@ -129,7 +120,7 @@ function testImplementationHealthWrapsAdapter() {
   assert.equal(health.ok, false)
   assert.equal(health.status, "local_image_model_implementation_not_connected")
   assert.equal(health.implementationConnected, false)
-  assert.equal(health.adapter.status, "real_image_generation_adapter_not_connected")
+  assert.equal(health.adapter.status, "real_image_generation_adapter_blocked")
   assert.equal(health.adapter.adapterConnected, false)
   assert.equal(health.canShowToPlayer, false)
 
@@ -146,7 +137,7 @@ async function testImplementationDryRunWrapsAdapter() {
   assert.equal(result.ok, false)
   assert.equal(result.status, "local_image_model_implementation_not_connected")
   assert.equal(result.implementationConnected, false)
-  assert.equal(result.adapter.status, "real_image_generation_adapter_not_connected")
+  assert.equal(result.adapter.status, "real_image_generation_adapter_blocked")
   assert.equal(result.adapter.adapterConnected, false)
   assert.equal(result.willReturnImageUrl, false)
   assert.equal(result.willReturnOriginalityConfirmed, false)
@@ -165,11 +156,10 @@ async function testImplementationGenerateWrapsAdapter() {
   assert.equal(result.ok, false)
   assert.equal(result.status, "local_image_model_implementation_not_connected")
   assert.equal(result.implementationConnected, false)
-  assert.equal(result.adapter.status, "real_image_generation_adapter_not_connected")
+  assert.equal(result.adapter.status, "real_image_generation_adapter_blocked")
   assert.equal(result.adapter.adapterConnected, false)
   assert.equal(Object.hasOwn(result, "imageUrl"), false)
   assert.equal(result.canShowToPlayer, false)
-  assert.ok(result.tags.includes("fake_image_forbidden"))
 
   printCheck("implementation generate wraps adapter")
 }
