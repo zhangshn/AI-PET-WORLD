@@ -8,15 +8,25 @@ import {
   REQUIRED_RESPONSE_FIELDS,
 } from "./contracts.mjs"
 import { readLocalImageOutputStorageStatus } from "./output-storage.mjs"
+import {
+  generateRealImageWithRunnerImplementation,
+  readRealImageRunnerImplementationHealth,
+  runRealImageRunnerImplementationDryRun,
+} from "./real-image-runner-implementation.mjs"
 import { readRealImageModelReadiness } from "./real-model-readiness.mjs"
 
 const RUNNER_NAME = "ai-pet-world-real-image-generation-runner"
-const RUNNER_VERSION = "runner-not-connected-1"
+const RUNNER_VERSION = "runner-not-connected-2"
 
 export function readRealImageRunnerHealth(input = {}) {
   const requiredResponseFields = readRequiredResponseFields(input)
   const readiness = readRealImageModelReadiness(input.realModelReadiness)
   const outputStorage = readLocalImageOutputStorageStatus(input.outputStorage)
+  const implementation = readRealImageRunnerImplementationHealth({
+    readiness,
+    outputStorage,
+    requiredResponseFields,
+  })
 
   return {
     ok: false,
@@ -36,19 +46,21 @@ export function readRealImageRunnerHealth(input = {}) {
     outputContract: buildRunnerOutputContract(requiredResponseFields),
     readiness,
     outputStorage,
+    implementation,
     message:
-      "真实图像生成 runner 边界已定义，但尚未接入自研推理实现。当前不能生成图片，也不会返回假图。",
+      "真实图像生成 runner 已连接 implementation 文件入口，但尚未接入自研推理实现。当前不能生成图片，也不会返回假图。",
     messageEn:
-      "The real image generation runner boundary is defined, but no in-house inference implementation is connected yet. It cannot generate images and will not return fake images.",
+      "The real image generation runner is connected to the implementation entry, but no in-house inference implementation is connected yet. It cannot generate images and will not return fake images.",
     nextStep: {
-      zh: "下一步接入真实自研推理实现；接入后必须把图片写入 output-storage，并返回 public imageUrl 与 6 个正式字段。",
-      en: "Next connect the real in-house inference implementation. After connection, it must write images into output-storage and return a public imageUrl plus the six formal fields.",
+      zh: "下一步在 runner implementation 中接入真实自研推理流程；接入后必须写入 output-storage，并返回 public imageUrl 与 6 个正式字段。",
+      en: "Next connect the real in-house inference flow inside the runner implementation. After connection, it must write into output-storage and return a public imageUrl plus the six formal fields.",
     },
     canShowToPlayer: false,
     tags: [
       "real_image_generation_runner",
       "runner_not_connected",
       ...readiness.tags,
+      ...implementation.tags,
       "output_storage_ready",
       "does_not_generate",
       "fake_image_forbidden",
@@ -61,6 +73,12 @@ export async function runRealImageRunnerDryRun(input = {}) {
   const requiredResponseFields = readRequiredResponseFields(input)
   const readiness = readRealImageModelReadiness(input.realModelReadiness)
   const outputStorage = readLocalImageOutputStorageStatus(input.outputStorage)
+  const implementation = await runRealImageRunnerImplementationDryRun({
+    requestAudit: input.requestAudit,
+    readiness,
+    outputStorage,
+    requiredResponseFields,
+  })
 
   return {
     ok: false,
@@ -76,6 +94,7 @@ export async function runRealImageRunnerDryRun(input = {}) {
     outputContract: buildRunnerOutputContract(requiredResponseFields),
     readiness,
     outputStorage,
+    implementation,
     willReturnImageUrl: false,
     willReturnImageFormat: false,
     willReturnWidth: false,
@@ -85,12 +104,12 @@ export async function runRealImageRunnerDryRun(input = {}) {
     willWriteOutputFile: false,
     willPersistOnlyAsHiddenCandidate: false,
     message:
-      "真实图像生成 runner 尚未接入推理实现，因此 dry-run 不能声明会返回真实图片字段。",
+      "真实图像生成 runner 已连接 implementation 文件入口，但 implementation 尚未接入推理实现，因此 dry-run 不能声明会返回真实图片字段。",
     messageEn:
-      "The real image generation runner has not connected an inference implementation, so dry-run cannot declare real image fields yet.",
+      "The real image generation runner is connected to the implementation entry, but the implementation has not connected inference yet, so dry-run cannot declare real image fields.",
     nextStep: {
       zh: "接入真实推理实现后，dry-run 才能返回 ok=true，并声明会返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
-      en: "After connecting the real inference implementation, dry-run may return ok=true and declare imageUrl / imageFormat / width / height / license / originalityConfirmed.",
+      en: "After connecting real inference, dry-run may return ok=true and declare imageUrl / imageFormat / width / height / license / originalityConfirmed.",
     },
     canShowToPlayer: false,
     tags: [
@@ -98,6 +117,7 @@ export async function runRealImageRunnerDryRun(input = {}) {
       "runner_not_connected",
       "dry_run_blocked",
       ...readiness.tags,
+      ...implementation.tags,
       "does_not_generate",
       "fake_image_forbidden",
       "not_player_visible",
@@ -109,6 +129,12 @@ export async function generateRealImageWithRunner(input = {}) {
   const requiredResponseFields = readRequiredResponseFields(input)
   const readiness = readRealImageModelReadiness(input.realModelReadiness)
   const outputStorage = readLocalImageOutputStorageStatus(input.outputStorage)
+  const implementation = await generateRealImageWithRunnerImplementation({
+    requestAudit: input.requestAudit,
+    readiness,
+    outputStorage,
+    requiredResponseFields,
+  })
 
   return {
     ok: false,
@@ -124,13 +150,14 @@ export async function generateRealImageWithRunner(input = {}) {
     outputContract: buildRunnerOutputContract(requiredResponseFields),
     readiness,
     outputStorage,
+    implementation,
     message:
-      "真实图像生成 runner 尚未接入推理实现。不会返回假图、占位图、SVG、HTML、JSON 调试图或程序绘图结果。",
+      "真实图像生成 runner 已连接 implementation 文件入口，但 implementation 尚未接入推理实现。不会返回假图、占位图、SVG、HTML、JSON 调试图或程序绘图结果。",
     messageEn:
-      "The real image generation runner has not connected an inference implementation. It will not return fake images, placeholders, SVG, HTML, debug JSON images, or programmatic render results.",
+      "The real image generation runner is connected to the implementation entry, but the implementation has not connected inference yet. It will not return fake images, placeholders, SVG, HTML, debug JSON images, or programmatic render results.",
     nextStep: {
-      zh: "下一步接入真实自研推理实现，使 runner 写入 PNG/WebP/JPG 文件，并返回正式 6 字段。",
-      en: "Next connect the real in-house inference implementation so the runner writes PNG/WebP/JPG files and returns the six formal fields.",
+      zh: "下一步在 runner implementation 中接入真实自研推理实现，使它写入 PNG/WebP/JPG 文件，并返回正式 6 字段。",
+      en: "Next connect the real in-house inference implementation inside the runner implementation so it writes PNG/WebP/JPG files and returns the six formal fields.",
     },
     canShowToPlayer: false,
     tags: [
@@ -138,6 +165,7 @@ export async function generateRealImageWithRunner(input = {}) {
       "runner_not_connected",
       "generate_blocked",
       ...readiness.tags,
+      ...implementation.tags,
       "does_not_generate",
       "fake_image_forbidden",
       "not_player_visible",
@@ -158,6 +186,7 @@ function buildRunnerInputContract(requiredResponseFields) {
     mustNotDisplayDirectly: true,
     mustNotCopyUnlicensedThirdPartyWorks: true,
     mustUseOutputStorage: true,
+    mustUseRunnerImplementation: true,
     requiredResponseFields,
   }
 }
