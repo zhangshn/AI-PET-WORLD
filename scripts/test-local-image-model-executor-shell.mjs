@@ -249,7 +249,7 @@ function testRunnerImplementationExposesExecutorShell() {
   const health = readRealImageRunnerImplementationHealth()
 
   assert.equal(health.ok, false)
-  assert.equal(health.version, "implementation-result-mapped-1")
+  assert.equal(health.version, "implementation-result-mapped-2")
   assert.equal(health.status, "real_image_runner_implementation_blocked")
   assert.equal(health.executorStdinPayloadConnected, true)
   assert.equal(health.executorShell.status, "real_image_executor_shell_disabled")
