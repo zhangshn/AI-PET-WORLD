@@ -1,4 +1,4 @@
-// 当前文件作用：定义 AI-PET-WORLD 自研真实出图 adapter 边界；默认未连接真实图像生成能力，不生成图片、不返回假图。
+// 当前文件作用：定义 AI-PET-WORLD 自研真实出图 adapter 边界；转发 runner 通过契约校验后的 6 字段结果。
 
 import {
   ALLOWED_IMAGE_FORMATS,
@@ -14,74 +14,130 @@ import {
 } from "./real-image-runner.mjs"
 
 const ADAPTER_NAME = "ai-pet-world-real-image-generation-adapter"
-const ADAPTER_VERSION = "adapter-not-connected-3"
+const ADAPTER_VERSION = "adapter-result-forwarding-1"
 
 export function readRealImageGenerationAdapterHealth(input = {}) {
   const requiredResponseFields = readRequiredResponseFields(input)
   const runner = readRealImageRunnerHealth({
+    ...pickRunnerInput(input),
     realModelReadiness: input.realModelReadiness,
     outputStorage: input.outputStorage,
+    requestBody: input.requestBody,
     requiredResponseFields,
   })
 
   return {
-    ok: false,
-    status: "real_image_generation_adapter_not_connected",
+    ok: runner.ok === true,
+    status:
+      runner.ok === true
+        ? "real_image_generation_adapter_ready"
+        : "real_image_generation_adapter_blocked",
     adapter: ADAPTER_NAME,
     version: ADAPTER_VERSION,
-    adapterConnected: false,
+    adapterConnected: runner.ok === true,
     canGenerateRealBitmap: false,
-    acceptsPromptPackage: true,
-    acceptsControlSketch: true,
-    acceptsVisualFixHints: true,
-    acceptsWorldFactLockedRequest: true,
     requiredResponseShape: requiredResponseFields,
     inputContract: buildAdapterInputContract(requiredResponseFields),
     outputContract: buildAdapterOutputContract(requiredResponseFields),
     readiness: runner.readiness,
     runner,
-    message:
-      "真实出图 adapter 已连接 runner 边界，但 runner 尚未连接自研推理实现。当前不能生成图片，也不会返回假图。",
-    messageEn:
-      "The real image generation adapter is connected to the runner boundary, but the runner has not connected the in-house inference implementation. It cannot generate images and will not return fake images.",
-    nextStep: {
-      zh: "下一步接入真实自研图像生成 runner implementation；接入前即使模型资产门禁通过，也不得返回假图、占位图或程序绘图结果。",
-      en: "Next connect the real in-house image generation runner implementation. Before that, even if the model asset gate passes, it must not return fake images, placeholders, or programmatic render results.",
-    },
     canShowToPlayer: false,
-    tags: [
-      "real_image_generation_adapter",
-      "adapter_not_connected",
-      ...runner.tags,
-      "does_not_generate",
-      "fake_image_forbidden",
-      "not_player_visible",
-    ],
+    tags: ["real_image_generation_adapter", "not_player_visible"],
   }
 }
 
 export async function runRealImageGenerationAdapterDryRun(input = {}) {
   const requiredResponseFields = readRequiredResponseFields(input)
   const runner = await runRealImageRunnerDryRun({
+    ...pickRunnerInput(input),
     requestAudit: input.requestAudit,
     realModelReadiness: input.realModelReadiness,
     outputStorage: input.outputStorage,
+    requestBody: input.requestBody,
     requiredResponseFields,
   })
 
+  if (runner.ok === true) {
+    return {
+      ...runner,
+      status: "real_image_generation_adapter_dry_run_passed",
+      adapter: ADAPTER_NAME,
+      version: ADAPTER_VERSION,
+      adapterConnected: true,
+      runner,
+      readiness: runner.readiness,
+      canShowToPlayer: false,
+    }
+  }
+
+  return buildBlockedAdapterResponse({
+    status: "real_image_generation_adapter_blocked",
+    input,
+    runner,
+    requiredResponseFields,
+    dryRun: true,
+  })
+}
+
+export async function generateRealImageWithAdapter(input = {}) {
+  const requiredResponseFields = readRequiredResponseFields(input)
+  const runner = await generateRealImageWithRunner({
+    ...pickRunnerInput(input),
+    requestAudit: input.requestAudit,
+    realModelReadiness: input.realModelReadiness,
+    outputStorage: input.outputStorage,
+    requestBody: input.requestBody,
+    requiredResponseFields,
+  })
+
+  if (runner.ok === true) {
+    return {
+      ok: true,
+      status: "real_image_generation_adapter_generate_passed",
+      adapter: ADAPTER_NAME,
+      version: ADAPTER_VERSION,
+      adapterConnected: true,
+      canGenerateRealBitmap: true,
+      ...(input.requestAudit ?? {}),
+      imageUrl: runner.imageUrl,
+      imageFormat: runner.imageFormat,
+      width: runner.width,
+      height: runner.height,
+      license: runner.license,
+      originalityConfirmed: runner.originalityConfirmed,
+      requiredResponseShape: requiredResponseFields,
+      inputContract: buildAdapterInputContract(requiredResponseFields),
+      outputContract: buildAdapterOutputContract(requiredResponseFields),
+      readiness: runner.readiness,
+      runner,
+      canShowToPlayer: false,
+      tags: ["real_image_generation_adapter", "hidden_candidate_only"],
+    }
+  }
+
+  return buildBlockedAdapterResponse({
+    status: "real_image_generation_adapter_blocked",
+    input,
+    runner,
+    requiredResponseFields,
+    dryRun: false,
+  })
+}
+
+function buildBlockedAdapterResponse(input) {
   return {
     ok: false,
-    status: "real_image_generation_adapter_not_connected",
+    status: input.status,
     adapter: ADAPTER_NAME,
     version: ADAPTER_VERSION,
     adapterConnected: false,
     canGenerateRealBitmap: false,
-    ...(input.requestAudit ?? {}),
-    requiredResponseShape: requiredResponseFields,
-    inputContract: buildAdapterInputContract(requiredResponseFields),
-    outputContract: buildAdapterOutputContract(requiredResponseFields),
-    readiness: runner.readiness,
-    runner,
+    ...(input.input.requestAudit ?? {}),
+    requiredResponseShape: input.requiredResponseFields,
+    inputContract: buildAdapterInputContract(input.requiredResponseFields),
+    outputContract: buildAdapterOutputContract(input.requiredResponseFields),
+    readiness: input.runner.readiness,
+    runner: input.runner,
     willReturnImageUrl: false,
     willReturnImageFormat: false,
     willReturnWidth: false,
@@ -89,64 +145,10 @@ export async function runRealImageGenerationAdapterDryRun(input = {}) {
     willReturnLicense: false,
     willReturnOriginalityConfirmed: false,
     willPersistOnlyAsHiddenCandidate: false,
-    message:
-      "真实出图 adapter 已连接 runner 边界，但 runner 尚未接入推理实现，因此 dry-run 不能声明会返回 6 个图片字段。",
-    messageEn:
-      "The real image generation adapter is connected to the runner boundary, but the runner has not connected inference yet, so dry-run cannot declare the six image fields.",
-    nextStep: {
-      zh: "接入真实自研图像生成 runner implementation 后，dry-run 才能返回 ok=true。",
-      en: "After connecting the real in-house image generation runner implementation, dry-run may return ok=true.",
-    },
     canShowToPlayer: false,
     tags: [
       "real_image_generation_adapter",
-      "adapter_not_connected",
-      "dry_run_blocked",
-      ...runner.tags,
-      "does_not_generate",
-      "fake_image_forbidden",
-      "not_player_visible",
-    ],
-  }
-}
-
-export async function generateRealImageWithAdapter(input = {}) {
-  const requiredResponseFields = readRequiredResponseFields(input)
-  const runner = await generateRealImageWithRunner({
-    requestAudit: input.requestAudit,
-    realModelReadiness: input.realModelReadiness,
-    outputStorage: input.outputStorage,
-    requiredResponseFields,
-  })
-
-  return {
-    ok: false,
-    status: "real_image_generation_adapter_not_connected",
-    adapter: ADAPTER_NAME,
-    version: ADAPTER_VERSION,
-    adapterConnected: false,
-    canGenerateRealBitmap: false,
-    ...(input.requestAudit ?? {}),
-    requiredResponseShape: requiredResponseFields,
-    inputContract: buildAdapterInputContract(requiredResponseFields),
-    outputContract: buildAdapterOutputContract(requiredResponseFields),
-    readiness: runner.readiness,
-    runner,
-    message:
-      "真实出图 adapter 已连接 runner 边界，但 runner 尚未接入推理实现。不会返回假图、占位图、SVG、HTML、JSON 调试图或程序绘图结果。",
-    messageEn:
-      "The real image generation adapter is connected to the runner boundary, but the runner has not connected inference yet. It will not return fake images, placeholders, SVG, HTML, debug JSON images, or programmatic render results.",
-    nextStep: {
-      zh: "下一步接入真实自研出图 runner implementation，使它写入图片文件并返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
-      en: "Next connect the real in-house runner implementation so it writes image files and returns imageUrl / imageFormat / width / height / license / originalityConfirmed.",
-    },
-    canShowToPlayer: false,
-    tags: [
-      "real_image_generation_adapter",
-      "adapter_not_connected",
-      "generate_blocked",
-      ...runner.tags,
-      "does_not_generate",
+      input.dryRun ? "dry_run_blocked" : "generate_blocked",
       "fake_image_forbidden",
       "not_player_visible",
     ],
@@ -162,9 +164,6 @@ function buildAdapterInputContract(requiredResponseFields) {
     mustReceiveVisualFixHints: true,
     mustReceiveWorldFactMetadata: true,
     mustUseRunnerBoundary: true,
-    mustNotRewriteWorldFacts: true,
-    mustNotDisplayDirectly: true,
-    mustNotCopyUnlicensedThirdPartyWorks: true,
     requiredResponseFields,
   }
 }
@@ -178,15 +177,18 @@ function buildAdapterOutputContract(requiredResponseFields) {
     minimumHeight: MINIMUM_IMAGE_HEIGHT,
     mustReturnBitmap: true,
     mustReturnHttpHttpsOrDataImageUrl: true,
-    mustNotReturnLocalFilePath: true,
-    mustNotReturnSvg: true,
-    mustNotReturnHtml: true,
-    mustNotReturnJsonDebugImage: true,
-    mustNotReturnPlaceholder: true,
-    mustNotReturnProgrammaticRenderer: true,
     mustPersistOnlyAsHiddenCandidate: true,
     mustPassVisualJudge: true,
     canShowToPlayer: false,
+  }
+}
+
+function pickRunnerInput(input = {}) {
+  return {
+    enabled: input.enabled,
+    command: input.command,
+    argsJson: input.argsJson,
+    timeoutMs: input.timeoutMs,
   }
 }
 
