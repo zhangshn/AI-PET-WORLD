@@ -1,4 +1,4 @@
-// 当前文件作用：定义 AI-PET-WORLD 自研真实图像生成 runner 边界；真实推理未接入前不生成图片、不返回假图。
+// 当前文件作用：定义 AI-PET-WORLD 自研真实图像生成 runner 边界；转发 implementation 的正式 6 字段结果。
 
 import {
   ALLOWED_IMAGE_FORMATS,
@@ -16,56 +16,39 @@ import {
 import { readRealImageModelReadiness } from "./real-model-readiness.mjs"
 
 const RUNNER_NAME = "ai-pet-world-real-image-generation-runner"
-const RUNNER_VERSION = "runner-not-connected-2"
+const RUNNER_VERSION = "runner-result-forwarding-1"
 
 export function readRealImageRunnerHealth(input = {}) {
   const requiredResponseFields = readRequiredResponseFields(input)
   const readiness = readRealImageModelReadiness(input.realModelReadiness)
   const outputStorage = readLocalImageOutputStorageStatus(input.outputStorage)
   const implementation = readRealImageRunnerImplementationHealth({
+    ...pickExecutorInput(input),
     readiness,
     outputStorage,
     requiredResponseFields,
+    requestBody: input.requestBody,
   })
 
   return {
-    ok: false,
-    status: "real_image_generation_runner_not_connected",
+    ok: implementation.ok === true,
+    status:
+      implementation.ok === true
+        ? "real_image_generation_runner_ready"
+        : "real_image_generation_runner_blocked",
     runner: RUNNER_NAME,
     version: RUNNER_VERSION,
-    runnerConnected: false,
-    canRunInference: false,
+    runnerConnected: implementation.ok === true,
+    canRunInference: implementation.ok === true,
     canGenerateRealBitmap: false,
-    acceptsReadinessGate: true,
-    acceptsPromptPackage: true,
-    acceptsControlSketch: true,
-    acceptsVisualFixHints: true,
-    acceptsWorldFactLockedRequest: true,
     requiredResponseShape: requiredResponseFields,
     inputContract: buildRunnerInputContract(requiredResponseFields),
     outputContract: buildRunnerOutputContract(requiredResponseFields),
     readiness,
     outputStorage,
     implementation,
-    message:
-      "真实图像生成 runner 已连接 implementation 文件入口，但尚未接入自研推理实现。当前不能生成图片，也不会返回假图。",
-    messageEn:
-      "The real image generation runner is connected to the implementation entry, but no in-house inference implementation is connected yet. It cannot generate images and will not return fake images.",
-    nextStep: {
-      zh: "下一步在 runner implementation 中接入真实自研推理流程；接入后必须写入 output-storage，并返回 public imageUrl 与 6 个正式字段。",
-      en: "Next connect the real in-house inference flow inside the runner implementation. After connection, it must write into output-storage and return a public imageUrl plus the six formal fields.",
-    },
     canShowToPlayer: false,
-    tags: [
-      "real_image_generation_runner",
-      "runner_not_connected",
-      ...readiness.tags,
-      ...implementation.tags,
-      "output_storage_ready",
-      "does_not_generate",
-      "fake_image_forbidden",
-      "not_player_visible",
-    ],
+    tags: ["real_image_generation_runner", "not_player_visible"],
   }
 }
 
@@ -74,27 +57,106 @@ export async function runRealImageRunnerDryRun(input = {}) {
   const readiness = readRealImageModelReadiness(input.realModelReadiness)
   const outputStorage = readLocalImageOutputStorageStatus(input.outputStorage)
   const implementation = await runRealImageRunnerImplementationDryRun({
+    ...pickExecutorInput(input),
     requestAudit: input.requestAudit,
     readiness,
     outputStorage,
     requiredResponseFields,
+    requestBody: input.requestBody,
   })
 
+  if (implementation.ok === true) {
+    return {
+      ...implementation,
+      status: "real_image_generation_runner_dry_run_passed",
+      runner: RUNNER_NAME,
+      version: RUNNER_VERSION,
+      runnerConnected: true,
+      readiness,
+      outputStorage,
+      implementation,
+      canShowToPlayer: false,
+    }
+  }
+
+  return buildBlockedRunnerResponse({
+    status: "real_image_generation_runner_blocked",
+    input,
+    readiness,
+    outputStorage,
+    implementation,
+    requiredResponseFields,
+    dryRun: true,
+  })
+}
+
+export async function generateRealImageWithRunner(input = {}) {
+  const requiredResponseFields = readRequiredResponseFields(input)
+  const readiness = readRealImageModelReadiness(input.realModelReadiness)
+  const outputStorage = readLocalImageOutputStorageStatus(input.outputStorage)
+  const implementation = await generateRealImageWithRunnerImplementation({
+    ...pickExecutorInput(input),
+    requestAudit: input.requestAudit,
+    readiness,
+    outputStorage,
+    requiredResponseFields,
+    requestBody: input.requestBody,
+  })
+
+  if (implementation.ok === true) {
+    return {
+      ok: true,
+      status: "real_image_generation_runner_generate_passed",
+      runner: RUNNER_NAME,
+      version: RUNNER_VERSION,
+      runnerConnected: true,
+      canRunInference: true,
+      canGenerateRealBitmap: true,
+      ...(input.requestAudit ?? {}),
+      imageUrl: implementation.imageUrl,
+      imageFormat: implementation.imageFormat,
+      width: implementation.width,
+      height: implementation.height,
+      license: implementation.license,
+      originalityConfirmed: implementation.originalityConfirmed,
+      requiredResponseShape: requiredResponseFields,
+      inputContract: buildRunnerInputContract(requiredResponseFields),
+      outputContract: buildRunnerOutputContract(requiredResponseFields),
+      readiness,
+      outputStorage,
+      implementation,
+      canShowToPlayer: false,
+      tags: ["real_image_generation_runner", "hidden_candidate_only"],
+    }
+  }
+
+  return buildBlockedRunnerResponse({
+    status: "real_image_generation_runner_blocked",
+    input,
+    readiness,
+    outputStorage,
+    implementation,
+    requiredResponseFields,
+    dryRun: false,
+  })
+}
+
+function buildBlockedRunnerResponse(input) {
   return {
     ok: false,
-    status: "real_image_generation_runner_not_connected",
+    status: input.status,
     runner: RUNNER_NAME,
     version: RUNNER_VERSION,
     runnerConnected: false,
     canRunInference: false,
     canGenerateRealBitmap: false,
-    ...(input.requestAudit ?? {}),
-    requiredResponseShape: requiredResponseFields,
-    inputContract: buildRunnerInputContract(requiredResponseFields),
-    outputContract: buildRunnerOutputContract(requiredResponseFields),
-    readiness,
-    outputStorage,
-    implementation,
+    ...(input.input.requestAudit ?? {}),
+    requiredResponseShape: input.requiredResponseFields,
+    inputContract: buildRunnerInputContract(input.requiredResponseFields),
+    outputContract: buildRunnerOutputContract(input.requiredResponseFields),
+    readiness: input.readiness,
+    outputStorage: input.outputStorage,
+    implementation: input.implementation,
     willReturnImageUrl: false,
     willReturnImageFormat: false,
     willReturnWidth: false,
@@ -103,70 +165,10 @@ export async function runRealImageRunnerDryRun(input = {}) {
     willReturnOriginalityConfirmed: false,
     willWriteOutputFile: false,
     willPersistOnlyAsHiddenCandidate: false,
-    message:
-      "真实图像生成 runner 已连接 implementation 文件入口，但 implementation 尚未接入推理实现，因此 dry-run 不能声明会返回真实图片字段。",
-    messageEn:
-      "The real image generation runner is connected to the implementation entry, but the implementation has not connected inference yet, so dry-run cannot declare real image fields.",
-    nextStep: {
-      zh: "接入真实推理实现后，dry-run 才能返回 ok=true，并声明会返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
-      en: "After connecting real inference, dry-run may return ok=true and declare imageUrl / imageFormat / width / height / license / originalityConfirmed.",
-    },
     canShowToPlayer: false,
     tags: [
       "real_image_generation_runner",
-      "runner_not_connected",
-      "dry_run_blocked",
-      ...readiness.tags,
-      ...implementation.tags,
-      "does_not_generate",
-      "fake_image_forbidden",
-      "not_player_visible",
-    ],
-  }
-}
-
-export async function generateRealImageWithRunner(input = {}) {
-  const requiredResponseFields = readRequiredResponseFields(input)
-  const readiness = readRealImageModelReadiness(input.realModelReadiness)
-  const outputStorage = readLocalImageOutputStorageStatus(input.outputStorage)
-  const implementation = await generateRealImageWithRunnerImplementation({
-    requestAudit: input.requestAudit,
-    readiness,
-    outputStorage,
-    requiredResponseFields,
-  })
-
-  return {
-    ok: false,
-    status: "real_image_generation_runner_not_connected",
-    runner: RUNNER_NAME,
-    version: RUNNER_VERSION,
-    runnerConnected: false,
-    canRunInference: false,
-    canGenerateRealBitmap: false,
-    ...(input.requestAudit ?? {}),
-    requiredResponseShape: requiredResponseFields,
-    inputContract: buildRunnerInputContract(requiredResponseFields),
-    outputContract: buildRunnerOutputContract(requiredResponseFields),
-    readiness,
-    outputStorage,
-    implementation,
-    message:
-      "真实图像生成 runner 已连接 implementation 文件入口，但 implementation 尚未接入推理实现。不会返回假图、占位图、SVG、HTML、JSON 调试图或程序绘图结果。",
-    messageEn:
-      "The real image generation runner is connected to the implementation entry, but the implementation has not connected inference yet. It will not return fake images, placeholders, SVG, HTML, debug JSON images, or programmatic render results.",
-    nextStep: {
-      zh: "下一步在 runner implementation 中接入真实自研推理实现，使它写入 PNG/WebP/JPG 文件，并返回正式 6 字段。",
-      en: "Next connect the real in-house inference implementation inside the runner implementation so it writes PNG/WebP/JPG files and returns the six formal fields.",
-    },
-    canShowToPlayer: false,
-    tags: [
-      "real_image_generation_runner",
-      "runner_not_connected",
-      "generate_blocked",
-      ...readiness.tags,
-      ...implementation.tags,
-      "does_not_generate",
+      input.dryRun ? "dry_run_blocked" : "generate_blocked",
       "fake_image_forbidden",
       "not_player_visible",
     ],
@@ -178,13 +180,6 @@ function buildRunnerInputContract(requiredResponseFields) {
     mustReceiveReadinessGate: true,
     mustReceiveModelTask: true,
     mustReceivePromptPackage: true,
-    mustReceiveControlSketch: true,
-    mustReceiveResponseContract: true,
-    mustReceiveVisualFixHints: true,
-    mustReceiveWorldFactMetadata: true,
-    mustNotRewriteWorldFacts: true,
-    mustNotDisplayDirectly: true,
-    mustNotCopyUnlicensedThirdPartyWorks: true,
     mustUseOutputStorage: true,
     mustUseRunnerImplementation: true,
     requiredResponseFields,
@@ -201,16 +196,18 @@ function buildRunnerOutputContract(requiredResponseFields) {
     mustReturnBitmap: true,
     mustWriteFileUnderOutputStorage: true,
     mustReturnPublicHttpUrl: true,
-    mustNotReturnLocalFilePath: true,
-    mustNotReturnFileUrl: true,
-    mustNotReturnSvg: true,
-    mustNotReturnHtml: true,
-    mustNotReturnJsonDebugImage: true,
-    mustNotReturnPlaceholder: true,
-    mustNotReturnProgrammaticRenderer: true,
     mustPersistOnlyAsHiddenCandidate: true,
     mustPassVisualJudge: true,
     canShowToPlayer: false,
+  }
+}
+
+function pickExecutorInput(input = {}) {
+  return {
+    enabled: input.enabled,
+    command: input.command,
+    argsJson: input.argsJson,
+    timeoutMs: input.timeoutMs,
   }
 }
 
