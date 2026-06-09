@@ -16,7 +16,7 @@ import {
 import { readRealImageModelReadiness } from "./real-model-readiness.mjs"
 
 const RUNNER_NAME = "ai-pet-world-real-image-generation-runner"
-const RUNNER_VERSION = "runner-result-forwarding-1"
+const RUNNER_VERSION = "runner-result-forwarding-2"
 
 export function readRealImageRunnerHealth(input = {}) {
   const requiredResponseFields = readRequiredResponseFields(input)
@@ -208,6 +208,7 @@ function pickExecutorInput(input = {}) {
     command: input.command,
     argsJson: input.argsJson,
     timeoutMs: input.timeoutMs,
+    workerEnv: input.workerEnv,
   }
 }
 
