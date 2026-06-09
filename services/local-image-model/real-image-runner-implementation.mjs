@@ -19,7 +19,7 @@ import {
 
 const RUNNER_IMPLEMENTATION_NAME =
   "ai-pet-world-real-image-runner-implementation"
-const RUNNER_IMPLEMENTATION_VERSION = "implementation-result-mapped-1"
+const RUNNER_IMPLEMENTATION_VERSION = "implementation-result-mapped-2"
 
 export function readRealImageRunnerImplementationHealth(input = {}) {
   const requiredResponseFields = readRequiredResponseFields(input)
@@ -58,6 +58,7 @@ export function readRealImageRunnerImplementationHealth(input = {}) {
     executionContract,
     executorStdinPayload,
     executorShell,
+    workerEnv: sanitizeWorkerEnv(input.workerEnv),
     canShowToPlayer: false,
     tags: [
       "real_image_runner_implementation",
@@ -103,6 +104,7 @@ export async function runRealImageRunnerImplementationDryRun(input = {}) {
       executorStdinPayloadConnected: true,
       executorStdinPayload,
       executorShell,
+      workerEnv: sanitizeWorkerEnv(input.workerEnv),
       canRunInference: true,
       canGenerateRealBitmap: false,
       canWriteOutputFile: true,
@@ -127,6 +129,7 @@ export async function runRealImageRunnerImplementationDryRun(input = {}) {
     executionContract,
     executorStdinPayload,
     executorShell,
+    workerEnv: sanitizeWorkerEnv(input.workerEnv),
     willReturnImageUrl: false,
     willReturnImageFormat: false,
     willReturnWidth: false,
@@ -163,6 +166,7 @@ export async function generateRealImageWithRunnerImplementation(input = {}) {
     command: input.command,
     argsJson: input.argsJson,
     timeoutMs: input.timeoutMs,
+    workerEnv: input.workerEnv,
     outputStorage: input.outputStorage,
     requiredResponseFields,
     executorStdinPayload:
@@ -188,6 +192,7 @@ export async function generateRealImageWithRunnerImplementation(input = {}) {
       executorStdinPayloadConnected: true,
       executorStdinPayload,
       executorShell,
+      workerEnv: sanitizeWorkerEnv(input.workerEnv),
       canRunInference: response.ok === true,
       canGenerateRealBitmap: response.ok === true,
       canWriteOutputFile: response.ok === true,
@@ -212,6 +217,7 @@ export async function generateRealImageWithRunnerImplementation(input = {}) {
     executionContract,
     executorStdinPayload,
     executorShell,
+    workerEnv: sanitizeWorkerEnv(input.workerEnv),
     canShowToPlayer: false,
     tags: [
       "real_image_runner_implementation",
@@ -253,7 +259,7 @@ function buildImplementationExecutorStdinPayload(input = {}) {
     audit: {
       ...(input.audit ?? {}),
       ...(input.requestAudit ?? {}),
-      node: "MD-NEXT-LOCAL-MODEL-IMPLEMENTATION-16-BLOCK",
+      node: "MD-NEXT-LOCAL-MODEL-IMPLEMENTATION-19",
     },
     constraints: input.constraints,
     requiredResponseFields: input.requiredResponseFields,
@@ -302,6 +308,18 @@ function buildImplementationOutputContract(requiredResponseFields) {
     mustPassVisualJudge: true,
     canShowToPlayer: false,
   }
+}
+
+function sanitizeWorkerEnv(workerEnv = {}) {
+  if (!workerEnv || typeof workerEnv !== "object" || Array.isArray(workerEnv)) {
+    return {}
+  }
+
+  return Object.fromEntries(
+    Object.entries(workerEnv).filter(
+      ([, value]) => typeof value === "string" && value.length > 0
+    )
+  )
 }
 
 function readRequiredResponseFields(input = {}) {
