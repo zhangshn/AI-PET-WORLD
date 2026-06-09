@@ -225,7 +225,7 @@ function readOptionalResolvedPath(value, baseDirectory = null) {
     return path.resolve(baseDirectory, trimmed)
   }
 
-  return path.resolve(process.cwd(), trimmed)
+  return path.resolve(/* turbopackIgnore: true */ process.cwd(), trimmed)
 }
 
 function readSafeStat(targetPath) {
