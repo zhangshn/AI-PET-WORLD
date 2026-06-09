@@ -4,6 +4,11 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 
+import {
+  readRealImageModelWorkerHealth,
+  readRealImageModelWorkerConfig,
+} from "../services/local-image-model/real-image-model-worker.mjs"
+
 const WORKER_PATH = path.resolve(
   "services",
   "local-image-model",
@@ -15,6 +20,8 @@ await main()
 async function main() {
   printTitle("AI-PET-WORLD real image model worker test")
 
+  testWorkerHealthBlocksWithoutInferenceCommand()
+  testWorkerHealthReadyWithInferenceCommand()
   await testWorkerBlocksWithoutInferenceCommand()
   await testWorkerRejectsInvalidInferenceStdout()
   await testWorkerRejectsMissingOutputFile()
@@ -23,6 +30,44 @@ async function main() {
 
   console.log("")
   console.log("RESULT: real image model worker test passed.")
+}
+
+function testWorkerHealthBlocksWithoutInferenceCommand() {
+  const fixture = createFixture("health-missing-command")
+  const config = readRealImageModelWorkerConfig({
+    outputDirectory: fixture.outputDirectory,
+  })
+  const health = readRealImageModelWorkerHealth({
+    outputDirectory: fixture.outputDirectory,
+  })
+
+  assert.equal(config.command, "")
+  assert.equal(config.argsValid, true)
+  assert.equal(health.ok, false)
+  assert.equal(health.status, "real_image_model_worker_inference_command_missing")
+  assert.equal(health.canShowToPlayer, false)
+
+  printCheck("worker health blocks without inference command")
+}
+
+function testWorkerHealthReadyWithInferenceCommand() {
+  const fixture = createFixture("health-ready")
+  const inference = createInferenceFile(fixture, `process.stdout.write("{}")\n`)
+  const health = readRealImageModelWorkerHealth({
+    command: process.execPath,
+    argsJson: JSON.stringify([inference]),
+    outputDirectory: fixture.outputDirectory,
+  })
+
+  assert.equal(health.ok, true)
+  assert.equal(health.status, "real_image_model_worker_ready")
+  assert.equal(health.inferenceCommandConfigured, true)
+  assert.equal(health.inferenceArgsValid, true)
+  assert.equal(health.outputDirectoryConfigured, true)
+  assert.equal(health.willExecuteCommand, false)
+  assert.equal(health.canShowToPlayer, false)
+
+  printCheck("worker health ready with inference command")
 }
 
 async function testWorkerBlocksWithoutInferenceCommand() {
