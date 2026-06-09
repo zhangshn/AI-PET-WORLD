@@ -21,7 +21,7 @@ export const REAL_IMAGE_EXECUTOR_SHELL_ENV = {
 }
 
 const EXECUTOR_SHELL_NAME = "ai-pet-world-real-image-executor-shell"
-const EXECUTOR_SHELL_VERSION = "executor-shell-worker-env-1"
+const EXECUTOR_SHELL_VERSION = "executor-shell-worker-env-2"
 
 const MAX_EXECUTOR_STDOUT_BYTES = 1024 * 1024
 const MAX_EXECUTOR_STDERR_BYTES = 64 * 1024
@@ -630,6 +630,14 @@ function readOptionalString(value) {
 }
 
 function readArgsJson(value) {
+  if (Array.isArray(value)) {
+    if (value.some((item) => typeof item !== "string")) {
+      return { ok: false, args: [] }
+    }
+
+    return { ok: true, args: value }
+  }
+
   if (typeof value !== "string" || !value.trim()) {
     return { ok: true, args: [] }
   }
