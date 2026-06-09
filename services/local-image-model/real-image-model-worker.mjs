@@ -3,12 +3,20 @@
 import { spawn } from "node:child_process"
 import fs from "node:fs/promises"
 import path from "node:path"
+import { pathToFileURL } from "node:url"
 
 import { validateRealImageExecutionStdoutPayload } from "./real-image-execution-contract.mjs"
 import { validateLocalImageOutputFileName } from "./output-storage.mjs"
 
-const WORKER_NAME = "ai-pet-world-real-image-model-worker"
-const WORKER_VERSION = "real-model-worker-command-bridge-1"
+export const REAL_IMAGE_MODEL_WORKER_NAME = "ai-pet-world-real-image-model-worker"
+export const REAL_IMAGE_MODEL_WORKER_VERSION = "real-model-worker-command-bridge-2"
+export const REAL_IMAGE_MODEL_WORKER_ENV = {
+  command: "AI_PET_WORLD_REAL_IMAGE_INFERENCE_COMMAND",
+  argsJson: "AI_PET_WORLD_REAL_IMAGE_INFERENCE_ARGS_JSON",
+  timeoutMs: "AI_PET_WORLD_REAL_IMAGE_INFERENCE_TIMEOUT_MS",
+  outputDirectory: "AI_PET_WORLD_LOCAL_IMAGE_OUTPUT_DIR",
+}
+
 const MAX_STDOUT_BYTES = 1024 * 1024
 const MAX_STDERR_BYTES = 64 * 1024
 const DEFAULT_TIMEOUT_MS = 600_000
@@ -16,19 +24,91 @@ const MIN_TIMEOUT_MS = 1_000
 const MAX_TIMEOUT_MS = 3_600_000
 const KILL_GRACE_MS = 1_000
 
-const ENV = {
-  command: "AI_PET_WORLD_REAL_IMAGE_INFERENCE_COMMAND",
-  argsJson: "AI_PET_WORLD_REAL_IMAGE_INFERENCE_ARGS_JSON",
-  timeoutMs: "AI_PET_WORLD_REAL_IMAGE_INFERENCE_TIMEOUT_MS",
-  outputDirectory: "AI_PET_WORLD_LOCAL_IMAGE_OUTPUT_DIR",
+if (isExecutedDirectly()) {
+  main().catch((error) => {
+    writeFailureAndExit({
+      status: "real_image_model_worker_unhandled_error",
+      message: error instanceof Error ? error.message : String(error),
+    })
+  })
 }
 
-main().catch((error) => {
-  writeFailureAndExit({
-    status: "real_image_model_worker_unhandled_error",
-    message: error instanceof Error ? error.message : String(error),
-  })
-})
+export function readRealImageModelWorkerConfig(input = {}) {
+  const argsResult = readArgsJson(
+    input.argsJson ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.argsJson]
+  )
+
+  return {
+    command: readOptionalString(
+      input.command ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.command]
+    ),
+    args: argsResult.args,
+    argsValid: argsResult.ok,
+    argsJsonConfigured: Boolean(
+      readOptionalString(
+        input.argsJson ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.argsJson]
+      )
+    ),
+    timeoutMs: readTimeoutMs(
+      input.timeoutMs ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.timeoutMs]
+    ),
+    outputDirectory: readOptionalString(
+      input.outputDirectory ??
+        process.env[REAL_IMAGE_MODEL_WORKER_ENV.outputDirectory]
+    ),
+  }
+}
+
+export function readRealImageModelWorkerHealth(input = {}) {
+  const config = readRealImageModelWorkerConfig(input)
+
+  if (!config.command) {
+    return buildWorkerHealthFailure({
+      status: "real_image_model_worker_inference_command_missing",
+      config,
+      tags: ["inference_command_missing"],
+    })
+  }
+
+  if (!config.argsValid) {
+    return buildWorkerHealthFailure({
+      status: "real_image_model_worker_inference_args_invalid",
+      config,
+      tags: ["inference_args_invalid"],
+    })
+  }
+
+  if (!config.outputDirectory) {
+    return buildWorkerHealthFailure({
+      status: "real_image_model_worker_output_directory_missing",
+      config,
+      tags: ["output_directory_missing"],
+    })
+  }
+
+  return {
+    ok: true,
+    status: "real_image_model_worker_ready",
+    worker: REAL_IMAGE_MODEL_WORKER_NAME,
+    version: REAL_IMAGE_MODEL_WORKER_VERSION,
+    inferenceCommandConfigured: true,
+    inferenceArgsValid: true,
+    outputDirectoryConfigured: true,
+    timeoutMs: config.timeoutMs,
+    canBridgeInferenceCommand: true,
+    canGenerateRealBitmap: false,
+    willExecuteCommand: false,
+    willWriteOutputFile: false,
+    canShowToPlayer: false,
+    tags: [
+      "real_image_model_worker",
+      "worker_ready",
+      "external_inference_command_configured",
+      "does_not_execute_on_health",
+      "not_player_visible",
+    ],
+  }
+}
 
 async function main() {
   const stdinResult = await readStdinJson()
@@ -39,7 +119,7 @@ async function main() {
   }
 
   const payload = stdinResult.payload
-  const config = readWorkerConfig()
+  const config = readRealImageModelWorkerConfig()
 
   if (!config.command) {
     writeFailureAndExit({
@@ -79,10 +159,7 @@ async function main() {
     return
   }
 
-  const commandResult = await runInferenceCommand({
-    config,
-    payload,
-  })
+  const commandResult = await runInferenceCommand({ config, payload })
 
   if (!commandResult.ok) {
     writeFailureAndExit(commandResult)
@@ -177,18 +254,6 @@ async function readStdinJson() {
   }
 }
 
-function readWorkerConfig() {
-  const argsResult = readArgsJson(process.env[ENV.argsJson])
-
-  return {
-    command: readOptionalString(process.env[ENV.command]),
-    args: argsResult.args,
-    argsValid: argsResult.ok,
-    timeoutMs: readTimeoutMs(process.env[ENV.timeoutMs]),
-    outputDirectory: readOptionalString(process.env[ENV.outputDirectory]),
-  }
-}
-
 function readArgsJson(value) {
   if (typeof value !== "string" || !value.trim()) {
     return { ok: true, args: [] }
@@ -246,10 +311,7 @@ async function runInferenceCommand(input) {
         },
       })
     } catch {
-      finish({
-        ok: false,
-        status: "real_image_model_worker_spawn_failed",
-      })
+      finish({ ok: false, status: "real_image_model_worker_spawn_failed" })
       return
     }
 
@@ -331,10 +393,7 @@ async function verifyGeneratedBitmapFile(input) {
   const outputFilePath = path.resolve(outputDirectory, input.outputFileName)
 
   if (!isPathInsideDirectory(outputFilePath, outputDirectory)) {
-    return {
-      ok: false,
-      status: "real_image_model_worker_output_path_escape_forbidden",
-    }
+    return { ok: false, status: "real_image_model_worker_output_path_escape_forbidden" }
   }
 
   let fileStat
@@ -514,8 +573,8 @@ function writeSuccess(input) {
       license: input.license,
       originalityConfirmed: input.originalityConfirmed,
       canShowToPlayer: false,
-      worker: WORKER_NAME,
-      version: WORKER_VERSION,
+      worker: REAL_IMAGE_MODEL_WORKER_NAME,
+      version: REAL_IMAGE_MODEL_WORKER_VERSION,
     })
   )
 }
@@ -527,12 +586,31 @@ function writeFailureAndExit(input) {
       status: input.status,
       message: input.message ?? null,
       detail: input.detail ?? null,
-      worker: WORKER_NAME,
-      version: WORKER_VERSION,
+      worker: REAL_IMAGE_MODEL_WORKER_NAME,
+      version: REAL_IMAGE_MODEL_WORKER_VERSION,
       canShowToPlayer: false,
     })
   )
   process.exitCode = 1
+}
+
+function buildWorkerHealthFailure(input) {
+  return {
+    ok: false,
+    status: input.status,
+    worker: REAL_IMAGE_MODEL_WORKER_NAME,
+    version: REAL_IMAGE_MODEL_WORKER_VERSION,
+    inferenceCommandConfigured: Boolean(input.config.command),
+    inferenceArgsValid: input.config.argsValid,
+    outputDirectoryConfigured: Boolean(input.config.outputDirectory),
+    timeoutMs: input.config.timeoutMs,
+    canBridgeInferenceCommand: false,
+    canGenerateRealBitmap: false,
+    willExecuteCommand: false,
+    willWriteOutputFile: false,
+    canShowToPlayer: false,
+    tags: ["real_image_model_worker", ...input.tags, "not_player_visible"],
+  }
 }
 
 function createTextCapture(maxBytes) {
@@ -568,4 +646,10 @@ function isRecord(value) {
 function isPathInsideDirectory(targetPath, directory) {
   const relative = path.relative(directory, targetPath)
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative))
+}
+
+function isExecutedDirectly() {
+  return process.argv[1]
+    ? import.meta.url === pathToFileURL(process.argv[1]).href
+    : false
 }
