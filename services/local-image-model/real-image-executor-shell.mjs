@@ -39,10 +39,6 @@ export function readRealImageExecutorShellHealth(input = {}) {
       status: "real_image_executor_shell_disabled",
       config,
       executionContract,
-      message:
-        "真实图像推理执行器 shell 尚未启用，因此不会执行命令，也不会生成图片。",
-      messageEn:
-        "The real image executor shell is not enabled, so it will not execute commands and will not generate images.",
       tags: ["executor_shell_disabled"],
     })
   }
@@ -52,8 +48,6 @@ export function readRealImageExecutorShellHealth(input = {}) {
       status: "real_image_executor_shell_command_missing",
       config,
       executionContract,
-      message: `真实图像推理执行器 shell 已启用，但缺少 ${REAL_IMAGE_EXECUTOR_SHELL_ENV.command}。`,
-      messageEn: `The real image executor shell is enabled, but ${REAL_IMAGE_EXECUTOR_SHELL_ENV.command} is missing.`,
       tags: ["executor_command_missing"],
     })
   }
@@ -63,8 +57,6 @@ export function readRealImageExecutorShellHealth(input = {}) {
       status: "real_image_executor_shell_args_invalid",
       config,
       executionContract,
-      message: `${REAL_IMAGE_EXECUTOR_SHELL_ENV.argsJson} 必须是 JSON 字符串数组。`,
-      messageEn: `${REAL_IMAGE_EXECUTOR_SHELL_ENV.argsJson} must be a JSON string array.`,
       tags: ["executor_args_invalid"],
     })
   }
@@ -84,14 +76,6 @@ export function readRealImageExecutorShellHealth(input = {}) {
     canGenerateRealBitmap: false,
     willExecuteCommand: false,
     executionContract,
-    message:
-      "真实图像推理执行器 shell 已接入 child_process 边界。只有 execute 阶段收到合法 executor stdin payload 时才会执行命令。",
-    messageEn:
-      "The real image executor shell is connected to the child_process boundary. It will execute only during the execute phase after receiving a valid executor stdin payload.",
-    nextStep: {
-      zh: "execute 阶段会通过 stdin 发送 JSON 请求，读取 stdout JSON，并经过 execution contract 与 output-storage 校验。",
-      en: "The execute phase will send a JSON request through stdin, read stdout JSON, and validate it through the execution contract and output-storage.",
-    },
     canShowToPlayer: false,
     tags: [
       "real_image_executor_shell",
@@ -99,7 +83,6 @@ export function readRealImageExecutorShellHealth(input = {}) {
       "child_process_connected",
       "stdin_json_required",
       "stdout_json_required",
-      "fake_image_forbidden",
       "not_player_visible",
     ],
   }
@@ -131,20 +114,8 @@ export async function runRealImageExecutorShellDryRun(input = {}) {
       willReturnLicense: false,
       willReturnOriginalityConfirmed: false,
       executionContract: health.executionContract,
-      message:
-        "真实图像推理执行器 shell dry-run 只暴露配置与契约；当前配置不足，因此不会执行命令。",
-      messageEn:
-        "The real image executor shell dry-run only exposes configuration and contracts. The current configuration is not ready, so no command will run.",
       canShowToPlayer: false,
-      tags: [
-        "real_image_executor_shell",
-        "dry_run_blocked",
-        ...health.tags,
-        "does_not_execute",
-        "does_not_generate",
-        "fake_image_forbidden",
-        "not_player_visible",
-      ],
+      tags: ["real_image_executor_shell", "dry_run_blocked", "not_player_visible"],
     }
   }
 
@@ -170,20 +141,8 @@ export async function runRealImageExecutorShellDryRun(input = {}) {
     willReturnLicense: false,
     willReturnOriginalityConfirmed: false,
     executionContract: health.executionContract,
-    message:
-      "真实图像推理执行器 shell dry-run 已确认 child_process 配置可用，但 dry-run 不会执行命令，也不会生成图片。",
-    messageEn:
-      "The real image executor shell dry-run confirms that the child_process configuration is usable, but dry-run will not execute commands or generate images.",
     canShowToPlayer: false,
-    tags: [
-      "real_image_executor_shell",
-      "dry_run_ready",
-      ...health.tags,
-      "dry_run_does_not_execute",
-      "does_not_generate",
-      "fake_image_forbidden",
-      "not_player_visible",
-    ],
+    tags: ["real_image_executor_shell", "dry_run_ready", "not_player_visible"],
   }
 }
 
@@ -195,10 +154,6 @@ export async function executeRealImageWithExecutorShell(input = {}) {
     return buildShellExecutionBlocked({
       status: health.status,
       health,
-      message:
-        "真实图像推理执行器 shell 当前不可执行命令：未启用、缺少命令或参数配置不合法。",
-      messageEn:
-        "The real image executor shell cannot execute commands now: it is disabled, missing a command, or has invalid args configuration.",
       tags: ["executor_shell_not_ready"],
     })
   }
@@ -209,10 +164,6 @@ export async function executeRealImageWithExecutorShell(input = {}) {
     return buildShellExecutionBlocked({
       status: "real_image_executor_shell_payload_missing",
       health,
-      message:
-        "真实图像推理执行器 shell 缺少 executor stdin payload，因此不会执行命令。",
-      messageEn:
-        "The real image executor shell is missing the executor stdin payload, so no command will run.",
       tags: ["executor_stdin_payload_missing"],
     })
   }
@@ -230,10 +181,6 @@ export async function executeRealImageWithExecutorShell(input = {}) {
       status: "real_image_executor_shell_execution_request_invalid",
       health,
       executionRequestValidation,
-      message:
-        "真实图像推理执行请求没有通过 execution contract，因此不会执行命令。",
-      messageEn:
-        "The real image execution request did not pass the execution contract, so no command will run.",
       tags: ["execution_request_invalid"],
     })
   }
@@ -241,6 +188,7 @@ export async function executeRealImageWithExecutorShell(input = {}) {
   const commandResult = await runCommandWithStdinJson({
     config,
     payload: executorStdinPayload,
+    outputDirectory: input.outputStorage?.outputDirectory,
   })
 
   if (!commandResult.ok) {
@@ -249,8 +197,6 @@ export async function executeRealImageWithExecutorShell(input = {}) {
       health,
       executionRequestValidation,
       commandResult,
-      message: commandResult.message,
-      messageEn: commandResult.messageEn,
       tags: commandResult.tags,
     })
   }
@@ -264,8 +210,6 @@ export async function executeRealImageWithExecutorShell(input = {}) {
       executionRequestValidation,
       commandResult,
       didReturnStdoutJson: false,
-      message: parsedStdout.message,
-      messageEn: parsedStdout.messageEn,
       tags: parsedStdout.tags,
     })
   }
@@ -282,10 +226,6 @@ export async function executeRealImageWithExecutorShell(input = {}) {
       commandResult,
       stdoutValidation,
       didReturnStdoutJson: true,
-      message:
-        "真实图像推理脚本返回了 stdout JSON，但没有通过 execution stdout contract。",
-      messageEn:
-        "The real image inference script returned stdout JSON, but it did not pass the execution stdout contract.",
       tags: ["stdout_contract_invalid"],
     })
   }
@@ -304,8 +244,6 @@ export async function executeRealImageWithExecutorShell(input = {}) {
       commandResult,
       stdoutValidation,
       didReturnStdoutJson: true,
-      message: outputReference.message,
-      messageEn: outputReference.messageEn,
       tags: outputReference.tags,
     })
   }
@@ -336,10 +274,6 @@ export async function executeRealImageWithExecutorShell(input = {}) {
     license: stdoutValidation.license,
     originalityConfirmed: stdoutValidation.originalityConfirmed,
     canShowToPlayer: false,
-    message:
-      "真实图像推理执行器 shell 已成功执行命令，并通过 stdout contract 与 output-storage 校验。该结果仍只能作为隐藏 AiImageCandidate 的来源，不能直接展示给玩家。",
-    messageEn:
-      "The real image executor shell executed the command successfully and passed stdout contract plus output-storage validation. This result may only source a hidden AiImageCandidate and must not be shown directly to the player.",
     tags: [
       "real_image_executor_shell",
       "child_process_executed",
@@ -357,15 +291,12 @@ export function readRealImageExecutorShellConfig(input = {}) {
   const enabled = readBoolean(
     input.enabled ?? process.env[REAL_IMAGE_EXECUTOR_SHELL_ENV.enabled]
   )
-
   const command = readOptionalString(
     input.command ?? process.env[REAL_IMAGE_EXECUTOR_SHELL_ENV.command]
   )
-
   const argsResult = readArgsJson(
     input.argsJson ?? process.env[REAL_IMAGE_EXECUTOR_SHELL_ENV.argsJson]
   )
-
   const timeoutMs = readTimeoutMs(
     input.timeoutMs ?? process.env[REAL_IMAGE_EXECUTOR_SHELL_ENV.timeoutMs]
   )
@@ -395,17 +326,8 @@ function buildShellDisabledResponse(input) {
     canGenerateRealBitmap: false,
     willExecuteCommand: false,
     executionContract: input.executionContract,
-    message: input.message,
-    messageEn: input.messageEn,
     canShowToPlayer: false,
-    tags: [
-      "real_image_executor_shell",
-      ...input.tags,
-      "does_not_execute",
-      "does_not_generate",
-      "fake_image_forbidden",
-      "not_player_visible",
-    ],
+    tags: ["real_image_executor_shell", ...input.tags, "not_player_visible"],
   }
 }
 
@@ -426,17 +348,8 @@ function buildShellExecutionBlocked(input) {
     didReturnStdoutJson: false,
     executionContract: input.health.executionContract,
     executionRequestValidation: input.executionRequestValidation,
-    message: input.message,
-    messageEn: input.messageEn,
     canShowToPlayer: false,
-    tags: [
-      "real_image_executor_shell",
-      ...input.tags,
-      "does_not_execute",
-      "does_not_generate",
-      "fake_image_forbidden",
-      "not_player_visible",
-    ],
+    tags: ["real_image_executor_shell", ...input.tags, "not_player_visible"],
   }
 }
 
@@ -465,14 +378,11 @@ function buildShellExecutionFailure(input) {
     stdoutTruncated: input.commandResult?.stdoutTruncated === true,
     stderrCaptured: input.commandResult?.stderrCaptured === true,
     stderrTruncated: input.commandResult?.stderrTruncated === true,
-    message: input.message,
-    messageEn: input.messageEn,
     canShowToPlayer: false,
     tags: [
       "real_image_executor_shell",
       ...input.tags,
       "does_not_return_image",
-      "fake_image_forbidden",
       "not_player_visible",
     ],
   }
@@ -489,10 +399,7 @@ async function runCommandWithStdinJson(input) {
 
   return new Promise((resolve) => {
     function finish(result) {
-      if (settled) {
-        return
-      }
-
+      if (settled) return
       settled = true
       clearTimeout(timeoutHandle)
       clearTimeout(killHandle)
@@ -504,14 +411,17 @@ async function runCommandWithStdinJson(input) {
         shell: false,
         windowsHide: true,
         stdio: ["pipe", "pipe", "pipe"],
+        env: {
+          ...process.env,
+          AI_PET_WORLD_LOCAL_IMAGE_OUTPUT_DIR:
+            input.outputDirectory ?? process.env.AI_PET_WORLD_LOCAL_IMAGE_OUTPUT_DIR,
+        },
       })
     } catch (error) {
       finish({
         ok: false,
         status: "real_image_executor_shell_spawn_failed",
         didExecuteCommand: false,
-        message: "真实图像推理命令启动失败。",
-        messageEn: "The real image inference command failed to start.",
         errorName: error?.name,
         tags: ["spawn_failed"],
       })
@@ -521,27 +431,19 @@ async function runCommandWithStdinJson(input) {
     timeoutHandle = setTimeout(() => {
       timedOut = true
       childProcess.kill("SIGTERM")
-
       killHandle = setTimeout(() => {
         childProcess.kill("SIGKILL")
       }, EXECUTOR_KILL_GRACE_MS)
     }, input.config.timeoutMs)
 
-    childProcess.stdout.on("data", (chunk) => {
-      appendTextCapture(stdoutCapture, chunk)
-    })
-
-    childProcess.stderr.on("data", (chunk) => {
-      appendTextCapture(stderrCapture, chunk)
-    })
+    childProcess.stdout.on("data", (chunk) => appendTextCapture(stdoutCapture, chunk))
+    childProcess.stderr.on("data", (chunk) => appendTextCapture(stderrCapture, chunk))
 
     childProcess.on("error", (error) => {
       finish({
         ok: false,
         status: "real_image_executor_shell_spawn_error",
         didExecuteCommand: false,
-        message: "真实图像推理命令发生启动错误。",
-        messageEn: "The real image inference command had a spawn error.",
         errorName: error?.name,
         tags: ["spawn_error"],
       })
@@ -559,9 +461,6 @@ async function runCommandWithStdinJson(input) {
           stdoutTruncated: stdoutCapture.truncated,
           stderrCaptured: stderrCapture.text.length > 0,
           stderrTruncated: stderrCapture.truncated,
-          message: "真实图像推理命令执行超时，已终止。",
-          messageEn:
-            "The real image inference command timed out and was terminated.",
           tags: ["executor_timeout"],
         })
         return
@@ -578,9 +477,6 @@ async function runCommandWithStdinJson(input) {
           stdoutTruncated: stdoutCapture.truncated,
           stderrCaptured: stderrCapture.text.length > 0,
           stderrTruncated: stderrCapture.truncated,
-          message: "真实图像推理命令退出码非 0。",
-          messageEn:
-            "The real image inference command exited with a non-zero code.",
           tags: ["executor_exit_non_zero"],
         })
         return
@@ -593,13 +489,9 @@ async function runCommandWithStdinJson(input) {
           didExecuteCommand: true,
           exitCode,
           signal,
-          timedOut: false,
           stdoutTruncated: true,
           stderrCaptured: stderrCapture.text.length > 0,
           stderrTruncated: stderrCapture.truncated,
-          message: "真实图像推理命令 stdout 超过允许大小。",
-          messageEn:
-            "The real image inference command stdout exceeded the allowed size.",
           tags: ["stdout_too_large"],
         })
         return
@@ -616,16 +508,11 @@ async function runCommandWithStdinJson(input) {
         stdoutTruncated: false,
         stderrCaptured: stderrCapture.text.length > 0,
         stderrTruncated: stderrCapture.truncated,
-        message: "真实图像推理命令已执行完成。",
-        messageEn: "The real image inference command completed.",
         tags: ["process_completed"],
       })
     })
 
-    childProcess.stdin.on("error", () => {
-      // 子进程提前退出时 stdin 可能关闭；最终结果统一由 error/close 分支处理。
-    })
-
+    childProcess.stdin.on("error", () => {})
     childProcess.stdin.end(JSON.stringify(input.payload))
   })
 }
@@ -637,38 +524,23 @@ function parseExecutorStdoutJson(stdoutText) {
     return {
       ok: false,
       status: "real_image_executor_shell_stdout_empty",
-      message: "真实图像推理命令没有返回 stdout JSON。",
-      messageEn:
-        "The real image inference command did not return stdout JSON.",
       tags: ["stdout_empty"],
     }
   }
 
   try {
     const payload = JSON.parse(trimmed)
-
-    if (!isRecord(payload)) {
-      return {
-        ok: false,
-        status: "real_image_executor_shell_stdout_not_object",
-        message: "真实图像推理 stdout JSON 必须是对象。",
-        messageEn:
-          "The real image inference stdout JSON must be an object.",
-        tags: ["stdout_json_not_object"],
-      }
-    }
-
-    return {
-      ok: true,
-      payload,
-    }
+    return isRecord(payload)
+      ? { ok: true, payload }
+      : {
+          ok: false,
+          status: "real_image_executor_shell_stdout_not_object",
+          tags: ["stdout_json_not_object"],
+        }
   } catch {
     return {
       ok: false,
       status: "real_image_executor_shell_stdout_json_invalid",
-      message: "真实图像推理 stdout 不是合法 JSON。",
-      messageEn:
-        "The real image inference stdout is not valid JSON.",
       tags: ["stdout_json_invalid"],
     }
   }
@@ -688,9 +560,6 @@ async function buildVerifiedShellOutputReference(input) {
     return {
       ok: false,
       status: "real_image_executor_shell_output_reference_invalid",
-      message: "真实图像推理输出文件引用没有通过 output-storage 校验。",
-      messageEn:
-        "The real image inference output file reference did not pass output-storage validation.",
       tags: reference.tags ?? ["output_reference_invalid"],
     }
   }
@@ -703,43 +572,20 @@ async function buildVerifiedShellOutputReference(input) {
     return {
       ok: false,
       status: "real_image_executor_shell_output_file_missing",
-      message:
-        "真实图像推理 stdout 声明了输出文件，但 output-storage 中没有找到该文件。",
-      messageEn:
-        "The real image inference stdout claimed an output file, but it was not found in output-storage.",
       tags: ["output_file_missing"],
     }
   }
 
   if (!fileStat.isFile()) {
-    return {
-      ok: false,
-      status: "real_image_executor_shell_output_not_file",
-      message: "真实图像推理输出目标不是文件。",
-      messageEn: "The real image inference output target is not a file.",
-      tags: ["output_not_file"],
-    }
+    return { ok: false, status: "real_image_executor_shell_output_not_file", tags: ["output_not_file"] }
   }
 
   if (fileStat.size <= 0) {
-    return {
-      ok: false,
-      status: "real_image_executor_shell_output_file_empty",
-      message: "真实图像推理输出文件为空。",
-      messageEn: "The real image inference output file is empty.",
-      tags: ["output_file_empty"],
-    }
+    return { ok: false, status: "real_image_executor_shell_output_file_empty", tags: ["output_file_empty"] }
   }
 
   if (fileStat.size > reference.maxFileBytes) {
-    return {
-      ok: false,
-      status: "real_image_executor_shell_output_file_too_large",
-      message: "真实图像推理输出文件超过 output-storage 允许大小。",
-      messageEn:
-        "The real image inference output file exceeds the output-storage size limit.",
-      tags: ["output_file_too_large"],
-    }
+    return { ok: false, status: "real_image_executor_shell_output_file_too_large", tags: ["output_file_too_large"] }
   }
 
   return {
@@ -747,21 +593,12 @@ async function buildVerifiedShellOutputReference(input) {
     imageFileName: reference.fileName,
     imageUrl: reference.imageUrl,
     canShowToPlayer: false,
-    tags: [
-      "output_file_verified",
-      "public_http_url_ready",
-      "not_player_visible",
-    ],
+    tags: ["output_file_verified", "public_http_url_ready", "not_player_visible"],
   }
 }
 
 function createTextCapture(maxBytes) {
-  return {
-    text: "",
-    bytes: 0,
-    maxBytes,
-    truncated: false,
-  }
+  return { text: "", bytes: 0, maxBytes, truncated: false }
 }
 
 function appendTextCapture(capture, chunk) {
@@ -777,76 +614,34 @@ function appendTextCapture(capture, chunk) {
   capture.text += piece.toString("utf8")
   capture.bytes += piece.length
 
-  if (piece.length < buffer.length) {
-    capture.truncated = true
-  }
+  if (piece.length < buffer.length) capture.truncated = true
 }
 
 function readBoolean(value) {
-  if (typeof value === "boolean") {
-    return value
-  }
-
-  if (typeof value !== "string") {
-    return false
-  }
-
+  if (typeof value === "boolean") return value
+  if (typeof value !== "string") return false
   return ["true", "1", "yes", "y"].includes(value.trim().toLowerCase())
 }
 
 function readOptionalString(value) {
-  if (typeof value !== "string") {
-    return ""
-  }
-
-  return value.trim()
+  return typeof value === "string" ? value.trim() : ""
 }
 
 function readArgsJson(value) {
-  if (value === undefined || value === null || value === "") {
-    return {
-      ok: true,
-      args: [],
-    }
-  }
-
-  if (Array.isArray(value) && value.every((item) => typeof item === "string")) {
-    return {
-      ok: true,
-      args: value,
-    }
-  }
-
-  if (typeof value !== "string") {
-    return {
-      ok: false,
-      args: [],
-    }
-  }
+  if (value === undefined || value === null || value === "") return { ok: true, args: [] }
+  if (Array.isArray(value) && value.every((item) => typeof item === "string")) return { ok: true, args: value }
+  if (typeof value !== "string") return { ok: false, args: [] }
 
   try {
     const parsed = JSON.parse(value)
-
-    if (
-      Array.isArray(parsed) &&
-      parsed.every((item) => typeof item === "string")
-    ) {
-      return {
-        ok: true,
-        args: parsed,
-      }
+    if (Array.isArray(parsed) && parsed.every((item) => typeof item === "string")) {
+      return { ok: true, args: parsed }
     }
   } catch {
-    return {
-      ok: false,
-      args: [],
-    }
+    return { ok: false, args: [] }
   }
 
-  return {
-    ok: false,
-    args: [],
-  }
+  return { ok: false, args: [] }
 }
 
 function readTimeoutMs(value) {
