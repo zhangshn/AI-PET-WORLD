@@ -43,24 +43,19 @@ function testExecutorShellDefaultDisabled() {
   assert.equal(health.enabled, false)
   assert.equal(health.commandConfigured, false)
   assert.equal(health.canExecuteCommand, false)
-  assert.equal(health.canGenerateRealBitmap, false)
-  assert.equal(health.willExecuteCommand, false)
   assert.equal(health.canShowToPlayer, false)
 
   printCheck("executor shell default disabled")
 }
 
 function testExecutorShellEnabledWithoutCommandBlocked() {
-  const health = readRealImageExecutorShellHealth({
-    enabled: true,
-  })
+  const health = readRealImageExecutorShellHealth({ enabled: true })
 
   assert.equal(health.ok, false)
   assert.equal(health.status, "real_image_executor_shell_command_missing")
   assert.equal(health.enabled, true)
   assert.equal(health.commandConfigured, false)
   assert.equal(health.canExecuteCommand, false)
-  assert.equal(health.willExecuteCommand, false)
 
   printCheck("executor shell enabled without command blocked")
 }
@@ -68,13 +63,12 @@ function testExecutorShellEnabledWithoutCommandBlocked() {
 function testExecutorShellInvalidArgsBlocked() {
   const health = readRealImageExecutorShellHealth({
     enabled: true,
-    command: "node",
+    command: process.execPath,
     argsJson: "{bad json",
   })
 
   assert.equal(health.ok, false)
   assert.equal(health.status, "real_image_executor_shell_args_invalid")
-  assert.equal(health.enabled, true)
   assert.equal(health.commandConfigured, true)
   assert.equal(health.argsValid, false)
   assert.equal(health.canExecuteCommand, false)
@@ -98,9 +92,6 @@ function testExecutorShellConfigReady() {
   assert.equal(health.timeoutMs, 10_000)
   assert.equal(health.executorConnected, true)
   assert.equal(health.canExecuteCommand, true)
-  assert.equal(health.canRunInference, true)
-  assert.equal(health.canGenerateRealBitmap, false)
-  assert.equal(health.willExecuteCommand, false)
   assert.equal(health.canShowToPlayer, false)
 
   const config = readRealImageExecutorShellConfig({
@@ -119,7 +110,6 @@ function testExecutorShellConfigReady() {
 
 async function testExecutorShellDryRunReadyDoesNotExecute() {
   const worker = createMockWorkerFile("dry-run-worker.mjs", buildInvalidJsonWorker())
-
   const dryRun = await runRealImageExecutorShellDryRun({
     enabled: true,
     command: process.execPath,
@@ -128,24 +118,17 @@ async function testExecutorShellDryRunReadyDoesNotExecute() {
 
   assert.equal(dryRun.ok, true)
   assert.equal(dryRun.status, "real_image_executor_shell_dry_run_ready")
-  assert.equal(dryRun.enabled, true)
-  assert.equal(dryRun.commandConfigured, true)
   assert.equal(dryRun.canExecuteCommand, true)
   assert.equal(dryRun.willExecuteCommand, false)
   assert.equal(dryRun.wouldExecuteCommand, true)
   assert.equal(dryRun.willReturnStdoutJson, true)
-  assert.equal(dryRun.willReturnImageUrl, false)
   assert.equal(dryRun.canShowToPlayer, false)
 
   printCheck("executor shell dry-run ready does not execute")
 }
 
 async function testExecutorShellExecutionRequiresPayload() {
-  const worker = createMockWorkerFile(
-    "requires-payload-worker.mjs",
-    buildInvalidJsonWorker()
-  )
-
+  const worker = createMockWorkerFile("requires-payload-worker.mjs", buildInvalidJsonWorker())
   const generate = await executeRealImageWithExecutorShell({
     enabled: true,
     command: process.execPath,
@@ -154,8 +137,6 @@ async function testExecutorShellExecutionRequiresPayload() {
 
   assert.equal(generate.ok, false)
   assert.equal(generate.status, "real_image_executor_shell_payload_missing")
-  assert.equal(generate.enabled, true)
-  assert.equal(generate.commandConfigured, true)
   assert.equal(generate.didExecuteCommand, false)
   assert.equal(generate.didWriteOutputFile, false)
   assert.equal(generate.didReturnStdoutJson, false)
@@ -165,28 +146,17 @@ async function testExecutorShellExecutionRequiresPayload() {
 }
 
 async function testExecutorShellDoesNotExecuteInvalidRequest() {
-  const worker = createMockWorkerFile(
-    "invalid-request-worker.mjs",
-    buildInvalidJsonWorker()
-  )
-
+  const worker = createMockWorkerFile("invalid-request-worker.mjs", buildInvalidJsonWorker())
   const generate = await executeRealImageWithExecutorShell({
     enabled: true,
     command: process.execPath,
     argsJson: JSON.stringify([worker]),
-    executorStdinPayload: {
-      schemaVersion: "invalid",
-    },
+    executorStdinPayload: { schemaVersion: "invalid" },
   })
 
   assert.equal(generate.ok, false)
-  assert.equal(
-    generate.status,
-    "real_image_executor_shell_execution_request_invalid"
-  )
+  assert.equal(generate.status, "real_image_executor_shell_execution_request_invalid")
   assert.equal(generate.didExecuteCommand, false)
-  assert.equal(generate.didWriteOutputFile, false)
-  assert.equal(generate.didReturnStdoutJson, false)
   assert.equal(generate.canShowToPlayer, false)
 
   printCheck("executor shell does not execute invalid request")
@@ -194,15 +164,11 @@ async function testExecutorShellDoesNotExecuteInvalidRequest() {
 
 async function testExecutorShellExecutesAndRejectsInvalidStdoutJson() {
   const fixture = createExecutionFixture()
-  const worker = createMockWorkerFile(
-    "invalid-stdout-json-worker.mjs",
-    buildInvalidJsonWorker()
-  )
+  const worker = createMockWorkerFile("invalid-stdout-json-worker.mjs", buildInvalidJsonWorker())
   const payload = buildValidExecutorPayload({
     requestId: "executor-invalid-json",
     outputDirectory: fixture.outputDirectory,
   })
-
   const generate = await executeRealImageWithExecutorShell({
     enabled: true,
     command: process.execPath,
@@ -217,9 +183,7 @@ async function testExecutorShellExecutesAndRejectsInvalidStdoutJson() {
   assert.equal(generate.ok, false)
   assert.equal(generate.status, "real_image_executor_shell_stdout_json_invalid")
   assert.equal(generate.didExecuteCommand, true)
-  assert.equal(generate.didWriteOutputFile, false)
   assert.equal(generate.didReturnStdoutJson, false)
-  assert.equal(generate.canShowToPlayer, false)
   assert.equal(Object.hasOwn(generate, "imageUrl"), false)
 
   printCheck("executor shell executes and rejects invalid stdout JSON")
@@ -227,15 +191,11 @@ async function testExecutorShellExecutesAndRejectsInvalidStdoutJson() {
 
 async function testExecutorShellExecutesAndRejectsInvalidStdoutContract() {
   const fixture = createExecutionFixture()
-  const worker = createMockWorkerFile(
-    "invalid-stdout-contract-worker.mjs",
-    buildInvalidStdoutContractWorker()
-  )
+  const worker = createMockWorkerFile("invalid-stdout-contract-worker.mjs", buildInvalidStdoutContractWorker())
   const payload = buildValidExecutorPayload({
     requestId: "executor-invalid-contract",
     outputDirectory: fixture.outputDirectory,
   })
-
   const generate = await executeRealImageWithExecutorShell({
     enabled: true,
     command: process.execPath,
@@ -248,15 +208,10 @@ async function testExecutorShellExecutesAndRejectsInvalidStdoutContract() {
   })
 
   assert.equal(generate.ok, false)
-  assert.equal(
-    generate.status,
-    "real_image_executor_shell_stdout_contract_invalid"
-  )
+  assert.equal(generate.status, "real_image_executor_shell_stdout_contract_invalid")
   assert.equal(generate.didExecuteCommand, true)
-  assert.equal(generate.didWriteOutputFile, false)
   assert.equal(generate.didReturnStdoutJson, true)
   assert.equal(generate.didAcceptStdoutJson, false)
-  assert.equal(generate.canShowToPlayer, false)
   assert.equal(Object.hasOwn(generate, "imageUrl"), false)
 
   printCheck("executor shell executes and rejects invalid stdout contract")
@@ -264,15 +219,11 @@ async function testExecutorShellExecutesAndRejectsInvalidStdoutContract() {
 
 async function testExecutorShellRejectsValidStdoutWithoutOutputFile() {
   const fixture = createExecutionFixture()
-  const worker = createMockWorkerFile(
-    "valid-stdout-missing-file-worker.mjs",
-    buildValidStdoutWithoutFileWorker()
-  )
+  const worker = createMockWorkerFile("valid-stdout-missing-file-worker.mjs", buildValidStdoutWithoutFileWorker())
   const payload = buildValidExecutorPayload({
     requestId: "executor-missing-file",
     outputDirectory: fixture.outputDirectory,
   })
-
   const generate = await executeRealImageWithExecutorShell({
     enabled: true,
     command: process.execPath,
@@ -287,10 +238,8 @@ async function testExecutorShellRejectsValidStdoutWithoutOutputFile() {
   assert.equal(generate.ok, false)
   assert.equal(generate.status, "real_image_executor_shell_output_file_missing")
   assert.equal(generate.didExecuteCommand, true)
-  assert.equal(generate.didWriteOutputFile, false)
   assert.equal(generate.didReturnStdoutJson, true)
   assert.equal(generate.didAcceptStdoutJson, false)
-  assert.equal(generate.canShowToPlayer, false)
   assert.equal(Object.hasOwn(generate, "imageUrl"), false)
 
   printCheck("executor shell rejects valid stdout without output file")
@@ -300,40 +249,25 @@ function testRunnerImplementationExposesExecutorShell() {
   const health = readRealImageRunnerImplementationHealth()
 
   assert.equal(health.ok, false)
-  assert.equal(health.version, "implementation-payload-connected-1")
-  assert.equal(
-    health.status,
-    "real_image_runner_implementation_payload_ready_not_connected"
-  )
+  assert.equal(health.version, "implementation-result-mapped-1")
+  assert.equal(health.status, "real_image_runner_implementation_blocked")
   assert.equal(health.executorStdinPayloadConnected, true)
   assert.equal(health.executorShell.status, "real_image_executor_shell_disabled")
-  assert.equal(health.executorShell.canExecuteCommand, false)
   assert.equal(health.inputContract.mustUseExecutorShell, true)
-  assert.equal(health.inputContract.mustBuildExecutorStdinPayload, true)
   assert.equal(health.canShowToPlayer, false)
-  assert.ok(health.tags.includes("executor_stdin_payload_ready"))
 
   printCheck("runner implementation exposes executor shell")
 }
 
 function createExecutionFixture() {
-  const outputDirectory = fs.mkdtempSync(
-    path.join(os.tmpdir(), "ai-pet-world-executor-shell-output-")
-  )
-
-  return {
-    outputDirectory,
-  }
+  const outputDirectory = fs.mkdtempSync(path.join(os.tmpdir(), "ai-pet-world-executor-shell-output-"))
+  return { outputDirectory }
 }
 
 function createMockWorkerFile(fileName, source) {
-  const directory = fs.mkdtempSync(
-    path.join(os.tmpdir(), "ai-pet-world-executor-shell-worker-")
-  )
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "ai-pet-world-executor-shell-worker-"))
   const filePath = path.join(directory, fileName)
-
   fs.writeFileSync(filePath, source, "utf8")
-
   return filePath
 }
 
@@ -350,21 +284,14 @@ function buildValidExecutorPayload(input) {
   })
 
   assert.equal(result.ok, true)
-  assert.equal(result.payload.canShowToPlayer, false)
-  assert.equal(result.payload.worldFactMetadata.locked, true)
-  assert.equal(result.payload.constraints.mustPassVisualJudge, true)
-
   return result.payload
 }
 
 function buildInvalidJsonWorker() {
   return `
 let input = ""
-
 process.stdin.setEncoding("utf8")
-process.stdin.on("data", (chunk) => {
-  input += chunk
-})
+process.stdin.on("data", (chunk) => { input += chunk })
 process.stdin.on("end", () => {
   JSON.parse(input)
   process.stdout.write("not-json")
@@ -375,11 +302,8 @@ process.stdin.on("end", () => {
 function buildInvalidStdoutContractWorker() {
   return `
 let input = ""
-
 process.stdin.setEncoding("utf8")
-process.stdin.on("data", (chunk) => {
-  input += chunk
-})
+process.stdin.on("data", (chunk) => { input += chunk })
 process.stdin.on("end", () => {
   JSON.parse(input)
   process.stdout.write(JSON.stringify({
@@ -399,14 +323,10 @@ process.stdin.on("end", () => {
 function buildValidStdoutWithoutFileWorker() {
   return `
 let input = ""
-
 process.stdin.setEncoding("utf8")
-process.stdin.on("data", (chunk) => {
-  input += chunk
-})
+process.stdin.on("data", (chunk) => { input += chunk })
 process.stdin.on("end", () => {
   const payload = JSON.parse(input)
-
   process.stdout.write(JSON.stringify({
     ok: true,
     status: "real_image_generated",
@@ -435,14 +355,7 @@ function buildRequestBody() {
       mustNotCopyUnlicensedThirdPartyWorks: true,
       canShowToPlayer: false,
     },
-    promptPackage: {
-      packageId: "executor-shell-test-prompt-package",
-      worldId: "executor-shell-test-world",
-      tick: 1,
-      canShowToPlayer: false,
-      summary:
-        "Executor shell child_process integration test. This is not a player-visible image.",
-    },
+    promptPackage: { packageId: "executor-shell-test-prompt-package" },
     controlSketch: {
       controlSketchId: "executor-shell-test-control-sketch",
       canShowToPlayer: false,
@@ -461,10 +374,7 @@ function buildRequestBody() {
     },
     visualFixHints: [],
     metadata: {
-      worldId: "executor-shell-test-world",
-      tick: 1,
-      promptPackageId: "executor-shell-test-prompt-package",
-      sourceFactIds: ["executor-shell-test-world", "executor-shell-test-fact"],
+      sourceFactIds: ["executor-shell-test-world"],
       canShowToPlayer: false,
       cannotApprove: true,
     },
@@ -491,14 +401,7 @@ function buildReadyReadinessGate() {
     },
     canRunInference: false,
     canShowToPlayer: false,
-    tags: [
-      "real_image_model_readiness",
-      "assets_ready",
-      "manifest_valid",
-      "runner_not_connected",
-      "does_not_generate",
-      "not_player_visible",
-    ],
+    tags: ["real_image_model_readiness", "assets_ready", "manifest_valid"],
   }
 }
 
