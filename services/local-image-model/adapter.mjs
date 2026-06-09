@@ -14,7 +14,7 @@ import {
 } from "./real-image-runner.mjs"
 
 const ADAPTER_NAME = "ai-pet-world-real-image-generation-adapter"
-const ADAPTER_VERSION = "adapter-result-forwarding-1"
+const ADAPTER_VERSION = "adapter-result-forwarding-2"
 
 export function readRealImageGenerationAdapterHealth(input = {}) {
   const requiredResponseFields = readRequiredResponseFields(input)
@@ -189,6 +189,7 @@ function pickRunnerInput(input = {}) {
     command: input.command,
     argsJson: input.argsJson,
     timeoutMs: input.timeoutMs,
+    workerEnv: input.workerEnv,
   }
 }
 
