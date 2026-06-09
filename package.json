@@ -11,6 +11,7 @@
     "inspect:visual-painter": "node scripts/inspect-world-visual-painter.mjs",
     "verify:local-image-model": "node scripts/verify-local-image-model-contract.mjs",
     "test:local-image-model-adapter": "node scripts/test-local-image-model-adapter-boundary.mjs",
+    "test:local-image-model-output-storage": "node scripts/test-local-image-model-output-storage.mjs",
     "test:local-image-model-contracts": "node scripts/test-local-image-model-contracts.mjs",
     "local-image-model:contract-server": "node services/local-image-model/server.mjs",
     "smoke:runtime": "node scripts/run-world-runtime-smoke.cjs",
