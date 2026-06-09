@@ -19,7 +19,7 @@ import {
 } from "./adapter.mjs"
 import { readRealImageModelWorkerHealth } from "./real-image-model-worker.mjs"
 
-const IMPLEMENTATION_VERSION = "implementation-worker-default-1"
+const IMPLEMENTATION_VERSION = "implementation-worker-default-2"
 const CURRENT_FILE_PATH = fileURLToPath(import.meta.url)
 const CURRENT_DIRECTORY = path.dirname(CURRENT_FILE_PATH)
 const DEFAULT_WORKER_ENTRY_PATH = path.join(
@@ -155,13 +155,14 @@ export function readLocalImageModelRuntimeConfig(input = {}) {
   const publicBaseUrl =
     outputStorageInput.publicBaseUrl ??
     process.env.AI_PET_WORLD_LOCAL_IMAGE_OUTPUT_PUBLIC_BASE_URL
+  const workerEnv = buildWorkerEnv({
+    workerInput,
+    outputDirectory,
+  })
   const workerHealth = readRealImageModelWorkerHealth({
-    command: workerInput.command ?? process.env.AI_PET_WORLD_REAL_IMAGE_INFERENCE_COMMAND,
-    argsJson:
-      workerInput.argsJson ?? process.env.AI_PET_WORLD_REAL_IMAGE_INFERENCE_ARGS_JSON,
-    timeoutMs:
-      workerInput.timeoutMs ??
-      process.env.AI_PET_WORLD_REAL_IMAGE_INFERENCE_TIMEOUT_MS,
+    command: workerEnv.AI_PET_WORLD_REAL_IMAGE_INFERENCE_COMMAND,
+    argsJson: workerEnv.AI_PET_WORLD_REAL_IMAGE_INFERENCE_ARGS_JSON,
+    timeoutMs: workerEnv.AI_PET_WORLD_REAL_IMAGE_INFERENCE_TIMEOUT_MS,
     outputDirectory,
   })
 
@@ -193,8 +194,29 @@ export function readLocalImageModelRuntimeConfig(input = {}) {
       outputDirectory,
       publicBaseUrl,
     },
+    workerEnv,
     workerHealth,
   }
+}
+
+function buildWorkerEnv(input = {}) {
+  const workerInput = input.workerInput ?? {}
+  const outputDirectory = input.outputDirectory
+  const env = {
+    AI_PET_WORLD_REAL_IMAGE_INFERENCE_COMMAND:
+      workerInput.command ?? process.env.AI_PET_WORLD_REAL_IMAGE_INFERENCE_COMMAND,
+    AI_PET_WORLD_REAL_IMAGE_INFERENCE_ARGS_JSON:
+      workerInput.argsJson ?? process.env.AI_PET_WORLD_REAL_IMAGE_INFERENCE_ARGS_JSON,
+    AI_PET_WORLD_REAL_IMAGE_INFERENCE_TIMEOUT_MS:
+      workerInput.timeoutMs ?? process.env.AI_PET_WORLD_REAL_IMAGE_INFERENCE_TIMEOUT_MS,
+    AI_PET_WORLD_LOCAL_IMAGE_OUTPUT_DIR: outputDirectory,
+  }
+
+  return Object.fromEntries(
+    Object.entries(env).filter(
+      ([, value]) => typeof value === "string" && value.length > 0
+    )
+  )
 }
 
 function readExecutorCommand(input = {}) {
