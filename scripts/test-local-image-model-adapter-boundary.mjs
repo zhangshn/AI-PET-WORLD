@@ -226,7 +226,10 @@ async function testImplementationGenerateUsesDefaultWorkerExecutor() {
   assertSuccessfulGenerateResult(result)
   assert.equal(result.worker.ok, true)
   assert.equal(result.worker.status, "real_image_model_worker_ready")
-  assert.equal(result.adapter.executorShell.commandConfigured, true)
+  assert.equal(
+    result.adapter.runner.implementation.executorShell.commandConfigured,
+    true
+  )
 
   printCheck("implementation generate uses default worker executor")
 }
@@ -301,6 +304,8 @@ function buildSuccessfulWorkerSource() {
 import fs from "node:fs"
 import path from "node:path"
 
+const pngBytes = ${JSON.stringify(createMinimalPngBuffer(1024, 1024).toString("base64"))}
+
 let input = ""
 process.stdin.setEncoding("utf8")
 process.stdin.on("data", (chunk) => {
@@ -310,7 +315,7 @@ process.stdin.on("end", () => {
   const payload = JSON.parse(input)
   const outputDirectory = process.env.AI_PET_WORLD_LOCAL_IMAGE_OUTPUT_DIR
   fs.mkdirSync(outputDirectory, { recursive: true })
-  fs.writeFileSync(path.join(outputDirectory, payload.outputFileName), "test-bitmap-bytes")
+  fs.writeFileSync(path.join(outputDirectory, payload.outputFileName), Buffer.from(pngBytes, "base64"))
   process.stdout.write(JSON.stringify({
     ok: true,
     status: "real_image_generated",
@@ -323,6 +328,22 @@ process.stdin.on("end", () => {
   }))
 })
 `
+}
+
+function createMinimalPngBuffer(width, height) {
+  const buffer = Buffer.alloc(33)
+  Buffer.from("89504e470d0a1a0a", "hex").copy(buffer, 0)
+  buffer.writeUInt32BE(13, 8)
+  buffer.write("IHDR", 12, "ascii")
+  buffer.writeUInt32BE(width, 16)
+  buffer.writeUInt32BE(height, 20)
+  buffer[24] = 8
+  buffer[25] = 2
+  buffer[26] = 0
+  buffer[27] = 0
+  buffer[28] = 0
+  buffer.writeUInt32BE(0, 29)
+  return buffer
 }
 
 function buildValidManifest() {
