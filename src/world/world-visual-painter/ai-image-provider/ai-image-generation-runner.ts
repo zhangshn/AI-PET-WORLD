@@ -2,6 +2,7 @@ import type {
   WorldVisualAiImageCandidate,
   WorldVisualAiImageGenerationRequest,
   WorldVisualAiImageGenerationResult,
+  WorldVisualAiImageProviderKind,
   WorldVisualFactManifest,
   WorldVisualImageGenerationResponseContract,
   WorldVisualPromptPackage,
@@ -117,9 +118,12 @@ export async function runWorldVisualAiImageGenerationRequest(input: {
       error: null,
       tags: [
         "ai_image_generation_result",
+        input.request.providerKind,
         "candidate_created",
+        "provider_response_contract_passed",
         "response_contract_passed",
         "hidden_until_visual_judge",
+        ...buildProviderProvenanceTags(input.request.providerKind),
       ],
     }
   } catch (error) {
@@ -203,27 +207,73 @@ function buildCandidateFromProviderResponse(input: {
       height: validation.height,
       license: validation.license,
       originalityConfirmed: validation.originalityConfirmed,
-      sourceDescription: {
-        zh: "由 AI 图像生成模型入口返回的隐藏位图候选图。",
-        en: "Hidden bitmap candidate returned by the AI image generation model entry.",
-      },
+      sourceDescription: buildProviderSourceDescription(input.request.providerKind),
       promptPackageId: input.promptPackage.packageId,
       sourceFactIds: input.factManifest.sourceFactIds,
       canShowToPlayer: false,
-      generationNotes: {
-        zh: "候选图不能直接展示，必须先进入 Visual Judge；候选图已按 responseContract 返回 imageUrl、imageFormat、width、height、license、originalityConfirmed，并声明遵守正式画面质量与版权安全要求。通过审核后才可生成 ApprovedFrame。",
-        en: "The candidate cannot be displayed directly and must enter Visual Judge first. It returned imageUrl, imageFormat, width, height, license, and originalityConfirmed according to responseContract, and declares compliance with formal frame quality and copyright safety requirements. It may become ApprovedFrame only after passing review.",
-      },
+      generationNotes: buildProviderGenerationNotes(input.request.providerKind),
       tags: [
         "ai_image_candidate",
         input.request.providerKind,
         "generated_candidate",
+        "provider_response_contract_passed",
         "response_contract_passed",
         "hidden_until_visual_judge",
+        ...buildProviderProvenanceTags(input.request.providerKind),
         ...VISUAL_QUALITY_ASSERTION_TAGS,
       ],
     },
   }
+}
+
+function buildProviderSourceDescription(
+  providerKind: Exclude<WorldVisualAiImageProviderKind, "not_configured" | "manual_import">
+) {
+  if (providerKind === "local_model") {
+    return {
+      zh: "由真实本地图像模型入口返回的隐藏位图候选图，已通过 imageUrl / imageFormat / width / height / license / originalityConfirmed 响应契约校验。",
+      en: "Hidden bitmap candidate returned by the real local image model entry and validated against the imageUrl / imageFormat / width / height / license / originalityConfirmed response contract.",
+    }
+  }
+
+  return {
+    zh: "由外部 AI 图像生成模型入口返回的隐藏位图候选图，已通过 imageUrl / imageFormat / width / height / license / originalityConfirmed 响应契约校验。",
+    en: "Hidden bitmap candidate returned by the external AI image generation entry and validated against the imageUrl / imageFormat / width / height / license / originalityConfirmed response contract.",
+  }
+}
+
+function buildProviderGenerationNotes(
+  providerKind: Exclude<WorldVisualAiImageProviderKind, "not_configured" | "manual_import">
+) {
+  if (providerKind === "local_model") {
+    return {
+      zh: "本地图像模型返回结果只被登记为隐藏 AiImageCandidate；不能直接展示，不能绕过 VisualJudge，也不能改写世界事实。该候选图必须继续通过 VisualJudge，生成 ApprovedFrame 后 /world 才能展示。",
+      en: "The local image model result is registered only as a hidden AiImageCandidate. It must not be displayed directly, bypass VisualJudge, or rewrite world facts. It must still pass VisualJudge before an ApprovedFrame can be shown by /world.",
+    }
+  }
+
+  return {
+    zh: "图像模型返回结果只被登记为隐藏 AiImageCandidate；不能直接展示，不能绕过 VisualJudge，也不能改写世界事实。该候选图必须继续通过 VisualJudge，生成 ApprovedFrame 后 /world 才能展示。",
+    en: "The image model result is registered only as a hidden AiImageCandidate. It must not be displayed directly, bypass VisualJudge, or rewrite world facts. It must still pass VisualJudge before an ApprovedFrame can be shown by /world.",
+  }
+}
+
+function buildProviderProvenanceTags(
+  providerKind: Exclude<WorldVisualAiImageProviderKind, "not_configured" | "manual_import">
+) {
+  return providerKind === "local_model"
+    ? [
+        "local_model_ai_image_candidate",
+        "real_local_model_response",
+        "local_model_response_contract_validated",
+        "candidate_source_local_model",
+      ]
+    : [
+        "external_api_ai_image_candidate",
+        "external_provider_response",
+        "external_response_contract_validated",
+        "candidate_source_external_api",
+      ]
 }
 
 function validateProviderImageResponse(input: {
