@@ -21,7 +21,7 @@ export const REAL_IMAGE_EXECUTOR_SHELL_ENV = {
 }
 
 const EXECUTOR_SHELL_NAME = "ai-pet-world-real-image-executor-shell"
-const EXECUTOR_SHELL_VERSION = "executor-shell-child-process-connected-1"
+const EXECUTOR_SHELL_VERSION = "executor-shell-worker-env-1"
 
 const MAX_EXECUTOR_STDOUT_BYTES = 1024 * 1024
 const MAX_EXECUTOR_STDERR_BYTES = 64 * 1024
@@ -189,6 +189,7 @@ export async function executeRealImageWithExecutorShell(input = {}) {
     config,
     payload: executorStdinPayload,
     outputDirectory: input.outputStorage?.outputDirectory,
+    workerEnv: input.workerEnv,
   })
 
   if (!commandResult.ok) {
@@ -413,6 +414,7 @@ async function runCommandWithStdinJson(input) {
         stdio: ["pipe", "pipe", "pipe"],
         env: {
           ...process.env,
+          ...sanitizeWorkerEnv(input.workerEnv),
           AI_PET_WORLD_LOCAL_IMAGE_OUTPUT_DIR:
             input.outputDirectory ?? process.env.AI_PET_WORLD_LOCAL_IMAGE_OUTPUT_DIR,
         },
@@ -624,44 +626,56 @@ function readBoolean(value) {
 }
 
 function readOptionalString(value) {
-  return typeof value === "string" ? value.trim() : ""
+  return typeof value === "string" && value.trim() ? value.trim() : ""
 }
 
 function readArgsJson(value) {
-  if (value === undefined || value === null || value === "") return { ok: true, args: [] }
-  if (Array.isArray(value) && value.every((item) => typeof item === "string")) return { ok: true, args: value }
-  if (typeof value !== "string") return { ok: false, args: [] }
+  if (typeof value !== "string" || !value.trim()) {
+    return { ok: true, args: [] }
+  }
 
   try {
     const parsed = JSON.parse(value)
-    if (Array.isArray(parsed) && parsed.every((item) => typeof item === "string")) {
-      return { ok: true, args: parsed }
+
+    if (!Array.isArray(parsed) || parsed.some((item) => typeof item !== "string")) {
+      return { ok: false, args: [] }
     }
+
+    return { ok: true, args: parsed }
   } catch {
     return { ok: false, args: [] }
   }
-
-  return { ok: false, args: [] }
 }
 
 function readTimeoutMs(value) {
-  const normalized = Number(value)
+  const numeric = Number(value)
 
-  if (
-    Number.isFinite(normalized) &&
-    normalized >= MIN_REAL_IMAGE_EXECUTION_TIMEOUT_MS &&
-    normalized <= MAX_REAL_IMAGE_EXECUTION_TIMEOUT_MS
-  ) {
-    return normalized
+  if (!Number.isFinite(numeric)) {
+    return DEFAULT_REAL_IMAGE_EXECUTION_TIMEOUT_MS
   }
 
-  return DEFAULT_REAL_IMAGE_EXECUTION_TIMEOUT_MS
+  return Math.min(
+    Math.max(Math.floor(numeric), MIN_REAL_IMAGE_EXECUTION_TIMEOUT_MS),
+    MAX_REAL_IMAGE_EXECUTION_TIMEOUT_MS
+  )
 }
 
 function readRecord(value) {
-  return isRecord(value) ? JSON.parse(JSON.stringify(value)) : {}
+  return isRecord(value) ? value : {}
 }
 
 function isRecord(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value)
+}
+
+function sanitizeWorkerEnv(workerEnv = {}) {
+  if (!isRecord(workerEnv)) {
+    return {}
+  }
+
+  return Object.fromEntries(
+    Object.entries(workerEnv).filter(
+      ([, value]) => typeof value === "string" && value.length > 0
+    )
+  )
 }
