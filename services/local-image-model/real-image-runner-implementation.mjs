@@ -8,6 +8,7 @@ import {
   REQUIRED_RESPONSE_FIELDS,
 } from "./contracts.mjs"
 import { buildRealImageExecutionContract } from "./real-image-execution-contract.mjs"
+import { buildRealImageExecutorStdinPayload } from "./real-image-execution-payload.mjs"
 import {
   executeRealImageWithExecutorShell,
   readRealImageExecutorShellHealth,
@@ -16,12 +17,17 @@ import {
 
 const RUNNER_IMPLEMENTATION_NAME =
   "ai-pet-world-real-image-runner-implementation"
-const RUNNER_IMPLEMENTATION_VERSION = "implementation-not-connected-3"
+const RUNNER_IMPLEMENTATION_VERSION = "implementation-payload-connected-1"
 
 export function readRealImageRunnerImplementationHealth(input = {}) {
   const requiredResponseFields = readRequiredResponseFields(input)
   const executionContract = buildRealImageExecutionContract({
     requiredResponseFields,
+  })
+  const executorStdinPayload = buildImplementationExecutorStdinPayload({
+    ...input,
+    requiredResponseFields,
+    executionContract,
   })
   const executorShell = readRealImageExecutorShellHealth({
     requiredResponseFields,
@@ -29,10 +35,11 @@ export function readRealImageRunnerImplementationHealth(input = {}) {
 
   return {
     ok: false,
-    status: "real_image_runner_implementation_not_connected",
+    status: "real_image_runner_implementation_payload_ready_not_connected",
     implementation: RUNNER_IMPLEMENTATION_NAME,
     version: RUNNER_IMPLEMENTATION_VERSION,
     implementationConnected: false,
+    executorStdinPayloadConnected: true,
     canRunInference: false,
     canGenerateRealBitmap: false,
     canWriteOutputFile: false,
@@ -40,21 +47,24 @@ export function readRealImageRunnerImplementationHealth(input = {}) {
     inputContract: buildImplementationInputContract(requiredResponseFields),
     outputContract: buildImplementationOutputContract(requiredResponseFields),
     executionContract,
+    executorStdinPayload,
     executorShell,
     message:
-      "真实 runner implementation 已连接 executor shell 与 execution contract，但尚未接入命令执行逻辑。当前不能生成图片，也不会返回假图。",
+      "真实 runner implementation 已接入 executor stdin payload，但尚未接入命令执行逻辑。当前不能生成图片，也不会返回假图。",
     messageEn:
-      "The real runner implementation is connected to the executor shell and execution contract, but command execution logic is not connected yet. It cannot generate images and will not return fake images.",
+      "The real runner implementation is connected to the executor stdin payload, but command execution logic is not connected yet. It cannot generate images and will not return fake images.",
     nextStep: {
-      zh: "下一步接入真实命令执行：通过 stdin 发送 JSON 请求，读取 stdout JSON，校验后写入 output-storage。",
-      en: "Next connect real command execution: send JSON request through stdin, read stdout JSON, validate it, then write into output-storage.",
+      zh: "下一步才接入真实命令执行：将 executorStdinPayload.payload 通过 stdin 发送给自研推理脚本，读取 stdout JSON，并经过 execution contract 校验。",
+      en: "Next connect real command execution: send executorStdinPayload.payload to the in-house inference script through stdin, read stdout JSON, and validate it through the execution contract.",
     },
     canShowToPlayer: false,
     tags: [
       "real_image_runner_implementation",
-      "implementation_not_connected",
+      "implementation_payload_connected",
       "runner_implementation_not_connected",
+      "executor_stdin_payload_ready",
       "execution_contract_ready",
+      ...executorStdinPayload.tags,
       ...executorShell.tags,
       "does_not_execute",
       "does_not_generate",
@@ -69,16 +79,22 @@ export async function runRealImageRunnerImplementationDryRun(input = {}) {
   const executionContract = buildRealImageExecutionContract({
     requiredResponseFields,
   })
+  const executorStdinPayload = buildImplementationExecutorStdinPayload({
+    ...input,
+    requiredResponseFields,
+    executionContract,
+  })
   const executorShell = await runRealImageExecutorShellDryRun({
     requiredResponseFields,
   })
 
   return {
     ok: false,
-    status: "real_image_runner_implementation_not_connected",
+    status: "real_image_runner_implementation_payload_ready_not_connected",
     implementation: RUNNER_IMPLEMENTATION_NAME,
     version: RUNNER_IMPLEMENTATION_VERSION,
     implementationConnected: false,
+    executorStdinPayloadConnected: true,
     canRunInference: false,
     canGenerateRealBitmap: false,
     canWriteOutputFile: false,
@@ -87,6 +103,7 @@ export async function runRealImageRunnerImplementationDryRun(input = {}) {
     inputContract: buildImplementationInputContract(requiredResponseFields),
     outputContract: buildImplementationOutputContract(requiredResponseFields),
     executionContract,
+    executorStdinPayload,
     executorShell,
     willReturnImageUrl: false,
     willReturnImageFormat: false,
@@ -98,9 +115,9 @@ export async function runRealImageRunnerImplementationDryRun(input = {}) {
     willExecuteCommand: false,
     willPersistOnlyAsHiddenCandidate: false,
     message:
-      "真实 runner implementation 尚未接入命令执行逻辑，因此 dry-run 不能声明会执行命令或返回真实图片字段。",
+      "真实 runner implementation dry-run 已能构建 executor stdin payload，但尚未接入命令执行逻辑，因此不能声明会执行命令或返回真实图片字段。",
     messageEn:
-      "The real runner implementation has not connected command execution logic yet, so dry-run cannot declare command execution or real image fields.",
+      "The real runner implementation dry-run can build the executor stdin payload, but command execution logic is not connected yet, so it cannot declare command execution or real image fields.",
     nextStep: {
       zh: "接入真实命令执行后，dry-run 才能返回 ok=true，并声明会返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
       en: "After connecting real command execution, dry-run may return ok=true and declare imageUrl / imageFormat / width / height / license / originalityConfirmed.",
@@ -108,9 +125,11 @@ export async function runRealImageRunnerImplementationDryRun(input = {}) {
     canShowToPlayer: false,
     tags: [
       "real_image_runner_implementation",
-      "implementation_not_connected",
+      "implementation_payload_connected",
       "runner_implementation_not_connected",
+      "executor_stdin_payload_ready",
       "execution_contract_ready",
+      ...executorStdinPayload.tags,
       ...executorShell.tags,
       "dry_run_blocked",
       "does_not_execute",
@@ -126,16 +145,24 @@ export async function generateRealImageWithRunnerImplementation(input = {}) {
   const executionContract = buildRealImageExecutionContract({
     requiredResponseFields,
   })
+  const executorStdinPayload = buildImplementationExecutorStdinPayload({
+    ...input,
+    requiredResponseFields,
+    executionContract,
+  })
   const executorShell = await executeRealImageWithExecutorShell({
     requiredResponseFields,
+    executorStdinPayload:
+      executorStdinPayload.ok === true ? executorStdinPayload.payload : null,
   })
 
   return {
     ok: false,
-    status: "real_image_runner_implementation_not_connected",
+    status: "real_image_runner_implementation_payload_ready_not_connected",
     implementation: RUNNER_IMPLEMENTATION_NAME,
     version: RUNNER_IMPLEMENTATION_VERSION,
     implementationConnected: false,
+    executorStdinPayloadConnected: true,
     canRunInference: false,
     canGenerateRealBitmap: false,
     canWriteOutputFile: false,
@@ -144,11 +171,12 @@ export async function generateRealImageWithRunnerImplementation(input = {}) {
     inputContract: buildImplementationInputContract(requiredResponseFields),
     outputContract: buildImplementationOutputContract(requiredResponseFields),
     executionContract,
+    executorStdinPayload,
     executorShell,
     message:
-      "真实 runner implementation 尚未接入命令执行逻辑。不会执行命令，也不会返回假图、占位图、SVG、HTML、JSON 调试图或程序绘图结果。",
+      "真实 runner implementation 已构建 executor stdin payload，但尚未接入命令执行逻辑。不会执行命令，也不会返回假图、占位图、SVG、HTML、JSON 调试图或程序绘图结果。",
     messageEn:
-      "The real runner implementation has not connected command execution logic. It will not execute commands and will not return fake images, placeholders, SVG, HTML, debug JSON images, or programmatic render results.",
+      "The real runner implementation has built the executor stdin payload, but command execution logic is not connected yet. It will not execute commands and will not return fake images, placeholders, SVG, HTML, debug JSON images, or programmatic render results.",
     nextStep: {
       zh: "下一步接入真实命令执行：执行成功后必须写入 output-storage，并返回 public imageUrl / imageFormat / width / height / license / originalityConfirmed。",
       en: "Next connect real command execution: after successful execution it must write into output-storage and return public imageUrl / imageFormat / width / height / license / originalityConfirmed.",
@@ -156,9 +184,11 @@ export async function generateRealImageWithRunnerImplementation(input = {}) {
     canShowToPlayer: false,
     tags: [
       "real_image_runner_implementation",
-      "implementation_not_connected",
+      "implementation_payload_connected",
       "runner_implementation_not_connected",
+      "executor_stdin_payload_ready",
       "execution_contract_ready",
+      ...executorStdinPayload.tags,
       ...executorShell.tags,
       "generate_blocked",
       "does_not_execute",
@@ -167,6 +197,43 @@ export async function generateRealImageWithRunnerImplementation(input = {}) {
       "not_player_visible",
     ],
   }
+}
+
+function buildImplementationExecutorStdinPayload(input = {}) {
+  return buildRealImageExecutorStdinPayload({
+    requestId:
+      input.requestId ??
+      input.requestAudit?.requestId ??
+      input.requestBody?.requestId,
+    requestBody: input.requestBody,
+    readiness: input.readiness ?? input.realModelReadiness,
+    outputStorage: input.outputStorage,
+    outputFileName: input.outputFileName ?? input.requestBody?.outputFileName,
+    manifest:
+      input.manifest ??
+      input.readiness?.manifest ??
+      input.realModelReadiness?.manifest ??
+      input.requestBody?.manifest,
+    modelTask: input.modelTask ?? input.requestBody?.modelTask,
+    promptPackage: input.promptPackage ?? input.requestBody?.promptPackage,
+    responseContract:
+      input.responseContract ?? input.requestBody?.responseContract,
+    executionContract: input.executionContract,
+    controlSketch: input.controlSketch ?? input.requestBody?.controlSketch,
+    visualFixHints: input.visualFixHints ?? input.requestBody?.visualFixHints,
+    worldFactMetadata:
+      input.worldFactMetadata ??
+      input.requestBody?.worldFactMetadata ??
+      input.requestBody?.metadata,
+    audit: {
+      ...(input.audit ?? {}),
+      ...(input.requestAudit ?? {}),
+      node: "MD-NEXT-LOCAL-MODEL-IMPLEMENTATION-14",
+    },
+    constraints: input.constraints,
+    requiredResponseFields: input.requiredResponseFields,
+    timeoutMs: input.timeoutMs,
+  })
 }
 
 function buildImplementationInputContract(requiredResponseFields) {
@@ -179,6 +246,7 @@ function buildImplementationInputContract(requiredResponseFields) {
     mustReceiveResponseContract: true,
     mustReceiveVisualFixHints: true,
     mustReceiveWorldFactMetadata: true,
+    mustBuildExecutorStdinPayload: true,
     mustUseExecutionContract: true,
     mustUseExecutorShell: true,
     mustNotRewriteWorldFacts: true,
