@@ -1,4 +1,4 @@
-// 当前文件作用：定义 AI-PET-WORLD 自研真实图像生成 runner implementation 入口；真实推理未接入前不生成图片、不返回假图。
+// 当前文件作用：定义 AI-PET-WORLD 自研真实图像生成 runner implementation 入口；把 executor shell 成功结果转换为正式 6 字段响应。
 
 import {
   ALLOWED_IMAGE_FORMATS,
@@ -6,6 +6,8 @@ import {
   MINIMUM_IMAGE_HEIGHT,
   MINIMUM_IMAGE_WIDTH,
   REQUIRED_RESPONSE_FIELDS,
+  buildSuccessfulDryRunResponse,
+  buildSuccessfulGenerateResponse,
 } from "./contracts.mjs"
 import { buildRealImageExecutionContract } from "./real-image-execution-contract.mjs"
 import { buildRealImageExecutorStdinPayload } from "./real-image-execution-payload.mjs"
@@ -17,7 +19,7 @@ import {
 
 const RUNNER_IMPLEMENTATION_NAME =
   "ai-pet-world-real-image-runner-implementation"
-const RUNNER_IMPLEMENTATION_VERSION = "implementation-payload-connected-1"
+const RUNNER_IMPLEMENTATION_VERSION = "implementation-result-mapped-1"
 
 export function readRealImageRunnerImplementationHealth(input = {}) {
   const requiredResponseFields = readRequiredResponseFields(input)
@@ -38,39 +40,31 @@ export function readRealImageRunnerImplementationHealth(input = {}) {
   })
 
   return {
-    ok: false,
-    status: "real_image_runner_implementation_payload_ready_not_connected",
+    ok: executorShell.ok === true,
+    status:
+      executorShell.ok === true
+        ? "real_image_runner_implementation_ready"
+        : "real_image_runner_implementation_blocked",
     implementation: RUNNER_IMPLEMENTATION_NAME,
     version: RUNNER_IMPLEMENTATION_VERSION,
-    implementationConnected: false,
+    implementationConnected: executorShell.ok === true,
     executorStdinPayloadConnected: true,
-    canRunInference: false,
+    canRunInference: executorShell.ok === true,
     canGenerateRealBitmap: false,
-    canWriteOutputFile: false,
+    canWriteOutputFile: executorShell.ok === true,
     requiredResponseShape: requiredResponseFields,
     inputContract: buildImplementationInputContract(requiredResponseFields),
     outputContract: buildImplementationOutputContract(requiredResponseFields),
     executionContract,
     executorStdinPayload,
     executorShell,
-    message:
-      "真实 runner implementation 已接入 executor stdin payload，但尚未接入命令执行结果转换逻辑。当前不能生成可进入正式链路的图片结果，也不会返回假图。",
-    messageEn:
-      "The real runner implementation is connected to the executor stdin payload, but execution result mapping is not connected yet. It cannot produce a formal-chain image result and will not return fake images.",
-    nextStep: {
-      zh: "下一步会把 executor shell 的真实执行结果转换成 local image model 的 6 字段响应，然后才能进入隐藏 AiImageCandidate。",
-      en: "Next map the executor shell real execution result into the local image model six-field response before it may enter a hidden AiImageCandidate.",
-    },
     canShowToPlayer: false,
     tags: [
       "real_image_runner_implementation",
-      "implementation_payload_connected",
-      "runner_implementation_not_connected",
       "executor_stdin_payload_ready",
       "execution_contract_ready",
       ...executorStdinPayload.tags,
       ...executorShell.tags,
-      "fake_image_forbidden",
       "not_player_visible",
     ],
   }
@@ -94,9 +88,31 @@ export async function runRealImageRunnerImplementationDryRun(input = {}) {
     requiredResponseFields,
   })
 
+  if (executorShell.ok === true && executorStdinPayload.ok === true) {
+    const response = buildSuccessfulDryRunResponse({
+      requestAudit: input.requestAudit,
+      requiredResponseFields,
+    })
+
+    return {
+      ...response,
+      status: "real_image_runner_implementation_dry_run_passed",
+      implementation: RUNNER_IMPLEMENTATION_NAME,
+      version: RUNNER_IMPLEMENTATION_VERSION,
+      implementationConnected: true,
+      executorStdinPayloadConnected: true,
+      executorStdinPayload,
+      executorShell,
+      canRunInference: true,
+      canGenerateRealBitmap: false,
+      canWriteOutputFile: true,
+      canShowToPlayer: false,
+    }
+  }
+
   return {
     ok: false,
-    status: "real_image_runner_implementation_payload_ready_not_connected",
+    status: "real_image_runner_implementation_blocked",
     implementation: RUNNER_IMPLEMENTATION_NAME,
     version: RUNNER_IMPLEMENTATION_VERSION,
     implementationConnected: false,
@@ -120,24 +136,12 @@ export async function runRealImageRunnerImplementationDryRun(input = {}) {
     willWriteOutputFile: false,
     willExecuteCommand: false,
     willPersistOnlyAsHiddenCandidate: false,
-    message:
-      "真实 runner implementation dry-run 已能构建 executor stdin payload，并能读取 executor shell child_process 配置，但尚未把执行结果转换成正式模型响应。",
-    messageEn:
-      "The real runner implementation dry-run can build the executor stdin payload and read executor shell child_process configuration, but it has not mapped execution results into the formal model response yet.",
-    nextStep: {
-      zh: "接入真实结果转换后，dry-run 才能声明会返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
-      en: "After connecting real result mapping, dry-run may declare imageUrl / imageFormat / width / height / license / originalityConfirmed.",
-    },
     canShowToPlayer: false,
     tags: [
       "real_image_runner_implementation",
-      "implementation_payload_connected",
-      "runner_implementation_not_connected",
-      "executor_stdin_payload_ready",
-      "execution_contract_ready",
+      "dry_run_blocked",
       ...executorStdinPayload.tags,
       ...executorShell.tags,
-      "dry_run_blocked",
       "fake_image_forbidden",
       "not_player_visible",
     ],
@@ -165,9 +169,35 @@ export async function generateRealImageWithRunnerImplementation(input = {}) {
       executorStdinPayload.ok === true ? executorStdinPayload.payload : null,
   })
 
+  if (executorShell.ok === true) {
+    const response = buildSuccessfulGenerateResponse({
+      requestAudit: input.requestAudit,
+      requiredResponseFields,
+      payload: executorShell,
+    })
+
+    return {
+      ...response,
+      status:
+        response.ok === true
+          ? "real_image_runner_implementation_generate_passed"
+          : response.status,
+      implementation: RUNNER_IMPLEMENTATION_NAME,
+      version: RUNNER_IMPLEMENTATION_VERSION,
+      implementationConnected: response.ok === true,
+      executorStdinPayloadConnected: true,
+      executorStdinPayload,
+      executorShell,
+      canRunInference: response.ok === true,
+      canGenerateRealBitmap: response.ok === true,
+      canWriteOutputFile: response.ok === true,
+      canShowToPlayer: false,
+    }
+  }
+
   return {
     ok: false,
-    status: "real_image_runner_implementation_payload_ready_not_connected",
+    status: "real_image_runner_implementation_blocked",
     implementation: RUNNER_IMPLEMENTATION_NAME,
     version: RUNNER_IMPLEMENTATION_VERSION,
     implementationConnected: false,
@@ -182,24 +212,12 @@ export async function generateRealImageWithRunnerImplementation(input = {}) {
     executionContract,
     executorStdinPayload,
     executorShell,
-    message:
-      "真实 runner implementation 已调用 executor shell 边界，但尚未把 shell 执行结果转换为正式 6 字段模型响应。不会直接返回假图、占位图、SVG、HTML、JSON 调试图或程序绘图结果。",
-    messageEn:
-      "The real runner implementation has called the executor shell boundary, but it has not mapped shell execution results into the formal six-field model response yet. It will not directly return fake images, placeholders, SVG, HTML, debug JSON images, or programmatic render results.",
-    nextStep: {
-      zh: "下一步接入真实结果转换：只有 executorShell.ok=true 时，才把 imageUrl / imageFormat / width / height / license / originalityConfirmed 传回 provider。",
-      en: "Next connect real result mapping: only when executorShell.ok=true may imageUrl / imageFormat / width / height / license / originalityConfirmed be returned to the provider.",
-    },
     canShowToPlayer: false,
     tags: [
       "real_image_runner_implementation",
-      "implementation_payload_connected",
-      "runner_implementation_not_connected",
-      "executor_stdin_payload_ready",
-      "execution_contract_ready",
+      "generate_blocked",
       ...executorStdinPayload.tags,
       ...executorShell.tags,
-      "generate_blocked",
       "fake_image_forbidden",
       "not_player_visible",
     ],
@@ -235,7 +253,7 @@ function buildImplementationExecutorStdinPayload(input = {}) {
     audit: {
       ...(input.audit ?? {}),
       ...(input.requestAudit ?? {}),
-      node: "MD-NEXT-LOCAL-MODEL-IMPLEMENTATION-15",
+      node: "MD-NEXT-LOCAL-MODEL-IMPLEMENTATION-16-BLOCK",
     },
     constraints: input.constraints,
     requiredResponseFields: input.requiredResponseFields,
