@@ -94,6 +94,10 @@ export async function buildWorldVisualReviewReport(input: {
         en: "The candidate must expose real image bytes. SVG, HTML, JSON, text, and spoofed files are forbidden.",
       },
       {
+        zh: "候选图必须返回明确的 image/png、image/webp 或 image/jpeg Content-Type。",
+        en: "The candidate must return an explicit image/png, image/webp, or image/jpeg Content-Type.",
+      },
+      {
         zh: "候选图必须生成可审计的图片字节指纹，用于证明 VisualJudge 审核的是同一份图片本体。",
         en: "The candidate must produce an auditable image byte fingerprint proving which exact image bytes VisualJudge reviewed.",
       },
@@ -124,6 +128,8 @@ export async function buildWorldVisualReviewReport(input: {
       "visual_review",
       status,
       "real_image_bytes_required",
+      "image_content_type_required",
+      "image_byte_fingerprint_required",
       "visual_quality_assertions_required",
       "ai_bitmap_candidate_required",
       "display_blocked_until_approved_frame",
@@ -161,6 +167,9 @@ function buildImageInspectionSummary(
       payloadQualityPassed
         ? "payload_quality_passed"
         : "payload_quality_failed",
+      inspection.contentType ? "content_type_present" : "content_type_missing",
+      inspection.format ? `format_${inspection.format}` : "format_missing",
+      inspection.byteLength > 0 ? "byte_length_present" : "byte_length_empty",
       inspection.sha256 ? "sha256_present" : "sha256_missing",
       "not_player_visible",
     ],
@@ -191,7 +200,7 @@ function buildReviewChecks(input: {
         candidate.sourceFactIds.length === input.factManifest.sourceFactIds.length
   const imageBytesAreValid = input.inspection.ok
   const imageHasByteFingerprint =
-  imageBytesAreValid && typeof input.inspection.sha256 === "string"
+    imageBytesAreValid && typeof input.inspection.sha256 === "string"
   const imageMatchesMetadata =
     candidate !== null &&
     imageBytesAreValid &&
@@ -203,11 +212,11 @@ function buildReviewChecks(input: {
     (input.inspection.width ?? 0) >= MIN_IMAGE_WIDTH &&
     (input.inspection.height ?? 0) >= MIN_IMAGE_HEIGHT
   const minimumPayloadBytes = getMinimumImageByteLength(
-  input.inspection.width,
-  input.inspection.height
+    input.inspection.width,
+    input.inspection.height
   )
   const bitmapPayloadIsSubstantial =
-    imageBytesAreValid && input.inspection.byteLength >= minimumPayloadBytes  
+    imageBytesAreValid && input.inspection.byteLength >= minimumPayloadBytes
   const styleQuality = buildTagGroupResult(
     candidate,
     REQUIRED_STYLE_QUALITY_TAGS
@@ -246,10 +255,10 @@ function buildReviewChecks(input: {
       "真实图片本体",
       "Real image bytes",
       imageBytesAreValid
-        ? `已读取真实图片本体，格式 ${input.inspection.format}，尺寸 ${input.inspection.width}x${input.inspection.height}。`
+        ? `已读取真实图片本体，Content-Type ${input.inspection.contentType}，格式 ${input.inspection.format}，尺寸 ${input.inspection.width}x${input.inspection.height}。`
         : input.inspection.errorZh ?? "无法读取真实图片本体。",
       imageBytesAreValid
-        ? `Real image bytes were read as ${input.inspection.format}, ${input.inspection.width}x${input.inspection.height}.`
+        ? `Real image bytes were read with Content-Type ${input.inspection.contentType}, as ${input.inspection.format}, ${input.inspection.width}x${input.inspection.height}.`
         : input.inspection.error ?? "Real image bytes could not be read."
     ),
     check(
@@ -406,6 +415,15 @@ async function inspectCandidateImage(
   const bytesResult = await readCandidateImageBytes(candidate.imageUrl)
   if (!bytesResult.ok) return bytesResult
 
+  if (bytesResult.byteLength <= 0) {
+    return failedInspection(
+      "候选图片为空字节，不能进入 VisualJudge。",
+      "Candidate image has empty bytes and cannot enter VisualJudge.",
+      bytesResult.contentType,
+      bytesResult.byteLength
+    )
+  }
+
   if (bytesResult.byteLength > MAX_IMAGE_BYTES) {
     return failedInspection(
       "候选图片过大，当前 MVP 审核拒绝超过 16MB 的图片。",
@@ -425,10 +443,19 @@ async function inspectCandidateImage(
     )
   }
 
+  if (!bytesResult.contentType) {
+    return failedInspection(
+      "候选图缺少明确的图片 Content-Type，不能证明其为 PNG/WebP/JPEG 位图。",
+      "Candidate image is missing an explicit image Content-Type, so it cannot prove PNG/WebP/JPEG bitmap identity.",
+      null,
+      bytesResult.byteLength
+    )
+  }
+
   if (!isAllowedContentType(bytesResult.contentType, parsed.format)) {
     return failedInspection(
-      `候选图 Content-Type 不合格：${bytesResult.contentType ?? "unknown"}。`,
-      `Candidate Content-Type is not allowed: ${bytesResult.contentType ?? "unknown"}.`,
+      `候选图 Content-Type 不合格：${bytesResult.contentType}。`,
+      `Candidate Content-Type is not allowed: ${bytesResult.contentType}.`,
       bytesResult.contentType,
       bytesResult.byteLength
     )
@@ -491,7 +518,14 @@ async function readCandidateImageBytes(
     }
 
     const contentType = normalizeContentType(response.headers.get("content-type"))
-    if (contentType && isForbiddenContentType(contentType)) {
+    if (!contentType) {
+      return failedInspection(
+        "候选图响应缺少 Content-Type，不能进入 ApprovedFrame 链路。",
+        "Candidate image response is missing Content-Type and cannot enter the ApprovedFrame chain."
+      )
+    }
+
+    if (isForbiddenContentType(contentType)) {
       return failedInspection(
         `候选图 Content-Type 被禁止：${contentType}。`,
         `Candidate Content-Type is forbidden: ${contentType}.`,
@@ -520,7 +554,7 @@ function readDataUrlBytes(
   }
 
   const contentType = normalizeContentType(match[1])
-  if (!contentType || isForbiddenContentType(contentType)) {
+  if (!contentType || !contentType.startsWith("image/") || isForbiddenContentType(contentType)) {
     return Promise.resolve(
       failedInspection(
         `候选图 data URL Content-Type 被禁止：${contentType ?? "unknown"}。`,
@@ -530,16 +564,27 @@ function readDataUrlBytes(
     )
   }
 
-  const encoded = match[3]
-  const bytes = match[2]
-    ? Buffer.from(encoded, "base64")
-    : Buffer.from(decodeURIComponent(encoded), "utf8")
-  return Promise.resolve({
-    ok: true,
-    bytes: new Uint8Array(bytes),
-    contentType,
-    byteLength: bytes.byteLength,
-  })
+  try {
+    const encoded = match[3]
+    const bytes = match[2]
+      ? Buffer.from(encoded, "base64")
+      : Buffer.from(decodeURIComponent(encoded), "utf8")
+
+    return Promise.resolve({
+      ok: true,
+      bytes: new Uint8Array(bytes),
+      contentType,
+      byteLength: bytes.byteLength,
+    })
+  } catch {
+    return Promise.resolve(
+      failedInspection(
+        "候选图 data URL 解码失败。",
+        "Candidate data URL decoding failed.",
+        contentType
+      )
+    )
+  }
 }
 
 function parseImageBytes(
@@ -639,7 +684,7 @@ function isAllowedContentType(
   contentType: string | null,
   format: WorldVisualAiImageCandidate["imageFormat"]
 ): boolean {
-  if (!contentType) return true
+  if (!contentType) return false
   if (format === "png") return contentType === "image/png"
   if (format === "jpg") return contentType === "image/jpeg"
   return contentType === "image/webp"
@@ -729,11 +774,11 @@ function buildFixInstructions(
 
       if (check.id === "real_image_bytes") {
         return {
-          zh: "重新生成或导入真实 PNG/WebP/JPG 位图，禁止 SVG、HTML、JSON、文本或占位结果。",
-          en: "Regenerate or import a real PNG/WebP/JPG bitmap. SVG, HTML, JSON, text, and placeholder results are forbidden.",
+          zh: "重新生成或导入真实 PNG/WebP/JPG 位图，禁止 SVG、HTML、JSON、文本或占位结果，并确保返回正确 Content-Type。",
+          en: "Regenerate or import a real PNG/WebP/JPG bitmap. SVG, HTML, JSON, text, and placeholder results are forbidden, and the response must return the correct Content-Type.",
         }
       }
-      
+
       if (check.id === "image_byte_fingerprint") {
         return {
           zh: "重新生成或重新导入可稳定读取的真实 PNG/WebP/JPG 位图，确保 VisualJudge 能生成图片本体 sha256 指纹。",
