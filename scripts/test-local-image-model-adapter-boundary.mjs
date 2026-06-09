@@ -1,4 +1,7 @@
 import assert from "node:assert/strict"
+import fs from "node:fs"
+import os from "node:os"
+import path from "node:path"
 
 import {
   generateLocalImageCandidate,
@@ -11,6 +14,7 @@ import {
   runRealImageGenerationAdapterDryRun,
 } from "../services/local-image-model/adapter.mjs"
 import { REQUIRED_RESPONSE_FIELDS } from "../services/local-image-model/contracts.mjs"
+import { REAL_MODEL_MANIFEST_SCHEMA_VERSION } from "../services/local-image-model/real-model-manifest.mjs"
 
 const VALID_REQUEST_AUDIT = {
   requestContractValid: true,
@@ -47,6 +51,7 @@ const VALID_REQUEST_BODY = {
     canShowToPlayer: false,
     cannotApprove: true,
   },
+  imageFormat: "png",
 }
 
 await main()
@@ -60,6 +65,9 @@ async function main() {
   testImplementationHealthWrapsAdapter()
   await testImplementationDryRunWrapsAdapter()
   await testImplementationGenerateWrapsAdapter()
+  testImplementationHealthUsesRuntimeConfig()
+  await testImplementationDryRunUsesRuntimeConfig()
+  await testImplementationGenerateUsesRuntimeConfig()
 
   console.log("")
   console.log("RESULT: local image model adapter boundary test passed.")
@@ -162,6 +170,146 @@ async function testImplementationGenerateWrapsAdapter() {
   assert.equal(result.canShowToPlayer, false)
 
   printCheck("implementation generate wraps adapter")
+}
+
+function testImplementationHealthUsesRuntimeConfig() {
+  const fixture = createRuntimeFixture("implementation-health-runtime-config")
+  const worker = createWorkerFile(fixture, buildSuccessfulWorkerSource())
+  const health = readLocalImageModelImplementationHealth(
+    buildRuntimeConfigInput({ fixture, worker })
+  )
+
+  assert.equal(health.ok, true)
+  assert.equal(health.status, "local_image_model_implementation_connected")
+  assert.equal(health.implementationConnected, true)
+  assert.equal(health.adapter.adapterConnected, true)
+  assert.equal(health.canShowToPlayer, false)
+
+  printCheck("implementation health uses runtime config")
+}
+
+async function testImplementationDryRunUsesRuntimeConfig() {
+  const fixture = createRuntimeFixture("implementation-dry-run-runtime-config")
+  const worker = createWorkerFile(fixture, buildSuccessfulWorkerSource())
+  const dryRun = await runLocalImageModelImplementationDryRun(
+    buildRuntimeConfigInput({ fixture, worker })
+  )
+
+  assert.equal(dryRun.ok, true)
+  assert.equal(dryRun.willReturnImageUrl, true)
+  assert.equal(dryRun.willReturnOriginalityConfirmed, true)
+  assert.equal(dryRun.canShowToPlayer, false)
+
+  printCheck("implementation dry-run uses runtime config")
+}
+
+async function testImplementationGenerateUsesRuntimeConfig() {
+  const fixture = createRuntimeFixture("implementation-generate-runtime-config")
+  const worker = createWorkerFile(fixture, buildSuccessfulWorkerSource())
+  const result = await generateLocalImageCandidate(
+    buildRuntimeConfigInput({ fixture, worker })
+  )
+
+  assert.equal(result.ok, true)
+  assert.equal(result.imageUrl.endsWith(".png"), true)
+  assert.equal(result.imageFormat, "png")
+  assert.equal(result.width, 1024)
+  assert.equal(result.height, 1024)
+  assert.equal(result.license, "self_owned")
+  assert.equal(result.originalityConfirmed, true)
+  assert.equal(result.canShowToPlayer, false)
+
+  printCheck("implementation generate uses runtime config")
+}
+
+function buildRuntimeConfigInput(input) {
+  return {
+    enabled: true,
+    command: process.execPath,
+    argsJson: JSON.stringify([input.worker]),
+    requestBody: VALID_REQUEST_BODY,
+    requestAudit: VALID_REQUEST_AUDIT,
+    requiredResponseFields: REQUIRED_RESPONSE_FIELDS,
+    realModelReadiness: {
+      enabled: true,
+      assetDirectory: input.fixture.root,
+      manifestPath: input.fixture.manifestPath,
+      license: "self_owned",
+      originalityConfirmed: true,
+    },
+    outputStorage: {
+      outputDirectory: input.fixture.outputDirectory,
+      publicBaseUrl: "http://127.0.0.1:3000",
+    },
+  }
+}
+
+function createRuntimeFixture(name) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), `ai-pet-world-${name}-`))
+  const outputDirectory = path.join(root, "generated")
+  const manifestPath = path.join(root, "model-manifest.json")
+  fs.mkdirSync(outputDirectory, { recursive: true })
+  fs.writeFileSync(manifestPath, JSON.stringify(buildValidManifest(), null, 2), "utf8")
+
+  return { root, outputDirectory, manifestPath }
+}
+
+function createWorkerFile(fixture, source) {
+  const worker = path.join(fixture.root, "worker.mjs")
+  fs.writeFileSync(worker, source, "utf8")
+  return worker
+}
+
+function buildSuccessfulWorkerSource() {
+  return `
+import fs from "node:fs"
+import path from "node:path"
+
+let input = ""
+process.stdin.setEncoding("utf8")
+process.stdin.on("data", (chunk) => {
+  input += chunk
+})
+process.stdin.on("end", () => {
+  const payload = JSON.parse(input)
+  const outputDirectory = process.env.AI_PET_WORLD_LOCAL_IMAGE_OUTPUT_DIR
+  fs.mkdirSync(outputDirectory, { recursive: true })
+  fs.writeFileSync(path.join(outputDirectory, payload.outputFileName), "test-bitmap-bytes")
+  process.stdout.write(JSON.stringify({
+    ok: true,
+    status: "real_image_generated",
+    imageFileName: payload.outputFileName,
+    imageFormat: "png",
+    width: 1024,
+    height: 1024,
+    license: "self_owned",
+    originalityConfirmed: true
+  }))
+})
+`
+}
+
+function buildValidManifest() {
+  return {
+    schemaVersion: REAL_MODEL_MANIFEST_SCHEMA_VERSION,
+    modelName: "ai-pet-world-adapter-boundary-test-model",
+    modelVersion: "0.0.1",
+    license: "self_owned",
+    dataSourceType: "self_owned",
+    commercialUseAllowed: true,
+    originalityConfirmed: true,
+    unlicensedThirdPartyArtworkAllowed: false,
+    outputCapabilities: {
+      supportedImageFormats: ["png", "webp", "jpg"],
+      minimumWidth: 512,
+      minimumHeight: 512,
+      canReturnPlaceholder: false,
+      canReturnSvg: false,
+      canReturnHtml: false,
+      canReturnJsonDebugImage: false,
+      canReturnProgrammaticRenderer: false,
+    },
+  }
 }
 
 function printTitle(title) {
