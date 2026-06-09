@@ -4,13 +4,7 @@ import os from "node:os"
 import path from "node:path"
 
 import { REQUIRED_RESPONSE_FIELDS } from "../services/local-image-model/contracts.mjs"
-import { REAL_IMAGE_EXECUTOR_STDIN_PAYLOAD_VERSION } from "../services/local-image-model/real-image-execution-payload.mjs"
 import { REAL_MODEL_MANIFEST_SCHEMA_VERSION } from "../services/local-image-model/real-model-manifest.mjs"
-import {
-  generateRealImageWithRunner,
-  readRealImageRunnerHealth,
-  runRealImageRunnerDryRun,
-} from "../services/local-image-model/real-image-runner.mjs"
 import {
   generateRealImageWithRunnerImplementation,
   readRealImageRunnerImplementationHealth,
@@ -24,14 +18,10 @@ async function main() {
 
   testImplementationHealthDefaultBlocked()
   await testImplementationDryRunDefaultBlocked()
-  await testImplementationGenerateNeverReturnsFakeImage()
-  testImplementationBuildsExecutorStdinPayload()
-  await testImplementationDryRunBuildsExecutorStdinPayload()
-  await testImplementationGenerateBuildsExecutorStdinPayloadButDoesNotExecute()
-  testRunnerHealthExposesImplementationEntry()
-  testRunnerHealthReadinessReadyStillBlocksImplementation()
-  await testRunnerDryRunExposesImplementationEntry()
-  await testRunnerGenerateExposesImplementationEntry()
+  await testImplementationGenerateDefaultBlocked()
+  testImplementationHealthReadyWithExecutorConfig()
+  await testImplementationDryRunReadyWithExecutorConfig()
+  await testImplementationGenerateReturnsSixFieldsWhenExecutorSucceeds()
 
   console.log("")
   console.log("RESULT: runner implementation entry test passed.")
@@ -41,22 +31,12 @@ function testImplementationHealthDefaultBlocked() {
   const health = readRealImageRunnerImplementationHealth()
 
   assert.equal(health.ok, false)
-  assert.equal(
-    health.status,
-    "real_image_runner_implementation_payload_ready_not_connected"
-  )
+  assert.equal(health.status, "real_image_runner_implementation_blocked")
   assert.equal(health.implementationConnected, false)
   assert.equal(health.executorStdinPayloadConnected, true)
-  assert.equal(health.canRunInference, false)
   assert.equal(health.canGenerateRealBitmap, false)
-  assert.equal(health.canWriteOutputFile, false)
   assert.equal(health.canShowToPlayer, false)
-  assert.equal(health.inputContract.mustBuildExecutorStdinPayload, true)
-  assert.equal(health.executorStdinPayload.canExecuteCommand, false)
-  assert.equal(health.executorStdinPayload.willExecuteCommand, false)
-  assert.equal(health.executorStdinPayload.willGenerateImage, false)
-  assert.ok(health.tags.includes("executor_stdin_payload_ready"))
-  assert.ok(health.tags.includes("fake_image_forbidden"))
+  assert.ok(health.tags.includes("not_player_visible"))
 
   printCheck("implementation health default blocked")
 }
@@ -65,274 +45,151 @@ async function testImplementationDryRunDefaultBlocked() {
   const dryRun = await runRealImageRunnerImplementationDryRun()
 
   assert.equal(dryRun.ok, false)
-  assert.equal(
-    dryRun.status,
-    "real_image_runner_implementation_payload_ready_not_connected"
-  )
-  assert.equal(dryRun.implementationConnected, false)
-  assert.equal(dryRun.executorStdinPayloadConnected, true)
+  assert.equal(dryRun.status, "real_image_runner_implementation_blocked")
   assert.equal(dryRun.willReturnImageUrl, false)
-  assert.equal(dryRun.willReturnImageFormat, false)
-  assert.equal(dryRun.willReturnWidth, false)
-  assert.equal(dryRun.willReturnHeight, false)
-  assert.equal(dryRun.willReturnLicense, false)
-  assert.equal(dryRun.willReturnOriginalityConfirmed, false)
-  assert.equal(dryRun.willWriteOutputFile, false)
-  assert.equal(dryRun.willExecuteCommand, false)
   assert.equal(dryRun.canShowToPlayer, false)
-  assert.equal(dryRun.executorStdinPayload.canExecuteCommand, false)
-  assert.equal(dryRun.executorStdinPayload.willExecuteCommand, false)
-  assert.equal(dryRun.executorStdinPayload.willGenerateImage, false)
 
   printCheck("implementation dry-run default blocked")
 }
 
-async function testImplementationGenerateNeverReturnsFakeImage() {
+async function testImplementationGenerateDefaultBlocked() {
   const generate = await generateRealImageWithRunnerImplementation()
 
   assert.equal(generate.ok, false)
-  assert.equal(
-    generate.status,
-    "real_image_runner_implementation_payload_ready_not_connected"
-  )
-  assert.equal(generate.implementationConnected, false)
-  assert.equal(generate.executorStdinPayloadConnected, true)
-  assert.equal(generate.canGenerateRealBitmap, false)
-  assert.equal(generate.canWriteOutputFile, false)
+  assert.equal(generate.status, "real_image_runner_implementation_blocked")
+  assert.equal(Object.hasOwn(generate, "imageUrl"), false)
   assert.equal(generate.canShowToPlayer, false)
-  assert.equal(Object.hasOwn(generate, "imageUrl"), false)
-  assert.equal(Object.hasOwn(generate, "imageFormat"), false)
-  assert.equal(Object.hasOwn(generate, "width"), false)
-  assert.equal(Object.hasOwn(generate, "height"), false)
-  assert.equal(Object.hasOwn(generate, "license"), false)
-  assert.equal(Object.hasOwn(generate, "originalityConfirmed"), false)
-  assert.equal(generate.executorStdinPayload.canExecuteCommand, false)
-  assert.equal(generate.executorStdinPayload.willExecuteCommand, false)
-  assert.equal(generate.executorStdinPayload.willGenerateImage, false)
-  assert.ok(generate.tags.includes("fake_image_forbidden"))
 
-  printCheck("implementation generate never returns fake image")
+  printCheck("implementation generate default blocked")
 }
 
-function testImplementationBuildsExecutorStdinPayload() {
-  const fixture = createReadinessFixture()
-  const health = readRealImageRunnerImplementationHealth({
-    requestAudit: {
-      requestId: "runner-implementation-payload-health",
-    },
-    readiness: createReadyReadinessGate(),
-    outputStorage: {
-      outputDirectory: fixture.assetDirectory,
-      publicBaseUrl: "http://127.0.0.1:3000",
-    },
-    requestBody: buildRequestBody(),
-  })
-
-  assert.equal(health.ok, false)
-  assert.equal(health.executorStdinPayloadConnected, true)
-  assert.equal(health.executorStdinPayload.ok, true)
-  assert.equal(
-    health.executorStdinPayload.payload.schemaVersion,
-    REAL_IMAGE_EXECUTOR_STDIN_PAYLOAD_VERSION
+function testImplementationHealthReadyWithExecutorConfig() {
+  const fixture = createFixture("implementation-health-ready")
+  const worker = createWorkerFile(fixture, buildSuccessfulWorkerSource())
+  const health = readRealImageRunnerImplementationHealth(
+    buildReadyImplementationInput({
+      fixture,
+      worker,
+      requestId: "implementation-health-ready",
+    })
   )
-  assert.equal(
-    health.executorStdinPayload.payload.requestId,
-    "runner-implementation-payload-health"
-  )
-  assert.equal(
-    health.executorStdinPayload.payload.outputFileName,
-    "runner-implementation-payload-health-executor-stdin.png"
-  )
-  assert.equal(health.executorStdinPayload.payload.canShowToPlayer, false)
-  assert.equal(
-    health.executorStdinPayload.payload.worldFactMetadata.locked,
-    true
-  )
-  assert.equal(
-    health.executorStdinPayload.payload.worldFactMetadata
-      .mustNotRewriteWorldFacts,
-    true
-  )
-  assert.equal(
-    health.executorStdinPayload.payload.constraints
-      .mustPersistOnlyAsHiddenCandidate,
-    true
-  )
-  assert.equal(
-    health.executorStdinPayload.payload.constraints.mustPassVisualJudge,
-    true
-  )
-  assert.equal(
-    health.executorStdinPayload.payload.constraints
-      .mustCreateApprovedFrameBeforePlayerView,
-    true
-  )
-  assert.equal(health.executorStdinPayload.canExecuteCommand, false)
-  assert.equal(health.executorStdinPayload.willExecuteCommand, false)
-  assert.equal(health.executorStdinPayload.willGenerateImage, false)
 
-  printCheck("implementation builds executor stdin payload")
-}
-
-async function testImplementationDryRunBuildsExecutorStdinPayload() {
-  const fixture = createReadinessFixture()
-  const dryRun = await runRealImageRunnerImplementationDryRun({
-    requestAudit: {
-      requestId: "runner-implementation-payload-dry-run",
-    },
-    readiness: createReadyReadinessGate(),
-    outputStorage: {
-      outputDirectory: fixture.assetDirectory,
-      publicBaseUrl: "http://127.0.0.1:3000",
-    },
-    requestBody: buildRequestBody(),
-  })
-
-  assert.equal(dryRun.ok, false)
-  assert.equal(dryRun.executorStdinPayloadConnected, true)
-  assert.equal(dryRun.executorStdinPayload.ok, true)
-  assert.equal(dryRun.executorStdinPayload.payload.canShowToPlayer, false)
-  assert.equal(dryRun.executorStdinPayload.willExecuteCommand, false)
-  assert.equal(dryRun.executorStdinPayload.willGenerateImage, false)
-  assert.equal(dryRun.willExecuteCommand, false)
-  assert.equal(dryRun.willWriteOutputFile, false)
-
-  printCheck("implementation dry-run builds executor stdin payload")
-}
-
-async function testImplementationGenerateBuildsExecutorStdinPayloadButDoesNotExecute() {
-  const fixture = createReadinessFixture()
-  const generate = await generateRealImageWithRunnerImplementation({
-    requestAudit: {
-      requestId: "runner-implementation-payload-generate",
-    },
-    readiness: createReadyReadinessGate(),
-    outputStorage: {
-      outputDirectory: fixture.assetDirectory,
-      publicBaseUrl: "http://127.0.0.1:3000",
-    },
-    requestBody: buildRequestBody(),
-  })
-
-  assert.equal(generate.ok, false)
-  assert.equal(
-    generate.status,
-    "real_image_runner_implementation_payload_ready_not_connected"
-  )
-  assert.equal(generate.executorStdinPayloadConnected, true)
-  assert.equal(generate.executorStdinPayload.ok, true)
-  assert.equal(generate.executorStdinPayload.payload.canShowToPlayer, false)
-  assert.equal(generate.executorStdinPayload.willExecuteCommand, false)
-  assert.equal(generate.executorStdinPayload.willGenerateImage, false)
-  assert.equal(generate.executorShell.didExecuteCommand, false)
-  assert.equal(generate.executorShell.didWriteOutputFile, false)
-  assert.equal(generate.executorShell.didReturnStdoutJson, false)
-  assert.equal(Object.hasOwn(generate, "imageUrl"), false)
-
-  printCheck("implementation generate builds executor stdin payload but does not execute")
-}
-
-function testRunnerHealthExposesImplementationEntry() {
-  const health = readRealImageRunnerHealth()
-
-  assert.equal(health.ok, false)
-  assert.equal(health.status, "real_image_generation_runner_not_connected")
-  assert.equal(health.version, "runner-not-connected-2")
-  assert.equal(
-    health.implementation.status,
-    "real_image_runner_implementation_payload_ready_not_connected"
-  )
-  assert.equal(health.implementation.implementationConnected, false)
-  assert.equal(health.implementation.executorStdinPayloadConnected, true)
-  assert.equal(health.implementation.canWriteOutputFile, false)
-  assert.equal(health.implementation.executorStdinPayload.canExecuteCommand, false)
+  assert.equal(health.ok, true)
+  assert.equal(health.status, "real_image_runner_implementation_ready")
+  assert.equal(health.implementationConnected, true)
+  assert.equal(health.executorShell.ok, true)
   assert.equal(health.canShowToPlayer, false)
 
-  printCheck("runner health exposes implementation entry")
+  printCheck("implementation health ready with executor config")
 }
 
-function testRunnerHealthReadinessReadyStillBlocksImplementation() {
-  const fixture = createReadinessFixture()
-
-  const health = readRealImageRunnerHealth({
-    realModelReadiness: {
-      enabled: true,
-      assetDirectory: fixture.assetDirectory,
-      manifestPath: fixture.manifestPath,
-      license: "self_owned",
-      originalityConfirmed: true,
-    },
-  })
-
-  assert.equal(health.ok, false)
-  assert.equal(health.readiness.ok, true)
-  assert.equal(health.readiness.status, "real_image_model_assets_ready")
-  assert.equal(health.readiness.manifest.ok, true)
-  assert.equal(
-    health.implementation.status,
-    "real_image_runner_implementation_payload_ready_not_connected"
+async function testImplementationDryRunReadyWithExecutorConfig() {
+  const fixture = createFixture("implementation-dry-run-ready")
+  const worker = createWorkerFile(fixture, buildSuccessfulWorkerSource())
+  const dryRun = await runRealImageRunnerImplementationDryRun(
+    buildReadyImplementationInput({
+      fixture,
+      worker,
+      requestId: "implementation-dry-run-ready",
+    })
   )
-  assert.equal(health.implementation.canRunInference, false)
-  assert.equal(health.implementation.executorStdinPayloadConnected, true)
-  assert.equal(health.implementation.executorStdinPayload.canExecuteCommand, false)
-  assert.equal(health.canGenerateRealBitmap, false)
-  assert.equal(health.canShowToPlayer, false)
 
-  printCheck("runner readiness ready still blocks implementation")
-}
-
-async function testRunnerDryRunExposesImplementationEntry() {
-  const dryRun = await runRealImageRunnerDryRun()
-
-  assert.equal(dryRun.ok, false)
-  assert.equal(dryRun.status, "real_image_generation_runner_not_connected")
-  assert.equal(
-    dryRun.implementation.status,
-    "real_image_runner_implementation_payload_ready_not_connected"
-  )
-  assert.equal(dryRun.implementation.executorStdinPayloadConnected, true)
-  assert.equal(dryRun.implementation.executorStdinPayload.canExecuteCommand, false)
-  assert.equal(dryRun.willReturnImageUrl, false)
-  assert.equal(dryRun.willReturnOriginalityConfirmed, false)
+  assert.equal(dryRun.ok, true)
+  assert.equal(dryRun.status, "real_image_runner_implementation_dry_run_passed")
+  assert.equal(dryRun.willReturnImageUrl, true)
+  assert.equal(dryRun.willReturnOriginalityConfirmed, true)
   assert.equal(dryRun.canShowToPlayer, false)
 
-  printCheck("runner dry-run exposes implementation entry")
+  printCheck("implementation dry-run ready with executor config")
 }
 
-async function testRunnerGenerateExposesImplementationEntry() {
-  const generate = await generateRealImageWithRunner()
-
-  assert.equal(generate.ok, false)
-  assert.equal(generate.status, "real_image_generation_runner_not_connected")
-  assert.equal(
-    generate.implementation.status,
-    "real_image_runner_implementation_payload_ready_not_connected"
+async function testImplementationGenerateReturnsSixFieldsWhenExecutorSucceeds() {
+  const fixture = createFixture("implementation-generate-six-fields")
+  const worker = createWorkerFile(fixture, buildSuccessfulWorkerSource())
+  const generate = await generateRealImageWithRunnerImplementation(
+    buildReadyImplementationInput({
+      fixture,
+      worker,
+      requestId: "implementation-generate-six-fields",
+    })
   )
-  assert.equal(generate.implementation.executorStdinPayloadConnected, true)
-  assert.equal(generate.canGenerateRealBitmap, false)
+
+  assert.equal(generate.ok, true)
+  assert.equal(generate.status, "real_image_runner_implementation_generate_passed")
+  assert.equal(generate.imageUrl.endsWith(".png"), true)
+  assert.equal(generate.imageFormat, "png")
+  assert.equal(generate.width, 1024)
+  assert.equal(generate.height, 1024)
+  assert.equal(generate.license, "self_owned")
+  assert.equal(generate.originalityConfirmed, true)
   assert.equal(generate.canShowToPlayer, false)
-  assert.equal(Object.hasOwn(generate, "imageUrl"), false)
-  assert.ok(generate.tags.includes("fake_image_forbidden"))
+  assert.equal(generate.executorShell.ok, true)
 
-  printCheck("runner generate exposes implementation entry")
+  printCheck("implementation generate returns six fields when executor succeeds")
 }
 
-function createReadinessFixture() {
-  const assetDirectory = fs.mkdtempSync(
-    path.join(os.tmpdir(), "ai-pet-world-runner-implementation-")
-  )
-  const manifestPath = path.join(assetDirectory, "model-manifest.json")
+function buildReadyImplementationInput(input) {
+  return {
+    enabled: true,
+    command: process.execPath,
+    argsJson: JSON.stringify([input.worker]),
+    requestAudit: {
+      requestId: input.requestId,
+    },
+    readiness: createReadyReadinessGate(),
+    outputStorage: {
+      outputDirectory: input.fixture.outputDirectory,
+      publicBaseUrl: "http://127.0.0.1:3000",
+    },
+    requestBody: buildRequestBody(),
+    requiredResponseFields: REQUIRED_RESPONSE_FIELDS,
+  }
+}
 
-  fs.writeFileSync(
-    manifestPath,
-    JSON.stringify(buildValidManifest(), null, 2),
-    "utf8"
-  )
+function createFixture(name) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), `ai-pet-world-${name}-`))
+  const outputDirectory = path.join(root, "generated")
+  fs.mkdirSync(outputDirectory, { recursive: true })
 
   return {
-    assetDirectory,
-    manifestPath,
+    root,
+    outputDirectory,
   }
+}
+
+function createWorkerFile(fixture, source) {
+  const worker = path.join(fixture.root, "worker.mjs")
+  fs.writeFileSync(worker, source, "utf8")
+  return worker
+}
+
+function buildSuccessfulWorkerSource() {
+  return `
+import fs from "node:fs"
+import path from "node:path"
+
+let input = ""
+process.stdin.setEncoding("utf8")
+process.stdin.on("data", (chunk) => {
+  input += chunk
+})
+process.stdin.on("end", () => {
+  const payload = JSON.parse(input)
+  const outputDirectory = process.env.AI_PET_WORLD_LOCAL_IMAGE_OUTPUT_DIR
+  fs.mkdirSync(outputDirectory, { recursive: true })
+  fs.writeFileSync(path.join(outputDirectory, payload.outputFileName), "test-bitmap-bytes")
+  process.stdout.write(JSON.stringify({
+    ok: true,
+    status: "real_image_generated",
+    imageFileName: payload.outputFileName,
+    imageFormat: "png",
+    width: 1024,
+    height: 1024,
+    license: "self_owned",
+    originalityConfirmed: true
+  }))
+})
+`
 }
 
 function createReadyReadinessGate() {
@@ -352,14 +209,7 @@ function createReadyReadinessGate() {
     },
     canRunInference: false,
     canShowToPlayer: false,
-    tags: [
-      "real_image_model_readiness",
-      "assets_ready",
-      "manifest_valid",
-      "runner_not_connected",
-      "does_not_generate",
-      "not_player_visible",
-    ],
+    tags: ["real_image_model_readiness", "assets_ready", "manifest_valid"],
   }
 }
 
@@ -382,8 +232,6 @@ function buildRequestBody() {
       worldId: "runner-implementation-test-world",
       tick: 1,
       canShowToPlayer: false,
-      summary:
-        "Runner implementation payload integration test. This is not an image and must not be displayed.",
     },
     controlSketch: {
       controlSketchId: "runner-implementation-test-control-sketch",
@@ -406,10 +254,7 @@ function buildRequestBody() {
       worldId: "runner-implementation-test-world",
       tick: 1,
       promptPackageId: "runner-implementation-test-prompt-package",
-      sourceFactIds: [
-        "runner-implementation-test-world",
-        "runner-implementation-test-fact",
-      ],
+      sourceFactIds: ["runner-implementation-test-world"],
       canShowToPlayer: false,
       cannotApprove: true,
     },
