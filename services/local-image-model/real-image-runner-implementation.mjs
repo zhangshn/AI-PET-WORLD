@@ -30,6 +30,10 @@ export function readRealImageRunnerImplementationHealth(input = {}) {
     executionContract,
   })
   const executorShell = readRealImageExecutorShellHealth({
+    enabled: input.enabled,
+    command: input.command,
+    argsJson: input.argsJson,
+    timeoutMs: input.timeoutMs,
     requiredResponseFields,
   })
 
@@ -50,12 +54,12 @@ export function readRealImageRunnerImplementationHealth(input = {}) {
     executorStdinPayload,
     executorShell,
     message:
-      "真实 runner implementation 已接入 executor stdin payload，但尚未接入命令执行逻辑。当前不能生成图片，也不会返回假图。",
+      "真实 runner implementation 已接入 executor stdin payload，但尚未接入命令执行结果转换逻辑。当前不能生成可进入正式链路的图片结果，也不会返回假图。",
     messageEn:
-      "The real runner implementation is connected to the executor stdin payload, but command execution logic is not connected yet. It cannot generate images and will not return fake images.",
+      "The real runner implementation is connected to the executor stdin payload, but execution result mapping is not connected yet. It cannot produce a formal-chain image result and will not return fake images.",
     nextStep: {
-      zh: "下一步才接入真实命令执行：将 executorStdinPayload.payload 通过 stdin 发送给自研推理脚本，读取 stdout JSON，并经过 execution contract 校验。",
-      en: "Next connect real command execution: send executorStdinPayload.payload to the in-house inference script through stdin, read stdout JSON, and validate it through the execution contract.",
+      zh: "下一步会把 executor shell 的真实执行结果转换成 local image model 的 6 字段响应，然后才能进入隐藏 AiImageCandidate。",
+      en: "Next map the executor shell real execution result into the local image model six-field response before it may enter a hidden AiImageCandidate.",
     },
     canShowToPlayer: false,
     tags: [
@@ -66,8 +70,6 @@ export function readRealImageRunnerImplementationHealth(input = {}) {
       "execution_contract_ready",
       ...executorStdinPayload.tags,
       ...executorShell.tags,
-      "does_not_execute",
-      "does_not_generate",
       "fake_image_forbidden",
       "not_player_visible",
     ],
@@ -85,6 +87,10 @@ export async function runRealImageRunnerImplementationDryRun(input = {}) {
     executionContract,
   })
   const executorShell = await runRealImageExecutorShellDryRun({
+    enabled: input.enabled,
+    command: input.command,
+    argsJson: input.argsJson,
+    timeoutMs: input.timeoutMs,
     requiredResponseFields,
   })
 
@@ -115,12 +121,12 @@ export async function runRealImageRunnerImplementationDryRun(input = {}) {
     willExecuteCommand: false,
     willPersistOnlyAsHiddenCandidate: false,
     message:
-      "真实 runner implementation dry-run 已能构建 executor stdin payload，但尚未接入命令执行逻辑，因此不能声明会执行命令或返回真实图片字段。",
+      "真实 runner implementation dry-run 已能构建 executor stdin payload，并能读取 executor shell child_process 配置，但尚未把执行结果转换成正式模型响应。",
     messageEn:
-      "The real runner implementation dry-run can build the executor stdin payload, but command execution logic is not connected yet, so it cannot declare command execution or real image fields.",
+      "The real runner implementation dry-run can build the executor stdin payload and read executor shell child_process configuration, but it has not mapped execution results into the formal model response yet.",
     nextStep: {
-      zh: "接入真实命令执行后，dry-run 才能返回 ok=true，并声明会返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
-      en: "After connecting real command execution, dry-run may return ok=true and declare imageUrl / imageFormat / width / height / license / originalityConfirmed.",
+      zh: "接入真实结果转换后，dry-run 才能声明会返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
+      en: "After connecting real result mapping, dry-run may declare imageUrl / imageFormat / width / height / license / originalityConfirmed.",
     },
     canShowToPlayer: false,
     tags: [
@@ -132,8 +138,6 @@ export async function runRealImageRunnerImplementationDryRun(input = {}) {
       ...executorStdinPayload.tags,
       ...executorShell.tags,
       "dry_run_blocked",
-      "does_not_execute",
-      "does_not_generate",
       "fake_image_forbidden",
       "not_player_visible",
     ],
@@ -151,6 +155,11 @@ export async function generateRealImageWithRunnerImplementation(input = {}) {
     executionContract,
   })
   const executorShell = await executeRealImageWithExecutorShell({
+    enabled: input.enabled,
+    command: input.command,
+    argsJson: input.argsJson,
+    timeoutMs: input.timeoutMs,
+    outputStorage: input.outputStorage,
     requiredResponseFields,
     executorStdinPayload:
       executorStdinPayload.ok === true ? executorStdinPayload.payload : null,
@@ -174,12 +183,12 @@ export async function generateRealImageWithRunnerImplementation(input = {}) {
     executorStdinPayload,
     executorShell,
     message:
-      "真实 runner implementation 已构建 executor stdin payload，但尚未接入命令执行逻辑。不会执行命令，也不会返回假图、占位图、SVG、HTML、JSON 调试图或程序绘图结果。",
+      "真实 runner implementation 已调用 executor shell 边界，但尚未把 shell 执行结果转换为正式 6 字段模型响应。不会直接返回假图、占位图、SVG、HTML、JSON 调试图或程序绘图结果。",
     messageEn:
-      "The real runner implementation has built the executor stdin payload, but command execution logic is not connected yet. It will not execute commands and will not return fake images, placeholders, SVG, HTML, debug JSON images, or programmatic render results.",
+      "The real runner implementation has called the executor shell boundary, but it has not mapped shell execution results into the formal six-field model response yet. It will not directly return fake images, placeholders, SVG, HTML, debug JSON images, or programmatic render results.",
     nextStep: {
-      zh: "下一步接入真实命令执行：执行成功后必须写入 output-storage，并返回 public imageUrl / imageFormat / width / height / license / originalityConfirmed。",
-      en: "Next connect real command execution: after successful execution it must write into output-storage and return public imageUrl / imageFormat / width / height / license / originalityConfirmed.",
+      zh: "下一步接入真实结果转换：只有 executorShell.ok=true 时，才把 imageUrl / imageFormat / width / height / license / originalityConfirmed 传回 provider。",
+      en: "Next connect real result mapping: only when executorShell.ok=true may imageUrl / imageFormat / width / height / license / originalityConfirmed be returned to the provider.",
     },
     canShowToPlayer: false,
     tags: [
@@ -191,8 +200,6 @@ export async function generateRealImageWithRunnerImplementation(input = {}) {
       ...executorStdinPayload.tags,
       ...executorShell.tags,
       "generate_blocked",
-      "does_not_execute",
-      "does_not_generate",
       "fake_image_forbidden",
       "not_player_visible",
     ],
@@ -228,7 +235,7 @@ function buildImplementationExecutorStdinPayload(input = {}) {
     audit: {
       ...(input.audit ?? {}),
       ...(input.requestAudit ?? {}),
-      node: "MD-NEXT-LOCAL-MODEL-IMPLEMENTATION-14",
+      node: "MD-NEXT-LOCAL-MODEL-IMPLEMENTATION-15",
     },
     constraints: input.constraints,
     requiredResponseFields: input.requiredResponseFields,
