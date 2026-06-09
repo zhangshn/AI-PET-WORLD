@@ -1,4 +1,4 @@
- // 当前文件作用：提供 AI-PET-WORLD 自研 local image model 的本地契约服务入口，并安全读取未来真实生成的本地图片。
+// 当前文件作用：提供 AI-PET-WORLD 自研 local image model 的本地契约服务入口，并安全读取未来真实生成的本地图片。
 
 import fs from "node:fs"
 import { stat } from "node:fs/promises"
@@ -29,12 +29,10 @@ const REQUIRED_RESPONSE_FIELDS = [
 
 function createJsonResponse(response, statusCode, payload) {
   const body = JSON.stringify(payload, null, 2)
-
   response.writeHead(statusCode, {
     "content-type": "application/json; charset=utf-8",
     "content-length": Buffer.byteLength(body, "utf8"),
   })
-
   response.end(body)
 }
 
@@ -42,10 +40,7 @@ function createNotFoundResponse(response) {
   createJsonResponse(response, 404, {
     ok: false,
     status: "not_found",
-    message: "未知 local image model endpoint。",
-    messageEn: "Unknown local image model endpoint.",
     canShowToPlayer: false,
-    tags: ["local_image_model_contract_server", "not_found"],
   })
 }
 
@@ -59,29 +54,17 @@ async function readJsonBody(request) {
   const rawBody = Buffer.concat(chunks).toString("utf8")
 
   if (!rawBody.trim()) {
-    return {
-      ok: false,
-      error: "Request body is empty.",
-      payload: null,
-    }
+    return { ok: false, error: "Request body is empty.", payload: null }
   }
 
   try {
     const payload = JSON.parse(rawBody)
 
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
-      return {
-        ok: false,
-        error: "Request body must be a JSON object.",
-        payload: null,
-      }
+      return { ok: false, error: "Request body must be a JSON object.", payload: null }
     }
 
-    return {
-      ok: true,
-      error: null,
-      payload,
-    }
+    return { ok: true, error: null, payload }
   } catch (error) {
     return {
       ok: false,
@@ -102,7 +85,7 @@ function handleHealth(response) {
       ok: true,
       status: "local_image_model_contract_server_ready",
       model: "ai-pet-world-local-image-model-contract-server",
-      version: "contract-shell-3",
+      version: "contract-server-runtime-config-1",
       endpoints: {
         health: "/health",
         dryRun: "/dry-run",
@@ -110,12 +93,7 @@ function handleHealth(response) {
         generatedImage: `${LOCAL_IMAGE_OUTPUT_ROUTE_PREFIX}/:fileName`,
       },
       canShowToPlayer: false,
-      tags: [
-        "local_image_model_contract_server",
-        "contract_server_ready",
-        "generated_route_ready",
-        "not_player_visible",
-      ],
+      tags: ["local_image_model_contract_server", "contract_server_ready"],
     },
   })
 }
@@ -128,9 +106,7 @@ async function handleDryRun(request, response) {
       ok: false,
       status: "invalid_json",
       message: bodyResult.error,
-      messageEn: bodyResult.error,
       canShowToPlayer: false,
-      tags: ["local_image_model_dry_run", "invalid_json"],
     })
     return
   }
@@ -142,26 +118,9 @@ async function handleDryRun(request, response) {
     createJsonResponse(response, 422, {
       ok: false,
       status: "local_image_model_dry_run_request_invalid",
-      model: "ai-pet-world-local-image-model-contract-server",
-      version: "contract-shell-3",
       ...requestAudit,
       requiredResponseShape: REQUIRED_RESPONSE_FIELDS,
-      willReturnImageUrl: false,
-      willReturnImageFormat: false,
-      willReturnWidth: false,
-      willReturnHeight: false,
-      willReturnLicense: false,
-      willReturnOriginalityConfirmed: false,
-      willPersistOnlyAsHiddenCandidate: false,
-      message: "dry-run 请求契约检查未通过。",
-      messageEn: "The dry-run request contract check failed.",
       canShowToPlayer: false,
-      tags: [
-        "local_image_model_dry_run",
-        "request_contract_failed",
-        "does_not_generate",
-        "not_player_visible",
-      ],
     })
     return
   }
@@ -183,9 +142,7 @@ async function handleGenerate(request, response) {
       ok: false,
       status: "invalid_json",
       message: bodyResult.error,
-      messageEn: bodyResult.error,
       canShowToPlayer: false,
-      tags: ["local_image_model_generate", "invalid_json"],
     })
     return
   }
@@ -197,19 +154,9 @@ async function handleGenerate(request, response) {
     createJsonResponse(response, 422, {
       ok: false,
       status: "local_image_model_generate_request_invalid",
-      model: "ai-pet-world-local-image-model-contract-server",
-      version: "contract-shell-3",
       ...requestAudit,
       requiredResponseShape: REQUIRED_RESPONSE_FIELDS,
-      message: "正式生成请求契约检查未通过。",
-      messageEn: "The formal generate request contract check failed.",
       canShowToPlayer: false,
-      tags: [
-        "local_image_model_generate",
-        "request_contract_failed",
-        "does_not_generate",
-        "not_player_visible",
-      ],
     })
     return
   }
@@ -253,18 +200,7 @@ async function handleGeneratedImage(url, response) {
       status: "generated_image_not_found",
       fileName: outputReference.fileName,
       imageUrl: outputReference.imageUrl,
-      message:
-        "请求的 generated 图片不存在。当前服务不会生成假图，也不会返回占位图。",
-      messageEn:
-        "The requested generated image does not exist. This service will not generate fake images or return placeholders.",
       canShowToPlayer: false,
-      tags: [
-        "generated_image_route",
-        "generated_image_not_found",
-        "does_not_generate",
-        "fake_image_forbidden",
-        "not_player_visible",
-      ],
     })
     return
   }
@@ -275,11 +211,6 @@ async function handleGeneratedImage(url, response) {
       status: "generated_image_not_file",
       fileName: outputReference.fileName,
       canShowToPlayer: false,
-      tags: [
-        "generated_image_route",
-        "generated_image_not_file",
-        "not_player_visible",
-      ],
     })
     return
   }
@@ -292,11 +223,6 @@ async function handleGeneratedImage(url, response) {
       sizeBytes: fileStat.size,
       maxFileBytes: MAX_LOCAL_IMAGE_OUTPUT_FILE_BYTES,
       canShowToPlayer: false,
-      tags: [
-        "generated_image_route",
-        "generated_image_too_large",
-        "not_player_visible",
-      ],
     })
     return
   }
@@ -312,11 +238,7 @@ async function handleGeneratedImage(url, response) {
   })
 
   const stream = fs.createReadStream(outputReference.internalFilePath)
-
-  stream.on("error", () => {
-    response.destroy()
-  })
-
+  stream.on("error", () => response.destroy())
   stream.pipe(response)
 }
 
@@ -324,62 +246,34 @@ function readGeneratedImageFileName(url) {
   const routePrefix = `${LOCAL_IMAGE_OUTPUT_ROUTE_PREFIX}/`
 
   if (!url.pathname.startsWith(routePrefix)) {
-    return {
-      ok: false,
-      status: "generated_image_route_mismatch",
-      message: "generated image route 不匹配。",
-      messageEn: "The generated image route does not match.",
-      canShowToPlayer: false,
-      tags: ["generated_image_route", "route_mismatch"],
-    }
+    return { ok: false, status: "generated_image_route_mismatch", canShowToPlayer: false }
   }
 
   const encodedFileName = url.pathname.slice(routePrefix.length)
 
   if (!encodedFileName) {
-    return {
-      ok: false,
-      status: "generated_image_file_name_missing",
-      message: "generated image 文件名不能为空。",
-      messageEn: "The generated image file name cannot be empty.",
-      canShowToPlayer: false,
-      tags: ["generated_image_route", "file_name_missing"],
-    }
+    return { ok: false, status: "generated_image_file_name_missing", canShowToPlayer: false }
   }
 
   try {
-    const fileName = decodeURIComponent(encodedFileName)
-
-    return {
-      ok: true,
-      fileName,
-    }
+    return { ok: true, fileName: decodeURIComponent(encodedFileName) }
   } catch {
     return {
       ok: false,
       status: "generated_image_file_name_invalid_encoding",
-      message: "generated image 文件名 URL 编码不合法。",
-      messageEn: "The generated image file name URL encoding is invalid.",
       canShowToPlayer: false,
-      tags: ["generated_image_route", "file_name_invalid_encoding"],
     }
   }
 }
 
 function readImageContentType(imageFormat) {
-  if (imageFormat === "png") {
-    return "image/png"
-  }
-
-  if (imageFormat === "webp") {
-    return "image/webp"
-  }
-
+  if (imageFormat === "png") return "image/png"
+  if (imageFormat === "webp") return "image/webp"
   return "image/jpeg"
 }
 
 function validateGenerationRequest(requestBody) {
-  if (!requestBody || typeof requestBody !== "object" || Array.isArray(requestBody)) {
+  if (!isRecord(requestBody)) {
     return buildAudit(false, false, false, false, false, false)
   }
 
@@ -470,9 +364,10 @@ const server = http.createServer(async (request, response) => {
       return
     }
 
-    if (request.method === "GET" && url.pathname.startsWith(
-      `${LOCAL_IMAGE_OUTPUT_ROUTE_PREFIX}/`
-    )) {
+    if (
+      request.method === "GET" &&
+      url.pathname.startsWith(`${LOCAL_IMAGE_OUTPUT_ROUTE_PREFIX}/`)
+    ) {
       await handleGeneratedImage(url, response)
       return
     }
@@ -493,9 +388,7 @@ const server = http.createServer(async (request, response) => {
       ok: false,
       status: "contract_server_error",
       message: error instanceof Error ? error.message : String(error),
-      messageEn: error instanceof Error ? error.message : String(error),
       canShowToPlayer: false,
-      tags: ["local_image_model_contract_server", "server_error"],
     })
   }
 })
@@ -509,6 +402,5 @@ server.listen(PORT, HOST, () => {
     `[local-image-model] generated: http://localhost:${PORT}${LOCAL_IMAGE_OUTPUT_ROUTE_PREFIX}/:fileName`
   )
   console.log("[local-image-model] implementation entry: ./implementation.mjs")
-  console.log("[local-image-model] real image model implementation: not connected")
   console.log("[local-image-model] fake image output: forbidden")
 })
