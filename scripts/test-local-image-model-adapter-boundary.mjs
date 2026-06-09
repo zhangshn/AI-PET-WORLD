@@ -16,9 +16,7 @@ import {
 import { REQUIRED_RESPONSE_FIELDS } from "../services/local-image-model/contracts.mjs"
 import { REAL_MODEL_MANIFEST_SCHEMA_VERSION } from "../services/local-image-model/real-model-manifest.mjs"
 
-const VALID_REQUEST_AUDIT = {
-  requestContractValid: true,
-}
+const VALID_REQUEST_AUDIT = { requestContractValid: true }
 
 const VALID_REQUEST_BODY = {
   modelTask: {
@@ -31,9 +29,7 @@ const VALID_REQUEST_BODY = {
     mustNotCopyUnlicensedThirdPartyWorks: true,
     canShowToPlayer: false,
   },
-  promptPackage: {
-    packageId: "adapter-boundary-test-prompt-package",
-  },
+  promptPackage: { packageId: "adapter-boundary-test-prompt-package" },
   controlSketch: {
     controlSketchId: "adapter-boundary-test-control-sketch",
     canShowToPlayer: false,
@@ -68,6 +64,7 @@ async function main() {
   testImplementationHealthUsesRuntimeConfig()
   await testImplementationDryRunUsesRuntimeConfig()
   await testImplementationGenerateUsesRuntimeConfig()
+  await testImplementationGenerateUsesDefaultWorkerExecutor()
 
   console.log("")
   console.log("RESULT: local image model adapter boundary test passed.")
@@ -210,6 +207,31 @@ async function testImplementationGenerateUsesRuntimeConfig() {
     buildRuntimeConfigInput({ fixture, worker })
   )
 
+  assertSuccessfulGenerateResult(result)
+  printCheck("implementation generate uses runtime config")
+}
+
+async function testImplementationGenerateUsesDefaultWorkerExecutor() {
+  const fixture = createRuntimeFixture("implementation-default-worker")
+  const inference = createWorkerFile(fixture, buildSuccessfulWorkerSource())
+  const result = await generateLocalImageCandidate(
+    buildRuntimeConfigInput({
+      fixture,
+      worker: null,
+      inference,
+      useDefaultWorkerExecutor: true,
+    })
+  )
+
+  assertSuccessfulGenerateResult(result)
+  assert.equal(result.worker.ok, true)
+  assert.equal(result.worker.status, "real_image_model_worker_ready")
+  assert.equal(result.adapter.executorShell.commandConfigured, true)
+
+  printCheck("implementation generate uses default worker executor")
+}
+
+function assertSuccessfulGenerateResult(result) {
   assert.equal(result.ok, true)
   assert.equal(result.imageUrl.endsWith(".png"), true)
   assert.equal(result.imageFormat, "png")
@@ -218,15 +240,11 @@ async function testImplementationGenerateUsesRuntimeConfig() {
   assert.equal(result.license, "self_owned")
   assert.equal(result.originalityConfirmed, true)
   assert.equal(result.canShowToPlayer, false)
-
-  printCheck("implementation generate uses runtime config")
 }
 
 function buildRuntimeConfigInput(input) {
-  return {
+  const config = {
     enabled: true,
-    command: process.execPath,
-    argsJson: JSON.stringify([input.worker]),
     requestBody: VALID_REQUEST_BODY,
     requestAudit: VALID_REQUEST_AUDIT,
     requiredResponseFields: REQUIRED_RESPONSE_FIELDS,
@@ -242,6 +260,20 @@ function buildRuntimeConfigInput(input) {
       publicBaseUrl: "http://127.0.0.1:3000",
     },
   }
+
+  if (input.useDefaultWorkerExecutor) {
+    config.worker = {
+      command: process.execPath,
+      argsJson: JSON.stringify([input.inference]),
+    }
+    return config
+  }
+
+  return {
+    ...config,
+    command: process.execPath,
+    argsJson: JSON.stringify([input.worker]),
+  }
 }
 
 function createRuntimeFixture(name) {
@@ -255,9 +287,13 @@ function createRuntimeFixture(name) {
 }
 
 function createWorkerFile(fixture, source) {
-  const worker = path.join(fixture.root, "worker.mjs")
+  const worker = path.join(fixture.root, `worker-${cryptoSafeSuffix()}.mjs`)
   fs.writeFileSync(worker, source, "utf8")
   return worker
+}
+
+function cryptoSafeSuffix() {
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
 function buildSuccessfulWorkerSource() {
