@@ -15,6 +15,7 @@
     "test:local-image-model-readiness": "node scripts/test-local-image-model-real-model-readiness.mjs",
     "test:local-image-model-executor-shell": "node scripts/test-local-image-model-executor-shell.mjs",
     "test:local-image-model-execution-contract": "node scripts/test-local-image-model-execution-contract.mjs",
+    "test:local-image-model-execution-payload": "node scripts/test-local-image-model-execution-payload.mjs",
     "test:local-image-model-manifest": "node scripts/test-local-image-model-real-model-manifest.mjs",
     "test:local-image-model-runner": "node scripts/test-local-image-model-real-image-runner.mjs",
     "test:local-image-model-runner-implementation": "node scripts/test-local-image-model-runner-implementation-entry.mjs",
