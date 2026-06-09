@@ -1,9 +1,10 @@
-// 当前文件作用：定义 AI-PET-WORLD 自研真实图像模型启用门禁；未满足资产、授权、原创确认前不允许进入真实出图。
+// 当前文件作用：定义 AI-PET-WORLD 自研真实图像模型启用门禁；未满足资产、授权、原创确认与 manifest 契约前不允许进入真实出图。
 
 import fs from "node:fs"
 import path from "node:path"
 
 import { ALLOWED_LICENSES } from "./contracts.mjs"
+import { readAndValidateRealModelManifest } from "./real-model-manifest.mjs"
 
 export const REAL_MODEL_ENV = {
   enabled: "AI_PET_WORLD_REAL_IMAGE_MODEL_ENABLED",
@@ -98,6 +99,45 @@ export function readRealImageModelReadiness(input = {}) {
     })
   }
 
+  const manifestValidation = readAndValidateRealModelManifest(config.manifestPath)
+
+  if (!manifestValidation.ok) {
+    return buildReadinessFailure({
+      status: "real_image_model_manifest_contract_invalid",
+      message: "真实自研图像模型 manifest 契约检查未通过。",
+      messageEn:
+        "The real in-house image model manifest contract check failed.",
+      config,
+      manifest: manifestValidation,
+      tags: ["manifest_contract_invalid"],
+    })
+  }
+
+  if (manifestValidation.license !== config.license) {
+    return buildReadinessFailure({
+      status: "real_image_model_manifest_license_mismatch",
+      message: "真实自研图像模型 manifest license 与环境变量 license 不一致。",
+      messageEn:
+        "The real in-house image model manifest license does not match the environment license.",
+      config,
+      manifest: manifestValidation,
+      tags: ["manifest_license_mismatch"],
+    })
+  }
+
+  if (manifestValidation.originalityConfirmed !== config.originalityConfirmed) {
+    return buildReadinessFailure({
+      status: "real_image_model_manifest_originality_mismatch",
+      message:
+        "真实自研图像模型 manifest originalityConfirmed 与环境变量 originalityConfirmed 不一致。",
+      messageEn:
+        "The real in-house image model manifest originalityConfirmed does not match the environment originalityConfirmed.",
+      config,
+      manifest: manifestValidation,
+      tags: ["manifest_originality_mismatch"],
+    })
+  }
+
   return {
     ok: true,
     status: "real_image_model_assets_ready",
@@ -106,16 +146,18 @@ export function readRealImageModelReadiness(input = {}) {
     manifestConfigured: true,
     license: config.license,
     originalityConfirmed: true,
+    manifest: manifestValidation,
     canRunInference: false,
     adapterConnected: false,
     message:
-      "真实自研图像模型资产门禁已通过，但推理 runner 尚未接入，因此仍不能生成图片。",
+      "真实自研图像模型资产与 manifest 门禁已通过，但推理 runner 尚未接入，因此仍不能生成图片。",
     messageEn:
-      "The real in-house image model asset gate passed, but the inference runner is not connected yet, so images still cannot be generated.",
+      "The real in-house image model asset and manifest gate passed, but the inference runner is not connected yet, so images still cannot be generated.",
     canShowToPlayer: false,
     tags: [
       "real_image_model_readiness",
       "assets_ready",
+      "manifest_valid",
       "runner_not_connected",
       "does_not_generate",
       "not_player_visible",
@@ -209,6 +251,7 @@ function buildReadinessFailure(input) {
     manifestConfigured: Boolean(input.config.manifestPath),
     license: input.config.license || null,
     originalityConfirmed: input.config.originalityConfirmed,
+    manifest: input.manifest ?? null,
     canRunInference: false,
     adapterConnected: false,
     message: input.message,

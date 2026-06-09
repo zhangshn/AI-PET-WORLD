@@ -7,6 +7,7 @@ import {
   readRealImageGenerationAdapterHealth,
   runRealImageGenerationAdapterDryRun,
 } from "../services/local-image-model/adapter.mjs"
+import { REAL_MODEL_MANIFEST_SCHEMA_VERSION } from "../services/local-image-model/real-model-manifest.mjs"
 import { readRealImageModelReadiness } from "../services/local-image-model/real-model-readiness.mjs"
 
 main()
@@ -102,6 +103,8 @@ function testAssetsReadyButRunnerStillMissing() {
 
   assert.equal(readiness.ok, true)
   assert.equal(readiness.status, "real_image_model_assets_ready")
+  assert.equal(readiness.manifest.ok, true)
+  assert.equal(readiness.manifest.status, "real_model_manifest_valid")
   assert.equal(readiness.canRunInference, false)
   assert.equal(readiness.adapterConnected, false)
   assert.equal(readiness.canShowToPlayer, false)
@@ -128,6 +131,7 @@ function testAdapterStillBlocksWhenReadinessReady() {
   assert.equal(adapterHealth.adapterConnected, false)
   assert.equal(adapterHealth.readiness.ok, true)
   assert.equal(adapterHealth.readiness.status, "real_image_model_assets_ready")
+  assert.equal(adapterHealth.readiness.manifest.ok, true)
   assert.equal(adapterHealth.canGenerateRealBitmap, false)
   assert.equal(adapterHealth.canShowToPlayer, false)
 
@@ -150,6 +154,7 @@ async function testAdapterDryRunStillBlocksWhenReadinessReady() {
   assert.equal(dryRun.ok, false)
   assert.equal(dryRun.status, "real_image_generation_adapter_not_connected")
   assert.equal(dryRun.readiness.ok, true)
+  assert.equal(dryRun.readiness.manifest.ok, true)
   assert.equal(dryRun.willReturnImageUrl, false)
   assert.equal(dryRun.willReturnOriginalityConfirmed, false)
   assert.equal(dryRun.canShowToPlayer, false)
@@ -165,20 +170,36 @@ function createReadinessFixture() {
 
   fs.writeFileSync(
     manifestPath,
-    JSON.stringify(
-      {
-        name: "ai-pet-world-readiness-test-model",
-        license: "self_owned",
-      },
-      null,
-      2
-    ),
+    JSON.stringify(buildValidManifest(), null, 2),
     "utf8"
   )
 
   return {
     assetDirectory,
     manifestPath,
+  }
+}
+
+function buildValidManifest() {
+  return {
+    schemaVersion: REAL_MODEL_MANIFEST_SCHEMA_VERSION,
+    modelName: "ai-pet-world-readiness-test-model",
+    modelVersion: "0.0.1",
+    license: "self_owned",
+    dataSourceType: "self_owned",
+    commercialUseAllowed: true,
+    originalityConfirmed: true,
+    unlicensedThirdPartyArtworkAllowed: false,
+    outputCapabilities: {
+      supportedImageFormats: ["png", "webp", "jpg"],
+      minimumWidth: 512,
+      minimumHeight: 512,
+      canReturnPlaceholder: false,
+      canReturnSvg: false,
+      canReturnHtml: false,
+      canReturnJsonDebugImage: false,
+      canReturnProgrammaticRenderer: false,
+    },
   }
 }
 

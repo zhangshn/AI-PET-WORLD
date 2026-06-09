@@ -8,6 +8,7 @@ import {
   readRealImageGenerationAdapterHealth,
   runRealImageGenerationAdapterDryRun,
 } from "../services/local-image-model/adapter.mjs"
+import { REAL_MODEL_MANIFEST_SCHEMA_VERSION } from "../services/local-image-model/real-model-manifest.mjs"
 import {
   generateRealImageWithRunner,
   readRealImageRunnerHealth,
@@ -63,6 +64,7 @@ function testRunnerHealthReadinessReadyStillBlocked() {
   assert.equal(health.status, "real_image_generation_runner_not_connected")
   assert.equal(health.readiness.ok, true)
   assert.equal(health.readiness.status, "real_image_model_assets_ready")
+  assert.equal(health.readiness.manifest.ok, true)
   assert.equal(health.runnerConnected, false)
   assert.equal(health.canRunInference, false)
   assert.equal(health.canGenerateRealBitmap, false)
@@ -87,6 +89,7 @@ async function testRunnerDryRunReadinessReadyStillBlocked() {
   assert.equal(dryRun.ok, false)
   assert.equal(dryRun.status, "real_image_generation_runner_not_connected")
   assert.equal(dryRun.readiness.ok, true)
+  assert.equal(dryRun.readiness.manifest.ok, true)
   assert.equal(dryRun.willReturnImageUrl, false)
   assert.equal(dryRun.willReturnImageFormat, false)
   assert.equal(dryRun.willReturnWidth, false)
@@ -115,6 +118,7 @@ async function testRunnerGenerateNeverReturnsFakeImage() {
   assert.equal(generate.ok, false)
   assert.equal(generate.status, "real_image_generation_runner_not_connected")
   assert.equal(generate.readiness.ok, true)
+  assert.equal(generate.readiness.manifest.ok, true)
   assert.equal(generate.canGenerateRealBitmap, false)
   assert.equal(generate.canShowToPlayer, false)
   assert.equal(Object.hasOwn(generate, "imageUrl"), false)
@@ -178,20 +182,36 @@ function createReadinessFixture() {
 
   fs.writeFileSync(
     manifestPath,
-    JSON.stringify(
-      {
-        name: "ai-pet-world-runner-boundary-test-model",
-        license: "self_owned",
-      },
-      null,
-      2
-    ),
+    JSON.stringify(buildValidManifest(), null, 2),
     "utf8"
   )
 
   return {
     assetDirectory,
     manifestPath,
+  }
+}
+
+function buildValidManifest() {
+  return {
+    schemaVersion: REAL_MODEL_MANIFEST_SCHEMA_VERSION,
+    modelName: "ai-pet-world-runner-boundary-test-model",
+    modelVersion: "0.0.1",
+    license: "self_owned",
+    dataSourceType: "self_owned",
+    commercialUseAllowed: true,
+    originalityConfirmed: true,
+    unlicensedThirdPartyArtworkAllowed: false,
+    outputCapabilities: {
+      supportedImageFormats: ["png", "webp", "jpg"],
+      minimumWidth: 512,
+      minimumHeight: 512,
+      canReturnPlaceholder: false,
+      canReturnSvg: false,
+      canReturnHtml: false,
+      canReturnJsonDebugImage: false,
+      canReturnProgrammaticRenderer: false,
+    },
   }
 }
 
