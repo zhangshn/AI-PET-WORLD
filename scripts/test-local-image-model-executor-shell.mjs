@@ -150,11 +150,18 @@ function testRunnerImplementationExposesExecutorShell() {
   const health = readRealImageRunnerImplementationHealth()
 
   assert.equal(health.ok, false)
-  assert.equal(health.version, "implementation-not-connected-3")
+  assert.equal(health.version, "implementation-payload-connected-1")
+  assert.equal(
+    health.status,
+    "real_image_runner_implementation_payload_ready_not_connected"
+  )
+  assert.equal(health.executorStdinPayloadConnected, true)
   assert.equal(health.executorShell.status, "real_image_executor_shell_disabled")
   assert.equal(health.executorShell.canExecuteCommand, false)
   assert.equal(health.inputContract.mustUseExecutorShell, true)
+  assert.equal(health.inputContract.mustBuildExecutorStdinPayload, true)
   assert.equal(health.canShowToPlayer, false)
+  assert.ok(health.tags.includes("executor_stdin_payload_ready"))
 
   printCheck("runner implementation exposes executor shell")
 }

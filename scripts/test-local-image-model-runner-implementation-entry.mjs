@@ -120,7 +120,7 @@ function testImplementationBuildsExecutorStdinPayload() {
     requestAudit: {
       requestId: "runner-implementation-payload-health",
     },
-    readiness: createReadyReadinessGate(fixture),
+    readiness: createReadyReadinessGate(),
     outputStorage: {
       outputDirectory: fixture.assetDirectory,
       publicBaseUrl: "http://127.0.0.1:3000",
@@ -180,7 +180,7 @@ async function testImplementationDryRunBuildsExecutorStdinPayload() {
     requestAudit: {
       requestId: "runner-implementation-payload-dry-run",
     },
-    readiness: createReadyReadinessGate(fixture),
+    readiness: createReadyReadinessGate(),
     outputStorage: {
       outputDirectory: fixture.assetDirectory,
       publicBaseUrl: "http://127.0.0.1:3000",
@@ -206,7 +206,7 @@ async function testImplementationGenerateBuildsExecutorStdinPayloadButDoesNotExe
     requestAudit: {
       requestId: "runner-implementation-payload-generate",
     },
-    readiness: createReadyReadinessGate(fixture),
+    readiness: createReadyReadinessGate(),
     outputStorage: {
       outputDirectory: fixture.assetDirectory,
       publicBaseUrl: "http://127.0.0.1:3000",
@@ -335,7 +335,7 @@ function createReadinessFixture() {
   }
 }
 
-function createReadyReadinessGate(fixture) {
+function createReadyReadinessGate() {
   return {
     ok: true,
     status: "real_image_model_assets_ready",
