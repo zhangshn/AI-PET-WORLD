@@ -41,9 +41,7 @@ function testDefaultReadinessBlocked() {
 }
 
 function testEnabledWithoutAssetDirectoryBlocked() {
-  const readiness = readRealImageModelReadiness({
-    enabled: true,
-  })
+  const readiness = readRealImageModelReadiness({ enabled: true })
 
   assert.equal(readiness.ok, false)
   assert.equal(readiness.status, "real_image_model_asset_directory_missing")
@@ -55,7 +53,6 @@ function testEnabledWithoutAssetDirectoryBlocked() {
 
 function testInvalidLicenseBlocked() {
   const fixture = createReadinessFixture()
-
   const readiness = readRealImageModelReadiness({
     enabled: true,
     assetDirectory: fixture.assetDirectory,
@@ -73,7 +70,6 @@ function testInvalidLicenseBlocked() {
 
 function testOriginalityNotConfirmedBlocked() {
   const fixture = createReadinessFixture()
-
   const readiness = readRealImageModelReadiness({
     enabled: true,
     assetDirectory: fixture.assetDirectory,
@@ -92,7 +88,6 @@ function testOriginalityNotConfirmedBlocked() {
 
 function testAssetsReadyButRunnerStillMissing() {
   const fixture = createReadinessFixture()
-
   const readiness = readRealImageModelReadiness({
     enabled: true,
     assetDirectory: fixture.assetDirectory,
@@ -115,19 +110,12 @@ function testAssetsReadyButRunnerStillMissing() {
 
 function testAdapterStillBlocksWhenReadinessReady() {
   const fixture = createReadinessFixture()
-
   const adapterHealth = readRealImageGenerationAdapterHealth({
-    realModelReadiness: {
-      enabled: true,
-      assetDirectory: fixture.assetDirectory,
-      manifestPath: fixture.manifestPath,
-      license: "self_owned",
-      originalityConfirmed: true,
-    },
+    realModelReadiness: buildReadyModelInput(fixture),
   })
 
   assert.equal(adapterHealth.ok, false)
-  assert.equal(adapterHealth.status, "real_image_generation_adapter_not_connected")
+  assert.equal(adapterHealth.status, "real_image_generation_adapter_blocked")
   assert.equal(adapterHealth.adapterConnected, false)
   assert.equal(adapterHealth.readiness.ok, true)
   assert.equal(adapterHealth.readiness.status, "real_image_model_assets_ready")
@@ -140,19 +128,12 @@ function testAdapterStillBlocksWhenReadinessReady() {
 
 async function testAdapterDryRunStillBlocksWhenReadinessReady() {
   const fixture = createReadinessFixture()
-
   const dryRun = await runRealImageGenerationAdapterDryRun({
-    realModelReadiness: {
-      enabled: true,
-      assetDirectory: fixture.assetDirectory,
-      manifestPath: fixture.manifestPath,
-      license: "self_owned",
-      originalityConfirmed: true,
-    },
+    realModelReadiness: buildReadyModelInput(fixture),
   })
 
   assert.equal(dryRun.ok, false)
-  assert.equal(dryRun.status, "real_image_generation_adapter_not_connected")
+  assert.equal(dryRun.status, "real_image_generation_adapter_blocked")
   assert.equal(dryRun.readiness.ok, true)
   assert.equal(dryRun.readiness.manifest.ok, true)
   assert.equal(dryRun.willReturnImageUrl, false)
@@ -174,9 +155,16 @@ function createReadinessFixture() {
     "utf8"
   )
 
+  return { assetDirectory, manifestPath }
+}
+
+function buildReadyModelInput(fixture) {
   return {
-    assetDirectory,
-    manifestPath,
+    enabled: true,
+    assetDirectory: fixture.assetDirectory,
+    manifestPath: fixture.manifestPath,
+    license: "self_owned",
+    originalityConfirmed: true,
   }
 }
 
