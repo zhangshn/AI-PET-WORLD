@@ -5,11 +5,14 @@ import fs from "node:fs/promises"
 import path from "node:path"
 import { pathToFileURL } from "node:url"
 
-import { validateRealImageExecutionStdoutPayload } from "./real-image-execution-contract.mjs"
-import { validateLocalImageOutputFileName } from "./output-storage.mjs"
+import {
+  buildRealImageInferenceCommandRequest,
+  readRealImageInferenceAdapterHealth,
+  validateRealImageInferenceStdout,
+} from "./real-image-inference-adapter.mjs"
 
 export const REAL_IMAGE_MODEL_WORKER_NAME = "ai-pet-world-real-image-model-worker"
-export const REAL_IMAGE_MODEL_WORKER_VERSION = "real-model-worker-command-bridge-2"
+export const REAL_IMAGE_MODEL_WORKER_VERSION = "real-model-worker-inference-adapter-1"
 export const REAL_IMAGE_MODEL_WORKER_ENV = {
   command: "AI_PET_WORLD_REAL_IMAGE_INFERENCE_COMMAND",
   argsJson: "AI_PET_WORLD_REAL_IMAGE_INFERENCE_ARGS_JSON",
@@ -34,57 +37,24 @@ if (isExecutedDirectly()) {
 }
 
 export function readRealImageModelWorkerConfig(input = {}) {
-  const argsResult = readArgsJson(
-    input.argsJson ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.argsJson]
-  )
-
+  const argsResult = readArgsJson(input.argsJson ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.argsJson])
   return {
-    command: readOptionalString(
-      input.command ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.command]
-    ),
+    command: readOptionalString(input.command ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.command]),
     args: argsResult.args,
     argsValid: argsResult.ok,
-    argsJsonConfigured: Boolean(
-      readOptionalString(
-        input.argsJson ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.argsJson]
-      )
-    ),
-    timeoutMs: readTimeoutMs(
-      input.timeoutMs ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.timeoutMs]
-    ),
-    outputDirectory: readOptionalString(
-      input.outputDirectory ??
-        process.env[REAL_IMAGE_MODEL_WORKER_ENV.outputDirectory]
-    ),
+    argsJsonConfigured: Boolean(readOptionalString(input.argsJson ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.argsJson])),
+    timeoutMs: readTimeoutMs(input.timeoutMs ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.timeoutMs]),
+    outputDirectory: readOptionalString(input.outputDirectory ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.outputDirectory]),
   }
 }
 
 export function readRealImageModelWorkerHealth(input = {}) {
   const config = readRealImageModelWorkerConfig(input)
+  const inferenceAdapter = readRealImageInferenceAdapterHealth()
 
-  if (!config.command) {
-    return buildWorkerHealthFailure({
-      status: "real_image_model_worker_inference_command_missing",
-      config,
-      tags: ["inference_command_missing"],
-    })
-  }
-
-  if (!config.argsValid) {
-    return buildWorkerHealthFailure({
-      status: "real_image_model_worker_inference_args_invalid",
-      config,
-      tags: ["inference_args_invalid"],
-    })
-  }
-
-  if (!config.outputDirectory) {
-    return buildWorkerHealthFailure({
-      status: "real_image_model_worker_output_directory_missing",
-      config,
-      tags: ["output_directory_missing"],
-    })
-  }
+  if (!config.command) return buildWorkerHealthFailure("real_image_model_worker_inference_command_missing", config, inferenceAdapter, ["inference_command_missing"])
+  if (!config.argsValid) return buildWorkerHealthFailure("real_image_model_worker_inference_args_invalid", config, inferenceAdapter, ["inference_args_invalid"])
+  if (!config.outputDirectory) return buildWorkerHealthFailure("real_image_model_worker_output_directory_missing", config, inferenceAdapter, ["output_directory_missing"])
 
   return {
     ok: true,
@@ -95,103 +65,36 @@ export function readRealImageModelWorkerHealth(input = {}) {
     inferenceArgsValid: true,
     outputDirectoryConfigured: true,
     timeoutMs: config.timeoutMs,
+    inferenceAdapter,
     canBridgeInferenceCommand: true,
     canGenerateRealBitmap: false,
     willExecuteCommand: false,
     willWriteOutputFile: false,
     canShowToPlayer: false,
-    tags: [
-      "real_image_model_worker",
-      "worker_ready",
-      "external_inference_command_configured",
-      "does_not_execute_on_health",
-      "not_player_visible",
-    ],
+    tags: ["real_image_model_worker", "worker_ready", "inference_adapter_ready", "external_inference_command_configured", "does_not_execute_on_health", "not_player_visible"],
   }
 }
 
 async function main() {
   const stdinResult = await readStdinJson()
+  if (!stdinResult.ok) return writeFailureAndExit(stdinResult)
 
-  if (!stdinResult.ok) {
-    writeFailureAndExit(stdinResult)
-    return
-  }
-
-  const payload = stdinResult.payload
   const config = readRealImageModelWorkerConfig()
+  if (!config.command) return writeFailureAndExit({ status: "real_image_model_worker_inference_command_missing", message: "缺少 AI_PET_WORLD_REAL_IMAGE_INFERENCE_COMMAND，worker 不能自行生成图片。" })
+  if (!config.argsValid) return writeFailureAndExit({ status: "real_image_model_worker_inference_args_invalid", message: "AI_PET_WORLD_REAL_IMAGE_INFERENCE_ARGS_JSON 必须是字符串数组 JSON。" })
+  if (!config.outputDirectory) return writeFailureAndExit({ status: "real_image_model_worker_output_directory_missing", message: "缺少 AI_PET_WORLD_LOCAL_IMAGE_OUTPUT_DIR。" })
 
-  if (!config.command) {
-    writeFailureAndExit({
-      status: "real_image_model_worker_inference_command_missing",
-      message:
-        "缺少 AI_PET_WORLD_REAL_IMAGE_INFERENCE_COMMAND，worker 不能自行生成图片。",
-    })
-    return
-  }
+  const inferenceRequest = buildRealImageInferenceCommandRequest({ workerPayload: stdinResult.payload })
+  if (!inferenceRequest.ok) return writeFailureAndExit({ status: inferenceRequest.status, detail: inferenceRequest })
 
-  if (!config.argsValid) {
-    writeFailureAndExit({
-      status: "real_image_model_worker_inference_args_invalid",
-      message: "AI_PET_WORLD_REAL_IMAGE_INFERENCE_ARGS_JSON 必须是字符串数组 JSON。",
-    })
-    return
-  }
-
-  if (!config.outputDirectory) {
-    writeFailureAndExit({
-      status: "real_image_model_worker_output_directory_missing",
-      message: "缺少 AI_PET_WORLD_LOCAL_IMAGE_OUTPUT_DIR。",
-    })
-    return
-  }
-
-  const outputFileNameValidation = validateLocalImageOutputFileName({
-    fileName: payload.outputFileName,
-  })
-
-  if (!outputFileNameValidation.ok) {
-    writeFailureAndExit({
-      status: "real_image_model_worker_output_file_name_invalid",
-      message: "真实模型输出文件名不安全。",
-      detail: outputFileNameValidation,
-    })
-    return
-  }
-
-  const commandResult = await runInferenceCommand({ config, payload })
-
-  if (!commandResult.ok) {
-    writeFailureAndExit(commandResult)
-    return
-  }
+  const commandResult = await runInferenceCommand({ config, payload: inferenceRequest.request })
+  if (!commandResult.ok) return writeFailureAndExit(commandResult)
 
   const stdoutResult = parseStdoutJson(commandResult.stdoutText)
+  if (!stdoutResult.ok) return writeFailureAndExit(stdoutResult)
 
-  if (!stdoutResult.ok) {
-    writeFailureAndExit(stdoutResult)
-    return
-  }
-
-  const stdoutValidation = validateRealImageExecutionStdoutPayload(
-    stdoutResult.payload
-  )
-
-  if (!stdoutValidation.ok) {
-    writeFailureAndExit({
-      status: "real_image_model_worker_stdout_contract_invalid",
-      detail: stdoutValidation,
-    })
-    return
-  }
-
-  if (stdoutValidation.imageFileName !== outputFileNameValidation.fileName) {
-    writeFailureAndExit({
-      status: "real_image_model_worker_output_file_name_mismatch",
-      message: "真实模型 stdout imageFileName 必须等于 stdin outputFileName。",
-    })
-    return
-  }
+  const stdoutValidation = validateRealImageInferenceStdout({ stdoutPayload: stdoutResult.payload, expectedOutputFileName: inferenceRequest.request.outputFileName })
+  if (!stdoutValidation.ok) return writeFailureAndExit({ status: stdoutValidation.status, detail: stdoutValidation })
 
   const bitmapResult = await verifyGeneratedBitmapFile({
     outputDirectory: config.outputDirectory,
@@ -200,73 +103,29 @@ async function main() {
     width: stdoutValidation.width,
     height: stdoutValidation.height,
   })
+  if (!bitmapResult.ok) return writeFailureAndExit(bitmapResult)
 
-  if (!bitmapResult.ok) {
-    writeFailureAndExit(bitmapResult)
-    return
-  }
-
-  writeSuccess({
-    imageFileName: stdoutValidation.imageFileName,
-    imageFormat: stdoutValidation.imageFormat,
-    width: stdoutValidation.width,
-    height: stdoutValidation.height,
-    license: stdoutValidation.license,
-    originalityConfirmed: stdoutValidation.originalityConfirmed,
-  })
+  writeSuccess(stdoutValidation)
 }
 
 async function readStdinJson() {
   const chunks = []
-
-  for await (const chunk of process.stdin) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)))
-  }
-
+  for await (const chunk of process.stdin) chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)))
   const text = Buffer.concat(chunks).toString("utf8").trim()
-
-  if (!text) {
-    return {
-      ok: false,
-      status: "real_image_model_worker_stdin_empty",
-      message: "真实模型 worker stdin 不能为空。",
-    }
-  }
-
+  if (!text) return { ok: false, status: "real_image_model_worker_stdin_empty", message: "真实模型 worker stdin 不能为空。" }
   try {
     const payload = JSON.parse(text)
-
-    if (!isRecord(payload)) {
-      return {
-        ok: false,
-        status: "real_image_model_worker_stdin_not_object",
-        message: "真实模型 worker stdin 必须是 JSON 对象。",
-      }
-    }
-
-    return { ok: true, payload }
+    return isRecord(payload) ? { ok: true, payload } : { ok: false, status: "real_image_model_worker_stdin_not_object", message: "真实模型 worker stdin 必须是 JSON 对象。" }
   } catch {
-    return {
-      ok: false,
-      status: "real_image_model_worker_stdin_json_invalid",
-      message: "真实模型 worker stdin 不是合法 JSON。",
-    }
+    return { ok: false, status: "real_image_model_worker_stdin_json_invalid", message: "真实模型 worker stdin 不是合法 JSON。" }
   }
 }
 
 function readArgsJson(value) {
-  if (typeof value !== "string" || !value.trim()) {
-    return { ok: true, args: [] }
-  }
-
+  if (typeof value !== "string" || !value.trim()) return { ok: true, args: [] }
   try {
     const parsed = JSON.parse(value)
-
-    if (!Array.isArray(parsed) || parsed.some((item) => typeof item !== "string")) {
-      return { ok: false, args: [] }
-    }
-
-    return { ok: true, args: parsed }
+    return Array.isArray(parsed) && parsed.every((item) => typeof item === "string") ? { ok: true, args: parsed } : { ok: false, args: [] }
   } catch {
     return { ok: false, args: [] }
   }
@@ -274,12 +133,7 @@ function readArgsJson(value) {
 
 function readTimeoutMs(value) {
   const numeric = Number(value)
-
-  if (!Number.isFinite(numeric)) {
-    return DEFAULT_TIMEOUT_MS
-  }
-
-  return Math.min(Math.max(Math.floor(numeric), MIN_TIMEOUT_MS), MAX_TIMEOUT_MS)
+  return Number.isFinite(numeric) ? Math.min(Math.max(Math.floor(numeric), MIN_TIMEOUT_MS), MAX_TIMEOUT_MS) : DEFAULT_TIMEOUT_MS
 }
 
 async function runInferenceCommand(input) {
@@ -292,7 +146,7 @@ async function runInferenceCommand(input) {
   let settled = false
 
   return new Promise((resolve) => {
-    function finish(result) {
+    const finish = (result) => {
       if (settled) return
       settled = true
       clearTimeout(timeoutHandle)
@@ -305,14 +159,10 @@ async function runInferenceCommand(input) {
         shell: false,
         windowsHide: true,
         stdio: ["pipe", "pipe", "pipe"],
-        env: {
-          ...process.env,
-          AI_PET_WORLD_LOCAL_IMAGE_OUTPUT_DIR: input.config.outputDirectory,
-        },
+        env: { ...process.env, AI_PET_WORLD_LOCAL_IMAGE_OUTPUT_DIR: input.config.outputDirectory },
       })
     } catch {
-      finish({ ok: false, status: "real_image_model_worker_spawn_failed" })
-      return
+      return finish({ ok: false, status: "real_image_model_worker_spawn_failed" })
     }
 
     timeoutHandle = setTimeout(() => {
@@ -323,49 +173,13 @@ async function runInferenceCommand(input) {
 
     childProcess.stdout.on("data", (chunk) => appendTextCapture(stdoutCapture, chunk))
     childProcess.stderr.on("data", (chunk) => appendTextCapture(stderrCapture, chunk))
-
-    childProcess.on("error", () => {
-      finish({ ok: false, status: "real_image_model_worker_spawn_error" })
-    })
-
+    childProcess.on("error", () => finish({ ok: false, status: "real_image_model_worker_spawn_error" }))
     childProcess.on("close", (exitCode, signal) => {
-      if (timedOut) {
-        finish({
-          ok: false,
-          status: "real_image_model_worker_timeout",
-          exitCode,
-          signal,
-          stdoutTruncated: stdoutCapture.truncated,
-          stderrCaptured: stderrCapture.text.length > 0,
-          stderrTruncated: stderrCapture.truncated,
-        })
-        return
-      }
-
-      if (exitCode !== 0) {
-        finish({
-          ok: false,
-          status: "real_image_model_worker_exit_non_zero",
-          exitCode,
-          signal,
-          stderrCaptured: stderrCapture.text.length > 0,
-          stderrTruncated: stderrCapture.truncated,
-        })
-        return
-      }
-
-      if (stdoutCapture.truncated) {
-        finish({ ok: false, status: "real_image_model_worker_stdout_too_large" })
-        return
-      }
-
-      finish({
-        ok: true,
-        status: "real_image_model_worker_process_completed",
-        stdoutText: stdoutCapture.text,
-      })
+      if (timedOut) return finish({ ok: false, status: "real_image_model_worker_timeout", exitCode, signal, stdoutTruncated: stdoutCapture.truncated, stderrCaptured: stderrCapture.text.length > 0, stderrTruncated: stderrCapture.truncated })
+      if (exitCode !== 0) return finish({ ok: false, status: "real_image_model_worker_exit_non_zero", exitCode, signal, stderrCaptured: stderrCapture.text.length > 0, stderrTruncated: stderrCapture.truncated })
+      if (stdoutCapture.truncated) return finish({ ok: false, status: "real_image_model_worker_stdout_too_large" })
+      finish({ ok: true, status: "real_image_model_worker_process_completed", stdoutText: stdoutCapture.text })
     })
-
     childProcess.stdin.on("error", () => {})
     childProcess.stdin.end(JSON.stringify(input.payload))
   })
@@ -373,16 +187,10 @@ async function runInferenceCommand(input) {
 
 function parseStdoutJson(stdoutText) {
   const text = typeof stdoutText === "string" ? stdoutText.trim() : ""
-
-  if (!text) {
-    return { ok: false, status: "real_image_model_worker_stdout_empty" }
-  }
-
+  if (!text) return { ok: false, status: "real_image_model_worker_stdout_empty" }
   try {
     const payload = JSON.parse(text)
-    return isRecord(payload)
-      ? { ok: true, payload }
-      : { ok: false, status: "real_image_model_worker_stdout_not_object" }
+    return isRecord(payload) ? { ok: true, payload } : { ok: false, status: "real_image_model_worker_stdout_not_object" }
   } catch {
     return { ok: false, status: "real_image_model_worker_stdout_json_invalid" }
   }
@@ -391,226 +199,78 @@ function parseStdoutJson(stdoutText) {
 async function verifyGeneratedBitmapFile(input) {
   const outputDirectory = path.resolve(input.outputDirectory)
   const outputFilePath = path.resolve(outputDirectory, input.outputFileName)
-
-  if (!isPathInsideDirectory(outputFilePath, outputDirectory)) {
-    return { ok: false, status: "real_image_model_worker_output_path_escape_forbidden" }
-  }
+  if (!isPathInsideDirectory(outputFilePath, outputDirectory)) return { ok: false, status: "real_image_model_worker_output_path_escape_forbidden" }
 
   let fileStat
-
   try {
     fileStat = await fs.stat(outputFilePath)
   } catch {
     return { ok: false, status: "real_image_model_worker_output_file_missing" }
   }
+  if (!fileStat.isFile()) return { ok: false, status: "real_image_model_worker_output_not_file" }
+  if (fileStat.size <= 0) return { ok: false, status: "real_image_model_worker_output_file_empty" }
 
-  if (!fileStat.isFile()) {
-    return { ok: false, status: "real_image_model_worker_output_not_file" }
-  }
-
-  if (fileStat.size <= 0) {
-    return { ok: false, status: "real_image_model_worker_output_file_empty" }
-  }
-
-  const buffer = await fs.readFile(outputFilePath)
-  const metadata = readBitmapMetadata(buffer)
-
-  if (!metadata.ok) {
-    return metadata
-  }
-
-  if (metadata.imageFormat !== input.imageFormat) {
-    return { ok: false, status: "real_image_model_worker_bitmap_format_mismatch" }
-  }
-
-  if (metadata.width !== input.width || metadata.height !== input.height) {
-    return { ok: false, status: "real_image_model_worker_bitmap_size_mismatch" }
-  }
-
-  return {
-    ok: true,
-    status: "real_image_model_worker_bitmap_verified",
-    imageFormat: metadata.imageFormat,
-    width: metadata.width,
-    height: metadata.height,
-  }
+  const metadata = readBitmapMetadata(await fs.readFile(outputFilePath))
+  if (!metadata.ok) return metadata
+  if (metadata.imageFormat !== input.imageFormat) return { ok: false, status: "real_image_model_worker_bitmap_format_mismatch" }
+  if (metadata.width !== input.width || metadata.height !== input.height) return { ok: false, status: "real_image_model_worker_bitmap_size_mismatch" }
+  return { ok: true, status: "real_image_model_worker_bitmap_verified", imageFormat: metadata.imageFormat, width: metadata.width, height: metadata.height }
 }
 
 function readBitmapMetadata(buffer) {
-  return (
-    readPngMetadata(buffer) ??
-    readWebpMetadata(buffer) ??
-    readJpegMetadata(buffer) ?? {
-      ok: false,
-      status: "real_image_model_worker_bitmap_signature_invalid",
-    }
-  )
+  return readPngMetadata(buffer) ?? readWebpMetadata(buffer) ?? readJpegMetadata(buffer) ?? { ok: false, status: "real_image_model_worker_bitmap_signature_invalid" }
 }
 
 function readPngMetadata(buffer) {
-  const signature = "89504e470d0a1a0a"
-
-  if (buffer.length < 24 || buffer.subarray(0, 8).toString("hex") !== signature) {
-    return null
-  }
-
-  if (buffer.subarray(12, 16).toString("ascii") !== "IHDR") {
-    return { ok: false, status: "real_image_model_worker_png_ihdr_missing" }
-  }
-
-  return {
-    ok: true,
-    imageFormat: "png",
-    width: buffer.readUInt32BE(16),
-    height: buffer.readUInt32BE(20),
-  }
+  if (buffer.length < 24 || buffer.subarray(0, 8).toString("hex") !== "89504e470d0a1a0a") return null
+  if (buffer.subarray(12, 16).toString("ascii") !== "IHDR") return { ok: false, status: "real_image_model_worker_png_ihdr_missing" }
+  return { ok: true, imageFormat: "png", width: buffer.readUInt32BE(16), height: buffer.readUInt32BE(20) }
 }
 
 function readWebpMetadata(buffer) {
-  if (
-    buffer.length < 30 ||
-    buffer.subarray(0, 4).toString("ascii") !== "RIFF" ||
-    buffer.subarray(8, 12).toString("ascii") !== "WEBP"
-  ) {
-    return null
-  }
-
+  if (buffer.length < 30 || buffer.subarray(0, 4).toString("ascii") !== "RIFF" || buffer.subarray(8, 12).toString("ascii") !== "WEBP") return null
   const chunkType = buffer.subarray(12, 16).toString("ascii")
-
-  if (chunkType === "VP8X" && buffer.length >= 30) {
-    return {
-      ok: true,
-      imageFormat: "webp",
-      width: 1 + buffer.readUIntLE(24, 3),
-      height: 1 + buffer.readUIntLE(27, 3),
-    }
-  }
-
-  if (chunkType === "VP8L" && buffer.length >= 25 && buffer[20] === 0x2f) {
+  if (chunkType === "VP8X") return { ok: true, imageFormat: "webp", width: 1 + buffer.readUIntLE(24, 3), height: 1 + buffer.readUIntLE(27, 3) }
+  if (chunkType === "VP8L" && buffer[20] === 0x2f) {
     const bits = buffer.readUInt32LE(21)
-    return {
-      ok: true,
-      imageFormat: "webp",
-      width: (bits & 0x3fff) + 1,
-      height: ((bits >> 14) & 0x3fff) + 1,
-    }
+    return { ok: true, imageFormat: "webp", width: (bits & 0x3fff) + 1, height: ((bits >> 14) & 0x3fff) + 1 }
   }
-
-  if (chunkType === "VP8 " && buffer.length >= 30) {
-    return {
-      ok: true,
-      imageFormat: "webp",
-      width: buffer.readUInt16LE(26) & 0x3fff,
-      height: buffer.readUInt16LE(28) & 0x3fff,
-    }
-  }
-
+  if (chunkType === "VP8 ") return { ok: true, imageFormat: "webp", width: buffer.readUInt16LE(26) & 0x3fff, height: buffer.readUInt16LE(28) & 0x3fff }
   return { ok: false, status: "real_image_model_worker_webp_header_invalid" }
 }
 
 function readJpegMetadata(buffer) {
-  if (buffer.length < 4 || buffer[0] !== 0xff || buffer[1] !== 0xd8) {
-    return null
-  }
-
+  if (buffer.length < 4 || buffer[0] !== 0xff || buffer[1] !== 0xd8) return null
   let offset = 2
-
   while (offset + 9 < buffer.length) {
     if (buffer[offset] !== 0xff) {
       offset += 1
       continue
     }
-
     const marker = buffer[offset + 1]
     const segmentLength = buffer.readUInt16BE(offset + 2)
-
-    if (segmentLength < 2) {
-      return { ok: false, status: "real_image_model_worker_jpeg_segment_invalid" }
-    }
-
-    if (isJpegStartOfFrameMarker(marker)) {
-      return {
-        ok: true,
-        imageFormat: "jpg",
-        height: buffer.readUInt16BE(offset + 5),
-        width: buffer.readUInt16BE(offset + 7),
-      }
-    }
-
+    if (segmentLength < 2) return { ok: false, status: "real_image_model_worker_jpeg_segment_invalid" }
+    if (isJpegStartOfFrameMarker(marker)) return { ok: true, imageFormat: "jpg", height: buffer.readUInt16BE(offset + 5), width: buffer.readUInt16BE(offset + 7) }
     offset += 2 + segmentLength
   }
-
   return { ok: false, status: "real_image_model_worker_jpeg_sof_missing" }
 }
 
 function isJpegStartOfFrameMarker(marker) {
-  return [
-    0xc0,
-    0xc1,
-    0xc2,
-    0xc3,
-    0xc5,
-    0xc6,
-    0xc7,
-    0xc9,
-    0xca,
-    0xcb,
-    0xcd,
-    0xce,
-    0xcf,
-  ].includes(marker)
+  return [0xc0, 0xc1, 0xc2, 0xc3, 0xc5, 0xc6, 0xc7, 0xc9, 0xca, 0xcb, 0xcd, 0xce, 0xcf].includes(marker)
 }
 
 function writeSuccess(input) {
-  process.stdout.write(
-    JSON.stringify({
-      ok: true,
-      status: "real_image_generated",
-      imageFileName: input.imageFileName,
-      imageFormat: input.imageFormat,
-      width: input.width,
-      height: input.height,
-      license: input.license,
-      originalityConfirmed: input.originalityConfirmed,
-      canShowToPlayer: false,
-      worker: REAL_IMAGE_MODEL_WORKER_NAME,
-      version: REAL_IMAGE_MODEL_WORKER_VERSION,
-    })
-  )
+  process.stdout.write(JSON.stringify({ ok: true, status: "real_image_generated", imageFileName: input.imageFileName, imageFormat: input.imageFormat, width: input.width, height: input.height, license: input.license, originalityConfirmed: input.originalityConfirmed, canShowToPlayer: false, worker: REAL_IMAGE_MODEL_WORKER_NAME, version: REAL_IMAGE_MODEL_WORKER_VERSION }))
 }
 
 function writeFailureAndExit(input) {
-  process.stderr.write(
-    JSON.stringify({
-      ok: false,
-      status: input.status,
-      message: input.message ?? null,
-      detail: input.detail ?? null,
-      worker: REAL_IMAGE_MODEL_WORKER_NAME,
-      version: REAL_IMAGE_MODEL_WORKER_VERSION,
-      canShowToPlayer: false,
-    })
-  )
+  process.stderr.write(JSON.stringify({ ok: false, status: input.status, message: input.message ?? null, detail: input.detail ?? null, worker: REAL_IMAGE_MODEL_WORKER_NAME, version: REAL_IMAGE_MODEL_WORKER_VERSION, canShowToPlayer: false }))
   process.exitCode = 1
 }
 
-function buildWorkerHealthFailure(input) {
-  return {
-    ok: false,
-    status: input.status,
-    worker: REAL_IMAGE_MODEL_WORKER_NAME,
-    version: REAL_IMAGE_MODEL_WORKER_VERSION,
-    inferenceCommandConfigured: Boolean(input.config.command),
-    inferenceArgsValid: input.config.argsValid,
-    outputDirectoryConfigured: Boolean(input.config.outputDirectory),
-    timeoutMs: input.config.timeoutMs,
-    canBridgeInferenceCommand: false,
-    canGenerateRealBitmap: false,
-    willExecuteCommand: false,
-    willWriteOutputFile: false,
-    canShowToPlayer: false,
-    tags: ["real_image_model_worker", ...input.tags, "not_player_visible"],
-  }
+function buildWorkerHealthFailure(status, config, inferenceAdapter, tags) {
+  return { ok: false, status, worker: REAL_IMAGE_MODEL_WORKER_NAME, version: REAL_IMAGE_MODEL_WORKER_VERSION, inferenceCommandConfigured: Boolean(config.command), inferenceArgsValid: config.argsValid, outputDirectoryConfigured: Boolean(config.outputDirectory), timeoutMs: config.timeoutMs, inferenceAdapter, canBridgeInferenceCommand: false, canGenerateRealBitmap: false, willExecuteCommand: false, willWriteOutputFile: false, canShowToPlayer: false, tags: ["real_image_model_worker", ...tags, "not_player_visible"] }
 }
 
 function createTextCapture(maxBytes) {
@@ -620,19 +280,14 @@ function createTextCapture(maxBytes) {
 function appendTextCapture(capture, chunk) {
   const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk))
   const remaining = capture.maxBytes - capture.bytes
-
   if (remaining <= 0) {
     capture.truncated = true
     return
   }
-
   const piece = buffer.subarray(0, remaining)
   capture.text += piece.toString("utf8")
   capture.bytes += piece.length
-
-  if (piece.length < buffer.length) {
-    capture.truncated = true
-  }
+  if (piece.length < buffer.length) capture.truncated = true
 }
 
 function readOptionalString(value) {
@@ -649,7 +304,5 @@ function isPathInsideDirectory(targetPath, directory) {
 }
 
 function isExecutedDirectly() {
-  return process.argv[1]
-    ? import.meta.url === pathToFileURL(process.argv[1]).href
-    : false
+  return process.argv[1] ? import.meta.url === pathToFileURL(process.argv[1]).href : false
 }
