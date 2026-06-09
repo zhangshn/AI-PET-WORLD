@@ -8,14 +8,22 @@ import {
   REQUIRED_RESPONSE_FIELDS,
 } from "./contracts.mjs"
 import { buildRealImageExecutionContract } from "./real-image-execution-contract.mjs"
+import {
+  executeRealImageWithExecutorShell,
+  readRealImageExecutorShellHealth,
+  runRealImageExecutorShellDryRun,
+} from "./real-image-executor-shell.mjs"
 
 const RUNNER_IMPLEMENTATION_NAME =
   "ai-pet-world-real-image-runner-implementation"
-const RUNNER_IMPLEMENTATION_VERSION = "implementation-not-connected-2"
+const RUNNER_IMPLEMENTATION_VERSION = "implementation-not-connected-3"
 
 export function readRealImageRunnerImplementationHealth(input = {}) {
   const requiredResponseFields = readRequiredResponseFields(input)
   const executionContract = buildRealImageExecutionContract({
+    requiredResponseFields,
+  })
+  const executorShell = readRealImageExecutorShellHealth({
     requiredResponseFields,
   })
 
@@ -32,13 +40,14 @@ export function readRealImageRunnerImplementationHealth(input = {}) {
     inputContract: buildImplementationInputContract(requiredResponseFields),
     outputContract: buildImplementationOutputContract(requiredResponseFields),
     executionContract,
+    executorShell,
     message:
-      "真实 runner implementation 文件入口已建立，并已定义 execution contract，但尚未接入自研图像推理执行器。当前不能生成图片，也不会返回假图。",
+      "真实 runner implementation 已连接 executor shell 与 execution contract，但尚未接入命令执行逻辑。当前不能生成图片，也不会返回假图。",
     messageEn:
-      "The real runner implementation entry is created and the execution contract is defined, but no in-house image inference executor is connected yet. It cannot generate images and will not return fake images.",
+      "The real runner implementation is connected to the executor shell and execution contract, but command execution logic is not connected yet. It cannot generate images and will not return fake images.",
     nextStep: {
-      zh: "下一步接入真实自研推理执行器：读取 PromptPackage，生成 PNG/WebP/JPG，写入 output-storage，并返回正式 6 字段。",
-      en: "Next connect the real in-house inference executor: read PromptPackage, generate PNG/WebP/JPG, write into output-storage, and return the six formal fields.",
+      zh: "下一步接入真实命令执行：通过 stdin 发送 JSON 请求，读取 stdout JSON，校验后写入 output-storage。",
+      en: "Next connect real command execution: send JSON request through stdin, read stdout JSON, validate it, then write into output-storage.",
     },
     canShowToPlayer: false,
     tags: [
@@ -46,6 +55,7 @@ export function readRealImageRunnerImplementationHealth(input = {}) {
       "implementation_not_connected",
       "runner_implementation_not_connected",
       "execution_contract_ready",
+      ...executorShell.tags,
       "does_not_execute",
       "does_not_generate",
       "fake_image_forbidden",
@@ -57,6 +67,9 @@ export function readRealImageRunnerImplementationHealth(input = {}) {
 export async function runRealImageRunnerImplementationDryRun(input = {}) {
   const requiredResponseFields = readRequiredResponseFields(input)
   const executionContract = buildRealImageExecutionContract({
+    requiredResponseFields,
+  })
+  const executorShell = await runRealImageExecutorShellDryRun({
     requiredResponseFields,
   })
 
@@ -74,6 +87,7 @@ export async function runRealImageRunnerImplementationDryRun(input = {}) {
     inputContract: buildImplementationInputContract(requiredResponseFields),
     outputContract: buildImplementationOutputContract(requiredResponseFields),
     executionContract,
+    executorShell,
     willReturnImageUrl: false,
     willReturnImageFormat: false,
     willReturnWidth: false,
@@ -84,12 +98,12 @@ export async function runRealImageRunnerImplementationDryRun(input = {}) {
     willExecuteCommand: false,
     willPersistOnlyAsHiddenCandidate: false,
     message:
-      "真实 runner implementation 尚未接入自研推理执行器，因此 dry-run 不能声明会执行命令或返回真实图片字段。",
+      "真实 runner implementation 尚未接入命令执行逻辑，因此 dry-run 不能声明会执行命令或返回真实图片字段。",
     messageEn:
-      "The real runner implementation has not connected the in-house inference executor yet, so dry-run cannot declare command execution or real image fields.",
+      "The real runner implementation has not connected command execution logic yet, so dry-run cannot declare command execution or real image fields.",
     nextStep: {
-      zh: "接入真实推理执行器后，dry-run 才能返回 ok=true，并声明会返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
-      en: "After connecting the real inference executor, dry-run may return ok=true and declare imageUrl / imageFormat / width / height / license / originalityConfirmed.",
+      zh: "接入真实命令执行后，dry-run 才能返回 ok=true，并声明会返回 imageUrl / imageFormat / width / height / license / originalityConfirmed。",
+      en: "After connecting real command execution, dry-run may return ok=true and declare imageUrl / imageFormat / width / height / license / originalityConfirmed.",
     },
     canShowToPlayer: false,
     tags: [
@@ -97,6 +111,7 @@ export async function runRealImageRunnerImplementationDryRun(input = {}) {
       "implementation_not_connected",
       "runner_implementation_not_connected",
       "execution_contract_ready",
+      ...executorShell.tags,
       "dry_run_blocked",
       "does_not_execute",
       "does_not_generate",
@@ -111,6 +126,9 @@ export async function generateRealImageWithRunnerImplementation(input = {}) {
   const executionContract = buildRealImageExecutionContract({
     requiredResponseFields,
   })
+  const executorShell = await executeRealImageWithExecutorShell({
+    requiredResponseFields,
+  })
 
   return {
     ok: false,
@@ -126,13 +144,14 @@ export async function generateRealImageWithRunnerImplementation(input = {}) {
     inputContract: buildImplementationInputContract(requiredResponseFields),
     outputContract: buildImplementationOutputContract(requiredResponseFields),
     executionContract,
+    executorShell,
     message:
-      "真实 runner implementation 尚未接入自研推理执行器。不会执行命令，也不会返回假图、占位图、SVG、HTML、JSON 调试图或程序绘图结果。",
+      "真实 runner implementation 尚未接入命令执行逻辑。不会执行命令，也不会返回假图、占位图、SVG、HTML、JSON 调试图或程序绘图结果。",
     messageEn:
-      "The real runner implementation has not connected the in-house inference executor yet. It will not execute commands and will not return fake images, placeholders, SVG, HTML, debug JSON images, or programmatic render results.",
+      "The real runner implementation has not connected command execution logic. It will not execute commands and will not return fake images, placeholders, SVG, HTML, debug JSON images, or programmatic render results.",
     nextStep: {
-      zh: "下一步接入真实推理执行器：执行成功后必须写入 output-storage，并返回 public imageUrl / imageFormat / width / height / license / originalityConfirmed。",
-      en: "Next connect the real inference executor: after successful execution it must write into output-storage and return public imageUrl / imageFormat / width / height / license / originalityConfirmed.",
+      zh: "下一步接入真实命令执行：执行成功后必须写入 output-storage，并返回 public imageUrl / imageFormat / width / height / license / originalityConfirmed。",
+      en: "Next connect real command execution: after successful execution it must write into output-storage and return public imageUrl / imageFormat / width / height / license / originalityConfirmed.",
     },
     canShowToPlayer: false,
     tags: [
@@ -140,6 +159,7 @@ export async function generateRealImageWithRunnerImplementation(input = {}) {
       "implementation_not_connected",
       "runner_implementation_not_connected",
       "execution_contract_ready",
+      ...executorShell.tags,
       "generate_blocked",
       "does_not_execute",
       "does_not_generate",
@@ -160,6 +180,7 @@ function buildImplementationInputContract(requiredResponseFields) {
     mustReceiveVisualFixHints: true,
     mustReceiveWorldFactMetadata: true,
     mustUseExecutionContract: true,
+    mustUseExecutorShell: true,
     mustNotRewriteWorldFacts: true,
     mustNotDisplayDirectly: true,
     mustNotCopyUnlicensedThirdPartyWorks: true,

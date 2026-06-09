@@ -157,7 +157,8 @@ function testRunnerImplementationExposesExecutionContract() {
   const health = readRealImageRunnerImplementationHealth()
 
   assert.equal(health.ok, false)
-  assert.equal(health.version, "implementation-not-connected-2")
+  assert.equal(health.version, "implementation-not-connected-3")
+  assert.equal(health.executorShell.status, "real_image_executor_shell_disabled")
   assert.equal(health.executionContract.ok, true)
   assert.equal(
     health.executionContract.status,

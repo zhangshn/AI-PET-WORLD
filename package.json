@@ -13,6 +13,7 @@
     "test:local-image-model-adapter": "node scripts/test-local-image-model-adapter-boundary.mjs",
     "test:local-image-model-output-storage": "node scripts/test-local-image-model-output-storage.mjs",
     "test:local-image-model-readiness": "node scripts/test-local-image-model-real-model-readiness.mjs",
+    "test:local-image-model-executor-shell": "node scripts/test-local-image-model-executor-shell.mjs",
     "test:local-image-model-execution-contract": "node scripts/test-local-image-model-execution-contract.mjs",
     "test:local-image-model-manifest": "node scripts/test-local-image-model-real-model-manifest.mjs",
     "test:local-image-model-runner": "node scripts/test-local-image-model-real-image-runner.mjs",
