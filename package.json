@@ -9,6 +9,7 @@
     "lint": "eslint",
     "check:encoding": "node scripts/check-source-encoding.mjs",
     "inspect:visual-painter": "node scripts/inspect-world-visual-painter.mjs",
+    "inspect:local-image-model-real-command-request": "node scripts/inspect-local-image-model-real-command-request.mjs",
     "verify:local-image-model": "node scripts/verify-local-image-model-contract.mjs",
     "check:local-image-model-real-command-env": "node scripts/check-local-image-model-real-command-env.mjs",
     "check:local-image-model-real-command-ready": "node scripts/check-local-image-model-real-command-env.mjs --require-real-command",
