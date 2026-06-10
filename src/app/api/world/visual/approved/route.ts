@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 
 import { readWorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-store-adapter"
 import { readLatestWorldVisualApprovedFrameRecord } from "@/world/world-visual-painter"
+import type { WorldVisualApprovedFrame } from "@/world/world-visual-painter"
 
 export async function GET() {
   const readResult = await readWorldRuntimeSaveRecord()
@@ -50,23 +51,14 @@ export async function GET() {
   const request = record.sourceCandidateRecord.aiImageGenerationRequest
   const controlSketch = request?.body.controlSketch ?? null
   const visualFixHints = request?.body.visualFixHints ?? []
+  const runtimeRenderGate = buildRuntimeRenderGate(record.approvedFrame, record.canShowToPlayer)
 
   return NextResponse.json(
     {
       ok: true,
       status: approvedFrameReadResult.status,
       record,
-      runtimeRenderGate: {
-        approvedFrameRecordCanShowToPlayer: record.canShowToPlayer,
-        approvedFrameCanShowToPlayer: record.approvedFrame.canShowToPlayer,
-        canRuntimeRender:
-          record.canShowToPlayer === true &&
-          record.approvedFrame.canShowToPlayer === true,
-        displayRule:
-          "Runtime Render 只能展示 ApprovedFrameRecord 和 ApprovedFrame 同时允许展示的图片。",
-        displayRuleEn:
-          "Runtime Render may only display an image when both ApprovedFrameRecord and ApprovedFrame allow display.",
-      },
+      runtimeRenderGate,
       provenance: {
         frameId: record.approvedFrame.frameId,
         sourceAiImageCandidateId: record.sourceAiImageCandidateId,
@@ -87,7 +79,7 @@ export async function GET() {
         sourceImageByteLength: record.approvedFrame.sourceImageByteLength,
         sourceImageContentType: record.approvedFrame.sourceImageContentType,
         sourceImagePayloadQualityPassed:
-            record.approvedFrame.sourceImagePayloadQualityPassed,
+          record.approvedFrame.sourceImagePayloadQualityPassed,
       },
       sourceCandidateAudit: {
         candidateId: record.sourceCandidateRecord.candidate.candidateId,
@@ -120,6 +112,7 @@ export async function GET() {
         status: record.reviewReport.status,
         score: record.reviewReport.score,
         canShowToPlayer: record.reviewReport.canShowToPlayer,
+        imageInspectionSummary: record.reviewReport.imageInspectionSummary,
         failedChecks: record.reviewReport.checks
           .filter((check) => !check.passed)
           .map((check) => ({
@@ -134,22 +127,88 @@ export async function GET() {
         ).length,
         totalCheckCount: record.reviewReport.checks.length,
       },
-      canShowToPlayer:
-        record.canShowToPlayer === true &&
-        record.approvedFrame.canShowToPlayer === true,
-      nextStep: {
-        zh: "该 ApprovedFrame 可供 /world Runtime Render 读取展示；不得由前端重新生成或修改画面。",
-        en: "This ApprovedFrame may be read by /world Runtime Render for display. The frontend must not regenerate or modify the frame.",
-      },
+      canShowToPlayer: runtimeRenderGate.canRuntimeRender,
+      nextStep: runtimeRenderGate.canRuntimeRender
+        ? {
+            zh: "该 ApprovedFrame 可供 /world Runtime Render 读取展示；不得由前端重新生成或修改画面。",
+            en: "This ApprovedFrame may be read by /world Runtime Render for display. The frontend must not regenerate or modify the frame.",
+          }
+        : {
+            zh: "ApprovedFrame 缺少 Runtime Render 必需硬字段，/world 必须继续阻断。",
+            en: "The ApprovedFrame is missing required Runtime Render hard fields, so /world must remain blocked.",
+          },
       tags: [
         "world_visual_approved_api",
         "approved_frame_only",
         "provenance_exposed_for_audit",
         "runtime_render_gate_checked",
+        runtimeRenderGate.canRuntimeRender
+          ? "runtime_render_allowed"
+          : "runtime_render_blocked",
         ...approvedFrameReadResult.tags,
       ],
     },
     { status: 200 }
+  )
+}
+
+function buildRuntimeRenderGate(
+  approvedFrame: WorldVisualApprovedFrame,
+  approvedFrameRecordCanShowToPlayer: boolean
+) {
+  const hardFieldsValid = approvedFrameHardFieldsValid(approvedFrame)
+  const canRuntimeRender =
+    approvedFrameRecordCanShowToPlayer === true &&
+    approvedFrame.canShowToPlayer === true &&
+    hardFieldsValid
+
+  return {
+    approvedFrameRecordCanShowToPlayer,
+    approvedFrameCanShowToPlayer: approvedFrame.canShowToPlayer,
+    hardFieldsValid,
+    sourceImageSha256Bound:
+      typeof approvedFrame.sourceImageSha256 === "string" &&
+      approvedFrame.sourceImageSha256.length === 64,
+    sourceImageByteLengthBound:
+      typeof approvedFrame.sourceImageByteLength === "number" &&
+      approvedFrame.sourceImageByteLength > 0,
+    sourceImageContentTypeBound:
+      typeof approvedFrame.sourceImageContentType === "string" &&
+      isApprovedContentType(approvedFrame.sourceImageContentType),
+    sourceImagePayloadQualityPassed:
+      approvedFrame.sourceImagePayloadQualityPassed === true,
+    canRuntimeRender,
+    displayRule:
+      "Runtime Render 只能展示 ApprovedFrameRecord 与 ApprovedFrame 同时允许展示，并且 sha256 / byteLength / contentType / payloadQualityPassed 全部有效的图片。",
+    displayRuleEn:
+      "Runtime Render may only display an image when both ApprovedFrameRecord and ApprovedFrame allow display, and sha256 / byteLength / contentType / payloadQualityPassed are all valid.",
+    tags: [
+      "runtime_render_gate",
+      hardFieldsValid ? "hard_fields_valid" : "hard_fields_invalid",
+      canRuntimeRender ? "runtime_render_allowed" : "runtime_render_blocked",
+    ],
+  }
+}
+
+function approvedFrameHardFieldsValid(
+  approvedFrame: WorldVisualApprovedFrame
+): boolean {
+  return (
+    typeof approvedFrame.sourceImageSha256 === "string" &&
+    approvedFrame.sourceImageSha256.length === 64 &&
+    typeof approvedFrame.sourceImageByteLength === "number" &&
+    approvedFrame.sourceImageByteLength > 0 &&
+    typeof approvedFrame.sourceImageContentType === "string" &&
+    isApprovedContentType(approvedFrame.sourceImageContentType) &&
+    approvedFrame.sourceImagePayloadQualityPassed === true
+  )
+}
+
+function isApprovedContentType(contentType: string): boolean {
+  return (
+    contentType === "image/png" ||
+    contentType === "image/webp" ||
+    contentType === "image/jpeg"
   )
 }
 
