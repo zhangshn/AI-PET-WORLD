@@ -145,6 +145,7 @@ function printReadySummary(input) {
 
 function loadRuntimeEnv() {
   return {
+    ...parseEnvFile(".env.example"),
     ...parseEnvFile(".env"),
     ...parseEnvFile(".env.local"),
     ...process.env,
