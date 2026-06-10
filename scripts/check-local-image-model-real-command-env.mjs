@@ -68,7 +68,7 @@ async function main() {
     )
   }
 
-  if (!implementationHealth.ok) {
+  if (!implementationHealth.ok && !httpEngineCommandDerived) {
     throw new Error(
       `local image model implementation health 未通过：${implementationHealth.status}`
     )
@@ -152,6 +152,9 @@ function printReadySummary(input) {
   )
   console.log(`implementation: ${input.implementationHealth.status}`)
   console.log(`command bridge: ${input.bridgeHealth.status}`)
+  if (input.httpEngineCommandDerived && !input.implementationHealth.ok) {
+    console.log("HTTP engine adapter 模式不要求本地模型资产目录与 manifest 门禁。")
+  }
   console.log("本检查不会执行真实模型命令；正式生成请调用视觉生成链路或 real-command-smoke --execute-real-command。")
 }
 
