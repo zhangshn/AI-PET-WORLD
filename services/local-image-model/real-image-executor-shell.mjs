@@ -21,10 +21,11 @@ export const REAL_IMAGE_EXECUTOR_SHELL_ENV = {
 }
 
 const EXECUTOR_SHELL_NAME = "ai-pet-world-real-image-executor-shell"
-const EXECUTOR_SHELL_VERSION = "executor-shell-worker-env-2"
+const EXECUTOR_SHELL_VERSION = "executor-shell-diagnostics-3"
 
 const MAX_EXECUTOR_STDOUT_BYTES = 1024 * 1024
 const MAX_EXECUTOR_STDERR_BYTES = 64 * 1024
+const EXECUTOR_TEXT_PREVIEW_BYTES = 4096
 const EXECUTOR_KILL_GRACE_MS = 1_000
 
 export function readRealImageExecutorShellHealth(input = {}) {
@@ -373,12 +374,18 @@ function buildShellExecutionFailure(input) {
     executionContract: input.health.executionContract,
     executionRequestValidation: input.executionRequestValidation,
     stdoutValidation: input.stdoutValidation,
+    commandResultStatus: input.commandResult?.status ?? null,
     exitCode: input.commandResult?.exitCode,
     signal: input.commandResult?.signal,
     timedOut: input.commandResult?.timedOut === true,
     stdoutTruncated: input.commandResult?.stdoutTruncated === true,
+    stdoutPreview: input.commandResult?.stdoutPreview ?? null,
     stderrCaptured: input.commandResult?.stderrCaptured === true,
     stderrTruncated: input.commandResult?.stderrTruncated === true,
+    stderrPreview: input.commandResult?.stderrPreview ?? null,
+    stderrJsonStatus: input.commandResult?.stderrJsonStatus ?? null,
+    stderrJsonMessage: input.commandResult?.stderrJsonMessage ?? null,
+    stderrJsonDetailStatus: input.commandResult?.stderrJsonDetailStatus ?? null,
     canShowToPlayer: false,
     tags: [
       "real_image_executor_shell",
@@ -463,6 +470,7 @@ async function runCommandWithStdinJson(input) {
           stdoutTruncated: stdoutCapture.truncated,
           stderrCaptured: stderrCapture.text.length > 0,
           stderrTruncated: stderrCapture.truncated,
+          ...buildCapturedTextDiagnostics({ stdoutCapture, stderrCapture }),
           tags: ["executor_timeout"],
         })
         return
@@ -479,6 +487,7 @@ async function runCommandWithStdinJson(input) {
           stdoutTruncated: stdoutCapture.truncated,
           stderrCaptured: stderrCapture.text.length > 0,
           stderrTruncated: stderrCapture.truncated,
+          ...buildCapturedTextDiagnostics({ stdoutCapture, stderrCapture }),
           tags: ["executor_exit_non_zero"],
         })
         return
@@ -494,6 +503,7 @@ async function runCommandWithStdinJson(input) {
           stdoutTruncated: true,
           stderrCaptured: stderrCapture.text.length > 0,
           stderrTruncated: stderrCapture.truncated,
+          ...buildCapturedTextDiagnostics({ stdoutCapture, stderrCapture }),
           tags: ["stdout_too_large"],
         })
         return
@@ -596,6 +606,36 @@ async function buildVerifiedShellOutputReference(input) {
     imageUrl: reference.imageUrl,
     canShowToPlayer: false,
     tags: ["output_file_verified", "public_http_url_ready", "not_player_visible"],
+  }
+}
+
+function buildCapturedTextDiagnostics(input = {}) {
+  const stdoutPreview = buildTextPreview(input.stdoutCapture?.text)
+  const stderrPreview = buildTextPreview(input.stderrCapture?.text)
+  const stderrJson = parseJsonObject(stderrPreview)
+
+  return {
+    stdoutPreview,
+    stderrPreview,
+    stderrJsonStatus: stderrJson?.status ?? null,
+    stderrJsonMessage: stderrJson?.message ?? null,
+    stderrJsonDetailStatus: stderrJson?.detail?.status ?? null,
+  }
+}
+
+function buildTextPreview(value) {
+  if (typeof value !== "string" || value.length === 0) return null
+  return value.slice(0, EXECUTOR_TEXT_PREVIEW_BYTES)
+}
+
+function parseJsonObject(value) {
+  if (typeof value !== "string" || !value.trim()) return null
+
+  try {
+    const parsed = JSON.parse(value)
+    return isRecord(parsed) ? parsed : null
+  } catch {
+    return null
   }
 }
 
