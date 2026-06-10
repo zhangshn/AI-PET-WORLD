@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url"
 
 export const REAL_IMAGE_HTTP_ENGINE_COMMAND_NAME =
   "ai-pet-world-real-image-http-engine-command"
-export const REAL_IMAGE_HTTP_ENGINE_COMMAND_VERSION = "http-engine-command-stdin-2"
+export const REAL_IMAGE_HTTP_ENGINE_COMMAND_VERSION = "http-engine-command-localhost-fallback-3"
 
 const DEFAULT_TIMEOUT_MS = 180_000
 const MIN_TIMEOUT_MS = 1_000
@@ -18,6 +18,7 @@ if (isExecutedDirectly()) {
     writeFailureAndExit({
       status: "real_image_http_engine_command_unhandled_error",
       message: error instanceof Error ? error.message : String(error),
+      detail: buildFetchErrorDetail(error),
     })
   })
 }
@@ -220,11 +221,39 @@ export function buildHttpEngineRequest(input = {}) {
 }
 
 async function callHttpEngine(input = {}) {
+  const attempts = []
+
+  for (const endpoint of buildHttpEndpointCandidates(input.config.endpoint)) {
+    const result = await postJsonToHttpEndpoint({
+      endpoint,
+      request: input.request,
+      timeoutMs: input.config.timeoutMs,
+    })
+
+    if (result.ok) return result
+
+    attempts.push(buildEndpointAttempt({ endpoint, result }))
+
+    if (!shouldRetryEndpointFailure(result)) {
+      return attachEndpointAttempts(result, attempts)
+    }
+  }
+
+  const lastAttempt = attempts.at(-1)
+
+  return buildFailure({
+    status: lastAttempt?.status ?? "real_image_http_engine_command_fetch_failed",
+    message: lastAttempt?.message ?? "HTTP engine 请求失败。",
+    detail: { endpointAttempts: attempts },
+  })
+}
+
+async function postJsonToHttpEndpoint(input = {}) {
   const controller = new AbortController()
-  const timeoutHandle = setTimeout(() => controller.abort(), input.config.timeoutMs)
+  const timeoutHandle = setTimeout(() => controller.abort(), input.timeoutMs)
 
   try {
-    const response = await fetch(input.config.endpoint, {
+    const response = await fetch(input.endpoint, {
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -241,6 +270,7 @@ async function callHttpEngine(input = {}) {
         status: "real_image_http_engine_command_http_failed",
         message: `HTTP engine 返回非 2xx：${response.status}。`,
         detail: {
+          endpoint: input.endpoint,
           statusCode: response.status,
           bodyPreview: text.slice(0, 512),
         },
@@ -254,12 +284,13 @@ async function callHttpEngine(input = {}) {
         : buildFailure({
             status: "real_image_http_engine_command_response_not_object",
             message: "HTTP engine 必须返回 JSON 对象。",
+            detail: { endpoint: input.endpoint },
           })
     } catch {
       return buildFailure({
         status: "real_image_http_engine_command_response_json_invalid",
         message: "HTTP engine 返回内容不是合法 JSON。",
-        detail: { bodyPreview: text.slice(0, 512) },
+        detail: { endpoint: input.endpoint, bodyPreview: text.slice(0, 512) },
       })
     }
   } catch (error) {
@@ -269,6 +300,10 @@ async function callHttpEngine(input = {}) {
           ? "real_image_http_engine_command_timeout"
           : "real_image_http_engine_command_fetch_failed",
       message: error instanceof Error ? error.message : String(error),
+      detail: {
+        endpoint: input.endpoint,
+        ...buildFetchErrorDetail(error),
+      },
     })
   } finally {
     clearTimeout(timeoutHandle)
@@ -289,6 +324,9 @@ async function resolveEngineImageBytes(input = {}) {
     status: "real_image_http_engine_command_image_missing",
     message:
       "HTTP engine 返回中没有 imageBase64 / dataUrl / imageUrl，无法写入真实图片。",
+    detail: {
+      returnedKeys: Object.keys(payload).slice(0, 30),
+    },
   })
 }
 
@@ -338,11 +376,34 @@ async function fetchImageUrl(imageUrl, timeoutMs) {
   const urlValidation = validateHttpUrl(imageUrl)
   if (!urlValidation.ok) return urlValidation
 
+  const attempts = []
+
+  for (const endpoint of buildHttpEndpointCandidates(imageUrl)) {
+    const result = await fetchImageEndpoint({ endpoint, timeoutMs })
+    if (result.ok) return result
+
+    attempts.push(buildEndpointAttempt({ endpoint, result }))
+
+    if (!shouldRetryEndpointFailure(result)) {
+      return attachEndpointAttempts(result, attempts)
+    }
+  }
+
+  const lastAttempt = attempts.at(-1)
+
+  return buildFailure({
+    status: lastAttempt?.status ?? "real_image_http_engine_command_image_fetch_error",
+    message: lastAttempt?.message ?? "HTTP engine 图片地址拉取失败。",
+    detail: { endpointAttempts: attempts },
+  })
+}
+
+async function fetchImageEndpoint(input = {}) {
   const controller = new AbortController()
-  const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs)
+  const timeoutHandle = setTimeout(() => controller.abort(), input.timeoutMs)
 
   try {
-    const response = await fetch(imageUrl, {
+    const response = await fetch(input.endpoint, {
       method: "GET",
       signal: controller.signal,
     })
@@ -351,6 +412,10 @@ async function fetchImageUrl(imageUrl, timeoutMs) {
       return buildFailure({
         status: "real_image_http_engine_command_image_fetch_failed",
         message: `HTTP engine 图片地址返回非 2xx：${response.status}。`,
+        detail: {
+          endpoint: input.endpoint,
+          statusCode: response.status,
+        },
       })
     }
 
@@ -363,6 +428,10 @@ async function fetchImageUrl(imageUrl, timeoutMs) {
           ? "real_image_http_engine_command_image_fetch_timeout"
           : "real_image_http_engine_command_image_fetch_error",
       message: error instanceof Error ? error.message : String(error),
+      detail: {
+        endpoint: input.endpoint,
+        ...buildFetchErrorDetail(error),
+      },
     })
   } finally {
     clearTimeout(timeoutHandle)
@@ -610,6 +679,69 @@ function validateHttpUrl(value) {
       status: "real_image_http_engine_command_url_invalid",
       message: "HTTP engine 地址不是合法 URL。",
     })
+  }
+}
+
+function buildHttpEndpointCandidates(endpoint) {
+  const candidates = [endpoint]
+
+  try {
+    const url = new URL(endpoint)
+    if (url.hostname === "localhost") {
+      url.hostname = "127.0.0.1"
+      candidates.push(url.toString())
+    }
+  } catch {
+    return candidates
+  }
+
+  return [...new Set(candidates)]
+}
+
+function shouldRetryEndpointFailure(result) {
+  return [
+    "real_image_http_engine_command_fetch_failed",
+    "real_image_http_engine_command_timeout",
+    "real_image_http_engine_command_image_fetch_error",
+    "real_image_http_engine_command_image_fetch_timeout",
+  ].includes(result.status)
+}
+
+function buildEndpointAttempt(input = {}) {
+  const detail = readRecord(input.result?.detail)
+
+  return {
+    endpoint: input.endpoint,
+    status: input.result?.status ?? null,
+    message: input.result?.message ?? null,
+    causeCode: detail.causeCode ?? null,
+    causeMessage: detail.causeMessage ?? null,
+    causeAddress: detail.causeAddress ?? null,
+    causePort: detail.causePort ?? null,
+    statusCode: detail.statusCode ?? null,
+  }
+}
+
+function attachEndpointAttempts(result, attempts) {
+  return {
+    ...result,
+    detail: {
+      ...readRecord(result.detail),
+      endpointAttempts: attempts,
+    },
+  }
+}
+
+function buildFetchErrorDetail(error) {
+  const cause = error?.cause
+
+  return {
+    errorName: error?.name ?? null,
+    causeName: cause?.name ?? null,
+    causeCode: cause?.code ?? null,
+    causeMessage: cause?.message ?? null,
+    causeAddress: cause?.address ?? null,
+    causePort: cause?.port ?? null,
   }
 }
 
