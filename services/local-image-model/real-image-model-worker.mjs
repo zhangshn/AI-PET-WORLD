@@ -12,7 +12,7 @@ import {
 } from "./real-image-inference-adapter.mjs"
 
 export const REAL_IMAGE_MODEL_WORKER_NAME = "ai-pet-world-real-image-model-worker"
-export const REAL_IMAGE_MODEL_WORKER_VERSION = "real-model-worker-inference-adapter-1"
+export const REAL_IMAGE_MODEL_WORKER_VERSION = "real-model-worker-diagnostics-2"
 export const REAL_IMAGE_MODEL_WORKER_ENV = {
   command: "AI_PET_WORLD_REAL_IMAGE_INFERENCE_COMMAND",
   argsJson: "AI_PET_WORLD_REAL_IMAGE_INFERENCE_ARGS_JSON",
@@ -22,6 +22,7 @@ export const REAL_IMAGE_MODEL_WORKER_ENV = {
 
 const MAX_STDOUT_BYTES = 1024 * 1024
 const MAX_STDERR_BYTES = 64 * 1024
+const TEXT_PREVIEW_BYTES = 4096
 const DEFAULT_TIMEOUT_MS = 600_000
 const MIN_TIMEOUT_MS = 1_000
 const MAX_TIMEOUT_MS = 3_600_000
@@ -37,12 +38,18 @@ if (isExecutedDirectly()) {
 }
 
 export function readRealImageModelWorkerConfig(input = {}) {
-  const argsResult = readArgsJson(input.argsJson ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.argsJson])
+  const argsResult = readArgsJson(
+    input.argsJson ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.argsJson]
+  )
   return {
-    command: readOptionalString(input.command ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.command]),
+    command: readOptionalString(
+      input.command ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.command]
+    ),
     args: argsResult.args,
     argsValid: argsResult.ok,
-    argsJsonConfigured: Boolean(readOptionalString(input.argsJson ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.argsJson])),
+    argsJsonConfigured: Boolean(
+      readOptionalString(input.argsJson ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.argsJson])
+    ),
     timeoutMs: readTimeoutMs(input.timeoutMs ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.timeoutMs]),
     outputDirectory: readOptionalString(input.outputDirectory ?? process.env[REAL_IMAGE_MODEL_WORKER_ENV.outputDirectory]),
   }
@@ -175,9 +182,9 @@ async function runInferenceCommand(input) {
     childProcess.stderr.on("data", (chunk) => appendTextCapture(stderrCapture, chunk))
     childProcess.on("error", () => finish({ ok: false, status: "real_image_model_worker_spawn_error" }))
     childProcess.on("close", (exitCode, signal) => {
-      if (timedOut) return finish({ ok: false, status: "real_image_model_worker_timeout", exitCode, signal, stdoutTruncated: stdoutCapture.truncated, stderrCaptured: stderrCapture.text.length > 0, stderrTruncated: stderrCapture.truncated })
-      if (exitCode !== 0) return finish({ ok: false, status: "real_image_model_worker_exit_non_zero", exitCode, signal, stderrCaptured: stderrCapture.text.length > 0, stderrTruncated: stderrCapture.truncated })
-      if (stdoutCapture.truncated) return finish({ ok: false, status: "real_image_model_worker_stdout_too_large" })
+      if (timedOut) return finish({ ok: false, status: "real_image_model_worker_timeout", exitCode, signal, stdoutTruncated: stdoutCapture.truncated, stderrCaptured: stderrCapture.text.length > 0, stderrTruncated: stderrCapture.truncated, detail: buildCapturedTextDiagnostics({ stdoutCapture, stderrCapture }) })
+      if (exitCode !== 0) return finish({ ok: false, status: "real_image_model_worker_exit_non_zero", exitCode, signal, stderrCaptured: stderrCapture.text.length > 0, stderrTruncated: stderrCapture.truncated, detail: buildCapturedTextDiagnostics({ stdoutCapture, stderrCapture }) })
+      if (stdoutCapture.truncated) return finish({ ok: false, status: "real_image_model_worker_stdout_too_large", detail: buildCapturedTextDiagnostics({ stdoutCapture, stderrCapture }) })
       finish({ ok: true, status: "real_image_model_worker_process_completed", stdoutText: stdoutCapture.text })
     })
     childProcess.stdin.on("error", () => {})
@@ -267,6 +274,39 @@ function writeSuccess(input) {
 function writeFailureAndExit(input) {
   process.stderr.write(JSON.stringify({ ok: false, status: input.status, message: input.message ?? null, detail: input.detail ?? null, worker: REAL_IMAGE_MODEL_WORKER_NAME, version: REAL_IMAGE_MODEL_WORKER_VERSION, canShowToPlayer: false }))
   process.exitCode = 1
+}
+
+function buildCapturedTextDiagnostics(input = {}) {
+  const stdoutPreview = buildTextPreview(input.stdoutCapture?.text)
+  const stderrPreview = buildTextPreview(input.stderrCapture?.text)
+  const stderrJson = parseJsonObject(stderrPreview)
+
+  return {
+    stdoutPreview,
+    stderrPreview,
+    stderrJsonStatus: stderrJson?.status ?? null,
+    stderrJsonMessage: stderrJson?.message ?? null,
+    stderrJsonDetailStatus: stderrJson?.detail?.status ?? null,
+    stderrJsonNestedStatus: stderrJson?.detail?.stderrJsonStatus ?? null,
+    stderrJsonNestedMessage: stderrJson?.detail?.stderrJsonMessage ?? null,
+    stderrJsonNestedDetailStatus: stderrJson?.detail?.stderrJsonDetailStatus ?? null,
+  }
+}
+
+function buildTextPreview(value) {
+  if (typeof value !== "string" || value.length === 0) return null
+  return value.slice(0, TEXT_PREVIEW_BYTES)
+}
+
+function parseJsonObject(value) {
+  if (typeof value !== "string" || !value.trim()) return null
+
+  try {
+    const parsed = JSON.parse(value)
+    return isRecord(parsed) ? parsed : null
+  } catch {
+    return null
+  }
 }
 
 function buildWorkerHealthFailure(status, config, inferenceAdapter, tags) {
