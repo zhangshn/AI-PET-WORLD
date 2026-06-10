@@ -3,6 +3,7 @@ import {
   buildWorldVisualPainterDecision,
   readLatestWorldVisualApprovedFrameRecord,
 } from "@/world/world-visual-painter"
+import type { WorldVisualApprovedFrame } from "@/world/world-visual-painter"
 
 export async function WorldLiveRuntimePage() {
   const runtimeView = await readWorldRuntimeForView()
@@ -43,7 +44,8 @@ export async function WorldLiveRuntimePage() {
   const canRuntimeRender =
     approvedFrameReadResult.status === "found" &&
     approvedFrameRecord?.canShowToPlayer === true &&
-    approvedFrame?.canShowToPlayer === true
+    approvedFrame !== null &&
+    canRenderApprovedFrame(approvedFrame)
 
   if (canRuntimeRender && approvedFrameRecord && approvedFrame) {
     return (
@@ -66,16 +68,18 @@ export async function WorldLiveRuntimePage() {
               style={runtimeWorldStyles.approvedImage}
             />
           </div>
-            <div style={runtimeWorldStyles.provenance}>
-              <span>Review {approvedFrame.reviewScore}</span>
-              <span>Candidate {approvedFrameRecord.sourceAiImageCandidateId}</span>
-              <span>Prompt {approvedFrameRecord.sourcePromptPackageId}</span>
-              <span>Image {approvedFrame.sourceImageSha256.slice(0, 12)}</span>
-              <span>
-                Payload{" "}
-                {approvedFrame.sourceImagePayloadQualityPassed ? "passed" : "blocked"}
-              </span>
-            </div>
+          <div style={runtimeWorldStyles.provenance}>
+            <span>Review {approvedFrame.reviewScore}</span>
+            <span>Candidate {approvedFrameRecord.sourceAiImageCandidateId}</span>
+            <span>Prompt {approvedFrameRecord.sourcePromptPackageId}</span>
+            <span>Image {approvedFrame.sourceImageSha256.slice(0, 12)}</span>
+            <span>{approvedFrame.sourceImageContentType}</span>
+            <span>{approvedFrame.sourceImageByteLength} bytes</span>
+            <span>
+              Payload{" "}
+              {approvedFrame.sourceImagePayloadQualityPassed ? "passed" : "blocked"}
+            </span>
+          </div>
         </div>
       </main>
     )
@@ -113,7 +117,7 @@ export async function WorldLiveRuntimePage() {
             <span style={blockedWorldStyles.metaLabel}>ApprovedFrame / 审核帧</span>
             <span>读取状态：{approvedFrameReadResult.status}</span>
             <span>
-              只有 ApprovedFrameRecord 与 ApprovedFrame 同时允许展示时，Runtime Render 才会显示图片。
+              只有 ApprovedFrameRecord 与 ApprovedFrame 同时允许展示，且 sha256 / byteLength / contentType / payloadQualityPassed 全部有效时，Runtime Render 才会显示图片。
             </span>
             <span>
               当前展示入口只读取 data/world-approved-frames/latest-approved-frame.json。
@@ -150,6 +154,27 @@ export async function WorldLiveRuntimePage() {
         </p>
       </section>
     </main>
+  )
+}
+
+function canRenderApprovedFrame(approvedFrame: WorldVisualApprovedFrame): boolean {
+  return (
+    approvedFrame.canShowToPlayer === true &&
+    typeof approvedFrame.sourceImageSha256 === "string" &&
+    approvedFrame.sourceImageSha256.length === 64 &&
+    typeof approvedFrame.sourceImageByteLength === "number" &&
+    approvedFrame.sourceImageByteLength > 0 &&
+    typeof approvedFrame.sourceImageContentType === "string" &&
+    isApprovedContentType(approvedFrame.sourceImageContentType) &&
+    approvedFrame.sourceImagePayloadQualityPassed === true
+  )
+}
+
+function isApprovedContentType(contentType: string): boolean {
+  return (
+    contentType === "image/png" ||
+    contentType === "image/webp" ||
+    contentType === "image/jpeg"
   )
 }
 
