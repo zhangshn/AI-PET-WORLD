@@ -11,6 +11,7 @@
     "inspect:visual-painter": "node scripts/inspect-world-visual-painter.mjs",
     "inspect:local-image-model-real-command-request": "node scripts/inspect-local-image-model-real-command-request.mjs",
     "inspect:local-image-model-real-command-output": "node scripts/inspect-local-image-model-real-command-output.mjs",
+    "inspect:local-image-model-real-command-adapter-template": "node scripts/inspect-local-image-model-real-command-adapter-template.mjs",
     "verify:local-image-model": "node scripts/verify-local-image-model-contract.mjs",
     "check:local-image-model-real-command-env": "node scripts/check-local-image-model-real-command-env.mjs",
     "check:local-image-model-real-command-ready": "node scripts/check-local-image-model-real-command-env.mjs --require-real-command",
