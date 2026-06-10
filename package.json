@@ -15,6 +15,7 @@
     "test:local-image-model-inference-adapter": "node scripts/test-local-image-model-inference-adapter.mjs",
     "test:local-image-model-command-bridge": "node scripts/test-local-image-model-command-bridge.mjs",
     "test:local-image-model-command-config": "node scripts/test-local-image-model-command-config.mjs",
+    "test:local-image-model-real-e2e-preflight": "node scripts/test-local-image-model-real-e2e-preflight.mjs",
     "test:local-image-model-output-storage": "node scripts/test-local-image-model-output-storage.mjs",
     "test:local-image-model-readiness": "node scripts/test-local-image-model-real-model-readiness.mjs",
     "test:local-image-model-executor-shell": "node scripts/test-local-image-model-executor-shell.mjs",
