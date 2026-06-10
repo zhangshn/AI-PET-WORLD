@@ -10,6 +10,8 @@
     "check:encoding": "node scripts/check-source-encoding.mjs",
     "inspect:visual-painter": "node scripts/inspect-world-visual-painter.mjs",
     "verify:local-image-model": "node scripts/verify-local-image-model-contract.mjs",
+    "check:local-image-model-real-command-env": "node scripts/check-local-image-model-real-command-env.mjs",
+    "check:local-image-model-real-command-ready": "node scripts/check-local-image-model-real-command-env.mjs --require-real-command",
     "test:local-image-model-adapter": "node scripts/test-local-image-model-adapter-boundary.mjs",
     "test:local-image-model-worker": "node scripts/test-local-image-model-worker.mjs",
     "test:local-image-model-inference-adapter": "node scripts/test-local-image-model-inference-adapter.mjs",
