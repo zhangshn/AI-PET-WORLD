@@ -7,6 +7,8 @@ import {
 } from "../services/local-image-model/real-image-runner-implementation.mjs"
 
 const EXECUTE_REAL_COMMAND = process.argv.includes("--execute-real-command")
+const HTTP_ENGINE_COMMAND_SCRIPT =
+  "services/local-image-model/real-image-http-engine-command.mjs"
 
 main().catch((error) => {
   console.error(error)
@@ -16,11 +18,12 @@ main().catch((error) => {
 async function main() {
   printTitle("AI-PET-WORLD real model command smoke check")
 
-  const env = loadRuntimeEnv()
+  const env = withDerivedHttpEngineCommandEnv(loadRuntimeEnv())
   const runtimeInput = buildRuntimeInput(env)
   const realModelCommandConfigured = hasValue(
     env.AI_PET_WORLD_REAL_IMAGE_MODEL_COMMAND
   )
+  const httpEngineCommandDerived = env.AI_PET_WORLD_REAL_IMAGE_MODEL_COMMAND_DERIVED === "http_engine"
   const health = readRealImageRunnerImplementationHealth(runtimeInput)
   const dryRun = await runRealImageRunnerImplementationDryRun(runtimeInput)
 
@@ -34,7 +37,11 @@ async function main() {
     return
   }
 
-  printCheck("real model command is configured")
+  printCheck(
+    httpEngineCommandDerived
+      ? "real model command derived from HTTP engine endpoint"
+      : "real model command is configured"
+  )
 
   if (health.ok !== true || dryRun.ok !== true) {
     throw new Error(
@@ -43,7 +50,7 @@ async function main() {
   }
 
   if (!EXECUTE_REAL_COMMAND) {
-    printReadyButNotExecutedSummary({ health, dryRun })
+    printReadyButNotExecutedSummary({ health, dryRun, httpEngineCommandDerived })
     console.log("")
     console.log(
       "RESULT: real model command smoke check passed without executing command."
@@ -102,6 +109,16 @@ function buildRuntimeInput(env) {
         env.AI_PET_WORLD_REAL_IMAGE_MODEL_ARGS_JSON,
       AI_PET_WORLD_REAL_IMAGE_MODEL_TIMEOUT_MS:
         env.AI_PET_WORLD_REAL_IMAGE_MODEL_TIMEOUT_MS,
+      AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ENDPOINT:
+        env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ENDPOINT,
+      AI_PET_WORLD_LOCAL_IMAGE_ENGINE_LICENSE:
+        env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_LICENSE,
+      AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ORIGINALITY_CONFIRMED:
+        env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ORIGINALITY_CONFIRMED,
+      AI_PET_WORLD_LOCAL_IMAGE_ENGINE_REQUEST_MODE:
+        env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_REQUEST_MODE,
+      AI_PET_WORLD_LOCAL_IMAGE_ENGINE_TIMEOUT_MS:
+        env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_TIMEOUT_MS,
       AI_PET_WORLD_LOCAL_IMAGE_OUTPUT_DIR:
         env.AI_PET_WORLD_LOCAL_IMAGE_OUTPUT_DIR,
     },
@@ -125,10 +142,15 @@ function buildSmokeReadiness(env) {
     enabled: true,
     assetDirectoryConfigured: hasValue(env.AI_PET_WORLD_REAL_IMAGE_MODEL_ASSET_DIR),
     manifestConfigured: hasValue(env.AI_PET_WORLD_REAL_IMAGE_MODEL_MANIFEST),
-    license: env.AI_PET_WORLD_REAL_IMAGE_MODEL_LICENSE || "self_owned",
+    license:
+      env.AI_PET_WORLD_REAL_IMAGE_MODEL_LICENSE ||
+      env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_LICENSE ||
+      "self_owned",
     originalityConfirmed:
-      String(env.AI_PET_WORLD_REAL_IMAGE_MODEL_ORIGINALITY_CONFIRMED).toLowerCase() ===
-      "true",
+      String(
+        env.AI_PET_WORLD_REAL_IMAGE_MODEL_ORIGINALITY_CONFIRMED ??
+          env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ORIGINALITY_CONFIRMED
+      ).toLowerCase() === "true",
     manifest: buildSmokeManifest(env),
     canRunInference: false,
     adapterConnected: false,
@@ -142,18 +164,26 @@ function buildSmokeReadiness(env) {
 }
 
 function buildSmokeManifest(env) {
+  const license =
+    env.AI_PET_WORLD_REAL_IMAGE_MODEL_LICENSE ||
+    env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_LICENSE ||
+    "self_owned"
+  const originalityConfirmed =
+    String(
+      env.AI_PET_WORLD_REAL_IMAGE_MODEL_ORIGINALITY_CONFIRMED ??
+        env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ORIGINALITY_CONFIRMED
+    ).toLowerCase() === "true"
+
   return {
     ok: true,
     status: "real_model_manifest_valid",
     schemaVersion: "ai-pet-world-real-image-model-manifest-v1",
     modelName: "AI-PET-WORLD Real Model Command Smoke Check",
     modelVersion: "smoke-check-1",
-    license: env.AI_PET_WORLD_REAL_IMAGE_MODEL_LICENSE || "self_owned",
+    license,
     dataSourceType: "self_owned",
     commercialUseAllowed: true,
-    originalityConfirmed:
-      String(env.AI_PET_WORLD_REAL_IMAGE_MODEL_ORIGINALITY_CONFIRMED).toLowerCase() ===
-      "true",
+    originalityConfirmed,
     unlicensedThirdPartyArtworkAllowed: false,
     outputCapabilities: {
       supportedImageFormats: ["png", "webp", "jpg"],
@@ -254,7 +284,11 @@ function printSafeBlockedSummary(input) {
 
 function printReadyButNotExecutedSummary(input) {
   console.log("")
-  console.log("当前状态：真实模型命令已配置，执行链路 dry-run 已 ready。")
+  console.log(
+    input.httpEngineCommandDerived
+      ? "当前状态：已从 HTTP engine endpoint 派生命令，执行链路 dry-run 已 ready。"
+      : "当前状态：真实模型命令已配置，执行链路 dry-run 已 ready。"
+  )
   console.log(`health: ${input.health.status}`)
   console.log(`dryRun: ${input.dryRun.status}`)
   console.log("本次未执行真实命令。")
@@ -268,6 +302,39 @@ function loadRuntimeEnv() {
     ...parseEnvFile(".env"),
     ...parseEnvFile(".env.local"),
     ...process.env,
+  }
+}
+
+function withDerivedHttpEngineCommandEnv(env) {
+  if (
+    hasValue(env.AI_PET_WORLD_REAL_IMAGE_MODEL_COMMAND) ||
+    !hasValue(env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ENDPOINT)
+  ) {
+    return env
+  }
+
+  return {
+    ...env,
+    AI_PET_WORLD_REAL_IMAGE_EXECUTOR_ENABLED: "true",
+    AI_PET_WORLD_REAL_IMAGE_EXECUTOR_COMMAND:
+      env.AI_PET_WORLD_REAL_IMAGE_EXECUTOR_COMMAND || process.execPath,
+    AI_PET_WORLD_REAL_IMAGE_EXECUTOR_ARGS_JSON:
+      env.AI_PET_WORLD_REAL_IMAGE_EXECUTOR_ARGS_JSON ||
+      JSON.stringify(["services/local-image-model/real-image-model-worker.mjs"]),
+    AI_PET_WORLD_REAL_IMAGE_INFERENCE_COMMAND:
+      env.AI_PET_WORLD_REAL_IMAGE_INFERENCE_COMMAND || process.execPath,
+    AI_PET_WORLD_REAL_IMAGE_INFERENCE_ARGS_JSON:
+      env.AI_PET_WORLD_REAL_IMAGE_INFERENCE_ARGS_JSON ||
+      JSON.stringify(["services/local-image-model/real-image-command-bridge.mjs"]),
+    AI_PET_WORLD_REAL_IMAGE_MODEL_COMMAND: process.execPath,
+    AI_PET_WORLD_REAL_IMAGE_MODEL_ARGS_JSON: JSON.stringify([
+      HTTP_ENGINE_COMMAND_SCRIPT,
+    ]),
+    AI_PET_WORLD_REAL_IMAGE_MODEL_TIMEOUT_MS:
+      env.AI_PET_WORLD_REAL_IMAGE_MODEL_TIMEOUT_MS ||
+      env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_TIMEOUT_MS ||
+      "180000",
+    AI_PET_WORLD_REAL_IMAGE_MODEL_COMMAND_DERIVED: "http_engine",
   }
 }
 
