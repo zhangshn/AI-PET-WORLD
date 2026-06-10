@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url"
 
 export const REAL_IMAGE_HTTP_ENGINE_COMMAND_NAME =
   "ai-pet-world-real-image-http-engine-command"
-export const REAL_IMAGE_HTTP_ENGINE_COMMAND_VERSION = "http-engine-command-1"
+export const REAL_IMAGE_HTTP_ENGINE_COMMAND_VERSION = "http-engine-command-stdin-2"
 
 const DEFAULT_TIMEOUT_MS = 180_000
 const MIN_TIMEOUT_MS = 1_000
@@ -64,6 +64,39 @@ async function main() {
       originalityConfirmed: config.originalityConfirmed,
     })
   )
+}
+
+async function readStdinJson() {
+  const chunks = []
+
+  for await (const chunk of process.stdin) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(String(chunk)))
+  }
+
+  const text = Buffer.concat(chunks).toString("utf8").trim()
+
+  if (!text) {
+    return buildFailure({
+      status: "real_image_http_engine_command_stdin_empty",
+      message: "HTTP engine command stdin 不能为空。",
+    })
+  }
+
+  try {
+    const payload = JSON.parse(text)
+
+    return isRecord(payload)
+      ? { ok: true, payload }
+      : buildFailure({
+          status: "real_image_http_engine_command_stdin_not_object",
+          message: "HTTP engine command stdin 必须是 JSON 对象。",
+        })
+  } catch {
+    return buildFailure({
+      status: "real_image_http_engine_command_stdin_json_invalid",
+      message: "HTTP engine command stdin 不是合法 JSON。",
+    })
+  }
 }
 
 export function readHttpEngineCommandConfig(input = {}) {
