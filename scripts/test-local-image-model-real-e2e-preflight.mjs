@@ -66,7 +66,7 @@ async function testImplementationDryRunReadyForPreflight(config) {
   })
 
   assert.equal(dryRun.ok, true)
-  assert.equal(dryRun.status, "local_image_model_dry_run_ok")
+  assert.equal(dryRun.status, "local_image_model_dry_run_passed")
   assert.equal(dryRun.adapter.adapterConnected, true)
   assert.equal(dryRun.adapter.runner.runnerConnected, true)
   assert.equal(dryRun.adapter.runner.implementation.implementationConnected, true)
