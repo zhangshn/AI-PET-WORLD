@@ -65,6 +65,7 @@ async function main() {
   const result = await generateRealImageWithRunnerImplementation(runtimeInput)
 
   if (result.ok !== true) {
+    printFailureDiagnostics(result)
     throw new Error(
       `真实模型命令烟测失败：${result.status} / executor=${result.executorShell?.status}`
     )
@@ -269,6 +270,29 @@ function buildSmokeRequestBody() {
       canShowToPlayer: false,
     },
     canShowToPlayer: false,
+  }
+}
+
+function printFailureDiagnostics(result) {
+  const executorShell = result.executorShell ?? {}
+  console.log("")
+  console.log("真实模型命令烟测诊断：")
+  console.log(`result.status: ${result.status}`)
+  console.log(`executor.status: ${executorShell.status}`)
+  console.log(`executor.commandResultStatus: ${executorShell.commandResultStatus}`)
+  console.log(`executor.exitCode: ${executorShell.exitCode}`)
+  console.log(`executor.stderrJsonStatus: ${executorShell.stderrJsonStatus}`)
+  console.log(`executor.stderrJsonMessage: ${executorShell.stderrJsonMessage}`)
+  console.log(`executor.stderrJsonDetailStatus: ${executorShell.stderrJsonDetailStatus}`)
+  if (executorShell.stderrPreview) {
+    console.log("")
+    console.log("executor.stderrPreview:")
+    console.log(executorShell.stderrPreview)
+  }
+  if (executorShell.stdoutPreview) {
+    console.log("")
+    console.log("executor.stdoutPreview:")
+    console.log(executorShell.stdoutPreview)
   }
 }
 
