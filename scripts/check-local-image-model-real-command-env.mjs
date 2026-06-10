@@ -9,6 +9,8 @@ import {
 } from "../services/local-image-model/real-image-command-bridge.mjs"
 
 const REQUIRE_REAL_COMMAND = process.argv.includes("--require-real-command")
+const HTTP_ENGINE_COMMAND_SCRIPT =
+  "services/local-image-model/real-image-http-engine-command.mjs"
 
 main().catch((error) => {
   console.error(error)
@@ -18,7 +20,7 @@ main().catch((error) => {
 async function main() {
   printTitle("AI-PET-WORLD real model command env acceptance")
 
-  const env = loadRuntimeEnv()
+  const env = withDerivedHttpEngineCommandEnv(loadRuntimeEnv())
   const runtimeInput = buildRuntimeInput(env)
   const runtimeConfig = readLocalImageModelRuntimeConfig(runtimeInput)
   const implementationHealth = readLocalImageModelImplementationHealth({
@@ -34,6 +36,8 @@ async function main() {
   const realModelCommandConfigured = hasValue(
     env.AI_PET_WORLD_REAL_IMAGE_MODEL_COMMAND
   )
+  const httpEngineCommandDerived =
+    env.AI_PET_WORLD_REAL_IMAGE_MODEL_COMMAND_DERIVED === "http_engine"
 
   assertBaseChain({ runtimeConfig, implementationHealth })
   assertBridgeConfig({ bridgeHealth, realModelCommandConfigured })
@@ -47,7 +51,7 @@ async function main() {
 
     if (REQUIRE_REAL_COMMAND) {
       throw new Error(
-        "真实模型命令未配置：请设置 AI_PET_WORLD_REAL_IMAGE_MODEL_COMMAND 后再运行 --require-real-command。"
+        "真实模型命令未配置：请设置 AI_PET_WORLD_REAL_IMAGE_MODEL_COMMAND，或设置 AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ENDPOINT 走 HTTP engine adapter。"
       )
     }
 
@@ -70,9 +74,13 @@ async function main() {
     )
   }
 
-  printCheck("real model command configured")
+  printCheck(
+    httpEngineCommandDerived
+      ? "real model command derived from HTTP engine endpoint"
+      : "real model command configured"
+  )
   printCheck("command bridge health ready")
-  printReadySummary({ implementationHealth, bridgeHealth })
+  printReadySummary({ implementationHealth, bridgeHealth, httpEngineCommandDerived })
 
   console.log("")
   console.log("RESULT: real model command env acceptance passed.")
@@ -137,10 +145,14 @@ function printBlockedSummary(input) {
 
 function printReadySummary(input) {
   console.log("")
-  console.log("当前状态：真实模型命令已配置，可进入下一步真实 generate 验证。")
+  console.log(
+    input.httpEngineCommandDerived
+      ? "当前状态：已从 HTTP engine endpoint 派生命令，可进入真实 generate 验证。"
+      : "当前状态：真实模型命令已配置，可进入下一步真实 generate 验证。"
+  )
   console.log(`implementation: ${input.implementationHealth.status}`)
   console.log(`command bridge: ${input.bridgeHealth.status}`)
-  console.log("本检查不会执行真实模型命令；正式生成请调用视觉生成链路。")
+  console.log("本检查不会执行真实模型命令；正式生成请调用视觉生成链路或 real-command-smoke --execute-real-command。")
 }
 
 function loadRuntimeEnv() {
@@ -149,6 +161,39 @@ function loadRuntimeEnv() {
     ...parseEnvFile(".env"),
     ...parseEnvFile(".env.local"),
     ...process.env,
+  }
+}
+
+function withDerivedHttpEngineCommandEnv(env) {
+  if (
+    hasValue(env.AI_PET_WORLD_REAL_IMAGE_MODEL_COMMAND) ||
+    !hasValue(env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ENDPOINT)
+  ) {
+    return env
+  }
+
+  return {
+    ...env,
+    AI_PET_WORLD_REAL_IMAGE_EXECUTOR_ENABLED: "true",
+    AI_PET_WORLD_REAL_IMAGE_EXECUTOR_COMMAND:
+      env.AI_PET_WORLD_REAL_IMAGE_EXECUTOR_COMMAND || process.execPath,
+    AI_PET_WORLD_REAL_IMAGE_EXECUTOR_ARGS_JSON:
+      env.AI_PET_WORLD_REAL_IMAGE_EXECUTOR_ARGS_JSON ||
+      JSON.stringify(["services/local-image-model/real-image-model-worker.mjs"]),
+    AI_PET_WORLD_REAL_IMAGE_INFERENCE_COMMAND:
+      env.AI_PET_WORLD_REAL_IMAGE_INFERENCE_COMMAND || process.execPath,
+    AI_PET_WORLD_REAL_IMAGE_INFERENCE_ARGS_JSON:
+      env.AI_PET_WORLD_REAL_IMAGE_INFERENCE_ARGS_JSON ||
+      JSON.stringify(["services/local-image-model/real-image-command-bridge.mjs"]),
+    AI_PET_WORLD_REAL_IMAGE_MODEL_COMMAND: process.execPath,
+    AI_PET_WORLD_REAL_IMAGE_MODEL_ARGS_JSON: JSON.stringify([
+      HTTP_ENGINE_COMMAND_SCRIPT,
+    ]),
+    AI_PET_WORLD_REAL_IMAGE_MODEL_TIMEOUT_MS:
+      env.AI_PET_WORLD_REAL_IMAGE_MODEL_TIMEOUT_MS ||
+      env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_TIMEOUT_MS ||
+      "180000",
+    AI_PET_WORLD_REAL_IMAGE_MODEL_COMMAND_DERIVED: "http_engine",
   }
 }
 
@@ -164,12 +209,17 @@ function buildRuntimeInput(env) {
       timeoutMs: env.AI_PET_WORLD_REAL_IMAGE_INFERENCE_TIMEOUT_MS,
     },
     realModelReadiness: {
-      enabled: env.AI_PET_WORLD_REAL_IMAGE_MODEL_ENABLED,
+      enabled:
+        env.AI_PET_WORLD_REAL_IMAGE_MODEL_ENABLED ||
+        (hasValue(env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ENDPOINT) ? "true" : "false"),
       assetDirectory: env.AI_PET_WORLD_REAL_IMAGE_MODEL_ASSET_DIR,
       manifestPath: env.AI_PET_WORLD_REAL_IMAGE_MODEL_MANIFEST,
-      license: env.AI_PET_WORLD_REAL_IMAGE_MODEL_LICENSE,
+      license:
+        env.AI_PET_WORLD_REAL_IMAGE_MODEL_LICENSE ||
+        env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_LICENSE,
       originalityConfirmed:
-        env.AI_PET_WORLD_REAL_IMAGE_MODEL_ORIGINALITY_CONFIRMED,
+        env.AI_PET_WORLD_REAL_IMAGE_MODEL_ORIGINALITY_CONFIRMED ||
+        env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ORIGINALITY_CONFIRMED,
     },
     outputStorage: {
       outputDirectory: env.AI_PET_WORLD_LOCAL_IMAGE_OUTPUT_DIR,
