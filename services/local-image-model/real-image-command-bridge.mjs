@@ -10,7 +10,7 @@ import {
 
 export const REAL_IMAGE_COMMAND_BRIDGE_NAME =
   "ai-pet-world-real-image-command-bridge"
-export const REAL_IMAGE_COMMAND_BRIDGE_VERSION = "real-command-bridge-1"
+export const REAL_IMAGE_COMMAND_BRIDGE_VERSION = "real-command-bridge-diagnostics-2"
 export const REAL_IMAGE_COMMAND_BRIDGE_ENV = {
   command: "AI_PET_WORLD_REAL_IMAGE_MODEL_COMMAND",
   argsJson: "AI_PET_WORLD_REAL_IMAGE_MODEL_ARGS_JSON",
@@ -20,6 +20,7 @@ export const REAL_IMAGE_COMMAND_BRIDGE_ENV = {
 
 const MAX_STDOUT_BYTES = 1024 * 1024
 const MAX_STDERR_BYTES = 64 * 1024
+const TEXT_PREVIEW_BYTES = 4096
 const DEFAULT_TIMEOUT_MS = 600_000
 const MIN_TIMEOUT_MS = 1_000
 const MAX_TIMEOUT_MS = 3_600_000
@@ -285,6 +286,7 @@ async function runModelCommand(input) {
               stdoutTruncated: stdoutCapture.truncated,
               stderrCaptured: stderrCapture.text.length > 0,
               stderrTruncated: stderrCapture.truncated,
+              ...buildCapturedTextDiagnostics({ stdoutCapture, stderrCapture }),
             },
           })
         )
@@ -300,6 +302,7 @@ async function runModelCommand(input) {
               signal,
               stderrCaptured: stderrCapture.text.length > 0,
               stderrTruncated: stderrCapture.truncated,
+              ...buildCapturedTextDiagnostics({ stdoutCapture, stderrCapture }),
             },
           })
         )
@@ -307,7 +310,12 @@ async function runModelCommand(input) {
       }
 
       if (stdoutCapture.truncated) {
-        finish(buildFailure({ status: "real_image_command_bridge_stdout_too_large" }))
+        finish(
+          buildFailure({
+            status: "real_image_command_bridge_stdout_too_large",
+            detail: buildCapturedTextDiagnostics({ stdoutCapture, stderrCapture }),
+          })
+        )
         return
       }
 
@@ -410,6 +418,36 @@ function buildFailure(input) {
     version: REAL_IMAGE_COMMAND_BRIDGE_VERSION,
     canShowToPlayer: false,
     tags: ["real_image_command_bridge", "failed", "not_player_visible"],
+  }
+}
+
+function buildCapturedTextDiagnostics(input = {}) {
+  const stdoutPreview = buildTextPreview(input.stdoutCapture?.text)
+  const stderrPreview = buildTextPreview(input.stderrCapture?.text)
+  const stderrJson = parseJsonObject(stderrPreview)
+
+  return {
+    stdoutPreview,
+    stderrPreview,
+    stderrJsonStatus: stderrJson?.status ?? null,
+    stderrJsonMessage: stderrJson?.message ?? null,
+    stderrJsonDetailStatus: stderrJson?.detail?.status ?? null,
+  }
+}
+
+function buildTextPreview(value) {
+  if (typeof value !== "string" || value.length === 0) return null
+  return value.slice(0, TEXT_PREVIEW_BYTES)
+}
+
+function parseJsonObject(value) {
+  if (typeof value !== "string" || !value.trim()) return null
+
+  try {
+    const parsed = JSON.parse(value)
+    return isRecord(parsed) ? parsed : null
+  } catch {
+    return null
   }
 }
 
