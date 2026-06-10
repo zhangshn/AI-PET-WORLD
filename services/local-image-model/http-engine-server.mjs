@@ -2,9 +2,10 @@
 
 import http from "node:http"
 import { Buffer } from "node:buffer"
+import { existsSync, readFileSync } from "node:fs"
 
 const SERVER_NAME = "ai-pet-world-local-http-image-engine"
-const SERVER_VERSION = "http-engine-server-1"
+const SERVER_VERSION = "http-engine-server-env-files-2"
 
 const DEFAULT_HOST = "127.0.0.1"
 const DEFAULT_PORT = 7860
@@ -12,7 +13,8 @@ const DEFAULT_TIMEOUT_MS = 180_000
 const MAX_REQUEST_BYTES = 1024 * 1024
 const MAX_RESPONSE_BYTES = 32 * 1024 * 1024
 
-const CONFIG = readServerConfig()
+const RUNTIME_ENV = loadRuntimeEnv()
+const CONFIG = readServerConfig(RUNTIME_ENV)
 
 const server = http.createServer((request, response) => {
   handleRequest(request, response).catch((error) => {
@@ -38,6 +40,7 @@ server.listen(CONFIG.port, CONFIG.host, () => {
       healthEndpoint: `http://${CONFIG.host}:${CONFIG.port}/health`,
       backendEndpointConfigured: Boolean(CONFIG.backendEndpoint),
       canGenerateRealBitmap: Boolean(CONFIG.backendEndpoint),
+      envFilesLoaded: CONFIG.envFilesLoaded,
       canShowToPlayer: false,
     })
   )
@@ -275,6 +278,7 @@ function buildHealthPayload() {
     endpoint: `http://${CONFIG.host}:${CONFIG.port}/generate`,
     backendEndpointConfigured: Boolean(CONFIG.backendEndpoint),
     backendEndpoint: CONFIG.backendEndpoint || null,
+    envFilesLoaded: CONFIG.envFilesLoaded,
     canAcceptGenerateRequests: true,
     canGenerateRealBitmap: Boolean(CONFIG.backendEndpoint),
     canShowToPlayer: false,
@@ -325,23 +329,21 @@ async function readJsonBody(request) {
   }
 }
 
-function readServerConfig() {
+function readServerConfig(env) {
   const host =
-    readOptionalString(process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_HOST) ||
+    readOptionalString(env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_HOST) ||
     DEFAULT_HOST
-  const endpoint = readOptionalString(
-    process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ENDPOINT
-  )
+  const endpoint = readOptionalString(env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_ENDPOINT)
   const portFromEndpoint = readPortFromEndpoint(endpoint)
   const port =
-    readPositiveInteger(process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_PORT) ??
+    readPositiveInteger(env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_PORT) ??
     portFromEndpoint ??
     DEFAULT_PORT
   const backendEndpoint = readOptionalString(
-    process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_BACKEND_ENDPOINT
+    env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_BACKEND_ENDPOINT
   )
   const timeoutMs =
-    readPositiveInteger(process.env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_TIMEOUT_MS) ??
+    readPositiveInteger(env.AI_PET_WORLD_LOCAL_IMAGE_ENGINE_TIMEOUT_MS) ??
     DEFAULT_TIMEOUT_MS
 
   return {
@@ -349,7 +351,58 @@ function readServerConfig() {
     port,
     backendEndpoint,
     timeoutMs,
+    envFilesLoaded: env.__envFilesLoaded,
   }
+}
+
+function loadRuntimeEnv() {
+  const envFiles = [".env.example", ".env", ".env.local"]
+  const parsedFiles = envFiles.map((filePath) => ({
+    filePath,
+    entries: parseEnvFile(filePath),
+  }))
+
+  return {
+    ...Object.fromEntries(
+      parsedFiles.flatMap((file) => Object.entries(file.entries))
+    ),
+    ...process.env,
+    __envFilesLoaded: parsedFiles
+      .filter((file) => Object.keys(file.entries).length > 0)
+      .map((file) => file.filePath),
+  }
+}
+
+function parseEnvFile(filePath) {
+  if (!existsSync(filePath)) return {}
+
+  const entries = {}
+  const raw = readFileSync(filePath, "utf8")
+
+  for (const line of raw.split(/\r?\n/)) {
+    const trimmed = line.trim()
+    if (!trimmed || trimmed.startsWith("#")) continue
+
+    const separatorIndex = trimmed.indexOf("=")
+    if (separatorIndex < 0) continue
+
+    const key = trimmed.slice(0, separatorIndex).trim()
+    const value = stripEnvQuotes(trimmed.slice(separatorIndex + 1).trim())
+    entries[key] = value
+  }
+
+  return entries
+}
+
+function stripEnvQuotes(value) {
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    return value.slice(1, -1)
+  }
+
+  return value
 }
 
 function readPortFromEndpoint(endpoint) {
