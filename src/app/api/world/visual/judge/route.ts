@@ -118,14 +118,36 @@ export async function POST() {
         sourceCandidateRecord: candidateRecord,
       })
     : null
-  const approvedPersisted = Boolean(approvedFrame && writeResult?.ok)
+  const controlledMvpApproved = Boolean(
+    approvedFrame &&
+      writeResult?.ok &&
+      reviewReport.status === "vj_0_passed" &&
+      reviewReport.approvalScope === "approved_for_controlled_mvp" &&
+      reviewReport.productionApprovalStatus === "not_approved_for_production" &&
+      approvedFrame.approvalScope === "approved_for_controlled_mvp" &&
+      approvedFrame.approvedForProduction === false
+  )
 
   return NextResponse.json(
     {
-      ok: approvedPersisted,
+      ok: controlledMvpApproved,
       reviewReport,
       approvedFrame,
       fixPlan,
+      approvalBoundary: {
+        vj0Status: reviewReport.vj0Status,
+        vj1Status: reviewReport.vj1Status,
+        vj2Status: reviewReport.vj2Status,
+        approvalScope: reviewReport.approvalScope,
+        productionApprovalStatus: reviewReport.productionApprovalStatus,
+        controlledMvpDisplayAllowed: controlledMvpApproved,
+        approvedForProduction: false,
+        productionDisplayAllowed: false,
+        noteZh:
+          "VJ-0 通过只允许生成受控 MVP ApprovedFrame；VJ-1/VJ-2 未实现前不得标记为生产批准。",
+        noteEn:
+          "Passing VJ-0 only allows a controlled MVP ApprovedFrame. It must not be marked production approved before VJ-1/VJ-2 are implemented.",
+      },
       currentRuntimeGate: {
         worldId: runtimeReadResult.record.worldId,
         tick: runtimeReadResult.record.tick,
@@ -137,16 +159,26 @@ export async function POST() {
       persisted: writeResult?.ok ?? false,
       approvedFramePath: writeResult?.path ?? null,
       approvedFrameWriteWarnings: writeResult?.warnings ?? [],
-      canShowToPlayer: approvedPersisted,
-      displayRule: approvedPersisted
-        ? "ApprovedFrame 已写入，但 /world 仍会在读取时再次校验当前 tick/sourceFactIds。"
-        : "审核或 ApprovedFrame 写入未通过时，禁止展示世界画面。",
-      displayRuleEn: approvedPersisted
-        ? "ApprovedFrame has been written, but /world will still re-check current tick/sourceFactIds when reading it."
-        : "When review or ApprovedFrame persistence fails, the world image must remain hidden.",
+      canShowToPlayer: controlledMvpApproved,
+      canShowToPlayerScope: "controlled_mvp_only",
+      displayRule: controlledMvpApproved
+        ? "受控 MVP ApprovedFrame 已写入，但 /world 仍会在读取时再次校验当前 tick/sourceFactIds；该帧不是 production approved。"
+        : "VJ-0、ApprovedFrame 写入或受控 MVP 边界未通过时，禁止展示世界画面。",
+      displayRuleEn: controlledMvpApproved
+        ? "A controlled MVP ApprovedFrame has been written, but /world will still re-check current tick/sourceFactIds when reading it; this frame is not production approved."
+        : "When VJ-0, ApprovedFrame persistence, or the controlled MVP boundary fails, the world image must remain hidden.",
       tags: [
         "world_visual_judge_api",
         "vj_0_hard_gate",
+        reviewReport.status,
+        reviewReport.vj1Status,
+        reviewReport.vj2Status,
+        reviewReport.approvalScope,
+        reviewReport.productionApprovalStatus,
+        controlledMvpApproved
+          ? "controlled_mvp_approved_frame_written"
+          : "controlled_mvp_approved_frame_blocked",
+        "production_display_blocked",
         "current_tick_gate_checked",
         "current_source_facts_gate_checked",
         ...(writeResult?.tags ?? []),
@@ -154,6 +186,6 @@ export async function POST() {
         ...reviewReport.tags,
       ],
     },
-    { status: approvedPersisted ? 200 : 422 }
+    { status: controlledMvpApproved ? 200 : 422 }
   )
 }
