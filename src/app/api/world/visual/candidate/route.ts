@@ -30,11 +30,12 @@ export async function GET() {
       {
         ok: false,
         status: candidateReadResult.status,
-        message: "还没有隐藏候选图。需要先调用 /api/world/visual/generate。",
+        message: "还没有隐藏候选图，需要先调用 /api/world/visual/generate。",
         messageEn:
           "No hidden candidate exists yet. Call /api/world/visual/generate first.",
         canShowToPlayer: false,
-        displayRule: "没有隐藏候选图时，VisualJudge 不能运行，/world 也不能展示。",
+        displayRule:
+          "没有隐藏候选图时，VisualJudge 不能运行，/world 也不能展示画面。",
         displayRuleEn:
           "Without a hidden candidate, VisualJudge cannot run and /world cannot display anything.",
         tags: ["world_visual_candidate_api", ...candidateReadResult.tags],
@@ -45,8 +46,7 @@ export async function GET() {
 
   const record = candidateReadResult.record
   const request = record.aiImageGenerationRequest
-  const controlSketch = request?.body.controlSketch ?? null
-  const visualFixHints = request?.body.visualFixHints ?? []
+  const condition = record.generationCondition
 
   return NextResponse.json(
     {
@@ -55,12 +55,11 @@ export async function GET() {
       record,
       provenance: {
         candidateId: record.candidate.candidateId,
-        providerKind: record.candidate.providerKind,
-        promptPackageId: record.promptPackage.packageId,
+        sourceKind: record.candidate.sourceKind,
+        modelVersion: record.candidate.modelVersion,
+        conditionId: condition.conditionId,
         aiImageGenerationRequestId: request?.requestId ?? null,
-        controlSketchId: controlSketch?.controlSketchId ?? null,
-        visualFixPlanId: request?.body.metadata.visualFixPlanId ?? null,
-        visualFixHintCount: visualFixHints.length,
+        visualFixConditionCount: condition.fixConditions.length,
         sourceFactIds: record.sourceFactIds,
         imageUrl: record.candidate.imageUrl,
         imageUrlAudit: buildImageUrlAudit(record.candidate.imageUrl),
@@ -72,33 +71,25 @@ export async function GET() {
         canShowToPlayer: record.candidate.canShowToPlayer,
       },
       generationInputAudit: {
-        hasPromptPackage: Boolean(record.promptPackage),
+        hasGenerationCondition: true,
         hasAiImageGenerationRequest: Boolean(request),
-        hasControlSketch: Boolean(controlSketch),
-        controlSketchCanShowToPlayer: controlSketch?.canShowToPlayer ?? null,
-        controlSketchCannotApprove: controlSketch?.cannotApprove ?? null,
-        hasVisualFixHints: visualFixHints.length > 0,
-        visualFixHints: visualFixHints.map((hint) => ({
-          sourceCheckId: hint.sourceCheckId,
-          actionType: hint.actionType,
-          priority: hint.priority,
-          changesWorldFacts: hint.changesWorldFacts,
-          instructionZh: hint.instructionZh,
-          instructionEn: hint.instructionEn,
-          expectedResultZh: hint.expectedResultZh,
-          expectedResultEn: hint.expectedResultEn,
-          tags: hint.tags,
-        })),
-        safety: request?.body.safety ?? null,
-        imageStyle: request?.body.imageStyle ?? null,
-        outputSize: request?.body.outputSize ?? null,
+        conditionVersion: condition.version,
+        conditionWorldId: condition.worldId,
+        conditionTick: condition.tick,
+        sourceFactIds: condition.sourceFactIds,
+        safetyCondition: condition.safetyCondition,
+        sceneCondition: condition.sceneCondition,
+        spatialCondition: condition.spatialCondition,
+        styleCondition: condition.styleCondition,
+        fixConditions: condition.fixConditions,
+        output: request?.output ?? null,
       },
       canShowToPlayer: false,
       displayRule: "候选图只供 VisualJudge 审核，不允许直接展示。",
       displayRuleEn:
         "The candidate is only for VisualJudge review and cannot be displayed directly.",
       nextStep: {
-        zh: "下一步只能调用 /api/world/visual/judge。候选图通过 VisualJudge 后，才可能生成 ApprovedFrame。",
+        zh: "下一步只能调用 /api/world/visual/judge。候选图通过审核后，才可能生成 ApprovedFrame。",
         en: "The next step is /api/world/visual/judge only. The candidate may become ApprovedFrame only after passing VisualJudge.",
       },
       tags: [
@@ -138,7 +129,7 @@ function buildImageUrlAudit(imageUrl: string) {
       reason: allowed ? "network_image_url_allowed" : "scheme_not_allowed",
       reasonZh: allowed
         ? "候选图使用 http/https URL，VisualJudge 可以尝试读取图片本体。"
-        : "候选图 imageUrl 协议不被允许。",
+        : "候选图 imageUrl 的协议不被允许。",
       reasonEn: allowed
         ? "The candidate uses an http/https URL. VisualJudge can try reading the image bytes."
         : "The candidate imageUrl uses a disallowed scheme.",

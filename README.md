@@ -27,10 +27,11 @@ The world page can only show `ApprovedFrame`.
 
 No candidate image, sketch, debug view, or programmatic drawing may be shown to the player.
 
-Current formal visual handoff document:
+Current formal visual documents:
 
 ```txt
-docs/GPT_HANDOFF.md
+docs/AI_PAINTER_PLAN.md
+docs/AI_PAINTER_DELIVERY_SCHEDULE.md
 ```
 
 ## Current API
@@ -38,6 +39,7 @@ docs/GPT_HANDOFF.md
 ```txt
 POST /api/world/create
 POST /api/world/tick
+GET  /api/world/visual/condition
 POST /api/world/visual/generate
 GET  /api/world/visual/candidate
 POST /api/world/visual/judge

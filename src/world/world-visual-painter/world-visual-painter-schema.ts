@@ -347,7 +347,7 @@ export type WorldVisualFixAction = {
     | "restore_fact_source"
     | "increase_layer_depth"
     | "generate_ai_image_candidate"
-    | "repair_prompt_package"
+    | "repair_generation_condition"
   priority: "high" | "medium" | "low"
   changesWorldFacts: false
   targetLayerId: string | null
@@ -367,177 +367,79 @@ export type WorldVisualFixPlan = {
   tags: string[]
 }
 
-export type WorldVisualPromptPackage = {
-  packageId: string
-  modelRole: "ai_image_generation_model"
-  positivePrompt: WorldVisualBilingualText
-  negativePrompt: WorldVisualBilingualText
-  compositionGuide: WorldVisualBilingualText
-  terrainGuide: WorldVisualBilingualText
-  assetGuide: WorldVisualBilingualText
-  motionGuide: WorldVisualBilingualText
+export type WorldVisualGenerationCondition = {
+  conditionId: string
+  version: "world-generation-condition-v1"
+  worldId: string
+  tick: number
+  modelVersion: string | null
+  sceneCondition: {
+    sceneType: WorldVisualSceneIntent["sceneType"]
+    mainStory: WorldVisualBilingualText
+    mustShow: WorldVisualBilingualText[]
+    mayShow: WorldVisualBilingualText[]
+    mustNotShow: WorldVisualBilingualText[]
+  }
+  spatialCondition: {
+    camera: WorldVisualCompositionPlan["camera"]
+    focalArea: WorldVisualBilingualText
+    background: WorldVisualBilingualText
+    midground: WorldVisualBilingualText
+    foreground: WorldVisualBilingualText
+    edgeFraming: WorldVisualBilingualText
+  }
+  terrainCondition: Omit<WorldVisualTerrainPlan, "sourceFactIds" | "tags">
+  assetCondition: Omit<WorldVisualAssetPlan, "sourceFactIds" | "tags">
+  styleCondition: {
+    imageMode: WorldVisualMvpTargetPolicy["imageMode"]
+    directions: WorldVisualBilingualText[]
+    allowedWorldElements: WorldVisualBilingualText[]
+  }
+  motionCondition: {
+    enabled: false
+    reason: WorldVisualBilingualText
+  }
+  safetyCondition: {
+    preserveWorldFacts: true
+    forbidProgrammaticFinalFrame: true
+    forbidPlaceholderFrame: true
+    forbidUnlicensedCopy: true
+    requireVisualJudge: true
+  }
+  fixConditions: Array<{
+    sourceCheckId: string
+    priority: WorldVisualFixAction["priority"]
+    instruction: WorldVisualBilingualText
+    expectedResult: WorldVisualBilingualText
+    changesWorldFacts: false
+  }>
   ruleDataIds: string[]
   sourceFactIds: string[]
   canShowToPlayer: false
   tags: string[]
 }
 
-export type WorldVisualAiImageProviderKind =
-  | "not_configured"
-  | "manual_import"
-  | "external_api"
-  | "local_model"
-
-export type WorldVisualAiImageProviderStatus = {
-  providerKind: WorldVisualAiImageProviderKind
-  configured: boolean
-  canGenerateAutomatically: boolean
-  canUseManualImport: boolean
+export type WorldVisualImageModelStatus = {
+  status: "not_implemented" | "disabled" | "ready"
+  modelVersion: string | null
+  canGenerate: boolean
   reason: WorldVisualBilingualText
   tags: string[]
 }
 
-export type WorldVisualImageOutputSize = {
-  width: number
-  height: number
-  imageFormat: "png" | "webp" | "jpg"
-}
-
-export type WorldVisualControlSketch = {
-  controlSketchId: string
-  type: "composition_control_only"
-  canShowToPlayer: false
-  cannotApprove: true
-  reason: WorldVisualBilingualText
-  outputSize: WorldVisualImageOutputSize
-  semanticLayout: {
-    focalArea: WorldVisualBilingualText
-    terrainAnchor: WorldVisualBilingualText
-    assetAnchor: WorldVisualBilingualText
-    motionNote: WorldVisualBilingualText
-  }
-  compositionHints: string[]
-  forbiddenUse: string[]
-  sourceFactIds: string[]
-  tags: string[]
-}
-
-export type WorldVisualImageStyle = {
-  styleTarget: string
-  camera: "top_down_world_view"
-  frameType: "static_world_frame"
-  qualityTarget: "mvp_approved_candidate"
-  canShowToPlayer: false
-}
-
-export type WorldVisualImageGenerationSafety = {
-  noProgrammaticRenderer: true
-  noSvgAsFinalFrame: true
-  noCanvasAsFinalFrame: true
-  noPrimitiveMapAsFinalFrame: true
-  noPlaceholderFrame: true
-  noUnlicensedThirdPartyCopy: true
-  noAddedWorldFacts: true
-  mustPassVisualJudge: true
-}
-
-export type WorldVisualImageGenerationResponseContract = {
-  requiredFields: Array<
-    | "imageUrl"
-    | "imageFormat"
-    | "width"
-    | "height"
-    | "license"
-    | "originalityConfirmed"
-  >
-  allowedImageFormats: Array<"png" | "webp" | "jpg">
-  allowedLicenses: Array<"self_owned" | "cc0" | "commercial_license">
-  minimumWidth: number
-  minimumHeight: number
-  canShowToPlayer: false
-  mustPersistAsAiImageCandidate: true
-  mustPassVisualJudge: true
-  tags: string[]
-}
-
-export type WorldVisualImageGenerationFixHint = {
-  sourceCheckId: string
-  actionType: WorldVisualFixAction["actionType"]
-  priority: WorldVisualFixAction["priority"]
-  instructionZh: string
-  instructionEn: string
-  expectedResultZh: string
-  expectedResultEn: string
-  changesWorldFacts: false
-  tags: string[]
-}
-
-export type WorldVisualImageGenerationModelTask = {
-  taskKind: "generate_hidden_world_bitmap_candidate"
-  modelRole: "ai_image_generation_model"
-  outputPurpose: "hidden_ai_image_candidate"
-  worldFrameKind: "static_top_down_pixel_world_frame"
-  mustReturnResponseContract: true
-  mustNotDisplayDirectly: true
-  mustNotRewriteWorldFacts: true
-  mustNotUseProgrammaticRenderer: true
-  mustNotCopyUnlicensedThirdPartyWorks: true
-  canShowToPlayer: false
-  tags: string[]
-}
-
-export type WorldVisualAiImageGenerationRequestBody = {
-  modelTask: WorldVisualImageGenerationModelTask
-  positivePrompt: string
-  negativePrompt: string
-  width: number
-  height: number
-  imageFormat: "png" | "webp" | "jpg"
-  promptPackage: {
-    packageId: string
-    modelRole: "ai_image_generation_model"
-    positivePromptZh: string
-    positivePromptEn: string
-    negativePromptZh: string
-    negativePromptEn: string
-    compositionGuide: WorldVisualBilingualText
-    terrainGuide: WorldVisualBilingualText
-    assetGuide: WorldVisualBilingualText
-    motionGuide: WorldVisualBilingualText
-    sourceFactIds: string[]
-    ruleDataIds: string[]
-    canShowToPlayer: false
-  }
-  controlSketch: WorldVisualControlSketch
-  outputSize: WorldVisualImageOutputSize
-  imageStyle: WorldVisualImageStyle
-  safety: WorldVisualImageGenerationSafety
-  responseContract: WorldVisualImageGenerationResponseContract
-  visualFixHints: WorldVisualImageGenerationFixHint[]
-  metadata: {
-    worldId: string
-    tick: number
-    promptPackageId: string
-    sourceFactIds: string[]
-    ruleDataIds: string[]
-    controlSketchId: string
-    visualFixPlanId: string | null
-    visualFixHintCount: number
-    canShowToPlayer: false
-    cannotApprove: true
-  }
-}
+export type WorldVisualCandidateSourceKind =
+  | "project_model_generated"
+  | "development_test_asset"
 
 export type WorldVisualAiImageGenerationRequest = {
   requestId: string
-  providerKind: Exclude<
-    WorldVisualAiImageProviderKind,
-    "not_configured" | "manual_import"
-  >
-  endpoint: string
-  method: "POST"
-  headers: Record<string, string>
-  body: WorldVisualAiImageGenerationRequestBody
+  modelVersion: string
+  condition: WorldVisualGenerationCondition
+  output: {
+    width: number
+    height: number
+    imageFormat: "png" | "webp"
+  }
   canShowToPlayer: false
   tags: string[]
 }
@@ -551,7 +453,8 @@ export type WorldVisualAiImageGenerationResult = {
 
 export type WorldVisualAiImageCandidate = {
   candidateId: string
-  providerKind: WorldVisualAiImageProviderKind
+  sourceKind: WorldVisualCandidateSourceKind
+  modelVersion: string | null
   imageUrl: string
   imageFormat: "png" | "webp" | "jpg"
   width: number
@@ -559,7 +462,7 @@ export type WorldVisualAiImageCandidate = {
   license: "self_owned" | "cc0" | "commercial_license"
   originalityConfirmed: boolean
   sourceDescription: WorldVisualBilingualText
-  promptPackageId: string
+  conditionId: string
   sourceFactIds: string[]
   canShowToPlayer: false
   generationNotes: WorldVisualBilingualText
@@ -602,8 +505,8 @@ export type WorldVisualPainterDecision = {
   motionPlan: WorldVisualMotionPlan
   reviewReport: WorldVisualReviewReport
   fixPlan: WorldVisualFixPlan
-  promptPackage: WorldVisualPromptPackage | null
-  aiImageProviderStatus: WorldVisualAiImageProviderStatus
+  generationCondition: WorldVisualGenerationCondition
+  imageModelStatus: WorldVisualImageModelStatus
   aiImageGenerationRequest: WorldVisualAiImageGenerationRequest | null
   aiImageCandidate: WorldVisualAiImageCandidate | null
   approvedFrame: WorldVisualApprovedFrame | null

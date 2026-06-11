@@ -23,9 +23,8 @@ export type WorldVisualApprovedFrameRecord = {
   reviewReport: WorldVisualReviewReport
   sourceCandidateRecord: WorldVisualCandidateRecord
   sourceAiImageCandidateId: string
-  sourcePromptPackageId: string
+  sourceGenerationConditionId: string
   sourceAiImageGenerationRequestId: string | null
-  sourceControlSketchId: string | null
   sourceVisualFixPlanId: string | null
   sourceVisualFixHintCount: number
   sourceFactIds: string[]
@@ -69,11 +68,12 @@ export async function writeWorldVisualApprovedFrameRecord(input: {
     reviewReport: input.reviewReport,
     sourceCandidateRecord: input.sourceCandidateRecord,
     sourceAiImageCandidateId: input.sourceCandidateRecord.candidate.candidateId,
-    sourcePromptPackageId: input.sourceCandidateRecord.promptPackage.packageId,
+    sourceGenerationConditionId:
+      input.sourceCandidateRecord.generationCondition.conditionId,
     sourceAiImageGenerationRequestId: request?.requestId ?? null,
-    sourceControlSketchId: request?.body.controlSketch.controlSketchId ?? null,
-    sourceVisualFixPlanId: request?.body.metadata.visualFixPlanId ?? null,
-    sourceVisualFixHintCount: request?.body.visualFixHints.length ?? 0,
+    sourceVisualFixPlanId: null,
+    sourceVisualFixHintCount:
+      input.sourceCandidateRecord.generationCondition.fixConditions.length,
     sourceFactIds: input.sourceCandidateRecord.sourceFactIds,
     canShowToPlayer: true,
     tags: [
@@ -200,10 +200,9 @@ async function writeLatestWorldVisualApprovedFrameIndex(input: {
   tick: input.record.tick,
   frameId: input.record.approvedFrame.frameId,
   sourceAiImageCandidateId: input.record.sourceAiImageCandidateId,
-  sourcePromptPackageId: input.record.sourcePromptPackageId,
+  sourceGenerationConditionId: input.record.sourceGenerationConditionId,
   sourceAiImageGenerationRequestId:
     input.record.sourceAiImageGenerationRequestId,
-  sourceControlSketchId: input.record.sourceControlSketchId,
   sourceVisualFixPlanId: input.record.sourceVisualFixPlanId,
   sourceVisualFixHintCount: input.record.sourceVisualFixHintCount,
   sourceImageSha256: input.record.approvedFrame.sourceImageSha256,
@@ -251,7 +250,7 @@ function normalizeWorldVisualApprovedFrameRecord(
     !value.reviewReport ||
     !value.sourceCandidateRecord ||
     typeof value.sourceAiImageCandidateId !== "string" ||
-    typeof value.sourcePromptPackageId !== "string" ||
+    typeof value.sourceGenerationConditionId !== "string" ||
     !Array.isArray(value.sourceFactIds) ||
     value.canShowToPlayer !== true ||
     !Array.isArray(value.tags)
@@ -269,10 +268,9 @@ function normalizeWorldVisualApprovedFrameRecord(
     reviewReport: value.reviewReport,
     sourceCandidateRecord: value.sourceCandidateRecord,
     sourceAiImageCandidateId: value.sourceAiImageCandidateId,
-    sourcePromptPackageId: value.sourcePromptPackageId,
+    sourceGenerationConditionId: value.sourceGenerationConditionId,
     sourceAiImageGenerationRequestId:
       value.sourceAiImageGenerationRequestId ?? null,
-    sourceControlSketchId: value.sourceControlSketchId ?? null,
     sourceVisualFixPlanId: value.sourceVisualFixPlanId ?? null,
     sourceVisualFixHintCount: value.sourceVisualFixHintCount ?? 0,
     sourceFactIds: value.sourceFactIds,

@@ -99,7 +99,7 @@ function buildActionsForFailedCheck(
       action(
         "fix-image-metadata-matches-bytes",
         check.id,
-        "repair_prompt_package",
+        "repair_generation_condition",
         "high",
         "修正 AI 图像生成模型输出登记逻辑，确保 imageFormat、width、height 与图片本体一致；不允许用声明值伪装图片格式或尺寸。",
         "Fix the AI image generation model output registration so imageFormat, width, and height match the actual image bytes. Declared values must not spoof image format or size.",
@@ -114,7 +114,7 @@ function buildActionsForFailedCheck(
       action(
         "fix-mvp-image-size",
         check.id,
-        "repair_prompt_package",
+        "repair_generation_condition",
         "high",
         "调整图像生成请求的 outputSize 或重生成参数，重新生成至少 1024x768 的静态世界位图。",
         "Adjust the image generation request outputSize or regeneration parameters, and regenerate a static world bitmap of at least 1024x768.",
@@ -146,8 +146,8 @@ if (check.id === "bitmap_payload_quality") {
         check.id,
         "restore_fact_source",
         "high",
-        "修正候选图登记流程，必须绑定 sourceFactIds 和 promptPackageId，保证视觉表达来自当前世界事实。不能为了修画面修改 WorldRuntimeSaveRecord。",
-        "Fix candidate registration so sourceFactIds and promptPackageId are bound, ensuring the visual expression is grounded in current world facts. WorldRuntimeSaveRecord must not be changed to fix visuals.",
+        "修正候选图登记流程，必须绑定 sourceFactIds 和 conditionId，保证视觉表达来自当前世界事实。不能为了修画面修改 WorldRuntimeSaveRecord。",
+        "Fix candidate registration so sourceFactIds and conditionId are bound, ensuring the visual expression is grounded in current world facts. WorldRuntimeSaveRecord must not be changed to fix visuals.",
         "候选图可追溯到世界事实和生成输入。",
         "The candidate is traceable to world facts and generation input."
       ),
@@ -159,7 +159,7 @@ if (check.id === "bitmap_payload_quality") {
       action(
         "fix-candidate-license",
         check.id,
-        "repair_prompt_package",
+        "repair_generation_condition",
         "high",
         "修正生成约束和候选图来源登记：候选图必须确认来源为自有、CC0 或商业授权，并确认没有直接复制未授权第三方作品。",
         "Fix generation constraints and candidate source registration: the candidate must be confirmed as self-owned, CC0, or commercially licensed, and must not directly copy unlicensed third-party work.",
@@ -174,7 +174,7 @@ if (check.id === "bitmap_payload_quality") {
       action(
         "fix-visual-style-quality",
         check.id,
-        "repair_prompt_package",
+        "repair_generation_condition",
         "high",
         "修正正向 prompt 和风格约束，强化明亮、治愈、精细、俯视像素风、清晰世界主焦点；禁止改写世界事实来制造画面效果。",
         "Fix the positive prompt and style constraints to reinforce bright, healing, detailed top-down pixel style and a clear world focal point. World facts must not be rewritten to create visual effects.",
@@ -184,10 +184,10 @@ if (check.id === "bitmap_payload_quality") {
       action(
         "fix-visual-style-negative-prompt",
         check.id,
-        "repair_prompt_package",
+        "repair_generation_condition",
         "medium",
-        "补强 negative prompt，排除照片感、3D 感、模糊插画感、低细节、空绿地、程序块感。",
-        "Strengthen the negative prompt to reject photorealism, 3D look, blurry illustration, low detail, empty green fields, and programmatic blockiness.",
+        "补强风格排除条件，排除照片感、3D 感、模糊插画感、低细节、空绿地和程序块感。",
+        "Strengthen style exclusion conditions to reject photorealism, 3D look, blurry illustration, low detail, empty green fields, and programmatic blockiness.",
         "重生成时减少错误风格和低质量画面。",
         "Regeneration reduces wrong style and low-quality frames."
       ),
@@ -224,10 +224,10 @@ if (check.id === "bitmap_payload_quality") {
       action(
         "fix-visual-artifact-rejection",
         check.id,
-        "repair_prompt_package",
+        "repair_generation_condition",
         "high",
-        "补强 negative prompt 和重生成约束，明确禁止占位块、脏路径、随机散点、乱码、水印、UI 卡片、调试框、程序矩形块。",
-        "Strengthen the negative prompt and regeneration constraints to forbid placeholder blocks, dirty paths, random scatter, garbled text, watermarks, UI cards, debug boxes, and programmatic rectangles.",
+        "补强排除条件和重生成约束，明确禁止占位块、脏路径、随机散点、乱码、水印、UI 卡片、调试框和程序矩形块。",
+        "Strengthen exclusion conditions and regeneration constraints to forbid placeholder blocks, dirty paths, random scatter, garbled text, watermarks, UI cards, debug boxes, and programmatic rectangles.",
         "重生成候选图不包含明显视觉污染。",
         "The regenerated candidate does not contain obvious visual artifacts."
       ),
@@ -241,8 +241,8 @@ if (check.id === "bitmap_payload_quality") {
         check.id,
         "restore_fact_source",
         "high",
-        "修正 Prompt Package 和候选图登记，必须保留 no_added_world_facts 与 copyright_safe 证明；只能使用授权数据或抽象设计原则，不能复制具体受保护作品、角色、标志或截图。",
-        "Fix the Prompt Package and candidate registration so no_added_world_facts and copyright_safe proof are preserved. Only licensed data or abstract design principles may be used; specific protected works, characters, logos, or screenshots must not be copied.",
+        "修正 WorldGenerationCondition 和候选图登记，必须保留 no_added_world_facts 与 copyright_safe 证明；只能使用授权数据或抽象设计原则，不能复制具体受保护作品、角色、标志或截图。",
+        "Fix WorldGenerationCondition and candidate registration so no_added_world_facts and copyright_safe proof are preserved. Only licensed data or abstract design principles may be used; specific protected works, characters, logos, or screenshots must not be copied.",
         "候选图没有新增世界事实，并满足版权安全要求。",
         "The candidate adds no world facts and satisfies copyright safety requirements."
       ),
@@ -253,10 +253,10 @@ if (check.id === "bitmap_payload_quality") {
     action(
       `fix-${check.id}`,
       check.id,
-      "repair_prompt_package",
+      "repair_generation_condition",
       "medium",
-      `修正审核项：${check.label.zh}。只允许修改 prompt、negative prompt、控制草图、重生成参数或局部视觉表达，不允许修改世界事实。`,
-      `Fix review check: ${check.label.en}. Only prompt, negative prompt, control sketch, regeneration parameters, or local visual expression may change; world facts must not change.`,
+      `修正审核项：${check.label.zh}。只允许修改生成条件、重生成参数或局部视觉表达，不允许修改世界事实。`,
+      `Fix review check: ${check.label.en}. Only generation conditions, regeneration parameters, or local visual expression may change; world facts must not change.`,
       "该审核项重新进入可通过状态。",
       "This review check becomes passable again."
     ),

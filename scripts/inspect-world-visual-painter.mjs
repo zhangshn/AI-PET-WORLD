@@ -1,28 +1,19 @@
-const provider = process.env.AI_PET_WORLD_IMAGE_PROVIDER || "not_configured"
-const manualUrl = process.env.AI_PET_WORLD_MANUAL_IMAGE_URL || ""
-const manualLicense = process.env.AI_PET_WORLD_MANUAL_IMAGE_LICENSE || ""
-const manualConfirmed =
-  process.env.AI_PET_WORLD_MANUAL_IMAGE_ORIGINALITY_CONFIRMED === "true"
+const enabled = process.env.AI_PET_WORLD_IMAGE_MODEL_ENABLED === "true"
+const modelVersion = process.env.AI_PET_WORLD_IMAGE_MODEL_VERSION || null
+const modelAssetDir = process.env.AI_PET_WORLD_IMAGE_MODEL_ASSET_DIR || null
 
 console.log(
   JSON.stringify(
     {
-      provider,
-      manualImportConfigured: Boolean(
-        manualUrl && manualLicense && manualConfirmed
-      ),
-      manualUrl,
-      manualLicense,
-      manualOriginalityConfirmed: manualConfirmed,
-      displayRule: "Only ApprovedFrame can be shown to players",
-      authorizedDataManifest: {
-        version: "authorized-data-mvp-v1",
-        acceptedTrainableCount: 0,
-        acceptedRuleOnlyCount: 1,
-        blockedCount: 0,
-        importPolicy:
-          "Only self-owned, CC0, or explicitly licensed data may be imported.",
-      },
+      architecture: "internal_world_image_model",
+      enabled,
+      modelVersion,
+      modelAssetDirConfigured: Boolean(modelAssetDir),
+      canGenerate: Boolean(enabled && modelVersion && modelAssetDir),
+      externalProviderAllowed: false,
+      formalManualImportAllowed: false,
+      displayRule: "Only an ApprovedFrame may be shown to players.",
+      nextStage: "AI-PAINTER A3: VJ-0 display gate",
     },
     null,
     2

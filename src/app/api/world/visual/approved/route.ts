@@ -49,8 +49,7 @@ export async function GET() {
 
   const record = approvedFrameReadResult.record
   const request = record.sourceCandidateRecord.aiImageGenerationRequest
-  const controlSketch = request?.body.controlSketch ?? null
-  const visualFixHints = request?.body.visualFixHints ?? []
+  const condition = record.sourceCandidateRecord.generationCondition
   const runtimeRenderGate = buildRuntimeRenderGate(record.approvedFrame, record.canShowToPlayer)
 
   return NextResponse.json(
@@ -62,10 +61,9 @@ export async function GET() {
       provenance: {
         frameId: record.approvedFrame.frameId,
         sourceAiImageCandidateId: record.sourceAiImageCandidateId,
-        sourcePromptPackageId: record.sourcePromptPackageId,
+        sourceGenerationConditionId: record.sourceGenerationConditionId,
         sourceAiImageGenerationRequestId:
           record.sourceAiImageGenerationRequestId,
-        sourceControlSketchId: record.sourceControlSketchId,
         sourceVisualFixPlanId: record.sourceVisualFixPlanId,
         sourceVisualFixHintCount: record.sourceVisualFixHintCount,
         sourceFactIds: record.sourceFactIds,
@@ -85,28 +83,22 @@ export async function GET() {
         candidateId: record.sourceCandidateRecord.candidate.candidateId,
         candidateCanShowToPlayer:
           record.sourceCandidateRecord.candidate.canShowToPlayer,
-        candidateProviderKind:
-          record.sourceCandidateRecord.candidate.providerKind,
+        candidateSourceKind:
+          record.sourceCandidateRecord.candidate.sourceKind,
+        candidateModelVersion:
+          record.sourceCandidateRecord.candidate.modelVersion,
         candidateLicense: record.sourceCandidateRecord.candidate.license,
         originalityConfirmed:
           record.sourceCandidateRecord.candidate.originalityConfirmed,
-        hasPromptPackage: Boolean(record.sourceCandidateRecord.promptPackage),
+        hasGenerationCondition: Boolean(condition),
         hasAiImageGenerationRequest: Boolean(request),
-        hasControlSketch: Boolean(controlSketch),
-        controlSketchCanShowToPlayer: controlSketch?.canShowToPlayer ?? null,
-        controlSketchCannotApprove: controlSketch?.cannotApprove ?? null,
-        hasVisualFixHints: visualFixHints.length > 0,
-        visualFixHints: visualFixHints.map((hint) => ({
-          sourceCheckId: hint.sourceCheckId,
-          actionType: hint.actionType,
-          priority: hint.priority,
-          changesWorldFacts: hint.changesWorldFacts,
-          instructionZh: hint.instructionZh,
-          instructionEn: hint.instructionEn,
-          expectedResultZh: hint.expectedResultZh,
-          expectedResultEn: hint.expectedResultEn,
-          tags: hint.tags,
-        })),
+        conditionId: condition.conditionId,
+        conditionVersion: condition.version,
+        conditionWorldId: condition.worldId,
+        conditionTick: condition.tick,
+        sourceFactIds: condition.sourceFactIds,
+        safetyCondition: condition.safetyCondition,
+        fixConditions: condition.fixConditions,
       },
       reviewAudit: {
         status: record.reviewReport.status,

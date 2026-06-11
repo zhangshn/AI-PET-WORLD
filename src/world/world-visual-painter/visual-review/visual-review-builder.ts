@@ -196,7 +196,7 @@ function buildReviewChecks(input: {
   const candidateKeepsFactLinks =
     candidate === null
       ? false
-      : candidate.promptPackageId.length > 0 &&
+      : candidate.conditionId.length > 0 &&
         candidate.sourceFactIds.length === input.factManifest.sourceFactIds.length
   const imageBytesAreValid = input.inspection.ok
   const imageHasByteFingerprint =
@@ -809,8 +809,8 @@ function buildFixInstructions(
 
       if (check.id === "candidate_fact_link") {
         return {
-          zh: "候选图必须绑定 sourceFactIds 和 promptPackageId，不能脱离世界事实。",
-          en: "The candidate must bind sourceFactIds and promptPackageId, and must not detach from world facts.",
+          zh: "候选图必须绑定 sourceFactIds 和 conditionId，不能脱离世界事实。",
+          en: "The candidate must bind sourceFactIds and conditionId and must not detach from world facts.",
         }
       }
 

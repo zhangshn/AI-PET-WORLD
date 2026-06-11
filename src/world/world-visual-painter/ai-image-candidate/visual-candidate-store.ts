@@ -5,7 +5,7 @@ import type {
   WorldVisualAiImageCandidate,
   WorldVisualAiImageGenerationRequest,
   WorldVisualFactManifest,
-  WorldVisualPromptPackage,
+  WorldVisualGenerationCondition,
 } from "../world-visual-painter-schema"
 
 const VISUAL_CANDIDATE_DIR = path.join(
@@ -15,13 +15,13 @@ const VISUAL_CANDIDATE_DIR = path.join(
 )
 
 export type WorldVisualCandidateRecord = {
-  version: "world-visual-candidate-v1"
+  version: "world-visual-candidate-v2"
   ownerId: string
   worldId: string
   tick: number
   savedAt: string
   candidate: WorldVisualAiImageCandidate
-  promptPackage: WorldVisualPromptPackage
+  generationCondition: WorldVisualGenerationCondition
   aiImageGenerationRequest: WorldVisualAiImageGenerationRequest | null
   sourceFactIds: string[]
   canShowToPlayer: false
@@ -50,18 +50,18 @@ export async function writeWorldVisualCandidateRecord(input: {
   worldId: string
   tick: number
   candidate: WorldVisualAiImageCandidate
-  promptPackage: WorldVisualPromptPackage
+  generationCondition: WorldVisualGenerationCondition
   factManifest: WorldVisualFactManifest
   aiImageGenerationRequest?: WorldVisualAiImageGenerationRequest | null
 }): Promise<WorldVisualCandidateStoreWriteResult> {
   const record: WorldVisualCandidateRecord = {
-    version: "world-visual-candidate-v1",
+    version: "world-visual-candidate-v2",
     ownerId: input.ownerId,
     worldId: input.worldId,
     tick: input.tick,
     savedAt: new Date().toISOString(),
     candidate: input.candidate,
-    promptPackage: input.promptPackage,
+    generationCondition: input.generationCondition,
     aiImageGenerationRequest: input.aiImageGenerationRequest ?? null,
     sourceFactIds: input.factManifest.sourceFactIds,
     canShowToPlayer: false,
@@ -219,13 +219,13 @@ function normalizeWorldVisualCandidateRecord(
   value: Partial<WorldVisualCandidateRecord>
 ): WorldVisualCandidateRecord | null {
   if (
-    value.version !== "world-visual-candidate-v1" ||
+    value.version !== "world-visual-candidate-v2" ||
     typeof value.ownerId !== "string" ||
     typeof value.worldId !== "string" ||
     typeof value.tick !== "number" ||
     typeof value.savedAt !== "string" ||
     !value.candidate ||
-    !value.promptPackage ||
+    !value.generationCondition ||
     !Array.isArray(value.sourceFactIds) ||
     value.canShowToPlayer !== false ||
     !Array.isArray(value.tags)
@@ -240,7 +240,7 @@ function normalizeWorldVisualCandidateRecord(
     tick: value.tick,
     savedAt: value.savedAt,
     candidate: value.candidate,
-    promptPackage: value.promptPackage,
+    generationCondition: value.generationCondition,
     aiImageGenerationRequest: value.aiImageGenerationRequest ?? null,
     sourceFactIds: value.sourceFactIds,
     canShowToPlayer: value.canShowToPlayer,

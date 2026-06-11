@@ -52,7 +52,7 @@ export function buildWorldVisualAuthorizedDataManifest(): WorldVisualAuthorizedD
     tags: [
       "authorized_data_manifest",
       "copyright_safe",
-      "manual_import_required",
+      "authorized_dataset_ingestion_required",
       "no_unlicensed_training_data",
     ],
   }

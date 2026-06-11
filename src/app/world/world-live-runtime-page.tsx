@@ -71,7 +71,7 @@ export async function WorldLiveRuntimePage() {
           <div style={runtimeWorldStyles.provenance}>
             <span>Review {approvedFrame.reviewScore}</span>
             <span>Candidate {approvedFrameRecord.sourceAiImageCandidateId}</span>
-            <span>Prompt {approvedFrameRecord.sourcePromptPackageId}</span>
+            <span>Condition {approvedFrameRecord.sourceGenerationConditionId}</span>
             <span>Image {approvedFrame.sourceImageSha256.slice(0, 12)}</span>
             <span>{approvedFrame.sourceImageContentType}</span>
             <span>{approvedFrame.sourceImageByteLength} bytes</span>

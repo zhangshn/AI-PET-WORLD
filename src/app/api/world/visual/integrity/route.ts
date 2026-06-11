@@ -16,15 +16,6 @@ type IntegrityCheck = {
   tags: string[]
 }
 
-const REQUIRED_RESPONSE_CONTRACT_FIELDS = [
-  "imageUrl",
-  "imageFormat",
-  "width",
-  "height",
-  "license",
-  "originalityConfirmed",
-] as const
-
 export async function GET() {
   const runtimeReadResult = await readWorldRuntimeSaveRecord()
 
@@ -33,7 +24,7 @@ export async function GET() {
       {
         ok: false,
         status: "runtime_world_missing",
-        message: "世界尚未创建，不能执行视觉链路完整性自检。",
+        message: "世界尚未创建，不能执行视觉链路完整性检查。",
         messageEn:
           "Runtime world has not been created, so visual pipeline integrity cannot be checked.",
         canShowToPlayer: false,
@@ -53,9 +44,9 @@ export async function GET() {
     )
   }
 
-  const ownerId = runtimeReadResult.record.ownerId
-  const worldId = runtimeReadResult.record.worldId
-
+  const runtime = runtimeReadResult.record
+  const ownerId = runtime.ownerId
+  const worldId = runtime.worldId
   const [candidateReadResult, fixPlanReadResult, approvedFrameReadResult] =
     await Promise.all([
       readLatestWorldVisualCandidateRecord({ ownerId, worldId }),
@@ -66,8 +57,7 @@ export async function GET() {
   const candidateRecord = candidateReadResult.record
   const candidate = candidateRecord?.candidate ?? null
   const request = candidateRecord?.aiImageGenerationRequest ?? null
-  const responseContract = request?.body.responseContract ?? null
-  const controlSketch = request?.body.controlSketch ?? null
+  const condition = candidateRecord?.generationCondition ?? null
   const fixPlanRecord = fixPlanReadResult.record
   const approvedFrameRecord = approvedFrameReadResult.record
   const approvedFrame = approvedFrameRecord?.approvedFrame ?? null
@@ -97,62 +87,59 @@ export async function GET() {
       ["candidate", "hidden_until_visual_judge"]
     ),
     check(
-      "candidate_has_prompt_package_if_exists",
-      !candidateRecord || Boolean(candidateRecord.promptPackage),
+      "candidate_has_generation_condition_if_exists",
+      !candidateRecord || Boolean(condition),
       "high",
-      "候选图记录绑定 PromptPackage。",
-      "Candidate record is bound to PromptPackage.",
-      ["candidate", "prompt_package"]
+      "候选图记录必须绑定 WorldGenerationCondition。",
+      "Candidate record must be bound to WorldGenerationCondition.",
+      ["candidate", "world_generation_condition"]
+    ),
+    check(
+      "generation_condition_matches_runtime",
+      !condition ||
+        (condition.worldId === worldId && condition.tick === runtime.tick),
+      "high",
+      "生成条件必须对应当前世界和当前 tick。",
+      "Generation condition must match the current world and tick.",
+      ["world_generation_condition", "runtime_alignment"]
+    ),
+    check(
+      "generation_condition_preserves_world_facts",
+      !condition || condition.safetyCondition.preserveWorldFacts === true,
+      "high",
+      "生成条件必须锁定世界事实，绘图不能篡改事实。",
+      "Generation condition must preserve world facts.",
+      ["world_generation_condition", "world_facts_locked"]
+    ),
+    check(
+      "generation_condition_requires_review",
+      !condition ||
+        (condition.canShowToPlayer === false &&
+          condition.safetyCondition.requireVisualJudge === true),
+      "high",
+      "生成条件和模型结果默认不可展示，必须经过 VisualJudge。",
+      "Generation conditions and model outputs must remain hidden until VisualJudge passes them.",
+      ["world_generation_condition", "visual_judge_required"]
     ),
     check(
       "candidate_has_generation_request_when_generated",
       !candidateRecord ||
-        candidate?.providerKind === "manual_import" ||
+        candidate?.sourceKind === "development_test_asset" ||
         Boolean(request),
       "medium",
-      "自动生成候选图应绑定 AiImageGenerationRequest；manual_import 可以没有自动请求。",
-      "Generated candidates should bind AiImageGenerationRequest; manual_import may have no automatic request.",
+      "内部模型生成的候选图必须绑定生成请求；开发测试资产不能进入正式展示。",
+      "Internal-model candidates must bind a generation request. Development test assets cannot enter formal display.",
       ["candidate", "ai_image_generation_request"]
     ),
     check(
-      "generation_request_has_response_contract_when_present",
-      !request || Boolean(responseContract),
+      "generation_request_uses_same_condition",
+      !request ||
+        !condition ||
+        request.condition.conditionId === condition.conditionId,
       "high",
-      "AiImageGenerationRequest 必须携带 responseContract，明确模型返回字段契约。",
-      "AiImageGenerationRequest must carry responseContract to define the model response contract.",
-      ["ai_image_generation_request", "response_contract"]
-    ),
-    check(
-      "response_contract_requires_all_candidate_fields",
-      !responseContract ||
-        REQUIRED_RESPONSE_CONTRACT_FIELDS.every((field) =>
-          responseContract.requiredFields.includes(field)
-        ),
-      "high",
-      "responseContract 必须要求 imageUrl、imageFormat、width、height、license、originalityConfirmed。",
-      "responseContract must require imageUrl, imageFormat, width, height, license, and originalityConfirmed.",
-      ["response_contract", "required_fields"]
-    ),
-    check(
-      "response_contract_requires_hidden_candidate_and_judge",
-      !responseContract ||
-        (responseContract.canShowToPlayer === false &&
-          responseContract.mustPersistAsAiImageCandidate === true &&
-          responseContract.mustPassVisualJudge === true),
-      "high",
-      "responseContract 必须要求模型结果保存为隐藏 AiImageCandidate，并通过 VisualJudge 后才能展示。",
-      "responseContract must require the model result to be persisted as a hidden AiImageCandidate and pass VisualJudge before display.",
-      ["response_contract", "hidden_candidate_required", "visual_judge_required"]
-    ),
-    check(
-      "control_sketch_never_displayable",
-      !controlSketch ||
-        (controlSketch.canShowToPlayer === false &&
-          controlSketch.cannotApprove === true),
-      "high",
-      "ControlSketch 只作为构图控制参考，不能展示，不能 Approved。",
-      "ControlSketch is only a composition control reference and cannot be displayed or approved.",
-      ["control_sketch", "cannot_approve", "not_player_visible"]
+      "生成请求必须使用候选图记录绑定的同一份生成条件。",
+      "The generation request must use the same condition bound to the candidate record.",
+      ["ai_image_generation_request", "world_generation_condition"]
     ),
     check(
       "visual_fix_does_not_change_world_facts",
@@ -161,7 +148,7 @@ export async function GET() {
           (action) => action.changesWorldFacts === false
         ),
       "high",
-      "VisualFix 只修视觉表达，不改世界事实。",
+      "VisualFix 只修视觉表达，不修改世界事实。",
       "VisualFix only repairs visual expression and does not change world facts.",
       ["visual_fix", "world_facts_locked"]
     ),
@@ -179,21 +166,9 @@ export async function GET() {
         approvedFrameRecord.sourceCandidateRecord.candidate.candidateId ===
           approvedFrameRecord.sourceAiImageCandidateId,
       "high",
-      "ApprovedFrame 来源必须能追溯到通过审核的 AiImageCandidate。",
-      "ApprovedFrame source must trace back to the reviewed AiImageCandidate.",
+      "ApprovedFrame 必须可追溯到通过审核的候选图。",
+      "ApprovedFrame must trace back to the reviewed candidate.",
       ["approved_frame", "source_candidate_record"]
-    ),
-    check(
-      "runtime_render_blocked_without_approved_frame",
-      approvedFrameRecord && approvedFrame ? approvedFrameDoubleGatePassed : true,
-      "high",
-      approvedFrameRecord
-        ? "存在 ApprovedFrame 时，Runtime Render 必须通过双重展示闸门。"
-        : "没有 ApprovedFrame 时，Runtime Render 必须阻断。",
-      approvedFrameRecord
-        ? "When ApprovedFrame exists, Runtime Render must pass the double display gate."
-        : "Without ApprovedFrame, Runtime Render must remain blocked.",
-      ["runtime_render", "approved_frame_required"]
     ),
   ]
 
@@ -207,11 +182,7 @@ export async function GET() {
     {
       ok,
       status: ok ? "integrity_passed" : "integrity_failed",
-      runtime: {
-        ownerId,
-        worldId,
-        tick: runtimeReadResult.record.tick,
-      },
+      runtime: { ownerId, worldId, tick: runtime.tick },
       pipelinePresence: {
         candidateStatus: candidateReadResult.status,
         hasCandidate: Boolean(candidateRecord),
@@ -225,13 +196,13 @@ export async function GET() {
       highSeverityFailedCount: highSeverityFailedChecks.length,
       canShowToPlayer: Boolean(approvedFrameDoubleGatePassed && ok),
       displayRule:
-        "Runtime Render 只能展示通过完整链路自检且拥有 ApprovedFrame 的图片。",
+        "Runtime Render 只能展示通过完整性检查且拥有 ApprovedFrame 的图像。",
       displayRuleEn:
         "Runtime Render may only display an image that has an ApprovedFrame and passes the full pipeline integrity check.",
       tags: [
         "world_visual_integrity_api",
         ok ? "integrity_passed" : "integrity_failed",
-        "response_contract_checked",
+        "world_generation_condition_checked",
         "status_only",
         "does_not_generate",
         "does_not_modify_world_facts",

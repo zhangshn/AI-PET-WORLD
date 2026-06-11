@@ -25,8 +25,7 @@ export async function GET() {
     saveRecord: readResult.record,
   })
   const request = decision.aiImageGenerationRequest
-  const controlSketch = request?.body.controlSketch ?? null
-  const visualFixHints = request?.body.visualFixHints ?? []
+  const condition = decision.generationCondition
 
   return NextResponse.json(
     {
@@ -65,29 +64,23 @@ export async function GET() {
         assetPlan: decision.assetPlan,
         motionPlan: decision.motionPlan,
       },
-      promptPackage: decision.promptPackage,
+      generationCondition: condition,
       generationRequestAudit: {
         hasAiImageGenerationRequest: Boolean(request),
         requestId: request?.requestId ?? null,
-        providerKind:
-          request?.providerKind ?? decision.aiImageProviderStatus.providerKind,
-        modelTask: request?.body.modelTask ?? null,
-        endpointConfigured: Boolean(request?.endpoint),
-        method: request?.method ?? null,
-        hasPromptPackage: Boolean(decision.promptPackage),
-        hasControlSketch: Boolean(controlSketch),
-        controlSketchId: controlSketch?.controlSketchId ?? null,
-        controlSketchCanShowToPlayer: controlSketch?.canShowToPlayer ?? null,
-        controlSketchCannotApprove: controlSketch?.cannotApprove ?? null,
-        hasVisualFixHints: visualFixHints.length > 0,
-        visualFixPlanId: request?.body.metadata.visualFixPlanId ?? null,
-        visualFixHintCount: visualFixHints.length,
-        outputSize: request?.body.outputSize ?? null,
-        imageStyle: request?.body.imageStyle ?? null,
-        safety: request?.body.safety ?? null,
+        modelVersion:
+          request?.modelVersion ?? decision.imageModelStatus.modelVersion,
+        conditionId: condition.conditionId,
+        conditionVersion: condition.version,
+        conditionWorldId: condition.worldId,
+        conditionTick: condition.tick,
+        sourceFactIdCount: condition.sourceFactIds.length,
+        fixConditionCount: condition.fixConditions.length,
+        output: request?.output ?? null,
+        safety: condition.safetyCondition,
         canShowToPlayer: request?.canShowToPlayer ?? false,
       },
-      provider: decision.aiImageProviderStatus,
+      imageModel: decision.imageModelStatus,
       reviewPreview: {
         status: decision.reviewReport.status,
         score: decision.reviewReport.score,
@@ -133,10 +126,10 @@ export async function GET() {
       nextStep: {
         zh: decision.aiImageGenerationRequest
           ? "下一步调用 POST /api/world/visual/generate，生成隐藏候选图。"
-          : "下一步需要配置图像生成入口或授权导入候选图。",
+          : "下一步需要实现项目内部模型训练与推理。",
         en: decision.aiImageGenerationRequest
           ? "Next call POST /api/world/visual/generate to create a hidden candidate."
-          : "Next configure an image generation entry or authorized candidate import.",
+          : "Next implement the project's internal model training and inference.",
         endpoint: decision.aiImageGenerationRequest
           ? "POST /api/world/visual/generate"
           : null,

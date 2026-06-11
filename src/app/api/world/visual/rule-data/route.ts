@@ -117,8 +117,8 @@ export async function GET() {
           "Public materials may only be used for abstract design principles, not directly as assets or training images.",
       },
       nextStep: {
-        zh: "规则数据只参与 Director、PromptPackage、VisualJudge 和 VisualFix；正式画面仍必须来自 AI 位图候选图并通过 ApprovedFrame。",
-        en: "Rule data only supports Director, PromptPackage, VisualJudge, and VisualFix. The formal frame must still come from an AI bitmap candidate and become ApprovedFrame.",
+        zh: "规则数据只参与 Director、WorldGenerationCondition、VisualJudge 和 VisualFix；正式画面仍必须来自内部模型位图候选图并通过 ApprovedFrame。",
+        en: "Rule data only supports Director, WorldGenerationCondition, VisualJudge, and VisualFix. The formal frame must come from an internal-model bitmap candidate and become ApprovedFrame.",
       },
       canShowToPlayer: false,
       tags: [

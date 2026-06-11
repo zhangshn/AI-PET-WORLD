@@ -126,7 +126,7 @@ function candidateKeepsFactLinks(
   candidate: WorldVisualAiImageCandidate,
   factManifest: WorldVisualFactManifest
 ): boolean {
-  if (candidate.promptPackageId.length === 0) return false
+  if (candidate.conditionId.length === 0) return false
   if (candidate.sourceFactIds.length !== factManifest.sourceFactIds.length) {
     return false
   }
