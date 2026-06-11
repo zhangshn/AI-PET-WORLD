@@ -14,8 +14,8 @@ const APPROVED_FRAME_DIR = path.join(
 )
 
 type RuntimeBoundApprovedFrame = WorldVisualApprovedFrame & {
-  worldId?: unknown
-  tick?: unknown
+  worldId: string
+  tick: number
 }
 
 export type WorldVisualApprovedFrameRecord = {
@@ -89,11 +89,15 @@ export async function writeWorldVisualApprovedFrameRecord(input: {
       "world_visual_approved_frame_record",
       `world_id:${input.worldId}`,
       `tick:${input.tick}`,
-      "player_visible_allowed",
-      "visual_review_passed",
+      "controlled_mvp_player_visible_allowed",
+      "vj_0_passed",
+      "vj_1_not_implemented",
+      "vj_2_not_implemented",
+      "approved_for_controlled_mvp",
+      "not_approved_for_production",
       "source_candidate_record_bound",
       "vj_0_approved_frame_record_gate_passed",
-      "current_tick_required_on_read",
+      "current_runtime_required_on_read",
       request
         ? "ai_image_generation_request_bound"
         : "no_ai_image_generation_request",
@@ -124,12 +128,14 @@ export async function writeWorldVisualApprovedFrameRecord(input: {
     return {
       ok: true,
       path: filePath,
-      message: "Approved frame record written.",
+      message: "Controlled MVP approved frame record written.",
       warnings: [],
       tags: [
         "world_visual_approved_frame_store_write",
         "ok",
         "vj_0_approved_frame_record_gate_passed",
+        "approved_for_controlled_mvp",
+        "not_approved_for_production",
       ],
     }
   } catch (error) {
@@ -146,8 +152,8 @@ export async function writeWorldVisualApprovedFrameRecord(input: {
 export async function readLatestWorldVisualApprovedFrameRecord(input: {
   ownerId: string
   worldId: string
-  currentTick?: number
-  currentSourceFactIds?: string[]
+  currentTick: number
+  currentSourceFactIds: string[]
 }): Promise<WorldVisualApprovedFrameStoreReadResult> {
   const indexPath = getLatestWorldVisualApprovedFrameIndexPath(input)
 
@@ -190,18 +196,16 @@ export async function readLatestWorldVisualApprovedFrameRecord(input: {
       status: "found",
       record: normalized,
       path: index.path,
-      message: "Approved frame record loaded.",
+      message: "Controlled MVP approved frame record loaded.",
       warnings: [],
       tags: [
         "world_visual_approved_frame_store_read",
         "found",
         "vj_0_approved_frame_record_gate_passed",
-        input.currentTick === undefined
-          ? "current_tick_not_requested"
-          : "current_tick_gate_passed",
-        input.currentSourceFactIds === undefined
-          ? "current_source_facts_not_requested"
-          : "current_source_facts_gate_passed",
+        "approved_for_controlled_mvp",
+        "not_approved_for_production",
+        "current_tick_gate_passed",
+        "current_source_facts_gate_passed",
       ],
     }
   } catch (error) {
@@ -289,9 +293,20 @@ function validateApprovedFrameRecord(
   pushIf(warnings, frame.width !== candidate.width, "width")
   pushIf(warnings, frame.height !== candidate.height, "height")
   pushIf(warnings, frame.reviewScore !== review.score, "review_score")
-  pushIf(warnings, review.status !== "passed_candidate", "review_status")
+  pushIf(warnings, review.status !== "vj_0_passed", "review_status")
+  pushIf(warnings, review.vj0Status !== "vj_0_passed", "review_vj0_status")
+  pushIf(warnings, review.vj1Status !== "vj_1_not_implemented", "review_vj1_status")
+  pushIf(warnings, review.vj2Status !== "vj_2_not_implemented", "review_vj2_status")
+  pushIf(warnings, review.approvalScope !== "approved_for_controlled_mvp", "review_approval_scope")
+  pushIf(warnings, review.productionApprovalStatus !== "not_approved_for_production", "review_production_status")
   pushIf(warnings, review.canShowToPlayer !== false, "review_visibility")
   pushIf(warnings, frame.canShowToPlayer !== true, "frame_visibility")
+  pushIf(warnings, frame.approvalScope !== "approved_for_controlled_mvp", "frame_approval_scope")
+  pushIf(warnings, frame.productionApprovalStatus !== "not_approved_for_production", "frame_production_status")
+  pushIf(warnings, frame.approvedForProduction !== false, "frame_production_flag")
+  pushIf(warnings, frame.vj0Status !== "vj_0_passed", "frame_vj0_status")
+  pushIf(warnings, frame.vj1Status !== "vj_1_not_implemented", "frame_vj1_status")
+  pushIf(warnings, frame.vj2Status !== "vj_2_not_implemented", "frame_vj2_status")
   pushIf(warnings, sourceRecord.canShowToPlayer !== false, "source_visibility")
   pushIf(warnings, candidate.canShowToPlayer !== false, "candidate_visibility")
   pushIf(warnings, frame.sourceImageSha256.length !== 64, "sha256")
@@ -331,31 +346,26 @@ function validateApprovedFrameRecord(
 function validateCurrentRuntimeBinding(
   record: WorldVisualApprovedFrameRecord,
   input: {
-    currentTick?: number
-    currentSourceFactIds?: string[]
+    currentTick: number
+    currentSourceFactIds: string[]
   }
 ): string[] {
   const warnings: string[] = []
   const runtimeFrame = record.approvedFrame as RuntimeBoundApprovedFrame
 
-  if (input.currentTick !== undefined) {
-    pushIf(warnings, record.tick !== input.currentTick, "current_tick_mismatch")
-    pushIf(warnings, runtimeFrame.tick !== input.currentTick, "current_frame_tick_mismatch")
-    pushIf(warnings, record.approvedFrame.frameId !== `approved-frame-${record.worldId}-${input.currentTick}`, "current_frame_id_mismatch")
-  }
-
-  if (input.currentSourceFactIds !== undefined) {
-    pushIf(
-      warnings,
-      !sameStringSet(record.sourceFactIds, input.currentSourceFactIds),
-      "current_source_facts_mismatch"
-    )
-    pushIf(
-      warnings,
-      !sameStringSet(record.approvedFrame.sourceFactIds, input.currentSourceFactIds),
-      "current_frame_source_facts_mismatch"
-    )
-  }
+  pushIf(warnings, record.tick !== input.currentTick, "current_tick_mismatch")
+  pushIf(warnings, runtimeFrame.tick !== input.currentTick, "current_frame_tick_mismatch")
+  pushIf(warnings, record.approvedFrame.frameId !== `approved-frame-${record.worldId}-${input.currentTick}`, "current_frame_id_mismatch")
+  pushIf(
+    warnings,
+    !sameStringSet(record.sourceFactIds, input.currentSourceFactIds),
+    "current_source_facts_mismatch"
+  )
+  pushIf(
+    warnings,
+    !sameStringSet(record.approvedFrame.sourceFactIds, input.currentSourceFactIds),
+    "current_frame_source_facts_mismatch"
+  )
 
   return warnings
 }
@@ -418,6 +428,12 @@ async function writeLatestWorldVisualApprovedFrameIndex(input: {
     frameWorldId: runtimeFrame.worldId,
     frameTick: runtimeFrame.tick,
     frameId: input.record.approvedFrame.frameId,
+    approvalScope: input.record.approvedFrame.approvalScope,
+    productionApprovalStatus: input.record.approvedFrame.productionApprovalStatus,
+    approvedForProduction: input.record.approvedFrame.approvedForProduction,
+    vj0Status: input.record.approvedFrame.vj0Status,
+    vj1Status: input.record.approvedFrame.vj1Status,
+    vj2Status: input.record.approvedFrame.vj2Status,
     sourceAiImageCandidateId: input.record.sourceAiImageCandidateId,
     sourceGenerationConditionId: input.record.sourceGenerationConditionId,
     sourceAiImageGenerationRequestId:
@@ -435,6 +451,8 @@ async function writeLatestWorldVisualApprovedFrameIndex(input: {
       "world_visual_approved_frame_latest_index",
       "image_byte_fingerprint_bound",
       "vj_0_approved_frame_record_gate_passed",
+      "approved_for_controlled_mvp",
+      "not_approved_for_production",
     ],
   }
 
