@@ -5,6 +5,8 @@ import {
 } from "@/world/world-visual-painter"
 import type { WorldVisualApprovedFrame } from "@/world/world-visual-painter"
 
+type ApprovedFrameReadStatus = "found" | "empty" | "invalid" | "failed"
+
 export async function WorldLiveRuntimePage() {
   const runtimeView = await readWorldRuntimeForView()
 
@@ -41,6 +43,12 @@ export async function WorldLiveRuntimePage() {
   })
   const approvedFrameRecord = approvedFrameReadResult.record
   const approvedFrame = approvedFrameRecord?.approvedFrame ?? null
+  const approvedFrameBlock = buildApprovedFrameBlockView({
+    status: approvedFrameReadResult.status,
+    path: approvedFrameReadResult.path,
+    warnings: approvedFrameReadResult.warnings,
+    tags: approvedFrameReadResult.tags,
+  })
   const canRuntimeRender =
     approvedFrameReadResult.status === "found" &&
     approvedFrameRecord?.canShowToPlayer === true &&
@@ -91,11 +99,11 @@ export async function WorldLiveRuntimePage() {
         <div style={blockedWorldStyles.brand}>AI-PET-WORLD</div>
         <div style={blockedWorldStyles.tick}>Tick {painterDecision.factManifest.tick}</div>
         <h1 style={blockedWorldStyles.title}>
-          世界视觉导演尚未就绪
-          <span style={blockedWorldStyles.titleSub}>WorldVisualPainter not ready</span>
+          {approvedFrameBlock.titleZh}
+          <span style={blockedWorldStyles.titleSub}>{approvedFrameBlock.titleEn}</span>
         </h1>
-        <p style={blockedWorldStyles.body}>{painterDecision.reason.zh}</p>
-        <p style={blockedWorldStyles.body}>{painterDecision.reason.en}</p>
+        <p style={blockedWorldStyles.body}>{approvedFrameBlock.messageZh}</p>
+        <p style={blockedWorldStyles.body}>{approvedFrameBlock.messageEn}</p>
         <div style={blockedWorldStyles.metaGrid}>
           <div style={blockedWorldStyles.metaItem}>
             <span style={blockedWorldStyles.metaLabel}>MVP Target / MVP 目标</span>
@@ -116,11 +124,26 @@ export async function WorldLiveRuntimePage() {
           <div style={blockedWorldStyles.metaItem}>
             <span style={blockedWorldStyles.metaLabel}>ApprovedFrame / 审核帧</span>
             <span>读取状态：{approvedFrameReadResult.status}</span>
+            <span>页面状态：{approvedFrameBlock.apiState}</span>
             <span>
-              只有 ApprovedFrameRecord 与 ApprovedFrame 同时允许展示，且 sha256 / byteLength / contentType / payloadQualityPassed 全部有效时，Runtime Render 才会显示图片。
+              VJ-0 阻断：{approvedFrameBlock.vj0Blocked ? "是" : "否"}
+            </span>
+            <span>{approvedFrameBlock.displayRuleZh}</span>
+          </div>
+          <div style={blockedWorldStyles.metaItem}>
+            <span style={blockedWorldStyles.metaLabel}>Read audit / 读取审计</span>
+            <span>路径：{approvedFrameBlock.path}</span>
+            <span>
+              warnings：
+              {approvedFrameBlock.warnings.length > 0
+                ? approvedFrameBlock.warnings.join(" / ")
+                : "无"}
             </span>
             <span>
-              当前展示入口只读取 data/world-approved-frames/latest-approved-frame.json。
+              tags：
+              {approvedFrameBlock.tags.length > 0
+                ? approvedFrameBlock.tags.join(" / ")
+                : "无"}
             </span>
           </div>
           <div style={blockedWorldStyles.metaItem}>
@@ -155,6 +178,80 @@ export async function WorldLiveRuntimePage() {
       </section>
     </main>
   )
+}
+
+function buildApprovedFrameBlockView(input: {
+  status: ApprovedFrameReadStatus
+  path: string
+  warnings: string[]
+  tags: string[]
+}) {
+  if (input.status === "invalid") {
+    return {
+      apiState: "approved_frame_blocked_by_vj_0_read_gate",
+      titleZh: "世界画面被 VJ-0 阻断",
+      titleEn: "ApprovedFrame blocked by VJ-0",
+      messageZh:
+        "已读取到 ApprovedFrameRecord，但它没有通过 VJ-0 读取闸门。/world 不会展示旧图或坏图。",
+      messageEn:
+        "An ApprovedFrameRecord was found, but it failed the VJ-0 read gate. /world will not display stale or invalid imagery.",
+      displayRuleZh:
+        "invalid 状态下只能显示阻断说明，不能渲染任何 ApprovedFrame 图片。",
+      vj0Blocked: true,
+      path: input.path,
+      warnings: input.warnings,
+      tags: input.tags,
+    }
+  }
+
+  if (input.status === "failed") {
+    return {
+      apiState: "approved_frame_read_failed",
+      titleZh: "世界画面读取失败",
+      titleEn: "ApprovedFrame read failed",
+      messageZh:
+        "ApprovedFrameRecord 读取失败。为避免展示不可信画面，/world 继续阻断。",
+      messageEn:
+        "ApprovedFrameRecord could not be read. /world remains blocked to avoid displaying untrusted imagery.",
+      displayRuleZh: "读取失败时只能显示阻断说明，不能回退展示旧图。",
+      vj0Blocked: true,
+      path: input.path,
+      warnings: input.warnings,
+      tags: input.tags,
+    }
+  }
+
+  if (input.status === "found") {
+    return {
+      apiState: "approved_frame_found_but_runtime_gate_blocked",
+      titleZh: "世界画面尚未通过展示闸门",
+      titleEn: "ApprovedFrame blocked by Runtime Render gate",
+      messageZh:
+        "ApprovedFrameRecord 已存在，但 Runtime Render 必需字段未全部通过。/world 不展示图片。",
+      messageEn:
+        "An ApprovedFrameRecord exists, but required Runtime Render fields did not all pass. /world will not display the image.",
+      displayRuleZh:
+        "found 但未通过 Runtime Render gate 时，仍然只能显示阻断说明。",
+      vj0Blocked: true,
+      path: input.path,
+      warnings: input.warnings,
+      tags: input.tags,
+    }
+  }
+
+  return {
+    apiState: "approved_frame_empty",
+    titleZh: "世界视觉导演尚未就绪",
+    titleEn: "WorldVisualPainter not ready",
+    messageZh: "还没有 ApprovedFrame。需要先生成候选图并通过 VisualJudge。",
+    messageEn:
+      "No ApprovedFrame exists yet. Generate a candidate and pass VisualJudge first.",
+    displayRuleZh: "没有 ApprovedFrame 时，/world 必须继续阻断。",
+    vj0Blocked: false,
+    path: input.path,
+    warnings: input.warnings,
+    tags: input.tags,
+  }
 }
 
 function canRenderApprovedFrame(approvedFrame: WorldVisualApprovedFrame): boolean {
