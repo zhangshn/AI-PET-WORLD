@@ -6,6 +6,7 @@ import {
   readLatestWorldVisualCandidateRecord,
   readLatestWorldVisualFixPlanRecord,
 } from "@/world/world-visual-painter"
+import type { WorldVisualApprovedFrame } from "@/world/world-visual-painter"
 
 type IntegrityCheck = {
   id: string
@@ -15,6 +16,8 @@ type IntegrityCheck = {
   en: string
   tags: string[]
 }
+
+type ApprovedFrameReadStatus = "found" | "empty" | "invalid" | "failed"
 
 export async function GET() {
   const runtimeReadResult = await readWorldRuntimeSaveRecord()
@@ -64,6 +67,14 @@ export async function GET() {
   const approvedFrameDoubleGatePassed =
     approvedFrameRecord?.canShowToPlayer === true &&
     approvedFrame?.canShowToPlayer === true
+  const approvedFrameGate = buildApprovedFrameGateSummary({
+    status: approvedFrameReadResult.status,
+    path: approvedFrameReadResult.path,
+    warnings: approvedFrameReadResult.warnings,
+    tags: approvedFrameReadResult.tags,
+    recordCanShowToPlayer: approvedFrameRecord?.canShowToPlayer ?? false,
+    approvedFrame,
+  })
 
   const checks: IntegrityCheck[] = [
     check(
@@ -153,11 +164,29 @@ export async function GET() {
       ["visual_fix", "world_facts_locked"]
     ),
     check(
+      "approved_frame_read_gate_status",
+      approvedFrameReadResult.status !== "invalid" &&
+        approvedFrameReadResult.status !== "failed",
+      "high",
+      "ApprovedFrame 读取闸门不能返回 invalid 或 failed。",
+      "ApprovedFrame read gate must not return invalid or failed.",
+      ["approved_frame", "vj_0_read_gate"]
+    ),
+    check(
       "approved_frame_record_gate_if_exists",
       !approvedFrameRecord || approvedFrameDoubleGatePassed,
       "high",
       "ApprovedFrameRecord 与 ApprovedFrame 必须同时允许展示。",
       "ApprovedFrameRecord and ApprovedFrame must both allow display.",
+      ["approved_frame", "runtime_render_gate"]
+    ),
+    check(
+      "approved_frame_runtime_gate_if_found",
+      approvedFrameReadResult.status !== "found" ||
+        approvedFrameGate.canRuntimeRender,
+      "high",
+      "found 状态的 ApprovedFrame 必须通过 Runtime Render 硬字段闸门。",
+      "A found ApprovedFrame must pass the Runtime Render hard-field gate.",
       ["approved_frame", "runtime_render_gate"]
     ),
     check(
@@ -191,10 +220,11 @@ export async function GET() {
         approvedFrameStatus: approvedFrameReadResult.status,
         hasApprovedFrame: Boolean(approvedFrameRecord),
       },
+      approvedFrameGate,
       checks,
       failedChecks,
       highSeverityFailedCount: highSeverityFailedChecks.length,
-      canShowToPlayer: Boolean(approvedFrameDoubleGatePassed && ok),
+      canShowToPlayer: Boolean(approvedFrameGate.canRuntimeRender && ok),
       displayRule:
         "Runtime Render 只能展示通过完整性检查且拥有 ApprovedFrame 的图像。",
       displayRuleEn:
@@ -202,6 +232,12 @@ export async function GET() {
       tags: [
         "world_visual_integrity_api",
         ok ? "integrity_passed" : "integrity_failed",
+        approvedFrameGate.canRuntimeRender
+          ? "runtime_render_allowed"
+          : "runtime_render_blocked",
+        approvedFrameGate.vj0Blocked
+          ? "vj_0_approved_frame_blocked"
+          : "vj_0_approved_frame_not_blocked",
         "world_generation_condition_checked",
         "status_only",
         "does_not_generate",
@@ -209,6 +245,90 @@ export async function GET() {
       ],
     },
     { status: ok ? 200 : 422 }
+  )
+}
+
+function buildApprovedFrameGateSummary(input: {
+  status: ApprovedFrameReadStatus
+  path: string
+  warnings: string[]
+  tags: string[]
+  recordCanShowToPlayer: boolean
+  approvedFrame: WorldVisualApprovedFrame | null
+}) {
+  const hardFieldsValid = input.approvedFrame
+    ? approvedFrameHardFieldsValid(input.approvedFrame)
+    : false
+  const canRuntimeRender =
+    input.status === "found" &&
+    input.recordCanShowToPlayer === true &&
+    input.approvedFrame?.canShowToPlayer === true &&
+    hardFieldsValid
+
+  return {
+    status: input.status,
+    apiState: buildApprovedFrameApiState(input.status, canRuntimeRender),
+    vj0Blocked: input.status === "invalid" || input.status === "failed",
+    canRuntimeRender,
+    canShowToPlayer: canRuntimeRender,
+    recordCanShowToPlayer: input.recordCanShowToPlayer,
+    approvedFrameCanShowToPlayer: input.approvedFrame?.canShowToPlayer ?? false,
+    hardFieldsValid,
+    sourceImageSha256Bound:
+      typeof input.approvedFrame?.sourceImageSha256 === "string" &&
+      input.approvedFrame.sourceImageSha256.length === 64,
+    sourceImageByteLengthBound:
+      typeof input.approvedFrame?.sourceImageByteLength === "number" &&
+      input.approvedFrame.sourceImageByteLength > 0,
+    sourceImageContentTypeBound:
+      typeof input.approvedFrame?.sourceImageContentType === "string" &&
+      isApprovedContentType(input.approvedFrame.sourceImageContentType),
+    sourceImagePayloadQualityPassed:
+      input.approvedFrame?.sourceImagePayloadQualityPassed === true,
+    path: input.path,
+    warnings: input.warnings,
+    tags: [
+      "approved_frame_gate_summary",
+      canRuntimeRender ? "runtime_render_allowed" : "runtime_render_blocked",
+      input.status === "invalid"
+        ? "vj_0_read_gate_blocked"
+        : "vj_0_read_gate_not_invalid",
+      ...input.tags,
+    ],
+  }
+}
+
+function buildApprovedFrameApiState(
+  status: ApprovedFrameReadStatus,
+  canRuntimeRender: boolean
+): string {
+  if (canRuntimeRender) return "approved_frame_ready_for_world"
+  if (status === "empty") return "approved_frame_empty"
+  if (status === "invalid") return "approved_frame_blocked_by_vj_0_read_gate"
+  if (status === "failed") return "approved_frame_read_failed"
+  return "approved_frame_found_but_runtime_gate_blocked"
+}
+
+function approvedFrameHardFieldsValid(
+  approvedFrame: WorldVisualApprovedFrame
+): boolean {
+  return (
+    approvedFrame.canShowToPlayer === true &&
+    typeof approvedFrame.sourceImageSha256 === "string" &&
+    approvedFrame.sourceImageSha256.length === 64 &&
+    typeof approvedFrame.sourceImageByteLength === "number" &&
+    approvedFrame.sourceImageByteLength > 0 &&
+    typeof approvedFrame.sourceImageContentType === "string" &&
+    isApprovedContentType(approvedFrame.sourceImageContentType) &&
+    approvedFrame.sourceImagePayloadQualityPassed === true
+  )
+}
+
+function isApprovedContentType(contentType: string): boolean {
+  return (
+    contentType === "image/png" ||
+    contentType === "image/webp" ||
+    contentType === "image/jpeg"
   )
 }
 
