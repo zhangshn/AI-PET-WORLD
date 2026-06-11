@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server"
 
 import { readWorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-store-adapter"
-import { readLatestWorldVisualCandidateRecord } from "@/world/world-visual-painter"
+import {
+  buildWorldVisualFactManifest,
+  readLatestWorldVisualCandidateRecord,
+} from "@/world/world-visual-painter"
 
 export async function GET() {
   const readResult = await readWorldRuntimeSaveRecord()
@@ -20,9 +23,14 @@ export async function GET() {
     )
   }
 
+  const factManifest = buildWorldVisualFactManifest({
+    saveRecord: readResult.record,
+  })
   const candidateReadResult = await readLatestWorldVisualCandidateRecord({
     ownerId: readResult.record.ownerId,
     worldId: readResult.record.worldId,
+    currentTick: readResult.record.tick,
+    currentSourceFactIds: factManifest.sourceFactIds,
   })
 
   if (candidateReadResult.status !== "found" || !candidateReadResult.record) {
@@ -30,17 +38,46 @@ export async function GET() {
       {
         ok: false,
         status: candidateReadResult.status,
-        message: "还没有隐藏候选图，需要先调用 /api/world/visual/generate。",
+        message:
+          candidateReadResult.status === "invalid"
+            ? "隐藏候选图没有通过当前 VJ-0 读取闸门，不能进入 VisualJudge。"
+            : "还没有隐藏候选图，需要先调用 /api/world/visual/generate。",
         messageEn:
-          "No hidden candidate exists yet. Call /api/world/visual/generate first.",
+          candidateReadResult.status === "invalid"
+            ? "The hidden candidate did not pass the current VJ-0 read gate and cannot enter VisualJudge."
+            : "No hidden candidate exists yet. Call /api/world/visual/generate first.",
+        currentRuntimeGate: {
+          worldId: readResult.record.worldId,
+          tick: readResult.record.tick,
+          sourceFactIds: factManifest.sourceFactIds,
+          sourceFactIdCount: factManifest.sourceFactIds.length,
+        },
+        readAudit: {
+          status: candidateReadResult.status,
+          path: candidateReadResult.path,
+          warnings: candidateReadResult.warnings,
+          tags: candidateReadResult.tags,
+        },
         canShowToPlayer: false,
         displayRule:
-          "没有隐藏候选图时，VisualJudge 不能运行，/world 也不能展示画面。",
+          "没有匹配当前 tick/sourceFactIds 的隐藏候选图时，VisualJudge 不能运行，/world 也不能展示画面。",
         displayRuleEn:
-          "Without a hidden candidate, VisualJudge cannot run and /world cannot display anything.",
-        tags: ["world_visual_candidate_api", ...candidateReadResult.tags],
+          "Without a hidden candidate that matches the current tick/sourceFactIds, VisualJudge cannot run and /world cannot display anything.",
+        tags: [
+          "world_visual_candidate_api",
+          "current_tick_gate_checked",
+          "current_source_facts_gate_checked",
+          ...candidateReadResult.tags,
+        ],
       },
-      { status: candidateReadResult.status === "empty" ? 404 : 500 }
+      {
+        status:
+          candidateReadResult.status === "empty"
+            ? 404
+            : candidateReadResult.status === "invalid"
+              ? 409
+              : 500,
+      }
     )
   }
 
@@ -53,6 +90,12 @@ export async function GET() {
       ok: true,
       status: candidateReadResult.status,
       record,
+      currentRuntimeGate: {
+        worldId: readResult.record.worldId,
+        tick: readResult.record.tick,
+        sourceFactIds: factManifest.sourceFactIds,
+        sourceFactIdCount: factManifest.sourceFactIds.length,
+      },
       provenance: {
         candidateId: record.candidate.candidateId,
         sourceKind: record.candidate.sourceKind,
@@ -96,6 +139,8 @@ export async function GET() {
         "world_visual_candidate_api",
         "hidden_candidate_only",
         "provenance_exposed_for_audit",
+        "current_tick_gate_checked",
+        "current_source_facts_gate_checked",
         "not_player_visible",
         ...candidateReadResult.tags,
       ],
