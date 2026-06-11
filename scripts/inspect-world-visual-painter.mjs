@@ -10,10 +10,10 @@ console.log(
       modelVersion,
       modelAssetDirConfigured: Boolean(modelAssetDir),
       canGenerate: Boolean(enabled && modelVersion && modelAssetDir),
-      externalProviderAllowed: false,
+      externalDrawingApiAllowed: false,
       formalManualImportAllowed: false,
-      displayRule: "Only an ApprovedFrame may be shown to players.",
-      nextStage: "AI-PAINTER A3: VJ-0 display gate",
+      displayRule: "Only a current-runtime ApprovedFrame may be shown to players.",
+      currentModule: "Module B: VJ-0 hard gate",
     },
     null,
     2
