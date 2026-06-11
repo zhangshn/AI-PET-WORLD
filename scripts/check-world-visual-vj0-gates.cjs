@@ -4,6 +4,8 @@ const path = require("node:path")
 const ROOT = process.cwd()
 
 const files = {
+  schema: "src/world/world-visual-painter/world-visual-painter-schema.ts",
+  authorizedData: "src/world/world-visual-painter/authorized-data/authorized-data-manifest.ts",
   visualReview: "src/world/world-visual-painter/visual-review/visual-review-builder.ts",
   approvedBuilder: "src/world/world-visual-painter/approved-frame/approved-frame-builder.ts",
   approvedStore: "src/world/world-visual-painter/approved-frame/approved-frame-store.ts",
@@ -16,6 +18,8 @@ const files = {
 const source = Object.fromEntries(
   Object.entries(files).map(([key, relPath]) => [key, read(relPath)])
 )
+
+const allFormalVisualSource = joinSources(source)
 
 const checks = [
   assertIncludes(
@@ -138,34 +142,59 @@ const checks = [
     source.status,
     "currentFrameTickMatched"
   ),
+  assertIncludes(
+    "Schema 明确定义 ApprovedFrame worldId",
+    source.schema,
+    "worldId: string"
+  ),
+  assertIncludes(
+    "Schema 明确定义 ApprovedFrame tick",
+    source.schema,
+    "tick: number"
+  ),
+  assertIncludes(
+    "授权数据使用 condition reference 命名",
+    source.authorizedData,
+    "canUseAsConditionReference"
+  ),
   assertNotIncludes(
     "正式视觉代码不得保留 PromptPackage",
-    joinSources(source),
+    allFormalVisualSource,
     "PromptPackage"
   ),
   assertNotIncludes(
     "正式视觉代码不得保留 ControlSketch",
-    joinSources(source),
+    allFormalVisualSource,
     "ControlSketch"
   ),
   assertNotIncludes(
     "正式视觉代码不得保留 positivePrompt",
-    joinSources(source),
+    allFormalVisualSource,
     "positivePrompt"
   ),
   assertNotIncludes(
     "正式视觉代码不得保留 negativePrompt",
-    joinSources(source),
+    allFormalVisualSource,
     "negativePrompt"
   ),
   assertNotIncludes(
+    "正式视觉代码不得保留 prompt_reference_only",
+    allFormalVisualSource,
+    "prompt_reference_only"
+  ),
+  assertNotIncludes(
+    "正式视觉代码不得保留 canUseAsPromptReference",
+    allFormalVisualSource,
+    "canUseAsPromptReference"
+  ),
+  assertNotIncludes(
     "正式视觉代码不得保留 not_from_control_sketch",
-    joinSources(source),
+    allFormalVisualSource,
     "not_from_control_sketch"
   ),
   assertNotIncludes(
     "正式视觉代码不得保留 prompt_or_regeneration_only",
-    joinSources(source),
+    allFormalVisualSource,
     "prompt_or_regeneration_only"
   ),
 ]
