@@ -107,7 +107,7 @@ export type WorldVisualAuthorizedDataKind =
 export type WorldVisualAuthorizedDataUsage =
   | "train_image_model"
   | "extract_visual_rules"
-  | "prompt_reference_only"
+  | "condition_reference_only"
   | "blocked"
 
 export type WorldVisualAuthorizedDataItem = {
@@ -120,7 +120,7 @@ export type WorldVisualAuthorizedDataItem = {
   licenseEvidence: WorldVisualBilingualText
   canTrainOnImagePixels: boolean
   canExtractRules: boolean
-  canUseAsPromptReference: boolean
+  canUseAsConditionReference: boolean
   mustAvoidDirectCopy: true
   status: "accepted" | "blocked"
   notes: WorldVisualBilingualText
@@ -471,6 +471,8 @@ export type WorldVisualAiImageCandidate = {
 
 export type WorldVisualApprovedFrame = {
   frameId: string
+  worldId: string
+  tick: number
   approvedAt: string
   sourceImageCandidateId: string
   reviewScore: number
