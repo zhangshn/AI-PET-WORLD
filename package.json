@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "check:encoding": "node scripts/check-source-encoding.mjs",
+    "check:vj0": "node scripts/check-world-visual-vj0-gates.cjs",
     "inspect:visual-painter": "node scripts/inspect-world-visual-painter.mjs",
     "smoke:runtime": "node scripts/run-world-runtime-smoke.cjs",
     "smoke:space": "node scripts/run-world-space-smoke.cjs",
