@@ -27,11 +27,11 @@ The world page can only show `ApprovedFrame`.
 
 No candidate image, sketch, debug view, or programmatic drawing may be shown to the player.
 
-Current formal visual documents:
+Current formal architecture documents:
 
 ```txt
-docs/AI_PAINTER_PLAN.md
-docs/AI_PAINTER_DELIVERY_SCHEDULE.md
+docs/AI_PET_WORLD_MASTER_ARCHITECTURE.md
+docs/AI_PET_WORLD_MASTER_ARCHITECTURE_CN.docx
 ```
 
 ## Current API
