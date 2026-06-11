@@ -7,6 +7,7 @@ import {
   readLatestWorldVisualCandidateRecord,
   readLatestWorldVisualFixPlanRecord,
 } from "@/world/world-visual-painter"
+import type { WorldVisualApprovedFrame } from "@/world/world-visual-painter"
 
 type IntegrityCheck = {
   id: string
@@ -15,6 +16,11 @@ type IntegrityCheck = {
   zh: string
   en: string
   tags: string[]
+}
+
+type RuntimeBoundApprovedFrame = WorldVisualApprovedFrame & {
+  worldId?: unknown
+  tick?: unknown
 }
 
 export async function GET() {
@@ -66,6 +72,7 @@ export async function GET() {
   const fixPlanRecord = fixPlanReadResult.record
   const approvedFrameRecord = approvedFrameReadResult.record
   const approvedFrame = approvedFrameRecord?.approvedFrame ?? null
+  const runtimeFrame = approvedFrame as RuntimeBoundApprovedFrame | null
   const approvedFrameDoubleGatePassed =
     approvedFrameReadResult.status === "found" &&
     approvedFrameRecord?.canShowToPlayer === true &&
@@ -74,10 +81,32 @@ export async function GET() {
     Boolean(approvedFrameRecord) &&
     approvedFrameRecord?.worldId === runtime.worldId &&
     approvedFrameRecord?.tick === runtime.tick &&
-    sameStringSet(approvedFrameRecord?.sourceFactIds ?? [], factManifest.sourceFactIds)
+    runtimeFrame?.worldId === runtime.worldId &&
+    runtimeFrame?.tick === runtime.tick &&
+    sameStringSet(approvedFrameRecord?.sourceFactIds ?? [], factManifest.sourceFactIds) &&
+    sameStringSet(approvedFrame?.sourceFactIds ?? [], factManifest.sourceFactIds)
 
   const checks: IntegrityCheck[] = [
     check("runtime_world_exists", true, "high", "正式世界运行记录存在。", "Runtime world record exists.", ["runtime_world"]),
+    check(
+      "generation_condition_exists_if_candidate_exists",
+      !candidateRecord || Boolean(condition),
+      "high",
+      "候选图如存在，必须存在 GenerationCondition。",
+      "If a candidate exists, GenerationCondition must exist.",
+      ["condition", "candidate"]
+    ),
+    check(
+      "generation_condition_current_runtime_if_exists",
+      !condition ||
+        (condition.worldId === runtime.worldId &&
+          condition.tick === runtime.tick &&
+          sameStringSet(condition.sourceFactIds, factManifest.sourceFactIds)),
+      "high",
+      "GenerationCondition 必须匹配当前 Runtime 的 worldId、tick 与 sourceFactIds。",
+      "GenerationCondition must match the current Runtime worldId, tick, and sourceFactIds.",
+      ["condition", "current_runtime"]
+    ),
     check(
       "candidate_read_gate_if_exists",
       candidateReadResult.status !== "invalid" && candidateReadResult.status !== "failed",
@@ -101,7 +130,8 @@ export async function GET() {
           candidateRecord.tick === runtime.tick &&
           condition?.worldId === runtime.worldId &&
           condition?.tick === runtime.tick &&
-          sameStringSet(candidateRecord.sourceFactIds, factManifest.sourceFactIds)),
+          sameStringSet(candidateRecord.sourceFactIds, factManifest.sourceFactIds) &&
+          sameStringSet(candidate?.sourceFactIds ?? [], factManifest.sourceFactIds)),
       "high",
       "候选图如存在，必须绑定当前 worldId、当前 tick 与当前 sourceFactIds。",
       "If a candidate exists, it must bind the current worldId, current tick, and current sourceFactIds.",
@@ -129,11 +159,14 @@ export async function GET() {
             request.condition.conditionId === condition.conditionId &&
             request.condition.worldId === runtime.worldId &&
             request.condition.tick === runtime.tick &&
-            sameStringSet(request.condition.sourceFactIds, factManifest.sourceFactIds)
+            sameStringSet(request.condition.sourceFactIds, factManifest.sourceFactIds) &&
+            request.output.width === candidate.width &&
+            request.output.height === candidate.height &&
+            request.output.imageFormat === candidate.imageFormat
         ),
       "high",
-      "候选图如存在，必须绑定内部模型生成请求，且请求必须绑定当前事实链。",
-      "If a candidate exists, it must bind an internal model generation request, and the request must bind the current fact chain.",
+      "候选图如存在，必须绑定内部模型生成请求，且请求必须绑定当前事实链与候选图输出。",
+      "If a candidate exists, it must bind an internal model generation request, and the request must bind the current fact chain and candidate output.",
       ["candidate", "generation_request"]
     ),
     check(
@@ -163,22 +196,35 @@ export async function GET() {
     check(
       "approved_frame_sources_candidate_if_exists",
       !approvedFrameRecord ||
-        approvedFrameRecord.sourceCandidateRecord.candidate.candidateId ===
-          approvedFrameRecord.sourceAiImageCandidateId,
+        (approvedFrameRecord.sourceCandidateRecord.candidate.candidateId ===
+          approvedFrameRecord.sourceAiImageCandidateId &&
+          approvedFrame?.sourceImageCandidateId === approvedFrameRecord.sourceAiImageCandidateId),
       "high",
       "ApprovedFrame 必须可追溯到通过审核的候选图。",
       "ApprovedFrame must trace back to the reviewed candidate.",
       ["approved_frame", "source_candidate_record"]
     ),
     check(
+      "approved_frame_review_passed_if_exists",
+      !approvedFrameRecord ||
+        (approvedFrameRecord.reviewReport.status === "passed_candidate" &&
+          approvedFrameRecord.reviewReport.canShowToPlayer === false),
+      "high",
+      "ApprovedFrame 必须绑定真实通过的 ReviewReport，ReviewReport 本身仍不可直接展示。",
+      "ApprovedFrame must bind a genuinely passed ReviewReport, while the ReviewReport itself remains non-displayable.",
+      ["approved_frame", "review_report"]
+    ),
+    check(
       "approved_frame_image_fingerprint_if_exists",
       !approvedFrame ||
         (approvedFrame.sourceImageSha256.length === 64 &&
           approvedFrame.sourceImageByteLength > 0 &&
+          typeof approvedFrame.sourceImageContentType === "string" &&
+          isApprovedContentType(approvedFrame.sourceImageContentType) &&
           approvedFrame.sourceImagePayloadQualityPassed === true),
       "high",
-      "ApprovedFrame 必须绑定图片 sha256、字节数与基础文件质量结果。",
-      "ApprovedFrame must bind image sha256, byte length, and baseline file quality result.",
+      "ApprovedFrame 必须绑定图片 sha256、字节数、Content-Type 与基础文件质量结果。",
+      "ApprovedFrame must bind image sha256, byte length, Content-Type, and baseline file quality result.",
       ["approved_frame", "image_fingerprint"]
     ),
   ]
@@ -201,6 +247,8 @@ export async function GET() {
       pipelinePresence: {
         candidateStatus: candidateReadResult.status,
         hasCandidate: Boolean(candidateRecord),
+        hasCondition: Boolean(condition),
+        hasGenerationRequest: Boolean(request),
         fixPlanStatus: fixPlanReadResult.status,
         hasFixPlan: Boolean(fixPlanRecord),
         approvedFrameStatus: approvedFrameReadResult.status,
@@ -260,6 +308,14 @@ function check(
     en,
     tags: [id, passed ? "passed" : "failed", ...tags],
   }
+}
+
+function isApprovedContentType(contentType: string): boolean {
+  return (
+    contentType === "image/png" ||
+    contentType === "image/webp" ||
+    contentType === "image/jpeg"
+  )
 }
 
 function sameStringSet(left: string[], right: string[]): boolean {
