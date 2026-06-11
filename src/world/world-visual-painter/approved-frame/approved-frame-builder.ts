@@ -30,6 +30,11 @@ type RuntimeBoundCandidate = WorldVisualAiImageCandidate & {
   tick?: unknown
 }
 
+type RuntimeBoundApprovedFrame = WorldVisualApprovedFrame & {
+  worldId: string
+  tick: number
+}
+
 export function buildWorldVisualApprovedFrame(input: {
   factManifest: WorldVisualFactManifest
   generationCondition: WorldVisualGenerationCondition
@@ -81,8 +86,10 @@ export function buildWorldVisualApprovedFrame(input: {
 
   const imageInspectionSummary = input.reviewReport.imageInspectionSummary
 
-  return {
+  const approvedFrame: RuntimeBoundApprovedFrame = {
     frameId: `approved-frame-${input.factManifest.worldId}-${input.factManifest.tick}`,
+    worldId: input.factManifest.worldId,
+    tick: input.factManifest.tick,
     approvedAt: new Date().toISOString(),
     sourceImageCandidateId: input.aiImageCandidate.candidateId,
     reviewScore: input.reviewReport.score,
@@ -103,6 +110,8 @@ export function buildWorldVisualApprovedFrame(input: {
     sourceFactIds: input.factManifest.sourceFactIds,
     tags: [
       "approved_frame",
+      `world_id:${input.factManifest.worldId}`,
+      `tick:${input.factManifest.tick}`,
       "ai_bitmap_candidate_approved",
       "runtime_render_ready",
       "world_facts_preserved",
@@ -118,9 +127,11 @@ export function buildWorldVisualApprovedFrame(input: {
       "candidate_tags_metadata_only",
       "approved_frame_display_gate_passed",
       "not_from_programmatic_renderer",
-      "not_from_control_sketch",
+      "world_generation_condition_source",
     ],
   }
+
+  return approvedFrame
 }
 
 function requiredReviewChecksPassed(
