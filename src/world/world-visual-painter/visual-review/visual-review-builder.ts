@@ -47,18 +47,24 @@ export async function buildWorldVisualReviewReport(input: {
   const score = Math.round(
     checks.reduce((sum, check) => sum + check.score, 0) / checks.length
   )
-  const status = checks.every((check) => check.passed)
-    ? "passed_candidate"
-    : "failed"
+  const vj0Passed = checks.every((check) => check.passed)
+  const status: WorldVisualReviewReport["status"] = vj0Passed
+    ? "vj_0_passed"
+    : "vj_0_failed"
 
   return {
     status,
+    vj0Status: status,
+    vj1Status: "vj_1_not_implemented",
+    vj2Status: "vj_2_not_implemented",
+    approvalScope: vj0Passed ? "approved_for_controlled_mvp" : "not_approved",
+    productionApprovalStatus: "not_approved_for_production",
     canShowToPlayer: false,
     reason:
-      status === "passed_candidate"
+      status === "vj_0_passed"
         ? {
-            zh: "AI 位图候选图通过 VJ-0 文件与事实硬闸门，可进入 ApprovedFrame 构建；在 ApprovedFrame 生成前仍禁止展示。",
-            en: "The AI bitmap candidate passed the VJ-0 file and fact hard gate and may enter ApprovedFrame building. It remains hidden until ApprovedFrame exists.",
+            zh: "AI 位图候选图只通过 VJ-0 文件与事实硬闸门。VJ-1 确定性视觉质量检查与 VJ-2 项目视觉判断模型尚未实现，因此不能标记为生产批准；当前只允许进入受控 MVP ApprovedFrame 构建。",
+            en: "The AI bitmap candidate passed only the VJ-0 file and fact hard gate. VJ-1 deterministic visual-quality checks and VJ-2 project visual-judge model are not implemented, so this is not production approved; it may only enter controlled MVP ApprovedFrame building.",
           }
         : {
             zh: "VJ-0 审核未通过：候选图、图片本体、条件绑定、生成请求、来源、事实链、授权或基础文件质量存在硬闸门问题，因此禁止展示。",
@@ -66,7 +72,23 @@ export async function buildWorldVisualReviewReport(input: {
           },
     score,
     imageInspectionSummary: buildImageInspectionSummary(inspection),
-    checks,
+    checks: [
+      ...checks,
+      notImplementedCheck(
+        "vj_1_not_implemented",
+        "VJ-1 确定性视觉质量检查未实现",
+        "VJ-1 deterministic visual-quality check is not implemented",
+        "尚未进行单色、空白、模糊、水印、文字、异常块、亮度、对比度、色彩范围和像素锐度等真实图片计算。",
+        "No real image computation has been run for solid/blank/blur/watermark/text/blocking/brightness/contrast/color-range/pixel-sharpness checks."
+      ),
+      notImplementedCheck(
+        "vj_2_not_implemented",
+        "VJ-2 项目视觉判断模型未实现",
+        "VJ-2 project visual-judge model is not implemented",
+        "尚未判断画面是否真实表达当前世界事实、是否符合项目像素风、构图是否合理、是否存在语义版权风险或连续性问题。",
+        "No project visual-judge model has checked fact expression, project pixel style, composition, semantic copyright risk, or continuity."
+      ),
+    ],
     requiredChecks: [
       {
         zh: "候选图必须是隐藏的 PNG/WebP/JPG 位图候选图，并满足基础尺寸要求。",
@@ -81,12 +103,16 @@ export async function buildWorldVisualReviewReport(input: {
         en: "The candidate must bind to the current WorldGenerationCondition worldId, tick, conditionId, and sourceFactIds.",
       },
       {
-        zh: "正式 ApprovedFrame 只允许 project_model_generated，并且必须绑定内部模型版本和生成请求。",
-        en: "Formal ApprovedFrame only allows project_model_generated and must bind the internal model version and generation request.",
+        zh: "受控 MVP ApprovedFrame 只允许 project_model_generated，并且必须绑定内部模型版本和生成请求；development_test_asset 不能进入正式 ApprovedFrame。",
+        en: "Controlled MVP ApprovedFrame only allows project_model_generated and must bind the internal model version and generation request; development_test_asset cannot enter formal ApprovedFrame.",
       },
       {
-        zh: "VJ-0 不接受候选图标签作为视觉质量、风格、无水印或版权安全的通过证据。",
-        en: "VJ-0 does not accept candidate tags as pass evidence for visual quality, style, watermark absence, or copyright safety.",
+        zh: "VJ-0 不接受候选图标签作为视觉质量、风格、无水印、事实呈现或版权语义安全的通过证据。",
+        en: "VJ-0 does not accept candidate tags as pass evidence for visual quality, style, watermark absence, fact expression, or semantic copyright safety.",
+      },
+      {
+        zh: "VJ-1/VJ-2 未实现前，只能生成受控 MVP ApprovedFrame，不能生成 production approved 帧。",
+        en: "Before VJ-1/VJ-2 are implemented, only controlled MVP ApprovedFrame may be created; production approved frames are forbidden.",
       },
       WORLD_VISUAL_MVP_TARGET_POLICY.displayGate,
     ],
@@ -95,6 +121,11 @@ export async function buildWorldVisualReviewReport(input: {
       "visual_judge",
       "vj_0_hard_gate",
       status,
+      "vj_1_not_implemented",
+      "vj_2_not_implemented",
+      vj0Passed ? "approved_for_controlled_mvp" : "not_approved",
+      "not_approved_for_production",
+      "production_approval_blocked_until_vj_1_vj_2",
       "real_image_bytes_required",
       "image_content_type_required",
       "image_byte_fingerprint_required",
@@ -103,7 +134,7 @@ export async function buildWorldVisualReviewReport(input: {
       "formal_project_model_source_required",
       "candidate_tags_are_metadata_only",
       "no_tag_based_quality_pass",
-      "display_blocked_until_approved_frame",
+      "display_blocked_until_controlled_mvp_approved_frame",
       "no_programmatic_renderer",
     ],
   }
@@ -142,6 +173,7 @@ function buildImageInspectionSummary(
       inspection.format ? `format_${inspection.format}` : "format_missing",
       inspection.byteLength > 0 ? "byte_length_present" : "byte_length_empty",
       inspection.sha256 ? "sha256_present" : "sha256_missing",
+      "vj_0_file_only_not_visual_quality",
       "not_player_visible",
     ],
   }
@@ -276,12 +308,12 @@ function buildReviewChecks(input: {
       bitmapPayloadIsSubstantial,
       bitmapPayloadIsSubstantial ? 86 : 0,
       "图片本体基础文件质量",
-      "Bitmap payload file quality",
+      "Bitmap payload file gate",
       bitmapPayloadIsSubstantial
-        ? `图片本体有效载荷达到基础文件质量门槛：${input.inspection.byteLength} bytes。`
+        ? `图片本体有效载荷达到 VJ-0 文件门槛：${input.inspection.byteLength} bytes。此项不代表画面美观、像素风、构图、水印或语义版权安全通过。`
         : `图片本体有效载荷过低：${input.inspection.byteLength} bytes，最低要求 ${minimumPayloadBytes} bytes。`,
       bitmapPayloadIsSubstantial
-        ? `The image payload passes the baseline file gate: ${input.inspection.byteLength} bytes.`
+        ? `The image payload passes the VJ-0 file gate: ${input.inspection.byteLength} bytes. This does not prove visual beauty, pixel style, composition, watermark absence, or semantic copyright safety.`
         : `The image payload is too small: ${input.inspection.byteLength} bytes, minimum ${minimumPayloadBytes} bytes.`
     ),
     check(
@@ -318,10 +350,10 @@ function buildReviewChecks(input: {
       "Candidate source kind",
       candidateSourceKind
         ? "候选图来源为 project_model_generated，并绑定内部模型版本。"
-        : "正式 ApprovedFrame 只允许 project_model_generated，开发测试资产不能进入正式展示。",
+        : "受控 MVP ApprovedFrame 只允许 project_model_generated，开发测试资产不能进入正式展示。",
       candidateSourceKind
         ? "The candidate source is project_model_generated and binds an internal model version."
-        : "Formal ApprovedFrame only allows project_model_generated; development test assets cannot enter formal display."
+        : "Controlled MVP ApprovedFrame only allows project_model_generated; development test assets cannot enter formal display."
     ),
     check(
       "candidate_generation_request",
@@ -350,17 +382,17 @@ function buildReviewChecks(input: {
         : "The candidate lacks the current world fact links."
     ),
     check(
-      "candidate_license",
+      "candidate_license_metadata",
       candidateHasAllowedLicense,
       candidateHasAllowedLicense ? 95 : 0,
-      "候选图授权",
-      "Candidate license",
+      "候选图授权元数据",
+      "Candidate license metadata",
       candidateHasAllowedLicense
-        ? "候选图已确认自有、CC0 或商业授权，并确认原创安全。"
-        : "候选图缺少允许使用的授权或原创确认。",
+        ? "候选图授权元数据为自有、CC0 或商业授权，并确认原创。此项只证明来源元数据，不证明 VJ-2 语义版权安全。"
+        : "候选图缺少允许使用的授权元数据或原创确认。",
       candidateHasAllowedLicense
-        ? "The candidate is confirmed as self-owned, CC0, or commercially licensed, with originality confirmed."
-        : "The candidate lacks allowed license or originality confirmation."
+        ? "The candidate license metadata is self-owned, CC0, or commercially licensed, with originality confirmed. This proves source metadata only, not VJ-2 semantic copyright safety."
+        : "The candidate lacks allowed license metadata or originality confirmation."
     ),
     check(
       "candidate_tags_not_used_as_quality_evidence",
@@ -368,8 +400,8 @@ function buildReviewChecks(input: {
       100,
       "候选图标签不作为质量证据",
       "Candidate tags are not quality evidence",
-      "VJ-0 只检查文件、字节、哈希、尺寸、来源和事实绑定；候选图标签仅作为来源元数据，不作为视觉质量、无水印、构图或版权安全的通过证据。",
-      "VJ-0 only checks files, bytes, hash, dimensions, source, and fact binding. Candidate tags are metadata only and are not pass evidence for visual quality, watermark absence, composition, or copyright safety."
+      "VJ-0 只检查文件、字节、哈希、尺寸、来源和事实绑定；候选图标签仅作为来源元数据，不作为画面美观、像素风、无水印、构图、世界事实呈现或版权语义安全的通过证据。",
+      "VJ-0 only checks files, bytes, hash, dimensions, source, and fact binding. Candidate tags are metadata only and are not pass evidence for beauty, pixel style, watermark absence, composition, world-fact expression, or semantic copyright safety."
     ),
   ]
 }
@@ -792,6 +824,23 @@ function check(
     label: { zh: zhLabel, en: enLabel },
     evidence: { zh: zhEvidence, en: enEvidence },
     tags: [id, passed ? "passed" : "failed"],
+  }
+}
+
+function notImplementedCheck(
+  id: "vj_1_not_implemented" | "vj_2_not_implemented",
+  zhLabel: string,
+  enLabel: string,
+  zhEvidence: string,
+  enEvidence: string
+): WorldVisualReviewCheck {
+  return {
+    id,
+    passed: false,
+    score: 0,
+    label: { zh: zhLabel, en: enLabel },
+    evidence: { zh: zhEvidence, en: enEvidence },
+    tags: [id, "not_implemented", "not_production_approval"],
   }
 }
 
