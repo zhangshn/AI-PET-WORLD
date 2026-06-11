@@ -165,13 +165,27 @@ export async function readLatestWorldVisualCandidateRecord(input: {
       return invalidRead(index.path, "Visual candidate record shape is invalid.")
     }
 
+    const validation = validateCandidateRecordRead(normalized)
+    if (!validation.ok) {
+      return invalidRead(
+        index.path,
+        "Visual candidate record failed VJ-0 read gate.",
+        validation.warnings,
+        validation.tags
+      )
+    }
+
     return {
       status: "found",
       record: normalized,
       path: index.path,
       message: "Visual candidate record loaded.",
       warnings: [],
-      tags: ["world_visual_candidate_store_read", "found"],
+      tags: [
+        "world_visual_candidate_store_read",
+        "found",
+        "vj_0_candidate_read_gate_passed",
+      ],
     }
   } catch (error) {
     if (isNodeFileError(error) && error.code === "ENOENT") {
@@ -271,6 +285,61 @@ function validateCandidateRecordInput(input: {
   }
 }
 
+function validateCandidateRecordRead(record: WorldVisualCandidateRecord): {
+  ok: boolean
+  warnings: string[]
+  tags: string[]
+} {
+  const warnings: string[] = []
+  const tags = ["vj_0_candidate_read_gate"]
+  const candidate = readRuntimeBoundCandidate(record.candidate)
+
+  if (record.ownerId.length === 0) warnings.push("record.ownerId is required.")
+  if (record.worldId.length === 0) warnings.push("record.worldId is required.")
+  if (!Number.isInteger(record.tick) || record.tick < 0) warnings.push("record.tick must be a non-negative integer.")
+  if (record.canShowToPlayer !== false) warnings.push("record.canShowToPlayer must be false.")
+  if (record.candidate.canShowToPlayer !== false) warnings.push("candidate.canShowToPlayer must be false.")
+  if (candidate.worldId !== record.worldId) warnings.push("candidate.worldId must match record worldId.")
+  if (candidate.tick !== record.tick) warnings.push("candidate.tick must match record tick.")
+  if (!record.candidate.tags.includes(`world_id:${record.worldId}`)) warnings.push("candidate must include world_id tag.")
+  if (!record.candidate.tags.includes(`tick:${record.tick}`)) warnings.push("candidate must include tick tag.")
+  if (!record.candidate.tags.includes("runtime_bound_candidate")) warnings.push("candidate must include runtime_bound_candidate tag.")
+  if (record.generationCondition.worldId !== record.worldId) warnings.push("generationCondition.worldId must match record worldId.")
+  if (record.generationCondition.tick !== record.tick) warnings.push("generationCondition.tick must match record tick.")
+  if (record.generationCondition.canShowToPlayer !== false) warnings.push("generationCondition.canShowToPlayer must be false.")
+  if (record.generationCondition.safetyCondition.requireVisualJudge !== true) warnings.push("generationCondition must require VisualJudge.")
+  if (record.generationCondition.safetyCondition.preserveWorldFacts !== true) warnings.push("generationCondition must preserve world facts.")
+  if (record.candidate.conditionId !== record.generationCondition.conditionId) warnings.push("candidate.conditionId must match generationCondition.conditionId.")
+  if (!sameStringSet(record.sourceFactIds, record.generationCondition.sourceFactIds)) warnings.push("record.sourceFactIds must match generationCondition.sourceFactIds.")
+  if (!sameStringSet(record.candidate.sourceFactIds, record.sourceFactIds)) warnings.push("candidate.sourceFactIds must match record.sourceFactIds.")
+
+  if (record.candidate.sourceKind === "project_model_generated") {
+    if (!record.candidate.modelVersion) warnings.push("project_model_generated candidate requires modelVersion.")
+    if (!record.aiImageGenerationRequest) warnings.push("project_model_generated candidate requires aiImageGenerationRequest.")
+    if (record.aiImageGenerationRequest) {
+      if (record.aiImageGenerationRequest.canShowToPlayer !== false) warnings.push("aiImageGenerationRequest.canShowToPlayer must be false.")
+      if (record.aiImageGenerationRequest.modelVersion !== record.candidate.modelVersion) warnings.push("aiImageGenerationRequest.modelVersion must match candidate.modelVersion.")
+      if (record.aiImageGenerationRequest.condition.conditionId !== record.generationCondition.conditionId) warnings.push("aiImageGenerationRequest.condition must match generationCondition.")
+      if (record.aiImageGenerationRequest.output.width !== record.candidate.width) warnings.push("aiImageGenerationRequest.output.width must match candidate.width.")
+      if (record.aiImageGenerationRequest.output.height !== record.candidate.height) warnings.push("aiImageGenerationRequest.output.height must match candidate.height.")
+      if (record.aiImageGenerationRequest.output.imageFormat !== record.candidate.imageFormat) warnings.push("aiImageGenerationRequest.output.imageFormat must match candidate.imageFormat.")
+    }
+  }
+
+  if (
+    record.candidate.sourceKind === "development_test_asset" &&
+    process.env.NODE_ENV === "production"
+  ) {
+    warnings.push("development_test_asset cannot be read in production.")
+  }
+
+  return {
+    ok: warnings.length === 0,
+    warnings,
+    tags: [...tags, warnings.length === 0 ? "passed" : "failed"],
+  }
+}
+
 function sameStringSet(left: string[], right: string[]): boolean {
   if (left.length !== right.length) return false
 
@@ -334,15 +403,17 @@ async function writeLatestWorldVisualCandidateIndex(input: {
 
 function invalidRead(
   filePath: string,
-  message: string
+  message: string,
+  warnings: string[] = [message],
+  tags: string[] = []
 ): WorldVisualCandidateStoreReadResult {
   return {
     status: "invalid",
     record: null,
     path: filePath,
     message,
-    warnings: [message],
-    tags: ["world_visual_candidate_store_read", "invalid"],
+    warnings,
+    tags: ["world_visual_candidate_store_read", "invalid", ...tags],
   }
 }
 
