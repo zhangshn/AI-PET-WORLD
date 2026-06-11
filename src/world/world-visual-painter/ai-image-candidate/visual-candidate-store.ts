@@ -119,10 +119,7 @@ export async function writeWorldVisualCandidateRecord(input: {
     await mkdir(path.dirname(filePath), { recursive: true })
     await writeFile(tempPath, `${JSON.stringify(record, null, 2)}\n`, "utf8")
     await rename(tempPath, filePath)
-    await writeLatestWorldVisualCandidateIndex({
-      record,
-      filePath,
-    })
+    await writeLatestWorldVisualCandidateIndex({ record, filePath })
 
     return {
       ok: true,
@@ -149,8 +146,8 @@ export async function writeWorldVisualCandidateRecord(input: {
 export async function readLatestWorldVisualCandidateRecord(input: {
   ownerId: string
   worldId: string
-  currentTick?: number
-  currentSourceFactIds?: string[]
+  currentTick: number
+  currentSourceFactIds: string[]
 }): Promise<WorldVisualCandidateStoreReadResult> {
   const indexPath = getLatestWorldVisualCandidateIndexPath(input)
 
@@ -195,12 +192,8 @@ export async function readLatestWorldVisualCandidateRecord(input: {
         "world_visual_candidate_store_read",
         "found",
         "vj_0_candidate_read_gate_passed",
-        input.currentTick === undefined
-          ? "current_tick_not_requested"
-          : "current_tick_gate_passed",
-        input.currentSourceFactIds === undefined
-          ? "current_source_facts_not_requested"
-          : "current_source_facts_gate_passed",
+        "current_tick_gate_passed",
+        "current_source_facts_gate_passed",
       ],
     }
   } catch (error) {
@@ -383,23 +376,18 @@ function validateCandidateRecordRead(record: WorldVisualCandidateRecord): {
 function validateCurrentRuntimeBinding(
   record: WorldVisualCandidateRecord,
   input: {
-    currentTick?: number
-    currentSourceFactIds?: string[]
+    currentTick: number
+    currentSourceFactIds: string[]
   }
 ): string[] {
   const warnings: string[] = []
 
-  if (input.currentTick !== undefined) {
-    if (record.tick !== input.currentTick) warnings.push("current_tick_mismatch")
-    if (record.generationCondition.tick !== input.currentTick) warnings.push("current_condition_tick_mismatch")
-    if (readRuntimeBoundCandidate(record.candidate).tick !== input.currentTick) warnings.push("current_candidate_tick_mismatch")
-  }
-
-  if (input.currentSourceFactIds !== undefined) {
-    if (!sameStringSet(record.sourceFactIds, input.currentSourceFactIds)) warnings.push("current_source_facts_mismatch")
-    if (!sameStringSet(record.candidate.sourceFactIds, input.currentSourceFactIds)) warnings.push("current_candidate_source_facts_mismatch")
-    if (!sameStringSet(record.generationCondition.sourceFactIds, input.currentSourceFactIds)) warnings.push("current_condition_source_facts_mismatch")
-  }
+  if (record.tick !== input.currentTick) warnings.push("current_tick_mismatch")
+  if (record.generationCondition.tick !== input.currentTick) warnings.push("current_condition_tick_mismatch")
+  if (readRuntimeBoundCandidate(record.candidate).tick !== input.currentTick) warnings.push("current_candidate_tick_mismatch")
+  if (!sameStringSet(record.sourceFactIds, input.currentSourceFactIds)) warnings.push("current_source_facts_mismatch")
+  if (!sameStringSet(record.candidate.sourceFactIds, input.currentSourceFactIds)) warnings.push("current_candidate_source_facts_mismatch")
+  if (!sameStringSet(record.generationCondition.sourceFactIds, input.currentSourceFactIds)) warnings.push("current_condition_source_facts_mismatch")
 
   return warnings
 }
