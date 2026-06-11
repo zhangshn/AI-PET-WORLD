@@ -71,10 +71,14 @@ export async function buildWorldVisualPainterDecision(
   const aiImageCandidate = null
   const reviewReport = await buildWorldVisualReviewReport({
     factManifest,
+    generationCondition,
+    aiImageGenerationRequest,
     aiImageCandidate,
   })
   const approvedFrame = buildWorldVisualApprovedFrame({
     factManifest,
+    generationCondition,
+    aiImageGenerationRequest,
     aiImageCandidate,
     reviewReport,
   })
@@ -89,8 +93,8 @@ export async function buildWorldVisualPainterDecision(
     currentStage: approvedFrame ? "approved_frame" : "ai_image_candidate",
     reason: approvedFrame
       ? {
-          zh: "AI 位图候选图已通过审核并生成 ApprovedFrame，可以进入 Runtime Render。",
-          en: "The AI bitmap candidate passed review and produced ApprovedFrame, so it may enter Runtime Render.",
+          zh: "AI 位图候选图已通过 VJ-0 硬闸门并生成 ApprovedFrame，可以进入 Runtime Render。",
+          en: "The AI bitmap candidate passed the VJ-0 hard gate and produced ApprovedFrame, so it may enter Runtime Render.",
         }
       : {
           zh: "正式世界画面必须由项目内部模型根据 WorldGenerationCondition 产出位图候选图，并通过 VisualJudge 后生成 ApprovedFrame。当前还没有合格候选图，禁止展示。",
@@ -117,6 +121,7 @@ export async function buildWorldVisualPainterDecision(
     tags: [
       "world_visual_painter",
       "ai_image_model_required",
+      "vj_0_hard_gate_required",
       "world_generation_condition_ready",
       latestFixPlan ? "latest_visual_fix_plan_loaded" : "no_latest_visual_fix_plan",
       "ai_image_candidate_required",
