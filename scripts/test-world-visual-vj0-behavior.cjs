@@ -1,4 +1,3 @@
-const { createHash } = require("node:crypto")
 const { mkdtempSync, rmSync, readFileSync } = require("node:fs")
 const os = require("node:os")
 const path = require("node:path")
@@ -698,7 +697,8 @@ function registerTypeScriptRuntime() {
   const originalResolve = Module._resolveFilename
   Module._resolveFilename = function resolveWithAlias(request, parent, isMain, options) {
     if (request.startsWith("@/")) {
-      return path.join(repoRoot, "src", request.slice(2))
+      const resolved = path.join(repoRoot, "src", request.slice(2))
+      return originalResolve.call(this, resolved, parent, isMain, options)
     }
 
     return originalResolve.call(this, request, parent, isMain, options)
