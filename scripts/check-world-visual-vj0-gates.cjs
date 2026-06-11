@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { readFileSync } = require("node:fs")
 const path = require("node:path")
 
@@ -17,6 +18,8 @@ const files = {
   status: "src/app/api/world/visual/status/route.ts",
   packageJson: "package.json",
   behaviorTest: "scripts/test-world-visual-vj0-behavior.cjs",
+  displayPolicy:
+    "src/world/world-visual-painter/approved-frame/controlled-mvp-display-policy.ts",
 }
 
 const source = Object.fromEntries(
@@ -26,6 +29,26 @@ const source = Object.fromEntries(
 const allFormalVisualSource = joinSources(source)
 
 const checks = [
+  assertIncludes(
+    "受控 MVP 展示策略在生产环境返回 false",
+    source.displayPolicy,
+    'runtimeEnvironment !== "production"'
+  ),
+  assertIncludes(
+    "/world 实际渲染闸门接入受控 MVP 环境策略",
+    source.worldPage,
+    "controlledMvpDisplayEnvironmentAllowed"
+  ),
+  assertIncludes(
+    "Status API 实际渲染闸门接入受控 MVP 环境策略",
+    source.status,
+    "controlledMvpDisplayEnvironmentAllowed"
+  ),
+  assertIncludes(
+    "Approved API 实际渲染闸门接入受控 MVP 环境策略",
+    source.approvedApi,
+    "controlledMvpDisplayEnvironmentAllowed"
+  ),
   assertIncludes(
     "当前 tick 正常匹配：/world 要求 record tick 与 current tick 一致",
     source.worldPage,

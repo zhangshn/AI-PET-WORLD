@@ -6,6 +6,7 @@ import {
   readLatestWorldVisualApprovedFrameRecord,
 } from "@/world/world-visual-painter"
 import type { WorldVisualApprovedFrame } from "@/world/world-visual-painter"
+import { isControlledMvpDisplayEnvironmentAllowed } from "@/world/world-visual-painter/approved-frame/controlled-mvp-display-policy"
 
 type ApprovedReadBlockedStatus = "empty" | "invalid" | "failed"
 
@@ -330,9 +331,12 @@ function buildRuntimeRenderGate(input: {
     input.approvedFrame.vj0Status === "vj_0_passed" &&
     input.approvedFrame.vj1Status === "vj_1_not_implemented" &&
     input.approvedFrame.vj2Status === "vj_2_not_implemented"
+  const controlledMvpDisplayEnvironmentAllowed =
+    isControlledMvpDisplayEnvironmentAllowed()
   const canRuntimeRender =
     input.approvedFrameRecordCanShowToPlayer === true &&
     input.approvedFrame.canShowToPlayer === true &&
+    controlledMvpDisplayEnvironmentAllowed &&
     hardFieldsValid &&
     controlledMvpBoundaryPassed &&
     currentWorldMatched &&
@@ -344,6 +348,7 @@ function buildRuntimeRenderGate(input: {
     approvedFrameCanShowToPlayer: input.approvedFrame.canShowToPlayer,
     hardFieldsValid,
     controlledMvpBoundaryPassed,
+    controlledMvpDisplayEnvironmentAllowed,
     productionDisplayAllowed: false,
     currentWorldMatched,
     currentTickMatched,

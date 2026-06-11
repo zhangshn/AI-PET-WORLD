@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { mkdtempSync, rmSync, readFileSync } = require("node:fs")
 const os = require("node:os")
 const path = require("node:path")
@@ -26,12 +27,16 @@ async function main() {
     const reviewBuilder = requireFromRepo(
       "src/world/world-visual-painter/visual-review/visual-review-builder.ts"
     )
+    const displayPolicy = requireFromRepo(
+      "src/world/world-visual-painter/approved-frame/controlled-mvp-display-policy.ts"
+    )
 
     const api = {
       ...candidateStore,
       ...approvedStore,
       ...approvedBuilder,
       ...reviewBuilder,
+      ...displayPolicy,
     }
 
     await testCurrentRuntimePasses(api)
@@ -48,6 +53,7 @@ async function main() {
     await testImageShaMismatchBlocked(api)
     await testFailedReviewCannotApprove(api)
     await testFakeQualityTagsDoNotPassVj1Vj2(api)
+    testProductionEnvironmentBlocksControlledMvpDisplay(api)
     await testNoApprovedFrameBlocksRuntimeRender(api)
     await testAdvancedTickInvalidatesApprovedFrame(api)
 
@@ -433,11 +439,34 @@ async function testFakeQualityTagsDoNotPassVj1Vj2(api) {
     "composition_passed",
     "semantic_copyright_safe",
   ]
-  const candidate = { ...fixture.candidate, tags: [...fixture.candidate.tags, ...fakeTags] }
+  const write = await api.writeWorldVisualCandidateRecord({
+    ownerId: fixture.ownerId,
+    worldId: fixture.worldId,
+    tick: fixture.tick,
+    candidate: fixture.candidate,
+    generationCondition: fixture.condition,
+    factManifest: fixture.factManifest,
+    aiImageGenerationRequest: fixture.request,
+  })
+  assert(write.ok, "fake-tag fixture candidate write should pass")
+
+  const read = await api.readLatestWorldVisualCandidateRecord({
+    ownerId: fixture.ownerId,
+    worldId: fixture.worldId,
+    currentTick: fixture.tick,
+    currentSourceFactIds: fixture.sourceFactIds,
+  })
+  assert(read.status === "found", "fake-tag fixture candidate read should be found")
+  assert(read.record, "fake-tag fixture candidate record should exist")
+
+  const candidate = {
+    ...read.record.candidate,
+    tags: [...read.record.candidate.tags, ...fakeTags],
+  }
   const review = await api.buildWorldVisualReviewReport({
     factManifest: fixture.factManifest,
-    generationCondition: fixture.condition,
-    aiImageGenerationRequest: fixture.request,
+    generationCondition: read.record.generationCondition,
+    aiImageGenerationRequest: read.record.aiImageGenerationRequest,
     aiImageCandidate: candidate,
   })
 
@@ -449,6 +478,23 @@ async function testFakeQualityTagsDoNotPassVj1Vj2(api) {
   assert(review.checks.some((check) => check.id === "vj_2_not_implemented" && check.passed === false), "VJ-2 not implemented check must remain failed")
 
   pass("Candidate 添加全部虚假质量标签，也不能获得 VJ-1/VJ-2 通过状态")
+}
+
+function testProductionEnvironmentBlocksControlledMvpDisplay(api) {
+  assert(
+    api.isControlledMvpDisplayEnvironmentAllowed("development") === true,
+    "development must allow controlled MVP display"
+  )
+  assert(
+    api.isControlledMvpDisplayEnvironmentAllowed("test") === true,
+    "test must allow controlled MVP display"
+  )
+  assert(
+    api.isControlledMvpDisplayEnvironmentAllowed("production") === false,
+    "production must block controlled MVP display"
+  )
+
+  pass("Controlled MVP 画面只允许开发和测试环境，生产环境强制阻断")
 }
 
 async function testNoApprovedFrameBlocksRuntimeRender(api) {

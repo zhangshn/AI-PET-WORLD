@@ -8,6 +8,7 @@ import {
   readLatestWorldVisualCandidateRecord,
 } from "@/world/world-visual-painter"
 import type { WorldVisualApprovedFrame } from "@/world/world-visual-painter"
+import { isControlledMvpDisplayEnvironmentAllowed } from "@/world/world-visual-painter/approved-frame/controlled-mvp-display-policy"
 
 type ApprovedFrameReadStatus = "found" | "empty" | "invalid" | "failed"
 
@@ -140,6 +141,8 @@ function buildApprovedFrameGateSummary(input: {
   const controlledMvpBoundaryPassed = input.approvedFrame
     ? approvedFrameControlledMvpBoundaryPassed(input.approvedFrame)
     : false
+  const controlledMvpDisplayEnvironmentAllowed =
+    isControlledMvpDisplayEnvironmentAllowed()
   const currentWorldMatched = input.recordWorldId === input.currentWorldId
   const currentTickMatched = input.recordTick === input.currentTick
   const currentFrameWorldMatched = runtimeFrame?.worldId === input.currentWorldId
@@ -155,6 +158,7 @@ function buildApprovedFrameGateSummary(input: {
     input.status === "found" &&
     input.recordCanShowToPlayer === true &&
     input.approvedFrame?.canShowToPlayer === true &&
+    controlledMvpDisplayEnvironmentAllowed &&
     hardFieldsValid &&
     controlledMvpBoundaryPassed &&
     currentWorldMatched &&
@@ -187,6 +191,7 @@ function buildApprovedFrameGateSummary(input: {
     approvedFrameCanShowToPlayer: input.approvedFrame?.canShowToPlayer ?? false,
     hardFieldsValid,
     controlledMvpBoundaryPassed,
+    controlledMvpDisplayEnvironmentAllowed,
     currentWorldMatched,
     currentTickMatched,
     currentFrameWorldMatched,
