@@ -90,13 +90,16 @@ export async function GET() {
   const record = approvedFrameReadResult.record
   const request = record.sourceCandidateRecord.aiImageGenerationRequest
   const condition = record.sourceCandidateRecord.generationCondition
-  const runtimeRenderGate = buildRuntimeRenderGate(
-    record.approvedFrame,
-    record.canShowToPlayer,
-    readResult.record.tick,
-    factManifest.sourceFactIds,
-    record.sourceFactIds
-  )
+  const runtimeRenderGate = buildRuntimeRenderGate({
+    approvedFrame: record.approvedFrame,
+    approvedFrameRecordCanShowToPlayer: record.canShowToPlayer,
+    recordWorldId: record.worldId,
+    recordTick: record.tick,
+    currentWorldId: readResult.record.worldId,
+    currentTick: readResult.record.tick,
+    currentSourceFactIds: factManifest.sourceFactIds,
+    recordSourceFactIds: record.sourceFactIds,
+  })
 
   return NextResponse.json(
     {
@@ -275,56 +278,59 @@ function buildApprovedFrameBlockedState(status: ApprovedReadBlockedStatus) {
   }
 }
 
-function buildRuntimeRenderGate(
-  approvedFrame: WorldVisualApprovedFrame,
-  approvedFrameRecordCanShowToPlayer: boolean,
-  currentTick: number,
-  currentSourceFactIds: string[],
+function buildRuntimeRenderGate(input: {
+  approvedFrame: WorldVisualApprovedFrame
+  approvedFrameRecordCanShowToPlayer: boolean
+  recordWorldId: string
+  recordTick: number
+  currentWorldId: string
+  currentTick: number
+  currentSourceFactIds: string[]
   recordSourceFactIds: string[]
-) {
-  const hardFieldsValid = approvedFrameHardFieldsValid(approvedFrame)
-  const currentTickMatched =
-    approvedFrame.frameId === `approved-frame-${approvedFrame.sourceFactIds.length > 0 ? "" : ""}`
-      ? false
-      : true
+}) {
+  const hardFieldsValid = approvedFrameHardFieldsValid(input.approvedFrame)
+  const currentWorldMatched = input.recordWorldId === input.currentWorldId
+  const currentTickMatched = input.recordTick === input.currentTick
   const currentSourceFactsMatched = sameStringSet(
-    currentSourceFactIds,
-    recordSourceFactIds
+    input.currentSourceFactIds,
+    input.recordSourceFactIds
   )
   const canRuntimeRender =
-    approvedFrameRecordCanShowToPlayer === true &&
-    approvedFrame.canShowToPlayer === true &&
+    input.approvedFrameRecordCanShowToPlayer === true &&
+    input.approvedFrame.canShowToPlayer === true &&
     hardFieldsValid &&
-    Number.isInteger(currentTick) &&
-    currentTick >= 0 &&
+    currentWorldMatched &&
+    currentTickMatched &&
     currentSourceFactsMatched
 
   return {
-    approvedFrameRecordCanShowToPlayer,
-    approvedFrameCanShowToPlayer: approvedFrame.canShowToPlayer,
+    approvedFrameRecordCanShowToPlayer: input.approvedFrameRecordCanShowToPlayer,
+    approvedFrameCanShowToPlayer: input.approvedFrame.canShowToPlayer,
     hardFieldsValid,
-    currentTick,
+    currentWorldMatched,
     currentTickMatched,
     currentSourceFactsMatched,
     sourceImageSha256Bound:
-      typeof approvedFrame.sourceImageSha256 === "string" &&
-      approvedFrame.sourceImageSha256.length === 64,
+      typeof input.approvedFrame.sourceImageSha256 === "string" &&
+      input.approvedFrame.sourceImageSha256.length === 64,
     sourceImageByteLengthBound:
-      typeof approvedFrame.sourceImageByteLength === "number" &&
-      approvedFrame.sourceImageByteLength > 0,
+      typeof input.approvedFrame.sourceImageByteLength === "number" &&
+      input.approvedFrame.sourceImageByteLength > 0,
     sourceImageContentTypeBound:
-      typeof approvedFrame.sourceImageContentType === "string" &&
-      isApprovedContentType(approvedFrame.sourceImageContentType),
+      typeof input.approvedFrame.sourceImageContentType === "string" &&
+      isApprovedContentType(input.approvedFrame.sourceImageContentType),
     sourceImagePayloadQualityPassed:
-      approvedFrame.sourceImagePayloadQualityPassed === true,
+      input.approvedFrame.sourceImagePayloadQualityPassed === true,
     canRuntimeRender,
     displayRule:
-      "Runtime Render 只能展示 ApprovedFrameRecord 与 ApprovedFrame 同时允许展示，并且 sha256 / byteLength / contentType / payloadQualityPassed / 当前 tick / 当前 sourceFactIds 全部有效的图片。",
+      "Runtime Render 只能展示 ApprovedFrameRecord 与 ApprovedFrame 同时允许展示，并且 sha256 / byteLength / contentType / payloadQualityPassed / 当前 worldId / 当前 tick / 当前 sourceFactIds 全部有效的图片。",
     displayRuleEn:
-      "Runtime Render may only display an image when both ApprovedFrameRecord and ApprovedFrame allow display, and sha256 / byteLength / contentType / payloadQualityPassed / current tick / current sourceFactIds are all valid.",
+      "Runtime Render may only display an image when both ApprovedFrameRecord and ApprovedFrame allow display, and sha256 / byteLength / contentType / payloadQualityPassed / current worldId / current tick / current sourceFactIds are all valid.",
     tags: [
       "runtime_render_gate",
       hardFieldsValid ? "hard_fields_valid" : "hard_fields_invalid",
+      currentWorldMatched ? "current_world_matched" : "current_world_mismatch",
+      currentTickMatched ? "current_tick_matched" : "current_tick_mismatch",
       currentSourceFactsMatched
         ? "current_source_facts_matched"
         : "current_source_facts_mismatch",
