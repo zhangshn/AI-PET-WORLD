@@ -1,7 +1,9 @@
 import type {
   WorldVisualAiImageCandidate,
+  WorldVisualAiImageGenerationRequest,
   WorldVisualApprovedFrame,
   WorldVisualFactManifest,
+  WorldVisualGenerationCondition,
   WorldVisualReviewReport,
 } from "../world-visual-painter-schema"
 
@@ -14,6 +16,10 @@ const REQUIRED_REVIEW_CHECK_IDS = [
   "image_metadata_matches_bytes",
   "mvp_image_size",
   "bitmap_payload_quality",
+  "candidate_world_binding",
+  "candidate_condition_binding",
+  "candidate_source_kind",
+  "candidate_generation_request",
   "candidate_fact_link",
   "candidate_license",
   "visual_style_quality",
@@ -24,6 +30,8 @@ const REQUIRED_REVIEW_CHECK_IDS = [
 
 export function buildWorldVisualApprovedFrame(input: {
   factManifest: WorldVisualFactManifest
+  generationCondition: WorldVisualGenerationCondition
+  aiImageGenerationRequest: WorldVisualAiImageGenerationRequest | null
   aiImageCandidate: WorldVisualAiImageCandidate | null
   reviewReport: WorldVisualReviewReport
 }): WorldVisualApprovedFrame | null {
@@ -32,6 +40,22 @@ export function buildWorldVisualApprovedFrame(input: {
   if (!isApprovedImageFormat(input.aiImageCandidate.imageFormat)) return null
   if (!isApprovedLicense(input.aiImageCandidate.license)) return null
   if (!input.aiImageCandidate.originalityConfirmed) return null
+  if (!candidateBindsWorld(input.aiImageCandidate, input.generationCondition)) {
+    return null
+  }
+  if (!candidateBindsGenerationCondition(input.aiImageCandidate, input.generationCondition)) {
+    return null
+  }
+  if (!candidateUsesFormalSourceKind(input.aiImageCandidate)) return null
+  if (
+    !candidateBindsGenerationRequest(
+      input.aiImageCandidate,
+      input.generationCondition,
+      input.aiImageGenerationRequest
+    )
+  ) {
+    return null
+  }
   if (!candidateKeepsFactLinks(input.aiImageCandidate, input.factManifest)) {
     return null
   }
@@ -62,8 +86,8 @@ export function buildWorldVisualApprovedFrame(input: {
       imageInspectionSummary.payloadQualityPassed,
     canShowToPlayer: true,
     approvalReason: {
-      zh: "AI 位图候选图已通过完整 VisualJudge 硬闸门：真实图片本体、Content-Type、图片字节指纹、格式尺寸、事实链、授权原创、视觉质量与污染排除均通过，允许进入 Runtime Render 展示阶段。",
-      en: "The AI bitmap candidate passed the full VisualJudge hard gate: real image bytes, Content-Type, image byte fingerprint, format and size, fact links, license and originality, visual quality, and artifact rejection all passed. It may enter Runtime Render.",
+      zh: "AI 位图候选图已通过 VJ-0 硬闸门，允许进入 Runtime Render 展示阶段。",
+      en: "The AI bitmap candidate passed the VJ-0 hard gate and may enter Runtime Render.",
     },
     sourceFactIds: input.factManifest.sourceFactIds,
     tags: [
@@ -72,11 +96,13 @@ export function buildWorldVisualApprovedFrame(input: {
       "runtime_render_ready",
       "world_facts_preserved",
       "visual_review_passed",
-      "hard_gate_passed",
+      "vj_0_hard_gate_passed",
       "image_byte_fingerprint_bound",
       "source_image_byte_length_bound",
       "source_image_content_type_bound",
       "source_image_payload_quality_passed",
+      "world_generation_condition_bound",
+      "formal_project_model_source_required",
       "approved_frame_display_gate_passed",
       "not_from_programmatic_renderer",
       "not_from_control_sketch",
@@ -119,6 +145,62 @@ function imageInspectionSummaryCanApprove(
     summary.format === candidate.imageFormat &&
     summary.width === candidate.width &&
     summary.height === candidate.height
+  )
+}
+
+function candidateBindsWorld(
+  candidate: WorldVisualAiImageCandidate,
+  generationCondition: WorldVisualGenerationCondition
+): boolean {
+  return (
+    generationCondition.worldId.length > 0 &&
+    Number.isInteger(generationCondition.tick) &&
+    generationCondition.tick >= 0 &&
+    candidate.tags.includes(`world_id:${generationCondition.worldId}`) &&
+    candidate.tags.includes(`tick:${generationCondition.tick}`)
+  )
+}
+
+function candidateBindsGenerationCondition(
+  candidate: WorldVisualAiImageCandidate,
+  generationCondition: WorldVisualGenerationCondition
+): boolean {
+  return (
+    candidate.conditionId === generationCondition.conditionId &&
+    candidate.modelVersion === generationCondition.modelVersion &&
+    generationCondition.canShowToPlayer === false &&
+    generationCondition.safetyCondition.requireVisualJudge === true &&
+    generationCondition.safetyCondition.forbidProgrammaticFinalFrame === true &&
+    generationCondition.safetyCondition.forbidPlaceholderFrame === true
+  )
+}
+
+function candidateUsesFormalSourceKind(
+  candidate: WorldVisualAiImageCandidate
+): boolean {
+  return (
+    candidate.sourceKind === "project_model_generated" &&
+    typeof candidate.modelVersion === "string" &&
+    candidate.modelVersion.length > 0 &&
+    !candidate.tags.includes("development_test_asset")
+  )
+}
+
+function candidateBindsGenerationRequest(
+  candidate: WorldVisualAiImageCandidate,
+  generationCondition: WorldVisualGenerationCondition,
+  request: WorldVisualAiImageGenerationRequest | null
+): boolean {
+  return (
+    request !== null &&
+    request.canShowToPlayer === false &&
+    request.modelVersion === candidate.modelVersion &&
+    request.condition.conditionId === generationCondition.conditionId &&
+    request.condition.worldId === generationCondition.worldId &&
+    request.condition.tick === generationCondition.tick &&
+    request.output.width === candidate.width &&
+    request.output.height === candidate.height &&
+    request.output.imageFormat === candidate.imageFormat
   )
 }
 
