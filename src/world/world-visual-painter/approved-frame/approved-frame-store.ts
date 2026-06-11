@@ -264,6 +264,7 @@ function validateApprovedFrameRecord(
   const frame = record.approvedFrame
   const runtimeFrame = frame as RuntimeBoundApprovedFrame
   const review = record.reviewReport
+  const summary = review.imageInspectionSummary
 
   pushIf(warnings, sourceRecord.ownerId !== record.ownerId, "source_owner")
   pushIf(warnings, sourceRecord.worldId !== record.worldId, "source_world")
@@ -300,6 +301,14 @@ function validateApprovedFrameRecord(
   pushIf(warnings, review.approvalScope !== "approved_for_controlled_mvp", "review_approval_scope")
   pushIf(warnings, review.productionApprovalStatus !== "not_approved_for_production", "review_production_status")
   pushIf(warnings, review.canShowToPlayer !== false, "review_visibility")
+  pushIf(warnings, summary.ok !== true, "review_summary_ok")
+  pushIf(warnings, summary.sha256 !== frame.sourceImageSha256, "review_summary_sha256")
+  pushIf(warnings, summary.byteLength !== frame.sourceImageByteLength, "review_summary_byte_length")
+  pushIf(warnings, summary.contentType !== frame.sourceImageContentType, "review_summary_content_type")
+  pushIf(warnings, summary.format !== frame.imageFormat, "review_summary_format")
+  pushIf(warnings, summary.width !== frame.width, "review_summary_width")
+  pushIf(warnings, summary.height !== frame.height, "review_summary_height")
+  pushIf(warnings, summary.payloadQualityPassed !== frame.sourceImagePayloadQualityPassed, "review_summary_payload_quality")
   pushIf(warnings, frame.canShowToPlayer !== true, "frame_visibility")
   pushIf(warnings, frame.approvalScope !== "approved_for_controlled_mvp", "frame_approval_scope")
   pushIf(warnings, frame.productionApprovalStatus !== "not_approved_for_production", "frame_production_status")
