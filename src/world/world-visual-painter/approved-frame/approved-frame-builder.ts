@@ -28,6 +28,11 @@ const REQUIRED_REVIEW_CHECK_IDS = [
   "fact_and_rights_quality",
 ] as const
 
+type RuntimeBoundCandidate = WorldVisualAiImageCandidate & {
+  worldId?: unknown
+  tick?: unknown
+}
+
 export function buildWorldVisualApprovedFrame(input: {
   factManifest: WorldVisualFactManifest
   generationCondition: WorldVisualGenerationCondition
@@ -102,6 +107,7 @@ export function buildWorldVisualApprovedFrame(input: {
       "source_image_content_type_bound",
       "source_image_payload_quality_passed",
       "world_generation_condition_bound",
+      "runtime_bound_candidate_required",
       "formal_project_model_source_required",
       "approved_frame_display_gate_passed",
       "not_from_programmatic_renderer",
@@ -152,10 +158,14 @@ function candidateBindsWorld(
   candidate: WorldVisualAiImageCandidate,
   generationCondition: WorldVisualGenerationCondition
 ): boolean {
+  const runtimeCandidate = candidate as RuntimeBoundCandidate
+
   return (
     generationCondition.worldId.length > 0 &&
     Number.isInteger(generationCondition.tick) &&
     generationCondition.tick >= 0 &&
+    runtimeCandidate.worldId === generationCondition.worldId &&
+    runtimeCandidate.tick === generationCondition.tick &&
     candidate.tags.includes(`world_id:${generationCondition.worldId}`) &&
     candidate.tags.includes(`tick:${generationCondition.tick}`)
   )
