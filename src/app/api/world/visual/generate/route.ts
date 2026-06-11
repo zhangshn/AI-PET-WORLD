@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server"
 
 import { readWorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-store-adapter"
-import { buildWorldVisualPainterDecision } from "@/world/world-visual-painter"
+import {
+  buildWorldVisualPainterDecision,
+  writeWorldVisualCandidateRecord,
+} from "@/world/world-visual-painter"
 
 export async function POST() {
   const runtime = await readWorldRuntimeSaveRecord()
@@ -46,6 +49,78 @@ export async function POST() {
         ],
       },
       { status: 501 }
+    )
+  }
+
+  if (decision.aiImageCandidate) {
+    const candidateWriteResult = await writeWorldVisualCandidateRecord({
+      ownerId: runtime.record.ownerId,
+      worldId: runtime.record.worldId,
+      tick: runtime.record.tick,
+      candidate: decision.aiImageCandidate,
+      generationCondition: decision.generationCondition,
+      factManifest: decision.factManifest,
+      aiImageGenerationRequest: decision.aiImageGenerationRequest,
+    })
+
+    if (!candidateWriteResult.ok) {
+      return NextResponse.json(
+        {
+          ok: false,
+          status: "candidate_write_failed",
+          message: "AI 候选图已生成，但写入隐藏候选图记录失败。",
+          messageEn:
+            "The AI image candidate was generated, but the hidden candidate record could not be written.",
+          imageModel: decision.imageModelStatus,
+          candidateWrite: candidateWriteResult,
+          canShowToPlayer: false,
+          displayRule: "候选图写入失败时，禁止进入 VisualJudge，也禁止展示世界画面。",
+          displayRuleEn:
+            "If candidate persistence fails, VisualJudge cannot run and the world image must stay hidden.",
+          tags: [
+            "world_visual_generate_api",
+            "candidate_write_failed",
+            "hidden_candidate_required",
+            ...candidateWriteResult.tags,
+          ],
+        },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json(
+      {
+        ok: true,
+        status: "candidate_written_pending_visual_judge",
+        message: "AI 候选图已写入隐藏候选记录，下一步必须交给 VisualJudge 审核。",
+        messageEn:
+          "The AI image candidate has been written as a hidden candidate record. The next step must be VisualJudge review.",
+        imageModel: decision.imageModelStatus,
+        candidateWrite: candidateWriteResult,
+        candidate: {
+          candidateId: decision.aiImageCandidate.candidateId,
+          sourceKind: decision.aiImageCandidate.sourceKind,
+          modelVersion: decision.aiImageCandidate.modelVersion,
+          conditionId: decision.aiImageCandidate.conditionId,
+          width: decision.aiImageCandidate.width,
+          height: decision.aiImageCandidate.height,
+          imageFormat: decision.aiImageCandidate.imageFormat,
+          canShowToPlayer: decision.aiImageCandidate.canShowToPlayer,
+        },
+        nextStage: "AI-PAINTER A3: VisualJudge review",
+        canShowToPlayer: false,
+        displayRule: "候选图只允许作为隐藏审核输入，不能直接展示给玩家。",
+        displayRuleEn:
+          "The candidate may only be used as hidden review input and cannot be shown directly to the player.",
+        tags: [
+          "world_visual_generate_api",
+          "hidden_candidate_written",
+          "visual_judge_required",
+          "approved_frame_required",
+          ...candidateWriteResult.tags,
+        ],
+      },
+      { status: 202 }
     )
   }
 
