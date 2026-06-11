@@ -19,31 +19,10 @@ const MIN_IMAGE_BYTES_PER_MEGAPIXEL = 12 * 1024
 const MAX_IMAGE_BYTES = 16 * 1024 * 1024
 const FETCH_TIMEOUT_MS = 8000
 
-const REQUIRED_STYLE_QUALITY_TAGS = [
-  "bright_healing_detailed_top_down_pixel_style",
-  "clear_world_focal_point",
-] as const
-
-const REQUIRED_WORLD_STRUCTURE_TAGS = [
-  "terrain_layer_depth",
-  "path_logic",
-  "natural_boundary",
-  "material_construction_relation",
-] as const
-
-const REQUIRED_ARTIFACT_REJECTION_TAGS = [
-  "no_placeholder_blocks",
-  "no_dirty_paths",
-  "no_random_scatter",
-  "no_garbled_text",
-  "no_watermark",
-  "no_ui_card",
-] as const
-
-const REQUIRED_FACT_AND_RIGHTS_TAGS = [
-  "no_added_world_facts",
-  "copyright_safe",
-] as const
+type RuntimeBoundCandidate = WorldVisualAiImageCandidate & {
+  worldId?: unknown
+  tick?: unknown
+}
 
 type ImageInspectionResult = {
   ok: boolean
@@ -55,11 +34,6 @@ type ImageInspectionResult = {
   sha256: string | null
   error: string | null
   errorZh: string | null
-}
-
-type TagGroupResult = {
-  passed: boolean
-  missingTags: string[]
 }
 
 export async function buildWorldVisualReviewReport(input: {
@@ -83,12 +57,12 @@ export async function buildWorldVisualReviewReport(input: {
     reason:
       status === "passed_candidate"
         ? {
-            zh: "AI 位图候选图通过 VJ-0 硬闸门，可进入 ApprovedFrame 构建；在 ApprovedFrame 生成前仍禁止展示。",
-            en: "The AI bitmap candidate passed the VJ-0 hard gate and may enter ApprovedFrame building. It remains hidden until ApprovedFrame exists.",
+            zh: "AI 位图候选图通过 VJ-0 文件与事实硬闸门，可进入 ApprovedFrame 构建；在 ApprovedFrame 生成前仍禁止展示。",
+            en: "The AI bitmap candidate passed the VJ-0 file and fact hard gate and may enter ApprovedFrame building. It remains hidden until ApprovedFrame exists.",
           }
         : {
-            zh: "VJ-0 审核未通过：候选图、图片本体、条件绑定、生成请求、来源、事实链、授权或基础质量存在硬闸门问题，因此禁止展示。",
-            en: "VJ-0 review failed: the candidate, image bytes, condition binding, generation request, source, fact links, license, or baseline quality failed the hard gate, so display is blocked.",
+            zh: "VJ-0 审核未通过：候选图、图片本体、条件绑定、生成请求、来源、事实链、授权或基础文件质量存在硬闸门问题，因此禁止展示。",
+            en: "VJ-0 review failed: the candidate, image bytes, condition binding, generation request, source, fact links, license, or baseline file quality failed the hard gate, so display is blocked.",
           },
     score,
     imageInspectionSummary: buildImageInspectionSummary(inspection),
@@ -110,11 +84,15 @@ export async function buildWorldVisualReviewReport(input: {
         zh: "正式 ApprovedFrame 只允许 project_model_generated，并且必须绑定内部模型版本和生成请求。",
         en: "Formal ApprovedFrame only allows project_model_generated and must bind the internal model version and generation request.",
       },
+      {
+        zh: "VJ-0 不接受候选图标签作为视觉质量、风格、无水印或版权安全的通过证据。",
+        en: "VJ-0 does not accept candidate tags as pass evidence for visual quality, style, watermark absence, or copyright safety.",
+      },
       WORLD_VISUAL_MVP_TARGET_POLICY.displayGate,
     ],
     fixInstructions: buildFixInstructions(checks),
     tags: [
-      "visual_review",
+      "visual_judge",
       "vj_0_hard_gate",
       status,
       "real_image_bytes_required",
@@ -123,6 +101,8 @@ export async function buildWorldVisualReviewReport(input: {
       "world_generation_condition_required",
       "ai_image_generation_request_required",
       "formal_project_model_source_required",
+      "candidate_tags_are_metadata_only",
+      "no_tag_based_quality_pass",
       "display_blocked_until_approved_frame",
       "no_programmatic_renderer",
     ],
@@ -224,19 +204,6 @@ function buildReviewChecks(input: {
     candidate !== null &&
     candidate.originalityConfirmed &&
     isApprovedLicense(candidate.license)
-  const styleQuality = buildTagGroupResult(candidate, REQUIRED_STYLE_QUALITY_TAGS)
-  const worldStructureQuality = buildTagGroupResult(
-    candidate,
-    REQUIRED_WORLD_STRUCTURE_TAGS
-  )
-  const artifactRejectionQuality = buildTagGroupResult(
-    candidate,
-    REQUIRED_ARTIFACT_REJECTION_TAGS
-  )
-  const factAndRightsQuality = buildTagGroupResult(
-    candidate,
-    REQUIRED_FACT_AND_RIGHTS_TAGS
-  )
 
   return [
     check(
@@ -308,13 +275,13 @@ function buildReviewChecks(input: {
       "bitmap_payload_quality",
       bitmapPayloadIsSubstantial,
       bitmapPayloadIsSubstantial ? 86 : 0,
-      "图片本体基础质量",
-      "Bitmap payload quality",
+      "图片本体基础文件质量",
+      "Bitmap payload file quality",
       bitmapPayloadIsSubstantial
-        ? `图片本体有效载荷达到基础质量门槛：${input.inspection.byteLength} bytes。`
+        ? `图片本体有效载荷达到基础文件质量门槛：${input.inspection.byteLength} bytes。`
         : `图片本体有效载荷过低：${input.inspection.byteLength} bytes，最低要求 ${minimumPayloadBytes} bytes。`,
       bitmapPayloadIsSubstantial
-        ? `The image payload passes the baseline quality gate: ${input.inspection.byteLength} bytes.`
+        ? `The image payload passes the baseline file gate: ${input.inspection.byteLength} bytes.`
         : `The image payload is too small: ${input.inspection.byteLength} bytes, minimum ${minimumPayloadBytes} bytes.`
     ),
     check(
@@ -395,46 +362,35 @@ function buildReviewChecks(input: {
         ? "The candidate is confirmed as self-owned, CC0, or commercially licensed, with originality confirmed."
         : "The candidate lacks allowed license or originality confirmation."
     ),
-    buildTagCheck("visual_style_quality", styleQuality, 88, "视觉风格质量", "Visual style quality"),
-    buildTagCheck("world_structure_quality", worldStructureQuality, 88, "世界结构质量", "World structure quality"),
-    buildTagCheck("visual_artifact_rejection", artifactRejectionQuality, 90, "视觉污染排除", "Visual artifact rejection"),
-    buildTagCheck("fact_and_rights_quality", factAndRightsQuality, 92, "事实与版权安全", "Fact and rights safety"),
+    check(
+      "candidate_tags_not_used_as_quality_evidence",
+      true,
+      100,
+      "候选图标签不作为质量证据",
+      "Candidate tags are not quality evidence",
+      "VJ-0 只检查文件、字节、哈希、尺寸、来源和事实绑定；候选图标签仅作为来源元数据，不作为视觉质量、无水印、构图或版权安全的通过证据。",
+      "VJ-0 only checks files, bytes, hash, dimensions, source, and fact binding. Candidate tags are metadata only and are not pass evidence for visual quality, watermark absence, composition, or copyright safety."
+    ),
   ]
-}
-
-function buildTagCheck(
-  id: string,
-  result: TagGroupResult,
-  score: number,
-  zhLabel: string,
-  enLabel: string
-): WorldVisualReviewCheck {
-  return check(
-    id,
-    result.passed,
-    result.passed ? score : 0,
-    zhLabel,
-    enLabel,
-    result.passed
-      ? `${zhLabel}证明已满足。`
-      : `${zhLabel}缺少证明：${result.missingTags.join(", ")}。`,
-    result.passed
-      ? `${enLabel} proof is satisfied.`
-      : `${enLabel} proof is missing: ${result.missingTags.join(", ")}.`
-  )
 }
 
 function candidateBindsWorld(
   candidate: WorldVisualAiImageCandidate | null,
   generationCondition: WorldVisualGenerationCondition
 ): boolean {
+  if (!candidate) return false
+
+  const runtimeCandidate = candidate as RuntimeBoundCandidate
+
   return (
-    candidate !== null &&
     generationCondition.worldId.length > 0 &&
     Number.isInteger(generationCondition.tick) &&
     generationCondition.tick >= 0 &&
+    runtimeCandidate.worldId === generationCondition.worldId &&
+    runtimeCandidate.tick === generationCondition.tick &&
     candidate.tags.includes(`world_id:${generationCondition.worldId}`) &&
-    candidate.tags.includes(`tick:${generationCondition.tick}`)
+    candidate.tags.includes(`tick:${generationCondition.tick}`) &&
+    candidate.tags.includes("runtime_bound_candidate")
   )
 }
 
@@ -447,9 +403,11 @@ function candidateBindsGenerationCondition(
     candidate.conditionId === generationCondition.conditionId &&
     candidate.modelVersion === generationCondition.modelVersion &&
     generationCondition.canShowToPlayer === false &&
+    generationCondition.safetyCondition.preserveWorldFacts === true &&
     generationCondition.safetyCondition.requireVisualJudge === true &&
     generationCondition.safetyCondition.forbidProgrammaticFinalFrame === true &&
-    generationCondition.safetyCondition.forbidPlaceholderFrame === true
+    generationCondition.safetyCondition.forbidPlaceholderFrame === true &&
+    generationCondition.safetyCondition.forbidUnlicensedCopy === true
   )
 }
 
@@ -478,6 +436,9 @@ function candidateBindsGenerationRequest(
     request.condition.conditionId === generationCondition.conditionId &&
     request.condition.worldId === generationCondition.worldId &&
     request.condition.tick === generationCondition.tick &&
+    request.condition.modelVersion === generationCondition.modelVersion &&
+    request.condition.canShowToPlayer === false &&
+    sameStringSet(request.condition.sourceFactIds, generationCondition.sourceFactIds) &&
     request.output.width === candidate.width &&
     request.output.height === candidate.height &&
     request.output.imageFormat === candidate.imageFormat
@@ -490,16 +451,12 @@ function candidateBindsFactLinks(
   generationCondition: WorldVisualGenerationCondition
 ): boolean {
   if (!candidate) return false
-  if (candidate.sourceFactIds.length !== factManifest.sourceFactIds.length) return false
-  if (candidate.sourceFactIds.length !== generationCondition.sourceFactIds.length) return false
+  if (factManifest.worldId !== generationCondition.worldId) return false
+  if (factManifest.tick !== generationCondition.tick) return false
+  if (!sameStringSet(candidate.sourceFactIds, factManifest.sourceFactIds)) return false
+  if (!sameStringSet(candidate.sourceFactIds, generationCondition.sourceFactIds)) return false
 
-  const candidateFactIds = new Set(candidate.sourceFactIds)
-  const conditionFactIds = new Set(generationCondition.sourceFactIds)
-
-  return factManifest.sourceFactIds.every(
-    (sourceFactId) =>
-      candidateFactIds.has(sourceFactId) && conditionFactIds.has(sourceFactId)
-  )
+  return true
 }
 
 function getMinimumImageByteLength(
@@ -605,7 +562,7 @@ async function readCandidateImageBytes(
     )
   }
 
-  if (!url.protocol.startsWith("http")) {
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
     return failedInspection(
       "候选图只允许 http、https 或 data:image URL。",
       "Candidate image URL may only use http, https, or data:image."
@@ -653,7 +610,11 @@ function readDataUrlBytes(
   }
 
   const contentType = normalizeContentType(match[1])
-  if (!contentType || !contentType.startsWith("image/") || isForbiddenContentType(contentType)) {
+  if (
+    !contentType ||
+    !contentType.startsWith("image/") ||
+    isForbiddenContentType(contentType)
+  ) {
     return Promise.resolve(
       failedInspection(
         `候选图 data URL Content-Type 被禁止：${contentType ?? "unknown"}。`,
@@ -834,16 +795,6 @@ function check(
   }
 }
 
-function buildTagGroupResult(
-  candidate: WorldVisualAiImageCandidate | null,
-  requiredTags: readonly string[]
-): TagGroupResult {
-  const candidateTags = new Set(candidate?.tags ?? [])
-  const missingTags = requiredTags.filter((tag) => !candidateTags.has(tag))
-
-  return { passed: missingTags.length === 0, missingTags }
-}
-
 function buildFixInstructions(
   checks: WorldVisualReviewCheck[]
 ): WorldVisualReviewReport["fixInstructions"] {
@@ -853,6 +804,13 @@ function buildFixInstructions(
       zh: `修正 ${check.label.zh}：${check.evidence.zh}`,
       en: `Fix ${check.label.en}: ${check.evidence.en}`,
     }))
+}
+
+function sameStringSet(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) return false
+
+  const rightSet = new Set(right)
+  return left.every((value) => rightSet.has(value))
 }
 
 function readAscii(bytes: Uint8Array, offset: number, length: number): string {
