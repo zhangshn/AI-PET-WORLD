@@ -54,6 +54,7 @@ export async function GET() {
         message: blockedState.message,
         messageEn: blockedState.messageEn,
         canShowToPlayer: false,
+        canShowToPlayerScope: "blocked",
         currentRuntimeGate: {
           worldId: readResult.record.worldId,
           tick: readResult.record.tick,
@@ -64,6 +65,14 @@ export async function GET() {
           canRuntimeRender: false,
           reason: blockedState.reason,
           tags: blockedState.tags,
+        },
+        approvalBoundary: {
+          approvalScope: "not_approved",
+          productionApprovalStatus: "not_approved_for_production",
+          approvedForProduction: false,
+          vj1Status: "vj_1_not_implemented",
+          vj2Status: "vj_2_not_implemented",
+          productionDisplayAllowed: false,
         },
         readAudit: {
           status: approvedFrameReadResult.status,
@@ -79,6 +88,7 @@ export async function GET() {
           "approved_frame_read_not_found_or_blocked",
           "current_tick_gate_checked",
           "current_source_facts_gate_checked",
+          "production_display_blocked",
           ...blockedState.tags,
           ...approvedFrameReadResult.tags,
         ],
@@ -106,11 +116,21 @@ export async function GET() {
       ok: runtimeRenderGate.canRuntimeRender,
       status: approvedFrameReadResult.status,
       apiState: runtimeRenderGate.canRuntimeRender
-        ? "approved_frame_found_current_runtime_matched"
-        : "approved_frame_found_but_runtime_gate_blocked",
+        ? "controlled_mvp_approved_frame_current_runtime_matched"
+        : "controlled_mvp_approved_frame_runtime_gate_blocked",
       vj0Blocked: !runtimeRenderGate.canRuntimeRender,
       record,
       runtimeRenderGate,
+      approvalBoundary: {
+        approvalScope: record.approvedFrame.approvalScope,
+        productionApprovalStatus: record.approvedFrame.productionApprovalStatus,
+        approvedForProduction: record.approvedFrame.approvedForProduction,
+        vj0Status: record.approvedFrame.vj0Status,
+        vj1Status: record.approvedFrame.vj1Status,
+        vj2Status: record.approvedFrame.vj2Status,
+        controlledMvpDisplayAllowed: runtimeRenderGate.canRuntimeRender,
+        productionDisplayAllowed: false,
+      },
       currentRuntimeGate: {
         worldId: readResult.record.worldId,
         tick: readResult.record.tick,
@@ -161,6 +181,11 @@ export async function GET() {
       },
       reviewAudit: {
         status: record.reviewReport.status,
+        vj0Status: record.reviewReport.vj0Status,
+        vj1Status: record.reviewReport.vj1Status,
+        vj2Status: record.reviewReport.vj2Status,
+        approvalScope: record.reviewReport.approvalScope,
+        productionApprovalStatus: record.reviewReport.productionApprovalStatus,
         score: record.reviewReport.score,
         canShowToPlayer: record.reviewReport.canShowToPlayer,
         imageInspectionSummary: record.reviewReport.imageInspectionSummary,
@@ -179,10 +204,11 @@ export async function GET() {
         totalCheckCount: record.reviewReport.checks.length,
       },
       canShowToPlayer: runtimeRenderGate.canRuntimeRender,
+      canShowToPlayerScope: "controlled_mvp_only",
       nextStep: runtimeRenderGate.canRuntimeRender
         ? {
-            zh: "该 ApprovedFrame 已匹配当前 runtime tick 与当前 sourceFactIds，可供 /world Runtime Render 读取展示；不得由前端重新生成或修改画面。",
-            en: "This ApprovedFrame matches the current runtime tick and sourceFactIds and may be read by /world Runtime Render. The frontend must not regenerate or modify the frame.",
+            zh: "该受控 MVP ApprovedFrame 已匹配当前 runtime tick 与当前 sourceFactIds，可供 /world Runtime Render 读取展示；它不是 production approved，前端不得重新生成或修改画面。",
+            en: "This controlled MVP ApprovedFrame matches the current runtime tick and sourceFactIds and may be read by /world Runtime Render. It is not production approved, and the frontend must not regenerate or modify the frame.",
           }
         : {
             zh: "ApprovedFrame 未通过当前 runtime 展示闸门，/world 必须继续阻断。",
@@ -190,14 +216,16 @@ export async function GET() {
           },
       tags: [
         "world_visual_approved_api",
-        "approved_frame_only",
+        "controlled_mvp_approved_frame_only",
+        "not_approved_for_production",
         "provenance_exposed_for_audit",
         "runtime_render_gate_checked",
         "current_tick_gate_checked",
         "current_source_facts_gate_checked",
         runtimeRenderGate.canRuntimeRender
-          ? "runtime_render_allowed"
+          ? "controlled_mvp_runtime_render_allowed"
           : "runtime_render_blocked",
+        "production_display_blocked",
         ...approvedFrameReadResult.tags,
       ],
     },
@@ -218,15 +246,15 @@ function buildApprovedFrameBlockedState(status: ApprovedReadBlockedStatus) {
       apiState: "approved_frame_empty",
       vj0Blocked: false,
       reason: "approved_frame_empty",
-      message: "还没有 ApprovedFrame。需要先生成候选图并通过 VisualJudge。",
+      message: "还没有受控 MVP ApprovedFrame。需要先生成候选图并通过 VJ-0。",
       messageEn:
-        "No ApprovedFrame exists yet. Generate a candidate and pass VisualJudge first.",
-      displayRule: "没有 ApprovedFrame 时，/world 必须继续阻断。",
+        "No controlled MVP ApprovedFrame exists yet. Generate a candidate and pass VJ-0 first.",
+      displayRule: "没有受控 MVP ApprovedFrame 时，/world 必须继续阻断。",
       displayRuleEn:
-        "/world must remain blocked while no ApprovedFrame exists.",
+        "/world must remain blocked while no controlled MVP ApprovedFrame exists.",
       nextStep: {
-        zh: "继续等待正式 AI 位图候选图通过 VJ-0，再生成 ApprovedFrame。",
-        en: "Wait for a formal AI bitmap candidate to pass VJ-0 before creating an ApprovedFrame.",
+        zh: "继续等待正式 AI 位图候选图通过 VJ-0，再生成受控 MVP ApprovedFrame。",
+        en: "Wait for a formal AI bitmap candidate to pass VJ-0 before creating a controlled MVP ApprovedFrame.",
       },
       tags: ["approved_frame_empty", "runtime_render_blocked"],
     }
@@ -246,8 +274,8 @@ function buildApprovedFrameBlockedState(status: ApprovedReadBlockedStatus) {
       displayRuleEn:
         "When an invalid ApprovedFrameRecord is read, /world must remain blocked and must not display stale or invalid imagery.",
       nextStep: {
-        zh: "需要重新生成候选图，并重新通过 VisualJudge 与 ApprovedFrame 写入闸门。",
-        en: "Generate a new candidate and pass VisualJudge plus the ApprovedFrame write gate again.",
+        zh: "需要重新生成候选图，并重新通过 VJ-0 与 ApprovedFrame 写入闸门。",
+        en: "Generate a new candidate and pass VJ-0 plus the ApprovedFrame write gate again.",
       },
       tags: [
         "approved_frame_invalid",
@@ -295,10 +323,18 @@ function buildRuntimeRenderGate(input: {
     input.currentSourceFactIds,
     input.recordSourceFactIds
   )
+  const controlledMvpBoundaryPassed =
+    input.approvedFrame.approvalScope === "approved_for_controlled_mvp" &&
+    input.approvedFrame.productionApprovalStatus === "not_approved_for_production" &&
+    input.approvedFrame.approvedForProduction === false &&
+    input.approvedFrame.vj0Status === "vj_0_passed" &&
+    input.approvedFrame.vj1Status === "vj_1_not_implemented" &&
+    input.approvedFrame.vj2Status === "vj_2_not_implemented"
   const canRuntimeRender =
     input.approvedFrameRecordCanShowToPlayer === true &&
     input.approvedFrame.canShowToPlayer === true &&
     hardFieldsValid &&
+    controlledMvpBoundaryPassed &&
     currentWorldMatched &&
     currentTickMatched &&
     currentSourceFactsMatched
@@ -307,6 +343,8 @@ function buildRuntimeRenderGate(input: {
     approvedFrameRecordCanShowToPlayer: input.approvedFrameRecordCanShowToPlayer,
     approvedFrameCanShowToPlayer: input.approvedFrame.canShowToPlayer,
     hardFieldsValid,
+    controlledMvpBoundaryPassed,
+    productionDisplayAllowed: false,
     currentWorldMatched,
     currentTickMatched,
     currentSourceFactsMatched,
@@ -323,18 +361,22 @@ function buildRuntimeRenderGate(input: {
       input.approvedFrame.sourceImagePayloadQualityPassed === true,
     canRuntimeRender,
     displayRule:
-      "Runtime Render 只能展示 ApprovedFrameRecord 与 ApprovedFrame 同时允许展示，并且 sha256 / byteLength / contentType / payloadQualityPassed / 当前 worldId / 当前 tick / 当前 sourceFactIds 全部有效的图片。",
+      "Runtime Render 当前只允许展示 ApprovedFrameRecord 与 ApprovedFrame 同时允许展示，并且 sha256 / byteLength / contentType / payloadQualityPassed / 当前 worldId / 当前 tick / 当前 sourceFactIds 全部有效的受控 MVP 帧；生产展示仍被阻断。",
     displayRuleEn:
-      "Runtime Render may only display an image when both ApprovedFrameRecord and ApprovedFrame allow display, and sha256 / byteLength / contentType / payloadQualityPassed / current worldId / current tick / current sourceFactIds are all valid.",
+      "Runtime Render currently may only display a controlled MVP frame when both ApprovedFrameRecord and ApprovedFrame allow display, and sha256 / byteLength / contentType / payloadQualityPassed / current worldId / current tick / current sourceFactIds are all valid; production display remains blocked.",
     tags: [
       "runtime_render_gate",
       hardFieldsValid ? "hard_fields_valid" : "hard_fields_invalid",
+      controlledMvpBoundaryPassed
+        ? "controlled_mvp_boundary_passed"
+        : "controlled_mvp_boundary_failed",
       currentWorldMatched ? "current_world_matched" : "current_world_mismatch",
       currentTickMatched ? "current_tick_matched" : "current_tick_mismatch",
       currentSourceFactsMatched
         ? "current_source_facts_matched"
         : "current_source_facts_mismatch",
-      canRuntimeRender ? "runtime_render_allowed" : "runtime_render_blocked",
+      canRuntimeRender ? "controlled_mvp_runtime_render_allowed" : "runtime_render_blocked",
+      "production_display_blocked",
     ],
   }
 }
@@ -343,6 +385,7 @@ function approvedFrameHardFieldsValid(
   approvedFrame: WorldVisualApprovedFrame
 ): boolean {
   return (
+    approvedFrame.canShowToPlayer === true &&
     typeof approvedFrame.sourceImageSha256 === "string" &&
     approvedFrame.sourceImageSha256.length === 64 &&
     typeof approvedFrame.sourceImageByteLength === "number" &&
