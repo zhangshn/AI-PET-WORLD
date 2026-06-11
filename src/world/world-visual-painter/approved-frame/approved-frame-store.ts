@@ -13,6 +13,11 @@ const APPROVED_FRAME_DIR = path.join(
   "world-approved-frames"
 )
 
+type RuntimeBoundApprovedFrame = WorldVisualApprovedFrame & {
+  worldId?: unknown
+  tick?: unknown
+}
+
 export type WorldVisualApprovedFrameRecord = {
   version: "world-approved-frame-v1"
   ownerId: string
@@ -64,7 +69,11 @@ export async function writeWorldVisualApprovedFrameRecord(input: {
     worldId: input.worldId,
     tick: input.tick,
     savedAt: new Date().toISOString(),
-    approvedFrame: input.approvedFrame,
+    approvedFrame: bindApprovedFrameToRuntime({
+      approvedFrame: input.approvedFrame,
+      worldId: input.worldId,
+      tick: input.tick,
+    }),
     reviewReport: input.reviewReport,
     sourceCandidateRecord: input.sourceCandidateRecord,
     sourceAiImageCandidateId: input.sourceCandidateRecord.candidate.candidateId,
@@ -78,6 +87,8 @@ export async function writeWorldVisualApprovedFrameRecord(input: {
     canShowToPlayer: true,
     tags: [
       "world_visual_approved_frame_record",
+      `world_id:${input.worldId}`,
+      `tick:${input.tick}`,
       "player_visible_allowed",
       "visual_review_passed",
       "source_candidate_record_bound",
@@ -216,6 +227,24 @@ export async function readLatestWorldVisualApprovedFrameRecord(input: {
   }
 }
 
+function bindApprovedFrameToRuntime(input: {
+  approvedFrame: WorldVisualApprovedFrame
+  worldId: string
+  tick: number
+}): RuntimeBoundApprovedFrame {
+  const tagSet = new Set(input.approvedFrame.tags)
+  tagSet.add(`world_id:${input.worldId}`)
+  tagSet.add(`tick:${input.tick}`)
+  tagSet.add("runtime_bound_approved_frame")
+
+  return {
+    ...input.approvedFrame,
+    worldId: input.worldId,
+    tick: input.tick,
+    tags: Array.from(tagSet),
+  }
+}
+
 function validateApprovedFrameRecord(
   record: WorldVisualApprovedFrameRecord
 ): string[] {
@@ -229,6 +258,7 @@ function validateApprovedFrameRecord(
   const condition = sourceRecord.generationCondition
   const request = sourceRecord.aiImageGenerationRequest
   const frame = record.approvedFrame
+  const runtimeFrame = frame as RuntimeBoundApprovedFrame
   const review = record.reviewReport
 
   pushIf(warnings, sourceRecord.ownerId !== record.ownerId, "source_owner")
@@ -238,6 +268,11 @@ function validateApprovedFrameRecord(
   pushIf(warnings, condition.tick !== record.tick, "condition_tick")
   pushIf(warnings, runtimeCandidate.worldId !== record.worldId, "candidate_world")
   pushIf(warnings, runtimeCandidate.tick !== record.tick, "candidate_tick")
+  pushIf(warnings, runtimeFrame.worldId !== record.worldId, "frame_world")
+  pushIf(warnings, runtimeFrame.tick !== record.tick, "frame_tick")
+  pushIf(warnings, !frame.tags.includes(`world_id:${record.worldId}`), "frame_world_tag")
+  pushIf(warnings, !frame.tags.includes(`tick:${record.tick}`), "frame_tick_tag")
+  pushIf(warnings, !frame.tags.includes("runtime_bound_approved_frame"), "frame_runtime_bound_tag")
   pushIf(warnings, !candidate.tags.includes(`world_id:${record.worldId}`), "candidate_world_tag")
   pushIf(warnings, !candidate.tags.includes(`tick:${record.tick}`), "candidate_tick_tag")
   pushIf(warnings, !candidate.tags.includes("runtime_bound_candidate"), "candidate_runtime_bound_tag")
@@ -301,9 +336,11 @@ function validateCurrentRuntimeBinding(
   }
 ): string[] {
   const warnings: string[] = []
+  const runtimeFrame = record.approvedFrame as RuntimeBoundApprovedFrame
 
   if (input.currentTick !== undefined) {
     pushIf(warnings, record.tick !== input.currentTick, "current_tick_mismatch")
+    pushIf(warnings, runtimeFrame.tick !== input.currentTick, "current_frame_tick_mismatch")
     pushIf(warnings, record.approvedFrame.frameId !== `approved-frame-${record.worldId}-${input.currentTick}`, "current_frame_id_mismatch")
   }
 
@@ -312,6 +349,11 @@ function validateCurrentRuntimeBinding(
       warnings,
       !sameStringSet(record.sourceFactIds, input.currentSourceFactIds),
       "current_source_facts_mismatch"
+    )
+    pushIf(
+      warnings,
+      !sameStringSet(record.approvedFrame.sourceFactIds, input.currentSourceFactIds),
+      "current_frame_source_facts_mismatch"
     )
   }
 
@@ -367,11 +409,14 @@ async function writeLatestWorldVisualApprovedFrameIndex(input: {
 }): Promise<void> {
   const indexPath = getLatestWorldVisualApprovedFrameIndexPath(input.record)
   const tempPath = `${indexPath}.tmp`
+  const runtimeFrame = input.record.approvedFrame as RuntimeBoundApprovedFrame
   const index = {
     version: "world-approved-frame-index-v1",
     ownerId: input.record.ownerId,
     worldId: input.record.worldId,
     tick: input.record.tick,
+    frameWorldId: runtimeFrame.worldId,
+    frameTick: runtimeFrame.tick,
     frameId: input.record.approvedFrame.frameId,
     sourceAiImageCandidateId: input.record.sourceAiImageCandidateId,
     sourceGenerationConditionId: input.record.sourceGenerationConditionId,
@@ -439,7 +484,11 @@ function normalizeWorldVisualApprovedFrameRecord(
     worldId: value.worldId,
     tick: value.tick,
     savedAt: value.savedAt,
-    approvedFrame: value.approvedFrame,
+    approvedFrame: bindApprovedFrameToRuntime({
+      approvedFrame: value.approvedFrame,
+      worldId: value.worldId,
+      tick: value.tick,
+    }),
     reviewReport: value.reviewReport,
     sourceCandidateRecord: value.sourceCandidateRecord,
     sourceAiImageCandidateId: value.sourceAiImageCandidateId,
