@@ -78,22 +78,27 @@ export async function WorldLiveRuntimePage() {
           <div style={runtimeWorldStyles.hud}>
             <span>AI-PET-WORLD</span>
             <span>Tick {painterDecision.factManifest.tick}</span>
-            <span>ApprovedFrame</span>
+            <span>Controlled MVP Frame</span>
           </div>
           <div
-            aria-label="已审核通过且匹配当前世界 tick 的世界画面"
+            aria-label="通过 VJ-0 并匹配当前世界 tick 的受控 MVP 世界画面，非生产批准帧"
             style={runtimeWorldStyles.frame}
           >
-            {/* ApprovedFrame imageUrl only renders after the VJ-0 current-runtime gate passes. */}
+            {/* Controlled MVP frame imageUrl only renders after the VJ-0 current-runtime gate and production-blocked boundary pass. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              alt="已审核通过的 AI 世界画面"
+              alt="通过 VJ-0 的受控 MVP AI 世界画面，非生产批准帧"
               src={approvedFrame.imageUrl}
               style={runtimeWorldStyles.approvedImage}
             />
           </div>
           <div style={runtimeWorldStyles.provenance}>
             <span>Review {approvedFrame.reviewScore}</span>
+            <span>VJ-0 passed</span>
+            <span>VJ-1 not implemented</span>
+            <span>VJ-2 not implemented</span>
+            <span>Controlled MVP only</span>
+            <span>Not production approved</span>
             <span>Candidate {approvedFrameRecord.sourceAiImageCandidateId}</span>
             <span>Condition {approvedFrameRecord.sourceGenerationConditionId}</span>
             <span>Image {approvedFrame.sourceImageSha256.slice(0, 12)}</span>
@@ -135,7 +140,7 @@ export async function WorldLiveRuntimePage() {
             <span>{painterDecision.currentStage}</span>
           </div>
           <div style={blockedWorldStyles.metaItem}>
-            <span style={blockedWorldStyles.metaLabel}>ApprovedFrame / 审核帧</span>
+            <span style={blockedWorldStyles.metaLabel}>ApprovedFrame / 受控 MVP 帧</span>
             <span>读取状态：{approvedFrameReadResult.status}</span>
             <span>页面状态：{approvedFrameBlock.apiState}</span>
             <span>VJ-0 阻断：{approvedFrameBlock.vj0Blocked ? "是" : "否"}</span>
@@ -149,6 +154,8 @@ export async function WorldLiveRuntimePage() {
             <span>frame tick 匹配：{currentRuntimeGate.currentFrameTickMatched ? "是" : "否"}</span>
             <span>sourceFactIds 匹配：{currentRuntimeGate.currentSourceFactsMatched ? "是" : "否"}</span>
             <span>frame sourceFactIds 匹配：{currentRuntimeGate.currentFrameSourceFactsMatched ? "是" : "否"}</span>
+            <span>controlled MVP 边界：{currentRuntimeGate.controlledMvpBoundaryPassed ? "是" : "否"}</span>
+            <span>production approved：否</span>
             <span>当前事实数量：{factManifest.sourceFactIds.length}</span>
           </div>
           <div style={blockedWorldStyles.metaItem}>
@@ -169,9 +176,9 @@ export async function WorldLiveRuntimePage() {
           </div>
           <div style={blockedWorldStyles.metaItem}>
             <span style={blockedWorldStyles.metaLabel}>Display gate / 展示闸门</span>
-            <span>未生成 AI 位图候选图并通过审核前禁止展示</span>
-            <span>流程：generate → hidden candidate → judge → ApprovedFrame → /world</span>
-            <span>Blocked until an AI bitmap candidate passes review and becomes ApprovedFrame</span>
+            <span>未生成受控 MVP ApprovedFrame 前禁止展示</span>
+            <span>流程：generate → hidden candidate → VJ-0 hard gate → controlled MVP ApprovedFrame → /world</span>
+            <span>VJ-1/VJ-2 未实现，production display 仍然阻断</span>
           </div>
           <div style={blockedWorldStyles.metaItem}>
             <span style={blockedWorldStyles.metaLabel}>Fact audit / 事实审计</span>
@@ -240,15 +247,15 @@ function buildApprovedFrameBlockView(input: {
 
   if (input.status === "found") {
     return {
-      apiState: "approved_frame_found_but_runtime_gate_blocked",
+      apiState: "controlled_mvp_approved_frame_runtime_gate_blocked",
       titleZh: "世界画面尚未通过展示闸门",
-      titleEn: "ApprovedFrame blocked by Runtime Render gate",
+      titleEn: "Controlled MVP frame blocked by Runtime Render gate",
       messageZh:
-        "ApprovedFrameRecord 已存在，但 Runtime Render 必需字段或当前世界 tick/sourceFactIds 未全部通过。/world 不展示图片。",
+        "ApprovedFrameRecord 已存在，但 Runtime Render 必需字段、controlled MVP 边界或当前世界 tick/sourceFactIds 未全部通过。/world 不展示图片。",
       messageEn:
-        "An ApprovedFrameRecord exists, but required Runtime Render fields or current world tick/sourceFactIds did not all pass. /world will not display the image.",
+        "An ApprovedFrameRecord exists, but required Runtime Render fields, the controlled MVP boundary, or current world tick/sourceFactIds did not all pass. /world will not display the image.",
       displayRuleZh:
-        "found 但未通过 Runtime Render gate 时，仍然只能显示阻断说明。",
+        "found 但未通过 Runtime Render gate 时，仍然只能显示阻断说明；production display 始终阻断。",
       vj0Blocked: true,
       path: input.path,
       warnings: input.warnings,
@@ -260,10 +267,10 @@ function buildApprovedFrameBlockView(input: {
     apiState: "approved_frame_empty",
     titleZh: "世界视觉导演尚未就绪",
     titleEn: "WorldVisualPainter not ready",
-    messageZh: "还没有 ApprovedFrame。需要先生成候选图并通过 VisualJudge。",
+    messageZh: "还没有受控 MVP ApprovedFrame。需要先生成候选图并通过 VJ-0。",
     messageEn:
-      "No ApprovedFrame exists yet. Generate a candidate and pass VisualJudge first.",
-    displayRuleZh: "没有 ApprovedFrame 时，/world 必须继续阻断。",
+      "No controlled MVP ApprovedFrame exists yet. Generate a candidate and pass VJ-0 first.",
+    displayRuleZh: "没有受控 MVP ApprovedFrame 时，/world 必须继续阻断。",
     vj0Blocked: false,
     path: input.path,
     warnings: input.warnings,
@@ -285,6 +292,9 @@ function buildCurrentRuntimeGate(input: {
   const hardFieldsValid = input.approvedFrame
     ? canRenderApprovedFrame(input.approvedFrame)
     : false
+  const controlledMvpBoundaryPassed = input.approvedFrame
+    ? approvedFrameControlledMvpBoundaryPassed(input.approvedFrame)
+    : false
   const currentWorldMatched = input.recordWorldId === input.currentWorldId
   const currentTickMatched = input.recordTick === input.currentTick
   const currentFrameWorldMatched = runtimeFrame?.worldId === input.currentWorldId
@@ -300,6 +310,7 @@ function buildCurrentRuntimeGate(input: {
     input.recordCanShowToPlayer === true &&
     input.approvedFrame?.canShowToPlayer === true &&
     hardFieldsValid &&
+    controlledMvpBoundaryPassed &&
     currentWorldMatched &&
     currentTickMatched &&
     currentFrameWorldMatched &&
@@ -309,6 +320,7 @@ function buildCurrentRuntimeGate(input: {
 
   return {
     hardFieldsValid,
+    controlledMvpBoundaryPassed,
     currentWorldMatched,
     currentTickMatched,
     currentFrameWorldMatched,
@@ -329,6 +341,19 @@ function canRenderApprovedFrame(approvedFrame: WorldVisualApprovedFrame): boolea
     typeof approvedFrame.sourceImageContentType === "string" &&
     isApprovedContentType(approvedFrame.sourceImageContentType) &&
     approvedFrame.sourceImagePayloadQualityPassed === true
+  )
+}
+
+function approvedFrameControlledMvpBoundaryPassed(
+  approvedFrame: WorldVisualApprovedFrame
+): boolean {
+  return (
+    approvedFrame.approvalScope === "approved_for_controlled_mvp" &&
+    approvedFrame.productionApprovalStatus === "not_approved_for_production" &&
+    approvedFrame.approvedForProduction === false &&
+    approvedFrame.vj0Status === "vj_0_passed" &&
+    approvedFrame.vj1Status === "vj_1_not_implemented" &&
+    approvedFrame.vj2Status === "vj_2_not_implemented"
   )
 }
 
@@ -420,18 +445,16 @@ const runtimeWorldStyles = {
     fontSize: 12,
     gap: 12,
     justifyContent: "space-between",
-    left: 14,
+    left: 16,
     letterSpacing: "0.08em",
-    pointerEvents: "none",
     position: "absolute",
-    right: 14,
+    right: 16,
     textTransform: "uppercase",
     top: 12,
     zIndex: 2,
   },
   frame: {
     height: "100%",
-    imageRendering: "pixelated",
     overflow: "hidden",
     width: "100%",
   },
@@ -443,93 +466,81 @@ const runtimeWorldStyles = {
     width: "100%",
   },
   provenance: {
-    alignItems: "center",
-    background: "rgba(0, 0, 0, 0.36)",
     bottom: 12,
     color: "rgba(235, 248, 218, 0.72)",
     display: "flex",
+    flexWrap: "wrap",
     fontSize: 11,
-    gap: 12,
-    left: 12,
-    maxWidth: "calc(100% - 24px)",
-    overflow: "hidden",
-    padding: "8px 10px",
-    pointerEvents: "none",
+    gap: 10,
+    left: 16,
     position: "absolute",
-    right: 12,
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
+    right: 16,
     zIndex: 2,
   },
 } as const
 
 const blockedWorldStyles = {
   page: {
-    alignItems: "center",
     background:
-      "linear-gradient(180deg, #10251d 0%, #08120f 58%, #050908 100%)",
+      "radial-gradient(circle at 50% 20%, #1a2d26 0, #0d1915 54%, #050908 100%)",
     color: "#d8ead8",
-    display: "flex",
-    justifyContent: "center",
     minHeight: "100vh",
     padding: 24,
   },
   panel: {
-    background: "rgba(8, 17, 14, 0.76)",
-    border: "1px solid rgba(151, 194, 156, 0.18)",
-    maxWidth: 920,
+    background: "rgba(8, 17, 14, 0.52)",
+    border: "1px solid rgba(143, 190, 159, 0.2)",
+    margin: "0 auto",
+    maxWidth: 980,
     padding: 28,
   },
   brand: {
-    color: "rgba(216, 234, 216, 0.68)",
+    color: "rgba(216, 234, 216, 0.62)",
     fontSize: 13,
-    letterSpacing: "0.12em",
-    marginBottom: 10,
+    letterSpacing: "0.08em",
   },
   tick: {
-    color: "rgba(216, 234, 216, 0.58)",
-    fontSize: 13,
-    marginBottom: 18,
+    color: "rgba(216, 234, 216, 0.78)",
+    fontSize: 14,
+    marginTop: 10,
   },
   title: {
-    fontSize: 34,
-    margin: "0 0 16px",
+    fontSize: 32,
+    lineHeight: 1.2,
+    margin: "14px 0 12px",
   },
   titleSub: {
-    color: "rgba(216, 234, 216, 0.66)",
+    color: "rgba(216, 234, 216, 0.62)",
     display: "block",
     fontSize: 18,
     marginTop: 8,
   },
   body: {
     lineHeight: 1.8,
-    margin: "0 0 14px",
+    margin: "0 0 8px",
   },
   metaGrid: {
     display: "grid",
     gap: 12,
     gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-    marginTop: 24,
+    marginTop: 22,
   },
   metaItem: {
     background: "rgba(255, 255, 255, 0.045)",
-    border: "1px solid rgba(255, 255, 255, 0.08)",
+    border: "1px solid rgba(216, 234, 216, 0.1)",
     display: "flex",
     flexDirection: "column",
     gap: 6,
     padding: 14,
   },
   metaLabel: {
-    color: "rgba(216, 234, 216, 0.52)",
+    color: "rgba(216, 234, 216, 0.55)",
     fontSize: 12,
-    letterSpacing: "0.08em",
     textTransform: "uppercase",
   },
   note: {
-    borderTop: "1px solid rgba(255, 255, 255, 0.08)",
-    color: "rgba(216, 234, 216, 0.74)",
+    color: "rgba(216, 234, 216, 0.72)",
     lineHeight: 1.8,
-    margin: "24px 0 0",
-    paddingTop: 18,
+    marginTop: 22,
   },
 } as const
