@@ -22,10 +22,7 @@ const REQUIRED_REVIEW_CHECK_IDS = [
   "candidate_generation_request",
   "candidate_fact_link",
   "candidate_license",
-  "visual_style_quality",
-  "world_structure_quality",
-  "visual_artifact_rejection",
-  "fact_and_rights_quality",
+  "candidate_tags_not_used_as_quality_evidence",
 ] as const
 
 type RuntimeBoundCandidate = WorldVisualAiImageCandidate & {
@@ -45,6 +42,9 @@ export function buildWorldVisualApprovedFrame(input: {
   if (!isApprovedImageFormat(input.aiImageCandidate.imageFormat)) return null
   if (!isApprovedLicense(input.aiImageCandidate.license)) return null
   if (!input.aiImageCandidate.originalityConfirmed) return null
+  if (!factManifestBindsGenerationCondition(input.factManifest, input.generationCondition)) {
+    return null
+  }
   if (!candidateBindsWorld(input.aiImageCandidate, input.generationCondition)) {
     return null
   }
@@ -61,7 +61,13 @@ export function buildWorldVisualApprovedFrame(input: {
   ) {
     return null
   }
-  if (!candidateKeepsFactLinks(input.aiImageCandidate, input.factManifest)) {
+  if (
+    !candidateKeepsFactLinks(
+      input.aiImageCandidate,
+      input.factManifest,
+      input.generationCondition
+    )
+  ) {
     return null
   }
 
@@ -91,8 +97,8 @@ export function buildWorldVisualApprovedFrame(input: {
       imageInspectionSummary.payloadQualityPassed,
     canShowToPlayer: true,
     approvalReason: {
-      zh: "AI 位图候选图已通过 VJ-0 硬闸门，允许进入 Runtime Render 展示阶段。",
-      en: "The AI bitmap candidate passed the VJ-0 hard gate and may enter Runtime Render.",
+      zh: "AI 位图候选图已通过 VJ-0 文件与事实硬闸门，允许进入 Runtime Render 展示阶段。",
+      en: "The AI bitmap candidate passed the VJ-0 file and fact hard gate and may enter Runtime Render.",
     },
     sourceFactIds: input.factManifest.sourceFactIds,
     tags: [
@@ -109,6 +115,7 @@ export function buildWorldVisualApprovedFrame(input: {
       "world_generation_condition_bound",
       "runtime_bound_candidate_required",
       "formal_project_model_source_required",
+      "candidate_tags_metadata_only",
       "approved_frame_display_gate_passed",
       "not_from_programmatic_renderer",
       "not_from_control_sketch",
@@ -154,6 +161,17 @@ function imageInspectionSummaryCanApprove(
   )
 }
 
+function factManifestBindsGenerationCondition(
+  factManifest: WorldVisualFactManifest,
+  generationCondition: WorldVisualGenerationCondition
+): boolean {
+  return (
+    factManifest.worldId === generationCondition.worldId &&
+    factManifest.tick === generationCondition.tick &&
+    sameStringSet(factManifest.sourceFactIds, generationCondition.sourceFactIds)
+  )
+}
+
 function candidateBindsWorld(
   candidate: WorldVisualAiImageCandidate,
   generationCondition: WorldVisualGenerationCondition
@@ -167,7 +185,8 @@ function candidateBindsWorld(
     runtimeCandidate.worldId === generationCondition.worldId &&
     runtimeCandidate.tick === generationCondition.tick &&
     candidate.tags.includes(`world_id:${generationCondition.worldId}`) &&
-    candidate.tags.includes(`tick:${generationCondition.tick}`)
+    candidate.tags.includes(`tick:${generationCondition.tick}`) &&
+    candidate.tags.includes("runtime_bound_candidate")
   )
 }
 
@@ -179,9 +198,11 @@ function candidateBindsGenerationCondition(
     candidate.conditionId === generationCondition.conditionId &&
     candidate.modelVersion === generationCondition.modelVersion &&
     generationCondition.canShowToPlayer === false &&
+    generationCondition.safetyCondition.preserveWorldFacts === true &&
     generationCondition.safetyCondition.requireVisualJudge === true &&
     generationCondition.safetyCondition.forbidProgrammaticFinalFrame === true &&
-    generationCondition.safetyCondition.forbidPlaceholderFrame === true
+    generationCondition.safetyCondition.forbidPlaceholderFrame === true &&
+    generationCondition.safetyCondition.forbidUnlicensedCopy === true
   )
 }
 
@@ -208,6 +229,9 @@ function candidateBindsGenerationRequest(
     request.condition.conditionId === generationCondition.conditionId &&
     request.condition.worldId === generationCondition.worldId &&
     request.condition.tick === generationCondition.tick &&
+    request.condition.modelVersion === generationCondition.modelVersion &&
+    request.condition.canShowToPlayer === false &&
+    sameStringSet(request.condition.sourceFactIds, generationCondition.sourceFactIds) &&
     request.output.width === candidate.width &&
     request.output.height === candidate.height &&
     request.output.imageFormat === candidate.imageFormat
@@ -216,18 +240,14 @@ function candidateBindsGenerationRequest(
 
 function candidateKeepsFactLinks(
   candidate: WorldVisualAiImageCandidate,
-  factManifest: WorldVisualFactManifest
+  factManifest: WorldVisualFactManifest,
+  generationCondition: WorldVisualGenerationCondition
 ): boolean {
   if (candidate.conditionId.length === 0) return false
-  if (candidate.sourceFactIds.length !== factManifest.sourceFactIds.length) {
-    return false
-  }
+  if (!sameStringSet(candidate.sourceFactIds, factManifest.sourceFactIds)) return false
+  if (!sameStringSet(candidate.sourceFactIds, generationCondition.sourceFactIds)) return false
 
-  const candidateFactIds = new Set(candidate.sourceFactIds)
-
-  return factManifest.sourceFactIds.every((sourceFactId) =>
-    candidateFactIds.has(sourceFactId)
-  )
+  return true
 }
 
 function isApprovedImageFormat(
@@ -253,4 +273,11 @@ function isApprovedContentType(
   if (imageFormat === "png") return contentType === "image/png"
   if (imageFormat === "webp") return contentType === "image/webp"
   return contentType === "image/jpeg"
+}
+
+function sameStringSet(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) return false
+
+  const rightSet = new Set(right)
+  return left.every((value) => rightSet.has(value))
 }
