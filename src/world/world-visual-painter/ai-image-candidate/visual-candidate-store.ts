@@ -106,6 +106,7 @@ export async function writeWorldVisualCandidateRecord(input: {
       "world_visual_candidate_record",
       "hidden_candidate",
       "vj_0_candidate_store_gate_passed",
+      "current_runtime_gate_required_on_read",
       aiImageGenerationRequest
         ? "ai_image_generation_request_bound"
         : "no_ai_image_generation_request",
@@ -148,6 +149,8 @@ export async function writeWorldVisualCandidateRecord(input: {
 export async function readLatestWorldVisualCandidateRecord(input: {
   ownerId: string
   worldId: string
+  currentTick?: number
+  currentSourceFactIds?: string[]
 }): Promise<WorldVisualCandidateStoreReadResult> {
   const indexPath = getLatestWorldVisualCandidateIndexPath(input)
 
@@ -166,12 +169,19 @@ export async function readLatestWorldVisualCandidateRecord(input: {
     }
 
     const validation = validateCandidateRecordRead(normalized)
-    if (!validation.ok) {
+    const currentGateWarnings = validateCurrentRuntimeBinding(normalized, input)
+    const warnings = [...validation.warnings, ...currentGateWarnings]
+    if (!validation.ok || currentGateWarnings.length > 0) {
       return invalidRead(
         index.path,
         "Visual candidate record failed VJ-0 read gate.",
-        validation.warnings,
-        validation.tags
+        warnings,
+        [
+          ...validation.tags,
+          currentGateWarnings.length > 0
+            ? "current_runtime_binding_failed"
+            : "record_shape_binding_failed",
+        ]
       )
     }
 
@@ -185,6 +195,12 @@ export async function readLatestWorldVisualCandidateRecord(input: {
         "world_visual_candidate_store_read",
         "found",
         "vj_0_candidate_read_gate_passed",
+        input.currentTick === undefined
+          ? "current_tick_not_requested"
+          : "current_tick_gate_passed",
+        input.currentSourceFactIds === undefined
+          ? "current_source_facts_not_requested"
+          : "current_source_facts_gate_passed",
       ],
     }
   } catch (error) {
@@ -246,6 +262,9 @@ function validateCandidateRecordInput(input: {
   if (input.candidate.canShowToPlayer !== false) warnings.push("candidate.canShowToPlayer must be false.")
   if (input.candidate.worldId !== input.worldId) warnings.push("candidate.worldId must match record worldId.")
   if (input.candidate.tick !== input.tick) warnings.push("candidate.tick must match record tick.")
+  if (!input.candidate.tags.includes(`world_id:${input.worldId}`)) warnings.push("candidate must include world_id tag.")
+  if (!input.candidate.tags.includes(`tick:${input.tick}`)) warnings.push("candidate must include tick tag.")
+  if (!input.candidate.tags.includes("runtime_bound_candidate")) warnings.push("candidate must include runtime_bound_candidate tag.")
   if (input.generationCondition.worldId !== input.worldId) warnings.push("generationCondition.worldId must match record worldId.")
   if (input.generationCondition.tick !== input.tick) warnings.push("generationCondition.tick must match record tick.")
   if (input.factManifest.worldId !== input.worldId) warnings.push("factManifest.worldId must match record worldId.")
@@ -259,15 +278,29 @@ function validateCandidateRecordInput(input: {
   if (!sameStringSet(input.candidate.sourceFactIds, input.generationCondition.sourceFactIds)) {
     warnings.push("candidate.sourceFactIds must match generationCondition.sourceFactIds.")
   }
+  if (input.generationCondition.canShowToPlayer !== false) warnings.push("generationCondition.canShowToPlayer must be false.")
+  if (input.generationCondition.safetyCondition.preserveWorldFacts !== true) warnings.push("generationCondition must preserve world facts.")
+  if (input.generationCondition.safetyCondition.requireVisualJudge !== true) warnings.push("generationCondition must require VisualJudge.")
+  if (input.generationCondition.safetyCondition.forbidProgrammaticFinalFrame !== true) warnings.push("generationCondition must forbid programmatic final frames.")
+  if (input.generationCondition.safetyCondition.forbidPlaceholderFrame !== true) warnings.push("generationCondition must forbid placeholder frames.")
+  if (input.generationCondition.safetyCondition.forbidUnlicensedCopy !== true) warnings.push("generationCondition must forbid unlicensed copy.")
 
   if (input.candidate.sourceKind === "project_model_generated") {
     if (!input.candidate.modelVersion) warnings.push("project_model_generated candidate requires modelVersion.")
     if (!input.aiImageGenerationRequest) warnings.push("project_model_generated candidate requires aiImageGenerationRequest.")
-    if (
-      input.aiImageGenerationRequest &&
-      input.aiImageGenerationRequest.condition.conditionId !== input.generationCondition.conditionId
-    ) {
-      warnings.push("aiImageGenerationRequest.condition must match generationCondition.")
+    if (input.candidate.modelVersion !== input.generationCondition.modelVersion) {
+      warnings.push("candidate.modelVersion must match generationCondition.modelVersion.")
+    }
+    if (input.aiImageGenerationRequest) {
+      if (input.aiImageGenerationRequest.canShowToPlayer !== false) warnings.push("aiImageGenerationRequest.canShowToPlayer must be false.")
+      if (input.aiImageGenerationRequest.modelVersion !== input.candidate.modelVersion) warnings.push("aiImageGenerationRequest.modelVersion must match candidate.modelVersion.")
+      if (input.aiImageGenerationRequest.condition.conditionId !== input.generationCondition.conditionId) warnings.push("aiImageGenerationRequest.condition must match generationCondition.")
+      if (input.aiImageGenerationRequest.condition.worldId !== input.worldId) warnings.push("aiImageGenerationRequest.condition.worldId must match record worldId.")
+      if (input.aiImageGenerationRequest.condition.tick !== input.tick) warnings.push("aiImageGenerationRequest.condition.tick must match record tick.")
+      if (!sameStringSet(input.aiImageGenerationRequest.condition.sourceFactIds, input.generationCondition.sourceFactIds)) warnings.push("aiImageGenerationRequest.condition sourceFactIds must match generationCondition.")
+      if (input.aiImageGenerationRequest.output.width !== input.candidate.width) warnings.push("aiImageGenerationRequest.output.width must match candidate.width.")
+      if (input.aiImageGenerationRequest.output.height !== input.candidate.height) warnings.push("aiImageGenerationRequest.output.height must match candidate.height.")
+      if (input.aiImageGenerationRequest.output.imageFormat !== input.candidate.imageFormat) warnings.push("aiImageGenerationRequest.output.imageFormat must match candidate.imageFormat.")
     }
   }
 
@@ -309,17 +342,24 @@ function validateCandidateRecordRead(record: WorldVisualCandidateRecord): {
   if (record.generationCondition.canShowToPlayer !== false) warnings.push("generationCondition.canShowToPlayer must be false.")
   if (record.generationCondition.safetyCondition.requireVisualJudge !== true) warnings.push("generationCondition must require VisualJudge.")
   if (record.generationCondition.safetyCondition.preserveWorldFacts !== true) warnings.push("generationCondition must preserve world facts.")
+  if (record.generationCondition.safetyCondition.forbidProgrammaticFinalFrame !== true) warnings.push("generationCondition must forbid programmatic final frames.")
+  if (record.generationCondition.safetyCondition.forbidPlaceholderFrame !== true) warnings.push("generationCondition must forbid placeholder frames.")
+  if (record.generationCondition.safetyCondition.forbidUnlicensedCopy !== true) warnings.push("generationCondition must forbid unlicensed copy.")
   if (record.candidate.conditionId !== record.generationCondition.conditionId) warnings.push("candidate.conditionId must match generationCondition.conditionId.")
   if (!sameStringSet(record.sourceFactIds, record.generationCondition.sourceFactIds)) warnings.push("record.sourceFactIds must match generationCondition.sourceFactIds.")
   if (!sameStringSet(record.candidate.sourceFactIds, record.sourceFactIds)) warnings.push("candidate.sourceFactIds must match record.sourceFactIds.")
 
   if (record.candidate.sourceKind === "project_model_generated") {
     if (!record.candidate.modelVersion) warnings.push("project_model_generated candidate requires modelVersion.")
+    if (record.candidate.modelVersion !== record.generationCondition.modelVersion) warnings.push("candidate.modelVersion must match generationCondition.modelVersion.")
     if (!record.aiImageGenerationRequest) warnings.push("project_model_generated candidate requires aiImageGenerationRequest.")
     if (record.aiImageGenerationRequest) {
       if (record.aiImageGenerationRequest.canShowToPlayer !== false) warnings.push("aiImageGenerationRequest.canShowToPlayer must be false.")
       if (record.aiImageGenerationRequest.modelVersion !== record.candidate.modelVersion) warnings.push("aiImageGenerationRequest.modelVersion must match candidate.modelVersion.")
       if (record.aiImageGenerationRequest.condition.conditionId !== record.generationCondition.conditionId) warnings.push("aiImageGenerationRequest.condition must match generationCondition.")
+      if (record.aiImageGenerationRequest.condition.worldId !== record.worldId) warnings.push("aiImageGenerationRequest.condition.worldId must match record worldId.")
+      if (record.aiImageGenerationRequest.condition.tick !== record.tick) warnings.push("aiImageGenerationRequest.condition.tick must match record tick.")
+      if (!sameStringSet(record.aiImageGenerationRequest.condition.sourceFactIds, record.generationCondition.sourceFactIds)) warnings.push("aiImageGenerationRequest.condition sourceFactIds must match generationCondition.")
       if (record.aiImageGenerationRequest.output.width !== record.candidate.width) warnings.push("aiImageGenerationRequest.output.width must match candidate.width.")
       if (record.aiImageGenerationRequest.output.height !== record.candidate.height) warnings.push("aiImageGenerationRequest.output.height must match candidate.height.")
       if (record.aiImageGenerationRequest.output.imageFormat !== record.candidate.imageFormat) warnings.push("aiImageGenerationRequest.output.imageFormat must match candidate.imageFormat.")
@@ -338,6 +378,30 @@ function validateCandidateRecordRead(record: WorldVisualCandidateRecord): {
     warnings,
     tags: [...tags, warnings.length === 0 ? "passed" : "failed"],
   }
+}
+
+function validateCurrentRuntimeBinding(
+  record: WorldVisualCandidateRecord,
+  input: {
+    currentTick?: number
+    currentSourceFactIds?: string[]
+  }
+): string[] {
+  const warnings: string[] = []
+
+  if (input.currentTick !== undefined) {
+    if (record.tick !== input.currentTick) warnings.push("current_tick_mismatch")
+    if (record.generationCondition.tick !== input.currentTick) warnings.push("current_condition_tick_mismatch")
+    if (readRuntimeBoundCandidate(record.candidate).tick !== input.currentTick) warnings.push("current_candidate_tick_mismatch")
+  }
+
+  if (input.currentSourceFactIds !== undefined) {
+    if (!sameStringSet(record.sourceFactIds, input.currentSourceFactIds)) warnings.push("current_source_facts_mismatch")
+    if (!sameStringSet(record.candidate.sourceFactIds, input.currentSourceFactIds)) warnings.push("current_candidate_source_facts_mismatch")
+    if (!sameStringSet(record.generationCondition.sourceFactIds, input.currentSourceFactIds)) warnings.push("current_condition_source_facts_mismatch")
+  }
+
+  return warnings
 }
 
 function sameStringSet(left: string[], right: string[]): boolean {
