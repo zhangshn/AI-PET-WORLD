@@ -35,6 +35,8 @@ export async function GET() {
     readLatestWorldVisualCandidateRecord({
       ownerId: runtime.record.ownerId,
       worldId: runtime.record.worldId,
+      currentTick: runtime.record.tick,
+      currentSourceFactIds: factManifest.sourceFactIds,
     }),
     readLatestWorldVisualApprovedFrameRecord({
       ownerId: runtime.record.ownerId,
@@ -68,6 +70,11 @@ export async function GET() {
     imageModel: decision.imageModelStatus,
     conditionStage: "world_generation_condition_ready",
     candidateStatus: candidate.status,
+    candidateReadAudit: {
+      path: candidate.path,
+      warnings: candidate.warnings,
+      tags: candidate.tags,
+    },
     approvedFrameStatus: approved.status,
     approvedFrameGate,
     canShowToPlayer: approvedFrameGate.canRuntimeRender,
