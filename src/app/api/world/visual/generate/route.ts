@@ -36,7 +36,7 @@ export async function POST() {
         messageEn: decision.imageModelStatus.reason.en,
         imageModel: decision.imageModelStatus,
         worldGenerationConditionStatus: "not_implemented",
-        nextStage: "AI-PAINTER A3: VJ-0 display gate",
+        nextStage: "AI-PAINTER B: VJ-0 hard gate",
         canShowToPlayer: false,
         displayRule: "内部模型产生真实候选图并通过 VisualJudge 前，禁止展示世界画面。",
         displayRuleEn:
@@ -45,7 +45,7 @@ export async function POST() {
           "world_visual_generate_api",
           "internal_model_only",
           "generation_blocked",
-          "no_provider_fallback",
+          "no_third_party_drawing_api_fallback",
         ],
       },
       { status: 501 }
@@ -107,7 +107,7 @@ export async function POST() {
           imageFormat: decision.aiImageCandidate.imageFormat,
           canShowToPlayer: decision.aiImageCandidate.canShowToPlayer,
         },
-        nextStage: "AI-PAINTER A3: VisualJudge review",
+        nextStage: "AI-PAINTER B: VisualJudge VJ-0 review",
         canShowToPlayer: false,
         displayRule: "候选图只允许作为隐藏审核输入，不能直接展示给玩家。",
         displayRuleEn:
