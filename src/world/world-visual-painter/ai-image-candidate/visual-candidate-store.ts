@@ -14,6 +14,11 @@ const VISUAL_CANDIDATE_DIR = path.join(
   "world-visual-candidates"
 )
 
+type RuntimeBoundCandidate = WorldVisualAiImageCandidate & {
+  worldId: string
+  tick: number
+}
+
 export type WorldVisualCandidateRecord = {
   version: "world-visual-candidate-v2"
   ownerId: string
@@ -54,27 +59,59 @@ export async function writeWorldVisualCandidateRecord(input: {
   factManifest: WorldVisualFactManifest
   aiImageGenerationRequest?: WorldVisualAiImageGenerationRequest | null
 }): Promise<WorldVisualCandidateStoreWriteResult> {
+  const aiImageGenerationRequest = input.aiImageGenerationRequest ?? null
+  const candidate = bindCandidateToRuntime({
+    candidate: input.candidate,
+    worldId: input.worldId,
+    tick: input.tick,
+  })
+  const validation = validateCandidateRecordInput({
+    ...input,
+    candidate,
+    aiImageGenerationRequest,
+  })
+  const filePath = getWorldVisualCandidateRecordPath({
+    ownerId: input.ownerId,
+    worldId: input.worldId,
+    tick: input.tick,
+    candidate,
+  })
+
+  if (!validation.ok) {
+    return {
+      ok: false,
+      path: filePath,
+      message: "Visual candidate record was blocked by VJ-0 candidate store gate.",
+      warnings: validation.warnings,
+      tags: [
+        "world_visual_candidate_store_write",
+        "blocked_by_vj_0_candidate_gate",
+        ...validation.tags,
+      ],
+    }
+  }
+
   const record: WorldVisualCandidateRecord = {
     version: "world-visual-candidate-v2",
     ownerId: input.ownerId,
     worldId: input.worldId,
     tick: input.tick,
     savedAt: new Date().toISOString(),
-    candidate: input.candidate,
+    candidate,
     generationCondition: input.generationCondition,
-    aiImageGenerationRequest: input.aiImageGenerationRequest ?? null,
+    aiImageGenerationRequest,
     sourceFactIds: input.factManifest.sourceFactIds,
     canShowToPlayer: false,
     tags: [
       "world_visual_candidate_record",
       "hidden_candidate",
-      input.aiImageGenerationRequest
+      "vj_0_candidate_store_gate_passed",
+      aiImageGenerationRequest
         ? "ai_image_generation_request_bound"
         : "no_ai_image_generation_request",
       "approved_frame_required",
     ],
   }
-  const filePath = getWorldVisualCandidateRecordPath(record)
   const tempPath = `${filePath}.tmp`
 
   try {
@@ -91,7 +128,11 @@ export async function writeWorldVisualCandidateRecord(input: {
       path: filePath,
       message: "Visual candidate record written.",
       warnings: [],
-      tags: ["world_visual_candidate_store_write", "ok"],
+      tags: [
+        "world_visual_candidate_store_write",
+        "ok",
+        "vj_0_candidate_store_gate_passed",
+      ],
     }
   } catch (error) {
     return {
@@ -155,14 +196,99 @@ export async function readLatestWorldVisualCandidateRecord(input: {
   }
 }
 
-function getWorldVisualCandidateRecordPath(
-  record: WorldVisualCandidateRecord
-): string {
+function bindCandidateToRuntime(input: {
+  candidate: WorldVisualAiImageCandidate
+  worldId: string
+  tick: number
+}): RuntimeBoundCandidate {
+  const tagSet = new Set(input.candidate.tags)
+  tagSet.add(`world_id:${input.worldId}`)
+  tagSet.add(`tick:${input.tick}`)
+  tagSet.add("runtime_bound_candidate")
+
+  return {
+    ...input.candidate,
+    worldId: input.worldId,
+    tick: input.tick,
+    tags: Array.from(tagSet),
+  }
+}
+
+function validateCandidateRecordInput(input: {
+  ownerId: string
+  worldId: string
+  tick: number
+  candidate: RuntimeBoundCandidate
+  generationCondition: WorldVisualGenerationCondition
+  factManifest: WorldVisualFactManifest
+  aiImageGenerationRequest: WorldVisualAiImageGenerationRequest | null
+}): { ok: boolean; warnings: string[]; tags: string[] } {
+  const warnings: string[] = []
+  const tags = ["vj_0_candidate_store_gate"]
+
+  if (input.ownerId.length === 0) warnings.push("ownerId is required.")
+  if (input.worldId.length === 0) warnings.push("worldId is required.")
+  if (!Number.isInteger(input.tick) || input.tick < 0) warnings.push("tick must be a non-negative integer.")
+  if (input.candidate.canShowToPlayer !== false) warnings.push("candidate.canShowToPlayer must be false.")
+  if (input.candidate.worldId !== input.worldId) warnings.push("candidate.worldId must match record worldId.")
+  if (input.candidate.tick !== input.tick) warnings.push("candidate.tick must match record tick.")
+  if (input.generationCondition.worldId !== input.worldId) warnings.push("generationCondition.worldId must match record worldId.")
+  if (input.generationCondition.tick !== input.tick) warnings.push("generationCondition.tick must match record tick.")
+  if (input.factManifest.worldId !== input.worldId) warnings.push("factManifest.worldId must match record worldId.")
+  if (input.factManifest.tick !== input.tick) warnings.push("factManifest.tick must match record tick.")
+  if (input.candidate.conditionId !== input.generationCondition.conditionId) {
+    warnings.push("candidate.conditionId must match generationCondition.conditionId.")
+  }
+  if (!sameStringSet(input.candidate.sourceFactIds, input.factManifest.sourceFactIds)) {
+    warnings.push("candidate.sourceFactIds must match factManifest.sourceFactIds.")
+  }
+  if (!sameStringSet(input.candidate.sourceFactIds, input.generationCondition.sourceFactIds)) {
+    warnings.push("candidate.sourceFactIds must match generationCondition.sourceFactIds.")
+  }
+
+  if (input.candidate.sourceKind === "project_model_generated") {
+    if (!input.candidate.modelVersion) warnings.push("project_model_generated candidate requires modelVersion.")
+    if (!input.aiImageGenerationRequest) warnings.push("project_model_generated candidate requires aiImageGenerationRequest.")
+    if (
+      input.aiImageGenerationRequest &&
+      input.aiImageGenerationRequest.condition.conditionId !== input.generationCondition.conditionId
+    ) {
+      warnings.push("aiImageGenerationRequest.condition must match generationCondition.")
+    }
+  }
+
+  if (
+    input.candidate.sourceKind === "development_test_asset" &&
+    process.env.NODE_ENV === "production"
+  ) {
+    warnings.push("development_test_asset cannot be written in production.")
+  }
+
+  return {
+    ok: warnings.length === 0,
+    warnings,
+    tags: [...tags, warnings.length === 0 ? "passed" : "failed"],
+  }
+}
+
+function sameStringSet(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) return false
+
+  const rightSet = new Set(right)
+  return left.every((value) => rightSet.has(value))
+}
+
+function getWorldVisualCandidateRecordPath(input: {
+  ownerId: string
+  worldId: string
+  tick: number
+  candidate: WorldVisualAiImageCandidate
+}): string {
   return path.join(
     VISUAL_CANDIDATE_DIR,
-    record.ownerId,
-    record.worldId,
-    `candidate-${record.tick}-${safeFileToken(record.candidate.candidateId)}.json`
+    input.ownerId,
+    input.worldId,
+    `candidate-${input.tick}-${safeFileToken(input.candidate.candidateId)}.json`
   )
 }
 
@@ -190,10 +316,15 @@ async function writeLatestWorldVisualCandidateIndex(input: {
     worldId: input.record.worldId,
     tick: input.record.tick,
     candidateId: input.record.candidate.candidateId,
+    candidateWorldId: readRuntimeBoundCandidate(input.record.candidate).worldId,
+    candidateTick: readRuntimeBoundCandidate(input.record.candidate).tick,
     hasAiImageGenerationRequest: Boolean(input.record.aiImageGenerationRequest),
     path: input.filePath,
     updatedAt: input.record.savedAt,
-    tags: ["world_visual_candidate_latest_index"],
+    tags: [
+      "world_visual_candidate_latest_index",
+      "vj_0_candidate_store_gate_passed",
+    ],
   }
 
   await mkdir(path.dirname(indexPath), { recursive: true })
@@ -233,19 +364,31 @@ function normalizeWorldVisualCandidateRecord(
     return null
   }
 
+  const candidate = bindCandidateToRuntime({
+    candidate: value.candidate,
+    worldId: value.worldId,
+    tick: value.tick,
+  })
+
   return {
     version: value.version,
     ownerId: value.ownerId,
     worldId: value.worldId,
     tick: value.tick,
     savedAt: value.savedAt,
-    candidate: value.candidate,
+    candidate,
     generationCondition: value.generationCondition,
     aiImageGenerationRequest: value.aiImageGenerationRequest ?? null,
     sourceFactIds: value.sourceFactIds,
     canShowToPlayer: value.canShowToPlayer,
     tags: value.tags,
   }
+}
+
+function readRuntimeBoundCandidate(
+  candidate: WorldVisualAiImageCandidate
+): RuntimeBoundCandidate {
+  return candidate as RuntimeBoundCandidate
 }
 
 function safeFileToken(value: string): string {
