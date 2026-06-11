@@ -11,6 +11,11 @@ import type { WorldVisualApprovedFrame } from "@/world/world-visual-painter"
 
 type ApprovedFrameReadStatus = "found" | "empty" | "invalid" | "failed"
 
+type RuntimeBoundApprovedFrame = WorldVisualApprovedFrame & {
+  worldId?: unknown
+  tick?: unknown
+}
+
 export async function GET() {
   const runtime = await readWorldRuntimeSaveRecord()
 
@@ -83,7 +88,7 @@ export async function GET() {
     tags: [
       "world_visual_status_api",
       "internal_model_only",
-      "no_provider_route",
+      "no_external_provider_route",
       "current_tick_gate_checked",
       "current_source_facts_gate_checked",
       approvedFrameGate.canRuntimeRender
@@ -110,15 +115,21 @@ function buildApprovedFrameGateSummary(input: {
   recordCanShowToPlayer: boolean
   approvedFrame: WorldVisualApprovedFrame | null
 }) {
+  const runtimeFrame = input.approvedFrame as RuntimeBoundApprovedFrame | null
   const hardFieldsValid = input.approvedFrame
     ? approvedFrameHardFieldsValid(input.approvedFrame)
     : false
   const currentWorldMatched = input.recordWorldId === input.currentWorldId
   const currentTickMatched = input.recordTick === input.currentTick
+  const currentFrameWorldMatched = runtimeFrame?.worldId === input.currentWorldId
+  const currentFrameTickMatched = runtimeFrame?.tick === input.currentTick
   const currentSourceFactsMatched = sameStringSet(
     input.currentSourceFactIds,
     input.recordSourceFactIds
   )
+  const currentFrameSourceFactsMatched = input.approvedFrame
+    ? sameStringSet(input.currentSourceFactIds, input.approvedFrame.sourceFactIds)
+    : false
   const canRuntimeRender =
     input.status === "found" &&
     input.recordCanShowToPlayer === true &&
@@ -126,7 +137,10 @@ function buildApprovedFrameGateSummary(input: {
     hardFieldsValid &&
     currentWorldMatched &&
     currentTickMatched &&
-    currentSourceFactsMatched
+    currentFrameWorldMatched &&
+    currentFrameTickMatched &&
+    currentSourceFactsMatched &&
+    currentFrameSourceFactsMatched
 
   return {
     status: input.status,
@@ -139,7 +153,10 @@ function buildApprovedFrameGateSummary(input: {
     hardFieldsValid,
     currentWorldMatched,
     currentTickMatched,
+    currentFrameWorldMatched,
+    currentFrameTickMatched,
     currentSourceFactsMatched,
+    currentFrameSourceFactsMatched,
     sourceImageSha256Bound:
       typeof input.approvedFrame?.sourceImageSha256 === "string" &&
       input.approvedFrame.sourceImageSha256.length === 64,
@@ -159,9 +176,14 @@ function buildApprovedFrameGateSummary(input: {
       input.status === "invalid" ? "vj_0_read_gate_blocked" : "vj_0_read_gate_not_invalid",
       currentWorldMatched ? "current_world_matched" : "current_world_mismatch",
       currentTickMatched ? "current_tick_matched" : "current_tick_mismatch",
+      currentFrameWorldMatched ? "current_frame_world_matched" : "current_frame_world_mismatch",
+      currentFrameTickMatched ? "current_frame_tick_matched" : "current_frame_tick_mismatch",
       currentSourceFactsMatched
         ? "current_source_facts_matched"
         : "current_source_facts_mismatch",
+      currentFrameSourceFactsMatched
+        ? "current_frame_source_facts_matched"
+        : "current_frame_source_facts_mismatch",
       ...input.tags,
     ],
   }
