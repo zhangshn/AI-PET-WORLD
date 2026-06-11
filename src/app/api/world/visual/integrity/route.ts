@@ -73,10 +73,29 @@ export async function GET() {
   const approvedFrameRecord = approvedFrameReadResult.record
   const approvedFrame = approvedFrameRecord?.approvedFrame ?? null
   const runtimeFrame = approvedFrame as RuntimeBoundApprovedFrame | null
+  const review = approvedFrameRecord?.reviewReport ?? null
+  const controlledMvpBoundaryPassed = Boolean(
+    approvedFrameRecord &&
+      approvedFrame &&
+      review &&
+      review.status === "vj_0_passed" &&
+      review.vj0Status === "vj_0_passed" &&
+      review.vj1Status === "vj_1_not_implemented" &&
+      review.vj2Status === "vj_2_not_implemented" &&
+      review.approvalScope === "approved_for_controlled_mvp" &&
+      review.productionApprovalStatus === "not_approved_for_production" &&
+      approvedFrame.approvalScope === "approved_for_controlled_mvp" &&
+      approvedFrame.productionApprovalStatus === "not_approved_for_production" &&
+      approvedFrame.approvedForProduction === false &&
+      approvedFrame.vj0Status === "vj_0_passed" &&
+      approvedFrame.vj1Status === "vj_1_not_implemented" &&
+      approvedFrame.vj2Status === "vj_2_not_implemented"
+  )
   const approvedFrameDoubleGatePassed =
     approvedFrameReadResult.status === "found" &&
     approvedFrameRecord?.canShowToPlayer === true &&
-    approvedFrame?.canShowToPlayer === true
+    approvedFrame?.canShowToPlayer === true &&
+    controlledMvpBoundaryPassed
   const approvedFrameCurrentRuntimeMatched =
     Boolean(approvedFrameRecord) &&
     approvedFrameRecord?.worldId === runtime.worldId &&
@@ -178,11 +197,19 @@ export async function GET() {
       ["visual_fix", "world_facts_locked"]
     ),
     check(
+      "controlled_mvp_approval_boundary_if_approved_frame_exists",
+      !approvedFrameRecord || controlledMvpBoundaryPassed,
+      "high",
+      "ApprovedFrame 如存在，只能是通过 VJ-0 的受控 MVP 批准帧，并且必须明确 VJ-1/VJ-2 未实现、非生产批准。",
+      "If an ApprovedFrame exists, it may only be a VJ-0 controlled MVP approval frame and must explicitly mark VJ-1/VJ-2 as not implemented and production approval as blocked.",
+      ["approved_frame", "controlled_mvp", "not_production_approved"]
+    ),
+    check(
       "approved_frame_record_gate_if_exists",
       !approvedFrameRecord || approvedFrameDoubleGatePassed,
       "high",
-      "ApprovedFrameRecord 与 ApprovedFrame 必须同时允许展示。",
-      "ApprovedFrameRecord and ApprovedFrame must both allow display.",
+      "ApprovedFrameRecord 与 ApprovedFrame 必须同时允许受控 MVP 展示，且不能是生产批准帧。",
+      "ApprovedFrameRecord and ApprovedFrame must both allow controlled MVP display, and must not be production approved.",
       ["approved_frame", "runtime_render_gate"]
     ),
     check(
@@ -200,19 +227,21 @@ export async function GET() {
           approvedFrameRecord.sourceAiImageCandidateId &&
           approvedFrame?.sourceImageCandidateId === approvedFrameRecord.sourceAiImageCandidateId),
       "high",
-      "ApprovedFrame 必须可追溯到通过审核的候选图。",
-      "ApprovedFrame must trace back to the reviewed candidate.",
+      "ApprovedFrame 必须可追溯到通过 VJ-0 的候选图。",
+      "ApprovedFrame must trace back to the VJ-0 reviewed candidate.",
       ["approved_frame", "source_candidate_record"]
     ),
     check(
-      "approved_frame_review_passed_if_exists",
+      "approved_frame_review_vj0_passed_if_exists",
       !approvedFrameRecord ||
-        (approvedFrameRecord.reviewReport.status === "passed_candidate" &&
-          approvedFrameRecord.reviewReport.canShowToPlayer === false),
+        (approvedFrameRecord.reviewReport.status === "vj_0_passed" &&
+          approvedFrameRecord.reviewReport.canShowToPlayer === false &&
+          approvedFrameRecord.reviewReport.vj1Status === "vj_1_not_implemented" &&
+          approvedFrameRecord.reviewReport.vj2Status === "vj_2_not_implemented"),
       "high",
-      "ApprovedFrame 必须绑定真实通过的 ReviewReport，ReviewReport 本身仍不可直接展示。",
-      "ApprovedFrame must bind a genuinely passed ReviewReport, while the ReviewReport itself remains non-displayable.",
-      ["approved_frame", "review_report"]
+      "ApprovedFrame 必须绑定真实通过 VJ-0 的 ReviewReport，且 ReviewReport 明确 VJ-1/VJ-2 未实现；ReviewReport 本身仍不可直接展示。",
+      "ApprovedFrame must bind a ReviewReport that genuinely passed VJ-0 and explicitly marks VJ-1/VJ-2 as not implemented; the ReviewReport itself remains non-displayable.",
+      ["approved_frame", "review_report", "vj_0_only"]
     ),
     check(
       "approved_frame_image_fingerprint_if_exists",
@@ -232,6 +261,7 @@ export async function GET() {
   const failedChecks = checks.filter((item) => !item.passed)
   const highSeverityFailedChecks = failedChecks.filter((item) => item.severity === "high")
   const ok = highSeverityFailedChecks.length === 0
+  const controlledMvpCanShow = Boolean(approvedFrameDoubleGatePassed && approvedFrameCurrentRuntimeMatched && ok)
 
   return NextResponse.json(
     {
@@ -243,6 +273,17 @@ export async function GET() {
         tick: runtime.tick,
         sourceFactIds: factManifest.sourceFactIds,
         sourceFactIdCount: factManifest.sourceFactIds.length,
+      },
+      approvalBoundary: {
+        approvalScope: approvedFrame?.approvalScope ?? "not_approved",
+        productionApprovalStatus:
+          approvedFrame?.productionApprovalStatus ?? "not_approved_for_production",
+        approvedForProduction: approvedFrame?.approvedForProduction ?? false,
+        vj0Status: approvedFrame?.vj0Status ?? "vj_0_failed",
+        vj1Status: approvedFrame?.vj1Status ?? "vj_1_not_implemented",
+        vj2Status: approvedFrame?.vj2Status ?? "vj_2_not_implemented",
+        controlledMvpCanShow,
+        productionDisplayAllowed: false,
       },
       pipelinePresence: {
         candidateStatus: candidateReadResult.status,
@@ -274,13 +315,20 @@ export async function GET() {
       checks,
       failedChecks,
       highSeverityFailedCount: highSeverityFailedChecks.length,
-      canShowToPlayer: Boolean(approvedFrameDoubleGatePassed && approvedFrameCurrentRuntimeMatched && ok),
-      displayRule: "Runtime Render 只能展示通过完整性检查、匹配当前 tick/sourceFactIds 且拥有 ApprovedFrame 的图像。",
+      canShowToPlayer: controlledMvpCanShow,
+      canShowToPlayerScope: "controlled_mvp_only",
+      displayRule: "Runtime Render 当前只允许展示通过 VJ-0 完整性检查、匹配当前 tick/sourceFactIds 且明确非生产批准的受控 MVP ApprovedFrame。",
       displayRuleEn:
-        "Runtime Render may only display an image that passes integrity checks, matches the current tick/sourceFactIds, and has an ApprovedFrame.",
+        "Runtime Render currently may only display a controlled MVP ApprovedFrame that passes VJ-0 integrity, matches the current tick/sourceFactIds, and is explicitly not production approved.",
       tags: [
         "world_visual_integrity_api",
         ok ? "integrity_passed" : "integrity_failed",
+        "vj_0_only",
+        "vj_1_not_implemented",
+        "vj_2_not_implemented",
+        "approved_for_controlled_mvp",
+        "not_approved_for_production",
+        "production_display_blocked",
         "current_tick_gate_checked",
         "current_source_facts_gate_checked",
         "status_only",
