@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "training-sample-metadata-v0",
+  "sampleId": "sample-forest-shore-001",
+  "datasetVersion": "ai-painter-dataset-v0",
+  "targetImage": "target.png",
+  "blueprintFile": "blueprint.json",
+  "source": {
+    "kind": "ai_assisted_manual_creation",
+    "toolName": "manually-used-ai-image-tool",
+    "createdAt": "2026-06-12",
+    "licenseBasis": "Project-owner-created training image; terms reviewed before import.",
+    "humanApproved": true,
+    "directCopyProhibited": true
+  },
+  "review": {
+    "reviewer": "project-owner",
+    "reviewedAt": "2026-06-12",
+    "rightsApproved": true,
+    "blueprintApproved": true,
+    "visualQualityApproved": true
+  },
+  "notes": "Bright healing top-down pixel world training target. No copied game characters, logos, or maps."
+}

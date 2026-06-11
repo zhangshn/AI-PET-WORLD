@@ -100,6 +100,7 @@ export type WorldVisualAuthorizedDataKind =
   | "self_created_bitmap"
   | "licensed_bitmap"
   | "cc0_bitmap"
+  | "ai_assisted_manual_bitmap"
   | "self_written_rule_note"
   | "public_abstract_principle_note"
   | "blocked_unlicensed_reference"

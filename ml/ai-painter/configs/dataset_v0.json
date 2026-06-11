@@ -1,0 +1,16 @@
+{
+  "datasetVersion": "ai-painter-dataset-v0",
+  "imageWidth": 256,
+  "imageHeight": 192,
+  "validationRatio": 0.1,
+  "requiredMasks": [
+    "grass",
+    "water",
+    "road",
+    "tree",
+    "rock",
+    "shelter",
+    "walkable",
+    "depth"
+  ]
+}

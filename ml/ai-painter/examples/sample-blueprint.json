@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "world-blueprint-v0",
+  "sceneId": "sample-forest-shore-001",
+  "width": 256,
+  "height": 192,
+  "seed": 101,
+  "styleId": "bright-healing-topdown-pixel-v0",
+  "terrainRegions": [
+    {
+      "id": "grass-main",
+      "terrain": "grass",
+      "polygon": [[0, 0], [255, 0], [255, 191], [0, 191]]
+    },
+    {
+      "id": "water-right",
+      "terrain": "water",
+      "polygon": [[210, 0], [255, 0], [255, 191], [224, 191], [216, 120]]
+    }
+  ],
+  "roads": [
+    {
+      "id": "road-entry",
+      "width": 10,
+      "points": [[30, 191], [80, 140], [125, 118], [150, 105]]
+    }
+  ],
+  "objects": [
+    {"id": "shelter-1", "kind": "shelter", "x": 122, "y": 82, "width": 42, "height": 34, "stage": 1},
+    {"id": "tree-1", "kind": "tree", "x": 20, "y": 20, "width": 24, "height": 34},
+    {"id": "tree-2", "kind": "tree", "x": 178, "y": 30, "width": 25, "height": 36},
+    {"id": "rock-1", "kind": "rock", "x": 72, "y": 54, "width": 12, "height": 9}
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "modelVersion": "tiny-unet-v0",
+  "inputChannels": 8,
+  "outputChannels": 3,
+  "baseChannels": 32,
+  "channelMultipliers": [1, 2, 4, 4],
+  "imageWidth": 256,
+  "imageHeight": 192,
+  "status": "not_implemented"
+}

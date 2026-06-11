@@ -46,8 +46,8 @@ export function buildWorldVisualAuthorizedDataManifest(): WorldVisualAuthorizedD
     blockedCount: AUTHORIZED_DATA_ITEMS.filter((item) => item.status === "blocked")
       .length,
     importPolicy: {
-      zh: "只允许导入自有、CC0、或明确商业授权的数据。未授权图片不能训练、不能复制、不能作为素材库；公开资料只能提炼抽象规则。",
-      en: "Only self-owned, CC0, or explicitly commercially licensed data may be imported. Unlicensed images cannot be trained on, copied, or used as an asset library. Public materials may only be used for abstract rule extraction.",
+      zh: "允许项目负责人在项目外人工使用 AI 图像工具制作训练图，再作为 AI 辅助自制位图导入。项目不得连接在线绘图 API；所有图片必须记录来源、许可、哈希并禁止直接复制具体作品。",
+      en: "The project owner may manually use an AI image tool outside the project and import the result as an AI-assisted project-created bitmap. The project must not connect to online drawing APIs; every image requires provenance, license evidence, hashes, and a no-direct-copy rule.",
     },
     tags: [
       "authorized_data_manifest",

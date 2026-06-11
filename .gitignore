@@ -2,6 +2,9 @@
 
 # dependencies
 /node_modules
+ml/ai-painter/.venv/
+ml/ai-painter/checkpoints/
+ml/ai-painter/outputs/
 /.pnp
 .pnp.*
 .yarn/*

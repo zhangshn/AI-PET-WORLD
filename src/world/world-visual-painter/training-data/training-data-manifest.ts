@@ -2,87 +2,60 @@ import { buildWorldVisualAuthorizedDataManifest } from "../authorized-data"
 import type {
   WorldVisualAuthorizedDataItem,
   WorldVisualAuthorizedDataManifest,
-  WorldVisualBilingualText,
 } from "../world-visual-painter-schema"
+import type {
+  WorldVisualTrainingDataManifest,
+  WorldVisualTrainingDataRequirement,
+  WorldVisualTrainingDataStatus,
+} from "./training-data-types"
 
-const D0_REQUIRED_MIN_IMAGE_COUNT = 20
-const D0_TARGET_MAX_IMAGE_COUNT = 50
-
-export type WorldVisualTrainingDataStage = "d0_baseline"
-
-export type WorldVisualTrainingDataStatus =
-  | "d0_missing"
-  | "d0_insufficient"
-  | "d0_ready"
-
-export type WorldVisualTrainingDataRequirement = {
-  id: string
-  title: WorldVisualBilingualText
-  required: boolean
-  fulfilled: boolean
-  tags: string[]
-}
-
-export type WorldVisualTrainingDataManifest = {
-  manifestId: string
-  version: "world-visual-training-data-mvp-v1"
-  stage: WorldVisualTrainingDataStage
-  status: WorldVisualTrainingDataStatus
-  requiredMinImageCount: number
-  targetMaxImageCount: number
-  acceptedTrainableImageCount: number
-  missingImageCount: number
-  readyForTraining: boolean
-  trainableItems: WorldVisualAuthorizedDataItem[]
-  blockedItems: WorldVisualAuthorizedDataItem[]
-  requirements: WorldVisualTrainingDataRequirement[]
-  policy: WorldVisualBilingualText
-  tags: string[]
-}
+const REQUIRED_MIN_SAMPLE_COUNT = 100
+const TARGET_SAMPLE_COUNT = 300
 
 export function buildWorldVisualTrainingDataManifest(
   authorizedDataManifest: WorldVisualAuthorizedDataManifest =
-    buildWorldVisualAuthorizedDataManifest()
+    buildWorldVisualAuthorizedDataManifest(),
+  acceptedPairedSampleCount = 0
 ): WorldVisualTrainingDataManifest {
   const trainableItems = authorizedDataManifest.items.filter(isAcceptedTrainableImageItem)
   const blockedItems = authorizedDataManifest.items.filter(
     (item) => item.status === "blocked" || item.usage === "blocked"
   )
-  const acceptedTrainableImageCount = trainableItems.length
-  const missingImageCount = Math.max(
+  const missingSampleCount = Math.max(
     0,
-    D0_REQUIRED_MIN_IMAGE_COUNT - acceptedTrainableImageCount
+    REQUIRED_MIN_SAMPLE_COUNT - acceptedPairedSampleCount
   )
-  const status = resolveTrainingDataStatus(acceptedTrainableImageCount)
-  const readyForTraining = status === "d0_ready"
+  const status = resolveTrainingDataStatus(acceptedPairedSampleCount)
+  const readyForTraining = status === "paired_dataset_ready"
 
   return {
-    manifestId: "world-visual-training-data-d0-v1",
-    version: "world-visual-training-data-mvp-v1",
-    stage: "d0_baseline",
+    manifestId: "world-visual-training-data-paired-v0",
+    version: "world-visual-training-data-v2",
+    stage: "paired_dataset_v0",
     status,
-    requiredMinImageCount: D0_REQUIRED_MIN_IMAGE_COUNT,
-    targetMaxImageCount: D0_TARGET_MAX_IMAGE_COUNT,
-    acceptedTrainableImageCount,
-    missingImageCount,
+    requiredMinSampleCount: REQUIRED_MIN_SAMPLE_COUNT,
+    targetSampleCount: TARGET_SAMPLE_COUNT,
+    acceptedPairedSampleCount,
+    missingSampleCount,
     readyForTraining,
     trainableItems,
     blockedItems,
-    requirements: buildD0Requirements({
-      acceptedTrainableImageCount,
+    requirements: buildRequirements({
+      acceptedPairedSampleCount,
       blockedCount: blockedItems.length,
     }),
     policy: {
-      zh: "D0 只接收自有、CC0 或明确商业授权的位图数据。规则笔记不能计入训练图片数量；未授权图片不能训练、不能复制、不能作为素材库。",
-      en: "D0 only accepts self-owned, CC0, or explicitly commercially licensed bitmap data. Rule notes do not count as training images; unlicensed images cannot be trained on, copied, or used as an asset library.",
+      zh: "训练集只统计已完成目标图、Blueprint、条件 mask、来源许可、哈希和人工审核的配对样本。项目代码不连接 GPT 或在线绘图 API。",
+      en: "The dataset only counts paired samples with a target image, Blueprint, condition masks, source/license record, hashes, and human approval. Project code does not connect to GPT or online drawing APIs.",
     },
     tags: [
       "world_visual_training_data_manifest",
-      "m1_data_spec_and_d0",
-      "d0_baseline",
-      readyForTraining ? "d0_ready" : "d0_not_ready",
-      `accepted_trainable_image_count:${acceptedTrainableImageCount}`,
-      `missing_d0_image_count:${missingImageCount}`,
+      "paired_dataset_v0",
+      readyForTraining ? "paired_dataset_ready" : "paired_dataset_not_ready",
+      `accepted_paired_sample_count:${acceptedPairedSampleCount}`,
+      `missing_paired_sample_count:${missingSampleCount}`,
+      "manual_ai_assisted_images_allowed",
+      "no_online_drawing_api_in_project",
       "no_unlicensed_training_data",
       "does_not_generate",
       "does_not_modify_world_facts",
@@ -98,6 +71,7 @@ function isAcceptedTrainableImageItem(
     item.usage === "train_image_model" &&
     item.canTrainOnImagePixels === true &&
     (item.dataKind === "self_created_bitmap" ||
+      item.dataKind === "ai_assisted_manual_bitmap" ||
       item.dataKind === "licensed_bitmap" ||
       item.dataKind === "cc0_bitmap") &&
     (item.license === "self_owned" ||
@@ -107,58 +81,58 @@ function isAcceptedTrainableImageItem(
 }
 
 function resolveTrainingDataStatus(
-  acceptedTrainableImageCount: number
+  acceptedPairedSampleCount: number
 ): WorldVisualTrainingDataStatus {
-  if (acceptedTrainableImageCount === 0) return "d0_missing"
-  if (acceptedTrainableImageCount < D0_REQUIRED_MIN_IMAGE_COUNT) {
-    return "d0_insufficient"
+  if (acceptedPairedSampleCount === 0) return "paired_dataset_missing"
+  if (acceptedPairedSampleCount < REQUIRED_MIN_SAMPLE_COUNT) {
+    return "paired_dataset_insufficient"
   }
 
-  return "d0_ready"
+  return "paired_dataset_ready"
 }
 
-function buildD0Requirements(input: {
-  acceptedTrainableImageCount: number
+function buildRequirements(input: {
+  acceptedPairedSampleCount: number
   blockedCount: number
 }): WorldVisualTrainingDataRequirement[] {
-  const hasD0Minimum = input.acceptedTrainableImageCount >= D0_REQUIRED_MIN_IMAGE_COUNT
+  const hasMinimum = input.acceptedPairedSampleCount >= REQUIRED_MIN_SAMPLE_COUNT
   const hasNoBlockedItems = input.blockedCount === 0
 
   return [
     {
-      id: "d0_minimum_trainable_image_count",
+      id: "paired_dataset_minimum_sample_count",
       title: {
-        zh: `D0 至少需要 ${D0_REQUIRED_MIN_IMAGE_COUNT} 张合法训练图片。`,
-        en: `D0 requires at least ${D0_REQUIRED_MIN_IMAGE_COUNT} legal training images.`,
+        zh: `首版训练集至少需要 ${REQUIRED_MIN_SAMPLE_COUNT} 条完整配对样本。`,
+        en: `The first training dataset requires at least ${REQUIRED_MIN_SAMPLE_COUNT} complete paired samples.`,
       },
       required: true,
-      fulfilled: hasD0Minimum,
+      fulfilled: hasMinimum,
       tags: [
-        "d0_requirement",
-        "trainable_image_count",
-        hasD0Minimum ? "fulfilled" : "missing",
+        "paired_dataset_requirement",
+        "paired_sample_count",
+        hasMinimum ? "fulfilled" : "missing",
       ],
     },
     {
-      id: "d0_authorized_bitmap_only",
+      id: "paired_dataset_complete_provenance",
       title: {
-        zh: "D0 只能统计自有、CC0 或商业授权位图，规则笔记不计入图片数量。",
-        en: "D0 may only count self-owned, CC0, or commercially licensed bitmaps; rule notes do not count as images.",
+        zh: "每条样本必须具有来源许可、人工审核、Blueprint、mask 和文件哈希。",
+        en: "Every sample must have provenance/license, human approval, a Blueprint, masks, and file hashes.",
       },
       required: true,
       fulfilled: true,
-      tags: ["d0_requirement", "authorized_bitmap_only", "fulfilled"],
+      tags: ["paired_dataset_requirement", "complete_provenance", "fulfilled"],
     },
     {
-      id: "d0_no_blocked_training_items",
+      id: "paired_dataset_no_blocked_items",
       title: {
-        zh: "D0 训练清单不能包含被阻断或未授权的数据。",
-        en: "D0 training manifest must not include blocked or unlicensed data.",
+        zh: "训练清单不能包含被阻断或未授权的数据。",
+        en: "The training manifest must not include blocked or unlicensed data.",
       },
       required: true,
       fulfilled: hasNoBlockedItems,
       tags: [
-        "d0_requirement",
+        "paired_dataset_requirement",
         "blocked_data_rejection",
         hasNoBlockedItems ? "fulfilled" : "blocked_items_present",
       ],

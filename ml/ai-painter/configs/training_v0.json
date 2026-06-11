@@ -1,0 +1,9 @@
+{
+  "trainingVersion": "training-v0",
+  "batchSize": 2,
+  "gradientAccumulationSteps": 8,
+  "learningRate": 0.0002,
+  "maxEpochs": 100,
+  "mixedPrecision": true,
+  "status": "not_started"
+}
