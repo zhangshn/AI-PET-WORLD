@@ -81,12 +81,26 @@ export async function writeWorldVisualApprovedFrameRecord(input: {
       "player_visible_allowed",
       "visual_review_passed",
       "source_candidate_record_bound",
+      "vj_0_approved_frame_record_gate_passed",
       request
         ? "ai_image_generation_request_bound"
         : "no_ai_image_generation_request",
     ],
   }
   const filePath = getWorldVisualApprovedFrameRecordPath(record)
+  const gateWarnings = validateApprovedFrameRecord(record)
+  if (gateWarnings.length > 0) {
+    return {
+      ok: false,
+      path: filePath,
+      message: "Approved frame record failed VJ-0 store gate.",
+      warnings: gateWarnings,
+      tags: [
+        "world_visual_approved_frame_store_write",
+        "vj_0_approved_frame_record_gate_failed",
+      ],
+    }
+  }
   const tempPath = `${filePath}.tmp`
 
   try {
@@ -100,7 +114,11 @@ export async function writeWorldVisualApprovedFrameRecord(input: {
       path: filePath,
       message: "Approved frame record written.",
       warnings: [],
-      tags: ["world_visual_approved_frame_store_write", "ok"],
+      tags: [
+        "world_visual_approved_frame_store_write",
+        "ok",
+        "vj_0_approved_frame_record_gate_passed",
+      ],
     }
   } catch (error) {
     return {
@@ -164,6 +182,92 @@ export async function readLatestWorldVisualApprovedFrameRecord(input: {
   }
 }
 
+function validateApprovedFrameRecord(
+  record: WorldVisualApprovedFrameRecord
+): string[] {
+  const warnings: string[] = []
+  const sourceRecord = record.sourceCandidateRecord
+  const candidate = sourceRecord.candidate
+  const runtimeCandidate = candidate as typeof candidate & {
+    worldId?: unknown
+    tick?: unknown
+  }
+  const condition = sourceRecord.generationCondition
+  const request = sourceRecord.aiImageGenerationRequest
+  const frame = record.approvedFrame
+  const review = record.reviewReport
+
+  pushIf(warnings, sourceRecord.ownerId !== record.ownerId, "source_owner")
+  pushIf(warnings, sourceRecord.worldId !== record.worldId, "source_world")
+  pushIf(warnings, sourceRecord.tick !== record.tick, "source_tick")
+  pushIf(warnings, condition.worldId !== record.worldId, "condition_world")
+  pushIf(warnings, condition.tick !== record.tick, "condition_tick")
+  pushIf(warnings, runtimeCandidate.worldId !== record.worldId, "candidate_world")
+  pushIf(warnings, runtimeCandidate.tick !== record.tick, "candidate_tick")
+  pushIf(warnings, record.sourceAiImageCandidateId !== candidate.candidateId, "candidate_id")
+  pushIf(warnings, frame.sourceImageCandidateId !== candidate.candidateId, "frame_candidate_id")
+  pushIf(warnings, record.sourceGenerationConditionId !== condition.conditionId, "condition_id")
+  pushIf(warnings, candidate.conditionId !== condition.conditionId, "candidate_condition")
+  pushIf(warnings, !sameStringSet(record.sourceFactIds, sourceRecord.sourceFactIds), "source_facts")
+  pushIf(warnings, !sameStringSet(record.sourceFactIds, candidate.sourceFactIds), "candidate_facts")
+  pushIf(warnings, !sameStringSet(record.sourceFactIds, condition.sourceFactIds), "condition_facts")
+  pushIf(warnings, !sameStringSet(record.sourceFactIds, frame.sourceFactIds), "frame_facts")
+  pushIf(warnings, frame.imageUrl !== candidate.imageUrl, "image_url")
+  pushIf(warnings, frame.imageFormat !== candidate.imageFormat, "image_format")
+  pushIf(warnings, frame.width !== candidate.width, "width")
+  pushIf(warnings, frame.height !== candidate.height, "height")
+  pushIf(warnings, frame.reviewScore !== review.score, "review_score")
+  pushIf(warnings, review.status !== "passed_candidate", "review_status")
+  pushIf(warnings, review.canShowToPlayer !== false, "review_visibility")
+  pushIf(warnings, frame.canShowToPlayer !== true, "frame_visibility")
+  pushIf(warnings, sourceRecord.canShowToPlayer !== false, "source_visibility")
+  pushIf(warnings, candidate.canShowToPlayer !== false, "candidate_visibility")
+  pushIf(warnings, frame.sourceImageSha256.length !== 64, "sha256")
+  pushIf(warnings, frame.sourceImageByteLength <= 0, "byte_length")
+  pushIf(warnings, !isAllowedApprovedContentType(frame.sourceImageContentType, frame.imageFormat), "content_type")
+  pushIf(warnings, frame.sourceImagePayloadQualityPassed !== true, "payload_quality")
+  pushIf(warnings, candidate.sourceKind !== "project_model_generated", "source_kind")
+  pushIf(warnings, !candidate.modelVersion, "model_version")
+  pushIf(warnings, candidate.modelVersion !== condition.modelVersion, "condition_model")
+  pushIf(warnings, candidate.tags.includes("development_test_asset"), "development_test_asset")
+
+  if (!request) {
+    warnings.push("request")
+  } else {
+    pushIf(warnings, record.sourceAiImageGenerationRequestId !== request.requestId, "request_id")
+    pushIf(warnings, request.canShowToPlayer !== false, "request_visibility")
+    pushIf(warnings, request.modelVersion !== candidate.modelVersion, "request_model")
+    pushIf(warnings, request.condition.conditionId !== condition.conditionId, "request_condition")
+    pushIf(warnings, request.condition.worldId !== record.worldId, "request_world")
+    pushIf(warnings, request.condition.tick !== record.tick, "request_tick")
+    pushIf(warnings, request.output.width !== candidate.width, "request_width")
+    pushIf(warnings, request.output.height !== candidate.height, "request_height")
+    pushIf(warnings, request.output.imageFormat !== candidate.imageFormat, "request_format")
+  }
+
+  return warnings
+}
+
+function pushIf(warnings: string[], failed: boolean, warning: string): void {
+  if (failed) warnings.push(warning)
+}
+
+function sameStringSet(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) return false
+
+  const rightSet = new Set(right)
+  return left.every((value) => rightSet.has(value))
+}
+
+function isAllowedApprovedContentType(
+  contentType: string | null,
+  imageFormat: WorldVisualApprovedFrame["imageFormat"]
+): boolean {
+  if (imageFormat === "png") return contentType === "image/png"
+  if (imageFormat === "webp") return contentType === "image/webp"
+  return contentType === "image/jpeg"
+}
+
 function getWorldVisualApprovedFrameRecordPath(
   record: WorldVisualApprovedFrameRecord
 ): string {
@@ -194,29 +298,30 @@ async function writeLatestWorldVisualApprovedFrameIndex(input: {
   const indexPath = getLatestWorldVisualApprovedFrameIndexPath(input.record)
   const tempPath = `${indexPath}.tmp`
   const index = {
-  version: "world-approved-frame-index-v1",
-  ownerId: input.record.ownerId,
-  worldId: input.record.worldId,
-  tick: input.record.tick,
-  frameId: input.record.approvedFrame.frameId,
-  sourceAiImageCandidateId: input.record.sourceAiImageCandidateId,
-  sourceGenerationConditionId: input.record.sourceGenerationConditionId,
-  sourceAiImageGenerationRequestId:
-    input.record.sourceAiImageGenerationRequestId,
-  sourceVisualFixPlanId: input.record.sourceVisualFixPlanId,
-  sourceVisualFixHintCount: input.record.sourceVisualFixHintCount,
-  sourceImageSha256: input.record.approvedFrame.sourceImageSha256,
-  sourceImageByteLength: input.record.approvedFrame.sourceImageByteLength,
-  sourceImageContentType: input.record.approvedFrame.sourceImageContentType,
-  sourceImagePayloadQualityPassed:
-    input.record.approvedFrame.sourceImagePayloadQualityPassed,
-  path: input.filePath,
-  updatedAt: input.record.savedAt,
-  tags: [
-    "world_visual_approved_frame_latest_index",
-    "image_byte_fingerprint_bound",
-  ],
-}
+    version: "world-approved-frame-index-v1",
+    ownerId: input.record.ownerId,
+    worldId: input.record.worldId,
+    tick: input.record.tick,
+    frameId: input.record.approvedFrame.frameId,
+    sourceAiImageCandidateId: input.record.sourceAiImageCandidateId,
+    sourceGenerationConditionId: input.record.sourceGenerationConditionId,
+    sourceAiImageGenerationRequestId:
+      input.record.sourceAiImageGenerationRequestId,
+    sourceVisualFixPlanId: input.record.sourceVisualFixPlanId,
+    sourceVisualFixHintCount: input.record.sourceVisualFixHintCount,
+    sourceImageSha256: input.record.approvedFrame.sourceImageSha256,
+    sourceImageByteLength: input.record.approvedFrame.sourceImageByteLength,
+    sourceImageContentType: input.record.approvedFrame.sourceImageContentType,
+    sourceImagePayloadQualityPassed:
+      input.record.approvedFrame.sourceImagePayloadQualityPassed,
+    path: input.filePath,
+    updatedAt: input.record.savedAt,
+    tags: [
+      "world_visual_approved_frame_latest_index",
+      "image_byte_fingerprint_bound",
+      "vj_0_approved_frame_record_gate_passed",
+    ],
+  }
 
   await mkdir(path.dirname(indexPath), { recursive: true })
   await writeFile(tempPath, `${JSON.stringify(index, null, 2)}\n`, "utf8")
