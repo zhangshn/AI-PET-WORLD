@@ -30,20 +30,43 @@ export async function GET() {
     approvedFrameReadResult.status !== "found" ||
     !approvedFrameReadResult.record
   ) {
+    const blockedState = buildApprovedFrameBlockedState(
+      approvedFrameReadResult.status
+    )
+
     return NextResponse.json(
       {
         ok: false,
         status: approvedFrameReadResult.status,
-        message: "还没有 ApprovedFrame。需要先生成候选图并通过 VisualJudge。",
-        messageEn:
-          "No ApprovedFrame exists yet. Generate a candidate and pass VisualJudge first.",
+        apiState: blockedState.apiState,
+        vj0Blocked: blockedState.vj0Blocked,
+        message: blockedState.message,
+        messageEn: blockedState.messageEn,
         canShowToPlayer: false,
-        displayRule: "没有 ApprovedFrame 时，/world 必须继续阻断。",
-        displayRuleEn:
-          "/world must remain blocked while no ApprovedFrame exists.",
-        tags: ["world_visual_approved_api", ...approvedFrameReadResult.tags],
+        runtimeRenderGate: {
+          canRuntimeRender: false,
+          reason: blockedState.reason,
+          reasonZh: blockedState.message,
+          reasonEn: blockedState.messageEn,
+          tags: blockedState.tags,
+        },
+        readAudit: {
+          status: approvedFrameReadResult.status,
+          path: approvedFrameReadResult.path,
+          warnings: approvedFrameReadResult.warnings,
+          tags: approvedFrameReadResult.tags,
+        },
+        displayRule: blockedState.displayRule,
+        displayRuleEn: blockedState.displayRuleEn,
+        nextStep: blockedState.nextStep,
+        tags: [
+          "world_visual_approved_api",
+          "approved_frame_read_not_found",
+          ...blockedState.tags,
+          ...approvedFrameReadResult.tags,
+        ],
       },
-      { status: approvedFrameReadResult.status === "empty" ? 404 : 500 }
+      { status: blockedState.httpStatus }
     )
   }
 
@@ -56,6 +79,8 @@ export async function GET() {
     {
       ok: true,
       status: approvedFrameReadResult.status,
+      apiState: "approved_frame_found",
+      vj0Blocked: false,
       record,
       runtimeRenderGate,
       provenance: {
@@ -142,6 +167,75 @@ export async function GET() {
     },
     { status: 200 }
   )
+}
+
+function buildApprovedFrameBlockedState(
+  status: "empty" | "invalid" | "failed"
+) {
+  if (status === "empty") {
+    return {
+      httpStatus: 404,
+      apiState: "approved_frame_empty",
+      vj0Blocked: false,
+      reason: "approved_frame_empty",
+      message: "还没有 ApprovedFrame。需要先生成候选图并通过 VisualJudge。",
+      messageEn:
+        "No ApprovedFrame exists yet. Generate a candidate and pass VisualJudge first.",
+      displayRule: "没有 ApprovedFrame 时，/world 必须继续阻断。",
+      displayRuleEn:
+        "/world must remain blocked while no ApprovedFrame exists.",
+      nextStep: {
+        zh: "继续等待正式 AI 位图候选图通过 VJ-0，再生成 ApprovedFrame。",
+        en: "Wait for a formal AI bitmap candidate to pass VJ-0 before creating an ApprovedFrame.",
+      },
+      tags: ["approved_frame_empty", "runtime_render_blocked"],
+    }
+  }
+
+  if (status === "invalid") {
+    return {
+      httpStatus: 409,
+      apiState: "approved_frame_blocked_by_vj_0_read_gate",
+      vj0Blocked: true,
+      reason: "vj_0_approved_frame_read_gate_failed",
+      message: "ApprovedFrameRecord 已被 VJ-0 读取闸门阻断，不能展示。",
+      messageEn:
+        "The ApprovedFrameRecord was blocked by the VJ-0 read gate and cannot be displayed.",
+      displayRule:
+        "读取到 invalid ApprovedFrameRecord 时，/world 必须继续阻断，不能展示旧图或坏图。",
+      displayRuleEn:
+        "When an invalid ApprovedFrameRecord is read, /world must remain blocked and must not display stale or invalid imagery.",
+      nextStep: {
+        zh: "需要重新生成候选图，并重新通过 VisualJudge 与 ApprovedFrame 写入闸门。",
+        en: "Generate a new candidate and pass VisualJudge plus the ApprovedFrame write gate again.",
+      },
+      tags: [
+        "approved_frame_invalid",
+        "vj_0_read_gate_blocked",
+        "runtime_render_blocked",
+      ],
+    }
+  }
+
+  return {
+    httpStatus: 500,
+    apiState: "approved_frame_read_failed",
+    vj0Blocked: true,
+    reason: "approved_frame_read_failed",
+    message: "ApprovedFrameRecord 读取失败，不能展示。",
+    messageEn: "ApprovedFrameRecord read failed and cannot be displayed.",
+    displayRule: "读取失败时，/world 必须继续阻断。",
+    displayRuleEn: "/world must remain blocked when reading fails.",
+    nextStep: {
+      zh: "需要检查本地 ApprovedFrame 存储或重新生成 ApprovedFrame。",
+      en: "Check the local ApprovedFrame storage or regenerate the ApprovedFrame.",
+    },
+    tags: [
+      "approved_frame_read_failed",
+      "vj_0_read_gate_unresolved",
+      "runtime_render_blocked",
+    ],
+  }
 }
 
 function buildRuntimeRenderGate(
