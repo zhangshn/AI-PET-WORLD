@@ -82,6 +82,7 @@ export async function writeWorldVisualApprovedFrameRecord(input: {
       "visual_review_passed",
       "source_candidate_record_bound",
       "vj_0_approved_frame_record_gate_passed",
+      "current_tick_required_on_read",
       request
         ? "ai_image_generation_request_bound"
         : "no_ai_image_generation_request",
@@ -134,6 +135,8 @@ export async function writeWorldVisualApprovedFrameRecord(input: {
 export async function readLatestWorldVisualApprovedFrameRecord(input: {
   ownerId: string
   worldId: string
+  currentTick?: number
+  currentSourceFactIds?: string[]
 }): Promise<WorldVisualApprovedFrameStoreReadResult> {
   const indexPath = getLatestWorldVisualApprovedFrameIndexPath(input)
 
@@ -152,16 +155,21 @@ export async function readLatestWorldVisualApprovedFrameRecord(input: {
     }
 
     const readGateWarnings = validateApprovedFrameRecord(normalized)
-    if (readGateWarnings.length > 0) {
+    const currentGateWarnings = validateCurrentRuntimeBinding(normalized, input)
+    const warnings = [...readGateWarnings, ...currentGateWarnings]
+    if (warnings.length > 0) {
       return {
         status: "invalid",
         record: null,
         path: index.path,
         message: "Approved frame record failed VJ-0 read gate.",
-        warnings: readGateWarnings,
+        warnings,
         tags: [
           "world_visual_approved_frame_store_read",
           "vj_0_approved_frame_record_gate_failed",
+          currentGateWarnings.length > 0
+            ? "current_runtime_binding_failed"
+            : "record_shape_binding_failed",
           "invalid",
         ],
       }
@@ -177,6 +185,12 @@ export async function readLatestWorldVisualApprovedFrameRecord(input: {
         "world_visual_approved_frame_store_read",
         "found",
         "vj_0_approved_frame_record_gate_passed",
+        input.currentTick === undefined
+          ? "current_tick_not_requested"
+          : "current_tick_gate_passed",
+        input.currentSourceFactIds === undefined
+          ? "current_source_facts_not_requested"
+          : "current_source_facts_gate_passed",
       ],
     }
   } catch (error) {
@@ -224,6 +238,9 @@ function validateApprovedFrameRecord(
   pushIf(warnings, condition.tick !== record.tick, "condition_tick")
   pushIf(warnings, runtimeCandidate.worldId !== record.worldId, "candidate_world")
   pushIf(warnings, runtimeCandidate.tick !== record.tick, "candidate_tick")
+  pushIf(warnings, !candidate.tags.includes(`world_id:${record.worldId}`), "candidate_world_tag")
+  pushIf(warnings, !candidate.tags.includes(`tick:${record.tick}`), "candidate_tick_tag")
+  pushIf(warnings, !candidate.tags.includes("runtime_bound_candidate"), "candidate_runtime_bound_tag")
   pushIf(warnings, record.sourceAiImageCandidateId !== candidate.candidateId, "candidate_id")
   pushIf(warnings, frame.sourceImageCandidateId !== candidate.candidateId, "frame_candidate_id")
   pushIf(warnings, record.sourceGenerationConditionId !== condition.conditionId, "condition_id")
@@ -250,6 +267,12 @@ function validateApprovedFrameRecord(
   pushIf(warnings, !candidate.modelVersion, "model_version")
   pushIf(warnings, candidate.modelVersion !== condition.modelVersion, "condition_model")
   pushIf(warnings, candidate.tags.includes("development_test_asset"), "development_test_asset")
+  pushIf(warnings, condition.canShowToPlayer !== false, "condition_visibility")
+  pushIf(warnings, condition.safetyCondition.preserveWorldFacts !== true, "preserve_world_facts")
+  pushIf(warnings, condition.safetyCondition.requireVisualJudge !== true, "require_visual_judge")
+  pushIf(warnings, condition.safetyCondition.forbidProgrammaticFinalFrame !== true, "forbid_programmatic_frame")
+  pushIf(warnings, condition.safetyCondition.forbidPlaceholderFrame !== true, "forbid_placeholder")
+  pushIf(warnings, condition.safetyCondition.forbidUnlicensedCopy !== true, "forbid_unlicensed_copy")
 
   if (!request) {
     warnings.push("request")
@@ -260,9 +283,36 @@ function validateApprovedFrameRecord(
     pushIf(warnings, request.condition.conditionId !== condition.conditionId, "request_condition")
     pushIf(warnings, request.condition.worldId !== record.worldId, "request_world")
     pushIf(warnings, request.condition.tick !== record.tick, "request_tick")
+    pushIf(warnings, request.condition.modelVersion !== condition.modelVersion, "request_condition_model")
+    pushIf(warnings, !sameStringSet(request.condition.sourceFactIds, condition.sourceFactIds), "request_source_facts")
     pushIf(warnings, request.output.width !== candidate.width, "request_width")
     pushIf(warnings, request.output.height !== candidate.height, "request_height")
     pushIf(warnings, request.output.imageFormat !== candidate.imageFormat, "request_format")
+  }
+
+  return warnings
+}
+
+function validateCurrentRuntimeBinding(
+  record: WorldVisualApprovedFrameRecord,
+  input: {
+    currentTick?: number
+    currentSourceFactIds?: string[]
+  }
+): string[] {
+  const warnings: string[] = []
+
+  if (input.currentTick !== undefined) {
+    pushIf(warnings, record.tick !== input.currentTick, "current_tick_mismatch")
+    pushIf(warnings, record.approvedFrame.frameId !== `approved-frame-${record.worldId}-${input.currentTick}`, "current_frame_id_mismatch")
+  }
+
+  if (input.currentSourceFactIds !== undefined) {
+    pushIf(
+      warnings,
+      !sameStringSet(record.sourceFactIds, input.currentSourceFactIds),
+      "current_source_facts_mismatch"
+    )
   }
 
   return warnings
