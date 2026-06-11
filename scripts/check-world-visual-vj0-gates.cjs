@@ -11,8 +11,12 @@ const files = {
   approvedStore: "src/world/world-visual-painter/approved-frame/approved-frame-store.ts",
   candidateStore: "src/world/world-visual-painter/ai-image-candidate/visual-candidate-store.ts",
   worldPage: "src/app/world/world-live-runtime-page.tsx",
+  approvedApi: "src/app/api/world/visual/approved/route.ts",
+  judgeApi: "src/app/api/world/visual/judge/route.ts",
   integrity: "src/app/api/world/visual/integrity/route.ts",
   status: "src/app/api/world/visual/status/route.ts",
+  packageJson: "package.json",
+  behaviorTest: "scripts/test-world-visual-vj0-behavior.cjs",
 }
 
 const source = Object.fromEntries(
@@ -53,6 +57,36 @@ const checks = [
     "currentFrameSourceFactsMatched"
   ),
   assertIncludes(
+    "Candidate 正式读取入口强制 currentTick",
+    source.candidateStore,
+    "currentTick: number"
+  ),
+  assertIncludes(
+    "Candidate 正式读取入口强制 currentSourceFactIds",
+    source.candidateStore,
+    "currentSourceFactIds: string[]"
+  ),
+  assertIncludes(
+    "ApprovedFrame 正式读取入口强制 currentTick",
+    source.approvedStore,
+    "currentTick: number"
+  ),
+  assertIncludes(
+    "ApprovedFrame 正式读取入口强制 currentSourceFactIds",
+    source.approvedStore,
+    "currentSourceFactIds: string[]"
+  ),
+  assertNotIncludes(
+    "正式视觉代码不得保留 current_tick_not_requested 绕过标签",
+    allFormalVisualSource,
+    "current_tick_not_requested"
+  ),
+  assertNotIncludes(
+    "正式视觉代码不得保留 current_source_facts_not_requested 绕过标签",
+    allFormalVisualSource,
+    "current_source_facts_not_requested"
+  ),
+  assertIncludes(
     "development_test_asset 被阻断：ApprovedFrame Store 检查开发测试资产",
     source.approvedStore,
     "development_test_asset"
@@ -76,6 +110,71 @@ const checks = [
     "Candidate 标签只作为元数据，不作为质量证据",
     source.visualReview,
     "candidate_tags_are_metadata_only"
+  ),
+  assertIncludes(
+    "ReviewReport 使用 vj_0_passed 状态",
+    source.visualReview,
+    "vj_0_passed"
+  ),
+  assertIncludes(
+    "ReviewReport 使用 vj_0_failed 状态",
+    source.visualReview,
+    "vj_0_failed"
+  ),
+  assertIncludes(
+    "ReviewReport 暴露 VJ-1 未实现",
+    source.visualReview,
+    "vj_1_not_implemented"
+  ),
+  assertIncludes(
+    "ReviewReport 暴露 VJ-2 未实现",
+    source.visualReview,
+    "vj_2_not_implemented"
+  ),
+  assertIncludes(
+    "ApprovedFrame 只能进入受控 MVP 批准范围",
+    source.approvedBuilder,
+    "approved_for_controlled_mvp"
+  ),
+  assertIncludes(
+    "ApprovedFrame 明确不是生产批准",
+    source.approvedBuilder,
+    "not_approved_for_production"
+  ),
+  assertIncludes(
+    "ApprovedFrame 生产批准布尔值必须为 false",
+    source.approvedBuilder,
+    "approvedForProduction: false"
+  ),
+  assertIncludes(
+    "ApprovedFrame Store 校验生产批准布尔值为 false",
+    source.approvedStore,
+    "frame.approvedForProduction !== false"
+  ),
+  assertIncludes(
+    "Status API 暴露生产展示阻断",
+    source.status,
+    "productionDisplayAllowed: false"
+  ),
+  assertIncludes(
+    "Judge API 暴露生产展示阻断",
+    source.judgeApi,
+    "productionDisplayAllowed: false"
+  ),
+  assertIncludes(
+    "Approved API 暴露生产展示阻断",
+    source.approvedApi,
+    "productionDisplayAllowed: false"
+  ),
+  assertIncludes(
+    "Integrity API 暴露生产展示阻断",
+    source.integrity,
+    "productionDisplayAllowed: false"
+  ),
+  assertNotIncludes(
+    "禁止保留 passed_candidate 误导视觉质量通过",
+    allFormalVisualSource,
+    "passed_candidate"
   ),
   assertNotIncludes(
     "禁止保留 visual_style_quality 作为 VJ-0 通过条件",
@@ -128,14 +227,19 @@ const checks = [
     "candidate.sourceKind !== \"project_model_generated\""
   ),
   assertIncludes(
-    "ApprovedFrame 写入/读取闸门要求 Review 真实通过",
+    "ApprovedFrame 写入/读取闸门要求 Review 真实通过 VJ-0",
     source.approvedStore,
-    "review.status !== \"passed_candidate\""
+    "review.status !== \"vj_0_passed\""
   ),
   assertIncludes(
     "ApprovedFrame 写入/读取闸门要求图片 SHA-256",
     source.approvedStore,
     "sourceImageSha256.length !== 64"
+  ),
+  assertIncludes(
+    "ApprovedFrame 写入/读取闸门要求 Review 摘要 SHA-256 绑定",
+    source.approvedStore,
+    "review_summary_sha256"
   ),
   assertIncludes(
     "Status API 暴露 ApprovedFrame 当前 Runtime gate",
@@ -153,9 +257,89 @@ const checks = [
     "tick: number"
   ),
   assertIncludes(
+    "Schema 明确定义 VJ-1 未实现状态",
+    source.schema,
+    "vj1Status: \"vj_1_not_implemented\""
+  ),
+  assertIncludes(
+    "Schema 明确定义 VJ-2 未实现状态",
+    source.schema,
+    "vj2Status: \"vj_2_not_implemented\""
+  ),
+  assertIncludes(
     "授权数据使用 condition reference 命名",
     source.authorizedData,
     "canUseAsConditionReference"
+  ),
+  assertIncludes(
+    "package.json 接入真实行为测试命令",
+    source.packageJson,
+    "\"test:vj0\": \"node scripts/test-world-visual-vj0-behavior.cjs\""
+  ),
+  assertIncludes(
+    "真实行为测试使用临时目录",
+    source.behaviorTest,
+    "mkdtempSync"
+  ),
+  assertIncludes(
+    "真实行为测试结束后清理临时目录",
+    source.behaviorTest,
+    "rmSync(tempDir, { recursive: true, force: true })"
+  ),
+  assertIncludes(
+    "真实行为测试调用 Candidate 写入函数",
+    source.behaviorTest,
+    "writeWorldVisualCandidateRecord"
+  ),
+  assertIncludes(
+    "真实行为测试调用 Candidate 读取函数",
+    source.behaviorTest,
+    "readLatestWorldVisualCandidateRecord"
+  ),
+  assertIncludes(
+    "真实行为测试调用 ReviewReport 构建函数",
+    source.behaviorTest,
+    "buildWorldVisualReviewReport"
+  ),
+  assertIncludes(
+    "真实行为测试调用 ApprovedFrame 构建函数",
+    source.behaviorTest,
+    "buildWorldVisualApprovedFrame"
+  ),
+  assertIncludes(
+    "真实行为测试调用 ApprovedFrame 写入函数",
+    source.behaviorTest,
+    "writeWorldVisualApprovedFrameRecord"
+  ),
+  assertIncludes(
+    "真实行为测试调用 ApprovedFrame 读取函数",
+    source.behaviorTest,
+    "readLatestWorldVisualApprovedFrameRecord"
+  ),
+  assertIncludes(
+    "真实行为测试覆盖旧 tick Candidate 阻断",
+    source.behaviorTest,
+    "旧 tick Candidate 被读取闸门阻断"
+  ),
+  assertIncludes(
+    "真实行为测试覆盖旧 tick ApprovedFrame 阻断",
+    source.behaviorTest,
+    "旧 tick ApprovedFrame 被读取闸门阻断"
+  ),
+  assertIncludes(
+    "真实行为测试覆盖 sourceFactIds 缺失、增加、替换",
+    source.behaviorTest,
+    "sourceFactIds 缺失、增加或替换时被阻断"
+  ),
+  assertIncludes(
+    "真实行为测试覆盖虚假质量标签不能通过 VJ-1/VJ-2",
+    source.behaviorTest,
+    "Candidate 添加全部虚假质量标签，也不能获得 VJ-1/VJ-2 通过状态"
+  ),
+  assertIncludes(
+    "真实行为测试覆盖 Runtime tick 推进后上一帧失效",
+    source.behaviorTest,
+    "当前 Runtime tick 推进后，上一 tick ApprovedFrame 立即失效"
   ),
   assertNotIncludes(
     "正式视觉代码不得保留 PromptPackage",
