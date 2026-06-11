@@ -3,7 +3,9 @@ import { createHash } from "node:crypto"
 
 import type {
   WorldVisualAiImageCandidate,
+  WorldVisualAiImageGenerationRequest,
   WorldVisualFactManifest,
+  WorldVisualGenerationCondition,
   WorldVisualImageInspectionSummary,
   WorldVisualReviewCheck,
   WorldVisualReviewReport,
@@ -55,8 +57,15 @@ type ImageInspectionResult = {
   errorZh: string | null
 }
 
+type TagGroupResult = {
+  passed: boolean
+  missingTags: string[]
+}
+
 export async function buildWorldVisualReviewReport(input: {
   factManifest: WorldVisualFactManifest
+  generationCondition: WorldVisualGenerationCondition
+  aiImageGenerationRequest: WorldVisualAiImageGenerationRequest | null
   aiImageCandidate: WorldVisualAiImageCandidate | null
 }): Promise<WorldVisualReviewReport> {
   const inspection = await inspectCandidateImage(input.aiImageCandidate)
@@ -74,64 +83,46 @@ export async function buildWorldVisualReviewReport(input: {
     reason:
       status === "passed_candidate"
         ? {
-            zh: "AI 位图候选图通过视觉审核，可进入 ApprovedFrame 构建；在 ApprovedFrame 生成前仍禁止展示。",
-            en: "The AI bitmap candidate passed Visual Judge and may enter ApprovedFrame building. It remains hidden until ApprovedFrame exists.",
+            zh: "AI 位图候选图通过 VJ-0 硬闸门，可进入 ApprovedFrame 构建；在 ApprovedFrame 生成前仍禁止展示。",
+            en: "The AI bitmap candidate passed the VJ-0 hard gate and may enter ApprovedFrame building. It remains hidden until ApprovedFrame exists.",
           }
         : {
-            zh: "视觉审核未通过：候选图缺失、图片本体无效、格式伪装、尺寸不合格、事实链缺失、授权不合格或缺少正式视觉质量证明，因此禁止展示。",
-            en: "Visual review failed: the candidate is missing, the image bytes are invalid, the format is spoofed, the size is invalid, fact links are incomplete, license confirmation is missing, or formal visual quality proof is incomplete.",
+            zh: "VJ-0 审核未通过：候选图、图片本体、条件绑定、生成请求、来源、事实链、授权或基础质量存在硬闸门问题，因此禁止展示。",
+            en: "VJ-0 review failed: the candidate, image bytes, condition binding, generation request, source, fact links, license, or baseline quality failed the hard gate, so display is blocked.",
           },
     score,
     imageInspectionSummary: buildImageInspectionSummary(inspection),
     checks,
     requiredChecks: [
       {
-        zh: "必须有 AI 图像生成模型或授权导入流程产出的 PNG/WebP/JPG 位图候选图。",
-        en: "A PNG/WebP/JPG bitmap candidate from an AI image model or authorized import flow is required.",
+        zh: "候选图必须是隐藏的 PNG/WebP/JPG 位图候选图，并满足基础尺寸要求。",
+        en: "The candidate must be a hidden PNG/WebP/JPG bitmap candidate and meet the baseline size requirement.",
       },
       {
-        zh: "候选图必须能读取真实图片本体，禁止 SVG、HTML、JSON、文本或格式伪装文件。",
-        en: "The candidate must expose real image bytes. SVG, HTML, JSON, text, and spoofed files are forbidden.",
+        zh: "候选图必须能读取真实图片本体，生成 sha256 指纹，并且声明格式尺寸与图片本体一致。",
+        en: "The candidate must expose real image bytes, produce a sha256 fingerprint, and match declared format and dimensions.",
       },
       {
-        zh: "候选图必须返回明确的 image/png、image/webp 或 image/jpeg Content-Type。",
-        en: "The candidate must return an explicit image/png, image/webp, or image/jpeg Content-Type.",
+        zh: "候选图必须绑定当前 WorldGenerationCondition 的 worldId、tick、conditionId 和 sourceFactIds。",
+        en: "The candidate must bind to the current WorldGenerationCondition worldId, tick, conditionId, and sourceFactIds.",
       },
       {
-        zh: "候选图必须生成可审计的图片字节指纹，用于证明 VisualJudge 审核的是同一份图片本体。",
-        en: "The candidate must produce an auditable image byte fingerprint proving which exact image bytes VisualJudge reviewed.",
-      },
-      {
-        zh: "候选图图片本体必须达到基础有效载荷体量，禁止极低字节量的空白图、占位图或伪装压缩图。",
-        en: "The candidate image payload must be substantial enough. Tiny blank images, placeholders, or spoofed compressed images are forbidden.",
-      },
-      {
-        zh: "候选图必须符合明亮、治愈、精细、俯视像素风，并具有清晰世界主焦点。",
-        en: "The candidate must match a bright, healing, detailed top-down pixel style with a clear world focal point.",
-      },
-      {
-        zh: "候选图必须具备地形层次、路径逻辑、自然边界、材料/施工关系。",
-        en: "The candidate must include terrain layering, path logic, natural boundaries, and material/construction relationships.",
-      },
-      {
-        zh: "候选图不得出现占位块、脏路径、随机散点、乱码、水印或 UI 卡片。",
-        en: "The candidate must not contain placeholder blocks, dirty paths, random scatter, garbled text, watermarks, or UI cards.",
-      },
-      {
-        zh: "候选图不能新增世界事实，不能复制未授权第三方作品，只能使用授权数据或抽象设计原则。",
-        en: "The candidate must not add world facts or copy unlicensed third-party work, and may only use licensed data or abstract design principles.",
+        zh: "正式 ApprovedFrame 只允许 project_model_generated，并且必须绑定内部模型版本和生成请求。",
+        en: "Formal ApprovedFrame only allows project_model_generated and must bind the internal model version and generation request.",
       },
       WORLD_VISUAL_MVP_TARGET_POLICY.displayGate,
     ],
     fixInstructions: buildFixInstructions(checks),
     tags: [
       "visual_review",
+      "vj_0_hard_gate",
       status,
       "real_image_bytes_required",
       "image_content_type_required",
       "image_byte_fingerprint_required",
-      "visual_quality_assertions_required",
-      "ai_bitmap_candidate_required",
+      "world_generation_condition_required",
+      "ai_image_generation_request_required",
+      "formal_project_model_source_required",
       "display_blocked_until_approved_frame",
       "no_programmatic_renderer",
     ],
@@ -178,26 +169,19 @@ function buildImageInspectionSummary(
 
 function buildReviewChecks(input: {
   factManifest: WorldVisualFactManifest
+  generationCondition: WorldVisualGenerationCondition
+  aiImageGenerationRequest: WorldVisualAiImageGenerationRequest | null
   aiImageCandidate: WorldVisualAiImageCandidate | null
   inspection: ImageInspectionResult
 }): WorldVisualReviewCheck[] {
   const candidate = input.aiImageCandidate
+  const request = input.aiImageGenerationRequest
   const hasCandidateMetadata =
-    Boolean(candidate) &&
-    candidate?.canShowToPlayer === false &&
+    candidate !== null &&
+    candidate.canShowToPlayer === false &&
     candidate.width >= MIN_IMAGE_WIDTH &&
     candidate.height >= MIN_IMAGE_HEIGHT &&
-    ["png", "webp", "jpg"].includes(candidate.imageFormat)
-  const candidateHasAllowedLicense =
-    candidate === null
-      ? false
-      : candidate.originalityConfirmed &&
-        ["self_owned", "cc0", "commercial_license"].includes(candidate.license)
-  const candidateKeepsFactLinks =
-    candidate === null
-      ? false
-      : candidate.conditionId.length > 0 &&
-        candidate.sourceFactIds.length === input.factManifest.sourceFactIds.length
+    isApprovedImageFormat(candidate.imageFormat)
   const imageBytesAreValid = input.inspection.ok
   const imageHasByteFingerprint =
     imageBytesAreValid && typeof input.inspection.sha256 === "string"
@@ -217,10 +201,30 @@ function buildReviewChecks(input: {
   )
   const bitmapPayloadIsSubstantial =
     imageBytesAreValid && input.inspection.byteLength >= minimumPayloadBytes
-  const styleQuality = buildTagGroupResult(
+  const candidateWorldBinding = candidateBindsWorld(
     candidate,
-    REQUIRED_STYLE_QUALITY_TAGS
+    input.generationCondition
   )
+  const candidateConditionBinding = candidateBindsGenerationCondition(
+    candidate,
+    input.generationCondition
+  )
+  const candidateSourceKind = candidateUsesFormalSourceKind(candidate)
+  const candidateGenerationRequest = candidateBindsGenerationRequest(
+    candidate,
+    input.generationCondition,
+    request
+  )
+  const candidateKeepsFactLinks = candidateBindsFactLinks(
+    candidate,
+    input.factManifest,
+    input.generationCondition
+  )
+  const candidateHasAllowedLicense =
+    candidate !== null &&
+    candidate.originalityConfirmed &&
+    isApprovedLicense(candidate.license)
+  const styleQuality = buildTagGroupResult(candidate, REQUIRED_STYLE_QUALITY_TAGS)
   const worldStructureQuality = buildTagGroupResult(
     candidate,
     REQUIRED_WORLD_STRUCTURE_TAGS
@@ -282,10 +286,10 @@ function buildReviewChecks(input: {
       "Image metadata matches bytes",
       imageMatchesMetadata
         ? "候选图声明的格式和尺寸与图片本体一致。"
-        : "候选图声明的格式或尺寸与图片本体不一致，可能是伪装文件或错误结果。",
+        : "候选图声明的格式或尺寸与图片本体不一致。",
       imageMatchesMetadata
         ? "The declared format and dimensions match the actual image bytes."
-        : "The declared format or dimensions do not match the actual image bytes, which may indicate spoofing or a bad result."
+        : "The declared format or dimensions do not match the actual image bytes."
     ),
     check(
       "mvp_image_size",
@@ -308,10 +312,62 @@ function buildReviewChecks(input: {
       "Bitmap payload quality",
       bitmapPayloadIsSubstantial
         ? `图片本体有效载荷达到基础质量门槛：${input.inspection.byteLength} bytes。`
-        : `图片本体有效载荷过低：${input.inspection.byteLength} bytes，最低要求 ${minimumPayloadBytes} bytes。可能是空白图、占位图或伪装压缩图。`,
+        : `图片本体有效载荷过低：${input.inspection.byteLength} bytes，最低要求 ${minimumPayloadBytes} bytes。`,
       bitmapPayloadIsSubstantial
         ? `The image payload passes the baseline quality gate: ${input.inspection.byteLength} bytes.`
-        : `The image payload is too small: ${input.inspection.byteLength} bytes, minimum ${minimumPayloadBytes} bytes. It may be a blank image, placeholder, or spoofed compressed result.`
+        : `The image payload is too small: ${input.inspection.byteLength} bytes, minimum ${minimumPayloadBytes} bytes.`
+    ),
+    check(
+      "candidate_world_binding",
+      candidateWorldBinding,
+      candidateWorldBinding ? 96 : 0,
+      "候选图世界绑定",
+      "Candidate world binding",
+      candidateWorldBinding
+        ? "候选图绑定了当前 worldId 与 tick。"
+        : "候选图缺少当前 worldId 或 tick 绑定。",
+      candidateWorldBinding
+        ? "The candidate binds the current worldId and tick."
+        : "The candidate is missing current worldId or tick binding."
+    ),
+    check(
+      "candidate_condition_binding",
+      candidateConditionBinding,
+      candidateConditionBinding ? 96 : 0,
+      "候选图条件绑定",
+      "Candidate condition binding",
+      candidateConditionBinding
+        ? "候选图绑定了当前 WorldGenerationCondition。"
+        : "候选图未绑定当前 WorldGenerationCondition，或安全条件不完整。",
+      candidateConditionBinding
+        ? "The candidate binds the current WorldGenerationCondition."
+        : "The candidate does not bind the current WorldGenerationCondition, or the safety condition is incomplete."
+    ),
+    check(
+      "candidate_source_kind",
+      candidateSourceKind,
+      candidateSourceKind ? 96 : 0,
+      "候选图来源类型",
+      "Candidate source kind",
+      candidateSourceKind
+        ? "候选图来源为 project_model_generated，并绑定内部模型版本。"
+        : "正式 ApprovedFrame 只允许 project_model_generated，开发测试资产不能进入正式展示。",
+      candidateSourceKind
+        ? "The candidate source is project_model_generated and binds an internal model version."
+        : "Formal ApprovedFrame only allows project_model_generated; development test assets cannot enter formal display."
+    ),
+    check(
+      "candidate_generation_request",
+      candidateGenerationRequest,
+      candidateGenerationRequest ? 96 : 0,
+      "候选图生成请求",
+      "Candidate generation request",
+      candidateGenerationRequest
+        ? "候选图绑定了内部模型生成请求。"
+        : "候选图缺少内部模型生成请求，或请求与候选图不一致。",
+      candidateGenerationRequest
+        ? "The candidate binds the internal model generation request."
+        : "The candidate is missing the internal model generation request, or the request does not match the candidate."
     ),
     check(
       "candidate_fact_link",
@@ -320,11 +376,11 @@ function buildReviewChecks(input: {
       "候选图事实链",
       "Candidate fact links",
       candidateKeepsFactLinks
-        ? "候选图保留了世界事实和 Prompt Package 来源链。"
-        : "候选图缺少世界事实或 Prompt Package 来源链。",
+        ? "候选图保留了当前世界事实来源链。"
+        : "候选图缺少当前世界事实来源链。",
       candidateKeepsFactLinks
-        ? "The candidate keeps world fact and prompt package links."
-        : "The candidate lacks world fact or prompt package links."
+        ? "The candidate keeps the current world fact links."
+        : "The candidate lacks the current world fact links."
     ),
     check(
       "candidate_license",
@@ -333,65 +389,117 @@ function buildReviewChecks(input: {
       "候选图授权",
       "Candidate license",
       candidateHasAllowedLicense
-        ? "候选图已确认自有、CC0 或商业授权，并确认不是直接复制未授权作品。"
-        : "候选图缺少允许使用的授权确认，不能进入 ApprovedFrame。",
+        ? "候选图已确认自有、CC0 或商业授权，并确认原创安全。"
+        : "候选图缺少允许使用的授权或原创确认。",
       candidateHasAllowedLicense
-        ? "The candidate is confirmed as self-owned, CC0, or commercially licensed, and not a direct copy of an unlicensed work."
-        : "The candidate lacks allowed license confirmation and cannot enter ApprovedFrame."
+        ? "The candidate is confirmed as self-owned, CC0, or commercially licensed, with originality confirmed."
+        : "The candidate lacks allowed license or originality confirmation."
     ),
-    check(
-      "visual_style_quality",
-      styleQuality.passed,
-      styleQuality.passed ? 88 : 0,
-      "视觉风格质量",
-      "Visual style quality",
-      styleQuality.passed
-        ? "候选图声明满足明亮、治愈、精细、俯视像素风，并具有清晰世界主焦点。"
-        : `候选图缺少视觉风格质量证明：${styleQuality.missingTags.join(", ")}。`,
-      styleQuality.passed
-        ? "The candidate declares bright, healing, detailed top-down pixel style and a clear world focal point."
-        : `The candidate is missing visual style quality proof: ${styleQuality.missingTags.join(", ")}.`
-    ),
-    check(
-      "world_structure_quality",
-      worldStructureQuality.passed,
-      worldStructureQuality.passed ? 88 : 0,
-      "世界结构质量",
-      "World structure quality",
-      worldStructureQuality.passed
-        ? "候选图声明具备地形层次、路径逻辑、自然边界、材料/施工关系。"
-        : `候选图缺少世界结构质量证明：${worldStructureQuality.missingTags.join(", ")}。`,
-      worldStructureQuality.passed
-        ? "The candidate declares terrain layering, path logic, natural boundaries, and material/construction relationships."
-        : `The candidate is missing world structure quality proof: ${worldStructureQuality.missingTags.join(", ")}.`
-    ),
-    check(
-      "visual_artifact_rejection",
-      artifactRejectionQuality.passed,
-      artifactRejectionQuality.passed ? 90 : 0,
-      "视觉污染排除",
-      "Visual artifact rejection",
-      artifactRejectionQuality.passed
-        ? "候选图声明没有占位块、脏路径、随机散点、乱码、水印或 UI 卡片。"
-        : `候选图缺少视觉污染排除证明：${artifactRejectionQuality.missingTags.join(", ")}。`,
-      artifactRejectionQuality.passed
-        ? "The candidate declares no placeholder blocks, dirty paths, random scatter, garbled text, watermarks, or UI cards."
-        : `The candidate is missing visual artifact rejection proof: ${artifactRejectionQuality.missingTags.join(", ")}.`
-    ),
-    check(
-      "fact_and_rights_quality",
-      factAndRightsQuality.passed,
-      factAndRightsQuality.passed ? 92 : 0,
-      "事实与版权安全",
-      "Fact and rights safety",
-      factAndRightsQuality.passed
-        ? "候选图声明没有新增世界事实，并满足版权安全要求。"
-        : `候选图缺少事实与版权安全证明：${factAndRightsQuality.missingTags.join(", ")}。`,
-      factAndRightsQuality.passed
-        ? "The candidate declares no added world facts and satisfies copyright safety requirements."
-        : `The candidate is missing fact and rights safety proof: ${factAndRightsQuality.missingTags.join(", ")}.`
-    ),
+    buildTagCheck("visual_style_quality", styleQuality, 88, "视觉风格质量", "Visual style quality"),
+    buildTagCheck("world_structure_quality", worldStructureQuality, 88, "世界结构质量", "World structure quality"),
+    buildTagCheck("visual_artifact_rejection", artifactRejectionQuality, 90, "视觉污染排除", "Visual artifact rejection"),
+    buildTagCheck("fact_and_rights_quality", factAndRightsQuality, 92, "事实与版权安全", "Fact and rights safety"),
   ]
+}
+
+function buildTagCheck(
+  id: string,
+  result: TagGroupResult,
+  score: number,
+  zhLabel: string,
+  enLabel: string
+): WorldVisualReviewCheck {
+  return check(
+    id,
+    result.passed,
+    result.passed ? score : 0,
+    zhLabel,
+    enLabel,
+    result.passed
+      ? `${zhLabel}证明已满足。`
+      : `${zhLabel}缺少证明：${result.missingTags.join(", ")}。`,
+    result.passed
+      ? `${enLabel} proof is satisfied.`
+      : `${enLabel} proof is missing: ${result.missingTags.join(", ")}.`
+  )
+}
+
+function candidateBindsWorld(
+  candidate: WorldVisualAiImageCandidate | null,
+  generationCondition: WorldVisualGenerationCondition
+): boolean {
+  return (
+    candidate !== null &&
+    generationCondition.worldId.length > 0 &&
+    Number.isInteger(generationCondition.tick) &&
+    generationCondition.tick >= 0 &&
+    candidate.tags.includes(`world_id:${generationCondition.worldId}`) &&
+    candidate.tags.includes(`tick:${generationCondition.tick}`)
+  )
+}
+
+function candidateBindsGenerationCondition(
+  candidate: WorldVisualAiImageCandidate | null,
+  generationCondition: WorldVisualGenerationCondition
+): boolean {
+  return (
+    candidate !== null &&
+    candidate.conditionId === generationCondition.conditionId &&
+    candidate.modelVersion === generationCondition.modelVersion &&
+    generationCondition.canShowToPlayer === false &&
+    generationCondition.safetyCondition.requireVisualJudge === true &&
+    generationCondition.safetyCondition.forbidProgrammaticFinalFrame === true &&
+    generationCondition.safetyCondition.forbidPlaceholderFrame === true
+  )
+}
+
+function candidateUsesFormalSourceKind(
+  candidate: WorldVisualAiImageCandidate | null
+): boolean {
+  return (
+    candidate !== null &&
+    candidate.sourceKind === "project_model_generated" &&
+    typeof candidate.modelVersion === "string" &&
+    candidate.modelVersion.length > 0 &&
+    !candidate.tags.includes("development_test_asset")
+  )
+}
+
+function candidateBindsGenerationRequest(
+  candidate: WorldVisualAiImageCandidate | null,
+  generationCondition: WorldVisualGenerationCondition,
+  request: WorldVisualAiImageGenerationRequest | null
+): boolean {
+  return (
+    candidate !== null &&
+    request !== null &&
+    request.canShowToPlayer === false &&
+    request.modelVersion === candidate.modelVersion &&
+    request.condition.conditionId === generationCondition.conditionId &&
+    request.condition.worldId === generationCondition.worldId &&
+    request.condition.tick === generationCondition.tick &&
+    request.output.width === candidate.width &&
+    request.output.height === candidate.height &&
+    request.output.imageFormat === candidate.imageFormat
+  )
+}
+
+function candidateBindsFactLinks(
+  candidate: WorldVisualAiImageCandidate | null,
+  factManifest: WorldVisualFactManifest,
+  generationCondition: WorldVisualGenerationCondition
+): boolean {
+  if (!candidate) return false
+  if (candidate.sourceFactIds.length !== factManifest.sourceFactIds.length) return false
+  if (candidate.sourceFactIds.length !== generationCondition.sourceFactIds.length) return false
+
+  const candidateFactIds = new Set(candidate.sourceFactIds)
+  const conditionFactIds = new Set(generationCondition.sourceFactIds)
+
+  return factManifest.sourceFactIds.every(
+    (sourceFactId) =>
+      candidateFactIds.has(sourceFactId) && conditionFactIds.has(sourceFactId)
+  )
 }
 
 function getMinimumImageByteLength(
@@ -436,8 +544,8 @@ async function inspectCandidateImage(
   const parsed = parseImageBytes(bytesResult.bytes)
   if (!parsed) {
     return failedInspection(
-      "候选图不是可识别的 PNG、JPG 或 WebP 位图，可能是 SVG、HTML、JSON、文本或伪装文件。",
-      "Candidate is not a recognized PNG, JPG, or WebP bitmap. It may be SVG, HTML, JSON, text, or a spoofed file.",
+      "候选图不是可识别的 PNG、JPG 或 WebP 位图。",
+      "Candidate is not a recognized PNG, JPG, or WebP bitmap.",
       bytesResult.contentType,
       bytesResult.byteLength
     )
@@ -445,8 +553,8 @@ async function inspectCandidateImage(
 
   if (!bytesResult.contentType) {
     return failedInspection(
-      "候选图缺少明确的图片 Content-Type，不能证明其为 PNG/WebP/JPEG 位图。",
-      "Candidate image is missing an explicit image Content-Type, so it cannot prove PNG/WebP/JPEG bitmap identity.",
+      "候选图缺少明确的图片 Content-Type。",
+      "Candidate image is missing an explicit image Content-Type.",
       null,
       bytesResult.byteLength
     )
@@ -468,7 +576,7 @@ async function inspectCandidateImage(
     height: parsed.height,
     contentType: bytesResult.contentType,
     byteLength: bytesResult.byteLength,
-    sha256: buildImageByteSha256(bytesResult.bytes),
+    sha256: createHash("sha256").update(bytesResult.bytes).digest("hex"),
     error: null,
     errorZh: null,
   }
@@ -485,9 +593,7 @@ async function readCandidateImageBytes(
       byteLength: number
     }
 > {
-  if (imageUrl.startsWith("data:")) {
-    return readDataUrlBytes(imageUrl)
-  }
+  if (imageUrl.startsWith("data:")) return readDataUrlBytes(imageUrl)
 
   let url: URL
   try {
@@ -499,10 +605,10 @@ async function readCandidateImageBytes(
     )
   }
 
-  if (!["http:", "https:"].includes(url.protocol)) {
+  if (!url.protocol.startsWith("http")) {
     return failedInspection(
-      "候选图只允许 http、https 或 data:image URL，禁止本地文件路径。",
-      "Candidate image URL may only use http, https, or data:image. Local file paths are forbidden."
+      "候选图只允许 http、https 或 data:image URL。",
+      "Candidate image URL may only use http, https, or data:image."
     )
   }
 
@@ -518,17 +624,10 @@ async function readCandidateImageBytes(
     }
 
     const contentType = normalizeContentType(response.headers.get("content-type"))
-    if (!contentType) {
+    if (!contentType || isForbiddenContentType(contentType)) {
       return failedInspection(
-        "候选图响应缺少 Content-Type，不能进入 ApprovedFrame 链路。",
-        "Candidate image response is missing Content-Type and cannot enter the ApprovedFrame chain."
-      )
-    }
-
-    if (isForbiddenContentType(contentType)) {
-      return failedInspection(
-        `候选图 Content-Type 被禁止：${contentType}。`,
-        `Candidate Content-Type is forbidden: ${contentType}.`,
+        `候选图 Content-Type 被禁止：${contentType ?? "unknown"}。`,
+        `Candidate Content-Type is forbidden: ${contentType ?? "unknown"}.`,
         contentType
       )
     }
@@ -604,14 +703,9 @@ function parseImageBytes(
 
 function parsePngDimensions(bytes: Uint8Array): { width: number; height: number } | null {
   const signature = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]
-  if (bytes.length < 24 || !signature.every((byte, index) => bytes[index] === byte)) {
-    return null
-  }
+  if (bytes.length < 24 || !signature.every((byte, index) => bytes[index] === byte)) return null
 
-  return {
-    width: readUint32Be(bytes, 16),
-    height: readUint32Be(bytes, 20),
-  }
+  return { width: readUint32Be(bytes, 16), height: readUint32Be(bytes, 20) }
 }
 
 function parseJpegDimensions(bytes: Uint8Array): { width: number; height: number } | null {
@@ -643,30 +737,16 @@ function parseJpegDimensions(bytes: Uint8Array): { width: number; height: number
 }
 
 function parseWebpDimensions(bytes: Uint8Array): { width: number; height: number } | null {
-  if (
-    bytes.length < 30 ||
-    readAscii(bytes, 0, 4) !== "RIFF" ||
-    readAscii(bytes, 8, 4) !== "WEBP"
-  ) {
-    return null
-  }
+  if (bytes.length < 30 || readAscii(bytes, 0, 4) !== "RIFF" || readAscii(bytes, 8, 4) !== "WEBP") return null
 
   const chunk = readAscii(bytes, 12, 4)
-  if (chunk === "VP8X" && bytes.length >= 30) {
-    return {
-      width: 1 + readUint24Le(bytes, 24),
-      height: 1 + readUint24Le(bytes, 27),
-    }
+  if (chunk === "VP8X") {
+    return { width: 1 + readUint24Le(bytes, 24), height: 1 + readUint24Le(bytes, 27) }
   }
-
-  if (chunk === "VP8 " && bytes.length >= 30) {
-    return {
-      width: readUint16Le(bytes, 26) & 0x3fff,
-      height: readUint16Le(bytes, 28) & 0x3fff,
-    }
+  if (chunk === "VP8 ") {
+    return { width: readUint16Le(bytes, 26) & 0x3fff, height: readUint16Le(bytes, 28) & 0x3fff }
   }
-
-  if (chunk === "VP8L" && bytes.length >= 25) {
+  if (chunk === "VP8L") {
     const b0 = bytes[21]
     const b1 = bytes[22]
     const b2 = bytes[23]
@@ -678,6 +758,18 @@ function parseWebpDimensions(bytes: Uint8Array): { width: number; height: number
   }
 
   return null
+}
+
+function isApprovedImageFormat(
+  imageFormat: WorldVisualAiImageCandidate["imageFormat"]
+): boolean {
+  return imageFormat === "png" || imageFormat === "webp" || imageFormat === "jpg"
+}
+
+function isApprovedLicense(
+  license: WorldVisualAiImageCandidate["license"]
+): boolean {
+  return license === "self_owned" || license === "cc0" || license === "commercial_license"
 }
 
 function isAllowedContentType(
@@ -702,10 +794,6 @@ function isForbiddenContentType(contentType: string): boolean {
 
 function normalizeContentType(contentType: string | null): string | null {
   return contentType?.split(";")[0]?.trim().toLowerCase() || null
-}
-
-function buildImageByteSha256(bytes: Uint8Array): string {
-  return createHash("sha256").update(bytes).digest("hex")
 }
 
 function failedInspection(
@@ -749,14 +837,11 @@ function check(
 function buildTagGroupResult(
   candidate: WorldVisualAiImageCandidate | null,
   requiredTags: readonly string[]
-): { passed: boolean; missingTags: string[] } {
+): TagGroupResult {
   const candidateTags = new Set(candidate?.tags ?? [])
   const missingTags = requiredTags.filter((tag) => !candidateTags.has(tag))
 
-  return {
-    passed: missingTags.length === 0,
-    missingTags,
-  }
+  return { passed: missingTags.length === 0, missingTags }
 }
 
 function buildFixInstructions(
@@ -764,96 +849,10 @@ function buildFixInstructions(
 ): WorldVisualReviewReport["fixInstructions"] {
   return checks
     .filter((check) => !check.passed)
-    .map((check) => {
-      if (check.id === "ai_image_candidate_metadata") {
-        return {
-          zh: "接入 AI 图像生成模型或授权导入流程，并要求返回完整候选图元数据。",
-          en: "Connect an AI image model or authorized import flow and require complete candidate metadata.",
-        }
-      }
-
-      if (check.id === "real_image_bytes") {
-        return {
-          zh: "重新生成或导入真实 PNG/WebP/JPG 位图，禁止 SVG、HTML、JSON、文本或占位结果，并确保返回正确 Content-Type。",
-          en: "Regenerate or import a real PNG/WebP/JPG bitmap. SVG, HTML, JSON, text, and placeholder results are forbidden, and the response must return the correct Content-Type.",
-        }
-      }
-
-      if (check.id === "image_byte_fingerprint") {
-        return {
-          zh: "重新生成或重新导入可稳定读取的真实 PNG/WebP/JPG 位图，确保 VisualJudge 能生成图片本体 sha256 指纹。",
-          en: "Regenerate or re-import a stable readable PNG/WebP/JPG bitmap so VisualJudge can generate an image byte sha256 fingerprint.",
-        }
-      }
-
-      if (check.id === "image_metadata_matches_bytes") {
-        return {
-          zh: "修正图像生成模型返回值，确保声明的格式和尺寸与图片本体一致。",
-          en: "Fix the image generation model response so declared format and dimensions match the actual image bytes.",
-        }
-      }
-
-      if (check.id === "mvp_image_size") {
-        return {
-          zh: `重新生成至少 ${MIN_IMAGE_WIDTH}x${MIN_IMAGE_HEIGHT} 的静态世界画面。`,
-          en: `Regenerate a static world frame of at least ${MIN_IMAGE_WIDTH}x${MIN_IMAGE_HEIGHT}.`,
-        }
-      }
-
-      if (check.id === "bitmap_payload_quality") {
-        return {
-          zh: "重新生成真实、有细节、有足够信息量的 PNG/WebP/JPG 位图，禁止极低字节量空白图、占位图或伪装压缩图。",
-          en: "Regenerate a real, detailed PNG/WebP/JPG bitmap with enough information payload. Tiny blank images, placeholders, and spoofed compressed results are forbidden.",
-        }
-      }
-
-      if (check.id === "candidate_fact_link") {
-        return {
-          zh: "候选图必须绑定 sourceFactIds 和 conditionId，不能脱离世界事实。",
-          en: "The candidate must bind sourceFactIds and conditionId and must not detach from world facts.",
-        }
-      }
-
-      if (check.id === "candidate_license") {
-        return {
-          zh: "候选图必须确认来源为自有、CC0 或商业授权，并确认没有直接复制未授权第三方作品。",
-          en: "The candidate must be confirmed as self-owned, CC0, or commercially licensed, and must not directly copy unlicensed third-party work.",
-        }
-      }
-
-      if (check.id === "visual_style_quality") {
-        return {
-          zh: "候选图必须补齐明亮治愈、精细俯视像素风、清晰世界主焦点等视觉风格质量证明。",
-          en: "The candidate must provide proof for bright healing detailed top-down pixel style and clear world focal point.",
-        }
-      }
-
-      if (check.id === "world_structure_quality") {
-        return {
-          zh: "候选图必须补齐地形层次、路径逻辑、自然边界、材料/施工关系等世界结构质量证明。",
-          en: "The candidate must provide proof for terrain layering, path logic, natural boundaries, and material/construction relationships.",
-        }
-      }
-
-      if (check.id === "visual_artifact_rejection") {
-        return {
-          zh: "候选图必须补齐无占位块、无脏路径、无随机散点、无乱码、无水印、无 UI 卡片等污染排除证明。",
-          en: "The candidate must provide proof that it has no placeholder blocks, dirty paths, random scatter, garbled text, watermarks, or UI cards.",
-        }
-      }
-
-      if (check.id === "fact_and_rights_quality") {
-        return {
-          zh: "候选图必须补齐无新增世界事实与版权安全证明。",
-          en: "The candidate must provide proof of no added world facts and copyright safety.",
-        }
-      }
-
-      return {
-        zh: `修正 ${check.label.zh}：${check.evidence.zh}`,
-        en: `Fix ${check.label.en}: ${check.evidence.en}`,
-      }
-    })
+    .map((check) => ({
+      zh: `修正 ${check.label.zh}：${check.evidence.zh}`,
+      en: `Fix ${check.label.en}: ${check.evidence.en}`,
+    }))
 }
 
 function readAscii(bytes: Uint8Array, offset: number, length: number): string {
