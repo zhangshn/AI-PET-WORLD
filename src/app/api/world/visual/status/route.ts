@@ -88,7 +88,7 @@ export async function GET() {
     tags: [
       "world_visual_status_api",
       "internal_model_only",
-      "no_external_provider_route",
+      "no_third_party_drawing_api_route",
       "current_tick_gate_checked",
       "current_source_facts_gate_checked",
       approvedFrameGate.canRuntimeRender
