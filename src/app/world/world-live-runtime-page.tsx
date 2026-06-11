@@ -1,5 +1,6 @@
 import { readWorldRuntimeForView } from "@/world/runtime/world-runtime-gateway"
 import {
+  buildWorldVisualFactManifest,
   buildWorldVisualPainterDecision,
   readLatestWorldVisualApprovedFrameRecord,
 } from "@/world/world-visual-painter"
@@ -37,9 +38,14 @@ export async function WorldLiveRuntimePage() {
   const painterDecision = await buildWorldVisualPainterDecision({
     saveRecord: runtimeView.saveRecord,
   })
+  const factManifest = buildWorldVisualFactManifest({
+    saveRecord: runtimeView.saveRecord,
+  })
   const approvedFrameReadResult = await readLatestWorldVisualApprovedFrameRecord({
     ownerId: runtimeView.saveRecord.ownerId,
     worldId: runtimeView.saveRecord.worldId,
+    currentTick: runtimeView.saveRecord.tick,
+    currentSourceFactIds: factManifest.sourceFactIds,
   })
   const approvedFrameRecord = approvedFrameReadResult.record
   const approvedFrame = approvedFrameRecord?.approvedFrame ?? null
@@ -49,13 +55,18 @@ export async function WorldLiveRuntimePage() {
     warnings: approvedFrameReadResult.warnings,
     tags: approvedFrameReadResult.tags,
   })
-  const canRuntimeRender =
-    approvedFrameReadResult.status === "found" &&
-    approvedFrameRecord?.canShowToPlayer === true &&
-    approvedFrame !== null &&
-    canRenderApprovedFrame(approvedFrame)
+  const currentRuntimeGate = buildCurrentRuntimeGate({
+    approvedFrame,
+    recordWorldId: approvedFrameRecord?.worldId ?? null,
+    recordTick: approvedFrameRecord?.tick ?? null,
+    recordSourceFactIds: approvedFrameRecord?.sourceFactIds ?? [],
+    recordCanShowToPlayer: approvedFrameRecord?.canShowToPlayer ?? false,
+    currentWorldId: runtimeView.saveRecord.worldId,
+    currentTick: runtimeView.saveRecord.tick,
+    currentSourceFactIds: factManifest.sourceFactIds,
+  })
 
-  if (canRuntimeRender && approvedFrameRecord && approvedFrame) {
+  if (currentRuntimeGate.canRuntimeRender && approvedFrameRecord && approvedFrame) {
     return (
       <main style={runtimeWorldStyles.page}>
         <div style={runtimeWorldStyles.stage}>
@@ -65,7 +76,7 @@ export async function WorldLiveRuntimePage() {
             <span>ApprovedFrame</span>
           </div>
           <div
-            aria-label="已审核通过的世界画面"
+            aria-label="已审核通过且匹配当前世界 tick 的世界画面"
             style={runtimeWorldStyles.frame}
           >
             {/* AI image providers are not fixed yet, so this cannot use next/image domains. */}
@@ -83,10 +94,8 @@ export async function WorldLiveRuntimePage() {
             <span>Image {approvedFrame.sourceImageSha256.slice(0, 12)}</span>
             <span>{approvedFrame.sourceImageContentType}</span>
             <span>{approvedFrame.sourceImageByteLength} bytes</span>
-            <span>
-              Payload{" "}
-              {approvedFrame.sourceImagePayloadQualityPassed ? "passed" : "blocked"}
-            </span>
+            <span>Tick matched</span>
+            <span>Facts matched</span>
           </div>
         </div>
       </main>
@@ -129,6 +138,13 @@ export async function WorldLiveRuntimePage() {
               VJ-0 阻断：{approvedFrameBlock.vj0Blocked ? "是" : "否"}
             </span>
             <span>{approvedFrameBlock.displayRuleZh}</span>
+          </div>
+          <div style={blockedWorldStyles.metaItem}>
+            <span style={blockedWorldStyles.metaLabel}>Current gate / 当前世界闸门</span>
+            <span>worldId 匹配：{currentRuntimeGate.currentWorldMatched ? "是" : "否"}</span>
+            <span>tick 匹配：{currentRuntimeGate.currentTickMatched ? "是" : "否"}</span>
+            <span>sourceFactIds 匹配：{currentRuntimeGate.currentSourceFactsMatched ? "是" : "否"}</span>
+            <span>当前事实数量：{factManifest.sourceFactIds.length}</span>
           </div>
           <div style={blockedWorldStyles.metaItem}>
             <span style={blockedWorldStyles.metaLabel}>Read audit / 读取审计</span>
@@ -192,9 +208,9 @@ function buildApprovedFrameBlockView(input: {
       titleZh: "世界画面被 VJ-0 阻断",
       titleEn: "ApprovedFrame blocked by VJ-0",
       messageZh:
-        "已读取到 ApprovedFrameRecord，但它没有通过 VJ-0 读取闸门。/world 不会展示旧图或坏图。",
+        "已读取到 ApprovedFrameRecord，但它没有通过 VJ-0 读取闸门或当前 tick/sourceFactIds 校验。/world 不会展示旧图或坏图。",
       messageEn:
-        "An ApprovedFrameRecord was found, but it failed the VJ-0 read gate. /world will not display stale or invalid imagery.",
+        "An ApprovedFrameRecord was found, but it failed the VJ-0 read gate or current tick/sourceFactIds check. /world will not display stale or invalid imagery.",
       displayRuleZh:
         "invalid 状态下只能显示阻断说明，不能渲染任何 ApprovedFrame 图片。",
       vj0Blocked: true,
@@ -227,9 +243,9 @@ function buildApprovedFrameBlockView(input: {
       titleZh: "世界画面尚未通过展示闸门",
       titleEn: "ApprovedFrame blocked by Runtime Render gate",
       messageZh:
-        "ApprovedFrameRecord 已存在，但 Runtime Render 必需字段未全部通过。/world 不展示图片。",
+        "ApprovedFrameRecord 已存在，但 Runtime Render 必需字段或当前世界 tick/sourceFactIds 未全部通过。/world 不展示图片。",
       messageEn:
-        "An ApprovedFrameRecord exists, but required Runtime Render fields did not all pass. /world will not display the image.",
+        "An ApprovedFrameRecord exists, but required Runtime Render fields or current world tick/sourceFactIds did not all pass. /world will not display the image.",
       displayRuleZh:
         "found 但未通过 Runtime Render gate 时，仍然只能显示阻断说明。",
       vj0Blocked: true,
@@ -254,6 +270,42 @@ function buildApprovedFrameBlockView(input: {
   }
 }
 
+function buildCurrentRuntimeGate(input: {
+  approvedFrame: WorldVisualApprovedFrame | null
+  recordWorldId: string | null
+  recordTick: number | null
+  recordSourceFactIds: string[]
+  recordCanShowToPlayer: boolean
+  currentWorldId: string
+  currentTick: number
+  currentSourceFactIds: string[]
+}) {
+  const hardFieldsValid = input.approvedFrame
+    ? canRenderApprovedFrame(input.approvedFrame)
+    : false
+  const currentWorldMatched = input.recordWorldId === input.currentWorldId
+  const currentTickMatched = input.recordTick === input.currentTick
+  const currentSourceFactsMatched = sameStringSet(
+    input.recordSourceFactIds,
+    input.currentSourceFactIds
+  )
+  const canRuntimeRender =
+    input.recordCanShowToPlayer === true &&
+    input.approvedFrame?.canShowToPlayer === true &&
+    hardFieldsValid &&
+    currentWorldMatched &&
+    currentTickMatched &&
+    currentSourceFactsMatched
+
+  return {
+    hardFieldsValid,
+    currentWorldMatched,
+    currentTickMatched,
+    currentSourceFactsMatched,
+    canRuntimeRender,
+  }
+}
+
 function canRenderApprovedFrame(approvedFrame: WorldVisualApprovedFrame): boolean {
   return (
     approvedFrame.canShowToPlayer === true &&
@@ -273,6 +325,13 @@ function isApprovedContentType(contentType: string): boolean {
     contentType === "image/webp" ||
     contentType === "image/jpeg"
   )
+}
+
+function sameStringSet(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) return false
+
+  const rightSet = new Set(right)
+  return left.every((value) => rightSet.has(value))
 }
 
 const emptyWorldStyles = {
