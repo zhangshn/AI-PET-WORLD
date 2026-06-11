@@ -17,7 +17,7 @@ const AUTHORIZED_DATA_ITEMS: WorldVisualAuthorizedDataManifest["items"] = [
     },
     canTrainOnImagePixels: false,
     canExtractRules: true,
-    canUseAsPromptReference: true,
+    canUseAsConditionReference: true,
     mustAvoidDirectCopy: true,
     status: "accepted",
     notes: {
