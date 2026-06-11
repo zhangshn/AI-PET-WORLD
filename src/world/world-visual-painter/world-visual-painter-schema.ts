@@ -327,7 +327,12 @@ export type WorldVisualImageInspectionSummary = {
 }
 
 export type WorldVisualReviewReport = {
-  status: "not_run" | "failed" | "passed_candidate"
+  status: "not_run" | "vj_0_failed" | "vj_0_passed"
+  vj0Status: "vj_0_failed" | "vj_0_passed"
+  vj1Status: "vj_1_not_implemented"
+  vj2Status: "vj_2_not_implemented"
+  approvalScope: "not_approved" | "approved_for_controlled_mvp"
+  productionApprovalStatus: "not_approved_for_production"
   canShowToPlayer: false
   reason: WorldVisualBilingualText
   score: number
@@ -484,6 +489,12 @@ export type WorldVisualApprovedFrame = {
   sourceImageByteLength: number
   sourceImageContentType: string | null
   sourceImagePayloadQualityPassed: boolean
+  approvalScope: "approved_for_controlled_mvp"
+  productionApprovalStatus: "not_approved_for_production"
+  approvedForProduction: false
+  vj0Status: "vj_0_passed"
+  vj1Status: "vj_1_not_implemented"
+  vj2Status: "vj_2_not_implemented"
   canShowToPlayer: true
   approvalReason: WorldVisualBilingualText
   sourceFactIds: string[]
