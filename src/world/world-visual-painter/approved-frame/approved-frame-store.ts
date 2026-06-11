@@ -151,13 +151,33 @@ export async function readLatestWorldVisualApprovedFrameRecord(input: {
       return invalidRead(index.path, "Approved frame record shape is invalid.")
     }
 
+    const readGateWarnings = validateApprovedFrameRecord(normalized)
+    if (readGateWarnings.length > 0) {
+      return {
+        status: "invalid",
+        record: null,
+        path: index.path,
+        message: "Approved frame record failed VJ-0 read gate.",
+        warnings: readGateWarnings,
+        tags: [
+          "world_visual_approved_frame_store_read",
+          "vj_0_approved_frame_record_gate_failed",
+          "invalid",
+        ],
+      }
+    }
+
     return {
       status: "found",
       record: normalized,
       path: index.path,
       message: "Approved frame record loaded.",
       warnings: [],
-      tags: ["world_visual_approved_frame_store_read", "found"],
+      tags: [
+        "world_visual_approved_frame_store_read",
+        "found",
+        "vj_0_approved_frame_record_gate_passed",
+      ],
     }
   } catch (error) {
     if (isNodeFileError(error) && error.code === "ENOENT") {
