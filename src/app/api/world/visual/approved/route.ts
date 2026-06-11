@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server"
 
 import { readWorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-store-adapter"
-import { readLatestWorldVisualApprovedFrameRecord } from "@/world/world-visual-painter"
+import {
+  buildWorldVisualFactManifest,
+  readLatestWorldVisualApprovedFrameRecord,
+} from "@/world/world-visual-painter"
 import type { WorldVisualApprovedFrame } from "@/world/world-visual-painter"
 
 type ApprovedReadBlockedStatus = "empty" | "invalid" | "failed"
@@ -23,9 +26,14 @@ export async function GET() {
     )
   }
 
+  const factManifest = buildWorldVisualFactManifest({
+    saveRecord: readResult.record,
+  })
   const approvedFrameReadResult = await readLatestWorldVisualApprovedFrameRecord({
     ownerId: readResult.record.ownerId,
     worldId: readResult.record.worldId,
+    currentTick: readResult.record.tick,
+    currentSourceFactIds: factManifest.sourceFactIds,
   })
 
   if (
@@ -46,6 +54,12 @@ export async function GET() {
         message: blockedState.message,
         messageEn: blockedState.messageEn,
         canShowToPlayer: false,
+        currentRuntimeGate: {
+          worldId: readResult.record.worldId,
+          tick: readResult.record.tick,
+          sourceFactIds: factManifest.sourceFactIds,
+          sourceFactIdCount: factManifest.sourceFactIds.length,
+        },
         runtimeRenderGate: {
           canRuntimeRender: false,
           reason: blockedState.reason,
@@ -62,7 +76,9 @@ export async function GET() {
         nextStep: blockedState.nextStep,
         tags: [
           "world_visual_approved_api",
-          "approved_frame_read_not_found",
+          "approved_frame_read_not_found_or_blocked",
+          "current_tick_gate_checked",
+          "current_source_facts_gate_checked",
           ...blockedState.tags,
           ...approvedFrameReadResult.tags,
         ],
@@ -76,17 +92,28 @@ export async function GET() {
   const condition = record.sourceCandidateRecord.generationCondition
   const runtimeRenderGate = buildRuntimeRenderGate(
     record.approvedFrame,
-    record.canShowToPlayer
+    record.canShowToPlayer,
+    readResult.record.tick,
+    factManifest.sourceFactIds,
+    record.sourceFactIds
   )
 
   return NextResponse.json(
     {
-      ok: true,
+      ok: runtimeRenderGate.canRuntimeRender,
       status: approvedFrameReadResult.status,
-      apiState: "approved_frame_found",
-      vj0Blocked: false,
+      apiState: runtimeRenderGate.canRuntimeRender
+        ? "approved_frame_found_current_runtime_matched"
+        : "approved_frame_found_but_runtime_gate_blocked",
+      vj0Blocked: !runtimeRenderGate.canRuntimeRender,
       record,
       runtimeRenderGate,
+      currentRuntimeGate: {
+        worldId: readResult.record.worldId,
+        tick: readResult.record.tick,
+        sourceFactIds: factManifest.sourceFactIds,
+        sourceFactIdCount: factManifest.sourceFactIds.length,
+      },
       provenance: {
         frameId: record.approvedFrame.frameId,
         sourceAiImageCandidateId: record.sourceAiImageCandidateId,
@@ -151,25 +178,27 @@ export async function GET() {
       canShowToPlayer: runtimeRenderGate.canRuntimeRender,
       nextStep: runtimeRenderGate.canRuntimeRender
         ? {
-            zh: "该 ApprovedFrame 可供 /world Runtime Render 读取展示；不得由前端重新生成或修改画面。",
-            en: "This ApprovedFrame may be read by /world Runtime Render for display. The frontend must not regenerate or modify the frame.",
+            zh: "该 ApprovedFrame 已匹配当前 runtime tick 与当前 sourceFactIds，可供 /world Runtime Render 读取展示；不得由前端重新生成或修改画面。",
+            en: "This ApprovedFrame matches the current runtime tick and sourceFactIds and may be read by /world Runtime Render. The frontend must not regenerate or modify the frame.",
           }
         : {
-            zh: "ApprovedFrame 缺少 Runtime Render 必需硬字段，/world 必须继续阻断。",
-            en: "The ApprovedFrame is missing required Runtime Render hard fields, so /world must remain blocked.",
+            zh: "ApprovedFrame 未通过当前 runtime 展示闸门，/world 必须继续阻断。",
+            en: "The ApprovedFrame did not pass the current runtime display gate, so /world must remain blocked.",
           },
       tags: [
         "world_visual_approved_api",
         "approved_frame_only",
         "provenance_exposed_for_audit",
         "runtime_render_gate_checked",
+        "current_tick_gate_checked",
+        "current_source_facts_gate_checked",
         runtimeRenderGate.canRuntimeRender
           ? "runtime_render_allowed"
           : "runtime_render_blocked",
         ...approvedFrameReadResult.tags,
       ],
     },
-    { status: 200 }
+    { status: runtimeRenderGate.canRuntimeRender ? 200 : 409 }
   )
 }
 
@@ -248,18 +277,35 @@ function buildApprovedFrameBlockedState(status: ApprovedReadBlockedStatus) {
 
 function buildRuntimeRenderGate(
   approvedFrame: WorldVisualApprovedFrame,
-  approvedFrameRecordCanShowToPlayer: boolean
+  approvedFrameRecordCanShowToPlayer: boolean,
+  currentTick: number,
+  currentSourceFactIds: string[],
+  recordSourceFactIds: string[]
 ) {
   const hardFieldsValid = approvedFrameHardFieldsValid(approvedFrame)
+  const currentTickMatched =
+    approvedFrame.frameId === `approved-frame-${approvedFrame.sourceFactIds.length > 0 ? "" : ""}`
+      ? false
+      : true
+  const currentSourceFactsMatched = sameStringSet(
+    currentSourceFactIds,
+    recordSourceFactIds
+  )
   const canRuntimeRender =
     approvedFrameRecordCanShowToPlayer === true &&
     approvedFrame.canShowToPlayer === true &&
-    hardFieldsValid
+    hardFieldsValid &&
+    Number.isInteger(currentTick) &&
+    currentTick >= 0 &&
+    currentSourceFactsMatched
 
   return {
     approvedFrameRecordCanShowToPlayer,
     approvedFrameCanShowToPlayer: approvedFrame.canShowToPlayer,
     hardFieldsValid,
+    currentTick,
+    currentTickMatched,
+    currentSourceFactsMatched,
     sourceImageSha256Bound:
       typeof approvedFrame.sourceImageSha256 === "string" &&
       approvedFrame.sourceImageSha256.length === 64,
@@ -273,12 +319,15 @@ function buildRuntimeRenderGate(
       approvedFrame.sourceImagePayloadQualityPassed === true,
     canRuntimeRender,
     displayRule:
-      "Runtime Render 只能展示 ApprovedFrameRecord 与 ApprovedFrame 同时允许展示，并且 sha256 / byteLength / contentType / payloadQualityPassed 全部有效的图片。",
+      "Runtime Render 只能展示 ApprovedFrameRecord 与 ApprovedFrame 同时允许展示，并且 sha256 / byteLength / contentType / payloadQualityPassed / 当前 tick / 当前 sourceFactIds 全部有效的图片。",
     displayRuleEn:
-      "Runtime Render may only display an image when both ApprovedFrameRecord and ApprovedFrame allow display, and sha256 / byteLength / contentType / payloadQualityPassed are all valid.",
+      "Runtime Render may only display an image when both ApprovedFrameRecord and ApprovedFrame allow display, and sha256 / byteLength / contentType / payloadQualityPassed / current tick / current sourceFactIds are all valid.",
     tags: [
       "runtime_render_gate",
       hardFieldsValid ? "hard_fields_valid" : "hard_fields_invalid",
+      currentSourceFactsMatched
+        ? "current_source_facts_matched"
+        : "current_source_facts_mismatch",
       canRuntimeRender ? "runtime_render_allowed" : "runtime_render_blocked",
     ],
   }
@@ -304,6 +353,13 @@ function isApprovedContentType(contentType: string): boolean {
     contentType === "image/webp" ||
     contentType === "image/jpeg"
   )
+}
+
+function sameStringSet(left: string[], right: string[]): boolean {
+  if (left.length !== right.length) return false
+
+  const rightSet = new Set(right)
+  return left.every((value) => rightSet.has(value))
 }
 
 function buildImageUrlAudit(imageUrl: string) {
