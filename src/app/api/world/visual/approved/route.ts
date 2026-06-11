@@ -4,6 +4,8 @@ import { readWorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-store-
 import { readLatestWorldVisualApprovedFrameRecord } from "@/world/world-visual-painter"
 import type { WorldVisualApprovedFrame } from "@/world/world-visual-painter"
 
+type ApprovedReadBlockedStatus = "empty" | "invalid" | "failed"
+
 export async function GET() {
   const readResult = await readWorldRuntimeSaveRecord()
 
@@ -30,9 +32,10 @@ export async function GET() {
     approvedFrameReadResult.status !== "found" ||
     !approvedFrameReadResult.record
   ) {
-    const blockedState = buildApprovedFrameBlockedState(
+    const blockedStatus = normalizeApprovedReadBlockedStatus(
       approvedFrameReadResult.status
     )
+    const blockedState = buildApprovedFrameBlockedState(blockedStatus)
 
     return NextResponse.json(
       {
@@ -46,8 +49,6 @@ export async function GET() {
         runtimeRenderGate: {
           canRuntimeRender: false,
           reason: blockedState.reason,
-          reasonZh: blockedState.message,
-          reasonEn: blockedState.messageEn,
           tags: blockedState.tags,
         },
         readAudit: {
@@ -73,7 +74,10 @@ export async function GET() {
   const record = approvedFrameReadResult.record
   const request = record.sourceCandidateRecord.aiImageGenerationRequest
   const condition = record.sourceCandidateRecord.generationCondition
-  const runtimeRenderGate = buildRuntimeRenderGate(record.approvedFrame, record.canShowToPlayer)
+  const runtimeRenderGate = buildRuntimeRenderGate(
+    record.approvedFrame,
+    record.canShowToPlayer
+  )
 
   return NextResponse.json(
     {
@@ -169,9 +173,13 @@ export async function GET() {
   )
 }
 
-function buildApprovedFrameBlockedState(
-  status: "empty" | "invalid" | "failed"
-) {
+function normalizeApprovedReadBlockedStatus(
+  status: "found" | ApprovedReadBlockedStatus
+): ApprovedReadBlockedStatus {
+  return status === "found" ? "failed" : status
+}
+
+function buildApprovedFrameBlockedState(status: ApprovedReadBlockedStatus) {
   if (status === "empty") {
     return {
       httpStatus: 404,
