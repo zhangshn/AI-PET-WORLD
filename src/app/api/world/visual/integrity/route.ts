@@ -44,7 +44,12 @@ export async function GET() {
   const worldId = runtime.worldId
   const [candidateReadResult, fixPlanReadResult, approvedFrameReadResult] =
     await Promise.all([
-      readLatestWorldVisualCandidateRecord({ ownerId, worldId }),
+      readLatestWorldVisualCandidateRecord({
+        ownerId,
+        worldId,
+        currentTick: runtime.tick,
+        currentSourceFactIds: factManifest.sourceFactIds,
+      }),
       readLatestWorldVisualFixPlanRecord({ ownerId, worldId }),
       readLatestWorldVisualApprovedFrameRecord({
         ownerId,
@@ -73,6 +78,14 @@ export async function GET() {
 
   const checks: IntegrityCheck[] = [
     check("runtime_world_exists", true, "high", "正式世界运行记录存在。", "Runtime world record exists.", ["runtime_world"]),
+    check(
+      "candidate_read_gate_if_exists",
+      candidateReadResult.status !== "invalid" && candidateReadResult.status !== "failed",
+      "high",
+      "候选图读取闸门不得返回 invalid/failed；旧 tick 或事实不一致的候选图必须阻断。",
+      "The candidate read gate must not return invalid/failed; stale tick or fact-mismatched candidates must be blocked.",
+      ["candidate", "read_gate"]
+    ),
     check(
       "candidate_hidden_if_exists",
       !candidate || candidate.canShowToPlayer === false,
