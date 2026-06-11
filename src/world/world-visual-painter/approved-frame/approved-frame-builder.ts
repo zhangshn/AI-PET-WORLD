@@ -21,7 +21,7 @@ const REQUIRED_REVIEW_CHECK_IDS = [
   "candidate_source_kind",
   "candidate_generation_request",
   "candidate_fact_link",
-  "candidate_license",
+  "candidate_license_metadata",
   "candidate_tags_not_used_as_quality_evidence",
 ] as const
 
@@ -76,10 +76,16 @@ export function buildWorldVisualApprovedFrame(input: {
     return null
   }
 
-  if (input.reviewReport.status !== "passed_candidate") return null
+  if (input.reviewReport.status !== "vj_0_passed") return null
+  if (input.reviewReport.vj0Status !== "vj_0_passed") return null
+  if (input.reviewReport.vj1Status !== "vj_1_not_implemented") return null
+  if (input.reviewReport.vj2Status !== "vj_2_not_implemented") return null
+  if (input.reviewReport.approvalScope !== "approved_for_controlled_mvp") return null
+  if (input.reviewReport.productionApprovalStatus !== "not_approved_for_production") return null
   if (input.reviewReport.canShowToPlayer !== false) return null
   if (input.reviewReport.score < MIN_APPROVAL_SCORE) return null
   if (!requiredReviewChecksPassed(input.reviewReport)) return null
+  if (!notImplementedReviewChecksPresent(input.reviewReport)) return null
   if (!imageInspectionSummaryCanApprove(input.reviewReport, input.aiImageCandidate)) {
     return null
   }
@@ -102,21 +108,31 @@ export function buildWorldVisualApprovedFrame(input: {
     sourceImageContentType: imageInspectionSummary.contentType,
     sourceImagePayloadQualityPassed:
       imageInspectionSummary.payloadQualityPassed,
+    approvalScope: "approved_for_controlled_mvp",
+    productionApprovalStatus: "not_approved_for_production",
+    approvedForProduction: false,
+    vj0Status: "vj_0_passed",
+    vj1Status: "vj_1_not_implemented",
+    vj2Status: "vj_2_not_implemented",
     canShowToPlayer: true,
     approvalReason: {
-      zh: "AI 位图候选图已通过 VJ-0 文件与事实硬闸门，允许进入 Runtime Render 展示阶段。",
-      en: "The AI bitmap candidate passed the VJ-0 file and fact hard gate and may enter Runtime Render.",
+      zh: "AI 位图候选图只通过 VJ-0 文件与事实硬闸门；VJ-1/VJ-2 尚未实现，因此该帧仅为受控 MVP ApprovedFrame，不是生产批准帧。",
+      en: "The AI bitmap candidate passed only the VJ-0 file and fact hard gate; VJ-1/VJ-2 are not implemented, so this is a controlled MVP ApprovedFrame, not a production approved frame.",
     },
     sourceFactIds: input.factManifest.sourceFactIds,
     tags: [
       "approved_frame",
       `world_id:${input.factManifest.worldId}`,
       `tick:${input.factManifest.tick}`,
-      "ai_bitmap_candidate_approved",
-      "runtime_render_ready",
+      "controlled_mvp_approved_frame",
+      "approved_for_controlled_mvp",
+      "not_approved_for_production",
+      "approved_for_production_false",
+      "runtime_render_ready_for_controlled_mvp",
       "world_facts_preserved",
-      "visual_review_passed",
-      "vj_0_hard_gate_passed",
+      "vj_0_passed",
+      "vj_1_not_implemented",
+      "vj_2_not_implemented",
       "image_byte_fingerprint_bound",
       "source_image_byte_length_bound",
       "source_image_content_type_bound",
@@ -125,7 +141,8 @@ export function buildWorldVisualApprovedFrame(input: {
       "runtime_bound_candidate_required",
       "formal_project_model_source_required",
       "candidate_tags_metadata_only",
-      "approved_frame_display_gate_passed",
+      "candidate_tags_not_visual_quality_evidence",
+      "approved_frame_display_gate_passed_for_controlled_mvp",
       "not_from_programmatic_renderer",
       "world_generation_condition_source",
     ],
@@ -143,6 +160,21 @@ function requiredReviewChecksPassed(
 
   return REQUIRED_REVIEW_CHECK_IDS.every(
     (checkId) => checkMap.get(checkId) === true
+  )
+}
+
+function notImplementedReviewChecksPresent(
+  reviewReport: WorldVisualReviewReport
+): boolean {
+  const checkMap = new Map(reviewReport.checks.map((check) => [check.id, check]))
+  const vj1 = checkMap.get("vj_1_not_implemented")
+  const vj2 = checkMap.get("vj_2_not_implemented")
+
+  return (
+    vj1?.passed === false &&
+    vj1.tags.includes("not_implemented") &&
+    vj2?.passed === false &&
+    vj2.tags.includes("not_implemented")
   )
 }
 
