@@ -31,7 +31,6 @@ Current formal architecture documents:
 
 ```txt
 docs/AI_PET_WORLD_MASTER_ARCHITECTURE.md
-docs/AI_PET_WORLD_MASTER_ARCHITECTURE_CN.docx
 ```
 
 ## Current API

@@ -11,6 +11,7 @@ import type {
   WorldVisualReviewReport,
 } from "../world-visual-painter-schema"
 import { WORLD_VISUAL_MVP_TARGET_POLICY } from "../visual-target-policy"
+import { judgeWorldVisualDeterministicQuality } from "../visual-quality"
 
 const MIN_IMAGE_WIDTH = 1024
 const MIN_IMAGE_HEIGHT = 768
@@ -34,6 +35,7 @@ type ImageInspectionResult = {
   sha256: string | null
   error: string | null
   errorZh: string | null
+  bytes: Uint8Array | null
 }
 
 export async function buildWorldVisualReviewReport(input: {
@@ -43,44 +45,69 @@ export async function buildWorldVisualReviewReport(input: {
   aiImageCandidate: WorldVisualAiImageCandidate | null
 }): Promise<WorldVisualReviewReport> {
   const inspection = await inspectCandidateImage(input.aiImageCandidate)
-  const checks = buildReviewChecks({ ...input, inspection })
+  const vj0Checks = buildReviewChecks({ ...input, inspection })
+  const vj0Passed = vj0Checks.every((check) => check.passed)
+  const vj1Result = vj0Passed && inspection.bytes
+    ? await judgeWorldVisualDeterministicQuality(inspection.bytes)
+    : {
+        summary: {
+          status: "vj_1_failed" as const,
+          sampleWidth: 0,
+          sampleHeight: 0,
+          meanLuminance: 0,
+          luminanceStdDev: 0,
+          quantizedColorCount: 0,
+          dominantColorRatio: 1,
+          edgeDensity: 0,
+          laplacianVariance: 0,
+          canShowToPlayer: false as const,
+          tags: [
+            "vj_1_failed",
+            vj0Passed ? "vj_0_image_bytes_unavailable" : "vj_0_prerequisite_failed",
+          ],
+        },
+        checks: [],
+      }
+  const vj1Passed = vj0Passed && vj1Result.summary.status === "vj_1_passed"
+  const reviewChecks = [...vj0Checks, ...vj1Result.checks]
   const score = Math.round(
-    checks.reduce((sum, check) => sum + check.score, 0) / checks.length
+    reviewChecks.reduce((sum, check) => sum + check.score, 0) /
+      Math.max(reviewChecks.length, 1)
   )
-  const vj0Passed = checks.every((check) => check.passed)
   const status: WorldVisualReviewReport["status"] = vj0Passed
-    ? "vj_0_passed"
+    ? vj1Passed
+      ? "vj_1_passed"
+      : "vj_1_failed"
     : "vj_0_failed"
 
   return {
     status,
-    vj0Status: status,
-    vj1Status: "vj_1_not_implemented",
+    vj0Status: vj0Passed ? "vj_0_passed" : "vj_0_failed",
+    vj1Status: vj1Passed ? "vj_1_passed" : "vj_1_failed",
     vj2Status: "vj_2_not_implemented",
-    approvalScope: vj0Passed ? "approved_for_controlled_mvp" : "not_approved",
+    approvalScope: vj1Passed ? "approved_for_controlled_mvp" : "not_approved",
     productionApprovalStatus: "not_approved_for_production",
     canShowToPlayer: false,
     reason:
-      status === "vj_0_passed"
+      status === "vj_1_passed"
         ? {
-            zh: "AI 位图候选图只通过 VJ-0 文件与事实硬闸门。VJ-1 确定性视觉质量检查与 VJ-2 项目视觉判断模型尚未实现，因此不能标记为生产批准；当前只允许进入受控 MVP ApprovedFrame 构建。",
-            en: "The AI bitmap candidate passed only the VJ-0 file and fact hard gate. VJ-1 deterministic visual-quality checks and VJ-2 project visual-judge model are not implemented, so this is not production approved; it may only enter controlled MVP ApprovedFrame building.",
+            zh: "AI 位图候选图已通过 VJ-0 文件与事实硬闸门，以及 VJ-1 确定性像素质量检查。VJ-2 项目视觉判断模型尚未实现，因此当前只允许进入受控 MVP ApprovedFrame。",
+            en: "The AI bitmap candidate passed the VJ-0 file and fact gate and VJ-1 deterministic pixel-quality checks. VJ-2 is not implemented, so it may only enter a controlled MVP ApprovedFrame.",
           }
+        : status === "vj_1_failed"
+          ? {
+              zh: "VJ-1 确定性视觉质量检查未通过，候选图存在亮度、对比度、颜色范围、单色占比、边缘密度或锐度问题，因此禁止展示。",
+              en: "VJ-1 deterministic visual-quality review failed due to brightness, contrast, color range, dominant-color ratio, edge density, or sharpness, so display is blocked.",
+            }
         : {
             zh: "VJ-0 审核未通过：候选图、图片本体、条件绑定、生成请求、来源、事实链、授权或基础文件质量存在硬闸门问题，因此禁止展示。",
             en: "VJ-0 review failed: the candidate, image bytes, condition binding, generation request, source, fact links, license, or baseline file quality failed the hard gate, so display is blocked.",
           },
     score,
     imageInspectionSummary: buildImageInspectionSummary(inspection),
+    vj1QualitySummary: vj1Result.summary,
     checks: [
-      ...checks,
-      notImplementedCheck(
-        "vj_1_not_implemented",
-        "VJ-1 确定性视觉质量检查未实现",
-        "VJ-1 deterministic visual-quality check is not implemented",
-        "尚未进行单色、空白、模糊、水印、文字、异常块、亮度、对比度、色彩范围和像素锐度等真实图片计算。",
-        "No real image computation has been run for solid/blank/blur/watermark/text/blocking/brightness/contrast/color-range/pixel-sharpness checks."
-      ),
+      ...reviewChecks,
       notImplementedCheck(
         "vj_2_not_implemented",
         "VJ-2 项目视觉判断模型未实现",
@@ -111,21 +138,22 @@ export async function buildWorldVisualReviewReport(input: {
         en: "VJ-0 does not accept candidate tags as pass evidence for visual quality, style, watermark absence, fact expression, or semantic copyright safety.",
       },
       {
-        zh: "VJ-1/VJ-2 未实现前，只能生成受控 MVP ApprovedFrame，不能生成 production approved 帧。",
-        en: "Before VJ-1/VJ-2 are implemented, only controlled MVP ApprovedFrame may be created; production approved frames are forbidden.",
+        zh: "VJ-0 与 VJ-1 均通过后才能生成受控 MVP ApprovedFrame；VJ-2 未实现前不能生成 production approved 帧。",
+        en: "Both VJ-0 and VJ-1 must pass before a controlled MVP ApprovedFrame can be created; production approval is forbidden before VJ-2 exists.",
       },
       WORLD_VISUAL_MVP_TARGET_POLICY.displayGate,
     ],
-    fixInstructions: buildFixInstructions(checks),
+    fixInstructions: buildFixInstructions(reviewChecks),
     tags: [
       "visual_judge",
       "vj_0_hard_gate",
+      "vj_1_deterministic_quality",
       status,
-      "vj_1_not_implemented",
+      vj1Passed ? "vj_1_passed" : "vj_1_failed",
       "vj_2_not_implemented",
-      vj0Passed ? "approved_for_controlled_mvp" : "not_approved",
+      vj1Passed ? "approved_for_controlled_mvp" : "not_approved",
       "not_approved_for_production",
-      "production_approval_blocked_until_vj_1_vj_2",
+      "production_approval_blocked_until_vj_2",
       "real_image_bytes_required",
       "image_content_type_required",
       "image_byte_fingerprint_required",
@@ -173,7 +201,7 @@ function buildImageInspectionSummary(
       inspection.format ? `format_${inspection.format}` : "format_missing",
       inspection.byteLength > 0 ? "byte_length_present" : "byte_length_empty",
       inspection.sha256 ? "sha256_present" : "sha256_missing",
-      "vj_0_file_only_not_visual_quality",
+      "vj_0_file_inspection",
       "not_player_visible",
     ],
   }
@@ -568,6 +596,7 @@ async function inspectCandidateImage(
     sha256: createHash("sha256").update(bytesResult.bytes).digest("hex"),
     error: null,
     errorZh: null,
+    bytes: bytesResult.bytes,
   }
 }
 
@@ -805,6 +834,7 @@ function failedInspection(
     sha256: null,
     error,
     errorZh,
+    bytes: null,
   }
 }
 
@@ -828,7 +858,7 @@ function check(
 }
 
 function notImplementedCheck(
-  id: "vj_1_not_implemented" | "vj_2_not_implemented",
+  id: "vj_2_not_implemented",
   zhLabel: string,
   enLabel: string,
   zhEvidence: string,

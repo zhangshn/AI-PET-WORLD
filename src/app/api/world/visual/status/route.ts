@@ -31,7 +31,7 @@ export async function GET() {
           approvalScope: "not_approved",
           productionApprovalStatus: "not_approved_for_production",
           approvedForProduction: false,
-          vj1Status: "vj_1_not_implemented",
+          vj1Status: "vj_1_failed",
           vj2Status: "vj_2_not_implemented",
           productionDisplayAllowed: false,
         },
@@ -103,7 +103,7 @@ export async function GET() {
       "internal_model_only",
       "no_third_party_drawing_api_route",
       "vj_0_only",
-      "vj_1_not_implemented",
+      "vj_1_failed",
       "vj_2_not_implemented",
       "approved_for_controlled_mvp",
       "not_approved_for_production",
@@ -182,7 +182,7 @@ function buildApprovedFrameGateSummary(input: {
         input.approvedFrame?.productionApprovalStatus ?? "not_approved_for_production",
       approvedForProduction: input.approvedFrame?.approvedForProduction ?? false,
       vj0Status: input.approvedFrame?.vj0Status ?? "vj_0_failed",
-      vj1Status: input.approvedFrame?.vj1Status ?? "vj_1_not_implemented",
+      vj1Status: input.approvedFrame?.vj1Status ?? "vj_1_failed",
       vj2Status: input.approvedFrame?.vj2Status ?? "vj_2_not_implemented",
       controlledMvpBoundaryPassed,
       productionDisplayAllowed: false,
@@ -268,7 +268,7 @@ function approvedFrameControlledMvpBoundaryPassed(
     approvedFrame.productionApprovalStatus === "not_approved_for_production" &&
     approvedFrame.approvedForProduction === false &&
     approvedFrame.vj0Status === "vj_0_passed" &&
-    approvedFrame.vj1Status === "vj_1_not_implemented" &&
+    approvedFrame.vj1Status === "vj_1_passed" &&
     approvedFrame.vj2Status === "vj_2_not_implemented"
   )
 }

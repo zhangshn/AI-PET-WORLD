@@ -10,6 +10,8 @@
     "check:encoding": "node scripts/check-source-encoding.mjs",
     "check:vj0": "node scripts/check-world-visual-vj0-gates.cjs",
     "test:vj0": "node scripts/test-world-visual-vj0-behavior.cjs",
+    "check:vj1": "node scripts/check-world-visual-vj0-gates.cjs",
+    "test:vj1": "node scripts/test-world-visual-vj0-behavior.cjs",
     "inspect:visual-painter": "node scripts/inspect-world-visual-painter.mjs",
     "smoke:runtime": "node scripts/run-world-runtime-smoke.cjs",
     "smoke:space": "node scripts/run-world-space-smoke.cjs",
@@ -23,7 +25,8 @@
   "dependencies": {
     "next": "16.2.4",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "sharp": "^0.35.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

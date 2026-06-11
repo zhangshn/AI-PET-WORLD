@@ -84,6 +84,8 @@ VisualFix 只能修正生成条件、构图表达、地形表达、资产表达�
 ### 3.6 合法数据与非侵权
 
 - 训练数据只能来自项目自制、权利清晰的委托制作、CC0 或明确允许训练和商业使用的内容。
+- 开发阶段允许由项目负责人在项目外部人工使用 GPT 等 AI 图像工具制作训练图片，再经过人工确认后导入本地数据集；项目代码、训练程序和游戏运行时不得对接 GPT、OpenAI API 或其他在线绘图服务。
+- AI 辅助制作的训练图片必须记录生成工具、生成日期、输入条件、对应 Blueprint、人工审核结果、文件哈希和许可依据。
 - 互联网公开案例只用于提炼抽象原则，默认不能直接进入训练集或素材库。
 - 禁止复制具体游戏画面、角色、标志、地图、素材或受保护的独特构图。
 - 每条训练数据必须记录来源、授权、版本、哈希和用途。
@@ -157,6 +159,40 @@ VisualFix 只能修正生成条件、构图表达、地形表达、资产表达�
 - 第 8-10 步由内部模型决定“如何画出来”。
 - 第 11-13 步决定“是否有资格展示”。
 - 第 14 步只负责展示，不重新生成或修改世界底图。
+
+### 5.1 当前自研小模型架构
+
+当前模型不是通用文生图模型，只服务 AI-PET-WORLD 的固定俯视像素世界。训练图片由项目负责人在项目外部人工使用 AI 图像工具制作并导入；项目代码不连接该工具。
+
+```text
+World Facts
+  -> VisualFactManifest
+  -> Scene Blueprint
+       terrain mask / water mask / road mask
+       object mask / depth map / walkable mask
+  -> Condition Tensor Builder
+  -> Tiny Conditional U-Net v0
+  -> RGB 256x192 Lab Candidate
+  -> VJ-0 文件与事实闸门
+  -> VJ-1 确定性像素质量
+  -> Lab Evaluation
+```
+
+v0 的目标是证明模型能够理解世界结构：水、道路、树、石头和临时住所必须出现在 Blueprint 指定区域。v0 不承诺达到最终参考图质量，也不进入正式玩家 ApprovedFrame。
+
+当 v0 结构控制验证通过后，升级为：
+
+```text
+Blueprint Encoder
++ World Condition Encoder
++ Noise / Seed
+-> 小型条件生成模型
+-> 高质量 RGB 世界图
+-> VJ-0 / VJ-1 / VJ-2
+-> ApprovedFrame
+```
+
+普通 Conditional U-Net 只作为结构控制基线，不作为最终高质量生成模型。最终模型必须具备真实随机采样能力，不能依赖程序色块或固定素材拼接。
 
 ## 6. 核心数据契约
 
@@ -256,8 +292,7 @@ VisualFix 只能修正生成条件、构图表达、地形表达、资产表达�
 ```text
 ai-pet-world/
 ├─ docs/
-│  ├─ AI_PET_WORLD_MASTER_ARCHITECTURE.md       # 唯一正式架构基线
-│  └─ AI_PET_WORLD_MASTER_ARCHITECTURE_CN.docx  # 中文阅读版
+│  └─ AI_PET_WORLD_MASTER_ARCHITECTURE.md       # 唯一正式架构基线
 ├─ src/
 │  ├─ app/
 │  │  ├─ api/world/
@@ -287,14 +322,8 @@ ai-pet-world/
 │  │     ├─ asset-plan/                          # 资产语义计划
 │  │     ├─ motion-plan/                         # 动态计划
 │  │     ├─ world-generation-condition/          # 唯一模型条件协议
-│  │     ├─ internal-image-model/                # 内部模型边界
-│  │     │  ├─ data/                             # 数据契约与加载
-│  │     │  ├─ condition-encoder/                # 条件编码
-│  │     │  ├─ model/                            # 模型结构
-│  │     │  ├─ training/                         # 训练与验证
-│  │     │  ├─ inference/                        # 推理
-│  │     │  ├─ checkpoints/                      # 仅清单，不提交大权重
-│  │     │  └─ evaluation/                       # 模型评估
+│  │     ├─ internal-image-model/                # TS 模型状态与调用契约，不放训练代码
+│  │     ├─ training-data/                       # TS 数据清单、来源与导入契约
 │  │     ├─ ai-image-candidate/                  # 候选图存储与闸门
 │  │     ├─ visual-judge/
 │  │     │  ├─ vj-0/                            # 文件与事实硬闸门
@@ -306,24 +335,78 @@ ai-pet-world/
 │  │     ├─ visual-rule-dataset/                 # 可追溯规则数据
 │  │     └─ authorized-data/                     # 授权与来源清单
 │  └─ butler/                                    # 人格、意识、记忆和自主决策
+├─ ml/
+│  └─ ai-painter/                                # 独立 Python/PyTorch 小模型工程
+│     ├─ pyproject.toml
+│     ├─ configs/
+│     │  ├─ dataset_v0.yaml
+│     │  ├─ model_tiny_unet_v0.yaml
+│     │  └─ training_v0.yaml
+│     ├─ src/ai_painter/
+│     │  ├─ blueprint/                           # Blueprint schema、校验与 mask 构建
+│     │  ├─ dataset/                             # 导入、索引、Dataset、DataLoader
+│     │  ├─ condition/                           # 多通道 Condition Tensor
+│     │  ├─ models/                              # Tiny U-Net 与后续生成模型
+│     │  ├─ training/                            # loss、trainer、checkpoint、日志
+│     │  ├─ inference/                           # 权重加载与 PNG 推理
+│     │  └─ evaluation/                          # 结构一致性与质量评估
+│     ├─ scripts/
+│     │  ├─ import_dataset.py
+│     │  ├─ validate_dataset.py
+│     │  ├─ train_tiny_unet.py
+│     │  └─ infer_tiny_unet.py
+│     └─ tests/                                  # 按模块拆分的 Python 测试
 ├─ data/
 │  ├─ world-runtime/                             # 本地 MVP 世界存档
 │  ├─ world-visual-candidates/                   # 隐藏候选图记录
 │  ├─ world-approved-frames/                     # 审核通过记录
-│  └─ ai-painter-datasets/                       # 本地数据清单，原图按策略存储
+│  └─ ai-painter-datasets/                       # 本地训练数据，不提交原图到 Git
+│     ├─ incoming/                               # 人工导入、尚未验收
+│     ├─ accepted/                               # 已配对并通过检查
+│     │  └─ dataset_v0/
+│     │     ├─ images/
+│     │     ├─ blueprints/
+│     │     ├─ masks/
+│     │     └─ metadata/
+│     ├─ rejected/                               # 失败样本与原因
+│     ├─ indexes/                                # train/validation 索引
+│     └─ manifests/                              # 来源、许可、哈希、版本
 ├─ scripts/
 │  ├─ check-source-encoding.mjs
-│  ├─ inspect-world-visual-painter.mjs
-│  └─ ai-painter/                                # 数据、训练、评估和审计脚本
+│  └─ inspect-world-visual-painter.mjs
 └─ services/
-   └─ internal-world-image-model/                # 需要独立进程时才启用
+   └─ ai-painter-inference/                      # v0 训练成功后才建立本地推理服务
 ```
 
 目录规则：
 
-- 不重新建立 `prompt-package`、`control-sketch`、`provider`、`external-api`、`manual-import` 或旧程序绘图目录。
+- 不重新建立 `prompt-package`、`control-sketch`、`provider`、`external-api` 或旧程序绘图目录。
+- 只允许在 `data/ai-painter-datasets/incoming` 执行开发期人工训练数据导入；该目录不是玩家画面来源，也不能绕过模型与 VisualJudge。
 - `visual-review` 迁移为 `visual-judge/vj-0|vj-1|vj-2` 时必须作为一个完整模块迁移，不能长期双轨并存。
 - 大模型权重、训练原图和临时输出不直接提交 Git，只提交清单、配置、哈希和可复现脚本。
+
+### 9.1 文件拆分与复杂度硬规则
+
+后续新增和整改代码必须遵守：
+
+| 文件类型 | 目标长度 | 硬上限 | 规则 |
+|---|---:|---:|---|
+| TypeScript/Python 业务文件 | 80-220 行 | 300 行 | 一个文件只负责一个明确职责 |
+| Next.js route | 60-150 行 | 180 行 | 只做输入、调用 service、输出响应 |
+| schema/type 文件 | 80-200 行 | 250 行 | 按领域拆分，不再建立总 schema 大文件 |
+| store 文件 | 100-250 行 | 320 行 | 路径、序列化、校验分别拆分 |
+| 单元/行为测试文件 | 100-250 行 | 300 行 | 按场景拆分，不建立单个巨型测试脚本 |
+| `index.ts` | 5-40 行 | 60 行 | 只导出，不包含业务逻辑 |
+
+超过目标长度时必须先判断是否存在多个职责；超过硬上限不得继续追加功能，必须在同一模块内拆分。禁止为了满足行数机械拆分互相强耦合的碎片文件。
+
+现有超长文件作为明确技术债处理，不要求一次性全库重构，但在对应模块再次修改前必须先拆分：
+
+1. `visual-review-builder.ts` 拆为 VJ-0 编排、图片读取、格式解析和 ReviewReport 组装。
+2. `world-visual-painter-schema.ts` 拆为 condition、candidate、review、approved-frame、training-data 类型。
+3. Candidate/ApprovedFrame store 拆为 path、normalize、validate、repository。
+4. visual API route 抽取 service，route 保持轻量。
+5. 视觉行为测试按 candidate、review、approved-frame、runtime-gate 分文件。
 
 ## 10. 技术栈与职责
 
@@ -348,7 +431,7 @@ TypeScript 与 Python 并不冲突：TypeScript 管世界与产品主链，Pytho
 范围：删除旧外部路线，建立 WorldGenerationCondition，Candidate 和 ApprovedFrame 绑定条件。  
 剩余收尾：删除旧术语；确保文档、API 和类型只有一种正式名称。
 
-### 模块 B：VJ-0 完整硬闸门（下一模块）
+### 模块 B：VJ-0 完整硬闸门（已完成）
 
 必须一次完成：
 
@@ -362,15 +445,25 @@ TypeScript 与 Python 并不冲突：TypeScript 管世界与产品主链，Pytho
 8. 对失败情况提供可定位的中英文错误。
 9. 类型、编码、构建和针对性测试全部通过。
 
-模块 B 完成前，不进入模型训练模块。
+模块 B 已完成：Candidate、ReviewReport、ApprovedFrame 与当前 Runtime 的 worldId、tick、sourceFactIds、Condition、Request、图片字节和来源已经形成真实硬闸门；静态闸门与行为测试均已通过。
 
-### 模块 C：VJ-1 确定性图片分析
+### 模块 C：VJ-1 确定性图片分析（部分完成）
 
-一次完成真实像素统计、单色/空白/透明、模糊、异常块、文字水印基础检测、结果证据结构和测试失败集。不得只增加标签名称。
+已完成真实像素解码、亮度、对比度、颜色范围、主色占比、边缘密度和锐度计算，并接入 ReviewReport、ApprovedFrame 和 VisualFix。尚需补齐透明度、异常矩形块、文字/水印基础检测及对应失败图片集。不得用标签替代真实计算。
 
-### 模块 D：D0 数据规范与基准集
+### 模块 D：人工导入的 AI 辅助训练数据与本地数据集（下一模块）
 
-一次完成授权协议、目录规范、数据清单、哈希、标注结构、20-50 张自有基准图、质量评分和失败样例。D0 是质量标准，不是完整训练集。
+一次完成 Blueprint Schema、Condition Tensor 规范、训练图片人工制作与导入规范、图片与 Blueprint 配对、来源与许可记录、哈希、数据清单、质量审核、失败样例和 train/validation 划分。
+
+模块 D 的硬边界：
+
+1. GPT 等 AI 图像工具只由项目负责人在项目外部人工使用，用于开发期制作训练图片。
+2. 项目代码不得调用 GPT、OpenAI API 或其他在线绘图服务。
+3. 游戏运行时不得依赖 GPT，也不得向外部平台发送世界事实或用户数据。
+4. 人工导入图片必须先通过来源、许可、哈希、Blueprint 一致性和质量审核。
+5. 第一批目标为 100-300 条完整配对样本，随后再扩展到 1,000-3,000 条。
+
+模块 D 同时完成与本模块直接相关的结构收敛：建立 `ml/ai-painter` 独立工程、拆分 training-data 契约，并保证新增文件符合 9.1 的长度规则。不得在模块 D 提前训练正式模型。
 
 ### 模块 E：内部模型训练基础设施
 
@@ -392,6 +485,30 @@ TypeScript 与 Python 并不冲突：TypeScript 管世界与产品主链，Pytho
 
 静态闭环稳定后，加入人物、动物、天气和建设动作。动态资产也必须经过批准，Runtime Render 只播放和合成。
 
+### 11.1 优化后的实施周期
+
+周期按单人开发、RTX 5050、本地小模型、训练图片由项目负责人在项目外人工制作、GPT/Codex 辅助代码计算。图片人工生成与代码开发可以并行。
+
+| 阶段 | 交付结果 | 预计周期 |
+|---|---|---:|
+| D0 架构与超长文件收敛 | 建立 `ml/ai-painter`，拆分训练契约和本轮涉及的超长文件 | 2-4 天 |
+| D1 Blueprint 与数据协议 | Blueprint、mask、metadata、许可与哈希规范 | 2-4 天 |
+| D2 本地导入与校验工具 | incoming/accepted/rejected、索引、预览和检查 | 3-5 天 |
+| D3 首批训练数据 | 20-50 条工程验证集，随后扩展至 100-300 条 | 3-7 天，可并行 |
+| E Tiny U-Net 训练工程 | Dataset、Condition Tensor、模型、训练、checkpoint、日志 | 5-8 天 |
+| F 最小过拟合与第一张 PNG | 先在 8-32 条样本过拟合，再完整推理一张 256x192 PNG | 3-7 天 |
+| G 结构控制原型 | 水、路、树、石头和住所位置可控，100-300 条数据训练 | 1-2 周 |
+| H 质量提升 | 扩展至 1,000-3,000 条，升级小型条件生成模型和 VJ-2 | 3-8 周 |
+
+关键时间判断：
+
+- 第一张由自研小模型真实生成的 PNG：约 2-4 周。
+- 能按照 Blueprint 稳定控制主要区域：约 4-7 周。
+- 初步可用于游戏内部测试的静态画面：约 8-16 周，主要取决于训练图片数量、统一程度和显卡训练速度。
+- 接近参考图质量不能仅靠代码周期保证，必须以数据集和实际生成结果验收。
+
+为了缩短周期，第一轮只做 `256x192`、固定俯视视角、草地/水域/道路/树/石头/临时住所，不做人物、动物、天气、城市、动画和 1024x768 直接训练。
+
 ## 12. 完成定义
 
 一个模块只有同时满足以下条件才可标记完成：
@@ -412,10 +529,11 @@ TypeScript 与 Python 并不冲突：TypeScript 管世界与产品主链，Pytho
 |---|---|---|
 | 产品与自主世界定义 | 完成 | 主方向明确 |
 | 旧外部视觉路线清理 | 完成 | 正式代码不调用第三方绘图服务 |
+| 自研小模型架构与目标目录 | 设计完成 | `ml/ai-painter`、本地数据目录、推理服务边界和文件复杂度规则已写入；物理目录将在模块 D 建立 |
 | WorldGenerationCondition | 基本完成 | 结构已建立，需清理少量旧术语 |
-| VJ-0 | 未完成 | 缺当前 tick 展示校验，完整性 API 不完整 |
-| VJ-1 | 未完成 | 当前部分视觉质量仍依赖候选标签自我声明 |
-| D0 合法基准数据 | 未完成 | 尚未形成 20-50 张正式基准集 |
+| VJ-0 | 完成 | Candidate 与 ApprovedFrame 写入/读取、当前 tick、worldId、sourceFactIds、图片字节、来源和生产展示闸门均已实现并通过测试 |
+| VJ-1 | 部分完成 | 已实现真实像素解码及亮度、对比度、颜色范围、主色占比、边缘密度、锐度检测；透明度、异常块、文字/水印仍待完成 |
+| 人工导入训练数据集 | 未开始 | 尚未冻结 Blueprint/Condition Tensor 数据规范，也没有形成首批 100-300 条配对样本 |
 | 内部模型训练管线 | 未开始 | 无训练与验证实现 |
 | 内部模型权重 | 不存在 | 不能生成正式候选图 |
 | 第一张模型世界图 | 未完成 | 当前不得展示世界图 |
@@ -483,6 +601,6 @@ TypeScript 与 Python 并不冲突：TypeScript 管世界与产品主链，Pytho
 
 ## 15. 下一步唯一任务
 
-下一轮只执行“模块 B：VJ-0 完整硬闸门”。不要开始训练管线，不要制作动态内容，不要做新 UI，不要接入任何模型服务。
+下一轮只执行“模块 D：人工导入的 AI 辅助训练数据与本地数据集”。不要开始正式模型训练，不要制作动态内容，不要做新 UI，不要接入 GPT、OpenAI API 或任何在线绘图服务。
 
-模块 B 的核心结果是：任何旧 tick、错误来源、事实不一致、图片损坏、开发测试资产或依靠自我声明标签的候选图，都绝不可能成为当前世界可展示的 ApprovedFrame。
+模块 D 的核心结果是：形成可供自研小模型训练的本地配对数据标准与第一批合规数据。每条数据必须包含训练目标图、Blueprint、条件数据、来源许可记录、哈希和审核结果，并且能够稳定划分 train/validation 数据集。

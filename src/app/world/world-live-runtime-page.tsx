@@ -88,7 +88,7 @@ export async function WorldLiveRuntimePage() {
             {/* Controlled MVP frame imageUrl only renders after the VJ-0 current-runtime gate and production-blocked boundary pass. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              alt="通过 VJ-0 的受控 MVP AI 世界画面，非生产批准帧"
+              alt="通过 VJ-0 与 VJ-1 的受控 MVP AI 世界画面，非生产批准帧"
               src={approvedFrame.imageUrl}
               style={runtimeWorldStyles.approvedImage}
             />
@@ -96,7 +96,7 @@ export async function WorldLiveRuntimePage() {
           <div style={runtimeWorldStyles.provenance}>
             <span>Review {approvedFrame.reviewScore}</span>
             <span>VJ-0 passed</span>
-            <span>VJ-1 not implemented</span>
+            <span>VJ-1 passed</span>
             <span>VJ-2 not implemented</span>
             <span>Controlled MVP only</span>
             <span>Not production approved</span>
@@ -179,7 +179,7 @@ export async function WorldLiveRuntimePage() {
             <span style={blockedWorldStyles.metaLabel}>Display gate / 展示闸门</span>
             <span>未生成受控 MVP ApprovedFrame 前禁止展示</span>
             <span>流程：generate → hidden candidate → VJ-0 hard gate → controlled MVP ApprovedFrame → /world</span>
-            <span>VJ-1/VJ-2 未实现，production display 仍然阻断</span>
+            <span>VJ-1 已实现；VJ-2 未实现，production display 仍然阻断</span>
           </div>
           <div style={blockedWorldStyles.metaItem}>
             <span style={blockedWorldStyles.metaLabel}>Fact audit / 事实审计</span>
@@ -357,7 +357,7 @@ function approvedFrameControlledMvpBoundaryPassed(
     approvedFrame.productionApprovalStatus === "not_approved_for_production" &&
     approvedFrame.approvedForProduction === false &&
     approvedFrame.vj0Status === "vj_0_passed" &&
-    approvedFrame.vj1Status === "vj_1_not_implemented" &&
+    approvedFrame.vj1Status === "vj_1_passed" &&
     approvedFrame.vj2Status === "vj_2_not_implemented"
   )
 }

@@ -326,10 +326,24 @@ export type WorldVisualImageInspectionSummary = {
   tags: string[]
 }
 
+export type WorldVisualVj1QualitySummary = {
+  status: "vj_1_failed" | "vj_1_passed"
+  sampleWidth: number
+  sampleHeight: number
+  meanLuminance: number
+  luminanceStdDev: number
+  quantizedColorCount: number
+  dominantColorRatio: number
+  edgeDensity: number
+  laplacianVariance: number
+  canShowToPlayer: false
+  tags: string[]
+}
+
 export type WorldVisualReviewReport = {
-  status: "not_run" | "vj_0_failed" | "vj_0_passed"
+  status: "not_run" | "vj_0_failed" | "vj_1_failed" | "vj_1_passed"
   vj0Status: "vj_0_failed" | "vj_0_passed"
-  vj1Status: "vj_1_not_implemented"
+  vj1Status: "vj_1_failed" | "vj_1_passed"
   vj2Status: "vj_2_not_implemented"
   approvalScope: "not_approved" | "approved_for_controlled_mvp"
   productionApprovalStatus: "not_approved_for_production"
@@ -337,6 +351,7 @@ export type WorldVisualReviewReport = {
   reason: WorldVisualBilingualText
   score: number
   imageInspectionSummary: WorldVisualImageInspectionSummary
+  vj1QualitySummary: WorldVisualVj1QualitySummary
   checks: WorldVisualReviewCheck[]
   requiredChecks: WorldVisualBilingualText[]
   fixInstructions: WorldVisualBilingualText[]
@@ -493,7 +508,7 @@ export type WorldVisualApprovedFrame = {
   productionApprovalStatus: "not_approved_for_production"
   approvedForProduction: false
   vj0Status: "vj_0_passed"
-  vj1Status: "vj_1_not_implemented"
+  vj1Status: "vj_1_passed"
   vj2Status: "vj_2_not_implemented"
   canShowToPlayer: true
   approvalReason: WorldVisualBilingualText

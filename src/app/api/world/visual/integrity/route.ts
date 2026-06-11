@@ -78,9 +78,9 @@ export async function GET() {
     approvedFrameRecord &&
       approvedFrame &&
       review &&
-      review.status === "vj_0_passed" &&
+      review.status === "vj_1_passed" &&
       review.vj0Status === "vj_0_passed" &&
-      review.vj1Status === "vj_1_not_implemented" &&
+      review.vj1Status === "vj_1_passed" &&
       review.vj2Status === "vj_2_not_implemented" &&
       review.approvalScope === "approved_for_controlled_mvp" &&
       review.productionApprovalStatus === "not_approved_for_production" &&
@@ -88,7 +88,7 @@ export async function GET() {
       approvedFrame.productionApprovalStatus === "not_approved_for_production" &&
       approvedFrame.approvedForProduction === false &&
       approvedFrame.vj0Status === "vj_0_passed" &&
-      approvedFrame.vj1Status === "vj_1_not_implemented" &&
+      approvedFrame.vj1Status === "vj_1_passed" &&
       approvedFrame.vj2Status === "vj_2_not_implemented"
   )
   const approvedFrameDoubleGatePassed =
@@ -200,7 +200,7 @@ export async function GET() {
       "controlled_mvp_approval_boundary_if_approved_frame_exists",
       !approvedFrameRecord || controlledMvpBoundaryPassed,
       "high",
-      "ApprovedFrame 如存在，只能是通过 VJ-0 的受控 MVP 批准帧，并且必须明确 VJ-1/VJ-2 未实现、非生产批准。",
+      "ApprovedFrame 如存在，只能是通过 VJ-0 与 VJ-1 的受控 MVP 批准帧，并且必须明确 VJ-2 未实现、非生产批准。",
       "If an ApprovedFrame exists, it may only be a VJ-0 controlled MVP approval frame and must explicitly mark VJ-1/VJ-2 as not implemented and production approval as blocked.",
       ["approved_frame", "controlled_mvp", "not_production_approved"]
     ),
@@ -234,14 +234,14 @@ export async function GET() {
     check(
       "approved_frame_review_vj0_passed_if_exists",
       !approvedFrameRecord ||
-        (approvedFrameRecord.reviewReport.status === "vj_0_passed" &&
+        (approvedFrameRecord.reviewReport.status === "vj_1_passed" &&
           approvedFrameRecord.reviewReport.canShowToPlayer === false &&
-          approvedFrameRecord.reviewReport.vj1Status === "vj_1_not_implemented" &&
+          approvedFrameRecord.reviewReport.vj1Status === "vj_1_passed" &&
           approvedFrameRecord.reviewReport.vj2Status === "vj_2_not_implemented"),
       "high",
-      "ApprovedFrame 必须绑定真实通过 VJ-0 的 ReviewReport，且 ReviewReport 明确 VJ-1/VJ-2 未实现；ReviewReport 本身仍不可直接展示。",
-      "ApprovedFrame must bind a ReviewReport that genuinely passed VJ-0 and explicitly marks VJ-1/VJ-2 as not implemented; the ReviewReport itself remains non-displayable.",
-      ["approved_frame", "review_report", "vj_0_only"]
+      "ApprovedFrame 必须绑定真实通过 VJ-0 与 VJ-1 的 ReviewReport；VJ-2 仍明确未实现，ReviewReport 本身不可直接展示。",
+      "ApprovedFrame must bind a ReviewReport that genuinely passed VJ-0 and VJ-1; VJ-2 remains explicitly unimplemented and the ReviewReport itself is non-displayable.",
+      ["approved_frame", "review_report", "vj_0_vj_1_passed"]
     ),
     check(
       "approved_frame_image_fingerprint_if_exists",
@@ -280,7 +280,7 @@ export async function GET() {
           approvedFrame?.productionApprovalStatus ?? "not_approved_for_production",
         approvedForProduction: approvedFrame?.approvedForProduction ?? false,
         vj0Status: approvedFrame?.vj0Status ?? "vj_0_failed",
-        vj1Status: approvedFrame?.vj1Status ?? "vj_1_not_implemented",
+        vj1Status: approvedFrame?.vj1Status ?? "vj_1_failed",
         vj2Status: approvedFrame?.vj2Status ?? "vj_2_not_implemented",
         controlledMvpCanShow,
         productionDisplayAllowed: false,
@@ -324,7 +324,7 @@ export async function GET() {
         "world_visual_integrity_api",
         ok ? "integrity_passed" : "integrity_failed",
         "vj_0_only",
-        "vj_1_not_implemented",
+        approvedFrame?.vj1Status ?? "vj_1_failed",
         "vj_2_not_implemented",
         "approved_for_controlled_mvp",
         "not_approved_for_production",

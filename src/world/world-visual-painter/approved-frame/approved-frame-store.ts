@@ -91,7 +91,7 @@ export async function writeWorldVisualApprovedFrameRecord(input: {
       `tick:${input.tick}`,
       "controlled_mvp_player_visible_allowed",
       "vj_0_passed",
-      "vj_1_not_implemented",
+      "vj_1_passed",
       "vj_2_not_implemented",
       "approved_for_controlled_mvp",
       "not_approved_for_production",
@@ -294,9 +294,9 @@ function validateApprovedFrameRecord(
   pushIf(warnings, frame.width !== candidate.width, "width")
   pushIf(warnings, frame.height !== candidate.height, "height")
   pushIf(warnings, frame.reviewScore !== review.score, "review_score")
-  pushIf(warnings, review.status !== "vj_0_passed", "review_status")
+  pushIf(warnings, review.status !== "vj_1_passed", "review_status")
   pushIf(warnings, review.vj0Status !== "vj_0_passed", "review_vj0_status")
-  pushIf(warnings, review.vj1Status !== "vj_1_not_implemented", "review_vj1_status")
+  pushIf(warnings, review.vj1Status !== "vj_1_passed", "review_vj1_status")
   pushIf(warnings, review.vj2Status !== "vj_2_not_implemented", "review_vj2_status")
   pushIf(warnings, review.approvalScope !== "approved_for_controlled_mvp", "review_approval_scope")
   pushIf(warnings, review.productionApprovalStatus !== "not_approved_for_production", "review_production_status")
@@ -314,7 +314,7 @@ function validateApprovedFrameRecord(
   pushIf(warnings, frame.productionApprovalStatus !== "not_approved_for_production", "frame_production_status")
   pushIf(warnings, frame.approvedForProduction !== false, "frame_production_flag")
   pushIf(warnings, frame.vj0Status !== "vj_0_passed", "frame_vj0_status")
-  pushIf(warnings, frame.vj1Status !== "vj_1_not_implemented", "frame_vj1_status")
+  pushIf(warnings, frame.vj1Status !== "vj_1_passed", "frame_vj1_status")
   pushIf(warnings, frame.vj2Status !== "vj_2_not_implemented", "frame_vj2_status")
   pushIf(warnings, sourceRecord.canShowToPlayer !== false, "source_visibility")
   pushIf(warnings, candidate.canShowToPlayer !== false, "candidate_visibility")

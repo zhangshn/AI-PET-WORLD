@@ -10,7 +10,9 @@ export function buildWorldVisualFixPlan(input: {
   factManifest: WorldVisualFactManifest
   reviewReport: WorldVisualReviewReport
 }): WorldVisualFixPlan {
-  const failedChecks = input.reviewReport.checks.filter((check) => !check.passed)
+  const failedChecks = input.reviewReport.checks.filter(
+    (check) => !check.passed && !check.tags.includes("not_implemented")
+  )
   const actions = failedChecks.flatMap((check) => buildActionsForFailedCheck(check))
   const status = actions.length > 0 ? "required" : "not_needed"
 
@@ -37,7 +39,7 @@ export function buildWorldVisualFixPlan(input: {
       "visual_expression_only",
       "world_facts_locked",
       "display_blocked",
-      "vj_0_hard_gate_fix_only",
+      "vj_0_vj_1_visual_fix_only",
       "regeneration_only",
     ],
   }
@@ -46,6 +48,21 @@ export function buildWorldVisualFixPlan(input: {
 function buildActionsForFailedCheck(
   check: WorldVisualReviewCheck
 ): WorldVisualFixAction[] {
+  if (check.id.startsWith("vj_1_")) {
+    return [
+      action(
+        `fix-${check.id}`,
+        check.id,
+        "generate_ai_image_candidate",
+        "high",
+        `VJ-1 检测未通过：${check.label.zh}。调整内部图像模型的生成条件并重新生成候选图，不允许修改世界事实，也不允许通过添加标签绕过检测。`,
+        `VJ-1 failed: ${check.label.en}. Adjust the internal image model generation conditions and regenerate the candidate. World facts must not change and tags must not bypass the check.`,
+        `新候选图真实通过 ${check.label.zh} 检测，并重新进入完整 VisualJudge。`,
+        `The new candidate genuinely passes ${check.label.en} and re-enters the full VisualJudge.`
+      ),
+    ]
+  }
+
   if (
     check.id === "ai_image_candidate" ||
     check.id === "ai_image_candidate_metadata"

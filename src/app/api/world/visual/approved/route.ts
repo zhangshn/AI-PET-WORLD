@@ -71,7 +71,7 @@ export async function GET() {
           approvalScope: "not_approved",
           productionApprovalStatus: "not_approved_for_production",
           approvedForProduction: false,
-          vj1Status: "vj_1_not_implemented",
+          vj1Status: "vj_1_failed",
           vj2Status: "vj_2_not_implemented",
           productionDisplayAllowed: false,
         },
@@ -329,7 +329,7 @@ function buildRuntimeRenderGate(input: {
     input.approvedFrame.productionApprovalStatus === "not_approved_for_production" &&
     input.approvedFrame.approvedForProduction === false &&
     input.approvedFrame.vj0Status === "vj_0_passed" &&
-    input.approvedFrame.vj1Status === "vj_1_not_implemented" &&
+    input.approvedFrame.vj1Status === "vj_1_passed" &&
     input.approvedFrame.vj2Status === "vj_2_not_implemented"
   const controlledMvpDisplayEnvironmentAllowed =
     isControlledMvpDisplayEnvironmentAllowed()

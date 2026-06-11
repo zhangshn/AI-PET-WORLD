@@ -3,6 +3,7 @@ const { mkdtempSync, rmSync, readFileSync } = require("node:fs")
 const os = require("node:os")
 const path = require("node:path")
 const Module = require("node:module")
+const { deflateSync } = require("node:zlib")
 const ts = require("typescript")
 
 const repoRoot = process.cwd()
@@ -58,10 +59,10 @@ async function main() {
     await testAdvancedTickInvalidatesApprovedFrame(api)
 
     for (const item of tests) console.log(`✓ ${item}`)
-    console.log(`\nVJ-0 behavior tests passed: ${tests.length} assertions.`)
+    console.log(`\nVisual judge behavior tests passed: ${tests.length} assertions.`)
   } catch (error) {
     for (const item of tests) console.log(`✓ ${item}`)
-    console.error("\nVJ-0 behavior test failed.")
+    console.error("\nVisual judge behavior test failed.")
     console.error(error instanceof Error ? error.stack ?? error.message : String(error))
     process.exitCode = 1
   } finally {
@@ -80,8 +81,11 @@ async function testCurrentRuntimePasses(api) {
 
   assert(bundle.candidateWrite.ok, "valid candidate write should pass")
   assert(bundle.candidateRead.status === "found", "valid candidate read should be found")
-  assert(bundle.review.status === "vj_0_passed", "valid review should pass VJ-0")
-  assert(bundle.review.vj1Status === "vj_1_not_implemented", "VJ-1 must remain not implemented")
+  assert(
+    bundle.review.status === "vj_1_passed",
+    `valid review should pass VJ-1: ${JSON.stringify({ status: bundle.review.status, quality: bundle.review.vj1QualitySummary, failed: bundle.review.checks.filter((check) => !check.passed).map((check) => check.id) })}`
+  )
+  assert(bundle.review.vj1Status === "vj_1_passed", "valid image must pass VJ-1")
   assert(bundle.review.vj2Status === "vj_2_not_implemented", "VJ-2 must remain not implemented")
   assert(bundle.approvedFrame, "valid VJ-0 review should build controlled MVP ApprovedFrame")
   assert(bundle.approvedFrame.approvalScope === "approved_for_controlled_mvp", "approved frame scope must be controlled MVP")
@@ -428,6 +432,7 @@ async function testFakeQualityTagsDoNotPassVj1Vj2(api) {
     worldId: "world-fake-tags",
     tick: 15,
     sourceFactIds: ["fact:fake-tags"],
+    imageUrl: makeSolidPngDataUrl(1024, 768),
   })
   const fakeTags = [
     "visual_style_quality",
@@ -470,11 +475,11 @@ async function testFakeQualityTagsDoNotPassVj1Vj2(api) {
     aiImageCandidate: candidate,
   })
 
-  assert(review.status === "vj_0_passed", "otherwise valid fake-tag candidate can only pass VJ-0")
-  assert(review.vj1Status === "vj_1_not_implemented", "fake tags must not pass VJ-1")
+  assert(review.status === "vj_1_failed", "solid-color candidate must fail VJ-1 despite fake tags")
+  assert(review.vj1Status === "vj_1_failed", "fake tags must not pass VJ-1")
   assert(review.vj2Status === "vj_2_not_implemented", "fake tags must not pass VJ-2")
   assert(review.productionApprovalStatus === "not_approved_for_production", "fake tags must not grant production approval")
-  assert(review.checks.some((check) => check.id === "vj_1_not_implemented" && check.passed === false), "VJ-1 not implemented check must remain failed")
+  assert(review.checks.some((check) => check.id === "vj_1_not_solid_color" && check.passed === false), "solid-color VJ-1 check must fail")
   assert(review.checks.some((check) => check.id === "vj_2_not_implemented" && check.passed === false), "VJ-2 not implemented check must remain failed")
 
   pass("Candidate 添加全部虚假质量标签，也不能获得 VJ-1/VJ-2 通过状态")
@@ -606,7 +611,7 @@ function makeFixture(options) {
   const height = 768
   const modelVersion = "vj0-test-model"
   const conditionId = `condition-${worldId}-${tick}`
-  const imageUrl = makePngDataUrl(width, height)
+  const imageUrl = options.imageUrl ?? makePngDataUrl(width, height)
   const text = (zh, en) => ({ zh, en })
   const factManifest = {
     worldId,
@@ -712,16 +717,72 @@ function makeFixture(options) {
 }
 
 function makePngDataUrl(width, height) {
-  const bytes = Buffer.alloc(25 * 1024, 0)
-  Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(bytes, 0)
-  bytes.writeUInt32BE(13, 8)
-  bytes.write("IHDR", 12, "ascii")
-  bytes.writeUInt32BE(width, 16)
-  bytes.writeUInt32BE(height, 20)
-  bytes[24] = 8
-  bytes[25] = 6
+  return encodePngDataUrl(width, height, (x, y) => {
+    const region = (Math.floor(x / 48) + Math.floor(y / 40)) % 5
+    const grain = ((x * 17 + y * 31) % 13) - 6
+    const palette = [
+      [58, 122, 54],
+      [92, 156, 70],
+      [142, 174, 76],
+      [72, 105, 48],
+      [168, 132, 72],
+    ][region]
+    return palette.map((value) => Math.max(0, Math.min(255, value + grain)))
+  }, 25 * 1024)
+}
 
+function makeSolidPngDataUrl(width, height) {
+  return encodePngDataUrl(width, height, () => [96, 154, 92], 25 * 1024)
+}
+
+function encodePngDataUrl(width, height, pixelAt, paddingBytes = 0) {
+  const scanlines = Buffer.alloc((width * 3 + 1) * height)
+  for (let y = 0; y < height; y += 1) {
+    const rowOffset = y * (width * 3 + 1)
+    scanlines[rowOffset] = 0
+    for (let x = 0; x < width; x += 1) {
+      const [red, green, blue] = pixelAt(x, y)
+      const offset = rowOffset + 1 + x * 3
+      scanlines[offset] = red
+      scanlines[offset + 1] = green
+      scanlines[offset + 2] = blue
+    }
+  }
+
+  const header = Buffer.alloc(13)
+  header.writeUInt32BE(width, 0)
+  header.writeUInt32BE(height, 4)
+  header[8] = 8
+  header[9] = 2
+  const chunks = [pngChunk("IHDR", header)]
+  if (paddingBytes > 0) chunks.push(pngChunk("tEXt", Buffer.alloc(paddingBytes, 65)))
+  chunks.push(pngChunk("IDAT", deflateSync(scanlines)), pngChunk("IEND", Buffer.alloc(0)))
+  const bytes = Buffer.concat([
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+    ...chunks,
+  ])
   return `data:image/png;base64,${bytes.toString("base64")}`
+}
+
+function pngChunk(type, data) {
+  const typeBytes = Buffer.from(type, "ascii")
+  const chunk = Buffer.alloc(12 + data.length)
+  chunk.writeUInt32BE(data.length, 0)
+  typeBytes.copy(chunk, 4)
+  data.copy(chunk, 8)
+  chunk.writeUInt32BE(crc32(Buffer.concat([typeBytes, data])), 8 + data.length)
+  return chunk
+}
+
+function crc32(bytes) {
+  let crc = 0xffffffff
+  for (const byte of bytes) {
+    crc ^= byte
+    for (let bit = 0; bit < 8; bit += 1) {
+      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0)
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0
 }
 
 function registerTypeScriptRuntime() {

@@ -121,7 +121,7 @@ export async function POST() {
   const controlledMvpApproved = Boolean(
     approvedFrame &&
       writeResult?.ok &&
-      reviewReport.status === "vj_0_passed" &&
+      reviewReport.status === "vj_1_passed" &&
       reviewReport.approvalScope === "approved_for_controlled_mvp" &&
       reviewReport.productionApprovalStatus === "not_approved_for_production" &&
       approvedFrame.approvalScope === "approved_for_controlled_mvp" &&
@@ -144,9 +144,9 @@ export async function POST() {
         approvedForProduction: false,
         productionDisplayAllowed: false,
         noteZh:
-          "VJ-0 通过只允许生成受控 MVP ApprovedFrame；VJ-1/VJ-2 未实现前不得标记为生产批准。",
+          "VJ-0 与 VJ-1 均通过后才允许生成受控 MVP ApprovedFrame；VJ-2 未实现前不得标记为生产批准。",
         noteEn:
-          "Passing VJ-0 only allows a controlled MVP ApprovedFrame. It must not be marked production approved before VJ-1/VJ-2 are implemented.",
+          "Passing both VJ-0 and VJ-1 allows a controlled MVP ApprovedFrame. It must not be marked production approved before VJ-2 is implemented.",
       },
       currentRuntimeGate: {
         worldId: runtimeReadResult.record.worldId,

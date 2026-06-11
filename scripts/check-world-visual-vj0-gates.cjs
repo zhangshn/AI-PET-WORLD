@@ -8,6 +8,8 @@ const files = {
   schema: "src/world/world-visual-painter/world-visual-painter-schema.ts",
   authorizedData: "src/world/world-visual-painter/authorized-data/authorized-data-manifest.ts",
   visualReview: "src/world/world-visual-painter/visual-review/visual-review-builder.ts",
+  visualQuality:
+    "src/world/world-visual-painter/visual-quality/visual-quality-judge.ts",
   approvedBuilder: "src/world/world-visual-painter/approved-frame/approved-frame-builder.ts",
   approvedStore: "src/world/world-visual-painter/approved-frame/approved-frame-store.ts",
   candidateStore: "src/world/world-visual-painter/ai-image-candidate/visual-candidate-store.ts",
@@ -145,9 +147,44 @@ const checks = [
     "vj_0_failed"
   ),
   assertIncludes(
-    "ReviewReport 暴露 VJ-1 未实现",
+    "ReviewReport 暴露 VJ-1 真实通过状态",
     source.visualReview,
-    "vj_1_not_implemented"
+    "vj_1_passed"
+  ),
+  assertIncludes(
+    "VJ-1 使用真实像素解码",
+    source.visualQuality,
+    ".raw()"
+  ),
+  assertIncludes(
+    "VJ-1 检查亮度",
+    source.visualQuality,
+    "vj_1_brightness"
+  ),
+  assertIncludes(
+    "VJ-1 检查对比度",
+    source.visualQuality,
+    "vj_1_contrast"
+  ),
+  assertIncludes(
+    "VJ-1 检查颜色范围",
+    source.visualQuality,
+    "vj_1_color_range"
+  ),
+  assertIncludes(
+    "VJ-1 检查单色占比",
+    source.visualQuality,
+    "vj_1_not_solid_color"
+  ),
+  assertIncludes(
+    "VJ-1 检查边缘密度",
+    source.visualQuality,
+    "vj_1_edge_density"
+  ),
+  assertIncludes(
+    "VJ-1 检查锐度",
+    source.visualQuality,
+    "vj_1_sharpness"
   ),
   assertIncludes(
     "ReviewReport 暴露 VJ-2 未实现",
@@ -250,9 +287,9 @@ const checks = [
     "candidate.sourceKind !== \"project_model_generated\""
   ),
   assertIncludes(
-    "ApprovedFrame 写入/读取闸门要求 Review 真实通过 VJ-0",
+    "ApprovedFrame 写入/读取闸门要求 Review 真实通过 VJ-1",
     source.approvedStore,
-    "review.status !== \"vj_0_passed\""
+    "review.status !== \"vj_1_passed\""
   ),
   assertIncludes(
     "ApprovedFrame 写入/读取闸门要求图片 SHA-256",
@@ -280,9 +317,9 @@ const checks = [
     "tick: number"
   ),
   assertIncludes(
-    "Schema 明确定义 VJ-1 未实现状态",
+    "Schema 明确定义 VJ-1 通过状态",
     source.schema,
-    "vj1Status: \"vj_1_not_implemented\""
+    'vj1Status: "vj_1_failed" | "vj_1_passed"'
   ),
   assertIncludes(
     "Schema 明确定义 VJ-2 未实现状态",
@@ -413,11 +450,11 @@ for (const item of checks) {
 }
 
 if (failed.length > 0) {
-  console.error(`\nVJ-0 gate check failed: ${failed.length} failed.`)
+  console.error(`\nVisual gate check failed: ${failed.length} failed.`)
   process.exit(1)
 }
 
-console.log(`\nVJ-0 gate check passed: ${checks.length} assertions.`)
+console.log(`\nVisual gate check passed: ${checks.length} assertions.`)
 
 function read(relPath) {
   return readFileSync(path.join(ROOT, relPath), "utf8")

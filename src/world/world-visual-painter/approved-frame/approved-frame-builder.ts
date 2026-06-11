@@ -76,16 +76,16 @@ export function buildWorldVisualApprovedFrame(input: {
     return null
   }
 
-  if (input.reviewReport.status !== "vj_0_passed") return null
+  if (input.reviewReport.status !== "vj_1_passed") return null
   if (input.reviewReport.vj0Status !== "vj_0_passed") return null
-  if (input.reviewReport.vj1Status !== "vj_1_not_implemented") return null
+  if (input.reviewReport.vj1Status !== "vj_1_passed") return null
   if (input.reviewReport.vj2Status !== "vj_2_not_implemented") return null
   if (input.reviewReport.approvalScope !== "approved_for_controlled_mvp") return null
   if (input.reviewReport.productionApprovalStatus !== "not_approved_for_production") return null
   if (input.reviewReport.canShowToPlayer !== false) return null
   if (input.reviewReport.score < MIN_APPROVAL_SCORE) return null
   if (!requiredReviewChecksPassed(input.reviewReport)) return null
-  if (!notImplementedReviewChecksPresent(input.reviewReport)) return null
+  if (!vj2NotImplementedCheckPresent(input.reviewReport)) return null
   if (!imageInspectionSummaryCanApprove(input.reviewReport, input.aiImageCandidate)) {
     return null
   }
@@ -112,12 +112,12 @@ export function buildWorldVisualApprovedFrame(input: {
     productionApprovalStatus: "not_approved_for_production",
     approvedForProduction: false,
     vj0Status: "vj_0_passed",
-    vj1Status: "vj_1_not_implemented",
+    vj1Status: "vj_1_passed",
     vj2Status: "vj_2_not_implemented",
     canShowToPlayer: true,
     approvalReason: {
-      zh: "AI 位图候选图只通过 VJ-0 文件与事实硬闸门；VJ-1/VJ-2 尚未实现，因此该帧仅为受控 MVP ApprovedFrame，不是生产批准帧。",
-      en: "The AI bitmap candidate passed only the VJ-0 file and fact hard gate; VJ-1/VJ-2 are not implemented, so this is a controlled MVP ApprovedFrame, not a production approved frame.",
+      zh: "AI 位图候选图已通过 VJ-0 文件事实闸门和 VJ-1 确定性视觉质量检查；VJ-2 尚未实现，因此该帧仅为受控 MVP ApprovedFrame。",
+      en: "The AI bitmap candidate passed VJ-0 file/fact gates and VJ-1 deterministic visual-quality checks; VJ-2 is not implemented, so this remains a controlled MVP ApprovedFrame.",
     },
     sourceFactIds: input.factManifest.sourceFactIds,
     tags: [
@@ -131,7 +131,7 @@ export function buildWorldVisualApprovedFrame(input: {
       "runtime_render_ready_for_controlled_mvp",
       "world_facts_preserved",
       "vj_0_passed",
-      "vj_1_not_implemented",
+      "vj_1_passed",
       "vj_2_not_implemented",
       "image_byte_fingerprint_bound",
       "source_image_byte_length_bound",
@@ -163,16 +163,13 @@ function requiredReviewChecksPassed(
   )
 }
 
-function notImplementedReviewChecksPresent(
+function vj2NotImplementedCheckPresent(
   reviewReport: WorldVisualReviewReport
 ): boolean {
   const checkMap = new Map(reviewReport.checks.map((check) => [check.id, check]))
-  const vj1 = checkMap.get("vj_1_not_implemented")
   const vj2 = checkMap.get("vj_2_not_implemented")
 
   return (
-    vj1?.passed === false &&
-    vj1.tags.includes("not_implemented") &&
     vj2?.passed === false &&
     vj2.tags.includes("not_implemented")
   )
