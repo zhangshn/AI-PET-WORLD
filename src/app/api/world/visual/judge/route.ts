@@ -19,8 +19,6 @@ export async function POST() {
       {
         ok: false,
         message: "世界尚未创建，不能执行视觉审核。",
-        messageEn:
-          "Runtime world has not been created, so VisualJudge cannot run.",
         tags: ["world_visual_judge_api", "runtime_save_required"],
       },
       { status: 409 }
@@ -37,7 +35,6 @@ export async function POST() {
       {
         ok: false,
         message: "还没有隐藏候选图，不能执行视觉审核。",
-        messageEn: "No hidden candidate exists, so VisualJudge cannot run.",
         candidateStatus: candidateReadResult.status,
         tags: ["world_visual_judge_api", ...candidateReadResult.tags],
       },
@@ -45,16 +42,21 @@ export async function POST() {
     )
   }
 
+  const candidateRecord = candidateReadResult.record
   const factManifest = buildWorldVisualFactManifest({
     saveRecord: runtimeReadResult.record,
   })
   const reviewReport = await buildWorldVisualReviewReport({
     factManifest,
-    aiImageCandidate: candidateReadResult.record.candidate,
+    generationCondition: candidateRecord.generationCondition,
+    aiImageGenerationRequest: candidateRecord.aiImageGenerationRequest,
+    aiImageCandidate: candidateRecord.candidate,
   })
   const approvedFrame = buildWorldVisualApprovedFrame({
     factManifest,
-    aiImageCandidate: candidateReadResult.record.candidate,
+    generationCondition: candidateRecord.generationCondition,
+    aiImageGenerationRequest: candidateRecord.aiImageGenerationRequest,
+    aiImageCandidate: candidateRecord.candidate,
     reviewReport,
   })
   const fixPlan = buildWorldVisualFixPlan({
@@ -76,7 +78,7 @@ export async function POST() {
         tick: runtimeReadResult.record.tick,
         approvedFrame,
         reviewReport,
-        sourceCandidateRecord: candidateReadResult.record,
+        sourceCandidateRecord: candidateRecord,
       })
     : null
 
@@ -88,19 +90,12 @@ export async function POST() {
       fixPlan,
       fixPlanPersisted: fixPlanWriteResult.ok,
       fixPlanPath: fixPlanWriteResult.path,
-      fixPlanPersistenceWarnings: fixPlanWriteResult.warnings,
       persisted: writeResult?.ok ?? false,
       approvedFramePath: writeResult?.path ?? null,
-      persistenceWarnings: writeResult?.warnings ?? [],
       canShowToPlayer: Boolean(approvedFrame && writeResult?.ok),
-      displayRule: approvedFrame
-        ? "ApprovedFrame 已生成，可以进入 /world 展示阶段。"
-        : "审核未通过，禁止展示；必须按 VisualFix 修正后重新生成候选图。",
-      displayRuleEn: approvedFrame
-        ? "ApprovedFrame exists and may enter /world display."
-        : "Review failed. Display is blocked until VisualFix is applied and a new candidate passes review.",
       tags: [
         "world_visual_judge_api",
+        "vj_0_hard_gate",
         ...(writeResult?.tags ?? []),
         ...fixPlanWriteResult.tags,
         ...reviewReport.tags,
