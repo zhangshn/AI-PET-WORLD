@@ -8,6 +8,11 @@ import type { WorldVisualApprovedFrame } from "@/world/world-visual-painter"
 
 type ApprovedFrameReadStatus = "found" | "empty" | "invalid" | "failed"
 
+type RuntimeBoundApprovedFrame = WorldVisualApprovedFrame & {
+  worldId?: unknown
+  tick?: unknown
+}
+
 export async function WorldLiveRuntimePage() {
   const runtimeView = await readWorldRuntimeForView()
 
@@ -79,7 +84,7 @@ export async function WorldLiveRuntimePage() {
             aria-label="已审核通过且匹配当前世界 tick 的世界画面"
             style={runtimeWorldStyles.frame}
           >
-            {/* AI image providers are not fixed yet, so this cannot use next/image domains. */}
+            {/* ApprovedFrame imageUrl only renders after the VJ-0 current-runtime gate passes. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               alt="已审核通过的 AI 世界画面"
@@ -94,7 +99,8 @@ export async function WorldLiveRuntimePage() {
             <span>Image {approvedFrame.sourceImageSha256.slice(0, 12)}</span>
             <span>{approvedFrame.sourceImageContentType}</span>
             <span>{approvedFrame.sourceImageByteLength} bytes</span>
-            <span>Tick matched</span>
+            <span>Frame world matched</span>
+            <span>Frame tick matched</span>
             <span>Facts matched</span>
           </div>
         </div>
@@ -117,9 +123,7 @@ export async function WorldLiveRuntimePage() {
           <div style={blockedWorldStyles.metaItem}>
             <span style={blockedWorldStyles.metaLabel}>MVP Target / MVP 目标</span>
             <span>{painterDecision.mvpTargetPolicy.title.zh}</span>
-            <span>
-              明亮、治愈、精细、俯视像素风；先做静态世界画面。
-            </span>
+            <span>明亮、治愈、精细、俯视像素风；先做静态世界画面。</span>
           </div>
           <div style={blockedWorldStyles.metaItem}>
             <span style={blockedWorldStyles.metaLabel}>Scene / 场景</span>
@@ -134,16 +138,17 @@ export async function WorldLiveRuntimePage() {
             <span style={blockedWorldStyles.metaLabel}>ApprovedFrame / 审核帧</span>
             <span>读取状态：{approvedFrameReadResult.status}</span>
             <span>页面状态：{approvedFrameBlock.apiState}</span>
-            <span>
-              VJ-0 阻断：{approvedFrameBlock.vj0Blocked ? "是" : "否"}
-            </span>
+            <span>VJ-0 阻断：{approvedFrameBlock.vj0Blocked ? "是" : "否"}</span>
             <span>{approvedFrameBlock.displayRuleZh}</span>
           </div>
           <div style={blockedWorldStyles.metaItem}>
             <span style={blockedWorldStyles.metaLabel}>Current gate / 当前世界闸门</span>
-            <span>worldId 匹配：{currentRuntimeGate.currentWorldMatched ? "是" : "否"}</span>
-            <span>tick 匹配：{currentRuntimeGate.currentTickMatched ? "是" : "否"}</span>
+            <span>record worldId 匹配：{currentRuntimeGate.currentWorldMatched ? "是" : "否"}</span>
+            <span>record tick 匹配：{currentRuntimeGate.currentTickMatched ? "是" : "否"}</span>
+            <span>frame worldId 匹配：{currentRuntimeGate.currentFrameWorldMatched ? "是" : "否"}</span>
+            <span>frame tick 匹配：{currentRuntimeGate.currentFrameTickMatched ? "是" : "否"}</span>
             <span>sourceFactIds 匹配：{currentRuntimeGate.currentSourceFactsMatched ? "是" : "否"}</span>
+            <span>frame sourceFactIds 匹配：{currentRuntimeGate.currentFrameSourceFactsMatched ? "是" : "否"}</span>
             <span>当前事实数量：{factManifest.sourceFactIds.length}</span>
           </div>
           <div style={blockedWorldStyles.metaItem}>
@@ -165,12 +170,8 @@ export async function WorldLiveRuntimePage() {
           <div style={blockedWorldStyles.metaItem}>
             <span style={blockedWorldStyles.metaLabel}>Display gate / 展示闸门</span>
             <span>未生成 AI 位图候选图并通过审核前禁止展示</span>
-            <span>
-              流程：generate → hidden candidate → judge → ApprovedFrame → /world
-            </span>
-            <span>
-              Blocked until an AI bitmap candidate passes review and becomes ApprovedFrame
-            </span>
+            <span>流程：generate → hidden candidate → judge → ApprovedFrame → /world</span>
+            <span>Blocked until an AI bitmap candidate passes review and becomes ApprovedFrame</span>
           </div>
           <div style={blockedWorldStyles.metaItem}>
             <span style={blockedWorldStyles.metaLabel}>Fact audit / 事实审计</span>
@@ -280,28 +281,40 @@ function buildCurrentRuntimeGate(input: {
   currentTick: number
   currentSourceFactIds: string[]
 }) {
+  const runtimeFrame = input.approvedFrame as RuntimeBoundApprovedFrame | null
   const hardFieldsValid = input.approvedFrame
     ? canRenderApprovedFrame(input.approvedFrame)
     : false
   const currentWorldMatched = input.recordWorldId === input.currentWorldId
   const currentTickMatched = input.recordTick === input.currentTick
+  const currentFrameWorldMatched = runtimeFrame?.worldId === input.currentWorldId
+  const currentFrameTickMatched = runtimeFrame?.tick === input.currentTick
   const currentSourceFactsMatched = sameStringSet(
     input.recordSourceFactIds,
     input.currentSourceFactIds
   )
+  const currentFrameSourceFactsMatched = input.approvedFrame
+    ? sameStringSet(input.approvedFrame.sourceFactIds, input.currentSourceFactIds)
+    : false
   const canRuntimeRender =
     input.recordCanShowToPlayer === true &&
     input.approvedFrame?.canShowToPlayer === true &&
     hardFieldsValid &&
     currentWorldMatched &&
     currentTickMatched &&
-    currentSourceFactsMatched
+    currentFrameWorldMatched &&
+    currentFrameTickMatched &&
+    currentSourceFactsMatched &&
+    currentFrameSourceFactsMatched
 
   return {
     hardFieldsValid,
     currentWorldMatched,
     currentTickMatched,
+    currentFrameWorldMatched,
+    currentFrameTickMatched,
     currentSourceFactsMatched,
+    currentFrameSourceFactsMatched,
     canRuntimeRender,
   }
 }
