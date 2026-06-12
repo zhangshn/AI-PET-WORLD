@@ -8,6 +8,7 @@ import numpy as np
 from PIL import Image
 
 from ai_painter.blueprint.channels import CANVAS_HEIGHT, CANVAS_WIDTH, V0_MASK_CHANNELS, V1_CONDITION_CHANNELS
+from ai_painter.dataset.v1_review import validate_v1_review_record
 
 from .torch_runtime import require_torch
 
@@ -51,8 +52,13 @@ class WorldSceneDataset:
         data = json.loads(path.read_text(encoding="utf-8"))
         if data.get("schemaVersion") != "world-blueprint-v1":
             raise ValueError(f"invalid v1 blueprint: {path}")
-        if data.get("requiresManualReview") and not self.allow_manual_review:
+        if self.allow_manual_review:
+            return
+        if data.get("requiresManualReview"):
             raise ValueError(f"v1 blueprint still requires manual review: {directory.name}")
+        review_errors = validate_v1_review_record(directory)
+        if review_errors:
+            raise ValueError("; ".join(review_errors))
 
 
 def load_split(dataset_root: Path, split: str) -> list[str]:

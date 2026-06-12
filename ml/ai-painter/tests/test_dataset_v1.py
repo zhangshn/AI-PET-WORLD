@@ -7,10 +7,14 @@ from PIL import Image
 
 from ai_painter.blueprint.channels import V1_CONDITION_CHANNELS
 from ai_painter.blueprint.v1_masks import render_v1_masks_from_file
+from ai_painter.dataset.v1_review import confirm_v1_sample
 from ai_painter.training import dataset as dataset_module
 
 
 class DatasetV1Tests(unittest.TestCase):
+    def setUp(self) -> None:
+        dataset_module.require_torch = lambda: FakeTorch()
+
     def test_v1_dataset_outputs_14_channel_condition_when_experimental_review_allowed(self) -> None:
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -20,16 +24,26 @@ class DatasetV1Tests(unittest.TestCase):
             self.assertEqual(item["condition"].shape, (14, 192, 256))
             self.assertEqual(item["target"].shape, (3, 192, 256))
 
+    def test_confirmed_v1_dataset_outputs_14_channels(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            _stage_v1_sample(root, review=True)
+            confirm_v1_sample(root, "sample-001")
+            dataset = dataset_module.WorldSceneDataset(root, "train", blueprint_version="v1")
+            self.assertEqual(dataset[0]["condition"].shape, (14, 192, 256))
+
     def test_missing_or_wrong_sized_mask_fails(self) -> None:
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
-            sample = _stage_v1_sample(root, review=False)
+            sample = _stage_v1_sample(root, review=True)
+            confirm_v1_sample(root, "sample-001")
             (sample / "masks_v1" / "grass.png").unlink()
             with self.assertRaises(FileNotFoundError):
                 dataset_module.WorldSceneDataset(root, "train", blueprint_version="v1")[0]
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
-            sample = _stage_v1_sample(root, review=False)
+            sample = _stage_v1_sample(root, review=True)
+            confirm_v1_sample(root, "sample-001")
             Image.new("L", (16, 16), 255).save(sample / "masks_v1" / "grass.png")
             with self.assertRaisesRegex(ValueError, "256x192"):
                 dataset_module.WorldSceneDataset(root, "train", blueprint_version="v1")[0]
@@ -41,8 +55,16 @@ class DatasetV1Tests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "requires manual review"):
                 dataset_module.WorldSceneDataset(root, "train", blueprint_version="v1")[0]
 
-    def setUp(self) -> None:
-        dataset_module.require_torch = lambda: FakeTorch()
+    def test_v1_review_hash_mismatch_is_blocked(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            sample = _stage_v1_sample(root, review=True)
+            confirm_v1_sample(root, "sample-001")
+            data = json.loads((sample / "blueprint.v1.json").read_text(encoding="utf-8"))
+            data["seed"] = 99
+            (sample / "blueprint.v1.json").write_text(json.dumps(data), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "hash mismatch"):
+                dataset_module.WorldSceneDataset(root, "train", blueprint_version="v1")[0]
 
 
 class FakeTensor:
