@@ -1,0 +1,11 @@
+{
+  "trainingVersion": "training-v1-condition-blueprint-draft",
+  "blueprintVersion": "world-blueprint-v1",
+  "conditionVersion": "condition-mask-v1-14ch",
+  "inputChannels": 14,
+  "outputChannels": 3,
+  "imageWidth": 256,
+  "imageHeight": 192,
+  "status": "experimental_requires_manual_data_review",
+  "officialTrainingAllowed": false
+}

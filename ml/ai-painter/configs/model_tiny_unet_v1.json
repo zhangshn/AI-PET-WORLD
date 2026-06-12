@@ -1,0 +1,12 @@
+{
+  "modelVersion": "tiny-unet-v1-condition-blueprint-draft",
+  "inputChannels": 14,
+  "outputChannels": 3,
+  "baseChannels": 32,
+  "channelMultipliers": [1, 2, 4, 4],
+  "imageWidth": 256,
+  "imageHeight": 192,
+  "blueprintVersion": "world-blueprint-v1",
+  "conditionVersion": "condition-mask-v1-14ch",
+  "status": "experimental_requires_manual_data_review"
+}

@@ -1,11 +1,12 @@
 import type { Metadata } from "next"
 import { BlueprintPreview, ConditionPreview } from "./condition-preview"
-import { BLUEPRINT_JSON, CONDITION_CHANNELS, buildAiPainterLabStages } from "./ai-painter-lab-data"
+import { BLUEPRINT_JSON, CONDITION_CHANNELS, CONDITION_CHANNELS_V1, buildAiPainterLabStages } from "./ai-painter-lab-data"
 import { readAiPainterDatasetStatus } from "./ai-painter-lab-status"
 import { DatasetUploadForm } from "./dataset-upload-form"
 import { InferencePreview } from "./inference-preview"
 import { ModelExperimentComparison } from "./model-experiment-comparison"
 import { SceneAnnotationEditor } from "./scene-annotation-editor"
+import { SceneAnnotationEditorV1 } from "./scene-annotation-editor-v1"
 import { TaxonomyPanel } from "./taxonomy-panel"
 import { TrainingDraftReview } from "./training-draft-review"
 import { TrainingControl } from "./training-control"
@@ -55,7 +56,8 @@ export default async function AiPainterLabPage() {
           <dl>
             <div><dt>工程验证目标</dt><dd>20-50 张</dd></div>
             <div><dt>最低训练目标</dt><dd>100 张</dd></div>
-            <div><dt>Condition 通道</dt><dd>8 个</dd></div>
+            <div><dt>Condition v0</dt><dd>8 个</dd></div>
+            <div><dt>Condition v1</dt><dd>14 个 / 待人工复核</dd></div>
             <div><dt>全部辅助样本</dt><dd>{dataset.totalAccepted - dataset.accepted} 条</dd></div>
             <div><dt>在线绘图 API</dt><dd>禁止接入</dd></div>
             <div><dt>导入失败记录</dt><dd>{dataset.rejected} 条</dd></div>
@@ -88,20 +90,23 @@ export default async function AiPainterLabPage() {
       </section>
 
       <section className={styles.section}>
-        <div className={styles.sectionHeading}><div><small>SCENE ANNOTATION</small><h2>完整场景结构标注</h2></div><p>为每张图片建立独立 Blueprint，并重新生成 8 通道 Condition Mask。</p></div>
+        <div className={styles.sectionHeading}><div><small>SCENE ANNOTATION V0</small><h2>完整场景结构标注</h2></div><p>为每张图片建立独立 Blueprint，并重新生成 8 通道 Condition Mask。</p></div>
         <SceneAnnotationEditor />
       </section>
 
       <section className={styles.section}>
-        <div className={styles.sectionHeading}><div><small>MODEL INPUT</small><h2>8 通道条件图</h2></div><p>白色或彩色区域代表该通道需要模型关注的空间结构。</p></div>
-        <div className={styles.maskGrid}>
-          {CONDITION_CHANNELS.map((channel, index) => (
-            <article className={styles.maskCard} key={channel.id}>
-              <div className={styles.maskPreview}><ConditionPreview channel={channel.id} color={channel.color} /></div>
-              <div><b>{String(index + 1).padStart(2, "0")}</b><h3>{channel.zh}</h3><code>{channel.id}_mask</code></div>
-            </article>
-          ))}
-        </div>
+        <div className={styles.sectionHeading}><div><small>CONDITION BLUEPRINT V1</small><h2>14 通道细粒度结构标注</h2></div><p>v1 草案独立保存，不覆盖 v0；待人工复核样本不能进入正式质量训练。</p></div>
+        <SceneAnnotationEditorV1 />
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.sectionHeading}><div><small>MODEL INPUT V0</small><h2>8 通道条件图</h2></div><p>白色或彩色区域代表该通道需要模型关注的空间结构。</p></div>
+        <div className={styles.maskGrid}>{CONDITION_CHANNELS.map((channel, index) => <article className={styles.maskCard} key={channel.id}><div className={styles.maskPreview}><ConditionPreview channel={channel.id} color={channel.color} /></div><div><b>{String(index + 1).padStart(2, "0")}</b><h3>{channel.zh}</h3><code>{channel.id}_mask</code></div></article>)}</div>
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.sectionHeading}><div><small>MODEL INPUT V1</small><h2>14 通道条件图</h2></div><p>v1 细分水岸、道路边缘、树干树冠、建筑结构和施工材料。</p></div>
+        <div className={styles.maskGrid}>{CONDITION_CHANNELS_V1.map((channel, index) => <article className={styles.maskCard} key={channel.id}><div className={styles.maskPreview}><ConditionPreview channel={channel.id} color={channel.color} /></div><div><b>{String(index + 1).padStart(2, "0")}</b><h3>{channel.zh}</h3><code>{channel.id}.png</code></div></article>)}</div>
       </section>
 
       <section className={styles.bottomGrid}>
@@ -112,7 +117,7 @@ export default async function AiPainterLabPage() {
         <article className={styles.section}>
           <div className={styles.sectionHeading}><div><small>EXAMPLE CONTRACT</small><h2>结构数据示例</h2></div></div>
           <pre className={styles.code}>{BLUEPRINT_JSON}</pre>
-          <p className={styles.footnote}>每个真实样本还必须包含目标 PNG、来源许可、三项人工审核、文件哈希及 8 张条件图。</p>
+          <p className={styles.footnote}>每个真实样本还必须包含目标 PNG、来源许可、人工审核、文件哈希及条件图。</p>
         </article>
       </section>
     </main>

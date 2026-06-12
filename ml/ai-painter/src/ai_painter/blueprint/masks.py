@@ -2,9 +2,10 @@ from pathlib import Path
 
 from PIL import Image, ImageChops, ImageDraw
 
+from .channels import V0_MASK_CHANNELS
 from .schema import Blueprint
 
-MASK_NAMES = ("grass", "water", "road", "tree", "rock", "shelter", "walkable", "depth")
+MASK_NAMES = V0_MASK_CHANNELS
 
 
 def render_blueprint_masks(blueprint: Blueprint, output_dir: Path) -> dict[str, Path]:
