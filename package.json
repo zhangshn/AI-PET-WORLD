@@ -13,6 +13,7 @@
     "check:vj1": "node scripts/check-world-visual-vj0-gates.cjs",
     "test:vj1": "node scripts/test-world-visual-vj0-behavior.cjs",
     "test:ai-painter-data": "ml\\ai-painter\\.venv\\Scripts\\python.exe -m unittest discover -s ml\\ai-painter\\tests -v",
+    "test:ai-painter-batch-upload": "node scripts/test-ai-painter-batch-sample-id.mjs",
     "validate:ai-painter-data": "ml\\ai-painter\\.venv\\Scripts\\python.exe ml\\ai-painter\\scripts\\validate_dataset.py --dataset-root data\\ai-painter-datasets",
     "inspect:visual-painter": "node scripts/inspect-world-visual-painter.mjs",
     "smoke:runtime": "node scripts/run-world-runtime-smoke.cjs",

@@ -5,10 +5,18 @@ import { promisify } from "node:util"
 import { NextResponse } from "next/server"
 
 import { DATASET_DOMAINS, DATASET_LAYERS } from "@/app/ai-painter-lab/dataset-taxonomy"
+import { createDatasetSampleId } from "../dataset-sample-id"
 
 const runFile = promisify(execFile)
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024
-const SAMPLE_ID_PATTERN = /^[a-z0-9][a-z0-9-]{2,63}$/u
+const MAX_BATCH_FILES = 20
+
+type ImportResult = {
+  fileName: string
+  sampleId?: string
+  ok: boolean
+  message: string
+}
 
 export async function POST(request: Request) {
   if (process.env.NODE_ENV === "production") {
@@ -17,53 +25,96 @@ export async function POST(request: Request) {
 
   try {
     const form = await request.formData()
-    const image = form.get("image")
-    const sampleId = textField(form, "sampleId")
+    const images = form.getAll("images").filter((value): value is File => value instanceof File && value.size > 0)
     const layer = textField(form, "sampleLayer")
     const domain = textField(form, "domain")
     const subtype = textField(form, "subtype")
-    const errors = validateInput({ image, sampleId, layer, domain, subtype, form })
-    if (errors.length) return response(false, errors.join("；"), 422)
+    const sharedErrors = validateSharedInput({ images, layer, domain, subtype, form })
+    if (sharedErrors.length) return response(false, sharedErrors.join("；"), 422)
 
     const root = path.join(process.cwd(), "data", "ai-painter-datasets")
-    const incoming = path.join(root, "incoming", sampleId)
-    await rm(incoming, { recursive: true, force: true })
-    await mkdir(incoming, { recursive: true })
-
-    await writeFile(path.join(incoming, "target.png"), Buffer.from(await (image as File).arrayBuffer()))
-    const structure = buildStructure(form, sampleId, layer)
-    const structureName = layer === "scene" ? "blueprint.json" : "annotation.json"
-    await writeFile(path.join(incoming, structureName), JSON.stringify(structure, null, 2), "utf8")
-    await writeFile(
-      path.join(incoming, "metadata.json"),
-      JSON.stringify(buildMetadata(form, sampleId, layer, domain, subtype, structureName), null, 2),
-      "utf8"
-    )
-
-    const python = path.join(process.cwd(), "ml", "ai-painter", ".venv", "Scripts", "python.exe")
-    const script = path.join(process.cwd(), "ml", "ai-painter", "scripts", "import_dataset.py")
-    try {
-      const result = await runFile(python, [script, sampleId, "--dataset-root", root], {
-        cwd: process.cwd(),
-        windowsHide: true,
-        timeout: 30_000,
-      })
-      return NextResponse.json({ ok: true, message: "训练样本已校验并归档。", result: JSON.parse(result.stdout) })
-    } catch (error) {
-      const output = extractProcessOutput(error)
-      return response(false, output || "本地数据校验失败。", 422)
+    const results: ImportResult[] = []
+    for (const image of images) {
+      results.push(await importImage({ form, image, layer, domain, subtype, root }))
     }
+
+    const accepted = results.filter((item) => item.ok).length
+    const rejected = results.length - accepted
+    const message = `批量导入完成：成功 ${accepted} 张，失败 ${rejected} 张。`
+    return NextResponse.json(
+      { ok: accepted > 0, message, accepted, rejected, results },
+      { status: accepted > 0 ? 200 : 422 }
+    )
   } catch (error) {
     return response(false, error instanceof Error ? error.message : "上传处理失败。", 500)
   }
 }
 
-function validateInput(input: { image: FormDataEntryValue | null; sampleId: string; layer: string; domain: string; subtype: string; form: FormData }) {
+async function importImage(input: {
+  form: FormData
+  image: File
+  layer: string
+  domain: string
+  subtype: string
+  root: string
+}): Promise<ImportResult> {
+  const imageError = validateImage(input.image)
+  if (imageError) return { fileName: input.image.name, ok: false, message: imageError }
+
+  const sampleId = createDatasetSampleId({
+    fileName: input.image.name,
+    layer: input.layer,
+    domain: input.domain,
+  })
+  const incoming = path.join(input.root, "incoming", sampleId)
+  try {
+    await rm(incoming, { recursive: true, force: true })
+    await mkdir(incoming, { recursive: true })
+    await writeFile(path.join(incoming, "target.png"), Buffer.from(await input.image.arrayBuffer()))
+
+    const structure = buildStructure(input.form, sampleId, input.layer)
+    const structureName = input.layer === "scene" ? "blueprint.json" : "annotation.json"
+    await writeFile(path.join(incoming, structureName), JSON.stringify(structure, null, 2), "utf8")
+    await writeFile(
+      path.join(incoming, "metadata.json"),
+      JSON.stringify(buildMetadata(input.form, sampleId, input.layer, input.domain, input.subtype, structureName), null, 2),
+      "utf8"
+    )
+
+    const result = await runImporter(input.root, sampleId)
+    return { fileName: input.image.name, sampleId, ok: true, message: result.status ?? "accepted" }
+  } catch (error) {
+    const output = extractProcessOutput(error)
+    return {
+      fileName: input.image.name,
+      sampleId,
+      ok: false,
+      message: output || (error instanceof Error ? error.message : "本地数据校验失败。"),
+    }
+  }
+}
+
+async function runImporter(root: string, sampleId: string) {
+  const python = path.join(process.cwd(), "ml", "ai-painter", ".venv", "Scripts", "python.exe")
+  const script = path.join(process.cwd(), "ml", "ai-painter", "scripts", "import_dataset.py")
+  const result = await runFile(python, [script, sampleId, "--dataset-root", root], {
+    cwd: process.cwd(),
+    windowsHide: true,
+    timeout: 30_000,
+  })
+  return JSON.parse(result.stdout) as { status?: string }
+}
+
+function validateSharedInput(input: {
+  images: File[]
+  layer: string
+  domain: string
+  subtype: string
+  form: FormData
+}) {
   const errors: string[] = []
-  if (!(input.image instanceof File) || input.image.size === 0) errors.push("请选择 PNG 图片")
-  else if (input.image.type !== "image/png") errors.push("训练图片必须是 PNG")
-  else if (input.image.size > MAX_IMAGE_BYTES) errors.push("图片不能超过 12MB")
-  if (!SAMPLE_ID_PATTERN.test(input.sampleId)) errors.push("样本 ID 只能使用小写字母、数字和连字符")
+  if (!input.images.length) errors.push("请至少选择一张 PNG 图片")
+  if (input.images.length > MAX_BATCH_FILES) errors.push(`每批最多上传 ${MAX_BATCH_FILES} 张图片`)
   if (!DATASET_LAYERS.some((item) => item.id === input.layer)) errors.push("训练层级无效")
   if (!DATASET_DOMAINS.some((item) => item.id === input.domain)) errors.push("数据领域无效")
   if (!input.subtype) errors.push("必须填写具体类型")
@@ -71,6 +122,12 @@ function validateInput(input: { image: FormDataEntryValue | null; sampleId: stri
     if (input.form.get(key) !== "true") errors.push(`必须确认 ${key}`)
   }
   return errors
+}
+
+function validateImage(image: File) {
+  if (image.type !== "image/png") return `${image.name} 不是 PNG 图片`
+  if (image.size > MAX_IMAGE_BYTES) return `${image.name} 超过 12MB`
+  return ""
 }
 
 function buildStructure(form: FormData, sampleId: string, layer: string) {
@@ -85,8 +142,7 @@ function buildStructure(form: FormData, sampleId: string, layer: string) {
       tags: csvField(form, "tags"),
     }
   }
-  const blueprintText = textField(form, "blueprint")
-  const blueprint = JSON.parse(blueprintText) as Record<string, unknown>
+  const blueprint = JSON.parse(textField(form, "blueprint")) as Record<string, unknown>
   return { ...blueprint, sceneId: sampleId }
 }
 

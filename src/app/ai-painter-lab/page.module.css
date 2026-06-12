@@ -53,6 +53,9 @@
 .domainGrid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 12px; }
 .domainGrid h3 { font-size: 14px; margin: 0 0 4px; }
 .uploadForm { background: #0a1512; border: 1px solid #243a32; padding: 18px; }
+.batchNotice, .batchWarning, .fileCount { margin: 0 0 14px; padding: 10px 12px; border-left: 3px solid #69cd8d; background: #101f1a; color: #a9c0b5; font-size: 12px; line-height: 1.6; }
+.batchWarning { margin-top: 14px; border-left-color: #d8b967; color: #dbc98e; }
+.fileCount { margin: 7px 0 0; padding: 0; border: 0; background: transparent; color: #76c995; }
 .formGrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 .uploadForm label { display: flex; flex-direction: column; gap: 7px; color: #91a99e; font-size: 12px; }
 .uploadForm input, .uploadForm select, .uploadForm textarea { border: 1px solid #30473e; background: #101f1a; color: #d9e8dd; padding: 10px; font: 13px Arial, "Microsoft YaHei", sans-serif; }
@@ -66,6 +69,7 @@
 .submitRow button { background: #71d394; color: #092014; border: 0; padding: 12px 18px; font-weight: 700; cursor: pointer; }
 .submitRow button:disabled { opacity: .5; }
 .submitRow span { color: #d8b967; font-size: 12px; }
+.batchResults { margin: 14px 0 0; padding: 12px 14px 12px 32px; background: #101f1a; border: 1px solid #30473e; color: #b9cec4; font-size: 12px; line-height: 1.7; }
 @media (max-width: 1000px) { .layerGrid, .formGrid { grid-template-columns: repeat(2, 1fr); } .domainGrid { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 900px) { .header { align-items: flex-start; gap: 20px; } .heroGrid, .bottomGrid { grid-template-columns: 1fr; } .maskGrid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 560px) { .page { padding: 22px 14px 50px; } .header, .notice { flex-direction: column; align-items: flex-start; } .maskGrid, .layerGrid, .domainGrid, .formGrid, .confirmations { grid-template-columns: 1fr; } .sectionHeading { align-items: flex-start; gap: 8px; flex-direction: column; } .submitRow { align-items: flex-start; flex-direction: column; } }
