@@ -4,9 +4,11 @@ import { BLUEPRINT_JSON, CONDITION_CHANNELS, buildAiPainterLabStages } from "./a
 import { readAiPainterDatasetStatus } from "./ai-painter-lab-status"
 import { DatasetUploadForm } from "./dataset-upload-form"
 import { InferencePreview } from "./inference-preview"
+import { ModelExperimentComparison } from "./model-experiment-comparison"
 import { SceneAnnotationEditor } from "./scene-annotation-editor"
 import { TaxonomyPanel } from "./taxonomy-panel"
 import { TrainingDraftReview } from "./training-draft-review"
+import { TrainingControl } from "./training-control"
 import { ValidationPreview } from "./validation-preview"
 import styles from "./page.module.css"
 
@@ -63,6 +65,12 @@ export default async function AiPainterLabPage() {
 
       <InferencePreview />
       <ValidationPreview />
+      <ModelExperimentComparison />
+
+      <section className={styles.section}>
+        <div className={styles.sectionHeading}><div><small>LOCAL TRAINING</small><h2>模型训练控制</h2></div><p>只使用本地已批准数据和 RTX 5050，不连接在线绘图服务。</p></div>
+        <TrainingControl />
+      </section>
 
       <section className={styles.section}>
         <div className={styles.sectionHeading}><div><small>TRAINING DRAFT REVIEW</small><h2>待审核原创训练图</h2></div><p>只有人工批准后才会生成 Mask 并进入训练索引。</p></div>

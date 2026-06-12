@@ -9,6 +9,7 @@ from PIL import Image
 
 from ai_painter.training.checkpoint import load_checkpoint
 from ai_painter.training.dataset import WorldSceneDataset
+from ai_painter.training.losses import image_edges
 from ai_painter.training.model import build_tiny_unet
 from ai_painter.training.torch_runtime import require_torch
 
@@ -33,15 +34,25 @@ def evaluate_checkpoint(*, checkpoint_path: Path, dataset_root: Path, split: str
             mae = float(torch.nn.functional.l1_loss(prediction, target))
             mse = float(torch.nn.functional.mse_loss(prediction, target))
             psnr = 99.0 if mse == 0 else 10 * math.log10(1 / mse)
+            prediction_edges = image_edges(prediction.unsqueeze(0), torch)
+            target_edges = image_edges(target.unsqueeze(0), torch)
+            edge_mae = float(torch.nn.functional.l1_loss(prediction_edges, target_edges))
+            sharpness_ratio = float(prediction_edges.abs().mean() / target_edges.abs().mean().clamp_min(1e-8))
             image_path = output_dir / f"{item['sampleId']}.png"
             save_tensor_png(prediction, image_path)
-            samples.append({"sampleId": item["sampleId"], "mae": mae, "psnr": psnr, "output": str(image_path.resolve())})
+            samples.append({
+                "sampleId": item["sampleId"], "mae": mae, "psnr": psnr,
+                "edgeMae": edge_mae, "sharpnessRatio": sharpness_ratio,
+                "output": str(image_path.resolve()),
+            })
 
     report = {
         "status": "completed", "split": split, "device": str(device),
         "sampleCount": len(samples),
         "meanMae": sum(float(item["mae"]) for item in samples) / len(samples),
         "meanPsnr": sum(float(item["psnr"]) for item in samples) / len(samples),
+        "meanEdgeMae": sum(float(item["edgeMae"]) for item in samples) / len(samples),
+        "meanSharpnessRatio": sum(float(item["sharpnessRatio"]) for item in samples) / len(samples),
         "samples": samples,
     }
     (output_dir / "evaluation.json").write_text(

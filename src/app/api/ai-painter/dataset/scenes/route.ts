@@ -22,7 +22,7 @@ export async function GET() {
       return {
         sampleId,
         subtype: typeof metadata.subtype === "string" ? metadata.subtype : "world_scene",
-        imageUrl: `/api/ai-painter/dataset/scenes/${sampleId}/image`,
+        imageUrl: `/api/ai-painter/dataset/scenes/${sampleId}/image?original=1`,
         blueprint,
       }
     }))

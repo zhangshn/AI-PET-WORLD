@@ -8,6 +8,7 @@ import time
 
 from .checkpoint import save_checkpoint
 from .dataset import WorldSceneDataset
+from .losses import build_image_loss
 from .model import build_tiny_unet
 from .torch_runtime import require_torch
 
@@ -50,6 +51,7 @@ def train(config: dict[str, object], *, dataset_root: Path, output_dir: Path, ma
     for epoch in range(1, epochs + 1):
         model.train()
         epoch_loss = 0.0
+        epoch_parts = {"l1": 0.0, "edge": 0.0, "texture": 0.0}
         optimizer.zero_grad(set_to_none=True)
         for batch_index, batch in enumerate(loader, start=1):
             condition = batch["condition"].to(device, non_blocking=True)
@@ -57,7 +59,8 @@ def train(config: dict[str, object], *, dataset_root: Path, output_dir: Path, ma
             context = torch.autocast(device_type="cuda", dtype=torch.float16) if use_amp else nullcontext()
             with context:
                 prediction = model(condition)
-                loss = torch.nn.functional.l1_loss(prediction, target) / accumulation
+                raw_loss, parts = build_image_loss(prediction, target, torch, config)
+                loss = raw_loss / accumulation
             scaler.scale(loss).backward()
             if batch_index % accumulation == 0 or batch_index == len(loader):
                 scaler.step(optimizer)
@@ -65,12 +68,16 @@ def train(config: dict[str, object], *, dataset_root: Path, output_dir: Path, ma
                 optimizer.zero_grad(set_to_none=True)
                 step += 1
             epoch_loss += float(loss.detach().cpu()) * accumulation
+            for name, value in parts.items():
+                epoch_parts[name] += float(value.detach().cpu())
 
         average_loss = epoch_loss / len(loader)
-        validation_loss = evaluate_loss(model, validation_loader, device, torch, use_amp)
+        average_parts = {name: value / len(loader) for name, value in epoch_parts.items()}
+        validation_loss = evaluate_loss(model, validation_loader, device, torch, use_amp, config)
         selection_loss = validation_loss if validation_loss is not None else average_loss
         record = {
             "epoch": epoch, "step": step, "trainLoss": average_loss,
+            "trainParts": average_parts,
             "validationLoss": validation_loss, "selectionLoss": selection_loss,
             "device": str(device), "seconds": round(time.time() - started, 2),
         }
@@ -98,7 +105,7 @@ def append_json(path: Path, value: dict[str, object]) -> None:
         stream.write(json.dumps(value, ensure_ascii=False) + "\n")
 
 
-def evaluate_loss(model, loader, device, torch, use_amp: bool) -> float | None:
+def evaluate_loss(model, loader, device, torch, use_amp: bool, config: dict[str, object]) -> float | None:
     if loader is None:
         return None
     model.eval()
@@ -109,5 +116,6 @@ def evaluate_loss(model, loader, device, torch, use_amp: bool) -> float | None:
             target = batch["target"].to(device, non_blocking=True)
             context = torch.autocast(device_type="cuda", dtype=torch.float16) if use_amp else nullcontext()
             with context:
-                total += float(torch.nn.functional.l1_loss(model(condition), target).cpu())
+                loss, _ = build_image_loss(model(condition), target, torch, config)
+                total += float(loss.cpu())
     return total / len(loader)

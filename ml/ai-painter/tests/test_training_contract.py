@@ -24,6 +24,15 @@ class TrainingContractTests(unittest.TestCase):
         for path in (ROOT / "src/ai_painter/training").glob("*.py"):
             ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
 
+    def test_gan_training_script_parses(self):
+        path = ROOT / "scripts/train_conditional_gan.py"
+        ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+
+    def test_training_config_defines_detail_preserving_losses(self):
+        config = json.loads((ROOT / "configs/training_v0.json").read_text(encoding="utf-8"))
+        self.assertGreater(config["lossWeights"]["edge"], 0)
+        self.assertGreater(config["lossWeights"]["texture"], 0)
+
     def test_runtime_check_reports_missing_dependency_cleanly(self):
         runtime = describe_torch_runtime()
         self.assertIn("ready", runtime)

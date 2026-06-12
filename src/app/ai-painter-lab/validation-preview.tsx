@@ -6,6 +6,8 @@ type EvaluationReport = {
   sampleCount: number
   meanMae: number
   meanPsnr: number
+  meanEdgeMae?: number
+  meanSharpnessRatio?: number
   samples: Array<{ sampleId: string }>
 }
 
@@ -13,7 +15,7 @@ export async function ValidationPreview() {
   const report = await readReport()
   const sample = report?.samples[0]
   if (!report || !sample) return null
-  const targetUrl = `/api/ai-painter/dataset/scenes/${encodeURIComponent(sample.sampleId)}/image`
+  const targetUrl = `/api/ai-painter/dataset/scenes/${encodeURIComponent(sample.sampleId)}/image?original=1`
 
   return (
     <section className={styles.section}>
@@ -22,7 +24,7 @@ export async function ValidationPreview() {
         <p>该结果用于判断泛化能力，当前不符合视觉展示标准。</p>
       </div>
       <div className={styles.inferenceGrid}>
-        <figure><img src={targetUrl} alt="验证目标图" /><figcaption>验证目标图</figcaption></figure>
+        <figure><img className={styles.originalImage} src={targetUrl} alt="验证目标图" /><figcaption>原始高清验证目标图</figcaption></figure>
         <figure><img src="/api/ai-painter/evaluation/image" alt="验证生成图" /><figcaption>模型验证生成图</figcaption></figure>
       </div>
       <dl className={styles.inferenceMeta}>
@@ -30,6 +32,8 @@ export async function ValidationPreview() {
         <div><dt>样本数量</dt><dd>{report.sampleCount}</dd></div>
         <div><dt>MAE（越低越好）</dt><dd>{report.meanMae.toFixed(4)}</dd></div>
         <div><dt>PSNR（越高越好）</dt><dd>{report.meanPsnr.toFixed(2)} dB</dd></div>
+        <div><dt>边缘误差（越低越好）</dt><dd>{report.meanEdgeMae?.toFixed(4) ?? "待评估"}</dd></div>
+        <div><dt>清晰度比例（接近 1）</dt><dd>{report.meanSharpnessRatio?.toFixed(3) ?? "待评估"}</dd></div>
       </dl>
     </section>
   )

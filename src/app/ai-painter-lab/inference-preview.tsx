@@ -13,7 +13,7 @@ type InferenceManifest = {
 export async function InferencePreview() {
   const manifest = await readManifest()
   if (!manifest) return null
-  const targetUrl = `/api/ai-painter/dataset/scenes/${encodeURIComponent(manifest.sampleId)}/image`
+  const targetUrl = `/api/ai-painter/dataset/scenes/${encodeURIComponent(manifest.sampleId)}/image?original=1`
 
   return (
     <section className={styles.section}>
@@ -22,7 +22,7 @@ export async function InferencePreview() {
         <p>仅用于训练诊断，未经视觉审核，禁止进入玩家画面。</p>
       </div>
       <div className={styles.inferenceGrid}>
-        <figure><img src={targetUrl} alt="训练目标图" /><figcaption>训练目标图</figcaption></figure>
+        <figure><img className={styles.originalImage} src={targetUrl} alt="训练目标图" /><figcaption>原始高清目标图</figcaption></figure>
         <figure><img src="/api/ai-painter/inference/latest-image" alt="本地模型生成图" /><figcaption>当前模型生成图</figcaption></figure>
       </div>
       <dl className={styles.inferenceMeta}>

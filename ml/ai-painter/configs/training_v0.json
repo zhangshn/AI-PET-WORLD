@@ -5,6 +5,11 @@
   "learningRate": 0.0002,
   "maxEpochs": 100,
   "mixedPrecision": true,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 0.45,
+    "texture": 0.2
+  },
   "seed": 20260612,
   "status": "gpu_smoke_verified"
 }

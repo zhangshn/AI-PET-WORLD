@@ -16,6 +16,7 @@
     "test:ai-painter-batch-upload": "node scripts/test-ai-painter-batch-sample-id.mjs",
     "check:ai-painter-training": "ml\\ai-painter\\.venv\\Scripts\\python.exe ml\\ai-painter\\scripts\\train_tiny_unet.py --dataset-root data\\ai-painter-datasets --check-runtime",
     "train:ai-painter-overfit": "ml\\ai-painter\\.venv\\Scripts\\python.exe ml\\ai-painter\\scripts\\train_tiny_unet.py --dataset-root data\\ai-painter-datasets --max-epochs 20",
+    "train:ai-painter-gan": "ml\\ai-painter\\.venv\\Scripts\\python.exe ml\\ai-painter\\scripts\\train_conditional_gan.py --dataset-root data\\ai-painter-datasets --output-dir .runtime\\ai-painter\\training-v2-gan --epochs 200",
     "infer:ai-painter-smoke": "ml\\ai-painter\\.venv\\Scripts\\python.exe ml\\ai-painter\\scripts\\infer_tiny_unet.py --checkpoint .runtime\\ai-painter\\training-v0-smoke\\best.pt --dataset-root data\\ai-painter-datasets --sample-id scene-world-1-e235b975 --output .runtime\\ai-painter\\inference-v0\\scene-world-1-e235b975.png",
     "evaluate:ai-painter": "ml\\ai-painter\\.venv\\Scripts\\python.exe ml\\ai-painter\\scripts\\evaluate_tiny_unet.py --checkpoint .runtime\\ai-painter\\training-v0-evaluation\\best.pt --dataset-root data\\ai-painter-datasets --split validation --output-dir .runtime\\ai-painter\\evaluation-v0",
     "validate:ai-painter-data": "ml\\ai-painter\\.venv\\Scripts\\python.exe ml\\ai-painter\\scripts\\validate_dataset.py --dataset-root data\\ai-painter-datasets",
