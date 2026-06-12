@@ -1,4 +1,5 @@
 import json
+from hashlib import sha256
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -28,7 +29,7 @@ class DatasetV1Tests(unittest.TestCase):
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
             _stage_v1_sample(root, review=True)
-            confirm_v1_sample(root, "sample-001")
+            confirm_v1_sample(root, "sample-001", _submission(root))
             dataset = dataset_module.WorldSceneDataset(root, "train", blueprint_version="v1")
             self.assertEqual(dataset[0]["condition"].shape, (14, 192, 256))
 
@@ -36,16 +37,16 @@ class DatasetV1Tests(unittest.TestCase):
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
             sample = _stage_v1_sample(root, review=True)
-            confirm_v1_sample(root, "sample-001")
+            confirm_v1_sample(root, "sample-001", _submission(root))
             (sample / "masks_v1" / "grass.png").unlink()
-            with self.assertRaises(FileNotFoundError):
+            with self.assertRaisesRegex(ValueError, "missing mask"):
                 dataset_module.WorldSceneDataset(root, "train", blueprint_version="v1")[0]
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
             sample = _stage_v1_sample(root, review=True)
-            confirm_v1_sample(root, "sample-001")
+            confirm_v1_sample(root, "sample-001", _submission(root))
             Image.new("L", (16, 16), 255).save(sample / "masks_v1" / "grass.png")
-            with self.assertRaisesRegex(ValueError, "256x192"):
+            with self.assertRaisesRegex(ValueError, "hash mismatch|size mismatch"):
                 dataset_module.WorldSceneDataset(root, "train", blueprint_version="v1")[0]
 
     def test_review_pending_sample_is_blocked_from_official_training(self) -> None:
@@ -59,7 +60,7 @@ class DatasetV1Tests(unittest.TestCase):
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
             sample = _stage_v1_sample(root, review=True)
-            confirm_v1_sample(root, "sample-001")
+            confirm_v1_sample(root, "sample-001", _submission(root))
             data = json.loads((sample / "blueprint.v1.json").read_text(encoding="utf-8"))
             data["seed"] = 99
             (sample / "blueprint.v1.json").write_text(json.dumps(data), encoding="utf-8")
@@ -97,11 +98,28 @@ def _stage_v1_sample(root: Path, review: bool) -> Path:
     sample.mkdir(parents=True)
     Image.new("RGB", (256, 192), (80, 120, 60)).save(sample / "target.png")
     blueprint = _v1(review)
-    (sample / "blueprint.v1.json").write_text(json.dumps(blueprint), encoding="utf-8")
+    (sample / "blueprint.v1.json").write_text(_json(blueprint), encoding="utf-8")
     render_v1_masks_from_file(sample / "blueprint.v1.json", sample / "masks_v1")
     (root / "indexes").mkdir()
     (root / "indexes" / "train.json").write_text(json.dumps({"sampleIds": ["sample-001"]}), encoding="utf-8")
     return sample
+
+
+def _submission(root: Path) -> dict[str, object]:
+    sample = root / "accepted" / "dataset_v0" / "scene" / "world" / "sample-001"
+    blueprint = json.loads((sample / "blueprint.v1.json").read_text(encoding="utf-8"))
+    return {
+        "sampleId": "sample-001",
+        "reviewer": "reviewer-a",
+        "blueprintHash": _sha256_file(sample / "blueprint.v1.json"),
+        "targetImageHash": _sha256_file(sample / "target.png"),
+        "overallDecision": "approved",
+        "overallConfirmation": True,
+        "decisions": [
+            {"structureId": item["id"], "type": item["type"], "decision": "approved", "reviewerNote": "确认"}
+            for item in blueprint["structures"] if item["requiresManualReview"]
+        ],
+    }
 
 
 def _v1(review: bool) -> dict[str, object]:
@@ -113,6 +131,14 @@ def _v1(review: bool) -> dict[str, object]:
             for index, name in enumerate(V1_CONDITION_CHANNELS)
         ],
     }
+
+
+def _json(data: dict[str, object]) -> str:
+    return json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+
+
+def _sha256_file(path: Path) -> str:
+    return sha256(path.read_bytes()).hexdigest()
 
 
 if __name__ == "__main__":

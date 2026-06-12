@@ -9,10 +9,11 @@ def main() -> int:
     parser = ArgumentParser(description="Confirm one reviewed v1 Blueprint draft.")
     parser.add_argument("sample_id")
     parser.add_argument("--dataset-root", type=Path, required=True)
-    parser.add_argument("--reviewer", default="project-owner")
+    parser.add_argument("--submission", type=Path, required=True)
     args = parser.parse_args()
     try:
-        result = confirm_v1_sample(args.dataset_root, args.sample_id, args.reviewer)
+        submission = json.loads(args.submission.read_text(encoding="utf-8"))
+        result = confirm_v1_sample(args.dataset_root, args.sample_id, submission)
         print(json.dumps({"status": "reviewed", "sampleId": args.sample_id, "review": result}, ensure_ascii=False))
         return 0
     except (OSError, ValueError, json.JSONDecodeError) as error:

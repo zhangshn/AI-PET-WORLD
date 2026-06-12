@@ -1,4 +1,5 @@
 import json
+from hashlib import sha256
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
@@ -33,7 +34,7 @@ class DatasetV1AuditTests(unittest.TestCase):
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
             _stage_sample(root, review=True)
-            confirm_v1_sample(root, "sample-001")
+            confirm_v1_sample(root, "sample-001", _submission(root))
             report = audit_v1_dataset(root)
             self.assertEqual(report["reviewedV1"], 1)
             self.assertEqual(report["trainableV1"], 1)
@@ -43,7 +44,7 @@ class DatasetV1AuditTests(unittest.TestCase):
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
             sample = _stage_sample(root, review=True)
-            confirm_v1_sample(root, "sample-001")
+            confirm_v1_sample(root, "sample-001", _submission(root))
             (sample / "masks_v1" / "grass.png").unlink()
             report = audit_v1_dataset(root)
             self.assertEqual(report["trainableV1"], 0)
@@ -56,9 +57,26 @@ def _stage_sample(root: Path, review: bool) -> Path:
     sample.mkdir(parents=True)
     Image.new("RGB", (256, 192), (80, 120, 60)).save(sample / "target.png")
     (sample / "blueprint.json").write_text(json.dumps({"schemaVersion": "world-blueprint-v0"}), encoding="utf-8")
-    (sample / "blueprint.v1.json").write_text(json.dumps(_v1(review)), encoding="utf-8")
+    (sample / "blueprint.v1.json").write_text(_json(_v1(review)), encoding="utf-8")
     render_v1_masks_from_file(sample / "blueprint.v1.json", sample / "masks_v1")
     return sample
+
+
+def _submission(root: Path) -> dict[str, object]:
+    sample = root / "accepted" / "dataset_v0" / "scene" / "world" / "sample-001"
+    blueprint = json.loads((sample / "blueprint.v1.json").read_text(encoding="utf-8"))
+    return {
+        "sampleId": "sample-001",
+        "reviewer": "reviewer-a",
+        "blueprintHash": _sha256_file(sample / "blueprint.v1.json"),
+        "targetImageHash": _sha256_file(sample / "target.png"),
+        "overallDecision": "approved",
+        "overallConfirmation": True,
+        "decisions": [
+            {"structureId": item["id"], "type": item["type"], "decision": "approved", "reviewerNote": "确认"}
+            for item in blueprint["structures"] if item["requiresManualReview"]
+        ],
+    }
 
 
 def _v1(review: bool) -> dict[str, object]:
@@ -84,6 +102,14 @@ def _v1(review: bool) -> dict[str, object]:
             for index, name in enumerate(V1_CONDITION_CHANNELS)
         ],
     }
+
+
+def _json(data: dict[str, object]) -> str:
+    return json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
+
+
+def _sha256_file(path: Path) -> str:
+    return sha256(path.read_bytes()).hexdigest()
 
 
 if __name__ == "__main__":

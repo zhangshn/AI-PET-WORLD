@@ -75,7 +75,10 @@ export type SceneDatasetItem = {
   imageUrl: string
   blueprint: SceneBlueprint
   blueprintV1?: SceneBlueprintV1
+  blueprintV1Hash?: string | null
+  targetImageHash?: string | null
   migrationV1?: Record<string, unknown>
+  reviewV1?: Record<string, unknown>
 }
 
 export type AnnotationTool = "grass" | "water" | "road" | "tree" | "rock" | "shelter"

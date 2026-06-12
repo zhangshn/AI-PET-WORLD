@@ -2,6 +2,7 @@
 
 import { MouseEvent, useEffect, useMemo, useState } from "react"
 import { CONDITION_CHANNELS_V1 } from "./ai-painter-lab-data"
+import { SceneReviewPanelV1 } from "./scene-review-panel-v1"
 import type { Point, SceneBlueprintV1, SceneDatasetItem, V1Structure, V1StructureType } from "./scene-annotation-types"
 import styles from "./page.module.css"
 
@@ -124,6 +125,7 @@ export function SceneAnnotationEditorV1() {
           <p>{status}</p>
           <h3>结构列表</h3>
           <div>{blueprint.structures.map((item) => <button type="button" key={item.id} onClick={() => removeStructure(item.id)}>{item.id} / {item.type}{item.requiresManualReview ? " / 待复核" : ""}</button>)}</div>
+          <SceneReviewPanelV1 scene={scene} blueprint={blueprint} onReviewed={() => loadScenes(selectedId)} />
         </aside>
       </div>
     </div>
