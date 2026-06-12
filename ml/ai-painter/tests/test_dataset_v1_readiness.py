@@ -103,6 +103,7 @@ def _stage(root: Path, sample_id: str, *, color=(60, 120, 180), review: bool = T
     sample = root / "accepted" / "dataset_v0" / "scene" / "world" / sample_id
     sample.mkdir(parents=True)
     _target(sample / "target.png", color, flat)
+    _write_json(sample / "blueprint.json", {"schemaVersion": "world-blueprint-v0", "sceneId": sample_id})
     blueprint = _blueprint(sample_id)
     _write_json(sample / "blueprint.v1.json", blueprint)
     render_v1_masks_from_file(sample / "blueprint.v1.json", sample / "masks_v1")
