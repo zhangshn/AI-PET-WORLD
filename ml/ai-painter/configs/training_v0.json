@@ -5,5 +5,6 @@
   "learningRate": 0.0002,
   "maxEpochs": 100,
   "mixedPrecision": true,
-  "status": "not_started"
+  "seed": 20260612,
+  "status": "gpu_smoke_verified"
 }

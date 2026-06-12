@@ -8,6 +8,9 @@ version = "0.1.0"
 requires-python = ">=3.10"
 dependencies = ["Pillow>=10.4,<12"]
 
+[project.optional-dependencies]
+training = ["torch", "numpy>=2.0,<3"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 

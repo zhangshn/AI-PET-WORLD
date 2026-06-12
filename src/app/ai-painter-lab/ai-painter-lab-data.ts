@@ -1,10 +1,12 @@
 export function buildAiPainterLabStages(accepted: number) {
   return [
     { name: "Blueprint v0", status: "完成", detail: "固定 256×192，描述地形、道路与世界对象。" },
-    { name: "Condition Mask", status: "完成", detail: "8 个结构通道，可直接供后续模型训练使用。" },
-    { name: "数据导入与审计", status: "完成", detail: "许可、人工复核、SHA-256、重复 ID 与文件完整性。" },
-    { name: "工程验证集", status: accepted >= 20 ? "完成" : "等待数据", detail: `当前 ${accepted}/20，图片由项目外人工制作后导入。` },
-    { name: "最低训练集", status: accepted >= 100 ? "完成" : "未完成", detail: `当前 ${accepted}/100，达到后才能进入模型训练。` },
+    { name: "Condition Mask", status: "完成", detail: "8 个结构通道已接入数据集和模型输入。" },
+    { name: "数据导入与审计", status: "完成", detail: "许可、人工复核、SHA-256、重复 ID 与文件完整性已实现。" },
+    { name: "Tiny U-Net 训练链", status: "完成", detail: "RTX 5050 GPU 训练、日志、latest/best checkpoint 已验证。" },
+    { name: "本地模型推理", status: "完成", detail: "已从 best.pt 生成第一张 256×192 PNG，仅供训练诊断。" },
+    { name: "工程质量数据集", status: accepted >= 20 ? "完成" : "等待数据", detail: `当前 ${accepted}/20；达到后开始画质与结构控制迭代。` },
+    { name: "视觉审核通过画面", status: "未完成", detail: "当前生成图不合格，不得进入 ApprovedFrame 或玩家画面。" },
   ]
 }
 

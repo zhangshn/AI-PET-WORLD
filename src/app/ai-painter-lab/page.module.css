@@ -14,6 +14,22 @@
 .panelTitle b { font: 12px "Courier New"; color: #6e8e82; }
 .blueprint { background: #07100e; padding: 14px; aspect-ratio: 4/3; max-height: 610px; }
 .blueprint svg, .maskPreview svg { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.inferenceGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.inferenceGrid figure { margin: 0; padding: 12px; background: #07100e; border: 1px solid #263b34; }
+.inferenceGrid img { display: block; width: 100%; aspect-ratio: 4/3; object-fit: contain; image-rendering: pixelated; }
+.inferenceGrid figcaption { margin-top: 10px; color: #9bb0a6; font-size: 13px; }
+.inferenceMeta { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 14px 0 0; }
+.inferenceMeta div { padding: 10px; background: #0b1713; border: 1px solid #263b34; }
+.inferenceMeta dt { color: #71887e; font-size: 12px; }
+.inferenceMeta dd { margin: 4px 0 0; color: #d8e5dc; overflow-wrap: anywhere; }
+.draftStatus { color: #9bb0a6; }
+.draftGrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.draftGrid article { padding: 12px; background: #0b1713; border: 1px solid #263b34; }
+.draftGrid img { display: block; width: 100%; aspect-ratio: 4/3; object-fit: cover; image-rendering: pixelated; }
+.draftGrid h3 { margin: 10px 0 4px; font-size: 14px; overflow-wrap: anywhere; }
+.draftGrid p { min-height: 42px; color: #83998f; font-size: 12px; line-height: 1.5; }
+.draftGrid button { width: 100%; padding: 10px; color: #d8e5dc; background: #183a2c; border: 1px solid #3d765a; cursor: pointer; }
+.draftGrid button:disabled { opacity: .45; cursor: wait; }
 .legend { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
 .legend span { background: #1a2b25; color: #9bb5aa; padding: 6px 9px; font-size: 11px; }
 .progressNumber strong { font-size: 72px; line-height: 1; color: #8cd5a4; }
@@ -70,6 +86,32 @@
 .submitRow button:disabled { opacity: .5; }
 .submitRow span { color: #d8b967; font-size: 12px; }
 .batchResults { margin: 14px 0 0; padding: 12px 14px 12px 32px; background: #101f1a; border: 1px solid #30473e; color: #b9cec4; font-size: 12px; line-height: 1.7; }
+.annotationEmpty, .annotationEditor { background: #0a1512; border: 1px solid #243a32; padding: 18px; color: #9db3a8; }
+.annotationToolbar { display: flex; align-items: end; flex-wrap: wrap; gap: 9px; margin-bottom: 14px; }
+.annotationToolbar label { display: flex; flex-direction: column; gap: 6px; color: #91a99e; font-size: 12px; }
+.annotationToolbar select, .annotationToolbar button, .annotationSummary button { border: 1px solid #365247; background: #10221c; color: #bcd1c7; padding: 9px 11px; cursor: pointer; }
+.toolButtons { display: flex; flex-wrap: wrap; gap: 6px; }
+.annotationToolbar .activeTool { background: #6fce91; color: #07170f; border-color: #6fce91; font-weight: 700; }
+.annotationWorkspace { display: grid; grid-template-columns: minmax(0, 4fr) minmax(230px, 1fr); gap: 14px; }
+.annotationCanvas { position: relative; aspect-ratio: 4/3; overflow: hidden; background: #050b09; cursor: crosshair; }
+.annotationCanvas img, .annotationCanvas svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.annotationCanvas img { object-fit: fill; image-rendering: pixelated; }
+.annotationCanvas svg { z-index: 1; }
+.waterRegion { fill: rgba(25, 172, 220, .34); stroke: #36d9ff; stroke-width: 1; }
+.grassRegion { fill: rgba(105, 213, 120, .16); stroke: #8be89a; stroke-width: 1; }
+.roadLine { fill: none; stroke: rgba(238, 183, 87, .72); stroke-linecap: round; stroke-linejoin: round; }
+.treeBox, .rockBox, .shelterBox { fill: rgba(34, 176, 84, .18); stroke: #45e27b; stroke-width: 1; }
+.rockBox { fill: rgba(210, 216, 220, .22); stroke: #eef3f5; }
+.shelterBox { fill: rgba(238, 145, 52, .25); stroke: #ffaf58; }
+.draftShape { fill: none; stroke: #fff06a; stroke-width: 1; stroke-dasharray: 3 2; }
+.draftPoint { fill: #fff06a; stroke: #07100e; stroke-width: .5; }
+.annotationSummary { background: #101f1a; border: 1px solid #30473e; padding: 15px; }
+.annotationSummary h3 { margin: 0 0 12px; }
+.annotationSummary dl { margin: 0; }
+.annotationSummary dl div { display: flex; justify-content: space-between; padding: 8px 0; border-top: 1px solid #2b4138; }
+.annotationSummary dd { margin: 0; color: #8de0a9; }
+.annotationSummary p { color: #d8b967; font-size: 12px; line-height: 1.6; }
+.annotationSummary button { width: 100%; background: #71d394; color: #092014; font-weight: 700; }
 @media (max-width: 1000px) { .layerGrid, .formGrid { grid-template-columns: repeat(2, 1fr); } .domainGrid { grid-template-columns: repeat(3, 1fr); } }
-@media (max-width: 900px) { .header { align-items: flex-start; gap: 20px; } .heroGrid, .bottomGrid { grid-template-columns: 1fr; } .maskGrid { grid-template-columns: repeat(2, 1fr); } }
-@media (max-width: 560px) { .page { padding: 22px 14px 50px; } .header, .notice { flex-direction: column; align-items: flex-start; } .maskGrid, .layerGrid, .domainGrid, .formGrid, .confirmations { grid-template-columns: 1fr; } .sectionHeading { align-items: flex-start; gap: 8px; flex-direction: column; } .submitRow { align-items: flex-start; flex-direction: column; } }
+@media (max-width: 900px) { .header { align-items: flex-start; gap: 20px; } .heroGrid, .bottomGrid, .annotationWorkspace { grid-template-columns: 1fr; } .maskGrid, .draftGrid { grid-template-columns: repeat(2, 1fr); } .inferenceMeta { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .page { padding: 22px 14px 50px; } .header, .notice { flex-direction: column; align-items: flex-start; } .maskGrid, .layerGrid, .domainGrid, .formGrid, .confirmations, .inferenceGrid, .inferenceMeta, .draftGrid { grid-template-columns: 1fr; } .sectionHeading { align-items: flex-start; gap: 8px; flex-direction: column; } .submitRow { align-items: flex-start; flex-direction: column; } }

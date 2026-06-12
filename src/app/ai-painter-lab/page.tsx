@@ -3,7 +3,11 @@ import { BlueprintPreview, ConditionPreview } from "./condition-preview"
 import { BLUEPRINT_JSON, CONDITION_CHANNELS, buildAiPainterLabStages } from "./ai-painter-lab-data"
 import { readAiPainterDatasetStatus } from "./ai-painter-lab-status"
 import { DatasetUploadForm } from "./dataset-upload-form"
+import { InferencePreview } from "./inference-preview"
+import { SceneAnnotationEditor } from "./scene-annotation-editor"
 import { TaxonomyPanel } from "./taxonomy-panel"
+import { TrainingDraftReview } from "./training-draft-review"
+import { ValidationPreview } from "./validation-preview"
 import styles from "./page.module.css"
 
 export const dynamic = "force-dynamic"
@@ -24,14 +28,14 @@ export default async function AiPainterLabPage() {
         <div>
           <p className={styles.eyebrow}>AI-PET-WORLD / INTERNAL LAB</p>
           <h1>AI Painter 数据实验室</h1>
-          <p className={styles.lead}>查看当前已经完成的数据协议、结构条件图和训练准备状态。</p>
+          <p className={styles.lead}>查看数据协议、条件图、本地训练与模型推理的真实状态。</p>
         </div>
-        <div className={styles.status}><span />模块 D 进行中</div>
+        <div className={styles.status}><span />模块 F 进行中</div>
       </header>
 
       <section className={styles.notice}>
         <strong>这不是最终世界画面。</strong>
-        <span>这里展示的是模型训练前的 Blueprint 与 Condition Mask 调试结果；模型生成、VJ 审核通过前，不能作为玩家画面展示。</span>
+        <span>这里包含 Blueprint、Condition Mask 与本地模型推理结果；VJ 审核通过前，任何生成图都不能作为玩家画面展示。</span>
       </section>
 
       <section className={styles.heroGrid}>
@@ -57,6 +61,14 @@ export default async function AiPainterLabPage() {
         </aside>
       </section>
 
+      <InferencePreview />
+      <ValidationPreview />
+
+      <section className={styles.section}>
+        <div className={styles.sectionHeading}><div><small>TRAINING DRAFT REVIEW</small><h2>待审核原创训练图</h2></div><p>只有人工批准后才会生成 Mask 并进入训练索引。</p></div>
+        <TrainingDraftReview />
+      </section>
+
       <section className={styles.section}>
         <div className={styles.sectionHeading}><div><small>DATA TAXONOMY</small><h2>训练数据分层目录</h2></div><p>拆开定义，分别归档；完整场景才进入主模型训练计数。</p></div>
         <TaxonomyPanel />
@@ -65,6 +77,11 @@ export default async function AiPainterLabPage() {
       <section className={styles.section}>
         <div className={styles.sectionHeading}><div><small>LOCAL IMPORT</small><h2>上传并导入训练数据</h2></div><p>仅开发环境可用，文件保存在本机，不上传到第三方服务。</p></div>
         <DatasetUploadForm />
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.sectionHeading}><div><small>SCENE ANNOTATION</small><h2>完整场景结构标注</h2></div><p>为每张图片建立独立 Blueprint，并重新生成 8 通道 Condition Mask。</p></div>
+        <SceneAnnotationEditor />
       </section>
 
       <section className={styles.section}>

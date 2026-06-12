@@ -34,6 +34,17 @@ class DatasetImportTests(unittest.TestCase):
             self.assertEqual(train_first, (root / "indexes/train.json").read_text(encoding="utf-8"))
             self.assertEqual(first["accepted"], 20)
 
+    def test_small_scene_dataset_keeps_one_validation_sample(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for index in range(5):
+                sample_id = f"small-{index:03d}"
+                _stage_sample(root, sample_id)
+                self.assertEqual(import_sample(root, sample_id)["status"], "accepted")
+            summary = build_dataset_indexes(root, 0.1)
+            self.assertEqual(summary["train"], 4)
+            self.assertEqual(summary["validation"], 1)
+
     def test_existing_sample_cannot_be_silently_overwritten(self) -> None:
         with TemporaryDirectory() as temporary:
             root = Path(temporary)

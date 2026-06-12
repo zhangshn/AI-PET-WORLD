@@ -23,6 +23,11 @@ def build_dataset_indexes(dataset_root: Path, validation_ratio: float = 0.1) -> 
         bucket = int(sha256(sample_id.encode("utf-8")).hexdigest()[:8], 16) % 10_000
         (validation if bucket < threshold else train).append(sample_id)
 
+    if len(train) + len(validation) >= 2 and not validation:
+        validation.append(train.pop(_stable_validation_index(train)))
+    if len(train) + len(validation) >= 2 and not train:
+        train.append(validation.pop())
+
     _write_index(layout.indexes / "train.json", "train", train)
     _write_index(layout.indexes / "validation.json", "validation", validation)
     summary = {
@@ -35,6 +40,13 @@ def build_dataset_indexes(dataset_root: Path, validation_ratio: float = 0.1) -> 
         json.dumps(summary, indent=2) + "\n", encoding="utf-8"
     )
     return summary
+
+
+def _stable_validation_index(sample_ids: list[str]) -> int:
+    return min(
+        range(len(sample_ids)),
+        key=lambda index: sha256(sample_ids[index].encode("utf-8")).hexdigest(),
+    )
 
 
 def _write_index(path: Path, split: str, sample_ids: list[str]) -> None:

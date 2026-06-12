@@ -6,5 +6,5 @@
   "channelMultipliers": [1, 2, 4, 4],
   "imageWidth": 256,
   "imageHeight": 192,
-  "status": "not_implemented"
+  "status": "gpu_smoke_verified"
 }
