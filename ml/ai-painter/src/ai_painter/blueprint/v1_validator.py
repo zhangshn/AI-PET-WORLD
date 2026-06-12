@@ -75,16 +75,30 @@ def _validate_geometry(value: Any, label: str) -> list[str]:
         return [f"{label}.geometry is required"]
     kind = value.get("kind")
     if kind == "rect":
-        return _validate_rect(value, label)
+        return _validate_allowed_keys(value, {"kind", "x", "y", "width", "height"}, label) + _validate_rect(value, label)
     if kind == "polygon":
-        return _validate_points(value.get("points"), 3, f"{label}.geometry.points")
+        return _validate_allowed_keys(value, {"kind", "points"}, label) + _validate_points(
+            value.get("points"), 3, f"{label}.geometry.points"
+        )
     if kind == "polyline":
-        errors = _validate_points(value.get("points"), 2, f"{label}.geometry.points")
+        errors = _validate_allowed_keys(value, {"kind", "points", "lineWidth"}, label)
+        errors.extend(_validate_points(value.get("points"), 2, f"{label}.geometry.points"))
         line_width = value.get("lineWidth")
         if not isinstance(line_width, int) or line_width <= 0:
             errors.append(f"{label}.geometry.lineWidth must be positive")
         return errors
     return [f"{label}.geometry.kind is invalid"]
+
+
+def _validate_allowed_keys(value: dict[str, Any], allowed: set[str], label: str) -> list[str]:
+    errors: list[str] = []
+    for key in sorted(set(value) - allowed):
+        errors.append(f"{label}.geometry.{key} is not allowed for {value.get('kind')} geometry")
+        if key in {"x", "y"}:
+            errors.append(f"{label}.geometry.{key} is outside the canvas")
+        if key in {"width", "height"}:
+            errors.append(f"{label}.geometry.{key} must be positive")
+    return errors
 
 
 def _validate_rect(value: dict[str, Any], label: str) -> list[str]:
