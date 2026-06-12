@@ -14,8 +14,8 @@ def audit_dataset(dataset_root: Path) -> dict[str, object]:
     errors: list[str] = []
     sample_ids: list[str] = []
 
-    for metadata_path in sorted((layout.accepted / "metadata").glob("*.json")):
-        sample_id = metadata_path.stem
+    for metadata_path in sorted(layout.accepted.glob("*/*/*/metadata.json")):
+        sample_id = metadata_path.parent.name
         sample_ids.append(sample_id)
         try:
             manifest = json.loads(metadata_path.read_text(encoding="utf-8"))
@@ -44,13 +44,14 @@ def _audit_manifest(root: Path, sample_id: str, manifest: Any) -> list[str]:
     files = manifest.get("files")
     if not isinstance(files, dict):
         return errors + [f"{sample_id}: files record is missing"]
-    for name in ("targetImage", "blueprint"):
+    for name in ("targetImage", "structure"):
         errors.extend(_audit_file_record(root, sample_id, name, files.get(name)))
 
     masks = files.get("masks")
-    if not isinstance(masks, dict) or len(masks) != 8:
+    requires_masks = manifest.get("sampleLayer") == "scene"
+    if requires_masks and (not isinstance(masks, dict) or len(masks) != 8):
         errors.append(f"{sample_id}: exactly 8 condition masks are required")
-    else:
+    elif isinstance(masks, dict):
         for name, record in sorted(masks.items()):
             errors.extend(_audit_file_record(root, sample_id, f"mask:{name}", record))
     return errors

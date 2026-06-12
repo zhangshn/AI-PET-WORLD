@@ -2,6 +2,8 @@ import type { Metadata } from "next"
 import { BlueprintPreview, ConditionPreview } from "./condition-preview"
 import { BLUEPRINT_JSON, CONDITION_CHANNELS, buildAiPainterLabStages } from "./ai-painter-lab-data"
 import { readAiPainterDatasetStatus } from "./ai-painter-lab-status"
+import { DatasetUploadForm } from "./dataset-upload-form"
+import { TaxonomyPanel } from "./taxonomy-panel"
 import styles from "./page.module.css"
 
 export const dynamic = "force-dynamic"
@@ -48,10 +50,21 @@ export default async function AiPainterLabPage() {
             <div><dt>工程验证目标</dt><dd>20-50 张</dd></div>
             <div><dt>最低训练目标</dt><dd>100 张</dd></div>
             <div><dt>Condition 通道</dt><dd>8 个</dd></div>
+            <div><dt>全部辅助样本</dt><dd>{dataset.totalAccepted - dataset.accepted} 条</dd></div>
             <div><dt>在线绘图 API</dt><dd>禁止接入</dd></div>
             <div><dt>导入失败记录</dt><dd>{dataset.rejected} 条</dd></div>
           </dl>
         </aside>
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.sectionHeading}><div><small>DATA TAXONOMY</small><h2>训练数据分层目录</h2></div><p>拆开定义，分别归档；完整场景才进入主模型训练计数。</p></div>
+        <TaxonomyPanel />
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.sectionHeading}><div><small>LOCAL IMPORT</small><h2>上传并导入训练数据</h2></div><p>仅开发环境可用，文件保存在本机，不上传到第三方服务。</p></div>
+        <DatasetUploadForm />
       </section>
 
       <section className={styles.section}>

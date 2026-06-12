@@ -17,7 +17,7 @@ class DatasetImportTests(unittest.TestCase):
             self.assertEqual(result["status"], "accepted")
             self.assertEqual(len(result["files"]["targetImage"]["sha256"]), 64)
             self.assertEqual(len(result["files"]["masks"]), 8)
-            with Image.open(root / "accepted/dataset_v0/images/sample-001.png") as image:
+            with Image.open(root / "accepted/dataset_v0/scene/world/sample-001/target.png") as image:
                 self.assertEqual(image.size, (256, 192))
 
     def test_index_split_is_stable(self) -> None:
@@ -48,7 +48,7 @@ class DatasetImportTests(unittest.TestCase):
             root = Path(temporary)
             _stage_sample(root, "sample-001")
             self.assertEqual(import_sample(root, "sample-001")["status"], "accepted")
-            image_path = root / "accepted/dataset_v0/images/sample-001.png"
+            image_path = root / "accepted/dataset_v0/scene/world/sample-001/target.png"
             image_path.write_bytes(image_path.read_bytes() + b"tampered")
             result = audit_dataset(root)
             self.assertEqual(result["status"], "failed")
@@ -64,6 +64,20 @@ class DatasetImportTests(unittest.TestCase):
             result = import_sample(root, "sample-001")
             self.assertEqual(result["status"], "rejected")
             self.assertTrue(any("variation" in error for error in result["errors"]))
+
+    def test_auxiliary_object_is_categorized_but_not_counted_as_scene(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            _stage_auxiliary_sample(root, "wood-house-001")
+            result = import_sample(root, "wood-house-001")
+            self.assertEqual(result["status"], "accepted")
+            self.assertEqual(result["sampleLayer"], "object")
+            self.assertTrue(
+                (root / "accepted/dataset_v0/object/building/wood-house-001/target.png").is_file()
+            )
+            summary = build_dataset_indexes(root, 0.2)
+            self.assertEqual(summary["accepted"], 1)
+            self.assertEqual(summary["primaryScenes"], 0)
 
 
 def _stage_sample(root: Path, sample_id: str) -> None:
@@ -89,6 +103,10 @@ def _stage_sample(root: Path, sample_id: str) -> None:
     metadata = {
         "schemaVersion": "training-sample-metadata-v0", "sampleId": sample_id,
         "datasetVersion": "ai-painter-dataset-v0", "targetImage": "target.png",
+        "sampleLayer": "scene", "domain": "world", "subtype": "test_scene",
+        "tags": ["test", "pixel"], "components": ["grass", "road", "shelter"],
+        "componentMaterials": [{"component": "shelter", "material": "wood"}],
+        "viewpoint": "fixed_top_down",
         "blueprintFile": "blueprint.json",
         "source": {"kind": "ai_assisted_manual_creation", "toolName": "manual-tool",
                    "createdAt": "2026-06-12", "licenseBasis": "project-owned",
@@ -100,6 +118,25 @@ def _stage_sample(root: Path, sample_id: str) -> None:
     }
     (sample_dir / "blueprint.json").write_text(json.dumps(blueprint), encoding="utf-8")
     (sample_dir / "metadata.json").write_text(json.dumps(metadata), encoding="utf-8")
+
+
+def _stage_auxiliary_sample(root: Path, sample_id: str) -> None:
+    _stage_sample(root, sample_id)
+    sample_dir = root / "incoming" / sample_id
+    metadata_path = sample_dir / "metadata.json"
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    metadata.update({
+        "sampleLayer": "object", "domain": "building", "subtype": "wood_house",
+        "components": ["roof", "wall", "door"], "annotationFile": "annotation.json",
+    })
+    metadata.pop("blueprintFile")
+    annotation = {
+        "schemaVersion": "training-asset-annotation-v0", "sampleId": sample_id,
+        "subject": "wood_house", "components": ["roof", "wall", "door"],
+        "tags": ["test", "pixel"],
+    }
+    (sample_dir / "annotation.json").write_text(json.dumps(annotation), encoding="utf-8")
+    metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
 
 
 if __name__ == "__main__":

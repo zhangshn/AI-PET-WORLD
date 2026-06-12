@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "dataset-taxonomy-v0",
+  "layers": {
+    "scene": {"titleZh": "完整场景", "primaryTraining": true, "size": [256, 192]},
+    "object": {"titleZh": "完整对象", "primaryTraining": false, "size": [128, 128]},
+    "part": {"titleZh": "结构部件", "primaryTraining": false, "size": [64, 64]},
+    "material": {"titleZh": "材质纹理", "primaryTraining": false, "size": [64, 64]}
+  },
+  "domains": [
+    "world", "building", "character", "animal", "vegetation",
+    "terrain", "road", "water", "material", "prop"
+  ],
+  "examples": {
+    "building": ["wood_house", "roof", "wall", "door", "window", "foundation"],
+    "character": ["butler", "head", "hair", "face", "torso", "arm", "leg", "clothing"],
+    "animal": ["full_body", "head", "body", "leg", "tail", "fur"],
+    "vegetation": ["tree", "bush", "grass_cluster", "flower"],
+    "terrain": ["grassland", "soil", "cliff", "shore"],
+    "water": ["river", "pond", "shoreline", "water_surface"]
+  }
+}

@@ -2,6 +2,16 @@
   "schemaVersion": "training-sample-metadata-v0",
   "sampleId": "sample-forest-shore-001",
   "datasetVersion": "ai-painter-dataset-v0",
+  "sampleLayer": "scene",
+  "domain": "world",
+  "subtype": "forest_shore_construction",
+  "tags": ["bright", "healing", "top_down", "pixel_art"],
+  "components": ["grass", "water", "road", "tree", "rock", "shelter"],
+  "componentMaterials": [
+    {"component": "shelter_wall", "material": "wood"},
+    {"component": "road", "material": "soil"}
+  ],
+  "viewpoint": "fixed_top_down",
   "targetImage": "target.png",
   "blueprintFile": "blueprint.json",
   "source": {

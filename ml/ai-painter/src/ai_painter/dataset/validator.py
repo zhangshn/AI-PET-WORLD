@@ -6,15 +6,16 @@ from PIL import Image, ImageStat
 from ai_painter.blueprint.schema import Blueprint, load_blueprint
 
 from .metadata import SampleMetadata, load_metadata
+from .taxonomy import LAYER_IMAGE_SIZES
 
 
 @dataclass(frozen=True)
 class StagedSample:
     directory: Path
     metadata: SampleMetadata
-    blueprint: Blueprint
+    blueprint: Blueprint | None
     image_path: Path
-    blueprint_path: Path
+    structure_path: Path
 
 
 @dataclass(frozen=True)
@@ -38,25 +39,31 @@ def validate_staged_sample(sample_dir: Path) -> ValidationResult:
     if metadata.sample_id != sample_dir.name:
         errors.append("sampleId must match the incoming directory name")
     image_path = _safe_child(sample_dir, metadata.target_image, errors)
-    blueprint_path = _safe_child(sample_dir, metadata.blueprint_file, errors)
-    if image_path is None or blueprint_path is None:
+    structure_file = metadata.blueprint_file or metadata.annotation_file or ""
+    structure_path = _safe_child(sample_dir, structure_file, errors)
+    if image_path is None or structure_path is None:
         return ValidationResult(False, tuple(errors), None)
 
     if not image_path.is_file():
         errors.append("target image does not exist")
-    if not blueprint_path.is_file():
-        errors.append("blueprint file does not exist")
+    if not structure_path.is_file():
+        errors.append("structure file does not exist")
     if errors:
         return ValidationResult(False, tuple(errors), None)
 
-    try:
-        blueprint = load_blueprint(blueprint_path)
-    except (OSError, ValueError) as error:
-        return ValidationResult(False, (str(error),), None)
-    if blueprint.scene_id != metadata.sample_id:
-        errors.append("blueprint sceneId must match metadata sampleId")
-    errors.extend(_validate_image(image_path, blueprint.width, blueprint.height))
-    sample = StagedSample(sample_dir, metadata, blueprint, image_path, blueprint_path)
+    blueprint = None
+    if metadata.sample_layer == "scene":
+        try:
+            blueprint = load_blueprint(structure_path)
+        except (OSError, ValueError) as error:
+            return ValidationResult(False, (str(error),), None)
+        if blueprint.scene_id != metadata.sample_id:
+            errors.append("blueprint sceneId must match metadata sampleId")
+    else:
+        errors.extend(_validate_annotation(structure_path, metadata.sample_id))
+    width, height = LAYER_IMAGE_SIZES[metadata.sample_layer]
+    errors.extend(_validate_image(image_path, width, height, metadata.sample_layer))
+    sample = StagedSample(sample_dir, metadata, blueprint, image_path, structure_path)
     return ValidationResult(not errors, tuple(errors), sample if not errors else None)
 
 
@@ -70,7 +77,7 @@ def _safe_child(root: Path, relative: str, errors: list[str]) -> Path | None:
     return candidate
 
 
-def _validate_image(path: Path, width: int, height: int) -> list[str]:
+def _validate_image(path: Path, width: int, height: int, layer: str) -> list[str]:
     try:
         with Image.open(path) as image:
             image.verify()
@@ -79,7 +86,7 @@ def _validate_image(path: Path, width: int, height: int) -> list[str]:
                 return ["v0 target image must be PNG"]
             source_ratio = image.width / image.height
             target_ratio = width / height
-            if abs(source_ratio - target_ratio) > 0.02:
+            if layer == "scene" and abs(source_ratio - target_ratio) > 0.02:
                 return ["target image aspect ratio must match 4:3"]
             rgb = image.convert("RGB")
             grayscale = rgb.convert("L")
@@ -93,4 +100,18 @@ def _validate_image(path: Path, width: int, height: int) -> list[str]:
                 return ["target image has insufficient visual contrast"]
     except (OSError, ValueError) as error:
         return [f"target image is invalid: {error}"]
+    return []
+
+
+def _validate_annotation(path: Path, sample_id: str) -> list[str]:
+    import json
+
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        return [f"annotation is invalid: {error}"]
+    if not isinstance(value, dict) or value.get("sampleId") != sample_id:
+        return ["annotation sampleId must match metadata sampleId"]
+    if value.get("schemaVersion") != "training-asset-annotation-v0":
+        return ["annotation schemaVersion must be training-asset-annotation-v0"]
     return []

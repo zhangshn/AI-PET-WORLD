@@ -29,12 +29,11 @@ class DatasetLayout:
     def ensure(self) -> None:
         for path in (
             self.incoming,
-            self.accepted / "images",
-            self.accepted / "blueprints",
-            self.accepted / "masks",
-            self.accepted / "metadata",
             self.rejected,
             self.indexes,
             self.manifests,
         ):
             path.mkdir(parents=True, exist_ok=True)
+
+        for layer in ("scene", "object", "part", "material"):
+            (self.accepted / layer).mkdir(parents=True, exist_ok=True)

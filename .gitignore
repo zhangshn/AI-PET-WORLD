@@ -5,6 +5,8 @@
 ml/ai-painter/.venv/
 ml/ai-painter/checkpoints/
 ml/ai-painter/outputs/
+__pycache__/
+*.py[cod]
 /.pnp
 .pnp.*
 .yarn/*

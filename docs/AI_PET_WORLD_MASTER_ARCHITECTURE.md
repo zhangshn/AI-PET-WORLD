@@ -467,6 +467,8 @@ TypeScript 与 Python 并不冲突：TypeScript 管世界与产品主链，Pytho
 
 当前已完成 `ml/ai-painter` Python 独立工程、Blueprint v0、8 通道 Condition Mask、人工训练图导入、来源许可记录、SHA-256、不可覆盖样本 ID、完整性审计以及稳定 train/validation 划分。当前本地已接收训练样本为 `0`，模块 D 仍需先形成 20-50 条工程验证集，再扩展到最低 100 条完整配对样本后才能验收完成。
 
+训练数据采用“分层定义、分目录归档、完整场景主训练”的结构：`scene` 保存完整世界场景并计入主模型训练数量；`object` 保存完整房屋、人物、动物、树木等对象；`part` 保存屋顶、墙体、门窗、头部、四肢、服装等结构部件；`material` 保存木材、石材、草地、水面、布料等纹理。辅助层不能直接计入场景模型的最低 100 张指标。领域目录固定为 world、building、character、animal、vegetation、terrain、road、water、material、prop。开发环境通过 `/ai-painter-lab` 本地上传，上传内容不得发送至第三方服务。
+
 ### 模块 E：内部模型训练基础设施
 
 一次完成 Python 工程、数据加载、Condition Encoder 接口、训练/验证循环、检查点、日志、配置、可复现实验和最小数据过拟合测试。
