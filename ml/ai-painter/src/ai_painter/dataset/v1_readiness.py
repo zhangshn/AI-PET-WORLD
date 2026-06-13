@@ -9,11 +9,13 @@ from typing import Any
 from PIL import Image, ImageStat
 
 from ai_painter.blueprint.channels import CANVAS_HEIGHT, CANVAS_WIDTH, V1_CONDITION_CHANNELS
+from ai_painter.blueprint.v1_validator import validate_v1_blueprint_data
 from ai_painter.dataset.migration_v1 import inspect_v1_sample
 from ai_painter.dataset.v1_audit import audit_v1_sample
 from ai_painter.dataset.v1_review import validate_v1_review_record
 
 REQUIRED_SPLITS = ("train", "validation")
+KNOWN_SAMPLE_STATUSES = ("v0_only", "v1_draft", "review_pending", "reviewed", "trainable", "blocked", "invalid")
 ENGINEERING_MIN_TRAINABLE = 20
 ENGINEERING_MIN_VALIDATION = 2
 FIRST_TRAINING_MIN_TRAINABLE = 100
@@ -39,7 +41,7 @@ def build_v1_readiness_report(dataset_root: Path) -> dict[str, Any]:
         "readyForFirstTraining": readiness_status == "first_training_ready",
         "engineeringValidationReady": readiness_status in {"engineering_validation_ready", "first_training_ready"},
         "sampleCount": len(samples),
-        "statusCounts": dict(Counter(str(item["status"]) for item in samples)),
+        "statusCounts": _status_counts(samples),
         "trainableSampleCount": len(trainable_ids),
         "blockedSampleCount": sum(1 for item in samples if item["blockingReasons"]),
         "lowQualityTargets": [item["sampleId"] for item in samples if any("contrast" in reason for reason in item["target"]["blockingReasons"])],
@@ -56,15 +58,16 @@ def build_v1_readiness_report(dataset_root: Path) -> dict[str, Any]:
 def _sample_report(sample_dir: Path) -> dict[str, Any]:
     status = inspect_v1_sample(sample_dir)
     audit = audit_v1_sample(sample_dir)
-    reasons = list(audit["blockingReasons"])
-    for error in validate_v1_review_record(sample_dir):
-        if error not in reasons:
-            reasons.append(error)
+    review_errors = validate_v1_review_record(sample_dir)
+    reasons = _dedupe([*audit["blockingReasons"], *review_errors])
     target = _target_report(sample_dir / "target.png")
     reasons.extend(target["blockingReasons"])
     masks = _mask_reports(sample_dir)
     for item in masks.values():
         reasons.extend(item["blockingReasons"])
+    reasons = _dedupe(reasons)
+    blueprint = _blueprint_report(sample_dir, status)
+    review = _review_report(sample_dir, review_errors)
     return {
         "sampleId": sample_dir.name,
         "status": status["status"],
@@ -74,7 +77,57 @@ def _sample_report(sample_dir: Path) -> dict[str, Any]:
         "blockingReasons": reasons,
         "warnings": _sample_warnings(sample_dir),
         "target": target,
+        "blueprint": blueprint,
+        "maskStatus": _mask_status(masks),
         "masks": masks,
+        "review": review,
+    }
+
+
+def _blueprint_report(sample_dir: Path, status: dict[str, Any]) -> dict[str, Any]:
+    v0_path = sample_dir / "blueprint.json"
+    v1_path = sample_dir / "blueprint.v1.json"
+    report: dict[str, Any] = {
+        "v0Exists": v0_path.is_file(),
+        "v1Exists": v1_path.is_file(),
+        "version": None,
+        "status": status["status"],
+        "requiresManualReview": None,
+        "structureCount": 0,
+        "blockingReasons": [],
+    }
+    if not v1_path.is_file():
+        return report
+    try:
+        data = json.loads(v1_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as error:
+        report["blockingReasons"] = [f"invalid blueprint.v1.json: {error}"]
+        return report
+    report["version"] = data.get("schemaVersion")
+    report["requiresManualReview"] = data.get("requiresManualReview")
+    report["structureCount"] = len(data.get("structures", [])) if isinstance(data.get("structures"), list) else 0
+    report["blockingReasons"] = validate_v1_blueprint_data(data)
+    return report
+
+
+def _review_report(sample_dir: Path, review_errors: list[str]) -> dict[str, Any]:
+    path = sample_dir / "blueprint.v1.review.json"
+    return {
+        "exists": path.is_file(),
+        "valid": path.is_file() and not review_errors,
+        "blockingReasons": review_errors,
+    }
+
+
+def _mask_status(masks: dict[str, dict[str, Any]]) -> dict[str, Any]:
+    known = [masks[name] for name in V1_CONDITION_CHANNELS if name in masks]
+    errors = [reason for item in masks.values() for reason in item["blockingReasons"]]
+    return {
+        "requiredChannelCount": len(V1_CONDITION_CHANNELS),
+        "existingChannelCount": sum(1 for item in known if item["exists"]),
+        "complete": all(item["exists"] for item in known) and len(known) == len(V1_CONDITION_CHANNELS),
+        "valid": not errors,
+        "blockingReasons": errors,
     }
 
 
@@ -210,7 +263,7 @@ def _channel_summary(samples: list[dict[str, Any]]) -> dict[str, Any]:
             "emptySamples": total - len(non_empty),
             "minNonZeroPixels": min(non_empty) if non_empty else 0,
             "maxNonZeroPixels": max(non_empty) if non_empty else 0,
-            "averageNonZeroPixels": round(sum(values) / total, 2) if total else 0.0,
+            "averageNonZeroPixels": round(sum(non_empty) / len(non_empty), 2) if non_empty else 0.0,
             "coverageRatio": round(len(non_empty) / total, 4) if total else 0.0,
         }
     return summary
@@ -272,6 +325,21 @@ def _readiness_status(samples: list[dict[str, Any]], indexes: dict[str, Any], ch
     if license_warnings:
         return "engineering_validation_ready", ["正式训练前必须补齐许可依据与权利审核"]
     return "first_training_ready", ["已达到首次正式训练数据门槛"]
+
+
+def _status_counts(samples: list[dict[str, Any]]) -> dict[str, int]:
+    counts = Counter(str(item["status"]) for item in samples)
+    for status in KNOWN_SAMPLE_STATUSES:
+        counts.setdefault(status, 0)
+    return dict(counts)
+
+
+def _dedupe(values: list[str]) -> list[str]:
+    result: list[str] = []
+    for value in values:
+        if value not in result:
+            result.append(value)
+    return result
 
 
 def _sha256_file(path: Path) -> str:
