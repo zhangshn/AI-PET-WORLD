@@ -17,10 +17,13 @@ export function SceneReviewPanelV1({ scene, blueprint, onReviewed }: Props) {
   const unfinished = pending.filter((item) => !decisions[item.id])
   const blocked = pending.filter((item) => decisions[item.id] === "rejected" || decisions[item.id] === "needs_correction")
   const hashReady = Boolean(scene.blueprintV1Hash && scene.targetImageHash)
-  const canSubmit = pending.length > 0 && unfinished.length === 0 && blocked.length === 0 && reviewer.trim() && hashReady
+  const canSubmit = pending.length > 0 && unfinished.length === 0 && blocked.length === 0 && Boolean(reviewer.trim()) && hashReady
 
   async function submitReview() {
-    if (!canSubmit) return
+    if (!canSubmit) {
+      setStatus(buildBlockedMessage({ unfinished: unfinished.length, blocked: blocked.length, reviewerReady: Boolean(reviewer.trim()), hashReady }))
+      return
+    }
     setSaving(true)
     setStatus("正在提交逐项人工复核...")
     const body = {
@@ -43,9 +46,11 @@ export function SceneReviewPanelV1({ scene, blueprint, onReviewed }: Props) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       })
-      const result = await response.json() as { ok: boolean; message: string }
-      setStatus(result.message)
-      if (result.ok) await onReviewed()
+      const result = await response.json() as { ok: boolean; message?: string }
+      setStatus(result.message ?? (response.ok ? "复核提交完成。" : "复核提交失败。"))
+      if (response.ok && result.ok) await onReviewed()
+    } catch (error) {
+      setStatus(error instanceof Error ? `复核提交失败：${error.message}` : "复核提交失败：网络或接口异常。")
     } finally {
       setSaving(false)
     }
@@ -75,7 +80,7 @@ export function SceneReviewPanelV1({ scene, blueprint, onReviewed }: Props) {
       ))}
       {blocked.length > 0 && <p>存在退回或需要修正项目，不能生成复核记录。</p>}
       {!hashReady && <p>缺少 Blueprint 或 target 哈希，不能提交。</p>}
-      <button type="button" disabled={saving || !canSubmit} onClick={submitReview}>{saving ? "正在提交" : "提交逐项复核"}</button>
+      <button type="button" disabled={saving} onClick={submitReview}>{saving ? "正在提交" : "提交逐项复核"}</button>
       {status && <p>{status}</p>}
     </section>
   )
@@ -83,4 +88,13 @@ export function SceneReviewPanelV1({ scene, blueprint, onReviewed }: Props) {
 
 function shortHash(value?: string | null) {
   return value ? value.slice(0, 12) : "未生成"
+}
+
+function buildBlockedMessage(input: { unfinished: number; blocked: number; reviewerReady: boolean; hashReady: boolean }) {
+  const reasons: string[] = []
+  if (input.unfinished > 0) reasons.push(`还有 ${input.unfinished} 个结构没有选择 approved`)
+  if (input.blocked > 0) reasons.push("存在 rejected 或 needs_correction 项")
+  if (!input.reviewerReady) reasons.push("审核人不能为空")
+  if (!input.hashReady) reasons.push("缺少 Blueprint 或 target 哈希")
+  return `暂不能提交：${reasons.join("；") || "条件未满足"}。`
 }
