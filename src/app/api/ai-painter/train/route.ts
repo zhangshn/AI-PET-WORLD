@@ -4,6 +4,7 @@ import { promisify } from "node:util"
 import { NextResponse } from "next/server"
 
 const runFile = promisify(execFile)
+const pythonEnv = { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" }
 
 export async function POST() {
   if (process.env.NODE_ENV === "production") {
@@ -41,5 +42,5 @@ async function readReadiness(root: string, python: string, script: string, datas
 }
 
 function runOptions(cwd: string) {
-  return { cwd, windowsHide: true, timeout: 30_000, maxBuffer: 2 * 1024 * 1024 }
+  return { cwd, env: pythonEnv, windowsHide: true, timeout: 30_000, maxBuffer: 2 * 1024 * 1024 }
 }
