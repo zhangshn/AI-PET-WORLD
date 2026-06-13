@@ -15,6 +15,14 @@ export async function POST() {
     const python = path.join(root, "ml", "ai-painter", ".venv", "Scripts", "python.exe")
     const scripts = path.join(root, "ml", "ai-painter", "scripts")
     const dataset = path.join(root, "data", "ai-painter-datasets")
+    const readiness = await readReadiness(root, python, scripts, dataset)
+    if (readiness.readinessStatus !== "first_training_ready") {
+      return NextResponse.json({
+        ok: false,
+        message: `训练已被阻断：当前 readiness=${readiness.readinessStatus}。请先完成 v1 迁移、逐项复核、索引更新，并达到至少 100 个正式可训练样本。`,
+        readiness,
+      }, { status: 423 })
+    }
     const training = path.join(root, ".runtime", "ai-painter", "training-v0-current")
     const evaluation = path.join(root, ".runtime", "ai-painter", "evaluation-v0")
     await runFile(python, [path.join(scripts, "train_tiny_unet.py"), "--dataset-root", dataset, "--max-epochs", "100", "--output-dir", training], runOptions(root))
@@ -37,6 +45,17 @@ export async function POST() {
       { ok: false, message: value.stderr || value.stdout || value.message || "训练失败。" },
       { status: 500 }
     )
+  }
+}
+
+async function readReadiness(root: string, python: string, scripts: string, dataset: string) {
+  try {
+    const result = await runFile(python, [path.join(scripts, "report_v1_readiness.py"), "--dataset-root", dataset], runOptions(root))
+    return JSON.parse(result.stdout) as { readinessStatus: string }
+  } catch (error) {
+    const value = error as { stdout?: string }
+    if (value.stdout) return JSON.parse(value.stdout) as { readinessStatus: string }
+    throw error
   }
 }
 
