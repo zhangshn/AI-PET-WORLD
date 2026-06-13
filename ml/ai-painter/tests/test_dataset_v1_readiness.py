@@ -17,9 +17,10 @@ class DatasetV1ReadinessTests(unittest.TestCase):
         with TemporaryDirectory() as temporary:
             report = build_v1_readiness_report(Path(temporary))
             self.assertFalse(report["readyForFirstTraining"])
+            self.assertEqual(report["readinessStatus"], "not_ready")
             self.assertIn("no accepted scene samples found", report["blockers"])
 
-    def test_reviewed_train_and_validation_samples_are_ready(self) -> None:
+    def test_reviewed_train_and_validation_samples_are_valid_but_below_engineering_threshold(self) -> None:
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
             _stage(root, "sample-001", color=(40, 90, 160))
@@ -27,10 +28,12 @@ class DatasetV1ReadinessTests(unittest.TestCase):
             _write_index(root, "train", ["sample-001"])
             _write_index(root, "validation", ["sample-002"])
             report = build_v1_readiness_report(root)
-            self.assertTrue(report["readyForFirstTraining"])
+            self.assertFalse(report["readyForFirstTraining"])
+            self.assertEqual(report["readinessStatus"], "not_ready")
             self.assertEqual(report["trainableSampleCount"], 2)
             self.assertEqual(report["splits"]["splits"]["train"]["count"], 1)
             self.assertEqual(report["channelSummary"]["grass"]["emptySamples"], 0)
+            self.assertTrue(any("20" in value for value in report["readinessReasons"]))
 
     def test_missing_validation_index_blocks_readiness(self) -> None:
         with TemporaryDirectory() as temporary:
