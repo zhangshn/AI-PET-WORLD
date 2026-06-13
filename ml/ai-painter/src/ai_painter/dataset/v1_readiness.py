@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import Counter, defaultdict
 from hashlib import sha256
 import json
 from pathlib import Path
@@ -9,10 +9,15 @@ from typing import Any
 from PIL import Image, ImageStat
 
 from ai_painter.blueprint.channels import CANVAS_HEIGHT, CANVAS_WIDTH, V1_CONDITION_CHANNELS
+from ai_painter.dataset.migration_v1 import inspect_v1_sample
 from ai_painter.dataset.v1_audit import audit_v1_sample
 from ai_painter.dataset.v1_review import validate_v1_review_record
 
 REQUIRED_SPLITS = ("train", "validation")
+ENGINEERING_MIN_TRAINABLE = 20
+ENGINEERING_MIN_VALIDATION = 2
+FIRST_TRAINING_MIN_TRAINABLE = 100
+IMPORTANT_CHANNELS = ("grass", "road_center", "walkable", "depth")
 
 
 def build_v1_readiness_report(dataset_root: Path) -> dict[str, Any]:
@@ -20,31 +25,39 @@ def build_v1_readiness_report(dataset_root: Path) -> dict[str, Any]:
     scene_root = root / "accepted" / "dataset_v0" / "scene" / "world"
     sample_dirs = sorted(path for path in scene_root.iterdir() if path.is_dir()) if scene_root.exists() else []
     samples = [_sample_report(path) for path in sample_dirs]
-    indexes = _index_report(root, {item["sampleId"] for item in samples if item["trainable"]})
+    trainable_ids = {item["sampleId"] for item in samples if item["trainable"]}
+    indexes = _index_report(root, trainable_ids)
+    samples = _attach_splits(samples, indexes)
     duplicates = _duplicate_target_report(samples)
     channel_summary = _channel_summary(samples)
     blockers = _collect_blockers(samples, indexes, duplicates)
     warnings = _collect_warnings(samples, channel_summary)
+    readiness_status, readiness_reasons = _readiness_status(samples, indexes, channel_summary, blockers, duplicates)
     return {
-        "schemaVersion": "blueprint-v1-training-readiness-report-v0",
-        "readyForFirstTraining": len(blockers) == 0,
+        "schemaVersion": "blueprint-v1-training-readiness-report-v1",
+        "readinessStatus": readiness_status,
+        "readyForFirstTraining": readiness_status == "first_training_ready",
+        "engineeringValidationReady": readiness_status in {"engineering_validation_ready", "first_training_ready"},
         "sampleCount": len(samples),
-        "trainableSampleCount": sum(1 for item in samples if item["trainable"]),
+        "statusCounts": dict(Counter(str(item["status"]) for item in samples)),
+        "trainableSampleCount": len(trainable_ids),
         "blockedSampleCount": sum(1 for item in samples if item["blockingReasons"]),
+        "lowQualityTargets": [item["sampleId"] for item in samples if any("contrast" in reason for reason in item["target"]["blockingReasons"])],
         "splits": indexes,
         "channelSummary": channel_summary,
         "duplicateTargets": duplicates,
         "warnings": warnings,
         "blockers": blockers,
+        "readinessReasons": readiness_reasons,
         "samples": samples,
     }
 
 
 def _sample_report(sample_dir: Path) -> dict[str, Any]:
+    status = inspect_v1_sample(sample_dir)
     audit = audit_v1_sample(sample_dir)
     reasons = list(audit["blockingReasons"])
-    review_errors = validate_v1_review_record(sample_dir)
-    for error in review_errors:
+    for error in validate_v1_review_record(sample_dir):
         if error not in reasons:
             reasons.append(error)
     target = _target_report(sample_dir / "target.png")
@@ -54,11 +67,31 @@ def _sample_report(sample_dir: Path) -> dict[str, Any]:
         reasons.extend(item["blockingReasons"])
     return {
         "sampleId": sample_dir.name,
+        "status": status["status"],
+        "pendingReviewStructures": status.get("pendingReviewStructures", 0),
         "trainable": len(reasons) == 0,
+        "split": None,
         "blockingReasons": reasons,
+        "warnings": _sample_warnings(sample_dir),
         "target": target,
         "masks": masks,
     }
+
+
+def _sample_warnings(sample_dir: Path) -> list[str]:
+    warnings: list[str] = []
+    metadata_path = sample_dir / "metadata.json"
+    try:
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return warnings
+    source = metadata.get("source", {})
+    review = metadata.get("review", {})
+    if isinstance(source, dict) and not source.get("licenseBasis"):
+        warnings.append("source licenseBasis is missing")
+    if isinstance(review, dict) and not review.get("rightsApproved"):
+        warnings.append("rightsApproved is not true")
+    return warnings
 
 
 def _target_report(path: Path) -> dict[str, Any]:
@@ -87,8 +120,7 @@ def _mask_reports(sample_dir: Path) -> dict[str, dict[str, Any]]:
     for name in sorted(actual - set(V1_CONDITION_CHANNELS)):
         reports[name] = {"exists": True, "knownChannel": False, "blockingReasons": [f"unknown mask channel: {name}"]}
     for name in V1_CONDITION_CHANNELS:
-        path = mask_root / f"{name}.png"
-        reports[name] = _mask_report(path, name)
+        reports[name] = _mask_report(mask_root / f"{name}.png", name)
     return reports
 
 
@@ -126,8 +158,7 @@ def _index_report(root: Path, trainable_ids: set[str]) -> dict[str, Any]:
     for sample_id in sorted(assigned_ids - trainable_ids):
         for split in assigned[sample_id]:
             splits[split]["blockingReasons"].append(f"split references non-trainable sample: {sample_id}")
-    omitted = sorted(trainable_ids - assigned_ids)
-    return {"requiredSplits": list(REQUIRED_SPLITS), "splits": splits, "omittedTrainableSampleIds": omitted}
+    return {"requiredSplits": list(REQUIRED_SPLITS), "splits": splits, "omittedTrainableSampleIds": sorted(trainable_ids - assigned_ids)}
 
 
 def _read_index(path: Path, split: str) -> tuple[list[str], list[str]]:
@@ -150,6 +181,14 @@ def _read_index(path: Path, split: str) -> tuple[list[str], list[str]]:
     return values, errors
 
 
+def _attach_splits(samples: list[dict[str, Any]], indexes: dict[str, Any]) -> list[dict[str, Any]]:
+    split_by_sample: dict[str, str] = {}
+    for split, item in indexes["splits"].items():
+        for sample_id in item["sampleIds"]:
+            split_by_sample[sample_id] = split
+    return [{**item, "split": split_by_sample.get(str(item["sampleId"]))} for item in samples]
+
+
 def _duplicate_target_report(samples: list[dict[str, Any]]) -> list[dict[str, Any]]:
     grouped: dict[str, list[str]] = defaultdict(list)
     for item in samples:
@@ -163,7 +202,17 @@ def _channel_summary(samples: list[dict[str, Any]]) -> dict[str, Any]:
     summary: dict[str, Any] = {}
     for name in V1_CONDITION_CHANNELS:
         values = [int(item["masks"][name]["nonZeroPixels"]) for item in samples if name in item["masks"]]
-        summary[name] = {"samples": len(values), "emptySamples": sum(1 for value in values if value == 0), "minNonZeroPixels": min(values) if values else 0, "maxNonZeroPixels": max(values) if values else 0}
+        non_empty = [value for value in values if value > 0]
+        total = len(values)
+        summary[name] = {
+            "samples": total,
+            "nonEmptySamples": len(non_empty),
+            "emptySamples": total - len(non_empty),
+            "minNonZeroPixels": min(non_empty) if non_empty else 0,
+            "maxNonZeroPixels": max(non_empty) if non_empty else 0,
+            "averageNonZeroPixels": round(sum(values) / total, 2) if total else 0.0,
+            "coverageRatio": round(len(non_empty) / total, 4) if total else 0.0,
+        }
     return summary
 
 
@@ -191,7 +240,35 @@ def _collect_warnings(samples: list[dict[str, Any]], channel_summary: dict[str, 
     for name, item in channel_summary.items():
         if samples and item["emptySamples"] == len(samples):
             warnings.append(f"channel has no positive pixels in all samples: {name}")
+    for item in samples:
+        for warning in item["warnings"]:
+            warnings.append(f"{item['sampleId']}: {warning}")
     return warnings
+
+
+def _readiness_status(samples: list[dict[str, Any]], indexes: dict[str, Any], channel_summary: dict[str, Any], blockers: list[str], duplicates: list[dict[str, Any]]) -> tuple[str, list[str]]:
+    trainable = sum(1 for item in samples if item["trainable"])
+    validation_count = int(indexes["splits"]["validation"]["count"])
+    reasons: list[str] = []
+    if blockers:
+        reasons.append("存在数据完整性或索引阻断项")
+        return "not_ready", reasons
+    if trainable < ENGINEERING_MIN_TRAINABLE:
+        reasons.append(f"可训练样本不足 {ENGINEERING_MIN_TRAINABLE} 张")
+        return "not_ready", reasons
+    if validation_count < ENGINEERING_MIN_VALIDATION:
+        reasons.append(f"validation 样本不足 {ENGINEERING_MIN_VALIDATION} 张")
+        return "not_ready", reasons
+    for channel in IMPORTANT_CHANNELS:
+        if channel_summary[channel]["nonEmptySamples"] == 0:
+            reasons.append(f"关键通道缺少覆盖：{channel}")
+    if duplicates:
+        reasons.append("存在重复 target 图片")
+    if reasons:
+        return "not_ready", reasons
+    if trainable < FIRST_TRAINING_MIN_TRAINABLE:
+        return "engineering_validation_ready", [f"尚未达到正式训练最低 {FIRST_TRAINING_MIN_TRAINABLE} 张"]
+    return "first_training_ready", []
 
 
 def _sha256_file(path: Path) -> str:
