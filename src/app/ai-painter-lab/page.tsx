@@ -11,6 +11,7 @@ import { TaxonomyPanel } from "./taxonomy-panel"
 import { TrainingDraftReview } from "./training-draft-review"
 import { TrainingControl } from "./training-control"
 import { ValidationPreview } from "./validation-preview"
+import { V1DatasetManagementPanel } from "./v1-dataset-management-panel"
 import styles from "./page.module.css"
 
 export const dynamic = "force-dynamic"
@@ -33,7 +34,7 @@ export default async function AiPainterLabPage() {
           <h1>AI Painter 数据实验室</h1>
           <p className={styles.lead}>查看数据协议、条件图、本地训练与模型推理的真实状态。</p>
         </div>
-        <div className={styles.status}><span />模块 F 进行中</div>
+        <div className={styles.status}><span />模块 D 数据准备中</div>
       </header>
 
       <section className={styles.notice}>
@@ -63,6 +64,11 @@ export default async function AiPainterLabPage() {
             <div><dt>导入失败记录</dt><dd>{dataset.rejected} 条</dd></div>
           </dl>
         </aside>
+      </section>
+
+      <section className={styles.section}>
+        <div className={styles.sectionHeading}><div><small>DATASET V1 READINESS</small><h2>训练数据 v1 正式准备</h2></div><p>批量迁移、复核队列、索引更新和三级 readiness 均读取本地真实数据。</p></div>
+        <V1DatasetManagementPanel />
       </section>
 
       <InferencePreview />
