@@ -4,6 +4,7 @@ import { promisify } from "node:util"
 import { NextResponse } from "next/server"
 
 const runFile = promisify(execFile)
+const pythonEnv = { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" }
 const SAMPLE_ID_PATTERN = /^[a-z0-9][a-z0-9-]{2,80}$/u
 
 type RequestBody = {
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
   const args = [script, "--dataset-root", datasetRoot, ...sampleIds.flatMap((sampleId) => ["--sample-id", sampleId])]
   if (body.force === true) args.push("--force")
   try {
-    const result = await runFile(python, args, { cwd: process.cwd(), windowsHide: true, timeout: 60_000 })
+    const result = await runFile(python, args, { cwd: process.cwd(), env: pythonEnv, windowsHide: true, timeout: 60_000 })
     return NextResponse.json({ ok: true, message: "批量 v1 迁移已完成，请继续逐项人工复核。", result: JSON.parse(result.stdout) })
   } catch (error) {
     const value = error as { stdout?: string; stderr?: string }
