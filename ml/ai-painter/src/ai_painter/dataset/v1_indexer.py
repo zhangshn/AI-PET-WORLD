@@ -10,6 +10,8 @@ from ai_painter.dataset.v1_readiness import build_v1_readiness_report
 
 from .layout import DatasetLayout
 
+ENGINEERING_VALIDATION_MIN = 2
+
 
 def build_trainable_v1_indexes(dataset_root: Path, validation_ratio: float = 0.1) -> dict[str, Any]:
     if not 0 < validation_ratio < 1:
@@ -47,6 +49,8 @@ def _split_trainable(sample_ids: list[str], validation_ratio: float) -> tuple[li
         validation.append(train.pop(_stable_validation_index(train)))
     if len(sample_ids) >= 2 and not train:
         train.append(validation.pop())
+    while len(sample_ids) >= 20 and len(validation) < ENGINEERING_VALIDATION_MIN and len(train) > ENGINEERING_VALIDATION_MIN:
+        validation.append(train.pop(_stable_validation_index(train)))
     return train, validation
 
 
