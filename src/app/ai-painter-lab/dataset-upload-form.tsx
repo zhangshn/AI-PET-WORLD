@@ -22,7 +22,7 @@ const DEFAULT_BLUEPRINT = `{
 type BatchUploadResponse = {
   ok: boolean
   message: string
-  results?: Array<{ fileName: string; sampleId?: string; ok: boolean; message: string }>
+  results?: Array<{ fileName: string; sampleId?: string; imageHash?: string; ok: boolean; message: string }>
 }
 
 export function DatasetUploadForm() {
@@ -46,7 +46,7 @@ export function DatasetUploadForm() {
       const result = await response.json() as BatchUploadResponse
       setStatus(result.message)
       setDetails(result.results?.map((item) =>
-        `${item.ok ? "成功" : "失败"}｜${item.fileName}${item.sampleId ? ` → ${item.sampleId}` : ""}${item.ok ? "" : `｜${item.message}`}`
+        `${item.ok ? "成功" : "失败"}｜${item.fileName}${item.sampleId ? ` → ${item.sampleId}` : ""}${item.imageHash ? `｜${item.imageHash.slice(0, 12)}` : ""}${item.ok ? "" : `｜${item.message}`}`
       ) ?? [])
       if (result.ok) {
         form.reset()
@@ -64,21 +64,22 @@ export function DatasetUploadForm() {
   return (
     <form className={styles.uploadForm} onSubmit={submit}>
       <p className={styles.batchNotice}>
-        支持一次选择最多 20 张同类 PNG。样本 ID 将根据层级、领域、文件名和随机短码自动生成，无需手工填写。
+        支持一次选择最多 20 张同类 PNG。样本 ID 将根据层级、领域、文件名和随机短码自动生成；重复图片会被阻断。
       </p>
       <div className={styles.formGrid}>
         <label>训练层级<select name="sampleLayer" value={layer} onChange={(event) => setLayer(event.target.value)}>{DATASET_LAYERS.map((item) => <option value={item.id} key={item.id}>{item.zh} / {item.size}</option>)}</select></label>
         <label>数据领域<select name="domain" defaultValue="world">{DATASET_DOMAINS.map((item) => <option value={item.id} key={item.id}>{item.zh}</option>)}</select></label>
+        <label>来源类型<select name="sourceKind" defaultValue="ai_assisted_manual_creation"><option value="ai_assisted_manual_creation">外部 AI 辅助人工制作</option><option value="self_created_bitmap">完全自制位图</option><option value="commissioned_bitmap">委托制作</option><option value="cc0_bitmap">CC0</option><option value="commercially_licensed_bitmap">商业授权</option></select></label>
         <label>具体类型<input name="subtype" required placeholder="early_settlement / grassland" /></label>
         <label>标签<input name="tags" required placeholder="bright, healing, top_down" /></label>
         <label>组成部分<input name="components" required placeholder="grass, path, shelter, trees" /></label>
         <label>部件材质映射<input name="componentMaterials" required placeholder="shelter:wood, path:soil" /></label>
         <label>观察视角<input name="viewpoint" required defaultValue="fixed_three_quarter_top_down" /></label>
-        <label>制作工具<input name="toolName" required defaultValue="OpenAI image generation via Codex" /></label>
+        <label>制作工具<input name="toolName" required defaultValue="外部人工 AI 图像工具或自制绘图流程" /></label>
         <label>审核人<input name="reviewer" required defaultValue="project-owner" /></label>
       </div>
       <label className={styles.wideField}>训练 PNG（可多选）<input type="file" name="images" accept="image/png" multiple required onChange={(event) => setSelectedCount(event.currentTarget.files?.length ?? 0)} /></label>
-      <p className={styles.fileCount}>已选择 {selectedCount} 张图片。</p>
+      <p className={styles.fileCount}>已选择 {selectedCount} 张图片。导入阶段会按现有规则标准化为 RGB 256×192，不直接拉伸变形。</p>
       <label className={styles.wideField}>许可依据<textarea name="licenseBasis" required placeholder="说明图片归属、商业训练与使用权。" /></label>
       <label className={styles.wideField}>备注<textarea name="notes" placeholder="说明本批画面内容、风格和用途。" /></label>
       {layer === "scene" && <>
