@@ -32,7 +32,7 @@ def build_v1_readiness_report(dataset_root: Path) -> dict[str, Any]:
     channel_summary = _channel_summary(samples)
     blockers = _collect_blockers(samples, indexes, duplicates)
     warnings = _collect_warnings(samples, channel_summary)
-    readiness_status, readiness_reasons = _readiness_status(samples, indexes, channel_summary, blockers, duplicates)
+    readiness_status, readiness_reasons = _readiness_status(samples, indexes, channel_summary, blockers, duplicates, warnings)
     return {
         "schemaVersion": "blueprint-v1-training-readiness-report-v1",
         "readinessStatus": readiness_status,
@@ -246,7 +246,7 @@ def _collect_warnings(samples: list[dict[str, Any]], channel_summary: dict[str, 
     return warnings
 
 
-def _readiness_status(samples: list[dict[str, Any]], indexes: dict[str, Any], channel_summary: dict[str, Any], blockers: list[str], duplicates: list[dict[str, Any]]) -> tuple[str, list[str]]:
+def _readiness_status(samples: list[dict[str, Any]], indexes: dict[str, Any], channel_summary: dict[str, Any], blockers: list[str], duplicates: list[dict[str, Any]], warnings: list[str]) -> tuple[str, list[str]]:
     trainable = sum(1 for item in samples if item["trainable"])
     validation_count = int(indexes["splits"]["validation"]["count"])
     reasons: list[str] = []
@@ -268,7 +268,10 @@ def _readiness_status(samples: list[dict[str, Any]], indexes: dict[str, Any], ch
         return "not_ready", reasons
     if trainable < FIRST_TRAINING_MIN_TRAINABLE:
         return "engineering_validation_ready", [f"尚未达到正式训练最低 {FIRST_TRAINING_MIN_TRAINABLE} 张"]
-    return "first_training_ready", []
+    license_warnings = [item for item in warnings if "licenseBasis" in item or "rightsApproved" in item]
+    if license_warnings:
+        return "engineering_validation_ready", ["正式训练前必须补齐许可依据与权利审核"]
+    return "first_training_ready", ["已达到首次正式训练数据门槛"]
 
 
 def _sha256_file(path: Path) -> str:
