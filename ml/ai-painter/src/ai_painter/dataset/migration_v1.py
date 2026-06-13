@@ -69,6 +69,8 @@ def migrate_dataset_v1(dataset_root: Path, sample_ids: list[str] | None = None, 
 def migrate_sample_v1(sample_dir: Path, *, force: bool = False) -> dict[str, Any]:
     sample_id = sample_dir.name
     current = inspect_v1_sample(sample_dir)
+    if current["status"] == "invalid":
+        return {"sampleId": sample_id, "status": "failed", "reason": "; ".join(current["blockingReasons"])}
     if current["status"] != "v0_only" and not force:
         return {"sampleId": sample_id, "status": "skipped", "reason": f"current status is {current['status']}"}
     if (sample_dir / "blueprint.v1.review.json").exists():
