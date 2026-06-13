@@ -5,7 +5,6 @@ import { readAiPainterDatasetStatus } from "./ai-painter-lab-status"
 import { DatasetUploadForm } from "./dataset-upload-form"
 import { InferencePreview } from "./inference-preview"
 import { ModelExperimentComparison } from "./model-experiment-comparison"
-import { SceneAnnotationEditor } from "./scene-annotation-editor"
 import { SceneAnnotationEditorV1 } from "./scene-annotation-editor-v1"
 import { TaxonomyPanel } from "./taxonomy-panel"
 import { TrainingDraftReview } from "./training-draft-review"
@@ -93,11 +92,6 @@ export default async function AiPainterLabPage() {
       <section className={styles.section}>
         <div className={styles.sectionHeading}><div><small>LOCAL IMPORT</small><h2>上传并导入训练数据</h2></div><p>仅开发环境可用，文件保存在本机，不上传到第三方服务。</p></div>
         <DatasetUploadForm />
-      </section>
-
-      <section className={styles.section}>
-        <div className={styles.sectionHeading}><div><small>SCENE ANNOTATION V0</small><h2>完整场景结构标注</h2></div><p>为每张图片建立独立 Blueprint，并重新生成 8 通道 Condition Mask。</p></div>
-        <SceneAnnotationEditor />
       </section>
 
       <section className={styles.section}>

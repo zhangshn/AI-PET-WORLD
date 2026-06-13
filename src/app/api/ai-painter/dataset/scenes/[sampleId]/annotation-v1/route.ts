@@ -9,7 +9,7 @@ const SAMPLE_ID_PATTERN = /^[a-z0-9][a-z0-9-]{2,63}$/u
 
 export async function POST(request: Request, context: { params: Promise<{ sampleId: string }> }) {
   if (process.env.NODE_ENV === "production") {
-    return NextResponse.json({ ok: false, message: "生产环境禁止修改 v1 Blueprint。" }, { status: 403 })
+    return NextResponse.json({ ok: false, message: "生产环境禁止修改 V1 Blueprint。" }, { status: 403 })
   }
   const { sampleId } = await context.params
   if (!SAMPLE_ID_PATTERN.test(sampleId)) {
@@ -22,10 +22,10 @@ export async function POST(request: Request, context: { params: Promise<{ sample
     await mkdir(temporaryRoot, { recursive: true })
     await writeFile(temporaryFile, JSON.stringify(blueprint, null, 2), "utf8")
     const result = await runPython(sampleId, temporaryFile)
-    return NextResponse.json({ ok: true, message: "v1 Blueprint 已保存，14 通道 Mask 已重新生成。", result: JSON.parse(result.stdout) })
+    return NextResponse.json({ ok: true, message: "V1 Blueprint 已保存，14 通道 Mask 已重新生成。", result: JSON.parse(result.stdout) })
   } catch (error) {
     const value = error as { stdout?: string; stderr?: string }
-    return NextResponse.json({ ok: false, message: value.stdout || value.stderr || (error instanceof Error ? error.message : "v1 更新失败。") }, { status: 422 })
+    return NextResponse.json({ ok: false, message: value.stdout || value.stderr || (error instanceof Error ? error.message : "V1 更新失败。") }, { status: 422 })
   } finally {
     await rm(temporaryFile, { force: true })
   }

@@ -101,6 +101,11 @@
 .annotationToolbar { display: flex; align-items: end; flex-wrap: wrap; gap: 9px; margin-bottom: 14px; }
 .annotationToolbar label { display: flex; flex-direction: column; gap: 6px; color: #91a99e; font-size: 12px; }
 .annotationToolbar select, .annotationToolbar button, .annotationSummary button { border: 1px solid #365247; background: #10221c; color: #bcd1c7; padding: 9px 11px; cursor: pointer; }
+.lineWidthInput { width: 76px; border: 1px solid #365247; background: #10221c; color: #f5d77b; padding: 8px; }
+.annotationHint { margin: 0 0 12px; padding: 10px 12px; border-left: 3px solid #f2cc60; background: #13231d; color: #d9c77e; font-size: 13px; }
+.annotationModeLegend { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.annotationModeLegend span { padding: 7px 9px; border: 1px solid #30473e; background: #0d1c17; color: #9db3a8; font-size: 12px; }
+.annotationModeLegend b { color: #f0d26f; margin-right: 4px; }
 .toolButtons { display: flex; flex-wrap: wrap; gap: 6px; }
 .annotationToolbar .activeTool { background: #6fce91; color: #07170f; border-color: #6fce91; font-weight: 700; }
 .annotationWorkspace { display: grid; grid-template-columns: minmax(0, 4fr) minmax(230px, 1fr); gap: 14px; }
@@ -115,6 +120,9 @@
 .rockBox { fill: rgba(210, 216, 220, .22); stroke: #eef3f5; }
 .shelterBox { fill: rgba(238, 145, 52, .25); stroke: #ffaf58; }
 .draftShape { fill: none; stroke: #fff06a; stroke-width: 1; stroke-dasharray: 3 2; }
+.editableRoadDraft { fill: none; stroke: rgba(255, 224, 82, .82); stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.editablePolygonDraft { fill: rgba(255, 224, 82, .18); stroke: #ffe052; stroke-width: 1.25; stroke-dasharray: 3 2; pointer-events: none; }
+.channelRect, .channelPolygon { stroke-width: 1.25; stroke-dasharray: 3 2; pointer-events: none; }
 .draftPoint { fill: #fff06a; stroke: #07100e; stroke-width: .5; }
 .annotationSummary { background: #101f1a; border: 1px solid #30473e; padding: 15px; }
 .annotationSummary h3 { margin: 0 0 12px; }
