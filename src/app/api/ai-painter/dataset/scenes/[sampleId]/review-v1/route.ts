@@ -5,6 +5,7 @@ import { promisify } from "node:util"
 import { NextResponse } from "next/server"
 
 const runFile = promisify(execFile)
+const pythonEnv = { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" }
 const SAMPLE_ID_PATTERN = /^[a-z0-9][a-z0-9-]{2,63}$/u
 const DECISIONS = new Set(["approved", "rejected", "needs_correction"])
 
@@ -46,7 +47,7 @@ export async function POST(request: Request, context: { params: Promise<{ sample
     const script = path.join(process.cwd(), "ml", "ai-painter", "scripts", "confirm_scene_annotation_v1.py")
     const datasetRoot = path.join(process.cwd(), "data", "ai-painter-datasets")
     const result = await runFile(python, [script, sampleId, "--dataset-root", datasetRoot, "--submission", temporaryFile], {
-      cwd: process.cwd(), windowsHide: true, timeout: 30_000,
+      cwd: process.cwd(), env: pythonEnv, windowsHide: true, timeout: 30_000,
     })
     return NextResponse.json({ ok: true, message: "已完成人工复核，可进入受控实验数据读取。", result: JSON.parse(result.stdout) })
   } catch (error) {
