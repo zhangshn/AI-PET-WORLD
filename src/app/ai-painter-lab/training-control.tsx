@@ -5,11 +5,11 @@ import styles from "./page.module.css"
 
 export function TrainingControl() {
   const [running, setRunning] = useState(false)
-  const [message, setMessage] = useState("批准新样本后，需要重新训练才能看到模型变化。")
+  const [message, setMessage] = useState("训练入口受 readiness 阻断；未达到正式训练条件不会启动训练进程。")
 
   async function train() {
     setRunning(true)
-    setMessage("正在使用当前已批准数据训练 100 epoch，请稍候...")
+    setMessage("正在检查训练数据 readiness...")
     try {
       const response = await fetch("/api/ai-painter/train", { method: "POST" })
       const result = await response.json() as { ok: boolean; message: string; meanMae?: number; meanPsnr?: number }
@@ -28,8 +28,8 @@ export function TrainingControl() {
 
   return (
     <div className={styles.trainingControl}>
-      <div><h3>重新训练当前模型</h3><p>{message}</p></div>
-      <button type="button" disabled={running} onClick={train}>{running ? "正在训练..." : "重新训练并查看效果"}</button>
+      <div><h3>训练前阻断检查</h3><p>{message}</p></div>
+      <button type="button" disabled={running} onClick={train}>{running ? "正在检查..." : "检查 readiness 并阻断未就绪训练"}</button>
     </div>
   )
 }
