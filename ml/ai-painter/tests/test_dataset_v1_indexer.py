@@ -114,10 +114,16 @@ def _target(path: Path, color: tuple[int, int, int]) -> None:
     image = Image.new("RGB", (256, 192), color)
     for x in range(0, 256, 8):
         for y in range(0, 192, 8):
+            patch: tuple[int, int, int] | None = None
             if (x + y) % 16 == 0:
-                for dx in range(4):
-                    for dy in range(4):
-                        image.putpixel((x + dx, y + dy), (255 - color[0], 255 - color[1], 255 - color[2]))
+                patch = (255, 255, 255)
+            elif (x // 8 + y // 8) % 7 == 0:
+                patch = (0, 0, 0)
+            if patch is None:
+                continue
+            for dx in range(4):
+                for dy in range(4):
+                    image.putpixel((x + dx, y + dy), patch)
     image.save(path)
 
 
