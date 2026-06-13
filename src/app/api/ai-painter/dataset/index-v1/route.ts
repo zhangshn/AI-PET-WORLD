@@ -4,6 +4,7 @@ import { promisify } from "node:util"
 import { NextResponse } from "next/server"
 
 const runFile = promisify(execFile)
+const pythonEnv = { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" }
 
 export async function POST() {
   if (process.env.NODE_ENV === "production") {
@@ -15,6 +16,7 @@ export async function POST() {
   try {
     const result = await runFile(python, [script, "--dataset-root", datasetRoot], {
       cwd: process.cwd(),
+      env: pythonEnv,
       windowsHide: true,
       timeout: 30_000,
     })
