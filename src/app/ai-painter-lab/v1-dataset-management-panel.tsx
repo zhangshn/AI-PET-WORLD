@@ -46,13 +46,16 @@ type StatusResponse = { ok: boolean; report?: ReadinessReport; message?: string 
 export function V1DatasetManagementPanel() {
   const [report, setReport] = useState<ReadinessReport | null>(null)
   const [selected, setSelected] = useState<Record<string, boolean>>({})
+  const [forceMigration, setForceMigration] = useState(false)
   const [status, setStatus] = useState("正在读取训练数据状态...")
   const [busy, setBusy] = useState(false)
 
   useEffect(() => { void load() }, [])
   const v0Only = useMemo(() => report?.samples.filter((item) => item.status === "v0_only") ?? [], [report])
+  const forceable = useMemo(() => report?.samples.filter((item) => item.status === "v1_draft" || item.status === "review_pending" || item.status === "blocked") ?? [], [report])
   const pending = useMemo(() => report?.samples.filter((item) => item.status === "review_pending") ?? [], [report])
   const untrainable = useMemo(() => report?.samples.filter((item) => !item.trainable) ?? [], [report])
+  const selectable = forceMigration ? forceable : v0Only
   const selectedIds = Object.keys(selected).filter((key) => selected[key])
 
   async function load() {
@@ -68,13 +71,14 @@ export function V1DatasetManagementPanel() {
 
   async function migrate() {
     if (selectedIds.length === 0) return
+    if (forceMigration && !window.confirm("确认重新生成选中样本的 v1 草案？已有 Review Record 的样本仍会被拒绝覆盖。")) return
     setBusy(true)
     setStatus(`正在批量迁移 ${selectedIds.length} 个样本...`)
     try {
       const response = await fetch("/api/ai-painter/dataset/scenes/migrate-v1", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sampleIds: selectedIds, force: false }),
+        body: JSON.stringify({ sampleIds: selectedIds, force: forceMigration }),
       })
       const result = await response.json() as { ok: boolean; message: string; result?: { results?: Array<{ sampleId: string; status: string; reason?: string }> } }
       setStatus(`${result.message}${result.result?.results ? "｜" + result.result.results.map((item) => `${item.sampleId}:${item.status}${item.reason ? ":" + item.reason : ""}`).join("；") : ""}`)
@@ -119,13 +123,14 @@ export function V1DatasetManagementPanel() {
 
       <section className={styles.annotationSummary}>
         <h3>批量 v0 → v1 迁移</h3>
-        <p>只显示缺少 blueprint.v1.json 的 v0_only 样本。默认禁止覆盖现有 v1、review record、masks_v1 和 target.png。</p>
-        <button type="button" disabled={busy || v0Only.length === 0} onClick={() => setSelected(Object.fromEntries(v0Only.map((item) => [item.sampleId, true])))}>全选待迁移样本</button>
+        <p>默认只显示缺少 blueprint.v1.json 的 v0_only 样本，禁止覆盖现有 v1、review record、masks_v1 和 target.png。</p>
+        <label><input type="checkbox" checked={forceMigration} onChange={(event) => { setForceMigration(event.target.checked); setSelected({}) }} />需要重新生成已有 v1 草案时启用 force，执行前会再次确认</label>
+        <button type="button" disabled={busy || selectable.length === 0} onClick={() => setSelected(Object.fromEntries(selectable.map((item) => [item.sampleId, true])))}>全选当前可迁移样本</button>
         <button type="button" disabled={busy || selectedIds.length === 0} onClick={migrate}>执行批量迁移</button>
-        <div className={styles.stageList}>{v0Only.map((item) => (
+        <div className={styles.stageList}>{selectable.map((item) => (
           <label key={item.sampleId}>
             <input type="checkbox" checked={Boolean(selected[item.sampleId])} onChange={(event) => setSelected({ ...selected, [item.sampleId]: event.target.checked })} />
-            {item.sampleId}
+            {item.sampleId}｜{item.status}
           </label>
         ))}</div>
       </section>
@@ -181,7 +186,7 @@ export function V1DatasetManagementPanel() {
   )
 }
 
-function Metric({ label, value }: { label: string; value: string | number | boolean }) {
+function Metric({ label, value }: { label: string | number | boolean; value: string | number | boolean }) {
   return <div><dt>{label}</dt><dd>{String(value)}</dd></div>
 }
 
