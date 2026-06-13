@@ -1,5 +1,7 @@
+import { createHash } from "node:crypto"
 import { execFile } from "node:child_process"
-import { mkdir, rm, writeFile } from "node:fs/promises"
+import type { Dirent } from "node:fs"
+import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { promisify } from "node:util"
 import { NextResponse } from "next/server"
@@ -14,6 +16,7 @@ const MAX_BATCH_FILES = 20
 type ImportResult = {
   fileName: string
   sampleId?: string
+  imageHash?: string
   ok: boolean
   message: string
 }
@@ -33,9 +36,18 @@ export async function POST(request: Request) {
     if (sharedErrors.length) return response(false, sharedErrors.join("；"), 422)
 
     const root = path.join(process.cwd(), "data", "ai-painter-datasets")
+    const knownHashes = await collectAcceptedTargetHashes(root)
+    const batchHashes = new Set<string>()
     const results: ImportResult[] = []
     for (const image of images) {
-      results.push(await importImage({ form, image, layer, domain, subtype, root }))
+      const buffer = Buffer.from(await image.arrayBuffer())
+      const imageHash = hashBuffer(buffer)
+      if (batchHashes.has(imageHash) || knownHashes.has(imageHash)) {
+        results.push({ fileName: image.name, imageHash, ok: false, message: "重复图片被阻断，不能重复进入训练数据集。" })
+        continue
+      }
+      batchHashes.add(imageHash)
+      results.push(await importImage({ form, image, imageBuffer: buffer, imageHash, layer, domain, subtype, root }))
     }
 
     const accepted = results.filter((item) => item.ok).length
@@ -53,44 +65,37 @@ export async function POST(request: Request) {
 async function importImage(input: {
   form: FormData
   image: File
+  imageBuffer: Buffer
+  imageHash: string
   layer: string
   domain: string
   subtype: string
   root: string
 }): Promise<ImportResult> {
   const imageError = validateImage(input.image)
-  if (imageError) return { fileName: input.image.name, ok: false, message: imageError }
+  if (imageError) return { fileName: input.image.name, imageHash: input.imageHash, ok: false, message: imageError }
 
-  const sampleId = createDatasetSampleId({
-    fileName: input.image.name,
-    layer: input.layer,
-    domain: input.domain,
-  })
+  const sampleId = createDatasetSampleId({ fileName: input.image.name, layer: input.layer, domain: input.domain })
   const incoming = path.join(input.root, "incoming", sampleId)
   try {
     await rm(incoming, { recursive: true, force: true })
     await mkdir(incoming, { recursive: true })
-    await writeFile(path.join(incoming, "target.png"), Buffer.from(await input.image.arrayBuffer()))
+    await writeFile(path.join(incoming, "target.png"), input.imageBuffer)
 
     const structure = buildStructure(input.form, sampleId, input.layer)
     const structureName = input.layer === "scene" ? "blueprint.json" : "annotation.json"
     await writeFile(path.join(incoming, structureName), JSON.stringify(structure, null, 2), "utf8")
     await writeFile(
       path.join(incoming, "metadata.json"),
-      JSON.stringify(buildMetadata(input.form, sampleId, input.layer, input.domain, input.subtype, structureName), null, 2),
+      JSON.stringify(buildMetadata(input.form, sampleId, input.layer, input.domain, input.subtype, structureName, input.imageHash), null, 2),
       "utf8"
     )
 
     const result = await runImporter(input.root, sampleId)
-    return { fileName: input.image.name, sampleId, ok: true, message: result.status ?? "accepted" }
+    return { fileName: input.image.name, sampleId, imageHash: input.imageHash, ok: true, message: result.status ?? "accepted" }
   } catch (error) {
     const output = extractProcessOutput(error)
-    return {
-      fileName: input.image.name,
-      sampleId,
-      ok: false,
-      message: output || (error instanceof Error ? error.message : "本地数据校验失败。"),
-    }
+    return { fileName: input.image.name, sampleId, imageHash: input.imageHash, ok: false, message: output || (error instanceof Error ? error.message : "本地数据校验失败。") }
   }
 }
 
@@ -98,9 +103,7 @@ async function runImporter(root: string, sampleId: string) {
   const python = path.join(process.cwd(), "ml", "ai-painter", ".venv", "Scripts", "python.exe")
   const script = path.join(process.cwd(), "ml", "ai-painter", "scripts", "import_dataset.py")
   const result = await runFile(python, [script, sampleId, "--dataset-root", root], {
-    cwd: process.cwd(),
-    windowsHide: true,
-    timeout: 30_000,
+    cwd: process.cwd(), windowsHide: true, timeout: 30_000,
   })
   return JSON.parse(result.stdout) as { status?: string }
 }
@@ -146,7 +149,7 @@ function buildStructure(form: FormData, sampleId: string, layer: string) {
   return { ...blueprint, sceneId: sampleId }
 }
 
-function buildMetadata(form: FormData, sampleId: string, layer: string, domain: string, subtype: string, structureName: string) {
+function buildMetadata(form: FormData, sampleId: string, layer: string, domain: string, subtype: string, structureName: string, originalImageHash: string) {
   const today = new Date().toISOString().slice(0, 10)
   return {
     schemaVersion: "training-sample-metadata-v0", sampleId,
@@ -156,8 +159,9 @@ function buildMetadata(form: FormData, sampleId: string, layer: string, domain: 
     targetImage: "target.png",
     ...(layer === "scene" ? { blueprintFile: structureName } : { annotationFile: structureName }),
     source: {
-      kind: "ai_assisted_manual_creation", toolName: textField(form, "toolName"),
-      createdAt: today, licenseBasis: textField(form, "licenseBasis"),
+      kind: textField(form, "sourceKind") || "ai_assisted_manual_creation",
+      toolName: textField(form, "toolName"), createdAt: today,
+      licenseBasis: textField(form, "licenseBasis"), originalImageSha256: originalImageHash,
       humanApproved: true, directCopyProhibited: true,
     },
     review: {
@@ -168,6 +172,24 @@ function buildMetadata(form: FormData, sampleId: string, layer: string, domain: 
   }
 }
 
+async function collectAcceptedTargetHashes(root: string) {
+  const hashes = new Set<string>()
+  const accepted = path.join(root, "accepted")
+  await collectTargetHashesFrom(accepted, hashes)
+  return hashes
+}
+
+async function collectTargetHashesFrom(directory: string, hashes: Set<string>) {
+  let entries: Dirent[]
+  try { entries = await readdir(directory, { withFileTypes: true }) } catch { return }
+  await Promise.all(entries.map(async (entry) => {
+    const file = path.join(directory, entry.name)
+    if (entry.isDirectory()) return collectTargetHashesFrom(file, hashes)
+    if (entry.isFile() && entry.name === "target.png") hashes.add(hashBuffer(await readFile(file)))
+  }))
+}
+
+function hashBuffer(value: Buffer) { return createHash("sha256").update(value).digest("hex") }
 function textField(form: FormData, key: string) { const value = form.get(key); return typeof value === "string" ? value.trim() : "" }
 function csvField(form: FormData, key: string) { return textField(form, key).split(/[,，]/u).map((item) => item.trim()).filter(Boolean) }
 function componentMaterialField(form: FormData) {
