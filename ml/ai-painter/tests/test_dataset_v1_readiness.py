@@ -101,6 +101,23 @@ class DatasetV1ReadinessTests(unittest.TestCase):
             report = build_v1_readiness_report(root)
             self.assertTrue(any("construction_material" in value for value in report["warnings"]))
 
+    def test_average_non_zero_pixels_ignores_empty_samples(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            _stage(root, "sample-001")
+            empty_sample = _stage(root, "sample-002", color=(120, 50, 140))
+            Image.new("L", (256, 192), 0).save(empty_sample / "masks_v1" / "grass.png")
+            record = json.loads((empty_sample / "blueprint.v1.review.json").read_text(encoding="utf-8"))
+            record["masks"]["grass"]["sha256"] = _sha256(empty_sample / "masks_v1" / "grass.png")
+            (empty_sample / "blueprint.v1.review.json").write_text(json.dumps(record, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+            _write_index(root, "train", ["sample-001"])
+            _write_index(root, "validation", ["sample-002"])
+            report = build_v1_readiness_report(root)
+            grass = report["channelSummary"]["grass"]
+            self.assertEqual(grass["nonEmptySamples"], 1)
+            self.assertEqual(grass["emptySamples"], 1)
+            self.assertEqual(grass["averageNonZeroPixels"], grass["maxNonZeroPixels"])
+
 
 def _stage(root: Path, sample_id: str, *, color=(60, 120, 180), review: bool = True, flat: bool = False) -> Path:
     sample = root / "accepted" / "dataset_v0" / "scene" / "world" / sample_id
