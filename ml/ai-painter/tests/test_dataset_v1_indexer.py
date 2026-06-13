@@ -112,9 +112,12 @@ def _stage(root: Path, sample_id: str, color=(80, 120, 60)) -> Path:
 
 def _target(path: Path, color: tuple[int, int, int]) -> None:
     image = Image.new("RGB", (256, 192), color)
-    for x in range(0, 256, 16):
-        for y in range(0, 192, 16):
-            image.putpixel((x, y), (255 - color[0], 255 - color[1], 255 - color[2]))
+    for x in range(0, 256, 8):
+        for y in range(0, 192, 8):
+            if (x + y) % 16 == 0:
+                for dx in range(4):
+                    for dy in range(4):
+                        image.putpixel((x + dx, y + dy), (255 - color[0], 255 - color[1], 255 - color[2]))
     image.save(path)
 
 
