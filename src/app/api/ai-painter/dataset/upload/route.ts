@@ -10,6 +10,7 @@ import { DATASET_DOMAINS, DATASET_LAYERS } from "@/app/ai-painter-lab/dataset-ta
 import { createDatasetSampleId } from "../dataset-sample-id"
 
 const runFile = promisify(execFile)
+const pythonEnv = { ...process.env, PYTHONIOENCODING: "utf-8", PYTHONUTF8: "1" }
 const MAX_IMAGE_BYTES = 12 * 1024 * 1024
 const MAX_BATCH_FILES = 20
 
@@ -103,7 +104,7 @@ async function runImporter(root: string, sampleId: string) {
   const python = path.join(process.cwd(), "ml", "ai-painter", ".venv", "Scripts", "python.exe")
   const script = path.join(process.cwd(), "ml", "ai-painter", "scripts", "import_dataset.py")
   const result = await runFile(python, [script, sampleId, "--dataset-root", root], {
-    cwd: process.cwd(), windowsHide: true, timeout: 30_000,
+    cwd: process.cwd(), env: pythonEnv, windowsHide: true, timeout: 30_000,
   })
   return JSON.parse(result.stdout) as { status?: string }
 }
