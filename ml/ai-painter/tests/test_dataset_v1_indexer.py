@@ -54,6 +54,17 @@ class DatasetV1IndexReadinessTests(unittest.TestCase):
             report = build_v1_readiness_report(root)
             self.assertTrue(any("duplicate" in item or "non-trainable" in item for item in report["blockers"]))
 
+    def test_missing_mask_sample_does_not_enter_indexes(self) -> None:
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            sample = _reviewed(root, "sample-001")
+            (sample / "masks_v1" / "grass.png").unlink()
+            result = build_trainable_v1_indexes(root)
+            indexed = _read_index(root, "train") + _read_index(root, "validation")
+            self.assertEqual(result["trainable"], 0)
+            self.assertNotIn("sample-001", indexed)
+            self.assertTrue(any("missing masks_v1/grass.png" in item for item in result["blockers"]))
+
     def test_engineering_and_first_training_statuses(self) -> None:
         with TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -79,10 +90,11 @@ class DatasetV1IndexReadinessTests(unittest.TestCase):
             self.assertEqual(report["readinessStatus"], "not_ready")
 
 
-def _reviewed(root: Path, sample_id: str, color=(80, 120, 60)) -> None:
+def _reviewed(root: Path, sample_id: str, color=(80, 120, 60)) -> Path:
     sample = _stage(root, sample_id, color=color)
     migrate_dataset_v1(root, [sample_id])
     confirm_v1_sample(root, sample_id, _submission(sample))
+    return sample
 
 
 def _pending(root: Path, sample_id: str) -> None:
