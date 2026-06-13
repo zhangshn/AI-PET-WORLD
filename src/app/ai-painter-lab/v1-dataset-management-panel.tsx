@@ -21,6 +21,7 @@ type SampleStatus = {
   split?: string | null
   pendingReviewStructures?: number
   blockingReasons: string[]
+  warnings?: string[]
 }
 
 type ReadinessReport = {
@@ -51,6 +52,7 @@ export function V1DatasetManagementPanel() {
   useEffect(() => { void load() }, [])
   const v0Only = useMemo(() => report?.samples.filter((item) => item.status === "v0_only") ?? [], [report])
   const pending = useMemo(() => report?.samples.filter((item) => item.status === "review_pending") ?? [], [report])
+  const untrainable = useMemo(() => report?.samples.filter((item) => !item.trainable) ?? [], [report])
   const selectedIds = Object.keys(selected).filter((key) => selected[key])
 
   async function load() {
@@ -131,15 +133,22 @@ export function V1DatasetManagementPanel() {
       <section className={styles.annotationSummary}>
         <h3>待复核样本队列</h3>
         {pending.length === 0 && <p>当前没有 review_pending 样本。</p>}
-        {pending.map((item) => (
-          <p key={item.sampleId}>待复核：{item.sampleId}｜结构 {item.pendingReviewStructures ?? 0} 个｜请在下方 v1 逐项复核面板中处理。</p>
-        ))}
+        <div className={styles.maskGrid}>{pending.map((item) => (
+          <article className={styles.maskCard} key={item.sampleId}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`/api/ai-painter/dataset/scenes/${item.sampleId}/image?original=1`} alt={`${item.sampleId} 待复核缩略图`} />
+            <div><b>{item.sampleId}</b><code>review_pending</code></div>
+            <p>待复核结构：{item.pendingReviewStructures ?? 0} 个。请在下方 v1 逐项复核面板中处理。</p>
+            {item.blockingReasons.map((reason) => <p key={reason}>原因：{reason}</p>)}
+          </article>
+        ))}</div>
       </section>
 
       <section className={styles.annotationSummary}>
         <h3>训练索引与就绪检查</h3>
         <button type="button" disabled={busy} onClick={updateIndexes}>按可训练样本更新 train/validation 索引</button>
         <p>工程验证：至少 20 个可训练样本且 validation 至少 2 个。正式训练：至少 100 个高质量可训练样本。</p>
+        <p>当前 readiness：{report.readinessStatus}；readyForFirstTraining={String(report.readyForFirstTraining)}。</p>
         {report.readinessReasons.map((item) => <p key={item}>原因：{item}</p>)}
       </section>
 
@@ -147,8 +156,19 @@ export function V1DatasetManagementPanel() {
         <h3>14 通道覆盖统计</h3>
         <div className={styles.maskGrid}>{CONDITION_CHANNELS_V1.map((channel) => {
           const item = report.channelSummary[channel.id]
-          return <article className={styles.maskCard} key={channel.id}><div><b>{channel.zh}</b><code>{channel.id}</code></div><p>非空 {item?.nonEmptySamples ?? 0}/{item?.samples ?? 0}｜平均像素 {item?.averageNonZeroPixels ?? 0}｜覆盖 {Math.round((item?.coverageRatio ?? 0) * 100)}%</p></article>
+          return <article className={styles.maskCard} key={channel.id}><div><b>{channel.zh}</b><code>{channel.id}</code></div><p>非空 {item?.nonEmptySamples ?? 0}/{item?.samples ?? 0}｜最小 {item?.minNonZeroPixels ?? 0}｜最大 {item?.maxNonZeroPixels ?? 0}｜平均非零像素 {item?.averageNonZeroPixels ?? 0}｜覆盖 {Math.round((item?.coverageRatio ?? 0) * 100)}%</p></article>
         })}</div>
+      </section>
+
+      <section className={styles.annotationSummary}>
+        <h3>不可训练样本及原因</h3>
+        {untrainable.length === 0 ? <p>当前所有样本均通过完整校验。</p> : untrainable.map((item) => (
+          <article className={styles.annotationSummary} key={item.sampleId}>
+            <strong>{item.sampleId}</strong>
+            <p>状态：{item.status}｜split：{item.split ?? "未进入索引"}</p>
+            {item.blockingReasons.length === 0 ? <p>尚未发现阻断原因，但仍未满足 trainable 条件。</p> : item.blockingReasons.map((reason) => <p key={reason}>原因：{reason}</p>)}
+          </article>
+        ))}
       </section>
 
       <section className={styles.annotationSummary}>
