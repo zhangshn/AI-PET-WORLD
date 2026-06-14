@@ -5,6 +5,8 @@ import { NextResponse } from "next/server"
 
 const DATASET_ROOT = path.join(process.cwd(), "data", "ai-painter-datasets")
 const AUTO_SCENE_ROOT = path.join(DATASET_ROOT, "accepted", "dataset_v1", "scene", "world")
+const REQUIRED_JUDGE_VERSION = "annotation-judge-v1.1"
+const REQUIRED_GEOMETRY_VERSION = "geometry-deriver-v1.2"
 const CHANNELS = new Set([
   "grass", "water_body", "shoreline", "road_center", "road_edge",
   "tree_trunk", "tree_crown", "rock", "shelter_foundation",
@@ -24,7 +26,7 @@ export async function GET() {
       .sort()
     const scenes = (await Promise.all(directories.map(readAutomaticScene))).filter(Boolean)
     if (!scenes.length) {
-      return NextResponse.json({ ok: false, message: "当前没有模块 D 自动标注 accepted 样本。请先运行自动标注流水线。", scenes: [] })
+      return NextResponse.json({ ok: false, message: "当前没有新版模块 D 自动标注 accepted 样本。请重新运行自动标注流水线。", scenes: [] })
     }
     return NextResponse.json({ ok: true, scenes })
   } catch (error) {
@@ -41,7 +43,10 @@ async function readAutomaticScene(sampleId: string) {
   if (metadata.schemaVersion !== "accepted-training-sample-v1") return null
   if (metadata.status !== "accepted" || metadata.trainingEligible !== true) return null
   const judge = isObject(metadata.judge) ? metadata.judge : {}
+  const versions = isObject(metadata.versions) ? metadata.versions : {}
   if (judge.status !== "passed") return null
+  if (judge.judgeVersion !== REQUIRED_JUDGE_VERSION) return null
+  if (versions.geometry !== REQUIRED_GEOMETRY_VERSION) return null
   return {
     sampleId,
     subtype: "module_d_auto_annotation",
@@ -52,7 +57,7 @@ async function readAutomaticScene(sampleId: string) {
     blueprintV1Hash: await optionalSha256(blueprintPath),
     targetImageHash: typeof metadata.originalSha256 === "string" ? metadata.originalSha256 : null,
     source: isObject(metadata.source) ? metadata.source : {},
-    versions: isObject(metadata.versions) ? metadata.versions : {},
+    versions,
     judge,
   }
 }
