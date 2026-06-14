@@ -1,31 +1,65 @@
-import { readdir } from "node:fs/promises"
+import { readFile, readdir } from "node:fs/promises"
 import path from "node:path"
 
 export type AiPainterDatasetStatus = {
-  accepted: number
-  totalAccepted: number
+  sourceMaterials: number
+  engineeringAssets: number
+  candidateAssets: number
+  trainableAssets: number
   rejected: number
   engineeringTarget: number
   trainingMinimum: number
-  acceptedSampleIds: string[]
-  byLayer: Record<string, number>
+  vjB2Acceptable: number
+  vjB2Unacceptable: number
+  vjB2MinimumPerLabel: number
 }
 
 export async function readAiPainterDatasetStatus(): Promise<AiPainterDatasetStatus> {
   const root = path.join(process.cwd(), "data", "ai-painter-datasets")
-  const acceptedRoot = path.join(root, "accepted", "dataset_v0")
-  const acceptedFiles = await readJsonFiles(acceptedRoot, true)
+  const sourceMaterials = await readPngFiles(path.join(root, "source-originals"))
+  const engineeringAssets = await readJsonFiles(path.join(process.cwd(), "data", "ai-painter-assets", "engineering"), true)
+  const candidateAssets = await readJsonFiles(path.join(process.cwd(), "data", "ai-painter-assets", "candidates"), true)
+  const trainableAssets = await readJsonFiles(path.join(process.cwd(), "data", "ai-painter-assets", "accepted"), true)
   const rejectedFiles = await readJsonFiles(path.join(root, "rejected"))
-  const byLayer = countByLayer(acceptedFiles)
+  const qualityCounts = await readQualityLabels(path.join(process.cwd(), "data", "ai-painter-quality", "vj-b2", "samples"))
 
   return {
-    accepted: byLayer.scene ?? 0,
-    totalAccepted: acceptedFiles.length,
+    sourceMaterials: sourceMaterials.length,
+    engineeringAssets: engineeringAssets.length,
+    candidateAssets: candidateAssets.length,
+    trainableAssets: trainableAssets.length,
     rejected: rejectedFiles.length,
     engineeringTarget: 20,
     trainingMinimum: 100,
-    acceptedSampleIds: acceptedFiles.map((file) => path.basename(path.dirname(file))),
-    byLayer,
+    vjB2Acceptable: qualityCounts.acceptable,
+    vjB2Unacceptable: qualityCounts.unacceptable,
+    vjB2MinimumPerLabel: 40,
+  }
+}
+
+async function readQualityLabels(directory: string): Promise<{ acceptable: number; unacceptable: number }> {
+  const counts = { acceptable: 0, unacceptable: 0 }
+  try {
+    const files = (await readdir(directory, { recursive: true })).filter((file) => file.endsWith("label.json"))
+    for (const file of files) {
+      try {
+        const value = JSON.parse(await readFile(path.join(directory, file), "utf8")) as { qualityLabel?: string }
+        if (value.qualityLabel === "acceptable" || value.qualityLabel === "unacceptable") counts[value.qualityLabel] += 1
+      } catch {
+        // Invalid labels are excluded and reported by the Python readiness audit.
+      }
+    }
+  } catch {
+    return counts
+  }
+  return counts
+}
+
+async function readPngFiles(directory: string): Promise<string[]> {
+  try {
+    return (await readdir(directory)).filter((file) => file.endsWith(".png")).sort()
+  } catch {
+    return []
   }
 }
 
@@ -37,12 +71,4 @@ async function readJsonFiles(directory: string, recursive = false): Promise<stri
   } catch {
     return []
   }
-}
-
-function countByLayer(files: string[]) {
-  return files.reduce<Record<string, number>>((counts, file) => {
-    const layer = file.split(/[\\/]/u)[0]
-    counts[layer] = (counts[layer] ?? 0) + 1
-    return counts
-  }, {})
 }

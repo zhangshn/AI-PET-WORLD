@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "layered-pixel-asset-v1",
+  "assetId": "tree-deciduous-001",
+  "category": "tree",
+  "admission": "engineering_only",
+  "size": [128, 128],
+  "anchor": [64, 118],
+  "layers": [
+    {"id": "trunk", "file": "tree-deciduous-001-trunk.png", "channel": "tree_trunk", "zIndex": 10},
+    {"id": "crown", "file": "tree-deciduous-001-crown.png", "channel": "tree_crown", "zIndex": 20}
+  ]
+}

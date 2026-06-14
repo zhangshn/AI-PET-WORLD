@@ -45,8 +45,8 @@ export function buildWorldVisualTrainingDataManifest(
       blockedCount: blockedItems.length,
     }),
     policy: {
-      zh: "训练集只统计已完成目标图、Blueprint、条件 mask、来源许可、哈希和人工审核的配对样本。项目代码不连接 GPT 或在线绘图 API。",
-      en: "The dataset only counts paired samples with a target image, Blueprint, condition masks, source/license record, hashes, and human approval. Project code does not connect to GPT or online drawing APIs.",
+      zh: "训练集只统计目标图、Blueprint、同源 Alpha mask、来源许可和哈希全部绑定的配对样本。系统自动校验后准入，人工仅抽检。项目代码不连接 GPT 或在线绘图 API。",
+      en: "The dataset only counts paired samples whose target image, Blueprint, same-source Alpha masks, provenance/license record, and hashes are bound together. Automated validation controls admission; humans only perform spot checks. Project code does not connect to GPT or online drawing APIs.",
     },
     tags: [
       "world_visual_training_data_manifest",
@@ -116,8 +116,8 @@ function buildRequirements(input: {
     {
       id: "paired_dataset_complete_provenance",
       title: {
-        zh: "每条样本必须具有来源许可、人工审核、Blueprint、mask 和文件哈希。",
-        en: "Every sample must have provenance/license, human approval, a Blueprint, masks, and file hashes.",
+        zh: "每条样本必须具有来源许可、同源 Blueprint、同源 Alpha mask 和文件哈希；人工只负责抽检。",
+        en: "Every sample must have provenance/license, a same-source Blueprint, same-source Alpha masks, and file hashes; humans only perform spot checks.",
       },
       required: true,
       fulfilled: true,

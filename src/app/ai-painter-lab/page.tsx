@@ -1,124 +1,62 @@
 import type { Metadata } from "next"
-import { BlueprintPreview, ConditionPreview } from "./condition-preview"
-import { BLUEPRINT_JSON, CONDITION_CHANNELS, CONDITION_CHANNELS_V1, buildAiPainterLabStages } from "./ai-painter-lab-data"
 import { readAiPainterDatasetStatus } from "./ai-painter-lab-status"
-import { DatasetUploadForm } from "./dataset-upload-form"
-import { InferencePreview } from "./inference-preview"
-import { ModelExperimentComparison } from "./model-experiment-comparison"
-import { SceneAnnotationEditorV1 } from "./scene-annotation-editor-v1"
-import { TaxonomyPanel } from "./taxonomy-panel"
-import { TrainingDraftReview } from "./training-draft-review"
-import { TrainingControl } from "./training-control"
-import { ValidationPreview } from "./validation-preview"
-import { V1DatasetManagementPanel } from "./v1-dataset-management-panel"
+import { LayeredAssetStatus } from "./layered-asset-status"
+import { ProjectStatusTables } from "./project-status-tables"
+import { QualitySampleStatus } from "./quality-sample-status"
 import styles from "./page.module.css"
 
 export const dynamic = "force-dynamic"
 
 export const metadata: Metadata = {
-  title: "AI Painter 数据实验室 | AI-PET-WORLD",
-  description: "查看 Blueprint、Condition Mask 和本地训练数据准备状态。",
+  title: "AI Painter 单体资产实验室 | AI-PET-WORLD",
+  description: "查看同源分层单体资产、精准 Alpha Mask 和真实训练准备状态。",
 }
 
 export default async function AiPainterLabPage() {
   const dataset = await readAiPainterDatasetStatus()
-  const stages = buildAiPainterLabStages(dataset.accepted)
-  const progress = Math.min(100, dataset.accepted)
 
   return (
     <main className={styles.page}>
       <header className={styles.header}>
         <div>
-          <p className={styles.eyebrow}>AI-PET-WORLD / INTERNAL LAB</p>
-          <h1>AI Painter 数据实验室</h1>
-          <p className={styles.lead}>查看数据协议、条件图、本地训练与模型推理的真实状态。</p>
+          <p className={styles.eyebrow}>AI-PET-WORLD / AI PAINTER LAB</p>
+          <h1>同源单体资产实验室</h1>
+          <p className={styles.lead}>先生成可拆分单体，再由相同图层同步生成精灵图与精准训练 Mask。</p>
         </div>
-        <div className={styles.status}><span />模块 D 自动标注展示</div>
+        <div className={styles.status}><span />分层资产构建器已接入</div>
       </header>
 
       <section className={styles.notice}>
-        <strong>这不是最终世界画面。</strong>
-        <span>这里包含 Blueprint、Condition Mask 与本地模型推理结果；VJ 审核通过前，任何生成图都不能作为玩家画面展示。</span>
+        <strong>未完成的图片不会展示或进入训练。</strong>
+        <span>原始图片仅作为参考；可信训练数据必须来自同一份 RGBA 图层、Alpha Mask 和哈希记录。</span>
       </section>
 
-      <section className={styles.heroGrid}>
-        <article className={styles.previewPanel}>
-          <div className={styles.panelTitle}><div><small>STRUCTURE PREVIEW</small><h2>Blueprint v0</h2></div><b>256 × 192</b></div>
-          <div className={styles.blueprint}><BlueprintPreview /></div>
-          <div className={styles.legend}><span>草地</span><span>水岸</span><span>道路</span><span>树木</span><span>石块</span><span>临时住所</span></div>
-        </article>
-
-        <aside className={styles.detailPanel}>
-          <div className={styles.panelTitle}><div><small>REAL STATUS</small><h2>训练准备</h2></div></div>
-          <div className={styles.progressNumber}><strong>{dataset.accepted}</strong><span>/ 100</span></div>
-          <div className={styles.progressTrack}><i style={{ width: `${progress}%` }} /></div>
-          <p>数据结构和导入工具已完成，数量直接读取本地数据集，不使用页面假数据。</p>
-          <dl>
-            <div><dt>工程验证目标</dt><dd>20-50 张</dd></div>
-            <div><dt>最低训练目标</dt><dd>100 张</dd></div>
-            <div><dt>Condition v0</dt><dd>8 个</dd></div>
-            <div><dt>Condition v1</dt><dd>14 个 / 模块 D 自动标注</dd></div>
-            <div><dt>全部辅助样本</dt><dd>{dataset.totalAccepted - dataset.accepted} 条</dd></div>
-            <div><dt>在线绘图 API</dt><dd>禁止接入</dd></div>
-            <div><dt>导入失败记录</dt><dd>{dataset.rejected} 条</dd></div>
-          </dl>
-        </aside>
+      <section className={styles.metrics}>
+        <article><small>原始参考素材</small><strong>{dataset.sourceMaterials}</strong><span>张，仅作参考</span></article>
+        <article><small>工程验证资产</small><strong>{dataset.engineeringAssets}</strong><span>个，不进入训练</span></article>
+        <article><small>画质候选资产</small><strong>{dataset.candidateAssets}</strong><span>个，等待审核</span></article>
+        <article><small>可信同源资产</small><strong>{dataset.trainableAssets}</strong><span>个，可进入训练</span></article>
+        <article><small>最低训练目标</small><strong>{dataset.trainingMinimum}</strong><span>个同源资产</span></article>
+        <article><small>VJ-B2 合格样本</small><strong>{dataset.vjB2Acceptable}</strong><span>/{dataset.vjB2MinimumPerLabel} 个</span></article>
+        <article><small>VJ-B2 不合格样本</small><strong>{dataset.vjB2Unacceptable}</strong><span>/{dataset.vjB2MinimumPerLabel} 个</span></article>
       </section>
 
-      <section className={styles.section}>
-        <div className={styles.sectionHeading}><div><small>DATASET V1 READINESS</small><h2>训练数据 v1 正式准备</h2></div><p>批量迁移、复核队列、索引更新和三级 readiness 均读取本地真实数据。</p></div>
-        <V1DatasetManagementPanel />
-      </section>
+      <LayeredAssetStatus />
 
-      <InferencePreview />
-      <ValidationPreview />
-      <ModelExperimentComparison />
+      <QualitySampleStatus />
 
-      <section className={styles.section}>
-        <div className={styles.sectionHeading}><div><small>LOCAL TRAINING</small><h2>模型训练控制</h2></div><p>只使用本地已批准数据和 RTX 5050，不连接在线绘图服务。</p></div>
-        <TrainingControl />
-      </section>
+      <ProjectStatusTables
+        engineeringAssets={dataset.engineeringAssets}
+        candidateAssets={dataset.candidateAssets}
+        trainableAssets={dataset.trainableAssets}
+        vjB2Acceptable={dataset.vjB2Acceptable}
+        vjB2Unacceptable={dataset.vjB2Unacceptable}
+      />
 
-      <section className={styles.section}>
-        <div className={styles.sectionHeading}><div><small>TRAINING DRAFT REVIEW</small><h2>待审核原创训练图</h2></div><p>只有人工批准后才会生成 Mask 并进入训练索引。</p></div>
-        <TrainingDraftReview />
-      </section>
-
-      <section className={styles.section}>
-        <div className={styles.sectionHeading}><div><small>DATA TAXONOMY</small><h2>训练数据分层目录</h2></div><p>拆开定义，分别归档；完整场景才进入主模型训练计数。</p></div>
-        <TaxonomyPanel />
-      </section>
-
-      <section className={styles.section}>
-        <div className={styles.sectionHeading}><div><small>LOCAL IMPORT</small><h2>上传并导入训练数据</h2></div><p>仅开发环境可用，文件保存在本机，不上传到第三方服务。</p></div>
-        <DatasetUploadForm />
-      </section>
-
-      <section className={styles.section}>
-        <div className={styles.sectionHeading}><div><small>MODULE D AUTO ANNOTATION</small><h2>模块 D 自动标注结果</h2></div><p>这里只展示 `accepted/dataset_v1` 中由自动标注流水线生成且 Judge 通过的结果；原来的 V0/V1 示例标注不再显示。</p></div>
-        <SceneAnnotationEditorV1 />
-      </section>
-
-      <section className={styles.section}>
-        <div className={styles.sectionHeading}><div><small>MODEL INPUT V0</small><h2>8 通道条件图</h2></div><p>白色或彩色区域代表该通道需要模型关注的空间结构。</p></div>
-        <div className={styles.maskGrid}>{CONDITION_CHANNELS.map((channel, index) => <article className={styles.maskCard} key={channel.id}><div className={styles.maskPreview}><ConditionPreview channel={channel.id} color={channel.color} /></div><div><b>{String(index + 1).padStart(2, "0")}</b><h3>{channel.zh}</h3><code>{channel.id}_mask</code></div></article>)}</div>
-      </section>
-
-      <section className={styles.section}>
-        <div className={styles.sectionHeading}><div><small>MODEL INPUT V1</small><h2>14 通道条件图</h2></div><p>v1 细分水岸、道路边缘、树干树冠、建筑结构和施工材料。</p></div>
-        <div className={styles.maskGrid}>{CONDITION_CHANNELS_V1.map((channel, index) => <article className={styles.maskCard} key={channel.id}><div className={styles.maskPreview}><ConditionPreview channel={channel.id} color={channel.color} /></div><div><b>{String(index + 1).padStart(2, "0")}</b><h3>{channel.zh}</h3><code>{channel.id}.png</code></div></article>)}</div>
-      </section>
-
-      <section className={styles.bottomGrid}>
-        <article className={styles.section}>
-          <div className={styles.sectionHeading}><div><small>PIPELINE</small><h2>当前完成细节</h2></div></div>
-          <div className={styles.stageList}>{stages.map((stage) => <div key={stage.name}><span className={stage.status === "完成" ? styles.done : styles.waiting}>{stage.status}</span><section><h3>{stage.name}</h3><p>{stage.detail}</p></section></div>)}</div>
-        </article>
-        <article className={styles.section}>
-          <div className={styles.sectionHeading}><div><small>EXAMPLE CONTRACT</small><h2>结构数据示例</h2></div></div>
-          <pre className={styles.code}>{BLUEPRINT_JSON}</pre>
-          <p className={styles.footnote}>每个真实样本还必须包含目标 PNG、来源许可、人工审核、文件哈希及条件图。</p>
-        </article>
+      <section className={styles.nextStep}>
+        <small>NEXT MODULE</small>
+        <h2>当前下一步：扩充独立高质量树木正样本</h2>
+        <p>当前已有 6 棵来源独立、结构不同的合格树木。下一阶段继续制作不同树冠结构、树干形态和光照细节的原创树木，不能只对同一棵树做微小变体凑数；达到每类 40 个可信样本后才启动 VJ-B2 训练。</p>
       </section>
     </main>
   )
