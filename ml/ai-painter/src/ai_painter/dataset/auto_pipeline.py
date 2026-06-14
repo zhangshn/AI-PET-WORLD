@@ -67,7 +67,7 @@ def write_accepted(
     report: dict[str, Any],
     attempts: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    sample_dir = layout.accepted / "scene" / "world" / asset.asset_id
+    sample_dir = layout.module_d_accepted / "scene" / "world" / asset.asset_id
     masks_dir = sample_dir / "masks"
     sample_dir.mkdir(parents=True, exist_ok=True)
     masks_dir.mkdir(parents=True, exist_ok=True)
