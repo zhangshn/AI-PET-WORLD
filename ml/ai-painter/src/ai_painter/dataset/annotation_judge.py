@@ -8,7 +8,7 @@ from ai_painter.blueprint.channels import CANVAS_HEIGHT, CANVAS_WIDTH, V1_CONDIT
 
 from .geometry_deriver import OBSTACLES
 
-JUDGE_VERSION = "annotation-judge-v1.0"
+JUDGE_VERSION = "annotation-judge-v1.1"
 MIN_CONFIDENCE = 0.55
 
 
@@ -25,9 +25,10 @@ def judge_candidate(candidate: dict[str, Any]) -> dict[str, Any]:
     source_hash = blueprint.get("sourceImage", {}).get("sha256")
     for item in structures:
         errors.extend(_check_structure(item, source_hash))
+    errors.extend(_check_structure_count(structures))
     errors.extend(_check_mask_coverage(masks))
     errors.extend(_check_water_shoreline(masks))
-    errors.extend(_check_road(masks))
+    errors.extend(_check_road(masks, structures))
     errors.extend(_check_building(masks))
     errors.extend(_check_tree(masks))
     errors.extend(_check_walkable(masks))
@@ -55,6 +56,20 @@ def _check_structure(item: dict[str, Any], source_hash: str) -> list[str]:
         errors.append(f"geometry out of bounds: {item.get('id')}")
     if isinstance(geometry, dict) and _is_huge_box(geometry, item.get("type")):
         errors.append(f"huge approximate box: {item.get('id')}")
+    if isinstance(geometry, dict) and _is_fake_full_width_line(geometry, item.get("type")):
+        errors.append(f"fake full-width road line: {item.get('id')}")
+    return errors
+
+
+def _check_structure_count(structures: list[dict[str, Any]]) -> list[str]:
+    counts: dict[str, int] = {}
+    for item in structures:
+        typ = str(item.get("type"))
+        counts[typ] = counts.get(typ, 0) + 1
+    errors: list[str] = []
+    for typ in ("grass", "tree_crown", "rock", "construction_material"):
+        if counts.get(typ, 0) > 90:
+            errors.append(f"too many fragmented structures: {typ}")
     return errors
 
 
@@ -82,14 +97,21 @@ def _check_water_shoreline(masks: dict[str, Image.Image]) -> list[str]:
     return [] if near_water.getbbox() else ["shoreline must follow water-land boundary"]
 
 
-def _check_road(masks: dict[str, Image.Image]) -> list[str]:
+def _check_road(masks: dict[str, Image.Image], structures: list[dict[str, Any]]) -> list[str]:
     errors = []
-    if masks["road_edge"].getbbox() and not masks["road_center"].getbbox():
+    center = masks["road_center"]
+    edge = masks["road_edge"]
+    if edge.getbbox() and not center.getbbox():
         errors.append("road edge requires road center")
-    if masks["road_center"].getbbox():
-        near = masks["road_edge"].filter(ImageFilter.MaxFilter(15))
-        if not ImageChops.multiply(masks["road_center"], near).getbbox():
+    if center.getbbox():
+        near = edge.filter(ImageFilter.MaxFilter(15))
+        if not ImageChops.multiply(center, near).getbbox():
             errors.append("road center must correspond to road edge")
+        if _mask_is_fake_full_width_line(center):
+            errors.append("road center must not be a fake full-width straight line")
+    for item in structures:
+        if item.get("type") in {"road_center", "road_edge"} and _is_fake_full_width_line(item.get("geometry"), item.get("type")):
+            errors.append(f"road structure must follow visible road shape: {item.get('id')}")
     return errors
 
 
@@ -139,6 +161,32 @@ def _is_huge_box(geometry: dict[str, Any], typ: Any) -> bool:
     ys = [p[1] for p in points]
     area = (max(xs) - min(xs) + 1) * (max(ys) - min(ys) + 1)
     return area / (CANVAS_WIDTH * CANVAS_HEIGHT) > 0.88
+
+
+def _is_fake_full_width_line(geometry: Any, typ: Any) -> bool:
+    if typ not in {"road_center", "road_edge"} or not isinstance(geometry, dict):
+        return False
+    if geometry.get("kind") != "polyline":
+        return False
+    points = geometry.get("points") or []
+    if len(points) < 2:
+        return False
+    xs = [point[0] for point in points if isinstance(point, list) and len(point) == 2]
+    ys = [point[1] for point in points if isinstance(point, list) and len(point) == 2]
+    if len(xs) < 2:
+        return False
+    x_span = max(xs) - min(xs) + 1
+    y_span = max(ys) - min(ys) + 1
+    return x_span / CANVAS_WIDTH > 0.82 and y_span <= 8 and len(points) <= 3
+
+
+def _mask_is_fake_full_width_line(mask: Image.Image) -> bool:
+    box = mask.getbbox()
+    if not box:
+        return False
+    x_span = box[2] - box[0]
+    y_span = box[3] - box[1]
+    return x_span / CANVAS_WIDTH > 0.82 and y_span <= 8 and _coverage(mask) < 0.08
 
 
 def _coverage(mask: Image.Image) -> float:
