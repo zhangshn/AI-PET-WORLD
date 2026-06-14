@@ -9,7 +9,18 @@ import styles from "./page.module.css"
 const EDITABLE_TYPES = CONDITION_CHANNELS_V1.map((item) => item.id) as V1StructureType[]
 const DEFAULT_VISIBLE = Object.fromEntries(EDITABLE_TYPES.map((item) => [item, true])) as Record<V1StructureType, boolean>
 const LINE_TYPES = new Set<V1StructureType>(["road_center", "road_edge", "shoreline"])
-const POLYGON_TYPES = new Set<V1StructureType>(["grass", "water_body", "tree_crown", "rock", "walkable", "depth"])
+const POLYGON_TYPES = new Set<V1StructureType>([
+  "grass",
+  "water_body",
+  "tree_crown",
+  "rock",
+  "shelter_foundation",
+  "shelter_wall",
+  "shelter_roof",
+  "construction_material",
+  "walkable",
+  "depth",
+])
 
 type DrawingMode = "polyline" | "polygon" | "rect"
 
@@ -163,9 +174,9 @@ export function SceneAnnotationEditorV1() {
       <p className={styles.annotationHint}>{toolInstruction(tool)}</p>
 
       <div className={styles.annotationModeLegend}>
-        <span><b>多边形</b> 草地、水体、树冠、岩石、可行走、深度</span>
+        <span><b>多边形</b> 草地、水体、树冠、岩石、建筑、施工材料、可行走、深度</span>
         <span><b>折线</b> 水岸、道路中心、道路边缘</span>
-        <span><b>矩形</b> 树干、建筑结构、施工材料</span>
+        <span><b>矩形</b> 树干落点</span>
       </div>
 
       <div className={styles.toolButtons}>{CONDITION_CHANNELS_V1.map((item) => <button className={visible[item.id] ? styles.activeTool : ""} type="button" key={item.id} onClick={() => setVisible({ ...visible, [item.id]: !visible[item.id] })}>{item.zh}</button>)}</div>
