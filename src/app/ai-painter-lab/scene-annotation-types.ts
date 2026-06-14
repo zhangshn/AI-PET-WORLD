@@ -53,6 +53,8 @@ export type V1Structure = {
   requiresManualReview: boolean
   manualReviewReasons: string[]
   depthValue?: number
+  confidence?: number
+  evidence?: Record<string, unknown>
 }
 
 export type SceneBlueprintV1 = {
@@ -73,12 +75,20 @@ export type SceneDatasetItem = {
   sampleId: string
   subtype: string
   imageUrl: string
+  annotationSource?: "module_d_auto" | "legacy_v1_draft"
   blueprint: SceneBlueprint
   blueprintV1?: SceneBlueprintV1
   blueprintV1Hash?: string | null
   targetImageHash?: string | null
   migrationV1?: Record<string, unknown>
   reviewV1?: Record<string, unknown>
+  source?: Record<string, unknown>
+  versions?: Record<string, unknown>
+  judge?: {
+    status?: string
+    errors?: string[]
+    evidence?: Record<string, unknown>
+  }
 }
 
 export type AnnotationTool = "grass" | "water" | "road" | "tree" | "rock" | "shelter"
