@@ -16,12 +16,19 @@ export async function GET(_request: Request, context: { params: Promise<{ sample
     const metadata = await readJson(path.join(AUTO_SCENE_ROOT, sampleId, "metadata.json"))
     const sourceOriginal = isObject(metadata.files) && isObject(metadata.files.sourceOriginal) ? metadata.files.sourceOriginal : null
     const relativePath = sourceOriginal && typeof sourceOriginal.path === "string" ? sourceOriginal.path : ""
-    const imagePath = safeDatasetPath(relativePath)
-    if (!imagePath) return new NextResponse(null, { status: 404 })
-    const image = await readFile(imagePath)
-    return new NextResponse(image, {
-      headers: { "Content-Type": "image/png", "Cache-Control": "no-store" },
-    })
+    const candidates = [
+      path.join(DATASET_ROOT, "incoming", sampleId, "target.png"),
+      safeDatasetPath(relativePath),
+    ].filter((item): item is string => Boolean(item))
+    for (const imagePath of candidates) {
+      try {
+        const image = await readFile(imagePath)
+        return new NextResponse(image, {
+          headers: { "Content-Type": "image/png", "Cache-Control": "no-store" },
+        })
+      } catch {}
+    }
+    return new NextResponse(null, { status: 404 })
   } catch {
     return new NextResponse(null, { status: 404 })
   }
