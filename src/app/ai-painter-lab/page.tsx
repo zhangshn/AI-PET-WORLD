@@ -33,7 +33,7 @@ export default async function AiPainterLabPage() {
           <h1>AI Painter 数据实验室</h1>
           <p className={styles.lead}>查看数据协议、条件图、本地训练与模型推理的真实状态。</p>
         </div>
-        <div className={styles.status}><span />模块 D 数据准备中</div>
+        <div className={styles.status}><span />模块 D 自动标注展示</div>
       </header>
 
       <section className={styles.notice}>
@@ -57,7 +57,7 @@ export default async function AiPainterLabPage() {
             <div><dt>工程验证目标</dt><dd>20-50 张</dd></div>
             <div><dt>最低训练目标</dt><dd>100 张</dd></div>
             <div><dt>Condition v0</dt><dd>8 个</dd></div>
-            <div><dt>Condition v1</dt><dd>14 个 / 待人工复核</dd></div>
+            <div><dt>Condition v1</dt><dd>14 个 / 模块 D 自动标注</dd></div>
             <div><dt>全部辅助样本</dt><dd>{dataset.totalAccepted - dataset.accepted} 条</dd></div>
             <div><dt>在线绘图 API</dt><dd>禁止接入</dd></div>
             <div><dt>导入失败记录</dt><dd>{dataset.rejected} 条</dd></div>
@@ -95,7 +95,7 @@ export default async function AiPainterLabPage() {
       </section>
 
       <section className={styles.section}>
-        <div className={styles.sectionHeading}><div><small>CONDITION BLUEPRINT V1</small><h2>14 通道细粒度结构标注</h2></div><p>v1 草案独立保存，不覆盖 v0；待人工复核样本不能进入正式质量训练。</p></div>
+        <div className={styles.sectionHeading}><div><small>MODULE D AUTO ANNOTATION</small><h2>模块 D 自动标注结果</h2></div><p>这里只展示 `accepted/dataset_v1` 中由自动标注流水线生成且 Judge 通过的结果；原来的 V0/V1 示例标注不再显示。</p></div>
         <SceneAnnotationEditorV1 />
       </section>
 
