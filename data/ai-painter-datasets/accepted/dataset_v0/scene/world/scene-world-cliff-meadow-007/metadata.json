@@ -1,0 +1,125 @@
+{
+  "schemaVersion": "accepted-training-sample-v0",
+  "sampleId": "scene-world-cliff-meadow-007",
+  "datasetVersion": "ai-painter-dataset-v0",
+  "sampleLayer": "scene",
+  "domain": "world",
+  "subtype": "cliff_meadow_construction",
+  "tags": [
+    "bright",
+    "healing",
+    "pixel_art",
+    "three_quarter_top_down",
+    "meadow",
+    "cliff",
+    "construction"
+  ],
+  "components": [
+    "grass",
+    "pond",
+    "dirt_path",
+    "cliff",
+    "stone_foundation",
+    "timber_scaffold",
+    "trees",
+    "rocks",
+    "flowers",
+    "materials"
+  ],
+  "componentMaterials": [
+    {
+      "component": "foundation",
+      "material": "stone"
+    },
+    {
+      "component": "scaffold",
+      "material": "wood"
+    },
+    {
+      "component": "path",
+      "material": "soil"
+    },
+    {
+      "component": "pond",
+      "material": "water"
+    },
+    {
+      "component": "cliff",
+      "material": "stone"
+    }
+  ],
+  "viewpoint": "fixed_three_quarter_top_down",
+  "styleId": "bright-healing-topdown-pixel-v0",
+  "seed": 107,
+  "source": {
+    "kind": "ai_assisted_manual_creation",
+    "toolName": "OpenAI image generation via Codex",
+    "createdAt": "2026-06-13",
+    "licenseBasis": "项目负责人指示 Codex 生成的原创候选训练图；未要求复制任何指定游戏、艺术家或第三方作品，仅在人工复核后用于 AI-PET-WORLD 本地模型训练。",
+    "humanApproved": true,
+    "directCopyProhibited": true
+  },
+  "review": {
+    "reviewer": "project-owner",
+    "reviewedAt": "2026-06-13",
+    "rightsApproved": true,
+    "blueprintApproved": true,
+    "visualQualityApproved": true
+  },
+  "files": {
+    "targetImage": {
+      "path": "accepted/dataset_v0/scene/world/scene-world-cliff-meadow-007/target.png",
+      "sha256": "13bdf28516829fb9f21c386fb7a6958044c5a0fb608c1397b46a98067e70f898",
+      "byteLength": 123933
+    },
+    "structure": {
+      "path": "accepted/dataset_v0/scene/world/scene-world-cliff-meadow-007/blueprint.json",
+      "sha256": "5848427c92f39f1daaf128db45d53352d0d3283b58c2272ffc4f189529f6ce85",
+      "byteLength": 860
+    },
+    "masks": {
+      "depth": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-cliff-meadow-007/masks/depth.png",
+        "sha256": "ddf4bd34a461531cfb7a575d202719f5f3774a8c2cce95f15b29daf726fd8149",
+        "byteLength": 359
+      },
+      "grass": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-cliff-meadow-007/masks/grass.png",
+        "sha256": "5ff1190b2021358924fc2a711b0e59c8a0aadd5f1e57692032a1183e48d5cb78",
+        "byteLength": 299
+      },
+      "road": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-cliff-meadow-007/masks/road.png",
+        "sha256": "e2e094b4b5f04648b2af4ccb1394e696fc95c080f828ec85e65c41d4abf4998e",
+        "byteLength": 486
+      },
+      "rock": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-cliff-meadow-007/masks/rock.png",
+        "sha256": "2b8b8a69c084f8132592aee7bfd1ae705cecc9ee51b09de19269b2bed2f073be",
+        "byteLength": 245
+      },
+      "shelter": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-cliff-meadow-007/masks/shelter.png",
+        "sha256": "8b121829e2d8a2bdc083f93ef5eb858358d061f6a4e710e43f6a8a0093a73232",
+        "byteLength": 199
+      },
+      "tree": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-cliff-meadow-007/masks/tree.png",
+        "sha256": "79f79db15f54c3b9858ae3b7e83e26b9b50aec1a00f221027e10863bfab64520",
+        "byteLength": 276
+      },
+      "walkable": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-cliff-meadow-007/masks/walkable.png",
+        "sha256": "60a7ca5949b4b9f89b4994b91d43217069b075de521839eaf65aead1769745b2",
+        "byteLength": 506
+      },
+      "water": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-cliff-meadow-007/masks/water.png",
+        "sha256": "a81ba4601f9626e08c2cf7042bf4ecd759cb8d04bf5c15ecccf272fe8be2c8eb",
+        "byteLength": 321
+      }
+    }
+  },
+  "status": "accepted",
+  "notes": "待项目负责人审核：草原、岩壁、小池塘和施工场景。"
+}

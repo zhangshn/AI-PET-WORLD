@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "training-sample-metadata-v0",
+  "sampleId": "scene-world-stream-confluence-new-008",
+  "datasetVersion": "ai-painter-dataset-v0",
+  "sampleLayer": "scene",
+  "domain": "world",
+  "subtype": "construction_scene / grassland / waterside / woodland",
+  "tags": [
+    "bright",
+    "healing",
+    "pixel_art",
+    "top_down",
+    "construction",
+    "nature"
+  ],
+  "components": [
+    "grass",
+    "path",
+    "water",
+    "trees",
+    "rocks",
+    "shelter",
+    "construction_material"
+  ],
+  "componentMaterials": [
+    {
+      "component": "shelter",
+      "material": "wood"
+    },
+    {
+      "component": "foundation",
+      "material": "stone"
+    },
+    {
+      "component": "path",
+      "material": "soil"
+    },
+    {
+      "component": "material",
+      "material": "wood_stone"
+    }
+  ],
+  "viewpoint": "fixed_three_quarter_top_down",
+  "targetImage": "target.png",
+  "blueprintFile": "blueprint.json",
+  "source": {
+    "kind": "ai_assisted_manual_creation",
+    "toolName": "OpenAI image generation via Codex",
+    "createdAt": "2026-06-13",
+    "licenseBasis": "??????? Codex ???????????????????????????????",
+    "originalImageSha256": "9d8921c1350981462938239947f5c69256cf8e95b8d11378f7ad654069c5e476",
+    "humanApproved": true,
+    "directCopyProhibited": true
+  },
+  "review": {
+    "reviewer": "project-owner",
+    "reviewedAt": "2026-06-13",
+    "rightsApproved": true,
+    "blueprintApproved": true,
+    "visualQualityApproved": true
+  },
+  "notes": "AI-PET-WORLD ?????? 01?? 8 ??????????"
+}

@@ -1,0 +1,70 @@
+{
+  "schemaVersion": "training-sample-metadata-v0",
+  "sampleId": "scene-world-forest-river-008",
+  "datasetVersion": "ai-painter-dataset-v0",
+  "targetImage": "target.png",
+  "sampleLayer": "scene",
+  "domain": "world",
+  "subtype": "forest_river_construction",
+  "tags": [
+    "bright",
+    "healing",
+    "pixel_art",
+    "three_quarter_top_down",
+    "forest",
+    "river",
+    "construction"
+  ],
+  "components": [
+    "grass",
+    "river",
+    "dirt_path",
+    "stone_foundation",
+    "timber_scaffold",
+    "bridge",
+    "trees",
+    "rocks",
+    "flowers",
+    "materials"
+  ],
+  "componentMaterials": [
+    {
+      "component": "foundation",
+      "material": "stone"
+    },
+    {
+      "component": "scaffold",
+      "material": "wood"
+    },
+    {
+      "component": "bridge",
+      "material": "wood"
+    },
+    {
+      "component": "path",
+      "material": "soil"
+    },
+    {
+      "component": "river",
+      "material": "water"
+    }
+  ],
+  "viewpoint": "fixed_three_quarter_top_down",
+  "blueprintFile": "blueprint.json",
+  "source": {
+    "kind": "ai_assisted_manual_creation",
+    "toolName": "OpenAI image generation via Codex",
+    "createdAt": "2026-06-13",
+    "licenseBasis": "项目负责人指示 Codex 生成的原创候选训练图；未要求复制任何指定游戏、艺术家或第三方作品，仅在人工复核后用于 AI-PET-WORLD 本地模型训练。",
+    "humanApproved": true,
+    "directCopyProhibited": true
+  },
+  "review": {
+    "reviewer": "project-owner",
+    "reviewedAt": "2026-06-13",
+    "rightsApproved": true,
+    "blueprintApproved": true,
+    "visualQualityApproved": true
+  },
+  "notes": "待项目负责人审核：森林边界、右侧河流、木桥和施工场景。"
+}

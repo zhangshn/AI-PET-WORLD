@@ -1,0 +1,117 @@
+{
+  "schemaVersion": "accepted-training-sample-v0",
+  "sampleId": "scene-world-11-e0e7975b",
+  "datasetVersion": "ai-painter-dataset-v0",
+  "sampleLayer": "scene",
+  "domain": "world",
+  "subtype": "construction_scene / grassland / waterside / woodland",
+  "tags": [
+    "bright",
+    "healing",
+    "pixel_art",
+    "top_down",
+    "construction",
+    "nature"
+  ],
+  "components": [
+    "grass",
+    "path",
+    "water",
+    "trees",
+    "rocks",
+    "shelter",
+    "construction_material"
+  ],
+  "componentMaterials": [
+    {
+      "component": "shelter",
+      "material": "wood"
+    },
+    {
+      "component": "foundation",
+      "material": "stone"
+    },
+    {
+      "component": "path",
+      "material": "soil"
+    },
+    {
+      "component": "material",
+      "material": "wood_stone"
+    }
+  ],
+  "viewpoint": "fixed_three_quarter_top_down",
+  "styleId": "bright-healing-topdown-pixel-v0",
+  "seed": 101,
+  "source": {
+    "kind": "ai_assisted_manual_creation",
+    "toolName": "外部人工 AI 图像工具或自制绘图流程",
+    "createdAt": "2026-06-13",
+    "licenseBasis": "由项目负责人通过 Codex 调用 OpenAI 图像生成能力，根据 AI-PET-WORLD 自有文字要求生成。未指定模仿任何具体游戏、艺术家或受保护角色。经人工审核后，仅用于本项目模型训练、测试和商业产品开发。保留生成记录及人工审核记录。",
+    "humanApproved": true,
+    "directCopyProhibited": true
+  },
+  "review": {
+    "reviewer": "jo",
+    "reviewedAt": "2026-06-13",
+    "rightsApproved": true,
+    "blueprintApproved": true,
+    "visualQualityApproved": true
+  },
+  "files": {
+    "targetImage": {
+      "path": "accepted/dataset_v0/scene/world/scene-world-11-e0e7975b/target.png",
+      "sha256": "2ebaf089c3f5e781af4754ffd30c09ed836e747002e4b4a00678dea249bc4f2d",
+      "byteLength": 129605
+    },
+    "structure": {
+      "path": "accepted/dataset_v0/scene/world/scene-world-11-e0e7975b/blueprint.json",
+      "sha256": "c264b7668a7b29d08d3a9720d3ad35ad673ae380898ed376f02faaac61a0a55f",
+      "byteLength": 969
+    },
+    "masks": {
+      "depth": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-11-e0e7975b/masks/depth.png",
+        "sha256": "da89acb3962527728fbca1ee578f2dd67dc594ed7454996754f1582a95b826ea",
+        "byteLength": 180
+      },
+      "grass": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-11-e0e7975b/masks/grass.png",
+        "sha256": "5ff1190b2021358924fc2a711b0e59c8a0aadd5f1e57692032a1183e48d5cb78",
+        "byteLength": 299
+      },
+      "road": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-11-e0e7975b/masks/road.png",
+        "sha256": "be7c6819e9afb0f97665d813f098bd863d35e07df1bb70dd2a5229c268738512",
+        "byteLength": 541
+      },
+      "rock": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-11-e0e7975b/masks/rock.png",
+        "sha256": "fec966e39bd2cb880399a71dc6687cd330bd399b1398709c3aa4a5c39bd7c911",
+        "byteLength": 128
+      },
+      "shelter": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-11-e0e7975b/masks/shelter.png",
+        "sha256": "f85732aa55e3b4af5816dfaf4e99ed26481bfa8c7249bf055de8270cdaa570f8",
+        "byteLength": 174
+      },
+      "tree": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-11-e0e7975b/masks/tree.png",
+        "sha256": "fec966e39bd2cb880399a71dc6687cd330bd399b1398709c3aa4a5c39bd7c911",
+        "byteLength": 128
+      },
+      "walkable": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-11-e0e7975b/masks/walkable.png",
+        "sha256": "425b9ec1c70b87a371b3566c0301314a0722bffc55f9a5cb48daf17142a7f497",
+        "byteLength": 374
+      },
+      "water": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-11-e0e7975b/masks/water.png",
+        "sha256": "fec966e39bd2cb880399a71dc6687cd330bd399b1398709c3aa4a5c39bd7c911",
+        "byteLength": 128
+      }
+    }
+  },
+  "status": "accepted",
+  "notes": "AI-PET-WORLD 工程验证批次 01，共 12 张原创静态世界场景原稿。统一为明亮、治愈、精细、俯视像素风，覆盖木材、石材、道路、水岸、桥梁、码头、建筑基础及其他施工材料。导入后仍需完成 Blueprint v1、14 通道 Mask 和逐项人工复核。"
+}

@@ -1,0 +1,343 @@
+{
+  "height": 192,
+  "manualReviewReasons": [],
+  "requiresManualReview": false,
+  "sceneId": "scene-world-4-18e587e8",
+  "schemaVersion": "world-blueprint-v1",
+  "seed": 104,
+  "sourceBlueprintHash": "1e056ae0e30cb14792f7d2b3df985696c1ddedff4327f56f49f78110875dfb7f",
+  "sourceBlueprintVersion": "world-blueprint-v0",
+  "structures": [
+    {
+      "geometry": {
+        "kind": "polygon",
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            255,
+            0
+          ],
+          [
+            255,
+            191
+          ],
+          [
+            0,
+            191
+          ]
+        ]
+      },
+      "id": "grass-grass-main",
+      "layer": 10,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "grass-main",
+      "type": "grass"
+    },
+    {
+      "geometry": {
+        "kind": "polyline",
+        "lineWidth": 10,
+        "points": [
+          [
+            0,
+            175
+          ],
+          [
+            38,
+            146
+          ],
+          [
+            67,
+            119
+          ],
+          [
+            103,
+            104
+          ],
+          [
+            151,
+            101
+          ],
+          [
+            196,
+            111
+          ],
+          [
+            255,
+            145
+          ]
+        ]
+      },
+      "id": "road-center-site-loop",
+      "layer": 40,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "site-loop",
+      "type": "road_center"
+    },
+    {
+      "geometry": {
+        "kind": "polyline",
+        "lineWidth": 20,
+        "points": [
+          [
+            0,
+            175
+          ],
+          [
+            38,
+            146
+          ],
+          [
+            67,
+            119
+          ],
+          [
+            103,
+            104
+          ],
+          [
+            151,
+            101
+          ],
+          [
+            196,
+            111
+          ],
+          [
+            255,
+            145
+          ]
+        ]
+      },
+      "id": "road-edge-site-loop",
+      "layer": 39,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "site-loop",
+      "type": "road_edge"
+    },
+    {
+      "geometry": {
+        "kind": "polyline",
+        "lineWidth": 8,
+        "points": [
+          [
+            196,
+            111
+          ],
+          [
+            217,
+            76
+          ],
+          [
+            226,
+            38
+          ]
+        ]
+      },
+      "id": "road-center-orchard-entry",
+      "layer": 40,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "orchard-entry",
+      "type": "road_center"
+    },
+    {
+      "geometry": {
+        "kind": "polyline",
+        "lineWidth": 16,
+        "points": [
+          [
+            196,
+            111
+          ],
+          [
+            217,
+            76
+          ],
+          [
+            226,
+            38
+          ]
+        ]
+      },
+      "id": "road-edge-orchard-entry",
+      "layer": 39,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "orchard-entry",
+      "type": "road_edge"
+    },
+    {
+      "geometry": {
+        "height": 60,
+        "kind": "rect",
+        "width": 70,
+        "x": 43,
+        "y": 45
+      },
+      "id": "shelter-foundation-shelter-1",
+      "layer": 80,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "shelter-1",
+      "type": "shelter_foundation"
+    },
+    {
+      "geometry": {
+        "height": 35,
+        "kind": "rect",
+        "width": 70,
+        "x": 43,
+        "y": 70
+      },
+      "id": "shelter-wall-shelter-1",
+      "layer": 82,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "shelter-1",
+      "type": "shelter_wall"
+    },
+    {
+      "geometry": {
+        "height": 25,
+        "kind": "rect",
+        "width": 70,
+        "x": 43,
+        "y": 45
+      },
+      "id": "shelter-roof-shelter-1",
+      "layer": 84,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "shelter-1",
+      "type": "shelter_roof"
+    },
+    {
+      "geometry": {
+        "height": 112,
+        "kind": "rect",
+        "width": 78,
+        "x": 178,
+        "y": 0
+      },
+      "id": "tree-crown-tree-orchard",
+      "layer": 70,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-orchard",
+      "type": "tree_crown"
+    },
+    {
+      "geometry": {
+        "height": 22,
+        "kind": "rect",
+        "width": 15,
+        "x": 209,
+        "y": 90
+      },
+      "id": "tree-trunk-tree-orchard",
+      "layer": 69,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-orchard",
+      "type": "tree_trunk"
+    },
+    {
+      "geometry": {
+        "height": 25,
+        "kind": "rect",
+        "width": 117,
+        "x": 63,
+        "y": 0
+      },
+      "id": "tree-crown-tree-north",
+      "layer": 70,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-north",
+      "type": "tree_crown"
+    },
+    {
+      "geometry": {
+        "height": 5,
+        "kind": "rect",
+        "width": 23,
+        "x": 110,
+        "y": 20
+      },
+      "id": "tree-trunk-tree-north",
+      "layer": 69,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-north",
+      "type": "tree_trunk"
+    },
+    {
+      "geometry": {
+        "height": 35,
+        "kind": "rect",
+        "width": 100,
+        "x": 0,
+        "y": 124
+      },
+      "id": "rock-rock-creek",
+      "layer": 60,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "rock-creek",
+      "type": "rock"
+    },
+    {
+      "geometry": {
+        "height": 23,
+        "kind": "rect",
+        "width": 37,
+        "x": 126,
+        "y": 105
+      },
+      "id": "rock-rock-material",
+      "layer": 60,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "rock-material",
+      "type": "rock"
+    },
+    {
+      "geometry": {
+        "height": 192,
+        "kind": "rect",
+        "width": 256,
+        "x": 0,
+        "y": 0
+      },
+      "id": "walkable-derived-v0",
+      "layer": 5,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "type": "walkable"
+    },
+    {
+      "depthValue": 128,
+      "geometry": {
+        "height": 192,
+        "kind": "rect",
+        "width": 256,
+        "x": 0,
+        "y": 0
+      },
+      "id": "depth-derived-v0",
+      "layer": 1,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "type": "depth"
+    }
+  ],
+  "styleId": "bright-healing-topdown-pixel-v0",
+  "width": 256
+}

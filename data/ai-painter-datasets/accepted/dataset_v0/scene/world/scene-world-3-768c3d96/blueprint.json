@@ -1,0 +1,163 @@
+{
+  "schemaVersion": "world-blueprint-v0",
+  "sceneId": "scene-world-3-768c3d96",
+  "width": 256,
+  "height": 192,
+  "seed": 103,
+  "styleId": "bright-healing-topdown-pixel-v0",
+  "terrainRegions": [
+    {
+      "id": "grass-main",
+      "terrain": "grass",
+      "polygon": [
+        [
+          0,
+          0
+        ],
+        [
+          255,
+          0
+        ],
+        [
+          255,
+          191
+        ],
+        [
+          0,
+          191
+        ]
+      ]
+    },
+    {
+      "id": "lake-left",
+      "terrain": "water",
+      "polygon": [
+        [
+          0,
+          0
+        ],
+        [
+          74,
+          0
+        ],
+        [
+          68,
+          39
+        ],
+        [
+          79,
+          74
+        ],
+        [
+          70,
+          111
+        ],
+        [
+          88,
+          145
+        ],
+        [
+          91,
+          191
+        ],
+        [
+          0,
+          191
+        ]
+      ]
+    }
+  ],
+  "roads": [
+    {
+      "id": "road-entry",
+      "width": 10,
+      "points": [
+        [
+          255,
+          53
+        ],
+        [
+          224,
+          73
+        ],
+        [
+          196,
+          92
+        ],
+        [
+          177,
+          109
+        ],
+        [
+          204,
+          133
+        ],
+        [
+          231,
+          191
+        ]
+      ]
+    },
+    {
+      "id": "landing-path",
+      "width": 8,
+      "points": [
+        [
+          177,
+          109
+        ],
+        [
+          143,
+          117
+        ],
+        [
+          109,
+          129
+        ]
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "shelter-1",
+      "kind": "shelter",
+      "x": 132,
+      "y": 31,
+      "width": 68,
+      "height": 55,
+      "stage": 1
+    },
+    {
+      "id": "tree-north",
+      "kind": "tree",
+      "x": 68,
+      "y": 0,
+      "width": 188,
+      "height": 29
+    },
+    {
+      "id": "tree-right",
+      "kind": "tree",
+      "x": 224,
+      "y": 0,
+      "width": 32,
+      "height": 192
+    },
+    {
+      "id": "rock-shore",
+      "kind": "rock",
+      "x": 51,
+      "y": 35,
+      "width": 32,
+      "height": 92
+    },
+    {
+      "id": "rock-north",
+      "kind": "rock",
+      "x": 7,
+      "y": 1,
+      "width": 42,
+      "height": 30
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "world-blueprint-v0",
+  "sceneId": "scene-world-stream-confluence-006",
+  "width": 256,
+  "height": 192,
+  "seed": 106,
+  "styleId": "bright-healing-topdown-pixel-v0",
+  "terrainRegions": [
+    {"id":"grass-main","terrain":"grass","polygon":[[0,0],[255,0],[255,191],[0,191]]},
+    {"id":"stream-left","terrain":"water","polygon":[[0,0],[31,0],[49,31],[40,69],[53,105],[75,137],[62,191],[27,191],[38,143],[27,108],[12,72],[20,36]]},
+    {"id":"stream-bottom","terrain":"water","polygon":[[62,121],[99,125],[134,132],[168,121],[208,126],[255,110],[255,151],[221,157],[180,153],[143,162],[101,154],[62,164]]}
+  ],
+  "roads": [{"id":"road-entry","width":10,"points":[[45,191],[70,155],[101,127],[118,102],[131,83]]}],
+  "objects": [
+    {"id":"shelter-main","kind":"shelter","x":91,"y":49,"width":75,"height":65,"stage":1},
+    {"id":"tree-north","kind":"tree","x":0,"y":0,"width":99,"height":42},
+    {"id":"tree-east","kind":"tree","x":211,"y":0,"width":45,"height":124},
+    {"id":"tree-south","kind":"tree","x":184,"y":153,"width":72,"height":39},
+    {"id":"rock-north","kind":"rock","x":94,"y":11,"width":38,"height":29},
+    {"id":"rock-west","kind":"rock","x":38,"y":62,"width":31,"height":35}
+  ]
+}

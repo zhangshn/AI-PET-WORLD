@@ -1,0 +1,7 @@
+{
+  "sampleId": "scene-world-8-45c15bf4",
+  "status": "rejected",
+  "errors": [
+    "target image aspect ratio must match 4:3"
+  ]
+}

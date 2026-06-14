@@ -1,0 +1,6 @@
+{
+  "schemaVersion":"world-blueprint-v0","sceneId":"scene-world-forest-river-008","width":256,"height":192,"seed":108,"styleId":"bright-healing-topdown-pixel-v0",
+  "terrainRegions":[{"id":"grass-main","terrain":"grass","polygon":[[0,0],[255,0],[255,191],[0,191]]},{"id":"river-right","terrain":"water","polygon":[[200,0],[231,0],[224,32],[237,62],[226,92],[241,124],[230,156],[246,191],[205,191],[211,158],[198,129],[210,96],[202,64],[211,31]]}],
+  "roads":[{"id":"road-entry","width":11,"points":[[66,191],[75,161],[67,132],[83,104],[107,88]]}],
+  "objects":[{"id":"shelter-main","kind":"shelter","x":54,"y":55,"width":94,"height":68,"stage":1},{"id":"tree-north","kind":"tree","x":0,"y":0,"width":198,"height":45},{"id":"tree-west","kind":"tree","x":0,"y":40,"width":48,"height":152},{"id":"tree-south","kind":"tree","x":76,"y":154,"width":126,"height":38},{"id":"rock-river","kind":"rock","x":196,"y":49,"width":42,"height":53},{"id":"rock-north","kind":"rock","x":91,"y":19,"width":37,"height":27}]
+}

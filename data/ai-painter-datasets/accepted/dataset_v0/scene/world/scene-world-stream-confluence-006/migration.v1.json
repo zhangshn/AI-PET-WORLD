@@ -1,0 +1,19 @@
+{
+  "manualReviewReasons": [
+    "construction_material 在 v0 中没有明确世界事实，需人工补充",
+    "v0 depth 为固定规则草案",
+    "v0 road 只有中心区域，道路边缘为确定性草案",
+    "v0 shelter 无法确认墙体范围，按下半部生成草案",
+    "v0 shelter 无法确认屋顶范围，按上半部生成草案",
+    "v0 tree 无法确认树干精确位置，按落地点生成草案",
+    "v0 walkable 由结构推断，需人工复核可行走边界",
+    "v0 water 只有水体区域，岸线为边界膨胀草案",
+    "v0 到 v1 的细分结构需要人工复核"
+  ],
+  "maskCount": 14,
+  "requiresManualReview": true,
+  "sampleId": "scene-world-stream-confluence-006",
+  "schemaVersion": "blueprint-v1-edit-record-v0",
+  "targetImageHash": "86b31bd69463ba79a60343115b11ba7669f6bb71de9a6065f251e86703c5b63f",
+  "v1BlueprintHash": "26c0aae834c725a08d74af7314b68bdc5fcf967cf402980d020f0e44e05bf624"
+}

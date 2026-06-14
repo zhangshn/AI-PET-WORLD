@@ -1,0 +1,124 @@
+{
+  "schemaVersion": "accepted-training-sample-v0",
+  "sampleId": "scene-world-stream-confluence-006",
+  "datasetVersion": "ai-painter-dataset-v0",
+  "sampleLayer": "scene",
+  "domain": "world",
+  "subtype": "stream_confluence_construction",
+  "tags": [
+    "bright",
+    "healing",
+    "pixel_art",
+    "three_quarter_top_down",
+    "streams",
+    "construction"
+  ],
+  "components": [
+    "grass",
+    "streams",
+    "dirt_path",
+    "stone_foundation",
+    "timber_scaffold",
+    "bridge",
+    "trees",
+    "rocks",
+    "flowers",
+    "materials"
+  ],
+  "componentMaterials": [
+    {
+      "component": "foundation",
+      "material": "stone"
+    },
+    {
+      "component": "scaffold",
+      "material": "wood"
+    },
+    {
+      "component": "bridge",
+      "material": "wood"
+    },
+    {
+      "component": "path",
+      "material": "soil"
+    },
+    {
+      "component": "streams",
+      "material": "water"
+    }
+  ],
+  "viewpoint": "fixed_three_quarter_top_down",
+  "styleId": "bright-healing-topdown-pixel-v0",
+  "seed": 106,
+  "source": {
+    "kind": "ai_assisted_manual_creation",
+    "toolName": "OpenAI image generation via Codex",
+    "createdAt": "2026-06-13",
+    "licenseBasis": "项目负责人指示 Codex 生成的原创候选训练图；未要求复制任何指定游戏、艺术家或第三方作品，仅在人工复核后用于 AI-PET-WORLD 本地模型训练。",
+    "humanApproved": true,
+    "directCopyProhibited": true
+  },
+  "review": {
+    "reviewer": "project-owner",
+    "reviewedAt": "2026-06-13",
+    "rightsApproved": true,
+    "blueprintApproved": true,
+    "visualQualityApproved": true
+  },
+  "files": {
+    "targetImage": {
+      "path": "accepted/dataset_v0/scene/world/scene-world-stream-confluence-006/target.png",
+      "sha256": "86b31bd69463ba79a60343115b11ba7669f6bb71de9a6065f251e86703c5b63f",
+      "byteLength": 129360
+    },
+    "structure": {
+      "path": "accepted/dataset_v0/scene/world/scene-world-stream-confluence-006/blueprint.json",
+      "sha256": "0422ec668e4e4e288c3b002b8e339ed3c822158c474cda7d2188518338913ea9",
+      "byteLength": 1225
+    },
+    "masks": {
+      "depth": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-stream-confluence-006/masks/depth.png",
+        "sha256": "831c3c9415139d010a121111c872ea10fe4621ae8c3c670cd03a4ad804d19752",
+        "byteLength": 356
+      },
+      "grass": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-stream-confluence-006/masks/grass.png",
+        "sha256": "5ff1190b2021358924fc2a711b0e59c8a0aadd5f1e57692032a1183e48d5cb78",
+        "byteLength": 299
+      },
+      "road": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-stream-confluence-006/masks/road.png",
+        "sha256": "1b6f38e6c635d8016deafb69a5ebd204c2959ffbc9db066c6fc28f269671b705",
+        "byteLength": 619
+      },
+      "rock": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-stream-confluence-006/masks/rock.png",
+        "sha256": "0fb438680c2e12712abe00687de56facc7c7ae9f7ded990dc472edae644c558c",
+        "byteLength": 216
+      },
+      "shelter": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-stream-confluence-006/masks/shelter.png",
+        "sha256": "3186f38de9ac56848e0ff78e2170c6da97cfec9100cf1eeb57be69ce805460ce",
+        "byteLength": 206
+      },
+      "tree": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-stream-confluence-006/masks/tree.png",
+        "sha256": "8aa2120c5929ac4df23f117bf7b107f8315aadd23d67040d1bc01b695979f02b",
+        "byteLength": 297
+      },
+      "walkable": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-stream-confluence-006/masks/walkable.png",
+        "sha256": "bcbf86d7bede999406ccf12447740abeeb3cc38d19b5abfe8aa5d411254a833b",
+        "byteLength": 887
+      },
+      "water": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-stream-confluence-006/masks/water.png",
+        "sha256": "48f30bdfb1d1a149bd9873be0312a31b19a2703ddfa9d8f6b13fc96676f973d9",
+        "byteLength": 731
+      }
+    }
+  },
+  "status": "accepted",
+  "notes": "待项目负责人审核：双溪流汇合、施工场、道路和桥梁场景。"
+}

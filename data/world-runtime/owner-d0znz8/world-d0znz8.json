@@ -1,0 +1,2466 @@
+{
+  "version": "v2.6-runtime-00",
+  "worldId": "world-d0znz8",
+  "ownerId": "owner-d0znz8",
+  "tick": 0,
+  "savedAt": "1970-08-20T06:01:41.082Z",
+  "butlerProfile": {
+    "identity": {
+      "displayName": "管家",
+      "mappingMode": "self_projection",
+      "birthTimeMode": "full_datetime",
+      "identitySummary": "管家以用户完整出生时间为基础，更接近用户在这个世界中的自我投影。"
+    },
+    "birth": {
+      "year": 1998,
+      "month": 1,
+      "day": 1,
+      "hour": 8,
+      "minute": 0
+    },
+    "lifeProfile": {
+      "subjectType": "butler",
+      "mode": "ziwei_primary",
+      "genderPerspective": "female",
+      "hasBirthHour": true,
+      "ziweiProfile": {
+        "pattern": {
+          "birthKey": "1998-1-1-8-0",
+          "lunarInfo": {
+            "solarYear": 1998,
+            "solarMonth": 1,
+            "solarDay": 1,
+            "solarHour": 8,
+            "solarMinute": 0,
+            "lunarYear": 1997,
+            "lunarMonth": 12,
+            "lunarDay": 3,
+            "yearStem": "ding",
+            "timeBranch": "chen",
+            "timeBranchIndex": 5,
+            "timeBranchNumber": 5,
+            "formulaTimeIndex": 2
+          },
+          "timeBranch": "chen",
+          "engine": "star-pair-engine",
+          "primaryBranchPalace": "you",
+          "bodyBranchPalace": "si",
+          "elementGate": "earth_5",
+          "elementBase": 5,
+          "branchPalaces": {
+            "yin": [
+              "star_02"
+            ],
+            "mao": [
+              "star_08",
+              "star_03"
+            ],
+            "chen": [
+              "star_01",
+              "star_09"
+            ],
+            "si": [
+              "star_10"
+            ],
+            "wu": [
+              "star_12"
+            ],
+            "wei": [],
+            "shen": [
+              "star_04"
+            ],
+            "you": [],
+            "xu": [
+              "star_06"
+            ],
+            "hai": [
+              "star_11"
+            ],
+            "zi": [
+              "star_05",
+              "star_07"
+            ],
+            "chou": [
+              "star_13",
+              "star_14"
+            ]
+          },
+          "branchToSectorMap": {
+            "you": "life",
+            "shen": "siblings",
+            "wei": "spouse",
+            "wu": "children",
+            "si": "wealth",
+            "chen": "health",
+            "mao": "travel",
+            "yin": "friends",
+            "chou": "career",
+            "zi": "property",
+            "hai": "fortune",
+            "xu": "parents"
+          },
+          "sectorToBranchMap": {
+            "life": "you",
+            "siblings": "shen",
+            "spouse": "wei",
+            "children": "wu",
+            "wealth": "si",
+            "health": "chen",
+            "travel": "mao",
+            "friends": "yin",
+            "career": "chou",
+            "property": "zi",
+            "fortune": "hai",
+            "parents": "xu"
+          },
+          "borrowedPalaces": [
+            {
+              "targetPalace": "wei",
+              "sourcePalace": "chou",
+              "stars": [
+                "star_13",
+                "star_14"
+              ]
+            },
+            {
+              "targetPalace": "you",
+              "sourcePalace": "mao",
+              "stars": [
+                "star_08",
+                "star_03"
+              ]
+            }
+          ],
+          "sectors": {
+            "life": [],
+            "siblings": [
+              "star_04"
+            ],
+            "spouse": [],
+            "children": [
+              "star_12"
+            ],
+            "wealth": [
+              "star_10"
+            ],
+            "health": [
+              "star_01",
+              "star_09"
+            ],
+            "travel": [
+              "star_08",
+              "star_03"
+            ],
+            "friends": [
+              "star_02"
+            ],
+            "career": [
+              "star_13",
+              "star_14"
+            ],
+            "property": [
+              "star_05",
+              "star_07"
+            ],
+            "fortune": [
+              "star_11"
+            ],
+            "parents": [
+              "star_06"
+            ]
+          },
+          "primarySector": "life",
+          "supportSectors": [
+            "wealth",
+            "career",
+            "travel"
+          ],
+          "supportBranchPalaces": [
+            "si",
+            "chou",
+            "mao"
+          ],
+          "supportStars": [
+            "star_10",
+            "star_13",
+            "star_14",
+            "star_08",
+            "star_03"
+          ],
+          "supportSymbols": [
+            "star_10",
+            "star_13",
+            "star_14",
+            "star_08",
+            "star_03"
+          ],
+          "primaryStars": [],
+          "isEmptyPrimary": true,
+          "oppositeSector": "travel",
+          "oppositeBranchPalace": "mao",
+          "borrowedStars": [
+            "star_08",
+            "star_03"
+          ],
+          "emptySectorCount": 2
+        },
+        "corePersonality": {
+          "activity": 0.5544,
+          "curiosity": 0.925,
+          "dependency": 0.5476,
+          "confidence": 0.477,
+          "sensitivity": 0.925
+        },
+        "traits": {
+          "activity": 58,
+          "restPreference": 53,
+          "appetite": 53,
+          "discipline": 53,
+          "curiosity": 93,
+          "emotionalSensitivity": 93,
+          "stability": 32,
+          "caregiving": 56,
+          "buildingPreference": 50
+        },
+        "summaries": [
+          "天梁底色明显",
+          "保护欲与责任感较强，更容易自然地站到照顾者或撑住局面的位置。",
+          "太阳底色明显",
+          "表达欲与外放度更强，更容易通过主动性和存在感影响周围。",
+          "太阴底色明显",
+          "细腻、内感、情绪感知更强，容易把外界变化转成内心波动。",
+          "天机底色明显",
+          "思维反应快、联想多，更容易从变化、信息与细节中启动自己。",
+          "巨门底色明显",
+          "容易从细节和矛盾处进入思考，对外界评价、信息偏差更敏感。",
+          "联动结构：思维细腻而敏感，观察入微，容易把外界变化转化为内在情绪波动。",
+          "更容易进入分析、推演和反复思考状态，信息处理深但内耗风险也更高。",
+          "命宫原生主星不足，当前人格更多通过对宫借星来表现。",
+          "情绪感知较强，更容易受到关系氛围与环境变化影响。",
+          "状态波动相对明显，对变化和刺激的反应更强。",
+          "探索欲偏强，容易被新的信息、变化和可能性吸引。"
+        ],
+        "tags": [
+          "保护欲",
+          "责任感",
+          "照顾倾向",
+          "外放",
+          "表达欲",
+          "照亮感",
+          "细腻",
+          "内感",
+          "情绪感知",
+          "思维快",
+          "变化感",
+          "观察力",
+          "思辨",
+          "敏感",
+          "怀疑",
+          "敏思型",
+          "观察细腻",
+          "情绪波动",
+          "思辨型",
+          "多想",
+          "分析欲"
+        ],
+        "debug": {
+          "primarySector": "life",
+          "primaryStars": [],
+          "supportSectors": [
+            "wealth",
+            "career",
+            "travel"
+          ],
+          "supportStars": [
+            "star_10",
+            "star_13",
+            "star_14",
+            "star_08",
+            "star_03"
+          ],
+          "borrowedStars": [
+            "star_08",
+            "star_03"
+          ],
+          "isEmptyPrimary": true,
+          "hitPairs": [],
+          "supportPairs": [
+            {
+              "pairId": "star_10+star_13",
+              "starIds": [
+                "star_10",
+                "star_13"
+              ],
+              "pairLabel": "天梁 + 太阳"
+            },
+            {
+              "pairId": "star_10+star_14",
+              "starIds": [
+                "star_10",
+                "star_14"
+              ],
+              "pairLabel": "天梁 + 太阴"
+            },
+            {
+              "pairId": "star_08+star_10",
+              "starIds": [
+                "star_10",
+                "star_08"
+              ],
+              "pairLabel": "天梁 + 天机"
+            },
+            {
+              "pairId": "star_03+star_10",
+              "starIds": [
+                "star_10",
+                "star_03"
+              ],
+              "pairLabel": "天梁 + 巨门"
+            },
+            {
+              "pairId": "star_13+star_14",
+              "starIds": [
+                "star_13",
+                "star_14"
+              ],
+              "pairLabel": "太阳 + 太阴"
+            },
+            {
+              "pairId": "star_08+star_13",
+              "starIds": [
+                "star_13",
+                "star_08"
+              ],
+              "pairLabel": "太阳 + 天机"
+            },
+            {
+              "pairId": "star_03+star_13",
+              "starIds": [
+                "star_13",
+                "star_03"
+              ],
+              "pairLabel": "太阳 + 巨门"
+            },
+            {
+              "pairId": "star_08+star_14",
+              "starIds": [
+                "star_14",
+                "star_08"
+              ],
+              "pairLabel": "机阴敏思型"
+            },
+            {
+              "pairId": "star_03+star_14",
+              "starIds": [
+                "star_14",
+                "star_03"
+              ],
+              "pairLabel": "太阴 + 巨门"
+            },
+            {
+              "pairId": "star_03+star_08",
+              "starIds": [
+                "star_08",
+                "star_03"
+              ],
+              "pairLabel": "巨机思辨型"
+            }
+          ]
+        }
+      },
+      "publicPersonalityView": {
+        "innateTemperament": "保护欲",
+        "currentPhase": "敏感观察期",
+        "visibleTraits": [
+          "保护欲",
+          "责任感",
+          "照顾倾向",
+          "外放",
+          "表达欲"
+        ],
+        "behaviorTendencies": [
+          "对新变化更敏感",
+          "状态变化较明显，需要更稳定的环境节奏"
+        ],
+        "summary": "天梁底色明显"
+      },
+      "baziProfile": {
+        "chart": {
+          "input": {
+            "year": 1998,
+            "month": 1,
+            "day": 1,
+            "hour": 8,
+            "minute": 0
+          },
+          "mode": "FOUR_PILLARS",
+          "hasHour": true,
+          "yearPillar": {
+            "stem": "丁",
+            "branch": "丑",
+            "label": "丁丑",
+            "stemElement": "fire",
+            "branchElement": "earth",
+            "hiddenStems": [
+              "己",
+              "癸",
+              "辛"
+            ],
+            "yinYang": "yin"
+          },
+          "monthPillar": {
+            "stem": "壬",
+            "branch": "子",
+            "label": "壬子",
+            "stemElement": "water",
+            "branchElement": "water",
+            "hiddenStems": [
+              "癸"
+            ],
+            "yinYang": "yang"
+          },
+          "dayPillar": {
+            "stem": "戊",
+            "branch": "申",
+            "label": "戊申",
+            "stemElement": "earth",
+            "branchElement": "metal",
+            "hiddenStems": [
+              "庚",
+              "壬",
+              "戊"
+            ],
+            "yinYang": "yang"
+          },
+          "hourPillar": {
+            "stem": "丙",
+            "branch": "辰",
+            "label": "丙辰",
+            "stemElement": "fire",
+            "branchElement": "earth",
+            "hiddenStems": [
+              "戊",
+              "乙",
+              "癸"
+            ],
+            "yinYang": "yang"
+          },
+          "dayMaster": "戊",
+          "pillars": [
+            {
+              "stem": "丁",
+              "branch": "丑",
+              "label": "丁丑",
+              "stemElement": "fire",
+              "branchElement": "earth",
+              "hiddenStems": [
+                "己",
+                "癸",
+                "辛"
+              ],
+              "yinYang": "yin"
+            },
+            {
+              "stem": "壬",
+              "branch": "子",
+              "label": "壬子",
+              "stemElement": "water",
+              "branchElement": "water",
+              "hiddenStems": [
+                "癸"
+              ],
+              "yinYang": "yang"
+            },
+            {
+              "stem": "戊",
+              "branch": "申",
+              "label": "戊申",
+              "stemElement": "earth",
+              "branchElement": "metal",
+              "hiddenStems": [
+                "庚",
+                "壬",
+                "戊"
+              ],
+              "yinYang": "yang"
+            },
+            {
+              "stem": "丙",
+              "branch": "辰",
+              "label": "丙辰",
+              "stemElement": "fire",
+              "branchElement": "earth",
+              "hiddenStems": [
+                "戊",
+                "乙",
+                "癸"
+              ],
+              "yinYang": "yang"
+            }
+          ]
+        },
+        "mode": "FOUR_PILLARS",
+        "precision": "high",
+        "hasHour": true,
+        "dayMaster": "戊",
+        "elementScores": {
+          "wood": 3.04,
+          "fire": 13.04,
+          "earth": 33.48,
+          "metal": 14.78,
+          "water": 35.65
+        },
+        "yinYangScores": {
+          "yin": 32.17,
+          "yang": 67.83
+        },
+        "dominantElements": [
+          "water",
+          "earth"
+        ],
+        "weakElements": [
+          "wood",
+          "fire"
+        ],
+        "dynamicVector": {
+          "growthDrive": 4.54,
+          "expressionDrive": 12.13,
+          "stabilityDrive": 31.83,
+          "boundaryDrive": 17.69,
+          "perceptionDrive": 31.93
+        },
+        "behaviorBias": {
+          "activity": 9.8,
+          "restPreference": 28.09,
+          "emotionalSensitivity": 20.41,
+          "explorationDrive": 10.43,
+          "caution": 21.32,
+          "adaptability": 21.98
+        },
+        "rawScore": {
+          "wood": 0.35,
+          "fire": 1.5,
+          "earth": 3.85,
+          "metal": 1.7,
+          "water": 4.1
+        },
+        "distribution": {
+          "wood": 3.04,
+          "fire": 13.04,
+          "earth": 33.48,
+          "metal": 14.78,
+          "water": 35.65
+        },
+        "dynamics": {
+          "actionIntensity": 9.8,
+          "reactionSpeed": 10.33,
+          "sensoryDepth": 28.03,
+          "consistency": 23.52,
+          "explorationDrive": 10.43,
+          "stability": 31.83,
+          "persistence": 20.52,
+          "adaptability": 21.98
+        },
+        "behaviorTags": [
+          "balanced_dynamics"
+        ],
+        "interpretation": {
+          "title": "八字动力底盘：水 / 土",
+          "summary": "当前使用四柱模式，能量动力精度较高。 原局能量以 水 / 土 为主。",
+          "behaviorDescription": [
+            "行动强度：10",
+            "探索驱动：10",
+            "感知深度：28"
+          ],
+          "newbornTendency": [
+            "新生期动作释放较平缓。",
+            "对环境变化保持中性反应。"
+          ],
+          "butlerTendency": [
+            "管家侧需要保留更高弹性。"
+          ],
+          "constructionTendency": [
+            "家园建设偏阶段性推进。"
+          ]
+        },
+        "summary": "当前为四柱模式。 原局主导能量为 水 / 土，相对弱项为 木 / 火。八字在当前系统中作为 AI 生命的能量动力层，用于影响行动节奏、感知深度、恢复方式与环境适应。",
+        "debug": {
+          "usedPillars": [
+            "丁丑",
+            "壬子",
+            "戊申",
+            "丙辰"
+          ],
+          "missingHour": false,
+          "elementDetails": [
+            {
+              "pillarLabel": "丁丑",
+              "source": "yearStem",
+              "element": "fire",
+              "yinYang": "yin",
+              "weight": 0.8,
+              "note": "天干主气"
+            },
+            {
+              "pillarLabel": "丁丑",
+              "source": "yearBranch",
+              "element": "earth",
+              "yinYang": "yin",
+              "weight": 0.8,
+              "note": "地支主气"
+            },
+            {
+              "pillarLabel": "丁丑",
+              "source": "hiddenStem",
+              "element": "earth",
+              "yinYang": "yin",
+              "weight": 0.35,
+              "note": "藏干 己"
+            },
+            {
+              "pillarLabel": "丁丑",
+              "source": "hiddenStem",
+              "element": "water",
+              "yinYang": "yin",
+              "weight": 0.35,
+              "note": "藏干 癸"
+            },
+            {
+              "pillarLabel": "丁丑",
+              "source": "hiddenStem",
+              "element": "metal",
+              "yinYang": "yin",
+              "weight": 0.35,
+              "note": "藏干 辛"
+            },
+            {
+              "pillarLabel": "壬子",
+              "source": "monthStem",
+              "element": "water",
+              "yinYang": "yang",
+              "weight": 1.1,
+              "note": "天干主气"
+            },
+            {
+              "pillarLabel": "壬子",
+              "source": "monthBranch",
+              "element": "water",
+              "yinYang": "yang",
+              "weight": 1.6,
+              "note": "地支主气"
+            },
+            {
+              "pillarLabel": "壬子",
+              "source": "hiddenStem",
+              "element": "water",
+              "yinYang": "yin",
+              "weight": 0.35,
+              "note": "藏干 癸"
+            },
+            {
+              "pillarLabel": "戊申",
+              "source": "dayStem",
+              "element": "earth",
+              "yinYang": "yang",
+              "weight": 1.3,
+              "note": "天干主气"
+            },
+            {
+              "pillarLabel": "戊申",
+              "source": "dayBranch",
+              "element": "metal",
+              "yinYang": "yang",
+              "weight": 1,
+              "note": "地支主气"
+            },
+            {
+              "pillarLabel": "戊申",
+              "source": "hiddenStem",
+              "element": "metal",
+              "yinYang": "yang",
+              "weight": 0.35,
+              "note": "藏干 庚"
+            },
+            {
+              "pillarLabel": "戊申",
+              "source": "hiddenStem",
+              "element": "water",
+              "yinYang": "yang",
+              "weight": 0.35,
+              "note": "藏干 壬"
+            },
+            {
+              "pillarLabel": "戊申",
+              "source": "hiddenStem",
+              "element": "earth",
+              "yinYang": "yang",
+              "weight": 0.35,
+              "note": "藏干 戊"
+            },
+            {
+              "pillarLabel": "丙辰",
+              "source": "hourStem",
+              "element": "fire",
+              "yinYang": "yang",
+              "weight": 0.7,
+              "note": "天干主气"
+            },
+            {
+              "pillarLabel": "丙辰",
+              "source": "hourBranch",
+              "element": "earth",
+              "yinYang": "yang",
+              "weight": 0.7,
+              "note": "地支主气"
+            },
+            {
+              "pillarLabel": "丙辰",
+              "source": "hiddenStem",
+              "element": "earth",
+              "yinYang": "yang",
+              "weight": 0.35,
+              "note": "藏干 戊"
+            },
+            {
+              "pillarLabel": "丙辰",
+              "source": "hiddenStem",
+              "element": "wood",
+              "yinYang": "yin",
+              "weight": 0.35,
+              "note": "藏干 乙"
+            },
+            {
+              "pillarLabel": "丙辰",
+              "source": "hiddenStem",
+              "element": "water",
+              "yinYang": "yin",
+              "weight": 0.35,
+              "note": "藏干 癸"
+            }
+          ],
+          "note": "当前八字计算使用四柱模式。"
+        }
+      },
+      "personalityInterpretationProfile": {
+        "mode": "ziwei_primary",
+        "genderPerspective": "female",
+        "principle": "紫微先定结构，男女进入紫微结构解释，八字作为辅助动力修正，五维负责现代产品表达。",
+        "ziweiLifeFunctionProfile": {
+          "genderPerspective": "female",
+          "functions": [
+            {
+              "key": "coreSelf",
+              "label": "核心自我",
+              "sourceSector": "life",
+              "sourceStars": [],
+              "baseScore": 74,
+              "score": 74,
+              "level": "high",
+              "baseMeaning": "生命最核心的自我反应方式、主驱动力与存在感。",
+              "genderFocus": "更关注感知、稳定、内在自我、情绪反应与关系位置。",
+              "relatedTraits": [
+                "emotionalSensitivity",
+                "sensitivity",
+                "stability",
+                "caregiving",
+                "restPreference",
+                "curiosity"
+              ],
+              "summary": "核心自我很强。更关注感知、稳定、内在自我、情绪反应与关系位置。"
+            },
+            {
+              "key": "taskExecution",
+              "label": "任务执行",
+              "sourceSector": "career",
+              "sourceStars": [
+                "star_13",
+                "star_14"
+              ],
+              "baseScore": 58,
+              "score": 58,
+              "level": "medium_high",
+              "baseMeaning": "面对目标、责任、秩序、规则和长期任务时的推进方式。",
+              "genderFocus": "更关注稳定执行、资源管理、组织协调与持续完成。",
+              "relatedTraits": [
+                "discipline",
+                "stability",
+                "buildingPreference",
+                "emotionalSensitivity",
+                "caregiving",
+                "restPreference"
+              ],
+              "summary": "任务执行偏强。更关注稳定执行、资源管理、组织协调与持续完成。"
+            },
+            {
+              "key": "longTermBond",
+              "label": "长期绑定",
+              "sourceSector": "spouse",
+              "sourceStars": [],
+              "baseScore": 58,
+              "score": 58,
+              "level": "medium_high",
+              "baseMeaning": "长期关系、亲密连接、信任模式和稳定陪伴的形成方式。",
+              "genderFocus": "更关注归属、依附、安全回应、关系确认与情绪稳定。",
+              "relatedTraits": [
+                "emotionalSensitivity",
+                "caregiving",
+                "stability",
+                "restPreference",
+                "sensitivity",
+                "dependency"
+              ],
+              "summary": "长期绑定偏强。更关注归属、依附、安全回应、关系确认与情绪稳定。"
+            },
+            {
+              "key": "caregivingCreation",
+              "label": "照护创造",
+              "sourceSector": "children",
+              "sourceStars": [
+                "star_12"
+              ],
+              "baseScore": 61,
+              "score": 61,
+              "level": "medium_high",
+              "baseMeaning": "照看、保护、创造、延续与关心弱小对象的倾向。",
+              "genderFocus": "更关注陪伴、滋养、安抚、感知需求与细腻照看。",
+              "relatedTraits": [
+                "caregiving",
+                "emotionalSensitivity",
+                "stability",
+                "restPreference",
+                "sensitivity",
+                "buildingPreference"
+              ],
+              "summary": "照护创造偏强。更关注陪伴、滋养、安抚、感知需求与细腻照看。"
+            },
+            {
+              "key": "innerRecovery",
+              "label": "内在恢复",
+              "sourceSector": "fortune",
+              "sourceStars": [
+                "star_11"
+              ],
+              "baseScore": 61,
+              "score": 61,
+              "level": "medium_high",
+              "baseMeaning": "内心恢复、情绪自洽、休息偏好和精神安放方式。",
+              "genderFocus": "更关注情绪平安、内在安全、稳定恢复与舒适感。",
+              "relatedTraits": [
+                "restPreference",
+                "emotionalSensitivity",
+                "stability",
+                "sensitivity",
+                "caregiving",
+                "appetite"
+              ],
+              "summary": "内在恢复偏强。更关注情绪平安、内在安全、稳定恢复与舒适感。"
+            },
+            {
+              "key": "explorationRange",
+              "label": "探索半径",
+              "sourceSector": "travel",
+              "sourceStars": [
+                "star_08",
+                "star_03"
+              ],
+              "baseScore": 73,
+              "score": 73,
+              "level": "high",
+              "baseMeaning": "外部环境适应、探索范围、刺激反应和移动倾向。",
+              "genderFocus": "更关注适应、观察环境、选择性移动、安全边界与敏锐判断。",
+              "relatedTraits": [
+                "curiosity",
+                "emotionalSensitivity",
+                "sensitivity",
+                "stability",
+                "activity",
+                "restPreference"
+              ],
+              "summary": "探索半径很强。更关注适应、观察环境、选择性移动、安全边界与敏锐判断。"
+            },
+            {
+              "key": "territorySafety",
+              "label": "领地安全",
+              "sourceSector": "property",
+              "sourceStars": [
+                "star_05",
+                "star_07"
+              ],
+              "baseScore": 56,
+              "score": 56,
+              "level": "medium",
+              "baseMeaning": "空间归属、安全区、边界感和长期安住倾向。",
+              "genderFocus": "更关注筑巢、安住、舒适、归属感、空间安全与内部稳定。",
+              "relatedTraits": [
+                "stability",
+                "restPreference",
+                "buildingPreference",
+                "emotionalSensitivity",
+                "caregiving",
+                "sensitivity"
+              ],
+              "summary": "领地安全中等。更关注筑巢、安住、舒适、归属感、空间安全与内部稳定。"
+            }
+          ],
+          "strongestFunctions": [
+            {
+              "key": "coreSelf",
+              "label": "核心自我",
+              "sourceSector": "life",
+              "sourceStars": [],
+              "baseScore": 74,
+              "score": 74,
+              "level": "high",
+              "baseMeaning": "生命最核心的自我反应方式、主驱动力与存在感。",
+              "genderFocus": "更关注感知、稳定、内在自我、情绪反应与关系位置。",
+              "relatedTraits": [
+                "emotionalSensitivity",
+                "sensitivity",
+                "stability",
+                "caregiving",
+                "restPreference",
+                "curiosity"
+              ],
+              "summary": "核心自我很强。更关注感知、稳定、内在自我、情绪反应与关系位置。"
+            },
+            {
+              "key": "explorationRange",
+              "label": "探索半径",
+              "sourceSector": "travel",
+              "sourceStars": [
+                "star_08",
+                "star_03"
+              ],
+              "baseScore": 73,
+              "score": 73,
+              "level": "high",
+              "baseMeaning": "外部环境适应、探索范围、刺激反应和移动倾向。",
+              "genderFocus": "更关注适应、观察环境、选择性移动、安全边界与敏锐判断。",
+              "relatedTraits": [
+                "curiosity",
+                "emotionalSensitivity",
+                "sensitivity",
+                "stability",
+                "activity",
+                "restPreference"
+              ],
+              "summary": "探索半径很强。更关注适应、观察环境、选择性移动、安全边界与敏锐判断。"
+            },
+            {
+              "key": "caregivingCreation",
+              "label": "照护创造",
+              "sourceSector": "children",
+              "sourceStars": [
+                "star_12"
+              ],
+              "baseScore": 61,
+              "score": 61,
+              "level": "medium_high",
+              "baseMeaning": "照看、保护、创造、延续与关心弱小对象的倾向。",
+              "genderFocus": "更关注陪伴、滋养、安抚、感知需求与细腻照看。",
+              "relatedTraits": [
+                "caregiving",
+                "emotionalSensitivity",
+                "stability",
+                "restPreference",
+                "sensitivity",
+                "buildingPreference"
+              ],
+              "summary": "照护创造偏强。更关注陪伴、滋养、安抚、感知需求与细腻照看。"
+            }
+          ],
+          "summary": "女命视角先进入紫微结构映射，再生成生命功能。当前最明显的生命功能集中在核心自我、探索半径、照护创造。",
+          "debug": {
+            "source": "ziwei",
+            "note": "紫微主导模式下，gender 先进入生命功能映射，再生成分数与解释；不是先算统一性格再套男女文案。"
+          }
+        },
+        "baziGenderFunctionProfile": null,
+        "baziDynamicsSupportProfile": {
+          "items": [
+            {
+              "key": "actionIntensity",
+              "label": "行动强度",
+              "score": 10,
+              "level": "low",
+              "summary": "行动释放力度较弱。"
+            },
+            {
+              "key": "reactionSpeed",
+              "label": "反应速度",
+              "score": 10,
+              "level": "low",
+              "summary": "对变化的反应速度较弱。"
+            },
+            {
+              "key": "sensoryDepth",
+              "label": "感知深度",
+              "score": 28,
+              "level": "medium_low",
+              "summary": "对环境和关系氛围的感知深度偏弱。"
+            },
+            {
+              "key": "consistency",
+              "label": "一致性",
+              "score": 24,
+              "level": "low",
+              "summary": "行为模式的一致性较弱。"
+            },
+            {
+              "key": "explorationDrive",
+              "label": "探索动力",
+              "score": 10,
+              "level": "low",
+              "summary": "主动接触未知的动力较弱。"
+            },
+            {
+              "key": "stability",
+              "label": "稳定动力",
+              "score": 32,
+              "level": "medium_low",
+              "summary": "维持稳定状态的动力偏弱。"
+            },
+            {
+              "key": "persistence",
+              "label": "持续力",
+              "score": 21,
+              "level": "low",
+              "summary": "持续推进一件事的能力较弱。"
+            },
+            {
+              "key": "adaptability",
+              "label": "适应力",
+              "score": 22,
+              "level": "low",
+              "summary": "面对环境变化的适应力较弱。"
+            }
+          ],
+          "dominantElements": [
+            "water",
+            "earth"
+          ],
+          "weakElements": [
+            "wood",
+            "fire"
+          ],
+          "summary": "八字作为辅助动力参与解释。当前较明显的动力项为稳定动力、感知深度、一致性；五行偏向为water、earth。八字只修正动力强弱和节奏，不推翻紫微主结构。",
+          "debug": {
+            "source": "bazi",
+            "note": "八字在本模块中只作为辅助动力适配器使用，不决定生命功能来源，不修改紫微结构。"
+          }
+        },
+        "fiveDimensionProfile": {
+          "genderPerspective": "female",
+          "dimensions": [
+            {
+              "key": "exploration",
+              "label": "探索性",
+              "score": 61,
+              "level": "medium_high",
+              "baseMeaning": "好奇、外出、尝试新环境、主动接触未知。",
+              "sourceFunctions": [
+                "explorationRange",
+                "coreSelf"
+              ],
+              "sourceBaziFunctions": [],
+              "genderFocus": "更关注适应、观察环境、选择性移动、安全边界与敏锐判断。；更关注感知、稳定、内在自我、情绪反应与关系位置。",
+              "baziSupportKeys": [
+                "explorationDrive",
+                "actionIntensity",
+                "reactionSpeed",
+                "adaptability"
+              ],
+              "summary": "探索性偏强。更关注适应、观察环境、选择性移动、安全边界与敏锐判断。；更关注感知、稳定、内在自我、情绪反应与关系位置。"
+            },
+            {
+              "key": "attachment",
+              "label": "依附性",
+              "score": 53,
+              "level": "medium",
+              "baseMeaning": "亲密、陪伴、关系绑定、安全连接。",
+              "sourceFunctions": [
+                "longTermBond",
+                "innerRecovery"
+              ],
+              "sourceBaziFunctions": [],
+              "genderFocus": "更关注归属、依附、安全回应、关系确认与情绪稳定。；更关注情绪平安、内在安全、稳定恢复与舒适感。",
+              "baziSupportKeys": [
+                "sensoryDepth",
+                "stability",
+                "adaptability"
+              ],
+              "summary": "依附性中等。更关注归属、依附、安全回应、关系确认与情绪稳定。；更关注情绪平安、内在安全、稳定恢复与舒适感。"
+            },
+            {
+              "key": "stability",
+              "label": "稳定性",
+              "score": 52,
+              "level": "medium",
+              "baseMeaning": "规律、恢复、休息、安全区、情绪平稳。",
+              "sourceFunctions": [
+                "territorySafety",
+                "innerRecovery"
+              ],
+              "sourceBaziFunctions": [],
+              "genderFocus": "更关注筑巢、安住、舒适、归属感、空间安全与内部稳定。；更关注情绪平安、内在安全、稳定恢复与舒适感。",
+              "baziSupportKeys": [
+                "stability",
+                "consistency",
+                "persistence"
+              ],
+              "summary": "稳定性中等。更关注筑巢、安住、舒适、归属感、空间安全与内部稳定。；更关注情绪平安、内在安全、稳定恢复与舒适感。"
+            },
+            {
+              "key": "execution",
+              "label": "执行性",
+              "score": 55,
+              "level": "medium",
+              "baseMeaning": "目标、边界、推进、完成任务、掌控感。",
+              "sourceFunctions": [
+                "taskExecution",
+                "coreSelf"
+              ],
+              "sourceBaziFunctions": [],
+              "genderFocus": "更关注稳定执行、资源管理、组织协调与持续完成。；更关注感知、稳定、内在自我、情绪反应与关系位置。",
+              "baziSupportKeys": [
+                "consistency",
+                "persistence",
+                "actionIntensity",
+                "reactionSpeed"
+              ],
+              "summary": "执行性中等。更关注稳定执行、资源管理、组织协调与持续完成。；更关注感知、稳定、内在自我、情绪反应与关系位置。"
+            },
+            {
+              "key": "caregiving",
+              "label": "照护性",
+              "score": 53,
+              "level": "medium",
+              "baseMeaning": "保护、照看、创造、延续、关心弱小对象。",
+              "sourceFunctions": [
+                "caregivingCreation",
+                "longTermBond"
+              ],
+              "sourceBaziFunctions": [],
+              "genderFocus": "更关注陪伴、滋养、安抚、感知需求与细腻照看。；更关注归属、依附、安全回应、关系确认与情绪稳定。",
+              "baziSupportKeys": [
+                "sensoryDepth",
+                "stability",
+                "persistence"
+              ],
+              "summary": "照护性中等。更关注陪伴、滋养、安抚、感知需求与细腻照看。；更关注归属、依附、安全回应、关系确认与情绪稳定。"
+            }
+          ],
+          "strongestDimensions": [
+            {
+              "key": "exploration",
+              "label": "探索性",
+              "score": 61,
+              "level": "medium_high",
+              "baseMeaning": "好奇、外出、尝试新环境、主动接触未知。",
+              "sourceFunctions": [
+                "explorationRange",
+                "coreSelf"
+              ],
+              "sourceBaziFunctions": [],
+              "genderFocus": "更关注适应、观察环境、选择性移动、安全边界与敏锐判断。；更关注感知、稳定、内在自我、情绪反应与关系位置。",
+              "baziSupportKeys": [
+                "explorationDrive",
+                "actionIntensity",
+                "reactionSpeed",
+                "adaptability"
+              ],
+              "summary": "探索性偏强。更关注适应、观察环境、选择性移动、安全边界与敏锐判断。；更关注感知、稳定、内在自我、情绪反应与关系位置。"
+            },
+            {
+              "key": "execution",
+              "label": "执行性",
+              "score": 55,
+              "level": "medium",
+              "baseMeaning": "目标、边界、推进、完成任务、掌控感。",
+              "sourceFunctions": [
+                "taskExecution",
+                "coreSelf"
+              ],
+              "sourceBaziFunctions": [],
+              "genderFocus": "更关注稳定执行、资源管理、组织协调与持续完成。；更关注感知、稳定、内在自我、情绪反应与关系位置。",
+              "baziSupportKeys": [
+                "consistency",
+                "persistence",
+                "actionIntensity",
+                "reactionSpeed"
+              ],
+              "summary": "执行性中等。更关注稳定执行、资源管理、组织协调与持续完成。；更关注感知、稳定、内在自我、情绪反应与关系位置。"
+            },
+            {
+              "key": "attachment",
+              "label": "依附性",
+              "score": 53,
+              "level": "medium",
+              "baseMeaning": "亲密、陪伴、关系绑定、安全连接。",
+              "sourceFunctions": [
+                "longTermBond",
+                "innerRecovery"
+              ],
+              "sourceBaziFunctions": [],
+              "genderFocus": "更关注归属、依附、安全回应、关系确认与情绪稳定。；更关注情绪平安、内在安全、稳定恢复与舒适感。",
+              "baziSupportKeys": [
+                "sensoryDepth",
+                "stability",
+                "adaptability"
+              ],
+              "summary": "依附性中等。更关注归属、依附、安全回应、关系确认与情绪稳定。；更关注情绪平安、内在安全、稳定恢复与舒适感。"
+            }
+          ],
+          "summary": "女命视角下，最终五维性格最明显的是探索性、执行性、依附性。五维分数由已完成性别映射的紫微生命功能主导，八字动力辅助。",
+          "debug": {
+            "source": "ziwei_gender_bazi",
+            "note": "五维性格由性别化紫微生命功能与八字辅助动力生成，不再依赖 FinalPersonalityVector。"
+          }
+        },
+        "summary": "女命视角解释完成。当前采用紫微主导模式。女命视角下，最终五维性格最明显的是探索性、执行性、依附性。五维分数由已完成性别映射的紫微生命功能主导，八字动力辅助。",
+        "debug": {
+          "doesModifyZiweiProfile": false,
+          "doesModifyBaziProfile": false,
+          "note": "紫微主导模式：性别先进入紫微生命功能映射，八字只作为辅助动力。"
+        }
+      },
+      "genderAwareBehaviorBias": {
+        "petBehaviorBias": {
+          "newbornActivity": 52,
+          "observationNeed": 42,
+          "attachmentNeed": 48,
+          "explorationRange": 51,
+          "restNeed": 43
+        },
+        "butlerBehaviorBias": {
+          "carePriority": 48,
+          "constructionDrive": 47,
+          "routinePreference": 45,
+          "riskTolerance": 55,
+          "responseSpeed": 46
+        },
+        "buildingBias": {
+          "expansionPreference": 45,
+          "stabilityPreference": 42,
+          "comfortPreference": 45,
+          "orderPreference": 43,
+          "adaptabilityPreference": 40
+        },
+        "debug": {
+          "source": "gender_aware_interpretation",
+          "note": "最终行为偏置由已完成男女映射的五维人格生成，不再使用未分男女的基础人格向量直接决定最终行为。"
+        }
+      },
+      "consciousnessProfile": {
+        "archetype": "seeker",
+        "coreDrive": "expand",
+        "threatInterpretation": "counter_if_needed",
+        "attachmentApproach": "slow_confirm_then_approach",
+        "recoveryResistance": "delay_rest",
+        "noveltyResponse": "pulled_by_novelty",
+        "orderResponse": "build_own_order",
+        "bias": {
+          "restResistance": 65.08,
+          "riskTolerance": 76.86,
+          "attachmentBias": 45.12,
+          "observationBias": 67.18,
+          "comfortSeeking": 36.019999999999996,
+          "changeSeeking": 87.97999999999999
+        },
+        "summaries": [
+          "意识更容易被新变化和外部可能性牵引。",
+          "长期核心驱动力偏向向外扩展。",
+          "对变化与新鲜刺激有持续拉力。"
+        ]
+      },
+      "debug": {
+        "source": "life_profile_core",
+        "note": "通用生命人格档案：性别先进入紫微或八字映射，直接生成最终性别人格与行为偏置。"
+      }
+    },
+    "behaviorBias": {
+      "petBehaviorBias": {
+        "newbornActivity": 52,
+        "observationNeed": 42,
+        "attachmentNeed": 48,
+        "explorationRange": 51,
+        "restNeed": 43
+      },
+      "butlerBehaviorBias": {
+        "carePriority": 48,
+        "constructionDrive": 47,
+        "routinePreference": 45,
+        "riskTolerance": 55,
+        "responseSpeed": 46
+      },
+      "buildingBias": {
+        "expansionPreference": 45,
+        "stabilityPreference": 42,
+        "comfortPreference": 45,
+        "orderPreference": 43,
+        "adaptabilityPreference": 40
+      },
+      "debug": {
+        "source": "gender_aware_interpretation",
+        "note": "最终行为偏置由已完成男女映射的五维人格生成，不再使用未分男女的基础人格向量直接决定最终行为。"
+      }
+    },
+    "source": {
+      "sourceType": "player_birth_data",
+      "algorithm": "life_profile_core"
+    },
+    "careStyle": "quiet_maintainer",
+    "buildStyle": "minimal_builder",
+    "boundaryStyle": "balanced_boundary",
+    "opportunityStyle": "offer_when_needed",
+    "bias": {
+      "carePriority": 50,
+      "constructionDrive": 47,
+      "observationPatience": 47,
+      "boundarySensitivity": 41,
+      "opportunityInitiative": 40
+    },
+    "publicSummary": "当前管家采用「映射自己」模式。照护风格：quiet_maintainer。建设风格：minimal_builder。边界风格：balanced_boundary。机会提供方式：offer_when_needed。",
+    "internalNotes": [
+      "管家不是普通 NPC，而是用户生命数据映射 / 平行世界人格投射。",
+      "管家创建时有先天人格，但没有世界经历记忆；经历必须在世界运行中逐步形成。",
+      "管家拥有自主判断，承担照看、教育、引导、保护、解释和环境管理职责。",
+      "管家不能替宠物做决定；对宠物的照护、靠近、食物、休息和互动必须以机会或环境条件进入宠物自己的判断链。",
+      "管家可以提供机会、保持距离、保护性回应、记录经验、调整照看方式，但不是只能维护环境或提供机会的工具。"
+    ]
+  },
+  "butlerRuntimeProfile": {
+    "playerId": "owner-d0znz8",
+    "ownerId": "owner-d0znz8",
+    "worldId": "world-d0znz8",
+    "butlerId": "butler:owner-d0znz8",
+    "displayName": "管家",
+    "constructionStyle": {
+      "structuredBuilder": 0.51,
+      "warmCaretaker": 0.526,
+      "protectiveKeeper": 0.485,
+      "aestheticOrganizer": 0.509,
+      "quietMaintainer": 0.503,
+      "adaptivePlanner": 0.484
+    },
+    "lifeRhythmBias": "morning",
+    "worldCareBias": "observe_first",
+    "explanationTone": "warm",
+    "visualTendency": "ordered",
+    "tags": [
+      "butler_runtime_profile",
+      "life_profile_core_driven",
+      "runtime_executor_compatibility_layer",
+      "no_unplanned_life_entry"
+    ]
+  },
+  "butlerBirthInput": {
+    "playerId": "owner-d0znz8",
+    "ownerId": "owner-d0znz8",
+    "worldId": "world-d0znz8",
+    "birthYear": 1998,
+    "birthMonth": 1,
+    "birthDay": 1,
+    "birthHour": 8,
+    "timezone": "Asia/Shanghai",
+    "seed": "world-d0znz8",
+    "tags": [
+      "world_runtime_created_from_create_world_input",
+      "style_source:life_profile_core"
+    ]
+  },
+  "butlerMappingMode": "self_projection",
+  "butlerConstructionStyle": {
+    "structuredBuilder": 0.51,
+    "warmCaretaker": 0.526,
+    "protectiveKeeper": 0.485,
+    "aestheticOrganizer": 0.509,
+    "quietMaintainer": 0.503,
+    "adaptivePlanner": 0.484
+  },
+  "worldCreationStyleSource": "life_profile_core",
+  "homeMapState": {
+    "worldId": "world-d0znz8",
+    "ownerId": "owner-d0znz8",
+    "seed": "world_1hcg5jx",
+    "mapSize": {
+      "columns": 80,
+      "rows": 48,
+      "tileSize": 24
+    },
+    "zones": [
+      {
+        "id": "visual-center-area",
+        "type": "visual_center",
+        "name": "视觉中心范围",
+        "purpose": "集中展示初始入口区、照护区、临时住所区与路径关系。",
+        "bounds": {
+          "x": 17,
+          "y": 14,
+          "width": 45,
+          "height": 21
+        },
+        "tags": [
+          "recipe_area",
+          "visual_center",
+          "layout_candidate_zone",
+          "layout-candidate-primary",
+          "oasis",
+          "initial_world_natural_zone",
+          "world_nature_fact",
+          "not_butler_construction_fact"
+        ]
+      },
+      {
+        "id": "entry-area",
+        "type": "entry_area",
+        "name": "初始入口区",
+        "purpose": "表达家园第一幕的入口位置与世界观察起点。",
+        "bounds": {
+          "x": 13,
+          "y": 18,
+          "width": 10,
+          "height": 8
+        },
+        "tags": [
+          "recipe_area",
+          "entry_area",
+          "layout_candidate_zone",
+          "layout-candidate-primary",
+          "oasis",
+          "initial_world_natural_zone",
+          "butler_observation_entry",
+          "not_butler_construction_fact"
+        ]
+      },
+      {
+        "id": "natural-boundary-area",
+        "type": "natural_boundary",
+        "name": "自然边界区",
+        "purpose": "减少大面积空草地，并形成温暖自然的边界。",
+        "bounds": {
+          "x": 0,
+          "y": 0,
+          "width": 80,
+          "height": 48
+        },
+        "tags": [
+          "recipe_area",
+          "nature_boundary",
+          "layout_candidate_zone",
+          "layout-candidate-primary",
+          "oasis",
+          "initial_world_natural_zone",
+          "world_nature_fact",
+          "not_butler_construction_fact"
+        ]
+      }
+    ],
+    "placements": [
+      {
+        "id": "boundary-tree-7",
+        "assetId": "natureTreeSmall01",
+        "x": 37,
+        "y": 4,
+        "layer": "nature",
+        "scale": 1,
+        "alpha": 1,
+        "label": "自然边界小树",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "tree",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-tree-6",
+        "assetId": "natureTreeSmall01",
+        "x": 38,
+        "y": 4,
+        "layer": "nature",
+        "scale": 1,
+        "alpha": 1,
+        "label": "自然边界小树",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "tree",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-tree-5",
+        "assetId": "natureTreeSmall01",
+        "x": 39,
+        "y": 4,
+        "layer": "nature",
+        "scale": 1,
+        "alpha": 1,
+        "label": "自然边界小树",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "tree",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-tree-8",
+        "assetId": "natureTreeSmall01",
+        "x": 41,
+        "y": 4,
+        "layer": "nature",
+        "scale": 1,
+        "alpha": 1,
+        "label": "自然边界小树",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "tree",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-tree-9",
+        "assetId": "natureTreeSmall01",
+        "x": 42,
+        "y": 4,
+        "layer": "nature",
+        "scale": 1,
+        "alpha": 1,
+        "label": "自然边界小树",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "tree",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-bush-13",
+        "assetId": "natureBushSmall01",
+        "x": 75,
+        "y": 4,
+        "layer": "nature",
+        "scale": 0.9,
+        "alpha": 1,
+        "label": "自然边界灌木",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "bush",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-bush-14",
+        "assetId": "natureBushSmall01",
+        "x": 76,
+        "y": 4,
+        "layer": "nature",
+        "scale": 0.9,
+        "alpha": 1,
+        "label": "自然边界灌木",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "bush",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-bush-15",
+        "assetId": "natureBushSmall01",
+        "x": 77,
+        "y": 4,
+        "layer": "nature",
+        "scale": 0.9,
+        "alpha": 1,
+        "label": "自然边界灌木",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "bush",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-bush-16",
+        "assetId": "natureBushSmall01",
+        "x": 78,
+        "y": 4,
+        "layer": "nature",
+        "scale": 0.9,
+        "alpha": 1,
+        "label": "自然边界灌木",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "bush",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-bush-12",
+        "assetId": "natureBushSmall01",
+        "x": 5,
+        "y": 7,
+        "layer": "nature",
+        "scale": 0.9,
+        "alpha": 1,
+        "label": "自然边界灌木",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "bush",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-bush-11",
+        "assetId": "natureBushSmall01",
+        "x": 5,
+        "y": 8,
+        "layer": "nature",
+        "scale": 0.9,
+        "alpha": 1,
+        "label": "自然边界灌木",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "bush",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-tree-10",
+        "assetId": "natureTreeSmall01",
+        "x": 5,
+        "y": 9,
+        "layer": "nature",
+        "scale": 1,
+        "alpha": 1,
+        "label": "自然边界小树",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "tree",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-bush-22",
+        "assetId": "natureBushSmall01",
+        "x": 5,
+        "y": 10,
+        "layer": "nature",
+        "scale": 0.9,
+        "alpha": 1,
+        "label": "自然边界灌木",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "bush",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-bush-20",
+        "assetId": "natureBushSmall01",
+        "x": 5,
+        "y": 11,
+        "layer": "nature",
+        "scale": 0.9,
+        "alpha": 1,
+        "label": "自然边界灌木",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "bush",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-bush-21",
+        "assetId": "natureBushSmall01",
+        "x": 5,
+        "y": 12,
+        "layer": "nature",
+        "scale": 0.9,
+        "alpha": 1,
+        "label": "自然边界灌木",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "bush",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-bush-19",
+        "assetId": "natureBushSmall01",
+        "x": 5,
+        "y": 35,
+        "layer": "nature",
+        "scale": 0.9,
+        "alpha": 1,
+        "label": "自然边界灌木",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "bush",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-bush-17",
+        "assetId": "natureBushSmall01",
+        "x": 5,
+        "y": 37,
+        "layer": "nature",
+        "scale": 0.9,
+        "alpha": 1,
+        "label": "自然边界灌木",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "bush",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-tree-2",
+        "assetId": "natureTreeSmall01",
+        "x": 75,
+        "y": 37,
+        "layer": "nature",
+        "scale": 1,
+        "alpha": 1,
+        "label": "自然边界小树",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "tree",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-bush-18",
+        "assetId": "natureBushSmall01",
+        "x": 5,
+        "y": 38,
+        "layer": "nature",
+        "scale": 0.9,
+        "alpha": 1,
+        "label": "自然边界灌木",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "bush",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-tree-1",
+        "assetId": "natureTreeSmall01",
+        "x": 75,
+        "y": 38,
+        "layer": "nature",
+        "scale": 1,
+        "alpha": 1,
+        "label": "自然边界小树",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "tree",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-tree-3",
+        "assetId": "natureTreeSmall01",
+        "x": 75,
+        "y": 39,
+        "layer": "nature",
+        "scale": 1,
+        "alpha": 1,
+        "label": "自然边界小树",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "tree",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "boundary-tree-4",
+        "assetId": "natureTreeSmall01",
+        "x": 75,
+        "y": 40,
+        "layer": "nature",
+        "scale": 1,
+        "alpha": 1,
+        "label": "自然边界小树",
+        "source": "placement_engine",
+        "tags": [
+          "nature_boundary",
+          "tree",
+          "dense_boundary"
+        ]
+      },
+      {
+        "id": "surface-decoration-1",
+        "assetId": "surfaceStoneSmall01",
+        "x": 49,
+        "y": 19,
+        "layer": "surface-decoration",
+        "scale": 0.82,
+        "alpha": 1,
+        "label": "自然地表装饰",
+        "source": "placement_engine",
+        "tags": [
+          "surface_decoration",
+          "natural_detail",
+          "near_nature"
+        ]
+      },
+      {
+        "id": "surface-decoration-2",
+        "assetId": "surfaceStoneSmall01",
+        "x": 50,
+        "y": 19,
+        "layer": "surface-decoration",
+        "scale": 0.82,
+        "alpha": 1,
+        "label": "自然地表装饰",
+        "source": "placement_engine",
+        "tags": [
+          "surface_decoration",
+          "natural_detail",
+          "near_nature"
+        ]
+      },
+      {
+        "id": "surface-decoration-3",
+        "assetId": "surfaceStoneSmall01",
+        "x": 52,
+        "y": 19,
+        "layer": "surface-decoration",
+        "scale": 0.82,
+        "alpha": 1,
+        "label": "自然地表装饰",
+        "source": "placement_engine",
+        "tags": [
+          "surface_decoration",
+          "natural_detail",
+          "near_nature"
+        ]
+      },
+      {
+        "id": "surface-decoration-4",
+        "assetId": "surfaceStoneSmall01",
+        "x": 54,
+        "y": 19,
+        "layer": "surface-decoration",
+        "scale": 0.82,
+        "alpha": 1,
+        "label": "自然地表装饰",
+        "source": "placement_engine",
+        "tags": [
+          "surface_decoration",
+          "natural_detail",
+          "near_nature"
+        ]
+      },
+      {
+        "id": "surface-decoration-5",
+        "assetId": "surfaceStoneSmall01",
+        "x": 55,
+        "y": 19,
+        "layer": "surface-decoration",
+        "scale": 0.82,
+        "alpha": 1,
+        "label": "自然地表装饰",
+        "source": "placement_engine",
+        "tags": [
+          "surface_decoration",
+          "natural_detail",
+          "near_nature"
+        ]
+      },
+      {
+        "id": "surface-decoration-6",
+        "assetId": "surfaceStoneSmall01",
+        "x": 49,
+        "y": 20,
+        "layer": "surface-decoration",
+        "scale": 0.82,
+        "alpha": 1,
+        "label": "自然地表装饰",
+        "source": "placement_engine",
+        "tags": [
+          "surface_decoration",
+          "natural_detail",
+          "near_nature"
+        ]
+      },
+      {
+        "id": "surface-decoration-7",
+        "assetId": "surfaceStoneSmall01",
+        "x": 50,
+        "y": 20,
+        "layer": "surface-decoration",
+        "scale": 0.82,
+        "alpha": 1,
+        "label": "自然地表装饰",
+        "source": "placement_engine",
+        "tags": [
+          "surface_decoration",
+          "natural_detail",
+          "near_nature"
+        ]
+      },
+      {
+        "id": "surface-decoration-8",
+        "assetId": "surfaceStoneSmall01",
+        "x": 51,
+        "y": 20,
+        "layer": "surface-decoration",
+        "scale": 0.82,
+        "alpha": 1,
+        "label": "自然地表装饰",
+        "source": "placement_engine",
+        "tags": [
+          "surface_decoration",
+          "natural_detail",
+          "near_nature"
+        ]
+      },
+      {
+        "id": "surface-decoration-9",
+        "assetId": "surfaceStoneSmall01",
+        "x": 55,
+        "y": 20,
+        "layer": "surface-decoration",
+        "scale": 0.82,
+        "alpha": 1,
+        "label": "自然地表装饰",
+        "source": "placement_engine",
+        "tags": [
+          "surface_decoration",
+          "natural_detail",
+          "near_nature"
+        ]
+      },
+      {
+        "id": "surface-decoration-10",
+        "assetId": "surfaceStoneSmall01",
+        "x": 49,
+        "y": 21,
+        "layer": "surface-decoration",
+        "scale": 0.82,
+        "alpha": 1,
+        "label": "自然地表装饰",
+        "source": "placement_engine",
+        "tags": [
+          "surface_decoration",
+          "natural_detail",
+          "near_nature"
+        ]
+      },
+      {
+        "id": "butler-observing-empty-land-world-d0znz8",
+        "assetId": "butlerBodyStandard01",
+        "x": 18,
+        "y": 22,
+        "layer": "actor",
+        "scale": 0.78,
+        "alpha": 1,
+        "label": "管家",
+        "source": "placement_engine",
+        "tags": [
+          "butler",
+          "actor",
+          "butler_observing_world",
+          "butler_logic",
+          "not_world_nature_fact",
+          "not_construction_result",
+          "construction_deferred",
+          "owner-d0znz8",
+          "world_1hcg5jx"
+        ]
+      },
+      {
+        "id": "world-observation-entry-world-d0znz8",
+        "assetId": "arrivalPointGrassRingSoft01",
+        "x": 18,
+        "y": 22,
+        "layer": "atmosphere",
+        "scale": 0.62,
+        "alpha": 0.72,
+        "label": "观察起点",
+        "source": "placement_engine",
+        "tags": [
+          "world_observation_entry",
+          "entry_area",
+          "initial_world_marker",
+          "not_home_building",
+          "not_care_point",
+          "not_shelter",
+          "not_storage",
+          "owner-d0znz8",
+          "world_1hcg5jx"
+        ]
+      }
+    ],
+    "resources": {
+      "groundHealth": 78,
+      "naturalGrowth": 46,
+      "materialReadiness": 31.96,
+      "careReadiness": 55.203,
+      "spacePressure": 18,
+      "resourcePoolState": {
+        "version": "v2_resource_pool_0",
+        "worldId": "world-d0znz8",
+        "regionId": "initial-home",
+        "biomeType": "oasis",
+        "resources": {
+          "groundHealth": {
+            "resourceKey": "groundHealth",
+            "current": 78,
+            "min": 0,
+            "max": 78,
+            "regenPerTick": 0.7,
+            "pressure": 0.22,
+            "tags": [
+              "water_adjacent_soil",
+              "oasis"
+            ],
+            "warnings": []
+          },
+          "naturalGrowth": {
+            "resourceKey": "naturalGrowth",
+            "current": 46,
+            "min": 0,
+            "max": 86,
+            "regenPerTick": 0.92,
+            "pressure": 0.28,
+            "tags": [
+              "water_adjacent",
+              "oasis"
+            ],
+            "warnings": []
+          },
+          "materialReadiness": {
+            "resourceKey": "materialReadiness",
+            "current": 31.96,
+            "min": 0,
+            "max": 70,
+            "regenPerTick": 0.68,
+            "pressure": 0.2,
+            "tags": [
+              "mixed_material",
+              "oasis"
+            ],
+            "warnings": []
+          },
+          "careReadiness": {
+            "resourceKey": "careReadiness",
+            "current": 55.203,
+            "min": 0,
+            "max": 90,
+            "regenPerTick": 1,
+            "pressure": 0.16,
+            "tags": [
+              "care_rich",
+              "oasis"
+            ],
+            "warnings": []
+          },
+          "spacePressure": {
+            "resourceKey": "spacePressure",
+            "current": 18,
+            "min": 0,
+            "max": 78,
+            "regenPerTick": 0.1,
+            "pressure": 0.48,
+            "tags": [
+              "space_pressure",
+              "oasis"
+            ],
+            "warnings": []
+          }
+        },
+        "transactions": [
+          {
+            "transactionId": "resource-init:world-d0znz8:groundHealth",
+            "resourceKey": "groundHealth",
+            "amount": 0,
+            "reason": "Initial resource state materialized from biome rule.",
+            "source": "initialization",
+            "before": 78,
+            "after": 78,
+            "status": "applied",
+            "tags": [
+              "initial_resource_fact",
+              "oasis"
+            ],
+            "warnings": []
+          },
+          {
+            "transactionId": "resource-init:world-d0znz8:naturalGrowth",
+            "resourceKey": "naturalGrowth",
+            "amount": 0,
+            "reason": "Initial resource state materialized from biome rule.",
+            "source": "initialization",
+            "before": 46,
+            "after": 46,
+            "status": "applied",
+            "tags": [
+              "initial_resource_fact",
+              "oasis"
+            ],
+            "warnings": []
+          },
+          {
+            "transactionId": "resource-init:world-d0znz8:materialReadiness",
+            "resourceKey": "materialReadiness",
+            "amount": 0,
+            "reason": "Initial resource state materialized from biome rule.",
+            "source": "initialization",
+            "before": 31.96,
+            "after": 31.96,
+            "status": "applied",
+            "tags": [
+              "initial_resource_fact",
+              "oasis"
+            ],
+            "warnings": []
+          },
+          {
+            "transactionId": "resource-init:world-d0znz8:careReadiness",
+            "resourceKey": "careReadiness",
+            "amount": 0,
+            "reason": "Initial resource state materialized from biome rule.",
+            "source": "initialization",
+            "before": 55.203,
+            "after": 55.203,
+            "status": "applied",
+            "tags": [
+              "initial_resource_fact",
+              "oasis"
+            ],
+            "warnings": []
+          },
+          {
+            "transactionId": "resource-init:world-d0znz8:spacePressure",
+            "resourceKey": "spacePressure",
+            "amount": 0,
+            "reason": "Initial resource state materialized from biome rule.",
+            "source": "initialization",
+            "before": 18,
+            "after": 18,
+            "status": "applied",
+            "tags": [
+              "initial_resource_fact",
+              "oasis"
+            ],
+            "warnings": []
+          }
+        ],
+        "tags": [
+          "resource_pool_state",
+          "biome_rule_driven",
+          "world_fact_before_visual",
+          "oasis",
+          "runtime_initial_resources",
+          "seed_biome"
+        ],
+        "warnings": []
+      },
+      "recentTransactions": [
+        {
+          "transactionId": "resource-init:world-d0znz8:groundHealth",
+          "resourceKey": "groundHealth",
+          "amount": 0,
+          "reason": "Initial resource state materialized from biome rule.",
+          "source": "initialization",
+          "before": 78,
+          "after": 78,
+          "status": "applied",
+          "tags": [
+            "initial_resource_fact",
+            "oasis"
+          ],
+          "warnings": []
+        },
+        {
+          "transactionId": "resource-init:world-d0znz8:naturalGrowth",
+          "resourceKey": "naturalGrowth",
+          "amount": 0,
+          "reason": "Initial resource state materialized from biome rule.",
+          "source": "initialization",
+          "before": 46,
+          "after": 46,
+          "status": "applied",
+          "tags": [
+            "initial_resource_fact",
+            "oasis"
+          ],
+          "warnings": []
+        },
+        {
+          "transactionId": "resource-init:world-d0znz8:materialReadiness",
+          "resourceKey": "materialReadiness",
+          "amount": 0,
+          "reason": "Initial resource state materialized from biome rule.",
+          "source": "initialization",
+          "before": 31.96,
+          "after": 31.96,
+          "status": "applied",
+          "tags": [
+            "initial_resource_fact",
+            "oasis"
+          ],
+          "warnings": []
+        },
+        {
+          "transactionId": "resource-init:world-d0znz8:careReadiness",
+          "resourceKey": "careReadiness",
+          "amount": 0,
+          "reason": "Initial resource state materialized from biome rule.",
+          "source": "initialization",
+          "before": 55.203,
+          "after": 55.203,
+          "status": "applied",
+          "tags": [
+            "initial_resource_fact",
+            "oasis"
+          ],
+          "warnings": []
+        },
+        {
+          "transactionId": "resource-init:world-d0znz8:spacePressure",
+          "resourceKey": "spacePressure",
+          "amount": 0,
+          "reason": "Initial resource state materialized from biome rule.",
+          "source": "initialization",
+          "before": 18,
+          "after": 18,
+          "status": "applied",
+          "tags": [
+            "initial_resource_fact",
+            "oasis"
+          ],
+          "warnings": []
+        }
+      ],
+      "resourceAudit": {
+        "auditId": "resource-audit:world-d0znz8:initial-home",
+        "passed": true,
+        "checkedResourceKeys": [
+          "groundHealth",
+          "naturalGrowth",
+          "materialReadiness",
+          "careReadiness",
+          "spacePressure"
+        ],
+        "blockedTransactionIds": [],
+        "warnings": [],
+        "tags": [
+          "resource_audit",
+          "resource_audit_passed",
+          "oasis"
+        ]
+      },
+      "tags": [
+        "runtime_initial_resources",
+        "resource_pool_state_snapshot",
+        "oasis",
+        "seed_biome"
+      ]
+    },
+    "constructionPlans": [
+      {
+        "id": "butler-intent-temporary-shelter-plan",
+        "title": "规划临时住所",
+        "targetZoneType": "temporary_shelter",
+        "status": "planned",
+        "progress": 0,
+        "reason": "管家会先观察 Runtime 初始家园 Scene Recipe 的自然资源、空间压力和地貌状态。临时住所不是初始世界事实，必须由管家后续消耗资源并通过 MapDiff 建设出来。",
+        "tags": [
+          "construction_plan",
+          "butler_construction_intent",
+          "temporary_shelter",
+          "not_initial_world_fact",
+          "resource_required_before_build",
+          "observe_before_build"
+        ]
+      },
+      {
+        "id": "butler-intent-initial-care-plan",
+        "title": "规划基础照护点",
+        "targetZoneType": "initial_care",
+        "status": "planned",
+        "progress": 0,
+        "reason": "照护点属于管家建设逻辑，不属于世界自然初始内容。管家需要先确认材料、照护准备度和空间条件，再决定如何建设。",
+        "tags": [
+          "construction_plan",
+          "butler_construction_intent",
+          "initial_care",
+          "not_initial_world_fact",
+          "resource_required_before_build",
+          "observe_before_build"
+        ]
+      }
+    ],
+    "mapDiffs": [],
+    "createdAt": 19980101082,
+    "updatedAt": 19980101082,
+    "tags": [
+      "runtime_initial_home",
+      "world_nature_initial_state",
+      "scene_recipe_natural_boundary_only",
+      "placement_engine_driven",
+      "layout_input_driven",
+      "personality_layout_input",
+      "stable_world_seed",
+      "construction_facts_deferred_to_butler",
+      "no_initial_shelter_fact",
+      "no_initial_care_point_fact",
+      "no_initial_storage_fact",
+      "no_initial_finished_path_fact",
+      "layout_candidate_driven_natural_zones",
+      "oasis",
+      "layout-candidate-primary",
+      "layout_ijw",
+      "world_ecology_state_initialized",
+      "observing",
+      "oasis"
+    ],
+    "ecologyState": {
+      "biomeType": "oasis",
+      "status": "observing",
+      "facts": [
+        {
+          "id": "terrain-foundation",
+          "kind": "terrain",
+          "label": "自然地貌",
+          "status": "stable",
+          "strength": 78,
+          "reason": "土地健康、自然边界和空间压力属于世界自然基础。",
+          "tags": [
+            "terrain",
+            "world_fact",
+            "not_construction_fact"
+          ]
+        },
+        {
+          "id": "plant-growth",
+          "kind": "plant",
+          "label": "植物生长",
+          "status": "stable",
+          "strength": 100,
+          "reason": "当前自然对象 22 个，自然生长值 46。",
+          "tags": [
+            "plant",
+            "natural_growth",
+            "world_fact"
+          ]
+        },
+        {
+          "id": "insect-trace",
+          "kind": "insect_trace",
+          "label": "昆虫迹象",
+          "status": "observable",
+          "strength": 62,
+          "reason": "昆虫迹象只来自自然条件，不由管家建设生成。",
+          "tags": [
+            "insect_trace",
+            "ecology_signal",
+            "world_fact"
+          ]
+        },
+        {
+          "id": "wild-trace",
+          "kind": "wild_trace",
+          "label": "野外活动迹象",
+          "status": "observable",
+          "strength": 53,
+          "reason": "野外活动迹象是生态背景，不等同于宠物或伙伴入场。",
+          "tags": [
+            "wild_trace",
+            "ecology_signal",
+            "no_unplanned_actor_spawn"
+          ]
+        },
+        {
+          "id": "natural-resource-base",
+          "kind": "resource",
+          "label": "自然资源基础",
+          "status": "latent",
+          "strength": 44,
+          "reason": "自然资源供管家判断和消耗，但资源本身属于世界。",
+          "tags": [
+            "resource",
+            "world_fact",
+            "butler_can_use_later"
+          ]
+        },
+        {
+          "id": "micro-climate",
+          "kind": "climate",
+          "label": "微气候舒适度",
+          "status": "stable",
+          "strength": 82,
+          "reason": "微气候由空间压力、地貌和自然生长共同影响。",
+          "tags": [
+            "micro_climate",
+            "world_fact",
+            "space_pressure"
+          ]
+        }
+      ],
+      "generatedAt": 19980101082,
+      "tags": [
+        "world_ecology_state",
+        "readonly_world_fact_projection",
+        "not_butler_construction",
+        "no_actor_spawn",
+        "oasis"
+      ]
+    }
+  },
+  "recentEvents": [
+    {
+      "id": "runtime-event-0",
+      "tick": 0,
+      "title": "世界已创建",
+      "body": "管家人格、世界种子和第一片家园已经根据出生信息生成。",
+      "source": "runtime",
+      "createdAt": "1970-08-20T06:01:41.082Z",
+      "tags": [
+        "world_runtime_event",
+        "create_world_to_world_flow",
+        "created_from_create_world_input",
+        "no_unplanned_life_fact"
+      ]
+    }
+  ],
+  "recentActionSignatures": [],
+  "lastRuntimeAction": null,
+  "recentMotivationTypes": [],
+  "lastButlerRuntimeDecision": null,
+  "lastButlerRuntimeIntent": null,
+  "lastButlerWorldRuleValidation": null,
+  "lastButlerRuntimeAuditSummary": null,
+  "tags": [
+    "world_runtime_save_record",
+    "local_file_runtime_store",
+    "initial_home_map_state",
+    "create_world_to_world_flow",
+    "created_from_create_world_input",
+    "no_unplanned_life_fact"
+  ]
+}

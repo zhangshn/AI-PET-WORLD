@@ -1,0 +1,389 @@
+{
+  "height": 192,
+  "manualReviewReasons": [],
+  "requiresManualReview": false,
+  "sceneId": "scene-world-forest-river-008",
+  "schemaVersion": "world-blueprint-v1",
+  "seed": 108,
+  "sourceBlueprintHash": "f89ef40a6014910700d56c51f8bd42c1dfe93b88d6d354b0dfc657c53eb1846f",
+  "sourceBlueprintVersion": "world-blueprint-v0",
+  "structures": [
+    {
+      "geometry": {
+        "kind": "polygon",
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            255,
+            0
+          ],
+          [
+            255,
+            191
+          ],
+          [
+            0,
+            191
+          ]
+        ]
+      },
+      "id": "grass-grass-main",
+      "layer": 10,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "grass-main",
+      "type": "grass"
+    },
+    {
+      "geometry": {
+        "kind": "polygon",
+        "points": [
+          [
+            200,
+            0
+          ],
+          [
+            231,
+            0
+          ],
+          [
+            224,
+            32
+          ],
+          [
+            237,
+            62
+          ],
+          [
+            226,
+            92
+          ],
+          [
+            241,
+            124
+          ],
+          [
+            230,
+            156
+          ],
+          [
+            246,
+            191
+          ],
+          [
+            205,
+            191
+          ],
+          [
+            211,
+            158
+          ],
+          [
+            198,
+            129
+          ],
+          [
+            210,
+            96
+          ],
+          [
+            202,
+            64
+          ],
+          [
+            211,
+            31
+          ]
+        ]
+      },
+      "id": "water-body-river-right",
+      "layer": 20,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "river-right",
+      "type": "water_body"
+    },
+    {
+      "geometry": {
+        "height": 192,
+        "kind": "rect",
+        "width": 57,
+        "x": 194,
+        "y": 0
+      },
+      "id": "shoreline-river-right",
+      "layer": 21,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "river-right",
+      "type": "shoreline"
+    },
+    {
+      "geometry": {
+        "kind": "polyline",
+        "lineWidth": 11,
+        "points": [
+          [
+            66,
+            191
+          ],
+          [
+            75,
+            161
+          ],
+          [
+            67,
+            132
+          ],
+          [
+            83,
+            104
+          ],
+          [
+            107,
+            88
+          ]
+        ]
+      },
+      "id": "road-center-road-entry",
+      "layer": 40,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "road-entry",
+      "type": "road_center"
+    },
+    {
+      "geometry": {
+        "kind": "polyline",
+        "lineWidth": 22,
+        "points": [
+          [
+            66,
+            191
+          ],
+          [
+            75,
+            161
+          ],
+          [
+            67,
+            132
+          ],
+          [
+            83,
+            104
+          ],
+          [
+            107,
+            88
+          ]
+        ]
+      },
+      "id": "road-edge-road-entry",
+      "layer": 39,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "road-entry",
+      "type": "road_edge"
+    },
+    {
+      "geometry": {
+        "height": 68,
+        "kind": "rect",
+        "width": 94,
+        "x": 54,
+        "y": 55
+      },
+      "id": "shelter-foundation-shelter-main",
+      "layer": 80,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "shelter-main",
+      "type": "shelter_foundation"
+    },
+    {
+      "geometry": {
+        "height": 39,
+        "kind": "rect",
+        "width": 94,
+        "x": 54,
+        "y": 84
+      },
+      "id": "shelter-wall-shelter-main",
+      "layer": 82,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "shelter-main",
+      "type": "shelter_wall"
+    },
+    {
+      "geometry": {
+        "height": 29,
+        "kind": "rect",
+        "width": 94,
+        "x": 54,
+        "y": 55
+      },
+      "id": "shelter-roof-shelter-main",
+      "layer": 84,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "shelter-main",
+      "type": "shelter_roof"
+    },
+    {
+      "geometry": {
+        "height": 45,
+        "kind": "rect",
+        "width": 198,
+        "x": 0,
+        "y": 0
+      },
+      "id": "tree-crown-tree-north",
+      "layer": 70,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-north",
+      "type": "tree_crown"
+    },
+    {
+      "geometry": {
+        "height": 9,
+        "kind": "rect",
+        "width": 39,
+        "x": 79,
+        "y": 36
+      },
+      "id": "tree-trunk-tree-north",
+      "layer": 69,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-north",
+      "type": "tree_trunk"
+    },
+    {
+      "geometry": {
+        "height": 152,
+        "kind": "rect",
+        "width": 48,
+        "x": 0,
+        "y": 40
+      },
+      "id": "tree-crown-tree-west",
+      "layer": 70,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-west",
+      "type": "tree_crown"
+    },
+    {
+      "geometry": {
+        "height": 30,
+        "kind": "rect",
+        "width": 9,
+        "x": 19,
+        "y": 162
+      },
+      "id": "tree-trunk-tree-west",
+      "layer": 69,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-west",
+      "type": "tree_trunk"
+    },
+    {
+      "geometry": {
+        "height": 38,
+        "kind": "rect",
+        "width": 126,
+        "x": 76,
+        "y": 154
+      },
+      "id": "tree-crown-tree-south",
+      "layer": 70,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-south",
+      "type": "tree_crown"
+    },
+    {
+      "geometry": {
+        "height": 7,
+        "kind": "rect",
+        "width": 25,
+        "x": 126,
+        "y": 185
+      },
+      "id": "tree-trunk-tree-south",
+      "layer": 69,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-south",
+      "type": "tree_trunk"
+    },
+    {
+      "geometry": {
+        "height": 53,
+        "kind": "rect",
+        "width": 42,
+        "x": 196,
+        "y": 49
+      },
+      "id": "rock-rock-river",
+      "layer": 60,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "rock-river",
+      "type": "rock"
+    },
+    {
+      "geometry": {
+        "height": 27,
+        "kind": "rect",
+        "width": 37,
+        "x": 91,
+        "y": 19
+      },
+      "id": "rock-rock-north",
+      "layer": 60,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "rock-north",
+      "type": "rock"
+    },
+    {
+      "geometry": {
+        "height": 192,
+        "kind": "rect",
+        "width": 256,
+        "x": 0,
+        "y": 0
+      },
+      "id": "walkable-derived-v0",
+      "layer": 5,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "type": "walkable"
+    },
+    {
+      "depthValue": 128,
+      "geometry": {
+        "height": 192,
+        "kind": "rect",
+        "width": 256,
+        "x": 0,
+        "y": 0
+      },
+      "id": "depth-derived-v0",
+      "layer": 1,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "type": "depth"
+    }
+  ],
+  "styleId": "bright-healing-topdown-pixel-v0",
+  "width": 256
+}

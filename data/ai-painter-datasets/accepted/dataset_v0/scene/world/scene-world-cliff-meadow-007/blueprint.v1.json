@@ -1,0 +1,327 @@
+{
+  "height": 192,
+  "manualReviewReasons": [],
+  "requiresManualReview": false,
+  "sceneId": "scene-world-cliff-meadow-007",
+  "schemaVersion": "world-blueprint-v1",
+  "seed": 107,
+  "sourceBlueprintHash": "5848427c92f39f1daaf128db45d53352d0d3283b58c2272ffc4f189529f6ce85",
+  "sourceBlueprintVersion": "world-blueprint-v0",
+  "structures": [
+    {
+      "geometry": {
+        "kind": "polygon",
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            255,
+            0
+          ],
+          [
+            255,
+            191
+          ],
+          [
+            0,
+            191
+          ]
+        ]
+      },
+      "id": "grass-grass-main",
+      "layer": 10,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "grass-main",
+      "type": "grass"
+    },
+    {
+      "geometry": {
+        "kind": "polygon",
+        "points": [
+          [
+            0,
+            104
+          ],
+          [
+            29,
+            100
+          ],
+          [
+            50,
+            113
+          ],
+          [
+            55,
+            140
+          ],
+          [
+            38,
+            165
+          ],
+          [
+            0,
+            170
+          ]
+        ]
+      },
+      "id": "water-body-pond-left",
+      "layer": 20,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "pond-left",
+      "type": "water_body"
+    },
+    {
+      "geometry": {
+        "height": 79,
+        "kind": "rect",
+        "width": 60,
+        "x": 0,
+        "y": 96
+      },
+      "id": "shoreline-pond-left",
+      "layer": 21,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "pond-left",
+      "type": "shoreline"
+    },
+    {
+      "geometry": {
+        "kind": "polyline",
+        "lineWidth": 10,
+        "points": [
+          [
+            61,
+            191
+          ],
+          [
+            76,
+            163
+          ],
+          [
+            86,
+            135
+          ],
+          [
+            112,
+            111
+          ],
+          [
+            133,
+            94
+          ]
+        ]
+      },
+      "id": "road-center-road-entry",
+      "layer": 40,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "road-entry",
+      "type": "road_center"
+    },
+    {
+      "geometry": {
+        "kind": "polyline",
+        "lineWidth": 20,
+        "points": [
+          [
+            61,
+            191
+          ],
+          [
+            76,
+            163
+          ],
+          [
+            86,
+            135
+          ],
+          [
+            112,
+            111
+          ],
+          [
+            133,
+            94
+          ]
+        ]
+      },
+      "id": "road-edge-road-entry",
+      "layer": 39,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "road-entry",
+      "type": "road_edge"
+    },
+    {
+      "geometry": {
+        "height": 59,
+        "kind": "rect",
+        "width": 79,
+        "x": 112,
+        "y": 62
+      },
+      "id": "shelter-foundation-shelter-main",
+      "layer": 80,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "shelter-main",
+      "type": "shelter_foundation"
+    },
+    {
+      "geometry": {
+        "height": 34,
+        "kind": "rect",
+        "width": 79,
+        "x": 112,
+        "y": 87
+      },
+      "id": "shelter-wall-shelter-main",
+      "layer": 82,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "shelter-main",
+      "type": "shelter_wall"
+    },
+    {
+      "geometry": {
+        "height": 25,
+        "kind": "rect",
+        "width": 79,
+        "x": 112,
+        "y": 62
+      },
+      "id": "shelter-roof-shelter-main",
+      "layer": 84,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "shelter-main",
+      "type": "shelter_roof"
+    },
+    {
+      "geometry": {
+        "height": 91,
+        "kind": "rect",
+        "width": 40,
+        "x": 0,
+        "y": 0
+      },
+      "id": "tree-crown-tree-west",
+      "layer": 70,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-west",
+      "type": "tree_crown"
+    },
+    {
+      "geometry": {
+        "height": 18,
+        "kind": "rect",
+        "width": 8,
+        "x": 16,
+        "y": 73
+      },
+      "id": "tree-trunk-tree-west",
+      "layer": 69,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-west",
+      "type": "tree_trunk"
+    },
+    {
+      "geometry": {
+        "height": 53,
+        "kind": "rect",
+        "width": 65,
+        "x": 191,
+        "y": 139
+      },
+      "id": "tree-crown-tree-south-east",
+      "layer": 70,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-south-east",
+      "type": "tree_crown"
+    },
+    {
+      "geometry": {
+        "height": 10,
+        "kind": "rect",
+        "width": 13,
+        "x": 217,
+        "y": 182
+      },
+      "id": "tree-trunk-tree-south-east",
+      "layer": 69,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-south-east",
+      "type": "tree_trunk"
+    },
+    {
+      "geometry": {
+        "height": 57,
+        "kind": "rect",
+        "width": 106,
+        "x": 150,
+        "y": 0
+      },
+      "id": "rock-rock-cliff",
+      "layer": 60,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "rock-cliff",
+      "type": "rock"
+    },
+    {
+      "geometry": {
+        "height": 43,
+        "kind": "rect",
+        "width": 45,
+        "x": 18,
+        "y": 99
+      },
+      "id": "rock-rock-pond",
+      "layer": 60,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "rock-pond",
+      "type": "rock"
+    },
+    {
+      "geometry": {
+        "height": 192,
+        "kind": "rect",
+        "width": 256,
+        "x": 0,
+        "y": 0
+      },
+      "id": "walkable-derived-v0",
+      "layer": 5,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "type": "walkable"
+    },
+    {
+      "depthValue": 128,
+      "geometry": {
+        "height": 192,
+        "kind": "rect",
+        "width": 256,
+        "x": 0,
+        "y": 0
+      },
+      "id": "depth-derived-v0",
+      "layer": 1,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "type": "depth"
+    }
+  ],
+  "styleId": "bright-healing-topdown-pixel-v0",
+  "width": 256
+}

@@ -1,0 +1,80 @@
+{
+  "blueprintHash": "b6c8f571a672557d04615b14df1ffc5089ea492cdf15c300d7e19fbfc41a9381",
+  "confirmedStructureIds": [
+    "shoreline-spring-pond",
+    "road-edge-road-entry",
+    "road-edge-camp-loop",
+    "shelter-wall-shelter-1",
+    "shelter-roof-shelter-1",
+    "tree-trunk-tree-left",
+    "tree-trunk-tree-north",
+    "walkable-derived-v0",
+    "depth-derived-v0"
+  ],
+  "maskCount": 14,
+  "masks": {
+    "construction_material": {
+      "path": "masks_v1/construction_material.png",
+      "sha256": "fec966e39bd2cb880399a71dc6687cd330bd399b1398709c3aa4a5c39bd7c911"
+    },
+    "depth": {
+      "path": "masks_v1/depth.png",
+      "sha256": "46584ea09e71dfcad0ee1c4f5a3bac16e42ab92e41cbf8db1b50530c835a2d51"
+    },
+    "grass": {
+      "path": "masks_v1/grass.png",
+      "sha256": "5ff1190b2021358924fc2a711b0e59c8a0aadd5f1e57692032a1183e48d5cb78"
+    },
+    "road_center": {
+      "path": "masks_v1/road_center.png",
+      "sha256": "fce5cb7a07d63e42602bae8b787e7309dd38f7e4b3a031e78aa590cab3d364ff"
+    },
+    "road_edge": {
+      "path": "masks_v1/road_edge.png",
+      "sha256": "1131160dce9c5d42b33a4e178746248229b44b9714d0de2023682675091b0578"
+    },
+    "rock": {
+      "path": "masks_v1/rock.png",
+      "sha256": "523a6989fe5cbd849c238432578dbd43e3ca4462e60919b2fd926652862b5d7f"
+    },
+    "shelter_foundation": {
+      "path": "masks_v1/shelter_foundation.png",
+      "sha256": "14d2bada9522e1aedcc9f4349e02fc94b85fa26326394a6dd5cb12197a5e73fa"
+    },
+    "shelter_roof": {
+      "path": "masks_v1/shelter_roof.png",
+      "sha256": "4bb180ffacf97561c4cc2891ccbd57fed3e19b2d43ae78e4e634bf0811a001c4"
+    },
+    "shelter_wall": {
+      "path": "masks_v1/shelter_wall.png",
+      "sha256": "e3e9923a326632379931c7fd980542a5b90278f4365c33b21001601f99cf74ba"
+    },
+    "shoreline": {
+      "path": "masks_v1/shoreline.png",
+      "sha256": "48aaca55c05c096accbe1300f167ec7c01dc66b3ff4616fbdadeaaed7ff22183"
+    },
+    "tree_crown": {
+      "path": "masks_v1/tree_crown.png",
+      "sha256": "c2cce86acf2ebd96d1cfb5ce81949464c55366be0b99ed2f3f1cd0077151dcba"
+    },
+    "tree_trunk": {
+      "path": "masks_v1/tree_trunk.png",
+      "sha256": "6e1dc57ddab535a3a4c49997a2558cf0721ca44abc0e5a25ed51369a0b68c90f"
+    },
+    "walkable": {
+      "path": "masks_v1/walkable.png",
+      "sha256": "5ff1190b2021358924fc2a711b0e59c8a0aadd5f1e57692032a1183e48d5cb78"
+    },
+    "water_body": {
+      "path": "masks_v1/water_body.png",
+      "sha256": "c389f5b7a819b6e26113af06ab33a42ff5365c7a52168c6bfd71653d81158f70"
+    }
+  },
+  "reviewSubmissionHash": "d5ff7db4f7f42b771a44f08d457e857ea8dd67922c555b9a0b6766c71b869806",
+  "reviewedAt": "2026-06-13T01:42:44.550831+00:00",
+  "reviewer": "jo",
+  "sampleId": "scene-world-2-0be81136",
+  "schemaVersion": "blueprint-v1-review-record-v1",
+  "status": "reviewed_for_experiment",
+  "targetImageHash": "850facf2759865575df60eb59645b9b9d4d459aebb875464d0f82bfa7a99e9e9"
+}

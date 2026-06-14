@@ -1,0 +1,182 @@
+{
+  "height": 192,
+  "manualReviewReasons": [
+    "v0 到 v1 的细分结构需要人工复核",
+    "construction_material 在 v0 中没有明确世界事实，需人工补充"
+  ],
+  "requiresManualReview": true,
+  "sceneId": "scene-world-9-1a418b26",
+  "schemaVersion": "world-blueprint-v1",
+  "seed": 101,
+  "sourceBlueprintHash": "4b7a55239cc84e1bd824ac8072582a94193998b9a8b95de778b46e1bfc4a4ae8",
+  "sourceBlueprintVersion": "world-blueprint-v0",
+  "structures": [
+    {
+      "geometry": {
+        "kind": "polygon",
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            255,
+            0
+          ],
+          [
+            255,
+            191
+          ],
+          [
+            0,
+            191
+          ]
+        ]
+      },
+      "id": "grass-grass-main",
+      "layer": 10,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "grass-main",
+      "type": "grass"
+    },
+    {
+      "geometry": {
+        "kind": "polyline",
+        "lineWidth": 10,
+        "points": [
+          [
+            30,
+            191
+          ],
+          [
+            90,
+            130
+          ],
+          [
+            150,
+            105
+          ]
+        ]
+      },
+      "id": "road-center-road-entry",
+      "layer": 40,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "road-entry",
+      "type": "road_center"
+    },
+    {
+      "geometry": {
+        "kind": "polyline",
+        "lineWidth": 20,
+        "points": [
+          [
+            30,
+            191
+          ],
+          [
+            90,
+            130
+          ],
+          [
+            150,
+            105
+          ]
+        ]
+      },
+      "id": "road-edge-road-entry",
+      "layer": 39,
+      "manualReviewReasons": [
+        "v0 road 只有中心区域，道路边缘为确定性草案"
+      ],
+      "requiresManualReview": true,
+      "sourceV0Id": "road-entry",
+      "type": "road_edge"
+    },
+    {
+      "geometry": {
+        "height": 34,
+        "kind": "rect",
+        "width": 42,
+        "x": 120,
+        "y": 82
+      },
+      "id": "shelter-foundation-shelter-1",
+      "layer": 80,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "shelter-1",
+      "type": "shelter_foundation"
+    },
+    {
+      "geometry": {
+        "height": 20,
+        "kind": "rect",
+        "width": 42,
+        "x": 120,
+        "y": 96
+      },
+      "id": "shelter-wall-shelter-1",
+      "layer": 82,
+      "manualReviewReasons": [
+        "v0 shelter 无法确认墙体范围，按下半部生成草案"
+      ],
+      "requiresManualReview": true,
+      "sourceV0Id": "shelter-1",
+      "type": "shelter_wall"
+    },
+    {
+      "geometry": {
+        "height": 14,
+        "kind": "rect",
+        "width": 42,
+        "x": 120,
+        "y": 82
+      },
+      "id": "shelter-roof-shelter-1",
+      "layer": 84,
+      "manualReviewReasons": [
+        "v0 shelter 无法确认屋顶范围，按上半部生成草案"
+      ],
+      "requiresManualReview": true,
+      "sourceV0Id": "shelter-1",
+      "type": "shelter_roof"
+    },
+    {
+      "geometry": {
+        "height": 192,
+        "kind": "rect",
+        "width": 256,
+        "x": 0,
+        "y": 0
+      },
+      "id": "walkable-derived-v0",
+      "layer": 5,
+      "manualReviewReasons": [
+        "v0 walkable 由结构推断，需人工复核可行走边界"
+      ],
+      "requiresManualReview": true,
+      "type": "walkable"
+    },
+    {
+      "depthValue": 128,
+      "geometry": {
+        "height": 192,
+        "kind": "rect",
+        "width": 256,
+        "x": 0,
+        "y": 0
+      },
+      "id": "depth-derived-v0",
+      "layer": 1,
+      "manualReviewReasons": [
+        "v0 depth 为固定规则草案"
+      ],
+      "requiresManualReview": true,
+      "type": "depth"
+    }
+  ],
+  "styleId": "bright-healing-topdown-pixel-v0",
+  "width": 256
+}

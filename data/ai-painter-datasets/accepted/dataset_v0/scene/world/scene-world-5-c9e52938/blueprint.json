@@ -1,0 +1,219 @@
+{
+  "schemaVersion": "world-blueprint-v0",
+  "sceneId": "scene-world-5-c9e52938",
+  "width": 256,
+  "height": 192,
+  "seed": 105,
+  "styleId": "bright-healing-topdown-pixel-v0",
+  "terrainRegions": [
+    {
+      "id": "grass-main",
+      "terrain": "grass",
+      "polygon": [
+        [
+          0,
+          0
+        ],
+        [
+          255,
+          0
+        ],
+        [
+          255,
+          191
+        ],
+        [
+          0,
+          191
+        ]
+      ]
+    },
+    {
+      "id": "stream-south",
+      "terrain": "water",
+      "polygon": [
+        [
+          0,
+          159
+        ],
+        [
+          43,
+          157
+        ],
+        [
+          76,
+          163
+        ],
+        [
+          111,
+          159
+        ],
+        [
+          147,
+          153
+        ],
+        [
+          186,
+          151
+        ],
+        [
+          225,
+          144
+        ],
+        [
+          255,
+          145
+        ],
+        [
+          255,
+          169
+        ],
+        [
+          223,
+          167
+        ],
+        [
+          188,
+          174
+        ],
+        [
+          148,
+          177
+        ],
+        [
+          112,
+          181
+        ],
+        [
+          75,
+          184
+        ],
+        [
+          40,
+          179
+        ],
+        [
+          0,
+          181
+        ]
+      ]
+    }
+  ],
+  "roads": [
+    {
+      "id": "switchback",
+      "width": 9,
+      "points": [
+        [
+          110,
+          191
+        ],
+        [
+          92,
+          168
+        ],
+        [
+          62,
+          153
+        ],
+        [
+          81,
+          130
+        ],
+        [
+          113,
+          116
+        ],
+        [
+          82,
+          102
+        ],
+        [
+          47,
+          91
+        ],
+        [
+          66,
+          69
+        ]
+      ]
+    },
+    {
+      "id": "quarry-path",
+      "width": 7,
+      "points": [
+        [
+          66,
+          69
+        ],
+        [
+          107,
+          67
+        ],
+        [
+          151,
+          70
+        ]
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "shelter-1",
+      "kind": "shelter",
+      "x": 17,
+      "y": 25,
+      "width": 72,
+      "height": 47,
+      "stage": 1
+    },
+    {
+      "id": "tree-left",
+      "kind": "tree",
+      "x": 0,
+      "y": 75,
+      "width": 37,
+      "height": 85
+    },
+    {
+      "id": "tree-right",
+      "kind": "tree",
+      "x": 206,
+      "y": 0,
+      "width": 50,
+      "height": 145
+    },
+    {
+      "id": "tree-south",
+      "kind": "tree",
+      "x": 0,
+      "y": 170,
+      "width": 256,
+      "height": 22
+    },
+    {
+      "id": "rock-cliff",
+      "kind": "rock",
+      "x": 0,
+      "y": 0,
+      "width": 142,
+      "height": 35
+    },
+    {
+      "id": "rock-quarry",
+      "kind": "rock",
+      "x": 108,
+      "y": 35,
+      "width": 79,
+      "height": 49
+    },
+    {
+      "id": "rock-meadow",
+      "kind": "rock",
+      "x": 113,
+      "y": 95,
+      "width": 89,
+      "height": 50
+    }
+  ]
+}

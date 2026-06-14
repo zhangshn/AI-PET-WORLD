@@ -1,0 +1,6 @@
+{
+  "schemaVersion":"world-blueprint-v0","sceneId":"scene-world-cliff-meadow-007","width":256,"height":192,"seed":107,"styleId":"bright-healing-topdown-pixel-v0",
+  "terrainRegions":[{"id":"grass-main","terrain":"grass","polygon":[[0,0],[255,0],[255,191],[0,191]]},{"id":"pond-left","terrain":"water","polygon":[[0,104],[29,100],[50,113],[55,140],[38,165],[0,170]]}],
+  "roads":[{"id":"road-entry","width":10,"points":[[61,191],[76,163],[86,135],[112,111],[133,94]]}],
+  "objects":[{"id":"shelter-main","kind":"shelter","x":112,"y":62,"width":79,"height":59,"stage":1},{"id":"tree-west","kind":"tree","x":0,"y":0,"width":40,"height":91},{"id":"tree-south-east","kind":"tree","x":191,"y":139,"width":65,"height":53},{"id":"rock-cliff","kind":"rock","x":150,"y":0,"width":106,"height":57},{"id":"rock-pond","kind":"rock","x":18,"y":99,"width":45,"height":43}]
+}

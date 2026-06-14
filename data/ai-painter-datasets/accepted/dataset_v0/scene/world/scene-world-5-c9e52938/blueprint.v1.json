@@ -1,0 +1,488 @@
+{
+  "height": 192,
+  "manualReviewReasons": [],
+  "requiresManualReview": false,
+  "sceneId": "scene-world-5-c9e52938",
+  "schemaVersion": "world-blueprint-v1",
+  "seed": 105,
+  "sourceBlueprintHash": "588fbef27a075dd3948d6f139d314003249ba9b142ba4a462e556461413df10f",
+  "sourceBlueprintVersion": "world-blueprint-v0",
+  "structures": [
+    {
+      "geometry": {
+        "kind": "polygon",
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            255,
+            0
+          ],
+          [
+            255,
+            191
+          ],
+          [
+            0,
+            191
+          ]
+        ]
+      },
+      "id": "grass-grass-main",
+      "layer": 10,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "grass-main",
+      "type": "grass"
+    },
+    {
+      "geometry": {
+        "kind": "polygon",
+        "points": [
+          [
+            0,
+            159
+          ],
+          [
+            43,
+            157
+          ],
+          [
+            76,
+            163
+          ],
+          [
+            111,
+            159
+          ],
+          [
+            147,
+            153
+          ],
+          [
+            186,
+            151
+          ],
+          [
+            225,
+            144
+          ],
+          [
+            255,
+            145
+          ],
+          [
+            255,
+            169
+          ],
+          [
+            223,
+            167
+          ],
+          [
+            188,
+            174
+          ],
+          [
+            148,
+            177
+          ],
+          [
+            112,
+            181
+          ],
+          [
+            75,
+            184
+          ],
+          [
+            40,
+            179
+          ],
+          [
+            0,
+            181
+          ]
+        ]
+      },
+      "id": "water-body-stream-south",
+      "layer": 20,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "stream-south",
+      "type": "water_body"
+    },
+    {
+      "geometry": {
+        "height": 49,
+        "kind": "rect",
+        "width": 256,
+        "x": 0,
+        "y": 140
+      },
+      "id": "shoreline-stream-south",
+      "layer": 21,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "stream-south",
+      "type": "shoreline"
+    },
+    {
+      "geometry": {
+        "kind": "polyline",
+        "lineWidth": 9,
+        "points": [
+          [
+            110,
+            191
+          ],
+          [
+            92,
+            168
+          ],
+          [
+            62,
+            153
+          ],
+          [
+            81,
+            130
+          ],
+          [
+            113,
+            116
+          ],
+          [
+            82,
+            102
+          ],
+          [
+            47,
+            91
+          ],
+          [
+            66,
+            69
+          ]
+        ]
+      },
+      "id": "road-center-switchback",
+      "layer": 40,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "switchback",
+      "type": "road_center"
+    },
+    {
+      "geometry": {
+        "kind": "polyline",
+        "lineWidth": 18,
+        "points": [
+          [
+            110,
+            191
+          ],
+          [
+            92,
+            168
+          ],
+          [
+            62,
+            153
+          ],
+          [
+            81,
+            130
+          ],
+          [
+            113,
+            116
+          ],
+          [
+            82,
+            102
+          ],
+          [
+            47,
+            91
+          ],
+          [
+            66,
+            69
+          ]
+        ]
+      },
+      "id": "road-edge-switchback",
+      "layer": 39,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "switchback",
+      "type": "road_edge"
+    },
+    {
+      "geometry": {
+        "kind": "polyline",
+        "lineWidth": 7,
+        "points": [
+          [
+            66,
+            69
+          ],
+          [
+            107,
+            67
+          ],
+          [
+            151,
+            70
+          ]
+        ]
+      },
+      "id": "road-center-quarry-path",
+      "layer": 40,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "quarry-path",
+      "type": "road_center"
+    },
+    {
+      "geometry": {
+        "kind": "polyline",
+        "lineWidth": 15,
+        "points": [
+          [
+            66,
+            69
+          ],
+          [
+            107,
+            67
+          ],
+          [
+            151,
+            70
+          ]
+        ]
+      },
+      "id": "road-edge-quarry-path",
+      "layer": 39,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "quarry-path",
+      "type": "road_edge"
+    },
+    {
+      "geometry": {
+        "height": 47,
+        "kind": "rect",
+        "width": 72,
+        "x": 17,
+        "y": 25
+      },
+      "id": "shelter-foundation-shelter-1",
+      "layer": 80,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "shelter-1",
+      "type": "shelter_foundation"
+    },
+    {
+      "geometry": {
+        "height": 27,
+        "kind": "rect",
+        "width": 72,
+        "x": 17,
+        "y": 45
+      },
+      "id": "shelter-wall-shelter-1",
+      "layer": 82,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "shelter-1",
+      "type": "shelter_wall"
+    },
+    {
+      "geometry": {
+        "height": 20,
+        "kind": "rect",
+        "width": 72,
+        "x": 17,
+        "y": 25
+      },
+      "id": "shelter-roof-shelter-1",
+      "layer": 84,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "shelter-1",
+      "type": "shelter_roof"
+    },
+    {
+      "geometry": {
+        "height": 85,
+        "kind": "rect",
+        "width": 37,
+        "x": 0,
+        "y": 75
+      },
+      "id": "tree-crown-tree-left",
+      "layer": 70,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-left",
+      "type": "tree_crown"
+    },
+    {
+      "geometry": {
+        "height": 17,
+        "kind": "rect",
+        "width": 7,
+        "x": 15,
+        "y": 143
+      },
+      "id": "tree-trunk-tree-left",
+      "layer": 69,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-left",
+      "type": "tree_trunk"
+    },
+    {
+      "geometry": {
+        "height": 145,
+        "kind": "rect",
+        "width": 50,
+        "x": 206,
+        "y": 0
+      },
+      "id": "tree-crown-tree-right",
+      "layer": 70,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-right",
+      "type": "tree_crown"
+    },
+    {
+      "geometry": {
+        "height": 29,
+        "kind": "rect",
+        "width": 10,
+        "x": 226,
+        "y": 116
+      },
+      "id": "tree-trunk-tree-right",
+      "layer": 69,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-right",
+      "type": "tree_trunk"
+    },
+    {
+      "geometry": {
+        "height": 22,
+        "kind": "rect",
+        "width": 256,
+        "x": 0,
+        "y": 170
+      },
+      "id": "tree-crown-tree-south",
+      "layer": 70,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-south",
+      "type": "tree_crown"
+    },
+    {
+      "geometry": {
+        "height": 4,
+        "kind": "rect",
+        "width": 51,
+        "x": 102,
+        "y": 188
+      },
+      "id": "tree-trunk-tree-south",
+      "layer": 69,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-south",
+      "type": "tree_trunk"
+    },
+    {
+      "geometry": {
+        "height": 35,
+        "kind": "rect",
+        "width": 142,
+        "x": 0,
+        "y": 0
+      },
+      "id": "rock-rock-cliff",
+      "layer": 60,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "rock-cliff",
+      "type": "rock"
+    },
+    {
+      "geometry": {
+        "height": 49,
+        "kind": "rect",
+        "width": 79,
+        "x": 108,
+        "y": 35
+      },
+      "id": "rock-rock-quarry",
+      "layer": 60,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "rock-quarry",
+      "type": "rock"
+    },
+    {
+      "geometry": {
+        "height": 50,
+        "kind": "rect",
+        "width": 89,
+        "x": 113,
+        "y": 95
+      },
+      "id": "rock-rock-meadow",
+      "layer": 60,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "rock-meadow",
+      "type": "rock"
+    },
+    {
+      "geometry": {
+        "height": 192,
+        "kind": "rect",
+        "width": 256,
+        "x": 0,
+        "y": 0
+      },
+      "id": "walkable-derived-v0",
+      "layer": 5,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "type": "walkable"
+    },
+    {
+      "depthValue": 128,
+      "geometry": {
+        "height": 192,
+        "kind": "rect",
+        "width": 256,
+        "x": 0,
+        "y": 0
+      },
+      "id": "depth-derived-v0",
+      "layer": 1,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "type": "depth"
+    }
+  ],
+  "styleId": "bright-healing-topdown-pixel-v0",
+  "width": 256
+}

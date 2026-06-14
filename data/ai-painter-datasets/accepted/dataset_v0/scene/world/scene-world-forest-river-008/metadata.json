@@ -1,0 +1,125 @@
+{
+  "schemaVersion": "accepted-training-sample-v0",
+  "sampleId": "scene-world-forest-river-008",
+  "datasetVersion": "ai-painter-dataset-v0",
+  "sampleLayer": "scene",
+  "domain": "world",
+  "subtype": "forest_river_construction",
+  "tags": [
+    "bright",
+    "healing",
+    "pixel_art",
+    "three_quarter_top_down",
+    "forest",
+    "river",
+    "construction"
+  ],
+  "components": [
+    "grass",
+    "river",
+    "dirt_path",
+    "stone_foundation",
+    "timber_scaffold",
+    "bridge",
+    "trees",
+    "rocks",
+    "flowers",
+    "materials"
+  ],
+  "componentMaterials": [
+    {
+      "component": "foundation",
+      "material": "stone"
+    },
+    {
+      "component": "scaffold",
+      "material": "wood"
+    },
+    {
+      "component": "bridge",
+      "material": "wood"
+    },
+    {
+      "component": "path",
+      "material": "soil"
+    },
+    {
+      "component": "river",
+      "material": "water"
+    }
+  ],
+  "viewpoint": "fixed_three_quarter_top_down",
+  "styleId": "bright-healing-topdown-pixel-v0",
+  "seed": 108,
+  "source": {
+    "kind": "ai_assisted_manual_creation",
+    "toolName": "OpenAI image generation via Codex",
+    "createdAt": "2026-06-13",
+    "licenseBasis": "项目负责人指示 Codex 生成的原创候选训练图；未要求复制任何指定游戏、艺术家或第三方作品，仅在人工复核后用于 AI-PET-WORLD 本地模型训练。",
+    "humanApproved": true,
+    "directCopyProhibited": true
+  },
+  "review": {
+    "reviewer": "project-owner",
+    "reviewedAt": "2026-06-13",
+    "rightsApproved": true,
+    "blueprintApproved": true,
+    "visualQualityApproved": true
+  },
+  "files": {
+    "targetImage": {
+      "path": "accepted/dataset_v0/scene/world/scene-world-forest-river-008/target.png",
+      "sha256": "76f452bc7172000d3f2b78dcc14e6bfea1797c540bdbb46606a4b7e9b7db561d",
+      "byteLength": 128460
+    },
+    "structure": {
+      "path": "accepted/dataset_v0/scene/world/scene-world-forest-river-008/blueprint.json",
+      "sha256": "f89ef40a6014910700d56c51f8bd42c1dfe93b88d6d354b0dfc657c53eb1846f",
+      "byteLength": 1006
+    },
+    "masks": {
+      "depth": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-forest-river-008/masks/depth.png",
+        "sha256": "c80a57815c33b83ae8b8cdf40d30b5ed71107fc42e52d261b66eabd7b5a0f9e7",
+        "byteLength": 372
+      },
+      "grass": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-forest-river-008/masks/grass.png",
+        "sha256": "5ff1190b2021358924fc2a711b0e59c8a0aadd5f1e57692032a1183e48d5cb78",
+        "byteLength": 299
+      },
+      "road": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-forest-river-008/masks/road.png",
+        "sha256": "e99af92264265913fae03aca63e02507183a687d0dacefe766ddd42f0d2a171e",
+        "byteLength": 486
+      },
+      "rock": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-forest-river-008/masks/rock.png",
+        "sha256": "05d432f3fc5b2a2a125f262b4d5d644275816147224d8174e3f000a8f9ec639b",
+        "byteLength": 230
+      },
+      "shelter": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-forest-river-008/masks/shelter.png",
+        "sha256": "6b68999debaa0a0521de5d5d3225a6b204bfeea0d0608770c00a217f683b1ece",
+        "byteLength": 210
+      },
+      "tree": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-forest-river-008/masks/tree.png",
+        "sha256": "592cc996c782476e832b2d1352c1f0732e5dc1a1821f707a46067cc2e818d302",
+        "byteLength": 324
+      },
+      "walkable": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-forest-river-008/masks/walkable.png",
+        "sha256": "030810560d2ad7f1cab7e5a5db70a37738d9486f9e6eea272446900efa7ada49",
+        "byteLength": 699
+      },
+      "water": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-forest-river-008/masks/water.png",
+        "sha256": "a68a13e732d9d2c729761514c52c20c9481d0d5a21720c1af564d433febcf7c7",
+        "byteLength": 545
+      }
+    }
+  },
+  "status": "accepted",
+  "notes": "待项目负责人审核：森林边界、右侧河流、木桥和施工场景。"
+}

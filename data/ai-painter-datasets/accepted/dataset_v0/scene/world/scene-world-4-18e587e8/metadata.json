@@ -1,0 +1,129 @@
+{
+  "schemaVersion": "accepted-training-sample-v0",
+  "sampleId": "scene-world-4-18e587e8",
+  "datasetVersion": "ai-painter-dataset-v0",
+  "sampleLayer": "scene",
+  "domain": "world",
+  "subtype": "early_settlement_construction",
+  "tags": [
+    "bright",
+    "healing",
+    "pixel_art",
+    "three_quarter_top_down",
+    "grassland",
+    "river",
+    "construction"
+  ],
+  "components": [
+    "grass",
+    "river",
+    "dirt_path",
+    "stone_foundation",
+    "timber_scaffold",
+    "bridge",
+    "trees",
+    "rocks",
+    "flowers",
+    "materials"
+  ],
+  "componentMaterials": [
+    {
+      "component": "foundation",
+      "material": "stone"
+    },
+    {
+      "component": "scaffold",
+      "material": "wood"
+    },
+    {
+      "component": "bridge",
+      "material": "wood"
+    },
+    {
+      "component": "path",
+      "material": "soil"
+    },
+    {
+      "component": "river",
+      "material": "water"
+    },
+    {
+      "component": "trees",
+      "material": "wood"
+    }
+  ],
+  "viewpoint": "fixed_three_quarter_top_down",
+  "styleId": "bright-healing-topdown-pixel-v0",
+  "seed": 101,
+  "source": {
+    "kind": "ai_assisted_manual_creation",
+    "toolName": "OpenAI image generation via Codex",
+    "createdAt": "2026-06-12",
+    "licenseBasis": "由项目负责人使用 OpenAI/Codex 图像生成工具生成并人工审核，依据适用服务条款取得输出使用权。生成过程未要求直接复制特定第三方作品，图片仅作为 AI-PET-WORLD 自研模型候选训练数据。",
+    "humanApproved": true,
+    "directCopyProhibited": true
+  },
+  "review": {
+    "reviewer": "project-owner",
+    "reviewedAt": "2026-06-12",
+    "rightsApproved": true,
+    "blueprintApproved": true,
+    "visualQualityApproved": true
+  },
+  "files": {
+    "targetImage": {
+      "path": "accepted/dataset_v0/scene/world/scene-world-4-18e587e8/target.png",
+      "sha256": "612ce5595d02542d32e5314c6f91a35f787fc5039acd1ad84bc5bd909b654248",
+      "byteLength": 128913
+    },
+    "structure": {
+      "path": "accepted/dataset_v0/scene/world/scene-world-4-18e587e8/blueprint.json",
+      "sha256": "1e056ae0e30cb14792f7d2b3df985696c1ddedff4327f56f49f78110875dfb7f",
+      "byteLength": 1988
+    },
+    "masks": {
+      "depth": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-4-18e587e8/masks/depth.png",
+        "sha256": "c1721ca1873084b297052cdd37ec0adacbde92cc28f282e3e5c25967d6c0233a",
+        "byteLength": 341
+      },
+      "grass": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-4-18e587e8/masks/grass.png",
+        "sha256": "5ff1190b2021358924fc2a711b0e59c8a0aadd5f1e57692032a1183e48d5cb78",
+        "byteLength": 299
+      },
+      "road": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-4-18e587e8/masks/road.png",
+        "sha256": "3c166dae29110757171c4063fcbf80da75692ee955ddbd6e80ca3ba2bdc3554e",
+        "byteLength": 792
+      },
+      "rock": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-4-18e587e8/masks/rock.png",
+        "sha256": "37604b62085e21767bca01f83a138bc0b4bb01e13567164e54d0b621313f48c1",
+        "byteLength": 206
+      },
+      "shelter": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-4-18e587e8/masks/shelter.png",
+        "sha256": "1e6e91fd690e8072c791b07156b185711585393a92829da8a815a32686042d5a",
+        "byteLength": 203
+      },
+      "tree": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-4-18e587e8/masks/tree.png",
+        "sha256": "297ed5bf9900f4016ca936b9ef189f937237eba2f78728b3f0598e95ba354fdf",
+        "byteLength": 248
+      },
+      "walkable": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-4-18e587e8/masks/walkable.png",
+        "sha256": "73bc380dfff5b0f76b5cf3a5d73c825170a9706f22a63dde2eb0d559d218fc5b",
+        "byteLength": 652
+      },
+      "water": {
+        "path": "accepted/dataset_v0/scene/world/scene-world-4-18e587e8/masks/water.png",
+        "sha256": "fec966e39bd2cb880399a71dc6687cd330bd399b1398709c3aa4a5c39bd7c911",
+        "byteLength": 128
+      }
+    }
+  },
+  "status": "accepted",
+  "notes": "AI-PET-WORLD 完整世界场景训练初稿。内容包含草地、河流、道路、树木、石材施工基础、木质脚手架、材料堆和木桥。需通过人工质量、结构一致性和权利审核后进入正式训练集。"
+}

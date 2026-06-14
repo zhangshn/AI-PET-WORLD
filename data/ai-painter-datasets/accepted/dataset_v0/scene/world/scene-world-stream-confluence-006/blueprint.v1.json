@@ -1,0 +1,457 @@
+{
+  "height": 192,
+  "manualReviewReasons": [],
+  "requiresManualReview": false,
+  "sceneId": "scene-world-stream-confluence-006",
+  "schemaVersion": "world-blueprint-v1",
+  "seed": 106,
+  "sourceBlueprintHash": "0422ec668e4e4e288c3b002b8e339ed3c822158c474cda7d2188518338913ea9",
+  "sourceBlueprintVersion": "world-blueprint-v0",
+  "structures": [
+    {
+      "geometry": {
+        "kind": "polygon",
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            255,
+            0
+          ],
+          [
+            255,
+            191
+          ],
+          [
+            0,
+            191
+          ]
+        ]
+      },
+      "id": "grass-grass-main",
+      "layer": 10,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "grass-main",
+      "type": "grass"
+    },
+    {
+      "geometry": {
+        "kind": "polygon",
+        "points": [
+          [
+            0,
+            0
+          ],
+          [
+            31,
+            0
+          ],
+          [
+            49,
+            31
+          ],
+          [
+            40,
+            69
+          ],
+          [
+            53,
+            105
+          ],
+          [
+            75,
+            137
+          ],
+          [
+            62,
+            191
+          ],
+          [
+            27,
+            191
+          ],
+          [
+            38,
+            143
+          ],
+          [
+            27,
+            108
+          ],
+          [
+            12,
+            72
+          ],
+          [
+            20,
+            36
+          ]
+        ]
+      },
+      "id": "water-body-stream-left",
+      "layer": 20,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "stream-left",
+      "type": "water_body"
+    },
+    {
+      "geometry": {
+        "height": 192,
+        "kind": "rect",
+        "width": 80,
+        "x": 0,
+        "y": 0
+      },
+      "id": "shoreline-stream-left",
+      "layer": 21,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "stream-left",
+      "type": "shoreline"
+    },
+    {
+      "geometry": {
+        "kind": "polygon",
+        "points": [
+          [
+            62,
+            121
+          ],
+          [
+            99,
+            125
+          ],
+          [
+            134,
+            132
+          ],
+          [
+            168,
+            121
+          ],
+          [
+            208,
+            126
+          ],
+          [
+            255,
+            110
+          ],
+          [
+            255,
+            151
+          ],
+          [
+            221,
+            157
+          ],
+          [
+            180,
+            153
+          ],
+          [
+            143,
+            162
+          ],
+          [
+            101,
+            154
+          ],
+          [
+            62,
+            164
+          ]
+        ]
+      },
+      "id": "water-body-stream-bottom",
+      "layer": 20,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "stream-bottom",
+      "type": "water_body"
+    },
+    {
+      "geometry": {
+        "height": 63,
+        "kind": "rect",
+        "width": 198,
+        "x": 58,
+        "y": 106
+      },
+      "id": "shoreline-stream-bottom",
+      "layer": 21,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "stream-bottom",
+      "type": "shoreline"
+    },
+    {
+      "geometry": {
+        "kind": "polyline",
+        "lineWidth": 10,
+        "points": [
+          [
+            45,
+            191
+          ],
+          [
+            70,
+            155
+          ],
+          [
+            101,
+            127
+          ],
+          [
+            118,
+            102
+          ],
+          [
+            131,
+            83
+          ]
+        ]
+      },
+      "id": "road-center-road-entry",
+      "layer": 40,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "road-entry",
+      "type": "road_center"
+    },
+    {
+      "geometry": {
+        "kind": "polyline",
+        "lineWidth": 20,
+        "points": [
+          [
+            45,
+            191
+          ],
+          [
+            70,
+            155
+          ],
+          [
+            101,
+            127
+          ],
+          [
+            118,
+            102
+          ],
+          [
+            131,
+            83
+          ]
+        ]
+      },
+      "id": "road-edge-road-entry",
+      "layer": 39,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "road-entry",
+      "type": "road_edge"
+    },
+    {
+      "geometry": {
+        "height": 65,
+        "kind": "rect",
+        "width": 75,
+        "x": 91,
+        "y": 49
+      },
+      "id": "shelter-foundation-shelter-main",
+      "layer": 80,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "shelter-main",
+      "type": "shelter_foundation"
+    },
+    {
+      "geometry": {
+        "height": 38,
+        "kind": "rect",
+        "width": 75,
+        "x": 91,
+        "y": 76
+      },
+      "id": "shelter-wall-shelter-main",
+      "layer": 82,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "shelter-main",
+      "type": "shelter_wall"
+    },
+    {
+      "geometry": {
+        "height": 27,
+        "kind": "rect",
+        "width": 75,
+        "x": 91,
+        "y": 49
+      },
+      "id": "shelter-roof-shelter-main",
+      "layer": 84,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "shelter-main",
+      "type": "shelter_roof"
+    },
+    {
+      "geometry": {
+        "height": 42,
+        "kind": "rect",
+        "width": 99,
+        "x": 0,
+        "y": 0
+      },
+      "id": "tree-crown-tree-north",
+      "layer": 70,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-north",
+      "type": "tree_crown"
+    },
+    {
+      "geometry": {
+        "height": 8,
+        "kind": "rect",
+        "width": 19,
+        "x": 40,
+        "y": 34
+      },
+      "id": "tree-trunk-tree-north",
+      "layer": 69,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-north",
+      "type": "tree_trunk"
+    },
+    {
+      "geometry": {
+        "height": 124,
+        "kind": "rect",
+        "width": 45,
+        "x": 211,
+        "y": 0
+      },
+      "id": "tree-crown-tree-east",
+      "layer": 70,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-east",
+      "type": "tree_crown"
+    },
+    {
+      "geometry": {
+        "height": 24,
+        "kind": "rect",
+        "width": 9,
+        "x": 229,
+        "y": 100
+      },
+      "id": "tree-trunk-tree-east",
+      "layer": 69,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-east",
+      "type": "tree_trunk"
+    },
+    {
+      "geometry": {
+        "height": 39,
+        "kind": "rect",
+        "width": 72,
+        "x": 184,
+        "y": 153
+      },
+      "id": "tree-crown-tree-south",
+      "layer": 70,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-south",
+      "type": "tree_crown"
+    },
+    {
+      "geometry": {
+        "height": 7,
+        "kind": "rect",
+        "width": 14,
+        "x": 213,
+        "y": 185
+      },
+      "id": "tree-trunk-tree-south",
+      "layer": 69,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "tree-south",
+      "type": "tree_trunk"
+    },
+    {
+      "geometry": {
+        "height": 29,
+        "kind": "rect",
+        "width": 38,
+        "x": 94,
+        "y": 11
+      },
+      "id": "rock-rock-north",
+      "layer": 60,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "rock-north",
+      "type": "rock"
+    },
+    {
+      "geometry": {
+        "height": 35,
+        "kind": "rect",
+        "width": 31,
+        "x": 38,
+        "y": 62
+      },
+      "id": "rock-rock-west",
+      "layer": 60,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "sourceV0Id": "rock-west",
+      "type": "rock"
+    },
+    {
+      "geometry": {
+        "height": 192,
+        "kind": "rect",
+        "width": 256,
+        "x": 0,
+        "y": 0
+      },
+      "id": "walkable-derived-v0",
+      "layer": 5,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "type": "walkable"
+    },
+    {
+      "depthValue": 128,
+      "geometry": {
+        "height": 192,
+        "kind": "rect",
+        "width": 256,
+        "x": 0,
+        "y": 0
+      },
+      "id": "depth-derived-v0",
+      "layer": 1,
+      "manualReviewReasons": [],
+      "requiresManualReview": false,
+      "type": "depth"
+    }
+  ],
+  "styleId": "bright-healing-topdown-pixel-v0",
+  "width": 256
+}
