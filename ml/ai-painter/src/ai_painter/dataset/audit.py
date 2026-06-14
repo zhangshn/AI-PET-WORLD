@@ -15,7 +15,7 @@ def audit_dataset(dataset_root: Path) -> dict[str, object]:
     layout.ensure()
     errors: list[str] = []
     sample_ids: list[str] = []
-    for metadata_path in sorted(layout.accepted.glob("scene/world/*/metadata.json")):
+    for metadata_path in sorted(layout.module_d_accepted.glob("scene/world/*/metadata.json")):
         sample_id = metadata_path.parent.name
         sample_ids.append(sample_id)
         try:
