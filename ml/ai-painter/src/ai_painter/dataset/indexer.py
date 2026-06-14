@@ -11,7 +11,7 @@ def build_dataset_indexes(dataset_root: Path, validation_ratio: float = 0.1) -> 
     layout = DatasetLayout(dataset_root)
     layout.ensure()
     manifests = [
-        path for path in sorted(layout.accepted.glob("scene/world/*/metadata.json"))
+        path for path in sorted(layout.module_d_accepted.glob("scene/world/*/metadata.json"))
         if _is_eligible(path, layout)
     ]
     train: list[str] = []
