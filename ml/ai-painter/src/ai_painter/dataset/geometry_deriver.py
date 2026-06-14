@@ -8,7 +8,7 @@ from ai_painter.blueprint.channels import CANVAS_HEIGHT, CANVAS_WIDTH
 
 from .auto_annotator import components, mask_polyline, record
 
-GEOMETRY_VERSION = "geometry-deriver-v1.1"
+GEOMETRY_VERSION = "geometry-deriver-v1.2"
 OBSTACLES = (
     "water_body", "tree_trunk", "tree_crown", "rock", "shelter_foundation",
     "shelter_wall", "shelter_roof", "construction_material",
@@ -29,7 +29,7 @@ def derive_geometry(
     )
     road_center = Image.new("L", road.size, 0)
     for box in components(road):
-        if (box[2] - box[0] + 1) * (box[3] - box[1] + 1) < 45:
+        if not _is_valid_road_component(box):
             continue
         y = (box[1] + box[3]) // 2
         ImageDraw.Draw(road_center).line([(box[0], y), (box[2], y)], fill=255, width=3)
@@ -67,6 +67,17 @@ def derive_geometry(
         0.86, source_hash, {"method": "continuous-spatial-gradient"},
     ))
     return masks, records
+
+
+def _is_valid_road_component(box: tuple[int, int, int, int]) -> bool:
+    width = box[2] - box[0] + 1
+    height = box[3] - box[1] + 1
+    area = width * height
+    if area < 45:
+        return False
+    if width / CANVAS_WIDTH > 0.82 and height <= 16:
+        return False
+    return True
 
 
 def _depth_mask() -> Image.Image:
