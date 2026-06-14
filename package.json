@@ -13,6 +13,7 @@
     "check:vj1": "node scripts/check-world-visual-vj0-gates.cjs",
     "test:vj1": "node scripts/test-world-visual-vj0-behavior.cjs",
     "test:ai-painter-data": "ml\\ai-painter\\.venv\\Scripts\\python.exe -m unittest discover -s ml\\ai-painter\\tests -v",
+    "ai-painter:auto-annotate": "ml\\ai-painter\\.venv\\Scripts\\python.exe -m ai_painter.dataset.auto_annotate_from_v0 --dataset-root data\\ai-painter-datasets",
     "test:ai-painter-batch-upload": "node scripts/test-ai-painter-batch-sample-id.mjs",
     "check:ai-painter-training": "ml\\ai-painter\\.venv\\Scripts\\python.exe ml\\ai-painter\\scripts\\train_tiny_unet.py --dataset-root data\\ai-painter-datasets --check-runtime",
     "train:ai-painter-overfit": "ml\\ai-painter\\.venv\\Scripts\\python.exe ml\\ai-painter\\scripts\\train_tiny_unet.py --dataset-root data\\ai-painter-datasets --max-epochs 20",
