@@ -16,11 +16,11 @@ class DatasetLayout:
 
     @property
     def accepted(self) -> Path:
-        return self.root / "accepted" / "dataset_v1"
+        return self.root / "accepted" / "dataset_v0"
 
     @property
-    def legacy_accepted(self) -> Path:
-        return self.root / "accepted" / "dataset_v0"
+    def module_d_accepted(self) -> Path:
+        return self.root / "accepted" / "dataset_v1"
 
     @property
     def quarantine(self) -> Path:
@@ -52,4 +52,6 @@ class DatasetLayout:
             self.manifests,
         ):
             path.mkdir(parents=True, exist_ok=True)
-        (self.accepted / "scene" / "world").mkdir(parents=True, exist_ok=True)
+        for layer in ("scene", "object", "part", "material"):
+            (self.accepted / layer).mkdir(parents=True, exist_ok=True)
+        (self.module_d_accepted / "scene" / "world").mkdir(parents=True, exist_ok=True)
