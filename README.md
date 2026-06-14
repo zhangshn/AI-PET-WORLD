@@ -27,6 +27,19 @@ The world page can only show `ApprovedFrame`.
 
 No candidate image, sketch, debug view, or programmatic drawing may be shown to the player.
 
+## Training Data Chain
+
+```txt
+Original training PNG
+-> project-owned automatic visual annotation
+-> Blueprint v1 + 14 channel masks
+-> automatic annotation judge and correction
+-> accepted training pair
+-> internal AI Painter training
+```
+
+The existing 20 images are immutable source materials, not trusted ground-truth annotations. Old coarse annotations and manual per-object approval are not part of the formal training-data chain. Samples that cannot pass automatic semantic and geometric checks must be quarantined instead of being sent to the user for manual approval.
+
 Current formal architecture documents:
 
 ```txt

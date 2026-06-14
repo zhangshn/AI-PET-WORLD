@@ -1,8 +1,8 @@
 # AI-PET-WORLD 唯一正式架构基线
 
-版本：v1.0  
+版本：v1.1  
 状态：唯一正式架构与实施依据  
-更新日期：2026-06-11  
+更新日期：2026-06-14  
 适用对象：产品负责人、开发人员、GPT/Codex 代码代理
 
 > 本文档替代此前所有 AI Painter 方案、阶段计划、旧视觉链路说明和冻结方案。任何实现、审查和后续交接都必须以本文档为唯一依据。
@@ -84,8 +84,10 @@ VisualFix 只能修正生成条件、构图表达、地形表达、资产表达�
 ### 3.6 合法数据与非侵权
 
 - 训练数据只能来自项目自制、权利清晰的委托制作、CC0 或明确允许训练和商业使用的内容。
-- 开发阶段允许由项目负责人在项目外部人工使用 GPT 等 AI 图像工具制作训练图片，再经过人工确认后导入本地数据集；项目代码、训练程序和游戏运行时不得对接 GPT、OpenAI API 或其他在线绘图服务。
-- AI 辅助制作的训练图片必须记录生成工具、生成日期、输入条件、对应 Blueprint、人工审核结果、文件哈希和许可依据。
+- 开发阶段允许项目负责人在项目外部使用 GPT 等 AI 图像工具制作原创训练图片；项目代码、训练程序和游戏运行时不得对接 GPT、OpenAI API 或其他在线绘图服务。
+- 外部生成工具只提供原始 PNG，不假定其同时提供 Blueprint、对象坐标或语义 Mask。
+- 原始训练图片进入项目后，由项目内部自动标注链生成 Blueprint 与 14 通道 Mask，不以人工逐项描边或人工逐项批准作为正式流程。
+- AI 辅助制作的训练图片必须记录生成工具、生成日期、输入条件、文件哈希和许可依据；自动标注结果必须记录标注模型版本、规则版本、置信度、几何校验和质量门禁结果。
 - 互联网公开案例只用于提炼抽象原则，默认不能直接进入训练集或素材库。
 - 禁止复制具体游戏画面、角色、标志、地图、素材或受保护的独特构图。
 - 每条训练数据必须记录来源、授权、版本、哈希和用途。
@@ -162,14 +164,33 @@ VisualFix 只能修正生成条件、构图表达、地形表达、资产表达�
 
 ### 5.1 当前自研小模型架构
 
-当前模型不是通用文生图模型，只服务 AI-PET-WORLD 的固定俯视像素世界。训练图片由项目负责人在项目外部人工使用 AI 图像工具制作并导入；项目代码不连接该工具。
+当前模型不是通用文生图模型，只服务 AI-PET-WORLD 的固定俯视像素世界。训练原图可以由项目负责人在项目外部使用 AI 图像工具制作并导入；项目代码不连接该工具。原图导入后必须由项目内部自动标注系统产生结构化训练条件。
+
+正式训练数据生产链固定为：
+
+```text
+原创训练 PNG
+  -> Source Asset Registry（来源、许可、哈希）
+  -> Automatic Visual Annotator（自动语义识别与实例边界）
+  -> Geometry Deriver（道路边缘、水岸、可行走区域、空间深度）
+  -> Blueprint + 14 Channel Masks
+  -> Annotation Judge（图片、标注、几何和语义一致性）
+  -> 自动修正 / 重新标注（失败时）
+  -> Accepted Training Pair（通过时）
+  -> Internal AI Painter Training
+```
+
+人工不进入正式逐项审核链。标注是否可训练由可复现的机器证据决定：像素覆盖、边界一致性、通道冲突、对象完整性、语义置信度、规则检查和标注模型交叉验证。无法自动确认的样本进入隔离区，不得进入训练集，也不要求用户手工逐对象批准。
 
 ```text
 World Facts
   -> VisualFactManifest
   -> Scene Blueprint
-       terrain mask / water mask / road mask
-       object mask / depth map / walkable mask
+       grass / water / shoreline
+       road center / road edge / walkable
+       tree trunk / tree crown / rock
+       shelter foundation / wall / roof
+       construction material / depth
   -> Condition Tensor Builder
   -> Tiny Conditional U-Net v0
   -> RGB 256x192 Lab Candidate
@@ -345,6 +366,9 @@ ai-pet-world/
 │     ├─ src/ai_painter/
 │     │  ├─ blueprint/                           # Blueprint schema、校验与 mask 构建
 │     │  ├─ dataset/                             # 导入、索引、Dataset、DataLoader
+│     │  ├─ annotation/                          # 自动语义/实例标注与置信度
+│     │  ├─ geometry/                            # 岸线、道路边缘、可行走、深度推导
+│     │  ├─ annotation_judge/                    # 自动标注质量门禁与交叉验证
 │     │  ├─ condition/                           # 多通道 Condition Tensor
 │     │  ├─ models/                              # Tiny U-Net 与后续生成模型
 │     │  ├─ training/                            # loss、trainer、checkpoint、日志
@@ -361,8 +385,10 @@ ai-pet-world/
 │  ├─ world-visual-candidates/                   # 隐藏候选图记录
 │  ├─ world-approved-frames/                     # 审核通过记录
 │  └─ ai-painter-datasets/                       # 本地训练数据，不提交原图到 Git
-│     ├─ incoming/                               # 人工导入、尚未验收
-│     ├─ accepted/                               # 已配对并通过检查
+│     ├─ source-originals/                       # 原始 20 张及后续原创 PNG，只作源素材
+│     ├─ annotation-working/                     # 自动标注中间结果，不可训练
+│     ├─ annotation-quarantine/                  # 自动门禁失败样本，不要求人工批准
+│     ├─ accepted/                               # 自动配对并通过机器质量门禁
 │     │  └─ dataset_v0/
 │     │     ├─ images/
 │     │     ├─ blueprints/
@@ -381,7 +407,9 @@ ai-pet-world/
 目录规则：
 
 - 不重新建立 `prompt-package`、`control-sketch`、`provider`、`external-api` 或旧程序绘图目录。
-- 只允许在 `data/ai-painter-datasets/incoming` 执行开发期人工训练数据导入；该目录不是玩家画面来源，也不能绕过模型与 VisualJudge。
+- 原始图片只能进入 `source-originals`，不得直接成为可训练样本。
+- `annotation-working` 和 `annotation-quarantine` 都不是正式训练来源，也不能绕过 Annotation Judge。
+- 人工标注页面仅保留为开发诊断工具，不属于正式数据生产和批准链。
 - `visual-review` 迁移为 `visual-judge/vj-0|vj-1|vj-2` 时必须作为一个完整模块迁移，不能长期双轨并存。
 - 大模型权重、训练原图和临时输出不直接提交 Git，只提交清单、配置、哈希和可复现脚本。
 
@@ -451,23 +479,26 @@ TypeScript 与 Python 并不冲突：TypeScript 管世界与产品主链，Pytho
 
 已完成真实像素解码、亮度、对比度、颜色范围、主色占比、边缘密度和锐度计算，并接入 ReviewReport、ApprovedFrame 和 VisualFix。尚需补齐透明度、异常矩形块、文字/水印基础检测及对应失败图片集。不得用标签替代真实计算。
 
-### 模块 D：人工导入的 AI 辅助训练数据与本地数据集（进行中）
+### 模块 D：自动标注数据流水线与本地训练数据集（进行中）
 
-一次完成 Blueprint Schema、Condition Tensor 规范、训练图片人工制作与导入规范、图片与 Blueprint 配对、来源与许可记录、哈希、数据清单、质量审核、失败样例和 train/validation 划分。
+一次完成原始图片注册、14 通道自动标注、几何派生、Blueprint/Mask 配对、机器质量门禁、失败隔离、来源与许可记录、哈希、数据清单以及 train/validation 划分。
 
 模块 D 的硬边界：
 
-1. GPT 等 AI 图像工具只由项目负责人在项目外部人工使用，用于开发期制作训练图片。
+1. GPT 等 AI 图像工具只由项目负责人在项目外部使用，用于开发期制作原创训练 PNG。
 2. 项目代码不得调用 GPT、OpenAI API 或其他在线绘图服务。
 3. 游戏运行时不得依赖 GPT，也不得向外部平台发送世界事实或用户数据。
-4. 人工导入图片必须先通过来源、许可、哈希、Blueprint 一致性和质量审核。
-5. 第一批目标为 100-300 条完整配对样本，随后再扩展到 1,000-3,000 条。
+4. 原始 PNG 不自带可信结构标注，必须经过项目内部自动标注器和 Annotation Judge。
+5. 正式链禁止以人工逐项描边、逐结构下拉选择或人工批准作为训练数据准入条件。
+6. 自动标注必须输出 14 通道 Mask、结构化 Blueprint、置信度、生成版本和机器审核证据。
+7. 低置信度、通道冲突或几何不一致样本自动进入隔离区，不得进入训练索引。
+8. 第一批原始素材固定保留现有 20 张；自动标注闭环通过后再扩展到 100-300 条完整配对样本。
 
 模块 D 同时完成与本模块直接相关的结构收敛：建立 `ml/ai-painter` 独立工程、拆分 training-data 契约，并保证新增文件符合 9.1 的长度规则。不得在模块 D 提前训练正式模型。
 
-当前已完成 `ml/ai-painter` Python 独立工程、Blueprint v0、8 通道 Condition Mask、人工训练图导入、来源许可记录、SHA-256、不可覆盖样本 ID、完整性审计以及稳定 train/validation 划分。当前本地已接收训练样本为 `0`，模块 D 仍需先形成 20-50 条工程验证集，再扩展到最低 100 条完整配对样本后才能验收完成。
+当前已完成 `ml/ai-painter` Python 独立工程、Blueprint v1、14 通道 Condition Mask、原始图片导入、来源许可记录、SHA-256、不可覆盖样本 ID、完整性审计以及稳定 train/validation 划分。现有 20 张图片只作为原始素材：其中旧人工/脚本粗标注不再作为正式真值，必须由新的自动标注链重新生成。模块 D 尚未完成，当前缺少自动视觉标注器、几何派生器、Annotation Judge 和自动修正闭环。
 
-训练数据采用“分层定义、分目录归档、完整场景主训练”的结构：`scene` 保存完整世界场景并计入主模型训练数量；`object` 保存完整房屋、人物、动物、树木等对象；`part` 保存屋顶、墙体、门窗、头部、四肢、服装等结构部件；`material` 保存木材、石材、草地、水面、布料等纹理。辅助层不能直接计入场景模型的最低 100 张指标。领域目录固定为 world、building、character、animal、vegetation、terrain、road、water、material、prop。开发环境通过 `/ai-painter-lab` 本地上传，上传内容不得发送至第三方服务。
+训练数据采用“分层定义、分目录归档、完整场景主训练”的结构：`scene` 保存完整世界场景并计入主模型训练数量；`object` 保存完整房屋、人物、动物、树木等对象；`part` 保存屋顶、墙体、门窗、头部、四肢、服装等结构部件；`material` 保存木材、石材、草地、水面、布料等纹理。领域目录固定为 world、building、character、animal、vegetation、terrain、road、water、material、prop。开发环境通过 `/ai-painter-lab` 查看原始素材、自动标注证据和隔离原因；页面不得成为正式人工审批依赖。
 
 ### 模块 E：内部模型训练基础设施
 
@@ -491,14 +522,15 @@ TypeScript 与 Python 并不冲突：TypeScript 管世界与产品主链，Pytho
 
 ### 11.1 优化后的实施周期
 
-周期按单人开发、RTX 5050、本地小模型、训练图片由项目负责人在项目外人工制作、GPT/Codex 辅助代码计算。图片人工生成与代码开发可以并行。
+周期按单人开发、RTX 5050、本地小模型、原创训练图片在项目外制作、项目内部自动标注、GPT/Codex 辅助代码计算。原始图片准备与自动标注系统开发可以并行。
 
 | 阶段 | 交付结果 | 预计周期 |
 |---|---|---:|
 | D0 架构与超长文件收敛 | 建立 `ml/ai-painter`，拆分训练契约和本轮涉及的超长文件 | 2-4 天 |
-| D1 Blueprint 与数据协议 | Blueprint、mask、metadata、许可与哈希规范 | 2-4 天 |
-| D2 本地导入与校验工具 | incoming/accepted/rejected、索引、预览和检查 | 3-5 天 |
-| D3 首批训练数据 | 20-50 条工程验证集，随后扩展至 100-300 条 | 3-7 天，可并行 |
+| D1 自动标注协议 | Blueprint、14 通道 Mask、置信度、来源与哈希规范 | 2-4 天 |
+| D2 自动视觉标注器 | 语义区域、实例边界、对象类型与结构分解 | 5-10 天 |
+| D3 几何派生与机器门禁 | 岸线、道路边缘、可行走、深度、冲突检查、失败隔离 | 4-8 天 |
+| D4 现有 20 张自动重建 | 清除粗标注资格，重新生成配对数据与机器证据 | 2-5 天 |
 | E Tiny U-Net 训练工程 | Dataset、Condition Tensor、模型、训练、checkpoint、日志 | 5-8 天 |
 | F 最小过拟合与第一张 PNG | 先在 8-32 条样本过拟合，再完整推理一张 256x192 PNG | 3-7 天 |
 | G 结构控制原型 | 水、路、树、石头和住所位置可控，100-300 条数据训练 | 1-2 周 |
@@ -537,7 +569,7 @@ TypeScript 与 Python 并不冲突：TypeScript 管世界与产品主链，Pytho
 | WorldGenerationCondition | 基本完成 | 结构已建立，需清理少量旧术语 |
 | VJ-0 | 完成 | Candidate 与 ApprovedFrame 写入/读取、当前 tick、worldId、sourceFactIds、图片字节、来源和生产展示闸门均已实现并通过测试 |
 | VJ-1 | 部分完成 | 已实现真实像素解码及亮度、对比度、颜色范围、主色占比、边缘密度、锐度检测；透明度、异常块、文字/水印仍待完成 |
-| 人工导入训练数据集 | 进行中 | Blueprint v0、8 通道 Condition Mask、三项人工审核、技术质量检查、许可、哈希、导入、审计和稳定划分已实现并通过 8 项测试；已接收样本 `0/100`，尚未形成工程验证集 |
+| 自动标注训练数据集 | 进行中 | 已有 Blueprint v1、14 通道 Mask、来源、许可、哈希、导入和索引基础；正式自动标注器、几何派生、机器质量门禁和自动修正尚未实现。现有 20 张仅是原始素材 |
 | 内部模型训练管线 | 未开始 | 无训练与验证实现 |
 | 内部模型权重 | 不存在 | 不能生成正式候选图 |
 | 第一张模型世界图 | 未完成 | 当前不得展示世界图 |
@@ -605,6 +637,17 @@ TypeScript 与 Python 并不冲突：TypeScript 管世界与产品主链，Pytho
 
 ## 15. 下一步唯一任务
 
-当前继续只执行“模块 D：人工导入的 AI 辅助训练数据与本地数据集”。不要开始正式模型训练，不要制作动态内容，不要做新 UI，不要接入 GPT、OpenAI API 或任何在线绘图服务。
+当前继续只执行“模块 D：自动标注数据流水线与本地训练数据集”。不要开始正式模型训练，不要制作动态内容，不要接入 GPT、OpenAI API 或任何在线绘图服务。
 
-模块 D 的代码工具结果已经形成。下一步唯一内容是按冻结协议制作并导入首批 20-50 条工程验证样本；每条数据必须包含训练目标图、Blueprint、8 张条件 mask、来源许可记录、哈希和人工审核结果。工程验证通过后扩展到最低 100 条，再进入模块 E。
+下一大模块必须一次完成以下内容：
+
+1. 将现有 20 张图片登记为不可变的 `source-originals` 原始素材。
+2. 取消旧粗标注和人工逐项审核结果的正式训练资格，但保留原图、来源、许可和哈希。
+3. 建立 Automatic Visual Annotator，输出对象语义、实例边界、结构部件和置信度。
+4. 建立 Geometry Deriver，生成道路中心/边缘、水岸、可行走区域和空间深度。
+5. 生成完整 Blueprint v1 与 14 通道 Mask。
+6. 建立 Annotation Judge，检查通道完整性、边界一致性、遮挡关系、几何冲突、语义置信度和图片对应关系。
+7. 失败样本自动修正或进入隔离区；禁止要求用户逐对象手工审核。
+8. 只有机器证据完整并通过门禁的样本才能进入 train/validation 索引。
+
+在用户发出下一步代码指令前，只保留本次文档变更，不实施代码修改。
