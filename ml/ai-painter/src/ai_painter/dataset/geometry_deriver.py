@@ -6,9 +6,9 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 
 from ai_painter.blueprint.channels import CANVAS_HEIGHT, CANVAS_WIDTH
 
-from .auto_annotator import components, mask_polygon, mask_polyline, record
+from .auto_annotator import components, mask_polyline, record
 
-GEOMETRY_VERSION = "geometry-deriver-v1.0"
+GEOMETRY_VERSION = "geometry-deriver-v1.1"
 OBSTACLES = (
     "water_body", "tree_trunk", "tree_crown", "rock", "shelter_foundation",
     "shelter_wall", "shelter_roof", "construction_material",
@@ -52,12 +52,20 @@ def derive_geometry(
             "shoreline-000", "shoreline", mask_polyline(shoreline), 0.78,
             source_hash, {"method": "water-land-boundary"},
         ))
-    records.extend([
-        record("road-center-000", "road_center", mask_polyline(road_center), 0.70, source_hash, {"method": "road-interior-axis"}),
-        record("road-edge-000", "road_edge", mask_polyline(road_edge), 0.70, source_hash, {"method": "road-boundary"}),
-        record("walkable-000", "walkable", mask_polygon(walkable), 0.76, source_hash, {"method": "grass-road-minus-obstacles"}),
-        record("depth-000", "depth", {"kind": "rect", "rect": [0, 0, CANVAS_WIDTH, CANVAS_HEIGHT]}, 0.86, source_hash, {"method": "continuous-spatial-gradient"}),
-    ])
+    if road_center.getbbox():
+        records.append(record(
+            "road-center-000", "road_center", mask_polyline(road_center), 0.70,
+            source_hash, {"method": "road-interior-axis"},
+        ))
+    if road_edge.getbbox():
+        records.append(record(
+            "road-edge-000", "road_edge", mask_polyline(road_edge), 0.70,
+            source_hash, {"method": "road-boundary"},
+        ))
+    records.append(record(
+        "depth-000", "depth", {"kind": "rect", "rect": [0, 0, CANVAS_WIDTH, CANVAS_HEIGHT]},
+        0.86, source_hash, {"method": "continuous-spatial-gradient"},
+    ))
     return masks, records
 
 
