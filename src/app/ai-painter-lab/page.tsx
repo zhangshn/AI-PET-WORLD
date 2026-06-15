@@ -3,6 +3,8 @@ import { readAiPainterDatasetStatus } from "./ai-painter-lab-status"
 import { LayeredAssetStatus } from "./layered-asset-status"
 import { ProjectStatusTables } from "./project-status-tables"
 import { QualitySampleStatus } from "./quality-sample-status"
+import { CandidateReviewPanel } from "./candidate-review-panel"
+import { readCandidateReviewItems } from "./candidate-review-data"
 import styles from "./page.module.css"
 
 export const dynamic = "force-dynamic"
@@ -14,6 +16,7 @@ export const metadata: Metadata = {
 
 export default async function AiPainterLabPage() {
   const dataset = await readAiPainterDatasetStatus()
+  const candidateReviews = await readCandidateReviewItems()
 
   return (
     <main className={styles.page}>
@@ -43,6 +46,8 @@ export default async function AiPainterLabPage() {
 
       <LayeredAssetStatus />
 
+      <CandidateReviewPanel initialCandidates={candidateReviews} />
+
       <QualitySampleStatus />
 
       <ProjectStatusTables
@@ -55,8 +60,8 @@ export default async function AiPainterLabPage() {
 
       <section className={styles.nextStep}>
         <small>NEXT MODULE</small>
-        <h2>当前下一步：扩充独立高质量树木正样本</h2>
-        <p>当前已有 6 棵来源独立、结构不同的合格树木。下一阶段继续制作不同树冠结构、树干形态和光照细节的原创树木，不能只对同一棵树做微小变体凑数；达到每类 40 个可信样本后才启动 VJ-B2 训练。</p>
+        <h2>当前下一步：依据标准树档案生成第二批改进候选</h2>
+        <p>标准树档案与双边界比对器已经接入。当前合格样本仍少于 40 个，下一批候选必须保存完整生成参数，并优先学习已通过样本的结构范围；系统无法确定时才交给人工确认。</p>
       </section>
     </main>
   )

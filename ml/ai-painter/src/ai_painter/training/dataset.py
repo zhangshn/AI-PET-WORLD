@@ -16,11 +16,12 @@ MASK_NAMES = V0_MASK_CHANNELS
 
 
 class WorldSceneDataset:
-    def __init__(self, dataset_root: Path, split: str = "train", *, blueprint_version: str = "v0", allow_manual_review: bool = False) -> None:
+    def __init__(self, dataset_root: Path, split: str = "train", *, blueprint_version: str = "v0", allow_manual_review: bool = False, augment: bool = False) -> None:
         self.dataset_root = dataset_root.resolve()
         self.sample_ids = load_split(self.dataset_root, split)
         self.blueprint_version = blueprint_version
         self.allow_manual_review = allow_manual_review
+        self.augment = augment and split == "train"
         if blueprint_version not in {"v0", "v1"}:
             raise ValueError("blueprint_version must be v0 or v1")
         if not self.sample_ids:
@@ -45,6 +46,9 @@ class WorldSceneDataset:
             image_tensor(mask_dir / f"{name}.png", "L", torch, expected_channels=1)
             for name in channels
         ], dim=0)
+        if self.augment and bool(torch.rand(()) < 0.5):
+            condition = torch.flip(condition, dims=(2,))
+            target = torch.flip(target, dims=(2,))
         return {"sampleId": sample_id, "condition": condition, "target": target}
 
     def _ensure_v1_trainable(self, directory: Path) -> None:

@@ -235,6 +235,122 @@
 .qualityCard p, .qualityCard li { color: #849b90; font-size: 11px; line-height: 1.55; }
 .qualityCard ul { margin: 8px 0 0; padding-left: 18px; }
 
+.reviewSummary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.reviewSummary span {
+  padding: 8px 11px;
+  border: 1px solid #334b41;
+  background: #091512;
+  color: #8da399;
+  font-size: 12px;
+}
+
+.reviewSummary strong { margin-left: 6px; color: #e5c36f; }
+
+.reviewWorkspace {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  min-height: 620px;
+  border: 1px solid #2d443a;
+  background: #091310;
+}
+
+.reviewQueue {
+  max-height: 720px;
+  overflow-y: auto;
+  border-right: 1px solid #2d443a;
+}
+
+.reviewQueue button {
+  display: block;
+  width: 100%;
+  padding: 11px 13px;
+  border: 0;
+  border-bottom: 1px solid #20342c;
+  background: transparent;
+  color: #b4c8be;
+  text-align: left;
+  cursor: pointer;
+}
+
+.reviewQueue button:hover,
+.reviewQueueActive { background: #173127 !important; }
+.reviewQueue span { display: block; overflow-wrap: anywhere; }
+.reviewQueue small { display: block; margin-top: 4px; color: #c9a958; }
+.reviewDetail { padding: 18px; }
+.reviewDetail h3 { margin: 0 0 6px; }
+.reviewDetail > p { color: #8ba097; }
+
+.reviewImages {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+
+.reviewImages figure { margin: 0; padding: 9px; background: #07100e; }
+.reviewImages img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  image-rendering: pixelated;
+  background: repeating-conic-gradient(#17241f 0 25%, #0d1814 0 50%) 50% / 18px 18px;
+}
+.reviewImages figcaption { margin-top: 7px; color: #80978c; font-size: 11px; }
+
+.profilePanel,
+.comparisonPanel {
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px solid #304b40;
+  background: #0b1814;
+}
+
+.profilePanel h4,
+.comparisonPanel h4 { margin: 0 0 10px; color: #9ed5ad; }
+.profileGrid { display: grid; grid-template-columns: repeat(4, minmax(100px, 1fr)); gap: 8px; }
+.profileGrid div { padding: 9px; border: 1px solid #263d34; background: #07110e; }
+.profileGrid small { display: block; color: #718b80; }
+.profileGrid strong { display: block; margin-top: 4px; color: #e1c474; }
+.profilePanel details { margin-top: 10px; color: #8ba097; }
+.profilePanel pre { max-height: 260px; overflow: auto; padding: 10px; background: #06100d; color: #9ec6aa; font-size: 11px; }
+.comparisonPanel p, .comparisonPanel li { color: #9bb0a6; font-size: 12px; line-height: 1.6; }
+.referenceList { display: flex; flex-wrap: wrap; gap: 7px; }
+.referenceList span { padding: 6px 8px; background: #17291f; color: #b7d4c1; font-size: 11px; }
+
+.reviewForm label { display: block; margin-bottom: 7px; color: #c6d6ce; }
+.reviewForm textarea {
+  width: 100%;
+  min-height: 110px;
+  padding: 11px;
+  border: 1px solid #355449;
+  background: #07110e;
+  color: #dce9d7;
+  resize: vertical;
+}
+
+.reviewActions { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 10px; }
+.reviewActions button {
+  padding: 9px 14px;
+  border: 1px solid #45685a;
+  background: #173126;
+  color: #d5e6dc;
+  cursor: pointer;
+}
+.reviewActions button:nth-child(2) { border-color: #815454; background: #351e1e; }
+.reviewActions button:nth-child(3) { border-color: #7f6a3e; background: #332b19; }
+.reviewActions button:disabled { cursor: not-allowed; opacity: .45; }
+.reviewMessage { color: #d8b65f !important; }
+.reviewExisting { padding: 14px; border-left: 3px solid #78c997; background: #11271d; }
+.reviewExisting p { color: #b7cac0; }
+.reviewExisting small { color: #799086; }
+
 .tableScroll { overflow-x: auto; }
 
 .statusTable {
@@ -272,4 +388,8 @@
   .metrics, .assetCard { grid-template-columns: 1fr; }
   .assetMasks { grid-template-columns: repeat(2, 1fr); }
   .assetAudit { grid-template-columns: repeat(2, 1fr); }
+  .reviewWorkspace { grid-template-columns: 1fr; }
+  .reviewQueue { max-height: 260px; border-right: 0; border-bottom: 1px solid #2d443a; }
+  .reviewImages { grid-template-columns: repeat(2, 1fr); }
+  .profileGrid { grid-template-columns: repeat(2, 1fr); }
 }

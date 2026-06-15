@@ -22,7 +22,13 @@ def train(config: dict[str, object], *, dataset_root: Path, output_dir: Path, ma
         torch.cuda.manual_seed_all(seed)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    dataset = WorldSceneDataset(dataset_root, "train")
+    blueprint_version = str(config.get("blueprintVersion", "v0"))
+    allow_experimental_data = bool(config.get("allowExperimentalStructuralData", False))
+    dataset = WorldSceneDataset(
+        dataset_root, "train", blueprint_version=blueprint_version,
+        allow_manual_review=allow_experimental_data,
+        augment=bool(config.get("horizontalFlipAugmentation", False)),
+    )
     loader = torch.utils.data.DataLoader(
         dataset, batch_size=int(config.get("batchSize", 1)), shuffle=True,
         num_workers=0, pin_memory=device.type == "cuda",
@@ -32,7 +38,7 @@ def train(config: dict[str, object], *, dataset_root: Path, output_dir: Path, ma
     validation_ids = load_json(dataset_root / "indexes" / "validation.json").get("sampleIds", [])
     validation_loader = None
     if validation_ids:
-        validation_dataset = WorldSceneDataset(dataset_root, "validation")
+        validation_dataset = WorldSceneDataset(dataset_root, "validation", blueprint_version=blueprint_version, allow_manual_review=allow_experimental_data)
         validation_loader = torch.utils.data.DataLoader(
             validation_dataset, batch_size=int(config.get("batchSize", 1)), shuffle=False,
             num_workers=0, pin_memory=device.type == "cuda",
@@ -59,7 +65,7 @@ def train(config: dict[str, object], *, dataset_root: Path, output_dir: Path, ma
             context = torch.autocast(device_type="cuda", dtype=torch.float16) if use_amp else nullcontext()
             with context:
                 prediction = model(condition)
-                raw_loss, parts = build_image_loss(prediction, target, torch, config)
+                raw_loss, parts = build_image_loss(prediction, target, torch, config, condition)
                 loss = raw_loss / accumulation
             scaler.scale(loss).backward()
             if batch_index % accumulation == 0 or batch_index == len(loader):
@@ -116,6 +122,6 @@ def evaluate_loss(model, loader, device, torch, use_amp: bool, config: dict[str,
             target = batch["target"].to(device, non_blocking=True)
             context = torch.autocast(device_type="cuda", dtype=torch.float16) if use_amp else nullcontext()
             with context:
-                loss, _ = build_image_loss(model(condition), target, torch, config)
+                loss, _ = build_image_loss(model(condition), target, torch, config, condition)
                 total += float(loss.cpu())
     return total / len(loader)

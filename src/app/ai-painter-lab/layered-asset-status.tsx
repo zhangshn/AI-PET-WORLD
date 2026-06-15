@@ -118,7 +118,7 @@ export async function LayeredAssetStatus() {
                     {asset.visualReview.vjB.failureReasonsZh.length > 0 && (
                       <ul>{asset.visualReview.vjB.failureReasonsZh.map((reason) => <li key={reason}>{reason}</li>)}</ul>
                     )}
-                    <p>VJ-B2 学习型参考审核：尚未实现；正式训练资格：禁止。</p>
+                    <p>VJ-B2 标准库比对已接入；学习型模型权重尚未训练，正式训练资格仍禁止。</p>
                   </div>
                 )}
                 <div className={styles.assetMasks}>

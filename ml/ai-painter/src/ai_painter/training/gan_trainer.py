@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import random
 
-from .checkpoint import save_checkpoint
+from .checkpoint import load_checkpoint, save_checkpoint
 from .dataset import WorldSceneDataset
 from .discriminator import build_patch_discriminator
 from .losses import build_image_loss
@@ -13,16 +13,24 @@ from .model import build_tiny_unet
 from .torch_runtime import require_torch
 
 
-def train_gan(config: dict[str, object], *, dataset_root: Path, output_dir: Path, epochs: int) -> dict[str, object]:
+def train_gan(config: dict[str, object], *, dataset_root: Path, output_dir: Path, epochs: int, initial_checkpoint: Path | None = None) -> dict[str, object]:
     torch = require_torch()
     seed = int(config.get("seed", 20260612))
     random.seed(seed); torch.manual_seed(seed); torch.cuda.manual_seed_all(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    dataset = WorldSceneDataset(dataset_root, "train")
+    blueprint_version = str(config.get("blueprintVersion", "v0"))
+    dataset = WorldSceneDataset(
+        dataset_root, "train", blueprint_version=blueprint_version,
+        allow_manual_review=bool(config.get("allowExperimentalStructuralData", False)),
+        augment=bool(config.get("horizontalFlipAugmentation", False)),
+    )
     loader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=True, num_workers=0)
     model_config = json.loads(Path(str(config["modelConfig"])).read_text(encoding="utf-8"))
     generator = build_tiny_unet(model_config).to(device)
-    discriminator = build_patch_discriminator(base=16).to(device)
+    if initial_checkpoint is not None:
+        load_checkpoint(initial_checkpoint, model=generator, device=device)
+    condition_channels = int(model_config.get("inputChannels", 8))
+    discriminator = build_patch_discriminator(condition_channels=condition_channels, base=16).to(device)
     generator_optimizer = torch.optim.Adam(generator.parameters(), lr=0.0002, betas=(0.5, 0.999), foreach=False)
     discriminator_optimizer = torch.optim.Adam(discriminator.parameters(), lr=0.0001, betas=(0.5, 0.999), foreach=False)
     adversarial = torch.nn.BCEWithLogitsLoss()
@@ -57,7 +65,7 @@ def train_gan(config: dict[str, object], *, dataset_root: Path, output_dir: Path
             with context:
                 fake = generator(condition)
                 fake_score = discriminator(torch.cat((condition, fake), dim=1))
-                reconstruction, _ = build_image_loss(fake, target, torch, config)
+                reconstruction, _ = build_image_loss(fake, target, torch, config, condition)
                 generator_loss = reconstruction + adversarial(fake_score, torch.ones_like(fake_score)) * 0.05
             scaler.scale(generator_loss).backward(); scaler.step(generator_optimizer); scaler.update()
             generator_total += float(generator_loss.detach().cpu())
@@ -73,6 +81,6 @@ def train_gan(config: dict[str, object], *, dataset_root: Path, output_dir: Path
             best_generator_loss = average_generator
             save_checkpoint(output_dir / "best.pt", model=generator, optimizer=generator_optimizer, epoch=epoch, step=step, loss=average_generator, config=config)
 
-    summary = {"status":"completed","epochs":epochs,"steps":step,"bestGeneratorLoss":best_generator_loss,"device":str(device),"sampleCount":len(dataset)}
+    summary = {"status":"completed","epochs":epochs,"steps":step,"bestGeneratorLoss":best_generator_loss,"device":str(device),"sampleCount":len(dataset),"initializedFrom":str(initial_checkpoint.resolve()) if initial_checkpoint else None}
     (output_dir / "training-summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     return summary

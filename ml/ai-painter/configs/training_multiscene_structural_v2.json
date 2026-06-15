@@ -1,0 +1,28 @@
+{
+  "trainingVersion": "training-multiscene-structural-v2",
+  "batchSize": 2,
+  "gradientAccumulationSteps": 2,
+  "learningRate": 0.0002,
+  "maxEpochs": 180,
+  "mixedPrecision": true,
+  "horizontalFlipAugmentation": true,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 0.55,
+    "texture": 0.25
+  },
+  "structureWeights": {
+    "water": 0.5,
+    "shoreline": 1.5,
+    "road": 2.0,
+    "roadEdge": 1.5,
+    "tree": 1.0,
+    "rock": 1.0,
+    "shelterFoundation": 5.0,
+    "shelterWall": 6.0,
+    "shelterRoof": 6.0,
+    "constructionMaterial": 3.0
+  },
+  "seed": 20260615,
+  "status": "experimental_structure_weighted"
+}

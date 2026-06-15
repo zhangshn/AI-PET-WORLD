@@ -30,7 +30,13 @@ def judge_single_asset(asset_dir: Path) -> dict[str, Any]:
     reasons = [_reason(name) for name, passed in checks.items() if not passed]
     vj_a_passed = all(checks.values())
     masks = _load_masks(asset_dir, metadata)
-    vj_b1 = judge_target_quality_proxy(sprite, masks, metadata.get("category", ""), vj_a_passed)
+    vj_b1 = judge_target_quality_proxy(
+        sprite,
+        masks,
+        metadata.get("category", ""),
+        vj_a_passed,
+        metadata.get("visualProfile", "default"),
+    )
     report = {
         "schemaVersion": "single-asset-visual-review-v1",
         "policyVersion": POLICY_VERSION,

@@ -30,6 +30,29 @@ class SingleAssetVisualJudgeBTests(unittest.TestCase):
         self.assertFalse(result["approvedForTraining"])
         self.assertEqual(result["vjB2LearnedJudgeStatus"], "not_implemented")
 
+    def test_sparse_tree_uses_explicit_edge_profile(self) -> None:
+        sprite = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
+        trunk = Image.new("L", sprite.size, 0)
+        crown = Image.new("L", sprite.size, 0)
+
+        default = judge_target_quality_proxy(
+            sprite,
+            {"tree_trunk": trunk, "tree_crown": crown},
+            "tree",
+            True,
+        )
+        sparse = judge_target_quality_proxy(
+            sprite,
+            {"tree_trunk": trunk, "tree_crown": crown},
+            "tree",
+            True,
+            "sparse_tree",
+        )
+
+        self.assertEqual(default["internalEdgeRange"], [0.07, 0.48])
+        self.assertEqual(sparse["internalEdgeRange"], [0.07, 0.58])
+        self.assertEqual(sparse["visualProfile"], "sparse_tree")
+
 
 if __name__ == "__main__":
     unittest.main()

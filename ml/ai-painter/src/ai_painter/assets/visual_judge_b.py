@@ -14,16 +14,18 @@ def judge_target_quality_proxy(
     masks: dict[str, Image.Image],
     category: str,
     vj_a_passed: bool,
+    visual_profile: str = "default",
 ) -> dict[str, Any]:
     metrics = _measure(sprite, masks)
     required_channels = _required_channels(category)
+    internal_edge_range = _internal_edge_range(category, visual_profile)
     checks = {
         "vj_a_passed": vj_a_passed,
         "category_profile_available": bool(required_channels),
         "category_layers_complete": required_channels.issubset(masks),
         "palette_richness": metrics["paletteColorCount"] >= 24,
         "dominant_color_control": metrics["dominantColorRatio"] <= 0.28,
-        "internal_detail_density": 0.07 <= metrics["internalEdgeDensity"] <= 0.48,
+        "internal_detail_density": internal_edge_range[0] <= metrics["internalEdgeDensity"] <= internal_edge_range[1],
         "highlight_shadow_balance": metrics["shadowRatio"] >= 0.08 and metrics["highlightRatio"] >= 0.06,
         "silhouette_complexity": 0.045 <= metrics["silhouetteEdgeDensity"] <= 0.22,
         "material_layer_separation": metrics["minimumLayerColorDistance"] >= 28,
@@ -35,6 +37,8 @@ def judge_target_quality_proxy(
         "status": "passed" if all(checks.values()) else "failed",
         "checks": checks,
         "metrics": metrics,
+        "visualProfile": visual_profile,
+        "internalEdgeRange": list(internal_edge_range),
         "failureReasonsZh": reasons,
         "vjB2LearnedJudgeStatus": "not_implemented",
         "approvedForTraining": False,
@@ -83,6 +87,12 @@ def _required_channels(category: str) -> set[str]:
         "rock": {"rock"},
         "construction_material": {"construction_material"},
     }.get(category, set())
+
+
+def _internal_edge_range(category: str, visual_profile: str) -> tuple[float, float]:
+    if category == "tree" and visual_profile == "sparse_tree":
+        return 0.07, 0.58
+    return 0.07, 0.48
 
 
 def _masked_mean_rgb(sprite: Image.Image, mask: Image.Image) -> tuple[float, float, float]:

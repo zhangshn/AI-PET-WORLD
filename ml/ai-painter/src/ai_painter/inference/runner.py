@@ -8,7 +8,8 @@ import numpy as np
 from PIL import Image
 
 from ai_painter.training.checkpoint import load_checkpoint
-from ai_painter.training.dataset import MASK_NAMES, image_tensor
+from ai_painter.blueprint.channels import V0_MASK_CHANNELS, V1_CONDITION_CHANNELS
+from ai_painter.training.dataset import image_tensor
 from ai_painter.training.model import build_tiny_unet
 from ai_painter.training.torch_runtime import require_torch
 
@@ -27,10 +28,10 @@ def run_inference(*, checkpoint_path: Path, dataset_root: Path, sample_id: str, 
     sample_dir = dataset_root.resolve() / "accepted" / "dataset_v0" / "scene" / "world" / sample_id
     if not sample_dir.is_dir():
         raise FileNotFoundError(f"scene sample not found: {sample_id}")
-    condition = torch.cat([
-        image_tensor(sample_dir / "masks" / f"{name}.png", "L", torch)
-        for name in MASK_NAMES
-    ], dim=0).unsqueeze(0).to(device)
+    blueprint_version = str(training_config.get("blueprintVersion", "v0"))
+    mask_dir = sample_dir / ("masks_v1" if blueprint_version == "v1" else "masks")
+    channels = V1_CONDITION_CHANNELS if blueprint_version == "v1" else V0_MASK_CHANNELS
+    condition = torch.cat([image_tensor(mask_dir / f"{name}.png", "L", torch) for name in channels], dim=0).unsqueeze(0).to(device)
 
     with torch.inference_mode():
         prediction = model(condition)[0].clamp(0, 1).mul(255).byte().cpu()

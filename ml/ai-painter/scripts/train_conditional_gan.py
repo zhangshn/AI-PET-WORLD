@@ -12,10 +12,15 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--model-config", type=Path, default=Path("ml/ai-painter/configs/model_tiny_unet_gan_v0.json"))
     parser.add_argument("--epochs", type=int, default=200)
+    parser.add_argument("--blueprint-version", choices=("v0", "v1"), default="v0")
+    parser.add_argument("--allow-experimental-structural-data", action="store_true")
+    parser.add_argument("--initial-checkpoint", type=Path)
     args = parser.parse_args()
     config = json.loads(args.config.read_text(encoding="utf-8"))
     config["modelConfig"] = str(args.model_config.resolve())
-    result = train_gan(config, dataset_root=args.dataset_root, output_dir=args.output_dir, epochs=args.epochs)
+    config["blueprintVersion"] = args.blueprint_version
+    config["allowExperimentalStructuralData"] = args.allow_experimental_structural_data
+    result = train_gan(config, dataset_root=args.dataset_root, output_dir=args.output_dir, epochs=args.epochs, initial_checkpoint=args.initial_checkpoint)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
 

@@ -7,6 +7,7 @@ from typing import Any
 from PIL import Image, ImageChops
 
 from ai_painter.dataset.hashing import sha256_file
+from .tree_profile import build_tree_drawing_profile
 
 SCHEMA_VERSION = "layered-pixel-asset-v1"
 SUPPORTED_CHANNELS = {
@@ -48,6 +49,7 @@ def build_layered_asset(manifest_path: Path, output_root: Path) -> dict[str, Any
         "schemaVersion": SCHEMA_VERSION,
         "assetId": asset_id,
         "category": manifest["category"],
+        "visualProfile": manifest.get("visualProfile", "default"),
         "size": list(size),
         "anchor": manifest["anchor"],
         "layers": layer_records,
@@ -61,6 +63,13 @@ def build_layered_asset(manifest_path: Path, output_root: Path) -> dict[str, Any
     (output_dir / "metadata.json").write_text(
         json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8",
     )
+    if manifest["category"] == "tree":
+        profile = build_tree_drawing_profile(
+            asset_id, sprite, masks, manifest.get("drawingSpec"),
+        )
+        (output_dir / "drawing-profile.json").write_text(
+            json.dumps(profile, ensure_ascii=False, indent=2) + "\n", encoding="utf-8",
+        )
     return metadata
 
 
