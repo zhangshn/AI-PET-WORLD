@@ -1,0 +1,28 @@
+{
+  "trainingVersion": "training-rgb-refiner-v4",
+  "modelVersion": "rgb-residual-refiner-v4",
+  "inputChannels": 17,
+  "baseChannels": 48,
+  "residualBlocks": 6,
+  "residualScale": 0.35,
+  "batchSize": 2,
+  "learningRate": 0.00015,
+  "maxEpochs": 220,
+  "mixedPrecision": true,
+  "residualPenalty": 0.08,
+  "lossWeights": { "l1": 1.0, "edge": 1.2, "texture": 0.8 },
+  "structureWeights": {
+    "water": 0.5,
+    "shoreline": 1.5,
+    "road": 2.0,
+    "roadEdge": 1.5,
+    "tree": 1.0,
+    "rock": 1.0,
+    "shelterFoundation": 6.0,
+    "shelterWall": 7.0,
+    "shelterRoof": 7.0,
+    "constructionMaterial": 4.0
+  },
+  "seed": 20260616,
+  "status": "local_rgb_detail_refinement"
+}

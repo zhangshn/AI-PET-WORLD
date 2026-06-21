@@ -27,6 +27,34 @@ The world page can only show `ApprovedFrame`.
 
 No candidate image, sketch, debug view, or programmatic drawing may be shown to the player.
 
+## AI Painter Hard Boundary
+
+Local AI Painter training trains local model weights. It does not train a drawing program.
+
+The formal route is:
+
+```txt
+project-owned training images
+-> Blueprint / Mask / rights records
+-> local PyTorch model training
+-> local model inference PNG
+-> VisualJudge
+-> ApprovedFrame
+```
+
+The following are not allowed as MVP world output, training conclusions, or `/world` display sources:
+
+```txt
+programmatic drawing
+SVG / Canvas / HTML / CSS render
+template image
+structure-fit debug preview
+fixed asset composition
+placeholder image
+```
+
+If a generated image does not come from the local model and pass VisualJudge, it must stay hidden.
+
 ## Training Data Chain
 
 ```txt
@@ -45,6 +73,30 @@ Current formal architecture documents:
 ```txt
 docs/AI_PET_WORLD_MASTER_ARCHITECTURE.md
 ```
+
+## Current Execution Plan
+
+The current main task is local model quality improvement for `natural-home RGB Refiner`.
+
+This stage only trains pure natural home scenes:
+
+- Allowed: grass, water, shoreline, natural paths, trees, rocks, flowers, shrubs, depth.
+- Forbidden: buildings, houses, construction sites, construction materials, characters, animals, insects, butler.
+- The output is only a local model candidate. It cannot be shown in `/world` unless it passes VisualJudge and becomes an `ApprovedFrame`.
+
+Current status:
+
+- Two local GPU training rounds have been diagnosed.
+- The first round is the known best result so far.
+- The second round regressed after stronger edge/texture weights.
+- The formal config has been restored to the known-best setup.
+- The next step is data improvement or model-capacity improvement, not more program drawing and not blind loss-weight escalation.
+
+Backup plans are documented but must not interrupt the current main task:
+
+- Training Result Diagnoser: explain why a local model output failed.
+- Next Training Planner: decide whether to add data, change loss weights, change training config, or retry inference.
+- Autonomous Training Loop: inference -> judge -> diagnose -> plan -> retrain.
 
 ## Current API
 

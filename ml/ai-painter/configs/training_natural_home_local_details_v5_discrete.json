@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "ai-painter-training-natural-home-local-details-v5-discrete",
+  "inputChannels": 14,
+  "paletteSize": 64,
+  "baseChannels": 32,
+  "batchSize": 4,
+  "learningRate": 0.0003,
+  "weightDecay": 0.0001,
+  "maxEpochs": 24,
+  "mixedPrecision": true
+}

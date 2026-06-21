@@ -1,0 +1,36 @@
+{
+  "trainingVersion": "training-natural-home-local-details-v14-single-source-compose",
+  "modelVersion": "natural-home-local-detail-unet-v14-single-source-compose",
+  "inputChannels": 16,
+  "inputExtras": ["coord"],
+  "outputChannels": 3,
+  "baseChannels": 48,
+  "batchSize": 2,
+  "learningRate": 0.00032,
+  "maxEpochs": 240,
+  "mixedPrecision": true,
+  "augment": false,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 3.0,
+    "texture": 2.4,
+    "laplacian": 1.8,
+    "gradient": 1.4,
+    "colorRange": 0.15
+  },
+  "structureWeights": {
+    "grass": 2.0,
+    "water": 2.4,
+    "shoreline": 3.4,
+    "road": 3.4,
+    "roadEdge": 3.2,
+    "tree": 3.8,
+    "rock": 3.2,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260619,
+  "status": "pure_natural_home_single_source_full_scene_composition_training"
+}

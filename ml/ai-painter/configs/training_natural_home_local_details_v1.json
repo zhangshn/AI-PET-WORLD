@@ -1,0 +1,32 @@
+{
+  "trainingVersion": "training-natural-home-local-details-v1",
+  "modelVersion": "natural-home-local-detail-unet-v1",
+  "inputChannels": 14,
+  "outputChannels": 3,
+  "baseChannels": 32,
+  "batchSize": 8,
+  "learningRate": 0.00025,
+  "maxEpochs": 32,
+  "mixedPrecision": true,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 1.8,
+    "texture": 1.2,
+    "laplacian": 0.7
+  },
+  "structureWeights": {
+    "grass": 1.6,
+    "water": 2.0,
+    "shoreline": 3.0,
+    "road": 2.6,
+    "roadEdge": 2.4,
+    "tree": 3.2,
+    "rock": 2.8,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260618,
+  "status": "pure_natural_home_local_detail_training"
+}

@@ -1,0 +1,31 @@
+{
+  "trainingVersion": "training-structure-guided-natural-home-v1",
+  "modelVersion": "structure-guided-unet-natural-home-v1",
+  "inputChannels": 14,
+  "structureChannels": 14,
+  "baseChannels": 32,
+  "batchSize": 2,
+  "learningRate": 0.0002,
+  "maxEpochs": 120,
+  "mixedPrecision": true,
+  "structureLossWeight": 3.2,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 0.65,
+    "texture": 0.28
+  },
+  "structureWeights": {
+    "water": 1.8,
+    "shoreline": 2.2,
+    "road": 1.8,
+    "roadEdge": 1.7,
+    "tree": 1.6,
+    "rock": 1.3,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260616,
+  "status": "local_structure_supervision_natural_home"
+}

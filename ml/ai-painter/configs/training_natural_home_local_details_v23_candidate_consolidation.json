@@ -1,0 +1,39 @@
+{
+  "trainingVersion": "training-natural-home-local-details-v23-candidate-consolidation",
+  "modelVersion": "natural-home-local-detail-unet-v23-candidate-consolidation",
+  "inputChannels": 28,
+  "inputExtras": ["coord", "source", "style"],
+  "outputChannels": 3,
+  "baseChannels": 88,
+  "batchSize": 2,
+  "learningRate": 0.00012,
+  "maxEpochs": 420,
+  "mixedPrecision": true,
+  "augment": false,
+  "upsampleMode": "transpose",
+  "midBlocks": 2,
+  "decoderDetailBlocks": 4,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 5.8,
+    "texture": 5.0,
+    "laplacian": 4.8,
+    "gradient": 3.4,
+    "colorRange": 0.18
+  },
+  "structureWeights": {
+    "grass": 2.8,
+    "water": 4.0,
+    "shoreline": 5.6,
+    "road": 4.4,
+    "roadEdge": 4.4,
+    "tree": 5.2,
+    "rock": 4.7,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260623,
+  "status": "pure_natural_home_candidate_consolidation_training"
+}

@@ -1,0 +1,39 @@
+{
+  "trainingVersion": "training-natural-home-local-details-v20-multisource-generalization",
+  "modelVersion": "natural-home-local-detail-unet-v20-multisource-generalization",
+  "inputChannels": 28,
+  "inputExtras": ["coord", "source", "style"],
+  "outputChannels": 3,
+  "baseChannels": 72,
+  "batchSize": 2,
+  "learningRate": 0.00016,
+  "maxEpochs": 320,
+  "mixedPrecision": true,
+  "augment": false,
+  "upsampleMode": "transpose",
+  "midBlocks": 2,
+  "decoderDetailBlocks": 2,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 5.0,
+    "texture": 4.2,
+    "laplacian": 4.0,
+    "gradient": 2.8,
+    "colorRange": 0.18
+  },
+  "structureWeights": {
+    "grass": 2.4,
+    "water": 3.3,
+    "shoreline": 4.5,
+    "road": 4.2,
+    "roadEdge": 4.2,
+    "tree": 4.8,
+    "rock": 4.2,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260620,
+  "status": "pure_natural_home_multisource_generalization_training"
+}

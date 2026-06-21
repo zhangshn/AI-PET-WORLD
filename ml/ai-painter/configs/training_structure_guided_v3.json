@@ -1,0 +1,27 @@
+{
+  "trainingVersion": "training-structure-guided-v3",
+  "modelVersion": "structure-guided-unet-v3",
+  "inputChannels": 14,
+  "structureChannels": 14,
+  "baseChannels": 32,
+  "batchSize": 2,
+  "learningRate": 0.0002,
+  "maxEpochs": 160,
+  "mixedPrecision": true,
+  "structureLossWeight": 3.0,
+  "lossWeights": { "l1": 1.0, "edge": 0.55, "texture": 0.2 },
+  "structureWeights": {
+    "water": 0.5,
+    "shoreline": 1.5,
+    "road": 2.0,
+    "roadEdge": 1.5,
+    "tree": 1.0,
+    "rock": 1.0,
+    "shelterFoundation": 5.0,
+    "shelterWall": 6.0,
+    "shelterRoof": 6.0,
+    "constructionMaterial": 3.0
+  },
+  "seed": 20260615,
+  "status": "local_structure_supervision"
+}

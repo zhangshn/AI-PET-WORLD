@@ -47,15 +47,9 @@ export function buildWorldVisualApprovedFrame(input: {
   if (!isApprovedImageFormat(input.aiImageCandidate.imageFormat)) return null
   if (!isApprovedLicense(input.aiImageCandidate.license)) return null
   if (!input.aiImageCandidate.originalityConfirmed) return null
-  if (!factManifestBindsGenerationCondition(input.factManifest, input.generationCondition)) {
-    return null
-  }
-  if (!candidateBindsWorld(input.aiImageCandidate, input.generationCondition)) {
-    return null
-  }
-  if (!candidateBindsGenerationCondition(input.aiImageCandidate, input.generationCondition)) {
-    return null
-  }
+  if (!factManifestBindsGenerationCondition(input.factManifest, input.generationCondition)) return null
+  if (!candidateBindsWorld(input.aiImageCandidate, input.generationCondition)) return null
+  if (!candidateBindsGenerationCondition(input.aiImageCandidate, input.generationCondition)) return null
   if (!candidateUsesFormalSourceKind(input.aiImageCandidate)) return null
   if (
     !candidateBindsGenerationRequest(
@@ -86,12 +80,9 @@ export function buildWorldVisualApprovedFrame(input: {
   if (input.reviewReport.score < MIN_APPROVAL_SCORE) return null
   if (!requiredReviewChecksPassed(input.reviewReport)) return null
   if (!vj2NotImplementedCheckPresent(input.reviewReport)) return null
-  if (!imageInspectionSummaryCanApprove(input.reviewReport, input.aiImageCandidate)) {
-    return null
-  }
+  if (!imageInspectionSummaryCanApprove(input.reviewReport, input.aiImageCandidate)) return null
 
   const imageInspectionSummary = input.reviewReport.imageInspectionSummary
-
   const approvedFrame: RuntimeBoundApprovedFrame = {
     frameId: `approved-frame-${input.factManifest.worldId}-${input.factManifest.tick}`,
     worldId: input.factManifest.worldId,
@@ -106,8 +97,7 @@ export function buildWorldVisualApprovedFrame(input: {
     sourceImageSha256: imageInspectionSummary.sha256,
     sourceImageByteLength: imageInspectionSummary.byteLength,
     sourceImageContentType: imageInspectionSummary.contentType,
-    sourceImagePayloadQualityPassed:
-      imageInspectionSummary.payloadQualityPassed,
+    sourceImagePayloadQualityPassed: imageInspectionSummary.payloadQualityPassed,
     approvalScope: "approved_for_controlled_mvp",
     productionApprovalStatus: "not_approved_for_production",
     approvedForProduction: false,
@@ -116,7 +106,7 @@ export function buildWorldVisualApprovedFrame(input: {
     vj2Status: "vj_2_not_implemented",
     canShowToPlayer: true,
     approvalReason: {
-      zh: "AI 位图候选图已通过 VJ-0 文件事实闸门和 VJ-1 确定性视觉质量检查；VJ-2 尚未实现，因此该帧仅为受控 MVP ApprovedFrame。",
+      zh: "AI 位图候选图已通过 VJ-0 文件/事实硬闸门和 VJ-1 确定性视觉质量检查；VJ-2 尚未实现，因此该帧仅作为受控 MVP ApprovedFrame。",
       en: "The AI bitmap candidate passed VJ-0 file/fact gates and VJ-1 deterministic visual-quality checks; VJ-2 is not implemented, so this remains a controlled MVP ApprovedFrame.",
     },
     sourceFactIds: input.factManifest.sourceFactIds,
@@ -169,10 +159,7 @@ function vj2NotImplementedCheckPresent(
   const checkMap = new Map(reviewReport.checks.map((check) => [check.id, check]))
   const vj2 = checkMap.get("vj_2_not_implemented")
 
-  return (
-    vj2?.passed === false &&
-    vj2.tags.includes("not_implemented")
-  )
+  return vj2?.passed === false && vj2.tags.includes("not_implemented")
 }
 
 function imageInspectionSummaryCanApprove(

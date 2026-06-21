@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "ai-painter-training-discrete-assets-v6",
+  "inputChannels": 14,
+  "paletteSize": 48,
+  "baseChannels": 32,
+  "batchSize": 4,
+  "learningRate": 0.0003,
+  "weightDecay": 0.0001,
+  "maxEpochs": 100,
+  "mixedPrecision": true
+}

@@ -1,0 +1,6 @@
+import Link from "next/link"
+import styles from "../detail.module.css"
+
+export default function RGBRefinerPage() {
+  return <main className={styles.page}><header className={styles.header}><Link className={styles.back} href="/ai-painter-progress">← 返回训练主页</Link><p className={styles.kicker}>STAGE 04 / RGB DETAIL REFINER</p><h1>RGB 像素细节生成</h1><p>冻结 Stage 03 的结构模型，只训练独立残差细化器。该模型可以增强边缘、材质和颜色，但不能移动建筑、道路或水域。</p><dl className={styles.metrics}><div><dt>训练</dt><dd>220 Epoch</dd></div><div><dt>细化器</dt><dd>Residual CNN</dd></div><div><dt>验证损失</dt><dd>0.3027</dd></div><div><dt>世界展示</dt><dd>继续阻断</dd></div></dl></header><section className={styles.resultGrid}><article className={styles.resultCard}><span className={styles.fail}>视觉审核未通过</span><h2>Stage 03 基础 RGB</h2><p>结构已经保留，但画面仍然平均化和模糊。</p><img src="/api/ai-painter/structure-guided-inference/generated" alt="结构模型基础 RGB" /></article><article className={styles.resultCard}><span className={styles.fail}>细节审核未通过</span><h2>Stage 04 细化 RGB</h2><p>边缘仅有轻微增强，建筑仍然模糊，与目标像素画面差距明显。</p><img src="/api/ai-painter/rgb-refiner-inference" alt="RGB 细化模型输出" /></article></section><section className={styles.panel}><h2>审核结论与下一步</h2><p>结构模型继续保留，当前残差细化器不进入正式链路。下一阶段需要提高有效训练分辨率，并把建筑、树木、道路等局部资产作为独立细节监督，而不是继续重复相同的全图训练。</p></section></main>
+}

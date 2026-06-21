@@ -1,0 +1,38 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v1-best-so-far",
+  "modelVersion": "rgb-residual-refiner-natural-home-v1",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 10,
+  "residualScale": 0.36,
+  "batchSize": 2,
+  "learningRate": 0.0001,
+  "maxEpochs": 220,
+  "mixedPrecision": true,
+  "residualPenalty": 0.025,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 2.25,
+    "texture": 1.65
+  },
+  "structureWeights": {
+    "water": 1.8,
+    "shoreline": 2.2,
+    "road": 1.8,
+    "roadEdge": 1.7,
+    "tree": 1.7,
+    "rock": 1.4,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "knownBestMetrics": {
+    "sharpnessRatio": 0.419351,
+    "edgeDensityRatio": 0.522606,
+    "mae": 0.044148,
+    "source": "2026-06-17 first diagnosis-improved run"
+  },
+  "seed": 20260617,
+  "status": "local_rgb_detail_refinement_natural_home_only_best_so_far"
+}

@@ -1,0 +1,26 @@
+{
+  "trainingVersion": "training-local-assets-v5",
+  "modelVersion": "local-asset-unet-v5",
+  "inputChannels": 14,
+  "outputChannels": 3,
+  "baseChannels": 32,
+  "batchSize": 4,
+  "learningRate": 0.0002,
+  "maxEpochs": 140,
+  "mixedPrecision": true,
+  "lossWeights": { "l1": 1.0, "edge": 1.4, "texture": 1.0 },
+  "structureWeights": {
+    "water": 1.5,
+    "shoreline": 3.0,
+    "road": 3.0,
+    "roadEdge": 2.5,
+    "tree": 2.5,
+    "rock": 1.0,
+    "shelterFoundation": 7.0,
+    "shelterWall": 8.0,
+    "shelterRoof": 8.0,
+    "constructionMaterial": 5.0
+  },
+  "seed": 20260616,
+  "status": "local_asset_high_resolution_supervision"
+}

@@ -10,6 +10,7 @@ import shutil
 
 from ai_painter.blueprint.v1_masks import render_v1_masks_from_file
 from ai_painter.blueprint.v1_validator import validate_v1_blueprint_data
+from multiscene_expansion_specs import EXPANSION_SCENES
 
 
 def main() -> int:
@@ -20,6 +21,7 @@ def main() -> int:
     source_root = args.source_root.resolve()
     output_root = args.output_root.resolve()
     specs = load_preserved_specs(Path("ml/ai-painter/scripts/relabel_engineering_batch_01.py"))
+    specs.update(EXPANSION_SCENES)
     if output_root.exists():
         shutil.rmtree(output_root)
     scene_root = output_root / "accepted" / "dataset_v0" / "scene" / "world"
@@ -51,7 +53,7 @@ def main() -> int:
         }
         (sample_dir / "metadata.json").write_text(json.dumps(metadata, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         results.append(scene_id)
-    train_ids, validation_ids = results[:10], results[10:]
+    train_ids, validation_ids = results[:16], results[16:]
     indexes = output_root / "indexes"
     indexes.mkdir()
     write_index(indexes / "train.json", "train", train_ids)
@@ -109,7 +111,7 @@ def build_blueprint(scene_id: str, spec: dict[str, object]) -> dict[str, object]
         box("shelter-foundation-main", "shelter_foundation", x, y + height * 3 // 4, width, max(7, height // 4), 50),
         box("shelter-wall-main", "shelter_wall", x, y + height // 5, width, max(8, height * 3 // 5), 51),
     ])
-    if scene_id in {"scene-world-2-d16f635d", "scene-world-6-baed2f27", "scene-world-9-1a418b26", "scene-world-11-e0e7975b"}:
+    if scene_id in {"scene-world-2-d16f635d", "scene-world-6-baed2f27", "scene-world-9-1a418b26", "scene-world-11-e0e7975b"} or bool(spec.get("hasRoof")):
         structures.append(box("shelter-roof-main", "shelter_roof", x, y, width, max(8, height // 3), 52))
     for index, values in enumerate(spec["materials"], 1):
         structures.append(box(f"construction-material-{index}", "construction_material", *values, 70))

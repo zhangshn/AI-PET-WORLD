@@ -1,0 +1,36 @@
+{
+  "trainingVersion": "training-natural-home-local-details-v7-source-curriculum",
+  "modelVersion": "natural-home-local-detail-unet-v7-source-curriculum",
+  "inputChannels": 16,
+  "inputExtras": ["coord"],
+  "outputChannels": 3,
+  "baseChannels": 48,
+  "batchSize": 4,
+  "learningRate": 0.0003,
+  "maxEpochs": 180,
+  "mixedPrecision": true,
+  "augment": false,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 2.6,
+    "texture": 2.0,
+    "laplacian": 1.4,
+    "gradient": 1.0,
+    "colorRange": 0.15
+  },
+  "structureWeights": {
+    "grass": 2.0,
+    "water": 2.4,
+    "shoreline": 3.4,
+    "road": 3.0,
+    "roadEdge": 3.0,
+    "tree": 3.8,
+    "rock": 3.2,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260618,
+  "status": "pure_natural_home_source_curriculum_training"
+}

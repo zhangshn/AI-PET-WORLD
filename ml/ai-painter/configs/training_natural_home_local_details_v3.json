@@ -1,0 +1,35 @@
+{
+  "trainingVersion": "training-natural-home-local-details-v3",
+  "modelVersion": "natural-home-local-detail-unet-v3-seeded-texture",
+  "inputChannels": 17,
+  "inputExtras": ["coord", "noise"],
+  "outputChannels": 3,
+  "baseChannels": 48,
+  "batchSize": 8,
+  "learningRate": 0.00025,
+  "maxEpochs": 48,
+  "mixedPrecision": true,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 2.4,
+    "texture": 1.8,
+    "laplacian": 1.2,
+    "gradient": 0.9,
+    "colorRange": 0.1
+  },
+  "structureWeights": {
+    "grass": 2.0,
+    "water": 2.4,
+    "shoreline": 3.4,
+    "road": 3.0,
+    "roadEdge": 3.0,
+    "tree": 3.8,
+    "rock": 3.2,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260618,
+  "status": "pure_natural_home_local_detail_training_v3_seeded_texture"
+}

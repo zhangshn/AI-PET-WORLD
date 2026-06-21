@@ -1,8 +1,11 @@
-import { readWorldVisualImageModelStatus } from "./internal-image-model"
 import { buildWorldVisualApprovedFrame } from "./approved-frame"
 import { buildWorldVisualAssetPlan } from "./asset-plan"
 import { buildWorldVisualAuthorizedDataManifest } from "./authorized-data"
 import { buildWorldVisualCompositionPlan } from "./composition-plan"
+import {
+  generateWorldVisualCandidateFromInternalModel,
+  readWorldVisualImageModelStatus,
+} from "./internal-image-model"
 import { buildWorldVisualMotionPlan } from "./motion-plan"
 import { buildWorldVisualGenerationCondition } from "./world-generation-condition"
 import { buildWorldVisualSceneIntent } from "./scene-intent"
@@ -67,8 +70,14 @@ export async function buildWorldVisualPainterDecision(
     imageModelStatus,
     latestFixPlan,
   })
-  const aiImageGenerationRequest = null
-  const aiImageCandidate = null
+  const generatedImage = imageModelStatus.canGenerate
+    ? await generateWorldVisualCandidateFromInternalModel({
+        factManifest,
+        generationCondition,
+      })
+    : null
+  const aiImageGenerationRequest = generatedImage?.request ?? null
+  const aiImageCandidate = generatedImage?.candidate ?? null
   const reviewReport = await buildWorldVisualReviewReport({
     factManifest,
     generationCondition,
@@ -93,12 +102,12 @@ export async function buildWorldVisualPainterDecision(
     currentStage: approvedFrame ? "approved_frame" : "ai_image_candidate",
     reason: approvedFrame
       ? {
-          zh: "AI 位图候选图已通过 VJ-0 硬闸门并生成 ApprovedFrame，可以进入 Runtime Render。",
-          en: "The AI bitmap candidate passed the VJ-0 hard gate and produced ApprovedFrame, so it may enter Runtime Render.",
+          zh: "AI 位图候选图已通过 VJ-0/VJ-1 审核并生成受控 MVP ApprovedFrame，可以进入 Runtime Render。",
+          en: "The AI bitmap candidate passed VJ-0/VJ-1 and produced a controlled MVP ApprovedFrame, so it may enter Runtime Render.",
         }
       : {
-          zh: "正式世界画面必须由项目内部模型根据 WorldGenerationCondition 产出位图候选图，并通过 VisualJudge 后生成 ApprovedFrame。当前还没有合格候选图，禁止展示。",
-          en: "Formal world rendering requires the internal model to produce a bitmap candidate from WorldGenerationCondition and pass VisualJudge before ApprovedFrame exists. No qualified candidate exists now, so display is blocked.",
+          zh: "正式世界画面必须由项目内部模型根据 WorldGenerationCondition 产出位图候选图，并通过 VisualJudge 后生成 ApprovedFrame。当前还没有可展示的 ApprovedFrame，禁止展示。",
+          en: "Formal world rendering requires the internal model to produce a bitmap candidate from WorldGenerationCondition and pass VisualJudge before ApprovedFrame exists. No displayable ApprovedFrame exists now, so display is blocked.",
         },
     mvpTargetPolicy: WORLD_VISUAL_MVP_TARGET_POLICY,
     ruleDataset: WORLD_VISUAL_MVP_RULE_DATASET,
@@ -121,10 +130,12 @@ export async function buildWorldVisualPainterDecision(
     tags: [
       "world_visual_painter",
       "ai_image_model_required",
+      imageModelStatus.canGenerate
+        ? "ai_image_candidate_generated_from_internal_model"
+        : "ai_image_candidate_required",
       "vj_0_hard_gate_required",
       "world_generation_condition_ready",
       latestFixPlan ? "latest_visual_fix_plan_loaded" : "no_latest_visual_fix_plan",
-      "ai_image_candidate_required",
       "approved_frame_required",
       "pass_required_for_display",
       "old_renderer_removed",

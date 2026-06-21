@@ -1,0 +1,39 @@
+{
+  "trainingVersion": "training-natural-home-local-details-v18-source-expert-bank",
+  "modelVersion": "natural-home-local-detail-unet-v18-source-expert-bank",
+  "inputChannels": 28,
+  "inputExtras": ["coord", "source", "style"],
+  "outputChannels": 3,
+  "baseChannels": 64,
+  "batchSize": 2,
+  "learningRate": 0.00026,
+  "maxEpochs": 220,
+  "mixedPrecision": true,
+  "augment": false,
+  "upsampleMode": "transpose",
+  "midBlocks": 1,
+  "decoderDetailBlocks": 1,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 4.8,
+    "texture": 4.0,
+    "laplacian": 3.6,
+    "gradient": 2.4,
+    "colorRange": 0.2
+  },
+  "structureWeights": {
+    "grass": 2.2,
+    "water": 3.0,
+    "shoreline": 4.2,
+    "road": 4.0,
+    "roadEdge": 4.0,
+    "tree": 4.6,
+    "rock": 4.0,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260619,
+  "status": "pure_natural_home_multi_source_expert_bank_training"
+}

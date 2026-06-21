@@ -1,0 +1,36 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-single-sample-direct-overfit-v1",
+  "modelVersion": "rgb-refiner-natural-home-unet-v4-direct-single-sample",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 1,
+  "learningRate": 0.00025,
+  "maxEpochs": 1200,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 2.3,
+    "texture": 1.7,
+    "laplacian": 1.25,
+    "gradient": 1.0,
+    "colorRange": 0.15
+  },
+  "structureWeights": {
+    "water": 2.0,
+    "shoreline": 2.5,
+    "road": 2.0,
+    "roadEdge": 2.0,
+    "tree": 2.0,
+    "rock": 1.7,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260618,
+  "status": "single_sample_direct_output_capability_check_only"
+}

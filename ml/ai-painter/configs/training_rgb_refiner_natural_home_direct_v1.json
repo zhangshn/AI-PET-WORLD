@@ -1,0 +1,41 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-direct-v1-clean-multisample",
+  "modelVersion": "rgb-refiner-natural-home-unet-v4-direct-multisample",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.00012,
+  "maxEpochs": 360,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 2.2,
+    "texture": 1.65,
+    "laplacian": 1.15,
+    "gradient": 0.95,
+    "colorRange": 0.15
+  },
+  "structureWeights": {
+    "water": 2.0,
+    "shoreline": 2.5,
+    "road": 2.0,
+    "roadEdge": 2.0,
+    "tree": 2.0,
+    "rock": 1.7,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "diagnosisTarget": {
+    "minimumSharpnessRatio": 0.72,
+    "minimumEdgeDensityRatio": 0.72,
+    "targetSampleId": "natural-home-crop-v7-12-forest-stream-clean"
+  },
+  "seed": 20260618,
+  "status": "direct_output_multisample_natural_home_clean_v1"
+}

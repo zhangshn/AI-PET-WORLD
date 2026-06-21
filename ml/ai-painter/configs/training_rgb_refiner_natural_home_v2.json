@@ -1,0 +1,42 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v2-detail-pyramid-clean",
+  "modelVersion": "rgb-residual-refiner-natural-home-v2-detail-pyramid",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "detailPyramid": true,
+  "residualScale": 0.34,
+  "edgeResidualScale": 0.12,
+  "batchSize": 2,
+  "learningRate": 0.00008,
+  "maxEpochs": 260,
+  "mixedPrecision": true,
+  "residualPenalty": 0.018,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 2.45,
+    "texture": 1.8,
+    "laplacian": 1.15,
+    "gradient": 0.95,
+    "colorRange": 0.2
+  },
+  "structureWeights": {
+    "water": 1.9,
+    "shoreline": 2.4,
+    "road": 1.9,
+    "roadEdge": 1.9,
+    "tree": 1.8,
+    "rock": 1.5,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "diagnosisTarget": {
+    "minimumSharpnessRatio": 0.72,
+    "minimumEdgeDensityRatio": 0.72,
+    "targetSampleId": "natural-home-crop-v7-12-forest-stream-clean"
+  },
+  "seed": 20260618,
+  "status": "local_rgb_detail_refinement_natural_home_clean_v2"
+}

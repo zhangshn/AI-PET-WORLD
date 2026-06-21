@@ -1,0 +1,39 @@
+{
+  "trainingVersion": "training-natural-home-local-details-v22-warning-focus",
+  "modelVersion": "natural-home-local-detail-unet-v22-warning-focus",
+  "inputChannels": 28,
+  "inputExtras": ["coord", "source", "style"],
+  "outputChannels": 3,
+  "baseChannels": 80,
+  "batchSize": 2,
+  "learningRate": 0.00014,
+  "maxEpochs": 360,
+  "mixedPrecision": true,
+  "augment": false,
+  "upsampleMode": "transpose",
+  "midBlocks": 2,
+  "decoderDetailBlocks": 3,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 5.6,
+    "texture": 4.8,
+    "laplacian": 4.6,
+    "gradient": 3.2,
+    "colorRange": 0.16
+  },
+  "structureWeights": {
+    "grass": 2.6,
+    "water": 3.9,
+    "shoreline": 5.4,
+    "road": 4.2,
+    "roadEdge": 4.2,
+    "tree": 5.0,
+    "rock": 4.5,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260622,
+  "status": "pure_natural_home_warning_source_focus_training"
+}
