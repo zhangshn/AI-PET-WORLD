@@ -1,0 +1,51 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v33-water-artifact-guard",
+  "modelVersion": "rgb-refiner-natural-home-v33-water-artifact-guard",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.000035,
+  "discriminatorLearningRate": 0.000025,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.025,
+  "maxEpochs": 60,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 2.2,
+    "texture": 1.65,
+    "laplacian": 1.4,
+    "gradient": 1.0,
+    "colorRange": 0.12,
+    "waterPeriodicity": 1.35
+  },
+  "structureWeights": {
+    "water": 3.0,
+    "shoreline": 3.1,
+    "road": 1.8,
+    "roadEdge": 1.8,
+    "tree": 2.0,
+    "rock": 1.8,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 16, 24, 32],
+    "allowedRatio": 1.08,
+    "margin": 0.0025
+  },
+  "diagnosisTarget": {
+    "minimumSharpnessRatio": 0.82,
+    "minimumEdgeDensityRatio": 0.85,
+    "targetSampleId": "natural-home-crop-v7-12-forest-stream-clean"
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260622,
+  "status": "v33_local_water_artifact_guard_for_natural_home_refiner"
+}

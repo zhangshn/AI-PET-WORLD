@@ -101,6 +101,7 @@ async function promoteCurrentRuntimeWorld(): Promise<TrainingWorldPromotionResul
       tags: ["training_world_visual_promotion", "candidate_read_gate_failed", ...candidateReadResult.tags],
     }
   }
+
   const candidateRecord = candidateReadResult.record
   const reviewReport = await buildWorldVisualReviewReport({
     factManifest,
@@ -170,7 +171,14 @@ async function promoteCurrentRuntimeWorld(): Promise<TrainingWorldPromotionResul
 }
 
 function isWorldVisualTrainingAction(action: string) {
-  return action.startsWith("full_natural_home_v")
+  return new Set([
+    "full_natural_home_v19_promoted_source",
+    "full_natural_home_v20_multisource_generalization",
+    "full_natural_home_v22_warning_focus",
+    "full_natural_home_v23_candidate_consolidation",
+    "full_natural_home_v24_diversity_generation",
+    "full_natural_home_v25_diversity_generalization",
+  ]).has(action)
 }
 
 async function withTrainingModelEnvironment<T>(

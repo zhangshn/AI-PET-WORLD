@@ -12,6 +12,7 @@ def main() -> int:
     parser.add_argument("--output-dir", type=Path, default=Path(".runtime/ai-painter/training-v0"))
     parser.add_argument("--max-epochs", type=int)
     parser.add_argument("--model-config", type=Path)
+    parser.add_argument("--initial-checkpoint", type=Path)
     parser.add_argument("--blueprint-version", choices=("v0", "v1"), default="v0")
     parser.add_argument("--allow-experimental-structural-data", action="store_true")
     parser.add_argument("--check-runtime", action="store_true")
@@ -28,7 +29,13 @@ def main() -> int:
     config["modelConfig"] = str(model_config.resolve())
     config["blueprintVersion"] = args.blueprint_version
     config["allowExperimentalStructuralData"] = args.allow_experimental_structural_data
-    result = train(config, dataset_root=args.dataset_root, output_dir=args.output_dir, max_epochs=args.max_epochs)
+    result = train(
+        config,
+        dataset_root=args.dataset_root,
+        output_dir=args.output_dir,
+        max_epochs=args.max_epochs,
+        initial_checkpoint=args.initial_checkpoint,
+    )
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0
 

@@ -12,6 +12,7 @@ import numpy as np
 from PIL import Image, ImageDraw
 
 from ai_painter.blueprint.channels import CANVAS_HEIGHT, CANVAS_WIDTH, V1_CONDITION_CHANNELS
+from ai_painter.runtime_retention import preserve_runtime_dir_before_clear
 from ai_painter.training.dataset import image_tensor
 from ai_painter.training.rgb_refiner_model import build_rgb_refiner
 from ai_painter.training.structure_guided_model import build_structure_guided_unet
@@ -31,9 +32,12 @@ def main() -> int:
     parser.add_argument("--sample-limit", type=int, default=6)
     parser.add_argument(
         "--selection-strategy",
-        choices=("sorted", "diverse-source"),
+        choices=("sorted", "diverse-source", "diverse-source-variants"),
         default="sorted",
-        help="Choose candidate conditions. diverse-source spreads samples across source scenes instead of taking one source's variants.",
+        help=(
+            "Choose candidate conditions. diverse-source spreads samples across source scenes; "
+            "diverse-source-variants walks source scenes and variants for broader hidden candidate sweeps."
+        ),
     )
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
@@ -43,6 +47,7 @@ def main() -> int:
     if not sample_ids:
         raise ValueError(f"no diversity samples found: {scene_root}")
     if args.output_root.exists() and args.force:
+        preserve_runtime_dir_before_clear(args.output_root, "generate-natural-home-diversity-refiner-candidates")
         shutil.rmtree(args.output_root)
     args.output_root.mkdir(parents=True, exist_ok=True)
 
@@ -110,6 +115,19 @@ def select_sample_ids(scene_root: Path, sample_limit: int, selection_strategy: s
         "hflip",
         "copy",
     )
+    if selection_strategy == "diverse-source-variants":
+        selected: list[str] = []
+        max_count = min(sample_limit, len(all_sample_ids))
+        for variant in preferred_variants:
+            for source_id in source_ids:
+                candidate = select_preferred_variant(grouped[source_id], (variant,))
+                if candidate in selected:
+                    continue
+                selected.append(candidate)
+                if len(selected) >= max_count:
+                    return selected
+        return selected
+
     limit = min(sample_limit, len(source_ids))
     if limit <= 1:
         selected_sources = source_ids[:limit]

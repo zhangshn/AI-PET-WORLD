@@ -260,6 +260,11 @@ function buildReviewChecks(input: {
     input.factManifest,
     input.generationCondition
   )
+  const candidateSourceChannelsMatchFacts =
+    candidateSourceChannelsSatisfyRequiredFacts(
+      candidate,
+      input.generationCondition
+    )
   const candidateHasAllowedLicense =
     candidate !== null &&
     candidate.originalityConfirmed &&
@@ -410,6 +415,19 @@ function buildReviewChecks(input: {
         : "The candidate lacks the current world fact links."
     ),
     check(
+      "candidate_source_fact_expression_channels",
+      candidateSourceChannelsMatchFacts,
+      candidateSourceChannelsMatchFacts ? 96 : 0,
+      "候选图源结构通道",
+      "Candidate source fact-expression channels",
+      candidateSourceChannelsMatchFacts
+        ? "候选图源样本包含当前世界事实所需的结构通道。"
+        : "候选图源样本缺少当前世界事实所需的结构通道，不能用自然图或局部图冒充施工/住所世界画面。",
+      candidateSourceChannelsMatchFacts
+        ? "The candidate source sample includes the structure channels required by current world facts."
+        : "The candidate source sample lacks structure channels required by current world facts, so a nature-only or partial image cannot stand in for a construction/home world frame."
+    ),
+    check(
       "candidate_license_metadata",
       candidateHasAllowedLicense,
       candidateHasAllowedLicense ? 95 : 0,
@@ -517,6 +535,46 @@ function candidateBindsFactLinks(
   if (!sameStringSet(candidate.sourceFactIds, generationCondition.sourceFactIds)) return false
 
   return true
+}
+
+function candidateSourceChannelsSatisfyRequiredFacts(
+  candidate: WorldVisualAiImageCandidate | null,
+  generationCondition: WorldVisualGenerationCondition
+): boolean {
+  if (!candidate) return false
+
+  const requiredGroups = buildRequiredSourceChannelGroups(generationCondition)
+  if (requiredGroups.length === 0) return true
+
+  if (!candidate.tags.includes("source_fact_expression_gate:passed")) return false
+
+  const sourceChannels = new Set(
+    candidate.tags
+      .filter((tag) => tag.startsWith("source_active_channel:"))
+      .map((tag) => tag.slice("source_active_channel:".length))
+  )
+
+  return requiredGroups.every((group) =>
+    group.channels.some((channel) => sourceChannels.has(channel))
+  )
+}
+
+function buildRequiredSourceChannelGroups(
+  generationCondition: WorldVisualGenerationCondition
+): Array<{ id: string; channels: string[] }> {
+  if (generationCondition.sceneCondition.sceneType !== "forest_construction_clearing") {
+    return []
+  }
+
+  return [
+    { id: "natural_ground", channels: ["grass"] },
+    { id: "readable_path", channels: ["road_center", "road_edge", "walkable"] },
+    {
+      id: "construction_core",
+      channels: ["shelter_foundation", "shelter_wall", "shelter_roof"],
+    },
+    { id: "construction_materials", channels: ["construction_material"] },
+  ]
 }
 
 function getMinimumImageByteLength(

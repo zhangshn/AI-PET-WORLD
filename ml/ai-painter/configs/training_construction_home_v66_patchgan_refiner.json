@@ -1,0 +1,45 @@
+{
+  "trainingVersion": "training-construction-home-v66-patchgan-refiner",
+  "modelVersion": "construction-home-rgb-refiner-v66-patchgan-heldout",
+  "inputChannels": 17,
+  "baseChannels": 56,
+  "residualBlocks": 10,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.000045,
+  "discriminatorLearningRate": 0.000035,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.055,
+  "maxEpochs": 120,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 0.95,
+    "edge": 2.45,
+    "texture": 2.05,
+    "laplacian": 1.55,
+    "gradient": 1.15,
+    "colorRange": 0.12
+  },
+  "structureWeights": {
+    "grass": 0.45,
+    "water": 0.58,
+    "shoreline": 0.86,
+    "road": 1.4,
+    "roadEdge": 1.3,
+    "tree": 0.85,
+    "rock": 0.95,
+    "shelterFoundation": 4.0,
+    "shelterWall": 4.9,
+    "shelterRoof": 3.8,
+    "constructionMaterial": 3.05
+  },
+  "diagnosisTarget": {
+    "minimumSharpnessRatio": 0.9,
+    "minimumEdgeDensityRatio": 0.9
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260623,
+  "status": "local_patchgan_refiner_train_16_validate_4_candidate_only"
+}

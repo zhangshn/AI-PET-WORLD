@@ -1,0 +1,32 @@
+{
+  "trainingVersion": "training-natural-home-v70-focus-local-experts",
+  "modelVersion": "natural-home-focus-local-expert-v70",
+  "inputChannels": 22,
+  "outputChannels": 3,
+  "baseChannels": 48,
+  "batchSize": 4,
+  "learningRate": 0.00014,
+  "maxEpochs": 36,
+  "mixedPrecision": true,
+  "augment": true,
+  "inputExtras": ["coord", "category"],
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 2.0,
+    "texture": 1.4,
+    "laplacian": 1.0,
+    "gradient": 0.9,
+    "colorRange": 0.1
+  },
+  "structureWeights": {
+    "grass": 1.2,
+    "water": 1.5,
+    "shoreline": 3.0,
+    "road": 3.0,
+    "roadEdge": 2.6,
+    "tree": 2.5,
+    "rock": 2.4
+  },
+  "seed": 20260624,
+  "status": "local_mvp_natural_home_v70_focus_mask_targets_no_construction_no_building"
+}

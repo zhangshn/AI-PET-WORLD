@@ -1,0 +1,46 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v72-safe-distillation",
+  "modelVersion": "rgb-refiner-natural-home-v72-safe-distillation",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.0000028,
+  "discriminatorLearningRate": 0.000002,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0035,
+  "maxEpochs": 14,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 2.4,
+    "texture": 1.8,
+    "laplacian": 1.35,
+    "gradient": 1.15,
+    "colorRange": 0.1,
+    "waterPeriodicity": 1.55
+  },
+  "structureWeights": {
+    "water": 2.7,
+    "shoreline": 3.0,
+    "road": 2.1,
+    "roadEdge": 2.1,
+    "tree": 2.2,
+    "rock": 2.1,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 16, 24, 32],
+    "allowedRatio": 1.02,
+    "margin": 0.0008
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260624,
+  "status": "v72_safe_candidate_distillation_no_building_no_character_no_animal"
+}

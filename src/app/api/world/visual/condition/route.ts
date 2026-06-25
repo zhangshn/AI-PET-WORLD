@@ -11,7 +11,8 @@ export async function GET() {
       {
         ok: false,
         message: "世界尚未创建，不能构建 WorldGenerationCondition。",
-        messageEn: "The runtime world has not been created, so WorldGenerationCondition cannot be built.",
+        messageEn:
+          "The runtime world has not been created, so WorldGenerationCondition cannot be built.",
         canShowToPlayer: false,
       },
       { status: 409 }
@@ -40,7 +41,7 @@ export async function GET() {
     },
     imageModel: decision.imageModelStatus,
     nextStep: {
-      zh: "WorldGenerationCondition 已就绪。下一步实现内部模型训练与推理请求。",
+      zh: "WorldGenerationCondition 已就绪。下一步执行内部模型训练与推理请求。",
       en: "WorldGenerationCondition is ready. Next implement internal model training and inference requests.",
     },
     canShowToPlayer: false,

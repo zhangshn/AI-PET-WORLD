@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process"
-import { appendFile, mkdir, rm, writeFile } from "node:fs/promises"
+import { appendFile, cp, mkdir, rm, stat, writeFile } from "node:fs/promises"
 import path from "node:path"
 import { startResourceUsageSession } from "./ai-painter-resource-usage"
 import { archiveTrainingResult } from "./ai-painter-training-result-archive"
@@ -33,6 +33,37 @@ export type TrainingAction =
   | "full_natural_home_v24_diversity_generation"
   | "full_natural_home_v25_diversity_generalization"
   | "full_natural_home_v28_real_mask_remix"
+  | "full_natural_home_v31_edge_refiner"
+  | "full_natural_home_v32_patchgan_refiner"
+  | "full_natural_home_v33_water_artifact_guard"
+  | "full_natural_home_v34_water_stability"
+  | "full_natural_home_v35_balanced_water_detail"
+  | "full_natural_home_v36_balanced_generalization"
+  | "full_natural_home_v37_water_failure_repair"
+  | "full_natural_home_v38_water_edge_balance"
+  | "full_natural_home_v39_failure_focus_repair"
+  | "full_natural_home_v40_sharpness_lock_repair"
+  | "full_natural_home_v41_v32_water_rescue"
+  | "full_natural_home_v42_water_expert_fix"
+  | "full_natural_home_v43_v32_failure_focus_repair"
+  | "full_natural_home_v44_v32_stable_generalization"
+  | "full_natural_home_v45_generalization"
+  | "full_natural_home_v46_v45_failure_focus_repair"
+  | "full_natural_home_v47_hard_failure_stabilization"
+  | "full_natural_home_v48_split_expert_merge_gate"
+  | "full_natural_home_v49_v32_diversity_sweep"
+  | "full_natural_home_v50_diversity_water_gate"
+  | "full_natural_home_v51_safe_candidate_pack"
+  | "full_natural_home_v80_quality_preserving_water_repair"
+  | "full_natural_home_v81_high_score_diversity_distillation"
+  | "full_natural_home_v82_broad_structure_coverage"
+  | "full_natural_home_v83_water_failure_repair"
+  | "full_natural_home_v84_v82_safe_quality_continuation"
+  | "full_natural_home_v85_v82_wide_variant_sweep"
+  | "full_natural_home_v86_wide_candidate_distillation"
+  | "full_natural_home_v87_quality_ledger"
+  | "full_natural_home_v88_quality_allowlist_dataset"
+  | "full_natural_home_v89_quality_allowlist_training"
   | "prepare"
   | "train"
   | "infer"
@@ -66,6 +97,7 @@ export type TrainingAction =
 export { readTrainingControlState, readTrainingLogTail, type TrainingControlState }
 
 let activeRun: Promise<void> | null = null
+const preClearArchiveRoot = path.join(/* turbopackIgnore: true */ aiPainterRuntimeRoot, "training-run-history", "pre-clear")
 
 export async function startTrainingAction(action: TrainingAction) {
   if (activeRun) {
@@ -114,24 +146,27 @@ async function runAction(
   } finally {
     state.finishedAt = new Date().toISOString()
     await writeTrainingControlState(state)
+
     const resourceSummary = await resourceSession.finish({
       status: state.status === "failed" ? "failed" : "completed",
       error: state.error,
     })
+
+    try {
+      const archived = await archiveTrainingResult({ action, resourceSummary })
+      await appendFile(
+        trainingControlLogPath,
+        archived
+          ? `\n[${new Date().toISOString()}] 已自动归档训练结果：${archived.id}\n`
+          : `\n[${new Date().toISOString()}] 未找到可归档的训练图；资源账本已保存。\n`,
+        "utf8",
+      )
+    } catch (archiveError) {
+      const message = archiveError instanceof Error ? archiveError.message : "训练结果自动归档失败"
+      await appendFile(trainingControlLogPath, `\n[${new Date().toISOString()}] 训练结果自动归档失败：${message}\n`, "utf8")
+    }
+
     if (state.status !== "failed") {
-      try {
-        const archived = await archiveTrainingResult({ action, resourceSummary })
-        if (archived) {
-          await appendFile(
-            trainingControlLogPath,
-            `\n[${new Date().toISOString()}] 已自动归档训练结果：${archived.id}\n`,
-            "utf8",
-          )
-        }
-      } catch (archiveError) {
-        const message = archiveError instanceof Error ? archiveError.message : "训练结果自动归档失败"
-        await appendFile(trainingControlLogPath, `\n[${new Date().toISOString()}] 训练结果自动归档失败：${message}\n`, "utf8")
-      }
       try {
         const promotion = await tryPromoteTrainingResultToWorldVisual({ action })
         await appendFile(
@@ -147,196 +182,529 @@ async function runAction(
   }
 }
 
+const fullActionScripts: Partial<Record<TrainingAction, string[]>> = {
+  full_natural_home: ["prepare:ai-painter-natural-home", "train:ai-painter-natural-home", "infer:ai-painter-natural-home"],
+  full_natural_home_structure_guided: ["train:ai-painter-natural-home-structure-guided", "infer:ai-painter-natural-home-structure-guided"],
+  full_natural_home_rgb_refiner: [
+    "train:ai-painter-natural-home-rgb-refiner",
+    "infer:ai-painter-natural-home-rgb-refiner",
+    "diagnose:ai-painter-natural-home-rgb-refiner",
+    "plan:ai-painter-natural-home-rgb-refiner",
+  ],
+  full_natural_home_v18_source_expert_bank: ["train:ai-painter-natural-home-local-details-v18-source-expert-bank"],
+  full_natural_home_v19_promoted_source: ["train:ai-painter-natural-home-local-details-v19-promoted-source"],
+  full_natural_home_v20_multisource_generalization: ["train:ai-painter-natural-home-local-details-v20-multisource-generalization"],
+  full_natural_home_v22_warning_focus: ["train:ai-painter-natural-home-local-details-v22-warning-focus"],
+  full_natural_home_v23_candidate_consolidation: ["train:ai-painter-natural-home-local-details-v23-candidate-consolidation"],
+  full_natural_home_v24_diversity_generation: ["generate:ai-painter-natural-home-v24-diversity"],
+  full_natural_home_v25_diversity_generalization: [
+    "prepare:ai-painter-natural-home-local-details-v25-diversity-generalization",
+    "train:ai-painter-natural-home-local-details-v25-diversity-generalization",
+    "generate:ai-painter-natural-home-v25-diversity",
+  ],
+  full_natural_home_v28_real_mask_remix: [
+    "prepare:ai-painter-natural-home-v28-real-mask-remix",
+    "train:ai-painter-natural-home-v28-structure",
+    "train:ai-painter-natural-home-v28-refiner",
+    "generate:ai-painter-natural-home-v28-diversity-refiner",
+  ],
+  full_natural_home_v31_edge_refiner: [
+    "train:ai-painter-natural-home-v31-edge-refiner",
+    "generate:ai-painter-natural-home-v31-edge-refiner",
+    "select:ai-painter-natural-home-v31-quality",
+  ],
+  full_natural_home_v32_patchgan_refiner: [
+    "train:ai-painter-natural-home-v32-patchgan-refiner",
+    "generate:ai-painter-natural-home-v32-patchgan-refiner",
+    "select:ai-painter-natural-home-v32-quality",
+  ],
+  full_natural_home_v33_water_artifact_guard: [
+    "train:ai-painter-natural-home-v33-water-artifact-guard",
+    "generate:ai-painter-natural-home-v33-water-artifact-guard",
+    "select:ai-painter-natural-home-v33-quality",
+  ],
+  full_natural_home_v34_water_stability: [
+    "train:ai-painter-natural-home-v34-water-stability",
+    "generate:ai-painter-natural-home-v34-water-stability",
+    "select:ai-painter-natural-home-v34-quality",
+  ],
+  full_natural_home_v35_balanced_water_detail: [
+    "train:ai-painter-natural-home-v35-balanced-water-detail",
+    "generate:ai-painter-natural-home-v35-balanced-water-detail",
+    "select:ai-painter-natural-home-v35-quality",
+  ],
+  full_natural_home_v36_balanced_generalization: [
+    "train:ai-painter-natural-home-v36-balanced-generalization",
+    "generate:ai-painter-natural-home-v36-balanced-generalization",
+    "select:ai-painter-natural-home-v36-quality",
+  ],
+  full_natural_home_v37_water_failure_repair: [
+    "train:ai-painter-natural-home-v37-water-failure-repair",
+    "generate:ai-painter-natural-home-v37-water-failure-repair",
+    "select:ai-painter-natural-home-v37-quality",
+  ],
+  full_natural_home_v38_water_edge_balance: [
+    "train:ai-painter-natural-home-v38-water-edge-balance",
+    "generate:ai-painter-natural-home-v38-water-edge-balance",
+    "select:ai-painter-natural-home-v38-quality",
+  ],
+  full_natural_home_v39_failure_focus_repair: [
+    "prepare:ai-painter-natural-home-v39-failure-focus",
+    "train:ai-painter-natural-home-v39-failure-focus-repair",
+    "generate:ai-painter-natural-home-v39-failure-focus-repair",
+    "select:ai-painter-natural-home-v39-quality",
+  ],
+  full_natural_home_v40_sharpness_lock_repair: [
+    "train:ai-painter-natural-home-v40-sharpness-lock-repair",
+    "generate:ai-painter-natural-home-v40-sharpness-lock-repair",
+    "select:ai-painter-natural-home-v40-quality",
+  ],
+  full_natural_home_v41_v32_water_rescue: [
+    "train:ai-painter-natural-home-v41-v32-water-rescue",
+    "generate:ai-painter-natural-home-v41-v32-water-rescue",
+    "select:ai-painter-natural-home-v41-quality",
+  ],
+  full_natural_home_v42_water_expert_fix: [
+    "fix:ai-painter-natural-home-v42-water-expert",
+    "select:ai-painter-natural-home-v42-quality",
+  ],
+  full_natural_home_v43_v32_failure_focus_repair: [
+    "prepare:ai-painter-natural-home-v43-v32-failure-focus",
+    "train:ai-painter-natural-home-v43-v32-failure-focus-repair",
+    "generate:ai-painter-natural-home-v43-v32-failure-focus-repair",
+    "select:ai-painter-natural-home-v43-quality",
+  ],
+  full_natural_home_v44_v32_stable_generalization: [
+    "train:ai-painter-natural-home-v44-v32-stable-generalization",
+    "generate:ai-painter-natural-home-v44-v32-stable-generalization",
+    "select:ai-painter-natural-home-v44-quality",
+  ],
+  full_natural_home_v45_generalization: [
+    "prepare:ai-painter-natural-home-v45-generalization-dataset",
+    "train:ai-painter-natural-home-v45-generalization",
+    "generate:ai-painter-natural-home-v45-generalization",
+    "select:ai-painter-natural-home-v45-quality",
+  ],
+  full_natural_home_v46_v45_failure_focus_repair: [
+    "prepare:ai-painter-natural-home-v46-v45-failure-focus",
+    "train:ai-painter-natural-home-v46-v45-failure-focus-repair",
+    "generate:ai-painter-natural-home-v46-v45-failure-focus-repair",
+    "select:ai-painter-natural-home-v46-quality",
+  ],
+  full_natural_home_v47_hard_failure_stabilization: [
+    "prepare:ai-painter-natural-home-v47-hard-failure-stabilization",
+    "train:ai-painter-natural-home-v47-hard-failure-stabilization",
+    "generate:ai-painter-natural-home-v47-hard-failure-stabilization",
+    "select:ai-painter-natural-home-v47-quality",
+  ],
+  full_natural_home_v48_split_expert_merge_gate: [
+    "fix:ai-painter-natural-home-v48-water-sharpness-expert",
+    "select:ai-painter-natural-home-v48-repair-quality",
+    "merge:ai-painter-natural-home-v48-merge-gate",
+  ],
+  full_natural_home_v49_v32_diversity_sweep: [
+    "generate:ai-painter-natural-home-v49-v32-diversity-sweep",
+    "select:ai-painter-natural-home-v49-quality",
+  ],
+  full_natural_home_v50_diversity_water_gate: [
+    "audit:ai-painter-natural-home-v50-diversity-gate",
+  ],
+  full_natural_home_v51_safe_candidate_pack: [
+    "pack:ai-painter-natural-home-v51-safe-candidates",
+  ],
+  full_natural_home_v80_quality_preserving_water_repair: [
+    "prepare:ai-painter-natural-home-v80-quality-preserving-water-repair",
+    "train:ai-painter-natural-home-v80-quality-preserving-water-repair",
+    "generate:ai-painter-natural-home-v80-quality-preserving-water-repair",
+    "select:ai-painter-natural-home-v80-quality",
+  ],
+  full_natural_home_v81_high_score_diversity_distillation: [
+    "prepare:ai-painter-natural-home-v81-high-score-diversity-distillation",
+    "train:ai-painter-natural-home-v81-high-score-diversity-distillation",
+    "generate:ai-painter-natural-home-v81-high-score-diversity-distillation",
+    "select:ai-painter-natural-home-v81-quality",
+  ],
+  full_natural_home_v82_broad_structure_coverage: [
+    "prepare:ai-painter-natural-home-v82-broad-structure-coverage",
+    "train:ai-painter-natural-home-v82-broad-structure-coverage",
+    "generate:ai-painter-natural-home-v82-broad-structure-coverage",
+    "select:ai-painter-natural-home-v82-quality",
+  ],
+  full_natural_home_v83_water_failure_repair: [
+    "prepare:ai-painter-natural-home-v83-water-failure-repair",
+    "train:ai-painter-natural-home-v83-water-failure-repair",
+    "generate:ai-painter-natural-home-v83-water-failure-repair",
+    "select:ai-painter-natural-home-v83-quality",
+  ],
+  full_natural_home_v84_v82_safe_quality_continuation: [
+    "prepare:ai-painter-natural-home-v84-v82-safe-quality-continuation",
+    "train:ai-painter-natural-home-v84-v82-safe-quality-continuation",
+    "generate:ai-painter-natural-home-v84-v82-safe-quality-continuation",
+    "select:ai-painter-natural-home-v84-quality",
+  ],
+  full_natural_home_v85_v82_wide_variant_sweep: [
+    "generate:ai-painter-natural-home-v85-v82-wide-variant-sweep",
+    "select:ai-painter-natural-home-v85-quality",
+  ],
+  full_natural_home_v86_wide_candidate_distillation: [
+    "prepare:ai-painter-natural-home-v86-wide-candidate-distillation",
+    "train:ai-painter-natural-home-v86-wide-candidate-distillation",
+    "generate:ai-painter-natural-home-v86-wide-candidate-distillation",
+    "select:ai-painter-natural-home-v86-quality",
+  ],
+  full_natural_home_v87_quality_ledger: [
+    "gate:ai-painter-natural-home-v87-quality-ledger",
+  ],
+  full_natural_home_v88_quality_allowlist_dataset: [
+    "prepare:ai-painter-natural-home-v88-quality-allowlist",
+  ],
+  full_natural_home_v89_quality_allowlist_training: [
+    "train:ai-painter-natural-home-v89-quality-allowlist",
+    "generate:ai-painter-natural-home-v89-quality-allowlist",
+    "select:ai-painter-natural-home-v89-quality",
+  ],
+  full: ["prepare:ai-painter-bootstrap", "train:ai-painter-bootstrap", "infer:ai-painter-bootstrap"],
+  full_multiscene: [
+    "prepare:ai-painter-multiscene",
+    "train:ai-painter-multiscene",
+    "train:ai-painter-multiscene-gan",
+    "infer:ai-painter-multiscene-gan",
+  ],
+  full_structure_guided: ["train:ai-painter-structure-guided", "infer:ai-painter-structure-guided"],
+  full_rgb_refiner: ["train:ai-painter-rgb-refiner", "infer:ai-painter-rgb-refiner"],
+  full_local_assets: [
+    "prepare:ai-painter-local-assets",
+    "prepare:ai-painter-local-asset-base",
+    "train:ai-painter-local-assets",
+    "infer:ai-painter-local-assets",
+  ],
+  full_discrete_assets: [
+    "prepare:ai-painter-discrete-palettes",
+    "train:ai-painter-discrete-assets",
+    "infer:ai-painter-discrete-assets",
+  ],
+  prepare_training_expansion: ["prepare:ai-painter-multiscene", "prepare:ai-painter-component-instances"],
+  full_autonomous_training: [
+    "prepare:ai-painter-multiscene",
+    "prepare:ai-painter-component-instances",
+    "check:ai-painter-autonomous-training",
+    "train:ai-painter-structure-guided",
+    "infer:ai-painter-structure-guided",
+    "train:ai-painter-rgb-refiner",
+    "infer:ai-painter-rgb-refiner",
+    "prepare:ai-painter-local-assets",
+    "prepare:ai-painter-local-asset-base",
+    "train:ai-painter-local-assets",
+    "infer:ai-painter-local-assets",
+    "prepare:ai-painter-discrete-palettes",
+    "train:ai-painter-discrete-assets",
+    "infer:ai-painter-discrete-assets",
+  ],
+}
+
+const singleActionScripts: Partial<Record<TrainingAction, string>> = {
+  prepare_natural_home: "prepare:ai-painter-natural-home",
+  train_natural_home: "train:ai-painter-natural-home",
+  infer_natural_home: "infer:ai-painter-natural-home",
+  train_natural_home_structure_guided: "train:ai-painter-natural-home-structure-guided",
+  infer_natural_home_structure_guided: "infer:ai-painter-natural-home-structure-guided",
+  train_natural_home_rgb_refiner: "train:ai-painter-natural-home-rgb-refiner",
+  infer_natural_home_rgb_refiner: "infer:ai-painter-natural-home-rgb-refiner",
+  prepare: "prepare:ai-painter-bootstrap",
+  train: "train:ai-painter-bootstrap",
+  infer: "infer:ai-painter-bootstrap",
+  prepare_multiscene: "prepare:ai-painter-multiscene",
+  train_multiscene: "train:ai-painter-multiscene",
+  train_multiscene_gan: "train:ai-painter-multiscene-gan",
+  infer_multiscene: "infer:ai-painter-multiscene-gan",
+  train_structure_guided: "train:ai-painter-structure-guided",
+  infer_structure_guided: "infer:ai-painter-structure-guided",
+  train_rgb_refiner: "train:ai-painter-rgb-refiner",
+  infer_rgb_refiner: "infer:ai-painter-rgb-refiner",
+  prepare_local_assets: "prepare:ai-painter-local-assets",
+  train_local_assets: "train:ai-painter-local-assets",
+  infer_local_assets: "infer:ai-painter-local-assets",
+  prepare_discrete_assets: "prepare:ai-painter-discrete-palettes",
+  train_discrete_assets: "train:ai-painter-discrete-assets",
+  infer_discrete_assets: "infer:ai-painter-discrete-assets",
+  prepare_component_instances: "prepare:ai-painter-component-instances",
+  report_mvp_gap: "report:ai-painter-mvp-gap",
+  report_natural_home: "report:ai-painter-natural-home",
+  report_natural_home_quality: "report:ai-painter-natural-home-quality",
+}
+
 function scriptsFor(action: TrainingAction) {
-  if (action === "full_natural_home") {
-    return ["prepare:ai-painter-natural-home", "train:ai-painter-natural-home", "infer:ai-painter-natural-home"]
-  }
-  if (action === "full_natural_home_structure_guided") {
-    return ["train:ai-painter-natural-home-structure-guided", "infer:ai-painter-natural-home-structure-guided"]
-  }
-  if (action === "full_natural_home_rgb_refiner") {
-    return [
-      "train:ai-painter-natural-home-rgb-refiner",
-      "infer:ai-painter-natural-home-rgb-refiner",
-      "diagnose:ai-painter-natural-home-rgb-refiner",
-      "plan:ai-painter-natural-home-rgb-refiner",
-    ]
-  }
-  if (action === "full_natural_home_v18_source_expert_bank") {
-    return ["train:ai-painter-natural-home-local-details-v18-source-expert-bank"]
-  }
-  if (action === "full_natural_home_v19_promoted_source") {
-    return ["train:ai-painter-natural-home-local-details-v19-promoted-source"]
-  }
-  if (action === "full_natural_home_v20_multisource_generalization") {
-    return ["train:ai-painter-natural-home-local-details-v20-multisource-generalization"]
-  }
-  if (action === "full_natural_home_v22_warning_focus") {
-    return ["train:ai-painter-natural-home-local-details-v22-warning-focus"]
-  }
-  if (action === "full_natural_home_v23_candidate_consolidation") {
-    return ["train:ai-painter-natural-home-local-details-v23-candidate-consolidation"]
-  }
-  if (action === "full_natural_home_v24_diversity_generation") {
-    return ["generate:ai-painter-natural-home-v24-diversity"]
-  }
-  if (action === "full_natural_home_v25_diversity_generalization") {
-    return [
-      "prepare:ai-painter-natural-home-local-details-v25-diversity-generalization",
-      "train:ai-painter-natural-home-local-details-v25-diversity-generalization",
-      "generate:ai-painter-natural-home-v25-diversity",
-    ]
-  }
-  if (action === "full_natural_home_v28_real_mask_remix") {
-    return [
-      "prepare:ai-painter-natural-home-v28-real-mask-remix",
-      "train:ai-painter-natural-home-v28-structure",
-      "train:ai-painter-natural-home-v28-refiner",
-      "generate:ai-painter-natural-home-v28-diversity-refiner",
-    ]
-  }
-  if (action === "full") return ["prepare:ai-painter-bootstrap", "train:ai-painter-bootstrap", "infer:ai-painter-bootstrap"]
-  if (action === "full_multiscene") {
-    return [
-      "prepare:ai-painter-multiscene",
-      "train:ai-painter-multiscene",
-      "train:ai-painter-multiscene-gan",
-      "infer:ai-painter-multiscene-gan",
-    ]
-  }
-  if (action === "full_structure_guided") return ["train:ai-painter-structure-guided", "infer:ai-painter-structure-guided"]
-  if (action === "full_rgb_refiner") return ["train:ai-painter-rgb-refiner", "infer:ai-painter-rgb-refiner"]
-  if (action === "full_local_assets") {
-    return [
-      "prepare:ai-painter-local-assets",
-      "prepare:ai-painter-local-asset-base",
-      "train:ai-painter-local-assets",
-      "infer:ai-painter-local-assets",
-    ]
-  }
-  if (action === "full_discrete_assets") {
-    return [
-      "prepare:ai-painter-discrete-palettes",
-      "train:ai-painter-discrete-assets",
-      "infer:ai-painter-discrete-assets",
-    ]
-  }
-  if (action === "prepare_training_expansion") return ["prepare:ai-painter-multiscene", "prepare:ai-painter-component-instances"]
-  if (action === "report_mvp_gap") return ["report:ai-painter-mvp-gap"]
-  if (action === "report_natural_home") return ["report:ai-painter-natural-home"]
-  if (action === "report_natural_home_quality") return ["report:ai-painter-natural-home-quality"]
-  if (action === "full_autonomous_training") {
-    return [
-      "prepare:ai-painter-multiscene",
-      "prepare:ai-painter-component-instances",
-      "check:ai-painter-autonomous-training",
-      "train:ai-painter-structure-guided",
-      "infer:ai-painter-structure-guided",
-      "train:ai-painter-rgb-refiner",
-      "infer:ai-painter-rgb-refiner",
-      "prepare:ai-painter-local-assets",
-      "prepare:ai-painter-local-asset-base",
-      "train:ai-painter-local-assets",
-      "infer:ai-painter-local-assets",
-      "prepare:ai-painter-discrete-palettes",
-      "train:ai-painter-discrete-assets",
-      "infer:ai-painter-discrete-assets",
-    ]
-  }
-  return [scriptFor(action)]
+  const fullScripts = fullActionScripts[action]
+  if (fullScripts) return fullScripts
+  const singleScript = singleActionScripts[action]
+  if (singleScript) return [singleScript]
+  throw new Error(`未知训练动作：${action}`)
+}
+
+const clearDirectories: Partial<Record<TrainingAction, string[]>> = {
+  prepare_natural_home: ["natural-home-dataset", "natural-home-training", "natural-home-inference"],
+  full_natural_home: ["natural-home-dataset", "natural-home-training", "natural-home-inference"],
+  train_natural_home: ["natural-home-training", "natural-home-inference"],
+  infer_natural_home: ["natural-home-inference"],
+  train_natural_home_structure_guided: ["natural-home-structure-guided-training", "natural-home-structure-guided-inference"],
+  full_natural_home_structure_guided: ["natural-home-structure-guided-training", "natural-home-structure-guided-inference"],
+  infer_natural_home_structure_guided: ["natural-home-structure-guided-inference"],
+  train_natural_home_rgb_refiner: [
+    "natural-home-rgb-refiner-training",
+    "natural-home-rgb-refiner-inference",
+    "natural-home-rgb-refiner-diagnosis",
+    "natural-home-next-training-plan",
+  ],
+  full_natural_home_rgb_refiner: [
+    "natural-home-rgb-refiner-training",
+    "natural-home-rgb-refiner-inference",
+    "natural-home-rgb-refiner-diagnosis",
+    "natural-home-next-training-plan",
+  ],
+  infer_natural_home_rgb_refiner: [
+    "natural-home-rgb-refiner-inference",
+    "natural-home-rgb-refiner-diagnosis",
+    "natural-home-next-training-plan",
+  ],
+  full_natural_home_v18_source_expert_bank: ["natural-home-local-detail-v18-source-expert-bank"],
+  full_natural_home_v19_promoted_source: ["natural-home-local-detail-v19-promoted-source"],
+  full_natural_home_v20_multisource_generalization: ["natural-home-local-detail-v20-multisource-generalization"],
+  full_natural_home_v22_warning_focus: ["natural-home-local-detail-v22-warning-focus"],
+  full_natural_home_v23_candidate_consolidation: ["natural-home-local-detail-v23-candidate-consolidation"],
+  full_natural_home_v24_diversity_generation: ["natural-home-v24-diversity-generation"],
+  full_natural_home_v25_diversity_generalization: [
+    "natural-home-local-detail-v25-diversity-generalization-dataset",
+    "natural-home-local-detail-v25-diversity-generalization-training",
+    "natural-home-v25-diversity-generation",
+  ],
+  full_natural_home_v31_edge_refiner: [
+    "natural-home-v31-edge-refiner-training",
+    "natural-home-v31-edge-refiner-generation",
+    "natural-home-v31-quality-selection",
+  ],
+  full_natural_home_v32_patchgan_refiner: [
+    "natural-home-v32-patchgan-refiner-training",
+    "natural-home-v32-patchgan-refiner-generation",
+    "natural-home-v32-quality-selection",
+  ],
+  full_natural_home_v33_water_artifact_guard: [
+    "natural-home-v33-water-artifact-guard-training",
+    "natural-home-v33-water-artifact-guard-generation",
+    "natural-home-v33-quality-selection",
+  ],
+  full_natural_home_v34_water_stability: [
+    "natural-home-v34-water-stability-training",
+    "natural-home-v34-water-stability-generation",
+    "natural-home-v34-quality-selection",
+  ],
+  full_natural_home_v35_balanced_water_detail: [
+    "natural-home-v35-balanced-water-detail-training",
+    "natural-home-v35-balanced-water-detail-generation",
+    "natural-home-v35-quality-selection",
+  ],
+  full_natural_home_v36_balanced_generalization: [
+    "natural-home-v36-balanced-generalization-training",
+    "natural-home-v36-balanced-generalization-generation",
+    "natural-home-v36-quality-selection",
+  ],
+  full_natural_home_v37_water_failure_repair: [
+    "natural-home-v37-water-failure-repair-training",
+    "natural-home-v37-water-failure-repair-generation",
+    "natural-home-v37-quality-selection",
+  ],
+  full_natural_home_v38_water_edge_balance: [
+    "natural-home-v38-water-edge-balance-training",
+    "natural-home-v38-water-edge-balance-generation",
+    "natural-home-v38-quality-selection",
+  ],
+  full_natural_home_v39_failure_focus_repair: [
+    "natural-home-v39-failure-focus-dataset",
+    "natural-home-v39-failure-focus-repair-training",
+    "natural-home-v39-failure-focus-repair-generation",
+    "natural-home-v39-quality-selection",
+  ],
+  full_natural_home_v40_sharpness_lock_repair: [
+    "natural-home-v40-sharpness-lock-repair-training",
+    "natural-home-v40-sharpness-lock-repair-generation",
+    "natural-home-v40-quality-selection",
+  ],
+  full_natural_home_v41_v32_water_rescue: [
+    "natural-home-v41-v32-water-rescue-training",
+    "natural-home-v41-v32-water-rescue-generation",
+    "natural-home-v41-quality-selection",
+  ],
+  full_natural_home_v42_water_expert_fix: [
+    "natural-home-v42-v32-water-expert-fix-generation",
+    "natural-home-v42-quality-selection",
+  ],
+  full_natural_home_v43_v32_failure_focus_repair: [
+    "natural-home-v43-v32-failure-focus-dataset",
+    "natural-home-v43-v32-failure-focus-repair-training",
+    "natural-home-v43-v32-failure-focus-repair-generation",
+    "natural-home-v43-quality-selection",
+  ],
+  full_natural_home_v44_v32_stable_generalization: [
+    "natural-home-v44-v32-stable-generalization-training",
+    "natural-home-v44-v32-stable-generalization-generation",
+    "natural-home-v44-quality-selection",
+  ],
+  full_natural_home_v45_generalization: [
+    "natural-home-v45-generalization-dataset",
+    "natural-home-v45-generalization-training",
+    "natural-home-v45-generalization-generation",
+    "natural-home-v45-quality-selection",
+  ],
+  full_natural_home_v46_v45_failure_focus_repair: [
+    "natural-home-v46-v45-failure-focus-dataset",
+    "natural-home-v46-v45-failure-focus-repair-training",
+    "natural-home-v46-v45-failure-focus-repair-generation",
+    "natural-home-v46-quality-selection",
+  ],
+  full_natural_home_v47_hard_failure_stabilization: [
+    "natural-home-v47-hard-failure-stabilization-dataset",
+    "natural-home-v47-hard-failure-stabilization-training",
+    "natural-home-v47-hard-failure-stabilization-generation",
+    "natural-home-v47-quality-selection",
+  ],
+  full_natural_home_v48_split_expert_merge_gate: [
+    "natural-home-v48-water-sharpness-expert-fix-generation",
+    "natural-home-v48-repair-quality-selection",
+    "natural-home-v48-merge-gate-selection",
+  ],
+  full_natural_home_v49_v32_diversity_sweep: [
+    "natural-home-v49-v32-diversity-sweep-generation",
+    "natural-home-v49-quality-selection",
+  ],
+  full_natural_home_v50_diversity_water_gate: [
+    "natural-home-v50-diversity-water-gate",
+  ],
+  full_natural_home_v51_safe_candidate_pack: [
+    "natural-home-v51-safe-candidate-pack",
+  ],
+  full_natural_home_v80_quality_preserving_water_repair: [
+    "natural-home-v80-quality-preserving-water-repair-dataset",
+    "natural-home-v80-quality-preserving-water-repair-training",
+    "natural-home-v80-quality-preserving-water-repair-generation",
+    "natural-home-v80-quality-selection",
+  ],
+  full_natural_home_v81_high_score_diversity_distillation: [
+    "natural-home-v81-high-score-diversity-distillation-dataset",
+    "natural-home-v81-high-score-diversity-distillation-training",
+    "natural-home-v81-high-score-diversity-distillation-generation",
+    "natural-home-v81-quality-selection",
+  ],
+  full_natural_home_v82_broad_structure_coverage: [
+    "natural-home-v82-broad-structure-coverage-dataset",
+    "natural-home-v82-broad-structure-coverage-training",
+    "natural-home-v82-broad-structure-coverage-generation",
+    "natural-home-v82-quality-selection",
+  ],
+  full_natural_home_v83_water_failure_repair: [
+    "natural-home-v83-water-failure-repair-dataset",
+    "natural-home-v83-water-failure-repair-training",
+    "natural-home-v83-water-failure-repair-generation",
+    "natural-home-v83-quality-selection",
+  ],
+  full_natural_home_v84_v82_safe_quality_continuation: [
+    "natural-home-v84-v82-safe-quality-continuation-dataset",
+    "natural-home-v84-v82-safe-quality-continuation-training",
+    "natural-home-v84-v82-safe-quality-continuation-generation",
+    "natural-home-v84-quality-selection",
+  ],
+  full_natural_home_v85_v82_wide_variant_sweep: [
+    "natural-home-v85-v82-wide-variant-sweep-generation",
+    "natural-home-v85-quality-selection",
+  ],
+  full_natural_home_v86_wide_candidate_distillation: [
+    "natural-home-v86-wide-candidate-distillation-dataset",
+    "natural-home-v86-wide-candidate-distillation-training",
+    "natural-home-v86-wide-candidate-distillation-generation",
+    "natural-home-v86-quality-selection",
+  ],
+  full_natural_home_v87_quality_ledger: [
+    "natural-home-v87-quality-ledger",
+  ],
+  full_natural_home_v88_quality_allowlist_dataset: [
+    "natural-home-v88-quality-allowlist-dataset",
+  ],
+  full_natural_home_v89_quality_allowlist_training: [
+    "natural-home-v89-quality-allowlist-training",
+    "natural-home-v89-quality-allowlist-generation",
+    "natural-home-v89-quality-selection",
+  ],
+  train: ["bootstrap-training", "bootstrap-inference"],
+  full: ["bootstrap-training", "bootstrap-inference"],
+  train_multiscene: ["multiscene-training", "multiscene-gan-training", "multiscene-gan-inference"],
+  full_multiscene: ["multiscene-training", "multiscene-gan-training", "multiscene-gan-inference"],
+  train_structure_guided: ["structure-guided-training", "structure-guided-inference"],
+  full_structure_guided: ["structure-guided-training", "structure-guided-inference"],
+  train_rgb_refiner: ["rgb-refiner-training", "rgb-refiner-inference"],
+  full_rgb_refiner: ["rgb-refiner-training", "rgb-refiner-inference"],
+  prepare_local_assets: ["local-asset-dataset", "local-asset-training", "local-asset-inference", "local-asset-base"],
+  full_local_assets: ["local-asset-dataset", "local-asset-training", "local-asset-inference", "local-asset-base"],
+  train_local_assets: ["local-asset-training", "local-asset-inference"],
+  prepare_discrete_assets: ["discrete-asset-training", "discrete-asset-inference"],
+  full_discrete_assets: ["discrete-asset-training", "discrete-asset-inference"],
+  train_discrete_assets: ["discrete-asset-training", "discrete-asset-inference"],
+  prepare_component_instances: ["component-instance-dataset"],
+  prepare_training_expansion: ["multiscene-dataset", "component-instance-dataset"],
+  report_mvp_gap: ["mvp-gap-report"],
+  report_natural_home: ["natural-home-readiness"],
+  report_natural_home_quality: ["natural-home-quality"],
+  full_autonomous_training: [
+    "multiscene-dataset",
+    "component-instance-dataset",
+    "structure-guided-training",
+    "structure-guided-inference",
+    "rgb-refiner-training",
+    "rgb-refiner-inference",
+    "local-asset-dataset",
+    "local-asset-base",
+    "local-asset-training",
+    "local-asset-inference",
+    "discrete-asset-training",
+    "discrete-asset-inference",
+  ],
 }
 
 async function clearOutputs(action: TrainingAction) {
-  if (action === "prepare_natural_home" || action === "full_natural_home") {
-    await clear("natural-home-dataset", "natural-home-training", "natural-home-inference")
-  }
-  if (action === "train_natural_home") await clear("natural-home-training", "natural-home-inference")
-  if (action === "infer_natural_home") await clear("natural-home-inference")
-  if (action === "train_natural_home_structure_guided" || action === "full_natural_home_structure_guided") {
-    await clear("natural-home-structure-guided-training", "natural-home-structure-guided-inference")
-  }
-  if (action === "infer_natural_home_structure_guided") await clear("natural-home-structure-guided-inference")
-  if (action === "train_natural_home_rgb_refiner" || action === "full_natural_home_rgb_refiner") {
-    await clear(
-      "natural-home-rgb-refiner-training",
-      "natural-home-rgb-refiner-inference",
-      "natural-home-rgb-refiner-diagnosis",
-      "natural-home-next-training-plan",
-    )
-  }
-  if (action === "infer_natural_home_rgb_refiner") {
-    await clear("natural-home-rgb-refiner-inference", "natural-home-rgb-refiner-diagnosis", "natural-home-next-training-plan")
-  }
-  if (action === "full_natural_home_v18_source_expert_bank") {
-    await clear("natural-home-local-detail-v18-source-expert-bank")
-  }
-  if (action === "full_natural_home_v19_promoted_source") {
-    await clear("natural-home-local-detail-v19-promoted-source")
-  }
-  if (action === "full_natural_home_v20_multisource_generalization") {
-    await clear("natural-home-local-detail-v20-multisource-generalization")
-  }
-  if (action === "full_natural_home_v22_warning_focus") {
-    await clear("natural-home-local-detail-v22-warning-focus")
-  }
-  if (action === "full_natural_home_v23_candidate_consolidation") {
-    await clear("natural-home-local-detail-v23-candidate-consolidation")
-  }
-  if (action === "full_natural_home_v24_diversity_generation") {
-    await clear("natural-home-v24-diversity-generation")
-  }
-  if (action === "full_natural_home_v25_diversity_generalization") {
-    await clear(
-      "natural-home-local-detail-v25-diversity-generalization-dataset",
-      "natural-home-local-detail-v25-diversity-generalization-training",
-      "natural-home-v25-diversity-generation",
-    )
-  }
-  if (action === "train" || action === "full") await clear("bootstrap-training", "bootstrap-inference")
-  if (action === "train_multiscene" || action === "full_multiscene") {
-    await clear("multiscene-training", "multiscene-gan-training", "multiscene-gan-inference")
-  }
-  if (action === "train_structure_guided" || action === "full_structure_guided") {
-    await clear("structure-guided-training", "structure-guided-inference")
-  }
-  if (action === "train_rgb_refiner" || action === "full_rgb_refiner") {
-    await clear("rgb-refiner-training", "rgb-refiner-inference")
-  }
-  if (action === "prepare_local_assets" || action === "full_local_assets") {
-    await clear("local-asset-dataset", "local-asset-training", "local-asset-inference", "local-asset-base")
-  }
-  if (action === "train_local_assets") await clear("local-asset-training", "local-asset-inference")
-  if (action === "prepare_discrete_assets" || action === "full_discrete_assets") {
-    await clear("discrete-asset-training", "discrete-asset-inference")
-  }
-  if (action === "train_discrete_assets") await clear("discrete-asset-training", "discrete-asset-inference")
-  if (action === "prepare_component_instances") await clear("component-instance-dataset")
-  if (action === "prepare_training_expansion") await clear("multiscene-dataset", "component-instance-dataset")
-  if (action === "report_mvp_gap") await clear("mvp-gap-report")
-  if (action === "report_natural_home") await clear("natural-home-readiness")
-  if (action === "report_natural_home_quality") await clear("natural-home-quality")
-  if (action === "full_autonomous_training") {
-    await clear(
-      "multiscene-dataset",
-      "component-instance-dataset",
-      "structure-guided-training",
-      "structure-guided-inference",
-      "rgb-refiner-training",
-      "rgb-refiner-inference",
-      "local-asset-dataset",
-      "local-asset-base",
-      "local-asset-training",
-      "local-asset-inference",
-      "discrete-asset-training",
-      "discrete-asset-inference",
-    )
-  }
+  await clear(...(clearDirectories[action] ?? []))
 }
 
 async function clear(...directories: string[]) {
+  if (!directories.length) return
+
+  const stamp = new Date().toISOString().replace(/[:.]/g, "-")
   for (const directory of directories) {
-    await rm(path.join(/* turbopackIgnore: true */ aiPainterRuntimeRoot, directory), { recursive: true, force: true })
+    const outputDir = path.join(/* turbopackIgnore: true */ aiPainterRuntimeRoot, directory)
+    await preserveOutputBeforeClear(directory, outputDir, stamp)
+    await rm(outputDir, { recursive: true, force: true })
   }
+}
+
+async function preserveOutputBeforeClear(directory: string, outputDir: string, stamp: string) {
+  try {
+    const info = await stat(outputDir)
+    if (!info.isDirectory()) return
+  } catch {
+    return
+  }
+
+  const relative = path.relative(/* turbopackIgnore: true */ aiPainterRuntimeRoot, outputDir)
+  if (!relative || relative.startsWith("..") || path.isAbsolute(relative)) return
+
+  const backupDir = path.join(preClearArchiveRoot, `${stamp}-${sanitizePathSegment(directory)}`, relative)
+  await mkdir(path.dirname(backupDir), { recursive: true })
+  await cp(outputDir, backupDir, { recursive: true })
+  await appendFile(
+    trainingControlLogPath,
+    `\n[${new Date().toISOString()}] preserved previous training output before clear: ${relative} -> ${path.relative(process.cwd(), backupDir)}\n`,
+    "utf8",
+  )
+}
+
+function sanitizePathSegment(value: string) {
+  return value.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "training-output"
 }
 
 function runNpmScript(script: string) {
@@ -355,82 +723,7 @@ function runNpmScript(script: string) {
   })
 }
 
-function scriptFor(
-  action: Exclude<
-    TrainingAction,
-    | "full"
-    | "full_natural_home"
-    | "full_natural_home_structure_guided"
-    | "full_natural_home_rgb_refiner"
-    | "full_natural_home_v18_source_expert_bank"
-    | "full_natural_home_v19_promoted_source"
-    | "full_natural_home_v20_multisource_generalization"
-    | "full_natural_home_v22_warning_focus"
-    | "full_natural_home_v23_candidate_consolidation"
-    | "full_natural_home_v24_diversity_generation"
-    | "full_natural_home_v25_diversity_generalization"
-    | "full_natural_home_v28_real_mask_remix"
-    | "full_multiscene"
-    | "full_structure_guided"
-    | "full_rgb_refiner"
-    | "full_local_assets"
-    | "full_discrete_assets"
-    | "full_autonomous_training"
-  >,
-) {
-  const scripts = {
-    prepare_natural_home: "prepare:ai-painter-natural-home",
-    train_natural_home: "train:ai-painter-natural-home",
-    infer_natural_home: "infer:ai-painter-natural-home",
-    train_natural_home_structure_guided: "train:ai-painter-natural-home-structure-guided",
-    infer_natural_home_structure_guided: "infer:ai-painter-natural-home-structure-guided",
-    train_natural_home_rgb_refiner: "train:ai-painter-natural-home-rgb-refiner",
-    infer_natural_home_rgb_refiner: "infer:ai-painter-natural-home-rgb-refiner",
-    prepare: "prepare:ai-painter-bootstrap",
-    train: "train:ai-painter-bootstrap",
-    infer: "infer:ai-painter-bootstrap",
-    prepare_multiscene: "prepare:ai-painter-multiscene",
-    train_multiscene: "train:ai-painter-multiscene",
-    train_multiscene_gan: "train:ai-painter-multiscene-gan",
-    infer_multiscene: "infer:ai-painter-multiscene-gan",
-    train_structure_guided: "train:ai-painter-structure-guided",
-    infer_structure_guided: "infer:ai-painter-structure-guided",
-    train_rgb_refiner: "train:ai-painter-rgb-refiner",
-    infer_rgb_refiner: "infer:ai-painter-rgb-refiner",
-    prepare_local_assets: "prepare:ai-painter-local-assets",
-    train_local_assets: "train:ai-painter-local-assets",
-    infer_local_assets: "infer:ai-painter-local-assets",
-    prepare_discrete_assets: "prepare:ai-painter-discrete-palettes",
-    train_discrete_assets: "train:ai-painter-discrete-assets",
-    infer_discrete_assets: "infer:ai-painter-discrete-assets",
-    prepare_component_instances: "prepare:ai-painter-component-instances",
-    prepare_training_expansion: "prepare:ai-painter-multiscene",
-    report_mvp_gap: "report:ai-painter-mvp-gap",
-    report_natural_home: "report:ai-painter-natural-home",
-    report_natural_home_quality: "report:ai-painter-natural-home-quality",
-  } as const
-  return scripts[action]
-}
-
 function labelFor(script: string) {
-  if (script === "train:ai-painter-natural-home-local-details-v22-warning-focus") {
-    return "Train V22 natural-home warning source focus model"
-  }
-  if (script === "train:ai-painter-natural-home-local-details-v23-candidate-consolidation") {
-    return "Train V23 natural-home candidate consolidation model"
-  }
-  if (script === "prepare:ai-painter-natural-home-v28-real-mask-remix") {
-    return "Prepare V28 real-mask remix natural-home dataset"
-  }
-  if (script === "train:ai-painter-natural-home-v28-structure") {
-    return "Train V28 real-mask remix structure model"
-  }
-  if (script === "train:ai-painter-natural-home-v28-refiner") {
-    return "Train V28 real-mask remix RGB refiner"
-  }
-  if (script === "generate:ai-painter-natural-home-v28-diversity-refiner") {
-    return "Generate V28 real-mask remix hidden candidates"
-  }
   const labels: Record<string, string> = {
     "prepare:ai-painter-natural-home": "编译纯世界家园训练数据",
     "train:ai-painter-natural-home": "使用本地 GPU 训练纯世界家园基础模型",
@@ -444,6 +737,71 @@ function labelFor(script: string) {
     "train:ai-painter-natural-home-local-details-v18-source-expert-bank": "训练 V18 多源自然世界专家模型",
     "train:ai-painter-natural-home-local-details-v19-promoted-source": "训练 V19 晋级自然源专家模型",
     "train:ai-painter-natural-home-local-details-v20-multisource-generalization": "训练 V20 多源自然世界泛化模型",
+    "train:ai-painter-natural-home-local-details-v22-warning-focus": "训练 V22 自然源警告样本强化模型",
+    "train:ai-painter-natural-home-local-details-v23-candidate-consolidation": "训练 V23 自然家园候选整合模型",
+    "generate:ai-painter-natural-home-v24-diversity": "生成 V24 多样自然家园候选",
+    "prepare:ai-painter-natural-home-local-details-v25-diversity-generalization": "准备 V25 多样自然家园泛化数据",
+    "train:ai-painter-natural-home-local-details-v25-diversity-generalization": "训练 V25 多样自然家园泛化模型",
+    "generate:ai-painter-natural-home-v25-diversity": "生成 V25 多样自然家园候选",
+    "prepare:ai-painter-natural-home-v28-real-mask-remix": "准备 V28 真实 Mask 重组数据",
+    "train:ai-painter-natural-home-v28-structure": "训练 V28 真实 Mask 结构模型",
+    "train:ai-painter-natural-home-v28-refiner": "训练 V28 真实 Mask RGB 细化模型",
+    "generate:ai-painter-natural-home-v28-diversity-refiner": "生成 V28 真实 Mask 隐藏候选",
+    "train:ai-painter-natural-home-v31-edge-refiner": "训练 V31 边缘强化 RGB 细化模型",
+    "generate:ai-painter-natural-home-v31-edge-refiner": "生成 V31 边缘强化隐藏候选",
+    "select:ai-painter-natural-home-v31-quality": "筛选 V31 候选并归档失败记录",
+    "train:ai-painter-natural-home-v32-patchgan-refiner": "训练 V32 PatchGAN RGB 细化模型",
+    "generate:ai-painter-natural-home-v32-patchgan-refiner": "生成 V32 PatchGAN 隐藏候选",
+    "select:ai-painter-natural-home-v32-quality": "筛选 V32 候选并归档失败记录",
+    "train:ai-painter-natural-home-v33-water-artifact-guard": "训练 V33 水体伪影防护模型",
+    "generate:ai-painter-natural-home-v33-water-artifact-guard": "生成 V33 水体伪影防护候选",
+    "select:ai-painter-natural-home-v33-quality": "筛选 V33 候选并归档失败记录",
+    "train:ai-painter-natural-home-v34-water-stability": "训练 V34 水体稳定性模型",
+    "generate:ai-painter-natural-home-v34-water-stability": "生成 V34 水体稳定性候选",
+    "select:ai-painter-natural-home-v34-quality": "筛选 V34 候选并归档失败记录",
+    "train:ai-painter-natural-home-v35-balanced-water-detail": "训练 V35 水体与细节平衡模型",
+    "generate:ai-painter-natural-home-v35-balanced-water-detail": "生成 V35 水体与细节平衡候选",
+    "select:ai-painter-natural-home-v35-quality": "筛选 V35 候选并归档失败记录",
+    "train:ai-painter-natural-home-v36-balanced-generalization": "训练 V36 平衡泛化模型",
+    "generate:ai-painter-natural-home-v36-balanced-generalization": "生成 V36 平衡泛化候选",
+    "select:ai-painter-natural-home-v36-quality": "筛选 V36 候选并归档失败记录",
+    "train:ai-painter-natural-home-v37-water-failure-repair": "训练 V37 水体失败修复模型",
+    "generate:ai-painter-natural-home-v37-water-failure-repair": "生成 V37 水体失败修复候选",
+    "select:ai-painter-natural-home-v37-quality": "筛选 V37 候选并归档失败记录",
+    "train:ai-painter-natural-home-v38-water-edge-balance": "训练 V38 水体与边缘平衡模型",
+    "generate:ai-painter-natural-home-v38-water-edge-balance": "生成 V38 水体与边缘平衡候选",
+    "select:ai-painter-natural-home-v38-quality": "筛选 V38 候选并归档失败记录",
+    "prepare:ai-painter-natural-home-v39-failure-focus": "准备 V39 失败样本加权数据",
+    "train:ai-painter-natural-home-v39-failure-focus-repair": "训练 V39 失败样本修复模型",
+    "generate:ai-painter-natural-home-v39-failure-focus-repair": "生成 V39 失败样本修复候选",
+    "select:ai-painter-natural-home-v39-quality": "筛选 V39 候选并归档失败记录",
+    "train:ai-painter-natural-home-v40-sharpness-lock-repair": "训练 V40 锐度锁定修复模型",
+    "generate:ai-painter-natural-home-v40-sharpness-lock-repair": "生成 V40 锐度锁定候选",
+    "select:ai-painter-natural-home-v40-quality": "筛选 V40 候选并归档失败记录",
+    "train:ai-painter-natural-home-v41-v32-water-rescue": "训练 V41 从 V32 出发的水体修复模型",
+    "generate:ai-painter-natural-home-v41-v32-water-rescue": "生成 V41 水体修复候选",
+    "select:ai-painter-natural-home-v41-quality": "筛选 V41 候选并归档失败记录",
+    "fix:ai-painter-natural-home-v42-water-expert": "执行 V42 本地水体专家 Mask 修复候选",
+    "select:ai-painter-natural-home-v42-quality": "筛选 V42 候选并归档失败记录",
+    "prepare:ai-painter-natural-home-v43-v32-failure-focus": "准备 V43 从 V32 出发的失败样本加权数据",
+    "train:ai-painter-natural-home-v43-v32-failure-focus-repair": "训练 V43 从 V32 出发的失败样本修复模型",
+    "generate:ai-painter-natural-home-v43-v32-failure-focus-repair": "生成 V43 失败样本修复候选",
+    "select:ai-painter-natural-home-v43-quality": "筛选 V43 候选并归档失败记录",
+    "train:ai-painter-natural-home-v44-v32-stable-generalization": "训练 V44 从 V32 出发的稳定泛化模型",
+    "generate:ai-painter-natural-home-v44-v32-stable-generalization": "生成 V44 稳定泛化隐藏候选",
+    "select:ai-painter-natural-home-v44-quality": "筛选 V44 候选并归档失败记录",
+    "prepare:ai-painter-natural-home-v45-generalization-dataset": "准备 V45 平衡泛化数据",
+    "train:ai-painter-natural-home-v45-generalization": "训练 V45 平衡泛化模型",
+    "generate:ai-painter-natural-home-v45-generalization": "生成 V45 泛化候选",
+    "select:ai-painter-natural-home-v45-quality": "筛选 V45 候选并归档失败记录",
+    "prepare:ai-painter-natural-home-v46-v45-failure-focus": "准备 V46 基于 V45 失败样本的加权数据",
+    "train:ai-painter-natural-home-v46-v45-failure-focus-repair": "训练 V46 水体伪影与边缘密度修复模型",
+    "generate:ai-painter-natural-home-v46-v45-failure-focus-repair": "生成 V46 失败样本修复候选",
+    "select:ai-painter-natural-home-v46-quality": "筛选 V46 候选并归档失败记录",
+    "prepare:ai-painter-natural-home-v47-hard-failure-stabilization": "准备 V47 硬失败样本稳定化数据",
+    "train:ai-painter-natural-home-v47-hard-failure-stabilization": "训练 V47 硬失败样本稳定化模型",
+    "generate:ai-painter-natural-home-v47-hard-failure-stabilization": "生成 V47 稳定化候选",
+    "select:ai-painter-natural-home-v47-quality": "筛选 V47 候选并归档失败记录",
     "check:ai-painter-autonomous-training": "执行自主训练闸门检查",
     "report:ai-painter-mvp-gap": "生成 MVP 视觉生成缺口审计",
     "report:ai-painter-natural-home": "生成纯世界家园数据闸门报告",

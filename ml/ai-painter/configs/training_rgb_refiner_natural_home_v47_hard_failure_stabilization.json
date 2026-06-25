@@ -1,0 +1,51 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v47-hard-failure-stabilization",
+  "modelVersion": "rgb-refiner-natural-home-v47-hard-failure-stabilization",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.0000022,
+  "discriminatorLearningRate": 0.0000012,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0012,
+  "maxEpochs": 16,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.06,
+    "edge": 3.15,
+    "texture": 2.18,
+    "laplacian": 2.05,
+    "gradient": 1.5,
+    "colorRange": 0.15,
+    "waterPeriodicity": 2.85
+  },
+  "structureWeights": {
+    "water": 3.5,
+    "shoreline": 3.55,
+    "road": 2.15,
+    "roadEdge": 2.25,
+    "tree": 2.35,
+    "rock": 2.65,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.012,
+    "margin": 0.0008
+  },
+  "diagnosisTarget": {
+    "minimumSharpnessRatio": 0.86,
+    "minimumEdgeDensityRatio": 0.9,
+    "targetSampleId": "natural-home-scene_005_highland_quarry_refuge-stream-lower-east-wide__v28-copy"
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260626,
+  "status": "v47_hard_failure_stabilization_from_v46"
+}

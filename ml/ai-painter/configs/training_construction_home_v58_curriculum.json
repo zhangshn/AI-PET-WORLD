@@ -1,0 +1,31 @@
+{
+  "trainingVersion": "training-construction-home-v58-curriculum",
+  "batchSize": 1,
+  "gradientAccumulationSteps": 8,
+  "learningRate": 0.00012,
+  "maxEpochs": 900,
+  "mixedPrecision": true,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 0.9,
+    "texture": 0.55,
+    "laplacian": 0.7,
+    "gradient": 0.55,
+    "colorRange": 0.35
+  },
+  "structureWeights": {
+    "grass": 0.25,
+    "water": 0.35,
+    "shoreline": 0.4,
+    "road": 0.55,
+    "roadEdge": 0.45,
+    "tree": 0.35,
+    "rock": 0.4,
+    "shelterFoundation": 0.8,
+    "shelterWall": 0.9,
+    "shelterRoof": 0.7,
+    "constructionMaterial": 0.75
+  },
+  "seed": 20260623,
+  "status": "local_curriculum_training_only"
+}

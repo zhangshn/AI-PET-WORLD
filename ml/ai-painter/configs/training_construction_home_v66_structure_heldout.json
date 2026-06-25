@@ -1,0 +1,35 @@
+{
+  "trainingVersion": "training-construction-home-v66-structure-heldout",
+  "modelVersion": "construction-home-structure-guided-v66-heldout",
+  "inputChannels": 14,
+  "structureChannels": 14,
+  "baseChannels": 48,
+  "batchSize": 2,
+  "learningRate": 0.00012,
+  "maxEpochs": 260,
+  "mixedPrecision": true,
+  "structureLossWeight": 4.8,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 1.05,
+    "texture": 0.52,
+    "laplacian": 0.72,
+    "gradient": 0.58,
+    "colorRange": 0.22
+  },
+  "structureWeights": {
+    "grass": 0.35,
+    "water": 0.46,
+    "shoreline": 0.72,
+    "road": 1.15,
+    "roadEdge": 1.05,
+    "tree": 0.68,
+    "rock": 0.78,
+    "shelterFoundation": 5.0,
+    "shelterWall": 6.0,
+    "shelterRoof": 4.4,
+    "constructionMaterial": 3.4
+  },
+  "seed": 20260623,
+  "status": "local_structure_model_train_16_validate_4_before_patchgan_refiner"
+}

@@ -12,6 +12,37 @@ export type TrainingAction =
   | "full_natural_home_v24_diversity_generation"
   | "full_natural_home_v25_diversity_generalization"
   | "full_natural_home_v28_real_mask_remix"
+  | "full_natural_home_v31_edge_refiner"
+  | "full_natural_home_v32_patchgan_refiner"
+  | "full_natural_home_v33_water_artifact_guard"
+  | "full_natural_home_v34_water_stability"
+  | "full_natural_home_v35_balanced_water_detail"
+  | "full_natural_home_v36_balanced_generalization"
+  | "full_natural_home_v37_water_failure_repair"
+  | "full_natural_home_v38_water_edge_balance"
+  | "full_natural_home_v39_failure_focus_repair"
+  | "full_natural_home_v40_sharpness_lock_repair"
+  | "full_natural_home_v41_v32_water_rescue"
+  | "full_natural_home_v42_water_expert_fix"
+  | "full_natural_home_v43_v32_failure_focus_repair"
+  | "full_natural_home_v44_v32_stable_generalization"
+  | "full_natural_home_v45_generalization"
+  | "full_natural_home_v46_v45_failure_focus_repair"
+  | "full_natural_home_v47_hard_failure_stabilization"
+  | "full_natural_home_v48_split_expert_merge_gate"
+  | "full_natural_home_v49_v32_diversity_sweep"
+  | "full_natural_home_v50_diversity_water_gate"
+  | "full_natural_home_v51_safe_candidate_pack"
+  | "full_natural_home_v80_quality_preserving_water_repair"
+  | "full_natural_home_v81_high_score_diversity_distillation"
+  | "full_natural_home_v82_broad_structure_coverage"
+  | "full_natural_home_v83_water_failure_repair"
+  | "full_natural_home_v84_v82_safe_quality_continuation"
+  | "full_natural_home_v85_v82_wide_variant_sweep"
+  | "full_natural_home_v86_wide_candidate_distillation"
+  | "full_natural_home_v87_quality_ledger"
+  | "full_natural_home_v88_quality_allowlist_dataset"
+  | "full_natural_home_v89_quality_allowlist_training"
   | "full"
   | "full_multiscene"
   | "full_structure_guided"
@@ -27,6 +58,7 @@ export type ResourceUsageSummary = {
   status: "running" | "completed" | "failed"
   action: string
   durationSeconds: number
+  telemetrySampleCount?: number
   sampleCount: number
   averageGpuUtilizationPercent: number
   maxGpuUtilizationPercent: number
@@ -75,6 +107,23 @@ export type Progress = {
     structureSummary: { bestStructureIoU?: number } | null
   }
   mvpGap: { missingRealAssetChannels?: string[]; assetSummary?: { totalUsableAssets?: number } } | null
+  visualUnitV0: {
+    schemaVersion: "visual-unit-v0"
+    status: "schema_ready_registry_seeded"
+    currentMvpUnitCount: number
+    futureUnitCount: number
+    approvedUnitCount: number
+    missingForDynamicWorld: string[]
+    nextModule: string
+  }
+  visualUnitData: {
+    schemaVersion: "visual-unit-data-v0"
+    status: string
+    formalWorldDisplay: boolean
+    trainingReadySampleCount: number
+    sampleCount: number
+    nextRequiredWork?: string[]
+  } | null
   naturalHomeReadiness: {
     canStartTraining?: boolean
     eligibleSampleCount?: number
@@ -277,6 +326,404 @@ export type Progress = {
       rows?: Array<{ sampleId?: string; status?: string; generated?: string; contactSheet?: string }>
     } | null
     inferenceReady?: boolean
+  } | null
+  naturalHomeV33WaterArtifactGuard?: {
+    latest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; contactSheet?: string }>
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV34WaterStability?: {
+    latest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; contactSheet?: string }>
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV35BalancedWaterDetail?: {
+    latest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; contactSheet?: string }>
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV36BalancedGeneralization?: {
+    latest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; contactSheet?: string }>
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV37WaterFailureRepair?: {
+    latest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; contactSheet?: string }>
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV38WaterEdgeBalance?: {
+    latest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; contactSheet?: string }>
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV39FailureFocusRepair?: {
+    datasetManifest?: {
+      status?: string
+      baseTrainCount?: number
+      weightedTrainCount?: number
+      failedFocusCount?: number
+      lowPassFocusCount?: number
+      contactSheet?: string
+    } | null
+    trainingSummary?: { epochs?: number; steps?: number; trainSampleCount?: number; validationSampleCount?: number } | null
+    trainingLatest?: { epoch?: number; step?: number } | null
+    latest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; contactSheet?: string }>
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV40SharpnessLockRepair?: {
+    trainingSummary?: { epochs?: number; steps?: number; trainSampleCount?: number; validationSampleCount?: number } | null
+    trainingLatest?: { epoch?: number; step?: number } | null
+    latest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; contactSheet?: string }>
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV41V32WaterRescue?: {
+    trainingSummary?: { epochs?: number; steps?: number; trainSampleCount?: number; validationSampleCount?: number } | null
+    trainingLatest?: { epoch?: number; step?: number } | null
+    latest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; contactSheet?: string }>
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV42WaterExpertFix?: {
+    latest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; contactSheet?: string }>
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV43V32FailureFocusRepair?: {
+    datasetManifest?: {
+      status?: string
+      baseTrainCount?: number
+      weightedTrainCount?: number
+      failedFocusCount?: number
+      lowPassFocusCount?: number
+      contactSheet?: string
+    } | null
+    trainingSummary?: { epochs?: number; steps?: number; trainSampleCount?: number; validationSampleCount?: number } | null
+    trainingLatest?: { epoch?: number; step?: number } | null
+    latest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; contactSheet?: string }>
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV44V32StableGeneralization?: {
+    trainingSummary?: { epochs?: number; steps?: number; trainSampleCount?: number; validationSampleCount?: number } | null
+    trainingLatest?: { epoch?: number; step?: number } | null
+    latest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; contactSheet?: string }>
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV45Generalization?: {
+    datasetManifest?: {
+      status?: string
+      uniqueCopiedSampleCount?: number
+      baseTrainCount?: number
+      weightedTrainCount?: number
+      validationCount?: number
+      sourceCoverageCount?: number
+      contactSheet?: string
+    } | null
+    trainingSummary?: { epochs?: number; steps?: number; trainSampleCount?: number; validationSampleCount?: number } | null
+    trainingLatest?: { epoch?: number; step?: number } | null
+    latest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; contactSheet?: string }>
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV46V45FailureFocusRepair?: {
+    datasetManifest?: {
+      status?: string
+      baseTrainCount?: number
+      baseValidationCount?: number
+      weightedTrainCount?: number
+      failedFocusCount?: number
+      lowPassFocusCount?: number
+      contactSheet?: string
+    } | null
+    trainingSummary?: { epochs?: number; steps?: number; trainSampleCount?: number; validationSampleCount?: number } | null
+    trainingLatest?: { epoch?: number; step?: number } | null
+    latest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; contactSheet?: string }>
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV47HardFailureStabilization?: {
+    datasetManifest?: {
+      status?: string
+      baseTrainCount?: number
+      baseValidationCount?: number
+      weightedTrainCount?: number
+      failedFocusCount?: number
+      lowPassFocusCount?: number
+      contactSheet?: string
+    } | null
+    trainingSummary?: { epochs?: number; steps?: number; trainSampleCount?: number; validationSampleCount?: number } | null
+    trainingLatest?: { epoch?: number; step?: number } | null
+    latest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; contactSheet?: string }>
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV48SplitExpertMergeGate?: {
+    latest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+      summary?: {
+        rowCount?: number
+        passedForNextTraining?: number
+        rejectedTrainingCandidate?: number
+        acceptedRepairCount?: number
+        keptSourceCount?: number
+        averageScore?: number
+        bestScore?: number
+        worstScore?: number
+      }
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; contactSheet?: string }>
+    } | null
+    repairLatest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; contactSheet?: string }>
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV49V32DiversitySweep?: {
+    latest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+      summary?: {
+        rowCount?: number
+        passedForNextTraining?: number
+        rejectedTrainingCandidate?: number
+        averageScore?: number
+        bestScore?: number
+        worstScore?: number
+      }
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; contactSheet?: string }>
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV50DiversityWaterGate?: {
+    latest?: {
+      status?: string
+      contactSheet?: string
+      summary?: {
+        rowCount?: number
+        trainingPassRows?: number
+        strictPassRows?: number
+        reviewRows?: number
+        rejectedRows?: number
+        sourceAverageScore?: number
+        strictAverageScore?: number
+      }
+      diversity?: {
+        uniqueSourceCount?: number
+        uniqueVariantCount?: number
+        coveredChannels?: string[]
+        missingRequiredChannels?: string[]
+        topologyCounts?: Record<string, number>
+      }
+      waterGate?: {
+        status?: string
+        blockingWaterFailureCount?: number
+        warningWaterFailureCount?: number
+      }
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV51SafeCandidatePack?: {
+    latest?: {
+      status?: string
+      contactSheet?: string
+      summary?: {
+        safeRowCount?: number
+        requiredSafeRows?: number
+        averageScore?: number
+        bestScore?: number
+        worstScore?: number
+        uniqueSourceCount?: number
+        uniqueVariantCount?: number
+      }
+      rows?: Array<{ sampleId?: string; sourceId?: string; status?: string; generated?: string; target?: string }>
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV87QualityLedger?: {
+    latest?: {
+      status?: string
+      stageId?: string
+      contactSheet?: string
+      summary?: {
+        allowRowCount?: number
+        negativeRowCount?: number
+        failureCodeCount?: number
+        status?: string
+      }
+      files?: {
+        nextTrainingAllowList?: string
+        negativeExamples?: string
+        failureTaxonomy?: string
+      }
+      trainingPolicy?: {
+        nextTrainingTargetSource?: string
+        negativeExampleUsage?: string
+        negativeExamplesMayTrainAsTarget?: boolean
+      }
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV88QualityAllowlistDataset?: {
+    latest?: {
+      status?: string
+      stageId?: string
+      contactSheet?: string
+      sampleCount?: number
+      trainSampleCount?: number
+      validationSampleCount?: number
+      negativeExampleCount?: number
+      trainingPolicy?: {
+        targetSource?: string
+        negativeExampleUsage?: string
+        negativeExamplesMayTrainAsTarget?: boolean
+      }
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV89QualityAllowlistTraining?: {
+    trainingSummary?: {
+      status?: string
+      trainingVersion?: string
+      modelVersion?: string
+      epochs?: number
+      steps?: number
+      bestGeneratorLoss?: number
+      bestValidationLoss?: number
+      device?: string
+      parameterCount?: number
+    } | null
+    trainingLatest?: {
+      epoch?: number
+      step?: number
+      generatorLoss?: number
+      discriminatorLoss?: number
+      validationLoss?: number
+      seconds?: number
+      device?: string
+    } | null
+    latest?: {
+      status?: string
+      stageId?: string
+      contactSheet?: string
+      sampleCount?: number
+      rowCount?: number
+      summary?: {
+        rowCount?: number
+        passedForNextTraining?: number
+        reviewCandidate?: number
+        rejectedTrainingCandidate?: number
+        averageScore?: number
+        bestScore?: number
+        worstScore?: number
+      }
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeBestTrainingCandidate?: {
+    stage: string
+    title: string
+    latest?: {
+      status?: string
+      sampleCount?: number
+      rowCount?: number
+      contactSheet?: string
+    } | null
+    summary?: {
+      rowCount?: number
+      passedForNextTraining?: number
+      reviewCandidate?: number
+      rejectedTrainingCandidate?: number
+      averageScore?: number
+      bestScore?: number
+      worstScore?: number
+    }
   } | null
   trainingQualityGate: {
     status?: "passed_for_next_training" | "warning_keep_candidate" | "failed_keep_for_history" | string

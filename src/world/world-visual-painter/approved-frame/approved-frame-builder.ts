@@ -21,6 +21,7 @@ const REQUIRED_REVIEW_CHECK_IDS = [
   "candidate_source_kind",
   "candidate_generation_request",
   "candidate_fact_link",
+  "candidate_source_fact_expression_channels",
   "candidate_license_metadata",
   "candidate_tags_not_used_as_quality_evidence",
 ] as const

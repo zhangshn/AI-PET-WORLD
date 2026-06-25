@@ -1,0 +1,46 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v82-broad-structure-coverage",
+  "modelVersion": "rgb-refiner-natural-home-v82-broad-structure-coverage",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.000001,
+  "discriminatorLearningRate": 0.00000075,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0011,
+  "maxEpochs": 12,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 3.15,
+    "texture": 2.25,
+    "laplacian": 1.95,
+    "gradient": 1.6,
+    "colorRange": 0.13,
+    "waterPeriodicity": 2.45
+  },
+  "structureWeights": {
+    "water": 3.6,
+    "shoreline": 3.65,
+    "road": 2.15,
+    "roadEdge": 2.15,
+    "tree": 2.45,
+    "rock": 2.4,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.009,
+    "margin": 0.0007
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260624,
+  "status": "v82_broad_structure_coverage_from_v81_no_building_no_character_no_animal"
+}

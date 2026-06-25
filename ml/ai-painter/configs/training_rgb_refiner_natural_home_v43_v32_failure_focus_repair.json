@@ -1,0 +1,51 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v43-v32-failure-focus-repair",
+  "modelVersion": "rgb-refiner-natural-home-v43-v32-failure-focus-repair",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.000003,
+  "discriminatorLearningRate": 0.000002,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0012,
+  "maxEpochs": 24,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.06,
+    "edge": 2.75,
+    "texture": 1.95,
+    "laplacian": 1.7,
+    "gradient": 1.35,
+    "colorRange": 0.12,
+    "waterPeriodicity": 2.65
+  },
+  "structureWeights": {
+    "water": 3.2,
+    "shoreline": 3.25,
+    "road": 1.95,
+    "roadEdge": 2.0,
+    "tree": 2.15,
+    "rock": 2.0,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 16, 24, 32],
+    "allowedRatio": 1.02,
+    "margin": 0.001
+  },
+  "diagnosisTarget": {
+    "minimumSharpnessRatio": 0.84,
+    "minimumEdgeDensityRatio": 0.9,
+    "targetSampleId": "natural-home-crop-v7-12-forest-stream-clean"
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260622,
+  "status": "v43_v32_failure_focus_repair_for_natural_home_refiner"
+}

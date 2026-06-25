@@ -1,0 +1,32 @@
+{
+  "trainingVersion": "training-construction-home-v62-fact-expression",
+  "batchSize": 1,
+  "gradientAccumulationSteps": 8,
+  "learningRate": 0.00003,
+  "maxEpochs": 260,
+  "mixedPrecision": true,
+  "horizontalFlipAugmentation": false,
+  "lossWeights": {
+    "l1": 1.05,
+    "edge": 1.35,
+    "texture": 0.82,
+    "laplacian": 1.0,
+    "gradient": 0.92,
+    "colorRange": 0.22
+  },
+  "structureWeights": {
+    "grass": 0.18,
+    "water": 0.28,
+    "shoreline": 0.38,
+    "road": 1.15,
+    "roadEdge": 0.95,
+    "tree": 0.28,
+    "rock": 0.38,
+    "shelterFoundation": 2.6,
+    "shelterWall": 3.4,
+    "shelterRoof": 2.4,
+    "constructionMaterial": 2.8
+  },
+  "seed": 20260623,
+  "status": "local_direct_model_construction_fact_expression_repair_from_v60"
+}

@@ -1,0 +1,46 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v75-broad-candidate-distillation",
+  "modelVersion": "rgb-refiner-natural-home-v75-broad-candidate-distillation",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.0000024,
+  "discriminatorLearningRate": 0.0000016,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0024,
+  "maxEpochs": 12,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 2.65,
+    "texture": 1.95,
+    "laplacian": 1.55,
+    "gradient": 1.25,
+    "colorRange": 0.12,
+    "waterPeriodicity": 1.85
+  },
+  "structureWeights": {
+    "water": 2.95,
+    "shoreline": 3.2,
+    "road": 2.1,
+    "roadEdge": 2.1,
+    "tree": 2.25,
+    "rock": 2.2,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 16, 24, 32],
+    "allowedRatio": 1.016,
+    "margin": 0.0008
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260624,
+  "status": "v75_distill_v73_passed_broad_structure_candidates_no_building_no_character_no_animal"
+}

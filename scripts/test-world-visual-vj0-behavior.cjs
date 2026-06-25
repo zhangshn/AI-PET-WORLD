@@ -672,7 +672,13 @@ function makeFixture(options) {
     ruleDataIds: [],
     sourceFactIds,
     canShowToPlayer: false,
-    tags: [],
+    tags: [
+      "source_fact_expression_gate:passed",
+      "source_active_channel:grass",
+      "source_active_channel:road_center",
+      "source_active_channel:shelter_foundation",
+      "source_active_channel:construction_material",
+    ],
   }
   const request = {
     requestId: `request-${worldId}-${tick}`,
@@ -684,7 +690,13 @@ function makeFixture(options) {
       imageFormat: "png",
     },
     canShowToPlayer: false,
-    tags: [],
+    tags: [
+      "source_fact_expression_gate:passed",
+      "source_active_channel:grass",
+      "source_active_channel:road_center",
+      "source_active_channel:shelter_foundation",
+      "source_active_channel:construction_material",
+    ],
   }
   const candidate = {
     candidateId: `candidate-${worldId}-${tick}`,
@@ -701,7 +713,13 @@ function makeFixture(options) {
     sourceFactIds,
     canShowToPlayer: false,
     generationNotes: text("测试", "Test"),
-    tags: [],
+    tags: [
+      "source_fact_expression_gate:passed",
+      "source_active_channel:grass",
+      "source_active_channel:road_center",
+      "source_active_channel:shelter_foundation",
+      "source_active_channel:construction_material",
+    ],
   }
 
   return {
@@ -718,17 +736,36 @@ function makeFixture(options) {
 
 function makePngDataUrl(width, height) {
   return encodePngDataUrl(width, height, (x, y) => {
-    const region = (Math.floor(x / 48) + Math.floor(y / 40)) % 5
-    const grain = ((x * 17 + y * 31) % 13) - 6
-    const palette = [
-      [58, 122, 54],
-      [92, 156, 70],
-      [142, 174, 76],
-      [72, 105, 48],
-      [168, 132, 72],
-    ][region]
-    return palette.map((value) => Math.max(0, Math.min(255, value + grain)))
-  }, 25 * 1024)
+    const sampleX = Math.floor((x * 128) / width)
+    const sampleY = Math.floor((y * 96) / height)
+    const hash = (sampleX * 37 + sampleY * 53 + (sampleX ^ sampleY) * 17) % 251
+    const path = Math.abs(sampleY - (58 + Math.sin(sampleX / 8) * 9)) < 5
+    const water = sampleX > 96 && sampleY > 36
+    const rock = (hash % 31 === 0 || hash % 43 === 0) && !water
+    const flower = hash % 67 === 0 || hash % 89 === 0
+    const blade = sampleX % 7 === 0 || sampleY % 11 === 0 || (sampleX + sampleY) % 13 === 0
+    const base = water
+      ? [28, 112, 144]
+      : path
+        ? [172, 132, 76]
+        : rock
+          ? [112, 116, 104]
+          : [58, 128, 56]
+    const colorShift = [
+      ((sampleX * 5 + sampleY * 3) % 9) * 7 - 22,
+      ((sampleX * 2 + sampleY * 7) % 10) * 6 - 20,
+      ((sampleX * 11 + sampleY) % 8) * 7 - 18,
+    ]
+    const texture = blade ? 26 : hash % 5 === 0 ? -22 : 0
+    const detail = flower ? [66, 42, 82] : [0, 0, 0]
+
+    return base.map((value, index) =>
+      Math.max(
+        0,
+        Math.min(255, value + colorShift[index] + texture + detail[index])
+      )
+    )
+  }, 40 * 1024)
 }
 
 function makeSolidPngDataUrl(width, height) {

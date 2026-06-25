@@ -1,0 +1,32 @@
+{
+  "trainingVersion": "training-construction-home-v60-direct-detail-repair",
+  "batchSize": 1,
+  "gradientAccumulationSteps": 8,
+  "learningRate": 0.000045,
+  "maxEpochs": 220,
+  "mixedPrecision": true,
+  "horizontalFlipAugmentation": false,
+  "lossWeights": {
+    "l1": 0.8,
+    "edge": 1.55,
+    "texture": 1.0,
+    "laplacian": 1.15,
+    "gradient": 0.95,
+    "colorRange": 0.28
+  },
+  "structureWeights": {
+    "grass": 0.28,
+    "water": 0.4,
+    "shoreline": 0.5,
+    "road": 0.72,
+    "roadEdge": 0.6,
+    "tree": 0.42,
+    "rock": 0.46,
+    "shelterFoundation": 1.05,
+    "shelterWall": 1.15,
+    "shelterRoof": 0.95,
+    "constructionMaterial": 0.95
+  },
+  "seed": 20260623,
+  "status": "local_direct_model_detail_repair_from_v58_best"
+}

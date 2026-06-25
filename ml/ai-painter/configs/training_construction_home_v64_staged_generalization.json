@@ -1,0 +1,32 @@
+{
+  "trainingVersion": "training-construction-home-v64-staged-generalization",
+  "batchSize": 1,
+  "gradientAccumulationSteps": 8,
+  "learningRate": 0.000012,
+  "maxEpochs": 180,
+  "mixedPrecision": true,
+  "horizontalFlipAugmentation": false,
+  "lossWeights": {
+    "l1": 1.08,
+    "edge": 1.55,
+    "texture": 0.95,
+    "laplacian": 1.12,
+    "gradient": 1.08,
+    "colorRange": 0.18
+  },
+  "structureWeights": {
+    "grass": 0.2,
+    "water": 0.3,
+    "shoreline": 0.42,
+    "road": 1.18,
+    "roadEdge": 1.02,
+    "tree": 0.34,
+    "rock": 0.44,
+    "shelterFoundation": 2.85,
+    "shelterWall": 3.6,
+    "shelterRoof": 2.55,
+    "constructionMaterial": 3.05
+  },
+  "seed": 20260623,
+  "status": "local_model_staged_generalization_preserve_v60_sharpness_add_four_sources"
+}

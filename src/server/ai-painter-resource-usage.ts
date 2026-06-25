@@ -31,6 +31,7 @@ export type ResourceUsageSessionSummary = {
   startedAt: string
   finishedAt: string | null
   durationSeconds: number
+  telemetrySampleCount: number
   sampleCount: number
   gpuName: string
   driver: string
@@ -136,7 +137,7 @@ async function readLatestSession() {
       finishedAt: new Date().toISOString(),
       status: "failed",
       samples: [],
-      error: "资源记录会话已经结束，但没有找到最新摘要。",
+      error: "Resource usage session already finished, but latest summary was not found.",
     })
   )
 }
@@ -175,7 +176,7 @@ async function readGpuSample(): Promise<ResourceUsageSample> {
     return {
       sampledAt: new Date().toISOString(),
       gpuAvailable: false,
-      gpuName: "未检测到 NVIDIA GPU",
+      gpuName: "NVIDIA GPU not detected",
       driver: "--",
       memoryTotalMiB: 0,
       memoryUsedMiB: 0,
@@ -216,8 +217,9 @@ function buildSummary(input: {
     startedAt: input.startedAt,
     finishedAt: input.finishedAt,
     durationSeconds,
+    telemetrySampleCount: input.samples.length,
     sampleCount: input.samples.length,
-    gpuName: input.samples.at(-1)?.gpuName ?? "未检测",
+    gpuName: input.samples.at(-1)?.gpuName ?? "NVIDIA GPU not detected",
     driver: input.samples.at(-1)?.driver ?? "--",
     averageGpuUtilizationPercent: round2(averageGpuUtilizationPercent),
     maxGpuUtilizationPercent: round2(max(input.samples.map((sample) => sample.utilizationPercent))),
@@ -229,13 +231,13 @@ function buildSummary(input: {
       estimatedKwh: round6(estimatedKwh),
       estimatedCny: round4(estimatedCny),
       cnyPerKwh,
-      formula: "电量(kWh)=平均功率(W)×训练时长(秒)/3600000；电费=电量×每度电价格。",
+      formula: "kWh = averagePowerWatts * durationSeconds / 3600000; cost = kWh * cnyPerKwh.",
     },
     tokenLedger: {
       externalApiTokens: 0,
       externalApiCostCny: 0,
       localComputeTokens: Math.round(gpuActiveSeconds * 1000),
-      localComputeTokenRule: "本地计算 token=GPU 活跃秒×1000，仅用于比较本地训练消耗；不是第三方 API token。",
+      localComputeTokenRule: "localComputeTokens = gpuActiveSeconds * 1000; local training comparison only, not third-party API tokens.",
     },
     error: input.error,
   }

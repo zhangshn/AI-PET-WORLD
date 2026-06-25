@@ -16,6 +16,39 @@ import {
 } from "./_lib/progress-view-model"
 import styles from "./page.module.css"
 
+const businessCapabilityPlan = [
+  {
+    name: "自然环境视觉底座",
+    state: "当前主线",
+    detail: "草地、水体、水岸、自然路径、树木、岩石、花草和深度层。当前 V89 仍是隐藏候选，用来继续训练和筛选。",
+  },
+  {
+    name: "人物 / 管家视觉单元",
+    state: "未开始",
+    detail: "未来要拆成人物体型、头部、服装、表情、朝向、待机、行走、劳动和互动状态帧。",
+  },
+  {
+    name: "设施 / 建筑视觉单元",
+    state: "未开始",
+    detail: "未来要覆盖地基、墙体、屋顶、门窗、内部空间、家具、材料堆和建造阶段，不混入当前纯自然训练。",
+  },
+  {
+    name: "动态状态帧",
+    state: "未开始",
+    detail: "水流、树叶、草地、天气、光影、动物和昆虫都应是状态帧或循环帧，不靠一张静态图硬撑。",
+  },
+  {
+    name: "运行时合成",
+    state: "待接入",
+    detail: "后端世界事实决定对象和状态，小模型生成视觉表达，Runtime 再把地表、对象、状态帧和动效层组合成玩家画面。",
+  },
+  {
+    name: "VisualJudge / ApprovedFrame",
+    state: "框架中",
+    detail: "VJ-0/VJ-1 已有闸门基础；VJ-2 还要判断语义、风格、状态一致性。通过后才写入正式 ApprovedFrame。",
+  },
+]
+
 export function ProgressClient() {
   const [data, setData] = useState<Progress | null>(null)
   const [message, setMessage] = useState("")
@@ -55,7 +88,41 @@ export function ProgressClient() {
   const missingChannels = data?.mvpGap?.missingRealAssetChannels ?? []
   const naturalHomeAction = buildNaturalHomeAction(data)
   const trainingQualityGate = data?.trainingQualityGate
+  const bestTrainingCandidate = data?.naturalHomeBestTrainingCandidate
   const generatedCount =
+    bestTrainingCandidate?.summary?.rowCount ??
+    bestTrainingCandidate?.latest?.rowCount ??
+    bestTrainingCandidate?.latest?.sampleCount ??
+    data?.naturalHomeV49V32DiversitySweep?.latest?.summary?.rowCount ??
+    data?.naturalHomeV49V32DiversitySweep?.latest?.rowCount ??
+    data?.naturalHomeV49V32DiversitySweep?.latest?.sampleCount ??
+    data?.naturalHomeV48SplitExpertMergeGate?.latest?.summary?.rowCount ??
+    data?.naturalHomeV48SplitExpertMergeGate?.latest?.rowCount ??
+    data?.naturalHomeV48SplitExpertMergeGate?.latest?.sampleCount ??
+    data?.naturalHomeV47HardFailureStabilization?.latest?.rowCount ??
+    data?.naturalHomeV47HardFailureStabilization?.latest?.sampleCount ??
+    data?.naturalHomeV46V45FailureFocusRepair?.latest?.rowCount ??
+    data?.naturalHomeV46V45FailureFocusRepair?.latest?.sampleCount ??
+    data?.naturalHomeV45Generalization?.latest?.rowCount ??
+    data?.naturalHomeV45Generalization?.latest?.sampleCount ??
+    data?.naturalHomeV44V32StableGeneralization?.latest?.rowCount ??
+    data?.naturalHomeV44V32StableGeneralization?.latest?.sampleCount ??
+    data?.naturalHomeV43V32FailureFocusRepair?.latest?.rowCount ??
+    data?.naturalHomeV43V32FailureFocusRepair?.latest?.sampleCount ??
+    data?.naturalHomeV42WaterExpertFix?.latest?.rowCount ??
+    data?.naturalHomeV42WaterExpertFix?.latest?.sampleCount ??
+    data?.naturalHomeV41V32WaterRescue?.latest?.rowCount ??
+    data?.naturalHomeV41V32WaterRescue?.latest?.sampleCount ??
+    data?.naturalHomeV40SharpnessLockRepair?.latest?.rowCount ??
+    data?.naturalHomeV40SharpnessLockRepair?.latest?.sampleCount ??
+    data?.naturalHomeV36BalancedGeneralization?.latest?.rowCount ??
+    data?.naturalHomeV36BalancedGeneralization?.latest?.sampleCount ??
+    data?.naturalHomeV35BalancedWaterDetail?.latest?.rowCount ??
+    data?.naturalHomeV35BalancedWaterDetail?.latest?.sampleCount ??
+    data?.naturalHomeV34WaterStability?.latest?.rowCount ??
+    data?.naturalHomeV34WaterStability?.latest?.sampleCount ??
+    data?.naturalHomeV33WaterArtifactGuard?.latest?.rowCount ??
+    data?.naturalHomeV33WaterArtifactGuard?.latest?.sampleCount ??
     data?.naturalHomeV28RealMaskRemix?.latest?.sampleCount ??
     data?.naturalHomeV27AugmentedDiversity?.latest?.sampleCount ??
     data?.naturalHomeDiversityRefiner?.latest?.sampleCount ??
@@ -89,7 +156,7 @@ export function ProgressClient() {
           label="资源账本"
           value={
             resource
-              ? `${resource.status === "running" ? "记录中" : "已记录"} / ${resource.sampleCount} 点`
+              ? `${resource.status === "running" ? "记录中" : "已记录"} / ${resource.telemetrySampleCount ?? resource.sampleCount} 个采样点`
               : "暂无记录"
           }
           detail={resource ? `任务 ${resource.action}` : "从页面启动训练后会自动生成"}
@@ -132,7 +199,7 @@ export function ProgressClient() {
           整体 MVP 进度：<strong>{mvpPercent}%</strong>
         </span>
         <span>
-          当前主线：<strong>纯世界家园 / 本地自研小模型 / 不进正式世界</strong>
+          当前主线：<strong>纯自然家园视觉底座 / 本地自研小模型 / 不进正式世界</strong>
         </span>
         <span>
           外部在线绘图 API：<strong>0</strong>
@@ -140,25 +207,42 @@ export function ProgressClient() {
       </section>
 
       <section className={styles.panel}>
-        <p className={styles.kicker}>INFORMATION ARCHITECTURE</p>
-        <h2>主页只放功能入口，训练后结果集中归档</h2>
+        <p className={styles.kicker}>BUSINESS CAPABILITY MAP</p>
+        <h2>动态世界不是一张图，是可组合视觉单元</h2>
         <p>
-          V19、V20、V22、V23、V24、V25、V26、V27 等训练输出不再堆在主页上。它们统一放到“训练后生成内容”
-          模块，保留生成时间、文件位置、审核状态和失败记录。这里只保留当前任务、资源状态和下一步入口。
+          当前训练只推进“纯自然环境底座”。正式业务还需要人物、管家、设施、建筑、内部空间、状态帧和运行时合成。
+          静态图只作为训练证据和视觉单元基础，未来玩家看到的是世界事实驱动后的动态 ApprovedFrame / RuntimeFrame。
+        </p>
+        <div className={styles.capabilityGrid}>
+          {businessCapabilityPlan.map((item) => (
+            <article key={item.name} className={styles.capabilityCard}>
+              <span>{item.state}</span>
+              <h3>{item.name}</h3>
+              <p>{item.detail}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className={styles.panel}>
+        <p className={styles.kicker}>INFORMATION ARCHITECTURE</p>
+        <h2>主页只放入口，训练后的图片集中归档</h2>
+        <p>
+          V19 到 V89 的训练输出不堆在主页。图片、时间戳、文件位置、质量门结论、失败原因和资源账本，都进入“训练后生成内容”模块。
+          主页只负责告诉我们：当前阶段、当前最佳候选、下一步该跑什么。
         </p>
       </section>
 
       {trainingQualityGate ? (
         <section className={styles.panel}>
           <p className={styles.kicker}>TRAINING QUALITY GATE</p>
-          <h2>训练结果质量闸门</h2>
+          <h2>训练结果质量门</h2>
           <p>
-            这里只判断本地小模型输出能不能作为下一轮训练依据。它不是正式 VJ-2，也不会把候选图直接放进 /world；
-            正式世界仍只接受 Candidate / VisualJudge / ApprovedFrame 链路。
+            这里只判断本地小模型输出能不能作为下一轮训练依据。它不是正式 VJ-2，也不会把候选图直接放进 /world。
           </p>
           <dl className={styles.metrics}>
             <div>
-              <dt>质量闸状态</dt>
+              <dt>质量门状态</dt>
               <dd>{qualityGateLabel(trainingQualityGate.status)}</dd>
             </div>
             <div>
@@ -218,28 +302,28 @@ export function ProgressClient() {
           label="STAGE 02"
           title="训练后生成内容"
           status={generatedCount > 0 ? `已有 ${generatedCount} 张最新候选` : "查看记录"}
-          description="集中查看本地模型推理后的 PNG、生成时间、文件位置和审核状态。所有失败候选也保留，不在主页铺开。"
+          description="集中查看本地模型推理后的 PNG、生成时间、文件位置、审核状态和失败记录。"
         />
         <StageCard
           href="/ai-painter-progress/history"
           label="STAGE 03"
           title="训练历史"
           status="查看记录"
-          description="集中查看每次训练摘要、资源账本和审核结论。失败记录必须保留，用于回溯和对比。"
+          description="集中查看每次训练摘要、资源账本和审核结论。失败记录也必须保留。"
         />
         <StageCard
           href="/ai-painter-progress/dataset-inventory"
           label="STAGE 04"
           title="数据与资产清单"
           status={`${data?.dataset.formalSceneSamples ?? 0} 个正式样本`}
-          description="查看训练样本、条件通道、图像尺寸和当前可用数据范围，不混入生成结果。"
+          description="查看训练样本、条件通道、图像尺寸和当前可用数据范围。"
         />
         <StageCard
           href="/ai-painter-progress/local-assets"
           label="STAGE 05"
           title="本地资产库"
           status={data?.localAssets.compositeReady ? "已生成资产" : "准备中"}
-          description="查看本地导入、候选资产和可信资产状态。原始素材只作为训练来源，不直接进入世界。"
+          description="查看本地导入、候选资产和可信资产状态。原始素材不直接进入世界。"
         />
         <StageCard
           href="/ai-painter-progress/structure-guided"
@@ -271,6 +355,32 @@ export function ProgressClient() {
           danger={!data?.componentReadiness?.canStartAutonomousTraining}
         />
         <StageCard
+          href="/ai-painter-progress"
+          label="STAGE 08B"
+          title="VisualUnit v0"
+          status={data?.visualUnitV0 ? "schema 已建立" : "未接入"}
+          description={
+            data?.visualUnitV0
+              ? `当前 MVP 单元 ${data.visualUnitV0.currentMvpUnitCount} 类，未来动态世界缺口 ${data.visualUnitV0.missingForDynamicWorld.length} 类。下一步：${data.visualUnitV0.nextModule}。`
+              : "建立可组合视觉单元：自然、管家、人物、建筑、设施、道具、动物和动效。"
+          }
+        />
+        <StageCard
+          href="/ai-painter-progress/dataset-inventory"
+          label="STAGE 08C"
+          title="VisualUnit 数据目录"
+          status={
+            data?.visualUnitData
+              ? `${data.visualUnitData.sampleCount} 个契约样例 / ${data.visualUnitData.trainingReadySampleCount} 个可训练`
+              : "未建立"
+          }
+          description={
+            data?.visualUnitData
+              ? `当前只建立 VisualUnit 数据契约，正式世界展示=${data.visualUnitData.formalWorldDisplay ? "允许" : "禁止"}。下一步：${data.visualUnitData.nextRequiredWork?.[0] ?? "补齐同源 target 和 mask"}。`
+              : "建立 data/visual-units，用来保存未来自然、人物、建筑、设施、物品、动物和动效的可组合训练数据。"
+          }
+        />
+        <StageCard
           href="/ai-painter-progress/training-expansion"
           label="STAGE 09"
           title="训练扩张"
@@ -285,7 +395,7 @@ export function ProgressClient() {
           label="STAGE 10"
           title="自主训练闭环"
           status={data?.autonomousTraining.latestDiscrete ? "已跑过一轮" : "待启动"}
-          description="未来串起结构、RGB、局部资产和离散像素，形成完整本地闭环。当前先不作为主页训练入口。"
+          description="未来串起结构、RGB、局部资产和离散像素，形成完整本地闭环。当前先不作为主训练入口。"
           disabled
         />
       </section>
@@ -325,7 +435,7 @@ function qualityGateLabel(status?: string) {
   if (status === "passed_for_next_training") return "通过，可进入下一轮训练"
   if (status === "warning_keep_candidate") return "候选保留，需要观察"
   if (status === "failed_keep_for_history") return "失败，仅保留历史"
-  return "暂无质量闸结论"
+  return "暂无质量门结论"
 }
 
 function qualityGateRowLabel(status?: string) {

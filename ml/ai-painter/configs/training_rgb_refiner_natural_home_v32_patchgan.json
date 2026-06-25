@@ -1,0 +1,45 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v32-patchgan-sharpen",
+  "modelVersion": "rgb-refiner-natural-home-v32-patchgan-sharpen",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.000055,
+  "discriminatorLearningRate": 0.00004,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.04,
+  "maxEpochs": 80,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 2.4,
+    "texture": 1.85,
+    "laplacian": 1.35,
+    "gradient": 1.05,
+    "colorRange": 0.12
+  },
+  "structureWeights": {
+    "water": 2.1,
+    "shoreline": 2.6,
+    "road": 2.0,
+    "roadEdge": 2.1,
+    "tree": 2.1,
+    "rock": 1.9,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "diagnosisTarget": {
+    "minimumSharpnessRatio": 0.82,
+    "minimumEdgeDensityRatio": 0.85,
+    "targetSampleId": "natural-home-crop-v7-12-forest-stream-clean"
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260621,
+  "status": "v32_local_patchgan_sharpen_for_full_scene_refiner"
+}

@@ -1,0 +1,32 @@
+{
+  "trainingVersion": "training-construction-home-v63-broader-fact-expression",
+  "batchSize": 1,
+  "gradientAccumulationSteps": 10,
+  "learningRate": 0.000028,
+  "maxEpochs": 320,
+  "mixedPrecision": true,
+  "horizontalFlipAugmentation": false,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 1.42,
+    "texture": 0.88,
+    "laplacian": 1.05,
+    "gradient": 0.96,
+    "colorRange": 0.2
+  },
+  "structureWeights": {
+    "grass": 0.2,
+    "water": 0.3,
+    "shoreline": 0.42,
+    "road": 1.12,
+    "roadEdge": 0.98,
+    "tree": 0.32,
+    "rock": 0.42,
+    "shelterFoundation": 2.75,
+    "shelterWall": 3.55,
+    "shelterRoof": 2.5,
+    "constructionMaterial": 3.0
+  },
+  "seed": 20260623,
+  "status": "local_model_broader_20_source_construction_fact_expression_training_from_v60"
+}

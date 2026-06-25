@@ -1,0 +1,46 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v80-quality-preserving-water-repair",
+  "modelVersion": "rgb-refiner-natural-home-v80-quality-preserving-water-repair",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.0000009,
+  "discriminatorLearningRate": 0.0000008,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0012,
+  "maxEpochs": 10,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 3.2,
+    "texture": 2.2,
+    "laplacian": 2.0,
+    "gradient": 1.6,
+    "colorRange": 0.14,
+    "waterPeriodicity": 2.6
+  },
+  "structureWeights": {
+    "water": 3.4,
+    "shoreline": 3.5,
+    "road": 2.05,
+    "roadEdge": 2.1,
+    "tree": 2.35,
+    "rock": 2.35,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.008,
+    "margin": 0.0007
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260624,
+  "status": "v80_quality_preserving_water_repair_from_v78_light_failure_focus_no_building_no_character_no_animal"
+}

@@ -1,0 +1,51 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v35-balanced-water-detail",
+  "modelVersion": "rgb-refiner-natural-home-v35-balanced-water-detail",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.000022,
+  "discriminatorLearningRate": 0.000015,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.012,
+  "maxEpochs": 50,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 2.8,
+    "texture": 1.75,
+    "laplacian": 1.55,
+    "gradient": 1.2,
+    "colorRange": 0.12,
+    "waterPeriodicity": 2.6
+  },
+  "structureWeights": {
+    "water": 3.2,
+    "shoreline": 3.2,
+    "road": 1.8,
+    "roadEdge": 1.8,
+    "tree": 2.0,
+    "rock": 1.8,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 16, 24, 32],
+    "allowedRatio": 1.04,
+    "margin": 0.0015
+  },
+  "diagnosisTarget": {
+    "minimumSharpnessRatio": 0.82,
+    "minimumEdgeDensityRatio": 0.85,
+    "targetSampleId": "natural-home-crop-v7-12-forest-stream-clean"
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260622,
+  "status": "v35_balanced_water_detail_for_natural_home_refiner"
+}

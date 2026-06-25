@@ -1,0 +1,51 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v46-v45-failure-focus",
+  "modelVersion": "rgb-refiner-natural-home-v46-v45-failure-focus",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.0000032,
+  "discriminatorLearningRate": 0.0000018,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0022,
+  "maxEpochs": 18,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.04,
+    "edge": 2.85,
+    "texture": 2.05,
+    "laplacian": 1.72,
+    "gradient": 1.32,
+    "colorRange": 0.13,
+    "waterPeriodicity": 2.05
+  },
+  "structureWeights": {
+    "water": 3.1,
+    "shoreline": 3.2,
+    "road": 2.1,
+    "roadEdge": 2.2,
+    "tree": 2.25,
+    "rock": 2.35,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 16, 24, 32],
+    "allowedRatio": 1.018,
+    "margin": 0.001
+  },
+  "diagnosisTarget": {
+    "minimumSharpnessRatio": 0.84,
+    "minimumEdgeDensityRatio": 0.88,
+    "targetSampleId": "natural-home-scene_005_highland_quarry_refuge-stream-lower-east-wide__v28-copy"
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260625,
+  "status": "v46_v45_failure_focus_repair_from_v32"
+}

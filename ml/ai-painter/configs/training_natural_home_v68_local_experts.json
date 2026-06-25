@@ -1,0 +1,32 @@
+{
+  "trainingVersion": "training-natural-home-v68-local-experts",
+  "modelVersion": "natural-home-local-expert-v68",
+  "inputChannels": 22,
+  "outputChannels": 3,
+  "baseChannels": 32,
+  "batchSize": 4,
+  "learningRate": 0.00016,
+  "maxEpochs": 18,
+  "mixedPrecision": true,
+  "augment": true,
+  "inputExtras": ["coord", "category"],
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 1.7,
+    "texture": 1.2,
+    "laplacian": 0.85,
+    "gradient": 0.75,
+    "colorRange": 0.12
+  },
+  "structureWeights": {
+    "grass": 0.75,
+    "water": 1.2,
+    "shoreline": 2.5,
+    "road": 2.4,
+    "roadEdge": 2.0,
+    "tree": 2.0,
+    "rock": 1.8
+  },
+  "seed": 20260624,
+  "status": "local_mvp_natural_home_six_experts_no_construction_no_building"
+}

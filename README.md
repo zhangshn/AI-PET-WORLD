@@ -1,121 +1,156 @@
-# AI-PET-WORLD
+# AI-PET-WORLD 总文档
 
-AI-PET-WORLD is an autonomous world game driven by an AI butler, world rules, and an AI visual pipeline.
+版本：v2.2  
+状态：正式入口文档  
+更新时间：2026-06-25
 
-The user enters birth data during registration. The project maps the birth data through Zi Wei Dou Shu and related destiny/personality logic into the butler's long-term personality, communication style, construction preference, and decision bias.
+本文档是项目总入口。后续执行顺序以唯一执行计划表为准，详细架构和目录结构不在这里展开，分别查看：
 
-The butler is not a directly controlled unit. The butler is an autonomous actor inside the world.
+- [唯一执行计划表](./docs/EXECUTION_PLAN.md)
+- [技术架构文档](./docs/ARCHITECTURE.md)
+- [目录结构文档](./docs/DIRECTORY_STRUCTURE.md)
 
-## Current Main Chain
+旧方案、冻结方案、旧视觉链路、程序画图方案、SVG/Canvas/HTML 调试画面、第三方在线绘图 API 接入方案，都不属于正式路线。
+
+## 1. 项目主旨
+
+AI-PET-WORLD 是一个自主世界游戏。
+
+核心不是玩家手动操作角色完成任务，而是：
+
+- 用户注册并输入出生信息。
+- 项目根据紫微斗数及人格映射，生成管家的灵魂、性格、沟通方式、长期偏好和建设倾向。
+- 管家是世界中的自主行为主体，可以参考玩家建议，但不保证服从。
+- 世界由规则、资源、生态、事件和管家行为共同推进。
+- 前期只有自然环境和基础资源；后续由管家自主建设住所、小镇、城市和多玩家共同世界。
+- 用户主要通过游戏内手机与管家沟通。
+
+## 2. 唯一业务主链
 
 ```txt
-User registration
--> Birth data
--> Destiny/personality mapping
--> Butler soul/personality
--> Personal world creation
--> Autonomous runtime world facts
--> AI Painter visual generation
+用户注册
+-> 出生信息
+-> 紫微斗数 / 人格映射
+-> 管家灵魂与长期行为偏好
+-> 自主世界 Runtime
+-> 世界事实 World Facts
+-> Scene Blueprint / Condition Mask
+-> 本地自研 AI Painter 小模型
+-> 候选视觉输出
 -> VisualJudge
--> ApprovedFrame
--> Player world view
+-> ApprovedFrame / RuntimeFrame
+-> 玩家看到世界
 ```
 
-## Visual Rule
+## 3. 当前硬边界
 
-The world page can only show `ApprovedFrame`.
+正式玩家世界只允许展示 `ApprovedFrame` 或后续经过同级审核的 `RuntimeFrame`。
 
-No candidate image, sketch, debug view, or programmatic drawing may be shown to the player.
+以下内容不能作为正式世界画面：
 
-## AI Painter Hard Boundary
+- 程序画图。
+- SVG / Canvas / HTML / CSS 渲染图。
+- 调试预览图。
+- 结构贴合图。
+- 固定模板图。
+- 占位图。
+- 未过 VisualJudge 的候选图。
+- 第三方在线绘图 API 直接生成的正式画面。
 
-Local AI Painter training trains local model weights. It does not train a drawing program.
+AI Painter 必须是本地自研小模型链路：训练数据、结构条件、模型训练、推理、VisualJudge、ApprovedFrame 都在项目内闭环。
 
-The formal route is:
+## 4. 当前 MVP 视觉范围
+
+当前主线只做纯自然家园视觉底座。
+
+允许：
+
+- 草地。
+- 水体。
+- 水岸。
+- 自然小路。
+- 树木。
+- 岩石。
+- 花草灌木。
+- 空间深度。
+
+当前禁止混入：
+
+- 建筑。
+- 房屋。
+- 临时住所。
+- 建筑地基。
+- 墙体。
+- 屋顶。
+- 施工材料。
+- 人物。
+- 动物。
+- 昆虫。
+- 管家。
+- 小镇和城市。
+
+这些内容后续要作为独立 VisualUnit 模块训练。
+
+## 5. 当前进度表
+
+| 模块 | 状态 | 完成度 | 说明 |
+|---|---|---:|---|
+| 自主世界主旨 | 正确 | 100% | 管家自主、世界自主、玩家通过手机沟通 |
+| 世界事实优先 | 正确 | 100% | 视觉不篡改事实 |
+| 正式展示闸门 | 正确 | 100% | `/world` 只允许 ApprovedFrame / RuntimeFrame |
+| 本地训练工程 | 可运行 | 95% | PyTorch/CUDA/训练/推理/记录已接通 |
+| 自然家园视觉底座 | 进行中 | 65% | V89 隐藏候选已生成，仍需继续提升泛化和质量 |
+| 训练结果归档 | 已接通 | 85% | 训练图、失败图、时间戳、资源账本已进入归档链路 |
+| VisualJudge VJ-0 | 完成 | 100% | 文件、来源、事实硬闸门已建 |
+| VisualJudge VJ-1 | 进行中 | 70% | 质量指标能拦截部分失败图 |
+| VisualJudge VJ-2 | 未完成 | 10% | 语义、风格、状态一致性判断还未完成 |
+| ApprovedFrame | 未完成 | 0% | 当前正式世界图为 0 |
+| VisualUnit v0 | 数据契约已建立 | 25% | 已有 schema、registry、状态帧、运行时帧、`data/visual-units` 目录和 1 个树木静态契约样例；judge 未完成 |
+| 人物 / 管家视觉单元 | 未开始 | 0% | 体型、动作、状态帧未训练 |
+| 设施 / 建筑视觉单元 | 未开始 | 0% | 地基、墙体、屋顶、内部空间、建造阶段未训练 |
+| 动态状态帧 | 未开始 | 0% | 水流、树叶、天气、动物、昆虫等未训练 |
+| Runtime 合成 | 未完成 | 0% | 还未把视觉单元组合成可运行世界画面 |
+
+## 6. 当前下一步
+
+当前下一步以 [唯一执行计划表](./docs/EXECUTION_PLAN.md) 为准。当前主线不是继续扩展 VisualUnit，而是回到自然家园小模型训练：
+
+1. 继续自然家园小模型训练。
+2. 继续自然家园候选图自动归档。
+3. 强化自然家园 VisualJudge。
+4. 达标后生成第一张自然家园 ApprovedFrame。
+5. VisualUnit judge、人物、建筑、动态状态帧全部后置，不能抢当前主线。
+
+任何新增模块、提前后续阶段、改变验收标准，都必须先向项目所有者申请确认。
+
+## 7. 还缺什么
+
+当前文档体系还缺的不是更多 MD，而是下一阶段代码落地：
+
+| 缺口 | 状态 |
+|---|---|
+| VisualUnit v0 judge | 未做 |
+| VisualUnit 训练数据目录 | 已建立最小契约样例 |
+| 人物 / 管家训练链路 | 未做 |
+| 设施 / 建筑训练链路 | 未做 |
+| 动态状态帧训练链路 | 未做 |
+| Runtime 合成层 | 未做 |
+| VJ-2 语义与状态一致性判断 | 未做 |
+| 第一张正式自然家园 ApprovedFrame | 未做 |
+
+## 8. 固定验收规则
+
+每次完成一个大模块后，必须输出：
 
 ```txt
-project-owned training images
--> Blueprint / Mask / rights records
--> local PyTorch model training
--> local model inference PNG
--> VisualJudge
--> ApprovedFrame
+当前模块：
+本轮范围：
+完成定义：
+实施结果：
+验证：
+进度表：
+下一模块：
+阻塞项：
 ```
 
-The following are not allowed as MVP world output, training conclusions, or `/world` display sources:
-
-```txt
-programmatic drawing
-SVG / Canvas / HTML / CSS render
-template image
-structure-fit debug preview
-fixed asset composition
-placeholder image
-```
-
-If a generated image does not come from the local model and pass VisualJudge, it must stay hidden.
-
-## Training Data Chain
-
-```txt
-Original training PNG
--> project-owned automatic visual annotation
--> Blueprint v1 + 14 channel masks
--> automatic annotation judge and correction
--> accepted training pair
--> internal AI Painter training
-```
-
-The existing 20 images are immutable source materials, not trusted ground-truth annotations. Old coarse annotations and manual per-object approval are not part of the formal training-data chain. Samples that cannot pass automatic semantic and geometric checks must be quarantined instead of being sent to the user for manual approval.
-
-Current formal architecture documents:
-
-```txt
-docs/AI_PET_WORLD_MASTER_ARCHITECTURE.md
-```
-
-## Current Execution Plan
-
-The current main task is local model quality improvement for `natural-home RGB Refiner`.
-
-This stage only trains pure natural home scenes:
-
-- Allowed: grass, water, shoreline, natural paths, trees, rocks, flowers, shrubs, depth.
-- Forbidden: buildings, houses, construction sites, construction materials, characters, animals, insects, butler.
-- The output is only a local model candidate. It cannot be shown in `/world` unless it passes VisualJudge and becomes an `ApprovedFrame`.
-
-Current status:
-
-- Two local GPU training rounds have been diagnosed.
-- The first round is the known best result so far.
-- The second round regressed after stronger edge/texture weights.
-- The formal config has been restored to the known-best setup.
-- The next step is data improvement or model-capacity improvement, not more program drawing and not blind loss-weight escalation.
-
-Backup plans are documented but must not interrupt the current main task:
-
-- Training Result Diagnoser: explain why a local model output failed.
-- Next Training Planner: decide whether to add data, change loss weights, change training config, or retry inference.
-- Autonomous Training Loop: inference -> judge -> diagnose -> plan -> retrain.
-
-## Current API
-
-```txt
-POST /api/world/create
-POST /api/world/tick
-GET  /api/world/visual/condition
-POST /api/world/visual/generate
-GET  /api/world/visual/candidate
-POST /api/world/visual/judge
-GET  /world
-```
-
-## Local MVP Persistence
-
-```txt
-data/world-runtime/
-data/world-visual-candidates/
-data/world-approved-frames/
-```
-
-Local file persistence is for MVP development only. Production needs a database adapter.
+任何代理不得自由发挥改主线，不得把程序图说成 AI 模型图，不得把候选图说成正式世界图。

@@ -1,0 +1,35 @@
+{
+  "trainingVersion": "training-construction-home-v59-structure-guided",
+  "modelVersion": "construction-home-structure-guided-v59",
+  "inputChannels": 14,
+  "structureChannels": 14,
+  "baseChannels": 40,
+  "batchSize": 2,
+  "learningRate": 0.00016,
+  "maxEpochs": 240,
+  "mixedPrecision": true,
+  "structureLossWeight": 4.2,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 0.95,
+    "texture": 0.45,
+    "laplacian": 0.65,
+    "gradient": 0.5,
+    "colorRange": 0.25
+  },
+  "structureWeights": {
+    "grass": 0.35,
+    "water": 0.45,
+    "shoreline": 0.7,
+    "road": 1.1,
+    "roadEdge": 1.0,
+    "tree": 0.65,
+    "rock": 0.75,
+    "shelterFoundation": 4.8,
+    "shelterWall": 5.8,
+    "shelterRoof": 4.2,
+    "constructionMaterial": 3.2
+  },
+  "seed": 20260623,
+  "status": "local_construction_home_structure_alignment_only"
+}

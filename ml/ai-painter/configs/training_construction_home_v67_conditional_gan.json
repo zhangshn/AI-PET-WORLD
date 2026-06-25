@@ -1,0 +1,28 @@
+{
+  "trainingVersion": "training-construction-home-v67-conditional-gan",
+  "mixedPrecision": true,
+  "horizontalFlipAugmentation": false,
+  "lossWeights": {
+    "l1": 0.95,
+    "edge": 1.85,
+    "texture": 1.35,
+    "laplacian": 1.2,
+    "gradient": 1.05,
+    "colorRange": 0.14
+  },
+  "structureWeights": {
+    "grass": 0.36,
+    "water": 0.48,
+    "shoreline": 0.75,
+    "road": 1.28,
+    "roadEdge": 1.16,
+    "tree": 0.72,
+    "rock": 0.82,
+    "shelterFoundation": 4.2,
+    "shelterWall": 5.0,
+    "shelterRoof": 3.9,
+    "constructionMaterial": 3.1
+  },
+  "seed": 20260623,
+  "status": "local_conditional_gan_short_run_from_v60_to_test_detail_preservation"
+}

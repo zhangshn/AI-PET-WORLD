@@ -105,7 +105,9 @@ export async function GET() {
       "vj_0_only",
       "vj_1_failed",
       "vj_2_not_implemented",
-      "approved_for_controlled_mvp",
+      approvedFrameGate.canRuntimeRender
+        ? "approved_for_controlled_mvp"
+        : "not_approved",
       "not_approved_for_production",
       "production_display_blocked",
       "current_tick_gate_checked",

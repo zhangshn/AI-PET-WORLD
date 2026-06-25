@@ -1,0 +1,32 @@
+{
+  "trainingVersion": "training-construction-home-v65-heldout-generalization",
+  "batchSize": 1,
+  "gradientAccumulationSteps": 8,
+  "learningRate": 0.00001,
+  "maxEpochs": 220,
+  "mixedPrecision": true,
+  "horizontalFlipAugmentation": false,
+  "lossWeights": {
+    "l1": 1.12,
+    "edge": 1.65,
+    "texture": 0.98,
+    "laplacian": 1.18,
+    "gradient": 1.12,
+    "colorRange": 0.16
+  },
+  "structureWeights": {
+    "grass": 0.2,
+    "water": 0.32,
+    "shoreline": 0.45,
+    "road": 1.18,
+    "roadEdge": 1.02,
+    "tree": 0.34,
+    "rock": 0.44,
+    "shelterFoundation": 2.9,
+    "shelterWall": 3.65,
+    "shelterRoof": 2.6,
+    "constructionMaterial": 3.08
+  },
+  "seed": 20260623,
+  "status": "local_model_heldout_generalization_preserve_v60_sharpness_train_16_validate_4"
+}

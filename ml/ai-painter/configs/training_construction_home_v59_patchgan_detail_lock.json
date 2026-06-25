@@ -1,0 +1,45 @@
+{
+  "trainingVersion": "training-construction-home-v59-patchgan-detail-lock",
+  "modelVersion": "construction-home-rgb-refiner-v59-patchgan-detail-lock",
+  "inputChannels": 17,
+  "baseChannels": 56,
+  "residualBlocks": 10,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.00006,
+  "discriminatorLearningRate": 0.00004,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.035,
+  "maxEpochs": 90,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 2.2,
+    "texture": 1.7,
+    "laplacian": 1.35,
+    "gradient": 1.0,
+    "colorRange": 0.14
+  },
+  "structureWeights": {
+    "grass": 0.45,
+    "water": 0.55,
+    "shoreline": 0.8,
+    "road": 1.35,
+    "roadEdge": 1.25,
+    "tree": 0.8,
+    "rock": 0.9,
+    "shelterFoundation": 3.8,
+    "shelterWall": 4.6,
+    "shelterRoof": 3.6,
+    "constructionMaterial": 2.8
+  },
+  "diagnosisTarget": {
+    "minimumSharpnessRatio": 0.86,
+    "minimumEdgeDensityRatio": 0.88
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260623,
+  "status": "local_construction_home_detail_lock_candidate_only"
+}

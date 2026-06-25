@@ -81,12 +81,24 @@ def category_channels(directory: Path, height: int, width: int, torch):
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
         value = metadata.get("category")
         if isinstance(value, str):
-            category = value
+            category = normalize_category(value)
     channels = []
     for name in categories:
         fill = 1.0 if name == category else 0.0
         channels.append(torch.full((1, height, width), fill, dtype=torch.float32))
     return channels
+
+
+def normalize_category(value: str) -> str:
+    aliases = {
+        "grass_ground": "grass",
+        "open_ground": "grass",
+        "road_path": "road",
+        "water_shoreline": "shoreline",
+        "tree_bush": "tree",
+        "rock_terrain": "rock",
+    }
+    return aliases.get(value, value)
 
 
 def source_channels(directory: Path, height: int, width: int, torch):

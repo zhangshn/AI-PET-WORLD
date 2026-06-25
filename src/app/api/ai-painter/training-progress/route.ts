@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process"
+﻿import { execFile } from "node:child_process"
 import { readFile, readdir, stat } from "node:fs/promises"
 import path from "node:path"
 import { promisify } from "node:util"
@@ -6,6 +6,7 @@ import { NextResponse } from "next/server"
 import { readResourceUsageLedger } from "@/server/ai-painter-resource-usage"
 import { buildTrainingQualityGateReport } from "@/server/ai-painter-training-quality-gate"
 import { readTrainingControlState, readTrainingLogTail } from "@/server/ai-painter-training-state"
+import { buildVisualUnitV0Status } from "@/world/world-visual-painter"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -63,7 +64,227 @@ export async function GET() {
   const naturalHomeV28DiversityRefinerLatest = await readJson(
     path.join(aiPainterRuntimeRoot, "natural-home-v28-diversity-refiner-generation", "latest.json"),
   )
-  const trainingQualityGateSource = naturalHomeCandidateConsolidationLatest ?? naturalHomeWarningFocusLatest ?? naturalHomeMultisourceLatest
+  const naturalHomeV31QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v31-quality-selection", "latest.json"),
+  )
+  const naturalHomeV32QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v32-quality-selection", "latest.json"),
+  )
+  const naturalHomeV33WaterArtifactGuardLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v33-water-artifact-guard-generation", "latest.json"),
+  )
+  const naturalHomeV33QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v33-quality-selection", "latest.json"),
+  )
+  const naturalHomeV34WaterStabilityLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v34-water-stability-generation", "latest.json"),
+  )
+  const naturalHomeV34QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v34-quality-selection", "latest.json"),
+  )
+  const naturalHomeV35BalancedWaterDetailLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v35-balanced-water-detail-generation", "latest.json"),
+  )
+  const naturalHomeV35QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v35-quality-selection", "latest.json"),
+  )
+  const naturalHomeV36BalancedGeneralizationLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v36-balanced-generalization-generation", "latest.json"),
+  )
+  const naturalHomeV36QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v36-quality-selection", "latest.json"),
+  )
+  const naturalHomeV37WaterFailureRepairLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v37-water-failure-repair-generation", "latest.json"),
+  )
+  const naturalHomeV37QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v37-quality-selection", "latest.json"),
+  )
+  const naturalHomeV38WaterEdgeBalanceLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v38-water-edge-balance-generation", "latest.json"),
+  )
+  const naturalHomeV38QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v38-quality-selection", "latest.json"),
+  )
+  const naturalHomeV39FailureFocusDatasetManifest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v39-failure-focus-dataset", "dataset-manifest.json"),
+  )
+  const naturalHomeV39FailureFocusRepairLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v39-failure-focus-repair-generation", "latest.json"),
+  )
+  const naturalHomeV39QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v39-quality-selection", "latest.json"),
+  )
+  const naturalHomeV39FailureFocusTrainingSummary = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v39-failure-focus-repair-training", "training-summary.json"),
+  )
+  const naturalHomeV39FailureFocusTrainingLatest = await readLastJsonLine(
+    path.join(aiPainterRuntimeRoot, "natural-home-v39-failure-focus-repair-training", "training-log.jsonl"),
+  )
+  const naturalHomeV40SharpnessLockRepairLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v40-sharpness-lock-repair-generation", "latest.json"),
+  )
+  const naturalHomeV40QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v40-quality-selection", "latest.json"),
+  )
+  const naturalHomeV40SharpnessLockTrainingSummary = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v40-sharpness-lock-repair-training", "training-summary.json"),
+  )
+  const naturalHomeV40SharpnessLockTrainingLatest = await readLastJsonLine(
+    path.join(aiPainterRuntimeRoot, "natural-home-v40-sharpness-lock-repair-training", "training-log.jsonl"),
+  )
+  const naturalHomeV41V32WaterRescueLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v41-v32-water-rescue-generation", "latest.json"),
+  )
+  const naturalHomeV41QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v41-quality-selection", "latest.json"),
+  )
+  const naturalHomeV41V32WaterRescueTrainingSummary = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v41-v32-water-rescue-training", "training-summary.json"),
+  )
+  const naturalHomeV41V32WaterRescueTrainingLatest = await readLastJsonLine(
+    path.join(aiPainterRuntimeRoot, "natural-home-v41-v32-water-rescue-training", "training-log.jsonl"),
+  )
+  const naturalHomeV42WaterExpertFixLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v42-v32-water-expert-fix-generation", "latest.json"),
+  )
+  const naturalHomeV42QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v42-quality-selection", "latest.json"),
+  )
+  const naturalHomeV43FailureFocusDatasetManifest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v43-v32-failure-focus-dataset", "dataset-manifest.json"),
+  )
+  const naturalHomeV43FailureFocusRepairLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v43-v32-failure-focus-repair-generation", "latest.json"),
+  )
+  const naturalHomeV43QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v43-quality-selection", "latest.json"),
+  )
+  const naturalHomeV43FailureFocusTrainingSummary = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v43-v32-failure-focus-repair-training", "training-summary.json"),
+  )
+  const naturalHomeV43FailureFocusTrainingLatest = await readLastJsonLine(
+    path.join(aiPainterRuntimeRoot, "natural-home-v43-v32-failure-focus-repair-training", "training-log.jsonl"),
+  )
+  const naturalHomeV44StableGeneralizationLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v44-v32-stable-generalization-generation", "latest.json"),
+  )
+  const naturalHomeV44QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v44-quality-selection", "latest.json"),
+  )
+  const naturalHomeV44StableGeneralizationTrainingSummary = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v44-v32-stable-generalization-training", "training-summary.json"),
+  )
+  const naturalHomeV44StableGeneralizationTrainingLatest = await readLastJsonLine(
+    path.join(aiPainterRuntimeRoot, "natural-home-v44-v32-stable-generalization-training", "training-log.jsonl"),
+  )
+  const naturalHomeV45GeneralizationDatasetManifest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v45-generalization-dataset", "dataset-manifest.json"),
+  )
+  const naturalHomeV45GeneralizationLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v45-generalization-generation", "latest.json"),
+  )
+  const naturalHomeV45QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v45-quality-selection", "latest.json"),
+  )
+  const naturalHomeV45GeneralizationTrainingSummary = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v45-generalization-training", "training-summary.json"),
+  )
+  const naturalHomeV45GeneralizationTrainingLatest = await readLastJsonLine(
+    path.join(aiPainterRuntimeRoot, "natural-home-v45-generalization-training", "training-log.jsonl"),
+  )
+  const naturalHomeV46FailureFocusDatasetManifest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v46-v45-failure-focus-dataset", "dataset-manifest.json"),
+  )
+  const naturalHomeV46FailureFocusRepairLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v46-v45-failure-focus-repair-generation", "latest.json"),
+  )
+  const naturalHomeV46QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v46-quality-selection", "latest.json"),
+  )
+  const naturalHomeV46FailureFocusTrainingSummary = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v46-v45-failure-focus-repair-training", "training-summary.json"),
+  )
+  const naturalHomeV46FailureFocusTrainingLatest = await readLastJsonLine(
+    path.join(aiPainterRuntimeRoot, "natural-home-v46-v45-failure-focus-repair-training", "training-log.jsonl"),
+  )
+  const naturalHomeV47HardFailureDatasetManifest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v47-hard-failure-stabilization-dataset", "dataset-manifest.json"),
+  )
+  const naturalHomeV47HardFailureGenerationLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v47-hard-failure-stabilization-generation", "latest.json"),
+  )
+  const naturalHomeV47QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v47-quality-selection", "latest.json"),
+  )
+  const naturalHomeV47HardFailureTrainingSummary = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v47-hard-failure-stabilization-training", "training-summary.json"),
+  )
+  const naturalHomeV47HardFailureTrainingLatest = await readLastJsonLine(
+    path.join(aiPainterRuntimeRoot, "natural-home-v47-hard-failure-stabilization-training", "training-log.jsonl"),
+  )
+  const naturalHomeV48WaterSharpnessExpertFixLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v48-water-sharpness-expert-fix-generation", "latest.json"),
+  )
+  const naturalHomeV48RepairQualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v48-repair-quality-selection", "latest.json"),
+  )
+  const naturalHomeV48MergeGateSelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v48-merge-gate-selection", "latest.json"),
+  )
+  const naturalHomeV49V32DiversitySweepGenerationLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v49-v32-diversity-sweep-generation", "latest.json"),
+  )
+  const naturalHomeV49QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v49-quality-selection", "latest.json"),
+  )
+  const naturalHomeV50DiversityWaterGateLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v50-diversity-water-gate", "latest.json"),
+  )
+  const naturalHomeV51SafeCandidatePackLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v51-safe-candidate-pack", "latest.json"),
+  )
+  const naturalHomeV87QualityLedgerLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v87-quality-ledger", "latest.json"),
+  )
+  const naturalHomeV88QualityAllowlistDatasetLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v88-quality-allowlist-dataset", "latest.json"),
+  )
+  const naturalHomeV89QualityAllowlistTrainingSummary = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v89-quality-allowlist-training", "training-summary.json"),
+  )
+  const naturalHomeV89QualityAllowlistTrainingLatest = await readLastJsonLine(
+    path.join(aiPainterRuntimeRoot, "natural-home-v89-quality-allowlist-training", "training-log.jsonl"),
+  )
+  const naturalHomeV89QualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v89-quality-selection", "latest.json"),
+  )
+  const naturalHomeBestTrainingCandidate = selectBestTrainingQualityCandidate([
+    { stage: "V49", title: "Natural Home V49 V32 diversity sweep", latest: naturalHomeV49QualitySelectionLatest },
+    { stage: "V48", title: "Natural Home V48 split expert merge gate", latest: naturalHomeV48MergeGateSelectionLatest },
+    { stage: "V47", title: "Natural Home V47 hard failure stabilization", latest: naturalHomeV47QualitySelectionLatest },
+    { stage: "V46", title: "Natural Home V46 V45 failure-focus repair", latest: naturalHomeV46QualitySelectionLatest },
+    { stage: "V45", title: "Natural Home V45 generalization dataset", latest: naturalHomeV45QualitySelectionLatest },
+    { stage: "V44", title: "Natural Home V44 V32 stable generalization", latest: naturalHomeV44QualitySelectionLatest },
+    { stage: "V43", title: "Natural Home V43 V32 failure-focus repair", latest: naturalHomeV43QualitySelectionLatest },
+    { stage: "V42", title: "Natural Home V42 water expert fix", latest: naturalHomeV42QualitySelectionLatest },
+    { stage: "V41", title: "Natural Home V41 V32 water rescue", latest: naturalHomeV41QualitySelectionLatest },
+    { stage: "V40", title: "Natural Home V40 sharpness-lock repair", latest: naturalHomeV40QualitySelectionLatest },
+    { stage: "V39", title: "Natural Home V39 failure-focus repair", latest: naturalHomeV39QualitySelectionLatest },
+    { stage: "V38", title: "Natural Home V38 water edge balance", latest: naturalHomeV38QualitySelectionLatest },
+    { stage: "V37", title: "Natural Home V37 water failure repair", latest: naturalHomeV37QualitySelectionLatest },
+    { stage: "V36", title: "Natural Home V36 balanced generalization", latest: naturalHomeV36QualitySelectionLatest },
+    { stage: "V35", title: "Natural Home V35 balanced water detail", latest: naturalHomeV35QualitySelectionLatest },
+    { stage: "V34", title: "Natural Home V34 water stability", latest: naturalHomeV34QualitySelectionLatest },
+    { stage: "V33", title: "Natural Home V33 water artifact guard", latest: naturalHomeV33QualitySelectionLatest },
+    { stage: "V32", title: "Natural Home V32 PatchGAN refiner", latest: naturalHomeV32QualitySelectionLatest },
+    { stage: "V31", title: "Natural Home V31 edge refiner", latest: naturalHomeV31QualitySelectionLatest },
+  ])
+  const trainingQualityGateSource =
+    naturalHomeBestTrainingCandidate?.latest ??
+    naturalHomeCandidateConsolidationLatest ??
+    naturalHomeWarningFocusLatest ??
+    naturalHomeMultisourceLatest
   const trainingQualityGate = trainingQualityGateSource
     ? buildTrainingQualityGateReport(trainingQualityGateSource)
     : null
@@ -136,6 +357,8 @@ export async function GET() {
       reviewStatus: "failed_visual_quality",
     },
     mvpGap: await readJson(path.join(aiPainterRuntimeRoot, "mvp-gap-report", "report.json")),
+    visualUnitV0: buildVisualUnitV0Status(),
+    visualUnitData: await readJson(path.join(process.cwd(), "data", "visual-units", "manifest.json")),
     naturalHomeReadiness: await readJson(path.join(aiPainterRuntimeRoot, "natural-home-readiness", "report.json")),
     naturalHomeQuality: await readJson(path.join(aiPainterRuntimeRoot, "natural-home-quality", "report.json")),
     naturalHomeTraining: {
@@ -206,6 +429,119 @@ export async function GET() {
       latest: naturalHomeV28DiversityRefinerLatest,
       inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v28-diversity-refiner-generation", "contact-sheet.png")),
     },
+    naturalHomeV33WaterArtifactGuard: {
+      latest: naturalHomeV33QualitySelectionLatest ?? naturalHomeV33WaterArtifactGuardLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v33-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV34WaterStability: {
+      latest: naturalHomeV34QualitySelectionLatest ?? naturalHomeV34WaterStabilityLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v34-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV35BalancedWaterDetail: {
+      latest: naturalHomeV35QualitySelectionLatest ?? naturalHomeV35BalancedWaterDetailLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v35-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV36BalancedGeneralization: {
+      latest: naturalHomeV36QualitySelectionLatest ?? naturalHomeV36BalancedGeneralizationLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v36-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV37WaterFailureRepair: {
+      latest: naturalHomeV37QualitySelectionLatest ?? naturalHomeV37WaterFailureRepairLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v37-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV38WaterEdgeBalance: {
+      latest: naturalHomeV38QualitySelectionLatest ?? naturalHomeV38WaterEdgeBalanceLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v38-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV39FailureFocusRepair: {
+      datasetManifest: naturalHomeV39FailureFocusDatasetManifest,
+      trainingSummary: naturalHomeV39FailureFocusTrainingSummary,
+      trainingLatest: naturalHomeV39FailureFocusTrainingLatest,
+      latest: naturalHomeV39QualitySelectionLatest ?? naturalHomeV39FailureFocusRepairLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v39-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV40SharpnessLockRepair: {
+      trainingSummary: naturalHomeV40SharpnessLockTrainingSummary,
+      trainingLatest: naturalHomeV40SharpnessLockTrainingLatest,
+      latest: naturalHomeV40QualitySelectionLatest ?? naturalHomeV40SharpnessLockRepairLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v40-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV41V32WaterRescue: {
+      trainingSummary: naturalHomeV41V32WaterRescueTrainingSummary,
+      trainingLatest: naturalHomeV41V32WaterRescueTrainingLatest,
+      latest: naturalHomeV41QualitySelectionLatest ?? naturalHomeV41V32WaterRescueLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v41-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV42WaterExpertFix: {
+      latest: naturalHomeV42QualitySelectionLatest ?? naturalHomeV42WaterExpertFixLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v42-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV43V32FailureFocusRepair: {
+      datasetManifest: naturalHomeV43FailureFocusDatasetManifest,
+      trainingSummary: naturalHomeV43FailureFocusTrainingSummary,
+      trainingLatest: naturalHomeV43FailureFocusTrainingLatest,
+      latest: naturalHomeV43QualitySelectionLatest ?? naturalHomeV43FailureFocusRepairLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v43-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV44V32StableGeneralization: {
+      trainingSummary: naturalHomeV44StableGeneralizationTrainingSummary,
+      trainingLatest: naturalHomeV44StableGeneralizationTrainingLatest,
+      latest: naturalHomeV44QualitySelectionLatest ?? naturalHomeV44StableGeneralizationLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v44-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV45Generalization: {
+      datasetManifest: naturalHomeV45GeneralizationDatasetManifest,
+      trainingSummary: naturalHomeV45GeneralizationTrainingSummary,
+      trainingLatest: naturalHomeV45GeneralizationTrainingLatest,
+      latest: naturalHomeV45QualitySelectionLatest ?? naturalHomeV45GeneralizationLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v45-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV46V45FailureFocusRepair: {
+      datasetManifest: naturalHomeV46FailureFocusDatasetManifest,
+      trainingSummary: naturalHomeV46FailureFocusTrainingSummary,
+      trainingLatest: naturalHomeV46FailureFocusTrainingLatest,
+      latest: naturalHomeV46QualitySelectionLatest ?? naturalHomeV46FailureFocusRepairLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v46-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV47HardFailureStabilization: {
+      datasetManifest: naturalHomeV47HardFailureDatasetManifest,
+      trainingSummary: naturalHomeV47HardFailureTrainingSummary,
+      trainingLatest: naturalHomeV47HardFailureTrainingLatest,
+      latest: naturalHomeV47QualitySelectionLatest ?? naturalHomeV47HardFailureGenerationLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v47-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV48SplitExpertMergeGate: {
+      repairLatest: naturalHomeV48RepairQualitySelectionLatest ?? naturalHomeV48WaterSharpnessExpertFixLatest,
+      latest: naturalHomeV48MergeGateSelectionLatest ?? naturalHomeV48RepairQualitySelectionLatest ?? naturalHomeV48WaterSharpnessExpertFixLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v48-merge-gate-selection", "contact-sheet.png")),
+    },
+    naturalHomeV49V32DiversitySweep: {
+      latest: naturalHomeV49QualitySelectionLatest ?? naturalHomeV49V32DiversitySweepGenerationLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v49-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV50DiversityWaterGate: {
+      latest: naturalHomeV50DiversityWaterGateLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v50-diversity-water-gate", "contact-sheet.png")),
+    },
+    naturalHomeV51SafeCandidatePack: {
+      latest: naturalHomeV51SafeCandidatePackLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v51-safe-candidate-pack", "contact-sheet.png")),
+    },
+    naturalHomeV87QualityLedger: {
+      latest: naturalHomeV87QualityLedgerLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v87-quality-ledger", "contact-sheet.png")),
+    },
+    naturalHomeV88QualityAllowlistDataset: {
+      latest: naturalHomeV88QualityAllowlistDatasetLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v88-quality-allowlist-dataset", "contact-sheet.png")),
+    },
+    naturalHomeV89QualityAllowlistTraining: {
+      trainingSummary: naturalHomeV89QualityAllowlistTrainingSummary,
+      trainingLatest: naturalHomeV89QualityAllowlistTrainingLatest,
+      latest: naturalHomeV89QualitySelectionLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v89-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeBestTrainingCandidate,
     trainingQualityGate,
     control,
     resourceUsage: await readResourceUsageLedger(),
@@ -259,6 +595,75 @@ async function readLastJsonLine(file: string): Promise<Record<string, unknown> |
   } catch {
     return null
   }
+}
+
+type TrainingQualityCandidate = {
+  stage: string
+  title: string
+  latest: Record<string, unknown> | null
+}
+
+function selectBestTrainingQualityCandidate(candidates: TrainingQualityCandidate[]) {
+  const ranked = candidates
+    .filter((candidate): candidate is TrainingQualityCandidate & { latest: Record<string, unknown> } => Boolean(candidate.latest))
+    .map((candidate) => ({ ...candidate, summary: qualitySummary(candidate.latest) }))
+    .sort((left, right) => {
+      const scoreDiff = right.summary.averageScore - left.summary.averageScore
+      if (scoreDiff !== 0) return scoreDiff
+      const passRateDiff = passRate(right.summary) - passRate(left.summary)
+      if (passRateDiff !== 0) return passRateDiff
+      const rejectedDiff = rejectedRate(left.summary) - rejectedRate(right.summary)
+      if (rejectedDiff !== 0) return rejectedDiff
+      return right.summary.passedForNextTraining - left.summary.passedForNextTraining
+    })
+
+  const best = ranked[0]
+  if (!best) return null
+  return {
+    stage: best.stage,
+    title: best.title,
+    latest: best.latest,
+    summary: best.summary,
+  }
+}
+
+function qualitySummary(latest: Record<string, unknown>) {
+  const summary = isRecord(latest.summary) ? latest.summary : {}
+  const rows = Array.isArray(latest.rows) ? latest.rows.filter(isRecord) : []
+  const passedForNextTraining = numberValue(summary.passedForNextTraining) ?? countRows(rows, "passed_for_next_training")
+  const reviewCandidate = numberValue(summary.reviewCandidate) ?? countRows(rows, "review_candidate")
+  const rejectedTrainingCandidate = numberValue(summary.rejectedTrainingCandidate) ?? countRows(rows, "rejected_training_candidate")
+  const rowCount = numberValue(summary.rowCount) ?? rows.length
+  const averageScore =
+    numberValue(summary.averageScore) ??
+    (rows.length
+      ? rows.reduce((total, row) => total + (numberValue(row.score) ?? 0), 0) / rows.length
+      : 0)
+  return {
+    rowCount,
+    passedForNextTraining,
+    reviewCandidate,
+    rejectedTrainingCandidate,
+    averageScore,
+    bestScore: numberValue(summary.bestScore),
+    worstScore: numberValue(summary.worstScore),
+  }
+}
+
+function countRows(rows: Record<string, unknown>[], status: string) {
+  return rows.filter((row) => row.status === status).length
+}
+
+function passRate(summary: ReturnType<typeof qualitySummary>) {
+  return summary.rowCount > 0 ? summary.passedForNextTraining / summary.rowCount : 0
+}
+
+function rejectedRate(summary: ReturnType<typeof qualitySummary>) {
+  return summary.rowCount > 0 ? summary.rejectedTrainingCandidate / summary.rowCount : 1
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value)
 }
 
 async function exists(file: string) {

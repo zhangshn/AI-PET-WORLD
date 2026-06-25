@@ -1,0 +1,51 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v45-generalization-dataset",
+  "modelVersion": "rgb-refiner-natural-home-v45-generalization-dataset",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.0000045,
+  "discriminatorLearningRate": 0.000003,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.006,
+  "maxEpochs": 22,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 2.5,
+    "texture": 1.9,
+    "laplacian": 1.45,
+    "gradient": 1.15,
+    "colorRange": 0.12,
+    "waterPeriodicity": 1.25
+  },
+  "structureWeights": {
+    "water": 2.45,
+    "shoreline": 2.75,
+    "road": 2.0,
+    "roadEdge": 2.05,
+    "tree": 2.15,
+    "rock": 2.0,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 16, 24, 32],
+    "allowedRatio": 1.03,
+    "margin": 0.001
+  },
+  "diagnosisTarget": {
+    "minimumSharpnessRatio": 0.84,
+    "minimumEdgeDensityRatio": 0.88,
+    "targetSampleId": "natural-home-crop-v7-12-forest-stream-clean"
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260624,
+  "status": "v45_balanced_generalization_dataset_from_v32"
+}

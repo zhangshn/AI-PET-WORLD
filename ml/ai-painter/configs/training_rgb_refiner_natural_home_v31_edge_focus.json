@@ -1,0 +1,41 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v31-edge-focus",
+  "modelVersion": "rgb-refiner-natural-home-v31-edge-focus",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.0001,
+  "maxEpochs": 140,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 3.4,
+    "texture": 2.2,
+    "laplacian": 2.0,
+    "gradient": 1.6,
+    "colorRange": 0.1
+  },
+  "structureWeights": {
+    "water": 2.3,
+    "shoreline": 3.0,
+    "road": 2.2,
+    "roadEdge": 2.4,
+    "tree": 2.5,
+    "rock": 2.2,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "diagnosisTarget": {
+    "minimumSharpnessRatio": 0.82,
+    "minimumEdgeDensityRatio": 0.85,
+    "targetSampleId": "natural-home-crop-v7-12-forest-stream-clean"
+  },
+  "seed": 20260621,
+  "status": "v31_edge_focus_refiner_for_v30_failure_response"
+}

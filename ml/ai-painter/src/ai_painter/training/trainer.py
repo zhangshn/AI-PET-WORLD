@@ -6,14 +6,21 @@ from pathlib import Path
 import random
 import time
 
-from .checkpoint import save_checkpoint
+from .checkpoint import load_checkpoint, save_checkpoint
 from .dataset import WorldSceneDataset
 from .losses import build_image_loss
 from .model import build_tiny_unet
 from .torch_runtime import require_torch
 
 
-def train(config: dict[str, object], *, dataset_root: Path, output_dir: Path, max_epochs: int | None = None) -> dict[str, object]:
+def train(
+    config: dict[str, object],
+    *,
+    dataset_root: Path,
+    output_dir: Path,
+    max_epochs: int | None = None,
+    initial_checkpoint: Path | None = None,
+) -> dict[str, object]:
     torch = require_torch()
     seed = int(config.get("seed", 20260612))
     random.seed(seed)
@@ -35,6 +42,10 @@ def train(config: dict[str, object], *, dataset_root: Path, output_dir: Path, ma
     )
     model_config = load_json(Path(str(config["modelConfig"])))
     model = build_tiny_unet(model_config).to(device)
+    initialized_from = None
+    if initial_checkpoint is not None:
+        load_checkpoint(initial_checkpoint, model=model, device=device)
+        initialized_from = str(initial_checkpoint.resolve())
     validation_ids = load_json(dataset_root / "indexes" / "validation.json").get("sampleIds", [])
     validation_loader = None
     if validation_ids:
@@ -57,7 +68,7 @@ def train(config: dict[str, object], *, dataset_root: Path, output_dir: Path, ma
     for epoch in range(1, epochs + 1):
         model.train()
         epoch_loss = 0.0
-        epoch_parts = {"l1": 0.0, "edge": 0.0, "texture": 0.0}
+        epoch_parts: dict[str, float] = {}
         optimizer.zero_grad(set_to_none=True)
         for batch_index, batch in enumerate(loader, start=1):
             condition = batch["condition"].to(device, non_blocking=True)
@@ -75,7 +86,7 @@ def train(config: dict[str, object], *, dataset_root: Path, output_dir: Path, ma
                 step += 1
             epoch_loss += float(loss.detach().cpu()) * accumulation
             for name, value in parts.items():
-                epoch_parts[name] += float(value.detach().cpu())
+                epoch_parts[name] = epoch_parts.get(name, 0.0) + float(value.detach().cpu())
 
         average_loss = epoch_loss / len(loader)
         average_parts = {name: value / len(loader) for name, value in epoch_parts.items()}
@@ -97,6 +108,7 @@ def train(config: dict[str, object], *, dataset_root: Path, output_dir: Path, ma
         "status": "completed", "epochs": epochs, "steps": step,
         "bestSelectionLoss": best_loss, "device": str(device),
         "trainSampleCount": len(dataset), "validationSampleCount": len(validation_ids),
+        "initializedFrom": initialized_from,
     }
     (output_dir / "training-summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     return summary

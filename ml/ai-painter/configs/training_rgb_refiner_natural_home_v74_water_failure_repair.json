@@ -1,0 +1,46 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v74-water-failure-repair",
+  "modelVersion": "rgb-refiner-natural-home-v74-water-failure-repair",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.0000021,
+  "discriminatorLearningRate": 0.0000012,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0014,
+  "maxEpochs": 18,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.05,
+    "edge": 3.1,
+    "texture": 2.05,
+    "laplacian": 1.9,
+    "gradient": 1.45,
+    "colorRange": 0.14,
+    "waterPeriodicity": 3.2
+  },
+  "structureWeights": {
+    "water": 3.8,
+    "shoreline": 3.7,
+    "road": 2.0,
+    "roadEdge": 2.05,
+    "tree": 2.15,
+    "rock": 2.35,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.008,
+    "margin": 0.0009
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260624,
+  "status": "v74_water_failure_repair_from_v73_broad_structure_sweep_no_building_no_character_no_animal"
+}
