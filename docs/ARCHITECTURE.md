@@ -4,7 +4,7 @@
 状态：正式架构基线  
 更新时间：2026-06-25
 
-本文档只描述架构，不记录临时实验细节。总入口见 [README.md](../README.md)，目录结构见 [DIRECTORY_STRUCTURE.md](./DIRECTORY_STRUCTURE.md)。
+本文档只描述架构，不记录临时实验细节。总入口见 [README.md](../README.md)，业务说明见 [BUSINESS_SPEC.md](./BUSINESS_SPEC.md)，目录结构见 [DIRECTORY_STRUCTURE.md](./DIRECTORY_STRUCTURE.md)。
 
 ## 1. 项目主旨
 
@@ -36,7 +36,48 @@ AI-PET-WORLD 是一个自主世界游戏。
 -> 玩家看到世界
 ```
 
-## 3. 世界 Runtime 架构
+## 3. 架构总表
+
+| 架构层 | 代表模块 | 输入 | 输出 | 硬边界 |
+|---|---|---|---|---|
+| 用户交互层 | `src/app/create-world`、`src/app/world`、游戏内手机 | 用户信息、玩家建议、浏览器请求 | 创建世界、查看世界、沟通入口 | 页面不能偷偷改 Runtime 事实 |
+| 人格灵魂层 | `src/world/butler`、`src/world/creation` | 出生信息、命盘映射、创建世界输入 | 管家 profile、偏好、行为倾向 | 不能把玩家建议当绝对命令 |
+| 世界 Runtime 层 | `src/world/runtime`、`src/world/runtime-core` | 管家动机、世界规则、tick | 世界事实、事件、资源、建设状态 | Runtime 只维护事实，不画图 |
+| 世界事实层 | `visual-fact-manifest`、`world-generation-condition` | Runtime state、sourceFactIds | VisualFactManifest、Condition、Mask | 不能补不存在的重大事实 |
+| 视觉结构层 | `composition-plan`、`terrain-plan`、`asset-plan` | 世界事实、MVP 规则 | 构图、地形、资产约束 | 只能规划表达方式，不改世界 |
+| 本地模型层 | `ml/ai-painter` | target、mask、训练配置、结构条件 | 候选 PNG、模型权重、训练记录 | 不接第三方在线绘图 API |
+| 候选存储层 | `ai-image-candidate`、`.runtime/ai-painter` | 模型输出、metadata | CandidateFrame、失败记录、资源账本 | Candidate 不能展示给玩家 |
+| 视觉审核层 | `visual-review`、`visual-quality`、`visual-fix` | Candidate、事实、mask、规则 | ReviewReport、FixPlan、拒绝原因 | 审核只判断，不篡改事实 |
+| 正式展示层 | `approved-frame`、`/world` | 过审 Candidate、review hash、image hash | ApprovedFrame / RuntimeFrame | 只有过审画面可见 |
+| 后续动态层 | `visual-unit`、Runtime 合成 | 对象状态、动作状态、生命周期 | 可组合动态帧 | 当前阶段暂停 |
+
+## 4. 关键数据流
+
+| 数据 | 来源 | 去向 | 必须记录 |
+|---|---|---|---|
+| 用户出生信息 | 创建世界流程 | 管家人格映射 | 用户输入、映射结果 |
+| 管家 profile | 人格灵魂层 | Runtime 行为选择 | 性格、动机、偏好、建设倾向 |
+| WorldRuntimeState | Runtime tick | 世界事实层 | worldId、tick、事件、资源、状态 |
+| sourceFactIds | Runtime / VisualFactManifest | Candidate / ApprovedFrame | 事实引用、hash 绑定 |
+| Condition Mask | 结构层 | AI Painter 训练和推理 | 通道、尺寸、禁用通道 |
+| Candidate PNG | 本地小模型 | VisualJudge | 图片 hash、生成时间、模型版本 |
+| ReviewReport | VisualJudge | ApprovedFrame | 通过状态、失败原因、review hash |
+| ApprovedFrame | ApprovedFrame store | `/world` | worldId、tick、sourceFactIds、image hash、review hash |
+| 训练资源账本 | 训练控制器 | 进度页和归档 | GPU、显存、耗时、电费估算、本地 token |
+
+## 5. 模块边界表
+
+| 模块 | 可以做 | 不可以做 |
+|---|---|---|
+| Runtime | 推进 tick、更新事实、生成事件、提交建设变化 | 直接生成正式画面 |
+| AI Painter | 根据事实和 mask 生成视觉候选 | 新增建筑、人物、动物或改变事实 |
+| VisualJudge | 判断候选是否合格、给出失败原因 | 修改 Runtime 或把失败图强行通过 |
+| ApprovedFrame | 绑定过审图和世界事实 | 接收未审核 Candidate |
+| `/world` | 读取 ApprovedFrame / RuntimeFrame | 展示候选图、训练图、调试图 |
+| Codex / GPT 代理 | 写代码、训练脚本、文档、检查和修复流程 | 手动替代系统保存正式结果、绕过审核 |
+| 训练页面 | 启动训练、展示结果、展示归档 | 把失败候选伪装成正式世界 |
+
+## 6. 世界 Runtime 架构
 
 世界 Runtime 的职责是维护事实，不负责画面美化。
 
@@ -64,7 +105,7 @@ Runtime 输出的是世界事实，例如：
 - 事件痕迹。
 - 可供 AI Painter 使用的 sourceFactIds。
 
-## 4. AI Painter 架构
+## 7. AI Painter 架构
 
 AI Painter 只负责视觉表达，不负责篡改世界事实。
 
@@ -90,7 +131,7 @@ Painter 不能凭空新增：
 
 如果世界事实中没有这些东西，AI Painter 画出来也必须被 VisualJudge 拦截。
 
-## 5. 正式视觉硬边界
+## 8. 正式视觉硬边界
 
 正式玩家世界只允许展示 `ApprovedFrame` 或后续经过同级审核的 `RuntimeFrame`。
 
@@ -109,7 +150,7 @@ Painter 不能凭空新增：
 
 Codex/GPT 代码代理只能维护训练管线、数据导入、标注校验、模型训练脚本、存储、VisualJudge 和 ApprovedFrame 闸门。代理不能把某一次人工生成、程序生成或调试生成的画面持续写入产品，不能用固定画面替代本地模型自主学习。
 
-## 6. 当前 MVP 视觉范围
+## 9. 当前 MVP 视觉范围
 
 当前主线只做纯自然家园视觉底座。
 
@@ -141,7 +182,7 @@ Codex/GPT 代码代理只能维护训练管线、数据导入、标注校验、�
 
 这些禁止内容不是永久不做，而是不能混入当前自然底座训练。后续必须作为独立 VisualUnit 模块训练。
 
-## 7. VisualUnit v0 架构方向
+## 10. VisualUnit v0 架构方向
 
 项目最终要的不是一张静态图，而是可组合、可审核、可运行的视觉单元。
 
@@ -168,7 +209,7 @@ Codex/GPT 代码代理只能维护训练管线、数据导入、标注校验、�
 | conditionMask | 对应结构条件 |
 | judgeRecord | VisualJudge 结果和失败原因 |
 
-## 8. 训练数据正式链路
+## 11. 训练数据正式链路
 
 ```txt
 原创训练 PNG
@@ -185,7 +226,7 @@ Codex/GPT 代码代理只能维护训练管线、数据导入、标注校验、�
 
 人工可以负责导入、抽检和决定方向，但正式训练数据不能长期依赖人工逐对象描边。长期目标是结构先行、同源生成 Mask、机器审核。
 
-## 9. 14 通道 Condition Mask
+## 12. 14 通道 Condition Mask
 
 | 通道 | 含义 | 当前自然阶段 |
 |---|---|---|
@@ -204,7 +245,7 @@ Codex/GPT 代码代理只能维护训练管线、数据导入、标注校验、�
 | walkable | 可行走区域 | 使用 |
 | depth | 空间深度 | 使用 |
 
-## 10. VisualJudge 与 ApprovedFrame
+## 13. VisualJudge 与 ApprovedFrame
 
 VisualJudge 分层：
 
@@ -216,7 +257,7 @@ VisualJudge 分层：
 
 `ApprovedFrame` 是玩家可见画面的硬闸门。任何 Candidate、训练输出、调试图、原稿图，都不能绕过 ApprovedFrame 进入 `/world`。
 
-## 11. 当前技术状态
+## 14. 当前技术状态
 
 | 模块 | 状态 | 说明 |
 |---|---|---|
@@ -230,7 +271,7 @@ VisualJudge 分层：
 | ApprovedFrame | 未完成 | 当前正式世界图为 0 |
 | VisualUnit v0 | 数据契约已建立 | 已有 schema、registry、状态帧、运行时帧、`data/visual-units` 目录和 1 个树木静态契约样例；judge 未完成 |
 
-## 12. 缺口清单
+## 15. 缺口清单
 
 当前还缺：
 
