@@ -4,14 +4,15 @@
 状态：正式目录基线  
 更新时间：2026-06-25
 
-本文档只描述目录职责。总入口见 [README.md](../README.md)，技术架构见 [ARCHITECTURE.md](./ARCHITECTURE.md)。
+本文档只描述目录职责。总入口见 [README.md](../README.md)，技术架构见 [ARCHITECTURE.md](./ARCHITECTURE.md)，实时进度见 [PROGRESS.md](./PROGRESS.md)。
 
 ## 1. 根目录
 
 | 路径 | 职责 | 备注 |
 |---|---|---|
-| `README.md` | 项目总入口、当前进度、下一步 | 不写长架构细节 |
-| `docs/` | 正式专题文档 | 只保留架构和目录结构文档 |
+| `README.md` | 项目总入口和业务总览 | 不写每日进度细节 |
+| `docs/` | 正式专题文档 | 只保留执行计划、进度、架构和目录结构文档 |
+| `docs/PROGRESS.md` | 当前进度表 | 每次大模块完成后更新 |
 | `src/` | Next.js 应用、世界 Runtime、视觉链路服务端代码 | TypeScript 主体 |
 | `ml/ai-painter/` | 本地 AI Painter 小模型、训练脚本、推理脚本、测试 | Python / PyTorch |
 | `scripts/` | 项目检查、smoke、归档脚本 | Node 脚本 |
