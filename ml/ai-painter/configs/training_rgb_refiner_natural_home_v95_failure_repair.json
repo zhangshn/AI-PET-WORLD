@@ -1,0 +1,46 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v95-failure-repair",
+  "modelVersion": "rgb-refiner-natural-home-v95-failure-repair",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.00000072,
+  "discriminatorLearningRate": 0.00000048,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.001,
+  "maxEpochs": 14,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.12,
+    "edge": 4.05,
+    "texture": 2.95,
+    "laplacian": 2.75,
+    "gradient": 2.3,
+    "colorRange": 0.1,
+    "waterPeriodicity": 2.75
+  },
+  "structureWeights": {
+    "water": 3.55,
+    "shoreline": 3.65,
+    "road": 2.45,
+    "roadEdge": 2.45,
+    "tree": 2.75,
+    "rock": 2.65,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.006,
+    "margin": 0.0006
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260625,
+  "status": "v95_v94_failure_repair_same_source_targets_no_building_no_character_no_animal"
+}

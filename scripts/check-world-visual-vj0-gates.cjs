@@ -302,6 +302,16 @@ const checks = [
     "review_summary_sha256"
   ),
   assertIncludes(
+    "ApprovedFrame 写入/读取闸门要求完整世界帧尺寸",
+    source.approvedStore,
+    "formal_world_frame_size"
+  ),
+  assertIncludes(
+    "ApprovedFrame 写入/读取闸门阻断 crop/partial 局部候选",
+    source.approvedStore,
+    "partial_or_crop_candidate"
+  ),
+  assertIncludes(
     "Status API 暴露 ApprovedFrame 当前 Runtime gate",
     source.status,
     "currentFrameTickMatched"

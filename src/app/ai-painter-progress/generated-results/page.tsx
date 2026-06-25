@@ -122,6 +122,11 @@ type ApprovedFrameRecord = {
   }
 }
 
+type RuntimeWorldIndex = {
+  ownerId?: string
+  worldId?: string
+}
+
 type ArchivedGeneratedResult = {
   id: string
   stage: string
@@ -143,6 +148,26 @@ type ArchivedGeneratedResult = {
 }
 
 const fallbackResults: GeneratedResult[] = [
+  fallbackQuality("V95 / FAILURE REPAIR VJ-2 REVIEW", "Natural Home V95 failure-repair minimal semantic/style review", "naturalHomeV95FailureRepairVj2Review", ".runtime/ai-painter/natural-home-v95-failure-repair-vj2-review/contact-sheet.png", ".runtime/ai-painter/natural-home-v95-failure-repair-vj2-review/latest.json", ".runtime/ai-painter/natural-home-v95-failure-repair-vj2-review/review-report.json"),
+  fallbackQuality("V95 / FAILURE REPAIR VJ-1 REVIEW", "Natural Home V95 failure-repair VisualJudge review", "naturalHomeV95FailureRepairVj1Review", ".runtime/ai-painter/natural-home-v95-failure-repair-vj1-review/contact-sheet.png", ".runtime/ai-painter/natural-home-v95-failure-repair-vj1-review/latest.json", ".runtime/ai-painter/natural-home-v95-failure-repair-vj1-review/review-report.json"),
+  fallbackQuality("V95 / FAILURE REPAIR QUALITY SELECTION", "Natural Home V95 failure-repair quality selection", "naturalHomeV95FailureRepairQualitySelection", ".runtime/ai-painter/natural-home-v95-failure-repair-quality-selection/contact-sheet.png", ".runtime/ai-painter/natural-home-v95-failure-repair-quality-selection/latest.json", ".runtime/ai-painter/natural-home-v95-failure-repair-quality-selection/selection-report.json"),
+  fallbackGeneration("V95 / FAILURE REPAIR GENERATION", "Natural Home V95 failure-repair local model inference", "naturalHomeV95FailureRepairGeneration", ".runtime/ai-painter/natural-home-v95-failure-repair-generation/contact-sheet.png", ".runtime/ai-painter/natural-home-v95-failure-repair-generation/latest.json"),
+  fallbackGeneration("V95 / FAILURE REPAIR DATASET", "Natural Home V95 V94-failure repair same-source dataset", "naturalHomeV95FailureRepairDataset", ".runtime/ai-painter/natural-home-v95-failure-repair-dataset/contact-sheet.png", ".runtime/ai-painter/natural-home-v95-failure-repair-dataset/manifest.json"),
+  fallbackQuality("V94 / EDGE SHARPNESS VJ-2 REVIEW", "Natural Home V94 edge/sharpness repair minimal semantic/style review", "naturalHomeV94EdgeSharpnessRepairVj2Review", ".runtime/ai-painter/natural-home-v94-edge-sharpness-repair-vj2-review/contact-sheet.png", ".runtime/ai-painter/natural-home-v94-edge-sharpness-repair-vj2-review/latest.json", ".runtime/ai-painter/natural-home-v94-edge-sharpness-repair-vj2-review/review-report.json"),
+  fallbackQuality("V94 / EDGE SHARPNESS VJ-1 REVIEW", "Natural Home V94 edge/sharpness repair VisualJudge review", "naturalHomeV94EdgeSharpnessRepairVj1Review", ".runtime/ai-painter/natural-home-v94-edge-sharpness-repair-vj1-review/contact-sheet.png", ".runtime/ai-painter/natural-home-v94-edge-sharpness-repair-vj1-review/latest.json", ".runtime/ai-painter/natural-home-v94-edge-sharpness-repair-vj1-review/review-report.json"),
+  fallbackQuality("V94 / EDGE SHARPNESS QUALITY SELECTION", "Natural Home V94 edge/sharpness repair quality selection", "naturalHomeV94EdgeSharpnessRepairQualitySelection", ".runtime/ai-painter/natural-home-v94-edge-sharpness-repair-quality-selection/contact-sheet.png", ".runtime/ai-painter/natural-home-v94-edge-sharpness-repair-quality-selection/latest.json", ".runtime/ai-painter/natural-home-v94-edge-sharpness-repair-quality-selection/selection-report.json"),
+  fallbackGeneration("V94 / EDGE SHARPNESS GENERATION", "Natural Home V94 edge/sharpness repair local model inference", "naturalHomeV94EdgeSharpnessRepairGeneration", ".runtime/ai-painter/natural-home-v94-edge-sharpness-repair-generation/contact-sheet.png", ".runtime/ai-painter/natural-home-v94-edge-sharpness-repair-generation/latest.json"),
+  fallbackQuality("V93 / CLEAN GENERALIZATION VJ-2 REVIEW", "Natural Home V93 clean generalization minimal semantic/style review", "naturalHomeV93CleanGeneralizationVj2Review", ".runtime/ai-painter/natural-home-v93-clean-generalization-vj2-review/contact-sheet.png", ".runtime/ai-painter/natural-home-v93-clean-generalization-vj2-review/latest.json", ".runtime/ai-painter/natural-home-v93-clean-generalization-vj2-review/review-report.json"),
+  fallbackQuality("V93 / CLEAN GENERALIZATION VJ-1 REVIEW", "Natural Home V93 clean generalization VisualJudge review", "naturalHomeV93CleanGeneralizationVj1Review", ".runtime/ai-painter/natural-home-v93-clean-generalization-vj1-review/contact-sheet.png", ".runtime/ai-painter/natural-home-v93-clean-generalization-vj1-review/latest.json", ".runtime/ai-painter/natural-home-v93-clean-generalization-vj1-review/review-report.json"),
+  fallbackQuality("V93 / CLEAN GENERALIZATION QUALITY SELECTION", "Natural Home V93 clean generalization quality selection", "naturalHomeV93CleanGeneralizationQualitySelection", ".runtime/ai-painter/natural-home-v93-clean-generalization-quality-selection/contact-sheet.png", ".runtime/ai-painter/natural-home-v93-clean-generalization-quality-selection/latest.json", ".runtime/ai-painter/natural-home-v93-clean-generalization-quality-selection/selection-report.json"),
+  fallbackGeneration("V93 / CLEAN GENERALIZATION GENERATION", "Natural Home V93 clean generalization local model inference", "naturalHomeV93CleanGeneralizationGeneration", ".runtime/ai-painter/natural-home-v93-clean-generalization-generation/contact-sheet.png", ".runtime/ai-painter/natural-home-v93-clean-generalization-generation/latest.json"),
+  fallbackGeneration("V93 / CLEAN GENERALIZATION DATASET", "Natural Home V93 clean current-MVP natural dataset", "naturalHomeV93CleanGeneralizationDataset", ".runtime/ai-painter/natural-home-v93-clean-generalization-dataset/contact-sheet.png", ".runtime/ai-painter/natural-home-v93-clean-generalization-dataset/manifest.json"),
+  fallbackQuality("V92 / GENERALIZATION VJ-2 REVIEW", "Natural Home V92 broad-structure minimal semantic/style review", "naturalHomeV92GeneralizationVj2Review", ".runtime/ai-painter/natural-home-v92-current-mvp-generalization-vj2-review/contact-sheet.png", ".runtime/ai-painter/natural-home-v92-current-mvp-generalization-vj2-review/latest.json", ".runtime/ai-painter/natural-home-v92-current-mvp-generalization-vj2-review/review-report.json"),
+  fallbackQuality("V92 / GENERALIZATION VJ-1 REVIEW", "Natural Home V92 broad-structure VisualJudge review", "naturalHomeV92GeneralizationVj1Review", ".runtime/ai-painter/natural-home-v92-current-mvp-generalization-vj1-review/contact-sheet.png", ".runtime/ai-painter/natural-home-v92-current-mvp-generalization-vj1-review/latest.json", ".runtime/ai-painter/natural-home-v92-current-mvp-generalization-vj1-review/review-report.json"),
+  fallbackQuality("V92 / GENERALIZATION QUALITY SELECTION", "Natural Home V92 broad-structure quality selection", "naturalHomeV92GeneralizationQualitySelection", ".runtime/ai-painter/natural-home-v92-current-mvp-generalization-quality-selection/contact-sheet.png", ".runtime/ai-painter/natural-home-v92-current-mvp-generalization-quality-selection/latest.json", ".runtime/ai-painter/natural-home-v92-current-mvp-generalization-quality-selection/selection-report.json"),
+  fallbackGeneration("V92 / GENERALIZATION SWEEP", "Natural Home V92 broad-structure local model inference", "naturalHomeV92GeneralizationSweepGeneration", ".runtime/ai-painter/natural-home-v92-current-mvp-generalization-sweep-generation/contact-sheet.png", ".runtime/ai-painter/natural-home-v92-current-mvp-generalization-sweep-generation/latest.json"),
+  fallbackQuality("V91 / APPROVEDFRAME CANDIDATE BINDING", "Natural Home V91 runtime fact binding before ApprovedFrame", "naturalHomeV91ApprovedFrameCandidateBinding", ".runtime/ai-painter/natural-home-v91-approved-frame-candidate-binding/candidate-preview.png", ".runtime/ai-painter/natural-home-v91-approved-frame-candidate-binding/latest.json", ".runtime/ai-painter/natural-home-v91-approved-frame-candidate-binding/binding-report.json"),
+  fallbackQuality("V91 / CURRENT MVP VJ-2 REVIEW", "Natural Home V91 current MVP minimal semantic/style review", "naturalHomeV91CurrentMvpVj2Review", ".runtime/ai-painter/natural-home-v91-current-mvp-vj2-review/contact-sheet.png", ".runtime/ai-painter/natural-home-v91-current-mvp-vj2-review/latest.json", ".runtime/ai-painter/natural-home-v91-current-mvp-vj2-review/review-report.json"),
   fallbackQuality("V91 / CURRENT MVP VJ-1 REVIEW", "Natural Home V91 current MVP VisualJudge review", "naturalHomeV91CurrentMvpVj1Review", ".runtime/ai-painter/natural-home-v91-current-mvp-vj1-review/contact-sheet.png", ".runtime/ai-painter/natural-home-v91-current-mvp-vj1-review/latest.json", ".runtime/ai-painter/natural-home-v91-current-mvp-vj1-review/review-report.json"),
   fallbackQuality("V91 / CURRENT MVP QUALITY SELECTION", "Natural Home V91 current MVP natural-only quality selection", "naturalHomeV91CurrentMvpQualitySelection", ".runtime/ai-painter/natural-home-v91-current-mvp-quality-selection/contact-sheet.png", ".runtime/ai-painter/natural-home-v91-current-mvp-quality-selection/latest.json", ".runtime/ai-painter/natural-home-v91-current-mvp-quality-selection/selection-report.json"),
   fallbackGeneration("V91 / CURRENT MVP GENERATION", "Natural Home V91 current MVP natural-only inference", "naturalHomeV91CurrentMvpGeneration", ".runtime/ai-painter/natural-home-v91-current-mvp-quality-ready-generation/contact-sheet.png", ".runtime/ai-painter/natural-home-v91-current-mvp-quality-ready-generation/latest.json"),
@@ -572,15 +597,29 @@ async function readJson<T>(file: string): Promise<T | null> {
 
 async function readLatestApprovedFrameRecord() {
   try {
+    const runtimeIndexPath = path.join(
+      /* turbopackIgnore: true */ process.cwd(),
+      "data",
+      "world-runtime",
+      "latest-world.json",
+    )
+    const runtimeIndex = JSON.parse(await readFile(runtimeIndexPath, "utf8")) as RuntimeWorldIndex
+    if (!runtimeIndex.ownerId || !runtimeIndex.worldId) return null
+
     const indexPath = path.join(
       /* turbopackIgnore: true */ process.cwd(),
-      ".runtime",
-      "world-visual-approved",
+      "data",
+      "world-approved-frames",
+      runtimeIndex.ownerId,
+      runtimeIndex.worldId,
       "latest-approved-frame.json",
     )
     const index = JSON.parse(await readFile(indexPath, "utf8")) as { path?: string }
     if (!index.path) return null
-    return JSON.parse(await readFile(path.join(/* turbopackIgnore: true */ process.cwd(), index.path), "utf8")) as ApprovedFrameRecord
+    const recordPath = path.isAbsolute(index.path)
+      ? index.path
+      : path.join(/* turbopackIgnore: true */ process.cwd(), index.path)
+    return JSON.parse(await readFile(recordPath, "utf8")) as ApprovedFrameRecord
   } catch {
     return null
   }

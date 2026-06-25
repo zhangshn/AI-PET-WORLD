@@ -52,6 +52,8 @@ async function main() {
     await testImageFormatMismatchBlocked(api)
     await testImageDimensionMismatchBlocked(api)
     await testImageShaMismatchBlocked(api)
+    await testPartialWorldFrameSizeBlocked(api)
+    await testCropCandidateBlocked(api)
     await testFailedReviewCannotApprove(api)
     await testFakeQualityTagsDoNotPassVj1Vj2(api)
     testProductionEnvironmentBlocksControlledMvpDisplay(api)
@@ -395,6 +397,78 @@ async function testImageShaMismatchBlocked(api) {
   assert(result.warnings.includes("review_summary_sha256"), "wrong sha should be compared against review summary")
 
   pass("图片 SHA-256 缺失或错误时被阻断")
+}
+
+async function testPartialWorldFrameSizeBlocked(api) {
+  const bundle = await buildValidPipeline(api, {
+    ownerId: "owner-partial-size",
+    worldId: "world-partial-size",
+    tick: 18,
+    sourceFactIds: ["fact:partial-size"],
+    skipApprovedWrite: true,
+  })
+  const partialFrame = {
+    ...bundle.approvedFrame,
+    width: 256,
+    height: 192,
+  }
+  const partialCandidateRecord = {
+    ...bundle.candidateRead.record,
+    candidate: {
+      ...bundle.candidateRead.record.candidate,
+      width: 256,
+      height: 192,
+    },
+  }
+  const result = await api.writeWorldVisualApprovedFrameRecord({
+    ownerId: bundle.ownerId,
+    worldId: bundle.worldId,
+    tick: bundle.tick,
+    approvedFrame: partialFrame,
+    reviewReport: bundle.review,
+    sourceCandidateRecord: partialCandidateRecord,
+  })
+
+  assert(!result.ok, "partial-size image must not write ApprovedFrame")
+  assert(result.warnings.includes("formal_world_frame_size"), "partial-size image must report formal frame size gate")
+
+  pass("局部尺寸图片不能写入 /world ApprovedFrame")
+}
+
+async function testCropCandidateBlocked(api) {
+  const bundle = await buildValidPipeline(api, {
+    ownerId: "owner-crop-candidate",
+    worldId: "world-crop-candidate",
+    tick: 19,
+    sourceFactIds: ["fact:crop-candidate"],
+    skipApprovedWrite: true,
+  })
+  const cropCandidateRecord = {
+    ...bundle.candidateRead.record,
+    candidate: {
+      ...bundle.candidateRead.record.candidate,
+      candidateId: `${bundle.candidateRead.record.candidate.candidateId}-crop-preview`,
+      tags: [...bundle.candidateRead.record.candidate.tags, "crop_preview"],
+    },
+  }
+  const cropFrame = {
+    ...bundle.approvedFrame,
+    sourceImageCandidateId: cropCandidateRecord.candidate.candidateId,
+    tags: [...bundle.approvedFrame.tags, "crop_preview"],
+  }
+  const result = await api.writeWorldVisualApprovedFrameRecord({
+    ownerId: bundle.ownerId,
+    worldId: bundle.worldId,
+    tick: bundle.tick,
+    approvedFrame: cropFrame,
+    reviewReport: bundle.review,
+    sourceCandidateRecord: cropCandidateRecord,
+  })
+
+  assert(!result.ok, "crop candidate must not write ApprovedFrame")
+  assert(result.warnings.includes("partial_or_crop_candidate"), "crop candidate must report partial/crop gate")
+
+  pass("crop / partial 候选图不能写入 /world ApprovedFrame")
 }
 
 async function testFailedReviewCannotApprove(api) {

@@ -12,6 +12,9 @@ const APPROVED_FRAME_DIR = path.join(
   "data",
   "world-approved-frames"
 )
+const FORMAL_WORLD_FRAME_MIN_WIDTH = 1024
+const FORMAL_WORLD_FRAME_MIN_HEIGHT = 768
+const PARTIAL_FRAME_TOKENS = ["crop", "partial", "patch", "tile", "sprite"]
 
 type RuntimeBoundApprovedFrame = WorldVisualApprovedFrame & {
   worldId: string
@@ -293,6 +296,28 @@ function validateApprovedFrameRecord(
   pushIf(warnings, frame.imageFormat !== candidate.imageFormat, "image_format")
   pushIf(warnings, frame.width !== candidate.width, "width")
   pushIf(warnings, frame.height !== candidate.height, "height")
+  pushIf(
+    warnings,
+    frame.width < FORMAL_WORLD_FRAME_MIN_WIDTH ||
+      frame.height < FORMAL_WORLD_FRAME_MIN_HEIGHT ||
+      candidate.width < FORMAL_WORLD_FRAME_MIN_WIDTH ||
+      candidate.height < FORMAL_WORLD_FRAME_MIN_HEIGHT,
+    "formal_world_frame_size"
+  )
+  pushIf(
+    warnings,
+    hasPartialFrameToken([
+      candidate.candidateId,
+      candidate.sourceDescription.zh,
+      candidate.sourceDescription.en,
+      candidate.generationNotes.zh,
+      candidate.generationNotes.en,
+      candidate.modelVersion ?? "",
+      ...candidate.tags,
+      ...frame.tags,
+    ]),
+    "partial_or_crop_candidate"
+  )
   pushIf(warnings, frame.reviewScore !== review.score, "review_score")
   pushIf(warnings, review.status !== "vj_1_passed", "review_status")
   pushIf(warnings, review.vj0Status !== "vj_0_passed", "review_vj0_status")
@@ -397,6 +422,13 @@ function isAllowedApprovedContentType(
   if (imageFormat === "png") return contentType === "image/png"
   if (imageFormat === "webp") return contentType === "image/webp"
   return contentType === "image/jpeg"
+}
+
+function hasPartialFrameToken(values: string[]): boolean {
+  return values.some((value) => {
+    const normalized = value.toLowerCase()
+    return PARTIAL_FRAME_TOKENS.some((token) => normalized.includes(token))
+  })
 }
 
 function getWorldVisualApprovedFrameRecordPath(

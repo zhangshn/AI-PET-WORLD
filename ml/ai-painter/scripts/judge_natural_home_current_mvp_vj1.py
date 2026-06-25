@@ -14,7 +14,7 @@ from ai_painter.blueprint.channels import CANVAS_HEIGHT, CANVAS_WIDTH
 
 
 SCHEMA_VERSION = "natural-home-current-mvp-vj1-review-v1"
-STAGE_ID = "natural-home-v91-current-mvp-vj1-review"
+DEFAULT_STAGE_ID = "natural-home-v91-current-mvp-vj1-review"
 
 ALLOWED_CHANNELS = {
     "grass",
@@ -80,6 +80,7 @@ def main() -> int:
         type=Path,
         default=Path(".runtime/ai-painter/natural-home-v91-current-mvp-vj1-review"),
     )
+    parser.add_argument("--stage-id", type=str, default=DEFAULT_STAGE_ID)
     parser.add_argument("--min-score", type=float, default=90.0)
     parser.add_argument("--max-mae", type=float, default=0.02)
     parser.add_argument("--min-psnr", type=float, default=30.0)
@@ -115,7 +116,7 @@ def main() -> int:
 
     report = {
         "schemaVersion": SCHEMA_VERSION,
-        "stageId": STAGE_ID,
+        "stageId": args.stage_id,
         "generatedAt": datetime.now(UTC).isoformat(),
         "sourceQualityReport": str(quality_report_path),
         "sourceStageId": quality_report.get("sourceStageId"),

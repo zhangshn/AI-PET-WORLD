@@ -1,0 +1,46 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v94-edge-sharpness-repair",
+  "modelVersion": "rgb-refiner-natural-home-v94-edge-sharpness-repair",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.00000085,
+  "discriminatorLearningRate": 0.00000055,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0012,
+  "maxEpochs": 18,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.08,
+    "edge": 3.75,
+    "texture": 2.75,
+    "laplacian": 2.55,
+    "gradient": 2.1,
+    "colorRange": 0.1,
+    "waterPeriodicity": 2.65
+  },
+  "structureWeights": {
+    "water": 3.45,
+    "shoreline": 3.55,
+    "road": 2.35,
+    "roadEdge": 2.35,
+    "tree": 2.65,
+    "rock": 2.55,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.008,
+    "margin": 0.0007
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260625,
+  "status": "v94_repair_v93_vj1_failures_no_building_no_character_no_animal"
+}
