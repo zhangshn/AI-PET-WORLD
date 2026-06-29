@@ -1,180 +1,103 @@
 # AI-PET-WORLD 当前进度表
 
-版本：v1.4
-状态：实时进度文档
-更新日期：2026-06-25
+状态：实时进度文档  
+更新时间：2026-06-29
 
-本文档只记录当前进度。项目入口看 [README](../README.md)，业务定义看 [业务说明](./BUSINESS_SPEC.md)，执行顺序看 [唯一执行计划表](./EXECUTION_PLAN.md)。
+本文只记录当前完成度、阻塞和下一步。总入口见 [README](../README.md)，执行顺序见 [唯一执行计划表](./EXECUTION_PLAN.md)。
 
 ## 当前阶段
 
-```txt
-当前主线：自然家园小模型训练 + 自然家园 VisualJudge + ApprovedFrame 闭环
-当前阶段：阶段 E，自然家园泛化训练与 VisualJudge 增强
-上一历史闭环：V91 曾写入受控 MVP ApprovedFrame，但因属于 256x192 crop 局部候选，当前已被主页面闸门阻断
-本轮最新结果：V95 已完成失败修复数据集、训练、候选生成、质量筛选、VJ-1/VJ-2，但 48 张候选仍全部被 VJ 阻断
-当前限制：V92/V93/V94/V95 都不能进入 /world，不能写 ApprovedFrame，不代表正式世界图
-```
+当前阶段：P4 / P5 交界  
+当前主线：自然家园小模型训练 + 自然家园 VisualJudge + Game-World ApprovedFrame 候选 + RuntimeFrame 闸门  
+当前结论：`/world` 已修正为完整游戏主世界入口，不再展示训练候选图、局部图、crop、patch、tile、sprite、Controlled MVP 图，也不允许把单张 ApprovedFrame 图片直接铺成主页面。ApprovedFrame 只能作为 RuntimeFrame 的视觉输入，必须经过游戏界面合成层后才可能进入 `/world`。
 
-## 总体进度表
+## 当前进度表
 
 | 模块 | 状态 | 完成度 | 当前说明 |
-|---|---|---:|---|
-| 业务主线定义 | 完成 | 100% | 自主世界、管家自主、世界事实优先已冻结 |
-| 文档入口整理 | 完成 | 100% | README、业务说明、执行计划、架构、目录、进度表已分离 |
-| 正式展示闸门 | 已收紧 | 100% | `/world` 只允许完整主世界 ApprovedFrame / RuntimeFrame，局部/crop/候选图全部阻断 |
-| 本地训练工程 | 可运行 | 95% | PyTorch、CUDA、训练、推理、资源记录已接通 |
-| 训练结果归档 | 已接通 | 90% | 训练图、失败图、时间戳、资源账本进入归档链路 |
-| 自然家园数据清洗 | 进行中 | 90% | V95 形成 200 个失败修复训练样本，含 185 训练 / 15 验证 |
-| 自然家园小模型训练 | 进行中 | 84% | V91 可出受控 MVP 图；V95 已继续训练但泛化仍未过 VJ |
-| 自然家园质量筛选 | 进行中 | 85% | V95 41/48 过训练筛选，但 VJ-1/VJ-2 全部阻断 |
-| VisualJudge VJ-0 | 完成 | 100% | 文件、来源、事实、runtime gate 已建 |
-| VisualJudge VJ-1 | 进行中 | 73% | 能阻断失败图；V95 泛化候选仍 0/48 通过 |
-| VisualJudge VJ-2 | 进行中 | 52% | MVP 最小语义/风格闸门已接入，但完整判断仍需增强 |
-| ApprovedFrame | 历史首张归档 | 65% | V91 旧受控 MVP 帧保留归档；因是 256x192 crop 局部图，已不允许作为主世界展示 |
-| `/world` 正式展示 | 闸门收紧，当前无可展示帧 | 55% | 主页面只展示完整世界帧；当前 V92/V93/V94/V95 均未通过，不展示训练图 |
-| VisualUnit v0 | 暂停 | 25% | schema、registry、状态帧、运行时帧、样例已建；judge 后置 |
-| 人物 / 管家视觉单元 | 未开始 | 0% | 后置 |
-| 设施 / 建筑视觉单元 | 未开始 | 0% | 后置 |
-| 动态状态帧 | 未开始 | 0% | 后置 |
-| Runtime 动态合成 | 未开始 | 0% | 后置 |
+|---|---:|---:|---|
+| 业务主线定义 | 完成 | 100% | 自主世界、自主管家、世界事实优先已固定。 |
+| 文档入口整理 | 进行中 | 90% | README、计划表、进度表已重新清理；后续只更新必要文档。 |
+| 本地训练工程 | 可运行 | 96% | PyTorch/CUDA/训练/推理/记录链路已接通。 |
+| 训练结果归档 | 已接通 | 96% | 成功图、失败图、候选图、时间戳、耗时、资源账本进入归档链路。 |
+| 自然家园数据范围 | 已冻结 | 100% | 当前只做草地、水体、水岸、道路、树、石、花草、空间深度。 |
+| 自然家园小模型训练 | 进行中 | 94% | V110 是当前稳定权重；V112 使用 V110 稳定权重扩大候选池。 |
+| 自然家园完整帧生成 | 进行中 | 91% | V116 扩展 formal-world 来源到 180 张候选，VJ-2 得到 43 张自然质量候选；V117 完整主世界闸门确认 0/180 可作为完整 `/world` 主世界帧。 |
+| V112 候选绑定复核 | 完成 | 100% | 曾绑定一个候选用于复核；视觉检查后确认不能作为正式 `/world` 画面，不写入正式展示源。 |
+| VisualJudge VJ-0 | 完成 | 100% | 文件、来源、hash、runtime gate、ApprovedFrame 记录闸门完成。 |
+| VisualJudge VJ-1 | 进行中 | 97% | V116 筛出 94 张 VJ-1 候选，剩余失败集中在锐度、水体伪影、边界密度和来源状态。 |
+| VisualJudge VJ-2 | 进行中 | 91% | V116 通过 43 张自然质量候选；现有 VJ-2 仍是自然质量筛选，下一步必须补完整主世界构图判断。 |
+| Game-World Frame Gate | 已建立 | 100% | V117 新增完整游戏主世界帧闸门；当前 V116 的 180 张全部被正确阻断。 |
+| Game-World ApprovedFrame | 协议已打通 | 88% | 当前没有正式可展示帧；V112 只是候选绑定，不是最终批准。 |
+| RuntimeFrame 闸门 | 已收紧 | 100% | `/world` 只允许完整游戏 RuntimeFrame；单张 ApprovedFrame 不能直接展示。 |
+| `/world` 正式展示 | 已阻断未合格内容 | 92% | 当前没有正式 RuntimeFrame，所以 `/world` 应显示阻断说明，不展示图。 |
+| VisualUnit v0 | 暂停 | 25% | schema 和样例已有，judge 后置。 |
+| 人物 / 管家视觉单元 | 未开始 | 0% | 后置。 |
+| 设施 / 建筑视觉单元 | 未开始 | 0% | 后置。 |
+| 动态状态帧 | 未开始 | 0% | 后置。 |
+| Runtime 动态合成 | 未开始 | 0% | 后置。 |
 
-## 训练分线进度
+## 最新批次结果
 
-| 分线 | 职责 | 当前状态 | 完成度 | 下一步 |
-|---|---|---:|---:|---|
-| 完整自然家园训练线 | 生成完整自然家园主世界候选图 | 当前主线 | 84% | V96 扩充干净多布局自然样本，并继续训练完整主世界候选 |
-| 完整自然家园 VisualJudge | 审核完整候选是否能成为 ApprovedFrame | 当前主线 | 63% | 强化 VJ-1/VJ-2，至少让完整候选出现稳定通过 |
-| ApprovedFrame 主世界闸门 | 只让完整、当前事实匹配的图进 `/world` | 已收紧 | 70% | 等待新的完整候选通过后写入 |
-| 局部视觉单元训练线 | 树、水、草、石、人物、建筑、状态帧 | 后置 | 25% | 暂不抢主线，只保留入口和数据契约 |
-| Runtime 合成线 | 把完整构图能力、局部单元和动态状态组合成游戏画面 | 后置 | 0% | 等自然家园 ApprovedFrame 达标后再启动 |
+| 批次 | 数据范围 | 结果 | 结论 |
+|---|---:|---:|---|
+| V104 full-frame formal world | 24 张 full-frame 候选 | 12/24 过 VJ-1，0/24 过 VJ-2 | 第一轮完整自然家园候选。 |
+| V105 full-frame stability | 60 张 full-frame 候选 | 28/60 过 VJ-1，0/60 过 VJ-2 | 稳定性提升。 |
+| V106 full-frame stability repair | 60 张 full-frame 候选 | 0/60 过 VJ-1 | 失败轮，已归档。 |
+| V107 formal-passed distillation | 60 张 full-frame 候选 | 28/60 过 VJ-1，0/60 过 VJ-2 | 恢复基线。 |
+| V108 V107-weight formal world | 60 张 full-frame 候选 | 28/60 过 VJ-1，0/60 过 VJ-2 | 与 V107 持平。 |
+| V109 pure-natural formal world | 60 张 full-frame 候选 | 44/60 过 formal VJ-1，44/60 过 minimal VJ-2 | 曾写入首帧协议，但缺最终业务确认，已移入 rejected archive，不能展示。 |
+| V110 V109 formal-passed distillation | 72 张 full-frame 候选 | 53/72 过 formal VJ-1，53/72 过 minimal VJ-2 | 当前稳定训练权重。 |
+| V111 V110 failure repair | 72 张 full-frame 候选 | 0/72 过 formal VJ-1/VJ-2 | 训练拉偏，失败记录保留，不采用。 |
+| V112 V110 stable formal-world sweep | 96 张候选 | 68/96 过 formal VJ-1，旧 minimal VJ-2 过线偏松 | 候选池可用，但不能直接代表完整主世界。 |
+| V112 candidate binding | 1 个候选 | 绑定 worldId/tick/sourceFactIds 成功 | 复核后确认不能写入 `/world`，保留记录。 |
+| V113 strict visible semantic VJ-2 | 96 张候选 | 0/96 通过 | 规则过严且把水体误算成绿色，失败轮保留。 |
+| V114 corrected visible semantic VJ-2 | 96 张候选 | 40/96 通过 | 得到自然质量候选池；仍需 V115 增加完整主世界构图闸门。 |
+| V115 complete-world composition sweep | 96 张候选 | 68/96 过 formal VJ-1，40/96 过修正 VJ-2 | 与 V114 持平，未突破完整主世界构图问题；不写入 `/world`。 |
+| V116 expanded formal-world composition | 180 张候选 | 157/180 过训练质量筛选，94/180 过 formal VJ-1，43/180 过修正 VJ-2 | formal-world 来源从 96 扩展到 180；自然质量候选增加，但人工复核仍是局部自然画面，不是完整游戏主世界帧；不写入 `/world`。 |
+| V117 complete game-world frame gate | 180 张候选 | 0/180 通过 | 新增完整主世界帧闸门；所有 V116 候选因缺少完整世界意图标签、构图锚点和 RuntimeFrame 来源声明被阻断，符合 `/world` 规则。 |
 
-## 页面与归档进度
+## 当前正式展示规则
 
-| 页面 / 模块 | 当前状态 | 说明 |
-|---|---|---|
-| `/world` | 已阻断历史局部图 | 当前没有合格完整主世界 ApprovedFrame，不展示训练图 |
-| `/ai-painter-progress` | 需整理入口 | 下一步拆成“完整训练入口”和“局部训练入口” |
-| `/ai-painter-progress/generated-results` | 已作为归档页 | 所有训练后输出、候选、失败、时间戳、耗时、资源账本都应集中查看 |
-| 完整训练详情页 | 需补清晰入口 | 显示自然家园完整训练、候选、VJ、ApprovedFrame 状态 |
-| 局部训练详情页 | 后置入口 | 显示 VisualUnit / 局部资产训练，不进入 `/world` |
+`/world` 是玩家主世界页面，不是训练预览页，也不是单张图片展示页。画面要进入 `/world`，必须同时满足：
 
-## 当前小模型链路进度
-
-| 阶段 | 状态 | 输出 |
-|---|---|---|
-| V90 当前 MVP 自然内容过滤 | 完成 | `.runtime/ai-painter/natural-home-v90-current-mvp-natural-only-filter` |
-| V91 质量可训练数据集 | 完成 | `.runtime/ai-painter/natural-home-v91-current-mvp-quality-ready-dataset` |
-| V91 本地训练 | 完成 | `.runtime/ai-painter/natural-home-v91-current-mvp-quality-ready-training` |
-| V91 候选生成 | 完成 | `.runtime/ai-painter/natural-home-v91-current-mvp-quality-ready-generation` |
-| V91 VJ-1 / VJ-2 审核 | 完成 | `.runtime/ai-painter/natural-home-v91-current-mvp-vj1-review`、`.runtime/ai-painter/natural-home-v91-current-mvp-vj2-review` |
-| V91 ApprovedFrame 候选绑定 | 完成 | `.runtime/ai-painter/natural-home-v91-approved-frame-candidate-binding` |
-| V91 第一张 ApprovedFrame 写入 | 完成 | `data/world-approved-frames/owner-d0znz8/world-d0znz8` |
-| V92 泛化候选生成 | 完成但失败归档 | `.runtime/ai-painter/natural-home-v92-current-mvp-generalization-sweep-generation` |
-| V92 泛化 VJ-1 / VJ-2 | 完成，0/48 通过 | `.runtime/ai-painter/natural-home-v92-current-mvp-generalization-vj1-review`、`.runtime/ai-painter/natural-home-v92-current-mvp-generalization-vj2-review` |
-| V93 干净泛化数据集 | 完成 | `.runtime/ai-painter/natural-home-v93-clean-generalization-dataset` |
-| V93 干净泛化训练 | 完成 | `.runtime/ai-painter/natural-home-v93-clean-generalization-training` |
-| V93 干净泛化 VJ-1 / VJ-2 | 完成，0/48 通过 | `.runtime/ai-painter/natural-home-v93-clean-generalization-vj1-review`、`.runtime/ai-painter/natural-home-v93-clean-generalization-vj2-review` |
-| V94 边缘与清晰度修复训练 | 完成但未达标 | `.runtime/ai-painter/natural-home-v94-edge-sharpness-repair-training` |
-| V94 候选生成与质量筛选 | 完成 | `.runtime/ai-painter/natural-home-v94-edge-sharpness-repair-generation`、`.runtime/ai-painter/natural-home-v94-edge-sharpness-repair-quality-selection` |
-| V94 VJ-1 / VJ-2 | 完成，0/48 通过 | `.runtime/ai-painter/natural-home-v94-edge-sharpness-repair-vj1-review`、`.runtime/ai-painter/natural-home-v94-edge-sharpness-repair-vj2-review` |
-| V95 失败修复数据集 | 完成 | `.runtime/ai-painter/natural-home-v95-failure-repair-dataset` |
-| V95 失败修复训练 | 完成但未达标 | `.runtime/ai-painter/natural-home-v95-failure-repair-training` |
-| V95 候选生成与质量筛选 | 完成 | `.runtime/ai-painter/natural-home-v95-failure-repair-generation`、`.runtime/ai-painter/natural-home-v95-failure-repair-quality-selection` |
-| V95 VJ-1 / VJ-2 | 完成，0/48 通过 | `.runtime/ai-painter/natural-home-v95-failure-repair-vj1-review`、`.runtime/ai-painter/natural-home-v95-failure-repair-vj2-review` |
-
-## 最新 V95 结果
-
-| 指标 | 数值 |
-|---|---:|
-| 数据集样本 | 200 |
-| 训练样本 / 验证样本 | 185 / 15 |
-| 失败聚焦来源 / 复制样本 | 34 / 140 |
-| 训练 epoch / step | 14 / 1302 |
-| 训练设备 | CUDA |
-| 参数量 | 2176134 |
-| bestGeneratorLoss | 0.4422638875 |
-| bestValidationLoss | 0.4856465869 |
-| 生成候选 | 48 |
-| 质量筛选通过下一轮训练 | 41 |
-| 质量筛选打回 | 7 |
-| 平均分 | 86.323431 |
-| 最高分 | 94.467040 |
-| 最低分 | 69.091667 |
-| VJ-1 通过 | 0 |
-| VJ-1 打回 | 48 |
-| VJ-2 通过 | 0 |
-| VJ-2 打回 | 48 |
-| 是否可展示 | 否 |
-| 是否可写 ApprovedFrame | 否 |
-| 是否进入 `/world` | 否 |
-
-主要失败原因：
-
-| 失败原因 | 次数 | 解释 |
-|---|---:|---|
-| `edge_density_ratio_above_vj1_line` | 48 | 边缘密度仍低于 VJ-1 线 |
-| `mae_under_vj1_line` | 48 | 与目标差异仍超过 VJ-1 线 |
-| `psnr_above_vj1_line` | 48 | 清晰接近度仍不足 |
-| `sharpness_ratio_above_vj1_line` | 41 | 多数候选仍不够锐 |
-| `score_above_vj1_line` | 34 | 综合质量不足 |
-| `mask_boundary_ratio_above_vj1_line` | 27 | mask 边界与画面细节一致性不足 |
-| `water_artifact_delta_under_vj1_line` | 4 | 部分水体仍有伪影风险 |
-| `vj1_must_pass` | 48 | VJ-2 要求先通过 VJ-1 |
-
-结论：
-
-```txt
-V95 是一次有效失败修复实验。
-它证明仅靠复制 V94 失败来源并放大失败修复权重，仍不能让泛化候选通过 VJ-1。
-下一步不继续蛮力重复同类失败样本，而是做 V96：扩充更干净、多布局、同源 mask 更稳定的自然家园样本，并把 VJ-1 失败原因转成更明确的数据配比。
-```
-
-## 历史 ApprovedFrame 记录
-
-| 项目 | 内容 |
+| 闸门 | 必须满足 |
 |---|---|
-| worldId | `world-d0znz8` |
-| tick | `0` |
-| sourceFactIds | `41` |
-| frameId | `approved-frame-world-d0znz8-0` |
-| approvedForProduction | `false` |
-| canShowToPlayer | 历史记录中为 `true`，但当前主页面闸门已收紧 |
-| 当前主页面状态 | 已被新闸门阻断，不再作为 `/world` 主世界画面展示 |
-| 阻断原因 | `256x192` 局部图，candidateId 含 `crop` |
-| 最新索引 | `data/world-approved-frames/owner-d0znz8/world-d0znz8/latest-approved-frame.json` |
-| 记录文件 | `data/world-approved-frames/owner-d0znz8/world-d0znz8/approved-frame-0-approved-frame-world-d0znz8-0.json` |
+| VJ-0 | 文件、来源、hash、runtime 绑定通过。 |
+| VJ-1 | 视觉质量通过。 |
+| VJ-2 | 自然家园语义、风格、完整世界帧判断通过。 |
+| 当前 Runtime | worldId、tick、sourceFactIds 匹配。 |
+| 图片绑定 | image hash、字节数、Content-Type、payload quality 匹配。 |
+| 正式世界边界 | `approved_for_game_world`、`game_world_ready_for_player`、`formal_full_world_frame`。 |
+| 项目最终确认 | 必须包含 `owner_final_world_mvp_approved`、`complete_game_world_scene`、`world_home_playable_frame`。 |
+| 游戏界面合成层 | 必须生成 RuntimeFrame / 游戏视口 / 游戏 UI 容器，不能把 ApprovedFrame 图片直接铺满页面。 |
 
-## 下一步计划
+当前正式 ApprovedFrame 源为空。V112/V114 仍是候选和复核记录，不能被 `/world` 读取或展示。
 
-| 顺序 | 任务 | 是否当前允许 | 完成标准 |
-|---:|---|---:|---|
-| 1 | 整理训练主页入口 | 是 | `/ai-painter-progress` 分清完整训练入口和局部训练入口，不在主页堆候选图 |
-| 2 | V96 扩充干净多布局自然样本 | 是 | 训练集不只重复失败来源，覆盖森林、水岸、空地、小路、石区多组合 |
-| 3 | V96 调整失败样本配比 | 是 | 失败样本作为负向反馈，不压过干净目标分布 |
-| 4 | V96 继续自然家园完整训练 | 是 | 能生成多结构完整自然家园候选，而不是局部 crop 图 |
-| 5 | 强化 VJ-1 清晰度、边缘、结构一致性检查 | 是 | 稳定打回模糊、伪影、错误结构，并减少误判 |
-| 6 | 强化 VJ-2 语义与风格判断 | 是 | 只让自然、明亮、治愈、俯视像素风候选进入 ApprovedFrame 候选 |
-| 7 | 生成新的完整自然家园 ApprovedFrame | 是 | 非局部、非 crop、完整尺寸、当前事实匹配后进入 `/world` |
-| 8 | VisualUnit judge | 否 | 后置 |
-| 9 | 人物 / 管家视觉 | 否 | 后置 |
-| 10 | 建筑 / 设施视觉 | 否 | 后置 |
-| 11 | 动态状态帧 | 否 | 后置 |
+## 最新验证结果
+
+| 命令 | 结果 |
+|---|---|
+| `npm run check:vj0` | 通过，90 项。 |
+| `npm run test:vj0` | 通过，19 项。 |
+| `node scripts/check-natural-home-approved-frame-candidate-binding.mjs .runtime\ai-painter\natural-home-v112-approved-frame-candidate-binding natural-home-v112-approved-frame-candidate-binding` | 通过。 |
+| `npm run check:encoding` | 通过。 |
+| `node scripts/check-natural-home-current-mvp-vj2.mjs .runtime\ai-painter\natural-home-v114-v112-visible-semantic-corrected-vj2-review natural-home-v114-v112-visible-semantic-corrected-vj2-review` | 通过，96 行，40 个自然质量候选。 |
+| `node scripts/check-natural-home-current-mvp-vj2.mjs .runtime\ai-painter\natural-home-v115-v110-complete-world-composition-sweep-formal-vj2-review natural-home-v115-v110-complete-world-composition-sweep-formal-vj2-review` | 通过，96 行，40 个自然质量候选。 |
+| `node scripts/check-natural-home-current-mvp-vj2.mjs .runtime\ai-painter\natural-home-v116-expanded-formal-world-composition-formal-vj2-review natural-home-v116-expanded-formal-world-composition-formal-vj2-review` | 通过，180 行，43 个自然质量候选。 |
+| `node scripts/check-natural-home-game-world-frame-gate.mjs .runtime\ai-painter\natural-home-v117-complete-game-world-frame-gate natural-home-v117-complete-game-world-frame-gate --expect-no-passed` | 通过，180 行，0 个完整主世界候选。 |
+| `npx tsc --noEmit` | 通过。 |
+| `npm run build` | 通过。 |
+
+## 当前下一步
+
+| 顺序 | 下一步 | 完成标准 |
+|---:|---|---|
+| 1 | 建立 V118 完整主世界构图数据源 | 生成带 `complete_natural_home_mvp`、`primary_world_view`、`runtime_frame_source` 标签和 6 个构图锚点的 Blueprint。 |
+| 2 | 用 V118 数据源生成新的完整自然家园候选 | 必须包含入口、主路径、水岸、自然边界、可探索区域、视觉中心，不做人物、建筑、动态。 |
+| 3 | 继续保留所有成功/失败/候选记录 | 每轮自动保存图、时间戳、耗时、GPU、hash、来源、失败原因。 |
+| 4 | 通过 VJ-1、VJ-2、Game-World Frame Gate | 只有三层都过，才进入候选绑定复核。 |
+| 5 | 项目所有者最终确认后才写入展示标签 | 没有最终确认标签，永远不能进入 `/world`。 |
 
 ## 固定提醒
 
-候选图、训练图、失败图、质量筛选图、VJ 通过图，都不是正式世界图。
-
-`/world` 是玩家主世界页面，不是训练预览页。任何局部图、crop 图、patch 图、tile 图、sprite 图、低于完整主世界帧尺寸的图，即使历史上写入过受控 MVP 记录，也只能保留归档，不能展示在 `/world`。
-
-正式世界图必须满足：
-
-```txt
-本地小模型生成
--> 绑定世界事实
--> 通过 VisualJudge
--> 满足完整主世界帧尺寸
--> 不是 crop / partial / patch / tile / sprite
--> 写入 ApprovedFrame / RuntimeFrame
--> /world 读取展示
-```
+`/world` 是玩家主世界页面，不是训练预览页，也不是图片画廊。任何局部图、crop 图、patch 图、tile 图、sprite 图、训练图、候选图、失败图，即使视觉分数高，也只能归档，不能展示在 `/world`。单张 ApprovedFrame 图片也不能直接等同于 `/world`，它只能作为 RuntimeFrame 合成层的视觉输入。

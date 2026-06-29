@@ -1,0 +1,78 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v107-formal-passed-distillation",
+  "modelVersion": "rgb-refiner-natural-home-v107-formal-passed-distillation",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.0000008,
+  "discriminatorLearningRate": 0.0,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0,
+  "maxEpochs": 18,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.15,
+    "edge": 3.8,
+    "texture": 2.7,
+    "laplacian": 3.4,
+    "gradient": 2.8,
+    "colorRange": 0.18,
+    "waterPeriodicity": 3.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.006,
+    "margin": 0.0006
+  },
+  "structureWeights": {
+    "water": 3.8,
+    "shoreline": 3.8,
+    "road": 2.3,
+    "roadEdge": 2.3,
+    "tree": 2.7,
+    "rock": 2.6,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 1.8,
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260627,
+  "status": "v107_distill_v105_formal_vj2_passed_candidates_no_world_display",
+  "allowedScope": "natural_home_only",
+  "forbiddenScope": [
+    "building",
+    "facility",
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "formalVj1": "recover formal VJ-1 pass stability from V105 safe candidates",
+    "formalVj2": "produce minimal VJ-2 candidates without using V106 failed soft outputs",
+    "worldDisplay": "blocked until ApprovedFrame binding passes current worldId, tick, sourceFactIds, and formal frame size"
+  }
+}

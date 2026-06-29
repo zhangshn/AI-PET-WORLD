@@ -43,6 +43,10 @@ export type TrainingAction =
   | "full_natural_home_v87_quality_ledger"
   | "full_natural_home_v88_quality_allowlist_dataset"
   | "full_natural_home_v89_quality_allowlist_training"
+  | "full_natural_home_v96_clean_multilayout"
+  | "full_natural_home_v97_edge_boundary_repair"
+  | "full_natural_home_v98_vj1_signal_repair"
+  | "full_natural_home_v99_vj1_boundary_similarity_repair"
   | "full"
   | "full_multiscene"
   | "full_structure_guided"
@@ -687,6 +691,226 @@ export type Progress = {
       validationLoss?: number
       seconds?: number
       device?: string
+    } | null
+    latest?: {
+      status?: string
+      stageId?: string
+      contactSheet?: string
+      sampleCount?: number
+      rowCount?: number
+      summary?: {
+        rowCount?: number
+        passedForNextTraining?: number
+        reviewCandidate?: number
+        rejectedTrainingCandidate?: number
+        averageScore?: number
+        bestScore?: number
+        worstScore?: number
+      }
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV96CleanMultilayout?: {
+    datasetLatest?: {
+      status?: string
+      stageId?: string
+      contactSheet?: string
+      sampleCount?: number
+      trainSampleCount?: number
+      validationSampleCount?: number
+      focusSourceCount?: number
+      focusCopySampleCount?: number
+    } | null
+    trainingSummary?: {
+      status?: string
+      trainingVersion?: string
+      modelVersion?: string
+      epochs?: number
+      steps?: number
+      bestGeneratorLoss?: number
+      bestValidationLoss?: number
+      device?: string
+      parameterCount?: number
+    } | null
+    trainingLatest?: {
+      epoch?: number
+      step?: number
+      generatorLoss?: number
+      discriminatorLoss?: number
+      validationLoss?: number
+      seconds?: number
+      device?: string
+    } | null
+    generationLatest?: {
+      status?: string
+      stageId?: string
+      contactSheet?: string
+      sampleCount?: number
+    } | null
+    latest?: {
+      status?: string
+      stageId?: string
+      contactSheet?: string
+      sampleCount?: number
+      rowCount?: number
+      summary?: {
+        rowCount?: number
+        passedForNextTraining?: number
+        reviewCandidate?: number
+        rejectedTrainingCandidate?: number
+        averageScore?: number
+        bestScore?: number
+        worstScore?: number
+      }
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV97EdgeBoundaryRepair?: {
+    datasetLatest?: {
+      status?: string
+      stageId?: string
+      contactSheet?: string
+      sampleCount?: number
+      trainSampleCount?: number
+      validationSampleCount?: number
+      focusSourceCount?: number
+      focusCopySampleCount?: number
+    } | null
+    trainingSummary?: {
+      status?: string
+      trainingVersion?: string
+      modelVersion?: string
+      epochs?: number
+      steps?: number
+      bestGeneratorLoss?: number
+      bestValidationLoss?: number
+      device?: string
+      parameterCount?: number
+    } | null
+    trainingLatest?: {
+      epoch?: number
+      step?: number
+      generatorLoss?: number
+      discriminatorLoss?: number
+      validationLoss?: number
+      seconds?: number
+      device?: string
+    } | null
+    generationLatest?: {
+      status?: string
+      stageId?: string
+      contactSheet?: string
+      sampleCount?: number
+    } | null
+    latest?: {
+      status?: string
+      stageId?: string
+      contactSheet?: string
+      sampleCount?: number
+      rowCount?: number
+      summary?: {
+        rowCount?: number
+        passedForNextTraining?: number
+        reviewCandidate?: number
+        rejectedTrainingCandidate?: number
+        averageScore?: number
+        bestScore?: number
+        worstScore?: number
+      }
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV98Vj1SignalRepair?: {
+    datasetLatest?: {
+      status?: string
+      stageId?: string
+      contactSheet?: string
+      sampleCount?: number
+      trainSampleCount?: number
+      validationSampleCount?: number
+      focusSourceCount?: number
+      focusCopySampleCount?: number
+    } | null
+    trainingSummary?: {
+      status?: string
+      trainingVersion?: string
+      modelVersion?: string
+      epochs?: number
+      steps?: number
+      bestGeneratorLoss?: number
+      bestValidationLoss?: number
+      device?: string
+      parameterCount?: number
+    } | null
+    trainingLatest?: {
+      epoch?: number
+      step?: number
+      generatorLoss?: number
+      discriminatorLoss?: number
+      validationLoss?: number
+      seconds?: number
+      device?: string
+    } | null
+    generationLatest?: {
+      status?: string
+      stageId?: string
+      contactSheet?: string
+      sampleCount?: number
+    } | null
+    latest?: {
+      status?: string
+      stageId?: string
+      contactSheet?: string
+      sampleCount?: number
+      rowCount?: number
+      summary?: {
+        rowCount?: number
+        passedForNextTraining?: number
+        reviewCandidate?: number
+        rejectedTrainingCandidate?: number
+        averageScore?: number
+        bestScore?: number
+        worstScore?: number
+      }
+    } | null
+    inferenceReady?: boolean
+  } | null
+  naturalHomeV99Vj1BoundarySimilarityRepair?: {
+    datasetLatest?: {
+      status?: string
+      stageId?: string
+      contactSheet?: string
+      sampleCount?: number
+      trainSampleCount?: number
+      validationSampleCount?: number
+      focusSourceCount?: number
+      focusCopySampleCount?: number
+    } | null
+    trainingSummary?: {
+      status?: string
+      trainingVersion?: string
+      modelVersion?: string
+      epochs?: number
+      steps?: number
+      bestGeneratorLoss?: number
+      bestValidationLoss?: number
+      device?: string
+      parameterCount?: number
+    } | null
+    trainingLatest?: {
+      epoch?: number
+      step?: number
+      generatorLoss?: number
+      discriminatorLoss?: number
+      validationLoss?: number
+      seconds?: number
+      device?: string
+    } | null
+    generationLatest?: {
+      status?: string
+      stageId?: string
+      contactSheet?: string
+      sampleCount?: number
     } | null
     latest?: {
       status?: string

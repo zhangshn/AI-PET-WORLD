@@ -4,6 +4,10 @@
  * Personality Core - Knowledge - Stars
  * ======================================================
  *
+ * Legacy note:
+ * New full-chart star catalog lives in ../star-catalog.
+ * Do not add full-chart stars here.
+ *
  * 【文件职责】
  * 这个文件只负责定义“星曜实体本身”，不负责人格计算。
  *

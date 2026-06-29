@@ -2,11 +2,15 @@ import { NextResponse } from "next/server"
 
 import { readWorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-store-adapter"
 import {
+  buildWorldGameRuntimeFrame,
+  buildWorldRuntimeFrameGate,
   buildWorldVisualFactManifest,
   readLatestWorldVisualApprovedFrameRecord,
 } from "@/world/world-visual-painter"
-import type { WorldVisualApprovedFrame } from "@/world/world-visual-painter"
-import { isControlledMvpDisplayEnvironmentAllowed } from "@/world/world-visual-painter/approved-frame/controlled-mvp-display-policy"
+import type {
+  WorldVisualApprovedFrame,
+  WorldVisualReviewReport,
+} from "@/world/world-visual-painter"
 
 type ApprovedReadBlockedStatus = "empty" | "invalid" | "failed"
 
@@ -101,6 +105,17 @@ export async function GET() {
   const record = approvedFrameReadResult.record
   const request = record.sourceCandidateRecord.aiImageGenerationRequest
   const condition = record.sourceCandidateRecord.generationCondition
+  const runtimeFrameBuild = buildWorldGameRuntimeFrame({
+    ownerId: readResult.record.ownerId,
+    currentWorldId: readResult.record.worldId,
+    currentTick: readResult.record.tick,
+    currentSourceFactIds: factManifest.sourceFactIds,
+    approvedFrame: record.approvedFrame,
+    reviewReport: record.reviewReport,
+    recordWorldId: record.worldId,
+    recordTick: record.tick,
+    recordSourceFactIds: record.sourceFactIds,
+  })
   const runtimeRenderGate = buildRuntimeRenderGate({
     approvedFrame: record.approvedFrame,
     approvedFrameRecordCanShowToPlayer: record.canShowToPlayer,
@@ -110,6 +125,10 @@ export async function GET() {
     currentTick: readResult.record.tick,
     currentSourceFactIds: factManifest.sourceFactIds,
     recordSourceFactIds: record.sourceFactIds,
+    reviewReport: record.reviewReport,
+    runtimeFrameReady: runtimeFrameBuild.runtimeFrameReady,
+    runtimeFrameId: runtimeFrameBuild.runtimeFrame?.frameId ?? null,
+    runtimeFrameBlockedReasons: runtimeFrameBuild.blockedReasons,
   })
 
   return NextResponse.json(
@@ -117,10 +136,12 @@ export async function GET() {
       ok: runtimeRenderGate.canRuntimeRender,
       status: approvedFrameReadResult.status,
       apiState: runtimeRenderGate.canRuntimeRender
-        ? "controlled_mvp_approved_frame_current_runtime_matched"
-        : "controlled_mvp_approved_frame_runtime_gate_blocked",
+        ? "game_ready_approved_frame_current_runtime_matched"
+        : "approved_frame_runtime_gate_blocked",
       vj0Blocked: !runtimeRenderGate.canRuntimeRender,
       record,
+      runtimeFrameStatus: runtimeFrameBuild.status,
+      runtimeFrame: runtimeFrameBuild.runtimeFrame,
       runtimeRenderGate,
       approvalBoundary: {
         approvalScope: record.approvedFrame.approvalScope,
@@ -129,7 +150,7 @@ export async function GET() {
         vj0Status: record.approvedFrame.vj0Status,
         vj1Status: record.approvedFrame.vj1Status,
         vj2Status: record.approvedFrame.vj2Status,
-        controlledMvpDisplayAllowed: runtimeRenderGate.canRuntimeRender,
+        gameWorldDisplayAllowed: runtimeRenderGate.canRuntimeRender,
         productionDisplayAllowed: false,
       },
       currentRuntimeGate: {
@@ -205,27 +226,30 @@ export async function GET() {
         totalCheckCount: record.reviewReport.checks.length,
       },
       canShowToPlayer: runtimeRenderGate.canRuntimeRender,
-      canShowToPlayerScope: "controlled_mvp_only",
+      canShowToPlayerScope: "game_runtime_frame_only",
       nextStep: runtimeRenderGate.canRuntimeRender
         ? {
-            zh: "该受控 MVP ApprovedFrame 已匹配当前 runtime tick 与当前 sourceFactIds，可供 /world Runtime Render 读取展示；它不是 production approved，前端不得重新生成或修改画面。",
-            en: "This controlled MVP ApprovedFrame matches the current runtime tick and sourceFactIds and may be read by /world Runtime Render. It is not production approved, and the frontend must not regenerate or modify the frame.",
+            zh: "完整游戏 RuntimeFrame 已通过当前 runtime 闸门，/world 可以展示游戏界面合成层。",
+            en: "The complete game RuntimeFrame passed the current runtime gate, so /world may display the composed game interface.",
           }
         : {
-            zh: "ApprovedFrame 未通过当前 runtime 展示闸门，/world 必须继续阻断。",
-            en: "The ApprovedFrame did not pass the current runtime display gate, so /world must remain blocked.",
+            zh: "ApprovedFrame 只能作为视觉层凭证。当前还没有完整游戏 RuntimeFrame / 游戏界面合成层，/world 必须继续阻断。",
+            en: "ApprovedFrame is only a visual-layer credential. A complete game RuntimeFrame / game interface composition layer does not exist yet, so /world must remain blocked.",
           },
       tags: [
         "world_visual_approved_api",
-        "controlled_mvp_approved_frame_only",
+        "game_world_approved_frame_only",
         "not_approved_for_production",
         "provenance_exposed_for_audit",
         "runtime_render_gate_checked",
         "current_tick_gate_checked",
         "current_source_facts_gate_checked",
         runtimeRenderGate.canRuntimeRender
-          ? "controlled_mvp_runtime_render_allowed"
+          ? "game_runtime_frame_render_allowed"
           : "runtime_render_blocked",
+        runtimeRenderGate.runtimeGameInterfaceReady
+          ? "runtime_game_interface_ready"
+          : "runtime_game_interface_not_implemented",
         "production_display_blocked",
         ...approvedFrameReadResult.tags,
       ],
@@ -316,6 +340,10 @@ function buildRuntimeRenderGate(input: {
   currentTick: number
   currentSourceFactIds: string[]
   recordSourceFactIds: string[]
+  reviewReport: WorldVisualReviewReport
+  runtimeFrameReady: boolean
+  runtimeFrameId: string | null
+  runtimeFrameBlockedReasons: string[]
 }) {
   const hardFieldsValid = approvedFrameHardFieldsValid(input.approvedFrame)
   const currentWorldMatched = input.recordWorldId === input.currentWorldId
@@ -331,24 +359,34 @@ function buildRuntimeRenderGate(input: {
     input.approvedFrame.vj0Status === "vj_0_passed" &&
     input.approvedFrame.vj1Status === "vj_1_passed" &&
     input.approvedFrame.vj2Status === "vj_2_not_implemented"
-  const controlledMvpDisplayEnvironmentAllowed =
-    isControlledMvpDisplayEnvironmentAllowed()
-  const canRuntimeRender =
-    input.approvedFrameRecordCanShowToPlayer === true &&
-    input.approvedFrame.canShowToPlayer === true &&
-    controlledMvpDisplayEnvironmentAllowed &&
-    hardFieldsValid &&
-    controlledMvpBoundaryPassed &&
-    currentWorldMatched &&
-    currentTickMatched &&
-    currentSourceFactsMatched
+  const gameWorldDisplayBoundaryPassed =
+    approvedFrameGameWorldDisplayBoundaryPassed(input.approvedFrame)
+  const runtimeFrameGate = buildWorldRuntimeFrameGate({
+    approvedFrame: input.approvedFrame,
+    reviewReport: input.reviewReport,
+    recordWorldId: input.recordWorldId,
+    recordTick: input.recordTick,
+    recordSourceFactIds: input.recordSourceFactIds,
+    recordCanShowToPlayer: input.approvedFrameRecordCanShowToPlayer,
+    currentWorldId: input.currentWorldId,
+    currentTick: input.currentTick,
+    currentSourceFactIds: input.currentSourceFactIds,
+    runtimeFrameReady: input.runtimeFrameReady,
+    runtimeFrameId: input.runtimeFrameId,
+    runtimeFrameBlockedReasons: input.runtimeFrameBlockedReasons,
+  })
+  const canRuntimeRender = runtimeFrameGate.canRuntimeRender
 
   return {
     approvedFrameRecordCanShowToPlayer: input.approvedFrameRecordCanShowToPlayer,
     approvedFrameCanShowToPlayer: input.approvedFrame.canShowToPlayer,
     hardFieldsValid,
     controlledMvpBoundaryPassed,
-    controlledMvpDisplayEnvironmentAllowed,
+    gameWorldDisplayBoundaryPassed,
+    runtimeGameInterfaceReady: runtimeFrameGate.runtimeGameInterfaceReady,
+    reviewReportGameWorldPassed: runtimeFrameGate.reviewReportGameWorldPassed,
+    ownerFinalWorldApprovalPassed:
+      runtimeFrameGate.ownerFinalWorldApprovalPassed,
     productionDisplayAllowed: false,
     currentWorldMatched,
     currentTickMatched,
@@ -365,22 +403,33 @@ function buildRuntimeRenderGate(input: {
     sourceImagePayloadQualityPassed:
       input.approvedFrame.sourceImagePayloadQualityPassed === true,
     canRuntimeRender,
-    displayRule:
-      "Runtime Render 当前只允许展示 ApprovedFrameRecord 与 ApprovedFrame 同时允许展示，并且 sha256 / byteLength / contentType / payloadQualityPassed / 当前 worldId / 当前 tick / 当前 sourceFactIds 全部有效的受控 MVP 帧；生产展示仍被阻断。",
-    displayRuleEn:
-      "Runtime Render currently may only display a controlled MVP frame when both ApprovedFrameRecord and ApprovedFrame allow display, and sha256 / byteLength / contentType / payloadQualityPassed / current worldId / current tick / current sourceFactIds are all valid; production display remains blocked.",
+    canShowToPlayerScope: "game_runtime_frame_only",
+    blockedReasons: runtimeFrameGate.blockedReasons,
+    displayRule: runtimeFrameGate.displayRule,
+    displayRuleEn: runtimeFrameGate.displayRuleEn,
     tags: [
       "runtime_render_gate",
+      "runtime_frame_required_for_world",
+      "single_approved_frame_direct_display_blocked",
+      runtimeFrameGate.runtimeGameInterfaceReady
+        ? "runtime_game_interface_ready"
+        : "runtime_game_interface_not_implemented",
       hardFieldsValid ? "hard_fields_valid" : "hard_fields_invalid",
       controlledMvpBoundaryPassed
         ? "controlled_mvp_boundary_passed"
         : "controlled_mvp_boundary_failed",
+      gameWorldDisplayBoundaryPassed
+        ? "game_world_display_boundary_passed"
+        : "game_world_display_boundary_failed",
       currentWorldMatched ? "current_world_matched" : "current_world_mismatch",
       currentTickMatched ? "current_tick_matched" : "current_tick_mismatch",
       currentSourceFactsMatched
         ? "current_source_facts_matched"
         : "current_source_facts_mismatch",
-      canRuntimeRender ? "controlled_mvp_runtime_render_allowed" : "runtime_render_blocked",
+      canRuntimeRender
+        ? "game_runtime_frame_render_allowed"
+        : "runtime_render_blocked",
+      ...runtimeFrameGate.tags,
       "production_display_blocked",
     ],
   }
@@ -398,6 +447,26 @@ function approvedFrameHardFieldsValid(
     typeof approvedFrame.sourceImageContentType === "string" &&
     isApprovedContentType(approvedFrame.sourceImageContentType) &&
     approvedFrame.sourceImagePayloadQualityPassed === true
+  )
+}
+
+function approvedFrameGameWorldDisplayBoundaryPassed(
+  approvedFrame: WorldVisualApprovedFrame
+): boolean {
+  const tags = new Set(approvedFrame.tags)
+
+  return (
+    approvedFrame.approvalScope === "approved_for_game_world" &&
+    approvedFrame.productionApprovalStatus === "not_approved_for_production" &&
+    approvedFrame.approvedForProduction === false &&
+    approvedFrame.vj0Status === "vj_0_passed" &&
+    approvedFrame.vj1Status === "vj_1_passed" &&
+    String(approvedFrame.vj2Status) === "vj_2_passed" &&
+    tags.has("game_world_ready_for_player") &&
+    tags.has("formal_full_world_frame") &&
+    !tags.has("controlled_mvp_player_visible_allowed") &&
+    !tags.has("training_candidate") &&
+    !tags.has("partial_or_crop_candidate")
   )
 }
 

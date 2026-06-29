@@ -244,6 +244,30 @@ const actionLabels: Record<string, { stage: string; title: string; description: 
     description:
       "Local dataset preparation only. It converts V87 allowlist rows into the next training target dataset and keeps failed negative examples out of target.png.",
   },
+  full_natural_home_v96_clean_multilayout: {
+    stage: "V96 / CLEAN MULTI-LAYOUT",
+    title: "Natural Home v96 Clean Multi-layout",
+    description:
+      "Local model candidate evidence only. It trains the full natural-home model on same-source clean multi-layout targets, uses failed candidates only as lightweight pressure signals, archives every row automatically, and cannot enter /world without a full ApprovedFrame.",
+  },
+  full_natural_home_v97_edge_boundary_repair: {
+    stage: "V97 / EDGE BOUNDARY REPAIR",
+    title: "Natural Home v97 Edge Boundary Repair",
+    description:
+      "Local model candidate evidence only. It fine-tunes from V96 to repair edge density, sharpness, target similarity and mask-boundary failures, archives every row automatically, and cannot enter /world without a full ApprovedFrame.",
+  },
+  full_natural_home_v98_vj1_signal_repair: {
+    stage: "V98 / VJ-1 SIGNAL REPAIR",
+    title: "Natural Home v98 VJ-1 Signal Repair",
+    description:
+      "Local model candidate evidence only. It fine-tunes from V97 using VJ-1 failure signals for edge density, sharpness, target similarity, water stability and mask-boundary consistency, archives every row automatically, and cannot enter /world without a full ApprovedFrame.",
+  },
+  full_natural_home_v99_vj1_boundary_similarity_repair: {
+    stage: "V99 / VJ-1 BOUNDARY SIMILARITY REPAIR",
+    title: "Natural Home v99 VJ-1 Boundary Similarity Repair",
+    description:
+      "Local model candidate evidence only. It fine-tunes from V98 using stronger boundary, edge-density and target-similarity pressure, archives every row automatically, and cannot enter /world without a full ApprovedFrame.",
+  },
 }
 
 export async function archiveTrainingResult(input: {

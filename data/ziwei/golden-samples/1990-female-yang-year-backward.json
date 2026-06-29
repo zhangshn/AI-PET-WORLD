@@ -1,0 +1,57 @@
+{
+  "sampleId": "1990-female-yang-year-backward",
+  "birthInput": {
+    "calendarType": "solar",
+    "year": 1990,
+    "month": 5,
+    "day": 17,
+    "hour": 9,
+    "minute": 0,
+    "gender": "female"
+  },
+  "dynamicInput": {
+    "currentAge": 36,
+    "currentYear": 2026,
+    "currentLunarMonth": 5,
+    "currentLunarDay": 13,
+    "currentTimeBranch": "si"
+  },
+  "expected": {
+    "palaceCount": 12,
+    "lifePalace": "zi",
+    "bodyPalace": "xu",
+    "elementGate": "fire_6",
+    "totalStarCount": 103,
+    "starCountsByCategory": {
+      "main": 14,
+      "assistant": 8,
+      "malefic": 6,
+      "transformation": 4,
+      "misc": 15,
+      "lifecycle": 12,
+      "yearly": 36,
+      "monthly": 4,
+      "dailyHourly": 4
+    },
+    "dynamicDebug": {
+      "direction": "backward",
+      "startAge": 6,
+      "currentAge": 36,
+      "isDaYunStarted": true
+    },
+    "dynamicFlowPalaces": {
+      "natal": "zi",
+      "daYun": "you",
+      "liuNian": "wu",
+      "liuYue": "xu",
+      "liuRi": "xu",
+      "liuShi": "mao"
+    },
+    "viewModel": {
+      "palaceGridCount": 12,
+      "palaceDetailCount": 12,
+      "dynamicTabCount": 6,
+      "starCatalogRowCount": 103
+    }
+  }
+}

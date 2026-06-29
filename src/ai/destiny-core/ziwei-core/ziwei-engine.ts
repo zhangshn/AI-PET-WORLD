@@ -4,6 +4,10 @@
  * Personality Core - Ziwei Engine
  * ======================================================
  *
+ * Legacy note:
+ * New full-chart placement lives in ./natal-foundation and ./star-placement.
+ * Do not add assistant, malefic, misc, or transformation stars here.
+ *
  * 【文件定位】
  * 这是正式排盘引擎文件。
  *

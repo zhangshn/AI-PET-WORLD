@@ -1,0 +1,46 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v100-single-overfit-diagnostic",
+  "modelVersion": "rgb-refiner-natural-home-v100-single-overfit-diagnostic",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 1,
+  "learningRate": 0.000002,
+  "discriminatorLearningRate": 0.0000005,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0001,
+  "maxEpochs": 80,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 2.6,
+    "edge": 6.0,
+    "texture": 4.0,
+    "laplacian": 4.0,
+    "gradient": 4.0,
+    "colorRange": 0.1,
+    "waterPeriodicity": 2.0
+  },
+  "structureWeights": {
+    "water": 3.0,
+    "shoreline": 3.5,
+    "road": 3.0,
+    "roadEdge": 3.0,
+    "tree": 3.0,
+    "rock": 3.0,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.004,
+    "margin": 0.0005
+  },
+  "saveBestBy": "validation_loss",
+  "seed": 20260626,
+  "status": "v100_single_overfit_diagnostic_no_world_display"
+}

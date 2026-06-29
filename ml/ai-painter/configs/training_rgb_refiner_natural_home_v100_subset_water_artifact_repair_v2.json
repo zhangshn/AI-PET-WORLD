@@ -1,0 +1,57 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v100-subset-water-artifact-repair-v2",
+  "modelVersion": "rgb-refiner-natural-home-v100-subset-water-artifact-repair-v2",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.000008,
+  "discriminatorLearningRate": 0.0,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0,
+  "maxEpochs": 220,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 7.5,
+    "edge": 8.0,
+    "texture": 4.5,
+    "laplacian": 7.0,
+    "gradient": 7.0,
+    "colorRange": 0.15,
+    "waterPeriodicity": 10.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 16, 32],
+    "allowedRatio": 1.0,
+    "margin": 0.0
+  },
+  "structureWeights": {
+    "water": 5.5,
+    "shoreline": 5.5,
+    "road": 2.5,
+    "roadEdge": 2.5,
+    "tree": 2.5,
+    "rock": 2.5,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 2.5,
+  "saveBestBy": "validation_loss",
+  "seed": 20260626,
+  "status": "v100_subset_water_artifact_repair_v2_no_world_display"
+}

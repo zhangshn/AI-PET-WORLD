@@ -70,7 +70,12 @@ assert(
 
 assert(report.reviewBinding && typeof report.reviewBinding === "object", "missing review binding")
 assert(isSha256(report.reviewBinding.vj2ReportSha256), "invalid VJ-2 review sha256")
-assert(report.reviewBinding.sourceStageId === "natural-home-v91-current-mvp-vj2-review", "unexpected VJ-2 source stage")
+assert(
+  typeof report.reviewBinding.sourceStageId === "string" &&
+    report.reviewBinding.sourceStageId.startsWith("natural-home-") &&
+    report.reviewBinding.sourceStageId.endsWith("vj2-review"),
+  "unexpected VJ-2 source stage",
+)
 assert(report.reviewBinding.summary?.vj2PassedCount > 0, "VJ-2 passed count must be positive")
 
 assert(

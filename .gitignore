@@ -43,7 +43,11 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # local runtime adapter saves
-data/
+data/*
+!data/ziwei/
+data/ziwei/*
+!data/ziwei/golden-samples/
+!data/ziwei/golden-samples/*.json
 runtime-data/
 .runtime/
 

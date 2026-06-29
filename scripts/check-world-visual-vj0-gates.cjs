@@ -12,6 +12,8 @@ const files = {
     "src/world/world-visual-painter/visual-quality/visual-quality-judge.ts",
   approvedBuilder: "src/world/world-visual-painter/approved-frame/approved-frame-builder.ts",
   approvedStore: "src/world/world-visual-painter/approved-frame/approved-frame-store.ts",
+  runtimeFrameGate:
+    "src/world/world-visual-painter/runtime-frame/runtime-frame-gate.ts",
   candidateStore: "src/world/world-visual-painter/ai-image-candidate/visual-candidate-store.ts",
   worldPage: "src/app/world/world-live-runtime-page.tsx",
   approvedApi: "src/app/api/world/visual/approved/route.ts",
@@ -39,17 +41,27 @@ const checks = [
   assertIncludes(
     "/world 实际渲染闸门接入受控 MVP 环境策略",
     source.worldPage,
-    "controlledMvpDisplayEnvironmentAllowed"
+    "gameWorldDisplayBoundaryPassed"
   ),
   assertIncludes(
-    "Status API 实际渲染闸门接入受控 MVP 环境策略",
+    "/world player page requires game-world display gate",
+    source.worldPage,
+    "gameWorldDisplayBoundaryPassed"
+  ),
+  assertIncludes(
+    "Status API runtime gate uses game-world display boundary",
     source.status,
-    "controlledMvpDisplayEnvironmentAllowed"
+    "gameWorldDisplayBoundaryPassed"
   ),
   assertIncludes(
-    "Approved API 实际渲染闸门接入受控 MVP 环境策略",
+    "Status API exposes game-world display gate",
+    source.status,
+    "gameWorldDisplayBoundaryPassed"
+  ),
+  assertIncludes(
+    "Approved API runtime gate uses game-world display boundary",
     source.approvedApi,
-    "controlledMvpDisplayEnvironmentAllowed"
+    "gameWorldDisplayBoundaryPassed"
   ),
   assertIncludes(
     "当前 tick 正常匹配：/world 要求 record tick 与 current tick 一致",
@@ -192,9 +204,29 @@ const checks = [
     "vj_2_not_implemented"
   ),
   assertIncludes(
-    "ApprovedFrame 只能进入受控 MVP 批准范围",
+    "ApprovedFrame supports controlled MVP scope",
     source.approvedBuilder,
     "approved_for_controlled_mvp"
+  ),
+  assertIncludes(
+    "ApprovedFrame schema supports game-world scope",
+    source.schema,
+    "approved_for_game_world"
+  ),
+  assertIncludes(
+    "/world render gate delegates game-world scope to RuntimeFrame gate",
+    source.runtimeFrameGate,
+    "approvalScope === \"approved_for_game_world\""
+  ),
+  assertIncludes(
+    "/world requires complete RuntimeFrame instead of raw ApprovedFrame image",
+    source.worldPage,
+    "buildWorldRuntimeFrameGate"
+  ),
+  assertIncludes(
+    "ApprovedFrame Store accepts game-world protocol",
+    source.approvedStore,
+    "gameWorldProtocolPassed"
   ),
   assertIncludes(
     "ApprovedFrame 明确不是生产批准",

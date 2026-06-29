@@ -1,120 +1,82 @@
-# AI-PET-WORLD 目录结构说明
+# AI-PET-WORLD 目录结构
 
-版本：v1.2
-状态：目录基线
-更新日期：2026-06-25
+状态：正式目录说明
+更新日期：2026-06-27
 
-## 根目录
+## 根目录职责
 
-| 路径 | 职责 |
+| 目录 / 文件 | 职责 |
 |---|---|
-| `README.md` | 项目总入口，只做摘要和文档索引 |
-| `docs/` | 正式文档 |
-| `src/` | Next.js 应用、世界逻辑、视觉逻辑 |
-| `ml/ai-painter/` | 本地 AI Painter 小模型训练、推理和数据脚本 |
-| `scripts/` | 检查、构建、ApprovedFrame、数据验证脚本 |
+| `README.md` | 项目总入口，只放摘要和文档导航 |
+| `docs/` | 业务、架构、目录、计划、进度表 |
+| `src/` | Next.js 应用、API、世界 runtime、视觉闸门 |
+| `ml/ai-painter/` | 本地自研 AI Painter 小模型、训练脚本、配置 |
+| `scripts/` | 检查、构建、归档、ApprovedFrame、数据验证脚本 |
 | `data/` | 项目正式数据、ApprovedFrame、VisualUnit 契约样例 |
-| `.runtime/` | 本地运行产物、训练结果、候选图、失败图、日志 |
+| `.runtime/` | 本地运行产物、训练产物、候选图、失败图和归档 |
 
-## 文档目录
+## 页面目录
 
-| 路径 | 职责 |
+| 页面 | 职责 | 是否可展示玩家正式画面 |
+|---|---|---|
+| `src/app/world` | 玩家主世界页面 | 是，但只展示完整游戏 RuntimeFrame / 游戏界面，不直铺单张 ApprovedFrame |
+| `src/app/ai-painter-progress` | 本地训练主页 | 否 |
+| `src/app/ai-painter-progress/generated-results` | 训练后内容归档页面 | 否 |
+| `src/app/ai-painter-progress/local-assets` | 本地资产和数据查看 | 否 |
+
+## API 目录
+
+| API | 职责 |
 |---|---|
-| `docs/BUSINESS_SPEC.md` | 业务主线和边界 |
-| `docs/EXECUTION_PLAN.md` | 唯一执行计划表 |
-| `docs/PROGRESS.md` | 当前进度表 |
-| `docs/ARCHITECTURE.md` | 技术架构 |
-| `docs/DIRECTORY_STRUCTURE.md` | 目录结构说明 |
+| `src/app/api/world/*` | 世界创建、tick、正式视觉状态 |
+| `src/app/api/ai-painter/training-control` | 启动本地训练动作 |
+| `src/app/api/ai-painter/training-progress` | 读取训练进度、GPU、当前批次 |
+| `src/app/api/ai-painter/natural-home/[view]` | 查看自然家园训练产物图片 |
+| `src/app/api/world/visual/*` | Candidate、Judge、ApprovedFrame、Integrity 等视觉链路 |
 
-## 应用目录
+## AI Painter 目录
 
-| 路径 | 职责 |
+| 目录 | 职责 |
 |---|---|
-| `src/app/world` | 正式世界页面，只展示 ApprovedFrame / RuntimeFrame |
-| `src/app/create-world` | 创建世界入口 |
-| `src/app/ai-painter-progress` | 本地训练进度主页 |
-| `src/app/ai-painter-progress/generated-results` | 训练后生成内容、失败图、候选图、审核图查看页 |
-| `src/app/api/world` | 世界创建、tick、视觉帧相关 API |
-| `src/app/api/ai-painter` | AI Painter 训练、推理、结果读取 API |
-
-## 训练页面规划
-
-训练页面必须分层，避免把训练候选、失败图和正式世界展示混在一起。
-
-| 页面 | 类型 | 职责 | 是否允许进 `/world` |
-|---|---|---|---:|
-| `src/app/world` | 玩家主页面 | 只展示完整 ApprovedFrame / RuntimeFrame | 是，仅通过闸门后 |
-| `src/app/ai-painter-progress` | 训练主页 | 只展示整体状态和入口 | 否 |
-| `src/app/ai-painter-progress/generated-results` | 训练结果归档 | 查看训练后 PNG、失败图、候选图、时间戳、耗时、资源账本、审核结果 | 否 |
-| 完整训练入口 | 规划入口 | 自然家园完整画面训练、生成、VJ、ApprovedFrame 候选 | 否，只有写入 ApprovedFrame 后由 `/world` 读取 |
-| 局部训练入口 | 规划入口 | VisualUnit、局部资产、状态帧训练 | 否 |
-
-规则：
-
-```txt
-训练页展示训练内容
-归档页保存所有训练结果
-/world 只展示玩家可见正式世界
-```
-
-## 世界逻辑目录
-
-| 路径 | 职责 |
-|---|---|
-| `src/world` | 世界 Runtime、世界事实、管家行为、视觉结构 |
-| `src/world/visual` | Candidate、Review、ApprovedFrame 等视觉链路代码 |
-| `src/world/runtime` | runtime tick、存档、事实读取 |
-| `src/world/creation` | 创建世界输入与人格映射 |
-
-## 本地小模型目录
-
-| 路径 | 职责 |
-|---|---|
-| `ml/ai-painter/configs` | 训练配置 |
-| `ml/ai-painter/scripts` | 训练、推理、数据清洗、质量筛选、VJ 辅助脚本 |
-| `ml/ai-painter/tests` | 数据和训练脚本测试 |
-| `ml/ai-painter/.venv` | 本地 Python 虚拟环境，不作为业务代码 |
-
-## 运行产物目录
-
-| 路径 | 职责 |
-|---|---|
-| `.runtime/ai-painter/*-dataset` | 训练数据集产物 |
-| `.runtime/ai-painter/*-training` | 训练权重、训练摘要、日志 |
-| `.runtime/ai-painter/*-generation` | 模型推理候选图 |
-| `.runtime/ai-painter/*-quality-selection` | 质量筛选报告 |
+| `ml/ai-painter/configs` | 每轮训练配置，例如 V100R3、V109 配置 |
+| `ml/ai-painter/scripts` | 数据准备、训练、生成、筛选、VJ 调用脚本 |
+| `ml/ai-painter/src` | 小模型和数据处理代码 |
+| `.runtime/ai-painter/*-dataset` | 每轮训练数据集 |
+| `.runtime/ai-painter/*-training` | 权重、日志、summary |
+| `.runtime/ai-painter/*-generation` | 候选生成图 |
+| `.runtime/ai-painter/*-quality-selection` | 质量筛选结果 |
 | `.runtime/ai-painter/*-vj1-review` | VJ-1 审核结果 |
 | `.runtime/ai-painter/*-vj2-review` | VJ-2 审核结果 |
-| `.runtime/ai-painter/logs` | 命令运行日志 |
+| `.runtime/ai-painter/generated-results` | 训练后内容归档，成功失败都保留 |
 
-## 训练产物归档规则
+## 当前关键产物
 
-| 产物 | 存放位置 | 要求 |
+| 产物 | 路径 |
+|---|---|
+| 当前 ApprovedFrame 记录 | 暂无，`data/world-approved-frames` 当前没有正式可展示帧文件 |
+| V109 rejected 记录 | `data/world-rejected-frames/owner-d0znz8/world-d0znz8/rejected-approved-frame-0-approved-frame-world-d0znz8-0.json` |
+| V109 rejected 索引备份 | `data/world-rejected-frames/owner-d0znz8/world-d0znz8/rejected-latest-approved-frame-v109.json` |
+| V109 生成结果 | `.runtime/ai-painter/natural-home-v109-pure-natural-formal-world-generation` |
+| V109 质量筛选 | `.runtime/ai-painter/natural-home-v109-pure-natural-formal-world-quality-selection` |
+| V109 formal VJ-1 | `.runtime/ai-painter/natural-home-v109-pure-natural-formal-world-formal-vj1-review` |
+| V109 formal VJ-2 | `.runtime/ai-painter/natural-home-v109-pure-natural-formal-world-formal-vj2-review` |
+| 训练后结果归档 | `.runtime/ai-painter/generated-results/index.json` |
+
+## 正式展示数据
+
+| 目录 | 用途 | 当前状态 |
 |---|---|---|
-| 训练数据集 | `.runtime/ai-painter/*-dataset` | 保留生成来源、mask、metadata |
-| 训练权重 | `.runtime/ai-painter/*-training` | 保留配置、权重、loss、时间戳、耗时、GPU 信息 |
-| 推理候选 | `.runtime/ai-painter/*-generation` | 保留所有候选，不删除失败图 |
-| 质量筛选 | `.runtime/ai-painter/*-quality-selection` | 保留通过、打回、失败原因 |
-| VJ-1 审核 | `.runtime/ai-painter/*-vj1-review` | 保留清晰度、边缘、结构审核 |
-| VJ-2 审核 | `.runtime/ai-painter/*-vj2-review` | 保留语义、风格、状态一致性审核 |
-| ApprovedFrame | `data/world-approved-frames` | 只保存通过完整主世界闸门的帧 |
+| `data/world-approved-frames` | 保存通过完整闸门且经项目所有者最终确认的 ApprovedFrame | 当前为空，不能放训练图、候选图、局部图或未最终确认图 |
+| `data/world-rejected-frames` | 保存被打回的历史 ApprovedFrame 记录 | V109 已移入此处，仅用于审计、复盘和后续训练参考 |
+| `.runtime/world-state` | 本地 runtime 世界状态 | 本地 MVP 使用 |
+| `.runtime/ai-painter/generated-results` | 训练归档，不是正式展示源 | 已接通 |
 
-训练产物不由 Codex 手动零散保存，必须由项目脚本和页面入口自动生成、自动记录、自动归档。
+## 禁止混用
 
-## 正式数据目录
-
-| 路径 | 职责 |
+| 禁止行为 | 原因 |
 |---|---|
-| `data/world-approved-frames` | ApprovedFrame 正式记录 |
-| `data/world-runtime` | 当前本地 runtime 存档 |
-| `data/visual-units` | 后续 VisualUnit 契约样例 |
-
-## 当前禁止
-
-| 禁止事项 | 原因 |
-|---|---|
-| 把候选图直接放入 `/world` | 没有通过 ApprovedFrame |
-| 把程序图当正式世界图 | 不是 AI Painter 正式输出 |
-| 把训练失败图删除 | 失败图是下一轮训练和 VJ 的依据 |
-| 在主页堆训练图 | 训练图统一进入 `generated-results` |
-| 新增未计划目录 | 必须先按执行计划申请确认 |
+| 从 `.runtime/ai-painter/*-generation` 直接读图进 `/world` | 候选图未通过 ApprovedFrame |
+| 从 `generated-results` 直接展示到 `/world` | 归档页不等于主世界页 |
+| 把 crop/patch/tile/sprite 当正式世界图 | 尺寸和语义都不完整 |
+| 把单张 ApprovedFrame 图片直接铺到 `/world` | `/world` 是游戏界面，不是图片展示页 |
+| 删除失败图 | 失败图是后续训练和审计数据 |

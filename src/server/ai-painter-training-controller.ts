@@ -64,6 +64,10 @@ export type TrainingAction =
   | "full_natural_home_v87_quality_ledger"
   | "full_natural_home_v88_quality_allowlist_dataset"
   | "full_natural_home_v89_quality_allowlist_training"
+  | "full_natural_home_v96_clean_multilayout"
+  | "full_natural_home_v97_edge_boundary_repair"
+  | "full_natural_home_v98_vj1_signal_repair"
+  | "full_natural_home_v99_vj1_boundary_similarity_repair"
   | "prepare"
   | "train"
   | "infer"
@@ -363,6 +367,50 @@ const fullActionScripts: Partial<Record<TrainingAction, string[]>> = {
     "generate:ai-painter-natural-home-v89-quality-allowlist",
     "select:ai-painter-natural-home-v89-quality",
   ],
+  full_natural_home_v96_clean_multilayout: [
+    "prepare:ai-painter-natural-home-v96-clean-multilayout",
+    "check:ai-painter-natural-home-v96-clean-multilayout",
+    "train:ai-painter-natural-home-v96-clean-multilayout",
+    "generate:ai-painter-natural-home-v96-clean-multilayout",
+    "select:ai-painter-natural-home-v96-clean-multilayout-quality",
+    "judge:ai-painter-natural-home-v96-clean-multilayout-vj1",
+    "check:ai-painter-natural-home-v96-clean-multilayout-vj1",
+    "judge:ai-painter-natural-home-v96-clean-multilayout-vj2",
+    "check:ai-painter-natural-home-v96-clean-multilayout-vj2",
+  ],
+  full_natural_home_v97_edge_boundary_repair: [
+    "prepare:ai-painter-natural-home-v97-edge-boundary-repair",
+    "check:ai-painter-natural-home-v97-edge-boundary-repair",
+    "train:ai-painter-natural-home-v97-edge-boundary-repair",
+    "generate:ai-painter-natural-home-v97-edge-boundary-repair",
+    "select:ai-painter-natural-home-v97-edge-boundary-repair-quality",
+    "judge:ai-painter-natural-home-v97-edge-boundary-repair-vj1",
+    "check:ai-painter-natural-home-v97-edge-boundary-repair-vj1",
+    "judge:ai-painter-natural-home-v97-edge-boundary-repair-vj2",
+    "check:ai-painter-natural-home-v97-edge-boundary-repair-vj2",
+  ],
+  full_natural_home_v98_vj1_signal_repair: [
+    "prepare:ai-painter-natural-home-v98-vj1-signal-repair",
+    "check:ai-painter-natural-home-v98-vj1-signal-repair",
+    "train:ai-painter-natural-home-v98-vj1-signal-repair",
+    "generate:ai-painter-natural-home-v98-vj1-signal-repair",
+    "select:ai-painter-natural-home-v98-vj1-signal-repair-quality",
+    "judge:ai-painter-natural-home-v98-vj1-signal-repair-vj1",
+    "check:ai-painter-natural-home-v98-vj1-signal-repair-vj1",
+    "judge:ai-painter-natural-home-v98-vj1-signal-repair-vj2",
+    "check:ai-painter-natural-home-v98-vj1-signal-repair-vj2",
+  ],
+  full_natural_home_v99_vj1_boundary_similarity_repair: [
+    "prepare:ai-painter-natural-home-v99-vj1-boundary-similarity-repair",
+    "check:ai-painter-natural-home-v99-vj1-boundary-similarity-repair",
+    "train:ai-painter-natural-home-v99-vj1-boundary-similarity-repair",
+    "generate:ai-painter-natural-home-v99-vj1-boundary-similarity-repair",
+    "select:ai-painter-natural-home-v99-vj1-boundary-similarity-repair-quality",
+    "judge:ai-painter-natural-home-v99-vj1-boundary-similarity-repair-vj1",
+    "check:ai-painter-natural-home-v99-vj1-boundary-similarity-repair-vj1",
+    "judge:ai-painter-natural-home-v99-vj1-boundary-similarity-repair-vj2",
+    "check:ai-painter-natural-home-v99-vj1-boundary-similarity-repair-vj2",
+  ],
   full: ["prepare:ai-painter-bootstrap", "train:ai-painter-bootstrap", "infer:ai-painter-bootstrap"],
   full_multiscene: [
     "prepare:ai-painter-multiscene",
@@ -631,6 +679,38 @@ const clearDirectories: Partial<Record<TrainingAction, string[]>> = {
     "natural-home-v89-quality-allowlist-training",
     "natural-home-v89-quality-allowlist-generation",
     "natural-home-v89-quality-selection",
+  ],
+  full_natural_home_v96_clean_multilayout: [
+    "natural-home-v96-clean-multilayout-dataset",
+    "natural-home-v96-clean-multilayout-training",
+    "natural-home-v96-clean-multilayout-generation",
+    "natural-home-v96-clean-multilayout-quality-selection",
+    "natural-home-v96-clean-multilayout-vj1-review",
+    "natural-home-v96-clean-multilayout-vj2-review",
+  ],
+  full_natural_home_v97_edge_boundary_repair: [
+    "natural-home-v97-edge-boundary-repair-dataset",
+    "natural-home-v97-edge-boundary-repair-training",
+    "natural-home-v97-edge-boundary-repair-generation",
+    "natural-home-v97-edge-boundary-repair-quality-selection",
+    "natural-home-v97-edge-boundary-repair-vj1-review",
+    "natural-home-v97-edge-boundary-repair-vj2-review",
+  ],
+  full_natural_home_v98_vj1_signal_repair: [
+    "natural-home-v98-vj1-signal-repair-dataset",
+    "natural-home-v98-vj1-signal-repair-training",
+    "natural-home-v98-vj1-signal-repair-generation",
+    "natural-home-v98-vj1-signal-repair-quality-selection",
+    "natural-home-v98-vj1-signal-repair-vj1-review",
+    "natural-home-v98-vj1-signal-repair-vj2-review",
+  ],
+  full_natural_home_v99_vj1_boundary_similarity_repair: [
+    "natural-home-v99-vj1-boundary-similarity-repair-dataset",
+    "natural-home-v99-vj1-boundary-similarity-repair-training",
+    "natural-home-v99-vj1-boundary-similarity-repair-generation",
+    "natural-home-v99-vj1-boundary-similarity-repair-quality-selection",
+    "natural-home-v99-vj1-boundary-similarity-repair-vj1-review",
+    "natural-home-v99-vj1-boundary-similarity-repair-vj2-review",
   ],
   train: ["bootstrap-training", "bootstrap-inference"],
   full: ["bootstrap-training", "bootstrap-inference"],

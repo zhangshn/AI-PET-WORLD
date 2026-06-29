@@ -1,0 +1,78 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v102-formal-vj2-quality-repair",
+  "modelVersion": "rgb-refiner-natural-home-v102-formal-vj2-quality-repair",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.000004,
+  "discriminatorLearningRate": 0.0,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0,
+  "maxEpochs": 80,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 7.8,
+    "edge": 8.8,
+    "texture": 5.2,
+    "laplacian": 8.0,
+    "gradient": 8.0,
+    "colorRange": 0.25,
+    "waterPeriodicity": 10.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 16, 32],
+    "allowedRatio": 1.0,
+    "margin": 0.0
+  },
+  "structureWeights": {
+    "water": 5.5,
+    "shoreline": 5.8,
+    "road": 2.8,
+    "roadEdge": 3.0,
+    "tree": 3.0,
+    "rock": 3.0,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 2.8,
+  "saveBestBy": "validation_loss",
+  "seed": 20260627,
+  "status": "v102_formal_vj2_quality_repair_no_world_display",
+  "allowedScope": "natural_home_only",
+  "forbiddenScope": [
+    "building",
+    "facility",
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "formalVj1": "at least one validation candidate passes formal VJ-1",
+    "formalVj2": "at least one validation candidate passes formal VJ-2",
+    "worldDisplay": "blocked until ApprovedFrame binding passes"
+  }
+}

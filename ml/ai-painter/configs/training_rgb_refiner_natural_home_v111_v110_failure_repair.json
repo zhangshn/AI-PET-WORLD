@@ -1,0 +1,78 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v111-v110-failure-repair",
+  "modelVersion": "rgb-refiner-natural-home-v111-v110-failure-repair",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.0000009,
+  "discriminatorLearningRate": 0.0,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0,
+  "maxEpochs": 14,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 4.2,
+    "edge": 7.8,
+    "texture": 5.2,
+    "laplacian": 8.4,
+    "gradient": 8.2,
+    "colorRange": 0.34,
+    "waterPeriodicity": 7.2
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.0015,
+    "margin": 0.00015
+  },
+  "structureWeights": {
+    "water": 5.5,
+    "shoreline": 5.7,
+    "road": 3.2,
+    "roadEdge": 3.25,
+    "tree": 3.35,
+    "rock": 3.25,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 2.9,
+  "saveBestBy": "validation_loss",
+  "seed": 20260628,
+  "status": "v111_repair_v110_formal_vj1_failures_hidden_training_only",
+  "allowedScope": "natural_home_only",
+  "forbiddenScope": [
+    "building",
+    "facility",
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "formalVj1": "reduce V110 formal VJ-1 failures caused by score, sharpness, edge density, and water artifacts",
+    "formalVj2": "preserve minimal VJ-2 pass count while improving full-frame consistency",
+    "worldDisplay": "blocked until a future Game-World ApprovedFrame binding passes current worldId, tick, sourceFactIds, and formal frame size"
+  }
+}

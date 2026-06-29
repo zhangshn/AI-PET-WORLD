@@ -57,7 +57,8 @@ def train_patchgan_refiner(
         torch.cuda.manual_seed_all(seed)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    train_set = WorldSceneDataset(dataset_root, "train", blueprint_version="v1", allow_manual_review=True, augment=True)
+    train_augment = bool(config.get("augmentTrain", True))
+    train_set = WorldSceneDataset(dataset_root, "train", blueprint_version="v1", allow_manual_review=True, augment=train_augment)
     validation_set = WorldSceneDataset(dataset_root, "validation", blueprint_version="v1", allow_manual_review=True)
     batch_size = int(config.get("batchSize", 2))
     train_loader = torch.utils.data.DataLoader(
@@ -140,24 +141,30 @@ def train_patchgan_refiner(
                 base_rgb, _ = structure_model(condition)
             context = torch.autocast(device_type="cuda", dtype=torch.float16) if use_amp else nullcontext()
 
-            discriminator_optimizer.zero_grad(set_to_none=True)
-            with context:
-                fake = generator(condition, base_rgb)
-                real_score = discriminator(torch.cat((condition, target), dim=1))
-                fake_score = discriminator(torch.cat((condition, fake.detach()), dim=1))
-                discriminator_loss = (
-                    adversarial(real_score, torch.ones_like(real_score) * 0.9)
-                    + adversarial(fake_score, torch.zeros_like(fake_score))
-                ) * 0.5
-            scaler.scale(discriminator_loss).backward()
-            scaler.step(discriminator_optimizer)
+            if adversarial_weight > 0.0:
+                discriminator_optimizer.zero_grad(set_to_none=True)
+                with context:
+                    fake = generator(condition, base_rgb)
+                    real_score = discriminator(torch.cat((condition, target), dim=1))
+                    fake_score = discriminator(torch.cat((condition, fake.detach()), dim=1))
+                    discriminator_loss = (
+                        adversarial(real_score, torch.ones_like(real_score) * 0.9)
+                        + adversarial(fake_score, torch.zeros_like(fake_score))
+                    ) * 0.5
+                scaler.scale(discriminator_loss).backward()
+                scaler.step(discriminator_optimizer)
+            else:
+                discriminator_loss = target.new_tensor(0.0)
 
             generator_optimizer.zero_grad(set_to_none=True)
             with context:
                 fake = generator(condition, base_rgb)
-                fake_score = discriminator(torch.cat((condition, fake), dim=1))
                 reconstruction_loss, loss_parts = build_image_loss(fake, target, torch, config, condition)
-                adversarial_loss = adversarial(fake_score, torch.ones_like(fake_score))
+                if adversarial_weight > 0.0:
+                    fake_score = discriminator(torch.cat((condition, fake), dim=1))
+                    adversarial_loss = adversarial(fake_score, torch.ones_like(fake_score))
+                else:
+                    adversarial_loss = target.new_tensor(0.0)
                 generator_loss = reconstruction_loss + adversarial_loss * adversarial_weight
             scaler.scale(generator_loss).backward()
             scaler.step(generator_optimizer)
@@ -224,6 +231,7 @@ def train_patchgan_refiner(
         "validationSampleCount": len(validation_set),
         "lossWeights": config.get("lossWeights", {}),
         "adversarialWeight": adversarial_weight,
+        "augmentTrain": train_augment,
         "structureCheckpoint": str(structure_checkpoint.resolve()),
         "initializedFrom": initialized_from,
         "displayAllowed": False,

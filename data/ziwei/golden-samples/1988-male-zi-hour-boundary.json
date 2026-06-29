@@ -1,0 +1,57 @@
+{
+  "sampleId": "1988-male-zi-hour-boundary",
+  "birthInput": {
+    "calendarType": "solar",
+    "year": 1988,
+    "month": 8,
+    "day": 8,
+    "hour": 23,
+    "minute": 30,
+    "gender": "male"
+  },
+  "dynamicInput": {
+    "currentAge": 38,
+    "currentYear": 2026,
+    "currentLunarMonth": 7,
+    "currentLunarDay": 1,
+    "currentTimeBranch": "zi"
+  },
+  "expected": {
+    "palaceCount": 12,
+    "lifePalace": "wei",
+    "bodyPalace": "wei",
+    "elementGate": "fire_6",
+    "totalStarCount": 103,
+    "starCountsByCategory": {
+      "main": 14,
+      "assistant": 8,
+      "malefic": 6,
+      "transformation": 4,
+      "misc": 15,
+      "lifecycle": 12,
+      "yearly": 36,
+      "monthly": 4,
+      "dailyHourly": 4
+    },
+    "dynamicDebug": {
+      "direction": "forward",
+      "startAge": 6,
+      "currentAge": 38,
+      "isDaYunStarted": true
+    },
+    "dynamicFlowPalaces": {
+      "natal": "wei",
+      "daYun": "xu",
+      "liuNian": "wu",
+      "liuYue": "zi",
+      "liuRi": "zi",
+      "liuShi": "zi"
+    },
+    "viewModel": {
+      "palaceGridCount": 12,
+      "palaceDetailCount": 12,
+      "dynamicTabCount": 6,
+      "starCatalogRowCount": 103
+    }
+  }
+}

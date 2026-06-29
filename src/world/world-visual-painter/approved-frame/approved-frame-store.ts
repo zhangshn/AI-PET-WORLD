@@ -15,6 +15,11 @@ const APPROVED_FRAME_DIR = path.join(
 const FORMAL_WORLD_FRAME_MIN_WIDTH = 1024
 const FORMAL_WORLD_FRAME_MIN_HEIGHT = 768
 const PARTIAL_FRAME_TOKENS = ["crop", "partial", "patch", "tile", "sprite"]
+const OWNER_FINAL_WORLD_APPROVAL_TAGS = [
+  "owner_final_world_mvp_approved",
+  "complete_game_world_scene",
+  "world_home_playable_frame",
+]
 
 type RuntimeBoundApprovedFrame = WorldVisualApprovedFrame & {
   worldId: string
@@ -66,17 +71,18 @@ export async function writeWorldVisualApprovedFrameRecord(input: {
   sourceCandidateRecord: WorldVisualCandidateRecord
 }): Promise<WorldVisualApprovedFrameStoreWriteResult> {
   const request = input.sourceCandidateRecord.aiImageGenerationRequest
+  const runtimeApprovedFrame = bindApprovedFrameToRuntime({
+    approvedFrame: input.approvedFrame,
+    worldId: input.worldId,
+    tick: input.tick,
+  })
   const record: WorldVisualApprovedFrameRecord = {
     version: "world-approved-frame-v1",
     ownerId: input.ownerId,
     worldId: input.worldId,
     tick: input.tick,
     savedAt: new Date().toISOString(),
-    approvedFrame: bindApprovedFrameToRuntime({
-      approvedFrame: input.approvedFrame,
-      worldId: input.worldId,
-      tick: input.tick,
-    }),
+    approvedFrame: runtimeApprovedFrame,
     reviewReport: input.reviewReport,
     sourceCandidateRecord: input.sourceCandidateRecord,
     sourceAiImageCandidateId: input.sourceCandidateRecord.candidate.candidateId,
@@ -88,23 +94,12 @@ export async function writeWorldVisualApprovedFrameRecord(input: {
       input.sourceCandidateRecord.generationCondition.fixConditions.length,
     sourceFactIds: input.sourceCandidateRecord.sourceFactIds,
     canShowToPlayer: true,
-    tags: [
-      "world_visual_approved_frame_record",
-      `world_id:${input.worldId}`,
-      `tick:${input.tick}`,
-      "controlled_mvp_player_visible_allowed",
-      "vj_0_passed",
-      "vj_1_passed",
-      "vj_2_not_implemented",
-      "approved_for_controlled_mvp",
-      "not_approved_for_production",
-      "source_candidate_record_bound",
-      "vj_0_approved_frame_record_gate_passed",
-      "current_runtime_required_on_read",
-      request
-        ? "ai_image_generation_request_bound"
-        : "no_ai_image_generation_request",
-    ],
+    tags: buildApprovedFrameRecordTags({
+      approvedFrame: runtimeApprovedFrame,
+      worldId: input.worldId,
+      tick: input.tick,
+      hasRequest: Boolean(request),
+    }),
   }
   const filePath = getWorldVisualApprovedFrameRecordPath(record)
   const gateWarnings = validateApprovedFrameRecord(record)
@@ -137,7 +132,7 @@ export async function writeWorldVisualApprovedFrameRecord(input: {
         "world_visual_approved_frame_store_write",
         "ok",
         "vj_0_approved_frame_record_gate_passed",
-        "approved_for_controlled_mvp",
+        input.approvedFrame.approvalScope,
         "not_approved_for_production",
       ],
     }
@@ -199,13 +194,14 @@ export async function readLatestWorldVisualApprovedFrameRecord(input: {
       status: "found",
       record: normalized,
       path: index.path,
-      message: "Controlled MVP approved frame record loaded.",
+      message: "Approved frame record loaded.",
       warnings: [],
       tags: [
         "world_visual_approved_frame_store_read",
         "found",
         "vj_0_approved_frame_record_gate_passed",
-        "approved_for_controlled_mvp",
+        normalized.approvedFrame.approvalScope,
+        normalized.approvedFrame.vj2Status,
         "not_approved_for_production",
         "current_tick_gate_passed",
         "current_source_facts_gate_passed",
@@ -252,6 +248,42 @@ function bindApprovedFrameToRuntime(input: {
   }
 }
 
+function buildApprovedFrameRecordTags(input: {
+  approvedFrame: WorldVisualApprovedFrame
+  worldId: string
+  tick: number
+  hasRequest: boolean
+}): string[] {
+  const tagSet = new Set([
+    "world_visual_approved_frame_record",
+    `world_id:${input.worldId}`,
+    `tick:${input.tick}`,
+    "vj_0_passed",
+    "vj_1_passed",
+    input.approvedFrame.vj2Status,
+    input.approvedFrame.approvalScope,
+    "not_approved_for_production",
+    "source_candidate_record_bound",
+    "vj_0_approved_frame_record_gate_passed",
+    "current_runtime_required_on_read",
+    input.hasRequest
+      ? "ai_image_generation_request_bound"
+      : "no_ai_image_generation_request",
+    ...input.approvedFrame.tags,
+  ])
+
+  if (input.approvedFrame.approvalScope === "approved_for_controlled_mvp") {
+    tagSet.add("controlled_mvp_player_visible_allowed")
+  }
+
+  if (input.approvedFrame.approvalScope === "approved_for_game_world") {
+    tagSet.add("game_world_ready_for_player")
+    tagSet.add("formal_full_world_frame")
+  }
+
+  return Array.from(tagSet)
+}
+
 function validateApprovedFrameRecord(
   record: WorldVisualApprovedFrameRecord
 ): string[] {
@@ -268,6 +300,20 @@ function validateApprovedFrameRecord(
   const runtimeFrame = frame as RuntimeBoundApprovedFrame
   const review = record.reviewReport
   const summary = review.imageInspectionSummary
+  const controlledMvpProtocolPassed =
+    review.vj2Status === "vj_2_not_implemented" &&
+    review.approvalScope === "approved_for_controlled_mvp" &&
+    frame.vj2Status === "vj_2_not_implemented" &&
+    frame.approvalScope === "approved_for_controlled_mvp"
+  const gameWorldProtocolPassed =
+    review.vj2Status === "vj_2_passed" &&
+    review.approvalScope === "approved_for_game_world" &&
+    frame.vj2Status === "vj_2_passed" &&
+    frame.approvalScope === "approved_for_game_world" &&
+    frame.tags.includes("game_world_ready_for_player") &&
+    frame.tags.includes("formal_full_world_frame") &&
+    ownerFinalWorldApprovalTagsPassed(frame.tags) &&
+    !frame.tags.includes("controlled_mvp_player_visible_allowed")
 
   pushIf(warnings, sourceRecord.ownerId !== record.ownerId, "source_owner")
   pushIf(warnings, sourceRecord.worldId !== record.worldId, "source_world")
@@ -322,8 +368,7 @@ function validateApprovedFrameRecord(
   pushIf(warnings, review.status !== "vj_1_passed", "review_status")
   pushIf(warnings, review.vj0Status !== "vj_0_passed", "review_vj0_status")
   pushIf(warnings, review.vj1Status !== "vj_1_passed", "review_vj1_status")
-  pushIf(warnings, review.vj2Status !== "vj_2_not_implemented", "review_vj2_status")
-  pushIf(warnings, review.approvalScope !== "approved_for_controlled_mvp", "review_approval_scope")
+  pushIf(warnings, !controlledMvpProtocolPassed && !gameWorldProtocolPassed, "approval_protocol")
   pushIf(warnings, review.productionApprovalStatus !== "not_approved_for_production", "review_production_status")
   pushIf(warnings, review.canShowToPlayer !== false, "review_visibility")
   pushIf(warnings, summary.ok !== true, "review_summary_ok")
@@ -335,12 +380,23 @@ function validateApprovedFrameRecord(
   pushIf(warnings, summary.height !== frame.height, "review_summary_height")
   pushIf(warnings, summary.payloadQualityPassed !== frame.sourceImagePayloadQualityPassed, "review_summary_payload_quality")
   pushIf(warnings, frame.canShowToPlayer !== true, "frame_visibility")
-  pushIf(warnings, frame.approvalScope !== "approved_for_controlled_mvp", "frame_approval_scope")
+  pushIf(warnings, !controlledMvpProtocolPassed && !gameWorldProtocolPassed, "frame_approval_scope")
   pushIf(warnings, frame.productionApprovalStatus !== "not_approved_for_production", "frame_production_status")
   pushIf(warnings, frame.approvedForProduction !== false, "frame_production_flag")
   pushIf(warnings, frame.vj0Status !== "vj_0_passed", "frame_vj0_status")
   pushIf(warnings, frame.vj1Status !== "vj_1_passed", "frame_vj1_status")
-  pushIf(warnings, frame.vj2Status !== "vj_2_not_implemented", "frame_vj2_status")
+  pushIf(warnings, gameWorldProtocolPassed && !record.tags.includes("game_world_ready_for_player"), "record_game_world_tag")
+  pushIf(warnings, gameWorldProtocolPassed && !record.tags.includes("formal_full_world_frame"), "record_formal_world_frame_tag")
+  pushIf(
+    warnings,
+    frame.approvalScope === "approved_for_game_world" && !ownerFinalWorldApprovalTagsPassed(frame.tags),
+    "owner_final_world_approval"
+  )
+  pushIf(
+    warnings,
+    frame.approvalScope === "approved_for_game_world" && !ownerFinalWorldApprovalTagsPassed(record.tags),
+    "record_owner_final_world_approval"
+  )
   pushIf(warnings, sourceRecord.canShowToPlayer !== false, "source_visibility")
   pushIf(warnings, candidate.canShowToPlayer !== false, "candidate_visibility")
   pushIf(warnings, frame.sourceImageSha256.length !== 64, "sha256")
@@ -431,6 +487,10 @@ function hasPartialFrameToken(values: string[]): boolean {
   })
 }
 
+function ownerFinalWorldApprovalTagsPassed(tags: string[]): boolean {
+  return OWNER_FINAL_WORLD_APPROVAL_TAGS.every((tag) => tags.includes(tag))
+}
+
 function getWorldVisualApprovedFrameRecordPath(
   record: WorldVisualApprovedFrameRecord
 ): string {
@@ -492,8 +552,16 @@ async function writeLatestWorldVisualApprovedFrameIndex(input: {
       "world_visual_approved_frame_latest_index",
       "image_byte_fingerprint_bound",
       "vj_0_approved_frame_record_gate_passed",
-      "approved_for_controlled_mvp",
+      input.record.approvedFrame.approvalScope,
+      input.record.approvedFrame.vj2Status,
       "not_approved_for_production",
+      ...input.record.approvedFrame.tags.filter((tag) =>
+        [
+          "controlled_mvp_player_visible_allowed",
+          "game_world_ready_for_player",
+          "formal_full_world_frame",
+        ].includes(tag)
+      ),
     ],
   }
 

@@ -1,0 +1,46 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v97-edge-boundary-repair",
+  "modelVersion": "rgb-refiner-natural-home-v97-edge-boundary-repair",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.0000008,
+  "discriminatorLearningRate": 0.0000005,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.001,
+  "maxEpochs": 16,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.2,
+    "edge": 4.6,
+    "texture": 3.0,
+    "laplacian": 3.1,
+    "gradient": 2.75,
+    "colorRange": 0.1,
+    "waterPeriodicity": 2.6
+  },
+  "structureWeights": {
+    "water": 3.55,
+    "shoreline": 3.75,
+    "road": 2.55,
+    "roadEdge": 2.7,
+    "tree": 2.95,
+    "rock": 2.85,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.006,
+    "margin": 0.0006
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260625,
+  "status": "v97_edge_boundary_repair_same_source_targets_no_building_no_character_no_animal"
+}

@@ -1,5 +1,9 @@
 /**
  * 当前文件负责：定义 ziwei-core 的核心数据结构。
+ *
+ * Legacy note:
+ * New full-chart contracts live in ./contracts.
+ * Do not add new full-chart fields here.
  */
 
 export type StarId =

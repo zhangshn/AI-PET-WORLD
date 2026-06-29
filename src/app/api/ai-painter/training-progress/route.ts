@@ -259,7 +259,71 @@ export async function GET() {
   const naturalHomeV89QualitySelectionLatest = await readJson(
     path.join(aiPainterRuntimeRoot, "natural-home-v89-quality-selection", "latest.json"),
   )
+  const naturalHomeV96CleanMultilayoutDatasetLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v96-clean-multilayout-dataset", "latest.json"),
+  )
+  const naturalHomeV96CleanMultilayoutTrainingSummary = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v96-clean-multilayout-training", "training-summary.json"),
+  )
+  const naturalHomeV96CleanMultilayoutTrainingLatest = await readLastJsonLine(
+    path.join(aiPainterRuntimeRoot, "natural-home-v96-clean-multilayout-training", "training-log.jsonl"),
+  )
+  const naturalHomeV96CleanMultilayoutGenerationLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v96-clean-multilayout-generation", "latest.json"),
+  )
+  const naturalHomeV96CleanMultilayoutQualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v96-clean-multilayout-quality-selection", "latest.json"),
+  )
+  const naturalHomeV97EdgeBoundaryRepairDatasetLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v97-edge-boundary-repair-dataset", "latest.json"),
+  )
+  const naturalHomeV97EdgeBoundaryRepairTrainingSummary = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v97-edge-boundary-repair-training", "training-summary.json"),
+  )
+  const naturalHomeV97EdgeBoundaryRepairTrainingLatest = await readLastJsonLine(
+    path.join(aiPainterRuntimeRoot, "natural-home-v97-edge-boundary-repair-training", "training-log.jsonl"),
+  )
+  const naturalHomeV97EdgeBoundaryRepairGenerationLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v97-edge-boundary-repair-generation", "latest.json"),
+  )
+  const naturalHomeV97EdgeBoundaryRepairQualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v97-edge-boundary-repair-quality-selection", "latest.json"),
+  )
+  const naturalHomeV98Vj1SignalRepairDatasetLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v98-vj1-signal-repair-dataset", "latest.json"),
+  )
+  const naturalHomeV98Vj1SignalRepairTrainingSummary = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v98-vj1-signal-repair-training", "training-summary.json"),
+  )
+  const naturalHomeV98Vj1SignalRepairTrainingLatest = await readLastJsonLine(
+    path.join(aiPainterRuntimeRoot, "natural-home-v98-vj1-signal-repair-training", "training-log.jsonl"),
+  )
+  const naturalHomeV98Vj1SignalRepairGenerationLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v98-vj1-signal-repair-generation", "latest.json"),
+  )
+  const naturalHomeV98Vj1SignalRepairQualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v98-vj1-signal-repair-quality-selection", "latest.json"),
+  )
+  const naturalHomeV99Vj1BoundarySimilarityRepairDatasetLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v99-vj1-boundary-similarity-repair-dataset", "latest.json"),
+  )
+  const naturalHomeV99Vj1BoundarySimilarityRepairTrainingSummary = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v99-vj1-boundary-similarity-repair-training", "training-summary.json"),
+  )
+  const naturalHomeV99Vj1BoundarySimilarityRepairTrainingLatest = await readLastJsonLine(
+    path.join(aiPainterRuntimeRoot, "natural-home-v99-vj1-boundary-similarity-repair-training", "training-log.jsonl"),
+  )
+  const naturalHomeV99Vj1BoundarySimilarityRepairGenerationLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v99-vj1-boundary-similarity-repair-generation", "latest.json"),
+  )
+  const naturalHomeV99Vj1BoundarySimilarityRepairQualitySelectionLatest = await readJson(
+    path.join(aiPainterRuntimeRoot, "natural-home-v99-vj1-boundary-similarity-repair-quality-selection", "latest.json"),
+  )
   const naturalHomeBestTrainingCandidate = selectBestTrainingQualityCandidate([
+    { stage: "V99", title: "Natural Home V99 VJ-1 boundary similarity repair", latest: naturalHomeV99Vj1BoundarySimilarityRepairQualitySelectionLatest },
+    { stage: "V98", title: "Natural Home V98 VJ-1 signal repair", latest: naturalHomeV98Vj1SignalRepairQualitySelectionLatest },
+    { stage: "V97", title: "Natural Home V97 edge-boundary repair", latest: naturalHomeV97EdgeBoundaryRepairQualitySelectionLatest },
+    { stage: "V96", title: "Natural Home V96 clean multi-layout", latest: naturalHomeV96CleanMultilayoutQualitySelectionLatest },
     { stage: "V49", title: "Natural Home V49 V32 diversity sweep", latest: naturalHomeV49QualitySelectionLatest },
     { stage: "V48", title: "Natural Home V48 split expert merge gate", latest: naturalHomeV48MergeGateSelectionLatest },
     { stage: "V47", title: "Natural Home V47 hard failure stabilization", latest: naturalHomeV47QualitySelectionLatest },
@@ -540,6 +604,38 @@ export async function GET() {
       trainingLatest: naturalHomeV89QualityAllowlistTrainingLatest,
       latest: naturalHomeV89QualitySelectionLatest,
       inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v89-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV96CleanMultilayout: {
+      datasetLatest: naturalHomeV96CleanMultilayoutDatasetLatest,
+      trainingSummary: naturalHomeV96CleanMultilayoutTrainingSummary,
+      trainingLatest: naturalHomeV96CleanMultilayoutTrainingLatest,
+      generationLatest: naturalHomeV96CleanMultilayoutGenerationLatest,
+      latest: naturalHomeV96CleanMultilayoutQualitySelectionLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v96-clean-multilayout-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV97EdgeBoundaryRepair: {
+      datasetLatest: naturalHomeV97EdgeBoundaryRepairDatasetLatest,
+      trainingSummary: naturalHomeV97EdgeBoundaryRepairTrainingSummary,
+      trainingLatest: naturalHomeV97EdgeBoundaryRepairTrainingLatest,
+      generationLatest: naturalHomeV97EdgeBoundaryRepairGenerationLatest,
+      latest: naturalHomeV97EdgeBoundaryRepairQualitySelectionLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v97-edge-boundary-repair-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV98Vj1SignalRepair: {
+      datasetLatest: naturalHomeV98Vj1SignalRepairDatasetLatest,
+      trainingSummary: naturalHomeV98Vj1SignalRepairTrainingSummary,
+      trainingLatest: naturalHomeV98Vj1SignalRepairTrainingLatest,
+      generationLatest: naturalHomeV98Vj1SignalRepairGenerationLatest,
+      latest: naturalHomeV98Vj1SignalRepairQualitySelectionLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v98-vj1-signal-repair-quality-selection", "contact-sheet.png")),
+    },
+    naturalHomeV99Vj1BoundarySimilarityRepair: {
+      datasetLatest: naturalHomeV99Vj1BoundarySimilarityRepairDatasetLatest,
+      trainingSummary: naturalHomeV99Vj1BoundarySimilarityRepairTrainingSummary,
+      trainingLatest: naturalHomeV99Vj1BoundarySimilarityRepairTrainingLatest,
+      generationLatest: naturalHomeV99Vj1BoundarySimilarityRepairGenerationLatest,
+      latest: naturalHomeV99Vj1BoundarySimilarityRepairQualitySelectionLatest,
+      inferenceReady: await exists(path.join(aiPainterRuntimeRoot, "natural-home-v99-vj1-boundary-similarity-repair-quality-selection", "contact-sheet.png")),
     },
     naturalHomeBestTrainingCandidate,
     trainingQualityGate,

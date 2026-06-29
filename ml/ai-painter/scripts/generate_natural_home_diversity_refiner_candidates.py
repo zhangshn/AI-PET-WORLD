@@ -32,11 +32,14 @@ def main() -> int:
     parser.add_argument("--sample-limit", type=int, default=6)
     parser.add_argument(
         "--selection-strategy",
-        choices=("sorted", "diverse-source", "diverse-source-variants"),
+        choices=("sorted", "train-index", "validation-index", "diverse-source", "diverse-source-variants", "formal-world"),
         default="sorted",
         help=(
-            "Choose candidate conditions. diverse-source spreads samples across source scenes; "
-            "diverse-source-variants walks source scenes and variants for broader hidden candidate sweeps."
+            "Choose candidate conditions. train-index and validation-index read dataset split files; "
+            "diverse-source spreads samples across source scenes; "
+            "diverse-source-variants walks source scenes and variants for broader hidden candidate sweeps; "
+            "formal-world only selects full-frame natural-home-scene samples and blocks crop/partial sources. "
+            "It also blocks current-stage building, work, construction, and material topics."
         ),
     )
     parser.add_argument("--force", action="store_true")
@@ -94,7 +97,14 @@ def main() -> int:
 
 
 def select_sample_ids(scene_root: Path, sample_limit: int, selection_strategy: str) -> list[str]:
+    dataset_root = scene_root.parents[3]
+    if selection_strategy in {"train-index", "validation-index"}:
+        split = "train" if selection_strategy == "train-index" else "validation"
+        return read_split_ids(dataset_root, split, sample_limit)
+
     all_sample_ids = sorted(path.name for path in scene_root.iterdir() if path.is_dir())
+    if selection_strategy == "formal-world":
+        return select_formal_world_sample_ids(all_sample_ids, sample_limit)
     if selection_strategy == "sorted":
         return all_sample_ids[:sample_limit]
 
@@ -146,6 +156,48 @@ def select_sample_ids(scene_root: Path, sample_limit: int, selection_strategy: s
     return selected
 
 
+def select_formal_world_sample_ids(all_sample_ids: list[str], sample_limit: int) -> list[str]:
+    formal_ids = [
+        sample_id
+        for sample_id in all_sample_ids
+        if is_formal_world_sample_id(sample_id)
+    ]
+    if sample_limit <= 0:
+        return []
+    if sample_limit >= len(formal_ids):
+        return formal_ids
+    if sample_limit == 1:
+        return formal_ids[:1]
+    return [
+        formal_ids[round(index * (len(formal_ids) - 1) / (sample_limit - 1))]
+        for index in range(sample_limit)
+    ]
+
+
+def is_formal_world_sample_id(sample_id: str) -> bool:
+    lowered = sample_id.lower()
+    blocked_tokens = (
+        "crop",
+        "partial",
+        "patch",
+        "tile",
+        "sprite",
+        "diagnostic",
+        "local-detail",
+        "local_detail",
+        "construction",
+        "building",
+        "house",
+        "facility",
+        "material",
+        "scaffold",
+        "wall",
+        "roof",
+        "foundation",
+    )
+    return lowered.startswith("natural-home-scene_") and not any(token in lowered for token in blocked_tokens)
+
+
 def select_preferred_variant(candidates: list[str], ranked_variants: tuple[str, ...]) -> str:
     for variant in ranked_variants:
         suffix = f"__v28-{variant}"
@@ -153,6 +205,15 @@ def select_preferred_variant(candidates: list[str], ranked_variants: tuple[str, 
             if candidate.endswith(suffix):
                 return candidate
     return candidates[0]
+
+
+def read_split_ids(dataset_root: Path, split: str, sample_limit: int) -> list[str]:
+    index_path = dataset_root / "indexes" / f"{split}.json"
+    data = json.loads(index_path.read_text(encoding="utf-8"))
+    sample_ids = data.get("sampleIds")
+    if not isinstance(sample_ids, list) or not all(isinstance(value, str) for value in sample_ids):
+        raise ValueError(f"invalid dataset index: {index_path}")
+    return sample_ids[:sample_limit]
 
 
 def render_sample(dataset_root: Path, output_root: Path, sample_id: str, structure_model, refiner, torch, device) -> dict[str, Any]:

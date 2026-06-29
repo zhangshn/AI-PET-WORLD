@@ -4,49 +4,28 @@ import { useEffect, useMemo, useState } from "react"
 import { InfoCard } from "./_components/info-card"
 import { StageCard } from "./_components/stage-card"
 import type { Progress, TrainingAction } from "./_lib/progress-types"
-import {
-  buildNaturalHomeAction,
-  buildNaturalHomeDescription,
-  buildNaturalHomeStatus,
-  calculateMvpPercent,
-  calculateVisiblePercent,
-  formatNumber,
-  translateNextActions,
-  translateQualityStatus,
-} from "./_lib/progress-view-model"
 import styles from "./page.module.css"
 
-const businessCapabilityPlan = [
-  {
-    name: "自然环境视觉底座",
-    state: "当前主线",
-    detail: "草地、水体、水岸、自然路径、树木、岩石、花草和深度层。当前 V89 仍是隐藏候选，用来继续训练和筛选。",
-  },
-  {
-    name: "人物 / 管家视觉单元",
-    state: "未开始",
-    detail: "未来要拆成人物体型、头部、服装、表情、朝向、待机、行走、劳动和互动状态帧。",
-  },
-  {
-    name: "设施 / 建筑视觉单元",
-    state: "未开始",
-    detail: "未来要覆盖地基、墙体、屋顶、门窗、内部空间、家具、材料堆和建造阶段，不混入当前纯自然训练。",
-  },
-  {
-    name: "动态状态帧",
-    state: "未开始",
-    detail: "水流、树叶、草地、天气、光影、动物和昆虫都应是状态帧或循环帧，不靠一张静态图硬撑。",
-  },
-  {
-    name: "运行时合成",
-    state: "待接入",
-    detail: "后端世界事实决定对象和状态，小模型生成视觉表达，Runtime 再把地表、对象、状态帧和动效层组合成玩家画面。",
-  },
-  {
-    name: "VisualJudge / ApprovedFrame",
-    state: "框架中",
-    detail: "VJ-0/VJ-1 已有闸门基础；VJ-2 还要判断语义、风格、状态一致性。通过后才写入正式 ApprovedFrame。",
-  },
+type StartableAction = {
+  label: string
+  action: TrainingAction
+}
+
+const nextFullTrainingSteps: Array<{
+  ready: (data: Progress) => boolean
+  action: TrainingAction
+  label: string
+}> = [
+  { ready: (data) => Boolean(data.naturalHomeTraining?.inferenceReady), action: "full_natural_home", label: "启动基础自然家园训练" },
+  { ready: (data) => Boolean(data.naturalHomeStructure?.inferenceReady), action: "full_natural_home_structure_guided", label: "启动结构引导训练" },
+  { ready: (data) => Boolean(data.naturalHomeRefiner?.inferenceReady), action: "full_natural_home_rgb_refiner", label: "启动 RGB 细化训练" },
+  { ready: (data) => Boolean(data.naturalHomeV87QualityLedger?.inferenceReady), action: "full_natural_home_v87_quality_ledger", label: "生成质量账本" },
+  { ready: (data) => Boolean(data.naturalHomeV88QualityAllowlistDataset?.inferenceReady), action: "full_natural_home_v88_quality_allowlist_dataset", label: "准备 allowlist 数据集" },
+  { ready: (data) => Boolean(data.naturalHomeV89QualityAllowlistTraining?.inferenceReady), action: "full_natural_home_v89_quality_allowlist_training", label: "启动 allowlist 训练" },
+  { ready: (data) => Boolean(data.naturalHomeV96CleanMultilayout?.inferenceReady), action: "full_natural_home_v96_clean_multilayout", label: "启动 V96 完整自然家园训练" },
+  { ready: (data) => Boolean(data.naturalHomeV97EdgeBoundaryRepair?.inferenceReady), action: "full_natural_home_v97_edge_boundary_repair", label: "启动 V97 边缘与边界修复训练" },
+  { ready: (data) => Boolean(data.naturalHomeV98Vj1SignalRepair?.inferenceReady), action: "full_natural_home_v98_vj1_signal_repair", label: "启动 V98 VJ-1 失败信号修复训练" },
+  { ready: (data) => Boolean(data.naturalHomeV99Vj1BoundarySimilarityRepair?.inferenceReady), action: "full_natural_home_v99_vj1_boundary_similarity_repair", label: "启动 V99 边界与相似度修复训练" },
 ]
 
 export function ProgressClient() {
@@ -55,6 +34,7 @@ export function ProgressClient() {
 
   useEffect(() => {
     let cancelled = false
+
     const refresh = async () => {
       const response = await fetch("/api/ai-painter/training-progress", { cache: "no-store" })
       if (!response.ok || cancelled) return
@@ -69,6 +49,14 @@ export function ProgressClient() {
     }
   }, [])
 
+  const busy = data?.control.status === "running"
+  const resource = data?.resourceUsage?.current ?? data?.resourceUsage?.latest ?? null
+  const fullAction = useMemo(() => getNextFullTrainingAction(data), [data])
+  const currentPercent = useMemo(() => getCurrentPercent(data, busy), [data, busy])
+  const mvpPercent = useMemo(() => getMvpPercent(data), [data])
+  const generatedCount = getGeneratedCount(data)
+  const qualityGate = data?.trainingQualityGate
+
   const start = async (action: TrainingAction) => {
     setMessage("正在提交本地训练任务...")
     const response = await fetch("/api/ai-painter/training-control", {
@@ -79,56 +67,6 @@ export function ProgressClient() {
     const result = (await response.json()) as { ok: boolean; message?: string }
     setMessage(result.ok ? "任务已提交到本地训练控制器。" : result.message ?? "任务启动失败。")
   }
-
-  const busy = data?.control.status === "running"
-  const resource = data?.resourceUsage?.current ?? data?.resourceUsage?.latest ?? null
-  const visiblePercent = useMemo(() => calculateVisiblePercent(data, busy), [data, busy])
-  const mvpPercent = useMemo(() => calculateMvpPercent(data), [data])
-  const quality = data?.naturalHomeQuality
-  const missingChannels = data?.mvpGap?.missingRealAssetChannels ?? []
-  const naturalHomeAction = buildNaturalHomeAction(data)
-  const trainingQualityGate = data?.trainingQualityGate
-  const bestTrainingCandidate = data?.naturalHomeBestTrainingCandidate
-  const generatedCount =
-    bestTrainingCandidate?.summary?.rowCount ??
-    bestTrainingCandidate?.latest?.rowCount ??
-    bestTrainingCandidate?.latest?.sampleCount ??
-    data?.naturalHomeV49V32DiversitySweep?.latest?.summary?.rowCount ??
-    data?.naturalHomeV49V32DiversitySweep?.latest?.rowCount ??
-    data?.naturalHomeV49V32DiversitySweep?.latest?.sampleCount ??
-    data?.naturalHomeV48SplitExpertMergeGate?.latest?.summary?.rowCount ??
-    data?.naturalHomeV48SplitExpertMergeGate?.latest?.rowCount ??
-    data?.naturalHomeV48SplitExpertMergeGate?.latest?.sampleCount ??
-    data?.naturalHomeV47HardFailureStabilization?.latest?.rowCount ??
-    data?.naturalHomeV47HardFailureStabilization?.latest?.sampleCount ??
-    data?.naturalHomeV46V45FailureFocusRepair?.latest?.rowCount ??
-    data?.naturalHomeV46V45FailureFocusRepair?.latest?.sampleCount ??
-    data?.naturalHomeV45Generalization?.latest?.rowCount ??
-    data?.naturalHomeV45Generalization?.latest?.sampleCount ??
-    data?.naturalHomeV44V32StableGeneralization?.latest?.rowCount ??
-    data?.naturalHomeV44V32StableGeneralization?.latest?.sampleCount ??
-    data?.naturalHomeV43V32FailureFocusRepair?.latest?.rowCount ??
-    data?.naturalHomeV43V32FailureFocusRepair?.latest?.sampleCount ??
-    data?.naturalHomeV42WaterExpertFix?.latest?.rowCount ??
-    data?.naturalHomeV42WaterExpertFix?.latest?.sampleCount ??
-    data?.naturalHomeV41V32WaterRescue?.latest?.rowCount ??
-    data?.naturalHomeV41V32WaterRescue?.latest?.sampleCount ??
-    data?.naturalHomeV40SharpnessLockRepair?.latest?.rowCount ??
-    data?.naturalHomeV40SharpnessLockRepair?.latest?.sampleCount ??
-    data?.naturalHomeV36BalancedGeneralization?.latest?.rowCount ??
-    data?.naturalHomeV36BalancedGeneralization?.latest?.sampleCount ??
-    data?.naturalHomeV35BalancedWaterDetail?.latest?.rowCount ??
-    data?.naturalHomeV35BalancedWaterDetail?.latest?.sampleCount ??
-    data?.naturalHomeV34WaterStability?.latest?.rowCount ??
-    data?.naturalHomeV34WaterStability?.latest?.sampleCount ??
-    data?.naturalHomeV33WaterArtifactGuard?.latest?.rowCount ??
-    data?.naturalHomeV33WaterArtifactGuard?.latest?.sampleCount ??
-    data?.naturalHomeV28RealMaskRemix?.latest?.sampleCount ??
-    data?.naturalHomeV27AugmentedDiversity?.latest?.sampleCount ??
-    data?.naturalHomeDiversityRefiner?.latest?.sampleCount ??
-    data?.naturalHomeDiversityGeneralization?.latest?.sampleCount ??
-    data?.naturalHomeDiversityGeneration?.latest?.sampleCount ??
-    0
 
   return (
     <>
@@ -154,12 +92,8 @@ export function ProgressClient() {
       <section className={styles.systemGrid}>
         <InfoCard
           label="资源账本"
-          value={
-            resource
-              ? `${resource.status === "running" ? "记录中" : "已记录"} / ${resource.telemetrySampleCount ?? resource.sampleCount} 个采样点`
-              : "暂无记录"
-          }
-          detail={resource ? `任务 ${resource.action}` : "从页面启动训练后会自动生成"}
+          value={resource ? `${resource.status === "running" ? "记录中" : "已记录"} / ${resource.sampleCount} 点` : "暂无记录"}
+          detail={resource ? `任务 ${resource.action}` : "从页面启动训练后自动生成"}
         />
         <InfoCard
           label="功耗估算"
@@ -169,11 +103,11 @@ export function ProgressClient() {
         <InfoCard
           label="电量 / 电费"
           value={`${formatNumber(resource?.electricity.estimatedKwh, 4)} kWh`}
-          detail={`约 ${formatNumber(resource?.electricity.estimatedCny, 4)} 元，按 ${resource?.electricity.cnyPerKwh ?? 0.6} 元/度`}
+          detail={`约 ${formatNumber(resource?.electricity.estimatedCny, 4)} 元`}
         />
         <InfoCard
-          label="Token 账本"
-          value={`外部 ${resource?.tokenLedger.externalApiTokens ?? 0}`}
+          label="本地计算账本"
+          value={`外部绘图 token ${resource?.tokenLedger.externalApiTokens ?? 0}`}
           detail={`本地计算 token ${resource?.tokenLedger.localComputeTokens ?? 0}`}
         />
       </section>
@@ -185,12 +119,48 @@ export function ProgressClient() {
           <p>
             {busy
               ? "页面会持续刷新 GPU、训练状态、电费估算和当前阶段。"
-              : message || "正式世界仍受 VisualJudge 闸门控制。未通过审核的图不会进入 /world。"}
+              : message || "当前主线是完整自然家园小模型训练。未通过 VisualJudge 与 ApprovedFrame 的图不会进入 /world。"}
           </p>
         </div>
         <div className={styles.compactProgress}>
-          <strong>{visiblePercent}%</strong>
+          <strong>{currentPercent}%</strong>
           <span>{busy ? "运行中" : "空闲"}</span>
+        </div>
+      </section>
+
+      <section className={styles.panel}>
+        <p className={styles.kicker}>TRAINING ENTRANCES</p>
+        <h2>训练入口分线</h2>
+        <p>
+          主页面只放入口和状态。完整训练负责自然家园主世界画面，局部训练负责未来可复用视觉单元。
+          当前主线仍是完整自然家园训练；局部训练不能把任何候选图写入 /world。
+        </p>
+        <div className={styles.stageGrid}>
+          <StageCard
+            href="/ai-painter-progress/natural-home"
+            label="完整训练入口"
+            title="完整自然家园训练"
+            status={getFullTrainingStatus(data)}
+            description="训练完整自然家园候选图，目标是生成非局部、非 crop、完整尺寸、当前事实匹配的 ApprovedFrame。"
+            actionLabel={fullAction?.label}
+            disabled={busy}
+            onAction={fullAction ? () => void start(fullAction.action) : undefined}
+            danger={Boolean(data?.naturalHomeQuality?.status === "blocked")}
+          />
+          <StageCard
+            href="/ai-painter-progress/local-assets"
+            label="局部训练入口"
+            title="局部视觉单元训练"
+            status="后置 / 只查看"
+            description="未来训练草、水、树、石、人物、建筑、状态帧等 VisualUnit。当前不抢完整自然家园主线。"
+          />
+          <StageCard
+            href="/ai-painter-progress/generated-results"
+            label="结果归档入口"
+            title="训练后生成内容"
+            status={generatedCount > 0 ? `${generatedCount} 张候选记录` : "暂无候选统计"}
+            description="集中查看训练输出、候选图、失败图、时间戳、耗时、资源账本和审核结果。失败图也必须保留。"
+          />
         </div>
       </section>
 
@@ -199,235 +169,144 @@ export function ProgressClient() {
           整体 MVP 进度：<strong>{mvpPercent}%</strong>
         </span>
         <span>
-          当前主线：<strong>纯自然家园视觉底座 / 本地自研小模型 / 不进正式世界</strong>
+          当前主线：<strong>完整自然家园训练 + VisualJudge + ApprovedFrame</strong>
         </span>
         <span>
           外部在线绘图 API：<strong>0</strong>
         </span>
       </section>
 
-      <section className={styles.panel}>
-        <p className={styles.kicker}>BUSINESS CAPABILITY MAP</p>
-        <h2>动态世界不是一张图，是可组合视觉单元</h2>
-        <p>
-          当前训练只推进“纯自然环境底座”。正式业务还需要人物、管家、设施、建筑、内部空间、状态帧和运行时合成。
-          静态图只作为训练证据和视觉单元基础，未来玩家看到的是世界事实驱动后的动态 ApprovedFrame / RuntimeFrame。
-        </p>
-        <div className={styles.capabilityGrid}>
-          {businessCapabilityPlan.map((item) => (
-            <article key={item.name} className={styles.capabilityCard}>
-              <span>{item.state}</span>
-              <h3>{item.name}</h3>
-              <p>{item.detail}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className={styles.panel}>
-        <p className={styles.kicker}>INFORMATION ARCHITECTURE</p>
-        <h2>主页只放入口，训练后的图片集中归档</h2>
-        <p>
-          V19 到 V89 的训练输出不堆在主页。图片、时间戳、文件位置、质量门结论、失败原因和资源账本，都进入“训练后生成内容”模块。
-          主页只负责告诉我们：当前阶段、当前最佳候选、下一步该跑什么。
-        </p>
-      </section>
-
-      {trainingQualityGate ? (
-        <section className={styles.panel}>
-          <p className={styles.kicker}>TRAINING QUALITY GATE</p>
-          <h2>训练结果质量门</h2>
-          <p>
-            这里只判断本地小模型输出能不能作为下一轮训练依据。它不是正式 VJ-2，也不会把候选图直接放进 /world。
-          </p>
-          <dl className={styles.metrics}>
-            <div>
-              <dt>质量门状态</dt>
-              <dd>{qualityGateLabel(trainingQualityGate.status)}</dd>
-            </div>
-            <div>
-              <dt>综合分</dt>
-              <dd>{formatNumber(trainingQualityGate.overallScore, 2)}</dd>
-            </div>
-            <div>
-              <dt>下一轮训练</dt>
-              <dd>{trainingQualityGate.canEnterNextTraining ? "允许作为依据" : "阻断"}</dd>
-            </div>
-            <div>
-              <dt>正式世界展示</dt>
-              <dd>{trainingQualityGate.canPromoteToWorld ? "允许" : "禁止"}</dd>
-            </div>
-          </dl>
-          <div className={styles.qualityList}>
-            {(trainingQualityGate.rows ?? []).map((row) => (
-              <article key={row.sourceId}>
-                <strong>{row.sourceId}</strong>
-                <span>{qualityGateRowLabel(row.status)} / 分数 {formatNumber(row.score, 2)}</span>
-                <small>
-                  MAE {formatNumber(row.mae ?? undefined, 4)} / PSNR {formatNumber(row.psnr ?? undefined, 2)} /
-                  锐度 {formatNumber(row.sharpnessRatio ?? undefined, 3)} / 边缘{" "}
-                  {formatNumber(row.edgeDensityRatio ?? undefined, 3)}
-                </small>
-                <small>{(row.reasons ?? []).join("；")}</small>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
       <section className={styles.stageGrid}>
         <StageCard
-          href="/ai-painter-progress/natural-home"
-          label="STAGE 00"
-          title="纯世界家园训练"
-          status={buildNaturalHomeStatus(data)}
-          description={buildNaturalHomeDescription(data)}
-          actionLabel={naturalHomeAction?.label}
-          disabled={busy}
-          onAction={naturalHomeAction ? () => void start(naturalHomeAction.action) : undefined}
-          danger={quality?.status === "blocked"}
-        />
-        <StageCard
-          href="/ai-painter-progress/bootstrap"
-          label="STAGE 01"
-          title="单图训练验证"
-          status={data?.training.inferenceReady ? "已完成" : "未完成"}
-          description="验证本地 PyTorch、CUDA、权重保存和 PNG 推理链路是否真实可运行。"
-          actionLabel="重新训练"
-          disabled={busy}
-          onAction={() => void start("full")}
-        />
-        <StageCard
-          href="/ai-painter-progress/generated-results"
-          label="STAGE 02"
-          title="训练后生成内容"
-          status={generatedCount > 0 ? `已有 ${generatedCount} 张最新候选` : "查看记录"}
-          description="集中查看本地模型推理后的 PNG、生成时间、文件位置、审核状态和失败记录。"
-        />
-        <StageCard
           href="/ai-painter-progress/history"
-          label="STAGE 03"
-          title="训练历史"
-          status="查看记录"
-          description="集中查看每次训练摘要、资源账本和审核结论。失败记录也必须保留。"
+          label="训练历史"
+          title="历史记录与资源账本"
+          status={resource ? "已有记录" : "待生成"}
+          description="查看每次训练摘要、GPU 使用、电费估算、耗时和失败记录。"
         />
         <StageCard
           href="/ai-painter-progress/dataset-inventory"
-          label="STAGE 04"
+          label="数据清单"
           title="数据与资产清单"
           status={`${data?.dataset.formalSceneSamples ?? 0} 个正式样本`}
           description="查看训练样本、条件通道、图像尺寸和当前可用数据范围。"
         />
         <StageCard
-          href="/ai-painter-progress/local-assets"
-          label="STAGE 05"
-          title="本地资产库"
-          status={data?.localAssets.compositeReady ? "已生成资产" : "准备中"}
-          description="查看本地导入、候选资产和可信资产状态。原始素材不直接进入世界。"
-        />
-        <StageCard
-          href="/ai-painter-progress/structure-guided"
-          label="STAGE 06"
-          title="结构引导模型"
-          status={data?.naturalHomeStructure?.inferenceReady ? "已完成" : "未完成"}
-          description="查看结构条件、Mask 和结构推理结果。它负责让世界事实约束画面布局。"
-        />
-        <StageCard
-          href="/ai-painter-progress/rgb-refiner"
-          label="STAGE 07"
-          title="RGB 细化模型"
-          status={data?.naturalHomeRefiner?.inferenceReady ? "已完成" : "未完成"}
-          description="查看 RGB 细化训练与推理结果。它只负责视觉表达，不新增世界事实。"
-        />
-        <StageCard
           href="/ai-painter-progress/component-readiness"
-          label="STAGE 08"
-          title="部件实例闸门"
-          status={
-            data?.componentReadiness?.canStartAutonomousTraining
-              ? "可自训"
-              : `${data?.componentReadiness?.blockedChannelCount ?? 14} 类阻断`
-          }
-          description="检查 14 类结构部件是否有足够样本覆盖。当前不作为纯自然世界主线入口。"
+          label="局部准备度"
+          title="VisualUnit 准备状态"
+          status={`${data?.componentReadiness?.blockedChannelCount ?? 0} 类阻断`}
+          description="检查局部视觉单元是否具备训练条件。该模块当前后置，不能抢完整训练主线。"
           actionLabel="重新检查"
           disabled={busy}
           onAction={() => void start("prepare_component_instances")}
           danger={!data?.componentReadiness?.canStartAutonomousTraining}
         />
-        <StageCard
-          href="/ai-painter-progress"
-          label="STAGE 08B"
-          title="VisualUnit v0"
-          status={data?.visualUnitV0 ? "schema 已建立" : "未接入"}
-          description={
-            data?.visualUnitV0
-              ? `当前 MVP 单元 ${data.visualUnitV0.currentMvpUnitCount} 类，未来动态世界缺口 ${data.visualUnitV0.missingForDynamicWorld.length} 类。下一步：${data.visualUnitV0.nextModule}。`
-              : "建立可组合视觉单元：自然、管家、人物、建筑、设施、道具、动物和动效。"
-          }
-        />
-        <StageCard
-          href="/ai-painter-progress/dataset-inventory"
-          label="STAGE 08C"
-          title="VisualUnit 数据目录"
-          status={
-            data?.visualUnitData
-              ? `${data.visualUnitData.sampleCount} 个契约样例 / ${data.visualUnitData.trainingReadySampleCount} 个可训练`
-              : "未建立"
-          }
-          description={
-            data?.visualUnitData
-              ? `当前只建立 VisualUnit 数据契约，正式世界展示=${data.visualUnitData.formalWorldDisplay ? "允许" : "禁止"}。下一步：${data.visualUnitData.nextRequiredWork?.[0] ?? "补齐同源 target 和 mask"}。`
-              : "建立 data/visual-units，用来保存未来自然、人物、建筑、设施、物品、动物和动效的可组合训练数据。"
-          }
-        />
-        <StageCard
-          href="/ai-painter-progress/training-expansion"
-          label="STAGE 09"
-          title="训练扩张"
-          status={`${data?.trainingExpansion.manifest?.sampleCount ?? 0} 张样本`}
-          description="继续扩充同源训练场景，为完整世界训练准备。"
-          actionLabel="重新编译"
-          disabled={busy}
-          onAction={() => void start("prepare_training_expansion")}
-        />
-        <StageCard
-          href="/ai-painter-progress/autonomous-training"
-          label="STAGE 10"
-          title="自主训练闭环"
-          status={data?.autonomousTraining.latestDiscrete ? "已跑过一轮" : "待启动"}
-          description="未来串起结构、RGB、局部资产和离散像素，形成完整本地闭环。当前先不作为主训练入口。"
-          disabled
-        />
       </section>
 
-      <section className={styles.summaryStrip}>
-        <span>
-          纯世界样本：<strong>{data?.naturalHomeTraining?.datasetManifest?.sampleCount ?? 0}</strong>
-        </span>
-        <span>
-          质量报告：<strong>{quality ? translateQualityStatus(quality.status) : "未生成"}</strong>
-        </span>
-        <span>
-          MVP 目标：<strong>{quality?.minimumMvpSampleCount ?? 50} 张</strong>
-        </span>
-        <span>
-          可用资产：<strong>{data?.mvpGap?.assetSummary?.totalUsableAssets ?? 0}</strong>
-        </span>
-        <span>
-          缺失通道：<strong>{missingChannels.length}</strong>
-        </span>
+      <section className={styles.panel}>
+        <p className={styles.kicker}>QUALITY GATE</p>
+        <h2>当前审核边界</h2>
+        <dl className={styles.metrics}>
+          <div>
+            <dt>训练质量闸门</dt>
+            <dd>{qualityGateLabel(qualityGate?.status)}</dd>
+          </div>
+          <div>
+            <dt>下一轮训练</dt>
+            <dd>{qualityGate?.canEnterNextTraining ? "允许" : "未允许"}</dd>
+          </div>
+          <div>
+            <dt>正式世界展示</dt>
+            <dd>{qualityGate?.canPromoteToWorld ? "允许" : "禁止"}</dd>
+          </div>
+          <div>
+            <dt>/world 状态</dt>
+            <dd>只展示完整 ApprovedFrame</dd>
+          </div>
+        </dl>
+        <p>
+          候选图、训练图、失败图、局部图和 crop 图都只进入训练归档页。
+          /world 是玩家主世界页面，不是训练预览页。
+        </p>
       </section>
-
-      {quality?.nextActions?.length ? (
-        <section className={styles.summaryStrip}>
-          <span>
-            下一步：<strong>{translateNextActions(quality.nextActions)}</strong>
-          </span>
-        </section>
-      ) : null}
 
       {data?.control.error ? <p className={styles.error}>{data.control.error}</p> : null}
     </>
+  )
+}
+
+function getNextFullTrainingAction(data: Progress | null): StartableAction | undefined {
+  if (!data) return undefined
+  if (!data.naturalHomeReadiness?.canStartTraining && !data.naturalHomeQuality) {
+    return { label: "检查自然家园源图", action: "report_natural_home" }
+  }
+
+  for (const step of nextFullTrainingSteps) {
+    if (!step.ready(data)) return { label: step.label, action: step.action }
+  }
+
+  return undefined
+}
+
+function getFullTrainingStatus(data: Progress | null) {
+  if (!data) return "读取中"
+  if (data.naturalHomeV99Vj1BoundarySimilarityRepair?.inferenceReady) return "V99 已生成候选，等待 VJ 复盘"
+  if (data.naturalHomeV98Vj1SignalRepair?.inferenceReady) return "V98 已生成候选，等待 V99"
+  if (data.naturalHomeV97EdgeBoundaryRepair?.inferenceReady) return "V97 已生成候选，等待 V98"
+  if (data.naturalHomeV96CleanMultilayout?.inferenceReady) return "V96 已完成，等待 V97"
+  if (data.naturalHomeV89QualityAllowlistTraining?.inferenceReady) return "V89 已完成，等待 V96"
+  if (data.naturalHomeV88QualityAllowlistDataset?.inferenceReady) return "V88 数据集完成"
+  if (data.naturalHomeV87QualityLedger?.inferenceReady) return "V87 质量账本完成"
+  if (data.naturalHomeRefiner?.inferenceReady) return "RGB 细化已完成"
+  if (data.naturalHomeStructure?.inferenceReady) return "结构推理已完成"
+  if (data.naturalHomeTraining?.inferenceReady) return "基础推理已完成"
+  if (data.naturalHomeQuality?.status === "blocked") return "质量阻断"
+  if (data.naturalHomeReadiness?.canStartTraining) return "可开始训练"
+  return `${data.naturalHomeReadiness?.blockedSampleCount ?? 0} 张阻断`
+}
+
+function getCurrentPercent(data: Progress | null, busy: boolean) {
+  if (!data) return 0
+  if (!busy) return 100
+  return data.training.percent ?? 0
+}
+
+function getMvpPercent(data: Progress | null) {
+  if (!data) return 0
+  let score = 0
+  if (data.naturalHomeReadiness?.canStartTraining || data.naturalHomeQuality) score += 10
+  if (data.naturalHomeTraining?.inferenceReady) score += 15
+  if (data.naturalHomeStructure?.inferenceReady) score += 15
+  if (data.naturalHomeRefiner?.inferenceReady) score += 10
+  if (data.naturalHomeV87QualityLedger?.inferenceReady) score += 10
+  if (data.naturalHomeV88QualityAllowlistDataset?.inferenceReady) score += 10
+  if (data.naturalHomeV89QualityAllowlistTraining?.inferenceReady) score += 10
+  if (data.naturalHomeV96CleanMultilayout?.inferenceReady) score += 5
+  if (data.naturalHomeV97EdgeBoundaryRepair?.inferenceReady) score += 5
+  if (data.naturalHomeV98Vj1SignalRepair?.inferenceReady) score += 5
+  if (data.naturalHomeV99Vj1BoundarySimilarityRepair?.inferenceReady) score += 5
+  if (data.trainingQualityGate) score += 5
+  if (data.componentReadiness) score += 3
+  if ((data.trainingExpansion.manifest?.sampleCount ?? 0) > 0) score += 2
+  return Math.min(100, score)
+}
+
+function getGeneratedCount(data: Progress | null) {
+  return (
+    data?.naturalHomeBestTrainingCandidate?.summary?.rowCount ??
+    data?.naturalHomeBestTrainingCandidate?.latest?.rowCount ??
+    data?.naturalHomeV99Vj1BoundarySimilarityRepair?.latest?.summary?.rowCount ??
+    data?.naturalHomeV99Vj1BoundarySimilarityRepair?.latest?.rowCount ??
+    data?.naturalHomeV98Vj1SignalRepair?.latest?.summary?.rowCount ??
+    data?.naturalHomeV98Vj1SignalRepair?.latest?.rowCount ??
+    data?.naturalHomeV97EdgeBoundaryRepair?.latest?.summary?.rowCount ??
+    data?.naturalHomeV97EdgeBoundaryRepair?.latest?.rowCount ??
+    data?.naturalHomeV89QualityAllowlistTraining?.latest?.summary?.rowCount ??
+    data?.naturalHomeV89QualityAllowlistTraining?.latest?.rowCount ??
+    data?.naturalHomeV51SafeCandidatePack?.latest?.summary?.safeRowCount ??
+    data?.naturalHomeV49V32DiversitySweep?.latest?.rowCount ??
+    0
   )
 }
 
@@ -435,12 +314,9 @@ function qualityGateLabel(status?: string) {
   if (status === "passed_for_next_training") return "通过，可进入下一轮训练"
   if (status === "warning_keep_candidate") return "候选保留，需要观察"
   if (status === "failed_keep_for_history") return "失败，仅保留历史"
-  return "暂无质量门结论"
+  return "暂无质量闸门结论"
 }
 
-function qualityGateRowLabel(status?: string) {
-  if (status === "passed") return "通过"
-  if (status === "warning") return "警告"
-  if (status === "failed") return "失败"
-  return "未知"
+function formatNumber(value?: number | null, digits = 2) {
+  return typeof value === "number" && Number.isFinite(value) ? value.toFixed(digits) : "--"
 }

@@ -15,6 +15,8 @@ from ai_painter.blueprint.channels import CANVAS_HEIGHT, CANVAS_WIDTH
 
 SCHEMA_VERSION = "natural-home-current-mvp-vj1-review-v1"
 DEFAULT_STAGE_ID = "natural-home-v91-current-mvp-vj1-review"
+TRAINING_DIAGNOSTIC_PROFILE = "training_diagnostic"
+FORMAL_WORLD_PROFILE = "formal_world_candidate"
 
 ALLOWED_CHANNELS = {
     "grass",
@@ -67,6 +69,17 @@ FORBIDDEN_CHANNELS = {
     "insect",
 }
 
+FORMAL_WORLD_BLOCKED_SOURCE_TOKENS = {
+    "crop",
+    "partial",
+    "patch",
+    "tile",
+    "sprite",
+    "diagnostic",
+    "local-detail",
+    "local_detail",
+}
+
 
 def main() -> int:
     parser = ArgumentParser(description="Run current-MVP natural-home VJ-1 checks for V91 candidates.")
@@ -81,6 +94,15 @@ def main() -> int:
         default=Path(".runtime/ai-painter/natural-home-v91-current-mvp-vj1-review"),
     )
     parser.add_argument("--stage-id", type=str, default=DEFAULT_STAGE_ID)
+    parser.add_argument(
+        "--judge-profile",
+        choices=[TRAINING_DIAGNOSTIC_PROFILE, FORMAL_WORLD_PROFILE],
+        default=TRAINING_DIAGNOSTIC_PROFILE,
+        help=(
+            "training_diagnostic uses target-comparison metrics for model debugging only; "
+            "formal_world_candidate does not depend on target replication and may enter later formal gates."
+        ),
+    )
     parser.add_argument("--min-score", type=float, default=90.0)
     parser.add_argument("--max-mae", type=float, default=0.02)
     parser.add_argument("--min-psnr", type=float, default=30.0)
@@ -106,9 +128,10 @@ def main() -> int:
         "maxWaterArtifactDelta": args.max_water_artifact_delta,
     }
 
-    reviewed_rows = [review_row(row, thresholds) for row in rows if isinstance(row, dict)]
+    reviewed_rows = [review_row(row, thresholds, args.judge_profile) for row in rows if isinstance(row, dict)]
     reviewed_rows.sort(key=lambda row: (-float(row["score"]), str(row["sampleId"])))
     best_passed = next((row for row in reviewed_rows if row["vj1Status"] == "vj_1_passed"), None)
+    is_formal_world_profile = args.judge_profile == FORMAL_WORLD_PROFILE
 
     args.output_root.mkdir(parents=True, exist_ok=True)
     contact_sheet = args.output_root / "contact-sheet.png"
@@ -120,11 +143,14 @@ def main() -> int:
         "generatedAt": datetime.now(UTC).isoformat(),
         "sourceQualityReport": str(quality_report_path),
         "sourceStageId": quality_report.get("sourceStageId"),
-        "reviewScope": "natural_home_current_mvp_vj1_only",
+        "judgeProfile": args.judge_profile,
+        "reviewScope": build_review_scope(args.judge_profile),
+        "targetComparisonUsed": args.judge_profile == TRAINING_DIAGNOSTIC_PROFILE,
+        "formalWorldCandidateReviewEnabled": is_formal_world_profile,
         "status": build_status(reviewed_rows),
         "displayAllowed": False,
         "canPromoteToWorld": False,
-        "canEnterApprovedFrameCandidateReview": best_passed is not None,
+        "canEnterApprovedFrameCandidateReview": is_formal_world_profile and best_passed is not None,
         "approvedFrameStatus": "not_written",
         "thresholds": thresholds,
         "policy": {
@@ -137,8 +163,9 @@ def main() -> int:
         "contactSheet": str(contact_sheet.resolve()),
         "rows": reviewed_rows,
         "note": (
-            "VJ-1 natural-home review only. Passing this report means the candidate may enter "
-            "ApprovedFrame candidate review, not that it can be shown to players."
+            "VJ-1 natural-home review only. training_diagnostic reports are for model debugging "
+            "and never enter ApprovedFrame. formal_world_candidate reports may only enter the next "
+            "formal gates; they still cannot be shown to players."
         ),
     }
 
@@ -148,7 +175,13 @@ def main() -> int:
     return 0
 
 
-def review_row(row: dict[str, Any], thresholds: dict[str, float]) -> dict[str, Any]:
+def build_review_scope(judge_profile: str) -> str:
+    if judge_profile == FORMAL_WORLD_PROFILE:
+        return "natural_home_formal_world_candidate_vj1"
+    return "natural_home_training_diagnostic_vj1"
+
+
+def review_row(row: dict[str, Any], thresholds: dict[str, float], judge_profile: str) -> dict[str, Any]:
     checks = []
     generated_path = Path(str(row.get("generated", "")))
     target_path = Path(str(row.get("target", "")))
@@ -162,19 +195,34 @@ def review_row(row: dict[str, Any], thresholds: dict[str, float]) -> dict[str, A
     checks.append(check("source_not_display_allowed", row.get("displayAllowed") is False))
     checks.append(check("source_not_world_promotable", row.get("canPromoteToWorld") is False))
     checks.append(check("generated_file_exists", generated_path.is_file(), str(generated_path)))
-    checks.append(check("target_file_exists", target_path.is_file(), str(target_path)))
     checks.append(check("blueprint_file_exists", blueprint_path.is_file(), str(blueprint_path)))
     checks.append(check("generated_png_size", image_size_is_current_mvp(generated_path), f"{CANVAS_WIDTH}x{CANVAS_HEIGHT}"))
+    checks.append(check("not_direct_display_profile", judge_profile in {TRAINING_DIAGNOSTIC_PROFILE, FORMAL_WORLD_PROFILE}, judge_profile))
 
-    searchable = searchable_text(row)
+    if judge_profile == TRAINING_DIAGNOSTIC_PROFILE:
+        checks.append(check("target_file_exists", target_path.is_file(), str(target_path)))
+    else:
+        checks.append(check("formal_world_vj1_does_not_require_target", True, "target comparison disabled"))
+        blocked_scope_tokens = blocked_formal_source_tokens(row)
+        checks.append(
+            check(
+                "formal_world_candidate_must_not_be_crop_partial_patch_tile_or_sprite",
+                not blocked_scope_tokens,
+                ",".join(blocked_scope_tokens),
+            )
+        )
+
+    active_channels = set(active_condition_channels(condition))
+    blueprint_types = set(blueprint_structure_types(blueprint_path))
+    semantic_channels = active_channels | blueprint_types
+    searchable = semantic_text(active_channels, blueprint_types)
     for token in sorted(FORBIDDEN_TEXT_TOKENS):
         checks.append(check(f"no_forbidden_text_{token}", token not in searchable, token))
 
-    active_channels = set(active_condition_channels(condition))
     checks.append(check("active_channels_not_empty", len(active_channels) >= 3, ",".join(sorted(active_channels))))
     checks.append(check("active_channels_are_current_mvp", active_channels.issubset(ALLOWED_CHANNELS), ",".join(sorted(active_channels - ALLOWED_CHANNELS))))
     for channel in sorted(FORBIDDEN_CHANNELS):
-        checks.append(check(f"no_forbidden_channel_{channel}", channel not in active_channels, channel))
+        checks.append(check(f"no_forbidden_channel_{channel}", channel not in semantic_channels, channel))
 
     score = number(row.get("score"))
     mae = number(comparison.get("mae"))
@@ -185,28 +233,36 @@ def review_row(row: dict[str, Any], thresholds: dict[str, float]) -> dict[str, A
     water_delta = number(condition.get("waterPeriodicArtifactDelta"), default=0.0)
 
     checks.append(check("score_above_vj1_line", score >= thresholds["minScore"], f"{score}"))
-    checks.append(check("mae_under_vj1_line", mae <= thresholds["maxMae"], f"{mae}"))
-    checks.append(check("psnr_above_vj1_line", psnr >= thresholds["minPsnr"], f"{psnr}"))
     checks.append(check("sharpness_ratio_above_vj1_line", sharpness >= thresholds["minSharpnessRatio"], f"{sharpness}"))
     checks.append(check("edge_density_ratio_above_vj1_line", edge_density >= thresholds["minEdgeDensityRatio"], f"{edge_density}"))
     checks.append(check("mask_boundary_ratio_above_vj1_line", boundary >= thresholds["minMaskBoundaryGradientRatio"], f"{boundary}"))
     checks.append(check("water_artifact_delta_under_vj1_line", water_delta <= thresholds["maxWaterArtifactDelta"], f"{water_delta}"))
+    if judge_profile == TRAINING_DIAGNOSTIC_PROFILE:
+        checks.append(check("mae_under_vj1_line", mae <= thresholds["maxMae"], f"{mae}"))
+        checks.append(check("psnr_above_vj1_line", psnr >= thresholds["minPsnr"], f"{psnr}"))
+    else:
+        checks.append(check("formal_world_vj1_has_no_mae_gate", True, "target comparison disabled"))
+        checks.append(check("formal_world_vj1_has_no_psnr_gate", True, "target comparison disabled"))
 
     failed_checks = [item for item in checks if not item["passed"]]
     status = "vj_1_passed" if not failed_checks else "vj_1_failed"
+    can_enter_approved_review = status == "vj_1_passed" and judge_profile == FORMAL_WORLD_PROFILE
     return {
         "sampleId": row.get("sampleId"),
+        "judgeProfile": judge_profile,
+        "targetComparisonUsed": judge_profile == TRAINING_DIAGNOSTIC_PROFILE,
         "vj1Status": status,
         "vj2Status": "vj_2_not_implemented",
         "displayAllowed": False,
         "canPromoteToWorld": False,
-        "canEnterApprovedFrameCandidateReview": status == "vj_1_passed",
+        "canEnterApprovedFrameCandidateReview": can_enter_approved_review,
         "score": round_float(score),
         "generated": str(generated_path.resolve()),
-        "target": str(target_path.resolve()),
+        "target": str(target_path.resolve()) if str(row.get("target", "")).strip() else None,
         "blueprint": str(blueprint_path.resolve()),
         "sourceSha256": row.get("sourceSha256"),
         "activeChannels": sorted(active_channels),
+        "blueprintTypes": sorted(blueprint_types),
         "metrics": {
             "mae": round_float(mae),
             "psnr": round_float(psnr),
@@ -237,6 +293,15 @@ def searchable_text(row: dict[str, Any]) -> str:
     return " ".join(str(value).lower() for value in values if value is not None)
 
 
+def semantic_text(active_channels: set[str], blueprint_types: set[str]) -> str:
+    return " ".join(sorted(active_channels | blueprint_types)).lower()
+
+
+def blocked_formal_source_tokens(row: dict[str, Any]) -> list[str]:
+    text = searchable_text(row)
+    return sorted(token for token in FORMAL_WORLD_BLOCKED_SOURCE_TOKENS if token in text)
+
+
 def active_condition_channels(condition: dict[str, Any]) -> list[str]:
     channels: set[str] = set()
     active = condition.get("activeChannels")
@@ -248,6 +313,30 @@ def active_condition_channels(condition: dict[str, Any]) -> list[str]:
             if number(value, default=0.0) > 0.0:
                 channels.add(str(key))
     return sorted(channels)
+
+
+def blueprint_structure_types(path: Path) -> list[str]:
+    try:
+        blueprint = read_json(path)
+    except Exception:
+        return []
+    found: set[str] = set()
+    collect_blueprint_types(blueprint, found)
+    return sorted(found)
+
+
+def collect_blueprint_types(value: Any, found: set[str]) -> None:
+    if isinstance(value, dict):
+        for key in ("type", "channel", "terrain", "semanticType", "maskType"):
+            item = value.get(key)
+            if isinstance(item, str) and item.strip():
+                found.add(item.strip())
+        for item in value.values():
+            collect_blueprint_types(item, found)
+        return
+    if isinstance(value, list):
+        for item in value:
+            collect_blueprint_types(item, found)
 
 
 def build_status(rows: list[dict[str, Any]]) -> str:
@@ -285,6 +374,8 @@ def build_best_candidate(row: dict[str, Any] | None) -> dict[str, Any] | None:
         "target": row.get("target"),
         "blueprint": row.get("blueprint"),
         "sourceSha256": row.get("sourceSha256"),
+        "judgeProfile": row.get("judgeProfile"),
+        "targetComparisonUsed": row.get("targetComparisonUsed"),
         "status": "may_enter_approved_frame_candidate_review",
     }
 

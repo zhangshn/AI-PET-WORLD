@@ -1,0 +1,78 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v110-v109-formal-passed-distillation",
+  "modelVersion": "rgb-refiner-natural-home-v110-v109-formal-passed-distillation",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.0000012,
+  "discriminatorLearningRate": 0.0,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0,
+  "maxEpochs": 16,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 3.8,
+    "edge": 7.2,
+    "texture": 4.8,
+    "laplacian": 7.2,
+    "gradient": 7.4,
+    "colorRange": 0.32,
+    "waterPeriodicity": 6.4
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.002,
+    "margin": 0.0002
+  },
+  "structureWeights": {
+    "water": 5.2,
+    "shoreline": 5.4,
+    "road": 3.0,
+    "roadEdge": 3.0,
+    "tree": 3.2,
+    "rock": 3.1,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 2.6,
+  "saveBestBy": "validation_loss",
+  "seed": 20260628,
+  "status": "v110_distill_v109_formal_passed_candidates_hidden_training_only",
+  "allowedScope": "natural_home_only",
+  "forbiddenScope": [
+    "building",
+    "facility",
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "formalVj1": "increase VJ-1 pass stability by distilling V109 formal full-world passed candidates",
+    "formalVj2": "preserve VJ-2 minimal pass while reducing remaining VJ-1 failure reasons",
+    "worldDisplay": "blocked until a future Game-World ApprovedFrame binding passes current worldId, tick, sourceFactIds, and formal frame size"
+  }
+}

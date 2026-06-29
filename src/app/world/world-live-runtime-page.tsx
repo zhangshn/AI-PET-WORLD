@@ -1,32 +1,15 @@
 import type { CSSProperties, ReactNode } from "react"
 import { readWorldRuntimeForView } from "@/world/runtime/world-runtime-gateway"
 import {
+  buildWorldGameRuntimeFrame,
+  buildWorldRuntimeFrameGate,
   buildWorldVisualFactManifest,
   buildWorldVisualPainterDecision,
   readLatestWorldVisualApprovedFrameRecord,
 } from "@/world/world-visual-painter"
-import type { WorldVisualApprovedFrame } from "@/world/world-visual-painter"
-import { isControlledMvpDisplayEnvironmentAllowed } from "@/world/world-visual-painter/approved-frame/controlled-mvp-display-policy"
+import type { WorldGameRuntimeFrame } from "@/world/world-visual-painter"
 
 type ApprovedFrameReadStatus = "found" | "empty" | "invalid" | "failed"
-
-type RuntimeBoundApprovedFrame = WorldVisualApprovedFrame & {
-  worldId?: unknown
-  tick?: unknown
-}
-
-type RuntimeGate = {
-  canRuntimeRender: boolean
-  hardFieldsValid: boolean
-  controlledMvpBoundaryPassed: boolean
-  controlledMvpDisplayEnvironmentAllowed: boolean
-  currentWorldMatched: boolean
-  currentTickMatched: boolean
-  currentFrameWorldMatched: boolean
-  currentFrameTickMatched: boolean
-  currentSourceFactsMatched: boolean
-  currentFrameSourceFactsMatched: boolean
-}
 
 export async function WorldLiveRuntimePage() {
   const runtimeView = await readWorldRuntimeForView()
@@ -59,8 +42,20 @@ export async function WorldLiveRuntimePage() {
   })
   const approvedFrameRecord = approvedFrameReadResult.record
   const approvedFrame = approvedFrameRecord?.approvedFrame ?? null
-  const runtimeGate = buildCurrentRuntimeGate({
+  const runtimeFrameBuild = buildWorldGameRuntimeFrame({
+    ownerId: saveRecord.ownerId,
+    currentWorldId: saveRecord.worldId,
+    currentTick: saveRecord.tick,
+    currentSourceFactIds: factManifest.sourceFactIds,
     approvedFrame,
+    reviewReport: approvedFrameRecord?.reviewReport ?? null,
+    recordWorldId: approvedFrameRecord?.worldId ?? null,
+    recordTick: approvedFrameRecord?.tick ?? null,
+    recordSourceFactIds: approvedFrameRecord?.sourceFactIds ?? [],
+  })
+  const runtimeGate = buildWorldRuntimeFrameGate({
+    approvedFrame,
+    reviewReport: approvedFrameRecord?.reviewReport ?? null,
     recordWorldId: approvedFrameRecord?.worldId ?? null,
     recordTick: approvedFrameRecord?.tick ?? null,
     recordSourceFactIds: approvedFrameRecord?.sourceFactIds ?? [],
@@ -68,36 +63,13 @@ export async function WorldLiveRuntimePage() {
     currentWorldId: saveRecord.worldId,
     currentTick: saveRecord.tick,
     currentSourceFactIds: factManifest.sourceFactIds,
+    runtimeFrameReady: runtimeFrameBuild.runtimeFrameReady,
+    runtimeFrameId: runtimeFrameBuild.runtimeFrame?.frameId ?? null,
+    runtimeFrameBlockedReasons: runtimeFrameBuild.blockedReasons,
   })
 
-  if (runtimeGate.canRuntimeRender && approvedFrameRecord && approvedFrame) {
-    return (
-      <main style={runtimeWorldStyles.page}>
-        <section style={runtimeWorldStyles.stage}>
-          <div style={runtimeWorldStyles.hud}>
-            <span>AI-PET-WORLD</span>
-            <span>Tick {saveRecord.tick}</span>
-            <span>Controlled MVP ApprovedFrame</span>
-          </div>
-          <div aria-label="已通过当前 Runtime 闸门的受控 MVP 世界画面" style={runtimeWorldStyles.frame}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              alt="已通过 VJ-0 与 VJ-1 的受控 MVP AI 世界画面"
-              src={approvedFrame.imageUrl}
-              style={runtimeWorldStyles.approvedImage}
-            />
-          </div>
-          <div style={runtimeWorldStyles.provenance}>
-            <span>VJ-0 passed</span>
-            <span>VJ-1 passed</span>
-            <span>VJ-2 not implemented</span>
-            <span>非生产批准</span>
-            <span>Candidate {approvedFrameRecord.sourceAiImageCandidateId}</span>
-            <span>SHA {approvedFrame.sourceImageSha256.slice(0, 12)}</span>
-          </div>
-        </section>
-      </main>
-    )
+  if (runtimeGate.canRuntimeRender && runtimeFrameBuild.runtimeFrame) {
+    return <WorldGameRuntimeFramePage runtimeFrame={runtimeFrameBuild.runtimeFrame} />
   }
 
   const blockView = buildApprovedFrameBlockView({
@@ -115,7 +87,8 @@ export async function WorldLiveRuntimePage() {
         <h1 style={blockedWorldStyles.title}>{blockView.title}</h1>
         <p style={blockedWorldStyles.body}>{blockView.message}</p>
         <p style={blockedWorldStyles.body}>
-          正式规则：世界事实先生成，AI Painter 只负责画面表达，VisualJudge 与 ApprovedFrame 没通过就不展示。
+          正式规则：世界事实先生成，AI Painter 只负责画面表达；VisualJudge、
+          ApprovedFrame 和 RuntimeFrame 没有全部通过，就不展示主世界画面。
         </p>
 
         <div style={blockedWorldStyles.metaGrid}>
@@ -126,25 +99,92 @@ export async function WorldLiveRuntimePage() {
           <GateItem title="ApprovedFrame 读取">
             <span>状态：{approvedFrameReadResult.status}</span>
             <span>路径：{blockView.path}</span>
-            <span>警告：{blockView.warnings.length ? blockView.warnings.join(" / ") : "无"}</span>
+            <span>
+              警告：
+              {blockView.warnings.length ? blockView.warnings.join(" / ") : "无"}
+            </span>
           </GateItem>
-          <GateItem title="Runtime 闸门">
+          <GateItem title="RuntimeFrame 闸门">
             <GateLine label="基础字段" value={runtimeGate.hardFieldsValid} />
-            <GateLine label="MVP 边界" value={runtimeGate.controlledMvpBoundaryPassed} />
-            <GateLine label="开发环境允许" value={runtimeGate.controlledMvpDisplayEnvironmentAllowed} />
-            <GateLine label="worldId 匹配" value={runtimeGate.currentWorldMatched && runtimeGate.currentFrameWorldMatched} />
-            <GateLine label="tick 匹配" value={runtimeGate.currentTickMatched && runtimeGate.currentFrameTickMatched} />
+            <GateLine
+              label="正式世界边界"
+              value={runtimeGate.gameWorldDisplayBoundaryPassed}
+            />
+            <GateLine
+              label="审核报告"
+              value={runtimeGate.reviewReportGameWorldPassed}
+            />
+            <GateLine
+              label="项目最终确认"
+              value={runtimeGate.ownerFinalWorldApprovalPassed}
+            />
+            <GateLine
+              label="游戏界面合成层"
+              value={runtimeGate.runtimeGameInterfaceReady}
+            />
+            <span>RuntimeFrame 状态：{runtimeFrameBuild.status}</span>
+            <GateLine
+              label="worldId 匹配"
+              value={
+                runtimeGate.currentWorldMatched &&
+                runtimeGate.currentFrameWorldMatched
+              }
+            />
+            <GateLine
+              label="tick 匹配"
+              value={
+                runtimeGate.currentTickMatched &&
+                runtimeGate.currentFrameTickMatched
+              }
+            />
             <GateLine
               label="sourceFactIds 匹配"
-              value={runtimeGate.currentSourceFactsMatched && runtimeGate.currentFrameSourceFactsMatched}
+              value={
+                runtimeGate.currentSourceFactsMatched &&
+                runtimeGate.currentFrameSourceFactsMatched
+              }
             />
           </GateItem>
           <GateItem title="世界事实清单">
             <span>sourceFactIds：{factManifest.sourceFactIds.length}</span>
             <span>主事实：{painterDecision.factManifest.primaryFacts.length}</span>
-            <span>支撑事实：{painterDecision.factManifest.supportingFacts.length}</span>
+            <span>
+              支撑事实：{painterDecision.factManifest.supportingFacts.length}
+            </span>
             <span>环境事实：{painterDecision.factManifest.ambientFacts.length}</span>
           </GateItem>
+        </div>
+      </section>
+    </main>
+  )
+}
+
+function WorldGameRuntimeFramePage(props: { runtimeFrame: WorldGameRuntimeFrame }) {
+  const visualLayer = props.runtimeFrame.visualLayers[0] ?? null
+
+  return (
+    <main style={runtimeFrameStyles.page}>
+      <section
+        aria-label="AI-PET-WORLD game runtime frame"
+        style={runtimeFrameStyles.stage}
+      >
+        {visualLayer ? (
+          <div
+            aria-hidden="true"
+            style={{
+              ...runtimeFrameStyles.visualLayer,
+              backgroundImage: `url("${visualLayer.imageUrl}")`,
+            }}
+          />
+        ) : null}
+        <div aria-hidden="true" style={runtimeFrameStyles.interactionLayer} />
+        <div style={runtimeFrameStyles.hud}>
+          <span>AI-PET-WORLD</span>
+          <span>Tick {props.runtimeFrame.tick}</span>
+          <span>RuntimeFrame</span>
+        </div>
+        <div style={runtimeFrameStyles.runtimeAudit}>
+          RuntimeFrame {props.runtimeFrame.frameId}
         </div>
       </section>
     </main>
@@ -177,7 +217,8 @@ function buildApprovedFrameBlockView(input: {
   if (input.status === "invalid") {
     return {
       title: "世界画面被 VJ-0 阻断",
-      message: "已读到 ApprovedFrameRecord，但它没有通过当前 tick、worldId 或 sourceFactIds 校验，所以不能展示。",
+      message:
+        "已读取 ApprovedFrameRecord，但它没有通过当前 tick、worldId 或 sourceFactIds 校验，所以不能展示。",
       path: input.path,
       warnings: input.warnings,
       tags: input.tags,
@@ -187,7 +228,8 @@ function buildApprovedFrameBlockView(input: {
   if (input.status === "failed") {
     return {
       title: "世界画面读取失败",
-      message: "ApprovedFrameRecord 读取失败。为避免展示不可信画面，/world 保持隐藏状态。",
+      message:
+        "ApprovedFrameRecord 读取失败。为避免展示不可信画面，/world 保持隐藏状态。",
       path: input.path,
       warnings: input.warnings,
       tags: input.tags,
@@ -196,8 +238,9 @@ function buildApprovedFrameBlockView(input: {
 
   if (input.status === "found") {
     return {
-      title: "世界画面尚未通过展示闸门",
-      message: "ApprovedFrameRecord 已存在，但 Runtime Render 必须字段、MVP 边界或当前世界匹配未全部通过。",
+      title: "世界画面尚未通过正式展示闸门",
+      message:
+        "ApprovedFrameRecord 已存在，但 /world 需要完整游戏 RuntimeFrame。单张 ApprovedFrame 图片只能作为视觉层数据，不能直接展示为玩家主世界。",
       path: input.path,
       warnings: input.warnings,
       tags: input.tags,
@@ -207,97 +250,12 @@ function buildApprovedFrameBlockView(input: {
   return {
     apiState: "approved_frame_empty",
     title: "AI Painter 尚未生成可展示画面",
-    message: "还没有受控 MVP ApprovedFrame。需要先生成隐藏 Candidate，并通过 VisualJudge。",
+    message:
+      "还没有正式游戏世界 ApprovedFrame。需要先生成隐藏 Candidate，并通过 VisualJudge。",
     path: input.path,
     warnings: input.warnings,
     tags: input.tags,
   }
-}
-
-function buildCurrentRuntimeGate(input: {
-  approvedFrame: WorldVisualApprovedFrame | null
-  recordWorldId: string | null
-  recordTick: number | null
-  recordSourceFactIds: string[]
-  recordCanShowToPlayer: boolean
-  currentWorldId: string
-  currentTick: number
-  currentSourceFactIds: string[]
-}): RuntimeGate {
-  const runtimeFrame = input.approvedFrame as RuntimeBoundApprovedFrame | null
-  const hardFieldsValid = input.approvedFrame ? canRenderApprovedFrame(input.approvedFrame) : false
-  const controlledMvpBoundaryPassed = input.approvedFrame
-    ? approvedFrameControlledMvpBoundaryPassed(input.approvedFrame)
-    : false
-  const controlledMvpDisplayEnvironmentAllowed = isControlledMvpDisplayEnvironmentAllowed()
-  const currentWorldMatched = input.recordWorldId === input.currentWorldId
-  const currentTickMatched = input.recordTick === input.currentTick
-  const currentFrameWorldMatched = runtimeFrame?.worldId === input.currentWorldId
-  const currentFrameTickMatched = runtimeFrame?.tick === input.currentTick
-  const currentSourceFactsMatched = sameStringSet(input.recordSourceFactIds, input.currentSourceFactIds)
-  const currentFrameSourceFactsMatched = input.approvedFrame
-    ? sameStringSet(input.approvedFrame.sourceFactIds, input.currentSourceFactIds)
-    : false
-
-  return {
-    hardFieldsValid,
-    controlledMvpBoundaryPassed,
-    controlledMvpDisplayEnvironmentAllowed,
-    currentWorldMatched,
-    currentTickMatched,
-    currentFrameWorldMatched,
-    currentFrameTickMatched,
-    currentSourceFactsMatched,
-    currentFrameSourceFactsMatched,
-    canRuntimeRender:
-      input.recordCanShowToPlayer === true &&
-      input.approvedFrame?.canShowToPlayer === true &&
-      controlledMvpDisplayEnvironmentAllowed &&
-      hardFieldsValid &&
-      controlledMvpBoundaryPassed &&
-      currentWorldMatched &&
-      currentTickMatched &&
-      currentFrameWorldMatched &&
-      currentFrameTickMatched &&
-      currentSourceFactsMatched &&
-      currentFrameSourceFactsMatched,
-  }
-}
-
-function canRenderApprovedFrame(approvedFrame: WorldVisualApprovedFrame): boolean {
-  return (
-    approvedFrame.canShowToPlayer === true &&
-    typeof approvedFrame.imageUrl === "string" &&
-    approvedFrame.imageUrl.startsWith("data:image/") &&
-    typeof approvedFrame.sourceImageSha256 === "string" &&
-    approvedFrame.sourceImageSha256.length === 64 &&
-    typeof approvedFrame.sourceImageByteLength === "number" &&
-    approvedFrame.sourceImageByteLength > 0 &&
-    typeof approvedFrame.sourceImageContentType === "string" &&
-    isApprovedContentType(approvedFrame.sourceImageContentType) &&
-    approvedFrame.sourceImagePayloadQualityPassed === true
-  )
-}
-
-function approvedFrameControlledMvpBoundaryPassed(approvedFrame: WorldVisualApprovedFrame): boolean {
-  return (
-    approvedFrame.approvalScope === "approved_for_controlled_mvp" &&
-    approvedFrame.productionApprovalStatus === "not_approved_for_production" &&
-    approvedFrame.approvedForProduction === false &&
-    approvedFrame.vj0Status === "vj_0_passed" &&
-    approvedFrame.vj1Status === "vj_1_passed" &&
-    approvedFrame.vj2Status === "vj_2_not_implemented"
-  )
-}
-
-function isApprovedContentType(contentType: string): boolean {
-  return contentType === "image/png" || contentType === "image/webp" || contentType === "image/jpeg"
-}
-
-function sameStringSet(left: string[], right: string[]): boolean {
-  if (left.length !== right.length) return false
-  const rightSet = new Set(right)
-  return left.every((value) => rightSet.has(value))
 }
 
 const emptyWorldStyles: Record<string, CSSProperties> = {
@@ -329,7 +287,7 @@ const emptyWorldStyles: Record<string, CSSProperties> = {
   },
 }
 
-const runtimeWorldStyles: Record<string, CSSProperties> = {
+const runtimeFrameStyles: Record<string, CSSProperties> = {
   page: {
     alignItems: "center",
     background: "radial-gradient(circle at 50% 18%, #10251d 0, #07120f 62%, #030807 100%)",
@@ -342,12 +300,29 @@ const runtimeWorldStyles: Record<string, CSSProperties> = {
   },
   stage: {
     aspectRatio: "4 / 3",
-    background: "#0a1712",
+    background: "#08120f",
     boxShadow: "0 24px 80px rgba(0, 0, 0, 0.42)",
     maxHeight: "calc(100vh - 36px)",
     maxWidth: "calc(100vw - 36px)",
+    overflow: "hidden",
     position: "relative",
     width: "min(1280px, calc((100vh - 36px) * 4 / 3), calc(100vw - 36px))",
+  },
+  visualLayer: {
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+    backgroundSize: "cover",
+    height: "100%",
+    imageRendering: "pixelated",
+    inset: 0,
+    position: "absolute",
+    width: "100%",
+  },
+  interactionLayer: {
+    border: "1px solid rgba(216, 234, 216, 0.18)",
+    inset: 0,
+    pointerEvents: "none",
+    position: "absolute",
   },
   hud: {
     alignItems: "center",
@@ -364,24 +339,12 @@ const runtimeWorldStyles: Record<string, CSSProperties> = {
     top: 12,
     zIndex: 2,
   },
-  frame: { height: "100%", overflow: "hidden", width: "100%" },
-  approvedImage: {
-    display: "block",
-    height: "100%",
-    imageRendering: "pixelated",
-    objectFit: "cover",
-    width: "100%",
-  },
-  provenance: {
+  runtimeAudit: {
     bottom: 12,
-    color: "rgba(235, 248, 218, 0.72)",
-    display: "flex",
-    flexWrap: "wrap",
+    color: "rgba(235, 248, 218, 0.68)",
     fontSize: 11,
-    gap: 10,
     left: 16,
     position: "absolute",
-    right: 16,
     zIndex: 2,
   },
 }

@@ -1,0 +1,46 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v99-vj1-boundary-similarity-repair",
+  "modelVersion": "rgb-refiner-natural-home-v99-vj1-boundary-similarity-repair",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.00000055,
+  "discriminatorLearningRate": 0.00000035,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.00065,
+  "maxEpochs": 18,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.55,
+    "edge": 5.45,
+    "texture": 3.35,
+    "laplacian": 3.65,
+    "gradient": 3.3,
+    "colorRange": 0.1,
+    "waterPeriodicity": 2.65
+  },
+  "structureWeights": {
+    "water": 3.55,
+    "shoreline": 4.15,
+    "road": 2.9,
+    "roadEdge": 3.15,
+    "tree": 3.25,
+    "rock": 3.25,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.0035,
+    "margin": 0.0005
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260626,
+  "status": "v99_vj1_boundary_similarity_repair_same_source_targets_no_building_no_character_no_animal"
+}

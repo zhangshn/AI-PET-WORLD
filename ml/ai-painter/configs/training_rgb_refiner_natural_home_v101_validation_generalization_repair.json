@@ -1,0 +1,59 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v101-validation-generalization-repair",
+  "modelVersion": "rgb-refiner-natural-home-v101-validation-generalization-repair",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.0000012,
+  "discriminatorLearningRate": 0.0,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0,
+  "maxEpochs": 6,
+  "mixedPrecision": true,
+  "augmentTrain": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 8.5,
+    "edge": 8.5,
+    "texture": 4.2,
+    "laplacian": 7.5,
+    "gradient": 7.5,
+    "colorRange": 0.12,
+    "waterPeriodicity": 6.5
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 16, 32],
+    "allowedRatio": 1.0,
+    "margin": 0.0
+  },
+  "structureWeights": {
+    "water": 4.5,
+    "shoreline": 4.5,
+    "road": 3.5,
+    "roadEdge": 3.5,
+    "tree": 3.5,
+    "rock": 3.0,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "focusLossChannels": [
+    "grass",
+    "water_body",
+    "shoreline",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "rock",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 2.0,
+  "saveBestBy": "validation_loss",
+  "seed": 20260626,
+  "status": "v101_validation_generalization_repair_no_world_display"
+}

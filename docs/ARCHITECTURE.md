@@ -1,186 +1,112 @@
 # AI-PET-WORLD 技术架构
 
-版本：v1.2
-状态：当前正式架构基线
-更新日期：2026-06-25
+状态：正式架构说明
+更新日期：2026-06-27
 
-## 总体架构
+本文只描述当前固定架构，不记录临时想法。当前执行顺序以 [唯一执行计划表](./EXECUTION_PLAN.md) 为准，当前完成度以 [当前进度表](./PROGRESS.md) 为准。
+
+## 总架构链路
 
 ```txt
-用户 / 管家 / 世界 Runtime
--> 世界事实 World Facts
--> Scene Blueprint
--> Condition Mask
--> 本地 AI Painter 小模型
--> Candidate Frame
+业务输入 / 世界规则
+-> World Facts 世界事实
+-> Scene Blueprint / Condition Mask
+-> 本地自研 AI Painter 小模型
+-> CandidateFrame 候选画面
 -> VisualJudge
 -> ApprovedFrame / RuntimeFrame
--> /world
+-> /world 玩家主世界页面
 ```
 
-## 架构原则
+核心原则：世界事实是源头，AI Painter 只负责视觉表达，VisualJudge 负责阻断不合格表达，ApprovedFrame 是视觉层凭证，不是 `/world` 页面本体。`/world` 必须是完整游戏 Runtime 界面。
 
-| 原则 | 说明 |
-|---|---|
-| 事实优先 | 所有视觉输出必须来源于世界事实 |
-| 模型只表达 | 小模型负责画面表达，不负责改事实 |
-| 审核闸门 | 未通过 VisualJudge 不能进入 ApprovedFrame |
-| 训练留档 | 每次训练、推理、失败、打回都要自动保存 |
-| 页面分层 | 训练主页保持干净，详细结果进入训练后内容页 |
-| 不接在线绘图 API | 当前正式链路不使用第三方在线绘图 API |
+## 模块职责
 
-## 核心模块表
-
-| 模块 | 位置 | 职责 |
+| 模块 | 职责 | 当前状态 |
 |---|---|---|
-| App Router 页面 | `src/app` | 页面入口、训练进度、世界展示 |
-| 世界 Runtime | `src/world` | 世界事实、tick、管家行为、建设计划 |
-| Visual Frame | `src/world/visual` | Candidate、Review、ApprovedFrame 相关结构 |
-| AI Painter API | `src/app/api/ai-painter` | 本地训练/推理/结果展示 API |
-| 服务端控制器 | `src/server` | 本地训练控制、进度读取、状态汇总 |
-| 小模型训练代码 | `ml/ai-painter` | PyTorch 训练、推理、数据处理 |
-| 检查脚本 | `scripts` | VJ、数据、ApprovedFrame、编码、构建检查 |
-| 运行产物 | `.runtime/ai-painter` | 训练结果、候选图、失败图、报告 |
-| 正式帧数据 | `data/world-approved-frames` | 通过审核后可被 `/world` 读取的帧 |
-| 文档 | `docs` | 业务、计划、架构、目录、进度 |
+| World Runtime | 维护世界事实、tick、管家行为、事件和资源状态 | 已有基础链路 |
+| World Facts | 抽取当前世界真实存在的事实，用于视觉生成绑定 | 已接入 sourceFactIds |
+| Scene Blueprint | 把世界事实转成画面结构条件，不是随意画图提示词 | 进行中 |
+| Condition Mask | 把地形、道路、水岸、草地、深度等结构转为训练和推理条件 | 进行中 |
+| AI Painter 数据层 | 存储训练样本、候选图、失败图、mask、资源账本 | 已接通 |
+| 本地小模型 | 使用本地 PyTorch / CUDA 进行训练和推理 | 进行中 |
+| VisualJudge VJ-0 | 校验文件、来源、hash、runtime gate、ApprovedFrame 边界 | 完成 |
+| VisualJudge VJ-1 | 校验清晰度、边缘、结构、事实覆盖和视觉质量 | 进行中 |
+| VisualJudge VJ-2 | 校验语义、风格、状态一致性和完整游戏画面感 | 进行中 |
+| ApprovedFrame | 保存通过视觉闸门的视觉层凭证，不等于游戏页面 | 已打通首帧协议 |
+| `/world` | 玩家主世界页面，只展示完整游戏 Runtime 界面 | 闸门已修正，禁止单张图片直铺 |
 
-## AI Painter 链路
+## 当前小模型结构
+
+| 层级 | 说明 |
+|---|---|
+| 输入 | 结构条件通道、自然家园 mask、深度、可走区域、世界事实绑定 |
+| 主体 | 本地 PyTorch 小模型，当前使用 RGB Refiner / Tiny U-Net 系列 |
+| 辅助 | PatchGAN 或局部判别训练只作为画质辅助，不决定世界事实 |
+| 输出 | 完整自然家园候选 PNG |
+| 限制 | 输出只是候选图，不等于 ApprovedFrame |
+
+当前模型不是第三方在线绘图 API。它是本地训练和本地推理链路。但训练数据、候选图、失败图仍必须经过权属记录与 VisualJudge 审核。
+
+## VJ-1 双口径
+
+| 口径 | 用途 | 是否可进入 `/world` |
+|---|---|---|
+| 训练诊断 VJ-1 | 用 target 对比 MAE、PSNR、锐度、边缘密度，判断模型是否学会复现训练目标 | 否 |
+| 正式世界 VJ-1 | 不依赖 target，检查完整帧、事实覆盖、结构合理、画质清晰、无禁用内容 | 是，但仍需 VJ-2 和 ApprovedFrame |
+
+训练诊断通过只能说明模型训练有效，不能直接说明世界画面可展示。正式世界画面必须通过正式世界 VJ-1、VJ-2 和 ApprovedFrame 绑定。
+
+## `/world` 展示闸门
+
+`/world` 必须满足全部条件才展示画面：
 
 ```txt
-训练数据 / target.png / mask / metadata
--> 数据清洗
--> 本地 PyTorch 训练
+存在 ApprovedFrame
+AND ApprovedFrame 是完整主世界帧
+AND approvalScope = approved_for_game_world
+AND worldId 匹配当前世界
+AND tick 匹配当前 runtime
+AND sourceFactIds 匹配当前世界事实
+AND VJ-0 通过
+AND 正式世界 VJ-1 通过
+AND VJ-2 通过
+AND 包含 game_world_ready_for_player
+AND 包含 formal_full_world_frame
+AND 不是训练图、候选图、失败图、crop、patch、tile、sprite
+AND 不是单张图片直铺
+AND 已生成游戏 RuntimeFrame / 游戏视口 / 交互容器
+```
+
+训练页、归档页、候选页可以展示训练过程，但不得冒充玩家正式世界画面。
+
+## 训练结果归档架构
+
+```txt
+训练开始
+-> 自动记录时间戳、耗时、GPU、显存、配置、数据集来源
 -> 生成候选图
 -> 质量筛选
--> VJ-1 清晰度与结构审核
--> VJ-2 语义与风格审核
--> ApprovedFrame 候选绑定
--> 写入 ApprovedFrame
+-> VJ 审核
+-> 成功 / 失败都写入 generated-results
+-> 页面只做查看，不改变审核结论
 ```
 
-当前训练模型是本地自研小模型链路，使用项目中的 PyTorch 脚本和本地数据集训练。第三方在线绘图 API 不在正式链路中。
+失败图必须保留。失败图不是垃圾，它是后续训练、审计和判断模型问题的重要数据。
 
-## AI Painter 训练架构分线
+## 代码与版权合规架构
 
-AI Painter 不是单一路径。为了服务“活着的游戏世界”，训练和展示必须分成三层。
-
-### 1. 完整世界画面训练线
-
-目标：让小模型学习完整自然家园画面的构图、层次、自然区域关系和整体像素质感。
-
-```txt
-World Facts
--> Scene Blueprint
--> 14 通道 Condition Mask
--> 完整自然家园训练样本
--> 本地小模型训练
--> 完整候选图
--> VisualJudge
--> ApprovedFrame 候选
-```
-
-职责：
-
-| 项目 | 说明 |
+| 规则 | 内容 |
 |---|---|
-| 学习对象 | 一整张自然家园画面 |
-| 当前内容 | 草地、水体、水岸、自然小路、树、石、花草、空间深度 |
-| 当前禁止 | 建筑、人物、动物、昆虫、动态状态、小镇城市 |
-| 输出用途 | 只用于候选、审核、归档；通过后才可能成为完整 ApprovedFrame |
-| 当前状态 | 当前主线 |
+| 禁止复制源码 | 不允许直接复制其他项目、教程、博客、仓库中的实现代码作为本项目代码 |
+| 允许学习原则 | 可以学习公开资料中的概念、论文思想、设计原则和工程方法，但必须用本项目自己的实现表达 |
+| 依赖需合规 | 使用第三方库必须通过包管理器或明确许可证引入，不能私下复制库内部源码 |
+| 生成资产需记录 | 训练图、候选图、参考图、失败图必须记录来源、用途、授权说明、生成时间 |
+| 不复制素材 | 不允许复制他人角色、地图、UI、像素资产、商标或受保护美术表达 |
+| 审核留痕 | 模型输出进入训练或展示前，必须经过来源、事实、画质和权属记录 |
 
-### 2. 局部视觉单元训练线
+这条规则同时约束人写代码、GPT 写代码、Codex 写代码和后续任何代理协作。
 
-目标：让小模型学习可复用的局部视觉单元，用于未来 Runtime 动态组合。
+## 当前架构结论
 
-```txt
-VisualUnit Fact
--> Unit Blueprint
--> Unit Mask / State
--> 局部训练样本
--> 局部候选图 / 状态帧
--> Unit Judge
--> 可复用视觉资产
-```
-
-职责：
-
-| 类型 | 未来内容 |
-|---|---|
-| 自然单元 | 草地块、水流、水岸、树、石、花草、天气光影 |
-| 人物单元 | 管家、人物体型、朝向、动作、状态帧 |
-| 建筑单元 | 地基、墙体、屋顶、门窗、室内结构、建造阶段 |
-| 生态单元 | 动物、昆虫、生命周期状态 |
-| 设施单元 | 道具、工具、材料、交互设施 |
-
-局部视觉单元不是当前主线。它可以有页面入口和数据契约，但不能抢在自然家园完整训练达标前成为主任务。
-
-### 3. Runtime 合成线
-
-目标：后期游戏画面不是一张固定大图，而是由世界事实驱动的运行时画面。
-
-```txt
-World Runtime Tick
--> 当前世界事实
--> 地形层 / 物件层 / 动态层 / UI 通信层
--> RuntimeFrame
--> VisualJudge / Runtime Gate
--> /world
-```
-
-Runtime 合成原则：
-
-| 原则 | 说明 |
-|---|---|
-| 不是一张死图 | 游戏后期不靠单张巨大 PNG 表达所有内容 |
-| 地图分层 | 地形、道路、水体、植被、建筑、人物、动态效果分层 |
-| 状态驱动 | 水流、树木生长、建筑阶段、人物动作都由事实和状态驱动 |
-| 视觉不改事实 | AI Painter 和 Runtime Render 只能表达事实，不能新增事实 |
-| 审核后展示 | RuntimeFrame 也必须过展示闸门才能进 `/world` |
-
-## 页面架构
-
-训练页面必须分清“训练”和“展示”。
-
-| 页面 | 职责 |
-|---|---|
-| `/world` | 玩家主世界页面，只能展示完整 ApprovedFrame / RuntimeFrame |
-| `/ai-painter-progress` | 本地 AI Painter 训练主页，只放阶段入口和整体状态 |
-| `/ai-painter-progress/generated-results` | 所有训练后结果、候选图、失败图、时间戳、耗时、资源账本和审核结果 |
-| 完整训练入口 | 进入自然家园完整画面训练、生成、审核链路 |
-| 局部训练入口 | 进入 VisualUnit / 局部资产 / 状态帧训练链路，当前后置 |
-
-训练主页不能堆满候选图。生成结果必须集中归档，失败图也必须保留。
-
-## VisualJudge 分层
-
-| 层级 | 目标 | 当前状态 |
-|---|---|---|
-| VJ-0 | 文件、来源、hash、runtime gate | 完成 |
-| VJ-1 | 清晰度、边缘、结构、禁区、失败原因 | 进行中 |
-| VJ-2 | 语义、风格、状态一致性 | 最小版完成，继续增强 |
-
-## ApprovedFrame 架构
-
-ApprovedFrame 是玩家可见画面的正式门票。
-
-必须满足：
-
-```txt
-Candidate 来自本地小模型
-AND 绑定 worldId / tick / sourceFactIds
-AND 图片 hash 正确
-AND review hash 正确
-AND VJ 通过
-AND runtime 当前事实匹配
-```
-
-## 当前风险
-
-| 风险 | 处理 |
-|---|---|
-| 泛化候选仍模糊 | 继续自然家园训练与数据扩充 |
-| VJ-1/VJ-2 仍需增强 | 保留失败原因，进入下一轮训练 |
-| 数据样本偏少 | V95 扩充干净自然样本 |
-| 误把候选当正式图 | `/world` 只读 ApprovedFrame / RuntimeFrame |
-| 文档跑偏 | 以后按 `docs/EXECUTION_PLAN.md` 执行 |
+当前架构没有变成“程序随便画图”，也没有允许候选图进入主世界。现在的关键问题是：小模型已经能生成自然家园候选，并已打通 Game-World ApprovedFrame 协议，但正式稳定率和完整世界感仍需要继续提升。下一步不扩展人物、建筑或动态，而是继续完成自然家园小模型泛化、正式世界 VJ-1/VJ-2 和更稳定的自然家园 ApprovedFrame。

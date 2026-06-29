@@ -1,0 +1,46 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v98-vj1-signal-repair",
+  "modelVersion": "rgb-refiner-natural-home-v98-vj1-signal-repair",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.00000065,
+  "discriminatorLearningRate": 0.0000004,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0008,
+  "maxEpochs": 16,
+  "mixedPrecision": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 1.35,
+    "edge": 4.95,
+    "texture": 3.15,
+    "laplacian": 3.25,
+    "gradient": 2.95,
+    "colorRange": 0.12,
+    "waterPeriodicity": 2.8
+  },
+  "structureWeights": {
+    "water": 3.7,
+    "shoreline": 3.9,
+    "road": 2.7,
+    "roadEdge": 2.85,
+    "tree": 3.05,
+    "rock": 3.0,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.004,
+    "margin": 0.0005
+  },
+  "saveBestBy": "generator_loss_with_adversarial",
+  "seed": 20260626,
+  "status": "v98_vj1_signal_repair_same_source_targets_no_building_no_character_no_animal"
+}

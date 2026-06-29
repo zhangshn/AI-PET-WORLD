@@ -1,0 +1,11 @@
+export type HeavenlyStem =
+  | "jia"
+  | "yi"
+  | "bing"
+  | "ding"
+  | "wu"
+  | "ji"
+  | "geng"
+  | "xin"
+  | "ren"
+  | "gui"
