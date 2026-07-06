@@ -1,0 +1,39 @@
+{
+  "trainingVersion": "training-natural-home-local-details-v35-anti-grid-bilinear",
+  "modelVersion": "natural-home-local-detail-unet-v35-anti-grid-bilinear",
+  "inputChannels": 22,
+  "inputExtras": ["style"],
+  "outputChannels": 3,
+  "baseChannels": 80,
+  "batchSize": 4,
+  "learningRate": 0.00016,
+  "maxEpochs": 120,
+  "mixedPrecision": true,
+  "augment": true,
+  "upsampleMode": "bilinear",
+  "midBlocks": 2,
+  "decoderDetailBlocks": 3,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 4.6,
+    "texture": 3.8,
+    "laplacian": 3.8,
+    "gradient": 2.8,
+    "colorRange": 0.2
+  },
+  "structureWeights": {
+    "grass": 2.8,
+    "water": 3.6,
+    "shoreline": 5.0,
+    "road": 4.0,
+    "roadEdge": 4.0,
+    "tree": 5.0,
+    "rock": 4.4,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260628,
+  "status": "pure_natural_home_anti_grid_bilinear_training"
+}

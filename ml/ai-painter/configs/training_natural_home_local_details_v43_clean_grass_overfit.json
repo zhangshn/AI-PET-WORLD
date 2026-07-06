@@ -1,0 +1,40 @@
+{
+  "trainingVersion": "training-natural-home-local-details-v43-clean-grass-overfit",
+  "modelVersion": "natural-home-local-detail-unet-v43-clean-grass-overfit",
+  "inputChannels": 28,
+  "inputExtras": ["coord", "noise", "reference", "style"],
+  "referenceMode": "self",
+  "outputChannels": 3,
+  "baseChannels": 80,
+  "batchSize": 2,
+  "learningRate": 0.00016,
+  "maxEpochs": 160,
+  "mixedPrecision": true,
+  "augment": true,
+  "upsampleMode": "bilinear",
+  "midBlocks": 2,
+  "decoderDetailBlocks": 3,
+  "lossWeights": {
+    "l1": 1.4,
+    "edge": 4.8,
+    "texture": 4.2,
+    "laplacian": 4.4,
+    "gradient": 3.0,
+    "colorRange": 0.18
+  },
+  "structureWeights": {
+    "grass": 4.5,
+    "water": 0.0,
+    "shoreline": 0.0,
+    "road": 0.0,
+    "roadEdge": 0.0,
+    "tree": 0.0,
+    "rock": 0.0,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260704,
+  "status": "pure_natural_home_clean_grass_overfit_material_training"
+}

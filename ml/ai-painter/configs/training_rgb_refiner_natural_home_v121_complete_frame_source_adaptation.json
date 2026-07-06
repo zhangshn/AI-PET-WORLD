@@ -1,0 +1,79 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v121-complete-frame-source-adaptation",
+  "modelVersion": "rgb-refiner-natural-home-v121-complete-frame-source-adaptation",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.000001,
+  "discriminatorLearningRate": 0.0,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0,
+  "maxEpochs": 16,
+  "mixedPrecision": true,
+  "augmentTrain": true,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 3.8,
+    "edge": 7.4,
+    "texture": 5.0,
+    "laplacian": 7.4,
+    "gradient": 7.6,
+    "colorRange": 0.32,
+    "waterPeriodicity": 6.4
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.002,
+    "margin": 0.0002
+  },
+  "structureWeights": {
+    "water": 5.2,
+    "shoreline": 5.4,
+    "road": 3.4,
+    "roadEdge": 3.4,
+    "tree": 3.4,
+    "rock": 3.2,
+    "shelterFoundation": 2.8,
+    "shelterWall": 2.8,
+    "shelterRoof": 2.6,
+    "constructionMaterial": 2.6
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "shelter_foundation",
+    "shelter_wall",
+    "shelter_roof",
+    "construction_material",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 2.8,
+  "saveBestBy": "validation_loss",
+  "seed": 20260630,
+  "status": "v121_complete_frame_source_adaptation_training_only",
+  "allowedScope": "complete_natural_home_mvp_training_only",
+  "forbiddenScope": [
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "purpose": "Adapt the current local RGB refiner from local natural patches to complete game-world source frames.",
+    "worldDisplay": "blocked until generated candidates pass VJ-1, VJ-2, Game-World Frame Gate, ApprovedFrame binding, RuntimeFrame, and owner confirmation."
+  }
+}

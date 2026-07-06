@@ -18,7 +18,7 @@ const stylePath = path.join(
   "_styles",
   "ziwei-page.module.css",
 )
-const pageDocPath = path.join(root, "docs", "ziwei", "PAGE_STRUCTURE.md")
+const pageDocPath = path.join(root, "docs", "ziwei", "PAGE_ACCEPTANCE.md")
 
 function fail(message) {
   console.error(`Ziwei debug JSON panel check failed: ${message}`)
@@ -34,7 +34,7 @@ if (!existsSync(stylePath)) {
 }
 
 if (!existsSync(pageDocPath)) {
-  fail("PAGE_STRUCTURE.md is missing")
+  fail("PAGE_ACCEPTANCE.md is missing")
 }
 
 const componentText = readFileSync(componentPath, "utf8")

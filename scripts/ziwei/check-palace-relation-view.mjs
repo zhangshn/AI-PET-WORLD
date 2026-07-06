@@ -36,7 +36,7 @@ const stylePath = path.join(
   "_styles",
   "ziwei-page.module.css",
 )
-const pageDocPath = path.join(root, "docs", "ziwei", "PAGE_STRUCTURE.md")
+const pageDocPath = path.join(root, "docs", "ziwei", "PAGE_ACCEPTANCE.md")
 
 function fail(message) {
   console.error(`Ziwei palace relation view check failed: ${message}`)

@@ -101,6 +101,10 @@ export interface ZiweiDynamicChart {
     startAge: number
     currentAge: number
     isDaYunStarted: boolean
+    xiaoXianDirection: ZiweiCycleDirection
+    xiaoXianStartPalace: BranchPalace
+    xiaoXianPalace: BranchPalace
+    douJunPalace: BranchPalace
   }
 }
 

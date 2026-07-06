@@ -48,6 +48,10 @@ data/*
 data/ziwei/*
 !data/ziwei/golden-samples/
 !data/ziwei/golden-samples/*.json
+!data/ziwei/pattern-golden-samples/
+!data/ziwei/pattern-golden-samples/*.json
+!data/ziwei/sample-calibration/
+!data/ziwei/sample-calibration/*.json
 runtime-data/
 .runtime/
 

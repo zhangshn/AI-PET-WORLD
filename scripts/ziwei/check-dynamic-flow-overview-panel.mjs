@@ -44,7 +44,7 @@ const stylePath = path.join(
   "_styles",
   "ziwei-page.module.css",
 )
-const pageDocPath = path.join(root, "docs", "ziwei", "PAGE_STRUCTURE.md")
+const pageDocPath = path.join(root, "docs", "ziwei", "PAGE_ACCEPTANCE.md")
 const directoryDocPath = path.join(root, "docs", "ziwei", "DIRECTORY_STRUCTURE.md")
 
 function fail(message) {
@@ -79,6 +79,8 @@ const contractMarkers = [
   "dynamicFlowDetails: ZiweiDynamicFlowDetailView[]",
   "palaceDetail?: ZiweiPalaceDetailView",
   "sourceRuleCount: number",
+  "transformations: ZiweiDynamicTransformationView[]",
+  "stemSourceLabel: string",
 ]
 
 contractMarkers.forEach((marker) => {
@@ -94,6 +96,8 @@ const builderMarkers = [
   "dynamicTabs: dynamicFlowDetails.map(buildDynamicTabView)",
   "dynamicFlowDetails,",
   "sourceRuleCount",
+  "stemSourceLabel",
+  "buildDynamicTransformationView",
   "palaceDetail: buildPalaceDetailView",
 ]
 
@@ -109,6 +113,10 @@ const componentMarkers = [
   "flow.influence.toFixed(2)",
   "flow.starCount",
   "flow.sourceRuleCount",
+  "flow.stemLabel",
+  "flow.stemSourceLabel",
+  "flow.transformations.map",
+  "dynamicTransformationList",
   "flow.palaceDetail.starGroups",
   "StarGroupList",
 ]
@@ -139,6 +147,8 @@ const styleMarkers = [
   ".dynamicFlowCardSelected",
   ".dynamicFlowCardHeader",
   ".dynamicFlowFacts",
+  ".dynamicTransformationList",
+  ".dynamicTransformationItem",
 ]
 
 styleMarkers.forEach((marker) => {

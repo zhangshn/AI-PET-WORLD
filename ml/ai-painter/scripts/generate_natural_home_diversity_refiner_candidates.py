@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw
 
 from ai_painter.blueprint.channels import CANVAS_HEIGHT, CANVAS_WIDTH, V1_CONDITION_CHANNELS
 from ai_painter.runtime_retention import preserve_runtime_dir_before_clear
-from ai_painter.training.dataset import image_tensor
+from ai_painter.training.dataset import append_condition_extra_channels, image_tensor
 from ai_painter.training.rgb_refiner_model import build_rgb_refiner
 from ai_painter.training.structure_guided_model import build_structure_guided_unet
 from ai_painter.training.torch_runtime import require_torch
@@ -23,7 +23,7 @@ def main() -> int:
     parser = ArgumentParser(description="Render diverse natural-home candidates with the full-scene RGB refiner.")
     parser.add_argument("--dataset-root", type=Path, default=Path(".runtime/ai-painter/natural-home-v25-diversity-generation/dataset"))
     parser.add_argument("--output-root", type=Path, default=Path(".runtime/ai-painter/natural-home-v26-diversity-refiner-generation"))
-    parser.add_argument("--structure-checkpoint", type=Path, default=Path(".runtime/ai-painter/natural-home-clean-structure-guided-training/best.pt"))
+    parser.add_argument("--structure-checkpoint", type=Path, default=Path(".runtime/ai-painter/natural-home-v28-structure-guided-training/best.pt"))
     parser.add_argument("--refiner-checkpoint", type=Path, default=Path(".runtime/ai-painter/natural-home-clean-direct-training/best.pt"))
     parser.add_argument("--schema-version", default="natural-home-diversity-refiner-generation-v26")
     parser.add_argument("--stage-id", default="natural-home-v26-diversity-refiner-generation")
@@ -63,6 +63,7 @@ def main() -> int:
     refiner_state = torch.load(args.refiner_checkpoint, map_location=device, weights_only=False)
     refiner = build_rgb_refiner(refiner_state["config"]).to(device)
     refiner.load_state_dict(refiner_state["model"])
+    refiner.ai_painter_config = refiner_state["config"]
     refiner.eval()
 
     rows: list[dict[str, Any]] = []
@@ -220,8 +221,20 @@ def render_sample(dataset_root: Path, output_root: Path, sample_id: str, structu
     sample = dataset_root / "accepted" / "dataset_v0" / "scene" / "world" / sample_id
     output_dir = output_root / "inference" / sample_id
     output_dir.mkdir(parents=True, exist_ok=True)
-    condition = torch.cat([image_tensor(sample / "masks_v1" / f"{name}.png", "L", torch) for name in V1_CONDITION_CHANNELS], dim=0).unsqueeze(0).to(device)
-    base_rgb, _ = structure_model(condition)
+    base_condition = torch.cat([image_tensor(sample / "masks_v1" / f"{name}.png", "L", torch) for name in V1_CONDITION_CHANNELS], dim=0)
+    refiner_config = getattr(refiner, "ai_painter_config", {})
+    extra_channels = read_condition_extra_channels(refiner_config)
+    condition = append_condition_extra_channels(base_condition, torch, sample_id, extra_channels).unsqueeze(0).to(device)
+    base_rgb_manifest = load_base_rgb_manifest(refiner_config)
+    if base_rgb_manifest:
+        base_rgb_path = base_rgb_manifest.get(sample_id)
+        if base_rgb_path is None:
+            raise ValueError(f"base RGB not found for sampleId: {sample_id}")
+        base_rgb = image_tensor(base_rgb_path, "RGB", torch, expected_channels=3).unsqueeze(0).to(device)
+    else:
+        base_rgb, _ = structure_model(condition[:, :14])
+    if bool(refiner_config.get("zeroBaseRgb", False)) and not base_rgb_manifest:
+        base_rgb = torch.zeros_like(base_rgb)
     prediction = refiner(condition, base_rgb)
     pixels = prediction[0].clamp(0, 1).mul(255).byte().cpu().permute(1, 2, 0).numpy()
     generated_path = output_dir / "generated.png"
@@ -239,7 +252,10 @@ def render_sample(dataset_root: Path, output_root: Path, sample_id: str, structu
         "contactSheet": str(contact_path.resolve()),
         "blueprint": str((sample / "blueprint.v1.json").resolve()),
         "sha256": hashlib.sha256(generated_path.read_bytes()).hexdigest(),
-        "note": "Generated from structure conditions only. It is not an ApprovedFrame.",
+        "conditionExtraChannels": extra_channels,
+        "zeroBaseRgb": bool(refiner_config.get("zeroBaseRgb", False)),
+        "baseRgbManifest": refiner_config.get("baseRgbManifest"),
+        "note": "Generated from structure conditions and deterministic texture controls. It is not an ApprovedFrame.",
     }
     (output_dir / "latest.json").write_text(json.dumps(row, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return row
@@ -293,6 +309,37 @@ def compact_sample_label(sample_id: str) -> str:
         source = source.replace("natural-home-", "")
         label = f"{source} / {variant}"
     return label[:30]
+
+
+def read_condition_extra_channels(config: dict[str, Any]) -> list[str]:
+    values = config.get("conditionExtraChannels", [])
+    if not isinstance(values, list):
+        raise ValueError("conditionExtraChannels must be a list")
+    return [str(value) for value in values]
+
+
+def load_base_rgb_manifest(config: dict[str, Any]) -> dict[str, Path]:
+    raw_path = config.get("baseRgbManifest")
+    if not raw_path:
+        return {}
+    manifest_path = Path(str(raw_path))
+    if not manifest_path.is_absolute():
+        manifest_path = Path.cwd() / manifest_path
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    rows = manifest.get("rows", [])
+    if not isinstance(rows, list):
+        raise ValueError(f"invalid baseRgbManifest rows: {manifest_path}")
+    mapping: dict[str, Path] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        sample_id = row.get("sampleId")
+        generated = row.get("generated")
+        if isinstance(sample_id, str) and isinstance(generated, str):
+            mapping[sample_id] = Path(generated)
+    if not mapping:
+        raise ValueError(f"empty baseRgbManifest: {manifest_path}")
+    return mapping
 
 
 if __name__ == "__main__":

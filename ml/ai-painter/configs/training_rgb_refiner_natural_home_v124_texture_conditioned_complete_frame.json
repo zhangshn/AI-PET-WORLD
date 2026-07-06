@@ -1,0 +1,86 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v124-texture-conditioned-complete-frame",
+  "modelVersion": "rgb-refiner-natural-home-v124-texture-conditioned-complete-frame",
+  "inputChannels": 22,
+  "conditionExtraChannels": [
+    "coord_x",
+    "coord_y",
+    "noise_fine",
+    "noise_medium",
+    "noise_coarse"
+  ],
+  "baseChannels": 96,
+  "residualBlocks": 18,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.00006,
+  "discriminatorLearningRate": 0.00002,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.012,
+  "maxEpochs": 120,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 5.0,
+    "edge": 13.0,
+    "texture": 11.0,
+    "laplacian": 13.0,
+    "gradient": 13.0,
+    "colorRange": 0.38,
+    "waterPeriodicity": 7.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.002,
+    "margin": 0.0002
+  },
+  "structureWeights": {
+    "water": 5.8,
+    "shoreline": 6.0,
+    "road": 5.2,
+    "roadEdge": 5.2,
+    "tree": 5.0,
+    "rock": 4.6,
+    "shelterFoundation": 4.6,
+    "shelterWall": 4.6,
+    "shelterRoof": 4.4,
+    "constructionMaterial": 4.4
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "shelter_foundation",
+    "shelter_wall",
+    "shelter_roof",
+    "construction_material",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 5.0,
+  "saveBestBy": "validation_loss",
+  "seed": 20260630,
+  "status": "v124_texture_conditioned_complete_frame_training_only",
+  "allowedScope": "complete_natural_home_mvp_training_only",
+  "forbiddenScope": [
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "purpose": "Add deterministic texture and coordinate controls so the local model can produce detailed complete natural-home frames without changing world facts.",
+    "worldDisplay": "blocked until generated candidates pass VJ-1, VJ-2, Game-World Frame Gate, ApprovedFrame binding, RuntimeFrame, and owner confirmation."
+  }
+}

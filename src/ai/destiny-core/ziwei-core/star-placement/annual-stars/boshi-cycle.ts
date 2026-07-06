@@ -12,7 +12,7 @@ import {
 
 import { createYearlyPlacedStar } from "./yearly-placement-utils"
 
-const BOSHI_SEQUENCE = [
+export const BOSHI_SEQUENCE = [
   YEARLY_STAR_IDS.boshi,
   YEARLY_STAR_IDS.lishi,
   YEARLY_STAR_IDS.qinglong,

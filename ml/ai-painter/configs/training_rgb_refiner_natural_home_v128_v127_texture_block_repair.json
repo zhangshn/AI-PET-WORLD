@@ -1,0 +1,82 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v128-v127-texture-block-repair",
+  "modelVersion": "rgb-refiner-natural-home-v128-v127-texture-block-repair",
+  "inputChannels": 17,
+  "baseRgbManifest": ".runtime/ai-painter/natural-home-v127-v125-detail-refiner-generation/latest.json",
+  "baseChannels": 96,
+  "residualBlocks": 18,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.000012,
+  "discriminatorLearningRate": 0.000014,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.026,
+  "maxEpochs": 80,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 4.6,
+    "edge": 20.0,
+    "texture": 14.0,
+    "multiScaleTexture": 12.0,
+    "patchVariance": 11.0,
+    "laplacian": 20.0,
+    "gradient": 18.0,
+    "colorRange": 0.34,
+    "waterPeriodicity": 7.5
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.002,
+    "margin": 0.0002
+  },
+  "structureWeights": {
+    "water": 6.2,
+    "shoreline": 6.4,
+    "road": 5.7,
+    "roadEdge": 5.7,
+    "tree": 5.4,
+    "rock": 5.0,
+    "shelterFoundation": 5.0,
+    "shelterWall": 5.0,
+    "shelterRoof": 4.8,
+    "constructionMaterial": 4.8
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "shelter_foundation",
+    "shelter_wall",
+    "shelter_roof",
+    "construction_material",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 5.8,
+  "saveBestBy": "validation_loss",
+  "seed": 20260630,
+  "status": "v128_v127_texture_block_repair_training_only",
+  "allowedScope": "complete_natural_home_mvp_training_only",
+  "forbiddenScope": [
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "purpose": "Continue from V127 and repair large smooth blocks by adding multiscale texture and patch-variance losses while staying on complete natural-home frames.",
+    "worldDisplay": "blocked until generated candidates pass VJ-1, VJ-2, Game-World Frame Gate, ApprovedFrame binding, RuntimeFrame, and owner confirmation."
+  }
+}

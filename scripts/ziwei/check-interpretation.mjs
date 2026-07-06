@@ -153,4 +153,23 @@ if (
   fail("expected transformation items to include target star and rule source")
 }
 
+if (interpretation.contentDetails.starInsights.length < 40) {
+  fail("expected interpretation to include content detail star insights")
+}
+
+if (
+  interpretation.contentDetails.personalityTendencies.length === 0 ||
+  interpretation.contentDetails.worldBehaviorHints.length === 0
+) {
+  fail("expected interpretation to aggregate personality and world behavior hints")
+}
+
+if (interpretation.detailedAnalysis.palaceAnalyses.length !== 12) {
+  fail("expected interpretation to include 12 detailed palace analyses")
+}
+
+if (interpretation.detailedAnalysis.debug.analyzedStarCount < 40) {
+  fail("expected detailed analysis to cover supported chart stars")
+}
+
 console.log("Ziwei interpretation check passed.")

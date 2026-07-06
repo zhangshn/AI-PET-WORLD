@@ -14,7 +14,7 @@ const ruleDocPath = path.join(
   root,
   "docs",
   "ziwei",
-  "RULE_SOURCE_TABLE.md",
+  "ALGORITHM_CONTRACTS.md",
 )
 
 function fail(message) {
@@ -23,7 +23,7 @@ function fail(message) {
 }
 
 if (!existsSync(ruleDocPath)) {
-  fail("RULE_SOURCE_TABLE.md is missing")
+  fail("ALGORITHM_CONTRACTS.md is missing")
 }
 
 const ruleDoc = readFileSync(ruleDocPath, "utf8")
@@ -46,11 +46,11 @@ const missingRuleIds = Array.from(placementRuleIds)
   .filter((ruleId) => !ruleDoc.includes(`\`${ruleId}\``))
 
 if (missingRuleIds.length > 0) {
-  fail(`missing rule ids in RULE_SOURCE_TABLE.md: ${missingRuleIds.join(", ")}`)
+  fail(`missing rule ids in ALGORITHM_CONTRACTS.md: ${missingRuleIds.join(", ")}`)
 }
 
 if (!ruleDoc.includes("待校准")) {
-  fail("RULE_SOURCE_TABLE.md must keep an explicit pending calibration section")
+  fail("ALGORITHM_CONTRACTS.md must keep an explicit pending calibration section")
 }
 
 console.log(

@@ -44,7 +44,7 @@ const stylePath = path.join(
   "_styles",
   "ziwei-page.module.css",
 )
-const pageDocPath = path.join(root, "docs", "ziwei", "PAGE_STRUCTURE.md")
+const pageDocPath = path.join(root, "docs", "ziwei", "PAGE_ACCEPTANCE.md")
 
 function fail(message) {
   console.error(`Ziwei star detail view check failed: ${message}`)
@@ -75,8 +75,10 @@ const pageDocText = readFileSync(pageDocPath, "utf8")
 
 const requiredContractMarkers = [
   "ZiweiPlacementRuleId",
+  "ZiweiStarBrightness",
   "categoryLabel: string",
   "placementRuleId: ZiweiPlacementRuleId",
+  "brightness?: ZiweiStarBrightness",
 ]
 
 requiredContractMarkers.forEach((marker) => {
@@ -100,9 +102,12 @@ const requiredComponentMarkers = [
   "showDetails?: boolean",
   "starDetailGrid",
   "starDetailCard",
+  "庙旺落陷",
+  "formatBrightnessLabel",
   "星曜 ID",
   "规则来源",
   "star.placementRuleId",
+  "star.brightness",
   "star.categoryLabel",
 ]
 
@@ -121,6 +126,7 @@ const requiredStyleMarkers = [
   ".starDetailCard",
   ".starDetailHeader",
   ".starMetaLine",
+  ".brightnessBadge",
 ]
 
 requiredStyleMarkers.forEach((marker) => {
@@ -131,6 +137,7 @@ requiredStyleMarkers.forEach((marker) => {
 
 const requiredDocMarkers = [
   "星曜明细",
+  "庙旺落陷",
   "星曜 ID",
   "规则来源",
   "check-star-detail-view.mjs",

@@ -1,69 +1,75 @@
-# AI-PET-WORLD 项目总入口
+# AI-PET-WORLD
 
-状态：正式入口文档  
-更新时间：2026-06-29
+状态：项目总入口  
+更新：2026-07-06
 
-本文只作为项目总入口。实时进度、当前阻塞、训练批次和下一步执行内容统一查看：
+AI-PET-WORLD 是一个“自主世界 + 自主管家 + 本地 AI 视觉生成”的长期运行游戏项目。项目核心不是生成一张地图图片，而是建立一套可运行、可交互、可持续演化的世界系统。
 
-- [当前进度表](./docs/PROGRESS.md)
-- [唯一执行计划表](./docs/EXECUTION_PLAN.md)
-- [业务说明](./docs/BUSINESS_SPEC.md)
-- [技术架构](./docs/ARCHITECTURE.md)
-- [目录结构](./docs/DIRECTORY_STRUCTURE.md)
-
-## 项目一句话
-
-AI-PET-WORLD 是一个以“管家自主灵魂”和“世界自主生成”为核心的长期运行游戏。玩家通过游戏内手机与管家沟通；管家拥有由用户出生信息映射出的性格、动机、偏好和判断，可以参考玩家建议，但不会机械服从。世界由世界事实、规则、资源、生态、事件、管家行为和未来多玩家管家共同建设持续推进。
-
-## 当前固定主线
-
-当前只推进这一条主线：
+## 项目定义
 
 ```txt
-自然家园小模型训练
--> 自动归档候选图、失败图、资源账本
--> VisualJudge 强化
--> 完整自然家园 ApprovedFrame 候选
--> RuntimeFrame 游戏界面合成层
--> /world 展示正式主世界
+程序生成和维护世界事实。
+AI Painter 根据结构化世界数据生成视觉表现。
+玩家行为和管家行为改变世界状态。
+世界状态驱动画面更新。
+评审结果进入正负样本库，反哺后续训练。
 ```
 
-当前不推进 VisualUnit、人物、管家、建筑、动态状态帧、小镇或城市。它们全部后置，不能抢当前自然家园主线。
+## 当前主线
 
-## 固定视觉链路
+当前主线已重构为：
 
 ```txt
-世界事实 World Facts
--> Scene Blueprint / Condition Mask
--> 本地自研 AI Painter 小模型
--> 候选视觉输出
--> VisualJudge 审核
--> ApprovedFrame 视觉凭证
--> RuntimeFrame 游戏界面合成
--> 玩家在 /world 看到正式世界
+P0 活世界 Schema 收口
 ```
 
-## 红线
+当前不继续把单张 AI 图、局部图、材料槽图或候选图推进到 `/world`。后续所有工作先按活世界定版方案完成世界数据协议、目录结构、候选归档和 POC-0 验证。
 
-| 红线 | 说明 |
+## 绝对规则
+
+| 规则 | 说明 |
 |---|---|
-| 世界事实优先 | AI Painter 只能表达世界事实，不能篡改或新增重大事实。 |
-| 本地自研小模型 | 当前正式链路不接第三方在线绘图 API。 |
-| 候选不等于正式 | 训练图、候选图、失败图、局部图都不是正式世界图。 |
-| `/world` 是主世界页面 | `/world` 只能展示完整 RuntimeFrame，不能展示单张训练图或单张 ApprovedFrame。 |
-| 没审核不展示 | 未通过 VisualJudge、ApprovedFrame、RuntimeFrame 闸门的内容不能给玩家看。 |
-| 代码不抄袭 | 不允许直接复制第三方项目、教程、博客或开源仓库实现当作本项目代码。 |
-| 数据要留痕 | 训练图、参考图、候选图、失败图必须记录来源、用途、授权说明、时间戳、耗时和资源信息。 |
+| 世界事实优先 | 世界里有什么，必须先由世界事实和规则决定。 |
+| AI 只负责视觉表达 | AI Painter 不能决定世界事实，不能凭空新增建筑、人物、动物或资源。 |
+| 图片不能反写世界 | 图片画错时只能进入候选失败或负样本，不能修改 WorldState。 |
+| 候选图不是样本 | VisualCandidate 必须经人工复核后才能进入正负样本库。 |
+| `/world` 只展示正式 Runtime | 训练图、候选图、局部图、失败图、程序占位图不能进入 `/world`。 |
+| README 只做入口 | 详细计划、进度、架构和目录结构必须维护在 docs 中。 |
 
-## 当前状态摘要
+## 正式文档入口
 
-当前处于 P4/P5 交界：
+| 文档 | 作用 |
+|---|---|
+| [项目总计划](./docs/PROJECT_MASTER_PLAN.md) | 项目级主控计划，定义整体阶段、当前主线和模块边界。 |
+| [活世界定版技术方案](./docs/live-world/AI_LIVE_WORLD_MVP_TECHNICAL_SPEC.md) | 活世界 MVP 技术架构、P0 Schema、视觉输入、归档、验收和路线。 |
+| [活世界目录结构](./docs/live-world/DIRECTORY_STRUCTURE.md) | 活世界文档、代码、数据、候选、样本和 Runtime 的目录边界。 |
+| [唯一执行计划表](./docs/EXECUTION_PLAN.md) | 当前可执行计划，后续工作按此推进。 |
+| [当前进度表](./docs/PROGRESS.md) | 当前状态、阻塞、下一步和历史阶段记录。 |
+| [业务规则说明](./docs/BUSINESS_SPEC.md) | 业务主线、MVP 边界、AI Painter 边界、`/world` 规则。 |
+| [业务与技术架构](./docs/ARCHITECTURE.md) | 业务架构图、技术架构图、数据流和模块边界。 |
+| [目录结构说明](./docs/DIRECTORY_STRUCTURE.md) | 项目总目录职责。 |
 
-- P4：自然家园 AI Painter 小模型训练仍在推进。
-- P5：`/world` 展示闸门已经收紧，只允许完整游戏 RuntimeFrame。
-- V116 已扩展到 180 张自然家园候选；严格可见语义复核后保留 43 张自然质量候选。
-- V117 已建立完整游戏主世界帧闸门；当前 180 张候选全部被正确阻断，不能进入 `/world`。
-- V112 曾完成一个候选的世界事实绑定复核，但复核后确认不能作为正式 `/world` 画面。
-- 当前正式 ApprovedFrame 源为空；V116 候选仍偏自然局部画面，`/world` 不应展示任何训练图、候选图、局部图或单张 ApprovedFrame。
+## 当前允许做
 
-任何新增模块、提前后续阶段、改变验收标准，都必须先向项目所有者申请确认。
+```txt
+src/world/live-world/types/
+src/world/live-world/rules/
+src/world/live-world/collision/
+src/world/live-world/visual-input/
+data/live-world/
+data/world-runs/
+data/world-visual-candidates/
+data/world-samples/
+```
+
+## 当前禁止做
+
+```txt
+直接继续整图训练
+直接把候选图放进 /world
+直接接 Runtime 完整展示
+直接做自动训练闭环
+提前做管家人物、建筑、动物、城市
+用程序直绘最终玩家画面
+```
+

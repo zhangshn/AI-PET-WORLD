@@ -1,0 +1,79 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v123-complete-frame-adversarial-sharpness",
+  "modelVersion": "rgb-refiner-natural-home-v123-complete-frame-adversarial-sharpness",
+  "inputChannels": 17,
+  "baseChannels": 96,
+  "residualBlocks": 18,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.000025,
+  "discriminatorLearningRate": 0.00002,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.018,
+  "maxEpochs": 90,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 4.8,
+    "edge": 14.0,
+    "texture": 10.0,
+    "laplacian": 14.0,
+    "gradient": 13.0,
+    "colorRange": 0.36,
+    "waterPeriodicity": 7.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.002,
+    "margin": 0.0002
+  },
+  "structureWeights": {
+    "water": 5.8,
+    "shoreline": 6.0,
+    "road": 5.2,
+    "roadEdge": 5.2,
+    "tree": 5.0,
+    "rock": 4.6,
+    "shelterFoundation": 4.6,
+    "shelterWall": 4.6,
+    "shelterRoof": 4.4,
+    "constructionMaterial": 4.4
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "shelter_foundation",
+    "shelter_wall",
+    "shelter_roof",
+    "construction_material",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 5.2,
+  "saveBestBy": "validation_loss",
+  "seed": 20260630,
+  "status": "v123_complete_frame_adversarial_sharpness_training_only",
+  "allowedScope": "complete_natural_home_mvp_training_only",
+  "forbiddenScope": [
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "purpose": "Repair the V122 blur problem by continuing from the complete-frame overfit checkpoint with a small local PatchGAN sharpness signal.",
+    "worldDisplay": "blocked until generated candidates pass VJ-1, VJ-2, Game-World Frame Gate, ApprovedFrame binding, RuntimeFrame, and owner confirmation."
+  }
+}

@@ -18,7 +18,7 @@ const stylePath = path.join(
   "_styles",
   "ziwei-page.module.css",
 )
-const pageDocPath = path.join(root, "docs", "ziwei", "PAGE_STRUCTURE.md")
+const pageDocPath = path.join(root, "docs", "ziwei", "PAGE_ACCEPTANCE.md")
 
 function fail(message) {
   console.error(`Ziwei star catalog table check failed: ${message}`)
@@ -34,7 +34,7 @@ if (!existsSync(stylePath)) {
 }
 
 if (!existsSync(pageDocPath)) {
-  fail("PAGE_STRUCTURE.md is missing")
+  fail("PAGE_ACCEPTANCE.md is missing")
 }
 
 const componentText = readFileSync(componentPath, "utf8")
@@ -46,11 +46,16 @@ const requiredComponentMarkers = [
   "StarCatalogCategoryFilter",
   "buildCategoryOptions",
   "buildPalaceOptions",
+  "buildBrightnessOptions",
   "filterRows",
   "getPalaceFilterKey",
   "formatPalaceLabel",
+  "brightness",
+  "selectedBrightness",
+  "onBrightnessChange",
   "placementRuleId",
-  "输入星曜或规则 ID",
+  "输入星曜、庙旺或规则 ID",
+  "庙旺",
   "全部分类",
   "全部宫位",
   "清空",
@@ -65,6 +70,7 @@ requiredComponentMarkers.forEach((marker) => {
 const requiredStyleMarkers = [
   ".tableFilters",
   ".secondaryButton",
+  ".brightnessBadge",
   ".ruleCode",
 ]
 
@@ -78,6 +84,7 @@ const requiredDocMarkers = [
   "星曜总表",
   "分类筛选",
   "落宫筛选",
+  "庙旺落陷",
   "规则关键词",
   "check-star-catalog-table.mjs",
 ]

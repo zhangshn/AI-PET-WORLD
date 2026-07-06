@@ -30,7 +30,7 @@ const KUI_YUE_BY_YEAR_STEM: Record<
 export function placeKuiYueStars(
   context: ZiweiPlacementContext
 ): ZiweiPlacedStar[] {
-  const branches = KUI_YUE_BY_YEAR_STEM[context.lunarInfo.yearStem]
+  const branches = getKuiYueBranches(context.lunarInfo.yearStem)
 
   return [
     createAssistantPlacedStar({
@@ -52,4 +52,11 @@ export function placeKuiYueStars(
       }
     })
   ]
+}
+
+export function getKuiYueBranches(yearStem: HeavenlyStem): {
+  tiankui: BranchPalace
+  tianyue: BranchPalace
+} {
+  return KUI_YUE_BY_YEAR_STEM[yearStem]
 }

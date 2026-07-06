@@ -1,138 +1,102 @@
 # AI-PET-WORLD 唯一执行计划表
 
-状态：冻结执行基线  
-更新时间：2026-06-29
+更新：2026-07-06  
+状态：已按活世界定版方案重构
 
-本文是 AI-PET-WORLD 后续执行的唯一计划表。后续开发、训练、审核、文档更新和代理协作都必须先对照本文。实时进度统一维护在 [当前进度表](./PROGRESS.md)。
+本文件是当前唯一执行计划。README 只做入口，项目总路线见 `docs/PROJECT_MASTER_PLAN.md`，活世界技术方案见 `docs/live-world/AI_LIVE_WORLD_MVP_TECHNICAL_SPEC.md`。
 
-## 固定执行纪律
-
-| 规则 | 内容 |
-|---|---|
-| 唯一计划源 | 后续执行以本文为准，README 只做入口和摘要。 |
-| 主线不跳跃 | 当前阶段没完成前，不进入后续阶段。 |
-| 不自由发挥 | 不允许因为技术上能做就临时加功能。 |
-| 扩展需申请 | 新增模块、改阶段、改目标、改验收标准，都必须先问项目所有者。 |
-| 先说明再执行 | 每次操作前说明当前阶段、要做内容、原因和完成标准。 |
-| 每轮有进度表 | 每次完成后打印当前进度表和下一步计划。 |
-| 候选不等于正式 | 候选图、训练图、失败图、调试图都不能说成正式世界图。 |
-| `/world` 是主世界页 | 不允许展示局部图、crop、patch、tile、sprite 或低于完整主世界帧的图。 |
-| `/world` 不是单图页 | 单张 ApprovedFrame 图片不能直接铺成 `/world`，必须先进入 RuntimeFrame / 游戏界面合成层。 |
-| 本地自研优先 | 当前视觉主线是本地自研 AI Painter 小模型，不接第三方在线绘图 API。 |
-| 世界事实优先 | AI Painter 只负责视觉表达，不能篡改世界事实。 |
-| 没审核不展示 | 未通过 VisualJudge、ApprovedFrame 和最终业务确认的图不能进入 `/world`。 |
-| 训练全留档 | 成功图、失败图、候选图、资源账本、时间戳、耗时都必须自动保存。 |
-| 代码不抄袭 | 不允许直接复制第三方项目、教程、博客或开源仓库实现当作本项目代码。 |
-| 权属要留痕 | 训练图、参考图、候选图、失败图都必须记录来源、用途、授权说明和时间戳。 |
-
-## 项目业务总主线
+## 1. 当前唯一主线
 
 ```txt
-用户注册
--> 输入出生信息
--> 紫微斗数 / 人格映射
--> 管家灵魂、性格、沟通方式、长期偏好
--> 自主世界 Runtime
--> 世界事实 World Facts
--> 管家自主行为与世界规则共同推进
--> AI Painter 根据世界事实生成画面表达
--> VisualJudge 审核事实、画质、风格和安全边界
--> ApprovedFrame / RuntimeFrame
--> 玩家通过世界画面和 P-Phone 体验世界
+P0 活世界 Schema 收口
 ```
 
-## 当前阶段总目标
+当前不继续推进旧的 P7-8 材料槽完整图路线。旧 P7-8 产物作为历史实验和视觉参考保留，不作为当前执行主线。
 
-当前阶段只做一个目标：
+## 2. 固定原则
+
+| 编号 | 原则 | 说明 |
+|---|---|---|
+| RULE-001 | 世界事实优先 | 世界里有什么，必须先由 WorldState / ChunkState / Entity 决定。 |
+| RULE-002 | AI Painter 只负责视觉表达 | AI 不决定资源、位置、碰撞、生命周期。 |
+| RULE-003 | 图片不能反写世界 | 视觉输出错误时进入失败候选或负样本，不修改世界事实。 |
+| RULE-004 | candidate 不等于 sample | 候选图必须经过人工复核后才能进入训练样本。 |
+| RULE-005 | `/world` 只展示正式 Runtime | 未完成 P0/P1/P2 前，不推进正式展示。 |
+| RULE-006 | 不提前做后置模块 | 管家行为、建筑、人物、动物、动态帧全部后置。 |
+| RULE-007 | 文档先行 | 后续所有代码落地按 `docs/live-world/` 定版文档走。 |
+
+## 3. 总阶段计划
+
+| 阶段 | 名称 | 状态 | 目标 |
+|---|---|---:|---|
+| P0 | 活世界 Schema 收口 | 当前主线 | 定义世界事实、实体、生命周期、碰撞、视觉输入、候选、评审、样本协议。 |
+| P1 | 单 Chunk POC | 待做 | 手写 32x32 Chunk，验证结构化输入到 AI Painter 候选图。 |
+| P2 | 固定 seed 5x5 世界 | 后置 | 生成 25 个 Chunk 的小型自然家园世界。 |
+| P3 | Runtime 区块激活 | 后置 | 玩家附近 3x3 Chunk 激活，远离 Chunk 休眠。 |
+| P4 | 候选归档与样本库 | 后置 | VisualCandidate -> ManualReview -> SampleRecord 闭环。 |
+| P5 | 自动结构评审 | 后置 | 检查资源数量、mask、路径、水岸、边缘和幻觉资源。 |
+| P6 | AI Painter 训练闭环 | 后置 | 用正负样本优化结构到视觉生成。 |
+| P7 | `/world` 正式自然家园 | 后置 | 通过机器与人工验收后展示正式 Runtime。 |
+| P8 | 管家行为接入 | 后置 | 管家行为改变世界事实并触发地图变化。 |
+| P9 | 人物、建筑、动物、动态世界 | 后置 | 扩展长期游戏体验。 |
+
+## 4. P0 任务表
+
+| 编号 | 任务 | 产物 | 状态 |
+|---|---|---|---:|
+| P0-1 | 建立活世界代码目录 | `src/world/live-world/` | 待做 |
+| P0-2 | 定义世界基础类型 | `types/world-types.ts` | 待做 |
+| P0-3 | 定义地形与生态类型 | `types/terrain-types.ts` | 待做 |
+| P0-4 | 定义生命周期类型 | `types/lifecycle-types.ts` | 待做 |
+| P0-5 | 定义实体强绑定 union | `types/entity-types.ts` | 待做 |
+| P0-6 | 定义碰撞与 footprint | `types/collision-types.ts` | 待做 |
+| P0-7 | 定义视觉输入输出 | `types/visual-types.ts` | 待做 |
+| P0-8 | 定义候选记录 | `types/candidate-types.ts` | 待做 |
+| P0-9 | 定义评审记录 | `types/review-types.ts` | 待做 |
+| P0-10 | 定义样本记录 | `types/sample-types.ts` | 待做 |
+| P0-11 | 定义资源生成规则 | `rules/placement-rules.ts` | 待做 |
+| P0-12 | 定义 Mask 规范 | `docs/live-world` 或代码注释 | 待做 |
+| P0-13 | 定义 POC-0 输入样例 | `data/live-world/poc-inputs/` | 待做 |
+| P0-14 | 定义归档目录写入协议 | `data/world-runs` / `data/world-visual-candidates` | 待做 |
+| P0-15 | 运行 TypeScript / lint 检查 | 编译通过 | 待做 |
+
+## 5. P0 验收标准
+
+P0 完成必须满足：
 
 ```txt
-训练出可以稳定通过 VisualJudge 的完整自然家园世界画面，
-经项目所有者最终确认后写入 Game-World ApprovedFrame，
-并让 /world 只展示通过闸门的正式 RuntimeFrame。
+1. 所有基础类型不使用松散 string / object。
+2. WorldEntity 使用 discriminated union。
+3. EntityLifecycle 与 entityType 强绑定。
+4. ChunkState 包含 runtimeState。
+5. WorldState 包含 timeState。
+6. CollisionState 拆分 visualSize / movementFootprint / visionFootprint / interactionFootprint。
+7. ChunkVisualInput 包含 terrainMask / biomeMask / walkableMask / collisionMask / entityMap。
+8. VisualCandidate / ReviewResult / SampleRecord 拆分。
+9. POC-0 输入规范可落地。
+10. 未接 AI Painter、未做 5x5、未推进 Runtime 展示。
 ```
 
-当前阶段禁止提前做：
+## 6. 当前禁止事项
 
 | 禁止项 | 原因 |
 |---|---|
-| 人物 / 管家视觉 | 自然家园底座未稳定。 |
-| 建筑 / 设施细节 | 当前自然阶段不能混入建筑事实。 |
-| 动态状态帧 | 静态自然世界仍在稳定率提升阶段。 |
-| 小镇 / 城市 | 自然家园 ApprovedFrame 仍需提高稳定率。 |
-| 把训练图放进 `/world` | `/world` 只展示正式通过内容。 |
-| 把局部图当完整世界图 | 游戏主世界必须是完整帧。 |
+| 继续整图训练 | 世界数据协议未锁死，继续训练只会试错。 |
+| 直接接 `/world` 展示 | 当前没有新协议下的正式 Runtime。 |
+| 候选图直接入样本库 | 必须人工复核。 |
+| 提前做管家行为 | 世界数据地基未完成。 |
+| 提前做建筑、人物、动物 | 会打散 P0。 |
+| 修改 route.ts 等高风险文件不读回 | 项目已有截断事故，必须防护。 |
 
-## 整体业务阶段总表
+## 7. 下一步
 
-| 总阶段 | 名称 | 业务目标 | 主要交付物 | 当前状态 | 进入条件 | 完成标准 |
-|---|---|---|---|---|---|---|
-| P0 | 项目基线与纪律 | 固定业务主线、文档入口、执行顺序、禁止事项。 | README、业务、架构、目录、计划、进度表。 | 完成 | 无 | 文档体系清晰，后续不自由发挥。 |
-| P1 | 用户注册与出生信息 | 用户进入游戏并输入出生年月日等基础信息。 | 注册入口、出生信息结构、用户档案。 | 后置 | P0 完成 | 用户资料可形成稳定输入。 |
-| P2 | 紫微斗数与管家灵魂 | 把出生信息映射成管家人格、偏好、沟通方式和长期动机。 | 人格映射规则、管家 Profile、灵魂种子。 | 后置 | P1 完成 | 管家有稳定性格，不是随机聊天对象。 |
-| P3 | 世界 Runtime 与世界事实 | 让世界有真实事实、tick、资源、事件、生态、地形状态。 | WorldRuntime、WorldFacts、sourceFactIds、tick。 | 已有基础，需继续收紧 | P0 完成 | 所有视觉生成都能绑定世界事实。 |
-| P4 | 自然家园 AI Painter 小模型 | 训练出完整自然家园静态世界画面。 | 本地小模型、训练数据、候选图、失败图、质量报告。 | 当前主线 | P3 有事实输入 | 完整自然家园候选能稳定通过 formal VJ-1/VJ-2。 |
-| P5 | ApprovedFrame 与 `/world` 正式展示 | 只把审核通过且最终确认的视觉层交给 RuntimeFrame，不直接铺图。 | ApprovedFrame、RuntimeFrame、`/world` 闸门。 | 当前主线 | P4 候选通过 VJ | `/world` 只展示 game-ready、事实匹配、最终确认且经过游戏界面合成的完整世界界面。 |
-| P6 | P-Phone 与管家沟通 | 玩家通过游戏内手机联系管家，管家可接受或拒绝建议。 | P-Phone UI、消息记录、管家回应策略。 | 后置 | P2/P3/P5 初步可用 | 沟通影响世界，但不强制管家服从。 |
-| P7 | VisualUnit 静态视觉单元 | 把草、水、树、石、路、材料等拆成可训练视觉单元。 | VisualUnit schema、单元数据、单元 judge。 | 后置 | 自然家园 ApprovedFrame 稳定后申请 | 单元可被 Runtime 合成使用。 |
-| P8 | 管家 / 人物视觉 | 训练管家和人物基础外观、姿态、动作状态。 | 管家视觉单元、人物状态帧、基础动作。 | 后置 | P7 稳定 | 管家可在世界中被表现。 |
-| P9 | 建筑 / 设施 / 内部空间 | 支持管家建房、设施、道路、室内空间。 | 建筑视觉单元、设施状态、室内结构。 | 后置 | P7/P8 后申请 | 建设结果能被视觉表达。 |
-| P10 | 动态状态与生命周期 | 水流、树木、草地、天气、昆虫、动物、施工进度等活起来。 | 状态帧、生命周期规则、动态素材。 | 后置 | P7-P9 | 静态内容能按状态变化。 |
-| P11 | Runtime 合成层 | 由世界事实、视觉单元和状态合成游戏画面。 | RuntimeFrame、合成规则、相机与层级。 | 后置 | P5/P7-P10 | 游戏画面能随世界事实变化。 |
-| P12 | 管家自主建设世界 | 管家根据动机、资源、环境自主建设家园、道路、设施。 | 建设计划、执行日志、世界事实变更、视觉反馈。 | 后置 | P2/P3/P9/P11 | 管家建设能改变世界并被展示。 |
-| P13 | 小镇 / 城市 / 多玩家管家 | 多个玩家管家共同建设小镇、城市和公共设施。 | 多世界事实合并、公共地图、协作规则。 | 长期后置 | P12 稳定 | 多管家建设形成共享世界。 |
-| P14 | 运维、合规与成本 | 记录训练成本、GPU、耗时、电费、来源、授权、失败样本。 | 资源账本、审计记录、合规记录。 | 持续进行 | 全阶段 | 所有代码和数据可追溯、可解释、可审计。 |
-
-## 当前主线位置
-
-当前只允许推进 P4 和 P5 的交界处：
+按顺序执行：
 
 ```txt
-P4 自然家园 AI Painter 小模型
--> formal VJ-1 / formal VJ-2
--> 项目所有者最终确认
--> P5 自然家园 Game-World ApprovedFrame
--> RuntimeFrame
--> /world 正式展示
+P0-1 建立 src/world/live-world/ 目录
+P0-2 到 P0-10 落地类型文件
+P0-11 落地 placement rules
+P0-12 到 P0-14 落地 POC 和归档规范
+P0-15 运行检查
 ```
 
-## AI Painter 小模型详细阶段表
-
-| 子阶段 | 名称 | 具体任务 | 产物 | 当前状态 | 验收标准 |
-|---|---|---|---|---|---|
-| AIP-0 | 训练工程准备 | PyTorch、CUDA、依赖、训练脚本、推理脚本、页面入口。 | 本地训练工程。 | 完成 | 用户可在本地触发训练与查看结果。 |
-| AIP-1 | 数据与来源管理 | 保存训练图、失败图、候选图、来源、授权、时间戳、耗时、GPU 信息。 | 数据集索引、资源账本、generated-results。 | 已接通，持续完善 | 不靠 Codex 手动保存，每次训练自动留档。 |
-| AIP-2 | 自然家园范围冻结 | 只允许草地、水体、水岸、道路、树、石、花草、空间深度。 | 自然家园数据约束。 | 完成 | 当前训练不混入建筑、人物、动物、动态。 |
-| AIP-3 | 小样本复现能力 | 先证明模型能学会少量可信样本。 | V100R3 小样本结果。 | 完成 | V100R3 8/8 通过训练诊断 VJ-1。 |
-| AIP-4 | 泛化失败诊断 | 分清模型复制失败、正式候选失败和 VJ 标准问题。 | V100R3/V101 对照、formal VJ 报告。 | 完成 | 明确训练诊断、正式视觉分和正式范围闸门。 |
-| AIP-5 | 定向质量修复 | 针对 formal VJ-2 分数线、清晰度、边缘、自然层次修复。 | V102/V103 训练 / 审核报告。 | 完成 | V103 质量接近，但 crop/partial 来源被阻断。 |
-| AIP-6 | 完整自然家园候选生成 | 生成完整主世界候选，不是局部、crop、patch、tile、sprite。 | 完整候选图。 | 进行中 | V116 得到 43 张自然质量候选；V117 完整主世界闸门确认 0/180 可进入主世界。 |
-| AIP-7 | ApprovedFrame 候选绑定 | 绑定 worldId、tick、sourceFactIds、image hash、review hash。 | ApprovedFrame candidate binding。 | 暂停写入 | V112 曾绑定一个候选用于复核；复核后不能作为正式 `/world` 画面。 |
-| AIP-8 | `/world` 正式展示闸门 | `/world` 只读取 game-ready RuntimeFrame；ApprovedFrame 只是视觉输入。 | 玩家主世界页面。 | 已收紧闸门 | 训练图、候选图、局部图、未最终确认图、单张 ApprovedFrame 直铺全部阻断。 |
-| AIP-9 | 失败闭环训练 | 把 VJ 失败原因转成下一轮训练数据和约束。 | 失败原因表、训练计划。 | 当前下一步 | V117 完整主世界闸门已建立；下一步补 V118 完整主世界构图数据源。 |
-| AIP-10 | 进入 VisualUnit 前置评审 | 判断是否可以从完整自然家园转向局部单元。 | 进入 P7 的申请结论。 | 后置 | 自然家园稳定率达标后再申请。 |
-
-## 当前下一步
-
-| 顺序 | 任务 | 说明 |
-|---:|---|---|
-| 1 | 建立 V118 完整主世界构图数据源 | Blueprint 必须带 `complete_natural_home_mvp`、`primary_world_view`、`runtime_frame_source` 标签，以及 world_entry、primary_path、natural_boundary、water_feature、exploration_area、visual_center 锚点。 |
-| 2 | 用 V118 数据源生成完整自然家园候选 | 必须像游戏主世界帧，不是局部自然 tile；不做人物、建筑、动态。 |
-| 3 | 记录所有训练输出 | 成功、失败、候选、耗时、GPU、hash、来源全部归档。 |
-| 4 | 通过 VJ-1、VJ-2、Game-World Frame Gate | 三层都过才允许进入 ApprovedFrame 候选绑定复核。 |
-| 5 | 最终确认后才写展示标签 | 项目所有者确认后才能加入最终业务标签，并允许 RuntimeFrame 展示。 |
-
-## 验收口径
-
-| 验收点 | 必须满足 |
-|---|---|
-| 完整世界帧 | 不能是局部图、切片图、patch 图、训练 crop。 |
-| 来源范围 | 不允许 crop、partial、patch、tile、sprite、diagnostic、local-detail。 |
-| 世界事实绑定 | worldId、tick、sourceFactIds 必须匹配当前 runtime。 |
-| VJ-0 | 文件、来源、hash、runtime gate 必须通过。 |
-| formal VJ-1 | 检查清晰度、边缘、结构、禁止内容、事实覆盖，不依赖目标图复制。 |
-| formal VJ-2 | 检查正式视觉分、语义、风格和状态一致性。 |
-| 最终业务确认 | 必须包含 `owner_final_world_mvp_approved`、`complete_game_world_scene`、`world_home_playable_frame`。 |
-| ApprovedFrame | 只能由完整通过且最终确认的候选写入。 |
-| `/world` | 只读取当前通过 game-world 展示闸门且完成游戏界面合成的 RuntimeFrame；不得直铺单张 ApprovedFrame。 |
-
-在 AIP-9 完成前，不进入 VisualUnit、人物、建筑、动态状态、小镇或城市。

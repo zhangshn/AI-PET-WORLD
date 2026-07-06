@@ -9,7 +9,10 @@ def build_image_loss(prediction, target, torch, config: dict[str, object], condi
     loss_prediction = focus_prediction_for_loss(prediction, target, focus_mask)
     l1 = weighted_l1_loss(loss_prediction, target, condition, torch, config, focus_mask)
     edge = edge_loss(loss_prediction, target, torch)
+    edge_density = edge_density_loss(loss_prediction, target, torch)
     texture = texture_loss(loss_prediction, target, torch)
+    multi_scale_texture = multi_scale_texture_loss(loss_prediction, target, torch)
+    patch_variance = patch_variance_loss(loss_prediction, target, torch)
     laplacian = laplacian_loss(loss_prediction, target, torch)
     gradient = gradient_loss(loss_prediction, target, torch)
     color_range = color_range_loss(loss_prediction, target, torch)
@@ -22,7 +25,10 @@ def build_image_loss(prediction, target, torch, config: dict[str, object], condi
     total = (
         l1 * float(weights.get("l1", 1.0))
         + edge * float(weights.get("edge", 0.0))
+        + edge_density * float(weights.get("edgeDensity", 0.0))
         + texture * float(weights.get("texture", 0.0))
+        + multi_scale_texture * float(weights.get("multiScaleTexture", 0.0))
+        + patch_variance * float(weights.get("patchVariance", 0.0))
         + laplacian * float(weights.get("laplacian", 0.0))
         + gradient * float(weights.get("gradient", 0.0))
         + color_range * float(weights.get("colorRange", 0.0))
@@ -31,7 +37,10 @@ def build_image_loss(prediction, target, torch, config: dict[str, object], condi
     return total, {
         "l1": l1,
         "edge": edge,
+        "edgeDensity": edge_density,
         "texture": texture,
+        "multiScaleTexture": multi_scale_texture,
+        "patchVariance": patch_variance,
         "laplacian": laplacian,
         "gradient": gradient,
         "colorRange": color_range,
@@ -74,6 +83,10 @@ def build_focus_loss_mask(condition, torch, config: dict[str, object]):
         "tree_trunk": 5,
         "tree_crown": 6,
         "rock": 7,
+        "shelter_foundation": 8,
+        "shelter_wall": 9,
+        "shelter_roof": 10,
+        "construction_material": 11,
         "walkable": 12,
         "depth": 13,
     }
@@ -95,8 +108,36 @@ def edge_loss(prediction, target, torch):
     return torch.nn.functional.l1_loss(image_edges(prediction, torch), image_edges(target, torch))
 
 
+def edge_density_loss(prediction, target, torch):
+    return torch.nn.functional.l1_loss(soft_edge_density_map(prediction, torch), soft_edge_density_map(target, torch).detach())
+
+
 def texture_loss(prediction, target, torch):
     return torch.nn.functional.l1_loss(local_contrast(prediction, torch), local_contrast(target, torch))
+
+
+def multi_scale_texture_loss(prediction, target, torch):
+    losses = []
+    for kernel_size in (3, 5, 9):
+        losses.append(
+            torch.nn.functional.l1_loss(
+                local_contrast_with_kernel(prediction, torch, kernel_size),
+                local_contrast_with_kernel(target, torch, kernel_size),
+            )
+        )
+    return torch.stack(losses).mean()
+
+
+def patch_variance_loss(prediction, target, torch):
+    losses = []
+    for kernel_size in (8, 16):
+        losses.append(
+            torch.nn.functional.l1_loss(
+                local_variance(prediction, torch, kernel_size),
+                local_variance(target, torch, kernel_size),
+            )
+        )
+    return torch.stack(losses).mean()
 
 
 def laplacian_loss(prediction, target, torch):
@@ -186,6 +227,14 @@ def image_edges(image, torch):
     return torch.cat((horizontal[:, :, :-1, :], vertical[:, :, :, :-1]), dim=1)
 
 
+def soft_edge_density_map(image, torch):
+    gray = image.mean(dim=1, keepdim=True)
+    horizontal = gray[:, :, :, 1:] - gray[:, :, :, :-1]
+    vertical = gray[:, :, 1:, :] - gray[:, :, :-1, :]
+    gradient = torch.sqrt(horizontal[:, :, :-1, :] ** 2 + vertical[:, :, :, :-1] ** 2 + 1e-8)
+    return torch.sigmoid((gradient - 0.08) * 80.0)
+
+
 def image_gradients(image):
     horizontal = image[:, :, :, 1:] - image[:, :, :, :-1]
     vertical = image[:, :, 1:, :] - image[:, :, :-1, :]
@@ -201,3 +250,16 @@ def laplacian_filter(image, torch):
 def local_contrast(image, torch):
     mean = torch.nn.functional.avg_pool2d(image, kernel_size=3, stride=1, padding=1)
     return torch.abs(image - mean)
+
+
+def local_contrast_with_kernel(image, torch, kernel_size: int):
+    padding = kernel_size // 2
+    mean = torch.nn.functional.avg_pool2d(image, kernel_size=kernel_size, stride=1, padding=padding)
+    return torch.abs(image - mean)
+
+
+def local_variance(image, torch, kernel_size: int):
+    padding = kernel_size // 2
+    mean = torch.nn.functional.avg_pool2d(image, kernel_size=kernel_size, stride=1, padding=padding)
+    mean_square = torch.nn.functional.avg_pool2d(image * image, kernel_size=kernel_size, stride=1, padding=padding)
+    return torch.relu(mean_square - mean * mean)

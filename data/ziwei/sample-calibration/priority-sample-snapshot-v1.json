@@ -1,0 +1,204 @@
+{
+  "schemaVersion": "ziwei-priority-sample-snapshot-v1",
+  "updatedAt": "2026-07-01",
+  "sourceSampleDir": "data/ziwei/golden-samples",
+  "patternGoldenPath": "data/ziwei/pattern-golden-samples/pattern-golden-v1.json",
+  "samples": [
+    {
+      "sampleId": "1990-male-solar",
+      "calibrationUse": ["阳男顺行", "大限已起", "火六局", "格局与动态盘基准"],
+      "expected": {
+        "lifePalace": "zi",
+        "bodyPalace": "xu",
+        "dynamicDirection": "forward",
+        "xiaoXianDirection": "forward",
+        "xiaoXianStartPalace": "chen",
+        "xiaoXianPalace": "mao",
+        "douJunPalace": "shen",
+        "dynamicFlowPalaces": {
+          "natal": "zi",
+          "daYun": "mao",
+          "liuNian": "wu",
+          "liuYue": "zi",
+          "liuRi": "zi",
+          "liuShi": "si"
+        },
+        "patternTotals": {
+          "hitCount": 25,
+          "enhancedCount": 5,
+          "brokenCount": 3,
+          "adverseHitCount": 10
+        }
+      }
+    },
+    {
+      "sampleId": "1990-female-yang-year-backward",
+      "calibrationUse": ["阳女逆行", "大限已起", "顺逆对照"],
+      "expected": {
+        "lifePalace": "zi",
+        "bodyPalace": "xu",
+        "dynamicDirection": "backward",
+        "xiaoXianDirection": "backward",
+        "xiaoXianStartPalace": "chen",
+        "xiaoXianPalace": "si",
+        "douJunPalace": "shen",
+        "dynamicFlowPalaces": {
+          "natal": "zi",
+          "daYun": "you",
+          "liuNian": "wu",
+          "liuYue": "zi",
+          "liuRi": "zi",
+          "liuShi": "si"
+        },
+        "patternTotals": {
+          "hitCount": 25,
+          "enhancedCount": 5,
+          "brokenCount": 3,
+          "adverseHitCount": 10
+        }
+      }
+    },
+    {
+      "sampleId": "1991-male-yin-year-backward",
+      "calibrationUse": ["阴男逆行", "土五局", "小限顺行对照"],
+      "expected": {
+        "lifePalace": "zi",
+        "bodyPalace": "xu",
+        "dynamicDirection": "backward",
+        "xiaoXianDirection": "forward",
+        "xiaoXianStartPalace": "chou",
+        "xiaoXianPalace": "zi",
+        "douJunPalace": "shen",
+        "dynamicFlowPalaces": {
+          "natal": "zi",
+          "daYun": "you",
+          "liuNian": "wu",
+          "liuYue": "zi",
+          "liuRi": "zi",
+          "liuShi": "si"
+        },
+        "patternTotals": {
+          "hitCount": 18,
+          "enhancedCount": 1,
+          "brokenCount": 0,
+          "adverseHitCount": 10
+        }
+      }
+    },
+    {
+      "sampleId": "1991-female-yin-year-forward",
+      "calibrationUse": ["阴女顺行", "土五局", "小限逆行对照"],
+      "expected": {
+        "lifePalace": "zi",
+        "bodyPalace": "xu",
+        "dynamicDirection": "forward",
+        "xiaoXianDirection": "backward",
+        "xiaoXianStartPalace": "chou",
+        "xiaoXianPalace": "yin",
+        "douJunPalace": "shen",
+        "dynamicFlowPalaces": {
+          "natal": "zi",
+          "daYun": "mao",
+          "liuNian": "wu",
+          "liuYue": "zi",
+          "liuRi": "zi",
+          "liuShi": "si"
+        },
+        "patternTotals": {
+          "hitCount": 18,
+          "enhancedCount": 1,
+          "brokenCount": 0,
+          "adverseHitCount": 10
+        }
+      }
+    },
+    {
+      "sampleId": "1995-female-not-started",
+      "calibrationUse": ["未起运", "子时出生", "文星类格局命中样例"],
+      "expected": {
+        "lifePalace": "yin",
+        "bodyPalace": "yin",
+        "dynamicDirection": "forward",
+        "xiaoXianDirection": "backward",
+        "xiaoXianStartPalace": "chou",
+        "xiaoXianPalace": "chou",
+        "douJunPalace": "wu",
+        "dynamicFlowPalaces": {
+          "natal": "yin",
+          "daYun": "yin",
+          "liuNian": "wu",
+          "liuYue": "si",
+          "liuRi": "xu",
+          "liuShi": "xu"
+        },
+        "patternTotals": {
+          "hitCount": 21,
+          "enhancedCount": 3,
+          "brokenCount": 3,
+          "adverseHitCount": 8
+        }
+      }
+    },
+    {
+      "sampleId": "1988-male-hai-hour-boundary",
+      "calibrationUse": ["亥时边界", "辰年三合组", "命身宫时辰对照"],
+      "expected": {
+        "lifePalace": "shen",
+        "bodyPalace": "wu",
+        "dynamicDirection": "forward",
+        "xiaoXianDirection": "forward",
+        "xiaoXianStartPalace": "xu",
+        "xiaoXianPalace": "hai",
+        "douJunPalace": "zi",
+        "dynamicFlowPalaces": {
+          "natal": "shen",
+          "daYun": "hai",
+          "liuNian": "wu",
+          "liuYue": "wu",
+          "liuRi": "wu",
+          "liuShi": "si"
+        },
+        "patternTotals": {
+          "hitCount": 18,
+          "enhancedCount": 2,
+          "brokenCount": 1,
+          "adverseHitCount": 10
+        }
+      }
+    },
+    {
+      "sampleId": "1988-male-zi-hour-boundary",
+      "calibrationUse": ["子时边界", "辰年三合组", "斗君边界对照"],
+      "expected": {
+        "lifePalace": "wei",
+        "bodyPalace": "wei",
+        "dynamicDirection": "forward",
+        "xiaoXianDirection": "forward",
+        "xiaoXianStartPalace": "xu",
+        "xiaoXianPalace": "hai",
+        "douJunPalace": "chou",
+        "dynamicFlowPalaces": {
+          "natal": "wei",
+          "daYun": "xu",
+          "liuNian": "wu",
+          "liuYue": "wei",
+          "liuRi": "wei",
+          "liuShi": "wei"
+        },
+        "patternTotals": {
+          "hitCount": 18,
+          "enhancedCount": 1,
+          "brokenCount": 2,
+          "adverseHitCount": 8
+        }
+      }
+    }
+  ],
+  "openSnapshotGaps": [
+    "缺闰月出生样例。",
+    "缺跨年农历流日样例。",
+    "缺文星拱命等文星类强命中样例。",
+    "缺火铃羊陀空劫化忌叠加的强凶格样例。",
+    "缺动态流视角格局命中人工样例。"
+  ]
+}

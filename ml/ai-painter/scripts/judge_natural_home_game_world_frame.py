@@ -7,9 +7,13 @@ import json
 from pathlib import Path
 from typing import Any
 
+from PIL import Image
+
 
 SCHEMA_VERSION = "natural-home-game-world-frame-gate-v1"
 DEFAULT_STAGE_ID = "natural-home-v117-complete-game-world-frame-gate"
+MIN_RUNTIME_FRAME_WIDTH = 768
+MIN_RUNTIME_FRAME_HEIGHT = 576
 
 REQUIRED_INTENT_TAGS = {
     "complete_natural_home_mvp",
@@ -86,6 +90,11 @@ def main() -> int:
         "policy": {
             "requiredIntentTags": sorted(REQUIRED_INTENT_TAGS),
             "requiredAnchors": sorted(REQUIRED_ANCHORS),
+            "minimumRuntimeFrameSize": {
+                "width": MIN_RUNTIME_FRAME_WIDTH,
+                "height": MIN_RUNTIME_FRAME_HEIGHT,
+                "note": "Complete game world frames must not be local crops or small natural tiles.",
+            },
             "blockedSourceTokens": sorted(BLOCKED_SOURCE_TOKENS),
             "note": (
                 "This gate is stricter than natural-quality VJ-2. It only allows complete game world frames "
@@ -106,16 +115,43 @@ def main() -> int:
 def review_row(row: dict[str, Any]) -> dict[str, Any]:
     blueprint_path = Path(str(row.get("blueprint", "")))
     blueprint = read_json(blueprint_path) if blueprint_path.exists() else {}
+    generated_path = Path(str(row.get("generated", "")))
+    image_metrics = inspect_generated_image(generated_path)
     game_world_intent = extract_game_world_intent(blueprint)
+    source_policy = extract_source_policy(blueprint)
     intent_tags = set(game_world_intent.get("tags", []))
     anchors = set(game_world_intent.get("anchors", []))
     blocked_tokens = blocked_source_tokens(row)
 
+    vj2_passed = row.get("vj2Status") == "vj_2_passed_minimal"
+    is_complete_frame_source = source_policy.get("completeGameWorldFrameSource") is True
+    is_model_generated_from_complete_condition = (
+        source_policy.get("completeWorldConditionSource") is True
+        and source_policy.get("requiresModelGeneration") is True
+        and vj2_passed
+    )
+
     checks = [
-        check("vj2_natural_quality_must_pass", row.get("vj2Status") == "vj_2_passed_minimal"),
+        check("vj2_natural_quality_must_pass", vj2_passed),
         check("candidate_must_not_be_display_allowed", row.get("displayAllowed") is False),
         check("candidate_must_not_promote_to_world", row.get("canPromoteToWorld") is False),
         check("source_must_not_be_local_or_partial", not blocked_tokens, ",".join(blocked_tokens)),
+        check(
+            "generated_image_must_exist",
+            image_metrics.get("exists") is True,
+            str(generated_path),
+        ),
+        check(
+            "generated_image_must_be_full_runtime_resolution",
+            image_metrics.get("width", 0) >= MIN_RUNTIME_FRAME_WIDTH
+            and image_metrics.get("height", 0) >= MIN_RUNTIME_FRAME_HEIGHT,
+            f'{image_metrics.get("width", 0)}x{image_metrics.get("height", 0)}',
+        ),
+        check(
+            "generated_image_must_keep_four_three_ratio",
+            image_metrics.get("aspectRatioOk") is True,
+            str(image_metrics.get("aspectRatio", 0)),
+        ),
         check(
             "complete_world_intent_tags_present",
             REQUIRED_INTENT_TAGS.issubset(intent_tags),
@@ -129,6 +165,14 @@ def review_row(row: dict[str, Any]) -> dict[str, Any]:
         check("blueprint_must_declare_complete_world_scope", game_world_intent.get("scope") == "complete_natural_home_mvp"),
         check("blueprint_must_declare_primary_world_view", game_world_intent.get("frameRole") == "primary_world_view"),
         check("runtime_frame_source_declared", game_world_intent.get("runtimeFrameSource") is True),
+        check(
+            "source_must_be_complete_game_world_frame_source_or_generated_from_condition",
+            is_complete_frame_source or is_model_generated_from_complete_condition,
+        ),
+        check(
+            "source_model_generation_requirement_satisfied",
+            source_policy.get("requiresModelGeneration") is not True or is_model_generated_from_complete_condition,
+        ),
     ]
 
     failed = [item for item in checks if not item["passed"]]
@@ -145,9 +189,26 @@ def review_row(row: dict[str, Any]) -> dict[str, Any]:
         "approvedFrameStatus": "not_written",
         "generated": str(Path(str(row.get("generated", ""))).resolve()),
         "blueprint": str(blueprint_path.resolve()),
+        "imageMetrics": image_metrics,
         "gameWorldIntent": game_world_intent,
+        "sourcePolicy": source_policy,
         "checks": checks,
         "failureReasons": [item["id"] for item in failed],
+    }
+
+
+def inspect_generated_image(path: Path) -> dict[str, Any]:
+    if not path.exists():
+        return {"exists": False, "width": 0, "height": 0, "aspectRatio": 0.0, "aspectRatioOk": False}
+    with Image.open(path) as image:
+        width, height = image.size
+    aspect_ratio = width / height if height else 0.0
+    return {
+        "exists": True,
+        "width": width,
+        "height": height,
+        "aspectRatio": round(aspect_ratio, 6),
+        "aspectRatioOk": abs(aspect_ratio - (4 / 3)) <= 0.015,
     }
 
 
@@ -166,6 +227,17 @@ def extract_game_world_intent(blueprint: dict[str, Any]) -> dict[str, Any]:
         "runtimeFrameSource": value.get("runtimeFrameSource") is True,
         "tags": [item for item in tags if isinstance(item, str)] if isinstance(tags, list) else [],
         "anchors": [item for item in anchors if isinstance(item, str)] if isinstance(anchors, list) else [],
+    }
+
+
+def extract_source_policy(blueprint: dict[str, Any]) -> dict[str, Any]:
+    value = blueprint.get("sourcePolicy")
+    if not isinstance(value, dict):
+        return {}
+    return {
+        "completeWorldConditionSource": value.get("completeWorldConditionSource") is True,
+        "completeGameWorldFrameSource": value.get("completeGameWorldFrameSource") is True,
+        "requiresModelGeneration": value.get("requiresModelGeneration") is True,
     }
 
 

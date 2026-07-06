@@ -2,12 +2,12 @@ import type {
   ZiweiStarCatalogRowView
 } from "@/ai/destiny-core/ziwei-core/contracts"
 
+import type { StarCatalogCategoryFilter } from "../_lib/ziwei-star-category-filter"
 import styles from "../_styles/ziwei-page.module.css"
 import {
   buildRuleSourceIndex,
   countRuleSourcePalaces
 } from "../_lib/ziwei-rule-source-index"
-import type { StarCatalogCategoryFilter } from "./star-catalog-table"
 
 export function RuleSourceOverviewPanel(props: {
   rows: ZiweiStarCatalogRowView[]

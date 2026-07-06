@@ -48,3 +48,13 @@ export {
   ziweiStarCatalog,
   ziweiStarCatalogById
 } from "./star-catalog"
+
+export {
+  applyZiweiStarBrightness,
+  ASSISTANT_STAR_BRIGHTNESS_TABLE,
+  MAIN_STAR_BRIGHTNESS_TABLE,
+  MALEFIC_STAR_BRIGHTNESS_TABLE,
+  resolveZiweiStarBrightness,
+  ZIWEI_STAR_BRIGHTNESS_TABLE,
+  ZIWEI_STAR_BRIGHTNESS_LABELS
+} from "./star-brightness"

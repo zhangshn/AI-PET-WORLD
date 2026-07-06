@@ -1,0 +1,40 @@
+{
+  "trainingVersion": "training-natural-home-local-details-v38-reference-reproduction",
+  "modelVersion": "natural-home-local-detail-unet-v38-reference-reproduction",
+  "inputChannels": 28,
+  "inputExtras": ["coord", "noise", "reference", "style"],
+  "referenceMode": "self",
+  "outputChannels": 3,
+  "baseChannels": 80,
+  "batchSize": 4,
+  "learningRate": 0.00014,
+  "maxEpochs": 90,
+  "mixedPrecision": true,
+  "augment": true,
+  "upsampleMode": "bilinear",
+  "midBlocks": 2,
+  "decoderDetailBlocks": 3,
+  "lossWeights": {
+    "l1": 1.2,
+    "edge": 5.8,
+    "texture": 5.0,
+    "laplacian": 4.8,
+    "gradient": 3.4,
+    "colorRange": 0.24
+  },
+  "structureWeights": {
+    "grass": 3.2,
+    "water": 3.8,
+    "shoreline": 5.2,
+    "road": 4.2,
+    "roadEdge": 4.2,
+    "tree": 5.2,
+    "rock": 4.6,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260704,
+  "status": "pure_natural_home_reference_reproduction_material_training"
+}

@@ -1,4 +1,5 @@
 import type {
+  BranchPalace,
   FullZiweiChart,
   FullZiweiDynamicChart,
   FullZiweiDynamicChartInput
@@ -7,12 +8,22 @@ import { resolveZiweiPlacementDirection } from "../star-placement/cycle-directio
 
 import { buildDynamicFlow } from "./dynamic-flow-builder"
 import {
+  getLiuNianStem,
+  getLiuRiStem,
+  getLiuShiStem,
+  getLiuYueStem
+} from "./dynamic-flow-stems"
+import {
   getDaYunPalace,
+  getDouJunPalace,
   getDynamicStartAge,
   getLiuNianPalace,
   getLiuRiPalace,
   getLiuShiPalace,
-  getLiuYuePalace
+  getLiuYuePalace,
+  getXiaoXianDirection,
+  getXiaoXianPalace,
+  getXiaoXianStartPalace
 } from "./dynamic-flow-palaces"
 
 export function buildFullZiweiDynamicChart(params: {
@@ -26,6 +37,16 @@ export function buildFullZiweiDynamicChart(params: {
   const startAge = getDynamicStartAge(params.chart.foundation.elementBase)
   const isDaYunStarted = params.input.currentAge >= startAge
   const natalPalace = params.chart.foundation.lifePalace
+  const birthYearBranch = params.chart.lunarInfo.yearBranch
+  const gender = params.chart.input.gender
+
+  if (!birthYearBranch) {
+    throw new Error("Missing birth year branch for Xiao Xian calculation.")
+  }
+
+  if (!gender) {
+    throw new Error("Missing gender for Xiao Xian calculation.")
+  }
 
   const daYunPalace = getDaYunPalace({
     lifePalace: natalPalace,
@@ -34,8 +55,13 @@ export function buildFullZiweiDynamicChart(params: {
     currentAge: params.input.currentAge
   })
   const liuNianPalace = getLiuNianPalace(params.input.currentYear)
-  const liuYuePalace = getLiuYuePalace({
+  const douJunPalace = getDouJunPalace({
     liuNianPalace,
+    birthLunarMonth: params.chart.lunarInfo.lunarMonth,
+    birthTimeBranch: params.chart.lunarInfo.timeBranch
+  })
+  const liuYuePalace = getLiuYuePalace({
+    douJunPalace,
     currentLunarMonth: params.input.currentLunarMonth
   })
   const liuRiPalace = getLiuRiPalace({
@@ -46,6 +72,13 @@ export function buildFullZiweiDynamicChart(params: {
     liuRiPalace,
     currentTimeBranch: params.input.currentTimeBranch
   })
+  const xiaoXianDirection = getXiaoXianDirection(gender)
+  const xiaoXianStartPalace = getXiaoXianStartPalace(birthYearBranch)
+  const xiaoXianPalace = getXiaoXianPalace({
+    birthYearBranch,
+    gender,
+    currentAge: params.input.currentAge
+  })
 
   return {
     flows: [
@@ -53,12 +86,16 @@ export function buildFullZiweiDynamicChart(params: {
         chart: params.chart,
         type: "natal",
         palace: natalPalace,
+        stem: params.chart.lunarInfo.yearStem,
+        stemSource: "birthYearStem",
         isActive: true
       }),
       buildDynamicFlow({
         chart: params.chart,
         type: "daYun",
         palace: daYunPalace,
+        stem: getPalaceStem(params.chart, daYunPalace),
+        stemSource: "dynamicPalaceStem",
         isActive: isDaYunStarted,
         inactiveReason: isDaYunStarted
           ? undefined
@@ -68,24 +105,44 @@ export function buildFullZiweiDynamicChart(params: {
         chart: params.chart,
         type: "liuNian",
         palace: liuNianPalace,
+        stem: getLiuNianStem(params.input.currentYear),
+        stemSource: "currentYearStem",
         isActive: true
       }),
       buildDynamicFlow({
         chart: params.chart,
         type: "liuYue",
         palace: liuYuePalace,
+        stem: getLiuYueStem({
+          currentYear: params.input.currentYear,
+          currentLunarMonth: params.input.currentLunarMonth
+        }),
+        stemSource: "currentMonthStem",
         isActive: true
       }),
       buildDynamicFlow({
         chart: params.chart,
         type: "liuRi",
         palace: liuRiPalace,
+        stem: getLiuRiStem({
+          currentYear: params.input.currentYear,
+          currentLunarMonth: params.input.currentLunarMonth,
+          currentLunarDay: params.input.currentLunarDay
+        }),
+        stemSource: "currentDayStem",
         isActive: true
       }),
       buildDynamicFlow({
         chart: params.chart,
         type: "liuShi",
         palace: liuShiPalace,
+        stem: getLiuShiStem({
+          currentYear: params.input.currentYear,
+          currentLunarMonth: params.input.currentLunarMonth,
+          currentLunarDay: params.input.currentLunarDay,
+          currentTimeBranch: params.input.currentTimeBranch
+        }),
+        stemSource: "currentTimeStem",
         isActive: true
       })
     ],
@@ -93,7 +150,24 @@ export function buildFullZiweiDynamicChart(params: {
       direction,
       startAge,
       currentAge: params.input.currentAge,
-      isDaYunStarted
+      isDaYunStarted,
+      xiaoXianDirection,
+      xiaoXianStartPalace,
+      xiaoXianPalace,
+      douJunPalace
     }
   }
+}
+
+function getPalaceStem(
+  chart: FullZiweiChart,
+  palace: BranchPalace
+): FullZiweiChart["palaces"][number]["palaceStem"] {
+  const match = chart.palaces.find((item) => item.branch === palace)
+
+  if (!match) {
+    throw new Error(`Missing dynamic palace stem for branch: ${palace}`)
+  }
+
+  return match.palaceStem
 }

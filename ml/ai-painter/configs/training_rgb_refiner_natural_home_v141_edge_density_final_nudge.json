@@ -1,0 +1,82 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v141-edge-density-final-nudge",
+  "modelVersion": "rgb-refiner-natural-home-v141-edge-density-final-nudge",
+  "inputChannels": 17,
+  "baseRgbManifest": ".runtime/ai-painter/natural-home-v136-stable-edge-micro-tune-full-base-generation/latest.json",
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": false,
+  "residualScale": 0.22,
+  "batchSize": 2,
+  "learningRate": 0.0000015,
+  "discriminatorLearningRate": 0.000002,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.004,
+  "maxEpochs": 16,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 3.0,
+    "edge": 17.0,
+    "edgeDensity": 14.0,
+    "texture": 8.8,
+    "multiScaleTexture": 8.2,
+    "patchVariance": 7.8,
+    "laplacian": 17.2,
+    "gradient": 16.8,
+    "colorRange": 0.34,
+    "waterPeriodicity": 8.4
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.0012,
+    "margin": 0.00012
+  },
+  "structureWeights": {
+    "water": 6.3,
+    "shoreline": 6.8,
+    "road": 5.8,
+    "roadEdge": 6.5,
+    "tree": 5.8,
+    "rock": 5.4,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 5.8,
+  "saveBestBy": "validation_loss",
+  "seed": 20260630,
+  "status": "v141_edge_density_final_nudge_hidden_training_only",
+  "allowedScope": "complete_natural_home_mvp_training_only",
+  "forbiddenScope": [
+    "building",
+    "facility",
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "purpose": "Small continuation from V140. The best V140 candidate already passes score, sharpness, and mask-boundary gates, and misses VJ-1 only on edge density. This run nudges edge density without changing world facts or promoting anything to /world.",
+    "worldDisplay": "blocked until generated candidates pass VJ-1, VJ-2, Game-World Frame Gate, ApprovedFrame binding, RuntimeFrame, and owner confirmation."
+  }
+}

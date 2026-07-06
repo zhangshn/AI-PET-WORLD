@@ -63,7 +63,7 @@ export function getLucunBranch(yearStem: HeavenlyStem): BranchPalace {
   return LUCUN_BY_YEAR_STEM[yearStem]
 }
 
-function getTianmaBranch(yearBranch: BranchPalace | undefined): BranchPalace {
+export function getTianmaBranch(yearBranch: BranchPalace | undefined): BranchPalace {
   if (!yearBranch) {
     throw new Error("Missing lunar year branch for Tianma placement.")
   }

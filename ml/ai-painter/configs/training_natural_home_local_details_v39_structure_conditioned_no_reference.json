@@ -1,0 +1,39 @@
+{
+  "trainingVersion": "training-natural-home-local-details-v39-structure-conditioned-no-reference",
+  "modelVersion": "natural-home-local-detail-unet-v39-structure-conditioned-no-reference",
+  "inputChannels": 35,
+  "inputExtras": ["coord", "noise", "category", "source", "style"],
+  "outputChannels": 3,
+  "baseChannels": 96,
+  "batchSize": 4,
+  "learningRate": 0.00014,
+  "maxEpochs": 140,
+  "mixedPrecision": true,
+  "augment": true,
+  "upsampleMode": "bilinear",
+  "midBlocks": 2,
+  "decoderDetailBlocks": 3,
+  "lossWeights": {
+    "l1": 1.1,
+    "edge": 5.6,
+    "texture": 5.2,
+    "laplacian": 4.8,
+    "gradient": 3.4,
+    "colorRange": 0.24
+  },
+  "structureWeights": {
+    "grass": 3.2,
+    "water": 3.8,
+    "shoreline": 5.2,
+    "road": 4.2,
+    "roadEdge": 4.2,
+    "tree": 5.2,
+    "rock": 4.6,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260704,
+  "status": "pure_natural_home_structure_conditioned_no_rgb_reference_training"
+}

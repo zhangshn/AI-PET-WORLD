@@ -1,11 +1,11 @@
 import type { ZiweiStarCatalogRowView } from "@/ai/destiny-core/ziwei-core/contracts"
 
 import styles from "../_styles/ziwei-page.module.css"
+import type { StarCatalogCategoryFilter } from "../_lib/ziwei-star-category-filter"
 import {
   buildStarCategorySummaries,
   countStarCategoryRules
 } from "../_lib/ziwei-star-category-summary"
-import type { StarCatalogCategoryFilter } from "./star-catalog-table"
 
 export function StarCategorySummaryPanel(props: {
   rows: ZiweiStarCatalogRowView[]

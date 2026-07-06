@@ -1,0 +1,41 @@
+{
+  "trainingVersion": "training-natural-home-local-details-v40-low-frequency-reference",
+  "modelVersion": "natural-home-local-detail-unet-v40-low-frequency-reference",
+  "inputChannels": 28,
+  "inputExtras": ["coord", "noise", "reference", "style"],
+  "referenceMode": "self",
+  "referenceDetailMode": "low_frequency",
+  "outputChannels": 3,
+  "baseChannels": 96,
+  "batchSize": 4,
+  "learningRate": 0.00014,
+  "maxEpochs": 140,
+  "mixedPrecision": true,
+  "augment": true,
+  "upsampleMode": "bilinear",
+  "midBlocks": 2,
+  "decoderDetailBlocks": 3,
+  "lossWeights": {
+    "l1": 1.12,
+    "edge": 5.8,
+    "texture": 5.2,
+    "laplacian": 5.0,
+    "gradient": 3.6,
+    "colorRange": 0.24
+  },
+  "structureWeights": {
+    "grass": 3.2,
+    "water": 3.8,
+    "shoreline": 5.2,
+    "road": 4.2,
+    "roadEdge": 4.2,
+    "tree": 5.2,
+    "rock": 4.6,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260704,
+  "status": "pure_natural_home_low_frequency_reference_training"
+}

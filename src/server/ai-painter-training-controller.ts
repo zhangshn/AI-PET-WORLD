@@ -6,6 +6,7 @@ import { archiveTrainingResult } from "./ai-painter-training-result-archive"
 import { tryPromoteTrainingResultToWorldVisual } from "./ai-painter-training-world-promotion"
 import {
   aiPainterRuntimeRoot,
+  appendTrainingProcessEvent,
   readTrainingControlState,
   readTrainingLogTail,
   trainingControlDir,
@@ -97,6 +98,7 @@ export type TrainingAction =
   | "report_mvp_gap"
   | "report_natural_home"
   | "report_natural_home_quality"
+  | "full_game_map_material_slot_v46_runtime_frame"
 
 export { readTrainingControlState, readTrainingLogTail, type TrainingControlState }
 
@@ -122,6 +124,16 @@ export async function startTrainingAction(action: TrainingAction) {
 
   await writeTrainingControlState(state)
   const resourceSession = await startResourceUsageSession(action)
+  await appendTrainingProcessEvent({
+    action,
+    runId: resourceSession.sessionId,
+    kind: "run_started",
+    status: "running",
+    title: "Training run started",
+    detail: "The local AI Painter controller accepted the training action.",
+    currentStep: state.currentStep ?? undefined,
+    resourceSessionId: resourceSession.sessionId,
+  })
   activeRun = runAction(action, state, resourceSession).finally(() => {
     activeRun = null
   })
@@ -133,19 +145,79 @@ async function runAction(
   state: TrainingControlState,
   resourceSession: Awaited<ReturnType<typeof startResourceUsageSession>>,
 ) {
+  const runId = resourceSession.sessionId
+  let currentScript: string | null = null
   try {
     await clearOutputs(action)
     for (const script of scriptsFor(action)) {
+      currentScript = script
       state.currentStep = labelFor(script)
       await writeTrainingControlState(state)
       await appendFile(trainingControlLogPath, `\n[${new Date().toISOString()}] ${state.currentStep}\n`, "utf8")
+      await appendTrainingProcessEvent({
+        action,
+        runId,
+        kind: "step_started",
+        status: "running",
+        title: "Training step started",
+        detail: state.currentStep,
+        script,
+        currentStep: state.currentStep ?? undefined,
+        resourceSessionId: resourceSession.sessionId,
+      })
       await runNpmScript(script)
+      await appendTrainingProcessEvent({
+        action,
+        runId,
+        kind: "step_completed",
+        status: "success",
+        title: "Training step completed",
+        detail: state.currentStep,
+        script,
+        currentStep: state.currentStep ?? undefined,
+        resourceSessionId: resourceSession.sessionId,
+      })
     }
     state.status = "completed"
     state.currentStep = "全部完成"
+    await appendTrainingProcessEvent({
+      action,
+      runId,
+      kind: "run_completed",
+      status: "success",
+      title: "Training run completed",
+      detail: "All local AI Painter scripts finished.",
+      currentStep: state.currentStep ?? undefined,
+      resourceSessionId: resourceSession.sessionId,
+    })
   } catch (error) {
     state.status = "failed"
     state.error = error instanceof Error ? error.message : "本地任务执行失败"
+    if (currentScript) {
+      await appendTrainingProcessEvent({
+        action,
+        runId,
+        kind: "step_failed",
+        status: "failed",
+        title: "Training step failed",
+        detail: state.currentStep ?? currentScript,
+        script: currentScript,
+        currentStep: state.currentStep ?? undefined,
+        error: state.error,
+        resourceSessionId: resourceSession.sessionId,
+      })
+    }
+    await appendTrainingProcessEvent({
+      action,
+      runId,
+      kind: "run_failed",
+      status: "failed",
+      title: "Training run failed",
+      detail: "The local AI Painter controller stopped this action after an error.",
+      currentStep: state.currentStep ?? undefined,
+      error: state.error,
+      resourceSessionId: resourceSession.sessionId,
+    })
     await appendFile(trainingControlLogPath, `\nERROR: ${state.error}\n`, "utf8")
   } finally {
     state.finishedAt = new Date().toISOString()
@@ -158,6 +230,18 @@ async function runAction(
 
     try {
       const archived = await archiveTrainingResult({ action, resourceSummary })
+      await appendTrainingProcessEvent({
+        action,
+        runId,
+        kind: archived ? "archive_completed" : "archive_skipped",
+        status: archived ? "success" : "info",
+        title: archived ? "Training result archived" : "No generated result to archive",
+        detail: archived
+          ? "Generated rows, summaries, failure data, and resource usage were retained."
+          : "Resource usage was retained, but no generated result was found for this action.",
+        resourceSessionId: resourceSession.sessionId,
+        archiveId: archived?.id,
+      })
       await appendFile(
         trainingControlLogPath,
         archived
@@ -166,6 +250,16 @@ async function runAction(
         "utf8",
       )
     } catch (archiveError) {
+      await appendTrainingProcessEvent({
+        action,
+        runId,
+        kind: "archive_failed",
+        status: "error",
+        title: "Training result archive failed",
+        detail: "The run finished, but automatic result retention hit an error.",
+        error: archiveError instanceof Error ? archiveError.message : "Training result archive failed.",
+        resourceSessionId: resourceSession.sessionId,
+      })
       const message = archiveError instanceof Error ? archiveError.message : "训练结果自动归档失败"
       await appendFile(trainingControlLogPath, `\n[${new Date().toISOString()}] 训练结果自动归档失败：${message}\n`, "utf8")
     }
@@ -173,12 +267,31 @@ async function runAction(
     if (state.status !== "failed") {
       try {
         const promotion = await tryPromoteTrainingResultToWorldVisual({ action })
+        await appendTrainingProcessEvent({
+          action,
+          runId,
+          kind: "promotion_completed",
+          status: promotion.ok ? "success" : promotion.attempted ? "blocked" : "info",
+          title: promotion.ok ? "World visual promotion completed" : "World visual promotion not applied",
+          detail: `${promotion.status}: ${promotion.message}`,
+          resourceSessionId: resourceSession.sessionId,
+        })
         await appendFile(
           trainingControlLogPath,
           `\n[${new Date().toISOString()}] 世界视觉自动晋级：${promotion.status}，${promotion.message}\n`,
           "utf8",
         )
       } catch (promotionError) {
+        await appendTrainingProcessEvent({
+          action,
+          runId,
+          kind: "promotion_failed",
+          status: "error",
+          title: "World visual promotion failed",
+          detail: "The run finished, but the world visual promotion bridge hit an error.",
+          error: promotionError instanceof Error ? promotionError.message : "World visual promotion failed.",
+          resourceSessionId: resourceSession.sessionId,
+        })
         const message = promotionError instanceof Error ? promotionError.message : "世界视觉自动晋级失败"
         await appendFile(trainingControlLogPath, `\n[${new Date().toISOString()}] 世界视觉自动晋级失败：${message}\n`, "utf8")
       }
@@ -410,6 +523,9 @@ const fullActionScripts: Partial<Record<TrainingAction, string[]>> = {
     "check:ai-painter-natural-home-v99-vj1-boundary-similarity-repair-vj1",
     "judge:ai-painter-natural-home-v99-vj1-boundary-similarity-repair-vj2",
     "check:ai-painter-natural-home-v99-vj1-boundary-similarity-repair-vj2",
+  ],
+  full_game_map_material_slot_v46_runtime_frame: [
+    "full:game-map-material-slot-v46-runtime-frame",
   ],
   full: ["prepare:ai-painter-bootstrap", "train:ai-painter-bootstrap", "infer:ai-painter-bootstrap"],
   full_multiscene: [

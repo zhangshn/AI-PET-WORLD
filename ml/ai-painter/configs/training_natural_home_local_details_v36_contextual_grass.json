@@ -1,0 +1,39 @@
+{
+  "trainingVersion": "training-natural-home-local-details-v36-contextual-grass",
+  "modelVersion": "natural-home-local-detail-unet-v36-contextual-grass",
+  "inputChannels": 29,
+  "inputExtras": ["coord", "noise", "source", "style"],
+  "outputChannels": 3,
+  "baseChannels": 80,
+  "batchSize": 4,
+  "learningRate": 0.00016,
+  "maxEpochs": 120,
+  "mixedPrecision": true,
+  "augment": true,
+  "upsampleMode": "bilinear",
+  "midBlocks": 2,
+  "decoderDetailBlocks": 3,
+  "lossWeights": {
+    "l1": 1.0,
+    "edge": 5.0,
+    "texture": 4.4,
+    "laplacian": 4.2,
+    "gradient": 3.0,
+    "colorRange": 0.2
+  },
+  "structureWeights": {
+    "grass": 3.0,
+    "water": 3.6,
+    "shoreline": 5.0,
+    "road": 4.0,
+    "roadEdge": 4.0,
+    "tree": 5.0,
+    "rock": 4.4,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260629,
+  "status": "pure_natural_home_contextual_grass_training"
+}

@@ -2,7 +2,7 @@ import type { ZiweiStarCatalogRowView } from "@/ai/destiny-core/ziwei-core/contr
 
 import styles from "../_styles/ziwei-page.module.css"
 import { buildSameNameStarGroups } from "../_lib/ziwei-same-name-stars"
-import type { StarCatalogCategoryFilter } from "./star-catalog-table"
+import type { StarCatalogCategoryFilter } from "../_lib/ziwei-star-category-filter"
 
 export function SameNameStarPanel(props: {
   rows: ZiweiStarCatalogRowView[]

@@ -11,14 +11,13 @@ import type {
   WorldRuntimeStoreReadResult,
   WorldRuntimeStoreWriteResult,
 } from "./world-runtime-schema"
+import { localFileRuntimeStore } from "./world-runtime-store"
 
 export async function getWorldRuntimeStoreAdapter(): Promise<WorldRuntimeStoreAdapter> {
   if (process.env.NODE_ENV === "production") {
     return runtimeStoreNotConfiguredAdapter
   }
 
-  const localStoreModulePath = "./world-runtime-store"
-  const { localFileRuntimeStore } = await import(localStoreModulePath)
   return localFileRuntimeStore
 }
 

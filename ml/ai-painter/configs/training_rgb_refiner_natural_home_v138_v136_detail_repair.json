@@ -1,0 +1,80 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v138-v136-detail-repair",
+  "modelVersion": "rgb-refiner-natural-home-v138-v136-detail-repair",
+  "inputChannels": 17,
+  "baseRgbManifest": ".runtime/ai-painter/natural-home-v136-stable-edge-micro-tune-full-base-generation/latest.json",
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.000001,
+  "discriminatorLearningRate": 0.000004,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.006,
+  "maxEpochs": 28,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 3.8,
+    "edge": 15.8,
+    "texture": 8.2,
+    "multiScaleTexture": 7.4,
+    "patchVariance": 7.0,
+    "laplacian": 15.8,
+    "gradient": 15.0,
+    "colorRange": 0.34,
+    "waterPeriodicity": 7.5
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.0014,
+    "margin": 0.00015
+  },
+  "structureWeights": {
+    "water": 6.1,
+    "shoreline": 6.6,
+    "road": 5.6,
+    "roadEdge": 6.2,
+    "tree": 5.5,
+    "rock": 5.1,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 5.6,
+  "saveBestBy": "validation_loss",
+  "seed": 20260630,
+  "status": "v138_v136_detail_repair_hidden_training_only",
+  "allowedScope": "complete_natural_home_mvp_training_only",
+  "forbiddenScope": [
+    "building",
+    "facility",
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "purpose": "Second-stage detail repair from V136 complete natural-home candidates. The model receives V136 generated RGB as base input and learns to recover target edge density, sharpness, and mask-boundary detail without changing world facts or adding forbidden content.",
+    "worldDisplay": "blocked until generated candidates pass VJ-1, VJ-2, Game-World Frame Gate, ApprovedFrame binding, RuntimeFrame, and owner confirmation."
+  }
+}

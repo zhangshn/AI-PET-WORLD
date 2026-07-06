@@ -9,6 +9,7 @@ import {
   normalizeZiweiBirthInput
 } from "../birth"
 import { buildZiweiNatalFoundation } from "../natal-foundation"
+import { applyZiweiStarBrightness } from "../star-catalog"
 import { placeZiweiStars } from "../star-placement"
 
 import { buildFullZiweiChartDebug } from "./full-chart-debug-builder"
@@ -27,7 +28,11 @@ export function buildFullZiweiChart(input: ZiweiBirthInput): FullZiweiChart {
     lunarInfo,
     foundation
   }
-  const placementResult = placeZiweiStars(context)
+  const placementResultWithoutBrightness = placeZiweiStars(context)
+  const placementResult = {
+    ...placementResultWithoutBrightness,
+    stars: placementResultWithoutBrightness.stars.map(applyZiweiStarBrightness)
+  }
   const palaces = buildFullZiweiPalaces({
     foundation,
     placedStars: placementResult.stars

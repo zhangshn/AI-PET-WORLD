@@ -1,0 +1,158 @@
+{
+  "schemaVersion": "ziwei-sample-manual-calibration-v1",
+  "status": "manual-calibration-list-open",
+  "updatedAt": "2026-07-01",
+  "sourceSampleDir": "data/ziwei/golden-samples",
+  "patternGoldenPath": "data/ziwei/pattern-golden-samples/pattern-golden-v1.json",
+  "closedSampleIds": [
+    "1988-male-hai-hour-boundary",
+    "1988-male-zi-hour-boundary",
+    "1990-female-yang-year-backward",
+    "1990-male-solar",
+    "1991-female-yin-year-forward",
+    "1991-male-yin-year-backward",
+    "1995-female-not-started"
+  ],
+  "coverageSummary": {
+    "goldenSampleCount": 7,
+    "patternTotalCount": 195,
+    "coversMale": true,
+    "coversFemale": true,
+    "coversForwardDaYun": true,
+    "coversBackwardDaYun": true,
+    "coversNotStartedDaYun": true,
+    "coversHaiZiHourBoundary": true,
+    "coversDynamicFlowBoundaries": true
+  },
+  "manualCalibrationGroups": [
+    {
+      "groupId": "base-star-placement",
+      "label": "本命安星样例校准",
+      "priority": "high",
+      "status": "needs-more-samples",
+      "coveredBy": [
+        "inspect-full-chart.mjs",
+        "check-dynamic-boundary-samples.mjs"
+      ],
+      "closedItems": [
+        "7 个黄金样例可复现十二宫、命身宫、总星曜数和动态宫位。",
+        "亥时/子时边界样例已固化出生时辰对命身宫和斗君的影响。"
+      ],
+      "openItems": [
+        "紫微系、天府系主星起例仍需更多出生日期样例人工对照。",
+        "文昌文曲、地空地劫、三台八座、恩光天贵等时日推导星曜需补样例。",
+        "月系杂曜和日时系星曜需要按不同农历月、农历日补覆盖。"
+      ]
+    },
+    {
+      "groupId": "brightness-and-star-catalog",
+      "label": "庙旺落陷与星曜总表校准",
+      "priority": "medium",
+      "status": "needs-manual-review",
+      "coveredBy": [
+        "check-star-brightness.mjs",
+        "check-star-brightness-summary-panel.mjs"
+      ],
+      "closedItems": [
+        "14 主星、文昌文曲、火铃羊陀等有表星曜已输出庙旺落陷字段。",
+        "无固定亮度表星曜统一显示不论，避免页面临时推断。"
+      ],
+      "openItems": [
+        "辅曜、煞曜亮度表仍需按后续指定流派版本人工复核。",
+        "杂曜是否需要亮度表暂不扩展，后续按资料版本决定。"
+      ]
+    },
+    {
+      "groupId": "pattern-and-malefic-rules",
+      "label": "格局与不良格局样例校准",
+      "priority": "high",
+      "status": "needs-more-samples",
+      "coveredBy": [
+        "check-pattern-golden-samples.mjs",
+        "check-pattern-expansion-consistency.mjs",
+        "check-pattern-overview-panel.mjs"
+      ],
+      "closedItems": [
+        "195 条格局目录已接入黄金样例快照。",
+        "吉格、凶格、破格、增强状态已在样例中固化命中 ID 和计数。"
+      ],
+      "openItems": [
+        "文星拱命、禄权科会、夹拱类格局需要更多命中样例。",
+        "凶格和破格需要补强强弱分层样例，避免只凭单一盘验证。",
+        "动态流视角下的格局命中仍需后续人工样例确认。"
+      ]
+    },
+    {
+      "groupId": "dynamic-flow",
+      "label": "动态盘边界样例校准",
+      "priority": "high",
+      "status": "baseline-closed",
+      "coveredBy": [
+        "check-dynamic-chart.mjs",
+        "check-dynamic-boundary-samples.mjs",
+        "check-dynamic-phase-final-closure.mjs"
+      ],
+      "closedItems": [
+        "阳男阴女顺、阴男阳女逆四组方向已覆盖。",
+        "小限、斗君、流月、流日、流时、流年十二神已进入动态盘闭合脚本。",
+        "闰月按同月处理、子时不自动跨日已由边界脚本锁定。"
+      ],
+      "openItems": [
+        "闰月真实出生样例仍需补充。",
+        "跨年农历流日样例仍需补充。",
+        "不同流派对小限、斗君细节差异保留人工校准。"
+      ]
+    },
+    {
+      "groupId": "page-and-analysis",
+      "label": "页面展示与详细分析样例校准",
+      "priority": "medium",
+      "status": "needs-visual-review",
+      "coveredBy": [
+        "check-detailed-analysis-closure.mjs",
+        "check-dynamic-page-data-consistency.mjs",
+        "check-ziwei-content-total-closure.mjs"
+      ],
+      "closedItems": [
+        "十二宫逐宫分析、关系分析、格局命中/破格分析和动态流分析已闭合。",
+        "页面动态模块统一读取 ViewModel，不重复排盘。"
+      ],
+      "openItems": [
+        "需要浏览器人工复核长文本、宫格密度和流年十二神展示是否易读。",
+        "需要后续补截图或视觉校验样例。"
+      ]
+    }
+  ],
+  "nextSampleRequests": [
+    {
+      "requestId": "leap-month-birth-sample",
+      "label": "闰月出生样例",
+      "reason": "校准闰月作为出生月时本命安星和动态流日天干口径。"
+    },
+    {
+      "requestId": "all-year-branch-trine-samples",
+      "label": "四组三合年支样例",
+      "reason": "覆盖天马、将前十二神、小限起点和年支系星曜。"
+    },
+    {
+      "requestId": "literary-pattern-hit-sample",
+      "label": "文星类格局命中样例",
+      "reason": "补文昌、文曲、化科、魁钺等文星格局的成格验证。"
+    },
+    {
+      "requestId": "malefic-broken-sample",
+      "label": "凶格破格强样例",
+      "reason": "补火铃羊陀空劫化忌叠加的强弱分层验证。"
+    },
+    {
+      "requestId": "dynamic-pattern-hit-sample",
+      "label": "动态流格局命中样例",
+      "reason": "校准大限、流年、流月视角下格局切换后的命中结果。"
+    }
+  ],
+  "copyrightBoundary": [
+    "只记录自有算法输出、样例 ID、结构化缺口和复核方向。",
+    "不复制外部软件排盘文案、整盘截图和付费资料原文。",
+    "外部资料只能作为人工校准方向，落地时必须转写为自有结构化规则。"
+  ]
+}

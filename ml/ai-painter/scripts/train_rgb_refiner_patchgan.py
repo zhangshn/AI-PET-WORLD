@@ -9,7 +9,7 @@ import time
 
 from ai_painter.runtime_retention import preserve_runtime_dir_before_clear
 from ai_painter.training.checkpoint import load_checkpoint, save_checkpoint
-from ai_painter.training.dataset import WorldSceneDataset
+from ai_painter.training.dataset import WorldSceneDataset, image_tensor
 from ai_painter.training.discriminator import build_patch_discriminator
 from ai_painter.training.losses import build_image_loss
 from ai_painter.training.rgb_refiner_model import build_rgb_refiner
@@ -55,11 +55,26 @@ def train_patchgan_refiner(
     torch.manual_seed(seed)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(seed)
+    base_rgb_manifest = load_base_rgb_manifest(config)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     train_augment = bool(config.get("augmentTrain", True))
-    train_set = WorldSceneDataset(dataset_root, "train", blueprint_version="v1", allow_manual_review=True, augment=train_augment)
-    validation_set = WorldSceneDataset(dataset_root, "validation", blueprint_version="v1", allow_manual_review=True)
+    condition_extra_channels = read_condition_extra_channels(config)
+    train_set = WorldSceneDataset(
+        dataset_root,
+        "train",
+        blueprint_version="v1",
+        allow_manual_review=True,
+        augment=train_augment,
+        condition_extra_channels=condition_extra_channels,
+    )
+    validation_set = WorldSceneDataset(
+        dataset_root,
+        "validation",
+        blueprint_version="v1",
+        allow_manual_review=True,
+        condition_extra_channels=condition_extra_channels,
+    )
     batch_size = int(config.get("batchSize", 2))
     train_loader = torch.utils.data.DataLoader(
         train_set,
@@ -138,7 +153,12 @@ def train_patchgan_refiner(
             condition = batch["condition"].to(device, non_blocking=True)
             target = batch["target"].to(device, non_blocking=True)
             with torch.inference_mode():
-                base_rgb, _ = structure_model(condition)
+                if base_rgb_manifest:
+                    base_rgb = load_base_rgb_batch(base_rgb_manifest, batch["sampleId"], torch, device)
+                else:
+                    base_rgb, _ = structure_model(condition[:, :14])
+                if bool(config.get("zeroBaseRgb", False)) and not base_rgb_manifest:
+                    base_rgb = torch.zeros_like(base_rgb)
             context = torch.autocast(device_type="cuda", dtype=torch.float16) if use_amp else nullcontext()
 
             if adversarial_weight > 0.0:
@@ -232,6 +252,9 @@ def train_patchgan_refiner(
         "lossWeights": config.get("lossWeights", {}),
         "adversarialWeight": adversarial_weight,
         "augmentTrain": train_augment,
+        "conditionExtraChannels": condition_extra_channels,
+        "zeroBaseRgb": bool(config.get("zeroBaseRgb", False)),
+        "baseRgbManifest": config.get("baseRgbManifest"),
         "structureCheckpoint": str(structure_checkpoint.resolve()),
         "initializedFrom": initialized_from,
         "displayAllowed": False,
@@ -245,11 +268,17 @@ def train_patchgan_refiner(
 def evaluate(model, structure_model, loader, device, torch, use_amp: bool, config: dict[str, object]) -> float:
     model.eval()
     total = 0.0
+    base_rgb_manifest = load_base_rgb_manifest(config)
     with torch.inference_mode():
         for batch in loader:
             condition = batch["condition"].to(device, non_blocking=True)
             target = batch["target"].to(device, non_blocking=True)
-            base_rgb, _ = structure_model(condition)
+            if base_rgb_manifest:
+                base_rgb = load_base_rgb_batch(base_rgb_manifest, batch["sampleId"], torch, device)
+            else:
+                base_rgb, _ = structure_model(condition[:, :14])
+            if bool(config.get("zeroBaseRgb", False)) and not base_rgb_manifest:
+                base_rgb = torch.zeros_like(base_rgb)
             context = torch.autocast(device_type="cuda", dtype=torch.float16) if use_amp else nullcontext()
             with context:
                 prediction = model(condition, base_rgb)
@@ -261,6 +290,47 @@ def evaluate(model, structure_model, loader, device, torch, use_amp: bool, confi
 def append_json(path: Path, value: dict[str, object]) -> None:
     with path.open("a", encoding="utf-8") as stream:
         stream.write(json.dumps(value, ensure_ascii=False) + "\n")
+
+
+def read_condition_extra_channels(config: dict[str, object]) -> list[str]:
+    values = config.get("conditionExtraChannels", [])
+    if not isinstance(values, list):
+        raise ValueError("conditionExtraChannels must be a list")
+    return [str(value) for value in values]
+
+
+def load_base_rgb_manifest(config: dict[str, object]) -> dict[str, Path]:
+    raw_path = config.get("baseRgbManifest")
+    if not raw_path:
+        return {}
+    manifest_path = Path(str(raw_path))
+    if not manifest_path.is_absolute():
+        manifest_path = Path.cwd() / manifest_path
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    rows = manifest.get("rows", [])
+    if not isinstance(rows, list):
+        raise ValueError(f"invalid baseRgbManifest rows: {manifest_path}")
+    mapping: dict[str, Path] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        sample_id = row.get("sampleId")
+        generated = row.get("generated")
+        if isinstance(sample_id, str) and isinstance(generated, str):
+            mapping[sample_id] = Path(generated)
+    if not mapping:
+        raise ValueError(f"empty baseRgbManifest: {manifest_path}")
+    return mapping
+
+
+def load_base_rgb_batch(base_rgb_manifest: dict[str, Path], sample_ids, torch, device):
+    images = []
+    for sample_id in sample_ids:
+        path = base_rgb_manifest.get(str(sample_id))
+        if path is None:
+            raise ValueError(f"base RGB not found for sampleId: {sample_id}")
+        images.append(image_tensor(path, "RGB", torch, expected_channels=3))
+    return torch.stack(images, dim=0).to(device, non_blocking=True)
 
 
 if __name__ == "__main__":

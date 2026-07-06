@@ -15,6 +15,22 @@ export type ZiweiPlacementSource =
 
 export type ZiweiPlacementRuleId = string
 
+export type ZiweiStarBrightnessLevel =
+  | "miao"
+  | "wang"
+  | "de"
+  | "li"
+  | "ping"
+  | "bu"
+  | "xian"
+  | "unmapped"
+
+export interface ZiweiStarBrightness {
+  level: ZiweiStarBrightnessLevel
+  label: string
+  sourceRuleId: string
+}
+
 export interface ZiweiPlacementContext {
   ruleSetVersion: string
   input: NormalizedZiweiBirthInput
@@ -30,6 +46,7 @@ export interface ZiweiPlacedStar {
   sectorName: SectorName
   source: ZiweiPlacementSource
   placementRuleId: ZiweiPlacementRuleId
+  brightness?: ZiweiStarBrightness
   targetStarId?: ZiweiStarId
   debug?: Record<string, unknown>
 }

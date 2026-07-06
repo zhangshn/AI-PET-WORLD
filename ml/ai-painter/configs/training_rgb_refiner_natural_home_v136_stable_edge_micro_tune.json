@@ -1,0 +1,79 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v136-stable-edge-micro-tune",
+  "modelVersion": "rgb-refiner-natural-home-v136-stable-edge-micro-tune",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.0000012,
+  "discriminatorLearningRate": 0.0,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0,
+  "maxEpochs": 24,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 4.2,
+    "edge": 14.0,
+    "texture": 6.2,
+    "multiScaleTexture": 5.5,
+    "patchVariance": 5.1,
+    "laplacian": 14.0,
+    "gradient": 13.6,
+    "colorRange": 0.34,
+    "waterPeriodicity": 7.5
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.0014,
+    "margin": 0.00015
+  },
+  "structureWeights": {
+    "water": 6.1,
+    "shoreline": 6.5,
+    "road": 5.4,
+    "roadEdge": 5.8,
+    "tree": 5.2,
+    "rock": 4.8,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 5.2,
+  "saveBestBy": "validation_loss",
+  "seed": 20260630,
+  "status": "v136_stable_edge_micro_tune_hidden_training_only",
+  "allowedScope": "complete_natural_home_mvp_training_only",
+  "forbiddenScope": [
+    "building",
+    "facility",
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "purpose": "Micro-tune from V134 on the stable complete-world condition dataset. Preserve V134 composition and score while improving VJ-1 blockers: edge density, sharpness, and mask-boundary gradient. Do not lower VisualJudge and do not add buildings, characters, animals, or dynamic content.",
+    "worldDisplay": "blocked until generated candidates pass VJ-1, VJ-2, Game-World Frame Gate, ApprovedFrame binding, RuntimeFrame, and owner confirmation."
+  }
+}

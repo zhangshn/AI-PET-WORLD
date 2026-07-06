@@ -56,6 +56,110 @@ export function ProgressClient() {
   const mvpPercent = useMemo(() => getMvpPercent(data), [data])
   const generatedCount = getGeneratedCount(data)
   const qualityGate = data?.trainingQualityGate
+  const processLedger = data?.trainingProcessLedger
+  const gameMapRuntimeFrame = data?.gameMapRuntimeFrame
+  const trainingRunArchive = data?.trainingRunArchive
+  const runtimeFramePanel = (
+    <section className={styles.panel}>
+      <p className={styles.kicker}>GAME MAP RUNTIMEFRAME CANDIDATE</p>
+      <h2>Latest /world composite preview</h2>
+      <p>
+        This is the latest complete RuntimeFrame candidate produced by the local small-model material pipeline,
+        ApprovedMaterialPack, RuntimeCompositor, and FormalVisualJudge. It is still waiting for project-owner final
+        acceptance.
+      </p>
+      {gameMapRuntimeFrame?.imageUrl ? (
+        <div className={styles.runtimePreview}>
+          <img
+            src={`${gameMapRuntimeFrame.imageUrl}?t=${encodeURIComponent(gameMapRuntimeFrame.recordId ?? "latest")}`}
+            alt="Latest GameMap RuntimeFrame composite preview"
+          />
+          <div className={styles.runtimeFacts}>
+            <span className={gameMapRuntimeFrame.ready ? styles.pass : styles.fail}>
+              {gameMapRuntimeFrame.ready ? "FORMAL JUDGE PASSED" : "CANDIDATE ONLY"}
+            </span>
+            <dl className={styles.metrics}>
+              <div>
+                <dt>World</dt>
+                <dd>{gameMapRuntimeFrame.worldId ?? "--"}</dd>
+              </div>
+              <div>
+                <dt>Tick</dt>
+                <dd>{gameMapRuntimeFrame.tick ?? "--"}</dd>
+              </div>
+              <div>
+                <dt>Issues</dt>
+                <dd>{gameMapRuntimeFrame.formalJudge?.issues ?? "--"}</dd>
+              </div>
+              <div>
+                <dt>Owner final</dt>
+                <dd>Pending</dd>
+              </div>
+            </dl>
+            <dl className={styles.metrics}>
+              <div>
+                <dt>Edge</dt>
+                <dd>{formatNumber(gameMapRuntimeFrame.formalJudge?.metrics.edgeDensity, 4)}</dd>
+              </div>
+              <div>
+                <dt>Grass haze</dt>
+                <dd>{formatNumber(gameMapRuntimeFrame.formalJudge?.metrics.washedGrassHazeRatio, 4)}</dd>
+              </div>
+              <div>
+                <dt>Path pollution</dt>
+                <dd>{formatNumber(gameMapRuntimeFrame.formalJudge?.metrics.pathContaminationRatio, 4)}</dd>
+              </div>
+              <div>
+                <dt>Path crater</dt>
+                <dd>{formatNumber(gameMapRuntimeFrame.formalJudge?.metrics.pathBlackCraterRatio, 4)}</dd>
+              </div>
+            </dl>
+            <p className={styles.note}>Record: {gameMapRuntimeFrame.recordId ?? "--"}</p>
+          </div>
+        </div>
+      ) : (
+        <p className={styles.note}>No formal GameMap RuntimeFrame preview has been written yet.</p>
+      )}
+    </section>
+  )
+  const trainingRunArchivePanel = (
+    <section className={styles.panel}>
+      <p className={styles.kicker}>TRAINING RUN ARCHIVE</p>
+      <h2>最新训练档案</h2>
+      <p>
+        每一轮完整训练必须自动保存参考图、材料图、完整图、报告、模型清单和人工复核状态。没有档案的训练不算有效训练。
+      </p>
+      <dl className={styles.metrics}>
+        <div>
+          <dt>档案状态</dt>
+          <dd>{trainingRunArchive?.ready ? trainingRunArchive.status ?? "已记录" : "缺失"}</dd>
+        </div>
+        <div>
+          <dt>材料文件</dt>
+          <dd>{trainingRunArchive?.materialFiles ?? 0}</dd>
+        </div>
+        <div>
+          <dt>机器审核</dt>
+          <dd>{trainingRunArchive?.materialPassed && trainingRunArchive.formalVisualJudgePassed ? "通过" : "未通过"}</dd>
+        </div>
+        <div>
+          <dt>人工复核</dt>
+          <dd>{trainingRunArchive?.manualReviewStatus ?? "未记录"}</dd>
+        </div>
+        <div>
+          <dt>修复问题</dt>
+          <dd>{trainingRunArchive?.visualDeltaReview?.priorityIssueCount ?? 0}</dd>
+        </div>
+        <div>
+          <dt>目标材料槽</dt>
+          <dd>{trainingRunArchive?.visualDeltaReview?.targetSlots.length ?? 0}</dd>
+        </div>
+      </dl>
+      <p className={styles.note}>下一步: {trainingRunArchive?.visualDeltaReview?.nextAction ?? "--"}</p>
+      <p className={styles.note}>复盘报告: {trainingRunArchive?.visualDeltaReview?.reportPath ?? "--"}</p>
+      <p className={styles.note}>Manifest: {trainingRunArchive?.manifestPath ?? "--"}</p>
+    </section>
+  )
 
   const start = async (action: TrainingAction) => {
     setMessage("正在提交本地训练任务...")
@@ -128,6 +232,55 @@ export function ProgressClient() {
         </div>
       </section>
 
+      {runtimeFramePanel}
+      {trainingRunArchivePanel}
+
+      <section className={styles.panel}>
+        <p className={styles.kicker}>TRAINING PROCESS LEDGER</p>
+        <h2>AI Painter automatic run log</h2>
+        <p>
+          The local training controller writes this ledger by itself. It keeps successful steps, failed steps, runtime
+          errors, archive results, and world-promotion decisions as retained evidence.
+        </p>
+        <dl className={styles.metrics}>
+          <div>
+            <dt>Total events</dt>
+            <dd>{processLedger?.summary.total ?? 0}</dd>
+          </div>
+          <div>
+            <dt>Success</dt>
+            <dd>{processLedger?.summary.success ?? 0}</dd>
+          </div>
+          <div>
+            <dt>Failed / Error</dt>
+            <dd>{(processLedger?.summary.failed ?? 0) + (processLedger?.summary.error ?? 0)}</dd>
+          </div>
+          <div>
+            <dt>Blocked</dt>
+            <dd>{processLedger?.summary.blocked ?? 0}</dd>
+          </div>
+        </dl>
+        <div className={styles.eventList}>
+          {(processLedger?.events ?? []).slice(0, 10).map((event) => (
+            <article className={styles.eventItem} key={event.id}>
+              <span className={styles.eventStatus} data-status={event.status}>
+                {event.status}
+              </span>
+              <div>
+                <strong>{event.title}</strong>
+                <small>
+                  {formatDateTime(event.timestamp)} / {event.action}
+                  {event.script ? ` / ${event.script}` : ""}
+                </small>
+                {event.detail ? <p>{event.detail}</p> : null}
+                {event.error ? <p className={styles.eventError}>{event.error}</p> : null}
+              </div>
+            </article>
+          ))}
+          {processLedger?.events?.length ? null : <p className={styles.note}>No process events have been recorded yet.</p>}
+        </div>
+      </section>
+
       <section className={styles.panel}>
         <p className={styles.kicker}>TRAINING ENTRANCES</p>
         <h2>训练入口分线</h2>
@@ -153,6 +306,16 @@ export function ProgressClient() {
             title="局部视觉单元训练"
             status="后置 / 只查看"
             description="未来训练草、水、树、石、人物、建筑、状态帧等 VisualUnit。当前不抢完整自然家园主线。"
+          />
+          <StageCard
+            href="/ai-painter-progress"
+            label="GAME MAP MATERIALS"
+            title="GameMap material-slot v46 training"
+            status="Local small-model pipeline"
+            description="Train grass and road material-slot models, run local inference, judge 31 material slots, build an approved material pack, and compose a RuntimeFrame candidate. /world still waits for owner review."
+            actionLabel="Run v46 GameMap training"
+            disabled={busy}
+            onAction={() => void start("full_game_map_material_slot_v46_runtime_frame")}
           />
           <StageCard
             href="/ai-painter-progress/generated-results"
@@ -315,6 +478,11 @@ function qualityGateLabel(status?: string) {
   if (status === "warning_keep_candidate") return "候选保留，需要观察"
   if (status === "failed_keep_for_history") return "失败，仅保留历史"
   return "暂无质量闸门结论"
+}
+
+function formatDateTime(value: string) {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? value : date.toLocaleString()
 }
 
 function formatNumber(value?: number | null, digits = 2) {

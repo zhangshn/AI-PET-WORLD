@@ -1,0 +1,79 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v132-complete-world-edge-repair",
+  "modelVersion": "rgb-refiner-natural-home-v132-complete-world-edge-repair",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.000006,
+  "discriminatorLearningRate": 0.000012,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.01,
+  "maxEpochs": 20,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 4.0,
+    "edge": 11.5,
+    "texture": 6.2,
+    "multiScaleTexture": 5.2,
+    "patchVariance": 4.6,
+    "laplacian": 11.5,
+    "gradient": 11.0,
+    "colorRange": 0.34,
+    "waterPeriodicity": 7.2
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.0015,
+    "margin": 0.00015
+  },
+  "structureWeights": {
+    "water": 5.8,
+    "shoreline": 6.0,
+    "road": 4.6,
+    "roadEdge": 4.6,
+    "tree": 4.4,
+    "rock": 3.8,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 4.2,
+  "saveBestBy": "validation_loss",
+  "seed": 20260630,
+  "status": "v132_complete_world_edge_repair_hidden_training_only",
+  "allowedScope": "complete_natural_home_mvp_training_only",
+  "forbiddenScope": [
+    "building",
+    "facility",
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "purpose": "Continue from V131 to repair the formal VJ-1 failures: sharpness ratio, edge density, mask-boundary alignment, and water periodic artifacts on complete natural-home world frames.",
+    "worldDisplay": "blocked until generated candidates pass VJ-1, VJ-2, Game-World Frame Gate, ApprovedFrame binding, RuntimeFrame, and owner confirmation."
+  }
+}

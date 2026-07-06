@@ -1,0 +1,82 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v148-focused-edge-cross",
+  "modelVersion": "rgb-refiner-natural-home-v148-focused-edge-cross",
+  "inputChannels": 17,
+  "baseRgbManifest": ".runtime/ai-painter/natural-home-v136-stable-edge-micro-tune-full-base-generation/latest.json",
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": false,
+  "residualScale": 0.24,
+  "batchSize": 2,
+  "learningRate": 0.00000115,
+  "discriminatorLearningRate": 0.000001,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.003,
+  "maxEpochs": 24,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 2.2,
+    "edge": 36.0,
+    "edgeDensity": 110.0,
+    "texture": 11.5,
+    "multiScaleTexture": 11.0,
+    "patchVariance": 11.0,
+    "laplacian": 44.0,
+    "gradient": 36.0,
+    "colorRange": 0.25,
+    "waterPeriodicity": 10.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.001,
+    "margin": 0.0001
+  },
+  "structureWeights": {
+    "water": 8.4,
+    "shoreline": 8.7,
+    "road": 7.2,
+    "roadEdge": 7.8,
+    "tree": 7.0,
+    "rock": 6.7,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 8.5,
+  "saveBestBy": "validation_loss",
+  "seed": 20260630,
+  "status": "v148_focused_edge_cross_hidden_training_only",
+  "allowedScope": "complete_natural_home_mvp_training_only",
+  "forbiddenScope": [
+    "building",
+    "facility",
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "purpose": "Focus on the V147 top five near-pass complete natural-home samples. The only goal is to push formal VJ-1 edgeDensityRatio over 0.90 while preserving visible water and current world facts.",
+    "worldDisplay": "blocked until generated candidates pass VJ-1, VJ-2, Game-World Frame Gate, ApprovedFrame binding, RuntimeFrame, and owner confirmation."
+  }
+}

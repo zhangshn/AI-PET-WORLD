@@ -1,0 +1,169 @@
+{
+  "schemaVersion": "ziwei-page-manual-acceptance-v1",
+  "status": "manual-acceptance-list-open",
+  "updatedAt": "2026-07-01",
+  "pagePath": "/ziwei",
+  "serverPolicy": "用户手动启动页面服务；本清单和检查脚本不启动端口。",
+  "purpose": "把紫微斗数页面的人工验收点结构化，覆盖主盘、流动时间、动态盘、格局、详细分析、中文显示和侵权边界。",
+  "acceptanceGroups": [
+    {
+      "groupId": "chart-grid",
+      "label": "十二宫主盘",
+      "priority": "high",
+      "relatedModules": ["ziwei-chart-grid.tsx", "palace-cell.tsx", "star-group-list.tsx"],
+      "automatedCoverage": [
+        "check-chart-cell-density.mjs",
+        "check-dynamic-palace-markers.mjs",
+        "check-dynamic-relation-lines.mjs",
+        "check-dynamic-page-data-consistency.mjs"
+      ],
+      "manualItems": [
+        "默认进入页面时为原盘状态，只显示原命、身宫和原盘三方四正线条。",
+        "十二宫都可以点击，点击任意宫位时三方四正线条以该宫为中心刷新。",
+        "宫格内主星和杂曜横向摘要展示，其它辅曜、煞曜、四化、长生、年系、月系、日时系星曜纵向展示。",
+        "庙旺落陷、格局数、命身标记、动态命宫标记和宫干支不互相遮挡。",
+        "没有选择动态流层时，不出现流年命、流月命、流日命、流时命等动态标记。"
+      ],
+      "status": "needs-manual-visual-review"
+    },
+    {
+      "groupId": "flow-time-picker",
+      "label": "流动时间选择器",
+      "priority": "high",
+      "relatedModules": ["dynamic-flow-tabs.tsx", "ziwei-page-view-model.ts"],
+      "automatedCoverage": [
+        "check-flow-time-selector.mjs",
+        "check-dynamic-chart.mjs",
+        "check-dynamic-boundary-samples.mjs"
+      ],
+      "manualItems": [
+        "流动时间位于十二宫盘下方，出生年月日仍由左侧输入手动填写。",
+        "再次点击同一个大限时，当前流动盘恢复为原盘状态，下层流年、流月、流日、流时不保持选中。",
+        "选择流年时保留所属大限高亮，选择流月时保留大限和流年高亮，选择流日、流时时按层级保留上级高亮。",
+        "大限顺逆方向按照阳男阴女顺、阴男阳女逆的固定规则，不在页面临时改写算法。",
+        "切换大限、流年、流月、流日、流时时，中宫摘要和当前流动盘说明同步变化。"
+      ],
+      "status": "needs-manual-click-review"
+    },
+    {
+      "groupId": "dynamic-layer-markers",
+      "label": "动态命宫与三方四正",
+      "priority": "high",
+      "relatedModules": ["ziwei-chart-grid.tsx", "ziwei-page.module.css"],
+      "automatedCoverage": [
+        "check-dynamic-palace-markers.mjs",
+        "check-dynamic-relation-lines.mjs",
+        "check-dynamic-page-data-consistency.mjs"
+      ],
+      "manualItems": [
+        "选择大限时只显示大限命宫标记和大限三方四正线条，不叠加原盘线条。",
+        "选择流年时显示大限命和流年命的层级标记，但关系线以当前流年查看盘为准。",
+        "选择流月、流日、流时时，以此类推显示当前层级与上级链路标记。",
+        "取消当前动态选择后，三方四正线条回到原盘状态。",
+        "不同动态层级颜色可区分，不把多个流层的线条同时堆在盘面上。"
+      ],
+      "status": "needs-manual-click-review"
+    },
+    {
+      "groupId": "pattern-panels",
+      "label": "格局与破格面板",
+      "priority": "high",
+      "relatedModules": [
+        "pattern-overview-panel.tsx",
+        "pattern-detail-panel.tsx",
+        "ziwei-pattern-catalog.ts",
+        "ziwei-pattern-detailed-analysis.ts"
+      ],
+      "automatedCoverage": [
+        "check-pattern-overview-panel.mjs",
+        "check-pattern-expansion-consistency.mjs",
+        "check-pattern-golden-samples.mjs",
+        "check-pattern-detailed-analysis.mjs"
+      ],
+      "manualItems": [
+        "筛选结果只显示当前盘中命中的格局，未命中、盘中没有的格局隐藏。",
+        "原盘格局标注为原盘，大限格局标注为大限，流年格局标注为流年，流月、流日、流时按当前层级标注。",
+        "点击大限时展示大限视角格局，点击流年时展示流年视角格局，后续流层以此类推。",
+        "不良格局、凶格、破格、强化和减弱信息都有命中说明，不把待校准缺口当作已命中结果展示。",
+        "格局说明、命中/破格分析和来源规则能对应到同一条格局 ID。"
+      ],
+      "status": "needs-manual-content-review"
+    },
+    {
+      "groupId": "dynamic-detail-panels",
+      "label": "动态盘详细分析",
+      "priority": "medium",
+      "relatedModules": [
+        "dynamic-flow-overview-panel.tsx",
+        "dynamic-flow-focus-panel.tsx",
+        "dynamic-flow-matrix-panel.tsx",
+        "dynamic-flow-impact-panel.tsx",
+        "dynamic-flow-priority-panel.tsx"
+      ],
+      "automatedCoverage": [
+        "check-dynamic-flow-overview-panel.mjs",
+        "check-dynamic-flow-focus-panel.mjs",
+        "check-dynamic-flow-matrix-panel.mjs",
+        "check-dynamic-flow-impact-panel.mjs",
+        "check-dynamic-flow-priority-panel.mjs",
+        "check-dynamic-detailed-analysis.mjs"
+      ],
+      "manualItems": [
+        "当前流动盘、完整明细、总览矩阵、叠加影响和重点宫位排序读取同一份动态数据。",
+        "流年层展示流年三套十二神，非流年层不误显示年系十二神。",
+        "流动星曜、四化、宫位重点和格局视角与当前选择层级一致。",
+        "动态盘内容展示为紫微盘分析，不提前进入行为映射。"
+      ],
+      "status": "needs-manual-content-review"
+    },
+    {
+      "groupId": "detailed-analysis",
+      "label": "原盘详细分析",
+      "priority": "medium",
+      "relatedModules": [
+        "palace-detail-panel.tsx",
+        "palace-overview-panel.tsx",
+        "interpretation-panel.tsx",
+        "content-detail-resolver.ts"
+      ],
+      "automatedCoverage": [
+        "check-detailed-analysis.mjs",
+        "check-detailed-analysis-closure.mjs",
+        "check-content-detail-closure.mjs"
+      ],
+      "manualItems": [
+        "十二宫详细分析、星曜解释、庙旺落陷说明、四化说明和格局说明内容完整。",
+        "主星、辅曜、煞曜、杂曜、长生十二神、博士十二神、岁前十二神、将前十二神均有归类入口。",
+        "内容解释不在页面重复定义参数或算法，只读解释层和 ViewModel。",
+        "缺口、待校准和已闭合内容边界清楚。"
+      ],
+      "status": "needs-manual-content-review"
+    },
+    {
+      "groupId": "encoding-and-copyright",
+      "label": "中文显示与侵权边界",
+      "priority": "medium",
+      "relatedModules": ["docs/ziwei", "src/app/ziwei", "scripts/ziwei"],
+      "automatedCoverage": [
+        "check-source-encoding.mjs",
+        "check-sample-manual-calibration.mjs",
+        "check-priority-sample-snapshots.mjs"
+      ],
+      "manualItems": [
+        "页面、文档、脚本中的中文无乱码。",
+        "参考图只用于布局和验收方向，不复制外部软件的文案、商标、图标或专有排版细节。",
+        "格局和算法按通用紫微斗数规则整理，不直接搬运受保护软件内容。",
+        "后续新增人工样例时记录来源边界，不保存外部截图中的完整专有文本。"
+      ],
+      "status": "needs-manual-legal-boundary-review"
+    }
+  ],
+  "acceptanceExitCriteria": [
+    "所有 acceptanceGroups 至少完成一次人工点验。",
+    "页面人工验收不新增算法，只记录人工检查结果和缺口。",
+    "自动检查入口全部通过。",
+    "如发现盘面、动态层或格局命中错误，先回到算法或 ViewModel 修正，再更新验收清单。",
+    "最终交付前更新最终闭合报告。"
+  ],
+  "nextStep": "P19-144 最终交付闭合报告"
+}

@@ -1,0 +1,79 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v134-complete-world-vj1-threshold-push",
+  "modelVersion": "rgb-refiner-natural-home-v134-complete-world-vj1-threshold-push",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.0000025,
+  "discriminatorLearningRate": 0.0,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0,
+  "maxEpochs": 44,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 4.0,
+    "edge": 12.8,
+    "texture": 6.1,
+    "multiScaleTexture": 5.4,
+    "patchVariance": 4.9,
+    "laplacian": 12.8,
+    "gradient": 12.2,
+    "colorRange": 0.34,
+    "waterPeriodicity": 7.3
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.0015,
+    "margin": 0.00015
+  },
+  "structureWeights": {
+    "water": 6.0,
+    "shoreline": 6.3,
+    "road": 5.2,
+    "roadEdge": 5.4,
+    "tree": 4.8,
+    "rock": 4.2,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 5.0,
+  "saveBestBy": "validation_loss",
+  "seed": 20260630,
+  "status": "v134_complete_world_vj1_threshold_push_hidden_training_only",
+  "allowedScope": "complete_natural_home_mvp_training_only",
+  "forbiddenScope": [
+    "building",
+    "facility",
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "purpose": "Continue from V133 with the corrected V28 structure chain. Push complete natural-home formal candidates across VJ-1 thresholds without lowering the judge: score >= 90, sharpness ratio >= 0.82, edge density ratio >= 0.90, and mask boundary ratio >= 0.85.",
+    "worldDisplay": "blocked until generated candidates pass VJ-1, VJ-2, Game-World Frame Gate, ApprovedFrame binding, RuntimeFrame, and owner confirmation."
+  }
+}

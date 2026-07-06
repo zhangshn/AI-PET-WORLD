@@ -12,6 +12,17 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    ".runtime/**",
+    "runtime-data/**",
+    "coverage/**",
+    "data/**",
+    "ml/ai-painter/.venv/**",
+    "ml/ai-painter/checkpoints/**",
+    "ml/ai-painter/outputs/**",
+    "**/__pycache__/**",
+    ".pytest_cache/**",
+    ".mypy_cache/**",
+    ".ruff_cache/**",
   ]),
 ]);
 

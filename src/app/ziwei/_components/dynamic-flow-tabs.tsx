@@ -32,6 +32,18 @@ export function DynamicFlowTabs(props: {
             <DynamicFact label="起运岁数" value={`${props.dynamicDebug.startAge} 岁`} />
             <DynamicFact label="当前年龄" value={`${props.dynamicDebug.currentAge} 岁`} />
             <DynamicFact
+              label="小限方向"
+              value={props.dynamicDebug.xiaoXianDirectionLabel}
+            />
+            <DynamicFact
+              label="当前小限"
+              value={props.dynamicDebug.xiaoXianPalaceLabel}
+            />
+            <DynamicFact
+              label="流年斗君"
+              value={props.dynamicDebug.douJunPalaceLabel}
+            />
+            <DynamicFact
               label="启用流"
               value={`${props.dynamicDebug.activeFlowCount}/${props.dynamicDebug.totalFlowCount}`}
             />

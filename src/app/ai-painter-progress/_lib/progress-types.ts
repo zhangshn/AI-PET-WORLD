@@ -57,6 +57,7 @@ export type TrainingAction =
   | "prepare_training_expansion"
   | "full_autonomous_training"
   | "report_mvp_gap"
+  | "full_game_map_material_slot_v46_runtime_frame"
 
 export type ResourceUsageSummary = {
   status: "running" | "completed" | "failed"
@@ -71,6 +72,38 @@ export type ResourceUsageSummary = {
   averagePowerWatts: number
   electricity: { estimatedKwh: number; estimatedCny: number; cnyPerKwh: number }
   tokenLedger: { externalApiTokens: number; externalApiCostCny: number; localComputeTokens: number }
+}
+
+export type TrainingProcessEvent = {
+  id: string
+  timestamp: string
+  action: string
+  runId: string
+  kind: string
+  status: "running" | "success" | "failed" | "error" | "blocked" | "info"
+  title: string
+  detail?: string
+  script?: string
+  currentStep?: string
+  error?: string | null
+  resourceSessionId?: string
+  archiveId?: string
+}
+
+export type TrainingProcessLedger = {
+  schemaVersion: "ai-painter-training-process-ledger-v1"
+  updatedAt: string | null
+  events: TrainingProcessEvent[]
+  summary: {
+    total: number
+    running: number
+    success: number
+    failed: number
+    error: number
+    blocked: number
+    info: number
+    lastEvent: TrainingProcessEvent | null
+  }
 }
 
 export type Progress = {
@@ -982,6 +1015,46 @@ export type Progress = {
     current: ResourceUsageSummary | null
     latest: ResourceUsageSummary | null
     history: ResourceUsageSummary[]
+  }
+  trainingProcessLedger?: TrainingProcessLedger
+  gameMapRuntimeFrame?: {
+    ready: boolean
+    canShowInWorld: boolean
+    status: string
+    imageUrl: string | null
+    recordId: string | null
+    worldId: string | null
+    tick: number | null
+    formalJudge: {
+      passed: boolean
+      status: string | null
+      issues: number
+      metrics: {
+        edgeDensity: number
+        washedGrassHazeRatio: number
+        pathContaminationRatio: number
+        pathBlackCraterRatio: number
+      }
+    } | null
+  }
+  trainingRunArchive?: {
+    ready: boolean
+    status: string | null
+    runId: string | null
+    action: string | null
+    materialFiles: number
+    materialPassed: boolean
+    formalVisualJudgePassed: boolean
+    manualReviewStatus: string | null
+    manifestPath: string | null
+    compositeImagePath: string | null
+    visualDeltaReview: {
+      status: string | null
+      priorityIssueCount: number
+      targetSlots: string[]
+      nextAction: string | null
+      reportPath: string | null
+    } | null
   }
   training: { percent: number; inferenceReady: boolean }
 }

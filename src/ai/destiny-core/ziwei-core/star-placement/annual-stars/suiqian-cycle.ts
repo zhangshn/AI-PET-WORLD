@@ -10,7 +10,7 @@ import {
   requireYearBranch
 } from "./yearly-placement-utils"
 
-const SUIQIAN_SEQUENCE = [
+export const SUIQIAN_SEQUENCE = [
   YEARLY_STAR_IDS.suijian,
   YEARLY_STAR_IDS.huiqi,
   YEARLY_STAR_IDS.sangmen,

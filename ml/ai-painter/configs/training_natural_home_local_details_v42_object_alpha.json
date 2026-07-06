@@ -1,0 +1,40 @@
+{
+  "trainingVersion": "training-natural-home-local-details-v42-object-alpha",
+  "modelVersion": "natural-home-local-detail-unet-v42-object-alpha",
+  "inputChannels": 28,
+  "inputExtras": ["coord", "noise", "reference", "style"],
+  "referenceMode": "self",
+  "outputChannels": 4,
+  "baseChannels": 80,
+  "batchSize": 4,
+  "learningRate": 0.00012,
+  "maxEpochs": 70,
+  "mixedPrecision": true,
+  "augment": true,
+  "upsampleMode": "bilinear",
+  "midBlocks": 2,
+  "decoderDetailBlocks": 3,
+  "lossWeights": {
+    "l1": 1.25,
+    "edge": 5.8,
+    "texture": 4.8,
+    "laplacian": 4.8,
+    "gradient": 3.4,
+    "colorRange": 0.2
+  },
+  "structureWeights": {
+    "grass": 3.0,
+    "water": 0.0,
+    "shoreline": 0.0,
+    "road": 0.0,
+    "roadEdge": 0.0,
+    "tree": 5.4,
+    "rock": 4.8,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260704,
+  "status": "pure_natural_home_object_alpha_material_training"
+}

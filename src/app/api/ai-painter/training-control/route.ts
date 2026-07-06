@@ -87,6 +87,7 @@ const actions = new Set<TrainingAction>([
   "report_mvp_gap",
   "report_natural_home",
   "report_natural_home_quality",
+  "full_game_map_material_slot_v46_runtime_frame",
 ])
 
 export async function POST(request: NextRequest) {

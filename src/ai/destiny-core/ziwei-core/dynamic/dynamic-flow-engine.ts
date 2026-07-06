@@ -24,7 +24,8 @@ import type {
   ZiweiCycleDirection,
   ZiweiDynamicChart,
   ZiweiDynamicResult,
-  ZiweiFlowResult
+  ZiweiFlowResult,
+  ZiweiGender
 } from "./dynamic-schema"
 
 const SECTOR_ORDER: SectorName[] = [
@@ -269,11 +270,23 @@ export function getLiuNianPalace(currentYear: number): BranchPalace {
 }
 
 export function getLiuYuePalace(params: {
-  liuNianPalace: BranchPalace
+  douJunPalace: BranchPalace
   currentLunarMonth: number
 }): BranchPalace {
   const month = normalizeLunarMonth(params.currentLunarMonth)
-  return moveBranch(params.liuNianPalace, month - 1)
+  return moveBranch(params.douJunPalace, month - 1)
+}
+
+export function getDouJunPalace(params: {
+  liuNianPalace: BranchPalace
+  birthLunarMonth: number
+  birthTimeBranch: BranchPalace
+}): BranchPalace {
+  const birthMonth = normalizeLunarMonth(params.birthLunarMonth)
+  const monthBasePalace = moveBranch(params.liuNianPalace, -(birthMonth - 1))
+  const birthTimeOffset = getTimeBranchOffset(params.birthTimeBranch)
+
+  return moveBranch(monthBasePalace, birthTimeOffset)
 }
 
 export function getLiuRiPalace(params: {
@@ -292,6 +305,44 @@ export function getLiuShiPalace(params: {
   return moveBranch(params.liuRiPalace, offset)
 }
 
+const XIAO_XIAN_START_BY_BIRTH_YEAR_BRANCH: Record<BranchPalace, BranchPalace> = {
+  zi: "xu",
+  chou: "wei",
+  yin: "chen",
+  mao: "chou",
+  chen: "xu",
+  si: "wei",
+  wu: "chen",
+  wei: "chou",
+  shen: "xu",
+  you: "wei",
+  xu: "chen",
+  hai: "chou"
+}
+
+export function getXiaoXianDirection(gender: ZiweiGender): ZiweiCycleDirection {
+  return gender === "male" ? "forward" : "backward"
+}
+
+export function getXiaoXianStartPalace(
+  birthYearBranch: BranchPalace
+): BranchPalace {
+  return XIAO_XIAN_START_BY_BIRTH_YEAR_BRANCH[birthYearBranch]
+}
+
+export function getXiaoXianPalace(params: {
+  birthYearBranch: BranchPalace
+  gender: ZiweiGender
+  currentAge: number
+}): BranchPalace {
+  const startPalace = getXiaoXianStartPalace(params.birthYearBranch)
+  const direction = getXiaoXianDirection(params.gender)
+  const ageSteps = Math.max(1, params.currentAge) - 1
+  const finalSteps = direction === "forward" ? ageSteps : -ageSteps
+
+  return moveBranch(startPalace, finalSteps)
+}
+
 export function buildZiweiDynamicChart(
   input: BuildZiweiDynamicChartInput
 ): ZiweiDynamicResult<ZiweiDynamicChart> {
@@ -307,6 +358,8 @@ export function buildZiweiDynamicChart(
   const startAge = getElementGateStartAge(input.pattern.elementGate)
   const isDaYunStarted = input.currentAge >= startAge
   const natalPalace = input.pattern.primaryBranchPalace
+  const gender = input.gender as ZiweiGender
+  const birthYearBranch = getYearBranch(input.pattern.lunarInfo.lunarYear)
 
   const daYunPalace = getDaYunPalace({
     lifePalace: natalPalace,
@@ -316,9 +369,14 @@ export function buildZiweiDynamicChart(
   })
 
   const liuNianPalace = getLiuNianPalace(input.currentYear)
+  const douJunPalace = getDouJunPalace({
+    liuNianPalace,
+    birthLunarMonth: input.pattern.lunarInfo.lunarMonth,
+    birthTimeBranch: input.pattern.lunarInfo.timeBranch
+  })
 
   const liuYuePalace = getLiuYuePalace({
-    liuNianPalace,
+    douJunPalace,
     currentLunarMonth: input.currentLunarMonth
   })
 
@@ -330,6 +388,13 @@ export function buildZiweiDynamicChart(
   const liuShiPalace = getLiuShiPalace({
     liuRiPalace,
     currentTimeBranch: input.currentTimeBranch
+  })
+  const xiaoXianDirection = getXiaoXianDirection(gender)
+  const xiaoXianStartPalace = getXiaoXianStartPalace(birthYearBranch)
+  const xiaoXianPalace = getXiaoXianPalace({
+    birthYearBranch,
+    gender,
+    currentAge: input.currentAge
   })
 
   return {
@@ -390,7 +455,11 @@ export function buildZiweiDynamicChart(
         direction: directionResult.data.direction,
         startAge,
         currentAge: input.currentAge,
-        isDaYunStarted
+        isDaYunStarted,
+        xiaoXianDirection,
+        xiaoXianStartPalace,
+        xiaoXianPalace,
+        douJunPalace
       }
     }
   }

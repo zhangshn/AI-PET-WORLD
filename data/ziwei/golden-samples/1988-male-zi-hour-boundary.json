@@ -37,15 +37,19 @@
       "direction": "forward",
       "startAge": 6,
       "currentAge": 38,
-      "isDaYunStarted": true
+      "isDaYunStarted": true,
+      "xiaoXianDirection": "forward",
+      "xiaoXianStartPalace": "xu",
+      "xiaoXianPalace": "hai",
+      "douJunPalace": "chou"
     },
     "dynamicFlowPalaces": {
       "natal": "wei",
       "daYun": "xu",
       "liuNian": "wu",
-      "liuYue": "zi",
-      "liuRi": "zi",
-      "liuShi": "zi"
+      "liuYue": "wei",
+      "liuRi": "wei",
+      "liuShi": "wei"
     },
     "viewModel": {
       "palaceGridCount": 12,

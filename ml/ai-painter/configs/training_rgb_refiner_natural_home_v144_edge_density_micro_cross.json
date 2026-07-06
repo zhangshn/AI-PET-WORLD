@@ -1,0 +1,82 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v144-edge-density-micro-cross",
+  "modelVersion": "rgb-refiner-natural-home-v144-edge-density-micro-cross",
+  "inputChannels": 17,
+  "baseRgbManifest": ".runtime/ai-painter/natural-home-v136-stable-edge-micro-tune-full-base-generation/latest.json",
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": false,
+  "residualScale": 0.18,
+  "batchSize": 2,
+  "learningRate": 0.0000008,
+  "discriminatorLearningRate": 0.000001,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.002,
+  "maxEpochs": 10,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 2.4,
+    "edge": 19.0,
+    "edgeDensity": 38.0,
+    "texture": 8.2,
+    "multiScaleTexture": 7.6,
+    "patchVariance": 7.2,
+    "laplacian": 19.2,
+    "gradient": 18.8,
+    "colorRange": 0.28,
+    "waterPeriodicity": 9.2
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.001,
+    "margin": 0.0001
+  },
+  "structureWeights": {
+    "water": 6.4,
+    "shoreline": 7.0,
+    "road": 6.1,
+    "roadEdge": 6.8,
+    "tree": 6.1,
+    "rock": 5.7,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 6.0,
+  "saveBestBy": "validation_loss",
+  "seed": 20260630,
+  "status": "v144_edge_density_micro_cross_hidden_training_only",
+  "allowedScope": "complete_natural_home_mvp_training_only",
+  "forbiddenScope": [
+    "building",
+    "facility",
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "purpose": "Continue from V143. V143 best candidate is within 0.004 of the VJ-1 edge-density gate. This short run is a final micro-cross attempt before switching to metric/data analysis.",
+    "worldDisplay": "blocked until generated candidates pass VJ-1, VJ-2, Game-World Frame Gate, ApprovedFrame binding, RuntimeFrame, and owner confirmation."
+  }
+}

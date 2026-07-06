@@ -43,6 +43,9 @@ for (const row of report.rows) {
   assert(Array.isArray(row.checks) && row.checks.length > 0, `missing checks: ${row.sampleId}`)
   for (const requiredCheck of [
     "vj2_natural_quality_must_pass",
+    "generated_image_must_exist",
+    "generated_image_must_be_full_runtime_resolution",
+    "generated_image_must_keep_four_three_ratio",
     "complete_world_intent_tags_present",
     "complete_world_anchors_present",
     "blueprint_must_declare_complete_world_scope",
@@ -54,6 +57,9 @@ for (const row of report.rows) {
       `missing game-world frame check ${requiredCheck}: ${row.sampleId}`,
     )
   }
+  assert(row.imageMetrics && typeof row.imageMetrics === "object", `missing image metrics: ${row.sampleId}`)
+  assert(Number.isFinite(row.imageMetrics.width), `missing image width metric: ${row.sampleId}`)
+  assert(Number.isFinite(row.imageMetrics.height), `missing image height metric: ${row.sampleId}`)
 }
 
 if (expectNoPassed) {

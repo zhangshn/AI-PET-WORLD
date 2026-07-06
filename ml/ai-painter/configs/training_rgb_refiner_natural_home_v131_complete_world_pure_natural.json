@@ -1,0 +1,79 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v131-complete-world-pure-natural",
+  "modelVersion": "rgb-refiner-natural-home-v131-complete-world-pure-natural",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.000004,
+  "discriminatorLearningRate": 0.0,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0,
+  "maxEpochs": 24,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 4.2,
+    "edge": 8.4,
+    "texture": 5.4,
+    "multiScaleTexture": 4.4,
+    "patchVariance": 3.6,
+    "laplacian": 8.4,
+    "gradient": 8.0,
+    "colorRange": 0.34,
+    "waterPeriodicity": 6.4
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.002,
+    "margin": 0.0002
+  },
+  "structureWeights": {
+    "water": 5.4,
+    "shoreline": 5.6,
+    "road": 3.8,
+    "roadEdge": 3.8,
+    "tree": 3.6,
+    "rock": 3.3,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 3.2,
+  "saveBestBy": "validation_loss",
+  "seed": 20260630,
+  "status": "v131_complete_world_pure_natural_hidden_training_only",
+  "allowedScope": "complete_natural_home_mvp_training_only",
+  "forbiddenScope": [
+    "building",
+    "facility",
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "purpose": "Train from V118 complete natural-home world conditions so candidates can satisfy the complete game-world frame gate without reintroducing buildings, characters, animals, or construction content.",
+    "worldDisplay": "blocked until generated candidates pass VJ-1, VJ-2, Game-World Frame Gate, ApprovedFrame binding, RuntimeFrame, and owner confirmation."
+  }
+}

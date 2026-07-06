@@ -1,0 +1,46 @@
+{
+  "trainingVersion": "training-natural-home-local-details-v44-material-slot-repair",
+  "modelVersion": "natural-home-local-detail-unet-v44-material-slot-repair",
+  "inputChannels": 28,
+  "inputExtras": ["coord", "noise", "reference", "style"],
+  "referenceMode": "self",
+  "outputChannels": 3,
+  "baseChannels": 80,
+  "batchSize": 2,
+  "learningRate": 0.00014,
+  "maxEpochs": 96,
+  "mixedPrecision": true,
+  "augment": true,
+  "upsampleMode": "bilinear",
+  "midBlocks": 2,
+  "decoderDetailBlocks": 3,
+  "lossWeights": {
+    "l1": 1.35,
+    "edge": 4.6,
+    "texture": 4.1,
+    "laplacian": 4.2,
+    "gradient": 3.0,
+    "colorRange": 0.16
+  },
+  "structureWeights": {
+    "grass": 3.8,
+    "water": 0.0,
+    "shoreline": 0.0,
+    "road": 3.2,
+    "roadEdge": 2.4,
+    "tree": 0.0,
+    "rock": 3.4,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260704,
+  "status": "game_map_material_slot_repair_local_model_training",
+  "formalPolicy": {
+    "notProgramDrawing": true,
+    "notWorldRuntimeFrame": true,
+    "sourcePolicy": "same_source_target_png_and_masks_v1_crop",
+    "purpose": "Repair material-slot grass/path/rock outputs before ApprovedMaterialPack. This config must not be used to create /world placeholders."
+  }
+}

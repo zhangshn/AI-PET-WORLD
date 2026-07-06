@@ -37,7 +37,11 @@
       "direction": "forward",
       "startAge": 5,
       "currentAge": 1,
-      "isDaYunStarted": false
+      "isDaYunStarted": false,
+      "xiaoXianDirection": "backward",
+      "xiaoXianStartPalace": "chou",
+      "xiaoXianPalace": "chou",
+      "douJunPalace": "wu"
     },
     "dynamicFlowPalaces": {
       "natal": "yin",

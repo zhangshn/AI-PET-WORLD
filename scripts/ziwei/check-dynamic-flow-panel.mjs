@@ -36,7 +36,7 @@ const stylePath = path.join(
   "_styles",
   "ziwei-page.module.css",
 )
-const pageDocPath = path.join(root, "docs", "ziwei", "PAGE_STRUCTURE.md")
+const pageDocPath = path.join(root, "docs", "ziwei", "PAGE_ACCEPTANCE.md")
 
 function fail(message) {
   console.error(`Ziwei dynamic flow panel check failed: ${message}`)
@@ -69,6 +69,10 @@ const requiredContractMarkers = [
   "startAge",
   "currentAge",
   "isDaYunStarted",
+  "xiaoXianDirectionLabel",
+  "xiaoXianStartPalaceLabel",
+  "xiaoXianPalaceLabel",
+  "douJunPalaceLabel",
   "activeFlowCount",
   "totalFlowCount",
   "dynamicDebug?: ZiweiDynamicDebugView",
@@ -85,6 +89,8 @@ const requiredBuilderMarkers = [
   "DYNAMIC_DIRECTION_LABELS",
   "dynamicDebug: input.dynamicChart",
   "dynamicChart.debug.direction",
+  "dynamicChart.debug.xiaoXianPalace",
+  "dynamicChart.debug.douJunPalace",
   "dynamicChart.flows.filter",
 ]
 
@@ -101,6 +107,9 @@ const requiredComponentMarkers = [
   "起运岁数",
   "当前年龄",
   "启用流",
+  "xiaoXianDirectionLabel",
+  "xiaoXianPalaceLabel",
+  "douJunPalaceLabel",
   "flowStatusActive",
   "flowStatusInactive",
 ]

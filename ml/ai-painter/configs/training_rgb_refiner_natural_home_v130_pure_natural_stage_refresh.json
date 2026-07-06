@@ -1,0 +1,79 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v130-pure-natural-stage-refresh",
+  "modelVersion": "rgb-refiner-natural-home-v130-pure-natural-stage-refresh",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.000002,
+  "discriminatorLearningRate": 0.0,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0,
+  "maxEpochs": 40,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 3.8,
+    "edge": 7.8,
+    "texture": 5.0,
+    "multiScaleTexture": 4.0,
+    "patchVariance": 3.2,
+    "laplacian": 7.8,
+    "gradient": 7.6,
+    "colorRange": 0.32,
+    "waterPeriodicity": 6.4
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.002,
+    "margin": 0.0002
+  },
+  "structureWeights": {
+    "water": 5.2,
+    "shoreline": 5.4,
+    "road": 3.0,
+    "roadEdge": 3.0,
+    "tree": 3.2,
+    "rock": 3.1,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 2.8,
+  "saveBestBy": "validation_loss",
+  "seed": 20260630,
+  "status": "v130_pure_natural_stage_refresh_hidden_training_only",
+  "allowedScope": "natural_home_only",
+  "forbiddenScope": [
+    "building",
+    "facility",
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "purpose": "Refresh the current-stage pure-natural local model using V110 clean formal-passed natural candidates and the stronger texture losses added in V128.",
+    "worldDisplay": "blocked until future complete game-world RuntimeFrame gates pass and the owner confirms the frame."
+  }
+}

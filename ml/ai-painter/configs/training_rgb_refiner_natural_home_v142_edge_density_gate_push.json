@@ -1,0 +1,82 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v142-edge-density-gate-push",
+  "modelVersion": "rgb-refiner-natural-home-v142-edge-density-gate-push",
+  "inputChannels": 17,
+  "baseRgbManifest": ".runtime/ai-painter/natural-home-v136-stable-edge-micro-tune-full-base-generation/latest.json",
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": false,
+  "residualScale": 0.2,
+  "batchSize": 2,
+  "learningRate": 0.0000012,
+  "discriminatorLearningRate": 0.0000015,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.003,
+  "maxEpochs": 18,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 2.8,
+    "edge": 18.0,
+    "edgeDensity": 20.0,
+    "texture": 8.6,
+    "multiScaleTexture": 8.0,
+    "patchVariance": 7.6,
+    "laplacian": 18.0,
+    "gradient": 17.4,
+    "colorRange": 0.32,
+    "waterPeriodicity": 8.8
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.0012,
+    "margin": 0.00012
+  },
+  "structureWeights": {
+    "water": 6.3,
+    "shoreline": 6.9,
+    "road": 5.9,
+    "roadEdge": 6.6,
+    "tree": 5.9,
+    "rock": 5.5,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 5.9,
+  "saveBestBy": "validation_loss",
+  "seed": 20260630,
+  "status": "v142_edge_density_gate_push_hidden_training_only",
+  "allowedScope": "complete_natural_home_mvp_training_only",
+  "forbiddenScope": [
+    "building",
+    "facility",
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "purpose": "Continue from V141. V141 best candidate only failed VJ-1 on edgeDensityRatio, so this run applies a narrow edge-density gate push while keeping candidates hidden and blocked from /world.",
+    "worldDisplay": "blocked until generated candidates pass VJ-1, VJ-2, Game-World Frame Gate, ApprovedFrame binding, RuntimeFrame, and owner confirmation."
+  }
+}

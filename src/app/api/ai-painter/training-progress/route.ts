@@ -5,7 +5,7 @@ import { promisify } from "node:util"
 import { NextResponse } from "next/server"
 import { readResourceUsageLedger } from "@/server/ai-painter-resource-usage"
 import { buildTrainingQualityGateReport } from "@/server/ai-painter-training-quality-gate"
-import { readTrainingControlState, readTrainingLogTail } from "@/server/ai-painter-training-state"
+import { readTrainingControlState, readTrainingLogTail, readTrainingProcessLedger } from "@/server/ai-painter-training-state"
 import { buildVisualUnitV0Status } from "@/world/world-visual-painter"
 
 export const runtime = "nodejs"
@@ -352,6 +352,8 @@ export async function GET() {
   const trainingQualityGate = trainingQualityGateSource
     ? buildTrainingQualityGateReport(trainingQualityGateSource)
     : null
+  const gameMapRuntimeFrame = await readLatestGameMapRuntimeFramePreview()
+  const trainingRunArchive = await readLatestTrainingRunArchive()
 
   return NextResponse.json({
     updatedAt: new Date().toISOString(),
@@ -641,6 +643,9 @@ export async function GET() {
     trainingQualityGate,
     control,
     resourceUsage: await readResourceUsageLedger(),
+    trainingProcessLedger: await readTrainingProcessLedger(),
+    gameMapRuntimeFrame,
+    trainingRunArchive,
     logs: await readTrainingLogTail(),
     training: {
       status: control.status === "running" ? "running" : summary?.status === "completed" ? "completed" : "not_started",
@@ -676,6 +681,22 @@ async function countDirectories(directory: string) {
   }
 }
 
+async function countFiles(directory: string): Promise<number> {
+  try {
+    const entries = await readdir(directory, { withFileTypes: true })
+    const counts: number[] = await Promise.all(
+      entries.map(async (entry): Promise<number> => {
+        const fullPath = path.join(directory, entry.name)
+        if (entry.isDirectory()) return countFiles(fullPath)
+        return entry.isFile() ? 1 : 0
+      }),
+    )
+    return counts.reduce((total: number, count: number) => total + count, 0)
+  } catch {
+    return 0
+  }
+}
+
 async function readJson(file: string): Promise<Record<string, unknown> | null> {
   try {
     return JSON.parse(await readFile(file, "utf8")) as Record<string, unknown>
@@ -690,6 +711,116 @@ async function readLastJsonLine(file: string): Promise<Record<string, unknown> |
     return lines.length ? JSON.parse(lines.at(-1)!) as Record<string, unknown> : null
   } catch {
     return null
+  }
+}
+
+async function readLatestGameMapRuntimeFramePreview() {
+  const record = await readJson(
+    path.join(
+      process.cwd(),
+      ".runtime",
+      "game-map-runtime-frame-candidates",
+      "latest-runtime-frame.json",
+    ),
+  )
+  const runtimeFrame = isRecord(record?.runtimeFrame) ? record.runtimeFrame : null
+  const composition = isRecord(runtimeFrame?.composition) ? runtimeFrame.composition : null
+  const compositeOutput = isRecord(composition?.compositeOutput) ? composition.compositeOutput : null
+  const outputTags = Array.isArray(compositeOutput?.tags)
+    ? compositeOutput.tags.filter((tag): tag is string => typeof tag === "string")
+    : []
+  const localImagePath = stringValue(compositeOutput?.imageUrl)
+  const formalJudgePath = localImagePath?.endsWith("-composite-output.png")
+    ? localImagePath.replace(/-composite-output\.png$/, "-formal-visual-judge.json")
+    : null
+  const formalJudge = formalJudgePath ? await readJson(formalJudgePath) : null
+  const metrics = isRecord(formalJudge?.metrics) ? formalJudge.metrics : null
+
+  if (!record || !localImagePath) {
+    return {
+      ready: false,
+      canShowInWorld: false,
+      status: "missing",
+      imageUrl: null,
+      recordId: null,
+      worldId: null,
+      tick: null,
+      formalJudge: null,
+    }
+  }
+
+  return {
+    ready: outputTags.includes("world_page_ready_after_formal_visual_judge"),
+    canShowInWorld: Boolean(record.canShowInWorld),
+    status: outputTags.includes("formal_game_map_visual_judge_passed")
+      ? "formal_passed"
+      : "candidate_only",
+    imageUrl: "/api/ai-painter/game-map-runtime-frame/image",
+    recordId: stringValue(record.recordId),
+    worldId: stringValue(record.worldId),
+    tick: numberValue(record.tick),
+    formalJudge: {
+      passed: Boolean(formalJudge?.passed),
+      status: stringValue(formalJudge?.status),
+      issues: Array.isArray(formalJudge?.issues) ? formalJudge.issues.length : 0,
+      metrics: {
+        edgeDensity: numberValue(metrics?.edgeDensity),
+        washedGrassHazeRatio: numberValue(metrics?.washedGrassHazeRatio),
+        pathContaminationRatio: numberValue(metrics?.pathContaminationRatio),
+        pathBlackCraterRatio: numberValue(metrics?.pathBlackCraterRatio),
+      },
+    },
+  }
+}
+
+async function readLatestTrainingRunArchive() {
+  const latest = await readJson(path.join(aiPainterRuntimeRoot, "training-run-archive", "latest.json"))
+  if (!latest) {
+    return {
+      ready: false,
+      status: "missing",
+      runId: null,
+      action: null,
+      materialFiles: 0,
+      materialPassed: false,
+      formalVisualJudgePassed: false,
+      manualReviewStatus: null,
+      manifestPath: null,
+      compositeImagePath: null,
+      visualDeltaReview: null,
+    }
+  }
+
+  const inference = isRecord(latest.inference) ? latest.inference : null
+  const quality = isRecord(latest.quality) ? latest.quality : null
+  const manualReview = isRecord(latest.manualReview) ? latest.manualReview : null
+  const files = isRecord(latest.files) ? latest.files : null
+  const output = isRecord(latest.output) ? latest.output : null
+  const visualDeltaReview = isRecord(latest.visualDeltaReview) ? latest.visualDeltaReview : null
+  const archivedMaterialDir = stringValue(inference?.archivedMaterialDir)
+
+  return {
+    ready: true,
+    status: stringValue(latest.status),
+    runId: stringValue(latest.runId),
+    action: stringValue(latest.action),
+    materialFiles: archivedMaterialDir ? await countFiles(path.resolve(process.cwd(), archivedMaterialDir)) : 0,
+    materialPassed: Boolean(quality?.materialPassed),
+    formalVisualJudgePassed: Boolean(quality?.formalVisualJudgePassed),
+    manualReviewStatus: stringValue(manualReview?.status),
+    manifestPath: stringValue(files?.manifest),
+    compositeImagePath: stringValue(output?.archivedCompositeOutput),
+    visualDeltaReview: visualDeltaReview
+      ? {
+          status: stringValue(visualDeltaReview.status),
+          priorityIssueCount: numberValue(visualDeltaReview.priorityIssueCount),
+          targetSlots: Array.isArray(visualDeltaReview.targetSlots)
+            ? visualDeltaReview.targetSlots.filter((slot): slot is string => typeof slot === "string")
+            : [],
+          nextAction: stringValue(visualDeltaReview.nextAction),
+          reportPath: stringValue(visualDeltaReview.archivedReport),
+        }
+      : null,
   }
 }
 
@@ -773,4 +904,8 @@ async function exists(file: string) {
 
 function numberValue(value: unknown) {
   return typeof value === "number" && Number.isFinite(value) ? value : 0
+}
+
+function stringValue(value: unknown) {
+  return typeof value === "string" && value.length > 0 ? value : null
 }

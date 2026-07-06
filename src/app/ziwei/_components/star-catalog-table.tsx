@@ -7,14 +7,20 @@ import type {
   ZiweiStarCategory
 } from "@/ai/destiny-core/ziwei-core/contracts"
 
+import type { StarCatalogBrightnessFilter } from "../_lib/ziwei-star-brightness-summary"
+import {
+  buildStarCatalogBrightnessFilterValues,
+  getStarBrightnessFilterLabel
+} from "../_lib/ziwei-star-brightness-summary"
+import type { StarCatalogCategoryFilter } from "../_lib/ziwei-star-category-filter"
 import styles from "../_styles/ziwei-page.module.css"
-
-export type StarCatalogCategoryFilter = ZiweiStarCategory | "all"
 
 export function StarCatalogTable(props: {
   rows: ZiweiStarCatalogRowView[]
   selectedCategory: StarCatalogCategoryFilter
+  selectedBrightness: StarCatalogBrightnessFilter
   onCategoryChange: (category: StarCatalogCategoryFilter) => void
+  onBrightnessChange: (brightness: StarCatalogBrightnessFilter) => void
 }) {
   const [selectedPalace, setSelectedPalace] = useState("all")
   const [query, setQuery] = useState("")
@@ -24,16 +30,27 @@ export function StarCatalogTable(props: {
   const palaceOptions = useMemo(() => {
     return buildPalaceOptions(props.rows)
   }, [props.rows])
+  const brightnessOptions = useMemo(() => {
+    return buildBrightnessOptions(props.rows)
+  }, [props.rows])
   const visibleRows = useMemo(() => {
     return filterRows({
       rows: props.rows,
       category: props.selectedCategory,
+      brightness: props.selectedBrightness,
       palaceKey: selectedPalace,
       query
     })
-  }, [props.rows, props.selectedCategory, selectedPalace, query])
+  }, [
+    props.rows,
+    props.selectedCategory,
+    props.selectedBrightness,
+    selectedPalace,
+    query
+  ])
   const hasActiveFilter =
     props.selectedCategory !== "all" ||
+    props.selectedBrightness !== "all" ||
     selectedPalace !== "all" ||
     query.trim().length > 0
 
@@ -82,11 +99,30 @@ export function StarCatalogTable(props: {
           </label>
 
           <label className={styles.field}>
-            <span className={styles.label}>星曜 / 规则</span>
+            <span className={styles.label}>庙旺</span>
+            <select
+              className={styles.select}
+              value={props.selectedBrightness}
+              onChange={(event) => {
+                props.onBrightnessChange(
+                  event.target.value as StarCatalogBrightnessFilter
+                )
+              }}
+            >
+              {brightnessOptions.map((option) => (
+                <option key={option.brightness} value={option.brightness}>
+                  {option.label}（{option.count}）
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className={styles.field}>
+            <span className={styles.label}>星曜 / 庙旺 / 来源</span>
             <input
               className={styles.input}
               value={query}
-              placeholder="输入星曜或规则 ID"
+              placeholder="输入星曜、庙旺或来源"
               onChange={(event) => setQuery(event.target.value)}
             />
             </label>
@@ -97,6 +133,7 @@ export function StarCatalogTable(props: {
             type="button"
             onClick={() => {
               props.onCategoryChange("all")
+              props.onBrightnessChange("all")
               setSelectedPalace("all")
               setQuery("")
             }}
@@ -112,20 +149,24 @@ export function StarCatalogTable(props: {
                 <th>星曜</th>
                 <th>分类</th>
                 <th>落宫</th>
-                <th>规则</th>
+                <th>庙旺</th>
+                <th>来源</th>
               </tr>
             </thead>
             <tbody>
               {visibleRows.map((row) => (
                 <tr key={`${row.starId}-${row.palaceLabel}-${row.placementRuleId}`}>
-                  <td>{row.label}</td>
+                  <td>{row.displayLabel}</td>
                   <td>{row.categoryLabel}</td>
                   <td>{row.palaceLabel} · {row.sectorLabel}</td>
                   <td>
-                    <code className={styles.ruleCode}>
-                      {row.placementRuleId ?? "未记录"}
-                    </code>
+                    <span className={styles.brightnessBadge}>
+                      {row.category === "transformation"
+                        ? "不参与"
+                        : row.brightness?.label ?? "未定"}
+                    </span>
                   </td>
+                  <td>{row.sourceLabel}</td>
                 </tr>
               ))}
             </tbody>
@@ -198,9 +239,31 @@ function buildPalaceOptions(rows: ZiweiStarCatalogRowView[]): Array<{
   })
 }
 
+function buildBrightnessOptions(rows: ZiweiStarCatalogRowView[]): Array<{
+  brightness: StarCatalogBrightnessFilter
+  label: string
+  count: number
+}> {
+  const levels = buildStarCatalogBrightnessFilterValues(rows)
+
+  return levels.map((brightness) => {
+    return {
+      brightness,
+      label: getStarBrightnessFilterLabel(brightness),
+      count:
+        brightness === "all"
+          ? rows.length
+          : rows.filter((row) => {
+              return (row.brightness?.level ?? "unmapped") === brightness
+            }).length
+    }
+  })
+}
+
 function filterRows(params: {
   rows: ZiweiStarCatalogRowView[]
   category: StarCatalogCategoryFilter
+  brightness: StarCatalogBrightnessFilter
   palaceKey: string
   query: string
 }): ZiweiStarCatalogRowView[] {
@@ -208,6 +271,13 @@ function filterRows(params: {
 
   return params.rows.filter((row) => {
     if (params.category !== "all" && row.category !== params.category) {
+      return false
+    }
+
+    if (
+      params.brightness !== "all" &&
+      (row.brightness?.level ?? "unmapped") !== params.brightness
+    ) {
       return false
     }
 
@@ -222,10 +292,13 @@ function filterRows(params: {
     return [
       row.starId,
       row.label,
+      row.displayLabel,
       row.categoryLabel,
       row.palaceLabel,
       row.sectorLabel,
-      row.placementRuleId
+      row.brightness?.label,
+      row.targetStarLabel,
+      row.sourceLabel
     ].some((value) => {
       return value?.toLowerCase().includes(queryText)
     })

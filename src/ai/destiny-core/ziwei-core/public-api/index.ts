@@ -2,7 +2,16 @@ export type {
   FullZiweiChart,
   FullZiweiDynamicChart,
   FullZiweiDynamicChartInput,
+  ZiweiChartContentDetails,
+  ZiweiChartDetailedAnalysis,
   ZiweiChartInterpretation,
+  ZiweiContentDetailInsight,
+  ZiweiDetailedDynamicFlowAnalysis,
+  ZiweiDetailedDynamicTransformationAnalysis,
+  ZiweiDetailedPalaceAnalysis,
+  ZiweiDetailedPalaceRelationAnalysis,
+  ZiweiDetailedPalaceRelationKind,
+  ZiweiDetailedStarAnalysis,
   ZiweiBirthInput,
   ZiweiPageViewModel
 } from "../contracts"

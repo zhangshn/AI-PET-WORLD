@@ -11,7 +11,7 @@ import {
   requireYearBranch
 } from "./yearly-placement-utils"
 
-const JIANGQIAN_SEQUENCE = [
+export const JIANGQIAN_SEQUENCE = [
   YEARLY_STAR_IDS.jiangxing,
   YEARLY_STAR_IDS.panan,
   YEARLY_STAR_IDS.suiyi,
@@ -26,7 +26,7 @@ const JIANGQIAN_SEQUENCE = [
   YEARLY_STAR_IDS.wangshen
 ]
 
-const JIANGXING_START_BY_YEAR_BRANCH: Record<BranchPalace, BranchPalace> = {
+export const JIANGXING_START_BY_YEAR_BRANCH: Record<BranchPalace, BranchPalace> = {
   yin: "wu",
   wu: "wu",
   xu: "wu",

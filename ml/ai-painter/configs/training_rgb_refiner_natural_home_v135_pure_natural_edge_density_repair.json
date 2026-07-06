@@ -1,0 +1,79 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v135-pure-natural-edge-density-repair",
+  "modelVersion": "rgb-refiner-natural-home-v135-pure-natural-edge-density-repair",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.000002,
+  "discriminatorLearningRate": 0.0,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.0,
+  "maxEpochs": 36,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 3.8,
+    "edge": 15.2,
+    "texture": 6.4,
+    "multiScaleTexture": 5.8,
+    "patchVariance": 5.4,
+    "laplacian": 15.0,
+    "gradient": 14.6,
+    "colorRange": 0.32,
+    "waterPeriodicity": 7.6
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.0014,
+    "margin": 0.00015
+  },
+  "structureWeights": {
+    "water": 6.2,
+    "shoreline": 6.5,
+    "road": 5.4,
+    "roadEdge": 5.8,
+    "tree": 5.2,
+    "rock": 4.8,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 5.6,
+  "saveBestBy": "validation_loss",
+  "seed": 20260630,
+  "status": "v135_pure_natural_edge_density_repair_hidden_training_only",
+  "allowedScope": "complete_natural_home_mvp_training_only",
+  "forbiddenScope": [
+    "building",
+    "facility",
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "purpose": "Continue the pure-natural complete-frame line from V134, using the V129 source whose construction channels are structurally zero. Push formal VJ-1 blockers: sharpness ratio, edge density ratio, and mask-boundary gradient ratio, without lowering the judge or adding buildings, characters, animals, or dynamic content.",
+    "worldDisplay": "blocked until generated candidates pass VJ-1, VJ-2, Game-World Frame Gate, ApprovedFrame binding, RuntimeFrame, and owner confirmation."
+  }
+}

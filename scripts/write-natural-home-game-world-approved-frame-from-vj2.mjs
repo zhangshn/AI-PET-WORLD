@@ -9,8 +9,9 @@ const DEFAULT_RUNTIME_INDEX = "data/world-runtime/latest-world.json"
 const DEFAULT_OUTPUT_ROOT = "data/world-approved-frames"
 const FORMAL_FRAME_WIDTH = 1024
 const FORMAL_FRAME_HEIGHT = 768
-const SOURCE_FRAME_WIDTH = 256
-const SOURCE_FRAME_HEIGHT = 192
+const MIN_RUNTIME_FRAME_WIDTH = 768
+const MIN_RUNTIME_FRAME_HEIGHT = 576
+const REQUIRED_ASPECT_RATIO = 4 / 3
 const BLOCKED_SOURCE_TOKENS = [
   "crop",
   "partial",
@@ -98,12 +99,20 @@ function buildSourceFactIds(saveRecord) {
 
 function findBestApprovedFrameCandidate(report) {
   const rows = Array.isArray(report.rows) ? report.rows : []
+  const eligibleRows = rows
+    .filter((row) => row.vj1Status === "vj_1_passed")
+    .filter((row) => row.vj2Status === "vj_2_passed_minimal")
+    .filter((row) => row.displayAllowed === false)
+    .filter((row) => row.canPromoteToWorld === false)
+    .filter((row) => row.canEnterApprovedFrameCandidateReview === true)
+    .filter((row) => Array.isArray(row.failureReasons) && row.failureReasons.length === 0)
+    .filter((row) => collectBlockedTokens(row).length === 0)
+
   const bestSampleId = report.bestCandidate?.sampleId
-  const bestRow = rows.find((row) => row.sampleId === bestSampleId)
+  const bestRow = eligibleRows.find((row) => row.sampleId === bestSampleId)
   if (bestRow) return bestRow
 
-  return rows
-    .filter((row) => row.vj2Status === "vj_2_passed_minimal")
+  return eligibleRows
     .sort((left, right) => (right.formalVisualScore ?? right.score ?? 0) - (left.formalVisualScore ?? left.score ?? 0))[0]
 }
 
@@ -311,9 +320,20 @@ async function main() {
   assert(fs.existsSync(blueprintPath), "missing source blueprint")
 
   const sourceMetadata = await sharp(generatedPath).metadata()
-  assert(sourceMetadata.width === SOURCE_FRAME_WIDTH, `source PNG width must be ${SOURCE_FRAME_WIDTH}`)
-  assert(sourceMetadata.height === SOURCE_FRAME_HEIGHT, `source PNG height must be ${SOURCE_FRAME_HEIGHT}`)
   assert(sourceMetadata.format === "png", "source image must be PNG")
+  assert(
+    Number.isFinite(sourceMetadata.width) && sourceMetadata.width >= MIN_RUNTIME_FRAME_WIDTH,
+    `source PNG width must be a complete runtime frame, at least ${MIN_RUNTIME_FRAME_WIDTH}`,
+  )
+  assert(
+    Number.isFinite(sourceMetadata.height) && sourceMetadata.height >= MIN_RUNTIME_FRAME_HEIGHT,
+    `source PNG height must be a complete runtime frame, at least ${MIN_RUNTIME_FRAME_HEIGHT}`,
+  )
+  const sourceAspectRatio = sourceMetadata.width / sourceMetadata.height
+  assert(
+    Math.abs(sourceAspectRatio - REQUIRED_ASPECT_RATIO) <= 0.015,
+    "source PNG must keep the 4:3 complete game-map aspect ratio",
+  )
 
   const sourceImageBytes = fs.readFileSync(generatedPath)
   const sourceImageSha256 = sha256Buffer(sourceImageBytes)
@@ -366,8 +386,8 @@ async function main() {
     sourceFactIds,
     canShowToPlayer: false,
     generationNotes: text(
-      "本地小模型生成源 PNG，经正式 VJ-1 与 VJ-2 后，以最近邻放大为正式世界帧，并进入 ApprovedFrame 写入闸门。",
-      "The local small model generated the source PNG, passed formal VJ-1 and VJ-2, then was nearest-neighbor scaled into a formal world frame for the ApprovedFrame write gate.",
+      "本地小模型生成完整 Runtime 尺寸源 PNG，经正式 VJ-1 与 VJ-2 后，进入 ApprovedFrame 写入闸门。",
+      "The local small model generated a complete runtime-sized PNG, passed formal VJ-1 and VJ-2, then entered the ApprovedFrame write gate.",
     ),
     worldId: runtimeSave.worldId,
     tick: runtimeSave.tick,
@@ -500,8 +520,10 @@ async function main() {
       `tick:${runtimeSave.tick}`,
       "runtime_bound_approved_frame",
       "approved_for_game_world",
-      "game_world_ready_for_player",
       "formal_full_world_frame",
+      "single_approved_visual_layer",
+      "not_world_page_runtime",
+      "requires_composite_game_map_runtime_frame",
       "not_approved_for_production",
       "approved_for_production_false",
       "runtime_render_ready_for_game_world",
@@ -541,8 +563,10 @@ async function main() {
       "world_visual_approved_frame_record",
       `world_id:${runtimeSave.worldId}`,
       `tick:${runtimeSave.tick}`,
-      "game_world_ready_for_player",
       "formal_full_world_frame",
+      "single_approved_visual_layer",
+      "not_world_page_runtime",
+      "requires_composite_game_map_runtime_frame",
       "vj_0_passed",
       "vj_1_passed",
       "vj_2_passed",
@@ -597,8 +621,10 @@ async function main() {
       "vj_0_approved_frame_record_gate_passed",
       "approved_for_game_world",
       "vj_2_passed",
-      "game_world_ready_for_player",
       "formal_full_world_frame",
+      "single_approved_visual_layer",
+      "not_world_page_runtime",
+      "requires_composite_game_map_runtime_frame",
       "not_approved_for_production",
     ],
   }

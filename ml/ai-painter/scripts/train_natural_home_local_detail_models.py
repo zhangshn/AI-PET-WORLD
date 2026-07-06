@@ -7,7 +7,29 @@ from pathlib import Path
 from ai_painter.training.local_patch_trainer import train_local_patch
 
 
-NATURAL_CATEGORIES = ("grass", "water", "shoreline", "road", "tree", "rock")
+NATURAL_CATEGORIES = (
+    "grass",
+    "water",
+    "shoreline",
+    "road",
+    "tree",
+    "rock",
+    "grass_object",
+    "tree_object",
+    "rock_object",
+)
+
+CATEGORY_DATASET_DIR = {
+    "grass_object": "grass",
+    "tree_object": "tree",
+    "rock_object": "rock",
+}
+
+CATEGORY_TARGET_ALPHA_CHANNELS = {
+    "grass_object": ["grass"],
+    "tree_object": ["tree_trunk", "tree_crown"],
+    "rock_object": ["rock"],
+}
 
 
 def main() -> int:
@@ -22,12 +44,16 @@ def main() -> int:
     results: dict[str, object] = read_existing_results(args.output_root) if args.only_category else {}
     categories = (args.only_category,) if args.only_category else NATURAL_CATEGORIES
     for category in categories:
-        category_root = args.dataset_root / category
+        category_root = args.dataset_root / CATEGORY_DATASET_DIR.get(category, category)
         if not category_root.exists():
             results[category] = {"status": "skipped", "reason": "missing category dataset"}
             continue
         print(f"TRAINING_NATURAL_HOME_LOCAL_DETAIL={category}", flush=True)
-        results[category] = train_local_patch(config, dataset_root=category_root, output_dir=args.output_root / category)
+        category_config = dict(config)
+        if category in CATEGORY_TARGET_ALPHA_CHANNELS:
+            category_config["outputChannels"] = 4
+            category_config["targetAlphaChannels"] = CATEGORY_TARGET_ALPHA_CHANNELS[category]
+        results[category] = train_local_patch(category_config, dataset_root=category_root, output_dir=args.output_root / category)
 
     completed = [value for value in results.values() if isinstance(value, dict) and value.get("status") == "completed"]
     summary = {

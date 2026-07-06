@@ -50,8 +50,22 @@ export function DynamicFlowOverviewPanel(props: {
                   <strong>{flow.influence.toFixed(2)}</strong>
                 </div>
                 <div>
+                  <span>流干来源</span>
+                  <strong>
+                    {flow.stemLabel} · {flow.stemSourceLabel}
+                  </strong>
+                </div>
+                <div>
                   <span>星曜数量</span>
                   <strong>{flow.starCount}</strong>
+                </div>
+                <div>
+                  <span>流星落点</span>
+                  <strong>{flow.flowingStarCount}</strong>
+                </div>
+                <div>
+                  <span>流年十二神</span>
+                  <strong>{flow.annualCycleStarCount}</strong>
                 </div>
                 <div>
                   <span>规则来源</span>
@@ -61,6 +75,58 @@ export function DynamicFlowOverviewPanel(props: {
 
               {flow.inactiveReason ? (
                 <p className={styles.metaText}>{flow.inactiveReason}</p>
+              ) : null}
+
+              <div className={styles.dynamicTransformationList}>
+                {flow.transformations.map((item) => (
+                  <div
+                    className={styles.dynamicTransformationItem}
+                    key={`${flow.type}-${item.transformationStarId}`}
+                  >
+                    <strong>{item.displayLabel}</strong>
+                    <span>
+                      {item.targetStarLabel} · {item.branchLabel}
+                      {item.sectorLabel}
+                    </span>
+                    <small>{item.placementRuleId}</small>
+                  </div>
+                ))}
+              </div>
+
+              {flow.flowingStars.length > 0 ? (
+                <div className={styles.dynamicTransformationList}>
+                  {flow.flowingStars.map((star) => (
+                    <div
+                      className={styles.dynamicTransformationItem}
+                      key={`${flow.type}-${star.starId}`}
+                    >
+                      <strong>{star.displayLabel}</strong>
+                      <span>
+                        {star.branchLabel}
+                        {star.sectorLabel}
+                      </span>
+                      <small>{star.placementRuleId}</small>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              {flow.annualCycleStars.length > 0 ? (
+                <div className={styles.dynamicTransformationList}>
+                  {flow.annualCycleStars.map((star) => (
+                    <div
+                      className={styles.dynamicTransformationItem}
+                      key={`${flow.type}-${star.starId}`}
+                    >
+                      <strong>{star.displayLabel}</strong>
+                      <span>
+                        {star.branchLabel}
+                        {star.sectorLabel}
+                      </span>
+                      <small>{star.cycleLabel}</small>
+                    </div>
+                  ))}
+                </div>
               ) : null}
 
               {flow.palaceDetail ? (

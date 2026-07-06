@@ -1,112 +1,190 @@
-# AI-PET-WORLD 技术架构
+# AI-PET-WORLD 业务与技术架构
 
-状态：正式架构说明
-更新日期：2026-06-27
+更新：2026-07-06
 
-本文只描述当前固定架构，不记录临时想法。当前执行顺序以 [唯一执行计划表](./EXECUTION_PLAN.md) 为准，当前完成度以 [当前进度表](./PROGRESS.md) 为准。
+本文定义当前 MVP 和长期主线的业务架构、技术架构、数据流、模块边界和禁止事项。
 
-## 总架构链路
+## 1. 架构原则
 
-```txt
-业务输入 / 世界规则
--> World Facts 世界事实
--> Scene Blueprint / Condition Mask
--> 本地自研 AI Painter 小模型
--> CandidateFrame 候选画面
--> VisualJudge
--> ApprovedFrame / RuntimeFrame
--> /world 玩家主世界页面
-```
-
-核心原则：世界事实是源头，AI Painter 只负责视觉表达，VisualJudge 负责阻断不合格表达，ApprovedFrame 是视觉层凭证，不是 `/world` 页面本体。`/world` 必须是完整游戏 Runtime 界面。
-
-## 模块职责
-
-| 模块 | 职责 | 当前状态 |
-|---|---|---|
-| World Runtime | 维护世界事实、tick、管家行为、事件和资源状态 | 已有基础链路 |
-| World Facts | 抽取当前世界真实存在的事实，用于视觉生成绑定 | 已接入 sourceFactIds |
-| Scene Blueprint | 把世界事实转成画面结构条件，不是随意画图提示词 | 进行中 |
-| Condition Mask | 把地形、道路、水岸、草地、深度等结构转为训练和推理条件 | 进行中 |
-| AI Painter 数据层 | 存储训练样本、候选图、失败图、mask、资源账本 | 已接通 |
-| 本地小模型 | 使用本地 PyTorch / CUDA 进行训练和推理 | 进行中 |
-| VisualJudge VJ-0 | 校验文件、来源、hash、runtime gate、ApprovedFrame 边界 | 完成 |
-| VisualJudge VJ-1 | 校验清晰度、边缘、结构、事实覆盖和视觉质量 | 进行中 |
-| VisualJudge VJ-2 | 校验语义、风格、状态一致性和完整游戏画面感 | 进行中 |
-| ApprovedFrame | 保存通过视觉闸门的视觉层凭证，不等于游戏页面 | 已打通首帧协议 |
-| `/world` | 玩家主世界页面，只展示完整游戏 Runtime 界面 | 闸门已修正，禁止单张图片直铺 |
-
-## 当前小模型结构
-
-| 层级 | 说明 |
+| 原则 | 说明 |
 |---|---|
-| 输入 | 结构条件通道、自然家园 mask、深度、可走区域、世界事实绑定 |
-| 主体 | 本地 PyTorch 小模型，当前使用 RGB Refiner / Tiny U-Net 系列 |
-| 辅助 | PatchGAN 或局部判别训练只作为画质辅助，不决定世界事实 |
-| 输出 | 完整自然家园候选 PNG |
-| 限制 | 输出只是候选图，不等于 ApprovedFrame |
+| 世界事实优先 | 世界事实是源头，视觉不能决定世界事实。 |
+| 结构先于画面 | 先有可玩的结构地图，再有视觉表达。 |
+| AI 只负责视觉表达 | AI Painter 生成视觉材料，不负责 Runtime、碰撞、交互和世界规则。 |
+| 地图不是单图 | 正式游戏地图由地图块、视觉单元、对象层、可走层、碰撞层、交互层和状态层组成。 |
+| `/world` 只展示 RuntimeFrame | 训练图、候选图、失败图、局部图只进训练页和归档页。 |
+| 训练与正式隔离 | 训练产物不能绕过 RuntimeFrame 和 VisualJudge。 |
+| 禁止程序直绘最终画面 | 程序可以生成结构、Mask、校验、合成，不能手写玩家最终画面。 |
+| 机器审核不是最终通过 | VisualJudge 和 RuntimeFrame gate 只是前置闸门，最终必须由项目所有者人工确认达到正式游戏标准。 |
+| 参考图只定方向 | 当前最高局部图只作为质感基准，不能绕过 RuntimeFrame，也不能作为 `/world` 成果。 |
 
-当前模型不是第三方在线绘图 API。它是本地训练和本地推理链路。但训练数据、候选图、失败图仍必须经过权属记录与 VisualJudge 审核。
+## 2. 业务架构图
 
-## VJ-1 双口径
+```mermaid
+flowchart TD
+  A["玩家注册 / 创建世界"] --> B["出生信息授权或跳过"]
+  B --> C["娱乐化人格种子"]
+  C --> D["管家人格 / 动机 / 偏好"]
+  D --> E["世界 Runtime"]
+  E --> F["世界事实 WorldFacts"]
+  F --> G["结构化地图 HomeMapStructure"]
+  G --> H["GameMapFrame"]
+  H --> I["地图块 / 视觉单元槽位"]
+  I --> J["本地 AI Painter 生成视觉材料"]
+  J --> K["MaterialQualityReport"]
+  K --> L["Approved Material Pack"]
+  L --> M["Runtime Compositor 合成完整地图"]
+  M --> N["Composite VisualJudge"]
+  N -->|"通过"| O["GameMapRuntimeFrame"]
+  N -->|"失败"| P["失败归档 / 修正计划"]
+  O --> R["项目所有者人工最终验收"]
+  R -->|"通过"| Q["/world 玩家主世界"]
+  R -->|"否决"| P
+```
 
-| 口径 | 用途 | 是否可进入 `/world` |
+## 3. 技术架构图
+
+```mermaid
+flowchart LR
+  subgraph Runtime["World Runtime"]
+    WF["WorldFacts"]
+    Tick["World Tick"]
+    Butler["Butler Motivation"]
+  end
+
+  subgraph Map["Game Map System"]
+    HMS["HomeMapStructure"]
+    GMF["GameMapFrame"]
+    Layers["terrain/object/walkable/collision/interaction/state"]
+    Slots["VisualUnitSlots"]
+  end
+
+  subgraph Painter["Local AI Painter"]
+    RefBase["Reference Visual Baseline"]
+    Pack["MaterialInputPack"]
+    Model["PyTorch Tiny U-Net / Refiner"]
+    Output["Material Candidates"]
+    Archive["Generated Results Archive"]
+  end
+
+  subgraph Judge["Visual Judge"]
+    VJ0["VJ-0 来源/绑定"]
+    VJ1["VJ-1 视觉质量"]
+    VJ2["VJ-2 语义/游戏地图"]
+    CQ["Composite Quality"]
+  end
+
+  subgraph Display["Display"]
+    RF["GameMapRuntimeFrame"]
+    OwnerGate["Owner Final Acceptance"]
+    WorldPage["/world"]
+  end
+
+  WF --> HMS --> GMF --> Slots --> Pack --> Model --> Output --> Archive
+  RefBase --> Pack
+  RefBase --> Output
+  Output --> VJ0 --> VJ1 --> VJ2 --> CQ
+  CQ --> RF --> OwnerGate --> WorldPage
+  Butler --> WF
+  Tick --> WF
+  GMF --> RF
+```
+
+## 4. RuntimeFrame 数据结构边界
+
+正式 GameMapRuntimeFrame 必须至少包含：
+
+| 层 | 作用 | 是否世界事实 |
+|---|---|---:|
+| identity | worldId、ownerId、tick、sourceFactIds | 是 |
+| mapStructure | 地图结构、入口、中心、区域、道路、水岸 | 是 |
+| terrainLayer | 草地、水体、水岸、道路等地形定义 | 是 |
+| objectLayer | 树、石头、草丛、花等对象记录 | 是 |
+| visualLayer | AI Painter 生成的视觉材料引用 | 部分。它是表达，不是事实。 |
+| walkableLayer | 可走区域 | 是 |
+| collisionLayer | 不可穿越区域 | 是 |
+| interactionLayer | 可查看、可点击、可建设、可采集区域 | 是 |
+| stateLayer | 生命周期、建造状态、资源状态、天气影响 | 是 |
+| audit | VisualJudge、hash、时间戳、模型版本、失败记录 | 否，但必须存在。 |
+| ownerAcceptance | 项目所有者人工最终验收记录 | 否，但正式展示前必须存在通过记录。 |
+
+## 5. 关键对象
+
+| 对象 | 作用 | 关键字段 |
 |---|---|---|
-| 训练诊断 VJ-1 | 用 target 对比 MAE、PSNR、锐度、边缘密度，判断模型是否学会复现训练目标 | 否 |
-| 正式世界 VJ-1 | 不依赖 target，检查完整帧、事实覆盖、结构合理、画质清晰、无禁用内容 | 是，但仍需 VJ-2 和 ApprovedFrame |
+| WorldFact | 世界事实源头 | `factId`、`worldId`、`tick`、`type`、`payload`、`source` |
+| VisualFactManifest | 视觉所需事实清单 | `sourceFactIds`、主事实、支撑事实、环境事实 |
+| HomeMapStructure | 自然家园结构 | 入口、中心、水岸、道路、自然边界 |
+| GameMapFrame | 可合成地图帧 | layers、slots、layout、camera |
+| VisualUnitSlot | 视觉单元槽位 | `slotId`、`kind`、`bounds`、`layer`、`sourceFactIds` |
+| RegionTexture | AI 生成的区域视觉材料 | `textureId`、`slotId`、`imageHash`、`reviewStatus` |
+| ObjectVisualUnit | AI 生成的对象视觉材料 | `unitId`、`objectKind`、`imageHash`、`alphaMaskHash` |
+| Approved Material Pack | 已审核视觉材料包 | `packId`、`worldId`、`tick`、`qualityReport`、`materials` |
+| GameMapRuntimeFrame | 正式世界画面记录 | `frameId`、`worldId`、`tick`、`runtimeLayers`、`visualLayers`、`audit` |
 
-训练诊断通过只能说明模型训练有效，不能直接说明世界画面可展示。正式世界画面必须通过正式世界 VJ-1、VJ-2 和 ApprovedFrame 绑定。
+## 6. AI Painter 内部边界
 
-## `/world` 展示闸门
-
-`/world` 必须满足全部条件才展示画面：
-
-```txt
-存在 ApprovedFrame
-AND ApprovedFrame 是完整主世界帧
-AND approvalScope = approved_for_game_world
-AND worldId 匹配当前世界
-AND tick 匹配当前 runtime
-AND sourceFactIds 匹配当前世界事实
-AND VJ-0 通过
-AND 正式世界 VJ-1 通过
-AND VJ-2 通过
-AND 包含 game_world_ready_for_player
-AND 包含 formal_full_world_frame
-AND 不是训练图、候选图、失败图、crop、patch、tile、sprite
-AND 不是单张图片直铺
-AND 已生成游戏 RuntimeFrame / 游戏视口 / 交互容器
-```
-
-训练页、归档页、候选页可以展示训练过程，但不得冒充玩家正式世界画面。
-
-## 训练结果归档架构
-
-```txt
-训练开始
--> 自动记录时间戳、耗时、GPU、显存、配置、数据集来源
--> 生成候选图
--> 质量筛选
--> VJ 审核
--> 成功 / 失败都写入 generated-results
--> 页面只做查看，不改变审核结论
-```
-
-失败图必须保留。失败图不是垃圾，它是后续训练、审计和判断模型问题的重要数据。
-
-## 代码与版权合规架构
-
-| 规则 | 内容 |
+| 模块 | 职责 |
 |---|---|
-| 禁止复制源码 | 不允许直接复制其他项目、教程、博客、仓库中的实现代码作为本项目代码 |
-| 允许学习原则 | 可以学习公开资料中的概念、论文思想、设计原则和工程方法，但必须用本项目自己的实现表达 |
-| 依赖需合规 | 使用第三方库必须通过包管理器或明确许可证引入，不能私下复制库内部源码 |
-| 生成资产需记录 | 训练图、候选图、参考图、失败图必须记录来源、用途、授权说明、生成时间 |
-| 不复制素材 | 不允许复制他人角色、地图、UI、像素资产、商标或受保护美术表达 |
-| 审核留痕 | 模型输出进入训练或展示前，必须经过来源、事实、画质和权属记录 |
+| Dataset Builder | 准备训练图、Mask、来源记录、用途记录。 |
+| Training Runner | 本地训练，记录 GPU、耗时、loss、输出。 |
+| Inference Runner | 根据结构条件生成候选视觉材料。 |
+| Refiner | 细化局部视觉材料。 |
+| Candidate Store | 保存候选结果，不进入 `/world`。 |
+| Result Archive | 保存成功、失败、耗时、时间戳、GPU 信息、质量分数。 |
 
-这条规则同时约束人写代码、GPT 写代码、Codex 写代码和后续任何代理协作。
+AI Painter 禁止承担：
 
-## 当前架构结论
+| 禁止职责 | 原因 |
+|---|---|
+| 决定地图里有什么 | 这是世界事实和 Runtime 的职责。 |
+| 决定玩家能不能走 | 这是可走层和碰撞层的职责。 |
+| 直接写 `/world` | 必须经过 RuntimeFrame 和 VisualJudge。 |
+| 接入第三方在线绘图 API | 当前正式链路必须本地自研。 |
 
-当前架构没有变成“程序随便画图”，也没有允许候选图进入主世界。现在的关键问题是：小模型已经能生成自然家园候选，并已打通 Game-World ApprovedFrame 协议，但正式稳定率和完整世界感仍需要继续提升。下一步不扩展人物、建筑或动态，而是继续完成自然家园小模型泛化、正式世界 VJ-1/VJ-2 和更稳定的自然家园 ApprovedFrame。
+## 7. `/world` 展示闸门
+
+```mermaid
+flowchart TD
+  A["/world 请求"] --> B["读取 latest GameMapRuntimeFrame"]
+  B --> C{"是否存在"}
+  C -->|"否"| D["显示阻断说明，不展示图"]
+  C -->|"是"| E{"是否完整 RuntimeFrame"}
+  E -->|"否"| D
+  E -->|"是"| F{"是否通过 VJ-0/VJ-1/VJ-2"}
+  F -->|"否"| D
+  F -->|"是"| G{"是否通过 composite quality"}
+  G -->|"否"| D
+  G -->|"是"| H{"是否通过项目所有者人工最终验收"}
+  H -->|"否"| D
+  H -->|"是"| I["展示正式游戏世界"]
+```
+
+`/world` 不能读取：
+
+| 内容 | 原因 |
+|---|---|
+| 训练图片 | 中间产物。 |
+| 失败图片 | 只能归档和复盘。 |
+| 候选图片 | 未正式通过。 |
+| 局部素材 | 不是完整游戏地图。 |
+| 单张 ApprovedFrame | 只是视觉素材凭证，不是 RuntimeFrame。 |
+| 程序占位图 | 不是正式 AI 视觉结果。 |
+| 人工否决图 | 机器审核曾通过也不能展示，必须进入失败归档和修复链。 |
+
+## 8. 当前架构结论
+
+当前必须从“AI 生成一张图”收口为“结构化游戏地图 + AI 视觉材料 + RuntimeFrame 合成”。AI Painter 仍然重要，但它只负责视觉表达。游戏是否可玩、对象是否存在、道路是否连通、碰撞是否正确、世界是否自主，全部由结构化数据和 Runtime 决定。
+
+正式展示链路必须收口为：
+
+```txt
+结构化游戏地图
++ 本地 AI Painter 视觉材料
++ RuntimeFrame 合成
++ VisualJudge / composite quality
++ 项目所有者人工最终验收
+= /world 正式游戏世界
+```
+
+缺少项目所有者人工最终验收，或人工验收明确否决时，不能把任何 RuntimeFrame 当成正式游戏成功结果。

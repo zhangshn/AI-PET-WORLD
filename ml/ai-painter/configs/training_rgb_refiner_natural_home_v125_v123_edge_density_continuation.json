@@ -1,0 +1,79 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v125-v123-edge-density-continuation",
+  "modelVersion": "rgb-refiner-natural-home-v125-v123-edge-density-continuation",
+  "inputChannels": 17,
+  "baseChannels": 96,
+  "residualBlocks": 18,
+  "unetDetailRefiner": true,
+  "directOutput": true,
+  "batchSize": 2,
+  "learningRate": 0.000012,
+  "discriminatorLearningRate": 0.000018,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.036,
+  "maxEpochs": 70,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 4.2,
+    "edge": 18.0,
+    "texture": 13.0,
+    "laplacian": 18.0,
+    "gradient": 17.0,
+    "colorRange": 0.32,
+    "waterPeriodicity": 7.5
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.002,
+    "margin": 0.0002
+  },
+  "structureWeights": {
+    "water": 6.0,
+    "shoreline": 6.2,
+    "road": 5.4,
+    "roadEdge": 5.4,
+    "tree": 5.2,
+    "rock": 4.8,
+    "shelterFoundation": 4.8,
+    "shelterWall": 4.8,
+    "shelterRoof": 4.6,
+    "constructionMaterial": 4.6
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "shelter_foundation",
+    "shelter_wall",
+    "shelter_roof",
+    "construction_material",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 5.4,
+  "saveBestBy": "validation_loss",
+  "seed": 20260630,
+  "status": "v125_v123_edge_density_continuation_training_only",
+  "allowedScope": "complete_natural_home_mvp_training_only",
+  "forbiddenScope": [
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "purpose": "Continue from V123, which had the best complete-frame candidate scores, and push edge density and sharpness without changing world facts.",
+    "worldDisplay": "blocked until generated candidates pass VJ-1, VJ-2, Game-World Frame Gate, ApprovedFrame binding, RuntimeFrame, and owner confirmation."
+  }
+}

@@ -1,0 +1,376 @@
+{
+  "schemaVersion": "ziwei-pattern-golden-v1",
+  "sourceSampleDir": "data/ziwei/golden-samples",
+  "expectedPatternTotalCount": 195,
+  "expectedCategoryTotals": {
+    "literary": 10,
+    "assistant": 14,
+    "mainCombo": 71,
+    "wealthPower": 24,
+    "malefic": 6,
+    "adverse": 64,
+    "misc": 6
+  },
+  "samples": [
+    {
+      "sampleId": "1988-male-hai-hour-boundary",
+      "lifePalace": "shen",
+      "bodyPalace": "wu",
+      "totals": {
+        "hitCount": 18,
+        "missCount": 177,
+        "enhancedCount": 2,
+        "brokenCount": 1,
+        "adverseHitCount": 10
+      },
+      "categoryHitCounts": {
+        "literary": 0,
+        "assistant": 0,
+        "mainCombo": 8,
+        "wealthPower": 0,
+        "malefic": 0,
+        "adverse": 10,
+        "misc": 0
+      },
+      "hitPatternIds": [
+        "pattern.main.taiyin-life",
+        "pattern.main.taiyin-bright-life",
+        "pattern.main.ji-yue-tong-liang",
+        "pattern.main.tianji-life",
+        "pattern.main.tianji-bright-life",
+        "pattern.main.zi-tan-same-palace",
+        "pattern.main.lian-sha-same-palace",
+        "pattern.main.ji-yin-same-palace",
+        "pattern.adverse.malefic-ji-life-scope",
+        "pattern.adverse.hua-ji-life-scope",
+        "pattern.adverse.quan-ji-life-scope",
+        "pattern.adverse.quan-ji-same-palace",
+        "pattern.adverse.tian-ji-hua-ji",
+        "pattern.adverse.tai-yin-hua-ji",
+        "pattern.adverse.tianji-malefic-ji-life",
+        "pattern.adverse.taiyin-malefic-ji-life",
+        "pattern.adverse.romance-malefic-life-scope",
+        "pattern.adverse.solitary-malefic-life-scope"
+      ],
+      "brokenPatternIds": [
+        "pattern.main.taiyin-bright-assisted-clean-life"
+      ],
+      "enhancedPatternIds": [
+        "pattern.adverse.quan-ji-life-scope",
+        "pattern.adverse.quan-ji-same-palace"
+      ]
+    },
+    {
+      "sampleId": "1988-male-zi-hour-boundary",
+      "lifePalace": "wei",
+      "bodyPalace": "wei",
+      "totals": {
+        "hitCount": 18,
+        "missCount": 177,
+        "enhancedCount": 1,
+        "brokenCount": 2,
+        "adverseHitCount": 8
+      },
+      "categoryHitCounts": {
+        "literary": 0,
+        "assistant": 1,
+        "mainCombo": 9,
+        "wealthPower": 0,
+        "malefic": 0,
+        "adverse": 8,
+        "misc": 0
+      },
+      "hitPatternIds": [
+        "pattern.assistant.kui-yue-life",
+        "pattern.main.taiyang-life",
+        "pattern.main.taiyang-bright-life",
+        "pattern.main.taiyin-life",
+        "pattern.main.taiyin-bright-life",
+        "pattern.main.sun-moon-life",
+        "pattern.main.sun-moon-bright-life",
+        "pattern.main.sun-moon-same-palace",
+        "pattern.main.wu-fu-same-palace",
+        "pattern.main.ji-ju-same-palace",
+        "pattern.adverse.kong-jie-life-scope",
+        "pattern.adverse.kong-jie-same-palace",
+        "pattern.adverse.ju-men-hua-ji",
+        "pattern.adverse.tian-ji-hua-ji",
+        "pattern.adverse.taiyang-malefic-ji-life",
+        "pattern.adverse.taiyin-malefic-ji-life",
+        "pattern.adverse.xian-chi-hua-ji-same-palace",
+        "pattern.adverse.solitary-malefic-life-scope"
+      ],
+      "brokenPatternIds": [
+        "pattern.main.taiyang-bright-assisted-clean-life",
+        "pattern.main.taiyin-bright-assisted-clean-life"
+      ],
+      "enhancedPatternIds": [
+        "pattern.assistant.kui-yue-life"
+      ]
+    },
+    {
+      "sampleId": "1990-female-yang-year-backward",
+      "lifePalace": "zi",
+      "bodyPalace": "xu",
+      "totals": {
+        "hitCount": 25,
+        "missCount": 170,
+        "enhancedCount": 5,
+        "brokenCount": 3,
+        "adverseHitCount": 10
+      },
+      "categoryHitCounts": {
+        "literary": 0,
+        "assistant": 1,
+        "mainCombo": 11,
+        "wealthPower": 3,
+        "malefic": 0,
+        "adverse": 10,
+        "misc": 0
+      },
+      "hitPatternIds": [
+        "pattern.assistant.zuo-you-same-palace",
+        "pattern.main.tianfu-life",
+        "pattern.main.tianfu-bright-life",
+        "pattern.main.wuqu-life",
+        "pattern.main.wuqu-bright-life",
+        "pattern.main.fu-xiang-life",
+        "pattern.main.fu-xiang-bright-life",
+        "pattern.main.zi-xiang-life",
+        "pattern.main.zi-sha-life",
+        "pattern.main.sun-moon-same-palace",
+        "pattern.main.wu-fu-same-palace",
+        "pattern.main.ji-ju-same-palace",
+        "pattern.wealth.lu-ma-life",
+        "pattern.wealth.quan-ke-life",
+        "pattern.wealth.quan-ke-same-palace",
+        "pattern.adverse.huo-ling-life-scope",
+        "pattern.adverse.kong-jie-life-scope",
+        "pattern.adverse.six-malefics-life-scope",
+        "pattern.adverse.malefic-ji-life-scope",
+        "pattern.adverse.lu-ji-adjacent-life",
+        "pattern.adverse.wu-qu-malefic-ji-life",
+        "pattern.adverse.tianfu-malefic-ji-life",
+        "pattern.adverse.romance-malefic-life-scope",
+        "pattern.adverse.solitary-malefic-life-scope",
+        "pattern.adverse.gu-chen-gua-su-life-scope"
+      ],
+      "brokenPatternIds": [
+        "pattern.main.tianfu-bright-assisted-clean-life",
+        "pattern.main.wuqu-bright-assisted-clean-life",
+        "pattern.wealth.fu-lu-ma-life"
+      ],
+      "enhancedPatternIds": [
+        "pattern.assistant.zuo-you-same-palace",
+        "pattern.wealth.lu-ma-life",
+        "pattern.wealth.quan-ke-life",
+        "pattern.wealth.quan-ke-same-palace",
+        "pattern.adverse.lu-ji-adjacent-life"
+      ]
+    },
+    {
+      "sampleId": "1990-male-solar",
+      "lifePalace": "zi",
+      "bodyPalace": "xu",
+      "totals": {
+        "hitCount": 25,
+        "missCount": 170,
+        "enhancedCount": 5,
+        "brokenCount": 3,
+        "adverseHitCount": 10
+      },
+      "categoryHitCounts": {
+        "literary": 0,
+        "assistant": 1,
+        "mainCombo": 11,
+        "wealthPower": 3,
+        "malefic": 0,
+        "adverse": 10,
+        "misc": 0
+      },
+      "hitPatternIds": [
+        "pattern.assistant.zuo-you-same-palace",
+        "pattern.main.tianfu-life",
+        "pattern.main.tianfu-bright-life",
+        "pattern.main.wuqu-life",
+        "pattern.main.wuqu-bright-life",
+        "pattern.main.fu-xiang-life",
+        "pattern.main.fu-xiang-bright-life",
+        "pattern.main.zi-xiang-life",
+        "pattern.main.zi-sha-life",
+        "pattern.main.sun-moon-same-palace",
+        "pattern.main.wu-fu-same-palace",
+        "pattern.main.ji-ju-same-palace",
+        "pattern.wealth.lu-ma-life",
+        "pattern.wealth.quan-ke-life",
+        "pattern.wealth.quan-ke-same-palace",
+        "pattern.adverse.huo-ling-life-scope",
+        "pattern.adverse.kong-jie-life-scope",
+        "pattern.adverse.six-malefics-life-scope",
+        "pattern.adverse.malefic-ji-life-scope",
+        "pattern.adverse.lu-ji-adjacent-life",
+        "pattern.adverse.wu-qu-malefic-ji-life",
+        "pattern.adverse.tianfu-malefic-ji-life",
+        "pattern.adverse.romance-malefic-life-scope",
+        "pattern.adverse.solitary-malefic-life-scope",
+        "pattern.adverse.gu-chen-gua-su-life-scope"
+      ],
+      "brokenPatternIds": [
+        "pattern.main.tianfu-bright-assisted-clean-life",
+        "pattern.main.wuqu-bright-assisted-clean-life",
+        "pattern.wealth.fu-lu-ma-life"
+      ],
+      "enhancedPatternIds": [
+        "pattern.assistant.zuo-you-same-palace",
+        "pattern.wealth.lu-ma-life",
+        "pattern.wealth.quan-ke-life",
+        "pattern.wealth.quan-ke-same-palace",
+        "pattern.adverse.lu-ji-adjacent-life"
+      ]
+    },
+    {
+      "sampleId": "1991-female-yin-year-forward",
+      "lifePalace": "zi",
+      "bodyPalace": "xu",
+      "totals": {
+        "hitCount": 18,
+        "missCount": 177,
+        "enhancedCount": 1,
+        "brokenCount": 0,
+        "adverseHitCount": 10
+      },
+      "categoryHitCounts": {
+        "literary": 0,
+        "assistant": 1,
+        "mainCombo": 6,
+        "wealthPower": 0,
+        "malefic": 0,
+        "adverse": 10,
+        "misc": 1
+      },
+      "hitPatternIds": [
+        "pattern.assistant.zuo-you-same-palace",
+        "pattern.main.ji-yue-tong-liang",
+        "pattern.main.tong-liang-same-palace",
+        "pattern.main.tianji-life",
+        "pattern.main.tianji-bright-life",
+        "pattern.main.zi-po-same-palace",
+        "pattern.main.lian-tan-same-palace",
+        "pattern.adverse.kong-jie-life-scope",
+        "pattern.adverse.malefic-ji-life-scope",
+        "pattern.adverse.lian-zhen-hua-ji",
+        "pattern.adverse.tan-lang-hua-ji",
+        "pattern.adverse.tianji-malefic-ji-life",
+        "pattern.adverse.romance-life-scope",
+        "pattern.adverse.romance-malefic-life-scope",
+        "pattern.adverse.solitary-malefic-life-scope",
+        "pattern.misc.xian-chi-tian-yao-life",
+        "pattern.adverse.xian-yao-life-scope",
+        "pattern.adverse.gu-chen-gua-su-life-scope"
+      ],
+      "brokenPatternIds": [],
+      "enhancedPatternIds": [
+        "pattern.assistant.zuo-you-same-palace"
+      ]
+    },
+    {
+      "sampleId": "1991-male-yin-year-backward",
+      "lifePalace": "zi",
+      "bodyPalace": "xu",
+      "totals": {
+        "hitCount": 18,
+        "missCount": 177,
+        "enhancedCount": 1,
+        "brokenCount": 0,
+        "adverseHitCount": 10
+      },
+      "categoryHitCounts": {
+        "literary": 0,
+        "assistant": 1,
+        "mainCombo": 6,
+        "wealthPower": 0,
+        "malefic": 0,
+        "adverse": 10,
+        "misc": 1
+      },
+      "hitPatternIds": [
+        "pattern.assistant.zuo-you-same-palace",
+        "pattern.main.ji-yue-tong-liang",
+        "pattern.main.tong-liang-same-palace",
+        "pattern.main.tianji-life",
+        "pattern.main.tianji-bright-life",
+        "pattern.main.zi-po-same-palace",
+        "pattern.main.lian-tan-same-palace",
+        "pattern.adverse.kong-jie-life-scope",
+        "pattern.adverse.malefic-ji-life-scope",
+        "pattern.adverse.lian-zhen-hua-ji",
+        "pattern.adverse.tan-lang-hua-ji",
+        "pattern.adverse.tianji-malefic-ji-life",
+        "pattern.adverse.romance-life-scope",
+        "pattern.adverse.romance-malefic-life-scope",
+        "pattern.adverse.solitary-malefic-life-scope",
+        "pattern.misc.xian-chi-tian-yao-life",
+        "pattern.adverse.xian-yao-life-scope",
+        "pattern.adverse.gu-chen-gua-su-life-scope"
+      ],
+      "brokenPatternIds": [],
+      "enhancedPatternIds": [
+        "pattern.assistant.zuo-you-same-palace"
+      ]
+    },
+    {
+      "sampleId": "1995-female-not-started",
+      "lifePalace": "yin",
+      "bodyPalace": "yin",
+      "totals": {
+        "hitCount": 21,
+        "missCount": 174,
+        "enhancedCount": 3,
+        "brokenCount": 3,
+        "adverseHitCount": 8
+      },
+      "categoryHitCounts": {
+        "literary": 1,
+        "assistant": 0,
+        "mainCombo": 9,
+        "wealthPower": 1,
+        "malefic": 0,
+        "adverse": 8,
+        "misc": 2
+      },
+      "hitPatternIds": [
+        "pattern.literary.ke-chang-qu-life",
+        "pattern.main.zi-fu-same-palace",
+        "pattern.main.ziwei-life",
+        "pattern.main.ziwei-bright-life",
+        "pattern.main.tianfu-life",
+        "pattern.main.tianfu-bright-life",
+        "pattern.main.fu-xiang-life",
+        "pattern.main.fu-xiang-bright-life",
+        "pattern.main.zi-xiang-life",
+        "pattern.main.zi-sha-life",
+        "pattern.adverse.tuo-luo-life",
+        "pattern.adverse.lu-ji-adjacent-life",
+        "pattern.adverse.kong-jie-same-palace",
+        "pattern.adverse.tai-yin-hua-ji",
+        "pattern.adverse.ziwei-malefic-ji-life",
+        "pattern.adverse.tianfu-malefic-ji-life",
+        "pattern.adverse.solitary-malefic-life-scope",
+        "pattern.wealth.double-lu-adjacent-life",
+        "pattern.misc.tai-fu-feng-gao-life",
+        "pattern.misc.san-tai-ba-zuo-life",
+        "pattern.adverse.gu-chen-gua-su-life-scope"
+      ],
+      "brokenPatternIds": [
+        "pattern.main.ziwei-bright-assisted-clean-life",
+        "pattern.main.tianfu-bright-assisted-clean-life",
+        "pattern.main.jun-chen-qing-hui"
+      ],
+      "enhancedPatternIds": [
+        "pattern.literary.ke-chang-qu-life",
+        "pattern.adverse.lu-ji-adjacent-life",
+        "pattern.wealth.double-lu-adjacent-life"
+      ]
+    }
+  ]
+}

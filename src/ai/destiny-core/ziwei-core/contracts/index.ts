@@ -46,7 +46,9 @@ export type {
   ZiweiPlacementContext,
   ZiweiPlacementResult,
   ZiweiPlacementRuleId,
-  ZiweiPlacementSource
+  ZiweiPlacementSource,
+  ZiweiStarBrightness,
+  ZiweiStarBrightnessLevel
 } from "./placement-contract"
 
 export type {
@@ -62,12 +64,28 @@ export type {
   FullZiweiDynamicChart,
   FullZiweiDynamicChartInput,
   FullZiweiDynamicFlow,
+  FullZiweiDynamicTransformation,
+  ZiweiDynamicStemSource,
   ZiweiDynamicFlowType
 } from "./dynamic-chart-contract"
 
 export type {
   BuildZiweiInterpretationInput,
+  ZiweiChartContentDetails,
+  ZiweiChartDetailedAnalysis,
   ZiweiChartInterpretation,
+  ZiweiContentDetailInsight,
+  ZiweiCurrentChartEvidenceChain,
+  ZiweiCurrentChartEvidenceKind,
+  ZiweiDetailedAnalysisTone,
+  ZiweiDetailedDynamicAnnualCycleStarAnalysis,
+  ZiweiDetailedDynamicFlowAnalysis,
+  ZiweiDetailedDynamicFlowingStarAnalysis,
+  ZiweiDetailedDynamicTransformationAnalysis,
+  ZiweiDetailedPalaceAnalysis,
+  ZiweiDetailedPalaceRelationAnalysis,
+  ZiweiDetailedPalaceRelationKind,
+  ZiweiDetailedStarAnalysis,
   ZiweiInterpretationItem,
   ZiweiInterpretationScope,
   ZiweiPalaceInterpretation
@@ -76,15 +94,21 @@ export type {
 export type {
   BuildZiweiPageViewModelInput,
   ZiweiChartMetaView,
+  ZiweiDynamicAnnualCycleStarView,
   ZiweiDynamicDebugView,
   ZiweiDynamicFlowDetailView,
+  ZiweiDynamicFlowingStarView,
   ZiweiDynamicTabView,
+  ZiweiDynamicTransformationView,
   ZiweiPageViewModel,
   ZiweiPalaceCellView,
   ZiweiPalaceDetailView,
   ZiweiPalaceRelationKind,
   ZiweiPalaceRelationView,
   ZiweiStarCatalogRowView,
+  ZiweiStarDictionaryDetailView,
+  ZiweiStarDictionaryEntryView,
+  ZiweiStarDictionaryPlacementView,
   ZiweiStarGroupView,
   ZiweiStarView
 } from "./page-view-contract"

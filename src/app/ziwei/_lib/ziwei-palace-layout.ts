@@ -1,5 +1,20 @@
 import type { BranchPalace } from "@/ai/destiny-core/ziwei-core/contracts"
 
+export const ZIWEI_PHYSICAL_BRANCH_ORDER = [
+  "yin",
+  "mao",
+  "chen",
+  "si",
+  "wu",
+  "wei",
+  "shen",
+  "you",
+  "xu",
+  "hai",
+  "zi",
+  "chou"
+] as const satisfies readonly BranchPalace[]
+
 export const ZIWEI_DESKTOP_GRID_TEMPLATE_ROWS = [
   "si wu wei shen",
   "chen center center you",
@@ -40,4 +55,14 @@ export const ZIWEI_PALACE_GRID_AREA_BY_BRANCH: Record<BranchPalace, string> = {
 
 export function getZiweiPalaceGridArea(branch: BranchPalace): string {
   return ZIWEI_PALACE_GRID_AREA_BY_BRANCH[branch]
+}
+
+export function moveZiweiPhysicalBranch(
+  branch: BranchPalace,
+  offset: number
+): BranchPalace {
+  const index = ZIWEI_PHYSICAL_BRANCH_ORDER.indexOf(branch)
+  const nextIndex = ((index + offset) % 12 + 12) % 12
+
+  return ZIWEI_PHYSICAL_BRANCH_ORDER[nextIndex]
 }
