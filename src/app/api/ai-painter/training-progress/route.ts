@@ -2,10 +2,15 @@
 import { readFile, readdir, stat } from "node:fs/promises"
 import path from "node:path"
 import { promisify } from "node:util"
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { readResourceUsageLedger } from "@/server/ai-painter-resource-usage"
 import { buildTrainingQualityGateReport } from "@/server/ai-painter-training-quality-gate"
-import { readTrainingControlState, readTrainingLogTail, readTrainingProcessLedger } from "@/server/ai-painter-training-state"
+import {
+  readTrainingControlState,
+  readTrainingLogTail,
+  readTrainingProcessLedger,
+  readTrainingRuntimeStatus,
+} from "@/server/ai-painter-training-state"
 import { buildVisualUnitV0Status } from "@/world/world-visual-painter"
 
 export const runtime = "nodejs"
@@ -14,8 +19,37 @@ export const dynamic = "force-dynamic"
 const execFileAsync = promisify(execFile)
 const aiPainterRuntimeRoot = path.join(/* turbopackIgnore: true */ process.cwd(), ".runtime", "ai-painter")
 const bootstrapTrainingDir = path.join(aiPainterRuntimeRoot, "bootstrap-training")
+const snapshotCacheTtlMs = 3_000
 
-export async function GET() {
+type TrainingProgressSnapshot = Record<string, unknown>
+
+let cachedSnapshot: { expiresAt: number; value: TrainingProgressSnapshot } | null = null
+let snapshotInFlight: Promise<TrainingProgressSnapshot> | null = null
+
+export async function GET(request: NextRequest) {
+  const snapshot = await readCachedTrainingProgressSnapshot()
+  const payload = request.nextUrl.searchParams.get("view") === "summary"
+    ? buildTrainingProgressSummary(snapshot)
+    : snapshot
+  return NextResponse.json(payload)
+}
+
+async function readCachedTrainingProgressSnapshot() {
+  if (cachedSnapshot && cachedSnapshot.expiresAt > Date.now()) return cachedSnapshot.value
+  if (snapshotInFlight) return snapshotInFlight
+
+  snapshotInFlight = buildTrainingProgressSnapshot()
+    .then((value) => {
+      cachedSnapshot = { expiresAt: Date.now() + snapshotCacheTtlMs, value }
+      return value
+    })
+    .finally(() => {
+      snapshotInFlight = null
+    })
+  return snapshotInFlight
+}
+
+async function buildTrainingProgressSnapshot(): Promise<TrainingProgressSnapshot> {
   const summary = await readJson(path.join(bootstrapTrainingDir, "training-summary.json"))
   const latest = await readLastJsonLine(path.join(bootstrapTrainingDir, "training-log.jsonl"))
   const checkpointReady = await exists(path.join(bootstrapTrainingDir, "best.pt"))
@@ -354,10 +388,15 @@ export async function GET() {
     : null
   const gameMapRuntimeFrame = await readLatestGameMapRuntimeFramePreview()
   const trainingRunArchive = await readLatestTrainingRunArchive()
+  const system = await readGpuInfo()
+  const runtimeStatus = await readTrainingRuntimeStatus()
+  const childProcessAlive = isProcessAlive(control.childPid ?? runtimeStatus.heartbeat?.childPid)
+  const liveControl = buildLiveControlState(control, system, runtimeStatus, childProcessAlive)
 
-  return NextResponse.json({
+  return {
     updatedAt: new Date().toISOString(),
-    system: await readGpuInfo(),
+    system,
+    runtimeStatus,
     dataset: {
       formalSceneSamples: await countDirectories(path.join(process.cwd(), "data", "ai-painter-datasets", "accepted", "dataset_v0", "scene", "world")),
       bootstrapSamples: await countDirectories(path.join(aiPainterRuntimeRoot, "bootstrap-dataset", "accepted", "dataset_v0", "scene", "world")),
@@ -641,14 +680,14 @@ export async function GET() {
     },
     naturalHomeBestTrainingCandidate,
     trainingQualityGate,
-    control,
+    control: liveControl,
     resourceUsage: await readResourceUsageLedger(),
     trainingProcessLedger: await readTrainingProcessLedger(),
     gameMapRuntimeFrame,
     trainingRunArchive,
     logs: await readTrainingLogTail(),
     training: {
-      status: control.status === "running" ? "running" : summary?.status === "completed" ? "completed" : "not_started",
+      status: liveControl.status === "running" ? "running" : summary?.status === "completed" ? "completed" : "not_started",
       epoch,
       targetEpochs: 120,
       percent: Math.min(100, Math.round((epoch / 120) * 100)),
@@ -657,7 +696,23 @@ export async function GET() {
       checkpointReady,
       inferenceReady,
     },
-  })
+  }
+}
+
+function buildTrainingProgressSummary(snapshot: TrainingProgressSnapshot) {
+  const ledger = isRecord(snapshot.trainingProcessLedger) ? snapshot.trainingProcessLedger : {}
+  return {
+    updatedAt: snapshot.updatedAt,
+    system: snapshot.system,
+    runtimeStatus: snapshot.runtimeStatus,
+    control: snapshot.control,
+    gameMapRuntimeFrame: snapshot.gameMapRuntimeFrame,
+    trainingRunArchive: snapshot.trainingRunArchive,
+    trainingProcessLedger: {
+      updatedAt: ledger.updatedAt,
+      summary: ledger.summary,
+    },
+  }
 }
 
 async function readGpuInfo() {
@@ -667,9 +722,200 @@ async function readGpuInfo() {
       "--format=csv,noheader,nounits",
     ], { windowsHide: true, timeout: 5000 })
     const [name, memoryTotal, memoryUsed, utilization, temperature, driver] = stdout.trim().split(",").map((value) => value.trim())
-    return { gpuAvailable: true, name, memoryTotalMiB: Number(memoryTotal), memoryUsedMiB: Number(memoryUsed), utilizationPercent: Number(utilization), temperatureCelsius: Number(temperature), driver }
+    const computeProcesses = await readGpuComputeProcesses()
+    const utilizationPercent = Number(utilization)
+    const memoryUsedMiB = Number(memoryUsed)
+    return {
+      gpuAvailable: true,
+      name,
+      memoryTotalMiB: Number(memoryTotal),
+      memoryUsedMiB,
+      utilizationPercent,
+      temperatureCelsius: Number(temperature),
+      driver,
+      computeProcesses,
+      activeComputeProcessCount: computeProcesses.length,
+      gpuBusy: utilizationPercent >= 20 || computeProcesses.length > 0,
+    }
   } catch {
-    return { gpuAvailable: false, name: "未检测到 NVIDIA GPU", memoryTotalMiB: 0, memoryUsedMiB: 0, utilizationPercent: 0, temperatureCelsius: 0, driver: "--" }
+    return {
+      gpuAvailable: false,
+      name: "未检测到 NVIDIA GPU",
+      memoryTotalMiB: 0,
+      memoryUsedMiB: 0,
+      utilizationPercent: 0,
+      temperatureCelsius: 0,
+      driver: "--",
+      computeProcesses: [],
+      activeComputeProcessCount: 0,
+      gpuBusy: false,
+    }
+  }
+}
+
+async function readGpuComputeProcesses() {
+  try {
+    const { stdout } = await execFileAsync("nvidia-smi", [
+      "--query-compute-apps=pid,process_name,used_memory",
+      "--format=csv,noheader,nounits",
+    ], { windowsHide: true, timeout: 5000 })
+    return stdout
+      .trim()
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .map((line) => {
+        const [pid, processName, usedMemoryMiB] = line.split(",").map((value) => value.trim())
+        const usedMemory = Number(usedMemoryMiB)
+        return {
+          pid: Number(pid),
+          processName,
+          usedMemoryMiB: Number.isFinite(usedMemory) ? usedMemory : null,
+        }
+      })
+      .filter((process) => {
+        if (!Number.isInteger(process.pid) || process.processName.length === 0) return false
+        return (
+          process.usedMemoryMiB !== null ||
+          /python|node|torch|cuda|ai-painter/i.test(process.processName)
+        )
+      })
+  } catch {
+    return []
+  }
+}
+
+function buildLiveControlState(
+  control: Awaited<ReturnType<typeof readTrainingControlState>>,
+  system: Awaited<ReturnType<typeof readGpuInfo>>,
+  runtimeStatus: Awaited<ReturnType<typeof readTrainingRuntimeStatus>>,
+  childProcessAlive: boolean,
+) {
+  if (runtimeStatus.heartbeat && !runtimeStatus.stale && runtimeStatus.status !== "completed_round") {
+    return {
+      ...control,
+      status: runtimeStatusIsActive(runtimeStatus.status) ? "running" as const : runtimeStatus.status,
+      currentStep:
+        runtimeStatus.heartbeat.activeStep ??
+        runtimeStatus.heartbeat.activeScript ??
+        labelRuntimeHeartbeatStatus(runtimeStatus.status),
+      liveDetected: true,
+      statusSource: "runtime_heartbeat",
+      controlFileStatus: control.status,
+      runtimeStatus,
+    }
+  }
+
+  const computeProcesses = system.computeProcesses ?? []
+  const hasLocalTrainingProcess = computeProcesses.some((process) =>
+    /python|node|torch|cuda|ai-painter/i.test(process.processName),
+  )
+  const highGpuLoad = system.gpuAvailable && system.utilizationPercent >= 20
+
+  if (control.status === "running" && childProcessAlive) {
+    return {
+      ...control,
+      liveDetected: true,
+      statusSource: "child_process",
+      controlFileStatus: control.status,
+      runtimeStatus,
+    }
+  }
+
+  if (control.status === "running" && (hasLocalTrainingProcess || highGpuLoad)) {
+    return {
+      ...control,
+      liveDetected: true,
+      statusSource: "training_control",
+      runtimeStatus,
+    }
+  }
+
+  if (control.status === "running") {
+    return {
+      ...control,
+      status: "idle" as const,
+      currentStep: control.currentStep ? `已忽略过期运行状态：${control.currentStep}` : "已忽略过期运行状态",
+      liveDetected: false,
+      statusSource: "stale_training_control",
+      controlFileStatus: control.status,
+      runtimeStatus,
+    }
+  }
+
+  if (hasLocalTrainingProcess || highGpuLoad) {
+    const processLabel =
+      computeProcesses.length > 0
+        ? computeProcesses
+            .slice(0, 2)
+            .map((process) => {
+              const memory = process.usedMemoryMiB === null ? "memory_unknown" : `${process.usedMemoryMiB}MiB`
+              return `${path.basename(process.processName)}:${memory}`
+            })
+            .join(" / ")
+        : `GPU ${system.utilizationPercent}%`
+    return {
+      ...control,
+      status: "running" as const,
+      currentStep: hasLocalTrainingProcess
+        ? `检测到 GPU 训练/推理进程：${processLabel}`
+        : `GPU 高负载，控制状态未登记：${processLabel}`,
+      liveDetected: true,
+      statusSource: hasLocalTrainingProcess ? "gpu_compute_process" : "gpu_utilization",
+      controlFileStatus: control.status,
+      runtimeStatus,
+    }
+  }
+
+  return {
+    ...control,
+    liveDetected: false,
+    statusSource: runtimeStatus.stale ? "stale_runtime_heartbeat" : "training_control",
+    runtimeStatus,
+  }
+}
+
+function isProcessAlive(pid: number | null | undefined) {
+  if (!pid || !Number.isInteger(pid) || pid <= 0) return false
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
+}
+
+function runtimeStatusIsActive(status: Awaited<ReturnType<typeof readTrainingRuntimeStatus>>["status"]) {
+  return [
+    "dataset_building",
+    "training",
+    "inferencing",
+    "reviewing",
+    "diagnosing",
+    "backwriting",
+  ].includes(status)
+}
+
+function labelRuntimeHeartbeatStatus(status: Awaited<ReturnType<typeof readTrainingRuntimeStatus>>["status"]) {
+  const labels: Record<Awaited<ReturnType<typeof readTrainingRuntimeStatus>>["status"], string> = {
+    idle: "空闲",
+    dataset_building: "构建训练数据",
+    training: "模型训练中",
+    inferencing: "模型推理中",
+    reviewing: "自动审核中",
+    diagnosing: "自动诊断中",
+    backwriting: "自动回写记录中",
+    waiting_owner_review: "等待人工审核",
+    blocked: "已阻断，等待处理",
+    completed_round: "本轮完成",
+  }
+  return labels[status]
+}
+
+async function readJson(file: string): Promise<Record<string, unknown> | null> {
+  try {
+    return JSON.parse(await readFile(file, "utf8")) as Record<string, unknown>
+  } catch {
+    return null
   }
 }
 
@@ -678,30 +924,6 @@ async function countDirectories(directory: string) {
     return (await readdir(directory, { withFileTypes: true })).filter((entry) => entry.isDirectory()).length
   } catch {
     return 0
-  }
-}
-
-async function countFiles(directory: string): Promise<number> {
-  try {
-    const entries = await readdir(directory, { withFileTypes: true })
-    const counts: number[] = await Promise.all(
-      entries.map(async (entry): Promise<number> => {
-        const fullPath = path.join(directory, entry.name)
-        if (entry.isDirectory()) return countFiles(fullPath)
-        return entry.isFile() ? 1 : 0
-      }),
-    )
-    return counts.reduce((total: number, count: number) => total + count, 0)
-  } catch {
-    return 0
-  }
-}
-
-async function readJson(file: string): Promise<Record<string, unknown> | null> {
-  try {
-    return JSON.parse(await readFile(file, "utf8")) as Record<string, unknown>
-  } catch {
-    return null
   }
 }
 
@@ -715,14 +937,23 @@ async function readLastJsonLine(file: string): Promise<Record<string, unknown> |
 }
 
 async function readLatestGameMapRuntimeFramePreview() {
-  const record = await readJson(
-    path.join(
-      process.cwd(),
-      ".runtime",
-      "game-map-runtime-frame-candidates",
-      "latest-runtime-frame.json",
-    ),
-  )
+  const record =
+    (await readJson(
+      path.join(
+        process.cwd(),
+        ".runtime",
+        "game-map-runtime-frame",
+        "latest-runtime-frame.json",
+      ),
+    )) ??
+    (await readJson(
+      path.join(
+        process.cwd(),
+        ".runtime",
+        "game-map-runtime-frame-candidates",
+        "latest-runtime-frame.json",
+      ),
+    ))
   const runtimeFrame = isRecord(record?.runtimeFrame) ? record.runtimeFrame : null
   const composition = isRecord(runtimeFrame?.composition) ? runtimeFrame.composition : null
   const compositeOutput = isRecord(composition?.compositeOutput) ? composition.compositeOutput : null
@@ -735,6 +966,12 @@ async function readLatestGameMapRuntimeFramePreview() {
     : null
   const formalJudge = formalJudgePath ? await readJson(formalJudgePath) : null
   const metrics = isRecord(formalJudge?.metrics) ? formalJudge.metrics : null
+  const machineReady = outputTags.includes("world_page_ready_after_formal_visual_judge")
+  const machinePassed = outputTags.includes("formal_game_map_visual_judge_passed")
+  const ownerReview = await readRuntimeFrameOwnerReviewGate({
+    runtimeFrameId: stringValue(runtimeFrame?.runtimeFrameId),
+    imageSha256: stringValue(compositeOutput?.imageSha256),
+  })
 
   if (!record || !localImagePath) {
     return {
@@ -750,15 +987,20 @@ async function readLatestGameMapRuntimeFramePreview() {
   }
 
   return {
-    ready: outputTags.includes("world_page_ready_after_formal_visual_judge"),
-    canShowInWorld: Boolean(record.canShowInWorld),
-    status: outputTags.includes("formal_game_map_visual_judge_passed")
-      ? "formal_passed"
-      : "candidate_only",
+    ready: machineReady && ownerReview.status !== "rejected",
+    canShowInWorld: Boolean(record.canShowInWorld) && ownerReview.status === "passed",
+    status: ownerReview.status === "rejected"
+      ? "owner_rejected"
+      : machinePassed
+        ? ownerReview.status === "passed"
+          ? "owner_review_passed"
+          : "owner_review_pending"
+        : "candidate_only",
     imageUrl: "/api/ai-painter/game-map-runtime-frame/image",
     recordId: stringValue(record.recordId),
     worldId: stringValue(record.worldId),
     tick: numberValue(record.tick),
+    ownerReview,
     formalJudge: {
       passed: Boolean(formalJudge?.passed),
       status: stringValue(formalJudge?.status),
@@ -770,6 +1012,83 @@ async function readLatestGameMapRuntimeFramePreview() {
         pathBlackCraterRatio: numberValue(metrics?.pathBlackCraterRatio),
       },
     },
+  }
+}
+
+async function readRuntimeFrameOwnerReviewGate(input: {
+  runtimeFrameId: string | null
+  imageSha256: string | null
+}) {
+  if (!input.runtimeFrameId || !input.imageSha256) {
+    return {
+      status: "missing_identity",
+      canShow: false,
+      reason: "runtime_frame_or_image_identity_missing",
+    }
+  }
+
+  const ledgerPath = path.join(
+    process.cwd(),
+    ".runtime",
+    "ai-painter",
+    "training-process-ledger",
+    "events.jsonl",
+  )
+
+  try {
+    const raw = await readFile(ledgerPath, "utf8")
+    const events = raw
+      .trim()
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .map(parseLedgerLine)
+      .filter((event): event is Record<string, unknown> => {
+        return (
+          isRecord(event) &&
+          event.action === "owner_review_game_map_runtime_frame" &&
+          event.archiveId === input.runtimeFrameId &&
+          event.resourceSessionId === input.imageSha256
+        )
+      })
+    const failures = events.filter((event) => event.status === "failed")
+    const passes = events.filter((event) =>
+      event.status === "success" || event.status === "passed" || event.status === "approved"
+    )
+
+    if (failures.length > 0) {
+      const latestFailure = failures.at(-1)
+      return {
+        status: "rejected",
+        canShow: false,
+        reason: stringValue(latestFailure?.error) ?? "owner_review_failed_visual_not_final",
+      }
+    }
+    if (passes.length > 0) {
+      return {
+        status: "passed",
+        canShow: true,
+        reason: "owner_review_passed",
+      }
+    }
+    return {
+      status: "pending",
+      canShow: false,
+      reason: "owner_review_required_before_world_display",
+    }
+  } catch {
+    return {
+      status: "ledger_unreadable",
+      canShow: false,
+      reason: "owner_review_ledger_unreadable",
+    }
+  }
+}
+
+function parseLedgerLine(line: string): unknown {
+  try {
+    return JSON.parse(line) as unknown
+  } catch {
+    return null
   }
 }
 
@@ -797,18 +1116,18 @@ async function readLatestTrainingRunArchive() {
   const files = isRecord(latest.files) ? latest.files : null
   const output = isRecord(latest.output) ? latest.output : null
   const visualDeltaReview = isRecord(latest.visualDeltaReview) ? latest.visualDeltaReview : null
-  const archivedMaterialDir = stringValue(inference?.archivedMaterialDir)
+  const archivedMaterialManifest = stringValue(inference?.archivedMaterialManifest)
 
   return {
     ready: true,
     status: stringValue(latest.status),
     runId: stringValue(latest.runId),
     action: stringValue(latest.action),
-    materialFiles: archivedMaterialDir ? await countFiles(path.resolve(process.cwd(), archivedMaterialDir)) : 0,
+    materialFiles: numberValue(inference?.materialFileCount ?? inference?.materialFiles ?? latest.materialFiles),
     materialPassed: Boolean(quality?.materialPassed),
     formalVisualJudgePassed: Boolean(quality?.formalVisualJudgePassed),
     manualReviewStatus: stringValue(manualReview?.status),
-    manifestPath: stringValue(files?.manifest),
+    manifestPath: stringValue(files?.manifest) ?? archivedMaterialManifest,
     compositeImagePath: stringValue(output?.archivedCompositeOutput),
     visualDeltaReview: visualDeltaReview
       ? {

@@ -1,0 +1,82 @@
+{
+  "trainingVersion": "training-rgb-refiner-natural-home-v150-complete-world-broad-continuation",
+  "modelVersion": "rgb-refiner-natural-home-v150-complete-world-broad-continuation",
+  "inputChannels": 17,
+  "baseChannels": 64,
+  "residualBlocks": 12,
+  "unetDetailRefiner": true,
+  "directOutput": false,
+  "residualScale": 0.3,
+  "batchSize": 2,
+  "learningRate": 0.000001,
+  "discriminatorLearningRate": 0.000001,
+  "discriminatorBase": 32,
+  "adversarialWeight": 0.003,
+  "maxEpochs": 6,
+  "mixedPrecision": true,
+  "augmentTrain": false,
+  "residualPenalty": 0.0,
+  "lossWeights": {
+    "l1": 2.4,
+    "edge": 42.0,
+    "edgeDensity": 130.0,
+    "texture": 12.0,
+    "multiScaleTexture": 11.8,
+    "patchVariance": 11.6,
+    "laplacian": 50.0,
+    "gradient": 40.0,
+    "colorRange": 0.24,
+    "waterPeriodicity": 10.0
+  },
+  "waterArtifactGuard": {
+    "periods": [8, 12, 16, 24, 32],
+    "allowedRatio": 1.001,
+    "margin": 0.0001
+  },
+  "structureWeights": {
+    "water": 8.5,
+    "shoreline": 8.8,
+    "road": 7.3,
+    "roadEdge": 7.9,
+    "tree": 7.1,
+    "rock": 6.8,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "focusLossChannels": [
+    "water_body",
+    "shoreline",
+    "grass",
+    "road_center",
+    "road_edge",
+    "tree_crown",
+    "tree_trunk",
+    "rock",
+    "walkable",
+    "depth"
+  ],
+  "focusLossBoost": 8.8,
+  "saveBestBy": "validation_loss",
+  "seed": 20260630,
+  "status": "v150_complete_world_broad_continuation_hidden_training_only",
+  "allowedScope": "complete_natural_home_mvp_training_only",
+  "forbiddenScope": [
+    "building",
+    "facility",
+    "butler",
+    "character",
+    "animal",
+    "insect",
+    "dynamic_state",
+    "visual_unit_expansion",
+    "town",
+    "city"
+  ],
+  "acceptance": {
+    "purpose": "Continue from V149 on the stored V129 pure-natural complete-world dataset. The run tests whether the local model can preserve the V149 edge/detail improvement while seeing the broader complete-world samples. It must remain hidden until VJ-1, VJ-2, Game-World Frame Gate, ApprovedFrame binding, RuntimeFrame, and owner confirmation pass.",
+    "knownRisk": "The current AI Painter blueprint canvas is 256x192. If Game-World Frame Gate still fails on generated_image_must_be_full_runtime_resolution, the next required work is model/generator output-spec repair, not visual approval.",
+    "worldDisplay": "blocked until generated candidates pass VJ-1, VJ-2, Game-World Frame Gate, ApprovedFrame binding, RuntimeFrame, and owner confirmation."
+  }
+}

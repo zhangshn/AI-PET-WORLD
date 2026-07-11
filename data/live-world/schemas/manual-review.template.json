@@ -1,0 +1,12 @@
+{
+  "reviewId": "review-poc0-example",
+  "outputId": "output-poc0-example",
+  "inputPayloadHash": "INPUT_PAYLOAD_HASH",
+  "reviewType": "manual",
+  "reviewer": "owner",
+  "status": "needs_owner_review",
+  "structureIssues": [],
+  "visualIssues": [],
+  "notes": "Owner review is required before promoting candidate to sample.",
+  "reviewedAt": "ISO_TIME"
+}

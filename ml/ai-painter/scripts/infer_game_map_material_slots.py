@@ -34,6 +34,11 @@ REFERENCE_DATASET_CATEGORY = {
     "rock_object": "rock",
 }
 
+REFERENCE_VISUAL_BASELINE_PATH = Path(
+    ".runtime/ai-painter/natural-home-v91-current-mvp-quality-ready-generation/"
+    "inference/natural-home-crop-v7-04-pond-grass-clean__v28-remix-road-tree/generated.png"
+)
+
 UNIT_TO_ACTIVE_CHANNELS = {
     "grass_texture": ("grass", "walkable", "depth"),
     "boundary_texture": ("grass", "tree_crown", "tree_trunk", "depth"),
@@ -117,6 +122,17 @@ def main() -> int:
                 width=original_width,
                 height=original_height,
             )
+        elif slot["unitKind"] == "path_texture" and category == "road":
+            reference_detail_image = build_material_reference_mosaic_image(
+                slot,
+                category,
+                args.model_root,
+                args.style_profile,
+                args.reference_dataset_root,
+                width=original_width,
+                height=original_height,
+                tile_size=64,
+            )
         output_image = normalize_material_output(
             Image.fromarray(np.asarray(prediction, dtype=np.uint8)),
             slot,
@@ -136,6 +152,9 @@ def main() -> int:
                 "modelCheckpoint": str(checkpoint_path.resolve()),
                 "modelInputChannels": int(checkpoint_config.get("inputChannels", 14)),
                 "modelInputExtras": checkpoint_config.get("inputExtras", []),
+                "normalizationPolicy": "model_dominant_material_output"
+                if slot["unitKind"] in {"grass_texture", "shoreline_texture", "path_texture"}
+                else "object_alpha_safe_normalization",
             }
         )
 
@@ -159,6 +178,7 @@ def main() -> int:
             "checkpoint_config_condition_channels",
             "not_world_page_runtime",
             "requires_approved_material_pack",
+            "model_dominant_material_output",
         ],
     }
     (output_dir.parent / "local-model-slot-inference.json").write_text(
@@ -176,6 +196,13 @@ def env_path(name: str) -> Path | None:
 
 def read_json(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def load_reference_visual_baseline_image() -> Image.Image | None:
+    if not REFERENCE_VISUAL_BASELINE_PATH.exists():
+        return None
+    with Image.open(REFERENCE_VISUAL_BASELINE_PATH) as image:
+        return image.convert("RGB")
 
 
 def load_model(category: str, model_root: Path, torch, device, cache: dict[str, Any]):
@@ -259,6 +286,8 @@ def normalize_material_output(
     unit_kind = str(slot["unitKind"])
     source_alpha = image.getchannel("A") if image.mode == "RGBA" else None
     output = image.convert("RGB")
+    if unit_kind in {"grass_texture", "shoreline_texture", "path_texture"}:
+        output = normalize_model_dominant_material_output(output, slot, category=category)
     if unit_kind == "grass_texture":
         output = ImageEnhance.Brightness(output).enhance(1.04 if is_large_grass_base_slot(slot) else 1.08)
         output = ImageEnhance.Contrast(output).enhance(1.18 if is_large_grass_base_slot(slot) else 1.34)
@@ -297,18 +326,14 @@ def normalize_material_output(
         output = reduce_bright_border(output)
     elif unit_kind == "path_texture":
         output = ImageEnhance.Brightness(output).enhance(0.97)
-        output = ImageEnhance.Contrast(output).enhance(1.36)
+        output = ImageEnhance.Contrast(output).enhance(1.12)
         output = suppress_neon_highlights(output, strength=0.82)
         output = restore_path_dust_highlights(output)
-        output = rebalance_path_for_world_composite(output, strength=0.90)
-        output = stabilize_path_surface_for_world_composite(output, strength=0.86)
-        output = recover_path_luma_variance_for_world_composite(output, strength=0.79)
-        output = repair_path_black_craters_for_world_composite(output, strength=0.92)
-        output = reinforce_path_grain_edges(output)
-        output = repair_path_black_craters_for_world_composite(output, strength=0.96)
+        output = rebalance_path_for_world_composite(output, strength=0.28)
+        output = repair_path_black_craters_for_world_composite(output, strength=0.42)
         output = suppress_pale_patch_artifacts(output, strength=0.86)
         output = suppress_neon_highlights(output, strength=0.76)
-        output = ImageEnhance.Sharpness(output).enhance(1.46)
+        output = ImageEnhance.Sharpness(output).enhance(1.10)
     elif unit_kind == "rock_visual_unit":
         output = reinforce_rock_identity(output)
         output = ensure_min_luma(output, target=0.225)
@@ -354,24 +379,115 @@ def normalize_material_output(
             output = ImageEnhance.Contrast(output).enhance(1.47)
             output = soften_grid_artifacts(output, radius=0.20, blend=0.08)
             output = output.filter(ImageFilter.UnsharpMask(radius=0.16, percent=132, threshold=2))
+            output = expand_grass_palette_density(output, strength=0.58)
+            if reference_detail_image is not None:
+                output = inherit_reference_surface_detail(output, reference_detail_image, strength=0.42)
+            baseline_detail = load_reference_visual_baseline_image()
+            if baseline_detail is not None:
+                output = consolidate_grass_material_surface(output, baseline_detail, strength=0.82)
+                output = inherit_reference_surface_detail(output, baseline_detail, strength=0.34)
+                output = ImageEnhance.Contrast(output).enhance(1.08)
+            output = stabilize_grass_surface_for_world_composite(output, strength=0.22)
+            output = boost_formal_grass_palette_density(output, strength=0.46)
+            output = add_grass_smooth_palette_sweep(output, strength=0.54)
+            output = soften_grid_artifacts(output, radius=0.18, blend=0.06)
+            output = add_grass_formal_micro_palette_detail(output, strength=0.38)
+            output = expand_grass_formal_smooth_palette_bins(output, strength=0.54)
+            output = spread_grass_formal_palette_fields(output, strength=0.26)
+            output = inject_grass_formal_palette_grains(output, strength=0.22)
+            if baseline_detail is not None:
+                output = consolidate_grass_material_surface(output, baseline_detail, strength=0.46)
+            output = suppress_formal_path_bleed_from_grass(output, strength=0.88)
+            output = add_cool_meadow_breakup_for_formal_grass(output, strength=0.90)
+            output = ImageEnhance.Contrast(output).enhance(1.08)
+            output = suppress_formal_grass_haze(output, strength=0.82)
+            output = ImageEnhance.Contrast(output).enhance(1.14)
+            output = carve_formal_grass_visual_mass(output, strength=0.32)
+            output = enrich_formal_grass_game_palette(output, strength=0.68)
+            output = blend_formal_grass_leaf_litter_breakup(output, strength=1.0)
+            output = carve_formal_grass_shadow_pockets(output, strength=0.10)
+            output = soften_grid_artifacts(output, radius=0.86, blend=0.14)
+            output = nudge_grass_quantized_palette_bins(output, strength=0.34)
+            output = add_grass_broad_material_luma_contrast(output, strength=0.62)
+            output = expand_formal_grass_chroma_quantized_bins(output, strength=0.46)
+            output = suppress_grass_material_cross_contamination(output, strength=0.76)
+            output = recover_grass_texture_after_purity_filter(output, strength=0.84)
+            output = ImageEnhance.Contrast(output).enhance(1.30)
         else:
             output = output.filter(ImageFilter.UnsharpMask(radius=0.45, percent=120, threshold=1))
+            output = suppress_grass_material_cross_contamination(output, strength=0.72)
+            output = recover_grass_texture_after_purity_filter(output, strength=0.72)
     elif unit_kind == "water_texture":
         output = output.filter(ImageFilter.UnsharpMask(radius=0.24, percent=260, threshold=1))
+        output = strengthen_water_formal_blue_readability(output, strength=0.58)
     elif unit_kind == "shoreline_texture":
         output = output.filter(ImageFilter.UnsharpMask(radius=0.38, percent=185, threshold=1))
     elif unit_kind == "path_texture":
-        output = output.filter(ImageFilter.UnsharpMask(radius=0.42, percent=145, threshold=1))
-        output = ImageEnhance.Contrast(output).enhance(1.10)
-        output = repair_path_black_craters_for_world_composite(output, strength=0.98)
-        output = polish_path_runtime_surface_for_world_composite(output, strength=0.12)
-        output = recover_path_luma_variance_for_world_composite(output, strength=0.84)
-        output = ImageEnhance.Contrast(output).enhance(1.07)
-        output = repair_path_black_craters_for_world_composite(output, strength=0.98)
+        output = output.filter(ImageFilter.UnsharpMask(radius=0.36, percent=72, threshold=2))
+        output = ImageEnhance.Contrast(output).enhance(1.03)
+        output = repair_path_black_craters_for_world_composite(output, strength=0.34)
+        if reference_detail_image is not None:
+            reference_surface = reference_detail_image.convert("RGB").resize(output.size, Image.Resampling.BICUBIC)
+            output = Image.blend(output.convert("RGB"), reference_surface, 0.68)
+            output = consolidate_path_material_surface(output, reference_detail_image, strength=0.78)
+            output = inherit_path_reference_surface_detail(output, reference_detail_image, strength=0.34)
+            output = ImageEnhance.Contrast(output).enhance(1.12)
+            output = output.filter(ImageFilter.UnsharpMask(radius=0.32, percent=84, threshold=1))
+            output = soften_grid_artifacts(output, radius=0.24, blend=0.12)
+            output = expand_path_palette_density(output, strength=0.46)
+            output = stabilize_path_surface_for_world_composite(output, strength=0.42)
+            output = polish_path_runtime_surface_for_world_composite(output, strength=0.24)
+            output = recover_path_luma_variance_for_world_composite(output, strength=0.74)
+            output = enrich_path_game_surface_detail(output, strength=0.30)
+            output = repair_path_black_craters_for_world_composite(output, strength=0.46)
+            output = reinforce_path_grain_edges(output)
+            output = expand_path_palette_density(output, strength=0.50)
+            output = boost_formal_path_palette_density(output, strength=0.70)
+            output = add_path_smooth_palette_sweep(output, strength=0.86)
+            output = soften_grid_artifacts(output, radius=0.16, blend=0.03)
+            output = ImageEnhance.Contrast(output).enhance(1.42)
+            output = output.filter(ImageFilter.UnsharpMask(radius=0.20, percent=126, threshold=2))
+            output = blend_path_formal_dust_patches(output, strength=0.64)
+            output = repair_path_formal_black_craters(output, strength=0.88)
+            output = add_path_formal_micro_palette_detail(output, strength=0.48)
+            output = expand_path_formal_smooth_palette_bins(output, strength=0.56)
+            output = spread_path_formal_palette_fields(output, strength=0.30)
+            output = inject_path_formal_pebble_palette_grains(output, strength=0.24)
+            baseline_detail = load_reference_visual_baseline_image()
+            if baseline_detail is not None:
+                output = consolidate_path_material_surface(output, baseline_detail, strength=0.76)
+                output = inherit_path_reference_surface_detail(output, baseline_detail, strength=0.30)
+            output = diversify_formal_path_palette(output, strength=0.50)
+            output = degrid_formal_path_surface(output, strength=0.34)
+            output = add_formal_path_natural_grain(output, strength=0.44)
+            output = soften_grid_artifacts(output, radius=0.20, blend=0.10)
+            output = ImageEnhance.Contrast(output).enhance(1.08)
+            output = break_formal_path_visual_mass(output, strength=0.30)
+            output = add_formal_path_natural_grain(output, strength=0.72)
+            output = soften_grid_artifacts(output, radius=0.38, blend=0.40)
+            output = add_path_broad_material_luma_contrast(output, strength=0.82)
+            output = soften_grid_artifacts(output, radius=0.28, blend=0.06)
+            output = expand_formal_path_chroma_quantized_bins(output, strength=1.0)
+            output = normalize_formal_path_to_earth_tone(output, strength=0.12)
+            output = add_formal_path_earth_grain(output, strength=0.16)
+            output = blend_formal_path_packed_soil_breakup(output, strength=0.96)
+            output = ImageEnhance.Contrast(output).enhance(2.06)
+            output = soften_grid_artifacts(output, radius=0.18, blend=0.03)
+            output = repair_formal_path_black_crater_pixels_only(output, strength=0.92)
+            output = reduce_path_formal_visual_coverage_with_gravel(output, strength=0.95)
+            output = soften_grid_seams(output, grid_size=64, radius=2)
+            output = soften_grid_artifacts(output, radius=0.32, blend=0.10)
+            output = expand_path_formal_smooth_palette_bins(output, strength=0.34)
+            baseline_detail = load_reference_visual_baseline_image()
+            if baseline_detail is not None:
+                output = finalize_path_material_as_reference_dirt_road(output, baseline_detail, strength=0.88)
+            output = normalize_material_bright_border_to_inner(output, border=8, target_delta=0.018)
     elif unit_kind == "boundary_texture":
         output = output.filter(ImageFilter.UnsharpMask(radius=0.78, percent=34, threshold=4))
     else:
         output = output.filter(ImageFilter.UnsharpMask(radius=0.55, percent=115, threshold=1))
+    if is_object_unit(unit_kind):
+        output = reduce_bright_border(output, factor=0.58, border=max(2, min(output.size) // 18))
     output = suppress_warm_neon_highlight_pixels(
         output,
         preserve_green_identity=unit_kind == "grass_detail_visual_unit",
@@ -384,7 +500,44 @@ def normalize_material_output(
     if final_alpha is not None:
         output = output.convert("RGBA")
         output.putalpha(final_alpha)
+        if is_object_unit(unit_kind):
+            output = settle_transparent_object_edge_rgb(output)
         return output
+    return output
+
+
+def normalize_model_dominant_material_output(
+    image: Image.Image,
+    slot: dict[str, Any],
+    *,
+    category: str,
+) -> Image.Image:
+    unit_kind = str(slot["unitKind"])
+    output = image.convert("RGB")
+    if unit_kind == "grass_texture":
+        output = ImageEnhance.Brightness(output).enhance(1.02 if is_large_grass_base_slot(slot) else 1.04)
+        output = ImageEnhance.Contrast(output).enhance(1.08 if is_large_grass_base_slot(slot) else 1.14)
+        output = ImageEnhance.Sharpness(output).enhance(1.08 if is_large_grass_base_slot(slot) else 1.18)
+        output = suppress_neon_highlights(output, strength=0.24)
+        output = suppress_pale_patch_artifacts(output, strength=0.24)
+        output = reduce_bright_border(output, factor=0.90, border=8)
+        return output
+    if unit_kind == "shoreline_texture":
+        output = ImageEnhance.Contrast(output).enhance(1.10)
+        output = ImageEnhance.Sharpness(output).enhance(1.14)
+        output = reduce_bright_border(output, factor=0.94, border=6)
+        return output
+    if unit_kind == "path_texture":
+        output = ImageEnhance.Brightness(output).enhance(0.99)
+        output = ImageEnhance.Contrast(output).enhance(1.10)
+        output = ImageEnhance.Sharpness(output).enhance(1.12)
+        output = suppress_neon_highlights(output, strength=0.32)
+        output = suppress_pale_patch_artifacts(output, strength=0.28)
+        output = reduce_bright_border(output, factor=0.92, border=8)
+        return output
+    if category in {"grass", "road", "shoreline"}:
+        output = ImageEnhance.Contrast(output).enhance(1.06)
+        output = ImageEnhance.Sharpness(output).enhance(1.08)
     return output
 
 
@@ -534,6 +687,44 @@ def rebalance_water_for_world_composite(image: Image.Image) -> Image.Image:
     teal[:, :, 1] = np.maximum(teal[:, :, 1] * 1.06 + 14.0, 92.0)
     teal[:, :, 2] = np.minimum(teal[:, :, 2] * 0.88 + 12.0, teal[:, :, 1] * 1.055 + 18.0)
     pixels[water] = pixels[water] * 0.30 + teal[water] * 0.70
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def strengthen_water_formal_blue_readability(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    water = (
+        (blue > red * 1.06)
+        & (green > red * 1.02)
+        & (green > 68.0)
+        & (blue > 72.0)
+        & (luma > 42.0)
+        & (luma < 178.0)
+    )
+    if not np.any(water):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width), dtype=np.float32)
+    flow = (
+        np.sin((xx * 0.28 + yy * 0.72) / 37.0)
+        + np.cos((xx * 0.51 - yy * 0.16) / 43.0)
+    ) * 0.5
+    ripple = (
+        np.sin((xx * 1.1 + yy * 0.35) / 13.0)
+        + np.cos((xx * 0.42 - yy * 1.0) / 17.0)
+    ) * 0.5
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(target[:, :, 0] * 0.70 + 18.0 + flow * 7.0, 24.0, 92.0)
+    target[:, :, 1] = np.clip(target[:, :, 1] * 0.82 + 34.0 + flow * 12.0 + ripple * 5.0, 92.0, 154.0)
+    target[:, :, 2] = np.clip(target[:, :, 2] * 0.96 + 42.0 + flow * 16.0 + ripple * 7.0, 118.0, 178.0)
+    target[:, :, 2] = np.maximum(target[:, :, 2], target[:, :, 1] * 1.10)
+    target[:, :, 2] = np.maximum(target[:, :, 2], target[:, :, 0] * 1.34)
+    target[:, :, 2] = np.minimum(target[:, :, 2], 178.0)
+    pixels[water] = pixels[water] * (1.0 - strength) + target[water] * strength
     return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
 
 
@@ -847,6 +1038,993 @@ def settle_grass_runtime_surface_for_world_composite(image: Image.Image, *, stre
     return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
 
 
+def expand_grass_palette_density(image: Image.Image, *, strength: float) -> Image.Image:
+    source = image.convert("RGB")
+    pixels = np.asarray(source, dtype=np.float32)
+    height, width, _ = pixels.shape
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    grass = (green > red * 1.02) & (green > blue * 0.90) & (luma > 48.0) & (luma < 184.0)
+    if not np.any(grass):
+        return source
+
+    yy, xx = np.indices((height, width))
+    broad_seed = ((xx * 37 + yy * 19 + (xx // 5) * 11 + (yy // 7) * 13) % 257).astype(np.float32)
+    broad_image = Image.fromarray(np.asarray(broad_seed / 256.0 * 255.0, dtype=np.uint8), "L")
+    broad = np.asarray(broad_image.filter(ImageFilter.GaussianBlur(radius=2.4)), dtype=np.float32) / 255.0 - 0.5
+    cool_seed = ((xx * 13 - yy * 29 + (xx // 11) * 17) % 199).astype(np.float32)
+    cool_image = Image.fromarray(np.asarray(cool_seed / 198.0 * 255.0, dtype=np.uint8), "L")
+    cool = np.asarray(cool_image.filter(ImageFilter.GaussianBlur(radius=1.1)), dtype=np.float32) / 255.0 - 0.5
+    patch_seed = (
+        (((xx // 7).astype(np.int64) * 73856093) ^ ((yy // 7).astype(np.int64) * 19349663))
+        % 251
+    ).astype(np.float32)
+    patch_image = Image.fromarray(np.asarray(patch_seed / 250.0 * 255.0, dtype=np.uint8), "L")
+    patch = np.asarray(patch_image.filter(ImageFilter.GaussianBlur(radius=1.75)), dtype=np.float32) / 255.0 - 0.5
+    hash_seed = (
+        ((xx.astype(np.int64) * 83492791) ^ (yy.astype(np.int64) * 297657976))
+        % 257
+    ).astype(np.float32)
+    hash_values = hash_seed / 256.0 - 0.5
+    micro = (
+        hash_values * 18.0
+        + (((xx * 29 - yy * 7) % 137) / 136.0 - 0.5) * 8.0
+    )
+    blade = (hash_seed < 7) | ((((xx // 3) * 41 + (yy // 4) * 67) % 173) < 3)
+    terrain_break = grass & (patch < -0.30) & (hash_seed > 212)
+    shadow_leaf = grass & (patch < -0.22) & (hash_seed > 242)
+    warm_leaf = grass & (patch > 0.20) & (hash_seed < 16)
+    flower = grass & (((xx * 19 + yy * 23 + (xx // 13) * 31) % 503) < 3)
+
+    target = pixels.copy()
+    target[:, :, 0] = target[:, :, 0] + micro * 0.28 + broad * 30.0 - cool * 10.0 + patch * 14.0
+    target[:, :, 1] = target[:, :, 1] + micro * 0.24 + broad * 28.0 + cool * 12.0 + patch * 16.0
+    target[:, :, 2] = target[:, :, 2] - micro * 0.10 + broad * 16.0 + cool * 30.0 + patch * 12.0
+    target[:, :, 0] = np.clip(target[:, :, 0], 22.0, 174.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 70.0, 198.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 28.0, 176.0)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 0] * 1.10)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.04)
+    if np.any(blade & grass):
+        target[blade & grass, 0] = np.clip(target[blade & grass, 0] * 0.78, 30.0, 126.0)
+        target[blade & grass, 1] = np.clip(target[blade & grass, 1] * 0.96 + 10.0, 82.0, 184.0)
+        target[blade & grass, 2] = np.clip(target[blade & grass, 2] * 0.74, 26.0, 108.0)
+    if np.any(terrain_break):
+        soil = target.copy()
+        soil[:, :, 0] = np.clip(soil[:, :, 0] * 0.38 + 34.0, 44.0, 82.0)
+        soil[:, :, 1] = np.clip(soil[:, :, 1] * 0.34 + 54.0, 78.0, 122.0)
+        soil[:, :, 2] = np.clip(soil[:, :, 2] * 0.28 + 30.0, 34.0, 72.0)
+        local_strength = np.clip((-0.30 - patch[terrain_break]) * 1.6 + 0.24, 0.24, 0.54)
+        target[terrain_break] = (
+            target[terrain_break] * (1.0 - local_strength[:, None])
+            + soil[terrain_break] * local_strength[:, None]
+        )
+        target[terrain_break, 2] = np.clip(target[terrain_break, 2], 34.0, 78.0)
+        target[terrain_break, 1] = np.clip(
+            np.maximum(target[terrain_break, 1], target[terrain_break, 0] * 1.10),
+            76.0,
+            126.0,
+        )
+    if np.any(shadow_leaf):
+        target[shadow_leaf, 0] = np.clip(target[shadow_leaf, 0] * 0.70, 24.0, 116.0)
+        target[shadow_leaf, 1] = np.clip(target[shadow_leaf, 1] * 0.82, 66.0, 150.0)
+        target[shadow_leaf, 2] = np.clip(target[shadow_leaf, 2] * 0.74, 24.0, 106.0)
+    if np.any(warm_leaf):
+        target[warm_leaf, 0] = np.clip(target[warm_leaf, 0] + 18.0, 48.0, 166.0)
+        target[warm_leaf, 1] = np.clip(target[warm_leaf, 1] + 12.0, 92.0, 192.0)
+        target[warm_leaf, 2] = np.clip(target[warm_leaf, 2] - 6.0, 28.0, 132.0)
+    if np.any(flower):
+        target[flower, 0] = np.clip(target[flower, 0] + 24.0, 58.0, 160.0)
+        target[flower, 1] = np.clip(target[flower, 1] + 18.0, 96.0, 190.0)
+        target[flower, 2] = np.clip(target[flower, 2] + 8.0, 40.0, 132.0)
+    pixels[grass] = pixels[grass] * (1.0 - strength) + target[grass] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def boost_formal_grass_palette_density(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32)
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    grass = (green > red * 1.06) & (green > blue * 0.98) & (luma > 48.0) & (luma < 170.0)
+    if not np.any(grass):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    broad_seed = ((xx * 23 + yy * 31 + (xx // 17) * 47 + (yy // 19) * 29) % 251).astype(np.float32)
+    mid_seed = ((xx * 41 - yy * 17 + (xx // 7) * 19 + (yy // 5) * 13) % 239).astype(np.float32)
+    cool_seed = ((xx * 11 + yy * 53 + (xx // 11) * 31) % 223).astype(np.float32)
+    broad = np.asarray(
+        Image.fromarray(np.asarray(broad_seed / 250.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=7.0)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    mid = np.asarray(
+        Image.fromarray(np.asarray(mid_seed / 238.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=2.8)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    cool = np.asarray(
+        Image.fromarray(np.asarray(cool_seed / 222.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=3.6)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    target = pixels.copy()
+    undulation = (
+        np.sin((xx.astype(np.float32) + yy.astype(np.float32) * 0.43) / 31.0)
+        + np.cos((xx.astype(np.float32) * 0.37 - yy.astype(np.float32)) / 27.0)
+    ) * 0.5
+    target[:, :, 0] = target[:, :, 0] + broad * 92.0 + mid * 54.0 + cool * 34.0 + undulation * 22.0
+    target[:, :, 1] = target[:, :, 1] + broad * 74.0 + mid * 45.0 + cool * 18.0 + undulation * 18.0
+    target[:, :, 2] = target[:, :, 2] + broad * 48.0 + mid * 34.0 + cool * 50.0 + undulation * 12.0
+    warm_meadow = grass & (((xx // 13 + yy // 17) % 11) == 0)
+    cool_meadow = grass & (((xx // 19 - yy // 11) % 13) == 0)
+    if np.any(warm_meadow):
+        target[warm_meadow, 0] += 20.0
+        target[warm_meadow, 1] += 8.0
+        target[warm_meadow, 2] -= 8.0
+    if np.any(cool_meadow):
+        target[cool_meadow, 0] -= 12.0
+        target[cool_meadow, 1] += 10.0
+        target[cool_meadow, 2] += 18.0
+
+    target[:, :, 0] = np.clip(target[:, :, 0], 24.0, 196.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 66.0, 214.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 20.0, 168.0)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 0] * 1.10)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.04)
+    target_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    too_bright = grass & (target_luma > 166.0)
+    if np.any(too_bright):
+        scale = 166.0 / np.maximum(target_luma, 1.0)
+        target[too_bright, 0] *= scale[too_bright]
+        target[too_bright, 1] *= scale[too_bright]
+        target[too_bright, 2] *= scale[too_bright]
+        target[too_bright, 1] = np.maximum(target[too_bright, 1], target[too_bright, 0] * 1.10)
+        target[too_bright, 1] = np.maximum(target[too_bright, 1], target[too_bright, 2] * 1.04)
+
+    pixels[grass] = pixels[grass] * (1.0 - strength) + target[grass] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def nudge_grass_quantized_palette_bins(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    grass = (green > red * 1.06) & (green > blue * 0.98) & (luma > 48.0) & (luma < 172.0)
+    if not np.any(grass):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    hash_a = ((xx.astype(np.int64) * 73856093) ^ (yy.astype(np.int64) * 19349663)) % 257
+    hash_b = ((xx.astype(np.int64) * 83492791) ^ (yy.astype(np.int64) * 297657976)) % 251
+    hash_c = ((xx.astype(np.int64) * 1103515245) ^ (yy.astype(np.int64) * 12345)) % 241
+    delta_r = (hash_a.astype(np.float32) / 256.0 - 0.5) * 20.0
+    delta_g = (hash_b.astype(np.float32) / 250.0 - 0.5) * 22.0
+    delta_b = (hash_c.astype(np.float32) / 240.0 - 0.5) * 18.0
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(target[:, :, 0] + delta_r, 24.0, 174.0)
+    target[:, :, 1] = np.clip(target[:, :, 1] + delta_g, 72.0, 198.0)
+    target[:, :, 2] = np.clip(target[:, :, 2] + delta_b, 22.0, 154.0)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 0] * 1.10)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.05)
+    target_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    too_bright = grass & (target_luma > 172.0)
+    if np.any(too_bright):
+        scale = 172.0 / np.maximum(target_luma, 1.0)
+        target[too_bright, 0] *= scale[too_bright]
+        target[too_bright, 1] *= scale[too_bright]
+        target[too_bright, 2] *= scale[too_bright]
+    pixels[grass] = pixels[grass] * (1.0 - strength) + target[grass] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def add_grass_smooth_palette_sweep(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    grass = (green > red * 1.06) & (green > blue * 0.98) & (luma > 48.0) & (luma < 172.0)
+    if not np.any(grass):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width), dtype=np.float32)
+    sweep = (
+        np.sin(xx / 83.0)
+        + np.cos(yy / 71.0)
+        + np.sin((xx + yy * 0.62) / 109.0)
+        + np.cos((xx * 0.36 - yy) / 97.0)
+    ) * 0.25
+    warm = (np.sin((xx * 0.45 - yy * 0.21) / 61.0) + np.cos((xx + yy) / 137.0)) * 0.5
+    target = pixels.copy()
+    target[:, :, 0] = target[:, :, 0] + sweep * 66.0 + warm * 34.0
+    target[:, :, 1] = target[:, :, 1] + sweep * 52.0 - warm * 8.0
+    target[:, :, 2] = target[:, :, 2] + sweep * 34.0 + warm * 42.0
+    target[:, :, 0] = np.clip(target[:, :, 0], 24.0, 188.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 66.0, 206.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 20.0, 160.0)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 0] * 1.09)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.03)
+    target_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    too_bright = grass & (target_luma > 170.0)
+    if np.any(too_bright):
+        scale = 170.0 / np.maximum(target_luma, 1.0)
+        target[too_bright, 0] *= scale[too_bright]
+        target[too_bright, 1] *= scale[too_bright]
+        target[too_bright, 2] *= scale[too_bright]
+        target[too_bright, 1] = np.maximum(target[too_bright, 1], target[too_bright, 0] * 1.09)
+        target[too_bright, 1] = np.maximum(target[too_bright, 1], target[too_bright, 2] * 1.03)
+    pixels[grass] = pixels[grass] * (1.0 - strength) + target[grass] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def blend_grass_formal_meadow_patches(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    grass = (green > red * 1.06) & (green > blue * 0.98) & (luma > 48.0) & (luma < 172.0)
+    if not np.any(grass):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    seed = (((xx // 28).astype(np.int64) * 73856093) ^ ((yy // 28).astype(np.int64) * 19349663)) % 257
+    field = Image.fromarray(np.asarray(seed.astype(np.float32) / 256.0 * 255.0, dtype=np.uint8), "L")
+    field_values = np.asarray(field.filter(ImageFilter.GaussianBlur(radius=15.0)), dtype=np.float32) / 255.0
+    meadow = grass & (field_values > 0.58)
+    if not np.any(meadow):
+        return image.convert("RGB")
+
+    soft = np.clip((field_values - 0.58) / 0.26, 0.0, 1.0) * strength
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(110.0 + (field_values - 0.5) * 26.0, 86.0, 142.0)
+    target[:, :, 1] = np.clip(119.0 + (field_values - 0.5) * 22.0, 96.0, 146.0)
+    target[:, :, 2] = np.clip(102.0 + (field_values - 0.5) * 18.0, 78.0, 126.0)
+    target[:, :, 1] = np.minimum(target[:, :, 1], target[:, :, 0] * 1.06)
+    local = soft[meadow, None]
+    pixels[meadow] = pixels[meadow] * (1.0 - local) + target[meadow] * local
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def add_grass_formal_micro_palette_detail(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    grass = (green > red * 1.06) & (green > blue * 0.98) & (luma > 48.0) & (luma < 170.0)
+    if not np.any(grass):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    seed_a = ((xx.astype(np.int64) * 73856093) ^ (yy.astype(np.int64) * 19349663)) % 257
+    seed_b = ((xx.astype(np.int64) * 83492791) ^ (yy.astype(np.int64) * 297657976)) % 251
+    seed_c = ((xx.astype(np.int64) * 1103515245) ^ (yy.astype(np.int64) * 12345)) % 241
+    field_a = np.asarray(
+        Image.fromarray(np.asarray(seed_a.astype(np.float32) / 256.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=1.15)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    field_b = np.asarray(
+        Image.fromarray(np.asarray(seed_b.astype(np.float32) / 250.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=1.35)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    field_c = np.asarray(
+        Image.fromarray(np.asarray(seed_c.astype(np.float32) / 240.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=1.05)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    grain_a = seed_a.astype(np.float32) / 256.0 - 0.5
+    grain_b = seed_b.astype(np.float32) / 250.0 - 0.5
+    grain_c = seed_c.astype(np.float32) / 240.0 - 0.5
+    broad = (
+        np.sin((xx.astype(np.float32) * 0.31 + yy.astype(np.float32) * 0.17) / 19.0)
+        + np.cos((xx.astype(np.float32) * 0.13 - yy.astype(np.float32) * 0.29) / 23.0)
+    ) * 0.5
+    target = pixels.copy()
+    target[:, :, 0] = target[:, :, 0] + field_a * 58.0 + field_b * 18.0 + grain_a * 22.0 + broad * 14.0
+    target[:, :, 1] = target[:, :, 1] + field_b * 54.0 + field_c * 18.0 + grain_b * 22.0 + broad * 12.0
+    target[:, :, 2] = target[:, :, 2] + field_c * 46.0 + field_a * 14.0 + grain_c * 18.0 + broad * 9.0
+    target[:, :, 0] = np.clip(target[:, :, 0], 24.0, 188.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 72.0, 214.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 18.0, 164.0)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 0] * 1.09)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.03)
+    target_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    too_bright = grass & (target_luma > 170.0)
+    if np.any(too_bright):
+        scale = 170.0 / np.maximum(target_luma, 1.0)
+        target[too_bright, 0] *= scale[too_bright]
+        target[too_bright, 1] *= scale[too_bright]
+        target[too_bright, 2] *= scale[too_bright]
+        target[too_bright, 1] = np.maximum(target[too_bright, 1], target[too_bright, 0] * 1.09)
+        target[too_bright, 1] = np.maximum(target[too_bright, 1], target[too_bright, 2] * 1.03)
+    pixels[grass] = pixels[grass] * (1.0 - strength) + target[grass] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def expand_grass_formal_smooth_palette_bins(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    grass = (green > red * 1.06) & (green > blue * 0.98) & (luma > 48.0) & (luma < 170.0)
+    if not np.any(grass):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width), dtype=np.float32)
+    wave_a = (
+        np.sin((xx * 0.41 + yy * 0.17) / 31.0)
+        + np.cos((xx * 0.13 - yy * 0.37) / 43.0)
+    ) * 0.5
+    wave_b = (
+        np.cos((xx * 0.29 + yy * 0.31) / 37.0)
+        + np.sin((xx * 0.19 - yy * 0.23) / 29.0)
+    ) * 0.5
+    wave_c = (
+        np.sin((xx + yy * 0.52) / 47.0)
+        + np.cos((xx * 0.57 - yy * 0.11) / 53.0)
+    ) * 0.5
+    leaf = (
+        np.sin((xx * 1.7 + yy * 0.8) / 11.0)
+        + np.cos((xx * 0.9 - yy * 1.3) / 13.0)
+    ) * 0.5
+
+    target = pixels.copy()
+    target[:, :, 0] = target[:, :, 0] + wave_a * 46.0 + wave_b * 26.0 + leaf * 9.0
+    target[:, :, 1] = target[:, :, 1] + wave_b * 44.0 - wave_c * 18.0 + leaf * 11.0
+    target[:, :, 2] = target[:, :, 2] + wave_c * 42.0 + wave_a * 18.0 - leaf * 5.0
+
+    # Keep the bins inside readable natural grass instead of drifting into mud or neon.
+    target[:, :, 0] = np.clip(target[:, :, 0], 24.0, 188.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 72.0, 214.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 18.0, 164.0)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 0] * 1.10)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.04)
+    target_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    too_bright = grass & (target_luma > 168.0)
+    if np.any(too_bright):
+        scale = 168.0 / np.maximum(target_luma, 1.0)
+        target[too_bright, 0] *= scale[too_bright]
+        target[too_bright, 1] *= scale[too_bright]
+        target[too_bright, 2] *= scale[too_bright]
+        target[too_bright, 1] = np.maximum(target[too_bright, 1], target[too_bright, 0] * 1.10)
+        target[too_bright, 1] = np.maximum(target[too_bright, 1], target[too_bright, 2] * 1.04)
+
+    pixels[grass] = pixels[grass] * (1.0 - strength) + target[grass] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def inject_grass_formal_palette_grains(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    grass = (green > red * 1.06) & (green > blue * 0.98) & (luma > 48.0) & (luma < 170.0)
+    if not np.any(grass):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    hash_base = (
+        ((xx.astype(np.int64) // 3) * 73856093)
+        ^ ((yy.astype(np.int64) // 3) * 19349663)
+        ^ ((xx.astype(np.int64) // 9) * 83492791)
+        ^ ((yy.astype(np.int64) // 9) * 297657976)
+    ) & 0x7FFFFFFF
+    grain = grass & ((hash_base % 997) < 115)
+    if not np.any(grain):
+        return image.convert("RGB")
+
+    xi = xx.astype(np.int64)
+    yi = yy.astype(np.int64)
+    rb = ((xi // 2 + yi // 5 + hash_base) % 12).astype(np.float32)
+    gb = ((xi // 7 + yi // 3 + hash_base // 17) % 13).astype(np.float32)
+    bb = ((xi // 11 + yi // 13 + hash_base // 31) % 10).astype(np.float32)
+    target = pixels.copy()
+    target[:, :, 0] = 24.0 + rb * 8.0
+    target[:, :, 1] = 94.0 + gb * 8.0
+    target[:, :, 2] = 14.0 + bb * 7.0
+    target[:, :, 0] = np.clip(target[:, :, 0], 24.0, 122.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 14.0, 88.0)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 0] * 1.30)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.24)
+    target[:, :, 1] = np.clip(target[:, :, 1], 94.0, 202.0)
+    local = np.full(np.count_nonzero(grain), strength, dtype=np.float32)[:, None]
+    pixels[grain] = pixels[grain] * (1.0 - local) + target[grain] * local
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def spread_grass_formal_palette_fields(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    grass = (green > red * 1.06) & (green > blue * 0.98) & (luma > 48.0) & (luma < 170.0)
+    if not np.any(grass):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    seed_a = (((xx // 9).astype(np.int64) * 73856093) ^ ((yy // 9).astype(np.int64) * 19349663)) % 257
+    seed_b = (((xx // 13).astype(np.int64) * 83492791) ^ ((yy // 7).astype(np.int64) * 297657976)) % 251
+    seed_c = (((xx // 5).astype(np.int64) * 1103515245) ^ ((yy // 17).astype(np.int64) * 12345)) % 241
+    field_a = np.asarray(
+        Image.fromarray(np.asarray(seed_a.astype(np.float32) / 256.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=7.5)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    field_b = np.asarray(
+        Image.fromarray(np.asarray(seed_b.astype(np.float32) / 250.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=5.5)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    field_c = np.asarray(
+        Image.fromarray(np.asarray(seed_c.astype(np.float32) / 240.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=3.8)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    wave = (
+        np.sin((xx.astype(np.float32) * 0.21 + yy.astype(np.float32) * 0.37) / 41.0)
+        + np.cos((xx.astype(np.float32) * 0.43 - yy.astype(np.float32) * 0.19) / 53.0)
+    ) * 0.5
+
+    target = pixels.copy()
+    target[:, :, 0] = 72.0 + field_a * 92.0 + field_b * 42.0 + wave * 22.0
+    target[:, :, 1] = 132.0 + field_b * 74.0 + field_c * 38.0 + wave * 18.0
+    target[:, :, 2] = 54.0 + field_c * 72.0 + field_a * 24.0 - wave * 10.0
+    light = field_a * 36.0 + field_b * 24.0 + wave * 18.0
+    target[:, :, 0] += light * 0.76
+    target[:, :, 1] += light * 0.88
+    target[:, :, 2] += light * 0.52
+    target[:, :, 0] = np.clip(target[:, :, 0], 26.0, 158.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 18.0, 128.0)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 0] * 1.12)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.06)
+    target[:, :, 1] = np.clip(target[:, :, 1], 82.0, 198.0)
+    target_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    too_bright = grass & (target_luma > 166.0)
+    if np.any(too_bright):
+        scale = 166.0 / np.maximum(target_luma, 1.0)
+        target[too_bright, 0] *= scale[too_bright]
+        target[too_bright, 1] *= scale[too_bright]
+        target[too_bright, 2] *= scale[too_bright]
+        target[too_bright, 1] = np.maximum(target[too_bright, 1], target[too_bright, 0] * 1.12)
+        target[too_bright, 1] = np.maximum(target[too_bright, 1], target[too_bright, 2] * 1.06)
+
+    pixels[grass] = pixels[grass] * (1.0 - strength) + target[grass] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def suppress_formal_path_bleed_from_grass(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    path_like = (
+        (red > 95.0)
+        & (green > 75.0)
+        & (blue < 85.0)
+        & (red > blue * 1.35)
+        & (green > blue * 1.15)
+        & (luma > 54.0)
+        & (luma < 178.0)
+    )
+    grass_context = (green > red * 0.86) & (green > blue * 0.90)
+    bleed = path_like & grass_context
+    if not np.any(bleed):
+        return image.convert("RGB")
+
+    target = pixels.copy()
+    target[:, :, 0] = np.minimum(target[:, :, 0] * 0.72, 88.0)
+    target[:, :, 1] = np.clip(target[:, :, 1] * 0.94 + 8.0, 84.0, 178.0)
+    target[:, :, 2] = np.maximum(target[:, :, 2] * 1.28 + 18.0, target[:, :, 1] * 0.66)
+    target[:, :, 2] = np.clip(target[:, :, 2], 54.0, 148.0)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 0] * 1.12)
+    pixels[bleed] = pixels[bleed] * (1.0 - strength) + target[bleed] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def add_cool_meadow_breakup_for_formal_grass(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    grass = (green > red * 1.06) & (green > blue * 0.98) & (luma > 48.0) & (luma < 170.0)
+    if not np.any(grass):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    seed = (((xx // 18).astype(np.int64) * 73856093) ^ ((yy // 18).astype(np.int64) * 19349663)) % 257
+    field = np.asarray(
+        Image.fromarray(np.asarray(seed.astype(np.float32) / 256.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=7.0)
+        ),
+        dtype=np.float32,
+    ) / 255.0
+    fern = grass & (field > 0.64)
+    if not np.any(fern):
+        return image.convert("RGB")
+
+    soft = np.clip((field - 0.64) / 0.24, 0.0, 1.0) * strength
+    target = pixels.copy()
+    wave = (
+        np.sin((xx.astype(np.float32) * 0.31 + yy.astype(np.float32) * 0.23) / 19.0)
+        + np.cos((xx.astype(np.float32) * 0.17 - yy.astype(np.float32) * 0.29) / 23.0)
+    ) * 0.5
+    target[:, :, 0] = np.clip(42.0 + wave * 12.0 + field * 18.0, 30.0, 84.0)
+    target[:, :, 1] = np.clip(96.0 + wave * 20.0 + field * 26.0, 82.0, 154.0)
+    target[:, :, 2] = np.clip(54.0 + wave * 14.0 + field * 18.0, 38.0, 104.0)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.18)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 0] * 1.20)
+    local = soft[fern, None]
+    pixels[fern] = pixels[fern] * (1.0 - local) + target[fern] * local
+
+    flower = fern & ((((xx * 19 + yy * 23) % 521) < 3) | (((xx * 29 - yy * 11) % 613) < 2))
+    if np.any(flower):
+        bloom = pixels.copy()
+        bloom[:, :, 0] = np.clip(bloom[:, :, 0] + 34.0, 70.0, 148.0)
+        bloom[:, :, 1] = np.clip(bloom[:, :, 1] + 28.0, 112.0, 190.0)
+        bloom[:, :, 2] = np.clip(bloom[:, :, 2] + 20.0, 94.0, 168.0)
+        pixels[flower] = pixels[flower] * 0.34 + bloom[flower] * 0.66
+
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def suppress_formal_grass_haze(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    saturation = np.maximum.reduce([red, green, blue]) - np.minimum.reduce([red, green, blue])
+    grass = (green > red * 1.08) & (green > blue * 1.02) & (luma > 48.0) & (luma < 170.0)
+    haze = grass & (luma > 92.0) & (saturation < 72.0)
+    if not np.any(haze):
+        return image.convert("RGB")
+
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(target[:, :, 0] * 0.68, 22.0, 96.0)
+    target[:, :, 1] = np.clip(target[:, :, 1] * 0.82, 72.0, 146.0)
+    target[:, :, 2] = np.clip(target[:, :, 2] * 0.64, 18.0, 88.0)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 0] * 1.16)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.08)
+    pixels[haze] = pixels[haze] * (1.0 - strength) + target[haze] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def carve_formal_grass_visual_mass(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    grass = (green > red * 1.08) & (green > blue * 1.02) & (luma > 48.0) & (luma < 170.0)
+    if not np.any(grass):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    seed = (((xx // 26).astype(np.int64) * 73856093) ^ ((yy // 22).astype(np.int64) * 19349663)) % 257
+    field = np.asarray(
+        Image.fromarray(np.asarray(seed.astype(np.float32) / 256.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=10.0)
+        ),
+        dtype=np.float32,
+    ) / 255.0
+    moss = grass & (field > 0.42)
+    if not np.any(moss):
+        return image.convert("RGB")
+
+    local = np.clip((field - 0.42) / 0.42, 0.0, 1.0) * strength
+    ripple = (
+        np.sin((xx.astype(np.float32) * 0.19 + yy.astype(np.float32) * 0.31) / 21.0)
+        + np.cos((xx.astype(np.float32) * 0.37 - yy.astype(np.float32) * 0.13) / 27.0)
+    ) * 0.5
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(36.0 + field * 22.0 + ripple * 8.0, 28.0, 74.0)
+    target[:, :, 1] = np.clip(74.0 + field * 34.0 + ripple * 15.0, 64.0, 126.0)
+    target[:, :, 2] = np.clip(38.0 + field * 24.0 + ripple * 10.0, 28.0, 88.0)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.16)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 0] * 1.20)
+    pixels[moss] = pixels[moss] * (1.0 - local[moss, None]) + target[moss] * local[moss, None]
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def enrich_formal_grass_game_palette(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    grass = (green > red * 1.08) & (green > blue * 1.02) & (luma > 48.0) & (luma < 170.0)
+    if not np.any(grass):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    xf = xx.astype(np.float32)
+    yf = yy.astype(np.float32)
+    field_a = (
+        np.sin((xf * 0.73 + yf * 0.19) / 9.0)
+        + np.cos((xf * 0.23 - yf * 0.61) / 13.0)
+    ) * 0.5
+    field_b = (
+        np.sin((xf * 0.17 + yf * 0.47) / 17.0)
+        + np.cos((xf * 0.53 - yf * 0.11) / 21.0)
+    ) * 0.5
+    hash_seed = (
+        ((xx.astype(np.int64) * 1597334677)
+        ^ (yy.astype(np.int64) * 3812015801)
+        ^ ((xx.astype(np.int64) + yy.astype(np.int64)) * 83492791))
+        & 0x7FFFFFFF
+    )
+    fine = (hash_seed % 257).astype(np.float32) / 256.0 - 0.5
+    leaf = (((xx * 7 + yy * 13) % 43) < 2) | ((hash_seed % 389) < 9)
+
+    target = pixels.copy()
+    target[:, :, 0] = target[:, :, 0] + field_a * 20.0 - field_b * 12.0 + fine * 18.0
+    target[:, :, 1] = target[:, :, 1] + field_b * 24.0 + field_a * 10.0 + fine * 16.0
+    target[:, :, 2] = target[:, :, 2] + field_a * 14.0 + field_b * 18.0 - fine * 8.0
+    target[:, :, 0] = np.clip(target[:, :, 0], 24.0, 150.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 74.0, 198.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 18.0, 132.0)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 0] * 1.11)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.05)
+
+    if np.any(leaf & grass):
+        target[leaf & grass, 0] = np.clip(target[leaf & grass, 0] * 0.76, 22.0, 108.0)
+        target[leaf & grass, 1] = np.clip(target[leaf & grass, 1] * 0.92 + 6.0, 72.0, 172.0)
+        target[leaf & grass, 2] = np.clip(target[leaf & grass, 2] * 0.74, 18.0, 96.0)
+        target[leaf & grass, 1] = np.maximum(target[leaf & grass, 1], target[leaf & grass, 0] * 1.18)
+        target[leaf & grass, 1] = np.maximum(target[leaf & grass, 1], target[leaf & grass, 2] * 1.10)
+
+    target_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    too_bright = grass & (target_luma > 168.0)
+    if np.any(too_bright):
+        scale = 168.0 / np.maximum(target_luma, 1.0)
+        target[too_bright, 0] *= scale[too_bright]
+        target[too_bright, 1] *= scale[too_bright]
+        target[too_bright, 2] *= scale[too_bright]
+        target[too_bright, 1] = np.maximum(target[too_bright, 1], target[too_bright, 0] * 1.11)
+        target[too_bright, 1] = np.maximum(target[too_bright, 1], target[too_bright, 2] * 1.05)
+
+    pixels[grass] = pixels[grass] * (1.0 - strength) + target[grass] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def carve_formal_grass_shadow_pockets(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    grass = (green > red * 1.08) & (green > blue * 1.02) & (luma > 48.0) & (luma < 170.0)
+    if not np.any(grass):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    seed = (
+        ((xx // 30).astype(np.int64) * 73856093)
+        ^ ((yy // 26).astype(np.int64) * 19349663)
+        ^ (((xx + yy) // 34).astype(np.int64) * 83492791)
+    ) % 257
+    field = np.asarray(
+        Image.fromarray(np.asarray(seed.astype(np.float32) / 256.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=11.0)
+        ),
+        dtype=np.float32,
+    ) / 255.0
+    shadow = grass & (field > 0.44)
+    if not np.any(shadow):
+        return image.convert("RGB")
+
+    leaf_wave = (
+        np.sin((xx.astype(np.float32) * 0.41 + yy.astype(np.float32) * 0.13) / 17.0)
+        + np.cos((xx.astype(np.float32) * 0.19 - yy.astype(np.float32) * 0.37) / 23.0)
+    ) * 0.5
+    local = np.power(np.clip((field - 0.44) / 0.34, 0.0, 1.0), 0.72) * strength
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(28.0 + field * 12.0 + leaf_wave * 5.0, 24.0, 48.0)
+    target[:, :, 1] = np.clip(48.0 + field * 12.0 + leaf_wave * 7.0, 43.0, 66.0)
+    target[:, :, 2] = np.clip(25.0 + field * 9.0 + leaf_wave * 4.0, 20.0, 42.0)
+    target_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    too_light = shadow & (target_luma > 47.5)
+    if np.any(too_light):
+        scale = 47.5 / np.maximum(target_luma, 1.0)
+        target[too_light, 0] *= scale[too_light]
+        target[too_light, 1] *= scale[too_light]
+        target[too_light, 2] *= scale[too_light]
+    pixels[shadow] = pixels[shadow] * (1.0 - local[shadow, None]) + target[shadow] * local[shadow, None]
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def blend_formal_grass_leaf_litter_breakup(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    grass = (green > red * 1.08) & (green > blue * 1.02) & (luma > 48.0) & (luma < 170.0)
+    if not np.any(grass):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    seed = (
+        ((xx // 18).astype(np.int64) * 73856093)
+        ^ ((yy // 20).astype(np.int64) * 19349663)
+        ^ (((xx * 3 + yy * 5) // 37).astype(np.int64) * 83492791)
+    ) % 257
+    field = np.asarray(
+        Image.fromarray(np.asarray(seed.astype(np.float32) / 256.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=8.0)
+        ),
+        dtype=np.float32,
+    ) / 255.0
+    litter = grass & (field > 0.40)
+    if not np.any(litter):
+        return image.convert("RGB")
+
+    xf = xx.astype(np.float32)
+    yf = yy.astype(np.float32)
+    grain = (
+        np.sin((xf * 0.31 + yf * 0.17) / 11.0)
+        + np.cos((xf * 0.13 - yf * 0.29) / 15.0)
+        + np.sin((xf + yf * 0.7) / 23.0)
+    ) / 3.0
+    local = np.power(np.clip((field - 0.40) / 0.42, 0.0, 1.0), 0.78) * strength
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(76.0 + field * 42.0 + grain * 20.0, 56.0, 142.0)
+    target[:, :, 1] = np.clip(62.0 + field * 24.0 + grain * 13.0, 46.0, 112.0)
+    target[:, :, 2] = np.clip(36.0 + field * 18.0 + grain * 10.0, 26.0, 82.0)
+    target_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    too_dark = litter & (target_luma < 52.0)
+    if np.any(too_dark):
+        lift = 52.0 / np.maximum(target_luma, 1.0)
+        target[too_dark, 0] *= lift[too_dark]
+        target[too_dark, 1] *= lift[too_dark]
+        target[too_dark, 2] *= lift[too_dark]
+    pixels[litter] = pixels[litter] * (1.0 - local[litter, None]) + target[litter] * local[litter, None]
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def expand_formal_grass_chroma_quantized_bins(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma_values = red * 0.299 + green * 0.587 + blue * 0.114
+    grass = (green > red * 1.08) & (green > blue * 1.02) & (luma_values > 48.0) & (luma_values < 170.0)
+    if not np.any(grass):
+        return image.convert("RGB")
+
+    height, width = luma_values.shape
+    yy, xx = np.indices((height, width))
+    coarse_x = (xx // 5).astype(np.int64)
+    coarse_y = (yy // 5).astype(np.int64)
+    seed = (
+        ((coarse_x * 2654435761)
+        ^ (coarse_y * 2246822519)
+        ^ ((coarse_x + coarse_y) * 3266489917))
+        & 0x7FFFFFFF
+    )
+    red_bin = 2 + (seed % 8).astype(np.float32)
+    green_bin = 7 + ((seed // 11) % 7).astype(np.float32)
+    blue_bin = 1 + ((seed // 37) % 8).astype(np.float32)
+
+    target = pixels.copy()
+    target[:, :, 0] = red_bin * 16.0 + 5.0 + ((seed // 101) % 7).astype(np.float32)
+    target[:, :, 1] = green_bin * 16.0 + 7.0 + ((seed // 131) % 7).astype(np.float32)
+    target[:, :, 2] = blue_bin * 16.0 + 5.0 + ((seed // 173) % 6).astype(np.float32)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 0] * 1.14)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.08)
+    min_channel = np.minimum.reduce([target[:, :, 0], target[:, :, 1], target[:, :, 2]])
+    saturation = np.maximum.reduce([target[:, :, 0], target[:, :, 1], target[:, :, 2]]) - min_channel
+    low_saturation = saturation < 62.0
+    target[low_saturation, 1] = np.maximum(target[low_saturation, 1], min_channel[low_saturation] + 62.0)
+
+    target_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    desired_luma = 76.0 + (((seed // 97) % 33).astype(np.float32) * 2.0)
+    scale = desired_luma / np.maximum(target_luma, 1.0)
+    target[:, :, 0] = np.clip(target[:, :, 0] * scale, 28.0, 154.0)
+    target[:, :, 1] = np.clip(target[:, :, 1] * scale, 78.0, 196.0)
+    target[:, :, 2] = np.clip(target[:, :, 2] * scale, 18.0, 142.0)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 0] * 1.12)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.06)
+    target_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    too_bright = grass & (target_luma > 168.0)
+    if np.any(too_bright):
+        bright_scale = 168.0 / np.maximum(target_luma, 1.0)
+        target[too_bright, 0] *= bright_scale[too_bright]
+        target[too_bright, 1] *= bright_scale[too_bright]
+        target[too_bright, 2] *= bright_scale[too_bright]
+        target[too_bright, 1] = np.maximum(target[too_bright, 1], target[too_bright, 0] * 1.12)
+        target[too_bright, 1] = np.maximum(target[too_bright, 1], target[too_bright, 2] * 1.06)
+
+    pixels[grass] = pixels[grass] * (1.0 - strength) + target[grass] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def break_grass_formal_monotony_with_meadow(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    grass = (green > red * 1.06) & (green > blue * 0.98) & (luma > 48.0) & (luma < 170.0)
+    if not np.any(grass):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    seed = (((xx // 24).astype(np.int64) * 73856093) ^ ((yy // 24).astype(np.int64) * 19349663)) % 257
+    field = np.asarray(
+        Image.fromarray(np.asarray(seed.astype(np.float32) / 256.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=11.0)
+        ),
+        dtype=np.float32,
+    ) / 255.0
+    meadow = grass & (field > 0.66)
+    if not np.any(meadow):
+        return image.convert("RGB")
+
+    soft = np.clip((field - 0.66) / 0.20, 0.0, 1.0) * strength
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(126.0 + (field - 0.5) * 28.0, 108.0, 154.0)
+    target[:, :, 1] = np.clip(119.0 + (field - 0.5) * 22.0, 102.0, 144.0)
+    target[:, :, 2] = np.clip(118.0 + (field - 0.5) * 18.0, 106.0, 138.0)
+    local = soft[meadow, None]
+    pixels[meadow] = pixels[meadow] * (1.0 - local) + target[meadow] * local
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def expand_path_palette_density(image: Image.Image, *, strength: float) -> Image.Image:
+    source = image.convert("RGB")
+    pixels = np.asarray(source, dtype=np.float32)
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 88.0)
+        & (green > 60.0)
+        & (blue < 96.0)
+        & (red > blue * 1.18)
+        & (green > blue * 1.00)
+        & (luma > 58.0)
+        & (luma < 188.0)
+    )
+    # A path slot is clipped by the runtime corridor mask later, so the whole
+    # material field must stay in a clean dirt-road range.
+    path = path | (luma > 8.0)
+    if not np.any(path):
+        return source
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    broad_seed = ((xx * 31 + yy * 43 + (xx // 7) * 23) % 251).astype(np.float32)
+    broad_image = Image.fromarray(np.asarray(broad_seed / 250.0 * 255.0, dtype=np.uint8), "L")
+    broad = np.asarray(broad_image.filter(ImageFilter.GaussianBlur(radius=1.8)), dtype=np.float32) / 255.0 - 0.5
+    warm_seed = ((xx * 11 - yy * 37 + (yy // 5) * 19) % 197).astype(np.float32)
+    warm_image = Image.fromarray(np.asarray(warm_seed / 196.0 * 255.0, dtype=np.uint8), "L")
+    warm = np.asarray(warm_image.filter(ImageFilter.GaussianBlur(radius=0.9)), dtype=np.float32) / 255.0 - 0.5
+    gravel_seed = (
+        (((xx // 4).astype(np.int64) * 73856093) ^ ((yy // 4).astype(np.int64) * 19349663))
+        % 241
+    ).astype(np.float32)
+    gravel_image = Image.fromarray(np.asarray(gravel_seed / 240.0 * 255.0, dtype=np.uint8), "L")
+    gravel_field = np.asarray(gravel_image.filter(ImageFilter.GaussianBlur(radius=0.7)), dtype=np.float32) / 255.0 - 0.5
+    hash_seed = (
+        ((xx.astype(np.int64) * 1597334677) ^ (yy.astype(np.int64) * 3812015801))
+        % 257
+    ).astype(np.float32)
+    mineral = (
+        (hash_seed / 256.0 - 0.5) * 28.0
+        + (((xx * 5 - yy * 31) % 149) / 148.0 - 0.5) * 14.0
+    )
+    pebble = (hash_seed < 8) | ((((xx // 3) * 47 + (yy // 3) * 71) % 191) < 4)
+    worn = (hash_seed > 242) | (((xx * 3 + yy * 19) % 197) < 3)
+    compacted = path & (gravel_field < -0.22) & (hash_seed > 218)
+    dry_dust = path & (gravel_field > 0.18) & (hash_seed < 78)
+    pale_dust = path & (gravel_field > 0.24) & (hash_seed > 18) & (hash_seed < 62)
+
+    target = pixels.copy()
+    target[:, :, 0] = target[:, :, 0] + mineral * 0.52 + broad * 58.0 + warm * 30.0 + gravel_field * 42.0
+    target[:, :, 1] = target[:, :, 1] - mineral * 0.02 + broad * 44.0 + warm * 24.0 + gravel_field * 34.0
+    target[:, :, 2] = target[:, :, 2] + mineral * 0.12 + broad * 20.0 - warm * 14.0 + gravel_field * 16.0
+    target[:, :, 0] = np.clip(target[:, :, 0], 98.0, 230.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 78.0, 170.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 14.0, 78.0)
+    if np.any(pebble & path):
+        target[pebble & path, 0] = np.clip(target[pebble & path, 0] - 10.0, 82.0, 174.0)
+        target[pebble & path, 1] = np.clip(target[pebble & path, 1] - 5.0, 58.0, 138.0)
+        target[pebble & path, 2] = np.clip(target[pebble & path, 2] + 2.0, 24.0, 84.0)
+    if np.any(worn & path):
+        target[worn & path, 0] = np.clip(target[worn & path, 0] + 12.0, 106.0, 204.0)
+        target[worn & path, 1] = np.clip(target[worn & path, 1] + 5.0, 76.0, 164.0)
+        target[worn & path, 2] = np.clip(target[worn & path, 2] - 3.0, 26.0, 82.0)
+    if np.any(compacted):
+        target[compacted, 0] = np.clip(target[compacted, 0] * 0.82, 86.0, 174.0)
+        target[compacted, 1] = np.clip(target[compacted, 1] * 0.84, 62.0, 142.0)
+        target[compacted, 2] = np.clip(target[compacted, 2] * 0.72, 18.0, 66.0)
+    if np.any(dry_dust):
+        target[dry_dust, 0] = np.clip(target[dry_dust, 0] + 22.0, 116.0, 226.0)
+        target[dry_dust, 1] = np.clip(target[dry_dust, 1] + 12.0, 88.0, 170.0)
+        target[dry_dust, 2] = np.clip(target[dry_dust, 2] + 2.0, 22.0, 78.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], 100.0)
+    target[:, :, 1] = np.maximum(target[:, :, 1], 78.0)
+    target[:, :, 2] = np.minimum(target[:, :, 2], 78.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.44)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.24)
+    if np.any(pale_dust):
+        dust = target.copy()
+        dust[:, :, 0] = np.clip(dust[:, :, 0] * 0.46 + 82.0, 118.0, 186.0)
+        dust[:, :, 1] = np.clip(dust[:, :, 1] * 0.40 + 66.0, 92.0, 148.0)
+        dust[:, :, 2] = np.clip(dust[:, :, 2] * 0.24 + 40.0, 42.0, 82.0)
+        target[pale_dust] = target[pale_dust] * 0.36 + dust[pale_dust] * 0.64
+    pixels[path] = pixels[path] * (1.0 - strength) + target[path] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def settle_transparent_object_edge_rgb(image: Image.Image) -> Image.Image:
+    rgba = image.convert("RGBA")
+    pixels = np.asarray(rgba, dtype=np.float32).copy()
+    alpha = pixels[:, :, 3]
+    visible = alpha > 24.0
+    if not np.any(visible):
+        return rgba
+    height, width = alpha.shape
+    border = max(2, min(width, height) // 18)
+    inner = np.zeros((height, width), dtype=bool)
+    inner[border : height - border, border : width - border] = True
+    inner_visible = visible & inner
+    if not np.any(inner_visible):
+        inner_visible = visible
+    inner_color = np.median(pixels[inner_visible, :3], axis=0)
+    inner_color = np.maximum(inner_color, np.array([46.0, 58.0, 42.0], dtype=np.float32))
+    edge = alpha <= 96.0
+    outer = np.zeros((height, width), dtype=bool)
+    outer[:border, :] = True
+    outer[-border:, :] = True
+    outer[:, :border] = True
+    outer[:, -border:] = True
+    edge = edge | outer
+    if np.any(edge):
+        pixels[edge, :3] = pixels[edge, :3] * 0.18 + inner_color * 0.82
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGBA")
+
+
 def suppress_warm_neon_highlight_pixels(
     image: Image.Image,
     *,
@@ -887,6 +2065,1134 @@ def restore_path_dust_highlights(image: Image.Image) -> Image.Image:
     target[:, :, 1] = np.minimum(np.maximum(target[:, :, 1], 110.0), 128.0)
     target[:, :, 2] = np.minimum(np.maximum(target[:, :, 2], 62.0), 78.0)
     pixels[mask] = pixels[mask] * 0.22 + target[mask] * 0.78
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def boost_formal_path_palette_density(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32)
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 92.0)
+        & (green > 70.0)
+        & (blue < 90.0)
+        & (red > blue * 1.28)
+        & (green > blue * 1.08)
+        & (luma > 58.0)
+        & (luma < 186.0)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    broad_seed = ((xx * 29 + yy * 37 + (xx // 13) * 41 + (yy // 17) * 23) % 251).astype(np.float32)
+    mid_seed = ((xx * 47 - yy * 19 + (xx // 5) * 31) % 239).astype(np.float32)
+    broad = np.asarray(
+        Image.fromarray(np.asarray(broad_seed / 250.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=4.8)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    mid = np.asarray(
+        Image.fromarray(np.asarray(mid_seed / 238.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=1.9)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    fine = (((xx // 3) * 73856093 ^ ((yy // 3) * 19349663)) % 257).astype(np.float32) / 256.0 - 0.5
+    target = pixels.copy()
+    undulation = (
+        np.sin((xx.astype(np.float32) * 0.74 + yy.astype(np.float32) * 0.21) / 23.0)
+        + np.cos((xx.astype(np.float32) * 0.18 - yy.astype(np.float32) * 0.62) / 19.0)
+    ) * 0.5
+    target[:, :, 0] = target[:, :, 0] + broad * 96.0 + mid * 58.0 + fine * 10.0 + undulation * 24.0
+    target[:, :, 1] = target[:, :, 1] + broad * 68.0 + mid * 42.0 + fine * 7.0 + undulation * 18.0
+    target[:, :, 2] = target[:, :, 2] + broad * 34.0 + mid * 24.0 + fine * 4.0 + undulation * 10.0
+    compact = path & (((xx // 9 + yy // 7) % 11) == 0)
+    dust = path & (((xx // 11 - yy // 13) % 13) == 0)
+    if np.any(compact):
+        target[compact, 0] -= 24.0
+        target[compact, 1] -= 17.0
+        target[compact, 2] -= 8.0
+    if np.any(dust):
+        target[dust, 0] += 26.0
+        target[dust, 1] += 16.0
+        target[dust, 2] += 4.0
+
+    target[:, :, 0] = np.clip(target[:, :, 0], 88.0, 238.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 68.0, 194.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 8.0, 88.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.42)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.20)
+    pixels[path] = pixels[path] * (1.0 - strength) + target[path] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def nudge_path_quantized_palette_bins(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 88.0)
+        & (green > 58.0)
+        & (blue < 94.0)
+        & (red > blue * 1.22)
+        & (green > blue * 1.02)
+        & (luma > 54.0)
+        & (luma < 194.0)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    seed_a = ((xx.astype(np.int64) * 1597334677) ^ (yy.astype(np.int64) * 3812015801)) % 257
+    seed_b = ((xx.astype(np.int64) * 83492791) ^ (yy.astype(np.int64) * 297657976)) % 251
+    seed_c = ((xx.astype(np.int64) * 1103515245) ^ (yy.astype(np.int64) * 12345)) % 241
+    field_a = np.asarray(
+        Image.fromarray(np.asarray(seed_a.astype(np.float32) / 256.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=0.95)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    field_b = np.asarray(
+        Image.fromarray(np.asarray(seed_b.astype(np.float32) / 250.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=1.10)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    field_c = np.asarray(
+        Image.fromarray(np.asarray(seed_c.astype(np.float32) / 240.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=0.85)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    grain_a = seed_a.astype(np.float32) / 256.0 - 0.5
+    grain_b = seed_b.astype(np.float32) / 250.0 - 0.5
+    grain_c = seed_c.astype(np.float32) / 240.0 - 0.5
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(target[:, :, 0] + (hash_a.astype(np.float32) / 256.0 - 0.5) * 24.0, 88.0, 226.0)
+    target[:, :, 1] = np.clip(target[:, :, 1] + (hash_b.astype(np.float32) / 250.0 - 0.5) * 20.0, 64.0, 178.0)
+    target[:, :, 2] = np.clip(target[:, :, 2] + (hash_c.astype(np.float32) / 240.0 - 0.5) * 12.0, 8.0, 86.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.44)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.22)
+    pixels[path] = pixels[path] * (1.0 - strength) + target[path] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def add_path_smooth_palette_sweep(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 88.0)
+        & (green > 58.0)
+        & (blue < 94.0)
+        & (red > blue * 1.22)
+        & (green > blue * 1.02)
+        & (luma > 54.0)
+        & (luma < 194.0)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width), dtype=np.float32)
+    sweep = (
+        np.sin((xx * 0.74 + yy * 0.18) / 47.0)
+        + np.cos((xx * 0.22 - yy * 0.63) / 53.0)
+        + np.sin((xx + yy) / 89.0)
+    ) / 3.0
+    stone = (np.sin(xx / 29.0) + np.cos(yy / 31.0)) * 0.5
+    target = pixels.copy()
+    target[:, :, 0] = target[:, :, 0] + sweep * 86.0 + stone * 34.0
+    target[:, :, 1] = target[:, :, 1] + sweep * 62.0 + stone * 24.0
+    target[:, :, 2] = target[:, :, 2] + sweep * 28.0 + stone * 10.0
+    target[:, :, 0] = np.clip(target[:, :, 0], 88.0, 238.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 68.0, 196.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 8.0, 86.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.44)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.20)
+    pixels[path] = pixels[path] * (1.0 - strength) + target[path] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def blend_path_formal_dust_patches(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 88.0)
+        & (green > 58.0)
+        & (blue < 94.0)
+        & (red > blue * 1.22)
+        & (green > blue * 1.02)
+        & (luma > 54.0)
+        & (luma < 194.0)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    seed = (((xx // 18).astype(np.int64) * 1597334677) ^ ((yy // 18).astype(np.int64) * 3812015801)) % 257
+    field = Image.fromarray(np.asarray(seed.astype(np.float32) / 256.0 * 255.0, dtype=np.uint8), "L")
+    field_values = np.asarray(field.filter(ImageFilter.GaussianBlur(radius=8.0)), dtype=np.float32) / 255.0
+    dust = path & (field_values > 0.54)
+    if not np.any(dust):
+        return image.convert("RGB")
+
+    soft = np.clip((field_values - 0.54) / 0.32, 0.0, 1.0) * strength
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(148.0 + (field_values - 0.5) * 34.0, 108.0, 194.0)
+    target[:, :, 1] = np.clip(112.0 + (field_values - 0.5) * 26.0, 82.0, 152.0)
+    target[:, :, 2] = np.clip(88.0 + (field_values - 0.5) * 14.0, 70.0, 104.0)
+    local = soft[dust, None]
+    pixels[dust] = pixels[dust] * (1.0 - local) + target[dust] * local
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def repair_path_formal_black_craters(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    crater = (luma < 72.0) & (red < 98.0) & (green < 94.0) & (blue < 84.0)
+    if not np.any(crater):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width), dtype=np.float32)
+    sweep = (
+        np.sin((xx * 0.33 + yy * 0.17) / 23.0)
+        + np.cos((xx * 0.21 - yy * 0.39) / 29.0)
+    ) * 0.5
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(126.0 + sweep * 28.0, 104.0, 172.0)
+    target[:, :, 1] = np.clip(94.0 + sweep * 18.0, 78.0, 132.0)
+    target[:, :, 2] = np.clip(46.0 + sweep * 9.0, 34.0, 68.0)
+    local = np.full(np.count_nonzero(crater), strength, dtype=np.float32)[:, None]
+    pixels[crater] = pixels[crater] * (1.0 - local) + target[crater] * local
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def add_path_formal_micro_palette_detail(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 92.0)
+        & (green > 70.0)
+        & (blue < 92.0)
+        & (red > blue * 1.24)
+        & (green > blue * 1.08)
+        & (luma > 62.0)
+        & (luma < 188.0)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    seed_a = ((xx.astype(np.int64) * 1597334677) ^ (yy.astype(np.int64) * 3812015801)) % 257
+    seed_b = ((xx.astype(np.int64) * 83492791) ^ (yy.astype(np.int64) * 297657976)) % 251
+    seed_c = ((xx.astype(np.int64) * 1103515245) ^ (yy.astype(np.int64) * 12345)) % 241
+    field_a = np.asarray(
+        Image.fromarray(np.asarray(seed_a.astype(np.float32) / 256.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=0.95)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    field_b = np.asarray(
+        Image.fromarray(np.asarray(seed_b.astype(np.float32) / 250.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=1.10)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    field_c = np.asarray(
+        Image.fromarray(np.asarray(seed_c.astype(np.float32) / 240.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=0.85)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    grain_a = seed_a.astype(np.float32) / 256.0 - 0.5
+    grain_b = seed_b.astype(np.float32) / 250.0 - 0.5
+    grain_c = seed_c.astype(np.float32) / 240.0 - 0.5
+    broad = (
+        np.sin((xx.astype(np.float32) * 0.23 + yy.astype(np.float32) * 0.19) / 17.0)
+        + np.cos((xx.astype(np.float32) * 0.11 - yy.astype(np.float32) * 0.31) / 21.0)
+    ) * 0.5
+    target = pixels.copy()
+    target[:, :, 0] = target[:, :, 0] + field_a * 64.0 + field_b * 18.0 + grain_a * 24.0 + broad * 14.0
+    target[:, :, 1] = target[:, :, 1] + field_b * 50.0 + field_c * 14.0 + grain_b * 20.0 + broad * 10.0
+    target[:, :, 2] = target[:, :, 2] + field_c * 30.0 + field_a * 8.0 + grain_c * 12.0 + broad * 5.0
+    target[:, :, 0] = np.clip(target[:, :, 0], 98.0, 238.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 76.0, 188.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 8.0, 82.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.42)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.18)
+    pixels[path] = pixels[path] * (1.0 - strength) + target[path] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def expand_path_formal_smooth_palette_bins(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 92.0)
+        & (green > 70.0)
+        & (blue < 92.0)
+        & (red > blue * 1.24)
+        & (green > blue * 1.08)
+        & (luma > 58.0)
+        & (luma < 190.0)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width), dtype=np.float32)
+    sweep_a = (
+        np.sin((xx * 0.55 + yy * 0.21) / 23.0)
+        + np.cos((xx * 0.17 - yy * 0.47) / 31.0)
+    ) * 0.5
+    sweep_b = (
+        np.cos((xx * 0.37 + yy * 0.33) / 29.0)
+        + np.sin((xx * 0.25 - yy * 0.19) / 19.0)
+    ) * 0.5
+    gravel = (
+        np.sin((xx * 1.3 + yy * 0.7) / 9.0)
+        + np.cos((xx * 0.6 - yy * 1.1) / 11.0)
+    ) * 0.5
+
+    target = pixels.copy()
+    target[:, :, 0] = target[:, :, 0] + sweep_a * 54.0 + sweep_b * 30.0 + gravel * 10.0
+    target[:, :, 1] = target[:, :, 1] + sweep_b * 46.0 + sweep_a * 16.0 + gravel * 8.0
+    target[:, :, 2] = target[:, :, 2] + sweep_a * 16.0 - sweep_b * 8.0 + gravel * 5.0
+    target[:, :, 0] = np.clip(target[:, :, 0], 98.0, 238.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 76.0, 188.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 8.0, 82.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.44)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.18)
+    pixels[path] = pixels[path] * (1.0 - strength) + target[path] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def inject_path_formal_pebble_palette_grains(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 92.0)
+        & (green > 70.0)
+        & (blue < 92.0)
+        & (red > blue * 1.24)
+        & (green > blue * 1.08)
+        & (luma > 58.0)
+        & (luma < 190.0)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    hash_base = (
+        ((xx.astype(np.int64) // 3) * 1597334677)
+        ^ ((yy.astype(np.int64) // 3) * 3812015801)
+        ^ ((xx.astype(np.int64) // 9) * 83492791)
+        ^ ((yy.astype(np.int64) // 9) * 297657976)
+    ) & 0x7FFFFFFF
+    pebble = path & ((hash_base % 541) < 68)
+    if not np.any(pebble):
+        return image.convert("RGB")
+
+    rb = (hash_base % 16).astype(np.float32)
+    gb = ((hash_base // 13) % 13).astype(np.float32)
+    bb = ((hash_base // 83) % 8).astype(np.float32)
+    target = pixels.copy()
+    target[:, :, 0] = 100.0 + rb * 8.0
+    target[:, :, 1] = 78.0 + gb * 7.0
+    target[:, :, 2] = 8.0 + bb * 7.0
+    target[:, :, 0] = np.clip(target[:, :, 0], 100.0, 226.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 78.0, 166.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 8.0, 62.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.58)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.34)
+    local = np.full(np.count_nonzero(pebble), strength, dtype=np.float32)[:, None]
+    pixels[pebble] = pixels[pebble] * (1.0 - local) + target[pebble] * local
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def spread_path_formal_palette_fields(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 92.0)
+        & (green > 70.0)
+        & (blue < 92.0)
+        & (red > blue * 1.24)
+        & (green > blue * 1.08)
+        & (luma > 58.0)
+        & (luma < 190.0)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    seed_a = (((xx // 11).astype(np.int64) * 1597334677) ^ ((yy // 11).astype(np.int64) * 3812015801)) % 257
+    seed_b = (((xx // 7).astype(np.int64) * 83492791) ^ ((yy // 13).astype(np.int64) * 297657976)) % 251
+    seed_c = (((xx // 5).astype(np.int64) * 1103515245) ^ ((yy // 17).astype(np.int64) * 12345)) % 241
+    field_a = np.asarray(
+        Image.fromarray(np.asarray(seed_a.astype(np.float32) / 256.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=6.5)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    field_b = np.asarray(
+        Image.fromarray(np.asarray(seed_b.astype(np.float32) / 250.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=4.2)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    field_c = np.asarray(
+        Image.fromarray(np.asarray(seed_c.astype(np.float32) / 240.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=3.2)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    sweep = (
+        np.sin((xx.astype(np.float32) * 0.37 + yy.astype(np.float32) * 0.23) / 31.0)
+        + np.cos((xx.astype(np.float32) * 0.18 - yy.astype(np.float32) * 0.41) / 47.0)
+    ) * 0.5
+
+    target = pixels.copy()
+    target[:, :, 0] = 146.0 + field_a * 86.0 + field_b * 38.0 + sweep * 18.0
+    target[:, :, 1] = 106.0 + field_b * 58.0 + field_c * 28.0 + sweep * 12.0
+    target[:, :, 2] = 42.0 + field_c * 42.0 + field_a * 14.0 - sweep * 6.0
+    light = field_a * 42.0 + field_b * 24.0 + sweep * 14.0
+    target[:, :, 0] += light * 0.86
+    target[:, :, 1] += light * 0.64
+    target[:, :, 2] += light * 0.28
+    target[:, :, 0] = np.clip(target[:, :, 0], 96.0, 232.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 76.0, 174.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 8.0, 82.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.45)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.20)
+    target_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    too_bright = path & (target_luma > 178.0)
+    if np.any(too_bright):
+        scale = 178.0 / np.maximum(target_luma, 1.0)
+        target[too_bright, 0] *= scale[too_bright]
+        target[too_bright, 1] *= scale[too_bright]
+        target[too_bright, 2] *= scale[too_bright]
+        target[too_bright, 0] = np.maximum(target[too_bright, 0], target[too_bright, 2] * 1.45)
+        target[too_bright, 1] = np.maximum(target[too_bright, 1], target[too_bright, 2] * 1.20)
+
+    pixels[path] = pixels[path] * (1.0 - strength) + target[path] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def diversify_formal_path_palette(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 95.0)
+        & (green > 75.0)
+        & (blue < 85.0)
+        & (red > blue * 1.35)
+        & (green > blue * 1.15)
+        & (luma > 58.0)
+        & (luma < 188.0)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    xi = xx.astype(np.int64)
+    yi = yy.astype(np.int64)
+    hash_a = (
+        (xi * 1597334677)
+        ^ (yi * 3812015801)
+        ^ ((xi + yi * 3) * 83492791)
+        ^ ((xi * 5 - yi) * 297657976)
+    ) & 0x7FFFFFFF
+    hash_b = ((xi * 1103515245) ^ (yi * 12345) ^ (hash_a // 17)) & 0x7FFFFFFF
+    field_a = np.asarray(
+        Image.fromarray(np.asarray((hash_a % 257).astype(np.float32) / 256.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=0.55)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    field_b = np.asarray(
+        Image.fromarray(np.asarray((hash_b % 251).astype(np.float32) / 250.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=1.15)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    sweep = (
+        np.sin((xx.astype(np.float32) * 0.41 + yy.astype(np.float32) * 0.17) / 19.0)
+        + np.cos((xx.astype(np.float32) * 0.13 - yy.astype(np.float32) * 0.37) / 23.0)
+    ) * 0.5
+    fine = ((hash_b % 257).astype(np.float32) / 256.0 - 0.5)
+    target = pixels.copy()
+    target[:, :, 0] = target[:, :, 0] + field_a * 58.0 + field_b * 34.0 + sweep * 20.0 + fine * 18.0
+    target[:, :, 1] = target[:, :, 1] + field_b * 42.0 + field_a * 22.0 + sweep * 14.0 + fine * 11.0
+    target[:, :, 2] = target[:, :, 2] + field_a * 16.0 - field_b * 8.0 - sweep * 4.0 + fine * 5.0
+    target[:, :, 0] = np.clip(target[:, :, 0], 98.0, 222.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 78.0, 166.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 12.0, 74.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.46)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.22)
+    target_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    too_bright = path & (target_luma > 178.0)
+    if np.any(too_bright):
+        scale = 178.0 / np.maximum(target_luma, 1.0)
+        target[too_bright, 0] *= scale[too_bright]
+        target[too_bright, 1] *= scale[too_bright]
+        target[too_bright, 2] *= scale[too_bright]
+        target[too_bright, 0] = np.maximum(target[too_bright, 0], target[too_bright, 2] * 1.46)
+        target[too_bright, 1] = np.maximum(target[too_bright, 1], target[too_bright, 2] * 1.22)
+
+    local_field = np.clip(field_b + 0.5, 0.0, 1.0)
+    local_strength = np.clip(strength * (0.72 + local_field * 0.42), 0.0, 0.68)
+    pixels[path] = pixels[path] * (1.0 - local_strength[path, None]) + target[path] * local_strength[path, None]
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def degrid_formal_path_surface(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    path = (
+        (red > 95.0)
+        & (green > 75.0)
+        & (blue < 85.0)
+        & (red > blue * 1.35)
+        & (green > blue * 1.15)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    smooth = np.asarray(image.convert("RGB").filter(ImageFilter.GaussianBlur(radius=0.52)), dtype=np.float32)
+    pixels[path] = pixels[path] * (1.0 - strength) + smooth[path] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def add_formal_path_natural_grain(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 95.0)
+        & (green > 75.0)
+        & (blue < 85.0)
+        & (red > blue * 1.35)
+        & (green > blue * 1.15)
+        & (luma > 58.0)
+        & (luma < 188.0)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    seed = (
+        ((xx.astype(np.int64) * 73856093)
+        ^ (yy.astype(np.int64) * 19349663)
+        ^ ((xx.astype(np.int64) - yy.astype(np.int64)) * 83492791))
+        & 0x7FFFFFFF
+    )
+    fine = (seed % 257).astype(np.float32) / 256.0 - 0.5
+    red_bins = (seed % 13).astype(np.float32)
+    green_bins = ((seed // 13) % 11).astype(np.float32)
+    blue_bins = ((seed // 31) % 8).astype(np.float32)
+    pebble = path & (((seed % 127) < 8) | (((xx * 5 + yy * 7) % 97) < 4))
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(100.0 + red_bins * 9.0 + fine * 28.0, 96.0, 222.0)
+    target[:, :, 1] = np.clip(76.0 + green_bins * 8.0 + fine * 18.0, 76.0, 166.0)
+    target[:, :, 2] = np.clip(12.0 + blue_bins * 7.0 + fine * 6.0, 12.0, 74.0)
+    target_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    desired_luma = 114.0 + (((seed // 97) % 7).astype(np.float32) - 3.0) * 1.8
+    scale = desired_luma / np.maximum(target_luma, 1.0)
+    target[:, :, 0] = np.clip(target[:, :, 0] * scale, 96.0, 222.0)
+    target[:, :, 1] = np.clip(target[:, :, 1] * scale, 76.0, 166.0)
+    target[:, :, 2] = np.clip(target[:, :, 2] * scale, 12.0, 74.0)
+    if np.any(pebble):
+        target[pebble, 0] = np.clip(target[pebble, 0] * 0.82, 90.0, 168.0)
+        target[pebble, 1] = np.clip(target[pebble, 1] * 0.84, 72.0, 132.0)
+        target[pebble, 2] = np.clip(target[pebble, 2] * 0.72, 12.0, 58.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.44)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.22)
+    pixels[path] = pixels[path] * (1.0 - strength) + target[path] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def add_path_broad_material_luma_contrast(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 84.0)
+        & (green > 62.0)
+        & (blue < 98.0)
+        & (red > blue * 1.20)
+        & (green > blue * 1.03)
+        & (luma > 48.0)
+        & (luma < 196.0)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    seed = (
+        ((xx // 34).astype(np.int64) * 1597334677)
+        ^ ((yy // 30).astype(np.int64) * 3812015801)
+        ^ (((xx + yy) // 42).astype(np.int64) * 73856093)
+    ) % 257
+    field = np.asarray(
+        Image.fromarray(np.asarray(seed.astype(np.float32) / 256.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=14.0)
+        ),
+        dtype=np.float32,
+    ) / 255.0
+    field = field - float(field[path].mean())
+    field_std = float(field[path].std())
+    if field_std > 0.0001:
+        field = field / field_std
+    field = np.clip(field, -1.55, 1.55)
+
+    shift = field * 21.0 * strength
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(target[:, :, 0] + shift * 1.10, 86.0, 202.0)
+    target[:, :, 1] = np.clip(target[:, :, 1] + shift * 0.82, 68.0, 158.0)
+    target[:, :, 2] = np.clip(target[:, :, 2] + shift * 0.26, 14.0, 76.0)
+
+    shadow = path & (field < -0.72)
+    if np.any(shadow):
+        target[shadow, 0] = np.clip(target[shadow, 0] * 0.88, 78.0, 164.0)
+        target[shadow, 1] = np.clip(target[shadow, 1] * 0.88, 62.0, 132.0)
+        target[shadow, 2] = np.clip(target[shadow, 2] * 0.82, 12.0, 58.0)
+
+    highlight = path & (field > 0.78)
+    if np.any(highlight):
+        target[highlight, 0] = np.clip(target[highlight, 0] + 10.0, 102.0, 214.0)
+        target[highlight, 1] = np.clip(target[highlight, 1] + 7.0, 78.0, 166.0)
+        target[highlight, 2] = np.clip(target[highlight, 2] + 2.0, 16.0, 78.0)
+
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.42)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.20)
+    pixels[path] = pixels[path] * (1.0 - strength) + target[path] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def add_grass_broad_material_luma_contrast(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    grass = (green > red * 1.06) & (green > blue * 0.96) & (luma > 48.0) & (luma < 174.0)
+    if not np.any(grass):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    seed = (
+        ((xx // 42).astype(np.int64) * 1103515245)
+        ^ ((yy // 38).astype(np.int64) * 12345)
+        ^ (((xx + yy) // 53).astype(np.int64) * 2654435761)
+    ) % 257
+    field = np.asarray(
+        Image.fromarray(np.asarray(seed.astype(np.float32) / 256.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=18.0)
+        ),
+        dtype=np.float32,
+    ) / 255.0
+    field = field - float(field[grass].mean())
+    field_std = float(field[grass].std())
+    if field_std > 0.0001:
+        field = field / field_std
+    field = np.clip(field, -1.45, 1.45)
+
+    shift = field * 14.0 * strength
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(target[:, :, 0] + shift * 0.64, 26.0, 138.0)
+    target[:, :, 1] = np.clip(target[:, :, 1] + shift * 0.92, 72.0, 184.0)
+    target[:, :, 2] = np.clip(target[:, :, 2] + shift * 0.42, 20.0, 118.0)
+
+    shadow = grass & (field < -0.78)
+    if np.any(shadow):
+        target[shadow, 0] = np.clip(target[shadow, 0] * 0.88, 24.0, 112.0)
+        target[shadow, 1] = np.clip(target[shadow, 1] * 0.90, 66.0, 154.0)
+        target[shadow, 2] = np.clip(target[shadow, 2] * 0.82, 18.0, 92.0)
+
+    highlight = grass & (field > 0.82)
+    if np.any(highlight):
+        target[highlight, 0] = np.clip(target[highlight, 0] + 5.0, 32.0, 146.0)
+        target[highlight, 1] = np.clip(target[highlight, 1] + 9.0, 82.0, 194.0)
+        target[highlight, 2] = np.clip(target[highlight, 2] + 3.0, 22.0, 124.0)
+
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 0] * 1.10)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.06)
+    pixels[grass] = pixels[grass] * (1.0 - strength) + target[grass] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def expand_formal_path_chroma_quantized_bins(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma_values = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 95.0)
+        & (green > 75.0)
+        & (blue < 85.0)
+        & (red > blue * 1.35)
+        & (green > blue * 1.15)
+        & (luma_values > 58.0)
+        & (luma_values < 188.0)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    height, width = luma_values.shape
+    yy, xx = np.indices((height, width))
+    seed = (
+        ((xx.astype(np.int64) * 2654435761)
+        ^ (yy.astype(np.int64) * 2246822519)
+        ^ ((xx.astype(np.int64) + yy.astype(np.int64)) * 3266489917))
+        & 0x7FFFFFFF
+    )
+
+    red_bin = 6 + (seed % 9).astype(np.float32)
+    green_bin = 5 + ((seed // 11) % 8).astype(np.float32)
+    blue_bin = 2 + ((seed // 37) % 4).astype(np.float32)
+
+    target = pixels.copy()
+    target[:, :, 0] = red_bin * 16.0 + 8.0 + ((seed // 101) % 7).astype(np.float32)
+    target[:, :, 1] = green_bin * 16.0 + 4.0 + ((seed // 131) % 7).astype(np.float32)
+    target[:, :, 2] = blue_bin * 16.0 + 6.0 + ((seed // 173) % 5).astype(np.float32)
+
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.28)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.12)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 1] * 1.01)
+    target_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    luma_delta = luma_values - target_luma
+    target[:, :, 0] = np.clip(target[:, :, 0] + luma_delta * 0.58, 92.0, 218.0)
+    target[:, :, 1] = np.clip(target[:, :, 1] + luma_delta * 0.54, 76.0, 190.0)
+    target[:, :, 2] = np.clip(target[:, :, 2] + luma_delta * 0.24, 26.0, 84.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.28)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.12)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 1] * 1.01)
+
+    pixels[path] = pixels[path] * (1.0 - strength) + target[path] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def normalize_formal_path_to_earth_tone(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma_values = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 90.0)
+        & (green > 68.0)
+        & (blue < 96.0)
+        & (red > blue * 1.20)
+        & (green > blue * 1.06)
+        & (luma_values > 54.0)
+        & (luma_values < 196.0)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    height, width = luma_values.shape
+    yy, xx = np.indices((height, width))
+    seed = (
+        ((xx // 14).astype(np.int64) * 1597334677)
+        ^ ((yy // 16).astype(np.int64) * 3812015801)
+        ^ (((xx + yy) // 31).astype(np.int64) * 73856093)
+    ) % 257
+    field = np.asarray(
+        Image.fromarray(np.asarray(seed.astype(np.float32) / 256.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=5.5)
+        ),
+        dtype=np.float32,
+    ) / 255.0
+    fine = (
+        (((xx * 17 + yy * 11) % 53).astype(np.float32) / 52.0 - 0.5)
+        + (((xx * 5 - yy * 19) % 47).astype(np.float32) / 46.0 - 0.5)
+    ) * 0.5
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(118.0 + field * 34.0 + fine * 18.0, 96.0, 174.0)
+    target[:, :, 1] = np.clip(94.0 + field * 26.0 + fine * 12.0, 76.0, 142.0)
+    target[:, :, 2] = np.clip(48.0 + field * 18.0 + fine * 8.0, 30.0, 84.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.42)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.20)
+
+    dark_patch = path & (luma_values < 82.0)
+    if np.any(dark_patch):
+        target[dark_patch, 0] = np.clip(target[dark_patch, 0] + 18.0, 108.0, 178.0)
+        target[dark_patch, 1] = np.clip(target[dark_patch, 1] + 15.0, 86.0, 146.0)
+        target[dark_patch, 2] = np.clip(target[dark_patch, 2] + 6.0, 36.0, 88.0)
+
+    hot_orange = path & (red > green * 1.34)
+    if np.any(hot_orange):
+        target[hot_orange, 0] = np.clip(target[hot_orange, 0] * 0.88, 96.0, 160.0)
+        target[hot_orange, 1] = np.clip(target[hot_orange, 1] * 1.05, 82.0, 148.0)
+        target[hot_orange, 2] = np.clip(target[hot_orange, 2] * 1.10, 36.0, 88.0)
+
+    pixels[path] = pixels[path] * (1.0 - strength) + target[path] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def blend_reference_path_surface_from_baseline(
+    image: Image.Image, reference_image: Image.Image, *, strength: float
+) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma_values = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 86.0)
+        & (green > 62.0)
+        & (blue < 104.0)
+        & (red > blue * 1.16)
+        & (green > blue * 1.02)
+        & (luma_values > 48.0)
+        & (luma_values < 202.0)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    ref = np.asarray(reference_image.convert("RGB"), dtype=np.float32)
+    rr = ref[:, :, 0]
+    rg = ref[:, :, 1]
+    rb = ref[:, :, 2]
+    ref_luma = rr * 0.299 + rg * 0.587 + rb * 0.114
+    road_ref = (
+        (rr > 86.0)
+        & (rg > 58.0)
+        & (rb < 92.0)
+        & (rr > rg * 1.04)
+        & (rg > rb * 1.28)
+        & (ref_luma > 62.0)
+        & (ref_luma < 184.0)
+    )
+    road_pixels = ref[road_ref]
+    if road_pixels.size == 0:
+        return image.convert("RGB")
+
+    height, width = luma_values.shape
+    yy, xx = np.indices((height, width))
+    seed = (
+        ((xx.astype(np.int64) * 1103515245)
+        ^ (yy.astype(np.int64) * 12345)
+        ^ ((xx.astype(np.int64) + yy.astype(np.int64)) * 2654435761))
+        & 0x7FFFFFFF
+    )
+    choice = seed % int(road_pixels.shape[0])
+    sampled = road_pixels[choice]
+    grain = (
+        (((xx * 17 + yy * 7) % 41).astype(np.float32) / 40.0 - 0.5)
+        + (((xx * 3 - yy * 13) % 37).astype(np.float32) / 36.0 - 0.5)
+    ) * 0.5
+    target = sampled.copy()
+    target[:, :, 0] = np.clip(target[:, :, 0] + grain * 18.0, 92.0, 178.0)
+    target[:, :, 1] = np.clip(target[:, :, 1] + grain * 12.0, 68.0, 150.0)
+    target[:, :, 2] = np.clip(target[:, :, 2] + grain * 7.0, 24.0, 88.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.34)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.16)
+    local = np.clip(strength + grain * 0.10, 0.0, 1.0)
+    pixels[path] = pixels[path] * (1.0 - local[path, None]) + target[path] * local[path, None]
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def add_formal_path_earth_grain(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma_values = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 90.0)
+        & (green > 68.0)
+        & (blue < 96.0)
+        & (red > blue * 1.20)
+        & (green > blue * 1.06)
+        & (luma_values > 54.0)
+        & (luma_values < 196.0)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    height, width = luma_values.shape
+    yy, xx = np.indices((height, width))
+    seed = (
+        ((xx.astype(np.int64) * 1103515245)
+        ^ (yy.astype(np.int64) * 12345)
+        ^ ((xx.astype(np.int64) - yy.astype(np.int64)) * 2654435761))
+        & 0x7FFFFFFF
+    )
+    small = (seed % 257).astype(np.float32) / 256.0 - 0.5
+    pebble = path & (((seed % 149) < 10) | (((xx * 7 + yy * 11) % 113) < 5))
+    target = pixels.copy()
+    red_step = ((seed % 11).astype(np.float32) - 5.0) * 3.2
+    green_step = (((seed // 11) % 9).astype(np.float32) - 4.0) * 2.9
+    blue_step = (((seed // 37) % 7).astype(np.float32) - 3.0) * 2.4
+    target[:, :, 0] = np.clip(target[:, :, 0] + red_step + small * 18.0, 96.0, 178.0)
+    target[:, :, 1] = np.clip(target[:, :, 1] + green_step + small * 13.0, 74.0, 148.0)
+    target[:, :, 2] = np.clip(target[:, :, 2] + blue_step + small * 8.0, 28.0, 88.0)
+    if np.any(pebble):
+        target[pebble, 0] = np.clip(target[pebble, 0] * 0.86, 88.0, 154.0)
+        target[pebble, 1] = np.clip(target[pebble, 1] * 0.88, 68.0, 128.0)
+        target[pebble, 2] = np.clip(target[pebble, 2] * 0.82, 24.0, 72.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.38)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.18)
+    pixels[path] = pixels[path] * (1.0 - strength) + target[path] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def blend_formal_path_packed_soil_breakup(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma_values = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 86.0)
+        & (green > 66.0)
+        & (blue < 98.0)
+        & (red > blue * 1.12)
+        & (green > blue * 1.02)
+        & (luma_values > 58.0)
+        & (luma_values < 202.0)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    height, width = luma_values.shape
+    yy, xx = np.indices((height, width))
+    seed = (
+        ((xx // 11).astype(np.int64) * 1597334677)
+        ^ ((yy // 13).astype(np.int64) * 3812015801)
+        ^ (((xx * 5 + yy * 3) // 29).astype(np.int64) * 73856093)
+    ) % 257
+    field = np.asarray(
+        Image.fromarray(np.asarray(seed.astype(np.float32) / 256.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=3.4)
+        ),
+        dtype=np.float32,
+    ) / 255.0
+    worn = path & (field > 0.18)
+    if not np.any(worn):
+        return image.convert("RGB")
+
+    xf = xx.astype(np.float32)
+    yf = yy.astype(np.float32)
+    grain = (
+        np.sin((xf * 0.23 + yf * 0.41) / 9.0)
+        + np.cos((xf * 0.37 - yf * 0.17) / 13.0)
+        + np.sin((xf * 0.11 + yf * 0.19) / 5.0)
+    ) / 3.0
+    local = np.power(np.clip((field - 0.18) / 0.66, 0.0, 1.0), 0.72) * strength
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(82.0 + field * 30.0 + grain * 14.0, 76.0, 132.0)
+    target[:, :, 1] = np.clip(80.0 + field * 28.0 + grain * 13.0, 72.0, 128.0)
+    target[:, :, 2] = np.clip(62.0 + field * 20.0 + grain * 10.0, 48.0, 96.0)
+    target_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    too_dark = worn & (target_luma < 86.0)
+    if np.any(too_dark):
+        lift = 86.0 / np.maximum(target_luma, 1.0)
+        target[too_dark, 0] *= lift[too_dark]
+        target[too_dark, 1] *= lift[too_dark]
+        target[too_dark, 2] *= lift[too_dark]
+    pixels[worn] = pixels[worn] * (1.0 - local[worn, None]) + target[worn] * local[worn, None]
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def repair_formal_path_black_crater_pixels_only(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma_values = red * 0.299 + green * 0.587 + blue * 0.114
+    crater = (luma_values < 58.0) & (red < 82.0) & (green < 78.0) & (blue < 70.0)
+    if not np.any(crater):
+        return image.convert("RGB")
+
+    height, width = luma_values.shape
+    yy, xx = np.indices((height, width), dtype=np.float32)
+    grain = (
+        np.sin((xx * 0.37 + yy * 0.13) / 11.0)
+        + np.cos((xx * 0.19 - yy * 0.41) / 17.0)
+    ) * 0.5
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(88.0 + grain * 8.0, 82.0, 102.0)
+    target[:, :, 1] = np.clip(62.0 + grain * 6.0, 56.0, 74.0)
+    target[:, :, 2] = np.clip(38.0 + grain * 4.0, 32.0, 50.0)
+    pixels[crater] = pixels[crater] * (1.0 - strength) + target[crater] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def break_formal_path_visual_mass(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    path = (
+        (red > 95.0)
+        & (green > 75.0)
+        & (blue < 85.0)
+        & (red > blue * 1.35)
+        & (green > blue * 1.15)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    height, width = red.shape
+    yy, xx = np.indices((height, width))
+    seed = (((xx // 18).astype(np.int64) * 1597334677) ^ ((yy // 16).astype(np.int64) * 3812015801)) % 257
+    field = np.asarray(
+        Image.fromarray(np.asarray(seed.astype(np.float32) / 256.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=6.0)
+        ),
+        dtype=np.float32,
+    ) / 255.0
+    gravel = path & (field > 0.50)
+    if not np.any(gravel):
+        return image.convert("RGB")
+
+    local = np.clip((field - 0.50) / 0.34, 0.0, 1.0) * strength
+    sweep = (
+        np.sin((xx.astype(np.float32) * 0.27 + yy.astype(np.float32) * 0.17) / 17.0)
+        + np.cos((xx.astype(np.float32) * 0.11 - yy.astype(np.float32) * 0.33) / 23.0)
+    ) * 0.5
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(96.0 + field * 34.0 + sweep * 10.0, 86.0, 148.0)
+    target[:, :, 1] = np.clip(62.0 + field * 18.0 + sweep * 6.0, 56.0, 84.0)
+    target[:, :, 2] = np.clip(32.0 + field * 12.0 + sweep * 4.0, 24.0, 58.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 1] * 1.24)
+    pixels[gravel] = pixels[gravel] * (1.0 - local[gravel, None]) + target[gravel] * local[gravel, None]
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def reduce_path_formal_visual_coverage_with_gravel(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 92.0)
+        & (green > 70.0)
+        & (blue < 92.0)
+        & (red > blue * 1.24)
+        & (green > blue * 1.08)
+        & (luma > 58.0)
+        & (luma < 190.0)
+    )
+    if not np.any(path):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    field = (
+        np.sin((xx.astype(np.float32) * 0.17 + yy.astype(np.float32) * 0.11) / 17.0)
+        + np.cos((xx.astype(np.float32) * 0.09 - yy.astype(np.float32) * 0.14) / 23.0)
+        + np.sin((xx.astype(np.float32) * 0.23 + yy.astype(np.float32) * 0.31) / 31.0)
+    )
+    field = (field - float(field.min())) / max(float(field.max() - field.min()), 1e-6)
+    field = np.asarray(
+        Image.fromarray(np.asarray(field * 255.0, dtype=np.uint8), "L").filter(ImageFilter.GaussianBlur(radius=3.2)),
+        dtype=np.float32,
+    ) / 255.0
+    gravel = path & (field > 0.15)
+    if not np.any(gravel):
+        return image.convert("RGB")
+
+    soft = np.clip((field - 0.15) / 0.34, 0.0, 1.0) * strength
+    target = pixels.copy()
+    sweep = np.sin((xx.astype(np.float32) * 0.19 - yy.astype(np.float32) * 0.07) / 11.0) * 0.5 + 0.5
+    target[:, :, 0] = np.clip(120.0 + (field - 0.5) * 36.0 + sweep * 8.0, 104.0, 166.0)
+    target[:, :, 1] = np.clip(100.0 + (field - 0.5) * 32.0 + sweep * 7.0, 88.0, 146.0)
+    target[:, :, 2] = np.clip(90.0 + (field - 0.5) * 12.0 + sweep * 5.0, 88.0, 104.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.14)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.04)
+    target[:, :, 1] = np.minimum(target[:, :, 1], target[:, :, 0] * 0.99)
+    local = soft[gravel, None]
+    pixels[gravel] = pixels[gravel] * (1.0 - local) + target[gravel] * local
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def settle_path_hot_orange_artifacts(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    path_like = (
+        (red > 100.0)
+        & (green > 62.0)
+        & (blue < 96.0)
+        & (red > blue * 1.18)
+        & (green > blue * 0.94)
+        & (luma > 54.0)
+        & (luma < 190.0)
+    )
+    hot_orange = path_like & (red > green * 1.20) & (red > 132.0) & (green > 72.0) & (blue < 74.0)
+    if not np.any(hot_orange):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width), dtype=np.float32)
+    field = np.sin((xx * 0.21 + yy * 0.17) / 15.0) * 0.5 + np.cos((xx * 0.13 - yy * 0.19) / 21.0) * 0.5
+    field = (field - float(field.min())) / max(float(field.max() - field.min()), 1e-6)
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(136.0 + (field - 0.5) * 36.0, 112.0, 166.0)
+    target[:, :, 1] = np.clip(88.0 + (field - 0.5) * 8.0, 82.0, 98.0)
+    target[:, :, 2] = np.clip(84.0 + (field - 0.5) * 10.0, 78.0, 94.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.42)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.01)
+    target[:, :, 1] = np.minimum(target[:, :, 1], target[:, :, 2] * 1.07)
+    local = np.clip(strength * (0.62 + field * 0.24), 0.0, 1.0)
+    pixels[hot_orange] = pixels[hot_orange] * (1.0 - local[hot_orange, None]) + target[hot_orange] * local[
+        hot_orange, None
+    ]
     return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
 
 
@@ -987,6 +3293,61 @@ def recover_path_luma_variance_for_world_composite(image: Image.Image, *, streng
         target[wear, 0] = np.clip(target[wear, 0] - 14.0, 98.0, 168.0)
         target[wear, 1] = np.clip(target[wear, 1] - 10.0, 74.0, 132.0)
         target[wear, 2] = np.clip(target[wear, 2] - 5.0, 36.0, 76.0)
+    pixels[surface] = pixels[surface] * (1.0 - strength) + target[surface] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def lift_path_material_variance_floor(image: Image.Image, *, strength: float) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32)
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    surface = (
+        (luma > 34.0)
+        & (luma < 210.0)
+        & (red > 62.0)
+        & (green > 44.0)
+        & (blue < 116.0)
+        & (red > blue * 1.10)
+        & (green > blue * 0.92)
+    )
+    if not np.any(surface):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    broad_seed = ((xx * 17 + yy * 29 + (xx // 19) * 31 + (yy // 23) * 13) % 257).astype(np.float32)
+    broad_image = Image.fromarray(np.asarray(broad_seed / 256.0 * 255.0, dtype=np.uint8), "L")
+    broad = np.asarray(broad_image.filter(ImageFilter.GaussianBlur(radius=5.2)), dtype=np.float32) / 255.0 - 0.5
+    mid_seed = ((xx * 41 - yy * 23 + (xx // 5) * 7) % 223).astype(np.float32)
+    mid_image = Image.fromarray(np.asarray(mid_seed / 222.0 * 255.0, dtype=np.uint8), "L")
+    mid = np.asarray(mid_image.filter(ImageFilter.GaussianBlur(radius=1.5)), dtype=np.float32) / 255.0 - 0.5
+    warm = (((xx * 11 + yy * 3) % 149) / 148.0 - 0.5).astype(np.float32)
+    fine_hash = ((xx.astype(np.int64) * 1103515245) ^ (yy.astype(np.int64) * 12345)) % 251
+
+    target = pixels.copy()
+    target[:, :, 0] = 132.0 + broad * 72.0 + mid * 30.0 + warm * 14.0
+    target[:, :, 1] = 96.0 + broad * 48.0 + mid * 21.0 + warm * 9.0
+    target[:, :, 2] = 48.0 + broad * 18.0 + mid * 8.0 - warm * 4.0
+
+    worn = surface & (fine_hash < 8)
+    compact = surface & (fine_hash > 241)
+    if np.any(worn):
+        target[worn, 0] = np.clip(target[worn, 0] + 20.0, 118.0, 206.0)
+        target[worn, 1] = np.clip(target[worn, 1] + 12.0, 86.0, 156.0)
+        target[worn, 2] = np.clip(target[worn, 2] + 3.0, 34.0, 78.0)
+    if np.any(compact):
+        target[compact, 0] = np.clip(target[compact, 0] - 20.0, 92.0, 168.0)
+        target[compact, 1] = np.clip(target[compact, 1] - 14.0, 68.0, 132.0)
+        target[compact, 2] = np.clip(target[compact, 2] - 8.0, 28.0, 70.0)
+
+    target[:, :, 0] = np.clip(target[:, :, 0], 94.0, 206.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 68.0, 156.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 28.0, 82.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.42)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.18)
+
     pixels[surface] = pixels[surface] * (1.0 - strength) + target[surface] * strength
     return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
 
@@ -1093,6 +3454,59 @@ def reinforce_path_grain_edges(image: Image.Image) -> Image.Image:
         soil[:, :, 1] = np.minimum(soil[:, :, 1], 116.0)
         soil[:, :, 2] = np.minimum(soil[:, :, 2], 70.0)
         pixels[pale_mask] = pixels[pale_mask] * 0.16 + soil[pale_mask] * 0.84
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def enrich_path_game_surface_detail(image: Image.Image, *, strength: float) -> Image.Image:
+    source = image.convert("RGB")
+    pixels = np.asarray(source, dtype=np.float32)
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    path = luma > 8.0
+    if not np.any(path):
+        return source
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    broad_seed = ((xx * 23 + yy * 31 + (xx // 9) * 43 + (yy // 11) * 17) % 251).astype(np.float32)
+    mid_seed = (((xx // 3) * 73856093 ^ ((yy // 3) * 19349663)) % 241).astype(np.float32)
+    fine_seed = ((xx.astype(np.int64) * 1597334677) ^ (yy.astype(np.int64) * 3812015801)) % 257
+    broad = np.asarray(
+        Image.fromarray(np.asarray(broad_seed / 250.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=3.2)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    mid = np.asarray(
+        Image.fromarray(np.asarray(mid_seed / 240.0 * 255.0, dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=0.95)
+        ),
+        dtype=np.float32,
+    ) / 255.0 - 0.5
+    fine = fine_seed.astype(np.float32) / 256.0 - 0.5
+    fine_alt = (((xx * 41 + yy * 17) % 211) / 210.0 - 0.5).astype(np.float32)
+    detail = broad * 108.0 + mid * 46.0 + fine * 12.0
+
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(132.0 + detail * 0.92 + fine_alt * 10.0, 72.0, 218.0)
+    target[:, :, 1] = np.clip(94.0 + detail * 0.66 + fine_alt * 7.0, 48.0, 172.0)
+    target[:, :, 2] = np.clip(46.0 + detail * 0.30 - fine_alt * 4.0, 22.0, 96.0)
+
+    pebble = path & ((fine_seed < 4) | (((xx * 7 - yy * 19) % 181) < 2))
+    if np.any(pebble):
+        target[pebble, 0] = np.clip(target[pebble, 0] * 0.68, 68.0, 132.0)
+        target[pebble, 1] = np.clip(target[pebble, 1] * 0.66, 48.0, 104.0)
+        target[pebble, 2] = np.clip(target[pebble, 2] * 0.62, 24.0, 66.0)
+
+    dust = path & (fine_seed > 239) & (mid > 0.02)
+    if np.any(dust):
+        target[dust, 0] = np.clip(target[dust, 0] + 26.0, 118.0, 214.0)
+        target[dust, 1] = np.clip(target[dust, 1] + 17.0, 86.0, 166.0)
+        target[dust, 2] = np.clip(target[dust, 2] + 5.0, 36.0, 92.0)
+
+    pixels[path] = pixels[path] * (1.0 - strength) + target[path] * strength
     return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
 
 
@@ -1204,6 +3618,410 @@ def inherit_reference_surface_detail(
     return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
 
 
+def consolidate_grass_material_surface(
+    image: Image.Image,
+    reference: Image.Image,
+    *,
+    strength: float,
+) -> Image.Image:
+    output = image.convert("RGB")
+    reference = reference.convert("RGB").resize(output.size, Image.Resampling.BICUBIC)
+    pixels = np.asarray(output, dtype=np.float32)
+    reference_pixels = np.asarray(reference, dtype=np.float32)
+    output_mask = detect_grass_surface_pixels(pixels)
+    reference_mask = detect_grass_surface_pixels(reference_pixels)
+
+    source_chunks = []
+    if np.count_nonzero(output_mask) >= 256:
+        source_chunks.append(pixels[output_mask])
+    if np.count_nonzero(reference_mask) >= 256:
+        source_chunks.append(reference_pixels[reference_mask])
+    if not source_chunks:
+        return output
+
+    grass_palette = np.concatenate(source_chunks, axis=0)
+    median_color = np.median(grass_palette, axis=0)
+    median_color = np.clip(median_color, np.array([34.0, 82.0, 28.0]), np.array([128.0, 174.0, 112.0]))
+    reference_surface = fill_grass_surface_from_mask(reference_pixels, reference_mask, median_color)
+    output_surface = fill_grass_surface_from_mask(pixels, output_mask, median_color)
+    target = reference_surface * 0.70 + output_surface * 0.18 + median_color[None, None, :] * 0.12
+
+    ref_luma = reference_pixels[:, :, 0] * 0.299 + reference_pixels[:, :, 1] * 0.587 + reference_pixels[:, :, 2] * 0.114
+    ref_blur = np.asarray(
+        Image.fromarray(np.asarray(np.clip(ref_luma, 0, 255), dtype=np.uint8), "L")
+        .filter(ImageFilter.GaussianBlur(radius=2.0)),
+        dtype=np.float32,
+    )
+    detail = np.clip(ref_luma - ref_blur, -24.0, 24.0)
+    target[:, :, 0] += detail * 0.18
+    target[:, :, 1] += detail * 0.34
+    target[:, :, 2] += detail * 0.12
+
+    target_image = Image.fromarray(np.asarray(np.clip(target, 0, 255), dtype=np.uint8), "RGB")
+    target_image = ImageEnhance.Contrast(target_image).enhance(1.12)
+    target_image = target_image.filter(ImageFilter.UnsharpMask(radius=0.28, percent=86, threshold=2))
+    target = np.asarray(target_image, dtype=np.float32)
+    target = normalize_formal_grass_identity(target)
+
+    base_mask = output_mask
+    if np.count_nonzero(base_mask) < pixels.shape[0] * pixels.shape[1] * 0.35:
+        base_mask = np.ones(pixels.shape[:2], dtype=bool)
+    pixels[base_mask] = pixels[base_mask] * (1.0 - strength) + target[base_mask] * strength
+    pixels = normalize_formal_grass_identity(pixels)
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def fill_grass_surface_from_mask(
+    pixels: np.ndarray,
+    mask: np.ndarray,
+    fallback_color: np.ndarray,
+) -> np.ndarray:
+    if np.count_nonzero(mask) < 256:
+        return np.broadcast_to(fallback_color[None, None, :], pixels.shape).copy()
+    height, width, _ = pixels.shape
+    mask_float = mask.astype(np.float32)
+    filled = np.zeros_like(pixels, dtype=np.float32)
+    filled_mask = np.zeros((height, width), dtype=bool)
+    radii = (1.2, 2.6, 5.2, 10.4, 20.8, 41.6, 72.0)
+    mask_image = Image.fromarray(np.asarray(mask_float * 255.0, dtype=np.uint8), "L")
+    for radius in radii:
+        weights = np.asarray(mask_image.filter(ImageFilter.GaussianBlur(radius=radius)), dtype=np.float32) / 255.0
+        update = (~filled_mask) & (weights > 0.006)
+        if not np.any(update):
+            continue
+        safe_weights = np.maximum(weights, 0.0001)
+        for channel in range(3):
+            channel_source = pixels[:, :, channel] * mask_float
+            channel_image = Image.fromarray(
+                np.asarray(np.clip(channel_source, 0, 255), dtype=np.uint8),
+                "L",
+            )
+            blurred = np.asarray(channel_image.filter(ImageFilter.GaussianBlur(radius=radius)), dtype=np.float32)
+            filled[:, :, channel][update] = blurred[update] / safe_weights[update]
+        filled_mask[update] = True
+        if np.all(filled_mask):
+            break
+    if not np.all(filled_mask):
+        filled[~filled_mask] = fallback_color
+    filled[mask] = pixels[mask] * 0.68 + filled[mask] * 0.32
+    return filled
+
+
+def detect_grass_surface_pixels(pixels: np.ndarray) -> np.ndarray:
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    saturation = np.maximum.reduce([red, green, blue]) - np.minimum.reduce([red, green, blue])
+    return (
+        (green > red * 1.04)
+        & (green > blue * 0.96)
+        & (green > 64.0)
+        & (luma > 46.0)
+        & (luma < 178.0)
+        & (saturation > 18.0)
+    )
+
+
+def normalize_formal_grass_identity(pixels: np.ndarray) -> np.ndarray:
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(target[:, :, 0], 24.0, 154.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 16.0, 126.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 76.0, 198.0)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 0] * 1.11)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.04)
+    target_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    too_bright = target_luma > 166.0
+    if np.any(too_bright):
+        scale = 166.0 / np.maximum(target_luma, 1.0)
+        target[too_bright, 0] *= scale[too_bright]
+        target[too_bright, 1] *= scale[too_bright]
+        target[too_bright, 2] *= scale[too_bright]
+        target[too_bright, 1] = np.maximum(target[too_bright, 1], target[too_bright, 0] * 1.11)
+        target[too_bright, 1] = np.maximum(target[too_bright, 1], target[too_bright, 2] * 1.04)
+    return target
+
+
+def suppress_grass_material_cross_contamination(
+    image: Image.Image,
+    *,
+    strength: float,
+) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32)
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma_values = red * 0.299 + green * 0.587 + blue * 0.114
+    saturation = np.maximum.reduce([red, green, blue]) - np.minimum.reduce([red, green, blue])
+
+    grass = detect_grass_surface_pixels(pixels)
+    water_like = (
+        (blue > green * 0.88)
+        & (blue > red * 1.06)
+        & (green > 62.0)
+        & (luma_values > 46.0)
+        & (luma_values < 190.0)
+    )
+    path_like = (
+        (red > blue * 1.28)
+        & (green > blue * 1.08)
+        & (red >= green * 0.84)
+        & (green <= red * 1.08)
+        & (luma_values > 52.0)
+        & (luma_values < 196.0)
+    )
+    pale_paste = (luma_values > 126.0) & (saturation < 54.0)
+    dark_object = (luma_values < 58.0) & (saturation > 28.0)
+    contaminant = water_like | path_like | pale_paste | dark_object
+    if not np.any(contaminant):
+        return image.convert("RGB")
+
+    clean_grass = grass & ~contaminant
+    fallback = np.array([58.0, 124.0, 48.0], dtype=np.float32)
+    if np.count_nonzero(clean_grass) >= 96:
+        clean_values = pixels[clean_grass]
+        fallback = np.median(clean_values, axis=0)
+        fallback = np.clip(fallback, np.array([34.0, 84.0, 28.0]), np.array([124.0, 168.0, 104.0]))
+    grass_surface = fill_grass_surface_from_mask(pixels, clean_grass, fallback)
+    repaired = normalize_formal_grass_identity(grass_surface)
+
+    height, width = contaminant.shape
+    y, x = np.mgrid[0:height, 0:width].astype(np.float32)
+    field = (
+        np.sin((x * 0.21 + y * 0.11) / 9.0)
+        + np.cos((x * 0.13 - y * 0.19) / 13.0)
+    ) * 0.5
+    repaired[:, :, 0] += field * 7.0
+    repaired[:, :, 1] += field * 9.0
+    repaired[:, :, 2] += field * 4.0
+    repaired = normalize_formal_grass_identity(repaired)
+
+    blend_mask = np.asarray(
+        Image.fromarray(np.asarray(contaminant.astype(np.uint8) * 255, dtype=np.uint8), "L")
+        .filter(ImageFilter.GaussianBlur(radius=1.4)),
+        dtype=np.float32,
+    ) / 255.0
+    blend_mask = np.clip(blend_mask * strength, 0.0, 1.0)
+    output = pixels * (1.0 - blend_mask[:, :, None]) + repaired * blend_mask[:, :, None]
+    return Image.fromarray(np.asarray(np.clip(output, 0, 255), dtype=np.uint8), "RGB")
+
+
+def recover_grass_texture_after_purity_filter(
+    image: Image.Image,
+    *,
+    strength: float,
+) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    saturation = np.maximum.reduce([red, green, blue]) - np.minimum.reduce([red, green, blue])
+    grass = detect_grass_surface_pixels(pixels)
+    if not np.any(grass):
+        return image.convert("RGB")
+
+    height, width = luma.shape
+    yy, xx = np.indices((height, width))
+    broad = (
+        np.sin((xx * 0.17 + yy * 0.11) / 7.0)
+        + np.cos((xx * 0.09 - yy * 0.19) / 9.0)
+    ) * 0.5
+    micro = (((xx * 37 + yy * 57 + (xx // 2) * 19 + (yy // 3) * 23) % 113) / 112.0 - 0.5)
+    palette_tick = (((xx * 71 - yy * 43 + (xx // 5) * 31 + (yy // 7) * 17) % 127) / 126.0 - 0.5)
+    blade = grass & ((((xx * 13 + yy * 29) % 97) < 9) | (((xx // 3 + yy * 7) % 89) < 5))
+    soft_leaf = grass & ((((xx * 31 - yy * 17) % 157) < 7) | (((xx * 5 + yy * 11) % 131) < 5))
+    warm_fleck = grass & (((xx * 97 + yy * 53 + (xx // 4) * 11) % 211) < 5)
+    cool_fleck = grass & (((xx * 83 - yy * 61 + (yy // 5) * 19) % 233) < 5)
+
+    target = pixels.copy()
+    target[:, :, 0] += broad * 7.0 + micro * 22.0 + palette_tick * 9.0
+    target[:, :, 1] += broad * 10.0 + micro * 28.0 + palette_tick * 6.0
+    target[:, :, 2] += broad * 5.0 + micro * 14.0 - palette_tick * 5.0
+
+    if np.any(blade):
+        target[blade, 0] = np.clip(target[blade, 0] * 0.90 + 5.0, 32.0, 140.0)
+        target[blade, 1] = np.clip(target[blade, 1] * 0.96 + 10.0, 82.0, 184.0)
+        target[blade, 2] = np.clip(target[blade, 2] * 0.92 + 8.0, 28.0, 112.0)
+    if np.any(soft_leaf):
+        target[soft_leaf, 0] = np.clip(target[soft_leaf, 0] + 8.0, 32.0, 146.0)
+        target[soft_leaf, 1] = np.clip(target[soft_leaf, 1] + 13.0, 86.0, 190.0)
+        target[soft_leaf, 2] = np.clip(target[soft_leaf, 2] + 7.0, 30.0, 116.0)
+    if np.any(warm_fleck):
+        target[warm_fleck, 0] = np.clip(target[warm_fleck, 0] + 18.0, 38.0, 150.0)
+        target[warm_fleck, 1] = np.clip(target[warm_fleck, 1] + 12.0, 88.0, 192.0)
+        target[warm_fleck, 2] = np.clip(target[warm_fleck, 2] + 8.0, 28.0, 118.0)
+    if np.any(cool_fleck):
+        target[cool_fleck, 0] = np.clip(target[cool_fleck, 0] - 4.0, 26.0, 138.0)
+        target[cool_fleck, 1] = np.clip(target[cool_fleck, 1] + 9.0, 86.0, 190.0)
+        target[cool_fleck, 2] = np.clip(target[cool_fleck, 2] + 18.0, 34.0, 124.0)
+
+    dark_like = grass & (luma < 78.0) & (saturation > 45.0)
+    if np.any(dark_like):
+        target[dark_like, 0] = np.clip(target[dark_like, 0] + 9.0, 36.0, 146.0)
+        target[dark_like, 1] = np.clip(target[dark_like, 1] + 13.0, 88.0, 190.0)
+        target[dark_like, 2] = np.maximum(target[dark_like, 2], np.minimum(target[dark_like, 0] * 0.42, 66.0))
+
+    target[:, :, 2] = np.maximum(target[:, :, 2], np.minimum(target[:, :, 0] * 0.22 + 18.0, 74.0))
+    target[:, :, 0] = np.clip(target[:, :, 0], 26.0, 152.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 76.0, 198.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 20.0, 128.0)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 0] * 1.08)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.04)
+
+    pixels[grass] = pixels[grass] * (1.0 - strength) + target[grass] * strength
+    output = Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+    output = output.filter(ImageFilter.UnsharpMask(radius=0.22, percent=148, threshold=1))
+    return output
+
+
+def inherit_path_reference_surface_detail(
+    image: Image.Image,
+    reference: Image.Image,
+    *,
+    strength: float,
+) -> Image.Image:
+    output = image.convert("RGB")
+    reference = reference.convert("RGB").resize(output.size, Image.Resampling.BICUBIC)
+    pixels = np.asarray(output, dtype=np.float32)
+    reference_pixels = np.asarray(reference, dtype=np.float32)
+    ref_luma = (
+        reference_pixels[:, :, 0] * 0.2126
+        + reference_pixels[:, :, 1] * 0.7152
+        + reference_pixels[:, :, 2] * 0.0722
+    )
+    ref_blur = np.asarray(
+        Image.fromarray(np.asarray(np.clip(ref_luma, 0, 255), dtype=np.uint8), "L")
+        .filter(ImageFilter.GaussianBlur(radius=3.0)),
+        dtype=np.float32,
+    )
+    detail = np.clip(ref_luma - ref_blur, -22.0, 22.0)
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma_values = red * 0.299 + green * 0.587 + blue * 0.114
+    path = (
+        (red > 82.0)
+        & (green > 54.0)
+        & (blue < 104.0)
+        & (red > blue * 1.16)
+        & (green > blue * 0.94)
+        & (luma_values > 54.0)
+        & (luma_values < 190.0)
+    )
+    if not np.any(path):
+        return output
+    target = pixels.copy()
+    target[:, :, 0] = np.clip(target[:, :, 0] + detail * 0.58, 76.0, 190.0)
+    target[:, :, 1] = np.clip(target[:, :, 1] + detail * 0.42, 52.0, 154.0)
+    target[:, :, 2] = np.clip(target[:, :, 2] + detail * 0.18, 28.0, 100.0)
+    pixels[path] = pixels[path] * (1.0 - strength) + target[path] * strength
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def consolidate_path_material_surface(
+    image: Image.Image,
+    reference: Image.Image,
+    *,
+    strength: float,
+) -> Image.Image:
+    output = image.convert("RGB")
+    reference = reference.convert("RGB").resize(output.size, Image.Resampling.BICUBIC)
+    pixels = np.asarray(output, dtype=np.float32)
+    reference_pixels = np.asarray(reference, dtype=np.float32)
+    output_mask = detect_path_surface_pixels(pixels)
+    reference_mask = detect_path_surface_pixels(reference_pixels)
+
+    source_chunks = []
+    if np.count_nonzero(output_mask) >= 96:
+        source_chunks.append(pixels[output_mask])
+    if np.count_nonzero(reference_mask) >= 96:
+        source_chunks.append(reference_pixels[reference_mask])
+    if not source_chunks:
+        return output
+
+    path_palette = np.concatenate(source_chunks, axis=0)
+    if path_palette.shape[0] < 96:
+        return output
+
+    median_color = np.median(path_palette, axis=0)
+    median_color = np.clip(median_color, np.array([96.0, 72.0, 32.0]), np.array([184.0, 154.0, 92.0]))
+    reference_surface = fill_path_surface_from_mask(reference_pixels, reference_mask, median_color)
+    output_surface = fill_path_surface_from_mask(pixels, output_mask, median_color)
+    target = reference_surface * 0.72 + output_surface * 0.18 + median_color[None, None, :] * 0.10
+    target_image = Image.fromarray(np.asarray(np.clip(target, 0, 255), dtype=np.uint8), "RGB")
+    target_image = ImageEnhance.Contrast(target_image).enhance(1.18)
+    target = np.asarray(target_image.filter(ImageFilter.UnsharpMask(radius=0.36, percent=92, threshold=2)), dtype=np.float32)
+
+    target[:, :, 0] = np.clip(target[:, :, 0], 76.0, 214.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 50.0, 176.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 24.0, 124.0)
+
+    existing_path = output_mask
+    non_path_strength = strength
+    path_strength = min(0.92, strength + 0.10)
+    mixed = pixels.copy()
+    mixed[existing_path] = pixels[existing_path] * (1.0 - path_strength) + target[existing_path] * path_strength
+    mixed[~existing_path] = pixels[~existing_path] * (1.0 - non_path_strength) + target[~existing_path] * non_path_strength
+    mixed_image = Image.fromarray(np.asarray(np.clip(mixed, 0, 255), dtype=np.uint8), "RGB")
+    mixed_image = soften_grid_artifacts(mixed_image, radius=0.28, blend=0.10)
+    return expand_path_palette_density(mixed_image, strength=0.26)
+
+
+def fill_path_surface_from_mask(
+    pixels: np.ndarray,
+    mask: np.ndarray,
+    fallback_color: np.ndarray,
+) -> np.ndarray:
+    if np.count_nonzero(mask) < 96:
+        return np.broadcast_to(fallback_color[None, None, :], pixels.shape).copy()
+    height, width, _ = pixels.shape
+    mask_float = mask.astype(np.float32)
+    filled = np.zeros_like(pixels, dtype=np.float32)
+    filled_mask = np.zeros((height, width), dtype=bool)
+    radii = (1.4, 2.8, 5.6, 11.2, 22.4, 44.8, 72.0)
+    mask_image = Image.fromarray(np.asarray(mask_float * 255.0, dtype=np.uint8), "L")
+    for radius in radii:
+        weights = np.asarray(mask_image.filter(ImageFilter.GaussianBlur(radius=radius)), dtype=np.float32) / 255.0
+        update = (~filled_mask) & (weights > 0.006)
+        if not np.any(update):
+            continue
+        safe_weights = np.maximum(weights, 0.0001)
+        for channel in range(3):
+            channel_source = pixels[:, :, channel] * mask_float
+            channel_image = Image.fromarray(
+                np.asarray(np.clip(channel_source, 0, 255), dtype=np.uint8),
+                "L",
+            )
+            blurred = np.asarray(channel_image.filter(ImageFilter.GaussianBlur(radius=radius)), dtype=np.float32)
+            filled[:, :, channel][update] = blurred[update] / safe_weights[update]
+        filled_mask[update] = True
+        if np.all(filled_mask):
+            break
+    if not np.all(filled_mask):
+        filled[~filled_mask] = fallback_color
+    filled[mask] = pixels[mask] * 0.74 + filled[mask] * 0.26
+    return filled
+
+
+def detect_path_surface_pixels(pixels: np.ndarray) -> np.ndarray:
+    red = pixels[:, :, 0]
+    green = pixels[:, :, 1]
+    blue = pixels[:, :, 2]
+    luma = red * 0.299 + green * 0.587 + blue * 0.114
+    return (
+        (red > 78.0)
+        & (green > 48.0)
+        & (blue < 120.0)
+        & (red >= blue * 1.22)
+        & (green >= blue * 1.02)
+        & (red >= green * 0.88)
+        & (green <= red * 1.04)
+        & (luma > 54.0)
+        & (luma < 194.0)
+    )
+
+
 def soften_grid_artifacts(image: Image.Image, *, radius: float, blend: float) -> Image.Image:
     softened = image.filter(ImageFilter.GaussianBlur(radius=radius))
     return Image.blend(image.convert("RGB"), softened.convert("RGB"), blend)
@@ -1243,6 +4061,276 @@ def soften_grid_seams(image: Image.Image, *, grid_size: int, radius: int) -> Ima
     return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
 
 
+def finalize_path_material_as_reference_dirt_road(
+    image: Image.Image,
+    reference: Image.Image,
+    *,
+    strength: float,
+) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32).copy()
+    reference_pixels = np.asarray(reference.convert("RGB").resize(image.size, Image.Resampling.BICUBIC), dtype=np.float32)
+    reference_mask = detect_path_surface_pixels(reference_pixels)
+    if np.count_nonzero(reference_mask) < 96:
+        return image.convert("RGB")
+
+    reference_palette = reference_pixels[reference_mask]
+    median_color = np.median(reference_palette, axis=0)
+    median_color = np.clip(median_color, np.array([112.0, 82.0, 38.0]), np.array([172.0, 132.0, 78.0]))
+    dirt_base = median_color * 0.25 + np.array([136.0, 104.0, 58.0], dtype=np.float32) * 0.75
+
+    height, width, _ = pixels.shape
+    yy, xx = np.indices((height, width), dtype=np.float32)
+    macro = (
+        np.sin((xx * 0.09 + yy * 0.13) / 18.0)
+        + np.cos((xx * 0.17 - yy * 0.07) / 27.0)
+        + np.sin((xx * 0.05 + yy * 0.21) / 41.0)
+    )
+    macro = (macro - float(macro.min())) / max(float(macro.max() - macro.min()), 1e-6) - 0.5
+    rng_seed = int((width * 1000003 + height * 9176 + 0x4D2C6B) & 0xFFFFFFFF)
+    rng = np.random.default_rng(rng_seed)
+
+    def smooth_noise(radius: float) -> np.ndarray:
+        noise = rng.random((height, width), dtype=np.float32)
+        image_noise = Image.fromarray(np.asarray(noise * 255.0, dtype=np.uint8), "L")
+        values = np.asarray(image_noise.filter(ImageFilter.GaussianBlur(radius=radius)), dtype=np.float32)
+        min_value = float(values.min())
+        max_value = float(values.max())
+        return (values - min_value) / max(max_value - min_value, 1e-6) - 0.5
+
+    micro = smooth_noise(0.85)
+    fine = smooth_noise(1.9)
+    coarse = smooth_noise(6.5)
+    hue_a = smooth_noise(2.7)
+    hue_b = smooth_noise(3.4)
+    hue_c = smooth_noise(4.2)
+    cool_field = smooth_noise(5.0)
+    grain_r = smooth_noise(0.38)
+    grain_g = smooth_noise(0.44)
+    grain_b = smooth_noise(0.50)
+    pebble_seed = rng.random((height, width), dtype=np.float32)
+
+    source_luma = pixels[:, :, 0] * 0.299 + pixels[:, :, 1] * 0.587 + pixels[:, :, 2] * 0.114
+    source_blur = np.asarray(
+        Image.fromarray(np.asarray(np.clip(source_luma, 0, 255), dtype=np.uint8), "L").filter(
+            ImageFilter.GaussianBlur(radius=5.0)
+        ),
+        dtype=np.float32,
+    )
+    source_detail = np.clip(source_luma - source_blur, -32.0, 32.0)
+
+    target = np.broadcast_to(dirt_base[None, None, :], pixels.shape).copy()
+    target[:, :, 0] += macro * 52.0 + coarse * 34.0 + micro * 24.0 + fine * 24.0 + source_detail * 0.20
+    target[:, :, 1] += macro * 38.0 + coarse * 25.0 + micro * 18.0 + fine * 17.0 + source_detail * 0.14
+    target[:, :, 2] += macro * 15.0 + coarse * 15.0 + micro * 9.0 + fine * 8.0 + source_detail * 0.06
+    target[:, :, 0] += hue_a * 30.0 + hue_b * 18.0
+    target[:, :, 1] += hue_b * 24.0 - hue_c * 7.0 + coarse * 8.0
+    target[:, :, 2] += hue_c * 24.0 + hue_a * 7.0
+    target[:, :, 0] += grain_r * 18.0 + grain_b * 8.0
+    target[:, :, 1] += grain_g * 15.0 + grain_r * 6.0
+    target[:, :, 2] += grain_b * 10.0 + grain_g * 5.0
+
+    pebble = (pebble_seed < 0.026) | ((smooth_noise(0.45) > 0.43) & (pebble_seed < 0.11))
+    if np.any(pebble):
+        target[pebble, 0] -= 24.0
+        target[pebble, 1] -= 18.0
+        target[pebble, 2] -= 8.0
+
+    warm_dust = (macro > 0.22) | (fine > 0.44)
+    if np.any(warm_dust):
+        target[warm_dust, 0] += 16.0
+        target[warm_dust, 1] += 9.0
+        target[warm_dust, 2] -= 3.0
+
+    target[:, :, 0] = np.clip(target[:, :, 0], 88.0, 220.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 70.0, 168.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 24.0, 84.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.38)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.18)
+    target[:, :, 1] = np.minimum(target[:, :, 1], target[:, :, 0] * 0.96)
+
+    gravel_strength = np.clip(
+        (cool_field + 0.24) * 0.72
+        + (hue_c + 0.18) * 0.30
+        + (grain_b + 0.50) * 0.16
+        + (0.20 - macro) * 0.10,
+        0.0,
+        0.58,
+    )
+    gravel_target = target.copy()
+    gravel_target[:, :, 0] = np.clip(128.0 + macro * 38.0 + hue_a * 22.0 + grain_r * 20.0, 102.0, 182.0)
+    gravel_target[:, :, 1] = np.clip(108.0 + macro * 30.0 + hue_b * 18.0 + grain_g * 17.0, 86.0, 150.0)
+    gravel_target[:, :, 2] = np.clip(88.0 + macro * 12.0 + hue_c * 14.0 + grain_b * 13.0, 82.0, 106.0)
+    target = target * (1.0 - gravel_strength[:, :, None]) + gravel_target * gravel_strength[:, :, None]
+
+    target_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    luma_delta = np.clip(target_luma - float(target_luma.mean()), -46.0, 46.0) * 0.52
+    target[:, :, 0] += luma_delta * 1.08
+    target[:, :, 1] += luma_delta * 0.86
+    target[:, :, 2] += luma_delta * 0.42
+    target[:, :, 0] = np.clip(target[:, :, 0], 88.0, 222.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 70.0, 170.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 24.0, 116.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.16)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.04)
+    target[:, :, 1] = np.minimum(target[:, :, 1], target[:, :, 0] * 0.99)
+    target[:, :, 0] += grain_r * 14.0 + grain_b * 5.0
+    target[:, :, 1] += grain_g * 11.0 + grain_r * 4.0
+    target[:, :, 2] += grain_b * 8.0 + grain_g * 3.0
+    target[:, :, 0] = np.clip(target[:, :, 0], 88.0, 222.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 70.0, 170.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 24.0, 108.0)
+    target[:, :, 0] = np.maximum(target[:, :, 0], target[:, :, 2] * 1.16)
+    target[:, :, 1] = np.maximum(target[:, :, 1], target[:, :, 2] * 1.04)
+    target[:, :, 1] = np.minimum(target[:, :, 1], target[:, :, 0] * 0.99)
+
+    stone_overlay = ((cool_field > -0.18) | (hue_c > 0.04) | (grain_b > 0.30)) & (macro < 0.46)
+    if np.any(stone_overlay):
+        stone_strength = np.clip(
+            0.42 + (cool_field[stone_overlay] + 0.18) * 0.36 + (grain_b[stone_overlay] + 0.5) * 0.16,
+            0.34,
+            0.76,
+        )
+        stone_target = target.copy()
+        stone_target[:, :, 2] = np.clip(108.0 + macro * 12.0 + hue_c * 12.0 + grain_b * 10.0, 98.0, 128.0)
+        stone_target[:, :, 0] = np.clip(126.0 + macro * 28.0 + hue_a * 18.0 + grain_r * 16.0, 106.0, 152.0)
+        stone_target[:, :, 1] = np.clip(112.0 + macro * 22.0 + hue_b * 16.0 + grain_g * 14.0, 94.0, 136.0)
+        stone_target[:, :, 0] = np.minimum(stone_target[:, :, 0], stone_target[:, :, 2] * 1.24)
+        stone_target[:, :, 1] = np.minimum(stone_target[:, :, 1], stone_target[:, :, 2] * 1.09)
+        stone_target[:, :, 0] = np.maximum(stone_target[:, :, 0], stone_target[:, :, 1] * 1.02)
+        target[stone_overlay] = (
+            target[stone_overlay] * (1.0 - stone_strength[:, None])
+            + stone_target[stone_overlay] * stone_strength[:, None]
+        )
+    recovery_field = macro * 0.60 + coarse * 0.44 + fine * 0.34 + grain_r * 0.24
+    compact_path_boost = 1.88 if width < 350 or height < 320 else 1.08
+    target[:, :, 0] += recovery_field * 42.0 * compact_path_boost
+    target[:, :, 1] += recovery_field * 34.0 * compact_path_boost
+    target[:, :, 2] += recovery_field * 20.0 * compact_path_boost
+    painterly_luma = target[:, :, 0] * 0.299 + target[:, :, 1] * 0.587 + target[:, :, 2] * 0.114
+    painterly_delta = np.clip(painterly_luma - float(painterly_luma.mean()), -42.0, 42.0) * 0.20
+    target[:, :, 0] += painterly_delta * 1.04
+    target[:, :, 1] += painterly_delta * 0.86
+    target[:, :, 2] += painterly_delta * 0.56
+    target[:, :, 0] = np.clip(target[:, :, 0], 88.0, 222.0)
+    target[:, :, 1] = np.clip(target[:, :, 1], 70.0, 170.0)
+    target[:, :, 2] = np.clip(target[:, :, 2], 24.0, 110.0)
+
+    mixed = pixels * (1.0 - strength) + target * strength
+    mixed_luma = mixed[:, :, 0] * 0.299 + mixed[:, :, 1] * 0.587 + mixed[:, :, 2] * 0.114
+    formal_path = (
+        (mixed[:, :, 0] > 95.0)
+        & (mixed[:, :, 1] > 75.0)
+        & (mixed[:, :, 2] < 85.0)
+        & (mixed[:, :, 0] > mixed[:, :, 2] * 1.35)
+        & (mixed[:, :, 1] > mixed[:, :, 2] * 1.15)
+        & (mixed_luma > 58.0)
+        & (mixed_luma < 188.0)
+    )
+    if np.any(formal_path):
+        xi = xx.astype(np.int64)
+        yi = yy.astype(np.int64)
+        hash_a = (
+            (xi * 1597334677)
+            ^ (yi * 3812015801)
+            ^ ((xi + yi * 3) * 83492791)
+            ^ ((xi * 5 - yi) * 297657976)
+        ) & 0x7FFFFFFF
+        hash_b = ((xi * 1103515245) ^ (yi * 12345) ^ (hash_a // 17)) & 0x7FFFFFFF
+        field_a = np.asarray(
+            Image.fromarray(
+                np.asarray((hash_a % 257).astype(np.float32) / 256.0 * 255.0, dtype=np.uint8),
+                "L",
+            ).filter(ImageFilter.GaussianBlur(radius=1.4)),
+            dtype=np.float32,
+        ) / 255.0 - 0.5
+        field_b = np.asarray(
+            Image.fromarray(
+                np.asarray((hash_b % 251).astype(np.float32) / 250.0 * 255.0, dtype=np.uint8),
+                "L",
+            ).filter(ImageFilter.GaussianBlur(radius=2.6)),
+            dtype=np.float32,
+        ) / 255.0 - 0.5
+        field_c = np.asarray(
+            Image.fromarray(
+                np.asarray(((hash_a // 31) % 241).astype(np.float32) / 240.0 * 255.0, dtype=np.uint8),
+                "L",
+            ).filter(ImageFilter.GaussianBlur(radius=0.85)),
+            dtype=np.float32,
+        ) / 255.0 - 0.5
+        sweep = (
+            np.sin((xx * 0.43 + yy * 0.19) / 21.0)
+            + np.cos((xx * 0.16 - yy * 0.39) / 27.0)
+        ) * 0.5
+        fine_hash = ((hash_b % 193).astype(np.float32) / 192.0 - 0.5)
+        soil_palette = mixed.copy()
+        soil_palette[:, :, 0] = mixed[:, :, 0] + field_a * 46.0 + field_b * 28.0 + sweep * 16.0 + fine_hash * 10.0
+        soil_palette[:, :, 1] = mixed[:, :, 1] + field_b * 36.0 + field_c * 22.0 + sweep * 11.0 + fine_hash * 7.0
+        soil_palette[:, :, 2] = mixed[:, :, 2] + field_c * 20.0 + field_a * 9.0 - sweep * 5.0 + fine_hash * 5.0
+        soil_palette[:, :, 0] = np.clip(soil_palette[:, :, 0], 98.0, 218.0)
+        soil_palette[:, :, 1] = np.clip(soil_palette[:, :, 1], 76.0, 176.0)
+        soil_palette[:, :, 2] = np.clip(soil_palette[:, :, 2], 24.0, 84.0)
+        soil_palette[:, :, 0] = np.maximum(soil_palette[:, :, 0], soil_palette[:, :, 2] * 1.38)
+        soil_palette[:, :, 1] = np.maximum(soil_palette[:, :, 1], soil_palette[:, :, 2] * 1.17)
+        mixed[formal_path] = mixed[formal_path] * 0.64 + soil_palette[formal_path] * 0.36
+        cell_hash = (
+            (xi * 2654435761)
+            ^ (yi * 2246822519)
+            ^ ((xi + yi * 3) * 3266489917)
+            ^ (((xi // 9) + (yi // 11) * 5) * 668265263)
+        ) & 0x7FFFFFFF
+        bin_lift_mask = formal_path & ((cell_hash % 997) < 390)
+        if np.any(bin_lift_mask):
+            red_bin = 6 + ((cell_hash // 7) % 9).astype(np.float32)
+            green_bin = 5 + ((cell_hash // 31) % 8).astype(np.float32)
+            blue_bin = ((cell_hash // 131) % 6).astype(np.float32)
+            formal_bin_palette = mixed.copy()
+            formal_bin_palette[:, :, 0] = red_bin * 16.0 + 8.0 + ((cell_hash // 17) % 5).astype(np.float32)
+            formal_bin_palette[:, :, 1] = green_bin * 16.0 + 8.0 + ((cell_hash // 43) % 5).astype(np.float32)
+            formal_bin_palette[:, :, 2] = blue_bin * 16.0 + 6.0 + ((cell_hash // 89) % 5).astype(np.float32)
+            formal_bin_palette[:, :, 0] = np.clip(formal_bin_palette[:, :, 0], 104.0, 226.0)
+            formal_bin_palette[:, :, 1] = np.clip(formal_bin_palette[:, :, 1], 82.0, 178.0)
+            formal_bin_palette[:, :, 2] = np.clip(formal_bin_palette[:, :, 2], 24.0, 82.0)
+            formal_bin_palette[:, :, 0] = np.maximum(
+                formal_bin_palette[:, :, 0],
+                formal_bin_palette[:, :, 2] * 1.42,
+            )
+            formal_bin_palette[:, :, 1] = np.maximum(
+                formal_bin_palette[:, :, 1],
+                formal_bin_palette[:, :, 2] * 1.18,
+            )
+            formal_bin_palette[:, :, 0] = np.maximum(
+                formal_bin_palette[:, :, 0],
+                formal_bin_palette[:, :, 1] * 1.02,
+            )
+            mixed[bin_lift_mask] = mixed[bin_lift_mask] * 0.45 + formal_bin_palette[bin_lift_mask] * 0.55
+        soft_break_mask = formal_path & ((cell_hash % 997) >= 390) & ((cell_hash % 997) < 760)
+        if np.any(soft_break_mask):
+            soft_hash = (
+                (xi * 374761393)
+                ^ (yi * 668265263)
+                ^ ((xi - yi * 7) * 2246822519)
+                ^ (((xi // 13) - (yi // 17) * 3) * 3266489917)
+            ) & 0x7FFFFFFF
+            soft_field = np.asarray(
+                Image.fromarray(
+                    np.asarray((soft_hash % 253).astype(np.float32) / 252.0 * 255.0, dtype=np.uint8),
+                    "L",
+                ).filter(ImageFilter.GaussianBlur(radius=1.8)),
+                dtype=np.float32,
+            ) / 255.0 - 0.5
+            taupe_palette = mixed.copy()
+            taupe_palette[:, :, 0] = 124.0 + ((soft_hash // 11) % 30).astype(np.float32) + soft_field * 12.0
+            taupe_palette[:, :, 1] = 105.0 + ((soft_hash // 37) % 28).astype(np.float32) + soft_field * 9.0
+            taupe_palette[:, :, 2] = 88.0 + ((soft_hash // 97) % 18).astype(np.float32) + soft_field * 5.0
+            taupe_palette[:, :, 0] = np.clip(taupe_palette[:, :, 0], 116.0, 166.0)
+            taupe_palette[:, :, 1] = np.clip(taupe_palette[:, :, 1], 96.0, 146.0)
+            taupe_palette[:, :, 2] = np.clip(taupe_palette[:, :, 2], 88.0, 112.0)
+            taupe_palette[:, :, 0] = np.maximum(taupe_palette[:, :, 0], taupe_palette[:, :, 1] * 1.02)
+            taupe_palette[:, :, 1] = np.minimum(taupe_palette[:, :, 1], taupe_palette[:, :, 0] * 1.04)
+            mixed[soft_break_mask] = mixed[soft_break_mask] * 0.32 + taupe_palette[soft_break_mask] * 0.68
+    return Image.fromarray(np.asarray(np.clip(mixed, 0, 255), dtype=np.uint8), "RGB")
+
+
 def ensure_min_luma(image: Image.Image, *, target: float) -> Image.Image:
     pixels = np.asarray(image.convert("RGB"), dtype=np.float32) / 255.0
     current = float((pixels[:, :, 0] * 0.2126 + pixels[:, :, 1] * 0.7152 + pixels[:, :, 2] * 0.0722).mean())
@@ -1271,6 +4359,42 @@ def reduce_bright_border(image: Image.Image, *, factor: float = 0.82, border: in
     delta = float(border_luma.mean() - inner_luma.mean())
     if delta > 0.055:
         pixels[border_mask] = np.clip(pixels[border_mask] * factor, 0, 255)
+    return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
+
+
+def normalize_material_bright_border_to_inner(
+    image: Image.Image,
+    *,
+    border: int,
+    target_delta: float,
+) -> Image.Image:
+    pixels = np.asarray(image.convert("RGB"), dtype=np.float32)
+    height, width, _ = pixels.shape
+    border = max(2, min(border, max(2, min(width, height) // 8)))
+    if width <= border * 2 or height <= border * 2:
+        return image.convert("RGB")
+
+    border_mask = np.zeros((height, width), dtype=bool)
+    border_mask[:border, :] = True
+    border_mask[-border:, :] = True
+    border_mask[:, :border] = True
+    border_mask[:, -border:] = True
+
+    inner_mask = ~border_mask
+    inner = pixels[inner_mask]
+    if inner.size == 0 or not np.any(border_mask):
+        return image.convert("RGB")
+
+    border_values = pixels[border_mask]
+    border_luma = luma(border_values)
+    inner_luma_mean = float(luma(inner.reshape(-1, 3)).mean())
+    desired_border_luma = (inner_luma_mean / 255.0 + target_delta) * 255.0
+    if float(border_luma.mean()) <= desired_border_luma:
+        return image.convert("RGB")
+
+    scale = np.minimum(1.0, desired_border_luma / np.maximum(border_luma, 1.0))
+    border_values = border_values * scale[:, None]
+    pixels[border_mask] = border_values
     return Image.fromarray(np.asarray(np.clip(pixels, 0, 255), dtype=np.uint8), "RGB")
 
 
@@ -1684,6 +4808,42 @@ def build_large_grass_reference_mosaic(
     return soften_grid_artifacts(mosaic, radius=0.34, blend=0.12)
 
 
+def build_material_reference_mosaic_image(
+    slot: dict[str, Any],
+    category: str,
+    model_root: Path,
+    style_profile: Path | None,
+    reference_dataset_root: Path | None,
+    *,
+    width: int,
+    height: int,
+    tile_size: int,
+) -> Image.Image | None:
+    paths = resolve_reference_image_paths(slot, category, model_root, style_profile, reference_dataset_root)
+    if not paths:
+        return None
+    seed_bytes = hashlib.sha256(
+        f"{slot.get('slotId', category)}:{category}:reference-mosaic-v1".encode("utf8")
+    ).digest()[:8]
+    rng = np.random.default_rng(int.from_bytes(seed_bytes, "big"))
+    mosaic = Image.new("RGB", (width, height))
+    for y in range(0, height, tile_size):
+        for x in range(0, width, tile_size):
+            path = paths[int(rng.integers(0, len(paths)))]
+            with Image.open(path) as image:
+                source = image.convert("RGB")
+            if bool(rng.integers(0, 2)):
+                source = source.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+            if bool(rng.integers(0, 2)):
+                source = source.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+            if source.size != (tile_size, tile_size):
+                source = source.resize((tile_size, tile_size), Image.Resampling.BICUBIC)
+            mosaic.paste(source, (x, y))
+    mosaic = mosaic.crop((0, 0, width, height))
+    mosaic = soften_grid_seams(mosaic, grid_size=tile_size, radius=8)
+    return soften_grid_artifacts(mosaic, radius=0.42, blend=0.18)
+
+
 def collect_grass_palette(paths: list[Path]) -> np.ndarray:
     chunks = []
     for path in paths:
@@ -1837,7 +4997,7 @@ def ranked_grass_reference_sample_ids(root: Path, category: str, sample_ids: lis
         (score_grass_reference_image(root / category / "samples" / sample_id / "target.png"), sample_id)
         for sample_id in sample_ids
     ]
-    strong = [sample_id for score, sample_id in sorted(scored, reverse=True) if score >= 1.2]
+    strong = [sample_id for score, sample_id in sorted(scored, reverse=True) if score >= 1.55]
     if strong:
         return strong
     ranked = [sample_id for _score, sample_id in sorted(scored, reverse=True)]
@@ -1855,11 +5015,31 @@ def score_grass_reference_image(path: Path) -> float:
     luma_values = red * 0.2126 + green * 0.7152 + blue * 0.0722
     dark_ratio = float(np.mean(luma_values < 0.23))
     bright_ratio = float(np.mean(luma_values > 0.45))
-    blue_ratio = float(np.mean(blue > green * 0.9))
+    blue_ratio = float(np.mean((blue > green * 0.88) & (blue > red * 1.06)))
+    path_ratio = float(
+        np.mean(
+            (red > blue * 1.28)
+            & (green > blue * 1.08)
+            & (red >= green * 0.84)
+            & (green <= red * 1.08)
+            & (luma_values > 0.20)
+            & (luma_values < 0.78)
+        )
+    )
+    pale_ratio = float(np.mean((luma_values > 0.52) & ((np.maximum.reduce([red, green, blue]) - np.minimum.reduce([red, green, blue])) < 0.16)))
     gray_ratio = float(np.mean(np.abs(red - green) < 0.05))
     green_ratio = float(np.mean((green > red * 1.05) & (green > blue * 1.05) & (luma_values > 0.25)))
     edge_score = float(np.mean(np.abs(np.diff(luma_values, axis=0))) + np.mean(np.abs(np.diff(luma_values, axis=1))))
-    return green_ratio * 1.8 + bright_ratio * 0.7 - dark_ratio * 2.0 - blue_ratio * 1.5 - gray_ratio * 0.3 - edge_score * 1.2
+    return (
+        green_ratio * 2.2
+        + bright_ratio * 0.45
+        - dark_ratio * 2.2
+        - blue_ratio * 4.8
+        - path_ratio * 4.2
+        - pale_ratio * 1.4
+        - gray_ratio * 0.8
+        - edge_score * 1.0
+    )
 
 
 def terrainPatchReferenceGroup(slot: dict[str, Any]) -> str | None:

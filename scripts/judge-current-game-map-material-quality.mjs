@@ -51,31 +51,46 @@ function isMaterialSlotInferenceReport(filePath) {
   }
 }
 
-async function inspectImage(imagePath) {
+async function inspectImage(imagePath, maskPath = null) {
   const image = sharp(imagePath, { failOn: "error" }).ensureAlpha()
   const metadata = await image.metadata()
   const { data, info } = await image
     .raw()
     .toBuffer({ resolveWithObject: true })
+  const activeMask = maskPath
+    ? await readActiveMask(maskPath, info.width, info.height)
+    : null
 
   const pixelCount = info.width * info.height
+  let activePixelCount = 0
   let lumaSum = 0
   let lumaSqSum = 0
   let rSum = 0
   let gSum = 0
   let bSum = 0
   let alphaVisible = 0
+  let grassVisualPixels = 0
+  let pathVisualPixels = 0
+  let waterVisualPixels = 0
+  let paleHighlightPixels = 0
+  let darkObjectPixels = 0
+  let blueDominantPixels = 0
   const palette = new Set()
   const lumas = new Float64Array(pixelCount)
 
   for (let index = 0; index < pixelCount; index += 1) {
+    if (activeMask && !activeMask[index]) continue
     const offset = index * info.channels
     const r = data[offset]
     const g = data[offset + 1]
     const b = data[offset + 2]
     const a = data[offset + 3]
     const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    const maxChannel = Math.max(r, g, b)
+    const minChannel = Math.min(r, g, b)
+    const saturation = maxChannel - minChannel
     lumas[index] = luma
+    activePixelCount += 1
     lumaSum += luma
     lumaSqSum += luma * luma
     rSum += r
@@ -83,7 +98,28 @@ async function inspectImage(imagePath) {
     bSum += b
     if (a > 12) alphaVisible += 1
     palette.add(`${r >> 4}:${g >> 4}:${b >> 4}`)
+    const formalLuma = r * 0.299 + g * 0.587 + b * 0.114
+    const isGrassVisual = g > r * 1.08 && g > b * 1.02 && formalLuma > 48 && formalLuma < 170
+    const isPathVisual =
+      r > 95 &&
+      g > 75 &&
+      b < 85 &&
+      r > b * 1.35 &&
+      g > b * 1.15
+    const isWaterVisual =
+      b > 70 &&
+      g > 75 &&
+      g >= r * 1.05 &&
+      b >= r * 1.08 &&
+      !(g > r * 1.35 && g > b * 1.05)
+    if (isGrassVisual) grassVisualPixels += 1
+    if (isPathVisual) pathVisualPixels += 1
+    if (isWaterVisual) waterVisualPixels += 1
+    if (formalLuma > 170 && r > 150 && g > 130 && b < 120) paleHighlightPixels += 1
+    if (formalLuma < 70 && saturation > 45) darkObjectPixels += 1
+    if (b > g * 1.08 && b > r * 1.08) blueDominantPixels += 1
   }
+  const measuredPixelCount = Math.max(1, activePixelCount)
 
   let edgeSum = 0
   let edgeSamples = 0
@@ -91,23 +127,30 @@ async function inspectImage(imagePath) {
     for (let x = 0; x < info.width; x += 1) {
       const current = lumas[y * info.width + x]
       if (x + 1 < info.width) {
-        edgeSum += Math.abs(current - lumas[y * info.width + x + 1])
-        edgeSamples += 1
+        const nextIndex = y * info.width + x + 1
+        if (!activeMask || (activeMask[y * info.width + x] && activeMask[nextIndex])) {
+          edgeSum += Math.abs(current - lumas[nextIndex])
+          edgeSamples += 1
+        }
       }
       if (y + 1 < info.height) {
-        edgeSum += Math.abs(current - lumas[(y + 1) * info.width + x])
-        edgeSamples += 1
+        const nextIndex = (y + 1) * info.width + x
+        if (!activeMask || (activeMask[y * info.width + x] && activeMask[nextIndex])) {
+          edgeSum += Math.abs(current - lumas[nextIndex])
+          edgeSamples += 1
+        }
       }
     }
   }
 
-  const lumaMean = lumaSum / pixelCount / 255
-  const lumaVariance = lumaSqSum / pixelCount - (lumaSum / pixelCount) ** 2
+  const lumaMean = lumaSum / measuredPixelCount / 255
+  const lumaVariance = lumaSqSum / measuredPixelCount - (lumaSum / measuredPixelCount) ** 2
   const lumaStd = Math.sqrt(Math.max(0, lumaVariance)) / 255
   const edgeDensity = edgeSamples > 0 ? edgeSum / edgeSamples / 255 : 0
-  const gridMetrics = measureGridArtifactMetrics(lumas, info.width, info.height)
-  const repetitiveTextureMetrics = measureRepetitiveTextureMetrics(lumas, info.width, info.height)
-  const borderMetrics = measureBorderContrastMetrics(lumas, info.width, info.height)
+  const gridMetrics = measureGridArtifactMetrics(lumas, info.width, info.height, activeMask)
+  const repetitiveTextureMetrics = measureRepetitiveTextureMetrics(lumas, info.width, info.height, activeMask)
+  const diagonalTextureMetrics = measureDiagonalTextureMetrics(lumas, info.width, info.height, activeMask)
+  const borderMetrics = measureBorderContrastMetrics(lumas, info.width, info.height, activeMask)
   const denseTextureArtifact = edgeDensity > 0.055 && lumaStd > 0.075
   const flatTextureArtifact = lumaStd < 0.026 && edgeDensity < 0.009
 
@@ -123,18 +166,45 @@ async function inspectImage(imagePath) {
     gridMetrics,
     repetitiveTextureArtifact: repetitiveTextureMetrics.repetitiveTextureSuspected,
     repetitiveTextureMetrics,
+    diagonalTextureArtifact: diagonalTextureMetrics.diagonalTextureSuspected,
+    diagonalTextureMetrics,
     denseTextureArtifact,
     flatTextureArtifact,
     brightBorderArtifact: borderMetrics.brightBorderArtifactSuspected,
     borderMetrics,
-    alphaCoverage: round(alphaVisible / pixelCount),
+    alphaCoverage: round(alphaVisible / measuredPixelCount),
+    activeMaskCoverage: round(measuredPixelCount / pixelCount),
     quantizedColorCount: palette.size,
+    grassVisualRatio: round(grassVisualPixels / measuredPixelCount),
+    pathVisualRatio: round(pathVisualPixels / measuredPixelCount),
+    waterVisualRatio: round(waterVisualPixels / measuredPixelCount),
+    paleHighlightRatio: round(paleHighlightPixels / measuredPixelCount),
+    darkObjectRatio: round(darkObjectPixels / measuredPixelCount),
+    blueDominantRatio: round(blueDominantPixels / measuredPixelCount),
     averageRgb: {
-      r: round(rSum / pixelCount / 255),
-      g: round(gSum / pixelCount / 255),
-      b: round(bSum / pixelCount / 255),
+      r: round(rSum / measuredPixelCount / 255),
+      g: round(gSum / measuredPixelCount / 255),
+      b: round(bSum / measuredPixelCount / 255),
     },
   }
+}
+
+async function readActiveMask(maskPath, width, height) {
+  if (!maskPath || !fs.existsSync(maskPath)) return null
+  const { data } = await sharp(maskPath, { failOn: "error" })
+    .resize(width, height, { fit: "fill" })
+    .greyscale()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+  const active = new Uint8Array(width * height)
+  let count = 0
+  for (let index = 0; index < active.length; index += 1) {
+    if ((data[index] ?? 0) > 12) {
+      active[index] = 1
+      count += 1
+    }
+  }
+  return count > 0 ? active : null
 }
 
 function judgeSlot(slot, metrics) {
@@ -187,6 +257,21 @@ function judgeSlot(slot, metrics) {
   if (slot.unitKind === "grass_texture" && isForestLikeGrassTexture(metrics)) {
     issues.push("grass_forest_canopy_texture_suspected")
   }
+  if (slot.unitKind === "grass_texture" && metrics.waterVisualRatio > 0.06) {
+    issues.push("grass_material_water_contamination_suspected")
+  }
+  if (slot.unitKind === "grass_texture" && metrics.pathVisualRatio > 0.12) {
+    issues.push("grass_material_path_fragment_suspected")
+  }
+  if (slot.unitKind === "grass_texture" && metrics.paleHighlightRatio > 0.025) {
+    issues.push("grass_material_pale_paste_fragment_suspected")
+  }
+  if (slot.unitKind === "grass_texture" && metrics.blueDominantRatio > 0.025) {
+    issues.push("grass_material_blue_object_fragment_suspected")
+  }
+  if (slot.unitKind === "grass_texture" && metrics.darkObjectRatio > 0.12) {
+    issues.push("grass_material_object_fragment_suspected")
+  }
   if (slot.unitKind === "water_texture" && !(b > r + 0.05 && b > g * 0.75)) {
     issues.push("water_color_identity_weak")
   }
@@ -203,17 +288,32 @@ function judgeSlot(slot, metrics) {
   if (slot.unitKind === "path_texture" && !(r >= b * 1.04 && g >= b * 1.02)) {
     issues.push("path_soil_identity_weak")
   }
+  if (slot.unitKind === "path_texture" && metrics.quantizedColorCount < 64) {
+    issues.push("path_material_palette_too_repetitive")
+  }
   if (slot.unitKind === "path_texture" && g > r * 1.04) {
     issues.push("path_green_contamination_suspected")
   }
   if (slot.unitKind === "path_texture" && metrics.denseTextureArtifact) {
     issues.push("path_dense_texture_suspected")
   }
+  if (slot.unitKind === "path_texture" && metrics.diagonalTextureArtifact) {
+    issues.push("path_diagonal_repetitive_texture_suspected")
+  }
+  if (slot.unitKind === "path_texture" && metrics.pathVisualRatio < 0.16) {
+    issues.push("path_material_visual_identity_too_weak")
+  }
   if (
     slot.unitKind === "rock_visual_unit" &&
     Math.max(Math.abs(r - g), Math.abs(g - b), Math.abs(r - b)) > 0.22
   ) {
     issues.push("rock_neutral_color_identity_weak")
+  }
+  if (slot.unitKind === "grass_texture" && metrics.quantizedColorCount < 150) {
+    issues.push("grass_material_palette_too_low_for_game_terrain")
+  }
+  if (isObjectVisualUnit(slot.unitKind) && metrics.brightBorderArtifact) {
+    issues.push("object_material_bright_paste_border_suspected")
   }
 
   return {
@@ -282,23 +382,23 @@ function isForestLikeGrassTexture(metrics) {
   return overlyCanopyGreen || darkCanopyPatch
 }
 
-function measureGridArtifactMetrics(lumas, width, height) {
+function measureGridArtifactMetrics(lumas, width, height, activeMask = null) {
   const verticalDeltas = []
   for (let x = 1; x < width; x += 1) {
-    verticalDeltas.push(measureVerticalDelta(lumas, width, height, x))
+    verticalDeltas.push(measureVerticalDelta(lumas, width, height, x, activeMask))
   }
   const horizontalDeltas = []
   for (let y = 1; y < height; y += 1) {
-    horizontalDeltas.push(measureHorizontalDelta(lumas, width, height, y))
+    horizontalDeltas.push(measureHorizontalDelta(lumas, width, height, y, activeMask))
   }
 
   const averageVerticalSeamDelta = average(verticalDeltas) / 255
   const averageHorizontalSeamDelta = average(horizontalDeltas) / 255
   const maxVerticalGridSeamDelta = max(
-    gridLines(width).map((x) => measureVerticalDelta(lumas, width, height, x))
+    gridLines(width).map((x) => measureVerticalDelta(lumas, width, height, x, activeMask))
   ) / 255
   const maxHorizontalGridSeamDelta = max(
-    gridLines(height).map((y) => measureHorizontalDelta(lumas, width, height, y))
+    gridLines(height).map((y) => measureHorizontalDelta(lumas, width, height, y, activeMask))
   ) / 255
   const maxVerticalGridSeamRatio = ratio(
     maxVerticalGridSeamDelta,
@@ -323,15 +423,15 @@ function measureGridArtifactMetrics(lumas, width, height) {
   }
 }
 
-function measureRepetitiveTextureMetrics(lumas, width, height) {
+function measureRepetitiveTextureMetrics(lumas, width, height, activeMask = null) {
   const shifts = [8, 16, 24, 32, 48, 64].filter(
     (shift) => shift < width / 2 && shift < height / 2
   )
   const horizontalShiftDeltas = shifts.map((shift) =>
-    measureShiftDelta(lumas, width, height, shift, 0)
+    measureShiftDelta(lumas, width, height, shift, 0, activeMask)
   )
   const verticalShiftDeltas = shifts.map((shift) =>
-    measureShiftDelta(lumas, width, height, 0, shift)
+    measureShiftDelta(lumas, width, height, 0, shift, activeMask)
   )
   const minHorizontalShiftDelta = min(horizontalShiftDeltas)
   const minVerticalShiftDelta = min(verticalShiftDeltas)
@@ -345,12 +445,35 @@ function measureRepetitiveTextureMetrics(lumas, width, height) {
   }
 }
 
-function measureBorderContrastMetrics(lumas, width, height) {
+function measureDiagonalTextureMetrics(lumas, width, height, activeMask = null) {
+  const shifts = [4, 8, 12, 16, 24, 32].filter(
+    (shift) => shift < width / 2 && shift < height / 2
+  )
+  const downRightShiftDeltas = shifts.map((shift) =>
+    measureSignedShiftDelta(lumas, width, height, shift, shift, activeMask)
+  )
+  const upRightShiftDeltas = shifts.map((shift) =>
+    measureSignedShiftDelta(lumas, width, height, shift, -shift, activeMask)
+  )
+  const minDownRightShiftDelta = min(downRightShiftDeltas)
+  const minUpRightShiftDelta = min(upRightShiftDeltas)
+  const diagonalTextureSuspected =
+    minDownRightShiftDelta <= 0.013 || minUpRightShiftDelta <= 0.013
+
+  return {
+    minDownRightShiftDelta: round(minDownRightShiftDelta),
+    minUpRightShiftDelta: round(minUpRightShiftDelta),
+    diagonalTextureSuspected,
+  }
+}
+
+function measureBorderContrastMetrics(lumas, width, height, activeMask = null) {
   const border = Math.max(2, Math.min(8, Math.floor(Math.min(width, height) / 24)))
   const borderValues = []
   const innerValues = []
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
+      if (activeMask && !activeMask[y * width + x]) continue
       const value = lumas[y * width + x] / 255
       if (x < border || y < border || x >= width - border || y >= height - border) {
         borderValues.push(value)
@@ -377,14 +500,17 @@ function measureBorderContrastMetrics(lumas, width, height) {
   }
 }
 
-function measureShiftDelta(lumas, width, height, shiftX, shiftY) {
+function measureShiftDelta(lumas, width, height, shiftX, shiftY, activeMask = null) {
   let total = 0
   let count = 0
   const step = 3
   for (let y = 0; y + shiftY < height; y += step) {
     for (let x = 0; x + shiftX < width; x += step) {
+      const fromIndex = y * width + x
+      const toIndex = (y + shiftY) * width + x + shiftX
+      if (activeMask && (!activeMask[fromIndex] || !activeMask[toIndex])) continue
       total += Math.abs(
-        lumas[y * width + x] - lumas[(y + shiftY) * width + x + shiftX]
+        lumas[fromIndex] - lumas[toIndex]
       )
       count += 1
     }
@@ -392,20 +518,52 @@ function measureShiftDelta(lumas, width, height, shiftX, shiftY) {
   return count > 0 ? total / count / 255 : 1
 }
 
-function measureVerticalDelta(lumas, width, height, x) {
+function measureSignedShiftDelta(lumas, width, height, shiftX, shiftY, activeMask = null) {
   let total = 0
-  for (let y = 0; y < height; y += 1) {
-    total += Math.abs(lumas[y * width + x] - lumas[y * width + x - 1])
+  let count = 0
+  const step = 3
+  const startY = Math.max(0, -shiftY)
+  const endY = Math.min(height, height - shiftY)
+  const startX = Math.max(0, -shiftX)
+  const endX = Math.min(width, width - shiftX)
+  for (let y = startY; y < endY; y += step) {
+    for (let x = startX; x < endX; x += step) {
+      const fromIndex = y * width + x
+      const toIndex = (y + shiftY) * width + x + shiftX
+      if (activeMask && (!activeMask[fromIndex] || !activeMask[toIndex])) continue
+      total += Math.abs(
+        lumas[fromIndex] - lumas[toIndex]
+      )
+      count += 1
+    }
   }
-  return total / height
+  return count > 0 ? total / count / 255 : 1
 }
 
-function measureHorizontalDelta(lumas, width, height, y) {
+function measureVerticalDelta(lumas, width, height, x, activeMask = null) {
   let total = 0
-  for (let x = 0; x < width; x += 1) {
-    total += Math.abs(lumas[y * width + x] - lumas[(y - 1) * width + x])
+  let count = 0
+  for (let y = 0; y < height; y += 1) {
+    const leftIndex = y * width + x - 1
+    const rightIndex = y * width + x
+    if (activeMask && (!activeMask[leftIndex] || !activeMask[rightIndex])) continue
+    total += Math.abs(lumas[rightIndex] - lumas[leftIndex])
+    count += 1
   }
-  return total / width
+  return count > 0 ? total / count : 255
+}
+
+function measureHorizontalDelta(lumas, width, height, y, activeMask = null) {
+  let total = 0
+  let count = 0
+  for (let x = 0; x < width; x += 1) {
+    const topIndex = (y - 1) * width + x
+    const bottomIndex = y * width + x
+    if (activeMask && (!activeMask[topIndex] || !activeMask[bottomIndex])) continue
+    total += Math.abs(lumas[bottomIndex] - lumas[topIndex])
+    count += 1
+  }
+  return count > 0 ? total / count : 255
 }
 
 function gridLines(size) {
@@ -485,7 +643,10 @@ async function main() {
       })
       continue
     }
-    const metrics = await inspectImage(imagePath)
+    const metrics = await inspectImage(
+      imagePath,
+      required.unitKind === "path_texture" ? required.conditionMaskPath : null
+    )
     const judgment = judgeSlot(required, metrics)
     slots.push({
       slotId: required.slotId,

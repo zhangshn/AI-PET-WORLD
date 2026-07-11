@@ -1,0 +1,43 @@
+{
+  "schemaVersion": "complete-map-drawability-dictionary-summary-v1",
+  "summaryId": "natural-home-complete-map-v0.3-drawability",
+  "generatedAt": "2026-07-09T11:33:20.830Z",
+  "timestampLocal": "2026-07-09T19:33:20+08:00",
+  "dictionaryVersionId": "mvp-natural-home-v0.3",
+  "dictionaryPath": "data/world-visual-data-dictionary/mvp-natural-home-v0.3.json",
+  "status": "dictionary_draw_ready",
+  "drawabilityMeaning": "The dictionary contains the minimum structured fields to build a complete-map candidate generation task. This is not training-data sufficiency and not owner approval.",
+  "requiredEntryIds": [
+    "generation-task/complete-map-image-generation-contract",
+    "map-grammar/natural-home-complete-map-template",
+    "spatial-grid/complete-map-canvas-contract",
+    "render-layer-recipe/complete-map-layer-stack-v2",
+    "material-recipe/complete-map-material-token-library",
+    "objects/complete-map-object-placement-library",
+    "transition/grass-to-path",
+    "transition/grass-to-water",
+    "transition/object-to-ground",
+    "review/complete-map-drawability-gate",
+    "training/complete-map-drawability-readiness"
+  ],
+  "missingEntryIds": [],
+  "taskBindings": {
+    "canvasContract": "spatial-grid/complete-map-canvas-contract",
+    "mapTemplate": "map-grammar/natural-home-complete-map-template",
+    "layerStack": "render-layer-recipe/complete-map-layer-stack-v2",
+    "materialTokens": "material-recipe/complete-map-material-token-library",
+    "objectPlacement": "objects/complete-map-object-placement-library",
+    "transitionPlan": [
+      "transition/grass-to-path",
+      "transition/grass-to-water",
+      "transition/object-to-ground"
+    ],
+    "generationContract": "generation-task/complete-map-image-generation-contract",
+    "reviewGate": "review/complete-map-drawability-gate"
+  },
+  "nonApprovalRules": [
+    "dictionary_draw_ready does not mean training_data_ready",
+    "dictionary_draw_ready does not mean owner_approved",
+    "dictionary_draw_ready only allows a stored candidate generation attempt"
+  ]
+}

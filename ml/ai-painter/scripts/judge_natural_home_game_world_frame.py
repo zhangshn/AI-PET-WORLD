@@ -41,6 +41,45 @@ BLOCKED_SOURCE_TOKENS = {
     "local_detail",
 }
 
+ACTIVE_SINGLE_MAP_DOCUMENTS = [
+    "versions/current-single-map-visual-scope",
+    "generation-task/task-package-schema",
+    "director/director-output-schema",
+    "ecology/single-map-ecology-fields",
+    "material-recipe/single-map-material-field-schema",
+    "composition-recipe/single-map-composition-fields",
+    "review/single-map-visual-acceptance",
+    "review/failure-codes",
+]
+
+REQUIRED_TASK_PACKAGE_FIELDS = [
+    "singleMapScope",
+    "singleMapEcologyFields",
+    "singleMapMaterialFields",
+    "singleMapCompositionFields",
+    "singleMapAcceptance",
+    "drawingProcess",
+    "professionalArtDirection",
+    "materialRecipe",
+    "compositionRecipe",
+    "runtimeRenderLayerRecipe",
+    "qualityRubric",
+]
+
+REQUIRED_DIRECTOR_OUTPUT_FIELDS = [
+    "singleMapScopePlan",
+    "singleMapEcologyPlan",
+    "singleMapMaterialPlan",
+    "singleMapCompositionPlan",
+    "singleMapAcceptancePlan",
+    "drawingProcessPlan",
+    "artDirectionPlan",
+    "materialPlan",
+    "compositionPlan",
+    "renderLayerPlan",
+    "qualityGatePlan",
+]
+
 
 def main() -> int:
     parser = ArgumentParser(description="Gate natural-home VJ-2 candidates as complete game world frames.")
@@ -55,6 +94,12 @@ def main() -> int:
         type=Path,
         default=Path(".runtime/ai-painter/natural-home-v117-complete-game-world-frame-gate"),
     )
+    parser.add_argument(
+        "--dictionary-latest",
+        type=Path,
+        default=Path("data/world-visual-data-dictionary/latest.json"),
+        help="Path to the exported world visual data dictionary latest pointer.",
+    )
     parser.add_argument("--stage-id", type=str, default=DEFAULT_STAGE_ID)
     args = parser.parse_args()
 
@@ -64,7 +109,8 @@ def main() -> int:
     if not isinstance(rows, list) or not rows:
         raise ValueError(f"VJ-2 report has no rows: {vj2_report_path}")
 
-    reviewed_rows = [review_row(row) for row in rows if isinstance(row, dict)]
+    dictionary_contract = load_dictionary_contract(args.dictionary_latest.resolve())
+    reviewed_rows = [review_row(row, dictionary_contract) for row in rows if isinstance(row, dict)]
     reviewed_rows.sort(
         key=lambda row: (
             -int(row["gameWorldFramePassed"]),
@@ -82,6 +128,7 @@ def main() -> int:
         "sourceVj2Report": str(vj2_report_path),
         "sourceStageId": vj2_report.get("stageId"),
         "reviewScope": "natural_home_complete_game_world_frame_gate",
+        "dictionaryContract": dictionary_contract,
         "status": build_status(reviewed_rows),
         "displayAllowed": False,
         "canPromoteToWorld": False,
@@ -112,7 +159,7 @@ def main() -> int:
     return 0
 
 
-def review_row(row: dict[str, Any]) -> dict[str, Any]:
+def review_row(row: dict[str, Any], dictionary_contract: dict[str, Any]) -> dict[str, Any]:
     blueprint_path = Path(str(row.get("blueprint", "")))
     blueprint = read_json(blueprint_path) if blueprint_path.exists() else {}
     generated_path = Path(str(row.get("generated", "")))
@@ -132,6 +179,16 @@ def review_row(row: dict[str, Any]) -> dict[str, Any]:
     )
 
     checks = [
+        check("dictionary_contract_must_pass", dictionary_contract.get("passed") is True),
+        check("single_map_visual_scope_active", dictionary_contract.get("activeScope") == "single_complete_map_visual"),
+        check(
+            "dictionary_must_have_no_unregistered_hard_failures",
+            dictionary_contract.get("summary", {}).get("unregisteredHardFailureCodeCount") == 0,
+        ),
+        check(
+            "dictionary_active_documents_present",
+            not dictionary_contract.get("summary", {}).get("missingActiveDocuments"),
+        ),
         check("vj2_natural_quality_must_pass", vj2_passed),
         check("candidate_must_not_be_display_allowed", row.get("displayAllowed") is False),
         check("candidate_must_not_promote_to_world", row.get("canPromoteToWorld") is False),
@@ -283,6 +340,70 @@ def build_best_candidate(row: dict[str, Any] | None) -> dict[str, Any] | None:
         "blueprint": row.get("blueprint"),
         "gameWorldFrameStatus": row.get("gameWorldFrameStatus"),
     }
+
+
+def load_dictionary_contract(latest_path: Path) -> dict[str, Any]:
+    latest = read_json(latest_path)
+    dictionary_path = Path(str(latest.get("dictionaryPath", "")))
+    if not dictionary_path.is_absolute():
+        dictionary_path = Path.cwd() / dictionary_path
+    dictionary = read_json(dictionary_path.resolve())
+    entries = dictionary.get("entries", [])
+    entry_ids = {entry.get("id") for entry in entries if isinstance(entry, dict)}
+    missing_active_documents = [item for item in ACTIVE_SINGLE_MAP_DOCUMENTS if item not in entry_ids]
+    summary = dictionary.get("summary", {}) if isinstance(dictionary.get("summary"), dict) else {}
+    missing_required_categories = summary.get("missingCategories", [])
+    if not isinstance(missing_required_categories, list):
+        missing_required_categories = []
+    unregistered_hard_failure_count = summary.get("unregisteredHardFailureCodeCount")
+    if unregistered_hard_failure_count is None:
+        unregistered_hard_failure_count = len(dictionary.get("unregisteredHardFailureCodes", []))
+
+    passed = (
+        dictionary.get("schemaVersion") == "world-visual-data-dictionary-export-v1"
+        and latest.get("dictionaryVersionId") == dictionary.get("dictionaryVersionId")
+        and not missing_required_categories
+        and not missing_active_documents
+        and unregistered_hard_failure_count == 0
+    )
+
+    return {
+        "schemaVersion": "world-visual-dictionary-runtime-contract-v1",
+        "dictionaryVersionId": dictionary.get("dictionaryVersionId"),
+        "dictionaryStatus": dictionary.get("status"),
+        "latestPath": project_path(latest_path),
+        "dictionaryPath": project_path(dictionary_path),
+        "generatedAt": dictionary.get("generatedAt"),
+        "activeScope": "single_complete_map_visual",
+        "reservedScopes": [
+            "player_character",
+            "player_movement",
+            "click_interaction",
+            "build_interaction",
+            "multi_tick_runtime_state",
+        ],
+        "requiredActiveDocuments": ACTIVE_SINGLE_MAP_DOCUMENTS,
+        "requiredTaskPackageFields": REQUIRED_TASK_PACKAGE_FIELDS,
+        "requiredDirectorOutputFields": REQUIRED_DIRECTOR_OUTPUT_FIELDS,
+        "summary": {
+            "documentCount": summary.get("documentCount"),
+            "entryCount": summary.get("entryCount", len(entries)),
+            "categoryCount": len(summary.get("categories", {})) if isinstance(summary.get("categories"), dict) else None,
+            "registeredFailureCodeCount": summary.get("registeredFailureCodeCount"),
+            "hardFailureCodeCount": summary.get("hardFailureCodeCount"),
+            "unregisteredHardFailureCodeCount": unregistered_hard_failure_count,
+            "missingRequiredCategories": missing_required_categories,
+            "missingActiveDocuments": missing_active_documents,
+        },
+        "passed": passed,
+    }
+
+
+def project_path(path_value: Path) -> str:
+    try:
+        return path_value.resolve().relative_to(Path.cwd().resolve()).as_posix()
+    except ValueError:
+        return str(path_value.resolve())
 
 
 def read_json(path: Path) -> dict[str, Any]:

@@ -18,6 +18,8 @@ export type HomeMapRect = HomeMapPoint & {
 
 export type HomeMapTerrainKind =
   | "grass"
+  | "mud_patch"
+  | "tall_grass"
   | "water"
   | "shoreline"
   | "path_ground"
@@ -209,6 +211,8 @@ function isHomeMapGenerationPolicy(
 function isHomeMapTerrainKind(value: unknown): value is HomeMapTerrainKind {
   return (
     value === "grass" ||
+    value === "mud_patch" ||
+    value === "tall_grass" ||
     value === "water" ||
     value === "shoreline" ||
     value === "path_ground" ||

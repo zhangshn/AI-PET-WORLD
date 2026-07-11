@@ -2,6 +2,17 @@ import fs from "node:fs"
 import path from "node:path"
 import crypto from "node:crypto"
 import { spawnSync } from "node:child_process"
+import {
+  assertWorldVisualDictionaryContract,
+  loadWorldVisualDictionaryContract,
+  tryLoadWorldVisualDictionaryContract,
+} from "./lib/world-visual-dictionary-contract.mjs"
+import {
+  completeTrainingControlRun,
+  failTrainingControlRun,
+  startTrainingControlRun,
+  updateTrainingControlStep,
+} from "./lib/ai-painter-training-control.mjs"
 
 const inferenceRoot = path.resolve(".runtime/game-map-material-slot-inference-runs")
 const approvedPackRoot = path.resolve(".runtime/game-map-approved-material-packs")
@@ -123,11 +134,14 @@ function pngMeta(filePath) {
 }
 
 function collectTrainingSummary(category) {
-  const summaryPath = path.resolve(
-    `.runtime/ai-painter/natural-home-local-detail-v46-ground-road-repair-training/${category}/training-summary.json`,
-  )
-  if (!fs.existsSync(summaryPath)) return null
+  const summaryPath = collectFiles(aiPainterRoot, "training-summary.json")
+    .find((filePath) => path.basename(path.dirname(filePath)) === category)
+  if (!summaryPath || !fs.existsSync(summaryPath)) return null
   return { summaryPath, summary: readJson(summaryPath) }
+}
+
+function findLatestCombinedModelManifest() {
+  return collectFiles(aiPainterRoot, "combined-model-root-manifest.json")[0] ?? null
 }
 
 function findLatestPassedMaterialReport() {
@@ -138,6 +152,12 @@ function findLatestPassedMaterialReport() {
     }
   }
   return null
+}
+
+function findLatestMaterialReport() {
+  const reportPath = collectFiles(inferenceRoot, "material-quality-report.json")[0] ?? null
+  if (!reportPath) return null
+  return { reportPath, report: readJson(reportPath) }
 }
 
 function findLatestApprovedPackPath() {
@@ -157,6 +177,18 @@ function findLatestFormalVisualJudge() {
 }
 
 function buildVisualDeltaReview(input) {
+  const materialSlots = Array.isArray(input.materialReport?.slots) ? input.materialReport.slots : []
+  const failedMaterialSlots = materialSlots
+    .filter((slot) => slot?.passed === false)
+    .map((slot) => ({
+      slotId: slot.slotId,
+      unitKind: slot.unitKind,
+      issues: Array.isArray(slot.issues) ? slot.issues : [],
+      metrics: slot.metrics ?? null,
+    }))
+  const formalIssues = Array.isArray(input.formalVisualJudge?.issues)
+    ? input.formalVisualJudge.issues
+    : []
   const priorityIssues = [
     {
       id: "road-naturalization",
@@ -212,6 +244,211 @@ function buildVisualDeltaReview(input) {
     },
   ]
 
+  if (failedMaterialSlots.some((slot) => slot.issues.includes("grass_material_palette_too_low_for_game_terrain"))) {
+    priorityIssues.unshift({
+      id: "strict-grass-palette-density",
+      severity: "high",
+      title: "grass palette density failed",
+      observedProblem:
+        "Grass material failed the strict professional-game palette-density gate; it still reads as a blurred green base texture.",
+      targetSlots: ["slot-terrain-terrain-terrain-current-grass-main"],
+      nextTrainingRequirement:
+        "Select and train from richer grass patches with higher quantized-color diversity, visible grass blades, flowers, and light/dark terrain rhythm.",
+      acceptance:
+        "Grass must pass grass_material_palette_too_low_for_game_terrain and formal_world_frame_grass_palette_density_too_low gates.",
+    })
+  }
+  if (
+    failedMaterialSlots.some((slot) =>
+      slot.issues.includes("material_edge_density_too_low") &&
+      slot.unitKind === "grass_texture"
+    )
+  ) {
+    priorityIssues.unshift({
+      id: "strict-model-dominant-grass-detail",
+      severity: "high",
+      title: "model-dominant grass detail failed",
+      observedProblem:
+        "With procedural texture injection disabled, the grass model output is too smooth and lacks enough edge/detail density.",
+      targetSlots: ["slot-terrain-terrain-terrain-current-grass-main"],
+      nextTrainingRequirement:
+        "Retrain grass with stronger edge, texture, laplacian, gradient, and color-range losses so the local model itself creates professional game terrain detail.",
+      acceptance:
+        "Grass must pass material_edge_density_too_low and grass_material_palette_too_low_for_game_terrain under model_dominant_material_output inference.",
+    })
+  }
+  if (failedMaterialSlots.some((slot) => slot.issues.includes("material_contrast_too_low"))) {
+    priorityIssues.unshift({
+      id: "strict-material-contrast",
+      severity: "high",
+      title: "material contrast too low",
+      observedProblem:
+        "One or more material slots failed the strict contrast gate. The current complete map cannot advance to approved material pack or composite RuntimeFrame until those slots pass.",
+      targetSlots: failedMaterialSlots
+        .filter((slot) => slot.issues.includes("material_contrast_too_low"))
+        .map((slot) => slot.slotId),
+      nextTrainingRequirement:
+        "Retrain or refine the failed material category with stronger local luminance variation, clearer high-frequency detail, and preserved natural palette.",
+      acceptance:
+        "Every target slot must pass material_contrast_too_low in the material quality report before composite RuntimeFrame writing is allowed.",
+    })
+  }
+  if (failedMaterialSlots.some((slot) => slot.issues.includes("path_material_palette_too_repetitive"))) {
+    priorityIssues.unshift({
+      id: "strict-path-material-variation",
+      severity: "high",
+      title: "path material repetitive",
+      observedProblem:
+        "Path material failed the strict professional-game material-variation gate; it reads as a repeated brick/tile road.",
+      targetSlots: [
+        "slot-terrain-path-corridor-path-current-entry-to-home",
+        "slot-terrain-path-corridor-path-current-home-to-water",
+      ],
+      nextTrainingRequirement:
+        "Select and train from irregular natural dirt-road patches with more color variation, broken edges, grass intrusion, and non-periodic detail.",
+      acceptance:
+        "Path must pass path_material_palette_too_repetitive and formal_world_frame_path_repetitive_brick_artifact gates.",
+    })
+  }
+  if (failedMaterialSlots.some((slot) => slot.issues.includes("path_green_contamination_suspected"))) {
+    priorityIssues.unshift({
+      id: "strict-model-dominant-path-color",
+      severity: "high",
+      title: "model-dominant path color failed",
+      observedProblem:
+        "With procedural texture injection disabled, one road slot is too green and no longer reads as coherent path material.",
+      targetSlots: failedMaterialSlots
+        .filter((slot) => slot.issues.includes("path_green_contamination_suspected"))
+        .map((slot) => slot.slotId),
+      nextTrainingRequirement:
+        "Retrain road with stronger road and road-edge structure weights so the local model separates earth path color from grass contamination.",
+      acceptance:
+        "Road slots must pass path_green_contamination_suspected under model_dominant_material_output inference.",
+    })
+  }
+  const contaminatedGrassSlots = failedMaterialSlots.filter((slot) =>
+    slot.unitKind === "grass_texture" &&
+    slot.issues.some((issue) =>
+      [
+        "grass_material_water_contamination_suspected",
+        "grass_material_path_fragment_suspected",
+        "grass_material_pale_paste_fragment_suspected",
+        "grass_material_blue_object_fragment_suspected",
+        "grass_material_object_fragment_suspected",
+      ].includes(issue)
+    )
+  )
+  if (contaminatedGrassSlots.length > 0) {
+    priorityIssues.unshift({
+      id: "strict-grass-material-contamination",
+      severity: "high",
+      title: "grass material contamination failed",
+      observedProblem:
+        "One or more grass-family terrain slots contain water, path, pale paste, blue object, or dark object fragments; material quality must block them before a complete RuntimeFrame can be composed.",
+      targetSlots: contaminatedGrassSlots.map((slot) => slot.slotId),
+      nextTrainingRequirement:
+        "Retrain grass-family terrain materials so mud and tall-grass regions keep natural ground identity without importing water, road, object, or pasted highlight fragments.",
+      acceptance:
+        "Every target slot must clear grass_material_water_contamination_suspected, grass_material_path_fragment_suspected, grass_material_pale_paste_fragment_suspected, grass_material_blue_object_fragment_suspected, and grass_material_object_fragment_suspected.",
+    })
+  }
+  if (formalIssues.some((issue) => issue?.code === "formal_world_frame_grass_palette_density_too_low")) {
+    priorityIssues.unshift({
+      id: "formal-grass-palette-density",
+      severity: "high",
+      title: "formal grass palette density failed",
+      observedProblem:
+        "The complete /world frame grass has too little local color variation and reads as a blurred base texture.",
+      targetSlots: ["slot-terrain-terrain-terrain-current-grass-main"],
+      nextTrainingRequirement:
+        "Repair the grass material from the latest approved baseline with richer local palette density, visible blade clusters, flowers, and light/dark terrain rhythm.",
+      acceptance:
+        "The next complete map must clear formal_world_frame_grass_palette_density_too_low without lowering the formal judge threshold.",
+    })
+  }
+  if (formalIssues.some((issue) => issue?.code === "formal_world_frame_muddy_grass_field_artifact")) {
+    priorityIssues.unshift({
+      id: "formal-muddy-grass-field",
+      severity: "high",
+      title: "formal muddy grass field failed",
+      observedProblem:
+        "The complete /world frame grass still reads as muddy training noise instead of deliberate game terrain material.",
+      targetSlots: ["slot-terrain-terrain-terrain-current-grass-main"],
+      nextTrainingRequirement:
+        "Repair grass using cleaner earth-to-grass transitions and natural detail contrast while avoiding camouflage-like noise.",
+      acceptance:
+        "The next complete map must clear formal_world_frame_muddy_grass_field_artifact and preserve readable grass coverage.",
+    })
+  }
+  if (formalIssues.some((issue) => issue?.code === "formal_world_frame_path_repetitive_brick_artifact")) {
+    priorityIssues.unshift({
+      id: "formal-path-naturalization",
+      severity: "high",
+      title: "formal path repetition failed",
+      observedProblem:
+        "The complete /world frame road reads as a repeated brick or tile texture instead of a natural playable route.",
+      targetSlots: [
+        "slot-terrain-path-corridor-path-current-entry-to-home",
+        "slot-terrain-path-corridor-path-current-home-to-water",
+      ],
+      nextTrainingRequirement:
+        "Repair road material with irregular natural dirt, broken edges, grass intrusion, and non-periodic detail.",
+      acceptance:
+        "The next complete map must clear formal_world_frame_path_repetitive_brick_artifact and keep route readability.",
+    })
+  }
+  if (formalIssues.some((issue) => issue?.code === "formal_world_frame_shoreline_pasted_strip_artifact")) {
+    priorityIssues.unshift({
+      id: "formal-shoreline-integration",
+      severity: "high",
+      title: "formal shoreline pasted strip failed",
+      observedProblem:
+        "The complete /world frame shoreline reads as an unintegrated pasted material strip.",
+      targetSlots: ["slot-terrain-terrain-terrain-current-shoreline-east"],
+      nextTrainingRequirement:
+        "Repair shoreline material with natural grass-water transition, broken edge shapes, shallow-bank color steps, and reduced vertical strip feel.",
+      acceptance:
+        "The next complete map must clear formal_world_frame_shoreline_pasted_strip_artifact without reducing visible water.",
+    })
+  }
+  if (failedMaterialSlots.some((slot) => slot.issues.includes("object_material_bright_paste_border_suspected"))) {
+    priorityIssues.unshift({
+      id: "strict-object-paste-border",
+      severity: "medium",
+      title: "object paste border failed",
+      observedProblem:
+        "Some object materials failed the strict bright-border gate and still read as pasted decals.",
+      targetSlots: failedMaterialSlots
+        .filter((slot) => slot.issues.includes("object_material_bright_paste_border_suspected"))
+        .map((slot) => slot.slotId),
+      nextTrainingRequirement:
+        "Repair object alpha, foot shadow, edge transparency, and local ground-color harmony so objects sit into terrain instead of floating above it.",
+      acceptance:
+        "Object slots must pass object_material_bright_paste_border_suspected and must not show hard bright borders in the composite map.",
+    })
+  }
+
+  const strictTargetSlots = [
+    ...new Set(
+      priorityIssues
+        .filter((issue) => issue.id.startsWith("strict-"))
+        .flatMap((issue) => issue.targetSlots),
+    ),
+  ]
+  const formalTargetSlots = [
+    ...new Set(
+      priorityIssues
+        .filter((issue) => issue.id.startsWith("formal-"))
+        .flatMap((issue) => issue.targetSlots),
+    ),
+  ]
+  const nextTargetSlots =
+    strictTargetSlots.length > 0
+      ? strictTargetSlots
+      : formalTargetSlots.length > 0
+        ? formalTargetSlots
+      : [...new Set(priorityIssues.flatMap((issue) => issue.targetSlots))]
+
   return {
     schemaVersion: "ai-painter-visual-delta-review-v1",
     generatedAt: input.finishedAt,
@@ -224,6 +461,8 @@ function buildVisualDeltaReview(input) {
       compositeImage: projectRelative(input.compositeOutputPath),
       machineMaterialPassed: input.materialReport?.passed === true,
       machineFormalVisualJudgePassed: input.formalVisualJudge?.passed === true,
+      failedMaterialSlots,
+      formalIssues,
       ownerReviewStatus: "pending_owner_review",
     },
     conclusion:
@@ -232,13 +471,15 @@ function buildVisualDeltaReview(input) {
     nextTrainingPlan: {
       focus: "先做材料槽局部修复，再合成完整画面复核。",
       mustKeep: ["每轮保存参考图", "每轮保存完整输出图", "每轮保存全部材料槽图", "每轮保存训练摘要", "每轮保存失败复盘"],
-      targetSlots: [...new Set(priorityIssues.flatMap((issue) => issue.targetSlots))],
+      targetSlots: nextTargetSlots,
       stopCondition: "人工确认接近参考图的自然像素质感后，才允许进入正式 /world 展示闭合。",
     },
   }
 }
 
 function buildRunArchive(input) {
+  const dictionaryContract = input.dictionaryContract ?? loadWorldVisualDictionaryContract()
+  assertWorldVisualDictionaryContract(dictionaryContract)
   const runId = `game-map-material-slot-v46-${input.startedAt.replace(/[:.]/g, "-")}`
   const archiveDir = path.join(runArchiveRoot, runId)
   const imagesDir = path.join(archiveDir, "images")
@@ -248,15 +489,15 @@ function buildRunArchive(input) {
 
   fs.mkdirSync(archiveDir, { recursive: true })
 
-  const compositeOutputPath = findLatestCompositeOutput()
-  const compositorAuditPath = findLatestCompositorAudit()
-  const formalVisualJudgePath = findLatestFormalVisualJudge()
-  const runtimeFrameCandidatePath = path.join(candidateRoot, "latest-runtime-frame.json")
+  const materialReport = input.materialQualityReportPath ? readJson(input.materialQualityReportPath) : null
+  const materialPassed = materialReport?.passed === true && materialReport?.status === "game_map_material_quality_passed"
+  const compositeOutputPath = materialPassed ? findLatestCompositeOutput() : null
+  const compositorAuditPath = materialPassed ? findLatestCompositorAudit() : null
+  const formalVisualJudgePath = materialPassed ? findLatestFormalVisualJudge() : null
+  const runtimeFrameCandidatePath = materialPassed ? path.join(candidateRoot, "latest-runtime-frame.json") : null
   const grassTraining = collectTrainingSummary("grass")
   const roadTraining = collectTrainingSummary("road")
-  const combinedModelManifestPath = path.resolve(
-    ".runtime/ai-painter/natural-home-local-detail-v46-ground-road-repair-combined/combined-model-root-manifest.json",
-  )
+  const combinedModelManifestPath = findLatestCombinedModelManifest()
   const datasetSummaryPath = path.resolve(".runtime/ai-painter/game-map-material-slot-v45-repair-dataset/dataset-summary.json")
 
   const archivedReference = copyIfExists(referenceBaselineImagePath, path.join(imagesDir, "reference-baseline.png"))
@@ -272,15 +513,23 @@ function buildRunArchive(input) {
   const archivedRoadSummary = copyIfExists(roadTraining?.summaryPath, path.join(reportsDir, "training-summary-road.json"))
   const archivedModelManifest = copyIfExists(combinedModelManifestPath, path.join(modelDir, "model-root-manifest.json"))
 
-  const materialReport = input.materialQualityReportPath ? readJson(input.materialQualityReportPath) : null
   const formalVisualJudge = formalVisualJudgePath && fs.existsSync(formalVisualJudgePath) ? readJson(formalVisualJudgePath) : null
-  const runtimeFrameCandidate = fs.existsSync(runtimeFrameCandidatePath) ? readJson(runtimeFrameCandidatePath) : null
+  const runtimeFrameCandidate = runtimeFrameCandidatePath && fs.existsSync(runtimeFrameCandidatePath) ? readJson(runtimeFrameCandidatePath) : null
   const visualDeltaReview = buildVisualDeltaReview({
     finishedAt: input.finishedAt,
     compositeOutputPath,
     materialReport,
     formalVisualJudge,
   })
+  const failedMaterialSlotsForManifest = Array.isArray(materialReport?.slots)
+    ? materialReport.slots
+        .filter((slot) => slot?.passed === false)
+        .map((slot) => ({
+          slotId: slot.slotId,
+          unitKind: slot.unitKind,
+          issues: Array.isArray(slot.issues) ? slot.issues : [],
+        }))
+    : materialReport?.failedSlots ?? []
   const archivedVisualDeltaReview = path.join(reportsDir, "visual-delta-review.json")
   writeJson(archivedVisualDeltaReview, visualDeltaReview)
 
@@ -289,6 +538,7 @@ function buildRunArchive(input) {
     runId,
     action: "full_game_map_material_slot_v46_runtime_frame",
     status: input.status,
+    dictionaryContract,
     startedAt: input.startedAt,
     finishedAt: input.finishedAt,
     purpose:
@@ -331,7 +581,7 @@ function buildRunArchive(input) {
       archivedMaterialQualityReport: projectRelative(archivedMaterialReport),
       materialStatus: materialReport?.status ?? null,
       materialPassed: materialReport?.passed ?? null,
-      failedSlots: materialReport?.failedSlots ?? [],
+      failedSlots: failedMaterialSlotsForManifest,
       formalVisualJudgePath: projectRelative(formalVisualJudgePath),
       archivedFormalVisualJudge: projectRelative(archivedFormalVisualJudge),
       formalVisualJudgeStatus: formalVisualJudge?.status ?? null,
@@ -390,24 +640,39 @@ function buildRunArchive(input) {
 
 function main() {
   const startedAt = new Date().toISOString()
+  const controlRun = startTrainingControlRun(
+    "full_game_map_material_slot_v46_runtime_frame",
+    process.argv.includes("--archive-existing")
+      ? "archive_existing_game_map_material_slot_runtime_outputs"
+      : "game_map_material_slot_v46_runtime_pipeline_started",
+  )
+  let dictionaryContract = null
   try {
+    dictionaryContract = loadWorldVisualDictionaryContract()
+    assertWorldVisualDictionaryContract(dictionaryContract)
     if (process.argv.includes("--archive-existing")) {
-      const materialReport = findLatestPassedMaterialReport()
+      updateTrainingControlStep(controlRun, "archive_existing_material_quality_report")
+      const materialReport = findLatestMaterialReport()
       if (!materialReport?.report?.materialDir) {
-        throw new Error("latest_passed_material_quality_report_missing")
+        throw new Error("latest_material_quality_report_missing")
       }
-      const approvedPackPath = findLatestApprovedPackPath()
-      if (!approvedPackPath) {
+      const approvedPackPath =
+        materialReport.report.passed === true ? findLatestApprovedPackPath() : null
+      if (materialReport.report.passed === true && !approvedPackPath) {
         throw new Error("latest_approved_material_pack_missing")
       }
       const finishedAt = new Date().toISOString()
       const archive = buildRunArchive({
-        status: "archived_existing",
+        status:
+          materialReport.report.passed === true
+            ? "archived_existing"
+            : "archived_existing_failed_material_quality",
         startedAt,
         finishedAt,
         materialQualityReportPath: materialReport.reportPath,
         materialDir: materialReport.report.materialDir,
         approvedPackPath,
+        dictionaryContract,
       })
       writeReport({
         ok: true,
@@ -418,6 +683,7 @@ function main() {
         trainingRunManifest: archive.files.manifest,
         tags: ["local_small_model_training_pipeline", "self_archived_training_run", "archive_existing_outputs"],
       })
+      completeTrainingControlRun(controlRun, "archive_existing_outputs_completed")
       return
     }
 
@@ -434,14 +700,17 @@ function main() {
     ]
 
     for (const step of steps) {
+      updateTrainingControlStep(controlRun, step)
       runNpmScript(step)
     }
 
+    updateTrainingControlStep(controlRun, "find_latest_passed_material_quality_report")
     const materialReport = findLatestPassedMaterialReport()
     if (!materialReport?.report?.materialDir) {
       throw new Error("latest_passed_material_quality_report_missing")
     }
 
+    updateTrainingControlStep(controlRun, "build_current_game_map_approved_material_pack")
     runNodeScript("scripts/build-current-game-map-approved-material-pack.mjs", [
       runtimeFrameRoot,
       path.resolve(materialReport.report.materialDir),
@@ -453,6 +722,7 @@ function main() {
       throw new Error("latest_approved_material_pack_missing")
     }
 
+    updateTrainingControlStep(controlRun, "write_current_game_map_composite_runtime_frame")
     runNodeScript("scripts/write-current-game-map-composite-runtime-frame.mjs", [
       runtimeFrameRoot,
       approvedPackPath,
@@ -468,6 +738,7 @@ function main() {
       materialQualityReportPath: materialReport.reportPath,
       materialDir: materialReport.report.materialDir,
       approvedPackPath,
+      dictionaryContract,
     })
 
     writeReport({
@@ -488,7 +759,13 @@ function main() {
         "self_archived_training_run",
       ],
     })
+    completeTrainingControlRun(controlRun, "game_map_material_slot_v46_runtime_pipeline_completed")
   } catch (error) {
+    failTrainingControlRun(
+      controlRun,
+      "game_map_material_slot_v46_runtime_pipeline_failed",
+      error,
+    )
     const finishedAt = new Date().toISOString()
     const runId = `game-map-material-slot-v46-${startedAt.replace(/[:.]/g, "-")}`
     const failureArchiveDir = path.join(runArchiveRoot, runId)
@@ -499,6 +776,7 @@ function main() {
       status: "failed",
       startedAt,
       finishedAt,
+      dictionaryContract: tryLoadWorldVisualDictionaryContract(),
       error: error instanceof Error ? error.message : "unknown_pipeline_error",
       manualReview: {
         status: "not_applicable_failed_before_candidate",

@@ -44,6 +44,23 @@ yarn-error.log*
 
 # local runtime adapter saves
 data/*
+!data/live-world/
+!data/live-world/**
+!data/world-visual-data-dictionary/
+!data/world-visual-data-dictionary/**
+!data/world-runs/
+data/world-runs/**
+!data/world-runs/README.md
+!data/world-visual-candidates/
+data/world-visual-candidates/**
+!data/world-visual-candidates/README.md
+!data/world-samples/
+data/world-samples/**
+!data/world-samples/README.md
+!data/world-samples/positive/
+!data/world-samples/positive/README.md
+!data/world-samples/negative/
+!data/world-samples/negative/README.md
 !data/ziwei/
 data/ziwei/*
 !data/ziwei/golden-samples/

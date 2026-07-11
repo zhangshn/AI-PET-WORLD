@@ -1,0 +1,7 @@
+{
+  "readinessId": "p16-runtime-page-readiness-0001",
+  "status": "blocked_waiting_for_approved_visuals",
+  "canRenderWorldPage": false,
+  "readinessPath": "data/live-world/runtime-readiness/p16-runtime-page-readiness.json",
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

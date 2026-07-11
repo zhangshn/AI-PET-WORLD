@@ -1,0 +1,27 @@
+{
+  "manifestVersion": "live-world-p15-training-sample-manifest-v1",
+  "manifestId": "p15-training-sample-manifest-0001",
+  "trainingRunId": "p15-training-run-0001",
+  "entries": [],
+  "positiveCount": 0,
+  "negativeCount": 0,
+  "totalTrainableSamples": 0,
+  "blockedSampleCounts": {
+    "pending": 9,
+    "rejected": 0
+  },
+  "readBoundary": {
+    "allowedSampleRoots": [
+      "data/world-samples/positive",
+      "data/world-samples/negative"
+    ],
+    "forbiddenSampleRoots": [
+      "data/world-samples/pending",
+      "data/world-samples/rejected",
+      "data/world-visual-candidates"
+    ],
+    "allowPending": false,
+    "allowRejected": false
+  },
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

@@ -1,0 +1,6 @@
+{
+  "enabled": false,
+  "stage": "P1",
+  "reason": "auto judge is not implemented in P1",
+  "createdAt": "ISO_TIME"
+}

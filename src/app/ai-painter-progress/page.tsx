@@ -3,19 +3,17 @@ import { ProgressClient } from "./progress-client"
 import styles from "./page.module.css"
 
 export const metadata: Metadata = {
-  title: "AI Painter 本地训练主页 | AI-PET-WORLD",
+  title: "AI Painter 训练主控台 | AI-PET-WORLD",
 }
 
 export default function AiPainterProgressPage() {
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <p className={styles.kicker}>AI-PET-WORLD / LOCAL AI PAINTER</p>
-        <h1>本地模型训练中心</h1>
+        <p className={styles.kicker}>AI-PET-WORLD / AI PAINTER</p>
+        <h1>训练主控台</h1>
         <p>
-          这里展示本地自研 AI Painter 的整体状态、训练入口、GPU 使用、电费估算和本地计算记录。
-          当前主线是纯自然家园视觉底座训练；它是未来动态世界的基础视觉单元，不是最终静态世界。
-          未通过 VisualJudge 与 ApprovedFrame 链路的输出不会进入正式世界页面。
+          主页只保留关键状态和入口按钮。完整地图训练、候选图审核、自动训练日志、数据字典、生成归档和训练目录都从入口进入，避免所有训练内容堆在一个页面里。
         </p>
       </header>
       <ProgressClient />

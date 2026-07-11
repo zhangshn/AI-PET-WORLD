@@ -1,0 +1,11 @@
+{
+  "runId": "run-poc0-example",
+  "stage": "P1",
+  "inputPath": "data/world-runs/run-poc0-example/input.chunk.json",
+  "outputImagePath": "data/world-runs/run-poc0-example/output.image.png",
+  "outputMetaPath": "data/world-runs/run-poc0-example/output.meta.json",
+  "autoJudgePath": "data/world-runs/run-poc0-example/auto-judge.json",
+  "manualReviewPath": "data/world-runs/run-poc0-example/manual-review.json",
+  "sampleDecisionPath": "data/world-runs/run-poc0-example/sample-decision.json",
+  "notes": "Template only. Runtime artifacts stay ignored unless explicitly promoted."
+}

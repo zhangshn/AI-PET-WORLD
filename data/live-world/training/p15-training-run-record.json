@@ -1,0 +1,32 @@
+{
+  "trainingRunVersion": "live-world-p15-training-run-v1",
+  "trainingRunId": "p15-training-run-0001",
+  "status": "blocked_no_trainable_samples",
+  "sampleManifestPath": "data/live-world/training/p15-training-sample-manifest.json",
+  "configSnapshot": {
+    "configVersion": "live-world-p15-training-config-v1",
+    "modelFamily": "ai-painter-natural-home",
+    "trainingMode": "blocked-plan-only",
+    "command": null,
+    "datasetRoot": null,
+    "outputRoot": ".runtime/ai-painter/live-world-p15-training-blocked",
+    "seed": 20260706,
+    "maxEpochs": null,
+    "reason": "No owner-approved positive or negative samples exist after P12."
+  },
+  "outputArchivePlan": {
+    "outputRoot": ".runtime/ai-painter/live-world-p15-training-blocked",
+    "checkpointPath": null,
+    "metricsPath": null,
+    "logPath": null,
+    "generatedCandidateRoot": null,
+    "canWriteModelArtifact": false
+  },
+  "blockedReasons": [
+    "P12 decisions are pending owner review.",
+    "No candidate was approved as a positive sample.",
+    "No candidate was approved as a negative sample."
+  ],
+  "nextAllowedAction": "Complete P12 owner decisions and rebuild the P15 training sample manifest.",
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

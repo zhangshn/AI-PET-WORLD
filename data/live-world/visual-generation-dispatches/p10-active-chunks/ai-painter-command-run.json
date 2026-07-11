@@ -1,0 +1,146 @@
+{
+  "runVersion": "live-world-p10-ai-painter-command-run-v1",
+  "runId": "p10-ai-painter-command-run-0001",
+  "dispatchId": "p10-ai-painter-dispatch-0001",
+  "status": "completed",
+  "aiPainterCommand": "node scripts/run-live-world-p10-local-ai-painter-adapter.mjs",
+  "entries": [
+    {
+      "candidateId": "p10-active-chunk-candidate-01",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1--1",
+      "inputPath": "data/world-visual-candidates/p10-active-chunk-candidate-01/input.chunk.json",
+      "outputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-01/output.image.png",
+      "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-01/output.meta.json",
+      "status": "generated",
+      "exitCode": 0,
+      "imageGenerated": true,
+      "imageHash": "edfab5ea4feb0711f3c77d064a6875b4af4c33e8fcbcfedf7dea8dbef63f45b6",
+      "errorMessage": null
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-02",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0--1",
+      "inputPath": "data/world-visual-candidates/p10-active-chunk-candidate-02/input.chunk.json",
+      "outputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-02/output.image.png",
+      "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-02/output.meta.json",
+      "status": "generated",
+      "exitCode": 0,
+      "imageGenerated": true,
+      "imageHash": "d4f231210e67c57b514efddfe96e097570f7a7e86e32402eb230abf6dd80debc",
+      "errorMessage": null
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-03",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1--1",
+      "inputPath": "data/world-visual-candidates/p10-active-chunk-candidate-03/input.chunk.json",
+      "outputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-03/output.image.png",
+      "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-03/output.meta.json",
+      "status": "generated",
+      "exitCode": 0,
+      "imageGenerated": true,
+      "imageHash": "14b6060370c25becc33cc2cc569f3b89a56033f94ca67b8610a0efd49718edfd",
+      "errorMessage": null
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-04",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1-0",
+      "inputPath": "data/world-visual-candidates/p10-active-chunk-candidate-04/input.chunk.json",
+      "outputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-04/output.image.png",
+      "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-04/output.meta.json",
+      "status": "generated",
+      "exitCode": 0,
+      "imageGenerated": true,
+      "imageHash": "ed7af90b4ef8091c61969d7fc1ad36ee6b8defb1957adf845a7f322c6db04a16",
+      "errorMessage": null
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-05",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0-0",
+      "inputPath": "data/world-visual-candidates/p10-active-chunk-candidate-05/input.chunk.json",
+      "outputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-05/output.image.png",
+      "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-05/output.meta.json",
+      "status": "generated",
+      "exitCode": 0,
+      "imageGenerated": true,
+      "imageHash": "59ac7227670bea86591c6d943dd9f0df60836afc04e326221c289e293876fa22",
+      "errorMessage": null
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-06",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1-0",
+      "inputPath": "data/world-visual-candidates/p10-active-chunk-candidate-06/input.chunk.json",
+      "outputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-06/output.image.png",
+      "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-06/output.meta.json",
+      "status": "generated",
+      "exitCode": 0,
+      "imageGenerated": true,
+      "imageHash": "ebcf916211507489b9e0e8f8d93ccd5e5b45eb78e0f0ddbff8c488efa81d9000",
+      "errorMessage": null
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-07",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1-1",
+      "inputPath": "data/world-visual-candidates/p10-active-chunk-candidate-07/input.chunk.json",
+      "outputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-07/output.image.png",
+      "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-07/output.meta.json",
+      "status": "generated",
+      "exitCode": 0,
+      "imageGenerated": true,
+      "imageHash": "d71dc2c3062b22b406e5a7ef5ca4487b2438c3d63036c4bab57d7f81b383f962",
+      "errorMessage": null
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-08",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0-1",
+      "inputPath": "data/world-visual-candidates/p10-active-chunk-candidate-08/input.chunk.json",
+      "outputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-08/output.image.png",
+      "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-08/output.meta.json",
+      "status": "generated",
+      "exitCode": 0,
+      "imageGenerated": true,
+      "imageHash": "c708f0815c6e7918267e7621cc1774f8250c3b6f462f6b89ff7321301f2bc1fe",
+      "errorMessage": null
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-09",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1-1",
+      "inputPath": "data/world-visual-candidates/p10-active-chunk-candidate-09/input.chunk.json",
+      "outputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-09/output.image.png",
+      "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-09/output.meta.json",
+      "status": "generated",
+      "exitCode": 0,
+      "imageGenerated": true,
+      "imageHash": "eca08d4899b12ee63181477088f848f5b8bf520beb5e8cea1ca2abe97c3db7b9",
+      "errorMessage": null
+    }
+  ],
+  "generatedCount": 9,
+  "failedCount": 0,
+  "blockedCount": 0,
+  "commandProtocol": {
+    "inputEnv": [
+      "LIVE_WORLD_CANDIDATE_ID",
+      "LIVE_WORLD_CHUNK_ID",
+      "LIVE_WORLD_INPUT_PATH",
+      "LIVE_WORLD_OUTPUT_IMAGE_PATH",
+      "LIVE_WORLD_OUTPUT_META_PATH",
+      "LIVE_WORLD_CANDIDATE_ROOT"
+    ],
+    "outputFiles": [
+      "output.image.png",
+      "output.meta.json"
+    ],
+    "successCriteria": [
+      "process exit code is 0",
+      "output.image.png exists",
+      "output image sha256 can be computed",
+      "candidate remains outside approved visuals until review passes"
+    ]
+  },
+  "forbiddenSideEffects": {
+    "writesApprovedVisuals": false,
+    "writesTrainingSamples": false,
+    "bypassesRuntimePageGate": false
+  },
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

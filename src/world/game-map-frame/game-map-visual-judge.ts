@@ -150,7 +150,10 @@ export function judgeGameMapFrameForRuntime(
   }
   if (frame.interactionLayer.items.length === 0) {
     issues.push(
-      error("interaction_layer_empty", "GameMapFrame interactionLayer must not be empty.")
+      warning(
+        "interaction_layer_reserved_current_scope",
+        "Interaction layer is reserved for later player and interaction work; the current single-map visual scope allows it to be empty."
+      )
     )
   }
 
@@ -191,6 +194,14 @@ function error(code: string, message: string): GameMapVisualJudgeIssue {
   return {
     code,
     severity: "error",
+    message,
+  }
+}
+
+function warning(code: string, message: string): GameMapVisualJudgeIssue {
+  return {
+    code,
+    severity: "warning",
     message,
   }
 }

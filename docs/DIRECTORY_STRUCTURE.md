@@ -1,132 +1,97 @@
-# AI-PET-WORLD 目录结构说明
+# AI-PET-WORLD 文档与项目目录结构
 
-更新：2026-07-06
+更新时间：2026-07-11 12:32:00 +08:00
 
-本文定义项目目录职责，防止训练内容、候选图、正式世界数据、文档和 Runtime 数据混用。
+状态：active-reference / 已规整 / 不决定当前执行顺序
 
-## 1. 根目录职责
+不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
-| 目录 / 文件 | 职责 |
+## 1. 项目根目录
+
+| 路径 | 唯一职责 |
 |---|---|
-| `README.md` | 项目总入口，只放导航、固定方向和当前主线。 |
-| `docs/` | 正式业务、架构、计划、进度、目录文档。 |
-| `src/` | Next.js 页面、API、世界 Runtime、地图结构、视觉闸门。 |
-| `ml/ai-painter/` | 本地 AI Painter 小模型、训练、推理、数据工具。 |
-| `data/` | 需要进入项目生命周期的结构化数据、正式记录、训练集。 |
-| `.runtime/` | 本地运行、训练、候选、失败、临时 Runtime 产物。 |
-| `scripts/` | 检查、生成、训练、归档、合成脚本。 |
+| `README.md` | 项目总入口、两大核心业务和当前工作导航。 |
+| `AGENTS.md` | 所有智能体必须执行的读取顺序和边界。 |
+| `docs/` | 当前有效的业务、架构、数据定义和程序契约；不保存旧文档。 |
+| `src/` | 页面、API、AI 管家、世界 Runtime 和游戏地图代码。 |
+| `ml/ai-painter/` | 本地视觉模型、训练、推理和数据处理。 |
+| `scripts/` | 自动检查、训练、推理、审核、归档和合成入口。 |
+| `data/` | 可版本化的结构化事实、字典导出、训练样本和正式记录。 |
+| `.runtime/` | 程序自动生成的运行状态、图片、模型、日志、审核和失败证据。 |
 
-## 2. 文档目录
+## 2. 正式文档目录
 
-| 文件 | 职责 |
-|---|---|
-| `docs/BUSINESS_SPEC.md` | 业务规则、MVP 边界、AI Painter 边界、`/world` 展示规则。 |
-| `docs/ARCHITECTURE.md` | 业务架构图、技术架构图、数据流、模块边界。 |
-| `docs/DIRECTORY_STRUCTURE.md` | 目录职责和文件放置规则。 |
-| `docs/EXECUTION_PLAN.md` | 唯一执行计划表。 |
-| `docs/PROGRESS.md` | 当前进度表，每次工作后只更新这里。 |
-| `docs/ziwei/` | 紫微模块文档。当前自然家园视觉主线不修改。 |
+```text
+docs/
+├─ DOCUMENT_AUTHORITY_INDEX.md
+├─ DOCUMENTATION_POLICY.md
+├─ BUSINESS_SPEC.md
+├─ ARCHITECTURE.md
+├─ DIRECTORY_STRUCTURE.md
+├─ game-world-generation/
+│  ├─ CURRENT_EXECUTION_GUIDE_20260710.md
+│  ├─ AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md
+│  ├─ TRAINING_DATA_AND_SOURCE_POLICY.md
+│  └─ REVIEW_AUTOMATION_AND_STORAGE_SPEC.md
+├─ world-visual-data-dictionary/
+├─ ai-painter-progress/
+└─ ziwei/
+```
 
-文档规则：
-
-| 规则 | 说明 |
-|---|---|
-| 总入口只导航 | `README.md` 不承载长计划和实时进度。 |
-| 计划只在 `EXECUTION_PLAN.md` | 不再创建临时计划文档。 |
-| 进度只在 `PROGRESS.md` | 每次只更新进度表，不在多个文档散落进度。 |
-| 架构只在 `ARCHITECTURE.md` | 不用临时方案替代正式架构。 |
-| 业务只在 `BUSINESS_SPEC.md` | 不用讨论文本替代业务规则。 |
-
-## 3. 页面目录
-
-| 页面路径 | 职责 | 是否允许展示正式游戏画面 |
+| 路径 | 内容 | 能否决定当前下一步 |
 |---|---|---:|
-| `src/app/world` | 玩家主世界页面 | 允许，但只能展示完整 GameMapRuntimeFrame。 |
-| `src/app/create-world` | 创建世界入口 | 不展示正式世界画面。 |
-| `src/app/ai-painter-progress` | 本地训练中心主页 | 不展示正式世界画面。 |
-| `src/app/ai-painter-progress/generated-results` | 训练后内容归档页 | 不展示正式世界画面。 |
-| `src/app/ai-painter-progress/local-assets` | 本地资源和训练数据查看 | 不展示正式世界画面。 |
-| `src/app/world-visual-control` | 视觉控制或诊断页 | 不展示正式世界画面。 |
+| `docs/DOCUMENT_AUTHORITY_INDEX.md` | 文档优先级和正式入口。 | 否，只治理读取顺序。 |
+| `docs/BUSINESS_SPEC.md` | 两大核心业务和长期业务边界。 | 否。 |
+| `docs/ARCHITECTURE.md` | AI 管家与类地球世界的长期架构。 | 否。 |
+| `docs/game-world-generation/` | 当前完整世界地图架构、模型、审核和执行指南。 | 只有当前执行指南可以。 |
+| `docs/world-visual-data-dictionary/` | 分层视觉事实、对象、地形、过渡、失败码和训练标签。 | 否，是数据标准。 |
+| `docs/ai-painter-progress/` | 后台页面、自动保存、模型对齐、诊断和修复契约。 | 否，是程序契约。 |
+| `docs/ziwei/` | AI 管家人格数据子系统。 | 不参与当前地图顺序。 |
 
-`/world` 禁止显示：
+当前世界地图唯一执行文档：
 
-| 内容 | 原因 |
+```text
+docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md
+```
+
+## 3. 文档清理边界
+
+| 内容 | 处理规则 |
 |---|---|
-| 训练图 | 训练中间产物。 |
-| 候选图 | 未正式通过。 |
-| 失败图 | 只能归档。 |
-| 局部图 | 不是完整游戏地图。 |
-| crop / patch / tile / sprite | 只是素材，不是主世界。 |
-| 单张 ApprovedFrame 图片 | 不是 RuntimeFrame。 |
-| 程序占位图 | 不是正式 AI 视觉结果。 |
+| 旧计划、旧进度表、阶段闭合报告 | 删除，不保留 Markdown 历史副本。 |
+| 重复业务说明和重复架构说明 | 合并进 `BUSINESS_SPEC.md` 或 `ARCHITECTURE.md` 后删除。 |
+| 当前地图架构规格 | 只保留 3 份下级规格，由当前执行指南按任务导航。 |
+| 世界视觉数据字典条目 | 保留分层文件；它们是结构化数据源，不是阶段报告。 |
+| 智能体读取视觉字典 | 只读 README、当前导出 JSON 和任务涉及条目，禁止默认全量读取。 |
+| 页面与自动化锁定规格 | 保留；程序检查直接依赖这些契约。 |
+| 图片、JSON、模型、训练日志、审核记录 | 不属于文档清理范围，继续由程序自动保存。 |
 
-## 4. API 目录
+禁止创建 `history/`、`old-docs/`、`archive-docs/` 或新的平行计划目录。
 
-| API 目录 | 职责 |
+## 4. 两大业务代码边界
+
+| 核心业务 | 主要代码边界 | 主要文档边界 |
+|---|---|---|
+| AI 管家人格与角色自主 | `src/ai/personality-core/`、`src/ai/destiny-core/`、相关管家运行模块 | `docs/BUSINESS_SPEC.md`、`docs/ARCHITECTURE.md`、`docs/ziwei/` |
+| 类地球世界自主运行与生长 | `src/world/`、`src/app/world/`、世界相关 API | `docs/game-world-generation/`、`docs/world-visual-data-dictionary/` |
+
+AI Painter 是类地球世界的视觉表达系统，不能决定世界事实：
+
+| 路径 | 职责 |
 |---|---|
-| `src/app/api/world/create` | 创建世界。 |
-| `src/app/api/world/tick` | 推进世界 tick。 |
-| `src/app/api/world/visual/*` | 世界视觉候选、审核、ApprovedFrame、完整性检查。 |
-| `src/app/api/ai-painter/*` | 本地 AI Painter 训练、推理、归档、状态读取。 |
+| `ml/ai-painter/` | 本地模型训练和推理。 |
+| `src/app/ai-painter-progress/` | 后台查看与控制入口。 |
+| `src/app/api/ai-painter/` | 训练状态、图片、归档和审核 API。 |
+| `.runtime/ai-painter/` | 程序自动保存的训练与推理证据。 |
 
-API 边界：
+## 5. 数据与展示边界
 
-| 规则 | 说明 |
-|---|---|
-| world API 管世界事实 | 不负责训练小模型。 |
-| ai-painter API 管训练和归档 | 不改变世界事实。 |
-| visual API 管候选和审核 | 不直接把图片塞进 `/world`。 |
+| 数据 | 正式位置 | 规则 |
+|---|---|---|
+| 世界事实 | `data/` 或世界 Runtime 存储 | 先于视觉存在。 |
+| 视觉字典导出 | `data/world-visual-data-dictionary/` | 由字典文档导出，供程序读取。 |
+| 训练与推理产物 | `.runtime/ai-painter/` | 成功、失败和中间结果全部自动保存。 |
+| RuntimeFrame | `.runtime/game-map-runtime-frame/` 及正式晋级存储 | 未通过全部闸门不得进入 `/world`。 |
+| 被拒绝结果 | `.runtime` 对应失败归档 | 不删除，不作为正式画面。 |
 
-## 5. 世界模块目录
-
-| 目录 | 职责 |
-|---|---|
-| `src/world/runtime/` | 世界运行、tick、事件、状态。 |
-| `src/world/game-map-frame/` | GameMapFrame、RuntimeFrame、材料包、合成器、闸门。 |
-| `src/world/creation/` | 创建世界输入和世界初始化。 |
-| `src/world/world-visual-painter/` | 视觉事实清单、AI 候选、ApprovedFrame、质量审核和训练数据边界。 |
-| `src/world/game-map-frame/` | GameMapFrame、材料包、RuntimeFrame、合成器和游戏地图闸门。 |
-| `data/visual-units/` | 后置 VisualUnit 数据样例；当前不抢 P7 主线。 |
-
-## 6. AI Painter 目录
-
-| 目录 | 职责 |
-|---|---|
-| `ml/ai-painter/src/` | 小模型、数据集、损失函数、训练工具。 |
-| `ml/ai-painter/scripts/` | 训练、推理、导入、修复、归档脚本。 |
-| `data/ai-painter-datasets/` | 训练数据集和结构化标注。 |
-| `.runtime/ai-painter/generated-results` | 成功、失败、候选、耗时、时间戳、GPU 信息归档。 |
-| `.runtime/ai-painter/training-run-archive` | 每一轮完整训练档案，保存参考图、材料图、完整图、报告、模型清单和人工复核状态。 |
-
-## 7. 正式数据和 Runtime 数据
-
-| 目录 | 职责 |
-|---|---|
-| `data/world-runtime` | 世界 Runtime 当前状态。 |
-| `data/world-approved-frames` | 正式 ApprovedFrame 或 RuntimeFrame 记录。 |
-| `data/world-rejected-frames` | 被打回的视觉记录。 |
-| `.runtime/game-map-runtime-frame` | 本地最新 GameMapRuntimeFrame 输出。 |
-| `.runtime/game-map-rejected-runtime-frames` | 本地被打回的 RuntimeFrame。 |
-| `.runtime/game-map-material-slot-inference-runs` | 材料槽推理运行结果。 |
-| `.runtime/game-map-approved-material-packs` | 已审核材料包。 |
-| `.runtime/game-map-runtime-compositor` | 地图合成器输出和审计。 |
-| `.runtime/ai-painter/training-run-archive/latest.json` | 最新一轮训练档案索引，必须通过 `npm run check:ai-painter-training-run-archive`。 |
-
-正式数据规则：
-
-| 规则 | 说明 |
-|---|---|
-| 正式展示只读 RuntimeFrame | `/world` 不能直接从训练目录读图。 |
-| 失败记录不能删除 | 失败图是质量迭代和审计数据。 |
-| `.runtime` 不等于正式展示源 | `.runtime` 主要是本地运行和训练产物。 |
-| `/world` 必须读 RuntimeFrame | 不从训练目录直接读图。 |
-
-## 8. 禁止混用
-
-| 禁止 | 原因 |
-|---|---|
-| 从 `.runtime/ai-painter/generated-results` 直接喂给 `/world` | 训练归档不是正式世界数据。 |
-| 把单张图当地图结构 | 游戏逻辑无法交互、碰撞、动态更新。 |
-| 把程序画图 fallback 当正式画面 | 违背本地 AI Painter 目标。 |
-| 用图片反推世界事实作为正式数据 | 世界事实必须先存在。 |
-| 新建临时方案文档替代计划 | 后续只能改主文档和进度表。 |
+`/world` 只能展示通过机器审核和项目所有者最终验收的完整 RuntimeFrame；训练图、局部图、候选图、失败图和程序占位图不得进入正式世界。

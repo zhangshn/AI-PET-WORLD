@@ -1,0 +1,8 @@
+{
+  "gateId": "p14-runtime-page-gate-0001",
+  "status": "blocked_no_approved_visuals",
+  "pageGatePath": "data/live-world/page-gates/p14-runtime-page-gate.json",
+  "approvedVisualManifestPath": "data/live-world/approved-visuals/p13-approved-visual-promotion-manifest.json",
+  "canRenderWorldPage": false,
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

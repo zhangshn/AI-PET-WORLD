@@ -1,0 +1,8 @@
+{
+  "trainingRunId": "p15-training-run-0001",
+  "status": "blocked_no_trainable_samples",
+  "sampleManifestPath": "data/live-world/training/p15-training-sample-manifest.json",
+  "trainingRunPath": "data/live-world/training/p15-training-run-record.json",
+  "totalTrainableSamples": 0,
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

@@ -1,0 +1,99 @@
+{
+  "batchVersion": "live-world-p12-owner-review-decision-batch-v1",
+  "batchId": "p12-owner-review-decision-batch-0001",
+  "sourceAutoReviewBatchPath": "data/live-world/visual-reviews/p11-active-chunks/p11-auto-visual-review-batch.json",
+  "status": "blocked_pending_owner_decision",
+  "candidateCount": 9,
+  "approvedCount": 0,
+  "rejectedCount": 0,
+  "pendingCount": 9,
+  "records": [
+    {
+      "candidateId": "p10-active-chunk-candidate-01",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1--1",
+      "ownerReviewPath": "data/live-world/owner-reviews/p12-active-chunks/p10-active-chunk-candidate-01/owner-review-decision.json",
+      "decision": "pending_review",
+      "canPromoteToApprovedVisual": false,
+      "canPromoteToPositiveSample": false,
+      "canPromoteToNegativeSample": false
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-02",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0--1",
+      "ownerReviewPath": "data/live-world/owner-reviews/p12-active-chunks/p10-active-chunk-candidate-02/owner-review-decision.json",
+      "decision": "pending_review",
+      "canPromoteToApprovedVisual": false,
+      "canPromoteToPositiveSample": false,
+      "canPromoteToNegativeSample": false
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-03",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1--1",
+      "ownerReviewPath": "data/live-world/owner-reviews/p12-active-chunks/p10-active-chunk-candidate-03/owner-review-decision.json",
+      "decision": "pending_review",
+      "canPromoteToApprovedVisual": false,
+      "canPromoteToPositiveSample": false,
+      "canPromoteToNegativeSample": false
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-04",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1-0",
+      "ownerReviewPath": "data/live-world/owner-reviews/p12-active-chunks/p10-active-chunk-candidate-04/owner-review-decision.json",
+      "decision": "pending_review",
+      "canPromoteToApprovedVisual": false,
+      "canPromoteToPositiveSample": false,
+      "canPromoteToNegativeSample": false
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-05",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0-0",
+      "ownerReviewPath": "data/live-world/owner-reviews/p12-active-chunks/p10-active-chunk-candidate-05/owner-review-decision.json",
+      "decision": "pending_review",
+      "canPromoteToApprovedVisual": false,
+      "canPromoteToPositiveSample": false,
+      "canPromoteToNegativeSample": false
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-06",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1-0",
+      "ownerReviewPath": "data/live-world/owner-reviews/p12-active-chunks/p10-active-chunk-candidate-06/owner-review-decision.json",
+      "decision": "pending_review",
+      "canPromoteToApprovedVisual": false,
+      "canPromoteToPositiveSample": false,
+      "canPromoteToNegativeSample": false
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-07",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1-1",
+      "ownerReviewPath": "data/live-world/owner-reviews/p12-active-chunks/p10-active-chunk-candidate-07/owner-review-decision.json",
+      "decision": "pending_review",
+      "canPromoteToApprovedVisual": false,
+      "canPromoteToPositiveSample": false,
+      "canPromoteToNegativeSample": false
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-08",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0-1",
+      "ownerReviewPath": "data/live-world/owner-reviews/p12-active-chunks/p10-active-chunk-candidate-08/owner-review-decision.json",
+      "decision": "pending_review",
+      "canPromoteToApprovedVisual": false,
+      "canPromoteToPositiveSample": false,
+      "canPromoteToNegativeSample": false
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-09",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1-1",
+      "ownerReviewPath": "data/live-world/owner-reviews/p12-active-chunks/p10-active-chunk-candidate-09/owner-review-decision.json",
+      "decision": "pending_review",
+      "canPromoteToApprovedVisual": false,
+      "canPromoteToPositiveSample": false,
+      "canPromoteToNegativeSample": false
+    }
+  ],
+  "forbiddenSideEffects": {
+    "writesApprovedVisuals": false,
+    "writesTrainingSamples": false,
+    "bypassesRuntimePageGate": false
+  },
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

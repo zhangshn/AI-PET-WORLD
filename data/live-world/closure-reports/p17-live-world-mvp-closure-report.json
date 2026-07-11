@@ -1,0 +1,64 @@
+{
+  "closureVersion": "live-world-p17-mvp-closure-report-v1",
+  "closureId": "p17-live-world-mvp-closure-report-0001",
+  "status": "closed_with_owner_approval_blocker",
+  "summary": "The data-driven live-world pipeline is closed through candidate generation, automatic review, owner-review templates, promotion gate, runtime gate, and training gate. Runtime approval is intentionally blocked because no owner-approved visuals exist yet.",
+  "completedStages": [
+    "P0",
+    "P1",
+    "P2",
+    "P3",
+    "P4",
+    "P5",
+    "P6",
+    "P7",
+    "P8",
+    "P9",
+    "P10-A",
+    "P10-B1",
+    "P10-B2",
+    "P10-B3",
+    "P10-B4",
+    "P10-C",
+    "P11",
+    "P12-template",
+    "P13-blocked-promotion",
+    "P14-blocked-runtime-gate",
+    "P15-blocked-training",
+    "P16-blocked-runtime-readiness"
+  ],
+  "blocker": {
+    "blockerId": "owner_approval_required",
+    "description": "All 9 generated candidate visuals require owner review. None has explicit owner approval.",
+    "blockedStages": [
+      "P13",
+      "P14",
+      "P15",
+      "P16"
+    ],
+    "requiredHumanAction": "Review each P12 owner-review-decision.json and change decisions from pending_review to approved or rejected."
+  },
+  "artifacts": {
+    "p11BatchPath": "data/live-world/visual-reviews/p11-active-chunks/p11-auto-visual-review-batch.json",
+    "p12BatchPath": "data/live-world/owner-reviews/p12-active-chunks/p12-owner-review-decision-batch.json",
+    "p13ManifestPath": "data/live-world/approved-visuals/p13-approved-visual-promotion-manifest.json",
+    "p14GatePath": "data/live-world/page-gates/p14-runtime-page-gate.json",
+    "p15ManifestPath": "data/live-world/training/p15-training-sample-manifest.json",
+    "p15RunPath": "data/live-world/training/p15-training-run-record.json",
+    "p16RecordPath": "data/live-world/runtime-readiness/p16-runtime-page-readiness.json"
+  },
+  "counts": {
+    "candidates": 9,
+    "generatedImages": 9,
+    "needsOwnerReview": 9,
+    "ownerApproved": 0,
+    "ownerRejected": 0,
+    "ownerPending": 9,
+    "approvedVisuals": 0,
+    "trainableSamples": 0
+  },
+  "finalRuntimeStatus": "blocked_waiting_for_approved_visuals",
+  "canRenderWorldPage": false,
+  "canStartTraining": false,
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

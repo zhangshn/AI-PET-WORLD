@@ -1,0 +1,34 @@
+{
+  "readinessVersion": "live-world-p16-runtime-page-readiness-v1",
+  "readinessId": "p16-runtime-page-readiness-0001",
+  "sourcePageGatePath": "data/live-world/page-gates/p14-runtime-page-gate.json",
+  "status": "blocked_waiting_for_approved_visuals",
+  "canRenderWorldPage": false,
+  "activeChunkCount": 9,
+  "approvedVisualCount": 0,
+  "missingApprovedVisualChunkIds": [
+    "p2-fixed-seed-5x5-world-chunk--1--1",
+    "p2-fixed-seed-5x5-world-chunk-0--1",
+    "p2-fixed-seed-5x5-world-chunk-1--1",
+    "p2-fixed-seed-5x5-world-chunk--1-0",
+    "p2-fixed-seed-5x5-world-chunk-0-0",
+    "p2-fixed-seed-5x5-world-chunk-1-0",
+    "p2-fixed-seed-5x5-world-chunk--1-1",
+    "p2-fixed-seed-5x5-world-chunk-0-1",
+    "p2-fixed-seed-5x5-world-chunk-1-1"
+  ],
+  "runtimeReadModel": {
+    "readsWorldState": true,
+    "readsRuntimeSnapshot": true,
+    "readsApprovedVisuals": true,
+    "readsCandidates": false,
+    "readsPendingSamples": false,
+    "readsRejectedSamples": false,
+    "readsRuntimeTrainingArtifacts": false
+  },
+  "blockedReasons": [
+    "Active chunks do not have owner-approved visual outputs."
+  ],
+  "nextAllowedAction": "Complete P12 owner approval, run P13 promotion, and refresh P14 page gate.",
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

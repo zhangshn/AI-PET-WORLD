@@ -1,0 +1,47 @@
+{
+  "trainingVersion": "training-natural-home-local-details-v52-strict-grass-purity",
+  "modelVersion": "natural-home-local-detail-unet-v52-strict-grass-purity",
+  "inputChannels": 28,
+  "inputExtras": ["coord", "noise", "reference", "style"],
+  "referenceMode": "self",
+  "referenceDetailMode": "low_frequency",
+  "outputChannels": 3,
+  "baseChannels": 80,
+  "batchSize": 2,
+  "learningRate": 0.00011,
+  "maxEpochs": 128,
+  "mixedPrecision": true,
+  "augment": true,
+  "upsampleMode": "bilinear",
+  "midBlocks": 2,
+  "decoderDetailBlocks": 3,
+  "lossWeights": {
+    "l1": 1.28,
+    "edge": 6.2,
+    "texture": 5.4,
+    "laplacian": 5.2,
+    "gradient": 4.0,
+    "colorRange": 0.38
+  },
+  "structureWeights": {
+    "grass": 5.8,
+    "water": 0.0,
+    "shoreline": 0.0,
+    "road": 0.0,
+    "roadEdge": 0.0,
+    "tree": 0.0,
+    "rock": 0.0,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260709,
+  "status": "game_map_material_slot_strict_grass_purity_local_model_training",
+  "formalPolicy": {
+    "notProgramDrawing": true,
+    "notWorldRuntimeFrame": true,
+    "sourcePolicy": "strict_same_source_grass_only_target_png_and_masks_v1_crop",
+    "purpose": "Repair grass material slots so grass no longer absorbs water, path, object, blue-object or pale-paste fragments."
+  }
+}

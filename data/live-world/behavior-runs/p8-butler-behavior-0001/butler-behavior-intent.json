@@ -1,0 +1,17 @@
+{
+  "intentVersion": "live-world-p8-butler-behavior-intent-v1",
+  "intentId": "p8-butler-intent-harvest-berry-0001",
+  "actorId": "butler-001",
+  "behaviorType": "harvest_resource",
+  "target": {
+    "chunkId": "p2-fixed-seed-5x5-world-chunk--1--1",
+    "entityId": "p2-fixed-seed-5x5-world-chunk--1--1-berry_bush-13",
+    "entityType": "berry_bush",
+    "tileX": 8,
+    "tileY": 7
+  },
+  "requestedTick": 1,
+  "sourceWorldStatePayloadHash": "3c464c6cb7f148d7a9ffc6cc0f956a25117c7c5552f4ce0ed888a24bf5110815",
+  "sourceRuntimeSnapshotPath": "data/live-world/runtime-states/p3-runtime-activation-snapshot.json",
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

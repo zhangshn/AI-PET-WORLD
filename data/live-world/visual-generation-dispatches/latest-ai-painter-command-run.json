@@ -1,0 +1,10 @@
+{
+  "runId": "p10-ai-painter-command-run-0001",
+  "dispatchId": "p10-ai-painter-dispatch-0001",
+  "status": "completed",
+  "runRecordPath": "data/live-world/visual-generation-dispatches/p10-active-chunks/ai-painter-command-run.json",
+  "generatedCount": 9,
+  "failedCount": 0,
+  "blockedCount": 0,
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

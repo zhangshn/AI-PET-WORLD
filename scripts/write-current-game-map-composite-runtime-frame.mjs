@@ -2,22 +2,165 @@ import fs from "node:fs"
 import path from "node:path"
 import { spawnSync } from "node:child_process"
 import { createRequire } from "node:module"
+import { randomUUID } from "node:crypto"
+import { enrichTrainingProcessLedgerEvent } from "./lib/ai-painter-training-ledger-event-analysis.mjs"
+import { refreshGameMapAutoVisualJudgeLearning } from "./lib/game-map-auto-visual-judge-learning.mjs"
 
 const runtimeFrameRoot = path.resolve(process.argv[2] ?? ".runtime/game-map-runtime-frame")
-const materialPackPath = process.argv[3] ? path.resolve(process.argv[3]) : null
+const materialPackPathArg = process.argv[3] ? path.resolve(process.argv[3]) : null
 const compositorOutputRoot = path.resolve(
   process.argv[4] ?? ".runtime/game-map-runtime-compositor",
 )
 const outputRoot = path.resolve(process.argv[5] ?? runtimeFrameRoot)
 const compileOutputDir = path.resolve(".runtime/check-game-map-frame-composite-writer")
 const sourceDir = "src/world/game-map-frame"
+const approvedPackRoot = path.resolve(".runtime/game-map-approved-material-packs")
+const ledgerDir = path.resolve(".runtime/ai-painter/training-process-ledger")
+const ledgerPath = path.join(ledgerDir, "events.jsonl")
+const latestLedgerPath = path.join(ledgerDir, "latest.json")
+let resolvedMaterialPackPathForReport = materialPackPathArg
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"))
 }
 
 function writeReport(report) {
+  try {
+    appendCompositeRuntimeFrameLedgerEvent(report)
+  } catch (error) {
+    report.ledgerWriteError = error instanceof Error ? error.message : String(error)
+  }
   console.log(JSON.stringify(report, null, 2))
+}
+
+function readLedgerEvents() {
+  if (!fs.existsSync(ledgerPath)) return []
+  return fs
+    .readFileSync(ledgerPath, "utf8")
+    .trim()
+    .split(/\r?\n/)
+    .filter(Boolean)
+    .map((line) => JSON.parse(line))
+}
+
+function buildLedgerSummary(events) {
+  const summary = {
+    total: events.length,
+    running: 0,
+    success: 0,
+    failed: 0,
+    error: 0,
+    blocked: 0,
+    info: 0,
+    lastEvent: events.at(-1) ?? null,
+  }
+  for (const event of events) {
+    if (Object.prototype.hasOwnProperty.call(summary, event.status)) {
+      summary[event.status] += 1
+    }
+  }
+  return summary
+}
+
+function readFormalVisualJudgeSummary(formalVisualJudgePath) {
+  if (!formalVisualJudgePath || !fs.existsSync(formalVisualJudgePath)) {
+    return null
+  }
+  const report = readJson(formalVisualJudgePath)
+  return {
+    status: report.status ?? null,
+    passed: report.passed === true,
+    issueCodes: Array.isArray(report.issues)
+      ? report.issues.map((issue) => issue.code).filter(Boolean)
+      : [],
+    metrics: report.metrics ?? null,
+  }
+}
+
+function appendCompositeRuntimeFrameLedgerEvent(report) {
+  const timestamp = new Date().toISOString()
+  const isSuccess = report.ok === true
+  const formalSummary = readFormalVisualJudgeSummary(report.formalVisualJudgePath)
+  const blockedReasons = Array.isArray(report.blockedReasons)
+    ? report.blockedReasons
+    : []
+  const issueCodes = formalSummary?.issueCodes ?? []
+  const status = isSuccess ? "success" : report.status === "failed" ? "error" : "failed"
+  const runId = `game-map-composite-runtime-frame-${timestamp.replace(/[:.]/g, "-")}`
+  const detailParts = [
+    `status=${report.status}`,
+    report.runtimeFrameId ? `runtimeFrameId=${report.runtimeFrameId}` : null,
+    report.outputPath ? `outputPath=${report.outputPath}` : null,
+    report.formalVisualJudgePath ? `formalVisualJudgePath=${report.formalVisualJudgePath}` : null,
+    blockedReasons.length > 0 ? `blockedReasons=${blockedReasons.join(",")}` : null,
+    issueCodes.length > 0 ? `formalIssues=${issueCodes.join(",")}` : null,
+  ].filter(Boolean)
+  const detailZhParts = [
+    `状态=${report.status}`,
+    report.runtimeFrameId ? `RuntimeFrame=${report.runtimeFrameId}` : null,
+    report.outputPath ? `图片路径=${report.outputPath}` : null,
+    report.formalVisualJudgePath ? `机器评审报告=${report.formalVisualJudgePath}` : null,
+    blockedReasons.length > 0 ? `阻断原因=${blockedReasons.join(",")}` : null,
+    issueCodes.length > 0 ? `机器评审失败码=${issueCodes.join(",")}` : null,
+  ].filter(Boolean)
+
+  const event = enrichTrainingProcessLedgerEvent({
+    id: randomUUID(),
+    timestamp,
+    action: "write_game_map_composite_runtime_frame",
+    runId,
+    kind: isSuccess ? "step_completed" : "step_failed",
+    status,
+    title: isSuccess
+      ? "Composite RuntimeFrame was written by the program"
+      : "Composite RuntimeFrame was blocked by the program",
+    titleZh: isSuccess
+      ? "程序自动写入完整 RuntimeFrame"
+      : "程序自动阻断完整 RuntimeFrame",
+    detail: detailParts.join(" / "),
+    detailZh: detailZhParts.join(" / "),
+    script: "scripts/write-current-game-map-composite-runtime-frame.mjs",
+    currentStep: report.status,
+    error: isSuccess ? null : [...blockedReasons, ...issueCodes].join(","),
+    errorZh: isSuccess ? null : `完整地图未达到机器评审或合成门槛：${[...blockedReasons, ...issueCodes].join(",")}`,
+    resourceSessionId: report.runtimeFrameId ?? null,
+    archiveId: report.recordPath ?? report.outputPath ?? null,
+    evidencePath: report.formalVisualJudgePath ?? report.outputPath ?? report.recordPath ?? null,
+  })
+
+  fs.mkdirSync(ledgerDir, { recursive: true })
+  fs.appendFileSync(ledgerPath, JSON.stringify(event) + "\n", "utf8")
+  const events = readLedgerEvents()
+  fs.writeFileSync(
+    latestLedgerPath,
+    JSON.stringify(
+      {
+        schemaVersion: "ai-painter-training-process-ledger-v1",
+        updatedAt: events.at(-1)?.timestamp ?? null,
+        events: events.slice(-80).reverse(),
+        summary: buildLedgerSummary(events),
+      },
+      null,
+      2,
+    ) + "\n",
+    "utf8",
+  )
+  refreshAutoVisualJudgeLearning(event)
+}
+
+function refreshAutoVisualJudgeLearning(event) {
+  try {
+    refreshGameMapAutoVisualJudgeLearning({
+      trigger: "composite_runtime_frame_ledger_event",
+      triggerEventId: event.id,
+    })
+  } catch (error) {
+    console.warn(
+      `[auto-visual-judge-learning] refresh failed: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    )
+  }
 }
 
 function getRuntimeFrameFromLatestRecord(record) {
@@ -125,7 +268,28 @@ function compileGameMapFrameModules() {
   }
 }
 
+function collectFiles(root, fileName) {
+  if (!fs.existsSync(root)) return []
+  const result = []
+  const stack = [root]
+  while (stack.length > 0) {
+    const current = stack.pop()
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const fullPath = path.join(current, entry.name)
+      if (entry.isDirectory()) stack.push(fullPath)
+      if (entry.isFile() && entry.name === fileName) result.push(fullPath)
+    }
+  }
+  return result.sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)
+}
+
+function findLatestApprovedPackPath() {
+  return collectFiles(approvedPackRoot, "approved-material-pack.json")[0] ?? null
+}
+
 async function main() {
+  const materialPackPath = materialPackPathArg ?? findLatestApprovedPackPath()
+  resolvedMaterialPackPathForReport = materialPackPath
   const latestRuntimeFramePath = path.join(runtimeFrameRoot, "latest-runtime-frame.json")
   if (!fs.existsSync(latestRuntimeFramePath)) {
     writeReport({
@@ -319,7 +483,7 @@ main().catch((error) => {
     status: "failed",
     message: error instanceof Error ? error.message : String(error),
     runtimeFrameRoot,
-    materialPackPath,
+    materialPackPath: resolvedMaterialPackPathForReport,
     compositorOutputRoot,
     outputRoot,
     tags: ["game_map_composite_runtime_frame_write", "failed"],

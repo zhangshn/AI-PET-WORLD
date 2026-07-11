@@ -1,0 +1,46 @@
+{
+  "trainingVersion": "training-natural-home-local-details-v51-model-dominant-material-repair",
+  "modelVersion": "natural-home-local-detail-unet-v51-model-dominant-material-repair",
+  "inputChannels": 28,
+  "inputExtras": ["coord", "noise", "reference", "style"],
+  "referenceMode": "self",
+  "outputChannels": 3,
+  "baseChannels": 80,
+  "batchSize": 2,
+  "learningRate": 0.00012,
+  "maxEpochs": 128,
+  "mixedPrecision": true,
+  "augment": true,
+  "upsampleMode": "bilinear",
+  "midBlocks": 2,
+  "decoderDetailBlocks": 3,
+  "lossWeights": {
+    "l1": 1.2,
+    "edge": 7.2,
+    "texture": 6.0,
+    "laplacian": 5.8,
+    "gradient": 4.4,
+    "colorRange": 0.32
+  },
+  "structureWeights": {
+    "grass": 5.2,
+    "water": 0.0,
+    "shoreline": 0.0,
+    "road": 4.8,
+    "roadEdge": 3.8,
+    "tree": 0.0,
+    "rock": 0.0,
+    "shelterFoundation": 0.0,
+    "shelterWall": 0.0,
+    "shelterRoof": 0.0,
+    "constructionMaterial": 0.0
+  },
+  "seed": 20260708,
+  "status": "game_map_material_slot_model_dominant_repair_local_model_training",
+  "formalPolicy": {
+    "notProgramDrawing": true,
+    "notWorldRuntimeFrame": true,
+    "sourcePolicy": "same_source_target_png_and_masks_v1_crop",
+    "purpose": "Repair model-dominant grass/path material output so material quality passes without procedural texture injection."
+  }
+}

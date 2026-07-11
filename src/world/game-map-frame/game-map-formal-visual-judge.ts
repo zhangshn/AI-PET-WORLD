@@ -36,6 +36,8 @@ export type GameMapFormalVisualJudgeReport = {
     brightPixelRatio: number
     neonHighlightRatio: number
     palePatchArtifactRatio: number
+    pinkTerrainArtifactRatio: number
+    grayPatchArtifactRatio: number
     electricBlueArtifactRatio: number
     transparentPixelRatio: number
     quantizedColorCount: number
@@ -45,11 +47,15 @@ export type GameMapFormalVisualJudgeReport = {
     waterVisualRatio: number
     shorelineVisualRatio: number
     shorelineMaskRatio: number
+    grassPaletteDensity: number
+    pathPaletteDensity: number
     lowDetailGrassRatio: number
     washedGrassHazeRatio: number
     pathEdgeDensity: number
     pathContaminationRatio: number
     pathBlackCraterRatio: number
+    muddyTerrainNoiseRatio: number
+    lowGrassCoverageWithMudRatio: number
     maxInteriorVerticalBoundaryDelta: number
     maxInteriorHorizontalBoundaryDelta: number
     requiredVisualUnitKindsPresent: boolean
@@ -142,6 +148,12 @@ export async function judgeFormalGameMapCompositeOutput(input: {
   if (metrics.palePatchArtifactRatio > 0.0012) {
     issues.push(error("formal_world_frame_pale_patch_artifact_too_high", "Formal /world map has too many pale pink-white pixels, which reads as failed path or pasted highlight material."))
   }
+  if (metrics.pinkTerrainArtifactRatio > 0.01) {
+    issues.push(error("formal_world_frame_pink_terrain_artifact_too_high", "Formal /world map has too many pink or mauve terrain pixels, which reads as a metric workaround instead of natural game terrain."))
+  }
+  if (metrics.grayPatchArtifactRatio > 0.02 && metrics.grassVisualRatio > 0.55) {
+    issues.push(error("formal_world_frame_gray_patch_artifact_too_high", "Formal /world map has too many low-saturation gray-green terrain patches, which reads as debug material, camouflage, or a metric workaround instead of professional natural game terrain."))
+  }
   if (metrics.electricBlueArtifactRatio > 0.01) {
     issues.push(error("formal_world_frame_electric_blue_artifact_too_high", "Formal /world map has over-saturated electric-blue water pixels instead of natural pixel-art water."))
   }
@@ -154,8 +166,18 @@ export async function judgeFormalGameMapCompositeOutput(input: {
   if (metrics.grassVisualRatio > 0.7 && metrics.edgeDensity < 0.055 && metrics.pathVisualRatio < 0.09) {
     issues.push(error("formal_world_frame_flat_terrain_readability_failed", "Formal /world map reads as a flat green fill with weak gameplay structure, not a professional readable game map."))
   }
+  if (
+    metrics.grassVisualRatio > 0.55 &&
+    (metrics.grassPaletteDensity < 8 ||
+      (metrics.grassPaletteDensity < 12 && metrics.lowDetailGrassRatio > 0.18))
+  ) {
+    issues.push(error("formal_world_frame_grass_palette_density_too_low", "Formal /world map grass has too little local color variation and reads as a blurred green base texture instead of professional game terrain."))
+  }
   if (metrics.pathVisualRatio < 0.045) {
     issues.push(error("formal_world_frame_path_presence_too_low", "Formal /world map main roads are not visually present enough for a readable player-enterable map."))
+  }
+  if (metrics.pathVisualRatio > 0.045 && metrics.pathPaletteDensity < 72) {
+    issues.push(error("formal_world_frame_path_repetitive_brick_artifact", "Formal /world map path has low material variation and reads as a repeated brick/tile texture instead of a natural playable road."))
   }
   if (metrics.pathVisualRatio > 0.035 && metrics.pathEdgeDensity < 0.085) {
     issues.push(error("formal_world_frame_path_blur_artifact", "Formal /world map path is too blurred or texture-like; main roads must be readable game-map routes."))
@@ -167,11 +189,27 @@ export async function judgeFormalGameMapCompositeOutput(input: {
   ) {
     issues.push(error("formal_world_frame_shoreline_overpaint_artifact", "Formal /world map shoreline occupies too much of the frame and reads as a pasted vertical material strip."))
   }
+  if (
+    metrics.shorelineVisualRatio > 0.16 &&
+    metrics.shorelineMaskRatio < 0.08 &&
+    metrics.waterVisualRatio > 0.12
+  ) {
+    issues.push(error("formal_world_frame_shoreline_pasted_strip_artifact", "Formal /world map shoreline reads as an unintegrated pasted material strip instead of a natural walkable terrain-water transition."))
+  }
   if (metrics.lowDetailGrassRatio > 0.18 && metrics.grassVisualRatio > 0.62) {
     issues.push(error("formal_world_frame_low_detail_grass_fill", "Formal /world map grass is too low-detail across the playable field for a professional game map."))
   }
   if (metrics.washedGrassHazeRatio > 0.14 && metrics.grassVisualRatio > 0.62) {
     issues.push(error("formal_world_frame_washed_grass_haze", "Formal /world map grass has too much washed cloudy haze; a professional game map needs readable terrain material, not foggy texture fill."))
+  }
+  if (metrics.muddyTerrainNoiseRatio > 0.18) {
+    issues.push(error("formal_world_frame_muddy_terrain_noise_too_high", "Formal /world map has too much muddy mottled terrain noise; grass must read as continuous game terrain, not a broken camouflage texture."))
+  }
+  if (metrics.grassVisualRatio > 0.55 && metrics.muddyTerrainNoiseRatio > 0.065) {
+    issues.push(error("formal_world_frame_muddy_grass_field_artifact", "Formal /world map grass still reads as muddy training noise instead of deliberate professional game terrain material."))
+  }
+  if (metrics.lowGrassCoverageWithMudRatio > 0.12 && metrics.grassVisualRatio < 0.48) {
+    issues.push(error("formal_world_frame_grass_readability_lost_to_mud", "Formal /world map loses too much readable grass to muddy broken patches; the player field no longer matches the natural-home reference quality."))
   }
   if (metrics.pathContaminationRatio > 0.14) {
     issues.push(error("formal_world_frame_path_contaminated_by_non_path_material", "Formal /world map path is contaminated by grass, muddy dark blobs, or water-like pixels; player routes must read as coherent path material."))
@@ -240,6 +278,8 @@ async function measureOutputPixels(bytes: Buffer, manifest: GameMapCompositeMani
   brightPixelRatio: number
   neonHighlightRatio: number
   palePatchArtifactRatio: number
+  pinkTerrainArtifactRatio: number
+  grayPatchArtifactRatio: number
   electricBlueArtifactRatio: number
   transparentPixelRatio: number
   quantizedColorCount: number
@@ -249,11 +289,15 @@ async function measureOutputPixels(bytes: Buffer, manifest: GameMapCompositeMani
   waterVisualRatio: number
   shorelineVisualRatio: number
   shorelineMaskRatio: number
+  grassPaletteDensity: number
+  pathPaletteDensity: number
   lowDetailGrassRatio: number
   washedGrassHazeRatio: number
   pathEdgeDensity: number
   pathContaminationRatio: number
   pathBlackCraterRatio: number
+  muddyTerrainNoiseRatio: number
+  lowGrassCoverageWithMudRatio: number
   maxInteriorVerticalBoundaryDelta: number
   maxInteriorHorizontalBoundaryDelta: number
 }> {
@@ -270,6 +314,8 @@ async function measureOutputPixels(bytes: Buffer, manifest: GameMapCompositeMani
   let brightPixels = 0
   let neonHighlightPixels = 0
   let palePatchArtifactPixels = 0
+  let pinkTerrainArtifactPixels = 0
+  let grayPatchArtifactPixels = 0
   let electricBlueArtifactPixels = 0
   let transparentPixels = 0
   let edgeHits = 0
@@ -284,9 +330,13 @@ async function measureOutputPixels(bytes: Buffer, manifest: GameMapCompositeMani
   let pathMaskPixels = 0
   let pathContaminatedPixels = 0
   let pathBlackCraterPixels = 0
+  let muddyTerrainNoisePixels = 0
+  let lowGrassCoverageWithMudPixels = 0
   let maxInteriorVerticalBoundaryDelta = 0
   let maxInteriorHorizontalBoundaryDelta = 0
   const quantizedColors = new Set<string>()
+  const grassQuantizedColors = new Set<string>()
+  const pathQuantizedColors = new Set<string>()
   const pathSlots = manifest.visualUnitSlots.filter((slot) => slot.unitKind === "path_texture")
   const shorelineSlots = manifest.visualUnitSlots.filter(
     (slot) => slot.unitKind === "shoreline_texture"
@@ -317,6 +367,19 @@ async function measureOutputPixels(bytes: Buffer, manifest: GameMapCompositeMani
     if (luma > 178 && red > 170 && green > 145 && blue > 125) {
       palePatchArtifactPixels += 1
     }
+    if (
+      luma > 58 &&
+      luma < 170 &&
+      red > 105 &&
+      red > green * 1.16 &&
+      blue > green * 0.86 &&
+      blue < red * 1.05
+    ) {
+      pinkTerrainArtifactPixels += 1
+    }
+    if (luma > 55 && luma < 145 && saturation < 34 && red > 70 && green > 70 && blue > 68) {
+      grayPatchArtifactPixels += 1
+    }
     if (blue > 185 && green > 120 && red < 110 && blue > green * 1.2) {
       electricBlueArtifactPixels += 1
     }
@@ -336,12 +399,43 @@ async function measureOutputPixels(bytes: Buffer, manifest: GameMapCompositeMani
     const isShorelineVisual =
       (red > 85 && green > 85 && blue < 80 && green > red * 0.75) ||
       (red > 70 && green > 90 && blue < 70)
-    if (isGrassVisual) grassVisualPixels += 1
-    if (isPathVisual) pathVisualPixels += 1
+    if (isGrassVisual) {
+      grassVisualPixels += 1
+      grassQuantizedColors.add(`${red >> 4},${green >> 4},${blue >> 4}`)
+    }
+    if (isPathVisual) {
+      pathVisualPixels += 1
+      pathQuantizedColors.add(`${red >> 4},${green >> 4},${blue >> 4}`)
+    }
     if (isWaterVisual) waterVisualPixels += 1
-    if (isShorelineVisual && !isPathVisual) shorelineVisualPixels += 1
+    if (isShorelineVisual && !isPathVisual && !isGrassVisual) shorelineVisualPixels += 1
     if (shorelineSlots.some((slot) => pointInSlotMask(x + 0.5, y + 0.5, slot))) {
       shorelineMaskPixels += 1
+    }
+    const isMuddyTerrainNoise =
+      alpha > 240 &&
+      luma > 42 &&
+      luma < 150 &&
+      saturation > 18 &&
+      blue < 118 &&
+      green >= red * 0.68 &&
+      green <= red * 1.16 &&
+      red >= blue * 0.82 &&
+      !isGrassVisual &&
+      !isPathVisual &&
+      !isWaterVisual &&
+      !isShorelineVisual
+    if (isMuddyTerrainNoise) {
+      muddyTerrainNoisePixels += 1
+    }
+    const isLowGrassCoverageMud =
+      isMuddyTerrainNoise &&
+      green > 54 &&
+      green >= blue * 0.96 &&
+      red > 44 &&
+      red < 132
+    if (isLowGrassCoverageMud) {
+      lowGrassCoverageWithMudPixels += 1
     }
     if (isGrassVisual && saturation < 55) lowDetailGrassPixels += 1
     if (isGrassVisual && luma > 92 && saturation < 72) washedGrassHazePixels += 1
@@ -424,6 +518,8 @@ async function measureOutputPixels(bytes: Buffer, manifest: GameMapCompositeMani
     brightPixelRatio: round(brightPixels / pixelCount, 4),
     neonHighlightRatio: round(neonHighlightPixels / pixelCount, 4),
     palePatchArtifactRatio: round(palePatchArtifactPixels / pixelCount, 4),
+    pinkTerrainArtifactRatio: round(pinkTerrainArtifactPixels / pixelCount, 4),
+    grayPatchArtifactRatio: round(grayPatchArtifactPixels / pixelCount, 4),
     electricBlueArtifactRatio: round(electricBlueArtifactPixels / pixelCount, 4),
     transparentPixelRatio: round(transparentPixels / pixelCount, 4),
     quantizedColorCount: quantizedColors.size,
@@ -433,11 +529,21 @@ async function measureOutputPixels(bytes: Buffer, manifest: GameMapCompositeMani
     waterVisualRatio: round(waterVisualPixels / pixelCount, 4),
     shorelineVisualRatio: round(shorelineVisualPixels / pixelCount, 4),
     shorelineMaskRatio: round(shorelineMaskPixels / pixelCount, 4),
+    grassPaletteDensity: round(
+      (grassQuantizedColors.size / Math.max(1, grassVisualPixels)) * 10000,
+      4
+    ),
+    pathPaletteDensity: round(
+      (pathQuantizedColors.size / Math.max(1, pathVisualPixels)) * 10000,
+      4
+    ),
     lowDetailGrassRatio: round(lowDetailGrassPixels / Math.max(1, grassVisualPixels), 4),
     washedGrassHazeRatio: round(washedGrassHazePixels / Math.max(1, grassVisualPixels), 4),
     pathEdgeDensity: round(pathEdgeHits / Math.max(1, pathVisualPixels * 2), 4),
     pathContaminationRatio: round(pathContaminatedPixels / Math.max(1, pathMaskPixels), 4),
     pathBlackCraterRatio: round(pathBlackCraterPixels / Math.max(1, pathMaskPixels), 4),
+    muddyTerrainNoiseRatio: round(muddyTerrainNoisePixels / pixelCount, 4),
+    lowGrassCoverageWithMudRatio: round(lowGrassCoverageWithMudPixels / pixelCount, 4),
     maxInteriorVerticalBoundaryDelta: round(maxInteriorVerticalBoundaryDelta, 4),
     maxInteriorHorizontalBoundaryDelta: round(maxInteriorHorizontalBoundaryDelta, 4),
   }

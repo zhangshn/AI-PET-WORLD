@@ -1,0 +1,137 @@
+{
+  "reviewVersion": "live-world-p11-auto-visual-review-v1",
+  "reviewId": "p10-active-chunk-candidate-04-p11-auto-review-0001",
+  "stage": "P11",
+  "candidateId": "p10-active-chunk-candidate-04",
+  "outputId": "p10-active-chunk-candidate-04-output-0001",
+  "inputPayloadHash": "a6bba6abe087f47889411df618dfd3fc6ab056f03823059e97c652abe45937ae",
+  "reviewType": "auto",
+  "reviewer": "system",
+  "status": "needs_owner_review",
+  "structureIssues": [],
+  "visualIssues": [
+    "muddy_texture"
+  ],
+  "candidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-04",
+  "candidateMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-04/candidate.meta.json",
+  "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-04/output.meta.json",
+  "candidateMetaPathForRuntime": "data/world-visual-candidates/p10-active-chunk-candidate-04/candidate.meta.json",
+  "notes": "P11 automatic review generated visual quality flags. Candidate requires owner review before any promotion.",
+  "reviewedAt": "2026-07-06T00:00:00.000Z",
+  "worldId": null,
+  "worldStatePayloadHash": "3c464c6cb7f148d7a9ffc6cc0f956a25117c7c5552f4ce0ed888a24bf5110815",
+  "sourceChunkStatePayloadHash": "p10-active-chunk-visual-input",
+  "imageGenerated": true,
+  "outputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-04/output.image.png",
+  "outputImageHash": "ed7af90b4ef8091c61969d7fc1ad36ee6b8defb1957adf845a7f322c6db04a16",
+  "expectedEntityCounts": {
+    "tree": 3,
+    "rock": 2,
+    "grass_clump": 6,
+    "flower": 4
+  },
+  "terrainMaskSummary": {
+    "grass": 882,
+    "tall_grass": 75,
+    "dirt_path": 47,
+    "stone_ground": 20
+  },
+  "neighborEdgeSummary": {
+    "north": "p2-fixed-seed-5x5-world-chunk--1--1:terrain=32,biome=32,movement=32,entities=1",
+    "south": "p2-fixed-seed-5x5-world-chunk--1-1:terrain=32,biome=32,movement=32,entities=2",
+    "east": "p2-fixed-seed-5x5-world-chunk-0-0:terrain=32,biome=32,movement=32,entities=4",
+    "west": "p2-fixed-seed-5x5-world-chunk--2-0:terrain=32,biome=32,movement=32,entities=0"
+  },
+  "structureChecks": [
+    {
+      "checkId": "output.image.exists",
+      "status": "pass",
+      "expected": true,
+      "actual": true,
+      "message": "Output image exists."
+    },
+    {
+      "checkId": "output.meta.generated",
+      "status": "pass",
+      "expected": "generated",
+      "actual": "generated|true",
+      "message": "Output metadata must mark the image as generated."
+    },
+    {
+      "checkId": "output.image.hash",
+      "status": "pass",
+      "expected": "ed7af90b4ef8091c61969d7fc1ad36ee6b8defb1957adf845a7f322c6db04a16",
+      "actual": "ed7af90b4ef8091c61969d7fc1ad36ee6b8defb1957adf845a7f322c6db04a16|ed7af90b4ef8091c61969d7fc1ad36ee6b8defb1957adf845a7f322c6db04a16",
+      "message": "Output image hash must match command run and output metadata."
+    },
+    {
+      "checkId": "candidate.meta.status",
+      "status": "pass",
+      "expected": "pending_structure_review",
+      "actual": "pending_structure_review",
+      "message": "Candidate must still be waiting for structure review."
+    },
+    {
+      "checkId": "input.hash.chain",
+      "status": "pass",
+      "expected": "a6bba6abe087f47889411df618dfd3fc6ab056f03823059e97c652abe45937ae",
+      "actual": "a6bba6abe087f47889411df618dfd3fc6ab056f03823059e97c652abe45937ae",
+      "message": "Candidate input hash must match ChunkVisualInput."
+    },
+    {
+      "checkId": "chunk.id.chain",
+      "status": "pass",
+      "expected": "p2-fixed-seed-5x5-world-chunk--1-0",
+      "actual": "p2-fixed-seed-5x5-world-chunk--1-0|p2-fixed-seed-5x5-world-chunk--1-0",
+      "message": "Chunk id must match input, candidate metadata, and output metadata."
+    },
+    {
+      "checkId": "entity.summary.match",
+      "status": "pass",
+      "expected": "{\"tree\":3,\"rock\":2,\"grass_clump\":6,\"flower\":4}",
+      "actual": "{\"tree\":3,\"rock\":2,\"grass_clump\":6,\"flower\":4}",
+      "message": "Output metadata entity summary must match input entityMap counts."
+    },
+    {
+      "checkId": "terrain.mask.size",
+      "status": "pass",
+      "expected": "32x32",
+      "actual": "32x32",
+      "message": "Terrain mask must match tile dimensions."
+    },
+    {
+      "checkId": "image.dimensions",
+      "status": "pass",
+      "expected": "256x192",
+      "actual": "256x192",
+      "message": "Generated image must match current local model output size."
+    },
+    {
+      "checkId": "image.quality.heuristics",
+      "status": "skipped",
+      "expected": "no issues",
+      "actual": "muddy_texture",
+      "message": "Visual quality issues are recorded for owner review and do not auto-promote."
+    }
+  ],
+  "conclusion": "needs_owner_review",
+  "trainingEligibility": "pending_review",
+  "canEnterManualReview": true,
+  "canEnterRuntime": false,
+  "recommendedSampleDecision": "pending_review",
+  "decisionReason": "Generated candidate requires owner review. Automatic review cannot approve runtime or training use.",
+  "visualQualityMetrics": {
+    "width": 256,
+    "height": 192,
+    "luminanceMean": 53.568,
+    "luminanceStdDev": 16.081,
+    "borderLuminanceMean": 51.494,
+    "centerLuminanceMean": 55.433,
+    "darkBorderRatio": 0.929,
+    "horizontalGridRatio": 0.968,
+    "verticalGridRatio": 1.176,
+    "uniqueColorRatio": 0.155
+  },
+  "manualReviewRequired": true,
+  "approvedVisualPromotionAllowed": false
+}

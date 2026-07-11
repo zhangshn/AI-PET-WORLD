@@ -1,0 +1,11 @@
+{
+  "sampleId": "sample-poc0-example",
+  "outputId": "output-poc0-example",
+  "inputPayloadHash": "INPUT_PAYLOAD_HASH",
+  "linkedRunId": "run-poc0-example",
+  "decision": "reference_only",
+  "sourceType": "generated",
+  "sourcePath": "data/world-runs/run-poc0-example/output.image.png",
+  "licenseStatus": "generated_by_us",
+  "createdAt": "ISO_TIME"
+}

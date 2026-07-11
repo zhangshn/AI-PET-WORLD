@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  outputFileTracingExcludes: {
+    "/api/ai-painter/training-data-image": [".runtime/**/*"],
+  },
 };
 
 export default nextConfig;

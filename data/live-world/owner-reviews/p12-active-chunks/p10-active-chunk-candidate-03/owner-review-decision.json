@@ -1,0 +1,21 @@
+{
+  "reviewVersion": "live-world-p12-owner-review-decision-v1",
+  "reviewId": "p10-active-chunk-candidate-03-p12-owner-review-0001",
+  "candidateId": "p10-active-chunk-candidate-03",
+  "chunkId": "p2-fixed-seed-5x5-world-chunk-1--1",
+  "sourceAutoReviewPath": "data/live-world/visual-reviews/p11-active-chunks/p10-active-chunk-candidate-03/auto-visual-review.json",
+  "sourceAutoStatus": "needs_owner_review",
+  "sourceAutoConclusion": "needs_owner_review",
+  "sourceVisualIssues": [
+    "muddy_texture"
+  ],
+  "sourceStructureIssues": [],
+  "decision": "pending_review",
+  "decisionSource": "template_generated",
+  "decisionReason": "P11 automatic review requires owner decision. Visual issues: muddy_texture. No image can enter approved visuals without explicit owner approval.",
+  "canPromoteToApprovedVisual": false,
+  "canPromoteToPositiveSample": false,
+  "canPromoteToNegativeSample": false,
+  "requiresExplicitOwnerApproval": true,
+  "decidedAt": "2026-07-06T00:00:00.000Z"
+}

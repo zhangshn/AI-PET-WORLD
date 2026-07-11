@@ -1,0 +1,9 @@
+{
+  "readinessId": "p10-local-ai-painter-adapter-readiness-0001",
+  "status": "ready_to_run",
+  "readinessPath": "data/live-world/visual-generation-dispatches/p10-active-chunks/local-ai-painter-adapter-readiness.json",
+  "candidateCount": 9,
+  "selectedModelRoot": ".runtime/ai-painter/natural-home-v91-current-mvp-quality-ready-training",
+  "selectedCheckpointPath": ".runtime/ai-painter/natural-home-v91-current-mvp-quality-ready-training/best.pt",
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

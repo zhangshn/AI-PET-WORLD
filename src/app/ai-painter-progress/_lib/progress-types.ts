@@ -82,12 +82,33 @@ export type TrainingProcessEvent = {
   kind: string
   status: "running" | "success" | "failed" | "error" | "blocked" | "info"
   title: string
+  titleZh?: string
   detail?: string
+  detailZh?: string
   script?: string
   currentStep?: string
   error?: string | null
+  errorZh?: string | null
+  autoAnalysisVersion?: string
+  resultScope?: string
+  resultScopeZh?: string
+  successMeaning?: string
+  successMeaningZh?: string
+  failureMeaning?: string
+  failureMeaningZh?: string
+  finalGameMapSuccess?: boolean
+  finalGameMapMeaning?: string
+  finalGameMapMeaningZh?: string
+  canEnterWorld?: boolean
+  worldEntryMeaning?: string
+  worldEntryMeaningZh?: string
+  evidenceRequirement?: string
+  evidenceRequirementZh?: string
+  nextAction?: string
+  nextActionZh?: string
   resourceSessionId?: string
   archiveId?: string
+  evidencePath?: string
 }
 
 export type TrainingProcessLedger = {

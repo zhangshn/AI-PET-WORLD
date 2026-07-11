@@ -1,0 +1,156 @@
+{
+  "dispatchVersion": "live-world-p10-ai-painter-dispatch-v1",
+  "dispatchId": "p10-ai-painter-dispatch-0001",
+  "batchId": "p10-active-chunk-visual-generation-batch-0001",
+  "status": "blocked_missing_ai_painter_command",
+  "aiPainterCommand": null,
+  "entries": [
+    {
+      "requestId": "p10-visual-request-01",
+      "candidateId": "p10-active-chunk-candidate-01",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1--1",
+      "inputPayloadHash": "2f6d8e85dd1987ec45e22a72d0aa1f933d4ad42ad115acca81eb17cdfc3d9747",
+      "candidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-01",
+      "candidateInputPath": "data/world-visual-candidates/p10-active-chunk-candidate-01/input.chunk.json",
+      "candidateMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-01/candidate.meta.json",
+      "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-01/output.meta.json",
+      "expectedOutputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-01/output.image.png",
+      "status": "generation_pending",
+      "blockedReason": "missing LIVE_WORLD_AI_PAINTER_COMMAND"
+    },
+    {
+      "requestId": "p10-visual-request-02",
+      "candidateId": "p10-active-chunk-candidate-02",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0--1",
+      "inputPayloadHash": "ea4fa752d7d46c837caeb7b7ce7b0e2c9725dc0f42ed3b73a5e323b9565e5e57",
+      "candidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-02",
+      "candidateInputPath": "data/world-visual-candidates/p10-active-chunk-candidate-02/input.chunk.json",
+      "candidateMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-02/candidate.meta.json",
+      "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-02/output.meta.json",
+      "expectedOutputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-02/output.image.png",
+      "status": "generation_pending",
+      "blockedReason": "missing LIVE_WORLD_AI_PAINTER_COMMAND"
+    },
+    {
+      "requestId": "p10-visual-request-03",
+      "candidateId": "p10-active-chunk-candidate-03",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1--1",
+      "inputPayloadHash": "40ff2dfe991a0afd8823c79de6c140164740e586d0f2dbab71af6171b169fe6f",
+      "candidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-03",
+      "candidateInputPath": "data/world-visual-candidates/p10-active-chunk-candidate-03/input.chunk.json",
+      "candidateMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-03/candidate.meta.json",
+      "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-03/output.meta.json",
+      "expectedOutputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-03/output.image.png",
+      "status": "generation_pending",
+      "blockedReason": "missing LIVE_WORLD_AI_PAINTER_COMMAND"
+    },
+    {
+      "requestId": "p10-visual-request-04",
+      "candidateId": "p10-active-chunk-candidate-04",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1-0",
+      "inputPayloadHash": "a6bba6abe087f47889411df618dfd3fc6ab056f03823059e97c652abe45937ae",
+      "candidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-04",
+      "candidateInputPath": "data/world-visual-candidates/p10-active-chunk-candidate-04/input.chunk.json",
+      "candidateMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-04/candidate.meta.json",
+      "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-04/output.meta.json",
+      "expectedOutputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-04/output.image.png",
+      "status": "generation_pending",
+      "blockedReason": "missing LIVE_WORLD_AI_PAINTER_COMMAND"
+    },
+    {
+      "requestId": "p10-visual-request-05",
+      "candidateId": "p10-active-chunk-candidate-05",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0-0",
+      "inputPayloadHash": "a377748df1738db5c5a9cc07dc28f8200585663669d5a3cf8d955344e5e93aef",
+      "candidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-05",
+      "candidateInputPath": "data/world-visual-candidates/p10-active-chunk-candidate-05/input.chunk.json",
+      "candidateMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-05/candidate.meta.json",
+      "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-05/output.meta.json",
+      "expectedOutputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-05/output.image.png",
+      "status": "generation_pending",
+      "blockedReason": "missing LIVE_WORLD_AI_PAINTER_COMMAND"
+    },
+    {
+      "requestId": "p10-visual-request-06",
+      "candidateId": "p10-active-chunk-candidate-06",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1-0",
+      "inputPayloadHash": "e33d7e5a810db55449af241ecb08d19f77791e0182fe870738196074d63c31de",
+      "candidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-06",
+      "candidateInputPath": "data/world-visual-candidates/p10-active-chunk-candidate-06/input.chunk.json",
+      "candidateMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-06/candidate.meta.json",
+      "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-06/output.meta.json",
+      "expectedOutputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-06/output.image.png",
+      "status": "generation_pending",
+      "blockedReason": "missing LIVE_WORLD_AI_PAINTER_COMMAND"
+    },
+    {
+      "requestId": "p10-visual-request-07",
+      "candidateId": "p10-active-chunk-candidate-07",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1-1",
+      "inputPayloadHash": "b00bb1c2bf4e30158a7e12527632d3e6250ba1ed8bd1f117d3cd6e5500858087",
+      "candidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-07",
+      "candidateInputPath": "data/world-visual-candidates/p10-active-chunk-candidate-07/input.chunk.json",
+      "candidateMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-07/candidate.meta.json",
+      "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-07/output.meta.json",
+      "expectedOutputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-07/output.image.png",
+      "status": "generation_pending",
+      "blockedReason": "missing LIVE_WORLD_AI_PAINTER_COMMAND"
+    },
+    {
+      "requestId": "p10-visual-request-08",
+      "candidateId": "p10-active-chunk-candidate-08",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0-1",
+      "inputPayloadHash": "e6ebe34d234fd4c3a2dfbd40aa1d77eb774b43482fd2622bfa6e92b1f3b05b3c",
+      "candidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-08",
+      "candidateInputPath": "data/world-visual-candidates/p10-active-chunk-candidate-08/input.chunk.json",
+      "candidateMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-08/candidate.meta.json",
+      "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-08/output.meta.json",
+      "expectedOutputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-08/output.image.png",
+      "status": "generation_pending",
+      "blockedReason": "missing LIVE_WORLD_AI_PAINTER_COMMAND"
+    },
+    {
+      "requestId": "p10-visual-request-09",
+      "candidateId": "p10-active-chunk-candidate-09",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1-1",
+      "inputPayloadHash": "71ae4e9dd456d8cc6434a2d55c0e6b7010405ad264b12a0ce09d0c28261d6046",
+      "candidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-09",
+      "candidateInputPath": "data/world-visual-candidates/p10-active-chunk-candidate-09/input.chunk.json",
+      "candidateMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-09/candidate.meta.json",
+      "outputMetaPath": "data/world-visual-candidates/p10-active-chunk-candidate-09/output.meta.json",
+      "expectedOutputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-09/output.image.png",
+      "status": "generation_pending",
+      "blockedReason": "missing LIVE_WORLD_AI_PAINTER_COMMAND"
+    }
+  ],
+  "candidateCount": 9,
+  "imageGeneratedCount": 0,
+  "readBoundary": {
+    "sourceBatchPath": "data/live-world/visual-generation-requests/p10-active-chunks/generation-batch.json",
+    "allowedWriteRoots": [
+      "data/world-visual-candidates",
+      "data/live-world/visual-generation-dispatches"
+    ],
+    "forbiddenWriteRoots": [
+      "data/live-world/approved-visuals",
+      "data/world-samples/positive",
+      "data/world-samples/negative",
+      "data/world-samples/pending",
+      "data/world-samples/rejected",
+      "data/world-runs"
+    ],
+    "canWriteCandidates": true,
+    "canWriteApprovedVisuals": false,
+    "canWriteTrainingSamples": false,
+    "canBypassRuntimePageGate": false
+  },
+  "nextRequiredPipelines": {
+    "aiPainterCommandConfiguration": true,
+    "aiPainterGeneration": true,
+    "autoStructureReview": false,
+    "ownerReview": false,
+    "approvedVisualPromotion": false,
+    "runtimePageGateRefresh": false
+  },
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

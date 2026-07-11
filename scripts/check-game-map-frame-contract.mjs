@@ -39,7 +39,7 @@ const approvedFrameSource = read("src/world/game-map-frame/game-map-approved-fra
 const sample = read("src/world/game-map-frame/natural-home-mvp-sample.ts")
 const index = read("src/world/game-map-frame/index.ts")
 const worldPage = read("src/app/world/world-live-runtime-page.tsx")
-const progress = read("docs/PROGRESS.md")
+const currentExecutionGuide = read("docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md")
 const packageJson = read("package.json")
 const currentRuntimeWriter = read("scripts/write-current-game-map-runtime-frame.mjs")
 const materialRequestWriter = read("scripts/write-current-game-map-material-generation-request.mjs")
@@ -54,6 +54,10 @@ const materialSlotRepairAssembler = read("scripts/assemble-game-map-material-slo
 const materialQualityJudge = read("scripts/judge-current-game-map-material-quality.mjs")
 const materialPackWriter = read("scripts/build-current-game-map-approved-material-pack.mjs")
 const compositeRuntimeWriter = read("scripts/write-current-game-map-composite-runtime-frame.mjs")
+const dictionaryContract = read("scripts/lib/world-visual-dictionary-contract.mjs")
+const runtimePipelineRunner = read("scripts/run-current-game-map-material-slot-v46-runtime-pipeline.mjs")
+const gameWorldFrameGate = read("ml/ai-painter/scripts/judge_natural_home_game_world_frame.py")
+const gameWorldFrameGateCheck = read("scripts/check-natural-home-game-world-frame-gate.mjs")
 
 check("HomeMapStructure schema exists", structureSchema.includes("HomeMapStructure"))
 check("HomeMapStructure version is fixed", structureSchema.includes('"home-map-structure-v1"'))
@@ -157,11 +161,11 @@ check(
     visualJudge.includes("partial_or_crop_candidate")
 )
 check(
-  "P5-4 VisualJudge requires map layers",
+  "P5-4 VisualJudge requires visual map layers and reserves interaction",
   visualJudge.includes("terrain_layer_empty") &&
     visualJudge.includes("walkable_layer_empty") &&
     visualJudge.includes("collision_layer_empty") &&
-    visualJudge.includes("interaction_layer_empty")
+    visualJudge.includes("interaction_layer_reserved_current_scope")
 )
 check(
   "P5-4 VisualJudge keeps source facts same source",
@@ -211,6 +215,43 @@ check(
   "P6-3 RuntimeFrame pipeline supports structured fallback",
   runtimePipeline.includes("bindStructuredFallbackVisualLayer") &&
     runtimePipeline.includes("allowStructuredFallback")
+)
+check(
+  "Current single-map visual scope allows reserved interaction layer to be empty",
+  visualJudge.includes("interaction_layer_reserved_current_scope") &&
+    !visualJudge.includes("interaction_layer_empty")
+)
+check(
+  "World visual dictionary runtime contract exists",
+  dictionaryContract.includes("world-visual-dictionary-runtime-contract-v1") &&
+    dictionaryContract.includes("ACTIVE_SINGLE_MAP_DOCUMENTS") &&
+    dictionaryContract.includes("REQUIRED_TASK_PACKAGE_FIELDS") &&
+    dictionaryContract.includes("REQUIRED_DIRECTOR_OUTPUT_FIELDS")
+)
+check(
+  "Runtime training archive loads dictionary contract",
+  runtimePipelineRunner.includes("loadWorldVisualDictionaryContract") &&
+    runtimePipelineRunner.includes("dictionaryContract") &&
+    runtimePipelineRunner.includes("tryLoadWorldVisualDictionaryContract")
+)
+check(
+  "Runtime training archive plans contaminated grass material repair",
+  runtimePipelineRunner.includes("strict-grass-material-contamination") &&
+    runtimePipelineRunner.includes("grass_material_water_contamination_suspected") &&
+    runtimePipelineRunner.includes("grass_material_path_fragment_suspected") &&
+    runtimePipelineRunner.includes("grass_material_blue_object_fragment_suspected")
+)
+check(
+  "Complete game-world gate writes dictionary contract",
+  gameWorldFrameGate.includes("load_dictionary_contract") &&
+    gameWorldFrameGate.includes("dictionaryContract") &&
+    gameWorldFrameGate.includes("dictionary_contract_must_pass")
+)
+check(
+  "Complete game-world gate check requires dictionary contract",
+  gameWorldFrameGateCheck.includes("world-visual-dictionary-runtime-contract-v1") &&
+    gameWorldFrameGateCheck.includes("dictionary_contract_must_pass") &&
+    gameWorldFrameGateCheck.includes("single_complete_map_visual")
 )
 check(
   "P5-5 RuntimeFrame builder keeps approved visual fields",
@@ -558,6 +599,12 @@ check(
     materialSlotLocalInference.includes("material slot condition channel mismatch")
 )
 check(
+  "P7-12 Local material slot inference keeps grass path shoreline model-dominant",
+  materialSlotLocalInference.includes("normalize_model_dominant_material_output") &&
+    materialSlotLocalInference.includes("model_dominant_material_output") &&
+    materialSlotLocalInference.includes('unit_kind in {"grass_texture", "shoreline_texture", "path_texture"}')
+)
+check(
   "P7-8 Material quality judge records per-slot visual failures",
   materialQualityJudge.includes("game-map-material-quality-report-v1") &&
     materialQualityJudge.includes("material_visual_quality_failed") &&
@@ -570,6 +617,10 @@ check(
   materialQualityJudge.includes("object_material_alpha_coverage_too_low") &&
     materialQualityJudge.includes("object_material_alpha_coverage_too_high") &&
     materialQualityJudge.includes("grass_forest_canopy_texture_suspected") &&
+    materialQualityJudge.includes("grass_material_water_contamination_suspected") &&
+    materialQualityJudge.includes("grass_material_path_fragment_suspected") &&
+    materialQualityJudge.includes("grass_material_blue_object_fragment_suspected") &&
+    materialQualityJudge.includes("path_material_visual_identity_too_weak") &&
     materialQualityJudge.includes("path_green_contamination_suspected") &&
     materialQualityJudge.includes("path_dense_texture_suspected") &&
     materialQualityJudge.includes("isForestLikeGrassTexture") &&
@@ -870,16 +921,8 @@ check(
   runtimeRenderer.includes("mvp_game_frontend_render_ready") &&
     runtimeRenderer.includes("world_page_runtime_layers_only")
 )
-check("Progress records current P7 mainline", progress.includes("P7"))
-check("Progress records P7-1", progress.includes("P7-1"))
-check("Progress records P7-2", progress.includes("P7-2"))
-check("Progress records P7-3", progress.includes("P7-3"))
-check("Progress records P7-4", progress.includes("P7-4"))
-check("Progress records P7-5", progress.includes("P7-5"))
-check("Progress records P7-6", progress.includes("P7-6"))
-check("Progress records P7-7", progress.includes("P7-7"))
-check("Progress records P7-8", progress.includes("P7-8"))
-check("Progress records P7-9", progress.includes("P7-9"))
+check("Current execution guide is authoritative", currentExecutionGuide.includes("本文档是当前继续工作的唯一执行入口"))
+check("Current execution guide names the complete-world command", currentExecutionGuide.includes("npm run run:complete-game-world"))
 
 let failed = 0
 for (const item of checks) {

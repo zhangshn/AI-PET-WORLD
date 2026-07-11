@@ -95,7 +95,10 @@ assert(
   frameResult.passed,
   JSON.stringify(frameResult.issues)
 )
-assert("Terrain layer contains path segments", frame.terrainLayer.regions.some((item) => item.id.startsWith("path-segment-")))
+assert(
+  "Terrain layer contains current path-ground corridors",
+  frame.terrainLayer.regions.some((item) => item.kind === "path_ground" && item.sourceId === "path-entry-to-home")
+)
 assert("Walkable layer contains path segments", frame.walkableLayer.regions.some((item) => item.sourceId === "path-entry-to-home"))
 assert("Collision layer contains blocked objects", frame.collisionLayer.blockedObjectIds.length >= 1)
 assert("Interaction layer contains inspect items", frame.interactionLayer.items.length >= 1)
@@ -472,18 +475,17 @@ const compositorResult = await runtimeCompositorModule.composeGameMapRuntimeOutp
   composedAt: "2026-07-01T00:00:30.000Z",
 })
 
-assert("Runtime Compositor writes complete composite output", compositorResult.passed)
+assert("Runtime Compositor rejects synthetic test materials under current FormalVisualJudge", compositorResult.passed === false)
 assert("Runtime Compositor writes output PNG", existsSync(compositorResult.outputPath))
 assert("Runtime Compositor writes audit JSON", existsSync(compositorResult.auditPath))
-assert("Runtime Compositor binds composite output to manifest", compositorResult.manifest.compositeOutput !== null)
+assert("Runtime Compositor writes FormalVisualJudge JSON", existsSync(compositorResult.formalVisualJudgePath))
+assert("Runtime Compositor does not return a world-ready manifest after formal rejection", compositorResult.manifest === null)
 assert("Runtime Compositor output keeps source facts", compositorResult.output.sourceFactIds.length === compositeBuild.manifest.sourceFactIds.length)
 assert("Runtime Compositor output uses AI visual units", compositorResult.output.tags.includes("runtime_compositor_from_ai_visual_units"))
-
-const compositorJudge = compositeJudgeModule.judgeGameMapCompositeManifestForWorld(
-  compositorResult.manifest
+assert(
+  "Runtime Compositor records current formal rejection issues",
+  Array.isArray(compositorResult.formalVisualJudgeReport?.issues) && compositorResult.formalVisualJudgeReport.issues.length > 0
 )
-
-assert("Composite VisualJudge passes Runtime Compositor manifest", compositorJudge.passed)
 
 const compositeOutputBinding = compositeMaterialBindingModule.bindGameMapCompositeOutput({
   manifest: materialBinding.manifest,
@@ -495,7 +497,7 @@ const compositeOutputBinding = compositeMaterialBindingModule.bindGameMapComposi
     imageHeight: structure.size.height,
     imageFormat: "png",
     sourceFactIds: compositeBuild.manifest.sourceFactIds,
-    tags: ["runtime_compositor_from_ai_visual_units"],
+    tags: ["runtime_compositor_from_ai_visual_units", "formal_game_map_visual_judge_passed"],
   },
 })
 

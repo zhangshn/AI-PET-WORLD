@@ -1,0 +1,383 @@
+{
+  "runtimeSnapshotVersion": "live-world-p3-runtime-activation-v1",
+  "sourceWorldStatePayloadHash": "3c464c6cb7f148d7a9ffc6cc0f956a25117c7c5552f4ce0ed888a24bf5110815",
+  "worldId": "p2-fixed-seed-5x5-world",
+  "seed": "live-world-p2-fixed-seed-5x5-v1",
+  "playerId": "p2-player-001",
+  "playerWorldTileX": 80,
+  "playerWorldTileY": 80,
+  "centerChunkId": "p2-fixed-seed-5x5-world-chunk-0-0",
+  "centerChunkX": 0,
+  "centerChunkY": 0,
+  "activeChunkRadius": 1,
+  "activeChunkIds": [
+    "p2-fixed-seed-5x5-world-chunk--1--1",
+    "p2-fixed-seed-5x5-world-chunk-0--1",
+    "p2-fixed-seed-5x5-world-chunk-1--1",
+    "p2-fixed-seed-5x5-world-chunk--1-0",
+    "p2-fixed-seed-5x5-world-chunk-0-0",
+    "p2-fixed-seed-5x5-world-chunk-1-0",
+    "p2-fixed-seed-5x5-world-chunk--1-1",
+    "p2-fixed-seed-5x5-world-chunk-0-1",
+    "p2-fixed-seed-5x5-world-chunk-1-1"
+  ],
+  "sleepingChunkIds": [
+    "p2-fixed-seed-5x5-world-chunk--2--2",
+    "p2-fixed-seed-5x5-world-chunk--1--2",
+    "p2-fixed-seed-5x5-world-chunk-0--2",
+    "p2-fixed-seed-5x5-world-chunk-1--2",
+    "p2-fixed-seed-5x5-world-chunk-2--2",
+    "p2-fixed-seed-5x5-world-chunk--2--1",
+    "p2-fixed-seed-5x5-world-chunk-2--1",
+    "p2-fixed-seed-5x5-world-chunk--2-0",
+    "p2-fixed-seed-5x5-world-chunk-2-0",
+    "p2-fixed-seed-5x5-world-chunk--2-1",
+    "p2-fixed-seed-5x5-world-chunk-2-1",
+    "p2-fixed-seed-5x5-world-chunk--2-2",
+    "p2-fixed-seed-5x5-world-chunk--1-2",
+    "p2-fixed-seed-5x5-world-chunk-0-2",
+    "p2-fixed-seed-5x5-world-chunk-1-2",
+    "p2-fixed-seed-5x5-world-chunk-2-2"
+  ],
+  "missingChunkIds": [],
+  "activeChunks": [
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1--1",
+      "chunkX": -1,
+      "chunkY": -1,
+      "distanceFromPlayerChunkX": -1,
+      "distanceFromPlayerChunkY": -1,
+      "runtimeState": {
+        "loadedState": "active",
+        "isActive": true,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0--1",
+      "chunkX": 0,
+      "chunkY": -1,
+      "distanceFromPlayerChunkX": 0,
+      "distanceFromPlayerChunkY": -1,
+      "runtimeState": {
+        "loadedState": "active",
+        "isActive": true,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1--1",
+      "chunkX": 1,
+      "chunkY": -1,
+      "distanceFromPlayerChunkX": 1,
+      "distanceFromPlayerChunkY": -1,
+      "runtimeState": {
+        "loadedState": "active",
+        "isActive": true,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1-0",
+      "chunkX": -1,
+      "chunkY": 0,
+      "distanceFromPlayerChunkX": -1,
+      "distanceFromPlayerChunkY": 0,
+      "runtimeState": {
+        "loadedState": "active",
+        "isActive": true,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0-0",
+      "chunkX": 0,
+      "chunkY": 0,
+      "distanceFromPlayerChunkX": 0,
+      "distanceFromPlayerChunkY": 0,
+      "runtimeState": {
+        "loadedState": "active",
+        "isActive": true,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1-0",
+      "chunkX": 1,
+      "chunkY": 0,
+      "distanceFromPlayerChunkX": 1,
+      "distanceFromPlayerChunkY": 0,
+      "runtimeState": {
+        "loadedState": "active",
+        "isActive": true,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1-1",
+      "chunkX": -1,
+      "chunkY": 1,
+      "distanceFromPlayerChunkX": -1,
+      "distanceFromPlayerChunkY": 1,
+      "runtimeState": {
+        "loadedState": "active",
+        "isActive": true,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0-1",
+      "chunkX": 0,
+      "chunkY": 1,
+      "distanceFromPlayerChunkX": 0,
+      "distanceFromPlayerChunkY": 1,
+      "runtimeState": {
+        "loadedState": "active",
+        "isActive": true,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1-1",
+      "chunkX": 1,
+      "chunkY": 1,
+      "distanceFromPlayerChunkX": 1,
+      "distanceFromPlayerChunkY": 1,
+      "runtimeState": {
+        "loadedState": "active",
+        "isActive": true,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    }
+  ],
+  "sleepingChunks": [
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--2--2",
+      "chunkX": -2,
+      "chunkY": -2,
+      "distanceFromPlayerChunkX": -2,
+      "distanceFromPlayerChunkY": -2,
+      "runtimeState": {
+        "loadedState": "sleeping",
+        "isActive": false,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1--2",
+      "chunkX": -1,
+      "chunkY": -2,
+      "distanceFromPlayerChunkX": -1,
+      "distanceFromPlayerChunkY": -2,
+      "runtimeState": {
+        "loadedState": "sleeping",
+        "isActive": false,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0--2",
+      "chunkX": 0,
+      "chunkY": -2,
+      "distanceFromPlayerChunkX": 0,
+      "distanceFromPlayerChunkY": -2,
+      "runtimeState": {
+        "loadedState": "sleeping",
+        "isActive": false,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1--2",
+      "chunkX": 1,
+      "chunkY": -2,
+      "distanceFromPlayerChunkX": 1,
+      "distanceFromPlayerChunkY": -2,
+      "runtimeState": {
+        "loadedState": "sleeping",
+        "isActive": false,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-2--2",
+      "chunkX": 2,
+      "chunkY": -2,
+      "distanceFromPlayerChunkX": 2,
+      "distanceFromPlayerChunkY": -2,
+      "runtimeState": {
+        "loadedState": "sleeping",
+        "isActive": false,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--2--1",
+      "chunkX": -2,
+      "chunkY": -1,
+      "distanceFromPlayerChunkX": -2,
+      "distanceFromPlayerChunkY": -1,
+      "runtimeState": {
+        "loadedState": "sleeping",
+        "isActive": false,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-2--1",
+      "chunkX": 2,
+      "chunkY": -1,
+      "distanceFromPlayerChunkX": 2,
+      "distanceFromPlayerChunkY": -1,
+      "runtimeState": {
+        "loadedState": "sleeping",
+        "isActive": false,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--2-0",
+      "chunkX": -2,
+      "chunkY": 0,
+      "distanceFromPlayerChunkX": -2,
+      "distanceFromPlayerChunkY": 0,
+      "runtimeState": {
+        "loadedState": "sleeping",
+        "isActive": false,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-2-0",
+      "chunkX": 2,
+      "chunkY": 0,
+      "distanceFromPlayerChunkX": 2,
+      "distanceFromPlayerChunkY": 0,
+      "runtimeState": {
+        "loadedState": "sleeping",
+        "isActive": false,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--2-1",
+      "chunkX": -2,
+      "chunkY": 1,
+      "distanceFromPlayerChunkX": -2,
+      "distanceFromPlayerChunkY": 1,
+      "runtimeState": {
+        "loadedState": "sleeping",
+        "isActive": false,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-2-1",
+      "chunkX": 2,
+      "chunkY": 1,
+      "distanceFromPlayerChunkX": 2,
+      "distanceFromPlayerChunkY": 1,
+      "runtimeState": {
+        "loadedState": "sleeping",
+        "isActive": false,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--2-2",
+      "chunkX": -2,
+      "chunkY": 2,
+      "distanceFromPlayerChunkX": -2,
+      "distanceFromPlayerChunkY": 2,
+      "runtimeState": {
+        "loadedState": "sleeping",
+        "isActive": false,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1-2",
+      "chunkX": -1,
+      "chunkY": 2,
+      "distanceFromPlayerChunkX": -1,
+      "distanceFromPlayerChunkY": 2,
+      "runtimeState": {
+        "loadedState": "sleeping",
+        "isActive": false,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0-2",
+      "chunkX": 0,
+      "chunkY": 2,
+      "distanceFromPlayerChunkX": 0,
+      "distanceFromPlayerChunkY": 2,
+      "runtimeState": {
+        "loadedState": "sleeping",
+        "isActive": false,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1-2",
+      "chunkX": 1,
+      "chunkY": 2,
+      "distanceFromPlayerChunkX": 1,
+      "distanceFromPlayerChunkY": 2,
+      "runtimeState": {
+        "loadedState": "sleeping",
+        "isActive": false,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    },
+    {
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-2-2",
+      "chunkX": 2,
+      "chunkY": 2,
+      "distanceFromPlayerChunkX": 2,
+      "distanceFromPlayerChunkY": 2,
+      "runtimeState": {
+        "loadedState": "sleeping",
+        "isActive": false,
+        "lastActiveTick": 0,
+        "lastUpdatedTick": 0
+      }
+    }
+  ],
+  "runtimeReadBoundary": {
+    "allowedSource": "WorldState",
+    "forbiddenSources": [
+      ".runtime/ai-painter",
+      "data/world-visual-candidates",
+      "data/world-samples"
+    ],
+    "allowTrainingArtifacts": false,
+    "allowUnreviewedCandidates": false
+  },
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

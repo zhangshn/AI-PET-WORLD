@@ -1,0 +1,46 @@
+{
+  "manifestVersion": "live-world-p7-approved-visual-manifest-v1",
+  "manifestId": "live-world-p7-approved-visual-manifest-0001",
+  "worldId": "p2-fixed-seed-5x5-world",
+  "sourceWorldStatePayloadHash": "3c464c6cb7f148d7a9ffc6cc0f956a25117c7c5552f4ce0ed888a24bf5110815",
+  "requiredChunkIds": [
+    "p2-fixed-seed-5x5-world-chunk--1--1",
+    "p2-fixed-seed-5x5-world-chunk-0--1",
+    "p2-fixed-seed-5x5-world-chunk-1--1",
+    "p2-fixed-seed-5x5-world-chunk--1-0",
+    "p2-fixed-seed-5x5-world-chunk-0-0",
+    "p2-fixed-seed-5x5-world-chunk-1-0",
+    "p2-fixed-seed-5x5-world-chunk--1-1",
+    "p2-fixed-seed-5x5-world-chunk-0-1",
+    "p2-fixed-seed-5x5-world-chunk-1-1"
+  ],
+  "approvedVisuals": [],
+  "approvedVisualCount": 0,
+  "missingApprovedVisualChunkIds": [
+    "p2-fixed-seed-5x5-world-chunk--1--1",
+    "p2-fixed-seed-5x5-world-chunk-0--1",
+    "p2-fixed-seed-5x5-world-chunk-1--1",
+    "p2-fixed-seed-5x5-world-chunk--1-0",
+    "p2-fixed-seed-5x5-world-chunk-0-0",
+    "p2-fixed-seed-5x5-world-chunk-1-0",
+    "p2-fixed-seed-5x5-world-chunk--1-1",
+    "p2-fixed-seed-5x5-world-chunk-0-1",
+    "p2-fixed-seed-5x5-world-chunk-1-1"
+  ],
+  "readBoundary": {
+    "allowedVisualRoots": [
+      "data/live-world/approved-visuals"
+    ],
+    "forbiddenVisualRoots": [
+      "data/world-visual-candidates",
+      "data/world-samples/pending",
+      "data/world-samples/rejected",
+      "data/world-runs",
+      ".runtime/ai-painter"
+    ],
+    "allowCandidateOutputs": false,
+    "allowPendingSamples": false,
+    "allowRejectedSamples": false
+  },
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

@@ -57,6 +57,30 @@ function main() {
   if (failures.length) return finish()
 
   const manifest = readJson(manifestPath)
+  const materialPassed = manifest.quality?.materialPassed === true
+  const formalPassed = manifest.quality?.formalVisualJudgePassed === true
+  const failedMaterialArchive = manifest.status === "archived_existing_failed_material_quality"
+  const materialQualityFailed = failedMaterialArchive && manifest.quality?.materialPassed === false
+  const failedFormalArchive = !materialQualityFailed && formalPassed === false
+  const failedArchive = failedMaterialArchive || failedFormalArchive
+  if (failedArchive) {
+    if (materialQualityFailed) {
+      check(
+        Array.isArray(manifest.quality?.failedSlots) && manifest.quality.failedSlots.length >= 1,
+        "failed material archive must record failedSlots",
+      )
+      check(manifest.output?.archivedCompositeOutput == null, "failed material archive must not reuse stale composite output")
+      check(manifest.quality?.archivedFormalVisualJudge == null, "failed material archive must not reuse stale Formal VisualJudge")
+      check(manifest.output?.archivedRuntimeFrameCandidate == null, "failed material archive must not reuse stale RuntimeFrame candidate")
+    }
+    if (failedFormalArchive) {
+      check(
+        Array.isArray(manifest.quality?.formalVisualJudgeIssues) &&
+          manifest.quality.formalVisualJudgeIssues.length >= 1,
+        "failed formal archive must record formal visual judge issues",
+      )
+    }
+  }
   check(manifest.schemaVersion === "ai-painter-training-run-archive-v1", "schemaVersion 必须是 ai-painter-training-run-archive-v1")
   check(typeof manifest.runId === "string" && manifest.runId.length > 0, "runId 必须存在")
   check(typeof manifest.action === "string" && manifest.action.length > 0, "action 必须存在")
@@ -64,26 +88,38 @@ function main() {
   check(typeof manifest.finishedAt === "string" && manifest.finishedAt.length > 0, "finishedAt 必须存在")
 
   check(fileExists(manifest.referenceBaseline?.archivedImage), "必须归档参考基准图")
-  check(fileExists(manifest.output?.archivedCompositeOutput), "必须归档完整合成图")
+  if (!materialQualityFailed) {
+    check(fileExists(manifest.output?.archivedCompositeOutput), "必须归档完整合成图")
+  }
   check(directoryExists(manifest.inference?.archivedMaterialDir), "必须归档材料槽图片目录")
   check(countFiles(manifest.inference?.archivedMaterialDir) >= 1, "材料槽图片目录必须包含文件")
 
   check(fileExists(manifest.quality?.archivedMaterialQualityReport), "必须归档材料质量报告")
-  check(fileExists(manifest.quality?.archivedFormalVisualJudge), "必须归档 Formal VisualJudge 报告")
+  if (!materialQualityFailed) {
+    check(fileExists(manifest.quality?.archivedFormalVisualJudge), "必须归档 Formal VisualJudge 报告")
+  }
   check(fileExists(manifest.visualDeltaReview?.archivedReport), "必须归档视觉差距复盘报告")
-  check(fileExists(manifest.output?.archivedApprovedPack), "必须归档 Approved Material Pack")
-  check(fileExists(manifest.output?.archivedRuntimeFrameCandidate), "必须归档 RuntimeFrame 候选记录")
+  if (!materialQualityFailed) {
+    check(fileExists(manifest.output?.archivedApprovedPack), "必须归档 Approved Material Pack")
+    check(fileExists(manifest.output?.archivedRuntimeFrameCandidate), "必须归档 RuntimeFrame 候选记录")
+  }
   check(fileExists(manifest.training?.archivedDatasetSummary), "必须归档数据集 summary")
   check(fileExists(manifest.training?.categories?.grass?.archivedSummary), "必须归档 grass 训练 summary")
   check(fileExists(manifest.training?.categories?.road?.archivedSummary), "必须归档 road 训练 summary")
   check(fileExists(manifest.model?.archivedModelManifest), "必须归档模型合并清单")
 
-  check(manifest.quality?.materialPassed === true, "材料质量必须记录为通过")
-  check(manifest.quality?.formalVisualJudgePassed === true, "Formal VisualJudge 必须记录为通过")
+  if (materialQualityFailed) {
+    check(manifest.quality?.materialPassed === false, "failed material archive must keep materialPassed=false")
+  } else {
+    check(manifest.quality?.materialPassed === true, "材料质量必须记录为通过")
+    check(manifest.quality?.formalVisualJudgePassed === true, "Formal VisualJudge 必须记录为通过")
+  }
   check(manifest.manualReview?.required === true, "必须记录需要项目所有者人工复核")
   check(manifest.manualReview?.status === "pending_owner_review", "人工复核状态必须是 pending_owner_review")
-  check(manifest.output?.compositeImageMeta?.width === 1024, "完整合成图宽度必须是 1024")
-  check(manifest.output?.compositeImageMeta?.height === 768, "完整合成图高度必须是 768")
+  if (!materialQualityFailed) {
+    check(manifest.output?.compositeImageMeta?.width === 1024, "完整合成图宽度必须是 1024")
+    check(manifest.output?.compositeImageMeta?.height === 768, "完整合成图高度必须是 768")
+  }
   check(
     typeof manifest.visualDeltaReview?.priorityIssueCount === "number" &&
       manifest.visualDeltaReview.priorityIssueCount >= 1,

@@ -1,0 +1,76 @@
+{
+  "readinessVersion": "live-world-p10-local-ai-painter-adapter-readiness-v1",
+  "readinessId": "p10-local-ai-painter-adapter-readiness-0001",
+  "dispatchId": "p10-ai-painter-dispatch-0001",
+  "status": "ready_to_run",
+  "adapterCommand": "node scripts/run-live-world-p10-local-ai-painter-adapter.mjs",
+  "adapterScriptPath": "scripts/run-live-world-p10-local-ai-painter-adapter.mjs",
+  "inferenceBridgeScriptPath": "ml/ai-painter/scripts/infer_live_world_chunk_visual.py",
+  "recommendedInnerInferenceCommand": "ml\\ai-painter\\.venv\\Scripts\\python.exe ml\\ai-painter\\scripts\\infer_live_world_chunk_visual.py",
+  "candidateCount": 9,
+  "modelAssets": [
+    {
+      "modelId": "natural-home-v28-structure-guided",
+      "modelRoot": ".runtime/ai-painter/natural-home-v28-structure-guided-training",
+      "checkpointPath": ".runtime/ai-painter/natural-home-v28-structure-guided-training/best.pt",
+      "role": "structure_checkpoint",
+      "exists": true
+    },
+    {
+      "modelId": "natural-home-v89-quality-allowlist",
+      "modelRoot": ".runtime/ai-painter/natural-home-v89-quality-allowlist-training",
+      "checkpointPath": ".runtime/ai-painter/natural-home-v89-quality-allowlist-training/best.pt",
+      "role": "rgb_refiner_checkpoint",
+      "exists": true
+    },
+    {
+      "modelId": "natural-home-v91-current-mvp-quality-ready",
+      "modelRoot": ".runtime/ai-painter/natural-home-v91-current-mvp-quality-ready-training",
+      "checkpointPath": ".runtime/ai-painter/natural-home-v91-current-mvp-quality-ready-training/best.pt",
+      "role": "current_mvp_checkpoint",
+      "exists": true
+    },
+    {
+      "modelId": "natural-home-v110-v109-formal-passed-distillation",
+      "modelRoot": ".runtime/ai-painter/natural-home-v110-v109-formal-passed-distillation-training",
+      "checkpointPath": ".runtime/ai-painter/natural-home-v110-v109-formal-passed-distillation-training/best.pt",
+      "role": "formal_world_checkpoint",
+      "exists": true
+    }
+  ],
+  "selectedModelRoot": ".runtime/ai-painter/natural-home-v91-current-mvp-quality-ready-training",
+  "selectedCheckpointPath": ".runtime/ai-painter/natural-home-v91-current-mvp-quality-ready-training/best.pt",
+  "missingReasons": [],
+  "commandProtocol": {
+    "outerCommandEnv": "LIVE_WORLD_AI_PAINTER_COMMAND",
+    "innerInferenceCommandEnv": "LIVE_WORLD_AI_PAINTER_INFERENCE_COMMAND",
+    "requiredCandidateEnv": [
+      "LIVE_WORLD_CANDIDATE_ID",
+      "LIVE_WORLD_CHUNK_ID",
+      "LIVE_WORLD_INPUT_PATH",
+      "LIVE_WORLD_OUTPUT_IMAGE_PATH",
+      "LIVE_WORLD_OUTPUT_META_PATH",
+      "LIVE_WORLD_CANDIDATE_ROOT"
+    ],
+    "outputFiles": [
+      "output.image.png",
+      "output.meta.json",
+      "adapter.blocked.json"
+    ]
+  },
+  "bridgeContract": {
+    "readsChunkVisualInput": true,
+    "convertsTileAndEntityDataToModelCondition": true,
+    "callsLocalModelRuntime": true,
+    "writesCandidateImageOnly": true,
+    "writesApprovedVisuals": false,
+    "writesTrainingSamples": false,
+    "bypassesRuntimePageGate": false
+  },
+  "nextActions": [
+    "Configure LIVE_WORLD_AI_PAINTER_COMMAND to the local adapter.",
+    "Configure LIVE_WORLD_AI_PAINTER_INFERENCE_COMMAND to the real bridge.",
+    "Run the P10 command runner and keep generated images in candidate directories only."
+  ],
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

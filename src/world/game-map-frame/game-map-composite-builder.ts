@@ -308,7 +308,9 @@ function layerZIndex(
   if (layer === "walkable") return 200 + index
   if (kind === "water") return 20 + index
   if (kind === "shoreline") return 30 + index
+  if (kind === "mud_patch") return 42 + index
   if (kind === "path_ground") return 50 + index
+  if (kind === "tall_grass") return 60 + index
   if (kind === "natural_boundary") return 70 + index
   return 10 + index
 }

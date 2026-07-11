@@ -1,0 +1,61 @@
+{
+  "mutationVersion": "live-world-p8-butler-world-mutation-record-v1",
+  "mutationId": "p8-butler-world-mutation-harvest-berry-0001",
+  "status": "applied",
+  "intentId": "p8-butler-intent-harvest-berry-0001",
+  "actorId": "butler-001",
+  "behaviorType": "harvest_resource",
+  "sourceWorldStatePath": "data/live-world/world-states/p2-fixed-seed-5x5-world.json",
+  "sourceWorldStatePayloadHash": "3c464c6cb7f148d7a9ffc6cc0f956a25117c7c5552f4ce0ed888a24bf5110815",
+  "affectedChunkIds": [
+    "p2-fixed-seed-5x5-world-chunk--1--1"
+  ],
+  "entityMutations": [
+    {
+      "entityId": "p2-fixed-seed-5x5-world-chunk--1--1-berry_bush-13",
+      "entityType": "berry_bush",
+      "fieldPath": "lifecycle.stage",
+      "before": "fruiting",
+      "after": "harvested"
+    },
+    {
+      "entityId": "p2-fixed-seed-5x5-world-chunk--1--1-berry_bush-13",
+      "entityType": "berry_bush",
+      "fieldPath": "lifecycle.nextFruitTick",
+      "before": null,
+      "after": 721
+    },
+    {
+      "entityId": "p2-fixed-seed-5x5-world-chunk--1--1-berry_bush-13",
+      "entityType": "berry_bush",
+      "fieldPath": "visualProfileId",
+      "before": "berry_bush.fruiting",
+      "after": "berry_bush.harvested"
+    },
+    {
+      "entityId": "p2-fixed-seed-5x5-world-chunk--1--1-berry_bush-13",
+      "entityType": "berry_bush",
+      "fieldPath": "updatedTick",
+      "before": 0,
+      "after": 1
+    }
+  ],
+  "resourceDeltas": [
+    {
+      "resourceType": "berry",
+      "amount": 3,
+      "inventoryTarget": "butler-001",
+      "reason": "Harvested a fruiting berry_bush in an active chunk."
+    }
+  ],
+  "collisionProjectionRefreshRequired": false,
+  "runtimeSnapshotRefreshRequired": true,
+  "visualRefreshRequired": true,
+  "forbiddenSideEffects": {
+    "writesImageFiles": false,
+    "writesTrainingSamples": false,
+    "writesApprovedVisuals": false,
+    "bypassesRuntimePageGate": false
+  },
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

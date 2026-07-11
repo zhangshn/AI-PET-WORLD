@@ -1,0 +1,10 @@
+{
+  "batchId": "p12-owner-review-decision-batch-0001",
+  "status": "blocked_pending_owner_decision",
+  "candidateCount": 9,
+  "approvedCount": 0,
+  "rejectedCount": 0,
+  "pendingCount": 9,
+  "batchPath": "data/live-world/owner-reviews/p12-active-chunks/p12-owner-review-decision-batch.json",
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

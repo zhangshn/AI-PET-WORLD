@@ -1,0 +1,10 @@
+{
+  "batchId": "p11-active-chunk-auto-visual-review-0001",
+  "status": "completed",
+  "candidateCount": 9,
+  "passCount": 0,
+  "failCount": 0,
+  "needsOwnerReviewCount": 9,
+  "batchPath": "data/live-world/visual-reviews/p11-active-chunks/p11-auto-visual-review-batch.json",
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

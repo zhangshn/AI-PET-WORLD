@@ -1,4 +1,4 @@
-import { readFile, stat } from "node:fs/promises"
+import { readFile, readdir, stat } from "node:fs/promises"
 import path from "node:path"
 import type { Metadata } from "next"
 import Link from "next/link"
@@ -147,6 +147,14 @@ type ArchivedGeneratedResult = {
   trainingDurationText?: string
 }
 
+type AutoSavedRun = {
+  name: string
+  path: string
+  kind: string
+  modifiedAt: string
+  evidence: string[]
+}
+
 const fallbackResults: GeneratedResult[] = [
   fallbackQuality("V95 / FAILURE REPAIR VJ-2 REVIEW", "Natural Home V95 failure-repair minimal semantic/style review", "naturalHomeV95FailureRepairVj2Review", ".runtime/ai-painter/natural-home-v95-failure-repair-vj2-review/contact-sheet.png", ".runtime/ai-painter/natural-home-v95-failure-repair-vj2-review/latest.json", ".runtime/ai-painter/natural-home-v95-failure-repair-vj2-review/review-report.json"),
   fallbackQuality("V95 / FAILURE REPAIR VJ-1 REVIEW", "Natural Home V95 failure-repair VisualJudge review", "naturalHomeV95FailureRepairVj1Review", ".runtime/ai-painter/natural-home-v95-failure-repair-vj1-review/contact-sheet.png", ".runtime/ai-painter/natural-home-v95-failure-repair-vj1-review/latest.json", ".runtime/ai-painter/natural-home-v95-failure-repair-vj1-review/review-report.json"),
@@ -210,9 +218,10 @@ const fallbackResults: GeneratedResult[] = [
 export default async function GeneratedResultsPage() {
   const archivedResults = await readArchivedGeneratedResults()
   const allGeneratedResults = mergeGeneratedResults(archivedResults, fallbackResults)
-  const [results, approvedRecord] = await Promise.all([
+  const [results, approvedRecord, autoSavedRuns] = await Promise.all([
     Promise.all(allGeneratedResults.map(readResult)),
     readLatestApprovedFrameRecord(),
+    readAutoSavedRuns(),
   ])
   const existingResults = results.filter((result) => result.meta)
   const failedCount = existingResults.filter((result) => result.reviewStatus === "failed").length
@@ -232,12 +241,39 @@ export default async function GeneratedResultsPage() {
           原稿、结构草图、Mask 调试图不放在这里，避免和真正训练后的内容混在一起。
         </p>
         <dl className={styles.metrics}>
+          <Metric label="自动保存目录" value={`${autoSavedRuns.length} 个`} />
           <Metric label="已记录推理结果" value={`${existingResults.length} 张`} />
           <Metric label="失败记录" value={`${failedCount} 张`} />
           <Metric label="候选记录" value={`${candidateCount} 张`} />
           <Metric label="ApprovedFrame" value={`${approvedCount} 张`} />
         </dl>
       </header>
+
+      <section className={styles.panel}>
+        <p className={styles.kicker}>LOCAL MODEL AUTO-SAVED DATA</p>
+        <h2>本地小模型自动保存目录</h2>
+        <p>
+          这里不改名、不移动数据、不重新生成记录，只读取程序已经写到磁盘上的目录。目录叫什么，页面就显示什么；
+          例如 `construction-home-v54-rgb-refiner-training` 就按 v54 显示。
+        </p>
+      </section>
+
+      <section className={styles.resultGrid}>
+        {autoSavedRuns.map((run) => (
+          <article className={styles.resultCard} key={run.path}>
+            <span className={styles.pass}>{run.kind}</span>
+            <p className={styles.kicker}>{run.name}</p>
+            <h2>{run.name}</h2>
+            <p>
+              自动保存路径：<code>{run.path}</code>
+              <br />
+              更新时间：<strong>{run.modifiedAt}</strong>
+              <br />
+              证据文件：<strong>{run.evidence.length ? run.evidence.join(" / ") : "目录存在，未检测到摘要文件"}</strong>
+            </p>
+          </article>
+        ))}
+      </section>
 
       {approvedRecord?.approvedFrame?.imageUrl ? (
         <section className={styles.resultGrid}>
@@ -359,6 +395,105 @@ function fallbackGeneration(stage: string, title: string, view: string, file: st
     description: "本地小模型推理输出，只用于候选观察；正式展示必须等质量筛选、VisualJudge 和 ApprovedFrame。",
     reviewStatus: "candidate",
   }
+}
+
+async function readAutoSavedRuns(): Promise<AutoSavedRun[]> {
+  const aiPainterRuns = await readAutoSavedRunRoot(".runtime/ai-painter", [
+    /^natural-home-v\d+/,
+    /^natural-home-local-detail-v\d+/,
+    /^construction-home-v\d+/,
+    /^game-map-material-slot-v\d+/,
+    /^training-run-archive$/,
+    /^generated-results$/,
+  ])
+  const materialInferenceRuns = await readAutoSavedRunRoot(".runtime/game-map-material-slot-inference-runs/world-d0znz8/0", [
+    /^material-slot-inference-/,
+  ])
+  return [...aiPainterRuns, ...materialInferenceRuns]
+    .sort((left, right) => Date.parse(right.modifiedAt) - Date.parse(left.modifiedAt))
+}
+
+async function readAutoSavedRunRoot(root: string, patterns: RegExp[]): Promise<AutoSavedRun[]> {
+  const absoluteRoot = path.join(/* turbopackIgnore: true */ process.cwd(), root)
+  try {
+    const entries = await readdir(/* turbopackIgnore: true */ absoluteRoot, { withFileTypes: true })
+    const runs = await Promise.all(
+      entries
+        .filter((entry) => entry.isDirectory() && patterns.some((pattern) => pattern.test(entry.name)))
+        .map(async (entry) => {
+          const relativePath = path.join(root, entry.name).replace(/\\/g, "/")
+          const absolutePath = path.join(absoluteRoot, entry.name)
+          const meta = await stat(/* turbopackIgnore: true */ absolutePath)
+          return {
+            name: entry.name,
+            path: relativePath,
+            kind: classifyAutoSavedRun(entry.name),
+            modifiedAt: formatDateValue(meta.mtime.toISOString()),
+            evidence: await readAutoSavedEvidence(absolutePath),
+          }
+        }),
+    )
+    return runs
+  } catch {
+    return []
+  }
+}
+
+async function readAutoSavedEvidence(absolutePath: string) {
+  const evidence = new Set<string>()
+  await collectEvidenceFiles(absolutePath, evidence)
+  try {
+    const entries = await readdir(/* turbopackIgnore: true */ absolutePath, { withFileTypes: true })
+    await Promise.all(
+      entries
+        .filter((entry) => entry.isDirectory())
+        .slice(0, 16)
+        .map((entry) => collectEvidenceFiles(path.join(absolutePath, entry.name), evidence)),
+    )
+  } catch {
+    // Directory is best-effort evidence only.
+  }
+  return [...evidence].slice(0, 10)
+}
+
+async function collectEvidenceFiles(absolutePath: string, evidence: Set<string>) {
+  try {
+    const entries = await readdir(/* turbopackIgnore: true */ absolutePath, { withFileTypes: true })
+    for (const entry of entries) {
+      if (!entry.isFile()) continue
+      if (
+        [
+          "training-summary.json",
+          "latest.json",
+          "manifest.json",
+          "dataset-summary.json",
+          "combined-model-root-manifest.json",
+          "material-quality-report.json",
+          "selection-report.json",
+          "review-report.json",
+          "contact-sheet.png",
+          "best.pt",
+        ].includes(entry.name)
+      ) {
+        evidence.add(entry.name)
+      }
+    }
+  } catch {
+    // Missing evidence files should not hide the saved directory itself.
+  }
+}
+
+function classifyAutoSavedRun(name: string) {
+  if (name.includes("training")) return "训练目录"
+  if (name.includes("dataset")) return "数据目录"
+  if (name.includes("candidate")) return "候选目录"
+  if (name.includes("inference")) return "推理目录"
+  if (name.includes("generation")) return "生成目录"
+  if (name.includes("selection") || name.includes("review") || name.includes("gate")) return "审核目录"
+  if (name.includes("combined")) return "合并模型目录"
+  if (name.includes("material-slot-inference")) return "材料推理目录"
+  if (name === "training-run-archive") return "训练自动保存记录"
+  return "自动保存目录"
 }
 
 async function readArchivedGeneratedResults(): Promise<GeneratedResult[]> {

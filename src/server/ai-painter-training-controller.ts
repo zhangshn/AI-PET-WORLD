@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process"
 import { appendFile, cp, mkdir, rm, stat, writeFile } from "node:fs/promises"
+import { closeSync, mkdirSync, openSync, readFileSync, unlinkSync, writeFileSync } from "node:fs"
 import path from "node:path"
 import { startResourceUsageSession } from "./ai-painter-resource-usage"
 import { archiveTrainingResult } from "./ai-painter-training-result-archive"
@@ -12,7 +13,9 @@ import {
   trainingControlDir,
   trainingControlLogPath,
   writeTrainingControlState,
+  writeTrainingRuntimeHeartbeat,
   type TrainingControlState,
+  type TrainingRuntimeHeartbeatStatus,
 } from "./ai-painter-training-state"
 
 export type TrainingAction =
@@ -104,40 +107,98 @@ export { readTrainingControlState, readTrainingLogTail, type TrainingControlStat
 
 let activeRun: Promise<void> | null = null
 const preClearArchiveRoot = path.join(/* turbopackIgnore: true */ aiPainterRuntimeRoot, "training-run-history", "pre-clear")
+const trainingProcessLockPath = path.join(/* turbopackIgnore: true */ trainingControlDir, "training-process.lock")
+const heartbeatIntervalMs = 25_000
 
 export async function startTrainingAction(action: TrainingAction) {
   if (activeRun) {
     throw new Error("已有本地训练任务正在运行，请等待完成。")
   }
+  const releaseProcessLock = acquireTrainingProcessLock(action)
 
-  await mkdir(trainingControlDir, { recursive: true })
-  await writeFile(trainingControlLogPath, "", "utf8")
+  try {
+    const persistedState = await readTrainingControlState()
+    if (persistedState.status === "running" && isProcessAlive(persistedState.childPid)) {
+      throw new Error("已有本地训练任务正在运行，请等待完成。")
+    }
 
-  const state: TrainingControlState = {
-    status: "running",
-    action,
-    currentStep: "准备执行",
-    startedAt: new Date().toISOString(),
-    finishedAt: null,
-    error: null,
+    await mkdir(trainingControlDir, { recursive: true })
+    await writeFile(trainingControlLogPath, "", "utf8")
+
+    const state: TrainingControlState = {
+      status: "running",
+      action,
+      currentStep: "准备执行",
+      startedAt: new Date().toISOString(),
+      finishedAt: null,
+      error: null,
+      controllerPid: process.pid,
+      childPid: null,
+    }
+
+    await writeTrainingControlState(state)
+    const resourceSession = await startResourceUsageSession(action)
+    await writeTrainingRuntimeHeartbeat({
+      status: "dataset_building",
+      activeTaskId: resourceSession.sessionId,
+      activeAction: action,
+      activeModelRole: modelRoleForAction(action),
+      activeStep: state.currentStep,
+      lastOutputRef: trainingControlLogPath,
+    })
+    await appendTrainingProcessEvent({
+      action,
+      runId: resourceSession.sessionId,
+      kind: "run_started",
+      status: "running",
+      title: "Training run started",
+      detail: "The local AI Painter controller accepted the training action.",
+      currentStep: state.currentStep ?? undefined,
+      resourceSessionId: resourceSession.sessionId,
+    })
+    activeRun = runAction(action, state, resourceSession).finally(() => {
+      activeRun = null
+      releaseProcessLock()
+    })
+    return state
+  } catch (error) {
+    releaseProcessLock()
+    throw error
   }
+}
 
-  await writeTrainingControlState(state)
-  const resourceSession = await startResourceUsageSession(action)
-  await appendTrainingProcessEvent({
-    action,
-    runId: resourceSession.sessionId,
-    kind: "run_started",
-    status: "running",
-    title: "Training run started",
-    detail: "The local AI Painter controller accepted the training action.",
-    currentStep: state.currentStep ?? undefined,
-    resourceSessionId: resourceSession.sessionId,
-  })
-  activeRun = runAction(action, state, resourceSession).finally(() => {
-    activeRun = null
-  })
-  return state
+function acquireTrainingProcessLock(action: TrainingAction): () => void {
+  mkdirSync(trainingControlDir, { recursive: true })
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const fd = openSync(trainingProcessLockPath, "wx")
+      writeFileSync(fd, JSON.stringify({ controllerPid: process.pid, action, acquiredAt: new Date().toISOString() }), "utf8")
+      closeSync(fd)
+      let released = false
+      return () => {
+        if (released) return
+        released = true
+        try { unlinkSync(trainingProcessLockPath) } catch {}
+      }
+    } catch (error) {
+      const lock = readTrainingProcessLock()
+      if (attempt === 0 && lock && !isProcessAlive(lock.controllerPid)) {
+        try { unlinkSync(trainingProcessLockPath) } catch {}
+        continue
+      }
+      throw new Error("已有本地训练任务持有跨进程运行锁，请等待完成。", { cause: error })
+    }
+  }
+  throw new Error("无法获取本地训练跨进程运行锁。")
+}
+
+function readTrainingProcessLock(): { controllerPid: number } | null {
+  try {
+    const value = JSON.parse(readFileSync(trainingProcessLockPath, "utf8"))
+    return typeof value?.controllerPid === "number" ? value : null
+  } catch {
+    return null
+  }
 }
 
 async function runAction(
@@ -153,6 +214,16 @@ async function runAction(
       currentScript = script
       state.currentStep = labelFor(script)
       await writeTrainingControlState(state)
+      await writeTrainingRuntimeHeartbeat({
+        status: heartbeatStatusForScript(script),
+        activeTaskId: runId,
+        activeAction: action,
+        activeModelRole: modelRoleForScript(script),
+        activeStep: state.currentStep,
+        activeScript: script,
+        lastOutputRef: trainingControlLogPath,
+        childPid: state.childPid,
+      })
       await appendFile(trainingControlLogPath, `\n[${new Date().toISOString()}] ${state.currentStep}\n`, "utf8")
       await appendTrainingProcessEvent({
         action,
@@ -165,7 +236,38 @@ async function runAction(
         currentStep: state.currentStep ?? undefined,
         resourceSessionId: resourceSession.sessionId,
       })
-      await runNpmScript(script)
+      const childRun = startNpmScript(script)
+      state.childPid = childRun.pid
+      await writeTrainingControlState(state)
+      const writeActiveHeartbeat = () => writeTrainingRuntimeHeartbeat({
+        status: heartbeatStatusForScript(script),
+        activeTaskId: runId,
+        activeAction: action,
+        activeModelRole: modelRoleForScript(script),
+        activeStep: state.currentStep,
+        activeScript: script,
+        lastOutputRef: trainingControlLogPath,
+        childPid: state.childPid,
+      })
+      await writeActiveHeartbeat()
+      const stopHeartbeat = startPeriodicHeartbeat(writeActiveHeartbeat)
+      try {
+        await childRun.completion
+      } finally {
+        await stopHeartbeat()
+        state.childPid = null
+        await writeTrainingControlState(state)
+      }
+      await writeTrainingRuntimeHeartbeat({
+        status: heartbeatStatusForScript(script),
+        activeTaskId: runId,
+        activeAction: action,
+        activeModelRole: modelRoleForScript(script),
+        activeStep: `${state.currentStep} completed`,
+        activeScript: script,
+        lastOutputRef: trainingControlLogPath,
+        childPid: null,
+      })
       await appendTrainingProcessEvent({
         action,
         runId,
@@ -179,6 +281,15 @@ async function runAction(
       })
     }
     state.status = "completed"
+    await writeTrainingRuntimeHeartbeat({
+      status: "completed_round",
+      activeTaskId: runId,
+      activeAction: action,
+      activeModelRole: modelRoleForAction(action),
+      activeStep: "completed",
+      activeScript: currentScript,
+      lastOutputRef: trainingControlLogPath,
+    })
     state.currentStep = "全部完成"
     await appendTrainingProcessEvent({
       action,
@@ -192,6 +303,15 @@ async function runAction(
     })
   } catch (error) {
     state.status = "failed"
+    await writeTrainingRuntimeHeartbeat({
+      status: "blocked",
+      activeTaskId: runId,
+      activeAction: action,
+      activeModelRole: currentScript ? modelRoleForScript(currentScript) : modelRoleForAction(action),
+      activeStep: state.currentStep ?? currentScript,
+      activeScript: currentScript,
+      lastOutputRef: trainingControlLogPath,
+    })
     state.error = error instanceof Error ? error.message : "本地任务执行失败"
     if (currentScript) {
       await appendTrainingProcessEvent({
@@ -220,8 +340,18 @@ async function runAction(
     })
     await appendFile(trainingControlLogPath, `\nERROR: ${state.error}\n`, "utf8")
   } finally {
+    state.childPid = null
     state.finishedAt = new Date().toISOString()
     await writeTrainingControlState(state)
+    await writeTrainingRuntimeHeartbeat({
+      status: state.status === "failed" ? "blocked" : "backwriting",
+      activeTaskId: runId,
+      activeAction: action,
+      activeModelRole: currentScript ? modelRoleForScript(currentScript) : modelRoleForAction(action),
+      activeStep: "finalizing resource usage, archive, and promotion evidence",
+      activeScript: currentScript,
+      lastOutputRef: trainingControlLogPath,
+    })
 
     const resourceSummary = await resourceSession.finish({
       status: state.status === "failed" ? "failed" : "completed",
@@ -296,7 +426,39 @@ async function runAction(
         await appendFile(trainingControlLogPath, `\n[${new Date().toISOString()}] 世界视觉自动晋级失败：${message}\n`, "utf8")
       }
     }
+    await writeTrainingRuntimeHeartbeat({
+      status: state.status === "failed" ? "blocked" : "completed_round",
+      activeTaskId: runId,
+      activeAction: action,
+      activeModelRole: currentScript ? modelRoleForScript(currentScript) : modelRoleForAction(action),
+      activeStep: state.currentStep,
+      activeScript: currentScript,
+      lastOutputRef: trainingControlLogPath,
+    })
   }
+}
+
+function heartbeatStatusForScript(script: string): TrainingRuntimeHeartbeatStatus {
+  const normalized = script.toLowerCase()
+  if (/prepare|dataset|pack/.test(normalized)) return "dataset_building"
+  if (/train|assemble/.test(normalized)) return "training"
+  if (/infer|generate|fix|merge|compose/.test(normalized)) return "inferencing"
+  if (/review|judge|audit|select|check/.test(normalized)) return "reviewing"
+  if (/diagnos/.test(normalized)) return "diagnosing"
+  if (/plan|report|ledger|archive|write/.test(normalized)) return "backwriting"
+  return "training"
+}
+
+function modelRoleForAction(action: TrainingAction) {
+  return action.includes("game_map") ? "complete_game_map" : "natural_home"
+}
+
+function modelRoleForScript(script: string) {
+  const normalized = script.toLowerCase()
+  if (/game-map|world|runtime-frame|material-slot/.test(normalized)) return "complete_game_map"
+  if (/visual|judge|review|audit|select/.test(normalized)) return "visual_judge"
+  if (/natural-home/.test(normalized)) return "natural_home"
+  return "ai_painter"
 }
 
 const fullActionScripts: Partial<Record<TrainingAction, string[]>> = {
@@ -903,20 +1065,56 @@ function sanitizePathSegment(value: string) {
   return value.replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "training-output"
 }
 
-function runNpmScript(script: string) {
-  return new Promise<void>((resolve, reject) => {
-    const command = process.env.ComSpec ?? "cmd.exe"
-    const child = spawn(command, ["/d", "/s", "/c", `npm run ${script}`], {
-      env: process.env,
-      windowsHide: true,
-    })
+function startNpmScript(script: string) {
+  const command = process.env.ComSpec ?? "cmd.exe"
+  const child = spawn(command, ["/d", "/s", "/c", `npm run ${script}`], {
+    env: process.env,
+    windowsHide: true,
+  })
+  const completion = new Promise<void>((resolve, reject) => {
     child.stdout.on("data", (chunk) => void appendFile(trainingControlLogPath, chunk))
     child.stderr.on("data", (chunk) => void appendFile(trainingControlLogPath, chunk))
     child.once("error", reject)
     child.once("exit", (code) => {
-      code === 0 ? resolve() : reject(new Error(`${script} exit code: ${code ?? "unknown"}`))
+      if (code === 0) resolve()
+      else reject(new Error(`${script} exit code: ${code ?? "unknown"}`))
     })
   })
+  return { pid: child.pid ?? null, completion }
+}
+
+function startPeriodicHeartbeat(writeHeartbeat: () => Promise<unknown>) {
+  let stopped = false
+  let timer: ReturnType<typeof setTimeout> | null = null
+  let inFlight: Promise<void> | null = null
+
+  function schedule() {
+    timer = setTimeout(() => {
+      inFlight = writeHeartbeat()
+        .then(() => undefined, () => undefined)
+        .finally(() => {
+          inFlight = null
+          if (!stopped) schedule()
+        })
+    }, heartbeatIntervalMs)
+  }
+
+  schedule()
+  return async () => {
+    stopped = true
+    if (timer) clearTimeout(timer)
+    if (inFlight) await inFlight
+  }
+}
+
+function isProcessAlive(pid: number | null | undefined) {
+  if (!pid || !Number.isInteger(pid) || pid <= 0) return false
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch {
+    return false
+  }
 }
 
 function labelFor(script: string) {

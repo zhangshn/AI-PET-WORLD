@@ -23,11 +23,11 @@ CATEGORY_RULES = {
     "grass": {
         "focusChannels": ("grass",),
         "patchSize": 96,
-        "minFocusRatio": 0.35,
-        "maxTreeRatio": 1.0,
+        "minFocusRatio": 0.58,
+        "maxTreeRatio": 0.14,
         "maxWaterRatio": 1.0,
         "maxRoadRatio": 1.0,
-        "maxRockRatio": 0.18,
+        "maxRockRatio": 0.12,
         "trainLimit": 180,
         "validationLimit": 36,
     },
@@ -128,13 +128,25 @@ def main() -> int:
     )
     parser.add_argument("--dataset-root", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, required=True)
+    parser.add_argument(
+        "--only-category",
+        choices=sorted(CATEGORY_RULES.keys()),
+        help="Prepare one material category instead of the full category set.",
+    )
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
 
     if args.output_root.exists():
-        if not args.force:
+        if args.only_category:
+            category_root = args.output_root / args.only_category
+            if category_root.exists():
+                if not args.force:
+                    raise FileExistsError(f"category output already exists: {category_root}")
+                shutil.rmtree(category_root)
+        elif not args.force:
             raise FileExistsError(f"output root already exists: {args.output_root}")
-        shutil.rmtree(args.output_root)
+        else:
+            shutil.rmtree(args.output_root)
 
     source_root = args.dataset_root / "accepted" / "dataset_v0" / "scene" / "world"
     train_ids = read_index(args.dataset_root / "indexes" / "train.json")
@@ -145,7 +157,13 @@ def main() -> int:
         raise ValueError("source dataset must contain train and validation indexes")
 
     category_summaries = {}
-    for category, rule in CATEGORY_RULES.items():
+    selected_rules = (
+        {args.only_category: CATEGORY_RULES[args.only_category]}
+        if args.only_category
+        else CATEGORY_RULES
+    )
+    for category, rule in selected_rules.items():
+        print(f"[prepare] category={category} split=train", flush=True)
         category_root = args.output_root / category
         train_samples = collect_samples(
             source_root,
@@ -155,6 +173,8 @@ def main() -> int:
             split="train",
             limit=int(rule["trainLimit"]),
         )
+        print(f"[prepare] category={category} train_samples={len(train_samples)}", flush=True)
+        print(f"[prepare] category={category} split=validation", flush=True)
         validation_samples = collect_samples(
             source_root,
             validation_ids,
@@ -163,6 +183,20 @@ def main() -> int:
             split="validation",
             limit=int(rule["validationLimit"]),
         )
+        print(f"[prepare] category={category} validation_samples={len(validation_samples)}", flush=True)
+        if category == "road":
+            train_samples = extend_with_reference_baseline_road_samples(
+                args.output_root,
+                train_samples,
+                split="train",
+                limit=int(rule["trainLimit"]),
+            )
+            validation_samples = extend_with_reference_baseline_road_samples(
+                args.output_root,
+                validation_samples,
+                split="validation",
+                limit=int(rule["validationLimit"]),
+            )
         if not train_samples:
             raise ValueError(f"no train samples were produced for category: {category}")
         if not validation_samples:
@@ -192,6 +226,7 @@ def main() -> int:
                 "forbiddenLaterStageChannels": list(FORBIDDEN_LATER_STAGE_CHANNELS),
             },
         }
+        print(f"[prepare] category={category} written", flush=True)
 
     summary = {
         "schemaVersion": "game-map-material-slot-repair-dataset-v1",
@@ -227,6 +262,8 @@ def collect_samples(
     scored: list[dict[str, object]] = []
 
     for source_id in source_ids:
+        if category == "road" and not is_allowed_road_source(source_id):
+            continue
         source = source_root / source_id
         if not source.exists():
             continue
@@ -284,6 +321,98 @@ def collect_samples(
     return selected
 
 
+def extend_with_reference_baseline_road_samples(
+    output_root: Path,
+    samples: list[dict[str, object]],
+    *,
+    split: str,
+    limit: int,
+) -> list[dict[str, object]]:
+    baseline_image = Path(
+        r"F:\ai-pet-world\.runtime\ai-painter\natural-home-v91-current-mvp-quality-ready-generation\inference\natural-home-crop-v7-04-pond-grass-clean__v28-remix-road-tree\target.png"
+    )
+    if not baseline_image.exists():
+        return samples
+
+    source_id = "reference-visual-baseline-road-natural-home-v91"
+    source_root = output_root / "_supplemental_sources" / source_id
+    mask_root = source_root / "masks_v1"
+    mask_root.mkdir(parents=True, exist_ok=True)
+    with Image.open(baseline_image) as image:
+        target = image.convert("RGB")
+        target.save(source_root / "target.png")
+        width, height = target.size
+    for name in V1_CONDITION_CHANNELS:
+        value = 255 if name in {"road_center", "walkable"} else 0
+        Image.new("L", (width, height), value).save(mask_root / f"{name}.png")
+
+    train_origins = [
+        (126, 0),
+        (120, 16),
+        (112, 32),
+        (106, 48),
+        (100, 64),
+        (94, 80),
+        (88, 96),
+        (82, 112),
+        (76, 128),
+        (70, 128),
+        (128, 104),
+        (144, 112),
+        (160, 112),
+        (176, 112),
+    ]
+    validation_origins = [(116, 8), (102, 56), (84, 104), (152, 112)]
+    origins = train_origins if split == "train" else validation_origins
+
+    with Image.open(source_root / "target.png") as image:
+        target = np.asarray(image.convert("RGB"), dtype=np.uint8)
+
+    supplemental = list(samples)
+    for x, y in origins:
+        if len(supplemental) >= limit:
+            break
+        patch = target[y : y + 64, x : x + 64]
+        if patch.shape[0] != 64 or patch.shape[1] != 64:
+            continue
+        full_mask = np.full((64, 64), 255, dtype=np.uint8)
+        empty_mask = np.zeros((64, 64), dtype=np.uint8)
+        metrics = patch_metrics(
+            patch,
+            masks={
+                "focus": full_mask,
+                "forbidden": empty_mask,
+                "tree": empty_mask,
+                "water": empty_mask,
+                "waterBody": empty_mask,
+                "shoreline": empty_mask,
+                "road": full_mask,
+                "rock": empty_mask,
+                "grass": empty_mask,
+            },
+        )
+        supplemental.append(
+            {
+                "sampleId": (
+                    f"road-{split}-{len(supplemental):04d}-{source_id}-{x}-{y}"
+                ),
+                "sourceId": source_id,
+                "source": source_root,
+                "category": "road",
+                "split": split,
+                "x": x,
+                "y": y,
+                "size": 64,
+                "focusChannels": ("road_center", "road_edge"),
+                "metrics": metrics,
+                "score": score_patch("road", metrics),
+                "styleVector": style_vector(patch),
+                "sourcePolicy": "reference_visual_baseline_local_model_crop_v1",
+            }
+        )
+    return supplemental[:limit]
+
+
 def candidate_origins(focus: np.ndarray, patch_size: int) -> list[tuple[int, int]]:
     height, width = focus.shape
     stride = max(8, patch_size // 4)
@@ -324,26 +453,56 @@ def passes_category_rule(category: str, metrics: dict[str, float], rule: dict[st
     if metrics["rockRatio"] > float(rule["maxRockRatio"]):
         return False
     if category == "grass":
-        if metrics["rMean"] < 0.18 or metrics["bMean"] < 0.18:
+        if metrics["waterBodyRatio"] > 0.05:
+            return False
+        if metrics["treeRatio"] > 0.14:
+            return False
+        if metrics["rockRatio"] > 0.12:
+            return False
+        if metrics["bluePixelRatio"] > 0.06:
+            return False
+        if metrics["darkObjectPixelRatio"] > 0.24:
+            return False
+        if metrics["roadSoilPixelRatio"] > 0.12:
+            return False
+        if metrics["vegetationPixelRatio"] < metrics["roadSoilPixelRatio"] + 0.30:
+            return False
+        if metrics["rMean"] < 0.14:
             return False
         if metrics["gMean"] < 0.32 or metrics["gMean"] > 0.58:
             return False
         if metrics["greenDominance"] < 0.06 or metrics["greenDominance"] > 0.22:
             return False
-        if metrics["soilIdentity"] > 0.12:
+        if metrics["soilIdentity"] > 0.32:
             return False
         if metrics["edgeDensity"] > 0.066:
             return False
-        if metrics["lumaStd"] > 0.14:
+        if metrics["lumaStd"] > 0.18:
             return False
         if metrics["greenDominance"] > 0.17 and metrics["edgeDensity"] > 0.075:
             return False
         if metrics["lumaStd"] < 0.035:
             return False
-    if category == "road":
-        if metrics["soilIdentity"] < 0.025:
+        if metrics["quantizedColorCount"] < 24:
             return False
-        if metrics["greenDominance"] > 0.055:
+    if category == "road":
+        if metrics["soilIdentity"] < 0.045:
+            return False
+        if metrics["greenDominance"] > 0.025:
+            return False
+        if metrics["grassRatio"] > 0.045:
+            return False
+        if metrics["vegetationPixelRatio"] > 0.055:
+            return False
+        if metrics["roadSoilPixelRatio"] < 0.68:
+            return False
+        if metrics["gMean"] > metrics["rMean"] * 0.94:
+            return False
+        if metrics["lumaStd"] > 0.125:
+            return False
+        if metrics["edgeDensity"] < 0.018:
+            return False
+        if metrics["quantizedColorCount"] < 18:
             return False
     if category == "rock":
         if metrics["neutrality"] < 0.35:
@@ -372,8 +531,23 @@ def score_patch(category: str, metrics: dict[str, float]) -> float:
     score = metrics["focusRatio"] * 2.0 + metrics["edgeDensity"] + metrics["lumaStd"]
     if category == "grass":
         score += max(0.0, 0.16 - metrics["greenDominance"])
+        score += metrics["paletteDensity"] * 0.0025
+        score += metrics["edgeDensity"] * 2.0
+        score -= metrics["waterRatio"] * 9.0
+        score -= metrics["waterBodyRatio"] * 14.0
+        score -= metrics["shorelineRatio"] * 8.0
+        score -= metrics["roadRatio"] * 7.0
+        score -= metrics["roadSoilPixelRatio"] * 6.0
+        score -= metrics["bluePixelRatio"] * 10.0
+        score -= metrics["darkObjectPixelRatio"] * 4.5
     if category == "road":
         score += metrics["soilIdentity"] * 2.0
+        score += metrics["roadSoilPixelRatio"] * 1.2
+        score += metrics["paletteDensity"] * 0.003
+        score += metrics["lumaStd"] * 1.5
+        score -= metrics["grassRatio"] * 5.0
+        score -= metrics["vegetationPixelRatio"] * 8.0
+        score -= max(0.0, metrics["gMean"] - metrics["rMean"] * 0.86) * 6.0
     if category == "rock":
         score += metrics["neutrality"]
     if category == "water":
@@ -430,7 +604,7 @@ def write_samples(category_root: Path, samples: list[dict[str, object]]) -> None
                 "focusChannels": list(sample["focusChannels"]),
                 "metrics": sample["metrics"],
                 "styleVector": sample["styleVector"],
-                "sourcePolicy": "same_source_target_png_and_masks_v1_crop",
+                "sourcePolicy": sample.get("sourcePolicy", "same_source_target_png_and_masks_v1_crop"),
                 "notProgramDrawing": True,
             },
         )
@@ -447,6 +621,31 @@ def patch_metrics(patch: np.ndarray, *, masks: dict[str, np.ndarray]) -> dict[st
     vertical = np.abs(luma[1:, :] - luma[:-1, :])
     edge_density = float((horizontal.mean() + vertical.mean()) * 0.5)
     neutrality = 1.0 - min(1.0, max(abs(r_mean - g_mean), abs(g_mean - b_mean), abs(r_mean - b_mean)) * 3.0)
+    quantized = np.unique((patch >> 4).reshape(-1, 3), axis=0)
+    quantized_color_count = int(quantized.shape[0])
+    road_soil = (
+        (rgb[:, :, 0] > rgb[:, :, 2] * 1.45)
+        & (rgb[:, :, 1] > rgb[:, :, 2] * 1.12)
+        & (rgb[:, :, 0] >= rgb[:, :, 1] * 0.92)
+        & (luma > 0.24)
+        & (luma < 0.78)
+    )
+    vegetation = (
+        (rgb[:, :, 1] > rgb[:, :, 0] * 1.04)
+        & (rgb[:, :, 1] > rgb[:, :, 2] * 1.35)
+        & (luma > 0.20)
+    )
+    blue_object = (
+        (rgb[:, :, 2] > rgb[:, :, 1] * 0.92)
+        & (rgb[:, :, 2] > rgb[:, :, 0] * 1.08)
+        & (luma > 0.18)
+        & (luma < 0.74)
+    )
+    dark_object = (
+        (luma < 0.23)
+        & (rgb[:, :, 1] < 0.36)
+        & (np.maximum.reduce([rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]]) - np.minimum.reduce([rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]]) > 0.08)
+    )
     return {
         "focusRatio": round(ratio(masks["focus"], pixel_count), 6),
         "forbiddenRatio": round(ratio(masks["forbidden"], pixel_count), 6),
@@ -465,7 +664,37 @@ def patch_metrics(patch: np.ndarray, *, masks: dict[str, np.ndarray]) -> dict[st
         "greenDominance": round(g_mean - max(r_mean, b_mean), 6),
         "soilIdentity": round(((r_mean + g_mean) * 0.5) - b_mean, 6),
         "neutrality": round(neutrality, 6),
+        "quantizedColorCount": quantized_color_count,
+        "paletteDensity": round(quantized_color_count / pixel_count * 10000.0, 6),
+        "roadSoilPixelRatio": round(float(np.count_nonzero(road_soil)) / pixel_count, 6),
+        "vegetationPixelRatio": round(float(np.count_nonzero(vegetation)) / pixel_count, 6),
+        "bluePixelRatio": round(float(np.count_nonzero(blue_object)) / pixel_count, 6),
+        "darkObjectPixelRatio": round(float(np.count_nonzero(dark_object)) / pixel_count, 6),
     }
+
+
+def is_allowed_road_source(source_id: str) -> bool:
+    lowered = source_id.lower()
+    rejected_tokens = (
+        "early_settlement",
+        "meadow",
+        "grass",
+        "rocks",
+        "stream",
+        "quarry",
+        "tree-line",
+        "flower",
+        "lower-orchard",
+    )
+    if any(token in lowered for token in rejected_tokens):
+        return False
+    allowed_tokens = (
+        "north-orchard-path",
+        "orchard-east-clean",
+        "orchard-southeast",
+        "southeast-orchard-tight",
+    )
+    return any(token in lowered for token in allowed_tokens)
 
 
 def style_vector(patch: np.ndarray) -> list[float]:

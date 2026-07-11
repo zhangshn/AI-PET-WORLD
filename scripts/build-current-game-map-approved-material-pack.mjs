@@ -4,10 +4,12 @@ import { spawnSync } from "node:child_process"
 import { createRequire } from "node:module"
 
 const runtimeFrameRoot = path.resolve(process.argv[2] ?? ".runtime/game-map-runtime-frame")
-const materialDir = process.argv[3] ? path.resolve(process.argv[3]) : null
+const materialDirArg = process.argv[3] ? path.resolve(process.argv[3]) : null
 const outputRoot = path.resolve(process.argv[4] ?? ".runtime/game-map-approved-material-packs")
 const compileOutputDir = path.resolve(".runtime/check-game-map-frame-material-pack-builder")
 const sourceDir = "src/world/game-map-frame"
+const inferenceRoot = path.resolve(".runtime/game-map-material-slot-inference-runs")
+let resolvedMaterialDirForReport = materialDirArg
 
 function readJson(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"))
@@ -96,7 +98,40 @@ function findQualityReport(root) {
   }
 }
 
+function collectFiles(root, fileName) {
+  if (!fs.existsSync(root)) return []
+  const result = []
+  const stack = [root]
+  while (stack.length > 0) {
+    const current = stack.pop()
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const fullPath = path.join(current, entry.name)
+      if (entry.isDirectory()) stack.push(fullPath)
+      if (entry.isFile() && entry.name === fileName) result.push(fullPath)
+    }
+  }
+  return result.sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs)
+}
+
+function findLatestPassedMaterialQualityReport() {
+  for (const reportPath of collectFiles(inferenceRoot, "material-quality-report.json")) {
+    const report = readJson(reportPath)
+    if (
+      report?.passed === true &&
+      report?.status === "game_map_material_quality_passed" &&
+      typeof report.materialDir === "string" &&
+      fs.existsSync(report.materialDir)
+    ) {
+      return { reportPath, report, materialDir: path.resolve(report.materialDir) }
+    }
+  }
+  return null
+}
+
 async function main() {
+  const latestPassedReport = materialDirArg ? null : findLatestPassedMaterialQualityReport()
+  const materialDir = materialDirArg ?? latestPassedReport?.materialDir ?? null
+  resolvedMaterialDirForReport = materialDir
   const latestRuntimeFramePath = path.join(runtimeFrameRoot, "latest-runtime-frame.json")
   if (!fs.existsSync(latestRuntimeFramePath)) {
     writeBlockedReport({
@@ -224,7 +259,7 @@ main().catch((error) => {
     status: "failed",
     message: error instanceof Error ? error.message : String(error),
     runtimeFrameRoot,
-    materialDir,
+    materialDir: resolvedMaterialDirForReport,
     outputRoot,
     tags: ["approved_material_pack_build", "failed"],
   })

@@ -1,0 +1,146 @@
+{
+  "batchVersion": "live-world-p10-active-chunk-visual-generation-batch-v1",
+  "batchId": "p10-active-chunk-visual-generation-batch-0001",
+  "status": "ready_for_ai_painter",
+  "sourceWorldStatePayloadHash": "3c464c6cb7f148d7a9ffc6cc0f956a25117c7c5552f4ce0ed888a24bf5110815",
+  "sourceRuntimeSnapshotPath": "data/live-world/runtime-states/p3-runtime-activation-snapshot.json",
+  "sourceRuntimePageGatePath": "data/live-world/page-gates/p7-runtime-page-gate.json",
+  "sourceRuntimePageGateStatus": "blocked_no_approved_visuals",
+  "activeChunkCount": 9,
+  "requestCount": 9,
+  "entries": [
+    {
+      "requestId": "p10-visual-request-01",
+      "candidateId": "p10-active-chunk-candidate-01",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1--1",
+      "chunkX": -1,
+      "chunkY": -1,
+      "inputPayloadHash": "2f6d8e85dd1987ec45e22a72d0aa1f933d4ad42ad115acca81eb17cdfc3d9747",
+      "visualInputPath": "data/live-world/visual-generation-requests/p10-active-chunks/p10-visual-request-01/chunk-visual-input.json",
+      "expectedCandidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-01",
+      "expectedOutputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-01/output.image.png",
+      "status": "waiting_for_ai_painter"
+    },
+    {
+      "requestId": "p10-visual-request-02",
+      "candidateId": "p10-active-chunk-candidate-02",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0--1",
+      "chunkX": 0,
+      "chunkY": -1,
+      "inputPayloadHash": "ea4fa752d7d46c837caeb7b7ce7b0e2c9725dc0f42ed3b73a5e323b9565e5e57",
+      "visualInputPath": "data/live-world/visual-generation-requests/p10-active-chunks/p10-visual-request-02/chunk-visual-input.json",
+      "expectedCandidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-02",
+      "expectedOutputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-02/output.image.png",
+      "status": "waiting_for_ai_painter"
+    },
+    {
+      "requestId": "p10-visual-request-03",
+      "candidateId": "p10-active-chunk-candidate-03",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1--1",
+      "chunkX": 1,
+      "chunkY": -1,
+      "inputPayloadHash": "40ff2dfe991a0afd8823c79de6c140164740e586d0f2dbab71af6171b169fe6f",
+      "visualInputPath": "data/live-world/visual-generation-requests/p10-active-chunks/p10-visual-request-03/chunk-visual-input.json",
+      "expectedCandidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-03",
+      "expectedOutputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-03/output.image.png",
+      "status": "waiting_for_ai_painter"
+    },
+    {
+      "requestId": "p10-visual-request-04",
+      "candidateId": "p10-active-chunk-candidate-04",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1-0",
+      "chunkX": -1,
+      "chunkY": 0,
+      "inputPayloadHash": "a6bba6abe087f47889411df618dfd3fc6ab056f03823059e97c652abe45937ae",
+      "visualInputPath": "data/live-world/visual-generation-requests/p10-active-chunks/p10-visual-request-04/chunk-visual-input.json",
+      "expectedCandidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-04",
+      "expectedOutputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-04/output.image.png",
+      "status": "waiting_for_ai_painter"
+    },
+    {
+      "requestId": "p10-visual-request-05",
+      "candidateId": "p10-active-chunk-candidate-05",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0-0",
+      "chunkX": 0,
+      "chunkY": 0,
+      "inputPayloadHash": "a377748df1738db5c5a9cc07dc28f8200585663669d5a3cf8d955344e5e93aef",
+      "visualInputPath": "data/live-world/visual-generation-requests/p10-active-chunks/p10-visual-request-05/chunk-visual-input.json",
+      "expectedCandidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-05",
+      "expectedOutputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-05/output.image.png",
+      "status": "waiting_for_ai_painter"
+    },
+    {
+      "requestId": "p10-visual-request-06",
+      "candidateId": "p10-active-chunk-candidate-06",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1-0",
+      "chunkX": 1,
+      "chunkY": 0,
+      "inputPayloadHash": "e33d7e5a810db55449af241ecb08d19f77791e0182fe870738196074d63c31de",
+      "visualInputPath": "data/live-world/visual-generation-requests/p10-active-chunks/p10-visual-request-06/chunk-visual-input.json",
+      "expectedCandidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-06",
+      "expectedOutputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-06/output.image.png",
+      "status": "waiting_for_ai_painter"
+    },
+    {
+      "requestId": "p10-visual-request-07",
+      "candidateId": "p10-active-chunk-candidate-07",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1-1",
+      "chunkX": -1,
+      "chunkY": 1,
+      "inputPayloadHash": "b00bb1c2bf4e30158a7e12527632d3e6250ba1ed8bd1f117d3cd6e5500858087",
+      "visualInputPath": "data/live-world/visual-generation-requests/p10-active-chunks/p10-visual-request-07/chunk-visual-input.json",
+      "expectedCandidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-07",
+      "expectedOutputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-07/output.image.png",
+      "status": "waiting_for_ai_painter"
+    },
+    {
+      "requestId": "p10-visual-request-08",
+      "candidateId": "p10-active-chunk-candidate-08",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0-1",
+      "chunkX": 0,
+      "chunkY": 1,
+      "inputPayloadHash": "e6ebe34d234fd4c3a2dfbd40aa1d77eb774b43482fd2622bfa6e92b1f3b05b3c",
+      "visualInputPath": "data/live-world/visual-generation-requests/p10-active-chunks/p10-visual-request-08/chunk-visual-input.json",
+      "expectedCandidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-08",
+      "expectedOutputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-08/output.image.png",
+      "status": "waiting_for_ai_painter"
+    },
+    {
+      "requestId": "p10-visual-request-09",
+      "candidateId": "p10-active-chunk-candidate-09",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1-1",
+      "chunkX": 1,
+      "chunkY": 1,
+      "inputPayloadHash": "71ae4e9dd456d8cc6434a2d55c0e6b7010405ad264b12a0ce09d0c28261d6046",
+      "visualInputPath": "data/live-world/visual-generation-requests/p10-active-chunks/p10-visual-request-09/chunk-visual-input.json",
+      "expectedCandidateRoot": "data/world-visual-candidates/p10-active-chunk-candidate-09",
+      "expectedOutputImagePath": "data/world-visual-candidates/p10-active-chunk-candidate-09/output.image.png",
+      "status": "waiting_for_ai_painter"
+    }
+  ],
+  "readBoundary": {
+    "allowedReadRoots": [
+      "data/live-world/world-states",
+      "data/live-world/runtime-states",
+      "data/live-world/visual-generation-requests"
+    ],
+    "forbiddenReadRoots": [
+      "data/live-world/approved-visuals",
+      "data/world-samples/pending",
+      "data/world-samples/rejected",
+      "data/world-runs"
+    ],
+    "canWriteCandidates": true,
+    "canWriteApprovedVisuals": false,
+    "canWriteTrainingSamples": false,
+    "canBypassRuntimePageGate": false
+  },
+  "nextRequiredPipelines": {
+    "aiPainterGeneration": true,
+    "autoStructureReview": true,
+    "ownerReview": true,
+    "approvedVisualPromotion": true,
+    "runtimePageGateRefresh": true
+  },
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

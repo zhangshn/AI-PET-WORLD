@@ -1,0 +1,121 @@
+{
+  "batchVersion": "live-world-p11-auto-visual-review-batch-v1",
+  "batchId": "p11-active-chunk-auto-visual-review-0001",
+  "sourceCommandRunPath": "data/live-world/visual-generation-dispatches/p10-active-chunks/ai-painter-command-run.json",
+  "status": "completed",
+  "candidateCount": 9,
+  "passCount": 0,
+  "failCount": 0,
+  "needsOwnerReviewCount": 9,
+  "records": [
+    {
+      "candidateId": "p10-active-chunk-candidate-01",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1--1",
+      "reviewPath": "data/live-world/visual-reviews/p11-active-chunks/p10-active-chunk-candidate-01/auto-visual-review.json",
+      "status": "needs_owner_review",
+      "conclusion": "needs_owner_review",
+      "structureIssues": [],
+      "visualIssues": [
+        "visible_grid_pattern",
+        "muddy_texture"
+      ]
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-02",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0--1",
+      "reviewPath": "data/live-world/visual-reviews/p11-active-chunks/p10-active-chunk-candidate-02/auto-visual-review.json",
+      "status": "needs_owner_review",
+      "conclusion": "needs_owner_review",
+      "structureIssues": [],
+      "visualIssues": [
+        "muddy_texture"
+      ]
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-03",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1--1",
+      "reviewPath": "data/live-world/visual-reviews/p11-active-chunks/p10-active-chunk-candidate-03/auto-visual-review.json",
+      "status": "needs_owner_review",
+      "conclusion": "needs_owner_review",
+      "structureIssues": [],
+      "visualIssues": [
+        "muddy_texture"
+      ]
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-04",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1-0",
+      "reviewPath": "data/live-world/visual-reviews/p11-active-chunks/p10-active-chunk-candidate-04/auto-visual-review.json",
+      "status": "needs_owner_review",
+      "conclusion": "needs_owner_review",
+      "structureIssues": [],
+      "visualIssues": [
+        "muddy_texture"
+      ]
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-05",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0-0",
+      "reviewPath": "data/live-world/visual-reviews/p11-active-chunks/p10-active-chunk-candidate-05/auto-visual-review.json",
+      "status": "needs_owner_review",
+      "conclusion": "needs_owner_review",
+      "structureIssues": [],
+      "visualIssues": [
+        "muddy_texture"
+      ]
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-06",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1-0",
+      "reviewPath": "data/live-world/visual-reviews/p11-active-chunks/p10-active-chunk-candidate-06/auto-visual-review.json",
+      "status": "needs_owner_review",
+      "conclusion": "needs_owner_review",
+      "structureIssues": [],
+      "visualIssues": [
+        "visible_grid_pattern",
+        "muddy_texture",
+        "water_artifact"
+      ]
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-07",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk--1-1",
+      "reviewPath": "data/live-world/visual-reviews/p11-active-chunks/p10-active-chunk-candidate-07/auto-visual-review.json",
+      "status": "needs_owner_review",
+      "conclusion": "needs_owner_review",
+      "structureIssues": [],
+      "visualIssues": [
+        "muddy_texture"
+      ]
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-08",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-0-1",
+      "reviewPath": "data/live-world/visual-reviews/p11-active-chunks/p10-active-chunk-candidate-08/auto-visual-review.json",
+      "status": "needs_owner_review",
+      "conclusion": "needs_owner_review",
+      "structureIssues": [],
+      "visualIssues": [
+        "visible_grid_pattern",
+        "muddy_texture"
+      ]
+    },
+    {
+      "candidateId": "p10-active-chunk-candidate-09",
+      "chunkId": "p2-fixed-seed-5x5-world-chunk-1-1",
+      "reviewPath": "data/live-world/visual-reviews/p11-active-chunks/p10-active-chunk-candidate-09/auto-visual-review.json",
+      "status": "needs_owner_review",
+      "conclusion": "needs_owner_review",
+      "structureIssues": [],
+      "visualIssues": [
+        "muddy_texture"
+      ]
+    }
+  ],
+  "forbiddenSideEffects": {
+    "writesApprovedVisuals": false,
+    "writesTrainingSamples": false,
+    "bypassesRuntimePageGate": false
+  },
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

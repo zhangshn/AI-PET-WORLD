@@ -1,5 +1,5 @@
 import { readFile } from "node:fs/promises"
-import { resolve, sep } from "node:path"
+import { join, resolve, sep } from "node:path"
 
 import { NextResponse, type NextRequest } from "next/server"
 
@@ -26,6 +26,18 @@ export async function GET(request: NextRequest) {
       {
         ok: false,
         status: "blocked_world_runtime_image_not_ready",
+      },
+      { status: 404 },
+    )
+  }
+
+  const ownerGate = await readRuntimeFrameOwnerReviewGate(runtimeFrame.runtimeFrameId, compositeOutput.imageSha256)
+  if (!ownerGate.canShow) {
+    return NextResponse.json(
+      {
+        ok: false,
+        status: "blocked_world_runtime_image_owner_review_required",
+        ownerGate,
       },
       { status: 404 },
     )
@@ -67,4 +79,79 @@ export async function GET(request: NextRequest) {
       "X-World-Runtime-Image-Sha256": compositeOutput.imageSha256,
     },
   })
+}
+
+async function readRuntimeFrameOwnerReviewGate(runtimeFrameId: string, imageSha256: string) {
+  const ledgerPath = join(
+    process.cwd(),
+    ".runtime",
+    "ai-painter",
+    "training-process-ledger",
+    "events.jsonl",
+  )
+
+  try {
+    const raw = await readFile(ledgerPath, "utf8")
+    const events = raw
+      .trim()
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .map(parseLedgerLine)
+      .filter((event): event is Record<string, unknown> => {
+        return (
+          isRecord(event) &&
+          event.action === "owner_review_game_map_runtime_frame" &&
+          event.archiveId === runtimeFrameId &&
+          event.resourceSessionId === imageSha256
+        )
+      })
+    const latestDecision = events.at(-1)
+    if (!latestDecision) {
+      return {
+        status: "pending",
+        canShow: false,
+        reason: "owner_review_required_before_world_display",
+      }
+    }
+    if (
+      latestDecision.status === "success" ||
+      latestDecision.status === "passed" ||
+      latestDecision.status === "approved"
+    ) {
+      return {
+        status: "passed",
+        canShow: true,
+        reason: "owner_review_passed",
+        decisionTimestamp: stringValue(latestDecision.timestamp),
+      }
+    }
+    return {
+      status: "rejected",
+      canShow: false,
+      reason: stringValue(latestDecision.error) ?? "owner_review_failed_visual_not_final",
+      decisionTimestamp: stringValue(latestDecision.timestamp),
+    }
+  } catch {
+    return {
+      status: "ledger_unreadable",
+      canShow: false,
+      reason: "owner_review_ledger_unreadable",
+    }
+  }
+}
+
+function parseLedgerLine(line: string): unknown {
+  try {
+    return JSON.parse(line) as unknown
+  } catch {
+    return null
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
+}
+
+function stringValue(value: unknown): string | null {
+  return typeof value === "string" && value.length > 0 ? value : null
 }

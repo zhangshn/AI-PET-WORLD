@@ -205,7 +205,8 @@ export async function composeGameMapRuntimeOutput(input: {
     .composite(compositeInputs)
     .png()
     .toBuffer()
-  const outputBytes = await repairCompositeSeams(compositeBytes, auditItems)
+  let outputBytes = await repairCompositeSeams(compositeBytes, auditItems)
+  outputBytes = await applyProfessionalNaturalHomeFinish(outputBytes, orderedSlots)
   const outputSha256 = sha256(outputBytes)
   const qualityMetrics = await measureCompositeOutputQuality(outputBytes, auditItems)
   const qualityTags =
@@ -358,6 +359,430 @@ async function readMaterialImageBytes(imageUrl: string): Promise<Buffer | null> 
   } catch {
     return null
   }
+}
+
+async function applyProfessionalNaturalHomeFinish(
+  outputBytes: Buffer,
+  slots: GameMapVisualUnitSlot[]
+): Promise<Buffer> {
+  const raw = await sharp(outputBytes, { failOn: "error" })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+  const width = raw.info.width
+  const height = raw.info.height
+  const channels = raw.info.channels
+  const data = Buffer.from(raw.data)
+  const pathSlots = slots.filter((slot) => slot.unitKind === "path_texture")
+  const shorelineSlots = slots.filter((slot) => slot.unitKind === "shoreline_texture")
+  const waterSlots = slots.filter((slot) => slot.unitKind === "water_texture")
+  const objectSlots = slots.filter((slot) => isObjectVisualUnit(slot.unitKind))
+
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const offset = (y * width + x) * channels
+      const red = data[offset] ?? 0
+      const green = data[offset + 1] ?? 0
+      const blue = data[offset + 2] ?? 0
+      const alpha = data[offset + 3] ?? 255
+      if (alpha < 250) continue
+
+      const inPath = pathSlots.some((slot) => pointInVisualSlot(x + 0.5, y + 0.5, slot))
+      const inShoreline = shorelineSlots.some((slot) =>
+        pointInVisualSlot(x + 0.5, y + 0.5, slot)
+      )
+      const inWater = waterSlots.some((slot) => pointInVisualSlot(x + 0.5, y + 0.5, slot))
+      const inObject = objectSlots.some((slot) => pointInVisualSlot(x + 0.5, y + 0.5, slot))
+      const nearPath =
+        !inPath &&
+        !inShoreline &&
+        !inWater &&
+        !inObject &&
+        pathSlots.some((slot) => pointNearVisualSlot(x + 0.5, y + 0.5, slot, 4))
+
+      if (inPath) {
+        writePixel(data, offset, stylizePathPixel(x, y))
+      } else if (nearPath) {
+        writePixel(data, offset, stylizePathShoulderPixel(red, green, blue, x, y))
+      } else if (inShoreline) {
+        writePixel(data, offset, stylizeShorelinePixel(red, green, blue, x, y))
+      } else if (inWater) {
+        writePixel(data, offset, stylizeWaterPixel(red, green, blue, x, y))
+      } else if (!inWater && !inObject && isNaturalGrassPixel(red, green, blue)) {
+        writePixel(data, offset, stylizeGrassPixel(red, green, blue, x, y))
+      }
+    }
+  }
+
+  return sharp(data, {
+    raw: {
+      width,
+      height,
+      channels,
+    },
+  })
+    .png()
+    .toBuffer()
+}
+
+function stylizeGrassPixel(
+  red: number,
+  green: number,
+  blue: number,
+  x: number,
+  y: number
+): [number, number, number] {
+  const broad = smoothNoiseSigned(x / 118, y / 118, 101)
+  const meadow = smoothNoiseSigned(x / 37, y / 31, 211)
+  const tuft = smoothNoiseSigned(x / 13, y / 11, 307)
+  const coolMoss = smoothNoiseSigned(x / 19, y / 17, 353)
+  const warmLeaf = smoothNoiseSigned(x / 9, y / 8, 367)
+  const blade = noiseSigned(x, y, 409)
+  const contour = Math.sin(x * 0.025 + y * 0.015 + broad * 1.1)
+  const detail = Math.sin(x * 0.73 + y * 0.31 + tuft * 1.8)
+  const paletteA = smoothNoiseSigned(x / 41, y / 37, 907)
+  const paletteB = smoothNoiseSigned(x / 29, y / 43, 911)
+  const paletteC = smoothNoiseSigned(x / 47, y / 31, 919)
+
+  if (coolMoss > 0.62) {
+    return [
+      clampByte(44 + broad * 11 + warmLeaf * 6 + blade * 2 + paletteA * 18 + paletteB * 12, 24, 126),
+      clampByte(118 + broad * 15 + tuft * 10 + detail * 3 + paletteB * 20 + paletteC * 10, 88, 188),
+      clampByte(52 + meadow * 10 + blade * 2 + paletteC * 24 - paletteA * 10, 22, 138),
+    ]
+  }
+
+  if (warmLeaf < -0.56) {
+    return [
+      clampByte(68 + broad * 18 + tuft * 10 + blade * 2 + paletteA * 22 + paletteB * 14, 36, 146),
+      clampByte(102 + meadow * 18 + contour * 4 + paletteB * 22 + paletteC * 10, 74, 178),
+      clampByte(88 + coolMoss * 13 + blade * 2 + paletteC * 22 - paletteA * 8, 50, 150),
+    ]
+  }
+
+  let nextRed =
+    red * 0.16 +
+    54 +
+    broad * 17 +
+    meadow * 16 +
+    tuft * 12 +
+    warmLeaf * 10 +
+    blade * 7 +
+    contour * 3 +
+    paletteA * 44 +
+    paletteB * 28
+  let nextGreen =
+    green * 0.12 +
+    118 +
+    broad * 17 +
+    meadow * 18 +
+    tuft * 14 +
+    warmLeaf * 8 +
+    detail * 4 +
+    paletteB * 42 +
+    paletteC * 26
+  let nextBlue =
+    blue * 0.16 +
+    38 +
+    broad * 12 +
+    meadow * 16 -
+    tuft * 7 +
+    blade * 7 +
+    paletteC * 46 -
+    paletteA * 20
+
+  if (smoothNoiseSigned(x / 23, y / 19, 613) > 0.58) {
+    nextRed += 12
+    nextGreen -= 2
+    nextBlue += 15
+  }
+  if (smoothNoiseSigned(x / 17, y / 29, 719) < -0.62) {
+    nextRed -= 10
+    nextGreen += 13
+    nextBlue -= 6
+  }
+
+  nextRed = clampByte(nextRed, 20, 174)
+  nextBlue = clampByte(nextBlue, Math.max(16, nextRed / 1.62), 166)
+  nextGreen = clampByte(Math.max(nextGreen, nextRed * 1.1, nextBlue * 1.06), 86, 222)
+  const luma = nextRed * 0.299 + nextGreen * 0.587 + nextBlue * 0.114
+  const saturation = Math.max(nextRed, nextGreen, nextBlue) - Math.min(nextRed, nextGreen, nextBlue)
+  if (luma > 82 && saturation < 96) {
+    const recovery = 96 - saturation
+    nextGreen = clampByte(nextGreen + recovery * 0.72, 96, 222)
+    nextRed = clampByte(nextRed - recovery * 0.42, 18, 174)
+    nextBlue = clampByte(nextBlue - recovery * 0.36, 14, 166)
+  }
+  if (nextRed > 160 && nextGreen > 172 && nextBlue < 124) {
+    nextBlue = 124
+  }
+  const finalLuma = nextRed * 0.299 + nextGreen * 0.587 + nextBlue * 0.114
+  if (nextRed > 168 && nextGreen > 145 && nextBlue > 125 && finalLuma > 176) {
+    nextRed = clampByte(nextRed - 18, 20, 166)
+    nextGreen = clampByte(nextGreen - 8, 86, 214)
+  }
+  const cellX = Math.floor(x / 7)
+  const cellY = Math.floor(y / 7)
+  nextRed = clampByte(nextRed + noiseSigned(cellX, cellY, 923) * 16, 20, 174)
+  nextGreen = clampByte(nextGreen + noiseSigned(cellX, cellY, 929) * 18, 86, 222)
+  nextBlue = clampByte(nextBlue + noiseSigned(cellX, cellY, 937) * 16, 16, 166)
+  const postNoiseLuma = nextRed * 0.299 + nextGreen * 0.587 + nextBlue * 0.114
+  const postNoiseSaturation =
+    Math.max(nextRed, nextGreen, nextBlue) - Math.min(nextRed, nextGreen, nextBlue)
+  if (postNoiseLuma > 82 && postNoiseSaturation < 98) {
+    const recovery = 98 - postNoiseSaturation
+    nextGreen = clampByte(nextGreen + recovery * 0.86, 96, 222)
+    nextRed = clampByte(nextRed - recovery * 0.42, 18, 174)
+    nextBlue = clampByte(nextBlue - recovery * 0.38, 14, 166)
+  }
+  let pathLikeGrass =
+    nextRed > 95 &&
+    nextGreen > 75 &&
+    nextBlue < 85 &&
+    nextRed > nextBlue * 1.35 &&
+    nextGreen > nextBlue * 1.15
+  if (pathLikeGrass) {
+    nextBlue = clampByte(Math.max(nextBlue, nextRed / 1.18, 88), 86, 166)
+    nextGreen = clampByte(Math.max(nextGreen, nextBlue * 1.08), 92, 222)
+  }
+  pathLikeGrass =
+    nextRed > 95 &&
+    nextGreen > 75 &&
+    nextBlue < 85 &&
+    nextRed > nextBlue * 1.35 &&
+    nextGreen > nextBlue * 1.15
+  if (pathLikeGrass) {
+    nextBlue = clampByte(Math.max(nextBlue, 92), 90, 166)
+  }
+  if (nextRed > 160 && nextGreen > 172 && nextBlue < 124) {
+    nextBlue = 124
+  }
+  const understoryPatch =
+    smoothNoiseSigned(x / 53, y / 47, 941) > 0.34 &&
+    smoothNoiseSigned(x / 17, y / 19, 947) > -0.18
+  if (understoryPatch) {
+    return [
+      clampByte(56 + paletteA * 12 + noiseSigned(cellX, cellY, 953) * 5, 34, 86),
+      clampByte(142 + paletteB * 20 + noiseSigned(cellX, cellY, 957) * 7, 112, 190),
+      clampByte(58 + paletteC * 12 + noiseSigned(cellX, cellY, 967) * 5, 34, 92),
+    ]
+  }
+
+  return [nextRed, nextGreen, nextBlue]
+}
+
+function stylizePathPixel(x: number, y: number): [number, number, number] {
+  if (smoothNoiseSigned(x / 5.5, y / 4.75, 761) > 0.965) {
+    return [218, 196, 124]
+  }
+
+  const coarse = smoothNoiseSigned(x / 34, y / 31, 401)
+  const wash = smoothNoiseSigned(x / 11, y / 13, 457)
+  const pebble = smoothNoiseSigned(x / 4.5, y / 4.25, 503)
+  const gravel = smoothNoiseSigned(x / 2.25, y / 2.75, 557)
+  const grain = noiseSigned(x, y, 509)
+  const redGrain = noiseSigned(x, y, 701)
+  const greenGrain = noiseSigned(x, y, 709)
+  const blueGrain = noiseSigned(x, y, 719)
+  const thread = Math.sin(x * 0.079 + y * 0.047 + coarse * 1.6)
+  const red = clampByte(
+    158 +
+      coarse * 46 +
+      wash * 36 +
+      pebble * 30 +
+      gravel * 24 +
+      grain * 24 +
+      redGrain * 34 +
+      thread * 10,
+    96,
+    246
+  )
+  const greenBase =
+    112 +
+    coarse * 35 +
+    wash * 30 +
+    pebble * 24 +
+    gravel * 20 +
+    grain * 18 +
+    greenGrain * 30 +
+    thread * 8
+  const green = clampByte(Math.min(greenBase, red * 0.86), 76, 202)
+  const blue = clampByte(
+    44 + coarse * 24 + wash * 20 + pebble * 24 + gravel * 20 - grain * 8 + blueGrain * 24,
+    16,
+    84
+  )
+  return [red, green, blue]
+}
+
+function stylizePathShoulderPixel(
+  red: number,
+  green: number,
+  blue: number,
+  x: number,
+  y: number
+): [number, number, number] {
+  const dust = smoothNoiseSigned(x / 18, y / 15, 829)
+  const grain = noiseSigned(x, y, 839)
+  return [
+    clampByte(red * 0.35 + 126 + dust * 24 + grain * 10, 92, 184),
+    clampByte(green * 0.28 + 104 + dust * 18 + grain * 8, 78, 154),
+    clampByte(blue * 0.18 + 42 + dust * 10 - grain * 4, 24, 82),
+  ]
+}
+
+function stylizeWaterPixel(
+  red: number,
+  green: number,
+  blue: number,
+  x: number,
+  y: number
+): [number, number, number] {
+  const ripple = Math.sin(x * 0.055 + y * 0.033 + smoothNoiseSigned(x / 23, y / 17, 853))
+  const glint =
+    noiseSigned(x, y, 857) > 0.94 &&
+    smoothNoiseSigned(x / 19, y / 11, 859) > -0.45
+  if (glint) {
+    return [122, 214, 232]
+  }
+  return [
+    clampByte(red * 0.9 + ripple * 2, 38, 128),
+    clampByte(green * 0.96 + ripple * 5, 92, 190),
+    clampByte(blue * 0.96 + ripple * 7, 106, 218),
+  ]
+}
+
+function stylizeShorelinePixel(
+  red: number,
+  green: number,
+  blue: number,
+  x: number,
+  y: number
+): [number, number, number] {
+  const flow = noiseSigned(Math.floor(x / 16), Math.floor(y / 22), 607)
+  const ripple = Math.sin(y * 0.035 + flow * 1.4)
+  const redBlend = red * 0.55 + 82 + flow * 14
+  const greenBlend = green * 0.55 + 98 + ripple * 10
+  const blueBlend = blue * 0.5 + 72 + flow * 12
+  return [
+    clampByte(redBlend, 56, 126),
+    clampByte(greenBlend, 78, 152),
+    clampByte(blueBlend, 58, 128),
+  ]
+}
+
+function isNaturalGrassPixel(red: number, green: number, blue: number): boolean {
+  const luma = red * 0.299 + green * 0.587 + blue * 0.114
+  return green > red * 1.02 && green > blue * 0.96 && luma > 42 && luma < 174
+}
+
+function writePixel(
+  data: Buffer,
+  offset: number,
+  color: [number, number, number]
+): void {
+  data[offset] = color[0]
+  data[offset + 1] = color[1]
+  data[offset + 2] = color[2]
+}
+
+function pointInVisualSlot(x: number, y: number, slot: GameMapVisualUnitSlot): boolean {
+  const bounds = slot.bounds
+  if (
+    x < bounds.x ||
+    y < bounds.y ||
+    x > bounds.x + bounds.width ||
+    y > bounds.y + bounds.height
+  ) {
+    return false
+  }
+  const geometry = slot.maskGeometry
+  if (geometry.kind === "rect") {
+    const rect = geometry.rect
+    return (
+      x >= rect.x &&
+      y >= rect.y &&
+      x <= rect.x + rect.width &&
+      y <= rect.y + rect.height
+    )
+  }
+  return pointInVisualPolygon(x, y, geometry.points)
+}
+
+function pointNearVisualSlot(
+  x: number,
+  y: number,
+  slot: GameMapVisualUnitSlot,
+  radius: number
+): boolean {
+  const samples = [
+    [radius, 0],
+    [-radius, 0],
+    [0, radius],
+    [0, -radius],
+    [radius * 0.7, radius * 0.7],
+    [-radius * 0.7, radius * 0.7],
+    [radius * 0.7, -radius * 0.7],
+    [-radius * 0.7, -radius * 0.7],
+  ] as const
+  return samples.some(([dx, dy]) => pointInVisualSlot(x + dx, y + dy, slot))
+}
+
+function pointInVisualPolygon(
+  x: number,
+  y: number,
+  points: Array<{ x: number; y: number }>
+): boolean {
+  let inside = false
+  for (let index = 0, previous = points.length - 1; index < points.length; previous = index, index += 1) {
+    const currentPoint = points[index]
+    const previousPoint = points[previous]
+    if (!currentPoint || !previousPoint) continue
+    const intersects =
+      currentPoint.y > y !== previousPoint.y > y &&
+      x <
+        ((previousPoint.x - currentPoint.x) * (y - currentPoint.y)) /
+          (previousPoint.y - currentPoint.y || Number.EPSILON) +
+          currentPoint.x
+    if (intersects) inside = !inside
+  }
+  return inside
+}
+
+function noiseSigned(x: number, y: number, salt: number): number {
+  let value = Math.imul(x + 374761393, 668265263) ^ Math.imul(y + 1442695041, 3266489917) ^ salt
+  value = Math.imul(value ^ (value >>> 13), 1274126177)
+  return (((value ^ (value >>> 16)) >>> 0) / 4294967295) * 2 - 1
+}
+
+function smoothNoiseSigned(x: number, y: number, salt: number): number {
+  const left = Math.floor(x)
+  const top = Math.floor(y)
+  const tx = smoothStep(x - left)
+  const ty = smoothStep(y - top)
+  const topBlend = lerp(
+    noiseSigned(left, top, salt),
+    noiseSigned(left + 1, top, salt),
+    tx
+  )
+  const bottomBlend = lerp(
+    noiseSigned(left, top + 1, salt),
+    noiseSigned(left + 1, top + 1, salt),
+    tx
+  )
+  return lerp(topBlend, bottomBlend, ty)
+}
+
+function smoothStep(value: number): number {
+  return value * value * (3 - 2 * value)
+}
+
+function lerp(left: number, right: number, amount: number): number {
+  return left + (right - left) * amount
+}
+
+function clampByte(value: number, min = 0, max = 255): number {
+  return Math.max(min, Math.min(max, Math.round(value)))
 }
 
 function slotToPlacement(slot: GameMapVisualUnitSlot): {

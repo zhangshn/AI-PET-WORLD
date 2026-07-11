@@ -1,75 +1,77 @@
 # AI-PET-WORLD
 
-状态：项目总入口  
-更新：2026-07-06
+更新时间：2026-07-11 12:32:00 +08:00
 
-AI-PET-WORLD 是一个“自主世界 + 自主管家 + 本地 AI 视觉生成”的长期运行游戏项目。项目核心不是生成一张地图图片，而是建立一套可运行、可交互、可持续演化的世界系统。
+状态：当前项目导航 / 完整自然家园地图阶段 / blocked
 
-## 项目定义
+不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
-```txt
-程序生成和维护世界事实。
-AI Painter 根据结构化世界数据生成视觉表现。
-玩家行为和管家行为改变世界状态。
-世界状态驱动画面更新。
-评审结果进入正负样本库，反哺后续训练。
+## 整个项目的两大核心业务
+
+1. **AI 管家人格与角色自主**：用户只能申请 AI 管家；以紫微斗数和八字作为性格数据来源；支持现实自我映射与平行世界反向紫微映射；最终形成具备稳定人格、记忆、动机和自主决策能力的角色。
+2. **类地球世界自主运行与生长**：以当前地球参数和自然规律为第一基准，建立持续存在、能够自主运行、自主生长并长期演化的游戏世界。
+
+两条业务相互驱动：管家在世界中自主行动并改变合法世界事实，世界环境和事件再影响管家的下一轮判断。
+
+## 当前唯一工作范围
+
+当前只完成第一版专业自然家园完整游戏地图。
+
+```text
+世界视觉数据字典
+-> 世界导演层
+-> 地图结构与语义层
+-> 材料与过渡层
+-> 物体摆放层
+-> 完整地图合成
+-> 机器审核
+-> 失败回写
+-> 下一轮训练
 ```
 
-## 当前主线
+当前阶段不做：
 
-当前主线已重构为：
+- 管家人物和角色行为实现。
+- 玩家交互、建筑、施工、动物、小镇和城市。
+- 旧的 5×5 Chunk / 9张候选图路线。
+- 紫微斗数人格映射实现；它属于第一核心业务，但当前地图阶段不启动。
+- 盲目继续 grass、road、water 等局部材料训练。
 
-```txt
-P0 活世界 Schema 收口
+## 当前状态
+
+```text
+status = blocked
+canEnterWorld = false
+blockers = owner_review_rejected, data_gap_insufficient,
+           model_training_alignment_failed,
+           training_data_persistence_failed,
+           complete_world_visual_inference_not_implemented
 ```
 
-当前不继续把单张 AI 图、局部图、材料槽图或候选图推进到 `/world`。后续所有工作先按活世界定版方案完成世界数据协议、目录结构、候选归档和 POC-0 验证。
+第一版完整世界地图尚未成功。机器审核通过不代表最终通过，项目所有者人工拒绝的 RuntimeFrame 不得进入 `/world`。
 
-## 绝对规则
+## 必读顺序
 
-| 规则 | 说明 |
-|---|---|
-| 世界事实优先 | 世界里有什么，必须先由世界事实和规则决定。 |
-| AI 只负责视觉表达 | AI Painter 不能决定世界事实，不能凭空新增建筑、人物、动物或资源。 |
-| 图片不能反写世界 | 图片画错时只能进入候选失败或负样本，不能修改 WorldState。 |
-| 候选图不是样本 | VisualCandidate 必须经人工复核后才能进入正负样本库。 |
-| `/world` 只展示正式 Runtime | 训练图、候选图、局部图、失败图、程序占位图不能进入 `/world`。 |
-| README 只做入口 | 详细计划、进度、架构和目录结构必须维护在 docs 中。 |
+1. `docs/DOCUMENT_AUTHORITY_INDEX.md`
+2. `docs/BUSINESS_SPEC.md`
+3. `docs/ARCHITECTURE.md`
+4. `docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md`
+5. 当前任务涉及的一份正式规格：
+   - `docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md`
+   - `docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md`
+   - `docs/game-world-generation/REVIEW_AUTOMATION_AND_STORAGE_SPEC.md`
 
-## 正式文档入口
+视觉字典禁止默认批量读取；只读其 README、当前导出 JSON 和任务明确涉及的条目。
 
-| 文档 | 作用 |
-|---|---|
-| [项目总计划](./docs/PROJECT_MASTER_PLAN.md) | 项目级主控计划，定义整体阶段、当前主线和模块边界。 |
-| [活世界定版技术方案](./docs/live-world/AI_LIVE_WORLD_MVP_TECHNICAL_SPEC.md) | 活世界 MVP 技术架构、P0 Schema、视觉输入、归档、验收和路线。 |
-| [活世界目录结构](./docs/live-world/DIRECTORY_STRUCTURE.md) | 活世界文档、代码、数据、候选、样本和 Runtime 的目录边界。 |
-| [唯一执行计划表](./docs/EXECUTION_PLAN.md) | 当前可执行计划，后续工作按此推进。 |
-| [当前进度表](./docs/PROGRESS.md) | 当前状态、阻塞、下一步和历史阶段记录。 |
-| [业务规则说明](./docs/BUSINESS_SPEC.md) | 业务主线、MVP 边界、AI Painter 边界、`/world` 规则。 |
-| [业务与技术架构](./docs/ARCHITECTURE.md) | 业务架构图、技术架构图、数据流和模块边界。 |
-| [目录结构说明](./docs/DIRECTORY_STRUCTURE.md) | 项目总目录职责。 |
+旧计划、旧进度表和 `docs/live-world/` 历史文档已删除，不再作为项目资料保留。
 
-## 当前允许做
+## 当前程序入口
 
-```txt
-src/world/live-world/types/
-src/world/live-world/rules/
-src/world/live-world/collision/
-src/world/live-world/visual-input/
-data/live-world/
-data/world-runs/
-data/world-visual-candidates/
-data/world-samples/
+```bash
+npm run check:documentation-policy
+npm run check:ai-painter-model-training-alignment
+npm run check:complete-game-world
+npm run run:complete-game-world
 ```
 
-## 当前禁止做
-
-```txt
-直接继续整图训练
-直接把候选图放进 /world
-直接接 Runtime 完整展示
-直接做自动训练闭环
-提前做管家人物、建筑、动物、城市
-用程序直绘最终玩家画面
-```
-
+当前正式下一步是闭合完整地图数据缺口并实现视觉条件编译器；达到数据门槛后才能接入当前任务包驱动的完整地图推理。

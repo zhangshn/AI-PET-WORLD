@@ -1,0 +1,48 @@
+{
+  "deltaVersion": "live-world-p8-world-state-delta-v1",
+  "deltaId": "p8-butler-harvest-berry-world-state-delta-0001",
+  "mutationId": "p8-butler-world-mutation-harvest-berry-0001",
+  "sourceWorldStatePayloadHash": "3c464c6cb7f148d7a9ffc6cc0f956a25117c7c5552f4ce0ed888a24bf5110815",
+  "affectedChunkIds": [
+    "p2-fixed-seed-5x5-world-chunk--1--1"
+  ],
+  "entityMutations": [
+    {
+      "entityId": "p2-fixed-seed-5x5-world-chunk--1--1-berry_bush-13",
+      "entityType": "berry_bush",
+      "fieldPath": "lifecycle.stage",
+      "before": "fruiting",
+      "after": "harvested"
+    },
+    {
+      "entityId": "p2-fixed-seed-5x5-world-chunk--1--1-berry_bush-13",
+      "entityType": "berry_bush",
+      "fieldPath": "lifecycle.nextFruitTick",
+      "before": null,
+      "after": 721
+    },
+    {
+      "entityId": "p2-fixed-seed-5x5-world-chunk--1--1-berry_bush-13",
+      "entityType": "berry_bush",
+      "fieldPath": "visualProfileId",
+      "before": "berry_bush.fruiting",
+      "after": "berry_bush.harvested"
+    },
+    {
+      "entityId": "p2-fixed-seed-5x5-world-chunk--1--1-berry_bush-13",
+      "entityType": "berry_bush",
+      "fieldPath": "updatedTick",
+      "before": 0,
+      "after": 1
+    }
+  ],
+  "nextRequiredPipelines": {
+    "lifecycleRefresh": true,
+    "collisionProjectionRefresh": false,
+    "runtimeActivationRefresh": true,
+    "chunkVisualInputRefresh": true,
+    "candidateGeneration": true,
+    "ownerApprovalBeforeRuntimePage": true
+  },
+  "createdAt": "2026-07-06T00:00:00.000Z"
+}

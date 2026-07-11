@@ -1,0 +1,3759 @@
+{
+  "schemaVersion": "world-visual-data-dictionary-export-v1",
+  "dictionaryVersionId": "mvp-natural-home-v0.1",
+  "status": "draft",
+  "generatedAt": "2026-07-08T06:30:46.781Z",
+  "sourceRoot": "docs/world-visual-data-dictionary",
+  "summary": {
+    "documentCount": 71,
+    "entryCount": 68,
+    "categories": {
+      "art-direction": 1,
+      "baseline": 1,
+      "composition-recipe": 2,
+      "composition": 3,
+      "database": 2,
+      "director": 2,
+      "drawing-method": 1,
+      "ecology": 2,
+      "gameplay": 1,
+      "generation-task": 2,
+      "map-grammar": 2,
+      "map-structure": 8,
+      "material-recipe": 2,
+      "objects": 8,
+      "quality-rubric": 1,
+      "render-layer-recipe": 1,
+      "review": 3,
+      "runtime-state": 2,
+      "schema": 2,
+      "spatial-grid": 2,
+      "terrain": 7,
+      "training": 3,
+      "versions": 2,
+      "visual-style": 6,
+      "world-ontology": 2
+    },
+    "registeredFailureCodeCount": 281,
+    "hardFailureCodeCount": 260,
+    "unregisteredHardFailureCodeCount": 0,
+    "trainingLabelCount": 16,
+    "missingCategories": []
+  },
+  "requiredCategories": [
+    "baseline",
+    "world-ontology",
+    "spatial-grid",
+    "map-grammar",
+    "terrain",
+    "objects",
+    "ecology",
+    "gameplay",
+    "runtime-state",
+    "map-structure",
+    "visual-style",
+    "drawing-method",
+    "art-direction",
+    "material-recipe",
+    "composition-recipe",
+    "render-layer-recipe",
+    "quality-rubric",
+    "composition",
+    "director",
+    "generation-task",
+    "review",
+    "training",
+    "schema",
+    "database",
+    "versions"
+  ],
+  "entries": [
+    {
+      "id": "art-direction/professional-game-art-direction",
+      "category": "art-direction",
+      "name": "professional-game-art-direction",
+      "title": "professional-game-art-direction",
+      "type": "art-direction",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/art-direction/professional-game-art-direction.md",
+      "hardFailures": [
+        {
+          "code": "art_direction_missing",
+          "meaning": "Frame has no stable professional game art direction."
+        },
+        {
+          "code": "not_player_facing_art",
+          "meaning": "Frame looks like training output or debug preview, not a player-facing map."
+        },
+        {
+          "code": "style_family_mixed",
+          "meaning": "Terrain, objects or water belong to conflicting art styles."
+        },
+        {
+          "code": "gameplay_read_not_supported",
+          "meaning": "Art direction does not support route, movement or interaction readability."
+        },
+        {
+          "code": "detail_density_unprofessional",
+          "meaning": "Detail density is either empty, noisy, or uncontrolled."
+        }
+      ],
+      "summary": "Type: art-direction Version: v0.2 Updated: 2026-07-08 13:37:48 +08:00"
+    },
+    {
+      "id": "baseline/earth",
+      "category": "baseline",
+      "name": "earth",
+      "title": "earth",
+      "type": "world baseline",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/baseline/earth.md",
+      "hardFailures": [
+        {
+          "code": "floating_object",
+          "meaning": "Object appears pasted without ground contact."
+        },
+        {
+          "code": "mixed_world_physics",
+          "meaning": "Some elements behave like icons, others like 3D objects, breaking world consistency."
+        },
+        {
+          "code": "non_earth_visual_logic",
+          "meaning": "Water, soil, plant or stone no longer reads as Earth-like natural material."
+        }
+      ],
+      "summary": "Type: world baseline Version: v0.1 The first AI-PET-WORLD natural home uses Earth-like natural logic. This does"
+    },
+    {
+      "id": "composition-recipe/game-map-composition-recipe",
+      "category": "composition-recipe",
+      "name": "game-map-composition-recipe",
+      "title": "game-map-composition-recipe",
+      "type": "composition-recipe",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/composition-recipe/game-map-composition-recipe.md",
+      "hardFailures": [
+        {
+          "code": "composition_recipe_missing",
+          "meaning": "Generation task has no composition recipe."
+        },
+        {
+          "code": "read_order_failed",
+          "meaning": "Player cannot read entrance, route, center, water and boundary in order."
+        },
+        {
+          "code": "focal_hierarchy_failed",
+          "meaning": "Decorative details beat the main route or center."
+        },
+        {
+          "code": "negative_space_missing",
+          "meaning": "Map has no readable open playable space."
+        },
+        {
+          "code": "detail_rhythm_random",
+          "meaning": "Detail distribution feels random rather than composed."
+        }
+      ],
+      "summary": "Type: composition-recipe Version: v0.2 Updated: 2026-07-08 13:37:48 +08:00"
+    },
+    {
+      "id": "composition-recipe/single-map-composition-fields",
+      "category": "composition-recipe",
+      "name": "single-map-composition-fields",
+      "title": "single-map-composition-fields",
+      "type": "composition-recipe",
+      "version": "v0.2",
+      "status": "active draft scope for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/composition-recipe/single-map-composition-fields.md",
+      "hardFailures": [
+        {
+          "code": "single_map_composition_fields_missing",
+          "meaning": "Single-map generation task lacks required composition fields."
+        },
+        {
+          "code": "entrance_route_center_not_composed",
+          "meaning": "Entrance, route and center do not form one readable composition."
+        },
+        {
+          "code": "water_boundary_not_composed",
+          "meaning": "Water and boundary placement do not support the map."
+        },
+        {
+          "code": "open_space_plan_missing",
+          "meaning": "Map lacks planned open visual space."
+        },
+        {
+          "code": "composition_depends_on_player_or_ui",
+          "meaning": "Map read depends on player character, marker or UI not in current scope."
+        }
+      ],
+      "summary": "Type: composition-recipe Version: v0.2 Updated: 2026-07-08 14:03:25 +08:00"
+    },
+    {
+      "id": "composition/layer-order",
+      "category": "composition",
+      "name": "layer-order",
+      "title": "layer-order",
+      "type": "composition rule",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/composition/layer-order.md",
+      "hardFailures": [
+        {
+          "code": "collapsed_layers",
+          "meaning": "Terrain, details and objects visually merge into unreadable noise."
+        },
+        {
+          "code": "pasted_objects",
+          "meaning": "Objects appear as stickers without contact or shared light."
+        },
+        {
+          "code": "layer_order_conflict",
+          "meaning": "Details cover important path/water/object edges in a way that breaks reading."
+        }
+      ],
+      "summary": "Type: composition rule Version: v0.1 The first world map must be composed in readable game layers. A professional"
+    },
+    {
+      "id": "composition/map-readability",
+      "category": "composition",
+      "name": "map-readability",
+      "title": "map-readability",
+      "type": "composition rule",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/composition/map-readability.md",
+      "hardFailures": [
+        {
+          "code": "no_clear_route",
+          "meaning": "Path route cannot be followed."
+        },
+        {
+          "code": "no_clear_center",
+          "meaning": "Home-center/central clearing cannot be identified."
+        },
+        {
+          "code": "water_land_confusion",
+          "meaning": "Water and land are visually confused."
+        },
+        {
+          "code": "professional_read_fail",
+          "meaning": "The image may be decorative but does not read as a playable map."
+        }
+      ],
+      "summary": "Type: composition rule Version: v0.1 The map must read as a playable world before it reads as a painting. This means"
+    },
+    {
+      "id": "composition/professional-quality",
+      "category": "composition",
+      "name": "professional-quality",
+      "title": "professional-quality",
+      "type": "composition rule",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/composition/professional-quality.md",
+      "hardFailures": [
+        {
+          "code": "not_game_ready",
+          "meaning": "Does not look ready for a first playable game map."
+        },
+        {
+          "code": "no_art_direction",
+          "meaning": "No stable visual language is visible."
+        },
+        {
+          "code": "target_not_learned",
+          "meaning": "Repeated outputs ignore this dictionary and require training/data adjustment."
+        }
+      ],
+      "summary": "Type: composition rule Version: v0.1 This file defines the first human-level visual bar. It is stricter than the"
+    },
+    {
+      "id": "database/schema-draft",
+      "category": "database",
+      "name": "schema-draft",
+      "title": "schema-draft",
+      "type": "database schema draft",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/database/schema-draft.md",
+      "hardFailures": [],
+      "summary": "Type: database schema draft Version: v0.1 Updated: 2026-07-08 12:52:59 +08:00"
+    },
+    {
+      "id": "database/storage-plan",
+      "category": "database",
+      "name": "storage-plan",
+      "title": "storage-plan",
+      "type": "database plan",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/database/storage-plan.md",
+      "hardFailures": [
+        {
+          "code": "db_without_versioning",
+          "meaning": "Database stores mutable rules without version identity."
+        },
+        {
+          "code": "db_review_not_linked",
+          "meaning": "Review records are not linked to dictionary version and model checkpoint."
+        },
+        {
+          "code": "db_binary_blob_first",
+          "meaning": "Database stores large images directly before asset/file storage is planned."
+        },
+        {
+          "code": "docs_db_diverge",
+          "meaning": "Documents and database disagree without a migration/export record."
+        }
+      ],
+      "summary": "Type: database plan Version: v0.1 Updated: 2026-07-08 12:52:59 +08:00"
+    },
+    {
+      "id": "director/director-contract",
+      "category": "director",
+      "name": "director-contract",
+      "title": "director-contract",
+      "type": "director",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/director/director-contract.md",
+      "hardFailures": [
+        {
+          "code": "director_invents_world_fact",
+          "meaning": "Director adds a fact not present in runtime state or version scope."
+        },
+        {
+          "code": "director_missing_map_grammar",
+          "meaning": "Director task lacks entrance, route, center, water edge, or boundary requirements."
+        },
+        {
+          "code": "director_ignores_fix_plan",
+          "meaning": "Previous structured failures are not used in the next task."
+        },
+        {
+          "code": "director_allows_player_visible_candidate",
+          "meaning": "Director marks a generation task or candidate as player-visible."
+        },
+        {
+          "code": "director_unstructured_prompt_only",
+          "meaning": "Director sends loose prompt text without structured generation condition."
+        }
+      ],
+      "summary": "Type: director Version: v0.2 Updated: 2026-07-08 12:52:59 +08:00"
+    },
+    {
+      "id": "director/director-output-schema",
+      "category": "director",
+      "name": "director-output-schema",
+      "title": "director-output-schema",
+      "type": "director",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/director/director-output-schema.md",
+      "hardFailures": [
+        {
+          "code": "director_output_missing_required_field",
+          "meaning": "Director output is missing a required planning field."
+        },
+        {
+          "code": "director_missing_read_order",
+          "meaning": "Director output does not define player read order."
+        },
+        {
+          "code": "director_missing_safety_block",
+          "meaning": "Director output lacks no-fact-rewrite or no-player-visible safety rules."
+        },
+        {
+          "code": "director_fix_plan_not_bound",
+          "meaning": "Director output does not bind previous failure codes to next task."
+        },
+        {
+          "code": "director_missing_drawing_process_plan",
+          "meaning": "Director output lacks drawingProcessPlan."
+        },
+        {
+          "code": "director_missing_art_direction_plan",
+          "meaning": "Director output lacks artDirectionPlan."
+        },
+        {
+          "code": "director_missing_material_recipe_plan",
+          "meaning": "Director output lacks materialRecipePlan."
+        },
+        {
+          "code": "director_missing_composition_recipe_plan",
+          "meaning": "Director output lacks compositionRecipePlan."
+        },
+        {
+          "code": "director_missing_render_layer_recipe_plan",
+          "meaning": "Director output lacks renderLayerRecipePlan."
+        },
+        {
+          "code": "director_missing_quality_rubric_plan",
+          "meaning": "Director output lacks qualityRubricPlan."
+        },
+        {
+          "code": "director_missing_single_map_scope_plan",
+          "meaning": "Director output lacks singleMapScopePlan."
+        },
+        {
+          "code": "director_missing_single_map_ecology_plan",
+          "meaning": "Director output lacks singleMapEcologyPlan."
+        },
+        {
+          "code": "director_missing_single_map_material_plan",
+          "meaning": "Director output lacks singleMapMaterialPlan."
+        },
+        {
+          "code": "director_missing_single_map_composition_plan",
+          "meaning": "Director output lacks singleMapCompositionPlan."
+        },
+        {
+          "code": "director_missing_single_map_acceptance_plan",
+          "meaning": "Director output lacks singleMapAcceptancePlan."
+        }
+      ],
+      "summary": "Type: director Version: v0.2 Updated: 2026-07-08 14:15:32 +08:00"
+    },
+    {
+      "id": "drawing-method/ai-drawing-process",
+      "category": "drawing-method",
+      "name": "ai-drawing-process",
+      "title": "ai-drawing-process",
+      "type": "drawing-method",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/drawing-method/ai-drawing-process.md",
+      "hardFailures": [
+        {
+          "code": "missing_drawing_process",
+          "meaning": "Generation did not store the drawing-process data."
+        },
+        {
+          "code": "skipped_spatial_blockout",
+          "meaning": "Image jumped into texture/detail without a readable layout blockout."
+        },
+        {
+          "code": "skipped_value_grouping",
+          "meaning": "Image has materials but no readable light/dark structure."
+        },
+        {
+          "code": "skipped_grounding_pass",
+          "meaning": "Objects and edges were not integrated into terrain."
+        },
+        {
+          "code": "polish_without_structure",
+          "meaning": "Image has detail but lacks professional map structure."
+        }
+      ],
+      "summary": "Type: drawing-method Version: v0.2 Updated: 2026-07-08 13:37:48 +08:00"
+    },
+    {
+      "id": "ecology/ecology-state-rules",
+      "category": "ecology",
+      "name": "ecology-state-rules",
+      "title": "ecology-state-rules",
+      "type": "ecology",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/ecology/ecology-state-rules.md",
+      "hardFailures": [
+        {
+          "code": "ecology_random_noise",
+          "meaning": "Natural details look randomly sprayed rather than ecologically related."
+        },
+        {
+          "code": "vegetation_density_overload",
+          "meaning": "Vegetation density hides map structure or route readability."
+        },
+        {
+          "code": "water_ecology_mismatch",
+          "meaning": "Water edge lacks wetland, shore, or transition logic."
+        },
+        {
+          "code": "path_wear_missing",
+          "meaning": "Path does not affect surrounding grass or ground."
+        },
+        {
+          "code": "biome_style_mismatch",
+          "meaning": "Plants, terrain, and color imply conflicting biomes."
+        }
+      ],
+      "summary": "Type: ecology Version: v0.2 Updated: 2026-07-08 12:52:59 +08:00"
+    },
+    {
+      "id": "ecology/single-map-ecology-fields",
+      "category": "ecology",
+      "name": "single-map-ecology-fields",
+      "title": "single-map-ecology-fields",
+      "type": "ecology",
+      "version": "v0.2",
+      "status": "active draft scope for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/ecology/single-map-ecology-fields.md",
+      "hardFailures": [
+        {
+          "code": "single_map_ecology_fields_missing",
+          "meaning": "Single-map generation task lacks required ecology fields."
+        },
+        {
+          "code": "moisture_map_unreadable",
+          "meaning": "Dry/wet/shoreline/open grass zones cannot be read."
+        },
+        {
+          "code": "grass_growth_ignores_path",
+          "meaning": "Grass density does not respond to the path."
+        },
+        {
+          "code": "shoreline_ecology_missing",
+          "meaning": "Water edge lacks wet grass, reeds or natural transition cues."
+        },
+        {
+          "code": "boundary_vegetation_wall",
+          "meaning": "Boundary vegetation becomes a flat wall instead of natural framing."
+        }
+      ],
+      "summary": "Type: ecology Version: v0.2 Updated: 2026-07-08 14:03:25 +08:00"
+    },
+    {
+      "id": "gameplay/playability-contract",
+      "category": "gameplay",
+      "name": "playability-contract",
+      "title": "playability-contract",
+      "type": "gameplay",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/gameplay/playability-contract.md",
+      "hardFailures": [
+        {
+          "code": "no_playable_read",
+          "meaning": "The image looks decorative but not playable."
+        },
+        {
+          "code": "movement_affordance_missing",
+          "meaning": "Player cannot infer where movement is possible."
+        },
+        {
+          "code": "collision_affordance_missing",
+          "meaning": "Blocked areas are not visually explained."
+        },
+        {
+          "code": "interaction_cue_noise",
+          "meaning": "Too many decorative details compete with future interaction points."
+        },
+        {
+          "code": "player_scale_conflict",
+          "meaning": "Path, objects, and open areas imply incompatible player scale."
+        }
+      ],
+      "summary": "Type: gameplay Version: v0.2 Updated: 2026-07-08 12:52:59 +08:00"
+    },
+    {
+      "id": "generation-task/runtime-frame-generation-task",
+      "category": "generation-task",
+      "name": "runtime-frame-generation-task",
+      "title": "runtime-frame-generation-task",
+      "type": "generation-task",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/generation-task/runtime-frame-generation-task.md",
+      "hardFailures": [
+        {
+          "code": "loose_prompt_only_generation",
+          "meaning": "Generation used loose prompt text without structured task package."
+        },
+        {
+          "code": "missing_task_storage",
+          "meaning": "Generated image exists without full task, model, review, or failure records."
+        },
+        {
+          "code": "missing_runtime_binding",
+          "meaning": "Generation task is not bound to worldId, tick, and dictionaryVersionId."
+        },
+        {
+          "code": "missing_previous_failure_feedback",
+          "meaning": "Previous failure codes are not included in the next task."
+        },
+        {
+          "code": "generation_target_not_runtime_frame",
+          "meaning": "Task asks for local material, crop, or decorative image instead of complete RuntimeFrame."
+        }
+      ],
+      "summary": "Type: generation-task Version: v0.2 Updated: 2026-07-08 12:52:59 +08:00"
+    },
+    {
+      "id": "generation-task/task-package-schema",
+      "category": "generation-task",
+      "name": "task-package-schema",
+      "title": "task-package-schema",
+      "type": "generation-task",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/generation-task/task-package-schema.md",
+      "hardFailures": [
+        {
+          "code": "task_schema_missing_required_field",
+          "meaning": "Task package is missing a required top-level field."
+        },
+        {
+          "code": "task_missing_required_map_part",
+          "meaning": "Task package does not require entrance, main path, home center, water edge or boundary."
+        },
+        {
+          "code": "task_missing_spatial_layers",
+          "meaning": "Task package does not include walkable, collision or object footprint layers."
+        },
+        {
+          "code": "task_storage_contract_incomplete",
+          "meaning": "Task package does not require full automatic storage and review records."
+        },
+        {
+          "code": "task_previous_failures_dropped",
+          "meaning": "Previous failure codes are absent from the next task package."
+        },
+        {
+          "code": "task_missing_drawing_process",
+          "meaning": "Task package lacks drawingProcess data."
+        },
+        {
+          "code": "task_missing_art_direction",
+          "meaning": "Task package lacks professional artDirection data."
+        },
+        {
+          "code": "task_missing_material_recipes",
+          "meaning": "Task package lacks required materialRecipes."
+        },
+        {
+          "code": "task_missing_composition_recipe",
+          "meaning": "Task package lacks compositionRecipe data."
+        },
+        {
+          "code": "task_missing_render_layer_recipe",
+          "meaning": "Task package lacks renderLayerRecipe data."
+        },
+        {
+          "code": "task_missing_quality_rubric",
+          "meaning": "Task package lacks qualityRubric data."
+        },
+        {
+          "code": "task_missing_single_map_scope",
+          "meaning": "Task package lacks current singleMapScope data."
+        },
+        {
+          "code": "task_missing_single_map_ecology_fields",
+          "meaning": "Task package lacks singleMapEcologyFields data."
+        },
+        {
+          "code": "task_missing_single_map_material_fields",
+          "meaning": "Task package lacks singleMapMaterialFields data."
+        },
+        {
+          "code": "task_missing_single_map_composition_fields",
+          "meaning": "Task package lacks singleMapCompositionFields data."
+        },
+        {
+          "code": "task_missing_single_map_acceptance",
+          "meaning": "Task package lacks singleMapAcceptance data."
+        }
+      ],
+      "summary": "Type: generation-task Version: v0.2 Updated: 2026-07-08 14:15:32 +08:00"
+    },
+    {
+      "id": "map-grammar/complete-map-grammar",
+      "category": "map-grammar",
+      "name": "complete-map-grammar",
+      "title": "complete-map-grammar",
+      "type": "map-grammar",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/map-grammar/complete-map-grammar.md",
+      "hardFailures": [
+        {
+          "code": "missing_complete_map_part",
+          "meaning": "One or more required map parts are absent."
+        },
+        {
+          "code": "route_hierarchy_missing",
+          "meaning": "Main and branch routes cannot be distinguished."
+        },
+        {
+          "code": "center_swallowed_by_texture",
+          "meaning": "Home center exists but is unreadable because of texture or clutter."
+        },
+        {
+          "code": "boundary_hard_clip",
+          "meaning": "Map edge reads as cropped rectangle rather than natural boundary."
+        },
+        {
+          "code": "random_asset_scatter",
+          "meaning": "Objects do not support route, center, water edge, or boundary grammar."
+        }
+      ],
+      "summary": "Type: map-grammar Version: v0.2 Updated: 2026-07-08 12:52:59 +08:00"
+    },
+    {
+      "id": "map-grammar/map-part-schema",
+      "category": "map-grammar",
+      "name": "map-part-schema",
+      "title": "map-part-schema",
+      "type": "map-grammar",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/map-grammar/map-part-schema.md",
+      "hardFailures": [
+        {
+          "code": "map_part_schema_missing_field",
+          "meaning": "A map grammar part lacks required schema fields."
+        },
+        {
+          "code": "map_part_connection_missing",
+          "meaning": "A required connection between map parts is absent."
+        },
+        {
+          "code": "map_part_role_conflict",
+          "meaning": "Walkable, collision, interaction, or visual role conflicts."
+        },
+        {
+          "code": "map_part_unreadable",
+          "meaning": "A required map part exists structurally but cannot be read visually."
+        }
+      ],
+      "summary": "Type: map-grammar Version: v0.2 Updated: 2026-07-08 13:11:42 +08:00"
+    },
+    {
+      "id": "map-structure/branch-path",
+      "category": "map-structure",
+      "name": "branch-path",
+      "title": "branch-path",
+      "type": "map structure",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/map-structure/branch-path.md",
+      "hardFailures": [
+        {
+          "code": "meaningless_branch",
+          "meaning": "Branch path goes nowhere."
+        },
+        {
+          "code": "branch_dominates_map",
+          "meaning": "Secondary path steals focus from main structure."
+        }
+      ],
+      "summary": "Type: map structure World meaning: secondary route Version: v0.1"
+    },
+    {
+      "id": "map-structure/collision-area",
+      "category": "map-structure",
+      "name": "collision-area",
+      "title": "collision-area",
+      "type": "map structure",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/map-structure/collision-area.md",
+      "hardFailures": [
+        {
+          "code": "invisible_collision",
+          "meaning": "Movement is blocked with no visible reason."
+        },
+        {
+          "code": "visible_blocker_no_collision",
+          "meaning": "Object looks blocking but data allows walking through it."
+        }
+      ],
+      "summary": "Type: map structure World meaning: non-walkable or blocking area Version: v0.1"
+    },
+    {
+      "id": "map-structure/entrance",
+      "category": "map-structure",
+      "name": "entrance",
+      "title": "entrance",
+      "type": "map structure",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/map-structure/entrance.md",
+      "hardFailures": [
+        {
+          "code": "hidden_entrance",
+          "meaning": "Player cannot tell where entry starts."
+        },
+        {
+          "code": "disconnected_entrance",
+          "meaning": "Entrance does not connect to main path."
+        }
+      ],
+      "summary": "Type: map structure World meaning: player entry point Version: v0.1"
+    },
+    {
+      "id": "map-structure/home-center",
+      "category": "map-structure",
+      "name": "home-center",
+      "title": "home-center",
+      "type": "map structure",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/map-structure/home-center.md",
+      "hardFailures": [
+        {
+          "code": "missing_center",
+          "meaning": "No readable center exists."
+        },
+        {
+          "code": "center_as_noise",
+          "meaning": "Center is buried under texture."
+        },
+        {
+          "code": "unauthorized_building",
+          "meaning": "Center becomes a building without world fact."
+        }
+      ],
+      "summary": "Type: map structure World meaning: natural home center, visual organization point Version: v0.1"
+    },
+    {
+      "id": "map-structure/main-path",
+      "category": "map-structure",
+      "name": "main-path",
+      "title": "main-path",
+      "type": "map structure",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/map-structure/main-path.md",
+      "hardFailures": [
+        {
+          "code": "unreadable_main_path",
+          "meaning": "Main route cannot be recognized."
+        },
+        {
+          "code": "obstructed_main_path",
+          "meaning": "Path appears blocked by tree, rock, water or noise."
+        },
+        {
+          "code": "arbitrary_path",
+          "meaning": "Path exists visually but has no structure purpose."
+        }
+      ],
+      "summary": "Type: map structure World meaning: primary walkable route Version: v0.1"
+    },
+    {
+      "id": "map-structure/natural-boundary",
+      "category": "map-structure",
+      "name": "natural-boundary",
+      "title": "natural-boundary",
+      "type": "map structure",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/map-structure/natural-boundary.md",
+      "hardFailures": [
+        {
+          "code": "hard_boundary_wall",
+          "meaning": "Boundary looks artificial."
+        },
+        {
+          "code": "boundary_noise",
+          "meaning": "Boundary is unreadable dark/green noise."
+        },
+        {
+          "code": "boundary_collision_mismatch",
+          "meaning": "Visual boundary contradicts collision data."
+        }
+      ],
+      "summary": "Type: map structure World meaning: natural edge of playable map Version: v0.1"
+    },
+    {
+      "id": "map-structure/walkable-area",
+      "category": "map-structure",
+      "name": "walkable-area",
+      "title": "walkable-area",
+      "type": "map structure",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/map-structure/walkable-area.md",
+      "hardFailures": [
+        {
+          "code": "walkable_visual_blocked",
+          "meaning": "Walkable area looks blocked."
+        },
+        {
+          "code": "collision_visual_conflict",
+          "meaning": "Visual says walkable but collision says blocked, or the reverse."
+        }
+      ],
+      "summary": "Type: map structure World meaning: area where player can move Version: v0.1"
+    },
+    {
+      "id": "map-structure/water-edge-zone",
+      "category": "map-structure",
+      "name": "water-edge-zone",
+      "title": "water-edge-zone",
+      "type": "map structure",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/map-structure/water-edge-zone.md",
+      "hardFailures": [
+        {
+          "code": "water_edge_wall",
+          "meaning": "Edge looks like a wall or pasted strip."
+        },
+        {
+          "code": "water_edge_confusion",
+          "meaning": "Player cannot tell land from water."
+        }
+      ],
+      "summary": "Type: map structure World meaning: playable/readable area around water boundary Version: v0.1"
+    },
+    {
+      "id": "material-recipe/natural-home-material-recipes",
+      "category": "material-recipe",
+      "name": "natural-home-material-recipes",
+      "title": "natural-home-material-recipes",
+      "type": "material-recipe",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/material-recipe/natural-home-material-recipes.md",
+      "hardFailures": [
+        {
+          "code": "material_recipe_missing",
+          "meaning": "Generation task does not provide material recipes."
+        },
+        {
+          "code": "grass_recipe_noise",
+          "meaning": "Grass material ignores layered readable recipe and becomes noise."
+        },
+        {
+          "code": "path_recipe_pasted",
+          "meaning": "Dirt path ignores embedded transition recipe and looks pasted."
+        },
+        {
+          "code": "water_recipe_synthetic",
+          "meaning": "Water ignores natural recipe and becomes neon/noisy/synthetic."
+        },
+        {
+          "code": "shoreline_recipe_wall",
+          "meaning": "Shoreline ignores transition recipe and becomes wall/strip."
+        },
+        {
+          "code": "detail_recipe_overload",
+          "meaning": "Detail marks overpower gameplay structure."
+        }
+      ],
+      "summary": "Type: material-recipe Version: v0.2 Updated: 2026-07-08 13:37:48 +08:00"
+    },
+    {
+      "id": "material-recipe/single-map-material-field-schema",
+      "category": "material-recipe",
+      "name": "single-map-material-field-schema",
+      "title": "single-map-material-field-schema",
+      "type": "material-recipe",
+      "version": "v0.2",
+      "status": "active draft scope for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/material-recipe/single-map-material-field-schema.md",
+      "hardFailures": [
+        {
+          "code": "single_map_material_fields_missing",
+          "meaning": "Single-map generation task lacks required material fields."
+        },
+        {
+          "code": "material_role_unclear",
+          "meaning": "Material does not communicate its map role."
+        },
+        {
+          "code": "material_value_band_conflict",
+          "meaning": "Material value range breaks route, center or water readability."
+        },
+        {
+          "code": "material_transition_missing",
+          "meaning": "Material edge lacks required transition behavior."
+        },
+        {
+          "code": "material_detail_budget_exceeded",
+          "meaning": "Material detail becomes uncontrolled noise."
+        }
+      ],
+      "summary": "Type: material-recipe Version: v0.2 Updated: 2026-07-08 14:03:25 +08:00"
+    },
+    {
+      "id": "objects/berry-bush",
+      "category": "objects",
+      "name": "berry-bush",
+      "title": "berry-bush",
+      "type": "object/resource",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/objects/berry-bush.md",
+      "hardFailures": [
+        {
+          "code": "indistinct_resource",
+          "meaning": "Cannot distinguish from random grass noise."
+        },
+        {
+          "code": "floating_resource",
+          "meaning": "No ground contact."
+        },
+        {
+          "code": "excessive_bright_berries",
+          "meaning": "Berry accents become noisy bright pixels."
+        }
+      ],
+      "summary": "Type: object/resource World meaning: small resource plant Version: v0.1"
+    },
+    {
+      "id": "objects/flower",
+      "category": "objects",
+      "name": "flower",
+      "title": "flower",
+      "type": "object/detail",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/objects/flower.md",
+      "hardFailures": [
+        {
+          "code": "pale_patch_flower",
+          "meaning": "Flower cluster becomes large pale flat patch."
+        },
+        {
+          "code": "path_pollution",
+          "meaning": "Flowers hide or dirty the path."
+        },
+        {
+          "code": "overbright_noise",
+          "meaning": "Flowers create noisy bright speckles."
+        }
+      ],
+      "summary": "Type: object/detail World meaning: small natural decoration Version: v0.1"
+    },
+    {
+      "id": "objects/grass-detail",
+      "category": "objects",
+      "name": "grass-detail",
+      "title": "grass-detail",
+      "type": "object/detail",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/objects/grass-detail.md",
+      "hardFailures": [
+        {
+          "code": "detail_noise",
+          "meaning": "Detail becomes random surface noise."
+        },
+        {
+          "code": "repeated_stamp",
+          "meaning": "Same detail repeats visibly."
+        },
+        {
+          "code": "structure_masking",
+          "meaning": "Detail hides path, center or water boundary."
+        }
+      ],
+      "summary": "Type: object/detail World meaning: small non-interactive surface detail Version: v0.1"
+    },
+    {
+      "id": "objects/pebble",
+      "category": "objects",
+      "name": "pebble",
+      "title": "pebble",
+      "type": "object/detail",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/objects/pebble.md",
+      "hardFailures": [
+        {
+          "code": "pebble_noise",
+          "meaning": "Pebbles become salt-and-pepper noise."
+        },
+        {
+          "code": "false_obstacle",
+          "meaning": "Pebbles look like major blockers."
+        },
+        {
+          "code": "repeated_dot_pattern",
+          "meaning": "Pebbles form a visible grid or repeated dot stamp."
+        }
+      ],
+      "summary": "Type: object/detail World meaning: small stone detail Version: v0.1"
+    },
+    {
+      "id": "objects/reed",
+      "category": "objects",
+      "name": "reed",
+      "title": "reed",
+      "type": "object/detail",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/objects/reed.md",
+      "hardFailures": [
+        {
+          "code": "inland_reed",
+          "meaning": "Reeds appear far from water without reason."
+        },
+        {
+          "code": "reed_wall",
+          "meaning": "Reeds form a wall or block the water boundary."
+        },
+        {
+          "code": "noisy_stripes",
+          "meaning": "Reeds become dense line noise."
+        }
+      ],
+      "summary": "Type: object/detail World meaning: shoreline vegetation Version: v0.1"
+    },
+    {
+      "id": "objects/rock",
+      "category": "objects",
+      "name": "rock",
+      "title": "rock",
+      "type": "object",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/objects/rock.md",
+      "hardFailures": [
+        {
+          "code": "black_noise_rock",
+          "meaning": "Rock reads as dark noise."
+        },
+        {
+          "code": "sticker_rock",
+          "meaning": "No shadow or terrain contact."
+        },
+        {
+          "code": "scale_mismatch",
+          "meaning": "Rock scale conflicts with tree/path."
+        }
+      ],
+      "summary": "Type: object World meaning: stone obstacle or decoration Version: v0.1"
+    },
+    {
+      "id": "objects/shrub",
+      "category": "objects",
+      "name": "shrub",
+      "title": "shrub",
+      "type": "object",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/objects/shrub.md",
+      "hardFailures": [
+        {
+          "code": "green_blob",
+          "meaning": "Shrub is only an unclear green blob."
+        },
+        {
+          "code": "floating_shrub",
+          "meaning": "No base contact."
+        },
+        {
+          "code": "style_mismatch",
+          "meaning": "Shrub does not match trees/grass style."
+        }
+      ],
+      "summary": "Type: object World meaning: low vegetation, soft boundary, decoration Version: v0.1"
+    },
+    {
+      "id": "objects/tree",
+      "category": "objects",
+      "name": "tree",
+      "title": "tree",
+      "type": "object",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/objects/tree.md",
+      "hardFailures": [
+        {
+          "code": "floating_tree",
+          "meaning": "Tree appears to hover."
+        },
+        {
+          "code": "sticker_tree",
+          "meaning": "Tree looks pasted from another image/style."
+        },
+        {
+          "code": "perspective_mismatch",
+          "meaning": "Tree camera conflicts with map camera."
+        },
+        {
+          "code": "scale_mismatch",
+          "meaning": "Tree size breaks world scale."
+        }
+      ],
+      "summary": "Type: object World meaning: plant, obstacle, boundary, ecology signal Version: v0.1"
+    },
+    {
+      "id": "quality-rubric/professional-map-quality-rubric",
+      "category": "quality-rubric",
+      "name": "professional-map-quality-rubric",
+      "title": "professional-map-quality-rubric",
+      "type": "quality-rubric",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/quality-rubric/professional-map-quality-rubric.md",
+      "hardFailures": [
+        {
+          "code": "quality_rubric_missing",
+          "meaning": "Review did not use the professional map quality rubric."
+        },
+        {
+          "code": "quality_score_unstructured",
+          "meaning": "Review result lacks category scores and structured failure codes."
+        },
+        {
+          "code": "machine_score_overrides_owner",
+          "meaning": "Machine score incorrectly overrides owner rejection."
+        },
+        {
+          "code": "near_pass_without_fix_targets",
+          "meaning": "Near-pass frame lacks next repair targets."
+        },
+        {
+          "code": "professional_score_below_gate",
+          "meaning": "Frame score is below professional display gate."
+        }
+      ],
+      "summary": "Type: quality-rubric Version: v0.2 Updated: 2026-07-08 13:37:48 +08:00"
+    },
+    {
+      "id": "render-layer-recipe/runtime-render-layer-recipe",
+      "category": "render-layer-recipe",
+      "name": "runtime-render-layer-recipe",
+      "title": "runtime-render-layer-recipe",
+      "type": "render-layer-recipe",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/render-layer-recipe/runtime-render-layer-recipe.md",
+      "hardFailures": [
+        {
+          "code": "render_layer_recipe_missing",
+          "meaning": "Generation or compositor lacks render layer recipe."
+        },
+        {
+          "code": "render_layer_order_broken",
+          "meaning": "Layers are composed in an order that breaks readability."
+        },
+        {
+          "code": "route_occluded_by_detail",
+          "meaning": "Main route is hidden by details or objects."
+        },
+        {
+          "code": "center_occluded_by_detail",
+          "meaning": "Home center is hidden by texture or objects."
+        },
+        {
+          "code": "object_without_contact_layer",
+          "meaning": "Object appears without footprint/contact layer."
+        },
+        {
+          "code": "debug_layer_visible",
+          "meaning": "Debug/fallback/program layer is visible as final game art."
+        }
+      ],
+      "summary": "Type: render-layer-recipe Version: v0.2 Updated: 2026-07-08 13:37:48 +08:00"
+    },
+    {
+      "id": "review/acceptance",
+      "category": "review",
+      "name": "acceptance",
+      "title": "acceptance",
+      "type": "review dictionary",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/review/acceptance.md",
+      "hardFailures": [],
+      "summary": "Type: review dictionary Version: v0.1 Updated: 2026-07-08 14:03:25 +08:00"
+    },
+    {
+      "id": "review/failure-codes",
+      "category": "review",
+      "name": "failure-codes",
+      "title": "failure-codes",
+      "type": "review dictionary",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/review/failure-codes.md",
+      "hardFailures": [],
+      "summary": "Type: review dictionary Version: v0.1 Updated: 2026-07-08 14:26:44 +08:00"
+    },
+    {
+      "id": "review/single-map-visual-acceptance",
+      "category": "review",
+      "name": "single-map-visual-acceptance",
+      "title": "single-map-visual-acceptance",
+      "type": "review dictionary",
+      "version": "v0.2",
+      "status": "active draft scope for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/review/single-map-visual-acceptance.md",
+      "hardFailures": [
+        {
+          "code": "single_map_acceptance_missing",
+          "meaning": "Review did not use the current single-map acceptance standard."
+        },
+        {
+          "code": "single_map_scope_failed",
+          "meaning": "Candidate is not one complete map visual."
+        },
+        {
+          "code": "reserved_player_gate_used",
+          "meaning": "Review used player-character requirements in current scope."
+        },
+        {
+          "code": "reserved_interaction_gate_used",
+          "meaning": "Review used interaction mechanics in current scope."
+        },
+        {
+          "code": "reserved_dynamic_gate_used",
+          "meaning": "Review used multi-tick dynamic variation in current scope."
+        }
+      ],
+      "summary": "Type: review dictionary Version: v0.2 Updated: 2026-07-08 14:03:25 +08:00"
+    },
+    {
+      "id": "runtime-state/live-map-state",
+      "category": "runtime-state",
+      "name": "live-map-state",
+      "title": "live-map-state",
+      "type": "runtime-state",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/runtime-state/live-map-state.md",
+      "hardFailures": [
+        {
+          "code": "tick_unbound_frame",
+          "meaning": "Frame is not bound to worldId and tick."
+        },
+        {
+          "code": "state_diff_untraceable",
+          "meaning": "Visual change cannot be traced to runtime state."
+        },
+        {
+          "code": "unstable_world_identity",
+          "meaning": "Same world changes style or layout without a state reason."
+        },
+        {
+          "code": "visual_repair_rewrites_facts",
+          "meaning": "Visual fix changes stored world facts instead of regenerating expression."
+        },
+        {
+          "code": "missing_review_link",
+          "meaning": "RuntimeFrame lacks link to generation and review records."
+        }
+      ],
+      "summary": "Type: runtime-state Version: v0.2 Updated: 2026-07-08 12:52:59 +08:00"
+    },
+    {
+      "id": "runtime-state/runtime-frame-state-binding-schema",
+      "category": "runtime-state",
+      "name": "runtime-frame-state-binding-schema",
+      "title": "runtime-frame-state-binding-schema",
+      "type": "runtime-state",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/runtime-state/runtime-frame-state-binding-schema.md",
+      "hardFailures": [
+        {
+          "code": "runtime_binding_schema_missing_field",
+          "meaning": "Runtime frame state binding lacks required fields."
+        },
+        {
+          "code": "runtime_binding_missing_generation_trace",
+          "meaning": "Binding lacks director or generation task id."
+        },
+        {
+          "code": "runtime_binding_missing_asset_trace",
+          "meaning": "Binding lacks generated asset id or image hash link."
+        },
+        {
+          "code": "runtime_binding_missing_review_trace",
+          "meaning": "Binding lacks review record id."
+        },
+        {
+          "code": "runtime_binding_missing_state_trace",
+          "meaning": "Binding lacks sourceFactIds or stateDiffIds."
+        },
+        {
+          "code": "runtime_binding_world_gate_bypass",
+          "meaning": "canEnterWorld is true without required review gates."
+        }
+      ],
+      "summary": "Type: runtime-state Version: v0.2 Updated: 2026-07-08 13:53:29 +08:00"
+    },
+    {
+      "id": "schema/dictionary-entry",
+      "category": "schema",
+      "name": "dictionary-entry",
+      "title": "dictionary-entry",
+      "type": "schema",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/schema/dictionary-entry.md",
+      "hardFailures": [
+        {
+          "code": "missing_required_field",
+          "meaning": "Dictionary item cannot be used by automation."
+        },
+        {
+          "code": "duplicate_meaning",
+          "meaning": "Two files define the same object or rule with different names."
+        },
+        {
+          "code": "vague_name",
+          "meaning": "Name does not reveal the object or rule directly."
+        }
+      ],
+      "summary": "Type: schema Version: v0.1 Every visual dictionary item should follow a stable shape so code, local model"
+    },
+    {
+      "id": "schema/review-record",
+      "category": "schema",
+      "name": "review-record",
+      "title": "review-record",
+      "type": "schema",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/schema/review-record.md",
+      "hardFailures": [
+        {
+          "code": "missing_image_path",
+          "meaning": "Review record cannot prove what was judged."
+        },
+        {
+          "code": "missing_failure_codes",
+          "meaning": "Failed sample cannot train the model."
+        },
+        {
+          "code": "manual_only_memory",
+          "meaning": "Result exists only in conversation and not in project data."
+        }
+      ],
+      "summary": "Type: schema Version: v0.1 Every model inference, generated map, failed frame and accepted frame must be"
+    },
+    {
+      "id": "spatial-grid/grid-and-layer-contract",
+      "category": "spatial-grid",
+      "name": "grid-and-layer-contract",
+      "title": "grid-and-layer-contract",
+      "type": "spatial-grid",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/spatial-grid/grid-and-layer-contract.md",
+      "hardFailures": [
+        {
+          "code": "visual_logic_mismatch",
+          "meaning": "Visual walkability or collision does not match runtime layer meaning."
+        },
+        {
+          "code": "unreadable_walkable_area",
+          "meaning": "Player cannot tell where movement is allowed."
+        },
+        {
+          "code": "unreadable_collision_area",
+          "meaning": "Blocked regions are not visually justified."
+        },
+        {
+          "code": "broken_route_continuity",
+          "meaning": "The path is visually interrupted or disconnected."
+        },
+        {
+          "code": "object_footprint_missing",
+          "meaning": "Objects lack clear contact footprint in spatial layer."
+        }
+      ],
+      "summary": "Type: spatial-grid Version: v0.2 Updated: 2026-07-08 12:52:59 +08:00"
+    },
+    {
+      "id": "spatial-grid/layer-record-schema",
+      "category": "spatial-grid",
+      "name": "layer-record-schema",
+      "title": "layer-record-schema",
+      "type": "spatial-grid",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/spatial-grid/layer-record-schema.md",
+      "hardFailures": [
+        {
+          "code": "layer_record_schema_missing_field",
+          "meaning": "Spatial layer record lacks required schema fields."
+        },
+        {
+          "code": "layer_geometry_missing",
+          "meaning": "Spatial layer record has no usable geometry."
+        },
+        {
+          "code": "layer_visual_cue_missing",
+          "meaning": "Spatial layer has no visible cue binding."
+        },
+        {
+          "code": "collision_walkable_overlap_unresolved",
+          "meaning": "Walkable and collision regions overlap without a rule."
+        },
+        {
+          "code": "object_footprint_geometry_mismatch",
+          "meaning": "Object footprint geometry does not match visible object contact."
+        }
+      ],
+      "summary": "Type: spatial-grid Version: v0.2 Updated: 2026-07-08 13:11:42 +08:00"
+    },
+    {
+      "id": "terrain/dirt-path",
+      "category": "terrain",
+      "name": "dirt-path",
+      "title": "dirt-path",
+      "type": "terrain",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/terrain/dirt-path.md",
+      "hardFailures": [
+        {
+          "code": "color_band_path",
+          "meaning": "Path looks like a pasted color band."
+        },
+        {
+          "code": "brick_repetition",
+          "meaning": "Path reads as repeated bricks/tiles instead of natural soil."
+        },
+        {
+          "code": "hard_cut_edge",
+          "meaning": "Edge is perfectly sharp or geometric."
+        },
+        {
+          "code": "broken_route",
+          "meaning": "Path visually fails to connect entrance, center or branch target."
+        }
+      ],
+      "summary": "Type: terrain World meaning: walkable earth path connecting important areas Version: v0.1"
+    },
+    {
+      "id": "terrain/forest-edge",
+      "category": "terrain",
+      "name": "forest-edge",
+      "title": "forest-edge",
+      "type": "terrain boundary",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/terrain/forest-edge.md",
+      "hardFailures": [
+        {
+          "code": "tree_wall",
+          "meaning": "Boundary becomes a repeated tree wall."
+        },
+        {
+          "code": "noisy_dark_edge",
+          "meaning": "Edge is a dark noise band."
+        },
+        {
+          "code": "center_invasion",
+          "meaning": "Boundary elements invade and hide the playable center."
+        }
+      ],
+      "summary": "Type: terrain boundary World meaning: natural map boundary and dense vegetation edge Version: v0.1"
+    },
+    {
+      "id": "terrain/grass",
+      "category": "terrain",
+      "name": "grass",
+      "title": "grass",
+      "type": "terrain",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/terrain/grass.md",
+      "hardFailures": [
+        {
+          "code": "green_noise_field",
+          "meaning": "Grass reads as random noise or dirty texture."
+        },
+        {
+          "code": "muddy_blur",
+          "meaning": "Grass becomes an unclear brown-green smear."
+        },
+        {
+          "code": "repeated_tile_grid",
+          "meaning": "Repeated 64px/128px block pattern is visible."
+        },
+        {
+          "code": "overgrown_path",
+          "meaning": "Grass destroys path readability."
+        }
+      ],
+      "summary": "Type: terrain World meaning: ordinary walkable natural grassland Version: v0.1"
+    },
+    {
+      "id": "terrain/mud-patch",
+      "category": "terrain",
+      "name": "mud-patch",
+      "title": "mud-patch",
+      "type": "terrain detail",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/terrain/mud-patch.md",
+      "hardFailures": [
+        {
+          "code": "muddy_map",
+          "meaning": "Mud spreads across the full frame and makes grass dirty."
+        },
+        {
+          "code": "stain_noise",
+          "meaning": "Mud looks like random stains."
+        },
+        {
+          "code": "gameplay_confusion",
+          "meaning": "Mud hides path or water boundary."
+        }
+      ],
+      "summary": "Type: terrain detail World meaning: damp exposed soil Version: v0.1"
+    },
+    {
+      "id": "terrain/shoreline",
+      "category": "terrain",
+      "name": "shoreline",
+      "title": "shoreline",
+      "type": "terrain transition",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/terrain/shoreline.md",
+      "hardFailures": [
+        {
+          "code": "hard_cut_shore",
+          "meaning": "Shoreline is a sharp mask edge."
+        },
+        {
+          "code": "pasted_wall_shore",
+          "meaning": "Shoreline looks like a vertical pasted wall."
+        },
+        {
+          "code": "overwide_shore",
+          "meaning": "Shoreline covers too much land or water."
+        },
+        {
+          "code": "disconnected_shore",
+          "meaning": "Shoreline does not follow the water boundary."
+        }
+      ],
+      "summary": "Type: terrain transition World meaning: natural boundary between land and water Version: v0.1"
+    },
+    {
+      "id": "terrain/tall-grass",
+      "category": "terrain",
+      "name": "tall-grass",
+      "title": "tall-grass",
+      "type": "terrain",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/terrain/tall-grass.md",
+      "hardFailures": [
+        {
+          "code": "full_frame_overgrowth",
+          "meaning": "Tall grass covers the map and destroys readability."
+        },
+        {
+          "code": "noisy_clumps",
+          "meaning": "Clumps become random dark stains."
+        },
+        {
+          "code": "path_contamination",
+          "meaning": "Tall grass hides or visually breaks the main path."
+        }
+      ],
+      "summary": "Type: terrain World meaning: denser grass, edge vegetation, soft obstacle hint Version: v0.1"
+    },
+    {
+      "id": "terrain/water",
+      "category": "terrain",
+      "name": "water",
+      "title": "water",
+      "type": "terrain",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/terrain/water.md",
+      "hardFailures": [
+        {
+          "code": "electric_blue_noise",
+          "meaning": "Water is neon, noisy or visually synthetic."
+        },
+        {
+          "code": "broken_water_surface",
+          "meaning": "Water breaks into unrelated blobs."
+        },
+        {
+          "code": "vertical_wall_water",
+          "meaning": "Water edge looks like a pasted vertical wall or cliff strip."
+        },
+        {
+          "code": "unreadable_depth",
+          "meaning": "No shallow/deep relation can be read."
+        }
+      ],
+      "summary": "Type: terrain World meaning: natural water body Version: v0.1"
+    },
+    {
+      "id": "training/automatic-storage",
+      "category": "training",
+      "name": "automatic-storage",
+      "title": "automatic-storage",
+      "type": "training rule",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/training/automatic-storage.md",
+      "hardFailures": [
+        {
+          "code": "inference_not_saved",
+          "meaning": "Model output was generated but not stored."
+        },
+        {
+          "code": "review_not_saved",
+          "meaning": "Review happened but cannot be found in project records."
+        },
+        {
+          "code": "no_negative_memory",
+          "meaning": "Failed outputs are not available for future training."
+        },
+        {
+          "code": "unstored_training_content",
+          "meaning": "Training content is visible or discussed but has no stored record."
+        },
+        {
+          "code": "page_bypasses_storage",
+          "meaning": "Page shows training content without reading the stored record first."
+        }
+      ],
+      "summary": "Type: training rule Version: v0.1 The local program, not Codex memory, must store every important training and"
+    },
+    {
+      "id": "training/feedback-loop",
+      "category": "training",
+      "name": "feedback-loop",
+      "title": "feedback-loop",
+      "type": "training dictionary",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/training/feedback-loop.md",
+      "hardFailures": [],
+      "summary": "Type: training dictionary Version: v0.1 The model must learn from both technical failures and owner visual failures."
+    },
+    {
+      "id": "training/sample-labels",
+      "category": "training",
+      "name": "sample-labels",
+      "title": "sample-labels",
+      "type": "training dictionary",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/training/sample-labels.md",
+      "hardFailures": [],
+      "summary": "Type: training dictionary Version: v0.1 Updated: 2026-07-08 12:52:59 +08:00"
+    },
+    {
+      "id": "versions/current-single-map-visual-scope",
+      "category": "versions",
+      "name": "current-single-map-visual-scope",
+      "title": "current-single-map-visual-scope",
+      "type": "version boundary",
+      "version": "v0.2",
+      "status": "active draft scope for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/versions/current-single-map-visual-scope.md",
+      "hardFailures": [
+        {
+          "code": "active_scope_player_feature_leak",
+          "meaning": "Current single-map visual task includes player-character requirements."
+        },
+        {
+          "code": "active_scope_interaction_feature_leak",
+          "meaning": "Current single-map visual task includes click, collect, build or inspect requirements."
+        },
+        {
+          "code": "active_scope_gameplay_gate_used",
+          "meaning": "Current review fails or passes based on gameplay systems outside current scope."
+        },
+        {
+          "code": "active_scope_dynamic_tick_required",
+          "meaning": "Current review requires multi-tick visual variation outside current scope."
+        }
+      ],
+      "summary": "Type: version boundary Version: v0.2 Updated: 2026-07-08 13:58:07 +08:00"
+    },
+    {
+      "id": "versions/mvp-natural-home",
+      "category": "versions",
+      "name": "mvp-natural-home",
+      "title": "mvp-natural-home",
+      "type": "version boundary",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/versions/mvp-natural-home.md",
+      "hardFailures": [
+        {
+          "code": "partial_candidate_not_full_world",
+          "meaning": "Candidate has useful local quality, but it is not a complete first playable world map."
+        },
+        {
+          "code": "missing_complete_map_structure",
+          "meaning": "Image does not show the full entrance/path/center/water/boundary composition."
+        },
+        {
+          "code": "active_scope_player_feature_leak",
+          "meaning": "Current single-map visual task includes player-character requirements."
+        },
+        {
+          "code": "active_scope_interaction_feature_leak",
+          "meaning": "Current single-map visual task includes click, collect, build or inspect requirements."
+        }
+      ],
+      "summary": "Type: version boundary Version: v0.1 Updated: 2026-07-08 13:58:07 +08:00"
+    },
+    {
+      "id": "visual-style/camera",
+      "category": "visual-style",
+      "name": "camera",
+      "title": "camera",
+      "type": "visual style",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/visual-style/camera.md",
+      "hardFailures": [
+        {
+          "code": "perspective_mismatch",
+          "meaning": "Elements use conflicting camera angles."
+        },
+        {
+          "code": "unreadable_map_camera",
+          "meaning": "Camera makes walkable space unclear."
+        }
+      ],
+      "summary": "Type: visual style Version: v0.1 The first map must use one camera language."
+    },
+    {
+      "id": "visual-style/color",
+      "category": "visual-style",
+      "name": "color",
+      "title": "color",
+      "type": "visual style",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/visual-style/color.md",
+      "hardFailures": [
+        {
+          "code": "neon_noise",
+          "meaning": "Saturated speckle artifacts dominate."
+        },
+        {
+          "code": "muddy_palette",
+          "meaning": "Whole map becomes brown-green sludge."
+        },
+        {
+          "code": "asset_palette_mismatch",
+          "meaning": "Objects have unrelated colors/style."
+        }
+      ],
+      "summary": "Type: visual style Version: v0.1 Colors should be natural, readable and game-like."
+    },
+    {
+      "id": "visual-style/edge-treatment",
+      "category": "visual-style",
+      "name": "edge-treatment",
+      "title": "edge-treatment",
+      "type": "visual style",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/visual-style/edge-treatment.md",
+      "hardFailures": [
+        {
+          "code": "hard_mask_edge",
+          "meaning": "Terrain masks are visibly hard-cut."
+        },
+        {
+          "code": "pasted_edge",
+          "meaning": "Objects or shoreline look pasted."
+        },
+        {
+          "code": "edge_blur",
+          "meaning": "Edges are so blurred that structure is unreadable."
+        }
+      ],
+      "summary": "Type: visual style Version: v0.1 Edges must explain natural transitions."
+    },
+    {
+      "id": "visual-style/light",
+      "category": "visual-style",
+      "name": "light",
+      "title": "light",
+      "type": "visual style",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/visual-style/light.md",
+      "hardFailures": [
+        {
+          "code": "no_contact_shadow",
+          "meaning": "Objects float due to missing shadow/base."
+        },
+        {
+          "code": "conflicting_light",
+          "meaning": "Different objects have different light directions."
+        },
+        {
+          "code": "overdark_scene",
+          "meaning": "Shadows hide gameplay structure."
+        }
+      ],
+      "summary": "Type: visual style Version: v0.1 Lighting should make the world unified and readable."
+    },
+    {
+      "id": "visual-style/material-density",
+      "category": "visual-style",
+      "name": "material-density",
+      "title": "material-density",
+      "type": "visual style",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/visual-style/material-density.md",
+      "hardFailures": [
+        {
+          "code": "full_frame_noise",
+          "meaning": "Same high-density texture covers everything."
+        },
+        {
+          "code": "low_detail_flatness",
+          "meaning": "Large areas are flat and unfinished."
+        },
+        {
+          "code": "repeated_material_stamp",
+          "meaning": "Repeated tile or stamp is visible."
+        }
+      ],
+      "summary": "Type: visual style Version: v0.1 Material detail must be layered and controlled."
+    },
+    {
+      "id": "visual-style/object-grounding",
+      "category": "visual-style",
+      "name": "object-grounding",
+      "title": "object-grounding",
+      "type": "visual style",
+      "version": "v0.1",
+      "status": null,
+      "sourcePath": "docs/world-visual-data-dictionary/visual-style/object-grounding.md",
+      "hardFailures": [
+        {
+          "code": "sticker_asset",
+          "meaning": "Object has no integration with ground."
+        },
+        {
+          "code": "floating_asset",
+          "meaning": "Object lacks contact shadow/base."
+        },
+        {
+          "code": "scale_break",
+          "meaning": "Object size breaks map scale."
+        }
+      ],
+      "summary": "Type: visual style Version: v0.1 Object grounding is mandatory. Any object that feels pasted or floating fails."
+    },
+    {
+      "id": "world-ontology/entity-taxonomy",
+      "category": "world-ontology",
+      "name": "entity-taxonomy",
+      "title": "entity-taxonomy",
+      "type": "world-ontology",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/world-ontology/entity-taxonomy.md",
+      "hardFailures": [
+        {
+          "code": "invented_major_entity",
+          "meaning": "The image contains major buildings, roads, characters, objects, or events not present in world facts."
+        },
+        {
+          "code": "missing_required_entity",
+          "meaning": "A required first-version structure or terrain entity is absent."
+        },
+        {
+          "code": "unbound_visible_entity",
+          "meaning": "A visible major entity cannot be traced to world facts or version scope."
+        },
+        {
+          "code": "entity_scope_mismatch",
+          "meaning": "The image shows a feature outside the current dictionary version boundary."
+        }
+      ],
+      "summary": "Type: world-ontology Version: v0.2 Updated: 2026-07-08 12:52:59 +08:00"
+    },
+    {
+      "id": "world-ontology/world-entity-record-schema",
+      "category": "world-ontology",
+      "name": "world-entity-record-schema",
+      "title": "world-entity-record-schema",
+      "type": "world-ontology",
+      "version": "v0.2",
+      "status": "draft for owner review",
+      "sourcePath": "docs/world-visual-data-dictionary/world-ontology/world-entity-record-schema.md",
+      "hardFailures": [
+        {
+          "code": "entity_record_schema_missing_field",
+          "meaning": "World entity record lacks required schema fields."
+        },
+        {
+          "code": "runtime_entity_missing_source_fact",
+          "meaning": "Runtime-only entity has no sourceFactId."
+        },
+        {
+          "code": "visible_entity_missing_visual_entry",
+          "meaning": "Visible entity has no allowed visual dictionary entry."
+        },
+        {
+          "code": "visible_entity_missing_placement_domain",
+          "meaning": "Visible entity has no placement domain."
+        },
+        {
+          "code": "forbidden_entity_in_task",
+          "meaning": "Forbidden entity appears in generation task or candidate frame."
+        }
+      ],
+      "summary": "Type: world-ontology Version: v0.2 Updated: 2026-07-08 13:53:29 +08:00"
+    }
+  ],
+  "registeredFailureCodes": [
+    {
+      "code": "grass_green_noise_field",
+      "meaning": "Grass reads as noisy or dirty texture.",
+      "typicalFixTarget": "`terrain/grass.md`"
+    },
+    {
+      "code": "grass_muddy_blur",
+      "meaning": "Grass is brown-green smear.",
+      "typicalFixTarget": "`terrain/grass.md`"
+    },
+    {
+      "code": "dirt_path_color_band",
+      "meaning": "Path is a pasted warm color band.",
+      "typicalFixTarget": "`terrain/dirt-path.md`"
+    },
+    {
+      "code": "dirt_path_brick_repetition",
+      "meaning": "Path has repeated brick/tile feeling.",
+      "typicalFixTarget": "`terrain/dirt-path.md`"
+    },
+    {
+      "code": "shoreline_pasted_wall",
+      "meaning": "Shoreline looks like a vertical wall or pasted strip.",
+      "typicalFixTarget": "`terrain/shoreline.md`"
+    },
+    {
+      "code": "water_electric_noise",
+      "meaning": "Water is neon/noisy/synthetic.",
+      "typicalFixTarget": "`terrain/water.md`"
+    },
+    {
+      "code": "object_sticker_asset",
+      "meaning": "Object looks pasted from another source.",
+      "typicalFixTarget": "`visual-style/object-grounding.md`"
+    },
+    {
+      "code": "object_floating_asset",
+      "meaning": "Object lacks contact with ground.",
+      "typicalFixTarget": "`visual-style/object-grounding.md`"
+    },
+    {
+      "code": "camera_perspective_mismatch",
+      "meaning": "Elements use conflicting camera angles.",
+      "typicalFixTarget": "`visual-style/camera.md`"
+    },
+    {
+      "code": "structure_unreadable",
+      "meaning": "Entrance, center, path or boundary cannot be read.",
+      "typicalFixTarget": "`map-structure/`"
+    },
+    {
+      "code": "style_palette_mismatch",
+      "meaning": "Object and terrain palette/style do not match.",
+      "typicalFixTarget": "`visual-style/color.md`"
+    },
+    {
+      "code": "full_frame_noise",
+      "meaning": "Whole frame is dominated by uniform noise texture.",
+      "typicalFixTarget": "`visual-style/material-density.md`"
+    },
+    {
+      "code": "machine_pass_owner_fail",
+      "meaning": "Machine checks passed but owner rejects visual quality.",
+      "typicalFixTarget": "training negative sample"
+    },
+    {
+      "code": "machine_pass_agent_fail",
+      "meaning": "Machine checks passed but early agent professional review rejects visual quality.",
+      "typicalFixTarget": "training negative sample"
+    },
+    {
+      "code": "not_game_ready",
+      "meaning": "Frame does not look ready for a first playable game map.",
+      "typicalFixTarget": "`composition/professional-quality.md`"
+    },
+    {
+      "code": "professional_read_fail",
+      "meaning": "Frame may contain terrain pieces but does not read as a professional playable map.",
+      "typicalFixTarget": "`composition/map-readability.md`"
+    },
+    {
+      "code": "no_clear_route",
+      "meaning": "Main path or route cannot be followed clearly.",
+      "typicalFixTarget": "`composition/map-readability.md`"
+    },
+    {
+      "code": "no_clear_center",
+      "meaning": "Home-center or central clearing cannot be identified.",
+      "typicalFixTarget": "`map-structure/home-center.md`"
+    },
+    {
+      "code": "water_land_confusion",
+      "meaning": "Water and land do not separate clearly enough for map reading.",
+      "typicalFixTarget": "`composition/map-readability.md`"
+    },
+    {
+      "code": "pasted_objects",
+      "meaning": "Objects appear pasted instead of grounded in the world.",
+      "typicalFixTarget": "`composition/layer-order.md`"
+    },
+    {
+      "code": "no_art_direction",
+      "meaning": "Frame has no stable camera, lighting and material language.",
+      "typicalFixTarget": "`composition/professional-quality.md`"
+    },
+    {
+      "code": "full_frame_low_contrast",
+      "meaning": "Frame is too flat to read structure clearly.",
+      "typicalFixTarget": "`composition/map-readability.md`"
+    },
+    {
+      "code": "machine_pass_owner_review_required",
+      "meaning": "Machine/runtime says ready, but owner/professional review is still required.",
+      "typicalFixTarget": "`review/acceptance.md`"
+    },
+    {
+      "code": "partial_candidate_not_full_world",
+      "meaning": "Candidate quality is useful, but it is a local/crop candidate rather than a complete RuntimeFrame world map.",
+      "typicalFixTarget": "`versions/mvp-natural-home.md`"
+    },
+    {
+      "code": "missing_world_ontology",
+      "meaning": "Generation task has visuals but no clear world entities or facts.",
+      "typicalFixTarget": "`world-ontology/entity-taxonomy.md`"
+    },
+    {
+      "code": "invented_major_entity",
+      "meaning": "Image contains major buildings, roads, characters, objects, or events not present in world facts.",
+      "typicalFixTarget": "`world-ontology/entity-taxonomy.md`"
+    },
+    {
+      "code": "missing_required_entity",
+      "meaning": "Required first-version structure or terrain entity is absent.",
+      "typicalFixTarget": "`world-ontology/entity-taxonomy.md`"
+    },
+    {
+      "code": "unbound_visible_entity",
+      "meaning": "Visible major entity cannot be traced to world facts or version scope.",
+      "typicalFixTarget": "`world-ontology/entity-taxonomy.md`"
+    },
+    {
+      "code": "entity_scope_mismatch",
+      "meaning": "Image shows a feature outside the current dictionary version boundary.",
+      "typicalFixTarget": "`world-ontology/entity-taxonomy.md`"
+    },
+    {
+      "code": "missing_spatial_contract",
+      "meaning": "Frame cannot map visual content to walkable, collision or interaction layers.",
+      "typicalFixTarget": "`spatial-grid/grid-and-layer-contract.md`"
+    },
+    {
+      "code": "visual_logic_mismatch",
+      "meaning": "Visual walkability or collision does not match runtime layer meaning.",
+      "typicalFixTarget": "`spatial-grid/grid-and-layer-contract.md`"
+    },
+    {
+      "code": "unreadable_walkable_area",
+      "meaning": "Player cannot tell where movement is allowed.",
+      "typicalFixTarget": "`spatial-grid/grid-and-layer-contract.md`"
+    },
+    {
+      "code": "unreadable_collision_area",
+      "meaning": "Blocked regions are not visually justified.",
+      "typicalFixTarget": "`spatial-grid/grid-and-layer-contract.md`"
+    },
+    {
+      "code": "broken_route_continuity",
+      "meaning": "Path is visually interrupted or disconnected.",
+      "typicalFixTarget": "`spatial-grid/grid-and-layer-contract.md`"
+    },
+    {
+      "code": "object_footprint_missing",
+      "meaning": "Object lacks clear contact footprint in spatial layer.",
+      "typicalFixTarget": "`spatial-grid/grid-and-layer-contract.md`"
+    },
+    {
+      "code": "missing_map_grammar",
+      "meaning": "Map has assets but no readable complete-game structure.",
+      "typicalFixTarget": "`map-grammar/complete-map-grammar.md`"
+    },
+    {
+      "code": "missing_complete_map_part",
+      "meaning": "Required entrance, route, center, water edge, boundary, or object cluster is absent.",
+      "typicalFixTarget": "`map-grammar/complete-map-grammar.md`"
+    },
+    {
+      "code": "route_hierarchy_missing",
+      "meaning": "Main and branch routes cannot be distinguished.",
+      "typicalFixTarget": "`map-grammar/complete-map-grammar.md`"
+    },
+    {
+      "code": "center_swallowed_by_texture",
+      "meaning": "Home center exists but is unreadable because of texture or clutter.",
+      "typicalFixTarget": "`map-grammar/complete-map-grammar.md`"
+    },
+    {
+      "code": "boundary_hard_clip",
+      "meaning": "Map edge reads as cropped rectangle rather than natural boundary.",
+      "typicalFixTarget": "`map-grammar/complete-map-grammar.md`"
+    },
+    {
+      "code": "random_asset_scatter",
+      "meaning": "Objects do not support route, center, water edge, or boundary grammar.",
+      "typicalFixTarget": "`map-grammar/complete-map-grammar.md`"
+    },
+    {
+      "code": "ecology_random_noise",
+      "meaning": "Natural details look randomly sprayed rather than ecologically related.",
+      "typicalFixTarget": "`ecology/ecology-state-rules.md`"
+    },
+    {
+      "code": "vegetation_density_overload",
+      "meaning": "Vegetation density hides map structure or route readability.",
+      "typicalFixTarget": "`ecology/ecology-state-rules.md`"
+    },
+    {
+      "code": "water_ecology_mismatch",
+      "meaning": "Water edge lacks wetland, shore, or transition logic.",
+      "typicalFixTarget": "`ecology/ecology-state-rules.md`"
+    },
+    {
+      "code": "path_wear_missing",
+      "meaning": "Path does not affect surrounding grass or ground.",
+      "typicalFixTarget": "`ecology/ecology-state-rules.md`"
+    },
+    {
+      "code": "biome_style_mismatch",
+      "meaning": "Plants, terrain, and color imply conflicting biomes.",
+      "typicalFixTarget": "`ecology/ecology-state-rules.md`"
+    },
+    {
+      "code": "no_playable_read",
+      "meaning": "Image looks decorative but not playable.",
+      "typicalFixTarget": "`gameplay/playability-contract.md`"
+    },
+    {
+      "code": "movement_affordance_missing",
+      "meaning": "Player cannot infer where movement is possible.",
+      "typicalFixTarget": "`gameplay/playability-contract.md`"
+    },
+    {
+      "code": "collision_affordance_missing",
+      "meaning": "Blocked areas are not visually explained.",
+      "typicalFixTarget": "`gameplay/playability-contract.md`"
+    },
+    {
+      "code": "interaction_cue_noise",
+      "meaning": "Decorative details compete with future interaction points.",
+      "typicalFixTarget": "`gameplay/playability-contract.md`"
+    },
+    {
+      "code": "player_scale_conflict",
+      "meaning": "Path, objects, and open areas imply incompatible player scale.",
+      "typicalFixTarget": "`gameplay/playability-contract.md`"
+    },
+    {
+      "code": "missing_runtime_state_contract",
+      "meaning": "Frame cannot belong to a live tick or future world change.",
+      "typicalFixTarget": "`runtime-state/live-map-state.md`"
+    },
+    {
+      "code": "tick_unbound_frame",
+      "meaning": "Frame is not bound to worldId and tick.",
+      "typicalFixTarget": "`runtime-state/live-map-state.md`"
+    },
+    {
+      "code": "state_diff_untraceable",
+      "meaning": "Visual change cannot be traced to runtime state.",
+      "typicalFixTarget": "`runtime-state/live-map-state.md`"
+    },
+    {
+      "code": "unstable_world_identity",
+      "meaning": "Same world changes style or layout without a state reason.",
+      "typicalFixTarget": "`runtime-state/live-map-state.md`"
+    },
+    {
+      "code": "visual_repair_rewrites_facts",
+      "meaning": "Visual fix changes stored world facts instead of regenerating expression.",
+      "typicalFixTarget": "`runtime-state/live-map-state.md`"
+    },
+    {
+      "code": "missing_review_link",
+      "meaning": "RuntimeFrame lacks link to generation and review records.",
+      "typicalFixTarget": "`runtime-state/live-map-state.md`"
+    },
+    {
+      "code": "missing_director_contract",
+      "meaning": "System has generation but no stable director instruction layer.",
+      "typicalFixTarget": "`director/director-contract.md`"
+    },
+    {
+      "code": "director_invents_world_fact",
+      "meaning": "Director adds a fact not present in runtime state or version scope.",
+      "typicalFixTarget": "`director/director-contract.md`"
+    },
+    {
+      "code": "director_missing_map_grammar",
+      "meaning": "Director task lacks entrance, route, center, water edge, or boundary requirements.",
+      "typicalFixTarget": "`director/director-contract.md`"
+    },
+    {
+      "code": "director_ignores_fix_plan",
+      "meaning": "Previous structured failures are not used in the next task.",
+      "typicalFixTarget": "`director/director-contract.md`"
+    },
+    {
+      "code": "director_allows_player_visible_candidate",
+      "meaning": "Director marks a generation task or candidate as player-visible.",
+      "typicalFixTarget": "`director/director-contract.md`"
+    },
+    {
+      "code": "director_unstructured_prompt_only",
+      "meaning": "Director sends loose prompt text without structured generation condition.",
+      "typicalFixTarget": "`director/director-contract.md`"
+    },
+    {
+      "code": "missing_generation_task_package",
+      "meaning": "Local model receives loose text instead of a complete structured task package.",
+      "typicalFixTarget": "`generation-task/runtime-frame-generation-task.md`"
+    },
+    {
+      "code": "loose_prompt_only_generation",
+      "meaning": "Generation used loose prompt text without structured task package.",
+      "typicalFixTarget": "`generation-task/runtime-frame-generation-task.md`"
+    },
+    {
+      "code": "missing_task_storage",
+      "meaning": "Generated image exists without full task, model, review, or failure records.",
+      "typicalFixTarget": "`generation-task/runtime-frame-generation-task.md`"
+    },
+    {
+      "code": "missing_runtime_binding",
+      "meaning": "Generation task is not bound to worldId, tick, and dictionaryVersionId.",
+      "typicalFixTarget": "`generation-task/runtime-frame-generation-task.md`"
+    },
+    {
+      "code": "missing_previous_failure_feedback",
+      "meaning": "Previous failure codes are not included in the next task.",
+      "typicalFixTarget": "`generation-task/runtime-frame-generation-task.md`"
+    },
+    {
+      "code": "generation_target_not_runtime_frame",
+      "meaning": "Task asks for local material, crop, or decorative image instead of complete RuntimeFrame.",
+      "typicalFixTarget": "`generation-task/runtime-frame-generation-task.md`"
+    },
+    {
+      "code": "task_schema_missing_required_field",
+      "meaning": "Task package is missing a required top-level field.",
+      "typicalFixTarget": "`generation-task/task-package-schema.md`"
+    },
+    {
+      "code": "task_missing_required_map_part",
+      "meaning": "Task package does not require entrance, main path, home center, water edge or boundary.",
+      "typicalFixTarget": "`generation-task/task-package-schema.md`"
+    },
+    {
+      "code": "task_missing_spatial_layers",
+      "meaning": "Task package does not include walkable, collision or object footprint layers.",
+      "typicalFixTarget": "`generation-task/task-package-schema.md`"
+    },
+    {
+      "code": "task_storage_contract_incomplete",
+      "meaning": "Task package does not require full automatic storage and review records.",
+      "typicalFixTarget": "`generation-task/task-package-schema.md`"
+    },
+    {
+      "code": "task_previous_failures_dropped",
+      "meaning": "Previous failure codes are absent from the next task package.",
+      "typicalFixTarget": "`generation-task/task-package-schema.md`"
+    },
+    {
+      "code": "director_output_missing_required_field",
+      "meaning": "Director output is missing a required planning field.",
+      "typicalFixTarget": "`director/director-output-schema.md`"
+    },
+    {
+      "code": "director_missing_read_order",
+      "meaning": "Director output does not define player read order.",
+      "typicalFixTarget": "`director/director-output-schema.md`"
+    },
+    {
+      "code": "director_missing_safety_block",
+      "meaning": "Director output lacks no-fact-rewrite or no-player-visible safety rules.",
+      "typicalFixTarget": "`director/director-output-schema.md`"
+    },
+    {
+      "code": "director_fix_plan_not_bound",
+      "meaning": "Director output does not bind previous failure codes to next task.",
+      "typicalFixTarget": "`director/director-output-schema.md`"
+    },
+    {
+      "code": "map_part_schema_missing_field",
+      "meaning": "Map grammar part lacks required schema fields.",
+      "typicalFixTarget": "`map-grammar/map-part-schema.md`"
+    },
+    {
+      "code": "map_part_connection_missing",
+      "meaning": "Required connection between map parts is absent.",
+      "typicalFixTarget": "`map-grammar/map-part-schema.md`"
+    },
+    {
+      "code": "map_part_role_conflict",
+      "meaning": "Walkable, collision, interaction, or visual role conflicts.",
+      "typicalFixTarget": "`map-grammar/map-part-schema.md`"
+    },
+    {
+      "code": "map_part_unreadable",
+      "meaning": "Required map part exists structurally but cannot be read visually.",
+      "typicalFixTarget": "`map-grammar/map-part-schema.md`"
+    },
+    {
+      "code": "layer_record_schema_missing_field",
+      "meaning": "Spatial layer record lacks required schema fields.",
+      "typicalFixTarget": "`spatial-grid/layer-record-schema.md`"
+    },
+    {
+      "code": "layer_geometry_missing",
+      "meaning": "Spatial layer record has no usable geometry.",
+      "typicalFixTarget": "`spatial-grid/layer-record-schema.md`"
+    },
+    {
+      "code": "layer_visual_cue_missing",
+      "meaning": "Spatial layer has no visible cue binding.",
+      "typicalFixTarget": "`spatial-grid/layer-record-schema.md`"
+    },
+    {
+      "code": "collision_walkable_overlap_unresolved",
+      "meaning": "Walkable and collision regions overlap without a rule.",
+      "typicalFixTarget": "`spatial-grid/layer-record-schema.md`"
+    },
+    {
+      "code": "object_footprint_geometry_mismatch",
+      "meaning": "Object footprint geometry does not match visible object contact.",
+      "typicalFixTarget": "`spatial-grid/layer-record-schema.md`"
+    },
+    {
+      "code": "missing_drawing_process",
+      "meaning": "Generation did not store the drawing-process data.",
+      "typicalFixTarget": "`drawing-method/ai-drawing-process.md`"
+    },
+    {
+      "code": "skipped_spatial_blockout",
+      "meaning": "Image jumped into texture/detail without a readable layout blockout.",
+      "typicalFixTarget": "`drawing-method/ai-drawing-process.md`"
+    },
+    {
+      "code": "skipped_value_grouping",
+      "meaning": "Image has materials but no readable light/dark structure.",
+      "typicalFixTarget": "`drawing-method/ai-drawing-process.md`"
+    },
+    {
+      "code": "skipped_grounding_pass",
+      "meaning": "Objects and edges were not integrated into terrain.",
+      "typicalFixTarget": "`drawing-method/ai-drawing-process.md`"
+    },
+    {
+      "code": "polish_without_structure",
+      "meaning": "Image has detail but lacks professional map structure.",
+      "typicalFixTarget": "`drawing-method/ai-drawing-process.md`"
+    },
+    {
+      "code": "art_direction_missing",
+      "meaning": "Frame has no stable professional game art direction.",
+      "typicalFixTarget": "`art-direction/professional-game-art-direction.md`"
+    },
+    {
+      "code": "not_player_facing_art",
+      "meaning": "Frame looks like training output or debug preview, not a player-facing map.",
+      "typicalFixTarget": "`art-direction/professional-game-art-direction.md`"
+    },
+    {
+      "code": "style_family_mixed",
+      "meaning": "Terrain, objects or water belong to conflicting art styles.",
+      "typicalFixTarget": "`art-direction/professional-game-art-direction.md`"
+    },
+    {
+      "code": "gameplay_read_not_supported",
+      "meaning": "Art direction does not support route, movement or interaction readability.",
+      "typicalFixTarget": "`art-direction/professional-game-art-direction.md`"
+    },
+    {
+      "code": "detail_density_unprofessional",
+      "meaning": "Detail density is empty, noisy, or uncontrolled.",
+      "typicalFixTarget": "`art-direction/professional-game-art-direction.md`"
+    },
+    {
+      "code": "material_recipe_missing",
+      "meaning": "Generation task does not provide material recipes.",
+      "typicalFixTarget": "`material-recipe/natural-home-material-recipes.md`"
+    },
+    {
+      "code": "grass_recipe_noise",
+      "meaning": "Grass material ignores layered readable recipe and becomes noise.",
+      "typicalFixTarget": "`material-recipe/natural-home-material-recipes.md`"
+    },
+    {
+      "code": "path_recipe_pasted",
+      "meaning": "Dirt path ignores embedded transition recipe and looks pasted.",
+      "typicalFixTarget": "`material-recipe/natural-home-material-recipes.md`"
+    },
+    {
+      "code": "water_recipe_synthetic",
+      "meaning": "Water ignores natural recipe and becomes neon/noisy/synthetic.",
+      "typicalFixTarget": "`material-recipe/natural-home-material-recipes.md`"
+    },
+    {
+      "code": "shoreline_recipe_wall",
+      "meaning": "Shoreline ignores transition recipe and becomes wall/strip.",
+      "typicalFixTarget": "`material-recipe/natural-home-material-recipes.md`"
+    },
+    {
+      "code": "detail_recipe_overload",
+      "meaning": "Detail marks overpower gameplay structure.",
+      "typicalFixTarget": "`material-recipe/natural-home-material-recipes.md`"
+    },
+    {
+      "code": "composition_recipe_missing",
+      "meaning": "Generation task has no composition recipe.",
+      "typicalFixTarget": "`composition-recipe/game-map-composition-recipe.md`"
+    },
+    {
+      "code": "read_order_failed",
+      "meaning": "Player cannot read entrance, route, center, water and boundary in order.",
+      "typicalFixTarget": "`composition-recipe/game-map-composition-recipe.md`"
+    },
+    {
+      "code": "focal_hierarchy_failed",
+      "meaning": "Decorative details beat the main route or center.",
+      "typicalFixTarget": "`composition-recipe/game-map-composition-recipe.md`"
+    },
+    {
+      "code": "negative_space_missing",
+      "meaning": "Map has no readable open playable space.",
+      "typicalFixTarget": "`composition-recipe/game-map-composition-recipe.md`"
+    },
+    {
+      "code": "detail_rhythm_random",
+      "meaning": "Detail distribution feels random rather than composed.",
+      "typicalFixTarget": "`composition-recipe/game-map-composition-recipe.md`"
+    },
+    {
+      "code": "render_layer_recipe_missing",
+      "meaning": "Generation or compositor lacks render layer recipe.",
+      "typicalFixTarget": "`render-layer-recipe/runtime-render-layer-recipe.md`"
+    },
+    {
+      "code": "render_layer_order_broken",
+      "meaning": "Layers are composed in an order that breaks readability.",
+      "typicalFixTarget": "`render-layer-recipe/runtime-render-layer-recipe.md`"
+    },
+    {
+      "code": "route_occluded_by_detail",
+      "meaning": "Main route is hidden by details or objects.",
+      "typicalFixTarget": "`render-layer-recipe/runtime-render-layer-recipe.md`"
+    },
+    {
+      "code": "center_occluded_by_detail",
+      "meaning": "Home center is hidden by texture or objects.",
+      "typicalFixTarget": "`render-layer-recipe/runtime-render-layer-recipe.md`"
+    },
+    {
+      "code": "object_without_contact_layer",
+      "meaning": "Object appears without footprint/contact layer.",
+      "typicalFixTarget": "`render-layer-recipe/runtime-render-layer-recipe.md`"
+    },
+    {
+      "code": "debug_layer_visible",
+      "meaning": "Debug/fallback/program layer is visible as final game art.",
+      "typicalFixTarget": "`render-layer-recipe/runtime-render-layer-recipe.md`"
+    },
+    {
+      "code": "quality_rubric_missing",
+      "meaning": "Review did not use the professional map quality rubric.",
+      "typicalFixTarget": "`quality-rubric/professional-map-quality-rubric.md`"
+    },
+    {
+      "code": "quality_score_unstructured",
+      "meaning": "Review result lacks category scores and structured failure codes.",
+      "typicalFixTarget": "`quality-rubric/professional-map-quality-rubric.md`"
+    },
+    {
+      "code": "machine_score_overrides_owner",
+      "meaning": "Machine score incorrectly overrides owner rejection.",
+      "typicalFixTarget": "`quality-rubric/professional-map-quality-rubric.md`"
+    },
+    {
+      "code": "near_pass_without_fix_targets",
+      "meaning": "Near-pass frame lacks next repair targets.",
+      "typicalFixTarget": "`quality-rubric/professional-map-quality-rubric.md`"
+    },
+    {
+      "code": "professional_score_below_gate",
+      "meaning": "Frame score is below professional display gate.",
+      "typicalFixTarget": "`quality-rubric/professional-map-quality-rubric.md`"
+    },
+    {
+      "code": "task_missing_drawing_process",
+      "meaning": "Task package lacks drawingProcess data.",
+      "typicalFixTarget": "`generation-task/task-package-schema.md`"
+    },
+    {
+      "code": "task_missing_art_direction",
+      "meaning": "Task package lacks professional artDirection data.",
+      "typicalFixTarget": "`generation-task/task-package-schema.md`"
+    },
+    {
+      "code": "task_missing_material_recipes",
+      "meaning": "Task package lacks required materialRecipes.",
+      "typicalFixTarget": "`generation-task/task-package-schema.md`"
+    },
+    {
+      "code": "task_missing_composition_recipe",
+      "meaning": "Task package lacks compositionRecipe data.",
+      "typicalFixTarget": "`generation-task/task-package-schema.md`"
+    },
+    {
+      "code": "task_missing_render_layer_recipe",
+      "meaning": "Task package lacks renderLayerRecipe data.",
+      "typicalFixTarget": "`generation-task/task-package-schema.md`"
+    },
+    {
+      "code": "task_missing_quality_rubric",
+      "meaning": "Task package lacks qualityRubric data.",
+      "typicalFixTarget": "`generation-task/task-package-schema.md`"
+    },
+    {
+      "code": "director_missing_drawing_process_plan",
+      "meaning": "Director output lacks drawingProcessPlan.",
+      "typicalFixTarget": "`director/director-output-schema.md`"
+    },
+    {
+      "code": "director_missing_art_direction_plan",
+      "meaning": "Director output lacks artDirectionPlan.",
+      "typicalFixTarget": "`director/director-output-schema.md`"
+    },
+    {
+      "code": "director_missing_material_recipe_plan",
+      "meaning": "Director output lacks materialRecipePlan.",
+      "typicalFixTarget": "`director/director-output-schema.md`"
+    },
+    {
+      "code": "director_missing_composition_recipe_plan",
+      "meaning": "Director output lacks compositionRecipePlan.",
+      "typicalFixTarget": "`director/director-output-schema.md`"
+    },
+    {
+      "code": "director_missing_render_layer_recipe_plan",
+      "meaning": "Director output lacks renderLayerRecipePlan.",
+      "typicalFixTarget": "`director/director-output-schema.md`"
+    },
+    {
+      "code": "director_missing_quality_rubric_plan",
+      "meaning": "Director output lacks qualityRubricPlan.",
+      "typicalFixTarget": "`director/director-output-schema.md`"
+    },
+    {
+      "code": "entity_record_schema_missing_field",
+      "meaning": "World entity record lacks required schema fields.",
+      "typicalFixTarget": "`world-ontology/world-entity-record-schema.md`"
+    },
+    {
+      "code": "runtime_entity_missing_source_fact",
+      "meaning": "Runtime-only entity has no sourceFactId.",
+      "typicalFixTarget": "`world-ontology/world-entity-record-schema.md`"
+    },
+    {
+      "code": "visible_entity_missing_visual_entry",
+      "meaning": "Visible entity has no allowed visual dictionary entry.",
+      "typicalFixTarget": "`world-ontology/world-entity-record-schema.md`"
+    },
+    {
+      "code": "visible_entity_missing_placement_domain",
+      "meaning": "Visible entity has no placement domain.",
+      "typicalFixTarget": "`world-ontology/world-entity-record-schema.md`"
+    },
+    {
+      "code": "forbidden_entity_in_task",
+      "meaning": "Forbidden entity appears in generation task or candidate frame.",
+      "typicalFixTarget": "`world-ontology/world-entity-record-schema.md`"
+    },
+    {
+      "code": "runtime_binding_schema_missing_field",
+      "meaning": "Runtime frame state binding lacks required fields.",
+      "typicalFixTarget": "`runtime-state/runtime-frame-state-binding-schema.md`"
+    },
+    {
+      "code": "runtime_binding_missing_generation_trace",
+      "meaning": "Binding lacks director or generation task id.",
+      "typicalFixTarget": "`runtime-state/runtime-frame-state-binding-schema.md`"
+    },
+    {
+      "code": "runtime_binding_missing_asset_trace",
+      "meaning": "Binding lacks generated asset id or image hash link.",
+      "typicalFixTarget": "`runtime-state/runtime-frame-state-binding-schema.md`"
+    },
+    {
+      "code": "runtime_binding_missing_review_trace",
+      "meaning": "Binding lacks review record id.",
+      "typicalFixTarget": "`runtime-state/runtime-frame-state-binding-schema.md`"
+    },
+    {
+      "code": "runtime_binding_missing_state_trace",
+      "meaning": "Binding lacks sourceFactIds or stateDiffIds.",
+      "typicalFixTarget": "`runtime-state/runtime-frame-state-binding-schema.md`"
+    },
+    {
+      "code": "runtime_binding_world_gate_bypass",
+      "meaning": "canEnterWorld is true without required review gates.",
+      "typicalFixTarget": "`runtime-state/runtime-frame-state-binding-schema.md`"
+    },
+    {
+      "code": "active_scope_player_feature_leak",
+      "meaning": "Current single-map visual task includes player-character requirements.",
+      "typicalFixTarget": "`versions/current-single-map-visual-scope.md`"
+    },
+    {
+      "code": "active_scope_interaction_feature_leak",
+      "meaning": "Current single-map visual task includes click, collect, build or inspect requirements.",
+      "typicalFixTarget": "`versions/current-single-map-visual-scope.md`"
+    },
+    {
+      "code": "active_scope_gameplay_gate_used",
+      "meaning": "Current review fails or passes based on gameplay systems outside current scope.",
+      "typicalFixTarget": "`versions/current-single-map-visual-scope.md`"
+    },
+    {
+      "code": "active_scope_dynamic_tick_required",
+      "meaning": "Current review requires multi-tick visual variation outside current scope.",
+      "typicalFixTarget": "`versions/current-single-map-visual-scope.md`"
+    },
+    {
+      "code": "single_map_ecology_fields_missing",
+      "meaning": "Single-map generation task lacks required ecology fields.",
+      "typicalFixTarget": "`ecology/single-map-ecology-fields.md`"
+    },
+    {
+      "code": "moisture_map_unreadable",
+      "meaning": "Dry/wet/shoreline/open grass zones cannot be read.",
+      "typicalFixTarget": "`ecology/single-map-ecology-fields.md`"
+    },
+    {
+      "code": "grass_growth_ignores_path",
+      "meaning": "Grass density does not respond to the path.",
+      "typicalFixTarget": "`ecology/single-map-ecology-fields.md`"
+    },
+    {
+      "code": "shoreline_ecology_missing",
+      "meaning": "Water edge lacks wet grass, reeds or natural transition cues.",
+      "typicalFixTarget": "`ecology/single-map-ecology-fields.md`"
+    },
+    {
+      "code": "boundary_vegetation_wall",
+      "meaning": "Boundary vegetation becomes a flat wall instead of natural framing.",
+      "typicalFixTarget": "`ecology/single-map-ecology-fields.md`"
+    },
+    {
+      "code": "single_map_material_fields_missing",
+      "meaning": "Single-map generation task lacks required material fields.",
+      "typicalFixTarget": "`material-recipe/single-map-material-field-schema.md`"
+    },
+    {
+      "code": "material_role_unclear",
+      "meaning": "Material does not communicate its map role.",
+      "typicalFixTarget": "`material-recipe/single-map-material-field-schema.md`"
+    },
+    {
+      "code": "material_value_band_conflict",
+      "meaning": "Material value range breaks route, center or water readability.",
+      "typicalFixTarget": "`material-recipe/single-map-material-field-schema.md`"
+    },
+    {
+      "code": "material_transition_missing",
+      "meaning": "Material edge lacks required transition behavior.",
+      "typicalFixTarget": "`material-recipe/single-map-material-field-schema.md`"
+    },
+    {
+      "code": "material_detail_budget_exceeded",
+      "meaning": "Material detail becomes uncontrolled noise.",
+      "typicalFixTarget": "`material-recipe/single-map-material-field-schema.md`"
+    },
+    {
+      "code": "single_map_composition_fields_missing",
+      "meaning": "Single-map generation task lacks required composition fields.",
+      "typicalFixTarget": "`composition-recipe/single-map-composition-fields.md`"
+    },
+    {
+      "code": "entrance_route_center_not_composed",
+      "meaning": "Entrance, route and center do not form one readable composition.",
+      "typicalFixTarget": "`composition-recipe/single-map-composition-fields.md`"
+    },
+    {
+      "code": "water_boundary_not_composed",
+      "meaning": "Water and boundary placement do not support the map.",
+      "typicalFixTarget": "`composition-recipe/single-map-composition-fields.md`"
+    },
+    {
+      "code": "open_space_plan_missing",
+      "meaning": "Map lacks planned open visual space.",
+      "typicalFixTarget": "`composition-recipe/single-map-composition-fields.md`"
+    },
+    {
+      "code": "composition_depends_on_player_or_ui",
+      "meaning": "Map read depends on player character, marker or UI not in current scope.",
+      "typicalFixTarget": "`composition-recipe/single-map-composition-fields.md`"
+    },
+    {
+      "code": "single_map_acceptance_missing",
+      "meaning": "Review did not use the current single-map acceptance standard.",
+      "typicalFixTarget": "`review/single-map-visual-acceptance.md`"
+    },
+    {
+      "code": "single_map_scope_failed",
+      "meaning": "Candidate is not one complete map visual.",
+      "typicalFixTarget": "`review/single-map-visual-acceptance.md`"
+    },
+    {
+      "code": "reserved_player_gate_used",
+      "meaning": "Review used player-character requirements in current scope.",
+      "typicalFixTarget": "`review/single-map-visual-acceptance.md`"
+    },
+    {
+      "code": "reserved_interaction_gate_used",
+      "meaning": "Review used interaction mechanics in current scope.",
+      "typicalFixTarget": "`review/single-map-visual-acceptance.md`"
+    },
+    {
+      "code": "reserved_dynamic_gate_used",
+      "meaning": "Review used multi-tick dynamic variation in current scope.",
+      "typicalFixTarget": "`review/single-map-visual-acceptance.md`"
+    },
+    {
+      "code": "task_missing_single_map_scope",
+      "meaning": "Task package lacks current singleMapScope data.",
+      "typicalFixTarget": "`generation-task/task-package-schema.md`"
+    },
+    {
+      "code": "task_missing_single_map_ecology_fields",
+      "meaning": "Task package lacks singleMapEcologyFields data.",
+      "typicalFixTarget": "`generation-task/task-package-schema.md`"
+    },
+    {
+      "code": "task_missing_single_map_material_fields",
+      "meaning": "Task package lacks singleMapMaterialFields data.",
+      "typicalFixTarget": "`generation-task/task-package-schema.md`"
+    },
+    {
+      "code": "task_missing_single_map_composition_fields",
+      "meaning": "Task package lacks singleMapCompositionFields data.",
+      "typicalFixTarget": "`generation-task/task-package-schema.md`"
+    },
+    {
+      "code": "task_missing_single_map_acceptance",
+      "meaning": "Task package lacks singleMapAcceptance data.",
+      "typicalFixTarget": "`generation-task/task-package-schema.md`"
+    },
+    {
+      "code": "director_missing_single_map_scope_plan",
+      "meaning": "Director output lacks singleMapScopePlan.",
+      "typicalFixTarget": "`director/director-output-schema.md`"
+    },
+    {
+      "code": "director_missing_single_map_ecology_plan",
+      "meaning": "Director output lacks singleMapEcologyPlan.",
+      "typicalFixTarget": "`director/director-output-schema.md`"
+    },
+    {
+      "code": "director_missing_single_map_material_plan",
+      "meaning": "Director output lacks singleMapMaterialPlan.",
+      "typicalFixTarget": "`director/director-output-schema.md`"
+    },
+    {
+      "code": "director_missing_single_map_composition_plan",
+      "meaning": "Director output lacks singleMapCompositionPlan.",
+      "typicalFixTarget": "`director/director-output-schema.md`"
+    },
+    {
+      "code": "director_missing_single_map_acceptance_plan",
+      "meaning": "Director output lacks singleMapAcceptancePlan.",
+      "typicalFixTarget": "`director/director-output-schema.md`"
+    },
+    {
+      "code": "arbitrary_path",
+      "meaning": "Path exists visually but has no structure purpose.",
+      "typicalFixTarget": "`map-structure/main-path.md`"
+    },
+    {
+      "code": "asset_palette_mismatch",
+      "meaning": "Objects have unrelated colors/style.",
+      "typicalFixTarget": "`visual-style/color.md`"
+    },
+    {
+      "code": "black_noise_rock",
+      "meaning": "Rock reads as dark noise.",
+      "typicalFixTarget": "`objects/rock.md`"
+    },
+    {
+      "code": "boundary_collision_mismatch",
+      "meaning": "Visual boundary contradicts collision data.",
+      "typicalFixTarget": "`map-structure/natural-boundary.md`"
+    },
+    {
+      "code": "boundary_noise",
+      "meaning": "Boundary is unreadable dark/green noise.",
+      "typicalFixTarget": "`map-structure/natural-boundary.md`"
+    },
+    {
+      "code": "branch_dominates_map",
+      "meaning": "Secondary path steals focus from main structure.",
+      "typicalFixTarget": "`map-structure/branch-path.md`"
+    },
+    {
+      "code": "brick_repetition",
+      "meaning": "Path reads as repeated bricks/tiles instead of natural soil.",
+      "typicalFixTarget": "`terrain/dirt-path.md`"
+    },
+    {
+      "code": "broken_route",
+      "meaning": "Path visually fails to connect entrance, center or branch target.",
+      "typicalFixTarget": "`terrain/dirt-path.md`"
+    },
+    {
+      "code": "broken_water_surface",
+      "meaning": "Water breaks into unrelated blobs.",
+      "typicalFixTarget": "`terrain/water.md`"
+    },
+    {
+      "code": "center_as_noise",
+      "meaning": "Center is buried under texture.",
+      "typicalFixTarget": "`map-structure/home-center.md`"
+    },
+    {
+      "code": "center_invasion",
+      "meaning": "Boundary elements invade and hide the playable center.",
+      "typicalFixTarget": "`terrain/forest-edge.md`"
+    },
+    {
+      "code": "collapsed_layers",
+      "meaning": "Terrain, details and objects visually merge into unreadable noise.",
+      "typicalFixTarget": "`composition/layer-order.md`"
+    },
+    {
+      "code": "collision_visual_conflict",
+      "meaning": "Visual says walkable but collision says blocked, or the reverse.",
+      "typicalFixTarget": "`map-structure/walkable-area.md`"
+    },
+    {
+      "code": "color_band_path",
+      "meaning": "Path looks like a pasted color band.",
+      "typicalFixTarget": "`terrain/dirt-path.md`"
+    },
+    {
+      "code": "conflicting_light",
+      "meaning": "Different objects have different light directions.",
+      "typicalFixTarget": "`visual-style/light.md`"
+    },
+    {
+      "code": "db_binary_blob_first",
+      "meaning": "Database stores large images directly before asset/file storage is planned.",
+      "typicalFixTarget": "`database/storage-plan.md`"
+    },
+    {
+      "code": "db_review_not_linked",
+      "meaning": "Review records are not linked to dictionary version and model checkpoint.",
+      "typicalFixTarget": "`database/storage-plan.md`"
+    },
+    {
+      "code": "db_without_versioning",
+      "meaning": "Database stores mutable rules without version identity.",
+      "typicalFixTarget": "`database/storage-plan.md`"
+    },
+    {
+      "code": "detail_noise",
+      "meaning": "Detail becomes random surface noise.",
+      "typicalFixTarget": "`objects/grass-detail.md`"
+    },
+    {
+      "code": "disconnected_entrance",
+      "meaning": "Entrance does not connect to main path.",
+      "typicalFixTarget": "`map-structure/entrance.md`"
+    },
+    {
+      "code": "disconnected_shore",
+      "meaning": "Shoreline does not follow the water boundary.",
+      "typicalFixTarget": "`terrain/shoreline.md`"
+    },
+    {
+      "code": "docs_db_diverge",
+      "meaning": "Documents and database disagree without a migration/export record.",
+      "typicalFixTarget": "`database/storage-plan.md`"
+    },
+    {
+      "code": "duplicate_meaning",
+      "meaning": "Two files define the same object or rule with different names.",
+      "typicalFixTarget": "`schema/dictionary-entry.md`"
+    },
+    {
+      "code": "edge_blur",
+      "meaning": "Edges are so blurred that structure is unreadable.",
+      "typicalFixTarget": "`visual-style/edge-treatment.md`"
+    },
+    {
+      "code": "electric_blue_noise",
+      "meaning": "Water is neon, noisy or visually synthetic.",
+      "typicalFixTarget": "`terrain/water.md`"
+    },
+    {
+      "code": "excessive_bright_berries",
+      "meaning": "Berry accents become noisy bright pixels.",
+      "typicalFixTarget": "`objects/berry-bush.md`"
+    },
+    {
+      "code": "false_obstacle",
+      "meaning": "Pebbles look like major blockers.",
+      "typicalFixTarget": "`objects/pebble.md`"
+    },
+    {
+      "code": "floating_asset",
+      "meaning": "Object lacks contact shadow/base.",
+      "typicalFixTarget": "`visual-style/object-grounding.md`"
+    },
+    {
+      "code": "floating_object",
+      "meaning": "Object appears pasted without ground contact.",
+      "typicalFixTarget": "`baseline/earth.md`"
+    },
+    {
+      "code": "floating_resource",
+      "meaning": "No ground contact.",
+      "typicalFixTarget": "`objects/berry-bush.md`"
+    },
+    {
+      "code": "floating_shrub",
+      "meaning": "No base contact.",
+      "typicalFixTarget": "`objects/shrub.md`"
+    },
+    {
+      "code": "floating_tree",
+      "meaning": "Tree appears to hover.",
+      "typicalFixTarget": "`objects/tree.md`"
+    },
+    {
+      "code": "full_frame_overgrowth",
+      "meaning": "Tall grass covers the map and destroys readability.",
+      "typicalFixTarget": "`terrain/tall-grass.md`"
+    },
+    {
+      "code": "gameplay_confusion",
+      "meaning": "Mud hides path or water boundary.",
+      "typicalFixTarget": "`terrain/mud-patch.md`"
+    },
+    {
+      "code": "green_blob",
+      "meaning": "Shrub is only an unclear green blob.",
+      "typicalFixTarget": "`objects/shrub.md`"
+    },
+    {
+      "code": "green_noise_field",
+      "meaning": "Grass reads as random noise or dirty texture.",
+      "typicalFixTarget": "`terrain/grass.md`"
+    },
+    {
+      "code": "hard_boundary_wall",
+      "meaning": "Boundary looks artificial.",
+      "typicalFixTarget": "`map-structure/natural-boundary.md`"
+    },
+    {
+      "code": "hard_cut_edge",
+      "meaning": "Edge is perfectly sharp or geometric.",
+      "typicalFixTarget": "`terrain/dirt-path.md`"
+    },
+    {
+      "code": "hard_cut_shore",
+      "meaning": "Shoreline is a sharp mask edge.",
+      "typicalFixTarget": "`terrain/shoreline.md`"
+    },
+    {
+      "code": "hard_mask_edge",
+      "meaning": "Terrain masks are visibly hard-cut.",
+      "typicalFixTarget": "`visual-style/edge-treatment.md`"
+    },
+    {
+      "code": "hidden_entrance",
+      "meaning": "Player cannot tell where entry starts.",
+      "typicalFixTarget": "`map-structure/entrance.md`"
+    },
+    {
+      "code": "indistinct_resource",
+      "meaning": "Cannot distinguish from random grass noise.",
+      "typicalFixTarget": "`objects/berry-bush.md`"
+    },
+    {
+      "code": "inference_not_saved",
+      "meaning": "Model output was generated but not stored.",
+      "typicalFixTarget": "`training/automatic-storage.md`"
+    },
+    {
+      "code": "inland_reed",
+      "meaning": "Reeds appear far from water without reason.",
+      "typicalFixTarget": "`objects/reed.md`"
+    },
+    {
+      "code": "invisible_collision",
+      "meaning": "Movement is blocked with no visible reason.",
+      "typicalFixTarget": "`map-structure/collision-area.md`"
+    },
+    {
+      "code": "layer_order_conflict",
+      "meaning": "Details cover important path/water/object edges in a way that breaks reading.",
+      "typicalFixTarget": "`composition/layer-order.md`"
+    },
+    {
+      "code": "low_detail_flatness",
+      "meaning": "Large areas are flat and unfinished.",
+      "typicalFixTarget": "`visual-style/material-density.md`"
+    },
+    {
+      "code": "manual_only_memory",
+      "meaning": "Result exists only in conversation and not in project data.",
+      "typicalFixTarget": "`schema/review-record.md`"
+    },
+    {
+      "code": "meaningless_branch",
+      "meaning": "Branch path goes nowhere.",
+      "typicalFixTarget": "`map-structure/branch-path.md`"
+    },
+    {
+      "code": "missing_center",
+      "meaning": "No readable center exists.",
+      "typicalFixTarget": "`map-structure/home-center.md`"
+    },
+    {
+      "code": "missing_complete_map_structure",
+      "meaning": "Image does not show the full entrance/path/center/water/boundary composition.",
+      "typicalFixTarget": "`versions/mvp-natural-home.md`"
+    },
+    {
+      "code": "missing_failure_codes",
+      "meaning": "Failed sample cannot train the model.",
+      "typicalFixTarget": "`schema/review-record.md`"
+    },
+    {
+      "code": "missing_image_path",
+      "meaning": "Review record cannot prove what was judged.",
+      "typicalFixTarget": "`schema/review-record.md`"
+    },
+    {
+      "code": "missing_required_field",
+      "meaning": "Dictionary item cannot be used by automation.",
+      "typicalFixTarget": "`schema/dictionary-entry.md`"
+    },
+    {
+      "code": "mixed_world_physics",
+      "meaning": "Some elements behave like icons, others like 3D objects, breaking world consistency.",
+      "typicalFixTarget": "`baseline/earth.md`"
+    },
+    {
+      "code": "muddy_blur",
+      "meaning": "Grass becomes an unclear brown-green smear.",
+      "typicalFixTarget": "`terrain/grass.md`"
+    },
+    {
+      "code": "muddy_map",
+      "meaning": "Mud spreads across the full frame and makes grass dirty.",
+      "typicalFixTarget": "`terrain/mud-patch.md`"
+    },
+    {
+      "code": "muddy_palette",
+      "meaning": "Whole map becomes brown-green sludge.",
+      "typicalFixTarget": "`visual-style/color.md`"
+    },
+    {
+      "code": "neon_noise",
+      "meaning": "Saturated speckle artifacts dominate.",
+      "typicalFixTarget": "`visual-style/color.md`"
+    },
+    {
+      "code": "no_contact_shadow",
+      "meaning": "Objects float due to missing shadow/base.",
+      "typicalFixTarget": "`visual-style/light.md`"
+    },
+    {
+      "code": "no_negative_memory",
+      "meaning": "Failed outputs are not available for future training.",
+      "typicalFixTarget": "`training/automatic-storage.md`"
+    },
+    {
+      "code": "noisy_clumps",
+      "meaning": "Clumps become random dark stains.",
+      "typicalFixTarget": "`terrain/tall-grass.md`"
+    },
+    {
+      "code": "noisy_dark_edge",
+      "meaning": "Edge is a dark noise band.",
+      "typicalFixTarget": "`terrain/forest-edge.md`"
+    },
+    {
+      "code": "noisy_stripes",
+      "meaning": "Reeds become dense line noise.",
+      "typicalFixTarget": "`objects/reed.md`"
+    },
+    {
+      "code": "non_earth_visual_logic",
+      "meaning": "Water, soil, plant or stone no longer reads as Earth-like natural material.",
+      "typicalFixTarget": "`baseline/earth.md`"
+    },
+    {
+      "code": "obstructed_main_path",
+      "meaning": "Path appears blocked by tree, rock, water or noise.",
+      "typicalFixTarget": "`map-structure/main-path.md`"
+    },
+    {
+      "code": "overbright_noise",
+      "meaning": "Flowers create noisy bright speckles.",
+      "typicalFixTarget": "`objects/flower.md`"
+    },
+    {
+      "code": "overdark_scene",
+      "meaning": "Shadows hide gameplay structure.",
+      "typicalFixTarget": "`visual-style/light.md`"
+    },
+    {
+      "code": "overgrown_path",
+      "meaning": "Grass destroys path readability.",
+      "typicalFixTarget": "`terrain/grass.md`"
+    },
+    {
+      "code": "overwide_shore",
+      "meaning": "Shoreline covers too much land or water.",
+      "typicalFixTarget": "`terrain/shoreline.md`"
+    },
+    {
+      "code": "page_bypasses_storage",
+      "meaning": "Page shows training content without reading the stored record first.",
+      "typicalFixTarget": "`training/automatic-storage.md`"
+    },
+    {
+      "code": "pale_patch_flower",
+      "meaning": "Flower cluster becomes large pale flat patch.",
+      "typicalFixTarget": "`objects/flower.md`"
+    },
+    {
+      "code": "pasted_edge",
+      "meaning": "Objects or shoreline look pasted.",
+      "typicalFixTarget": "`visual-style/edge-treatment.md`"
+    },
+    {
+      "code": "pasted_wall_shore",
+      "meaning": "Shoreline looks like a vertical pasted wall.",
+      "typicalFixTarget": "`terrain/shoreline.md`"
+    },
+    {
+      "code": "path_contamination",
+      "meaning": "Tall grass hides or visually breaks the main path.",
+      "typicalFixTarget": "`terrain/tall-grass.md`"
+    },
+    {
+      "code": "path_pollution",
+      "meaning": "Flowers hide or dirty the path.",
+      "typicalFixTarget": "`objects/flower.md`"
+    },
+    {
+      "code": "pebble_noise",
+      "meaning": "Pebbles become salt-and-pepper noise.",
+      "typicalFixTarget": "`objects/pebble.md`"
+    },
+    {
+      "code": "perspective_mismatch",
+      "meaning": "Tree camera conflicts with map camera.",
+      "typicalFixTarget": "`objects/tree.md`"
+    },
+    {
+      "code": "reed_wall",
+      "meaning": "Reeds form a wall or block the water boundary.",
+      "typicalFixTarget": "`objects/reed.md`"
+    },
+    {
+      "code": "repeated_dot_pattern",
+      "meaning": "Pebbles form a visible grid or repeated dot stamp.",
+      "typicalFixTarget": "`objects/pebble.md`"
+    },
+    {
+      "code": "repeated_material_stamp",
+      "meaning": "Repeated tile or stamp is visible.",
+      "typicalFixTarget": "`visual-style/material-density.md`"
+    },
+    {
+      "code": "repeated_stamp",
+      "meaning": "Same detail repeats visibly.",
+      "typicalFixTarget": "`objects/grass-detail.md`"
+    },
+    {
+      "code": "repeated_tile_grid",
+      "meaning": "Repeated 64px/128px block pattern is visible.",
+      "typicalFixTarget": "`terrain/grass.md`"
+    },
+    {
+      "code": "review_not_saved",
+      "meaning": "Review happened but cannot be found in project records.",
+      "typicalFixTarget": "`training/automatic-storage.md`"
+    },
+    {
+      "code": "scale_break",
+      "meaning": "Object size breaks map scale.",
+      "typicalFixTarget": "`visual-style/object-grounding.md`"
+    },
+    {
+      "code": "scale_mismatch",
+      "meaning": "Rock scale conflicts with tree/path.",
+      "typicalFixTarget": "`objects/rock.md`"
+    },
+    {
+      "code": "stain_noise",
+      "meaning": "Mud looks like random stains.",
+      "typicalFixTarget": "`terrain/mud-patch.md`"
+    },
+    {
+      "code": "sticker_asset",
+      "meaning": "Object has no integration with ground.",
+      "typicalFixTarget": "`visual-style/object-grounding.md`"
+    },
+    {
+      "code": "sticker_rock",
+      "meaning": "No shadow or terrain contact.",
+      "typicalFixTarget": "`objects/rock.md`"
+    },
+    {
+      "code": "sticker_tree",
+      "meaning": "Tree looks pasted from another image/style.",
+      "typicalFixTarget": "`objects/tree.md`"
+    },
+    {
+      "code": "structure_masking",
+      "meaning": "Detail hides path, center or water boundary.",
+      "typicalFixTarget": "`objects/grass-detail.md`"
+    },
+    {
+      "code": "style_mismatch",
+      "meaning": "Shrub does not match trees/grass style.",
+      "typicalFixTarget": "`objects/shrub.md`"
+    },
+    {
+      "code": "target_not_learned",
+      "meaning": "Repeated outputs ignore this dictionary and require training/data adjustment.",
+      "typicalFixTarget": "`composition/professional-quality.md`"
+    },
+    {
+      "code": "tree_wall",
+      "meaning": "Boundary becomes a repeated tree wall.",
+      "typicalFixTarget": "`terrain/forest-edge.md`"
+    },
+    {
+      "code": "unauthorized_building",
+      "meaning": "Center becomes a building without world fact.",
+      "typicalFixTarget": "`map-structure/home-center.md`"
+    },
+    {
+      "code": "unreadable_depth",
+      "meaning": "No shallow/deep relation can be read.",
+      "typicalFixTarget": "`terrain/water.md`"
+    },
+    {
+      "code": "unreadable_main_path",
+      "meaning": "Main route cannot be recognized.",
+      "typicalFixTarget": "`map-structure/main-path.md`"
+    },
+    {
+      "code": "unreadable_map_camera",
+      "meaning": "Camera makes walkable space unclear.",
+      "typicalFixTarget": "`visual-style/camera.md`"
+    },
+    {
+      "code": "unstored_training_content",
+      "meaning": "Training content is visible or discussed but has no stored record.",
+      "typicalFixTarget": "`training/automatic-storage.md`"
+    },
+    {
+      "code": "vague_name",
+      "meaning": "Name does not reveal the object or rule directly.",
+      "typicalFixTarget": "`schema/dictionary-entry.md`"
+    },
+    {
+      "code": "vertical_wall_water",
+      "meaning": "Water edge looks like a pasted vertical wall or cliff strip.",
+      "typicalFixTarget": "`terrain/water.md`"
+    },
+    {
+      "code": "visible_blocker_no_collision",
+      "meaning": "Object looks blocking but data allows walking through it.",
+      "typicalFixTarget": "`map-structure/collision-area.md`"
+    },
+    {
+      "code": "walkable_visual_blocked",
+      "meaning": "Walkable area looks blocked.",
+      "typicalFixTarget": "`map-structure/walkable-area.md`"
+    },
+    {
+      "code": "water_edge_confusion",
+      "meaning": "Player cannot tell land from water.",
+      "typicalFixTarget": "`map-structure/water-edge-zone.md`"
+    },
+    {
+      "code": "water_edge_wall",
+      "meaning": "Edge looks like a wall or pasted strip.",
+      "typicalFixTarget": "`map-structure/water-edge-zone.md`"
+    }
+  ],
+  "trainingLabels": [
+    {
+      "label": "positive_owner_accepted",
+      "meaning": "Owner accepted as matching first-version target.",
+      "mayTrain": "Yes"
+    },
+    {
+      "label": "positive_machine_and_owner_passed",
+      "meaning": "Machine and owner both passed.",
+      "mayTrain": "Yes"
+    },
+    {
+      "label": "positive_local_material_candidate",
+      "meaning": "Local visual quality is useful for material/style training, but not enough for full world approval.",
+      "mayTrain": "Yes, as local/material positive"
+    },
+    {
+      "label": "negative_owner_rejected",
+      "meaning": "Owner rejected visual quality.",
+      "mayTrain": "Yes, as negative"
+    },
+    {
+      "label": "negative_agent_rejected",
+      "meaning": "Early agent professional review rejected visual quality before owner final review.",
+      "mayTrain": "Yes, as negative candidate"
+    },
+    {
+      "label": "negative_machine_failed",
+      "meaning": "Machine failed visual/structure gate.",
+      "mayTrain": "Yes, as negative"
+    },
+    {
+      "label": "negative_machine_pass_owner_fail",
+      "meaning": "Machine passed but owner rejected.",
+      "mayTrain": "Yes, high-value negative"
+    },
+    {
+      "label": "negative_machine_pass_agent_fail",
+      "meaning": "Machine passed but early agent professional review rejected.",
+      "mayTrain": "Yes, high-value negative candidate"
+    },
+    {
+      "label": "pending_owner_review",
+      "meaning": "Waiting for owner judgment.",
+      "mayTrain": "No"
+    },
+    {
+      "label": "reference_rule_only",
+      "meaning": "Rule/reference text only, not pixel training.",
+      "mayTrain": "No image training"
+    },
+    {
+      "label": "blocked_unlicensed",
+      "meaning": "Cannot use.",
+      "mayTrain": "No"
+    },
+    {
+      "label": "positive_complete_runtime_frame",
+      "meaning": "Complete RuntimeFrame candidate satisfies map grammar, playability, and visual review.",
+      "mayTrain": "Yes, high-value full-frame positive"
+    },
+    {
+      "label": "negative_missing_map_grammar",
+      "meaning": "Candidate has visual material but lacks complete map grammar.",
+      "mayTrain": "Yes, full-frame negative"
+    },
+    {
+      "label": "negative_missing_spatial_contract",
+      "meaning": "Candidate cannot bind visual regions to walkable, collision, or interaction layers.",
+      "mayTrain": "Yes, structure negative"
+    },
+    {
+      "label": "negative_director_task_gap",
+      "meaning": "Generation task failed because director inputs or fix hints were incomplete.",
+      "mayTrain": "Yes, task-level negative"
+    },
+    {
+      "label": "negative_live_state_mismatch",
+      "meaning": "Candidate does not preserve world identity, tick binding, or state continuity.",
+      "mayTrain": "Yes, runtime negative"
+    }
+  ],
+  "hardFailureCodes": [
+    "active_scope_dynamic_tick_required",
+    "active_scope_gameplay_gate_used",
+    "active_scope_interaction_feature_leak",
+    "active_scope_player_feature_leak",
+    "arbitrary_path",
+    "art_direction_missing",
+    "asset_palette_mismatch",
+    "biome_style_mismatch",
+    "black_noise_rock",
+    "boundary_collision_mismatch",
+    "boundary_hard_clip",
+    "boundary_noise",
+    "boundary_vegetation_wall",
+    "branch_dominates_map",
+    "brick_repetition",
+    "broken_route",
+    "broken_route_continuity",
+    "broken_water_surface",
+    "center_as_noise",
+    "center_invasion",
+    "center_occluded_by_detail",
+    "center_swallowed_by_texture",
+    "collapsed_layers",
+    "collision_affordance_missing",
+    "collision_visual_conflict",
+    "collision_walkable_overlap_unresolved",
+    "color_band_path",
+    "composition_depends_on_player_or_ui",
+    "composition_recipe_missing",
+    "conflicting_light",
+    "db_binary_blob_first",
+    "db_review_not_linked",
+    "db_without_versioning",
+    "debug_layer_visible",
+    "detail_density_unprofessional",
+    "detail_noise",
+    "detail_recipe_overload",
+    "detail_rhythm_random",
+    "director_allows_player_visible_candidate",
+    "director_fix_plan_not_bound",
+    "director_ignores_fix_plan",
+    "director_invents_world_fact",
+    "director_missing_art_direction_plan",
+    "director_missing_composition_recipe_plan",
+    "director_missing_drawing_process_plan",
+    "director_missing_map_grammar",
+    "director_missing_material_recipe_plan",
+    "director_missing_quality_rubric_plan",
+    "director_missing_read_order",
+    "director_missing_render_layer_recipe_plan",
+    "director_missing_safety_block",
+    "director_missing_single_map_acceptance_plan",
+    "director_missing_single_map_composition_plan",
+    "director_missing_single_map_ecology_plan",
+    "director_missing_single_map_material_plan",
+    "director_missing_single_map_scope_plan",
+    "director_output_missing_required_field",
+    "director_unstructured_prompt_only",
+    "disconnected_entrance",
+    "disconnected_shore",
+    "docs_db_diverge",
+    "duplicate_meaning",
+    "ecology_random_noise",
+    "edge_blur",
+    "electric_blue_noise",
+    "entity_record_schema_missing_field",
+    "entity_scope_mismatch",
+    "entrance_route_center_not_composed",
+    "excessive_bright_berries",
+    "false_obstacle",
+    "floating_asset",
+    "floating_object",
+    "floating_resource",
+    "floating_shrub",
+    "floating_tree",
+    "focal_hierarchy_failed",
+    "forbidden_entity_in_task",
+    "full_frame_noise",
+    "full_frame_overgrowth",
+    "gameplay_confusion",
+    "gameplay_read_not_supported",
+    "generation_target_not_runtime_frame",
+    "grass_growth_ignores_path",
+    "grass_recipe_noise",
+    "green_blob",
+    "green_noise_field",
+    "hard_boundary_wall",
+    "hard_cut_edge",
+    "hard_cut_shore",
+    "hard_mask_edge",
+    "hidden_entrance",
+    "indistinct_resource",
+    "inference_not_saved",
+    "inland_reed",
+    "interaction_cue_noise",
+    "invented_major_entity",
+    "invisible_collision",
+    "layer_geometry_missing",
+    "layer_order_conflict",
+    "layer_record_schema_missing_field",
+    "layer_visual_cue_missing",
+    "loose_prompt_only_generation",
+    "low_detail_flatness",
+    "machine_score_overrides_owner",
+    "manual_only_memory",
+    "map_part_connection_missing",
+    "map_part_role_conflict",
+    "map_part_schema_missing_field",
+    "map_part_unreadable",
+    "material_detail_budget_exceeded",
+    "material_recipe_missing",
+    "material_role_unclear",
+    "material_transition_missing",
+    "material_value_band_conflict",
+    "meaningless_branch",
+    "missing_center",
+    "missing_complete_map_part",
+    "missing_complete_map_structure",
+    "missing_drawing_process",
+    "missing_failure_codes",
+    "missing_image_path",
+    "missing_previous_failure_feedback",
+    "missing_required_entity",
+    "missing_required_field",
+    "missing_review_link",
+    "missing_runtime_binding",
+    "missing_task_storage",
+    "mixed_world_physics",
+    "moisture_map_unreadable",
+    "movement_affordance_missing",
+    "muddy_blur",
+    "muddy_map",
+    "muddy_palette",
+    "near_pass_without_fix_targets",
+    "negative_space_missing",
+    "neon_noise",
+    "no_art_direction",
+    "no_clear_center",
+    "no_clear_route",
+    "no_contact_shadow",
+    "no_negative_memory",
+    "no_playable_read",
+    "noisy_clumps",
+    "noisy_dark_edge",
+    "noisy_stripes",
+    "non_earth_visual_logic",
+    "not_game_ready",
+    "not_player_facing_art",
+    "object_footprint_geometry_mismatch",
+    "object_footprint_missing",
+    "object_without_contact_layer",
+    "obstructed_main_path",
+    "open_space_plan_missing",
+    "overbright_noise",
+    "overdark_scene",
+    "overgrown_path",
+    "overwide_shore",
+    "page_bypasses_storage",
+    "pale_patch_flower",
+    "partial_candidate_not_full_world",
+    "pasted_edge",
+    "pasted_objects",
+    "pasted_wall_shore",
+    "path_contamination",
+    "path_pollution",
+    "path_recipe_pasted",
+    "path_wear_missing",
+    "pebble_noise",
+    "perspective_mismatch",
+    "player_scale_conflict",
+    "polish_without_structure",
+    "professional_read_fail",
+    "professional_score_below_gate",
+    "quality_rubric_missing",
+    "quality_score_unstructured",
+    "random_asset_scatter",
+    "read_order_failed",
+    "reed_wall",
+    "render_layer_order_broken",
+    "render_layer_recipe_missing",
+    "repeated_dot_pattern",
+    "repeated_material_stamp",
+    "repeated_stamp",
+    "repeated_tile_grid",
+    "reserved_dynamic_gate_used",
+    "reserved_interaction_gate_used",
+    "reserved_player_gate_used",
+    "review_not_saved",
+    "route_hierarchy_missing",
+    "route_occluded_by_detail",
+    "runtime_binding_missing_asset_trace",
+    "runtime_binding_missing_generation_trace",
+    "runtime_binding_missing_review_trace",
+    "runtime_binding_missing_state_trace",
+    "runtime_binding_schema_missing_field",
+    "runtime_binding_world_gate_bypass",
+    "runtime_entity_missing_source_fact",
+    "scale_break",
+    "scale_mismatch",
+    "shoreline_ecology_missing",
+    "shoreline_recipe_wall",
+    "single_map_acceptance_missing",
+    "single_map_composition_fields_missing",
+    "single_map_ecology_fields_missing",
+    "single_map_material_fields_missing",
+    "single_map_scope_failed",
+    "skipped_grounding_pass",
+    "skipped_spatial_blockout",
+    "skipped_value_grouping",
+    "stain_noise",
+    "state_diff_untraceable",
+    "sticker_asset",
+    "sticker_rock",
+    "sticker_tree",
+    "structure_masking",
+    "style_family_mixed",
+    "style_mismatch",
+    "target_not_learned",
+    "task_missing_art_direction",
+    "task_missing_composition_recipe",
+    "task_missing_drawing_process",
+    "task_missing_material_recipes",
+    "task_missing_quality_rubric",
+    "task_missing_render_layer_recipe",
+    "task_missing_required_map_part",
+    "task_missing_single_map_acceptance",
+    "task_missing_single_map_composition_fields",
+    "task_missing_single_map_ecology_fields",
+    "task_missing_single_map_material_fields",
+    "task_missing_single_map_scope",
+    "task_missing_spatial_layers",
+    "task_previous_failures_dropped",
+    "task_schema_missing_required_field",
+    "task_storage_contract_incomplete",
+    "tick_unbound_frame",
+    "tree_wall",
+    "unauthorized_building",
+    "unbound_visible_entity",
+    "unreadable_collision_area",
+    "unreadable_depth",
+    "unreadable_main_path",
+    "unreadable_map_camera",
+    "unreadable_walkable_area",
+    "unstable_world_identity",
+    "unstored_training_content",
+    "vague_name",
+    "vegetation_density_overload",
+    "vertical_wall_water",
+    "visible_blocker_no_collision",
+    "visible_entity_missing_placement_domain",
+    "visible_entity_missing_visual_entry",
+    "visual_logic_mismatch",
+    "visual_repair_rewrites_facts",
+    "walkable_visual_blocked",
+    "water_boundary_not_composed",
+    "water_ecology_mismatch",
+    "water_edge_confusion",
+    "water_edge_wall",
+    "water_land_confusion",
+    "water_recipe_synthetic"
+  ],
+  "unregisteredHardFailureCodes": []
+}

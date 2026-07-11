@@ -17,6 +17,21 @@ const report = JSON.parse(fs.readFileSync(reportPath, "utf8"))
 assert(report.schemaVersion === "natural-home-game-world-frame-gate-v1", "unexpected game-world frame gate schema")
 assert(report.stageId === expectedStageId, "unexpected game-world frame gate stageId")
 assert(report.reviewScope === "natural_home_complete_game_world_frame_gate", "unexpected game-world frame review scope")
+assert(
+  report.dictionaryContract?.schemaVersion === "world-visual-dictionary-runtime-contract-v1",
+  "missing world visual dictionary contract",
+)
+assert(report.dictionaryContract.passed === true, "world visual dictionary contract must pass")
+assert(report.dictionaryContract.activeScope === "single_complete_map_visual", "unexpected dictionary active scope")
+assert(
+  report.dictionaryContract.summary?.unregisteredHardFailureCodeCount === 0,
+  "dictionary contract must have no unregistered hard failures",
+)
+assert(
+  Array.isArray(report.dictionaryContract.summary?.missingActiveDocuments) &&
+    report.dictionaryContract.summary.missingActiveDocuments.length === 0,
+  "dictionary contract missing active documents",
+)
 assert(report.displayAllowed === false, "game-world frame gate report must not be display allowed")
 assert(report.canPromoteToWorld === false, "game-world frame gate report must not promote directly to world")
 assert(report.approvedFrameStatus === "not_written", "game-world frame gate must not write ApprovedFrame")
@@ -42,6 +57,10 @@ for (const row of report.rows) {
   assert(fs.existsSync(row.blueprint), `missing blueprint: ${row.sampleId}`)
   assert(Array.isArray(row.checks) && row.checks.length > 0, `missing checks: ${row.sampleId}`)
   for (const requiredCheck of [
+    "dictionary_contract_must_pass",
+    "single_map_visual_scope_active",
+    "dictionary_must_have_no_unregistered_hard_failures",
+    "dictionary_active_documents_present",
     "vj2_natural_quality_must_pass",
     "generated_image_must_exist",
     "generated_image_must_be_full_runtime_resolution",
