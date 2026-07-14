@@ -10,6 +10,7 @@ import type {
   ResourcePoolState,
   ResourceTransaction,
 } from "@/world/resource-cycle/resource-schema"
+import type { WorldConnectivityRuntimeState } from "@/world/runtime/world-connectivity-runtime-schema"
 
 export type HomeMapSize = {
   columns: number
@@ -119,6 +120,7 @@ export type HomeMapState = {
   placements: MapPlacement[]
   resources: HomeResourceState
   ecologyState?: WorldEcologyState
+  worldConnectivity?: WorldConnectivityRuntimeState
   houseStyle?: HousePreference
   houseStyleHistory?: HousePreference[]
   constructionPlans: ConstructionPlanSummary[]

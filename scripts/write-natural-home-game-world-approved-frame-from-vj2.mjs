@@ -86,6 +86,7 @@ function buildSourceFactIds(saveRecord) {
     : []
   const mapDiffs = Array.isArray(homeMapState.mapDiffs) ? homeMapState.mapDiffs : []
   const recentEvents = Array.isArray(saveRecord.recentEvents) ? saveRecord.recentEvents : []
+  const connectivity = homeMapState.worldConnectivity ?? null
 
   return [
     saveRecord.worldId,
@@ -94,7 +95,16 @@ function buildSourceFactIds(saveRecord) {
     ...constructionPlans.map((plan) => plan.id),
     ...mapDiffs.map((diff) => diff.id),
     ...recentEvents.map((event) => event.id),
+    ...buildConnectivityFactIds(connectivity),
   ].filter((id) => typeof id === "string" && id.trim().length > 0)
+}
+
+function buildConnectivityFactIds(connectivity) {
+  if (!connectivity) return []
+  return [connectivity.contractId, connectivity.blueprintId, connectivity.currentRegion?.regionId,
+    ...(connectivity.currentRegion?.neighborRegionIds ?? []), ...(connectivity.currentRegion?.edgePorts ?? []),
+    connectivity.pathGraph?.pathGraphId, connectivity.hydrologyGraph?.hydrologyGraphId,
+    connectivity.walkableGraph?.walkableGraphId]
 }
 
 function findBestApprovedFrameCandidate(report) {

@@ -1,11 +1,40 @@
 import type { HomeMapStructure, HomeMapObject } from "./home-map-structure-schema"
 
+type CurrentWorldConnectivityRuntimeSource = {
+  contractId: string
+  blueprintId: string
+  status:
+    | "runtime_migrated_pending_owner_review"
+    | "runtime_migrated_owner_approved"
+  currentRegion: {
+    regionId: string
+    neighborRegionIds: string[]
+    edgePorts: string[]
+  }
+  pathGraph: {
+    pathGraphId: string
+    nodes: string[]
+  }
+  hydrologyGraph: {
+    hydrologyGraphId: string
+    flowAxis: string
+    upstreamPortId: string
+    downstreamPortId: string
+    lateralContinuationPortId: string
+  }
+  walkableGraph: {
+    walkableGraphId: string
+  }
+}
+
 export type CurrentWorldRuntimeStructureSource = {
   ownerId: string
   worldId: string
   tick: number
+  worldProfileId?: string
   homeMapState?: {
     seed?: string
+    worldConnectivity?: CurrentWorldConnectivityRuntimeSource
   }
 }
 
@@ -25,6 +54,12 @@ export function buildCurrentWorldHomeMapStructure(
   const structureId =
     input.structureId ??
     `home-map-structure-${saveRecord.worldId}-${saveRecord.tick}-natural-home`
+  const connectivity = saveRecord.homeMapState?.worldConnectivity
+  const connectivityFactIds = collectConnectivityFactIds(connectivity)
+  const allSourceFactIds = normalizeSourceFactIds(
+    [...sourceFactIds, ...connectivityFactIds],
+    saveRecord.worldId
+  )
 
   return {
     schemaVersion: "home-map-structure-v1",
@@ -50,7 +85,7 @@ export function buildCurrentWorldHomeMapStructure(
           { x: 1024, y: 768 },
           { x: 0, y: 768 },
         ],
-        sourceFactIds: factSlice(sourceFactIds, 0, 2),
+        sourceFactIds: factSlice(allSourceFactIds, 0, 2),
       },
       {
         id: "terrain-current-water-east",
@@ -67,7 +102,7 @@ export function buildCurrentWorldHomeMapStructure(
           { x: 744, y: 768 },
           { x: 1024, y: 768 },
         ],
-        sourceFactIds: factSlice(sourceFactIds, 2, 4),
+        sourceFactIds: factSlice(allSourceFactIds, 2, 4),
       },
       {
         id: "terrain-current-shoreline-east",
@@ -90,7 +125,7 @@ export function buildCurrentWorldHomeMapStructure(
           { x: 854, y: 96 },
           { x: 880, y: 0 },
         ],
-        sourceFactIds: factSlice(sourceFactIds, 4, 6),
+        sourceFactIds: factSlice(allSourceFactIds, 4, 6),
       },
       {
         id: "terrain-current-mud-worn-entry-path-edge",
@@ -207,17 +242,38 @@ export function buildCurrentWorldHomeMapStructure(
         kind: "branch_path",
         points: [
           { x: 544, y: 410 },
-          { x: 636, y: 468 },
-          { x: 706, y: 570 },
-          { x: 786, y: 642 },
+          { x: 620, y: 462 },
+          { x: 674, y: 532 },
+          { x: 714, y: 574 },
         ],
         width: 26,
         connects: ["home_center", "water_edge"],
         sourceFactIds: factSlice(sourceFactIds, 10, 12),
       },
+      ...(connectivity
+        ? [
+            {
+              id: "path-current-entry-to-south-world-port",
+              kind: "entry_path" as const,
+              points: [
+                { x: 96, y: 704 },
+                { x: 96, y: 768 },
+              ],
+              width: 32,
+              connects: [
+                "entry_point",
+                connectivity.pathGraph.nodes.find((node) =>
+                  node.endsWith(":port:south-path-exit")
+                ) ?? "south_world_port",
+              ],
+              sourceFactIds: connectivityFactIds,
+            },
+          ]
+        : []),
     ],
     objects: buildCurrentWorldObjects(sourceFactIds),
-    sourceFactIds,
+    connectivity: connectivity ? buildConnectivityBinding(connectivity) : undefined,
+    sourceFactIds: allSourceFactIds,
     generationPolicy: {
       scope: "natural_home_mvp",
       allowAiPainterVisualFill: true,
@@ -233,12 +289,54 @@ export function buildCurrentWorldHomeMapStructure(
     tags: [
       "natural_home_mvp",
       "current_world_runtime_source",
+      saveRecord.worldProfileId ?? "world_profile_missing",
+      ...(connectivity ? ["world_connectivity_runtime_bound"] : []),
       "structure_first",
       "no_character",
       "no_animal",
       "no_building_construction",
     ],
   }
+}
+
+function buildConnectivityBinding(
+  connectivity: CurrentWorldConnectivityRuntimeSource
+): NonNullable<HomeMapStructure["connectivity"]> {
+  return {
+    contractId: connectivity.contractId,
+    blueprintId: connectivity.blueprintId,
+    regionId: connectivity.currentRegion.regionId,
+    neighborRegionIds: [...connectivity.currentRegion.neighborRegionIds],
+    activeEdgePortIds: [...connectivity.currentRegion.edgePorts],
+    pathGraphId: connectivity.pathGraph.pathGraphId,
+    hydrologyGraphId: connectivity.hydrologyGraph.hydrologyGraphId,
+    walkableGraphId: connectivity.walkableGraph.walkableGraphId,
+    waterFlowAxis: connectivity.hydrologyGraph.flowAxis,
+    upstreamPortId: connectivity.hydrologyGraph.upstreamPortId,
+    downstreamPortId: connectivity.hydrologyGraph.downstreamPortId,
+    lateralContinuationPortId:
+      connectivity.hydrologyGraph.lateralContinuationPortId,
+    status: connectivity.status,
+  }
+}
+
+function collectConnectivityFactIds(
+  connectivity: CurrentWorldConnectivityRuntimeSource | undefined
+): string[] {
+  if (!connectivity) return []
+
+  return Array.from(
+    new Set([
+      connectivity.contractId,
+      connectivity.blueprintId,
+      connectivity.currentRegion.regionId,
+      ...connectivity.currentRegion.neighborRegionIds,
+      ...connectivity.currentRegion.edgePorts,
+      connectivity.pathGraph.pathGraphId,
+      connectivity.hydrologyGraph.hydrologyGraphId,
+      connectivity.walkableGraph.walkableGraphId,
+    ])
+  ).sort()
 }
 
 function buildCurrentWorldObjects(sourceFactIds: string[]): HomeMapObject[] {

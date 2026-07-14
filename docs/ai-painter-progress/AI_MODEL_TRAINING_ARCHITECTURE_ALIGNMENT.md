@@ -1,6 +1,6 @@
 # AI Painter 模型架构与训练架构对齐规格
 
-更新时间：2026-07-11 12:32:00 +08:00
+更新时间：2026-07-11 20:55:00 +08:00
 
 状态：active-lock / 真实代码与产物检查已实现 / 完整地图数据与视觉推理仍阻断
 
@@ -94,6 +94,7 @@
 | 训练 | dataset、config、initial checkpoint | best.pt、training-summary、log | 配置、epoch、loss、设备、样本数 |
 | 合并模型 | 各材料槽 best.pt | combined-model-root | combined-model-root-manifest |
 | 完整视觉推理 | current task package、VisualFactManifest、model checkpoint | 本轮完整地图候选、inference manifest | 任务包、模型版本、checkpoint、seed、图片 hash、生成时间、`reusedExistingImage=false` |
+| bootstrap 完整视觉推理 | 当前条件包、本地 SD 1.5 + ControlNet foundation | 本轮原生 1024×768 自绘冷启动候选 | 禁止 target、旧图复用、程序 RGB 和在线推理 API；固定不能直接进入 `/world`，必须自动机器审核 |
 | 内部材料推理（可选） | model-root、reference dataset、task package | materials、latest.json、material-quality-report | 模型路径、输入包、每个材料槽图片；不得代替完整视觉推理 |
 | 材料审核 | materials、字典材质规则 | MaterialQuality report | failedSlots、materialPassed |
 | 材料包 | material pass 结果 | ApprovedMaterialPack 或失败记录 | approved pack 或 failure report |
@@ -113,6 +114,9 @@
 | 数据目录 | `.runtime/ai-painter/*-dataset/` |
 | 合并模型 | `.runtime/ai-painter/*-combined/` |
 | 推理运行 | `.runtime/game-map-material-slot-inference-runs/` |
+| bootstrap 完整地图推理 | `.runtime/ai-painter/complete-world-visual-bootstrap-inference/` |
+| bootstrap 机器审核 | `.runtime/ai-painter/complete-world-visual-machine-reviews/` |
+| foundation 自动候选批次 | `.runtime/ai-painter/complete-world-visual-foundation-batches/` |
 | Runtime 合成 | `.runtime/game-map-runtime-compositor/` |
 | RuntimeFrame 候选 | `.runtime/game-map-runtime-frame-candidates/` |
 | 字典审核试验 | `.runtime/world-visual-dictionary-trials/` |
@@ -134,8 +138,10 @@
 | 组件 | 状态 | 程序证据 |
 |---|---|---|
 | 世界视觉数据字典 | 已实现 | `scripts/check-world-visual-data-dictionary.mjs` |
+| 完整地图正式数据包 | 已实现程序能力、数据仍不足 | `scripts/register-complete-map-training-sample.mjs`、`scripts/build-current-complete-map-dataset-package.mjs` |
 | 当前世界视觉任务包 | 已实现 | `scripts/build-current-world-visual-generation-task-package.mjs` |
 | 当前视觉事实清单 | 已实现 | `scripts/build-current-world-visual-fact-manifest.mjs` |
+| 当前视觉条件编译器 | 已实现 | `scripts/compile-current-world-visual-conditions.mjs`；23 个单通道条件与结构化向量自动保存在当前任务包内 |
 | 完整世界视觉推理 | 未实现 | 必须由后续正式执行器提供，不得以空壳命令代替 |
 | 审核失败学习消费端 | 已实现 | `scripts/consume-game-map-visual-learning-feedback.mjs`；产物进入下一份世界视觉任务包 |
 
@@ -154,7 +160,8 @@
 | 模型训练架构对齐通过 | `npm run check:ai-painter-model-training-alignment` |
 | 数据严格审计满足当前门槛 | `npm run audit:complete-map-data-sufficiency` |
 | VisualFactManifest 与任务包绑定当前世界 | `npm run build:current-world-visual-task-package` |
-| 视觉条件编译器和完整视觉推理已有行为证据 | 不能由空壳命令或旧图替代 |
+| 视觉条件编译器行为证据通过 | `npm run check:current-world-visual-conditions` |
+| 完整视觉推理已有行为证据 | 不能由空壳命令或旧图替代 |
 
 ## 10. 结论
 

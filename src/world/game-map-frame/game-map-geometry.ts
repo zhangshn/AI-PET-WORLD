@@ -104,6 +104,33 @@ export function rectsOverlap(left: HomeMapRect, right: HomeMapRect): boolean {
   )
 }
 
+export function polygonsOverlap(
+  left: HomeMapPoint[],
+  right: HomeMapPoint[]
+): boolean {
+  if (left.length < 3 || right.length < 3) return false
+  if (!rectsOverlap(polygonBounds(left), polygonBounds(right))) return false
+
+  if (left.some((point) => pointInPolygonInterior(point, right))) return true
+  if (right.some((point) => pointInPolygonInterior(point, left))) return true
+
+  for (let leftIndex = 0; leftIndex < left.length; leftIndex += 1) {
+    const leftStart = left[leftIndex]
+    const leftEnd = left[(leftIndex + 1) % left.length]
+
+    for (let rightIndex = 0; rightIndex < right.length; rightIndex += 1) {
+      const rightStart = right[rightIndex]
+      const rightEnd = right[(rightIndex + 1) % right.length]
+      if (segmentsProperlyIntersect(leftStart, leftEnd, rightStart, rightEnd)) return true
+    }
+  }
+
+  return (
+    pointInPolygonInterior(polygonCentroid(left), right) ||
+    pointInPolygonInterior(polygonCentroid(right), left)
+  )
+}
+
 export function rectWithinBounds(rect: HomeMapRect, bounds: GameMapBounds): boolean {
   return (
     rect.x >= bounds.x &&
@@ -141,5 +168,72 @@ function averageNormals(
   return {
     x: x / length,
     y: y / length,
+  }
+}
+
+function pointInPolygonInterior(point: HomeMapPoint, polygon: HomeMapPoint[]): boolean {
+  for (let index = 0; index < polygon.length; index += 1) {
+    if (pointOnSegment(point, polygon[index], polygon[(index + 1) % polygon.length])) {
+      return false
+    }
+  }
+
+  let inside = false
+  for (let index = 0, previous = polygon.length - 1; index < polygon.length; previous = index++) {
+    const start = polygon[index]
+    const end = polygon[previous]
+    const crosses =
+      start.y > point.y !== end.y > point.y &&
+      point.x < ((end.x - start.x) * (point.y - start.y)) / (end.y - start.y) + start.x
+    if (crosses) inside = !inside
+  }
+  return inside
+}
+
+function segmentsProperlyIntersect(
+  leftStart: HomeMapPoint,
+  leftEnd: HomeMapPoint,
+  rightStart: HomeMapPoint,
+  rightEnd: HomeMapPoint
+): boolean {
+  const leftA = orientation(leftStart, leftEnd, rightStart)
+  const leftB = orientation(leftStart, leftEnd, rightEnd)
+  const rightA = orientation(rightStart, rightEnd, leftStart)
+  const rightB = orientation(rightStart, rightEnd, leftEnd)
+  const epsilon = 0.000001
+
+  return (
+    leftA * leftB < -epsilon &&
+    rightA * rightB < -epsilon
+  )
+}
+
+function pointOnSegment(
+  point: HomeMapPoint,
+  start: HomeMapPoint,
+  end: HomeMapPoint
+): boolean {
+  const epsilon = 0.000001
+  if (Math.abs(orientation(start, end, point)) > epsilon) return false
+  return (
+    point.x >= Math.min(start.x, end.x) - epsilon &&
+    point.x <= Math.max(start.x, end.x) + epsilon &&
+    point.y >= Math.min(start.y, end.y) - epsilon &&
+    point.y <= Math.max(start.y, end.y) + epsilon
+  )
+}
+
+function orientation(start: HomeMapPoint, end: HomeMapPoint, point: HomeMapPoint): number {
+  return (end.x - start.x) * (point.y - start.y) - (end.y - start.y) * (point.x - start.x)
+}
+
+function polygonCentroid(polygon: HomeMapPoint[]): HomeMapPoint {
+  const total = polygon.reduce(
+    (sum, point) => ({ x: sum.x + point.x, y: sum.y + point.y }),
+    { x: 0, y: 0 }
+  )
+  return {
+    x: total.x / polygon.length,
+    y: total.y / polygon.length,
   }
 }

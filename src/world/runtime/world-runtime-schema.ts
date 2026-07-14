@@ -14,6 +14,11 @@ import type { WorldRuntimeConstructionTickResult } from "@/world/runtime-core/wo
 import type { SpaceTraceInfluenceSummary } from "@/world/space"
 import type { TraceField, TraceMemorySeedField } from "@/world/trace"
 import type { ButlerRuntimeAuditSummary } from "./butler-runtime-audit-summary"
+export type {
+  WorldConnectivityRuntimeState,
+  WorldRegionEdgePort,
+  WorldRegionNeighborStub,
+} from "./world-connectivity-runtime-schema"
 import type {
   ButlerRuntimeDecision,
   ButlerRuntimeMotivationType,
@@ -53,6 +58,11 @@ export type WorldRuntimeSaveRecord = {
   ownerId: string
   tick: number
   savedAt: string
+  worldProfileId?: string
+  worldProfileVersion?: string
+  worldProfilePath?: string
+  earthParameterSnapshotId?: string
+  earthParameterSnapshotPath?: string
   butlerProfile: ButlerProfile
   butlerRuntimeProfile: ButlerRuntimeProfile
   butlerBirthInput: ButlerRuntimeProfileBirthInput
@@ -128,4 +138,3 @@ export type WorldRuntimeStoreAdapter = {
   }): Promise<WorldRuntimeStoreWriteResult>
   getDefaultSavePath(): string
 }
-

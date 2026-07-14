@@ -10,3 +10,4 @@
 .statusHint{display:block;margin-top:6px;color:#91bda5;font-size:11px;line-height:1.45;overflow-wrap:anywhere}
 .stageCard img{width:100%;height:auto;max-height:180px;object-fit:contain;border:1px solid #2b5a44;background:#06120d}
 .stageCard{text-decoration:none;color:inherit}.stageCard:hover{border-color:#5ad888;background:#113020}
+.recordThumbnail{display:block;width:min(100%,720px);height:auto;max-height:420px;object-fit:contain;border:1px solid #2b5a44;background:#06120d}

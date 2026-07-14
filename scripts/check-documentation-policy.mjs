@@ -128,6 +128,10 @@ const currentGuide = fs.readFileSync(path.join(ROOT, "docs/game-world-generation
 for (const requiredText of [
   "本文档是当前继续工作的唯一执行入口",
   "npm run run:complete-game-world",
+  "npm run check:current-world-visual-conditions",
+  "npm run check:original-image-library",
+  "npm run check:complete-map-training-sample-registry",
+  "npm run check:current-complete-map-dataset-package",
   "owner_review_rejected",
   "data_gap_insufficient",
 ]) {

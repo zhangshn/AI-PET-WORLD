@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "project-owned-complete-world-model-config-v1",
+  "modelId": "ai-pet-world-complete-world-independent-v1",
+  "status": "architecture_ready_untrained",
+  "ownership": "project_owned_independent_weights",
+  "initialization": "random_initialization_only",
+  "upstreamModelIds": [],
+  "thirdPartyGeneratedTrainingOutputsAllowed": false,
+  "conditionChannels": 23,
+  "conditionChannelOrder": [
+    "terrain_grass",
+    "terrain_water",
+    "terrain_path_ground",
+    "terrain_shoreline",
+    "terrain_natural_boundary",
+    "terrain_mud_patch",
+    "terrain_tall_grass",
+    "walkable",
+    "collision",
+    "object_footprints",
+    "object_tree",
+    "object_rock",
+    "object_vegetation",
+    "focal_area",
+    "object_instance",
+    "coordinate_x",
+    "coordinate_y",
+    "signed_distance_path",
+    "signed_distance_water",
+    "signed_distance_shoreline",
+    "signed_distance_object_ground",
+    "signed_distance_boundary",
+    "moisture_proximity"
+  ],
+  "imageSize": {
+    "width": 1024,
+    "height": 768
+  },
+  "latentChannels": 4,
+  "latentDownsampleFactor": 8,
+  "baseChannels": 64,
+  "diffusionSteps": 1000,
+  "inferenceSteps": 50,
+  "training": {
+    "resolutionStages": [
+      { "width": 256, "height": 192 },
+      { "width": 512, "height": 384 },
+      { "width": 1024, "height": 768 }
+    ],
+    "batchSize": 1,
+    "autoencoderEpochs": 20,
+    "denoiserEpochs": 40,
+    "autoencoderLearningRate": 0.0002,
+    "denoiserLearningRate": 0.0001,
+    "seed": 20260712
+  },
+  "requiredCheckpointProvenance": "project-owned-complete-world-checkpoint-v1"
+}

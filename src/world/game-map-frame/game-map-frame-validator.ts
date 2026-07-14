@@ -1,8 +1,10 @@
 import type { GameMapFrame } from "./game-map-frame-schema"
 import { isGameMapFrame } from "./game-map-frame-schema"
 import {
+  buildPolylineCorridorPolygon,
   buildSegmentPolygon,
   polygonBounds,
+  polygonsOverlap,
   rectWithinBounds,
   rectsOverlap,
 } from "./game-map-geometry"
@@ -80,6 +82,48 @@ export function validateHomeMapStructure(
     )
   }
 
+  if (value.connectivity) {
+    const southPathPort = value.connectivity.activeEdgePortIds.find((portId) =>
+      portId.endsWith(":port:south-path-exit")
+    )
+    const connectedExitPath = southPathPort
+      ? value.paths.find((path) => path.connects.includes(southPathPort))
+      : undefined
+    if (!southPathPort || !connectedExitPath) {
+      issues.push(
+        issue(
+          "broken_cross_region_path",
+          "Migrated connectivity requires a path from entry_point to the south world port."
+        )
+      )
+    } else if (
+      !connectedExitPath.points.some(
+        (point) => point.y === value.size.height && point.x === value.entryPoint.x
+      )
+    ) {
+      issues.push(
+        issue(
+          "world_path_port_not_on_boundary",
+          "The south world path port must terminate on the map boundary."
+        )
+      )
+    }
+
+    const waterPortIds = [
+      value.connectivity.upstreamPortId,
+      value.connectivity.downstreamPortId,
+      value.connectivity.lateralContinuationPortId,
+    ]
+    if (!waterPortIds.every((portId) => value.connectivity?.activeEdgePortIds.includes(portId))) {
+      issues.push(
+        issue(
+          "broken_hydrology",
+          "Hydrology graph ports must all belong to the active current region ports."
+        )
+      )
+    }
+  }
+
   const sourceFactIds = collectHomeMapStructureSourceFactIds(value)
   if (!sameStringSet(value.sourceFactIds, sourceFactIds)) {
     issues.push(
@@ -109,6 +153,22 @@ export function validateHomeMapStructure(
         issue(
           "blocking_object_overlaps_path",
           `Blocking object ${object.id} overlaps a required path corridor.`
+        )
+      )
+    }
+  }
+
+  const waterPolygons = value.terrainRegions
+    .filter((region) => region.kind === "water")
+    .map((region) => region.polygon)
+
+  for (const path of value.paths) {
+    const corridor = buildPolylineCorridorPolygon(path.points, path.width)
+    if (waterPolygons.some((waterPolygon) => polygonsOverlap(corridor, waterPolygon))) {
+      issues.push(
+        issue(
+          "path_overlaps_water",
+          `Path ${path.id} overlaps water and cannot be used as a walkable corridor.`
         )
       )
     }

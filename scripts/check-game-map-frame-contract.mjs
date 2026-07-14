@@ -783,6 +783,13 @@ check(
     currentWorldStructure.includes('"character"') &&
     currentWorldStructure.includes('"building_construction"')
 )
+check(
+  "P7 required path corridors cannot overlap water",
+  geometry.includes("polygonsOverlap") &&
+    validator.includes("buildPolylineCorridorPolygon") &&
+    validator.includes('region.kind === "water"') &&
+    validator.includes('"path_overlaps_water"')
+)
 check("P7 ApprovedFrame source adapter exists", approvedFrameSource.includes("toGameMapApprovedFrameInput"))
 check(
   "P7 ApprovedFrame adapter preserves gate-critical fields",

@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "original-image-intake-request-v1.schema.json",
+  "title": "AI-PET-WORLD Original Image Intake Request V1",
+  "type": "object",
+  "required": ["schemaVersion", "categoryId", "title", "imagePath", "source", "classification", "worldBinding"],
+  "properties": {
+    "schemaVersion": { "const": "original-image-intake-request-v1" },
+    "categoryId": { "enum": ["complete-maps", "terrain", "vegetation", "natural-objects", "transitions"] },
+    "title": { "type": "string", "minLength": 1 },
+    "imagePath": { "type": "string", "minLength": 1 },
+    "source": {
+      "type": "object",
+      "required": ["sourceType", "creationMethod", "rightsHolder", "thirdPartyContentUsed", "thirdPartyGenerativeModelUsed", "copiedFromExistingWork"],
+      "properties": {
+        "sourceType": { "type": "string" },
+        "creationMethod": { "type": "string", "minLength": 1 },
+        "rightsHolder": { "type": "string", "minLength": 1 },
+        "thirdPartyContentUsed": { "type": "boolean" },
+        "thirdPartyGenerativeModelUsed": { "type": "boolean" },
+        "copiedFromExistingWork": { "type": "boolean" }
+      }
+    },
+    "classification": { "type": "object" },
+    "worldBinding": {
+      "type": "object",
+      "required": ["worldProfileId", "biomeType", "snapshotId", "snapshotPath", "snapshotIsFinal"],
+      "properties": {
+        "worldProfileId": { "type": "string", "minLength": 1 },
+        "biomeType": { "type": "string", "minLength": 1 },
+        "snapshotId": { "type": "string", "minLength": 1 },
+        "snapshotPath": { "type": "string", "minLength": 1 },
+        "snapshotIsFinal": { "type": "boolean" },
+        "worldId": { "type": ["string", "null"] },
+        "tick": { "type": ["integer", "null"] },
+        "taskPackageId": { "type": ["string", "null"] },
+        "conditionPackPath": { "type": ["string", "null"] }
+      }
+    },
+    "layerFiles": { "type": "array", "items": { "type": "string" } },
+    "conditionFiles": { "type": "array", "items": { "type": "string" } },
+    "rightsFiles": { "type": "array", "items": { "type": "string" } },
+    "reviewFiles": { "type": "array", "items": { "type": "string" } }
+  }
+}

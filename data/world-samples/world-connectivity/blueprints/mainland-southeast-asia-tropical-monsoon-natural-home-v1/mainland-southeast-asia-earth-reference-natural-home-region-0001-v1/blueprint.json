@@ -1,0 +1,347 @@
+{
+  "schemaVersion": "world-connectivity-blueprint-v1",
+  "blueprintId": "mainland-southeast-asia-earth-reference-natural-home-region-0001-v1",
+  "status": "owner_directed_earth_reference_ready_for_runtime_migration",
+  "createdAt": "2026-07-13T09:03:54.015Z",
+  "createdAtAsiaShanghai": "2026-07-13T17:03:54+08:00",
+  "contractId": "natural-home-large-world-connectivity-v1",
+  "worldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+  "ownerDirective": {
+    "directiveId": "owner-use-real-earth-conditions-2026-07-13",
+    "normalizedInstruction": "use_real_earth_conditions_as_the_connectivity_definition_basis",
+    "commandSource": "project_owner_current_task",
+    "appliedScope": "first_mvp_region_connectivity_blueprint",
+    "doesNotApproveFinalVisual": true,
+    "doesNotApproveRuntimeMigrationResult": true
+  },
+  "sourceBinding": {
+    "earthReferenceSourceId": "mainland-southeast-asia-connectivity-earth-reference-v1",
+    "earthReferenceSourcePath": "data/world-samples/world-connectivity/earth-reference-sources/mainland-southeast-asia-connectivity-v1.json",
+    "earthReferenceSourceSha256": "1e0ceb3a524ba9edc9b04bea8fe163b9b0095385cc7872ef77b18766bede518c",
+    "proposalId": "world-connectivity-proposal-world-d0znz8-1-2026-07-13T08-31-05-687Z",
+    "proposalPath": ".runtime/ai-painter/world-connectivity-proposals/world-connectivity-proposal-world-d0znz8-1-2026-07-13T08-31-05-687Z/proposal.json",
+    "proposalSha256": "c062282af3c2eac288f572fb96f049ba91a4c0056ba09718e7cb6e2b67f4bb7e",
+    "sourceTaskId": "world-visual-task-world-d0znz8-1-2026-07-13T06-14-57-275Z",
+    "sourceTaskSha256": "d32b8a3d4beaf76a6e870ddf54ea45938434b8842e4a6f2336550111a5aaffcc",
+    "worldStatePath": "data/world-runtime/owner-d0znz8/world-d0znz8/ticks/1/world-state.json",
+    "worldStateSha256": "426b50320cd697663e55fb7ca050e0e531b9ee9902729205f7623b0b8541bea2"
+  },
+  "topologyPolicy": {
+    "copiesNamedRealLocationGeometry": false,
+    "usesEarthHydrologyClimateAndTerrainRelationships": true,
+    "waterFlowAxis": "north_to_south",
+    "mvpRegionRole": "first_connected_playable_region_of_future_large_world",
+    "exactLongTermWorldBoundsDefined": false
+  },
+  "currentRegion": {
+    "regionId": "world-d0znz8:natural-home:region-0001",
+    "worldId": "world-d0znz8",
+    "worldSeed": "world-d0znz8:mainland-southeast-asia-tropical-monsoon:mvp-v1",
+    "worldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+    "worldBounds": {
+      "regionX": 0,
+      "regionY": 0,
+      "widthRegions": 1,
+      "heightRegions": 1
+    },
+    "localBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 1024,
+      "height": 768
+    },
+    "regionalLandscapeType": "riparian-tropical-forest",
+    "elevationBand": {
+      "class": "river_valley_lowland",
+      "referenceElevationMeters": 232.08,
+      "exactPerPortElevationPendingRuntimeTerrainModel": true
+    },
+    "neighborRegionIds": [
+      "world-d0znz8:natural-home:region-0002-upstream-riparian",
+      "world-d0znz8:natural-home:region-0003-downstream-floodplain",
+      "world-d0znz8:natural-home:region-0004-east-bank-riparian"
+    ],
+    "edgePorts": [
+      "world-d0znz8:natural-home:region-0001:port:north-water-inlet",
+      "world-d0znz8:natural-home:region-0001:port:south-water-outlet",
+      "world-d0znz8:natural-home:region-0001:port:east-shared-channel",
+      "world-d0znz8:natural-home:region-0001:port:south-path-exit"
+    ],
+    "pathGraphId": "mainland-southeast-asia-earth-reference-natural-home-region-0001-v1:path-graph-v1",
+    "hydrologyGraphId": "mainland-southeast-asia-earth-reference-natural-home-region-0001-v1:hydrology-graph-v1",
+    "walkableGraphId": "mainland-southeast-asia-earth-reference-natural-home-region-0001-v1:walkable-graph-v1",
+    "objectIdentitySetId": "home-map-structure-world-d0znz8-1-natural-home:objects",
+    "version": 1,
+    "contentHash": "d32b8a3d4beaf76a6e870ddf54ea45938434b8842e4a6f2336550111a5aaffcc"
+  },
+  "neighborRegionStubs": [
+    {
+      "regionId": "world-d0znz8:natural-home:region-0002-upstream-riparian",
+      "relativePosition": "north",
+      "regionalLandscapeType": "riparian-tropical-forest",
+      "topologyRole": "upstream_river_valley",
+      "generationStatus": "reserved_not_generated"
+    },
+    {
+      "regionId": "world-d0znz8:natural-home:region-0003-downstream-floodplain",
+      "relativePosition": "south",
+      "regionalLandscapeType": "river-floodplain",
+      "topologyRole": "downstream_floodplain_and_land_route",
+      "generationStatus": "reserved_not_generated"
+    },
+    {
+      "regionId": "world-d0znz8:natural-home:region-0004-east-bank-riparian",
+      "relativePosition": "east",
+      "regionalLandscapeType": "riparian-tropical-forest",
+      "topologyRole": "opposite_bank_and_shared_channel_continuation",
+      "generationStatus": "reserved_not_generated"
+    }
+  ],
+  "edgePorts": [
+    {
+      "edgePortId": "world-d0znz8:natural-home:region-0001:port:north-water-inlet",
+      "kind": "watercourse",
+      "regionId": "world-d0znz8:natural-home:region-0001",
+      "boundarySide": "north",
+      "boundaryPosition": {
+        "x": 948,
+        "y": 0
+      },
+      "direction": "south",
+      "width": 152,
+      "elevation": {
+        "class": "river_valley_lowland",
+        "exactMeters": null,
+        "status": "pending_runtime_terrain_model"
+      },
+      "role": "upstream_inlet",
+      "connectsToRegionId": "world-d0znz8:natural-home:region-0002-upstream-riparian",
+      "connectsToEdgePortId": "world-d0znz8:natural-home:region-0002-upstream-riparian:port:south-water-outlet",
+      "state": "existing_boundary_evidence",
+      "version": 1
+    },
+    {
+      "edgePortId": "world-d0znz8:natural-home:region-0002-upstream-riparian:port:south-water-outlet",
+      "kind": "watercourse",
+      "regionId": "world-d0znz8:natural-home:region-0002-upstream-riparian",
+      "boundarySide": "south",
+      "boundaryPosition": null,
+      "direction": "south",
+      "width": 152,
+      "elevation": {
+        "class": "river_valley_lowland",
+        "exactMeters": null,
+        "status": "pending_runtime_terrain_model"
+      },
+      "role": "downstream_outlet_pair_stub",
+      "connectsToRegionId": "world-d0znz8:natural-home:region-0001",
+      "connectsToEdgePortId": "world-d0znz8:natural-home:region-0001:port:north-water-inlet",
+      "state": "reserved_neighbor_stub",
+      "version": 1
+    },
+    {
+      "edgePortId": "world-d0znz8:natural-home:region-0001:port:south-water-outlet",
+      "kind": "watercourse",
+      "regionId": "world-d0znz8:natural-home:region-0001",
+      "boundarySide": "south",
+      "boundaryPosition": {
+        "x": 884,
+        "y": 768
+      },
+      "direction": "south",
+      "width": 280,
+      "elevation": {
+        "class": "river_valley_lowland",
+        "exactMeters": null,
+        "status": "pending_runtime_terrain_model"
+      },
+      "role": "downstream_outlet",
+      "connectsToRegionId": "world-d0znz8:natural-home:region-0003-downstream-floodplain",
+      "connectsToEdgePortId": "world-d0znz8:natural-home:region-0003-downstream-floodplain:port:north-water-inlet",
+      "state": "existing_boundary_evidence",
+      "version": 1
+    },
+    {
+      "edgePortId": "world-d0znz8:natural-home:region-0003-downstream-floodplain:port:north-water-inlet",
+      "kind": "watercourse",
+      "regionId": "world-d0znz8:natural-home:region-0003-downstream-floodplain",
+      "boundarySide": "north",
+      "boundaryPosition": null,
+      "direction": "south",
+      "width": 280,
+      "elevation": {
+        "class": "river_valley_lowland",
+        "exactMeters": null,
+        "status": "pending_runtime_terrain_model"
+      },
+      "role": "upstream_inlet_pair_stub",
+      "connectsToRegionId": "world-d0znz8:natural-home:region-0001",
+      "connectsToEdgePortId": "world-d0znz8:natural-home:region-0001:port:south-water-outlet",
+      "state": "reserved_neighbor_stub",
+      "version": 1
+    },
+    {
+      "edgePortId": "world-d0znz8:natural-home:region-0001:port:east-shared-channel",
+      "kind": "watercourse",
+      "regionId": "world-d0znz8:natural-home:region-0001",
+      "boundarySide": "east",
+      "boundaryPosition": {
+        "x": 1024,
+        "y": 384
+      },
+      "direction": "south",
+      "width": 768,
+      "elevation": {
+        "class": "river_valley_lowland",
+        "exactMeters": null,
+        "status": "pending_runtime_terrain_model"
+      },
+      "role": "shared_channel_side",
+      "connectsToRegionId": "world-d0znz8:natural-home:region-0004-east-bank-riparian",
+      "connectsToEdgePortId": "world-d0znz8:natural-home:region-0004-east-bank-riparian:port:west-shared-channel",
+      "state": "existing_boundary_evidence",
+      "version": 1
+    },
+    {
+      "edgePortId": "world-d0znz8:natural-home:region-0004-east-bank-riparian:port:west-shared-channel",
+      "kind": "watercourse",
+      "regionId": "world-d0znz8:natural-home:region-0004-east-bank-riparian",
+      "boundarySide": "west",
+      "boundaryPosition": null,
+      "direction": "south",
+      "width": 768,
+      "elevation": {
+        "class": "river_valley_lowland",
+        "exactMeters": null,
+        "status": "pending_runtime_terrain_model"
+      },
+      "role": "shared_channel_side_pair_stub",
+      "connectsToRegionId": "world-d0znz8:natural-home:region-0001",
+      "connectsToEdgePortId": "world-d0znz8:natural-home:region-0001:port:east-shared-channel",
+      "state": "reserved_neighbor_stub",
+      "version": 1
+    },
+    {
+      "edgePortId": "world-d0znz8:natural-home:region-0001:port:south-path-exit",
+      "kind": "path",
+      "regionId": "world-d0znz8:natural-home:region-0001",
+      "boundarySide": "south",
+      "boundaryPosition": {
+        "x": 96,
+        "y": 768
+      },
+      "direction": "south",
+      "width": 32,
+      "elevation": {
+        "class": "river_valley_lowland",
+        "exactMeters": null,
+        "status": "pending_runtime_terrain_model"
+      },
+      "role": "land_route_exit",
+      "connectsToRegionId": "world-d0znz8:natural-home:region-0003-downstream-floodplain",
+      "connectsToEdgePortId": "world-d0znz8:natural-home:region-0003-downstream-floodplain:port:north-path-entry",
+      "state": "planned_requires_runtime_path_extension",
+      "version": 1
+    },
+    {
+      "edgePortId": "world-d0znz8:natural-home:region-0003-downstream-floodplain:port:north-path-entry",
+      "kind": "path",
+      "regionId": "world-d0znz8:natural-home:region-0003-downstream-floodplain",
+      "boundarySide": "north",
+      "boundaryPosition": null,
+      "direction": "south",
+      "width": 32,
+      "elevation": {
+        "class": "river_valley_lowland",
+        "exactMeters": null,
+        "status": "pending_runtime_terrain_model"
+      },
+      "role": "land_route_entry_pair_stub",
+      "connectsToRegionId": "world-d0znz8:natural-home:region-0001",
+      "connectsToEdgePortId": "world-d0znz8:natural-home:region-0001:port:south-path-exit",
+      "state": "reserved_neighbor_stub",
+      "version": 1
+    }
+  ],
+  "pathGraph": {
+    "pathGraphId": "mainland-southeast-asia-earth-reference-natural-home-region-0001-v1:path-graph-v1",
+    "nodes": [
+      "entry_point",
+      "home_center",
+      "world-d0znz8:natural-home:region-0001:port:south-path-exit"
+    ],
+    "edges": [
+      {
+        "source": "entry_point",
+        "target": "home_center",
+        "sourceStructureId": "path-current-entry-to-home",
+        "status": "existing"
+      },
+      {
+        "source": "entry_point",
+        "target": "world-d0znz8:natural-home:region-0001:port:south-path-exit",
+        "coordinates": [
+          {
+            "x": 96,
+            "y": 704
+          },
+          {
+            "x": 96,
+            "y": 768
+          }
+        ],
+        "width": 32,
+        "status": "planned_runtime_migration"
+      }
+    ],
+    "westBoundaryStatus": "natural_boundary_no_active_path_port",
+    "crossesWater": false
+  },
+  "hydrologyGraph": {
+    "hydrologyGraphId": "mainland-southeast-asia-earth-reference-natural-home-region-0001-v1:hydrology-graph-v1",
+    "waterBodyId": "terrain-current-water-east",
+    "flowAxis": "north_to_south",
+    "upstreamPortId": "world-d0znz8:natural-home:region-0001:port:north-water-inlet",
+    "downstreamPortId": "world-d0znz8:natural-home:region-0001:port:south-water-outlet",
+    "lateralContinuationPortId": "world-d0znz8:natural-home:region-0001:port:east-shared-channel",
+    "seasonalRegime": "tropical_monsoon_flood_pulse",
+    "wetSeasonReference": "may_to_october_project_profile_with_mrc_flood_context",
+    "exactDischargeModelStatus": "not_defined_for_mvp_visual_milestone"
+  },
+  "walkableGraph": {
+    "walkableGraphId": "mainland-southeast-asia-earth-reference-natural-home-region-0001-v1:walkable-graph-v1",
+    "requiredConnectedNodesAfterMigration": [
+      "home_center",
+      "entry_point",
+      "world-d0znz8:natural-home:region-0001:port:south-path-exit"
+    ],
+    "watercoursePortsWalkable": false,
+    "collisionRevalidationRequired": true,
+    "migrationStatus": "pending"
+  },
+  "runtimeMigration": {
+    "required": true,
+    "status": "pending",
+    "requiredChanges": [
+      "extend_entry_path_from_96_704_to_south_path_port_96_768",
+      "bind_current_water_region_to_north_south_hydrology_ports",
+      "bind_east_water_boundary_as_shared_channel_continuation",
+      "persist_region_id_neighbor_stubs_and_graph_ids_in_world_state",
+      "rebuild_visual_fact_manifest_task_package_and_conditions",
+      "rerun_walkable_collision_path_water_and_hydrology_validation"
+    ]
+  },
+  "coverageThresholds": {
+    "status": "pending_owner_approval",
+    "positiveCounts": null,
+    "negativeCounts": null
+  },
+  "authorityBoundary": {
+    "worldStateMutatedByRegistration": false,
+    "imagesGeneratedByRegistration": false,
+    "externalImagesOrMapGeometryUsed": false,
+    "runtimeMigrationRequiresSeparateExecution": true,
+    "runtimeMigrationResultRequiresOwnerReview": true
+  },
+  "blueprintSha256": "57a9577e1b5ba50e584c16a35498dc32eb86d394cf632250f0ee7e61828673a5"
+}

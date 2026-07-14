@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "world-connectivity-blueprint-manifest-v1",
+  "blueprintId": "mainland-southeast-asia-earth-reference-natural-home-region-0001-v1",
+  "status": "owner_directed_earth_reference_ready_for_runtime_migration",
+  "createdAt": "2026-07-13T09:03:54.015Z",
+  "createdAtAsiaShanghai": "2026-07-13T17:03:54+08:00",
+  "contractId": "natural-home-large-world-connectivity-v1",
+  "worldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+  "currentRegionId": "world-d0znz8:natural-home:region-0001",
+  "blueprintSha256": "57a9577e1b5ba50e584c16a35498dc32eb86d394cf632250f0ee7e61828673a5",
+  "blueprintPath": "data/world-samples/world-connectivity/blueprints/mainland-southeast-asia-tropical-monsoon-natural-home-v1/mainland-southeast-asia-earth-reference-natural-home-region-0001-v1/blueprint.json",
+  "sourcePath": "data/world-samples/world-connectivity/earth-reference-sources/mainland-southeast-asia-connectivity-v1.json",
+  "runtimeMigrationStatus": "pending",
+  "automaticStorage": true
+}

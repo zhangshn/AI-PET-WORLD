@@ -1,0 +1,79 @@
+{
+  "schemaVersion": "world-connectivity-earth-reference-source-v1",
+  "sourceId": "mainland-southeast-asia-connectivity-earth-reference-v1",
+  "status": "versioned_facts_only",
+  "createdAt": "2026-07-13T09:03:54.015Z",
+  "createdAtAsiaShanghai": "2026-07-13T17:03:54+08:00",
+  "worldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+  "localProjectSources": [
+    {
+      "sourceId": "mainland-southeast-asia-reference-v1",
+      "path": "data/world-samples/original-image-library/natural-home-v1/earth-parameter-snapshots/mainland-southeast-asia-reference-v1/manifest.json",
+      "authority": "NASA POWER",
+      "factsUsed": [
+        "representative_elevation",
+        "tropical_monsoon_seasonality",
+        "wet_season_reference"
+      ],
+      "sha256": "121caee4fbf4327bea06c4b615b4af95339567516e5d373494335d9a40554f1e"
+    },
+    {
+      "sourceId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+      "path": "data/world-samples/original-image-library/natural-home-v1/mainland-southeast-asia-tropical-monsoon-profile-v1.json",
+      "factsUsed": [
+        "regional_ecosystem_envelope",
+        "allowed_landscape_types",
+        "excluded_mvp_systems"
+      ],
+      "sha256": "6b284d25809e36a4af7a5a0fec7a0b36b11f979400edcea96b8f6e68cdd368f0"
+    }
+  ],
+  "externalAuthorities": [
+    {
+      "authority": "Mekong River Commission",
+      "url": "https://www.mrcmekong.org/hydrometeorological-monitoring/",
+      "retrievedAt": "2026-07-13T09:03:54.015Z",
+      "factsUsed": [
+        "mainstream_general_southerly_direction",
+        "southwest_monsoon_drives_annual_flood_pulse"
+      ]
+    },
+    {
+      "authority": "Mekong River Commission",
+      "url": "https://www.mrcmekong.org/hydrology/",
+      "retrievedAt": "2026-07-13T09:03:54.015Z",
+      "factsUsed": [
+        "lower_basin_seasonal_flow_variability",
+        "flood_season_june_to_november",
+        "tributary_and_floodplain_ecosystem_relationship"
+      ]
+    },
+    {
+      "authority": "Mekong River Commission",
+      "url": "https://www.mrcmekong.org/geography/",
+      "retrievedAt": "2026-07-13T09:03:54.015Z",
+      "factsUsed": [
+        "diverse_lower_basin_topography",
+        "tributary_network",
+        "river_valley_and_floodplain_sequence"
+      ]
+    },
+    {
+      "authority": "Mekong River Commission",
+      "url": "https://www.mrcmekong.org/basin-climate/",
+      "retrievedAt": "2026-07-13T09:03:54.015Z",
+      "factsUsed": [
+        "lower_basin_tropical_monsoon_identity",
+        "regional_rainfall_gradient"
+      ]
+    }
+  ],
+  "rightsBoundary": {
+    "factsOnly": true,
+    "externalImagesUsed": false,
+    "externalMapTilesUsed": false,
+    "namedRealLocationGeometryCopied": false,
+    "externalTrainingAssetsCreated": false
+  },
+  "sourceSha256": "1e0ceb3a524ba9edc9b04bea8fe163b9b0095385cc7872ef77b18766bede518c"
+}

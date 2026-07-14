@@ -45,8 +45,19 @@ const taskPackage = taskManifest?.taskPath ? readJson(taskManifest.taskPath) : n
 const directorOutput = taskManifest?.directorPath ? readJson(taskManifest.directorPath) : null
 const visualFactPointer = readJson(".runtime/ai-painter/world-visual-fact-manifests/latest.json")
 const visualFactManifest = visualFactPointer?.manifestPath ? readJson(visualFactPointer.manifestPath) : null
+const conditionManifestPath = taskManifest?.taskPath
+  ? path.join(path.dirname(taskManifest.taskPath), "compiled-conditions", "manifest.json")
+  : null
+const conditionManifest = conditionManifestPath ? readJson(conditionManifestPath) : null
+const conditionPack = conditionManifest?.conditionPackPath ? readJson(conditionManifest.conditionPackPath) : null
 const inferencePointer = readJson(".runtime/ai-painter/complete-world-visual-inference/latest.json")
 const inferenceManifest = inferencePointer?.manifestPath ? readJson(inferencePointer.manifestPath) : null
+const bootstrapPointer = readJson(".runtime/ai-painter/complete-world-visual-bootstrap-inference/latest.json")
+const bootstrapManifest = bootstrapPointer?.manifestPath ? readJson(bootstrapPointer.manifestPath) : null
+const bootstrapReview = readJson(".runtime/ai-painter/complete-world-visual-machine-reviews/latest.json")
+const datasetPackagePointer = readJson("data/world-samples/dataset-packages/latest.json")
+const datasetPackage = datasetPackagePointer?.manifestPath ? readJson(datasetPackagePointer.manifestPath) : null
+const projectOwnedModelConfig = readJson("ml/ai-painter/config/complete-world-independent-v1.json")
 
 const components = [
   component("world_visual_dictionary", {
@@ -54,6 +65,23 @@ const components = [
     command: "check:world-visual-data-dictionary",
     file: "scripts/check-world-visual-data-dictionary.mjs",
     artifact: contract.dictionaryPath,
+  }),
+  component("complete_map_dataset_package", {
+    implemented:
+      hasScript("register:complete-map-training-sample") &&
+      hasScript("check:complete-map-training-sample-registry") &&
+      hasScript("check:project-owned-training-data-ip-policy") &&
+      hasScript("build:current-complete-map-dataset-package") &&
+      hasScript("check:current-complete-map-dataset-package") &&
+      exists("scripts/register-complete-map-training-sample.mjs") &&
+      exists("scripts/build-current-complete-map-dataset-package.mjs") &&
+      exists("scripts/check-project-owned-training-data-ip-policy.mjs") &&
+      datasetPackage?.schemaVersion === "complete-map-dataset-package-v1" &&
+      datasetPackage?.dictionaryVersionId === contract.dictionaryVersionId &&
+      datasetPackage?.automaticStorage === true,
+    command: "build:current-complete-map-dataset-package",
+    file: "scripts/build-current-complete-map-dataset-package.mjs",
+    artifact: datasetPackagePointer?.manifestPath ?? null,
   }),
   component("world_visual_task_package", {
     implemented:
@@ -69,14 +97,72 @@ const components = [
     file: "scripts/build-current-world-visual-generation-task-package.mjs",
     artifact: taskManifest?.taskPath ?? null,
   }),
+  component("world_visual_condition_compiler", {
+    implemented:
+      hasScript("compile:current-world-visual-conditions") &&
+      hasScript("check:current-world-visual-conditions") &&
+      exists("scripts/compile-current-world-visual-conditions.mjs") &&
+      exists("scripts/check-current-world-visual-conditions.mjs") &&
+      conditionManifest?.schemaVersion === "complete-world-visual-condition-manifest-v1" &&
+      conditionManifest?.status === "compiled_conditions_ready" &&
+      conditionManifest?.taskId === taskManifest?.taskId &&
+      conditionManifest?.dictionaryVersionId === taskManifest?.dictionaryVersionId &&
+      conditionManifest?.outputKind === "model_condition_only_no_rgb" &&
+      conditionManifest?.generatesPlayerFacingPixels === false &&
+      conditionPack?.taskId === taskManifest?.taskId &&
+      Array.isArray(conditionPack?.channels) &&
+      conditionPack.channels.length > 0,
+    command: "compile:current-world-visual-conditions",
+    file: "scripts/compile-current-world-visual-conditions.mjs",
+    artifact: conditionManifestPath?.replace(/\\/g, "/") ?? null,
+  }),
   component("complete_world_visual_inference", {
     implemented:
       hasScript("run:current-world-visual-inference") &&
       exists("scripts/run-current-world-visual-inference.mjs") &&
-      validateInferenceEvidence(inferencePointer, inferenceManifest, taskManifest),
+      exists("ml/ai-painter/scripts/infer_project_owned_complete_world.py") &&
+      exists("ml/ai-painter/src/ai_painter/complete_world/diffusion.py"),
+    operationalReady: validateInferenceEvidence(inferencePointer, inferenceManifest, taskManifest),
+    waitingReason: inferenceManifest ? null : "project_owned_checkpoint_or_inference_evidence_missing",
     command: "run:current-world-visual-inference",
     file: "scripts/run-current-world-visual-inference.mjs",
     artifact: inferencePointer?.manifestPath ?? null,
+  }),
+  component("project_owned_complete_world_model_architecture", {
+    implemented:
+      hasScript("check:project-owned-complete-world-model") &&
+      hasScript("train:project-owned-complete-world-model") &&
+      exists("scripts/check-project-owned-complete-world-model.mjs") &&
+      exists("scripts/train-project-owned-complete-world-model.mjs") &&
+      exists("ml/ai-painter/src/ai_painter/complete_world/model.py") &&
+      exists("ml/ai-painter/src/ai_painter/complete_world/dataset.py") &&
+      exists("ml/ai-painter/scripts/train_project_owned_complete_world.py") &&
+      projectOwnedModelConfig?.ownership === "project_owned_independent_weights" &&
+      projectOwnedModelConfig?.initialization === "random_initialization_only" &&
+      Array.isArray(projectOwnedModelConfig?.upstreamModelIds) &&
+      projectOwnedModelConfig.upstreamModelIds.length === 0,
+    command: "check:project-owned-complete-world-model",
+    file: "ml/ai-painter/src/ai_painter/complete_world/model.py",
+    artifact: "ml/ai-painter/config/complete-world-independent-v1.json",
+  }),
+  component("historical_third_party_bootstrap_isolated", {
+    implemented:
+      hasScript("run:current-world-foundation-bootstrap-inference") &&
+      hasScript("run:current-world-foundation-candidate-batch") &&
+      hasScript("check:current-world-bootstrap-inference") &&
+      hasScript("review:current-world-bootstrap-candidate") &&
+      hasScript("check:current-world-bootstrap-machine-review") &&
+      exists("scripts/run-current-world-foundation-bootstrap-inference.mjs") &&
+      exists("scripts/run-current-world-foundation-candidate-batch.mjs") &&
+      exists("scripts/review-current-world-bootstrap-candidate.mjs") &&
+      validateBootstrapEvidence(bootstrapPointer, bootstrapManifest) &&
+      bootstrapReview?.schemaVersion === "complete-world-visual-machine-review-v1" &&
+      bootstrapReview?.candidate?.imageSha256 === bootstrapManifest?.outputImageSha256 &&
+      bootstrapReview?.canEnterWorld === false,
+    command: "run:current-world-foundation-bootstrap-inference",
+    file: "scripts/run-current-world-foundation-bootstrap-inference.mjs",
+    artifact: bootstrapPointer?.manifestPath ?? null,
+    required: false,
   }),
   component("automatic_review_failure_learning_consumer", {
     implemented:
@@ -90,7 +176,7 @@ const components = [
 ]
 
 for (const item of components) {
-  check(item.implemented, `${item.id}: implementation evidence missing`)
+  if (item.required) check(item.implemented, `${item.id}: implementation evidence missing`)
 }
 
 const result = {
@@ -109,13 +195,21 @@ console[failures.length === 0 ? "log" : "error"](JSON.stringify(result, null, 2)
 process.exit(failures.length === 0 ? 0 : 1)
 
 function component(id, details) {
+  const operationalReady = details.operationalReady ?? details.implemented
   return {
     id,
-    status: details.implemented ? "implemented" : "not_implemented",
+    status: details.implemented
+      ? operationalReady
+        ? "implemented"
+        : "implemented_waiting_required_artifact"
+      : "not_implemented",
     implemented: details.implemented,
+    operationalReady,
+    waitingReason: operationalReady ? null : details.waitingReason ?? null,
     requiredCommand: details.command,
     implementationFile: details.file,
     latestArtifact: details.artifact,
+    required: details.required !== false,
   }
 }
 
@@ -143,6 +237,23 @@ function validateInferenceEvidence(pointer, manifest, latestTask) {
   if (actualHash !== manifest.outputImageSha256.toLowerCase()) return false
   if (pointer.taskId !== manifest.taskId || pointer.outputImageSha256 !== manifest.outputImageSha256) return false
   return true
+}
+
+function validateBootstrapEvidence(pointer, manifest) {
+  if (!pointer || !manifest) return false
+  if (manifest.schemaVersion !== "complete-world-visual-bootstrap-inference-manifest-v1") return false
+  if (manifest.status !== "completed_bootstrap_candidate_generated") return false
+  if (!manifest.taskId || !manifest.worldId || !Number.isInteger(manifest.tick)) return false
+  if (manifest.dictionaryVersionId !== contract.dictionaryVersionId) return false
+  if (!["fresh_local_model_inference", "fresh_local_foundation_inference"].includes(manifest.outputSource)) return false
+  if (manifest.onlineInferenceApiUsed !== false || manifest.localFilesOnly !== true) return false
+  if (manifest.reusedExistingImage !== false || manifest.targetImageUsed !== false || manifest.programDrawnRgbUsed !== false) return false
+  if (manifest.canEnterWorld !== false || manifest.canCountAsPositiveSample !== false) return false
+  if (!manifest.outputImagePath || !/^[a-f0-9]{64}$/i.test(manifest.outputImageSha256 ?? "")) return false
+  const outputPath = path.resolve(ROOT, manifest.outputImagePath)
+  if (!fs.existsSync(outputPath)) return false
+  const actualHash = crypto.createHash("sha256").update(fs.readFileSync(outputPath)).digest("hex")
+  return actualHash === manifest.outputImageSha256.toLowerCase() && pointer.runId === manifest.runId
 }
 
 function exists(relativePath) {

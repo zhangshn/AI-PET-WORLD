@@ -48,6 +48,8 @@ const blueprint = {
     runtimeFrameCandidates: ".runtime/game-map-runtime-frame-candidates",
     materialSlotInferenceRuns: ".runtime/game-map-material-slot-inference-runs",
     trainingArchive: ".runtime/ai-painter/training-run-archive",
+    formalSampleRegistry: "data/world-samples/registry",
+    immutableDatasetPackages: "data/world-samples/dataset-packages",
   },
   requiredDataByLayer: [
     {

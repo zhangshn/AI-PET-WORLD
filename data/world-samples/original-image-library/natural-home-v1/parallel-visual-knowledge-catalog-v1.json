@@ -1,0 +1,82 @@
+{
+  "schemaVersion": "parallel-visual-knowledge-catalog-v1",
+  "catalogId": "natural-home-v1-parallel-visual-knowledge-v1",
+  "status": "tropical_monsoon_definitions_ready_ai_assisted_records_present_independent_records_missing",
+  "updatedAt": "2026-07-14T06:02:06+08:00",
+  "worldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+  "dictionaryVersionId": "mvp-natural-home-v0.3",
+  "snapshotId": "mainland-southeast-asia-tropical-monsoon-provisional-wet-season-post-rain-v2",
+  "acquisitionOrder": "parallel_no_stage_order",
+  "formalTrainingTarget": "unified_complete_world_model_system",
+  "formalInferenceTarget": "single_complete_world_inference_entrypoint",
+  "mechanicalImageCompositionAllowed": false,
+  "sharedRules": {
+    "primaryCategoryPerOriginalRecord": true,
+    "semanticLabelsMayBeAddedOnlyAtAuditedRegistryStage": true,
+    "contextRichSourceImagesAllowed": true,
+    "untraceableIsolatedCropAllowed": false,
+    "duplicateImageMayCountAcrossCategories": false,
+    "allRecordsRequireSourceRightsHashReviewAndSnapshotBinding": true,
+    "legacyProfileRecordsCountForCurrentProfile": false
+  },
+  "categories": [
+    {
+      "categoryId":"complete-maps",
+      "role":"global_composition_style_and_gameplay_readability_knowledge",
+      "dictionaryEntryIds":["composition/complete-map-professional-readability-v2","composition/layer-order","composition/map-readability","composition/professional-quality","map-structure/entrance","map-structure/home-center","map-structure/main-path","map-structure/branch-path","map-structure/natural-boundary","map-structure/water-edge-zone","map-structure/walkable-area","map-structure/collision-area"],
+      "coverageAxes": {
+        "regionalLandscapeType":["lowland-evergreen-tropical-forest","seasonal-evergreen-semi-evergreen-forest","moist-deciduous-teak-forest","dry-dipterocarp-woodland","bamboo-grove","riparian-tropical-forest","monsoon-grassland","tropical-forest-glade","river-floodplain","freshwater-swamp","reed-marsh","pond-short-creek","tropical-mountain-stream","limestone-foothill","rocky-low-hill","forested-low-mountain","tropical-valley-floor","wet-season-drainage-hollow","dry-season-exposed-riverbank","grassland-forest-transition"],
+        "entranceLocation":["left","bottom","right"],
+        "homeCenterLocation":["central","left_of_center","right_of_center","upper_of_center"],
+        "mainPathTopology":["direct_soft_curve","single_bend","fork_with_clear_primary","shore_parallel"],
+        "waterPlacement":["east_edge","west_edge","upper_pond","lower_edge","no_large_visible_water"],
+        "monsoonSeason":["wet_season","wet_to_dry_transition","dry_season","dry_to_wet_transition"]
+      },
+      "existingMinimumGate":{"positive":20,"negative":40,"meaning":"A complete-map category gate, not the full library size."}
+    },
+    {
+      "categoryId":"terrain",
+      "role":"earth_like_surface_material_state_and_landform_readability_knowledge",
+      "dictionaryEntryIds":["terrain/grass","terrain/grass-purity-and-variation","terrain/dirt-path","terrain/water","terrain/shoreline","terrain/mud-patch","terrain/tall-grass","terrain/forest-edge"],
+      "firstRoundStateVocabulary": {
+        "grass":["wet_season_moist_healthy_open","wet_season_mixed_height","humid_shadowed","lightly_trampled","recovering","dry_season_senescent"],
+        "dirt-path":["post_rain_damp_compacted","wet_season_lightly_worn","dry_season_dusty_readable","grass_encroached_soft_edge"],
+        "water":["post_rain_calm_reflective","light_ripple","shallow_edge_readable","forest_shadowed_water","dry_season_lower_level"],
+        "shoreline":["wet_grass_bank","damp_soil_bank","stone_edge","reed_edge","dry_season_exposed_bank"],
+        "forest-edge":["evergreen_layered_boundary","semi_evergreen_transition","bamboo_edge","light_gap","dense_readable_boundary"]
+      },
+      "reservedCoverageAxes":["monsoonSeason","moistureState","growthOrWearState","lightingState","visualVariant"]
+    },
+    {
+      "categoryId":"vegetation",
+      "role":"real_species_lifecycle_monsoon_health_resource_and_spatial_form_knowledge",
+      "dictionaryEntryIds":["objects/tree","objects/shrub","objects/flower","objects/grass-detail","objects/reed"],
+      "speciesCatalogPath":"data/world-samples/original-image-library/natural-home-v1/mainland-southeast-asia-tropical-monsoon-species-catalog-v1.json",
+      "coverageBlueprintPath":"data/world-samples/original-image-library/natural-home-v1/coverage-blueprint.json",
+      "speciesCount":12,
+      "plannedVisualCoverageUnits":390,
+      "note":"Species and lifecycle definitions are referenced, not duplicated in this catalog."
+    },
+    {
+      "categoryId":"natural-objects",
+      "role":"non_vegetation_natural_object_shape_scale_material_and_environment_knowledge",
+      "dictionaryEntryIds":["objects/rock","objects/pebble"],
+      "firstRoundStateVocabulary":{"rock":["embedded_moist_ground","embedded_dry_exposed_surface","light_moss_cover","partial_shadow","small_natural_cluster"],"pebble":["sparse_path_edge","sparse_shore_edge","wet_season_damp_surface","dry_season_exposed_bank"]},
+      "forbiddenCurrentObjects":["building","construction_material","animal","character","furniture"]
+    },
+    {
+      "categoryId":"transitions",
+      "role":"continuous_material_boundary_ground_contact_shadow_and_occlusion_knowledge",
+      "dictionaryEntryIds":["transition/grass-to-path","transition/grass-to-water","transition/object-to-ground"],
+      "firstRoundStateVocabulary": {
+        "grass-to-path":["post_rain_soft_damp_edge","wet_season_grass_encroachment","dry_season_clear_walkable_width"],
+        "grass-to-water":["wet_grass_bank","post_rain_damp_soil_bank","reed_edge","stone_edge","dry_season_exposed_bank"],
+        "object-to-ground":["tree_contact","shrub_contact","rock_contact","pebble_contact","flower_patch_contact","reed_water_edge_contact","bamboo_grove_contact"]
+      },
+      "polarityRequired":["positive","negative"],
+      "existingMinimumGates":{"grassToPath":{"positive":40,"negative":40},"grassToWater":{"positive":40,"negative":40},"objectToGround":{"positive":30,"negative":30}}
+    }
+  ],
+  "currentBlockers":["independent_training_eligible_original_image_records_zero","independent_training_dataset_not_ready","project_owned_checkpoint_missing"],
+  "legacyEvidenceRule":"Temperate concept image records were deleted by owner command and must not be restored. Legacy profile definition files are migration notes only."
+}

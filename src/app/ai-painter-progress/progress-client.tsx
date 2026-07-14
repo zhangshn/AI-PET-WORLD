@@ -114,6 +114,12 @@ const mainEntrances = [
     title: "训练目录",
     body: "查看所有训练线路入口。主页不再堆放每一条训练内容。",
   },
+  {
+    href: "/ai-painter-progress/original-images",
+    label: "ORIGINALS",
+    title: "原图资料库",
+    body: "按完整地图、地形、植物、自然物品和过渡目录查看程序保存的第一版家园原图。",
+  },
 ]
 
 export function ProgressClient() {

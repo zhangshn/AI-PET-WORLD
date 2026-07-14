@@ -75,6 +75,24 @@ export type HomeMapGenerationPolicy = {
   ]
 }
 
+export type HomeMapConnectivityBinding = {
+  contractId: string
+  blueprintId: string
+  regionId: string
+  neighborRegionIds: string[]
+  activeEdgePortIds: string[]
+  pathGraphId: string
+  hydrologyGraphId: string
+  walkableGraphId: string
+  waterFlowAxis: string
+  upstreamPortId: string
+  downstreamPortId: string
+  lateralContinuationPortId: string
+  status:
+    | "runtime_migrated_pending_owner_review"
+    | "runtime_migrated_owner_approved"
+}
+
 export type HomeMapStructure = {
   schemaVersion: HomeMapStructureVersion
   structureId: string
@@ -88,6 +106,7 @@ export type HomeMapStructure = {
   terrainRegions: HomeMapTerrainRegion[]
   paths: HomeMapPath[]
   objects: HomeMapObject[]
+  connectivity?: HomeMapConnectivityBinding
   sourceFactIds: string[]
   generationPolicy: HomeMapGenerationPolicy
   tags: string[]
@@ -109,9 +128,32 @@ export function isHomeMapStructure(value: unknown): value is HomeMapStructure {
     isArrayOf(value.terrainRegions, isHomeMapTerrainRegion) &&
     isArrayOf(value.paths, isHomeMapPath) &&
     isArrayOf(value.objects, isHomeMapObject) &&
+    (value.connectivity === undefined || isHomeMapConnectivityBinding(value.connectivity)) &&
     isArrayOf(value.sourceFactIds, isNonEmptyString) &&
     isHomeMapGenerationPolicy(value.generationPolicy) &&
     isArrayOf(value.tags, isNonEmptyString)
+  )
+}
+
+function isHomeMapConnectivityBinding(
+  value: unknown
+): value is HomeMapConnectivityBinding {
+  return (
+    isRecord(value) &&
+    isNonEmptyString(value.contractId) &&
+    isNonEmptyString(value.blueprintId) &&
+    isNonEmptyString(value.regionId) &&
+    isArrayOf(value.neighborRegionIds, isNonEmptyString) &&
+    isArrayOf(value.activeEdgePortIds, isNonEmptyString) &&
+    isNonEmptyString(value.pathGraphId) &&
+    isNonEmptyString(value.hydrologyGraphId) &&
+    isNonEmptyString(value.walkableGraphId) &&
+    isNonEmptyString(value.waterFlowAxis) &&
+    isNonEmptyString(value.upstreamPortId) &&
+    isNonEmptyString(value.downstreamPortId) &&
+    isNonEmptyString(value.lateralContinuationPortId) &&
+    (value.status === "runtime_migrated_pending_owner_review" ||
+      value.status === "runtime_migrated_owner_approved")
   )
 }
 

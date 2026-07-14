@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "original-image-record-v1.schema.json",
+  "title": "AI-PET-WORLD Original Image Record V1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schemaVersion",
+    "recordId",
+    "collectionId",
+    "categoryId",
+    "title",
+    "status",
+    "originalImage",
+    "source",
+    "worldBinding",
+    "createdAtUtc",
+    "createdAtAsiaShanghai"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "original-image-record-v1" },
+    "recordId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9_-]*$" },
+    "collectionId": { "const": "natural-home-v1" },
+    "categoryId": {
+      "enum": ["complete-maps", "terrain", "vegetation", "natural-objects", "transitions"]
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "status": {
+      "enum": ["intake", "pending_review", "eligible", "blocked", "rejected", "registered"]
+    },
+    "originalImage": {
+      "type": "object",
+      "required": ["path", "fileName", "sha256", "mediaType", "width", "height"],
+      "properties": {
+        "path": { "type": "string", "pattern": "^source/" },
+        "fileName": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "mediaType": { "enum": ["image/png", "image/jpeg", "image/webp"] },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": ["sourceType", "creationMethod", "rightsHolder"],
+      "properties": {
+        "sourceType": { "type": "string" },
+        "creationMethod": { "type": "string" },
+        "rightsHolder": { "type": "string" },
+        "thirdPartyContentUsed": { "type": "boolean" },
+        "thirdPartyGenerativeModelUsed": { "type": "boolean" },
+        "copiedFromExistingWork": { "type": "boolean" }
+      }
+    },
+    "worldBinding": {
+      "type": "object",
+      "required": ["worldProfileId", "biomeType", "snapshotId", "snapshotPath", "snapshotIsFinal"]
+    },
+    "classification": { "type": "object" },
+    "reviews": { "type": "object" },
+    "createdAtUtc": { "type": "string" },
+    "createdAtAsiaShanghai": { "type": "string" },
+    "updatedAtUtc": { "type": "string" },
+    "updatedAtAsiaShanghai": { "type": "string" }
+  }
+}

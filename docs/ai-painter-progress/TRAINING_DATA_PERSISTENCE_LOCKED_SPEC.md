@@ -1,6 +1,6 @@
 # AI Painter 训练数据完整保存锁定规格
 
-更新时间：2026-07-10 19:50:04 +08:00
+更新时间：2026-07-12 15:38:00 +08:00
 
 状态：active-lock / 程序自动保存边界 / 已进入代码实现
 
@@ -38,10 +38,19 @@
 | 本地训练目录 | `.runtime/ai-painter/*-training/` |
 | 本地数据目录 | `.runtime/ai-painter/*-dataset/` |
 | 本地候选目录 | `.runtime/ai-painter/*-candidate*/` |
+| 第一版家园原图库 | `data/world-samples/original-image-library/natural-home-v1/` |
+| 正式样本登记 | `data/world-samples/registry/<dictionaryVersion>/` |
+| 不可变完整地图数据包 | `data/world-samples/dataset-packages/<packageId>/` |
 | 本地推理目录 | `.runtime/ai-painter/*-inference/` |
+| bootstrap 完整地图候选 | `.runtime/ai-painter/complete-world-visual-bootstrap-inference/` |
+| bootstrap 机器审核与失败回写 | `.runtime/ai-painter/complete-world-visual-machine-reviews/` |
+| foundation 自动候选批次 | `.runtime/ai-painter/complete-world-visual-foundation-batches/` |
+| 本地 foundation 模型来源与文件 hash | `.runtime/ai-painter/local-foundation-models/manifest.json` |
 | 材料槽推理运行 | `.runtime/game-map-material-slot-inference-runs/` |
 | RuntimeFrame 候选 | `.runtime/game-map-runtime-frame-candidates/` |
 | Runtime 合成器输出 | `.runtime/game-map-runtime-compositor/` |
+| 当前完整视觉任务包 | `.runtime/ai-painter/world-visual-generation-task-packages/<taskId>/` |
+| 编译后模型条件 | `.runtime/ai-painter/world-visual-generation-task-packages/<taskId>/compiled-conditions/` |
 
 ## 4. 通过标准
 
@@ -54,7 +63,8 @@
 | 失败也保存 | 失败时必须记录 failedSlots 或 formalVisualJudgeIssues |
 | 人工复核状态保存 | 必须记录 manualReview.required 和 manualReview.status |
 | 字典版本保存 | 必须记录 dictionaryContract 或等价字典版本信息 |
-| 页面可查 | `/ai-painter-progress/generated-results` 必须能展示自动保存目录 |
+| 页面可查 | 所有程序保存的图片必须进入所属索引并在控制台可查；`/ai-painter-progress/generated-results` 展示生成结果，`/ai-painter-progress/original-images` 按三级页面自动刷新并展示全部原图缩略图和详情 |
+| 条件可追溯 | 每个条件通道必须绑定 taskId、字典版本、Manifest、尺寸、路径和 SHA-256；条件编译不得生成玩家画面 |
 
 ## 5. 禁止事项
 
@@ -74,6 +84,8 @@
 | `npm run check:ai-painter-training-data-persistence` | 检查训练数据、运行档案、失败码、人工复核、原始输出路径是否可追溯 |
 | `npm run check:ai-painter-generated-results-page-lock` | 检查生成结果页面仍按锁定规格读取自动保存目录 |
 | `npm run check:documentation-policy` | 检查文档是否保留强制句 |
+| `npm run check:current-world-visual-conditions` | 检查当前任务的模型条件、身份、尺寸、hash 和无 RGB 输出边界 |
+| `npm run check:original-image-library` | 检查原图目录、索引、记录、图片 hash、尺寸和分类一致性 |
 
 ## 7. 处理规则
 

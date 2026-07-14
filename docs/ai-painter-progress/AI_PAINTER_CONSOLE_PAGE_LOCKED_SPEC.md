@@ -1,6 +1,6 @@
 # AI Painter 训练控制台页面锁定规格
 
-更新时间：2026-07-10 19:50:04 +08:00
+更新时间：2026-07-12 15:38:00 +08:00
 
 状态：active-lock / 控制台只读与实时状态已实现
 
@@ -31,6 +31,12 @@
 | 完整训练运行档案 | `.runtime/ai-painter/training-run-archive/` |
 | 材料槽推理运行 | `.runtime/game-map-material-slot-inference-runs/world-d0znz8/0/` |
 | 自动修复执行记录 | `.runtime/ai-painter/game-map-material-slot-next-repair-plan-runs/` |
+| foundation 完整地图推理 | `.runtime/ai-painter/complete-world-visual-bootstrap-inference/` |
+| foundation 机器审核 | `.runtime/ai-painter/complete-world-visual-machine-reviews/` |
+| foundation 自动候选批次 | `.runtime/ai-painter/complete-world-visual-foundation-batches/` |
+| 当前完整地图任务包 | `.runtime/ai-painter/world-visual-generation-task-packages/` |
+| 当前完整地图数据包 | `data/world-samples/dataset-packages/` |
+| 当前正式样本登记 | `data/world-samples/registry/<dictionaryVersion>/records/` |
 
 控制台页面如果看不到训练图，优先检查程序是否已经把图片写入上述目录；不得用聊天截图、手工复制图片或临时文件替代程序自动保存结果。
 
@@ -56,8 +62,10 @@ AI Painter 训练控制台
 │  │  └─ /ai-painter-progress/world-visual-dictionary
 │  ├─ B5. 生成结果归档
 │  │  └─ /ai-painter-progress/generated-results
-│  └─ B6. 训练目录
-│     └─ /ai-painter-progress/training-directory
+│  ├─ B6. 训练目录
+│  │  └─ /ai-painter-progress/training-directory
+│  └─ B7. 原图资料库
+│     └─ /ai-painter-progress/original-images
 │
 └─ C. 记录归属说明
    ├─ 日志必须由本地小模型训练程序自动写入
@@ -160,6 +168,7 @@ AI Painter 训练控制台
 | F08 | 查看训练目录 | `/ai-painter-progress/training-directory` | 固定训练入口清单 | 否 |
 | F09 | 查看 RuntimeFrame 状态 | 控制台状态区 | 程序写入的 RuntimeFrame 状态 | 否 |
 | F10 | 查看 GPU / 显存 | 控制台状态区 | 本地运行状态接口 | 否 |
+| F11 | 查看第一版家园原图 | `/ai-painter-progress/original-images` | `data/world-samples/original-image-library/natural-home-v1/` | 否 |
 
 ## 5. 训练图预览固定规则
 
@@ -199,9 +208,11 @@ AI Painter 训练控制台
 | 禁止随意新增入口 | 新入口必须先说明原因并获得命令 |
 | 禁止随意删除旧入口 | 旧训练数据必须可查 |
 
-## 8. 后续自动化边界
+## 8. 当前自动化边界
 
-后续训练数据、训练图、失败码、成功记录、审核记录、RuntimeFrame 候选、ApprovedFrame 结果，都必须由本地小模型程序自动保存。控制台页面只负责读取和展示这些已保存数据。
+从现在开始，训练数据、原图、训练图、推理图、失败图、候选图、审核图、RuntimeFrame 候选和 ApprovedFrame 结果，都必须由对应本地程序自动保存并进入控制台可读索引。控制台页面只负责读取和展示这些已保存数据；Codex 不得手工复制图片或补写索引代替程序。
+
+每个图像生产或接收程序必须在图片与 manifest/record 原子落盘成功后更新所属索引或台账。控制台监听轻量索引事件并自动刷新；分类列表必须展示所有记录的缩略图和身份，详情页展示完整图片及全部证据。未经索引的临时图片不得在控制台伪装成正式记录。
 
 如果页面看不到数据，先判断：
 

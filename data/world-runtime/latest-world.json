@@ -2,9 +2,22 @@
   "version": "v2.6-runtime-00",
   "ownerId": "owner-d0znz8",
   "worldId": "world-d0znz8",
-  "path": "F:\\ai-pet-world\\data\\world-runtime\\owner-d0znz8\\world-d0znz8.json",
-  "updatedAt": "1970-08-20T06:01:41.082Z",
+  "tick": 3,
+  "worldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+  "path": "F:\\ai-pet-world\\data\\world-runtime\\owner-d0znz8\\world-d0znz8\\ticks\\3\\world-state.json",
+  "updatedAt": "2026-07-13T11:28:05.420Z",
+  "migrationId": "world-profile-migration-world-d0znz8-2026-07-13T01-09-50-024Z",
+  "migrationReportPath": ".runtime/world-profile-migrations/world-profile-migration-world-d0znz8-2026-07-13T01-09-50-024Z/migration-report.json",
   "tags": [
-    "world_runtime_latest_index"
-  ]
+    "world_runtime_latest_index",
+    "profile_migrated",
+    "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+    "world_connectivity_runtime_migrated",
+    "mainland-southeast-asia-earth-reference-natural-home-region-0001-v1",
+    "world_connectivity_owner_approved"
+  ],
+  "connectivityMigrationId": "world-connectivity-migration-world-d0znz8-2026-07-13T09-28-56-183Z",
+  "connectivityMigrationReportPath": ".runtime/world-connectivity-migrations/world-connectivity-migration-world-d0znz8-2026-07-13T09-28-56-183Z/migration-report.json",
+  "connectivityOwnerReviewId": "world-connectivity-owner-review-world-d0znz8-2026-07-13T11-28-05-420Z",
+  "connectivityOwnerReviewPath": ".runtime/world-connectivity-owner-reviews/world-connectivity-owner-review-world-d0znz8-2026-07-13T11-28-05-420Z/owner-review.json"
 }

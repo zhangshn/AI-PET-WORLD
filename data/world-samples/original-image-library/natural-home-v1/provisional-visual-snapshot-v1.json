@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "natural-home-visual-snapshot-v1",
+  "snapshotId": "temperate-humid-natural-home-provisional-summer-post-rain-v1",
+  "status": "provisional_owner_approved_baseline",
+  "isFinal": false,
+  "updatedAt": "2026-07-12T18:21:53+08:00",
+  "worldProfileId": "temperate-humid-natural-home-v1",
+  "biomeType": "temperate_natural_home",
+  "regionBasis": "east_asia_temperate_humid",
+  "environment": {
+    "season": "summer",
+    "localTime": "10:00:00",
+    "timeZone": "Asia/Shanghai",
+    "weather": "post_rain_clearing",
+    "lighting": "soft_natural_daylight",
+    "groundMoisture": "moist",
+    "standingWaterOutsideDefinedWaterBodies": false,
+    "visibility": "clear",
+    "wind": "light"
+  },
+  "visualStyle": {
+    "styleId": "natural-home-2d-pixel-art-v1",
+    "medium": "2d_pixel_art",
+    "nativeWidth": 256,
+    "nativeHeight": 192,
+    "displayScale": 4,
+    "displayWidth": 1024,
+    "displayHeight": 768,
+    "displayInterpolation": "nearest_neighbor",
+    "antiAliasingAllowed": false,
+    "mechanicalTileCompositionAllowed": false,
+    "completeMapRequired": true
+  },
+  "visualIntent": [
+    "show_readable_grass_road_water_shoreline_tree_and_object_grounding",
+    "retain_humid_temperate_character_without_uniform_green_noise",
+    "use_soft_daylight_without_cinematic_color_cast",
+    "keep_road_walkable_and_water_inside_defined_water_structure"
+  ],
+  "usage": {
+    "originalImageCoverageBaseline": true,
+    "completeMapValidationBaseline": true,
+    "permanentWorldDefault": false,
+    "finalProductStandard": false
+  },
+  "replacementRule": "A later owner-approved snapshot creates a new version. Existing records keep this snapshotId and must not be relabeled or overwritten.",
+  "ownerDecision": "Use this snapshot for the first working round, but do not treat it as final."
+}

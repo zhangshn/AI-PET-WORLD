@@ -20,10 +20,12 @@ const worldPointer = readRequiredJson("data/world-runtime/latest-world.json")
 const worldState = readRequiredJson(worldPointer.path)
 const runtimeRecord = readRequiredJson(".runtime/game-map-runtime-frame/latest-runtime-frame.json")
 const runtimeFrame = runtimeRecord.runtimeFrame
+const EXPECTED_WORLD_PROFILE = "mainland-southeast-asia-tropical-monsoon-natural-home-v1"
 assert(runtimeFrame && typeof runtimeFrame === "object", "latest RuntimeFrame is missing")
 assert(worldState.worldId === runtimeFrame.worldId, "world state and RuntimeFrame worldId mismatch")
 assert(worldState.ownerId === runtimeFrame.ownerId, "world state and RuntimeFrame ownerId mismatch")
 assert(worldState.tick === runtimeFrame.tick, "world state and RuntimeFrame tick mismatch")
+assert(worldState.worldProfileId === EXPECTED_WORLD_PROFILE, "current world profile is not the authorized tropical monsoon MVP profile")
 
 const taskId = `world-visual-task-${runtimeFrame.worldId}-${runtimeFrame.tick}-${timestamp.replace(/[:.]/g, "-")}`
 const directorRunId = `world-visual-director-${runtimeFrame.worldId}-${runtimeFrame.tick}-${timestamp.replace(/[:.]/g, "-")}`
@@ -31,6 +33,12 @@ const latestAuditPointer = readOptionalJson(
   "data/world-samples/dataset-blueprints/latest-natural-home-complete-map-audit.json",
 )
 const latestAudit = latestAuditPointer?.auditPath ? readOptionalJson(latestAuditPointer.auditPath) : null
+const datasetPackagePointer = readOptionalJson(
+  "data/world-samples/dataset-packages/latest.json",
+)
+const projectOwnedCheckpointPointer = readOptionalJson(
+  ".runtime/ai-painter/project-owned-complete-world-model/latest.json",
+)
 const learningConsumptionPointer = readOptionalJson(
   ".runtime/ai-painter/visual-learning-feedback-consumption/latest.json",
 )
@@ -42,6 +50,7 @@ const visualFactPointer = readRequiredJson(
 )
 const visualFactManifest = readRequiredJson(visualFactPointer.manifestPath)
 assert(visualFactManifest.passed === true, "current VisualFactManifest did not pass")
+assert(visualFactManifest.worldProfileId === EXPECTED_WORLD_PROFILE, "VisualFactManifest world profile mismatch")
 assert(visualFactManifest.worldId === runtimeFrame.worldId, "VisualFactManifest worldId mismatch")
 assert(visualFactManifest.tick === runtimeFrame.tick, "VisualFactManifest tick mismatch")
 const latestOwnerDecision = readLatestOwnerDecision(
@@ -84,6 +93,8 @@ const taskPackage = {
   worldId: runtimeFrame.worldId,
   ownerId: runtimeFrame.ownerId,
   tick: runtimeFrame.tick,
+  worldProfileId: worldState.worldProfileId,
+  earthParameterSnapshotId: worldState.earthParameterSnapshotId,
   outputSize: { width: 1024, height: 768, aspect: "4:3", frameScope: "complete_runtime_frame" },
   singleMapScope: {
     activeScopeId: "versions/current-single-map-visual-scope",
@@ -100,6 +111,9 @@ const taskPackage = {
     structureId: runtimeFrame.structureId,
     dictionaryPath: dictionary.dictionaryPath,
     dataAuditPath: latestAuditPointer?.auditPath ?? null,
+    datasetPackageId: datasetPackagePointer?.packageId ?? null,
+    datasetPackagePath: datasetPackagePointer?.manifestPath ?? null,
+    datasetPackageStatus: datasetPackagePointer?.status ?? "missing",
     learningFeedbackPath: learningConsumptionPointer?.recordPath ?? null,
     visualFactManifestId: visualFactManifest.manifestId,
     visualFactManifestPath: visualFactPointer.manifestPath,
@@ -155,7 +169,7 @@ const taskPackage = {
   },
   visualStyle: {
     camera: "top_down_slight_three_quarter_2d",
-    palette: "earth_like_coherent_natural_home",
+    palette: "mainland_southeast_asia_tropical_monsoon_natural_home",
     lighting: "single_soft_daylight_direction",
     materialDensity: "controlled_multi_scale_detail",
     grounding: "footprint_contact_shadow_and_transition_required",
@@ -173,9 +187,9 @@ const taskPackage = {
     reviewPass: { machineReview: true, ownerReview: true, ownerRejectOverridesMachinePass: true },
   },
   artDirection: {
-    genreRead: "cozy natural home playable world map",
+    genreRead: "high-resolution pixel-art playable natural home world map",
     cameraLanguage: "top-down or slight three-quarter 2D game camera",
-    styleFamily: "hand-painted readable game map",
+    styleFamily: "professional high-resolution 2d pixel game map",
     mood: "alive natural gentle exploratory and gameplay-readable",
     forbiddenLooks: ["noise_map", "asset_collage", "sticker_objects", "debug_preview", "wallpaper", "program_drawn_final_art"],
     professionalStandards: ["first_glance_game_read", "style_unity", "spatial_clarity", "material_clarity", "object_grounding", "controlled_polish"],
@@ -254,11 +268,23 @@ const taskPackage = {
     ownerReviewStatus: "pending",
   },
   inferenceGate: {
-    status: latestAudit?.status === "training_data_sufficient" ? "blocked_visual_inference_not_implemented" : "blocked_data_gap_insufficient",
+    status: "blocked_project_owned_model_not_ready",
     canRunCompleteVisualInference: false,
-    reasons: latestAudit?.status === "training_data_sufficient"
-      ? ["world_visual_inference_runner_not_implemented"]
-      : ["data_gap_insufficient", "world_visual_inference_runner_not_implemented"],
+    reasons: [
+      ...(latestAudit?.status === "training_data_sufficient" ? [] : ["data_gap_insufficient"]),
+      ...(projectOwnedCheckpointPointer ? [] : ["project_owned_checkpoint_missing"]),
+    ],
+  },
+  bootstrapInferenceGate: {
+    status: "historical_third_party_bootstrap_disabled",
+    canRunBootstrapInference: false,
+    canEnterWorld: false,
+    canCountAsPositiveSample: false,
+    independentTrainingEligible: false,
+    requiresMachineReview: true,
+    requiresOwnerReview: true,
+    dataSufficiencyRequiredForCandidateGeneration: true,
+    dataSufficiencyRequiredForFormalTrainingPromotion: true,
   },
 }
 
@@ -291,6 +317,8 @@ const manifest = {
   worldId: runtimeFrame.worldId,
   ownerId: runtimeFrame.ownerId,
   tick: runtimeFrame.tick,
+  worldProfileId: worldState.worldProfileId,
+  earthParameterSnapshotId: worldState.earthParameterSnapshotId,
   runtimeFrameId: runtimeFrame.runtimeFrameId,
   taskSha256: taskPackage.taskSha256,
   taskPath: projectPath(taskPath),

@@ -23,8 +23,11 @@ const manifest = readJson(".runtime/ai-painter/training-run-archive/latest.json"
 const currentDictionary = readJson("data/world-visual-data-dictionary/latest.json")
 const taskPointer = readJson(".runtime/ai-painter/world-visual-generation-task-packages/latest.json")
 const visualFactPointer = readJson(".runtime/ai-painter/world-visual-fact-manifests/latest.json")
+const datasetPackagePointer = readJson("data/world-samples/dataset-packages/latest.json")
 if (manifest) checkTrainingRunManifest(manifest, currentDictionary)
 checkCurrentWorldTaskPersistence(taskPointer, visualFactPointer, currentDictionary)
+checkCurrentDatasetPackagePersistence(datasetPackagePointer, currentDictionary)
+checkCurrentFoundationPersistence(currentDictionary)
 
 check(directoryExists(".runtime/game-map-material-slot-inference-runs"), "material-slot inference run root missing")
 check(
@@ -45,10 +48,11 @@ function checkTrainingRunManifest(manifest, currentDictionary) {
 
   check(Boolean(manifest.dictionaryContract), "dictionaryContract missing from latest training archive")
   check(manifest.dictionaryContract?.passed === true, "dictionaryContract must be recorded as passed")
-  check(
-    manifest.dictionaryContract?.dictionaryVersionId === currentDictionary?.dictionaryVersionId,
-    `latest training archive dictionary must match current dictionary ${currentDictionary?.dictionaryVersionId ?? "missing"}`,
-  )
+  if (manifest.dictionaryContract?.dictionaryVersionId !== currentDictionary?.dictionaryVersionId) {
+    warnings.push(
+      `latest legacy material archive uses dictionary ${manifest.dictionaryContract?.dictionaryVersionId ?? "missing"}; current complete-map evidence is validated separately against ${currentDictionary?.dictionaryVersionId ?? "missing"}`,
+    )
+  }
 
   const materialQualityFailed =
     manifest.status === "archived_existing_failed_material_quality" &&
@@ -133,12 +137,71 @@ function checkCurrentWorldTaskPersistence(taskPointer, visualFactPointer, curren
   const task = readJson(taskPointer.taskPath)
   const director = readJson(taskPointer.directorPath)
   const visualFacts = readJson(visualFactPointer.manifestPath)
+  const conditionManifestPath = path.join(
+    path.dirname(taskPointer.taskPath),
+    "compiled-conditions",
+    "manifest.json",
+  )
+  const conditionManifest = readJson(conditionManifestPath)
+  const conditionPack = conditionManifest?.conditionPackPath
+    ? readJson(conditionManifest.conditionPackPath)
+    : null
   check(task?.taskId === taskPointer.taskId, "task JSON identity mismatch")
   check(task?.dictionaryVersionId === currentDictionary.dictionaryVersionId, "task JSON dictionary is not current")
   check(task?.sourceBindings?.visualFactManifestId === visualFactPointer.manifestId, "task does not bind latest VisualFactManifest")
   check(director?.dictionaryVersionId === currentDictionary.dictionaryVersionId, "director output dictionary is not current")
   check(director?.worldId === task?.worldId && director?.tick === task?.tick, "director output world identity mismatch")
   check(visualFacts?.worldId === task?.worldId && visualFacts?.tick === task?.tick, "VisualFactManifest world identity mismatch")
+  check(conditionManifest?.status === "compiled_conditions_ready", "compiled condition manifest missing or incomplete")
+  check(conditionManifest?.taskId === task?.taskId, "compiled condition task identity mismatch")
+  check(conditionManifest?.dictionaryVersionId === currentDictionary.dictionaryVersionId, "compiled condition dictionary is not current")
+  check(conditionManifest?.outputKind === "model_condition_only_no_rgb", "compiled conditions must not be an RGB candidate")
+  check(conditionManifest?.generatesPlayerFacingPixels === false, "condition compiler must not generate player-facing pixels")
+  checkFile(conditionManifest?.conditionPackPath, "compiled condition pack missing")
+  check(conditionPack?.taskSha256 === task?.taskSha256, "compiled condition pack task hash mismatch")
+  check(Array.isArray(conditionPack?.channels) && conditionPack.channels.length > 0, "compiled condition channels missing")
+  for (const channel of conditionPack?.channels ?? []) {
+    checkFile(channel.path, `compiled condition channel missing: ${channel.id ?? "unknown"}`)
+  }
+}
+
+function checkCurrentDatasetPackagePersistence(pointer, currentDictionary) {
+  check(Boolean(pointer), "latest complete-map dataset package pointer is missing")
+  if (!pointer) return
+  check(pointer.dictionaryVersionId === currentDictionary?.dictionaryVersionId, "dataset package dictionary is not current")
+  checkFile(pointer.manifestPath, "latest complete-map dataset package manifest missing")
+  checkFile(pointer.sourceIndexPath, "latest complete-map dataset package source index missing")
+  checkFile(pointer.auditReportPath, "latest complete-map dataset package audit missing")
+  const manifest = readJson(pointer.manifestPath)
+  check(manifest?.packageId === pointer.packageId, "dataset package identity mismatch")
+  check(manifest?.immutable === true, "dataset package must be immutable")
+  check(manifest?.automaticStorage === true, "dataset package must be program-saved")
+  check(Array.isArray(manifest?.splitIsolationFailures), "dataset package split isolation evidence missing")
+  check((manifest?.splitIsolationFailures ?? []).length === 0, "dataset package split isolation failed")
+  for (const split of ["train", "validation", "challenge", "regression"]) {
+    checkFile(path.join(pointer.packagePath, "splits", `${split}.json`), `dataset package split missing: ${split}`)
+  }
+}
+
+function checkCurrentFoundationPersistence(currentDictionary) {
+  const inferencePointer = readJson(".runtime/ai-painter/complete-world-visual-bootstrap-inference/latest.json")
+  const reviewPointer = readJson(".runtime/ai-painter/complete-world-visual-machine-reviews/latest.json")
+  const batchPointer = readJson(".runtime/ai-painter/complete-world-visual-foundation-batches/latest.json")
+  const sourceManifest = readJson(".runtime/ai-painter/local-foundation-models/manifest.json")
+  check(Boolean(inferencePointer), "latest foundation inference pointer is missing")
+  check(Boolean(reviewPointer), "latest complete-map machine review pointer is missing")
+  check(Boolean(batchPointer), "latest foundation candidate batch pointer is missing")
+  check(sourceManifest?.status === "local_visual_foundation_ready", "local foundation model manifest is missing or invalid")
+  check(sourceManifest?.onlineInferenceApiUsed === false, "local foundation model manifest must forbid online inference")
+  if (!inferencePointer || !reviewPointer || !batchPointer) return
+  check(inferencePointer.dictionaryVersionId === currentDictionary?.dictionaryVersionId, "foundation inference dictionary is not current")
+  check(inferencePointer.automaticStorage === true, "foundation inference was not program-saved")
+  checkFile(inferencePointer.manifestPath, "foundation inference manifest missing")
+  checkFile(inferencePointer.outputImagePath, "foundation inference candidate image missing")
+  check(reviewPointer.candidate?.imageSha256 === inferencePointer.outputImageSha256, "machine review does not match latest foundation candidate")
+  check(reviewPointer.automaticStorage === true, "machine review was not program-saved")
+  checkFile(reviewPointer.reviewPath, "latest complete-map machine review missing")
+  checkFile(batchPointer.batchPath, "latest foundation candidate batch record missing")
 }
 
 function checkString(value, message) {

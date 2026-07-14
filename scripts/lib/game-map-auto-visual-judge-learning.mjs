@@ -26,11 +26,12 @@ export function refreshGameMapAutoVisualJudgeLearning(options = {}) {
     learningMode: "evidence_driven_program_learning",
     learningModeZh: "证据驱动程序学习",
     meaning:
-      "The program learns reusable judgment memory from persisted material reports, FormalVisualJudge reports, owner reviews, and review-gap diagnostics. This is programmatic evidence learning, not a chat explanation.",
+      "The program learns reusable judgment memory from persisted complete-map machine reviews, material reports, FormalVisualJudge reports, owner reviews, and review-gap diagnostics. This is programmatic evidence learning, not a chat explanation.",
     meaningZh:
-      "程序从已落盘的材料报告、FormalVisualJudge、人工审核和漏判诊断中学习可复用判断记忆。这是程序证据学习，不是聊天解释。",
+      "程序从已落盘的完整地图机器审核、材料报告、FormalVisualJudge、人工审核和漏判诊断中学习可复用判断记忆。这是程序证据学习，不是聊天解释。",
     evidenceSummary: {
       ledgerEventCount: evidence.ledgerEvents.length,
+      completeMapMachineReviewCount: evidence.completeMapMachineReviews.length,
       materialQualityReportCount: evidence.materialReports.length,
       formalVisualJudgeReportCount: evidence.formalReports.length,
       ownerReviewCount: evidence.ownerReviews.length,
@@ -41,6 +42,7 @@ export function refreshGameMapAutoVisualJudgeLearning(options = {}) {
     nextAutonomousJudgeInputs: buildNextAutonomousJudgeInputs(learnedFailurePatterns),
     evidenceRecords: {
       latestMaterialQualityReportPath: evidence.materialReports[0]?.path ?? null,
+      latestCompleteMapMachineReviewPath: evidence.completeMapMachineReviews[0]?.path ?? null,
       latestFormalVisualJudgePath: evidence.formalReports[0]?.path ?? null,
       latestOwnerReviewPath: evidence.ownerReviews[0]?.path ?? null,
       latestReviewDiagnosisPath: evidence.reviewDiagnostics[0]?.path ?? null,
@@ -58,6 +60,11 @@ export { latestLearningPath }
 function collectEvidence() {
   return {
     ledgerEvents: readLedgerEvents().slice(-200),
+    completeMapMachineReviews: collectJsonEvidence(
+      [".runtime/ai-painter/complete-world-visual-machine-reviews"],
+      "machine-review.json",
+      80,
+    ),
     materialReports: collectJsonEvidence(
       [
         ".runtime/game-map-material-slot-inference-runs",
@@ -127,6 +134,21 @@ function collectFiles(root, matcher, files) {
 
 function buildLearnedFailurePatterns(evidence) {
   const patternMap = new Map()
+
+  for (const review of evidence.completeMapMachineReviews) {
+    for (const issue of review.data?.issues ?? []) {
+      if (!issue?.code) continue
+      addPattern(patternMap, issue.code, {
+        sourceKind: "complete_map_machine_review",
+        sourceKindZh: "完整地图机器审核",
+        occurrenceCount: 1,
+        evidencePath: review.path,
+        targetArea: issue.affectedRegion ?? inferTargetArea(issue.code),
+        blocksWorld: true,
+        message: issue.messageZh ?? issue.message ?? null,
+      })
+    }
+  }
 
   for (const report of evidence.materialReports) {
     const issueCounts = report.data?.summary?.issueCounts ?? {}
@@ -249,11 +271,15 @@ function buildCurrentDecision(evidence, learnedFailurePatterns) {
   const latestMaterial = evidence.materialReports[0]?.data
   const latestFormal = evidence.formalReports[0]?.data
   const latestOwner = evidence.ownerReviews[0]?.data
+  const latestCompleteMapReview = evidence.completeMapMachineReviews[0]?.data
   const ownerRejected = latestOwner?.ownerDecision === "rejected" || latestOwner?.status === "failed"
   const blockers = []
 
   if (latestMaterial && latestMaterial.passed !== true) {
     blockers.push("material_quality_failed")
+  }
+  if (latestCompleteMapReview && latestCompleteMapReview.passed !== true) {
+    blockers.push("complete_map_machine_review_failed")
   }
   if (latestFormal && (latestFormal.passed !== true || latestFormal.canEnterWorld === false)) {
     blockers.push("formal_visual_judge_failed")
@@ -279,7 +305,13 @@ function buildCurrentDecision(evidence, learnedFailurePatterns) {
 }
 
 function buildNextAutonomousJudgeInputs(patterns) {
-  return patterns
+  const currentCompleteMapPatterns = patterns.filter((pattern) =>
+    pattern.sourceKinds.includes("complete_map_machine_review"),
+  )
+  const supportingHistoricalPatterns = patterns.filter((pattern) =>
+    !pattern.sourceKinds.includes("complete_map_machine_review"),
+  )
+  return [...currentCompleteMapPatterns, ...supportingHistoricalPatterns]
     .filter((pattern) => pattern.blocksWorld || pattern.requiresJudgeUpgrade)
     .slice(0, 12)
     .map((pattern) => ({

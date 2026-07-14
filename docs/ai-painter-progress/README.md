@@ -1,6 +1,6 @@
 # AI Painter Progress 页面文档入口
 
-更新时间：2026-07-10 20:43:22 +08:00
+更新时间：2026-07-12 16:27:52 +08:00
 
 状态：active-locks + implementation-evidence / 不决定完整世界总路线
 
@@ -17,8 +17,11 @@
 | AI Painter 后台管理自动化 | `AI_PAINTER_ADMIN_BACKEND_LOCKED_SPEC.md` | 已锁定 |
 | 自动修复计划执行器 | `AUTO_REPAIR_PLAN_RUNNER_LOCKED_SPEC.md` | 已锁定 |
 | 自动视觉审核学习 | `AUTO_VISUAL_JUDGE_LEARNING_LOCKED_SPEC_20260709.md` | 已锁定 |
+| 原图资料库三级页面 | `ORIGINAL_IMAGE_LIBRARY_LOCKED_SPEC.md` | 已锁定 |
 
 局部材料修复、单次失败分析和按日期生成的阶段说明不再作为文档保存；相关运行事实必须由程序写入 `.runtime` 台账。
+
+本目录只定义页面和自动化契约，不定义 AI Painter 总业务或训练顺序。原图库页面中的五类入口是并行数据导航，不是五阶段训练计划；总路线必须返回 `../DOCUMENT_AUTHORITY_INDEX.md`、`../ARCHITECTURE.md` 和 `../game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md` 读取。
 
 ## 2. 修改前必须确认
 

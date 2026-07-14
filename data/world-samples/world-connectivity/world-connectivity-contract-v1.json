@@ -1,0 +1,161 @@
+{
+  "schemaVersion": "world-connectivity-contract-v1",
+  "contractId": "natural-home-large-world-connectivity-v1",
+  "status": "active_contract_first_mvp_runtime_owner_approved_pending_coverage",
+  "updatedAt": "2026-07-13T19:28:05+08:00",
+  "scope": {
+    "worldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+    "currentMilestone": "first_connected_playable_region_of_future_large_world",
+    "visualMilestone": "single_complete_professional_map_snapshot",
+    "exactWorldTopologyApproved": false,
+    "firstMvpRegionConnectivityBlueprintDefined": true,
+    "firstMvpRegionConnectivityBlueprintId": "mainland-southeast-asia-earth-reference-natural-home-region-0001-v1",
+    "firstMvpRegionConnectivityBlueprintPath": "data/world-samples/world-connectivity/blueprints/mainland-southeast-asia-tropical-monsoon-natural-home-v1/mainland-southeast-asia-earth-reference-natural-home-region-0001-v1/blueprint.json",
+    "minimumConnectivityCountsApproved": false,
+    "firstMvpRegionRuntimeMigrated": true
+  },
+  "authority": {
+    "topologySource": "structured_world_facts_and_owner_approved_connectivity_blueprint",
+    "visualCanDefineTopology": false,
+    "rgbCanCreateWorldFacts": false,
+    "mechanicalImageCompositionAllowed": false,
+    "rule": "AI Painter may express approved connectivity, but it may not invent region adjacency, road exits, water flow, walkability, collisions, object identity, or world facts."
+  },
+  "coordinateSystems": {
+    "globalWorld": {
+      "type": "continuous_region_graph",
+      "requiredIdentityFields": [
+        "playerId",
+        "worldId",
+        "worldSeed",
+        "worldProfileId"
+      ],
+      "exactBounds": "pending_owner_approved_world_topology_blueprint"
+    },
+    "currentMvpRegion": {
+      "logicalGridWidth": 64,
+      "logicalGridHeight": 48,
+      "tileSize": 16,
+      "visualWidth": 1024,
+      "visualHeight": 768,
+      "visualRole": "complete_region_view_bound_to_structured_world_facts"
+    }
+  },
+  "requiredRegionFields": [
+    "regionId",
+    "worldId",
+    "worldSeed",
+    "worldProfileId",
+    "worldBounds",
+    "localBounds",
+    "regionalLandscapeType",
+    "elevationBand",
+    "neighborRegionIds",
+    "edgePorts",
+    "pathGraphId",
+    "hydrologyGraphId",
+    "walkableGraphId",
+    "objectIdentitySetId",
+    "version",
+    "contentHash"
+  ],
+  "edgePortContract": {
+    "allowedKinds": [
+      "path",
+      "watercourse",
+      "ecology_transition",
+      "elevation_transition"
+    ],
+    "requiredFields": [
+      "edgePortId",
+      "kind",
+      "regionId",
+      "boundarySide",
+      "boundaryPosition",
+      "direction",
+      "width",
+      "elevation",
+      "connectsToRegionId",
+      "connectsToEdgePortId",
+      "state",
+      "version"
+    ],
+    "pairingRule": "Every active outward edge port must bind exactly one compatible neighbor port; unpaired ports remain blocked and cannot be represented as a connected route."
+  },
+  "graphRules": {
+    "regionAdjacency": [
+      "neighbor_relations_must_be_bidirectional",
+      "paired_edge_ports_must_share_compatible_kind_position_width_direction_and_elevation",
+      "regional_landscape_transitions_must_follow_the_active_world_profile",
+      "isolated_visual_regions_cannot_count_as_large_world_connectivity"
+    ],
+    "path": [
+      "entry_to_home_center_must_be_walkably_connected",
+      "approved_region_exit_must_connect_to_its_paired_neighbor_port",
+      "path_must_not_overlap_water_or_blocked_collision",
+      "main_route_and_branch_priority_must_remain_readable"
+    ],
+    "hydrology": [
+      "watercourse_must_have_explicit_upstream_and_downstream_relationships",
+      "cross_region_water_ports_must_pair_without_broken_channel_or_shoreline",
+      "flow_direction_and_elevation_must_be_compatible",
+      "closed_ponds_must_not_claim_cross_region_flow"
+    ],
+    "walkability": [
+      "required_playable_areas_must_belong_to_the_approved_walkable_graph",
+      "region_entry_center_and_approved_exits_must_not_form_isolated_components",
+      "collision_changes_must_trigger_connectivity_revalidation"
+    ],
+    "objectIdentity": [
+      "persistent_objects_must_keep_stable_object_ids_across_ticks",
+      "objects_crossing_region_boundaries_must_preserve_identity_state_and_world_coordinates",
+      "visual_variants_must_not_create_or_delete_object_identity"
+    ]
+  },
+  "trainingCoverageAxes": [
+    "internal_entry_to_center_path",
+    "center_to_approved_edge_port_path",
+    "cross_region_path_pair",
+    "upstream_downstream_water_pair",
+    "ecology_transition_pair",
+    "elevation_transition_pair",
+    "walkable_component_continuity",
+    "collision_preservation",
+    "object_identity_continuity"
+  ],
+  "failureCodes": [
+    "disconnected_region",
+    "unmatched_edge_port",
+    "broken_cross_region_path",
+    "broken_hydrology",
+    "path_overlaps_water",
+    "isolated_walkable_component",
+    "adjacency_profile_conflict",
+    "object_identity_discontinuity",
+    "visual_invented_connectivity"
+  ],
+  "storage": {
+    "contractPath": "data/world-samples/world-connectivity/world-connectivity-contract-v1.json",
+    "blueprintRoot": "data/world-samples/world-connectivity/blueprints",
+    "runtimeWorldRoot": "data/world-runtime",
+    "automaticStorageRequired": true,
+    "immutableEvidenceRequired": true,
+    "pageReadMustNotCreateBusinessRecords": true
+  },
+  "pendingOwnerDecisions": [
+    "exact_large_world_region_topology",
+    "minimum_positive_and_negative_connectivity_coverage_counts",
+    "runtime_migration_result_review"
+  ],
+  "runtimeEvidence": {
+    "status": "runtime_migrated_owner_approved",
+    "migrationId": "world-connectivity-migration-world-d0znz8-2026-07-13T09-28-56-183Z",
+    "reportPath": ".runtime/world-connectivity-migrations/world-connectivity-migration-world-d0znz8-2026-07-13T09-28-56-183Z/migration-report.json",
+    "worldId": "world-d0znz8",
+    "tick": 3,
+    "blueprintId": "mainland-southeast-asia-earth-reference-natural-home-region-0001-v1",
+    "automaticStorage": true,
+    "ownerReviewId": "world-connectivity-owner-review-world-d0znz8-2026-07-13T11-28-05-420Z",
+    "ownerReviewPath": ".runtime/world-connectivity-owner-reviews/world-connectivity-owner-review-world-d0znz8-2026-07-13T11-28-05-420Z/owner-review.json"
+  }
+}

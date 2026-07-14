@@ -1,0 +1,145 @@
+{
+  "schemaVersion": "natural-home-real-species-catalog-v1",
+  "catalogId": "east-asia-temperate-humid-species-v1",
+  "status": "owner_confirmed_framework",
+  "updatedAt": "2026-07-12T15:06:22+08:00",
+  "worldProfileId": "temperate-humid-natural-home-v1",
+  "biomeType": "temperate_natural_home",
+  "regionBasis": "east_asia_temperate_humid",
+  "selectionRule": "Use real accepted terrestrial species whose documented temperate distribution supports a coherent East Asian natural-home reference profile.",
+  "taxonomyAuthority": {
+    "name": "Royal Botanic Gardens, Kew - Plants of the World Online",
+    "usage": "taxonomy_and_distribution_facts_only",
+    "imageUsage": "forbidden_without_separate_project_rights_audit",
+    "checkedAt": "2026-07-12"
+  },
+  "species": [
+    {
+      "speciesId": "quercus-mongolica",
+      "nameZh": "蒙古栎",
+      "scientificName": "Quercus mongolica Fisch. ex Ledeb.",
+      "plantKind": "tree",
+      "ecologicalRole": ["deciduous_canopy", "natural_boundary", "seasonal_color_anchor"],
+      "nativeRangeSummary": "Southeastern Siberia through northern China, Korea and Japan; temperate biome.",
+      "lifecycleProfileId": "tree-15-key-states-v1",
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn%3Alsid%3Aipni.org%3Anames%3A50874074-1"
+    },
+    {
+      "speciesId": "betula-pendula-mandshurica",
+      "nameZh": "东北白桦",
+      "scientificName": "Betula pendula subsp. mandshurica (Regel) Ashburner & McAll.",
+      "plantKind": "tree",
+      "ecologicalRole": ["deciduous_canopy", "light_bark_landmark", "seasonal_color_anchor"],
+      "nativeRangeSummary": "Central Siberia to Japan, including Manchuria, Korea and Inner Mongolia; temperate biome.",
+      "lifecycleProfileId": "tree-15-key-states-v1",
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn%3Alsid%3Aipni.org%3Anames%3A77128716-1"
+    },
+    {
+      "speciesId": "pinus-koraiensis",
+      "nameZh": "红松",
+      "scientificName": "Pinus koraiensis Siebold & Zucc.",
+      "plantKind": "tree",
+      "ecologicalRole": ["evergreen_canopy", "winter_structure", "seed_resource"],
+      "nativeRangeSummary": "Russian Far East, northeastern China, Korea and Japan; temperate biome.",
+      "lifecycleProfileId": "tree-15-key-states-v1",
+      "sourceUrl": "https://powo.science.kew.org/taxon/263037-1"
+    },
+    {
+      "speciesId": "salix-babylonica",
+      "nameZh": "垂柳",
+      "scientificName": "Salix babylonica L.",
+      "plantKind": "tree",
+      "ecologicalRole": ["riparian_tree", "shoreline_anchor", "moisture_indicator"],
+      "nativeRangeSummary": "Northern and eastern China to Korea; temperate biome.",
+      "lifecycleProfileId": "tree-15-key-states-v1",
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn%3Alsid%3Aipni.org%3Anames%3A777133-1"
+    },
+    {
+      "speciesId": "corylus-heterophylla",
+      "nameZh": "榛",
+      "scientificName": "Corylus heterophylla Fisch. ex Trautv.",
+      "plantKind": "shrub",
+      "ecologicalRole": ["understory_shrub", "edge_softener", "nut_resource"],
+      "nativeRangeSummary": "Southeastern Siberia through China, Korea and Japan; temperate biome.",
+      "lifecycleProfileId": "shrub-14-key-states-v1",
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn%3Alsid%3Aipni.org%3Anames%3A295460-1"
+    },
+    {
+      "speciesId": "lespedeza-bicolor",
+      "nameZh": "二色胡枝子",
+      "scientificName": "Lespedeza bicolor Turcz.",
+      "plantKind": "shrub",
+      "ecologicalRole": ["understory_shrub", "flowering_edge", "transition_softener"],
+      "nativeRangeSummary": "Southeastern Siberia to China, Korea and Japan; temperate biome.",
+      "lifecycleProfileId": "shrub-14-key-states-v1",
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn%3Alsid%3Aipni.org%3Anames%3A502415-1"
+    },
+    {
+      "speciesId": "miscanthus-sinensis",
+      "nameZh": "芒",
+      "scientificName": "Miscanthus sinensis Andersson",
+      "plantKind": "grass_detail",
+      "ecologicalRole": ["tall_grass_mass", "meadow_edge", "seasonal_motion_layer"],
+      "nativeRangeSummary": "China to temperate East Asia; perennial or rhizomatous grass of the temperate biome.",
+      "lifecycleProfileId": "grass-12-key-states-v1",
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn%3Alsid%3Aipni.org%3Anames%3A408768-1"
+    },
+    {
+      "speciesId": "zoysia-japonica",
+      "nameZh": "结缕草",
+      "scientificName": "Zoysia japonica Steud.",
+      "plantKind": "grass_detail",
+      "ecologicalRole": ["low_grass_cover", "walkable_meadow", "path_edge_transition"],
+      "nativeRangeSummary": "Southern Russian Far East to eastern China and temperate East Asia; temperate biome.",
+      "lifecycleProfileId": "grass-12-key-states-v1",
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn%3Alsid%3Aipni.org%3Anames%3A271349-2"
+    },
+    {
+      "speciesId": "iris-sanguinea",
+      "nameZh": "溪荪",
+      "scientificName": "Iris sanguinea Hornem.",
+      "plantKind": "flower_patch",
+      "ecologicalRole": ["moist_meadow_flower", "shoreline_color", "seasonal_phenology"],
+      "nativeRangeSummary": "Southern Siberia to Japan, including northern and southeastern China and Korea; temperate biome.",
+      "lifecycleProfileId": "flower-12-key-states-v1",
+      "sourceUrl": "https://powo.science.kew.org/taxon/439065-1"
+    },
+    {
+      "speciesId": "viola-mandshurica",
+      "nameZh": "紫花地丁",
+      "scientificName": "Viola mandshurica W.Becker",
+      "plantKind": "flower_patch",
+      "ecologicalRole": ["low_ground_flower", "spring_color", "path_edge_detail"],
+      "nativeRangeSummary": "Russian Far East through northern and eastern China to Korea and Japan; temperate biome.",
+      "lifecycleProfileId": "flower-12-key-states-v1",
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn%3Alsid%3Aipni.org%3Anames%3A868618-1"
+    },
+    {
+      "speciesId": "lilium-pumilum",
+      "nameZh": "山丹",
+      "scientificName": "Lilium pumilum Redouté",
+      "plantKind": "flower_patch",
+      "ecologicalRole": ["meadow_flower", "summer_color", "sparse_visual_accent"],
+      "nativeRangeSummary": "Siberia through northern China and Mongolia to northern Korea; temperate biome.",
+      "lifecycleProfileId": "flower-12-key-states-v1",
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn%3Alsid%3Aipni.org%3Anames%3A323396-2"
+    },
+    {
+      "speciesId": "phragmites-japonicus",
+      "nameZh": "日本苇",
+      "scientificName": "Phragmites japonicus Steud.",
+      "plantKind": "reed",
+      "ecologicalRole": ["riparian_reed", "shoreline_transition", "wetland_structure"],
+      "nativeRangeSummary": "Russian Far East to Korea and Japan, including Manchuria; temperate biome.",
+      "lifecycleProfileId": "reed-12-key-states-v1",
+      "sourceUrl": "https://powo.science.kew.org/taxon/urn%3Alsid%3Aipni.org%3Anames%3A415939-1"
+    }
+  ],
+  "constraints": {
+    "realSpeciesOnly": true,
+    "fictionalSpeciesAllowed": false,
+    "thirdPartyReferenceImagesAllowedAsTrainingData": false,
+    "speciesFactSourceDoesNotGrantImageTrainingRights": true,
+    "runtimeMigrationRequiredBeforeFormalGeneration": true
+  }
+}

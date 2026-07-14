@@ -1,6 +1,6 @@
 # AI-PET-WORLD 业务与技术架构
 
-更新时间：2026-07-11 11:56:40 +08:00
+更新时间：2026-07-13 19:31:50 +08:00
 
 状态：long-term-architecture-reference / 当前只实现完整自然家园地图相关层
 
@@ -11,6 +11,8 @@
 本文定义当前 MVP 和长期主线的业务架构、技术架构、数据流、模块边界和禁止事项。
 
 ## 1. 架构原则
+
+系统边界固定为：AI-PET-WORLD 是像素风格自主世界游戏；本地小 AI 是跨世界理解、导演、推理、角色自主、失败学习和视觉表达的游戏智能核心。AI Painter 位于视觉表达边界，只是本地小 AI 的一个子系统。它不能代替 World Runtime、世界事实、角色决策或游戏规则，也不能反向根据图片发明世界事实。
 
 | 原则 | 说明 |
 |---|---|
@@ -23,6 +25,7 @@
 | 禁止程序直绘最终画面 | 程序可以生成结构、Mask、校验、合成，不能手写玩家最终画面。 |
 | 机器审核不是最终通过 | VisualJudge 和 RuntimeFrame gate 只是前置闸门，最终必须由项目所有者人工确认达到正式游戏标准。 |
 | 参考图只定方向 | 当前最高局部图只作为质感基准，不能绕过 RuntimeFrame，也不能作为 `/world` 成果。 |
+| 第一版像素视觉契约 | 正式模型原生生成 `1024×768` 高分辨率像素风完整地图；禁止从低分辨率图、tile、sprite 或局部材料放大/拼接得到正式候选。 |
 
 项目架构必须始终保持两条一级主线：
 
@@ -32,6 +35,19 @@
 | 类地球世界自主运行与生长 | 类地球参数、世界数据字典、时间、环境和世界事实 | 世界生成、Runtime 推进、生态与资源变化、状态持久化 | 持续存在并自主演化的世界 |
 
 两条主线通过“管家感知世界事实”和“管家行为写入合法世界变化”连接。视觉系统只负责表达该闭环产生的事实。
+
+世界生成身份层固定为：
+
+```text
+PlayerIdentity
+-> WorldIdentity(worldId)
+-> DeterministicWorldSeed
+-> EarthLikeWorldProfile
+-> Terrain / Climate / Hydrology / Ecology / Time
+-> WorldFacts
+```
+
+长期生成器必须允许不同 `playerId` 绑定不同世界种子和世界档案。MVP 使用 `mainland-southeast-asia-tropical-monsoon-natural-home-v1` 作为固定参考档案，以东南亚大陆热带季风低地、河谷和丘陵生态为现实参照；`playerId`、`worldId`、`worldSeed` 和 `worldProfileId` 四个字段仍必须保留，避免第一版完成后重写世界身份架构。气候、水文、地形和物种事实必须绑定来源、版本、许可与采集时间；外部事实来源不自动授予图片训练权。
 
 ## 2. 业务架构图
 
@@ -116,6 +132,72 @@ flowchart LR
   GMF --> RF
 ```
 
+### 3.1 视觉知识、训练数据与推理架构
+
+原图库是训练来源层，不是运行时地图层。五类目录按主要知识职责并行保存原图和证据；审核通过后由统一登记器写入正式样本注册表，再由数据包构建器按 hash、结构和来源隔离为统一完整世界数据包。正式推理只有一个完整世界入口，内部能力可以由一个或多个自有模块实现，但不得让任何分类目录或局部模型取得主入口地位。
+
+```mermaid
+flowchart LR
+  subgraph Sources["并行原始视觉知识"]
+    CM["complete-maps"]
+    TE["terrain"]
+    VE["vegetation"]
+    NO["natural-objects"]
+    TR["transitions"]
+  end
+  CM --> Intake["统一来源、权属、hash 与视觉审核"]
+  TE --> Intake
+  VE --> Intake
+  NO --> Intake
+  TR --> Intake
+  Intake --> Registry["正式样本 Registry"]
+  Registry --> Package["统一不可变 Complete-World Dataset Package"]
+  Package --> Train["项目自有完整世界模型体系训练"]
+  Task["WorldFacts + Director + 23通道任务条件"] --> Inference["单一正式完整世界推理入口"]
+  Train --> Inference
+  Inference --> Candidate["Fresh Complete-Map Candidate"]
+```
+
+固定禁止关系：
+
+```text
+五类目录 != 五个训练阶段
+五类目录 != 五个 Runtime 图层
+五类目录 != 五个必须独立存在的神经网络
+五类原图 != 程序机械拼接后的完整地图
+```
+
+语义分类图可以保留完整环境上下文；只有用于明确标注、条件构建或审核证据时才允许生成可追溯裁切。旧 256×192 材料槽、无父图引用的孤立裁片和重复噪声变体不能替代完整世界训练数据。
+
+第一版正式路线使用原生 `1024×768` 高分辨率像素风画布：正式输出覆盖整个地图并绑定当前任务包、全部结构条件、模型谱系和审核记录。旧 `256×192` 材料槽和任何低分辨率局部输出只作历史证据，不得放大或拼接进入正式路线。23 通道结构条件必须通过可审计的条件编译生成与原生画布严格对齐的条件张量；训练可以使用渐进分辨率，但正式候选、审核和 Runtime 只认原生 `1024×768` 输出。
+
+### 3.2 大世界空间连接架构
+
+第一版自然家园是未来类地球大世界中的第一个连接区域。`1024×768` 是当前完整区域视觉画布，不是整个长期世界的固定边界。区域连接必须先由结构化世界事实和项目所有者批准的连接蓝图定义，再由 AI Painter 表达；图片、提示词和模型输出没有拓扑决策权。
+
+```mermaid
+flowchart LR
+  WorldIdentity["playerId + worldId + worldSeed + worldProfileId"] --> RegionGraph["区域邻接图"]
+  RegionGraph --> EdgePorts["道路 / 水系 / 生态 / 海拔边界连接口"]
+  EdgePorts --> PathGraph["道路与可走图"]
+  EdgePorts --> HydrologyGraph["上游 / 下游水文图"]
+  RegionGraph --> ObjectIdentity["稳定对象身份与世界坐标"]
+  PathGraph --> VisualTask["完整区域视觉任务"]
+  HydrologyGraph --> VisualTask
+  ObjectIdentity --> VisualTask
+  VisualTask --> Painter["AI Painter 视觉表达"]
+```
+
+| 结构 | 职责 | 固定边界 |
+|---|---|---|
+| RegionGraph | 保存区域身份、全局范围和双向邻接关系 | 不由 RGB 或导演自由生成 |
+| EdgePort | 保存道路、水系、生态和海拔在区域边界的配对关系 | 未配对出口必须阻断，不能伪装成已连接 |
+| PathGraph / WalkableGraph | 证明入口、中心和批准出口可走连通 | 任何碰撞变化都必须重新校验 |
+| HydrologyGraph | 保存流向、上游、下游、海拔和跨区域水口 | 水岸视觉不能替代水文事实 |
+| ObjectIdentitySet | 保存跨 tick 和跨区域对象身份 | 视觉变体不得改变对象事实 |
+
+机器可读契约是 `natural-home-large-world-connectivity-v1`，固定位置为 `data/world-samples/world-connectivity/world-connectivity-contract-v1.json`。第一版连接蓝图 `mainland-southeast-asia-earth-reference-natural-home-region-0001-v1` 已按项目所有者“使用真实地球实际情况”的命令登记：水文按东南亚大陆河谷总体北入南出组织，道路从当前最近的南边界接入，西侧保持自然边界；外部资料只提供事实关系，不复制真实地图几何。项目所有者授权后，程序已把区域身份、三个邻居、四个当前区域连接口、PathGraph、HydrologyGraph 和 WalkableGraph 写入 tick 2，并自动保存迁移前后世界状态、hash 和报告；项目所有者审核通过后，程序在不改变连接几何的前提下写入 tick 3 和独立审核记录。连接事实审核通过不等于图片具备连接训练资格，也不等于连接覆盖数量门槛已批准。
+
 ## 4. RuntimeFrame 数据结构边界
 
 正式 GameMapRuntimeFrame 必须至少包含：
@@ -142,6 +224,7 @@ flowchart LR
 | VisualFactManifest | 视觉所需事实清单 | `sourceFactIds`、主事实、支撑事实、环境事实 |
 | CompleteWorldVisualTaskPackage | 当前完整地图推理任务 | `worldId`、`tick`、`dictionaryVersion`、`visualFactManifestId`、导演输出、结构输入、失败记忆、禁止内容 |
 | CompleteWorldVisualCandidate | 本轮真实完整地图候选 | `taskPackageId`、`modelVersion`、`checkpoint`、`seed`、`imageHash`、`generatedAt`、`reusedExistingImage=false` |
+| HighResolutionPixelStyleFrame | 第一版高分辨率像素风画面契约 | `nativeWidth=1024`、`nativeHeight=768`、`completeMap=true`、`generatedDirectly=true`、`lowResolutionUpscale=false`、`mechanicalComposition=false`、`addsVisualFacts=false` |
 | HomeMapStructure | 自然家园结构 | 入口、中心、水岸、道路、自然边界 |
 | GameMapFrame | 可合成地图帧 | layers、slots、layout、camera |
 | VisualUnitSlot | 视觉单元槽位 | `slotId`、`kind`、`bounds`、`layer`、`sourceFactIds` |
@@ -160,6 +243,8 @@ flowchart LR
 | Refiner | 细化局部视觉材料。 |
 | Candidate Store | 保存候选结果，不进入 `/world`。 |
 | Result Archive | 保存成功、失败、耗时、时间戳、GPU 信息、质量分数。 |
+
+`Dataset Builder` 必须统一消费五类合格记录和完整任务条件，输出同一个版本化完整世界数据包。`Refiner` 只负责模型内部或候选后的受控细化，不得把五类原图按坐标贴合、缩放或拼接后宣称为 AI Painter 完整地图生成。
 
 AI Painter 禁止承担：
 

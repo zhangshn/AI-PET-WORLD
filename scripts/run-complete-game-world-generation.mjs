@@ -26,9 +26,59 @@ const plan = [
     command: ["npm", ["run", "build:complete-map-data-blueprint"]],
   },
   {
+    id: "original_image_library",
+    title: "Original Image Library",
+    command: ["npm", ["run", "check:original-image-library"]],
+  },
+  {
+    id: "world_connectivity_contract",
+    title: "Large World Connectivity Contract",
+    command: ["npm", ["run", "check:world-connectivity-contract"]],
+  },
+  {
+    id: "world_connectivity_proposal",
+    title: "Current World Connectivity Proposal",
+    command: ["npm", ["run", "build:current-world-connectivity-proposal"]],
+  },
+  {
+    id: "world_connectivity_proposal_contract",
+    title: "Current World Connectivity Proposal Contract",
+    command: ["npm", ["run", "check:current-world-connectivity-proposal"]],
+  },
+  {
+    id: "earth_reference_world_connectivity_blueprint_contract",
+    title: "Earth-Reference World Connectivity Blueprint Contract",
+    command: ["npm", ["run", "check:earth-reference-world-connectivity-blueprint"]],
+  },
+  {
+    id: "current_world_connectivity_migration_contract",
+    title: "Current World Connectivity Runtime Migration Contract",
+    command: ["npm", ["run", "check:current-world-connectivity-migration"]],
+  },
+  {
+    id: "complete_map_sample_registry",
+    title: "Complete Map Training Sample Registry",
+    command: ["npm", ["run", "check:complete-map-training-sample-registry"]],
+  },
+  {
+    id: "project_owned_training_data_ip_policy",
+    title: "Strict Project-Owned Training Data IP Policy",
+    command: ["npm", ["run", "check:project-owned-training-data-ip-policy"]],
+  },
+  {
     id: "complete_map_data_sufficiency_audit",
     title: "Complete Map Data Sufficiency Audit",
     command: ["npm", ["run", "audit:complete-map-data-sufficiency"]],
+  },
+  {
+    id: "complete_map_dataset_package",
+    title: "Current Complete Map Dataset Package",
+    command: ["npm", ["run", "build:current-complete-map-dataset-package"]],
+  },
+  {
+    id: "complete_map_dataset_package_contract",
+    title: "Current Complete Map Dataset Package Contract",
+    command: ["npm", ["run", "check:current-complete-map-dataset-package"]],
   },
   {
     id: "automatic_visual_judge_learning",
@@ -49,6 +99,41 @@ const plan = [
     id: "world_visual_generation_task_package",
     title: "Current World Visual Generation Task Package",
     command: ["npm", ["run", "build:current-world-visual-task-package"]],
+  },
+  {
+    id: "world_visual_condition_compiler",
+    title: "Current World Visual Condition Compiler",
+    command: ["npm", ["run", "compile:current-world-visual-conditions"]],
+  },
+  {
+    id: "world_visual_condition_contract",
+    title: "Current World Visual Condition Contract",
+    command: ["npm", ["run", "check:current-world-visual-conditions"]],
+  },
+  {
+    id: "project_owned_complete_world_model_contract",
+    title: "Project-Owned Complete-World Model Contract",
+    command: ["npm", ["run", "check:project-owned-complete-world-model"]],
+  },
+  {
+    id: "current_world_visual_inference",
+    title: "Project-Owned Current World Visual Inference",
+    command: ["npm", ["run", "run:current-world-visual-inference"]],
+  },
+  {
+    id: "post_review_data_sufficiency_audit",
+    title: "Post-Review Complete Map Data Sufficiency Audit",
+    command: ["npm", ["run", "audit:complete-map-data-sufficiency"]],
+  },
+  {
+    id: "post_review_dataset_package",
+    title: "Post-Review Complete Map Dataset Package",
+    command: ["npm", ["run", "build:current-complete-map-dataset-package"]],
+  },
+  {
+    id: "post_review_dataset_package_contract",
+    title: "Post-Review Dataset Package Contract",
+    command: ["npm", ["run", "check:current-complete-map-dataset-package"]],
   },
   {
     id: "model_training_alignment",
@@ -74,6 +159,15 @@ const plan = [
 
 const readOnlyCheckIds = new Set([
   "world_visual_dictionary",
+  "world_connectivity_contract",
+  "world_connectivity_proposal_contract",
+  "earth_reference_world_connectivity_blueprint_contract",
+  "current_world_connectivity_migration_contract",
+  "complete_map_sample_registry",
+  "project_owned_training_data_ip_policy",
+  "complete_map_dataset_package_contract",
+  "world_visual_condition_contract",
+  "project_owned_complete_world_model_contract",
   "model_training_alignment",
   "training_data_persistence",
   "admin_backend_automation",
@@ -125,10 +219,25 @@ const dataGapReport = readDataGapReport()
 const latestTaskPackage = readJson(
   path.join(ROOT, ".runtime", "ai-painter", "world-visual-generation-task-packages", "latest.json"),
 )
+const latestConditionManifest = latestTaskPackage?.taskPath
+  ? readJson(path.join(ROOT, path.dirname(latestTaskPackage.taskPath), "compiled-conditions", "manifest.json"))
+  : null
+const latestBootstrapInference = readJson(
+  path.join(ROOT, ".runtime", "ai-painter", "complete-world-visual-bootstrap-inference", "latest.json"),
+)
+const latestBootstrapReview = readJson(
+  path.join(ROOT, ".runtime", "ai-painter", "complete-world-visual-machine-reviews", "latest.json"),
+)
+const latestProjectOwnedInferenceFailure = readJson(
+  path.join(ROOT, ".runtime", "ai-painter", "complete-world-visual-inference", "failures", "latest.json"),
+)
+const worldProfileGate = readCurrentWorldProfileGate()
+const worldConnectivityGate = readWorldConnectivityGate()
+const pixelOutputGate = readPixelOutputGate()
 const generationPipeline = {
-  status: "not_implemented",
+  status: "implemented_blocked_until_project_owned_checkpoint",
   passed: false,
-  reason: "complete_world_visual_inference_not_implemented",
+  reason: latestProjectOwnedInferenceFailure?.blockers?.[0] ?? "complete_world_visual_inference_not_implemented",
   taskPackage: latestTaskPackage
     ? {
         status: "implemented",
@@ -138,13 +247,60 @@ const generationPipeline = {
         inferenceStatus: latestTaskPackage.inferenceStatus,
       }
     : { status: "missing" },
-  requiredNextArtifact: "complete_world_visual_inference_runner",
+  conditionCompiler: latestConditionManifest
+    ? {
+        status: latestConditionManifest.status === "compiled_conditions_ready" ? "implemented" : "failed",
+        conditionPackId: latestConditionManifest.conditionPackId,
+        manifestPath: path.join(path.dirname(latestTaskPackage.taskPath), "compiled-conditions", "manifest.json").replace(/\\/g, "/"),
+        channelCount: latestConditionManifest.channelCount,
+        outputKind: latestConditionManifest.outputKind,
+        generatesPlayerFacingPixels: latestConditionManifest.generatesPlayerFacingPixels,
+      }
+    : { status: "missing" },
+  historicalThirdPartyBootstrap: latestBootstrapInference
+    ? {
+        status: "isolated_historical_evidence_only",
+        runId: latestBootstrapInference.runId,
+        taskId: latestBootstrapInference.taskId,
+        imagePath: latestBootstrapInference.outputImagePath,
+        imageSha256: latestBootstrapInference.outputImageSha256,
+        candidateStatus: latestBootstrapInference.candidateStatus,
+        canEnterWorld: false,
+      }
+    : { status: "missing" },
+  historicalThirdPartyBootstrapReview: latestBootstrapReview
+    ? {
+        status: latestBootstrapReview.status,
+        reviewId: latestBootstrapReview.reviewId,
+        passed: latestBootstrapReview.passed === true,
+        reviewPath: latestBootstrapReview.reviewPath,
+        issueCodes: Array.isArray(latestBootstrapReview.issues)
+          ? latestBootstrapReview.issues.map((issue) => issue.code)
+          : [],
+        canEnterWorld: false,
+      }
+    : { status: "missing" },
+  projectOwnedInferenceFailure: latestProjectOwnedInferenceFailure
+    ? {
+        status: latestProjectOwnedInferenceFailure.status,
+        failureId: latestProjectOwnedInferenceFailure.failureId,
+        blockers: latestProjectOwnedInferenceFailure.blockers ?? [],
+        thirdPartyWeightsLoaded: latestProjectOwnedInferenceFailure.thirdPartyWeightsLoaded,
+        candidateGenerated: latestProjectOwnedInferenceFailure.candidateGenerated,
+        failurePath: latestProjectOwnedInferenceFailure.failurePath,
+      }
+    : { status: "missing", blockers: ["project_owned_inference_failure_record_missing"] },
+  requiredNextArtifact: "project_owned_complete_world_checkpoint",
 }
 
 if (ownerGate.status !== "passed") blocked = true
 if (formalGate.status !== "passed") blocked = true
 if (dataGapReport.status !== "sufficient") blocked = true
+if (generationPipeline.conditionCompiler.status !== "implemented") blocked = true
 if (generationPipeline.status !== "implemented") blocked = true
+if (worldProfileGate.status !== "passed") blocked = true
+if (worldConnectivityGate.status !== "passed") blocked = true
+if (pixelOutputGate.status !== "passed") blocked = true
 
 const report = {
   schemaVersion: "complete-game-world-main-run-v1",
@@ -169,13 +325,16 @@ const report = {
   executedStages: steps.map((step) => ({ id: step.id, status: step.status, command: step.command })),
   status: blocked ? "blocked_preflight_or_generation" : "generated_waiting_owner_final_acceptance",
   canEnterWorld: !blocked && ownerGate.status === "passed" && generationPipeline.status === "implemented",
-  blockers: collectBlockers(steps, ownerGate, formalGate, dataGapReport, generationPipeline),
+  blockers: collectBlockers(steps, ownerGate, formalGate, dataGapReport, generationPipeline, worldProfileGate, worldConnectivityGate, pixelOutputGate),
   checks: steps,
   gates: {
     formalGate,
     ownerGate,
     dataGapReport,
     generationPipeline,
+    worldProfileGate,
+    worldConnectivityGate,
+    pixelOutputGate,
   },
   latestRuntimeFrame: {
     recordId: latestRuntimeFrame?.recordId ?? null,
@@ -365,14 +524,120 @@ function readDataGapReport() {
   }
 }
 
-function collectBlockers(steps, ownerGate, formalGate, dataGapReport, generationPipeline) {
-  return [
+function collectBlockers(steps, ownerGate, formalGate, dataGapReport, generationPipeline, worldProfileGate, worldConnectivityGate, pixelOutputGate) {
+  return [...new Set([
     ...steps.filter((step) => step.status === "failed").map((step) => `${step.id}_failed`),
     ownerGate.status === "passed" ? null : `owner_review_${ownerGate.status}`,
     formalGate.status === "passed" ? null : `formal_gate_${formalGate.status}`,
     dataGapReport.status === "sufficient" ? null : `data_gap_${dataGapReport.status}`,
+    generationPipeline.conditionCompiler.status === "implemented" ? null : "world_visual_condition_compiler_missing",
+    ...(generationPipeline.projectOwnedInferenceFailure.blockers ?? []),
     generationPipeline.status === "implemented" ? null : generationPipeline.reason,
+    ...(worldProfileGate.blockers ?? []),
+    ...(worldConnectivityGate.blockers ?? []),
+    ...(pixelOutputGate.blockers ?? []),
+  ].filter(Boolean))]
+}
+
+function readWorldConnectivityGate() {
+  const contractPath = path.join(ROOT, "data", "world-samples", "world-connectivity", "world-connectivity-contract-v1.json")
+  const coveragePath = path.join(ROOT, "data", "world-samples", "original-image-library", "natural-home-v1", "coverage-blueprint.json")
+  const blueprintLatestPath = path.join(ROOT, "data", "world-samples", "world-connectivity", "blueprints", "latest.json")
+  const migrationLatestPath = path.join(ROOT, ".runtime", "world-connectivity-migrations", "latest.json")
+  const ownerReviewLatestPath = path.join(ROOT, ".runtime", "world-connectivity-owner-reviews", "latest.json")
+  const worldPointerPath = path.join(ROOT, "data", "world-runtime", "latest-world.json")
+  const contract = readJson(contractPath)
+  const coverage = readJson(coveragePath)
+  const blueprintLatest = readJson(blueprintLatestPath)
+  const blueprint = blueprintLatest?.blueprintPath ? readJson(path.join(ROOT, blueprintLatest.blueprintPath)) : null
+  const migration = readJson(migrationLatestPath)
+  const ownerReview = readJson(ownerReviewLatestPath)
+  const worldPointer = readJson(worldPointerPath)
+  const world = worldPointer?.path ? readJson(worldPointer.path) : null
+  const contractValid = contract?.contractId === "natural-home-large-world-connectivity-v1"
+    && contract?.authority?.visualCanDefineTopology === false
+    && contract?.authority?.mechanicalImageCompositionAllowed === false
+    && coverage?.worldConnectivityContract?.contractId === contract.contractId
+  const blueprintDefined = contract?.scope?.firstMvpRegionConnectivityBlueprintDefined === true
+    && blueprint?.blueprintId === contract.scope.firstMvpRegionConnectivityBlueprintId
+    && blueprint?.status === "owner_directed_earth_reference_ready_for_runtime_migration"
+  const connectivityStatus = world?.homeMapState?.worldConnectivity?.status
+  const runtimeMigrated = migration?.status === "runtime_migration_completed_pending_owner_review"
+    && migration?.passed === true
+    && migration?.blueprintId === blueprint?.blueprintId
+    && world?.homeMapState?.worldConnectivity?.blueprintId === blueprint?.blueprintId
+    && ["runtime_migrated_pending_owner_review", "runtime_migrated_owner_approved"].includes(connectivityStatus)
+  const ownerReviewApproved = connectivityStatus === "runtime_migrated_owner_approved"
+    && ownerReview?.status === "owner_approved"
+    && ownerReview?.decision === "approved"
+    && ownerReview?.reviewId === world?.homeMapState?.worldConnectivity?.ownerReview?.reviewId
+    && ownerReview?.targetTick === world?.tick
+  const coverageThresholdsApproved = contract?.scope?.minimumConnectivityCountsApproved === true
+  const blockers = [
+    contractValid ? null : "world_connectivity_contract_invalid",
+    blueprintDefined ? null : "world_connectivity_blueprint_missing",
+    runtimeMigrated ? null : "world_connectivity_runtime_migration_pending",
+    ownerReviewApproved ? null : "world_connectivity_owner_review_pending",
+    coverageThresholdsApproved ? null : "world_connectivity_coverage_thresholds_pending",
   ].filter(Boolean)
+  return {
+    status: blockers.length === 0 ? "passed" : "blocked",
+    passed: blockers.length === 0,
+    contractId: contract?.contractId ?? null,
+    contractPath: projectRelative(contractPath),
+    firstMvpRegionConnectivityBlueprintDefined: blueprintDefined,
+    blueprintId: blueprint?.blueprintId ?? null,
+    blueprintPath: blueprintLatest?.blueprintPath ?? null,
+    runtimeMigrationStatus: ownerReviewApproved
+      ? "runtime_migrated_owner_approved"
+      : runtimeMigrated
+        ? "runtime_migration_completed_pending_owner_review"
+        : blueprint?.runtimeMigration?.status ?? "missing",
+    runtimeMigrationReportPath: runtimeMigrated ? projectRelative(migrationLatestPath) : null,
+    ownerReviewStatus: ownerReviewApproved ? "owner_approved" : "pending",
+    ownerReviewPath: ownerReviewApproved ? projectRelative(ownerReviewLatestPath) : null,
+    coverageThresholdsApproved,
+    qualifiedConnectivityRecordCount: coverage?.connectivityCoverage?.currentQualifiedRecordCount ?? 0,
+    blockers,
+  }
+}
+
+function readCurrentWorldProfileGate() {
+  const library = readJson(path.join(ROOT, "data", "world-samples", "original-image-library", "natural-home-v1", "library.json"))
+  const profile = library?.currentWorldProfilePath ? readJson(path.join(ROOT, library.currentWorldProfilePath)) : null
+  const snapshot = library?.provisionalVisualSnapshotPath ? readJson(path.join(ROOT, library.provisionalVisualSnapshotPath)) : null
+  const aligned = Boolean(profile?.worldProfileId && snapshot?.worldProfileId === profile.worldProfileId)
+  const parametersVersioned = profile?.earthParameterSnapshot?.status === "versioned_ready"
+  const blockers = [
+    aligned ? null : "current_world_profile_contract_invalid",
+    parametersVersioned ? null : "earth_parameter_snapshot_not_versioned",
+  ].filter(Boolean)
+  return {
+    status: blockers.length === 0 ? "passed" : "blocked",
+    passed: blockers.length === 0,
+    worldProfileId: profile?.worldProfileId ?? null,
+    profilePath: library?.currentWorldProfilePath ?? null,
+    snapshotPath: library?.provisionalVisualSnapshotPath ?? null,
+    parametersVersioned,
+    blockers,
+  }
+}
+
+function readPixelOutputGate() {
+  const configPath = path.join(ROOT, "ml", "ai-painter", "config", "complete-world-independent-v1.json")
+  const config = readJson(configPath)
+  const passed = config?.imageSize?.width === 1024
+    && config?.imageSize?.height === 768
+    && config?.training?.resolutionStages?.length === 3
+    && config.training.resolutionStages[2]?.width === 1024
+    && config.training.resolutionStages[2]?.height === 768
+  return {
+    status: passed ? "passed" : "blocked",
+    passed,
+    nativeSize: config?.imageSize ?? null,
+    visualContract: { style: "high_resolution_pixel_style", lowResolutionUpscaleAllowed: false },
+    blockers: passed ? [] : ["high_resolution_pixel_style_output_contract_not_implemented"],
+  }
 }
 
 function appendLedger(report) {

@@ -1,6 +1,11 @@
 import crypto from "node:crypto"
 import { access, mkdir, readFile, readdir, writeFile } from "node:fs/promises"
 import path from "node:path"
+import sharp from "sharp"
+import {
+  SAMPLE_SCHEMA_VERSION,
+  validateRegisteredSampleRecord,
+} from "./lib/complete-map-training-sample-contract.mjs"
 
 const root = process.cwd()
 const blueprintPointerPath = path.join(root, "data/world-samples/dataset-blueprints/latest-natural-home-complete-map.json")
@@ -19,6 +24,7 @@ const sourcePaths = {
   runtimeFrameCandidates: ".runtime/game-map-runtime-frame-candidates",
   materialSlotInferenceRuns: ".runtime/game-map-material-slot-inference-runs",
   trainingArchive: ".runtime/ai-painter/training-run-archive",
+  formalSampleRegistry: "data/world-samples/registry",
   routedExistingEvidence: "data/world-samples/routed-existing-evidence/natural-home-complete-map-v0.2",
   transitionCandidateCrops: "data/world-samples/transition-candidates/natural-home-complete-map-v0.2",
 }
@@ -58,7 +64,7 @@ const candidateRecordFiles = unique([
   ...sourceFiles.ownerRejectedCompleteFrames,
   ...sourceFiles.worldSamples,
   ...sourceFiles.reviewDiagnostics,
-]).filter((file) => file.endsWith(".json"))
+]).filter((file) => file.endsWith(".json") && isAuditableRecordPath(file))
 
 const validation = {
   completeMapPositive: [],
@@ -72,6 +78,8 @@ const validation = {
   judgeGapRecords: [],
 }
 const rejectedRecords = []
+const perceptualDuplicateRecords = []
+const historicalOrNonIndependentRecords = []
 
 for (const file of candidateRecordFiles) {
   const record = await readJsonIfExists(file)
@@ -81,6 +89,16 @@ for (const file of candidateRecordFiles) {
   const checked = await validateSampleRecord(record, file, currentDictionaryVersion)
   for (const classification of classifications) {
     if (checked.valid) {
+      const independent = validateIndependentTrainingEligibility(record)
+      if (!independent.eligible) {
+        historicalOrNonIndependentRecords.push({
+          classification,
+          recordPath: projectPath(file),
+          sampleId: checked.sampleId,
+          reasons: independent.reasons,
+        })
+        continue
+      }
       validation[classification].push({
         sampleId: checked.sampleId,
         imageSha256: checked.imageSha256,
@@ -99,7 +117,7 @@ for (const file of candidateRecordFiles) {
 }
 
 for (const key of Object.keys(validation)) {
-  validation[key] = dedupeValidatedSamples(validation[key])
+  validation[key] = await dedupeValidatedSamples(validation[key], key)
 }
 
 const observed = Object.fromEntries(Object.entries(validation).map(([key, records]) => [key, records.length]))
@@ -122,10 +140,13 @@ const audit = {
       "unique_sample_id",
       "existing_image",
       "matching_image_sha256",
+      "perceptually_distinct_image",
       "formal_sample_type",
       "required_labels",
       "review_status",
       "current_dictionary_version",
+      "independent_training_eligibility",
+      "no_upstream_generation_weights_or_outputs",
     ],
     forbiddenCounters: ["raw_file_count", "json_file_count", "path_keyword_match", "latest_alias_count"],
   },
@@ -138,13 +159,19 @@ const audit = {
   validatedSamples: validation,
   invalidSampleRecordCount: rejectedRecords.length,
   invalidSampleRecords: rejectedRecords.slice(0, 200),
+  perceptualDuplicateRecordCount: perceptualDuplicateRecords.length,
+  perceptualDuplicateRecords: perceptualDuplicateRecords.slice(0, 200),
+  historicalOrNonIndependentRecordCount: historicalOrNonIndependentRecords.length,
+  historicalOrNonIndependentRecords: historicalOrNonIndependentRecords.slice(0, 200),
   gates,
   blockingGates,
   importantNotes: [
     "A JSON record without a retained image and matching image hash is not a visual training sample.",
     "Aliases, latest pointers, and historical copies are deduplicated by sample id and image hash.",
+    "Perceptually near-identical noise variants are retained as records but counted once for data sufficiency.",
     "Path names are never used as transition or judge-gap labels.",
     "Material-slot images and pending candidates are not complete-map positives.",
+    "Third-party or legacy model outputs remain historical evidence and are excluded from independent-model training counts.",
   ],
 }
 
@@ -170,6 +197,7 @@ function classifyRecord(record) {
   const type = record.sampleType
   if (type === "complete_map_positive") return ["completeMapPositive"]
   if (type === "negative_sample" && record.sampleScope === "complete_map") return ["completeMapNegative"]
+  if (type === "machine_negative" && record.sampleScope === "complete_map") return ["completeMapNegative"]
   if (type === "judge_gap_record") return ["judgeGapRecords"]
   if (type !== "transition_sample") return []
   const suffix = record.polarity === "positive" ? "Positive" : record.polarity === "negative" ? "Negative" : null
@@ -180,12 +208,32 @@ function classifyRecord(record) {
   return []
 }
 
+function validateIndependentTrainingEligibility(record) {
+  const reasons = []
+  if (record.independentTrainingEligible !== true) reasons.push("independent_training_eligible_not_explicit")
+  if (record.trainingDataProvenance !== "independent-training-eligible") reasons.push("independent_training_provenance_missing")
+  if (record.sourceType === "local_model_generated") {
+    if (record.modelOwnership !== "project_owned_independent_weights") reasons.push("model_weights_not_independently_owned")
+    if (!Array.isArray(record.upstreamModelIds) || record.upstreamModelIds.length !== 0) reasons.push("upstream_model_dependency_present_or_unknown")
+    if (record.thirdPartyGeneratedTrainingOutputUsed !== false) reasons.push("third_party_generated_training_output_status_not_clear")
+  }
+  return { eligible: reasons.length === 0, reasons }
+}
+
+function isAuditableRecordPath(file) {
+  const normalized = file.replace(/\\/g, "/")
+  if (!normalized.includes("/data/world-samples/registry/")) return true
+  return normalized.includes("/records/")
+}
+
 async function validateSampleRecord(record, recordPath, dictionaryVersionId) {
   const reasons = []
   const sampleId = stringValue(record.sampleId)
   const imageRef = stringValue(record.imagePath)
   const expectedHash = stringValue(record.imageSha256 ?? record.sha256)
   const recordDictionary = stringValue(record.dictionaryVersionId ?? record.dictionaryVersion)
+  if (record.schemaVersion !== SAMPLE_SCHEMA_VERSION) reasons.push("formal_sample_schema_missing_or_invalid")
+  else reasons.push(...validateRegisteredSampleRecord(record, dictionaryVersionId))
   if (!sampleId) reasons.push("sample_id_missing")
   if (!imageRef || !isImage(imageRef)) reasons.push("image_path_missing_or_not_image")
   if (!/^[a-f0-9]{64}$/i.test(expectedHash)) reasons.push("image_sha256_missing_or_invalid")
@@ -208,6 +256,11 @@ async function validateSampleRecord(record, recordPath, dictionaryVersionId) {
     sampleId,
     imageSha256: expectedHash.toLowerCase(),
     imagePath: imagePath ? projectPath(imagePath) : null,
+    sampleType: record.sampleType ?? null,
+    split: record.split ?? null,
+    trainingUsage: record.trainingUsage ?? null,
+    blueprintHash: record.blueprintHash ?? null,
+    conditionHashes: record.conditionHashes ?? [],
     reasons,
   }
 }
@@ -216,6 +269,9 @@ function hasRequiredReview(record) {
   if (record.sampleType === "complete_map_positive") return record.ownerApproval?.status === "approved"
   if (record.sampleType === "negative_sample") {
     return Boolean(record.rejectedBy) && record.mustNotTrainAsPositive === true && nonEmpty(record.failureCodes)
+  }
+  if (record.sampleType === "machine_negative") {
+    return record.machineReviewStatus === "machine_rejected" && record.ownerReviewStatus === "not_reached_machine_failed" && record.rejectedBy === "complete_map_machine_review" && record.mustNotTrainAsPositive === true && nonEmpty(record.failureCodes)
   }
   if (record.sampleType === "transition_sample") return ["approved", "rejected"].includes(record.reviewStatus)
   if (record.sampleType === "judge_gap_record") return record.machineDecision === "passed" && record.ownerDecision === "rejected"
@@ -227,20 +283,43 @@ function hasRequiredLabels(record) {
   if (record.sampleType === "negative_sample") {
     return nonEmpty(record.failureCodes) && nonEmpty(record.failureRegions) && nonEmpty(record.rootCauses) && Boolean(record.nextTrainingTask)
   }
+  if (record.sampleType === "machine_negative") {
+    return nonEmpty(record.failureCodes) && nonEmpty(record.failureRegions) && nonEmpty(record.rootCauses) && Boolean(record.nextTrainingTask)
+  }
   if (record.sampleType === "transition_sample") return Boolean(record.transitionId) && nonEmpty(record.failureCodes ?? record.qualityTags)
   if (record.sampleType === "judge_gap_record") return nonEmpty(record.failureCodes) && Boolean(record.sourceReviewRecordId)
   return false
 }
 
-function dedupeValidatedSamples(records) {
+async function dedupeValidatedSamples(records, classification) {
   const seenIds = new Set()
   const seenHashes = new Set()
-  return records.filter((record) => {
-    if (seenIds.has(record.sampleId) || seenHashes.has(record.imageSha256)) return false
+  const accepted = []
+  const thumbnails = []
+  for (const record of records) {
+    if (seenIds.has(record.sampleId) || seenHashes.has(record.imageSha256)) continue
     seenIds.add(record.sampleId)
     seenHashes.add(record.imageSha256)
-    return true
-  })
+    const thumbnail = await readNormalizedThumbnail(record.imagePath)
+    const duplicateIndex = thumbnails.findIndex((existing) => thumbnailDifference(thumbnail, existing) <= 4)
+    if (duplicateIndex >= 0) {
+      perceptualDuplicateRecords.push({ classification, recordPath: record.recordPath, sampleId: record.sampleId, duplicateOfSampleId: accepted[duplicateIndex].sampleId, normalizedThumbnailDifference: thumbnailDifference(thumbnail, thumbnails[duplicateIndex]) })
+      continue
+    }
+    accepted.push(record)
+    thumbnails.push(thumbnail)
+  }
+  return accepted
+}
+
+async function readNormalizedThumbnail(imagePath) {
+  return sharp(path.resolve(root, imagePath), { failOn: "error" }).greyscale().resize(64, 48, { fit: "fill" }).raw().toBuffer()
+}
+
+function thumbnailDifference(left, right) {
+  let total = 0
+  for (let index = 0; index < left.length; index += 1) total += Math.abs(left[index] - right[index])
+  return Math.round((total / left.length) * 10000) / 10000
 }
 
 function resolveEvidencePath(imageRef, recordPath) {

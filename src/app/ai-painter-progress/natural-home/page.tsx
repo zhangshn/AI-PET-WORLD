@@ -52,8 +52,12 @@ export default async function NaturalHomePage({ searchParams }: PageProps) {
     null
   const selectedRecord = selectedIndex ? await hydrateTrainingRecord(selectedIndex) : null
   const pipeline = await buildPipelineLedgerView(records)
-  const selectedCompleteImages = selectedRecord?.previewImages.filter(isCompleteMapImage) ?? []
-  const selectedEvidenceImages = selectedRecord?.previewImages.filter((imagePath) => !isCompleteMapImage(imagePath)) ?? []
+  const selectedCompleteImages = selectedRecord?.previewImages.filter(
+    (imagePath) => isCompleteMapImage(imagePath) || selectedRecord.kind === "完整地图训练样本",
+  ) ?? []
+  const selectedEvidenceImages = selectedRecord?.previewImages.filter(
+    (imagePath) => !selectedCompleteImages.includes(imagePath),
+  ) ?? []
 
   return (
     <main className={styles.page}>
@@ -73,6 +77,21 @@ export default async function NaturalHomePage({ searchParams }: PageProps) {
           <Metric label="阶段台账" value={pipeline.ledgerPath} />
         </dl>
       </header>
+
+      <section className={styles.panel}>
+        <p className={styles.kicker}>TIME SEARCH</p>
+        <h2>按时间搜索训练内容</h2>
+        <TrainingRecordSelector
+          records={records.map((record) => ({
+            id: record.id,
+            label: `${formatDate(record.modifiedAt)} / ${record.kind} / ${record.status} / ${record.name}`,
+          }))}
+          selectedId={selectedRecord?.id ?? ""}
+        />
+        <p className={styles.note}>
+          下拉框选择一条自动保存记录后，只展示该记录对应内容。完整地图图像会进入主展示；局部训练样本只进入证据图，不作为完整地图验收结果。
+        </p>
+      </section>
 
       <section className={styles.panel}>
         <p className={styles.kicker}>FIXED WORLD MAP PIPELINE</p>
@@ -107,21 +126,6 @@ export default async function NaturalHomePage({ searchParams }: PageProps) {
             </Link>
           ))}
         </section>
-      </section>
-
-      <section className={styles.panel}>
-        <p className={styles.kicker}>TIME SEARCH</p>
-        <h2>按时间搜索训练内容</h2>
-        <TrainingRecordSelector
-          records={records.map((record) => ({
-            id: record.id,
-            label: `${formatDate(record.modifiedAt)} / ${record.kind} / ${record.status} / ${record.name}`,
-          }))}
-          selectedId={selectedRecord?.id ?? ""}
-        />
-        <p className={styles.note}>
-          下拉框选择一条自动保存记录后，只展示该记录对应内容。完整地图图像会进入主展示；局部训练样本只进入证据图，不作为完整地图验收结果。
-        </p>
       </section>
 
       {selectedRecord ? (
@@ -374,6 +378,12 @@ async function readTrainingRecords(): Promise<TrainingRecord[]> {
     readArchiveRecords(),
     readMaterialInferenceRecords(),
     readRepairPlanRunRecords(),
+    readFoundationInferenceRecords(),
+    readFoundationMachineReviewRecords(),
+    readFoundationBatchRecords(),
+    readWorldVisualTaskRecords(),
+    readCompleteMapDatasetPackageRecords(),
+    readCompleteMapSampleRecords(),
   ])
   const byId = new Map<string, TrainingRecord>()
   for (const record of groups.flat()) byId.set(record.id, record)
@@ -452,6 +462,94 @@ async function readRepairPlanRunRecords() {
   )
 }
 
+async function readFoundationInferenceRecords() {
+  return readDirectoryRecords(
+    ".runtime/ai-painter/complete-world-visual-bootstrap-inference",
+    "完整地图模型推理",
+    /^(foundation-bootstrap-complete-map-|bootstrap-complete-map-)/,
+  )
+}
+
+async function readFoundationMachineReviewRecords() {
+  return readDirectoryRecords(
+    ".runtime/ai-painter/complete-world-visual-machine-reviews",
+    "完整地图机器审核",
+    /^bootstrap-machine-review-/,
+  )
+}
+
+async function readFoundationBatchRecords() {
+  return readDirectoryRecords(
+    ".runtime/ai-painter/complete-world-visual-foundation-batches",
+    "完整地图自动候选批次",
+    /^foundation-candidate-batch-/,
+  )
+}
+
+async function readWorldVisualTaskRecords() {
+  return readDirectoryRecords(
+    ".runtime/ai-painter/world-visual-generation-task-packages",
+    "完整地图任务包",
+    /^world-visual-task-/,
+  )
+}
+
+async function readCompleteMapDatasetPackageRecords() {
+  return readDirectoryRecords(
+    "data/world-samples/dataset-packages",
+    "完整地图数据包",
+    /^natural-home-complete-map-/,
+  )
+}
+
+async function readCompleteMapSampleRecords(): Promise<TrainingRecord[]> {
+  const dictionaryPointer = await readJsonFile<JsonRecord>(
+    path.join(process.cwd(), "data/world-visual-data-dictionary/latest.json"),
+  )
+  const dictionaryVersionId = stringValue(dictionaryPointer?.dictionaryVersionId)
+  if (!dictionaryVersionId) return []
+  const relativeRoot = `data/world-samples/registry/${dictionaryVersionId}/records`
+  const absoluteRoot = path.join(process.cwd(), relativeRoot)
+  try {
+    const entries = await readdir(absoluteRoot, { withFileTypes: true })
+    const candidates = []
+    for (const entry of entries) {
+      if (!entry.isFile() || !entry.name.endsWith(".json")) continue
+      const absolutePath = path.join(absoluteRoot, entry.name)
+      const info = await stat(absolutePath)
+      candidates.push({ entry, absolutePath, modifiedAtMs: info.mtimeMs })
+    }
+    candidates.sort((left, right) => right.modifiedAtMs - left.modifiedAtMs)
+    const records: TrainingRecord[] = []
+    for (const candidate of candidates.slice(0, 80)) {
+      const json = await readJsonFile<JsonRecord>(candidate.absolutePath)
+      if (!json) continue
+      const relativePath = `${relativeRoot}/${candidate.entry.name}`
+      const imagePath = stringValue(json.imagePath)
+      const createdAt = stringValue(json.createdAtUtc) ?? new Date(candidate.modifiedAtMs).toISOString()
+      records.push({
+        id: relativePath,
+        name: stringValue(json.sampleId) ?? candidate.entry.name,
+        kind: "完整地图训练样本",
+        path: relativePath,
+        modifiedAt: createdAt,
+        status: stringValue(json.sampleType) ?? "saved",
+        evidence: [candidate.entry.name],
+        previewImages: imagePath ? [imagePath] : [],
+        summaryLines: [
+          `sampleType: ${stringValue(json.sampleType) ?? "--"}`,
+          `trainingUsage: ${stringValue(json.trainingUsage) ?? "--"}`,
+          `machineReviewStatus: ${stringValue(json.machineReviewStatus) ?? "--"}`,
+          `ownerReviewStatus: ${stringValue(json.ownerReviewStatus) ?? "--"}`,
+        ],
+      })
+    }
+    return records
+  } catch {
+    return []
+  }
+}
+
 async function readDirectoryRecords(root: string, kind: string, pattern: RegExp): Promise<TrainingRecord[]> {
   const absoluteRoot = path.join(process.cwd(), root)
   try {
@@ -497,6 +595,10 @@ async function latestFileMtimeMs(absolutePath: string, fallback: number) {
     "dataset-summary.json",
     "training-summary.json",
     "manifest.json",
+    "machine-review.json",
+    "batch.json",
+    "task-package.json",
+    "model-report.json",
     "run-report.json",
     "latest.json",
     "material-quality-report.json",
@@ -531,6 +633,7 @@ async function hydrateTrainingRecord(record: TrainingRecord): Promise<TrainingRe
   const previewImages = uniqueStrings([
     ...record.previewImages,
     ...(await collectPreviewImages(absolutePath, record.path)),
+    ...(await collectReferencedImages(absolutePath)),
   ])
   return {
     ...record,
@@ -542,6 +645,10 @@ async function hydrateTrainingRecord(record: TrainingRecord): Promise<TrainingRe
 async function readRecordSummary(absolutePath: string) {
   const candidates = [
     "manifest.json",
+    "machine-review.json",
+    "batch.json",
+    "task-package.json",
+    "model-report.json",
     "run-report.json",
     "material-quality-report.json",
     "latest-material-quality-report.json",
@@ -556,6 +663,37 @@ async function readRecordSummary(absolutePath: string) {
     return summarizeJson(candidate, json)
   }
   return { status: "saved", lines: ["目录已自动保存"] }
+}
+
+async function collectReferencedImages(absolutePath: string) {
+  const candidates = ["manifest.json", "machine-review.json", "batch.json", "task-package.json", "model-report.json"]
+  const images: string[] = []
+  for (const candidate of candidates) {
+    const json = await readJsonFile<unknown>(path.join(absolutePath, candidate))
+    if (!json) continue
+    for (const value of collectStringValues(json)) {
+      const imagePath = normalizeProjectImagePath(value)
+      if (!imagePath || !isPreviewImage(imagePath)) continue
+      if (await fileExists(path.join(process.cwd(), imagePath))) images.push(imagePath)
+      if (images.length >= 18) return uniqueStrings(images)
+    }
+  }
+  return uniqueStrings(images)
+}
+
+function collectStringValues(value: unknown): string[] {
+  if (typeof value === "string") return [value]
+  if (Array.isArray(value)) return value.flatMap(collectStringValues)
+  if (!value || typeof value !== "object") return []
+  return Object.values(value as JsonRecord).flatMap(collectStringValues)
+}
+
+function normalizeProjectImagePath(value: string) {
+  const normalized = value.replace(/\\/g, "/")
+  const cwd = process.cwd().replace(/\\/g, "/")
+  if (normalized.startsWith(`${cwd}/`)) return normalized.slice(cwd.length + 1)
+  if (normalized.startsWith(".runtime/") || normalized.startsWith("data/")) return normalized
+  return null
 }
 
 function summarizeJson(fileName: string, json: JsonRecord) {
@@ -628,6 +766,9 @@ async function collectPreviewImages(absolutePath: string, relativePath: string) 
     "materials/slot-terrain-terrain-terrain-current-water-east.png",
     "materials/slot-terrain-terrain-terrain-current-shoreline-east.png",
     "contact-sheet.png",
+    "candidate.png",
+    "candidate-native-768x576.png",
+    "controlnet-seg-condition.png",
     "generated.png",
     "target.png",
   ]
@@ -759,11 +900,13 @@ function isPreviewImage(filePath: string) {
 
 function isCompleteMapImage(imagePath: string) {
   const normalized = imagePath.toLowerCase().replace(/\\/g, "/")
+  const name = path.basename(normalized)
   return (
     normalized.includes(".runtime/game-map-runtime-compositor/") ||
     normalized.includes(".runtime/game-map-runtime-frame/") ||
     normalized.endsWith("composite-output.png") ||
-    normalized.includes("/images/composite-output.png")
+    normalized.includes("/images/composite-output.png") ||
+    (normalized.includes("/complete-world-visual-bootstrap-inference/") && name === "candidate.png")
   )
 }
 
@@ -771,6 +914,8 @@ function previewImageRank(imagePath: string) {
   const normalized = imagePath.toLowerCase()
   const name = path.basename(normalized)
   if (isCompleteMapImage(imagePath)) return 0
+  if (name === "candidate.png") return 1
+  if (name === "controlnet-seg-condition.png") return 2
   if (name === "contact-sheet.png") return 1
   if (normalized.includes("slot-terrain-terrain-terrain-current-grass-main")) return 2
   if (normalized.includes("slot-terrain-path")) return 3

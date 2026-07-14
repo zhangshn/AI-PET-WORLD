@@ -1,0 +1,84 @@
+{
+  "schemaVersion": "original-image-library-v1",
+  "collectionId": "natural-home-v1",
+  "title": "第一版自然家园原图库",
+  "status": "active_with_ai_assisted_cold_start_records",
+  "updatedAt": "2026-07-14T16:38:11.274Z",
+  "rootPath": "data/world-samples/original-image-library/natural-home-v1",
+  "indexPath": "data/world-samples/original-image-library/natural-home-v1/index.json",
+  "coverageBlueprintPath": "data/world-samples/original-image-library/natural-home-v1/coverage-blueprint.json",
+  "currentWorldProfilePath": "data/world-samples/original-image-library/natural-home-v1/mainland-southeast-asia-tropical-monsoon-profile-v1.json",
+  "currentEarthParameterSnapshotPath": "data/world-samples/original-image-library/natural-home-v1/earth-parameter-snapshots/mainland-southeast-asia-reference-v1/manifest.json",
+  "currentSpeciesCatalogPath": "data/world-samples/original-image-library/natural-home-v1/mainland-southeast-asia-tropical-monsoon-species-catalog-v1.json",
+  "provisionalVisualSnapshotPath": "data/world-samples/original-image-library/natural-home-v1/provisional-visual-snapshot-v2.json",
+  "visualSnapshotPaths": [
+    "data/world-samples/original-image-library/natural-home-v1/provisional-visual-snapshot-v2.json",
+    "data/world-samples/original-image-library/natural-home-v1/provisional-visual-snapshot-late-dry-season-v1.json"
+  ],
+  "parallelVisualKnowledgeCatalogPath": "data/world-samples/original-image-library/natural-home-v1/parallel-visual-knowledge-catalog-v1.json",
+  "recordManifestName": "record.json",
+  "requiredRecordFiles": [
+    "record.json",
+    "source/<original-file>"
+  ],
+  "optionalRecordDirectories": [
+    "layers",
+    "conditions",
+    "rights",
+    "reviews"
+  ],
+  "categories": [
+    {
+      "id": "complete-maps",
+      "title": "完整地图原图",
+      "description": "第一版自然家园完整地图原始视觉，必须绑定完整世界结构、任务包和审核。",
+      "directoryPattern": [
+        "recordId"
+      ]
+    },
+    {
+      "id": "terrain",
+      "title": "地形原图",
+      "description": "草地、道路、水体、水岸和土壤等地形状态原始视觉。",
+      "directoryPattern": [
+        "terrainType",
+        "stateId",
+        "recordId"
+      ]
+    },
+    {
+      "id": "vegetation",
+      "title": "植物原图",
+      "description": "按植物类别、物种、生命周期、季节和健康状态组织的原始视觉。",
+      "directoryPattern": [
+        "plantKind",
+        "speciesId",
+        "lifeStage",
+        "season",
+        "recordId"
+      ],
+      "hierarchySource": "mainland-southeast-asia-tropical-monsoon-species-catalog-v1.json"
+    },
+    {
+      "id": "natural-objects",
+      "title": "自然物品原图",
+      "description": "石头等当前允许自然物品及其环境状态原始视觉。",
+      "directoryPattern": [
+        "objectKind",
+        "stateId",
+        "recordId"
+      ]
+    },
+    {
+      "id": "transitions",
+      "title": "过渡与接地原图",
+      "description": "草地到道路、草地到水岸、对象接地和遮挡关系原始视觉。",
+      "directoryPattern": [
+        "transitionKind",
+        "recordId"
+      ]
+    }
+  ],
+  "recordCount": 25,
+  "aiAssistedColdStartRecordCount": 25
+}

@@ -10,10 +10,13 @@ const worldPointer = readRequiredJson("data/world-runtime/latest-world.json")
 const worldState = readRequiredJson(worldPointer.path)
 const runtimeRecord = readRequiredJson(".runtime/game-map-runtime-frame/latest-runtime-frame.json")
 const runtimeFrame = runtimeRecord.runtimeFrame
+const EXPECTED_WORLD_PROFILE = "mainland-southeast-asia-tropical-monsoon-natural-home-v1"
 assert(runtimeFrame, "latest RuntimeFrame is missing")
 assert(worldState.worldId === runtimeFrame.worldId, "worldId mismatch between world state and RuntimeFrame")
 assert(worldState.ownerId === runtimeFrame.ownerId, "ownerId mismatch between world state and RuntimeFrame")
 assert(worldState.tick === runtimeFrame.tick, "tick mismatch between world state and RuntimeFrame")
+assert(worldState.worldProfileId === EXPECTED_WORLD_PROFILE, "current world profile is not the authorized tropical monsoon MVP profile")
+assert(worldState.homeMapState?.ecologyState?.biomeType === "tropical_monsoon_lowland_foothill_natural_home", "current world biome is not migrated")
 
 const home = worldState.homeMapState ?? {}
 const includedZones = (home.zones ?? []).filter(isCurrentVisualZone).map((zone) => ({
@@ -42,6 +45,7 @@ const includedEcology = (home.ecologyState?.facts ?? []).filter(isCurrentVisualE
   tags: fact.tags ?? [],
   source: "world_state.homeMapState.ecologyState.facts",
 }))
+const includedConnectivity = buildConnectivityVisualFacts(home.worldConnectivity)
 
 const excludedFacts = [
   ...(home.placements ?? []).filter((item) => !isCurrentVisualPlacement(item)).map((item) => excluded(item.id, "placement", exclusionReason(item))),
@@ -55,6 +59,7 @@ const visualFacts = [
   ...includedZones,
   ...includedPlacements,
   ...includedEcology,
+  ...includedConnectivity,
 ]
 const visualFactIds = [...new Set(visualFacts.map((fact) => fact.factId))]
 const forbiddenFactIds = new Set(excludedFacts.map((fact) => fact.factId))
@@ -68,6 +73,17 @@ const structureBindings = {
   objectRecords: runtimeFrame.layers.objects.map((item) => ({ structureRecordId: item.sourceObjectId, kind: item.kind, position: item.position, footprint: item.footprint })),
   walkableRecords: runtimeFrame.layers.walkable,
   collisionRecords: runtimeFrame.layers.collision,
+  connectivity: runtimeFrame.structure?.connectivity ?? home.worldConnectivity
+    ? {
+        contractId: home.worldConnectivity?.contractId ?? null,
+        blueprintId: home.worldConnectivity?.blueprintId ?? null,
+        regionId: home.worldConnectivity?.currentRegion?.regionId ?? null,
+        activeEdgePortIds: home.worldConnectivity?.currentRegion?.edgePorts ?? [],
+        pathGraphId: home.worldConnectivity?.pathGraph?.pathGraphId ?? null,
+        hydrologyGraphId: home.worldConnectivity?.hydrologyGraph?.hydrologyGraphId ?? null,
+        walkableGraphId: home.worldConnectivity?.walkableGraph?.walkableGraphId ?? null,
+      }
+    : null,
   note: "Structure records constrain placement and geometry; they are not reclassified as world source facts.",
 }
 
@@ -82,6 +98,8 @@ const manifest = {
   worldId: worldState.worldId,
   ownerId: worldState.ownerId,
   tick: worldState.tick,
+  worldProfileId: worldState.worldProfileId,
+  earthParameterSnapshotId: worldState.earthParameterSnapshotId,
   scope: "single_complete_natural_home_map",
   source: {
     worldStatePath: projectPath(worldPointer.path),
@@ -117,10 +135,75 @@ const manifest = {
     zones: includedZones.length,
     placements: includedPlacements.length,
     ecologyFacts: includedEcology.length,
+    connectivityFacts: includedConnectivity.length,
     excludedFacts: excludedFacts.length,
     structureTerrainRecords: structureBindings.terrainRecords.length,
     structureObjectRecords: structureBindings.objectRecords.length,
   },
+}
+
+function buildConnectivityVisualFacts(connectivity) {
+  if (!connectivity) return []
+  return [
+    {
+      factId: connectivity.contractId,
+      factType: "world_connectivity_contract",
+      semanticType: "large_world_connectivity",
+      source: "world_state.homeMapState.worldConnectivity",
+    },
+    {
+      factId: connectivity.blueprintId,
+      factType: "world_connectivity_blueprint",
+      semanticType: "earth_reference_region_topology",
+      source: "world_state.homeMapState.worldConnectivity",
+    },
+    {
+      factId: connectivity.currentRegion.regionId,
+      factType: "world_region",
+      semanticType: connectivity.currentRegion.regionalLandscapeType,
+      bounds: connectivity.currentRegion.localBounds,
+      source: "world_state.homeMapState.worldConnectivity.currentRegion",
+    },
+    ...connectivity.neighborRegionStubs.map((neighbor) => ({
+      factId: neighbor.regionId,
+      factType: "neighbor_region",
+      semanticType: neighbor.topologyRole,
+      relativePosition: neighbor.relativePosition,
+      generationStatus: neighbor.generationStatus,
+      source: "world_state.homeMapState.worldConnectivity.neighborRegionStubs",
+    })),
+    ...connectivity.edgePorts
+      .filter((port) => port.regionId === connectivity.currentRegion.regionId)
+      .map((port) => ({
+        factId: port.edgePortId,
+        factType: "world_edge_port",
+        semanticType: port.kind,
+        boundarySide: port.boundarySide,
+        boundaryPosition: port.boundaryPosition,
+        direction: port.direction,
+        width: port.width,
+        role: port.role,
+        source: "world_state.homeMapState.worldConnectivity.edgePorts",
+      })),
+    {
+      factId: connectivity.pathGraph.pathGraphId,
+      factType: "world_path_graph",
+      semanticType: "walkable_region_connection",
+      source: "world_state.homeMapState.worldConnectivity.pathGraph",
+    },
+    {
+      factId: connectivity.hydrologyGraph.hydrologyGraphId,
+      factType: "world_hydrology_graph",
+      semanticType: connectivity.hydrologyGraph.flowAxis,
+      source: "world_state.homeMapState.worldConnectivity.hydrologyGraph",
+    },
+    {
+      factId: connectivity.walkableGraph.walkableGraphId,
+      factType: "world_walkable_graph",
+      semanticType: "connected_playable_region",
+      source: "world_state.homeMapState.worldConnectivity.walkableGraph",
+    },
+  ]
 }
 manifest.manifestSha256 = crypto.createHash("sha256").update(JSON.stringify(manifest)).digest("hex")
 
