@@ -61,7 +61,10 @@ function collectEvidence() {
   return {
     ledgerEvents: readLedgerEvents().slice(-200),
     completeMapMachineReviews: collectJsonEvidence(
-      [".runtime/ai-painter/complete-world-visual-machine-reviews"],
+      [
+        ".runtime/ai-painter/complete-world-visual-machine-reviews",
+        "data/world-samples/original-image-library/natural-home-v1",
+      ],
       "machine-review.json",
       80,
     ),
@@ -78,7 +81,14 @@ function collectEvidence() {
       (fileName) => fileName.endsWith("-formal-visual-judge.json") || fileName === "formal-visual-judge.json",
       40,
     ),
-    ownerReviews: collectJsonEvidence([".runtime/game-map-owner-reviews"], "owner-review.json", 40),
+    ownerReviews: collectJsonEvidence(
+      [
+        ".runtime/game-map-owner-reviews",
+        ".runtime/ai-painter/auto-visual-judge-learning/original-image-owner-failures",
+      ],
+      (fileName) => fileName === "owner-review.json" || fileName === "failure-record.json",
+      80,
+    ),
     reviewDiagnostics: collectJsonEvidence([".runtime/game-map-review-diagnostics"], "review-diagnosis.json", 40),
   }
 }

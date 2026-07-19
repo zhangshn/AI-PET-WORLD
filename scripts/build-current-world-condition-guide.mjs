@@ -4,10 +4,12 @@ import path from "node:path"
 import sharp from "sharp"
 
 const ROOT = process.cwd()
-const latest = readJson(".runtime/ai-painter/world-visual-generation-task-packages/latest.json")
-const taskPath = resolveProjectPath(latest.taskPath)
+const taskArg = argumentValue("--task")
+const conditionArg = argumentValue("--condition-pack")
+const latest = taskArg ? null : readJson(".runtime/ai-painter/world-visual-generation-task-packages/latest.json")
+const taskPath = resolveProjectPath(taskArg ?? latest.taskPath)
 const taskDir = path.dirname(taskPath)
-const conditionPackPath = path.join(taskDir, "compiled-conditions", "condition-pack.json")
+const conditionPackPath = resolveProjectPath(conditionArg ?? path.join(taskDir, "compiled-conditions", "condition-pack.json"))
 const conditionPack = readJson(conditionPackPath)
 const width = conditionPack.canvas.width
 const height = conditionPack.canvas.height
@@ -25,7 +27,7 @@ const colors = {
   object_vegetation: [54, 106, 45],
   focal_area: [205, 177, 79],
 }
-const ordered = ["terrain_grass", "terrain_mud_patch", "terrain_tall_grass", "terrain_water", "terrain_shoreline", "terrain_path_ground", "terrain_natural_boundary", "focal_area", "object_vegetation", "object_tree", "object_rock"]
+const ordered = ["terrain_grass", "terrain_mud_patch", "terrain_tall_grass", "terrain_shoreline", "terrain_water", "terrain_path_ground", "terrain_natural_boundary", "focal_area", "object_vegetation", "object_tree", "object_rock"]
 const rgb = Buffer.alloc(width * height * 3, 0)
 for (const id of ordered) {
   const channel = channelMap.get(id)
@@ -74,6 +76,7 @@ writeJson(manifestPath, manifest)
 console.log(JSON.stringify({ ...manifest, manifestPath: projectPath(manifestPath) }, null, 2))
 
 function readJson(value) { return JSON.parse(fs.readFileSync(resolveProjectPath(value), "utf8")) }
+function argumentValue(name) { const index = process.argv.indexOf(name); return index >= 0 ? process.argv[index + 1] : null }
 function resolveProjectPath(value) { const resolved = path.resolve(ROOT, value); assert(resolved === ROOT || resolved.startsWith(`${ROOT}${path.sep}`), `path escapes project: ${value}`); return resolved }
 function projectPath(value) { return path.relative(ROOT, path.resolve(value)).replace(/\\/g, "/") }
 function writeJson(value, body) { fs.writeFileSync(value, `${JSON.stringify(body, null, 2)}\n`, "utf8") }

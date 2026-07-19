@@ -16,6 +16,18 @@ def add_noise(clean_latent, noise, timesteps, alpha_bars):
     return alpha.sqrt() * clean_latent + (1.0 - alpha).sqrt() * noise
 
 
+def velocity_target(clean_latent, noise, timesteps, alpha_bars):
+    alpha = alpha_bars[timesteps].view(-1, 1, 1, 1)
+    return alpha.sqrt() * noise - (1.0 - alpha).sqrt() * clean_latent
+
+
+def recover_from_velocity(noisy_latent, predicted_velocity, timestep: int, alpha_bars):
+    alpha = alpha_bars[timestep]
+    predicted_clean = alpha.sqrt() * noisy_latent - (1.0 - alpha).sqrt() * predicted_velocity
+    predicted_noise = (1.0 - alpha).sqrt() * noisy_latent + alpha.sqrt() * predicted_velocity
+    return predicted_clean, predicted_noise
+
+
 def inference_timesteps(diffusion_steps: int, inference_steps: int, device):
     torch = require_torch()
     return torch.linspace(diffusion_steps - 1, 0, inference_steps, device=device).round().long()
@@ -26,4 +38,11 @@ def deterministic_step(noisy_latent, predicted_noise, timestep: int, previous_ti
     alpha = alpha_bars[timestep]
     previous_alpha = alpha_bars[previous_timestep] if previous_timestep >= 0 else torch.ones((), device=noisy_latent.device)
     predicted_clean = (noisy_latent - (1.0 - alpha).sqrt() * predicted_noise) / alpha.sqrt().clamp_min(1e-6)
+    return previous_alpha.sqrt() * predicted_clean + (1.0 - previous_alpha).sqrt() * predicted_noise
+
+
+def deterministic_velocity_step(noisy_latent, predicted_velocity, timestep: int, previous_timestep: int, alpha_bars):
+    torch = require_torch()
+    previous_alpha = alpha_bars[previous_timestep] if previous_timestep >= 0 else torch.ones((), device=noisy_latent.device)
+    predicted_clean, predicted_noise = recover_from_velocity(noisy_latent, predicted_velocity, timestep, alpha_bars)
     return previous_alpha.sqrt() * predicted_clean + (1.0 - previous_alpha).sqrt() * predicted_noise

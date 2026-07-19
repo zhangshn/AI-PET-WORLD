@@ -22,7 +22,7 @@ const coverage = fs.existsSync(COVERAGE_PATH) ? readJson(COVERAGE_PATH) : null
 
 check(contract?.schemaVersion === "world-connectivity-contract-v1", "world_connectivity_contract_schema_invalid")
 check(contract?.contractId === "natural-home-large-world-connectivity-v1", "world_connectivity_contract_id_invalid")
-check(contract?.status === "active_contract_first_mvp_runtime_owner_approved_pending_coverage", "world_connectivity_contract_status_invalid")
+check(contract?.status === "active_contract_first_mvp_runtime_owner_approved_connectivity_coverage_met", "world_connectivity_contract_status_invalid")
 check(contract?.authority?.visualCanDefineTopology === false, "world_connectivity_visual_authority_invalid")
 check(contract?.authority?.rgbCanCreateWorldFacts === false, "world_connectivity_rgb_authority_invalid")
 check(contract?.authority?.mechanicalImageCompositionAllowed === false, "world_connectivity_composition_rule_invalid")
@@ -30,7 +30,13 @@ check(contract?.scope?.exactWorldTopologyApproved === false, "world_connectivity
 check(contract?.scope?.firstMvpRegionConnectivityBlueprintDefined === true, "world_connectivity_first_mvp_blueprint_not_defined")
 check(contract?.scope?.firstMvpRegionRuntimeMigrated === true, "world_connectivity_runtime_migration_not_recorded")
 check(contract?.scope?.firstMvpRegionConnectivityBlueprintId === "mainland-southeast-asia-earth-reference-natural-home-region-0001-v1", "world_connectivity_first_mvp_blueprint_id_invalid")
-check(contract?.scope?.minimumConnectivityCountsApproved === false, "world_connectivity_unapproved_threshold_claimed")
+check(contract?.scope?.minimumConnectivityCountsApproved === true, "world_connectivity_threshold_approval_missing")
+check(contract?.coverageThresholds?.status === "owner_approved", "world_connectivity_threshold_status_invalid")
+check(contract?.coverageThresholds?.minimumPositiveRecordCount === 27, "world_connectivity_positive_threshold_invalid")
+check(contract?.coverageThresholds?.minimumNegativeRecordCount === 27, "world_connectivity_negative_threshold_invalid")
+check(contract?.coverageThresholds?.minimumPositivePerAxis === 3, "world_connectivity_positive_per_axis_threshold_invalid")
+check(contract?.coverageThresholds?.minimumNegativePerAxis === 3, "world_connectivity_negative_per_axis_threshold_invalid")
+check(contract?.coverageThresholds?.coverageAxes?.length === 9, "world_connectivity_threshold_axis_count_invalid")
 check(contract?.runtimeEvidence?.status === "runtime_migrated_owner_approved", "world_connectivity_runtime_evidence_status_invalid")
 check(contract?.runtimeEvidence?.automaticStorage === true, "world_connectivity_runtime_evidence_storage_invalid")
 check(nonEmpty(contract?.runtimeEvidence?.ownerReviewId), "world_connectivity_owner_review_id_missing")
@@ -57,8 +63,21 @@ for (const code of ["disconnected_region", "unmatched_edge_port", "broken_cross_
 check(coverage?.worldConnectivityContract?.contractId === contract?.contractId, "coverage_connectivity_contract_id_mismatch")
 check(coverage?.worldConnectivityContract?.path === "data/world-samples/world-connectivity/world-connectivity-contract-v1.json", "coverage_connectivity_contract_path_invalid")
 check(coverage?.worldConnectivityContract?.firstMvpRegionConnectivityBlueprintId === contract?.scope?.firstMvpRegionConnectivityBlueprintId, "coverage_connectivity_blueprint_id_mismatch")
-check(coverage?.connectivityCoverage?.minimumThresholdStatus === "pending_owner_approval", "coverage_connectivity_threshold_status_invalid")
-check(coverage?.connectivityCoverage?.currentQualifiedRecordCount === 0, "coverage_connectivity_records_unexpectedly_qualified")
+check(coverage?.connectivityCoverage?.minimumThresholdStatus === "owner_approved", "coverage_connectivity_threshold_status_invalid")
+check(coverage?.connectivityCoverage?.minimumPositiveRecordCount === 27, "coverage_connectivity_positive_threshold_invalid")
+check(coverage?.connectivityCoverage?.minimumNegativeRecordCount === 27, "coverage_connectivity_negative_threshold_invalid")
+check(coverage?.connectivityCoverage?.minimumPositivePerAxis === 3, "coverage_connectivity_positive_per_axis_threshold_invalid")
+check(coverage?.connectivityCoverage?.minimumNegativePerAxis === 3, "coverage_connectivity_negative_per_axis_threshold_invalid")
+check(coverage?.connectivityCoverage?.currentPositiveRecordCount === 27, "coverage_connectivity_positive_record_count_invalid")
+check(coverage?.connectivityCoverage?.currentNegativeRecordCount === 27, "coverage_connectivity_negative_record_count_invalid")
+check(coverage?.connectivityCoverage?.thresholdMet === true, "coverage_connectivity_threshold_not_met")
+check(coverage?.connectivityCoverage?.currentQualifiedRecordCount === 54, "coverage_connectivity_record_count_invalid")
+check(nonEmpty(coverage?.connectivityCoverage?.coverageManifestPath), "coverage_connectivity_manifest_path_missing")
+check(nonEmpty(coverage?.connectivityCoverage?.coverageManifestSha256), "coverage_connectivity_manifest_hash_missing")
+for (const axis of contract?.trainingCoverageAxes ?? []) {
+  check(coverage?.connectivityCoverage?.axisCounts?.[axis]?.positive === 3, `coverage_connectivity_positive_axis_count_invalid:${axis}`)
+  check(coverage?.connectivityCoverage?.axisCounts?.[axis]?.negative === 3, `coverage_connectivity_negative_axis_count_invalid:${axis}`)
+}
 for (const axis of ["connectivityBlueprintId", "regionId", "edgePortIds", "pathGraphId", "hydrologyGraphId", "walkableGraphId"]) {
   check(coverage?.coverageAxes?.["complete-maps"]?.includes(axis), `coverage_connectivity_axis_missing:${axis}`)
 }
@@ -78,6 +97,10 @@ const result = {
   topologyBlueprintStatus: contract?.status ?? null,
   firstMvpRegionConnectivityBlueprintId: contract?.scope?.firstMvpRegionConnectivityBlueprintId ?? null,
   qualifiedConnectivityRecordCount: coverage?.connectivityCoverage?.currentQualifiedRecordCount ?? null,
+  minimumPositiveRecordCount: coverage?.connectivityCoverage?.minimumPositiveRecordCount ?? null,
+  minimumNegativeRecordCount: coverage?.connectivityCoverage?.minimumNegativeRecordCount ?? null,
+  minimumPerAxis: coverage?.connectivityCoverage?.minimumPositivePerAxis ?? null,
+  coverageThresholdMet: coverage?.connectivityCoverage?.thresholdMet ?? false,
   failures,
 }
 console[failures.length ? "error" : "log"](JSON.stringify(result, null, 2))

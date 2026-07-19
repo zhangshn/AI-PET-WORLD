@@ -5,8 +5,12 @@ import sharp from "sharp"
 
 const ROOT = process.cwd()
 const TASK_ROOT = path.join(ROOT, ".runtime", "ai-painter", "world-visual-generation-task-packages")
-const latestTask = readRequiredJson(path.join(TASK_ROOT, "latest.json"))
-const taskPath = resolveProjectPath(latestTask.taskPath)
+const explicitTaskPath = argumentValue("--task")
+const explicitManifestPath = argumentValue("--task-manifest")
+const latestTask = explicitManifestPath
+  ? readRequiredJson(resolveProjectPath(explicitManifestPath))
+  : readRequiredJson(path.join(TASK_ROOT, "latest.json"))
+const taskPath = resolveProjectPath(explicitTaskPath ?? latestTask.taskPath)
 const task = readRequiredJson(taskPath)
 const taskDir = path.dirname(taskPath)
 const outputDir = path.join(taskDir, "compiled-conditions")
@@ -451,6 +455,11 @@ function resolveProjectPath(filePath) {
   const resolved = path.resolve(ROOT, filePath)
   assert(resolved === ROOT || resolved.startsWith(`${ROOT}${path.sep}`), `path escapes project root: ${filePath}`)
   return resolved
+}
+
+function argumentValue(name) {
+  const index = process.argv.indexOf(name)
+  return index >= 0 ? process.argv[index + 1] ?? null : null
 }
 
 function readRequiredJson(filePath) {

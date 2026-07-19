@@ -1,6 +1,6 @@
 # 训练数据与来源正式规则
 
-更新时间：2026-07-14 07:04:00 +08:00
+更新时间：2026-07-19 11:53:41 +08:00
 
 状态：active-architecture / 当前数据缺口硬门禁 / 正式样本仍不足
 
@@ -12,7 +12,15 @@
 
 程序可以生成世界事实、Blueprint、Mask、距离图、对象实例图、可走层、碰撞层和调试预览；程序直绘图不能作为专业完整地图正样本，也不能进入 `/world`。
 
-第一版正式 RGB 训练目标采用原生 `1024×768` 2D 高分辨率像素风完整画布。完整地图原图必须具备统一视角、世界尺度、对象比例、像素纹理语言、轮廓、光照、接地、遮挡和游戏可读性；普通数字插画、仅套像素滤镜的图片、低分辨率自动放大图、tile/sprite 拼接图均不能获得正式原图资格。训练可以使用渐进分辨率，但最终目标图、审核图和 Runtime 图只计原生 `1024×768` 文件一次。
+第一版正式本地模型 RGB target 采用原生 `1024×768` 2D 高分辨率像素风完整画布。正式 target、正式候选、owner review 和 Runtime 必须具备统一视角、世界尺度、对象比例、像素纹理语言、轮廓、光照、接地、遮挡和游戏可读性；普通数字插画、仅套像素滤镜的图片、低分辨率自动放大图、tile/sprite 拼接图均不能取得正式资格。训练内部可以使用渐进分辨率，但最终正式输出只计本地模型原生 `1024×768` 文件一次。
+
+完整地图训练资格同时要求完整地图范围。只有单一河段、单一道路、单一池塘、单一林间空地、单一材质范围或放大局部生态单元的全画布图片，统一标记为 `local_scene_not_complete_map`；即使尺寸、来源、hash、23通道和像素风检查通过，也不得计入完整地图 target、`completeMapPositive` 或自主生成训练原图。此类图片只能作为局部视觉知识、负样本或审核失败证据保存。完整地图必须绑定整体入口/出口关系、家园中心、连续道路组织、多个可辨识空间或生态分区、自然边界和大世界连接语义；水体只按当前世界事实出现，不得把东南亚档案解释成固定水体构图模板。
+
+任何新 RGB 的生成都要求“正式文档具体任务 + 项目所有者本轮明确命令”双重授权。程序不得因样本不足、编号空缺、蓝图待处理、失败修复或自动循环而自行出图或批量出图；范围不明、重复风险、局部图风险和待人工审核状态均必须在调用生成算力前阻断。
+
+冷启动基础完整地图原图必须先作为集合建立版本化完整地图视觉标准，不能只用于页面展示，也不能逐张作为后续生成器的图片参考。该标准只能保存经来源与审核身份约束的聚合数值、结构统计和文字契约；至少覆盖镜头/世界尺度、整体构图层次、入口—中心—道路关系、空间与生态分区、水体分布变化、对象尺寸/密度及像素视觉语法。后续条件训练样本仍必须由当前世界事实、世界导演、23通道与本轮新 RGB 真实配对形成。历史完整地图 RGB 不得用于反推世界事实或复制构图。
+
+数据一致性要求固定为“视觉语言统一、构图样本多样”。使用相同水体、道路、分区和整体布局，仅替换植被、颜色、天气或装饰，不能计作新的完整地图正样本；必须写入 `complete_map_composition_diversity_failed` 或对应重复记录。
 
 ## 2. 允许的视觉来源
 
@@ -23,11 +31,13 @@
 | 项目独立权重模型生成且 owner approved 的完整地图 | 完成独立来源审计后可作为正样本 |
 | 项目独立权重模型生成且 owner rejected 的图片 | 只能进入负样本或隔离区 |
 | 外部图片或外部模型输出 | 默认禁止；只有项目所有者明确改变来源政策并完成许可审计后才能使用 |
-| OpenAI 或其他在线生成图片 | 当前正式训练链禁止 |
+| OpenAI 或其他在线生成图片 | 严格独立训练链禁止；只有符合 `owner-authorized-ai-assisted-cold-start-v1` 的记录可进入单独 AI 辅助冷启动通道 |
 | 程序规则渲染、占位图、结构预览 | 只能用于结构调试或条件验证，不是专业 RGB 目标 |
 | 来源不明、许可不明、hash 不一致 | `blocked_source` |
 
 项目所有者已明确授权 `owner-authorized-ai-assisted-cold-start-v1`。OpenAI 辅助生成的高分辨率像素风图片可以进入独立的 AI 辅助冷启动通道，但必须标记 `thirdPartyGenerativeModelUsed=true`、`independentTrainingEligible=false`，保存生成器、完整提示词证据、owner 授权、文件 hash、机器审核和人工审核。只有 owner 审核通过后才能标记 `aiAssistedColdStartEligible=true`；由此训练的 checkpoint 必须声明 AI 生成数据依赖，不得冒充 `project_owned_independent_weights`。原严格项目自有数据通道继续并存。
+
+2026-07-16 项目所有者进一步批准 `owner-approved-high-resolution-four-three-derivative-v1`。该契约仅用于 Codex 内置图像生成的 AI 辅助冷启动来源：生成器原始文件必须精确 4:3 且不小于 `1024×768`，必须原样不可变保存；程序只能以 nearest-neighbor、无裁切、无放大生成 `1024×768` 训练/机器审核派生图。原图和派生图必须保存独立路径、尺寸和 SHA-256；派生图固定 `formalCandidate=false`、`runtimeFrameEligible=false`、`directWorldDisplayAllowed=false`、`independentTrainingEligible=false`。该例外不改变正式本地模型原生 `1024×768` 输出契约。
 
 两条训练谱系固定分离：
 
@@ -145,6 +155,68 @@ data/world-samples/dataset-packages/<packageId>/
 
 数据包必须绑定字典快照、导演与任务快照、条件 Manifest、审核规则快照和最新严格审计。`train`、`validation`、`challenge`、`regression` 必须按图片 hash、Blueprint hash 和条件 hash 隔离。
 
+### 5.1 AI 辅助冷启动数据包与训练边界
+
+AI 辅助冷启动数据包固定保存到：
+
+```text
+data/world-samples/ai-assisted-cold-start-dataset-packages/<packageId>/
+```
+
+程序只能从原图库索引读取 `aiAssistedColdStartEligible=true`、`independentTrainingEligible=false`、机器审核通过且项目所有者审核通过的不可变记录。构建时必须重新核验图片、提示词证据、审核记录和 SHA-256，并复制到新的不可变版本；不得直接从页面、聊天记录或临时附件训练。
+
+当前 AI 辅助冷启动数据中，旧批次条件配对只作历史证据；当前 `complete-map-v2-001...021` 已形成21套新的原图、任务包、23通道条件、机器审核和owner审核同一身份配对。其他已审核完整地图继续只允许执行项目自有 Autoencoder 视觉预热。地形、植物、自然物品和过渡/接地图当前只作为 `visual_knowledge_reference` 保存，不能伪装成完整地图 target。Autoencoder 预热不消费世界任务包，不训练条件去噪器，不生成正式候选，也不能取得 Runtime 或 `/world` 资格。
+
+项目所有者已于2026-07-18命令保留旧21套条件蓝图为历史、不进行修补，并根据“原图生成前已经保存的提示词意图 + 锁定世界档案 + 地球参数快照 + 已批准连接事实”以全新身份整体重建。程序已通过 `npm run build:ai-assisted-conditional-world-facts` 自动生成并保存 `complete-map-v2-001...021` 共21套世界事实蓝图、导演输出、任务包和原生 `1024×768` 的23通道条件包，并由 `npm run check:ai-assisted-conditional-world-facts` 与 `npm run check:ai-assisted-complete-map-scope` 校验为21/21通过。该生成前批次固定 `generationContractVersion=complete-map-scope-world-facts-v2`、`sourceBlueprintReuse=false`、`historicalBatchMutation=false`、`sourceImageGeometryRead=false`、`existingRgbBoundToGeneratedConditions=false`、`pairedRgbCount=0`，用来证明条件不是由RGB反推；该字段不得在出图后回写。2026-07-19项目所有者审核通过当前正式001 V2后，程序重建并检查不可变数据包，按任务包、条件包和hash严格确认当前v2后置RGB配对21/21，未配对数为0；旧版本RGB和审核仅作历史，不得自动重绑。
+
+固定程序入口：
+
+```text
+npm run build:ai-assisted-cold-start-dataset-package
+npm run check:ai-assisted-cold-start-dataset-package
+npm run check:ai-assisted-complete-world-model
+npm run train:ai-assisted-complete-world-model -- --resolution-stage 0
+```
+
+AI 辅助 checkpoint 必须声明：
+
+```text
+ownership = project_owned_architecture_ai_assisted_cold_start_weights
+trainingLane = ai_assisted_cold_start
+thirdPartyWeightsLoaded = false
+thirdPartyGeneratedTrainingOutputUsed = true
+aiGenerationDependencyDeclared = true
+denoiserTrained = true
+formalInferenceEligible = false
+```
+
+上述条件蓝图之后的新RGB已有21张项目所有者通过记录，并已全部满足正式v2任务包、23通道条件包和hash完全一致的真实配对；最新严格复核结果为21/21，未配对数为0。项目所有者已批准21套作为第一轮AI辅助条件去噪训练数量门槛，并批准Autoencoder v2达到继续条件。大世界连接覆盖门槛固定为至少27条正样本、27条负样本且9个覆盖轴各不少于3正+3负；程序现已自动保存并复核27正、27负连接记录，9轴全部达到3正+3负。AI辅助数据包连接门禁已打开；项目自有23通道条件去噪训练程序已完成单批次冒烟和256×192、512×384、1024×768三个40轮渐进阶段，最终checkpoint仍为待验证状态。隔离的AI辅助单图推理验证入口已经实现并通过模型合同检查，只允许使用validation、challenge或regression split，并要求项目所有者提供本轮具体单图命令；所有输出固定为非正式候选、非Runtime。冒烟checkpoint、阶段checkpoint、验证图和门禁打开均不得误报为正式推理或Runtime成功。下一步只允许执行一张未见结构推理验证；任何单张验证RGB必须另获项目所有者对本轮具体生成的明确命令。程序不得根据已有图片反推世界事实、把未配对蓝图冒充训练样本、自动重绑旧RGB或自行改变门槛。
+
+条件后置 RGB 生成完成后必须通过 `finalize:ai-assisted-conditional-rgb` 进入既有原图库接收层，并由该入口自动调用 `run:ai-assisted-cold-start-review-pipeline`。AI辅助高分辨率来源必须使用同一 `recordId` 保存原始图 hash、训练派生图 hash、派生政策版本、无裁切/无放大证据和审核链；统一事件总账与原图库记录使用1024×768训练派生图身份，且必须能追溯到不可变原图。任何只保存图片但没有机器审核、总账事件和后续审核状态的记录都不能计入训练数据。项目所有者拒绝后，程序必须固定 `trainingEligibility=owner_rejected`、`aiAssistedColdStartEligible=false`、`independentTrainingEligible=false` 并保存不可变失败学习记录。生成前失败也必须由 `record:ai-assisted-conditional-rgb-generation-failure` 保存失败码、路线、UTC、北京时间和证据路径，不得保存 API Key 或其他秘密。
+
+条件后置 RGB 的季节与环境输入统一使用 `world-visual-environment-context-v1`。该对象必须由来源记录和锁定环境快照共同生成，并以同一身份贯穿世界事实蓝图、世界导演输出、完整任务包、生成请求和自动检查；至少包含 `season`、`monsoonPhase`、`environmentState`、`weather`、`lighting`、`groundMoisture`、`visibility` 和 `sourceSnapshotId`。所有条件共用同一请求编译算法；该算法还必须按 `regionalLandscapeType` 读取 `coverage-blueprint.json` 的区域生态档案，将 `requiredFeatures` 和 `optionalFeatures` 写入提示证据和请求。统一编译器必须读取版本化基础完整地图视觉标准的聚合数值/文字档案、当前23通道hash和道路期望覆盖比例，不得读取历史完整地图 RGB；当前请求契约固定为 `dynamic_complete_map_scope_plus_foundational_visual_standard_plus_world_facts_director_23_channels_v9`。生成前必须执行完整地图范围门禁；缺少入口/出口、家园中心、连续道路、多空间/生态分区、自然边界或大世界连接证据时，以 `local_scene_not_complete_map` 自动保存阻断。同一条件重试必须保存项目所有者授权原因，并固定不能修改世界事实、条件几何或审核门槛。不得把雨季、旱季或湿度文字写死。来源记录季节与快照季节不一致、请求文字与环境对象冲突、无水条件请求新增水体时，必须在图像生成前失败并自动保存失败记录。
+
+机器审核的颜色分类器必须覆盖雨季和旱季两种地表。若通用道路暖色阈值将大面积金黄色旱季草层误判为道路，程序必须保留候选失败记录并阻断晋级；修复必须改进道路/草层的实际分类方法并对历史通过图、拒绝图和不同季节执行回归，不得只放宽空间、覆盖或风格阈值让当前图片通过。
+
+当前道路识别版本固定为 `season_aware_local_color_signal_plus_8x6_spatial_mass_and_centroid_v2`。旱季分类必须证明006 V2的低对比道路仍失败、006 V3的红棕土路与草层分离后通过；雨季分类必须证明001 V2和005 V2继续通过，历史拒绝002 V1继续失败。机器重审必须把旧审核保存到 `reviews/machine/<reviewId>.json`，不得覆盖历史失败证据。
+
+### 5.2 条件编号推进与防重复规则
+
+条件后置 RGB 必须按“一个条件蓝图、一个当前审核身份”推进，不能把版本号递增当作任务进度。固定规则如下：
+
+| 情况 | 程序行为 |
+|---|---|
+| 未显式提供 `--source-record-id` | 生成前阻断；不得默认回到001、002或任何历史条件 |
+| 同一条件已有 `pending_review` 图片 | 生成前阻断并保存顺序阻断记录；`computeStarted=false` |
+| 同一条件已有 `owner_approved` 图片 | 生成前阻断并推进其他未尝试条件 |
+| 同一条件已有拒绝或失败历史 | 默认禁止自动重试；必须有项目所有者明确重试授权和非空原因 |
+| 不同 SHA 但同一条件反复生成 | 仍属于同一条件重试，不得按新数据任务计算进度 |
+| 历史完整地图被作为新图的图像参考 | 生成前阻断；生成器只允许接收当前条件引导图，风格只由版本化基础完整地图聚合标准提供 |
+| 新图命中历史完整地图或项目所有者已拒绝构图 | 机器审核自动拒绝，保存相似记录ID、指标、失败码和下一训练目标；不得自动重试当前条件 |
+| 当前条件审核完成 | 默认选择条件蓝图清单中尚未尝试的下一条，不按缺失编号自行创建任务 |
+
+编号防重复检查入口固定为 `npm run check:ai-assisted-conditional-rgb-sequence`，构图重复回归入口固定为 `npm run check:ai-assisted-composition-novelty`。生成请求必须保存 `historicalCompleteMapImageReferencesUsed=false`、空的历史风格图引用和唯一条件引导图路径。顺序阻断记录保存在 `.runtime/ai-painter/ai-assisted-cold-start/conditional-rgb-generation-requests/sequence-blocks/`；不得修改或删除既有图片、请求、审核和失败历史。
+
 ## 6. 当前最低门槛
 
 第一版原图覆盖必须绑定 `mainland-southeast-asia-tropical-monsoon-natural-home-v1`，并区分以下数据轴：
@@ -185,7 +257,7 @@ data/world-samples/dataset-packages/<packageId>/
 | `walkableGraphId` | 绑定可走连通分量与碰撞关系 |
 | 正负连接标签 | 保存连续连接、断路、断水、孤立区域、邻接冲突和对象身份中断等证据 |
 
-第一版连接蓝图已经登记为 `mainland-southeast-asia-earth-reference-natural-home-region-0001-v1`，Runtime 连接事实已迁移到 tick 2，并经项目所有者审核后写入 tick 3。现有 AI 辅助冷启动原图即使通过视觉审核，也只属于视觉冷启动数据；在逐张绑定边界连接口和图结构并通过图片自身的连接审核前，不得计入连接覆盖。连接正负样本的最低数量仍未得到项目所有者批准，当前必须保持 `pending_owner_approval`，智能体和程序不得自行发明数字或借用旧的 20/40 条视觉门槛。
+第一版连接蓝图已经登记为 `mainland-southeast-asia-earth-reference-natural-home-region-0001-v1`，Runtime 连接事实已迁移到 tick 2，并经项目所有者审核后写入 tick 3。项目所有者已批准连接覆盖最低27条正样本、27条负样本，9个覆盖轴各不少于3正+3负。程序已在 `data/world-samples/world-connectivity/coverage/` 自动保存并机器复核27正、27负结构化连接监督记录，九轴全部达到3正+3负；这些记录不含RGB、不修改Runtime世界事实。现有 AI 辅助冷启动原图即使通过视觉审核，也只属于视觉冷启动数据，不得仅凭图片视觉内容计入连接覆盖。
 
 20 条 `completeMapPositive` 是完整地图类别的最低门槛，不是第一批唯一任务，也不是全部训练数据规模。390 个热带季风植物视觉覆盖单元和过渡、接地、负样本、漏判数据与完整地图样本共同构成数据充足度；各类可以并行积累，但任何门槛不足时统一数据包仍保持阻断。
 
@@ -252,9 +324,19 @@ data/world-samples/original-image-library/natural-home-v1/mainland-southeast-asi
 
 ## 8. 自动保存
 
+AI辅助条件去噪checkpoint的隔离验证图不得进入原图库接收层。它必须保存在`.runtime/ai-painter/ai-assisted-conditional-inference-validation/<runId>/`，并由`review:ai-assisted-conditional-inference-validation`自动保存VJ-0、VJ-1、VJ-2、风格指纹、构图新颖性、审核hash和失败学习；无论机器通过或拒绝均固定为非正式候选、非Runtime。
+
 训练、推理、审核和失败回写必须由程序自动保存。自有训练器在数据不足时也必须保存带北京时间、数据包 ID、阻断码、第三方权重加载状态和 checkpoint 创建状态的记录。Codex 可以修复程序和检查证据，但不得手工伪造训练记录。
 
+AI 辅助条件 RGB 自动保存检查固定为 `npm run check:ai-assisted-conditional-rgb-automation`。该检查读取程序记录，不创建审核结论；缺少图片、hash、UTC/北京时间、原图库事件、机器审核、统一总账、owner 拒绝证据或失败学习记录时必须失败。
+
 必须保存输入任务包、数据包版本、配置、模型版本、checkpoint、seed、设备、耗时、loss、生成图片、hash、机器审核、人工审核、失败区域和下一轮任务。
+
+AI 辅助冷启动训练记录固定保存到 `.runtime/ai-painter/project-owned-complete-world-model-ai-assisted/`；每次运行必须建立独立 run 目录并保存 `progress.json`、`manifest.json`、checkpoint、训练/验证 loss、四类 split 指标和验证/挑战/回归的原图-模型重建对照图及 hash。对照图只属于模型训练证据，固定 `formalCandidate=false`。渐进分辨率的后一阶段只能继承同一数据包、同一权属、无第三方权重且分辨率正好为前一阶段的项目 checkpoint，并保存父 checkpoint 路径与 hash；缺少父 checkpoint 时必须自动阻断。阻断与失败分别保存到 `blocks/`、`failures/`，不得覆盖严格独立训练谱系 `.runtime/ai-painter/project-owned-complete-world-model/`。
+
+首轮 v1 Autoencoder 在原生 1024 重建中明显丢失像素细节后，项目所有者已批准进入模型调整。v2 数据包必须绑定 `ai-pet-world-complete-world-ai-assisted-cold-start-v2` 配置快照；v2 checkpoint 独立保存到 `.runtime/ai-painter/project-owned-complete-world-model-ai-assisted-v2/`，不得覆盖 v1。v2 将潜空间从 `1/8、4 通道` 调整为 `1/4、12 通道`，并使用项目代码实现的像素、边缘和 Laplacian 高频损失；该调整仍不改变 AI 生成数据依赖，不赋予条件训练或正式推理资格。
+
+v1/v2 重建比较固定使用 `npm run audit:ai-assisted-autoencoder-version-comparison`，读取两版原生 1024 验证、挑战和回归证据，统一计算 RGB MAE、边缘 MAE、Laplacian MAE 和 PSNR，并自动保存报告。训练 loss 因损失版本不同不能直接横向比较。当前 6 张统一证据显示 v2 的 RGB、边缘和高频误差分别降低约 `58.19%`、`54.58%`、`48.79%`，PSNR 提升约 `8.39 dB`；该结果证明重建改善，但仍要求项目所有者视觉审核，不能自动取得正式推理资格。
 
 ## 9. 数据库迁移边界
 

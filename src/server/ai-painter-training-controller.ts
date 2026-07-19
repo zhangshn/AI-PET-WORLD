@@ -101,6 +101,7 @@ export type TrainingAction =
   | "report_mvp_gap"
   | "report_natural_home"
   | "report_natural_home_quality"
+  | "smoke_ai_assisted_conditional_denoiser_v4"
   | "full_game_map_material_slot_v46_runtime_frame"
 
 export { readTrainingControlState, readTrainingLogTail, type TrainingControlState }
@@ -450,7 +451,9 @@ function heartbeatStatusForScript(script: string): TrainingRuntimeHeartbeatStatu
 }
 
 function modelRoleForAction(action: TrainingAction) {
-  return action.includes("game_map") ? "complete_game_map" : "natural_home"
+  return action.includes("game_map") || action.includes("ai_assisted_conditional")
+    ? "complete_game_map"
+    : "natural_home"
 }
 
 function modelRoleForScript(script: string) {
@@ -757,6 +760,7 @@ const singleActionScripts: Partial<Record<TrainingAction, string>> = {
   report_mvp_gap: "report:ai-painter-mvp-gap",
   report_natural_home: "report:ai-painter-natural-home",
   report_natural_home_quality: "report:ai-painter-natural-home-quality",
+  smoke_ai_assisted_conditional_denoiser_v4: "smoke:ai-assisted-conditional-denoiser-v4",
 }
 
 function scriptsFor(action: TrainingAction) {
@@ -1119,6 +1123,7 @@ function isProcessAlive(pid: number | null | undefined) {
 
 function labelFor(script: string) {
   const labels: Record<string, string> = {
+    "smoke:ai-assisted-conditional-denoiser-v4": "V4 Stage 0 conditional denoiser smoke training",
     "prepare:ai-painter-natural-home": "编译纯世界家园训练数据",
     "train:ai-painter-natural-home": "使用本地 GPU 训练纯世界家园基础模型",
     "infer:ai-painter-natural-home": "生成纯世界家园基础推理图",

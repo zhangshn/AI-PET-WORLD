@@ -2,6 +2,7 @@ import { readFile, readdir, stat } from "node:fs/promises"
 import path from "node:path"
 import type { Metadata } from "next"
 import Link from "next/link"
+import { listConditionalRgbGenerationAttempts } from "@/server/ai-painter-conditional-rgb-generation-records"
 import styles from "../page.module.css"
 import { TrainingRecordSelector } from "./training-record-selector"
 
@@ -170,10 +171,19 @@ export default async function NaturalHomePage({ searchParams }: PageProps) {
             <section className={styles.featurePreview}>
               <article className={styles.resultCard}>
                 <span className={styles.fail}>NO COMPLETE MAP IMAGE</span>
-                <h2>本记录不是完整地图主结果</h2>
-                <p>
-                  这条记录可能是数据集、局部材料训练、模型 checkpoint 或失败诊断。它会作为流水线证据保留，但不能作为完整游戏地图通过。
-                </p>
+                {selectedRecord.kind === "条件 RGB 生成尝试" ? (
+                  <>
+                    <h2>生成失败，未产生图片</h2>
+                    <p>程序已经自动保存本次失败尝试。失败码、生成路线、时间戳和证据文件均保留在下方，不得伪造图片补齐记录。</p>
+                  </>
+                ) : (
+                  <>
+                    <h2>本记录不是完整地图主结果</h2>
+                    <p>
+                      这条记录可能是数据集、局部材料训练、模型 checkpoint 或失败诊断。它会作为流水线证据保留，但不能作为完整游戏地图通过。
+                    </p>
+                  </>
+                )}
               </article>
             </section>
           )}
@@ -384,10 +394,36 @@ async function readTrainingRecords(): Promise<TrainingRecord[]> {
     readWorldVisualTaskRecords(),
     readCompleteMapDatasetPackageRecords(),
     readCompleteMapSampleRecords(),
+    readConditionalRgbGenerationAttemptRecords(),
   ])
   const byId = new Map<string, TrainingRecord>()
   for (const record of groups.flat()) byId.set(record.id, record)
   return [...byId.values()].sort((left, right) => Date.parse(right.modifiedAt) - Date.parse(left.modifiedAt))
+}
+
+async function readConditionalRgbGenerationAttemptRecords(): Promise<TrainingRecord[]> {
+  const attempts = await listConditionalRgbGenerationAttempts()
+  return attempts.map((attempt) => ({
+        id: attempt.evidencePath,
+        name: attempt.outputRecordId,
+        kind: "条件 RGB 生成尝试",
+        path: attempt.evidencePath,
+        modifiedAt: attempt.createdAtUtc,
+        status: attempt.status,
+        evidence: [attempt.evidencePath],
+        previewImages: attempt.generatedImagePath ? [attempt.generatedImagePath] : [],
+        summaryLines: [
+          `attemptId: ${attempt.attemptId}`,
+          `requestId: ${attempt.requestId}`,
+          `failureCode: ${attempt.failureCode}`,
+          `failureMessage: ${attempt.failureMessage}`,
+          `attemptedRoute: ${attempt.attemptedRoute}`,
+          `UTC: ${attempt.createdAtUtc}`,
+          `北京时间: ${attempt.createdAtAsiaShanghai}`,
+          `generatedImageCreated: ${String(attempt.generatedImageCreated)}`,
+          `automaticStorage: ${String(attempt.automaticStorage)}`,
+        ],
+      }))
 }
 
 async function readCurrentRuntimeFrameRecord(): Promise<TrainingRecord[]> {

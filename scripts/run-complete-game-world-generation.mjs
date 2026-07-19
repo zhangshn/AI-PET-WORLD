@@ -31,6 +31,26 @@ const plan = [
     command: ["npm", ["run", "check:original-image-library"]],
   },
   {
+    id: "foundational_complete_map_visual_standard",
+    title: "Foundational Complete-Map Visual Standard",
+    command: ["npm", ["run", "build:foundational-complete-map-visual-standard"]],
+  },
+  {
+    id: "foundational_complete_map_visual_standard_contract",
+    title: "Foundational Complete-Map Visual Standard Contract",
+    command: ["npm", ["run", "check:foundational-complete-map-visual-standard"]],
+  },
+  {
+    id: "ai_assisted_complete_map_scope",
+    title: "AI-Assisted Complete-Map Scope Gate",
+    command: ["npm", ["run", "check:ai-assisted-complete-map-scope"]],
+  },
+  {
+    id: "conditional_rgb_sequence_guard",
+    title: "AI-Assisted Conditional RGB Sequence Guard",
+    command: ["npm", ["run", "check:ai-assisted-conditional-rgb-sequence"]],
+  },
+  {
     id: "world_connectivity_contract",
     title: "Large World Connectivity Contract",
     command: ["npm", ["run", "check:world-connectivity-contract"]],
@@ -159,6 +179,9 @@ const plan = [
 
 const readOnlyCheckIds = new Set([
   "world_visual_dictionary",
+  "foundational_complete_map_visual_standard_contract",
+  "ai_assisted_complete_map_scope",
+  "conditional_rgb_sequence_guard",
   "world_connectivity_contract",
   "world_connectivity_proposal_contract",
   "earth_reference_world_connectivity_blueprint_contract",
@@ -573,12 +596,26 @@ function readWorldConnectivityGate() {
     && ownerReview?.reviewId === world?.homeMapState?.worldConnectivity?.ownerReview?.reviewId
     && ownerReview?.targetTick === world?.tick
   const coverageThresholdsApproved = contract?.scope?.minimumConnectivityCountsApproved === true
+  const connectivityCoverage = coverage?.connectivityCoverage
+  const positiveCoverageMet = coverageThresholdsApproved
+    && (connectivityCoverage?.currentPositiveRecordCount ?? 0) >= (connectivityCoverage?.minimumPositiveRecordCount ?? Number.POSITIVE_INFINITY)
+  const negativeCoverageMet = coverageThresholdsApproved
+    && (connectivityCoverage?.currentNegativeRecordCount ?? 0) >= (connectivityCoverage?.minimumNegativeRecordCount ?? Number.POSITIVE_INFINITY)
+  const perAxisCoverageMet = coverageThresholdsApproved
+    && (contract?.trainingCoverageAxes ?? []).every((axis) => {
+      const counts = connectivityCoverage?.axisCounts?.[axis]
+      return (counts?.positive ?? 0) >= (connectivityCoverage?.minimumPositivePerAxis ?? Number.POSITIVE_INFINITY)
+        && (counts?.negative ?? 0) >= (connectivityCoverage?.minimumNegativePerAxis ?? Number.POSITIVE_INFINITY)
+    })
   const blockers = [
     contractValid ? null : "world_connectivity_contract_invalid",
     blueprintDefined ? null : "world_connectivity_blueprint_missing",
     runtimeMigrated ? null : "world_connectivity_runtime_migration_pending",
     ownerReviewApproved ? null : "world_connectivity_owner_review_pending",
     coverageThresholdsApproved ? null : "world_connectivity_coverage_thresholds_pending",
+    coverageThresholdsApproved && !positiveCoverageMet ? "world_connectivity_positive_coverage_insufficient" : null,
+    coverageThresholdsApproved && !negativeCoverageMet ? "world_connectivity_negative_coverage_insufficient" : null,
+    coverageThresholdsApproved && !perAxisCoverageMet ? "world_connectivity_per_axis_coverage_insufficient" : null,
   ].filter(Boolean)
   return {
     status: blockers.length === 0 ? "passed" : "blocked",
@@ -597,6 +634,12 @@ function readWorldConnectivityGate() {
     ownerReviewStatus: ownerReviewApproved ? "owner_approved" : "pending",
     ownerReviewPath: ownerReviewApproved ? projectRelative(ownerReviewLatestPath) : null,
     coverageThresholdsApproved,
+    connectivityCoverageMet: positiveCoverageMet && negativeCoverageMet && perAxisCoverageMet,
+    currentPositiveConnectivityRecordCount: connectivityCoverage?.currentPositiveRecordCount ?? 0,
+    currentNegativeConnectivityRecordCount: connectivityCoverage?.currentNegativeRecordCount ?? 0,
+    minimumPositiveConnectivityRecordCount: connectivityCoverage?.minimumPositiveRecordCount ?? null,
+    minimumNegativeConnectivityRecordCount: connectivityCoverage?.minimumNegativeRecordCount ?? null,
+    minimumConnectivityRecordsPerAxis: connectivityCoverage?.minimumPositivePerAxis ?? null,
     qualifiedConnectivityRecordCount: coverage?.connectivityCoverage?.currentQualifiedRecordCount ?? 0,
     blockers,
   }

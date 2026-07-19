@@ -17,12 +17,19 @@ export function GET(request: NextRequest) {
     "original-image-library",
     "natural-home-v1",
   )
+  const generationRequestRoot = path.join(
+    /* turbopackIgnore: true */ process.cwd(),
+    ".runtime",
+    "ai-painter",
+    "ai-assisted-cold-start",
+    "conditional-rgb-generation-requests",
+  )
   let cleanup: () => void = () => undefined
 
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       let closed = false
-      let watcher: FSWatcher | null = null
+      const watchers: FSWatcher[] = []
       let changeTimer: ReturnType<typeof setTimeout> | null = null
 
       const send = (event: string, value: Record<string, unknown>) => {
@@ -32,7 +39,7 @@ export function GET(request: NextRequest) {
         if (closed) return
         closed = true
         if (changeTimer) clearTimeout(changeTimer)
-        watcher?.close()
+        for (const watcher of watchers) watcher.close()
         try {
           controller.close()
         } catch {
@@ -42,15 +49,29 @@ export function GET(request: NextRequest) {
 
       cleanup = close
       send("ready", { status: "watching_original_image_library" })
-      watcher = watch(libraryRoot, { persistent: false }, (_eventType, fileName) => {
-        if (fileName?.toString() !== "index.json") return
+      const scheduleRefresh = (source: string) => {
         if (changeTimer) clearTimeout(changeTimer)
         changeTimer = setTimeout(() => {
-          send("library_changed", { updatedAt: new Date().toISOString() })
+          send("library_changed", { source, updatedAt: new Date().toISOString() })
           changeTimer = null
         }, 100)
+      }
+      const libraryWatcher = watch(libraryRoot, { persistent: false }, (_eventType, fileName) => {
+        if (fileName?.toString() !== "index.json") return
+        scheduleRefresh("original_image_index")
       })
-      watcher.on("error", close)
+      const generationWatcher = watch(
+        generationRequestRoot,
+        { persistent: false, recursive: true },
+        (_eventType, fileName) => {
+          const normalized = fileName?.toString().replaceAll("\\", "/") ?? ""
+          if (!normalized.includes("/generation-attempts/") || !normalized.endsWith(".json")) return
+          scheduleRefresh("conditional_rgb_generation_attempt")
+        },
+      )
+      watchers.push(libraryWatcher, generationWatcher)
+      libraryWatcher.on("error", close)
+      generationWatcher.on("error", close)
       request.signal.addEventListener("abort", close, { once: true })
     },
     cancel() {

@@ -87,6 +87,7 @@ const actions = new Set<TrainingAction>([
   "report_mvp_gap",
   "report_natural_home",
   "report_natural_home_quality",
+  "smoke_ai_assisted_conditional_denoiser_v4",
   "full_game_map_material_slot_v46_runtime_frame",
 ])
 

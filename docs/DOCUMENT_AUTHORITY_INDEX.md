@@ -1,8 +1,8 @@
 # 项目文档权威索引
 
-更新时间：2026-07-14 14:39:13 +08:00
+更新时间：2026-07-19 20:26:21 +08:00
 
-状态：正式文档治理入口 / 已生效 / 当前世界地图主线受数据缺口和人工拒绝阻断
+状态：正式文档治理入口 / 已生效 / 当前v2条件严格配对21/21 / 首张V2隔离验证已拒绝 / V3数值稳定性修复与三级训练已完成 / 等待V3单图视觉验证命令
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
@@ -60,15 +60,21 @@ AI Painter 数据关系固定为：五类原图库是并行视觉知识分类，
 
 项目身份同时固定为：AI-PET-WORLD 是像素风格自主世界游戏，本地小 AI 是游戏智能核心；AI Painter 只是视觉生产子系统，“画图”只是它服务游戏的一项功能。任何文档或智能体不得把项目简化成 AI 绘图工具，也不得让 AI Painter 取代世界事实、Runtime、世界导演或角色自主系统。
 
-第一版正式视觉契约固定为 2D 高分辨率像素风完整地图：模型原生画布 `1024×768`，正式候选必须覆盖完整地图并直接生成该分辨率。禁止从 `256×192`、tile、sprite、局部材料或其他低分辨率图放大、拼接得到正式候选；当前仍因数据、地球参数快照、checkpoint 和 owner review 阻断。
+第一版正式视觉契约固定为 2D 高分辨率像素风完整地图：本地正式模型原生画布 `1024×768`，正式候选必须覆盖完整地图并直接生成该分辨率。禁止从 `256×192`、tile、sprite、局部材料或其他低分辨率图放大、拼接得到正式候选；当前仍因数据、checkpoint 和 owner review 阻断。
 
-本文档中的分辨率术语只有一种解释：`1024×768` 是原图、正式候选、机器审核、owner review 和 Runtime 的唯一原生画布；`256×192 -> 512×384 -> 1024×768` 只描述训练内部可采用的渐进分辨率，不授权把低分辨率 RGB 输出放大为正式候选。任何窗口若把训练阶段分辨率解释成正式输出契约，必须以本条纠正，不得建立另一份路线说明。
+“完整地图”是业务范围和空间结构契约，不是文件尺寸名称。任何只表现单一河段、单一道路、单一池塘、单一林间空地、单一材质范围或放大局部生态单元的图，即使铺满 `1024×768`，仍固定判定为局部图，不得登记为完整地图 target、自主生成训练原图、正式候选或 RuntimeFrame。完整地图必须由同一任务包同时证明整体入口/出口关系、家园中心、连续道路组织、多个可辨识空间或生态分区、自然边界和大世界连接语义；水体是否出现及其占比只能服从当前世界事实，不得把东南亚生态身份解释成所有地图都以水体为主体。完整地图范围尚不能由机器证明时，生成前必须阻断。
+
+冷启动基础完整地图原图的正式作用固定为建立完整地图视觉知识与计算标准，而不是仅供页面查看，也不是供下一张图直接临摹。程序必须从经审核集合提取并版本化保存镜头/世界尺度、整体构图层次、入口—中心—道路关系、空间与生态分区组织、水体分布变化、对象尺寸和密度、像素纹理、色彩、光照及游戏可读性标准。生成请求只能消费该聚合标准的机器数值和文字契约，以及当前世界事实、世界导演和本轮23通道；历史完整地图 RGB 引用继续固定为0。所有合格图共享游戏视觉语言，但不得共享同一河流、道路、区域组合或整体构图模板。
+
+出图授权固定采用“双条件门禁”：正式当前执行文档明确允许该具体任务，并且项目所有者对本轮生成给出明确命令。蓝图队列、历史计划、失败后的重试需求、缺失编号、自动循环或智能体推断均不构成出图授权；不得自动批量出图，不得在待审核、范围不明、重复风险或局部图风险存在时继续调用生成算力。
+
+本文档中的分辨率术语固定分为两条且不得混用：正式本地模型 target、正式候选、owner review、Runtime 和 `/world` 的唯一原生画布是 `1024×768`；AI 辅助冷启动来源可按 `owner-approved-high-resolution-four-three-derivative-v1` 保存不小于 `1024×768` 的精确 4:3 原始文件，并由程序生成 nearest-neighbor、无裁切、无放大的 `1024×768` 训练/机器审核派生图。该派生图不具备正式候选、Runtime 或独立训练资格。`256×192 -> 512×384 -> 1024×768` 只描述训练内部渐进分辨率。任何窗口不得把冷启动派生图或训练阶段图解释成正式输出契约。
 
 画法/生成算法与风格契约必须分开理解并同时满足：前者定义世界事实、导演结果、23 通道条件和本地模型如何生成本轮新像素；后者定义所有合格画面共享的视角、世界尺度、对象比例、像素纹理语言、轮廓、光照、接地、遮挡和游戏可读性。季节、湿度、生态类型和对象状态可以改变画面内容与状态色彩，但不得自行改变上述共同视觉语法。
 
 第一版当前世界档案固定为 `mainland-southeast-asia-tropical-monsoon-natural-home-v1`，以东南亚大陆热带季风低地、河谷和丘陵生态为现实参照。机器权威文件为 `mainland-southeast-asia-tropical-monsoon-profile-v1.json`、对应物种目录、`coverage-blueprint.json` 和 `provisional-visual-snapshot-v2.json`。旧温带概念图片、原图库记录和来源副本已按项目所有者命令删除；旧档案定义文件只作迁移说明，不得进入当前训练或自动恢复记录。
 
-第一版自然家园同时是未来类地球大世界中的第一个连接区域，不是孤立图片。大世界连接原则的机器权威为 `natural-home-large-world-connectivity-v1`，位置为 `data/world-samples/world-connectivity/world-connectivity-contract-v1.json`。项目所有者已命令按真实地球条件定义第一版连接，程序据当前东南亚热带季风档案、NASA 快照和湄公河委员会水文/地理事实登记 `mainland-southeast-asia-earth-reference-natural-home-region-0001-v1`；它不复制真实地图几何。Runtime 世界事实迁移已由项目所有者授权并由程序写入 tick 2；项目所有者随后审核通过连接事实，程序写入 tick 3。迁移报告位于 `.runtime/world-connectivity-migrations/latest.json`，审核记录位于 `.runtime/world-connectivity-owner-reviews/latest.json`；当前只剩连接训练覆盖门槛未批准。
+第一版自然家园同时是未来类地球大世界中的第一个连接区域，不是孤立图片。大世界连接原则的机器权威为 `natural-home-large-world-connectivity-v1`，位置为 `data/world-samples/world-connectivity/world-connectivity-contract-v1.json`。项目所有者已命令按真实地球条件定义第一版连接，程序据当前东南亚热带季风档案、NASA 快照和湄公河委员会水文/地理事实登记 `mainland-southeast-asia-earth-reference-natural-home-region-0001-v1`；它不复制真实地图几何。Runtime 世界事实迁移已由项目所有者授权并由程序写入 tick 2；项目所有者随后审核通过连接事实，程序写入 tick 3。迁移报告位于 `.runtime/world-connectivity-migrations/latest.json`，审核记录位于 `.runtime/world-connectivity-owner-reviews/latest.json`。连接训练覆盖门槛已批准为27条正样本、27条负样本且9个覆盖轴各不少于3正+3负；程序已自动保存并复核27正/27负，九轴全部达到3正+3负。
 
 ## 3. 目录分类
 
@@ -89,12 +95,15 @@ docs/
 ```text
 status = blocked
 canEnterWorld = false
-blockers = owner_review_rejected, data_gap_insufficient,
-           project_owned_checkpoint_missing,
-           world_connectivity_coverage_thresholds_pending
+blockers = owner_review_missing_identity, formal_gate_missing,
+           data_gap_insufficient, ai_assisted_v3_visual_validation_missing
 ```
 
-自有扩散训练程序、采样器和 `strict-project-owned-training-data-v1` IP 门禁已经实现并通过检查。第一版真实地球参照连接蓝图、Runtime 迁移及项目所有者审核记录均已写入，当前世界为 tick 3；下一正式阶段是按五类并行视觉知识目录获取、接收、审核并登记绑定连接事实的合规 RGB 数据，统一构建完整世界数据包并训练首个项目自有 checkpoint。连接覆盖门槛仍须项目所有者批准。不是只做 20 张完整地图，不是继续旧的 P10-B3 Chunk 出图，也不是盲目训练局部材料。
+自有扩散采样器、Autoencoder训练程序和 `strict-project-owned-training-data-v1` IP 门禁已经实现并通过检查。第一版真实地球参照连接蓝图、Runtime 迁移及项目所有者审核记录均已写入，当前世界为 tick 3。当前v2的21套世界事实、导演、任务包和23通道均已通过结构与完整地图范围门；后置RGB和项目所有者逐图审核已有21张通过记录。项目所有者于2026-07-19批准21套条件训练数量门槛、Autoencoder v2继续条件视觉验收和27正/27负/每轴3+3连接覆盖门槛。程序已自动保存并复核27正、27负连接记录，9轴全部达到3正+3负；最新AI辅助不可变数据包 `blockers=[]`。首张隔离 V2 验证 `complete-map-v2-014` 已生成并被机器拒绝，程序完整保存图像、审核、失败码和失败学习。诊断确认旧采样链数值爆炸；经项目所有者授权，程序已建立 V3 归一化潜空间、velocity 预测和多尺度23通道 U-Net，并完成 `256x192 -> 512x384 -> 1024x768` 三阶段训练。V3 无 RGB 数值诊断已证明采样数值回到训练潜空间范围，但尚未进行新视觉验证；最终1024 checkpoint继续固定 `formalInferenceEligible=false`。当前下一正式阶段是等待项目所有者明确授权一张 V3 held-out 单图视觉验证；不得继续批量出图，不得回到旧 P10-B3 Chunk 路线或局部材料盲训。
+
+AI辅助单图推理验证已经接通验证专用机器审核：生成后必须自动执行VJ-0、VJ-1、VJ-2、版本化风格指纹和构图新颖性审核，保存图片、条件、checkpoint、审核hash、中英文记录和失败学习。验证结果无论机器通过或拒绝都固定`formalCandidate=false`、`formalInferenceEligible=false`、`runtimeFrameEligible=false`，不得写入原图库或进入`/world`。
+
+旧批次第002号 V4、第005号 V2、第006号 V5及其机器/项目所有者审核继续作为不可变历史证据保存，不得自动重试、递增版本或绑定到当前新条件。当前权威条件身份为 `complete-map-v2-001...021`：生成前蓝图快照保持 `pairedRgbCount=0`，证明没有用历史RGB反推或回绑；后置当前v2配对由独立审核记录和不可变数据包统计，当前严格结果为21/21，未配对数为0。不得从旧版本审核结果推断当前配对完成；历史完整地图图像引用继续固定为0。
 
 ## 5. 旧文档清理规则
 

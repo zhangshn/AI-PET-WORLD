@@ -1,8 +1,8 @@
 {
   "schemaVersion": "world-connectivity-contract-v1",
   "contractId": "natural-home-large-world-connectivity-v1",
-  "status": "active_contract_first_mvp_runtime_owner_approved_pending_coverage",
-  "updatedAt": "2026-07-13T19:28:05+08:00",
+  "status": "active_contract_first_mvp_runtime_owner_approved_connectivity_coverage_met",
+  "updatedAt": "2026-07-19 09:05:57+08:00",
   "scope": {
     "worldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
     "currentMilestone": "first_connected_playable_region_of_future_large_world",
@@ -11,8 +11,9 @@
     "firstMvpRegionConnectivityBlueprintDefined": true,
     "firstMvpRegionConnectivityBlueprintId": "mainland-southeast-asia-earth-reference-natural-home-region-0001-v1",
     "firstMvpRegionConnectivityBlueprintPath": "data/world-samples/world-connectivity/blueprints/mainland-southeast-asia-tropical-monsoon-natural-home-v1/mainland-southeast-asia-earth-reference-natural-home-region-0001-v1/blueprint.json",
-    "minimumConnectivityCountsApproved": false,
-    "firstMvpRegionRuntimeMigrated": true
+    "minimumConnectivityCountsApproved": true,
+    "firstMvpRegionRuntimeMigrated": true,
+    "connectivityCoverageMet": true
   },
   "authority": {
     "topologySource": "structured_world_facts_and_owner_approved_connectivity_blueprint",
@@ -144,7 +145,6 @@
   },
   "pendingOwnerDecisions": [
     "exact_large_world_region_topology",
-    "minimum_positive_and_negative_connectivity_coverage_counts",
     "runtime_migration_result_review"
   ],
   "runtimeEvidence": {
@@ -157,5 +157,74 @@
     "automaticStorage": true,
     "ownerReviewId": "world-connectivity-owner-review-world-d0znz8-2026-07-13T11-28-05-420Z",
     "ownerReviewPath": ".runtime/world-connectivity-owner-reviews/world-connectivity-owner-review-world-d0znz8-2026-07-13T11-28-05-420Z/owner-review.json"
+  },
+  "coverageThresholds": {
+    "schemaVersion": "world-connectivity-coverage-threshold-v1",
+    "status": "owner_approved",
+    "minimumPositiveRecordCount": 27,
+    "minimumNegativeRecordCount": 27,
+    "minimumPositivePerAxis": 3,
+    "minimumNegativePerAxis": 3,
+    "coverageAxes": [
+      "internal_entry_to_center_path",
+      "center_to_approved_edge_port_path",
+      "cross_region_path_pair",
+      "upstream_downstream_water_pair",
+      "ecology_transition_pair",
+      "elevation_transition_pair",
+      "walkable_component_continuity",
+      "collision_preservation",
+      "object_identity_continuity"
+    ],
+    "approvalId": "ai-assisted-training-gate-owner-approval-2026-07-19T00-00-54-424Z",
+    "approvalPath": ".runtime/ai-painter/ai-assisted-training-gate-owner-approvals/ai-assisted-training-gate-owner-approval-2026-07-19T00-00-54-424Z/approval.json",
+    "approvalSha256": "096d3c2e764e2a4a6509f381f22abc3c34edc002f62a411b62d065957105f424"
+  },
+  "coverageEvidence": {
+    "datasetId": "world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z",
+    "manifestPath": "data/world-samples/world-connectivity/coverage/world-connectivity-coverage-v1-2026-07-19T01-05-57-521Z/manifest.json",
+    "manifestSha256": "26c58bf50e3a07948c99f53369665c246510560826450a28f5afa4bf1624e177",
+    "positiveRecordCount": 27,
+    "negativeRecordCount": 27,
+    "axisCounts": {
+      "internal_entry_to_center_path": {
+        "positive": 3,
+        "negative": 3
+      },
+      "center_to_approved_edge_port_path": {
+        "positive": 3,
+        "negative": 3
+      },
+      "cross_region_path_pair": {
+        "positive": 3,
+        "negative": 3
+      },
+      "upstream_downstream_water_pair": {
+        "positive": 3,
+        "negative": 3
+      },
+      "ecology_transition_pair": {
+        "positive": 3,
+        "negative": 3
+      },
+      "elevation_transition_pair": {
+        "positive": 3,
+        "negative": 3
+      },
+      "walkable_component_continuity": {
+        "positive": 3,
+        "negative": 3
+      },
+      "collision_preservation": {
+        "positive": 3,
+        "negative": 3
+      },
+      "object_identity_continuity": {
+        "positive": 3,
+        "negative": 3
+      }
+    },
+    "thresholdMet": true,
+    "verifiedAtUtc": "2026-07-19T01:05:57.521Z"
   }
 }

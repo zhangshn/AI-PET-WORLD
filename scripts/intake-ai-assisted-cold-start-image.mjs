@@ -19,6 +19,9 @@ const regionalLandscapeType = argumentValue("--regional-landscape-type")
 const taskArg = argumentValue("--task-package")
 const conditionArg = argumentValue("--condition-pack")
 const guideManifestArg = argumentValue("--condition-guide-manifest")
+const COLD_START_DERIVATIVE_POLICY = "owner-approved-high-resolution-four-three-derivative-v1"
+const TRAINING_WIDTH = 1024
+const TRAINING_HEIGHT = 768
 
 assert(inputArg && promptArg && recordId && title, "usage: npm run intake:ai-assisted-cold-start-image -- --input <generated.png> --prompt-evidence <prompt.json> --record-id <id> --title <title> [--category-id <category>] [--regional-landscape-type <type-id>]")
 assert(/^[a-z0-9][a-z0-9_-]{1,95}$/.test(recordId), "record-id is invalid")
@@ -52,43 +55,75 @@ if (promptEvidence.targetMonsoonSeason) assert(promptEvidence.targetMonsoonSeaso
 const sourceBytes = fs.readFileSync(inputPath)
 const sourceMetadata = await sharp(sourceBytes, { failOn: "error" }).metadata()
 assert(sourceMetadata.width && sourceMetadata.height, "generated input dimensions are missing")
-assert(sourceMetadata.width >= 1024 && sourceMetadata.height >= 768, "generated input must not be smaller than the formal canvas")
-const crop = centeredFourByThreeCrop(sourceMetadata.width, sourceMetadata.height)
+const sourceIsNativeTrainingSize = sourceMetadata.width === TRAINING_WIDTH && sourceMetadata.height === TRAINING_HEIGHT
+const sourceIsEligibleHighResolutionFourThree = sourceMetadata.width >= TRAINING_WIDTH
+  && sourceMetadata.height >= TRAINING_HEIGHT
+  && sourceMetadata.width * 3 === sourceMetadata.height * 4
+assert(
+  sourceIsNativeTrainingSize || sourceIsEligibleHighResolutionFourThree,
+  `AI-assisted cold-start source must be native 1024x768 or a no-smaller exact 4:3 source; received ${sourceMetadata.width}x${sourceMetadata.height}`,
+)
 
 const candidateRoot = path.join(OUTPUT_ROOT, recordId)
 assert(!fs.existsSync(candidateRoot), `candidate already exists: ${projectPath(candidateRoot)}`)
 fs.mkdirSync(candidateRoot, { recursive: true })
 const rawPath = path.join(candidateRoot, "source-generated.png")
-const normalizedPath = path.join(candidateRoot, "normalized-1024x768.png")
+const normalizedPath = path.join(candidateRoot, sourceIsNativeTrainingSize ? "native-1024x768.png" : "training-derivative-1024x768.png")
 const manifestPath = path.join(candidateRoot, "normalization-manifest.json")
 const requestPath = path.join(candidateRoot, "original-image-intake-request.json")
 fs.copyFileSync(inputPath, rawPath, fs.constants.COPYFILE_EXCL)
-await sharp(sourceBytes, { failOn: "error" })
-  .extract(crop)
-  .resize(1024, 768, { fit: "fill", kernel: sharp.kernel.nearest })
-  .png({ compressionLevel: 9, adaptiveFiltering: false })
-  .toFile(normalizedPath)
+if (sourceIsNativeTrainingSize) {
+  fs.copyFileSync(inputPath, normalizedPath, fs.constants.COPYFILE_EXCL)
+} else {
+  await sharp(sourceBytes, { failOn: "error" })
+    .resize(TRAINING_WIDTH, TRAINING_HEIGHT, {
+      fit: "fill",
+      kernel: sharp.kernel.nearest,
+    })
+    .png({ compressionLevel: 9 })
+    .toFile(normalizedPath)
+}
 
 const normalizedBytes = fs.readFileSync(normalizedPath)
 const timestamp = new Date().toISOString()
 const manifest = {
-  schemaVersion: "ai-assisted-cold-start-image-normalization-v1",
+  schemaVersion: "ai-assisted-cold-start-image-normalization-v3",
   recordId,
-  status: "normalized_waiting_original_image_intake",
+  status: sourceIsNativeTrainingSize
+    ? "native_1024x768_verified_waiting_original_image_intake"
+    : "high_resolution_four_three_source_derived_waiting_original_image_intake",
   createdAtUtc: timestamp,
   createdAtAsiaShanghai: formatShanghai(timestamp),
   policyVersion: "owner-authorized-ai-assisted-cold-start-v1",
+  derivativePolicyVersion: COLD_START_DERIVATIVE_POLICY,
   ownerAuthorizationRef: "conversation-owner-authorization-2026-07-13",
   rawGeneratedImagePath: projectPath(rawPath),
   rawGeneratedImageSha256: sha256(sourceBytes),
   rawSize: { width: sourceMetadata.width, height: sourceMetadata.height },
-  sourceCrop: crop,
+  sourceCrop: null,
   normalizedImagePath: projectPath(normalizedPath),
   normalizedImageSha256: sha256(normalizedBytes),
   normalizedSize: { width: 1024, height: 768 },
-  transformation: "center_crop_to_4_to_3_then_downscale_nearest_no_upscale",
-  imageContentChangedByProgram: false,
+  transformation: sourceIsNativeTrainingSize
+    ? "none_native_1024x768"
+    : "nearest_neighbor_downsample_exact_four_three_to_1024x768",
+  resampling: sourceIsNativeTrainingSize ? null : {
+    kernel: "nearest",
+    fit: "fill_exact_four_three_no_crop",
+    sourceAspectRatio: "4:3",
+    targetAspectRatio: "4:3",
+    upscale: false,
+    crop: false,
+  },
+  imageContentChangedByProgram: !sourceIsNativeTrainingSize,
   programDrawnRgbUsed: false,
+  rawSourceRole: "immutable_ai_assisted_cold_start_source_evidence",
+  normalizedImageRole: sourceIsNativeTrainingSize
+    ? "ai_assisted_cold_start_training_target_and_machine_review"
+    : "ai_assisted_cold_start_training_derivative_and_machine_review",
+  formalCandidate: false,
+  directWorldDisplayAllowed: false,
+  runtimeFrameEligible: false,
   promptEvidencePath: projectPath(promptPath),
   promptEvidenceSha256: sha256(fs.readFileSync(promptPath)),
   conditionBinding,
@@ -121,6 +156,14 @@ const request = {
     generatorSystem: promptEvidence.generatorSystem,
     promptEvidencePath: projectPath(promptPath),
     promptEvidenceSha256: manifest.promptEvidenceSha256,
+    sourceRoute: sourceIsNativeTrainingSize
+      ? "generator_native_1024x768"
+      : "generator_native_high_resolution_four_three_with_audited_training_derivative",
+    derivativePolicyVersion: COLD_START_DERIVATIVE_POLICY,
+    trainingDerivativePath: projectPath(normalizedPath),
+    trainingDerivativeSha256: manifest.normalizedImageSha256,
+    formalCandidate: false,
+    directWorldDisplayAllowed: false,
     independentTrainingEligible: false,
   },
   conditionBinding,
@@ -163,6 +206,8 @@ console.log(JSON.stringify({
   rawGeneratedImageSha256: manifest.rawGeneratedImageSha256,
   normalizedImageSha256: manifest.normalizedImageSha256,
   normalizedImagePath: manifest.normalizedImagePath,
+  transformation: manifest.transformation,
+  derivativePolicyVersion: manifest.derivativePolicyVersion,
   recordPath: intakeResult.recordPath,
   ownerReviewStatus: "pending_review",
   aiAssistedColdStartEligible: false,
@@ -185,24 +230,6 @@ function writeJson(value, body) { fs.mkdirSync(path.dirname(value), { recursive:
 function resolveProjectPath(value) { const resolved = path.resolve(ROOT, value); assert(isWithin(ROOT, resolved), `path escapes project root: ${value}`); return resolved }
 function projectPath(value) { return path.relative(ROOT, path.resolve(value)).replace(/\\/g, "/") }
 function isWithin(parent, child) { const root = path.resolve(parent); const target = path.resolve(child); return target === root || target.startsWith(`${root}${path.sep}`) }
-function centeredFourByThreeCrop(width, height) {
-  let cropWidth
-  let cropHeight
-  if (width / height > 4 / 3) {
-    cropHeight = Math.floor(height / 3) * 3
-    cropWidth = (cropHeight / 3) * 4
-  } else {
-    cropWidth = Math.floor(width / 4) * 4
-    cropHeight = (cropWidth / 4) * 3
-  }
-  return {
-    left: Math.floor((width - cropWidth) / 2),
-    top: Math.floor((height - cropHeight) / 2),
-    width: cropWidth,
-    height: cropHeight,
-  }
-}
-
 function loadConditionBinding(taskValue, conditionValue, guideValue) {
   if (!taskValue && !conditionValue && !guideValue) return null
   assert(taskValue && conditionValue && guideValue, "task package, condition pack and condition guide manifest must be supplied together")

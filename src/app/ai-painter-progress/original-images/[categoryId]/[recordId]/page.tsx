@@ -2,7 +2,12 @@ import type { Metadata } from "next"
 import Image from "next/image"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { findOriginalImageRecord, originalImageProjectPath } from "@/server/ai-painter-original-image-library"
+import {
+  completeMapOriginalGroupFor,
+  findCompleteMapOriginalGroup,
+  findOriginalImageRecord,
+  originalImageProjectPath,
+} from "@/server/ai-painter-original-image-library"
 import styles from "../../../page.module.css"
 
 export const dynamic = "force-dynamic"
@@ -18,11 +23,17 @@ export default async function OriginalImageRecordPage({ params }: PageProps) {
   const record = await findOriginalImageRecord(categoryId, recordId)
   if (!record) notFound()
   const imageUrl = `/api/ai-painter/original-images/${categoryId}/${recordId}`
+  const completeMapGroup = categoryId === "complete-maps"
+    ? findCompleteMapOriginalGroup(completeMapOriginalGroupFor(record))
+    : null
+  const backHref = completeMapGroup
+    ? `/ai-painter-progress/original-images/complete-maps/types/${completeMapGroup.id}`
+    : `/ai-painter-progress/original-images/${categoryId}`
 
   return (
     <main className={styles.page}>
       <header className={styles.header}>
-        <Link className={styles.back} href={`/ai-painter-progress/original-images/${categoryId}`}>返回原图分类</Link>
+        <Link className={styles.back} href={backHref}>返回{completeMapGroup?.title ?? "原图分类"}</Link>
         <p className={styles.kicker}>ORIGINAL IMAGE LIBRARY / RECORD</p>
         <h1>{record.title}</h1>
         <p>本页只读取程序保存的单条原图记录，不改变审核、训练资格或正式登记状态。</p>
@@ -37,6 +48,9 @@ export default async function OriginalImageRecordPage({ params }: PageProps) {
       <section className={styles.resultGrid}>
         <article className={styles.resultCard}>
           <span className={["eligible", "registered", "ai_assisted_cold_start_eligible"].includes(record.status) ? styles.pass : styles.fail}>{record.status}</span>
+          {record.autonomousGenerationTrainingOriginal?.sequenceLabel ? (
+            <span className={styles.pass}>{record.autonomousGenerationTrainingOriginal.sequenceLabel}</span>
+          ) : null}
           <h2>{record.originalImage?.fileName ?? "原图文件未记录"}</h2>
           <p><code>{originalImageProjectPath(record)}</code></p>
           {record.originalImage?.path ? (
