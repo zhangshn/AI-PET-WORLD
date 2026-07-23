@@ -132,7 +132,7 @@ export function ProgressClient() {
 
     async function refresh() {
       try {
-        const response = await fetch("/api/ai-painter/training-progress", { cache: "no-store" })
+        const response = await fetch("/api/ai-painter/training-progress?view=summary", { cache: "no-store" })
         if (!cancelled && response.ok) {
           setProgress((await response.json()) as TrainingProgressSummary)
         }

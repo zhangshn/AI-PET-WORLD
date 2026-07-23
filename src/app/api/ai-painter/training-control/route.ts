@@ -88,6 +88,10 @@ const actions = new Set<TrainingAction>([
   "report_natural_home",
   "report_natural_home_quality",
   "smoke_ai_assisted_conditional_denoiser_v4",
+  "train_ai_assisted_conditional_denoiser_v4_stage_0",
+  "train_ai_assisted_conditional_denoiser_v4_stage_1",
+  "train_ai_assisted_conditional_denoiser_v4_stage_2",
+  "validate_ai_assisted_conditional_denoiser_v4_complete_map_v2_005",
   "full_game_map_material_slot_v46_runtime_frame",
 ])
 

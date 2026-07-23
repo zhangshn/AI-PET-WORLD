@@ -1,5 +1,6 @@
 import { readFile, readdir, stat } from "node:fs/promises"
 import path from "node:path"
+import { listLatestIndexedArtifacts } from "@/server/ai-pet-world-storage-catalog"
 
 const RELATIVE_REQUEST_ROOT = ".runtime/ai-painter/ai-assisted-cold-start/conditional-rgb-generation-requests"
 
@@ -20,6 +21,21 @@ export type ConditionalRgbGenerationAttemptRecord = {
 }
 
 export async function listConditionalRgbGenerationAttempts(limit = 80) {
+  const indexedArtifacts = listLatestIndexedArtifacts(RELATIVE_REQUEST_ROOT, Math.max(limit * 4, 320))
+  if (indexedArtifacts) {
+    const indexedAttempts = indexedArtifacts
+      .filter((artifact) => artifact.path.includes("/generation-attempts/") && artifact.name.endsWith(".json"))
+      .slice(0, limit)
+    const attempts = await Promise.all(
+      indexedAttempts.map((artifact) => readAttemptRecord(
+        path.join(process.cwd(), artifact.path),
+        artifact.path,
+        Date.parse(artifact.modifiedAt),
+      )),
+    )
+    return attempts.filter((attempt): attempt is ConditionalRgbGenerationAttemptRecord => attempt !== null)
+  }
+
   const absoluteRoot = path.join(
     /* turbopackIgnore: true */ process.cwd(),
     ".runtime",
@@ -59,28 +75,33 @@ export async function listConditionalRgbGenerationAttempts(limit = 80) {
     candidates.sort((left, right) => right.modifiedAtMs - left.modifiedAtMs)
     const attempts: ConditionalRgbGenerationAttemptRecord[] = []
     for (const candidate of candidates.slice(0, limit)) {
-      const json = await readJson(candidate.absolutePath)
-      if (!json) continue
-      attempts.push({
-        attemptId: stringValue(json.attemptId) ?? path.basename(candidate.relativePath, ".json"),
-        requestId: stringValue(json.requestId) ?? "--",
-        outputRecordId: stringValue(json.outputRecordId) ?? "--",
-        status: stringValue(json.status) ?? "failed",
-        failureCode: stringValue(json.failureCode) ?? "generation_attempt_failed",
-        failureMessage: stringValue(json.failureMessage) ?? "--",
-        attemptedRoute: stringValue(json.attemptedRoute) ?? "--",
-        createdAtUtc: stringValue(json.createdAtUtc) ?? new Date(candidate.modifiedAtMs).toISOString(),
-        createdAtAsiaShanghai: stringValue(json.createdAtAsiaShanghai) ?? "--",
-        generatedImageCreated: booleanValue(json.generatedImageCreated) ?? false,
-        generatedImagePath: normalizeProjectPath(stringValue(json.generatedImagePath)),
-        automaticStorage: booleanValue(json.automaticStorage) ?? false,
-        evidencePath: candidate.relativePath,
-      })
+      const attempt = await readAttemptRecord(candidate.absolutePath, candidate.relativePath, candidate.modifiedAtMs)
+      if (attempt) attempts.push(attempt)
     }
     return attempts
   } catch {
     return []
   }
+}
+
+async function readAttemptRecord(absolutePath: string, relativePath: string, modifiedAtMs: number) {
+  const json = await readJson(absolutePath)
+  if (!json) return null
+  return {
+    attemptId: stringValue(json.attemptId) ?? path.basename(relativePath, ".json"),
+    requestId: stringValue(json.requestId) ?? "--",
+    outputRecordId: stringValue(json.outputRecordId) ?? "--",
+    status: stringValue(json.status) ?? "failed",
+    failureCode: stringValue(json.failureCode) ?? "generation_attempt_failed",
+    failureMessage: stringValue(json.failureMessage) ?? "--",
+    attemptedRoute: stringValue(json.attemptedRoute) ?? "--",
+    createdAtUtc: stringValue(json.createdAtUtc) ?? new Date(modifiedAtMs).toISOString(),
+    createdAtAsiaShanghai: stringValue(json.createdAtAsiaShanghai) ?? "--",
+    generatedImageCreated: booleanValue(json.generatedImageCreated) ?? false,
+    generatedImagePath: normalizeProjectPath(stringValue(json.generatedImagePath)),
+    automaticStorage: booleanValue(json.automaticStorage) ?? false,
+    evidencePath: relativePath,
+  } satisfies ConditionalRgbGenerationAttemptRecord
 }
 
 async function readJson(filePath: string): Promise<Record<string, unknown> | null> {

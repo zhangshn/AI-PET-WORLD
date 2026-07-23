@@ -7,20 +7,24 @@ import {
   formatShanghai as formatProgramEventShanghai,
   projectPath as programEventProjectPath,
 } from "./lib/ai-painter-program-event-store.mjs"
+import { indexArtifact } from "./lib/ai-pet-world-storage-catalog.mjs"
 
 const ROOT = process.cwd()
 const PYTHON = path.join(ROOT, "ml", "ai-painter", ".venv", "Scripts", "python.exe")
 const TRAINER = path.join(ROOT, "ml", "ai-painter", "scripts", "train_ai_assisted_conditional_denoiser.py")
-const CONFIG = path.join(ROOT, "ml", "ai-painter", "config", "complete-world-ai-assisted-cold-start-v4.json")
+const useV6 = process.argv.includes("--v6")
+const useV5 = process.argv.includes("--v5")
+const modelVersion = useV6 ? "v6" : (useV5 ? "v5" : "v4")
+const CONFIG = path.join(ROOT, "ml", "ai-painter", "config", `complete-world-ai-assisted-cold-start-${modelVersion}.json`)
 const AUTOENCODER_ROOT = path.join(ROOT, ".runtime", "ai-painter", "project-owned-complete-world-model-ai-assisted-v2")
-const MODEL_ROOT = path.join(ROOT, ".runtime", "ai-painter", "project-owned-complete-world-conditional-denoiser-v4")
+const MODEL_ROOT = path.join(ROOT, ".runtime", "ai-painter", `project-owned-complete-world-conditional-denoiser-${modelVersion}`)
 const modelConfig = readJson(CONFIG)
 const datasetPointer = readJson("data/world-samples/ai-assisted-cold-start-dataset-packages/latest.json")
 const datasetManifest = datasetPointer?.manifestPath ? readJson(datasetPointer.manifestPath) : null
 const timestamp = new Date().toISOString()
 const smokeTest = process.argv.includes("--smoke-test")
 const resolutionStage = readResolutionStage(process.argv.slice(2))
-const runId = `ai-assisted-conditional-denoiser-v4-${smokeTest ? "smoke" : `stage-${resolutionStage}`}-${timestamp.replace(/[:.]/g, "-")}`
+const runId = `ai-assisted-conditional-denoiser-${modelVersion}-${smokeTest ? "smoke" : `stage-${resolutionStage}`}-${timestamp.replace(/[:.]/g, "-")}`
 const runDir = path.join(MODEL_ROOT, runId)
 const autoencoderCheckpoint = findAutoencoderCheckpoint()
 const parentDenoiserCheckpoint = resolutionStage > 0 && !smokeTest
@@ -106,8 +110,8 @@ const valid = manifest?.schemaVersion === modelConfig?.requiredCheckpointProvena
   && manifest?.latentNormalization?.version === "per_channel_train_split_v1"
   && manifest?.latentNormalization?.mean?.length === modelConfig?.latentChannels
   && manifest?.latentNormalization?.standardDeviation?.length === modelConfig?.latentChannels
-  && manifest?.bestCheckpointMetric === "fixed_grid_composite_condition_quality_score_v4"
-  && manifest?.denoiserLossVersion === "velocity_clean_gradient_condition_reconstruction_v4"
+  && manifest?.bestCheckpointMetric === modelConfig?.training?.bestCheckpointMetric
+  && manifest?.denoiserLossVersion === modelConfig?.training?.denoiserLossVersion
   && manifest?.conditionResizeContract === "discrete_nearest_continuous_bilinear_v1"
   && Number.isInteger(manifest?.bestEpoch)
   && manifest?.formalInferenceEligible === false
@@ -132,6 +136,7 @@ const pointer = {
 }
 writeJson(manifestPath, pointer)
 writeJson(path.join(MODEL_ROOT, smokeTest ? "latest-program-check.json" : "latest.json"), pointer)
+indexArtifactTree(runDir, runId)
 appendAiPainterProgramEvent({
   action: "run_ai_assisted_conditional_denoiser_training",
   runId,
@@ -189,6 +194,7 @@ function failOrBlock(status, reasons, child) {
   const recordPath = path.join(MODEL_ROOT, status === "blocked" ? "blocks" : "failures", `${runId}.json`)
   writeJson(recordPath, record)
   writeJson(path.join(path.dirname(recordPath), "latest.json"), { ...record, recordPath: projectPath(recordPath) })
+  indexArtifactTree(runDir, runId)
   appendAiPainterProgramEvent({
     action: "run_ai_assisted_conditional_denoiser_training",
     runId,
@@ -237,7 +243,7 @@ function findPreviousDenoiserCheckpoint(stageIndex) {
   const expected = modelConfig?.training?.resolutionStages?.[stageIndex - 1]
   if (!expected || !fs.existsSync(MODEL_ROOT)) return null
   return fs.readdirSync(MODEL_ROOT, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && entry.name.startsWith("ai-assisted-conditional-denoiser-v4-stage-"))
+    .filter((entry) => entry.isDirectory() && entry.name.startsWith(`ai-assisted-conditional-denoiser-${modelVersion}-stage-`))
     .map((entry) => readJson(path.join(MODEL_ROOT, entry.name, "manifest.json")))
     .filter((manifest) => manifest
       && manifest.status === "conditional_denoiser_training_completed_pending_validation"
@@ -263,7 +269,31 @@ function readResolutionStage(args) {
 }
 
 function readJson(value) { try { return JSON.parse(fs.readFileSync(path.resolve(ROOT, value), "utf8")) } catch { return null } }
-function writeJson(filePath, value) { fs.mkdirSync(path.dirname(filePath), { recursive: true }); fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`) }
+function writeJson(filePath, value) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true })
+  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`)
+  indexWrittenArtifact(filePath, runId)
+}
+function indexArtifactTree(rootPath, artifactRunId) {
+  if (!fs.existsSync(rootPath)) return
+  for (const entry of fs.readdirSync(rootPath, { withFileTypes: true })) {
+    const childPath = path.join(rootPath, entry.name)
+    if (entry.isDirectory()) indexArtifactTree(childPath, artifactRunId)
+    else if (entry.isFile()) indexWrittenArtifact(childPath, artifactRunId)
+  }
+}
+function indexWrittenArtifact(filePath, artifactRunId) {
+  const info = fs.statSync(filePath)
+  indexArtifact({
+    logicalPath: projectPath(filePath),
+    physicalUri: fs.realpathSync(filePath),
+    storageLayer: "hot",
+    runId: artifactRunId,
+    byteSize: info.size,
+    modifiedAtUtc: info.mtime.toISOString(),
+    sha256: sha256File(filePath),
+  })
+}
 function projectPath(value) { return path.relative(ROOT, path.resolve(value)).replace(/\\/g, "/") }
 function fileHashMatches(filePath, expected) {
   if (!filePath || !expected) return false

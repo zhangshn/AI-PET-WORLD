@@ -2,7 +2,7 @@
   "schemaVersion": "natural-home-original-image-coverage-blueprint-v1",
   "blueprintId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1-original-image-coverage",
   "status": "regional_profile_lifecycle_and_connectivity_owner_approved_source_route_pending",
-  "updatedAt": "2026-07-19 09:05:57+08:00",
+  "updatedAt": "2026-07-22T09:12:54+08:00",
   "ownerDecision": {
     "mvpProfileConfirmed": true,
     "longTermWorldIdentityStrategy": "playerId_to_worldId_to_worldSeed_to_worldProfileId",
@@ -424,10 +424,24 @@
       "isDefault": true
     },
     {
+      "snapshotId": "mainland-southeast-asia-tropical-monsoon-provisional-wet-to-dry-transition-v1",
+      "path": "data/world-samples/original-image-library/natural-home-v1/provisional-visual-snapshot-wet-to-dry-transition-v1.json",
+      "season": "wet_to_dry_transition",
+      "environmentState": "receding_monsoon_transition",
+      "isDefault": false
+    },
+    {
       "snapshotId": "mainland-southeast-asia-tropical-monsoon-provisional-late-dry-season-v1",
       "path": "data/world-samples/original-image-library/natural-home-v1/provisional-visual-snapshot-late-dry-season-v1.json",
       "season": "dry_season",
       "environmentState": "late_dry_season",
+      "isDefault": false
+    },
+    {
+      "snapshotId": "mainland-southeast-asia-tropical-monsoon-provisional-dry-to-wet-transition-v1",
+      "path": "data/world-samples/original-image-library/natural-home-v1/provisional-visual-snapshot-dry-to-wet-transition-v1.json",
+      "season": "dry_to_wet_transition",
+      "environmentState": "pre_monsoon_rainfall_return_transition",
       "isDefault": false
     }
   ],
@@ -687,5 +701,6 @@
     "existing_concept_records_use_legacy_temperate_profile",
     "latest_task_environment_must_be_recompiled"
   ],
-  "automaticStorage": true
+  "automaticStorage": true,
+  "seasonalTransitionSnapshotAuthorizationRef": "project-owner-authorization-2026-07-22-seasonal-transition-environment-snapshots"
 }

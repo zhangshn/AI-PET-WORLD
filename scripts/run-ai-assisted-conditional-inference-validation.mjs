@@ -4,6 +4,8 @@ import fs from "node:fs"
 import path from "node:path"
 import sharp from "sharp"
 import { appendAiPainterProgramEvent, projectPath as ledgerProjectPath } from "./lib/ai-painter-program-event-store.mjs"
+import { indexArtifact } from "./lib/ai-pet-world-storage-catalog.mjs"
+import { logicalProjectPath } from "./lib/ai-pet-world-storage.mjs"
 
 const ROOT = process.cwd()
 const PYTHON = path.join(ROOT, "ml", "ai-painter", ".venv", "Scripts", "python.exe")
@@ -13,14 +15,15 @@ const RUNNER = path.join(ROOT, "scripts", "run-ai-assisted-conditional-inference
 const MODEL_SOURCE = path.join(ROOT, "ml", "ai-painter", "src", "ai_painter", "complete_world", "model.py")
 const DIFFUSION_SOURCE = path.join(ROOT, "ml", "ai-painter", "src", "ai_painter", "complete_world", "diffusion.py")
 const PROFESSIONAL_AESTHETIC_SOURCE = path.join(ROOT, "scripts", "lib", "ai-assisted-professional-aesthetic.mjs")
-const CONFIG_PATH = "ml/ai-painter/config/complete-world-ai-assisted-cold-start-v4.json"
-const CHECKPOINT_POINTER = ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v4/latest.json"
+const args = parseArgs(process.argv.slice(2))
+const MODEL_VERSION = args.modelVersion
+const CONFIG_PATH = `ml/ai-painter/config/complete-world-ai-assisted-cold-start-${MODEL_VERSION}.json`
+const CHECKPOINT_POINTER = `.runtime/ai-painter/project-owned-complete-world-conditional-denoiser-${MODEL_VERSION}/latest.json`
 const DATASET_POINTER = "data/world-samples/ai-assisted-cold-start-dataset-packages/latest.json"
 const OUTPUT_ROOT = path.join(ROOT, ".runtime", "ai-painter", "ai-assisted-conditional-inference-validation")
 const FAILURE_ROOT = path.join(OUTPUT_ROOT, "failures")
-const args = parseArgs(process.argv.slice(2))
 const timestamp = new Date().toISOString()
-const runId = `ai-assisted-conditional-inference-validation-v4-${timestamp.replace(/[:.]/g, "-")}`
+const runId = `ai-assisted-conditional-inference-validation-${MODEL_VERSION}-${timestamp.replace(/[:.]/g, "-")}`
 const runDir = path.join(OUTPUT_ROOT, runId)
 const outputImage = path.join(runDir, "validation.png")
 const modelReportPath = path.join(runDir, "model-report.json")
@@ -53,11 +56,12 @@ if (!args.ownerCommandRef || args.ownerCommandRef.length < 8) blockers.push("spe
 if (blockers.length > 0) blockOrFail("blocked", blockers, null)
 if (!config || config.ownership !== "project_owned_architecture_ai_assisted_cold_start_weights") blockers.push("ai_assisted_model_config_invalid")
 if (!checkpoint) blockers.push("ai_assisted_conditional_checkpoint_missing")
+if (checkpoint && checkpoint.schemaVersion !== config?.requiredCheckpointProvenance) blockers.push("ai_assisted_checkpoint_provenance_invalid")
 if (checkpoint && checkpoint.status !== "conditional_denoiser_training_completed_pending_validation") blockers.push("ai_assisted_checkpoint_training_not_completed")
 if (checkpoint && checkpoint.denoiserTrained !== true) blockers.push("ai_assisted_denoiser_not_trained")
 if (checkpoint && checkpoint.predictionTarget !== "velocity_v1") blockers.push("ai_assisted_checkpoint_prediction_target_invalid")
-if (checkpoint && checkpoint.bestCheckpointMetric !== "fixed_grid_composite_condition_quality_score_v4") blockers.push("ai_assisted_checkpoint_selection_metric_invalid")
-if (checkpoint && checkpoint.denoiserLossVersion !== "velocity_clean_gradient_condition_reconstruction_v4") blockers.push("ai_assisted_checkpoint_loss_contract_invalid")
+if (checkpoint && checkpoint.bestCheckpointMetric !== config?.training?.bestCheckpointMetric) blockers.push("ai_assisted_checkpoint_selection_metric_invalid")
+if (checkpoint && checkpoint.denoiserLossVersion !== config?.training?.denoiserLossVersion) blockers.push("ai_assisted_checkpoint_loss_contract_invalid")
 if (checkpoint && checkpoint.conditionResizeContract !== "discrete_nearest_continuous_bilinear_v1") blockers.push("ai_assisted_checkpoint_condition_resize_invalid")
 if (checkpoint && checkpoint.latentNormalization?.version !== "per_channel_train_split_v1") blockers.push("ai_assisted_checkpoint_latent_normalization_invalid")
 if (checkpoint && checkpoint.formalInferenceEligible !== false) blockers.push("ai_assisted_checkpoint_validation_boundary_invalid")
@@ -277,6 +281,7 @@ const completedManifest = {
 }
 writeJson(manifestPath, completedManifest)
 writeJson(path.join(OUTPUT_ROOT, "latest.json"), { ...completedManifest, manifestPath: projectPath(manifestPath) })
+indexArtifactTree(runDir, runId)
 console.log(JSON.stringify({ status: completedManifest.status, runId, conditionLabel: args.conditionLabel, sourceSplit: sample.split, outputImagePath: completedManifest.outputImagePath, manifestPath: projectPath(manifestPath), machineReviewPath: completedManifest.machineReviewPath, machineReviewIssueCodes: completedManifest.machineReviewIssueCodes, formalInferenceEligible: false }, null, 2))
 
 function blockOrFail(status, reasons, child, candidateGenerated = false, generatedManifest = null) {
@@ -305,6 +310,7 @@ function blockOrFail(status, reasons, child, candidateGenerated = false, generat
   const recordPath = path.join(FAILURE_ROOT, `${runId}.json`)
   writeJson(recordPath, record)
   writeJson(path.join(FAILURE_ROOT, "latest.json"), { ...record, recordPath: projectPath(recordPath) })
+  if (fs.existsSync(runDir)) indexArtifactTree(runDir, runId)
   appendAiPainterProgramEvent({
     action: "run_ai_assisted_conditional_inference_validation",
     runId,
@@ -334,12 +340,39 @@ function parseArgs(values) {
   const seedValue = read("--seed")
   const seed = seedValue === null ? null : Number(seedValue)
   if (seedValue !== null && (!Number.isInteger(seed) || seed < 0)) throw new Error("--seed must be a non-negative integer")
-  return { conditionLabel: read("--condition-label"), ownerCommandRef: read("--owner-command-ref"), seed }
+  const requestedVersion = read("--model-version") ?? (values.includes("--v6") ? "v6" : (values.includes("--v5") ? "v5" : "v4"))
+  if (!new Set(["v4", "v5", "v6"]).has(requestedVersion)) throw new Error("--model-version must be v4, v5, or v6")
+  return { conditionLabel: read("--condition-label"), ownerCommandRef: read("--owner-command-ref"), seed, modelVersion: requestedVersion }
 }
 
 function readJson(value) { try { return JSON.parse(fs.readFileSync(resolvePath(value), "utf8")) } catch { return null } }
 function resolvePath(value) { const resolved = path.resolve(ROOT, value); if (resolved !== ROOT && !resolved.startsWith(`${ROOT}${path.sep}`)) throw new Error(`path escapes root: ${value}`); return resolved }
-function writeJson(filePath, value) { fs.mkdirSync(path.dirname(filePath), { recursive: true }); fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`) }
+function writeJson(filePath, value) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true })
+  fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`)
+  indexWrittenArtifact(filePath, runId)
+}
+function indexArtifactTree(rootPath, artifactRunId) {
+  if (!fs.existsSync(rootPath)) return
+  const entries = fs.readdirSync(rootPath, { withFileTypes: true })
+  for (const entry of entries) {
+    const childPath = path.join(rootPath, entry.name)
+    if (entry.isDirectory()) indexArtifactTree(childPath, artifactRunId)
+    else if (entry.isFile()) indexWrittenArtifact(childPath, artifactRunId)
+  }
+}
+function indexWrittenArtifact(filePath, artifactRunId) {
+  const info = fs.statSync(filePath)
+  indexArtifact({
+    logicalPath: logicalProjectPath(filePath),
+    physicalUri: fs.realpathSync(filePath),
+    storageLayer: "hot",
+    runId: artifactRunId,
+    byteSize: info.size,
+    modifiedAtUtc: info.mtime.toISOString(),
+    sha256: sha256(fs.readFileSync(filePath)),
+  })
+}
 function projectPath(value) { return path.relative(ROOT, path.resolve(value)).replace(/\\/g, "/") }
 function sha256(value) { return crypto.createHash("sha256").update(value).digest("hex") }
 function fileEvidence(value) {

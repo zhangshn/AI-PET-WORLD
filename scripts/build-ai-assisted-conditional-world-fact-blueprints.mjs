@@ -8,6 +8,13 @@ import {
   assertWorldVisualDictionaryContract,
   loadWorldVisualDictionaryContract,
 } from "./lib/world-visual-dictionary-contract.mjs"
+import { auditCompleteMapScope } from "./lib/complete-map-scope-gate.mjs"
+import {
+  appendAiPainterProgramEvent,
+  writeJsonAtomic,
+} from "./lib/ai-painter-program-event-store.mjs"
+import { indexArtifact } from "./lib/ai-pet-world-storage-catalog.mjs"
+import { logicalProjectPath } from "./lib/ai-pet-world-storage.mjs"
 
 const ROOT = process.cwd()
 const OUTPUT_ROOT = path.join(ROOT, ".runtime", "ai-painter", "ai-assisted-conditional-world-facts")
@@ -16,10 +23,13 @@ const PROFILE_PATH = "data/world-samples/original-image-library/natural-home-v1/
 const CONNECTIVITY_POINTER_PATH = "data/world-samples/world-connectivity/blueprints/latest.json"
 const WORLD_PROFILE_ID = "mainland-southeast-asia-tropical-monsoon-natural-home-v1"
 const OWNER_AUTHORIZATION_REF = "conversation-owner-authorization-2026-07-18-rebuild-all-condition-blueprints-new-labels"
+const V7_TASK_OWNER_AUTHORIZATION_REF_PREFIX = "conversation-owner-authorization-2026-07-22"
+const V7_CONTINUOUS_BATCH_AUTHORIZATION_ID = "owner-authorized-v7-remaining-104-continuous-batch-20260723"
 const GENERATION_CONTRACT_VERSION = "complete-map-scope-world-facts-v2"
 const LABEL_PREFIX = "complete-map-v2"
 const WIDTH = 1024
 const HEIGHT = 768
+const V7_SLOT_ID = argumentValue("--v7-slot-id")
 const REVISE_SOURCE_RECORD_ID = argumentValue("--revise-source-record-id")
 const REVISION_REASON = argumentValue("--revision-reason")
 const REVISION_OWNER_COMMAND_REF = argumentValue("--owner-command-ref")
@@ -44,6 +54,11 @@ const connectivityBlueprint = readRequiredJson(connectivityPointer.blueprintPath
 assert(profile.worldProfileId === WORLD_PROFILE_ID, "world profile identity mismatch")
 assert(connectivityPointer.worldProfileId === WORLD_PROFILE_ID, "connectivity profile identity mismatch")
 assert(connectivityBlueprint.blueprintId === connectivityPointer.blueprintId, "connectivity blueprint identity mismatch")
+
+if (V7_SLOT_ID) {
+  await buildV7CapacitySlot(V7_SLOT_ID)
+  process.exit(0)
+}
 
 const sourceRecords = (index.records ?? [])
   .filter((record) => record.categoryId === "complete-maps")
@@ -879,8 +894,582 @@ function buildEnvironmentContext({ record, snapshot, recipe }) {
 }
 
 function snapshotPathForId(snapshotId) {
-  if (snapshotId === "mainland-southeast-asia-tropical-monsoon-provisional-late-dry-season-v1") return "data/world-samples/original-image-library/natural-home-v1/provisional-visual-snapshot-late-dry-season-v1.json"
-  return "data/world-samples/original-image-library/natural-home-v1/provisional-visual-snapshot-v2.json"
+  const paths = {
+    "mainland-southeast-asia-tropical-monsoon-provisional-wet-season-post-rain-v2": "data/world-samples/original-image-library/natural-home-v1/provisional-visual-snapshot-v2.json",
+    "mainland-southeast-asia-tropical-monsoon-provisional-wet-to-dry-transition-v1": "data/world-samples/original-image-library/natural-home-v1/provisional-visual-snapshot-wet-to-dry-transition-v1.json",
+    "mainland-southeast-asia-tropical-monsoon-provisional-late-dry-season-v1": "data/world-samples/original-image-library/natural-home-v1/provisional-visual-snapshot-late-dry-season-v1.json",
+    "mainland-southeast-asia-tropical-monsoon-provisional-dry-to-wet-transition-v1": "data/world-samples/original-image-library/natural-home-v1/provisional-visual-snapshot-dry-to-wet-transition-v1.json",
+  }
+  assert(paths[snapshotId], `unknown environment snapshot: ${snapshotId}`)
+  return paths[snapshotId]
+}
+
+async function buildV7CapacitySlot(slotId) {
+  const v7OutputRoot = path.join(ROOT, ".runtime", "ai-painter", "ai-assisted-v7-data-tasks")
+  const planPointerPath = path.join(ROOT, ".runtime", "ai-painter", "ai-assisted-v7-data-capacity-plans", "latest.json")
+  const planPointer = readRequiredJson(planPointerPath)
+  verifyHash(resolveProjectPath(planPointer.gapListPath), planPointer.gapListSha256, "V7 gap-list hash mismatch")
+  const gapList = readRequiredJson(planPointer.gapListPath)
+  const slot = gapList.plannedSlots?.find((entry) => entry.slotId === slotId)
+  assert(slot, `V7 capacity slot missing: ${slotId}`)
+  assert(slot.imageGenerationAuthorized === true, "V7 slot is outside the owner-authorized continuous generation batch")
+  assert(slot.gpuTrainingAuthorized === false, "V7 slot unexpectedly authorizes GPU training")
+  assert(slot.automaticBatchGenerationAllowed === true, "V7 slot does not authorize continuous batch generation")
+  assert(slot.continuousBatchAuthorizationId === V7_CONTINUOUS_BATCH_AUTHORIZATION_ID, "V7 continuous batch authorization identity mismatch")
+  assert(slot.mapScope === "complete-natural-home-map", "V7 slot is not a complete map")
+  assert(slot.requiredConditionContract === GENERATION_CONTRACT_VERSION, "V7 condition contract mismatch")
+  assert(slot.requiredNativeResolution?.width === WIDTH && slot.requiredNativeResolution?.height === HEIGHT, "V7 native resolution mismatch")
+  const existingTask = findExistingV7CapacitySlotTask(v7OutputRoot, slotId)
+  assert(!existingTask, `V7 capacity slot task already exists and cannot be repeated: ${slotId} (${existingTask ?? "unknown"})`)
+  const ownerAuthorizationRef = V7_CONTINUOUS_BATCH_AUTHORIZATION_ID
+
+  const coveragePath = "data/world-samples/original-image-library/natural-home-v1/coverage-blueprint.json"
+  const coverage = readRequiredJson(coveragePath)
+  const landscapeProfile = coverage.regionalLandscapeTypes?.find((entry) => entry.typeId === slot.regionalLandscapeType)
+  assert(landscapeProfile, `approved landscape profile missing: ${slot.regionalLandscapeType}`)
+  const snapshotEntry = coverage.availableVisualSnapshots?.find((entry) => entry.season === slot.monsoonSeason)
+  assert(snapshotEntry, `approved environment snapshot missing: ${slot.monsoonSeason}`)
+  const snapshotPath = snapshotEntry.path
+  const snapshot = readRequiredJson(snapshotPath)
+  assert(snapshot.snapshotId === snapshotEntry.snapshotId, "V7 snapshot identity mismatch")
+
+  const runId = `ai-assisted-v7-data-task-${slotId}-${timestamp.replace(/[:.]/g, "-")}`
+  const runDir = path.join(v7OutputRoot, runId)
+  const sampleDir = path.join(runDir, slotId)
+  fs.mkdirSync(sampleDir, { recursive: true })
+
+  try {
+    const conditionLabel = `v7-complete-map-${slotId.replace("v7-capacity-slot-", "")}`
+    const taskId = `training-world-visual-task-${conditionLabel}-${timestamp.replace(/[:.]/g, "-")}`
+    const worldSeed = sha256(Buffer.from(`${planPointer.runId}:${slotId}:${slot.regionalLandscapeType}:${slot.monsoonSeason}`))
+    const worldId = `training-world:${conditionLabel}:${worldSeed.slice(0, 12)}`
+    const recipe = v7RecipeFor(slot, worldSeed)
+    const syntheticRecord = {
+      recordId: slotId,
+      classification: {
+        monsoonSeason: slot.monsoonSeason,
+        environmentState: snapshot.environment.monsoonPhase,
+      },
+      aiAssistedColdStart: { promptEvidencePath: null },
+    }
+    const environmentContext = buildEnvironmentContext({ record: syntheticRecord, snapshot, recipe })
+    const geometry = buildGeometry(conditionLabel, recipe)
+    const blueprintPath = path.join(sampleDir, "world-fact-blueprint.json")
+    const blueprint = {
+      schemaVersion: "ai-assisted-training-world-fact-blueprint-v2",
+      blueprintId: `training-world-facts-${conditionLabel}`,
+      status: "v7_capacity_world_facts_ready_rgb_missing",
+      createdAtUtc: timestamp,
+      createdAtAsiaShanghai: formatShanghai(timestamp),
+      ownerAuthorizationRef,
+      generationContractVersion: GENERATION_CONTRACT_VERSION,
+      conditionLabel,
+      capacitySlotId: slotId,
+      capacityPlanRunId: planPointer.runId,
+      capacityGapListPath: planPointer.gapListPath,
+      capacityGapListSha256: planPointer.gapListSha256,
+      split: slot.split,
+      coverageRole: slot.coverageRole,
+      uniqueWorldSeed: worldSeed,
+      uniqueLayoutVariant: recipe.layoutVariant,
+      sourceBlueprintReuse: false,
+      completeMapScopeRequired: true,
+      sourceMode: "v7_capacity_slot_plus_locked_world_rules_before_rgb",
+      sourceRecordId: null,
+      sourceImagePathRead: false,
+      sourceImageGeometryRead: false,
+      existingRgbMayBeBoundAsTarget: false,
+      taskId,
+      worldId,
+      tick: 0,
+      worldProfileId: WORLD_PROFILE_ID,
+      earthParameterSnapshotId: snapshot.snapshotId,
+      earthParameterSnapshotPath: projectPath(snapshotPath),
+      connectivityContractId: connectivityPointer.contractId,
+      connectivityBlueprintId: connectivityPointer.blueprintId,
+      connectivityBlueprintPath: connectivityPointer.blueprintPath,
+      connectivityTrainingEligible: true,
+      connectivityThresholdStatus: "owner_approved_27_positive_27_negative_nine_axes_3_plus_3",
+      landscapeType: recipe.landscape,
+      landscapeProfile: {
+        requiredFeatures: landscapeProfile.requiredFeatures,
+        optionalFeatures: landscapeProfile.optionalFeatures,
+      },
+      environmentContext,
+      canvas: { width: WIDTH, height: HEIGHT, frameScope: "complete_runtime_frame" },
+      geometry,
+      semanticRules: {
+        waterFlow: recipe.waterFlow,
+        routeIntent: recipe.routeIntent,
+        centerIntent: recipe.centerIntent,
+        camera: "top_down_slight_three_quarter_2d",
+        style: "native_1024x768_high_resolution_pixel_game_map",
+        forbidden: ["building", "character", "animal", "bridge", "text", "ui", "program_drawn_final_art"],
+      },
+      outputContract: {
+        generatesRgb: false,
+        changesRuntimeWorldFacts: false,
+        formalCandidate: false,
+        needsNewRgbPairCreatedAfterThisBlueprint: true,
+      },
+      automaticStorage: true,
+    }
+    writeJson(blueprintPath, blueprint)
+
+    const visualFacts = buildVisualFacts({ conditionLabel, recipe, geometry, environmentContext, taskId, worldId, blueprintPath })
+    const visualFactPath = path.join(sampleDir, "visual-fact-manifest.json")
+    writeJson(visualFactPath, visualFacts)
+    const directorPlan = buildDirectorPlan({ conditionLabel, recipe, geometry, environmentContext, taskId, worldId, visualFacts, snapshot })
+    directorPlan.capacitySlotId = slotId
+    directorPlan.uniqueWorldSeed = worldSeed
+    directorPlan.uniqueLayoutVariant = recipe.layoutVariant
+    directorPlan.singleMapEcologyPlan.requiredFeatures = landscapeProfile.requiredFeatures
+    directorPlan.singleMapEcologyPlan.optionalFeatures = landscapeProfile.optionalFeatures
+
+    const taskPackage = buildTaskPackage({
+      record: syntheticRecord,
+      conditionLabel,
+      recipe,
+      geometry,
+      environmentContext,
+      taskId,
+      worldId,
+      visualFacts,
+      visualFactPath,
+      directorPlan,
+      snapshot,
+      snapshotPath,
+      blueprintPath,
+    })
+    taskPackage.status = "v7_capacity_task_ready_rgb_missing"
+    taskPackage.generationMode = "v7_capacity_slot_task_preparation"
+    taskPackage.capacitySlot = slot
+    taskPackage.uniqueWorldSeed = worldSeed
+    taskPackage.uniqueLayoutVariant = recipe.layoutVariant
+    taskPackage.sourceBindings.promptEvidencePath = null
+    taskPackage.sourceBindings.capacityPlanPath = planPointer.capacityPlanPath
+    taskPackage.sourceBindings.capacityGapListPath = planPointer.gapListPath
+    taskPackage.sourceBindings.capacityGapListSha256 = planPointer.gapListSha256
+    taskPackage.sourceBindings.capacitySlotId = slotId
+    taskPackage.ecologyState.requiredFeatures = landscapeProfile.requiredFeatures
+    taskPackage.ecologyState.optionalFeatures = landscapeProfile.optionalFeatures
+    taskPackage.inferenceGate = {
+      status: "continuous_batch_rgb_generation_authorized_rgb_missing",
+      canRunCompleteVisualInference: false,
+      reasons: ["rgb_missing"],
+      authorizationId: V7_CONTINUOUS_BATCH_AUTHORIZATION_ID,
+      ownerApprovalAutomatic: false,
+      gpuTrainingAuthorized: false,
+    }
+    taskPackage.storageContract.mustStoreModelCheckpoint = false
+    validateRequiredFields(directorPlan, REQUIRED_DIRECTOR_OUTPUT_FIELDS, `v7-director:${slotId}`)
+    validateRequiredFields(taskPackage, REQUIRED_TASK_PACKAGE_FIELDS, `v7-task:${slotId}`)
+    taskPackage.taskSha256 = sha256(Buffer.from(JSON.stringify(taskPackage)))
+
+    const taskPath = path.join(sampleDir, "task-package.json")
+    const directorPath = path.join(sampleDir, "director-output.json")
+    const taskManifestPath = path.join(sampleDir, "manifest.json")
+    writeJson(taskPath, taskPackage)
+    writeJson(directorPath, directorPlan)
+    const taskManifest = {
+      schemaVersion: "world-visual-generation-task-manifest-v1",
+      taskId,
+      status: taskPackage.status,
+      inferenceStatus: taskPackage.inferenceGate.status,
+      createdAt: timestamp,
+      createdAtAsiaShanghai: formatShanghai(timestamp),
+      dictionaryVersionId: dictionary.dictionaryVersionId,
+      worldId,
+      ownerId: "project-owner",
+      tick: 0,
+      worldProfileId: WORLD_PROFILE_ID,
+      generationContractVersion: GENERATION_CONTRACT_VERSION,
+      conditionLabel,
+      capacitySlotId: slotId,
+      split: slot.split,
+      earthParameterSnapshotId: snapshot.snapshotId,
+      environmentContext,
+      runtimeFrameId: null,
+      sourceMode: "v7_capacity_slot_plus_locked_world_rules_before_rgb",
+      taskSha256: taskPackage.taskSha256,
+      taskPath: projectPath(taskPath),
+      directorPath: projectPath(directorPath),
+      blueprintPath: projectPath(blueprintPath),
+      imageCount: 0,
+      imageGenerationStarted: false,
+      gpuTrainingStarted: false,
+      automaticStorage: true,
+    }
+    writeJson(taskManifestPath, taskManifest)
+
+    const compiler = spawnSync(process.execPath, [
+      path.join(ROOT, "scripts", "compile-current-world-visual-conditions.mjs"),
+      "--task", projectPath(taskPath),
+      "--task-manifest", projectPath(taskManifestPath),
+    ], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+    assert(compiler.status === 0, `V7 condition compilation failed: ${compiler.stderr || compiler.stdout}`)
+    const conditionManifestPath = path.join(sampleDir, "compiled-conditions", "manifest.json")
+    const conditionManifest = readRequiredJson(conditionManifestPath)
+    const conditionPack = readRequiredJson(conditionManifest.conditionPackPath)
+    assert(conditionManifest.channelCount === 23, "V7 condition channel count mismatch")
+
+    const scopeAudit = await auditCompleteMapScope({ blueprint, directorOutput: directorPlan, task: taskPackage, conditionPack, connectivityBlueprint })
+    const scopeAuditPath = path.join(sampleDir, "complete-map-scope-audit.json")
+    writeJson(scopeAuditPath, scopeAudit)
+    assert(scopeAudit.passed === true, `V7 complete-map scope blocked: ${(scopeAudit.issues ?? []).join(",")}`)
+
+    const row = {
+      capacitySlotId: slotId,
+      status: "task_ready_rgb_missing",
+      split: slot.split,
+      coverageRole: slot.coverageRole,
+      regionalLandscapeType: slot.regionalLandscapeType,
+      monsoonSeason: slot.monsoonSeason,
+      conditionLabel,
+      worldId,
+      uniqueWorldSeed: worldSeed,
+      uniqueLayoutVariant: recipe.layoutVariant,
+      environmentSnapshotId: snapshot.snapshotId,
+      blueprintPath: projectPath(blueprintPath),
+      blueprintSha256: sha256(fs.readFileSync(blueprintPath)),
+      directorOutputPath: projectPath(directorPath),
+      directorOutputSha256: sha256(fs.readFileSync(directorPath)),
+      taskPackagePath: projectPath(taskPath),
+      taskPackageSha256: sha256(fs.readFileSync(taskPath)),
+      conditionManifestPath: projectPath(conditionManifestPath),
+      conditionPackPath: conditionManifest.conditionPackPath,
+      conditionPackSha256: conditionManifest.conditionPackSha256,
+      conditionPackCanonicalSha256: conditionManifest.conditionPackSha256,
+      conditionPackFileSha256: sha256(fs.readFileSync(resolveProjectPath(conditionManifest.conditionPackPath))),
+      completeMapScopeAuditPath: projectPath(scopeAuditPath),
+      completeMapScopeAuditSha256: sha256(fs.readFileSync(scopeAuditPath)),
+      channelCount: conditionManifest.channelCount,
+      completeMapScopePassed: true,
+      pairedRgbCount: 0,
+      imageGenerationAuthorized: true,
+      gpuTrainingAuthorized: false,
+      continuousBatchAuthorizationId: V7_CONTINUOUS_BATCH_AUTHORIZATION_ID,
+    }
+    const manifest = {
+      schemaVersion: "ai-assisted-v7-data-task-run-v1",
+      runId,
+      status: "task_ready_rgb_generation_authorized_by_continuous_batch",
+      createdAtUtc: timestamp,
+      createdAtAsiaShanghai: formatShanghai(timestamp),
+      ownerAuthorizationRef,
+      capacityPlanRunId: planPointer.runId,
+      capacityGapListPath: planPointer.gapListPath,
+      capacityGapListSha256: planPointer.gapListSha256,
+      row,
+      continuousBatchAuthorization: {
+        authorizationId: V7_CONTINUOUS_BATCH_AUTHORIZATION_ID,
+        executionMode: "sequential_one_active_generation_request",
+        ownerApprovalAutomatic: false,
+        gpuTrainingAutomatic: false,
+      },
+      blockers: ["rgb_missing", "machine_review_missing", "owner_review_missing"],
+      imageGenerationStarted: false,
+      gpuTrainingStarted: false,
+      automaticStorage: true,
+    }
+    const manifestPath = path.join(runDir, "manifest.json")
+    writeJson(manifestPath, manifest)
+    const latestPath = path.join(v7OutputRoot, "latest.json")
+    writeJsonAtomic(latestPath, {
+      schemaVersion: "ai-assisted-v7-data-task-latest-v1",
+      runId,
+      status: manifest.status,
+      updatedAtUtc: timestamp,
+      updatedAtAsiaShanghai: formatShanghai(timestamp),
+      capacitySlotId: slotId,
+      manifestPath: projectPath(manifestPath),
+      manifestSha256: sha256(fs.readFileSync(manifestPath)),
+      taskPackagePath: row.taskPackagePath,
+      conditionPackPath: row.conditionPackPath,
+      completeMapScopeAuditPath: row.completeMapScopeAuditPath,
+      imageGenerationStarted: false,
+      gpuTrainingStarted: false,
+    })
+    indexV7RunArtifacts(runDir, runId)
+    indexV7Artifact(latestPath, runId)
+    appendAiPainterProgramEvent({
+      runId,
+      status: "success",
+      stage: "ai_assisted_v7_capacity_slot_task_prepared",
+      action: "prepare_v7_capacity_slot_task",
+      kind: "v7_data_task",
+      titleZh: `V7 容量槽位 ${slotId.replace("v7-capacity-slot-", "")} 的完整地图任务已由程序准备并自动保存`,
+      titleEn: `The complete-map task for ${slotId} was prepared and saved by the program`,
+      summaryZh: "程序已保存世界事实、世界导演、任务包、23 通道条件、完整地图范围审核和双哈希证据。未生成 RGB，未启动 GPU，当前等待项目所有者对单张 RGB 的单独授权。",
+      summaryEn: "The program saved world facts, World Director output, the task package, 23-channel conditions, the complete-map scope audit, and dual-hash evidence. No RGB was generated and no GPU was started; explicit owner authorization for one RGB is still required.",
+      evidence: [
+        projectPath(manifestPath),
+        row.blueprintPath,
+        row.directorOutputPath,
+        row.taskPackagePath,
+        row.conditionPackPath,
+        row.completeMapScopeAuditPath,
+      ],
+    })
+    console.log(JSON.stringify(manifest, null, 2))
+  } catch (error) {
+    const failure = {
+      schemaVersion: "ai-assisted-v7-data-task-build-failure-v1",
+      runId,
+      capacitySlotId: slotId,
+      status: "failed_before_rgb_generation",
+      createdAtUtc: timestamp,
+      createdAtAsiaShanghai: formatShanghai(timestamp),
+      error: error instanceof Error ? error.message : "unknown_v7_task_build_error",
+      imageGenerationStarted: false,
+      gpuTrainingStarted: false,
+      automaticStorage: true,
+    }
+    const failurePath = path.join(runDir, "failure.json")
+    writeJsonAtomic(failurePath, failure)
+    indexV7Artifact(failurePath, runId)
+    appendAiPainterProgramEvent({
+      runId,
+      status: "failed",
+      stage: "ai_assisted_v7_capacity_slot_task_preparation_failed",
+      action: "prepare_v7_capacity_slot_task",
+      kind: "v7_data_task",
+      titleZh: "V7 容量槽位任务准备失败，程序已阻断并保存证据",
+      titleEn: "V7 capacity slot task preparation failed; the program blocked and saved evidence",
+      summaryZh: failure.error,
+      summaryEn: failure.error,
+      evidence: [projectPath(failurePath)],
+      errorCode: "v7_capacity_slot_task_preparation_failed",
+    })
+    throw error
+  }
+}
+
+function indexV7RunArtifacts(runDir, runId) {
+  for (const filePath of listFilesRecursive(runDir)) indexV7Artifact(filePath, runId)
+}
+
+function indexV7Artifact(filePath, runId) {
+  const stat = fs.statSync(filePath)
+  indexArtifact({
+    logicalPath: logicalProjectPath(filePath),
+    physicalUri: fs.realpathSync(filePath),
+    storageLayer: "hot",
+    runId,
+    byteSize: stat.size,
+    modifiedAtUtc: stat.mtime.toISOString(),
+    sha256: sha256(fs.readFileSync(filePath)),
+  })
+}
+
+function listFilesRecursive(root) {
+  const files = []
+  for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+    const resolved = path.join(root, entry.name)
+    if (entry.isDirectory()) files.push(...listFilesRecursive(resolved))
+    else if (entry.isFile()) files.push(resolved)
+  }
+  return files
+}
+
+function v7RecipeFor(slot, worldSeed) {
+  if (slot.slotId === "v7-capacity-slot-001") {
+    assert(slot.regionalLandscapeType === "lowland-evergreen-tropical-forest", `V7 ${slot.slotId} landscape recipe is not defined`)
+    assert(slot.monsoonSeason === "wet_to_dry_transition", `V7 ${slot.slotId} season recipe is not defined`)
+    const recipe = spec(
+      slot.regionalLandscapeType,
+      "no_major_surface_water_in_current_world_facts",
+      "south_boundary_entry_curves_through_irregular_home_center_and_continues_to_northeast_world_connection",
+      [],
+      [],
+      [line([[0.2, 1.03], [0.26, 0.82], [0.4, 0.64], [0.46, 0.53], [0.58, 0.38], [0.76, -0.03]], 0.032)],
+      [0.46, 0.53],
+      "high_to_moderate",
+      "high",
+    )
+    recipe.layoutVariant = `v7-complete-map-grammar-south-to-northeast-${worldSeed.slice(0, 12)}`
+    recipe.centerIntent = "irregular_playable_natural_home_center_without_rectangular_ground_patch"
+    recipe.focalSize = { width: 0.14, height: 0.11 }
+    recipe.objectCounts = { tree: 12, rock: 5, vegetation: 10 }
+    return recipe
+  }
+
+  if (slot.slotId === "v7-capacity-slot-002") {
+    assert(slot.regionalLandscapeType === "lowland-evergreen-tropical-forest", `V7 ${slot.slotId} landscape recipe is not defined`)
+    assert(slot.monsoonSeason === "wet_to_dry_transition", `V7 ${slot.slotId} season recipe is not defined`)
+    const recipe = spec(
+      slot.regionalLandscapeType,
+      "no_major_surface_water_in_current_world_facts",
+      "southeast_boundary_entry_bends_around_an_offset_irregular_home_center_and_continues_to_northwest_world_connection",
+      [],
+      [],
+      [line([[0.82, 1.03], [0.74, 0.84], [0.64, 0.69], [0.58, 0.57], [0.49, 0.47], [0.37, 0.31], [0.27, -0.03]], 0.034)],
+      [0.58, 0.57],
+      "high_to_moderate",
+      "high",
+    )
+    recipe.layoutVariant = `v7-complete-map-grammar-southeast-to-northwest-offset-center-${worldSeed.slice(0, 12)}`
+    recipe.centerIntent = "offset_irregular_playable_natural_home_center_with_distinct_open_and_forest_edge_zones"
+    recipe.focalSize = { width: 0.16, height: 0.1 }
+    recipe.objectCounts = { tree: 14, rock: 4, vegetation: 12 }
+    return recipe
+  }
+
+  if (slot.slotId === "v7-capacity-slot-003") {
+    assert(slot.regionalLandscapeType === "lowland-evergreen-tropical-forest", `V7 ${slot.slotId} landscape recipe is not defined`)
+    assert(slot.monsoonSeason === "dry_season", `V7 ${slot.slotId} season recipe is not defined`)
+    const recipe = spec(
+      slot.regionalLandscapeType,
+      "no_major_surface_water_in_current_world_facts",
+      "southwest_boundary_entry_curves_through_an_east_offset_irregular_home_center_and_continues_to_the_north_world_connection",
+      [],
+      [],
+      [line([[0.18, 1.03], [0.28, 0.84], [0.46, 0.7], [0.64, 0.58], [0.71, 0.45], [0.62, 0.26], [0.54, -0.03]], 0.033)],
+      [0.64, 0.58],
+      "medium",
+      "high",
+    )
+    recipe.layoutVariant = `v7-complete-map-grammar-southwest-to-north-dry-season-east-offset-center-${worldSeed.slice(0, 12)}`
+    recipe.centerIntent = "east_offset_irregular_playable_natural_home_center_with_dry_season_open_floor_and_layered_evergreen_boundary_zones"
+    recipe.focalSize = { width: 0.15, height: 0.12 }
+    recipe.objectCounts = { tree: 13, rock: 6, vegetation: 9 }
+    return recipe
+  }
+
+  const slotNumber = Number(slot.slotId.match(/v7-capacity-slot-(\d{3})/)?.[1])
+  assert(Number.isInteger(slotNumber) && slotNumber >= 4 && slotNumber <= 107, `V7 slot recipe is outside the authorized range: ${slot.slotId}`)
+  const sourceRecipeId = v7LandscapeRecipeId(slot.regionalLandscapeType)
+  assert(sourceRecipeId, `V7 landscape recipe is not defined: ${slot.regionalLandscapeType}`)
+  const source = recipeFor(`ai-cold-start-map-${sourceRecipeId}`, slot.regionalLandscapeType)
+  const transformIndex = (slotNumber - 4) % 8
+  const scaleX = 0.9 + (Number.parseInt(worldSeed.slice(0, 2), 16) / 255) * 0.08
+  const scaleY = 1 + (Number.parseInt(worldSeed.slice(2, 4), 16) / 255) * 0.06
+  const recipe = transformCompleteMapRecipe(source, transformIndex, scaleX, scaleY)
+  const seasonalProfile = v7SeasonalProfile(slot.monsoonSeason)
+  assert(seasonalProfile, `V7 season recipe is not defined: ${slot.monsoonSeason}`)
+  recipe.moisture = seasonalProfile.moisture
+  recipe.layoutVariant = `v7-complete-map-${slot.regionalLandscapeType}-${slot.monsoonSeason}-transform-${transformIndex}-${worldSeed.slice(0, 12)}`
+  recipe.centerIntent = `${slot.regionalLandscapeType}_${slot.monsoonSeason}_irregular_playable_home_center_without_rectangular_ground_patch`
+  recipe.focalSize = {
+    width: Number((0.13 + (Number.parseInt(worldSeed.slice(4, 6), 16) / 255) * 0.04).toFixed(6)),
+    height: Number((0.09 + (Number.parseInt(worldSeed.slice(6, 8), 16) / 255) * 0.04).toFixed(6)),
+  }
+  recipe.objectCounts = adjustObjectCountsForSeason(source.objectCounts, seasonalProfile)
+  return recipe
+}
+
+function v7LandscapeRecipeId(landscapeType) {
+  return {
+    "lowland-evergreen-tropical-forest": "001",
+    "seasonal-evergreen-semi-evergreen-forest": "005",
+    "moist-deciduous-teak-forest": "004",
+    "dry-dipterocarp-woodland": "006",
+    "bamboo-grove": "007",
+    "riparian-tropical-forest": "008",
+    "monsoon-grassland": "009",
+    "tropical-forest-glade": "010",
+    "river-floodplain": "011",
+    "freshwater-swamp": "012",
+    "reed-marsh": "013",
+    "pond-short-creek": "014",
+    "tropical-mountain-stream": "015",
+    "limestone-foothill": "016",
+    "rocky-low-hill": "017",
+    "forested-low-mountain": "018",
+    "tropical-valley-floor": "019",
+    "wet-season-drainage-hollow": "020",
+    "dry-season-exposed-riverbank": "021",
+    "grassland-forest-transition": "022",
+  }[landscapeType]
+}
+
+function v7SeasonalProfile(season) {
+  return {
+    wet_season: { moisture: "very_high", treeDelta: 1, vegetationDelta: 3 },
+    wet_to_dry_transition: { moisture: "high", treeDelta: 0, vegetationDelta: 1 },
+    dry_season: { moisture: "low", treeDelta: -1, vegetationDelta: -2 },
+    dry_to_wet_transition: { moisture: "medium", treeDelta: 0, vegetationDelta: 2 },
+  }[season]
+}
+
+function transformCompleteMapRecipe(source, transformIndex, scaleX, scaleY) {
+  const transformPoint = ({ x, y }) => {
+    const mirrored = transformIndex % 2 === 1
+    const warpAmplitude = [0, 0, 0.035, 0.035, -0.045, -0.045, 0.025, 0.025][transformIndex]
+    const warpFrequency = transformIndex >= 6 ? 2 : 1
+    const tx = mirrored ? 1 - x : x
+    const ty = y
+    const boundedY = Math.max(0, Math.min(1, ty))
+    const warpedX = tx + Math.sin(boundedY * Math.PI * warpFrequency) * warpAmplitude
+    return {
+      x: roundCoordinate(0.5 + (warpedX - 0.5) * scaleX),
+      y: roundCoordinate(0.5 + (ty - 0.5) * scaleY),
+    }
+  }
+  const transformLine = (entry) => ({
+    points: entry.points.map(transformPoint),
+    width: Number((entry.width * Math.min(scaleX, scaleY)).toFixed(6)),
+  })
+  const transformRouteLine = (entry) => {
+    const transformed = transformLine(entry)
+    const sideClearance = Math.max(0.095, transformed.width + 0.06)
+    const hasTopConnector = entry.points.some((point) => point.y <= 0)
+    const topClearance = Math.max(0.105, transformed.width + 0.065)
+    return {
+      ...transformed,
+      points: transformed.points.map((point) => ({
+        x: Number(Math.max(sideClearance, Math.min(1 - sideClearance, point.x)).toFixed(6)),
+        y: hasTopConnector ? point.y : Number(Math.max(topClearance, point.y).toFixed(6)),
+      })),
+    }
+  }
+  const transformEllipse = (entry) => {
+    const center = transformPoint({ x: entry.cx, y: entry.cy })
+    return {
+      cx: center.x,
+      cy: center.y,
+      rx: Number((entry.rx * scaleX).toFixed(6)),
+      ry: Number((entry.ry * scaleY).toFixed(6)),
+    }
+  }
+  const center = transformPoint(source.center)
+  return {
+    ...structuredClone(source),
+    waterFlow: `${source.waterFlow}_complete_map_transform_${transformIndex}`,
+    routeIntent: `${source.routeIntent}_complete_map_transform_${transformIndex}`,
+    waterLines: source.waterLines.map(transformLine),
+    waterEllipses: source.waterEllipses.map(transformEllipse),
+    pathLines: source.pathLines.map(transformRouteLine),
+    center,
+    mudAreas: source.mudAreas.map(transformEllipse),
+    tallGrassAreas: source.tallGrassAreas.map(transformEllipse),
+  }
+}
+
+function adjustObjectCountsForSeason(sourceCounts, seasonalProfile) {
+  return {
+    tree: Math.max(4, sourceCounts.tree + seasonalProfile.treeDelta),
+    rock: sourceCounts.rock,
+    vegetation: Math.max(5, sourceCounts.vegetation + seasonalProfile.vegetationDelta),
+  }
+}
+
+function roundCoordinate(value) {
+  return Number(Math.max(-0.08, Math.min(1.08, value)).toFixed(6))
+}
+
+function findExistingV7CapacitySlotTask(outputRoot, slotId) {
+  if (!fs.existsSync(outputRoot)) return null
+  for (const entry of fs.readdirSync(outputRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue
+    const manifestPath = path.join(outputRoot, entry.name, "manifest.json")
+    if (!fs.existsSync(manifestPath)) continue
+    const manifest = readRequiredJson(manifestPath)
+    if (manifest.row?.capacitySlotId === slotId && manifest.status !== "failed_before_rgb_generation") {
+      return projectPath(manifestPath)
+    }
+  }
+  return null
 }
 
 function validateRequiredFields(value, fields, label) {

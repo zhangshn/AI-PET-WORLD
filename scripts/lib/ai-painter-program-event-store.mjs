@@ -2,6 +2,8 @@ import fs from "node:fs"
 import path from "node:path"
 import { randomUUID } from "node:crypto"
 import { enrichTrainingProcessLedgerEvent } from "./ai-painter-training-ledger-event-analysis.mjs"
+import { indexArtifact, indexProgramEvent } from "./ai-pet-world-storage-catalog.mjs"
+import { logicalProjectPath } from "./ai-pet-world-storage.mjs"
 
 const ROOT = process.cwd()
 const LEDGER_DIR = path.join(ROOT, ".runtime", "ai-painter", "training-process-ledger")
@@ -24,6 +26,9 @@ export function appendAiPainterProgramEvent(input) {
     events: events.slice(-120).reverse(),
     summary: buildLedgerSummary(events),
   })
+  indexProgramEvent(event)
+  indexWrittenArtifact(LEDGER_PATH)
+  indexWrittenArtifact(LATEST_LEDGER_PATH)
   return event
 }
 
@@ -40,6 +45,8 @@ export function writeImmutableProgramRun({ root, runId, fileName, record, latest
     runPath: projectPath(runPath),
     ...latest,
   })
+  indexWrittenArtifact(runPath, runId)
+  indexWrittenArtifact(path.resolve(ROOT, root, "latest.json"), runId)
   return { runPath: projectPath(runPath), runRoot: projectPath(runRoot) }
 }
 
@@ -89,4 +96,16 @@ function buildLedgerSummary(events) {
     if (Object.prototype.hasOwnProperty.call(summary, event.status)) summary[event.status] += 1
   }
   return summary
+}
+
+function indexWrittenArtifact(filePath, runId = null) {
+  const info = fs.statSync(filePath)
+  indexArtifact({
+    logicalPath: logicalProjectPath(filePath),
+    physicalUri: fs.realpathSync(filePath),
+    storageLayer: "hot",
+    runId,
+    byteSize: info.size,
+    modifiedAtUtc: info.mtime.toISOString(),
+  })
 }

@@ -40,9 +40,10 @@ if (pointer && manifest && sourceIndex && conditionalFactsManifest && trainingGa
   check(manifest.currentConditionExpectedCount === 21, "current_condition_expected_count_invalid")
   check(manifest.currentConditionPairCount === 21, "current_condition_pair_count_incomplete")
   check(manifest.currentConditionUnpairedCount === 0, "current_condition_unpaired_count_nonzero")
-  check(manifest.conditionBoundCompleteMapCount === manifest.currentConditionPairCount, "current_condition_pair_manifest_count_mismatch")
+  check(manifest.conditionBoundCompleteMapCount === manifest.currentConditionPairCount + manifest.v7CapacityContributionCount, "condition_bound_manifest_count_mismatch")
   check(sourceIndex.currentConditionPairCount === manifest.currentConditionPairCount, "current_condition_pair_source_index_count_mismatch")
   check(sourceIndex.currentConditionUnpairedCount === manifest.currentConditionUnpairedCount, "current_condition_unpaired_source_index_count_mismatch")
+  check(sourceIndex.v7CapacityContributionCount === manifest.v7CapacityContributionCount, "v7_capacity_contribution_count_mismatch")
   check(conditionalFactsManifest.batchId === manifest.conditionalFactsBatchId, "conditional_world_facts_batch_identity_mismatch")
   check(conditionalFactsManifest.sourceImageGeometryRead === false, "conditional_world_facts_must_not_read_rgb_geometry")
   check(conditionalFactsManifest.existingRgbBoundToGeneratedConditions === false, "existing_rgb_must_not_be_rebound")
@@ -78,6 +79,7 @@ if (pointer && manifest && sourceIndex && conditionalFactsManifest && trainingGa
   check(!(manifest.blockers ?? []).includes("condition_blueprints_require_new_rgb_pairs"), "completed_condition_pairs_must_not_keep_rgb_pair_blocker")
   for (const sample of sourceIndex.samples ?? []) validateSample(sample)
   validateCurrentConditionPairCoverage(sourceIndex)
+  validateV7CapacityContributions(sourceIndex)
   for (const blueprint of sourceIndex.conditionOnlyBlueprints ?? []) validateConditionOnlyBlueprint(blueprint)
   for (const snapshot of Object.values(manifest.snapshots ?? {})) validateHash(snapshot.path, snapshot.sha256, `snapshot_hash_mismatch:${snapshot.path}`)
 }
@@ -92,6 +94,7 @@ const result = {
   autoencoderSampleCount: manifest?.autoencoderSampleCount ?? 0,
   conditionBoundCompleteMapCount: manifest?.conditionBoundCompleteMapCount ?? 0,
   currentConditionPairCount: manifest?.currentConditionPairCount ?? 0,
+  v7CapacityContributionCount: manifest?.v7CapacityContributionCount ?? 0,
   currentConditionUnpairedCount: manifest?.currentConditionUnpairedCount ?? 0,
   conditionOnlyBlueprintCount: manifest?.conditionOnlyBlueprintCount ?? 0,
   canStartAutoencoderWarmup: manifest?.canStartAutoencoderWarmup ?? false,
@@ -127,9 +130,13 @@ function validateSample(sample) {
   validateHash(sample.ownerReviewPath, sample.ownerReviewSha256, `sample_owner_review_hash_mismatch:${sample.sampleId}`)
   if (sample.trainingRoles?.includes("conditional_denoiser")) {
     check(sample.conditionBound === true && Boolean(sample.conditionPackPath), `conditional_sample_binding_missing:${sample.sampleId}`)
-    check(sample.currentConditionIdentityMatches === true, `conditional_sample_current_identity_mismatch:${sample.sampleId}`)
+    check(sample.currentConditionIdentityMatches === true || sample.v7CapacityContributionRegistered === true, `conditional_sample_identity_mismatch:${sample.sampleId}`)
     check(sample.conditionGenerationContractVersion === "complete-map-scope-world-facts-v2", `conditional_sample_contract_invalid:${sample.sampleId}`)
-    check(/^complete-map-v2-\d{3}$/.test(sample.conditionLabel ?? ""), `conditional_sample_label_invalid:${sample.sampleId}`)
+    check(/^(complete-map-v2|v7-complete-map)-\d{3}$/.test(sample.conditionLabel ?? ""), `conditional_sample_label_invalid:${sample.sampleId}`)
+    if (sample.v7CapacityContributionRegistered === true) {
+      check(/^v7-capacity-slot-\d{3}$/.test(sample.v7CapacitySlotId ?? ""), `v7_capacity_slot_invalid:${sample.sampleId}`)
+      validateHash(sample.v7CapacityContributionPath, sample.v7CapacityContributionSha256, `v7_capacity_contribution_hash_mismatch:${sample.sampleId}`)
+    }
   }
 }
 
@@ -140,6 +147,27 @@ function validateCurrentConditionPairCoverage(index) {
   check(pairs.length === 21 && pairWorldIds.size === 21, "current_condition_pair_identities_not_unique_or_complete")
   check(blueprintWorldIds.size === 21, "current_condition_blueprint_world_identities_invalid")
   for (const worldId of blueprintWorldIds) check(pairWorldIds.has(worldId), `current_condition_pair_missing:${worldId}`)
+}
+
+function validateV7CapacityContributions(index) {
+  const contributions = index.v7CapacityContributions ?? []
+  const slotIds = new Set(contributions.map((entry) => entry.capacitySlotId))
+  const imageHashes = new Set(contributions.map((entry) => entry.imageSha256))
+  const worldIds = new Set(contributions.map((entry) => entry.worldId))
+  const taskIds = new Set(contributions.map((entry) => entry.taskPackageId))
+  const conditionLabels = new Set(contributions.map((entry) => entry.conditionLabel))
+  check(contributions.length === index.v7CapacityContributionCount, "v7_capacity_contribution_list_count_mismatch")
+  check(slotIds.size === contributions.length, "v7_capacity_slot_identities_not_unique")
+  check(imageHashes.size === contributions.length, "v7_capacity_image_identities_not_unique")
+  check(worldIds.size === contributions.length, "v7_capacity_world_identities_not_unique")
+  check(taskIds.size === contributions.length, "v7_capacity_task_identities_not_unique")
+  check(conditionLabels.size === contributions.length, "v7_capacity_condition_labels_not_unique")
+  for (const entry of contributions) {
+    check(/^v7-capacity-slot-\d{3}$/.test(entry.capacitySlotId ?? ""), `v7_capacity_slot_invalid:${entry.sampleId}`)
+    check(["train", "validation", "challenge", "regression"].includes(entry.split), `v7_capacity_split_invalid:${entry.sampleId}`)
+    check(/^v7-complete-map-\d{3}$/.test(entry.conditionLabel ?? ""), `v7_capacity_condition_label_invalid:${entry.sampleId}`)
+    validateHash(entry.contributionPath, entry.contributionSha256, `v7_capacity_contribution_hash_mismatch:${entry.sampleId}`)
+  }
 }
 
 function validateHash(value, expected, message) {

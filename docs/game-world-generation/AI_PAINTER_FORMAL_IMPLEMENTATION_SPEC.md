@@ -1,8 +1,8 @@
 # AI Painter 正式实现规格
 
-更新时间：2026-07-20 04:31:34 +08:00
+更新时间：2026-07-23 05:55:34 +08:00
 
-状态：active-architecture / 当前完整世界视觉实现唯一规格 / 真实完整地图推理仍阻断
+状态：active-architecture / 当前完整世界视觉实现唯一规格 / V7剩余104槽连续数据批次已授权 / 当前24张已登记 / V7 GPU训练未授权
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
@@ -213,20 +213,21 @@ reviewPlan
 | AI 辅助 Autoencoder 预热入口 | 已实现并完成 `256×192 -> 512×384 -> 1024×768` 首轮渐进训练；后一阶段继承同一数据包的前一阶段项目 checkpoint，自动保存父 hash、四类 split 指标和重建对照图；不加载第三方权重，checkpoint 固定声明 AI 生成数据依赖、`denoiserTrained=false`、`formalInferenceEligible=false`。当前 1024 重建仍明显模糊，只能认定训练流程闭环，不能认定视觉能力通过 |
 | AI 辅助 Pixel Detail Autoencoder v2 | 已获项目所有者调整授权并完成三级渐进训练；采用项目自有残差编码/解码结构、`1/4` 潜空间、12 潜通道和像素/边缘/Laplacian 损失。v2 使用独立配置、数据包快照、运行目录和 checkpoint schema，保留 v1 全部证据。统一 6 图审计显示 RGB/边缘/高频误差分别降低约 `58.19%/54.58%/48.79%`，PSNR 提升约 `8.39 dB`；项目所有者已确认达到进入后续条件训练准备的继续条件，但该确认不授予正式推理资格 |
 | AI 辅助条件去噪器 V3 | 已获项目所有者算法修复授权。首张V2隔离验证在`complete-map-v2-014`上产生多色噪声并被机器拒绝；诊断确认潜空间尺度不一致、epsilon高时间步放大和浅层去噪器能力不足。V3复用Autoencoder v2，固定采用训练集逐通道潜变量归一化、`velocity_v1`预测、多尺度23通道条件U-Net、固定时间步验证和最佳checkpoint选择；已重新完成256×192、512×384、1024×768三阶段训练，最佳轮次分别为22、31、40。最终checkpoint hash为`684ecc29c74408038539c8f3fd62b3272611a0bd0e5ddd4ef3931ae16668659b`。同条件同seed无RGB诊断将解码饱和比例从V2的12.493%降至V3的1.1945%，但随后获owner单图授权的held-out验证仍生成高频噪声与层级坍缩图，并以`condition_terrain_path_ground_coverage_mismatch`被拒绝；V3固定为失败验证历史、`formalInferenceEligible=false`，不得继续训练或作为V4父checkpoint |
-| AI 辅助条件去噪器 V4 | 已获项目所有者针对V3失败的修复授权。配置身份固定为`typed-condition-composite-objective-multiscale-unet-v4`：15个离散通道只用nearest-neighbor，8个连续通道只用bilinear；训练同时计算velocity MSE、clean latent L1、clean latent gradient L1、离散条件重建BCE和连续条件重建L1；best checkpoint只按固定验证网格复合条件质量分数选择。配置、模型、训练器、采样器和审核器已通过静态检查、CPU前向/反向及历史V3失败图回归。项目所有者授权的stage 0冒烟runId=`ai-assisted-conditional-denoiser-v4-smoke-2026-07-19T20-23-04-154Z`已通过，程序保存的checkpoint SHA-256=`f7e00f80035d8986546ed4004b68647852a83df8d43c99b0ef40e28787910c63`；该checkpoint只证明程序可运行，固定`formalInferenceEligible=false`。正式渐进训练和V4 RGB验证尚未执行 |
+| AI 辅助条件去噪器 V4 | 已获项目所有者针对V3失败的修复授权。配置身份固定为`typed-condition-composite-objective-multiscale-unet-v4`：15个离散通道只用nearest-neighbor，8个连续通道只用bilinear；训练采用复合目标与复合checkpoint选择。stage 0至stage 2均已完成，最终checkpoint SHA-256=`a3a5bdb608091bbdec5e65160758b8f35ca752adeb647487a013ba6df4c11a04`。`complete-map-v2-005` held-out验证已执行，runId=`ai-assisted-conditional-inference-validation-v4-2026-07-20T20-31-54-134Z`，图片SHA-256=`418fbe777eb40c2b685b8cf10e38717c1998a8d92630717586c7542e274bea0e`；因水体意外信号、道路覆盖错配、多尺度纹理噪声过载和安静区域缺失被机器拒绝。checkpoint和验证图均固定`formalInferenceEligible=false` |
+| AI 辅助条件去噪器 V5 | 配置身份固定为`output-bound-condition-hierarchy-multiscale-unet-v5`：保持23通道身份与分类型缩放；条件重建绑定最终`predicted_clean`潜变量；复合目标包含多尺度gradient、Laplacian、quiet-region excess及离散/连续输出绑定损失；时间步采用确定性分层轮换；checkpoint选择采用固定网格输出绑定层级分数；严格held-out推理split为`challenge`。项目所有者已分别授权并完成stage 0至stage 2正式渐进训练。Stage 2 runId=`ai-assisted-conditional-denoiser-v5-stage-2-2026-07-21T07-41-08-443Z`原生训练`1024×768`共40轮，checkpoint SHA-256=`b8363a1625854ceb70b6c4ad48cf379dbeefa986743b469b377af09e7927580b`。随后唯一`challenge`样本`complete-map-v2-014`已完成单图验证，runId=`ai-assisted-conditional-inference-validation-v5-2026-07-21T08-45-43-210Z`，机器以道路/地面条件覆盖错配和多尺度纹理噪声过载拒绝；当前固定`formalInferenceEligible=false`，等待owner授权诊断与修复 |
 | 视觉条件编译器 | v1 已实现 23 个 1024×768 单通道源条件和结构化向量；离散通道 nearest-neighbor、连续通道 bilinear 对齐到各训练阶段，最终原生条件保持 `1024×768`，不产生 RGB 候选 |
 | 历史第三方 bootstrap 证据 | SD 1.5 + ControlNet Segmentation 结果已隔离为历史实验；不再由完整世界主入口运行，不进入独立自研训练计数 |
 | bootstrap 机器审核 | 已实现 VJ-0/VJ-1/VJ-2/Professional 四级记录；当前首图机器拒绝 |
 | 项目自有扩散训练程序 | 已实现；读取独立数据包和配套 23 通道条件包，按自编码器、条件去噪器两阶段训练并自动保存 checkpoint 谱系；当前因独立样本为 0 阻断 |
-| 当前任务包驱动的AI辅助隔离验证采样器 | `run:ai-assisted-conditional-inference-validation` 已实现；只接收当前生效版本的最终1024 AI辅助checkpoint、held-out任务包、23通道和项目所有者本轮单图命令，离散条件使用nearest-neighbor、连续条件使用bilinear；生成后自动调用`review:ai-assisted-conditional-inference-validation`执行VJ-0/VJ-1/VJ-2、风格指纹、构图新颖性、专业审美、审核hash和失败学习；固定`formalCandidate=false`、`runtimeFrameEligible=false`。V2与V3验证均已执行并拒绝；V4尚无checkpoint，当前不得运行V4 RGB验证 |
+| 当前任务包驱动的AI辅助隔离验证采样器 | `run:ai-assisted-conditional-inference-validation` 已实现；只接收当前最终1024 AI辅助checkpoint、held-out任务包、23通道和项目所有者本轮单图命令，离散条件使用nearest-neighbor、连续条件使用bilinear；生成后自动执行VJ-0/VJ-1/VJ-2、风格指纹、构图新颖性和专业审美并保存审核hash与失败事件；固定`formalCandidate=false`、`runtimeFrameEligible=false`。采样器已兼容项目根与批准的D盘热运行根并继续拒绝其他路径。V2、V3、V4验证均已执行并拒绝，当前不得自动重试或批量运行 |
 | 原生正式分辨率新候选 | 当前无项目独立权重生成的 `1024×768` 高分辨率像素风完整候选；历史第三方 1024×768 bootstrap 只作隔离证据，分辨率相同不代表资格相同 |
-| 专业审美学习模型 | 本地CLIP语义初审继续只作辅助。Professional Aesthetic v2新增由owner已批准基础完整地图自动校准的多尺度纹理上限、安静区域和层级检查；不加载外部审美权重。历史V3失败图回归能检出`professional_multiscale_texture_noise_overload`与`professional_quiet_region_missing`。该门禁仍不能代替owner终审，且尚需在未来V4验证图上持续验证 |
+| 专业审美学习模型 | 本地CLIP语义初审继续只作辅助。Professional Aesthetic v2由owner已批准基础完整地图自动校准多尺度纹理上限、安静区域和层级检查；不加载外部审美权重。本轮V4验证图已被它以`professional_multiscale_texture_noise_overload`与`professional_quiet_region_missing`正确拒绝。该门禁仍不能代替owner终审 |
 
 当前不得继续 V152、V153 式旧数据集盲目续训。下一实现目标只能来自当前执行指南。
 
 AI 辅助 Autoencoder 预热和正式完整世界扩散训练不是同一成功状态。前者只学习已审核 RGB 的视觉压缩与重建基础；它不消费 WorldState、世界导演、23 通道条件或连接契约。当前三级渐进预热已经证明数据读取、项目权重继承、CUDA 训练、指标、重建证据和 checkpoint 谱系能够自动运行，但原生 1024 重建仍丢失大量像素细节。继续调整 Autoencoder 容量、结构或损失属于模型调整，必须先由项目所有者批准；不得靠重复增加轮次冒充能力提升。只有后续真实条件绑定闭合、条件训练门槛获得项目所有者批准、条件去噪器完成训练并通过正式审核后，才可能形成任务包驱动的完整地图模型。任何 AI 辅助预热 checkpoint 都不得被正式推理入口当作 `project_owned_independent_weights`。
 
-2026-07-18 的v2条件世界事实整体重建不改变上述结论。21套新条件包建立“世界事实和导演意图应如何进入模型”的训练输入侧，旧批次RGB继续保持原历史身份，不能事后与v2条件配对。项目所有者已逐图命令并审核完成21套后置新RGB；生成来源、条件包hash、任务包hash、图片hash与审核记录均由程序保存。项目所有者于2026-07-19批准21套作为第一轮AI辅助条件去噪训练数量门槛、批准Autoencoder v2达到继续条件，并批准大世界连接覆盖最低27条正样本、27条负样本且9个覆盖轴各不少于3正+3负。连接覆盖已由程序自动建立并复核为27正、27负、九轴各3正+3负；V3条件去噪器已完成三个40轮渐进阶段，但held-out视觉验证失败并暴露训练目标与专业审美漏判问题。项目所有者随后授权V4程序修复和stage 0冒烟训练；冒烟已经由正式控制器执行并自动保存全部规定证据。下一步是获得项目所有者明确授权后执行V4 stage 0正式渐进训练，而不是继续V3、直接运行V4 RGB或把冒烟checkpoint当成训练完成。任何V3/V4 checkpoint和验证图均不得自行晋级正式候选或Runtime。
+2026-07-18 的v2条件世界事实整体重建不改变上述结论。21套新条件包建立“世界事实和导演意图应如何进入模型”的训练输入侧，旧批次RGB继续保持原历史身份，不能事后与v2条件配对。项目所有者已逐图命令并审核完成21套后置新RGB；生成来源、条件包hash、任务包hash、图片hash与审核记录均由程序保存。项目所有者于2026-07-19批准21套作为第一轮AI辅助条件去噪训练数量门槛、批准Autoencoder v2达到继续条件，并批准大世界连接覆盖最低27条正样本、27条负样本且9个覆盖轴各不少于3正+3负。连接覆盖已由程序自动建立并复核为27正、27负、九轴各3正+3负。V3与V4均完成训练但held-out视觉验证失败；V4失败已完成程序化根因诊断，V5程序修复、纯CPU回归、stage 0冒烟和stage 0正式渐进训练已完成。Stage 0只证明`256×192`阶段的V5正式训练和证据链闭合，没有生成RGB，也不证明视觉能力通过。下一步不是继续V4推理，也不是自动启动后续训练，而是等待项目所有者单独授权V5 stage 1正式渐进训练。任何V3/V4 checkpoint、V5冒烟或stage 0 checkpoint及历史验证图均不得自行晋级正式候选或Runtime。
 
 项目所有者已批准首轮 v2 调整并完成继续条件视觉验收。v2 的目标只是在相同已审核数据上验证细节重建是否优于 v1，不改变完整世界业务路线，不增加第三方权重，也不授予正式推理资格。程序已经保存 v1/v2 重建证据、统一指标报告和项目所有者批准记录；后续阻断来自连接覆盖样本不足，而不是继续重复Autoencoder预热。
 
@@ -342,3 +343,74 @@ npm run check:current-world-visual-conditions
 6. 禁止第三方在线绘图 API 进入正式链路。
 7. 禁止对像素候选使用双线性、双三次、AI 超分或抗锯齿缩放后冒充正式像素画面。
 8. 禁止把 tile 拼接、重复 stamp、局部 sprite 放大或旧 `256×192` 材料槽冒充原生完整像素地图。
+
+## 12. V5当前实现状态
+
+截至2026-07-21，V5 `output-bound-condition-hierarchy-multiscale-unet-v5`已经完成stage 0至stage 2正式渐进训练。Stage 2 runId=`ai-assisted-conditional-denoiser-v5-stage-2-2026-07-21T07-41-08-443Z`严格继承stage 1实际checkpoint SHA-256=`44e43a831cee6d52f40b0e7ef95212c9bc83c9f9e508d39ca3b6db2a91e2c41d`，在CUDA上完成原生`1024×768`阶段40轮，最佳轮次40、最佳验证指标`2.0965599417686462`、持续183.328秒，新checkpoint SHA-256=`b8363a1625854ceb70b6c4ad48cf379dbeefa986743b469b377af09e7927580b`。程序已经自动保存父checkpoint谱系、逐轮指标、条件证据、算法证据、manifest、progress、checkpoint和双语程序事件，并完成D盘SQLite索引及hash校验。
+
+Stage 2完成只证明原生`1024×768`渐进训练及证据链闭合，不证明视觉能力通过。项目所有者随后授权唯一`challenge`样本`complete-map-v2-014`的单图held-out验证；程序使用V5 Stage 2 checkpoint生成原生`1024×768`新图，runId=`ai-assisted-conditional-inference-validation-v5-2026-07-21T08-45-43-210Z`，图片SHA-256=`3e4af6352c2ed4a48a3610de0f59c5efe161a858b4cd92f0553fade0aa506011`。VJ-0与VJ-1通过，VJ-2以`condition_terrain_path_ground_coverage_mismatch`拒绝，Professional Aesthetic以`professional_multiscale_texture_noise_overload`拒绝。程序自动保存图片、模型报告、manifest、机器审核和3个过程事件，D盘SQLite核验8个artifact与3个中英文程序事件，并由自动视觉审核学习摄取本轮失败。
+
+V5验证结果固定`formalCandidate=false`、`formalInferenceEligible=false`、`runtimeFrameEligible=false`、`canEnterWorld=false`。下一步只能等待项目所有者明确授权失败诊断与修复；不得自动重训、重复推理、批量生成、建立候选、绑定Runtime或进入`/world`。
+
+### V7容量槽位001视觉结果
+
+更新时间：2026-07-22 12:59:59 +08:00
+
+`v7-capacity-slot-001`已在项目所有者单图授权下生成一张新RGB。请求ID=`conditional-rgb-001-2026-07-22T03-03-07-793Z`，只消费当前世界事实、世界导演、23通道语义引导和版本化聚合视觉标准，不消费历史完整地图RGB。程序保存的训练派生图为原生训练尺寸`1024×768`，SHA-256=`6f89c3830183a48dc4d7074a8d88b8787e3ff19753dc42bb6bd337548878e5c2`。机器合同审核通过，项目所有者审核已写入`owner_approved`；记录取得`formalConditionalTrainingEligible=true`并登记为自主生成训练原图第002张，但仍固定不得直接进入Runtime或`/world`。
+
+项目所有者随后授权正式V7条件-RGB配对与容量贡献入口实现。程序已把该图登记为`v7-capacity-slot-001`的train贡献，贡献证据SHA-256=`33be42900b7c3a8e9375f50cfa6d61dc70b555ace0d09b2d0f4d6f8a9d924ae3`；数据包保持旧21套条件身份不变并新增1条V7贡献。最新容量审计合格数22、缺口106。该登记未改变本轮世界事实、23通道、RGB hash或既有审核结论，也不授权V7 GPU训练或`slot-002`出图。
+
+## 13. V6失败修复合同
+
+V6 `decoded-rgb-sparse-region-rollout-multiscale-unet-v6`只修复V5已证实的算法缺口，不改变世界事实、世界导演、完整地图范围、23通道身份、数据来源政策或审核门槛。训练输出约束固定为`predicted_clean_latent_and_decoded_rgb_v1`：除V5潜变量层级与条件输出绑定外，还必须把预测clean latent经冻结Autoencoder解码，并计算全局RGB、RGB gradient/Laplacian、RGB安静区域超量以及道路、水体、岸线、物体占地、焦点区域的独立归一化RGB损失。
+
+V6最佳checkpoint指标固定为`fixed_grid_plus_deterministic_rollout_rgb_score_v6`。每轮只用validation中的固定样本与固定seed执行完整确定性采样，把最终RGB及稀疏区域质量加入checkpoint选择。`challenge`在训练过程中禁止读取像素和条件张量，只能记录样本身份与数量，必须等项目所有者单独授权held-out推理。
+
+项目所有者已授权并由正式控制器完成V6 stage 1正式渐进训练，runId=`ai-assisted-conditional-denoiser-v6-stage-1-2026-07-21T12-46-28-623Z`。该阶段在`512×384`执行40轮，最佳epoch=36，checkpoint SHA-256=`23593901bd7c9dff385a1c943867b0da1f990b6e8f1fa530359cf5da4062e921`；它严格继承Stage 0 checkpoint，21套条件、23通道、解码RGB监督、稀疏区域监督和完整采样checkpoint指标均保持，challenge保持隔离且未生成RGB。Stage 1固定`formalInferenceEligible=false`。
+
+项目所有者随后授权并由正式控制器完成V6 stage 2原生`1024×768`正式渐进训练，runId=`ai-assisted-conditional-denoiser-v6-stage-2-2026-07-21T19-11-57-819Z`，40轮最佳epoch=36，checkpoint SHA-256=`3a4cfd161c80402664eba35010159913be1ae3dc08c954600d577ddef1f9fbc9`。Stage 2没有生成RGB，challenge保持`metricsReadDuringTraining=false`，固定`formalInferenceEligible=false`。
+
+项目所有者继而授权唯一`challenge`样本`complete-map-v2-014`的V6 held-out单图验证。程序生成runId=`ai-assisted-conditional-inference-validation-v6-2026-07-21T20-39-03-363Z`和原生`1024×768`图片SHA-256=`6ce37acc6278d5d7bbae6210e8273c634358fc1301936be9d394725fe2cf039e`。机器审核状态为`machine_rejected`：VJ-0、VJ-1通过，VJ-2以`condition_terrain_path_ground_coverage_mismatch`拒绝，Professional Aesthetic当前通过。所有图片、条件、模型、审核、事件、哈希和失败学习证据均由程序自动保存并写入D盘SQLite。
+
+该验证固定`formalCandidate=false`、`formalInferenceEligible=false`、`runtimeFrameEligible=false`、`canEnterWorld=false`。该段的等待诊断门禁已由第14节取代；V6训练、checkpoint、验证图和机器拒绝结论继续作为不可变历史保存。
+
+## 14. V6失败诊断与V7修复合同
+
+项目所有者已授权V6失败诊断与修复。诊断runId=`ai-assisted-conditional-v6-diagnosis-2026-07-21T21-45-18-698Z`确认V6训练rollout和正式推理均从纯高斯噪声开始，不存在target图捷径。失败根因固定为：第一轮条件数据仅`16`个train、`2`个validation、`1`个challenge、`2`个regression；V6 checkpoint只使用一个validation样本和一个seed执行完整采样；RGB MAE、梯度、Laplacian和稀疏区域像素误差不能稳定代表完整地图语义；Professional Aesthetic对单轴纹理异常缺少诊断提示。
+
+V7模型合同固定为`typed-condition-composite-objective-multiscale-unet-v7`，架构身份为`all-validation-multiseed-semantic-rollout-unet-v7`。它保持自有Autoencoder v2、23通道数量与顺序、离散条件nearest-neighbor、连续条件bilinear、原生`1024×768`和无第三方权重不变。新增约束为：
+
+1. checkpoint完整采样评估覆盖全部validation样本；
+2. 每个validation样本至少使用2个固定seed；
+3. 平均轨迹与最差轨迹共同进入checkpoint分数；
+4. 新增道路、水体、岸线、对象占地和焦点区域的稀疏区域对比损失；
+5. 新增`8×6`空间网格RGB损失，约束完整地图的大尺度空间分布；
+6. challenge继续严格隔离，训练期不得读取其图片或条件张量。
+
+最新纯CPU回归runId=`ai-assisted-conditional-v7-cpu-regression-2026-07-22T00-20-01-226Z`已完成2个validation样本、每样本2个seed、共4条完整采样轨迹，并验证前向、反向、有限指标、输出梯度、23通道、challenge隔离、容量批准合同和无第三方权重。该回归没有GPU训练、没有推理、没有新RGB，也不产生checkpoint资格。
+
+项目所有者于2026-07-22批准V7数据容量为128张独立完整地图，split固定为`96 train / 16 validation / 8 challenge / 8 regression`。V7模型结构、23通道、损失、checkpoint多样本多seed评估及审核门槛均不因容量决策而改变。程序已审计旧21条基线与2条V7贡献合计23/23张合格、失败0张，正式缺口105张；最新容量证据runId=`ai-assisted-v7-data-capacity-plan-2026-07-22T12-05-01-665Z`。
+
+V7配置固定`trainingAuthorizationStatus=blocked_pending_approved_128_dataset_implementation`、`formalInferenceEligible=false`。覆盖矩阵确认当前24张已登记、剩余104槽。项目所有者已授权104槽连续数据批次：程序逐槽建立独立完整地图世界事实、世界导演、23通道和请求，Codex内置生成通道只提供RGB像素；程序自动保存和机器审核。机器通过只进入待人工审核，失败归档后继续；同槽不得自动重试，任何结果不得自动取得owner资格或触发V7 GPU训练。
+
+## 15. V7容量槽位任务实现状态
+
+V7容量槽位任务入口固定为`npm run build:ai-assisted-v7-data-task -- --v7-slot-id <slotId>`，只读检查入口为`npm run check:ai-assisted-v7-data-task -- --slot-id <slotId>`。已闭合容量贡献为`v7-capacity-slot-001`与`v7-capacity-slot-002`。不得因缺口列表存在105项而循环处理其他槽位。程序必须读取最新容量计划与gap-list的已验证hash，再读取锁定的东南亚MVP生态档案和版本化季节快照，生成独立世界事实、世界导演输出、任务包、23通道条件包与完整地图范围审核；成功任务不得对同一槽位重复构建。
+
+当前runId=`ai-assisted-v7-data-task-v7-capacity-slot-001-2026-07-22T02-07-41-845Z`已通过上述检查，条件身份为`v7-complete-map-001`，世界类型为`lowland-evergreen-tropical-forest`，季节为`wet_to_dry_transition`，通道数为23，完整地图范围为通过。任务明确不读取历史RGB几何，世界事实没有要求主要地表水体，因此程序没有为了“东南亚风格”自行添加河流；道路从南侧大世界入口进入，经非矩形家园中心连接至东北侧延伸语义。
+
+`v7-capacity-slot-001`与`v7-capacity-slot-002`均已完成条件准备、单张RGB、机器审核、owner审核和容量贡献登记；其结果仅作为AI辅助条件训练数据，不是正式候选或RuntimeFrame。slot-002任务runId=`ai-assisted-v7-data-task-v7-capacity-slot-002-2026-07-22T10-03-58-601Z`及后续审核、贡献证据继续不可变保留。GPU训练继续未授权。
+
+## 16. V7容量槽位002 RGB实现状态
+
+项目所有者已授权`slot-002`唯一一张RGB，程序请求ID=`conditional-rgb-002-2026-07-22T10-50-32-811Z`。请求构建器已按槽位身份生成授权引用，不再硬编码slot-001；请求检查确认完整地图范围、23通道、道路与水体/碰撞零重叠、当前世界无主要地表水、历史完整地图RGB引用为零。
+
+项目所有者随后明确审核通过slot-002。程序已登记train容量贡献，贡献SHA-256=`7f3dcf75cfc5a1804b7d3905afa0f463a4253bff3701f888881673ae8f2725f2`，并重建数据包与容量矩阵。当前条件绑定完整地图23条、V7贡献2条、未配对0条；最新容量审计runId=`ai-assisted-v7-data-capacity-plan-2026-07-22T12-05-01-665Z`，合格23、失败0、缺口105。模型合同、23通道、审核门槛与`formalInferenceEligible=false`均未改变；不得自动进入slot-003或启动GPU训练。
+
+程序自动接收生成源图，保存原始来源、SHA-256、双时区时间、条件证据、聚合风格标准、`1024x768` nearest-neighbor派生图、机器审核、style fingerprint和审核流水线报告。`generated_intaked_machine_passed_waiting_owner_review`是slot-002在owner审核前的历史状态；该图后来已获owner通过并登记容量，但仍不是正式候选、RuntimeFrame或`/world`画面。同一身份继续禁止重复出图，当前状态以第17节slot-003任务为准。
+
+## 17. V7容量槽位003实现状态
+
+`v7-capacity-slot-003`使用正式旱季快照`mainland-southeast-asia-tropical-monsoon-provisional-late-dry-season-v1`。任务配方只描述完整地图级结构：低地常绿热带森林、旱季地表状态、南侧入口、连续道路、东偏不规则家园中心、多个开放/森林分区、北侧大世界延伸和自然边界；不强制添加当前世界事实中不存在的主要地表水体。道路不得穿越封闭左右边界，顶部出口必须使用既有边界通道。
+
+两次RGB前阻断分别固定为`season recipe is not defined`和`complete_map_route_overlaps_collision`，均保留为程序失败证据。成功任务runId=`ai-assisted-v7-data-task-v7-capacity-slot-003-2026-07-22T13-27-59-480Z`已通过独立检查，包含23通道、完整地图范围审核、32项SQLite artifact和1条中英文程序事件；`pairedRgbCount=0`，未生成RGB、未启动GPU。当前只等待slot-003唯一一张RGB的单独授权；模型合同、审核门槛、容量统计和页面结构均未改变。

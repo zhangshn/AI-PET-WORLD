@@ -90,6 +90,7 @@ data/ziwei/*
 !data/ziwei/sample-calibration/*.json
 runtime-data/
 .runtime/
+.runtime-f-drive-backup-*/
 
 # env files (can opt-in for committing if needed)
 .env*

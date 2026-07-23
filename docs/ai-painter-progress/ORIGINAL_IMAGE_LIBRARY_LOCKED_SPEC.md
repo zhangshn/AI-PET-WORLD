@@ -1,8 +1,8 @@
 # AI Painter 原图资料库页面锁定规格
 
-更新时间：2026-07-17 01:09:21 +08:00
+更新时间：2026-07-23 01:44:29 +08:00
 
-状态：active-lock / 第一版家园原图目录与完整地图四类型只读页面已定义
+状态：active-lock / 第一版家园原图目录与完整地图四类型页面已定义 / 项目所有者审核命令入口已授权
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
@@ -98,7 +98,9 @@ data/world-samples/original-image-library/
 
 一级显示分类数、原图记录总数、可用于训练数和阻断数。`complete-maps` 二级显示四个固定类型及各自实时数量；类型页显示按北京时间排序的下拉框，并只展开当前选中的原图或失败记录。记录详情显示原图、SHA-256、来源方法、权利人、第三方内容标记、世界绑定、分类状态和审核状态。
 
-页面不执行审核、不改变训练资格、不晋级 RuntimeFrame，也不把任何原图直接送入 `/world`。
+页面的 GET 展示不执行审核、不改变训练资格、不晋级 RuntimeFrame，也不把任何原图直接送入 `/world`。项目所有者于 2026-07-23 明确授权在完整地图类型页增加“通过 / 拒绝”审核按钮；按钮只对 `machine_contract_passed_waiting_owner_visual_review + pending_review` 的单条记录显示，并只通过本机 POST 向正式审核程序提交项目所有者命令。页面组件不得直接写 `record.json`、索引、审核、失败学习、容量贡献或数据包。
+
+审核命令固定调用 `record-ai-assisted-cold-start-owner-review.mjs`。拒绝必须填写具体原因和下一轮修复目标；程序自动保存失败图引用、失败码、双时区时间、hash、不可变审核历史、双语事件和失败学习。V7容量槽位通过后，程序继续自动登记唯一容量贡献、执行贡献检查、重建并检查数据包、刷新128张容量审计。该按钮不能自动批准机器未通过记录，不能覆盖历史结论，不能自动生成下一张RGB、准备下一槽位、启动GPU训练、建立RuntimeFrame或进入`/world`。
 
 ## 6. 程序自动接收入口
 
@@ -107,6 +109,16 @@ npm run build:original-image-intake-template
 npm run intake:original-image -- --request <original-image-intake-request-v1.json>
 npm run check:original-image-library
 ```
+
+## 9. V7 原图目录实时归类与程序对账补充锁定
+
+更新时间：2026-07-23 13:19:45 +08:00
+
+项目所有者明确要求全部 V7 训练数据在控制台可查。`autonomous-generation-training-originals` 类型页因此固定展示所有未被拒绝的 V7 容量原图，包括 `pending_review` 和 `owner_approved`；`pending_review` 只表示等待项目所有者审核，不授予自主序号、训练正样本资格或 V7 容量贡献。项目所有者通过后，正式审核程序自动分配唯一 `autonomousGenerationTrainingOriginal.sequenceNumber`，并继续执行容量贡献、数据包和容量审计流程。
+
+`status=rejected` 仍优先归入 `failed-records`，不得因具有 V7 槽位身份而进入自主生成训练原图页。`condition-paired-history` 只保留 V7 容量序列建立前的历史条件配对记录。以上归类只根据程序记录字段计算，不移动、不复制、不重命名真实目录，也不改变页面布局。
+
+历史上已经通过但缺少自主序号的 V7 记录必须通过 `npm run repair:ai-assisted-v7-original-image-catalog` 由程序回填记录与索引，禁止页面或 Codex 手工改写。连续批次摘要必须通过 `npm run reconcile:ai-assisted-v7-continuous-data-batch` 从已保存任务和请求重建；该命令只对账，不准备新槽位、不生成 RGB、不自动人工通过、不登记未审核容量贡献，也不启动 V7 GPU 训练。
 
 接收程序必须验证分类、来源声明、图片解码和分类字段，复制原图与证据文件，计算 SHA-256，写入不可变 `record.json`，再原子更新 `index.json`。完整地图原图当前固定校验为 `1024×768`。任何接收失败必须自动写入 `.runtime/ai-painter/original-image-intake-rejections/`，不得留下半写目录或虚假索引。
 

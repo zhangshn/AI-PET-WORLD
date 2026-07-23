@@ -78,7 +78,7 @@ export function isOwnerAuthorizedAiAssistedColdStartSource(request) {
     && source?.thirdPartyGenerativeModelUsed === true
     && source?.copiedFromExistingWork === false
     && coldStart?.policyVersion === "owner-authorized-ai-assisted-cold-start-v1"
-    && coldStart?.ownerAuthorizationRef === "conversation-owner-authorization-2026-07-13"
+    && isOwnerAuthorizedAiAssistedColdStartRef(coldStart?.ownerAuthorizationRef)
     && coldStart?.trainingLane === "ai_assisted_cold_start"
     && typeof coldStart?.generatorProvider === "string"
     && coldStart.generatorProvider.length > 0
@@ -86,6 +86,12 @@ export function isOwnerAuthorizedAiAssistedColdStartSource(request) {
     && coldStart.generatorSystem.length > 0
     && typeof coldStart?.promptEvidencePath === "string"
     && coldStart.promptEvidencePath.length > 0
+}
+
+export function isOwnerAuthorizedAiAssistedColdStartRef(value) {
+  return value === "conversation-owner-authorization-2026-07-13"
+    || value === "owner-authorized-v7-remaining-104-continuous-batch-20260723"
+    || /^project-owner-authorization-\d{4}-\d{2}-\d{2}-v7-capacity-slot-\d{3}-single-rgb-generation$/.test(value ?? "")
 }
 
 export function isSafeOriginalImageId(value) {

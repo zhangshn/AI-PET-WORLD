@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import random
 import time
@@ -12,7 +13,13 @@ from copy import deepcopy
 import numpy as np
 import torch
 
-from ai_painter.complete_world import add_noise, build_complete_world_system, velocity_target
+from ai_painter.complete_world import (
+    add_noise,
+    build_complete_world_system,
+    deterministic_velocity_step,
+    inference_timesteps,
+    velocity_target,
+)
 from ai_painter.complete_world.dataset import AiAssistedConditionalDenoiserDataset
 
 
@@ -107,6 +114,7 @@ def main() -> int:
             latent_normalization,
             device,
             config,
+            epoch,
             max_train_batches,
         )
         validation = evaluate_velocity_prediction(
@@ -120,22 +128,54 @@ def main() -> int:
             config,
         )
         validation_loss = validation["compositeConditionQualityScore"]
+        rollout_validation = None
+        if is_v7(config):
+            rollout_validation = evaluate_deterministic_rollout_rgb_quality_v7(
+                model,
+                datasets["validation"],
+                diffusion,
+                latent_normalization,
+                device,
+                seed + 3000,
+                config,
+            )
+            validation_loss += (
+                rollout_validation["rolloutRgbQualityScore"]
+                * float(config["training"].get("checkpointRolloutWeight", 1.0))
+            )
+        elif is_v6(config):
+            rollout_validation = evaluate_deterministic_rollout_rgb_quality(
+                model,
+                datasets["validation"],
+                diffusion,
+                latent_normalization,
+                device,
+                seed + 3000,
+                config,
+            )
+            validation_loss += (
+                rollout_validation["rolloutRgbQualityScore"]
+                * float(config["training"].get("checkpointRolloutWeight", 1.0))
+            )
         row = {
             "stage": "ai_assisted_23_channel_conditional_denoiser",
             "epoch": epoch + 1,
             "trainCompositeLoss": train_metrics["compositeLoss"],
             "trainVelocityPredictionLoss": train_metrics["velocityPredictionMse"],
             "trainCleanLatentMae": train_metrics["cleanLatentMae"],
-            "trainCleanLatentGradientMae": train_metrics["cleanLatentGradientMae"],
-            "trainDiscreteConditionReconstructionBce": train_metrics["discreteConditionReconstructionBce"],
-            "trainContinuousConditionReconstructionMae": train_metrics["continuousConditionReconstructionMae"],
-            "validationFixedGridCompositeConditionQualityScore": validation_loss,
+            "validationFixedGridCompositeConditionQualityScore": validation["compositeConditionQualityScore"],
             "validationFixedGridVelocityLoss": validation["velocityPredictionMse"],
             "validationFixedGridCleanLatentMae": validation["cleanLatentMae"],
-            "validationFixedGridCleanLatentGradientMae": validation["cleanLatentGradientMae"],
-            "validationFixedGridDiscreteConditionReconstructionBce": validation["discreteConditionReconstructionBce"],
-            "validationFixedGridContinuousConditionReconstructionMae": validation["continuousConditionReconstructionMae"],
+            "validationCheckpointSelectionScore": validation_loss,
         }
+        if rollout_validation:
+            row.update({f"validation{upper_camel(key)}": value for key, value in rollout_validation.items()})
+        for key, value in train_metrics.items():
+            if key not in {"compositeLoss", "velocityPredictionMse", "cleanLatentMae"}:
+                row[f"train{upper_camel(key)}"] = value
+        for key, value in validation.items():
+            if key not in {"compositeConditionQualityScore", "velocityPredictionMse", "cleanLatentMae", "fixedTimesteps"}:
+                row[f"validationFixedGrid{upper_camel(key)}"] = value
         if validation_loss < best_validation_loss:
             best_validation_loss = validation_loss
             best_epoch = epoch + 1
@@ -150,8 +190,16 @@ def main() -> int:
         raise ValueError("fixed validation did not produce a selectable checkpoint")
     model.denoiser.load_state_dict(best_denoiser_state)
 
-    split_metrics = {
-        split: {
+    split_metrics = {}
+    for index, split in enumerate(datasets):
+        if is_v6_or_later(config) and split == config["training"].get("strictHeldOutInferenceSplit"):
+            split_metrics[split] = {
+                "sampleCount": len(datasets[split]),
+                "status": "reserved_for_post_training_held_out_inference",
+                "metricsReadDuringTraining": False,
+            }
+            continue
+        split_metrics[split] = {
             "sampleCount": len(datasets[split]),
             **evaluate_velocity_prediction(
                 model,
@@ -164,8 +212,6 @@ def main() -> int:
                 config,
             ),
         }
-        for index, split in enumerate(datasets)
-    }
     condition_evidence = save_condition_evidence(
         model,
         datasets,
@@ -302,13 +348,60 @@ def validate_training_inputs(config, package):
     channel_types = config.get("conditionChannelTypes", {})
     typed_channels = list(channel_types.get("discrete", [])) + list(channel_types.get("continuous", []))
     if config.get("conditionResizeContract") != "discrete_nearest_continuous_bilinear_v1":
-        raise ValueError("V4 typed condition resize contract is invalid")
+        raise ValueError("typed condition resize contract is invalid")
     if len(typed_channels) != 23 or set(typed_channels) != set(config["conditionChannelOrder"]):
-        raise ValueError("V4 typed condition groups must cover the locked 23-channel order")
-    if config.get("training", {}).get("denoiserLossVersion") != "velocity_clean_gradient_condition_reconstruction_v4":
-        raise ValueError("V4 composite denoiser loss contract is invalid")
-    if config.get("training", {}).get("bestCheckpointMetric") != "fixed_grid_composite_condition_quality_score_v4":
-        raise ValueError("V4 composite checkpoint selection contract is invalid")
+        raise ValueError("typed condition groups must cover the locked 23-channel order")
+    architecture = config.get("denoiserArchitecture")
+    if architecture == "multiscale_condition_unet_v4":
+        if config.get("training", {}).get("denoiserLossVersion") != "velocity_clean_gradient_condition_reconstruction_v4":
+            raise ValueError("V4 composite denoiser loss contract is invalid")
+        if config.get("training", {}).get("bestCheckpointMetric") != "fixed_grid_composite_condition_quality_score_v4":
+            raise ValueError("V4 composite checkpoint selection contract is invalid")
+    elif architecture == "multiscale_condition_unet_v5":
+        if config.get("conditionOutputBinding") != "predicted_clean_latent_probe_v1":
+            raise ValueError("V5 output-bound condition contract is invalid")
+        if config.get("training", {}).get("denoiserLossVersion") != "velocity_output_bound_condition_texture_hierarchy_v5":
+            raise ValueError("V5 composite denoiser loss contract is invalid")
+        if config.get("training", {}).get("bestCheckpointMetric") != "fixed_grid_output_bound_hierarchy_score_v5":
+            raise ValueError("V5 checkpoint selection contract is invalid")
+        if config.get("training", {}).get("strictHeldOutInferenceSplit") != "challenge":
+            raise ValueError("V5 strict held-out split must be challenge")
+    elif architecture == "multiscale_condition_unet_v6":
+        training = config.get("training", {})
+        if config.get("conditionOutputBinding") != "predicted_clean_latent_and_decoded_rgb_v1":
+            raise ValueError("V6 decoded RGB output binding contract is invalid")
+        if training.get("denoiserLossVersion") != "velocity_decoded_rgb_sparse_region_rollout_v6":
+            raise ValueError("V6 composite denoiser loss contract is invalid")
+        if training.get("bestCheckpointMetric") != "fixed_grid_plus_deterministic_rollout_rgb_score_v6":
+            raise ValueError("V6 checkpoint selection contract is invalid")
+        if training.get("strictHeldOutInferenceSplit") != "challenge":
+            raise ValueError("V6 strict held-out split must be challenge")
+        required_sparse = {"terrain_water", "terrain_path_ground", "terrain_shoreline", "object_footprints", "focal_area"}
+        if set(training.get("sparseRgbConditionChannels", [])) != required_sparse:
+            raise ValueError("V6 sparse RGB condition channels are incomplete")
+        if int(training.get("checkpointRolloutSampleCount", 0)) < 1:
+            raise ValueError("V6 rollout checkpoint validation must include at least one validation sample")
+    elif architecture == "multiscale_condition_unet_v7":
+        training = config.get("training", {})
+        if config.get("conditionOutputBinding") != "predicted_clean_latent_and_decoded_rgb_v1":
+            raise ValueError("V7 decoded RGB output binding contract is invalid")
+        if training.get("denoiserLossVersion") != "velocity_decoded_rgb_sparse_region_rollout_v7":
+            raise ValueError("V7 composite denoiser loss contract is invalid")
+        if training.get("bestCheckpointMetric") != "all_validation_multiseed_worst_case_semantic_rollout_score_v7":
+            raise ValueError("V7 checkpoint selection contract is invalid")
+        if training.get("strictHeldOutInferenceSplit") != "challenge":
+            raise ValueError("V7 strict held-out split must be challenge")
+        if training.get("checkpointRolloutCoverage") != "all_validation_samples":
+            raise ValueError("V7 checkpoint rollout must cover every validation sample")
+        if int(training.get("checkpointRolloutSeedsPerSample", 0)) < 2:
+            raise ValueError("V7 checkpoint rollout requires at least two deterministic seeds per validation sample")
+        if training.get("trainingAuthorizationStatus") != "owner_approved":
+            raise ValueError("V7 GPU training is blocked pending a separate owner data-capacity and training decision")
+        required_sparse = {"terrain_water", "terrain_path_ground", "terrain_shoreline", "object_footprints", "focal_area"}
+        if set(training.get("sparseRgbConditionChannels", [])) != required_sparse:
+            raise ValueError("V7 sparse RGB condition channels are incomplete")
+    else:
+        raise ValueError("unsupported conditional denoiser architecture")
     if package.get("schemaVersion") != "ai-assisted-cold-start-dataset-package-v1":
         raise ValueError("AI-assisted dataset package schema is invalid")
     if package.get("policyVersion") != POLICY_VERSION or package.get("trainingLane") != "ai_assisted_cold_start":
@@ -375,7 +468,7 @@ def build_diffusion_schedule(config, device):
     }
 
 
-def train_epoch(model, loader, optimizer, diffusion, latent_normalization, device, config, max_batches=None):
+def train_epoch(model, loader, optimizer, diffusion, latent_normalization, device, config, epoch_index, max_batches=None):
     model.denoiser.train()
     totals = {}
     count = 0
@@ -387,26 +480,30 @@ def train_epoch(model, loader, optimizer, diffusion, latent_normalization, devic
         with torch.no_grad():
             latent = model.autoencoder.encode(image)
             latent = normalize_latent(latent, latent_normalization)
-        timestep = torch.randint(0, diffusion["alphasCumulative"].shape[0], (image.shape[0],), device=device)
+        timestep = training_timesteps(
+            config,
+            epoch_index,
+            batch_index,
+            len(loader),
+            image.shape[0],
+            diffusion["alphasCumulative"].shape[0],
+            device,
+        )
         noise = torch.randn_like(latent)
         noisy_latent = add_noise(latent, noise, timestep, diffusion["alphasCumulative"])
         target_velocity = velocity_target(latent, noise, timestep, diffusion["alphasCumulative"])
         optimizer.zero_grad(set_to_none=True)
-        predicted_velocity, predicted_conditions, resized_conditions = model.predict_velocity_with_condition_reconstruction(
+        loss_metrics = predict_and_measure(
+            model,
             noisy_latent,
-            timestep,
-            conditions,
-        )
-        loss_metrics = composite_denoiser_losses(
-            predicted_velocity,
             target_velocity,
-            noisy_latent,
             latent,
             timestep,
             diffusion["alphasCumulative"],
-            predicted_conditions,
-            resized_conditions,
+            conditions,
             config,
+            image,
+            latent_normalization,
         )
         loss_metrics["compositeLossTensor"].backward()
         optimizer.step()
@@ -423,12 +520,7 @@ def train_epoch(model, loader, optimizer, diffusion, latent_normalization, devic
 def evaluate_velocity_prediction(model, loader, diffusion, latent_normalization, device, seed, timesteps, config):
     was_training = model.denoiser.training
     model.denoiser.eval()
-    velocity_total = 0.0
-    clean_total = 0.0
-    gradient_total = 0.0
-    discrete_condition_total = 0.0
-    continuous_condition_total = 0.0
-    composite_total = 0.0
+    totals = {}
     count = 0
     with torch.no_grad():
         for batch_index, batch in enumerate(loader):
@@ -442,42 +534,81 @@ def evaluate_velocity_prediction(model, loader, diffusion, latent_normalization,
                 noise = torch.randn(latent.shape, device=device, dtype=latent.dtype, generator=generator)
                 noisy_latent = add_noise(latent, noise, timestep, diffusion["alphasCumulative"])
                 target_velocity = velocity_target(latent, noise, timestep, diffusion["alphasCumulative"])
-                predicted_velocity, predicted_conditions, resized_conditions = model.predict_velocity_with_condition_reconstruction(
+                loss_metrics = predict_and_measure(
+                    model,
                     noisy_latent,
-                    timestep,
-                    conditions,
-                )
-                loss_metrics = composite_denoiser_losses(
-                    predicted_velocity,
                     target_velocity,
-                    noisy_latent,
                     latent,
                     timestep,
                     diffusion["alphasCumulative"],
-                    predicted_conditions,
-                    resized_conditions,
+                    conditions,
                     config,
+                    image,
+                    latent_normalization,
                 )
-                velocity_total += float(loss_metrics["velocityPredictionMse"].detach())
-                clean_total += float(loss_metrics["cleanLatentMae"].detach())
-                gradient_total += float(loss_metrics["cleanLatentGradientMae"].detach())
-                discrete_condition_total += float(loss_metrics["discreteConditionReconstructionBce"].detach())
-                continuous_condition_total += float(loss_metrics["continuousConditionReconstructionMae"].detach())
-                composite_total += float(loss_metrics["compositeConditionQualityScore"].detach())
+                for key, value in loss_metrics.items():
+                    if key.endswith("Tensor") or key == "compositeLoss":
+                        continue
+                    totals[key] = totals.get(key, 0.0) + float(value.detach())
                 count += 1
     if was_training:
         model.denoiser.train()
     if count == 0:
         raise ValueError("conditional denoiser evaluation loader produced no batches")
     return {
-        "velocityPredictionMse": velocity_total / count,
-        "cleanLatentMae": clean_total / count,
-        "cleanLatentGradientMae": gradient_total / count,
-        "discreteConditionReconstructionBce": discrete_condition_total / count,
-        "continuousConditionReconstructionMae": continuous_condition_total / count,
-        "compositeConditionQualityScore": composite_total / count,
+        **{key: value / count for key, value in totals.items()},
         "fixedTimesteps": [int(value) for value in timesteps],
     }
+
+
+def predict_and_measure(model, noisy_latent, target_velocity, clean_latent, timesteps, alpha_bars, conditions, config, target_image=None, latent_normalization=None):
+    alpha = alpha_bars[timesteps].view(-1, 1, 1, 1)
+    if is_v5_or_later(config):
+        predicted_velocity = model.predict_velocity(noisy_latent, timesteps, conditions)
+        predicted_clean = alpha.sqrt() * noisy_latent - (1.0 - alpha).sqrt() * predicted_velocity
+        predicted_conditions = model.reconstruct_conditions_from_clean_latent(predicted_clean)
+        target_conditions = model.prepare_typed_conditions(conditions, predicted_clean.shape[-2:])
+        if is_v6_or_later(config):
+            if target_image is None or latent_normalization is None:
+                raise ValueError("V6 decoded RGB supervision requires target image and latent normalization")
+            predicted_rgb = model.autoencoder.decode(denormalize_latent(predicted_clean, latent_normalization))
+            return composite_denoiser_losses_v6(
+                predicted_velocity,
+                target_velocity,
+                predicted_clean,
+                clean_latent,
+                predicted_conditions,
+                target_conditions,
+                predicted_rgb,
+                target_image,
+                conditions,
+                config,
+            )
+        return composite_denoiser_losses_v5(
+            predicted_velocity,
+            target_velocity,
+            predicted_clean,
+            clean_latent,
+            predicted_conditions,
+            target_conditions,
+            config,
+        )
+    predicted_velocity, predicted_conditions, target_conditions = model.predict_velocity_with_condition_reconstruction(
+        noisy_latent,
+        timesteps,
+        conditions,
+    )
+    return composite_denoiser_losses(
+        predicted_velocity,
+        target_velocity,
+        noisy_latent,
+        clean_latent,
+        timesteps,
+        alpha_bars,
+        predicted_conditions,
+        target_conditions,
+        config,
+    )
 
 
 def composite_denoiser_losses(predicted_velocity, target_velocity, noisy_latent, clean_latent, timesteps, alpha_bars, predicted_conditions, target_conditions, config):
@@ -524,10 +655,352 @@ def composite_denoiser_losses(predicted_velocity, target_velocity, noisy_latent,
     }
 
 
+def composite_denoiser_losses_v5(predicted_velocity, target_velocity, predicted_clean, clean_latent, predicted_conditions, target_conditions, config):
+    functional = torch.nn.functional
+    velocity_loss = functional.mse_loss(predicted_velocity, target_velocity)
+    clean_loss = functional.l1_loss(predicted_clean, clean_latent)
+    gradient_loss, laplacian_loss = multiscale_latent_hierarchy_losses(predicted_clean, clean_latent, config)
+    quiet_region_loss = quiet_region_excess_loss(predicted_clean, clean_latent, config)
+    discrete_indices, continuous_indices = condition_type_indices(config)
+    discrete_condition_loss = balanced_binary_condition_loss(
+        predicted_conditions[:, discrete_indices],
+        target_conditions[:, discrete_indices],
+    )
+    continuous_condition_loss = functional.l1_loss(
+        predicted_conditions[:, continuous_indices],
+        target_conditions[:, continuous_indices],
+    )
+    values = {
+        "velocityPredictionMse": velocity_loss,
+        "cleanLatentMae": clean_loss,
+        "multiscaleLatentGradientMae": gradient_loss,
+        "multiscaleLatentLaplacianMae": laplacian_loss,
+        "quietRegionExcess": quiet_region_loss,
+        "discreteConditionOutputBindingBce": discrete_condition_loss,
+        "continuousConditionOutputBindingMae": continuous_condition_loss,
+    }
+    training_key_map = {
+        "velocity": "velocityPredictionMse",
+        "cleanLatent": "cleanLatentMae",
+        "multiscaleLatentGradient": "multiscaleLatentGradientMae",
+        "multiscaleLatentLaplacian": "multiscaleLatentLaplacianMae",
+        "quietRegionExcess": "quietRegionExcess",
+        "discreteConditionOutputBinding": "discreteConditionOutputBindingBce",
+        "continuousConditionOutputBinding": "continuousConditionOutputBindingMae",
+    }
+    composite_loss = sum(
+        values[training_key_map[key]] * float(weight)
+        for key, weight in config["training"]["denoiserLossWeights"].items()
+        if key in training_key_map
+    )
+    checkpoint_score = sum(
+        values[key] * float(weight)
+        for key, weight in config["training"]["bestCheckpointMetricWeights"].items()
+        if key in values
+    )
+    return {
+        "compositeLossTensor": composite_loss,
+        "compositeLoss": composite_loss,
+        **values,
+        "compositeConditionQualityScore": checkpoint_score,
+    }
+
+
+def composite_denoiser_losses_v6(predicted_velocity, target_velocity, predicted_clean, clean_latent, predicted_conditions, target_conditions, predicted_rgb, target_rgb, full_conditions, config):
+    base = composite_denoiser_losses_v5(
+        predicted_velocity,
+        target_velocity,
+        predicted_clean,
+        clean_latent,
+        predicted_conditions,
+        target_conditions,
+        config,
+    )
+    rgb_mae = torch.nn.functional.l1_loss(predicted_rgb, target_rgb)
+    rgb_gradient, rgb_laplacian = multiscale_latent_hierarchy_losses(predicted_rgb, target_rgb, config)
+    rgb_quiet = quiet_region_excess_loss(predicted_rgb, target_rgb, config)
+    sparse_region = sparse_region_rgb_loss(predicted_rgb, target_rgb, full_conditions, config)
+    values = {
+        key: value
+        for key, value in base.items()
+        if key not in {"compositeLossTensor", "compositeLoss", "compositeConditionQualityScore"}
+    }
+    values.update({
+        "decodedRgbMae": rgb_mae,
+        "decodedRgbGradientMae": rgb_gradient,
+        "decodedRgbLaplacianMae": rgb_laplacian,
+        "decodedRgbQuietRegionExcess": rgb_quiet,
+        "sparseRegionDecodedRgbMae": sparse_region,
+    })
+    key_map = {
+        "velocity": "velocityPredictionMse",
+        "cleanLatent": "cleanLatentMae",
+        "multiscaleLatentGradient": "multiscaleLatentGradientMae",
+        "multiscaleLatentLaplacian": "multiscaleLatentLaplacianMae",
+        "quietRegionExcess": "quietRegionExcess",
+        "discreteConditionOutputBinding": "discreteConditionOutputBindingBce",
+        "continuousConditionOutputBinding": "continuousConditionOutputBindingMae",
+        "decodedRgb": "decodedRgbMae",
+        "decodedRgbGradient": "decodedRgbGradientMae",
+        "decodedRgbLaplacian": "decodedRgbLaplacianMae",
+        "decodedRgbQuietRegionExcess": "decodedRgbQuietRegionExcess",
+        "sparseRegionDecodedRgb": "sparseRegionDecodedRgbMae",
+    }
+    composite = sum(values[key_map[key]] * float(weight) for key, weight in config["training"]["denoiserLossWeights"].items())
+    checkpoint = sum(values[key] * float(weight) for key, weight in config["training"]["bestCheckpointMetricWeights"].items())
+    return {
+        "compositeLossTensor": composite,
+        "compositeLoss": composite,
+        **values,
+        "compositeConditionQualityScore": checkpoint,
+    }
+
+
+def sparse_region_rgb_loss(predicted_rgb, target_rgb, conditions, config):
+    order = list(config["conditionChannelOrder"])
+    losses = []
+    for name in config["training"].get("sparseRgbConditionChannels", []):
+        mask = conditions[:, order.index(name):order.index(name) + 1]
+        mask = torch.nn.functional.interpolate(mask, size=predicted_rgb.shape[-2:], mode="nearest")
+        denominator = mask.sum() * predicted_rgb.shape[1]
+        if float(denominator.detach()) > 0.0:
+            losses.append(((predicted_rgb - target_rgb).abs() * mask).sum() / denominator)
+    if not losses:
+        return predicted_rgb.new_zeros(())
+    return torch.stack(losses).mean()
+
+
+def evaluate_deterministic_rollout_rgb_quality(model, dataset, diffusion, latent_normalization, device, seed, config):
+    was_training = model.denoiser.training
+    model.denoiser.eval()
+    totals = {"rolloutRgbMae": 0.0, "rolloutRgbGradientMae": 0.0, "rolloutRgbLaplacianMae": 0.0, "rolloutSparseRegionRgbMae": 0.0}
+    count = min(len(dataset), int(config["training"].get("checkpointRolloutSampleCount", 1)))
+    if count == 0:
+        raise ValueError("V6 rollout checkpoint validation has no validation samples")
+    with torch.no_grad():
+        for index in range(count):
+            row = dataset[index]
+            target_rgb = row["image"].unsqueeze(0).to(device)
+            conditions = row["conditions"].unsqueeze(0).to(device)
+            latent_shape = model.autoencoder.encode(target_rgb).shape
+            generator = torch.Generator(device=device).manual_seed(seed + index)
+            latent = torch.randn(latent_shape, device=device, generator=generator)
+            steps = inference_timesteps(int(config["diffusionSteps"]), int(config["inferenceSteps"]), device)
+            for step_index, timestep in enumerate(steps):
+                timestep_batch = torch.full((1,), int(timestep.item()), device=device, dtype=torch.long)
+                velocity = model.predict_velocity(latent, timestep_batch, conditions)
+                previous = int(steps[step_index + 1].item()) if step_index + 1 < len(steps) else -1
+                latent = deterministic_velocity_step(latent, velocity, int(timestep.item()), previous, diffusion["alphasCumulative"])
+            predicted_rgb = model.autoencoder.decode(denormalize_latent(latent, latent_normalization))
+            gradient, laplacian = multiscale_latent_hierarchy_losses(predicted_rgb, target_rgb, config)
+            sparse = sparse_region_rgb_loss(predicted_rgb, target_rgb, conditions, config)
+            totals["rolloutRgbMae"] += float(torch.nn.functional.l1_loss(predicted_rgb, target_rgb))
+            totals["rolloutRgbGradientMae"] += float(gradient)
+            totals["rolloutRgbLaplacianMae"] += float(laplacian)
+            totals["rolloutSparseRegionRgbMae"] += float(sparse)
+    if was_training:
+        model.denoiser.train()
+    result = {key: value / count for key, value in totals.items()}
+    weights = config["training"]["rolloutCheckpointMetricWeights"]
+    result["rolloutRgbQualityScore"] = sum(result[key] * float(weight) for key, weight in weights.items())
+    result["rolloutSampleCount"] = count
+    return result
+
+
+def evaluate_deterministic_rollout_rgb_quality_v7(model, dataset, diffusion, latent_normalization, device, seed, config):
+    was_training = model.denoiser.training
+    model.denoiser.eval()
+    totals = {
+        "rolloutRgbMae": 0.0,
+        "rolloutRgbGradientMae": 0.0,
+        "rolloutRgbLaplacianMae": 0.0,
+        "rolloutSparseRegionRgbMae": 0.0,
+        "rolloutRegionContrastMae": 0.0,
+        "rolloutSpatialGridRgbMae": 0.0,
+    }
+    sample_count = len(dataset)
+    seed_count = int(config["training"].get("checkpointRolloutSeedsPerSample", 2))
+    if sample_count == 0:
+        raise ValueError("V7 rollout checkpoint validation has no validation samples")
+    trajectory_scores = []
+    with torch.no_grad():
+        for index in range(sample_count):
+            row = dataset[index]
+            target_rgb = row["image"].unsqueeze(0).to(device)
+            conditions = row["conditions"].unsqueeze(0).to(device)
+            latent_shape = model.autoencoder.encode(target_rgb).shape
+            for seed_index in range(seed_count):
+                generator = torch.Generator(device=device).manual_seed(seed + index * seed_count + seed_index)
+                latent = torch.randn(latent_shape, device=device, generator=generator)
+                steps = inference_timesteps(int(config["diffusionSteps"]), int(config["inferenceSteps"]), device)
+                for step_index, timestep in enumerate(steps):
+                    timestep_batch = torch.full((1,), int(timestep.item()), device=device, dtype=torch.long)
+                    velocity = model.predict_velocity(latent, timestep_batch, conditions)
+                    previous = int(steps[step_index + 1].item()) if step_index + 1 < len(steps) else -1
+                    latent = deterministic_velocity_step(latent, velocity, int(timestep.item()), previous, diffusion["alphasCumulative"])
+                predicted_rgb = model.autoencoder.decode(denormalize_latent(latent, latent_normalization)).clamp(0.0, 1.0)
+                gradient, laplacian = multiscale_latent_hierarchy_losses(predicted_rgb, target_rgb, config)
+                values = {
+                    "rolloutRgbMae": float(torch.nn.functional.l1_loss(predicted_rgb, target_rgb)),
+                    "rolloutRgbGradientMae": float(gradient),
+                    "rolloutRgbLaplacianMae": float(laplacian),
+                    "rolloutSparseRegionRgbMae": float(sparse_region_rgb_loss(predicted_rgb, target_rgb, conditions, config)),
+                    "rolloutRegionContrastMae": float(sparse_region_contrast_loss(predicted_rgb, target_rgb, conditions, config)),
+                    "rolloutSpatialGridRgbMae": float(spatial_grid_rgb_loss(predicted_rgb, target_rgb)),
+                }
+                for key, value in values.items():
+                    totals[key] += value
+                weights = config["training"]["rolloutCheckpointMetricWeights"]
+                trajectory_scores.append(sum(values[key] * float(weight) for key, weight in weights.items()))
+    if was_training:
+        model.denoiser.train()
+    trajectory_count = sample_count * seed_count
+    result = {key: value / trajectory_count for key, value in totals.items()}
+    result["rolloutAverageQualityScore"] = sum(
+        result[key] * float(weight)
+        for key, weight in config["training"]["rolloutCheckpointMetricWeights"].items()
+    )
+    result["rolloutWorstTrajectoryQualityScore"] = max(trajectory_scores)
+    result["rolloutRgbQualityScore"] = (
+        result["rolloutAverageQualityScore"]
+        + result["rolloutWorstTrajectoryQualityScore"] * float(config["training"].get("checkpointWorstTrajectoryWeight", 1.0))
+    )
+    result["rolloutSampleCount"] = sample_count
+    result["rolloutSeedCountPerSample"] = seed_count
+    result["rolloutTrajectoryCount"] = trajectory_count
+    return result
+
+
+def sparse_region_contrast_loss(predicted_rgb, target_rgb, conditions, config):
+    order = list(config["conditionChannelOrder"])
+    losses = []
+    for name in config["training"].get("sparseRgbConditionChannels", []):
+        mask = conditions[:, order.index(name):order.index(name) + 1]
+        mask = torch.nn.functional.interpolate(mask, size=predicted_rgb.shape[-2:], mode="nearest")
+        inside_count = mask.sum().clamp_min(1.0)
+        outside = 1.0 - mask
+        outside_count = outside.sum().clamp_min(1.0)
+        predicted_contrast = (predicted_rgb * mask).sum(dim=(2, 3)) / inside_count - (predicted_rgb * outside).sum(dim=(2, 3)) / outside_count
+        target_contrast = (target_rgb * mask).sum(dim=(2, 3)) / inside_count - (target_rgb * outside).sum(dim=(2, 3)) / outside_count
+        losses.append(torch.nn.functional.l1_loss(predicted_contrast, target_contrast))
+    if not losses:
+        return predicted_rgb.new_zeros(())
+    return torch.stack(losses).mean()
+
+
+def spatial_grid_rgb_loss(predicted_rgb, target_rgb):
+    predicted_grid = torch.nn.functional.adaptive_avg_pool2d(predicted_rgb, (6, 8))
+    target_grid = torch.nn.functional.adaptive_avg_pool2d(target_rgb, (6, 8))
+    return torch.nn.functional.l1_loss(predicted_grid, target_grid)
+
+
 def latent_gradient_mae(predicted, target):
     horizontal = torch.nn.functional.l1_loss(predicted[:, :, :, 1:] - predicted[:, :, :, :-1], target[:, :, :, 1:] - target[:, :, :, :-1])
     vertical = torch.nn.functional.l1_loss(predicted[:, :, 1:, :] - predicted[:, :, :-1, :], target[:, :, 1:, :] - target[:, :, :-1, :])
     return (horizontal + vertical) * 0.5
+
+
+def multiscale_latent_hierarchy_losses(predicted, target, config):
+    functional = torch.nn.functional
+    gradient_losses = []
+    laplacian_losses = []
+    for scale in config["training"].get("textureHierarchyScales", [1.0, 0.5, 0.25]):
+        if float(scale) == 1.0:
+            predicted_level, target_level = predicted, target
+        else:
+            size = (
+                max(2, round(predicted.shape[-2] * float(scale))),
+                max(2, round(predicted.shape[-1] * float(scale))),
+            )
+            predicted_level = functional.interpolate(predicted, size=size, mode="area")
+            target_level = functional.interpolate(target, size=size, mode="area")
+        gradient_losses.append(latent_gradient_mae(predicted_level, target_level))
+        laplacian_losses.append(functional.l1_loss(latent_laplacian(predicted_level), latent_laplacian(target_level)))
+    return torch.stack(gradient_losses).mean(), torch.stack(laplacian_losses).mean()
+
+
+def latent_laplacian(value):
+    functional = torch.nn.functional
+    padded = functional.pad(value, (1, 1, 1, 1), mode="replicate")
+    return (
+        padded[:, :, 1:-1, :-2]
+        + padded[:, :, 1:-1, 2:]
+        + padded[:, :, :-2, 1:-1]
+        + padded[:, :, 2:, 1:-1]
+        - 4.0 * value
+    )
+
+
+def latent_activity(value):
+    horizontal = torch.nn.functional.pad((value[:, :, :, 1:] - value[:, :, :, :-1]).abs(), (0, 1, 0, 0))
+    vertical = torch.nn.functional.pad((value[:, :, 1:, :] - value[:, :, :-1, :]).abs(), (0, 0, 0, 1))
+    return (horizontal + vertical).mean(dim=1, keepdim=True) * 0.5
+
+
+def quiet_region_excess_loss(predicted, target, config):
+    target_activity = latent_activity(target)
+    predicted_activity = latent_activity(predicted)
+    quantile = float(config["training"].get("quietRegionQuantile", 0.3))
+    margin = float(config["training"].get("quietRegionMargin", 0.02))
+    thresholds = torch.quantile(target_activity.flatten(1), quantile, dim=1).view(-1, 1, 1, 1)
+    quiet_mask = (target_activity <= thresholds).to(predicted.dtype)
+    excess = torch.relu(predicted_activity - target_activity - margin) * quiet_mask
+    return excess.sum() / quiet_mask.sum().clamp_min(1.0)
+
+
+def balanced_binary_condition_loss(predicted, target):
+    epsilon = 1e-6
+    predicted = predicted.clamp(epsilon, 1.0 - epsilon)
+    positive_mask = target >= 0.5
+    negative_mask = ~positive_mask
+    channel_losses = []
+    for channel_index in range(target.shape[1]):
+        channel_predicted = predicted[:, channel_index]
+        channel_positive = positive_mask[:, channel_index]
+        channel_negative = negative_mask[:, channel_index]
+        parts = []
+        if channel_positive.any():
+            parts.append(-torch.log(channel_predicted[channel_positive]).mean())
+        if channel_negative.any():
+            parts.append(-torch.log1p(-channel_predicted[channel_negative]).mean())
+        channel_losses.append(torch.stack(parts).mean())
+    return torch.stack(channel_losses).mean()
+
+
+def training_timesteps(config, epoch_index, batch_index, batch_count, batch_size, diffusion_steps, device):
+    if not is_v5_or_later(config):
+        return torch.randint(0, diffusion_steps, (batch_size,), device=device)
+    bucket_count = max(1, batch_count * batch_size)
+    values = []
+    for item_index in range(batch_size):
+        bucket = (batch_index * batch_size + item_index + epoch_index) % bucket_count
+        value = 0 if bucket_count == 1 else round((bucket / (bucket_count - 1)) * (diffusion_steps - 1))
+        values.append(value)
+    return torch.tensor(values, device=device, dtype=torch.long)
+
+
+def is_v5(config):
+    return config.get("denoiserArchitecture") == "multiscale_condition_unet_v5"
+
+
+def is_v6(config):
+    return config.get("denoiserArchitecture") == "multiscale_condition_unet_v6"
+
+
+def is_v7(config):
+    return config.get("denoiserArchitecture") == "multiscale_condition_unet_v7"
+
+
+def is_v6_or_later(config):
+    return is_v6(config) or is_v7(config)
+
+
+def is_v5_or_later(config):
+    return is_v5(config) or is_v6_or_later(config)
+
+
+def upper_camel(value):
+    return value[:1].upper() + value[1:]
 
 
 def condition_type_indices(config):
@@ -546,6 +1019,14 @@ def save_condition_evidence(model, datasets, diffusion, latent_normalization, de
     with torch.no_grad():
         for split_index, split in enumerate(("validation", "challenge", "regression")):
             dataset = datasets[split]
+            if is_v6_or_later(config) and split == config["training"].get("strictHeldOutInferenceSplit"):
+                records.append({
+                    "split": split,
+                    "sampleCount": len(dataset),
+                    "status": "reserved_for_post_training_held_out_inference",
+                    "metricsReadDuringTraining": False,
+                })
+                continue
             for sample_index in range(len(dataset)):
                 row = dataset[sample_index]
                 image = row["image"].unsqueeze(0).to(device)
@@ -558,23 +1039,19 @@ def save_condition_evidence(model, datasets, diffusion, latent_normalization, de
                 noise = torch.randn(latent.shape, device=device, dtype=latent.dtype, generator=generator)
                 noisy_latent = add_noise(latent, noise, timestep, diffusion["alphasCumulative"])
                 target_velocity = velocity_target(latent, noise, timestep, diffusion["alphasCumulative"])
-                predicted_velocity, predicted_conditions, resized_conditions = model.predict_velocity_with_condition_reconstruction(
+                loss_metrics = predict_and_measure(
+                    model,
                     noisy_latent,
-                    timestep,
-                    conditions,
-                )
-                loss_metrics = composite_denoiser_losses(
-                    predicted_velocity,
                     target_velocity,
-                    noisy_latent,
                     latent,
                     timestep,
                     diffusion["alphasCumulative"],
-                    predicted_conditions,
-                    resized_conditions,
+                    conditions,
                     config,
+                    image,
+                    latent_normalization,
                 )
-                records.append({
+                record = {
                     "split": split,
                     "sampleId": row["sampleId"],
                     "conditionLabel": row["conditionLabel"],
@@ -583,17 +1060,19 @@ def save_condition_evidence(model, datasets, diffusion, latent_normalization, de
                     "timestep": int(timestep_value),
                     "velocityPredictionLoss": float(loss_metrics["velocityPredictionMse"].detach()),
                     "cleanLatentMae": float(loss_metrics["cleanLatentMae"].detach()),
-                    "cleanLatentGradientMae": float(loss_metrics["cleanLatentGradientMae"].detach()),
-                    "discreteConditionReconstructionBce": float(loss_metrics["discreteConditionReconstructionBce"].detach()),
-                    "continuousConditionReconstructionMae": float(loss_metrics["continuousConditionReconstructionMae"].detach()),
                     "compositeConditionQualityScore": float(loss_metrics["compositeConditionQualityScore"].detach()),
                     "generatedRgb": False,
                     "formalCandidate": False,
-                })
+                }
+                for key, value in loss_metrics.items():
+                    if key in {"compositeLossTensor", "compositeLoss", "velocityPredictionMse", "cleanLatentMae", "compositeConditionQualityScore"}:
+                        continue
+                    record[key] = float(value.detach())
+                records.append(record)
     if was_training:
         model.denoiser.train()
     payload = {
-        "schemaVersion": "ai-assisted-conditional-denoiser-evidence-v1",
+        "schemaVersion": "ai-assisted-conditional-denoiser-evidence-v4" if is_v7(config) else ("ai-assisted-conditional-denoiser-evidence-v3" if is_v6(config) else ("ai-assisted-conditional-denoiser-evidence-v2" if is_v5(config) else "ai-assisted-conditional-denoiser-evidence-v1")),
         "createdAtUtc": utc_now(),
         "createdAtAsiaShanghai": asia_shanghai_now(),
         "records": records,
@@ -648,6 +1127,10 @@ def load_latent_normalization(checkpoint, device):
 
 def normalize_latent(latent, normalization):
     return (latent - normalization["mean"]) / normalization["standardDeviation"]
+
+
+def denormalize_latent(latent, normalization):
+    return latent * normalization["standardDeviation"] + normalization["mean"]
 
 
 def serialize_latent_normalization(normalization):
@@ -705,7 +1188,16 @@ def asia_shanghai_now():
 
 
 def project_path(path):
-    return str(Path(path).resolve().relative_to(Path.cwd().resolve())).replace("\\", "/")
+    resolved = Path(path).resolve()
+    project_root = Path.cwd().resolve()
+    try:
+        relative = resolved.relative_to(project_root)
+    except ValueError:
+        default_data_root = Path("D:/AI-PET-WORLD-DATA") if os.name == "nt" else project_root / ".ai-pet-world-data"
+        data_root = Path(os.environ.get("AI_PET_WORLD_DATA_ROOT", default_data_root)).resolve()
+        physical_runtime_root = data_root / "hot" / "runtime"
+        relative = Path(".runtime") / resolved.relative_to(physical_runtime_root)
+    return str(relative).replace("\\", "/")
 
 
 def sha256_file(path):

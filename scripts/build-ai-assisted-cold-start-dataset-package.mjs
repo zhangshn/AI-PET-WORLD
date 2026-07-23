@@ -1,10 +1,10 @@
 import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
+import { isOwnerAuthorizedAiAssistedColdStartRef } from "./lib/original-image-library-contract.mjs"
 
 const ROOT = process.cwd()
 const POLICY_VERSION = "owner-authorized-ai-assisted-cold-start-v1"
-const OWNER_AUTHORIZATION_REF = "conversation-owner-authorization-2026-07-13"
 const WORLD_PROFILE_ID = "mainland-southeast-asia-tropical-monsoon-natural-home-v1"
 const OUTPUT_ROOT = path.join(ROOT, "data", "world-samples", "ai-assisted-cold-start-dataset-packages")
 const INDEX_PATH = "data/world-samples/original-image-library/natural-home-v1/index.json"
@@ -41,11 +41,16 @@ fs.mkdirSync(packageDir, { recursive: false })
 const completeMaps = eligibleRecords.filter((record) => record.categoryId === "complete-maps")
 const completeMapSplits = new Map(completeMaps.map((record, indexValue) => [record.recordId, splitForIndex(indexValue)]))
 const samples = eligibleRecords.map((summary) => buildSample(summary, completeMapSplits.get(summary.recordId) ?? "knowledge"))
+const ownerAuthorizationRefs = [...new Set(samples.map((sample) => sample.ownerAuthorizationRef))].sort()
 const autoencoderSamples = samples.filter((sample) => sample.trainingRoles.includes("rgb_autoencoder_warmup"))
 const conditionBoundSamples = samples.filter((sample) => sample.trainingRoles.includes("conditional_denoiser"))
-const pairedWorldIds = new Set(conditionBoundSamples.map((sample) => sample.conditionWorldId))
+const currentConditionBoundSamples = conditionBoundSamples.filter((sample) => sample.currentConditionIdentityMatches === true)
+const v7CapacityContributionSamples = conditionBoundSamples.filter((sample) => sample.v7CapacityContributionRegistered === true)
+const pairedWorldIds = new Set(currentConditionBoundSamples.map((sample) => sample.conditionWorldId))
 const unpairedConditionRows = currentConditionRows.filter((row) => !pairedWorldIds.has(row.worldId))
-assert(pairedWorldIds.size === conditionBoundSamples.length, "current condition RGB pairs must have unique world identities")
+assert(pairedWorldIds.size === currentConditionBoundSamples.length, "current condition RGB pairs must have unique world identities")
+assert(new Set(conditionBoundSamples.map((sample) => sample.conditionWorldId)).size === conditionBoundSamples.length, "all condition-bound samples must have unique world identities")
+assert(new Set(v7CapacityContributionSamples.map((sample) => sample.v7CapacitySlotId)).size === v7CapacityContributionSamples.length, "V7 capacity contributions must have unique slot identities")
 const conditionOnlyBlueprints = (conditionalFactsManifest.rows ?? []).map((row) => ({
   sourceRecordId: row.sourceRecordId,
   worldId: row.worldId,
@@ -74,7 +79,7 @@ const conditionalThreshold = trainingGateApprovalPointer?.approvals?.conditional
 const autoencoderVisualReview = trainingGateApprovalPointer?.approvals?.autoencoderV2VisualReview
 const connectivityThreshold = trainingGateApprovalPointer?.approvals?.worldConnectivityCoverageThreshold
 const conditionalThresholdApproved = conditionalThreshold?.decision === "approved"
-  && conditionBoundSamples.length >= conditionalThreshold.minimumCurrentConditionPairCount
+  && currentConditionBoundSamples.length >= conditionalThreshold.minimumCurrentConditionPairCount
 const autoencoderVisualApproved = autoencoderVisualReview?.decision === "approved"
 const connectivityThresholdApproved = connectivityThreshold?.decision === "approved"
   && connectivityCoverage?.minimumThresholdStatus === "owner_approved"
@@ -105,7 +110,8 @@ const packageStatus = canTrainConditionalDenoiser
 const sourceIndex = {
   schemaVersion: "ai-assisted-cold-start-dataset-source-index-v1",
   policyVersion: POLICY_VERSION,
-  ownerAuthorizationRef: OWNER_AUTHORIZATION_REF,
+  ownerAuthorizationRef: ownerAuthorizationRefs.length === 1 ? ownerAuthorizationRefs[0] : null,
+  ownerAuthorizationRefs,
   packageId,
   dictionaryVersionId: dictionaryPointer.dictionaryVersionId,
   sampleCount: samples.length,
@@ -113,15 +119,28 @@ const sourceIndex = {
   samples,
   conditionOnlyBlueprintCount: conditionOnlyBlueprints.length,
   conditionOnlyBlueprints,
-  currentConditionPairCount: conditionBoundSamples.length,
+  currentConditionPairCount: currentConditionBoundSamples.length,
   currentConditionUnpairedCount: unpairedConditionRows.length,
-  currentConditionPairs: conditionBoundSamples.map((sample) => ({
+  currentConditionPairs: currentConditionBoundSamples.map((sample) => ({
     sampleId: sample.sampleId,
     conditionLabel: sample.conditionLabel,
     worldId: sample.conditionWorldId,
     taskPackageId: sample.taskPackageId,
     conditionPackPath: sample.conditionPackPath,
     imageSha256: sample.imageSha256,
+  })),
+  v7CapacityContributionCount: v7CapacityContributionSamples.length,
+  v7CapacityContributions: v7CapacityContributionSamples.map((sample) => ({
+    sampleId: sample.sampleId,
+    capacitySlotId: sample.v7CapacitySlotId,
+    split: sample.split,
+    conditionLabel: sample.conditionLabel,
+    worldId: sample.conditionWorldId,
+    taskPackageId: sample.taskPackageId,
+    conditionPackPath: sample.conditionPackPath,
+    imageSha256: sample.imageSha256,
+    contributionPath: sample.v7CapacityContributionPath,
+    contributionSha256: sample.v7CapacityContributionSha256,
   })),
 }
 writeJson(path.join(packageDir, "source-index.json"), sourceIndex)
@@ -141,7 +160,8 @@ const snapshots = snapshotInputs(packageDir)
 const manifest = {
   schemaVersion: "ai-assisted-cold-start-dataset-package-v1",
   policyVersion: POLICY_VERSION,
-  ownerAuthorizationRef: OWNER_AUTHORIZATION_REF,
+  ownerAuthorizationRef: ownerAuthorizationRefs.length === 1 ? ownerAuthorizationRefs[0] : null,
+  ownerAuthorizationRefs,
   packageId,
   parentPackageId: readOptionalJson(path.join(OUTPUT_ROOT, "latest.json"))?.packageId ?? null,
   createdAtUtc: timestamp,
@@ -160,7 +180,8 @@ const manifest = {
   completeMapCount: completeMaps.length,
   autoencoderSampleCount: autoencoderSamples.length,
   conditionBoundCompleteMapCount: conditionBoundSamples.length,
-  currentConditionPairCount: conditionBoundSamples.length,
+  currentConditionPairCount: currentConditionBoundSamples.length,
+  v7CapacityContributionCount: v7CapacityContributionSamples.length,
   currentConditionUnpairedCount: unpairedConditionRows.length,
   currentConditionExpectedCount: currentConditionRows.length,
   conditionOnlyBlueprintCount: conditionOnlyBlueprints.length,
@@ -221,7 +242,8 @@ writeJson(path.join(OUTPUT_ROOT, "latest.json"), {
   sampleCount: samples.length,
   autoencoderSampleCount: autoencoderSamples.length,
   conditionBoundCompleteMapCount: conditionBoundSamples.length,
-  currentConditionPairCount: conditionBoundSamples.length,
+  currentConditionPairCount: currentConditionBoundSamples.length,
+  v7CapacityContributionCount: v7CapacityContributionSamples.length,
   currentConditionUnpairedCount: unpairedConditionRows.length,
   conditionOnlyBlueprintCount: conditionOnlyBlueprints.length,
   conditionalFactsBatchId: conditionalFactsManifest.batchId,
@@ -237,7 +259,8 @@ console.log(JSON.stringify({
   categoryCounts,
   autoencoderSampleCount: autoencoderSamples.length,
   conditionBoundCompleteMapCount: conditionBoundSamples.length,
-  currentConditionPairCount: conditionBoundSamples.length,
+  currentConditionPairCount: currentConditionBoundSamples.length,
+  v7CapacityContributionCount: v7CapacityContributionSamples.length,
   currentConditionUnpairedCount: unpairedConditionRows.length,
   splitCounts,
   blockers,
@@ -250,7 +273,10 @@ function buildSample(summary, split) {
   assert(record.aiAssistedColdStartEligible === true, `AI cold-start eligibility missing: ${summary.recordId}`)
   assert(record.independentTrainingEligible === false, `independent lane contamination: ${summary.recordId}`)
   assert(record.aiAssistedColdStart?.policyVersion === POLICY_VERSION, `policy mismatch: ${summary.recordId}`)
-  assert(record.aiAssistedColdStart?.ownerAuthorizationRef === OWNER_AUTHORIZATION_REF, `owner authorization mismatch: ${summary.recordId}`)
+  assert(
+    isOwnerAuthorizedAiAssistedColdStartRef(record.aiAssistedColdStart?.ownerAuthorizationRef),
+    `owner authorization mismatch: ${summary.recordId}`,
+  )
   assert(record.aiAssistedColdStart?.trainingLane === "ai_assisted_cold_start", `training lane mismatch: ${summary.recordId}`)
   assert(record.source?.thirdPartyContentUsed === false, `third-party content present: ${summary.recordId}`)
   assert(record.source?.thirdPartyGenerativeModelUsed === true, `AI generation dependency missing: ${summary.recordId}`)
@@ -288,8 +314,13 @@ function buildSample(summary, split) {
   const currentConditionIdentityMatches = Boolean(currentConditionRow)
     && record.worldBinding?.taskPackageId === currentConditionRow.taskId
     && conditionPackPath === currentConditionRow.conditionPackPath
+  const v7CapacityContribution = record.v7CapacityContribution?.status === "registered"
+    ? validateV7CapacityContribution(record, machineReview)
+    : null
+  const v7CapacityContributionRegistered = Boolean(v7CapacityContribution)
+  const conditionIdentityMatches = currentConditionIdentityMatches || v7CapacityContributionRegistered
   const conditionBound = conditionReferencePresent
-    && currentConditionIdentityMatches
+    && conditionIdentityMatches
     && record.conditionBinding?.formalConditionalTrainingEligible === true
     && machineReview.semanticConditionAudit?.passed === true
   const trainingRoles = []
@@ -302,7 +333,7 @@ function buildSample(summary, split) {
     recordId: record.recordId,
     title: record.title,
     categoryId: record.categoryId,
-    split,
+    split: v7CapacityContribution?.split ?? split,
     trainingRoles,
     imagePath: projectPath(packageImagePath),
     imageSha256: record.originalImage.sha256,
@@ -323,23 +354,57 @@ function buildSample(summary, split) {
     classification: record.classification,
     taskPackageId: record.worldBinding?.taskPackageId ?? null,
     conditionPackPath,
-    conditionLabel: currentConditionRow?.conditionLabel ?? null,
+    conditionLabel: currentConditionRow?.conditionLabel ?? v7CapacityContribution?.conditionLabel ?? null,
     conditionWorldId,
-    conditionGenerationContractVersion: currentConditionRow?.generationContractVersion ?? null,
+    conditionGenerationContractVersion: currentConditionRow?.generationContractVersion ?? v7CapacityContribution?.conditionGenerationContractVersion ?? null,
     currentConditionIdentityMatches,
+    v7CapacityContributionRegistered,
+    v7CapacitySlotId: v7CapacityContribution?.capacitySlotId ?? null,
+    v7CapacityContributionPath: v7CapacityContribution?.contributionPath ?? null,
+    v7CapacityContributionSha256: v7CapacityContribution?.contributionSha256 ?? null,
     conditionReferencePresent,
     conditionBindingStatus: record.conditionBinding?.status ?? null,
     formalConditionalTrainingEligible: record.conditionBinding?.formalConditionalTrainingEligible === true,
     conditionBound,
     connectivityBinding: record.worldBinding?.connectivityBinding ?? null,
     policyVersion: POLICY_VERSION,
-    ownerAuthorizationRef: OWNER_AUTHORIZATION_REF,
+    ownerAuthorizationRef: record.aiAssistedColdStart.ownerAuthorizationRef,
     independentTrainingEligible: false,
     aiAssistedColdStartEligible: true,
     thirdPartyWeightsLoaded: false,
     thirdPartyGeneratedTrainingOutputUsed: true,
     directWorldDisplayAllowed: false,
     directRuntimeFrameUseAllowed: false,
+  }
+}
+
+function validateV7CapacityContribution(record, machineReview) {
+  const pointer = record.v7CapacityContribution
+  verifyHash(resolveProjectPath(pointer.contributionPath), pointer.contributionSha256, `V7 contribution hash mismatch: ${record.recordId}`)
+  const contribution = readRequiredJson(pointer.contributionPath)
+  const taskPackage = readRequiredJson(record.worldBinding.taskPackagePath)
+  assert(contribution.schemaVersion === "ai-assisted-v7-capacity-contribution-v1", `V7 contribution schema invalid: ${record.recordId}`)
+  assert(contribution.recordId === record.recordId, `V7 contribution record mismatch: ${record.recordId}`)
+  assert(contribution.capacitySlotId === pointer.capacitySlotId, `V7 contribution slot mismatch: ${record.recordId}`)
+  assert(contribution.split === pointer.split, `V7 contribution split mismatch: ${record.recordId}`)
+  assert(contribution.imageSha256 === record.originalImage.sha256, `V7 contribution image mismatch: ${record.recordId}`)
+  assert(contribution.taskPackageId === record.worldBinding.taskPackageId, `V7 contribution task mismatch: ${record.recordId}`)
+  assert(contribution.conditionWorldId === record.worldBinding.worldId, `V7 contribution world mismatch: ${record.recordId}`)
+  assert(contribution.conditionPackPath === record.worldBinding.conditionPackPath, `V7 contribution condition path mismatch: ${record.recordId}`)
+  assert(contribution.conditionChannelCount === 23, `V7 contribution channel count invalid: ${record.recordId}`)
+  assert(machineReview.styleFingerprintAudit?.passed === true, `V7 style audit failed: ${record.recordId}`)
+  assert(machineReview.compositionNoveltyAudit?.passed === true, `V7 novelty audit failed: ${record.recordId}`)
+  assert(taskPackage.capacitySlot?.slotId === contribution.capacitySlotId, `V7 task slot mismatch: ${record.recordId}`)
+  assert(taskPackage.capacitySlot?.split === contribution.split, `V7 task split mismatch: ${record.recordId}`)
+  assert(taskPackage.conditionLabel === contribution.conditionLabel, `V7 condition label mismatch: ${record.recordId}`)
+  assert(taskPackage.generationContractVersion === "complete-map-scope-world-facts-v2", `V7 condition contract invalid: ${record.recordId}`)
+  return {
+    capacitySlotId: contribution.capacitySlotId,
+    split: contribution.split,
+    conditionLabel: contribution.conditionLabel,
+    conditionGenerationContractVersion: taskPackage.generationContractVersion,
+    contributionPath: pointer.contributionPath,
+    contributionSha256: pointer.contributionSha256,
   }
 }
 

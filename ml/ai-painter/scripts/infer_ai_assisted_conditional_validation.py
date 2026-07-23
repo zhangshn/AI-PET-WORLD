@@ -3,6 +3,7 @@ from __future__ import annotations
 from argparse import ArgumentParser
 import hashlib
 import json
+import os
 from pathlib import Path
 import time
 
@@ -137,9 +138,9 @@ def validate_inputs(config, pack, checkpoint):
         raise ValueError("AI-assisted checkpoint training-stage evidence is invalid")
     if config.get("predictionTarget") != "velocity_v1" or checkpoint.get("predictionTarget") != "velocity_v1":
         raise ValueError("AI-assisted checkpoint prediction target is invalid")
-    if checkpoint.get("bestCheckpointMetric") != "fixed_grid_composite_condition_quality_score_v4":
+    if checkpoint.get("bestCheckpointMetric") != config.get("training", {}).get("bestCheckpointMetric"):
         raise ValueError("AI-assisted checkpoint selection metric is invalid")
-    if checkpoint.get("denoiserLossVersion") != "velocity_clean_gradient_condition_reconstruction_v4":
+    if checkpoint.get("denoiserLossVersion") != config.get("training", {}).get("denoiserLossVersion"):
         raise ValueError("AI-assisted checkpoint loss contract is invalid")
     if checkpoint.get("conditionResizeContract") != "discrete_nearest_continuous_bilinear_v1":
         raise ValueError("AI-assisted checkpoint condition resize contract is invalid")
@@ -211,8 +212,13 @@ def resolve_project_path(value):
     resolved = (root / value).resolve()
     try:
         resolved.relative_to(root)
-    except ValueError as error:
-        raise ValueError(f"condition channel path escapes project root: {value}") from error
+    except ValueError:
+        default_data_root = Path("D:/AI-PET-WORLD-DATA") if os.name == "nt" else root / ".ai-pet-world-data"
+        physical_runtime_root = (Path(os.environ.get("AI_PET_WORLD_DATA_ROOT", default_data_root)) / "hot" / "runtime").resolve()
+        try:
+            resolved.relative_to(physical_runtime_root)
+        except ValueError as error:
+            raise ValueError(f"condition channel path escapes approved project and runtime roots: {value}") from error
     if not resolved.is_file():
         raise ValueError(f"condition channel file is missing: {value}")
     return resolved

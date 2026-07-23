@@ -56,6 +56,19 @@ export async function auditAiAssistedProfessionalAesthetic(imagePath) {
   const textureHierarchyUpperEnvelope = round(Math.max(...hierarchyRatios) * 1.05 + 1e-6)
   const textureHierarchyRatio = round(candidateFeatures.block_variance_q10 / Math.max(candidateFeatures.block_variance_q90, 1e-9))
   const issues = []
+  const diagnosticWarnings = []
+
+  if (textureViolations.length > 0 && textureViolations.length < 4) {
+    diagnosticWarnings.push({
+      code: "professional_single_axis_texture_envelope_exceeded_diagnostic",
+      severity: "warning",
+      message: "One or more texture axes exceed the owner-approved envelope, but the existing rejection threshold is not met.",
+      messageZh: "一个或多个纹理轴超过项目所有者已批准完整地图的校准范围，但尚未达到现有拒绝门槛。",
+      affectedRegion: "whole_frame",
+      requiredAction: "retain_for_failure_diagnosis_and_review_calibration",
+      violationCount: textureViolations.length,
+    })
+  }
 
   if (textureViolations.length >= 4) {
     issues.push(issue(
@@ -112,6 +125,7 @@ export async function auditAiAssistedProfessionalAesthetic(imagePath) {
       textureHierarchyUpperEnvelope,
     },
     textureViolations,
+    diagnosticWarnings,
     issues,
   }
 }

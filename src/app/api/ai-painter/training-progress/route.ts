@@ -25,13 +25,53 @@ type TrainingProgressSnapshot = Record<string, unknown>
 
 let cachedSnapshot: { expiresAt: number; value: TrainingProgressSnapshot } | null = null
 let snapshotInFlight: Promise<TrainingProgressSnapshot> | null = null
+let cachedSummary: { expiresAt: number; value: TrainingProgressSnapshot } | null = null
+let summaryInFlight: Promise<TrainingProgressSnapshot> | null = null
 
 export async function GET(request: NextRequest) {
+  if (request.nextUrl.searchParams.get("view") === "summary") {
+    return NextResponse.json(await readCachedTrainingProgressSummary())
+  }
   const snapshot = await readCachedTrainingProgressSnapshot()
-  const payload = request.nextUrl.searchParams.get("view") === "summary"
-    ? buildTrainingProgressSummary(snapshot)
-    : snapshot
-  return NextResponse.json(payload)
+  return NextResponse.json(snapshot)
+}
+
+async function readCachedTrainingProgressSummary() {
+  if (cachedSummary && cachedSummary.expiresAt > Date.now()) return cachedSummary.value
+  if (summaryInFlight) return summaryInFlight
+  summaryInFlight = buildLightweightTrainingProgressSummary()
+    .then((value) => {
+      cachedSummary = { expiresAt: Date.now() + snapshotCacheTtlMs, value }
+      return value
+    })
+    .finally(() => {
+      summaryInFlight = null
+    })
+  return summaryInFlight
+}
+
+async function buildLightweightTrainingProgressSummary(): Promise<TrainingProgressSnapshot> {
+  const [control, system, runtimeStatus, gameMapRuntimeFrame, trainingRunArchive, ledger] = await Promise.all([
+    readTrainingControlState(),
+    readGpuInfo(),
+    readTrainingRuntimeStatus(),
+    readLatestGameMapRuntimeFramePreview(),
+    readLatestTrainingRunArchive(),
+    readTrainingProcessLedger(),
+  ])
+  const childProcessAlive = isProcessAlive(control.childPid ?? runtimeStatus.heartbeat?.childPid)
+  return {
+    updatedAt: new Date().toISOString(),
+    system,
+    runtimeStatus,
+    control: buildLiveControlState(control, system, runtimeStatus, childProcessAlive),
+    gameMapRuntimeFrame,
+    trainingRunArchive,
+    trainingProcessLedger: {
+      updatedAt: ledger.updatedAt,
+      summary: ledger.summary,
+    },
+  }
 }
 
 async function readCachedTrainingProgressSnapshot() {
@@ -695,22 +735,6 @@ async function buildTrainingProgressSnapshot(): Promise<TrainingProgressSnapshot
       device: latest?.device ?? summary?.device ?? "等待训练",
       checkpointReady,
       inferenceReady,
-    },
-  }
-}
-
-function buildTrainingProgressSummary(snapshot: TrainingProgressSnapshot) {
-  const ledger = isRecord(snapshot.trainingProcessLedger) ? snapshot.trainingProcessLedger : {}
-  return {
-    updatedAt: snapshot.updatedAt,
-    system: snapshot.system,
-    runtimeStatus: snapshot.runtimeStatus,
-    control: snapshot.control,
-    gameMapRuntimeFrame: snapshot.gameMapRuntimeFrame,
-    trainingRunArchive: snapshot.trainingRunArchive,
-    trainingProcessLedger: {
-      updatedAt: ledger.updatedAt,
-      summary: ledger.summary,
     },
   }
 }

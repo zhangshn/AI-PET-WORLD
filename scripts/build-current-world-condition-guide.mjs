@@ -2,12 +2,16 @@ import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
 import sharp from "sharp"
+import { appendAiPainterProgramEvent, writeJsonAtomic } from "./lib/ai-painter-program-event-store.mjs"
+import { closeStorageCatalog, indexArtifact } from "./lib/ai-pet-world-storage-catalog.mjs"
+import { logicalProjectPath } from "./lib/ai-pet-world-storage.mjs"
 
 const ROOT = process.cwd()
 const taskArg = argumentValue("--task")
 const conditionArg = argumentValue("--condition-pack")
 const latest = taskArg ? null : readJson(".runtime/ai-painter/world-visual-generation-task-packages/latest.json")
 const taskPath = resolveProjectPath(taskArg ?? latest.taskPath)
+const task = readJson(taskPath)
 const taskDir = path.dirname(taskPath)
 const conditionPackPath = resolveProjectPath(conditionArg ?? path.join(taskDir, "compiled-conditions", "condition-pack.json"))
 const conditionPack = readJson(conditionPackPath)
@@ -72,14 +76,43 @@ const manifest = {
   automaticStorage: true,
 }
 const manifestPath = path.join(taskDir, "compiled-conditions", "condition-guide-manifest.json")
-writeJson(manifestPath, manifest)
+writeJsonAtomic(manifestPath, manifest)
+const runId = task.capacitySlot?.slotId
+  ? path.basename(path.dirname(taskDir))
+  : task.taskId
+indexWrittenArtifact(guidePath, runId)
+indexWrittenArtifact(manifestPath, runId)
+appendAiPainterProgramEvent({
+  runId,
+  status: "success",
+  stage: "current_world_condition_guide_built",
+  action: "build_current_world_condition_guide",
+  kind: "condition_guide",
+  titleZh: "当前完整地图任务的语义条件引导图已由程序生成并保存",
+  titleEn: "The semantic condition guide for the current complete-map task was generated and saved by the program",
+  summaryZh: "该引导图仅表达23通道语义，不是训练RGB、候选图或正式游戏画面。",
+  summaryEn: "This guide expresses only the 23-channel semantics; it is not a training RGB, candidate, or formal game frame.",
+  evidence: [projectPath(guidePath), projectPath(manifestPath)],
+})
+closeStorageCatalog()
 console.log(JSON.stringify({ ...manifest, manifestPath: projectPath(manifestPath) }, null, 2))
 
 function readJson(value) { return JSON.parse(fs.readFileSync(resolveProjectPath(value), "utf8")) }
 function argumentValue(name) { const index = process.argv.indexOf(name); return index >= 0 ? process.argv[index + 1] : null }
 function resolveProjectPath(value) { const resolved = path.resolve(ROOT, value); assert(resolved === ROOT || resolved.startsWith(`${ROOT}${path.sep}`), `path escapes project: ${value}`); return resolved }
 function projectPath(value) { return path.relative(ROOT, path.resolve(value)).replace(/\\/g, "/") }
-function writeJson(value, body) { fs.writeFileSync(value, `${JSON.stringify(body, null, 2)}\n`, "utf8") }
+function indexWrittenArtifact(filePath, runId) {
+  const stat = fs.statSync(filePath)
+  indexArtifact({
+    logicalPath: logicalProjectPath(filePath),
+    physicalUri: fs.realpathSync(filePath),
+    storageLayer: "hot",
+    runId,
+    byteSize: stat.size,
+    modifiedAtUtc: stat.mtime.toISOString(),
+    sha256: sha256File(filePath),
+  })
+}
 function sha256File(value) { return crypto.createHash("sha256").update(fs.readFileSync(value)).digest("hex") }
 function formatShanghai(iso) { return `${new Intl.DateTimeFormat("sv-SE", { timeZone: "Asia/Shanghai", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).format(new Date(iso)).replace(" ", "T")}+08:00` }
 function assert(condition, message) { if (!condition) throw new Error(message) }

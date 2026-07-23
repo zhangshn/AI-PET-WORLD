@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto"
 import { appendFile, mkdir, readFile, writeFile } from "node:fs/promises"
 import path from "node:path"
+import { aiPainterRuntimeRoot } from "@/server/ai-pet-world-storage"
+import { indexTrainingProcessEvent, readIndexedTrainingProcessLedger } from "@/server/ai-pet-world-storage-catalog"
+
+export { aiPainterRuntimeRoot } from "@/server/ai-pet-world-storage"
 
 export type TrainingControlState = {
   status: "idle" | "running" | "completed" | "failed"
@@ -13,7 +17,6 @@ export type TrainingControlState = {
   childPid?: number | null
 }
 
-export const aiPainterRuntimeRoot = path.join(/* turbopackIgnore: true */ process.cwd(), ".runtime", "ai-painter")
 export const trainingControlDir = path.join(aiPainterRuntimeRoot, "training-control")
 export const trainingControlStatePath = path.join(trainingControlDir, "state.json")
 export const trainingControlLogPath = path.join(trainingControlDir, "console.log")
@@ -249,6 +252,7 @@ export async function appendTrainingProcessEvent(input: Omit<TrainingProcessEven
       ...input,
     }
     await appendFile(trainingProcessLedgerPath, JSON.stringify(event) + "\n", "utf8")
+    indexTrainingProcessEvent(event as unknown as Record<string, unknown>)
     await writeFile(trainingProcessLedgerLatestPath, JSON.stringify(await readTrainingProcessLedger(), null, 2) + "\n", "utf8")
     return event
   } catch {
@@ -257,6 +261,8 @@ export async function appendTrainingProcessEvent(input: Omit<TrainingProcessEven
 }
 
 export async function readTrainingProcessLedger(limit = 80): Promise<TrainingProcessLedger> {
+  const indexed = readIndexedTrainingProcessLedger(limit)
+  if (indexed && indexed.summary.total > 0) return indexed as TrainingProcessLedger
   const events = await readAllTrainingProcessEvents()
   const latestFirst = events.slice(-limit).reverse()
   return {

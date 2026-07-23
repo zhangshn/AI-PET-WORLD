@@ -3,6 +3,7 @@ import path from "node:path"
 import type { Metadata } from "next"
 import Link from "next/link"
 import { listConditionalRgbGenerationAttempts } from "@/server/ai-painter-conditional-rgb-generation-records"
+import { listIndexedChildDirectories, listLatestIndexedArtifacts } from "@/server/ai-pet-world-storage-catalog"
 import styles from "../page.module.css"
 import { TrainingRecordSelector } from "./training-record-selector"
 
@@ -43,6 +44,8 @@ type PipelineStage = {
 }
 
 type JsonRecord = Record<string, unknown>
+
+let broadAiPainterDirectoryRead: Promise<Array<{ entry: { name: string }; absolutePath: string; modifiedAtMs: number }>> | null = null
 
 export default async function NaturalHomePage({ searchParams }: PageProps) {
   const params = searchParams ? await searchParams : {}
@@ -395,10 +398,71 @@ async function readTrainingRecords(): Promise<TrainingRecord[]> {
     readCompleteMapDatasetPackageRecords(),
     readCompleteMapSampleRecords(),
     readConditionalRgbGenerationAttemptRecords(),
+    readAiAssistedConditionalInferenceValidationRecords(),
+    readAiAssistedConditionalInferenceFailureRecords(),
   ])
   const byId = new Map<string, TrainingRecord>()
   for (const record of groups.flat()) byId.set(record.id, record)
   return [...byId.values()].sort((left, right) => Date.parse(right.modifiedAt) - Date.parse(left.modifiedAt))
+}
+
+async function readAiAssistedConditionalInferenceValidationRecords() {
+  const records = await readDirectoryRecords(
+    ".runtime/ai-painter/ai-assisted-conditional-inference-validation",
+    "AI\u8f85\u52a9\u6761\u4ef6\u63a8\u7406\u9a8c\u8bc1",
+    /^ai-assisted-conditional-inference-validation-v\d+-/,
+  )
+  const completedRecords: TrainingRecord[] = []
+  for (const record of records) {
+    const artifacts = listLatestIndexedArtifacts(record.path, 500)
+    const manifestArtifact = artifacts?.find((artifact) => artifact.name === "manifest.json")
+    if (!manifestArtifact) continue
+    const manifest = await readJsonFile<JsonRecord>(path.join(process.cwd(), manifestArtifact.path))
+    if (!manifest) continue
+    completedRecords.push({
+      ...record,
+      modifiedAt: stringValue(manifest.createdAtUtc) ?? record.modifiedAt,
+      status: stringValue(manifest.status) ?? record.status,
+    })
+  }
+  return completedRecords
+}
+
+async function readAiAssistedConditionalInferenceFailureRecords(): Promise<TrainingRecord[]> {
+  const root = ".runtime/ai-painter/ai-assisted-conditional-inference-validation/failures"
+  const artifacts = listLatestIndexedArtifacts(root, 500)
+  if (!artifacts) return []
+  const records: TrainingRecord[] = []
+  for (const artifact of artifacts) {
+    if (artifact.name === "latest.json" || !artifact.name.endsWith(".json")) continue
+    const json = await readJsonFile<JsonRecord>(path.join(process.cwd(), artifact.path))
+    if (!json) continue
+    const failureCodes = stringArrayValue(json.blockers)
+    const outputImagePath = stringValue(json.outputImagePath)
+    const timestampUtc = stringValue(json.timestampUtc) ?? artifact.modifiedAt
+    records.push({
+      id: artifact.path,
+      name: stringValue(json.runId) ?? path.basename(artifact.name, ".json"),
+      kind: "AI\u8f85\u52a9\u6761\u4ef6\u63a8\u7406\u5931\u8d25",
+      path: artifact.path,
+      modifiedAt: timestampUtc,
+      status: stringValue(json.status) ?? "failed",
+      evidence: [artifact.path],
+      previewImages: outputImagePath ? [outputImagePath] : [],
+      summaryLines: [
+        `runId: ${stringValue(json.runId) ?? "--"}`,
+        `conditionLabel: ${stringValue(json.conditionLabel) ?? "--"}`,
+        `failureCodes: ${failureCodes.length ? failureCodes.join(", ") : "--"}`,
+        `candidateGenerated: ${String(booleanValue(json.candidateGenerated) ?? false)}`,
+        `exitCode: ${numberValue(json.exitCode) ?? "--"}`,
+        `UTC: ${timestampUtc}`,
+        `\u5317\u4eac\u65f6\u95f4: ${stringValue(json.timestampAsiaShanghai) ?? "--"}`,
+        `automaticStorage: ${String(booleanValue(json.automaticStorage) ?? false)}`,
+      ],
+    })
+    if (records.length >= 80) break
+  }
+  return records
 }
 
 async function readConditionalRgbGenerationAttemptRecords(): Promise<TrainingRecord[]> {
@@ -589,40 +653,72 @@ async function readCompleteMapSampleRecords(): Promise<TrainingRecord[]> {
 async function readDirectoryRecords(root: string, kind: string, pattern: RegExp): Promise<TrainingRecord[]> {
   const absoluteRoot = path.join(process.cwd(), root)
   try {
-    const entries = await readdir(absoluteRoot, { withFileTypes: true })
-    const candidates = []
-    for (const entry of entries) {
-      if (!entry.isDirectory() || !pattern.test(entry.name)) continue
-      const absolutePath = path.join(absoluteRoot, entry.name)
-      const meta = await stat(absolutePath)
-      const modifiedAtMs = kind.startsWith("WORLD MAP")
-        ? await latestFileMtimeMs(absolutePath, meta.mtimeMs)
-        : meta.mtimeMs
-      candidates.push({ entry, absolutePath, modifiedAtMs })
-    }
+    const indexedEntries = root === ".runtime/ai-painter" ? null : listIndexedChildDirectories(root, 500)
+    const candidates = root === ".runtime/ai-painter"
+      ? (await readBroadAiPainterDirectoryCandidates(absoluteRoot)).filter((entry) => pattern.test(entry.entry.name))
+      : indexedEntries
+        ? indexedEntries
+          .filter((entry) => pattern.test(entry.name))
+          .map((entry) => ({
+            entry: { name: entry.name },
+            absolutePath: path.join(absoluteRoot, entry.name),
+            modifiedAtMs: Date.parse(entry.modifiedAt),
+          }))
+        : await readDirectoryCandidates(absoluteRoot, kind, pattern)
     candidates.sort((left, right) => right.modifiedAtMs - left.modifiedAtMs)
     const visibleCandidates = candidates.slice(0, 80)
 
     const records: TrainingRecord[] = []
     for (const candidate of visibleCandidates) {
       const relativePath = path.join(root, candidate.entry.name).replace(/\\/g, "/")
-      const summary = await readRecordSummary(candidate.absolutePath)
       records.push({
         id: relativePath,
         name: candidate.entry.name,
         kind,
         path: relativePath,
         modifiedAt: new Date(candidate.modifiedAtMs).toISOString(),
-        status: summary.status,
+        status: "saved",
         evidence: [],
         previewImages: [],
-        summaryLines: summary.lines,
+        summaryLines: [],
       })
     }
     return records
   } catch {
     return []
   }
+}
+
+async function readBroadAiPainterDirectoryCandidates(absoluteRoot: string) {
+  if (!broadAiPainterDirectoryRead) {
+    broadAiPainterDirectoryRead = (async () => {
+      const entries = await readdir(absoluteRoot, { withFileTypes: true })
+      const directories = entries.filter((entry) => entry.isDirectory())
+      return Promise.all(directories.map(async (entry) => {
+        const absolutePath = path.join(absoluteRoot, entry.name)
+        const meta = await stat(absolutePath)
+        return { entry: { name: entry.name }, absolutePath, modifiedAtMs: meta.mtimeMs }
+      }))
+    })().finally(() => {
+      broadAiPainterDirectoryRead = null
+    })
+  }
+  return broadAiPainterDirectoryRead
+}
+
+async function readDirectoryCandidates(absoluteRoot: string, kind: string, pattern: RegExp) {
+  const entries = await readdir(absoluteRoot, { withFileTypes: true })
+  const candidates = []
+  for (const entry of entries) {
+    if (!entry.isDirectory() || !pattern.test(entry.name)) continue
+    const absolutePath = path.join(absoluteRoot, entry.name)
+    const meta = await stat(absolutePath)
+    const modifiedAtMs = kind.startsWith("WORLD MAP")
+      ? await latestFileMtimeMs(absolutePath, meta.mtimeMs)
+      : meta.mtimeMs
+    candidates.push({ entry: { name: entry.name }, absolutePath, modifiedAtMs })
+  }
+  return candidates
 }
 
 async function latestFileMtimeMs(absolutePath: string, fallback: number) {
@@ -665,14 +761,27 @@ async function latestFileMtimeMs(absolutePath: string, fallback: number) {
 
 async function hydrateTrainingRecord(record: TrainingRecord): Promise<TrainingRecord> {
   const absolutePath = path.join(process.cwd(), record.path)
-  const evidence = uniqueStrings([...record.evidence, ...(await collectEvidenceFiles(absolutePath))])
+  const summary = record.summaryLines.length ? null : await readRecordSummary(absolutePath)
+  const indexedArtifacts = listLatestIndexedArtifacts(record.path, 500)
+  const indexedEvidence = indexedArtifacts?.filter((artifact) => !isPreviewImage(artifact.path)).slice(0, 32) ?? []
+  const indexedImages = indexedArtifacts?.filter((artifact) => isPreviewImage(artifact.path)).slice(0, 18) ?? []
+  const evidence = uniqueStrings([
+    ...record.evidence,
+    ...(indexedArtifacts?.length
+      ? indexedEvidence.map((artifact) => artifact.path)
+      : await collectEvidenceFiles(absolutePath)),
+  ])
   const previewImages = uniqueStrings([
     ...record.previewImages,
-    ...(await collectPreviewImages(absolutePath, record.path)),
-    ...(await collectReferencedImages(absolutePath)),
+    ...(indexedArtifacts?.length
+      ? indexedImages.map((artifact) => artifact.path)
+      : await collectPreviewImages(absolutePath, record.path)),
+    ...(indexedArtifacts?.length ? [] : await collectReferencedImages(absolutePath)),
   ])
   return {
     ...record,
+    status: summary?.status ?? record.status,
+    summaryLines: summary?.lines ?? record.summaryLines,
     evidence,
     previewImages,
   }
@@ -734,9 +843,19 @@ function normalizeProjectImagePath(value: string) {
 
 function summarizeJson(fileName: string, json: JsonRecord) {
   const status = stringValue(json.status) ?? (booleanValue(json.passed) === false ? "failed" : "saved")
+  const machineReviewIssueCodes = stringArrayValue(json.machineReviewIssueCodes)
   const lines = [
     `${fileName}: ${status}`,
     stringValue(json.runId) ? `runId: ${stringValue(json.runId)}` : null,
+    stringValue(json.conditionLabel) ? `conditionLabel: ${stringValue(json.conditionLabel)}` : null,
+    stringValue(json.sourceSplit) ? `sourceSplit: ${stringValue(json.sourceSplit)}` : null,
+    stringValue(json.machineReviewStatus) ? `machineReviewStatus: ${stringValue(json.machineReviewStatus)}` : null,
+    machineReviewIssueCodes.length ? `machineReviewIssueCodes: ${machineReviewIssueCodes.join(", ")}` : null,
+    stringValue(json.outputImageSha256) ? `outputImageSha256: ${stringValue(json.outputImageSha256)}` : null,
+    stringValue(json.modelCheckpointSha256) ? `modelCheckpointSha256: ${stringValue(json.modelCheckpointSha256)}` : null,
+    stringValue(json.createdAtUtc) ? `UTC: ${stringValue(json.createdAtUtc)}` : null,
+    stringValue(json.createdAtAsiaShanghai) ? `\u5317\u4eac\u65f6\u95f4: ${stringValue(json.createdAtAsiaShanghai)}` : null,
+    booleanValue(json.automaticStorage) !== null ? `automaticStorage: ${String(booleanValue(json.automaticStorage))}` : null,
     numberValue(json.materialCount) !== null ? `materialCount: ${numberValue(json.materialCount)}` : null,
     numberValue(json.slotCount) !== null ? `slotCount: ${numberValue(json.slotCount)}` : null,
     summarizeQuality(json),
@@ -879,6 +998,11 @@ async function existingPaths(paths: string[]) {
 }
 
 async function latestFileRecord(root: string, predicate: (name: string) => boolean) {
+  const indexed = listLatestIndexedArtifacts(root, 1000)
+  if (indexed) {
+    const match = indexed.find((candidate) => predicate(candidate.name))
+    return match ? { path: match.path, modifiedAtMs: Date.parse(match.modifiedAt) } : null
+  }
   const absoluteRoot = path.join(process.cwd(), root)
   const files = await collectFiles(absoluteRoot, root, predicate, 48)
   files.sort((left, right) => right.modifiedAtMs - left.modifiedAtMs)
@@ -940,6 +1064,7 @@ function isCompleteMapImage(imagePath: string) {
   return (
     normalized.includes(".runtime/game-map-runtime-compositor/") ||
     normalized.includes(".runtime/game-map-runtime-frame/") ||
+    normalized.includes(".runtime/ai-painter/ai-assisted-conditional-inference-validation/") ||
     normalized.endsWith("composite-output.png") ||
     normalized.includes("/images/composite-output.png") ||
     (normalized.includes("/complete-world-visual-bootstrap-inference/") && name === "candidate.png")
@@ -980,6 +1105,10 @@ function numberValue(value: unknown) {
 
 function booleanValue(value: unknown) {
   return typeof value === "boolean" ? value : null
+}
+
+function stringArrayValue(value: unknown) {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : []
 }
 
 function objectValue(value: unknown): JsonRecord | null {

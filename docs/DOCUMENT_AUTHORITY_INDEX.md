@@ -1,8 +1,8 @@
 # 项目文档权威索引
 
-更新时间：2026-07-19 20:26:21 +08:00
+更新时间：2026-07-23 05:55:34 +08:00
 
-状态：正式文档治理入口 / 已生效 / 当前v2条件严格配对21/21 / 首张V2隔离验证已拒绝 / V3数值稳定性修复与三级训练已完成 / 等待V3单图视觉验证命令
+状态：正式文档治理入口 / 已生效 / V7剩余104槽连续数据批次已授权 / 当前24张已登记 / 机器通过仅进入待人工审核 / V7 GPU训练未授权
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
@@ -66,7 +66,7 @@ AI Painter 数据关系固定为：五类原图库是并行视觉知识分类，
 
 冷启动基础完整地图原图的正式作用固定为建立完整地图视觉知识与计算标准，而不是仅供页面查看，也不是供下一张图直接临摹。程序必须从经审核集合提取并版本化保存镜头/世界尺度、整体构图层次、入口—中心—道路关系、空间与生态分区组织、水体分布变化、对象尺寸和密度、像素纹理、色彩、光照及游戏可读性标准。生成请求只能消费该聚合标准的机器数值和文字契约，以及当前世界事实、世界导演和本轮23通道；历史完整地图 RGB 引用继续固定为0。所有合格图共享游戏视觉语言，但不得共享同一河流、道路、区域组合或整体构图模板。
 
-出图授权固定采用“双条件门禁”：正式当前执行文档明确允许该具体任务，并且项目所有者对本轮生成给出明确命令。蓝图队列、历史计划、失败后的重试需求、缺失编号、自动循环或智能体推断均不构成出图授权；不得自动批量出图，不得在待审核、范围不明、重复风险或局部图风险存在时继续调用生成算力。
+出图授权固定采用“双条件门禁”：正式当前执行文档明确允许该具体任务，并且项目所有者给出单图命令或有界批次命令。当前唯一批次例外是`owner-authorized-v7-remaining-104-continuous-batch-20260723`，仅覆盖`v7-capacity-slot-004...107`；程序逐槽串行，机器通过只进入待人工审核，失败保存后继续，不得自动重试、自动人工通过、自动登记容量或启动V7 GPU训练。范围不明、重复风险或局部图风险仍必须在该槽生成前阻断。
 
 本文档中的分辨率术语固定分为两条且不得混用：正式本地模型 target、正式候选、owner review、Runtime 和 `/world` 的唯一原生画布是 `1024×768`；AI 辅助冷启动来源可按 `owner-approved-high-resolution-four-three-derivative-v1` 保存不小于 `1024×768` 的精确 4:3 原始文件，并由程序生成 nearest-neighbor、无裁切、无放大的 `1024×768` 训练/机器审核派生图。该派生图不具备正式候选、Runtime 或独立训练资格。`256×192 -> 512×384 -> 1024×768` 只描述训练内部渐进分辨率。任何窗口不得把冷启动派生图或训练阶段图解释成正式输出契约。
 
@@ -96,10 +96,11 @@ docs/
 status = blocked
 canEnterWorld = false
 blockers = owner_review_missing_identity, formal_gate_missing,
-           data_gap_insufficient, ai_assisted_v3_visual_validation_missing
+           data_gap_insufficient,
+           ai_assisted_v7_training_blocked_pending_approved_128_dataset_implementation
 ```
 
-自有扩散采样器、Autoencoder训练程序和 `strict-project-owned-training-data-v1` IP 门禁已经实现并通过检查。第一版真实地球参照连接蓝图、Runtime 迁移及项目所有者审核记录均已写入，当前世界为 tick 3。当前v2的21套世界事实、导演、任务包和23通道均已通过结构与完整地图范围门；后置RGB和项目所有者逐图审核已有21张通过记录。项目所有者于2026-07-19批准21套条件训练数量门槛、Autoencoder v2继续条件视觉验收和27正/27负/每轴3+3连接覆盖门槛。程序已自动保存并复核27正、27负连接记录，9轴全部达到3正+3负；最新AI辅助不可变数据包 `blockers=[]`。首张隔离 V2 验证 `complete-map-v2-014` 已生成并被机器拒绝，程序完整保存图像、审核、失败码和失败学习。诊断确认旧采样链数值爆炸；经项目所有者授权，程序已建立 V3 归一化潜空间、velocity 预测和多尺度23通道 U-Net，并完成 `256x192 -> 512x384 -> 1024x768` 三阶段训练。V3 无 RGB 数值诊断已证明采样数值回到训练潜空间范围，但尚未进行新视觉验证；最终1024 checkpoint继续固定 `formalInferenceEligible=false`。当前下一正式阶段是等待项目所有者明确授权一张 V3 held-out 单图视觉验证；不得继续批量出图，不得回到旧 P10-B3 Chunk 路线或局部材料盲训。
+自有扩散采样器、Autoencoder训练程序和 `strict-project-owned-training-data-v1` IP 门禁已经实现并通过检查。第一版真实地球参照连接蓝图、Runtime迁移及项目所有者审核记录均已写入，当前世界为tick 3。当前v2的21套世界事实、导演、任务包和23通道均已通过结构与完整地图范围门；21/21后置RGB条件配对、27正/27负连接覆盖和九轴各3正+3负均已由程序自动保存并复核。V2至V5训练及验证作为不可变历史保留；V5 challenge验证失败后，项目所有者已授权V6修复。V6 CPU回归、冒烟和Stage 0至Stage 2三级正式渐进训练均已完成。最新Stage 2 runId=`ai-assisted-conditional-denoiser-v6-stage-2-2026-07-21T19-11-57-819Z`，checkpoint SHA-256=`3a4cfd161c80402664eba35010159913be1ae3dc08c954600d577ddef1f9fbc9`，严格继承Stage 1 checkpoint SHA-256=`23593901bd7c9dff385a1c943867b0da1f990b6e8f1fa530359cf5da4062e921`，以原生`1024×768`完成40轮，最佳轮次36、最佳验证指标`2.792788481960694`，固定`formalInferenceEligible=false`。V6单张challenge验证已执行并机器拒绝，V6诊断与V7当前状态以第9节为准；不得重复Stage 2训练，也不得回到旧P10-B3 Chunk路线或局部材料盲训。
 
 AI辅助单图推理验证已经接通验证专用机器审核：生成后必须自动执行VJ-0、VJ-1、VJ-2、版本化风格指纹和构图新颖性审核，保存图片、条件、checkpoint、审核hash、中英文记录和失败学习。验证结果无论机器通过或拒绝都固定`formalCandidate=false`、`formalInferenceEligible=false`、`runtimeFrameEligible=false`，不得写入原图库或进入`/world`。
 
@@ -136,3 +137,45 @@ AI辅助单图推理验证已经接通验证专用机器审核：生成后必须
 4. 明确的数据来源、适用范围和禁止事项。
 5. 如改变当前执行顺序，必须同步更新当前执行指南。
 6. 页面布局、样式、入口、名称和信息层级属于项目所有者锁定内容；提出需求不等于获得修改授权，必须等待项目所有者明确指令。
+
+## 8. 2026-07-22 V6单图验证最新状态
+
+本节覆盖本文中“等待V6单张challenge验证”的历史描述。项目所有者已授权唯一`challenge`样本`complete-map-v2-014`的V6 held-out单图验证。正式程序生成runId=`ai-assisted-conditional-inference-validation-v6-2026-07-21T20-39-03-363Z`，绑定V6 Stage 2 checkpoint SHA-256=`3a4cfd161c80402664eba35010159913be1ae3dc08c954600d577ddef1f9fbc9`，生成原生`1024×768`图片SHA-256=`6ce37acc6278d5d7bbae6210e8273c634358fc1301936be9d394725fe2cf039e`。
+
+机器审核状态为`machine_rejected`：VJ-0、VJ-1通过，VJ-2以`condition_terrain_path_ground_coverage_mismatch`拒绝，Professional Aesthetic当前通过。程序已自动保存图片、23通道条件、checkpoint、seed、model-report、manifest、machine-review、双语过程事件和D盘SQLite索引；自动失败学习runId=`auto-visual-judge-learning-2026-07-21T20-39-36-899Z`已摄取本轮审核。该图固定`formalCandidate=false`、`formalInferenceEligible=false`、`runtimeFrameEligible=false`、`canEnterWorld=false`，不能进入原图库、候选、Runtime或`/world`。
+
+该等待诊断门禁已经由第9节取代。V6历史图和机器拒绝结论保持不变，不得覆盖、重绑或重新解释为通过。
+
+## 9. 2026-07-22 V6失败诊断与V7修复最新状态
+
+项目所有者已授权V6失败诊断与修复。程序完成诊断runId=`ai-assisted-conditional-v6-diagnosis-2026-07-21T21-45-18-698Z`，证据位于`.runtime/ai-painter/ai-assisted-conditional-repair-diagnostics-v6/ai-assisted-conditional-v6-diagnosis-2026-07-21T21-45-18-698Z/diagnosis.json`。诊断确认V6训练rollout和正式推理都从纯高斯噪声开始，不存在读取target图直接出图的捷径；V6失败根因是训练/验证容量仅`16/2`、checkpoint只评估一个validation样本和一个seed、像素级指标不能可靠代表完整地图语义，以及Professional Aesthetic对单轴纹理异常只记录通过结果而缺少诊断提示。
+
+V7合同固定为`all-validation-multiseed-semantic-rollout-unet-v7`：checkpoint选择必须覆盖全部validation样本、每样本至少2个固定seed，并把最差完整采样轨迹计入分数；训练目标新增道路、水体、岸线、对象占地和焦点区域的对比约束，以及`8×6`空间网格RGB约束。V7不改变世界事实、世界导演、23通道数量与身份、数据来源政策、页面结构或已有审核拒绝门槛。Professional Aesthetic只增加`professional_single_axis_texture_envelope_exceeded_diagnostic`诊断警告，原`minimumMultiscaleViolationCount=4`和历史V6机器审核结论不变。
+
+程序完成最新纯CPU回归runId=`ai-assisted-conditional-v7-cpu-regression-2026-07-22T00-20-01-226Z`，证据位于`.runtime/ai-painter/ai-assisted-conditional-v7-repair-checks/ai-assisted-conditional-v7-cpu-regression-2026-07-22T00-20-01-226Z/report.json`；2个validation样本、每样本2个seed，共4条完整采样轨迹通过数值、梯度、23通道、challenge隔离、容量批准合同和诊断警告回归。本轮没有GPU训练、推理或新RGB。
+
+项目所有者于2026-07-22批准V7验证容量为128张独立完整地图，固定split为`96 train / 16 validation / 8 challenge / 8 regression`。最新审计runId=`ai-assisted-v7-data-capacity-plan-2026-07-22T21-04-46-042Z`确认旧21条基线与3条V7容量贡献合计24/24合格、审计失败0条、正式缺口104条；剩余split固定规划为`77 train / 14 validation / 7 challenge / 6 regression`。任何复制、裁切、轻微变体、只换seed、旧图重绑、局部图或尺寸达标但不具备完整地图语义的图片都不得计数。
+
+V7配置保持`trainingAuthorizationStatus=blocked_pending_approved_128_dataset_implementation`、`formalInferenceEligible=false`。`v7-capacity-slot-001`、`v7-capacity-slot-002`与`v7-capacity-slot-003`均已由正式入口登记容量贡献；最新数据包保持旧21条基线并加入3条V7贡献。剩余104槽已获得有界连续数据批次授权，但批次产物在逐张人工审核前不计入容量。数据包达到128张并通过身份、来源、23通道、完整地图范围、去重和split隔离审计后，仍须项目所有者另行授权V7 GPU训练。
+
+## 10. 2026-07-22 V7容量槽位002单图最新状态
+
+项目所有者已明确授权`v7-capacity-slot-002`唯一一张RGB。正式请求`conditional-rgb-002-2026-07-22T10-50-32-811Z`只使用该槽位的语义条件引导图，不使用历史完整地图RGB；程序自动接收`1448x1086`精确4:3源图，并以nearest-neighbor生成单独的`1024x768`训练/机器审核派生图。源图SHA-256=`96ee07168ba20d700299901a5abe907bb830be8764f5f656f372507ca5582b79`，派生图SHA-256=`d326d6073e91b1a8ba2bcccca5e153281326980b725ef987277b1fdbc75f92e3`。
+
+项目所有者已于2026-07-22明确审核通过该图。程序自动写入owner审核、更新请求状态并登记`v7-capacity-slot-002`的train容量贡献；贡献证据SHA-256=`7f3dcf75cfc5a1804b7d3905afa0f463a4253bff3701f888881673ae8f2725f2`。slot-002闭环时的数据包ID=`natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-22T12-04-59-138Z`，条件绑定完整地图23条、V7贡献2条、未配对0条、阻断0条；当时容量审计runId=`ai-assisted-v7-data-capacity-plan-2026-07-22T12-05-01-665Z`确认23/23合格、失败0、正式缺口105。该图仅取得AI辅助条件训练资格，仍固定`independentTrainingEligible=false`、`formalCandidate=false`、`runtimeFrameEligible=false`；slot-002不得重复生成，后续状态以第13节为准。
+
+## 11. 2026-07-22 V7容量槽位003当前状态
+
+项目所有者已明确授权准备`v7-capacity-slot-003`。程序首先如实保存“旱季配方未实现”和“道路与封闭边界碰撞”两次RGB前失败；随后只修复正式旱季任务配方，没有改变MVP世界档案、完整地图合同、23通道或审核门槛。成功任务runId=`ai-assisted-v7-data-task-v7-capacity-slot-003-2026-07-22T13-27-59-480Z`，身份固定为`train / lowland-evergreen-tropical-forest / dry_season / pairwise_landscape_season_baseline`，环境快照为`mainland-southeast-asia-tropical-monsoon-provisional-late-dry-season-v1`。
+
+独立检查确认`channelCount=23`、`completeMapScopePassed=true`、`pairedRgbCount=0`、32项SQLite artifact及1条中英文程序事件均通过，且没有生成RGB或启动GPU。该段记录任务准备阶段的历史门禁；slot-003后续生成、审核和容量登记已经由第13节闭合。
+
+## 12. 2026-07-23 原图审核按钮授权边界
+
+项目所有者明确授权完整地图原图页面增加单条“通过 / 拒绝”审核按钮。GET页面继续只读；按钮只向正式审核程序提交owner命令，页面不得直接写业务数据。程序负责不可变审核、双时区时间、hash、双语事件、失败学习，并在V7容量槽位通过后自动登记贡献、检查贡献、重建和检查数据包、刷新容量审计。
+
+该授权不包含自动生成容量缺口图片、不包含下一槽位自动准备或GPU训练。slot-003当时仍等待唯一一张RGB；该历史门禁已由第13节闭合。本地小AI继续是自主世界游戏的核心驱动，AI Painter只是把既有世界事实转成视觉的子系统，审核页面不得反向创造世界事实。
+
+## 13. 2026-07-23 V7容量槽位003闭环状态
+
+项目所有者已通过控制台审核slot-003。程序修正了审核服务遗漏V7槽位身份的问题，并使用原owner命令引用完成容量贡献登记、贡献检查、数据包重建与检查以及容量计划刷新。贡献runId=`ai-assisted-v7-capacity-contribution-v7-capacity-slot-003-2026-07-22T21-02-11-194Z`；最新容量计划runId=`ai-assisted-v7-data-capacity-plan-2026-07-22T21-04-46-042Z`确认24/24合格、正式缺口104条。当前不得自动准备`slot-004`、生成新RGB或启动V7 GPU训练。

@@ -1,6 +1,6 @@
 # AI-PET-WORLD 业务与技术架构
 
-更新时间：2026-07-13 19:31:50 +08:00
+更新时间：2026-07-23 05:55:34 +08:00
 
 状态：long-term-architecture-reference / 当前只实现完整自然家园地图相关层
 
@@ -198,6 +198,22 @@ flowchart LR
 
 机器可读契约是 `natural-home-large-world-connectivity-v1`，固定位置为 `data/world-samples/world-connectivity/world-connectivity-contract-v1.json`。第一版连接蓝图 `mainland-southeast-asia-earth-reference-natural-home-region-0001-v1` 已按项目所有者“使用真实地球实际情况”的命令登记：水文按东南亚大陆河谷总体北入南出组织，道路从当前最近的南边界接入，西侧保持自然边界；外部资料只提供事实关系，不复制真实地图几何。项目所有者授权后，程序已把区域身份、三个邻居、四个当前区域连接口、PathGraph、HydrologyGraph 和 WalkableGraph 写入 tick 2，并自动保存迁移前后世界状态、hash 和报告；项目所有者审核通过后，程序在不改变连接几何的前提下写入 tick 3 和独立审核记录。连接事实审核通过不等于图片具备连接训练资格，也不等于连接覆盖数量门槛已批准。
 
+### 3.3 训练数据存储与目录索引架构
+
+AI Painter训练、推理、审核、失败回写和Runtime证据采用文件权威、数据库索引的冷热分层架构：
+
+```text
+F:\ai-pet-world                       项目代码、文档和轻量逻辑入口
+D:\AI-PET-WORLD-DATA\hot\runtime     当前运行和仍需直接访问的热文件
+D:\AI-PET-WORLD-DATA\cold\runs       已完成运行的不可变冷归档
+D:\AI-PET-WORLD-DATA\catalog         SQLite目录索引与只读查询快照
+D:\AI-PET-WORLD-DATA\migrations      迁移清单、数量/字节/hash校验和切换证据
+```
+
+数据库只保存run、artifact、event、审核状态、URI、大小、时间戳和SHA-256，不取代图片、checkpoint和原始JSON文件。项目逻辑路径`.runtime`在无损迁移完成后通过目录联接继续保持兼容，避免现有世界事实、训练和审核身份发生变化。完成运行进入冷层时必须保留不可变归档、原始相对路径和hash；控制台通过SQLite分页查询，不得为显示页面递归扫描整个物理目录。
+
+迁移`runtime-to-d-20260720-0528`已完成并激活。源/目标均为700,058个文件和94,808,690,230字节，逐文件校验差异为0；`.runtime`已成为D盘热层目录联接，F盘旧数据保留为带迁移ID的备份。SQLite现登记700,058条artifact和637条程序事件；控制台主页面、实时摘要和完整地图页面均已通过索引读取回归。
+
 ## 4. RuntimeFrame 数据结构边界
 
 正式 GameMapRuntimeFrame 必须至少包含：
@@ -301,3 +317,9 @@ VisualFactManifest + 世界导演 + 结构化游戏地图
 ```
 
 缺少项目所有者人工最终验收，或人工验收明确否决时，不能把任何 RuntimeFrame 当成正式游戏成功结果。
+
+## 9. 当前视觉模型实现关系
+
+V6失败诊断和V7代码修复不改变本文件定义的长期架构。V7仍然只是AI Painter视觉生产子系统中的完整地图条件去噪器：输入继续是正式世界事实、世界导演和23通道完整地图条件，输出仍须经过机器审核、项目所有者终审和RuntimeFrame绑定，不能生成或修改世界事实。
+
+V7当前只完成代码合同、纯CPU回归、128张容量覆盖规划及3条V7条件-RGB容量贡献登记，没有GPU训练、没有正式checkpoint、没有V7推理验证图。程序审计旧21条基线与3条V7贡献合计24/24合格并确认仍缺104条，不可变数据包尚未达到128张，因此训练被`blocked_pending_approved_128_dataset_implementation`硬阻断。数据包完成后仍需项目所有者另行授权GPU训练。不得把容量登记、覆盖矩阵或CPU回归描述为V7已训练、视觉能力通过或游戏世界完成。

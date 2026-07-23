@@ -102,6 +102,10 @@ export type TrainingAction =
   | "report_natural_home"
   | "report_natural_home_quality"
   | "smoke_ai_assisted_conditional_denoiser_v4"
+  | "train_ai_assisted_conditional_denoiser_v4_stage_0"
+  | "train_ai_assisted_conditional_denoiser_v4_stage_1"
+  | "train_ai_assisted_conditional_denoiser_v4_stage_2"
+  | "validate_ai_assisted_conditional_denoiser_v4_complete_map_v2_005"
   | "full_game_map_material_slot_v46_runtime_frame"
 
 export { readTrainingControlState, readTrainingLogTail, type TrainingControlState }
@@ -458,7 +462,7 @@ function modelRoleForAction(action: TrainingAction) {
 
 function modelRoleForScript(script: string) {
   const normalized = script.toLowerCase()
-  if (/game-map|world|runtime-frame|material-slot/.test(normalized)) return "complete_game_map"
+  if (/game-map|world|runtime-frame|material-slot|ai-assisted-conditional-denoiser/.test(normalized)) return "complete_game_map"
   if (/visual|judge|review|audit|select/.test(normalized)) return "visual_judge"
   if (/natural-home/.test(normalized)) return "natural_home"
   return "ai_painter"
@@ -761,6 +765,10 @@ const singleActionScripts: Partial<Record<TrainingAction, string>> = {
   report_natural_home: "report:ai-painter-natural-home",
   report_natural_home_quality: "report:ai-painter-natural-home-quality",
   smoke_ai_assisted_conditional_denoiser_v4: "smoke:ai-assisted-conditional-denoiser-v4",
+  train_ai_assisted_conditional_denoiser_v4_stage_0: "train:ai-assisted-conditional-denoiser -- --resolution-stage 0",
+  train_ai_assisted_conditional_denoiser_v4_stage_1: "train:ai-assisted-conditional-denoiser -- --resolution-stage 1",
+  train_ai_assisted_conditional_denoiser_v4_stage_2: "train:ai-assisted-conditional-denoiser -- --resolution-stage 2",
+  validate_ai_assisted_conditional_denoiser_v4_complete_map_v2_005: "run:ai-assisted-conditional-inference-validation -- --condition-label complete-map-v2-005 --owner-command-ref owner-authorized-v4-heldout-complete-map-v2-005-20260721",
 }
 
 function scriptsFor(action: TrainingAction) {
@@ -1124,6 +1132,10 @@ function isProcessAlive(pid: number | null | undefined) {
 function labelFor(script: string) {
   const labels: Record<string, string> = {
     "smoke:ai-assisted-conditional-denoiser-v4": "V4 Stage 0 conditional denoiser smoke training",
+    "train:ai-assisted-conditional-denoiser -- --resolution-stage 0": "V4 Stage 0 正式渐进训练",
+    "train:ai-assisted-conditional-denoiser -- --resolution-stage 1": "V4 Stage 1 正式渐进训练",
+    "train:ai-assisted-conditional-denoiser -- --resolution-stage 2": "V4 Stage 2 正式渐进训练",
+    "run:ai-assisted-conditional-inference-validation -- --condition-label complete-map-v2-005 --owner-command-ref owner-authorized-v4-heldout-complete-map-v2-005-20260721": "V4 complete-map-v2-005 单张 held-out 推理验证与自动审核",
     "prepare:ai-painter-natural-home": "编译纯世界家园训练数据",
     "train:ai-painter-natural-home": "使用本地 GPU 训练纯世界家园基础模型",
     "infer:ai-painter-natural-home": "生成纯世界家园基础推理图",

@@ -14,13 +14,21 @@ import { auditCompleteMapScope } from "./lib/complete-map-scope-gate.mjs"
 import { validateFoundationalCompleteMapVisualStandard } from "./lib/foundational-complete-map-visual-standard.mjs"
 
 const ROOT = process.cwd()
-const SOURCE_RECORD_ID = argumentValue("--source-record-id")
+const LEGACY_SOURCE_RECORD_ID = argumentValue("--source-record-id")
+const V7_TASK_MANIFEST_ARG = argumentValue("--v7-task-manifest")
+const v7Mode = Boolean(V7_TASK_MANIFEST_ARG)
+assert(!(LEGACY_SOURCE_RECORD_ID && V7_TASK_MANIFEST_ARG), "use either --source-record-id or --v7-task-manifest, not both")
+const v7TaskManifest = v7Mode ? readJson(V7_TASK_MANIFEST_ARG) : null
+const SOURCE_RECORD_ID = LEGACY_SOURCE_RECORD_ID ?? v7TaskManifest?.row?.capacitySlotId
 const OUTPUT_ROOT = path.join(ROOT, ".runtime", "ai-painter", "ai-assisted-cold-start", "conditional-rgb-generation-requests")
 const SEQUENCE_BLOCK_ROOT = path.join(OUTPUT_ROOT, "sequence-blocks")
 const PREPARATION_FAILURE_ROOT = ".runtime/ai-painter/ai-assisted-cold-start/conditional-rgb-generation-requests/preparation-failures"
 const COMPLETE_MAP_SCOPE_AUDIT_ROOT = ".runtime/ai-painter/complete-map-scope-audits"
 const WORLD_PROFILE_ID = "mainland-southeast-asia-tropical-monsoon-natural-home-v1"
 const OWNER_AUTHORIZATION_REF = "conversation-owner-authorization-2026-07-13"
+const V7_OWNER_AUTHORIZATION_REF = v7Mode
+  ? "owner-authorized-v7-remaining-104-continuous-batch-20260723"
+  : null
 const POLICY_VERSION = "owner-authorized-ai-assisted-cold-start-v1"
 const DERIVATIVE_POLICY_VERSION = "owner-approved-high-resolution-four-three-derivative-v1"
 const SOURCE_CONTRACT = "generator-native-exact-four-three-no-smaller-than-1024x768-with-audited-training-derivative"
@@ -28,12 +36,23 @@ const STYLE_GUIDANCE_MODE = "versioned_foundational_complete_map_visual_standard
 const ownerAuthorizedRetry = process.argv.includes("--owner-authorized-retry")
 const retryReason = argumentValue("--retry-reason")
 let preparationFailureRecorded = false
-assert(SOURCE_RECORD_ID, "--source-record-id is required; the program must never default to a previously used condition")
-const batchPointer = readJson(".runtime/ai-painter/ai-assisted-conditional-world-facts/latest.json")
-const batch = readJson(batchPointer.manifestPath)
-const row = (batch.rows ?? []).find((entry) => entry.sourceRecordId === SOURCE_RECORD_ID)
+assert(SOURCE_RECORD_ID, "--source-record-id or --v7-task-manifest is required; the program must never default to a previous condition")
+const batchPointer = v7Mode ? null : readJson(".runtime/ai-painter/ai-assisted-conditional-world-facts/latest.json")
+const batch = v7Mode ? v7TaskManifest : readJson(batchPointer.manifestPath)
+const row = v7Mode
+  ? batch.row
+  : (batch.rows ?? []).find((entry) => entry.sourceRecordId === SOURCE_RECORD_ID)
 assert(row, `condition blueprint row missing: ${SOURCE_RECORD_ID}`)
+if (v7Mode) {
+  assert(v7TaskManifest.continuousBatchAuthorization?.authorizationId === V7_OWNER_AUTHORIZATION_REF, "V7 continuous batch authorization is missing from the task manifest")
+  assert(v7TaskManifest.continuousBatchAuthorization?.executionMode === "sequential_one_active_generation_request", "V7 generation request is not in sequential batch mode")
+  assert(v7TaskManifest.continuousBatchAuthorization?.ownerApprovalAutomatic === false, "V7 generation request must not auto-approve owner review")
+  assert(v7TaskManifest.continuousBatchAuthorization?.gpuTrainingAutomatic === false, "V7 generation request must not auto-start GPU training")
+  assert(row.imageGenerationAuthorized === true, "V7 task is not authorized for continuous RGB generation")
+  assert(row.gpuTrainingAuthorized === false, "V7 task unexpectedly authorizes GPU training")
+}
 const blueprint = readJson(row.blueprintPath)
+row.generationContractVersion ??= blueprint.generationContractVersion
 const directorOutput = readJson(row.directorOutputPath)
 const task = readJson(row.taskPackagePath)
 const conditionPack = readJson(row.conditionPackPath)
@@ -41,7 +60,16 @@ const guideManifestPath = path.join(path.dirname(resolveProjectPath(row.conditio
 assert(fs.existsSync(guideManifestPath), `condition guide must be built first: ${projectPath(guideManifestPath)}`)
 const guide = readJson(guideManifestPath)
 const index = readJson("data/world-samples/original-image-library/natural-home-v1/index.json")
-const sourceRecord = (index.records ?? []).find((entry) => entry.recordId === SOURCE_RECORD_ID)
+const sourceRecord = v7Mode
+  ? {
+      recordId: SOURCE_RECORD_ID,
+      classification: { regionalLandscapeType: row.regionalLandscapeType },
+      worldBinding: {
+        snapshotId: blueprint.earthParameterSnapshotId,
+        snapshotPath: blueprint.earthParameterSnapshotPath,
+      },
+    }
+  : (index.records ?? []).find((entry) => entry.recordId === SOURCE_RECORD_ID)
 assert(sourceRecord, `source record missing: ${SOURCE_RECORD_ID}`)
 const coverageBlueprint = readJson("data/world-samples/original-image-library/natural-home-v1/coverage-blueprint.json")
 const landscapeProfile = (coverageBlueprint.regionalLandscapeTypes ?? [])
@@ -55,8 +83,13 @@ const visualStandardSha256 = sha256(fs.readFileSync(resolveProjectPath(visualSta
 const visualStandardPromptProfile = visualStandard.generatorProfile
 const connectivityBlueprint = readJson(blueprint.connectivityBlueprintPath)
 
-assert(batch.sourceImageGeometryRead === false, "condition batch must not read source RGB geometry")
-assert(row.existingRgbBound === false && row.needsNewRgbPair === true, "condition row is not waiting for new RGB")
+assert((v7Mode ? blueprint.sourceImageGeometryRead : batch.sourceImageGeometryRead) === false, "condition batch must not read source RGB geometry")
+assert(
+  v7Mode
+    ? blueprint.existingRgbMayBeBoundAsTarget === false && blueprint.outputContract?.needsNewRgbPairCreatedAfterThisBlueprint === true
+    : row.existingRgbBound === false && row.needsNewRgbPair === true,
+  "condition row is not waiting for new RGB",
+)
 assert(task.worldProfileId === WORLD_PROFILE_ID && conditionPack.worldProfileId === WORLD_PROFILE_ID, "world profile mismatch")
 assert(directorOutput.worldId === blueprint.worldId && directorOutput.tick === blueprint.tick, "director output does not match the selected world-fact blueprint")
 assert(blueprint.environmentContext?.contractVersion === "world-visual-environment-context-v1", "world environment context is missing")
@@ -73,7 +106,7 @@ assert(routeConditionAudit.pathWaterOverlapPixels === 0, "terrain path overlaps 
 assert(routeConditionAudit.pathCollisionOverlapPixels === 0, "terrain path overlaps the collision condition")
 
 const timestamp = new Date().toISOString()
-const shortId = row.conditionLabel.match(/^complete-map-v2-(\d{3})$/)?.[1]
+const shortId = row.conditionLabel.match(/^(?:complete-map-v2|v7-complete-map)-(\d{3})$/)?.[1]
 assert(shortId, "formal condition label sequence missing")
 const completeMapScopeAudit = await auditCompleteMapScope({
   blueprint,
@@ -91,20 +124,25 @@ const completeMapScopeAuditStored = persistCompleteMapScopeAudit({
   visualStandardSha256,
 })
 assert(completeMapScopeAudit.passed, `${completeMapScopeAudit.failureCode}: ${completeMapScopeAudit.issues.join(",")}`)
-const outputRecordBase = `ai-cold-start-condition-pair-${shortId}-${blueprint.landscapeType}`
-const sequenceGate = evaluateConditionalRgbGenerationSequence({
-  sourceRecordId: SOURCE_RECORD_ID,
-  conditionLabel: row.conditionLabel,
-  generationContractVersion: row.generationContractVersion,
-  taskId: task.taskId,
-  conditionPackId: conditionPack.conditionPackId,
-  conditionPackSha256: conditionPack.conditionPackSha256,
-  outputRecordBase,
-  libraryRecords: index.records ?? [],
-  generationRequests: readConditionalRgbGenerationRequests(OUTPUT_ROOT),
-  ownerAuthorizedRetry,
-  retryReason,
-})
+const outputRecordBase = v7Mode
+  ? `ai-cold-start-v7-${SOURCE_RECORD_ID}-${blueprint.landscapeType}`
+  : `ai-cold-start-condition-pair-${shortId}-${blueprint.landscapeType}`
+const generationRequests = readConditionalRgbGenerationRequests(OUTPUT_ROOT)
+const sequenceGate = v7Mode
+  ? evaluateV7SingleSlotSequence({ sourceRecordId: SOURCE_RECORD_ID, generationRequests, ownerAuthorizedRetry, retryReason })
+  : evaluateConditionalRgbGenerationSequence({
+      sourceRecordId: SOURCE_RECORD_ID,
+      conditionLabel: row.conditionLabel,
+      generationContractVersion: row.generationContractVersion,
+      taskId: task.taskId,
+      conditionPackId: conditionPack.conditionPackId,
+      conditionPackSha256: conditionPack.conditionPackSha256,
+      outputRecordBase,
+      libraryRecords: index.records ?? [],
+      generationRequests,
+      ownerAuthorizedRetry,
+      retryReason,
+    })
 if (!sequenceGate.allowed) {
   const blockRecord = saveSequenceBlock({
     timestamp,
@@ -157,7 +195,7 @@ const promptEvidence = {
   promptId: requestId,
   createdAtUtc: timestamp,
   createdAtAsiaShanghai: formatShanghai(timestamp),
-  ownerAuthorizationRef: OWNER_AUTHORIZATION_REF,
+  ownerAuthorizationRef: v7Mode ? V7_OWNER_AUTHORIZATION_REF : OWNER_AUTHORIZATION_REF,
   policyVersion: POLICY_VERSION,
   generatorProvider: "OpenAI",
   generatorSystem: "Codex built-in image generation",
@@ -246,7 +284,9 @@ const request = {
   conditionLabel: row.conditionLabel,
   generationContractVersion: row.generationContractVersion,
   outputRecordId,
-  title: `AI辅助条件配对图 ${shortId} v${outputVersion}：${blueprint.landscapeType}`,
+  title: v7Mode
+    ? `V7自主生成训练原图 ${shortId} v${outputVersion}: ${blueprint.landscapeType}`
+    : `AI辅助条件配对图 ${shortId} v${outputVersion}: ${blueprint.landscapeType}`,
   categoryId: "complete-maps",
   regionalLandscapeType: promptEvidence.targetRegionalLandscapeType,
   environmentContextContractVersion: promptEvidence.environmentContextContractVersion,
@@ -278,6 +318,10 @@ const request = {
   existingRgbReusedAsTarget: false,
   requiresMachineReview: true,
   requiresOwnerReview: true,
+  continuousBatchAuthorizationId: v7Mode ? V7_OWNER_AUTHORIZATION_REF : null,
+  ownerApprovalAutomatic: false,
+  capacityContributionAutomaticBeforeOwnerApproval: false,
+  gpuTrainingAuthorized: false,
   conditionalTrainingEligible: false,
   sequenceGate: {
     code: sequenceGate.code,
@@ -310,6 +354,47 @@ console.log(JSON.stringify({
   historicalCompleteMapImageReferencesUsed: false,
   prompt,
 }, null, 2))
+
+function evaluateV7SingleSlotSequence({ sourceRecordId, generationRequests, ownerAuthorizedRetry: retryAuthorized, retryReason: reason }) {
+  const priorRequests = generationRequests.filter((entry) => entry.sourceRecordId === sourceRecordId)
+  if (priorRequests.length === 0) {
+    return {
+      allowed: true,
+      code: "v7_continuous_batch_slot_first_rgb_authorized",
+      priorRequestCount: 0,
+      priorRecordCount: 0,
+    }
+  }
+  if (priorRequests.every(isReplaceableV7PreGenerationFailure)) {
+    return {
+      allowed: true,
+      code: "v7_pre_generation_request_replacement_under_existing_batch_authorization",
+      priorRequestCount: priorRequests.length,
+      priorRecordCount: 0,
+    }
+  }
+  if (retryAuthorized && reason?.trim()) {
+    return {
+      allowed: true,
+      code: "v7_single_slot_retry_explicitly_owner_authorized",
+      priorRequestCount: priorRequests.length,
+      priorRecordCount: 0,
+    }
+  }
+  return {
+    allowed: false,
+    code: "v7_single_slot_duplicate_generation_blocked",
+    priorRequestCount: priorRequests.length,
+    priorRecordCount: 0,
+    blockers: ["existing_v7_slot_generation_request", "explicit_owner_retry_authorization_missing"],
+  }
+}
+
+function isReplaceableV7PreGenerationFailure(request) {
+  return request.status === "generation_failed_retryable"
+    && request.lastGenerationFailureCode === "v7_stale_task_manifest_selected_before_generation"
+    && !request.generatedImagePath
+}
 
 function buildPrompt(value, director, summary, profile, visualStandardProfile, routeProfile, retryProfile) {
   const objectCounts = countObjects(value.geometry.objectFootprints)

@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import sharp from "sharp"
+import { isOwnerAuthorizedAiAssistedColdStartRef } from "./lib/original-image-library-contract.mjs"
 
 const ROOT = process.cwd()
 const COLLECTION_ROOT = path.join(ROOT, "data", "world-samples", "original-image-library", "natural-home-v1")
@@ -39,7 +40,7 @@ const promptPath = resolveProjectPath(promptArg)
 assert(fs.existsSync(promptPath) && fs.statSync(promptPath).isFile(), "prompt evidence is missing")
 const promptEvidence = readJson(promptPath)
 assert(promptEvidence.policyVersion === "owner-authorized-ai-assisted-cold-start-v1", "prompt evidence policy is invalid")
-assert(promptEvidence.ownerAuthorizationRef === "conversation-owner-authorization-2026-07-13", "prompt evidence owner authorization is invalid")
+assert(isOwnerAuthorizedAiAssistedColdStartRef(promptEvidence.ownerAuthorizationRef), "prompt evidence owner authorization is invalid")
 assert((promptEvidence.targetCategoryId ?? "complete-maps") === categoryId, "prompt evidence category mismatch")
 if (categoryId === "complete-maps") assert(promptEvidence.targetRegionalLandscapeType === regionalLandscapeType, "prompt evidence regional landscape type mismatch")
 const conditionBinding = loadConditionBinding(taskArg, conditionArg, guideManifestArg)
@@ -96,7 +97,10 @@ const manifest = {
   createdAtAsiaShanghai: formatShanghai(timestamp),
   policyVersion: "owner-authorized-ai-assisted-cold-start-v1",
   derivativePolicyVersion: COLD_START_DERIVATIVE_POLICY,
-  ownerAuthorizationRef: "conversation-owner-authorization-2026-07-13",
+  ownerAuthorizationRef: promptEvidence.ownerAuthorizationRef,
+  continuousBatchAuthorizationId: promptEvidence.ownerAuthorizationRef === "owner-authorized-v7-remaining-104-continuous-batch-20260723"
+    ? promptEvidence.ownerAuthorizationRef
+    : null,
   rawGeneratedImagePath: projectPath(rawPath),
   rawGeneratedImageSha256: sha256(sourceBytes),
   rawSize: { width: sourceMetadata.width, height: sourceMetadata.height },
@@ -150,7 +154,10 @@ const request = {
   },
   aiAssistedColdStart: {
     policyVersion: "owner-authorized-ai-assisted-cold-start-v1",
-    ownerAuthorizationRef: "conversation-owner-authorization-2026-07-13",
+    ownerAuthorizationRef: promptEvidence.ownerAuthorizationRef,
+    continuousBatchAuthorizationId: promptEvidence.ownerAuthorizationRef === "owner-authorized-v7-remaining-104-continuous-batch-20260723"
+      ? promptEvidence.ownerAuthorizationRef
+      : null,
     trainingLane: "ai_assisted_cold_start",
     generatorProvider: promptEvidence.generatorProvider,
     generatorSystem: promptEvidence.generatorSystem,

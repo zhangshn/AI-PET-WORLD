@@ -3,6 +3,7 @@ import path from "node:path"
 import type { ResourceUsageSessionSummary } from "./ai-painter-resource-usage"
 import { buildTrainingQualityGateReport } from "./ai-painter-training-quality-gate"
 import { aiPainterRuntimeRoot } from "./ai-painter-training-state"
+import { indexRuntimeArtifactPaths } from "./ai-pet-world-storage-catalog"
 
 type ResultManifest = {
   schemaVersion?: string
@@ -340,6 +341,18 @@ export async function archiveTrainingResult(input: {
   }
 
   await upsertGeneratedResult(record)
+  await indexRuntimeArtifactPaths(
+    [
+      path.dirname(manifestEntry.file),
+      archivedImageFile,
+      summaryFile,
+      diagnosisFile,
+      qualityGateFile,
+      rowArchiveDir,
+      indexPath,
+    ],
+    id,
+  )
   return record
 }
 

@@ -108,13 +108,20 @@ export function findCompleteMapOriginalGroup(groupId: string) {
 
 export function completeMapOriginalGroupFor(record: OriginalImageRecord): CompleteMapOriginalGroupId {
   if (record.status === "rejected") return "failed-records"
-  if (record.autonomousGenerationTrainingOriginal?.sequenceNumber) {
+  if (
+    isV7CapacityOriginal(record)
+    || record.autonomousGenerationTrainingOriginal?.sequenceNumber
+  ) {
     return "autonomous-generation-training-originals"
   }
   if (record.recordId.startsWith("ai-cold-start-map-")) {
     return "foundational-complete-map-originals"
   }
   return "condition-paired-history"
+}
+
+export function isV7CapacityOriginal(record: OriginalImageRecord) {
+  return /^ai-cold-start-v7-v7-capacity-slot-\d{3}(?:-|$)/.test(record.recordId)
 }
 
 type OriginalImageLibraryIndex = {

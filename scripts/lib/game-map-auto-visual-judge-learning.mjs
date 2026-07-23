@@ -63,6 +63,7 @@ function collectEvidence() {
     completeMapMachineReviews: collectJsonEvidence(
       [
         ".runtime/ai-painter/complete-world-visual-machine-reviews",
+        ".runtime/ai-painter/ai-assisted-conditional-inference-validation",
         "data/world-samples/original-image-library/natural-home-v1",
       ],
       "machine-review.json",

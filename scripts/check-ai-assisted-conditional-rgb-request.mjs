@@ -48,7 +48,13 @@ const routeConditionAudit = await auditRouteCondition(conditionPack)
 const completeMapScopeAudit = await auditCompleteMapScope({ blueprint, directorOutput: director, task, conditionPack, connectivityBlueprint })
 const visualStandardValidation = validateFoundationalCompleteMapVisualStandard(visualStandard)
 
-check(request.sourceRecordId === blueprint.sourceRecordId, "source_record_blueprint_mismatch")
+check(request.sourceRecordId === (blueprint.sourceRecordId ?? blueprint.capacitySlotId), "source_record_blueprint_mismatch")
+if (/^v7-capacity-slot-\d{3}$/.test(request.sourceRecordId ?? "")) {
+  check(request.continuousBatchAuthorizationId === "owner-authorized-v7-remaining-104-continuous-batch-20260723", "v7_continuous_batch_authorization_mismatch")
+  check(request.ownerApprovalAutomatic === false, "v7_owner_approval_must_remain_manual")
+  check(request.capacityContributionAutomaticBeforeOwnerApproval === false, "v7_capacity_contribution_must_wait_for_owner_review")
+  check(request.gpuTrainingAuthorized === false, "v7_gpu_training_must_remain_blocked")
+}
 check(request.conditionLabel === blueprint.conditionLabel, "request_condition_label_mismatch")
 check(request.generationContractVersion === blueprint.generationContractVersion, "request_generation_contract_version_mismatch")
 check(evidence.conditionLabel === blueprint.conditionLabel, "prompt_condition_label_mismatch")

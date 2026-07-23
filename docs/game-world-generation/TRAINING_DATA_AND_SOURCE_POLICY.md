@@ -1,8 +1,8 @@
 # 训练数据与来源正式规则
 
-更新时间：2026-07-19 11:53:41 +08:00
+更新时间：2026-07-23 05:55:34 +08:00
 
-状态：active-architecture / 当前数据缺口硬门禁 / 正式样本仍不足
+状态：active-architecture / V7容量128张已批准 / 当前24张已登记 / 剩余104槽连续数据批次已授权 / V7 GPU训练未授权
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
@@ -16,7 +16,7 @@
 
 完整地图训练资格同时要求完整地图范围。只有单一河段、单一道路、单一池塘、单一林间空地、单一材质范围或放大局部生态单元的全画布图片，统一标记为 `local_scene_not_complete_map`；即使尺寸、来源、hash、23通道和像素风检查通过，也不得计入完整地图 target、`completeMapPositive` 或自主生成训练原图。此类图片只能作为局部视觉知识、负样本或审核失败证据保存。完整地图必须绑定整体入口/出口关系、家园中心、连续道路组织、多个可辨识空间或生态分区、自然边界和大世界连接语义；水体只按当前世界事实出现，不得把东南亚档案解释成固定水体构图模板。
 
-任何新 RGB 的生成都要求“正式文档具体任务 + 项目所有者本轮明确命令”双重授权。程序不得因样本不足、编号空缺、蓝图待处理、失败修复或自动循环而自行出图或批量出图；范围不明、重复风险、局部图风险和待人工审核状态均必须在调用生成算力前阻断。
+任何新 RGB 的生成都要求“正式文档具体任务 + 项目所有者单图命令或有界批次命令”双重授权。当前有界批次命令仅为`owner-authorized-v7-remaining-104-continuous-batch-20260723`，覆盖`slot-004...107`。待人工审核不阻断后续不同槽位，但同槽不得自动重试；范围不明、重复风险和局部图风险仍必须在调用生成算力前阻断。
 
 冷启动基础完整地图原图必须先作为集合建立版本化完整地图视觉标准，不能只用于页面展示，也不能逐张作为后续生成器的图片参考。该标准只能保存经来源与审核身份约束的聚合数值、结构统计和文字契约；至少覆盖镜头/世界尺度、整体构图层次、入口—中心—道路关系、空间与生态分区、水体分布变化、对象尺寸/密度及像素视觉语法。后续条件训练样本仍必须由当前世界事实、世界导演、23通道与本轮新 RGB 真实配对形成。历史完整地图 RGB 不得用于反推世界事实或复制构图。
 
@@ -340,4 +340,66 @@ v1/v2 重建比较固定使用 `npm run audit:ai-assisted-autoencoder-version-co
 
 ## 9. 数据库迁移边界
 
-当前 `.runtime` 和 `data` 是正式文件来源。未来数据库保存结构化元数据、关系、状态和索引；大图片与 checkpoint 使用对象存储或文件存储，数据库保存 URI 与 hash。迁移不得改变样本身份和审核历史。
+当前`.runtime`和`data`中的文件继续是正式证据来源。SQLite只保存结构化元数据、关系、状态和索引；大图片、checkpoint、条件图和原始审核JSON继续使用文件存储，数据库保存URI、大小、修改时间和SHA-256。迁移不得改变样本身份、训练资格、审核历史、runId或hash。
+
+项目所有者于2026-07-20批准第一版物理存储合同：
+
+| 层 | 固定位置 | 作用 |
+|---|---|---|
+| 项目逻辑入口 | `F:\ai-pet-world\.runtime` | 迁移完成后指向D盘热层的目录联接；保持现有相对路径合同 |
+| 热层 | `D:\AI-PET-WORLD-DATA\hot\runtime` | 当前运行、最新状态、仍需直接访问的训练和审核证据 |
+| 冷层 | `D:\AI-PET-WORLD-DATA\cold\runs` | 已完成run的不可变归档包及归档清单 |
+| SQLite目录 | `D:\AI-PET-WORLD-DATA\catalog` | run、artifact、event、review和迁移索引 |
+| 迁移证据 | `D:\AI-PET-WORLD-DATA\migrations` | 源/目标数量、字节、hash、错误、时间戳和切换记录 |
+
+SQLite最低Schema固定包含：`storage_meta`、`migration_runs`、`runs`、`artifacts`、`program_events`。`artifacts`必须保存逻辑相对路径、物理URI、存储层、字节数、修改时间、SHA-256、runId和文件类型；`program_events`必须保存中英文事件、状态、证据URI和时间戳。数据库使用WAL模式并建立路径、runId、时间和状态索引。
+
+无损迁移顺序固定为：预检无活动训练 -> 复制到D盘热层 -> 统计源/目标文件数量和字节 -> 校验SHA-256 -> 建立SQLite目录 -> 只读查询验证 -> 停止开发服务 -> 将F盘旧`.runtime`改名为带迁移ID的备份 -> 建立目录联接 -> 重启服务 -> 运行回归检查。任何一步失败都必须保存失败记录并保持F盘原路径可恢复；项目所有者验收前不得删除F盘备份。
+
+该顺序已由迁移`runtime-to-d-20260720-0528`完整执行并通过：700,058个源文件与700,058个目标文件、94,808,690,230字节完全一致，逐文件hash差异为0。SQLite已登记700,058条artifact和637条历史程序事件；后续训练归档程序会按新run精确索引新增文件，不得重新全盘扫描70万文件。F盘备份`F:\ai-pet-world\.runtime-f-drive-backup-runtime-to-d-20260720-0528`在项目所有者明确验收前继续保留。
+
+## 10. V6失败后的数据容量结论
+
+项目所有者批准的21套条件配对是第一轮实验训练的执行门槛，不是“数据已经足够训练出稳定完整地图”的证明。V6实际split仅为`16 train / 2 validation / 1 challenge / 2 regression`；V6完成三级训练后仍在唯一challenge图上失败。该结果证明当前数据只能用于验证管线、条件接入和算法方向，不能证明模型已获得可泛化的完整地图视觉能力。
+
+V7代码修复已把checkpoint评估扩展为全部validation样本、多seed和最差轨迹，并加入完整地图空间网格与稀疏区域对比约束，但代码修复不能替代数据容量。项目所有者于2026-07-22批准V7验证容量固定为128张独立完整地图，split固定为`96 train / 16 validation / 8 challenge / 8 regression`。最新程序容量审计runId=`ai-assisted-v7-data-capacity-plan-2026-07-22T06-22-44-884Z`确认旧21条基线与1条V7贡献合计22/22张通过记录身份、图片/记录/审核hash、世界事实身份、23通道、完整地图范围和构图新颖性审计，失败0张；正式缺口为106张，剩余split固定规划为`79 train / 14 validation / 7 challenge / 6 regression`。
+
+128张属于正向条件去噪RGB容量，不等于把失败图作为正目标。负样本、机器漏判、审核拒绝和失败学习继续进入审核器、回归集、挑战集或失败经验库；除非有独立的负样本学习合同，不得直接混入正向RGB target。新增完整地图必须覆盖锁定的东南亚MVP生态类别和湿季、湿转干、干季、干转湿四个季风状态；覆盖矩阵必须在具体出图前由程序生成并通过审计，不能以一类一图的表面数量代替道路、水体、入口、中心、空间分区、自然边界和大世界连接的结构变化。
+
+当前V7训练状态固定为`blocked_pending_approved_128_dataset_implementation`。机器可读覆盖矩阵确认当前容量24、缺口104。剩余104槽已获连续数据批次授权：机器通过只进入待人工审核，失败必须存图、失败码、时间戳和证据后继续；未经owner逐张通过不得登记容量。128张不可变数据包完成后仍须项目所有者单独授权V7 GPU训练。
+
+任何新增数据仍必须遵守本文件的来源、许可、身份、hash、时间戳、审核与自动保存规则。不得通过复制、轻微变体、重复seed或旧图重绑虚增样本数量；不得把局部图、程序占位图或失败图伪装为完整地图正样本。
+
+## 11. V7季节过渡事实与首个容量槽位
+
+程序已从项目既有NASA POWER 2001-2020月度原始快照建立两份版本化环境事实：`mainland-southeast-asia-tropical-monsoon-provisional-wet-to-dry-transition-v1`和`mainland-southeast-asia-tropical-monsoon-provisional-dry-to-wet-transition-v1`。两份快照均保存源月份、气候均值、原始响应SHA-256、构建规则和双时区时间；它们是世界事实输入，不是RGB训练图，不得单独计入128张容量。
+
+首个容量槽位`v7-capacity-slot-001`的正式任务证据runId=`ai-assisted-v7-data-task-v7-capacity-slot-001-2026-07-22T02-07-41-845Z`，身份固定为`train / lowland-evergreen-tropical-forest / wet_to_dry_transition`。它已通过23通道唯一性、原生`1024×768`完整范围、世界身份、大世界连接和自动保存检查，并在完成单图生成、机器审核和owner审核后由正式容量入口登记为1条V7 train贡献。
+
+### 11.1 首个槽位RGB人工审核通过
+
+更新时间：2026-07-22 12:59:59 +08:00
+
+项目所有者已授权并仅生成一张`v7-capacity-slot-001` RGB。请求ID=`conditional-rgb-001-2026-07-22T03-03-07-793Z`；训练派生图SHA-256=`6f89c3830183a48dc4d7074a8d88b8787e3ff19753dc42bb6bd337548878e5c2`。机器合同审核通过，项目所有者审核已由程序写入`owner_approved`，记录状态=`ai_assisted_cold_start_eligible`，`formalConditionalTrainingEligible=true`，自主生成训练原图序号=`002`。它仍固定`independentTrainingEligible=false`且不得直接进入Runtime或`/world`。
+
+正式入口`npm run register:ai-assisted-v7-capacity-contribution`现已保存任务、23通道、RGB、机器审核、owner审核和容量槽位的一一对应关系；独立入口`npm run check:ai-assisted-v7-capacity-contribution`已验证该贡献。不可变证据位于`.runtime/ai-painter/ai-assisted-v7-capacity-contributions/ai-assisted-v7-capacity-contribution-v7-capacity-slot-001-2026-07-22T06-19-53-556Z/contribution.json`，SHA-256=`33be42900b7c3a8e9375f50cfa6d61dc70b555ace0d09b2d0f4d6f8a9d924ae3`。
+
+slot-001闭环时的数据包曾保持旧21条条件配对并增加1条V7贡献，总条件绑定完整地图22条、未配对0条，正式缺口从107减为106。该段保留为历史；slot-002闭环后的最新结果为23条、缺口105。后续槽位同样不得读取历史完整地图RGB几何、不得把已有RGB重绑为target，也不得自动复制、裁切或批量生成。
+
+### 11.2 容量槽位002任务准备
+
+更新时间：2026-07-22 18:12:27 +08:00
+
+`v7-capacity-slot-002`任务runId=`ai-assisted-v7-data-task-v7-capacity-slot-002-2026-07-22T10-03-58-601Z`绑定`lowland-evergreen-tropical-forest / wet_to_dry_transition / train / structural_diversity_reserve`。程序已保存独立世界事实、世界导演、任务包、23通道条件包、完整地图范围审核、双时区时间和hash；构图为东南入口、偏置不规则中心、西北大世界出口，且世界事实不要求主要地表水体。该任务没有读取历史完整地图RGB几何，没有生成RGB，也没有启动GPU。它只有在项目所有者明确授权唯一一张RGB、机器审核和owner审核均完成后，才可能登记为容量贡献。
+
+项目所有者随后授权该槽位唯一一张RGB。程序保存源图SHA-256=`96ee07168ba20d700299901a5abe907bb830be8764f5f656f372507ca5582b79`及`1024x768`训练/机器审核派生图SHA-256=`d326d6073e91b1a8ba2bcccca5e153281326980b725ef987277b1fdbc75f92e3`。在owner审核前，机器合同已通过但owner状态仍为`pending_review`，当时不得进入条件训练数据包或计入容量；该段保留为“机器通过不能代替人工审核”的历史门禁证据。最新owner通过与容量结果见下一段。
+
+项目所有者现已明确审核通过该图，程序自动完成owner审核写入、容量登记、数据包重建和容量重审。slot-002贡献SHA-256=`7f3dcf75cfc5a1804b7d3905afa0f463a4253bff3701f888881673ae8f2725f2`；最新数据包ID=`natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-22T12-04-59-138Z`，条件绑定完整地图23条、V7贡献2条、未配对0条。最新容量审计runId=`ai-assisted-v7-data-capacity-plan-2026-07-22T12-05-01-665Z`确认23/23合格、失败0、缺口105。该数据仍属于AI辅助冷启动通道，固定`independentTrainingEligible=false`；不得作为正式候选、Runtime或`/world`画面。
+
+### 11.3 容量槽位003任务准备
+
+更新时间：2026-07-22 21:33:24 +08:00
+
+`v7-capacity-slot-003`绑定`lowland-evergreen-tropical-forest / dry_season / train / pairwise_landscape_season_baseline`。程序先保存两次RGB前失败：旱季配方缺失，以及道路与封闭边界碰撞；项目所有者已授权修复该配方。成功runId=`ai-assisted-v7-data-task-v7-capacity-slot-003-2026-07-22T13-27-59-480Z`使用既有旱季环境快照，保存独立世界事实、世界导演、任务包、正式23通道、完整地图范围审核、双时区时间、hash、32项SQLite artifact和1条中英文程序事件。
+
+该任务没有读取历史完整地图RGB几何，没有绑定现有RGB，没有生成图片，也没有启动GPU。当前`pairedRgbCount=0`，因此不会增加训练容量；总容量仍为23，缺口仍为105。只有项目所有者再次明确授权slot-003唯一一张RGB，并且后续机器审核、owner审核和容量登记全部通过后，该记录才可能进入AI辅助条件训练数据包。

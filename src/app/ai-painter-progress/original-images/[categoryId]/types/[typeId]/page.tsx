@@ -15,6 +15,7 @@ import {
 } from "@/server/ai-painter-original-image-library"
 import styles from "../../../../page.module.css"
 import { OriginalImageLibraryLiveRefresh } from "../../../library-live-refresh"
+import { OwnerReviewControls } from "../../../owner-review-controls"
 
 export const dynamic = "force-dynamic"
 
@@ -145,6 +146,12 @@ function CompleteMapActivityCard({ activity }: { activity: CompleteMapActivity }
         <span>{record.relativeDirectory}</span>
         <small>recordId: {record.recordId} / 状态: {record.status} / 尺寸: {record.originalImage?.width ?? "--"}×{record.originalImage?.height ?? "--"}</small>
         <small>项目所有者审核: {stringField(record.reviews, "ownerReviewStatus")} / 时间: {formatTimestamp(activity.timestamp)}</small>
+        <OwnerReviewControls
+          categoryId="complete-maps"
+          recordId={record.recordId}
+          machineReviewStatus={stringField(record.reviews, "machineReviewStatus")}
+          ownerReviewStatus={stringField(record.reviews, "ownerReviewStatus")}
+        />
         <Link className={styles.textLink} href={`/ai-painter-progress/original-images/complete-maps/${record.recordId}`}>查看原图详情</Link>
       </article>
     )

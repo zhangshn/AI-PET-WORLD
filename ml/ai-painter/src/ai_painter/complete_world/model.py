@@ -28,7 +28,12 @@ def build_complete_world_system(config: dict[str, object]):
         return 1
 
     def typed_condition_indices():
-        if denoiser_architecture != "multiscale_condition_unet_v4":
+        if denoiser_architecture not in {
+            "multiscale_condition_unet_v4",
+            "multiscale_condition_unet_v5",
+            "multiscale_condition_unet_v6",
+            "multiscale_condition_unet_v7",
+        }:
             return None
         if len(condition_channel_order) != condition_channels:
             raise ValueError("V4 condition channel order does not match conditionChannels")
@@ -264,6 +269,13 @@ def build_complete_world_system(config: dict[str, object]):
                 nn.Conv2d(channels, condition_channels, 1),
                 nn.Sigmoid(),
             ) if denoiser_architecture == "multiscale_condition_unet_v4" else None
+            self.output_bound_condition_probe = nn.Sequential(
+                nn.Conv2d(latent_channels, channels, 3, padding=1),
+                nn.SiLU(),
+                ResidualBlock(channels),
+                nn.Conv2d(channels, condition_channels, 1),
+                nn.Sigmoid(),
+            ) if denoiser_architecture in {"multiscale_condition_unet_v5", "multiscale_condition_unet_v6", "multiscale_condition_unet_v7"} else None
 
         def forward(self, noisy_latent, timestep, conditions, return_condition_reconstruction=False):
             if conditions.shape[1] != condition_channels:
@@ -299,11 +311,25 @@ def build_complete_world_system(config: dict[str, object]):
                 return predicted_velocity, self.condition_reconstruction(up0), resized_conditions
             return predicted_velocity
 
+        def reconstruct_conditions_from_clean_latent(self, predicted_clean):
+            if self.output_bound_condition_probe is None:
+                raise ValueError("output-bound condition probe is only available in the V5 denoiser")
+            return self.output_bound_condition_probe(predicted_clean)
+
+        def prepare_typed_conditions(self, conditions, latent_size):
+            return resize_typed_conditions(conditions, latent_size)
+
     class ProjectOwnedCompleteWorldSystem(nn.Module):
         def __init__(self):
             super().__init__()
             self.autoencoder = ProjectOwnedAutoencoder()
-            if denoiser_architecture in {"multiscale_condition_unet_v3", "multiscale_condition_unet_v4"}:
+            if denoiser_architecture in {
+                "multiscale_condition_unet_v3",
+                "multiscale_condition_unet_v4",
+                "multiscale_condition_unet_v5",
+                "multiscale_condition_unet_v6",
+                "multiscale_condition_unet_v7",
+            }:
                 self.denoiser = ProjectOwnedMultiscaleConditionUNet()
             elif denoiser_architecture == "shallow_condition_fusion_v2":
                 self.denoiser = ProjectOwnedDenoiser()
@@ -318,5 +344,11 @@ def build_complete_world_system(config: dict[str, object]):
 
         def predict_velocity_with_condition_reconstruction(self, noisy_latent, timestep, conditions):
             return self.denoiser(noisy_latent, timestep, conditions, return_condition_reconstruction=True)
+
+        def reconstruct_conditions_from_clean_latent(self, predicted_clean):
+            return self.denoiser.reconstruct_conditions_from_clean_latent(predicted_clean)
+
+        def prepare_typed_conditions(self, conditions, latent_size):
+            return self.denoiser.prepare_typed_conditions(conditions, latent_size)
 
     return ProjectOwnedCompleteWorldSystem()
