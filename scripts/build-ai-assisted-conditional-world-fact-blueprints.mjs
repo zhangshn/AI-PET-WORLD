@@ -23,13 +23,14 @@ const PROFILE_PATH = "data/world-samples/original-image-library/natural-home-v1/
 const CONNECTIVITY_POINTER_PATH = "data/world-samples/world-connectivity/blueprints/latest.json"
 const WORLD_PROFILE_ID = "mainland-southeast-asia-tropical-monsoon-natural-home-v1"
 const OWNER_AUTHORIZATION_REF = "conversation-owner-authorization-2026-07-18-rebuild-all-condition-blueprints-new-labels"
-const V7_TASK_OWNER_AUTHORIZATION_REF_PREFIX = "conversation-owner-authorization-2026-07-22"
 const V7_CONTINUOUS_BATCH_AUTHORIZATION_ID = "owner-authorized-v7-remaining-104-continuous-batch-20260723"
 const GENERATION_CONTRACT_VERSION = "complete-map-scope-world-facts-v2"
 const LABEL_PREFIX = "complete-map-v2"
 const WIDTH = 1024
 const HEIGHT = 768
 const V7_SLOT_ID = argumentValue("--v7-slot-id")
+const AUTONOMY_REBUILD_24 = process.argv.includes("--autonomy-rebuild-24")
+const SUPERSEDE_INCOMPATIBLE_PRE_GENERATION_TASK = process.argv.includes("--supersede-incompatible-pre-generation-task")
 const REVISE_SOURCE_RECORD_ID = argumentValue("--revise-source-record-id")
 const REVISION_REASON = argumentValue("--revision-reason")
 const REVISION_OWNER_COMMAND_REF = argumentValue("--owner-command-ref")
@@ -57,6 +58,10 @@ assert(connectivityBlueprint.blueprintId === connectivityPointer.blueprintId, "c
 
 if (V7_SLOT_ID) {
   await buildV7CapacitySlot(V7_SLOT_ID)
+  process.exit(0)
+}
+if (AUTONOMY_REBUILD_24) {
+  await buildAutonomyRebuild24()
   process.exit(0)
 }
 
@@ -326,10 +331,21 @@ function buildBlueprint({ record, conditionLabel, promptEvidence, snapshot, snap
     semanticRules: {
       waterFlow: recipe.waterFlow,
       routeIntent: recipe.routeIntent,
-    centerIntent: recipe.centerIntent ?? "irregular_playable_natural_home_center",
+      siteSelectionPolicy: "initial_natural_world_no_preset_home_site",
       camera: "top_down_slight_three_quarter_2d",
       style: "native_1024x768_high_resolution_pixel_game_map",
-      forbidden: ["building", "character", "animal", "bridge", "text", "ui", "program_drawn_final_art"],
+      forbidden: [
+        "building",
+        "character",
+        "animal",
+        "bridge",
+        "text",
+        "ui",
+        "program_drawn_final_art",
+        "preset_home_site",
+        "construction_clearing",
+        "route_convergence_platform",
+      ],
     },
     outputContract: {
       generatesRgb: false,
@@ -344,7 +360,6 @@ function buildBlueprint({ record, conditionLabel, promptEvidence, snapshot, snap
 function buildVisualFacts({ conditionLabel, recipe, geometry, environmentContext, taskId, worldId, blueprintPath }) {
   const facts = [
     fact(`${conditionLabel}:entrance`, "entrance", geometry.entranceBounds),
-    fact(`${conditionLabel}:home-center`, "home_center", geometry.focalBounds),
     fact(`${conditionLabel}:natural-boundary`, "natural_boundary", { x: 0, y: 0, width: WIDTH, height: HEIGHT }),
     ...geometry.terrainRegions.map((region) => ({
       factId: `${conditionLabel}:terrain:${region.sourceId}`,
@@ -389,14 +404,24 @@ function buildDirectorPlan({ conditionLabel, recipe, geometry, environmentContex
     sceneIntentId: `natural-home-${conditionLabel}`,
     sceneType: "training_complete_natural_home_map",
     mainStory: `A ${recipe.landscape} natural-home region in ${environmentContext.environmentState}, defined before RGB creation.`,
-    primaryFocus: "home_center",
-    mustShow: ["entrance", "main_path", "home_center", "natural_boundary", ...(geometry.hasWater ? ["water_edge"] : [])],
+    primaryFocus: "complete_natural_region",
+    mustShow: ["entrance", "main_path", "natural_boundary", ...(geometry.hasWater ? ["water_edge"] : [])],
     mayShow: ["tree", "rock", "shrub", "flower_patch", "grass_detail"],
-    mustNotShow: ["player", "butler", "building", "animal", "debug_preview", "material_test_board"],
+    mustNotShow: [
+      "player",
+      "butler",
+      "building",
+      "animal",
+      "debug_preview",
+      "material_test_board",
+      "preset_home_site",
+      "construction_clearing",
+      "route_convergence_platform",
+    ],
   }
   const compositionPlan = {
-    readOrder: ["entrance", "main_path", "home_center", ...(geometry.hasWater ? ["water_edge"] : []), "natural_boundary"],
-    focalHierarchy: ["home_center", "route", ...(geometry.hasWater ? ["water_edge"] : []), "boundary", "detail_clusters"],
+    readOrder: ["entrance", "main_path", ...(geometry.hasWater ? ["water_edge"] : []), "natural_boundary", "ecological_zones"],
+    focalHierarchy: ["complete_natural_region", "route", ...(geometry.hasWater ? ["water_edge"] : []), "boundary", "detail_clusters"],
     layoutIntent: recipe.routeIntent,
     clutterBudget: "controlled_with_quiet_playable_areas",
     cameraFit: "top_down_complete_map_readability",
@@ -446,7 +471,11 @@ function buildDirectorPlan({ conditionLabel, recipe, geometry, environmentContex
       groundMoisture: environmentContext.groundMoisture,
     },
     compositionRecipePlan: compositionPlan,
-    singleMapCompositionPlan: { entranceBounds: geometry.entranceBounds, focalBounds: geometry.focalBounds, routeIntent: recipe.routeIntent },
+    singleMapCompositionPlan: {
+      entranceBounds: geometry.entranceBounds,
+      routeIntent: recipe.routeIntent,
+      siteSelectionPolicy: "initial_natural_world_no_preset_home_site",
+    },
     renderLayerRecipePlan: standardRenderLayers(),
     qualityRubricPlan: { required: ["game_read", "map_grammar", "style_unity", "grounding", "polish"], ownerReviewRequired: true },
     singleMapAcceptancePlan: { passDefinition: "one_complete_professional_natural_home_map_visual", ownerReviewRequired: true },
@@ -495,7 +524,19 @@ function buildTaskPackage({ record, conditionLabel, recipe, geometry, environmen
       structureId: `training-structure-${conditionLabel}`,
     },
     directorPlan,
-    mapGrammar: { requiredParts: directorPlan.sceneIntent.mustShow.map((partId) => ({ partId })), routeGraph: { intent: recipe.routeIntent }, adjacencyRules: [], forbiddenLayouts: ["isolated_path", "fragmented_water", "unreadable_center", "material_test_board"] },
+    mapGrammar: {
+      requiredParts: directorPlan.sceneIntent.mustShow.map((partId) => ({ partId })),
+      routeGraph: { intent: recipe.routeIntent },
+      adjacencyRules: [],
+      forbiddenLayouts: [
+        "isolated_path",
+        "fragmented_water",
+        "material_test_board",
+        "preset_home_site",
+        "construction_clearing",
+        "rectangular_route_platform",
+      ],
+    },
     spatialLayers: {
       terrainRegions: geometry.terrainRegions,
       walkableRegions: geometry.walkableRegions,
@@ -522,8 +563,19 @@ function buildTaskPackage({ record, conditionLabel, recipe, geometry, environmen
     artDirection: { genreRead: "high-resolution pixel-art playable natural home world map", styleFamily: "professional high-resolution 2d pixel game map", forbiddenLooks: ["noise_map", "asset_collage", "debug_preview", "program_drawn_final_art"] },
     materialRecipes,
     singleMapMaterialFields: materialRecipes,
-    compositionRecipe: { focalPoint: geometry.focalBounds, routeShape: recipe.routeIntent, negativeSpacePlan: { preserve: ["home_center", "main_route"] } },
-    singleMapCompositionFields: { primaryFocalArea: geometry.focalBounds, entrancePlacement: geometry.entranceBounds, mainRoutePlan: recipe.routeIntent, boundaryFrame: "natural_irregular_frame" },
+    compositionRecipe: {
+      routeShape: recipe.routeIntent,
+      negativeSpacePlan: {
+        preserve: ["main_route", "multiple_natural_ecological_zones"],
+        presetConstructionClearingForbidden: true,
+      },
+    },
+    singleMapCompositionFields: {
+      entrancePlacement: geometry.entranceBounds,
+      mainRoutePlan: recipe.routeIntent,
+      boundaryFrame: "natural_irregular_frame",
+      siteSelectionPolicy: "runtime_butler_autonomy_only",
+    },
     renderLayerRecipe: standardRenderLayers(),
     qualityRubric: { categories: ["game_read", "map_grammar", "material_quality", "style_unity", "grounding", "polish"], ownerReviewOverride: true },
     singleMapAcceptance: { activeGates: ["map_structure", "material_quality", "composition_quality", "object_grounding", "storage_trace", "owner_review"], passDefinition: "one_complete_professional_natural_home_map_visual", ownerReviewRequired: true },
@@ -563,20 +615,12 @@ function buildGeometry(sampleId, recipe) {
   return {
     hasWater: waterRegions.length > 0,
     terrainRegions: [grass, ...shorelineRegions, ...waterRegions, ...pathRegions, ...boundaryRegions, ...mudRegions, ...tallGrassRegions],
-    walkableRegions: [
-      { sourceId: `${sampleId}-walkable-center`, polygon: ellipsePolygon(recipe.center.x, recipe.center.y, 0.24, 0.19) },
-      ...pathRegions.map((entry) => ({ sourceId: `${entry.sourceId}-walkable`, polygon: entry.polygon })),
-    ],
+    walkableRegions: pathRegions.map((entry) => ({ sourceId: `${entry.sourceId}-walkable`, polygon: entry.polygon })),
     collisionRegions,
     boundaryPassages: boundaryPlan.passages,
     objectFootprints,
     entranceBounds: boundsFromCenter(entrance.x, entrance.y, 0.08, 0.06),
-    focalBounds: boundsFromCenter(
-      recipe.center.x,
-      recipe.center.y,
-      recipe.focalSize?.width ?? 0.18,
-      recipe.focalSize?.height ?? 0.14,
-    ),
+    focalBounds: null,
   }
 }
 
@@ -599,7 +643,6 @@ function buildObjects(sampleId, recipe, exclusionPolygons) {
       y = 0.06 + random() * 0.88
       const candidate = normalizedBoundsFromCenter(x, y, size[0], size[1])
       if (boundsTouchesAnyPolygon(candidate, exclusionPolygons)) continue
-      if (distance(x, y, recipe.center.x, recipe.center.y) <= 0.2) continue
       if (rows.some((row) => normalizedBoundsOverlap(candidate, normalizePixelBounds(row.footprint), 0.012))) continue
       accepted = true
       break
@@ -699,7 +742,7 @@ function ribbonPolygon(points, width) {
 }
 
 function edgeBoundaries(sampleId, depth, pathLines = []) {
-  const rasterPassageClearance = 0.03
+  const rasterPassageClearance = 0.04
   const topPassages = mergeIntervals(pathLines.flatMap((route, routeIndex) => route.points
     .filter((point) => point.y <= 0)
     .map((point) => ({
@@ -824,7 +867,6 @@ function pointInPolygon(x, y, polygon) {
 }
 
 function fact(factId, semanticType, bounds) { return { factId, semanticType, sourceType: "training_world_fact_blueprint", bounds } }
-function distance(ax, ay, bx, by) { return Math.hypot(ax - bx, ay - by) }
 function clamp(value, minimum, maximum) { return Math.max(minimum, Math.min(maximum, value)) }
 
 function seededRandom(seedText) {
@@ -920,7 +962,20 @@ async function buildV7CapacitySlot(slotId) {
   assert(slot.requiredConditionContract === GENERATION_CONTRACT_VERSION, "V7 condition contract mismatch")
   assert(slot.requiredNativeResolution?.width === WIDTH && slot.requiredNativeResolution?.height === HEIGHT, "V7 native resolution mismatch")
   const existingTask = findExistingV7CapacitySlotTask(v7OutputRoot, slotId)
-  assert(!existingTask, `V7 capacity slot task already exists and cannot be repeated: ${slotId} (${existingTask ?? "unknown"})`)
+  if (existingTask) {
+    assert(
+      SUPERSEDE_INCOMPATIBLE_PRE_GENERATION_TASK,
+      `V7 capacity slot task already exists and cannot be repeated: ${slotId} (${existingTask})`,
+    )
+    assert(
+      taskRequiresNoPresetSiteSupersession(existingTask),
+      `V7 capacity slot task already satisfies the no-preset-site contract and cannot be superseded: ${slotId}`,
+    )
+    assert(
+      !findExistingV7GenerationRequest(slotId),
+      `V7 capacity slot already has a generation request and cannot supersede its task: ${slotId}`,
+    )
+  }
   const ownerAuthorizationRef = V7_CONTINUOUS_BATCH_AUTHORIZATION_ID
 
   const coveragePath = "data/world-samples/original-image-library/natural-home-v1/coverage-blueprint.json"
@@ -1001,10 +1056,21 @@ async function buildV7CapacitySlot(slotId) {
       semanticRules: {
         waterFlow: recipe.waterFlow,
         routeIntent: recipe.routeIntent,
-        centerIntent: recipe.centerIntent,
+        siteSelectionPolicy: "initial_natural_world_no_preset_home_site",
         camera: "top_down_slight_three_quarter_2d",
         style: "native_1024x768_high_resolution_pixel_game_map",
-        forbidden: ["building", "character", "animal", "bridge", "text", "ui", "program_drawn_final_art"],
+        forbidden: [
+          "building",
+          "character",
+          "animal",
+          "bridge",
+          "text",
+          "ui",
+          "program_drawn_final_art",
+          "preset_home_site",
+          "construction_clearing",
+          "route_convergence_platform",
+        ],
       },
       outputContract: {
         generatesRgb: false,
@@ -1149,6 +1215,8 @@ async function buildV7CapacitySlot(slotId) {
       imageGenerationAuthorized: true,
       gpuTrainingAuthorized: false,
       continuousBatchAuthorizationId: V7_CONTINUOUS_BATCH_AUTHORIZATION_ID,
+      supersedesTaskManifestPath: existingTask,
+      supersessionReason: existingTask ? "preset_home_site_contract_removed_before_rgb_generation" : null,
     }
     const manifest = {
       schemaVersion: "ai-assisted-v7-data-task-run-v1",
@@ -1157,6 +1225,8 @@ async function buildV7CapacitySlot(slotId) {
       createdAtUtc: timestamp,
       createdAtAsiaShanghai: formatShanghai(timestamp),
       ownerAuthorizationRef,
+      supersedesTaskManifestPath: existingTask,
+      supersessionReason: existingTask ? "preset_home_site_contract_removed_before_rgb_generation" : null,
       capacityPlanRunId: planPointer.runId,
       capacityGapListPath: planPointer.gapListPath,
       capacityGapListSha256: planPointer.gapListSha256,
@@ -1243,6 +1313,533 @@ async function buildV7CapacitySlot(slotId) {
     })
     throw error
   }
+}
+
+async function buildAutonomyRebuild24() {
+  const authorizationId = "owner-authorized-no-preset-home-site-engineering-rebuild-24-20260724"
+  const outputRoot = path.join(ROOT, ".runtime", "ai-painter", "ai-assisted-v7-autonomy-rebuild-data-tasks")
+  const coveragePath = "data/world-samples/original-image-library/natural-home-v1/coverage-blueprint.json"
+  const factualReferencePath = "data/world-samples/original-image-library/natural-home-v1/sakaerat-wang-nam-khiao-mvp-reference-v1.json"
+  const coverage = readRequiredJson(coveragePath)
+  const factualReference = readRequiredJson(factualReferencePath)
+  const landscapeProfiles = coverage.regionalLandscapeTypes ?? []
+  const snapshotProfiles = coverage.availableVisualSnapshots ?? []
+
+  assert(landscapeProfiles.length === 20, `expected 20 approved landscape profiles, received ${landscapeProfiles.length}`)
+  assert(snapshotProfiles.length === 4, `expected 4 approved monsoon snapshots, received ${snapshotProfiles.length}`)
+  assert(factualReference.referenceId === "sakaerat-wang-nam-khiao-mvp-reference-v1", "Sakaerat factual reference identity mismatch")
+
+  const entries = [
+    ...landscapeProfiles.map((landscape, index) => ({
+      landscape,
+      season: snapshotProfiles[index % snapshotProfiles.length],
+      variant: 1,
+    })),
+    ...landscapeProfiles.slice(0, 4).map((landscape, index) => ({
+      landscape,
+      season: snapshotProfiles[(index + 2) % snapshotProfiles.length],
+      variant: 2,
+    })),
+  ].map((entry, index) => ({
+    ...entry,
+    rebuildId: `autonomous-world-rebuild-${String(index + 1).padStart(3, "0")}`,
+    split: index < 19 ? "train" : index < 21 ? "validation" : index === 21 ? "challenge" : "regression",
+  }))
+  assert(entries.length === 24, `autonomy rebuild expected 24 entries, received ${entries.length}`)
+
+  const runId = `ai-assisted-v7-autonomy-rebuild-24-${timestamp.replace(/[:.]/g, "-")}`
+  const runDir = path.join(outputRoot, runId)
+  fs.mkdirSync(runDir, { recursive: true })
+  const rows = []
+
+  try {
+    for (const [index, entry] of entries.entries()) {
+      const sampleDir = path.join(runDir, entry.rebuildId)
+      fs.mkdirSync(sampleDir, { recursive: true })
+      const conditionLabel = `autonomous-complete-map-${String(index + 1).padStart(3, "0")}`
+      const taskId = `training-world-visual-task-${conditionLabel}-${timestamp.replace(/[:.]/g, "-")}`
+      const worldSeed = sha256(Buffer.from(`${authorizationId}:${entry.rebuildId}:${entry.landscape.typeId}:${entry.season.season}:${entry.variant}`))
+      const worldId = `training-world:${conditionLabel}:${worldSeed.slice(0, 12)}`
+      const snapshot = readRequiredJson(entry.season.path)
+      assert(snapshot.snapshotId === entry.season.snapshotId, `snapshot identity mismatch: ${entry.rebuildId}`)
+      const recipe = autonomyRebuildRecipe(entry, worldSeed)
+      const syntheticRecord = {
+        recordId: entry.rebuildId,
+        classification: {
+          monsoonSeason: entry.season.season,
+          environmentState: entry.season.environmentState,
+        },
+        aiAssistedColdStart: { promptEvidencePath: null },
+      }
+      const environmentContext = buildEnvironmentContext({ record: syntheticRecord, snapshot, recipe })
+      const geometry = buildGeometry(conditionLabel, recipe)
+      const blueprintPath = path.join(sampleDir, "world-fact-blueprint.json")
+      const blueprint = {
+        schemaVersion: "ai-assisted-training-world-fact-blueprint-v2",
+        blueprintId: `training-world-facts-${conditionLabel}`,
+        status: "autonomous_world_facts_ready_rgb_missing",
+        createdAtUtc: timestamp,
+        createdAtAsiaShanghai: formatShanghai(timestamp),
+        ownerAuthorizationRef: authorizationId,
+        generationContractVersion: GENERATION_CONTRACT_VERSION,
+        conditionLabel,
+        rebuildId: entry.rebuildId,
+        split: entry.split,
+        uniqueWorldSeed: worldSeed,
+        uniqueLayoutVariant: recipe.layoutVariant,
+        sourceBlueprintReuse: false,
+        sourceTransformReuse: false,
+        sourceRgbRead: false,
+        sourceImageGeometryRead: false,
+        completeMapScopeRequired: true,
+        sourceMode: "autonomous_world_facts_plus_locked_earth_reference_before_rgb",
+        taskId,
+        worldId,
+        tick: 0,
+        worldProfileId: WORLD_PROFILE_ID,
+        earthParameterSnapshotId: snapshot.snapshotId,
+        earthParameterSnapshotPath: projectPath(entry.season.path),
+        factualReferenceId: factualReference.referenceId,
+        factualReferencePath,
+        connectivityContractId: connectivityPointer.contractId,
+        connectivityBlueprintId: connectivityPointer.blueprintId,
+        connectivityBlueprintPath: connectivityPointer.blueprintPath,
+        landscapeType: recipe.landscape,
+        landscapeProfile: {
+          requiredFeatures: entry.landscape.requiredFeatures,
+          optionalFeatures: entry.landscape.optionalFeatures,
+        },
+        environmentContext,
+        canvas: { width: WIDTH, height: HEIGHT, frameScope: "complete_runtime_frame" },
+        geometry,
+        semanticRules: {
+          waterFlow: recipe.waterFlow,
+          routeIntent: recipe.routeIntent,
+          siteSelectionPolicy: "initial_natural_world_no_preset_home_site",
+          focalAreaPolicy: "inactive_all_zero_compatibility_channel",
+          camera: "top_down_slight_three_quarter_2d",
+          style: "native_1024x768_high_resolution_pixel_game_map",
+          forbidden: [
+            "building",
+            "character",
+            "animal",
+            "bridge",
+            "text",
+            "ui",
+            "program_drawn_final_art",
+            "preset_home_site",
+            "construction_clearing",
+            "route_convergence_platform",
+            "mirrored_historical_layout",
+            "rotated_historical_layout",
+          ],
+        },
+        outputContract: {
+          generatesRgb: false,
+          changesRuntimeWorldFacts: false,
+          formalCandidate: false,
+          needsNewRgbPairCreatedAfterThisBlueprint: true,
+        },
+        automaticStorage: true,
+      }
+      writeJson(blueprintPath, blueprint)
+
+      const visualFacts = buildVisualFacts({
+        conditionLabel,
+        recipe,
+        geometry,
+        environmentContext,
+        taskId,
+        worldId,
+        blueprintPath,
+      })
+      const visualFactPath = path.join(sampleDir, "visual-fact-manifest.json")
+      writeJson(visualFactPath, visualFacts)
+
+      const directorPlan = buildDirectorPlan({
+        conditionLabel,
+        recipe,
+        geometry,
+        environmentContext,
+        taskId,
+        worldId,
+        visualFacts,
+        snapshot,
+      })
+      directorPlan.autonomyContract = {
+        siteSelectionPolicy: "runtime_butler_autonomy_only",
+        presetHomeSite: false,
+        constructionClearing: false,
+        focalAreaActive: false,
+      }
+      directorPlan.factualReference = {
+        referenceId: factualReference.referenceId,
+        path: factualReferencePath,
+        copiedRealMapGeometry: false,
+        externalImageUsed: false,
+      }
+      directorPlan.singleMapEcologyPlan.requiredFeatures = entry.landscape.requiredFeatures
+      directorPlan.singleMapEcologyPlan.optionalFeatures = entry.landscape.optionalFeatures
+
+      const taskPackage = buildTaskPackage({
+        record: syntheticRecord,
+        conditionLabel,
+        recipe,
+        geometry,
+        environmentContext,
+        taskId,
+        worldId,
+        visualFacts,
+        visualFactPath,
+        directorPlan,
+        snapshot,
+        snapshotPath: entry.season.path,
+        blueprintPath,
+      })
+      taskPackage.status = "autonomous_world_task_ready_rgb_missing"
+      taskPackage.generationMode = "bounded_owner_authorized_autonomy_rebuild_24"
+      taskPackage.rebuildIdentity = {
+        rebuildId: entry.rebuildId,
+        split: entry.split,
+        authorizationId,
+        uniqueWorldSeed: worldSeed,
+        uniqueLayoutVariant: recipe.layoutVariant,
+      }
+      taskPackage.sourceBindings.promptEvidencePath = null
+      taskPackage.sourceBindings.factualReferencePath = factualReferencePath
+      taskPackage.ecologyState.requiredFeatures = entry.landscape.requiredFeatures
+      taskPackage.ecologyState.optionalFeatures = entry.landscape.optionalFeatures
+      taskPackage.inferenceGate = {
+        status: "rgb_generation_not_started",
+        canRunCompleteVisualInference: false,
+        reasons: ["rgb_missing", "machine_review_missing", "owner_review_missing"],
+        authorizationId,
+        ownerApprovalAutomatic: false,
+        gpuTrainingAuthorized: false,
+      }
+      taskPackage.storageContract.mustStoreModelCheckpoint = false
+      validateRequiredFields(directorPlan, REQUIRED_DIRECTOR_OUTPUT_FIELDS, `autonomy-director:${entry.rebuildId}`)
+      validateRequiredFields(taskPackage, REQUIRED_TASK_PACKAGE_FIELDS, `autonomy-task:${entry.rebuildId}`)
+      taskPackage.taskSha256 = sha256(Buffer.from(JSON.stringify(taskPackage)))
+
+      const taskPath = path.join(sampleDir, "task-package.json")
+      const directorPath = path.join(sampleDir, "director-output.json")
+      const taskManifestPath = path.join(sampleDir, "manifest.json")
+      writeJson(taskPath, taskPackage)
+      writeJson(directorPath, directorPlan)
+      const taskManifest = {
+        schemaVersion: "world-visual-generation-task-manifest-v1",
+        taskId,
+        status: taskPackage.status,
+        inferenceStatus: taskPackage.inferenceGate.status,
+        createdAt: timestamp,
+        createdAtAsiaShanghai: formatShanghai(timestamp),
+        dictionaryVersionId: dictionary.dictionaryVersionId,
+        worldId,
+        ownerId: "project-owner",
+        tick: 0,
+        worldProfileId: WORLD_PROFILE_ID,
+        generationContractVersion: GENERATION_CONTRACT_VERSION,
+        conditionLabel,
+        rebuildId: entry.rebuildId,
+        split: entry.split,
+        earthParameterSnapshotId: snapshot.snapshotId,
+        environmentContext,
+        runtimeFrameId: null,
+        sourceMode: "autonomous_world_facts_plus_locked_earth_reference_before_rgb",
+        taskSha256: taskPackage.taskSha256,
+        taskPath: projectPath(taskPath),
+        directorPath: projectPath(directorPath),
+        blueprintPath: projectPath(blueprintPath),
+        imageCount: 0,
+        imageGenerationStarted: false,
+        gpuTrainingStarted: false,
+        automaticStorage: true,
+      }
+      writeJson(taskManifestPath, taskManifest)
+
+      const compiler = spawnSync(process.execPath, [
+        path.join(ROOT, "scripts", "compile-current-world-visual-conditions.mjs"),
+        "--task", projectPath(taskPath),
+        "--task-manifest", projectPath(taskManifestPath),
+      ], { cwd: ROOT, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
+      assert(compiler.status === 0, `condition compilation failed for ${entry.rebuildId}: ${compiler.stderr || compiler.stdout}`)
+      const conditionManifestPath = path.join(sampleDir, "compiled-conditions", "manifest.json")
+      const conditionManifest = readRequiredJson(conditionManifestPath)
+      const conditionPack = readRequiredJson(conditionManifest.conditionPackPath)
+      assert(conditionManifest.channelCount === 23, `condition channel count mismatch: ${entry.rebuildId}`)
+      const focalArea = conditionPack.channels?.find((channel) => channel.id === "focal_area")
+      assert(focalArea, `focal_area missing: ${entry.rebuildId}`)
+      assert(Number(focalArea.statistics?.nonZeroCount ?? -1) === 0, `focal_area must be all-zero: ${entry.rebuildId}`)
+      assert(!activePresetHomeSiteSemantics(taskPackage), `active preset home-site semantics detected: ${entry.rebuildId}`)
+
+      const scopeAudit = await auditCompleteMapScope({
+        blueprint,
+        directorOutput: directorPlan,
+        task: taskPackage,
+        conditionPack,
+        connectivityBlueprint,
+      })
+      const scopeAuditPath = path.join(sampleDir, "complete-map-scope-audit.json")
+      writeJson(scopeAuditPath, scopeAudit)
+      assert(scopeAudit.passed === true, `complete-map scope blocked for ${entry.rebuildId}: ${(scopeAudit.issues ?? []).join(",")}`)
+
+      rows.push({
+        rebuildId: entry.rebuildId,
+        status: "task_ready_rgb_missing",
+        split: entry.split,
+        regionalLandscapeType: entry.landscape.typeId,
+        monsoonSeason: entry.season.season,
+        conditionLabel,
+        worldId,
+        uniqueWorldSeed: worldSeed,
+        uniqueLayoutVariant: recipe.layoutVariant,
+        blueprintPath: projectPath(blueprintPath),
+        blueprintSha256: sha256(fs.readFileSync(blueprintPath)),
+        directorOutputPath: projectPath(directorPath),
+        directorOutputSha256: sha256(fs.readFileSync(directorPath)),
+        taskPackagePath: projectPath(taskPath),
+        taskPackageSha256: sha256(fs.readFileSync(taskPath)),
+        conditionManifestPath: projectPath(conditionManifestPath),
+        conditionPackPath: conditionManifest.conditionPackPath,
+        conditionPackSha256: conditionManifest.conditionPackSha256,
+        conditionPackFileSha256: sha256(fs.readFileSync(resolveProjectPath(conditionManifest.conditionPackPath))),
+        completeMapScopeAuditPath: projectPath(scopeAuditPath),
+        completeMapScopeAuditSha256: sha256(fs.readFileSync(scopeAuditPath)),
+        channelCount: 23,
+        focalAreaNonZeroCount: 0,
+        completeMapScopePassed: true,
+        presetHomeSiteSemanticsDetected: false,
+        sourceTransformReuse: false,
+        pairedRgbCount: 0,
+      })
+    }
+
+    assert(new Set(rows.map((row) => row.worldId)).size === 24, "autonomy rebuild world identities must be unique")
+    assert(new Set(rows.map((row) => row.uniqueLayoutVariant)).size === 24, "autonomy rebuild layout identities must be unique")
+    const manifest = {
+      schemaVersion: "ai-assisted-v7-autonomy-rebuild-24-run-v1",
+      runId,
+      status: "all_24_autonomous_world_condition_tasks_ready_rgb_missing",
+      createdAtUtc: timestamp,
+      createdAtAsiaShanghai: formatShanghai(timestamp),
+      ownerAuthorizationRef: authorizationId,
+      sourceReclassificationPointerPath: ".runtime/ai-painter/ai-assisted-v7-preset-home-site-reclassifications/latest.json",
+      factualReferenceId: factualReference.referenceId,
+      factualReferencePath,
+      worldProfileId: WORLD_PROFILE_ID,
+      generatedTaskCount: rows.length,
+      generatedConditionPackCount: rows.length,
+      channelCountPerTask: 23,
+      focalAreaPolicy: "all_zero_inactive_compatibility_channel",
+      sourceTransformReuse: false,
+      historicalRgbRead: false,
+      imageGenerationStarted: false,
+      imagesGenerated: 0,
+      gpuTrainingStarted: false,
+      ownerApprovalAutomatic: false,
+      blockers: ["rgb_missing", "machine_review_missing", "owner_review_missing"],
+      splitCounts: countRowsBy(rows, "split"),
+      rows,
+      automaticStorage: true,
+    }
+    const manifestPath = path.join(runDir, "manifest.json")
+    writeJsonAtomic(manifestPath, manifest)
+    writeJsonAtomic(path.join(outputRoot, "latest.json"), {
+      schemaVersion: "ai-assisted-v7-autonomy-rebuild-24-latest-v1",
+      runId,
+      status: manifest.status,
+      updatedAtUtc: timestamp,
+      updatedAtAsiaShanghai: formatShanghai(timestamp),
+      manifestPath: projectPath(manifestPath),
+      manifestSha256: sha256(fs.readFileSync(manifestPath)),
+      generatedTaskCount: rows.length,
+      imagesGenerated: 0,
+      gpuTrainingStarted: false,
+    })
+    indexV7RunArtifacts(runDir, runId)
+    indexV7Artifact(path.join(outputRoot, "latest.json"), runId)
+    appendAiPainterProgramEvent({
+      runId,
+      status: "success",
+      stage: "ai_assisted_v7_autonomy_rebuild_24_conditions",
+      action: "build_24_autonomous_world_condition_tasks",
+      kind: "v7_data_task",
+      titleZh: "24条无固定家园中心的自主自然世界条件任务已由程序建立并保存",
+      titleEn: "The program built and saved 24 autonomous natural-world condition tasks without preset home sites",
+      summaryZh: "程序建立了24套全新世界事实、世界导演、完整地图任务包和23通道。所有focal_area均为全零；未读取历史RGB，未复用镜像或旋转骨架，未生成图片，未启动GPU训练。",
+      summaryEn: "The program built 24 new world-fact, World Director, complete-map task, and 23-channel packages. Every focal_area is all-zero; no historical RGB or transformed skeleton was reused, no image was generated, and no GPU training started.",
+      evidence: [projectPath(manifestPath), factualReferencePath, coveragePath],
+      evidencePath: projectPath(manifestPath),
+      evidenceSha256: sha256(fs.readFileSync(manifestPath)),
+    })
+    console.log(JSON.stringify({
+      status: manifest.status,
+      runId,
+      manifestPath: projectPath(manifestPath),
+      manifestSha256: sha256(fs.readFileSync(manifestPath)),
+      generatedTaskCount: rows.length,
+      splitCounts: manifest.splitCounts,
+      imagesGenerated: 0,
+      gpuTrainingStarted: false,
+    }, null, 2))
+  } catch (error) {
+    const failure = {
+      schemaVersion: "ai-assisted-v7-autonomy-rebuild-24-failure-v1",
+      runId,
+      status: "failed_before_rgb_generation",
+      createdAtUtc: timestamp,
+      createdAtAsiaShanghai: formatShanghai(timestamp),
+      completedTaskCount: rows.length,
+      error: error instanceof Error ? error.message : "unknown_autonomy_rebuild_error",
+      imageGenerationStarted: false,
+      imagesGenerated: 0,
+      gpuTrainingStarted: false,
+      automaticStorage: true,
+    }
+    const failurePath = path.join(runDir, "failure.json")
+    writeJsonAtomic(failurePath, failure)
+    indexV7RunArtifacts(runDir, runId)
+    appendAiPainterProgramEvent({
+      runId,
+      status: "failed",
+      stage: "ai_assisted_v7_autonomy_rebuild_24_conditions",
+      action: "build_24_autonomous_world_condition_tasks",
+      kind: "v7_data_task",
+      titleZh: "24条自主自然世界条件重建被程序阻断并保存失败证据",
+      titleEn: "The 24-record autonomous-world condition rebuild was blocked and the program saved failure evidence",
+      summaryZh: failure.error,
+      summaryEn: failure.error,
+      evidence: [projectPath(failurePath)],
+      evidencePath: projectPath(failurePath),
+      evidenceSha256: sha256(fs.readFileSync(failurePath)),
+      errorCode: "autonomy_rebuild_24_condition_task_failed",
+    })
+    throw error
+  }
+}
+
+function autonomyRebuildRecipe(entry, worldSeed) {
+  const random = seededRandom(`${entry.rebuildId}:${worldSeed}`)
+  const waterRequired = entry.landscape.requiredFeatures.some((feature) => (
+    /(river|water|stream|pond|creek|swamp|marsh|drainage|bank)/i.test(feature)
+  ))
+  const routeOnLeft = Number.parseInt(worldSeed.slice(0, 2), 16) % 2 === 0
+  const routeBand = routeOnLeft ? [0.16, 0.42] : [0.58, 0.84]
+  const waterBand = routeOnLeft ? [0.62, 0.86] : [0.14, 0.38]
+  const routePoints = makeIndependentBoundaryRoute(random, routeBand, entry.variant)
+  const water = waterRequired
+    ? makeIndependentWaterGeometry(entry.landscape.typeId, random, waterBand, entry.variant)
+    : { lines: [], ellipses: [], flow: "no_major_surface_water_in_current_world_facts" }
+  const seasonalProfile = v7SeasonalProfile(entry.season.season)
+  assert(seasonalProfile, `seasonal profile missing: ${entry.rebuildId}`)
+  const vegetationDensity = /(grassland|glade|dry-dipterocarp|rocky)/.test(entry.landscape.typeId)
+    ? "open"
+    : /(swamp|marsh|riparian|evergreen|mountain)/.test(entry.landscape.typeId)
+      ? "high"
+      : "balanced"
+  const primaryVegetation = entry.landscape.typeId.includes("bamboo")
+    ? "bamboo"
+    : entry.landscape.typeId.includes("marsh") || entry.landscape.typeId.includes("swamp")
+      ? "reed"
+      : "shrub"
+  const baseCounts = vegetationDensity === "open"
+    ? { tree: 7, rock: 6, vegetation: 9 }
+    : vegetationDensity === "high"
+      ? { tree: 14, rock: 5, vegetation: 13 }
+      : { tree: 10, rock: 5, vegetation: 10 }
+  const mudAreas = seasonalProfile.moisture === "very_high"
+    ? [ellipse(routeOnLeft ? 0.7 : 0.3, 0.72 - random() * 0.25, 0.08, 0.045)]
+    : []
+  const tallGrassAreas = /grassland|marsh|swamp|floodplain|drainage/.test(entry.landscape.typeId)
+    ? [ellipse(routeOnLeft ? 0.72 : 0.28, 0.26 + random() * 0.35, 0.11, 0.075)]
+    : []
+
+  return {
+    landscape: entry.landscape.typeId,
+    waterFlow: water.flow,
+    routeIntent: `${entry.landscape.typeId}_${entry.season.season}_boundary_to_boundary_natural_passage_without_preset_home_site`,
+    waterLines: water.lines,
+    waterEllipses: water.ellipses,
+    pathLines: [line(routePoints.map((point) => [point.x, point.y]), 0.027 + random() * 0.009)],
+    moisture: seasonalProfile.moisture,
+    vegetationDensity,
+    primaryVegetation,
+    boundaryDepth: vegetationDensity === "open" ? 0.035 : 0.055,
+    objectCounts: adjustObjectCountsForSeason(baseCounts, seasonalProfile),
+    mudAreas,
+    tallGrassAreas,
+    layoutVariant: `autonomous-world-fact-grammar-${entry.rebuildId}-${worldSeed.slice(0, 16)}`,
+    siteSelectionPolicy: "initial_natural_world_no_preset_home_site",
+  }
+}
+
+function makeIndependentBoundaryRoute(random, [minimumX, maximumX], variant) {
+  const pointCount = 6 + variant
+  const points = []
+  for (let index = 0; index < pointCount; index += 1) {
+    const progress = index / (pointCount - 1)
+    const wave = Math.sin((progress * Math.PI * (1.2 + random() * 0.7)) + random() * 0.8) * 0.045
+    const x = clamp(minimumX + (maximumX - minimumX) * (0.25 + random() * 0.5) + wave, minimumX, maximumX)
+    points.push({ x: Number(x.toFixed(6)), y: Number((1.03 - progress * 1.06).toFixed(6)) })
+  }
+  return points
+}
+
+function makeIndependentWaterGeometry(landscapeType, random, [minimumX, maximumX], variant) {
+  const centerX = minimumX + (maximumX - minimumX) * (0.3 + random() * 0.4)
+  if (landscapeType === "pond-short-creek") {
+    const pondY = 0.35 + random() * 0.25
+    return {
+      lines: [line([
+        [centerX, pondY],
+        [centerX + (random() - 0.5) * 0.06, pondY - 0.18],
+        [centerX + (random() - 0.5) * 0.08, -0.03],
+      ], 0.026)],
+      ellipses: [ellipse(centerX, pondY, 0.11 + random() * 0.035, 0.08 + random() * 0.025)],
+      flow: "single_connected_pond_to_short_creek_outlet",
+    }
+  }
+  if (landscapeType === "freshwater-swamp") {
+    return {
+      lines: [],
+      ellipses: [
+        ellipse(centerX, 0.32 + random() * 0.12, 0.11, 0.16),
+        ellipse(centerX + (random() - 0.5) * 0.08, 0.66 + random() * 0.1, 0.12, 0.14),
+      ],
+      flow: "two_connected_shallow_swamp_basins_with_continuous_edge",
+    }
+  }
+  const pointCount = 6 + variant
+  const points = []
+  for (let index = 0; index < pointCount; index += 1) {
+    const progress = index / (pointCount - 1)
+    const x = clamp(centerX + Math.sin(progress * Math.PI * (1.4 + random())) * 0.055 + (random() - 0.5) * 0.025, minimumX, maximumX)
+    points.push([Number(x.toFixed(6)), Number((-0.03 + progress * 1.06).toFixed(6))])
+  }
+  return {
+    lines: [line(points, /river|floodplain|riverbank|riparian/.test(landscapeType) ? 0.06 : 0.035)],
+    ellipses: [],
+    flow: `${landscapeType}_continuous_north_to_south_natural_hydrology`,
+  }
+}
+
+function activePresetHomeSiteSemantics(value, keyPath = "") {
+  if (value === null || value === undefined) return false
+  if (typeof value === "string") {
+    if (/(^|\.)(mustNotShow|forbidden|forbiddenLayouts|forbiddenContent)(\.|$)/i.test(keyPath)) return false
+    return /home[_ -]?center|activity[_ -]?center|construction[_ -]?clearing|building[_ -]?candidate|route[_ -]?convergence[_ -]?platform/i.test(value)
+  }
+  if (Array.isArray(value)) return value.some((entry, index) => activePresetHomeSiteSemantics(entry, `${keyPath}.${index}`))
+  if (typeof value !== "object") return false
+  return Object.entries(value).some(([key, entry]) => activePresetHomeSiteSemantics(entry, keyPath ? `${keyPath}.${key}` : key))
+}
+
+function countRowsBy(rows, field) {
+  return rows.reduce((counts, row) => {
+    counts[row[field]] = (counts[row[field]] ?? 0) + 1
+    return counts
+  }, {})
 }
 
 function indexV7RunArtifacts(runDir, runId) {
@@ -1349,11 +1946,8 @@ function v7RecipeFor(slot, worldSeed) {
   assert(seasonalProfile, `V7 season recipe is not defined: ${slot.monsoonSeason}`)
   recipe.moisture = seasonalProfile.moisture
   recipe.layoutVariant = `v7-complete-map-${slot.regionalLandscapeType}-${slot.monsoonSeason}-transform-${transformIndex}-${worldSeed.slice(0, 12)}`
-  recipe.centerIntent = `${slot.regionalLandscapeType}_${slot.monsoonSeason}_irregular_playable_home_center_without_rectangular_ground_patch`
-  recipe.focalSize = {
-    width: Number((0.13 + (Number.parseInt(worldSeed.slice(4, 6), 16) / 255) * 0.04).toFixed(6)),
-    height: Number((0.09 + (Number.parseInt(worldSeed.slice(6, 8), 16) / 255) * 0.04).toFixed(6)),
-  }
+  recipe.routeIntent = `${slot.regionalLandscapeType}_${slot.monsoonSeason}_continuous_boundary_to_boundary_natural_passage_without_preset_home_site`
+  recipe.siteSelectionPolicy = "initial_natural_world_no_preset_home_site"
   recipe.objectCounts = adjustObjectCountsForSeason(source.objectCounts, seasonalProfile)
   return recipe
 }
@@ -1468,6 +2062,28 @@ function findExistingV7CapacitySlotTask(outputRoot, slotId) {
     if (manifest.row?.capacitySlotId === slotId && manifest.status !== "failed_before_rgb_generation") {
       return projectPath(manifestPath)
     }
+  }
+  return null
+}
+
+function taskRequiresNoPresetSiteSupersession(manifestPath) {
+  const manifest = readRequiredJson(manifestPath)
+  const task = readRequiredJson(manifest.row?.taskPackagePath)
+  const conditionPack = readRequiredJson(manifest.row?.conditionPackPath)
+  const focalChannel = conditionPack.channels?.find((entry) => entry.id === "focal_area")
+  return task.singleMapCompositionFields?.siteSelectionPolicy !== "runtime_butler_autonomy_only"
+    || Number(focalChannel?.statistics?.nonZeroCount ?? 0) > 0
+}
+
+function findExistingV7GenerationRequest(slotId) {
+  const requestRoot = path.join(ROOT, ".runtime", "ai-painter", "ai-assisted-cold-start", "conditional-rgb-generation-requests")
+  if (!fs.existsSync(requestRoot)) return null
+  for (const entry of fs.readdirSync(requestRoot, { withFileTypes: true })) {
+    if (!entry.isDirectory()) continue
+    const requestPath = path.join(requestRoot, entry.name, "request.json")
+    if (!fs.existsSync(requestPath)) continue
+    const request = readRequiredJson(requestPath)
+    if (request.sourceRecordId === slotId) return projectPath(requestPath)
   }
   return null
 }

@@ -14,6 +14,7 @@ const ROOT = process.cwd()
 const CONFIG_PATH = "ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json"
 const COVERAGE_BLUEPRINT_PATH = "data/world-samples/original-image-library/natural-home-v1/coverage-blueprint.json"
 const DATASET_LATEST_PATH = "data/world-samples/ai-assisted-cold-start-dataset-packages/latest.json"
+const RECLASSIFICATION_LATEST_PATH = ".runtime/ai-painter/ai-assisted-v7-capacity-reclassifications/latest.json"
 const OUTPUT_ROOT = ".runtime/ai-painter/ai-assisted-v7-data-capacity-plans"
 const EXPECTED_WORLD_PROFILE = "mainland-southeast-asia-tropical-monsoon-natural-home-v1"
 const EXPECTED_MAP_SCOPE = "complete-natural-home-map"
@@ -42,27 +43,37 @@ const decision = config.training?.dataCapacityDecision
 const coverageBlueprint = readJson(COVERAGE_BLUEPRINT_PATH)
 const datasetLatest = readJson(DATASET_LATEST_PATH)
 const sourceIndex = readJson(datasetLatest.sourceIndexPath)
+const reclassificationLatest = readJson(RECLASSIFICATION_LATEST_PATH)
+const reclassification = readJson(reclassificationLatest.runPath)
 const landscapeTypes = (coverageBlueprint.regionalLandscapeTypes ?? []).map((entry) => entry.typeId)
 
 assert(decision?.status === "owner_approved", "V7 data-capacity decision is not owner approved")
 assert(decision?.totalCompleteMaps === 128, "V7 data-capacity total must be 128")
 assert(sameJson(decision?.splitCounts, REQUIRED_SPLITS), "V7 split must be 96/16/8/8")
-assert(decision?.batchImageGenerationAuthorized === true, "the owner-authorized V7 continuous data batch is missing")
 assert(decision?.continuousBatchAuthorization?.authorizationId === "owner-authorized-v7-remaining-104-continuous-batch-20260723", "continuous batch authorization identity mismatch")
 assert(decision?.continuousBatchAuthorization?.authorizedRecordCount === 104, "continuous batch authorization must cover the remaining 104 slots")
 assert(decision?.continuousBatchAuthorization?.executionMode === "sequential_one_active_generation_request", "continuous batch must remain strictly sequential")
 assert(decision?.continuousBatchAuthorization?.ownerApprovalAutomatic === false, "continuous batch must not grant owner approval")
 assert(decision?.continuousBatchAuthorization?.gpuTrainingAutomatic === false, "continuous batch must not start GPU training")
 assert(decision?.gpuTrainingAuthorized === false, "GPU training must remain unauthorized")
+assert(reclassificationLatest.status === "owner_suspended_transform_derived_capacity_contributions", "transform-derived capacity reclassification is missing")
+assert(reclassification.authorization?.authorizationId === "owner-authorized-transform-derived-capacity-suspension-and-sakaerat-engineering-pretrain-20260724", "capacity reclassification authorization mismatch")
+assert(reclassification.reclassification?.suspendedRecordCount === 17, "expected 17 suspended transform-derived records")
+assert(reclassification.reclassification?.capacityContributionAllowed === false, "suspended records must not retain capacity eligibility")
+assert(reclassification.reclassification?.formalV7TrainingEligible === false, "suspended records must not retain formal V7 training eligibility")
 assert(sameJson(coverageBlueprint.requiredStateFramework?.monsoonSeasons, REQUIRED_SEASONS), "monsoon season framework mismatch")
 assert(coverageBlueprint.requiredStateFramework?.selectionMethod === "key_states_plus_pairwise_coverage_plus_unseen_challenge", "coverage selection method mismatch")
 assert(coverageBlueprint.requiredStateFramework?.fullCartesianProductForbidden === true, "full Cartesian-product prohibition is missing")
 assert(landscapeTypes.length === 20, "expected 20 approved regional landscape types")
 
-const currentRecords = (sourceIndex.samples ?? []).filter((sample) => sample.categoryId === "complete-maps"
+const suspendedRecordIds = new Set(reclassification.suspendedRecords.map((record) => record.recordId))
+const eligibleSourceRecords = (sourceIndex.samples ?? []).filter((sample) => sample.categoryId === "complete-maps"
   && sample.formalConditionalTrainingEligible === true
   && sample.conditionBound === true
   && (sample.currentConditionIdentityMatches === true || sample.v7CapacityContributionRegistered === true))
+const suspendedHistoricalRecords = eligibleSourceRecords.filter((sample) => suspendedRecordIds.has(sample.recordId))
+const currentRecords = eligibleSourceRecords.filter((sample) => !suspendedRecordIds.has(sample.recordId))
+assert(suspendedHistoricalRecords.length === 17, `expected 17 suspended records in source index, received ${suspendedHistoricalRecords.length}`)
 const audits = currentRecords.map(auditExistingRecord)
 const qualifiedRecords = audits.filter((audit) => audit.passed)
 const failedAudits = audits.filter((audit) => !audit.passed)
@@ -72,8 +83,11 @@ const registeredV7SlotNumbers = qualifiedRecords
   .filter(Boolean)
   .map(capacitySlotNumber)
   .sort((left, right) => left - right)
-registeredV7SlotNumbers.forEach((slotNumber, index) => assert(slotNumber === index + 1, "registered V7 capacity slots must be contiguous from slot 001"))
-const nextCapacitySlotNumber = registeredV7SlotNumbers.length + 1
+const allObservedV7SlotNumbers = (sourceIndex.samples ?? [])
+  .map((sample) => sample.v7CapacitySlotId ?? sample.recordId?.match(/v7-capacity-slot-\d{3}/)?.[0])
+  .filter(Boolean)
+  .map(capacitySlotNumber)
+const nextCapacitySlotNumber = Math.max(0, ...allObservedV7SlotNumbers) + 1
 const qualifiedByCell = buildCellCounts(qualifiedRecords.map((audit) => audit.record))
 
 const targetCountsByLandscape = Object.fromEntries(landscapeTypes.map((landscapeType, index) => [
@@ -133,8 +147,14 @@ const gapList = {
   createdAtUtc,
   createdAtAsiaShanghai,
   approvedTargetCount: 128,
-  auditedSourceRecordCount: currentRecords.length,
+  auditedSourceRecordCount: eligibleSourceRecords.length,
   qualifiedExistingRecordCount: qualifiedRecords.length,
+  suspendedHistoricalRecordCount: suspendedHistoricalRecords.length,
+  suspendedHistoricalRecords: suspendedHistoricalRecords.map((record) => ({
+    recordId: record.recordId,
+    capacitySlotId: record.v7CapacitySlotId,
+    reason: "transform_derived_capacity_contribution_suspended",
+  })),
   failedExistingAuditCount: failedAudits.length,
   requiredNewRecordCount: plannedSlots.length,
   splitDeficits: Object.fromEntries(Object.keys(REQUIRED_SPLITS).map((split) => [
@@ -148,20 +168,23 @@ const gapList = {
   failedAudits: failedAudits.map((audit) => ({ recordId: audit.recordId, issues: audit.issues })),
   plannedSlots,
   gates: {
-    automaticBatchGenerationAllowed: true,
+    automaticBatchGenerationAllowed: false,
     gpuTrainingAllowed: false,
-    imageGenerationAllowedByThisPlan: true,
+    imageGenerationAllowedByThisPlan: false,
     ownerApprovalAutomatic: false,
     capacityContributionBeforeOwnerApproval: false,
-    continuousBatchAuthorizationId: decision.continuousBatchAuthorization.authorizationId,
-    nextRequiredAction: "run_remaining_slots_sequentially_then_owner_review_machine_passed_queue",
+    continuousBatchAuthorizationId: null,
+    supersededContinuousBatchAuthorizationId: decision.continuousBatchAuthorization.authorizationId,
+    nextRequiredAction: "owner_review_sakaerat_rebuilt_capacity_plan_before_any_generation",
   },
 }
 
 const capacityPlan = {
   schemaVersion: "ai-assisted-v7-data-capacity-plan-v1",
   runId,
-  status: gapList.status === "capacity_complete" ? "capacity_complete_waiting_owner_training_authorization" : "blocked_pending_approved_128_dataset_implementation",
+  status: gapList.status === "capacity_complete"
+    ? "capacity_complete_waiting_owner_training_authorization"
+    : "blocked_pending_sakaerat_rebuild_and_approved_128_dataset_implementation",
   createdAtUtc,
   createdAtAsiaShanghai,
   decisionId: decision.decisionId,
@@ -173,6 +196,13 @@ const capacityPlan = {
   sourcePackageId: datasetLatest.packageId,
   sourceIndexPath: datasetLatest.sourceIndexPath,
   sourceIndexSha256: fileSha256(datasetLatest.sourceIndexPath),
+  capacityReclassification: {
+    runId: reclassification.runId,
+    path: reclassificationLatest.runPath,
+    sha256: fileSha256(reclassificationLatest.runPath),
+    suspendedHistoricalRecordCount: suspendedHistoricalRecords.length,
+    suspendedRecordIds: [...suspendedRecordIds].sort(),
+  },
   approvedCapacity: {
     total: 128,
     splitCounts: REQUIRED_SPLITS,
@@ -183,9 +213,10 @@ const capacityPlan = {
     allocationRule: "20x4 landscape-season pairwise baseline inside the approved axes, then bounded structural-diversity reserve; no full product across all world axes",
   },
   auditSummary: {
-    auditedSourceRecordCount: currentRecords.length,
+    auditedSourceRecordCount: eligibleSourceRecords.length,
     qualifiedExistingRecordCount: qualifiedRecords.length,
     failedExistingAuditCount: failedAudits.length,
+    suspendedHistoricalRecordCount: suspendedHistoricalRecords.length,
     uniqueQualifiedImageCount: new Set(qualifiedRecords.map((audit) => audit.record.imageSha256)).size,
     uniqueQualifiedConditionCount: new Set(qualifiedRecords.map((audit) => audit.record.conditionLabel)).size,
     registeredV7CapacityContributionCount: registeredV7SlotNumbers.length,
@@ -208,6 +239,7 @@ const capacityPlan = {
     gpuTrainingStarted: false,
     trainingStarted: false,
     existingRecordsModified: false,
+    suspendedHistoryDeleted: false,
     runtimeEligibilityGranted: false,
     formalInferenceEligibilityGranted: false,
   },
@@ -233,7 +265,9 @@ writeIndexedJson(path.join(ROOT, OUTPUT_ROOT, "latest.json"), {
   coverageMatrixSha256: capacityPlan.evidenceFiles.coverageMatrixSha256,
   gapListPath: capacityPlan.evidenceFiles.gapListPath,
   gapListSha256: capacityPlan.evidenceFiles.gapListSha256,
+  auditedSourceRecordCount: eligibleSourceRecords.length,
   qualifiedExistingRecordCount: qualifiedRecords.length,
+  suspendedHistoricalRecordCount: suspendedHistoricalRecords.length,
   requiredNewRecordCount: plannedSlots.length,
   finalSplitCounts,
 })
@@ -243,8 +277,8 @@ appendAiPainterProgramEvent({
   stage: "ai_assisted_v7_data_capacity_plan_built",
   titleZh: "V7 的 128 张完整地图容量矩阵与缺口清单已由程序生成",
   titleEn: "The V7 128-complete-map capacity matrix and gap list were built by the program",
-  summaryZh: `程序审核现有 ${currentRecords.length} 条记录，其中 ${qualifiedRecords.length} 条合格；仍需 ${plannedSlots.length} 条完整地图记录。未生成图片、未启动 GPU 训练。`,
-  summaryEn: `The program audited ${currentRecords.length} existing records and qualified ${qualifiedRecords.length}; ${plannedSlots.length} complete-map records are still required. No image generation or GPU training was started.`,
+  summaryZh: `程序审计 ${eligibleSourceRecords.length} 条既有候选容量记录，隔离 ${suspendedHistoricalRecords.length} 条变换派生历史记录，确认 ${qualifiedRecords.length} 条可信完整地图；正式 128 图容量仍缺 ${plannedSlots.length} 条。未生成图片，未启动 GPU 训练。`,
+  summaryEn: `The program audited ${eligibleSourceRecords.length} existing candidate capacity records, suspended ${suspendedHistoricalRecords.length} transform-derived historical records, and qualified ${qualifiedRecords.length} trusted complete maps; ${plannedSlots.length} records are still required for formal capacity 128. No image generation or GPU training was started.`,
   evidence: [
     `${OUTPUT_ROOT}/${runId}/capacity-plan.json`,
     `${OUTPUT_ROOT}/${runId}/coverage-matrix.json`,
@@ -257,8 +291,9 @@ console.log(JSON.stringify({
   status: capacityPlan.status,
   runId,
   capacityPlanPath: `${OUTPUT_ROOT}/${runId}/capacity-plan.json`,
-  auditedSourceRecordCount: currentRecords.length,
+  auditedSourceRecordCount: eligibleSourceRecords.length,
   qualifiedExistingRecordCount: qualifiedRecords.length,
+  suspendedHistoricalRecordCount: suspendedHistoricalRecords.length,
   failedExistingAuditCount: failedAudits.length,
   requiredNewRecordCount: plannedSlots.length,
   existingSplitCounts,
@@ -384,10 +419,11 @@ function createPlannedSlot(regionalLandscapeType, monsoonSeason, coverageRole) {
       "owner_review",
       "split_identity",
     ],
-    imageGenerationAuthorized: true,
+    imageGenerationAuthorized: false,
     gpuTrainingAuthorized: false,
-    automaticBatchGenerationAllowed: true,
-    continuousBatchAuthorizationId: decision.continuousBatchAuthorization.authorizationId,
+    automaticBatchGenerationAllowed: false,
+    continuousBatchAuthorizationId: null,
+    blockedReason: "previous_continuous_batch_stopped_and_sakaerat_rebuild_requires_owner_review",
   }
 }
 

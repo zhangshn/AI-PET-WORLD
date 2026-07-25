@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "earth-reference-focal-area-v1",
+  "referenceId": "sakaerat-wang-nam-khiao-mvp-reference-v1",
+  "status": "owner_approved_factual_reference_for_mvp_rebuild",
+  "updatedAtUtc": "2026-07-23T23:10:00.000Z",
+  "updatedAtAsiaShanghai": "2026-07-24T07:10:00+08:00",
+  "parentWorldProfileId": "mainland-southeast-asia-tropical-monsoon-natural-home-v1",
+  "placeIdentity": {
+    "country": "Thailand",
+    "province": "Nakhon Ratchasima",
+    "districtReference": "Wang Nam Khiao",
+    "biosphereReference": "Sakaerat Biosphere Reserve",
+    "referenceCoordinate": {
+      "latitude": 14.5078,
+      "longitude": 101.895
+    },
+    "geometryUsage": "facts_only_no_real_map_geometry_copy"
+  },
+  "earthFacts": {
+    "landform": [
+      "north-eastern flank of the Khao Khieo Massif",
+      "rim of the Korat Plateau",
+      "tilted and gently dissected plateau",
+      "lowland-to-foothill and low-upland transitions"
+    ],
+    "elevationMeters": {
+      "minimum": 250,
+      "maximum": 760,
+      "usage": "bounded terrain-class and slope-distribution reference only"
+    },
+    "hydrology": [
+      "intermittent streams",
+      "local dry-season water retention",
+      "drainage toward the Mun River system"
+    ],
+    "ecosystems": [
+      "dry evergreen forest",
+      "mixed deciduous forest",
+      "dry dipterocarp forest",
+      "bamboo patches",
+      "reforestation and natural transition areas"
+    ],
+    "seasonality": [
+      "tropical monsoon wet season",
+      "wet-to-dry transition",
+      "pronounced hot dry season",
+      "dry-to-wet transition"
+    ]
+  },
+  "mvpVisualBoundary": {
+    "allowed": [
+      "natural forest mosaics",
+      "dry evergreen and dry dipterocarp transitions",
+      "mixed deciduous patches",
+      "bamboo clearings",
+      "intermittent drainage",
+      "foothill and plateau-edge relief",
+      "natural paths justified by current world facts"
+    ],
+    "forbidden": [
+      "copied real-world map geometry",
+      "external reference images as training targets",
+      "fixed home center",
+      "construction clearing",
+      "central square platform",
+      "mandatory water in every map",
+      "snow",
+      "glacier",
+      "alpine tundra",
+      "desert",
+      "coastal mangrove"
+    ],
+    "completeMapRequirement": "every RGB must represent a complete connected natural-home region with multiple readable ecological or spatial zones, natural boundaries, and large-world connection semantics"
+  },
+  "provenance": [
+    {
+      "authority": "UNESCO Man and the Biosphere Programme",
+      "url": "https://www.unesco.org/en/mab/sakaerat",
+      "retrievedAtUtc": "2026-07-23T23:10:00.000Z",
+      "factsUsed": [
+        "location and reference coordinate",
+        "250-760 metre elevation envelope",
+        "plateau and massif setting",
+        "intermittent stream behaviour",
+        "dry evergreen, mixed deciduous, dry dipterocarp and bamboo ecosystem mosaic"
+      ],
+      "imagesUsed": false,
+      "mapGeometryUsed": false
+    },
+    {
+      "authority": "Sakaerat Environmental Research Station, Thailand Institute of Scientific and Technological Research",
+      "url": "https://sakaerat.tistr.or.th/index.php",
+      "retrievedAtUtc": "2026-07-23T23:10:00.000Z",
+      "factsUsed": [
+        "Wang Nam Khiao and Nakhon Ratchasima location identity",
+        "dry dipterocarp and dry evergreen research context",
+        "strong monsoon seasonality context"
+      ],
+      "imagesUsed": false,
+      "mapGeometryUsed": false
+    }
+  ],
+  "rightsBoundary": {
+    "publicFactsMayInformWorldRules": true,
+    "externalImagesEligibleForTraining": false,
+    "externalMapGeometryEligibleForGeneration": false,
+    "externalTextCopiedIntoProduct": false,
+    "sourceIdentityAndRetrievalTimeRequired": true
+  }
+}

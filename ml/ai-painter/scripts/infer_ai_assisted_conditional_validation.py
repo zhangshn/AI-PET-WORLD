@@ -22,13 +22,14 @@ def main() -> int:
     parser.add_argument("--output-image", type=Path, required=True)
     parser.add_argument("--report", type=Path, required=True)
     parser.add_argument("--seed", type=int, required=True)
+    parser.add_argument("--allow-progressive-checkpoint-nonformal", action="store_true")
     args = parser.parse_args()
 
     started = time.perf_counter()
     config = read_json(args.config)
     condition_pack = read_json(args.condition_pack)
     checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
-    validate_inputs(config, condition_pack, checkpoint)
+    validate_inputs(config, condition_pack, checkpoint, args.allow_progressive_checkpoint_nonformal)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = build_complete_world_system(config).to(device)
@@ -83,6 +84,9 @@ def main() -> int:
         "outputImagePath": str(args.output_image.resolve()),
         "outputImageSha256": sha256_file(args.output_image),
         "outputSize": {"width": width, "height": height},
+        "checkpointNativeResolution": checkpoint["resolutionStage"],
+        "checkpointNativeResolutionMatchesOutput": checkpoint["resolutionStage"] == {"width": width, "height": height},
+        "progressiveCheckpointNonformalValidation": args.allow_progressive_checkpoint_nonformal,
         "inferenceSteps": int(config["inferenceSteps"]),
         "predictionTarget": config["predictionTarget"],
         "latentNormalizationVersion": checkpoint["latentNormalization"]["version"],
@@ -119,7 +123,7 @@ def load_conditions(pack, config, device):
     return torch.stack(arrays, dim=0).unsqueeze(0).to(device)
 
 
-def validate_inputs(config, pack, checkpoint):
+def validate_inputs(config, pack, checkpoint, allow_progressive_checkpoint_nonformal):
     if config.get("ownership") != "project_owned_architecture_ai_assisted_cold_start_weights":
         raise ValueError("AI-assisted model configuration ownership is invalid")
     if config.get("trainingLane") != "ai_assisted_cold_start" or config.get("upstreamModelIds") != []:
@@ -146,7 +150,15 @@ def validate_inputs(config, pack, checkpoint):
         raise ValueError("AI-assisted checkpoint condition resize contract is invalid")
     if checkpoint.get("latentNormalization", {}).get("version") != "per_channel_train_split_v1":
         raise ValueError("AI-assisted checkpoint latent normalization is invalid")
-    if checkpoint.get("resolutionStage") != config.get("imageSize"):
+    checkpoint_resolution = checkpoint.get("resolutionStage")
+    if allow_progressive_checkpoint_nonformal:
+        if config.get("modelId") != "ai-pet-world-complete-world-ai-assisted-cold-start-v7-engineering-26":
+            raise ValueError("progressive checkpoint exception is restricted to V7 engineering validation")
+        if checkpoint_resolution != {"width": 256, "height": 192}:
+            raise ValueError("V7 engineering validation requires the completed stage-0 checkpoint")
+        if config.get("imageSize") != {"width": 1024, "height": 768}:
+            raise ValueError("V7 engineering validation output contract must remain 1024x768")
+    elif checkpoint_resolution != config.get("imageSize"):
         raise ValueError("AI-assisted checkpoint is not the native 1024x768 stage")
     if not isinstance(checkpoint.get("autoencoderState"), dict) or not isinstance(checkpoint.get("denoiserState"), dict):
         raise ValueError("AI-assisted checkpoint model state is missing")

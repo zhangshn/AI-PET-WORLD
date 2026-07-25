@@ -75,8 +75,9 @@ binaryMasks.set("object_vegetation", rasterizeFootprints(
   height,
 ))
 
-const focalBounds = findFactBounds(visualFacts.visualFacts, ["visual_center", "home_center"])
-if (focalBounds) binaryMasks.set("focal_area", rasterizeBounds(focalBounds, width, height))
+const presetHomeSiteFact = visualFacts.visualFacts?.find((fact) => ["visual_center", "home_center"].includes(fact.semanticType))
+assert(!presetHomeSiteFact, "preset_home_site_or_construction_clearing_forbidden")
+binaryMasks.set("focal_area", Buffer.alloc(width * height, 0))
 
 const channels = []
 for (const [id, pixels] of binaryMasks) {
@@ -86,7 +87,7 @@ for (const [id, pixels] of binaryMasks) {
     kind: "binary_mask",
     semantics: binarySemantics(id),
     derivation: "rasterized_from_current_task_geometry",
-    sourceRefs: sourceRefsForBinary(id, task, visualFacts),
+    sourceRefs: sourceRefsForBinary(id, task),
   }))
 }
 
@@ -321,12 +322,6 @@ function rasterizeInstances(records, canvasWidth, canvasHeight) {
   return pixels
 }
 
-function rasterizeBounds(bounds, canvasWidth, canvasHeight) {
-  const pixels = Buffer.alloc(canvasWidth * canvasHeight)
-  fillBounds(pixels, bounds, canvasWidth, canvasHeight, 255)
-  return pixels
-}
-
 function fillPolygon(pixels, polygon, canvasWidth, canvasHeight, value) {
   if (!Array.isArray(polygon) || polygon.length < 3) return
   const minX = clamp(Math.floor(Math.min(...polygon.map((point) => point.x))), 0, canvasWidth - 1)
@@ -422,16 +417,15 @@ function distanceTransform(mask, canvasWidth, canvasHeight, distanceInside) {
   return distance
 }
 
-function findFactBounds(facts, semanticTypes) {
-  return facts?.find((fact) => semanticTypes.includes(fact.semanticType) && fact.bounds)?.bounds ?? null
-}
-
 function binarySemantics(id) {
+  if (id === "focal_area") {
+    return "Inactive all-zero compatibility channel. Initial natural-world tasks must not encode a home site, activity center, construction clearing, or route-convergence platform."
+  }
   return `Binary complete-map condition for ${id.replaceAll("_", " ")}.`
 }
 
-function sourceRefsForBinary(id, currentTask, currentFacts) {
-  if (id === "focal_area") return currentFacts.visualFacts.filter((fact) => ["visual_center", "home_center"].includes(fact.semanticType)).map((fact) => fact.factId)
+function sourceRefsForBinary(id, currentTask) {
+  if (id === "focal_area") return ["owner-locked-initial-world-no-preset-home-site-20260723"]
   if (id.startsWith("object_")) return currentTask.spatialLayers.objectFootprints.map((item) => item.objectId)
   if (id === "walkable") return currentTask.spatialLayers.walkableRegions.map((item) => item.sourceId ?? item.id)
   if (id === "collision") return currentTask.spatialLayers.collisionRegions.map((item) => item.sourceId ?? item.id)

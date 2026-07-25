@@ -17,10 +17,20 @@ const DIFFUSION_SOURCE = path.join(ROOT, "ml", "ai-painter", "src", "ai_painter"
 const PROFESSIONAL_AESTHETIC_SOURCE = path.join(ROOT, "scripts", "lib", "ai-assisted-professional-aesthetic.mjs")
 const args = parseArgs(process.argv.slice(2))
 const MODEL_VERSION = args.modelVersion
+const IS_ENGINEERING_26 = MODEL_VERSION === "v7-engineering-26"
 const CONFIG_PATH = `ml/ai-painter/config/complete-world-ai-assisted-cold-start-${MODEL_VERSION}.json`
-const CHECKPOINT_POINTER = `.runtime/ai-painter/project-owned-complete-world-conditional-denoiser-${MODEL_VERSION}/latest.json`
-const DATASET_POINTER = "data/world-samples/ai-assisted-cold-start-dataset-packages/latest.json"
-const OUTPUT_ROOT = path.join(ROOT, ".runtime", "ai-painter", "ai-assisted-conditional-inference-validation")
+const CHECKPOINT_POINTER = IS_ENGINEERING_26
+  ? ".runtime/ai-painter/project-owned-complete-world-v7-engineering-pretraining/latest.json"
+  : `.runtime/ai-painter/project-owned-complete-world-conditional-denoiser-${MODEL_VERSION}/latest.json`
+const DATASET_POINTER = IS_ENGINEERING_26
+  ? "data/world-samples/ai-assisted-v7-engineering-pretraining-datasets/latest.json"
+  : "data/world-samples/ai-assisted-cold-start-dataset-packages/latest.json"
+const OUTPUT_ROOT = path.join(
+  ROOT,
+  ".runtime",
+  "ai-painter",
+  IS_ENGINEERING_26 ? "ai-assisted-v7-engineering-inference-validation" : "ai-assisted-conditional-inference-validation",
+)
 const FAILURE_ROOT = path.join(OUTPUT_ROOT, "failures")
 const timestamp = new Date().toISOString()
 const runId = `ai-assisted-conditional-inference-validation-${MODEL_VERSION}-${timestamp.replace(/[:.]/g, "-")}`
@@ -65,7 +75,8 @@ if (checkpoint && checkpoint.denoiserLossVersion !== config?.training?.denoiserL
 if (checkpoint && checkpoint.conditionResizeContract !== "discrete_nearest_continuous_bilinear_v1") blockers.push("ai_assisted_checkpoint_condition_resize_invalid")
 if (checkpoint && checkpoint.latentNormalization?.version !== "per_channel_train_split_v1") blockers.push("ai_assisted_checkpoint_latent_normalization_invalid")
 if (checkpoint && checkpoint.formalInferenceEligible !== false) blockers.push("ai_assisted_checkpoint_validation_boundary_invalid")
-if (checkpoint && (checkpoint.resolutionStage?.width !== 1024 || checkpoint.resolutionStage?.height !== 768)) blockers.push("native_resolution_checkpoint_missing")
+if (checkpoint && IS_ENGINEERING_26 && (checkpoint.resolutionStage?.width !== 256 || checkpoint.resolutionStage?.height !== 192)) blockers.push("engineering_stage_0_checkpoint_resolution_invalid")
+if (checkpoint && !IS_ENGINEERING_26 && (checkpoint.resolutionStage?.width !== 1024 || checkpoint.resolutionStage?.height !== 768)) blockers.push("native_resolution_checkpoint_missing")
 if (checkpoint && checkpoint.thirdPartyWeightsLoaded !== false) blockers.push("third_party_weight_status_invalid")
 if (checkpoint && (checkpoint.thirdPartyGeneratedTrainingOutputUsed !== true || checkpoint.aiGenerationDependencyDeclared !== true)) blockers.push("ai_training_data_dependency_not_declared")
 if (checkpoint?.checkpointPath && !fileHashMatches(checkpoint.checkpointPath, checkpoint.checkpointSha256)) blockers.push("checkpoint_file_or_hash_invalid")
@@ -122,6 +133,7 @@ const child = spawnSync(PYTHON, [
   "--output-image", outputImage,
   "--report", modelReportPath,
   "--seed", String(seed),
+  ...(IS_ENGINEERING_26 ? ["--allow-progressive-checkpoint-nonformal"] : []),
 ], {
   cwd: ROOT,
   encoding: "utf8",
@@ -204,6 +216,10 @@ const manifest = {
   aiGenerationDependencyDeclared: true,
   seed,
   outputSource: "fresh_local_ai_assisted_checkpoint_validation",
+  validationLane: IS_ENGINEERING_26 ? "nonformal_engineering_held_out" : "formal_resolution_checkpoint_held_out",
+  checkpointNativeResolution: checkpoint.resolutionStage,
+  checkpointNativeResolutionMatchesOutput: checkpoint.resolutionStage?.width === metadata.width && checkpoint.resolutionStage?.height === metadata.height,
+  progressiveCheckpointNonformalValidation: IS_ENGINEERING_26,
   reusedExistingImage: false,
   targetImageUsed: false,
   programDrawnRgbUsed: false,
@@ -341,7 +357,7 @@ function parseArgs(values) {
   const seed = seedValue === null ? null : Number(seedValue)
   if (seedValue !== null && (!Number.isInteger(seed) || seed < 0)) throw new Error("--seed must be a non-negative integer")
   const requestedVersion = read("--model-version") ?? (values.includes("--v6") ? "v6" : (values.includes("--v5") ? "v5" : "v4"))
-  if (!new Set(["v4", "v5", "v6"]).has(requestedVersion)) throw new Error("--model-version must be v4, v5, or v6")
+  if (!new Set(["v4", "v5", "v6", "v7-engineering-26"]).has(requestedVersion)) throw new Error("--model-version must be v4, v5, v6, or v7-engineering-26")
   return { conditionLabel: read("--condition-label"), ownerCommandRef: read("--owner-command-ref"), seed, modelVersion: requestedVersion }
 }
 
@@ -459,7 +475,8 @@ function completeMapScopeValid(pack, task, selectedSample) {
     && pack?.canvas?.height === 768
     && pack?.canvas?.frameScope === "complete_runtime_frame"
     && pack?.categoricalConditions?.sceneIntent?.sceneType === "training_complete_natural_home_map"
-    && ["entrance", "main_path", "home_center", "natural_boundary"].every((value) => mustShow.has(value))
+    && ["entrance", "main_path", "natural_boundary"].every((value) => mustShow.has(value))
+    && !mustShow.has("home_center")
     && task?.schemaVersion === "runtime-frame-generation-task-v1"
     && task?.generationContractVersion === "complete-map-scope-world-facts-v2"
     && task?.conditionLabel === selectedSample?.conditionLabel

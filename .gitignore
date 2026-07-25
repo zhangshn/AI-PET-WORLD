@@ -76,6 +76,7 @@ data/world-samples/original-image-library/**
 !data/world-samples/original-image-library/natural-home-v1/east-asia-temperate-humid-species-catalog.json
 !data/world-samples/original-image-library/natural-home-v1/provisional-visual-snapshot-v1.json
 !data/world-samples/original-image-library/natural-home-v1/parallel-visual-knowledge-catalog-v1.json
+!data/world-samples/original-image-library/natural-home-v1/sakaerat-wang-nam-khiao-mvp-reference-v1.json
 !data/world-samples/schemas/
 data/world-samples/schemas/**
 !data/world-samples/schemas/original-image-record-v1.schema.json

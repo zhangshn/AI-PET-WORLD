@@ -86,7 +86,7 @@ const review = {
   recordId,
   status: passed ? "machine_contract_passed_waiting_owner_visual_review" : "machine_rejected",
   passed,
-  reviewerVersion: "ai-assisted-cold-start-machine-review-v6",
+  reviewerVersion: "ai-assisted-cold-start-machine-review-v7",
   title: passed ? "AI-assisted cold-start machine contract review passed" : "AI-assisted cold-start machine contract review failed",
   titleZh: passed ? "AI 辅助冷启动机器契约审核通过" : "AI 辅助冷启动机器契约审核失败",
   createdAtUtc: timestamp,

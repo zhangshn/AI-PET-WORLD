@@ -29,9 +29,8 @@ const colors = {
   object_tree: [18, 62, 28],
   object_rock: [111, 111, 105],
   object_vegetation: [54, 106, 45],
-  focal_area: [205, 177, 79],
 }
-const ordered = ["terrain_grass", "terrain_mud_patch", "terrain_tall_grass", "terrain_shoreline", "terrain_water", "terrain_path_ground", "terrain_natural_boundary", "focal_area", "object_vegetation", "object_tree", "object_rock"]
+const ordered = ["terrain_grass", "terrain_mud_patch", "terrain_tall_grass", "terrain_shoreline", "terrain_water", "terrain_path_ground", "terrain_natural_boundary", "object_vegetation", "object_tree", "object_rock"]
 const rgb = Buffer.alloc(width * height * 3, 0)
 for (const id of ordered) {
   const channel = channelMap.get(id)
@@ -68,6 +67,7 @@ const manifest = {
   guideSha256: sha256File(guidePath),
   guideSize: { width, height },
   sourceChannelIds: ordered.filter((id) => channelMap.has(id)),
+  excludedCompatibilityChannelIds: ["focal_area"],
   outputKind: "semantic_condition_guide_not_training_rgb",
   generatesWorldFacts: false,
   trainingTargetEligible: false,

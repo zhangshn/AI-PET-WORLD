@@ -21,6 +21,18 @@ export async function auditCompleteMapScope({ blueprint, directorOutput, task, c
   const canvas = blueprint.canvas ?? task.outputSize
   const channels = new Map((conditionPack.channels ?? []).map((entry) => [entry.id, entry]))
   const channelIds = [...channels.keys()]
+  const semanticContractText = JSON.stringify({ blueprint, directorOutput, task })
+  const transformDerivedMarkers = [...semanticContractText.matchAll(/[^"]+_complete_map_transform_\d+/g)]
+    .map((match) => match[0])
+    .slice(0, 20)
+
+  evidence.structuralNovelty = {
+    sharedSkeletonTransformMarkerDetected: transformDerivedMarkers.length > 0,
+    forbiddenMarkerPattern: "_complete_map_transform_<index>",
+    detectedMarkers: transformDerivedMarkers,
+    policy: "new complete-map geometry must originate from current world facts and director output; mirror, rotation, or indexed transform reuse is forbidden before RGB generation",
+  }
+  requireEvidence(issues, transformDerivedMarkers.length === 0, "transform_derived_complete_map_skeleton_forbidden")
 
   requireEvidence(issues, conditionPack.channels?.length === 23 && new Set(channelIds).size === 23, "complete_map_scope_requires_exactly_23_unique_channels")
   requireEvidence(issues, REQUIRED_CHANNELS.every((id) => channels.has(id)), "complete_map_scope_required_channels_missing")
@@ -33,18 +45,30 @@ export async function auditCompleteMapScope({ blueprint, directorOutput, task, c
   requireEvidence(issues, task.drawingProcess?.sourceImageGeometryRead === false, "task_reads_historical_rgb_geometry")
 
   const entrance = auditBounds(blueprint.geometry?.entranceBounds, canvas)
-  const focal = auditBounds(blueprint.geometry?.focalBounds, canvas)
   evidence.entrance = entrance
-  evidence.homeCenter = focal
+  evidence.siteSelection = {
+    policy: blueprint.semanticRules?.siteSelectionPolicy ?? null,
+    presetHomeBounds: blueprint.geometry?.focalBounds ?? null,
+  }
   requireEvidence(issues, entrance.valid && entrance.touchesCanvasEdge, "complete_map_boundary_entrance_or_exit_missing")
-  requireEvidence(issues, focal.valid && !focal.touchesCanvasEdge, "complete_map_home_center_missing_or_on_boundary")
+  requireEvidence(
+    issues,
+    blueprint.semanticRules?.siteSelectionPolicy === "initial_natural_world_no_preset_home_site"
+      && blueprint.geometry?.focalBounds == null,
+    "preset_home_site_or_construction_clearing_forbidden",
+  )
 
   const mustShow = new Set(directorOutput.sceneIntent?.mustShow ?? [])
   const readOrder = directorOutput.compositionPlan?.readOrder ?? []
-  for (const item of ["entrance", "main_path", "home_center", "natural_boundary"]) {
+  for (const item of ["entrance", "main_path", "natural_boundary"]) {
     requireEvidence(issues, mustShow.has(item), `director_must_show_missing_${item}`)
     requireEvidence(issues, readOrder.includes(item), `director_read_order_missing_${item}`)
   }
+  requireEvidence(
+    issues,
+    !mustShow.has("home_center") && !readOrder.includes("home_center"),
+    "preset_home_site_or_construction_clearing_forbidden",
+  )
 
   if (issues.length === 0 || REQUIRED_CHANNELS.every((id) => channels.has(id))) {
     const [route, water, boundary, walkable, collision, objects, focalChannel] = await Promise.all([
@@ -57,13 +81,13 @@ export async function auditCompleteMapScope({ blueprint, directorOutput, task, c
       readChannel(channels.get("focal_area")),
     ])
     assertSameDimensions([route, water, boundary, walkable, collision, objects, focalChannel])
-    const routeStats = rasterStats(route, entrance.rasterBounds, focal.rasterBounds)
+    const routeStats = rasterStats(route, entrance.rasterBounds)
     const waterStats = rasterStats(water)
     const boundaryStats = rasterStats(boundary)
     const walkableStats = rasterStats(walkable)
     const collisionStats = rasterStats(collision)
     const objectStats = rasterStats(objects)
-    const focalStats = rasterStats(focalChannel, null, focal.rasterBounds)
+    const focalStats = rasterStats(focalChannel)
     const overlaps = overlapStats(route, water, collision)
     evidence.raster = {
       route: routeStats,
@@ -79,19 +103,20 @@ export async function auditCompleteMapScope({ blueprint, directorOutput, task, c
     requireEvidence(issues, routeStats.maximumNormalizedSpan >= 0.35, "complete_map_route_span_too_local")
     requireEvidence(issues, routeStats.edgeTouchCount >= 1, "complete_map_route_has_no_boundary_connection")
     requireEvidence(issues, routeStats.intersectsPrimaryBounds, "complete_map_route_does_not_reach_entrance")
-    requireEvidence(issues, routeStats.intersectsSecondaryBounds, "complete_map_route_does_not_reach_home_center")
     requireEvidence(issues, overlaps.routeWater === 0, "complete_map_route_overlaps_water")
     requireEvidence(issues, overlaps.routeCollision === 0, "complete_map_route_overlaps_collision")
     requireEvidence(issues, boundaryStats.nonZeroPixels > 0 && boundaryStats.edgeTouchCount >= 2, "complete_map_natural_boundary_not_frame_scale")
-    requireEvidence(issues, walkableStats.nonZeroRatio >= 0.04, "complete_map_walkable_space_insufficient")
-    requireEvidence(issues, focalStats.nonZeroPixels > 0 && focalStats.intersectsSecondaryBounds, "complete_map_focal_area_channel_missing")
+    requireEvidence(issues, walkableStats.nonZeroRatio >= 0.015, "complete_map_walkable_space_insufficient")
+    requireEvidence(issues, focalStats.nonZeroPixels === 0, "preset_home_site_or_construction_clearing_forbidden")
     requireEvidence(issues, objectStats.nonZeroRatio > 0 && objectStats.nonZeroRatio < 0.35, "complete_map_object_density_not_readable")
     requireEvidence(issues, collisionStats.nonZeroRatio > 0 && collisionStats.nonZeroRatio < 0.75, "complete_map_collision_scope_invalid")
     requireEvidence(issues, Boolean(blueprint.geometry?.hasWater) === (waterStats.nonZeroPixels > 0), "water_channel_conflicts_with_current_world_facts")
 
+    const terrainKindCount = new Set((blueprint.geometry?.terrainRegions ?? []).map((entry) => entry.kind)).size
     const recognizableSpaceEvidence = [
-      focalStats.nonZeroPixels > 0 ? "home_center" : null,
-      walkableStats.nonZeroRatio >= 0.04 ? "walkable_open_space" : null,
+      routeStats.maximumNormalizedSpan >= 0.35 ? "continuous_natural_passage" : null,
+      walkableStats.nonZeroRatio >= 0.015 ? "walkable_route_space" : null,
+      terrainKindCount >= 3 ? "ecological_terrain_diversity" : null,
       boundaryStats.edgeTouchCount >= 2 ? "natural_boundary_zone" : null,
       objectStats.nonZeroRatio > 0 ? "ecological_object_zone" : null,
       waterStats.nonZeroPixels > 0 ? "world_fact_water_zone" : null,
@@ -111,12 +136,20 @@ export async function auditCompleteMapScope({ blueprint, directorOutput, task, c
   evidence.localSceneSignals = localSceneSignals
   if (localSceneSignals.length > 0 && !issues.includes("local_scene_not_complete_map")) issues.push("local_scene_not_complete_map")
 
+  const uniqueIssues = [...new Set(issues)]
+  const failureCode = uniqueIssues.includes("transform_derived_complete_map_skeleton_forbidden")
+    ? "transform_derived_complete_map_skeleton_forbidden"
+    : uniqueIssues.includes("preset_home_site_or_construction_clearing_forbidden")
+      ? "preset_home_site_or_construction_clearing_forbidden"
+      : uniqueIssues.length > 0
+        ? "local_scene_not_complete_map"
+        : null
   return {
     schemaVersion: "complete-map-scope-audit-v1",
     status: issues.length === 0 ? "complete_map_scope_passed" : "blocked_before_generation",
     passed: issues.length === 0,
-    failureCode: issues.length === 0 ? null : "local_scene_not_complete_map",
-    issues: [...new Set(issues)],
+    failureCode,
+    issues: uniqueIssues,
     sourceIdentity: {
       blueprintId: blueprint.blueprintId,
       directorRunId: directorOutput.directorRunId,
@@ -142,7 +175,6 @@ function auditConnectivity(blueprint, task, connectivity) {
     && (connectivity.currentRegion?.neighborRegionIds ?? []).length > 0
     && pathPorts.length > 0
     && nodes.has("entry_point")
-    && nodes.has("home_center")
     && pathPorts.some((port) => nodes.has(port.edgePortId)),
   )
   return {
@@ -164,26 +196,31 @@ async function readChannel(channel) {
 }
 
 function rasterStats(channel, primaryBounds = null, secondaryBounds = null) {
+  const width = Number(channel.width)
+  const height = Number(channel.height)
+  if (!Number.isInteger(width) || width <= 0 || !Number.isInteger(height) || height <= 0) {
+    throw new Error(`condition channel dimensions invalid: ${channel.id}`)
+  }
   let nonZeroPixels = 0
-  let minimumX = channel.width
+  let minimumX = width
   let maximumX = -1
-  let minimumY = channel.height
+  let minimumY = height
   let maximumY = -1
   let intersectsPrimaryBounds = false
   let intersectsSecondaryBounds = false
   const touchedEdges = new Set()
-  for (let y = 0; y < channel.height; y += 1) {
-    for (let x = 0; x < channel.width; x += 1) {
-      if (channel.data[y * channel.width + x] === 0) continue
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (channel.data[y * width + x] === 0) continue
       nonZeroPixels += 1
       minimumX = Math.min(minimumX, x)
       maximumX = Math.max(maximumX, x)
       minimumY = Math.min(minimumY, y)
       maximumY = Math.max(maximumY, y)
       if (x === 0) touchedEdges.add("left")
-      if (x === channel.width - 1) touchedEdges.add("right")
+      if (x === width - 1) touchedEdges.add("right")
       if (y === 0) touchedEdges.add("top")
-      if (y === channel.height - 1) touchedEdges.add("bottom")
+      if (y === height - 1) touchedEdges.add("bottom")
       if (primaryBounds && pointInBounds(x, y, primaryBounds)) intersectsPrimaryBounds = true
       if (secondaryBounds && pointInBounds(x, y, secondaryBounds)) intersectsSecondaryBounds = true
     }
@@ -193,11 +230,11 @@ function rasterStats(channel, primaryBounds = null, secondaryBounds = null) {
   return {
     channelId: channel.id,
     nonZeroPixels,
-    nonZeroRatio: round(nonZeroPixels / (channel.width * channel.height), 6),
+    nonZeroRatio: round(nonZeroPixels / (width * height), 6),
     bounds: nonZeroPixels ? { x: minimumX, y: minimumY, width: widthSpan, height: heightSpan } : null,
-    normalizedWidthSpan: round(widthSpan / channel.width, 6),
-    normalizedHeightSpan: round(heightSpan / channel.height, 6),
-    maximumNormalizedSpan: round(Math.max(widthSpan / channel.width, heightSpan / channel.height), 6),
+    normalizedWidthSpan: round(widthSpan / width, 6),
+    normalizedHeightSpan: round(heightSpan / height, 6),
+    maximumNormalizedSpan: round(Math.max(widthSpan / width, heightSpan / height), 6),
     edgeTouches: [...touchedEdges].sort(),
     edgeTouchCount: touchedEdges.size,
     intersectsPrimaryBounds,

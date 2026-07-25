@@ -1,8 +1,8 @@
 # 审核、自动闭环与存储正式规格
 
-更新时间：2026-07-23 05:55:34 +08:00
+更新时间：2026-07-25 09:02:19 +08:00
 
-状态：active-architecture / 自动保存与控制台边界已锁定 / V7剩余104槽连续数据批次已授权 / 机器通过仅进入待人工审核 / V7训练仍被程序阻断
+状态：active-architecture / 自动保存与控制台边界已锁定 / 连续数据批次已停止 / 自主重建001机器与项目所有者审核均已通过 / V7训练仍被程序阻断
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
@@ -39,8 +39,9 @@ Fresh Candidate
 | 像素密度 | 草地、道路、水岸、树木、石头和花草使用一致的像素尺度与观察角度 |
 | 色板 | 有限、协调且具有地形可读性；不得退化为均匀绿色噪声或过量抖色 |
 | 重复控制 | 阻断明显 tile 接缝、棋盘格、连续重复图案、复制树和机械 stamp |
-| 完整地图专业性 | 像素风不能降低入口、中心、道路、水岸、可走性、构图、接地和 owner 终审标准 |
-| 完整地图范围 | 必须表现整体入口/出口关系、家园中心、连续道路组织、多个可辨识空间或生态分区、自然边界和大世界连接语义；只有单一河段、道路、池塘、林间空地、材质范围或放大局部生态单元时，固定写入 `local_scene_not_complete_map` 并拒绝 |
+| 完整地图专业性 | 像素风不能降低入口/出口、自然通行、水岸、可走性、构图、接地和 owner 终审标准 |
+| 完整地图范围 | 必须表现整体入口/出口关系、连续自然通行组织、多个可辨识空间或生态分区、自然边界和大世界连接语义；只有单一河段、道路、池塘、林间空地、材质范围或放大局部生态单元时，固定写入 `local_scene_not_complete_map` 并拒绝 |
+| 自主选址边界 | 初始自然地图出现固定家园中心、规则中央空地、道路汇聚平台、建筑候选地、施工预留地或为其清空对象时，固定写入 `preset_home_site_or_construction_clearing_forbidden` 并拒绝；机器通过也不得覆盖项目所有者判断 |
 | 水体适用性 | 水体只在当前世界事实要求时出现并服从水文图；东南亚身份不等于每张图都围绕水体，无水或少水蓝图不得被生成器自行补水 |
 
 完整地图范围必须执行两次门禁：生成前检查世界导演、任务包和23通道是否描述完整区域；生成后检查RGB是否仍保持完整地图尺度。生成前失败不得调用图像生成算力，必须保存无图阻断记录；生成后失败必须保存真实图片、失败码、时间戳、hash和证据路径，但不得进入完整地图正样本。
@@ -314,3 +315,39 @@ Professional Aesthetic只新增`professional_single_axis_texture_envelope_exceed
 项目所有者授权ID固定为`owner-authorized-v7-remaining-104-continuous-batch-20260723`，范围仅为`v7-capacity-slot-004...107`。程序必须使用`.runtime/ai-painter/ai-assisted-v7-continuous-data-batches/`保存批次`state.json`、逐次事件和`latest.json`，同时登记D盘SQLite；任何时刻最多一个`ready_for_openai_assisted_generation`请求。
 
 每槽顺序固定为：程序准备并检查世界事实、世界导演、完整地图任务与23通道；Codex内置生成通道只返回本槽RGB；程序自动接收、保存来源与hash并执行机器审核。机器通过进入`pending_review`队列，机器失败保存图片、失败码、双时区时间、审核证据和失败学习后继续下一槽。同槽不得自动重试或递增版本。批次不得自动写入owner通过、不得在owner逐张审核前登记容量贡献、不得启动V7 GPU训练、不得建立RuntimeFrame或进入`/world`。
+
+## 24. 2026-07-24 自主重建001失败保留、恢复接收与待审核证据
+
+项目所有者单图授权ID固定为`owner-authorized-autonomous-world-rebuild-001-single-rgb-20260724`，请求ID=`conditional-rgb-001-2026-07-24T04-29-42-877Z`。首次接收因授权许可白名单缺少该新ID而失败，程序必须并已经把失败保存到该请求目录中的不可变JSON，至少包括失败阶段、UTC和Asia/Shanghai时间、输入图片绝对路径与SHA-256、错误文本、`gpuTrainingStarted=false`和`automaticNextGeneration=false`，同时写入中英文SQLite事件。失败不得因后续恢复成功而删除。
+
+授权识别修复后，程序复用同一张SHA-256=`db0c793ea93429d44ac913267be6a56409e620d309e922516a4687d52590eaba`源图继续接收，没有第二次调用图像生成。程序自动生成并保存SHA-256=`fbe83fa149ded7d09da77b77bcf956caa86cc49c4142d1f0747fbfc49b032c0a`的`1024×768`派生图、原图记录、机器审核、来源与许可、双时区时间和hash。SQLite精确查询确认本请求具有失败、自动审核开始、机器审核通过、等待owner审核4条相关程序事件。
+
+机器审核通过后，请求首先进入`generated_intaked_machine_passed_waiting_owner_review`且owner为`pending_review`。控制台类型页已经验证能读取并展示该记录、图片及“通过 / 拒绝”按钮；本次页面修改只补充自主重建记录类型识别，没有调整锁定布局。页面GET不得写业务记录，按钮不得推断owner结论。
+
+项目所有者于`2026-07-24T06:01:21.719Z / 2026-07-24T14:01:21+08:00`以命令`owner-approved-autonomous-world-rebuild-001-20260724`明确通过。程序自动保存owner当前记录与不可变历史，审核记录SHA-256=`064472a424b42524ec6c5d41466409ceb8baaabe0b104d49baea4eca0b0001c6`，并把请求状态更新为`generated_intaked_machine_passed_owner_approved`、训练资格更新为`ai_assisted_cold_start_eligible`。自动化检查和原图库检查均通过，控制台已验证显示`owner_approved`。
+
+审核闭环不得自动登记容量、生成002、启动GPU训练、创建RuntimeFrame或进入`/world`。任何后续动作必须继续使用项目所有者单独授权。
+
+## 25. 2026-07-24 自主重建002自动保存与待审核证据
+
+更新时间：2026-07-24 17:03:18 +08:00
+
+项目所有者单图授权ID=`owner-authorized-autonomous-world-rebuild-002-single-rgb-20260724`，请求ID=`conditional-rgb-002-2026-07-24T08-09-32-109Z`。授权解析器必须同时校验授权中的`002`、重建ID中的`002`和条件标签中的`002`，不得把002授权用于001、003或任何批次。
+
+程序自动保存`1448×1086`源图SHA-256=`415038107844f51c1ffc78534fca0669cf434199051b9dcd5e05fbbd1517de5b`、`1024×768`派生图SHA-256=`46ee59c59b5f99be083b9bf53de33fa3c5d3dccc87a060414bb709a362658dfe`、请求、原图记录、世界事实引用、世界导演引用、23通道引用、提示、来源/许可、UTC与Asia/Shanghai时间、hash、机器审核和SQLite证据。原图记录SHA-256=`2e78bc84309ea8c091bf6073984d48d812a1f033b1c3f48f666d2aab967c077d`，机器审核记录SHA-256=`b3047c5bb1467742c3cc7f87d55ff6f6aadb16ea0d26f5d637cf9cae2dd08eeb`。
+
+机器审核通过后，请求进入`generated_intaked_machine_passed_waiting_owner_review`，机器状态=`machine_contract_passed_waiting_owner_visual_review`，owner状态=`pending_review`，训练资格仍为`false`。控制台类型页已经验证能读取并展示002记录、图片和待审核状态；GET页面不写业务记录。
+
+002等待人工审核期间，程序和智能体均不得自动生成003、自动重试、批量出图、推断owner结论、登记容量、启动GPU训练、创建RuntimeFrame或进入`/world`。项目所有者的通过或拒绝必须由页面审核命令触发正式程序写入。
+
+## 26. 2026-07-25 道路误判诊断、同图复审与审核历史
+
+更新时间：2026-07-25 09:02:19 +08:00
+
+记录`ai-cold-start-earth-reference-earth-reference-naturalized-complete-map-b3be6a28ffb6-v1`首次机器审核以`condition_terrain_path_ground_centroid_drift`拒绝后，程序必须保留原机器审核、失败学习、图像引用、时间、hash和SQLite事件。后续诊断或复审不得删除、覆盖或回写旧记录。
+
+项目所有者授权的诊断只允许检查审核算法。诊断runId=`ai-assisted-cold-start-path-false-positive-diagnosis-2026-07-25T00-34-27-315Z`确认旱季裸地暖色碎片被误计为道路。道路审核改为先形成8连通视觉分量，再只保留与正式`terrain_path_ground`走廊相交或被其支持的分量；不得改变固定阈值、世界事实、世界导演、23通道、RGB或风格标准。程序必须同时保存旧指标、新指标、排除像素数、算法版本、`thresholdsChanged`和`newRgbCreated`。
+
+同一SHA-256=`ac6778270a44d2379e1ea0c635041eb8685c0def7659ba8e7d3a6a73b1d29bb4`图像的机器复审runId=`ai-assisted-cold-start-review-ai-cold-start-earth-reference-earth-reference-naturalized-complete-map-b3be6a28ffb6-v1-2026-07-25T00-37-54-194Z`必须作为新的不可变审核记录保存，不得替换首次拒绝。项目所有者通过由正式程序以命令引用`owner-approved-earth-reference-naturalized-complete-map-b3be6a28ffb6-20260725`写入，owner reviewId=`ai-cold-start-owner-review-ai-cold-start-earth-reference-earth-reference-naturalized-complete-map-b3be6a28ffb6-v1-2026-07-25T00-41-06-524Z`。
+
+通过后的自动动作仅限更新记录资格、写入不可变owner历史、SQLite事件和重建获准的数据包。不得自动建立V7容量贡献、启动GPU训练、生成新RGB、建立正式候选、绑定RuntimeFrame或进入`/world`。控制台必须能够查看同一记录的原始拒绝、诊断、同图机器通过和owner通过证据。

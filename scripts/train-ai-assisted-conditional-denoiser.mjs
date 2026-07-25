@@ -12,14 +12,19 @@ import { indexArtifact } from "./lib/ai-pet-world-storage-catalog.mjs"
 const ROOT = process.cwd()
 const PYTHON = path.join(ROOT, "ml", "ai-painter", ".venv", "Scripts", "python.exe")
 const TRAINER = path.join(ROOT, "ml", "ai-painter", "scripts", "train_ai_assisted_conditional_denoiser.py")
+const engineeringMode = process.argv.includes("--engineering-26")
 const useV6 = process.argv.includes("--v6")
 const useV5 = process.argv.includes("--v5")
-const modelVersion = useV6 ? "v6" : (useV5 ? "v5" : "v4")
+const modelVersion = engineeringMode ? "v7-engineering-26" : (useV6 ? "v6" : (useV5 ? "v5" : "v4"))
 const CONFIG = path.join(ROOT, "ml", "ai-painter", "config", `complete-world-ai-assisted-cold-start-${modelVersion}.json`)
 const AUTOENCODER_ROOT = path.join(ROOT, ".runtime", "ai-painter", "project-owned-complete-world-model-ai-assisted-v2")
-const MODEL_ROOT = path.join(ROOT, ".runtime", "ai-painter", `project-owned-complete-world-conditional-denoiser-${modelVersion}`)
+const MODEL_ROOT = engineeringMode
+  ? path.join(ROOT, ".runtime", "ai-painter", "project-owned-complete-world-v7-engineering-pretraining")
+  : path.join(ROOT, ".runtime", "ai-painter", `project-owned-complete-world-conditional-denoiser-${modelVersion}`)
 const modelConfig = readJson(CONFIG)
-const datasetPointer = readJson("data/world-samples/ai-assisted-cold-start-dataset-packages/latest.json")
+const datasetPointer = readJson(engineeringMode
+  ? "data/world-samples/ai-assisted-v7-engineering-pretraining-datasets/latest.json"
+  : "data/world-samples/ai-assisted-cold-start-dataset-packages/latest.json")
 const datasetManifest = datasetPointer?.manifestPath ? readJson(datasetPointer.manifestPath) : null
 const timestamp = new Date().toISOString()
 const smokeTest = process.argv.includes("--smoke-test")
@@ -39,6 +44,14 @@ if (datasetManifest?.currentConditionUnpairedCount !== 0) blockers.push("ai_assi
 if (datasetManifest?.connectivityCoverage?.thresholdMet !== true) blockers.push("world_connectivity_coverage_missing")
 if (datasetManifest?.canStartFormalTraining !== false || datasetManifest?.formalInferenceEligible !== false) blockers.push("ai_assisted_package_formal_boundary_invalid")
 if (datasetManifest?.modelConfigId !== (modelConfig?.datasetPackageModelId ?? modelConfig?.modelId)) blockers.push("ai_assisted_dataset_model_config_mismatch")
+if (engineeringMode && resolutionStage !== 0) blockers.push("engineering_pretraining_only_allows_resolution_stage_0")
+if (engineeringMode && datasetManifest?.sampleCount !== 26) blockers.push("engineering_pretraining_trusted_sample_count_invalid")
+if (engineeringMode && datasetManifest?.formalV7CapacityCount !== 26) blockers.push("engineering_pretraining_formal_capacity_boundary_invalid")
+if (engineeringMode && datasetManifest?.formalV7RequiredNewCount !== 102) blockers.push("engineering_pretraining_formal_gap_boundary_invalid")
+if (engineeringMode && datasetManifest?.trainingGateStatus?.engineeringPretrainingAuthorized !== true) blockers.push("engineering_pretraining_owner_authorization_missing")
+if (engineeringMode && datasetManifest?.trainingGateStatus?.formalV7TrainingAuthorized !== false) blockers.push("engineering_pretraining_formal_v7_boundary_invalid")
+if (engineeringMode && modelConfig?.training?.trainingMode !== "nonformal_engineering_pretraining") blockers.push("engineering_pretraining_config_mode_invalid")
+if (engineeringMode && modelConfig?.training?.formalV7TrainingAuthorized !== false) blockers.push("engineering_pretraining_config_formal_boundary_invalid")
 if (!autoencoderCheckpoint) blockers.push("approved_ai_assisted_autoencoder_checkpoint_missing")
 if (resolutionStage > 0 && !smokeTest && !parentDenoiserCheckpoint) blockers.push("previous_conditional_denoiser_resolution_checkpoint_missing")
 if (!fs.existsSync(CONFIG)) blockers.push("ai_assisted_model_config_missing")
@@ -129,6 +142,12 @@ const algorithmEvidencePath = path.join(runDir, "algorithm-evidence.json")
 writeJson(algorithmEvidencePath, algorithmEvidence)
 const pointer = {
   ...manifest,
+  trainingMode: engineeringMode ? "nonformal_engineering_pretraining" : "progressive_conditional_denoiser_training",
+  trainingAuthorizationId: engineeringMode ? modelConfig.training.trainingAuthorizationId : null,
+  formalV7TrainingAuthorized: false,
+  formalV7CapacityCount: engineeringMode ? 26 : null,
+  formalV7RequiredNewCount: engineeringMode ? 102 : null,
+  rgbGenerated: false,
   manifestPath: projectPath(manifestPath),
   algorithmEvidencePath: projectPath(algorithmEvidencePath),
   algorithmEvidenceSha256: sha256File(algorithmEvidencePath),
@@ -165,6 +184,9 @@ console.log(JSON.stringify({
   checkpointPath: manifest.checkpointPath,
   manifestPath: projectPath(manifestPath),
   conditionBoundSampleCount: manifest.conditionBoundSampleCount,
+  trainingMode: engineeringMode ? "nonformal_engineering_pretraining" : "progressive_conditional_denoiser_training",
+  formalV7TrainingAuthorized: false,
+  rgbGenerated: false,
   formalInferenceEligible: false,
   remainingBlockers: manifest.remainingBlockers,
 }, null, 2))

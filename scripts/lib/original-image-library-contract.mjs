@@ -91,6 +91,8 @@ export function isOwnerAuthorizedAiAssistedColdStartSource(request) {
 export function isOwnerAuthorizedAiAssistedColdStartRef(value) {
   return value === "conversation-owner-authorization-2026-07-13"
     || value === "owner-authorized-v7-remaining-104-continuous-batch-20260723"
+    || value === "owner-authorized-earth-reference-naturalized-complete-map-single-rgb-20260725"
+    || /^owner-authorized-autonomous-world-rebuild-\d{3}-single-rgb-\d{8}$/.test(value ?? "")
     || /^project-owner-authorization-\d{4}-\d{2}-\d{2}-v7-capacity-slot-\d{3}-single-rgb-generation$/.test(value ?? "")
 }
 

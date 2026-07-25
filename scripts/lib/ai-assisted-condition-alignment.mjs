@@ -47,6 +47,7 @@ export async function auditAiAssistedConditionAlignment({ record, imagePath }) {
     image,
     channelId: "terrain_path_ground",
     classify: pathClassifier.classify,
+    isolateSignal: isolateConditionSupportedConnectedComponents,
     minimumSpatialIntersection: 0.25,
     maximumCentroidDistance: 0.25,
     minimumCoverageRatio: 0.25,
@@ -63,11 +64,13 @@ export async function auditAiAssistedConditionAlignment({ record, imagePath }) {
     conditionPackPath: projectPath(conditionPackPath),
     conditionPackFileSha256: sha256(conditionPackBytes),
     canvas: conditionPack.canvas,
-    method: "season_aware_local_color_signal_plus_8x6_spatial_mass_and_centroid_v2",
+    method: "season_aware_local_color_signal_plus_condition_supported_components_plus_8x6_spatial_mass_and_centroid_v3",
     pathClassifier: {
       mode: pathClassifier.mode,
       season: record.classification?.monsoonSeason ?? null,
       source: "record.classification.monsoonSeason",
+      signalIsolationMode: "condition_supported_connected_components_v1",
+      supportCorridorRadiusPixels: 48,
       acceptanceThresholdsChanged: false,
     },
     channelAudits: audits,
@@ -75,7 +78,7 @@ export async function auditAiAssistedConditionAlignment({ record, imagePath }) {
   }
 }
 
-async function auditChannel({ conditionPack, image, channelId, classify, minimumSpatialIntersection, maximumCentroidDistance, minimumCoverageRatio, maximumCoverageRatio, maximumAbsentSignalRatio = 0 }) {
+async function auditChannel({ conditionPack, image, channelId, classify, isolateSignal = null, minimumSpatialIntersection, maximumCentroidDistance, minimumCoverageRatio, maximumCoverageRatio, maximumAbsentSignalRatio = 0 }) {
   const channel = conditionPack.channels.find((item) => item.id === channelId)
   assert(channel, `required condition channel missing: ${channelId}`)
   const channelPath = resolveProjectPath(channel.path)
@@ -89,7 +92,12 @@ async function auditChannel({ conditionPack, image, channelId, classify, minimum
   }
 
   const expectedDistribution = spatialDistribution(expected, image.info.width, image.info.height)
-  const actualDistribution = spatialDistribution(actual, image.info.width, image.info.height)
+  const signalIsolation = isolateSignal
+    ? isolateSignal({ actual, expected, width: image.info.width, height: image.info.height })
+    : null
+  const auditedActual = signalIsolation?.mask ?? actual
+  const rawActualDistribution = spatialDistribution(actual, image.info.width, image.info.height)
+  const actualDistribution = spatialDistribution(auditedActual, image.info.width, image.info.height)
   const absenceExpected = expectedDistribution.nonZeroRatio === 0
   const spatialIntersection = expectedDistribution.cells.reduce((sum, value, index) => sum + Math.min(value, actualDistribution.cells[index]), 0)
   const centroidDistance = Math.hypot(
@@ -137,6 +145,8 @@ async function auditChannel({ conditionPack, image, channelId, classify, minimum
     expectedChannelSha256: channel.sha256,
     expectedNonZeroRatio: round(expectedDistribution.nonZeroRatio),
     actualSignalRatio: round(actualDistribution.nonZeroRatio),
+    rawActualSignalRatio: round(rawActualDistribution.nonZeroRatio),
+    signalIsolation: signalIsolation?.diagnostics ?? null,
     absenceExpected,
     coverageRatio: absenceExpected ? null : round(coverageRatio),
     spatialIntersection: absenceExpected ? null : round(spatialIntersection),
@@ -147,6 +157,120 @@ async function auditChannel({ conditionPack, image, channelId, classify, minimum
     passed: issues.length === 0,
     issues,
   }
+}
+
+function isolateConditionSupportedConnectedComponents({ actual, expected, width, height }) {
+  const supportRadiusPixels = 48
+  const support = buildRectangularSupportMask(expected, width, height, supportRadiusPixels)
+  const visited = new Uint8Array(actual.length)
+  const retained = new Uint8Array(actual.length)
+  const queue = new Int32Array(actual.length)
+  const componentIndexes = []
+  const components = []
+  let retainedComponentCount = 0
+  let rejectedComponentCount = 0
+  let retainedPixelCount = 0
+  let rejectedPixelCount = 0
+
+  for (let start = 0; start < actual.length; start += 1) {
+    if (!actual[start] || visited[start]) continue
+    let head = 0
+    let tail = 0
+    let supportPixelCount = 0
+    let directExpectedOverlap = 0
+    componentIndexes.length = 0
+    visited[start] = 1
+    queue[tail++] = start
+
+    while (head < tail) {
+      const index = queue[head++]
+      componentIndexes.push(index)
+      if (support[index]) supportPixelCount += 1
+      if (expected[index]) directExpectedOverlap += 1
+      const x = index % width
+      const y = Math.floor(index / width)
+      for (let dy = -1; dy <= 1; dy += 1) {
+        for (let dx = -1; dx <= 1; dx += 1) {
+          if (dx === 0 && dy === 0) continue
+          const nextX = x + dx
+          const nextY = y + dy
+          if (nextX < 0 || nextX >= width || nextY < 0 || nextY >= height) continue
+          const next = nextY * width + nextX
+          if (!actual[next] || visited[next]) continue
+          visited[next] = 1
+          queue[tail++] = next
+        }
+      }
+    }
+
+    const size = componentIndexes.length
+    const supportRatio = supportPixelCount / size
+    const keep = directExpectedOverlap > 0 || (supportPixelCount >= 8 && supportRatio >= 0.02)
+    if (keep) {
+      retainedComponentCount += 1
+      retainedPixelCount += size
+      for (const index of componentIndexes) retained[index] = 1
+    } else {
+      rejectedComponentCount += 1
+      rejectedPixelCount += size
+    }
+    components.push({
+      size,
+      supportPixelCount,
+      directExpectedOverlap,
+      supportRatio: round(supportRatio),
+      retained: keep,
+    })
+  }
+
+  const largestRejectedComponents = components
+    .filter((component) => !component.retained)
+    .sort((left, right) => right.size - left.size)
+    .slice(0, 5)
+
+  return {
+    mask: retained,
+    diagnostics: {
+      mode: "condition_supported_connected_components_v1",
+      supportCorridorRadiusPixels: supportRadiusPixels,
+      connectivity: 8,
+      componentCount: components.length,
+      retainedComponentCount,
+      rejectedComponentCount,
+      retainedPixelCount,
+      rejectedPixelCount,
+      largestRejectedComponents,
+      acceptanceThresholdsChanged: false,
+    },
+  }
+}
+
+function buildRectangularSupportMask(expected, width, height, radius) {
+  const integralWidth = width + 1
+  const integral = new Uint32Array((width + 1) * (height + 1))
+  for (let y = 0; y < height; y += 1) {
+    let rowSum = 0
+    for (let x = 0; x < width; x += 1) {
+      rowSum += expected[y * width + x]
+      integral[(y + 1) * integralWidth + x + 1] = integral[y * integralWidth + x + 1] + rowSum
+    }
+  }
+
+  const support = new Uint8Array(expected.length)
+  for (let y = 0; y < height; y += 1) {
+    const top = Math.max(0, y - radius)
+    const bottom = Math.min(height - 1, y + radius)
+    for (let x = 0; x < width; x += 1) {
+      const left = Math.max(0, x - radius)
+      const right = Math.min(width - 1, x + radius)
+      const count = integral[(bottom + 1) * integralWidth + right + 1]
+        - integral[top * integralWidth + right + 1]
+        - integral[(bottom + 1) * integralWidth + left]
+        + integral[top * integralWidth + left]
+      support[y * width + x] = count > 0 ? 1 : 0
+    }
+  }
+  return support
 }
 
 function spatialDistribution(mask, width, height) {

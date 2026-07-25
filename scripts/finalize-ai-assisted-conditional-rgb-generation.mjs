@@ -54,24 +54,36 @@ if (!sourceIsNativeTrainingSize && !sourceIsEligibleHighResolutionFourThree) {
   process.exit(1)
 }
 
-const intake = runJsonScript([
-  path.join(ROOT, "scripts", "intake-ai-assisted-cold-start-image.mjs"),
-  "--input", inputPath,
-  "--prompt-evidence", resolveProjectPath(request.promptEvidencePath),
-  "--record-id", request.outputRecordId,
-  "--title", request.title,
-  "--category-id", request.categoryId,
-  "--regional-landscape-type", request.regionalLandscapeType,
-  "--task-package", resolveProjectPath(request.taskPackagePath),
-  "--condition-pack", resolveProjectPath(request.conditionPackPath),
-  "--condition-guide-manifest", resolveProjectPath(request.conditionGuideManifestPath),
-], "conditional RGB intake")
+let intake
+try {
+  intake = runJsonScript([
+    path.join(ROOT, "scripts", "intake-ai-assisted-cold-start-image.mjs"),
+    "--input", inputPath,
+    "--prompt-evidence", resolveProjectPath(request.promptEvidencePath),
+    "--record-id", request.outputRecordId,
+    "--title", request.title,
+    "--category-id", request.categoryId,
+    "--regional-landscape-type", request.regionalLandscapeType,
+    "--task-package", resolveProjectPath(request.taskPackagePath),
+    "--condition-pack", resolveProjectPath(request.conditionPackPath),
+    "--condition-guide-manifest", resolveProjectPath(request.conditionGuideManifestPath),
+  ], "conditional RGB intake")
+} catch (error) {
+  persistProcessingFailure({ request, inputPath, inputBytes, stage: "conditional_rgb_intake", error })
+  throw error
+}
 
-const automaticReview = runJsonScript([
-  path.join(ROOT, "scripts", "run-ai-assisted-cold-start-review-pipeline.mjs"),
-  "--record-id", request.outputRecordId,
-  "--category-id", request.categoryId,
-], "automatic review pipeline")
+let automaticReview
+try {
+  automaticReview = runJsonScript([
+    path.join(ROOT, "scripts", "run-ai-assisted-cold-start-review-pipeline.mjs"),
+    "--record-id", request.outputRecordId,
+    "--category-id", request.categoryId,
+  ], "automatic review pipeline")
+} catch (error) {
+  persistProcessingFailure({ request, inputPath, inputBytes, stage: "automatic_review_pipeline", error })
+  throw error
+}
 
 const timestamp = new Date().toISOString()
 const completed = {
@@ -205,6 +217,52 @@ function persistSourceContractFailure({ request: requestValue, requestPath: requ
       automaticStorage: true,
     },
   }
+}
+
+function persistProcessingFailure({ request: requestValue, inputPath: sourcePath, inputBytes: sourceBytes, stage, error }) {
+  const timestamp = new Date().toISOString()
+  const failureId = `${requestValue.requestId}-${stage}-${timestamp.replace(/[:.]/g, "-")}`
+  const failurePath = path.join(path.dirname(requestPath), `${failureId}.json`)
+  const failure = {
+    schemaVersion: "ai-assisted-conditional-rgb-processing-failure-v1",
+    failureId,
+    status: "processing_failed_before_intake_completion",
+    createdAtUtc: timestamp,
+    createdAtAsiaShanghai: formatShanghai(timestamp),
+    requestId: requestValue.requestId,
+    outputRecordId: requestValue.outputRecordId,
+    stage,
+    inputPath: sourcePath,
+    inputSha256: sha256(sourceBytes),
+    error: String(error?.message ?? error),
+    requestStatusPreserved: requestValue.status,
+    imageRegenerationRequired: false,
+    gpuTrainingStarted: false,
+    automaticNextGenerationAuthorized: false,
+    automaticStorage: true,
+  }
+  writeJson(failurePath, failure)
+  appendAiPainterProgramEvent({
+    action: "finalize_ai_assisted_conditional_rgb",
+    runId: requestValue.requestId,
+    kind: "step_failed",
+    status: "failed",
+    title: "Conditional RGB processing failed before intake completion",
+    titleZh: "条件 RGB 在接收完成前处理失败",
+    detail: `stage=${stage}; inputSha256=${failure.inputSha256}; error=${failure.error}`,
+    detailZh: `阶段=${stage}；输入哈希=${failure.inputSha256}；错误=${failure.error}`,
+    script: "scripts/finalize-ai-assisted-conditional-rgb-generation.mjs",
+    currentStep: stage,
+    error: failure.error,
+    errorZh: failure.error,
+    finalGameMapSuccess: false,
+    canEnterWorld: false,
+    archiveId: requestValue.outputRecordId,
+    evidencePath: projectPath(failurePath),
+    nextAction: "repair_processing_gate_and_resume_same_generated_image",
+    nextActionZh: "修复处理门禁并继续使用同一张已生成图片，不重新出图",
+  })
+  return failure
 }
 
 function runJsonScript(args, label) {

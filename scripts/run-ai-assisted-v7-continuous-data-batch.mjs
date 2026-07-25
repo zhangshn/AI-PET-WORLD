@@ -21,10 +21,11 @@ const LATEST_PATH = `${BATCH_ROOT}/latest.json`
 const prepareNext = process.argv.includes("--prepare-next")
 const statusOnly = process.argv.includes("--status")
 const reconcileOnly = process.argv.includes("--reconcile-only")
+const ownerStop = process.argv.includes("--owner-stop")
 
 assert(
-  [prepareNext, statusOnly, reconcileOnly].filter(Boolean).length === 1,
-  "use exactly one of --prepare-next, --status, or --reconcile-only",
+  [prepareNext, statusOnly, reconcileOnly, ownerStop].filter(Boolean).length === 1,
+  "use exactly one of --prepare-next, --status, --reconcile-only, or --owner-stop",
 )
 const config = readJson(CONFIG_PATH)
 const decision = config.training?.dataCapacityDecision
@@ -40,7 +41,18 @@ assert(authorization?.gpuTrainingAutomatic === false && decision?.gpuTrainingAut
 const capacityPointer = readJson(CAPACITY_POINTER_PATH)
 verifyHash(capacityPointer.gapListPath, capacityPointer.gapListSha256, "V7 gap-list hash mismatch")
 const gapList = readJson(capacityPointer.gapListPath)
-const authorizedSlots = (gapList.plannedSlots ?? []).filter((slot) => slot.continuousBatchAuthorizationId === AUTHORIZATION_ID)
+const remainingAuthorizedSlots = (gapList.plannedSlots ?? []).filter((slot) => slot.continuousBatchAuthorizationId === AUTHORIZATION_ID)
+const remainingAuthorizedSlotById = new Map(remainingAuthorizedSlots.map((slot) => [slot.slotId, slot]))
+const authorizedSlots = Array.from({ length: authorization.authorizedRecordCount }, (_, index) => {
+  const slotId = `v7-capacity-slot-${String(index + 4).padStart(3, "0")}`
+  return remainingAuthorizedSlotById.get(slotId) ?? {
+    slotId,
+    split: null,
+    regionalLandscapeType: null,
+    monsoonSeason: null,
+    removedFromGapListAfterQualification: true,
+  }
+})
 assert(authorizedSlots.length === 104, `authorized continuous batch expected 104 slots, got ${authorizedSlots.length}`)
 assert(authorizedSlots[0]?.slotId === "v7-capacity-slot-004", "continuous batch must start at slot 004")
 assert(authorizedSlots.at(-1)?.slotId === "v7-capacity-slot-107", "continuous batch must end at slot 107")
@@ -48,11 +60,56 @@ assert(authorizedSlots.at(-1)?.slotId === "v7-capacity-slot-107", "continuous ba
 const tasks = readTaskManifests()
 const requests = readGenerationRequests()
 const state = buildState({ authorizedSlots, tasks, requests })
+const previousBatch = readJsonSafe(LATEST_PATH)
 
-if (statusOnly) {
-  console.log(JSON.stringify(state, null, 2))
+if (ownerStop) {
+  const suspendedRequest = state.activeRequests[0] ?? null
+  const result = persistState({
+    ...state,
+    status: "stopped_by_owner",
+    nextAction: "none_waiting_owner_instruction",
+    activeRequest: null,
+    activeRequests: [],
+    suspendedRequest,
+    stoppedByOwner: true,
+    stopReason: "owner_stopped_batch_due_to_repeated_transform_derived_compositions",
+  })
+  appendAiPainterProgramEvent({
+    runId: result.batchRunId,
+    status: "blocked",
+    stage: "ai_assisted_v7_continuous_batch_stopped_by_owner",
+    action: "stop_v7_continuous_batch",
+    kind: "v7_continuous_data_batch",
+    titleZh: "项目所有者已停止 V7 连续数据批次",
+    titleEn: "The project owner stopped the V7 continuous data batch",
+    summaryZh: `连续出图、下一槽准备和 V7 GPU 训练均已停止。暂停请求=${suspendedRequest?.requestId ?? "无"}；其历史证据保留，不生成 RGB。`,
+    summaryEn: `Continuous image generation, next-slot preparation, and V7 GPU training are stopped. Suspended request=${suspendedRequest?.requestId ?? "none"}; its historical evidence is retained and no RGB is generated.`,
+    errorCode: "owner_stopped_continuous_batch_due_to_transform_derived_repetition",
+    evidence: [result.statePath, LATEST_PATH, suspendedRequest?.requestPath].filter(Boolean),
+  })
+  console.log(JSON.stringify(result, null, 2))
   process.exit(0)
 }
+
+if (statusOnly) {
+  console.log(JSON.stringify(previousBatch?.status === "stopped_by_owner"
+    ? {
+        ...state,
+        status: "stopped_by_owner",
+        nextAction: "none_waiting_owner_instruction",
+        activeRequests: [],
+        activeRequest: null,
+        suspendedRequest: previousBatch.suspendedRequest ?? previousBatch.activeRequest ?? null,
+        stoppedByOwner: true,
+        stopReason: previousBatch.stopReason,
+        stoppedAtUtc: previousBatch.updatedAtUtc,
+        stoppedAtAsiaShanghai: previousBatch.updatedAtAsiaShanghai,
+      }
+    : state, null, 2))
+  process.exit(0)
+}
+
+assert(previousBatch?.status !== "stopped_by_owner", "V7 continuous batch is stopped by the project owner")
 
 if (reconcileOnly) {
   const result = persistState({
@@ -106,8 +163,10 @@ if (!nextSlot) {
 }
 
 let task = tasks.find((entry) => entry.row?.capacitySlotId === nextSlot.slotId)
-if (!task) {
-  runNode("scripts/build-ai-assisted-conditional-world-fact-blueprints.mjs", ["--v7-slot-id", nextSlot.slotId], "prepare V7 slot task")
+if (!task || !taskSatisfiesNoPresetSiteContract(task)) {
+  const args = ["--v7-slot-id", nextSlot.slotId]
+  if (task) args.push("--supersede-incompatible-pre-generation-task")
+  runNode("scripts/build-ai-assisted-conditional-world-fact-blueprints.mjs", args, "prepare V7 slot task")
   runNode("scripts/check-ai-assisted-v7-data-task.mjs", ["--slot-id", nextSlot.slotId], "check V7 slot task")
   task = readTaskManifests().find((entry) => entry.row?.capacitySlotId === nextSlot.slotId)
 }
@@ -236,7 +295,12 @@ function persistState(value) {
     authorizationId: AUTHORIZATION_ID,
     statePath: projectPath(statePath),
     stateSha256: sha256(fs.readFileSync(statePath)),
-    activeRequest: state.activeRequest ?? state.activeRequests?.[0] ?? null,
+    activeRequest: state.status === "stopped_by_owner"
+      ? null
+      : state.activeRequest ?? state.activeRequests?.[0] ?? null,
+    suspendedRequest: state.suspendedRequest ?? null,
+    stoppedByOwner: state.stoppedByOwner === true,
+    stopReason: state.stopReason ?? null,
     generatedResultCount: state.generatedResultCount,
     machinePassedPendingOwnerCount: state.machinePassedPendingOwnerCount,
     machineRejectedCount: state.machineRejectedCount,
@@ -275,6 +339,14 @@ function isReplaceablePreGenerationFailure(request) {
   return request.status === "generation_failed_retryable"
     && request.lastGenerationFailureCode === "v7_stale_task_manifest_selected_before_generation"
     && !request.generatedImagePath
+}
+
+function taskSatisfiesNoPresetSiteContract(task) {
+  const taskPackage = readJsonSafe(task.row?.taskPackagePath)
+  const conditionPack = readJsonSafe(task.row?.conditionPackPath)
+  const focalChannel = conditionPack?.channels?.find((entry) => entry.id === "focal_area")
+  return taskPackage?.singleMapCompositionFields?.siteSelectionPolicy === "runtime_butler_autonomy_only"
+    && Number(focalChannel?.statistics?.nonZeroCount ?? -1) === 0
 }
 
 function runNode(script, args, label) {

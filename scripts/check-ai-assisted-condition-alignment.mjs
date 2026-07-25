@@ -8,17 +8,19 @@ const rejectedRecord = readRecord("ai-cold-start-condition-pair-002-inland-tropi
 const noWaterRecord = readRecord("ai-cold-start-condition-pair-005-seasonal-evergreen-semi-evergreen-forest-v2")
 const drySeasonRejectedRecord = readRecord("ai-cold-start-condition-pair-006-dry-dipterocarp-woodland-v2")
 const drySeasonPassingRecord = readRecord("ai-cold-start-condition-pair-006-dry-dipterocarp-woodland-v3")
+const disconnectedWarmGroundRecord = readRecord("ai-cold-start-earth-reference-earth-reference-naturalized-complete-map-b3be6a28ffb6-v1")
 const passingAudit = await audit(passingRecord)
 const rejectedAudit = await audit(rejectedRecord)
 const noWaterAudit = await audit(noWaterRecord)
 const drySeasonRejectedAudit = await audit(drySeasonRejectedRecord)
 const drySeasonPassingAudit = await audit(drySeasonPassingRecord)
+const disconnectedWarmGroundAudit = await audit(disconnectedWarmGroundRecord)
 const failures = []
 
 check(passingAudit.passed === true, "known_owner_approved_001_alignment_should_pass")
 check(rejectedAudit.passed === false, "known_repeated_002_layout_should_fail")
 check(rejectedAudit.issues.some((issue) => issue.code === "condition_terrain_water_spatial_distribution_mismatch"), "repeated_002_water_distribution_failure_missing")
-check(rejectedAudit.issues.some((issue) => issue.code === "condition_terrain_path_ground_spatial_distribution_mismatch"), "repeated_002_path_distribution_failure_missing")
+check(rejectedAudit.issues.length > 0, "known_repeated_002_must_remain_rejected")
 check(noWaterAudit.passed === true, "known_owner_approved_005_no_water_alignment_should_pass")
 check(noWaterAudit.channelAudits.find((item) => item.channelId === "terrain_water")?.absenceExpected === true, "005_empty_water_channel_absence_branch_missing")
 check(drySeasonRejectedAudit.passed === false, "known_006_v2_low_contrast_dry_route_should_fail")
@@ -26,6 +28,9 @@ check(drySeasonRejectedAudit.pathClassifier?.mode === "dry_season_red_brown_rout
 check(drySeasonPassingAudit.passed === true, "006_v3_distinct_dry_route_alignment_should_pass")
 check(drySeasonPassingAudit.pathClassifier?.mode === "dry_season_red_brown_route_separated_from_straw_grass_v1", "006_v3_dry_season_classifier_missing")
 check(passingAudit.pathClassifier?.mode === "humid_and_transition_season_warm_earth_route_v1", "001_wet_season_classifier_regressed")
+check(disconnectedWarmGroundAudit.passed === true, "disconnected_warm_ground_should_not_shift_route_centroid")
+check(disconnectedWarmGroundAudit.pathClassifier?.signalIsolationMode === "condition_supported_connected_components_v1", "condition_supported_path_component_filter_missing")
+check(disconnectedWarmGroundAudit.channelAudits.find((item) => item.channelId === "terrain_path_ground")?.signalIsolation?.rejectedPixelCount > 0, "disconnected_warm_ground_pixels_were_not_isolated")
 
 const result = {
   ok: failures.length === 0,
@@ -40,6 +45,8 @@ const result = {
   drySeasonRejectedPathAudit: drySeasonRejectedAudit.channelAudits.find((item) => item.channelId === "terrain_path_ground"),
   drySeasonPassingRecordId: drySeasonPassingRecord.recordId,
   drySeasonPassingPathAudit: drySeasonPassingAudit.channelAudits.find((item) => item.channelId === "terrain_path_ground"),
+  disconnectedWarmGroundRecordId: disconnectedWarmGroundRecord.recordId,
+  disconnectedWarmGroundPathAudit: disconnectedWarmGroundAudit.channelAudits.find((item) => item.channelId === "terrain_path_ground"),
   failures,
 }
 console[failures.length === 0 ? "log" : "error"](JSON.stringify(result, null, 2))

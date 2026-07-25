@@ -16,10 +16,28 @@ import { validateFoundationalCompleteMapVisualStandard } from "./lib/foundationa
 const ROOT = process.cwd()
 const LEGACY_SOURCE_RECORD_ID = argumentValue("--source-record-id")
 const V7_TASK_MANIFEST_ARG = argumentValue("--v7-task-manifest")
+const AUTONOMY_TASK_MANIFEST_ARG = argumentValue("--autonomy-task-manifest")
+const EARTH_TASK_MANIFEST_ARG = argumentValue("--earth-task-manifest")
+const AUTONOMY_REBUILD_ID = argumentValue("--autonomy-rebuild-id")
+const AUTONOMY_OWNER_AUTHORIZATION_ID = argumentValue("--owner-authorization-id")
 const v7Mode = Boolean(V7_TASK_MANIFEST_ARG)
-assert(!(LEGACY_SOURCE_RECORD_ID && V7_TASK_MANIFEST_ARG), "use either --source-record-id or --v7-task-manifest, not both")
+const autonomyMode = Boolean(AUTONOMY_TASK_MANIFEST_ARG || AUTONOMY_REBUILD_ID)
+const earthMode = Boolean(EARTH_TASK_MANIFEST_ARG)
+assert(
+  [Boolean(LEGACY_SOURCE_RECORD_ID), v7Mode, autonomyMode, earthMode].filter(Boolean).length === 1,
+  "use exactly one source mode",
+)
+assert(
+  !autonomyMode || (AUTONOMY_TASK_MANIFEST_ARG && AUTONOMY_REBUILD_ID && AUTONOMY_OWNER_AUTHORIZATION_ID),
+  "autonomy mode requires task manifest, rebuild id, and owner authorization id",
+)
 const v7TaskManifest = v7Mode ? readJson(V7_TASK_MANIFEST_ARG) : null
-const SOURCE_RECORD_ID = LEGACY_SOURCE_RECORD_ID ?? v7TaskManifest?.row?.capacitySlotId
+const autonomyTaskManifest = autonomyMode ? readJson(AUTONOMY_TASK_MANIFEST_ARG) : null
+const earthTaskManifest = earthMode ? readJson(EARTH_TASK_MANIFEST_ARG) : null
+const SOURCE_RECORD_ID = LEGACY_SOURCE_RECORD_ID
+  ?? v7TaskManifest?.row?.capacitySlotId
+  ?? AUTONOMY_REBUILD_ID
+  ?? earthTaskManifest?.conditionLabel
 const OUTPUT_ROOT = path.join(ROOT, ".runtime", "ai-painter", "ai-assisted-cold-start", "conditional-rgb-generation-requests")
 const SEQUENCE_BLOCK_ROOT = path.join(OUTPUT_ROOT, "sequence-blocks")
 const PREPARATION_FAILURE_ROOT = ".runtime/ai-painter/ai-assisted-cold-start/conditional-rgb-generation-requests/preparation-failures"
@@ -29,6 +47,10 @@ const OWNER_AUTHORIZATION_REF = "conversation-owner-authorization-2026-07-13"
 const V7_OWNER_AUTHORIZATION_REF = v7Mode
   ? "owner-authorized-v7-remaining-104-continuous-batch-20260723"
   : null
+const AUTONOMY_OWNER_AUTHORIZATION_REF = autonomyMode ? AUTONOMY_OWNER_AUTHORIZATION_ID : null
+const EARTH_OWNER_AUTHORIZATION_REF = earthMode
+  ? "owner-authorized-earth-reference-naturalized-complete-map-single-rgb-20260725"
+  : null
 const POLICY_VERSION = "owner-authorized-ai-assisted-cold-start-v1"
 const DERIVATIVE_POLICY_VERSION = "owner-approved-high-resolution-four-three-derivative-v1"
 const SOURCE_CONTRACT = "generator-native-exact-four-three-no-smaller-than-1024x768-with-audited-training-derivative"
@@ -36,11 +58,37 @@ const STYLE_GUIDANCE_MODE = "versioned_foundational_complete_map_visual_standard
 const ownerAuthorizedRetry = process.argv.includes("--owner-authorized-retry")
 const retryReason = argumentValue("--retry-reason")
 let preparationFailureRecorded = false
-assert(SOURCE_RECORD_ID, "--source-record-id or --v7-task-manifest is required; the program must never default to a previous condition")
-const batchPointer = v7Mode ? null : readJson(".runtime/ai-painter/ai-assisted-conditional-world-facts/latest.json")
-const batch = v7Mode ? v7TaskManifest : readJson(batchPointer.manifestPath)
+assert(SOURCE_RECORD_ID, "an explicit source identity is required; the program must never default to a previous condition")
+const earthTaskDir = earthMode ? path.dirname(resolveProjectPath(EARTH_TASK_MANIFEST_ARG)) : null
+const earthConditionPackPath = earthMode ? path.join(earthTaskDir, "compiled-conditions", "condition-pack.json") : null
+const earthConditionPack = earthMode ? readJson(earthConditionPackPath) : null
+const batchPointer = (v7Mode || autonomyMode || earthMode) ? null : readJson(".runtime/ai-painter/ai-assisted-conditional-world-facts/latest.json")
+const batch = v7Mode
+  ? v7TaskManifest
+  : autonomyMode
+    ? autonomyTaskManifest
+    : earthMode
+      ? earthTaskManifest
+    : readJson(batchPointer.manifestPath)
 const row = v7Mode
   ? batch.row
+  : autonomyMode
+    ? (batch.rows ?? []).find((entry) => entry.rebuildId === SOURCE_RECORD_ID)
+    : earthMode
+      ? {
+          sourceRecordId: SOURCE_RECORD_ID,
+          conditionLabel: earthTaskManifest.conditionLabel,
+          generationContractVersion: earthTaskManifest.generationContractVersion,
+          blueprintPath: earthTaskManifest.blueprintPath,
+          blueprintSha256: sha256(fs.readFileSync(resolveProjectPath(earthTaskManifest.blueprintPath))),
+          directorOutputPath: earthTaskManifest.directorPath,
+          directorOutputSha256: sha256(fs.readFileSync(resolveProjectPath(earthTaskManifest.directorPath))),
+          taskPackagePath: earthTaskManifest.taskPath,
+          taskPackageSha256: earthTaskManifest.taskSha256,
+          conditionPackPath: projectPath(earthConditionPackPath),
+          conditionPackSha256: earthConditionPack.conditionPackSha256,
+          regionalLandscapeType: "lowland-evergreen-tropical-forest",
+        }
   : (batch.rows ?? []).find((entry) => entry.sourceRecordId === SOURCE_RECORD_ID)
 assert(row, `condition blueprint row missing: ${SOURCE_RECORD_ID}`)
 if (v7Mode) {
@@ -51,6 +99,45 @@ if (v7Mode) {
   assert(row.imageGenerationAuthorized === true, "V7 task is not authorized for continuous RGB generation")
   assert(row.gpuTrainingAuthorized === false, "V7 task unexpectedly authorizes GPU training")
 }
+if (autonomyMode) {
+  const rebuildIdentity = /^autonomous-world-rebuild-(\d{3})$/.exec(SOURCE_RECORD_ID)
+  const authorizationIdentity = /^owner-authorized-autonomous-world-rebuild-(\d{3})-single-rgb-(\d{8})$/.exec(
+    AUTONOMY_OWNER_AUTHORIZATION_REF ?? "",
+  )
+  assert(rebuildIdentity, "autonomy rebuild identity is invalid")
+  assert(
+    authorizationIdentity?.[1] === rebuildIdentity[1],
+    "autonomy single-image authorization identity mismatch",
+  )
+  assert(batch.status === "all_24_autonomous_world_condition_tasks_ready_rgb_missing", "autonomy rebuild manifest is not ready for RGB")
+  assert(batch.ownerAuthorizationRef === "owner-authorized-no-preset-home-site-engineering-rebuild-24-20260724", "autonomy rebuild authorization mismatch")
+  assert(batch.imageGenerationStarted === false && batch.imagesGenerated === 0, "autonomy rebuild manifest already reports RGB generation")
+  assert(batch.gpuTrainingStarted === false, "autonomy rebuild manifest unexpectedly reports GPU training")
+  assert(row.status === "task_ready_rgb_missing", "selected autonomy rebuild row is not waiting for RGB")
+  assert(row.conditionLabel === `autonomous-complete-map-${rebuildIdentity[1]}`, "selected autonomy condition identity mismatch")
+  assert(row.channelCount === 23, "selected autonomy row must contain 23 channels")
+  assert(row.focalAreaNonZeroCount === 0, "selected autonomy row must keep focal_area all-zero")
+  assert(row.completeMapScopePassed === true, "selected autonomy row did not pass complete-map scope")
+  assert(row.presetHomeSiteSemanticsDetected === false, "selected autonomy row contains preset home-site semantics")
+  assert(row.sourceTransformReuse === false, "selected autonomy row reuses transformed source geometry")
+  assert(row.pairedRgbCount === 0, "selected autonomy row already has paired RGB")
+  validateAutonomySkeletonAudit(batch)
+}
+if (earthMode) {
+  assert(
+    earthTaskManifest.status === "naturalized_complete_map_task_ready_rgb_authorization_required",
+    "earth-reference task is not waiting for bounded RGB authorization",
+  )
+  assert(
+    earthTaskManifest.imageCount === 0 && earthTaskManifest.imageGenerationStarted === false,
+    "earth-reference task already contains RGB output",
+  )
+  assert(earthTaskManifest.gpuTrainingStarted === false, "earth-reference task unexpectedly reports GPU training")
+  assert(
+    /^earth-reference-naturalized-complete-map-[a-f0-9]{12}$/.test(row.conditionLabel),
+    "earth-reference condition identity is invalid",
+  )
+}
 const blueprint = readJson(row.blueprintPath)
 row.generationContractVersion ??= blueprint.generationContractVersion
 const directorOutput = readJson(row.directorOutputPath)
@@ -59,21 +146,33 @@ const conditionPack = readJson(row.conditionPackPath)
 const guideManifestPath = path.join(path.dirname(resolveProjectPath(row.conditionPackPath)), "condition-guide-manifest.json")
 assert(fs.existsSync(guideManifestPath), `condition guide must be built first: ${projectPath(guideManifestPath)}`)
 const guide = readJson(guideManifestPath)
+const library = readJson("data/world-samples/original-image-library/natural-home-v1/library.json")
 const index = readJson("data/world-samples/original-image-library/natural-home-v1/index.json")
-const sourceRecord = v7Mode
+const sourceRecord = (v7Mode || autonomyMode || earthMode)
   ? {
       recordId: SOURCE_RECORD_ID,
       classification: { regionalLandscapeType: row.regionalLandscapeType },
       worldBinding: {
-        snapshotId: blueprint.earthParameterSnapshotId,
-        snapshotPath: blueprint.earthParameterSnapshotPath,
+        snapshotId: earthMode
+          ? readJson(library.provisionalVisualSnapshotPath).snapshotId
+          : blueprint.earthParameterSnapshotId,
+        snapshotPath: earthMode
+          ? library.provisionalVisualSnapshotPath
+          : blueprint.earthParameterSnapshotPath,
       },
     }
   : (index.records ?? []).find((entry) => entry.recordId === SOURCE_RECORD_ID)
 assert(sourceRecord, `source record missing: ${SOURCE_RECORD_ID}`)
 const coverageBlueprint = readJson("data/world-samples/original-image-library/natural-home-v1/coverage-blueprint.json")
-const landscapeProfile = (coverageBlueprint.regionalLandscapeTypes ?? [])
-  .find((entry) => entry.typeId === blueprint.landscapeType)
+const landscapeProfile = earthMode
+  ? {
+      typeId: blueprint.landscapeType,
+      nameZh: "真实地球参照自然化低地、河谷与低丘生态镶嵌",
+      requiredFeatures: blueprint.landscapeProfile?.measuredNaturalSystems ?? [],
+      optionalFeatures: [],
+    }
+  : (coverageBlueprint.regionalLandscapeTypes ?? [])
+    .find((entry) => entry.typeId === blueprint.landscapeType)
 assert(landscapeProfile, `regional landscape profile missing: ${blueprint.landscapeType}`)
 const visualStandardPointer = readJson(".runtime/ai-painter/foundational-complete-map-visual-standards/latest.json")
 const visualStandardPath = visualStandardPointer.standardPath ?? visualStandardPointer.runPath
@@ -83,17 +182,29 @@ const visualStandardSha256 = sha256(fs.readFileSync(resolveProjectPath(visualSta
 const visualStandardPromptProfile = visualStandard.generatorProfile
 const connectivityBlueprint = readJson(blueprint.connectivityBlueprintPath)
 
-assert((v7Mode ? blueprint.sourceImageGeometryRead : batch.sourceImageGeometryRead) === false, "condition batch must not read source RGB geometry")
+assert(((v7Mode || autonomyMode || earthMode) ? blueprint.sourceImageGeometryRead : batch.sourceImageGeometryRead) === false, "condition batch must not read source RGB geometry")
 assert(
   v7Mode
     ? blueprint.existingRgbMayBeBoundAsTarget === false && blueprint.outputContract?.needsNewRgbPairCreatedAfterThisBlueprint === true
-    : row.existingRgbBound === false && row.needsNewRgbPair === true,
+    : autonomyMode
+      ? blueprint.sourceRgbRead === false && blueprint.sourceTransformReuse === false && row.pairedRgbCount === 0
+      : earthMode
+        ? blueprint.sourceRgbRead === false
+          && blueprint.sourceTransformReuse === false
+          && blueprint.outputContract?.rgbCreated === false
+      : row.existingRgbBound === false && row.needsNewRgbPair === true,
   "condition row is not waiting for new RGB",
 )
 assert(task.worldProfileId === WORLD_PROFILE_ID && conditionPack.worldProfileId === WORLD_PROFILE_ID, "world profile mismatch")
 assert(directorOutput.worldId === blueprint.worldId && directorOutput.tick === blueprint.tick, "director output does not match the selected world-fact blueprint")
 assert(blueprint.environmentContext?.contractVersion === "world-visual-environment-context-v1", "world environment context is missing")
-assert(sameJson(task.environmentContext, blueprint.environmentContext), "task and blueprint environment contexts differ")
+assert(
+  earthMode
+    ? task.directorPlan?.singleMapEcologyPlan?.season === blueprint.environmentContext.season
+      && task.directorPlan?.singleMapMaterialPlan?.environmentState === blueprint.environmentContext.environmentState
+    : sameJson(task.environmentContext, blueprint.environmentContext),
+  "task and blueprint environment contexts differ",
+)
 assert(directorOutput.singleMapEcologyPlan?.season === blueprint.environmentContext.season, "director season differs from blueprint")
 assert(directorOutput.singleMapMaterialPlan?.environmentState === blueprint.environmentContext.environmentState, "director environment state differs from blueprint")
 assert(conditionPack.channels?.length === 23, "condition pack must contain 23 channels")
@@ -106,7 +217,9 @@ assert(routeConditionAudit.pathWaterOverlapPixels === 0, "terrain path overlaps 
 assert(routeConditionAudit.pathCollisionOverlapPixels === 0, "terrain path overlaps the collision condition")
 
 const timestamp = new Date().toISOString()
-const shortId = row.conditionLabel.match(/^(?:complete-map-v2|v7-complete-map)-(\d{3})$/)?.[1]
+const shortId = earthMode
+  ? "001"
+  : row.conditionLabel.match(/^(?:complete-map-v2|v7-complete-map|autonomous-complete-map)-(\d{3})$/)?.[1]
 assert(shortId, "formal condition label sequence missing")
 const completeMapScopeAudit = await auditCompleteMapScope({
   blueprint,
@@ -126,10 +239,18 @@ const completeMapScopeAuditStored = persistCompleteMapScopeAudit({
 assert(completeMapScopeAudit.passed, `${completeMapScopeAudit.failureCode}: ${completeMapScopeAudit.issues.join(",")}`)
 const outputRecordBase = v7Mode
   ? `ai-cold-start-v7-${SOURCE_RECORD_ID}-${blueprint.landscapeType}`
+  : autonomyMode
+    ? `ai-cold-start-autonomy-${SOURCE_RECORD_ID}-${blueprint.landscapeType}`
+    : earthMode
+      ? `ai-cold-start-earth-reference-${SOURCE_RECORD_ID}`
   : `ai-cold-start-condition-pair-${shortId}-${blueprint.landscapeType}`
 const generationRequests = readConditionalRgbGenerationRequests(OUTPUT_ROOT)
 const sequenceGate = v7Mode
   ? evaluateV7SingleSlotSequence({ sourceRecordId: SOURCE_RECORD_ID, generationRequests, ownerAuthorizedRetry, retryReason })
+  : autonomyMode
+    ? evaluateAutonomySingleImageSequence({ sourceRecordId: SOURCE_RECORD_ID, generationRequests })
+    : earthMode
+      ? evaluateEarthReferenceSingleImageSequence({ sourceRecordId: SOURCE_RECORD_ID, generationRequests })
   : evaluateConditionalRgbGenerationSequence({
       sourceRecordId: SOURCE_RECORD_ID,
       conditionLabel: row.conditionLabel,
@@ -184,7 +305,7 @@ const prompt = buildPrompt(
 assert(prompt.includes(blueprint.semanticRules.routeIntent), "prompt does not contain the selected blueprint route intent")
 assert(prompt.includes(blueprint.semanticRules.waterFlow), "prompt does not contain the selected blueprint water-flow intent")
 assert(prompt.includes(boundsSummary("entrance", blueprint.geometry.entranceBounds)), "prompt does not contain the selected blueprint entrance bounds")
-assert(prompt.includes(boundsSummary("focal", blueprint.geometry.focalBounds)), "prompt does not contain the selected blueprint focal bounds")
+assert(prompt.includes("No preset home site"), "prompt does not contain the no-preset-home-site policy")
 assert(prompt.includes(blueprint.environmentContext.season), "prompt does not contain the selected season")
 assert(prompt.includes(blueprint.environmentContext.environmentState), "prompt does not contain the selected environment state")
 for (const feature of landscapeProfile.requiredFeatures ?? []) {
@@ -195,7 +316,13 @@ const promptEvidence = {
   promptId: requestId,
   createdAtUtc: timestamp,
   createdAtAsiaShanghai: formatShanghai(timestamp),
-  ownerAuthorizationRef: v7Mode ? V7_OWNER_AUTHORIZATION_REF : OWNER_AUTHORIZATION_REF,
+  ownerAuthorizationRef: v7Mode
+    ? V7_OWNER_AUTHORIZATION_REF
+    : autonomyMode
+      ? AUTONOMY_OWNER_AUTHORIZATION_REF
+      : earthMode
+        ? EARTH_OWNER_AUTHORIZATION_REF
+      : OWNER_AUTHORIZATION_REF,
   policyVersion: POLICY_VERSION,
   generatorProvider: "OpenAI",
   generatorSystem: "Codex built-in image generation",
@@ -261,7 +388,8 @@ const promptEvidence = {
     "condition_geometry_drift",
     "invented_major_geometry",
     "path_entering_water",
-    "objects_blocking_route_or_focal_area",
+    "objects_blocking_route",
+    "preset_home_site_or_construction_clearing",
     "photorealism_or_painterly_blur",
     "low_resolution_upscale",
     "tile_collage_or_repeated_stamp_patterns",
@@ -284,8 +412,12 @@ const request = {
   conditionLabel: row.conditionLabel,
   generationContractVersion: row.generationContractVersion,
   outputRecordId,
-  title: v7Mode
+  title: autonomyMode
+    ? `自主世界重建训练原图 ${shortId} v${outputVersion}: ${blueprint.landscapeType}`
+    : v7Mode
     ? `V7自主生成训练原图 ${shortId} v${outputVersion}: ${blueprint.landscapeType}`
+    : earthMode
+    ? `真实地球参照自然化完整地图单图 ${shortId} v${outputVersion}: ${blueprint.landscapeType}`
     : `AI辅助条件配对图 ${shortId} v${outputVersion}: ${blueprint.landscapeType}`,
   categoryId: "complete-maps",
   regionalLandscapeType: promptEvidence.targetRegionalLandscapeType,
@@ -319,6 +451,10 @@ const request = {
   requiresMachineReview: true,
   requiresOwnerReview: true,
   continuousBatchAuthorizationId: v7Mode ? V7_OWNER_AUTHORIZATION_REF : null,
+  autonomySingleImageAuthorizationId: autonomyMode ? AUTONOMY_OWNER_AUTHORIZATION_REF : null,
+  earthReferenceSingleImageAuthorizationId: earthMode ? EARTH_OWNER_AUTHORIZATION_REF : null,
+  automaticNextGenerationAuthorized: false,
+  automaticRetryAuthorized: false,
   ownerApprovalAutomatic: false,
   capacityContributionAutomaticBeforeOwnerApproval: false,
   gpuTrainingAuthorized: false,
@@ -390,6 +526,63 @@ function evaluateV7SingleSlotSequence({ sourceRecordId, generationRequests, owne
   }
 }
 
+function evaluateAutonomySingleImageSequence({ sourceRecordId, generationRequests }) {
+  const priorRequests = generationRequests.filter((entry) => entry.sourceRecordId === sourceRecordId)
+  return priorRequests.length === 0
+    ? {
+        allowed: true,
+        code: "autonomy_rebuild_single_rgb_explicitly_authorized",
+        priorRequestCount: 0,
+        priorRecordCount: 0,
+      }
+    : {
+        allowed: false,
+        code: "autonomy_rebuild_duplicate_generation_blocked",
+        priorRequestCount: priorRequests.length,
+        priorRecordCount: 0,
+        blockers: ["existing_autonomy_rebuild_generation_request"],
+      }
+}
+
+function evaluateEarthReferenceSingleImageSequence({ sourceRecordId, generationRequests }) {
+  const priorRequests = generationRequests.filter((entry) => entry.sourceRecordId === sourceRecordId)
+  return priorRequests.length === 0
+    ? {
+        allowed: true,
+        code: "earth_reference_naturalized_complete_map_single_rgb_owner_authorized",
+        priorRequestCount: 0,
+        priorRecordCount: 0,
+      }
+    : {
+        allowed: false,
+        code: "earth_reference_naturalized_complete_map_single_rgb_already_requested",
+        priorRequestCount: priorRequests.length,
+        priorRecordCount: 0,
+        blockers: ["existing_earth_reference_naturalized_complete_map_generation_request"],
+      }
+}
+
+function validateAutonomySkeletonAudit(taskManifest) {
+  const latest = readJson(".runtime/ai-painter/ai-assisted-v7-autonomy-rebuild-condition-skeleton-audits/latest.json")
+  const report = readJson(latest.reportPath)
+  verifyHash(latest.reportPath, latest.reportSha256, "autonomy skeleton audit report hash mismatch")
+  const taskManifestPath = projectPath(resolveProjectPath(AUTONOMY_TASK_MANIFEST_ARG))
+  const taskManifestSha256 = sha256(fs.readFileSync(resolveProjectPath(AUTONOMY_TASK_MANIFEST_ARG)))
+  assert(latest.status === "passed_no_transform_condition_skeleton_duplicate", "autonomy skeleton audit is not passed")
+  assert(latest.auditedRecordCount === 24 && latest.comparisonCount === 276, "autonomy skeleton audit coverage mismatch")
+  assert(latest.exactDuplicatePairCount === 0, "autonomy skeleton audit found exact duplicates")
+  assert(latest.strongTransformDuplicatePairCount === 0, "autonomy skeleton audit found transform duplicates")
+  assert(latest.attentionPairCount === 0 && latest.distinctPairCount === 276, "autonomy skeleton audit has unresolved attention pairs")
+  assert(latest.focalAreaAllZeroCount === 24, "autonomy skeleton audit focal_area coverage mismatch")
+  assert(latest.imageGenerationStarted === false && latest.imagesGenerated === 0, "autonomy skeleton audit already reports RGB generation")
+  assert(latest.gpuTrainingStarted === false, "autonomy skeleton audit unexpectedly reports GPU training")
+  assert(latest.rgbGenerationEligibleByThisAudit === true, "autonomy skeleton audit does not permit bounded RGB generation")
+  assert(latest.formalTrainingAuthorized === false, "autonomy skeleton audit must not authorize formal training")
+  assert(report.sourceManifestPath === taskManifestPath, "autonomy skeleton audit source manifest path mismatch")
+  assert(report.sourceManifestSha256 === taskManifestSha256, "autonomy skeleton audit source manifest hash mismatch")
+  assert(taskManifest.runId === report.sourceRunId, "autonomy skeleton audit source run mismatch")
+}
+
 function isReplaceableV7PreGenerationFailure(request) {
   return request.status === "generation_failed_retryable"
     && request.lastGenerationFailureCode === "v7_stale_task_manifest_selected_before_generation"
@@ -415,10 +608,7 @@ function buildPrompt(value, director, summary, profile, visualStandardProfile, r
   const retryInstruction = retryProfile
     ? `\nOwner-authorized retry repair: ${retryProfile.reason}. Apply this repair only to visual material expression. Do not alter world facts, condition geometry, object footprints, camera, environment context or review thresholds.`
     : ""
-  const focalInstruction = value.semanticRules.centerIntent.includes("semantic_only_no_rectangular_ground_patch")
-    ? "The focal-area color is semantic occupancy only: integrate it as an irregular natural quiet space and route convergence using the surrounding grass material. Never render its rectangular mask boundary, a square bare-earth pad, plaza, foundation or construction plot."
-    : "Treat the focal area as semantic occupancy and blend its boundary naturally into surrounding terrain."
-  return `Use case: stylized-concept\nAsset type: generator-native high-resolution exact 4:3 complete playable game-map cold-start RGB paired to an authoritative semantic condition guide\nPrimary request: Convert the only image reference, the authoritative semantic condition guide for ${value.blueprintId}, into one complete professional 2D high-resolution pure pixel-art game map for AI-PET-WORLD. Output one exact 4:3 image at the generator's native high resolution, no smaller than 1024x768. Do not crop, upscale, add borders, text or UI. The project program will preserve the raw source unchanged and create a separately audited nearest-neighbor 1024x768 training derivative. The only image reference is the sole authority for this run's layout. Preserve its exact water, shoreline, route, natural boundary and object-footprint geometry; respect the focal area as a semantic occupancy zone rather than a literal material shape. ${focalInstruction} No historical complete-map RGB image is supplied as an image reference. Use only the persisted versioned foundational complete-map visual standard aggregate for shared game visual language; never reconstruct or reuse a historical complete-map composition.\nComplete-map scope: show the entire connected natural-home region in one frame, including the authorized boundary entrance or exit relation, home center, continuous route organization, multiple recognizable spatial or ecological zones, natural boundary and large-world connectivity meaning. A magnified river segment, road segment, pond, clearing, material patch or other local scene is forbidden.\nWorld-fact identity: landscapeType=${value.landscapeType}; waterFlow=${value.semanticRules.waterFlow}; routeIntent=${value.semanticRules.routeIntent}; centerIntent=${value.semanticRules.centerIntent}; ${boundsSummary("entrance", value.geometry.entranceBounds)}; ${boundsSummary("focal", value.geometry.focalBounds)}.\nEnvironment context: contract=${environment.contractVersion}; season=${environment.season}; monsoonPhase=${environment.monsoonPhase}; environmentState=${environment.environmentState}; weather=${environment.weather}; lighting=${environment.lighting}; groundMoisture=${environment.groundMoisture}; visibility=${environment.visibility}.\nRegional ecology profile: typeId=${profile.typeId}; nameZh=${profile.nameZh}; requiredFeatures=${requiredFeatures}; optionalFeatures=${optionalFeatures}. Required features are identity constraints, not optional decoration. ${ecologyInstruction}\nDirector composition: layoutIntent=${director.compositionPlan.layoutIntent}; readOrder=${director.compositionPlan.readOrder.join(" -> ")}; focalHierarchy=${director.compositionPlan.focalHierarchy.join(" -> ")}; clutterBudget=${director.compositionPlan.clutterBudget}.\nCondition summary: ${JSON.stringify(summary)}.\nRoute raster contract: ${JSON.stringify(routeProfile)}. Render one continuous compacted-earth route across the full guide-defined path footprint, with visual coverage close to expectedNonZeroRatio=${routeProfile.expectedNonZeroRatio}. ${routeMaterialInstruction}\nScene/backdrop: class-Earth mainland Southeast Asia ${value.landscapeType} under the exact environment context above.\nVersioned foundational complete-map visual standard (aggregate numeric and text profile, no historical RGB): ${JSON.stringify(visualStandardProfile)}. ${paletteInstruction} Match the aggregate visual language without copying any historical composition.\nStyle/medium: professional high-resolution pure pixel art with the approved distant game-map scale, dense fine deliberate pixel clusters, layered terrain microtexture, crisp small-scale silhouettes and coherent warm daylight; no smooth digital painting and no coarse low-resolution sprite look\nComposition/framing: entire 4:3 playable region visible at once from the approved distant elevated ${value.semanticRules.camera} camera; terrainKinds=${terrainKinds.join(", ")}; objectFootprints=${JSON.stringify(objectCounts)}; maintain readable quiet playable areas\nMaterials/textures: ${waterMaterialInstruction} ${groundMaterialInstruction} Ground all vegetation and rocks using the approved fine pixel density.${retryInstruction}\nConstraints: follow the selected blueprint, world director output and condition guide; keep objects out of water, route and focal clearing; use one coherent world scale and the locked light direction; produce a composition unique to this condition\nAvoid: local_scene_not_complete_map, buildings, bridges, characters, animals, pets, vehicles, text, UI, watermark, invented major geometry, historical-complete-map composition reuse, previous-candidate composition reuse, snow, glacier, desert, generic savanna, orchard rows, temperate woodland, photorealism, painterly blur, low-resolution enlargement, tile collage, repeated stamps, uniform green noise, floating objects, close camera, oversized trees, oversized rocks, coarse pixel texture, owner-rejected style pattern, globally bright yellow-green ground, washed highlights, broken route segments, pale tan route blending into grass, rectangular focal patch, square bare-earth center`
+  return `Use case: stylized-concept\nAsset type: generator-native high-resolution exact 4:3 complete playable game-map cold-start RGB paired to an authoritative semantic condition guide\nPrimary request: Convert the only image reference, the authoritative semantic condition guide for ${value.blueprintId}, into one complete professional 2D high-resolution pure pixel-art game map for AI-PET-WORLD. Output one exact 4:3 image at the generator's native high resolution, no smaller than 1024x768. Do not crop, upscale, add borders, text or UI. The project program will preserve the raw source unchanged and create a separately audited nearest-neighbor 1024x768 training derivative. The only image reference is the sole authority for this run's layout. Preserve its exact water, shoreline, route, natural boundary and object-footprint geometry. The focal_area model channel is an inactive all-zero compatibility channel and is deliberately excluded from the visible guide. No preset home site, activity center, building plot, construction clearing, central square, route-convergence platform or protected empty patch may be invented. No historical complete-map RGB image is supplied as an image reference. Use only the persisted versioned foundational complete-map visual standard aggregate for shared game visual language; never reconstruct or reuse a historical complete-map composition.\nComplete-map scope: show the entire connected natural region in one frame, including the authorized boundary entrance or exit relation, continuous natural passage organization, multiple recognizable spatial or ecological zones, natural boundary and large-world connectivity meaning. A magnified river segment, road segment, pond, clearing, material patch or other local scene is forbidden.\nWorld-fact identity: landscapeType=${value.landscapeType}; waterFlow=${value.semanticRules.waterFlow}; routeIntent=${value.semanticRules.routeIntent}; siteSelectionPolicy=${value.semanticRules.siteSelectionPolicy}; ${boundsSummary("entrance", value.geometry.entranceBounds)}.\nEnvironment context: contract=${environment.contractVersion}; season=${environment.season}; monsoonPhase=${environment.monsoonPhase}; environmentState=${environment.environmentState}; weather=${environment.weather}; lighting=${environment.lighting}; groundMoisture=${environment.groundMoisture}; visibility=${environment.visibility}.\nRegional ecology profile: typeId=${profile.typeId}; nameZh=${profile.nameZh}; requiredFeatures=${requiredFeatures}; optionalFeatures=${optionalFeatures}. Required features are identity constraints, not optional decoration. ${ecologyInstruction}\nDirector composition: layoutIntent=${director.compositionPlan.layoutIntent}; readOrder=${director.compositionPlan.readOrder.join(" -> ")}; focalHierarchy=${director.compositionPlan.focalHierarchy.join(" -> ")}; clutterBudget=${director.compositionPlan.clutterBudget}.\nCondition summary: ${JSON.stringify(summary)}.\nRoute raster contract: ${JSON.stringify(routeProfile)}. Render one continuous compacted-earth route across the full guide-defined path footprint, with visual coverage close to expectedNonZeroRatio=${routeProfile.expectedNonZeroRatio}. ${routeMaterialInstruction}\nScene/backdrop: class-Earth mainland Southeast Asia ${value.landscapeType} under the exact environment context above.\nVersioned foundational complete-map visual standard (aggregate numeric and text profile, no historical RGB): ${JSON.stringify(visualStandardProfile)}. ${paletteInstruction} Match the aggregate visual language without copying any historical composition.\nStyle/medium: professional high-resolution pure pixel art with the approved distant game-map scale, dense fine deliberate pixel clusters, layered terrain microtexture, crisp small-scale silhouettes and coherent warm daylight; no smooth digital painting and no coarse low-resolution sprite look\nComposition/framing: entire 4:3 playable region visible at once from the approved distant elevated ${value.semanticRules.camera} camera; terrainKinds=${terrainKinds.join(", ")}; objectFootprints=${JSON.stringify(objectCounts)}; maintain multiple naturally formed ecological spaces without reserving a construction site\nMaterials/textures: ${waterMaterialInstruction} ${groundMaterialInstruction} Ground all vegetation and rocks using the approved fine pixel density.${retryInstruction}\nConstraints: follow the selected blueprint, world director output and condition guide; keep objects out of water and route; do not clear objects around any artificial center; use one coherent world scale and the locked light direction; produce a composition unique to this condition\nAvoid: local_scene_not_complete_map, preset_home_site_or_construction_clearing, home-center marker, activity-center marker, building plot, construction clearing, central square, rectangular bare-earth patch, route-convergence platform, buildings, bridges, characters, animals, pets, vehicles, text, UI, watermark, invented major geometry, historical-complete-map composition reuse, previous-candidate composition reuse, snow, glacier, desert, generic savanna, orchard rows, temperate woodland, photorealism, painterly blur, low-resolution enlargement, tile collage, repeated stamps, uniform green noise, floating objects, close camera, oversized trees, oversized rocks, coarse pixel texture, owner-rejected style pattern, globally bright yellow-green ground, washed highlights, broken route segments, pale tan route blending into grass`
 }
 
 function buildRegionalEcologyInstruction(profile) {
@@ -535,9 +725,9 @@ function buildSemanticConditionSummary(value, director, profile) {
     environmentContext: value.environmentContext,
     waterFlow: value.semanticRules.waterFlow,
     routeIntent: value.semanticRules.routeIntent,
-    centerIntent: value.semanticRules.centerIntent,
+    siteSelectionPolicy: value.semanticRules.siteSelectionPolicy,
     entranceBounds: value.geometry.entranceBounds,
-    focalBounds: value.geometry.focalBounds,
+    focalAreaCompatibilityChannel: "inactive_all_zero_excluded_from_visible_guide",
     terrainKinds: Array.from(new Set(value.geometry.terrainRegions.map((region) => region.kind))),
     objectCounts: countObjects(value.geometry.objectFootprints),
     directorLayoutIntent: director.compositionPlan.layoutIntent,

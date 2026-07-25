@@ -110,6 +110,7 @@ export function completeMapOriginalGroupFor(record: OriginalImageRecord): Comple
   if (record.status === "rejected") return "failed-records"
   if (
     isV7CapacityOriginal(record)
+    || isAutonomyRebuildOriginal(record)
     || record.autonomousGenerationTrainingOriginal?.sequenceNumber
   ) {
     return "autonomous-generation-training-originals"
@@ -122,6 +123,10 @@ export function completeMapOriginalGroupFor(record: OriginalImageRecord): Comple
 
 export function isV7CapacityOriginal(record: OriginalImageRecord) {
   return /^ai-cold-start-v7-v7-capacity-slot-\d{3}(?:-|$)/.test(record.recordId)
+}
+
+export function isAutonomyRebuildOriginal(record: OriginalImageRecord) {
+  return /^ai-cold-start-autonomy-autonomous-world-rebuild-\d{3}(?:-|$)/.test(record.recordId)
 }
 
 type OriginalImageLibraryIndex = {

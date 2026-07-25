@@ -1,6 +1,6 @@
 # AI-PET-WORLD 文档与项目目录结构
 
-更新时间：2026-07-13 19:31:50 +08:00
+更新时间：2026-07-24 21:46:58 +08:00
 
 状态：active-reference / 已规整 / 不决定当前执行顺序
 
@@ -118,6 +118,33 @@ data/world-samples/world-connectivity/
 └─ blueprints/<worldProfileId>/<connectivityBlueprintId>/
    └─ blueprint.json
 ```
+
+真实地理测量与自然化派生和视觉原图库分开保存，固定目录为：
+
+```text
+data/world-samples/earth-geospatial/
+├─ source-registry/
+│  └─ earth-geospatial-source-registry-v1.json
+└─ regions/
+   └─ <naturalizationContractId>/
+      ├─ region-contract.json
+      ├─ sources/                         # 可版本化的小型原始响应与hash
+      └─ derived-world-facts/             # 审核后的自然化事实，不含RGB
+
+.runtime/ai-painter/
+├─ earth-geospatial-naturalization-preflights/
+│  ├─ latest.json
+│  └─ <runId>/preflight-report.json
+└─ earth-geospatial-naturalization-runs/
+   └─ <runId>/
+      ├─ raw/                             # D盘热层的大型源栅格
+      ├─ normalized/
+      ├─ human-removal/
+      ├─ derived/
+      └─ reports/
+```
+
+`earth-geospatial`只保存真实测量来源、许可、版本、采集时间、hash、自然化步骤与派生世界事实。外部栅格不得进入`original-image-library`，不得成为RGB训练原图；页面和GET API只能读取程序已经保存和索引的摘要，不得通过页面访问触发下载或派生。
 
 `natural-home-large-world-connectivity-v1` 只定义区域身份、邻接、边界连接口、道路、水文、可走图和对象身份的机器契约。`blueprints/` 只保存项目所有者命令下由程序登记的具体连接蓝图；当前第一版蓝图已登记并迁移到 `data/world-runtime/` 的 tick 2，项目所有者审核通过后形成 tick 3。迁移前后状态、hash 和报告自动保存在 `.runtime/world-connectivity-migrations/`，人工审核命令与不改几何的结果自动保存在 `.runtime/world-connectivity-owner-reviews/`；页面读取不得创建或修改这些业务记录。实际世界实例和运行状态不得写回原图库。
 

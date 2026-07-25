@@ -1,8 +1,8 @@
 # 训练数据与来源正式规则
 
-更新时间：2026-07-23 05:55:34 +08:00
+更新时间：2026-07-25 09:02:19 +08:00
 
-状态：active-architecture / V7容量128张已批准 / 当前24张已登记 / 剩余104槽连续数据批次已授权 / V7 GPU训练未授权
+状态：active-architecture / V7容量128张已批准 / 连续出图批次已停止 / 17条变换派生容量已隔离 / 当前可信26张 / 非正式工程预训练已完成 / 正式缺口102张 / V7 GPU训练未授权
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
@@ -14,9 +14,11 @@
 
 第一版正式本地模型 RGB target 采用原生 `1024×768` 2D 高分辨率像素风完整画布。正式 target、正式候选、owner review 和 Runtime 必须具备统一视角、世界尺度、对象比例、像素纹理语言、轮廓、光照、接地、遮挡和游戏可读性；普通数字插画、仅套像素滤镜的图片、低分辨率自动放大图、tile/sprite 拼接图均不能取得正式资格。训练内部可以使用渐进分辨率，但最终正式输出只计本地模型原生 `1024×768` 文件一次。
 
-完整地图训练资格同时要求完整地图范围。只有单一河段、单一道路、单一池塘、单一林间空地、单一材质范围或放大局部生态单元的全画布图片，统一标记为 `local_scene_not_complete_map`；即使尺寸、来源、hash、23通道和像素风检查通过，也不得计入完整地图 target、`completeMapPositive` 或自主生成训练原图。此类图片只能作为局部视觉知识、负样本或审核失败证据保存。完整地图必须绑定整体入口/出口关系、家园中心、连续道路组织、多个可辨识空间或生态分区、自然边界和大世界连接语义；水体只按当前世界事实出现，不得把东南亚档案解释成固定水体构图模板。
+完整地图训练资格同时要求完整地图范围。只有单一河段、单一道路、单一池塘、单一林间空地、单一材质范围或放大局部生态单元的全画布图片，统一标记为 `local_scene_not_complete_map`；即使尺寸、来源、hash、23通道和像素风检查通过，也不得计入完整地图 target、`completeMapPositive` 或自主生成训练原图。此类图片只能作为局部视觉知识、负样本或审核失败证据保存。完整地图必须绑定整体入口/出口关系、连续自然通行组织、多个可辨识空间或生态分区、自然边界和大世界连接语义；水体只按当前世界事实出现，不得把东南亚档案解释成固定水体构图模板。
 
-任何新 RGB 的生成都要求“正式文档具体任务 + 项目所有者单图命令或有界批次命令”双重授权。当前有界批次命令仅为`owner-authorized-v7-remaining-104-continuous-batch-20260723`，覆盖`slot-004...107`。待人工审核不阻断后续不同槽位，但同槽不得自动重试；范围不明、重复风险和局部图风险仍必须在调用生成算力前阻断。
+后续初始自然地图训练数据不得包含或标注固定家园中心、建筑候选地、施工预留地、规则中央空地、道路汇聚方块或为这些位置清空对象的布局。`focal_area` 为维持23通道版本兼容而保留，但初始自然地图必须写入全零值，不得进入可视条件引导，不得作为对象排除区或道路目标。违反该规则的生成图必须保存为失败记录，失败码固定为 `preset_home_site_or_construction_clearing_forbidden`，不得进入正样本、容量贡献、Runtime 或 `/world`。
+
+任何新 RGB 的生成都要求“正式文档具体任务 + 项目所有者单图命令或当前有效的有界批次命令”双重授权。历史批次`owner-authorized-v7-remaining-104-continuous-batch-20260723`已经停止，不再构成有效出图授权。范围不明、重复风险、镜像/旋转/共享骨架风险和局部图风险必须在调用生成算力前阻断。
 
 冷启动基础完整地图原图必须先作为集合建立版本化完整地图视觉标准，不能只用于页面展示，也不能逐张作为后续生成器的图片参考。该标准只能保存经来源与审核身份约束的聚合数值、结构统计和文字契约；至少覆盖镜头/世界尺度、整体构图层次、入口—中心—道路关系、空间与生态分区、水体分布变化、对象尺寸/密度及像素视觉语法。后续条件训练样本仍必须由当前世界事实、世界导演、23通道与本轮新 RGB 真实配对形成。历史完整地图 RGB 不得用于反推世界事实或复制构图。
 
@@ -194,7 +196,7 @@ formalInferenceEligible = false
 
 条件后置 RGB 生成完成后必须通过 `finalize:ai-assisted-conditional-rgb` 进入既有原图库接收层，并由该入口自动调用 `run:ai-assisted-cold-start-review-pipeline`。AI辅助高分辨率来源必须使用同一 `recordId` 保存原始图 hash、训练派生图 hash、派生政策版本、无裁切/无放大证据和审核链；统一事件总账与原图库记录使用1024×768训练派生图身份，且必须能追溯到不可变原图。任何只保存图片但没有机器审核、总账事件和后续审核状态的记录都不能计入训练数据。项目所有者拒绝后，程序必须固定 `trainingEligibility=owner_rejected`、`aiAssistedColdStartEligible=false`、`independentTrainingEligible=false` 并保存不可变失败学习记录。生成前失败也必须由 `record:ai-assisted-conditional-rgb-generation-failure` 保存失败码、路线、UTC、北京时间和证据路径，不得保存 API Key 或其他秘密。
 
-条件后置 RGB 的季节与环境输入统一使用 `world-visual-environment-context-v1`。该对象必须由来源记录和锁定环境快照共同生成，并以同一身份贯穿世界事实蓝图、世界导演输出、完整任务包、生成请求和自动检查；至少包含 `season`、`monsoonPhase`、`environmentState`、`weather`、`lighting`、`groundMoisture`、`visibility` 和 `sourceSnapshotId`。所有条件共用同一请求编译算法；该算法还必须按 `regionalLandscapeType` 读取 `coverage-blueprint.json` 的区域生态档案，将 `requiredFeatures` 和 `optionalFeatures` 写入提示证据和请求。统一编译器必须读取版本化基础完整地图视觉标准的聚合数值/文字档案、当前23通道hash和道路期望覆盖比例，不得读取历史完整地图 RGB；当前请求契约固定为 `dynamic_complete_map_scope_plus_foundational_visual_standard_plus_world_facts_director_23_channels_v9`。生成前必须执行完整地图范围门禁；缺少入口/出口、家园中心、连续道路、多空间/生态分区、自然边界或大世界连接证据时，以 `local_scene_not_complete_map` 自动保存阻断。同一条件重试必须保存项目所有者授权原因，并固定不能修改世界事实、条件几何或审核门槛。不得把雨季、旱季或湿度文字写死。来源记录季节与快照季节不一致、请求文字与环境对象冲突、无水条件请求新增水体时，必须在图像生成前失败并自动保存失败记录。
+条件后置 RGB 的季节与环境输入统一使用 `world-visual-environment-context-v1`。该对象必须由来源记录和锁定环境快照共同生成，并以同一身份贯穿世界事实蓝图、世界导演输出、完整任务包、生成请求和自动检查；至少包含 `season`、`monsoonPhase`、`environmentState`、`weather`、`lighting`、`groundMoisture`、`visibility` 和 `sourceSnapshotId`。所有条件共用同一请求编译算法；该算法还必须按 `regionalLandscapeType` 读取 `coverage-blueprint.json` 的区域生态档案，将 `requiredFeatures` 和 `optionalFeatures` 写入提示证据和请求。统一编译器必须读取版本化基础完整地图视觉标准的聚合数值/文字档案、当前23通道hash和道路期望覆盖比例，不得读取历史完整地图 RGB；当前请求契约固定为 `dynamic_complete_map_scope_plus_foundational_visual_standard_plus_world_facts_director_23_channels_v9`。生成前必须执行完整地图范围门禁；缺少入口/出口、连续自然通行、多空间/生态分区、自然边界或大世界连接证据时，以 `local_scene_not_complete_map` 自动保存阻断；发现预设家园位置或建设空地时，以 `preset_home_site_or_construction_clearing_forbidden` 阻断或拒绝。同一条件重试必须保存项目所有者授权原因，并固定不能修改世界事实、条件几何或审核门槛。不得把雨季、旱季或湿度文字写死。来源记录季节与快照季节不一致、请求文字与环境对象冲突、无水条件请求新增水体时，必须在图像生成前失败并自动保存失败记录。
 
 机器审核的颜色分类器必须覆盖雨季和旱季两种地表。若通用道路暖色阈值将大面积金黄色旱季草层误判为道路，程序必须保留候选失败记录并阻断晋级；修复必须改进道路/草层的实际分类方法并对历史通过图、拒绝图和不同季节执行回归，不得只放宽空间、覆盖或风格阈值让当前图片通过。
 
@@ -403,3 +405,60 @@ slot-001闭环时的数据包曾保持旧21条条件配对并增加1条V7贡献�
 `v7-capacity-slot-003`绑定`lowland-evergreen-tropical-forest / dry_season / train / pairwise_landscape_season_baseline`。程序先保存两次RGB前失败：旱季配方缺失，以及道路与封闭边界碰撞；项目所有者已授权修复该配方。成功runId=`ai-assisted-v7-data-task-v7-capacity-slot-003-2026-07-22T13-27-59-480Z`使用既有旱季环境快照，保存独立世界事实、世界导演、任务包、正式23通道、完整地图范围审核、双时区时间、hash、32项SQLite artifact和1条中英文程序事件。
 
 该任务没有读取历史完整地图RGB几何，没有绑定现有RGB，没有生成图片，也没有启动GPU。当前`pairedRgbCount=0`，因此不会增加训练容量；总容量仍为23，缺口仍为105。只有项目所有者再次明确授权slot-003唯一一张RGB，并且后续机器审核、owner审核和容量登记全部通过后，该记录才可能进入AI辅助条件训练数据包。
+
+## 12. 2026-07-24 容量重分类与非正式工程预训练边界
+
+变换重复审计已确认17条历史容量由镜像、旋转或共享构图骨架派生。程序必须保留这些图片、记录、审核、时间戳和hash，但不得再把它们计入正式128张容量。独立重分类证据为`.runtime/ai-painter/ai-assisted-v7-capacity-reclassifications/ai-assisted-v7-capacity-reclassification-2026-07-23T22-54-14-255Z/reclassification.json`，SHA-256=`24f126487ccbd353d840b84f07edd6a4cf9646a2bd9a6940b514de1c44d770f2`。
+
+当前可信数据固定为26张：21张当前`complete-map-v2`条件配对完整地图，加V7容量槽位`001`、`002`、`003`、`033`、`034`。当前split固定为`21 train / 2 validation / 1 challenge / 2 regression`。该26张可以用于项目所有者授权的非正式工程预训练，只用于验证数据读取、23通道绑定、训练损失、checkpoint保存、事件记录和D盘SQLite索引链。
+
+工程预训练输出必须固定`formalInferenceEligible=false`、`runtimeFrameEligible=false`、`canEnterWorld=false`。它不能补足102张正式数据缺口，不能登记为新容量，不能启动或冒充正式V7训练，也不能生成新RGB。任何正式V7训练仍需128张数据包闭合并由项目所有者单独授权。
+
+后续新数据必须以`sakaerat-wang-nam-khiao-mvp-reference-v1`为具体MVP参照，并通过完整地图范围门和变换骨架前置门。项目所有者于2026-07-24批准真实地理自然化路线：有明确许可、版本和来源的高程、土地覆盖、气候与土壤测量可以派生自然世界事实及自然拓扑；建筑、城市、工程道路、耕地地块、地籍/行政边界和人工水体必须先移除或自然化重建。外部RGB、卫星图像、地图瓦片视觉、照片和外部视觉作品仍不得进入训练数据或作为生成器图片参考。
+
+### 真实地理测量来源与自然化边界
+
+正式来源注册表固定为`data/world-samples/earth-geospatial/source-registry/earth-geospatial-source-registry-v1.json`，首个区域契约固定为`data/world-samples/earth-geospatial/regions/sakaerat-wang-nam-khiao-earth-geospatial-naturalization-v1/region-contract.json`。当前来源职责固定如下：
+
+| 来源 | 允许用途 | 禁止用途 |
+|---|---|---|
+| Copernicus DEM GLO-30 | 地形高程、坡度、自然汇流与地貌层级的测量输入 | 直接当作游戏高度图发布；把真实栅格分辨率解释为游戏米/像素 |
+| ESA WorldCover 2021 | 识别自然覆盖、建成区与耕地，形成移除/重建掩码 | 当作RGB目标、颜色参考或可直接显示的地图 |
+| NASA POWER | 季风气候、温度、降雨、湿度与风的区域上下文 | 决定细粒度地形几何 |
+| SoilGrids | 土壤属性、排水与地表湿度的区域上下文 | 冒充对象位置、道路或精确水文几何 |
+
+每次程序运行必须保存：来源ID、提供者、产品版本、许可、署名、URL、采集时间、远端对象身份、原始响应hash、空间窗口、变换步骤、移除的人类开发类别、自然化重建报告、派生事实hash、成功/失败事件及SQLite索引。测量数据只有在自然化审计通过后才能形成WorldFact；它本身不是WorldFact，更不是RGB训练样本。
+
+### 12.1 非正式工程预训练执行结果
+
+程序已建立数据包`ai-assisted-v7-engineering-pretraining-trusted-26-2026-07-23T23-45-32-454Z`，manifest SHA-256=`06b706d208607cf74a6436f53b3f5b2ed395fdece6a3319dc9bb0f2b5fc46586`。26条数据全部具备唯一RGB、记录、机器审核、owner审核和23通道证据；17条镜像、旋转或共享骨架派生记录不在该包内。初始自然地图不允许固定家园中心，因此数据包内部使用统一全零`focal_area`兼容通道，原始记录及其hash保持不变。
+
+非正式训练runId=`ai-assisted-conditional-denoiser-v7-engineering-26-stage-0-2026-07-23T23-51-23-450Z`，checkpoint SHA-256=`bc65e68936ce851142c94b2be65ced528f44a874361e39e02d31406c3419d382`。程序完成6轮`256x192`工程训练，最佳验证指标=`3.538672380770246`，并自动保存逐轮指标、manifest、条件证据、算法证据、checkpoint、双语事件和SQLite索引。该run没有生成RGB，不取得正式V7、正式推理、Runtime或`/world`资格。
+
+这次运行不改变128张正式容量合同：当前可信26张、正式缺口102张。任何held-out RGB验证、正式V7训练、后续阶段训练或新增数据生产都必须获得项目所有者新的单独授权。
+
+## 13. 真实地理自然化数据的当前执行边界
+
+更新时间：2026-07-25 06:39:54 +08:00
+
+项目所有者已授权并完成`owner-approved-real-geography-naturalization-route-20260724`的数据阶段。Overpass/OSM在该链路中只用于识别测量窗口内的人类工程道路和建筑，并生成可追溯移除掩码；不得把OSM道路、水系、建筑轮廓、节点、关系或现实导航拓扑直接复制为游戏几何、23通道最终结构或RGB训练目标。
+
+工程设施移除runId=`earth-geospatial-engineered-removal-2026-07-24T21-46-52-147Z`保存107个工程要素及其来源响应、查询、许可、时间、hash和移除掩码。自然化WorldFacts runId=`earth-geospatial-naturalized-world-facts-2026-07-24T22-10-04-752Z`重建15,170个被排除像素，只导出聚合的地势、土地覆盖、土壤、水文和生态事实；WorldFacts固定`visualTrainingTargetEligible=false`，不能单独计入RGB容量。
+
+完整地图条件runId=`earth-geospatial-complete-map-conditions-2026-07-24T22-32-37-023Z`只消费聚合WorldFacts与已审核大世界连接契约，并在新的匿名游戏坐标中建立World Director、完整地图任务和23通道。独立检查确认23通道完整、`focal_area`全零、完整地图范围通过、没有读取历史RGB或复制现实/OSM几何。该条件包仍不是训练RGB、正式候选、RuntimeFrame或`/world`画面；任何单张RGB、训练或容量登记仍需项目所有者另行授权并继续遵守本文件的来源、许可、审核、自动保存和失败回写规则。
+
+## 14. 真实地理自然化条件首张RGB的数据资格
+
+更新时间：2026-07-25 09:02:19 +08:00
+
+项目所有者已以`owner-authorized-earth-reference-naturalized-complete-map-single-rgb-20260725`单独授权conditionId=`earth-reference-naturalized-complete-map-b3be6a28ffb6`的一张AI辅助冷启动RGB。请求ID=`conditional-rgb-001-2026-07-24T23-28-55-094Z`；生成器只接收程序编译的本轮语义条件引导图，不接收历史完整地图RGB、现实地图RGB、卫星图、地图瓦片或OSM几何。
+
+程序自动保存`1448×1086`源图SHA-256=`dd1075eb865991f250d91726724b3f2c17adbe0a3f726d5ad8da183cf8246ab8`与`1024×768`审核派生图SHA-256=`ac6778270a44d2379e1ea0c635041eb8685c0def7659ba8e7d3a6a73b1d29bb4`。机器审核仅以`condition_terrain_path_ground_centroid_drift`拒绝：道路视觉中心相对条件通道偏移`0.3108`，超过上限`0.25`。水体对齐、来源分辨率、风格指纹和构图新颖性均通过。
+
+该机器拒绝、失败图引用、失败码、下一训练目标、双时区时间、hash、SQLite索引和失败学习均作为不可变历史保留，不得覆盖或删除。项目所有者后续只授权诊断该审核差距并复审同一张图；没有授权重画、修改世界事实、23通道、审核阈值或风格标准。
+
+正式诊断runId=`ai-assisted-cold-start-path-false-positive-diagnosis-2026-07-25T00-34-27-315Z`确认旧审核器把远离正式道路条件的旱季裸地暖色碎片计入道路视觉中心。新版道路审核只保留与`terrain_path_ground`走廊连通或受其支持的8连通视觉分量，旧中心距离`0.3108`降为同图`0.0856`，排除非道路暖色像素`27,182`；`thresholdsChanged=false`、`newRgbCreated=false`。
+
+同图机器复审runId=`ai-assisted-cold-start-review-ai-cold-start-earth-reference-earth-reference-naturalized-complete-map-b3be6a28ffb6-v1-2026-07-25T00-37-54-194Z`通过，问题数=0。项目所有者明确通过由正式程序保存为reviewId=`ai-cold-start-owner-review-ai-cold-start-earth-reference-earth-reference-naturalized-complete-map-b3be6a28ffb6-v1-2026-07-25T00-41-06-524Z`，命令引用=`owner-approved-earth-reference-naturalized-complete-map-b3be6a28ffb6-20260725`。
+
+该记录当前资格固定为：`trainingEligibility=ai_assisted_cold_start_eligible`、`formalConditionalTrainingEligible=true`、`independentTrainingEligible=false`、`formalCandidate=false`、`runtimeFrameEligible=false`、`canEnterWorld=false`。程序重建的数据包`natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-25T00-45-56-567Z`已将其放入`validation`，只承担`rgb_autoencoder_warmup`。它尚无V7容量贡献身份，不得计入V7正式容量，也不得进入Runtime或`/world`。

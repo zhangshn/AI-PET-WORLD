@@ -1,10 +1,20 @@
 # AI-PET-WORLD 智能体执行规则
 
-更新时间：2026-07-23 05:55:34 +08:00
+更新时间：2026-07-25 09:02:19 +08:00
 
 状态：active-governance / 所有项目窗口和智能体必须遵守
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
+
+## 当前最新执行门禁
+
+项目所有者已授权的真实地理自然化数据建设已经闭合。工程设施移除runId=`earth-geospatial-engineered-removal-2026-07-24T21-46-52-147Z`通过Overpass API读取当前测量窗口内的OSM工程道路与建筑证据，共识别107个工程要素；OSM几何只用于识别人类开发痕迹并形成移除掩码，不得成为游戏世界几何、导航数据、23通道直接几何或RGB训练图。
+
+自然化WorldFacts runId=`earth-geospatial-naturalized-world-facts-2026-07-24T22-10-04-752Z`重建15,170个被排除像素，WorldFacts SHA-256=`52b207ec59ea6a4034998d8a0def396a61b0dd76c942089795081539758c3ff2`。完整地图条件runId=`earth-geospatial-complete-map-conditions-2026-07-24T22-32-37-023Z`、conditionId=`earth-reference-naturalized-complete-map-b3be6a28ffb6`已经生成并通过独立检查：World Director、完整地图任务、正式23通道、完整地图范围审核、双时区时间、SHA-256和SQLite索引全部存在；`focal_area`全零，不包含固定家园中心，不携带现实或OSM精确几何，不读取历史RGB，`remainingBlockers=[]`。
+
+项目所有者随后以`owner-authorized-earth-reference-naturalized-complete-map-single-rgb-20260725`只授权上述条件的一张RGB。请求ID=`conditional-rgb-001-2026-07-24T23-28-55-094Z`；Codex内置生成仅调用一次，程序自动保存`1448×1086`源图SHA-256=`dd1075eb865991f250d91726724b3f2c17adbe0a3f726d5ad8da183cf8246ab8`和nearest-neighbor `1024×768`审核派生图SHA-256=`ac6778270a44d2379e1ea0c635041eb8685c0def7659ba8e7d3a6a73b1d29bb4`，并完成来源、许可、任务、23通道、审核、双时区时间、hash、SQLite索引和失败学习自动写入。
+
+机器审核状态=`machine_rejected`，唯一失败码=`condition_terrain_path_ground_centroid_drift`：道路期望中心为`(0.1966, 0.5436)`，视觉信号中心为`(0.5051, 0.5057)`，距离`0.3108`，超过最大值`0.25`；水体条件、来源分辨率、风格指纹和对117张历史完整地图的构图新颖性审核均通过。该记录固定`status=rejected`、`trainingEligibility=machine_rejected`、`formalCandidate=false`、`runtimeFrameEligible=false`、`canEnterWorld=false`，未进入人工审核，GPU训练数仍为0。当前唯一下一动作是等待项目所有者明确授权道路条件对齐修复或新的单图尝试；不得自动重试、生成第二张、启动训练、建立候选、绑定RuntimeFrame或进入`/world`。
 
 ## 必读入口
 
@@ -25,9 +35,11 @@
 
 当前只处理第一版专业自然家园完整游戏地图及其数据、模型、审核、自动保存和控制台支撑。
 
-项目所有者于 2026-07-18 锁定完整地图范围：当前任务禁止继续生成或接收只有单一河段、单一道路、单一池塘、单一林间空地、单一材质区域或放大局部生态单元的“全画布局部图”。文件尺寸达到 `1024×768` 不等于完整地图。每张新 RGB 在生成前必须由正式世界事实、世界导演和完整地图级 23 通道共同证明其覆盖完整自然家园区域，能够同时表达整体入口/出口关系、家园中心、连续道路组织、多个可辨识空间或生态分区、自然边界和大世界连接语义；水体只在当前世界事实要求时出现，不得把东南亚档案错误解释成每张图都围绕水体。无法证明完整地图范围时必须在调用任何图像生成算力前阻断并询问项目所有者。
+项目所有者于 2026-07-18 锁定完整地图范围：当前任务禁止继续生成或接收只有单一河段、单一道路、单一池塘、单一林间空地、单一材质区域或放大局部生态单元的“全画布局部图”。文件尺寸达到 `1024×768` 不等于完整地图。每张新 RGB 在生成前必须由正式世界事实、世界导演和完整地图级 23 通道共同证明其覆盖完整自然家园区域，能够同时表达整体入口/出口关系、连续自然通行组织、多个可辨识空间或生态分区、自然边界和大世界连接语义；水体只在当前世界事实要求时出现，不得把东南亚档案错误解释成每张图都围绕水体。无法证明完整地图范围时必须在调用任何图像生成算力前阻断并询问项目所有者。
 
-除项目所有者明确签发的有界批次授权外，任何智能体或程序不得根据蓝图队列、历史计划、缺失编号、失败记录或“继续”状态自行批量出图。项目所有者于 2026-07-23 授权 `owner-authorized-v7-remaining-104-continuous-batch-20260723`：仅允许 `v7-capacity-slot-004...107` 共 104 个剩余槽位按严格串行模式连续建设数据。程序必须逐槽准备并验证世界事实、世界导演、完整地图任务和 23 通道，任何时刻最多存在一个活动生成请求；Codex 内置生成通道返回 RGB 后，程序自动保存并执行机器审核。机器通过只进入 `pending_review` 队列，机器失败必须保存失败证据并继续下一槽，不得自动重试、递增版本或视为人工通过。未经项目所有者逐张审核，不得登记容量贡献；本批次不得启动 V7 GPU 训练。发现文档、世界导演、23 通道或构图尺度可能导致局部图、重复图或相似图时，仍必须在该槽调用图像生成算力前阻断并询问项目所有者。
+项目所有者于 2026-07-23 进一步锁定初始自然世界的自主性边界：任何后续训练原图、世界事实、世界导演、23通道可视引导、提示词和审核规则均不得预设、暗示或保护固定的“家园中心”“活动中心”“建筑候选地”“施工空地”或道路汇聚平台。初始地图中的道路只表达既有自然通行与大世界连接，不得为了未来建筑而在中部或其他位置人为扩宽、留白、清空植被或形成规则方块。家园选址、建造位置和后续修路属于 AI 管家基于人格、记忆、目标和当时世界事实作出的运行时自主决策；只有该决策经合法世界规则写入新的 WorldFact 后，后续 RuntimeFrame 才能表达对应建设事实。为兼容既有模型输入，23通道中的 `focal_area` 名称暂时保留，但在初始自然地图任务中必须是全零的非活动兼容通道，不得进入可视条件引导，也不得承担家园选址、清空对象或道路汇聚语义。历史已保存记录继续作为不可变旧契约证据，不得重写或冒充新规则样本。
+
+除项目所有者明确签发的有界批次授权外，任何智能体或程序不得根据蓝图队列、历史计划、缺失编号、失败记录或“继续”状态自行批量出图。项目所有者曾于 2026-07-23 授权 `owner-authorized-v7-remaining-104-continuous-batch-20260723`；该连续批次已于2026-07-24被项目所有者明确停止，只作为历史授权证据保留，不得从任何槽位恢复。发现文档、世界导演、23 通道或构图尺度可能导致局部图、重复图或相似图时，必须在调用任何图像生成算力前阻断并询问项目所有者。
 
 冷启动基础完整地图原图不是只读展示图，也不是后续生成器直接临摹的图片参考。程序必须先从经审核基础完整地图集合中形成可追溯、版本化的完整地图视觉标准，至少覆盖镜头与世界尺度、整体构图层次、入口/中心/道路关系、空间与生态分区组织、水体分布变化、对象尺寸与密度、像素纹理、色彩、光照和游戏可读性。后续生成只允许消费该聚合标准、当前世界事实、世界导演和本轮23通道；不得把历史完整地图 RGB 直接传给生成器。统一游戏视觉语言不等于重复构图，河流、道路、区域组合和生态结构必须由本轮世界事实产生并通过新颖性审核。
 
@@ -114,3 +126,27 @@ AI辅助单图推理验证入口现在还必须自动调用验证专用机器审
 2026-07-23 04:16:35 +08:00 最新执行状态覆盖上一句“等待slot-003单图授权”：项目所有者已明确授权并仅生成`v7-capacity-slot-003`唯一一张完整地图RGB。正式请求ID=`conditional-rgb-003-2026-07-22T20-03-44-163Z`，记录ID=`ai-cold-start-v7-v7-capacity-slot-003-lowland-evergreen-tropical-forest-v1`；唯一图像引用为当前任务语义条件引导图，历史完整地图RGB引用数为0。程序自动保存`1448×1086`源图SHA-256=`8182273c7f60a6445a2a7fafdef1f2b4c1ed085d00ae9d69aa6a1f102211a9b4`及nearest-neighbor `1024×768`训练派生图SHA-256=`3fb5be1a2ac39c5da46cb9c67516b0bd3712bfe1d66c6a13e215913c593217c4`，并完成任务、23通道、提示、来源许可、机器审核、双时区时间、hash和SQLite证据写入。当前请求状态=`generated_intaked_machine_passed_waiting_owner_review`、机器状态=`machine_contract_passed_waiting_owner_visual_review`、owner状态=`pending_review`，仍不得计入容量。当前唯一动作是项目所有者在页面审核该图；不得生成第二张、准备`slot-004`、启动V7 GPU训练、建立RuntimeFrame或进入`/world`。
 
 2026-07-23 05:55:34 +08:00 最新授权覆盖上一句“停止等待下一任务”：项目所有者允许将剩余104张数据建设切换为连续批次模式。批次范围固定`slot-004...107`，严格单活动请求；程序自动准备、保存和机器审核，机器通过进入待人工审核队列，失败保存后继续下一槽。该授权不允许自动人工通过、自动容量登记、自动重试或V7 GPU训练。像素仍由批准的Codex内置生成通道提供，本地程序负责世界条件编排、接收、审核、存储与队列推进，不得把该阶段宣称为本地V7模型自主出图。
+
+2026-07-24最新执行状态覆盖上述连续批次授权：项目所有者已经停止批量出图。变换重复审计runId=`ai-assisted-v7-transform-duplicate-audit-2026-07-23T21-57-30-763Z`确认17条镜像、旋转或共享构图骨架派生记录；重分类runId=`ai-assisted-v7-capacity-reclassification-2026-07-23T22-54-14-255Z`在不改写历史的前提下暂停其容量资格。最新容量计划runId=`ai-assisted-v7-data-capacity-plan-2026-07-23T23-02-25-228Z`确认可信26张、暂停17张、正式缺口102张。生成前范围门已经以`transform_derived_complete_map_skeleton_forbidden`阻断变换派生骨架。新增MVP事实参照固定为泰国Sakaerat / Wang Nam Khiao；历史事实锚点和旧连接蓝图继续作为不可变证据保留。
+
+项目所有者于2026-07-24进一步批准`owner-approved-real-geography-naturalization-route-20260724`。新数据路线允许使用具有明确许可、版本和来源的真实地球高程、土地覆盖、气候与土壤测量数据派生自然世界事实和自然拓扑；这不等于复制外部RGB、地图瓦片视觉或现实导航地图。程序必须剔除建筑、城市、工程道路、耕地地块、行政/地籍边界和人工水体几何，并依据邻近自然地形、水文、土壤与生态证据完成自然化重建，再归一化到游戏世界坐标。原始测量、来源许可、采集时间、远端身份、hash、变换步骤、派生事实和失败记录必须由程序自动保存并进入SQLite。真实地理栅格分辨率不得被擅自解释为游戏米/像素；外部测量数据不得作为RGB训练原图或直接图片参考。当前只授权来源预检、数据采集、自然化世界事实、世界导演与23通道建设；任何RGB生成、GPU训练、正式候选、RuntimeFrame或`/world`仍需项目所有者单独授权。
+
+2026-07-25最新真实地理首图审核状态覆盖此前“机器拒绝并等待修复授权”的历史门禁。程序在不修改世界事实、23通道、图像、审核阈值和风格标准的前提下，完成道路视觉误判诊断runId=`ai-assisted-cold-start-path-false-positive-diagnosis-2026-07-25T00-34-27-315Z`。根因是旧审核器把远离正式道路条件的旱季裸地暖色碎片一并计入道路中心；新版只保留与正式`terrain_path_ground`走廊连通或受其支持的8连通视觉分量。旧道路中心距离`0.3108`，同图新距离`0.0856`，被排除的非道路暖色像素为`27,182`；`thresholdsChanged=false`、`newRgbCreated=false`。
+
+同一张SHA-256=`ac6778270a44d2379e1ea0c635041eb8685c0def7659ba8e7d3a6a73b1d29bb4`的`1024×768`派生图随后完成正式机器复审，runId=`ai-assisted-cold-start-review-ai-cold-start-earth-reference-earth-reference-naturalized-complete-map-b3be6a28ffb6-v1-2026-07-25T00-37-54-194Z`，状态=`machine_contract_passed_waiting_owner_visual_review`、问题数=0。旧拒绝记录、诊断记录和新通过记录均作为不可变历史保留。项目所有者此前对该图的明确“通过，完全可以”已由正式程序以命令引用`owner-approved-earth-reference-naturalized-complete-map-b3be6a28ffb6-20260725`写入，owner reviewId=`ai-cold-start-owner-review-ai-cold-start-earth-reference-earth-reference-naturalized-complete-map-b3be6a28ffb6-v1-2026-07-25T00-41-06-524Z`。当前训练资格=`ai_assisted_cold_start_eligible`、`formalConditionalTrainingEligible=true`、`independentTrainingEligible=false`，仍固定`formalCandidate=false`、`runtimeFrameEligible=false`、`canEnterWorld=false`。
+
+程序已自动重建冷启动数据包`natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-25T00-45-56-567Z`，共76条，其中完整地图/Autoencoder 72条、正式条件绑定43条，split=`53/7/6/6`，阻断项为空。该真实地理记录进入`validation`并只承担`rgb_autoencoder_warmup`；因尚无当前V7容量贡献身份，不得被冒充为V7正式容量。此次闭环没有生成新RGB、没有启动GPU训练、没有建立RuntimeFrame或进入`/world`。
+
+真实地理测量窗口已由程序编译并通过离线检查。runId=`earth-geospatial-naturalization-2026-07-24T15-43-27-955Z`使用Sakaerat官方`7,808 ha`范围与4:3画布计算仅用于采样的观测包络；该包络约`10.20 × 7.65 km`，不定义运行时米/像素。程序缓存并哈希Copernicus DEM与ESA WorldCover源，裁取并归一化`1024×768`测量数组；高程为`248.0724–769.7570 m`，有效像素`786,432`，识别并自然化耕地/建成区像素`10,280`。首次调色板解析失败及后续成功运行均已自动保存，当前`imageGenerationStarted=false`、`gpuTrainingStarted=false`、`derivedWorldFactsCreated=false`。本段所列“尚未采集SoilGrids与尚未派生自然水文”的旧状态已由下一段覆盖。
+
+2026-07-25 01:49:16 +08:00，程序完成SoilGrids测量和临时自然水文编译，最终runId=`earth-geospatial-soil-hydrology-2026-07-24T17-49-16-293Z`。四个`0-5cm / Q0.5`土壤窗口均来自SoilGrids WCS 2.0.1并保存原始GeoTIFF、许可、请求URL、字节数和SHA-256：黏土`19.7–37.2%`、均值`28.4045%`；砂土`30.1–39.5%`、均值`35.8619%`；pH`5.0–5.9`、均值`5.2482`；体积含水量`36.7–40.7%`、均值`39.4580%`。程序把已保存DEM聚合到`256×192`分析网格，执行Priority-Flood洼地填充、D8汇流和流量累积；最大汇流量`12,578`，临时排水像素`734`、占比`1.4933%`，边界出口`65`。该水文固定为`provisional_dem_derived_pending_engineered_linear_removal`，在工程线性设施移除证据完成前不得成为最终WorldFact。第一次runId=`earth-geospatial-soil-hydrology-2026-07-24T17-31-39-590Z`因`MinHeap`初始化顺序失败，后续无数据值统计修正和最终成功run均由程序保留为不可变历史并写入SQLite。当前只剩`engineered_linear_feature_removal_evidence_missing`、`derived_world_facts_missing`、`complete_map_23_channels_missing`三项阻断；本阶段仍为RGB 0张、GPU训练0次、WorldFacts 0套。
+
+项目所有者授权的26图非正式工程预训练已经完成。数据包ID=`ai-assisted-v7-engineering-pretraining-trusted-26-2026-07-23T23-45-32-454Z`，manifest SHA-256=`06b706d208607cf74a6436f53b3f5b2ed395fdece6a3319dc9bb0f2b5fc46586`；训练runId=`ai-assisted-conditional-denoiser-v7-engineering-26-stage-0-2026-07-23T23-51-23-450Z`，6轮`256x192`工程训练最佳epoch=6、最佳验证指标=`3.538672380770246`、checkpoint SHA-256=`bc65e68936ce851142c94b2be65ced528f44a874361e39e02d31406c3419d382`。程序自动保存6个训练artifact、2条中英文事件和D盘SQLite索引；本轮生成RGB=0。该run固定`formalV7TrainingAuthorized=false`、`formalInferenceEligible=false`、`runtimeFrameEligible=false`、`canEnterWorld=false`，不能增加正式容量。未经项目所有者新的单独授权，不得执行held-out RGB验证、恢复批量出图、启动正式V7训练、建立候选、RuntimeFrame或进入`/world`。
+
+2026-07-24最新自主性执行状态：程序已按`initial-natural-world-no-preset-home-site-v1`暂停旧工程包中24条含固定`home_center`或非零`focal_area`的后续训练资格，并以runId=`ai-assisted-v7-autonomy-rebuild-24-2026-07-24T03-24-05-684Z`建立`autonomous-world-rebuild-001...024`共24套无预设家园位置条件。24/24套23通道完整、`focal_area`全零、完整地图范围通过、配对RGB为0。构图审计runId=`ai-assisted-v7-autonomy-rebuild-condition-skeleton-audit-2026-07-24T03-33-33-443Z`完成276组原位及镜像/旋转比较，重复、强变换重复和关注组均为0。
+
+项目所有者随后以`owner-authorized-autonomous-world-rebuild-001-single-rgb-20260724`只授权`autonomous-world-rebuild-001`唯一一张RGB。请求ID=`conditional-rgb-001-2026-07-24T04-29-42-877Z`；Codex内置生成仅调用一次，源图SHA-256=`db0c793ea93429d44ac913267be6a56409e620d309e922516a4687d52590eaba`，程序自动派生的`1024×768`图SHA-256=`fbe83fa149ded7d09da77b77bcf956caa86cc49c4142d1f0747fbfc49b032c0a`。首次接收失败已保留不可变记录和SQLite事件，修复授权识别后复用同一源图完成接收，没有重复生成。
+
+项目所有者已于`2026-07-24T06:01:21.719Z / 2026-07-24T14:01:21+08:00`以`owner-approved-autonomous-world-rebuild-001-20260724`明确通过001。程序自动保存owner审核、不可变历史、原图索引、请求更新和SQLite事件；审核记录SHA-256=`064472a424b42524ec6c5d41466409ceb8baaabe0b104d49baea4eca0b0001c6`。当前请求=`generated_intaked_machine_passed_owner_approved`，训练资格=`ai_assisted_cold_start_eligible`；该图仍未取得正式容量、独立训练、正式候选、RuntimeFrame或`/world`资格。001闭环后必须停止；不得生成002、自动登记容量或启动GPU训练，任何后续动作仍需项目所有者单独授权。
+
+2026-07-24 17:03:18 +08:00 最新执行状态覆盖上一句“不得生成002”的历史门禁：项目所有者已以`owner-authorized-autonomous-world-rebuild-002-single-rgb-20260724`单独授权并仅生成`autonomous-world-rebuild-002`唯一一张RGB。请求ID=`conditional-rgb-002-2026-07-24T08-09-32-109Z`，世界身份=`training-world:autonomous-complete-map-002:12a1ebb5d0eb`，景观=`seasonal-evergreen-semi-evergreen-forest`，季节=`wet_to_dry_transition`；正式23通道完整且`focal_area`全零，无主要水体事实、固定家园中心、活动中心、施工空地或历史完整地图RGB引用。Codex内置生成仅调用一次；程序自动保存`1448×1086`源图SHA-256=`415038107844f51c1ffc78534fca0669cf434199051b9dcd5e05fbbd1517de5b`和nearest-neighbor `1024×768`派生图SHA-256=`46ee59c59b5f99be083b9bf53de33fa3c5d3dccc87a060414bb709a362658dfe`，并完成来源、许可、双时区时间、hash、机器审核和SQLite证据写入。当前请求=`generated_intaked_machine_passed_waiting_owner_review`、机器状态=`machine_contract_passed_waiting_owner_visual_review`、owner状态=`pending_review`、训练资格=`false`。当前唯一动作是项目所有者在控制台页面审核002；不得生成003、自动重试、批量出图、自动登记容量、启动GPU训练、创建RuntimeFrame或进入`/world`。

@@ -9,7 +9,7 @@ import {
 
 const ROOT = process.cwd()
 
-export const FOUNDATIONAL_STANDARD_SCHEMA = "foundational-complete-map-visual-standard-v1"
+export const FOUNDATIONAL_STANDARD_SCHEMA = "foundational-complete-map-visual-standard-v2"
 export const FOUNDATIONAL_STANDARD_STATUS = "foundational_complete_map_visual_standard_ready"
 export const FOUNDATIONAL_RECORD_COUNT = 22
 export const FOUNDATIONAL_WORLD_PROFILE_ID = "mainland-southeast-asia-tropical-monsoon-natural-home-v1"
@@ -94,7 +94,7 @@ export async function buildFoundationalCompleteMapVisualStandard(index) {
     standardId: `foundational-complete-map-visual-standard-${inputSha256.slice(0, 16)}`,
     status: FOUNDATIONAL_STANDARD_STATUS,
     worldProfileId: FOUNDATIONAL_WORLD_PROFILE_ID,
-    sourcePolicy: "owner_approved_foundational_complete_maps_001_through_022_aggregate_only_v1",
+    sourcePolicy: "owner_approved_foundational_complete_maps_001_through_022_aggregate_only_v2_no_preset_site_bias",
     inputSha256,
     sourceRecordCount: sourceEvidence.length,
     sourceEvidence,
@@ -138,6 +138,8 @@ export function validateFoundationalCompleteMapVisualStandard(standard) {
   if (!standard?.generatorProfile || hasImagePath(standard.generatorProfile)) issues.push("generator_profile_contains_historical_image_path")
   if (standard?.generatorProfile?.completeMapScope !== "complete_natural_home_region_not_local_scene") issues.push("generator_profile_complete_map_scope_missing")
   if (standard?.generatorProfile?.visualLanguage?.nativeWidth !== 1024 || standard?.generatorProfile?.visualLanguage?.nativeHeight !== 768) issues.push("generator_profile_native_resolution_mismatch")
+  if (standard?.generatorProfile?.siteSelectionPolicy !== "initial_natural_world_no_preset_home_site") issues.push("generator_profile_site_selection_policy_invalid")
+  if (standard?.compositionStatistics?.metrics?.centerQuietCoverage) issues.push("generator_profile_contains_center_quiet_bias")
   return { passed: issues.length === 0, issues }
 }
 
@@ -169,12 +171,10 @@ async function extractAggregateCompositionFeatures(imagePath) {
     vegetationCoverage: 0,
     earthCoverage: 0,
     darkBoundaryCoverage: 0,
-    centerQuietCoverage: 0,
     edgeDenseCoverage: 0,
   }
   const total = info.width * info.height
   let edgePixels = 0
-  let centerPixels = 0
   for (let y = 0; y < info.height; y += 1) {
     for (let x = 0; x < info.width; x += 1) {
       const offset = (y * info.width + x) * info.channels
@@ -189,27 +189,21 @@ async function extractAggregateCompositionFeatures(imagePath) {
       if (green > red * 1.06 && green > blue * 1.05 && saturation > 0.18) counts.vegetationCoverage += 1
       if (red > blue * 1.18 && red >= green * 0.88 && green > blue * 1.05 && saturation > 0.12) counts.earthCoverage += 1
       const edge = x < 8 || x >= info.width - 8 || y < 6 || y >= info.height - 6
-      const center = x >= 16 && x < 48 && y >= 12 && y < 36
       if (edge) {
         edgePixels += 1
         if (luminance < 0.37 || (green > red * 1.08 && saturation > 0.2)) counts.edgeDenseCoverage += 1
         if (luminance < 0.3) counts.darkBoundaryCoverage += 1
       }
-      if (center) {
-        centerPixels += 1
-        if (saturation < 0.42 && luminance > 0.25 && luminance < 0.72) counts.centerQuietCoverage += 1
-      }
     }
   }
   return {
-    featureVersion: "foundational-complete-map-composition-aggregate-feature-v1",
+    featureVersion: "foundational-complete-map-composition-aggregate-feature-v2",
     featureNames: Object.keys(counts),
     vector: [
       counts.waterCoverage / total,
       counts.vegetationCoverage / total,
       counts.earthCoverage / total,
       counts.darkBoundaryCoverage / Math.max(1, edgePixels),
-      counts.centerQuietCoverage / Math.max(1, centerPixels),
       counts.edgeDenseCoverage / Math.max(1, edgePixels),
     ].map((value) => round(value, 8)),
   }
@@ -254,14 +248,14 @@ function buildTextualContract() {
   return {
     completeMapScope: "One native 1024x768 frame must show the whole connected natural-home region, never a magnified local ecological scene.",
     cameraAndScale: "Use one distant elevated top-down slight three-quarter 2D game camera with stable world scale and object proportions.",
-    compositionHierarchy: "The whole frame must read as entrance or exit relation, continuous route organization, home center, multiple recognizable spatial or ecological zones, natural boundary and large-world connectivity.",
-    routeAndCenter: "Routes must connect the authorized boundary entrance or exit to the home center and organize movement across the complete region.",
+    compositionHierarchy: "The whole frame must read as entrance or exit relation, continuous natural passage organization, multiple recognizable spatial or ecological zones, natural boundary and large-world connectivity.",
+    routeAndSiteAutonomy: "Routes must express only current world facts and large-world passage. Initial natural maps must not reserve a home site, activity center, building plot, construction clearing or route-convergence platform.",
     ecologicalZones: "Use multiple legible spaces and ecological zones governed by the current world facts; do not enlarge one river, road, pond, clearing or material patch to fill the canvas.",
     waterVariation: "Water appears only when current world facts require it; mainland Southeast Asia does not imply a water-dominated composition.",
     objectScaleAndDensity: "Trees, rocks and vegetation keep stable game scale, grounded footprints, readable clustering and playable negative space.",
     pixelLanguage: "Professional native 1024x768 high-resolution pure pixel art with crisp deliberate clusters, coherent outlines, grounding and occlusion.",
     colorAndLighting: "Use one coherent natural-light system and restrained tropical monsoon palette while allowing season and environment facts to change local color and density.",
-    gameplayReadability: "Terrain, routes, boundaries, focal space, walkability and collision causes remain readable as a game map.",
+    gameplayReadability: "Terrain, routes, boundaries, natural spaces, walkability and collision causes remain readable as a game map.",
     diversity: "Visual language stays unified while water, route, zone and ecology composition must be newly derived from the current facts and 23 channels.",
     forbidden: [
       "local_scene_not_complete_map",
@@ -270,15 +264,17 @@ function buildTextualContract() {
       "single_feature_full_canvas",
       "tile_collage_or_repeated_stamp",
       "program_drawn_final_rgb",
+      "preset_home_site_or_construction_clearing",
     ],
   }
 }
 
 function buildGeneratorProfile({ inputSha256, visualStyleStatistics, compositionStatistics, landscapeCoverage }) {
   return {
-    schemaVersion: "foundational-complete-map-generator-profile-v1",
+    schemaVersion: "foundational-complete-map-generator-profile-v2",
     inputSha256,
     completeMapScope: "complete_natural_home_region_not_local_scene",
+    siteSelectionPolicy: "initial_natural_world_no_preset_home_site",
     historicalCompleteMapRgbReferenceCount: 0,
     directHistoricalImageReferencesForbidden: true,
     visualLanguage: {
@@ -297,8 +293,7 @@ function buildGeneratorProfile({ inputSha256, visualStyleStatistics, composition
     landscapeCoverage,
     requiredWholeMapEvidence: [
       "boundary_entrance_or_exit_relation",
-      "home_center",
-      "continuous_route_organization",
+      "continuous_natural_passage",
       "multiple_recognizable_spatial_or_ecological_zones",
       "natural_boundary",
       "large_world_connectivity_semantics",

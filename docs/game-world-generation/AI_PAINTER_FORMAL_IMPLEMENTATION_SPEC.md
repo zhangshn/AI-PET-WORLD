@@ -1,8 +1,8 @@
 # AI Painter 正式实现规格
 
-更新时间：2026-07-23 05:55:34 +08:00
+更新时间：2026-07-25 09:02:19 +08:00
 
-状态：active-architecture / 当前完整世界视觉实现唯一规格 / V7剩余104槽连续数据批次已授权 / 当前24张已登记 / V7 GPU训练未授权
+状态：active-architecture / 当前完整世界视觉实现唯一规格 / 连续数据批次已停止 / 旧工程包24条预设家园位置记录已暂停训练资格 / 24套自主自然世界条件已通过生成前门禁 / 自主重建001单图已获owner通过 / V7 GPU训练未授权
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
@@ -12,7 +12,23 @@ AI Painter 是 AI-PET-WORLD 的完整世界视觉生产系统。它在世界事�
 
 AI Painter 不决定世界中有什么，不决定道路是否可走、对象是否碰撞、世界如何生长，也不能用图片反推正式世界事实。局部材料、对象图和过渡图只是内部能力，不能代表完整 AI Painter。
 
-当前完整地图模型不得输出“全画布局部图”。`1024×768` 只定义原生画布，不定义地图范围；单一河段、单一道路、单一池塘、单一林间空地、单一材质范围或放大局部生态单元即使铺满画布，也不属于完整地图。世界导演和条件编译器必须在像素生成前提供完整地图范围证据，证明同一画面包含整体入口/出口关系、家园中心、连续道路组织、多个可辨识空间或生态分区、自然边界及大世界连接语义。水体布局必须服从当前世界事实，不能成为每张东南亚地图的默认主体。范围证据缺失或只描述局部场景时，推理入口必须以 `local_scene_not_complete_map` 在算力调用前阻断。
+真实地理自然化属于世界事实准备层，不属于AI Painter像素生成层。正式前置链固定为：
+
+```text
+有许可的高程/土地覆盖/气候/土壤测量
+-> 来源与许可注册
+-> 人类开发痕迹移除
+-> 自然地形/水文/土壤/生态重建
+-> 审核后的DerivedNaturalWorldFacts
+-> WorldFacts
+-> World Director
+-> 完整地图级23通道
+-> AI Painter像素生成
+```
+
+AI Painter不得读取外部RGB、卫星图像或地图瓦片作为图片参考。真实地理数据只通过审核后的结构化世界事实和23通道进入视觉链；真实数据的原始分辨率、坐标与地名不得直接成为游戏画布比例、玩家导航数据或正式视觉身份。
+
+当前完整地图模型不得输出“全画布局部图”。`1024×768` 只定义原生画布，不定义地图范围；单一河段、单一道路、单一池塘、单一林间空地、单一材质范围或放大局部生态单元即使铺满画布，也不属于完整地图。世界导演和条件编译器必须在像素生成前提供完整地图范围证据，证明同一画面包含整体入口/出口关系、连续自然通行组织、多个可辨识空间或生态分区、自然边界及大世界连接语义。水体布局必须服从当前世界事实，不能成为每张东南亚地图的默认主体。范围证据缺失或只描述局部场景时，推理入口必须以 `local_scene_not_complete_map` 在算力调用前阻断。
 
 ### 1.1 冷启动完整地图视觉标准
 
@@ -20,7 +36,7 @@ AI Painter 不决定世界中有什么，不决定道路是否可走、对象是
 
 - 镜头方向、镜头距离、世界尺度与对象比例；
 - 整体构图层次、视觉阅读顺序和可游玩空间组织；
-- 入口、家园中心、主路/支路、边界与连接口的关系；
+- 入口/出口、自然通行、边界与连接口的关系；
 - 多空间、多生态分区的组织方式及分区之间的过渡；
 - 有水、少水与无水地图的分布变化，不固定单一河流模板；
 - 树木、石头、植被等对象尺寸、密度、接地与遮挡；
@@ -53,7 +69,11 @@ AI Painter 不决定世界中有什么，不决定道路是否可走、对象是
 
 画法/生成算法和风格契约不是同一个概念，但两者缺一不可。算法保证来源、条件消费和新像素生成正确；风格契约保证不同区域、季节和状态仍属于同一款游戏。季节、湿度、生态类型和生命周期可以改变局部色彩、密度和环境状态，但不能自行改变镜头关系、对象比例、逻辑像素尺度、轮廓语言和光照体系。任何新增风格版本必须取得项目所有者命令并保存版本身份；不得由智能体或模型在单张图中临时改风格。
 
-全部地图条件统一使用 `world-visual-environment-context-v1`，不是每张图使用不同算法。统一链路固定为 `来源记录/环境快照 -> WorldFacts.environmentContext -> World Director -> CompleteWorldVisualTaskPackage -> coverage-blueprint区域生态档案 -> 完整地图范围门禁 -> 生成请求编译器 -> 像素生成器`。当前请求契约为 `dynamic_complete_map_scope_plus_foundational_visual_standard_plus_world_facts_director_23_channels_v9`；每个区域的 `requiredFeatures`、`optionalFeatures`、地表湿度、道路材质和调色指令都由同一编译器从当前生态档案与环境上下文动态构建。v9读取 `versioned_foundational_complete_map_visual_standard_aggregate_only_v1`、当前23通道及其道路覆盖档案，但不读取历史完整地图 RGB。范围门禁必须在生成算力调用前验证完整地图入口/出口、家园中心、连续道路、多空间/生态分区、自然边界及大世界连接证据；失败统一写入 `local_scene_not_complete_map` 并阻断。同一条件重试时，项目所有者授权的非空原因必须形成 `owner-authorized-conditional-rgb-retry-repair-v1`，只允许改变视觉材料表达，不能改变世界事实、条件几何、对象足迹、镜头、环境或审核门槛。季节、季风阶段、环境状态、天气、光照、地表湿度和能见度只作为版本化输入参数变化；请求编译器不得硬编码雨季、旱季或湿度，也不得因单个条件新增临时生成算法。任何跨层身份不一致必须在像素生成前阻断。
+全部地图条件统一使用 `world-visual-environment-context-v1`，不是每张图使用不同算法。统一链路固定为 `来源记录/环境快照 -> WorldFacts.environmentContext -> World Director -> CompleteWorldVisualTaskPackage -> coverage-blueprint区域生态档案 -> 完整地图范围门禁 -> 生成请求编译器 -> 像素生成器`。当前请求契约为 `dynamic_complete_map_scope_plus_foundational_visual_standard_plus_world_facts_director_23_channels_v9`；每个区域的 `requiredFeatures`、`optionalFeatures`、地表湿度、道路材质和调色指令都由同一编译器从当前生态档案与环境上下文动态构建。v9读取 `versioned_foundational_complete_map_visual_standard_aggregate_only_v2_no_preset_site_bias`、当前23通道及其道路覆盖档案，但不读取历史完整地图 RGB。范围门禁必须在生成算力调用前验证完整地图入口/出口、连续自然通行、多空间/生态分区、自然边界及大世界连接证据；失败统一写入 `local_scene_not_complete_map` 并阻断。初始自然地图不得把 `home_center` 写入世界事实或导演必显项；兼容通道 `focal_area` 必须全零且不能合成进可视条件引导。同一条件重试时，项目所有者授权的非空原因必须形成 `owner-authorized-conditional-rgb-retry-repair-v1`，只允许改变视觉材料表达，不能改变世界事实、条件几何、对象足迹、镜头、环境或审核门槛。季节、季风阶段、环境状态、天气、光照、地表湿度和能见度只作为版本化输入参数变化；请求编译器不得硬编码雨季、旱季或湿度，也不得因单个条件新增临时生成算法。任何跨层身份不一致必须在像素生成前阻断。
+
+### 1.2 初始自然世界的选址自主性
+
+当前数据建设只表达尚未建设的自然世界。固定家园中心、活动中心、建筑候选地、施工空地、矩形留白和道路汇聚平台均为禁止内容。AI Painter 不得为了构图可读性创建这些世界事实，也不得通过对象清空或道路扩宽暗示这些位置。家园选址、建造和修路属于 AI 管家未来的运行时自主行为；只有新 WorldFact 合法存在后，后续视觉任务才能读取并表达。历史 `home_center` 任务和图片继续保留为旧契约证据，不回写、不重绑。
 
 条件对齐审核的道路识别固定采用 `season_aware_local_color_signal_plus_8x6_spatial_mass_and_centroid_v2`。该算法依据记录的 `classification.monsoonSeason` 选择雨季/转换季暖土道路或旱季红棕土路分类，再使用同一8×6空间质量、质心和覆盖门槛比对23通道。季节分类只改变实际像素信号提取，不改变验收阈值；所有版本必须同时回归历史通过图、拒绝图、雨季图和旱季图。
 
@@ -414,3 +434,59 @@ V7容量槽位任务入口固定为`npm run build:ai-assisted-v7-data-task -- --
 `v7-capacity-slot-003`使用正式旱季快照`mainland-southeast-asia-tropical-monsoon-provisional-late-dry-season-v1`。任务配方只描述完整地图级结构：低地常绿热带森林、旱季地表状态、南侧入口、连续道路、东偏不规则家园中心、多个开放/森林分区、北侧大世界延伸和自然边界；不强制添加当前世界事实中不存在的主要地表水体。道路不得穿越封闭左右边界，顶部出口必须使用既有边界通道。
 
 两次RGB前阻断分别固定为`season recipe is not defined`和`complete_map_route_overlaps_collision`，均保留为程序失败证据。成功任务runId=`ai-assisted-v7-data-task-v7-capacity-slot-003-2026-07-22T13-27-59-480Z`已通过独立检查，包含23通道、完整地图范围审核、32项SQLite artifact和1条中英文程序事件；`pairedRgbCount=0`，未生成RGB、未启动GPU。当前只等待slot-003唯一一张RGB的单独授权；模型合同、审核门槛、容量统计和页面结构均未改变。
+
+## 18. 无预设家园位置条件重建合同
+
+更新时间：2026-07-24 11:45:03 +08:00
+
+旧26图非正式工程预训练包继续作为不可变工程历史保留，但其中24条含固定`home_center`或非零`focal_area`的记录已由程序暂停后续工程训练和正式V7训练资格。该重分类不得通过删除图片、改写record、替换23通道或重绑checkpoint实现；正式证据为runId=`ai-assisted-v7-preset-home-site-reclassification-2026-07-24T02-51-42-416Z`。
+
+新条件身份固定为`autonomous-world-rebuild-001...024`。每个身份必须满足：
+
+1. 当前世界事实、世界导演、任务包和23通道使用同一身份与hash链；
+2. `focal_area`为全零兼容通道，不进入可视引导；
+3. 不包含固定家园中心、活动中心、施工空地、建筑候选地或道路汇聚平台；
+4. 道路只表达当前自然通行与大世界连接，不为未来建造预留规则空地；
+5. 完整地图范围审核在RGB算力调用前通过；
+6. 不读取历史完整地图RGB，不复用镜像、旋转或共享构图骨架；
+7. RGB生成前必须通过24套条件之间的变换构图去重审核。
+
+当前重建runId=`ai-assisted-v7-autonomy-rebuild-24-2026-07-24T03-24-05-684Z`已建立24/24套条件，split=`19/2/1/2`，每套23通道、`focal_area`全零、完整地图范围通过、配对RGB为0。构图审计runId=`ai-assisted-v7-autonomy-rebuild-condition-skeleton-audit-2026-07-24T03-33-33-443Z`对276组条件完成原位、水平镜像、垂直镜像及180度旋转比较，精确重复、强变换重复和关注组均为0。
+
+上述结果只证明条件输入具备进入单图RGB授权门的资格。连续批次仍然停止；每个RGB身份必须由项目所有者单独明确授权，程序生成、自动保存和机器审核后必须停止等待页面人工审核。不得自动推进下一编号、自动重试、自动通过、启动GPU训练、创建正式候选、绑定RuntimeFrame或进入`/world`。
+
+## 19. 自主世界重建单图生成实现状态
+
+更新时间：2026-07-24 14:05:40 +08:00
+
+自主重建RGB入口只接受显式`--autonomy-task-manifest`、`--autonomy-rebuild-id`和`--owner-authorization-id`。授权ID必须严格使用`owner-authorized-autonomous-world-rebuild-NNN-single-rgb-YYYYMMDD`，其中`NNN`必须与本次`autonomous-world-rebuild-NNN`和`autonomous-complete-map-NNN`完全一致；入口在调用图像算力前验证重建manifest、对应行身份、23通道、全零`focal_area`、完整地图范围、无预设家园位置、无变换骨架复用、无历史RGB引用和无既有配对RGB。该规则只允许项目所有者本次明确指定的一个编号，不构成其他编号或批次授权。
+
+请求`conditional-rgb-001-2026-07-24T04-29-42-877Z`只调用一次Codex内置图像生成。源图SHA-256=`db0c793ea93429d44ac913267be6a56409e620d309e922516a4687d52590eaba`；首次接收失败被程序保存后，同一源图在精确授权识别修复后继续完成，未生成第二张图。`1024×768`派生图SHA-256=`fbe83fa149ded7d09da77b77bcf956caa86cc49c4142d1f0747fbfc49b032c0a`，记录ID=`ai-cold-start-autonomy-autonomous-world-rebuild-001-lowland-evergreen-tropical-forest-v1`。
+
+机器审核已通过来源、风格指纹、构图新颖性和语义条件对齐。项目所有者随后以`owner-approved-autonomous-world-rebuild-001-20260724`明确通过，owner审核时间=`2026-07-24T06:01:21.719Z / 2026-07-24T14:01:21+08:00`，审核记录SHA-256=`064472a424b42524ec6c5d41466409ceb8baaabe0b104d49baea4eca0b0001c6`。程序已把请求状态更新为`generated_intaked_machine_passed_owner_approved`，并赋予`ai_assisted_cold_start_eligible`资格。
+
+该owner通过不授予独立训练、正式候选、正式容量、RuntimeFrame或`/world`资格。001闭环后必须停止；002、GPU训练和容量登记仍保持阻断并需要后续单独授权。
+
+## 20. 自主世界重建002单图实现状态
+
+更新时间：2026-07-24 17:03:18 +08:00
+
+项目所有者随后以`owner-authorized-autonomous-world-rebuild-002-single-rgb-20260724`单独授权002。正式请求`conditional-rgb-002-2026-07-24T08-09-32-109Z`通过上述严格编号绑定门禁；世界事实、世界导演、完整地图任务、23通道和范围审核均来自不可变重建runId=`ai-assisted-v7-autonomy-rebuild-24-2026-07-24T03-24-05-684Z`。002的`focal_area`全零、历史完整地图RGB引用数为0、既有配对RGB数为0，本轮不要求主要水体，也不含预设家园位置语义。
+
+Codex内置生成只调用一次。程序保存源图SHA-256=`415038107844f51c1ffc78534fca0669cf434199051b9dcd5e05fbbd1517de5b`和`1024×768`派生图SHA-256=`46ee59c59b5f99be083b9bf53de33fa3c5d3dccc87a060414bb709a362658dfe`，并由机器审核通过来源、风格指纹、构图新颖性和23通道语义对齐。002当前固定为`pending_review`且`conditionalTrainingEligible=false`；在项目所有者页面审核前，不得生成003、登记容量、启动GPU训练、建立正式候选、RuntimeFrame或进入`/world`。
+
+## 21. 道路视觉审核的连通分量实现契约
+
+更新时间：2026-07-25 09:02:19 +08:00
+
+旱季草地、裸土、岩石高光和道路可能共享暖色范围，因此道路审核不得把整张RGB中的所有暖色像素直接视为道路。正式实现必须：
+
+1. 保留既有湿季/旱季道路颜色分类器和固定通过阈值；
+2. 把视觉道路候选拆分为8连通分量；
+3. 依据正式`terrain_path_ground`条件建立有界支持走廊；
+4. 只保留与该走廊相交或获得足够条件支持的视觉分量；
+5. 对保留分量的完整形状计算覆盖、交集、质心和空间网格指标，不得裁剪为期望掩码后制造虚假通过；
+6. 保存原始候选像素数、保留/排除像素数、分量数量、每个分量的保留原因和审核算法版本；
+7. 任何算法修复后必须对同一图像建立新的不可变复审记录，旧拒绝不得覆盖。
+
+当前正式方法版本为`season_aware_local_color_signal_plus_condition_supported_components_plus_8x6_spatial_mass_and_centroid_v3`。真实地理首图诊断中，旧中心距离=`0.3108`，新中心距离=`0.0856`，排除非道路暖色像素=`27,182`；阈值、世界事实、23通道与RGB均未改变。该实现修复的是审核误判，不授予图像V7容量、RuntimeFrame或`/world`资格。

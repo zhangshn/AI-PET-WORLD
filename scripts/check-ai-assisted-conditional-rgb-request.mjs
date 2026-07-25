@@ -47,13 +47,55 @@ const persistedScopeAudit = readJson(evidence.completeMapScopeAuditPath)
 const routeConditionAudit = await auditRouteCondition(conditionPack)
 const completeMapScopeAudit = await auditCompleteMapScope({ blueprint, directorOutput: director, task, conditionPack, connectivityBlueprint })
 const visualStandardValidation = validateFoundationalCompleteMapVisualStandard(visualStandard)
+const earthReferenceMode = request.earthReferenceSingleImageAuthorizationId
+  === "owner-authorized-earth-reference-naturalized-complete-map-single-rgb-20260725"
 
-check(request.sourceRecordId === (blueprint.sourceRecordId ?? blueprint.capacitySlotId), "source_record_blueprint_mismatch")
+check(
+  request.sourceRecordId === (
+    earthReferenceMode
+      ? blueprint.conditionLabel
+      : (blueprint.sourceRecordId ?? blueprint.capacitySlotId ?? blueprint.rebuildId)
+  ),
+  "source_record_blueprint_mismatch",
+)
 if (/^v7-capacity-slot-\d{3}$/.test(request.sourceRecordId ?? "")) {
   check(request.continuousBatchAuthorizationId === "owner-authorized-v7-remaining-104-continuous-batch-20260723", "v7_continuous_batch_authorization_mismatch")
   check(request.ownerApprovalAutomatic === false, "v7_owner_approval_must_remain_manual")
   check(request.capacityContributionAutomaticBeforeOwnerApproval === false, "v7_capacity_contribution_must_wait_for_owner_review")
   check(request.gpuTrainingAuthorized === false, "v7_gpu_training_must_remain_blocked")
+}
+if (/^autonomous-world-rebuild-\d{3}$/.test(request.sourceRecordId ?? "")) {
+  const rebuildIdentity = /^autonomous-world-rebuild-(\d{3})$/.exec(request.sourceRecordId)
+  const authorizationIdentity = /^owner-authorized-autonomous-world-rebuild-(\d{3})-single-rgb-(\d{8})$/.exec(
+    request.autonomySingleImageAuthorizationId ?? "",
+  )
+  check(request.conditionLabel === `autonomous-complete-map-${rebuildIdentity?.[1]}`, "autonomy_single_image_condition_mismatch")
+  check(
+    authorizationIdentity?.[1] === rebuildIdentity?.[1],
+    "autonomy_single_image_authorization_mismatch",
+  )
+  check(request.continuousBatchAuthorizationId === null, "autonomy_single_image_must_not_use_continuous_batch_authorization")
+  check(request.automaticNextGenerationAuthorized === false, "autonomy_single_image_must_not_authorize_next_generation")
+  check(request.automaticRetryAuthorized === false, "autonomy_single_image_must_not_authorize_retry")
+  check(request.ownerApprovalAutomatic === false, "autonomy_single_image_owner_approval_must_remain_manual")
+  check(request.capacityContributionAutomaticBeforeOwnerApproval === false, "autonomy_single_image_capacity_contribution_must_wait_for_owner_review")
+  check(request.gpuTrainingAuthorized === false, "autonomy_single_image_gpu_training_must_remain_blocked")
+}
+if (earthReferenceMode) {
+  check(
+    request.conditionLabel === blueprint.conditionLabel
+      && /^earth-reference-naturalized-complete-map-[a-f0-9]{12}$/.test(request.conditionLabel ?? ""),
+    "earth_reference_single_image_condition_mismatch",
+  )
+  check(request.continuousBatchAuthorizationId === null, "earth_reference_single_image_must_not_use_continuous_batch_authorization")
+  check(request.automaticNextGenerationAuthorized === false, "earth_reference_single_image_must_not_authorize_next_generation")
+  check(request.automaticRetryAuthorized === false, "earth_reference_single_image_must_not_authorize_retry")
+  check(request.ownerApprovalAutomatic === false, "earth_reference_single_image_owner_approval_must_remain_manual")
+  check(request.capacityContributionAutomaticBeforeOwnerApproval === false, "earth_reference_single_image_capacity_contribution_must_wait_for_owner_review")
+  check(request.gpuTrainingAuthorized === false, "earth_reference_single_image_gpu_training_must_remain_blocked")
+  check(blueprint.sourceMode === "naturalized_earth_facts_plus_locked_connectivity", "earth_reference_source_mode_invalid")
+  check(blueprint.sourceRgbRead === false, "earth_reference_source_rgb_must_not_be_read")
+  check(blueprint.sourceImageGeometryRead === false, "earth_reference_source_image_geometry_must_not_be_read")
 }
 check(request.conditionLabel === blueprint.conditionLabel, "request_condition_label_mismatch")
 check(request.generationContractVersion === blueprint.generationContractVersion, "request_generation_contract_version_mismatch")
@@ -78,7 +120,15 @@ check(blueprint.environmentContext?.contractVersion === "world-visual-environmen
 check(evidence.environmentContextContractVersion === blueprint.environmentContext?.contractVersion, "prompt_environment_contract_mismatch")
 check(sameJson(evidence.environmentContext, blueprint.environmentContext), "prompt_blueprint_environment_context_mismatch")
 check(sameJson(request.environmentContext, blueprint.environmentContext), "request_blueprint_environment_context_mismatch")
-check(sameJson(task.environmentContext, blueprint.environmentContext), "task_blueprint_environment_context_mismatch")
+if (earthReferenceMode) {
+  check(task.directorPlan?.singleMapEcologyPlan?.season === blueprint.environmentContext?.season, "task_blueprint_season_mismatch")
+  check(task.directorPlan?.singleMapEcologyPlan?.environmentState === blueprint.environmentContext?.environmentState, "task_blueprint_environment_state_mismatch")
+  check(task.directorPlan?.singleMapMaterialPlan?.weather === blueprint.environmentContext?.weather, "task_blueprint_weather_mismatch")
+  check(task.directorPlan?.singleMapMaterialPlan?.lighting === blueprint.environmentContext?.lighting, "task_blueprint_lighting_mismatch")
+  check(task.directorPlan?.singleMapMaterialPlan?.groundMoisture === blueprint.environmentContext?.groundMoisture, "task_blueprint_ground_moisture_mismatch")
+} else {
+  check(sameJson(task.environmentContext, blueprint.environmentContext), "task_blueprint_environment_context_mismatch")
+}
 check(director.singleMapEcologyPlan?.season === blueprint.environmentContext?.season, "director_blueprint_season_mismatch")
 check(director.singleMapMaterialPlan?.environmentState === blueprint.environmentContext?.environmentState, "director_blueprint_environment_state_mismatch")
 check(evidence.semanticConditionSummary?.blueprintId === blueprint.blueprintId, "semantic_summary_blueprint_mismatch")
@@ -91,7 +141,8 @@ check(evidence.semanticConditionSummary?.directorLayoutIntent === director.compo
 check(evidence.prompt.includes(blueprint.semanticRules.waterFlow), "selected_water_flow_missing_from_prompt")
 check(evidence.prompt.includes(blueprint.semanticRules.routeIntent), "selected_route_intent_missing_from_prompt")
 check(evidence.prompt.includes(boundsSummary("entrance", blueprint.geometry.entranceBounds)), "selected_entrance_bounds_missing_from_prompt")
-check(evidence.prompt.includes(boundsSummary("focal", blueprint.geometry.focalBounds)), "selected_focal_bounds_missing_from_prompt")
+check(evidence.prompt.includes("No preset home site"), "no_preset_home_site_policy_missing_from_prompt")
+check(evidence.prompt.includes("focal_area model channel is an inactive all-zero compatibility channel"), "inactive_focal_area_policy_missing_from_prompt")
 check(evidence.prompt.includes("The only image reference is the sole authority for this run's layout"), "condition_guide_layout_authority_missing")
 check(evidence.prompt.includes("No historical complete-map RGB image is supplied as an image reference"), "historical_complete_map_reference_block_missing")
 check(visualStandardValidation.passed, `foundational_visual_standard_invalid:${visualStandardValidation.issues.join(",")}`)
