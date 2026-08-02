@@ -1,10 +1,140 @@
 # AI Painter 正式实现规格
 
-更新时间：2026-07-25 09:02:19 +08:00
+更新时间：2026-08-01 00:58:46 +08:00
 
-状态：active-architecture / 当前完整世界视觉实现唯一规格 / 连续数据批次已停止 / 旧工程包24条预设家园位置记录已暂停训练资格 / 24套自主自然世界条件已通过生成前门禁 / 自主重建001单图已获owner通过 / V7 GPU训练未授权
+状态：active-architecture / 完整矩形世界与未来动态准备V2 / 泰国64组条件包64/64通过 / 合规RGB 0/64 / RGB与GPU阻断
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
+
+## 0-BB. 2026-08-01 完整世界实现链全面升级
+
+本轮根因不是单张道路画错，而是旧条件引导把`terrain_natural_boundary`最后绘成深绿大块遮罩，并要求生成器保留该几何，导致生成结果把世界外背景和悬浮地图切片学成共同结构。实现链现统一升级：
+
+1. 64 个条件包统一使用构图修订`owner-authorized-thailand-rebuild64-full-world-dynamic-readiness-v3-20260731`，不再为slot-198保留旧标准例外。
+2. 条件引导使用`complete-world-condition-guide-v2`；基础世界地表必须覆盖全部像素，自然边界在道路、细节和对象之前绘制，并使用世界内森林纹理语义，禁止纯色外部遮罩。
+3. 生成提示使用`full_rectangular_world_plus_future_dynamic_readiness_plus_world_facts_director_23_channels_v10`，明确要求矩形世界铺满、指定边界入口真实接触、禁止背景/空洞/悬浮切片/镜像翻转，并保留未来动态状态身份。
+4. 机器审核使用`ai-assisted-cold-start-machine-review-v8-full-world-dynamic-readiness`，加入`complete-map-world-frame-integrity-v1`全画幅审计和`condition-route-boundary-contact-v2`实际边界接触审计。
+5. 64 组框架审核必须`64/64`通过、`2016/2016`对全部不同，且共享粗骨架、共享构造语法和需重建项均为0。
+
+机器可读合同=`data/ai-painter/system-governance/complete-map-world-training-and-dynamic-readiness-contract-v2.json`，SHA-256=`a3ebae47ab542cfc818b99fd9237356edda18d666253a85ac00def4c2cf1b9bd`。本轮只授权升级、重建条件包和审核，不授权生成新RGB、启动GPU、RuntimeFrame或`/world`。
+
+## 0-AAAAAAAAAA. slot-149 owner审核与容量贡献结果
+
+项目所有者明确通过slot-149后，正式程序已写入`owner_approved`并登记split=`train`的容量贡献。图片、WorldFacts、23通道、审核阈值和机器审核历史均未改变；review后新增RGB=0、GPU训练=0。
+
+owner reviewId=`ai-cold-start-owner-review-ai-cold-start-v7-v7-capacity-slot-149-tropical-forest-glade-v1-2026-07-30T01-25-18-362Z`；容量贡献runId=`ai-assisted-v7-capacity-contribution-v7-capacity-slot-149-2026-07-30T01-25-54-965Z`、SHA-256=`5ba1acb7ce6bdb6fee9c7028d1ab422720a4344264e84d8379df4efb2098125d`；本地解决记录=`owner-action-request-slot-149-owner-visual-review-resolution-20260730`、SHA-256=`211f15490f25602ae862dbcdd30cbd9f219c569616cc15e052d5fb2bc070915f`。
+
+当前合规RGB容量4/64、缺口60。slot-149已经闭合，但本次owner决定不授予slot-150或任何后续RGB的生成权，也不授予GPU训练、RuntimeFrame或`/world`权限。程序必须停下并等待下一条明确命令。
+
+## 0-AAAAAAAAA. slot-149单张草图执行边界
+
+本轮只完成`v7-capacity-slot-149`的一次条件RGB生成、接收和机器审核。正式图片为`ai-cold-start-v7-v7-capacity-slot-149-tropical-forest-glade-v1`，`1024×768`审核派生图SHA-256=`c74339a56b0d1d9a76cced942857d76cfe58a37464b2afc4c04e9bb88feaf039`；生成输入只包含conditionId=`earth-reference-v7-v7-capacity-slot-149-3fa4124cfd20`的当前匿名条件引导，历史RGB读取=0，生成调用次数=1。
+
+机器审核全部通过只把流程推进至`owner_visual_review_required`，不授予训练资格或容量资格。正式程序已经保存本地`owner-action-request-slot-149-owner-visual-review-20260730`；Codex和其他外部员工不得代替owner决定，也不得在等待期间修改图片、WorldFacts、23通道、阈值，或生成slot-150。当前容量仍为3/64、缺口61、GPU=0。
+
+## 0-AAAAAAAA. slot-148 owner审核与容量贡献结果
+
+项目所有者明确通过slot-148后，正式程序已写入`owner_approved`并登记split=`train`的容量贡献。图片、WorldFacts、23通道、审核阈值和机器审核历史均未改变；review后新增RGB=0、GPU训练=0。
+
+当前合规RGB容量3/64、缺口61。slot-148已经闭合，但本次owner决定不授予slot-149或任何后续RGB的生成权，也不授予GPU训练、RuntimeFrame或`/world`权限。程序必须停下并等待下一条明确命令。
+
+## 0-AAAAAAA. slot-148单张草图执行边界
+
+本轮只完成`v7-capacity-slot-148`的一次条件RGB生成、接收和机器审核。正式图片为`ai-cold-start-v7-v7-capacity-slot-148-grassland-forest-transition-v1`，`1024×768`审核派生图SHA-256=`dfab6240b07dddeab8b40c6d2e278daa0c98146959061901681f90403f090dfa`；生成输入只包含conditionId=`earth-reference-v7-v7-capacity-slot-148-34b9a66ce3f6`的当前匿名条件引导，历史RGB读取=0，生成调用次数=1。
+
+机器审核全部通过只把流程推进至`owner_visual_review_required`，不授予训练资格或容量资格。正式程序已经保存本地`owner-action-request-slot-148-owner-visual-review-20260730`；Codex和其他外部员工不得代替owner决定，也不得在等待期间修改图片、WorldFacts、23通道、阈值，或生成slot-149。当前容量仍为2/64、缺口62、GPU=0。
+
+## 0-AAAAAA. slot-147 owner审核与容量贡献结果
+
+项目所有者明确通过slot-147后，正式程序已写入`owner_approved`并登记split=`train`的容量贡献。图片、WorldFacts、23通道、审核阈值和机器审核历史均未改变；review后新增RGB=0、GPU训练=0。
+
+当前合规RGB容量2/64、缺口62。slot-147已经闭合，但本次owner决定不授予slot-148或任何后续RGB的生成权，也不授予GPU训练、RuntimeFrame或`/world`权限。程序必须停下并等待下一条明确命令。
+
+## 0-AAAAA. slot-147单张草图执行边界
+
+本轮只完成`v7-capacity-slot-147`的一次条件RGB生成、接收和机器审核。正式图片为`ai-cold-start-v7-v7-capacity-slot-147-grassland-forest-transition-v1`，`1024×768`审核派生图SHA-256=`0dce7acccce15d238ff92afe2bb9dc47ee54e730db0da8569640a5aba1dbbf12`；生成输入只包含conditionId=`earth-reference-v7-v7-capacity-slot-147-1f2122e8a74a`的当前匿名条件引导，历史RGB读取=0，生成调用次数=1。
+
+机器审核全部通过只把流程推进至`owner_visual_review_required`，不授予训练资格或容量资格。正式程序已经保存本地`owner-action-request-slot-147-owner-visual-review-20260729`；Codex和其他外部员工不得代替owner决定，也不得在等待期间修改图片、WorldFacts、23通道、阈值，或生成slot-148。当前容量仍为1/64、缺口63、GPU=0。
+
+## 0-AAAA. 本地决策与owner动作请求实现
+
+AI Painter的正式工作流不得依赖Codex聊天保存判断或下一动作。本地系统是正式判断、授权请求、审核状态和长期记忆的唯一载体；Codex只作为受控执行与检查员工，不得成为owner授权、业务状态或长期记忆来源。
+
+机器可读职责合同固定为`data/ai-painter/system-governance/local-ai-responsibility-contract-v1.json`。通用记录入口固定为：
+
+```text
+npm run record:ai-painter-owner-action-request -- --input <request-input.json>
+npm run check:ai-painter-local-system-governance
+```
+
+每个`owner-action-request`必须包含任务身份、owner已表达结论、本地机器发现、阻断码、不能继续的原因、最小请求动作、不变量、禁止动作、证据路径、面向owner的完整说明和获批后执行链。程序必须在等待owner前写入`.runtime/ai-painter/owner-action-requests/<requestId>/request.json`，生成不可变hash、训练过程事件和SQLite索引。聊天可以展示同一段本地说明，但不能代替记录。
+
+当前Codex角色固定为`bounded_execution_and_verification_employee`，目标角色为`verification_employee_only`。当前允许的临时冷启动图像能力不授予流程编排或决定权；本地模型闭合后，Codex只接收明确检查任务并把结果返回本地系统。
+
+## 0-AAA. 2026-07-29 历史结构身份兼容边界
+
+全历史反重复审核不得因为旧任务早于`themeArchitectureIdentity`和`instanceDetailIdentity`合同而读取历史RGB、修改旧记录或放弃比较。对具有不可变`ai-assisted-training-world-fact-blueprint-v1`或`ai-assisted-training-world-fact-blueprint-v2`、具体`connectivityBlueprintId`和原有完整几何，但自身尚无两层结构身份的历史记录，程序只允许建立审计旁路身份：主题身份由旧蓝图的连接、景观、水体、地形类型及归一化区域范围确定，细节身份由旧蓝图原有几何确定；旧蓝图文件和历史记录保持不可变。最终重复判定仍必须同时执行条件引导的直接、水平镜像、垂直镜像和180度旋转比较，审核阈值不变。
+
+唯一早于训练蓝图合同、没有可证明连接身份的`ai-cold-start-map-003-condition-guided-east-river`固定为`legacy_guide_only_composition_reference`：只参与全变换主题架构和细节构图比较，不得声称具有连接身份，不得作为具体连接复用通过证据，也不得进入生成器输入。除该明确历史记录外，任何缺少任务、蓝图、连接身份或结构身份的记录继续以`historical_structural_identity_comparison_incomplete`失败关闭。
+
+兼容审计必须保存每条来源任务/蓝图路径、SHA-256、派生身份、证据类别和`historicalRgbRead=false`、`historicalRecordModified=false`。它只解决新旧审计合同的证据兼容，不授予历史样本新的训练、容量、RuntimeFrame或`/world`资格。
+
+## 0-AA. 2026-07-29 连接模式与区域实例分离
+
+AI Painter条件链必须区分连接模式契约与具体区域连接实例。`natural-home-large-world-connectivity-v1`只定义RegionGraph、EdgePort、PathGraph、HydrologyGraph、WalkableGraph的字段、配对和审核规则；`mainland-southeast-asia-earth-reference-natural-home-region-0001-v1`只定义`region-0001`自身的连接事实。
+
+V7训练条件不得默认绑定`region-0001`。每个训练槽位必须具备独立`regionId`、独立连接事实和独立图结构，并由当前槽位的WorldFacts、真实测量事实和区域生态事实决定：
+
+- 是否存在跨区域水体或只有内部/封闭水体；
+- 水文流向、入口/出口数量及边界方向；
+- 道路入口/出口、自然通行与相邻区域关系；
+- 水体、道路、生态区和自然边界的整体空间关系。
+
+独立实例必须属于同一个可连通大世界，而不是独立概念图。每个训练区域至少需要一组已配对的跨区域通行EdgePort，并由PathGraph和WalkableGraph证明可达；存在跨界水系时还必须由HydrologyGraph证明连续。AI Painter只表达这些事实，不能用画面补造邻接、端口或连接。
+
+所有新条件与RGB还必须具有两层全历史唯一性。`themeArchitectureIdentity`覆盖连接拓扑、水文、道路、水路相对关系、生态/空间分区、边界与阅读层级；`instanceDetailIdentity`覆盖具体轨迹、岸线/水域/分区轮廓、对象实例位置与簇、密度节奏、空隙和过渡。两层任一重复均在生成前或生成后阻断。共同相机、像素语言、对象比例、光照和材质体系属于可共享风格，不属于允许复制的世界内容。
+
+固定“北入南出＋东侧共享水系＋南侧道路”只能在任务明确绑定`region-0001`时编译。其他训练槽位若引用该蓝图、复制其端口或只改变内部曲线，必须在23通道和RGB生成前以`concrete_region_connectivity_instance_reused`阻断。相同具体区域连接实例不得重复计作多个独立完整地图容量。
+
+修订前slot-124条件及当前容量必须完成连接作用域重审。在代码、条件包和历史容量对齐本节前，不得生成新RGB或启动V7 GPU训练。
+
+本规格长期适用于全部真实地球区域，不把泰国包写死为模型唯一事实源。每个视觉任务必须绑定当前`regionId`对应的`RealEarthRegionSourcePackage`及其派生WorldFacts；当前泰国Sakaerat / Wang Nam Khiao包只服务MVP首区。新区域若没有自身真实地图/测量来源、许可、版本、范围、hash和派生记录，条件编译必须在AI Painter之前阻断。AI Painter不得用泰国事实、历史RGB或提示词想象代替缺失的区域数据。
+
+视觉任务的区域来源绑定至少必须包含：
+
+```text
+realEarthRegionId
+regionSourcePackageId / regionSourcePackageSha256
+sourceSpatialBounds / observationPeriod
+terrainFactSetId
+climateSnapshotId
+soilHydrologyFactSetId
+ecologyProfileId
+regionalConnectivityFactSetId
+gameCoordinateDerivationId / derivationSha256
+```
+
+当前MVP上述字段只能指向泰国Sakaerat / Wang Nam Khiao包及其正式派生记录。未来区域只能指向自身包；任务中出现“区域身份与来源包不一致”“非泰国区域引用泰国包”或“来源包缺失”必须在World Director和23通道之前阻断。
+
+## 0-A. 2026-07-27 匿名道路自然性生成与审核
+
+项目所有者因`v7-capacity-slot-119`道路呈现长距离等宽折线感而拒绝该RGB，并授权诊断、修复匿名道路自然性及重建该槽位的无RGB条件包。旧路线只使用7个控制点和正弦偏移，程序回归确认其点密度不足、最长单段过长、曲折度低于公开参照范围且内角突变，旧图和拒绝证据继续不可变保留。
+
+正式匿名道路自然性方法固定为`aggregate_public_route_morphology_plus_multi_frequency_catmull_rom_v1`：
+
+1. 只从已保存的OpenStreetMap/Overpass ODbL证据中选择`track/path/footway/bridleway`，形成曲折度和转角的聚合统计；不得保存或输出单条道路ID、经纬度、逐道路指标或精确形状。
+2. 游戏道路继续由当前世界事实、连接口和匿名种子决定；公开数据只提供非空间统计包络，不得成为游戏导航几何、23通道直接几何或RGB参考。
+3. 中心线使用多频匿名锚点和Catmull-Rom重采样，宽度使用缓变匿名宽度曲线；不得恢复7点折线骨架。
+4. RGB前必须通过`anonymous-route-naturalness-audit-v1`，至少验证点密度、最大单段、曲折度范围、最大内角和累计曲率。
+5. profile、来源许可、双时区时间、SHA-256、自然性审核、失败、SQLite索引和中英文程序事件必须自动保存。
+
+修复后的slot-119无RGB条件runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-119-2026-07-27T11-27-00-472Z`，conditionId=`earth-reference-v7-v7-capacity-slot-119-f913ac78e39a`。独立检查确认23通道、完整地图范围、`focal_area=0`、匿名道路自然性、来源边界和SQLite均通过；本轮RGB=0、GPU训练=0。任何新RGB仍须项目所有者单独授权。
+
+## 0. 2026-07-25 V7首次MVP训练实现门槛
+
+V7首次MVP正式训练的数据门槛固定为64张独立完整地图，split为`48 train / 8 validation / 4 challenge / 4 regression`。128张与`96/16/8/8`保留为后续增强目标。此变化只调整首次训练容量，不改变模型合同`all-validation-multiseed-semantic-rollout-unet-v7`、WorldFacts、World Director、23通道、原生`1024×768`、完整地图范围、无固定家园中心、构图新颖性、来源或审核门槛。
+
+当前程序审计为可信26张、隔离17张、缺口38张。训练控制器必须继续以`blocked_pending_owner_approved_mvp_64_dataset_implementation`阻断正式V7训练，直到64张不可变数据包通过全部审计并获得项目所有者单独GPU训练授权。容量计划本身不得触发图片生成、推理或训练。
 
 ## 1. 定位与边界
 
@@ -181,6 +311,8 @@ reviewPlan
 
 完整区域任务在声明“大世界连接覆盖”前，必须绑定 `connectivityBlueprintId`、`regionId`、`edgePortIds`、`pathGraphId`、`hydrologyGraphId` 和 `walkableGraphId`。编译器只能把已经批准的道路、水口、生态/海拔过渡和对象身份关系转换为向量、图特征、Mask 或距离图；不得根据 RGB、提示词或模型偏好创造连接口。
 
+这里的`connectivityBlueprintId`必须指向当前任务区域自己的实例蓝图，不能默认指向`region-0001`。通用机器契约只验证图结构是否合法；方向、端口和水体类型由当前区域实例决定。训练槽位缺少自身连接实例时必须阻断，不得以`region-0001`补位。
+
 | 输入 | 模型允许学习的内容 | 模型禁止决定的内容 |
 |---|---|---|
 | 区域邻接与边界连接口 | 连接在视觉上如何自然延续 | 哪两个区域相邻、出口是否存在 |
@@ -188,7 +320,7 @@ reviewPlan
 | HydrologyGraph | 河道、水岸、流向的视觉连续性 | 上游、下游、流量和地形高程事实 |
 | ObjectIdentitySet | 同一对象在状态变化中的一致视觉身份 | 对象创建、删除、位置和生命状态 |
 
-第一版具体区域连接已经按真实地球参照登记为 `mainland-southeast-asia-earth-reference-natural-home-region-0001-v1`。项目所有者授权后，程序已把区域、邻居、边界连接口、道路延伸和水文/可走图迁移到 tick 2，并自动保存 `.runtime/world-connectivity-migrations/latest.json`；项目所有者审核通过后，程序生成 tick 3 和 `.runtime/world-connectivity-owner-reviews/latest.json`，状态固定为 `runtime_migrated_owner_approved`。现有 AI 辅助冷启动图片在未逐张绑定新蓝图并完成图片自身审核前，仍不能自动计入连接训练覆盖。
+第一版具体运行区域连接已经按真实地球参照登记为 `mainland-southeast-asia-earth-reference-natural-home-region-0001-v1`。项目所有者授权后，程序已把该区域、邻居、边界连接口、道路延伸和水文/可走图迁移到 tick 2，并自动保存 `.runtime/world-connectivity-migrations/latest.json`；项目所有者审核通过后，程序生成 tick 3 和 `.runtime/world-connectivity-owner-reviews/latest.json`，状态固定为 `runtime_migrated_owner_approved`。该批准只覆盖`region-0001`，不允许训练槽位共享此实例。现有 AI 辅助冷启动图片在未逐张绑定自身区域连接实例并完成图片自身审核前，不能计入独立区域训练容量或连接覆盖。
 
 ## 6. 模型能力边界
 
@@ -489,4 +621,13 @@ Codex内置生成只调用一次。程序保存源图SHA-256=`415038107844f51c1f
 6. 保存原始候选像素数、保留/排除像素数、分量数量、每个分量的保留原因和审核算法版本；
 7. 任何算法修复后必须对同一图像建立新的不可变复审记录，旧拒绝不得覆盖。
 
-当前正式方法版本为`season_aware_local_color_signal_plus_condition_supported_components_plus_8x6_spatial_mass_and_centroid_v3`。真实地理首图诊断中，旧中心距离=`0.3108`，新中心距离=`0.0856`，排除非道路暖色像素=`27,182`；阈值、世界事实、23通道与RGB均未改变。该实现修复的是审核误判，不授予图像V7容量、RuntimeFrame或`/world`资格。
+当前正式方法版本为`season_aware_dense_water_surface_plus_condition_supported_path_components_plus_8x6_spatial_mass_and_centroid_v4`。道路仍执行既有季节分类与条件支持连通分量；水体按正式`terrain_water`事实选择分支：有水条件保持宽覆盖淡水颜色信号和空间审核，无水条件使用强蓝主导及16×16局部连续色面过滤。缺水阈值仍为`0.005`，其他覆盖、交集和质心阈值均未改变。真实地理道路首图诊断中，旧中心距离=`0.3108`，新中心距离=`0.0856`，排除非道路暖色像素=`27,182`；slot-146无水森林诊断中，旧误判水信号=`0.0787`，新审核信号=`0.0028`。两次修复均不修改世界事实、23通道或RGB。
+# 完整地图语义拓扑硬门禁（2026-08-01）
+
+完整地图的新颖性判断必须同时包含像素几何和语义拓扑。像素IoU、质心距离、图像哈希、测量窗口指纹、主题身份及细节身份均不得单独作为“无重复”的结论。
+
+程序必须在RGB请求建立前生成并保存三层签名：道路签名、水文/岸线签名、完整骨架签名。任一签名与当前64组或拒绝历史构成同一语义模板时直接阻断；不得通过换坐标、换入口附近小弯、换树石细节、镜像、旋转或轻微形变绕过。多张有水图还必须使用不同河网连接类型。
+
+硬门禁的定义以 `data/ai-painter/system-governance/complete-map-semantic-topology-diversity-contract-v1.json` 为准。
+
+候选筛选与正式条件构建必须共用候选级连接实例和河宽，不得用旧槽位的水文起终点或固定河宽进行假预检。检查顺序固定为：候选真实测量摘要→候选匿名连接实例→主河自然度与弯曲半径→内部支流/分汊自然度与弯曲半径→岸线→道路完整跨度、边界与避水→当前64组语义签名→全部历史条件引导。道路搜索容量不足时，只能扩展由同一测量摘要确定的匿名自由空间候选数量，所有审核阈值保持不变。

@@ -1,16 +1,140 @@
 # 训练数据与来源正式规则
 
-更新时间：2026-07-25 09:02:19 +08:00
+更新时间：2026-08-02 09:55:00 +08:00
 
-状态：active-architecture / V7容量128张已批准 / 连续出图批次已停止 / 17条变换派生容量已隔离 / 当前可信26张 / 非正式工程预训练已完成 / 正式缺口102张 / V7 GPU训练未授权
+状态：active-architecture / 泰国新64组owner通过与V7容量64/64 / 正式分割48/8/4/4 / CPU门禁通过 / V7 GPU训练未激活
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
+
+## 0-AAAAA. 2026-08-02 MVP64正式训练数据冻结
+
+V7首次正式训练容量固定为新64组，且只接受当前owner通过、机器通过、23通道绑定、真实泰国来源完整并已登记容量的活动版本。正式分割固定为`train=48`、`validation=8`、`challenge=4`、`regression=4`；训练过程中不得读取challenge或regression指标进行权重选择。20个历史失败版本和其他旧图继续保留为失败学习证据，不得恢复为正向容量或作为生成参考。
+
+最新不可变数据集manifest SHA-256=`8001f5a27bb8bc18883184b0c7e39ef1336eb295ce5787618bf4e60059dd48aa`，V7容量贡献64、未配对条件0、阻断0。任何训练启动前必须再次验证该manifest、容量计划、64条贡献及各自来源/审核/条件hash；发生变化必须阻断并重新申请授权，不得静默重建或替换样本。
+
+## 0-AAA. 2026-08-01 新64组取消逐张人工筛选
+
+项目所有者已明确要求对`thailand-rebuild64-20260731`活动64张执行一次程序最终审核，不再逐张手动点击通过或拒绝。正式合同为`data/ai-painter/system-governance/thailand-rebuild64-machine-final-review-contract-v1.json`。
+
+程序必须为01至64各选择且只选择一个当前活动版本，并用当前机器审核器重新执行来源、完整世界画幅、风格、全历史RGB构图新颖性、WorldFacts/23通道语义、道路边界连接、水文/岸线及季节生态硬门禁。任一问题立即固定为`rejected`并归入`failed-records`，不自动重试、不自动重生成，原图与失败证据不得删除。全部硬门禁通过的图片按项目所有者本次明确的批量委托写入成功终态；审核证据必须标明`reviewMode=owner_delegated_machine_hard_gate_batch`和`manualVisualInspectionPerformed=false`，不得伪造成逐张人工目视审核。批处理结束后`pending_review`必须为0。
+
+本授权只处理既有RGB审核终态，不授权生成新RGB、启动GPU训练、建立RuntimeFrame或进入`/world`。
+
+执行结果：活动64张中56张通过当前全部机器硬门禁并按批量委托进入成功组，8张直接进入`failed-records`，编号为`23、33、39、43、45、47、49、55`，`pending_review=0`。批量报告=`.runtime/ai-painter/thailand-rebuild64-machine-final-reviews/thailand-rebuild64-machine-final-review-2026-08-01T07-09-11-618Z/review-report.json`，SHA-256=`a89cca227d1d48291c0cdbd3ff12b931de023b88e923dbfc2d40ead342ebbdb6`。
+
+## 0-AAAA. 2026-08-01 八张失败图替换规则
+
+项目所有者已授权只替换编号`23、33、39、43、45、47、49、55`。每张必须从当前机器失败证据编译独立修复包，并继续绑定当前泰国WorldFacts、当前权威23通道和当前条件引导图；旧失败RGB禁止作为图像参考。构图失败必须把条件包的两层结构身份和全历史不复用要求写入提示；道路失败必须把唯一允许边界、禁止边界、完整道路栅格覆盖及目标覆盖比例写入提示。
+
+每个目标只允许一个新版本和一次ImageGen调用，不自动二次重试。新图机器失败直接进入`failed-records`；机器通过按既有`owner_delegated_machine_hard_gate_batch`规则写入成功终态，明确没有逐张人工目视。正式合同=`data/ai-painter/system-governance/thailand-rebuild64-failed8-rgb-replacement-contract-v1.json`。本次不授权GPU、RuntimeFrame或`/world`。
+
+## 0-AA. 2026-08-01 完整世界训练目标升级
+
+正向训练原图必须同时是可进入游戏的完整世界画面和未来动态世界底图，不能只在视觉上像一张地图。全画幅硬要求为：每个像素属于世界；矩形画面铺满到四边；不存在透明区、外部纯色背景、深绿遮罩、悬浮切片、沙盘边缘或非世界留白；自然边界是世界内密集生态。道路必须实际接触条件指定的边界侧，不得通过镜像、翻转、旋转或额外未约定出口伪造连接。
+
+64 组正样本必须进行全部 `2016` 对两两比较。相同大骨架、相同大框架、相同构造语法、复制、镜像、旋转、轻微变形或模板复用均为容量失败；同景观、同季节或同像素画风不构成豁免。静态 RGB 还必须绑定 23 通道和未来动态状态身份，否则不得计入训练容量。
+
+本轮已将新64组第01至05张及第53张（slot-198 V3）共6张 RGB 正式拒绝并归入`failed-records`。它们保留原图和审核历史，但只允许作为负向学习证据，合规RGB容量为`0/64`。正式合同=`data/ai-painter/system-governance/complete-map-world-training-and-dynamic-readiness-contract-v2.json`，SHA-256=`a3ebae47ab542cfc818b99fd9237356edda18d666253a85ac00def4c2cf1b9bd`。
+
+## 0-A. 2026-07-29 历史反重复证据兼容
+
+历史样本不可因新版两层结构身份合同而被重写。具有不可变旧版训练蓝图、具体连接身份和原有完整几何的记录，可由审核程序生成独立的`legacy-complete-map-structural-identity-compatibility-v1`旁路证据；该证据只从旧蓝图自身派生并保存蓝图SHA-256，不读取历史RGB，不修改原记录，不改变其训练或容量资格。
+
+旁路身份不能单独证明不重复。全部历史条件引导仍须按直接、水平镜像、垂直镜像和180度旋转比较主题架构与实例细节，并沿用正式阈值。`ai-cold-start-map-003-condition-guided-east-river`因产生时间早于训练蓝图合同且没有可证明连接身份，只能作为`legacy_guide_only_composition_reference`参与构图反重复；程序必须明确记录`connectivityIdentityAvailable=false`，不得为它虚构连接事实。其他缺少完整证据的记录不得使用此例外。
+
+该兼容层不是训练数据修复：不恢复被隔离容量，不把旧RGB传给生成器，不把历史泰国或`region-0001`连接事实复制给新槽位，也不降低任何生成前或生成后重复门禁。
+
+## 0. 2026-07-29 具体区域连接实例禁止复用
+
+训练数据中的“大世界连接”只要求每张完整地图绑定合法、可追溯的当前区域连接事实，不要求所有地图共享同一方向和端口。`natural-home-large-world-connectivity-v1`是连接模式契约；`mainland-southeast-asia-earth-reference-natural-home-region-0001-v1`是`region-0001`的具体实例。
+
+每条V7容量样本必须满足：
+
+1. 具有独立训练`regionId`及其自身RegionGraph、EdgePort、PathGraph、HydrologyGraph和WalkableGraph；
+2. 连接实例由当前槽位WorldFacts、真实测量事实与区域生态事实产生，不从历史RGB、历史条件或其他区域蓝图复制；
+3. 水体是否存在、跨区域流向、端口方向和道路入口/出口服从当前事实，不得统一为北入南出、东侧水系和南侧道路；
+4. 无跨区域水系、内部湿地、封闭池塘、少水和无水区域保持相应事实；
+5. 除非样本明确就是`region-0001`同一运行区域，否则`connectivityBlueprintId`不得引用`region-0001-v1`；
+6. 同一具体连接实例、其镜像、旋转、轻微变形或仅改变内部曲线的版本不得重复计入独立容量。
+7. 样本区域必须加入同一类地球大世界RegionGraph，并至少有一组与相邻区域双向配对且由PathGraph/WalkableGraph验证的跨区域通行连接；独立布局不等于孤立地图。
+8. 每条样本必须形成独立`themeArchitectureIdentity`和`instanceDetailIdentity`，并与全部历史条件和RGB比较；主题架构或实例细节任一重复均不得计入容量。
+
+主题架构比较至少覆盖区域连接、水文、道路、水路相对关系、生态/空间分区、边界和整体层级；实例细节比较至少覆盖具体轨迹、岸线/水域/分区轮廓、对象实例位置、对象簇、密度、空隙和过渡。统一画风、相同生态类型或相同季节可以共享，但不能以此豁免具体内容唯一性。
+
+违反本节的记录固定写入`concrete_region_connectivity_instance_reused`、`complete_map_theme_architecture_duplicate`或`complete_map_detail_content_duplicate`并隔离；即使RGB、hash、23通道和既有构图阈值曾通过，也必须完成全历史重审后才能恢复资格。修订前容量40/64当前只作历史统计，新的可训练计数须以重审结果为准。
+
+### 0.1 长期真实地球区域来源合同
+
+训练数据和世界条件必须以对应真实地区的地图与权威地理测量为底层事实来源。当前正式泰国包只覆盖Sakaerat / Wang Nam Khiao MVP区域；它不是未来全部世界和全部训练样本的通用底层数据。
+
+每个新增国家或地区必须先建立版本化`RealEarthRegionSourcePackage`，至少包含：
+
+```text
+realEarthRegionId
+countryOrTerritory
+spatialBounds / coordinateReference
+observationTime / datasetVersions
+elevationAndTerrainSources
+landCoverSources
+climateAndSeasonSources
+soilAndMoistureSources
+hydrologySources
+ecologyAndSpeciesSources
+regionalConnectivitySources
+humanDevelopmentRemovalEvidence
+licenses / attribution / acquisitionTimestamps
+rawObjectHashes / derivationManifest / packageSha256
+```
+
+包内来源可以使用适用于该地区的全球权威产品或当地权威数据，但必须逐项保存实际空间覆盖和版本，不能只登记产品名称。只有经过人类开发识别/自然化、来源审计和派生审计的数据才能形成WorldFacts与23通道。
+
+“根据真实地图”不等于把地图画面当作RGB训练目标。外部卫星RGB、地图瓦片、导航地图、照片和历史生成图片不得直接进入正式RGB target或下一次生成引用；它们只有在许可与正式政策允许的结构化事实角色下才能被读取。任何新区域缺少自己的合格来源包时，以`real_earth_region_source_package_missing`阻断，不得复用泰国事实或由AI自由补全。
+
+#### 当前MVP包与未来包
+
+| 项目 | 当前MVP | 后续区域 |
+|---|---|---|
+| 地区 | 泰国Sakaerat / Wang Nam Khiao | 由项目所有者逐区指定 |
+| 当前是否允许 | 是，唯一当前区域来源包 | 否，未指定前不得自动开始 |
+| 地形/水文/生态来源 | 当前泰国包内实际覆盖数据 | 新地区自己的实际覆盖数据 |
+| 是否可使用泰国事实 | 仅泰国MVP区域 | 禁止 |
+| 是否可复用算法/Schema | 可以 | 可以 |
+| 是否可复用主题架构或实例细节 | 不可以 | 不可以 |
+| 是否必须连接大世界 | 是 | 是 |
+
+#### 单包验收清单
+
+1. 区域身份、国家/地区和空间范围明确。
+2. 每个来源对象实际覆盖当前范围和所声明观察时间。
+3. 提供者、产品、版本、许可、署名、URL/对象身份和双时区采集时间完整。
+4. 原始文件存在，字节数和SHA-256一致。
+5. 高程、土地覆盖、气候、土壤、水文、生态和连接事实没有跨地区补用。
+6. 人类开发识别、移除/自然化及无数据处理过程完整。
+7. 原始真实数据到DerivedNaturalWorldFacts再到游戏坐标的派生链完整。
+8. 当前区域自己的连接实例有效并接入同一大世界。
+9. 历史RGB读取为0；外部地图RGB训练目标为0。
+10. 世界事实、导演、23通道、主题架构和实例细节身份一致且唯一。
+
+任一项失败都不得构建可出图条件。失败记录必须保存实际缺失项，不能只写“数据不足”。
 
 ## 1. 数据原则
 
 训练数据必须是可追溯、可复现、可审核的程序资产。文件数量、历史 JSON 数量、重复样本和缺少正式记录的图片不能计入数据充足度。
 
 程序可以生成世界事实、Blueprint、Mask、距离图、对象实例图、可走层、碰撞层和调试预览；程序直绘图不能作为专业完整地图正样本，也不能进入 `/world`。
+
+## 1.1 V7两级容量合同
+
+项目所有者于2026-07-25批准：
+
+| 合同 | 总量 | split | 当前资格 |
+|---|---:|---|---|
+| V7首次MVP训练 | 64 | `48/8/4/4` | 当前执行门槛 |
+| V7后续正式增强 | 128 | `96/16/8/8` | 后续扩容目标 |
+
+减少首次训练数量只缩短冷启动时间，不改变任何单条数据资格。每条必须是非重复、非镜像、非旋转、非共享骨架的完整地图，并绑定独立WorldFacts、World Director、正式23通道、原生RGB、来源许可、机器审核、项目所有者审核、双时区时间、SHA-256和程序存储证据。局部图、程序直绘图、历史图重绑、只换seed或只换植被的轻微变体均不得计数。
+
+最新程序审计runId=`ai-assisted-v7-data-capacity-plan-2026-07-25T03-00-46-178Z`确认可信26条、隔离17条、失败0条，64张门槛缺38条，split缺口为`27/6/2/3`。该审计没有授予任何RGB生成或GPU训练权限。
 
 第一版正式本地模型 RGB target 采用原生 `1024×768` 2D 高分辨率像素风完整画布。正式 target、正式候选、owner review 和 Runtime 必须具备统一视角、世界尺度、对象比例、像素纹理语言、轮廓、光照、接地、遮挡和游戏可读性；普通数字插画、仅套像素滤镜的图片、低分辨率自动放大图、tile/sprite 拼接图均不能取得正式资格。训练内部可以使用渐进分辨率，但最终正式输出只计本地模型原生 `1024×768` 文件一次。
 
@@ -23,6 +147,8 @@
 冷启动基础完整地图原图必须先作为集合建立版本化完整地图视觉标准，不能只用于页面展示，也不能逐张作为后续生成器的图片参考。该标准只能保存经来源与审核身份约束的聚合数值、结构统计和文字契约；至少覆盖镜头/世界尺度、整体构图层次、入口—中心—道路关系、空间与生态分区、水体分布变化、对象尺寸/密度及像素视觉语法。后续条件训练样本仍必须由当前世界事实、世界导演、23通道与本轮新 RGB 真实配对形成。历史完整地图 RGB 不得用于反推世界事实或复制构图。
 
 数据一致性要求固定为“视觉语言统一、构图样本多样”。使用相同水体、道路、分区和整体布局，仅替换植被、颜色、天气或装饰，不能计作新的完整地图正样本；必须写入 `complete_map_composition_diversity_failed` 或对应重复记录。
+
+连接实例、主题架构和实例细节是三道独立门禁。即使像素或条件栅格差异达到既有构图阈值，只要多个样本错误引用同一具体区域蓝图、同一主题骨架或同一实例细节布局，仍不得计为不同自主世界训练样本。
 
 ## 2. 允许的视觉来源
 
@@ -200,6 +326,8 @@ formalInferenceEligible = false
 
 机器审核的颜色分类器必须覆盖雨季和旱季两种地表。若通用道路暖色阈值将大面积金黄色旱季草层误判为道路，程序必须保留候选失败记录并阻断晋级；修复必须改进道路/草层的实际分类方法并对历史通过图、拒绝图和不同季节执行回归，不得只放宽空间、覆盖或风格阈值让当前图片通过。
 
+无水森林、低山阴影和蓝绿色树冠不得被宽水色规则直接计为水体。正式`terrain_water`通道非空时，审核器使用覆盖绿色/暗色淡水的宽颜色信号并执行空间、覆盖与质心审核；通道全零时，审核器改用强蓝主导与16×16局部连续色面过滤，再与固定`maximumAbsentSignalRatio=0.005`比较。该分支选择来自当前23通道，不得由图片类别、槽位编号或owner结论硬编码。任何修复必须保证历史已通过水图和无水图回归失败0，历史水体空间错位拒绝继续失败，并保存同图旧拒绝与新复审。
+
 当前道路识别版本固定为 `season_aware_local_color_signal_plus_8x6_spatial_mass_and_centroid_v2`。旱季分类必须证明006 V2的低对比道路仍失败、006 V3的红棕土路与草层分离后通过；雨季分类必须证明001 V2和005 V2继续通过，历史拒绝002 V1继续失败。机器重审必须把旧审核保存到 `reviews/machine/<reviewId>.json`，不得覆盖历史失败证据。
 
 ### 5.2 条件编号推进与防重复规则
@@ -251,7 +379,7 @@ formalInferenceEligible = false
 
 | 字段 | 作用 |
 |---|---|
-| `connectivityBlueprintId` | 指向项目所有者批准、程序登记的具体世界连接蓝图 |
+| `connectivityBlueprintId` | 指向当前样本自身`regionId`对应、经批准并由程序登记的具体连接实例；不得默认复用`region-0001` |
 | `regionId` | 标识本图对应的大世界区域 |
 | `edgePortIds` | 标识道路、水系、生态和海拔在边界上的批准连接口 |
 | `pathGraphId` | 绑定入口、中心、出口和跨区域道路关系 |
@@ -259,7 +387,7 @@ formalInferenceEligible = false
 | `walkableGraphId` | 绑定可走连通分量与碰撞关系 |
 | 正负连接标签 | 保存连续连接、断路、断水、孤立区域、邻接冲突和对象身份中断等证据 |
 
-第一版连接蓝图已经登记为 `mainland-southeast-asia-earth-reference-natural-home-region-0001-v1`，Runtime 连接事实已迁移到 tick 2，并经项目所有者审核后写入 tick 3。项目所有者已批准连接覆盖最低27条正样本、27条负样本，9个覆盖轴各不少于3正+3负。程序已在 `data/world-samples/world-connectivity/coverage/` 自动保存并机器复核27正、27负结构化连接监督记录，九轴全部达到3正+3负；这些记录不含RGB、不修改Runtime世界事实。现有 AI 辅助冷启动原图即使通过视觉审核，也只属于视觉冷启动数据，不得仅凭图片视觉内容计入连接覆盖。
+第一版具体运行区域连接蓝图已经登记为 `mainland-southeast-asia-earth-reference-natural-home-region-0001-v1`，该区域Runtime连接事实已迁移到 tick 2，并经项目所有者审核后写入 tick 3。该批准不覆盖其他训练区域。项目所有者已批准连接覆盖最低27条正样本、27条负样本，9个覆盖轴各不少于3正+3负；这些历史结构化监督记录不含RGB、不修改Runtime世界事实，但不能替代每张训练样本自身的区域连接实例。现有 AI 辅助冷启动原图即使通过视觉审核，也不得仅凭图片视觉内容或共享`region-0001`蓝图计入独立区域训练容量。
 
 20 条 `completeMapPositive` 是完整地图类别的最低门槛，不是第一批唯一任务，也不是全部训练数据规模。390 个热带季风植物视觉覆盖单元和过渡、接地、负样本、漏判数据与完整地图样本共同构成数据充足度；各类可以并行积累，但任何门槛不足时统一数据包仍保持阻断。
 
@@ -462,3 +590,16 @@ slot-001闭环时的数据包曾保持旧21条条件配对并增加1条V7贡献�
 同图机器复审runId=`ai-assisted-cold-start-review-ai-cold-start-earth-reference-earth-reference-naturalized-complete-map-b3be6a28ffb6-v1-2026-07-25T00-37-54-194Z`通过，问题数=0。项目所有者明确通过由正式程序保存为reviewId=`ai-cold-start-owner-review-ai-cold-start-earth-reference-earth-reference-naturalized-complete-map-b3be6a28ffb6-v1-2026-07-25T00-41-06-524Z`，命令引用=`owner-approved-earth-reference-naturalized-complete-map-b3be6a28ffb6-20260725`。
 
 该记录当前资格固定为：`trainingEligibility=ai_assisted_cold_start_eligible`、`formalConditionalTrainingEligible=true`、`independentTrainingEligible=false`、`formalCandidate=false`、`runtimeFrameEligible=false`、`canEnterWorld=false`。程序重建的数据包`natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-25T00-45-56-567Z`已将其放入`validation`，只承担`rgb_autoencoder_warmup`。它尚无V7容量贡献身份，不得计入V7正式容量，也不得进入Runtime或`/world`。
+# 64组完整地图的语义拓扑唯一性（2026-08-01 owner 授权）
+
+64个不同的真实测量窗口、条件ID、SHA-256或结构身份，只能证明来源记录不同，不能证明训练内容不同。用于本地AI训练并作为未来游戏世界画面的完整地图，还必须通过道路、水文、岸线和整体骨架的语义拓扑去重。
+
+出图前必须比较当前64组及全部机器拒绝、owner拒绝历史。道路比较入口侧、边界接触顺序、跨度方向、起始带、主要转弯数量与方向序列，以及与水体的相对关系。水文比较进出边界、主河道数、支流/分汊/汇流/分流模式、分离与回流顺序、岛体、回水洼地、岸线包围关系和主要弯曲序列。坐标变化、宽度变化、纹理变化、左右侧变化或小幅变形不能把同一拓扑模板变成新样本。
+
+当64组中有多张有水地图时，不能全部使用同一种河网连接模式。例如两张图即使来自不同泰国测量窗口，只要都表现为“主河道分汊—围成中央岛—下游回流”，仍属于重复，必须重新选择能支撑不同水文类型的真实测量证据并重建条件包。
+
+正式机器可读合同：`data/ai-painter/system-governance/complete-map-semantic-topology-diversity-contract-v1.json`。
+
+候选窗口预检必须与正式构建使用同一个候选自己的区域连接实例：起点、终点、上下游河宽和构图修订均不得从当前槽位的旧条件包复用。水文预检必须同时审核主河、每条内部支流或分汊、由同一水体几何派生的岸线，以及道路对完整水系的避让；只检查主河不构成通过。允许增加由本轮八段泰国测量摘要派生的匿名自由空间道路候选，但不得降低道路跨度、边界、穿水、曲率或河道自然度阈值。
+
+历史比较不是“新190只比旧190、新194只比旧194”。任何候选只要与全部时间顺序可用历史中的任一通过、待审、机器失败或owner拒绝完整地图形成相同水体/道路宏观组织，都必须阻断。某个真实窗口曾在另一个失败槽位中使用，也不能再通过改槽位编号进入成功64组。

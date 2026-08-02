@@ -45,6 +45,39 @@
     "visualCanDefineTopology": false,
     "mechanicalImageCompositionAllowed": false
   },
+  "mvpActiveLandscapePolicy": {
+    "policyId": "thailand-sakaerat-mvp-supported-landscape-subset-v1",
+    "status": "owner_approved_for_first_mvp_training",
+    "ownerAuthorizationId": "owner-authorized-thailand-mvp-provable-landscape-scope-20260729",
+    "currentMvpSourcePackage": "Thailand / Sakaerat-Wang Nam Khiao",
+    "activeLandscapeTypeIds": [
+      "seasonal-evergreen-semi-evergreen-forest",
+      "dry-dipterocarp-woodland",
+      "bamboo-grove",
+      "tropical-forest-glade",
+      "grassland-forest-transition",
+      "wet-season-drainage-hollow",
+      "forested-low-mountain"
+    ],
+    "derivationRule": "each slot type must be derived from its current measurement metrics plus the approved regional ecology facts; quota assignment is forbidden",
+    "futureEnhancementLandscapeTypeIds": [
+      "lowland-evergreen-tropical-forest",
+      "moist-deciduous-teak-forest",
+      "riparian-tropical-forest",
+      "monsoon-grassland",
+      "river-floodplain",
+      "freshwater-swamp",
+      "reed-marsh",
+      "pond-short-creek",
+      "tropical-mountain-stream",
+      "limestone-foothill",
+      "rocky-low-hill",
+      "tropical-valley-floor",
+      "dry-season-exposed-riverbank"
+    ],
+    "futureEnhancementRequiresAdditionalApprovedRegionalSourcePackages": true,
+    "allTwentyHistoricalTypesRemainCatalogued": true
+  },
   "coverageAxes": {
     "complete-maps": [
       "worldId",

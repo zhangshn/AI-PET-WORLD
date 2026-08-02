@@ -104,6 +104,15 @@
       "version": "v0.2",
       "status": "draft for owner review",
       "sourcePath": "data/world-visual-data-dictionary/source/mvp-natural-home-v0.3-source.json#composition-recipe/game-map-composition-recipe",
+      "currentContractOverride": {
+        "contractVersion": "initial-natural-world-autonomy-and-complete-map-novelty-v1",
+        "effectiveAt": "2026-07-28T09:43:37.876Z",
+        "siteSelectionPolicy": "initial_natural_world_no_preset_home_site",
+        "focalAreaPolicy": "inactive_all_zero_excluded_from_visible_guide",
+        "waterPolicy": "only_when_required_by_current_world_facts",
+        "readOrderPolicy": "entrance_or_exit_to_natural_passage_to_multiple_ecological_zones_to_natural_boundary_and_large_world_connection",
+        "compositionNoveltyPolicy": "dominant_water_route_and_ecological_macro_topology_must_not_repeat_approved_or_rejected_complete_maps"
+      },
       "hardFailures": [
         {
           "code": "composition_recipe_missing",
@@ -139,6 +148,21 @@
       "version": "v0.2",
       "status": "active draft scope for owner review",
       "sourcePath": "data/world-visual-data-dictionary/source/mvp-natural-home-v0.3-source.json#composition-recipe/single-map-composition-fields",
+      "currentContractOverride": {
+        "contractVersion": "initial-natural-world-autonomy-and-complete-map-novelty-v1",
+        "effectiveAt": "2026-07-28T09:43:37.876Z",
+        "presetCenterRequired": false,
+        "presetOpenConstructionSpaceRequired": false,
+        "focalAreaPolicy": "inactive_all_zero_excluded_from_visible_guide",
+        "waterPolicy": "optional_and_world_fact_bound",
+        "wholeMapFieldsRequired": [
+          "boundary_entrance_or_exit_relation",
+          "continuous_natural_passage",
+          "multiple_recognizable_spatial_or_ecological_zones",
+          "natural_boundary",
+          "large_world_connectivity_semantics"
+        ]
+      },
       "hardFailures": [
         {
           "code": "single_map_composition_fields_missing",
@@ -174,6 +198,15 @@
       "version": "v0.2",
       "status": "draft for owner review",
       "sourcePath": "data/world-visual-data-dictionary/source/mvp-natural-home-v0.3-source.json#composition/complete-map-professional-readability-v2",
+      "currentContractOverride": {
+        "contractVersion": "initial-natural-world-autonomy-and-complete-map-novelty-v1",
+        "effectiveAt": "2026-07-28T09:43:37.876Z",
+        "presetHomeCenterForbidden": true,
+        "waterRequiredOnlyByWorldFacts": true,
+        "localSceneForbidden": true,
+        "compositionDiversityRequired": true,
+        "historicalApprovedAndRejectedMacroCompositionReuseForbidden": true
+      },
       "hardFailures": [
         {
           "code": "professional_readability_failed",
@@ -1577,6 +1610,14 @@
       "version": "v0.3",
       "status": "draft for owner review",
       "sourcePath": "data/world-visual-data-dictionary/source/mvp-natural-home-v0.3-source.json#review/complete-map-drawability-gate",
+      "currentContractOverride": {
+        "contractVersion": "initial-natural-world-autonomy-and-complete-map-novelty-v1",
+        "effectiveAt": "2026-07-28T09:43:37.876Z",
+        "preRgbDominantMacroTopologyAuditRequired": true,
+        "comparisonScope": "all_chronology_eligible_approved_rejected_machine_rejected_and_pending_complete_map_condition_guides",
+        "historicalRgbReadByGeneratorForbidden": true,
+        "imageGenerationMustRemainBlockedWhenDuplicateRiskExists": true
+      },
       "hardFailures": [
         {
           "code": "drawability_gate_missing",
@@ -3209,6 +3250,56 @@
       "code": "composition_recipe_missing",
       "meaning": "Generation task has no composition recipe.",
       "typicalFixTarget": "`composition-recipe/game-map-composition-recipe.md`"
+    },
+    {
+      "code": "composition_duplicate",
+      "meaning": "The complete-map subject framework or macro composition repeats an existing map.",
+      "typicalFixTarget": "`review/complete-map-negative-sample-routing.md`"
+    },
+    {
+      "code": "complete_map_composition_diversity_failed",
+      "meaning": "A candidate reuses an owner-approved complete-map composition template.",
+      "typicalFixTarget": "`composition/complete-map-professional-readability-v2.md`"
+    },
+    {
+      "code": "historical_rejected_composition_duplicate",
+      "meaning": "A candidate matches a complete-map composition previously rejected by the project owner.",
+      "typicalFixTarget": "`review/complete-map-negative-sample-routing.md`"
+    },
+    {
+      "code": "historical_approved_condition_guide_macro_composition_duplicate",
+      "meaning": "A pre-RGB condition guide repeats the macro topology of an approved complete map.",
+      "typicalFixTarget": "`review/complete-map-drawability-gate.md`"
+    },
+    {
+      "code": "historical_complete_map_condition_guide_macro_composition_duplicate",
+      "meaning": "A pre-RGB condition guide repeats the macro topology of another historical complete-map condition guide.",
+      "typicalFixTarget": "`review/complete-map-drawability-gate.md`"
+    },
+    {
+      "code": "condition_terrain_path_ground_coverage_mismatch",
+      "meaning": "Rendered route coverage does not match the authoritative terrain_path_ground condition.",
+      "typicalFixTarget": "`spatial-grid/layer-record-schema.md`"
+    },
+    {
+      "code": "transform_derived_complete_map_skeleton_forbidden",
+      "meaning": "A complete-map skeleton is derived by mirror, rotation, or another forbidden transform.",
+      "typicalFixTarget": "`review/complete-map-drawability-gate.md`"
+    },
+    {
+      "code": "preset_home_site_or_construction_clearing_forbidden",
+      "meaning": "An initial natural map presets a home site, activity center, or construction clearing.",
+      "typicalFixTarget": "`director/complete-map-layout-constraints.md`"
+    },
+    {
+      "code": "local_scene_not_complete_map",
+      "meaning": "The output is a local scene or enlarged ecological unit rather than a complete map.",
+      "typicalFixTarget": "`composition/complete-map-professional-readability-v2.md`"
+    },
+    {
+      "code": "owner_visual_quality_rejected",
+      "meaning": "The project owner rejected the complete-map visual quality for a reason not covered by a more specific registered code.",
+      "typicalFixTarget": "`review/complete-map-negative-sample-routing.md`"
     },
     {
       "code": "read_order_failed",

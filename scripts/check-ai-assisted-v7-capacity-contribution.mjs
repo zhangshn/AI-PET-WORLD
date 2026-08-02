@@ -7,33 +7,39 @@ const recordId = argumentValue("--record-id")
 const index = readJson("data/world-samples/original-image-library/natural-home-v1/index.json")
 const records = (index?.records ?? []).filter((summary) => !recordId || summary.recordId === recordId)
 const failures = []
+const registered = []
 
 check(records.length > 0, "v7_capacity_contribution_record_missing")
 for (const summary of records) {
-  if (summary.v7CapacityContribution?.status !== "registered") continue
-  validate(summary)
+  const record = readJson(summary.recordPath)
+  const recordRegistered = record?.v7CapacityContribution?.status === "registered"
+  const indexRegistered = summary.v7CapacityContribution?.status === "registered"
+  if (recordRegistered !== indexRegistered) {
+    check(false, `index_registration_mismatch:${summary.recordId}`)
+  }
+  if (!recordRegistered) continue
+  registered.push({ summary, record })
+  validate(summary, record)
 }
-const registered = records.filter((summary) => summary.v7CapacityContribution?.status === "registered")
 check(registered.length > 0, "v7_capacity_contribution_not_registered")
-check(new Set(registered.map((summary) => summary.v7CapacityContribution.capacitySlotId)).size === registered.length, "v7_capacity_slot_duplicate")
+check(new Set(registered.map(({ record }) => record.v7CapacityContribution.capacitySlotId)).size === registered.length, "v7_capacity_slot_duplicate")
 
 const result = {
   ok: failures.length === 0,
   status: failures.length === 0 ? "v7_capacity_contribution_check_passed" : "v7_capacity_contribution_check_failed",
   checkedRecordCount: registered.length,
-  records: registered.map((summary) => ({
+  records: registered.map(({ summary, record }) => ({
     recordId: summary.recordId,
-    capacitySlotId: summary.v7CapacityContribution.capacitySlotId,
-    split: summary.v7CapacityContribution.split,
-    contributionPath: summary.v7CapacityContribution.contributionPath,
+    capacitySlotId: record.v7CapacityContribution.capacitySlotId,
+    split: record.v7CapacityContribution.split,
+    contributionPath: record.v7CapacityContribution.contributionPath,
   })),
   failures,
 }
 console[failures.length === 0 ? "log" : "error"](JSON.stringify(result, null, 2))
 process.exit(failures.length === 0 ? 0 : 1)
 
-function validate(summary) {
-  const record = readJson(summary.recordPath)
+function validate(summary, record) {
   const pointer = record?.v7CapacityContribution
   check(Boolean(record), `record_missing:${summary.recordId}`)
   check(pointer?.status === "registered", `registration_missing:${summary.recordId}`)

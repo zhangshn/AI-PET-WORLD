@@ -2,6 +2,9 @@ import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
 import { isOwnerAuthorizedAiAssistedColdStartRef } from "./lib/original-image-library-contract.mjs"
+import { appendAiPainterProgramEvent } from "./lib/ai-painter-program-event-store.mjs"
+import { indexArtifact } from "./lib/ai-pet-world-storage-catalog.mjs"
+import { logicalProjectPath } from "./lib/ai-pet-world-storage.mjs"
 
 const ROOT = process.cwd()
 const POLICY_VERSION = "owner-authorized-ai-assisted-cold-start-v1"
@@ -232,7 +235,8 @@ const manifest = {
   automaticStorage: true,
 }
 writeJson(path.join(packageDir, "manifest.json"), manifest)
-writeJson(path.join(OUTPUT_ROOT, "latest.json"), {
+const latestPath = path.join(OUTPUT_ROOT, "latest.json")
+writeJson(latestPath, {
   schemaVersion: "ai-assisted-cold-start-dataset-package-latest-v1",
   packageId,
   status: manifest.status,
@@ -250,6 +254,27 @@ writeJson(path.join(OUTPUT_ROOT, "latest.json"), {
   canStartAutoencoderWarmup: manifest.canStartAutoencoderWarmup,
   canTrainConditionalDenoiser: manifest.canTrainConditionalDenoiser,
 })
+const indexedArtifactCount = indexGeneratedPackageArtifacts(packageDir, latestPath)
+appendAiPainterProgramEvent({
+  action: "build_ai_assisted_cold_start_dataset_package",
+  runId: packageId,
+  kind: "dataset_package_built",
+  status: "success",
+  stage: "ai_assisted_cold_start_dataset_package_built",
+  title: "AI-assisted cold-start dataset package built and indexed",
+  titleZh: "AI 辅助冷启动数据集包已构建并写入索引",
+  titleEn: "The AI-assisted cold-start dataset package was built and indexed",
+  detail: `The program built package ${packageId}, indexed ${indexedArtifactCount} artifacts with SHA-256, and preserved all immutable source histories.`,
+  detailZh: `程序构建数据集包 ${packageId}，将 ${indexedArtifactCount} 项产物连同 SHA-256 写入 SQLite，并保留全部不可变来源历史。`,
+  summaryZh: `数据集包包含 ${samples.length} 个样本、${currentConditionBoundSamples.length} 条当前条件配对和 ${v7CapacityContributionSamples.length} 条历史 V7 容量贡献。容量资格暂停由独立容量计划执行；本轮未生成图片，未启动 GPU 训练。`,
+  summaryEn: `The package contains ${samples.length} samples, ${currentConditionBoundSamples.length} current condition pairs, and ${v7CapacityContributionSamples.length} historical V7 capacity contributions. Capacity suspensions are applied by the separate capacity plan. No image was generated and GPU training did not start.`,
+  evidencePath: manifest.sourceIndexPath,
+  evidence: [
+    projectPath(path.join(packageDir, "manifest.json")),
+    manifest.sourceIndexPath,
+    projectPath(latestPath),
+  ],
+})
 
 console.log(JSON.stringify({
   status: manifest.status,
@@ -264,6 +289,9 @@ console.log(JSON.stringify({
   currentConditionUnpairedCount: unpairedConditionRows.length,
   splitCounts,
   blockers,
+  indexedArtifactCount,
+  imagesGenerated: 0,
+  gpuTrainingStarted: false,
 }, null, 2))
 
 function buildSample(summary, split) {
@@ -366,6 +394,20 @@ function buildSample(summary, split) {
     conditionBindingStatus: record.conditionBinding?.status ?? null,
     formalConditionalTrainingEligible: record.conditionBinding?.formalConditionalTrainingEligible === true,
     conditionBound,
+    realEarthRegionId:
+      record.conditionBinding?.realEarthRegionId ?? null,
+    realEarthRegionSourcePackageId:
+      record.conditionBinding?.realEarthRegionSourcePackageId ?? null,
+    realEarthRegionSourcePackagePath:
+      record.conditionBinding?.realEarthRegionSourcePackagePath ?? null,
+    realEarthRegionSourcePackageSha256:
+      record.conditionBinding?.realEarthRegionSourcePackageSha256 ?? null,
+    connectivityBlueprintId:
+      record.conditionBinding?.connectivityBlueprintId ?? null,
+    connectivityBlueprintPath:
+      record.conditionBinding?.connectivityBlueprintPath ?? null,
+    structuralIdentities:
+      record.conditionBinding?.structuralIdentities ?? null,
     connectivityBinding: record.worldBinding?.connectivityBinding ?? null,
     policyVersion: POLICY_VERSION,
     ownerAuthorizationRef: record.aiAssistedColdStart.ownerAuthorizationRef,
@@ -394,9 +436,10 @@ function validateV7CapacityContribution(record, machineReview) {
   assert(contribution.conditionChannelCount === 23, `V7 contribution channel count invalid: ${record.recordId}`)
   assert(machineReview.styleFingerprintAudit?.passed === true, `V7 style audit failed: ${record.recordId}`)
   assert(machineReview.compositionNoveltyAudit?.passed === true, `V7 novelty audit failed: ${record.recordId}`)
-  assert(taskPackage.capacitySlot?.slotId === contribution.capacitySlotId, `V7 task slot mismatch: ${record.recordId}`)
-  assert(taskPackage.capacitySlot?.split === contribution.split, `V7 task split mismatch: ${record.recordId}`)
-  assert(taskPackage.conditionLabel === contribution.conditionLabel, `V7 condition label mismatch: ${record.recordId}`)
+  const taskSlotBinding = taskPackage.capacitySlot ?? taskPackage.v7SlotBinding
+  assert(taskSlotBinding?.slotId === contribution.capacitySlotId, `V7 task slot mismatch: ${record.recordId}`)
+  assert(taskSlotBinding?.split === contribution.split, `V7 task split mismatch: ${record.recordId}`)
+  assert(v7ConditionLabel(taskPackage, taskSlotBinding) === contribution.conditionLabel, `V7 condition label mismatch: ${record.recordId}`)
   assert(taskPackage.generationContractVersion === "complete-map-scope-world-facts-v2", `V7 condition contract invalid: ${record.recordId}`)
   return {
     capacitySlotId: contribution.capacitySlotId,
@@ -406,6 +449,10 @@ function validateV7CapacityContribution(record, machineReview) {
     contributionPath: pointer.contributionPath,
     contributionSha256: pointer.contributionSha256,
   }
+}
+
+function v7ConditionLabel(taskPackage, taskSlotBinding) {
+  return taskPackage.conditionLabel ?? `v7-complete-map-${taskSlotBinding.slotId.slice(-3)}`
 }
 
 function snapshotInputs(destinationRoot) {
@@ -487,6 +534,34 @@ function resolveProjectPath(value) {
 function writeJson(filePath, value) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true })
   fs.writeFileSync(filePath, `${JSON.stringify(value, null, 2)}\n`)
+}
+
+function indexGeneratedPackageArtifacts(packageRoot, pointerPath) {
+  const files = [...collectFiles(packageRoot), pointerPath]
+  for (const filePath of files) {
+    const stat = fs.statSync(filePath)
+    indexArtifact({
+      logicalPath: logicalProjectPath(filePath),
+      physicalUri: fs.realpathSync(filePath),
+      storageLayer: "hot",
+      runId: packageId,
+      artifactType: "ai_assisted_cold_start_dataset_package",
+      byteSize: stat.size,
+      modifiedAtUtc: stat.mtime.toISOString(),
+      sha256: sha256(fs.readFileSync(filePath)),
+    })
+  }
+  return files.length
+}
+
+function collectFiles(directory) {
+  const files = []
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const entryPath = path.join(directory, entry.name)
+    if (entry.isDirectory()) files.push(...collectFiles(entryPath))
+    else if (entry.isFile()) files.push(entryPath)
+  }
+  return files
 }
 
 function projectPath(filePath) { return path.relative(ROOT, path.resolve(filePath)).replace(/\\/g, "/") }

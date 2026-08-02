@@ -6,6 +6,12 @@ import sharp from "sharp"
 const ROOT = process.cwd()
 const GRID_COLUMNS = 8
 const GRID_ROWS = 6
+const FLOWING_WATER_LANDSCAPES = new Set([
+  "wet-season-drainage-hollow",
+  "river-floodplain",
+  "riparian-tropical-forest",
+  "dry-season-exposed-riverbank",
+])
 
 export async function auditAiAssistedConditionAlignment({ record, imagePath }) {
   if (!record.conditionBinding?.conditionPackPath) {
@@ -29,6 +35,12 @@ export async function auditAiAssistedConditionAlignment({ record, imagePath }) {
   const image = await sharp(imagePath, { failOn: "error" }).removeAlpha().raw().toBuffer({ resolveWithObject: true })
   assert(image.info.width === conditionPack.canvas.width && image.info.height === conditionPack.canvas.height, "candidate and condition-pack canvas mismatch")
   const pathClassifier = selectPathClassifier(record)
+  const flowingWaterBoundaryRequired =
+    record.rebuild64Sequence?.seriesId ===
+      "thailand-rebuild64-20260731" &&
+    FLOWING_WATER_LANDSCAPES.has(
+      record.classification?.regionalLandscapeType,
+    )
 
   const audits = []
   audits.push(await auditChannel({
@@ -36,11 +48,19 @@ export async function auditAiAssistedConditionAlignment({ record, imagePath }) {
     image,
     channelId: "terrain_water",
     classify: classifyWater,
+    classifierMode:
+      "condition_present_broad_freshwater_color_signal_v1",
+    classifyWhenExpectedAbsent: classifyStrongWater,
+    absentClassifierMode:
+      "condition_absent_strong_blue_dominance_v2",
+    isolateSignalWhenExpectedAbsent:
+      isolateDenseWaterSurfaceSignal,
     minimumSpatialIntersection: 0.5,
     maximumCentroidDistance: 0.12,
     minimumCoverageRatio: 0.35,
     maximumCoverageRatio: 2.5,
     maximumAbsentSignalRatio: 0.005,
+    requireBoundaryContact: flowingWaterBoundaryRequired,
   }))
   audits.push(await auditChannel({
     conditionPack,
@@ -52,9 +72,17 @@ export async function auditAiAssistedConditionAlignment({ record, imagePath }) {
     maximumCentroidDistance: 0.25,
     minimumCoverageRatio: 0.25,
     maximumCoverageRatio: 3.0,
+    requireBoundaryContact: true,
   }))
 
-  const issues = audits.flatMap((audit) => audit.issues)
+  const hydrologyConnectivityAudit = auditHydrologyConnectivity({
+    record,
+    waterAudit: audits.find((audit) => audit.channelId === "terrain_water"),
+  })
+  const issues = [
+    ...audits.flatMap((audit) => audit.issues),
+    ...hydrologyConnectivityAudit.issues,
+  ]
   return {
     schemaVersion: "ai-assisted-condition-alignment-audit-v1",
     status: issues.length === 0 ? "condition_alignment_passed" : "condition_alignment_failed",
@@ -64,7 +92,17 @@ export async function auditAiAssistedConditionAlignment({ record, imagePath }) {
     conditionPackPath: projectPath(conditionPackPath),
     conditionPackFileSha256: sha256(conditionPackBytes),
     canvas: conditionPack.canvas,
-    method: "season_aware_local_color_signal_plus_condition_supported_components_plus_8x6_spatial_mass_and_centroid_v3",
+    method: "season_aware_dense_water_surface_plus_water_port_boundary_continuity_plus_condition_supported_path_components_plus_8x6_spatial_mass_centroid_v5",
+    waterClassifier: {
+      mode: "condition_presence_aware_water_signal_v3",
+      conditionPresentMode:
+        "condition_present_broad_freshwater_color_signal_v1",
+      conditionAbsentMode:
+        "condition_absent_strong_blue_dominance_plus_16px_dense_surface_v2",
+      blockSizePixels: 16,
+      minimumBlockSignalRatio: 0.35,
+      acceptanceThresholdsChanged: false,
+    },
     pathClassifier: {
       mode: pathClassifier.mode,
       season: record.classification?.monsoonSeason ?? null,
@@ -73,12 +111,149 @@ export async function auditAiAssistedConditionAlignment({ record, imagePath }) {
       supportCorridorRadiusPixels: 48,
       acceptanceThresholdsChanged: false,
     },
+    hydrologyConnectivityAudit,
     channelAudits: audits,
     issues,
   }
 }
 
-async function auditChannel({ conditionPack, image, channelId, classify, isolateSignal = null, minimumSpatialIntersection, maximumCentroidDistance, minimumCoverageRatio, maximumCoverageRatio, maximumAbsentSignalRatio = 0 }) {
+function auditHydrologyConnectivity({ record, waterAudit }) {
+  const landscapeType =
+    record.classification?.regionalLandscapeType ?? null
+  const flowingWaterRequired =
+    record.rebuild64Sequence?.seriesId ===
+      "thailand-rebuild64-20260731" &&
+    FLOWING_WATER_LANDSCAPES.has(landscapeType) &&
+    waterAudit?.absenceExpected === false
+  const connectivityPath =
+    record.conditionBinding?.connectivityBlueprintPath ?? null
+  const issues = []
+  if (!flowingWaterRequired) {
+    return {
+      contractVersion: "flowing-water-world-connectivity-v1",
+      status: "not_applicable_no_flowing_water_contract",
+      passed: true,
+      landscapeType,
+      flowingWaterRequired: false,
+      connectivityBlueprintPath: connectivityPath,
+      externalWaterPortIds: [],
+      upstreamPortId: null,
+      downstreamPortId: null,
+      expectedBoundarySides: [],
+      issues,
+    }
+  }
+
+  const resolvedConnectivityPath = connectivityPath
+    ? resolveProjectPath(connectivityPath)
+    : null
+  const connectivity =
+    resolvedConnectivityPath && fs.existsSync(resolvedConnectivityPath)
+      ? JSON.parse(fs.readFileSync(resolvedConnectivityPath, "utf8"))
+      : null
+  const graph = connectivity?.hydrologyGraph ?? null
+  const externalWaterPortIds = Array.isArray(
+    graph?.externalWaterPortIds,
+  )
+    ? graph.externalWaterPortIds
+    : []
+  const edgePorts = Array.isArray(connectivity?.edgePorts)
+    ? connectivity.edgePorts
+    : []
+  const currentWaterPorts = edgePorts.filter(
+    (port) =>
+      port.kind === "water" &&
+      externalWaterPortIds.includes(port.edgePortId),
+  )
+  const upstreamPort = currentWaterPorts.find(
+    (port) => port.edgePortId === graph?.upstreamPortId,
+  )
+  const downstreamPort = currentWaterPorts.find(
+    (port) => port.edgePortId === graph?.downstreamPortId,
+  )
+  const expectedBoundarySides =
+    waterAudit?.boundaryContactAudit?.requiredSides ?? []
+  const portContractPassed = Boolean(
+    graph &&
+      externalWaterPortIds.length === 2 &&
+      currentWaterPorts.length === 2 &&
+      upstreamPort?.boundarySide === "north" &&
+      upstreamPort?.flowRole === "inlet" &&
+      downstreamPort?.boundarySide === "south" &&
+      downstreamPort?.flowRole === "outlet" &&
+      upstreamPort.connectsToRegionId &&
+      upstreamPort.connectsToEdgePortId &&
+      downstreamPort.connectsToRegionId &&
+      downstreamPort.connectsToEdgePortId &&
+      graph.flowAxis === "north_to_south",
+  )
+  const rasterBoundaryContractPassed =
+    expectedBoundarySides.includes("north") &&
+    expectedBoundarySides.includes("south") &&
+    expectedBoundarySides.length === 2
+
+  if (!connectivity) {
+    issues.push(issue(
+      "condition_terrain_water_connectivity_blueprint_missing",
+      "The flowing-water map has no readable regional connectivity blueprint.",
+      "流动水体地图缺少可读取的区域连接蓝图。",
+      "water_and_shoreline",
+    ))
+  } else if (!portContractPassed) {
+    issues.push(issue(
+      "condition_terrain_water_upstream_downstream_ports_missing",
+      "The flowing-water map must bind one north upstream inlet and one south downstream outlet to paired neighbor water ports.",
+      "流动水体地图必须绑定北侧上游入口和南侧下游出口，并连接相邻区域水口。",
+      "water_and_shoreline",
+    ))
+  }
+  if (!rasterBoundaryContractPassed) {
+    issues.push(issue(
+      "condition_terrain_water_inlet_outlet_raster_missing",
+      "The authoritative water mask does not visibly continue through both contracted water boundaries.",
+      "权威水体掩码没有从两个正式水文边界连续穿出。",
+      "water_and_shoreline",
+    ))
+  }
+
+  return {
+    contractVersion: "flowing-water-world-connectivity-v1",
+    status: issues.length === 0
+      ? "flowing_water_connectivity_passed"
+      : "flowing_water_connectivity_failed",
+    passed: issues.length === 0,
+    landscapeType,
+    flowingWaterRequired: true,
+    connectivityBlueprintPath: connectivityPath,
+    hydrologyGraphId: graph?.hydrologyGraphId ?? null,
+    externalWaterPortIds,
+    upstreamPortId: graph?.upstreamPortId ?? null,
+    downstreamPortId: graph?.downstreamPortId ?? null,
+    flowAxis: graph?.flowAxis ?? null,
+    expectedBoundarySides,
+    portContractPassed,
+    rasterBoundaryContractPassed,
+    issues,
+  }
+}
+
+async function auditChannel({
+  conditionPack,
+  image,
+  channelId,
+  classify,
+  classifierMode = null,
+  classifyWhenExpectedAbsent = null,
+  absentClassifierMode = null,
+  isolateSignal = null,
+  isolateSignalWhenExpectedAbsent = null,
+  minimumSpatialIntersection,
+  maximumCentroidDistance,
+  minimumCoverageRatio,
+  maximumCoverageRatio,
+  maximumAbsentSignalRatio = 0,
+  requireBoundaryContact = false,
+}) {
   const channel = conditionPack.channels.find((item) => item.id === channelId)
   assert(channel, `required condition channel missing: ${channelId}`)
   const channelPath = resolveProjectPath(channel.path)
@@ -87,18 +262,36 @@ async function auditChannel({ conditionPack, image, channelId, classify, isolate
   const actual = new Uint8Array(expected.length)
   for (let index = 0; index < expected.length; index += 1) {
     expected[index] = expectedImage.data[index * expectedImage.info.channels] > 0 ? 1 : 0
+  }
+  const expectedDistribution = spatialDistribution(expected, image.info.width, image.info.height)
+  const absenceExpected = expectedDistribution.nonZeroRatio === 0
+  const activeClassifier =
+    absenceExpected && classifyWhenExpectedAbsent
+      ? classifyWhenExpectedAbsent
+      : classify
+  const activeClassifierMode =
+    absenceExpected && absentClassifierMode
+      ? absentClassifierMode
+      : classifierMode
+  for (let index = 0; index < expected.length; index += 1) {
     const offset = index * image.info.channels
-    actual[index] = classify(image.data[offset], image.data[offset + 1], image.data[offset + 2]) ? 1 : 0
+    actual[index] = activeClassifier(
+      image.data[offset],
+      image.data[offset + 1],
+      image.data[offset + 2],
+    ) ? 1 : 0
   }
 
-  const expectedDistribution = spatialDistribution(expected, image.info.width, image.info.height)
-  const signalIsolation = isolateSignal
-    ? isolateSignal({ actual, expected, width: image.info.width, height: image.info.height })
+  const activeSignalIsolation =
+    absenceExpected && isolateSignalWhenExpectedAbsent
+      ? isolateSignalWhenExpectedAbsent
+      : isolateSignal
+  const signalIsolation = activeSignalIsolation
+    ? activeSignalIsolation({ actual, expected, width: image.info.width, height: image.info.height })
     : null
   const auditedActual = signalIsolation?.mask ?? actual
   const rawActualDistribution = spatialDistribution(actual, image.info.width, image.info.height)
   const actualDistribution = spatialDistribution(auditedActual, image.info.width, image.info.height)
-  const absenceExpected = expectedDistribution.nonZeroRatio === 0
   const spatialIntersection = expectedDistribution.cells.reduce((sum, value, index) => sum + Math.min(value, actualDistribution.cells[index]), 0)
   const centroidDistance = Math.hypot(
     expectedDistribution.centroid.x - actualDistribution.centroid.x,
@@ -138,6 +331,25 @@ async function auditChannel({ conditionPack, image, channelId, classify, isolate
       channelId === "terrain_water" ? "water_and_shoreline" : "route_and_walkable_area",
     ))
   }
+  const boundaryContactAudit = requireBoundaryContact && !absenceExpected
+    ? auditBoundaryContacts(expected, auditedActual, actual, image.info.width, image.info.height)
+    : null
+  if (boundaryContactAudit?.missingRequiredSides.length > 0) {
+    issues.push(issue(
+      `condition_${channelId}_required_boundary_contact_missing`,
+      `${channelId} does not visibly touch the boundary side required by the selected condition channel.`,
+      `${channelId} 没有在所选条件通道要求的画布边界侧形成可见接触。`,
+      "boundary_entrance",
+    ))
+  }
+  if (boundaryContactAudit?.unexpectedContactSides.length > 0) {
+    issues.push(issue(
+      `condition_${channelId}_uncontracted_boundary_contact`,
+      `${channelId} visibly touches a canvas boundary side that is absent from the selected condition channel.`,
+      `${channelId} 在条件通道未授权的画布边界侧形成了可见接触。`,
+      "boundary_entrance",
+    ))
+  }
 
   return {
     channelId,
@@ -146,7 +358,9 @@ async function auditChannel({ conditionPack, image, channelId, classify, isolate
     expectedNonZeroRatio: round(expectedDistribution.nonZeroRatio),
     actualSignalRatio: round(actualDistribution.nonZeroRatio),
     rawActualSignalRatio: round(rawActualDistribution.nonZeroRatio),
+    classifierMode: activeClassifierMode,
     signalIsolation: signalIsolation?.diagnostics ?? null,
+    boundaryContactAudit,
     absenceExpected,
     coverageRatio: absenceExpected ? null : round(coverageRatio),
     spatialIntersection: absenceExpected ? null : round(spatialIntersection),
@@ -157,6 +371,154 @@ async function auditChannel({ conditionPack, image, channelId, classify, isolate
     passed: issues.length === 0,
     issues,
   }
+}
+
+function auditBoundaryContacts(expected, supportedActual, rawActual, width, height) {
+  const bandPixels = 6
+  const expectedCounts = countBoundarySignal(expected, width, height, bandPixels)
+  const actualCounts = countBoundarySignal(supportedActual, width, height, bandPixels)
+  const rawActualCounts = countBoundarySignal(rawActual, width, height, bandPixels)
+  const sides = ["north", "east", "south", "west"]
+  const requiredSides = sides.filter((side) => expectedCounts[side] > 0)
+  const actualContactSides = sides.filter((side) => actualCounts[side] >= 6)
+  const rawActualMaximumRuns = Object.fromEntries(
+    sides.map((side) => [side, maximumBoundarySignalRun(rawActual, width, height, bandPixels, side)]),
+  )
+  const rawBoundaryComponentStats = boundaryConnectedComponentStats(
+    rawActual,
+    width,
+    height,
+    bandPixels,
+  )
+  const rawActualContactSides = sides.filter(
+    (side) =>
+      rawBoundaryComponentStats[side].maximumComponentSize >= 500 &&
+      rawBoundaryComponentStats[side].maximumComponentContactPixels >= 6,
+  )
+  const missingRequiredSides = requiredSides.filter((side) => {
+    const minimum = Math.max(6, Math.round(expectedCounts[side] * 0.1))
+    return actualCounts[side] < minimum
+  })
+  const unexpectedContactSides = rawActualContactSides.filter(
+    (side) => !requiredSides.includes(side),
+  )
+  return {
+    contractVersion: "condition-semantic-boundary-contact-v3",
+    bandPixels,
+    expectedCounts,
+    actualCounts,
+    rawActualCounts,
+    rawActualMaximumRuns,
+    rawBoundaryComponentStats,
+    requiredSides,
+    actualContactSides,
+    rawActualContactSides,
+    unexpectedContactSignalMode: "full_frame_raw_path_boundary_connected_component_minimum_500_pixels_and_6_contact_pixels_v2",
+    missingRequiredSides,
+    unexpectedContactSides,
+    passed:
+      requiredSides.length > 0 &&
+      missingRequiredSides.length === 0 &&
+      unexpectedContactSides.length === 0,
+  }
+}
+
+function boundaryConnectedComponentStats(mask, width, height, bandPixels) {
+  const sides = ["north", "east", "south", "west"]
+  const result = Object.fromEntries(
+    sides.map((side) => [side, {
+      contactingComponentCount: 0,
+      maximumComponentSize: 0,
+      maximumComponentContactPixels: 0,
+    }]),
+  )
+  const visited = new Uint8Array(mask.length)
+  const queue = new Int32Array(mask.length)
+  for (let start = 0; start < mask.length; start += 1) {
+    if (!mask[start] || visited[start]) continue
+    let head = 0
+    let tail = 0
+    const contactCounts = { north: 0, east: 0, south: 0, west: 0 }
+    visited[start] = 1
+    queue[tail++] = start
+    while (head < tail) {
+      const index = queue[head++]
+      const x = index % width
+      const y = Math.floor(index / width)
+      if (y < bandPixels) contactCounts.north += 1
+      if (x >= width - bandPixels) contactCounts.east += 1
+      if (y >= height - bandPixels) contactCounts.south += 1
+      if (x < bandPixels) contactCounts.west += 1
+      for (let dy = -1; dy <= 1; dy += 1) {
+        for (let dx = -1; dx <= 1; dx += 1) {
+          if (dx === 0 && dy === 0) continue
+          const nextX = x + dx
+          const nextY = y + dy
+          if (nextX < 0 || nextX >= width || nextY < 0 || nextY >= height) continue
+          const next = nextY * width + nextX
+          if (!mask[next] || visited[next]) continue
+          visited[next] = 1
+          queue[tail++] = next
+        }
+      }
+    }
+    for (const side of sides) {
+      if (contactCounts[side] === 0) continue
+      result[side].contactingComponentCount += 1
+      result[side].maximumComponentSize = Math.max(
+        result[side].maximumComponentSize,
+        tail,
+      )
+      result[side].maximumComponentContactPixels = Math.max(
+        result[side].maximumComponentContactPixels,
+        contactCounts[side],
+      )
+    }
+  }
+  return result
+}
+
+function maximumBoundarySignalRun(mask, width, height, bandPixels, side) {
+  const length = side === "north" || side === "south" ? width : height
+  let maximumRun = 0
+  let currentRun = 0
+  for (let coordinate = 0; coordinate < length; coordinate += 1) {
+    let present = false
+    for (let depth = 0; depth < bandPixels && !present; depth += 1) {
+      const x = side === "west"
+        ? depth
+        : side === "east"
+          ? width - 1 - depth
+          : coordinate
+      const y = side === "north"
+        ? depth
+        : side === "south"
+          ? height - 1 - depth
+          : coordinate
+      present = mask[y * width + x] > 0
+    }
+    if (present) {
+      currentRun += 1
+      maximumRun = Math.max(maximumRun, currentRun)
+    } else {
+      currentRun = 0
+    }
+  }
+  return maximumRun
+}
+
+function countBoundarySignal(mask, width, height, bandPixels) {
+  const counts = { north: 0, east: 0, south: 0, west: 0 }
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      if (!mask[y * width + x]) continue
+      if (y < bandPixels) counts.north += 1
+      if (y >= height - bandPixels) counts.south += 1
+      if (x < bandPixels) counts.west += 1
+      if (x >= width - bandPixels) counts.east += 1
+    }
+  }
+  return counts
 }
 
 function isolateConditionSupportedConnectedComponents({ actual, expected, width, height }) {
@@ -245,6 +607,78 @@ function isolateConditionSupportedConnectedComponents({ actual, expected, width,
   }
 }
 
+function isolateDenseWaterSurfaceSignal({ actual, width, height }) {
+  const blockSizePixels = 16
+  const minimumBlockSignalRatio = 0.35
+  const retained = new Uint8Array(actual.length)
+  let rawPixelCount = 0
+  let retainedPixelCount = 0
+  let rejectedPixelCount = 0
+  let retainedBlockCount = 0
+  let rejectedBlockCount = 0
+
+  for (const value of actual) rawPixelCount += value
+  for (
+    let blockY = 0;
+    blockY < height;
+    blockY += blockSizePixels
+  ) {
+    for (
+      let blockX = 0;
+      blockX < width;
+      blockX += blockSizePixels
+    ) {
+      const maximumX = Math.min(
+        width,
+        blockX + blockSizePixels,
+      )
+      const maximumY = Math.min(
+        height,
+        blockY + blockSizePixels,
+      )
+      let signalPixelCount = 0
+      let blockPixelCount = 0
+      for (let y = blockY; y < maximumY; y += 1) {
+        for (let x = blockX; x < maximumX; x += 1) {
+          blockPixelCount += 1
+          signalPixelCount += actual[y * width + x]
+        }
+      }
+      const signalRatio =
+        signalPixelCount / Math.max(1, blockPixelCount)
+      if (signalRatio >= minimumBlockSignalRatio) {
+        retainedBlockCount += 1
+        for (let y = blockY; y < maximumY; y += 1) {
+          for (let x = blockX; x < maximumX; x += 1) {
+            const index = y * width + x
+            if (!actual[index]) continue
+            retained[index] = 1
+            retainedPixelCount += 1
+          }
+        }
+      } else {
+        rejectedBlockCount += 1
+        rejectedPixelCount += signalPixelCount
+      }
+    }
+  }
+
+  return {
+    mask: retained,
+    diagnostics: {
+      mode: "strong_blue_dominance_plus_16px_dense_surface_v2",
+      blockSizePixels,
+      minimumBlockSignalRatio,
+      rawPixelCount,
+      retainedPixelCount,
+      rejectedPixelCount,
+      retainedBlockCount,
+      rejectedBlockCount,
+      acceptanceThresholdsChanged: false,
+    },
+  }
+}
+
 function buildRectangularSupportMask(expected, width, height, radius) {
   const integralWidth = width + 1
   const integral = new Uint32Array((width + 1) * (height + 1))
@@ -297,7 +731,17 @@ function spatialDistribution(mask, width, height) {
 }
 
 function classifyWater(red, green, blue) {
-  return blue > red * 1.12 && green > red * 1.08 && blue > green * 0.72 && blue >= 55
+  return blue > red * 1.12
+    && green > red * 1.08
+    && blue > green * 0.72
+    && blue >= 55
+}
+
+function classifyStrongWater(red, green, blue) {
+  return blue > red * 1.25
+    && blue > green * 1.08
+    && blue >= 65
+    && blue - red >= 22
 }
 
 function classifyWetSeasonPath(red, green, blue) {

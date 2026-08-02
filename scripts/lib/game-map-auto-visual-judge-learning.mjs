@@ -35,8 +35,13 @@ export function refreshGameMapAutoVisualJudgeLearning(options = {}) {
       materialQualityReportCount: evidence.materialReports.length,
       formalVisualJudgeReportCount: evidence.formalReports.length,
       ownerReviewCount: evidence.ownerReviews.length,
+      ownerReviewCountBeforeDeduplication:
+        evidence.ownerReviewDeduplication.inputCount,
+      ownerReviewDuplicateSuppressedCount:
+        evidence.ownerReviewDeduplication.suppressedCount,
       reviewDiagnosisCount: evidence.reviewDiagnostics.length,
     },
+    ownerReviewDeduplication: evidence.ownerReviewDeduplication,
     currentDecision,
     learnedFailurePatterns,
     nextAutonomousJudgeInputs: buildNextAutonomousJudgeInputs(learnedFailurePatterns),
@@ -58,6 +63,15 @@ export function refreshGameMapAutoVisualJudgeLearning(options = {}) {
 export { latestLearningPath }
 
 function collectEvidence() {
+  const ownerReviewEvidence = collectJsonEvidence(
+    [
+      ".runtime/game-map-owner-reviews",
+      ".runtime/ai-painter/auto-visual-judge-learning/original-image-owner-failures",
+    ],
+    (fileName) => fileName === "owner-review.json" || fileName === "failure-record.json",
+    80,
+  )
+  const ownerReviewDeduplication = deduplicateOwnerReviewEvidence(ownerReviewEvidence)
   return {
     ledgerEvents: readLedgerEvents().slice(-200),
     completeMapMachineReviews: collectJsonEvidence(
@@ -67,7 +81,7 @@ function collectEvidence() {
         "data/world-samples/original-image-library/natural-home-v1",
       ],
       "machine-review.json",
-      80,
+      512,
     ),
     materialReports: collectJsonEvidence(
       [
@@ -82,16 +96,53 @@ function collectEvidence() {
       (fileName) => fileName.endsWith("-formal-visual-judge.json") || fileName === "formal-visual-judge.json",
       40,
     ),
-    ownerReviews: collectJsonEvidence(
-      [
-        ".runtime/game-map-owner-reviews",
-        ".runtime/ai-painter/auto-visual-judge-learning/original-image-owner-failures",
-      ],
-      (fileName) => fileName === "owner-review.json" || fileName === "failure-record.json",
-      80,
-    ),
+    ownerReviews: ownerReviewDeduplication.records,
+    ownerReviewDeduplication: ownerReviewDeduplication.summary,
     reviewDiagnostics: collectJsonEvidence([".runtime/game-map-review-diagnostics"], "review-diagnosis.json", 40),
   }
+}
+
+function deduplicateOwnerReviewEvidence(records) {
+  const authoritativeByIdentity = new Map()
+  const kept = []
+  const suppressed = []
+  for (const record of records) {
+    const identity = ownerReviewEvidenceIdentity(record)
+    const authoritative = authoritativeByIdentity.get(identity)
+    if (!authoritative) {
+      authoritativeByIdentity.set(identity, record)
+      kept.push(record)
+      continue
+    }
+    suppressed.push({
+      identity,
+      suppressedPath: record.path,
+      authoritativePath: authoritative.path,
+      recordId: record.data?.recordId ?? null,
+      imageSha256: record.data?.imageSha256 ?? null,
+      reasonCodes: record.data?.reasonCodes ?? [],
+    })
+  }
+  return {
+    records: kept,
+    summary: {
+      contractVersion: "owner-review-evidence-record-image-dedup-v1",
+      identityFields: ["recordId", "imageSha256"],
+      selectionRule: "keep_newest_evidence_by_modified_time",
+      inputCount: records.length,
+      outputCount: kept.length,
+      suppressedCount: suppressed.length,
+      suppressed,
+    },
+  }
+}
+
+function ownerReviewEvidenceIdentity(record) {
+  const recordId = record.data?.recordId
+  const imageSha256 = record.data?.imageSha256
+  return recordId && imageSha256
+    ? `${recordId}:${imageSha256}`
+    : `path:${record.path}`
 }
 
 function readLedgerEvents() {

@@ -2,7 +2,7 @@
   "schemaVersion": "world-visual-data-dictionary-latest-pointer-v1",
   "dictionaryVersionId": "mvp-natural-home-v0.3",
   "status": "draft",
-  "generatedAt": "2026-07-11T05:23:00.923Z",
+  "generatedAt": "2026-07-28T09:47:56.220Z",
   "dictionaryPath": "data/world-visual-data-dictionary/mvp-natural-home-v0.3.json",
   "sourcePath": "data/world-visual-data-dictionary/source/mvp-natural-home-v0.3-source.json",
   "summary": {
@@ -36,7 +36,7 @@
       "visual-style": 6,
       "world-ontology": 2
     },
-    "registeredFailureCodeCount": 366,
+    "registeredFailureCodeCount": 376,
     "hardFailureCodeCount": 345,
     "unregisteredHardFailureCodeCount": 0,
     "trainingLabelCount": 16,

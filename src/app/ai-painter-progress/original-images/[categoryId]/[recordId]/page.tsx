@@ -48,8 +48,8 @@ export default async function OriginalImageRecordPage({ params }: PageProps) {
       <section className={styles.resultGrid}>
         <article className={styles.resultCard}>
           <span className={["eligible", "registered", "ai_assisted_cold_start_eligible"].includes(record.status) ? styles.pass : styles.fail}>{record.status}</span>
-          {record.autonomousGenerationTrainingOriginal?.sequenceLabel ? (
-            <span className={styles.pass}>{record.autonomousGenerationTrainingOriginal.sequenceLabel}</span>
+          {record.rebuild64Sequence?.sequenceLabel || record.autonomousGenerationTrainingOriginal?.sequenceLabel ? (
+            <span className={styles.pass}>{record.rebuild64Sequence?.sequenceLabel ?? record.autonomousGenerationTrainingOriginal?.sequenceLabel}</span>
           ) : null}
           <h2>{record.originalImage?.fileName ?? "原图文件未记录"}</h2>
           <p><code>{originalImageProjectPath(record)}</code></p>

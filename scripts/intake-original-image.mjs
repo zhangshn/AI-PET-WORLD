@@ -159,6 +159,7 @@ const record = {
   source: request.source,
   aiAssistedColdStart: request.aiAssistedColdStart ?? null,
   conditionBinding: request.conditionBinding ?? null,
+  rebuild64Sequence: request.rebuild64Sequence ?? null,
   worldBinding: request.worldBinding ?? {},
   classification: request.classification,
   reviews: {
@@ -191,6 +192,7 @@ const indexRecord = {
   source: record.source,
   aiAssistedColdStart: record.aiAssistedColdStart,
   conditionBinding: record.conditionBinding,
+  rebuild64Sequence: record.rebuild64Sequence,
   worldBinding: record.worldBinding,
   classification: record.classification,
   createdAtUtc: record.createdAtUtc,
@@ -207,6 +209,7 @@ function hydrateIndexRecord(indexRecord, storedRecord) {
     source: storedRecord.source ?? null,
     aiAssistedColdStart: storedRecord.aiAssistedColdStart ?? null,
     conditionBinding: storedRecord.conditionBinding ?? null,
+    rebuild64Sequence: storedRecord.rebuild64Sequence ?? null,
     worldBinding: storedRecord.worldBinding ?? {},
     classification: storedRecord.classification ?? {},
   }

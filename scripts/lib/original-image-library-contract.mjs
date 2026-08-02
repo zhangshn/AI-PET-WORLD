@@ -91,9 +91,13 @@ export function isOwnerAuthorizedAiAssistedColdStartSource(request) {
 export function isOwnerAuthorizedAiAssistedColdStartRef(value) {
   return value === "conversation-owner-authorization-2026-07-13"
     || value === "owner-authorized-v7-remaining-104-continuous-batch-20260723"
+    || value === "owner-authorized-thailand-rebuild64-complete-batch-generation-20260731"
+    || value === "owner-authorized-thailand-rebuild64-remaining63-full-world-rgb-generation-20260801"
+    || value === "owner-authorized-thailand-rebuild64-failed8-rgb-replacements-20260801"
+    || value === "owner-authorized-thailand-rebuild64-cross-modal-rgb-collapse-prevention-20260801"
     || value === "owner-authorized-earth-reference-naturalized-complete-map-single-rgb-20260725"
     || /^owner-authorized-autonomous-world-rebuild-\d{3}-single-rgb-\d{8}$/.test(value ?? "")
-    || /^project-owner-authorization-\d{4}-\d{2}-\d{2}-v7-capacity-slot-\d{3}-single-rgb-generation$/.test(value ?? "")
+    || /^project-owner-authorization-\d{4}-\d{2}-\d{2}-v7-capacity-slot-\d{3}-single-rgb-generation(?:-attempt-\d+)?$/.test(value ?? "")
 }
 
 export function isSafeOriginalImageId(value) {

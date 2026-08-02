@@ -8,6 +8,13 @@ import { isOwnerAuthorizedAiAssistedColdStartRef } from "./lib/original-image-li
 const ROOT = process.cwd()
 const COLLECTION_ROOT = path.join(ROOT, "data", "world-samples", "original-image-library", "natural-home-v1")
 const COVERAGE_BLUEPRINT_PATH = path.join(COLLECTION_ROOT, "coverage-blueprint.json")
+const REBUILD64_SEQUENCE_REGISTRY_PATH = path.join(
+  ROOT,
+  "data",
+  "ai-painter",
+  "system-governance",
+  "thailand-rebuild64-sequence-registry-v1.json",
+)
 const OUTPUT_ROOT = path.join(ROOT, ".runtime", "ai-painter", "ai-assisted-cold-start", "candidates")
 const CODEX_GENERATED_ROOT = path.resolve(process.env.USERPROFILE ?? "", ".codex", "generated_images")
 const TEMP_ROOT = path.resolve(process.env.LOCALAPPDATA ?? "", "Temp")
@@ -21,6 +28,24 @@ const taskArg = argumentValue("--task-package")
 const conditionArg = argumentValue("--condition-pack")
 const guideManifestArg = argumentValue("--condition-guide-manifest")
 const COLD_START_DERIVATIVE_POLICY = "owner-approved-high-resolution-four-three-derivative-v1"
+const THAILAND_REBUILD64_BATCH_AUTHORIZATION_ID =
+  "owner-authorized-thailand-rebuild64-complete-batch-generation-20260731"
+const THAILAND_REBUILD64_REMAINING63_AUTHORIZATION_ID =
+  "owner-authorized-thailand-rebuild64-remaining63-full-world-rgb-generation-20260801"
+const THAILAND_REBUILD64_FAILED8_REPLACEMENT_AUTHORIZATION_ID =
+  "owner-authorized-thailand-rebuild64-failed8-rgb-replacements-20260801"
+const THAILAND_REBUILD64_CROSS_MODAL_REPLACEMENT_AUTHORIZATION_ID =
+  "owner-authorized-thailand-rebuild64-cross-modal-rgb-collapse-prevention-20260801"
+const THAILAND_REBUILD64_FAILED8_CAPACITY_SLOTS = new Set([
+  "v7-capacity-slot-168",
+  "v7-capacity-slot-178",
+  "v7-capacity-slot-184",
+  "v7-capacity-slot-188",
+  "v7-capacity-slot-190",
+  "v7-capacity-slot-192",
+  "v7-capacity-slot-194",
+  "v7-capacity-slot-200",
+])
 const TRAINING_WIDTH = 1024
 const TRAINING_HEIGHT = 768
 
@@ -44,6 +69,32 @@ assert(isOwnerAuthorizedAiAssistedColdStartRef(promptEvidence.ownerAuthorization
 assert((promptEvidence.targetCategoryId ?? "complete-maps") === categoryId, "prompt evidence category mismatch")
 if (categoryId === "complete-maps") assert(promptEvidence.targetRegionalLandscapeType === regionalLandscapeType, "prompt evidence regional landscape type mismatch")
 const conditionBinding = loadConditionBinding(taskArg, conditionArg, guideManifestArg)
+if (promptEvidence.ownerAuthorizationRef === THAILAND_REBUILD64_FAILED8_REPLACEMENT_AUTHORIZATION_ID) {
+  assert(
+    THAILAND_REBUILD64_FAILED8_CAPACITY_SLOTS.has(conditionBinding?.capacitySlotId),
+    "failed8 replacement authorization does not cover this capacity slot",
+  )
+  assert(
+    promptEvidence.retryRepairProfile?.sourceFailedRecordId,
+    "failed8 replacement intake requires an immutable source failed record identity",
+  )
+}
+if (promptEvidence.ownerAuthorizationRef === THAILAND_REBUILD64_CROSS_MODAL_REPLACEMENT_AUTHORIZATION_ID) {
+  assert(
+    new Set(["v7-capacity-slot-190", "v7-capacity-slot-194"]).has(
+      conditionBinding?.capacitySlotId,
+    ),
+    "cross-modal replacement authorization does not cover this capacity slot",
+  )
+  assert(
+    promptEvidence.retryRepairProfile?.sourceFailedRecordId,
+    "cross-modal replacement intake requires an immutable source failed record identity",
+  )
+}
+const rebuild64Sequence = rebuild64SequenceForCapacitySlot(conditionBinding?.capacitySlotId)
+const effectiveTitle = rebuild64Sequence
+  ? `${rebuild64Sequence.sequenceLabel}: ${regionalLandscapeType}`
+  : title
 
 const defaultSnapshotPath = resolveProjectPath(library.provisionalVisualSnapshotPath)
 const snapshotPath = promptEvidence.targetVisualSnapshotPath
@@ -98,7 +149,13 @@ const manifest = {
   policyVersion: "owner-authorized-ai-assisted-cold-start-v1",
   derivativePolicyVersion: COLD_START_DERIVATIVE_POLICY,
   ownerAuthorizationRef: promptEvidence.ownerAuthorizationRef,
-  continuousBatchAuthorizationId: promptEvidence.ownerAuthorizationRef === "owner-authorized-v7-remaining-104-continuous-batch-20260723"
+  continuousBatchAuthorizationId: [
+    "owner-authorized-v7-remaining-104-continuous-batch-20260723",
+    THAILAND_REBUILD64_BATCH_AUTHORIZATION_ID,
+    THAILAND_REBUILD64_REMAINING63_AUTHORIZATION_ID,
+    THAILAND_REBUILD64_FAILED8_REPLACEMENT_AUTHORIZATION_ID,
+    THAILAND_REBUILD64_CROSS_MODAL_REPLACEMENT_AUTHORIZATION_ID,
+  ].includes(promptEvidence.ownerAuthorizationRef)
     ? promptEvidence.ownerAuthorizationRef
     : null,
   rawGeneratedImagePath: projectPath(rawPath),
@@ -139,7 +196,7 @@ const request = {
   schemaVersion: "original-image-intake-request-v1",
   recordId,
   categoryId,
-  title,
+  title: effectiveTitle,
   imagePath: projectPath(normalizedPath),
   source: {
     sourceType: "openai_generated",
@@ -155,7 +212,13 @@ const request = {
   aiAssistedColdStart: {
     policyVersion: "owner-authorized-ai-assisted-cold-start-v1",
     ownerAuthorizationRef: promptEvidence.ownerAuthorizationRef,
-    continuousBatchAuthorizationId: promptEvidence.ownerAuthorizationRef === "owner-authorized-v7-remaining-104-continuous-batch-20260723"
+    continuousBatchAuthorizationId: [
+      "owner-authorized-v7-remaining-104-continuous-batch-20260723",
+      THAILAND_REBUILD64_BATCH_AUTHORIZATION_ID,
+      THAILAND_REBUILD64_REMAINING63_AUTHORIZATION_ID,
+      THAILAND_REBUILD64_FAILED8_REPLACEMENT_AUTHORIZATION_ID,
+      THAILAND_REBUILD64_CROSS_MODAL_REPLACEMENT_AUTHORIZATION_ID,
+    ].includes(promptEvidence.ownerAuthorizationRef)
       ? promptEvidence.ownerAuthorizationRef
       : null,
     trainingLane: "ai_assisted_cold_start",
@@ -174,6 +237,7 @@ const request = {
     independentTrainingEligible: false,
   },
   conditionBinding,
+  rebuild64Sequence,
   classification: classificationForPromptEvidence(categoryId, promptEvidence, regionalLandscapeType, conditionBinding, snapshot),
   worldBinding: {
     worldProfileId: snapshot.worldProfileId,
@@ -253,6 +317,25 @@ function loadConditionBinding(taskValue, conditionValue, guideValue) {
   assert(guide.outputKind === "semantic_condition_guide_not_training_rgb", "condition guide output kind is invalid")
   assert(guide.trainingTargetEligible === false && guide.directWorldDisplayAllowed === false, "condition guide isolation contract is invalid")
   assert(sha256(fs.readFileSync(resolveProjectPath(guide.guidePath))) === guide.guideSha256, "condition guide hash mismatch")
+  const blueprint = task.sourceBindings?.trainingBlueprintPath
+    ? readJson(resolveProjectPath(task.sourceBindings.trainingBlueprintPath))
+    : null
+  if (task.v7SlotBinding) {
+    assert(
+      blueprint?.realEarthRegionSourcePackageId
+        && blueprint?.realEarthRegionSourcePackagePath
+        && blueprint?.connectivityBlueprintId
+        && /^[a-f0-9]{64}$/.test(
+          blueprint?.structuralIdentities
+            ?.themeArchitectureIdentity ?? "",
+        )
+        && /^[a-f0-9]{64}$/.test(
+          blueprint?.structuralIdentities
+            ?.instanceDetailIdentity ?? "",
+        ),
+      "V7 condition binding lacks region source, connectivity, or structural identities",
+    )
+  }
   return {
     status: "reference_guided_pending_alignment_review",
     worldId: task.worldId,
@@ -261,13 +344,43 @@ function loadConditionBinding(taskValue, conditionValue, guideValue) {
     taskId: task.taskId,
     taskPackagePath: projectPath(taskPath),
     taskSha256: task.taskSha256,
+    capacitySlotId: task.v7SlotBinding?.slotId ?? null,
     conditionPackId: condition.conditionPackId,
     conditionPackPath: projectPath(conditionPath),
     conditionPackSha256: condition.conditionPackSha256,
     guideManifestPath: projectPath(guidePath),
     guidePath: guide.guidePath,
     guideSha256: guide.guideSha256,
+    realEarthRegionId: blueprint?.realEarthRegionId ?? null,
+    realEarthRegionSourcePackageId:
+      blueprint?.realEarthRegionSourcePackageId ?? null,
+    realEarthRegionSourcePackagePath:
+      blueprint?.realEarthRegionSourcePackagePath ?? null,
+    realEarthRegionSourcePackageSha256:
+      blueprint?.realEarthRegionSourcePackageSha256 ?? null,
+    connectivityBlueprintId:
+      blueprint?.connectivityBlueprintId ?? null,
+    connectivityBlueprintPath:
+      blueprint?.connectivityBlueprintPath ?? null,
+    structuralIdentities:
+      blueprint?.structuralIdentities ?? null,
     formalConditionalTrainingEligible: false,
+  }
+}
+function rebuild64SequenceForCapacitySlot(capacitySlotId) {
+  if (!capacitySlotId || !fs.existsSync(REBUILD64_SEQUENCE_REGISTRY_PATH)) return null
+  const registry = readJson(REBUILD64_SEQUENCE_REGISTRY_PATH)
+  const entry = registry.entries?.find((item) => item.legacyCapacitySlotId === capacitySlotId)
+  if (!entry) return null
+  return {
+    registryId: registry.registryId,
+    seriesId: registry.seriesId,
+    sequenceNumber: entry.sequenceNumber,
+    sequenceCode: entry.sequenceCode,
+    sequenceLabel: entry.sequenceLabel,
+    workItemId: entry.workItemId,
+    legacyCapacitySlotId: entry.legacyCapacitySlotId,
+    ownerCommandRef: registry.ownerCommandRef,
   }
 }
 function sha256(value) { return crypto.createHash("sha256").update(value).digest("hex") }

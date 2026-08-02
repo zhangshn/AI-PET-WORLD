@@ -55,7 +55,7 @@ export default async function CompleteMapOriginalTypePage({ params, searchParams
   const [library, records, generationAttempts] = await Promise.all([
     readOriginalImageLibrary(),
     listOriginalImageRecords("complete-maps"),
-    listConditionalRgbGenerationAttempts(),
+    typeId === "failed-records" ? listConditionalRgbGenerationAttempts() : Promise.resolve([]),
   ])
   const selectedRecords = records.filter((record) => completeMapOriginalGroupFor(record) === typeId)
   const savedRecordIds = new Set(records.map((record) => record.recordId))
@@ -128,7 +128,8 @@ export default async function CompleteMapOriginalTypePage({ params, searchParams
 function CompleteMapActivityCard({ activity }: { activity: CompleteMapActivity }) {
   if (activity.kind === "original_image") {
     const { record } = activity
-    const sequenceLabel = record.autonomousGenerationTrainingOriginal?.sequenceLabel
+    const sequenceLabel = record.rebuild64Sequence?.sequenceLabel
+      ?? record.autonomousGenerationTrainingOriginal?.sequenceLabel
     return (
       <article>
         {record.originalImage?.path ? (

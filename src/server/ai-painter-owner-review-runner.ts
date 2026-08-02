@@ -49,10 +49,11 @@ export async function runOriginalImageOwnerReview(input: {
       reviewArguments.push("--autonomous-sequence", String(sequenceNumber))
     }
     if (input.decision === "rejected") {
+      const rejection = classifyOwnerRejection(comment)
       reviewArguments.push(
-        "--reason-codes", "owner_visual_quality_rejected",
-        "--reason-codes-zh", "项目所有者判定完整地图视觉质量不通过",
-        "--affected-regions", "complete-map",
+        "--reason-codes", rejection.reasonCodes.join(","),
+        "--reason-codes-zh", rejection.reasonCodesZh.join(","),
+        "--affected-regions", rejection.affectedRegions.join(","),
         "--next-training-target", comment,
       )
     }
@@ -132,6 +133,26 @@ function normalizeComment(value: string, decision: OwnerReviewDecision) {
     throw new OwnerReviewInputError("拒绝时必须填写具体原因和下一轮修复目标。")
   }
   return comment || "项目所有者通过控制台确认该完整地图原图符合当前训练数据标准。"
+}
+
+export function classifyOwnerRejection(comment: string) {
+  const normalized = comment.trim().toLowerCase()
+  const duplicateSignal =
+    /(重复|雷同|相同|一样|重新画|duplicate|duplicated|reus(?:e|ed|ing))/.test(normalized)
+  const compositionSignal =
+    /(构图|主体|框架|结构|布局|地图|河道|道路|composition|framework|template|layout|map|river|route)/.test(normalized)
+  if (duplicateSignal && compositionSignal) {
+    return {
+      reasonCodes: ["composition_duplicate"],
+      reasonCodesZh: ["完整地图主体构图重复"],
+      affectedRegions: ["full_map_composition"],
+    }
+  }
+  return {
+    reasonCodes: ["owner_visual_quality_rejected"],
+    reasonCodesZh: ["项目所有者判定完整地图视觉质量不通过"],
+    affectedRegions: ["complete-map"],
+  }
 }
 
 async function runProgram(step: string, args: string[]) {

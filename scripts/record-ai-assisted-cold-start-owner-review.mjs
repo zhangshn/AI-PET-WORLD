@@ -20,10 +20,20 @@ const reasonCodesZh = csvArgument("--reason-codes-zh")
 const affectedRegions = csvArgument("--affected-regions")
 const nextTrainingTarget = argumentValue("--next-training-target")
 const autonomousSequence = numericArgument("--autonomous-sequence")
+const reviewMode = argumentValue("--review-mode") ?? "manual_visual_review"
+const batchAuthorizationRef = argumentValue("--batch-authorization-ref")
 
 assert(recordId && /^[a-z0-9][a-z0-9_-]{1,95}$/.test(recordId), "--record-id is required")
 assert(["approved", "rejected"].includes(decision), "--decision must be approved or rejected")
 assert(ownerCommandRef, "--owner-command-ref is required")
+assert([
+  "manual_visual_review",
+  "owner_delegated_machine_hard_gate_batch",
+].includes(reviewMode), "--review-mode is invalid")
+if (reviewMode === "owner_delegated_machine_hard_gate_batch") {
+  assert(decision === "approved", "delegated machine hard-gate mode only records machine-pass approval")
+  assert(batchAuthorizationRef, "--batch-authorization-ref is required for delegated batch review")
+}
 if (decision === "rejected") {
   assert(reasonCodes.length > 0, "--reason-codes is required for rejection")
   assert(reasonCodesZh.length === reasonCodes.length, "--reason-codes-zh must match --reason-codes")
@@ -50,6 +60,12 @@ const review = {
   reviewId: `ai-cold-start-owner-review-${recordId}-${timestamp.replace(/[:.]/g, "-")}`,
   recordId,
   reviewerRole: "project_owner",
+  reviewMode,
+  manualVisualInspectionPerformed: reviewMode === "manual_visual_review",
+  decisionBasis: reviewMode === "manual_visual_review"
+    ? "explicit_per_image_owner_visual_review"
+    : "machine_hard_gate_passed_under_explicit_owner_batch_delegation",
+  batchAuthorizationRef: batchAuthorizationRef ?? null,
   decision: approved ? "owner_approved" : "owner_rejected",
   ownerCommandRef,
   comment,
@@ -98,9 +114,11 @@ const updatedRecord = {
   conditionBinding: record.conditionBinding
     ? {
         ...record.conditionBinding,
-        status: approved && readJson(record.reviews.machineReviewPath).semanticConditionAudit?.passed === true
-          ? "formal_conditional_training_eligible_owner_approved"
-          : record.conditionBinding.status,
+        status: approved
+          ? readJson(record.reviews.machineReviewPath).semanticConditionAudit?.passed === true
+            ? "formal_conditional_training_eligible_owner_approved"
+            : record.conditionBinding.status
+          : "owner_rejected_not_training_eligible",
         formalConditionalTrainingEligible: approved
           && readJson(record.reviews.machineReviewPath).semanticConditionAudit?.passed === true,
       }
@@ -117,7 +135,24 @@ const updatedRecord = {
         ownerCommandRef,
         ownerReviewPath: projectPath(reviewPath),
       }
-    : record.autonomousGenerationTrainingOriginal,
+    : !approved && record.autonomousGenerationTrainingOriginal
+      ? {
+          ...record.autonomousGenerationTrainingOriginal,
+          ownerReviewDecision: "owner_rejected",
+          ownerCommandRef,
+          ownerReviewPath: projectPath(reviewPath),
+        }
+      : record.autonomousGenerationTrainingOriginal,
+  v7CapacityContribution: !approved && record.v7CapacityContribution?.status === "registered"
+    ? {
+        ...record.v7CapacityContribution,
+        status: "withdrawn_owner_rejected",
+        withdrawnAtUtc: timestamp,
+        withdrawnAtAsiaShanghai: formatShanghai(timestamp),
+        withdrawalOwnerCommandRef: ownerCommandRef,
+        withdrawalReasonCodes: reasonCodes,
+      }
+    : record.v7CapacityContribution,
   copiedArtifacts: {
     ...record.copiedArtifacts,
     reviews: [
@@ -238,7 +273,9 @@ function updateIndex(value) {
     reviews: value.reviews,
     title: value.title,
     classification: value.classification,
+    conditionBinding: value.conditionBinding,
     autonomousGenerationTrainingOriginal: value.autonomousGenerationTrainingOriginal,
+    v7CapacityContribution: value.v7CapacityContribution,
     trainingEligibility: value.trainingEligibility,
     aiAssistedColdStartEligible: value.aiAssistedColdStartEligible,
     independentTrainingEligible: false,

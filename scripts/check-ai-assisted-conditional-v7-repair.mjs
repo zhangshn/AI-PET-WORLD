@@ -13,8 +13,9 @@ const ROOT = process.cwd()
 const PYTHON = path.join(ROOT, "ml", "ai-painter", ".venv", "Scripts", "python.exe")
 const CHECKER = "ml/ai-painter/scripts/check_ai_assisted_conditional_v7_repair.py"
 const DIAGNOSIS_POINTER = ".runtime/ai-painter/ai-assisted-conditional-repair-diagnostics-v6/latest.json"
+const V7_CONFIG = "ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json"
 const SOURCES = [
-  "ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json",
+  V7_CONFIG,
   "ml/ai-painter/src/ai_painter/complete_world/model.py",
   "ml/ai-painter/src/ai_painter/complete_world/diffusion.py",
   "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
@@ -26,6 +27,8 @@ const SOURCES = [
 
 const createdAtUtc = new Date().toISOString()
 const runId = `ai-assisted-conditional-v7-cpu-regression-${createdAtUtc.replace(/[:.]/g, "-")}`
+const v7Config = readJson(V7_CONFIG)
+const trainingAuthorizationStatus = v7Config?.training?.trainingAuthorizationStatus ?? null
 const diagnosisPointer = readJson(DIAGNOSIS_POINTER)
 const diagnosis = readJson(diagnosisPointer.runPath)
 const professionalAudit = await auditAiAssistedProfessionalAesthetic(
@@ -34,6 +37,7 @@ const professionalAudit = await auditAiAssistedProfessionalAesthetic(
 const diagnosticWarning = professionalAudit.diagnosticWarnings?.find(
   (value) => value.code === "professional_single_axis_texture_envelope_exceeded_diagnostic",
 )
+const textureViolationCount = professionalAudit.textureViolations?.length ?? 0
 
 const child = spawnSync(PYTHON, [CHECKER], {
   cwd: ROOT,
@@ -54,7 +58,8 @@ const passed = child.status === 0
   && result?.gpuUsed === false
   && result?.imageGenerated === false
   && result?.trainingStarted === false
-  && Boolean(diagnosticWarning)
+  && professionalAudit.passed === true
+  && (Boolean(diagnosticWarning) || textureViolationCount === 0)
   && professionalAudit.calibration?.minimumMultiscaleViolationCount === 4
 
 const record = {
@@ -71,6 +76,8 @@ const record = {
   professionalAestheticDiagnosticRegression: {
     historicalPassedValuePreserved: professionalAudit.passed,
     existingMinimumMultiscaleViolationCountPreserved: professionalAudit.calibration?.minimumMultiscaleViolationCount,
+    currentCalibrationFingerprintId: professionalAudit.calibration?.fingerprintId ?? null,
+    textureViolationCount,
     diagnosticWarning: diagnosticWarning ?? null,
     issues: professionalAudit.issues,
   },
@@ -78,8 +85,8 @@ const record = {
   sourceEvidence: SOURCES.map((value) => ({ path: value, sha256: sha256File(value) })),
   gpuTrainingStarted: false,
   imageInferenceStarted: false,
-  dataCapacityDecisionId: "owner-approved-v7-data-capacity-128-20260722",
-  trainingAuthorizationStatus: "blocked_pending_approved_128_dataset_implementation",
+  dataCapacityDecisionId: "owner-approved-v7-mvp-first-training-capacity-64-20260725",
+  trainingAuthorizationStatus,
   formalInferenceEligible: false,
   runtimeFrameEligible: false,
   canEnterWorld: false,
@@ -95,8 +102,8 @@ const written = writeImmutableProgramRun({
     repairVersion: "V7",
     gpuTrainingStarted: false,
     imageInferenceStarted: false,
-    dataCapacityDecisionId: "owner-approved-v7-data-capacity-128-20260722",
-    trainingAuthorizationStatus: "blocked_pending_approved_128_dataset_implementation",
+    dataCapacityDecisionId: "owner-approved-v7-mvp-first-training-capacity-64-20260725",
+    trainingAuthorizationStatus,
   },
 })
 

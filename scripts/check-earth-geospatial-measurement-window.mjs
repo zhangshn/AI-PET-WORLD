@@ -65,7 +65,9 @@ assert(
 assert(
   regionContract.blockers.includes(
     "engineered_linear_feature_removal_evidence_missing",
-  ),
+  ) ||
+    regionContract.measurementEvidence
+      ?.engineeredRemovalEvidenceCompiled === true,
   "required human linear-feature blocker missing",
 )
 

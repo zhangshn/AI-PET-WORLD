@@ -48,6 +48,20 @@ const OFFICIAL_STUDY_AREA_HECTARES = 7808
 const OFFICIAL_AREA_SOURCE = "https://whc.unesco.org/document/127655"
 const NATURAL_CLASSES = new Set([10, 20, 30, 60, 80, 90, 95, 100])
 const HUMAN_CLASSES = new Set([40, 50])
+const EXPANDED_SLOT_123_SCOPE = process.argv.includes(
+  "--expanded-slot-123-scope",
+)
+const BEYOND_NINE_BY_NINE_SLOT_123_SCOPE = process.argv.includes(
+  "--beyond-nine-by-nine-slot-123-scope",
+)
+const OWNER_TAKEOVER_AUTHORIZATION_PATH =
+  ".runtime/ai-painter/ai-assisted-v7-owner-takeover-authorizations/latest.json"
+const EXPANDED_SCOPE_AUTHORIZATION_ID =
+  "owner-authorized-slot-123-expanded-real-measurement-window-scope-20260728"
+const BEYOND_NINE_BY_NINE_AUTHORIZATION_PATH =
+  ".runtime/ai-painter/earth-geospatial-v7-slot-123-scope-expansion-authorizations/latest.json"
+const BEYOND_NINE_BY_NINE_AUTHORIZATION_ID =
+  "owner-authorized-slot-123-thai-measurement-scope-beyond-9x9-no-rgb-20260729"
 
 const createdAtUtc = new Date().toISOString()
 const createdAtAsiaShanghai = formatShanghai(createdAtUtc)
@@ -81,6 +95,41 @@ appendAiPainterProgramEvent({
 })
 
 try {
+  assert(
+    !(EXPANDED_SLOT_123_SCOPE && BEYOND_NINE_BY_NINE_SLOT_123_SCOPE),
+    "measurement scope flags are mutually exclusive",
+  )
+  if (EXPANDED_SLOT_123_SCOPE) {
+    const authorization = readJson(OWNER_TAKEOVER_AUTHORIZATION_PATH)
+    assert(
+      authorization.windowScopeAuthorizationId ===
+        EXPANDED_SCOPE_AUTHORIZATION_ID &&
+        authorization.scope?.expandRealMeasurementWindowScopeForSlot123 ===
+          true &&
+        authorization.currentExecutionBoundary?.gpuTrainingStarted === false,
+      "expanded slot-123 measurement scope is not owner-authorized",
+    )
+  }
+  if (BEYOND_NINE_BY_NINE_SLOT_123_SCOPE) {
+    const authorizationPointer = readJson(
+      BEYOND_NINE_BY_NINE_AUTHORIZATION_PATH,
+    )
+    const authorization = readJson(authorizationPointer.runPath)
+    assert(
+      authorizationPointer.authorizationId ===
+        BEYOND_NINE_BY_NINE_AUTHORIZATION_ID &&
+      authorization.authorizationId ===
+        BEYOND_NINE_BY_NINE_AUTHORIZATION_ID &&
+        authorization.scope?.sameFormalThailandDataSourceOnly === true &&
+        authorization.scope?.minimumNextOuterRingOnly === true &&
+        authorization.scope?.conditionOnlyNoRgb === true &&
+        authorization.scope?.worldConnectivityContractUnchanged === true &&
+        authorization.scope?.reviewThresholdsUnchanged === true &&
+        authorization.outputBoundary?.imageGenerationAuthorized === false &&
+        authorization.outputBoundary?.gpuTrainingAuthorized === false,
+      "beyond-9x9 slot-123 measurement scope is not owner-authorized",
+    )
+  }
   const observationExtent = buildObservationExtent(center)
   writeJsonAtomic(OBSERVATION_EXTENT_PATH, observationExtent)
   indexFile(OBSERVATION_EXTENT_PATH, runId)
@@ -309,30 +358,57 @@ try {
 
 function buildObservationExtent(referenceCoordinate) {
   const areaSquareKilometres = OFFICIAL_STUDY_AREA_HECTARES / 100
-  const widthKilometres = Math.sqrt((areaSquareKilometres * 4) / 3)
-  const heightKilometres = Math.sqrt((areaSquareKilometres * 3) / 4)
+  const baseWidthKilometres = Math.sqrt((areaSquareKilometres * 4) / 3)
+  const baseHeightKilometres = Math.sqrt((areaSquareKilometres * 3) / 4)
+  const scopeGridSize = BEYOND_NINE_BY_NINE_SLOT_123_SCOPE
+    ? 11
+    : EXPANDED_SLOT_123_SCOPE
+      ? 9
+      : 7
+  const expansionFactor = scopeGridSize / 7
+  const widthKilometres = baseWidthKilometres * expansionFactor
+  const heightKilometres = baseHeightKilometres * expansionFactor
   const latitudeRadians = (referenceCoordinate.latitude * Math.PI) / 180
   const latitudeDegrees = heightKilometres / 111.32
   const longitudeDegrees =
     widthKilometres / (111.32 * Math.cos(latitudeRadians))
   return {
     schemaVersion: "earth-observation-extent-v1",
-    extentId: "sakaerat-official-7808ha-four-three-observation-envelope-v1",
-    status: "compiled_from_official_area_and_reference_coordinate",
+    extentId: BEYOND_NINE_BY_NINE_SLOT_123_SCOPE
+      ? "sakaerat-wang-nam-khiao-owner-authorized-eleven-by-eleven-observation-envelope-v3"
+      : EXPANDED_SLOT_123_SCOPE
+        ? "sakaerat-wang-nam-khiao-owner-authorized-nine-by-nine-observation-envelope-v2"
+        : "sakaerat-official-7808ha-four-three-observation-envelope-v1",
+    status:
+      EXPANDED_SLOT_123_SCOPE || BEYOND_NINE_BY_NINE_SLOT_123_SCOPE
+        ? "owner_authorized_adjacent_measurement_scope_compiled"
+        : "compiled_from_official_area_and_reference_coordinate",
     updatedAtUtc: createdAtUtc,
     updatedAtAsiaShanghai: createdAtAsiaShanghai,
     source: {
       areaHectares: OFFICIAL_STUDY_AREA_HECTARES,
       areaSourceUrl: OFFICIAL_AREA_SOURCE,
       referenceCoordinate,
+      expandedScopeAuthorizationId: BEYOND_NINE_BY_NINE_SLOT_123_SCOPE
+        ? BEYOND_NINE_BY_NINE_AUTHORIZATION_ID
+        : EXPANDED_SLOT_123_SCOPE
+          ? EXPANDED_SCOPE_AUTHORIZATION_ID
+          : null,
     },
     derivation: {
       aspectRatio: "4:3",
-      areaSquareKilometres,
+      areaSquareKilometres: areaSquareKilometres * expansionFactor ** 2,
+      baseOfficialAreaSquareKilometres: areaSquareKilometres,
       widthKilometres,
       heightKilometres,
+      expansionFactor,
+      scopeGridSize,
       method:
-        "A 4:3 observation envelope is derived from the official 7,808 ha study-area figure and the approved Sakaerat reference coordinate.",
+        BEYOND_NINE_BY_NINE_SLOT_123_SCOPE
+          ? "The minimum next one-cell measurement ring is added around the prior nine-by-nine envelope, preserving the original seven-by-seven cell scale. The resulting eleven-by-eleven envelope remains inside the same cached Thailand DEM and WorldCover source objects, is authorized only for slot-123 no-RGB condition screening, and does not claim an exact reserve boundary."
+          : EXPANDED_SLOT_123_SCOPE
+            ? "A one-cell measurement ring is added around the prior seven-by-seven envelope, preserving the original cell scale. The expanded nine-by-nine envelope is owner-authorized for adjacent Wang Nam Khiao measurement evidence and does not claim an exact reserve boundary."
+            : "A 4:3 observation envelope is derived from the official 7,808 ha study-area figure and the approved Sakaerat reference coordinate.",
       exactReserveBoundaryClaimed: false,
       runtimeMetresPerPixelDefined: false,
     },
@@ -682,4 +758,8 @@ function readJson(filePath) {
 
 function clamp(value, minimum, maximum) {
   return Math.max(minimum, Math.min(maximum, value))
+}
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message)
 }

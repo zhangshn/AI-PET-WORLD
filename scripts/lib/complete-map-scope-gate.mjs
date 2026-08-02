@@ -167,22 +167,61 @@ export async function auditCompleteMapScope({ blueprint, directorOutput, task, c
 function auditConnectivity(blueprint, task, connectivity) {
   const pathPorts = (connectivity.edgePorts ?? []).filter((entry) => entry.regionId === connectivity.currentRegion?.regionId && entry.kind === "path")
   const nodes = new Set(connectivity.pathGraph?.nodes ?? [])
+  const pairedPathPorts = pathPorts.filter((port) =>
+    (connectivity.edgePorts ?? []).some((candidate) =>
+      candidate.edgePortId === port.connectsToEdgePortId
+      && candidate.regionId === port.connectsToRegionId
+      && candidate.connectsToEdgePortId === port.edgePortId
+      && candidate.connectsToRegionId === port.regionId
+    ))
+  const sourcePackageBound = Boolean(
+    blueprint.realEarthRegionId
+    && blueprint.realEarthRegionSourcePackageId
+    && blueprint.realEarthRegionSourcePackagePath
+    && task.sourceBindings?.realEarthRegionId === blueprint.realEarthRegionId
+    && task.sourceBindings?.realEarthRegionSourcePackageId === blueprint.realEarthRegionSourcePackageId
+    && task.sourceBindings?.realEarthRegionSourcePackagePath === blueprint.realEarthRegionSourcePackagePath
+  )
+  const independentTrainingInstance = blueprint.v7SlotBinding
+    ? connectivity.identityBoundary?.region0001InstanceInherited === false
+      && connectivity.anonymousTrainingCoordinateProjection?.region0001ConcreteInstanceRead === false
+      && !/region-0001/.test(connectivity.blueprintId ?? "")
+    : true
+  const structuralIdentitiesBound =
+    /^[a-f0-9]{64}$/.test(blueprint.structuralIdentities?.themeArchitectureIdentity ?? "")
+    && /^[a-f0-9]{64}$/.test(blueprint.structuralIdentities?.instanceDetailIdentity ?? "")
   const bound = blueprint.connectivityBlueprintId === connectivity.blueprintId
     && task.sourceBindings?.connectivityBlueprintPath
     && task.worldProfileId === connectivity.worldProfileId
   const passed = Boolean(
     bound
+    && sourcePackageBound
+    && independentTrainingInstance
+    && structuralIdentitiesBound
     && (connectivity.currentRegion?.neighborRegionIds ?? []).length > 0
     && pathPorts.length > 0
+    && pairedPathPorts.length === pathPorts.length
     && nodes.has("entry_point")
     && pathPorts.some((port) => nodes.has(port.edgePortId)),
   )
   return {
     passed,
-    failureCode: passed ? null : "complete_map_large_world_connectivity_unproven",
+    failureCode: passed
+      ? null
+      : !sourcePackageBound
+        ? "real_earth_region_source_package_missing"
+        : !independentTrainingInstance
+          ? "concrete_region_connectivity_instance_reused"
+          : !structuralIdentitiesBound
+            ? "complete_map_structural_identity_missing"
+            : "complete_map_large_world_connectivity_unproven",
     boundToCurrentBlueprint: Boolean(bound),
+    sourcePackageBound,
+    independentTrainingInstance,
+    structuralIdentitiesBound,
     neighborRegionCount: connectivity.currentRegion?.neighborRegionIds?.length ?? 0,
     pathPortIds: pathPorts.map((entry) => entry.edgePortId),
+    pairedPathPortIds: pairedPathPorts.map((entry) => entry.edgePortId),
     pathGraphId: connectivity.pathGraph?.pathGraphId ?? null,
     pathGraphNodes: [...nodes],
   }

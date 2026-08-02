@@ -2,7 +2,7 @@
   "schemaVersion": "project-owned-complete-world-model-config-v1",
   "modelId": "ai-pet-world-complete-world-ai-assisted-cold-start-v7",
   "architectureVersion": "all-validation-multiseed-semantic-rollout-unet-v7",
-  "status": "repair_implemented_cpu_verified_data_capacity_approved_training_blocked_pending_dataset",
+  "status": "repair_implemented_cpu_verified_mvp64_gpu_training_owner_authorized_active",
   "ownership": "project_owned_architecture_ai_assisted_cold_start_weights",
   "trainingLane": "ai_assisted_cold_start",
   "trainingDataPolicyVersion": "owner-authorized-ai-assisted-cold-start-v1",
@@ -17,28 +17,64 @@
   "autoencoderRequiredCheckpointProvenance": "project-owned-ai-assisted-cold-start-checkpoint-v2",
   "conditionChannels": 23,
   "conditionChannelOrder": [
-    "terrain_grass", "terrain_water", "terrain_path_ground", "terrain_shoreline",
-    "terrain_natural_boundary", "terrain_mud_patch", "terrain_tall_grass", "walkable",
-    "collision", "object_footprints", "object_tree", "object_rock", "object_vegetation",
-    "focal_area", "object_instance", "coordinate_x", "coordinate_y", "signed_distance_path",
-    "signed_distance_water", "signed_distance_shoreline", "signed_distance_object_ground",
-    "signed_distance_boundary", "moisture_proximity"
+    "terrain_grass",
+    "terrain_water",
+    "terrain_path_ground",
+    "terrain_shoreline",
+    "terrain_natural_boundary",
+    "terrain_mud_patch",
+    "terrain_tall_grass",
+    "walkable",
+    "collision",
+    "object_footprints",
+    "object_tree",
+    "object_rock",
+    "object_vegetation",
+    "focal_area",
+    "object_instance",
+    "coordinate_x",
+    "coordinate_y",
+    "signed_distance_path",
+    "signed_distance_water",
+    "signed_distance_shoreline",
+    "signed_distance_object_ground",
+    "signed_distance_boundary",
+    "moisture_proximity"
   ],
   "conditionChannelTypes": {
     "discrete": [
-      "terrain_grass", "terrain_water", "terrain_path_ground", "terrain_shoreline",
-      "terrain_natural_boundary", "terrain_mud_patch", "terrain_tall_grass", "walkable",
-      "collision", "object_footprints", "object_tree", "object_rock", "object_vegetation",
-      "focal_area", "object_instance"
+      "terrain_grass",
+      "terrain_water",
+      "terrain_path_ground",
+      "terrain_shoreline",
+      "terrain_natural_boundary",
+      "terrain_mud_patch",
+      "terrain_tall_grass",
+      "walkable",
+      "collision",
+      "object_footprints",
+      "object_tree",
+      "object_rock",
+      "object_vegetation",
+      "focal_area",
+      "object_instance"
     ],
     "continuous": [
-      "coordinate_x", "coordinate_y", "signed_distance_path", "signed_distance_water",
-      "signed_distance_shoreline", "signed_distance_object_ground", "signed_distance_boundary",
+      "coordinate_x",
+      "coordinate_y",
+      "signed_distance_path",
+      "signed_distance_water",
+      "signed_distance_shoreline",
+      "signed_distance_object_ground",
+      "signed_distance_boundary",
       "moisture_proximity"
     ]
   },
   "conditionResizeContract": "discrete_nearest_continuous_bilinear_v1",
-  "imageSize": { "width": 1024, "height": 768 },
+  "imageSize": {
+    "width": 1024,
+    "height": 768
+  },
   "autoencoderArchitecture": "residual_4x_latent_pixel_detail_v2",
   "denoiserArchitecture": "multiscale_condition_unet_v7",
   "conditionOutputBinding": "predicted_clean_latent_and_decoded_rgb_v1",
@@ -51,29 +87,112 @@
   "diffusionSteps": 1000,
   "inferenceSteps": 50,
   "training": {
-    "trainingAuthorizationStatus": "blocked_pending_approved_128_dataset_implementation",
+    "trainingAuthorizationStatus": "owner_authorized_active_mvp64_gpu_training",
     "dataCapacityDecision": {
-      "decisionId": "owner-approved-v7-data-capacity-128-20260722",
+      "decisionId": "owner-approved-v7-mvp-first-training-capacity-64-20260725",
       "status": "owner_approved",
-      "approvedAt": "2026-07-22T07:22:18+08:00",
-      "totalCompleteMaps": 128,
+      "approvedAt": "2026-07-25T09:02:19+08:00",
+      "authorizationRef": "project-owner-current-task-authorization-20260725-use-64-map-mvp-first-training-plan",
+      "purpose": "mvp_first_training_capacity",
+      "totalCompleteMaps": 64,
       "splitCounts": {
-        "train": 96,
-        "validation": 16,
-        "challenge": 8,
-        "regression": 8
+        "train": 48,
+        "validation": 8,
+        "challenge": 4,
+        "regression": 4
       },
-      "existingConditionBoundRecordsPendingAudit": 21,
-      "estimatedAdditionalRecords": 107,
+      "formalEnhancementTarget": {
+        "status": "retained_not_current_first_training_gate",
+        "totalCompleteMaps": 128,
+        "splitCounts": {
+          "train": 96,
+          "validation": 16,
+          "challenge": 8,
+          "regression": 8
+        }
+      },
+      "supersedesDecisionIdForFirstTrainingGate": "owner-approved-v7-data-capacity-128-20260722",
+      "existingConditionBoundRecordsPendingAudit": 0,
+      "estimatedAdditionalRecords": 64,
       "actualGapAuthority": "programmatic_identity_hash_scope_and_novelty_audit",
-      "coverageMatrixStatus": "program_built_gap_107",
+      "coverageMatrixStatus": "authorized_rebuild64_world_facts_derived_condition_preparation_ready",
       "coverageMatrixLatestPath": ".runtime/ai-painter/ai-assisted-v7-data-capacity-plans/latest.json",
-      "programAuditedQualifiedExistingRecords": 21,
-      "programAuditedRequiredNewRecords": 107,
-      "batchImageGenerationAuthorized": true,
+      "programAuditedQualifiedExistingRecords": 0,
+      "programAuditedRequiredNewRecords": 64,
+      "connectivityThemeAndDetailReaudit": {
+        "status": "failed_connectivity_theme_and_detail_reaudit",
+        "historicalQualifiedCountIsCurrentTrainingTruth": false,
+        "legacyHistoricalQualifiedCount": 40,
+        "structurallyReverifiedTrainingTruthCount": 0,
+        "auditedRecordCount": 40,
+        "failedRecordCount": 40,
+        "requiredComparisonScope": "all_historical_complete_map_conditions_and_rgb",
+        "requiredGates": [
+          "real_earth_region_source_package_present",
+          "concrete_region_connectivity_instance_unique",
+          "region_connected_to_world_graph",
+          "theme_architecture_identity_unique",
+          "instance_detail_identity_unique"
+        ],
+        "conditionAudit": {
+          "runId": "ai-assisted-v7-qualified-condition-topology-audit-2026-07-29T01-18-43-568Z",
+          "path": ".runtime/ai-painter/ai-assisted-v7-qualified-condition-topology-audits/ai-assisted-v7-qualified-condition-topology-audit-2026-07-29T01-18-43-568Z/audit-report.json",
+          "sha256": "229ec90d07aea110722c24d2141d9ae25527a571f70a314c7acc56165d7adc6b",
+          "passed": false,
+          "issueCounts": {
+            "real_earth_region_source_package_missing": 40,
+            "concrete_region_0001_connectivity_instance_reused": 40,
+            "theme_architecture_identity_missing": 40,
+            "instance_detail_identity_missing": 40,
+            "preset_home_center_in_connectivity": 40,
+            "complete_map_theme_architecture_duplicate": 23,
+            "complete_map_detail_content_duplicate": 18
+          }
+        },
+        "rgbDiagnosis": {
+          "runId": "ai-assisted-v7-qualified-topology-diagnosis-2026-07-29T01-19-47-732Z",
+          "path": ".runtime/ai-painter/ai-assisted-v7-qualified-topology-diagnostics/ai-assisted-v7-qualified-topology-diagnosis-2026-07-29T01-19-47-732Z/diagnosis-report.json",
+          "sha256": "bef7906e1d9c96ed38979c6d31f461c4ac72e87fdfc597d7004c4e23a10ba82f",
+          "diagnosedFindingRecordCount": 40,
+          "currentQualifiedCollisionGroupCount": 3,
+          "currentQualifiedDuplicateExcessCount": 4,
+          "ownerDecisionRequired": true
+        },
+        "ownerIsolation": {
+          "authorizationId": "owner-authorized-isolate-legacy40-and-rebuild-thailand-mvp64-20260729",
+          "runId": "ai-assisted-v7-legacy-connectivity-capacity-isolation-2026-07-29T01-28-10-947Z",
+          "path": ".runtime/ai-painter/ai-assisted-v7-legacy-connectivity-capacity-isolations/ai-assisted-v7-legacy-connectivity-capacity-isolation-2026-07-29T01-28-10-947Z/isolation-report.json",
+          "sha256": "c76d7bb4069872a6a73eda5643af17050e3ffd034df4e6c265143c1e7ba75b05",
+          "isolatedHistoricalRecordCount": 40,
+          "requiredCompliantRecordCount": 64
+        },
+        "gpuTrainingBlockedUntilPassed": true
+      },
+      "batchImageGenerationAuthorized": false,
+      "boundedDataBuildAuthorization": {
+        "authorizationId": "owner-authorized-isolate-legacy40-and-rebuild-thailand-mvp64-20260729",
+        "authorizedAt": "2026-07-29T09:28:10+08:00",
+        "status": "authorized_data_preparation_only",
+        "scope": "v7-capacity-slot-146-through-v7-capacity-slot-209",
+        "authorizedRecordCount": 64,
+        "referenceContractId": "sakaerat-wang-nam-khiao-earth-geospatial-naturalization-v1",
+        "capacityPlanPath": ".runtime/ai-painter/ai-assisted-v7-data-capacity-plans/ai-assisted-v7-data-capacity-plan-2026-07-29T01-39-06-016Z/capacity-plan.json",
+        "capacityPlanSha256": "96432fbe01419c28addecf989e9c0d60c71162abd8879980dd00922a8f94c800",
+        "measurementWindowPlanPath": ".runtime/ai-painter/earth-geospatial-v7-mvp-window-plans/earth-geospatial-v7-mvp-window-plan-rebuild64-2026-07-29T01-39-06-016Z/window-plan.json",
+        "measurementWindowPlanSha256": "4f9dcb79b1ca1c140de2220dc0b43c545e89da0818dbb8d36934f40daf7dd813",
+        "measurementWindowPlanningAuthorized": true,
+        "perWindowWorldFactDerivationAuthorized": true,
+        "conditionPackagePreparationAuthorized": true,
+        "imageGenerationAuthorized": false,
+        "ownerApprovalAutomatic": false,
+        "gpuTrainingAuthorized": false,
+        "runtimeFrameAuthorized": false,
+        "worldEntryAuthorized": false
+      },
       "continuousBatchAuthorization": {
         "authorizationId": "owner-authorized-v7-remaining-104-continuous-batch-20260723",
         "authorizedAt": "2026-07-23T05:55:34+08:00",
+        "status": "stopped_by_owner_not_reusable",
         "scope": "v7-capacity-slot-004-through-v7-capacity-slot-107",
         "authorizedRecordCount": 104,
         "executionMode": "sequential_one_active_generation_request",
@@ -103,9 +222,18 @@
       ]
     },
     "resolutionStages": [
-      { "width": 256, "height": 192 },
-      { "width": 512, "height": 384 },
-      { "width": 1024, "height": 768 }
+      {
+        "width": 256,
+        "height": 192
+      },
+      {
+        "width": 512,
+        "height": 384
+      },
+      {
+        "width": 1024,
+        "height": 768
+      }
     ],
     "batchSize": 1,
     "autoencoderEpochs": 20,
@@ -113,10 +241,14 @@
     "autoencoderLearningRate": 0.0002,
     "denoiserLearningRate": 0.0001,
     "autoencoderLossVersion": "pixel_edge_laplacian_v2",
-    "autoencoderLossWeights": { "pixel": 1.0, "edge": 0.75, "laplacian": 0.25 },
+    "autoencoderLossWeights": {
+      "pixel": 1,
+      "edge": 0.75,
+      "laplacian": 0.25
+    },
     "denoiserLossVersion": "velocity_decoded_rgb_sparse_region_rollout_v7",
     "denoiserLossWeights": {
-      "velocity": 1.0,
+      "velocity": 1,
       "cleanLatent": 0.5,
       "multiscaleLatentGradient": 0.35,
       "multiscaleLatentLaplacian": 0.2,
@@ -129,17 +261,32 @@
       "decodedRgbQuietRegionExcess": 0.3,
       "sparseRegionDecodedRgb": 0.75
     },
-    "fixedValidationTimesteps": [0, 100, 250, 500, 750, 999],
+    "fixedValidationTimesteps": [
+      0,
+      100,
+      250,
+      500,
+      750,
+      999
+    ],
     "timestepSampling": "deterministic_stratified_epoch_rotation_v1",
     "quietRegionQuantile": 0.3,
     "quietRegionMargin": 0.02,
-    "textureHierarchyScales": [1.0, 0.5, 0.25],
+    "textureHierarchyScales": [
+      1,
+      0.5,
+      0.25
+    ],
     "sparseRgbConditionChannels": [
-      "terrain_water", "terrain_path_ground", "terrain_shoreline", "object_footprints", "focal_area"
+      "terrain_water",
+      "terrain_path_ground",
+      "terrain_shoreline",
+      "object_footprints",
+      "focal_area"
     ],
     "bestCheckpointMetric": "all_validation_multiseed_worst_case_semantic_rollout_score_v7",
     "bestCheckpointMetricWeights": {
-      "velocityPredictionMse": 1.0,
+      "velocityPredictionMse": 1,
       "cleanLatentMae": 0.5,
       "multiscaleLatentGradientMae": 0.35,
       "multiscaleLatentLaplacianMae": 0.2,
@@ -153,20 +300,41 @@
       "sparseRegionDecodedRgbMae": 0.75
     },
     "rolloutCheckpointMetricWeights": {
-      "rolloutRgbMae": 1.0,
+      "rolloutRgbMae": 1,
       "rolloutRgbGradientMae": 0.5,
       "rolloutRgbLaplacianMae": 0.25,
-      "rolloutSparseRegionRgbMae": 1.0,
-      "rolloutRegionContrastMae": 1.0,
-      "rolloutSpatialGridRgbMae": 1.0
+      "rolloutSparseRegionRgbMae": 1,
+      "rolloutRegionContrastMae": 1,
+      "rolloutSpatialGridRgbMae": 1
     },
-    "checkpointRolloutWeight": 1.0,
+    "checkpointRolloutWeight": 1,
     "checkpointRolloutCoverage": "all_validation_samples",
     "checkpointRolloutSeedsPerSample": 2,
-    "checkpointWorstTrajectoryWeight": 1.0,
+    "checkpointWorstTrajectoryWeight": 1,
     "checkpointSelectionSplit": "validation",
     "strictHeldOutInferenceSplit": "challenge",
-    "seed": 20260722
+    "seed": 20260722,
+    "ownerTrainingAuthorization": {
+      "authorizationId": "owner-approved-v7-mvp64-local-gpu-training-activation-20260802",
+      "authorizationPath": ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-mvp64-gpu-training-activation-resolution-20260802/request.json",
+      "authorizationSha256": "03f2b9d275a3e42f1086f09cccce86c086afe3c6909650963b88cded62908e62",
+      "status": "owner_authorized_active_mvp64_gpu_training",
+      "activationGates": [
+        "qualified_complete_map_count_equals_64",
+        "split_counts_equal_48_train_8_validation_4_challenge_4_regression",
+        "every_record_has_independent_world_facts_world_director_and_23_channels",
+        "every_record_has_real_earth_region_source_package",
+        "every_record_has_unique_concrete_region_connectivity_instance",
+        "every_region_is_connected_to_world_graph",
+        "theme_architecture_all_history_reaudit_pass",
+        "instance_detail_all_history_reaudit_pass",
+        "every_record_has_machine_review_pass",
+        "every_record_has_project_owner_review_pass",
+        "immutable_dataset_package_hash_and_source_lineage_audit_pass",
+        "identity_hash_novelty_and_split_isolation_audit_pass"
+      ],
+      "gpuTrainingAuthorizedNow": true
+    }
   },
   "requiredCheckpointProvenance": "project-owned-ai-assisted-cold-start-checkpoint-v7",
   "formalInferenceEligible": false

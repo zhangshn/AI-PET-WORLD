@@ -9,12 +9,14 @@ const noWaterRecord = readRecord("ai-cold-start-condition-pair-005-seasonal-ever
 const drySeasonRejectedRecord = readRecord("ai-cold-start-condition-pair-006-dry-dipterocarp-woodland-v2")
 const drySeasonPassingRecord = readRecord("ai-cold-start-condition-pair-006-dry-dipterocarp-woodland-v3")
 const disconnectedWarmGroundRecord = readRecord("ai-cold-start-earth-reference-earth-reference-naturalized-complete-map-b3be6a28ffb6-v1")
+const noWaterForestedLowMountainRecord = readRecord("ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v1")
 const passingAudit = await audit(passingRecord)
 const rejectedAudit = await audit(rejectedRecord)
 const noWaterAudit = await audit(noWaterRecord)
 const drySeasonRejectedAudit = await audit(drySeasonRejectedRecord)
 const drySeasonPassingAudit = await audit(drySeasonPassingRecord)
 const disconnectedWarmGroundAudit = await audit(disconnectedWarmGroundRecord)
+const noWaterForestedLowMountainAudit = await audit(noWaterForestedLowMountainRecord)
 const failures = []
 
 check(passingAudit.passed === true, "known_owner_approved_001_alignment_should_pass")
@@ -31,6 +33,11 @@ check(passingAudit.pathClassifier?.mode === "humid_and_transition_season_warm_ea
 check(disconnectedWarmGroundAudit.passed === true, "disconnected_warm_ground_should_not_shift_route_centroid")
 check(disconnectedWarmGroundAudit.pathClassifier?.signalIsolationMode === "condition_supported_connected_components_v1", "condition_supported_path_component_filter_missing")
 check(disconnectedWarmGroundAudit.channelAudits.find((item) => item.channelId === "terrain_path_ground")?.signalIsolation?.rejectedPixelCount > 0, "disconnected_warm_ground_pixels_were_not_isolated")
+check(noWaterForestedLowMountainAudit.passed === true, "no_water_forested_low_mountain_blue_green_shadows_should_pass")
+check(noWaterForestedLowMountainAudit.waterClassifier?.mode === "condition_presence_aware_water_signal_v3", "condition_presence_aware_water_classifier_missing")
+check(noWaterForestedLowMountainAudit.channelAudits.find((item) => item.channelId === "terrain_water")?.classifierMode === "condition_absent_strong_blue_dominance_v2", "dense_water_surface_absence_classifier_missing")
+check(noWaterForestedLowMountainAudit.channelAudits.find((item) => item.channelId === "terrain_water")?.actualSignalRatio <= 0.005, "no_water_forested_low_mountain_false_water_signal_not_removed")
+check(noWaterForestedLowMountainAudit.channelAudits.find((item) => item.channelId === "terrain_water")?.signalIsolation?.acceptanceThresholdsChanged === false, "water_false_positive_repair_changed_thresholds")
 
 const result = {
   ok: failures.length === 0,
@@ -47,6 +54,8 @@ const result = {
   drySeasonPassingPathAudit: drySeasonPassingAudit.channelAudits.find((item) => item.channelId === "terrain_path_ground"),
   disconnectedWarmGroundRecordId: disconnectedWarmGroundRecord.recordId,
   disconnectedWarmGroundPathAudit: disconnectedWarmGroundAudit.channelAudits.find((item) => item.channelId === "terrain_path_ground"),
+  noWaterForestedLowMountainRecordId: noWaterForestedLowMountainRecord.recordId,
+  noWaterForestedLowMountainWaterAudit: noWaterForestedLowMountainAudit.channelAudits.find((item) => item.channelId === "terrain_water"),
   failures,
 }
 console[failures.length === 0 ? "log" : "error"](JSON.stringify(result, null, 2))

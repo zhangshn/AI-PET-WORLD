@@ -1,16 +1,716 @@
 # 完整游戏世界生成当前执行指南
 
-更新时间：2026-07-25 09:02:19 +08:00
+更新时间：2026-08-02 09:55:00 +08:00
 
-状态：正式当前执行文档 / 连续出图批次已停止 / 17条变换派生容量已隔离 / 旧26图工程包中24条预设家园位置记录已暂停后续训练资格 / 24套无预设家园位置条件已重建并通过构图去重门 / 自主重建001单图已获项目所有者通过 / V7 GPU训练未授权 / RuntimeFrame仍阻断
+状态：正式当前执行文档 / V7 GPU激活已授权 / 首次冒烟在训练前失败 / stage-0未启动 / 授权门禁修复与单次重试待owner决定
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
+
+## 0-EE. 2026-08-02 冒烟失败后必须停止
+
+V7首次冒烟已执行，但Python训练器仍只接受旧授权字符串，未识别当前已落盘并哈希验证的新owner激活记录，因此在任何训练计算和checkpoint创建之前失败。失败不是显存不足或数据集失败；`gpuTrainingStarted=false`、`checkpointCreated=false`。按owner批准时的失败即停边界，程序不得自动修改后重试，也不得进入stage-0。
+
+当前唯一允许的等待动作是项目所有者审核`owner-action-request-v7-mvp64-smoke-authorization-gate-repair-retry-20260802`。批准范围应仅包括把Python门禁改为验证当前active授权、授权文件SHA-256和MVP64身份，然后只重试一次冒烟；再次失败必须停止。
+
+## 0-DD. 2026-08-02 当前唯一下一步：GPU训练激活决定
+
+新64组已全部闭合为owner通过、机器通过、容量已登记，分割固定为`48 train / 8 validation / 4 challenge / 4 regression`。最新数据集含116个样本、112张完整地图、64个V7容量贡献、0个未配对条件和0个阻断项；容量计划状态为`capacity_complete_waiting_owner_training_authorization`。CPU完整模型合同、23通道、真实泰国来源、全历史唯一性和历史失败学习均已复核通过。
+
+当前程序只保存了`owner-action-request-v7-mvp64-gpu-training-activation-20260802`，尚未获得GPU激活许可。项目所有者若批准，执行边界只包括再次核对锁定hash、V7训练程序冒烟检查以及按顺序执行stage-0、stage-1、stage-2；任一阶段失败立即停止。正式图像推理、RuntimeFrame和`/world`仍须后续单独授权。若项目所有者未明确批准，则不得调用任何GPU训练命令。
+
+## 0-CC. 2026-08-01 新64组第01张单次草图等待owner审核
+
+项目所有者以“允许，先生成第一张草图”只授权新64组第01张（`v7-capacity-slot-146`）的一次生成。正式授权记录=`.runtime/ai-painter/owner-action-requests/project-owner-authorization-2026-08-01-v7-capacity-slot-146-single-rgb-generation/request.json`，SHA-256=`2ebb157da62619536e8e77aecd1b71de52c50ab66e63cc7e0e94d78230ee1370`。requestId=`conditional-rgb-146-2026-07-31T23-58-36-692Z`，recordId=`ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3`；内置生成调用1次，源图`1448×1086`，最近邻审核派生图`1024×768`，SHA-256=`eb5c085a05f775ea8df2a8912ff806794dca25b7a378dc54102b142aecf43125`。
+
+本图条件为森林低山、湿季、无可见水体、南侧入口。完整矩形世界画幅、无外部背景或悬浮切片、无水、南侧入口、风格及全历史构图新颖性最终机器审核通过。复核过程中发现旧入口审核只看条件支持的道路像素，程序已在不改变条件、RGB或阈值的前提下补充全画幅原始道路边界连通分量证据并对同一图片重审；没有第二次生成。最终机器reviewId=`ai-cold-start-machine-review-ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3-2026-08-01T00-06-18-223Z`。
+
+当前固定为`generated_intaked_machine_passed_waiting_owner_review`、`ownerReviewStatus=pending_review`、`conditionalTrainingEligible=false`。本次执行解决记录=`.runtime/ai-painter/owner-action-requests/owner-action-request-slot-146-new64-01-single-rgb-generation-resolution-20260801/request.json`，SHA-256=`f993e12b2924d0f79a2918048c5eae64e1a55ae7de47b164e5670b47b429781a`。不得自动通过、登记容量、重试本图、生成第02张、启动GPU、RuntimeFrame或`/world`；唯一下一动作是项目所有者审核本图并明确通过或拒绝及原因。
+
+## 0-BB. 2026-08-01 完整世界与未来动态准备升级闭合
+
+项目所有者明确要求全面升级64组定义和算法，并要求当前存在背景/悬浮切片问题的图片直接失败。新64组01至05及53（slot-198 V3）共6张已正式写入`owner_rejected`，随后按新版审核器复审为`machine_rejected`；原图、目录和审核历史保留，删除0，正样本容量0。自主训练成功类型页实测活动记录0、带图片记录0；未通过页实测包含上述6条。
+
+64个无RGB条件包已经按`complete-rectangular-world-and-future-dynamic-readiness-v2`全部重建。最终批次报告=`.runtime/ai-painter/thailand-rebuild64-condition-package-batches/thailand-rebuild64-condition-package-batch-2026-07-31T16-22-15-259Z/batch-report.json`；全框架审核报告=`.runtime/ai-painter/earth-geospatial-v7-capacity-146-209-complete-framework-audits/earth-geospatial-v7-capacity-146-209-complete-framework-audit-2026-07-31T16-22-48-089Z/audit-report.json`，SHA-256=`3c470eb2a315045b12f75a4b4bb38e0247e29b3d1d1911e4789330d641bf68c5`，结果64/64通过、2016/2016对不同、硬失败0、注意项0、共享构造语法0。
+
+最终综合回归报告=`.runtime/ai-painter/thailand-rebuild64-full-world-dynamic-readiness-checks/thailand-rebuild64-full-world-dynamic-readiness-check-2026-07-31T17-07-13-035Z/check-report.json`，SHA-256=`4a40023412969c71ac4abea772141692e56eb29ba7c57a47bc9eb44847d770fe`，确认条件包64、不同对2016、拒绝RGB6、旧版ready请求0、问题0。当前只完成数据包与算法升级；不得自动生成任何RGB、启动GPU、RuntimeFrame或`/world`。下一动作必须等待项目所有者在查看新条件草图/证据后给出新的明确RGB授权。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-31 自主训练原图页面只保留新64组
+
+项目所有者明确要求自主训练原图页面不再显示之前旧图。程序从页面对应记录集中锁定40条旧自主训练记录，使用正式owner拒绝链全部归入`failed-records`；原图40张、审核历史和原目录全部保留，删除0，并撤回37个旧V7容量贡献。归档结果SHA-256=`862ce1734c0a95b9c3b168d020cd5f388c475727e4cb593cece4fe0df7d48449`。
+
+刷新`/ai-painter-progress/original-images/complete-maps/types/autonomous-generation-training-originals`实测活动记录与带图记录均为1，下拉框只剩新的slot-198 V3，即`新64组第53张`。它仍为`ai_assisted_cold_start_intake`和`pending_review`，没有代写owner通过。当前V7容量贡献0、新64组合规RGB容量0/64、GPU=0；后续记录只有绑定`thailand-rebuild64-20260731`新编号系列才允许出现在该页面。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-31 旧RGB归入未通过并启用新64组编号
+
+项目所有者命令旧生成内容不得删除但不再需要作为正样本。程序已将旧slot-146至197 RGB和slot-198 V1/V2共54条正式归入`failed-records`，其中52条本次写入owner拒绝、2条原已拒绝；54张原图和不可变审核历史全部保留，删除0、移动目录0，旧注册容量贡献全部撤回。归档结果SHA-256=`35b26b1ba9335211ca54e67130860cb1c8bdcaeccebede6debeaada663c9a5b7`。
+
+新64组使用registryId=`thailand-rebuild64-sequence-registry-v1`、seriesId=`thailand-rebuild64-20260731`，编码从`01`至`64`；原slot仅作测量来源追溯，映射公式=`新编号=原slot编号-145`。因此slot-146=`01`、slot-198=`53`、slot-209=`64`。当前新的slot-198 V3已绑定`新64组第53张`但仍等待owner审核；其余63项必须按各自泰国测量事实重建新的完整构图条件包与RGB，不得复用旧骨架。当前新组合规容量0/64，GPU=0；本次未授权自动生成、批量处理、RuntimeFrame或`/world`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-30 slot-149正式通过并登记容量
+
+项目所有者明确回复“通过”。正式程序对recordId=`ai-cold-start-v7-v7-capacity-slot-149-tropical-forest-glade-v1`写入owner reviewId=`ai-cold-start-owner-review-ai-cold-start-v7-v7-capacity-slot-149-tropical-forest-glade-v1-2026-07-30T01-25-18-362Z`，命令引用=`owner-approved-v7-capacity-slot-149-complete-pass-20260730`。同一图片SHA-256=`c74339a56b0d1d9a76cced942857d76cfe58a37464b2afc4c04e9bb88feaf039`状态更新为`owner_approved`；AI辅助条件训练资格=true，独立训练资格=false，正式候选、RuntimeFrame和`/world`资格仍为false。
+
+容量贡献runId=`ai-assisted-v7-capacity-contribution-v7-capacity-slot-149-2026-07-30T01-25-54-965Z`、SHA-256=`5ba1acb7ce6bdb6fee9c7028d1ab422720a4344264e84d8379df4efb2098125d`登记并独立检查通过，split=`train`。本地系统另存解决记录`owner-action-request-slot-149-owner-visual-review-resolution-20260730`、SHA-256=`211f15490f25602ae862dbcdd30cbd9f219c569616cc15e052d5fb2bc070915f`，原`waiting_owner_review`请求保持不可变。
+
+当前合规RGB容量4/64、缺口60、GPU=0。本次owner通过只闭合slot-149，不能扩展为slot-150单张RGB或连续出图授权；不得启动GPU、RuntimeFrame或`/world`。当前唯一下一动作是等待项目所有者明确命令。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-30 slot-149草图机器通过并等待owner审核
+
+项目所有者以“继续”只授权`v7-capacity-slot-149`的一张草图，不授权后续槽位或训练。程序读取当前v2条件runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-149-2026-07-29T09-49-42-136Z`、conditionId=`earth-reference-v7-v7-capacity-slot-149-3fa4124cfd20`，建立requestId=`conditional-rgb-149-2026-07-30T01-13-00-083Z`。生成器只接收当前泰国测量事实派生的匿名条件引导，历史RGB和历史RGB风格引用均为0；Codex内置图像生成只调用一次。
+
+源图尺寸`1448×1086`、SHA-256=`22ca28eb381c5b184b946e76d799a8bf96c18f539a24958537f85b99fb3d8f51`；按批准合同无裁切、无放大地以nearest-neighbor生成`1024×768`审核派生图，SHA-256=`c74339a56b0d1d9a76cced942857d76cfe58a37464b2afc4c04e9bb88feaf039`。recordId=`ai-cold-start-v7-v7-capacity-slot-149-tropical-forest-glade-v1`。
+
+机器审核ID=`ai-cold-start-machine-review-ai-cold-start-v7-v7-capacity-slot-149-tropical-forest-glade-v1-2026-07-30T01-17-09-597Z`全部通过：WorldFacts要求无主要可见水体，实际水体信号=0；道路期望覆盖比例`0.0189`、实际`0.0146`，coverageRatio=`0.7709`、spatialIntersection=`0.79`、centroidDistance=`0.0291`；来源、完整地图范围、23通道、干湿季过渡热带森林林间地生态、风格指纹和145张全历史RGB构图新颖性均通过，重复命中0。
+
+当前请求固定`generated_intaked_machine_passed_waiting_owner_review`，owner仍为`pending_review`，训练资格=false。本地系统已保存`owner-action-request-slot-149-owner-visual-review-20260730`，明确只请求项目所有者审核本图并回复“通过”或“拒绝＋原因”。在owner决定写入前，不得自动批准、登记slot-149容量、生成slot-150、启动GPU、RuntimeFrame或`/world`。当前合规容量仍为3/64、缺口61、GPU=0。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-30 slot-148正式通过并登记容量
+
+项目所有者明确回复“通过”。正式程序对recordId=`ai-cold-start-v7-v7-capacity-slot-148-grassland-forest-transition-v1`写入owner reviewId=`ai-cold-start-owner-review-ai-cold-start-v7-v7-capacity-slot-148-grassland-forest-transition-v1-2026-07-30T00-59-59-431Z`，命令引用=`owner-approved-v7-capacity-slot-148-complete-pass-20260730`。同一图片SHA-256=`dfab6240b07dddeab8b40c6d2e278daa0c98146959061901681f90403f090dfa`状态更新为`owner_approved`；AI辅助条件训练资格=true，独立训练资格=false，正式候选、RuntimeFrame和`/world`资格仍为false。
+
+容量贡献runId=`ai-assisted-v7-capacity-contribution-v7-capacity-slot-148-2026-07-30T01-00-47-626Z`、SHA-256=`1366f1b40928d460a1995e9aad520929bdaeef0f0f29dbe6fd4f2c260f1321ba`登记并独立检查通过，split=`train`。本地系统另存解决记录`owner-action-request-slot-148-owner-visual-review-resolution-20260730`，原`waiting_owner_review`请求保持不可变。
+
+当前合规RGB容量3/64、缺口61、GPU=0。本次owner通过只闭合slot-148，不能扩展为slot-149单张RGB或连续出图授权；不得启动GPU、RuntimeFrame或`/world`。当前唯一下一动作是等待项目所有者明确命令。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-30 slot-148草图机器通过并等待owner审核
+
+项目所有者以“开始 继续”只授权`v7-capacity-slot-148`的一张草图，不授权后续槽位或训练。程序读取当前v2条件runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-148-2026-07-29T09-48-27-342Z`、conditionId=`earth-reference-v7-v7-capacity-slot-148-34b9a66ce3f6`，建立requestId=`conditional-rgb-148-2026-07-30T00-47-59-844Z`。生成器只接收当前泰国测量事实派生的匿名条件引导，历史RGB和历史RGB风格引用均为0；Codex内置图像生成只调用一次。
+
+源图尺寸`1448×1086`、SHA-256=`76263ff18c9c15a61e48cc27e4c6eb11fbc7bd874849c35f47d1e375573fb845`；按批准合同无裁切、无放大地以nearest-neighbor生成`1024×768`审核派生图，SHA-256=`dfab6240b07dddeab8b40c6d2e278daa0c98146959061901681f90403f090dfa`。recordId=`ai-cold-start-v7-v7-capacity-slot-148-grassland-forest-transition-v1`。
+
+机器审核ID=`ai-cold-start-machine-review-ai-cold-start-v7-v7-capacity-slot-148-grassland-forest-transition-v1-2026-07-30T00-52-23-490Z`全部通过：WorldFacts要求无主要可见水体，实际水体信号=0；道路期望覆盖比例`0.0263`、实际`0.0112`，coverageRatio=`0.4247`、spatialIntersection=`0.8212`、centroidDistance=`0.0305`；来源、完整地图范围、23通道、旱季草地—森林过渡生态、风格指纹和144张全历史RGB构图新颖性均通过，重复命中0。
+
+当前请求固定`generated_intaked_machine_passed_waiting_owner_review`，owner仍为`pending_review`，训练资格=false。本地系统已保存`owner-action-request-slot-148-owner-visual-review-20260730`，明确只请求项目所有者审核本图并回复“通过”或“拒绝＋原因”。在owner决定写入前，不得自动批准、登记slot-148容量、生成slot-149、启动GPU、RuntimeFrame或`/world`。当前合规容量仍为2/64、缺口62、GPU=0。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-30 slot-147正式通过并登记容量
+
+项目所有者明确回复“通过”。正式程序对recordId=`ai-cold-start-v7-v7-capacity-slot-147-grassland-forest-transition-v1`写入owner reviewId=`ai-cold-start-owner-review-ai-cold-start-v7-v7-capacity-slot-147-grassland-forest-transition-v1-2026-07-30T00-38-37-710Z`，命令引用=`owner-approved-v7-capacity-slot-147-complete-pass-20260730`。同一图片SHA-256=`0dce7acccce15d238ff92afe2bb9dc47ee54e730db0da8569640a5aba1dbbf12`状态更新为`owner_approved`；AI辅助条件训练资格=true，独立训练资格=false，正式候选、RuntimeFrame和`/world`资格仍为false。
+
+容量贡献runId=`ai-assisted-v7-capacity-contribution-v7-capacity-slot-147-2026-07-30T00-39-05-580Z`、SHA-256=`bfb5fda9a3916ad733f8d72668c81a01bc69e0b69a875b0522075690951c77ca`登记并独立检查通过，split=`train`。本地系统另存解决记录`owner-action-request-slot-147-owner-visual-review-resolution-20260730`，原`waiting_owner_review`请求保持不可变。
+
+当前合规RGB容量2/64、缺口62、GPU=0。本次owner通过只闭合slot-147，不能扩展为slot-148单张RGB或连续出图授权；不得启动GPU、RuntimeFrame或`/world`。当前唯一下一动作是等待项目所有者明确命令。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-147草图机器通过并等待owner审核
+
+项目所有者以“ok，接着下一步”只授权`v7-capacity-slot-147`的一张草图，不授权后续槽位或训练。程序读取当前v2条件runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-147-2026-07-29T09-47-46-823Z`、conditionId=`earth-reference-v7-v7-capacity-slot-147-1f2122e8a74a`，建立requestId=`conditional-rgb-147-2026-07-29T13-28-05-306Z`。生成器只接收当前泰国测量事实派生的匿名条件引导，历史RGB和历史RGB风格引用均为0；Codex内置图像生成只调用一次。
+
+源图尺寸`1448×1086`、SHA-256=`e1f691329c09ed06a3c0828c9dd0f46a36a75d1e320e4d461e965b16bf3ce23a`；按批准合同无裁切、无放大地以nearest-neighbor生成`1024×768`审核派生图，SHA-256=`0dce7acccce15d238ff92afe2bb9dc47ee54e730db0da8569640a5aba1dbbf12`。recordId=`ai-cold-start-v7-v7-capacity-slot-147-grassland-forest-transition-v1`。
+
+机器审核ID=`ai-cold-start-machine-review-ai-cold-start-v7-v7-capacity-slot-147-grassland-forest-transition-v1-2026-07-29T13-48-02-906Z`全部通过：当前WorldFacts要求无主要可见水体，实际水体信号=0；道路期望覆盖比例`0.0284`、实际`0.0213`，coverageRatio=`0.7494`、spatialIntersection=`0.8254`、centroidDistance=`0.0371`；来源、完整地图范围、23通道、风格指纹和143张全历史RGB构图新颖性均通过，重复命中0。
+
+当前请求固定`generated_intaked_machine_passed_waiting_owner_review`，owner仍为`pending_review`，训练资格=false。本地系统已保存`owner-action-request-slot-147-owner-visual-review-20260729`，明确只请求项目所有者审核本图并回复“通过”或“拒绝＋原因”。在owner决定写入前，不得自动批准、登记slot-147容量、生成slot-148、启动GPU、RuntimeFrame或`/world`。当前合规容量仍为1/64、缺口63、GPU=0。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 本地系统主责记录闭合
+
+项目所有者明确要求逐步脱离Codex：本地系统是正式判断、授权请求、审核状态和长期记忆的唯一载体；Codex只作为受控执行与检查员工，目标职责仅为按本地系统分派执行相对应检查并返回证据。该职责已写入`data/ai-painter/system-governance/local-ai-responsibility-contract-v1.json`。
+
+程序新增通用`owner-action-request`本地记录入口和治理检查器。每次出现“owner结论已明确但机器门禁仍阻断”“需要改变有限范围后才能继续”等情形，本地系统必须在等待owner前保存任务身份、机器发现、不能继续原因、最小授权请求、不变量、禁止动作、完整面向owner说明、证据和获批后执行链，并写入不可变文件、程序事件与SQLite索引；聊天说明不能替代。
+
+slot-146实际说明已保存为`owner-action-request-slot-146-water-false-positive-20260729`，状态=`resolved_owner_authorized`，引用原机器拒绝、水体分类器回归、同图机器通过、owner完全通过和容量登记证据。该记录只是把已经发生的真实流程纳入本地系统，没有生成新RGB、修改历史审核或启动GPU。当前合规RGB容量仍为1/64、缺口63；不得自动进入slot-147。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-146完全通过并登记容量
+
+项目所有者明确“通过这个完全通过”，并授权仅修复同图无水森林暗部误判。程序建立`condition_presence_aware_water_signal_v3`：有水条件保持宽淡水颜色分类，无水条件使用强蓝主导与16×16局部连续色面；全部正式阈值、WorldFacts、23通道和图片不变。回归runId=`ai-assisted-water-signal-classifier-regression-2026-07-29T11-16-51-707Z`比较113条，111条历史已通过样本回归失败0，64条有水和47条无水继续通过，历史002水体错位拒绝继续有效。本图正式水信号由旧`0.0787`降为`0.0028`，低于未改动阈值`0.005`。
+
+同一SHA-256=`9d1381f69cd1beada1602c31bf7aadab7e91aceac70d158eacba165afc308f97`图片机器复审ID=`ai-cold-start-machine-review-ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v1-2026-07-29T11-23-30-735Z`通过，问题数0；旧拒绝保留。owner reviewId=`ai-cold-start-owner-review-ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v1-2026-07-29T11-26-23-796Z`、命令引用=`owner-approved-v7-capacity-slot-146-complete-pass-20260729`正式通过。容量贡献runId=`ai-assisted-v7-capacity-contribution-v7-capacity-slot-146-2026-07-29T11-33-04-333Z`、SHA-256=`6d9ed9bf22cd0c83994abc311522a0765d8279a5fc9d3ed9fb5066098f8b5b4a`登记并检查通过。当前合规RGB容量1/64、缺口63、GPU=0；不得自动生成slot-147或启动训练。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-146单张草图已保存并机器拒绝
+
+项目程序为同一slot-146条件建立请求`conditional-rgb-146-2026-07-29T10-34-27-006Z`，Codex内置生成只调用一次，只读取当前条件引导，不读取历史RGB。记录ID=`ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v1`；源图`1448×1086`，nearest-neighbor `1024×768`审核派生图SHA-256=`9d1381f69cd1beada1602c31bf7aadab7e91aceac70d158eacba165afc308f97`。
+
+全历史输入边界、风格指纹、生成前121份条件构图审核和生成后142份RGB构图新颖性均通过，历史重复命中0。道路条件通过：coverageRatio=`1.0469`、spatialIntersection=`0.8124`、centroidDistance=`0.012`。机器审核唯一失败码为`condition_terrain_water_unexpected_signal`：当前WorldFacts要求无主要可见水体，但颜色分类器在低山森林暗部计算出水信号`0.0787`，高于固定阈值`0.005`；审核阈值没有修改。该草图固定`machine_rejected`、`ownerReviewStatus=not_reached_machine_failed`、`conditionalTrainingEligible=false`，不得计入容量或训练。下一动作只等待项目所有者审核这张草图的整体架构；不得自动重试、生成slot-147、启动GPU、RuntimeFrame或`/world`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-146旧投影重建与历史身份兼容授权
+
+项目所有者明确批准：保持泰国Sakaerat / Wang Nam Khiao测量窗口、WorldFacts、split、23通道定义和审核阈值不变，把`slot-146`至`150`从旧匿名连接投影v1重建为当前`measurement-driven-independent-region-coordinate-projection-v2`。新run分别为`earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-29T09-46-51-928Z`、`slot-147-2026-07-29T09-47-46-823Z`、`slot-148-2026-07-29T09-48-27-342Z`、`slot-149-2026-07-29T09-49-42-136Z`和`slot-150-2026-07-29T09-51-35-927Z`；旧run保持不可变。只读全扫描确认`slot-146`至`209`当前64/64均为v2，RGB=0、GPU=0。
+
+随后slot-146生成前门禁完成121份历史条件引导的直接、镜像、旋转和细节比较，重复命中0，但发现120份旧蓝图缺少后来新增的两层结构身份，另1份早期记录没有训练蓝图，因证据合同不完整在RGB前阻断。项目所有者以`project-owner-authorization-2026-07-29-v7-capacity-slot-146-single-rgb-generation`批准历史兼容边界及同一条件的一张草图：120份只从其不可变旧蓝图连接和几何建立旁路审计身份；`ai-cold-start-map-003-condition-guided-east-river`仅作为无连接身份的全变换构图参考。不得读取历史RGB、修改旧记录、降低阈值或授予旧容量新资格。兼容回归通过后，本轮只允许同一slot-146条件的一张草图；不得自动进入slot-147 RGB或GPU训练。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-209无RGB条件及64槽位准备闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-209-2026-07-29T09-29-37-784Z`、conditionId=`earth-reference-v7-v7-capacity-slot-209-d1621080b4dc`、SHA-256=`e479ea7599b7045e6c6df53899551edefb44fd5849e1185ba78a3d88cd9e2943`。split=`regression`、景观=`tropical-forest-glade`、季节=`dry_to_wet_transition`；独立泰国测量窗口、连接、主题、细节身份、全历史新颖性、23通道、完整地图范围和`focal_area=0`门禁全部通过。现实精确几何带入=0、历史RGB读取=0。
+
+`slot-146`至`209`共64个无RGB条件包现已全部准备完成，条件缺口=0；这不代表已有64张合规RGB，当前合规RGB容量仍为0/64、GPU=0。不得进入`slot-210`，不得自动生成RGB、启动V7训练、建立RuntimeFrame或进入`/world`；任何RGB仍须项目所有者依正式门禁另行明确授权。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-208无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-208-2026-07-29T09-23-32-797Z`、conditionId=`earth-reference-v7-v7-capacity-slot-208-16a9c5073afc`、SHA-256=`31032db3b308a0dd7fe005463e87990092d95752f7b5aea05d8e98863794231a`。split=`regression`、景观=`forested-low-mountain`、季节=`dry_season`；独立泰国测量窗口、连接、主题、细节身份、全历史新颖性、23通道、完整地图范围和`focal_area=0`门禁全部通过。现实精确几何带入=0、历史RGB读取=0。条件包63/64、还差1个，RGB=0/64、GPU=0；下一项为`slot-209`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-207无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-207-2026-07-29T09-07-49-106Z`、conditionId=`earth-reference-v7-v7-capacity-slot-207-b4b811e6df88`、SHA-256=`b2c04962340d3f1b10985939c49372551590792351777efe4be535e85528d083`。split=`regression`、景观=`tropical-forest-glade`、季节=`wet_to_dry_transition`；独立泰国测量窗口、连接、主题、细节身份、全历史新颖性、23通道、完整地图范围和`focal_area=0`门禁全部通过。现实精确几何带入=0、历史RGB读取=0。条件包62/64、还差2个，RGB=0/64、GPU=0；下一项为`slot-208`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-206无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-206-2026-07-29T08-49-57-855Z`、conditionId=`earth-reference-v7-v7-capacity-slot-206-fc2f809de93c`、SHA-256=`70566752b9cb22743d1696f4f399379d3f6054b40252a4a90821671baf41ca1e`。split=`regression`、景观=`bamboo-grove`、季节=`wet_season`；独立泰国测量窗口、连接、主题、细节身份、全历史新颖性、23通道、完整地图范围和`focal_area=0`门禁全部通过。现实精确几何带入=0、历史RGB读取=0。条件包61/64、还差3个，RGB=0/64、GPU=0；下一项为`slot-207`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-205无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-205-2026-07-29T08-33-59-748Z`、conditionId=`earth-reference-v7-v7-capacity-slot-205-91a2edbff991`、SHA-256=`8bc69a8d8641dafd92f1f60c258614cc23f34a7107c140a1cf0935b32b156925`。split=`challenge`、景观=`dry-dipterocarp-woodland`、季节=`dry_to_wet_transition`；独立泰国测量窗口、连接、主题、细节身份、全历史新颖性、23通道、完整地图范围和`focal_area=0`门禁全部通过。现实精确几何带入=0、历史RGB读取=0。条件包60/64、还差4个，RGB=0/64、GPU=0；下一项为`slot-206`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-204无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-204-2026-07-29T08-10-51-279Z`、conditionId=`earth-reference-v7-v7-capacity-slot-204-b7d2999c8387`、SHA-256=`4909a5ccb9179871b5d3e7e9a0ab8ac6d574ea1bff315ae2ed1ce75a9facd152`。split=`challenge`、景观=`forested-low-mountain`、季节=`dry_season`；独立泰国测量窗口、连接、主题、细节身份、全历史新颖性、23通道、完整地图范围和`focal_area=0`门禁全部通过。现实精确几何带入=0、历史RGB读取=0。条件包59/64、还差5个，RGB=0/64、GPU=0；下一项为`slot-205`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-203无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-203-2026-07-29T07-59-24-578Z`、conditionId=`earth-reference-v7-v7-capacity-slot-203-2168e0d75810`、SHA-256=`bf565a5c770087d64bfd02f7062a254d36ff302c093a572727ffde8774cbe006`。split=`challenge`、景观=`tropical-forest-glade`、季节=`wet_to_dry_transition`；独立泰国测量窗口、连接、主题、细节身份、全历史新颖性、23通道、完整地图范围和`focal_area=0`门禁全部通过。现实精确几何带入=0、历史RGB读取=0。条件包58/64、还差6个，RGB=0/64、GPU=0；下一项为`slot-204`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-202无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-202-2026-07-29T07-47-05-915Z`、conditionId=`earth-reference-v7-v7-capacity-slot-202-ea99d888caf4`、SHA-256=`a9570e7c1e0ca443813a9a4a3bb10a5961b76965330d5064c5c8b425fef6539e`。split=`challenge`、景观=`dry-dipterocarp-woodland`、季节=`wet_season`；独立泰国测量窗口、连接、主题、细节身份、全历史新颖性、23通道、完整地图范围和`focal_area=0`门禁全部通过。现实精确几何带入=0、历史RGB读取=0。条件包57/64、还差7个，RGB=0/64、GPU=0；下一项为`slot-203`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-201无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-201-2026-07-29T07-35-24-464Z`、conditionId=`earth-reference-v7-v7-capacity-slot-201-79c0ccf3d084`、SHA-256=`d602f2645ba8dbe8be753031f27e695e443c2e0bc71733d4c91845024bf90436`。split=`validation`、景观=`bamboo-grove`、季节=`dry_to_wet_transition`；独立泰国测量窗口、连接、主题、细节身份、全历史新颖性、23通道、完整地图范围和`focal_area=0`门禁全部通过。现实精确几何带入=0、历史RGB读取=0。条件包56/64、还差8个，RGB=0/64、GPU=0；下一项为`slot-202`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-200无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-200-2026-07-29T07-25-28-492Z`、conditionId=`earth-reference-v7-v7-capacity-slot-200-2453214a07ac`、SHA-256=`e70baeabd3b9b923bd8d5529828d04689268ba5928b67bcbbc78b099f6e207e7`。split=`validation`、景观=`forested-low-mountain`、季节=`dry_season`；独立泰国测量窗口、连接、主题、细节身份、全历史新颖性、23通道、完整地图范围和`focal_area=0`门禁全部通过。现实精确几何带入=0、历史RGB读取=0。条件包55/64、还差9个，RGB=0/64、GPU=0；下一项为`slot-201`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-199无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-199-2026-07-29T07-18-06-823Z`、conditionId=`earth-reference-v7-v7-capacity-slot-199-a65aee175280`、SHA-256=`f89d61f9032738b346f24b87763e651506265b5bc25da549a11c0d11ec7d5768`。split=`validation`、景观=`grassland-forest-transition`、季节=`wet_to_dry_transition`；独立泰国测量窗口、连接、主题、细节身份、全历史新颖性、23通道、完整地图范围和`focal_area=0`门禁全部通过。现实精确几何带入=0、历史RGB读取=0。条件包54/64、还差10个，RGB=0/64、GPU=0；下一项为`slot-200`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-198无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-198-2026-07-29T07-08-51-057Z`、conditionId=`earth-reference-v7-v7-capacity-slot-198-cf3efb3de859`、SHA-256=`23fde51a857ab28371bbed3975119c5fdcb9d4ed4ceda5b6573640eb1f321fed`。split=`validation`、景观=`grassland-forest-transition`、季节=`wet_season`；独立泰国测量窗口、连接、主题、细节身份、全历史新颖性、23通道、完整地图范围和`focal_area=0`门禁全部通过。现实精确几何带入=0、历史RGB读取=0。条件包53/64、还差11个，RGB=0/64、GPU=0；下一项为`slot-199`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-197无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-197-2026-07-29T07-00-49-975Z`、conditionId=`earth-reference-v7-v7-capacity-slot-197-7a9dd9b64762`、SHA-256=`3f981a6d1cfa2439414f0fa8c45dd02acae8949be373de106c19b1caff526e32`。split=`validation`、景观=`tropical-forest-glade`、季节=`dry_to_wet_transition`；独立泰国测量窗口、连接、主题、细节身份、全历史新颖性、23通道、完整地图范围和`focal_area=0`门禁全部通过。现实精确几何带入=0、历史RGB读取=0。条件包52/64、还差12个，RGB=0/64、GPU=0；下一项为`slot-198`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-196无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-196-2026-07-29T06-50-54-834Z`、conditionId=`earth-reference-v7-v7-capacity-slot-196-6a9629fbca81`、SHA-256=`5c54f023d3c3d34ba9cd3b2889756fe84c37cc9843e84de9b4de8bff5a7bc649`。split=`validation`、景观=`seasonal-evergreen-semi-evergreen-forest`、季节=`dry_season`；独立泰国测量窗口、连接、主题、细节身份、全历史新颖性、23通道、完整地图范围和`focal_area=0`门禁全部通过。现实精确几何带入=0、历史RGB读取=0。条件包51/64、还差13个，RGB=0/64、GPU=0；下一项为`slot-197`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-195无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-195-2026-07-29T06-43-22-972Z`、conditionId=`earth-reference-v7-v7-capacity-slot-195-fd582468ba98`、SHA-256=`2b10023d2d72f9007a348e89f2203df34066b929e959e61013fead9f39c7408a`。split=`validation`、景观=`seasonal-evergreen-semi-evergreen-forest`、季节=`wet_to_dry_transition`；独立泰国测量窗口、连接、主题、细节身份、全历史新颖性、23通道、完整地图范围和`focal_area=0`门禁全部通过。现实精确几何带入=0、历史RGB读取=0。条件包50/64、还差14个，RGB=0/64、GPU=0；下一项为`slot-196`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-194通用支流弧度修复与无RGB条件闭合
+
+项目所有者以“允许”批准只扩展内部支流通用测量弧度候选搜索。首次构建因固定弧度比例`1.96`无法同时通过曲流度上限与内岸弯曲半径而失败；runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-194-2026-07-29T06-20-43-456Z`、failure SHA-256=`4115e1d176285926270e44ea18f653b8e5088c09924f0387e995875fdcd540c0`作为不可变证据保留。通用修复只审核既有`0.55`至`1.8`候选并保留`1.96`，不修改泰国事实、连接契约、23通道或任何审核阈值，也不读取槽位编号、历史几何或历史RGB。
+
+最终runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-194-2026-07-29T06-34-12-308Z`、conditionId=`earth-reference-v7-v7-capacity-slot-194-e26f0b5e29dc`、SHA-256=`91ef46399616f62255aa120ffff688a6484867adb51775b99c25ba5cedc9d6e1`。景观=`wet-season-drainage-hollow`、季节=`wet_season`；选定弧度比例=`0.68`、支流曲流度=`1.234338`、最小弯曲半径比例=`1.152682`，全部原阈值与独立检查通过。条件包49/64、还差15个，RGB=0/64、GPU=0；下一项为`slot-195`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-193无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-193-2026-07-29T06-12-57-295Z`、conditionId=`earth-reference-v7-v7-capacity-slot-193-d48b35223281`、SHA-256=`f50d6b2ef050178b9df84dbad86f5cd69071ae736153010ac8eed0e8006580e9`。景观=`tropical-forest-glade`、季节=`dry_to_wet_transition`；独立泰国测量窗口、连接、主题、细节身份、全历史新颖性、23通道、完整地图范围和`focal_area=0`门禁全部通过。现实精确几何带入=0、历史RGB读取=0。条件包48/64、还差16个，RGB=0/64、GPU=0；下一项为`slot-194`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-192无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-192-2026-07-29T06-01-03-932Z`、conditionId=`earth-reference-v7-v7-capacity-slot-192-5ceac7540d1c`、SHA-256=`0d35e7e50978943fb031fd2936febe6d3b739411878305ba7228949c0b412583`。景观=`forested-low-mountain`、季节=`dry_season`；与同类前置槽位仍分别绑定独立泰国测量窗口、连接、主题与细节身份，全历史新颖性、23通道、完整地图范围和`focal_area=0`门禁全部通过。现实精确几何带入=0、历史RGB读取=0。条件包47/64、还差17个，RGB=0/64；下一项为`slot-193`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-191无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-191-2026-07-29T05-46-51-607Z`、conditionId=`earth-reference-v7-v7-capacity-slot-191-71b6e11c2f2e`、SHA-256=`90602cd515927ef2f7592298f273fc122d8270c1f25a2419018d7cfa6638171f`。景观=`forested-low-mountain`、季节=`wet_to_dry_transition`；23通道、完整地图范围、`focal_area=0`、来源、独立连接、主题与细节身份及全历史新颖性门禁全部通过，现实精确几何带入=0、历史RGB读取=0。条件包46/64、还差18个，RGB=0/64；下一项为`slot-192`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-190匿名分汊曲流修复与无RGB条件闭合
+
+项目所有者以“继续”批准只修复通用匿名分汊河道曲率构建能力，保持泰国测量事实、世界连接契约、边界端口、23通道和全部审核阈值不变。原始失败runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-07-29T04-47-37-729Z`、failure SHA-256=`0bb4ac38db9dc7c7ed57d517c2646326f030501f6a52727e095eb7203922e8f1`；宽弧被匿名边界裁平的修复试算失败runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-07-29T05-23-19-132Z`、failure SHA-256=`66ea77c1815a7e38269cc5167e8bcf0a07617b0255d5ba2784be9681b9458cfb`。两次失败均保持RGB=0、GPU=0并作为不可变证据保留。
+
+最终通用方法只在测量选择侧匿名边界空间不足时按可用空间重映射内部弧向，仍消费全部八段泰国DEM/D8支撑，不读取槽位编号、历史几何或历史RGB，也未降低任何阈值。最终runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-190-2026-07-29T05-29-15-762Z`、conditionId=`earth-reference-v7-v7-capacity-slot-190-fa2d04c6c3fc`、SHA-256=`394625711319289d2b4284903748eafcefb4830af220f0671b74495e50d3ccee`。景观=`wet-season-drainage-hollow`、季节=`wet_season`；分汊曲流度=`1.225397`，全部无RGB门禁和独立检查通过。条件包45/64、还差19个，RGB=0/64；下一项为`slot-191`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-189无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-189-2026-07-29T04-24-44-599Z`、conditionId=`earth-reference-v7-v7-capacity-slot-189-42435c0390b3`、SHA-256=`8cae9f764e0dde4f7bc6c8c98d60e913ae65f4118bdc72ab6c0f529b3f495826`。景观=`bamboo-grove`、季节=`dry_to_wet_transition`；全部无RGB门禁通过。条件包44/64、还差20个，RGB=0/64；下一项为`slot-190`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-188无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-188-2026-07-29T04-23-15-906Z`、conditionId=`earth-reference-v7-v7-capacity-slot-188-feacb5c81d48`、SHA-256=`d4a0a02d8c96dbf2eda6d9abb9d1c5a9cb3ac8f0604e3bcad322aa4f58b2c02c`。景观=`grassland-forest-transition`、季节=`dry_season`；全部无RGB门禁通过。条件包43/64、还差21个，RGB=0/64；下一项为`slot-189`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-187无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-187-2026-07-29T04-21-46-184Z`、conditionId=`earth-reference-v7-v7-capacity-slot-187-28f5c795bd7d`、SHA-256=`ba3026f6424cdcca7ce4a5d80ae6b83dd2fc93597bc6e34e45f4e32d51497e5b`。景观=`grassland-forest-transition`、季节=`wet_to_dry_transition`；全部无RGB门禁通过。条件包42/64、还差22个，RGB=0/64；下一项为`slot-188`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-185至186无RGB条件连续闭合
+
+`slot-185` conditionId=`earth-reference-v7-v7-capacity-slot-185-b3329fcce28b`，SHA-256=`63acc8a01ccae9fe45e0d171c464f1851bdbf10fbfcb82172e829ace58685462`；`slot-186` runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-186-2026-07-29T04-19-53-230Z`、conditionId=`earth-reference-v7-v7-capacity-slot-186-df4a7964e5db`、SHA-256=`533e82c7d48b715b55b474b950ec30b38f9615d9beec6514b1310d0e09dab4ec`。两槽全部无RGB门禁通过。条件包41/64、还差23个，RGB=0/64；下一项为`slot-187`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-184无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-184-2026-07-29T04-07-10-975Z`、conditionId=`earth-reference-v7-v7-capacity-slot-184-e62e597b4849`、manifest SHA-256=`dac1a7a4adf41b3ef2eb03b534d7e98396c51830a290a630e5c690b5331151cb`。景观=`seasonal-evergreen-semi-evergreen-forest`、季节=`dry_season`；全部无RGB门禁通过。条件包39/64、还差25个，RGB=0/64。下一项为`slot-185`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-183无RGB条件闭合
+
+runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-183-2026-07-29T04-05-32-763Z`、conditionId=`earth-reference-v7-v7-capacity-slot-183-5f99e62cd578`、manifest SHA-256=`87d5cf6e8951a860dbc4e9033859966aa5de6f6bd0fd3540c3732aebced6766a`。景观=`bamboo-grove`、季节=`wet_to_dry_transition`；全部无RGB门禁通过。条件包38/64、还差26个，RGB=0/64。下一项为`slot-184`。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-182无RGB条件闭合
+
+`v7-capacity-slot-182`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-182-2026-07-29T04-01-50-493Z`、conditionId=`earth-reference-v7-v7-capacity-slot-182-ed117d06fcce`、manifest SHA-256=`de44121ab9a1cece7c3cc81ab0d6a854c1b26f76840f71ce4e57a0cec6b55388`。景观为`forested-low-mountain`、季节为`wet_season`；全部无RGB门禁通过。RGB与GPU均为0。
+
+当前条件包进度37/64、还差27个；合规RGB训练容量仍为0/64。下一项是`slot-183`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-181无RGB条件闭合
+
+`v7-capacity-slot-181`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-181-2026-07-29T03-59-38-734Z`、conditionId=`earth-reference-v7-v7-capacity-slot-181-603f54a6bfaa`、manifest SHA-256=`d7f44d5e486317d8da75fe58ad88ca6afc6330842976f1e26e871c6f28f7d6d1`。该train槽位由自身泰国测量事实派生为`dry-dipterocarp-woodland`和`dry_to_wet_transition`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`181`只完成条件准备，条件包进度36/64、还差28个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-182`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-180无RGB条件闭合
+
+`v7-capacity-slot-180`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-180-2026-07-29T03-56-11-138Z`、conditionId=`earth-reference-v7-v7-capacity-slot-180-66287cc3d045`、manifest SHA-256=`18b017ec62c9eec6e6bb0f85d069c87f46826b63c1bd839ca5eb3642b3a61246`。该train槽位由自身泰国测量事实派生为`seasonal-evergreen-semi-evergreen-forest`和`dry_season`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`180`只完成条件准备，条件包进度35/64、还差29个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-181`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-179无RGB条件闭合
+
+`v7-capacity-slot-179`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-179-2026-07-29T03-47-29-194Z`、conditionId=`earth-reference-v7-v7-capacity-slot-179-ff16f87ae958`、manifest SHA-256=`a1b9e01f52821436a8d95a25cfbc112da6083eb96813aa75faba74b157e590c5`。该train槽位由自身泰国测量事实派生为`forested-low-mountain`和`wet_to_dry_transition`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`179`只完成条件准备，条件包进度34/64、还差30个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-180`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-178无RGB条件闭合
+
+`v7-capacity-slot-178`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-178-2026-07-29T03-45-39-538Z`、conditionId=`earth-reference-v7-v7-capacity-slot-178-89305d8f2d40`、manifest SHA-256=`f99eda710a394acacad0c9c19d856a3e19396e7a103a0c1f912c6904631a2727`。该train槽位由自身泰国测量事实派生为`forested-low-mountain`和`wet_season`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`178`只完成条件准备，条件包进度33/64、还差31个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-179`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-177无RGB条件闭合
+
+`v7-capacity-slot-177`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-177-2026-07-29T03-44-00-351Z`、conditionId=`earth-reference-v7-v7-capacity-slot-177-573093a10286`、manifest SHA-256=`8f4487cb96a3d29aeb7df41b4617f410f9a5c9ef2774bf169420937fa695b940`。该train槽位由自身泰国测量事实派生为`dry-dipterocarp-woodland`和`dry_to_wet_transition`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`177`只完成条件准备，条件包进度32/64、还差32个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-178`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-176无RGB条件闭合
+
+`v7-capacity-slot-176`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-176-2026-07-29T03-42-22-315Z`、conditionId=`earth-reference-v7-v7-capacity-slot-176-feb30be8a4f2`、manifest SHA-256=`aaea7de29ffc61fc23cb2b8b92e2d54fabe7928877242e7314cb9e955a78bd65`。该train槽位由自身泰国测量事实派生为`forested-low-mountain`和`dry_season`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`176`只完成条件准备，条件包进度31/64、还差33个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-177`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-175无RGB条件闭合
+
+`v7-capacity-slot-175`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-175-2026-07-29T03-39-57-156Z`、conditionId=`earth-reference-v7-v7-capacity-slot-175-824651386964`、manifest SHA-256=`1d119d8b259a238889fea3002679001513ccf8cac612822298f0163cc8ac0048`。该train槽位由自身泰国测量事实派生为`dry-dipterocarp-woodland`和`wet_to_dry_transition`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`175`只完成条件准备，条件包进度30/64、还差34个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-176`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-174无RGB条件闭合
+
+`v7-capacity-slot-174`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-174-2026-07-29T03-36-50-218Z`、conditionId=`earth-reference-v7-v7-capacity-slot-174-94eae04391ed`、manifest SHA-256=`f7d396f6e373f4917d1ac9e6efb9ca58183ffef14ee5d786cabd2c419d1820e5`。该train槽位由自身泰国测量事实派生为`forested-low-mountain`和`wet_season`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`174`只完成条件准备，条件包进度29/64、还差35个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-175`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-173无RGB条件闭合
+
+`v7-capacity-slot-173`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-173-2026-07-29T03-34-44-554Z`、conditionId=`earth-reference-v7-v7-capacity-slot-173-fd4d8f71499b`、manifest SHA-256=`7d47e19b213a677561b36cc850ef9e14d6ff6ce013c0396dbabe4b8b341f424e`。该train槽位由自身泰国测量事实派生为`grassland-forest-transition`和`dry_to_wet_transition`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`173`只完成条件准备，条件包进度28/64、还差36个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-174`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-172无RGB条件闭合
+
+`v7-capacity-slot-172`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-172-2026-07-29T03-32-50-468Z`、conditionId=`earth-reference-v7-v7-capacity-slot-172-6a996f1c94e6`、manifest SHA-256=`8b6315162da1819c2421ab7c7801065f8671c0dcea54b941dcfe3e8042654e0a`。该train槽位由自身泰国测量事实派生为`seasonal-evergreen-semi-evergreen-forest`和`dry_season`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`172`只完成条件准备，条件包进度27/64、还差37个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-173`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-171无RGB条件闭合
+
+`v7-capacity-slot-171`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-171-2026-07-29T03-31-15-664Z`、conditionId=`earth-reference-v7-v7-capacity-slot-171-b692273e7e86`、manifest SHA-256=`eebf2c77821c827271d84a2fa10e3801099ae5e4156d54c6be1b4d09f513a0f7`。该train槽位由自身泰国测量事实派生为`grassland-forest-transition`和`wet_to_dry_transition`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`171`只完成条件准备，条件包进度26/64、还差38个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-172`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-170无RGB条件闭合
+
+`v7-capacity-slot-170`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-170-2026-07-29T03-29-40-175Z`、conditionId=`earth-reference-v7-v7-capacity-slot-170-535897efb478`、manifest SHA-256=`72883d2604b22f578046acc0603f0d9246e64cb96fd06ef9436adade98238cf0`。该train槽位由自身泰国测量事实派生为`forested-low-mountain`和`wet_season`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`170`只完成条件准备，条件包进度25/64、还差39个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-171`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-169无RGB条件闭合
+
+`v7-capacity-slot-169`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-169-2026-07-29T03-24-53-225Z`、conditionId=`earth-reference-v7-v7-capacity-slot-169-30dd0db126a1`、manifest SHA-256=`be36ee4348893e3bb5e72d3ccbe8cc0b45d363e1dfb3f29a7bc89d5a13b26a70`。该train槽位由自身泰国测量事实派生为`forested-low-mountain`和`dry_to_wet_transition`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`169`只完成条件准备，条件包进度24/64、还差40个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-170`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-168无RGB条件闭合
+
+`v7-capacity-slot-168`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-168-2026-07-29T03-20-13-685Z`、conditionId=`earth-reference-v7-v7-capacity-slot-168-149a7e7109b2`、manifest SHA-256=`a1554f520f77ea316409c1a40ff331cd587ee62cde419ab5b59f6135ce52ea15`。该train槽位由自身泰国测量事实派生为`dry-dipterocarp-woodland`和`dry_season`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`168`只完成条件准备，条件包进度23/64、还差41个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-169`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-167无RGB条件闭合
+
+`v7-capacity-slot-167`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-167-2026-07-29T03-13-56-294Z`、conditionId=`earth-reference-v7-v7-capacity-slot-167-ded69119ce82`、manifest SHA-256=`b047792cded78e8703a9da51ac92308e055d62d4e0f08cd99a76ee469e2071fd`。该train槽位由自身泰国测量事实派生为`tropical-forest-glade`和`wet_to_dry_transition`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`167`只完成条件准备，条件包进度22/64、还差42个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-168`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-166无RGB条件闭合
+
+`v7-capacity-slot-166`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-166-2026-07-29T03-12-21-259Z`、conditionId=`earth-reference-v7-v7-capacity-slot-166-f9e62b095fa4`、manifest SHA-256=`5e7f9a71697067916d018c11716a7653797e5c9cd3bd8ccf3c3242cb6fc04d02`。该train槽位由自身泰国测量事实派生为`seasonal-evergreen-semi-evergreen-forest`和`wet_season`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`166`只完成条件准备，条件包进度21/64、还差43个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-167`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-165无RGB条件闭合
+
+`v7-capacity-slot-165`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-165-2026-07-29T03-08-31-335Z`、conditionId=`earth-reference-v7-v7-capacity-slot-165-bd53548137b4`、manifest SHA-256=`d7e0ce8aadd0b3982fc83a92951dde3917ef4b80a3c2c23761f1a31f0a7bc85b`。该train槽位由自身泰国测量事实派生为`seasonal-evergreen-semi-evergreen-forest`和`dry_to_wet_transition`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`165`只完成条件准备，条件包进度20/64、还差44个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-166`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-164无RGB条件闭合
+
+`v7-capacity-slot-164`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-164-2026-07-29T03-04-58-663Z`、conditionId=`earth-reference-v7-v7-capacity-slot-164-fa21b716dc52`、manifest SHA-256=`ce2e3721b82da955463aa9a3f39d581dde8fd0f1c177173125be1a09b996cdb1`。该train槽位由自身泰国测量事实派生为`bamboo-grove`和`dry_season`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`164`只完成条件准备，条件包进度19/64、还差45个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-165`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-163无RGB条件闭合
+
+`v7-capacity-slot-163`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-163-2026-07-29T03-03-25-841Z`、conditionId=`earth-reference-v7-v7-capacity-slot-163-ebbf10c73520`、manifest SHA-256=`3d7e24eeff5ddb1f8aa430659714bcdbdf76b3c431dc425c3c9288d3752efa49`。该train槽位由自身泰国测量事实派生为`tropical-forest-glade`和`wet_to_dry_transition`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`163`只完成条件准备，条件包进度18/64、还差46个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-164`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-162无RGB条件闭合
+
+`v7-capacity-slot-162`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-162-2026-07-29T03-01-48-863Z`、conditionId=`earth-reference-v7-v7-capacity-slot-162-18529ba16b7b`、manifest SHA-256=`ea2e620ac423f3b28c6a2705d877a7377827f7a665bea933ea3387577be1488f`。该train槽位由自身泰国测量事实派生为`grassland-forest-transition`和`wet_season`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`162`只完成条件准备，条件包进度17/64、还差47个；合规RGB训练容量仍为0/64。下一项获批动作是`slot-163`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-161无RGB条件闭合
+
+`v7-capacity-slot-161`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-161-2026-07-29T02-53-42-848Z`、conditionId=`earth-reference-v7-v7-capacity-slot-161-2a78f62ac376`、manifest SHA-256=`1d409a04eb93511bdadac0476b474cb548b7f8e4eadf740c7ff0d3b79baabade`。该train槽位由自身泰国测量事实派生为`grassland-forest-transition`和`dry_to_wet_transition`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`161`只完成条件准备，合规RGB训练容量仍为0/64；下一项获批动作是`slot-162`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-160无RGB条件闭合
+
+`v7-capacity-slot-160`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-160-2026-07-29T02-50-28-234Z`、conditionId=`earth-reference-v7-v7-capacity-slot-160-6cd8605dcde2`、manifest SHA-256=`7b7e03a89eec1893dbfb62783aff52538d23f96329bcf2f5f630a4d4a51d7c77`。该train槽位由自身泰国测量事实派生为`forested-low-mountain`和`dry_season`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`160`只完成条件准备，合规RGB训练容量仍为0/64；下一项获批动作是`slot-161`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-159无RGB条件闭合
+
+`v7-capacity-slot-159`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-159-2026-07-29T02-46-13-778Z`、conditionId=`earth-reference-v7-v7-capacity-slot-159-5f15cd14eb37`、manifest SHA-256=`eb0be9fda07a453a1ebbfa659a513686ad72e8e67a3b6809b6803c71fe70ce96`。该train槽位由自身泰国测量事实派生为`dry-dipterocarp-woodland`和`wet_to_dry_transition`；测量、连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`159`只完成条件准备，合规RGB训练容量仍为0/64；下一项获批动作是`slot-160`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-158无RGB条件闭合
+
+`v7-capacity-slot-158`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-158-2026-07-29T02-41-29-443Z`、conditionId=`earth-reference-v7-v7-capacity-slot-158-1075ea428855`、manifest SHA-256=`2cb617b017dbc67ec7bb25d950df28d92c5ba188ff68f121569bfb5daab7ede1`。该train槽位由自身测量事实派生为`forested-low-mountain`和`wet_season`；即使类型与季节重复，测量、连接、主题、细节和全历史新颖性仍独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`158`只完成条件准备，合规RGB训练容量仍为0/64；下一项获批动作是`slot-159`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAAA. 2026-07-29 slot-157无RGB条件闭合
+
+`v7-capacity-slot-157`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-157-2026-07-29T02-38-42-283Z`、conditionId=`earth-reference-v7-v7-capacity-slot-157-7ce7d5578279`、manifest SHA-256=`3a14340d111398cd0d666ac067dc81fa66a7c7687ba0403a254e3b4da0182260`。该train槽位由自身测量事实派生为`grassland-forest-transition`和`dry_to_wet_transition`；独立测量、连接、主题、细节、全历史新颖性和全部正式条件门禁通过。RGB与GPU均为0。
+
+当前`slot-146`至`157`只完成条件准备，合规RGB训练容量仍为0/64；下一项获批动作是`slot-158`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAAA. 2026-07-29 slot-156无RGB条件闭合
+
+`v7-capacity-slot-156`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-156-2026-07-29T02-27-50-520Z`、conditionId=`earth-reference-v7-v7-capacity-slot-156-a258a86d953b`、manifest SHA-256=`d04f3de393722e42967d402c2d176be8ace87651dbd62e2f7ba12e44db4509fb`。该train槽位由自身测量事实派生为`seasonal-evergreen-semi-evergreen-forest`和`dry_season`；独立测量、连接、主题、细节、全历史新颖性和全部正式条件门禁通过。RGB与GPU均为0。
+
+当前`slot-146`至`156`只完成条件准备，合规RGB训练容量仍为0/64；下一项获批动作是`slot-157`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAAA. 2026-07-29 slot-155无RGB条件闭合
+
+`v7-capacity-slot-155`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-155-2026-07-29T02-23-28-292Z`、conditionId=`earth-reference-v7-v7-capacity-slot-155-2792561c5b21`、manifest SHA-256=`dc4713cab8313a60967860de11f6c28fb71041d7d8c5c563740c655be1959868`。该train槽位由自身测量事实派生为`grassland-forest-transition`和`wet_to_dry_transition`；即使类型与季节重复，测量窗口、独立连接、主题、细节和全历史新颖性均独立通过。RGB与GPU均为0。
+
+当前`slot-146`至`155`只完成条件准备，合规RGB训练容量仍为0/64；下一项获批动作是`slot-156`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAAA. 2026-07-29 slot-154无RGB条件闭合
+
+`v7-capacity-slot-154`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-154-2026-07-29T02-20-45-628Z`、conditionId=`earth-reference-v7-v7-capacity-slot-154-b48c8835876c`、manifest SHA-256=`a163cfd9c88393df785298796cc2c05ac11fc37d26313af4377b05a7da4aec45`。该train槽位由自身测量事实派生为`tropical-forest-glade`和`wet_season`；测量窗口、独立连接、主题与细节身份及全历史新颖性均独立通过。完整地图、23通道、来源、hash和SQLite门禁通过，RGB与GPU均为0。
+
+当前`slot-146`至`154`只完成条件准备，合规RGB训练容量仍为0/64；下一项获批动作是`slot-155`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAAA. 2026-07-29 slot-153无RGB条件闭合
+
+`v7-capacity-slot-153`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-153-2026-07-29T02-16-31-224Z`、conditionId=`earth-reference-v7-v7-capacity-slot-153-e324b3035843`、manifest SHA-256=`7a23ad57cc9bf842615f7a9a81ffcb78332a3b221a097ad2874b86693e808b74`。该train槽位由自身测量事实派生为`forested-low-mountain`和`dry_to_wet_transition`；与同类slot-146之间保持独立测量窗口、区域连接、主题架构和实例细节，全历史新颖性与其他正式门禁通过。RGB与GPU均为0。
+
+当前`slot-146`至`153`只完成条件准备，合规RGB训练容量仍为0/64；下一项获批动作是`slot-154`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAAA. 2026-07-29 slot-152无RGB条件闭合
+
+`v7-capacity-slot-152`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-152-2026-07-29T02-13-38-343Z`、conditionId=`earth-reference-v7-v7-capacity-slot-152-22c370f8a958`、manifest SHA-256=`de0192ad391c1b0b9ae682d103bede92d0f0cc4784872cbc43c341d6635714bb`。该train槽位由自身测量事实派生为`tropical-forest-glade`和`dry_season`；修复后的完整地图道路跨度、碰撞、独立连接、两层新颖性、23通道、来源、hash和SQLite检查全部通过。RGB与GPU均为0。
+
+当前`slot-146`至`152`只完成条件准备，合规RGB训练容量仍为0/64；下一项获批动作是`slot-153`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAAA. 2026-07-29 slot-151道路跨度修复闭合
+
+项目所有者已明确允许只修正匿名道路端口到内部入口的跨度方法，保持测量窗口、WorldFacts、连接身份和`0.35`审核阈值不变。程序将独立区域PathGraph内部入口纵深改为由当前测量指纹派生的`0.40–0.72`，并修复无水体匿名道路未消费该PathGraph入口的根因；不再使用旧硬编码上部、下部或横向起点。64槽位定向回归确认纵深范围为`0.401367–0.719727`，区域blueprint ID、端口ID和审核阈值没有改变。
+
+第一次修复重试`earth-geospatial-v7-slot-condition-v7-capacity-slot-151-2026-07-29T02-01-37-469Z`仍失败，原因是道路生成器尚未消费新入口并产生碰撞重叠；失败证据保留。最终runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-151-2026-07-29T02-03-48-993Z`、conditionId=`earth-reference-v7-v7-capacity-slot-151-b0bfa3256c3a`、manifest SHA-256=`827b781528c570f4458097412c3a4610e5322bcb17f7491af432330c7f18f4dc`通过全部无RGB检查。最终道路跨度=`0.478516`、碰撞重叠=0；23通道、完整地图范围、来源、独立连接、两层新颖性、hash和SQLite均通过。
+
+当前`slot-146`至`151`只完成条件准备，合规RGB训练容量仍为0/64；下一项获批动作是`slot-152`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAAAA. 2026-07-29 slot-151完整地图道路跨度阻断
+
+`v7-capacity-slot-151`无RGB条件构建在正式完整地图范围审核处失败关闭。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-151-2026-07-29T01-56-37-540Z`，失败证据SHA-256=`8cd4057f6a7feddae6d8b4e9bb6cc2cda9efc2be1a713b247ba64590282c0a62`。道路栅格包围盒为`325×118`，最大归一化跨度=`0.317383`，低于既有完整地图阈值`0.35`，因此命中`complete_map_route_span_too_local`和`local_scene_not_complete_map`。道路已连接左侧合法区域端口，自然度审核通过；构图新颖性比较112个历史槽位并通过，未命中镜像、旋转或共享道路骨架。
+
+该失败发生在RGB之前，RGB和GPU均为0。当前不得降低审核阈值、切换测量窗口、随机重试、硬拉历史道路或跳到slot-152。唯一待授权修复范围是：保持当前WorldFacts、景观、季节、独立连接身份和审核阈值不变，仅让匿名道路生成方法保证从当前合法区域端口向内部延伸到完整地图所需跨度；获得项目所有者明确允许后才能修改并重试slot-151。
+
+## 0-AAAAAAAAAAA. 2026-07-29 slot-150无RGB条件闭合
+
+`v7-capacity-slot-150`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-150-2026-07-29T01-54-37-993Z`、conditionId=`earth-reference-v7-v7-capacity-slot-150-99d6a20b8bc4`、manifest SHA-256=`e0aa1ddc122d3a966ccf5662e642a68235674cefab9a88694550165a4a46d624`。该train槽位由自身测量事实派生为`tropical-forest-glade`和`wet_season`；与同类slot-149之间的独立测量窗口、区域连接、主题架构、实例细节及跨槽位新颖性检查通过。23通道、完整地图、来源边界、hash和SQLite证据闭合，RGB与GPU均为0。
+
+当前`slot-146`至`150`只完成条件准备，合规RGB训练容量仍为0/64；下一项获批动作是`slot-151`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAAA. 2026-07-29 slot-149无RGB条件闭合
+
+`v7-capacity-slot-149`无RGB条件包已完成并通过独立检查。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-149-2026-07-29T01-52-54-165Z`、conditionId=`earth-reference-v7-v7-capacity-slot-149-37d101ef8c7b`、manifest SHA-256=`2a9a3e9fded969c8b644853906c83af0c7aba0e78a6695a13041be6aa2ba8463`。该train槽位由自身测量事实派生为`tropical-forest-glade`和`dry_to_wet_transition`；独立区域连接、两层结构身份、跨槽位新颖性、23通道、完整地图范围、来源边界、hash及SQLite检查通过。RGB与GPU均为0。
+
+当前`slot-146`至`149`只完成条件准备，合规RGB训练容量仍为0/64；下一项获批动作是`slot-150`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAAA. 2026-07-29 slot-148无RGB条件闭合
+
+`v7-capacity-slot-148`无RGB条件包已完成并独立检查通过。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-148-2026-07-29T01-50-50-442Z`、conditionId=`earth-reference-v7-v7-capacity-slot-148-86c122f8c0dc`、manifest SHA-256=`fc17b2fd59673fb19dfec681d168caadbd53361765eef8a63fa8dd0965f66b23`。该train槽位由自身测量事实派生为`grassland-forest-transition`和`dry_season`；与同类slot-147之间的独立来源、区域连接、主题架构、实例细节和跨槽位构图新颖性均通过。23通道、完整地图、`focal_area=0`、来源边界、hash和SQLite检查通过，RGB与GPU均为0。
+
+当前`slot-146`至`148`只完成条件准备，合规RGB训练容量仍为0/64；下一项获批动作是`slot-149`无RGB条件构建与独立检查。
+
+## 0-AAAAAAAA. 2026-07-29 slot-147无RGB条件闭合
+
+`v7-capacity-slot-147`无RGB条件包已由正式程序构建并独立检查通过。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-147-2026-07-29T01-48-38-714Z`、conditionId=`earth-reference-v7-v7-capacity-slot-147-37e388ad0aac`、manifest SHA-256=`1a91521338053873e15cd56ecd269b4351bbef2bae7c5c8d47d590d0f1930bb9`。该train槽位由自身测量窗口事实派生为`grassland-forest-transition`，季节=`wet_to_dry_transition`；23通道、完整地图范围、`focal_area=0`、独立真实地球来源包、独立区域连接、现实精确几何不带入、历史RGB不读取、跨槽位新颖性、hash和SQLite检查均通过。
+
+该结果只闭合条件准备，不是RGB训练样本。`slot-146`和`147`均未生成RGB，当前合规训练容量仍为0/64；下一项获批动作是按顺序构建并检查`slot-148`无RGB条件包。
+
+## 0-AAAAAAA. 2026-07-29 新64槽位首个无RGB条件闭合
+
+`v7-capacity-slot-146`无RGB条件包已由正式程序构建并独立检查通过。runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-146-2026-07-29T01-46-39-731Z`、conditionId=`earth-reference-v7-v7-capacity-slot-146-e4cd4599e751`、manifest SHA-256=`8f6ec17d84afa04404bac0cf18fdcb6ed3fffc70b856105bd0e3ff8ed6004ca4`。该槽位为train、`forested-low-mountain`、`wet_season`；23通道、完整地图范围、`focal_area=0`、独立真实地球来源包、独立区域连接、现实精确几何不带入、历史RGB不读取、跨槽位新颖性、hash和SQLite检查均通过，索引38个artifact和2条程序事件。
+
+该结果只证明`slot-146`条件准备完成，不能计为RGB训练样本或当前容量贡献。当前合规容量仍为0/64，RGB和GPU均为0。既有有界授权允许继续按顺序构建`slot-147`的无RGB条件包；`slot-146`及后续任何RGB仍须项目所有者逐张明确授权。
+
+## 0-AAAAAA. 2026-07-29 泰国MVP可证实景观子集与64槽位逐窗派生
+
+项目所有者以“允许”批准：首次泰国MVP只使用当前Sakaerat/Wang Nam Khiao正式真实地球数据包能够证明的景观类型，不为满足旧20类目录而虚构当前无来源证据的生态类型。当前活动子集固定为7类：季节常绿/半常绿林、干旱龙脑香林、竹林、热带林间隙、草地森林过渡、雨季排水洼地和低山森林。旧目录其余13类继续保留为未来增强目标；启用前必须新增相应地区或生态类型的正式来源包并另行获得项目所有者批准。
+
+64个新槽位的景观身份已经由各自测量窗口的相对高程、相对起伏、平均坡度、树木覆盖、草地覆盖、季风阶段及批准的区域生态事实逐窗派生，禁止按容量配额分配。最新容量runId=`ai-assisted-v7-data-capacity-plan-2026-07-29T01-39-06-016Z`、SHA-256=`96432fbe01419c28addecf989e9c0d60c71162abd8879980dd00922a8f94c800`；窗口计划runId=`earth-geospatial-v7-mvp-window-plan-rebuild64-2026-07-29T01-39-06-016Z`、SHA-256=`4f9dcb79b1ca1c140de2220dc0b43c545e89da0818dbb8d36934f40daf7dd813`。64/64派生完成，64个窗口、直接指纹和变换规范指纹全部唯一，重叠对=0；split为48/8/4/4。实际测量结果分布为：`forested-low-mountain` 17、`grassland-forest-transition` 13、`tropical-forest-glade` 12、`seasonal-evergreen-semi-evergreen-forest` 8、`dry-dipterocarp-woodland` 7、`bamboo-grove` 5、`wet-season-drainage-hollow` 2。
+
+当前状态为`authorized_rebuild64_world_facts_derived_condition_preparation_ready`，当前合规训练容量仍为0/64。唯一获批的执行范围是按`v7-capacity-slot-146`至`209`逐槽构建和独立检查无RGB条件包；不得自动批量出图。每槽必须有自己的真实地球来源包、独立训练区域身份、独立世界连接、WorldFacts、World Director、完整地图任务和正式23通道，并通过完整地图范围、`focal_area=0`、来源与许可、精确现实几何不带入、历史RGB不读取、主题架构唯一、实例细节唯一、镜像/旋转/共享骨架阻断、全历史新颖性、hash、split隔离和SQLite证据检查。任何RGB仍须项目所有者逐张明确授权；64张合规数据与全部审计闭合前不得启动V7 GPU训练、RuntimeFrame或`/world`。
+
+## 0-AAAAA. 2026-07-29 连接实例被误用为全局模板的文档修正
+
+项目所有者已批准隔离历史40条并重建64条。隔离runId=`ai-assisted-v7-legacy-connectivity-capacity-isolation-2026-07-29T01-28-10-947Z`、SHA-256=`c76d7bb4069872a6a73eda5643af17050e3ffd034df4e6c265143c1e7ba75b05`；容量计划runId=`ai-assisted-v7-data-capacity-plan-2026-07-29T01-29-55-597Z`、SHA-256=`3613fa77f91fe71e7f4799992d617ef12ed4b72681e7e769ea97425d40a5c5f1`；64窗口计划runId=`earth-geospatial-v7-mvp-window-plan-rebuild64-2026-07-29T01-29-55-597Z`、SHA-256=`28b966105876a2724d4a218a812d76bfc6014d410085de45a0299ae83491c955`。
+
+新槽位为`v7-capacity-slot-146`至`209`，split为48/8/4/4。64个窗口互不重叠，直接与变换规范指纹全部唯一，并位于泰国批准边界内；当前合规容量0/64。景观身份不得按容量配额硬填，必须逐窗从事实派生。旧20类覆盖要求包含当前Sakaerat事实包未证明的沼泽、芦苇湿地和石灰岩等类型，因此当前在生态覆盖范围决定处失败关闭：项目所有者须选择把泰国首次MVP收窄到该包可证明的类型，或先补充批准的泰国多生态数据包。RGB=0、GPU=0。
+
+项目所有者确认导致连续两天训练图主体架构趋同的更上游根因：当前文档和实现把具体运行区域`mainland-southeast-asia-earth-reference-natural-home-region-0001-v1`的“北入南出、东侧相邻/共享水系、南侧道路连接”错误延伸成了所有V7训练槽位的固定连接语义。此前只改变内部曲线、8带锚点或道路候选，仍保留相同边界方向，因此不能从根本上形成不同自主世界。
+
+2026-07-29 09:20:00 +08:00程序完成修订后首轮全历史重审。条件审计runId=`ai-assisted-v7-qualified-condition-topology-audit-2026-07-29T01-18-43-568Z`、SHA-256=`229ec90d07aea110722c24d2141d9ae25527a571f70a314c7acc56165d7adc6b`，对修订前40条容量记录逐条检查真实地球来源包、具体区域连接、世界图连接、主题架构身份、实例细节身份及全历史条件重复：通过0条。40条全部缺少正式来源包、全部复用`region-0001`具体实例、全部仍携带旧`home_center`、全部缺少两层结构身份；23条命中主题架构重复，18条命中实例细节重复。
+
+RGB诊断runId=`ai-assisted-v7-qualified-topology-diagnosis-2026-07-29T01-19-47-732Z`、SHA-256=`bef7906e1d9c96ed38979c6d31f461c4ac72e87fdfc597d7004c4e23a10ba82f`，确认3个当前历史容量碰撞组与4条重复超额记录。审计仅读取历史条件和RGB用于比较，未把历史RGB送入生成器，未生成新RGB、未修改历史审核与容量记录、未启动GPU、RuntimeFrame或`/world`。
+
+因此修订前40/64只作为不可变历史统计保留，`historicalQualifiedCountIsCurrentTrainingTruth=false`；修订后`structurallyReverifiedTrainingTruthCount=0`，状态=`failed_connectivity_theme_and_detail_reaudit`。不得伪造来源或事后重绑连接恢复旧样本资格。下一动作必须等待项目所有者决定历史40条的隔离/失败学习处置和新的合规容量建设范围；不得自动进入slot-124 RGB或V7 GPU训练。
+
+本节立即覆盖本文档中所有“后续训练槽位仍须保持南北水口、东侧共享水口和南侧道路口不变”的当前执行解释。历史run、授权、图片、条件、hash和审核记录保持不可变，只作为当时过程证据；不得再据此继续生成。
+
+正式作用域现固定为：
+
+1. `natural-home-large-world-connectivity-v1`只规定连接图的数据结构、端口配对、道路/水文/可走合法性、来源和审核，不规定所有区域使用相同方向。
+2. `region-0001-v1`的北入南出、东侧水系、南侧道路和西侧自然边界只约束该具体运行区域及其tick 3事实。
+3. V7每个训练槽位必须建立独立训练区域身份和独立连接实例。道路、水体是否存在、边界方向、流向、入口/出口、相邻关系和内部空间组织只能由该槽位当前WorldFacts、真实测量事实与区域生态事实决定。
+4. 无跨区域水系、封闭池塘、内部湿地、少水或无水区域不得继承`region-0001`水口；其他流向或道路连接不得被强制改写为北入南出与南侧道路。
+5. 除非任务明确表达的就是`region-0001`同一运行事实，训练槽位的`connectivityBlueprintId`、World Director、23通道、条件引导和提示词不得引用该实例；同一实例也不能重复贡献多个独立容量。
+6. 独立训练区域仍必须接入同一个大世界RegionGraph。每个区域至少具有一组与相邻区域完成双向配对的通行连接，并由PathGraph/WalkableGraph证明可达；方向和类型可以不同，但禁止孤立区域、悬空端口或仅凭RGB外观宣称连接。
+7. 唯一性门禁覆盖每一张新条件与新RGB，不限slot-124。主题架构必须在连接、水文、道路、分区、边界和整体层级上区别于全部历史；实例细节必须在具体轨迹、轮廓、对象实例/对象簇、密度、空隙和过渡上区别于全部历史。统一画风可以共享，具体内容不得重复。
+8. 长期世界事实必须来自当前区域对应的真实地球地图与地理测量包。当前Sakaerat / Wang Nam Khiao只允许服务泰国MVP区域；未来任何国家或地区必须建立自己的`RealEarthRegionSourcePackage`，不得继续套用泰国地形、水文、生态或连接事实。
+
+当前执行范围进一步固定为：
+
+```text
+longTermProductScope = real-earth multi-region autonomous world
+currentMvpRegionScope = Thailand / Sakaerat-Wang Nam Khiao
+currentApprovedRegionSourcePackageCount = 1
+automaticOtherCountryAcquisitionAllowed = false
+thailandPackageReusableOutsideThailand = false
+futureRegionRequiresOwnerScopeAndOwnSourcePackage = true
+```
+
+本节只锁定长期架构和当前MVP边界，不授权立即采集或建设其他国家。当前继续工作只能审计并修复泰国MVP数据链；其他地区必须在后续由项目所有者明确指定后另建来源包。
+
+slot-124修订前条件`earth-reference-v7-v7-capacity-slot-124-5fed7c9ee699`只是当前受影响记录之一，当前固定为`invalidated_pending_connectivity_scope_rebuild`。全体历史容量与所有未来槽位统一服从上述两层唯一性规则；修订前容量统计40/64继续作为历史数值保留，但当前可训练容量进入`pending_connectivity_theme_and_detail_reaudit`，逐条重审前不得声称仍有40张满足资格。
+
+本轮只完成文档修正，没有修改代码、没有生成RGB、没有启动GPU训练。下一步仍须项目所有者另行允许后，才能审计和修复条件构建代码、逐槽建立独立连接事实并重跑无RGB门禁。在此之前禁止新RGB、slot-124生成、V7 GPU训练、RuntimeFrame和`/world`。以下0-AAAA及更早内容均为历史过程证据；冲突时以本节为准。
+
+## 0-AAAA. 2026-07-29 固定共享骨架根因修复与 slot-124 无 RGB 闭环
+
+项目所有者命令扫描并修复“后续每次仍生成右侧大水系＋左侧道路同一家族”的代码根因，并明确要求该问题不得污染训练内容或后续出图。程序确认根因不是泰国数据包本身，而是生成器把世界连接端口继续扩展成内部共享三次曲线、把8条测量带压缩到同一中心目标、把道路候选限制在画布左侧，并且旧回归只比较哈希而没有比较栅格宏观结构。
+
+本轮只修改活动生成器与无 RGB 回归，不修改泰国Sakaerat/Wang Nam Khiao数据包、世界连接契约、南北水口、东侧共享水口、南侧道路口或任何审核阈值：
+
+- 主河道取消固定内部三次曲线；南北连接口只作为首尾边界约束，内部8带锚点由当前泰国测量窗口的8条DEM/D8直接支持、8条相对支持及其匿名测量摘要投影产生。当前版本为`thai-dem-d8-coarse-spatial-statistics-anonymous-river-network-profile-v14`、`measurement_derived_anonymous_multisegment_river_network_from_eight_quantized_dem_d8_bands_v17`。
+- 东侧共享水口不再靠“任意水面碰到右边缘”冒充满足；程序新增精确绑定该端口并汇入当前主河的独立横向支流，使用原水体自然度与内弯半径审核。
+- 道路由每个测量窗口生成16个覆盖全画布的两层候选起点，完成水体碰撞、未连接边界、自然边界余量和完整地图跨度审核后选择；不再固定在左侧候选区或沿水体包络复制。
+- 回归门禁新增真实中心线8带重心宏观签名与跨窗口平均距离检查；哈希不同但栅格骨架相同不能再通过。生成器仍固定`historicalRgbRead=false`、`historicalLayoutRead=false`、`mirrorOrRotationTransformApplied=false`。
+
+最终无 RGB 条件runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-124-2026-07-28T23-57-28-594Z`，conditionId=`earth-reference-v7-v7-capacity-slot-124-5fed7c9ee699`，按既有`owner-directed-v7-capacity-slot-124-seed-revision-1-20260727`身份链封装，正式23通道、完整地图范围、`focal_area=0`、来源与SQLite证据全部通过；东侧连接口精确绑定通过。语义条件引导SHA-256=`ada12d8188bc3d9989820cbc66e9009870a619137b5a4c63a17a0109f9f40541`。最终生成前全历史审核runId=`ai-assisted-pre-rgb-condition-guide-novelty-v7-capacity-slot-124-2026-07-28T23-57-48-887Z`、SHA-256=`be26169cff572638869f827bd6cb2b121f571e7451d6c994cb53eb99ae102677`比较121份历史完整地图条件引导，匹配0份并通过；未降低任何阈值。
+
+全窗口无 RGB 回归runId=`earth-geospatial-v7-relative-support-main-channel-repair-check-2026-07-29T00-01-39-161Z`、SHA-256=`5b1a4e25b6f2714ac55551813cec091e1bfbff79817180053243d01f051fc730`通过14/14项检查：20个具有完整水文支持的当前泰国窗口形成10种栅格宏观签名，最大成对内部8带重心距离为`0.324963`；slot-144与slot-145因测量支持不完整继续按原门禁阻断，不得以共享骨架补位。固定共享骨架回归runId=`earth-geospatial-v7-shared-skeleton-removal-check-2026-07-29T00-04-27-025Z`、SHA-256=`1056c2cd6a5ecf324ca8d6560cd5722ac51ab65b2306021c25417d4ab5f528f4`通过12/12项。
+
+后置RGB审核还完成历史原因码兼容修复：`owner_rejected_duplicate_macro_structure`只被规范化为既有`composition_duplicate`语义，所有相似度阈值保持不变。回归runId=`ai-assisted-pre-rgb-topology-gate-repair-check-2026-07-29T00-04-42-404Z`、SHA-256=`b912300e0170c7898ebcf307538c409bbdfe7009f164d5f32d7615e43bc434ee`确认slot-123 v1至v4四张重复RGB全部被后置构图门禁阻断；当前40张可信容量失败0张。
+
+本轮生成RGB=0、训练样本新增=0、GPU训练=0、RuntimeFrame=0、`/world`=0；当前可信容量仍为40/64、缺口24。slot-124当前只达到`complete_map_conditions_ready_rgb_authorization_required`，不得自动生成RGB。下一动作只能等待项目所有者针对conditionId=`earth-reference-v7-v7-capacity-slot-124-5fed7c9ee699`另行明确授权一张RGB；达到64张并完成全部数据、来源、身份、hash、去重与split隔离审计前不得启动本地V7 GPU训练。
+
+## 0-AAA. 2026-07-29 全部前置图片禁止成为新图生成依据
+
+项目所有者明确要求：禁止依据038或039继续画，也禁止依据任何其他前置图片继续画。该规则不是槽位名单，而是全项目、全历史、无例外的输入边界。所有历史完整地图RGB、历史条件引导、内部几何、道路/河网布局、构图骨架及其镜像、旋转或变形版本，只能进入独立的生成前/生成后查重审核，不得进入下一次生成请求、提示证据或图像引用。
+
+活动代码现执行`all-prior-project-images-audit-only-never-generation-input-v1`：
+
+- 生成器只允许读取与当前condition pack精确绑定的一份语义条件引导。
+- 仅允许正式文档定义的版本化聚合视觉标准提供统一的像素纹理、尺度、轮廓、光照和可读性语言；不得携带任何单张历史图片、历史路径、记录ID、内部几何或构图骨架。
+- 完整全历史审核明细只保存在审核证据中；生成请求只保留通过状态、比较数量、审核路径和SHA-256，不得转发历史记录ID、历史引导路径或比较指标。
+- 旧`--source-record-id`历史记录出图模式及已停止的V7连续批次出图入口已经关闭；缺少当前全历史输入边界的旧请求不得复用。
+- 生成前条件引导审核与生成后RGB审核均失败关闭；任一应比较历史对象缺失或不可读时，分别以`historical_condition_guide_comparison_incomplete`或`historical_complete_map_comparison_incomplete`阻断。
+
+只读全量核对以当前第039张不可变记录为候选：生成前比较120/120份历史条件引导、跳过0；生成后比较141/141张历史完整地图RGB、跳过0。后者补足没有条件引导的早期完整地图，因此全部前置图片都处于审核覆盖内。该核对不改变038失败或039通过。
+
+无RGB回归runId=`ai-assisted-all-history-generation-input-boundary-check-2026-07-28T22-13-17-416Z`，报告SHA-256=`31c47656b883cfa0222f3ae479946b39674d0c7020398a127518267e1a40e4cd`，17/17项通过，并把当前全历史实际读取覆盖写入不可变报告。`conditionPackageBuilt=false`、`RGB=false`、`GPU=false`、`RuntimeFrame=false`、`/world=false`。当前可信容量40/64、缺口24；下一动作仍须等待项目所有者明确命令，不得自动进入slot-124、构建新条件、出图或训练。
+
+## 0-AA. 2026-07-29 固定共享宏观骨架删除状态
+
+项目所有者命令把持续产生“右侧主河＋左侧道路＋固定南侧道路口”同一家族的生成机制删除干净。本轮没有物理删除不可变历史审核证据，没有改变038失败、039通过，也没有修改泰国数据、世界连接契约或审核阈值；删除范围只包括未来仍会复制该家族的活动生成代码。
+
+程序已经完成以下删除与替换：
+
+- 删除旧`buildGameGeometry`固定完整地图骨架，非测量槽位入口现在会在产生任何任务产物前阻断。
+- 删除道路沿当前水体左侧包络逐带跟随的算法及其专用曲线构造器。
+- 删除道路终点`x=96`的代码副本；南侧道路口只能从正式世界连接契约读取。
+- 删除固定`top/right/bottom`水体边界数组；实际占用边界从当前世界连接端口派生。
+- 删除“仅slot-123启用泰国8带粗水文”的单槽特判；所有需要水体的V7槽位统一读取各自当前泰国测量分配。
+- 删除固定道路候选起点格；每个槽位的8个匿名起点由该窗口的测量摘要、8带支撑和地形统计摘要计算出的指纹派生。
+- 道路现在在完整画布内独立生成候选，只用当前匿名水体多边形做碰撞拒绝，不再跟随水体任一侧包络；候选触碰未开放的地图边界时也会在生成前阻断。
+
+无RGB回归runId=`earth-geospatial-v7-shared-skeleton-removal-check-2026-07-28T21-59-30-739Z`，报告SHA-256=`c9120467a51cfa9e66f386de7bfb96821f4f8e8d01cac95bae91ea913ff9d807`，12/12项通过。回归读取当前三个不同泰国测量窗口，确认布局profile、道路计划及候选起点集合均不同，`fixedSharedSkeletonUsed=false`；禁止的固定包络、固定终点副本、旧共享骨架入口均为0。正式世界连接契约SHA-256仍为`59b9f1f68d9212f77bd66724b0e18339083555488732ce6d727e065cd760f1e8`；连接蓝图检查、道路自然性检查和文档治理检查均通过。
+
+正式连接契约仍要求北侧来水、南侧出水、东侧共享水道边界和南侧道路连接口。这些是地图外部连接事实，不能删除；本次修复保证它们只约束边界，不再决定内部河网与道路的整张宏观骨架。
+
+本轮`conditionPackageBuilt=false`、`RGB=false`、`GPU=false`、`RuntimeFrame=false`、`/world=false`。可信容量仍为40/64、缺口24；038保持失败证据，039保持项目所有者通过。当前唯一下一动作是等待项目所有者明确命令；不得自动进入slot-124、构建新条件、出图或启动训练。
+
+## 0-A. 2026-07-28 AI Painter接管、slot-123新条件与V7延迟训练授权状态
+
+项目所有者于2026-07-29明确命令“038改为失败，039是通过”。程序已通过正式owner审核入口把`ai-cold-start-v7-v7-capacity-slot-122-river-floodplain-v2`保留为第038张历史身份并改判为`owner_rejected`；当前记录`status=rejected`、`formalConditionalTrainingEligible=false`、`aiAssistedColdStartEligible=false`，slot-122旧容量贡献当前为`withdrawn_owner_rejected`。失败码=`owner_rejected_duplicate_macro_structure`。038图片、原机器审核和此前owner通过记录继续作为不可变历史及失败学习证据保存，但038不得进入训练正样本、当前容量、RuntimeFrame或`/world`。
+
+记录`ai-cold-start-v7-v7-capacity-slot-123-river-floodplain-v6`固定为自主生成训练原图第039张并通过，当前`ownerReviewStatus=owner_approved`、`status=ai_assisted_cold_start_eligible`、slot-123容量贡献=`registered`，训练派生图SHA-256=`9c20e05a7ba2a958cf84dfad289c98fc957d7d4cabe3bacb70febd8483bd2513`。039是本轮唯一通过图，不得改回038身份。
+
+最新数据包`natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-28T21-42-02-183Z`已重建并通过独立检查：038已从正样本数据包排除，039已进入；58条当前条件合格记录扣除18条既有暂停记录后，可信容量仍为40/64、缺口24。原图库检查通过。本轮没有再次生成RGB，没有启动GPU训练、RuntimeFrame或`/world`。下一动作只能等待项目所有者另行明确命令，不得自动进入slot-124或训练。以下原“等待slot-123单张RGB授权”状态已经完成并由本段覆盖，只作为历史证据保留。
+
+项目所有者于2026-07-29以“允许”把当前11×11泰国测量事实驱动的匿名道路修复扩展到匿名内部河网，并明确保持正式世界连接契约、北入南出与东侧共享水道边界、南侧道路连接口和全部审核阈值不变。授权ID=`owner-authorized-slot-123-measurement-driven-anonymous-river-network-repair-20260729`；授权runId=`earth-geospatial-v7-slot-123-anonymous-river-network-repair-authorization-2026-07-28T20-44-51-147Z`、SHA-256=`44e6d6f9edbb8f7c3b0fa1d24f788385979ece305351b0502053a7ba5557b5f3`。本授权不包含13×13、RGB、GPU训练、RuntimeFrame、`/world`或slot-124。
+
+匿名内部河网现由当前泰国窗口的8条DEM/D8直接支撑、8条相对支撑及其局部峰连续决定支流侧向、起点带横向支撑、汇流跨度和回水盆地数量/位置。正式几何方法=`aggregate_natural_facts_plus_optional_eight_band_quantized_dem_d8_lateral_and_relative_support_to_independent_anonymous_water_and_route_geometry_v33`，内部河网家族=`measurement_fact_driven_anonymous_eight_band_floodplain_river_network_v18`；`fixedSharedInternalRiverSkeletonUsed=false`、`historicalGeometryRead=false`、`historicalRgbRead=false`、`mirrorOrRotationTransformApplied=false`。世界连接端口和全部审核阈值未修改。
+
+最终无RGB条件runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-123-2026-07-28T21-20-48-776Z`、conditionId=`earth-reference-v7-v7-capacity-slot-123-e824fc7d58a2`通过完整地图条件独立检查：正式23通道、完整地图范围、`focal_area=0`、来源和SQLite索引均有效，精确现实/OSM几何带入=0、历史RGB读取=0。语义条件引导SHA-256=`606d24373d4be7c5e40efb48aa5a3e21eed1efc468b054659709d9d2435a9c20`，固定为非RGB、非训练目标、非正式候选和非游戏画面。
+
+最终全历史预RGB审核runId=`ai-assisted-pre-rgb-condition-guide-novelty-v7-capacity-slot-123-2026-07-28T21-21-11-405Z`、SHA-256=`df3b1c6889d21ec7341358c3a92fe30ad948de0a01a78cfc7d5e119905751cb5`比较120份历史完整地图条件引导，匹配0份并通过。相对历史v5，水体IoU=`0.643283`、8带水体质心距离=`0.056716`，在原阈值下`routeAndWaterTopologyDuplicate=false`；同时`macroTopologyDuplicate=false`、`transformDerivedDuplicate=false`、`strongCompositeSkeletonDuplicate=false`，没有使用镜像、旋转、共享骨架或阈值调整。
+
+38窗口无RGB回归runId=`earth-geospatial-v7-relative-support-main-channel-repair-check-2026-07-28T21-21-15-429Z`通过13/13项，报告SHA-256=`051b4be420f7a6743786dfc1067536ecf464708ca2667095276587d98f87ae71`；8个不满足既有测量支撑或自然度条件的窗口继续阻断。全量重复构图回归runId=`ai-assisted-pre-rgb-topology-gate-repair-check-2026-07-28T21-25-08-410Z`、SHA-256=`a33aa0f2840264ba19753983072f23692cf630e652031d9566513bfb04224a75`通过，slot-123 v1至v4继续全部阻断，当前40张可信容量失败0张。本轮RGB=0、GPU训练=0。
+
+当前容量仍为40/64、缺口24，slot-123状态固定为`complete_map_conditions_ready_rgb_authorization_required`。当前唯一下一动作是等待项目所有者针对conditionId=`earth-reference-v7-v7-capacity-slot-123-e824fc7d58a2`另行明确授权只生成一张RGB，并保持当前WorldFacts、世界连接契约、23通道和全部审核阈值不变。未获得该单张精确授权前，不得调用图像生成、进入slot-124、扩大13×13、继续修改河网或道路、启动GPU训练、RuntimeFrame或`/world`。以下04:37及更早状态作为不可变历史证据保留，与本段冲突时以本段为准。
+
+项目所有者于2026-07-29明确选择“修改匿名道路生成方法，但保持世界连接契约和审核阈值不变”，不选择13×13扩展，并命令开始执行。精确授权ID=`owner-authorized-slot-123-measurement-driven-anonymous-route-structure-repair-20260729`；授权runId=`earth-geospatial-v7-slot-123-anonymous-route-structure-repair-authorization-2026-07-28T20-28-00-425Z`、SHA-256=`0e9f9c125484a60984580bd90994224f7bcf422c0eaa1fc76bcffe1c90ffa7a9`。本轮只允许在当前11×11泰国测量范围内修复匿名内部道路宏观结构，不允许修改南侧道路端口、世界连接契约、审核阈值、河网、RGB、GPU、RuntimeFrame或`/world`。
+
+道路方法现固定为`aggregate_natural_facts_plus_optional_eight_band_quantized_dem_d8_lateral_and_relative_support_to_independent_anonymous_water_and_route_geometry_v20`：从当前测量窗口的8条DEM/D8横向支撑、8条相对支撑、坡度、起伏与排水概率派生完整地图道路起点、逐带退距和走廊跟随强度，不读取slot身份、重试seed、历史几何或历史RGB，不使用固定共享骨架。最终无RGB回归runId=`earth-geospatial-v7-relative-support-main-channel-repair-check-2026-07-28T20-37-31-773Z`通过13/13项，报告SHA-256=`09128af9f2f5297aa84ea72718ff8d2032c752fcfff3597d2d1108bcc9d07e49`。
+
+正式无RGB条件runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-123-2026-07-28T20-33-58-517Z`、conditionId=`earth-reference-v7-v7-capacity-slot-123-6888d145646e`已经通过独立条件检查：23通道、完整地图范围、`focal_area=0`、来源边界和SQLite证据全部有效；精确现实/OSM几何带入=0、历史RGB读取=0。共享道路骨架相似度由原失败值`1`降至`0.608696`，低于保持不变的`0.92`阈值；比较77份既有几何后确认无原位/镜像/旋转精确重复、无共享道路骨架。
+
+最终120份全历史条件引导审核runId=`ai-assisted-pre-rgb-condition-guide-novelty-v7-capacity-slot-123-2026-07-28T20-34-21-997Z`仍阻断，SHA-256=`6d8b53944a73991792f1ae53f401e854c878d18165baa0e5d208b75f5c934cea`。匹配记录为历史机器拒绝的`ai-cold-start-v7-v7-capacity-slot-123-river-floodplain-v5`；`matchedTransform=direct`、`strongCompositeSkeletonDuplicate=false`，不是镜像、旋转或强复合骨架重复。实际阻断是当前未修改的匿名水系和历史v5都属于右侧纵向水系，而道路都在其左侧，命中原有`routeAndWaterTopologyDuplicate`。道路修复检查runId=`earth-geospatial-v7-slot-123-anonymous-route-structure-repair-check-2026-07-28T20-37-02-243Z`、SHA-256=`5ca32bf4df8777af050d70c3e75a1c34047ff6136edc751caec40ab6b3e8e881`确认道路层修复通过、完整组合仍失败、全部审核阈值与连接契约未改变。
+
+中间的过短横向道路试验被既有完整地图范围门禁拒绝，失败runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-123-2026-07-28T20-35-03-785Z`、失败记录SHA-256=`48b57445da3b0d47e21a6b854a4ff4a59020abccdcd5cf372d177be757a6a593`；失败码包含`complete_map_route_span_too_local`、`complete_map_walkable_space_insufficient`、`local_scene_not_complete_map`。该中间实现已撤回，当前代码回到通过完整地图和共享道路骨架门禁的v20；RGB=0、GPU=0。
+
+当前容量仍为40/64、缺口24、GPU训练=0。当前唯一下一动作是等待项目所有者明确允许或拒绝：把当前“只修复匿名道路”扩展为“同时修复同一泰国测量事实驱动的匿名内部河网宏观结构”，继续保持11×11、世界连接契约和所有审核阈值不变。未获得该精确授权，不得修改河网、扩大13×13、降低阈值、生成RGB、进入slot-124、启动GPU训练、RuntimeFrame或`/world`。以下此前状态作为不可变历史证据保留，与本段冲突时以本段为准。
+
+项目所有者于2026-07-29 04:15:00 +08:00以前的本轮“允许”授权：只在同一正式泰国数据源内把slot-123测量范围扩展到现有9×9之外；只筛选和构建无RGB条件，保持世界连接契约与审核阈值不变；找到首个通过全历史、镜像、旋转与共享骨架门禁的条件后停止，任何RGB仍须另行授权。程序按最小扩大原则只增加一圈形成11×11，不得自动扩大到13×13。授权ID=`owner-authorized-slot-123-thai-measurement-scope-beyond-9x9-no-rgb-20260729`，授权runId=`earth-geospatial-v7-slot-123-scope-expansion-authorization-2026-07-28T20-06-35-235Z`，SHA-256=`7dbee793a523ed4b7cce69c60120f6772eefd7e16aa4af3eb96596a2e3e3bac5`。
+
+正式程序完成以下无RGB链路并全部通过独立检查：
+
+- 11×11测量runId=`earth-geospatial-naturalization-2026-07-28T20-06-59-669Z`，只复用既有Copernicus DEM GLO-30与ESA WorldCover 2021源对象，测量manifest SHA-256=`765e2d3898d0621c633e3a7ccbf617d15b2e343b239111c384ed09230b98da13`。
+- 土壤/水文runId=`earth-geospatial-soil-hydrology-2026-07-28T20-07-07-498Z`，manifest SHA-256=`dcde7256cd4b4bb79012bedfd06e24fd80ec8a53ead90f1360ca7fa90bcf7b43`。
+- 工程设施移除runId=`earth-geospatial-engineered-removal-2026-07-28T20-07-18-804Z`识别853项工程要素，OSM只形成删除掩码，manifest SHA-256=`b443666ce61afa2cf534600ec0b8cdd2d33d7a7f0392d78ad939ae9a9529983c`。
+- 自然化WorldFacts runId=`earth-geospatial-naturalized-world-facts-2026-07-28T20-07-32-194Z`重建110,310像素，精确现实/OSM几何带入=0，run SHA-256=`24fcb3fa11b9d7095953d890f28233ac6a5e28e7090b5a1e81d8572473f13da2`。
+- 121窗口计划runId=`earth-geospatial-v7-mvp-window-plan-2026-07-28T20-07-38-419Z`保持原23个槽位的物理测量绑定，只把40个11×11新外圈窗口开放给slot-123筛选；计划SHA-256=`bea651460926eb3c8c6b8dc96ea9ea29d1af1384bb2027bdba8f7050d50c71ce`。
+
+40个新外圈窗口与120份历史条件引导的前级审核runId=`earth-geospatial-v7-slot-123-all-history-window-selection-2026-07-28T20-08-00-435Z`、SHA-256=`76d2f8cf33b000c997d5e0bb22e6069cb61853823a90f238d85eff21ed68cbaf`。30个通过水体自然度，20个离开旧右侧模式，只有`sakaerat-measurement-window-r06-c11-v3`同时通过历史水体走廊前级门禁。程序只替换slot-123，其他22槽不变；独立复现检查runId=`earth-geospatial-v7-slot-123-all-history-window-replacement-check-2026-07-28T20-13-07-965Z`、SHA-256=`fc2b44ae2ea77e3fc6a99571aa469ba52881fc4e2ec6440a83c6d7a41c41b317`通过。
+
+该唯一候选在正式条件构建时被生成前共享道路骨架门禁拒绝。失败runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-123-2026-07-28T20-13-29-558Z`，失败码=`earth_geospatial_complete_map_conditions_failed`，错误=`V7 slot route skeleton is too similar to v7-capacity-slot-123: 1`，失败记录SHA-256=`2f190fd75d97840e77b1e348a383dad5cdcd373ec18be97ef6d02e95d7fad4bb`。该run没有形成World Director、完整任务、23通道、conditionId或RGB，GPU=0。新外圈其余39个候选未通过前级全历史门禁，因此11×11授权范围内完整合格条件数为0。
+
+当前容量仍为40/64、缺口24、GPU训练=0。当前唯一下一动作是等待项目所有者明确选择：继续把同一泰国来源按最小下一圈扩大到13×13，或授权修改匿名道路生成方法但保持连接契约和审核阈值不变。未经明确授权不得扩大范围、修改道路算法、降低阈值、重试旧条件、进入slot-124、生成RGB、启动GPU训练、RuntimeFrame或`/world`。
+
+项目所有者于2026-07-28 20:14:41 +08:00明确允许删除固定共享骨架、使用既有泰国测量事实连续生成独立内部地形/河网/道路，并增加镜像、旋转和共享骨架生成前阻断；泰国数据包、正式世界连接契约和全部审核阈值必须保持不变。授权ID=`owner-authorized-slot-123-thai-measurement-independent-skeleton-and-pre-rgb-transform-gates-20260728`，不包含RGB、GPU训练、RuntimeFrame或`/world`授权。
+
+河网实现已升级为`measurement_derived_anonymous_multisegment_river_network_from_eight_quantized_dem_d8_bands_v12`，删除四行固定宏观家族表，改由当前泰国测量指纹、八个DEM/D8直接支撑带和八个相对支撑带连续派生匿名内部参数；不读取历史RGB或历史几何，不使用镜像、旋转、slot身份或重试seed选择宏观结构。连接端口继续从正式蓝图读取北入、南出和东侧共享水道约束。无RGB回归runId=`earth-geospatial-v7-relative-support-main-channel-repair-check-2026-07-28T12-11-23-007Z`通过13/13项，报告SHA-256=`9308650be7935302dc8b1c987e87ccdf9490029634fb47daf044543dbe89d1c1`；6个不满足原测量支撑或原水体自然度门槛的窗口保持阻断。
+
+预RGB审核现在同时比较原位、水平镜像、垂直镜像、180度旋转，并以64×48语义复合栅格阻断地形/水体/道路共享骨架；审核沿用既有宏观构图和共享骨架阈值。回归runId=`ai-assisted-pre-rgb-topology-gate-repair-check-2026-07-28T12-14-24-405Z`通过，报告SHA-256=`01532541f8e7a281883b3ad14ced2ecb5e4a6af9b4472dae069b19721adbb426`，slot-123 v1至v4继续全部阻断，40张可信容量失败0张，RGB=0、GPU=0。
+
+中间v11曾从`sakaerat-measurement-window-r03-c02-v2`建立无RGB条件`earth-reference-v7-v7-capacity-slot-123-3c26809049c4`；最终120份历史条件引导审核runId=`ai-assisted-pre-rgb-condition-guide-novelty-v7-capacity-slot-123-2026-07-28T11-56-46-549Z`确认它与slot-123 v5直接宏观构图重复，因此该条件固定失败，不得重试或出图。v12最终窗口选择runId=`earth-geospatial-v7-slot-123-all-history-window-selection-2026-07-28T11-57-53-933Z`审计现有9×9批准范围内58个全局未占用窗口和120份历史条件引导，合格候选为0，状态=`blocked_no_unused_real_measurement_window_ready_for_full_composition_audit`，报告SHA-256=`a3facff495387ded7dcd414a22cfa39b848f5acaa849a7af599df2d7095160f0`。这表示修复代码与门禁已闭合，但当前批准数据范围不足以建立不重复的新slot-123。
+
+当前唯一下一动作是等待项目所有者明确授权扩大泰国测量范围（保持正式泰国来源、连接契约和审核阈值不变），或提供另一份已批准泰国测量数据。未经新授权，不得继续修改算法、扩大范围、降低阈值、重试旧条件、进入slot-124、生成RGB或启动GPU训练、RuntimeFrame、`/world`。当前容量仍为40/64、缺口24、GPU训练=0。
+
+项目所有者于2026-07-28 19:19:24 +08:00明确覆盖此前“修复同一conditionId”的下一动作：`slot-123`必须从已有正式泰国数据包重新建立一张独立新完整地图；v1至v5、conditionId=`earth-reference-v7-v7-capacity-slot-123-4e5cd19781a8`及其宏观主体结构只保留为失败证据，不得修复、重试、继承、重绑或作为参考。独立不得解释为镜像、旋转、换方向或共享骨架，也不得通过智能体自行增加选择规则、修改算法或改变审核阈值实现。
+
+智能体曾临时修改窗口选择器并产生无RGB偏离runId=`earth-geospatial-v7-slot-123-all-history-window-selection-2026-07-28T11-04-06-871Z`；该修改已撤销，该run固定RGB=0、GPU=0并隔离禁用。窗口选择latest指针已恢复到修改前正式runId=`earth-geospatial-v7-slot-123-all-history-window-selection-2026-07-28T10-10-04-730Z`。当前唯一下一动作是只读核对既有正式数据包和程序是否已有满足上述独立要求的明确入口；存在则只先构建无RGB条件包并独立检查，不存在则在RGB前停止询问项目所有者。新的RGB仍需新条件包和预RGB审核通过后的单张明确授权。
+
+项目所有者已明确授权当前智能体完全接管AI Painter与AI Painter 2的工作，授权引用固定为`owner-authorized-ai-painter-and-ai-painter-2-takeover-20260728`。项目所有者随后命令尽快开始本地自研AI模型训练；程序将该命令按既定64张MVP门禁记录为`owner-authorized-v7-local-training-after-mvp64-audit-20260728`，证据runId=`ai-assisted-v7-owner-takeover-authorization-2026-07-28T09-55-22-158Z`、SHA-256=`1cf1e016ba74bde8e85dd24b5b4308b939a49d88ee0eb4e5df89e8080973feb5`。训练授权状态为`owner_authorized_deferred_until_mvp64_dataset_and_audits_pass`；64张、48/8/4/4 split、逐图机器与owner审核、不可变数据包、来源、身份、hash、去重与split隔离未全部通过前，`gpuTrainingAuthorizedNow=false`。
+
+当前可信容量固定为40/64，剩余24；最新容量计划runId=`ai-assisted-v7-data-capacity-plan-2026-07-27T22-50-19-758Z`，下一容量槽位仍为`v7-capacity-slot-123`。`slot-123`的四次RGB记录`ai-cold-start-v7-v7-capacity-slot-123-river-floodplain-v1`至`v4`全部为`rejected`，不得计入容量、训练正样本、Runtime或`/world`。其中v1与v3由项目所有者明确以“构图重复/主体框架完全重复”拒绝；v2与v4由机器审核命中`historical_rejected_composition_duplicate`，v4同时命中`condition_terrain_path_ground_coverage_mismatch`。
+
+根因固定为：旧生成前门禁允许只改变道路局部覆盖来绕过占据主体画面的同侧纵向河流宏观拓扑；旧生成后门禁的低频差异阈值过窄；控制台把“主体框架完全重复”错误保存为通用`owner_visual_quality_rejected`，导致拒绝原因未进入`composition_duplicate`学习。
+
+程序已修复生成前主导水体宏观拓扑硬门禁、生成后完整地图宏观构图门禁和项目所有者拒绝原因归一化。正式回归runId=`ai-assisted-pre-rgb-topology-gate-repair-check-2026-07-28T09-48-07-630Z`、报告SHA-256=`406fcffd91977c974e250dd6ba592ddc1fc89c37e3690751af95d1ef4c590c08`：最新v4条件引导在RGB前同时命中slot-122-v2、slot-123-v1和slot-123-v3；slot-123 v1至v4四张RGB全部被生成后门禁阻断；当前40张可信容量完成全量RGB构图新颖性复审，失败0张。数据字典已登记本轮正式重复构图、条件道路错配、局部图、变换骨架和预设家园场地失败码。
+
+项目所有者以`owner-authorized-slot-123-expanded-real-measurement-window-scope-20260728`批准扩展真实测量范围。程序完成9×9扩展测量范围、土壤/水文、296项OSM工程设施移除、54,143像素自然化重建和81窗口规划；OSM只用于人类开发痕迹移除，没有把现实/OSM精确几何带入游戏世界。最终选定`sakaerat-measurement-window-r04-c09-v2`，新建slot-123条件runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-123-2026-07-28T10-14-35-115Z`、conditionId=`earth-reference-v7-v7-capacity-slot-123-4e5cd19781a8`。独立检查确认完整地图范围、WorldFacts、World Director、正式23通道和`focal_area=0`全部通过。
+
+新条件最终预RGB审核runId=`ai-assisted-pre-rgb-condition-guide-novelty-v7-capacity-slot-123-2026-07-28T10-16-11-929Z`、SHA-256=`128bb9c0190a559716a4a4c57038b509ff9c6f7e43d62ff4b4d6e0df1997031f`，比较119份历史完整地图条件引导、匹配0份。全量门禁回归runId=`ai-assisted-pre-rgb-topology-gate-repair-check-2026-07-28T10-16-36-019Z`、SHA-256=`a905416676797dad5fab7057ece4c4cbf3b7cda5d7e148897565de4c39a984b2`，slot-123 v1至v4继续全部阻断，40张当前可信容量失败0张。V7 CPU模型回归runId=`ai-assisted-conditional-v7-cpu-regression-2026-07-28T10-19-27-177Z`通过，GPU训练=0、图像推理=0。
+
+项目所有者以本轮“继续，不要自由发挥”只授权上述conditionId的一张RGB。程序建立请求ID=`conditional-rgb-123-2026-07-28T10-29-05-748Z`，Codex内置生成只调用一次，只读取当前泰国真实测量数据派生的匿名条件引导，没有读取或引用slot-038及任何历史RGB。程序保存`1448×1086`精确4:3源图，并按`owner-approved-high-resolution-four-three-derivative-v1`以nearest-neighbor生成`1024×768`审核派生图，SHA-256=`ffd1c2f9c770eca9b478c8943b2aea532951f90ef5ed6e92e2acbc0ed9063fff`。
+
+该图记录ID=`ai-cold-start-v7-v7-capacity-slot-123-river-floodplain-v5`。机器审核中，来源分辨率、河道条件、水体空间位置、风格指纹和构图新颖性全部通过；唯一失败码为`condition_terrain_path_ground_coverage_mismatch`，路径实际视觉覆盖相对正式条件为`0.1852`，低于最低`0.25`。审核runId=`ai-assisted-cold-start-review-ai-cold-start-v7-v7-capacity-slot-123-river-floodplain-v5-2026-07-28T10-47-26-916Z`，最终状态=`machine_rejected_and_archived`、`ownerReviewStatus=not_reached_machine_failed`、训练资格=false。该图不得计入容量、训练正样本、Runtime或`/world`；容量仍为40/64，缺口仍为24，GPU训练=0。
+
+当前唯一下一动作是等待项目所有者针对同一conditionId另行明确授权一次“只修复路径可见覆盖不足、不改变WorldFacts、河道几何、23通道或审核阈值”的单张RGB重试。未获得精确重试授权前不得再次调用图像生成，不得进入slot-124；64张和全部审计闭合后才自动激活已记录的本地V7训练授权。RuntimeFrame和`/world`仍未授权。
+
+## 0-B. 2026-07-27 slot-119道路自然性修复状态
+
+当前可信容量仍为37/64，剩余27；`v7-capacity-slot-119`旧RGB已由项目所有者以“道路太僵硬、缺少现实道路自然曲率比较”拒绝，固定不计容量、不具备训练资格。拒绝记录、双语原因、双时区时间、SHA-256、SQLite事件和失败学习均由程序自动保存。
+
+项目所有者随后只授权诊断、修复匿名道路自然性并重建slot-119无RGB条件包。程序使用已保存的OpenStreetMap/Overpass ODbL证据形成不含道路ID、经纬度、逐道路形状的聚合道路形态档案；真实或OSM精确几何仍禁止进入游戏坐标、导航、23通道直接几何或RGB参考。正式路线改用多频匿名锚点、Catmull-Rom重采样和缓变宽度，并新增`anonymous-route-naturalness-audit-v1`。
+
+针对性回归确认旧slot-119路线为7点、最长单段约193.37px、曲折度约1.02787、最大内角约31.41度，必须拒绝；修复原型为71点并通过公开统计包络。正式重建runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-119-2026-07-27T11-27-00-472Z`，conditionId=`earth-reference-v7-v7-capacity-slot-119-f913ac78e39a`，23通道、完整地图范围、`focal_area=0`、非镜像/非共享骨架、来源边界、hash和SQLite检查通过。
+
+本轮生成RGB=0、GPU训练=0、RuntimeFrame=0、`/world`进入=0。下一动作只能等待项目所有者对该新conditionId另行签发slot-119唯一单张RGB授权；不得复用旧授权、自动生成、自动重试、准备slot-120或启动GPU训练。
 
 ## 1. 本文档用途
 
 本文档是当前继续工作的唯一执行入口。
 
 后续执行顺序必须先读本文档，再读被本文档引用的下级文档。旧计划、旧进度和旧 `live-world` 文档已经删除，不再保留平行入口。
+
+## 0. 2026-07-25 V7首次MVP训练容量当前决策
+
+项目所有者已明确批准把V7首次MVP训练门槛由128张缩短为64张独立完整地图，决策ID=`owner-approved-v7-mvp-first-training-capacity-64-20260725`。当前split固定为：
+
+```text
+48 train / 8 validation / 4 challenge / 4 regression
+```
+
+128张与`96/16/8/8`继续作为后续正式增强目标保留，不再是首次MVP训练启动门槛。所有历史128容量审计和批次授权只作为不可变过程证据，不得覆盖本节当前决策。
+
+程序已执行`npm run build:ai-assisted-v7-data-capacity-plan`，当前runId=`ai-assisted-v7-data-capacity-plan-2026-07-25T05-21-03-494Z`。结果固定为：
+
+| 项目 | 数量 |
+|---|---:|
+| 审计历史记录 | 43 |
+| 当前可信完整地图 | 26 |
+| 继续隔离的变换/共享骨架记录 | 17 |
+| 审计失败 | 0 |
+| 64张MVP缺口 | 38 |
+| 缺口split | `27 train / 6 validation / 2 challenge / 3 regression` |
+
+程序已完成首个缺口槽位`v7-capacity-slot-108`的无RGB条件包，runId=`earth-geospatial-v7-slot-condition-v7-capacity-slot-108-2026-07-25T08-29-49-749Z`，conditionId=`earth-reference-v7-v7-capacity-slot-108-0d0cb362aedc`。该槽位属于train split，绑定`seasonal-evergreen-semi-evergreen-forest`与`wet_to_dry_transition`。独立检查确认：
+
+| 检查项 | 结果 |
+|---|---|
+| 正式条件通道 | `23/23` |
+| 完整地图范围 | `passed` |
+| `focal_area` | 全零 |
+| 真实/OSM/测量窗口精确几何带入 | 0 |
+| 历史RGB读取 | 0 |
+| 镜像/旋转模板 | 0 |
+| SQLite artifact | 35 |
+| 中英文程序事件 | 2 |
+| RGB / GPU训练 / RuntimeFrame / `/world` | `0 / 0 / 0 / 0` |
+
+该槽位当前固定为`complete_map_conditions_ready_rgb_authorization_required`。条件包通过不等于训练样本完成，也不允许程序自动调用图像生成。`slot-108`的唯一下一道业务门禁是项目所有者单独授权一张RGB；其余`slot-109`至`145`只能在现有有界授权内继续无RGB条件包准备和逐槽独立检查。不得恢复旧连续出图批次，不得用“继续”推断批量RGB授权，不得启动V7 GPU训练。
+
+本次容量计划没有生成RGB、没有启动GPU、没有执行训练。旧连续批次`owner-authorized-v7-remaining-104-continuous-batch-20260723`保持停止且不可恢复。
+
+项目所有者已签发有界数据建设授权`owner-authorized-v7-mvp64-gap38-real-geography-bounded-data-build-20260725`。本授权只允许38槽位真实地理测量窗口规划和逐槽条件包准备，不允许RGB生成、批量出图或V7 GPU训练。窗口规划和检查结果见本文第34节。
+
+当前唯一下一动作是程序按`v7-capacity-slot-108`至`v7-capacity-slot-145`逐槽准备并独立检查完整地图WorldFacts、World Director、任务包和正式23通道。达到64张并完成身份、来源、许可、hash、构图新颖性、完整地图范围、机器审核、项目所有者审核和split隔离审计后，仍须项目所有者单独授权V7 GPU训练。
 
 ### 1.1 2026-07-18 项目所有者硬停止令
 
@@ -707,3 +1407,33 @@ Codex内置生成只调用一次，得到`1448×1086`精确4:3源图。程序自
 项目所有者此前对该图的明确“通过，完全可以”由正式审核程序以命令引用`owner-approved-earth-reference-naturalized-complete-map-b3be6a28ffb6-20260725`保存；reviewId=`ai-cold-start-owner-review-ai-cold-start-earth-reference-earth-reference-naturalized-complete-map-b3be6a28ffb6-v1-2026-07-25T00-41-06-524Z`。当前记录状态=`owner_approved`，训练资格=`ai_assisted_cold_start_eligible`、`formalConditionalTrainingEligible=true`、`independentTrainingEligible=false`；仍固定`formalCandidate=false`、`runtimeFrameEligible=false`、`canEnterWorld=false`。
 
 程序自动重建数据包`natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-07-25T00-45-56-567Z`，共76条、完整地图/Autoencoder 72条、正式条件绑定43条、split=`53/7/6/6`、阻断项为空。该图位于`validation`，当前只承担`rgb_autoencoder_warmup`；没有V7容量贡献登记，不得计入V7正式容量。本次闭环没有生成新RGB、没有GPU训练、没有建立候选、RuntimeFrame或`/world`画面。
+
+## 34. 2026-07-25 V7首次MVP缺口真实地理测量窗口规划闭环
+
+更新时间：2026-07-25 14:38:07 +08:00
+
+本节覆盖第0节“等待38槽位计划审核”的历史门禁。项目所有者已签发`owner-authorized-v7-mvp64-gap38-real-geography-bounded-data-build-20260725`，范围严格限定为最新容量计划中的38个缺口身份`v7-capacity-slot-108`至`v7-capacity-slot-145`。授权允许真实地理测量窗口规划和逐槽条件包准备；不允许自动生成RGB、批量出图、自动人工通过、V7 GPU训练、RuntimeFrame或`/world`。
+
+程序新增并执行：
+
+```text
+npm run build:earth-geospatial-v7-mvp-window-plan
+npm run check:earth-geospatial-v7-mvp-window-plan
+```
+
+成功runId=`earth-geospatial-v7-mvp-window-plan-2026-07-25T06-31-05-371Z`。程序只读取已批准Sakaerat/Wang Nam Khiao测量包中的自然化土地覆盖、高程、坡度、排水可能性和工程设施移除证据，把`1024×768`测量包划分为49个互不重叠的4:3测量窗口，按38个缺口槽位选择38个，保留11个未使用。窗口只承担测量证据分区，不直接宣称目标生态身份；需要岩性、水文、土壤湿度或区域生态证据的槽位均在计划中保留额外证据要求。
+
+每个窗口保存直接测量指纹以及水平、垂直和180度变换规范指纹。独立检查结论固定为：候选49、选中38、未使用11、直接指纹唯一38、变换规范指纹唯一38、选中窗口重叠对0；3个SQLite artifact与2条中英文程序事件均通过路径、字节数和SHA-256核验。程序没有读取历史RGB，没有生成新RGB，没有启动GPU训练。
+
+当前唯一下一动作是程序逐槽把已选测量证据编译为新的匿名游戏坐标WorldFacts、World Director、完整地图任务和正式23通道，并逐槽独立检查：
+
+1. 完整地图范围成立，不得生成局部生态图。
+2. `focal_area`保持全零，不预设家园中心、建筑空地或道路汇聚平台。
+3. 现实或OSM精确几何不得直接进入游戏几何、导航数据或可视条件。
+4. 历史RGB引用数必须为0。
+5. 每槽身份、来源、许可、UTC与Asia/Shanghai时间、SHA-256、非镜像/非共享骨架证据和SQLite索引必须完整。
+
+逐槽条件包检查通过不等于RGB获批。任何RGB仍须项目所有者另行明确授权；未经授权不得调用图像生成算力。64张数据包闭合后，V7 GPU训练仍须单独授权。
+## 0-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA. slot-185闭合
+
+conditionId=`earth-reference-v7-v7-capacity-slot-185-b3329fcce28b`，SHA-256=`63acc8a01ccae9fe45e0d171c464f1851bdbf10fbfcb82172e829ace58685462`。条件包40/64，还差24个；下一项`slot-186`。

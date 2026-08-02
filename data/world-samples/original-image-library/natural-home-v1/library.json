@@ -3,7 +3,7 @@
   "collectionId": "natural-home-v1",
   "title": "第一版自然家园原图库",
   "status": "active_with_ai_assisted_cold_start_records",
-  "updatedAt": "2026-07-24T23:43:12.524Z",
+  "updatedAt": "2026-08-02T00:26:21.257Z",
   "rootPath": "data/world-samples/original-image-library/natural-home-v1",
   "indexPath": "data/world-samples/original-image-library/natural-home-v1/index.json",
   "coverageBlueprintPath": "data/world-samples/original-image-library/natural-home-v1/coverage-blueprint.json",
@@ -79,6 +79,6 @@
       ]
     }
   ],
-  "recordCount": 122,
-  "aiAssistedColdStartRecordCount": 84
+  "recordCount": 284,
+  "aiAssistedColdStartRecordCount": 123
 }

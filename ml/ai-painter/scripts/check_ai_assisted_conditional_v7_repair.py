@@ -127,14 +127,92 @@ def main() -> int:
         "outputReceivesDecodedRgbGradient": bool(output_gradients) and all(value is not None and torch.isfinite(value).all() for value in output_gradients),
         "compositeLossFinite": bool(torch.isfinite(losses["compositeLossTensor"])),
         "strictHeldOutSplitIsChallenge": source_config["training"]["strictHeldOutInferenceSplit"] == "challenge",
-        "approvedCapacityIs128": source_config["training"]["dataCapacityDecision"]["totalCompleteMaps"] == 128,
+        "approvedCapacityIs64": source_config["training"]["dataCapacityDecision"]["totalCompleteMaps"] == 64,
         "approvedSplitIsFixed": source_config["training"]["dataCapacityDecision"]["splitCounts"] == {
-            "train": 96,
-            "validation": 16,
-            "challenge": 8,
-            "regression": 8,
+            "train": 48,
+            "validation": 8,
+            "challenge": 4,
+            "regression": 4,
         },
-        "trainingRemainsBlocked": source_config["training"]["trainingAuthorizationStatus"] == "blocked_pending_approved_128_dataset_implementation",
+        "formalEnhancementTargetRemains128": source_config["training"]["dataCapacityDecision"]["formalEnhancementTarget"] == {
+            "status": "retained_not_current_first_training_gate",
+            "totalCompleteMaps": 128,
+            "splitCounts": {
+                "train": 96,
+                "validation": 16,
+                "challenge": 8,
+                "regression": 8,
+            },
+        },
+        "connectivityThemeAndDetailReauditBlocksTraining": (
+            source_config["training"]["dataCapacityDecision"]
+            .get("connectivityThemeAndDetailReaudit", {})
+            .get("status")
+            == "failed_connectivity_theme_and_detail_reaudit"
+            and source_config["training"]["dataCapacityDecision"]
+            .get("connectivityThemeAndDetailReaudit", {})
+            .get("historicalQualifiedCountIsCurrentTrainingTruth")
+            is False
+            and source_config["training"]["dataCapacityDecision"]
+            .get("connectivityThemeAndDetailReaudit", {})
+            .get("structurallyReverifiedTrainingTruthCount")
+            == 0
+            and source_config["training"]["dataCapacityDecision"]
+            .get("connectivityThemeAndDetailReaudit", {})
+            .get("conditionAudit", {})
+            .get("passed")
+            is False
+            and source_config["training"]["dataCapacityDecision"]
+            .get("connectivityThemeAndDetailReaudit", {})
+            .get("rgbDiagnosis", {})
+            .get("ownerDecisionRequired")
+            is True
+            and source_config["training"]["dataCapacityDecision"]
+            .get("connectivityThemeAndDetailReaudit", {})
+            .get("gpuTrainingBlockedUntilPassed")
+            is True
+        ),
+        "authorizedThailandMvpRebuild64Recorded": (
+            source_config["training"]["dataCapacityDecision"].get(
+                "programAuditedQualifiedExistingRecords"
+            )
+            == 0
+            and source_config["training"]["dataCapacityDecision"].get(
+                "programAuditedRequiredNewRecords"
+            )
+            == 64
+            and source_config["training"]["dataCapacityDecision"]
+            .get("boundedDataBuildAuthorization", {})
+            .get("authorizationId")
+            == "owner-authorized-isolate-legacy40-and-rebuild-thailand-mvp64-20260729"
+            and source_config["training"]["dataCapacityDecision"]
+            .get("boundedDataBuildAuthorization", {})
+            .get("scope")
+            == "v7-capacity-slot-146-through-v7-capacity-slot-209"
+            and source_config["training"]["dataCapacityDecision"]
+            .get("boundedDataBuildAuthorization", {})
+            .get("authorizedRecordCount")
+            == 64
+            and source_config["training"]["dataCapacityDecision"]
+            .get("boundedDataBuildAuthorization", {})
+            .get("imageGenerationAuthorized")
+            is False
+            and source_config["training"]["dataCapacityDecision"]
+            .get("boundedDataBuildAuthorization", {})
+            .get("gpuTrainingAuthorized")
+            is False
+        ),
+        "trainingRemainsBlocked": (
+            source_config["training"]["trainingAuthorizationStatus"]
+            in {
+                "blocked_pending_owner_approved_mvp_64_dataset_implementation",
+                "owner_authorized_pending_mvp64_dataset_and_audits",
+            }
+            and source_config["training"].get("ownerTrainingAuthorization", {}).get(
+                "gpuTrainingAuthorizedNow"
+            )
+            is False
+        ),
         "noThirdPartyWeights": source_config["thirdPartyWeightsAllowed"] is False and source_config["upstreamModelIds"] == [],
     }
     payload = {

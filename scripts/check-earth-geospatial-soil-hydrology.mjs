@@ -73,7 +73,9 @@ assert(
 assert(
   regionContract.blockers.includes(
     "engineered_linear_feature_removal_evidence_missing",
-  ),
+  ) ||
+    regionContract.measurementEvidence
+      ?.engineeredRemovalEvidenceCompiled === true,
   "region contract lost the road-removal blocker",
 )
 

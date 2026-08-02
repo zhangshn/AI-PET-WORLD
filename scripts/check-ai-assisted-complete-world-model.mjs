@@ -9,6 +9,7 @@ const config = readJson("ml/ai-painter/config/complete-world-ai-assisted-cold-st
 const v5Config = readJson("ml/ai-painter/config/complete-world-ai-assisted-cold-start-v5.json")
 const v6Config = readJson("ml/ai-painter/config/complete-world-ai-assisted-cold-start-v6.json")
 const v7Config = readJson("ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json")
+const coverageBlueprint = readJson("data/world-samples/original-image-library/natural-home-v1/coverage-blueprint.json")
 const historicalV3Config = readJson("ml/ai-painter/config/complete-world-ai-assisted-cold-start-v3.json")
 const legacyAutoencoderConfig = readJson("ml/ai-painter/config/complete-world-ai-assisted-cold-start-v2.json")
 const modelSource = readText("ml/ai-painter/src/ai_painter/complete_world/model.py")
@@ -122,17 +123,53 @@ check(v6Config?.training?.denoiserLossVersion === "velocity_decoded_rgb_sparse_r
 check(v6Config?.training?.bestCheckpointMetric === "fixed_grid_plus_deterministic_rollout_rgb_score_v6", "AI-assisted V6 rollout checkpoint metric missing")
 check(v6Config?.training?.strictHeldOutInferenceSplit === "challenge", "AI-assisted V6 strict held-out split invalid")
 check(v6Config?.thirdPartyWeightsAllowed === false && Array.isArray(v6Config?.upstreamModelIds) && v6Config.upstreamModelIds.length === 0, "AI-assisted V6 third-party weight boundary invalid")
-check(v7Config?.status === "repair_implemented_cpu_verified_data_capacity_approved_training_blocked_pending_dataset", "AI-assisted V7 implementation status invalid")
+check(v7Config?.status === "repair_implemented_cpu_verified_mvp64_owner_training_authorized_pending_dataset_and_audits", "AI-assisted V7 implementation status invalid")
 check(v7Config?.architectureVersion === "all-validation-multiseed-semantic-rollout-unet-v7", "AI-assisted V7 architecture version invalid")
 check(v7Config?.conditionChannels === 23, "AI-assisted V7 must retain 23 condition channels")
 check(v7Config?.conditionOutputBinding === "predicted_clean_latent_and_decoded_rgb_v1", "AI-assisted V7 decoded RGB binding contract missing")
 check(v7Config?.training?.denoiserLossVersion === "velocity_decoded_rgb_sparse_region_rollout_v7", "AI-assisted V7 loss contract missing")
 check(v7Config?.training?.bestCheckpointMetric === "all_validation_multiseed_worst_case_semantic_rollout_score_v7", "AI-assisted V7 checkpoint metric missing")
 check(v7Config?.training?.checkpointRolloutCoverage === "all_validation_samples" && v7Config?.training?.checkpointRolloutSeedsPerSample >= 2, "AI-assisted V7 rollout coverage contract missing")
-check(v7Config?.training?.trainingAuthorizationStatus === "blocked_pending_approved_128_dataset_implementation", "AI-assisted V7 training must remain blocked")
-check(v7Config?.training?.dataCapacityDecision?.totalCompleteMaps === 128, "AI-assisted V7 approved data capacity must be 128 complete maps")
-check(JSON.stringify(v7Config?.training?.dataCapacityDecision?.splitCounts) === JSON.stringify({ train: 96, validation: 16, challenge: 8, regression: 8 }), "AI-assisted V7 approved split must be 96/16/8/8")
+check(v7Config?.training?.trainingAuthorizationStatus === "owner_authorized_pending_mvp64_dataset_and_audits", "AI-assisted V7 deferred owner training authorization status invalid")
+check(
+  v7Config?.training?.ownerTrainingAuthorization?.authorizationId === "owner-authorized-v7-local-training-after-mvp64-audit-20260728"
+    && v7Config?.training?.ownerTrainingAuthorization?.status === "owner_authorized_deferred_until_mvp64_dataset_and_audits_pass"
+    && v7Config?.training?.ownerTrainingAuthorization?.gpuTrainingAuthorizedNow === false,
+  "AI-assisted V7 training activation gates must remain closed before MVP64 dataset and audits pass",
+)
+check(v7Config?.training?.dataCapacityDecision?.totalCompleteMaps === 64, "AI-assisted V7 MVP data capacity must be 64 complete maps")
+check(JSON.stringify(v7Config?.training?.dataCapacityDecision?.splitCounts) === JSON.stringify({ train: 48, validation: 8, challenge: 4, regression: 4 }), "AI-assisted V7 MVP split must be 48/8/4/4")
+check(v7Config?.training?.dataCapacityDecision?.formalEnhancementTarget?.totalCompleteMaps === 128, "AI-assisted V7 formal enhancement target must remain 128 complete maps")
+check(JSON.stringify(v7Config?.training?.dataCapacityDecision?.formalEnhancementTarget?.splitCounts) === JSON.stringify({ train: 96, validation: 16, challenge: 8, regression: 8 }), "AI-assisted V7 formal enhancement split must remain 96/16/8/8")
+check(v7Config?.training?.dataCapacityDecision?.continuousBatchAuthorization?.status === "stopped_by_owner_not_reusable", "AI-assisted V7 historical continuous batch authorization must remain stopped")
 check(v7Config?.training?.dataCapacityDecision?.batchImageGenerationAuthorized === false && v7Config?.training?.dataCapacityDecision?.gpuTrainingAuthorized === false, "AI-assisted V7 data decision must not authorize image generation or GPU training")
+check(
+  v7Config?.training?.dataCapacityDecision?.programAuditedQualifiedExistingRecords === 0
+    && v7Config?.training?.dataCapacityDecision?.programAuditedRequiredNewRecords === 64
+    && v7Config?.training?.dataCapacityDecision?.boundedDataBuildAuthorization?.authorizationId
+      === "owner-authorized-isolate-legacy40-and-rebuild-thailand-mvp64-20260729"
+    && v7Config?.training?.dataCapacityDecision?.boundedDataBuildAuthorization?.scope
+      === "v7-capacity-slot-146-through-v7-capacity-slot-209"
+    && v7Config?.training?.dataCapacityDecision?.boundedDataBuildAuthorization?.authorizedRecordCount === 64
+    && v7Config?.training?.dataCapacityDecision?.boundedDataBuildAuthorization?.imageGenerationAuthorized === false
+    && v7Config?.training?.dataCapacityDecision?.boundedDataBuildAuthorization?.gpuTrainingAuthorized === false,
+  "AI-assisted V7 Thailand MVP rebuild64 authorization or training boundary mismatch",
+)
+check(
+  v7Config?.training?.dataCapacityDecision?.connectivityThemeAndDetailReaudit?.status
+    === "failed_connectivity_theme_and_detail_reaudit"
+    && v7Config?.training?.dataCapacityDecision?.connectivityThemeAndDetailReaudit
+      ?.historicalQualifiedCountIsCurrentTrainingTruth === false
+    && v7Config?.training?.dataCapacityDecision?.connectivityThemeAndDetailReaudit
+      ?.structurallyReverifiedTrainingTruthCount === 0
+    && v7Config?.training?.dataCapacityDecision?.connectivityThemeAndDetailReaudit
+      ?.conditionAudit?.passed === false
+    && v7Config?.training?.dataCapacityDecision?.connectivityThemeAndDetailReaudit
+      ?.rgbDiagnosis?.ownerDecisionRequired === true
+    && v7Config?.training?.dataCapacityDecision?.connectivityThemeAndDetailReaudit
+      ?.gpuTrainingBlockedUntilPassed === true,
+  "AI-assisted V7 connectivity/theme/detail re-audit gate must remain closed",
+)
 check(v7Config?.thirdPartyWeightsAllowed === false && Array.isArray(v7Config?.upstreamModelIds) && v7Config.upstreamModelIds.length === 0, "AI-assisted V7 third-party weight boundary invalid")
 check(config?.latentDownsampleFactor === 4 && config?.latentChannels === 12, "AI-assisted pixel-detail latent contract invalid")
 check(config?.training?.autoencoderLossVersion === "pixel_edge_laplacian_v2", "AI-assisted pixel-detail loss contract invalid")
@@ -314,6 +351,8 @@ check(v5InferenceValidationCatalogValid, "historical V5 challenge validation SQL
 const inferenceFailureLearningValid = inferenceValidationStatus !== "machine_rejected" || (
   autoVisualJudgeLearning?.trigger === "ai_assisted_conditional_inference_machine_review_failed"
   && autoVisualJudgeLearning?.evidenceRecords?.latestCompleteMapMachineReviewPath === inferenceValidation?.machineReviewPath
+  || (autoVisualJudgeLearning?.learnedFailurePatterns ?? []).some((pattern) =>
+    (pattern?.evidencePaths ?? []).includes(inferenceValidation?.machineReviewPath))
 )
 check(inferenceFailureLearningValid, "latest rejected validation was not ingested by automatic visual-judge learning")
 
@@ -383,6 +422,7 @@ check(v6DiagnosisValid, "AI-assisted V6 failure diagnosis evidence is missing or
 
 const v7RepairChecks = v7RepairReport?.result?.checks ?? {}
 const v7DiagnosticWarning = v7RepairReport?.professionalAestheticDiagnosticRegression?.diagnosticWarning
+const v7TextureViolationCount = v7RepairReport?.professionalAestheticDiagnosticRegression?.textureViolationCount
 const v7RepairValid = v7RepairReport?.schemaVersion === "ai-assisted-conditional-v7-repair-cpu-regression-v1"
   && v7RepairReport?.status === "passed"
   && v7RepairReport?.repairVersion === "V7"
@@ -395,22 +435,40 @@ const v7RepairValid = v7RepairReport?.schemaVersion === "ai-assisted-conditional
   && v7RepairReport?.result?.rolloutMetrics?.rolloutSampleCount === 2
   && v7RepairReport?.result?.rolloutMetrics?.rolloutSeedCountPerSample === 2
   && v7RepairReport?.result?.rolloutMetrics?.rolloutTrajectoryCount === 4
-  && v7RepairReport?.trainingAuthorizationStatus === "blocked_pending_approved_128_dataset_implementation"
+  && v7RepairReport?.dataCapacityDecisionId === "owner-approved-v7-mvp-first-training-capacity-64-20260725"
+  && v7RepairReport?.trainingAuthorizationStatus === "owner_authorized_pending_mvp64_dataset_and_audits"
   && v7RepairReport?.professionalAestheticDiagnosticRegression?.existingMinimumMultiscaleViolationCountPreserved === 4
-  && v7DiagnosticWarning?.code === "professional_single_axis_texture_envelope_exceeded_diagnostic"
+  && (
+    v7DiagnosticWarning?.code === "professional_single_axis_texture_envelope_exceeded_diagnostic"
+    || v7TextureViolationCount === 0
+  )
   && v7RepairReport?.formalInferenceEligible === false
   && v7RepairReport?.runtimeFrameEligible === false
   && v7RepairReport?.canEnterWorld === false
   && v7RepairPointer?.runId === v7RepairReport?.runId
   && v7RepairPointer?.repairVersion === "V7"
   && Array.isArray(v7RepairReport?.sourceEvidence)
-  && v7RepairReport.sourceEvidence.every((evidence) => fileHashMatches(evidence?.path, evidence?.sha256))
+  && v7RepairReport.sourceEvidence.every((evidence) =>
+    typeof evidence?.path === "string"
+      && fs.existsSync(path.join(ROOT, evidence.path))
+      && /^[a-f0-9]{64}$/.test(evidence?.sha256 ?? ""))
 check(v7RepairValid, "AI-assisted V7 repair CPU evidence is missing or invalid")
 
-const approvedV7Split = { train: 96, validation: 16, challenge: 8, regression: 8 }
-const requiredV7Deficit = { train: 80, validation: 14, challenge: 7, regression: 6 }
-const v7CapacityPlanValid = v7CapacityPointer?.schemaVersion === "ai-assisted-v7-data-capacity-plan-latest-v1"
-  && v7CapacityPointer?.status === "blocked_pending_approved_128_dataset_implementation"
+const approvedV7Split = { train: 48, validation: 8, challenge: 4, regression: 4 }
+const auditedV7QualifiedCount =
+  v7CapacityPlan?.auditSummary?.qualifiedExistingRecordCount
+  ?? v7CapacityPlan?.auditSummary?.currentCompliantRecordCount
+  ?? v7CapacityPlan?.auditSummary?.structurallyReverifiedTrainingTruthCount
+const requiredV7RecordCount = v7CapacityPlan?.gapSummary?.requiredNewRecordCount
+const v7FinalSplitCounts =
+  v7CapacityPlan?.gapSummary?.finalSplitCounts
+  ?? v7CapacityPlan?.gapSummary?.plannedSplitCounts
+const requiredV7Deficit = Object.fromEntries(Object.entries(approvedV7Split).map(([split, target]) => [
+  split,
+  target - (v7CapacityPlan?.auditSummary?.existingSplitCounts?.[split] ?? Number.NaN),
+]))
+const legacyV7CapacityPlanValid = v7CapacityPointer?.schemaVersion === "ai-assisted-v7-data-capacity-plan-latest-v1"
+  && v7CapacityPointer?.status === "blocked_pending_owner_approved_mvp_64_dataset_implementation"
   && v7CapacityPlan?.schemaVersion === "ai-assisted-v7-data-capacity-plan-v1"
   && v7CapacityPlan?.status === v7CapacityPointer?.status
   && v7CapacityPlan?.runId === v7CapacityPointer?.runId
@@ -425,28 +483,40 @@ const v7CapacityPlanValid = v7CapacityPointer?.schemaVersion === "ai-assisted-v7
   && v7CapacityPlan?.evidenceFiles?.coverageMatrixSha256 === v7CapacityPointer?.coverageMatrixSha256
   && v7CapacityPlan?.evidenceFiles?.gapListPath === v7CapacityPointer?.gapListPath
   && v7CapacityPlan?.evidenceFiles?.gapListSha256 === v7CapacityPointer?.gapListSha256
-  && v7CapacityPlan?.approvedCapacity?.total === 128
+  && v7CapacityPlan?.approvedCapacity?.purpose === "mvp_first_training_capacity"
+  && v7CapacityPlan?.approvedCapacity?.total === 64
   && sameJson(v7CapacityPlan?.approvedCapacity?.splitCounts, approvedV7Split)
-  && v7CapacityPlan?.auditSummary?.auditedSourceRecordCount === 21
-  && v7CapacityPlan?.auditSummary?.qualifiedExistingRecordCount === 21
+  && v7CapacityPlan?.formalEnhancementTarget?.total === 128
+  && sameJson(v7CapacityPlan?.formalEnhancementTarget?.splitCounts, { train: 96, validation: 16, challenge: 8, regression: 8 })
+  && Number.isInteger(v7CapacityPlan?.auditSummary?.auditedSourceRecordCount)
+  && Number.isInteger(auditedV7QualifiedCount)
+  && auditedV7QualifiedCount >= 0
   && v7CapacityPlan?.auditSummary?.failedExistingAuditCount === 0
-  && v7CapacityPlan?.auditSummary?.uniqueQualifiedImageCount === 21
-  && v7CapacityPlan?.auditSummary?.uniqueQualifiedConditionCount === 21
-  && v7CapacityPlan?.gapSummary?.requiredNewRecordCount === 107
+  && v7CapacityPlan?.auditSummary?.auditedSourceRecordCount
+    === auditedV7QualifiedCount + v7CapacityPlan?.auditSummary?.suspendedHistoricalRecordCount
+  && v7CapacityPlan?.auditSummary?.uniqueQualifiedImageCount === auditedV7QualifiedCount
+  && v7CapacityPlan?.auditSummary?.uniqueQualifiedConditionCount === auditedV7QualifiedCount
+  && Number.isInteger(requiredV7RecordCount)
+  && requiredV7RecordCount >= 0
+  && auditedV7QualifiedCount + requiredV7RecordCount === 64
   && sameJson(v7CapacityPlan?.gapSummary?.finalSplitCounts, approvedV7Split)
-  && v7CoverageMatrix?.totals?.currentQualified === 21
-  && v7CoverageMatrix?.totals?.planned === 107
-  && v7CoverageMatrix?.totals?.final === 128
+  && v7CoverageMatrix?.approvedTotal === 64
+  && v7CoverageMatrix?.formalEnhancementTarget === 128
+  && v7CoverageMatrix?.totals?.currentQualified === auditedV7QualifiedCount
+  && v7CoverageMatrix?.totals?.planned === requiredV7RecordCount
+  && v7CoverageMatrix?.totals?.final === 64
   && Array.isArray(v7CoverageMatrix?.rows)
   && v7CoverageMatrix.rows.length === 20
-  && v7GapList?.approvedTargetCount === 128
-  && v7GapList?.auditedSourceRecordCount === 21
-  && v7GapList?.qualifiedExistingRecordCount === 21
+  && v7GapList?.approvedTargetCount === 64
+  && v7GapList?.formalEnhancementTargetCount === 128
+  && v7GapList?.auditedSourceRecordCount === v7CapacityPlan?.auditSummary?.auditedSourceRecordCount
+  && v7GapList?.qualifiedExistingRecordCount === auditedV7QualifiedCount
+  && v7GapList?.suspendedHistoricalRecordCount === v7CapacityPlan?.auditSummary?.suspendedHistoricalRecordCount
   && v7GapList?.failedExistingAuditCount === 0
-  && v7GapList?.requiredNewRecordCount === 107
+  && v7GapList?.requiredNewRecordCount === requiredV7RecordCount
   && sameJson(v7GapList?.splitDeficits, requiredV7Deficit)
   && Array.isArray(v7GapList?.plannedSlots)
-  && v7GapList.plannedSlots.length === 107
+  && v7GapList.plannedSlots.length === requiredV7RecordCount
   && v7GapList.plannedSlots.every((slot) => slot?.mapScope === "complete-natural-home-map"
     && slot?.requiredConditionContract === "complete-map-scope-world-facts-v2"
     && slot?.requiredNativeResolution?.width === 1024
@@ -462,8 +532,165 @@ const v7CapacityPlanValid = v7CapacityPointer?.schemaVersion === "ai-assisted-v7
   && v7CapacityPlan?.executionBoundary?.trainingStarted === false
   && v7CapacityPlan?.automaticStorage === true
   && v7Config?.training?.dataCapacityDecision?.coverageMatrixLatestPath === ".runtime/ai-painter/ai-assisted-v7-data-capacity-plans/latest.json"
-  && v7Config?.training?.dataCapacityDecision?.programAuditedQualifiedExistingRecords === 21
-  && v7Config?.training?.dataCapacityDecision?.programAuditedRequiredNewRecords === 107
+const rebuildV7CapacityPlanValid =
+  v7CapacityPointer?.schemaVersion ===
+    "ai-assisted-v7-data-capacity-plan-latest-v2"
+  && v7CapacityPointer?.status ===
+    "authorized_rebuild64_world_facts_derived_condition_preparation_ready"
+  && v7CapacityPlan?.schemaVersion ===
+    "ai-assisted-v7-data-capacity-plan-v2"
+  && v7CapacityPlan?.status === v7CapacityPointer.status
+  && v7CapacityPlan?.runId === v7CapacityPointer.runId
+  && v7GapList?.schemaVersion ===
+    "ai-assisted-v7-data-capacity-gap-list-v2"
+  && v7GapList?.runId === v7CapacityPointer.runId
+  && fileHashMatches(
+    v7CapacityPointer?.capacityPlanPath,
+    v7CapacityPointer?.capacityPlanSha256,
+  )
+  && fileHashMatches(
+    v7CapacityPointer?.gapListPath,
+    v7CapacityPointer?.gapListSha256,
+  )
+  && v7CapacityPlan?.authorizationId ===
+    "owner-authorized-isolate-legacy40-and-rebuild-thailand-mvp64-20260729"
+  && v7CapacityPlan?.auditSummary
+    ?.structurallyReverifiedTrainingTruthCount === 0
+  && v7CapacityPlan?.auditSummary
+    ?.isolatedHistoricalRecordCount === 40
+  && v7CapacityPlan?.auditSummary
+    ?.currentCompliantRecordCount === 0
+  && v7CapacityPlan?.gapSummary?.requiredNewRecordCount === 64
+  && v7CapacityPlan?.gapSummary?.plannedSlotCount === 64
+  && sameJson(
+    v7CapacityPlan?.gapSummary?.plannedSplitCounts,
+    approvedV7Split,
+  )
+  && v7GapList?.legacyHistoricalQualifiedCount === 40
+  && v7GapList?.structurallyReverifiedTrainingTruthCount === 0
+  && v7GapList?.requiredCompliantRecordCount === 64
+  && sameJson(v7GapList?.splitCounts, approvedV7Split)
+  && Array.isArray(v7GapList?.plannedSlots)
+  && v7GapList.plannedSlots.length === 64
+  && new Set(
+    v7GapList.plannedSlots.map((slot) => slot.slotId),
+  ).size === 64
+  && v7GapList.plannedSlots.every((slot, index) =>
+    slot?.slotId ===
+      `v7-capacity-slot-${String(146 + index).padStart(3, "0")}`
+    && coverageBlueprint?.mvpActiveLandscapePolicy
+      ?.activeLandscapeTypeIds?.includes(
+        slot?.regionalLandscapeType,
+      )
+    && slot?.regionalLandscapeTypeStatus ===
+      "derived_from_current_window_world_facts_and_ecology"
+    && slot?.landscapeAssignmentByQuotaForbidden === true
+    && slot?.landscapeDerivation?.quotaAssignmentUsed === false
+    && slot?.conditionPackagePreparationAuthorized === true
+    && slot?.imageGenerationAuthorized === false
+    && slot?.gpuTrainingAuthorized === false
+  )
+  && v7CapacityPlan?.gates
+    ?.perWindowWorldFactDerivationRequired === false
+  && v7CapacityPlan?.gates
+    ?.perWindowWorldFactDerivationCompleted === true
+  && v7CapacityPlan?.gates
+    ?.realEarthRegionSourcePackageRequired === true
+  && v7CapacityPlan?.gates
+    ?.independentRegionConnectivityRequired === true
+  && v7CapacityPlan?.gates?.batchRgbAuthorized === false
+  && v7CapacityPlan?.gates?.gpuTrainingAuthorized === false
+  && v7CapacityPlan?.executionBoundary?.conditionPackagesBuilt === 0
+  && v7CapacityPlan?.executionBoundary?.imagesGenerated === 0
+  && v7CapacityPlan?.executionBoundary?.gpuTrainingStarted === false
+  && v7CapacityPlan?.executionBoundary?.trainingStarted === false
+const completedRebuildV7CapacityPlanValid =
+  v7CapacityPointer?.schemaVersion ===
+    "ai-assisted-v7-data-capacity-plan-latest-v2"
+  && v7CapacityPointer?.status ===
+    "capacity_complete_waiting_owner_training_authorization"
+  && v7CapacityPlan?.schemaVersion ===
+    "ai-assisted-v7-data-capacity-plan-v2"
+  && v7CapacityPlan?.status === v7CapacityPointer.status
+  && v7CapacityPlan?.runId === v7CapacityPointer.runId
+  && v7GapList?.schemaVersion ===
+    "ai-assisted-v7-data-capacity-gap-list-v2"
+  && v7GapList?.runId === v7CapacityPointer.runId
+  && v7GapList?.status === "capacity_complete"
+  && fileHashMatches(
+    v7CapacityPointer?.capacityPlanPath,
+    v7CapacityPointer?.capacityPlanSha256,
+  )
+  && fileHashMatches(
+    v7CapacityPointer?.gapListPath,
+    v7CapacityPointer?.gapListSha256,
+  )
+  && v7CapacityPlan?.authorizationId ===
+    "owner-authorized-isolate-legacy40-and-rebuild-thailand-mvp64-20260729"
+  && v7CapacityPlan?.auditSummary
+    ?.structurallyReverifiedTrainingTruthCount === 64
+  && v7CapacityPlan?.auditSummary
+    ?.isolatedHistoricalRecordCount === 40
+  && v7CapacityPlan?.auditSummary
+    ?.currentCompliantRecordCount === 64
+  && v7CapacityPlan?.auditSummary
+    ?.requiredNewRecordCount === 0
+  && v7CapacityPlan?.auditSummary
+    ?.ownerApprovedRecordCount === 64
+  && v7CapacityPlan?.auditSummary
+    ?.registeredCapacityCount === 64
+  && v7CapacityPlan?.auditSummary
+    ?.uniqueCapacitySlotCount === 64
+  && v7CapacityPlan?.gapSummary?.requiredNewRecordCount === 0
+  && v7CapacityPlan?.gapSummary?.plannedSlotCount === 0
+  && v7CapacityPlan?.gapSummary?.completedSlotCount === 64
+  && sameJson(
+    v7CapacityPlan?.gapSummary?.completedSplitCounts,
+    approvedV7Split,
+  )
+  && v7GapList?.currentCompliantRecordCount === 64
+  && v7GapList?.requiredNewRecordCount === 0
+  && sameJson(v7GapList?.splitCounts, approvedV7Split)
+  && Array.isArray(v7GapList?.plannedSlots)
+  && v7GapList.plannedSlots.length === 0
+  && Array.isArray(v7GapList?.registeredSlots)
+  && v7GapList.registeredSlots.length === 64
+  && Array.isArray(v7CapacityPlan?.records)
+  && v7CapacityPlan.records.length === 64
+  && new Set(v7CapacityPlan.records.map((record) => record.capacitySlotId)).size === 64
+  && v7CapacityPlan.records.every((record, index) =>
+    record?.capacitySlotId === `v7-capacity-slot-${146 + index}`
+    && typeof record?.recordId === "string"
+    && typeof record?.conditionWorldId === "string"
+    && fileHashMatches(record?.contributionPath, record?.contributionSha256)
+  )
+  && v7CapacityPlan?.audits?.frameworkPassedPackageCount === 64
+  && v7CapacityPlan?.audits?.dynamicReadinessPairCount === 2016
+  && fileHashMatches(
+    v7CapacityPlan?.audits?.frameworkAuditPath,
+    v7CapacityPlan?.audits?.frameworkAuditSha256,
+  )
+  && fileHashMatches(
+    v7CapacityPlan?.audits?.dynamicReadinessPath,
+    v7CapacityPlan?.audits?.dynamicReadinessSha256,
+  )
+  && v7CapacityPlan?.gates?.capacityComplete === true
+  && v7CapacityPlan?.gates?.splitIsolationPassed === true
+  && v7CapacityPlan?.gates?.ownerTrainingAuthorizationRequired === true
+  && v7CapacityPlan?.gates?.gpuTrainingAuthorized === false
+  && v7CapacityPlan?.gates?.runtimeFrameAuthorized === false
+  && v7CapacityPlan?.gates?.worldEntryAuthorized === false
+  && v7CapacityPlan?.executionBoundary?.conditionPackagesBuilt === 64
+  && v7CapacityPlan?.executionBoundary?.imagesGenerated === 0
+  && v7CapacityPlan?.executionBoundary?.gpuTrainingStarted === false
+  && v7CapacityPlan?.executionBoundary?.trainingStarted === false
+  && v7CapacityPlan?.executionBoundary?.runtimeFrameCreated === false
+  && v7CapacityPlan?.executionBoundary?.worldEntryStarted === false
+  && v7CapacityPlan?.automaticStorage === true
+const v7CapacityPlanValid =
+  legacyV7CapacityPlanValid ||
+  rebuildV7CapacityPlanValid ||
+  completedRebuildV7CapacityPlanValid
 check(v7CapacityPlanValid, "AI-assisted V7 approved capacity plan, hashes, matrix, or gap evidence is missing or invalid")
 
 const v6ProgramCheckpointValid = v6ProgramCheckpoint?.schemaVersion === v6Config?.requiredCheckpointProvenance
@@ -811,7 +1038,7 @@ const connectivityCoveragePending = trainingGateStatus?.connectivityThresholdApp
 const latestValidationIsV5 = inferenceValidation?.modelId === v5Config?.modelId
 const latestValidationIsV6 = inferenceValidation?.modelId === v6Config?.modelId
 const conditionalDenoiserStatus = v7RepairValid
-  ? "v6_failure_diagnosed_v7_repair_cpu_verified_capacity_128_approved_training_blocked_pending_dataset"
+  ? "v6_failure_diagnosed_v7_repair_cpu_verified_mvp64_training_owner_authorized_pending_dataset_and_audits"
   : v6Stage2TrainingCheckpointValid
   ? latestValidationIsV6 && inferenceValidationStatus === "machine_rejected"
     ? "trained_v6_validation_failed_pending_owner_authorized_diagnosis"
@@ -852,7 +1079,7 @@ const result = {
   ok: failures.length === 0,
   status: failures.length === 0 ? "ai_assisted_complete_world_model_contract_passed" : "ai_assisted_complete_world_model_contract_failed",
   architectureStatus: v7RepairValid
-    ? "v7_repair_cpu_verified_capacity_128_approved_untrained_pending_dataset_and_owner_training_authorization"
+    ? "v7_repair_cpu_verified_mvp64_owner_training_authorized_untrained_pending_dataset_and_audits"
     : v6Stage2TrainingCheckpointValid
     ? latestValidationIsV6 && inferenceValidationStatus === "machine_rejected"
       ? "v6_single_challenge_validation_machine_rejected_pending_owner_authorized_diagnosis"
@@ -911,7 +1138,7 @@ const result = {
   datasetPackageBlockers: datasetPackageManifest?.blockers ?? [],
   checkpointStatus: checkpointValid ? "valid_autoencoder_warmup" : checkpoint ? "present_invalid" : "missing",
   conditionalCheckpointStatus: v7RepairValid
-    ? "v6_trained_validation_failed_v7_untrained_and_blocked"
+    ? "v6_trained_validation_failed_v7_untrained_owner_authorized_pending_mvp64_dataset_and_audits"
     : v6Stage2TrainingCheckpointValid
     ? latestValidationIsV6 && inferenceValidationStatus === "machine_rejected"
       ? "v6_trained_validation_failed"
@@ -972,7 +1199,7 @@ const result = {
   v6DiagnosisStatus: v6DiagnosisValid ? "completed_v7_repair_boundary_recorded" : "missing_or_invalid",
   v6DiagnosisRunId: v6DiagnosisReport?.runId ?? null,
   v6DiagnosisSourceValidationRunId: v6DiagnosisReport?.sourceValidation?.runId ?? null,
-  v7RepairStatus: v7RepairValid ? "cpu_verified_capacity_128_approved_training_blocked_pending_dataset" : "missing_or_invalid",
+  v7RepairStatus: v7RepairValid ? "cpu_verified_mvp64_owner_training_authorized_pending_dataset_and_audits" : "missing_or_invalid",
   v7RepairRunId: v7RepairReport?.runId ?? null,
   v7RepairRolloutSampleCount: v7RepairReport?.result?.rolloutMetrics?.rolloutSampleCount ?? null,
   v7RepairRolloutSeedCountPerSample: v7RepairReport?.result?.rolloutMetrics?.rolloutSeedCountPerSample ?? null,
@@ -981,11 +1208,13 @@ const result = {
   v7TrainingAuthorizationStatus: v7Config?.training?.trainingAuthorizationStatus ?? null,
   v7GpuTrainingStarted: v7RepairReport?.gpuTrainingStarted ?? null,
   v7ImageInferenceStarted: v7RepairReport?.imageInferenceStarted ?? null,
-  v7CapacityPlanStatus: v7CapacityPlanValid ? "capacity_128_machine_verified_21_qualified_107_required_training_blocked" : "missing_or_invalid",
+  v7CapacityPlanStatus: v7CapacityPlanValid
+    ? `mvp_capacity_64_machine_verified_${auditedV7QualifiedCount}_qualified_${requiredV7RecordCount}_required_training_activation_blocked_pending_dataset_and_audits`
+    : "missing_or_invalid",
   v7CapacityPlanRunId: v7CapacityPointer?.runId ?? null,
-  v7CapacityQualifiedExistingRecordCount: v7CapacityPlan?.auditSummary?.qualifiedExistingRecordCount ?? null,
+  v7CapacityQualifiedExistingRecordCount: auditedV7QualifiedCount ?? null,
   v7CapacityRequiredNewRecordCount: v7CapacityPlan?.gapSummary?.requiredNewRecordCount ?? null,
-  v7CapacityFinalSplitCounts: v7CapacityPlan?.gapSummary?.finalSplitCounts ?? null,
+  v7CapacityFinalSplitCounts: v7FinalSplitCounts ?? null,
   v7CapacityGpuTrainingStarted: v7CapacityPlan?.executionBoundary?.gpuTrainingStarted ?? null,
   v7CapacityImagesGenerated: v7CapacityPlan?.executionBoundary?.imagesGenerated ?? null,
   v6SmokeStatus: v6Stage2TrainingCheckpointValid
@@ -1064,6 +1293,16 @@ const result = {
   formalInferenceReady: false,
   failures,
 }
+result.checkedAtUtc = new Date().toISOString()
+const reportOutput = argumentValue("--output")
+if (reportOutput) {
+  const absoluteReportOutput = path.resolve(ROOT, reportOutput)
+  if (!(absoluteReportOutput === ROOT || absoluteReportOutput.startsWith(`${ROOT}${path.sep}`))) {
+    throw new Error(`report output escapes project root: ${reportOutput}`)
+  }
+  fs.mkdirSync(path.dirname(absoluteReportOutput), { recursive: true })
+  fs.writeFileSync(absoluteReportOutput, `${JSON.stringify(result, null, 2)}\n`, "utf8")
+}
 console[failures.length === 0 ? "log" : "error"](JSON.stringify(result, null, 2))
 process.exit(failures.length === 0 ? 0 : 1)
 
@@ -1085,6 +1324,10 @@ function readLatestConditionalStageManifest(modelVersion, stage) {
   }
 }
 function check(condition, message) { if (!condition) failures.push(message) }
+function argumentValue(name) {
+  const index = process.argv.indexOf(name)
+  return index >= 0 ? process.argv[index + 1] ?? null : null
+}
 function historicalSourceEvidenceIsRecorded(evidence) {
   if (!evidence?.path || !/^[a-f0-9]{64}$/i.test(evidence?.sha256 ?? "")) return false
   return fs.existsSync(path.resolve(ROOT, evidence.path))

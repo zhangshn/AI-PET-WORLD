@@ -13,15 +13,27 @@ const ROOT = process.cwd()
 const PYTHON = path.join(ROOT, "ml", "ai-painter", ".venv", "Scripts", "python.exe")
 const TRAINER = path.join(ROOT, "ml", "ai-painter", "scripts", "train_ai_assisted_conditional_denoiser.py")
 const engineeringMode = process.argv.includes("--engineering-26")
+const useV7 = process.argv.includes("--v7")
 const useV6 = process.argv.includes("--v6")
 const useV5 = process.argv.includes("--v5")
-const modelVersion = engineeringMode ? "v7-engineering-26" : (useV6 ? "v6" : (useV5 ? "v5" : "v4"))
+const selectedModeCount = [engineeringMode, useV7, useV6, useV5].filter(Boolean).length
+if (selectedModeCount > 1) throw new Error("only one model-version flag may be used")
+const modelVersion = engineeringMode ? "v7-engineering-26" : (useV7 ? "v7" : (useV6 ? "v6" : (useV5 ? "v5" : "v4")))
 const CONFIG = path.join(ROOT, "ml", "ai-painter", "config", `complete-world-ai-assisted-cold-start-${modelVersion}.json`)
 const AUTOENCODER_ROOT = path.join(ROOT, ".runtime", "ai-painter", "project-owned-complete-world-model-ai-assisted-v2")
 const MODEL_ROOT = engineeringMode
   ? path.join(ROOT, ".runtime", "ai-painter", "project-owned-complete-world-v7-engineering-pretraining")
   : path.join(ROOT, ".runtime", "ai-painter", `project-owned-complete-world-conditional-denoiser-${modelVersion}`)
 const modelConfig = readJson(CONFIG)
+const v7TrainingAuthorization = useV7
+  ? readJson(modelConfig?.training?.ownerTrainingAuthorization?.authorizationPath)
+  : null
+const v7CapacityPointer = useV7
+  ? readJson(".runtime/ai-painter/ai-assisted-v7-data-capacity-plans/latest.json")
+  : null
+const v7CapacityPlan = useV7 && v7CapacityPointer?.capacityPlanPath
+  ? readJson(v7CapacityPointer.capacityPlanPath)
+  : null
 const datasetPointer = readJson(engineeringMode
   ? "data/world-samples/ai-assisted-v7-engineering-pretraining-datasets/latest.json"
   : "data/world-samples/ai-assisted-cold-start-dataset-packages/latest.json")
@@ -52,6 +64,34 @@ if (engineeringMode && datasetManifest?.trainingGateStatus?.engineeringPretraini
 if (engineeringMode && datasetManifest?.trainingGateStatus?.formalV7TrainingAuthorized !== false) blockers.push("engineering_pretraining_formal_v7_boundary_invalid")
 if (engineeringMode && modelConfig?.training?.trainingMode !== "nonformal_engineering_pretraining") blockers.push("engineering_pretraining_config_mode_invalid")
 if (engineeringMode && modelConfig?.training?.formalV7TrainingAuthorized !== false) blockers.push("engineering_pretraining_config_formal_boundary_invalid")
+if (useV7 && modelConfig?.training?.ownerTrainingAuthorization?.gpuTrainingAuthorizedNow !== true) blockers.push("v7_gpu_training_owner_activation_missing")
+if (useV7 && modelConfig?.training?.ownerTrainingAuthorization?.status !== "owner_authorized_active_mvp64_gpu_training") blockers.push("v7_gpu_training_authorization_status_invalid")
+if (useV7 && !fileHashMatches(
+  modelConfig?.training?.ownerTrainingAuthorization?.authorizationPath,
+  modelConfig?.training?.ownerTrainingAuthorization?.authorizationSha256,
+)) blockers.push("v7_gpu_training_authorization_hash_invalid")
+if (useV7 && v7TrainingAuthorization?.status !== "resolved_owner_authorized") blockers.push("v7_gpu_training_owner_resolution_missing")
+if (useV7 && v7TrainingAuthorization?.ownerDecision?.commandRef !== "owner-approved-v7-mvp64-local-gpu-training-activation-20260802") blockers.push("v7_gpu_training_owner_command_invalid")
+if (useV7 && v7TrainingAuthorization?.resolution?.gpuTrainingActivated !== true) blockers.push("v7_gpu_training_activation_not_resolved")
+if (useV7 && v7TrainingAuthorization?.resolution?.formalInferenceAuthorized !== false) blockers.push("v7_formal_inference_boundary_invalid")
+if (useV7 && datasetManifest?.v7CapacityContributionCount !== 64) blockers.push("v7_mvp64_dataset_capacity_invalid")
+if (useV7 && v7TrainingAuthorization?.taskIdentity?.datasetPackageId !== datasetManifest?.packageId) blockers.push("v7_authorized_dataset_identity_mismatch")
+if (useV7 && v7TrainingAuthorization?.taskIdentity?.qualifiedCompleteMapCount !== 64) blockers.push("v7_authorized_capacity_count_invalid")
+if (useV7 && !sameJson(v7TrainingAuthorization?.taskIdentity?.splitCounts, {
+  train: 48,
+  validation: 8,
+  challenge: 4,
+  regression: 4,
+})) blockers.push("v7_authorized_split_invalid")
+if (useV7 && v7CapacityPlan?.status !== "capacity_complete_waiting_owner_training_authorization") blockers.push("v7_capacity_plan_not_complete")
+if (useV7 && v7CapacityPlan?.auditSummary?.currentCompliantRecordCount !== 64) blockers.push("v7_capacity_plan_record_count_invalid")
+if (useV7 && !sameJson(v7CapacityPlan?.gapSummary?.completedSplitCounts, {
+  train: 48,
+  validation: 8,
+  challenge: 4,
+  regression: 4,
+})) blockers.push("v7_capacity_plan_split_invalid")
+if (useV7 && !fileHashMatches(v7CapacityPointer?.capacityPlanPath, v7CapacityPointer?.capacityPlanSha256)) blockers.push("v7_capacity_plan_hash_invalid")
 if (!autoencoderCheckpoint) blockers.push("approved_ai_assisted_autoencoder_checkpoint_missing")
 if (resolutionStage > 0 && !smokeTest && !parentDenoiserCheckpoint) blockers.push("previous_conditional_denoiser_resolution_checkpoint_missing")
 if (!fs.existsSync(CONFIG)) blockers.push("ai_assisted_model_config_missing")
@@ -143,10 +183,14 @@ writeJson(algorithmEvidencePath, algorithmEvidence)
 const pointer = {
   ...manifest,
   trainingMode: engineeringMode ? "nonformal_engineering_pretraining" : "progressive_conditional_denoiser_training",
-  trainingAuthorizationId: engineeringMode ? modelConfig.training.trainingAuthorizationId : null,
-  formalV7TrainingAuthorized: false,
-  formalV7CapacityCount: engineeringMode ? 26 : null,
-  formalV7RequiredNewCount: engineeringMode ? 102 : null,
+  trainingAuthorizationId: engineeringMode
+    ? modelConfig.training.trainingAuthorizationId
+    : useV7
+      ? modelConfig.training.ownerTrainingAuthorization.authorizationId
+      : null,
+  formalV7TrainingAuthorized: useV7,
+  formalV7CapacityCount: engineeringMode ? 26 : useV7 ? 64 : null,
+  formalV7RequiredNewCount: engineeringMode ? 102 : useV7 ? 0 : null,
   rgbGenerated: false,
   manifestPath: projectPath(manifestPath),
   algorithmEvidencePath: projectPath(algorithmEvidencePath),
@@ -185,7 +229,7 @@ console.log(JSON.stringify({
   manifestPath: projectPath(manifestPath),
   conditionBoundSampleCount: manifest.conditionBoundSampleCount,
   trainingMode: engineeringMode ? "nonformal_engineering_pretraining" : "progressive_conditional_denoiser_training",
-  formalV7TrainingAuthorized: false,
+  formalV7TrainingAuthorized: useV7,
   rgbGenerated: false,
   formalInferenceEligible: false,
   remainingBlockers: manifest.remainingBlockers,
@@ -323,6 +367,7 @@ function fileHashMatches(filePath, expected) {
   return fs.existsSync(absolute) && crypto.createHash("sha256").update(fs.readFileSync(absolute)).digest("hex") === expected
 }
 function sha256File(filePath) { return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex") }
+function sameJson(left, right) { return JSON.stringify(left) === JSON.stringify(right) }
 function buildAlgorithmEvidence() {
   const sources = [
     CONFIG,

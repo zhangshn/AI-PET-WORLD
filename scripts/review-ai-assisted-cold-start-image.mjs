@@ -7,6 +7,7 @@ import { refreshGameMapAutoVisualJudgeLearning } from "./lib/game-map-auto-visua
 import { auditImageAgainstLatestStyleFingerprint } from "./lib/ai-assisted-style-fingerprint.mjs"
 import { auditAiAssistedConditionAlignment } from "./lib/ai-assisted-condition-alignment.mjs"
 import { auditAiAssistedCompositionNovelty } from "./lib/ai-assisted-composition-novelty.mjs"
+import { auditCompleteMapWorldFrameIntegrity } from "./lib/complete-map-world-frame-integrity.mjs"
 
 const ROOT = process.cwd()
 const LIBRARY_ROOT = path.join(ROOT, "data", "world-samples", "original-image-library", "natural-home-v1")
@@ -63,6 +64,10 @@ const styleFingerprintAudit = await auditImageAgainstLatestStyleFingerprint(imag
 issues.push(...styleFingerprintAudit.issues)
 const compositionNoveltyAudit = await auditAiAssistedCompositionNovelty({ record, imagePath })
 issues.push(...compositionNoveltyAudit.issues)
+const worldFrameIntegrityAudit = completeMapMetricContractActive
+  ? await auditCompleteMapWorldFrameIntegrity({ record, imagePath })
+  : null
+if (worldFrameIntegrityAudit) issues.push(...worldFrameIntegrityAudit.issues)
 const semanticConditionAudit = record.conditionBinding?.conditionPackPath
   ? await auditAiAssistedConditionAlignment({ record, imagePath })
   : null
@@ -73,20 +78,20 @@ const passed = issues.length === 0
 const persistedOwnerReview = readPersistedOwnerReview(record)
 const ownerAlreadyRejected = persistedOwnerReview?.decision === "owner_rejected"
 const ownerAlreadyApproved = persistedOwnerReview?.decision === "owner_approved"
-const effectiveOwnerReviewStatus = ownerAlreadyRejected
-  ? "owner_rejected"
-  : ownerAlreadyApproved
+const effectiveOwnerReviewStatus = !passed
+  ? "not_reached_machine_failed"
+  : ownerAlreadyRejected
+    ? "owner_rejected"
+    : ownerAlreadyApproved
     ? "owner_approved"
-  : passed
-    ? "pending_review"
-    : "not_reached_machine_failed"
+    : "pending_review"
 const review = {
   schemaVersion: "ai-assisted-cold-start-machine-review-v1",
   reviewId: `ai-cold-start-machine-review-${recordId}-${timestamp.replace(/[:.]/g, "-")}`,
   recordId,
   status: passed ? "machine_contract_passed_waiting_owner_visual_review" : "machine_rejected",
   passed,
-  reviewerVersion: "ai-assisted-cold-start-machine-review-v7",
+  reviewerVersion: "ai-assisted-cold-start-machine-review-v9-water-connectivity-and-position-invariant-topology",
   title: passed ? "AI-assisted cold-start machine contract review passed" : "AI-assisted cold-start machine contract review failed",
   titleZh: passed ? "AI 辅助冷启动机器契约审核通过" : "AI 辅助冷启动机器契约审核失败",
   createdAtUtc: timestamp,
@@ -120,6 +125,7 @@ const review = {
   sourceResolutionAudit,
   styleFingerprintAudit,
   compositionNoveltyAudit,
+  worldFrameIntegrityAudit,
   semanticConditionAudit,
   issues,
   affectedRegions: Array.from(new Set(issues.map((issue) => issue.affectedRegion))),
@@ -145,9 +151,15 @@ writeJsonAtomic(path.join(reviewHistoryRoot, `${review.reviewId}.json`), review)
 writeJson(reviewPath, review)
 const updatedRecord = {
   ...record,
-  status: passed ? record.status : "rejected",
-  blockReasons: passed
-    ? record.blockReasons
+  status: !passed
+    ? "rejected"
+    : ownerAlreadyRejected
+      ? "rejected"
+      : ownerAlreadyApproved
+        ? record.status
+        : "ai_assisted_cold_start_intake",
+  blockReasons: passed && !ownerAlreadyRejected
+    ? (record.blockReasons ?? []).filter((reason) => reason !== "machine_visual_review_rejected")
     : Array.from(new Set([...(record.blockReasons ?? []), "machine_visual_review_rejected"])),
   reviews: {
     ...record.reviews,
@@ -158,23 +170,38 @@ const updatedRecord = {
   conditionBinding: record.conditionBinding
     ? {
         ...record.conditionBinding,
-        status: passed && semanticConditionAudit?.passed
-          ? "machine_semantic_alignment_passed_waiting_owner_review"
+        status: passed && semanticConditionAudit?.passed && ownerAlreadyApproved
+          ? record.v7CapacityContribution?.status === "registered"
+            ? "formal_conditional_training_eligible_owner_approved_v7_capacity_registered"
+            : "formal_conditional_training_eligible_owner_approved"
+          : passed && semanticConditionAudit?.passed
+            ? "machine_semantic_alignment_passed_waiting_owner_review"
           : semanticConditionAudit?.passed
             ? "machine_visual_contract_failed"
             : "machine_semantic_alignment_failed",
-        formalConditionalTrainingEligible: false,
+        formalConditionalTrainingEligible: ownerAlreadyApproved && passed && semanticConditionAudit?.passed === true,
       }
     : record.conditionBinding,
-  trainingEligibility: ownerAlreadyRejected
-    ? "owner_rejected"
-    : ownerAlreadyApproved && passed
-      ? record.trainingEligibility
-    : passed
-      ? record.trainingEligibility
-      : "machine_rejected",
-  aiAssistedColdStartEligible: false,
+  trainingEligibility: !passed
+    ? "machine_rejected"
+    : ownerAlreadyRejected
+      ? "owner_rejected"
+      : ownerAlreadyApproved
+        ? record.trainingEligibility
+        : "ai_assisted_cold_start_pending_review",
+  aiAssistedColdStartEligible: ownerAlreadyApproved && passed,
   independentTrainingEligible: false,
+  v7CapacityContribution:
+    !passed && record.v7CapacityContribution?.status === "registered"
+      ? {
+          ...record.v7CapacityContribution,
+          status: "withdrawn_machine_rejected",
+          withdrawnAtUtc: timestamp,
+          withdrawnAtAsiaShanghai: formatShanghai(timestamp),
+          withdrawalReasonCodes: issues.map((issue) => issue.code),
+          withdrawalMachineReviewId: review.reviewId,
+        }
+      : record.v7CapacityContribution,
   updatedAtUtc: timestamp,
   updatedAtAsiaShanghai: formatShanghai(timestamp),
 }

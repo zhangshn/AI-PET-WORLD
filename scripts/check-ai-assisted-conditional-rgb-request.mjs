@@ -4,6 +4,7 @@ import path from "node:path"
 import sharp from "sharp"
 import { auditCompleteMapScope } from "./lib/complete-map-scope-gate.mjs"
 import { validateFoundationalCompleteMapVisualStandard } from "./lib/foundational-complete-map-visual-standard.mjs"
+import { validateGenerationInputHistoryBoundary } from "./lib/generation-input-history-boundary.mjs"
 
 const ROOT = process.cwd()
 const failures = []
@@ -21,8 +22,10 @@ for (const [field, value] of [
   ["promptEvidencePath", request.promptEvidencePath],
   ["taskPackagePath", request.taskPackagePath],
   ["conditionPackPath", request.conditionPackPath],
+  ["conditionGuideManifestPath", request.conditionGuideManifestPath],
   ["foundationalVisualStandardPath", request.foundationalVisualStandardPath],
   ["completeMapScopeAuditPath", request.completeMapScopeAuditPath],
+  ["preRgbConditionGuideNoveltyAuditPath", request.preRgbConditionGuideNoveltyAuditPath],
 ]) {
   if (!value) failPreflight(`conditional_rgb_request_required_path_missing:${field}`)
 }
@@ -41,28 +44,142 @@ const blueprint = readJson(evidence.sourceConditionBlueprintPath)
 const director = readJson(evidence.directorOutputPath)
 const task = readJson(evidence.taskPackagePath)
 const conditionPack = readJson(evidence.conditionPackPath)
+const guideManifest = readJson(request.conditionGuideManifestPath)
 const connectivityBlueprint = readJson(blueprint.connectivityBlueprintPath)
 const visualStandard = readJson(evidence.foundationalVisualStandardPath)
 const persistedScopeAudit = readJson(evidence.completeMapScopeAuditPath)
 const routeConditionAudit = await auditRouteCondition(conditionPack)
 const completeMapScopeAudit = await auditCompleteMapScope({ blueprint, directorOutput: director, task, conditionPack, connectivityBlueprint })
 const visualStandardValidation = validateFoundationalCompleteMapVisualStandard(visualStandard)
+const generationInputHistoryBoundary =
+  validateGenerationInputHistoryBoundary({
+    root: ROOT,
+    request,
+    evidence,
+    guideManifest,
+    conditionPack,
+    visualStandard,
+  })
+const preRgbNoveltyAudit = readJson(
+  request.preRgbConditionGuideNoveltyAuditPath,
+)
+check(
+  sha256(
+    fs.readFileSync(
+      resolveProjectPath(
+        request.preRgbConditionGuideNoveltyAuditPath,
+      ),
+    ),
+  ) === request.preRgbConditionGuideNoveltyAuditSha256,
+  "pre_rgb_condition_guide_novelty_audit_hash_mismatch",
+)
+check(
+  preRgbNoveltyAudit.passed === true &&
+    preRgbNoveltyAudit
+      .crossModalHistoricalRgbComparisonIncompleteCount === 0 &&
+    preRgbNoveltyAudit
+      .crossModalHistoricalRgbWaterShapeMatches?.length === 0 &&
+    request.preRgbConditionGuideNoveltyGate
+      ?.matchedCrossModalHistoricalRgbWaterShapeCount === 0 &&
+    request.preRgbConditionGuideNoveltyGate
+      ?.crossModalHistoricalRgbComparisonIncompleteCount === 0,
+  "pre_rgb_cross_modal_historical_rgb_water_shape_gate_missing_or_failed",
+)
 const earthReferenceMode = request.earthReferenceSingleImageAuthorizationId
   === "owner-authorized-earth-reference-naturalized-complete-map-single-rgb-20260725"
+const v7SlotSingleImageMode = Boolean(request.v7SlotSingleImageAuthorizationId)
+const thailandRebuild64BatchAuthorizationIds = new Set([
+  "owner-authorized-thailand-rebuild64-complete-batch-generation-20260731",
+  "owner-authorized-thailand-rebuild64-remaining63-full-world-rgb-generation-20260801",
+  "owner-authorized-thailand-rebuild64-failed8-rgb-replacements-20260801",
+  "owner-authorized-thailand-rebuild64-cross-modal-rgb-collapse-prevention-20260801",
+])
+const v7SlotBatchMode = thailandRebuild64BatchAuthorizationIds.has(
+  request.v7SlotBatchAuthorizationId,
+)
+const v7SlotMode = v7SlotSingleImageMode || v7SlotBatchMode
+const selectedEnvironmentState = blueprint.environmentContext?.environmentState
+  ?? blueprint.environmentContext?.monsoonPhase
 
 check(
   request.sourceRecordId === (
     earthReferenceMode
       ? blueprint.conditionLabel
+      : v7SlotMode
+        ? director.v7SlotBinding?.slotId
       : (blueprint.sourceRecordId ?? blueprint.capacitySlotId ?? blueprint.rebuildId)
   ),
   "source_record_blueprint_mismatch",
 )
 if (/^v7-capacity-slot-\d{3}$/.test(request.sourceRecordId ?? "")) {
-  check(request.continuousBatchAuthorizationId === "owner-authorized-v7-remaining-104-continuous-batch-20260723", "v7_continuous_batch_authorization_mismatch")
+  const slotIdentity = /^v7-capacity-slot-(\d{3})$/.exec(request.sourceRecordId)
+  const singleImageAuthorizationIdentity = /^project-owner-authorization-\d{4}-\d{2}-\d{2}-v7-capacity-slot-(\d{3})-single-rgb-generation(?:-attempt-\d+)?$/.exec(
+    request.v7SlotSingleImageAuthorizationId ?? "",
+  )
+  if (singleImageAuthorizationIdentity) {
+    check(
+      singleImageAuthorizationIdentity[1] === slotIdentity?.[1],
+      "v7_slot_single_image_authorization_identity_mismatch",
+    )
+    check(request.continuousBatchAuthorizationId === null, "v7_slot_single_image_must_not_use_continuous_batch_authorization")
+    check(request.automaticNextGenerationAuthorized === false, "v7_slot_single_image_must_not_authorize_next_generation")
+    check(request.automaticRetryAuthorized === false, "v7_slot_single_image_must_not_authorize_retry")
+  } else if (v7SlotBatchMode) {
+    check(
+      thailandRebuild64BatchAuthorizationIds.has(
+        request.v7SlotBatchAuthorizationId,
+      ),
+      "thailand_rebuild64_batch_authorization_mismatch",
+    )
+    check(
+      request.continuousBatchAuthorizationId === null,
+      "thailand_rebuild64_batch_must_use_its_dedicated_authorization_field",
+    )
+    check(
+      request.automaticNextGenerationAuthorized === false,
+      "thailand_rebuild64_each_request_must_not_self_authorize_next_generation",
+    )
+  } else {
+    check(request.continuousBatchAuthorizationId === "owner-authorized-v7-remaining-104-continuous-batch-20260723", "v7_continuous_batch_authorization_mismatch")
+  }
   check(request.ownerApprovalAutomatic === false, "v7_owner_approval_must_remain_manual")
   check(request.capacityContributionAutomaticBeforeOwnerApproval === false, "v7_capacity_contribution_must_wait_for_owner_review")
   check(request.gpuTrainingAuthorized === false, "v7_gpu_training_must_remain_blocked")
+  const sourcePackage = readJson(
+    blueprint.realEarthRegionSourcePackagePath,
+  )
+  check(
+    sourcePackage.packageId === blueprint.realEarthRegionSourcePackageId
+      && sourcePackage.packageSha256 ===
+        blueprint.realEarthRegionSourcePackageSha256
+      && sourcePackage.scope?.currentMvpRegionScope ===
+        "thailand_sakaerat_wang_nam_khiao_only"
+      && sourcePackage.scope?.reusableOutsideThailand === false,
+    "real_earth_region_source_package_missing",
+  )
+  check(
+    connectivityBlueprint.identityBoundary
+      ?.region0001InstanceInherited === false
+      && connectivityBlueprint.anonymousTrainingCoordinateProjection
+        ?.region0001ConcreteInstanceRead === false
+      && connectivityBlueprint.currentRegion?.neighborRegionIds?.length > 0,
+    "concrete_region_connectivity_instance_reused",
+  )
+  check(
+    /^[a-f0-9]{64}$/.test(
+      evidence.structuralIdentities
+        ?.themeArchitectureIdentity ?? "",
+    )
+      && /^[a-f0-9]{64}$/.test(
+        evidence.structuralIdentities
+          ?.instanceDetailIdentity ?? "",
+      )
+      && sameJson(
+        evidence.structuralIdentities,
+        blueprint.structuralIdentities,
+      ),
+    "complete_map_structural_identity_missing",
+  )
 }
 if (/^autonomous-world-rebuild-\d{3}$/.test(request.sourceRecordId ?? "")) {
   const rebuildIdentity = /^autonomous-world-rebuild-(\d{3})$/.exec(request.sourceRecordId)
@@ -101,7 +218,26 @@ check(request.conditionLabel === blueprint.conditionLabel, "request_condition_la
 check(request.generationContractVersion === blueprint.generationContractVersion, "request_generation_contract_version_mismatch")
 check(evidence.conditionLabel === blueprint.conditionLabel, "prompt_condition_label_mismatch")
 check(evidence.generationContractVersion === blueprint.generationContractVersion, "prompt_generation_contract_version_mismatch")
-check(evidence.promptConstruction === "dynamic_complete_map_scope_plus_foundational_visual_standard_plus_world_facts_director_23_channels_v9", "dynamic_prompt_contract_missing")
+check(evidence.promptConstruction === "full_rectangular_world_plus_future_dynamic_readiness_plus_world_facts_director_23_channels_v10", "full_world_dynamic_prompt_contract_missing")
+check(
+  evidence.worldFrameContract?.contractVersion === "complete-rectangular-world-and-future-dynamic-readiness-v2"
+    && evidence.worldFrameContract?.frameCoverage?.everyPixelMustResolveToInWorldSurfaceOrInWorldObject === true
+    && evidence.worldFrameContract?.frameCoverage?.continuousWorldSurfaceMustFillRectangleEdgeToEdge === true
+    && evidence.worldFrameContract?.frameCoverage?.externalBackdropAllowed === false
+    && evidence.worldFrameContract?.frameCoverage?.solidColorMatteAllowed === false
+    && evidence.worldFrameContract?.frameCoverage?.floatingMapOrIslandCutoutAllowed === false
+    && evidence.worldFrameContract?.semanticDecomposition?.futureRuntimeMotionReserved === true,
+  "full_world_dynamic_readiness_evidence_missing",
+)
+check(
+  evidence.conditionGuideFullWorldRenderingContract?.contractVersion === "complete-rectangular-world-and-future-dynamic-readiness-v2"
+    && evidence.conditionGuideFullWorldRenderingContract?.everyPixelIsInWorld === true
+    && evidence.conditionGuideFullWorldRenderingContract?.baseSurfaceCoverageRatio === 1
+    && evidence.conditionGuideFullWorldRenderingContract?.naturalBoundarySemantic === "dense_in_world_edge_ecology_not_external_background"
+    && evidence.conditionGuideFullWorldRenderingContract?.externalBackdropAllowed === false
+    && evidence.conditionGuideFullWorldRenderingContract?.floatingMapOrIslandCutoutAllowed === false,
+  "condition_guide_full_world_rendering_contract_missing",
+)
 check(evidence.styleGuidanceMode === "versioned_foundational_complete_map_visual_standard_aggregate_only_v1", "foundational_visual_standard_guidance_contract_missing")
 check(request.styleGuidanceMode === evidence.styleGuidanceMode, "request_style_guidance_mode_mismatch")
 check(Array.isArray(evidence.styleReferences) && evidence.styleReferences.length === 0, "historical_complete_map_style_references_must_be_empty")
@@ -111,6 +247,9 @@ check(request.historicalCompleteMapImageReferencesUsed === false, "request_histo
 check(Array.isArray(request.referenceImagePaths) && request.referenceImagePaths.length === 1, "request_must_have_exactly_one_condition_guide_reference")
 check(request.referenceImagePaths?.[0] === evidence.conditionGuidePath, "request_reference_must_be_condition_guide")
 check(request.referenceImageRoles?.length === 1 && request.referenceImageRoles[0] === "authoritative_semantic_condition_guide", "request_reference_role_invalid")
+for (const issue of generationInputHistoryBoundary.issues) {
+  check(false, issue)
+}
 check(evidence.targetVisualContract === "generator-native-exact-four-three-no-smaller-than-1024x768-with-audited-training-derivative", "cold_start_source_contract_missing")
 check(evidence.derivativePolicyVersion === "owner-approved-high-resolution-four-three-derivative-v1", "cold_start_derivative_policy_missing")
 check(evidence.trainingDerivativeContract === "nearest-neighbor-no-crop-no-upscale-to-1024x768", "cold_start_training_derivative_contract_missing")
@@ -120,9 +259,9 @@ check(blueprint.environmentContext?.contractVersion === "world-visual-environmen
 check(evidence.environmentContextContractVersion === blueprint.environmentContext?.contractVersion, "prompt_environment_contract_mismatch")
 check(sameJson(evidence.environmentContext, blueprint.environmentContext), "prompt_blueprint_environment_context_mismatch")
 check(sameJson(request.environmentContext, blueprint.environmentContext), "request_blueprint_environment_context_mismatch")
-if (earthReferenceMode) {
+if (earthReferenceMode || v7SlotMode) {
   check(task.directorPlan?.singleMapEcologyPlan?.season === blueprint.environmentContext?.season, "task_blueprint_season_mismatch")
-  check(task.directorPlan?.singleMapEcologyPlan?.environmentState === blueprint.environmentContext?.environmentState, "task_blueprint_environment_state_mismatch")
+  check(task.directorPlan?.singleMapMaterialPlan?.environmentState === selectedEnvironmentState, "task_blueprint_environment_state_mismatch")
   check(task.directorPlan?.singleMapMaterialPlan?.weather === blueprint.environmentContext?.weather, "task_blueprint_weather_mismatch")
   check(task.directorPlan?.singleMapMaterialPlan?.lighting === blueprint.environmentContext?.lighting, "task_blueprint_lighting_mismatch")
   check(task.directorPlan?.singleMapMaterialPlan?.groundMoisture === blueprint.environmentContext?.groundMoisture, "task_blueprint_ground_moisture_mismatch")
@@ -130,7 +269,7 @@ if (earthReferenceMode) {
   check(sameJson(task.environmentContext, blueprint.environmentContext), "task_blueprint_environment_context_mismatch")
 }
 check(director.singleMapEcologyPlan?.season === blueprint.environmentContext?.season, "director_blueprint_season_mismatch")
-check(director.singleMapMaterialPlan?.environmentState === blueprint.environmentContext?.environmentState, "director_blueprint_environment_state_mismatch")
+check(director.singleMapMaterialPlan?.environmentState === selectedEnvironmentState, "director_blueprint_environment_state_mismatch")
 check(evidence.semanticConditionSummary?.blueprintId === blueprint.blueprintId, "semantic_summary_blueprint_mismatch")
 check(evidence.landscapeProfile?.typeId === blueprint.landscapeType, "landscape_profile_identity_mismatch")
 check(evidence.semanticConditionSummary?.landscapeProfile?.typeId === blueprint.landscapeType, "semantic_summary_landscape_profile_mismatch")
@@ -177,8 +316,11 @@ check(evidence.prompt.includes("exact 4:3 image at the generator's native high r
 check(evidence.prompt.includes("preserve the raw source unchanged"), "immutable_raw_source_instruction_missing")
 check(evidence.prompt.includes("nearest-neighbor 1024x768 training derivative"), "training_derivative_instruction_missing")
 for (const field of ["season", "environmentState", "weather", "lighting", "groundMoisture"]) {
-  check(Boolean(blueprint.environmentContext?.[field]), `environment_context_field_missing:${field}`)
-  check(evidence.prompt.includes(blueprint.environmentContext?.[field]), `prompt_environment_field_missing:${field}`)
+  const value = field === "environmentState"
+    ? selectedEnvironmentState
+    : blueprint.environmentContext?.[field]
+  check(Boolean(value), `environment_context_field_missing:${field}`)
+  check(evidence.prompt.includes(value), `prompt_environment_field_missing:${field}`)
 }
 if (blueprint.environmentContext?.season === "dry_season") {
   check(!evidence.prompt.includes("wet-season post-rain"), "dry_season_prompt_contains_wet_season_text")
@@ -212,6 +354,7 @@ const result = {
   routeConditionAudit,
   completeMapScopeAudit,
   foundationalVisualStandardId: visualStandard.standardId,
+  generationInputHistoryBoundary,
   failures,
 }
 

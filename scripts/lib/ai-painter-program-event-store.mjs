@@ -1,6 +1,6 @@
 import fs from "node:fs"
 import path from "node:path"
-import { randomUUID } from "node:crypto"
+import { createHash, randomUUID } from "node:crypto"
 import { enrichTrainingProcessLedgerEvent } from "./ai-painter-training-ledger-event-analysis.mjs"
 import { indexArtifact, indexProgramEvent } from "./ai-pet-world-storage-catalog.mjs"
 import { logicalProjectPath } from "./ai-pet-world-storage.mjs"
@@ -107,5 +107,8 @@ function indexWrittenArtifact(filePath, runId = null) {
     runId,
     byteSize: info.size,
     modifiedAtUtc: info.mtime.toISOString(),
+    sha256: createHash("sha256")
+      .update(fs.readFileSync(filePath))
+      .digest("hex"),
   })
 }

@@ -69,6 +69,16 @@ export type OriginalImageRecord = {
     ownerCommandRef?: string
     ownerReviewPath?: string
   }
+  rebuild64Sequence?: {
+    registryId?: string
+    seriesId?: string
+    sequenceNumber?: number
+    sequenceCode?: string
+    sequenceLabel?: string
+    workItemId?: string
+    legacyCapacitySlotId?: string
+    ownerCommandRef?: string
+  } | null
   createdAtUtc?: string
   createdAtAsiaShanghai?: string
   updatedAtUtc?: string

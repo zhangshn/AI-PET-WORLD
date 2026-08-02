@@ -1,6 +1,6 @@
 # AI-PET-WORLD 业务与技术架构
 
-更新时间：2026-07-24 21:46:58 +08:00
+更新时间：2026-07-29 20:21:33 +08:00
 
 状态：long-term-architecture-reference / 当前只实现完整自然家园地图相关层
 
@@ -9,6 +9,37 @@
 > 本文保留长期产品架构。当前执行范围、阻断和下一步只读取 `docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md`，不得从长期架构提前启动管家角色或玩家交互。紫微斗数是人格数据子系统，当前地图阶段不实现其业务，但长期必须通过正式契约连接 AI 管家人格映射。
 
 本文定义当前 MVP 和长期主线的业务架构、技术架构、数据流、模块边界和禁止事项。
+
+## 0. 本地智能核心与外部员工解耦架构
+
+本地系统是正式判断、授权请求、审核状态和长期记忆的唯一载体。世界事实、任务状态、机器结论、owner动作请求、owner决定、复审结果、容量登记和下一门禁必须全部以本地不可变文件为证据，并由本地SQLite提供查询索引。聊天和外部智能体记忆不属于系统状态。
+
+本地治理链固定为：
+
+```text
+本地证据读取
+-> 本地门禁判断与冲突诊断
+-> 本地生成owner-action-request
+-> 本地不可变保存、事件与SQLite索引
+-> 项目所有者明确决定
+-> 本地程序只执行获批范围
+-> 本地复审、登记和下一状态
+```
+
+Codex只作为受控执行与检查员工。当前允许它在本地程序已经锁定任务、范围和门禁后执行受控冷启动RGB、代码修复或对应检查；它不得成为系统编排器、长期记忆、正式证据源或授权机关。目标架构中，本地小AI负责完整判断和流程编排，Codex仅在收到具体任务时运行相应检查并把证据交回本地系统；移除Codex或丢失聊天历史不得破坏本地流程连续性。
+
+机器可读长期合同固定为`data/ai-painter/system-governance/local-ai-responsibility-contract-v1.json`。运行时owner动作请求固定保存到`.runtime/ai-painter/owner-action-requests/<requestId>/request.json`，同时写入训练过程事件总账和D盘SQLite索引；`latest.json`只是查询指针。
+
+## 2026-07-25 V7首次MVP容量架构覆盖
+
+V7训练容量采用两级目标，不改变AI Painter、WorldFacts、World Director、23通道、审核或Runtime边界：
+
+| 级别 | 完整地图数量 | split | 作用 |
+|---|---:|---|---|
+| 首次MVP训练门槛 | 64 | `48/8/4/4` | 尽快启动第一轮正式MVP训练并验证本地模型闭环 |
+| 后续正式增强目标 | 128 | `96/16/8/8` | 扩大构图、季节、生态和挑战集覆盖，提高泛化稳定性 |
+
+当前26张可信完整地图继续作为现有容量，17条镜像、旋转或共享骨架派生记录继续隔离。64张门槛仍要求每条记录绑定独立完整地图世界事实、World Director、正式23通道、原生RGB、来源许可、机器审核、项目所有者审核、hash和不可变存储；降低数量不降低单条质量与完整地图门槛。
 
 ## 1. 架构原则
 
@@ -49,6 +80,90 @@ PlayerIdentity
 ```
 
 长期生成器必须允许不同 `playerId` 绑定不同世界种子和世界档案。MVP 使用 `mainland-southeast-asia-tropical-monsoon-natural-home-v1` 作为兼容参考档案，并以 `sakaerat-wang-nam-khiao-mvp-reference-v1` 作为当前新增数据的具体事实锚点。新路线允许从有明确许可、版本和来源的真实高程、土地覆盖、气候与土壤测量中派生自然世界事实和自然拓扑，但必须先剔除建筑、城市、工程道路、耕地地块、人工水体与其他人类开发痕迹，再归一化到游戏坐标；不得把外部RGB或地图瓦片视觉作为训练图或生成器图片参考。`playerId`、`worldId`、`worldSeed` 和 `worldProfileId` 四个字段仍必须保留，避免第一版完成后重写世界身份架构。气候、水文、地形和物种事实必须绑定来源、版本、许可、采集时间、hash与派生步骤；外部测量来源不自动授予图片训练权。
+
+上述泰国锚点只属于当前MVP区域。长期架构必须在WorldIdentity与WorldFacts之间增加版本化真实地球区域来源层：
+
+```text
+WorldIdentity
+-> RealEarthRegionIdentity
+-> RealEarthRegionSourcePackage
+-> DerivedNaturalWorldFacts
+-> RegionGraph / Terrain / Climate / Hydrology / Soil / Ecology
+-> WorldFacts
+```
+
+`RealEarthRegionSourcePackage`按真实国家或地区独立建立，不能由一个全局泰国包服务所有世界。它必须包含区域范围和地理参考，以及高程、土地覆盖、气候、土壤、水文、生态、连接数据的来源对象、许可、版本、采集时间、hash和派生清单。新区域缺少自己的合格包时必须阻断，不能退回泰国数据或由生成器补造事实。
+
+### 1.1 RealEarthRegionSourcePackage正式结构
+
+```text
+RealEarthRegionSourcePackage
+├─ identity
+│  ├─ realEarthRegionId
+│  ├─ countryOrTerritory
+│  ├─ namedArea
+│  ├─ spatialBounds
+│  ├─ coordinateReference
+│  └─ observationPeriod
+├─ sourceLayers
+│  ├─ elevationAndTerrain
+│  ├─ landCover
+│  ├─ climateAndSeason
+│  ├─ soilAndMoisture
+│  ├─ hydrology
+│  ├─ ecologyAndSpecies
+│  └─ regionalConnectivity
+├─ sourceProvenance
+│  ├─ provider / product / version
+│  ├─ license / attribution
+│  ├─ acquisitionUrlOrObjectId
+│  ├─ acquiredAtUtc / acquiredAtAsiaShanghai
+│  └─ rawSha256
+├─ derivation
+│  ├─ humanDevelopmentClassification
+│  ├─ removalOrNaturalization
+│  ├─ measurementAggregation
+│  ├─ anonymousGameCoordinateNormalization
+│  └─ derivationManifestSha256
+└─ output
+   ├─ DerivedNaturalWorldFacts
+   ├─ regionalConnectivityFacts
+   ├─ sourcePackageSha256
+   └─ auditStatus
+```
+
+### 1.2 区域包生命周期
+
+```text
+项目所有者确定真实地区和范围
+-> 注册适用来源、许可和版本
+-> 获取并不可变保存原始对象与hash
+-> 核对空间覆盖、时间覆盖和无数据范围
+-> 识别人类开发与不适用事实
+-> 按当前世界阶段执行移除或自然化
+-> 派生地形/气候/土壤/水文/生态事实
+-> 建立该地区自己的RegionGraph与连接实例
+-> 归一化到游戏坐标并保存派生关系
+-> 编译WorldFacts、World Director和23通道
+-> 来源、完整地图、连接、唯一性和存储审核
+-> 才能进入单张RGB授权门
+```
+
+当前只有泰国Sakaerat / Wang Nam Khiao包处于MVP执行范围。架构支持未来区域不等于程序已获权自动采集或建设其他国家；每次新增区域都必须先更新当前执行指南并取得项目所有者明确范围。
+
+### 1.3 真实空间与游戏坐标关系
+
+真实空间身份和测量值必须保留在来源层；游戏坐标是经记录的视觉/运行坐标派生层。两者关系固定为：
+
+```text
+真实地区与测量数据
+-> 可追溯自然事实和空间关系
+-> 经审核的游戏坐标归一化
+-> WorldFacts与结构条件
+-> AI Painter视觉表达
+```
+
+不得把真实地图RGB当作游戏画面，也不得因“匿名游戏坐标”丢失真实地区、来源范围或事实谱系。匿名化只防止直接复制现实导航/工程几何，不允许把真实地球依据改成随机想象。
 
 ## 2. 业务架构图
 
@@ -176,6 +291,29 @@ flowchart LR
 
 第一版自然家园是未来类地球大世界中的第一个连接区域。`1024×768` 是当前完整区域视觉画布，不是整个长期世界的固定边界。区域连接必须先由结构化世界事实和项目所有者批准的连接蓝图定义，再由 AI Painter 表达；图片、提示词和模型输出没有拓扑决策权。
 
+连接架构必须严格区分“模式契约”和“实例蓝图”：
+
+```text
+natural-home-large-world-connectivity-v1
+  = 所有区域共同遵守的数据结构、配对和审核规则
+
+mainland-southeast-asia-earth-reference-natural-home-region-0001-v1
+  = region-0001自身的一个具体连接实例
+```
+
+模式契约不得携带固定北/南/东/西构图。具体实例可以锁定自身的方向和端口，但其作用域只能是对应`regionId`。V7训练槽位和其他自主生成区域必须建立独立`regionId`及其RegionGraph、EdgePort、PathGraph、HydrologyGraph和WalkableGraph；除非任务明确绑定同一运行区域，否则禁止引用`region-0001`的北入南出、东侧共享水道、南侧道路口作为训练边界。水体不存在、封闭水体、内部湿地和不同跨区域水文必须按当前世界事实表达。
+
+“独立区域连接实例”仍须落在同一个连通世界图中。每个区域节点至少包含一组与相邻区域双向配对的边界通行口，并由PathGraph/WalkableGraph证明可达；水系存在时由HydrologyGraph证明上下游或跨界关系，生态与海拔过渡由相邻事实证明连续。任何无邻接、端口未配对或仅用图片接缝证明连接的区域都不能进入自主世界或独立训练容量。
+
+完整地图唯一性必须使用两个相互独立的结构身份：
+
+| 身份 | 至少包含 | 作用 |
+|---|---|---|
+| `themeArchitectureIdentity` | RegionGraph关系、EdgePort类型/方向、水文与道路拓扑、水路相对关系、生态/空间分区、自然边界和阅读层级 | 阻断同一世界主题骨架重复 |
+| `instanceDetailIdentity` | 河岸/道路具体轨迹、分支和水域轮廓、分区轮廓、对象实例位置与簇、密度节奏、空隙及局部过渡 | 阻断换皮、轻微位移或细节复用 |
+
+两者都必须对全部历史执行直接、镜像、旋转和变形比较。hash不同、测量窗口不同或主题名称不同不能替代结构唯一性证明。
+
 ```mermaid
 flowchart LR
   WorldIdentity["playerId + worldId + worldSeed + worldProfileId"] --> RegionGraph["区域邻接图"]
@@ -197,7 +335,7 @@ flowchart LR
 | HydrologyGraph | 保存流向、上游、下游、海拔和跨区域水口 | 水岸视觉不能替代水文事实 |
 | ObjectIdentitySet | 保存跨 tick 和跨区域对象身份 | 视觉变体不得改变对象事实 |
 
-机器可读契约是 `natural-home-large-world-connectivity-v1`，固定位置为 `data/world-samples/world-connectivity/world-connectivity-contract-v1.json`。第一版连接蓝图 `mainland-southeast-asia-earth-reference-natural-home-region-0001-v1` 已按项目所有者“使用真实地球实际情况”的命令登记：水文按东南亚大陆河谷总体北入南出组织，道路从当前最近的南边界接入，西侧保持自然边界；外部资料只提供事实关系，不复制真实地图几何。项目所有者授权后，程序已把区域身份、三个邻居、四个当前区域连接口、PathGraph、HydrologyGraph 和 WalkableGraph 写入 tick 2，并自动保存迁移前后世界状态、hash 和报告；项目所有者审核通过后，程序在不改变连接几何的前提下写入 tick 3 和独立审核记录。连接事实审核通过不等于图片具备连接训练资格，也不等于连接覆盖数量门槛已批准。
+机器可读模式契约是 `natural-home-large-world-connectivity-v1`，固定位置为 `data/world-samples/world-connectivity/world-connectivity-contract-v1.json`。第一版具体实例蓝图 `mainland-southeast-asia-earth-reference-natural-home-region-0001-v1` 已按项目所有者“使用真实地球实际情况”的命令登记：该区域自身的水文按北入南出组织，道路从南边界接入，西侧保持自然边界；外部资料只提供事实关系，不复制真实地图几何。项目所有者授权后，程序已把该区域身份、三个邻居、四个当前区域连接口、PathGraph、HydrologyGraph 和 WalkableGraph 写入 tick 2，并自动保存迁移前后世界状态、hash 和报告；项目所有者审核通过后，程序在不改变该区域连接几何的前提下写入 tick 3 和独立审核记录。该审核只批准`region-0001`自身，不批准其他训练区域复制它。连接事实审核通过也不等于图片具备连接训练资格。
 
 ### 3.3 训练数据存储与目录索引架构
 

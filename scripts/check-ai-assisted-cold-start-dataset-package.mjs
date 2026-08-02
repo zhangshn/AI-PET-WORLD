@@ -1,6 +1,8 @@
 import crypto from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
+import { DatabaseSync } from "node:sqlite"
+import { catalogPath } from "./lib/ai-pet-world-storage.mjs"
 
 const ROOT = process.cwd()
 const modelConfig = readJson("ml/ai-painter/config/complete-world-ai-assisted-cold-start-v2.json")
@@ -82,6 +84,7 @@ if (pointer && manifest && sourceIndex && conditionalFactsManifest && trainingGa
   validateV7CapacityContributions(sourceIndex)
   for (const blueprint of sourceIndex.conditionOnlyBlueprints ?? []) validateConditionOnlyBlueprint(blueprint)
   for (const snapshot of Object.values(manifest.snapshots ?? {})) validateHash(snapshot.path, snapshot.sha256, `snapshot_hash_mismatch:${snapshot.path}`)
+  validateSqlitePackageStorage(pointer, manifest)
 }
 
 const result = {
@@ -170,6 +173,61 @@ function validateV7CapacityContributions(index) {
   }
 }
 
+function validateSqlitePackageStorage(pointerValue, manifestValue) {
+  const database = new DatabaseSync(catalogPath, { readOnly: true })
+  try {
+    const packageRoot = path.dirname(resolveProjectPath(pointerValue.manifestPath))
+    const expectedFiles = [
+      ...collectFiles(packageRoot),
+      resolveProjectPath("data/world-samples/ai-assisted-cold-start-dataset-packages/latest.json"),
+    ]
+    const artifactQuery = database.prepare(`
+      SELECT logical_path, byte_size, sha256
+      FROM artifacts
+      WHERE logical_path = ? AND run_id = ?
+    `)
+    for (const filePath of expectedFiles) {
+      const logicalPath = projectPath(filePath)
+      const artifact = artifactQuery.get(logicalPath, manifestValue.packageId)
+      check(Boolean(artifact), `sqlite_artifact_missing:${logicalPath}`)
+      if (!artifact) continue
+      check(artifact.byte_size === fs.statSync(filePath).size, `sqlite_artifact_size_mismatch:${logicalPath}`)
+      check(artifact.sha256 === sha256(fs.readFileSync(filePath)), `sqlite_artifact_hash_mismatch:${logicalPath}`)
+    }
+    const indexedCount = database.prepare(`
+      SELECT COUNT(*) AS count
+      FROM artifacts
+      WHERE run_id = ?
+    `).get(manifestValue.packageId)?.count ?? 0
+    check(indexedCount === expectedFiles.length, "sqlite_dataset_package_artifact_count_mismatch")
+    const event = database.prepare(`
+      SELECT action, status, title, title_zh, evidence_path
+      FROM program_events
+      WHERE run_id = ? AND action = 'build_ai_assisted_cold_start_dataset_package'
+      ORDER BY timestamp_utc DESC
+      LIMIT 1
+    `).get(manifestValue.packageId)
+    check(Boolean(event), "sqlite_dataset_package_program_event_missing")
+    if (event) {
+      check(event.status === "success", "sqlite_dataset_package_program_event_status_invalid")
+      check(Boolean(event.title) && Boolean(event.title_zh), "sqlite_dataset_package_bilingual_event_missing")
+      check(event.evidence_path === manifestValue.sourceIndexPath, "sqlite_dataset_package_event_evidence_mismatch")
+    }
+  } finally {
+    database.close()
+  }
+}
+
+function collectFiles(directory) {
+  const files = []
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    const entryPath = path.join(directory, entry.name)
+    if (entry.isDirectory()) files.push(...collectFiles(entryPath))
+    else if (entry.isFile()) files.push(entryPath)
+  }
+  return files
+}
+
 function validateHash(value, expected, message) {
   const filePath = resolveProjectPath(value)
   check(fs.existsSync(filePath), `file_missing:${value}`)
@@ -178,5 +236,6 @@ function validateHash(value, expected, message) {
 
 function readJson(value) { try { return JSON.parse(fs.readFileSync(resolveProjectPath(value), "utf8")) } catch { return null } }
 function resolveProjectPath(value) { const resolved = path.resolve(ROOT, value); if (resolved !== ROOT && !resolved.startsWith(`${ROOT}${path.sep}`)) throw new Error(`path escapes project root: ${value}`); return resolved }
+function projectPath(value) { return path.relative(ROOT, path.resolve(value)).replace(/\\/g, "/") }
 function sha256(bytes) { return crypto.createHash("sha256").update(bytes).digest("hex") }
 function check(condition, message) { if (!condition && !failures.includes(message)) failures.push(message) }

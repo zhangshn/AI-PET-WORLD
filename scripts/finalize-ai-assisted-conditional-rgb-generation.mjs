@@ -22,7 +22,18 @@ const requestPath = requestIdArg
 assert(fs.existsSync(requestPath), `conditional RGB request is missing: ${requestIdArg ?? pointer.requestPath}`)
 const request = readJson(requestPath)
 if (requestIdArg) assert(request.requestId === requestIdArg, "conditional RGB request identity mismatch")
-assert(request.status === "ready_for_openai_assisted_generation", `request is not ready: ${request.status}`)
+const retryablePreCallFailure = request.status === "generation_failed_retryable"
+  ? readAuthorizedPreCallFailure(request)
+  : null
+const retryableProcessingFailure = request.status === "processing_failed_retryable"
+  ? readAuthorizedProcessingFailure(request, inputPath)
+  : null
+assert(
+  request.status === "ready_for_openai_assisted_generation" ||
+    retryablePreCallFailure ||
+    retryableProcessingFailure,
+  `request is not ready: ${request.status}`,
+)
 const promptEvidence = readJson(request.promptEvidencePath)
 assert(promptEvidence.promptId === request.requestId, "prompt evidence identity mismatch")
 verifyHash(request.promptEvidencePath, request.promptEvidenceSha256, "prompt evidence hash mismatch")
@@ -110,6 +121,28 @@ const completed = {
   conditionalTrainingEligible: false,
   intakeResult: intake,
   automaticReview,
+  preCallFailureRecovery: retryablePreCallFailure
+    ? {
+        status: "recovered_from_recorded_pre_call_failure",
+        attemptPath: request.latestGenerationAttemptPath,
+        attemptSha256: sha256(fs.readFileSync(resolveProjectPath(request.latestGenerationAttemptPath))),
+        failureCode: retryablePreCallFailure.failureCode,
+        attemptedRoute: retryablePreCallFailure.attemptedRoute,
+        generatedImageCreatedByFailedAttempt: false,
+      }
+    : null,
+  processingFailureRecovery: retryableProcessingFailure
+    ? {
+        status: "resumed_same_generated_image_after_processing_gate_repair",
+        failurePath: request.latestProcessingFailurePath,
+        failureSha256: sha256(
+          fs.readFileSync(
+            resolveProjectPath(request.latestProcessingFailurePath),
+          ),
+        ),
+        imageRegenerated: false,
+      }
+    : null,
   automaticStorage: true,
 }
 writeJson(requestPath, completed)
@@ -145,6 +178,48 @@ console.log(JSON.stringify({
   conditionalTrainingEligible: false,
   automaticStorage: true,
 }, null, 2))
+
+function readAuthorizedPreCallFailure(requestValue) {
+  assert(typeof requestValue.latestGenerationAttemptPath === "string", "retryable request is missing its latest generation attempt")
+  const attemptPath = resolveProjectPath(requestValue.latestGenerationAttemptPath)
+  assert(fs.existsSync(attemptPath) && fs.statSync(attemptPath).isFile(), "retryable request generation attempt is missing")
+  const attempt = readJson(attemptPath)
+  assert(attempt.requestId === requestValue.requestId, "retryable pre-call failure request identity mismatch")
+  assert(attempt.status === "generation_failed_retryable", "retryable pre-call failure status mismatch")
+  const authorizedFailureIdentity = (
+    attempt.failureCode === "prompt_evidence_field_location_mismatch"
+    && attempt.attemptedRoute === "codex_builtin_imagegen_pre_call_prompt_read"
+  ) || (
+    attempt.failureCode === "codex_builtin_prompt_source_path_mismatch"
+    && attempt.attemptedRoute === "codex_builtin_image_generation"
+  )
+  assert(authorizedFailureIdentity, "retryable failure is not the authorized pre-call prompt-read failure")
+  assert(attempt.generatedImageCreated === false, "retryable pre-call failure unexpectedly generated an image")
+  assert(attempt.generatedImagePath === null && attempt.generatedImageSha256 === null, "retryable pre-call failure contains generated image identity")
+  return attempt
+}
+
+function readAuthorizedProcessingFailure(requestValue, sourcePath) {
+  assert(
+    typeof requestValue.latestProcessingFailurePath === "string",
+    "retryable processing request is missing failure evidence",
+  )
+  const failurePath = resolveProjectPath(
+    requestValue.latestProcessingFailurePath,
+  )
+  const failure = readJson(failurePath)
+  assert(
+    failure.requestId === requestValue.requestId &&
+      failure.status === "processing_failed_before_intake_completion" &&
+      failure.imageRegenerationRequired === false,
+    "retryable processing failure evidence is invalid",
+  )
+  assert(
+    failure.inputSha256 === sha256(fs.readFileSync(sourcePath)),
+    "retryable processing input must be the same generated image",
+  )
+  return failure
+}
 
 function persistSourceContractFailure({ request: requestValue, requestPath: requestFile, pointer: pointerValue, inputPath: sourcePath, inputBytes: sourceBytes, sourceWidth: width, sourceHeight: height, failureCode }) {
   const timestamp = new Date().toISOString()
@@ -242,7 +317,7 @@ function persistProcessingFailure({ request: requestValue, inputPath: sourcePath
     automaticStorage: true,
   }
   writeJson(failurePath, failure)
-  appendAiPainterProgramEvent({
+  const ledgerEvent = appendAiPainterProgramEvent({
     action: "finalize_ai_assisted_conditional_rgb",
     runId: requestValue.requestId,
     kind: "step_failed",
@@ -261,6 +336,32 @@ function persistProcessingFailure({ request: requestValue, inputPath: sourcePath
     evidencePath: projectPath(failurePath),
     nextAction: "repair_processing_gate_and_resume_same_generated_image",
     nextActionZh: "修复处理门禁并继续使用同一张已生成图片，不重新出图",
+  })
+  const failedRequest = {
+    ...requestValue,
+    status: "processing_failed_retryable",
+    updatedAtUtc: timestamp,
+    updatedAtAsiaShanghai: failure.createdAtAsiaShanghai,
+    generatedImageSourcePath: sourcePath,
+    generatedImageSourceSha256: failure.inputSha256,
+    latestProcessingFailurePath: projectPath(failurePath),
+    processingFailurePaths: [
+      ...(requestValue.processingFailurePaths ?? []),
+      projectPath(failurePath),
+    ],
+    imageRegenerationRequired: false,
+    automaticNextGenerationAuthorized: false,
+    automaticStorage: true,
+  }
+  writeJson(requestPath, failedRequest)
+  writeJson(POINTER_PATH, {
+    ...readJson(POINTER_PATH),
+    status: failedRequest.status,
+    updatedAtUtc: timestamp,
+    requestPath: projectPath(requestPath),
+    latestProcessingFailurePath: projectPath(failurePath),
+    generatedImageSourceSha256: failure.inputSha256,
+    ledgerEventId: ledgerEvent.id,
   })
   return failure
 }

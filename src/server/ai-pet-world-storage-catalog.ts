@@ -15,6 +15,7 @@ type SqliteStatement = {
 
 type SqliteDatabase = {
   close: () => void
+  exec: (sql: string) => void
   prepare: (sql: string) => SqliteStatement
 }
 
@@ -25,7 +26,9 @@ function openCatalog(readOnly = true): SqliteDatabase | null {
     const sqlite = require("node:sqlite") as {
       DatabaseSync: new (fileName: string, options?: { readOnly?: boolean }) => SqliteDatabase
     }
-    return new sqlite.DatabaseSync(aiPetWorldCatalogPath, { readOnly })
+    const database = new sqlite.DatabaseSync(aiPetWorldCatalogPath, { readOnly })
+    database.exec("PRAGMA busy_timeout=5000")
+    return database
   } catch {
     return null
   }
