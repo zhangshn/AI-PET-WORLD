@@ -32,5 +32,5 @@ export default async function ComponentReadinessPage() {
 }
 
 async function readReport(): Promise<Report | null> {
-  try { return JSON.parse(await readFile(path.join(process.cwd(), ".runtime", "ai-painter", "component-instance-dataset", "report.json"), "utf8")) as Report } catch { return null }
+  try { return JSON.parse(await readFile(path.join(/* turbopackIgnore: true */ process.cwd(), ".runtime", "ai-painter", "component-instance-dataset", "report.json"), "utf8")) as Report } catch { return null }
 }

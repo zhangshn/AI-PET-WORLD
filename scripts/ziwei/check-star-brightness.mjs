@@ -73,7 +73,7 @@ const starCatalogTablePath = path.join(
   "star-catalog-table.tsx",
 )
 const pageDocPath = path.join(root, "docs", "ziwei", "PAGE_ACCEPTANCE.md")
-const executionTablePath = path.join(root, "docs", "ziwei", "EXECUTION_TABLE.md")
+const executionTablePath = path.join(root, "data", "ziwei", "legacy-execution-verification-baseline-v1.txt")
 
 function fail(message) {
   console.error(`Ziwei star brightness check failed: ${message}`)

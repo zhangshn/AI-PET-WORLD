@@ -2,7 +2,7 @@
 
 更新时间：2026-07-11 13:18:45 +08:00
 
-状态：active-reference / mvp-natural-home-v0.3 / draft
+状态：versioned-world-visual-dictionary-export
 GeneratedAt: 2026-07-11T05:17:54.999Z
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
@@ -51,7 +51,7 @@ GeneratedAt: 2026-07-11T05:17:54.999Z
 | 训练标签 | 16 |
 | 缺失分类 | 0 |
 
-## 3. 当前出图状态
+## 3. 出图状态字段
 
 | 状态项 | 内容 |
 | --- | --- |
@@ -1109,11 +1109,10 @@ GeneratedAt: 2026-07-11T05:17:54.999Z
 | negative_director_task_gap | Generation task failed because director inputs or fix hints were incomplete. | Yes, task-level negative |
 | negative_live_state_mismatch | Candidate does not preserve world identity, tick binding, or state continuity. | Yes, runtime negative |
 
-## 8. 当前缺口
+## 8. 字典覆盖缺口字段
 
 | 缺口 | 说明 |
 | --- | --- |
 | 训练数据 | 字典已经具备完整候选图任务字段，但正负样本数量仍需由训练数据审计决定。 |
 | 项目验收 | 任何 RuntimeFrame 仍必须经过项目所有者人工最终验收。 |
 | 自动生成 | 下一步程序必须读取本字典版本生成候选图，并自动保存任务包、图片、审核记录和失败码。 |
-

@@ -53,7 +53,7 @@ const starCatalogPath = path.join(
 const pageDocPath = path.join(root, "docs", "ziwei", "PAGE_ACCEPTANCE.md")
 const pagePath = path.join(root, "src", "app", "ziwei", "page.tsx")
 const directoryDocPath = path.join(root, "docs", "ziwei", "DIRECTORY_STRUCTURE.md")
-const executionDocPath = path.join(root, "docs", "ziwei", "EXECUTION_TABLE.md")
+const executionDocPath = path.join(root, "data", "ziwei", "legacy-execution-verification-baseline-v1.txt")
 
 function fail(message) {
   console.error(`Ziwei URL state check failed: ${message}`)

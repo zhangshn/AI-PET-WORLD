@@ -17,7 +17,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ va
   const parts = variants[variant as keyof typeof variants]
   if (!parts) return new NextResponse(null, { status: 404 })
   try {
-    const image = await readFile(path.join(process.cwd(), ".runtime", "ai-painter", ...parts))
+    const image = await readFile(path.join(/* turbopackIgnore: true */ process.cwd(), ".runtime", "ai-painter", ...parts))
     return new NextResponse(image, { headers: { "content-type": "image/png", "cache-control": "no-store" } })
   } catch {
     return new NextResponse(null, { status: 404 })

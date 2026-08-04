@@ -52,7 +52,7 @@ const stylePath = path.join(
 )
 const pageDocPath = path.join(root, "docs", "ziwei", "PAGE_ACCEPTANCE.md")
 const directoryDocPath = path.join(root, "docs", "ziwei", "DIRECTORY_STRUCTURE.md")
-const executionDocPath = path.join(root, "docs", "ziwei", "EXECUTION_TABLE.md")
+const executionDocPath = path.join(root, "data", "ziwei", "legacy-execution-verification-baseline-v1.txt")
 
 function fail(message) {
   console.error(`Ziwei palace brightness matrix check failed: ${message}`)

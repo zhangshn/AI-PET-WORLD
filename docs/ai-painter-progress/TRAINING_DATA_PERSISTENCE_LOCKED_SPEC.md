@@ -2,7 +2,7 @@
 
 更新时间：2026-07-12 15:38:00 +08:00
 
-状态：active-lock / 程序自动保存边界 / 已进入代码实现
+状态：active-training-data-persistence-contract
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 

@@ -6,7 +6,7 @@ import { spawnSync } from "node:child_process"
 import { createRequire } from "node:module"
 import sharp from "sharp"
 
-const outputDir = ".runtime/check-game-map-frame-sample"
+const outputDir = ".test-output/check-game-map-frame-sample"
 const sourceDir = "src/world/game-map-frame"
 const sourceFiles = readdirSync(sourceDir)
   .filter((file) => file.endsWith(".ts"))
@@ -818,6 +818,7 @@ if (process.exitCode) {
 }
 
 console.log("GameMapFrame sample behavior test passed: structured fallback assertions included.")
+rmSync(outputDir, { recursive: true, force: true })
 
 function sha256(bytes) {
   return createHash("sha256").update(bytes).digest("hex")

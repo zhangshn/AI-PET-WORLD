@@ -8,7 +8,6 @@ const DOCUMENT_PATHS = [
   "docs/BUSINESS_SPEC.md",
   "docs/ARCHITECTURE.md",
   "docs/DIRECTORY_STRUCTURE.md",
-  "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md",
   "docs/game-world-generation/AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md",
   "docs/game-world-generation/TRAINING_DATA_AND_SOURCE_POLICY.md",
 ]

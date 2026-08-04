@@ -10,7 +10,7 @@ const files = {
   flowReport: path.join(root, "docs/ziwei/DYNAMIC_FLOW_CLOSURE_REPORT.md"),
   readme: path.join(root, "docs/ziwei/README.md"),
   pageStructure: path.join(root, "docs/ziwei/PAGE_ACCEPTANCE.md"),
-  executionTable: path.join(root, "docs/ziwei/EXECUTION_TABLE.md"),
+  executionTable: path.join(root, "data/ziwei/legacy-execution-verification-baseline-v1.txt"),
   finalCheck: path.join(root, "scripts/ziwei/check-dynamic-phase-final-closure.mjs"),
   algorithmCheck: path.join(root, "scripts/ziwei/check-dynamic-algorithm-closure.mjs"),
   boundaryCheck: path.join(root, "scripts/ziwei/check-dynamic-boundary-samples.mjs"),

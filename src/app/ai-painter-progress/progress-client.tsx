@@ -79,6 +79,12 @@ type TrainingProgressSummary = {
 
 const mainEntrances = [
   {
+    href: "/ai-painter-progress/task-console",
+    label: "TASK CONSOLE",
+    title: "本地AI任务操作台",
+    body: "选择并审阅本地任务合同。Owner密钥和独立授权未就绪时，真实启动保持失败关闭。",
+  },
+  {
     href: "/ai-painter-progress/natural-home",
     label: "WORLD MAP",
     title: "完整世界地图训练",
@@ -201,11 +207,12 @@ export function ProgressClient() {
   return (
     <>
       <section className={styles.statusBar} aria-label="训练状态摘要">
-        <article>
+        <Link className={styles.statusCardLink} href="/ai-painter-progress/current-training">
           <span>当前运行</span>
           <strong>{runningText}</strong>
           <small className={styles.statusHint}>{runningSourceText}</small>
-        </article>
+          <small className={styles.statusEntryHint}>打开完整训练控制台 →</small>
+        </Link>
         <article>
           <span>RuntimeFrame</span>
           <strong>{runtimeStatus}</strong>

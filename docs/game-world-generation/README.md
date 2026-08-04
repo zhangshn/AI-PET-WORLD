@@ -1,54 +1,33 @@
 # 完整游戏世界生成文档入口
 
-更新时间：2026-07-12 16:27:52 +08:00
+更新时间：2026-08-02 23:10:00 +08:00
 
-状态：active-architecture / 文档已收缩为单一执行指南与三份正式规格
+状态：active-game-world-generation-index
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
-## 必读顺序
+本目录定义类地球世界的完整地图视觉生产、训练数据、审核存储、水文连接和跨模态去重合同。它不保存某次运行结果、临时阻断或授权历史。
 
-```text
-1. ../DOCUMENT_AUTHORITY_INDEX.md
-2. ../BUSINESS_SPEC.md
-3. ../ARCHITECTURE.md
-4. CURRENT_EXECUTION_GUIDE_20260710.md
-5. 当前任务涉及的一份正式规格
-```
+## 阅读顺序
 
-正式规格：
+1. `../DOCUMENT_AUTHORITY_INDEX.md`
+2. `../BUSINESS_SPEC.md`
+3. `../ARCHITECTURE.md`
+4. `CURRENT_EXECUTION_GUIDE_20260710.md`：项目唯一模块计划表
+5. 当前模块直接涉及的一份正式规格
 
-| 任务 | 文件 |
+## 正式规格
+
+| 文件 | 稳定职责 |
 |---|---|
-| AI Painter 视觉实现、条件编译、模型能力、完整推理 | `AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md` |
-| 训练样本、来源、数据包、严格审计 | `TRAINING_DATA_AND_SOURCE_POLICY.md` |
-| 审核、失败学习、自主循环、实时状态、控制台、存储 | `REVIEW_AUTOMATION_AND_STORAGE_SPEC.md` |
+| `AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md` | AI Painter视觉实现、条件编译和模型能力边界 |
+| `TRAINING_DATA_AND_SOURCE_POLICY.md` | 训练样本、来源、数据包与审计规则 |
+| `REVIEW_AUTOMATION_AND_STORAGE_SPEC.md` | 审核、失败学习、自动写入和存储合同 |
+| `FLOWING_WATER_CONNECTIVITY_AND_NOVELTY_SPEC.md` | 流动水体端口、连通和全历史骨架唯一性 |
+| `CROSS_MODAL_RGB_COLLAPSE_PREVENTION_SPEC.md` | 条件图对历史RGB的模板收敛防护 |
+| `CROSS_MODAL_RGB_GATE_THRESHOLD_ALIGNMENT_20260802.md` | 条件预检与RGB复审的水体阈值一致性 |
+| `DOCUMENT_INDEX.md` | 本目录正式文件职责索引 |
 
-AI Painter 数据任务固定阅读关系：先由 `CURRENT_EXECUTION_GUIDE_20260710.md` 确认当前步骤；涉及模型时读实现规格，涉及五类原图、来源和统一数据包时读训练数据与来源政策，涉及审核、自动保存和控制台时读审核与存储规格。五类原图库不是五个执行阶段，禁止根据目录顺序拼装训练路线。
+运行状态、授权消费、训练指标、图片、失败码和不可变证据由本地程序写入`data/`、`.runtime/`和SQLite；目录README不复制这些事实。
 
-禁止默认一次性读取全部三份规格。先由当前执行指南确定任务，再读取对应的一份。
-
-## 当前状态
-
-```text
-status = blocked
-canEnterWorld = false
-blockers = owner_review_rejected
-           data_gap_insufficient
-           project_owned_checkpoint_missing
-```
-
-已实现：合法样本登记、不可变数据包、严格数据审计、VisualFactManifest、动态世界导演、完整视觉任务包、23 通道视觉条件编译器、项目自有模型架构、训练程序、采样器、失败反馈消费、自动保存与门禁。
-
-当前阻断：独立训练样本为 0、项目自有 checkpoint 缺失、当前人工否决仍有效。正式推理程序已经实现，但在 checkpoint 出现前必须阻断；项目自有原生正式分辨率新候选和闭合的专业审美学习仍未形成。
-
-## 固定禁止事项
-
-1. 不恢复旧 5×5 Chunk、P10-P17 或版本号盲训路线。
-2. 不把局部材料训练当作完整地图训练。
-3. 不复用、复制或放大旧图冒充本轮新图。
-4. 不建立“项目内部视觉教师”，不让程序直绘图成为专业正样本。
-5. 不从视觉字典条目自行拼接新计划。
-6. 不把机器审核通过当作项目所有者终审通过。
-
-世界视觉字典是机器参考，只按需读取 `../world-visual-data-dictionary/README.md`、当前导出 JSON 和任务涉及条目。
+世界视觉字典按需读取`../world-visual-data-dictionary/README.md`及任务涉及条目，不得从目录顺序推导训练顺序。

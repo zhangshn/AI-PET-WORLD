@@ -101,7 +101,14 @@ class AiAssistedColdStartRgbDataset:
 
 
 class AiAssistedConditionalDenoiserDataset:
-    def __init__(self, package_manifest: Path, split: str, channel_order: list[str], image_size: tuple[int, int]):
+    def __init__(
+        self,
+        package_manifest: Path,
+        split: str,
+        channel_order: list[str],
+        image_size: tuple[int, int],
+        require_v7_capacity_contribution: bool = False,
+    ):
         torch = require_torch()
         self._torch = torch
         self.root = Path.cwd()
@@ -119,21 +126,17 @@ class AiAssistedConditionalDenoiserDataset:
         source_index = read_json(self.root / manifest["sourceIndexPath"])
         self.rows = [
             row for row in source_index.get("samples", [])
-            if row.get("split") == split
-            and row.get("categoryId") == "complete-maps"
-            and "conditional_denoiser" in row.get("trainingRoles", [])
-            and row.get("formalConditionalTrainingEligible") is True
-            and row.get("conditionBound") is True
-            and row.get("currentConditionIdentityMatches") is True
-            and row.get("ownerReviewStatus") == "owner_approved"
-            and row.get("machineReviewStatus") == "passed"
-            and row.get("aiAssistedColdStartEligible") is True
-            and row.get("independentTrainingEligible") is False
+            if is_ai_assisted_conditional_row(
+                row,
+                split,
+                require_v7_capacity_contribution=require_v7_capacity_contribution,
+            )
         ]
         if not self.rows:
             raise ValueError(f"no AI-assisted conditional complete-map samples in split={split}")
         self.channel_order = channel_order
         self.image_size = image_size
+        self.require_v7_capacity_contribution = require_v7_capacity_contribution
 
     def __len__(self):
         return len(self.rows)
@@ -167,6 +170,31 @@ class AiAssistedConditionalDenoiserDataset:
 
 def read_json(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def is_ai_assisted_conditional_row(
+    row: dict,
+    split: str,
+    *,
+    require_v7_capacity_contribution: bool = False,
+) -> bool:
+    binding_matches = (
+        row.get("v7CapacityContributionRegistered") is True
+        if require_v7_capacity_contribution
+        else row.get("currentConditionIdentityMatches") is True
+    )
+    return (
+        row.get("split") == split
+        and row.get("categoryId") == "complete-maps"
+        and "conditional_denoiser" in row.get("trainingRoles", [])
+        and row.get("formalConditionalTrainingEligible") is True
+        and row.get("conditionBound") is True
+        and binding_matches
+        and row.get("ownerReviewStatus") == "owner_approved"
+        and row.get("machineReviewStatus") == "passed"
+        and row.get("aiAssistedColdStartEligible") is True
+        and row.get("independentTrainingEligible") is False
+    )
 
 
 def read_image(path: Path, mode: str, size: tuple[int, int], resampling):

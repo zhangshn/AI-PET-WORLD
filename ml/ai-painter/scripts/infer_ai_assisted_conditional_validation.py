@@ -96,12 +96,59 @@ def main() -> int:
         "requiresMachineReview": True,
         "requiresOwnerReview": True,
         "durationSeconds": round(time.perf_counter() - started, 3),
+        "validationTokenAccounting": build_validation_token_accounting(config),
         "automaticStorage": True,
     }
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(report, ensure_ascii=False, indent=2))
     return 0
+
+
+def build_validation_token_accounting(config):
+    """Record exact local denoiser work without calling image-model compute an NLP token."""
+    width = int(config["imageSize"]["width"])
+    height = int(config["imageSize"]["height"])
+    factor = int(config["latentDownsampleFactor"])
+    latent_width = width // factor
+    latent_height = height // factor
+    latent_positions = latent_width * latent_height
+    inference_steps = int(config["inferenceSteps"])
+    latent_channels = int(config["latentChannels"])
+    condition_channels = int(config["conditionChannels"])
+    return {
+        "schemaVersion": "ai-assisted-local-validation-token-accounting-v1",
+        "terminology": {
+            "localValidationTokenUnit": "one_latent_spatial_position_processed_by_one_denoiser_sample_forward_pass",
+            "isNlpToken": False,
+            "tokenizerUsed": False,
+            "noteZh": "本地V7验证不使用文本Tokenizer；本地潜空间Token是图像模型计算量单位，不是API计费Token。",
+        },
+        "geometry": {
+            "imageWidth": width,
+            "imageHeight": height,
+            "latentWidth": latent_width,
+            "latentHeight": latent_height,
+            "latentSpatialPositionsPerSample": latent_positions,
+            "latentChannels": latent_channels,
+            "conditionChannels": condition_channels,
+        },
+        "runTotals": {
+            "denoiserSampleForwardPasses": inference_steps,
+            "latentSpatialTokens": inference_steps * latent_positions,
+            "latentChannelValues": inference_steps * latent_positions * latent_channels,
+            "conditionScalarValues": inference_steps * width * height * condition_channels,
+            "decodedRgbFrames": 1,
+            "decodedRgbPixelPredictions": width * height,
+        },
+        "externalApi": {
+            "providerCalls": 0,
+            "promptTokens": 0,
+            "completionTokens": 0,
+            "totalTokens": 0,
+            "measurementStatus": "not_applicable_local_pytorch_validation",
+        },
+    }
 
 
 def load_conditions(pack, config, device):
@@ -173,10 +220,19 @@ def validate_inputs(config, pack, checkpoint, allow_progressive_checkpoint_nonfo
     must_show = set(pack.get("categoricalConditions", {}).get("sceneIntent", {}).get("mustShow", []))
     if pack.get("canvas") != {"width": 1024, "height": 768, "coordinateSpace": "task_output_pixels", "frameScope": "complete_runtime_frame"}:
         raise ValueError("condition pack canvas is not a complete native RuntimeFrame")
-    if pack.get("categoricalConditions", {}).get("sceneIntent", {}).get("sceneType") != "training_complete_natural_home_map":
-        raise ValueError("condition pack scene is not a complete natural-home map")
-    if not {"entrance", "main_path", "home_center", "natural_boundary"}.issubset(must_show):
-        raise ValueError("condition pack is missing complete-map composition identities")
+    scene_type = pack.get("categoricalConditions", {}).get("sceneIntent", {}).get("sceneType")
+    if config.get("modelId") == "ai-pet-world-complete-world-ai-assisted-cold-start-v7":
+        if scene_type != "training_complete_natural_region_map":
+            raise ValueError("V7 condition pack scene is not a complete natural-region map")
+        if not {"entrance", "main_path", "natural_boundary", "multiple_ecological_zones"}.issubset(must_show):
+            raise ValueError("V7 condition pack is missing complete natural-region composition identities")
+        if "home_center" in must_show:
+            raise ValueError("V7 natural-region condition pack unexpectedly requires a home center")
+    else:
+        if scene_type != "training_complete_natural_home_map":
+            raise ValueError("condition pack scene is not a complete natural-home map")
+        if not {"entrance", "main_path", "home_center", "natural_boundary"}.issubset(must_show):
+            raise ValueError("condition pack is missing complete-map composition identities")
 
 
 def load_latent_normalization(checkpoint, device):

@@ -41,7 +41,7 @@ const closureDocPath = path.join(
   "ziwei",
   "DYNAMIC_FLOW_CLOSURE_REPORT.md"
 )
-const executionDocPath = path.join(root, "docs", "ziwei", "EXECUTION_TABLE.md")
+const executionDocPath = path.join(root, "data", "ziwei", "legacy-execution-verification-baseline-v1.txt")
 
 function fail(message) {
   console.error(`[check-flow-time-palace-sync] ${message}`)

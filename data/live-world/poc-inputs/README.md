@@ -1,10 +1,14 @@
-# POC-0 输入目录
+# Live World POC 输入目录
 
-本目录用于保存 POC-0 的手写单 Chunk 输入。
+更新时间：2026-08-03 09:23:45 +08:00
 
-POC-0 固定范围：
+状态：legacy-poc-input-contract
 
-```txt
+不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
+
+本目录只保存早期单 Chunk POC 的不可变输入与验证证据，不作为正式世界默认配置。
+
+```text
 chunkSize = 32
 tileSize = 16
 pixelWidth = 512
@@ -13,16 +17,4 @@ chunkX = 0
 chunkY = 0
 ```
 
-POC-0 资源：
-
-| 资源 | 数量 | 规则 |
-|---|---:|---|
-| tree | 3 | 严格匹配 |
-| rock | 2 | 严格匹配 |
-| grass_clump | 6 | 可视觉合并 |
-| flower | 5 | 可装饰化 |
-| reed | 4 | 必须靠近水岸 |
-| berry_bush | 0 | 后置到 POC-1 或 P2 |
-
-正式 `input.chunk.json` 在 P0 类型和基础校验稳定后再写入。
-
+POC 资源约束只适用于对应 POC 身份；正式 Runtime 必须读取自己的 WorldFacts 和版本化输入合同。

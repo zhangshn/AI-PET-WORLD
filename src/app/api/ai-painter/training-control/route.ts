@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import type { TrainingAction } from "@/server/ai-painter-training-controller"
+import { claimOwnerWriteAuthorization, OwnerWriteAuthorizationError } from "@/server/project-owner-write-authorization"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -106,10 +107,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    await claimOwnerWriteAuthorization(request, {
+      action: `ai_painter.training_control.${body.action}`,
+      target: { subsystem: "ai-painter-training-controller", action: body.action },
+      payload: body,
+    })
     const { startTrainingAction } = await import("@/server/ai-painter-training-controller")
     const state = await startTrainingAction(body.action)
     return NextResponse.json({ ok: true, state }, { status: 202 })
   } catch (error) {
+    if (error instanceof OwnerWriteAuthorizationError) {
+      return NextResponse.json({ ok: false, code: error.code, message: error.message }, { status: error.status })
+    }
     return NextResponse.json(
       { ok: false, message: error instanceof Error ? error.message : "无法启动训练任务。" },
       { status: 409 },

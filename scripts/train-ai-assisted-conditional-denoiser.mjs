@@ -12,6 +12,8 @@ import { indexArtifact } from "./lib/ai-pet-world-storage-catalog.mjs"
 const ROOT = process.cwd()
 const PYTHON = path.join(ROOT, "ml", "ai-painter", ".venv", "Scripts", "python.exe")
 const TRAINER = path.join(ROOT, "ml", "ai-painter", "scripts", "train_ai_assisted_conditional_denoiser.py")
+const V7_DATASET_REPAIR_AUTHORIZATION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-mvp64-training-sample-binding-repair-retrain-resolution-20260802/request.json"
+const V7_DATASET_REPAIR_AUTHORIZATION_SHA256 = "3ecebd96908852b3888a7327a40b3cb38b2f0a5a6f9b3b6ddbd2f67aa4db554e"
 const engineeringMode = process.argv.includes("--engineering-26")
 const useV7 = process.argv.includes("--v7")
 const useV6 = process.argv.includes("--v6")
@@ -28,6 +30,9 @@ const modelConfig = readJson(CONFIG)
 const v7TrainingAuthorization = useV7
   ? readJson(modelConfig?.training?.ownerTrainingAuthorization?.authorizationPath)
   : null
+const v7DatasetRepairAuthorization = useV7
+  ? readJson(V7_DATASET_REPAIR_AUTHORIZATION_PATH)
+  : null
 const v7CapacityPointer = useV7
   ? readJson(".runtime/ai-painter/ai-assisted-v7-data-capacity-plans/latest.json")
   : null
@@ -38,10 +43,16 @@ const datasetPointer = readJson(engineeringMode
   ? "data/world-samples/ai-assisted-v7-engineering-pretraining-datasets/latest.json"
   : "data/world-samples/ai-assisted-cold-start-dataset-packages/latest.json")
 const datasetManifest = datasetPointer?.manifestPath ? readJson(datasetPointer.manifestPath) : null
+const datasetSourceIndex = datasetManifest?.sourceIndexPath ? readJson(datasetManifest.sourceIndexPath) : null
+const actualV7LoadedRows = useV7
+  ? (datasetSourceIndex?.samples ?? []).filter(isV7RegisteredConditionalRow)
+  : []
+const actualV7LoadedSplitCounts = countSplits(actualV7LoadedRows)
 const timestamp = new Date().toISOString()
 const smokeTest = process.argv.includes("--smoke-test")
+const preflightOnly = process.argv.includes("--preflight-only")
 const resolutionStage = readResolutionStage(process.argv.slice(2))
-const runId = `ai-assisted-conditional-denoiser-${modelVersion}-${smokeTest ? "smoke" : `stage-${resolutionStage}`}-${timestamp.replace(/[:.]/g, "-")}`
+const runId = `ai-assisted-conditional-denoiser-${modelVersion}-${preflightOnly ? "preflight" : smokeTest ? "smoke" : `stage-${resolutionStage}`}-${timestamp.replace(/[:.]/g, "-")}`
 const runDir = path.join(MODEL_ROOT, runId)
 const autoencoderCheckpoint = findAutoencoderCheckpoint()
 const parentDenoiserCheckpoint = resolutionStage > 0 && !smokeTest
@@ -74,7 +85,18 @@ if (useV7 && v7TrainingAuthorization?.status !== "resolved_owner_authorized") bl
 if (useV7 && v7TrainingAuthorization?.ownerDecision?.commandRef !== "owner-approved-v7-mvp64-local-gpu-training-activation-20260802") blockers.push("v7_gpu_training_owner_command_invalid")
 if (useV7 && v7TrainingAuthorization?.resolution?.gpuTrainingActivated !== true) blockers.push("v7_gpu_training_activation_not_resolved")
 if (useV7 && v7TrainingAuthorization?.resolution?.formalInferenceAuthorized !== false) blockers.push("v7_formal_inference_boundary_invalid")
+if (useV7 && !fileHashMatches(V7_DATASET_REPAIR_AUTHORIZATION_PATH, V7_DATASET_REPAIR_AUTHORIZATION_SHA256)) blockers.push("v7_dataset_repair_authorization_hash_invalid")
+if (useV7 && v7DatasetRepairAuthorization?.status !== "resolved_owner_authorized") blockers.push("v7_dataset_repair_owner_resolution_missing")
+if (useV7 && v7DatasetRepairAuthorization?.ownerDecision?.commandRef !== "owner-approved-v7-mvp64-training-sample-binding-repair-retrain-20260802") blockers.push("v7_dataset_repair_owner_command_invalid")
+if (useV7 && v7DatasetRepairAuthorization?.ownerDecision?.scope !== "v7_dataset_binding_repair_cpu_regression_smoke_stage_0_1_2_only") blockers.push("v7_dataset_repair_owner_scope_invalid")
+if (useV7 && v7DatasetRepairAuthorization?.resolution?.datasetBindingRepairAuthorized !== true) blockers.push("v7_dataset_binding_repair_not_authorized")
+if (useV7 && v7DatasetRepairAuthorization?.resolution?.gpuRetrainingAuthorized !== true) blockers.push("v7_dataset_retraining_not_authorized")
+if (useV7 && v7DatasetRepairAuthorization?.resolution?.postTrainingValidationAuthorized !== false) blockers.push("v7_dataset_repair_post_validation_boundary_invalid")
 if (useV7 && datasetManifest?.v7CapacityContributionCount !== 64) blockers.push("v7_mvp64_dataset_capacity_invalid")
+if (useV7 && actualV7LoadedRows.length !== 64) blockers.push("v7_actual_loaded_capacity_count_invalid")
+if (useV7 && !sameJson(actualV7LoadedSplitCounts, { train: 48, validation: 8, challenge: 4, regression: 4 })) blockers.push("v7_actual_loaded_split_invalid")
+if (useV7 && new Set(actualV7LoadedRows.map((row) => row.recordId)).size !== 64) blockers.push("v7_actual_loaded_record_identity_duplicate")
+if (useV7 && new Set(actualV7LoadedRows.map((row) => row.v7CapacitySlotId)).size !== 64) blockers.push("v7_actual_loaded_slot_identity_duplicate")
 if (useV7 && v7TrainingAuthorization?.taskIdentity?.datasetPackageId !== datasetManifest?.packageId) blockers.push("v7_authorized_dataset_identity_mismatch")
 if (useV7 && v7TrainingAuthorization?.taskIdentity?.qualifiedCompleteMapCount !== 64) blockers.push("v7_authorized_capacity_count_invalid")
 if (useV7 && !sameJson(v7TrainingAuthorization?.taskIdentity?.splitCounts, {
@@ -118,6 +140,36 @@ if (blockers.length > 0) {
   failOrBlock("blocked", blockers, null)
 }
 
+if (preflightOnly) {
+  appendAiPainterProgramEvent({
+    action: "run_ai_assisted_conditional_denoiser_training",
+    runId,
+    kind: "training_preflight_completed",
+    status: "success",
+    title: "V7 Dataset actual-row preflight completed",
+    titleZh: "V7 Dataset实际加载行预检已完成",
+    detail: `actualLoaded=${actualV7LoadedRows.length}; split=${JSON.stringify(actualV7LoadedSplitCounts)}; gpuStarted=false`,
+    detailZh: `实际加载=${actualV7LoadedRows.length}；分割=${JSON.stringify(actualV7LoadedSplitCounts)}；GPU启动=false`,
+    script: "scripts/train-ai-assisted-conditional-denoiser.mjs",
+    currentStep: "v7_actual_dataset_binding_preflight_passed",
+    finalGameMapSuccess: false,
+    canEnterWorld: false,
+    evidencePath: datasetPointer?.manifestPath ?? programEventProjectPath(CONFIG),
+  })
+  console.log(JSON.stringify({
+    status: "v7_actual_dataset_binding_preflight_passed",
+    runId,
+    actualLoadedConditionalSampleCount: actualV7LoadedRows.length,
+    actualLoadedV7CapacityCount: actualV7LoadedRows.length,
+    actualLoadedSplitCounts: actualV7LoadedSplitCounts,
+    uniqueRecordIdCount: new Set(actualV7LoadedRows.map((row) => row.recordId)).size,
+    uniqueCapacitySlotCount: new Set(actualV7LoadedRows.map((row) => row.v7CapacitySlotId)).size,
+    gpuStarted: false,
+    formalInferenceEligible: false,
+  }, null, 2))
+  process.exit(0)
+}
+
 const pythonArgs = [
   TRAINER,
   "--config", CONFIG,
@@ -153,7 +205,10 @@ const valid = manifest?.schemaVersion === modelConfig?.requiredCheckpointProvena
   && manifest?.architectureVersion === modelConfig?.architectureVersion
   && manifest?.datasetPackageId === datasetManifest?.packageId
   && manifest?.conditionChannels === 23
-  && manifest?.conditionBoundSampleCount === datasetManifest?.currentConditionPairCount
+  && manifest?.conditionBoundSampleCount === (useV7 ? 64 : datasetManifest?.currentConditionPairCount)
+  && (!useV7 || manifest?.actualLoadedConditionalSampleCount === 64)
+  && (!useV7 || manifest?.actualLoadedV7CapacityCount === 64)
+  && (!useV7 || sameJson(manifest?.actualLoadedSplitCounts, { train: 48, validation: 8, challenge: 4, regression: 4 }))
   && manifest?.thirdPartyWeightsLoaded === false
   && manifest?.thirdPartyGeneratedTrainingOutputUsed === true
   && manifest?.aiGenerationDependencyDeclared === true
@@ -228,6 +283,9 @@ console.log(JSON.stringify({
   checkpointPath: manifest.checkpointPath,
   manifestPath: projectPath(manifestPath),
   conditionBoundSampleCount: manifest.conditionBoundSampleCount,
+  actualLoadedConditionalSampleCount: manifest.actualLoadedConditionalSampleCount ?? null,
+  actualLoadedV7CapacityCount: manifest.actualLoadedV7CapacityCount ?? null,
+  actualLoadedSplitCounts: manifest.actualLoadedSplitCounts ?? null,
   trainingMode: engineeringMode ? "nonformal_engineering_pretraining" : "progressive_conditional_denoiser_training",
   formalV7TrainingAuthorized: useV7,
   rgbGenerated: false,
@@ -317,6 +375,9 @@ function findPreviousDenoiserCheckpoint(stageIndex) {
       && manifest.modelId === modelConfig?.modelId
       && manifest.architectureVersion === modelConfig?.architectureVersion
       && manifest.datasetPackageId === datasetManifest?.packageId
+      && manifest.actualLoadedConditionalSampleCount === 64
+      && manifest.actualLoadedV7CapacityCount === 64
+      && sameJson(manifest.actualLoadedSplitCounts, { train: 48, validation: 8, challenge: 4, regression: 4 })
       && manifest.denoiserTrained === true
       && manifest.predictionTarget === "velocity_v1"
       && manifest.latentNormalization?.version === "per_channel_train_split_v1"
@@ -368,6 +429,23 @@ function fileHashMatches(filePath, expected) {
 }
 function sha256File(filePath) { return crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex") }
 function sameJson(left, right) { return JSON.stringify(left) === JSON.stringify(right) }
+function isV7RegisteredConditionalRow(row) {
+  return row?.categoryId === "complete-maps"
+    && row?.trainingRoles?.includes("conditional_denoiser")
+    && row?.formalConditionalTrainingEligible === true
+    && row?.conditionBound === true
+    && row?.v7CapacityContributionRegistered === true
+    && row?.ownerReviewStatus === "owner_approved"
+    && row?.machineReviewStatus === "passed"
+    && row?.aiAssistedColdStartEligible === true
+    && row?.independentTrainingEligible === false
+}
+function countSplits(rows) {
+  return Object.fromEntries(["train", "validation", "challenge", "regression"].map((split) => [
+    split,
+    rows.filter((row) => row.split === split).length,
+  ]))
+}
 function buildAlgorithmEvidence() {
   const sources = [
     CONFIG,

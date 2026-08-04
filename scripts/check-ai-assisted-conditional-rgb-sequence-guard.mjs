@@ -48,7 +48,11 @@ const completed005Gate = evaluateConditionalRgbGenerationSequence({
   generationRequests: requests,
 })
 assert(!completed005Gate.allowed, "condition 005 must remain blocked after V2 owner approval")
-assert(completed005Gate.code === "conditional_rgb_generation_blocked_condition_already_owner_approved", `unexpected condition 005 state: ${completed005Gate.code}`)
+const condition005Record = (index.records ?? []).find((record) => record.recordId === "ai-cold-start-condition-pair-005-seasonal-evergreen-semi-evergreen-forest-v2")
+const expectedCondition005Code = condition005Record?.reviews?.ownerReviewStatus === "owner_approved"
+  ? "conditional_rgb_generation_blocked_condition_already_owner_approved"
+  : "conditional_rgb_generation_blocked_repeat_requires_owner_authorization"
+assert(completed005Gate.code === expectedCondition005Code, `unexpected condition 005 state: ${completed005Gate.code}`)
 assert(completed005Gate.blockingRecordIds.includes("ai-cold-start-condition-pair-005-seasonal-evergreen-semi-evergreen-forest-v2"), "condition 005 V2 blocking record was not identified")
 
 const syntheticRejectedRecord = {

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 
 import { readWorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-store-adapter"
+import { claimOwnerWriteAuthorization, OwnerWriteAuthorizationError } from "@/server/project-owner-write-authorization"
 import {
   buildWorldVisualApprovedFrame,
   buildWorldVisualFactManifest,
@@ -11,7 +12,7 @@ import {
   writeWorldVisualFixPlanRecord,
 } from "@/world/world-visual-painter"
 
-export async function POST() {
+export async function POST(request: Request) {
   const runtimeReadResult = await readWorldRuntimeSaveRecord()
 
   if (runtimeReadResult.status !== "found" || !runtimeReadResult.record) {
@@ -83,6 +84,26 @@ export async function POST() {
   }
 
   const candidateRecord = candidateReadResult.record
+  try {
+    await claimOwnerWriteAuthorization(request, {
+      action: "world.visual.judge",
+      target: {
+        ownerId: runtimeReadResult.record.ownerId,
+        worldId: runtimeReadResult.record.worldId,
+        tick: runtimeReadResult.record.tick,
+        candidateId: candidateRecord.candidate.candidateId,
+      },
+      payload: {
+        sourceFactIds: factManifest.sourceFactIds,
+        requestedOutputs: ["visual-fix-plan", "controlled-mvp-approved-frame-if-passed"],
+      },
+    })
+  } catch (error) {
+    if (error instanceof OwnerWriteAuthorizationError) {
+      return NextResponse.json({ ok: false, code: error.code, message: error.message }, { status: error.status })
+    }
+    throw error
+  }
   const reviewReport = await buildWorldVisualReviewReport({
     factManifest,
     generationCondition: candidateRecord.generationCondition,

@@ -24,6 +24,7 @@ export async function runOriginalImageOwnerReview(input: {
   recordId: string
   decision: OwnerReviewDecision
   comment: string
+  ownerCommandRef: string
 }) {
   const key = `${input.categoryId}:${input.recordId}`
   if (activeReviews.has(key)) throw new OwnerReviewConflictError("该原图正在写入审核，请勿重复提交。")
@@ -31,7 +32,8 @@ export async function runOriginalImageOwnerReview(input: {
 
   try {
     const record = await requireReviewableRecord(input.categoryId, input.recordId)
-    const ownerCommandRef = `ai-painter-console-owner-review:${input.recordId}:${new Date().toISOString()}`
+    const ownerCommandRef = input.ownerCommandRef.trim()
+    if (!ownerCommandRef) throw new OwnerReviewInputError("Owner命令身份不能为空。")
     const comment = normalizeComment(input.comment, input.decision)
     const sequenceNumber = input.decision === "approved" && hasV7CapacitySlot(record)
       ? await nextAutonomousSequence(record)

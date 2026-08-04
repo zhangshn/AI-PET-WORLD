@@ -1,8 +1,8 @@
 # AI Painter Progress 页面文档入口
 
-更新时间：2026-07-12 16:27:52 +08:00
+更新时间：2026-08-02 19:17:43 +08:00
 
-状态：active-locks + implementation-evidence / 不决定完整世界总路线
+状态：active-ai-painter-progress-index
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
@@ -18,6 +18,7 @@
 | 自动修复计划执行器 | `AUTO_REPAIR_PLAN_RUNNER_LOCKED_SPEC.md` | 已锁定 |
 | 自动视觉审核学习 | `AUTO_VISUAL_JUDGE_LEARNING_LOCKED_SPEC_20260709.md` | 已锁定 |
 | 原图资料库三级页面 | `ORIGINAL_IMAGE_LIBRARY_LOCKED_SPEC.md` | 已锁定 |
+| 当前训练只读监控台与Run详情 | `CURRENT_TRAINING_BACKEND_CONSOLE_LOCKED_SPEC.md` | 已锁定 |
 
 局部材料修复、单次失败分析和按日期生成的阶段说明不再作为文档保存；相关运行事实必须由程序写入 `.runtime` 台账。
 

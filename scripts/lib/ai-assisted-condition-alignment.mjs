@@ -13,7 +13,7 @@ const FLOWING_WATER_LANDSCAPES = new Set([
   "dry-season-exposed-riverbank",
 ])
 
-export async function auditAiAssistedConditionAlignment({ record, imagePath }) {
+export async function auditAiAssistedConditionAlignment({ record, imagePath, referenceImagePath = null }) {
   if (!record.conditionBinding?.conditionPackPath) {
     return {
       schemaVersion: "ai-assisted-condition-alignment-audit-v1",
@@ -32,8 +32,13 @@ export async function auditAiAssistedConditionAlignment({ record, imagePath }) {
   assert(conditionPack.worldId === record.conditionBinding.worldId, "condition pack worldId mismatch")
   assert(conditionPack.tick === record.conditionBinding.tick, "condition pack tick mismatch")
 
-  const image = await sharp(imagePath, { failOn: "error" }).removeAlpha().raw().toBuffer({ resolveWithObject: true })
+  const resolvedImagePath = resolveProjectPath(imagePath)
+  const image = await sharp(fs.readFileSync(resolvedImagePath), { failOn: "error" }).removeAlpha().raw().toBuffer({ resolveWithObject: true })
+  const referenceImage = referenceImagePath
+    ? await sharp(fs.readFileSync(resolveProjectPath(referenceImagePath)), { failOn: "error" }).removeAlpha().raw().toBuffer({ resolveWithObject: true })
+    : null
   assert(image.info.width === conditionPack.canvas.width && image.info.height === conditionPack.canvas.height, "candidate and condition-pack canvas mismatch")
+  if (referenceImage) assert(referenceImage.info.width === image.info.width && referenceImage.info.height === image.info.height, "object semantic reference canvas mismatch")
   const pathClassifier = selectPathClassifier(record)
   const flowingWaterBoundaryRequired =
     record.rebuild64Sequence?.seriesId ===
@@ -74,6 +79,19 @@ export async function auditAiAssistedConditionAlignment({ record, imagePath }) {
     maximumCoverageRatio: 3.0,
     requireBoundaryContact: true,
   }))
+  const objectSemanticAudits = await Promise.all([
+    ["object_footprints", "object_footprints"],
+    ["object_tree", "tree_objects"],
+    ["object_rock", "rock_objects"],
+    ["object_vegetation", "vegetation_objects"],
+    ["focal_area", "focal_area"],
+  ].map(([channelId, affectedRegion]) => auditObjectSemanticResponse({
+    conditionPack,
+    image,
+    referenceImage,
+    channelId,
+    affectedRegion,
+  })))
 
   const hydrologyConnectivityAudit = auditHydrologyConnectivity({
     record,
@@ -81,6 +99,7 @@ export async function auditAiAssistedConditionAlignment({ record, imagePath }) {
   })
   const issues = [
     ...audits.flatMap((audit) => audit.issues),
+    ...objectSemanticAudits.flatMap((audit) => audit.issues),
     ...hydrologyConnectivityAudit.issues,
   ]
   return {
@@ -92,7 +111,7 @@ export async function auditAiAssistedConditionAlignment({ record, imagePath }) {
     conditionPackPath: projectPath(conditionPackPath),
     conditionPackFileSha256: sha256(conditionPackBytes),
     canvas: conditionPack.canvas,
-    method: "season_aware_dense_water_surface_plus_water_port_boundary_continuity_plus_condition_supported_path_components_plus_8x6_spatial_mass_centroid_v5",
+    method: "season_aware_water_path_alignment_plus_object_mask_local_visual_response_v6",
     waterClassifier: {
       mode: "condition_presence_aware_water_signal_v3",
       conditionPresentMode:
@@ -113,7 +132,205 @@ export async function auditAiAssistedConditionAlignment({ record, imagePath }) {
     },
     hydrologyConnectivityAudit,
     channelAudits: audits,
+    objectSemanticAudits,
     issues,
+  }
+}
+
+async function auditObjectSemanticResponse({ conditionPack, image, referenceImage, channelId, affectedRegion }) {
+  const channel = conditionPack.channels.find((item) => item.id === channelId)
+  assert(channel, `required object semantic channel missing: ${channelId}`)
+  const channelPath = resolveProjectPath(channel.path)
+  const maskImage = await sharp(channelPath, { failOn: "error" }).raw().toBuffer({ resolveWithObject: true })
+  const mask = new Uint8Array(image.info.width * image.info.height)
+  for (let index = 0; index < mask.length; index += 1) {
+    mask[index] = maskImage.data[index * maskImage.info.channels] > 0 ? 1 : 0
+  }
+  const distribution = spatialDistribution(mask, image.info.width, image.info.height)
+  if (distribution.nonZeroRatio === 0) {
+    return {
+      channelId,
+      expectedChannelPath: projectPath(channelPath),
+      expectedChannelSha256: channel.sha256,
+      status: "not_applicable_empty_object_semantic_mask",
+      passed: true,
+      expectedNonZeroRatio: 0,
+      issues: [],
+    }
+  }
+
+  const support = buildRectangularSupportMask(mask, image.info.width, image.info.height, 12)
+  const ring = new Uint8Array(mask.length)
+  for (let index = 0; index < ring.length; index += 1) ring[index] = support[index] && !mask[index] ? 1 : 0
+  const inside = measureMaskedVisualResponse(image, mask)
+  const outside = measureMaskedVisualResponse(image, ring)
+  const colorDistance = Math.sqrt(
+    inside.meanRgb.reduce((sum, value, index) => sum + (value - outside.meanRgb[index]) ** 2, 0),
+  )
+  const edgeDifference = Math.abs(inside.meanEdge - outside.meanEdge)
+  const edgeRatio = Math.max(inside.meanEdge, outside.meanEdge) / Math.max(0.001, Math.min(inside.meanEdge, outside.meanEdge))
+  const calibratedThresholds = {
+    object_footprints: { minimumColorDistance: 1.0, minimumEdgeDifference: 0.04, minimumEdgeRatio: 1.002 },
+    object_tree: { minimumColorDistance: 1.05, minimumEdgeDifference: 0.055, minimumEdgeRatio: 1.0025 },
+    object_rock: { minimumColorDistance: 1.5, minimumEdgeDifference: 0.05, minimumEdgeRatio: 1.003 },
+    object_vegetation: { minimumColorDistance: 0.8, minimumEdgeDifference: 0.035, minimumEdgeRatio: 1.002 },
+    focal_area: { minimumColorDistance: 0.8, minimumEdgeDifference: 0.035, minimumEdgeRatio: 1.002 },
+  }
+  const thresholds = {
+    ...calibratedThresholds[channelId],
+    supportRadiusPixels: 12,
+  }
+  const localResponsePassed =
+    colorDistance >= thresholds.minimumColorDistance
+    || edgeDifference >= thresholds.minimumEdgeDifference
+    || edgeRatio >= thresholds.minimumEdgeRatio
+  const referenceResponse = referenceImage
+    ? measureMaskedReferenceResponse(image, referenceImage, mask)
+    : null
+  const referenceThresholds = {
+    maximumMaskedRgbMae: channelId === "object_rock" ? 0.2 : 0.18,
+    maximumMaskedEdgeMae: 0.12,
+    minimumMaskedLumaCorrelation: 0.08,
+    highFidelityFallbackMaximumRgbMae: 0.08,
+    highFidelityFallbackMaximumEdgeMae: 0.06,
+  }
+  const referenceResponsePassed = !referenceResponse || (
+    referenceResponse.maskedRgbMae <= referenceThresholds.maximumMaskedRgbMae
+    && referenceResponse.maskedEdgeMae <= referenceThresholds.maximumMaskedEdgeMae
+    && referenceResponse.maskedLumaCorrelation >= referenceThresholds.minimumMaskedLumaCorrelation
+  ) || Boolean(referenceResponse
+    && referenceResponse.maskedRgbMae <= referenceThresholds.highFidelityFallbackMaximumRgbMae
+    && referenceResponse.maskedEdgeMae <= referenceThresholds.highFidelityFallbackMaximumEdgeMae
+  )
+  const passed = localResponsePassed && referenceResponsePassed
+  const issues = []
+  if (!localResponsePassed) issues.push(issue(
+    `condition_${channelId}_visual_response_missing`,
+    `${channelId} has no measurable local color or structure response inside its authoritative mask.`,
+    `${channelId} 在权威掩码内没有形成可测量的局部颜色或结构响应。`,
+    affectedRegion,
+  ))
+  if (!referenceResponsePassed) issues.push(issue(
+    `condition_${channelId}_reference_semantic_mismatch`,
+    `${channelId} does not reproduce the held-out reference object's masked color and edge structure.`,
+    `${channelId} 没有复现留出参考图中该对象掩码内的颜色与边缘结构。`,
+    affectedRegion,
+  ))
+  return {
+    channelId,
+    expectedChannelPath: projectPath(channelPath),
+    expectedChannelSha256: channel.sha256,
+    status: passed ? "object_semantic_visual_response_passed" : "object_semantic_visual_response_failed",
+    passed,
+    expectedNonZeroRatio: round(distribution.nonZeroRatio),
+    inside: roundVisualResponse(inside),
+    surroundingRing: roundVisualResponse(outside),
+    colorDistance: round(colorDistance),
+    edgeDifference: round(edgeDifference),
+    edgeRatio: round(edgeRatio),
+    localResponsePassed,
+    referenceComparisonMode: referenceImage ? "post_generation_held_out_masked_rgb_edge_correlation_v1" : "not_available",
+    referenceResponse: referenceResponse ? roundReferenceResponse(referenceResponse) : null,
+    referenceThresholds: referenceImage ? referenceThresholds : null,
+    thresholds,
+    thresholdCalibration: "owner_and_machine_approved_mvp64_object_response_p05_baseline_v1",
+    priorAcceptanceThresholdChanged: false,
+    issues,
+  }
+}
+
+function measureMaskedReferenceResponse(candidate, reference, mask) {
+  let rgbAbsoluteError = 0
+  let edgeAbsoluteError = 0
+  let count = 0
+  let candidateLumaSum = 0
+  let referenceLumaSum = 0
+  let candidateLumaSquareSum = 0
+  let referenceLumaSquareSum = 0
+  let lumaProductSum = 0
+  for (let y = 0; y < candidate.info.height; y += 1) {
+    for (let x = 0; x < candidate.info.width; x += 1) {
+      const index = y * candidate.info.width + x
+      if (!mask[index]) continue
+      const offset = index * candidate.info.channels
+      const candidateLuma = candidate.data[offset] * 0.2126 + candidate.data[offset + 1] * 0.7152 + candidate.data[offset + 2] * 0.0722
+      const referenceLuma = reference.data[offset] * 0.2126 + reference.data[offset + 1] * 0.7152 + reference.data[offset + 2] * 0.0722
+      for (let channel = 0; channel < 3; channel += 1) rgbAbsoluteError += Math.abs(candidate.data[offset + channel] - reference.data[offset + channel])
+      candidateLumaSum += candidateLuma
+      referenceLumaSum += referenceLuma
+      candidateLumaSquareSum += candidateLuma ** 2
+      referenceLumaSquareSum += referenceLuma ** 2
+      lumaProductSum += candidateLuma * referenceLuma
+      if (x + 1 < candidate.info.width) {
+        const next = offset + candidate.info.channels
+        const candidateEdge = Math.abs(candidateLuma - (candidate.data[next] * 0.2126 + candidate.data[next + 1] * 0.7152 + candidate.data[next + 2] * 0.0722))
+        const referenceEdge = Math.abs(referenceLuma - (reference.data[next] * 0.2126 + reference.data[next + 1] * 0.7152 + reference.data[next + 2] * 0.0722))
+        edgeAbsoluteError += Math.abs(candidateEdge - referenceEdge)
+      }
+      count += 1
+    }
+  }
+  const numerator = count * lumaProductSum - candidateLumaSum * referenceLumaSum
+  const denominator = Math.sqrt(
+    Math.max(0, count * candidateLumaSquareSum - candidateLumaSum ** 2)
+    * Math.max(0, count * referenceLumaSquareSum - referenceLumaSum ** 2),
+  )
+  return {
+    maskedPixelCount: count,
+    maskedRgbMae: rgbAbsoluteError / Math.max(1, count * 3 * 255),
+    maskedEdgeMae: edgeAbsoluteError / Math.max(1, count * 255),
+    maskedLumaCorrelation: denominator > 1e-9 ? numerator / denominator : 0,
+  }
+}
+
+function roundReferenceResponse(value) {
+  return {
+    maskedPixelCount: value.maskedPixelCount,
+    maskedRgbMae: round(value.maskedRgbMae),
+    maskedEdgeMae: round(value.maskedEdgeMae),
+    maskedLumaCorrelation: round(value.maskedLumaCorrelation),
+  }
+}
+
+function measureMaskedVisualResponse(image, mask) {
+  const rgb = [0, 0, 0]
+  let edge = 0
+  let count = 0
+  for (let y = 0; y < image.info.height; y += 1) {
+    for (let x = 0; x < image.info.width; x += 1) {
+      const index = y * image.info.width + x
+      if (!mask[index]) continue
+      const offset = index * image.info.channels
+      rgb[0] += image.data[offset]
+      rgb[1] += image.data[offset + 1]
+      rgb[2] += image.data[offset + 2]
+      let comparisons = 0
+      if (x + 1 < image.info.width) {
+        const next = offset + image.info.channels
+        edge += (Math.abs(image.data[offset] - image.data[next]) + Math.abs(image.data[offset + 1] - image.data[next + 1]) + Math.abs(image.data[offset + 2] - image.data[next + 2])) / 3
+        comparisons += 1
+      }
+      if (y + 1 < image.info.height) {
+        const next = offset + image.info.width * image.info.channels
+        edge += (Math.abs(image.data[offset] - image.data[next]) + Math.abs(image.data[offset + 1] - image.data[next + 1]) + Math.abs(image.data[offset + 2] - image.data[next + 2])) / 3
+        comparisons += 1
+      }
+      count += 1
+      if (comparisons === 0) edge += 0
+    }
+  }
+  return {
+    pixelCount: count,
+    meanRgb: rgb.map((value) => value / Math.max(1, count)),
+    meanEdge: edge / Math.max(1, count * 2),
+  }
+}
+
+function roundVisualResponse(value) {
+  return {
+    pixelCount: value.pixelCount,
+    meanRgb: value.meanRgb.map(round),
+    meanEdge: round(value.meanEdge),
   }
 }
 

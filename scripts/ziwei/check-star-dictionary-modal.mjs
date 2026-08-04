@@ -38,7 +38,7 @@ const files = {
   chartGrid: path.join(root, "src/app/ziwei/_components/ziwei-chart-grid.tsx"),
   styles: path.join(root, "src/app/ziwei/_styles/ziwei-page.module.css"),
   pageStructure: path.join(root, "docs/ziwei/PAGE_ACCEPTANCE.md"),
-  executionTable: path.join(root, "docs/ziwei/EXECUTION_TABLE.md")
+  executionTable: path.join(root, "data/ziwei/legacy-execution-verification-baseline-v1.txt")
 }
 
 function fail(message) {

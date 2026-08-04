@@ -27,7 +27,7 @@ const stylePath = path.join(
   "ziwei-page.module.css"
 )
 const pageDocPath = path.join(root, "docs", "ziwei", "PAGE_ACCEPTANCE.md")
-const executionDocPath = path.join(root, "docs", "ziwei", "EXECUTION_TABLE.md")
+const executionDocPath = path.join(root, "data", "ziwei", "legacy-execution-verification-baseline-v1.txt")
 
 function fail(message) {
   console.error(`[check-dynamic-palace-markers] ${message}`)

@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto"
 import { mkdir, readFile, readdir, writeFile } from "node:fs/promises"
 import path from "node:path"
+import { claimOwnerWriteAuthorization, OwnerWriteAuthorizationError } from "@/server/project-owner-write-authorization"
 
 const CANDIDATE_ROOT = path.join(process.cwd(), "data", "ai-painter-assets", "candidates")
 const QUALITY_ROOT = path.join(process.cwd(), "data", "ai-painter-quality", "vj-b2", "samples")
@@ -106,6 +107,20 @@ export async function POST(request: Request) {
       return Response.json({ error: "候选图片哈希与 metadata 不一致，禁止审核。" }, { status: 409 })
     }
 
+    let authorization
+    try {
+      authorization = await claimOwnerWriteAuthorization(request, {
+        action: "ai_painter.candidate_review",
+        target: { assetId, imageSha256 },
+        payload: { decision, reasonZh },
+      })
+    } catch (error) {
+      if (error instanceof OwnerWriteAuthorizationError) {
+        return Response.json({ error: error.message, code: error.code }, { status: error.status })
+      }
+      throw error
+    }
+
     const qualitySampleId = decision === "redraw" ? null : `reviewed-${assetId}`
     if (qualitySampleId) {
       const sampleDir = path.join(QUALITY_ROOT, qualitySampleId)
@@ -138,7 +153,7 @@ export async function POST(request: Request) {
       assetId,
       decision,
       reasonZh,
-      reviewer: "project-owner",
+      reviewer: `project-owner:${authorization.ownerCommandRef}`,
       reviewedAt: new Date().toISOString(),
       imageSha256,
       qualitySampleId,

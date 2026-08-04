@@ -52,6 +52,7 @@ export type ResourceUsageSessionSummary = {
     externalApiCostCny: number
     localComputeTokens: number
     localComputeTokenRule: string
+    localComputeTokenStatus: "deprecated_not_authoritative"
   }
   error: string | null
 }
@@ -208,8 +209,6 @@ function buildSummary(input: {
   const cnyPerKwh = readPositiveNumber(process.env.AI_PAINTER_ELECTRICITY_CNY_PER_KWH, 0.6)
   const estimatedKwh = (averagePowerWatts * durationSeconds) / 3600000
   const estimatedCny = estimatedKwh * cnyPerKwh
-  const gpuActiveSeconds = durationSeconds * (averageGpuUtilizationPercent / 100)
-
   return {
     sessionId: input.sessionId,
     action: input.action,
@@ -236,8 +235,9 @@ function buildSummary(input: {
     tokenLedger: {
       externalApiTokens: 0,
       externalApiCostCny: 0,
-      localComputeTokens: Math.round(gpuActiveSeconds * 1000),
-      localComputeTokenRule: "localComputeTokens = gpuActiveSeconds * 1000; local training comparison only, not third-party API tokens.",
+      localComputeTokens: 0,
+      localComputeTokenRule: "Deprecated: elapsed GPU time is not a token count. Read exact local latent-spatial token accounting from the training run manifest or token ledger.",
+      localComputeTokenStatus: "deprecated_not_authoritative",
     },
     error: input.error,
   }

@@ -1,12 +1,12 @@
 # World Samples 正式样本目录
 
-更新时间：2026-07-12 14:21:07 +08:00
+更新时间：2026-08-03 09:23:45 +08:00
 
-状态：active-data-contract / 正式样本登记能力已实现 / 当前有效样本为 0
+状态：active-world-samples-directory-contract
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
-当前正式入口：
+正式入口：
 
 ```text
 data/world-samples/registry/<dictionaryVersion>/
@@ -39,7 +39,7 @@ npm run register:complete-map-training-sample -- --request <registration-request
 
 程序自动复制留存图片、计算 SHA-256、写入时间戳和不可变记录。声明独立训练资格的请求还必须通过 `strict-project-owned-training-data-v1`，提供原创源文件、权利人、完整全球商业与训练权、第三方内容禁用声明、权属证据及其 hash。来源、许可、人工审核、IP审核、标签、任务身份和 split 必须由请求明确提供，程序不得补造。
 
-先运行 `npm run build:project-owned-sample-intake-template` 取得绑定当前任务与23通道的待填写模板；模板不是正式样本。完成原创 RGB、机器审核、owner视觉审核和IP审核后，才允许运行登记命令。
+`npm run build:project-owned-sample-intake-template` 生成绑定任务与23通道的待填写模板；模板不是正式样本。完成原创 RGB、机器审核、Owner视觉审核和IP审核后，登记程序才能接收该请求。
 
 数据包命令：
 

@@ -928,8 +928,18 @@ check(
   runtimeRenderer.includes("mvp_game_frontend_render_ready") &&
     runtimeRenderer.includes("world_page_runtime_layers_only")
 )
-check("Current execution guide is authoritative", currentExecutionGuide.includes("本文档是当前继续工作的唯一执行入口"))
-check("Current execution guide names the complete-world command", currentExecutionGuide.includes("npm run run:complete-game-world"))
+check(
+  "Current execution guide is the single module plan",
+  currentExecutionGuide.includes("# AI-PET-WORLD 唯一模块计划表") &&
+    currentExecutionGuide.includes("本文档是项目唯一计划表")
+)
+check(
+  "Single module plan excludes run-level evidence",
+  !currentExecutionGuide.includes("runId=") &&
+    !currentExecutionGuide.includes("SHA-256=") &&
+    !currentExecutionGuide.includes("当前唯一下一步")
+)
+check("Complete-world command remains owned by package scripts", packageJson.includes('"run:complete-game-world"'))
 
 let failed = 0
 for (const item of checks) {

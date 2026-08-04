@@ -1,8 +1,8 @@
 # 完整游戏世界生成正式文档索引
 
-更新时间：2026-07-11 12:32:00 +08:00
+更新时间：2026-08-02 15:41:57 +08:00
 
-状态：active-architecture-index / 6 份文档 / 禁止重建阶段性文档树
+状态：active-game-world-document-index
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
@@ -15,25 +15,30 @@ docs/game-world-generation/
 ├─ CURRENT_EXECUTION_GUIDE_20260710.md
 ├─ AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md
 ├─ TRAINING_DATA_AND_SOURCE_POLICY.md
-└─ REVIEW_AUTOMATION_AND_STORAGE_SPEC.md
+├─ REVIEW_AUTOMATION_AND_STORAGE_SPEC.md
+├─ FLOWING_WATER_CONNECTIVITY_AND_NOVELTY_SPEC.md
+├─ CROSS_MODAL_RGB_COLLAPSE_PREVENTION_SPEC.md
+└─ CROSS_MODAL_RGB_GATE_THRESHOLD_ALIGNMENT_20260802.md
 ```
 
 | 文档 | 权限 |
 |---|---|
-| `CURRENT_EXECUTION_GUIDE_20260710.md` | 唯一决定当前状态、阻断和下一步 |
+| `CURRENT_EXECUTION_GUIDE_20260710.md` | 项目唯一模块计划表；只在模块边界变化时更新 |
 | `AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md` | 定义完整视觉生产技术边界 |
 | `TRAINING_DATA_AND_SOURCE_POLICY.md` | 定义样本来源、数据合同和严格门槛 |
 | `REVIEW_AUTOMATION_AND_STORAGE_SPEC.md` | 定义审核、回写、自动运行和存储 |
+| `FLOWING_WATER_CONNECTIVITY_AND_NOVELTY_SPEC.md` | 定义流动水体边界连接、相邻EdgePort和全历史骨架唯一性 |
+| `CROSS_MODAL_RGB_COLLAPSE_PREVENTION_SPEC.md` | 定义条件图对历史RGB的模板收敛预防 |
+| `CROSS_MODAL_RGB_GATE_THRESHOLD_ALIGNMENT_20260802.md` | 锁定条件预检与RGB复审使用相同水体阈值 |
 | `README.md` | 只提供阅读导航 |
 | `DOCUMENT_INDEX.md` | 只声明正式文件清单 |
 
 ## 已合并删除的内容
 
-原 `00-15` 阶段目录中的世界理解、导演、多尺度、过渡、视觉原子、审美、失败记忆、训练数据、模型计划、数据缺口、审核、实施路线、控制台、数据库和自主循环文档，已分别合并进入上述三份正式规格。
+原 `00-15` 阶段目录中的世界理解、导演、多尺度、过渡、视觉原子、审美、失败记忆、训练数据、模型计划、数据缺口、审核、实施路线、控制台、数据库和自主循环文档，已分别合并进入上述三份核心规格。三份补充规格只承载已落地机器合同所需的水文和跨模态门禁，不代表恢复阶段性文档树。
 
 这些旧文件不得恢复，也不得另建 `history`、`archive-docs` 或平行计划保存副本。运行证据继续保存在 `data/` 和 `.runtime/`，不受 Markdown 清理影响。
 
 ## 字典边界
 
 `docs/world-visual-data-dictionary/` 的分层条目继续作为机器可导出的正式事实定义，不计入智能体默认阅读链。需要字段细节时只读取相关条目，不得全量读取后改变当前路线。
-

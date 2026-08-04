@@ -112,7 +112,7 @@ export default async function TrialReviewsPage() {
 }
 
 async function readTrialReviews(): Promise<TrialResponse> {
-  const trialsRoot = path.join(process.cwd(), ".runtime", "world-visual-dictionary-trials")
+  const trialsRoot = path.join(/* turbopackIgnore: true */ process.cwd(), ".runtime", "world-visual-dictionary-trials")
   try {
     const entries = await readdir(trialsRoot, { withFileTypes: true })
     const records = []

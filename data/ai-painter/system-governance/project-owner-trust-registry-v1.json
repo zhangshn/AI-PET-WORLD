@@ -1,0 +1,6 @@
+{
+  "schemaVersion": "project-owner-trust-registry-v1",
+  "status": "owner_key_provisioning_required",
+  "keys": [],
+  "noteZh": "由项目所有者在Codex之外生成Ed25519密钥，并将公钥登记后，把本文件SHA-256配置为AI_PET_WORLD_OWNER_TRUST_REGISTRY_SHA256。未配置前所有写接口保持失败关闭。"
+}

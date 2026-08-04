@@ -169,7 +169,7 @@ const files = {
   ),
   pageDoc: path.join(root, "docs", "ziwei", "PAGE_ACCEPTANCE.md"),
   directoryDoc: path.join(root, "docs", "ziwei", "DIRECTORY_STRUCTURE.md"),
-  executionDoc: path.join(root, "docs", "ziwei", "EXECUTION_TABLE.md")
+  executionDoc: path.join(root, "data", "ziwei", "legacy-execution-verification-baseline-v1.txt")
 }
 
 const texts = Object.fromEntries(

@@ -6,6 +6,7 @@ import {
   runOriginalImageOwnerReview,
   type OwnerReviewDecision,
 } from "@/server/ai-painter-owner-review-runner"
+import { claimOwnerWriteAuthorization, OwnerWriteAuthorizationError } from "@/server/project-owner-write-authorization"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -37,15 +38,22 @@ export async function POST(
   }
 
   try {
+    const authorization = await claimOwnerWriteAuthorization(request, {
+      action: "ai_painter.original_image.owner_review",
+      target: { categoryId, recordId },
+      payload: body,
+    })
     const result = await runOriginalImageOwnerReview({
       categoryId,
       recordId,
       decision: body.decision,
       comment: body.comment,
+      ownerCommandRef: authorization.ownerCommandRef,
     })
     return Response.json(result, { headers: { "Cache-Control": "no-store" } })
   } catch (error) {
     const message = error instanceof Error ? error.message : "审核程序执行失败。"
+    if (error instanceof OwnerWriteAuthorizationError) return Response.json({ error: message, code: error.code }, { status: error.status })
     if (error instanceof OwnerReviewInputError) return Response.json({ error: message }, { status: 400 })
     if (error instanceof OwnerReviewNotFoundError) return Response.json({ error: message }, { status: 404 })
     if (error instanceof OwnerReviewConflictError) return Response.json({ error: message }, { status: 409 })

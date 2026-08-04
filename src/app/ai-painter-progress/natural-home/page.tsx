@@ -277,7 +277,7 @@ async function buildPipelineStages(records: TrainingRecord[]): Promise<PipelineS
     ".runtime/game-map-runtime-compositor/world-d0znz8/0",
     (name) => name.endsWith("formal-visual-judge.json"),
   )
-  const machineJudge = formalJudge ? await readJsonFile<JsonRecord>(path.join(process.cwd(), formalJudge.path)) : null
+  const machineJudge = formalJudge ? await readJsonFile<JsonRecord>(path.join(/* turbopackIgnore: true */ process.cwd(), formalJudge.path)) : null
   const machinePassed = booleanValue(machineJudge?.passed)
   const dictionaryEvidence = await existingPaths([
     "docs/world-visual-data-dictionary/FULL_DICTIONARY_PRINT.md",
@@ -417,7 +417,7 @@ async function readAiAssistedConditionalInferenceValidationRecords() {
     const artifacts = listLatestIndexedArtifacts(record.path, 500)
     const manifestArtifact = artifacts?.find((artifact) => artifact.name === "manifest.json")
     if (!manifestArtifact) continue
-    const manifest = await readJsonFile<JsonRecord>(path.join(process.cwd(), manifestArtifact.path))
+    const manifest = await readJsonFile<JsonRecord>(path.join(/* turbopackIgnore: true */ process.cwd(), manifestArtifact.path))
     if (!manifest) continue
     completedRecords.push({
       ...record,
@@ -435,7 +435,7 @@ async function readAiAssistedConditionalInferenceFailureRecords(): Promise<Train
   const records: TrainingRecord[] = []
   for (const artifact of artifacts) {
     if (artifact.name === "latest.json" || !artifact.name.endsWith(".json")) continue
-    const json = await readJsonFile<JsonRecord>(path.join(process.cwd(), artifact.path))
+    const json = await readJsonFile<JsonRecord>(path.join(/* turbopackIgnore: true */ process.cwd(), artifact.path))
     if (!json) continue
     const failureCodes = stringArrayValue(json.blockers)
     const outputImagePath = stringValue(json.outputImagePath)
@@ -492,10 +492,10 @@ async function readConditionalRgbGenerationAttemptRecords(): Promise<TrainingRec
 
 async function readCurrentRuntimeFrameRecord(): Promise<TrainingRecord[]> {
   const relativePath = ".runtime/game-map-runtime-frame/latest-runtime-frame.json"
-  const absolutePath = path.join(process.cwd(), relativePath)
+  const absolutePath = path.join(/* turbopackIgnore: true */ process.cwd(), relativePath)
   const json = await readJsonFile<JsonRecord>(absolutePath)
   if (!json) return []
-  const meta = await stat(absolutePath)
+  const meta = await stat(/* turbopackIgnore: true */ absolutePath)
   const createdAt = stringValue(json.createdAt) ?? meta.mtime.toISOString()
   const recordId = stringValue(json.recordId) ?? "latest-runtime-frame"
   const runtimeFrame = objectValue(json.runtimeFrame)
@@ -604,19 +604,19 @@ async function readCompleteMapDatasetPackageRecords() {
 
 async function readCompleteMapSampleRecords(): Promise<TrainingRecord[]> {
   const dictionaryPointer = await readJsonFile<JsonRecord>(
-    path.join(process.cwd(), "data/world-visual-data-dictionary/latest.json"),
+    path.join(/* turbopackIgnore: true */ process.cwd(), "data/world-visual-data-dictionary/latest.json"),
   )
   const dictionaryVersionId = stringValue(dictionaryPointer?.dictionaryVersionId)
   if (!dictionaryVersionId) return []
   const relativeRoot = `data/world-samples/registry/${dictionaryVersionId}/records`
-  const absoluteRoot = path.join(process.cwd(), relativeRoot)
+  const absoluteRoot = path.join(/* turbopackIgnore: true */ process.cwd(), relativeRoot)
   try {
-    const entries = await readdir(absoluteRoot, { withFileTypes: true })
+    const entries = await readdir(/* turbopackIgnore: true */ absoluteRoot, { withFileTypes: true })
     const candidates = []
     for (const entry of entries) {
       if (!entry.isFile() || !entry.name.endsWith(".json")) continue
       const absolutePath = path.join(absoluteRoot, entry.name)
-      const info = await stat(absolutePath)
+      const info = await stat(/* turbopackIgnore: true */ absolutePath)
       candidates.push({ entry, absolutePath, modifiedAtMs: info.mtimeMs })
     }
     candidates.sort((left, right) => right.modifiedAtMs - left.modifiedAtMs)
@@ -651,7 +651,7 @@ async function readCompleteMapSampleRecords(): Promise<TrainingRecord[]> {
 }
 
 async function readDirectoryRecords(root: string, kind: string, pattern: RegExp): Promise<TrainingRecord[]> {
-  const absoluteRoot = path.join(process.cwd(), root)
+  const absoluteRoot = path.join(/* turbopackIgnore: true */ process.cwd(), root)
   try {
     const indexedEntries = root === ".runtime/ai-painter" ? null : listIndexedChildDirectories(root, 500)
     const candidates = root === ".runtime/ai-painter"
@@ -692,11 +692,11 @@ async function readDirectoryRecords(root: string, kind: string, pattern: RegExp)
 async function readBroadAiPainterDirectoryCandidates(absoluteRoot: string) {
   if (!broadAiPainterDirectoryRead) {
     broadAiPainterDirectoryRead = (async () => {
-      const entries = await readdir(absoluteRoot, { withFileTypes: true })
+      const entries = await readdir(/* turbopackIgnore: true */ absoluteRoot, { withFileTypes: true })
       const directories = entries.filter((entry) => entry.isDirectory())
       return Promise.all(directories.map(async (entry) => {
         const absolutePath = path.join(absoluteRoot, entry.name)
-        const meta = await stat(absolutePath)
+        const meta = await stat(/* turbopackIgnore: true */ absolutePath)
         return { entry: { name: entry.name }, absolutePath, modifiedAtMs: meta.mtimeMs }
       }))
     })().finally(() => {
@@ -707,12 +707,12 @@ async function readBroadAiPainterDirectoryCandidates(absoluteRoot: string) {
 }
 
 async function readDirectoryCandidates(absoluteRoot: string, kind: string, pattern: RegExp) {
-  const entries = await readdir(absoluteRoot, { withFileTypes: true })
+  const entries = await readdir(/* turbopackIgnore: true */ absoluteRoot, { withFileTypes: true })
   const candidates = []
   for (const entry of entries) {
     if (!entry.isDirectory() || !pattern.test(entry.name)) continue
     const absolutePath = path.join(absoluteRoot, entry.name)
-    const meta = await stat(absolutePath)
+    const meta = await stat(/* turbopackIgnore: true */ absolutePath)
     const modifiedAtMs = kind.startsWith("WORLD MAP")
       ? await latestFileMtimeMs(absolutePath, meta.mtimeMs)
       : meta.mtimeMs
@@ -750,7 +750,7 @@ async function latestFileMtimeMs(absolutePath: string, fallback: number) {
   ]
   for (const candidate of candidates) {
     try {
-      const info = await stat(path.join(absolutePath, candidate))
+      const info = await stat(/* turbopackIgnore: true */ path.join(absolutePath, candidate))
       latest = Math.max(latest, info.mtimeMs)
     } catch {
       // Optional evidence file.
@@ -760,7 +760,7 @@ async function latestFileMtimeMs(absolutePath: string, fallback: number) {
 }
 
 async function hydrateTrainingRecord(record: TrainingRecord): Promise<TrainingRecord> {
-  const absolutePath = path.join(process.cwd(), record.path)
+  const absolutePath = path.join(/* turbopackIgnore: true */ process.cwd(), record.path)
   const summary = record.summaryLines.length ? null : await readRecordSummary(absolutePath)
   const indexedArtifacts = listLatestIndexedArtifacts(record.path, 500)
   const indexedEvidence = indexedArtifacts?.filter((artifact) => !isPreviewImage(artifact.path)).slice(0, 32) ?? []
@@ -819,7 +819,7 @@ async function collectReferencedImages(absolutePath: string) {
     for (const value of collectStringValues(json)) {
       const imagePath = normalizeProjectImagePath(value)
       if (!imagePath || !isPreviewImage(imagePath)) continue
-      if (await fileExists(path.join(process.cwd(), imagePath))) images.push(imagePath)
+      if (await fileExists(path.join(/* turbopackIgnore: true */ process.cwd(), imagePath))) images.push(imagePath)
       if (images.length >= 18) return uniqueStrings(images)
     }
   }
@@ -939,7 +939,7 @@ async function collectPreviewImages(absolutePath: string, relativePath: string) 
 
 async function appendDirectoryImages(absolutePath: string, relativePath: string, images: string[]) {
   try {
-    const entries = await readdir(absolutePath, { withFileTypes: true })
+    const entries = await readdir(/* turbopackIgnore: true */ absolutePath, { withFileTypes: true })
     for (const entry of entries) {
       if (!entry.isFile() || !isPreviewImage(entry.name)) continue
       const imagePath = `${relativePath}/${entry.name}`.replace(/\\/g, "/")
@@ -972,7 +972,7 @@ async function appendNestedSampleImages(absolutePath: string, relativePath: stri
 
 async function appendSampleTargetImages(absolutePath: string, relativePath: string, images: string[]) {
   try {
-    const entries = await readdir(absolutePath, { withFileTypes: true })
+    const entries = await readdir(/* turbopackIgnore: true */ absolutePath, { withFileTypes: true })
     for (const entry of entries) {
       if (!entry.isDirectory()) continue
       const sampleRelativePath = `${relativePath}/${entry.name}`.replace(/\\/g, "/")
@@ -992,7 +992,7 @@ async function appendSampleTargetImages(absolutePath: string, relativePath: stri
 async function existingPaths(paths: string[]) {
   const existing: string[] = []
   for (const candidate of paths) {
-    if (await fileExists(path.join(process.cwd(), candidate))) existing.push(candidate)
+    if (await fileExists(path.join(/* turbopackIgnore: true */ process.cwd(), candidate))) existing.push(candidate)
   }
   return existing
 }
@@ -1003,7 +1003,7 @@ async function latestFileRecord(root: string, predicate: (name: string) => boole
     const match = indexed.find((candidate) => predicate(candidate.name))
     return match ? { path: match.path, modifiedAtMs: Date.parse(match.modifiedAt) } : null
   }
-  const absoluteRoot = path.join(process.cwd(), root)
+  const absoluteRoot = path.join(/* turbopackIgnore: true */ process.cwd(), root)
   const files = await collectFiles(absoluteRoot, root, predicate, 48)
   files.sort((left, right) => right.modifiedAtMs - left.modifiedAtMs)
   return files[0] ?? null
@@ -1018,7 +1018,7 @@ async function collectFiles(
 ): Promise<Array<{ path: string; modifiedAtMs: number }>> {
   if (depth > 4 || limit <= 0) return []
   try {
-    const entries = await readdir(absoluteRoot, { withFileTypes: true })
+    const entries = await readdir(/* turbopackIgnore: true */ absoluteRoot, { withFileTypes: true })
     const files: Array<{ path: string; modifiedAtMs: number }> = []
     for (const entry of entries) {
       const absolutePath = path.join(absoluteRoot, entry.name)
@@ -1026,7 +1026,7 @@ async function collectFiles(
       if (entry.isDirectory()) {
         files.push(...(await collectFiles(absolutePath, relativePath, predicate, limit - files.length, depth + 1)))
       } else if (entry.isFile() && predicate(entry.name)) {
-        const info = await stat(absolutePath)
+        const info = await stat(/* turbopackIgnore: true */ absolutePath)
         files.push({ path: relativePath, modifiedAtMs: info.mtimeMs })
       }
       if (files.length >= limit) break
@@ -1039,7 +1039,7 @@ async function collectFiles(
 
 async function fileExists(filePath: string) {
   try {
-    const info = await stat(filePath)
+    const info = await stat(/* turbopackIgnore: true */ filePath)
     return info.isFile()
   } catch {
     return false
@@ -1048,7 +1048,7 @@ async function fileExists(filePath: string) {
 
 async function readJsonFile<T>(filePath: string): Promise<T | null> {
   try {
-    return JSON.parse(await readFile(filePath, "utf8")) as T
+    return JSON.parse(await readFile(/* turbopackIgnore: true */ filePath, "utf8")) as T
   } catch {
     return null
   }

@@ -793,13 +793,12 @@ export const DESTINY_CONTENT_INTAKE_DIRECTORY_RULES: DestinyContentIntakeDirecto
     purpose: "记录紫微当前阶段文档、目录、进度和来源边界。",
     allowedFiles: [
       "README.md",
-      "ROADMAP.md",
       "DIRECTORY_STRUCTURE.md",
       "ALGORITHM_CONTRACTS.md",
       "CONTENT_DATA_DICTIONARY.md",
       "SOURCE_STORAGE_BOUNDARY.md",
       "PAGE_ACCEPTANCE.md",
-      "EXECUTION_TABLE.md"
+      "DATA_DICTIONARY_MASTER_BLUEPRINT.md"
     ],
     forbiddenPatterns: ["旧阶段散文档", "SOURCE_COPYRIGHT.md", "IMPLEMENTATION_PLAN.md"],
     dependsOn: ["scripts/ziwei/check-p35-data-intake.mjs"],

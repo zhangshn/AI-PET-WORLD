@@ -3,6 +3,7 @@
 import { serializeCreateWorldInput } from "@/world/creation/world-creation-client-schema"
 import { parseCreateWorldInput } from "@/world/creation/world-creation-runtime"
 import { createRuntimeWorldFromCreateWorldInput } from "@/world/runtime/world-runtime-gateway"
+import { claimOwnerWriteAuthorization, OwnerWriteAuthorizationError } from "@/server/project-owner-write-authorization"
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
@@ -21,9 +22,21 @@ export async function POST(request: Request) {
     )
   }
 
-  const result = await createRuntimeWorldFromCreateWorldInput({
-    createWorldInput: parsedInput,
-  })
+  let authorization
+  try {
+    authorization = await claimOwnerWriteAuthorization(request, {
+      action: "world.create",
+      target: { resource: "world-runtime", operation: "create" },
+      payload: parsedInput,
+    })
+  } catch (error) {
+    if (error instanceof OwnerWriteAuthorizationError) {
+      return NextResponse.json({ ok: false, code: error.code, message: error.message }, { status: error.status })
+    }
+    throw error
+  }
+
+  const result = await createRuntimeWorldFromCreateWorldInput({ createWorldInput: parsedInput })
 
   if (!result.persisted) {
     return NextResponse.json(
@@ -45,6 +58,7 @@ export async function POST(request: Request) {
     tags: [
       "create_world_to_world_flow",
       "runtime_save_persisted",
+      `owner_authorization:${authorization.authorizationSha256}`,
       "no_unplanned_life_fact",
     ],
   })

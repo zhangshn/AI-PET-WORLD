@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server"
 
 import { readWorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-store-adapter"
+import { claimOwnerWriteAuthorization, OwnerWriteAuthorizationError } from "@/server/project-owner-write-authorization"
 import {
   buildWorldVisualPainterDecision,
   writeWorldVisualCandidateRecord,
 } from "@/world/world-visual-painter"
 
-export async function POST() {
+export async function POST(request: Request) {
   const runtime = await readWorldRuntimeSaveRecord()
 
   if (runtime.status !== "found" || !runtime.record) {
@@ -21,6 +22,23 @@ export async function POST() {
       },
       { status: 409 }
     )
+  }
+
+  try {
+    await claimOwnerWriteAuthorization(request, {
+      action: "world.visual.generate",
+      target: {
+        ownerId: runtime.record.ownerId,
+        worldId: runtime.record.worldId,
+        tick: runtime.record.tick,
+      },
+      payload: { output: "hidden-world-visual-candidate" },
+    })
+  } catch (error) {
+    if (error instanceof OwnerWriteAuthorizationError) {
+      return NextResponse.json({ ok: false, code: error.code, message: error.message }, { status: error.status })
+    }
+    throw error
   }
 
   const decision = await buildWorldVisualPainterDecision({

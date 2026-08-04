@@ -1,8 +1,8 @@
 # AI-PET-WORLD 文档与项目目录结构
 
-更新时间：2026-07-24 21:46:58 +08:00
+更新时间：2026-08-02 20:16:35 +08:00
 
-状态：active-reference / 已规整 / 不决定当前执行顺序
+状态：active-directory-reference
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
@@ -27,28 +27,35 @@ docs/
 ├─ DOCUMENTATION_POLICY.md
 ├─ BUSINESS_SPEC.md
 ├─ ARCHITECTURE.md
+├─ LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md
 ├─ DIRECTORY_STRUCTURE.md
 ├─ game-world-generation/
+│  ├─ README.md
+│  ├─ DOCUMENT_INDEX.md
 │  ├─ CURRENT_EXECUTION_GUIDE_20260710.md
 │  ├─ AI_PAINTER_FORMAL_IMPLEMENTATION_SPEC.md
 │  ├─ TRAINING_DATA_AND_SOURCE_POLICY.md
-│  └─ REVIEW_AUTOMATION_AND_STORAGE_SPEC.md
+│  ├─ REVIEW_AUTOMATION_AND_STORAGE_SPEC.md
+│  ├─ FLOWING_WATER_CONNECTIVITY_AND_NOVELTY_SPEC.md
+│  ├─ CROSS_MODAL_RGB_COLLAPSE_PREVENTION_SPEC.md
+│  └─ CROSS_MODAL_RGB_GATE_THRESHOLD_ALIGNMENT_20260802.md
 ├─ world-visual-data-dictionary/
 ├─ ai-painter-progress/
 └─ ziwei/
 ```
 
-| 路径 | 内容 | 能否决定当前下一步 |
-|---|---|---:|
-| `docs/DOCUMENT_AUTHORITY_INDEX.md` | 文档优先级和正式入口。 | 否，只治理读取顺序。 |
-| `docs/BUSINESS_SPEC.md` | 两大核心业务和长期业务边界。 | 否。 |
-| `docs/ARCHITECTURE.md` | AI 管家与类地球世界的长期架构。 | 否。 |
-| `docs/game-world-generation/` | 当前完整世界地图架构、模型、审核和执行指南。 | 只有当前执行指南可以。 |
-| `docs/world-visual-data-dictionary/` | 分层视觉事实、对象、地形、过渡、失败码和训练标签。 | 否，是数据标准。 |
-| `docs/ai-painter-progress/` | 后台页面、自动保存、模型对齐、诊断和修复契约。 | 否，是程序契约。 |
-| `docs/ziwei/` | AI 管家人格数据子系统。 | 不参与当前地图顺序。 |
+| 路径 | 稳定职责 |
+|---|---|
+| `docs/DOCUMENT_AUTHORITY_INDEX.md` | 文档优先级和正式入口。 |
+| `docs/BUSINESS_SPEC.md` | 两大核心业务和长期业务边界。 |
+| `docs/ARCHITECTURE.md` | AI 管家与类地球世界的长期架构。 |
+| `docs/LOCAL_SELF_DEVELOPED_AI_CAPABILITY_AND_CODEX_MIGRATION_ARCHITECTURE.md` | 本地自研AI能力建设、任务执行和Codex职能迁移主体架构。 |
+| `docs/game-world-generation/` | 完整世界地图架构、模型、审核和唯一模块计划表。 |
+| `docs/world-visual-data-dictionary/` | 分层视觉事实、对象、地形、过渡、失败码和训练标签。 |
+| `docs/ai-painter-progress/` | 后台页面、自动保存、模型对齐、诊断和修复契约。 |
+| `docs/ziwei/` | AI 管家人格数据子系统的稳定合同。 |
 
-当前世界地图唯一执行文档：
+项目唯一模块计划表：
 
 ```text
 docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md
@@ -60,7 +67,7 @@ docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md
 |---|---|
 | 旧计划、旧进度表、阶段闭合报告 | 删除，不保留 Markdown 历史副本。 |
 | 重复业务说明和重复架构说明 | 合并进 `BUSINESS_SPEC.md` 或 `ARCHITECTURE.md` 后删除。 |
-| 当前地图架构规格 | 只保留 3 份下级规格，由当前执行指南按任务导航。 |
+| 当前地图架构规格 | 严格保留目录索引登记的3份核心规格和3份水文/跨模态补充规格，由当前执行指南按任务导航。 |
 | 世界视觉数据字典条目 | 84 个条目保存在单一结构化 JSON 权威源；Markdown 只保留 README 和完整打印稿。 |
 | 智能体读取视觉字典 | 只读 README、当前导出 JSON 和任务涉及条目，禁止默认全量读取。 |
 | 页面与自动化锁定规格 | 保留；程序检查直接依赖这些契约。 |
@@ -146,7 +153,7 @@ data/world-samples/earth-geospatial/
 
 `earth-geospatial`只保存真实测量来源、许可、版本、采集时间、hash、自然化步骤与派生世界事实。外部栅格不得进入`original-image-library`，不得成为RGB训练原图；页面和GET API只能读取程序已经保存和索引的摘要，不得通过页面访问触发下载或派生。
 
-`natural-home-large-world-connectivity-v1` 只定义区域身份、邻接、边界连接口、道路、水文、可走图和对象身份的机器契约。`blueprints/` 只保存项目所有者命令下由程序登记的具体连接蓝图；当前第一版蓝图已登记并迁移到 `data/world-runtime/` 的 tick 2，项目所有者审核通过后形成 tick 3。迁移前后状态、hash 和报告自动保存在 `.runtime/world-connectivity-migrations/`，人工审核命令与不改几何的结果自动保存在 `.runtime/world-connectivity-owner-reviews/`；页面读取不得创建或修改这些业务记录。实际世界实例和运行状态不得写回原图库。
+`natural-home-large-world-connectivity-v1` 只定义区域身份、邻接、边界连接口、道路、水文、可走图和对象身份的机器契约。`blueprints/` 只保存项目所有者命令下由程序登记的具体连接蓝图。迁移前后状态、hash 和报告自动保存在 `.runtime/world-connectivity-migrations/`，人工审核命令与不改几何的结果自动保存在 `.runtime/world-connectivity-owner-reviews/`；页面读取不得创建或修改这些业务记录。实际世界实例和运行状态不得写回原图库。
 
 程序从当前任务包提取的待审核连接候选固定保存在：
 
@@ -169,7 +176,7 @@ original-image-library/<五类并行来源>
 -> .runtime/ai-painter/ 自动训练与推理证据
 ```
 
-当前完整地图视觉运行目录固定分层：
+完整地图视觉运行目录固定分层：
 
 ```text
 .runtime/ai-painter/

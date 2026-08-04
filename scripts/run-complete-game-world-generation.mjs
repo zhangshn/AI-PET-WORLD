@@ -41,9 +41,9 @@ const plan = [
     command: ["npm", ["run", "check:foundational-complete-map-visual-standard"]],
   },
   {
-    id: "ai_assisted_complete_map_scope",
-    title: "AI-Assisted Complete-Map Scope Gate",
-    command: ["npm", ["run", "check:ai-assisted-complete-map-scope"]],
+    id: "current_v7_dataset_binding",
+    title: "Current V7 64-Map Dataset Binding Gate",
+    command: ["npm", ["run", "check:ai-painter-current-training-dashboard"]],
   },
   {
     id: "conditional_rgb_sequence_guard",
@@ -180,7 +180,7 @@ const plan = [
 const readOnlyCheckIds = new Set([
   "world_visual_dictionary",
   "foundational_complete_map_visual_standard_contract",
-  "ai_assisted_complete_map_scope",
+  "current_v7_dataset_binding",
   "conditional_rgb_sequence_guard",
   "world_connectivity_contract",
   "world_connectivity_proposal_contract",

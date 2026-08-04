@@ -13,7 +13,7 @@ export async function GET(_request: NextRequest, context: { params: Promise<{ vi
   const file = views[view as keyof typeof views]
   if (!file) return new NextResponse(null, { status: 404 })
   try {
-    const image = await readFile(path.join(process.cwd(), ".runtime", "ai-painter", "structure-guided-inference", file))
+    const image = await readFile(path.join(/* turbopackIgnore: true */ process.cwd(), ".runtime", "ai-painter", "structure-guided-inference", file))
     return new NextResponse(image, { headers: { "content-type": "image/png", "cache-control": "no-store" } })
   } catch {
     return new NextResponse(null, { status: 404 })

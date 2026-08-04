@@ -2,8 +2,9 @@ import { NextResponse } from "next/server"
 
 import { runAndPersistOneRuntimeTick } from "@/world/runtime/world-runtime-gateway"
 import { readWorldRuntimeSaveRecord } from "@/world/runtime/world-runtime-store-adapter"
+import { claimOwnerWriteAuthorization, OwnerWriteAuthorizationError } from "@/server/project-owner-write-authorization"
 
-export async function POST() {
+export async function POST(request: Request) {
   const readResult = await readWorldRuntimeSaveRecord()
 
   if (readResult.status !== "found" || !readResult.record) {
@@ -21,6 +22,23 @@ export async function POST() {
       },
       { status: 409 }
     )
+  }
+
+  try {
+    await claimOwnerWriteAuthorization(request, {
+      action: "world.tick",
+      target: {
+        ownerId: readResult.record.ownerId,
+        worldId: readResult.record.worldId,
+        currentTick: readResult.record.tick,
+      },
+      payload: { requestedTransition: "one-runtime-tick" },
+    })
+  } catch (error) {
+    if (error instanceof OwnerWriteAuthorizationError) {
+      return NextResponse.json({ ok: false, code: error.code, message: error.message }, { status: error.status })
+    }
+    throw error
   }
 
   const result = await runAndPersistOneRuntimeTick({ now: Date.now() })

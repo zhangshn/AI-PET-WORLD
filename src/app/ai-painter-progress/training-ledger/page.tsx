@@ -163,7 +163,7 @@ async function readAutoVisualJudgeLearning() {
   try {
     return JSON.parse(
       await readFile(
-        path.join(process.cwd(), ".runtime", "ai-painter", "auto-visual-judge-learning", "latest.json"),
+        path.join(/* turbopackIgnore: true */ process.cwd(), ".runtime", "ai-painter", "auto-visual-judge-learning", "latest.json"),
         "utf8",
       ),
     ) as {

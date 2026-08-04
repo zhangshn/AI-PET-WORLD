@@ -6,7 +6,7 @@ export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
 
 const root = process.cwd()
-const trialsRoot = path.join(root, ".runtime", "world-visual-dictionary-trials")
+const trialsRoot = path.join(/* turbopackIgnore: true */ root, ".runtime", "world-visual-dictionary-trials")
 
 export async function GET() {
   const latest = await readJson(path.join(trialsRoot, "latest.json"))

@@ -1,6 +1,9 @@
 # Live World Samples
 
-Future home for positive and negative sample records.
+更新时间：2026-08-03 09:23:45 +08:00
 
-External references with unknown or do-not-train licensing must never be promoted into training samples.
+状态：active-source-module-contract
 
+不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
+
+本目录承载正向、负向和隔离样本的程序合同。来源、许可、身份、哈希、审核和 split 不完整的记录不得进入训练；未知或禁止训练的外部内容永久不能晋级正样本。

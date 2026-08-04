@@ -18,10 +18,18 @@ const PROFESSIONAL_AESTHETIC_SOURCE = path.join(ROOT, "scripts", "lib", "ai-assi
 const args = parseArgs(process.argv.slice(2))
 const MODEL_VERSION = args.modelVersion
 const IS_ENGINEERING_26 = MODEL_VERSION === "v7-engineering-26"
-const CONFIG_PATH = `ml/ai-painter/config/complete-world-ai-assisted-cold-start-${MODEL_VERSION}.json`
-const CHECKPOINT_POINTER = IS_ENGINEERING_26
-  ? ".runtime/ai-painter/project-owned-complete-world-v7-engineering-pretraining/latest.json"
-  : `.runtime/ai-painter/project-owned-complete-world-conditional-denoiser-${MODEL_VERSION}/latest.json`
+const IS_REPAIR_R1 = MODEL_VERSION === "v7-repair-r1"
+const IS_V7 = MODEL_VERSION === "v7" || IS_REPAIR_R1
+const REPAIR_R1_CONFIG_PATH = ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r1/derived-configs/ai-assisted-v7-repair-r1-full-training-2026-08-03T04-12-49-525Z.json"
+const REPAIR_R1_CHECKPOINT_MANIFEST = ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r1/ai-assisted-v7-repair-r1-stage-2-2026-08-03T04-12-49-525Z/manifest.json"
+const CONFIG_PATH = IS_REPAIR_R1
+  ? REPAIR_R1_CONFIG_PATH
+  : `ml/ai-painter/config/complete-world-ai-assisted-cold-start-${MODEL_VERSION}.json`
+const CHECKPOINT_POINTER = IS_REPAIR_R1
+  ? REPAIR_R1_CHECKPOINT_MANIFEST
+  : IS_ENGINEERING_26
+    ? ".runtime/ai-painter/project-owned-complete-world-v7-engineering-pretraining/latest.json"
+    : `.runtime/ai-painter/project-owned-complete-world-conditional-denoiser-${MODEL_VERSION}/latest.json`
 const DATASET_POINTER = IS_ENGINEERING_26
   ? "data/world-samples/ai-assisted-v7-engineering-pretraining-datasets/latest.json"
   : "data/world-samples/ai-assisted-cold-start-dataset-packages/latest.json"
@@ -29,7 +37,11 @@ const OUTPUT_ROOT = path.join(
   ROOT,
   ".runtime",
   "ai-painter",
-  IS_ENGINEERING_26 ? "ai-assisted-v7-engineering-inference-validation" : "ai-assisted-conditional-inference-validation",
+  IS_REPAIR_R1
+    ? "ai-assisted-v7-repair-r1-strict-revalidation-trajectories"
+    : IS_ENGINEERING_26
+      ? "ai-assisted-v7-engineering-inference-validation"
+      : "ai-assisted-conditional-inference-validation",
 )
 const FAILURE_ROOT = path.join(OUTPUT_ROOT, "failures")
 const timestamp = new Date().toISOString()
@@ -46,14 +58,35 @@ const datasetManifestPath = checkpoint?.datasetManifestPath ?? datasetPointer?.m
 const sourceIndexPath = checkpoint?.sourceIndexPath ?? null
 const datasetManifest = datasetManifestPath ? readJson(datasetManifestPath) : null
 const sourceIndex = sourceIndexPath ? readJson(sourceIndexPath) : null
+const parentBatchConsumption = args.parentBatchConsumptionPath ? readJson(args.parentBatchConsumptionPath) : null
+const repairR1ParentAuthorizationValid = !IS_REPAIR_R1 || args.preflightOnly || Boolean(
+  args.parentBatchConsumptionPath
+  && args.parentBatchConsumptionSha256
+  && fileHashMatches(args.parentBatchConsumptionPath, args.parentBatchConsumptionSha256)
+  && parentBatchConsumption?.schemaVersion === "ai-assisted-v7-repair-r1-strict-revalidation-authorization-consumption-v1"
+  && parentBatchConsumption?.status === "consumed_before_first_trajectory"
+  && parentBatchConsumption?.ownerCommandRef === args.ownerCommandRef
+  && parentBatchConsumption?.checkpointSha256 === checkpoint?.checkpointSha256,
+)
 const eligibleSplits = new Set(["validation", "challenge", "regression"])
 const matchingSamples = (sourceIndex?.samples ?? []).filter((sample) =>
   sample.conditionLabel === args.conditionLabel
   && eligibleSplits.has(sample.split)
   && sample.conditionBound === true
-  && sample.currentConditionIdentityMatches === true
-  && sample.formalConditionalTrainingEligible === true)
+  && sample.formalConditionalTrainingEligible === true
+  && sampleEligibleForModel(sample))
 const sample = matchingSamples.length === 1 ? matchingSamples[0] : null
+const currentV7Rows = (sourceIndex?.samples ?? []).filter((candidate) =>
+  candidate.categoryId === "complete-maps"
+  && candidate.trainingRoles?.includes("conditional_denoiser")
+  && candidate.formalConditionalTrainingEligible === true
+  && candidate.conditionBound === true
+  && candidate.v7CapacityContributionRegistered === true
+  && candidate.ownerReviewStatus === "owner_approved"
+  && candidate.machineReviewStatus === "passed"
+  && candidate.aiAssistedColdStartEligible === true
+  && candidate.independentTrainingEligible === false)
+const currentV7SplitCounts = Object.fromEntries(["train", "validation", "challenge", "regression"].map((split) => [split, currentV7Rows.filter((row) => row.split === split).length]))
 const conditionPack = sample?.conditionPackPath ? readJson(sample.conditionPackPath) : null
 const taskPackage = conditionPack?.sourceBindings?.taskPackagePath ? readJson(conditionPack.sourceBindings.taskPackagePath) : null
 const seed = args.seed ?? Number.parseInt(sha256(Buffer.from(`${args.conditionLabel}:${args.ownerCommandRef}:ai-assisted-validation-v1`)).slice(0, 8), 16)
@@ -63,7 +96,15 @@ const blockers = []
 
 if (!args.conditionLabel) blockers.push("validation_condition_label_missing")
 if (!args.ownerCommandRef || args.ownerCommandRef.length < 8) blockers.push("specific_owner_single_image_command_missing")
-if (blockers.length > 0) blockOrFail("blocked", blockers, null)
+if (IS_REPAIR_R1 && !args.preflightOnly) {
+  if (!args.parentBatchConsumptionPath || !args.parentBatchConsumptionSha256) blockers.push("repair_r1_parent_batch_consumption_missing")
+  if (args.parentBatchConsumptionPath && !fileHashMatches(args.parentBatchConsumptionPath, args.parentBatchConsumptionSha256)) blockers.push("repair_r1_parent_batch_consumption_hash_invalid")
+  if (parentBatchConsumption?.schemaVersion !== "ai-assisted-v7-repair-r1-strict-revalidation-authorization-consumption-v1") blockers.push("repair_r1_parent_batch_consumption_schema_invalid")
+  if (parentBatchConsumption?.status !== "consumed_before_first_trajectory") blockers.push("repair_r1_parent_batch_authorization_not_consumed")
+  if (parentBatchConsumption?.ownerCommandRef !== args.ownerCommandRef) blockers.push("repair_r1_parent_batch_command_identity_mismatch")
+  if (parentBatchConsumption?.checkpointSha256 !== checkpoint?.checkpointSha256) blockers.push("repair_r1_parent_batch_checkpoint_identity_mismatch")
+}
+if (blockers.length > 0) handleBlockers(blockers)
 if (!config || config.ownership !== "project_owned_architecture_ai_assisted_cold_start_weights") blockers.push("ai_assisted_model_config_invalid")
 if (!checkpoint) blockers.push("ai_assisted_conditional_checkpoint_missing")
 if (checkpoint && checkpoint.schemaVersion !== config?.requiredCheckpointProvenance) blockers.push("ai_assisted_checkpoint_provenance_invalid")
@@ -84,6 +125,9 @@ if (!datasetManifest || datasetManifest.canTrainConditionalDenoiser !== true) bl
 if (!datasetManifestPath || !fileHashMatches(datasetManifestPath, checkpoint?.datasetManifestSha256)) blockers.push("conditional_dataset_manifest_invalid")
 if (datasetManifest?.packageId !== checkpoint?.datasetPackageId) blockers.push("conditional_dataset_checkpoint_identity_mismatch")
 if (!sourceIndex || !sourceIndexPath || !fileHashMatches(sourceIndexPath, checkpoint?.sourceIndexSha256)) blockers.push("conditional_source_index_invalid")
+if (IS_V7 && currentV7Rows.length !== 64) blockers.push("v7_validation_dataset_capacity_not_64")
+if (IS_V7 && JSON.stringify(currentV7SplitCounts) !== JSON.stringify({ train: 48, validation: 8, challenge: 4, regression: 4 })) blockers.push("v7_validation_dataset_split_not_48_8_4_4")
+if (IS_V7 && sample && sample.split !== config?.training?.strictHeldOutInferenceSplit) blockers.push("v7_validation_sample_not_strict_held_out_challenge")
 if (matchingSamples.length !== 1) blockers.push(matchingSamples.length === 0 ? "unseen_validation_condition_not_found" : "validation_condition_identity_ambiguous")
 if (!conditionPack || conditionPack.channels?.length !== 23 || !canonicalJsonHashMatches(conditionPack, "conditionPackSha256")) blockers.push("validation_condition_pack_invalid")
 if (conditionPack && !conditionChannelFilesValid(conditionPack, config?.conditionChannelOrder)) blockers.push("validation_condition_channel_evidence_invalid")
@@ -92,8 +136,27 @@ if (!fs.existsSync(PYTHON)) blockers.push("local_python_runtime_missing")
 if (!fs.existsSync(SAMPLER)) blockers.push("ai_assisted_validation_sampler_missing")
 if (!fs.existsSync(MACHINE_REVIEWER)) blockers.push("ai_assisted_validation_machine_reviewer_missing")
 
-if (blockers.length > 0) blockOrFail("blocked", blockers, null)
+if (blockers.length > 0) handleBlockers(blockers)
 
+if (args.preflightOnly) {
+  console.log(JSON.stringify({
+    ok: true,
+    status: "ai_assisted_conditional_inference_validation_read_only_preflight_passed",
+    modelVersion: MODEL_VERSION,
+    conditionLabel: args.conditionLabel,
+    sourceSplit: sample.split,
+    checkpointPath: checkpoint.checkpointPath,
+    checkpointSha256: checkpoint.checkpointSha256,
+    datasetPackageId: checkpoint.datasetPackageId,
+    actualLoadedV7CapacityCount: IS_V7 ? currentV7Rows.length : null,
+    splitCounts: IS_V7 ? currentV7SplitCounts : null,
+    outputWritten: false,
+    authorizationConsumed: false,
+  }, null, 2))
+  process.exit(0)
+}
+
+fs.mkdirSync(OUTPUT_ROOT, { recursive: true })
 fs.mkdirSync(runDir, { recursive: false })
 const inferenceStartedAtMs = Date.now()
 const startedEvidence = writeProcessEvidence(1, "inference-started", {
@@ -164,6 +227,7 @@ const generatedEvidence = writeProcessEvidence(2, "validation-image-generated", 
   outputSize: { width: metadata.width, height: metadata.height, channels: metadata.channels },
   modelReportPath: projectPath(modelReportPath),
   modelReportSha256: sha256(fs.readFileSync(modelReportPath)),
+  validationTokenAccounting: modelReport.validationTokenAccounting ?? null,
 })
 processEvidence.push(generatedEvidence)
 appendAiPainterProgramEvent({
@@ -206,6 +270,10 @@ const manifest = {
   taskPackagePath: conditionPack.sourceBindings.taskPackagePath,
   taskPackageSha256: conditionPack.taskSha256,
   modelId: config.modelId,
+  modelVersion: MODEL_VERSION,
+  validationConditionContract: IS_V7
+    ? "v7_capacity_natural_region_complete_map_v1"
+    : "legacy_natural_home_complete_map_v1",
   modelCheckpointPath: checkpoint.checkpointPath,
   modelCheckpointSha256: checkpoint.checkpointSha256,
   ownership: "project_owned_architecture_ai_assisted_cold_start_weights",
@@ -228,6 +296,7 @@ const manifest = {
   outputSize: { width: metadata.width, height: metadata.height },
   modelReportPath: projectPath(modelReportPath),
   modelReportSha256: sha256(fs.readFileSync(modelReportPath)),
+  validationTokenAccounting: modelReport.validationTokenAccounting ?? null,
   algorithmEvidence,
   algorithmEvidenceSha256,
   processEvidence,
@@ -357,8 +426,39 @@ function parseArgs(values) {
   const seed = seedValue === null ? null : Number(seedValue)
   if (seedValue !== null && (!Number.isInteger(seed) || seed < 0)) throw new Error("--seed must be a non-negative integer")
   const requestedVersion = read("--model-version") ?? (values.includes("--v6") ? "v6" : (values.includes("--v5") ? "v5" : "v4"))
-  if (!new Set(["v4", "v5", "v6", "v7-engineering-26"]).has(requestedVersion)) throw new Error("--model-version must be v4, v5, v6, or v7-engineering-26")
-  return { conditionLabel: read("--condition-label"), ownerCommandRef: read("--owner-command-ref"), seed, modelVersion: requestedVersion }
+  if (!new Set(["v4", "v5", "v6", "v7", "v7-repair-r1", "v7-engineering-26"]).has(requestedVersion)) throw new Error("--model-version must be v4, v5, v6, v7, v7-repair-r1, or v7-engineering-26")
+  return {
+    conditionLabel: read("--condition-label"),
+    ownerCommandRef: read("--owner-command-ref"),
+    seed,
+    modelVersion: requestedVersion,
+    preflightOnly: values.includes("--preflight-only"),
+    parentBatchConsumptionPath: read("--parent-batch-consumption"),
+    parentBatchConsumptionSha256: read("--parent-batch-consumption-sha256"),
+  }
+}
+
+function handleBlockers(reasons) {
+  if (!args.preflightOnly && repairR1ParentAuthorizationValid) blockOrFail("blocked", reasons, null)
+  console.error(JSON.stringify({
+    ok: false,
+    status: "ai_assisted_conditional_inference_validation_read_only_preflight_failed",
+    modelVersion: MODEL_VERSION,
+    conditionLabel: args.conditionLabel,
+    blockers: reasons,
+    outputWritten: false,
+    authorizationConsumed: false,
+  }, null, 2))
+  process.exit(1)
+}
+
+function sampleEligibleForModel(sample) {
+  if (!IS_V7) return sample.currentConditionIdentityMatches === true
+  return sample.v7CapacityContributionRegistered === true
+    && sample.ownerReviewStatus === "owner_approved"
+    && sample.machineReviewStatus === "passed"
+    && sample.aiAssistedColdStartEligible === true
+    && sample.independentTrainingEligible === false
 }
 
 function readJson(value) { try { return JSON.parse(fs.readFileSync(resolvePath(value), "utf8")) } catch { return null } }
@@ -470,16 +570,22 @@ function conditionChannelFilesValid(pack, channelOrder) {
 }
 function completeMapScopeValid(pack, task, selectedSample) {
   const mustShow = new Set(pack?.categoricalConditions?.sceneIntent?.mustShow ?? [])
+  const expectedSceneType = IS_V7
+    ? "training_complete_natural_region_map"
+    : "training_complete_natural_home_map"
+  const taskConditionIdentityValid = IS_V7
+    ? (task?.conditionLabel == null || task.conditionLabel === selectedSample?.conditionLabel)
+    : task?.conditionLabel === selectedSample?.conditionLabel
   return selectedSample?.conditionGenerationContractVersion === "complete-map-scope-world-facts-v2"
     && pack?.canvas?.width === 1024
     && pack?.canvas?.height === 768
     && pack?.canvas?.frameScope === "complete_runtime_frame"
-    && pack?.categoricalConditions?.sceneIntent?.sceneType === "training_complete_natural_home_map"
+    && pack?.categoricalConditions?.sceneIntent?.sceneType === expectedSceneType
     && ["entrance", "main_path", "natural_boundary"].every((value) => mustShow.has(value))
     && !mustShow.has("home_center")
     && task?.schemaVersion === "runtime-frame-generation-task-v1"
     && task?.generationContractVersion === "complete-map-scope-world-facts-v2"
-    && task?.conditionLabel === selectedSample?.conditionLabel
+    && taskConditionIdentityValid
     && task?.singleMapScope?.activeGoal === "single_complete_map_visual"
     && task?.outputSize?.frameScope === "complete_runtime_frame"
     && task?.taskSha256 === pack?.taskSha256

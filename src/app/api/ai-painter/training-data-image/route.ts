@@ -49,9 +49,9 @@ function resolveTrainingImageFile(relativePath: string | null) {
 
 function trainingImageRoots(workspaceRoot: string) {
   return [
-    path.resolve(workspaceRoot, ".runtime", "ai-painter"),
-    path.resolve(workspaceRoot, ".runtime", "game-map-material-slot-inference-runs"),
-    path.resolve(workspaceRoot, ".runtime", "game-map-runtime-compositor"),
-    path.resolve(workspaceRoot, ".runtime", "game-map-runtime-frame-candidates"),
+    path.resolve(/* turbopackIgnore: true */ workspaceRoot, ".runtime", "ai-painter"),
+    path.resolve(/* turbopackIgnore: true */ workspaceRoot, ".runtime", "game-map-material-slot-inference-runs"),
+    path.resolve(/* turbopackIgnore: true */ workspaceRoot, ".runtime", "game-map-runtime-compositor"),
+    path.resolve(/* turbopackIgnore: true */ workspaceRoot, ".runtime", "game-map-runtime-frame-candidates"),
   ]
 }

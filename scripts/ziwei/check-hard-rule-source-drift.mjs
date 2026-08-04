@@ -75,13 +75,13 @@ const HARD_RULE_SOURCES = [
 
 const DOC_FILES = [
   "docs/ziwei/README.md",
-  "docs/ziwei/ROADMAP.md",
+  "data/ziwei/legacy-roadmap-verification-baseline-v1.txt",
   "docs/ziwei/DIRECTORY_STRUCTURE.md",
   "docs/ziwei/ALGORITHM_CONTRACTS.md",
   "docs/ziwei/CONTENT_DATA_DICTIONARY.md",
   "docs/ziwei/SOURCE_STORAGE_BOUNDARY.md",
   "docs/ziwei/PAGE_ACCEPTANCE.md",
-  "docs/ziwei/EXECUTION_TABLE.md"
+  "data/ziwei/legacy-execution-verification-baseline-v1.txt"
 ]
 
 const {

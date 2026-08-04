@@ -11,7 +11,7 @@ const files = {
   closureReport: path.join(root, "docs", "ziwei", "DYNAMIC_FLOW_CLOSURE_REPORT.md"),
   pageStructure: path.join(root, "docs", "ziwei", "PAGE_ACCEPTANCE.md"),
   directoryStructure: path.join(root, "docs", "ziwei", "DIRECTORY_STRUCTURE.md"),
-  executionTable: path.join(root, "docs", "ziwei", "EXECUTION_TABLE.md"),
+  executionTable: path.join(root, "data", "ziwei", "legacy-execution-verification-baseline-v1.txt"),
   ziweiReadme: path.join(root, "docs", "ziwei", "README.md"),
   moduleRegistry: path.join(
     root,

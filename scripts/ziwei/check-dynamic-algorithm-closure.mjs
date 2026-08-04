@@ -57,7 +57,7 @@ assertIncludes(
   "dynamic algorithm closure report"
 )
 
-const executionTable = read("docs/ziwei/EXECUTION_TABLE.md")
+const executionTable = read("data/ziwei/legacy-execution-verification-baseline-v1.txt")
 assertIncludes(
   executionTable,
   [

@@ -214,37 +214,37 @@ function imageModelEnvironmentForAction(action: string) {
   if (action === "full_natural_home_v19_promoted_source") {
     return {
       modelVersion: "ai-pet-world-natural-home-v19-promoted-source",
-      assetDir: path.join(process.cwd(), ".runtime", "ai-painter", "natural-home-local-detail-v19-promoted-source"),
+      assetDir: path.join(/* turbopackIgnore: true */ process.cwd(), ".runtime", "ai-painter", "natural-home-local-detail-v19-promoted-source"),
     }
   }
   if (action === "full_natural_home_v20_multisource_generalization") {
     return {
       modelVersion: "ai-pet-world-natural-home-v20-multisource-generalization",
-      assetDir: path.join(process.cwd(), ".runtime", "ai-painter", "natural-home-local-detail-v20-multisource-generalization"),
+      assetDir: path.join(/* turbopackIgnore: true */ process.cwd(), ".runtime", "ai-painter", "natural-home-local-detail-v20-multisource-generalization"),
     }
   }
   if (action === "full_natural_home_v22_warning_focus") {
     return {
       modelVersion: "ai-pet-world-natural-home-v22-warning-focus",
-      assetDir: path.join(process.cwd(), ".runtime", "ai-painter", "natural-home-local-detail-v22-warning-focus"),
+      assetDir: path.join(/* turbopackIgnore: true */ process.cwd(), ".runtime", "ai-painter", "natural-home-local-detail-v22-warning-focus"),
     }
   }
   if (action === "full_natural_home_v23_candidate_consolidation") {
     return {
       modelVersion: "ai-pet-world-natural-home-v23-candidate-consolidation",
-      assetDir: path.join(process.cwd(), ".runtime", "ai-painter", "natural-home-local-detail-v23-candidate-consolidation"),
+      assetDir: path.join(/* turbopackIgnore: true */ process.cwd(), ".runtime", "ai-painter", "natural-home-local-detail-v23-candidate-consolidation"),
     }
   }
   if (action === "full_natural_home_v24_diversity_generation") {
     return {
       modelVersion: "ai-pet-world-natural-home-v24-diversity-generation",
-      assetDir: path.join(process.cwd(), ".runtime", "ai-painter", "natural-home-v24-diversity-generation"),
+      assetDir: path.join(/* turbopackIgnore: true */ process.cwd(), ".runtime", "ai-painter", "natural-home-v24-diversity-generation"),
     }
   }
   if (action === "full_natural_home_v25_diversity_generalization") {
     return {
       modelVersion: "ai-pet-world-natural-home-v25-diversity-generalization",
-      assetDir: path.join(process.cwd(), ".runtime", "ai-painter", "natural-home-v25-diversity-generation"),
+      assetDir: path.join(/* turbopackIgnore: true */ process.cwd(), ".runtime", "ai-painter", "natural-home-v25-diversity-generation"),
     }
   }
   return null

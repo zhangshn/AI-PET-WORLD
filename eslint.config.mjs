@@ -13,6 +13,8 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     ".runtime/**",
+    ".runtime-f-drive-backup-*/**",
+    ".test-output/**",
     "runtime-data/**",
     "coverage/**",
     "data/**",

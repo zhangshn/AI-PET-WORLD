@@ -1,6 +1,9 @@
 # Live World Review
 
-Future home for manual and automatic review contracts.
+更新时间：2026-08-03 09:23:45 +08:00
 
-P0 only defines ReviewResult types. Automatic structure judging is P5.
+状态：active-source-module-contract
 
+不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
+
+本目录承载机器审核、Owner 审核、复审和失败学习合同。审核结果必须来自正式程序并保存不可变证据；缺少实现或证据时显示未执行，不得使用占位结论。

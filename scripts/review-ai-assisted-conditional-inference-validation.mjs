@@ -21,6 +21,13 @@ assert(fs.existsSync(imagePath), "validation image is missing")
 assert(fs.existsSync(conditionPackPath), "validation condition pack is missing")
 
 const conditionPack = readJson(conditionPackPath)
+const sourceIndex = manifest.sourceIndexPath ? readJson(resolveProjectPath(manifest.sourceIndexPath)) : null
+const referenceSample = (sourceIndex?.samples ?? []).find((sample) =>
+  sample.conditionLabel === manifest.conditionLabel
+  && sample.split === manifest.sourceSplit
+  && sample.v7CapacityContributionRegistered === true
+)
+assert(referenceSample?.imagePath, "held-out object semantic review reference is missing")
 const imageBytes = fs.readFileSync(imagePath)
 const imageSha256 = sha256(imageBytes)
 const image = await sharp(imageBytes, { failOn: "error" }).removeAlpha().raw().toBuffer({ resolveWithObject: true })
@@ -43,7 +50,11 @@ const syntheticRecord = {
     monsoonSeason: conditionPack.categoricalConditions?.ecologyPlan?.season ?? null,
   },
 }
-const conditionAlignmentAudit = await auditAiAssistedConditionAlignment({ record: syntheticRecord, imagePath })
+const conditionAlignmentAudit = await auditAiAssistedConditionAlignment({
+  record: syntheticRecord,
+  imagePath,
+  referenceImagePath: referenceSample.imagePath,
+})
 const styleFingerprintAudit = await auditImageAgainstLatestStyleFingerprint(imagePath)
 const compositionNoveltyAudit = await auditAiAssistedCompositionNovelty({ record: syntheticRecord, imagePath })
 const professionalAestheticAudit = await auditAiAssistedProfessionalAesthetic(imagePath)
@@ -60,7 +71,11 @@ addIssue(pixelMetrics.edgeDensity < 0.035, "vj1_low_detail_blur_artifact", "VJ-1
 addIssue(pixelMetrics.stripeAnisotropy > 1.65, "vj1_vertical_stripe_artifact", "VJ-1", "整图存在明显纵向条纹或扫描线伪影。", "The frame contains strong vertical stripe or scan-line artifacts.", "whole_frame", "artifact_suppression")
 addIssue(pixelMetrics.quantizedColorCount < 650, "vj1_palette_collapse", "VJ-1", "整图有效色彩变化不足，材质语言发生塌缩。", "The frame has insufficient effective color variation and collapsed material language.", "whole_frame", "complete_frame_color_language")
 for (const issue of conditionAlignmentAudit.issues ?? []) issues.push(normalizeIssue(issue, "VJ-2"))
-addIssue(conditionPack.canvas?.frameScope !== "complete_runtime_frame" || conditionPack.categoricalConditions?.sceneIntent?.sceneType !== "training_complete_natural_home_map", "vj2_complete_map_scope_contract_missing", "VJ-2", "条件包没有保持完整地图范围。", "The condition pack does not preserve complete-map scope.", "whole_frame", "complete_map_scope")
+const expectedSceneType = ["v7", "v7-repair-r1"].includes(manifest.modelVersion)
+  && manifest.validationConditionContract === "v7_capacity_natural_region_complete_map_v1"
+  ? "training_complete_natural_region_map"
+  : "training_complete_natural_home_map"
+addIssue(conditionPack.canvas?.frameScope !== "complete_runtime_frame" || conditionPack.categoricalConditions?.sceneIntent?.sceneType !== expectedSceneType, "vj2_complete_map_scope_contract_missing", "VJ-2", "条件包没有保持完整地图范围。", "The condition pack does not preserve complete-map scope.", "whole_frame", "complete_map_scope")
 for (const issue of styleFingerprintAudit.issues ?? []) issues.push(normalizeIssue(issue, "Professional Aesthetic"))
 for (const issue of compositionNoveltyAudit.issues ?? []) issues.push(normalizeIssue(issue, "Professional Aesthetic"))
 for (const issue of professionalAestheticAudit.issues ?? []) issues.push(normalizeIssue(issue, "Professional Aesthetic"))
@@ -91,6 +106,12 @@ const report = {
   gates,
   metrics: { pixel: pixelMetrics },
   conditionAlignmentAudit,
+  objectSemanticReferenceEvidence: {
+    mode: "post_generation_review_only_not_inference_input",
+    referenceImagePath: referenceSample.imagePath,
+    referenceImageSha256: referenceSample.imageSha256,
+    targetImageUsedByInference: false,
+  },
   styleFingerprintAudit,
   compositionNoveltyAudit,
   professionalAestheticAudit,
