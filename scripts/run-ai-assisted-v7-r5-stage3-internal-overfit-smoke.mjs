@@ -2,34 +2,36 @@ import crypto from "node:crypto"
 import { spawnSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
-import sharp from "sharp"
-import { auditAiAssistedProfessionalAesthetic } from "./lib/ai-assisted-professional-aesthetic.mjs"
-import { auditAiAssistedConditionAlignment } from "./lib/ai-assisted-condition-alignment.mjs"
 import { appendAiPainterProgramEvent, formatShanghai } from "./lib/ai-painter-program-event-store.mjs"
+import {
+  evaluateR5Stage3TailStability,
+  reviewAiAssistedV7R5Stage3Previews,
+} from "./lib/ai-assisted-v7-r5-stage3-preview-review.mjs"
 
 const ROOT = process.cwd()
+const COVERAGE_CONVERGENCE = process.argv.includes("--coverage-convergence")
 const PYTHON = resolve("ml/ai-painter/.venv/Scripts/python.exe")
 const TRAINER = "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py"
-const TRAINER_SHA256 = "f41597ec380c068fc9ea9d87dcea56f214bc6a3bc4bff5ddb6875f90ae19b7eb"
-const REQUEST_ID = "owner-action-request-v7-r5-stage3-condition-evidence-serialization-fix-retry-20260804"
+const TRAINER_SHA256 = COVERAGE_CONVERGENCE ? "5b57bd30217b3c6095dd59eb244bb112356ace5a2c43c896a2bdf8f9a15253f4" : "f41597ec380c068fc9ea9d87dcea56f214bc6a3bc4bff5ddb6875f90ae19b7eb"
+const REQUEST_ID = COVERAGE_CONVERGENCE ? "owner-action-request-v7-r5-stage3-coverage-convergence-single-sample-gpu-smoke-20260805" : "owner-action-request-v7-r5-stage3-condition-evidence-serialization-fix-retry-20260804"
 const AUTHORIZATION_PATH = `.runtime/ai-painter/owner-action-requests/${REQUEST_ID}/request.json`
-const AUTHORIZATION_SHA256 = "df0de715098933533468668776573cfa88abc17ec0716e4883e005baf7782708"
+const AUTHORIZATION_SHA256 = COVERAGE_CONVERGENCE ? "037741e42eeb3c73b7b9fdfc1eae8a0536ce9208e053cfec4aac4d4977515d19" : "df0de715098933533468668776573cfa88abc17ec0716e4883e005baf7782708"
 const CONSUMPTION_PATH = `.runtime/ai-painter/owner-action-requests/${REQUEST_ID}/authorization-consumption.json`
-const CONSUMPTION_SHA256 = "10873531ed7e9804b9cdc76fde78f7ecc4faf764a4626b277d70373a3f1aea6a"
-const COMMAND_REF = "owner-authorized-v7-r5-stage3-condition-evidence-serialization-fix-and-one-checkpoint-smoke-retry-20260804"
-const SCOPE = "r5_stage3_condition_evidence_non_scalar_image_tensor_serialization_fix_cpu_regression_and_one_same_checkpoint_gpu_smoke_retry_only"
-const AUTHORIZATION_STATUS = "owner_authorized_v7_r5_single_sample_overfit_smoke"
-const SOURCE_CONFIG_PATH = ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/stage3-internal-isolated-configs/ai-assisted-v7-r5-stage3-internal-isolated-config-2026-08-04T11-48-19-629Z/isolated-config.json"
-const SOURCE_CONFIG_SHA256 = "400e44d68b5c6500619bdac4a28ff20151457451dd93bfd9672c41f87d6ca363"
-const SELECTION_CONTRACT_PATH = "data/ai-painter/system-governance/v7-r5-stage3-internal-isolated-config-selection-contract.json"
-const SELECTION_CONTRACT_SHA256 = "0df8084664460711a641365bed0e6435893f7aa8e8343fad3c9702e2eb3b6de3"
+const CONSUMPTION_SHA256 = COVERAGE_CONVERGENCE ? "9281a8ba10c58a68f93a056995a2bfb8f9d7d62430aa5c73ca4a7a0dccb42bc8" : "10873531ed7e9804b9cdc76fde78f7ecc4faf764a4626b277d70373a3f1aea6a"
+const COMMAND_REF = COVERAGE_CONVERGENCE ? "owner-authorized-v7-r5-stage3-coverage-convergence-single-sample-gpu-smoke-20260805" : "owner-authorized-v7-r5-stage3-condition-evidence-serialization-fix-and-one-checkpoint-smoke-retry-20260804"
+const SCOPE = COVERAGE_CONVERGENCE ? "rebind_r5_stage3_coverage_convergence_smoke_runner_and_trainer_gate_cpu_regression_then_one_checkpoint_continuation_single_sample_30_epoch_gpu_smoke_only" : "r5_stage3_condition_evidence_non_scalar_image_tensor_serialization_fix_cpu_regression_and_one_same_checkpoint_gpu_smoke_retry_only"
+const AUTHORIZATION_STATUS = COVERAGE_CONVERGENCE ? "owner_authorized_v7_r5_stage3_coverage_convergence_single_sample_gpu_smoke" : "owner_authorized_v7_r5_single_sample_overfit_smoke"
+const SOURCE_CONFIG_PATH = COVERAGE_CONVERGENCE ? ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/stage3-coverage-convergence-isolated-configs/ai-assisted-v7-r5-stage3-coverage-convergence-isolated-config-2026-08-05T07-54-34-093Z/isolated-config.json" : ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/stage3-internal-isolated-configs/ai-assisted-v7-r5-stage3-internal-isolated-config-2026-08-04T11-48-19-629Z/isolated-config.json"
+const SOURCE_CONFIG_SHA256 = COVERAGE_CONVERGENCE ? "0f35220968a020bd5b27d785380f1e20eacb85239bb598b567156c8f907185d6" : "400e44d68b5c6500619bdac4a28ff20151457451dd93bfd9672c41f87d6ca363"
+const SELECTION_CONTRACT_PATH = COVERAGE_CONVERGENCE ? "data/ai-painter/system-governance/v7-r5-stage3-coverage-convergence-isolated-config-selection-contract.json" : "data/ai-painter/system-governance/v7-r5-stage3-internal-isolated-config-selection-contract.json"
+const SELECTION_CONTRACT_SHA256 = COVERAGE_CONVERGENCE ? "6af2a71585bfb66cdde858da27c39fd21f38d67c036294ae53d303bef7c03ab3" : "0df8084664460711a641365bed0e6435893f7aa8e8343fad3c9702e2eb3b6de3"
 const DATASET_MANIFEST_SHA256 = "8001f5a27bb8bc18883184b0c7e39ef1336eb295ce5787618bf4e60059dd48aa"
-const PARENT_CHECKPOINT_PATH = ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/ai-assisted-v7-repair-r5-checkpoint-continuation-single-sample-overfit-smoke-2026-08-04T10-07-52-619Z/complete-world-ai-assisted-conditional-denoiser.pt"
-const PARENT_CHECKPOINT_SHA256 = "21198424af06d140c780540c345809841afc4fb2e19cd0c52419f62b58f5da42"
-const PARENT_MANIFEST_PATH = ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/ai-assisted-v7-repair-r5-checkpoint-continuation-single-sample-overfit-smoke-2026-08-04T10-07-52-619Z/manifest.json"
-const PARENT_MANIFEST_SHA256 = "37fab710dab997d0ea390ffa9f8dcf337f21011ac37c7f40698c8a49d836686d"
-const PREVIOUS_FAILURE_REPORT_PATH = ".runtime/ai-painter/v7-r5-stage3-internal-overfit-smoke-finalizations/ai-assisted-v7-r5-stage3-overfit-smoke-finalization-2026-08-04T12-45-05-150Z/finalization-report.json"
-const PREVIOUS_FAILURE_REPORT_SHA256 = "c1059a13463bc0b42cf19705093ee84a18c3aa3e234a6602b7befac7315d4269"
+const PARENT_CHECKPOINT_PATH = COVERAGE_CONVERGENCE ? ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage3-internal/ai-assisted-v7-r5-stage3-internal-checkpoint-continuation-overfit-smoke-2026-08-04T13-23-54-684Z/complete-world-ai-assisted-conditional-denoiser.pt" : ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/ai-assisted-v7-repair-r5-checkpoint-continuation-single-sample-overfit-smoke-2026-08-04T10-07-52-619Z/complete-world-ai-assisted-conditional-denoiser.pt"
+const PARENT_CHECKPOINT_SHA256 = COVERAGE_CONVERGENCE ? "39ce5fc5ac9766795f9e5084a926f1fa1f5237720456010464f69f24098e3514" : "21198424af06d140c780540c345809841afc4fb2e19cd0c52419f62b58f5da42"
+const PARENT_MANIFEST_PATH = COVERAGE_CONVERGENCE ? ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage3-internal/ai-assisted-v7-r5-stage3-internal-checkpoint-continuation-overfit-smoke-2026-08-04T13-23-54-684Z/manifest.json" : ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5/ai-assisted-v7-repair-r5-checkpoint-continuation-single-sample-overfit-smoke-2026-08-04T10-07-52-619Z/manifest.json"
+const PARENT_MANIFEST_SHA256 = COVERAGE_CONVERGENCE ? "91f36faa6293eef911acc313ede0e11855f5fef7bda1e8c1823dff4ac28cd6d9" : "37fab710dab997d0ea390ffa9f8dcf337f21011ac37c7f40698c8a49d836686d"
+const PREVIOUS_FAILURE_REPORT_PATH = COVERAGE_CONVERGENCE ? ".runtime/ai-painter/v7-r5-stage3-internal-overfit-smoke-finalizations/ai-assisted-v7-r5-stage3-overfit-smoke-finalization-2026-08-04T13-23-54-684Z/finalization-report.json" : ".runtime/ai-painter/v7-r5-stage3-internal-overfit-smoke-finalizations/ai-assisted-v7-r5-stage3-overfit-smoke-finalization-2026-08-04T12-45-05-150Z/finalization-report.json"
+const PREVIOUS_FAILURE_REPORT_SHA256 = COVERAGE_CONVERGENCE ? "a6e5cd96817ed2ba6761123786ebe3174513a47dddbbaf83c5f6b3e0c865bc6f" : "c1059a13463bc0b42cf19705093ee84a18c3aa3e234a6602b7befac7315d4269"
 const EXPECTED_SAMPLE_ID = "ai-cold-start-v7-v7-capacity-slot-146-forested-low-mountain-v3"
 const EXPECTED_CONDITION_LABEL = "v7-complete-map-146"
 const EXPECTED_SEED = 20260722
@@ -38,15 +40,15 @@ const EVALUATION_INTERVAL = 10
 const REQUIRED_PREVIEW_EPOCHS = [1, 10, 20, 30]
 const REQUIRED_TAIL_EPOCHS = [10, 20, 30]
 const EXPECTED_SPLITS = { train: 48, validation: 8, challenge: 4, regression: 4 }
-const MODEL_ROOT = resolve(".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage3-internal")
-const FINALIZATION_ROOT = resolve(".runtime/ai-painter/v7-r5-stage3-internal-overfit-smoke-finalizations")
+const MODEL_ROOT = resolve(COVERAGE_CONVERGENCE ? ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage3-coverage-convergence" : ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage3-internal")
+const FINALIZATION_ROOT = resolve(COVERAGE_CONVERGENCE ? ".runtime/ai-painter/v7-r5-stage3-coverage-convergence-overfit-smoke-finalizations" : ".runtime/ai-painter/v7-r5-stage3-internal-overfit-smoke-finalizations")
 const now = new Date().toISOString()
 const suffix = now.replace(/[:.]/g, "-")
-const runId = `ai-assisted-v7-r5-stage3-internal-checkpoint-continuation-overfit-smoke-${suffix}`
+const runId = `ai-assisted-v7-r5-stage3-${COVERAGE_CONVERGENCE ? "coverage-convergence-" : "internal-"}checkpoint-continuation-overfit-smoke-${suffix}`
 const runDir = path.join(MODEL_ROOT, runId)
 const derivedConfigPath = path.join(MODEL_ROOT, "derived-configs", `${runId}.json`)
 const registrationPath = path.join(MODEL_ROOT, "run-registrations", `${REQUEST_ID}.json`)
-const lockPath = path.join(MODEL_ROOT, ".r5-stage3-single-sample-overfit-smoke.lock")
+const lockPath = path.join(MODEL_ROOT, COVERAGE_CONVERGENCE ? ".r5-stage3-coverage-convergence-single-sample-overfit-smoke.lock" : ".r5-stage3-single-sample-overfit-smoke.lock")
 
 const authorization = readJson(AUTHORIZATION_PATH)
 const consumption = readJson(CONSUMPTION_PATH)
@@ -65,6 +67,7 @@ const derivedConfig = deepMerge(sourceConfig, {
   training: {
     trainingAuthorizationStatus: AUTHORIZATION_STATUS,
     authorizedOverfitSampleId: EXPECTED_SAMPLE_ID,
+    authorizedOverfitConditionLabel: EXPECTED_CONDITION_LABEL,
     authorizedInitialization: "project_r5_single_sample_checkpoint_continuation",
     r5Stage3CheckpointContinuation: {
       loadingAuthorizedNow: true,
@@ -81,6 +84,7 @@ const derivedConfig = deepMerge(sourceConfig, {
       selectionContractPath: SELECTION_CONTRACT_PATH,
       selectionContractSha256: SELECTION_CONTRACT_SHA256,
       status: AUTHORIZATION_STATUS,
+      checkpointHashValidatedByRunnerAfterPythonPreflight: COVERAGE_CONVERGENCE,
       checkpointLoadingAuthorized: true,
       optimizerCreationAuthorized: true,
       modelWeightMutationAuthorized: true,
@@ -106,6 +110,9 @@ appendEvent("r5_stage3_smoke_python_preflight_started", "running", "Python只读
 const pythonPreflight = runTrainer(["--preflight-only"])
 if (pythonPreflight.status !== 0) finishBlocked("r5_stage3_smoke_python_preflight_failed", ["r5_stage3_python_preflight_failed"], pythonPreflight)
 appendEvent("r5_stage3_smoke_python_preflight_completed", "success", "Python预检通过；Checkpoint尚未加载；GPU尚未启动")
+if (COVERAGE_CONVERGENCE && !fileHashMatches(PARENT_CHECKPOINT_PATH, PARENT_CHECKPOINT_SHA256)) {
+  finishBlocked("r5_stage3_coverage_convergence_checkpoint_hash_blocked", ["parent_checkpoint_hash_invalid_after_python_preflight"], pythonPreflight)
+}
 
 const gpuBefore = gpuSnapshot()
 if (!gpuBefore.available || gpuBefore.utilizationPercent > 10 || gpuBefore.memoryUsedMiB > 3000) {
@@ -196,7 +203,7 @@ function validatePreflight() {
   check(fileHashMatches(TRAINER, TRAINER_SHA256), "trainer_hash_invalid")
   check(fileHashMatches(SOURCE_CONFIG_PATH, SOURCE_CONFIG_SHA256), "source_config_hash_invalid")
   check(fileHashMatches(SELECTION_CONTRACT_PATH, SELECTION_CONTRACT_SHA256), "selection_contract_hash_invalid")
-  check(fileHashMatches(PARENT_CHECKPOINT_PATH, PARENT_CHECKPOINT_SHA256), "parent_checkpoint_hash_invalid")
+  if (!COVERAGE_CONVERGENCE) check(fileHashMatches(PARENT_CHECKPOINT_PATH, PARENT_CHECKPOINT_SHA256), "parent_checkpoint_hash_invalid")
   check(fileHashMatches(PARENT_MANIFEST_PATH, PARENT_MANIFEST_SHA256), "parent_manifest_hash_invalid")
   check(fileHashMatches(PREVIOUS_FAILURE_REPORT_PATH, PREVIOUS_FAILURE_REPORT_SHA256), "previous_failure_report_invalid")
   check(authorization?.status === "resolved_owner_authorized", "authorization_not_resolved")
@@ -204,14 +211,24 @@ function validatePreflight() {
   check(consumption?.status === "consumed_before_authorized_write" && consumption?.authorizationSha256 === AUTHORIZATION_SHA256, "authorization_not_consumed")
   check(consumption?.commandRef === COMMAND_REF && consumption?.scope === SCOPE, "consumption_identity_invalid")
   check(consumption?.allowedExecutionCount === 1, "retry_execution_count_invalid")
-  for (const key of ["conditionEvidenceSerializationFixAuthorized", "knownPredictedRgbTensorExclusionAuthorized", "unknownNonScalarTensorFailureClosureRequired", "cpuPositiveRegressionAuthorized", "cpuNegativeRegressionAuthorized", "trainerAuthorizationGateRebindingAuthorized", "runnerAuthorizationGateRebindingAuthorized", "sameCheckpointReadAndLoadingAuthorized", "optimizerCreationAuthorized", "modelWeightMutationAuthorized", "oneGpuSmokeRetryAuthorized", "fixedEpochPreviewGenerationAuthorized", "machinePreviewReviewAuthorized", "checkpointAndTokenEvidenceStorageAuthorized", "automaticTerminalStorageAuthorized"]) check(authorization?.resolution?.[key] === true, `${key}_missing`)
+  const requiredAuthorizationFlags = COVERAGE_CONVERGENCE
+    ? ["trainerAuthorizationGateRebindingAuthorized", "runnerAuthorizationGateRebindingAuthorized", "legacyStage3CompatibilityRequired", "cpuPositiveAuthorizationRegressionAuthorized", "cpuNegativeAuthorizationRegressionAuthorized", "pythonPreflightAuthorized", "checkpointFileReadAuthorizedAfterPreflight", "checkpointLoadingAuthorizedAfterPreflight", "optimizerCreationAuthorized", "modelWeightMutationAuthorized", "oneGpuSmokeAuthorized", "fixedEpochPreviewGenerationAuthorized", "machinePreviewReviewAuthorized", "checkpointAndTokenEvidenceStorageAuthorized", "automaticTerminalStorageAuthorized"]
+    : ["conditionEvidenceSerializationFixAuthorized", "knownPredictedRgbTensorExclusionAuthorized", "unknownNonScalarTensorFailureClosureRequired", "cpuPositiveRegressionAuthorized", "cpuNegativeRegressionAuthorized", "trainerAuthorizationGateRebindingAuthorized", "runnerAuthorizationGateRebindingAuthorized", "sameCheckpointReadAndLoadingAuthorized", "optimizerCreationAuthorized", "modelWeightMutationAuthorized", "oneGpuSmokeRetryAuthorized", "fixedEpochPreviewGenerationAuthorized", "machinePreviewReviewAuthorized", "checkpointAndTokenEvidenceStorageAuthorized", "automaticTerminalStorageAuthorized"]
+  for (const key of requiredAuthorizationFlags) check(authorization?.resolution?.[key] === true, `${key}_missing`)
   for (const key of ["automaticAdditionalRetryAuthorized", "fullTrainingAuthorized", "strictRevalidationAuthorized", "formalInferenceAuthorized", "checkpointPromotionAuthorized", "runtimeFrameAuthorized", "worldEntryAuthorized"]) check(authorization?.resolution?.[key] === false, `boundary_${key}_invalid`)
-  check(selectionContract?.status === "r5_stage3_isolated_config_compiled_not_active_checkpoint_not_read_or_loaded_training_not_authorized", "selection_contract_status_invalid")
-  check(sourceConfig?.status === "isolated_r5_stage3_internal_candidate_not_active", "source_config_not_isolated")
+  check(selectionContract?.status === (COVERAGE_CONVERGENCE ? "bounded_values_selected_config_compiled_cpu_verified_not_active" : "r5_stage3_isolated_config_compiled_not_active_checkpoint_not_read_or_loaded_training_not_authorized"), "selection_contract_status_invalid")
+  check(sourceConfig?.status === (COVERAGE_CONVERGENCE ? "isolated_r5_stage3_coverage_convergence_candidate_not_active" : "isolated_r5_stage3_internal_candidate_not_active"), "source_config_not_isolated")
   check(sourceConfig?.training?.boundedRepairVersion === "v7_bounded_repair_r5_candidate", "source_config_version_invalid")
   check(sourceConfig?.training?.r5Stage3CheckpointContinuation?.sourceCheckpointPath === PARENT_CHECKPOINT_PATH, "parent_checkpoint_path_binding_invalid")
   check(sourceConfig?.training?.r5Stage3CheckpointContinuation?.sourceCheckpointSha256 === PARENT_CHECKPOINT_SHA256, "parent_checkpoint_hash_binding_invalid")
   check(sourceConfig?.training?.r5Stage3CheckpointContinuation?.loadingAuthorizedNow === false, "source_checkpoint_loading_active")
+  if (COVERAGE_CONVERGENCE) {
+    check(sourceConfig?.training?.r5Stage3CheckpointContinuation?.checkpointFileReadByCompiler === false, "source_checkpoint_read_by_compiler")
+    check(sourceConfig?.training?.pathActivationMassCalibration?.weight === 0.625, "activation_mass_weight_invalid")
+    check(sourceConfig?.training?.shortTrajectoryCoverageDrift?.weight === 0.2875, "coverage_drift_weight_invalid")
+    check(authorization?.taskIdentity?.trainerBeforeSha256 === "e337fbcbdbef1a740c43615e3cc9ac4d62ae4f8d53f754b0e012b104373014da", "trainer_before_hash_invalid")
+    check(authorization?.taskIdentity?.runnerBeforeSha256 === "8314e2fc5fcbcee6b3269f738cde41755e97da3ae9acf4a82efebe055df5b492", "runner_before_hash_invalid")
+  }
   check(sourceConfig?.training?.pathHardExampleReplay?.passesPerEpoch === 2, "replay_count_invalid")
   check(sourceConfig?.training?.denoiserEpochs === OVERFIT_EPOCHS, "epoch_contract_invalid")
   check(sameJson(sourceConfig?.training?.smokeStabilityGate?.tailEpochs, REQUIRED_TAIL_EPOCHS), "tail_epoch_contract_invalid")
@@ -268,68 +285,22 @@ function validateManifest(value) {
 
 async function reviewPreviews() {
   const previewRoot = path.join(runDir, "fixed-epoch-previews")
-  const files = fs.existsSync(previewRoot) ? fs.readdirSync(previewRoot).filter((name) => name.endsWith(".png")).sort() : []
-  const reviews = []
-  const conditionPack = readJson(overfitRow.conditionPackPath)
-  for (const fileName of files) {
-    const previewPath = path.join(previewRoot, fileName)
-    const epoch = Number(fileName.match(/^epoch-(\d+)/)?.[1] ?? 0)
-    const shortInputPath = resolve(`.runtime/ai-painter/r5-stage3-review-inputs/${runId.slice(-24)}/e${String(epoch).padStart(3, "0")}.png`)
-    const normalizedPath = path.join(runDir, "fixed-preview-review-assets", `e${String(epoch).padStart(3, "0")}.png`)
-    fs.mkdirSync(path.dirname(shortInputPath), { recursive: true })
-    fs.mkdirSync(path.dirname(normalizedPath), { recursive: true })
-    fs.copyFileSync(previewPath, shortInputPath, fs.constants.COPYFILE_EXCL)
-    if (sha256File(shortInputPath) !== sha256File(previewPath)) throw new Error(`review_copy_hash_mismatch_epoch_${epoch}`)
-    await sharp(shortInputPath).removeAlpha().resize(1024, 768, { fit: "fill", kernel: sharp.kernel.nearest }).png().toFile(normalizedPath)
-    const [aesthetic, alignment] = await Promise.all([
-      auditAiAssistedProfessionalAesthetic(normalizedPath),
-      auditAiAssistedConditionAlignment({
-        record: { recordId: `${runId}-${path.parse(fileName).name}`, conditionBinding: { conditionPackPath: overfitRow.conditionPackPath, worldId: conditionPack.worldId, tick: conditionPack.tick }, classification: overfitRow.classification },
-        imagePath: normalizedPath,
-        referenceImagePath: overfitRow.imagePath,
-      }),
-    ])
-    reviews.push({
-      epoch,
-      recordedAtUtc: new Date().toISOString(),
-      recordedAtAsiaShanghai: formatShanghai(new Date().toISOString()),
-      previewPath: projectPath(previewPath),
-      previewSha256: sha256File(previewPath),
-      normalizedReviewImagePath: projectPath(normalizedPath),
-      normalizedReviewImageSha256: sha256File(normalizedPath),
-      passed: aesthetic.passed && alignment.passed,
-      issueCodes: [...aesthetic.issues, ...alignment.issues].map((issue) => issue.code),
-      professionalAesthetic: aesthetic,
-      conditionAlignment: alignment,
-    })
-  }
-  const report = {
-    schemaVersion: "ai-assisted-v7-r5-stage3-preview-hard-gate-review-v1",
-    createdAtUtc: new Date().toISOString(),
-    createdAtAsiaShanghai: formatShanghai(new Date().toISOString()),
-    status: reviews.length === 4 && reviews.every((review) => review.passed) && evaluateTailStability(reviews).passed ? "passed" : "failed",
-    stage: 0,
-    reviewCount: reviews.length,
-    passCount: reviews.filter((review) => review.passed).length,
-    failCount: reviews.filter((review) => !review.passed).length,
-    tailStabilityGate: evaluateTailStability(reviews),
-    reviewThresholdPolicy: "unchanged_existing_machine_review_contract",
-    reviews,
-    nextStageStarted: false,
-  }
-  writeImmutableJson(path.join(runDir, "fixed-preview-hard-gate-review.json"), report)
+  const { reviews } = await reviewAiAssistedV7R5Stage3Previews({
+    runId,
+    previewRoot,
+    finalAssetRoot: path.join(runDir, "fixed-preview-review-assets"),
+    reportPath: path.join(runDir, "fixed-preview-hard-gate-review.json"),
+    workRoot: resolve(".runtime/ai-painter/r5-stage3-review-work"),
+    workId: `live-${sha256Text(runId).slice(0, 16)}`,
+    overfitRow,
+    requiredPreviewEpochs: REQUIRED_PREVIEW_EPOCHS,
+    requiredTailEpochs: REQUIRED_TAIL_EPOCHS,
+  })
   return reviews
 }
 
 function evaluateTailStability(reviews) {
-  const byEpoch = new Map(reviews.map((row) => [row.epoch, row]))
-  const evaluated = REQUIRED_TAIL_EPOCHS.map((epoch) => {
-    const row = byEpoch.get(epoch)
-    const issueCodes = row?.issueCodes ?? []
-    return { epoch, recorded: Boolean(row), passed: Boolean(row?.passed && issueCodes.length === 0), pathIssueFree: !issueCodes.some((code) => code.includes("terrain_path_ground")), objectIssueFree: !issueCodes.some((code) => code.startsWith("condition_object_")), issueCodes }
-  })
-  const passed = evaluated.length === 3 && evaluated.every((row) => row.recorded && row.passed && row.pathIssueFree && row.objectIssueFree)
-  return { status: passed ? "r5_stage3_tail_stability_gate_passed" : "r5_stage3_tail_stability_gate_failed_closed", passed, requiredConsecutiveTailPasses: 3, evaluated }
+  return evaluateR5Stage3TailStability(reviews, REQUIRED_TAIL_EPOCHS)
 }
 
 function writeReport(status, blockers, currentManifest, reviews, processResult, metrics = {}) {
@@ -435,6 +406,7 @@ function writeImmutableJson(value, body) { fs.mkdirSync(path.dirname(value), { r
 function resolve(value) { return path.isAbsolute(value) ? value : path.resolve(ROOT, value) }
 function projectPath(value) { return path.relative(ROOT, path.resolve(value)).replaceAll("\\", "/") }
 function sha256File(value) { return crypto.createHash("sha256").update(fs.readFileSync(resolve(value))).digest("hex") }
+function sha256Text(value) { return crypto.createHash("sha256").update(value, "utf8").digest("hex") }
 function fileHashMatches(value, expected) { const absolute = resolve(value); return Boolean(fs.existsSync(absolute) && sha256File(absolute) === expected) }
 function sameJson(left, right) { return JSON.stringify(left) === JSON.stringify(right) }
 function gpuSnapshot() { const child = spawnSync("nvidia-smi", ["--query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu", "--format=csv,noheader,nounits"], { cwd: ROOT, encoding: "utf8", windowsHide: true }); if (child.status !== 0) return { available: false, stderr: child.stderr }; const [name, utilization, memoryUsed, memoryTotal, temperature] = child.stdout.trim().split(",").map((value) => value.trim()); return { available: true, name, utilizationPercent: Number(utilization), memoryUsedMiB: Number(memoryUsed), memoryTotalMiB: Number(memoryTotal), temperatureCelsius: Number(temperature) } }

@@ -9,6 +9,36 @@ const ISSUE_DEFINITIONS = {
     labelZh: "道路接触了条件包未授权的地图边界",
     repairTarget: "route_boundary_contact_consistency",
   },
+  condition_terrain_path_ground_spatial_distribution_mismatch: {
+    family: "terrain_path_topology",
+    labelZh: "道路空间分布与条件范围不一致",
+    repairTarget: "route_spatial_distribution_consistency",
+  },
+  condition_terrain_path_ground_centroid_drift: {
+    family: "terrain_path_topology",
+    labelZh: "道路可视质心偏离条件质心",
+    repairTarget: "route_centroid_consistency",
+  },
+  condition_terrain_path_ground_required_boundary_contact_missing: {
+    family: "terrain_path_topology",
+    labelZh: "道路缺少条件要求的地图边界接触",
+    repairTarget: "route_required_boundary_contact_consistency",
+  },
+  condition_terrain_water_coverage_mismatch: {
+    family: "hydrology_spatial_alignment",
+    labelZh: "水体可视覆盖与条件范围不一致",
+    repairTarget: "water_coverage_consistency",
+  },
+  condition_terrain_water_spatial_distribution_mismatch: {
+    family: "hydrology_spatial_alignment",
+    labelZh: "水体空间分布与条件范围不一致",
+    repairTarget: "water_spatial_distribution_consistency",
+  },
+  condition_terrain_water_centroid_drift: {
+    family: "hydrology_spatial_alignment",
+    labelZh: "水体可视质心偏离条件质心",
+    repairTarget: "water_centroid_consistency",
+  },
   condition_object_footprints_reference_semantic_mismatch: {
     family: "object_semantic_alignment",
     labelZh: "对象占地语义与留出参考不一致",
@@ -31,12 +61,22 @@ const ISSUE_DEFINITIONS = {
   },
 }
 
+const STAGE4_DIAGNOSTIC_OBJECT_CHANNELS = ["Footprints", "Tree", "Rock", "Vegetation"]
+const STAGE4_DIAGNOSTIC_ROUTE_METRICS = [
+  "stage4DiagnosticRouteActivationMassRatio",
+  "stage4DiagnosticRouteSpatialDistributionL1",
+  "stage4DiagnosticRouteCentroidDrift",
+  "stage4DiagnosticRouteRequiredBoundaryContactMinimum",
+]
+
 export function analyzeFailureLearningLoop({
   review,
   finalization,
   overlay,
   sourcePaths,
   proposedBoundedRepairVersion = "v7_bounded_repair_r3_candidate",
+  repairProfile = "legacy_smoke",
+  diagnosticEvidence = null,
 }) {
   assert(review && Array.isArray(review.reviews), "failure_learning_review_rows_missing")
   assert(review.reviews.length >= 2, "failure_learning_timeline_too_short")
@@ -47,7 +87,11 @@ export function analyzeFailureLearningLoop({
   const issueCodes = [...new Set(timeline.flatMap((row) => row.issueCodes))].sort()
   const issueClusters = issueCodes.map((code) => buildIssueCluster(code, timeline))
   const familyGroups = groupFamilies(issueClusters)
+  const diagnosticInterpretation = diagnosticEvidence === null
+    ? null
+    : interpretStage4DiagnosticEvidence(diagnosticEvidence)
   const rootCauseCandidates = buildRootCauseCandidates({ timeline, issueClusters, familyGroups })
+  if (diagnosticInterpretation) rootCauseCandidates.push(...buildDiagnosticEvidenceCandidates(diagnosticInterpretation))
   const currentTraining = overlay?.patch?.training ?? {}
   const sourceSmokePolicy = currentTraining.fixedEpochPreviewPolicy?.smoke ?? []
   const repairContract = buildRepairContract({
@@ -58,6 +102,8 @@ export function analyzeFailureLearningLoop({
     sourceSmokePolicy,
     sourcePaths,
     proposedBoundedRepairVersion,
+    repairProfile,
+    diagnosticInterpretation,
   })
 
   return {
@@ -82,6 +128,7 @@ export function analyzeFailureLearningLoop({
     issueClusters,
     familyGroups,
     rootCauseCandidates,
+    diagnosticInterpretation,
     repairContract,
     closure: {
       evidenceNormalized: true,
@@ -96,6 +143,117 @@ export function analyzeFailureLearningLoop({
       nextState: "waiting_for_owner_review_of_bounded_repair_contract",
     },
   }
+}
+
+export function interpretStage4DiagnosticEvidence(report) {
+  assert(report?.schemaVersion === "v7-r5-stage4-readonly-single-sample-gpu-diagnostic-report-v1", "failure_learning_diagnostic_schema_invalid")
+  assert(report?.status === "read_only_single_sample_gpu_diagnostic_completed_weights_unchanged", "failure_learning_diagnostic_status_invalid")
+  const metrics = report?.diagnosticMetrics
+  assert(metrics && typeof metrics === "object" && !Array.isArray(metrics), "failure_learning_diagnostic_metrics_missing")
+  const objectMetricNames = STAGE4_DIAGNOSTIC_OBJECT_CHANNELS.flatMap((channel) => [
+    `stage4DiagnosticObject${channel}IndependentLoss`,
+    `stage4DiagnosticObject${channel}GradientContribution`,
+    `stage4DiagnosticObject${channel}DecodedResponsePrototypeMae`,
+  ])
+  const requiredMetricNames = [...objectMetricNames, "stage4DiagnosticObjectGradientAvailable", ...STAGE4_DIAGNOSTIC_ROUTE_METRICS]
+  assert(Object.keys(metrics).length === requiredMetricNames.length, "failure_learning_diagnostic_metric_count_invalid")
+  assert(requiredMetricNames.every((name) => Object.hasOwn(metrics, name)), "failure_learning_diagnostic_metric_identity_invalid")
+  for (const name of requiredMetricNames) assert(Number.isFinite(metrics[name]) && metrics[name] >= 0, `failure_learning_diagnostic_metric_value_invalid:${name}`)
+  assert(metrics.stage4DiagnosticObjectGradientAvailable === 1, "failure_learning_diagnostic_object_gradient_unavailable")
+  assert(report.integrity?.autoencoderStateSha256Before === report.integrity?.autoencoderStateSha256After, "failure_learning_diagnostic_autoencoder_state_changed")
+  assert(report.integrity?.denoiserStateSha256Before === report.integrity?.denoiserStateSha256After, "failure_learning_diagnostic_denoiser_state_changed")
+  assert(report.integrity?.parameterGradientsAbsentAfterDiagnostic === true, "failure_learning_diagnostic_parameter_gradients_present")
+  assert(report.optimizerCreated === false && report.lossBackwardExecuted === false && report.modelWeightsModified === false, "failure_learning_diagnostic_mutation_boundary_invalid")
+  assert(report.checkpointWritten === false && report.trainingStarted === false && report.fullTrainingStarted === false, "failure_learning_diagnostic_training_boundary_invalid")
+
+  const objectChannels = STAGE4_DIAGNOSTIC_OBJECT_CHANNELS.map((name) => {
+    const prefix = `stage4DiagnosticObject${name}`
+    return {
+      channel: name.toLowerCase(),
+      independentLoss: metrics[`${prefix}IndependentLoss`],
+      gradientContribution: metrics[`${prefix}GradientContribution`],
+      decodedResponsePrototypeMae: metrics[`${prefix}DecodedResponsePrototypeMae`],
+    }
+  })
+  const byLoss = descendingRank(objectChannels, "independentLoss")
+  const byGradient = descendingRank(objectChannels, "gradientContribution")
+  const byDecodedResponse = descendingRank(objectChannels, "decodedResponsePrototypeMae")
+  const gradientMinimum = Math.min(...objectChannels.map((row) => row.gradientContribution))
+  for (const row of objectChannels) {
+    row.lossRankDescending = byLoss.indexOf(row.channel) + 1
+    row.gradientContributionRankDescending = byGradient.indexOf(row.channel) + 1
+    row.decodedResponsePrototypeMaeRankDescending = byDecodedResponse.indexOf(row.channel) + 1
+    row.gradientContributionRelativeToMinimum = gradientMinimum === 0 ? null : row.gradientContribution / gradientMinimum
+  }
+
+  const activationMassRatio = metrics.stage4DiagnosticRouteActivationMassRatio
+  const boundaryContactMinimum = metrics.stage4DiagnosticRouteRequiredBoundaryContactMinimum
+  return {
+    schemaVersion: "local-ai-stage4-diagnostic-evidence-interpretation-v1",
+    status: "single_sample_diagnostic_metrics_interpreted_read_only",
+    metricCount: requiredMetricNames.length,
+    objectMetrics: {
+      gradientAvailable: true,
+      channels: objectChannels,
+      highestIndependentLossChannel: byLoss[0],
+      highestGradientContributionChannel: byGradient[0],
+      highestDecodedResponsePrototypeMaeChannel: byDecodedResponse[0],
+      finding: "All four object channels expose non-zero diagnostic gradients. Rock has the highest independent loss, gradient contribution, and decoded-response prototype MAE in this fixed sample; this supports an isolated rock-channel bounded candidate, but does not prove a dataset-wide weight choice.",
+    },
+    routeMetrics: {
+      activationMassRatio,
+      activationMassDifferenceFromTarget: activationMassRatio - 1,
+      activationMassPercentDifferenceFromTarget: (activationMassRatio - 1) * 100,
+      activationDirectionRelativeToTarget: activationMassRatio > 1 ? "above_target" : activationMassRatio < 1 ? "below_target" : "equal_target",
+      spatialDistributionL1: metrics.stage4DiagnosticRouteSpatialDistributionL1,
+      centroidDrift: metrics.stage4DiagnosticRouteCentroidDrift,
+      requiredBoundaryContactMinimum: boundaryContactMinimum,
+      requiredBoundaryContactState: boundaryContactMinimum > 0 ? "present" : "absent",
+      finding: "The fixed sample has route activation mass above the target, non-zero spatial-distribution error and centroid drift, and zero required-boundary contact. The raw values are evidence for isolated bounded repair design; no machine-review threshold is changed or reinterpreted.",
+    },
+    evidenceLimits: {
+      fixedSingleSampleOnly: true,
+      fixedTimestepOnly: true,
+      fixedSeedOnly: true,
+      datasetWideCausalityEstablished: false,
+      acceptanceThresholdPassFailInferred: false,
+      executionValueSelected: false,
+    },
+  }
+}
+
+function descendingRank(rows, field) {
+  return [...rows].sort((left, right) => right[field] - left[field] || left.channel.localeCompare(right.channel)).map((row) => row.channel)
+}
+
+function buildDiagnosticEvidenceCandidates(interpretation) {
+  return [
+    {
+      id: "diagnostic_object_rock_dominant_residual_single_sample",
+      category: "diagnostic_evidence_pattern",
+      confidence: 0.72,
+      titleZh: "固定单样本中岩石对象残差最高",
+      findingZh: "四类对象均有非零诊断梯度；岩石的独立Loss、梯度贡献和解码响应Prototype MAE均为四类最高。该证据只支持隔离、有界候选，不支持直接选择执行参数。",
+      evidenceIssueCodes: ["condition_object_rock_reference_semantic_mismatch"],
+      evidenceEpochs: [],
+      proposedTarget: "仅为岩石对象通道建立相对当前值的有界候选区间，其他对象通道保持不变；在新的独立授权前不应用。",
+    },
+    {
+      id: "diagnostic_route_mass_above_target_and_required_contact_absent_single_sample",
+      category: "diagnostic_evidence_pattern",
+      confidence: 0.78,
+      titleZh: "固定单样本道路激活偏高且必需边界接触缺失",
+      findingZh: `道路激活量相对目标为${interpretation.routeMetrics.activationMassPercentDifferenceFromTarget.toFixed(4)}%，空间分布L1与质心漂移均非零，必需边界接触最小值为0。单样本证据不能替代完整训练或机器审核。`,
+      evidenceIssueCodes: [
+        "condition_terrain_path_ground_coverage_mismatch",
+        "condition_terrain_path_ground_spatial_distribution_mismatch",
+        "condition_terrain_path_ground_centroid_drift",
+        "condition_terrain_path_ground_required_boundary_contact_missing",
+      ],
+      evidenceEpochs: [],
+      proposedTarget: "保留审核阈值，隔离评估激活量校准与必需边界接触Loss的有界候选；不从本次单样本直接选择权重。",
+    },
+  ]
 }
 
 function normalizeTimelineRow(row) {
@@ -171,31 +329,59 @@ function buildRootCauseCandidates({ timeline, issueClusters, familyGroups }) {
   const objectClusters = issueClusters.filter((cluster) => cluster.family === "object_semantic_alignment")
   if (objectClusters.length > 0) {
     const slowest = [...objectClusters].sort((left, right) => right.lastSeenEpoch - left.lastSeenEpoch)[0]
+    const persistentObjectClusters = objectClusters.filter((cluster) => cluster.presentAtFinal)
     candidates.push({
-      id: "uneven_object_semantic_learning_rate",
+      id: persistentObjectClusters.length > 0 ? "persistent_object_semantic_non_convergence" : "uneven_object_semantic_learning_rate",
       category: "training_supervision",
-      confidence: 0.86,
-      titleZh: "不同对象通道的语义学习速度不均衡",
-      findingZh: `对象语义错误均在终态前收敛，但${slowest.labelZh}持续到Epoch ${slowest.lastSeenEpoch}，说明模型能够学习，不应把对象通道整体判为不可学习。`,
+      confidence: persistentObjectClusters.length > 0 ? 0.99 : 0.86,
+      titleZh: persistentObjectClusters.length > 0 ? "对象语义监督在终态仍未收敛" : "不同对象通道的语义学习速度不均衡",
+      findingZh: persistentObjectClusters.length > 0
+        ? `${persistentObjectClusters.length}类对象语义从首次预览持续失败至Epoch ${timeline.at(-1).epoch}，不能判为已学习或稳定收敛。`
+        : `对象语义错误均在终态前收敛，但${slowest.labelZh}持续到Epoch ${slowest.lastSeenEpoch}，说明模型能够学习，不应把对象通道整体判为不可学习。`,
       evidenceIssueCodes: objectClusters.map((cluster) => cluster.issueCode),
       evidenceEpochs: [...new Set(objectClusters.flatMap((cluster) => cluster.occurrenceEpochs))].sort((a, b) => a - b),
-      proposedTarget: "增加对象通道独立Loss观测，并只对持续最久的岩石/对象语义监督建立有界权重搜索。",
+      proposedTarget: persistentObjectClusters.length > 0
+        ? "先增加四类对象通道独立Loss、梯度贡献与解码响应诊断，再决定是否建立有界权重搜索；不得直接提高全部对象权重。"
+        : "增加对象通道独立Loss观测，并只对持续最久的岩石/对象语义监督建立有界权重搜索。",
+    })
+  }
+  const hydrologyFamily = familyGroups.find((group) => group.family === "hydrology_spatial_alignment")
+  if (hydrologyFamily) {
+    const hydrologyClusters = issueClusters.filter((cluster) => cluster.family === hydrologyFamily.family)
+    candidates.push({
+      id: hydrologyFamily.allResolvedByFinal ? "hydrology_learned_before_terminal" : "hydrology_spatial_alignment_non_convergence",
+      category: "training_trajectory",
+      confidence: hydrologyFamily.allResolvedByFinal ? 0.96 : 0.99,
+      titleZh: hydrologyFamily.allResolvedByFinal ? "水体空间响应在训练中收敛" : "水体空间响应在终态仍未收敛",
+      findingZh: hydrologyFamily.allResolvedByFinal
+        ? `水体问题最晚在Epoch ${hydrologyFamily.lastSeenEpoch}后消失，当前证据不支持降低水体审核门槛或优先扩大水体Loss。`
+        : `水体问题持续至Epoch ${hydrologyFamily.lastSeenEpoch}，必须保持失败关闭并补充空间响应诊断。`,
+      evidenceIssueCodes: hydrologyFamily.issueCodes,
+      evidenceEpochs: [...new Set(hydrologyClusters.flatMap((cluster) => cluster.occurrenceEpochs))].sort((a, b) => a - b),
+      proposedTarget: hydrologyFamily.allResolvedByFinal
+        ? "保留现有水体合同与阈值，把水体收敛轨迹作为对象/道路修复的历史回归保护。"
+        : "增加水体覆盖、空间网格与质心响应的独立训练诊断，不使用审核阈值作为训练目标。",
     })
   }
   const pathFamily = familyGroups.find((group) => group.family === "terrain_path_topology")
   if (pathFamily) {
     const recurrent = issueClusters.filter((cluster) => cluster.family === pathFamily.family && cluster.episodeCount > 1)
+    const persistent = issueClusters.filter((cluster) => cluster.family === pathFamily.family && cluster.presentAtFinal)
     candidates.push({
-      id: "route_topology_training_trajectory_instability",
+      id: persistent.length > 0 ? "route_topology_terminal_non_convergence" : "route_topology_training_trajectory_instability",
       category: "training_trajectory",
-      confidence: recurrent.length > 0 ? 0.96 : 0.9,
-      titleZh: "道路覆盖和边界接触在训练轨迹中不稳定",
-      findingZh: recurrent.length > 0
+      confidence: persistent.length > 0 ? 0.99 : (recurrent.length > 0 ? 0.96 : 0.9),
+      titleZh: persistent.length > 0 ? "道路拓扑响应在终态仍未收敛" : "道路覆盖和边界接触在训练轨迹中不稳定",
+      findingZh: persistent.length > 0
+        ? `${persistent.map((cluster) => cluster.labelZh).join("、")}持续至Epoch ${timeline.at(-1).epoch}；道路问题在末段出现且未全部恢复，不能判为已收敛。`
+        : recurrent.length > 0
         ? `道路边界错误分成${recurrent[0].episodeCount}段出现，曾消失后在Epoch ${recurrent[0].lastSeenEpoch}复发；这不是固定条件包错误，而是训练轨迹回归。`
         : `道路错误持续到Epoch ${pathFamily.lastSeenEpoch}才消失，需要专门的覆盖与边界一致性监督。`,
       evidenceIssueCodes: pathFamily.issueCodes,
       evidenceEpochs: [...new Set(issueClusters.filter((cluster) => cluster.family === pathFamily.family).flatMap((cluster) => cluster.occurrenceEpochs))].sort((a, b) => a - b),
-      proposedTarget: "保留现有道路审核阈值，增加道路覆盖/边界一致性Loss诊断与末段稳定性复验。",
+      proposedTarget: persistent.length > 0
+        ? "保留现有道路审核阈值，增加道路覆盖、空间分布、质心和必需边界接触的末段回归诊断；未取得诊断证据前不选择新权重。"
+        : "保留现有道路审核阈值，增加道路覆盖/边界一致性Loss诊断与末段稳定性复验。",
     })
   }
   const finalPassingStreak = trailingPassCount(timeline)
@@ -222,7 +408,20 @@ function buildRepairContract({
   sourceSmokePolicy,
   sourcePaths,
   proposedBoundedRepairVersion,
+  repairProfile,
+  diagnosticInterpretation,
 }) {
+  if (repairProfile === "stage4_progressive") {
+    return buildStage4ProgressiveRepairContract({
+      timeline,
+      issueClusters,
+      rootCauseCandidates,
+      currentTraining,
+      sourcePaths,
+      proposedBoundedRepairVersion,
+      diagnosticInterpretation,
+    })
+  }
   const proposedSmokePolicy = [...new Set([...sourceSmokePolicy, 100, 110, timeline.at(-1).epoch])].sort((a, b) => a - b)
   return {
     schemaVersion: "local-ai-bounded-repair-contract-proposal-v1",
@@ -289,6 +488,151 @@ function buildRepairContract({
       immutableAuthorizationConsumptionRequired: true,
       applyConfigurationNow: false,
       startTrainingNow: false,
+    },
+  }
+}
+
+function buildStage4ProgressiveRepairContract({
+  timeline,
+  issueClusters,
+  rootCauseCandidates,
+  currentTraining,
+  sourcePaths,
+  proposedBoundedRepairVersion,
+  diagnosticInterpretation,
+}) {
+  const objectWeights = currentTraining.objectSemanticChannelWeights ?? {}
+  const diagnosticCandidate = diagnosticInterpretation
+    ? buildStage4DiagnosticCandidateProposal(diagnosticInterpretation, currentTraining)
+    : null
+  return {
+    schemaVersion: "local-ai-stage4-bounded-repair-contract-proposal-v1",
+    status: "owner_review_required_not_applied",
+    objectiveZh: "先解释Stage 0对象语义持续失败和道路末段回归，再形成不降低审核门槛、不直接重跑完整训练的最小修复候选。",
+    evidenceBasis: {
+      sourcePaths,
+      epochs: timeline.map((row) => row.epoch),
+      issueCodes: issueClusters.map((cluster) => cluster.issueCode),
+      rootCauseCandidateIds: rootCauseCandidates.map((candidate) => candidate.id),
+      diagnosticMetricCount: diagnosticInterpretation?.metricCount ?? 0,
+    },
+    preservedContracts: {
+      datasetCapacityCount: currentTraining.stage4FullTrainingContract?.datasetCapacityCount ?? null,
+      splitCounts: currentTraining.stage4FullTrainingContract?.splitCounts ?? null,
+      resolutionStages: currentTraining.stage4FullTrainingContract?.stages ?? null,
+      reviewThresholds: "preserved_unchanged",
+      failedPreviewPixelsUsedAsTrainingTargets: false,
+      stage3SmokeCheckpointInitializationAuthorized: false,
+    },
+    allowedChangeTargets: [
+      "四类对象通道独立Loss、梯度贡献和解码响应诊断",
+      "道路覆盖、空间分布、质心和必需边界接触的末段回归诊断",
+      "水体已收敛轨迹的历史回归保护",
+      "仅在诊断证据支持后建立对象或道路Loss的有界参数选择合同",
+      "再次完整训练前的CPU正反回归和独立短Smoke门禁",
+    ],
+    forbiddenChanges: [
+      "降低、删除或重解释现有机器审核阈值",
+      "改写六张失败预览、拒绝码、源Manifest或失败终态",
+      "把失败预览像素或审核阈值作为训练目标",
+      "未经独立证据同时提高全部对象语义权重",
+      "读取或加载本次Stage 0失败Checkpoint作为当前分析输入",
+      "当前提案自动修改训练配置、启动GPU训练或进入Stage 1",
+    ],
+    configurationPatchProposal: {
+      status: "proposal_only_not_applied",
+      baseBoundedRepairVersion: currentTraining.boundedRepairVersion ?? null,
+      proposedBoundedRepairVersion,
+      selectedExecutionValues: false,
+      currentObjectSemanticChannelWeights: objectWeights,
+      proposedCapabilities: {
+        objectSemanticDiagnostics: {
+          enabled: true,
+          channels: ["object_footprints", "object_tree", "object_rock", "object_vegetation"],
+          measurements: ["independent_loss", "gradient_contribution", "decoded_response"],
+          changesTrainingWeightsNow: false,
+        },
+        routeLateRegressionDiagnostics: {
+          enabled: true,
+          measurements: ["coverage", "spatial_distribution", "centroid", "required_boundary_contact"],
+          preserveExistingPathLossWeights: true,
+        },
+        hydrologyRegressionProtection: {
+          enabled: true,
+          measurements: ["coverage", "spatial_distribution", "centroid"],
+          changeHydrologyWeightsNow: false,
+        },
+      },
+      boundedParameterSelection: {
+        status: "not_selected_requires_separate_evidence_and_owner_authorization",
+        objectSemanticWeightSelectionAllowedNow: false,
+        pathWeightSelectionAllowedNow: false,
+        hydrologyWeightSelectionAllowedNow: false,
+      },
+      diagnosticEvidenceCandidate: diagnosticCandidate,
+    },
+    regressionContract: {
+      positive: [
+        "必须重现六张源预览的全部原始拒绝码和Epoch时间线",
+        "对象语义持续失败、水体阶段性收敛和道路末段回归必须分别归类",
+        "新增诊断不得改变64/64数据、48/8/4/4划分、分辨率Stage或审核阈值",
+      ],
+      negative: [
+        "缺少任一固定Epoch、源哈希不一致或出现未知失败码时必须拒绝",
+        "任何已选择执行参数、训练配置应用、Checkpoint读取或GPU标志必须拒绝",
+        "不得把水体早期失败误判为终态持续失败，也不得把对象终态失败误判为已收敛",
+      ],
+      promotionBoundary: "本提案只进入Owner审核；后续训练器支持、参数选择、Smoke和完整训练分别授权。",
+    },
+    applicationGate: {
+      ownerAuthorizationRequired: true,
+      immutableAuthorizationConsumptionRequired: true,
+      applyConfigurationNow: false,
+      readCheckpointNow: false,
+      startGpuNow: false,
+      startTrainingNow: false,
+    },
+  }
+}
+
+function buildStage4DiagnosticCandidateProposal(interpretation, currentTraining) {
+  const currentObjectWeight = currentTraining.denoiserLossWeights?.objectSemanticRgb ?? null
+  const currentActivationWeight = currentTraining.pathActivationMassCalibration?.weight ?? null
+  const currentBoundaryWeight = currentTraining.authorizedBoundaryTopology?.weight ?? null
+  return {
+    status: "bounded_candidate_not_selected_not_applied",
+    evidenceScope: "one_fixed_validation_sample_one_timestep_one_seed",
+    objectSemanticCandidate: {
+      targetChannel: interpretation.objectMetrics.highestIndependentLossChannel,
+      reason: "highest independent loss, gradient contribution, and decoded-response prototype MAE in the bound diagnostic sample",
+      preserveOtherObjectChannels: true,
+      currentSharedObjectSemanticRgbWeight: currentObjectWeight,
+      relativeMultiplierRange: { minimum: 1.0, maximum: 1.25, selectedValue: null },
+    },
+    routeCandidate: {
+      activationMassDirection: interpretation.routeMetrics.activationDirectionRelativeToTarget,
+      requiredBoundaryContactState: interpretation.routeMetrics.requiredBoundaryContactState,
+      preserveSpatialAndCentroidReviewThresholds: true,
+      pathActivationMassCalibrationWeight: {
+        current: currentActivationWeight,
+        minimum: currentActivationWeight,
+        maximum: currentActivationWeight === null ? null : Math.min(0.75, currentActivationWeight * 1.2),
+        selectedValue: null,
+      },
+      requiredBoundaryContactLoss: {
+        status: "candidate_capability_only_requires_trainer_support_authorization",
+        currentForbiddenBoundaryTopologyWeight: currentBoundaryWeight,
+        proposedWeightRange: { minimum: 0.25, maximum: 0.75, selectedValue: null },
+      },
+    },
+    activationGate: {
+      selectedExecutionValues: false,
+      applyConfigurationNow: false,
+      createOptimizerNow: false,
+      readCheckpointNow: false,
+      startGpuNow: false,
+      startTrainingNow: false,
+      separateOwnerAuthorizationRequired: true,
     },
   }
 }

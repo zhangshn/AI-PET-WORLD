@@ -83,12 +83,57 @@ V7_REPAIR_R5_SMOKE_AUTHORIZATION_PATH = ".runtime/ai-painter/owner-action-reques
 V7_REPAIR_R5_SMOKE_AUTHORIZATION_SHA256 = "df0de715098933533468668776573cfa88abc17ec0716e4883e005baf7782708"
 V7_REPAIR_R5_SMOKE_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage3-condition-evidence-serialization-fix-retry-20260804/authorization-consumption.json"
 V7_REPAIR_R5_SMOKE_CONSUMPTION_SHA256 = "10873531ed7e9804b9cdc76fde78f7ecc4faf764a4626b277d70373a3f1aea6a"
+V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_STATUS = "owner_authorized_v7_r5_stage3_coverage_convergence_single_sample_gpu_smoke"
+V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_ID = "owner-action-request-v7-r5-stage3-coverage-convergence-single-sample-gpu-smoke-20260805"
+V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_COMMAND_REF = "owner-authorized-v7-r5-stage3-coverage-convergence-single-sample-gpu-smoke-20260805"
+V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_SCOPE = "rebind_r5_stage3_coverage_convergence_smoke_runner_and_trainer_gate_cpu_regression_then_one_checkpoint_continuation_single_sample_30_epoch_gpu_smoke_only"
+V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage3-coverage-convergence-single-sample-gpu-smoke-20260805/request.json"
+V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_SHA256 = "037741e42eeb3c73b7b9fdfc1eae8a0536ce9208e053cfec4aac4d4977515d19"
+V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage3-coverage-convergence-single-sample-gpu-smoke-20260805/authorization-consumption.json"
+V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_CONSUMPTION_SHA256 = "9281a8ba10c58a68f93a056995a2bfb8f9d7d62430aa5c73ca4a7a0dccb42bc8"
+V7_REPAIR_R5_STAGE4_PREFLIGHT_AUTHORIZATION_STATUS = "owner_authorized_v7_r5_stage4_full_training_preflight_only"
+V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_STATUS = "owner_authorized_v7_r5_stage4_full_training"
+V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_ID = "owner-action-request-v7-r5-stage4-contract-boundary-correction-bounded-execution-20260805"
+V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_COMMAND_REF = "owner-authorized-v7-r5-stage4-contract-boundary-correction-bounded-execution-20260805"
+V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_SCOPE = "split_stage3_smoke_30_epoch_and_stage4_formal_40_epoch_contract_then_one_bounded_stage4_execution_only"
+V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-contract-boundary-correction-bounded-execution-20260805/request.json"
+V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_SHA256 = "2bc4993cf339476d786a5c4a90dc60bb61bd0ade632f366c2414ef60bba5a07c"
+V7_REPAIR_R5_STAGE4_IMPLEMENTATION_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-contract-boundary-correction-bounded-execution-20260805/implementation-authorization-consumption.json"
+V7_REPAIR_R5_STAGE4_IMPLEMENTATION_CONSUMPTION_SHA256 = "698788ed3a5b5b87f25f92ef2234a5345be9a92b2aebb7ce8c8c20127ae690b4"
+V7_REPAIR_R5_STAGE4_TRAINING_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-contract-boundary-correction-bounded-execution-20260805/training-execution-authorization-consumption.json"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS = "owner_authorized_v7_r5_stage4_bounded_repair_smoke_preflight_only"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS = "owner_authorized_v7_r5_stage4_bounded_repair_single_sample_gpu_smoke"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_ID = "owner-action-request-v7-r5-stage4-bounded-repair-smoke-stage1-stage2-boundary-fix-new-execution-20260805"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_COMMAND_REF = "owner-authorized-v7-r5-stage4-bounded-repair-smoke-stage1-stage2-boundary-fix-new-execution-20260805"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_SCOPE = "add_only_stage1_stage2_and_stage1_or_stage2_initialization_rejection_sync_hashes_then_one_cpu_gate_preflights_and_one_30_epoch_bounded_gpu_smoke"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-bounded-repair-smoke-stage1-stage2-boundary-fix-new-execution-20260805/request.json"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_SHA256 = "847ea347e17dd349a479a508b730166f3156df129dcad8972f5501c16e34c2c7"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_IMPLEMENTATION_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-bounded-repair-smoke-stage1-stage2-boundary-fix-new-execution-20260805/implementation-authorization-consumption.json"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_IMPLEMENTATION_CONSUMPTION_SHA256 = "2a4478a92c08a67cb69f0634c2266c42f6815d627f9a0eed35df5758b90fe7ab"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_EXECUTION_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-bounded-repair-smoke-stage1-stage2-boundary-fix-new-execution-20260805/gpu-execution-authorization-consumption.json"
 V7_MVP64_SPLIT_COUNTS = {
     "train": 48,
     "validation": 8,
     "challenge": 4,
     "regression": 4,
 }
+V7_R5_STAGE4_OBJECT_DIAGNOSTIC_CHANNELS = (
+    "object_footprints",
+    "object_tree",
+    "object_rock",
+    "object_vegetation",
+)
+V7_R5_STAGE4_OBJECT_DIAGNOSTIC_MEASUREMENTS = (
+    "independent_loss",
+    "gradient_contribution",
+    "decoded_response",
+)
+V7_R5_STAGE4_ROUTE_DIAGNOSTIC_MEASUREMENTS = (
+    "coverage",
+    "spatial_distribution",
+    "centroid",
+    "required_boundary_contact",
+)
 
 
 def main() -> int:
@@ -137,26 +182,70 @@ def main() -> int:
             raise ValueError("V7 R4 authorized Smoke evaluation interval does not match")
     if config.get("training", {}).get("boundedRepairVersion") == "v7_bounded_repair_r5_candidate":
         training = config["training"]
-        continuation = training.get("r5Stage3CheckpointContinuation") or training.get("r5CheckpointContinuation", {})
-        if args.single_sample_overfit_smoke is not True:
-            raise ValueError("V7 R5 authorization permits only single-sample overfit smoke")
-        if args.overfit_sample_id != training.get("authorizedOverfitSampleId"):
-            raise ValueError("V7 R5 authorized overfit sample identity does not match")
-        if args.initial_denoiser_checkpoint is None:
-            raise ValueError("V7 R5 Smoke requires the bound parent checkpoint")
-        if project_path(args.initial_denoiser_checkpoint) != continuation.get("sourceCheckpointPath"):
-            raise ValueError("V7 R5 parent checkpoint path does not match the bound source")
-        expected_initialization = (
-            "project_r5_single_sample_checkpoint_continuation"
-            if training.get("r5Stage3CheckpointContinuation")
-            else "project_r4_single_sample_checkpoint_continuation"
-        )
-        if training.get("authorizedInitialization") != expected_initialization:
-            raise ValueError("V7 R5 authorized checkpoint continuation identity is invalid")
-        if int(args.overfit_epochs or 0) != int(training.get("denoiserEpochs", 0)):
-            raise ValueError("V7 R5 authorized Smoke epoch count does not match")
-        if int(args.overfit_evaluation_interval) != int(training.get("smokeStabilityGate", {}).get("evaluationInterval", 0)):
-            raise ValueError("V7 R5 authorized Smoke evaluation interval does not match")
+        authorization_status = training.get("trainingAuthorizationStatus")
+        stage4_bounded_smoke = authorization_status in {
+            V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS,
+            V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS,
+        }
+        stage4_mode = authorization_status in {
+            V7_REPAIR_R5_STAGE4_PREFLIGHT_AUTHORIZATION_STATUS,
+            V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_STATUS,
+        }
+        if stage4_bounded_smoke:
+            smoke_contract = training.get("r5Stage4BoundedRepairSmokeContract", {})
+            continuation = training.get("r5Stage4BoundedRepairCheckpointContinuation", {})
+            if authorization_status == V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS and args.preflight_only is not True:
+                raise ValueError("V7 R5 Stage 4 bounded-repair Smoke preflight cannot execute training")
+            if args.single_sample_overfit_smoke is not True or args.smoke_test:
+                raise ValueError("V7 R5 Stage 4 bounded repair permits only single-sample overfit Smoke")
+            if args.overfit_sample_id != training.get("authorizedOverfitSampleId"):
+                raise ValueError("V7 R5 Stage 4 bounded-repair Smoke sample identity does not match")
+            if args.initial_denoiser_checkpoint is None:
+                raise ValueError("V7 R5 Stage 4 bounded-repair Smoke requires the bound Stage 0 checkpoint")
+            if project_path(args.initial_denoiser_checkpoint) != continuation.get("sourceCheckpointPath"):
+                raise ValueError("V7 R5 Stage 4 bounded-repair Smoke checkpoint path does not match")
+            if int(args.overfit_epochs or 0) != int(smoke_contract.get("epochCount", 0)):
+                raise ValueError("V7 R5 Stage 4 bounded-repair Smoke epoch count does not match")
+            if int(args.overfit_evaluation_interval) != int(smoke_contract.get("evaluationInterval", 0)):
+                raise ValueError("V7 R5 Stage 4 bounded-repair Smoke evaluation interval does not match")
+            if args.resolution_stage != 0:
+                raise ValueError("V7 R5 Stage 4 bounded-repair Smoke is restricted to Stage 0")
+            if training.get("authorizedInitialization") != "project_stage4_failed_stage0_checkpoint_continuation_nonformal_smoke":
+                raise ValueError("V7 R5 Stage 4 bounded-repair Smoke initialization is invalid")
+        elif stage4_mode:
+            if authorization_status == V7_REPAIR_R5_STAGE4_PREFLIGHT_AUTHORIZATION_STATUS and args.preflight_only is not True:
+                raise ValueError("V7 R5 Stage 4 preflight config cannot execute training")
+            if args.single_sample_overfit_smoke or args.smoke_test:
+                raise ValueError("V7 R5 Stage 4 full training cannot use a Smoke execution mode")
+            if args.overfit_sample_id is not None or args.overfit_epochs is not None:
+                raise ValueError("V7 R5 Stage 4 full training cannot carry single-sample arguments")
+            if args.resolution_stage == 0 and args.initial_denoiser_checkpoint is not None:
+                raise ValueError("V7 R5 Stage 4 Stage 0 must use deterministic project random initialization")
+            if args.resolution_stage > 0 and args.initial_denoiser_checkpoint is None and not args.preflight_only:
+                raise ValueError("V7 R5 Stage 4 progressive stage requires the current-run parent checkpoint")
+            if training.get("authorizedInitialization") != "project_random_stage0_then_current_run_progressive_checkpoint_chain":
+                raise ValueError("V7 R5 Stage 4 initialization contract is invalid")
+        else:
+            continuation = training.get("r5Stage3CheckpointContinuation") or training.get("r5CheckpointContinuation", {})
+            if args.single_sample_overfit_smoke is not True:
+                raise ValueError("V7 R5 authorization permits only single-sample overfit smoke")
+            if args.overfit_sample_id != training.get("authorizedOverfitSampleId"):
+                raise ValueError("V7 R5 authorized overfit sample identity does not match")
+            if args.initial_denoiser_checkpoint is None:
+                raise ValueError("V7 R5 Smoke requires the bound parent checkpoint")
+            if project_path(args.initial_denoiser_checkpoint) != continuation.get("sourceCheckpointPath"):
+                raise ValueError("V7 R5 parent checkpoint path does not match the bound source")
+            expected_initialization = (
+                "project_r5_single_sample_checkpoint_continuation"
+                if training.get("r5Stage3CheckpointContinuation")
+                else "project_r4_single_sample_checkpoint_continuation"
+            )
+            if training.get("authorizedInitialization") != expected_initialization:
+                raise ValueError("V7 R5 authorized checkpoint continuation identity is invalid")
+            if int(args.overfit_epochs or 0) != int(training.get("denoiserEpochs", 0)):
+                raise ValueError("V7 R5 authorized Smoke epoch count does not match")
+            if int(args.overfit_evaluation_interval) != int(training.get("smokeStabilityGate", {}).get("evaluationInterval", 0)):
+                raise ValueError("V7 R5 authorized Smoke evaluation interval does not match")
     if args.resolution_stage < 0 or args.resolution_stage >= len(config["training"]["resolutionStages"]):
         raise ValueError("resolution stage is outside the configured progressive stages")
     stage = config["training"]["resolutionStages"][args.resolution_stage]
@@ -222,17 +311,30 @@ def main() -> int:
         parameter.requires_grad_(False)
     denoiser_initialization = "project_random_multiscale_denoiser"
     parent_denoiser_checkpoint = None
-    r5_checkpoint_continuation = config.get("training", {}).get("boundedRepairVersion") == "v7_bounded_repair_r5_candidate"
+    r5_checkpoint_continuation = (
+        config.get("training", {}).get("boundedRepairVersion") == "v7_bounded_repair_r5_candidate"
+        and args.single_sample_overfit_smoke
+    )
     if r5_checkpoint_continuation:
         if args.resolution_stage != 0 or args.initial_denoiser_checkpoint is None:
             raise ValueError("V7 R5 checkpoint continuation is restricted to the Stage 0 single-sample Smoke")
-        parent_denoiser_checkpoint = load_r5_continuation_checkpoint(args.initial_denoiser_checkpoint, config, package)
+        if config.get("training", {}).get("trainingAuthorizationStatus") == V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS:
+            parent_denoiser_checkpoint = load_stage4_bounded_repair_checkpoint(
+                args.initial_denoiser_checkpoint,
+                config,
+                package,
+            )
+        else:
+            parent_denoiser_checkpoint = load_r5_continuation_checkpoint(args.initial_denoiser_checkpoint, config, package)
         model.denoiser.load_state_dict(parent_denoiser_checkpoint["denoiserState"])
-        denoiser_initialization = (
-            "project_r5_single_sample_checkpoint_continuation"
-            if config.get("training", {}).get("r5Stage3CheckpointContinuation")
-            else "project_r4_single_sample_checkpoint_continuation"
-        )
+        if config.get("training", {}).get("trainingAuthorizationStatus") == V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS:
+            denoiser_initialization = "project_stage4_failed_stage0_checkpoint_continuation_nonformal_smoke"
+        else:
+            denoiser_initialization = (
+                "project_r5_single_sample_checkpoint_continuation"
+                if config.get("training", {}).get("r5Stage3CheckpointContinuation")
+                else "project_r4_single_sample_checkpoint_continuation"
+            )
     elif args.resolution_stage > 0:
         if args.initial_denoiser_checkpoint is None:
             raise ValueError("progressive denoiser stage requires the previous denoiser checkpoint")
@@ -241,6 +343,16 @@ def main() -> int:
         denoiser_initialization = "project_denoiser_checkpoint_resume"
     elif args.initial_denoiser_checkpoint is not None:
         raise ValueError("conditional denoiser stage 0 must start from project random initialization")
+
+    record_stage4_smoke_state_hashes = (
+        config.get("training", {}).get("trainingAuthorizationStatus")
+        == V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS
+    )
+    initial_denoiser_state_sha256 = (
+        state_dict_sha256(model.denoiser.state_dict())
+        if record_stage4_smoke_state_hashes
+        else None
+    )
 
     latent_normalization = (
         load_latent_normalization(parent_denoiser_checkpoint, device)
@@ -527,6 +639,11 @@ def main() -> int:
     if best_denoiser_state is None:
         raise ValueError("fixed validation did not produce a selectable checkpoint")
     model.denoiser.load_state_dict(best_denoiser_state)
+    final_denoiser_state_sha256 = (
+        state_dict_sha256(model.denoiser.state_dict())
+        if record_stage4_smoke_state_hashes
+        else None
+    )
 
     split_metrics = {}
     for index, split in enumerate(datasets):
@@ -610,6 +727,13 @@ def main() -> int:
         "autoencoderState": {key: value.detach().cpu() for key, value in model.autoencoder.state_dict().items()},
         "denoiserState": {key: value.detach().cpu() for key, value in model.denoiser.state_dict().items()},
     }
+    if record_stage4_smoke_state_hashes:
+        checkpoint["modelStateHashEvidence"] = {
+            "algorithm": "sha256_sorted_tensor_bytes_v1",
+            "initialDenoiserStateSha256": initial_denoiser_state_sha256,
+            "finalDenoiserStateSha256": final_denoiser_state_sha256,
+            "weightsChanged": initial_denoiser_state_sha256 != final_denoiser_state_sha256,
+        }
     torch.save(checkpoint, checkpoint_path)
 
     created_at = utc_now()
@@ -688,6 +812,8 @@ def main() -> int:
         "metrics": metrics,
         "automaticStorage": True,
     }
+    if record_stage4_smoke_state_hashes:
+        manifest["modelStateHashEvidence"] = deepcopy(checkpoint["modelStateHashEvidence"])
     manifest_path = args.output_dir / "manifest.json"
     write_json(manifest_path, manifest)
     completed_live_progress = build_live_progress(
@@ -718,7 +844,17 @@ def build_single_sample_overfit_evidence(datasets, args):
         }
     if args.smoke_test:
         raise ValueError("single-sample overfit smoke and program smoke-test are mutually exclusive")
-    rows = datasets["train"].rows
+    configured_split = "train"
+    if args.config:
+        smoke_config = read_json(args.config)
+        if smoke_config.get("training", {}).get("trainingAuthorizationStatus") in {
+            V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS,
+            V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS,
+        }:
+            configured_split = smoke_config.get("training", {}).get("authorizedOverfitSampleSplit")
+            if configured_split != "validation":
+                raise ValueError("V7 R5 Stage 4 bounded-repair Smoke must use the bound validation diagnostic sample")
+    rows = datasets[configured_split].rows
     selected_index = 0
     if args.overfit_sample_id:
         matches = [index for index, row in enumerate(rows) if row.get("sampleId") == args.overfit_sample_id]
@@ -729,7 +865,7 @@ def build_single_sample_overfit_evidence(datasets, args):
     return {
         "enabled": True,
         "nonFormal": True,
-        "selectedSplit": "train",
+        "selectedSplit": configured_split,
         "selectedIndex": selected_index,
         "sampleId": row.get("sampleId"),
         "conditionLabel": row.get("conditionLabel"),
@@ -742,7 +878,8 @@ def build_single_sample_overfit_evidence(datasets, args):
 def build_optimization_datasets(datasets, overfit_evidence):
     if not overfit_evidence.get("enabled"):
         return datasets
-    selected = torch.utils.data.Subset(datasets["train"], [int(overfit_evidence["selectedIndex"])])
+    source_split = overfit_evidence.get("selectedSplit", "train")
+    selected = torch.utils.data.Subset(datasets[source_split], [int(overfit_evidence["selectedIndex"])])
     return {
         "train": selected,
         "validation": selected,
@@ -1212,8 +1349,16 @@ def validate_v7_r5_candidate_contract(config):
     if evidence.get("selectedObjectWeightChanges") is not None:
         raise ValueError("V7 R5 candidate cannot change object weights")
 
+    authorization_status = training.get("trainingAuthorizationStatus")
+    stage4_bounded_repair_candidate = "r5Stage4DiagnosticEvidenceBoundedSelectionEvidence" in training
+    stage4_mode = authorization_status in {
+        V7_REPAIR_R5_STAGE4_PREFLIGHT_AUTHORIZATION_STATUS,
+        V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_STATUS,
+    } or stage4_bounded_repair_candidate
     selected_fields = {
-        "continuationEpochs": int(training.get("denoiserEpochs", 0)),
+        # Stage 3 bounded-selection evidence governs its 30-Epoch Smoke only.
+        # Stage 4 has an independent formal per-stage epoch contract validated below.
+        "continuationEpochs": int(evidence.get("continuationEpochs", {}).get("selectedValue", 0)) if stage4_mode else int(training.get("denoiserEpochs", 0)),
         "replayPassesPerEpoch": int(training.get("pathHardExampleReplay", {}).get("passesPerEpoch", 0)),
         "pathShortTrajectoryConsistencyWeight": float(training.get("pathShortTrajectoryConsistency", {}).get("weight", float("nan"))),
     }
@@ -1257,6 +1402,11 @@ def validate_v7_r5_candidate_contract(config):
         "shortTrajectoryCoverageDrift",
     )):
         validate_v7_r5_stage3_internal_trainer_contract(config)
+    if any(key in training for key in (
+        "r5Stage4DiagnosticEvidenceBoundedSelectionEvidence",
+        "stage4RequiredBoundaryContact",
+    )):
+        validate_v7_r5_stage4_diagnostic_evidence_bounded_repair_contract(config)
 
     continuation = training.get("r5CheckpointContinuation", {})
     if continuation.get("sourceBoundedRepairVersion") != "v7_bounded_repair_r4_candidate":
@@ -1265,10 +1415,28 @@ def validate_v7_r5_candidate_contract(config):
         raise ValueError("V7 R5 checkpoint continuation SHA-256 is invalid")
     if continuation.get("sourceCheckpointPath") != evidence.get("sourceCheckpointPath") or continuation.get("sourceCheckpointSha256") != evidence.get("sourceCheckpointSha256"):
         raise ValueError("V7 R5 checkpoint continuation identity does not match the proposal evidence")
-    authorization_status = training.get("trainingAuthorizationStatus")
-    smoke_authorized = authorization_status == V7_REPAIR_R5_SMOKE_AUTHORIZATION_STATUS
-    loading_continuation = training.get("r5Stage3CheckpointContinuation") or continuation
-    if authorization_status not in {"not_authorized_candidate_only", V7_REPAIR_R5_SMOKE_AUTHORIZATION_STATUS}:
+    smoke_authorized = authorization_status in {
+        V7_REPAIR_R5_SMOKE_AUTHORIZATION_STATUS,
+        V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_STATUS,
+        V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS,
+    }
+    bounded_smoke_preflight = authorization_status == V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS
+    stage4_preflight = authorization_status == V7_REPAIR_R5_STAGE4_PREFLIGHT_AUTHORIZATION_STATUS
+    full_training_authorized = authorization_status == V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_STATUS
+    loading_continuation = (
+        training.get("r5Stage4BoundedRepairCheckpointContinuation")
+        or training.get("r5Stage3CheckpointContinuation")
+        or continuation
+    )
+    if authorization_status not in {
+        "not_authorized_candidate_only",
+        V7_REPAIR_R5_SMOKE_AUTHORIZATION_STATUS,
+        V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_STATUS,
+        V7_REPAIR_R5_STAGE4_PREFLIGHT_AUTHORIZATION_STATUS,
+        V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_STATUS,
+        V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS,
+        V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS,
+    }:
         raise ValueError("V7 R5 candidate training authorization status is invalid")
     if smoke_authorized and loading_continuation.get("loadingAuthorizedNow") is not True:
         raise ValueError("V7 R5 authorized Smoke must enable checkpoint loading")
@@ -1299,7 +1467,6 @@ def validate_v7_r5_candidate_contract(config):
     )
     forbidden_flags = (
         "automaticRetryAuthorized",
-        "fullTrainingAuthorized",
         "strictRevalidationAuthorized",
         "validationAuthorized",
         "formalInferenceAuthorized",
@@ -1310,17 +1477,44 @@ def validate_v7_r5_candidate_contract(config):
     if smoke_authorized:
         if any(authorization.get(name) is not True for name in active_flags):
             raise ValueError("V7 R5 active Smoke is missing an execution flag")
-        if any(authorization.get(name) is not False for name in forbidden_flags):
+        if authorization.get("fullTrainingAuthorized") is not False or any(authorization.get(name) is not False for name in forbidden_flags):
             raise ValueError("V7 R5 active Smoke improperly opens a forbidden execution boundary")
-    elif any(authorization.get(name) is True for name in (*active_flags, *forbidden_flags)):
+    elif stage4_preflight or bounded_smoke_preflight:
+        if any(authorization.get(name) is True for name in (*active_flags, "fullTrainingAuthorized", *forbidden_flags)):
+            raise ValueError("V7 R5 Stage 4 preflight config carries an active execution flag")
+    elif full_training_authorized:
+        for name in ("checkpointLoadingAuthorized", "gpuTrainingAuthorizedNow", "fullTrainingAuthorized"):
+            if authorization.get(name) is not True:
+                raise ValueError(f"V7 R5 Stage 4 full training is missing {name}")
+        if authorization.get("singleSampleGpuOverfitSmokeAuthorized") is not False:
+            raise ValueError("V7 R5 Stage 4 full training cannot authorize single-sample Smoke")
+        if any(authorization.get(name) is not False for name in forbidden_flags):
+            raise ValueError("V7 R5 Stage 4 full training opens a forbidden downstream boundary")
+    elif any(authorization.get(name) is True for name in (*active_flags, "fullTrainingAuthorized", *forbidden_flags)):
         raise ValueError("V7 R5 isolated candidate carries an active execution flag")
     return {
-        "status": "r5_candidate_contract_valid_for_single_smoke" if smoke_authorized else "r5_candidate_contract_valid_not_authorized_for_training",
+        "status": (
+            "r5_candidate_contract_valid_for_single_smoke"
+            if smoke_authorized
+            else (
+                "r5_candidate_contract_valid_for_stage4_full_training"
+                if full_training_authorized
+                else (
+                    "r5_candidate_contract_valid_for_stage4_bounded_repair_not_active"
+                    if stage4_bounded_repair_candidate
+                    else (
+                        "r5_candidate_contract_valid_for_stage4_preflight"
+                        if stage4_mode
+                        else "r5_candidate_contract_valid_not_authorized_for_training"
+                    )
+                )
+            )
+        ),
         "continuationEpochs": continuation_epochs,
         "replayPassesPerEpoch": selected_fields["replayPassesPerEpoch"],
         "pathShortTrajectoryConsistencyWeight": selected_fields["pathShortTrajectoryConsistencyWeight"],
         "tailEpochs": tail_epochs,
-        "checkpointLoadingAuthorized": smoke_authorized,
+        "checkpointLoadingAuthorized": smoke_authorized or full_training_authorized,
     }
 
 
@@ -1354,7 +1548,16 @@ def validate_v7_r5_stage3_internal_trainer_contract(config):
     if int(replay.get("passesPerEpoch", 0)) != 2:
         raise ValueError("V7 R5 stage-3 requires exactly two original-target replay passes per epoch")
     authorization = training.get("ownerTrainingAuthorization", {})
-    smoke_authorized = training.get("trainingAuthorizationStatus") == V7_REPAIR_R5_SMOKE_AUTHORIZATION_STATUS
+    smoke_authorized = training.get("trainingAuthorizationStatus") in {
+        V7_REPAIR_R5_SMOKE_AUTHORIZATION_STATUS,
+        V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_STATUS,
+        V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS,
+    }
+    stage4_preflight = training.get("trainingAuthorizationStatus") in {
+        V7_REPAIR_R5_STAGE4_PREFLIGHT_AUTHORIZATION_STATUS,
+        V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS,
+    }
+    full_training_authorized = training.get("trainingAuthorizationStatus") == V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_STATUS
     active_flags = (
         "checkpointLoadingAuthorized",
         "optimizerCreationAuthorized",
@@ -1363,7 +1566,6 @@ def validate_v7_r5_stage3_internal_trainer_contract(config):
     )
     forbidden_flags = (
         "automaticRetryAuthorized",
-        "fullTrainingAuthorized",
         "strictRevalidationAuthorized",
         "validationAuthorized",
         "formalInferenceAuthorized",
@@ -1374,15 +1576,26 @@ def validate_v7_r5_stage3_internal_trainer_contract(config):
     if smoke_authorized:
         if any(authorization.get(key) is not True for key in active_flags):
             raise ValueError("V7 R5 stage-3 active Smoke is missing an execution authorization")
-        if any(authorization.get(key) is not False for key in forbidden_flags):
+        if authorization.get("fullTrainingAuthorized") is not False or any(authorization.get(key) is not False for key in forbidden_flags):
             raise ValueError("V7 R5 stage-3 active Smoke opens a forbidden execution boundary")
-    elif any(authorization.get(key) is True for key in (*active_flags, *forbidden_flags)):
+    elif stage4_preflight:
+        if any(authorization.get(key) is True for key in (*active_flags, "fullTrainingAuthorized", *forbidden_flags)):
+            raise ValueError("V7 R5 Stage 4 preflight carries an active execution authorization")
+    elif full_training_authorized:
+        for key in ("checkpointLoadingAuthorized", "optimizerCreationAuthorized", "gpuTrainingAuthorizedNow", "fullTrainingAuthorized"):
+            if authorization.get(key) is not True:
+                raise ValueError(f"V7 R5 Stage 4 full training is missing {key}")
+        if authorization.get("singleSampleGpuOverfitSmokeAuthorized") is not False:
+            raise ValueError("V7 R5 Stage 4 full training cannot authorize single-sample Smoke")
+        if any(authorization.get(key) is not False for key in forbidden_flags):
+            raise ValueError("V7 R5 Stage 4 full training opens a forbidden downstream boundary")
+    elif any(authorization.get(key) is True for key in (*active_flags, "fullTrainingAuthorized", *forbidden_flags)):
         raise ValueError("V7 R5 stage-3 inactive contract carries an active execution authorization")
     convergence = None
     if "pathActivationMassCalibration" in training or "shortTrajectoryCoverageDrift" in training:
         convergence = validate_v7_r5_stage3_coverage_convergence_trainer_contract(config)
     return {
-        "status": "r5_stage3_internal_trainer_contract_valid_not_active",
+        "status": "r5_stage3_internal_trainer_contract_valid_for_stage4" if full_training_authorized else "r5_stage3_internal_trainer_contract_valid_not_active",
         "pathCoverageCalibrationWeight": float(coverage["weight"]),
         "authorizedBoundaryTopologyWeight": float(boundary["weight"]),
         "replayPassesPerEpoch": 2,
@@ -1426,6 +1639,170 @@ def validate_v7_r5_stage3_coverage_convergence_trainer_contract(config):
     }
 
 
+def validate_v7_r5_stage4_diagnostic_evidence_bounded_repair_contract(config):
+    training = config.get("training", {})
+    evidence = training.get("r5Stage4DiagnosticEvidenceBoundedSelectionEvidence", {})
+    required_contact = training.get("stage4RequiredBoundaryContact", {})
+    expected_policy = (
+        "failure_prevalence_linear_mapping_with_bound_diagnostic_direction_"
+        "and_no_threshold_reinterpretation"
+    )
+    if evidence.get("candidateVersion") != "v7_r5_stage4_diagnostic_evidence_bounded_candidate_v1":
+        raise ValueError("V7 R5 Stage 4 bounded repair candidate identity is invalid")
+    if evidence.get("candidateStatus") != "selected_inactive_not_authorized":
+        raise ValueError("V7 R5 Stage 4 bounded repair candidate must remain inactive")
+    if evidence.get("selectionPolicy") != expected_policy:
+        raise ValueError("V7 R5 Stage 4 bounded repair selection policy is invalid")
+    if evidence.get("reviewThresholdPolicy") != "preserved_unchanged_not_used_as_training_target":
+        raise ValueError("V7 R5 Stage 4 bounded repair cannot reinterpret review thresholds")
+
+    selections = evidence.get("selectedValues", {})
+    expected = {
+        "objectRockRelativeMultiplier": (1.0, 1.25, 1.25),
+        "pathActivationMassCalibrationWeight": (0.625, 0.75, 2.0 / 3.0),
+        "requiredBoundaryContactLossWeight": (0.25, 0.75, 1.0 / 3.0),
+    }
+    for name, (minimum, maximum, selected) in expected.items():
+        record = selections.get(name, {})
+        actual = (
+            float(record.get("minimum", float("nan"))),
+            float(record.get("maximum", float("nan"))),
+            float(record.get("selectedValue", float("nan"))),
+        )
+        if not all(math.isfinite(value) for value in actual):
+            raise ValueError(f"V7 R5 Stage 4 bounded repair {name} selection is invalid")
+        if any(not math.isclose(value, wanted, rel_tol=0.0, abs_tol=1e-12) for value, wanted in zip(actual, (minimum, maximum, selected))):
+            raise ValueError(f"V7 R5 Stage 4 bounded repair {name} selection does not match its evidence bound")
+        if not actual[0] <= actual[2] <= actual[1]:
+            raise ValueError(f"V7 R5 Stage 4 bounded repair {name} selection is outside its bounds")
+
+    expected_object_weights = {
+        "object_footprints": 1.0,
+        "object_tree": 1.0,
+        "object_rock": 1.25,
+        "object_vegetation": 1.0,
+    }
+    actual_object_weights = {
+        name: float(value)
+        for name, value in training.get("objectSemanticChannelWeights", {}).items()
+    }
+    if actual_object_weights != expected_object_weights:
+        raise ValueError("V7 R5 Stage 4 bounded repair object channel weights are invalid")
+    activation_weight = float(training.get("pathActivationMassCalibration", {}).get("weight", float("nan")))
+    if not math.isclose(activation_weight, 2.0 / 3.0, rel_tol=0.0, abs_tol=1e-12):
+        raise ValueError("V7 R5 Stage 4 bounded repair path activation-mass weight is invalid")
+
+    if required_contact.get("enabled") is not True:
+        raise ValueError("V7 R5 Stage 4 required-boundary contact loss must be enabled in the inactive candidate")
+    required_contact_identity = {
+        "conditionChannel": "terrain_path_ground",
+        "targetSource": "original_owner_approved_rgb_required_boundary_activation_with_original_condition_mask_only",
+        "requiredSidesSource": "authorizedBoundaryTopology.requiredBoundarySides",
+        "lossForm": "required_side_target_activation_deficit",
+    }
+    for name, value in required_contact_identity.items():
+        if required_contact.get(name) != value:
+            raise ValueError(f"V7 R5 Stage 4 required-boundary contact {name} is invalid")
+    if required_contact.get("failedPreviewPixelsUsedAsTrainingTargets") is not False:
+        raise ValueError("V7 R5 Stage 4 required-boundary contact cannot use failed preview pixels")
+    if required_contact.get("machineReviewThresholdUsedAsTrainingTarget") is not False:
+        raise ValueError("V7 R5 Stage 4 required-boundary contact cannot use machine-review thresholds")
+    contact_weight = float(required_contact.get("weight", float("nan")))
+    if not math.isclose(contact_weight, 1.0 / 3.0, rel_tol=0.0, abs_tol=1e-12):
+        raise ValueError("V7 R5 Stage 4 required-boundary contact weight is invalid")
+    topology = training.get("authorizedBoundaryTopology", {})
+    required_sides = list(topology.get("requiredBoundarySides", []))
+    if not required_sides or any(side not in {"north", "south", "west", "east"} for side in required_sides):
+        raise ValueError("V7 R5 Stage 4 bounded repair required boundary sides are invalid")
+    if not math.isclose(
+        float(required_contact.get("boundaryBandRatio", float("nan"))),
+        float(topology.get("boundaryBandRatio", float("nan"))),
+        rel_tol=0.0,
+        abs_tol=1e-12,
+    ):
+        raise ValueError("V7 R5 Stage 4 required-boundary contact band must preserve the topology contract")
+    if evidence.get("candidateActive") is not False:
+        raise ValueError("V7 R5 Stage 4 bounded repair evidence cannot activate the candidate")
+    return {
+        "status": "r5_stage4_diagnostic_evidence_bounded_repair_contract_valid_not_active",
+        "objectSemanticChannelWeights": actual_object_weights,
+        "pathActivationMassCalibrationWeight": activation_weight,
+        "requiredBoundaryContactLossWeight": contact_weight,
+        "requiredBoundarySides": required_sides,
+    }
+
+
+def validate_v7_r5_stage4_failure_diagnostic_support_contract(config):
+    training = config.get("training", {})
+    contract = training.get("stage4FailureDiagnostics", {})
+    active_bounded_smoke = training.get("trainingAuthorizationStatus") == V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS
+    if contract.get("enabled") is not True:
+        raise ValueError("V7 R5 Stage 4 failure diagnostics must be enabled")
+    expected_status = (
+        "diagnostic_support_active_bounded_smoke"
+        if active_bounded_smoke
+        else "diagnostic_support_candidate_not_active"
+    )
+    if contract.get("status") != expected_status:
+        raise ValueError("V7 R5 Stage 4 failure diagnostics status is invalid")
+    object_contract = contract.get("objectSemanticDiagnostics", {})
+    if tuple(object_contract.get("channels", [])) != V7_R5_STAGE4_OBJECT_DIAGNOSTIC_CHANNELS:
+        raise ValueError("V7 R5 Stage 4 object diagnostic channels are invalid")
+    if tuple(object_contract.get("measurements", [])) != V7_R5_STAGE4_OBJECT_DIAGNOSTIC_MEASUREMENTS:
+        raise ValueError("V7 R5 Stage 4 object diagnostic measurements are invalid")
+    if object_contract.get("gradientTarget") != "predicted_rgb_only":
+        raise ValueError("V7 R5 Stage 4 object gradient diagnostic target is invalid")
+    if object_contract.get("changesTrainingWeightsNow") is not False:
+        raise ValueError("V7 R5 Stage 4 diagnostics cannot change object training weights")
+    route_contract = contract.get("routeLateRegressionDiagnostics", {})
+    if tuple(route_contract.get("measurements", [])) != V7_R5_STAGE4_ROUTE_DIAGNOSTIC_MEASUREMENTS:
+        raise ValueError("V7 R5 Stage 4 route diagnostic measurements are invalid")
+    if route_contract.get("conditionChannel") != "terrain_path_ground":
+        raise ValueError("V7 R5 Stage 4 route diagnostics require terrain_path_ground")
+    if route_contract.get("requiredBoundarySidesSource") != "authorizedBoundaryTopology.requiredBoundarySides":
+        raise ValueError("V7 R5 Stage 4 route boundary source is invalid")
+    if route_contract.get("preserveExistingPathLossWeights") is not True:
+        raise ValueError("V7 R5 Stage 4 route diagnostics cannot change path loss weights")
+    for key in (
+        "reviewThresholdsModified",
+        "failedPreviewPixelsUsedAsTrainingTargets",
+        "executionValuesSelected",
+        "trainingConfigApplied",
+    ):
+        if contract.get(key) is not False:
+            raise ValueError(f"V7 R5 Stage 4 diagnostics boundary is invalid: {key}")
+    for key in ("checkpointFileReadAuthorized", "gpuUseAuthorized", "trainingAuthorized"):
+        if contract.get(key) is not active_bounded_smoke:
+            raise ValueError(f"V7 R5 Stage 4 diagnostics execution boundary is invalid: {key}")
+    required_object_weights = {
+        "object_footprints": 1.0,
+        "object_tree": 1.0,
+        "object_rock": 1.25,
+        "object_vegetation": 1.0,
+    }
+    actual_object_weights = {
+        key: float(value)
+        for key, value in training.get("objectSemanticChannelWeights", {}).items()
+    }
+    if actual_object_weights != required_object_weights:
+        raise ValueError("V7 R5 Stage 4 diagnostic support cannot change object weights")
+    loss_weights = training.get("denoiserLossWeights", {})
+    if float(loss_weights.get("pathInteriorRgb", float("nan"))) != 2.0 or float(loss_weights.get("pathForbiddenBoundaryRgb", float("nan"))) != 2.0:
+        raise ValueError("V7 R5 Stage 4 diagnostic support cannot change path weights")
+    return {
+        "status": (
+            "r5_stage4_failure_diagnostic_support_contract_valid_for_bounded_smoke"
+            if active_bounded_smoke
+            else "r5_stage4_failure_diagnostic_support_contract_valid_not_active"
+        ),
+        "objectChannels": list(V7_R5_STAGE4_OBJECT_DIAGNOSTIC_CHANNELS),
+        "objectMeasurements": list(V7_R5_STAGE4_OBJECT_DIAGNOSTIC_MEASUREMENTS),
+        "routeMeasurements": list(V7_R5_STAGE4_ROUTE_DIAGNOSTIC_MEASUREMENTS),
+        "executionValuesSelected": False,
+        "trainingConfigApplied": False,
+    }
+
+
 def summarize_v7_r5_tail_stability(review_rows, config):
     gate = config.get("training", {}).get("smokeStabilityGate", {})
     tail_epochs = [int(value) for value in gate.get("tailEpochs", [])]
@@ -1459,7 +1836,23 @@ def validate_v7_training_authorization(config, package, project_root=None):
     training = config.get("training", {})
     if training.get("boundedRepairVersion") == "v7_bounded_repair_r5_candidate":
         validate_v7_r5_candidate_contract(config)
-        if training.get("trainingAuthorizationStatus") != V7_REPAIR_R5_SMOKE_AUTHORIZATION_STATUS:
+        authorization_status = training.get("trainingAuthorizationStatus")
+        if authorization_status in {
+            V7_REPAIR_R5_STAGE4_PREFLIGHT_AUTHORIZATION_STATUS,
+            V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_STATUS,
+        }:
+            validate_v7_repair_r5_stage4_full_training_authorization(config, package, project_root)
+            return
+        if authorization_status in {
+            V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS,
+            V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS,
+        }:
+            validate_v7_repair_r5_stage4_bounded_smoke_authorization(config, package, project_root)
+            return
+        if authorization_status == V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_STATUS:
+            validate_v7_repair_r5_coverage_convergence_smoke_authorization(config, package, project_root)
+            return
+        if authorization_status != V7_REPAIR_R5_SMOKE_AUTHORIZATION_STATUS:
             raise ValueError("V7 R5 candidate is isolated and is not authorized for training")
         validate_v7_repair_r5_smoke_authorization(config, package, project_root)
         return
@@ -1724,6 +2117,464 @@ def validate_v7_repair_r5_smoke_authorization(config, package, project_root=None
         raise ValueError("V7 repair R5 checkpoint loading is not active")
     if package.get("v7CapacityContributionCount") != 64:
         raise ValueError("V7 repair R5 dataset capacity is not 64")
+
+
+def validate_v7_repair_r5_coverage_convergence_smoke_authorization(config, package, project_root=None):
+    training = config.get("training", {})
+    authorization = training.get("ownerTrainingAuthorization", {})
+    continuation = training.get("r5Stage3CheckpointContinuation", {})
+    expected_identity = {
+        "authorizationId": V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_ID,
+        "authorizationPath": V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_PATH,
+        "authorizationSha256": V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_SHA256,
+        "authorizationConsumptionPath": V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_CONSUMPTION_PATH,
+        "authorizationConsumptionSha256": V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_CONSUMPTION_SHA256,
+        "status": V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_STATUS,
+    }
+    for name, expected in expected_identity.items():
+        if authorization.get(name) != expected:
+            raise ValueError(f"V7 R5 coverage-convergence Smoke {name} identity is invalid")
+    for name in (
+        "checkpointLoadingAuthorized",
+        "optimizerCreationAuthorized",
+        "modelWeightMutationAuthorized",
+        "gpuTrainingAuthorizedNow",
+        "singleSampleGpuOverfitSmokeAuthorized",
+    ):
+        if authorization.get(name) is not True:
+            raise ValueError(f"V7 R5 coverage-convergence Smoke is missing {name}")
+    for name in (
+        "automaticRetryAuthorized",
+        "fullTrainingAuthorized",
+        "strictRevalidationAuthorized",
+        "validationAuthorized",
+        "formalInferenceAuthorized",
+        "checkpointPromotionAuthorized",
+        "runtimeFrameAuthorized",
+        "worldEntryAuthorized",
+    ):
+        if authorization.get(name) is not False:
+            raise ValueError(f"V7 R5 coverage-convergence Smoke improperly authorizes {name}")
+    if authorization.get("checkpointHashValidatedByRunnerAfterPythonPreflight") is not True:
+        raise ValueError("V7 R5 coverage-convergence Smoke requires post-preflight runner checkpoint validation")
+
+    root = Path(project_root or Path.cwd()).resolve()
+    authorization_path = root / Path(V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_PATH)
+    consumption_path = root / Path(V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_CONSUMPTION_PATH)
+    if not authorization_path.is_file() or sha256_file(authorization_path) != V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_SHA256:
+        raise ValueError("V7 R5 coverage-convergence immutable authorization evidence is missing or changed")
+    if not consumption_path.is_file() or sha256_file(consumption_path) != V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_CONSUMPTION_SHA256:
+        raise ValueError("V7 R5 coverage-convergence atomic authorization consumption evidence is missing or changed")
+    record = read_json(authorization_path)
+    consumption = read_json(consumption_path)
+    if record.get("requestId") != V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_ID or record.get("status") != "resolved_owner_authorized":
+        raise ValueError("V7 R5 coverage-convergence authorization record is not resolved")
+    decision = record.get("ownerDecision", {})
+    if decision.get("commandRef") != V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_COMMAND_REF or decision.get("scope") != V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_SCOPE:
+        raise ValueError("V7 R5 coverage-convergence owner authorization identity mismatch")
+    resolution = record.get("resolution", {})
+    for name in (
+        "trainerAuthorizationGateRebindingAuthorized",
+        "runnerAuthorizationGateRebindingAuthorized",
+        "legacyStage3CompatibilityRequired",
+        "cpuPositiveAuthorizationRegressionAuthorized",
+        "cpuNegativeAuthorizationRegressionAuthorized",
+        "pythonPreflightAuthorized",
+        "checkpointFileReadAuthorizedAfterPreflight",
+        "checkpointLoadingAuthorizedAfterPreflight",
+        "optimizerCreationAuthorized",
+        "modelWeightMutationAuthorized",
+        "oneGpuSmokeAuthorized",
+        "fixedEpochPreviewGenerationAuthorized",
+        "machinePreviewReviewAuthorized",
+        "checkpointAndTokenEvidenceStorageAuthorized",
+        "automaticTerminalStorageAuthorized",
+    ):
+        if resolution.get(name) is not True:
+            raise ValueError(f"V7 R5 coverage-convergence authorization is missing {name}")
+    for name in (
+        "automaticAdditionalRetryAuthorized",
+        "fullTrainingAuthorized",
+        "strictRevalidationAuthorized",
+        "formalInferenceAuthorized",
+        "checkpointPromotionAuthorized",
+        "runtimeFrameAuthorized",
+        "worldEntryAuthorized",
+    ):
+        if resolution.get(name) is not False:
+            raise ValueError(f"V7 R5 coverage-convergence authorization improperly opens {name}")
+    if consumption.get("status") != "consumed_before_authorized_write" or consumption.get("authorizationSha256") != V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_SHA256:
+        raise ValueError("V7 R5 coverage-convergence authorization was not consumed before write")
+    if consumption.get("commandRef") != V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_COMMAND_REF or consumption.get("scope") != V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_SCOPE:
+        raise ValueError("V7 R5 coverage-convergence authorization consumption identity mismatch")
+    if int(consumption.get("allowedExecutionCount", 0)) != 1:
+        raise ValueError("V7 R5 coverage-convergence authorization execution count is invalid")
+
+    identity = record.get("taskIdentity", {})
+    if identity.get("modelId") != config.get("modelId") or identity.get("datasetPackageId") != package.get("packageId"):
+        raise ValueError("V7 R5 coverage-convergence model or dataset identity mismatch")
+    if identity.get("sampleId") != training.get("authorizedOverfitSampleId"):
+        raise ValueError("V7 R5 coverage-convergence sample identity mismatch")
+    if identity.get("conditionLabel") != training.get("authorizedOverfitConditionLabel"):
+        raise ValueError("V7 R5 coverage-convergence condition identity mismatch")
+    if int(identity.get("seed", -1)) != int(training.get("seed", -2)):
+        raise ValueError("V7 R5 coverage-convergence seed identity mismatch")
+    if int(identity.get("epochCount", 0)) != int(training.get("denoiserEpochs", -1)):
+        raise ValueError("V7 R5 coverage-convergence epoch count identity mismatch")
+    if int(identity.get("evaluationInterval", 0)) != int(training.get("smokeStabilityGate", {}).get("evaluationInterval", -1)):
+        raise ValueError("V7 R5 coverage-convergence evaluation interval identity mismatch")
+    if identity.get("requiredPreviewEpochs") != training.get("fixedEpochPreviewPolicy", {}).get("smoke"):
+        raise ValueError("V7 R5 coverage-convergence preview identity mismatch")
+    if identity.get("requiredTailEpochs") != training.get("smokeStabilityGate", {}).get("tailEpochs"):
+        raise ValueError("V7 R5 coverage-convergence tail identity mismatch")
+    selected = identity.get("selectedValues", {})
+    if float(selected.get("pathActivationMassCalibrationWeight", -1)) != float(training.get("pathActivationMassCalibration", {}).get("weight", -2)):
+        raise ValueError("V7 R5 coverage-convergence activation-mass weight identity mismatch")
+    if float(selected.get("shortTrajectoryCoverageDriftWeight", -1)) != float(training.get("shortTrajectoryCoverageDrift", {}).get("weight", -2)):
+        raise ValueError("V7 R5 coverage-convergence drift weight identity mismatch")
+    if identity.get("parentCheckpointPath") != continuation.get("sourceCheckpointPath") or identity.get("parentCheckpointSha256") != continuation.get("sourceCheckpointSha256"):
+        raise ValueError("V7 R5 coverage-convergence parent checkpoint binding mismatch")
+    if continuation.get("loadingAuthorizedNow") is not True:
+        raise ValueError("V7 R5 coverage-convergence checkpoint loading is not active")
+
+    source_config_path = root / Path(authorization.get("sourceConfigPath", ""))
+    selection_contract_path = root / Path(authorization.get("selectionContractPath", ""))
+    if authorization.get("sourceConfigPath") != identity.get("sourceConfigPath") or authorization.get("sourceConfigSha256") != identity.get("sourceConfigSha256"):
+        raise ValueError("V7 R5 coverage-convergence source config identity mismatch")
+    if not source_config_path.is_file() or sha256_file(source_config_path) != identity.get("sourceConfigSha256"):
+        raise ValueError("V7 R5 coverage-convergence source config is missing or changed")
+    if authorization.get("selectionContractPath") != identity.get("selectionContractPath") or authorization.get("selectionContractSha256") != identity.get("selectionContractSha256"):
+        raise ValueError("V7 R5 coverage-convergence selection contract identity mismatch")
+    if not selection_contract_path.is_file() or sha256_file(selection_contract_path) != identity.get("selectionContractSha256"):
+        raise ValueError("V7 R5 coverage-convergence selection contract is missing or changed")
+    if package.get("v7CapacityContributionCount") != 64:
+        raise ValueError("V7 R5 coverage-convergence dataset capacity is not 64")
+
+
+def validate_v7_repair_r5_stage4_bounded_smoke_authorization(config, package, project_root=None):
+    training = config.get("training", {})
+    nested = training.get("ownerTrainingAuthorization", {})
+    status = training.get("trainingAuthorizationStatus")
+    preflight_only = status == V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS
+    active_smoke = status == V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS
+    if not preflight_only and not active_smoke:
+        raise ValueError("V7 R5 Stage 4 bounded-repair Smoke authorization status is invalid")
+    root = Path(project_root) if project_root is not None else Path.cwd()
+    authorization_path = root / V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_PATH
+    implementation_path = root / V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_IMPLEMENTATION_CONSUMPTION_PATH
+    if not authorization_path.is_file() or sha256_file(authorization_path) != V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_SHA256:
+        raise ValueError("V7 R5 Stage 4 bounded-repair Smoke authorization is missing or changed")
+    if not implementation_path.is_file() or sha256_file(implementation_path) != V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_IMPLEMENTATION_CONSUMPTION_SHA256:
+        raise ValueError("V7 R5 Stage 4 bounded-repair Smoke implementation consumption is missing or changed")
+    record = read_json(authorization_path)
+    implementation = read_json(implementation_path)
+    if record.get("requestId") != V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_ID or record.get("status") != "resolved_owner_authorized":
+        raise ValueError("V7 R5 Stage 4 bounded-repair Smoke Owner authorization is invalid")
+    decision = record.get("ownerDecision", {})
+    if decision.get("commandRef") != V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_COMMAND_REF or decision.get("scope") != V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_SCOPE:
+        raise ValueError("V7 R5 Stage 4 bounded-repair Smoke command identity is invalid")
+    if (
+        implementation.get("status") != "consumed_before_seed_fix_authorization_binding_and_new_cpu_gate_writes"
+        or implementation.get("authorizationSha256") != V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_SHA256
+        or implementation.get("commandRef") != V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_COMMAND_REF
+        or implementation.get("scope") != V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_SCOPE
+        or int(implementation.get("allowedImplementationExecutionCount", 0)) != 1
+        or int(implementation.get("cpuRegressionExecutionCount", 0)) != 1
+        or implementation.get("gpuExecutionConsumed") is not False
+    ):
+        raise ValueError("V7 R5 Stage 4 bounded-repair Smoke implementation consumption identity is invalid")
+    identity = record.get("taskIdentity", {})
+    smoke = training.get("r5Stage4BoundedRepairSmokeContract", {})
+    continuation = training.get("r5Stage4BoundedRepairCheckpointContinuation", {})
+    expected = {
+        "modelId": config.get("modelId"),
+        "fixedStageNumber": 4,
+        "fixedResolutionStageIndex": 0,
+        "resolution": training.get("resolutionStages", [None])[0],
+        "epochCount": smoke.get("epochCount"),
+        "evaluationInterval": smoke.get("evaluationInterval"),
+        "requiredPreviewEpochs": smoke.get("requiredPreviewEpochs"),
+        "seed": training.get("seed"),
+        "sampleId": training.get("authorizedOverfitSampleId"),
+        "conditionLabel": training.get("authorizedOverfitConditionLabel"),
+        "sampleSplit": training.get("authorizedOverfitSampleSplit"),
+        "inactiveConfigPath": nested.get("sourceConfigPath"),
+        "inactiveConfigSha256": nested.get("sourceConfigSha256"),
+        "selectionContractPath": nested.get("selectionContractPath"),
+        "selectionContractSha256": nested.get("selectionContractSha256"),
+        "trainerSupportContractPath": nested.get("trainerSupportContractPath"),
+        "trainerSupportContractSha256": nested.get("trainerSupportContractSha256"),
+        "boundedRepairCpuReportPath": nested.get("boundedRepairCpuReportPath"),
+        "boundedRepairCpuReportSha256": nested.get("boundedRepairCpuReportSha256"),
+        "boundedRepairTerminalPath": nested.get("boundedRepairTerminalPath"),
+        "boundedRepairTerminalSha256": nested.get("boundedRepairTerminalSha256"),
+        "stage0ManifestPath": continuation.get("sourceManifestPath"),
+        "stage0ManifestSha256": continuation.get("sourceManifestSha256"),
+        "stage0CheckpointPath": continuation.get("sourceCheckpointPath"),
+        "stage0CheckpointSha256": continuation.get("sourceCheckpointSha256"),
+        "autoencoderCheckpointPath": nested.get("autoencoderCheckpointPath"),
+        "autoencoderCheckpointSha256": nested.get("autoencoderCheckpointSha256"),
+        "datasetManifestPath": nested.get("datasetManifestPath"),
+        "datasetManifestSha256": nested.get("datasetManifestSha256"),
+        "sourceIndexPath": nested.get("sourceIndexPath"),
+        "sourceIndexSha256": nested.get("sourceIndexSha256"),
+        "requiredDiagnosticMetricCount": 17,
+        "requiredSmokeStage1Authorized": smoke.get("stage1Authorized"),
+        "requiredSmokeStage2Authorized": smoke.get("stage2Authorized"),
+        "requiredStage1OrStage2InitializationAuthorized": continuation.get("stage1OrStage2InitializationAuthorized"),
+    }
+    for key, value in expected.items():
+        if identity.get(key) != value:
+            raise ValueError(f"V7 R5 Stage 4 bounded-repair Smoke identity is invalid: {key}")
+    if package.get("packageId") != "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z":
+        raise ValueError("V7 R5 Stage 4 bounded-repair Smoke dataset identity is invalid")
+    if package.get("v7CapacityContributionCount") != 64:
+        raise ValueError("V7 R5 Stage 4 bounded-repair Smoke requires the fixed 64-sample capacity")
+    if smoke.get("status") != ("preflight_only" if preflight_only else "active_single_execution"):
+        raise ValueError("V7 R5 Stage 4 bounded-repair Smoke contract status is invalid")
+    if smoke.get("nonFormalValidationSampleOverfit") is not True or smoke.get("checkpointPromotionEligible") is not False:
+        raise ValueError("V7 R5 Stage 4 bounded-repair Smoke formal boundary is invalid")
+    if smoke.get("stage1Authorized") is not False or smoke.get("stage2Authorized") is not False:
+        raise ValueError("V7 R5 Stage 4 bounded-repair Smoke Stage 1/2 authorization boundary is invalid")
+    if continuation.get("stage1OrStage2InitializationAuthorized") is not False:
+        raise ValueError("V7 R5 Stage 4 bounded-repair Smoke Stage 1/2 initialization boundary is invalid")
+    if training.get("fixedEpochPreviewPolicy", {}).get("smoke") != [1, 5, 10, 20, 30]:
+        raise ValueError("V7 R5 Stage 4 bounded-repair Smoke preview policy is invalid")
+    diagnostics = training.get("stage4FailureDiagnostics", {})
+    if diagnostics.get("enabled") is not True or diagnostics.get("trainingAuthorized") is not active_smoke:
+        raise ValueError("V7 R5 Stage 4 bounded-repair Smoke diagnostics activation is invalid")
+    validate_v7_r5_stage4_failure_diagnostic_support_contract(config)
+    if continuation.get("loadingAuthorizedNow") is not active_smoke:
+        raise ValueError("V7 R5 Stage 4 bounded-repair Smoke checkpoint loading boundary is invalid")
+    expected_nested = {
+        "authorizationId": V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_ID,
+        "authorizationPath": V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_PATH,
+        "authorizationSha256": V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_SHA256,
+        "implementationConsumptionPath": V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_IMPLEMENTATION_CONSUMPTION_PATH,
+        "implementationConsumptionSha256": V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_IMPLEMENTATION_CONSUMPTION_SHA256,
+        "status": status,
+    }
+    for key, value in expected_nested.items():
+        if nested.get(key) != value:
+            raise ValueError(f"V7 R5 Stage 4 bounded-repair Smoke nested authorization is invalid: {key}")
+    active_flags = (
+        "checkpointLoadingAuthorized",
+        "optimizerCreationAuthorized",
+        "modelWeightMutationAuthorized",
+        "gpuTrainingAuthorizedNow",
+        "singleSampleGpuOverfitSmokeAuthorized",
+    )
+    forbidden_flags = (
+        "automaticRetryAuthorized",
+        "fullTrainingAuthorized",
+        "strictRevalidationAuthorized",
+        "validationAuthorized",
+        "formalInferenceAuthorized",
+        "checkpointPromotionAuthorized",
+        "runtimeFrameAuthorized",
+        "worldEntryAuthorized",
+    )
+    if preflight_only:
+        if any(nested.get(key) is not False for key in (*active_flags, *forbidden_flags)):
+            raise ValueError("V7 R5 Stage 4 bounded-repair Smoke preflight opens an execution boundary")
+        if nested.get("executionConsumptionPath") is not None or nested.get("executionConsumptionSha256") is not None:
+            raise ValueError("V7 R5 Stage 4 bounded-repair Smoke preflight cannot bind execution consumption")
+    else:
+        if any(nested.get(key) is not True for key in active_flags):
+            raise ValueError("V7 R5 Stage 4 bounded-repair Smoke is missing an active execution flag")
+        if any(nested.get(key) is not False for key in forbidden_flags):
+            raise ValueError("V7 R5 Stage 4 bounded-repair Smoke opens a forbidden downstream boundary")
+        execution_path_value = nested.get("executionConsumptionPath")
+        execution_sha = nested.get("executionConsumptionSha256")
+        if execution_path_value != V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_EXECUTION_CONSUMPTION_PATH:
+            raise ValueError("V7 R5 Stage 4 bounded-repair Smoke execution consumption path is invalid")
+        execution_path = root / execution_path_value
+        if not execution_path.is_file() or sha256_file(execution_path) != execution_sha:
+            raise ValueError("V7 R5 Stage 4 bounded-repair Smoke execution consumption is missing or changed")
+        execution = read_json(execution_path)
+        if (
+            execution.get("status") != "consumed_after_all_preflights_before_checkpoint_read_and_gpu_smoke"
+            or execution.get("authorizationSha256") != V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_SHA256
+            or execution.get("commandRef") != V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_COMMAND_REF
+            or execution.get("scope") != V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_SCOPE
+            or int(execution.get("allowedExecutionCount", 0)) != 1
+            or execution.get("automaticRetryAuthorized") is not False
+        ):
+            raise ValueError("V7 R5 Stage 4 bounded-repair Smoke execution consumption identity is invalid")
+
+
+def validate_v7_repair_r5_stage4_full_training_authorization(config, package, project_root=None):
+    training = config.get("training", {})
+    authorization = training.get("ownerTrainingAuthorization", {})
+    authorization_status = training.get("trainingAuthorizationStatus")
+    preflight_only = authorization_status == V7_REPAIR_R5_STAGE4_PREFLIGHT_AUTHORIZATION_STATUS
+    active_training = authorization_status == V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_STATUS
+    if not preflight_only and not active_training:
+        raise ValueError("V7 R5 Stage 4 authorization status is invalid")
+    expected_identity = {
+        "authorizationId": V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_ID,
+        "authorizationPath": V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_PATH,
+        "authorizationSha256": V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_SHA256,
+        "implementationConsumptionPath": V7_REPAIR_R5_STAGE4_IMPLEMENTATION_CONSUMPTION_PATH,
+        "implementationConsumptionSha256": V7_REPAIR_R5_STAGE4_IMPLEMENTATION_CONSUMPTION_SHA256,
+        "status": authorization_status,
+    }
+    for name, expected in expected_identity.items():
+        if authorization.get(name) != expected:
+            raise ValueError(f"V7 R5 Stage 4 {name} identity is invalid")
+
+    root = Path(project_root or Path.cwd()).resolve()
+    authorization_path = root / Path(V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_PATH)
+    implementation_path = root / Path(V7_REPAIR_R5_STAGE4_IMPLEMENTATION_CONSUMPTION_PATH)
+    if not authorization_path.is_file() or sha256_file(authorization_path) != V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_SHA256:
+        raise ValueError("V7 R5 Stage 4 immutable authorization evidence is missing or changed")
+    if not implementation_path.is_file() or sha256_file(implementation_path) != V7_REPAIR_R5_STAGE4_IMPLEMENTATION_CONSUMPTION_SHA256:
+        raise ValueError("V7 R5 Stage 4 implementation authorization consumption is missing or changed")
+    record = read_json(authorization_path)
+    implementation = read_json(implementation_path)
+    if record.get("requestId") != V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_ID or record.get("status") != "resolved_owner_authorized":
+        raise ValueError("V7 R5 Stage 4 authorization record is not resolved")
+    decision = record.get("ownerDecision", {})
+    if decision.get("commandRef") != V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_COMMAND_REF or decision.get("scope") != V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_SCOPE:
+        raise ValueError("V7 R5 Stage 4 owner authorization identity mismatch")
+    if implementation.get("status") != "implementation_scope_consumed_before_authorized_writes_training_scope_not_consumed":
+        raise ValueError("V7 R5 Stage 4 implementation scope was not consumed before writes")
+    if implementation.get("authorizationSha256") != V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_SHA256:
+        raise ValueError("V7 R5 Stage 4 implementation consumption authorization hash mismatch")
+    if implementation.get("commandRef") != V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_COMMAND_REF or implementation.get("scope") != V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_SCOPE:
+        raise ValueError("V7 R5 Stage 4 implementation consumption identity mismatch")
+
+    resolution = record.get("resolution", {})
+    for name in (
+        "contractBoundaryRepairAuthorized",
+        "stage3SmokeContinuationEpochsMustRemain30",
+        "stage4FormalEpochsPerStageMustRemain40",
+        "legacyR1CompatibilityRequired",
+        "legacyStage3CompatibilityRequired",
+        "stage4InactiveConfigRecompilationAuthorized",
+        "cpuPositiveAuthorizationRegressionAuthorized",
+        "cpuNegativeAuthorizationRegressionAuthorized",
+        "pythonReadOnlyPreflightAuthorized",
+        "gpuResourceGateAuthorized",
+        "diskBudgetGateAuthorized",
+        "implementationConsumptionRequiredBeforeAuthorizedWrites",
+        "trainingExecutionConsumptionRequiredAfterAllPreflights",
+        "autoencoderCheckpointReadAndLoadAuthorizedAfterTrainingConsumption",
+        "stage0RandomInitializationAuthorized",
+        "stage1CurrentRunStage0CheckpointReadAndLoadAuthorized",
+        "stage2CurrentRunStage1CheckpointReadAndLoadAuthorized",
+        "optimizerCreationAuthorizedAfterTrainingConsumption",
+        "boundedModelWeightMutationAuthorizedAfterTrainingConsumption",
+        "oneFullStage0Stage1Stage2GpuTrainingAuthorized",
+        "fixedPreviewGenerationAndMachineReviewAuthorized",
+        "checkpointTokenResourceAndTerminalEvidenceStorageAuthorized",
+    ):
+        if resolution.get(name) is not True:
+            raise ValueError(f"V7 R5 Stage 4 authorization is missing {name}")
+    for name in (
+        "stage3SmokeCheckpointReadOrLoadAuthorized",
+        "automaticRetryAuthorized",
+        "strictRevalidationAuthorized",
+        "formalInferenceAuthorized",
+        "checkpointFormalPromotionAuthorized",
+        "runtimeFrameAuthorized",
+        "worldEntryAuthorized",
+    ):
+        if resolution.get(name) is not False:
+            raise ValueError(f"V7 R5 Stage 4 authorization improperly opens {name}")
+
+    identity = record.get("taskIdentity", {})
+    if identity.get("modelId") != config.get("modelId"):
+        raise ValueError("V7 R5 Stage 4 model identity mismatch")
+    if identity.get("requiredRecordCount") != 64 or identity.get("requiredSplitCounts") != V7_MVP64_SPLIT_COUNTS:
+        raise ValueError("V7 R5 Stage 4 data identity mismatch")
+    expected_stages = [
+        {"index": 0, "width": 256, "height": 192, "epochs": 40, "initialization": "deterministic_project_random"},
+        {"index": 1, "width": 512, "height": 384, "epochs": 40, "initialization": "current_run_stage_0_checkpoint_only"},
+        {"index": 2, "width": 1024, "height": 768, "epochs": 40, "initialization": "current_run_stage_1_checkpoint_only"},
+    ]
+    if identity.get("requiredStages") != expected_stages:
+        raise ValueError("V7 R5 Stage 4 progressive stage authorization mismatch")
+    if identity.get("stage3SmokeContinuationEpochs") != 30:
+        raise ValueError("V7 R5 Stage 3 Smoke continuation epoch identity mismatch")
+    if identity.get("stage4FormalEpochsPerStage") != 40:
+        raise ValueError("V7 R5 Stage 4 formal epoch identity mismatch")
+    if int(training.get("r5BoundedSelectionEvidence", {}).get("continuationEpochs", {}).get("selectedValue", 0)) != 30:
+        raise ValueError("V7 R5 Stage 3 Smoke bounded continuation epoch changed")
+    if training.get("resolutionStages") != [{"width": 256, "height": 192}, {"width": 512, "height": 384}, {"width": 1024, "height": 768}]:
+        raise ValueError("V7 R5 Stage 4 resolution stages are invalid")
+    if int(training.get("denoiserEpochs", 0)) != 40:
+        raise ValueError("V7 R5 Stage 4 requires 40 epochs per stage")
+    if training.get("fixedEpochPreviewPolicy", {}).get("formalStage") != [1, 5, 10, 20, 30, 40]:
+        raise ValueError("V7 R5 Stage 4 fixed preview epochs are invalid")
+    if identity.get("requiredPreviewEpochsPerStage") != [1, 5, 10, 20, 30, 40]:
+        raise ValueError("V7 R5 Stage 4 preview authorization identity mismatch")
+    if training.get("authorizedInitialization") != "project_random_stage0_then_current_run_progressive_checkpoint_chain":
+        raise ValueError("V7 R5 Stage 4 initialization identity mismatch")
+    if training.get("r5Stage3CheckpointContinuation", {}).get("loadingAuthorizedNow") is not False:
+        raise ValueError("V7 R5 Stage 4 cannot activate the Stage 3 Smoke checkpoint")
+    if package.get("v7CapacityContributionCount") != 64:
+        raise ValueError("V7 R5 Stage 4 dataset capacity is not 64")
+
+    source_config_path = root / Path(authorization.get("sourceConfigPath", ""))
+    selection_contract_path = root / Path(authorization.get("selectionContractPath", ""))
+    stage3_report_path = root / Path(authorization.get("stage3ClosureReportPath", ""))
+    stage3_terminal_path = root / Path(authorization.get("stage3ClosureTerminalPath", ""))
+    for evidence_path, expected_hash, code in (
+        (source_config_path, authorization.get("sourceConfigSha256"), "source_config"),
+        (selection_contract_path, authorization.get("selectionContractSha256"), "selection_contract"),
+        (stage3_report_path, authorization.get("stage3ClosureReportSha256"), "stage3_closure_report"),
+        (stage3_terminal_path, authorization.get("stage3ClosureTerminalSha256"), "stage3_closure_terminal"),
+    ):
+        if not evidence_path.is_file() or sha256_file(evidence_path) != expected_hash:
+            raise ValueError(f"V7 R5 Stage 4 {code} is missing or changed")
+    if read_json(stage3_report_path).get("status") != "r5_stage3_coverage_convergence_gpu_smoke_passed_closed_after_offline_preview_review":
+        raise ValueError("V7 R5 Stage 4 Stage 3 closure did not pass")
+
+    active_true_flags = (
+        "checkpointLoadingAuthorized",
+        "optimizerCreationAuthorized",
+        "modelWeightMutationAuthorized",
+        "gpuTrainingAuthorizedNow",
+        "fullTrainingAuthorized",
+    )
+    always_false_flags = (
+        "singleSampleGpuOverfitSmokeAuthorized",
+        "automaticRetryAuthorized",
+        "strictRevalidationAuthorized",
+        "validationAuthorized",
+        "formalInferenceAuthorized",
+        "checkpointPromotionAuthorized",
+        "runtimeFrameAuthorized",
+        "worldEntryAuthorized",
+    )
+    if preflight_only:
+        if any(authorization.get(name) is True for name in (*active_true_flags, *always_false_flags)):
+            raise ValueError("V7 R5 Stage 4 preflight config carries an active execution flag")
+        if authorization.get("trainingExecutionConsumptionPath") is not None or authorization.get("trainingExecutionConsumptionSha256") is not None:
+            raise ValueError("V7 R5 Stage 4 preflight cannot bind a training execution consumption")
+        return
+    if any(authorization.get(name) is not True for name in active_true_flags):
+        raise ValueError("V7 R5 Stage 4 active full training is missing an execution flag")
+    if any(authorization.get(name) is not False for name in always_false_flags):
+        raise ValueError("V7 R5 Stage 4 active full training opens a forbidden boundary")
+    if authorization.get("trainingExecutionConsumptionPath") != V7_REPAIR_R5_STAGE4_TRAINING_CONSUMPTION_PATH:
+        raise ValueError("V7 R5 Stage 4 training consumption path identity is invalid")
+    consumption_hash = authorization.get("trainingExecutionConsumptionSha256")
+    if not isinstance(consumption_hash, str) or len(consumption_hash) != 64:
+        raise ValueError("V7 R5 Stage 4 training consumption hash identity is invalid")
+    training_consumption_path = root / Path(V7_REPAIR_R5_STAGE4_TRAINING_CONSUMPTION_PATH)
+    if not training_consumption_path.is_file() or sha256_file(training_consumption_path) != consumption_hash:
+        raise ValueError("V7 R5 Stage 4 training execution consumption is missing or changed")
+    consumption = read_json(training_consumption_path)
+    if consumption.get("status") != "training_execution_scope_consumed_after_all_preflights_passed":
+        raise ValueError("V7 R5 Stage 4 training execution scope was not consumed after preflight")
+    if consumption.get("authorizationSha256") != V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_SHA256:
+        raise ValueError("V7 R5 Stage 4 training consumption authorization hash mismatch")
+    if consumption.get("commandRef") != V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_COMMAND_REF or consumption.get("scope") != V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_SCOPE:
+        raise ValueError("V7 R5 Stage 4 training consumption identity mismatch")
+    if int(consumption.get("allowedTrainingExecutionCount", 0)) != 1 or consumption.get("allPreflightsPassed") is not True:
+        raise ValueError("V7 R5 Stage 4 training execution count or preflight state is invalid")
 
 
 def validate_v7_repair_r4_smoke_authorization(config, package, project_root=None):
@@ -2231,6 +3082,40 @@ def load_r5_continuation_checkpoint(path, config, package):
         raise ValueError("V7 R5 continuation checkpoint improperly claims formal inference eligibility")
     if not isinstance(checkpoint.get("denoiserState"), dict):
         raise ValueError("V7 R5 continuation denoiser state is missing")
+    return checkpoint
+
+
+def load_stage4_bounded_repair_checkpoint(path, config, package):
+    continuation = config.get("training", {}).get("r5Stage4BoundedRepairCheckpointContinuation", {})
+    if project_path(path) != continuation.get("sourceCheckpointPath"):
+        raise ValueError("V7 R5 Stage 4 bounded-repair checkpoint path is invalid")
+    if sha256_file(path) != continuation.get("sourceCheckpointSha256"):
+        raise ValueError("V7 R5 Stage 4 bounded-repair checkpoint SHA-256 is invalid")
+    checkpoint = torch.load(path, map_location="cpu", weights_only=False)
+    if checkpoint.get("schemaVersion") != config.get("requiredCheckpointProvenance"):
+        raise ValueError("V7 R5 Stage 4 bounded-repair checkpoint schema is invalid")
+    if checkpoint.get("ownership") != OWNERSHIP or checkpoint.get("trainingLane") != "ai_assisted_cold_start":
+        raise ValueError("V7 R5 Stage 4 bounded-repair checkpoint ownership or lane is invalid")
+    if checkpoint.get("thirdPartyWeightsLoaded") is not False or checkpoint.get("upstreamModelIds") != []:
+        raise ValueError("V7 R5 Stage 4 bounded-repair checkpoint contains forbidden upstream weights")
+    if checkpoint.get("modelId") != config.get("modelId"):
+        raise ValueError("V7 R5 Stage 4 bounded-repair checkpoint model identity is invalid")
+    if checkpoint.get("architectureVersion") != continuation.get("sourceArchitectureVersion"):
+        raise ValueError("V7 R5 Stage 4 bounded-repair checkpoint source architecture is invalid")
+    if checkpoint.get("datasetPackageId") != package.get("packageId"):
+        raise ValueError("V7 R5 Stage 4 bounded-repair checkpoint dataset package does not match")
+    if checkpoint.get("actualLoadedConditionalSampleCount") != 64 or checkpoint.get("actualLoadedV7CapacityCount") != 64:
+        raise ValueError("V7 R5 Stage 4 bounded-repair checkpoint capacity is not 64")
+    if checkpoint.get("actualLoadedSplitCounts") != V7_MVP64_SPLIT_COUNTS:
+        raise ValueError("V7 R5 Stage 4 bounded-repair checkpoint split is not 48/8/4/4")
+    if checkpoint.get("resolutionStage") != config["training"]["resolutionStages"][0]:
+        raise ValueError("V7 R5 Stage 4 bounded-repair source is not a Stage 0 checkpoint")
+    if checkpoint.get("trainingStage") != "conditional_denoiser_training":
+        raise ValueError("V7 R5 Stage 4 bounded-repair source is not the bound failed formal Stage 0 checkpoint")
+    if checkpoint.get("formalInferenceEligible") is not False:
+        raise ValueError("V7 R5 Stage 4 bounded-repair checkpoint improperly claims formal inference eligibility")
+    if not isinstance(checkpoint.get("denoiserState"), dict):
+        raise ValueError("V7 R5 Stage 4 bounded-repair denoiser state is missing")
     return checkpoint
 
 
@@ -2887,6 +3772,18 @@ def composite_denoiser_losses_v6(predicted_velocity, target_velocity, predicted_
         full_conditions,
         config,
     )
+    stage4_required_boundary_contact = required_boundary_contact_loss(
+        predicted_rgb,
+        target_rgb,
+        full_conditions,
+        config,
+    )
+    stage4_failure_diagnostics = stage4_failure_diagnostic_metrics(
+        predicted_rgb,
+        target_rgb,
+        full_conditions,
+        config,
+    )
     values = {
         key: value
         for key, value in base.items()
@@ -2907,6 +3804,8 @@ def composite_denoiser_losses_v6(predicted_velocity, target_velocity, predicted_
         "pathCoverageCalibrationLoss": path_coverage_calibration,
         "authorizedBoundaryTopologyLoss": authorized_boundary_topology,
         "pathActivationMassCalibrationLoss": path_activation_mass_calibration,
+        "stage4RequiredBoundaryContactLoss": stage4_required_boundary_contact,
+        **stage4_failure_diagnostics,
         "predictedRgbTensor": predicted_rgb,
     })
     key_map = {
@@ -2937,12 +3836,15 @@ def composite_denoiser_losses_v6(predicted_velocity, target_velocity, predicted_
     coverage_contract = config.get("training", {}).get("pathCoverageCalibration", {})
     boundary_contract = config.get("training", {}).get("authorizedBoundaryTopology", {})
     activation_mass_contract = config.get("training", {}).get("pathActivationMassCalibration", {})
+    required_contact_contract = config.get("training", {}).get("stage4RequiredBoundaryContact", {})
     if coverage_contract.get("enabled") is True:
         composite = composite + path_coverage_calibration * float(coverage_contract["weight"])
     if boundary_contract.get("enabled") is True:
         composite = composite + authorized_boundary_topology * float(boundary_contract["weight"])
     if activation_mass_contract.get("enabled") is True:
         composite = composite + path_activation_mass_calibration * float(activation_mass_contract["weight"])
+    if required_contact_contract.get("enabled") is True:
+        composite = composite + stage4_required_boundary_contact * float(required_contact_contract["weight"])
     checkpoint = sum(
         values[key] * float(weight)
         for key, weight in config["training"]["bestCheckpointMetricWeights"].items()
@@ -3009,6 +3911,161 @@ def object_semantic_rgb_losses(predicted_rgb, target_rgb, conditions, config):
         "objectVegetationRgbMae": losses.get("object_vegetation", zero),
         "objectSemanticRgbMae": aggregate,
     }
+
+
+def stage4_failure_diagnostic_metrics(predicted_rgb, target_rgb, conditions, config):
+    contract = config.get("training", {}).get("stage4FailureDiagnostics", {})
+    if contract.get("enabled") is not True:
+        return {}
+    validate_v7_r5_stage4_failure_diagnostic_support_contract(config)
+    return {
+        **object_semantic_diagnostic_metrics(predicted_rgb, target_rgb, conditions, config),
+        **route_late_regression_diagnostic_metrics(predicted_rgb, target_rgb, conditions, config),
+    }
+
+
+def object_semantic_diagnostic_metrics(predicted_rgb, target_rgb, conditions, config):
+    training = config.get("training", {})
+    weights = training.get("objectSemanticChannelWeights", {})
+    aggregate_weight = float(training.get("denoiserLossWeights", {}).get("objectSemanticRgb", 0.0))
+    weight_denominator = sum(float(weights[name]) for name in V7_R5_STAGE4_OBJECT_DIAGNOSTIC_CHANNELS)
+    if aggregate_weight <= 0.0 or weight_denominator <= 0.0:
+        raise ValueError("V7 R5 Stage 4 object diagnostic weight basis is invalid")
+    prefix_by_channel = {
+        "object_footprints": ("ObjectFootprints", "objectFootprints"),
+        "object_tree": ("ObjectTree", "objectTree"),
+        "object_rock": ("ObjectRock", "objectRock"),
+        "object_vegetation": ("ObjectVegetation", "objectVegetation"),
+    }
+    result = {}
+    gradient_available = torch.is_grad_enabled() and predicted_rgb.requires_grad
+    for channel in V7_R5_STAGE4_OBJECT_DIAGNOSTIC_CHANNELS:
+        formal_prefix, legacy_prefix = prefix_by_channel[channel]
+        loss = masked_condition_rgb_loss(predicted_rgb, target_rgb, conditions, config, channel)
+        independent_loss = loss.detach()
+        prototype_mae = masked_rgb_prototype_mae(
+            predicted_rgb,
+            target_rgb,
+            conditions,
+            config,
+            channel,
+        ).detach()
+        gradient = predicted_rgb.new_zeros(())
+        if gradient_available and loss.requires_grad:
+            contribution_loss = (
+                loss
+                * aggregate_weight
+                * float(weights[channel])
+                / weight_denominator
+            )
+            contribution = torch.autograd.grad(
+                contribution_loss,
+                predicted_rgb,
+                retain_graph=True,
+                create_graph=False,
+                allow_unused=True,
+            )[0]
+            if contribution is not None:
+                gradient = contribution.abs().mean().detach()
+        formal_values = {
+            f"stage4Diagnostic{formal_prefix}IndependentLoss": independent_loss,
+            f"stage4Diagnostic{formal_prefix}GradientContribution": gradient,
+            f"stage4Diagnostic{formal_prefix}DecodedResponsePrototypeMae": prototype_mae,
+        }
+        result.update(formal_values)
+        result[f"stage4Diagnostic{legacy_prefix}IndependentLoss"] = independent_loss
+        result[f"stage4Diagnostic{legacy_prefix}GradientContribution"] = gradient
+        result[f"stage4Diagnostic{legacy_prefix}DecodedResponsePrototypeMae"] = prototype_mae
+    result["stage4DiagnosticObjectGradientAvailable"] = predicted_rgb.new_tensor(
+        1.0 if gradient_available else 0.0
+    )
+    return result
+
+
+def masked_rgb_prototype_mae(predicted_rgb, target_rgb, conditions, config, channel_name):
+    order = list(config["conditionChannelOrder"])
+    if channel_name not in order:
+        raise ValueError(f"condition channel is missing: {channel_name}")
+    mask = conditions[:, order.index(channel_name):order.index(channel_name) + 1]
+    mask = torch.nn.functional.interpolate(mask, size=predicted_rgb.shape[-2:], mode="nearest")
+    denominator = mask.sum(dim=(2, 3), keepdim=True).clamp_min(1.0)
+    predicted_prototype = (predicted_rgb * mask).sum(dim=(2, 3), keepdim=True) / denominator
+    target_prototype = (target_rgb * mask).sum(dim=(2, 3), keepdim=True) / denominator
+    present = (mask.sum(dim=(2, 3), keepdim=True) > 0.0).to(predicted_rgb.dtype)
+    return ((predicted_prototype - target_prototype).abs().mean(dim=1, keepdim=True) * present).sum() / present.sum().clamp_min(1.0)
+
+
+def route_late_regression_diagnostic_metrics(predicted_rgb, target_rgb, conditions, config):
+    training = config.get("training", {})
+    diagnostic = training["stage4FailureDiagnostics"]["routeLateRegressionDiagnostics"]
+    activation_contract = training.get("pathActivationMassCalibration", {})
+    path_mask = original_path_condition_mask(conditions, config, predicted_rgb.shape[-2:])
+    support = path_support_corridor(path_mask, config, activation_contract)
+    temperature = float(activation_contract.get("appearanceTemperature", 0.2))
+    predicted_activation = path_visual_activation(predicted_rgb, target_rgb, path_mask, temperature) * support
+    target_activation = path_visual_activation(target_rgb, target_rgb, path_mask, temperature) * support
+    epsilon = max(float(activation_contract.get("epsilon", 1e-6)), 1e-8)
+    predicted_mass = predicted_activation.sum(dim=(2, 3))
+    target_mass = target_activation.sum(dim=(2, 3)).clamp_min(epsilon)
+    coverage_ratio = (predicted_mass / target_mass).mean()
+    predicted_distribution = predicted_activation / predicted_mass.view(-1, 1, 1, 1).clamp_min(epsilon)
+    target_distribution = target_activation / target_mass.view(-1, 1, 1, 1)
+    grid_size = int(diagnostic.get("spatialGridSize", 4))
+    if grid_size < 2 or grid_size > 16:
+        raise ValueError("V7 R5 Stage 4 route diagnostic grid size is invalid")
+    predicted_grid = torch.nn.functional.adaptive_avg_pool2d(predicted_distribution, (grid_size, grid_size))
+    target_grid = torch.nn.functional.adaptive_avg_pool2d(target_distribution, (grid_size, grid_size))
+    spatial_distribution = (predicted_grid - target_grid).abs().sum(dim=(1, 2, 3)).mean()
+    centroid_drift = activation_centroid_drift(predicted_activation, target_activation, epsilon)
+    required_sides = list(training.get("authorizedBoundaryTopology", {}).get("requiredBoundarySides", []))
+    if not required_sides:
+        raise ValueError("V7 R5 Stage 4 route diagnostics require at least one authorized boundary side")
+    boundary_contact = required_boundary_contact_minimum(
+        predicted_activation,
+        path_mask,
+        required_sides,
+        float(training.get("authorizedBoundaryTopology", {}).get("boundaryBandRatio", training.get("pathBoundaryBandRatio", 0.04))),
+    )
+    return {
+        "stage4DiagnosticRouteActivationMassRatio": coverage_ratio.detach(),
+        "stage4DiagnosticRouteSpatialDistributionL1": spatial_distribution.detach(),
+        "stage4DiagnosticRouteCentroidDrift": centroid_drift.detach(),
+        "stage4DiagnosticRouteRequiredBoundaryContactMinimum": boundary_contact.detach(),
+    }
+
+
+def activation_centroid_drift(predicted_activation, target_activation, epsilon=1e-6):
+    height, width = predicted_activation.shape[-2:]
+    y = torch.linspace(0.0, 1.0, height, device=predicted_activation.device, dtype=predicted_activation.dtype).view(1, 1, height, 1)
+    x = torch.linspace(0.0, 1.0, width, device=predicted_activation.device, dtype=predicted_activation.dtype).view(1, 1, 1, width)
+    predicted_mass = predicted_activation.sum(dim=(2, 3), keepdim=True).clamp_min(epsilon)
+    target_mass = target_activation.sum(dim=(2, 3), keepdim=True).clamp_min(epsilon)
+    predicted_x = (predicted_activation * x).sum(dim=(2, 3), keepdim=True) / predicted_mass
+    predicted_y = (predicted_activation * y).sum(dim=(2, 3), keepdim=True) / predicted_mass
+    target_x = (target_activation * x).sum(dim=(2, 3), keepdim=True) / target_mass
+    target_y = (target_activation * y).sum(dim=(2, 3), keepdim=True) / target_mass
+    return torch.sqrt((predicted_x - target_x).square() + (predicted_y - target_y).square()).mean()
+
+
+def required_boundary_contact_minimum(predicted_activation, path_mask, required_sides, band_ratio):
+    band = max(1, round(min(predicted_activation.shape[-2:]) * float(band_ratio)))
+    scores = []
+    for side in required_sides:
+        side_mask = torch.zeros_like(path_mask)
+        if side == "north":
+            side_mask[:, :, :band, :] = 1.0
+        elif side == "south":
+            side_mask[:, :, -band:, :] = 1.0
+        elif side == "west":
+            side_mask[:, :, :, :band] = 1.0
+        elif side == "east":
+            side_mask[:, :, :, -band:] = 1.0
+        else:
+            raise ValueError(f"V7 R5 Stage 4 route diagnostic boundary side is invalid: {side}")
+        required_support = side_mask * path_mask
+        denominator = required_support.sum(dim=(2, 3)).clamp_min(1.0)
+        scores.append(((predicted_activation * required_support).sum(dim=(2, 3)) / denominator).mean())
+    return torch.stack(scores).amin()
 
 
 def path_interior_rgb_loss(predicted_rgb, target_rgb, conditions, config):
@@ -3341,6 +4398,58 @@ def authorized_boundary_topology_loss(predicted_rgb, target_rgb, conditions, con
     excess = torch.nn.functional.relu(predicted_activation - target_activation - float(contract.get("activationMargin", 0.0)))
     denominator = forbidden.sum().clamp_min(1.0)
     return (excess * forbidden).sum() / denominator
+
+
+def required_boundary_contact_loss(predicted_rgb, target_rgb, conditions, config):
+    contract = config.get("training", {}).get("stage4RequiredBoundaryContact", {})
+    if contract.get("enabled") is not True:
+        return predicted_rgb.new_zeros(())
+    if contract.get("conditionChannel") != "terrain_path_ground":
+        raise ValueError("required-boundary contact loss requires terrain_path_ground")
+    if contract.get("targetSource") != "original_owner_approved_rgb_required_boundary_activation_with_original_condition_mask_only":
+        raise ValueError("required-boundary contact loss target source is invalid")
+    if contract.get("requiredSidesSource") != "authorizedBoundaryTopology.requiredBoundarySides":
+        raise ValueError("required-boundary contact loss side source is invalid")
+    if contract.get("failedPreviewPixelsUsedAsTrainingTargets") is not False:
+        raise ValueError("failed preview pixels cannot be used as required-boundary contact targets")
+    if contract.get("machineReviewThresholdUsedAsTrainingTarget") is not False:
+        raise ValueError("machine-review thresholds cannot be used as required-boundary contact targets")
+    if contract.get("lossForm") != "required_side_target_activation_deficit":
+        raise ValueError("required-boundary contact loss form is invalid")
+
+    path_mask = original_path_condition_mask(conditions, config, predicted_rgb.shape[-2:])
+    topology = config.get("training", {}).get("authorizedBoundaryTopology", {})
+    required_sides = list(topology.get("requiredBoundarySides", []))
+    if not required_sides:
+        raise ValueError("required-boundary contact loss requires at least one authorized side")
+    band_ratio = float(contract.get("boundaryBandRatio", topology.get("boundaryBandRatio", 0.04)))
+    band = max(1, round(min(predicted_rgb.shape[-2:]) * band_ratio))
+    temperature = float(contract.get("appearanceTemperature", topology.get("appearanceTemperature", 0.2)))
+    predicted_activation = path_visual_activation(predicted_rgb, target_rgb, path_mask, temperature)
+    target_activation = path_visual_activation(target_rgb, target_rgb, path_mask, temperature)
+    margin = float(contract.get("activationMargin", 0.0))
+    losses = []
+    for side in required_sides:
+        side_mask = torch.zeros_like(path_mask)
+        if side == "north":
+            side_mask[:, :, :band, :] = 1.0
+        elif side == "south":
+            side_mask[:, :, -band:, :] = 1.0
+        elif side == "west":
+            side_mask[:, :, :, :band] = 1.0
+        elif side == "east":
+            side_mask[:, :, :, -band:] = 1.0
+        else:
+            raise ValueError(f"required-boundary contact side is invalid: {side}")
+        required_support = side_mask * path_mask
+        support_count = required_support.sum(dim=(2, 3))
+        if bool((support_count <= 0.0).any().detach()):
+            raise ValueError(f"required-boundary contact source mask does not contact side: {side}")
+        deficit = torch.nn.functional.relu(target_activation - predicted_activation - margin)
+        losses.append(
+            ((deficit * required_support).sum(dim=(2, 3)) / support_count.clamp_min(1.0)).mean()
+        )
+    return torch.stack(losses).mean()
 
 
 def forbidden_boundary_pair_rgb_l1(left_rgb, right_rgb, conditions, config):
@@ -3729,6 +4838,17 @@ def project_path(path):
 
 def sha256_file(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def state_dict_sha256(state_dict):
+    digest = hashlib.sha256()
+    for name in sorted(state_dict):
+        tensor = state_dict[name].detach().cpu().contiguous()
+        digest.update(name.encode("utf-8"))
+        digest.update(str(tensor.dtype).encode("ascii"))
+        digest.update(json.dumps(list(tensor.shape), separators=(",", ":")).encode("ascii"))
+        digest.update(tensor.numpy().tobytes(order="C"))
+    return digest.hexdigest()
 
 
 def read_json(path):
