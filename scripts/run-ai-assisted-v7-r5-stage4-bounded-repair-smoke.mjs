@@ -12,19 +12,19 @@ import { formatShanghai } from "./lib/ai-painter-program-event-store.mjs"
 const ROOT = process.cwd()
 const PYTHON = resolve("ml/ai-painter/.venv/Scripts/python.exe")
 const TRAINER = "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py"
-const TRAINER_SHA256 = "20da44f6365eacfcdeb41a01473f4557790ea8974c382927c044f1fc65448e85"
+const TRAINER_SHA256 = "f9a6b6d6a7c7a4b5e5f98178ad5b2ec1696a33354fbf294b56d5ff1e90ee7ccc"
 const RUNNER_PATH = "scripts/run-ai-assisted-v7-r5-stage4-bounded-repair-smoke.mjs"
 const CPU_CHECKER_PATH = "ml/ai-painter/scripts/check_ai_assisted_v7_r5_stage4_bounded_repair_smoke_authorization_cpu.py"
-const REQUEST_ID = "owner-action-request-v7-r5-stage4-bounded-repair-smoke-stage1-stage2-boundary-fix-new-execution-20260805"
+const REQUEST_ID = "owner-action-request-v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-new-execution-20260806"
 const AUTHORIZATION_PATH = `.runtime/ai-painter/owner-action-requests/${REQUEST_ID}/request.json`
-const AUTHORIZATION_SHA256 = "847ea347e17dd349a479a508b730166f3156df129dcad8972f5501c16e34c2c7"
+const AUTHORIZATION_SHA256 = "1c497e6802da24bd6e16e3b981b7ff5438639047d04f3d9afa677bb33937efed"
 const IMPLEMENTATION_CONSUMPTION_PATH = `.runtime/ai-painter/owner-action-requests/${REQUEST_ID}/implementation-authorization-consumption.json`
-const IMPLEMENTATION_CONSUMPTION_SHA256 = "2a4478a92c08a67cb69f0634c2266c42f6815d627f9a0eed35df5758b90fe7ab"
+const IMPLEMENTATION_CONSUMPTION_SHA256 = "7ed86af0f3fb94ef3585c83cb5511fbd72273da94fbb69bb594ab6f683f5ab7f"
 const EXECUTION_CONSUMPTION_PATH = `.runtime/ai-painter/owner-action-requests/${REQUEST_ID}/gpu-execution-authorization-consumption.json`
-const COMMAND_REF = "owner-authorized-v7-r5-stage4-bounded-repair-smoke-stage1-stage2-boundary-fix-new-execution-20260805"
-const SCOPE = "add_only_stage1_stage2_and_stage1_or_stage2_initialization_rejection_sync_hashes_then_one_cpu_gate_preflights_and_one_30_epoch_bounded_gpu_smoke"
-const PREVIOUS_FAILURE_TERMINAL_PATH = ".runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-seed-identity-completion-authorization-cpu-regressions/20260805-233500000/phase-terminal.json"
-const PREVIOUS_FAILURE_TERMINAL_SHA256 = "071dc64434fec7166a0c19e2d8641f26f1e79fc10bd257b3adf821ef05599940"
+const COMMAND_REF = "owner-authorized-v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-new-execution-20260806"
+const SCOPE = "fix_only_two_diagnostic_success_status_bindings_sync_related_hashes_then_one_cpu_gate_preflights_and_one_30_epoch_bounded_gpu_smoke"
+const PREVIOUS_FAILURE_TERMINAL_PATH = ".runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-finalizations/ai-assisted-v7-r5-stage4-bounded-repair-smoke-2026-08-05T15-36-34-038Z-finalization/phase-terminal.json"
+const PREVIOUS_FAILURE_TERMINAL_SHA256 = "c9804cd03a5ca706a0230a695a440c57adfe0d6d125e3a3495db1e109eb3cbc7"
 const INACTIVE_CONFIG_PATH = ".runtime/ai-painter/v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-runs/ai-assisted-v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-2026-08-05T14-10-00-000Z/inactive-config.json"
 const INACTIVE_CONFIG_SHA256 = "6bcc1a6f49b4e9fd5a7ac1eca5f25783445894097b22cf349e15b365cad07332"
 const SELECTION_PATH = ".runtime/ai-painter/v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-runs/ai-assisted-v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-2026-08-05T14-10-00-000Z/selection-contract.json"
@@ -35,7 +35,7 @@ const BOUNDED_CPU_REPORT_PATH = ".runtime/ai-painter/v7-r5-stage4-diagnostic-evi
 const BOUNDED_CPU_REPORT_SHA256 = "975332317a237b7da5ad96c131d6420c5a9d8033790fcb113976e96544a7e05c"
 const BOUNDED_TERMINAL_PATH = ".runtime/ai-painter/v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-runs/ai-assisted-v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-2026-08-05T14-10-00-000Z/phase-terminal.json"
 const BOUNDED_TERMINAL_SHA256 = "7d602540466eb08a44985357508bd9f9fbcb981935dd031a3d1a2acafd3c6643"
-const CPU_REPORT_PATH = ".runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-stage1-stage2-boundary-fix-authorization-cpu-regressions/20260805-234500000/report.json"
+const CPU_REPORT_PATH = ".runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-authorization-cpu-regressions/20260806-001500000/report.json"
 const DATASET_MANIFEST_PATH = "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json"
 const DATASET_MANIFEST_SHA256 = "8001f5a27bb8bc18883184b0c7e39ef1336eb295ce5787618bf4e60059dd48aa"
 const SOURCE_INDEX_PATH = "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/source-index.json"
@@ -233,7 +233,7 @@ function validateStaticPreflight(context, hardware, disk) {
   check(context.authorization?.status === "resolved_owner_authorized", "authorization_not_resolved")
   check(context.authorization?.ownerDecision?.commandRef === COMMAND_REF && context.authorization?.ownerDecision?.scope === SCOPE, "authorization_identity_invalid")
   check(context.implementation?.status === "consumed_before_seed_fix_authorization_binding_and_new_cpu_gate_writes", "implementation_not_consumed")
-  check(context.previousFailureTerminal?.status === "stage4_bounded_repair_smoke_cpu_gate_failed_closed", "previous_failure_terminal_status_invalid")
+  check(context.previousFailureTerminal?.status === "stage4_bounded_repair_smoke_preflight_failed_closed", "previous_failure_terminal_status_invalid")
   check(context.authorization?.previousFailedExecution?.failureTerminalPath === PREVIOUS_FAILURE_TERMINAL_PATH && context.authorization?.previousFailedExecution?.failureTerminalSha256 === PREVIOUS_FAILURE_TERMINAL_SHA256 && context.authorization?.previousFailedExecution?.closedNoRetry === true, "previous_failure_authorization_binding_invalid")
   check(context.inactiveConfig?.status === "r5_stage4_diagnostic_evidence_bounded_repair_candidate_inactive", "inactive_config_status_invalid")
   check(context.selection?.status === "selected_inactive_not_authorized", "selection_status_invalid")
@@ -243,8 +243,8 @@ function validateStaticPreflight(context, hardware, disk) {
   check(context.cpuReport?.status === "passed_cpu_only_stage4_bounded_repair_smoke_authorization_gate_gpu_not_started", "smoke_cpu_gate_not_passed")
   check(context.cpuReport?.inputs?.trainerSha256 === TRAINER_SHA256, "smoke_cpu_trainer_identity_invalid")
   check(context.cpuReport?.inputs?.runnerSha256 === sha256File(RUNNER_PATH), "smoke_cpu_runner_identity_invalid")
-  check(context.diagnostic?.status === "stage4_readonly_diagnostic_completed_17_metrics_model_state_unchanged", "diagnostic_report_status_invalid")
-  check(context.diagnosticTerminal?.status === "stage4_readonly_gpu_diagnostic_succeeded_closed", "diagnostic_terminal_status_invalid")
+  check(context.diagnostic?.status === "read_only_single_sample_gpu_diagnostic_completed_weights_unchanged", "diagnostic_report_status_invalid")
+  check(context.diagnosticTerminal?.status === "r5_stage4_readonly_single_sample_gpu_diagnostic_completed_closed", "diagnostic_terminal_status_invalid")
   check(context.stage0Manifest?.checkpointPath === STAGE0_CHECKPOINT_PATH && context.stage0Manifest?.checkpointSha256 === STAGE0_CHECKPOINT_SHA256, "stage0_manifest_checkpoint_binding_invalid")
   check(context.stage0Manifest?.autoencoderCheckpointPath === AUTOENCODER_CHECKPOINT_PATH && context.stage0Manifest?.autoencoderCheckpointSha256 === AUTOENCODER_CHECKPOINT_SHA256, "stage0_manifest_autoencoder_binding_invalid")
   check(context.sample?.conditionLabel === EXPECTED_CONDITION_LABEL && context.sample?.split === EXPECTED_SPLIT, "sample_identity_invalid")

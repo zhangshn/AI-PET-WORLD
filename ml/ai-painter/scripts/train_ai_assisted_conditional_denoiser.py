@@ -103,14 +103,14 @@ V7_REPAIR_R5_STAGE4_IMPLEMENTATION_CONSUMPTION_SHA256 = "698788ed3a5b5b87f25f92e
 V7_REPAIR_R5_STAGE4_TRAINING_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-contract-boundary-correction-bounded-execution-20260805/training-execution-authorization-consumption.json"
 V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS = "owner_authorized_v7_r5_stage4_bounded_repair_smoke_preflight_only"
 V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS = "owner_authorized_v7_r5_stage4_bounded_repair_single_sample_gpu_smoke"
-V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_ID = "owner-action-request-v7-r5-stage4-bounded-repair-smoke-stage1-stage2-boundary-fix-new-execution-20260805"
-V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_COMMAND_REF = "owner-authorized-v7-r5-stage4-bounded-repair-smoke-stage1-stage2-boundary-fix-new-execution-20260805"
-V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_SCOPE = "add_only_stage1_stage2_and_stage1_or_stage2_initialization_rejection_sync_hashes_then_one_cpu_gate_preflights_and_one_30_epoch_bounded_gpu_smoke"
-V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-bounded-repair-smoke-stage1-stage2-boundary-fix-new-execution-20260805/request.json"
-V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_SHA256 = "847ea347e17dd349a479a508b730166f3156df129dcad8972f5501c16e34c2c7"
-V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_IMPLEMENTATION_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-bounded-repair-smoke-stage1-stage2-boundary-fix-new-execution-20260805/implementation-authorization-consumption.json"
-V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_IMPLEMENTATION_CONSUMPTION_SHA256 = "2a4478a92c08a67cb69f0634c2266c42f6815d627f9a0eed35df5758b90fe7ab"
-V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_EXECUTION_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-bounded-repair-smoke-stage1-stage2-boundary-fix-new-execution-20260805/gpu-execution-authorization-consumption.json"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_ID = "owner-action-request-v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-new-execution-20260806"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_COMMAND_REF = "owner-authorized-v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-new-execution-20260806"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_SCOPE = "fix_only_two_diagnostic_success_status_bindings_sync_related_hashes_then_one_cpu_gate_preflights_and_one_30_epoch_bounded_gpu_smoke"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-new-execution-20260806/request.json"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_SHA256 = "1c497e6802da24bd6e16e3b981b7ff5438639047d04f3d9afa677bb33937efed"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_IMPLEMENTATION_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-new-execution-20260806/implementation-authorization-consumption.json"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_IMPLEMENTATION_CONSUMPTION_SHA256 = "7ed86af0f3fb94ef3585c83cb5511fbd72273da94fbb69bb594ab6f683f5ab7f"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_EXECUTION_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-new-execution-20260806/gpu-execution-authorization-consumption.json"
 V7_MVP64_SPLIT_COUNTS = {
     "train": 48,
     "validation": 8,

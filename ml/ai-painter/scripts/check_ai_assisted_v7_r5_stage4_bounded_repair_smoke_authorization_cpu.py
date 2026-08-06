@@ -10,21 +10,22 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 AUTHORIZATION_PATH = Path(
     ".runtime/ai-painter/owner-action-requests/"
-    "owner-action-request-v7-r5-stage4-bounded-repair-smoke-stage1-stage2-boundary-fix-new-execution-20260805/request.json"
+    "owner-action-request-v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-new-execution-20260806/request.json"
 )
-AUTHORIZATION_SHA256 = "847ea347e17dd349a479a508b730166f3156df129dcad8972f5501c16e34c2c7"
+AUTHORIZATION_SHA256 = "1c497e6802da24bd6e16e3b981b7ff5438639047d04f3d9afa677bb33937efed"
 IMPLEMENTATION_PATH = AUTHORIZATION_PATH.parent / "implementation-authorization-consumption.json"
-IMPLEMENTATION_SHA256 = "2a4478a92c08a67cb69f0634c2266c42f6815d627f9a0eed35df5758b90fe7ab"
-COMMAND_REF = "owner-authorized-v7-r5-stage4-bounded-repair-smoke-stage1-stage2-boundary-fix-new-execution-20260805"
+IMPLEMENTATION_SHA256 = "7ed86af0f3fb94ef3585c83cb5511fbd72273da94fbb69bb594ab6f683f5ab7f"
+COMMAND_REF = "owner-authorized-v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-new-execution-20260806"
 SCOPE = (
-    "add_only_stage1_stage2_and_stage1_or_stage2_initialization_rejection_sync_"
-    "hashes_then_one_cpu_gate_preflights_and_one_30_epoch_bounded_gpu_smoke"
+    "fix_only_two_diagnostic_success_status_bindings_sync_related_hashes_then_one_"
+    "cpu_gate_preflights_and_one_30_epoch_bounded_gpu_smoke"
 )
 PREVIOUS_FAILURE_TERMINAL_PATH = Path(
-    ".runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-seed-identity-completion-"
-    "authorization-cpu-regressions/20260805-233500000/phase-terminal.json"
+    ".runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-finalizations/"
+    "ai-assisted-v7-r5-stage4-bounded-repair-smoke-2026-08-05T15-36-34-038Z-finalization/"
+    "phase-terminal.json"
 )
-PREVIOUS_FAILURE_TERMINAL_SHA256 = "071dc64434fec7166a0c19e2d8641f26f1e79fc10bd257b3adf821ef05599940"
+PREVIOUS_FAILURE_TERMINAL_SHA256 = "c9804cd03a5ca706a0230a695a440c57adfe0d6d125e3a3495db1e109eb3cbc7"
 INACTIVE_CONFIG_PATH = Path(
     ".runtime/ai-painter/v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-runs/"
     "ai-assisted-v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-2026-08-05T14-10-00-000Z/"
@@ -43,9 +44,9 @@ BOUNDED_CPU_SHA256 = "975332317a237b7da5ad96c131d6420c5a9d8033790fcb113976e96544
 BOUNDED_TERMINAL_PATH = INACTIVE_CONFIG_PATH.parent / "phase-terminal.json"
 BOUNDED_TERMINAL_SHA256 = "7d602540466eb08a44985357508bd9f9fbcb981935dd031a3d1a2acafd3c6643"
 TRAINER_PATH = Path("ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py")
-TRAINER_SHA256 = "20da44f6365eacfcdeb41a01473f4557790ea8974c382927c044f1fc65448e85"
+TRAINER_SHA256 = "f9a6b6d6a7c7a4b5e5f98178ad5b2ec1696a33354fbf294b56d5ff1e90ee7ccc"
 RUNNER_PATH = Path("scripts/run-ai-assisted-v7-r5-stage4-bounded-repair-smoke.mjs")
-RUNNER_SHA256 = "037b8f728cbfd721306bc07d9b5ff09e69232ddaa3cc85b5e7a46baf6a913e84"
+RUNNER_SHA256 = "4ca34148e3a6055ecc86049c7c93b3601755918db8b5790337da465154493a4b"
 DATASET_MANIFEST_PATH = Path(
     "data/world-samples/ai-assisted-cold-start-dataset-packages/"
     "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json"
@@ -158,7 +159,7 @@ def validate_immutable_inputs() -> None:
     previous_failure = read_json(PREVIOUS_FAILURE_TERMINAL_PATH)
     previous_binding = authorization.get("previousFailedExecution", {})
     if (
-        previous_failure.get("status") != "stage4_bounded_repair_smoke_cpu_gate_failed_closed"
+        previous_failure.get("status") != "stage4_bounded_repair_smoke_preflight_failed_closed"
         or previous_binding.get("failureTerminalPath") != project_path(PREVIOUS_FAILURE_TERMINAL_PATH)
         or previous_binding.get("failureTerminalSha256") != PREVIOUS_FAILURE_TERMINAL_SHA256
         or previous_binding.get("closedNoRetry") is not True
@@ -174,7 +175,7 @@ def validate_immutable_inputs() -> None:
         "trainerSupportContractPath": project_path(SUPPORT_PATH),
         "trainerSupportContractSha256": SUPPORT_SHA256,
         "trainerPath": project_path(TRAINER_PATH),
-        "trainerBeforeSha256": "8eb26d707fffd5035cc4b0c60dcd0b2ba515fbce43af18094354e6d5808c54e3",
+        "trainerBeforeSha256": "20da44f6365eacfcdeb41a01473f4557790ea8974c382927c044f1fc65448e85",
         "datasetManifestPath": project_path(DATASET_MANIFEST_PATH),
         "datasetManifestSha256": DATASET_MANIFEST_SHA256,
         "sourceIndexPath": project_path(SOURCE_INDEX_PATH),
@@ -199,10 +200,12 @@ def validate_immutable_inputs() -> None:
         "requiredSmokeStage1Authorized": False,
         "requiredSmokeStage2Authorized": False,
         "requiredStage1OrStage2InitializationAuthorized": False,
+        "requiredDiagnosticReportStatus": "read_only_single_sample_gpu_diagnostic_completed_weights_unchanged",
+        "requiredDiagnosticTerminalStatus": "r5_stage4_readonly_single_sample_gpu_diagnostic_completed_closed",
         "runnerPath": project_path(RUNNER_PATH),
-        "runnerBeforeSha256": "3b587e8f3fc5f480bfb3a90f5a5d1def63e1a9e312b6a8aa40a9c2d7fc9c7572",
+        "runnerBeforeSha256": "037b8f728cbfd721306bc07d9b5ff09e69232ddaa3cc85b5e7a46baf6a913e84",
         "cpuCheckerPath": project_path(Path(__file__)),
-        "cpuCheckerBeforeSha256": "a70e3f7623dc4041956b0c0df1d871a963cca3aab0e24633f76ee959e9ab7145",
+        "cpuCheckerBeforeSha256": "f201dcba9dd80ea368a2ae9937453f736e25972252e9f7797d63f677730bd721",
     }
     for key, expected in expected_identity.items():
         if identity.get(key) != expected:
