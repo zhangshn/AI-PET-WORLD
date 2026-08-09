@@ -75,6 +75,76 @@ export type LocalCapabilityMigration = {
   nextGateZh: string | null;
 };
 
+export type AiPainterTaskCapsuleEvidence = {
+  kind: string;
+  labelZh: string;
+  path: string;
+  sha256: string | null;
+  expectedSha256: string | null;
+  sha256Verified: boolean;
+  recordedAtUtc: string | null;
+  recordedAtAsiaShanghai: string | null;
+};
+
+export type AiPainterTaskCapsule = {
+  schemaVersion: "ai-painter-local-task-capsule-v1";
+  capsuleId: string;
+  generatedFrom: "program_saved_evidence";
+  readOnly: true;
+  module: { id: string; nameZh: string };
+  fixedOverallProgress: {
+    completedStages: number | null;
+    totalStages: number | null;
+    percent: number | null;
+    source: string;
+  };
+  currentStage: {
+    number: number;
+    total: number;
+    labelZh: string;
+    status: string;
+  };
+  candidateTerminal: {
+    runId: string | null;
+    status: "failed_closed" | "unknown_or_stale";
+    programStatus: string | null;
+    previewMachineStatus: string | null;
+    modelQualificationStatus: string;
+    previewCount: number | null;
+    previewPassCount: number | null;
+    previewFailCount: number | null;
+    checkpointWritten: boolean;
+    modelWeightsModified: boolean;
+    recordedAtUtc: string | null;
+    recordedAtAsiaShanghai: string | null;
+  };
+  latestBlocker: { code: string; summaryZh: string };
+  nextAllowedAction: {
+    code: string;
+    labelZh: string;
+    ownerAuthorizationRequired: boolean;
+    automaticExecutionAllowed: boolean;
+    planEvidenceConfirmed: boolean;
+  };
+  forbiddenActions: string[];
+  taskIdentity: {
+    modelId: string | null;
+    sampleId: string | null;
+    conditionLabel: string | null;
+    sampleSplit: string | null;
+    seed: number | null;
+    requiredBoundarySides: string[];
+  };
+  evidence: AiPainterTaskCapsuleEvidence[];
+  integrity: {
+    status: "verified" | "incomplete_or_mismatched";
+    requiredEvidencePresent: boolean;
+    boundEvidenceVerified: boolean;
+    identityMatches: boolean;
+    migrationRegistryStatus: string | null;
+  };
+};
+
 export type TrainingStagePreview = {
   epoch: number;
   recordedAtUtc: string | null;
@@ -334,6 +404,7 @@ export type CurrentTrainingDashboardSnapshot = {
   schemaVersion: "ai-painter-current-training-dashboard-v1";
   generatedAtUtc: string;
   readOnly: true;
+  taskCapsule: AiPainterTaskCapsule;
   activity: CurrentExecutionActivity;
   status: {
     code:
@@ -342,6 +413,7 @@ export type CurrentTrainingDashboardSnapshot = {
       | "resource_blocked"
       | "awaiting_validation"
       | "validation_failed"
+      | "candidate_failed_closed"
       | "idle";
     label: string;
     summary: string;

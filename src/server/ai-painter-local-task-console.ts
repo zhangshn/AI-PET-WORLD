@@ -1,6 +1,8 @@
 import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
+import type { AiPainterTaskCapsule } from "@/app/ai-painter-progress/_lib/current-training-dashboard-types";
+import { readCurrentTrainingDashboard } from "@/server/ai-painter-current-training";
 
 const catalogPath = path.join(
   process.cwd(),
@@ -54,7 +56,7 @@ export type LocalTaskConsoleSnapshot = {
   schemaVersion: "local-ai-task-console-snapshot-v1";
   generatedAtUtc: string;
   generatedAtAsiaShanghai: string;
-  mode: "contract_and_failure_learning_preview";
+  mode: "task_capsule_and_owner_action_preview";
   launchEnabled: false;
   gate: {
     status: "blocked";
@@ -80,6 +82,36 @@ export type LocalTaskConsoleSnapshot = {
     arbitraryCommandsAllowed: false;
   };
   failureLearning: FailureLearningSnapshot;
+  taskCapsule: AiPainterTaskCapsule;
+  ownerActionRequestPreview: OwnerActionRequestPreview;
+};
+
+type OwnerActionRequestPreview = {
+  schemaVersion: "local-ai-owner-action-request-preview-v1";
+  status: "draft_unexecuted";
+  generatedFromCapsuleId: string;
+  generatedAtUtc: string;
+  actionCode: string;
+  titleZh: string;
+  summaryZh: string;
+  ownerDecisionStatus: "not_recorded";
+  allowedOwnerChoices: Array<{
+    code:
+      | "request_new_readonly_failure_analysis"
+      | "request_new_bounded_candidate_design"
+      | "pause_stage4";
+    labelZh: string;
+    currentlyExecutable: false;
+  }>;
+  forbiddenActions: string[];
+  evidence: AiPainterTaskCapsule["evidence"];
+  boundaries: {
+    persistedAsAuthorization: false;
+    ownerDecisionRecorded: false;
+    authorizationConsumptionAllowed: false;
+    executionAllowed: false;
+    postRequestAllowed: false;
+  };
 };
 
 type FailureLearningSummary = {
@@ -152,8 +184,9 @@ type FailureLearningSnapshot =
       };
     };
 
-export function readLocalTaskConsoleSnapshot(): LocalTaskConsoleSnapshot {
+export async function readLocalTaskConsoleSnapshot(): Promise<LocalTaskConsoleSnapshot> {
   const catalog = readJson<TaskCatalog>(catalogPath);
+  const { taskCapsule } = await readCurrentTrainingDashboard();
   const trustRegistry = readJson<{ status?: string; keys?: unknown[] }>(trustRegistryPath);
   const registrySha256 = sha256File(trustRegistryPath);
   const configuredRegistrySha256 = process.env.AI_PET_WORLD_OWNER_TRUST_REGISTRY_SHA256?.trim().toLowerCase() ?? "";
@@ -169,7 +202,7 @@ export function readLocalTaskConsoleSnapshot(): LocalTaskConsoleSnapshot {
     schemaVersion: "local-ai-task-console-snapshot-v1",
     generatedAtUtc: now.toISOString(),
     generatedAtAsiaShanghai: formatShanghai(now),
-    mode: "contract_and_failure_learning_preview",
+    mode: "task_capsule_and_owner_action_preview",
     launchEnabled: false,
     gate: {
       status: "blocked",
@@ -200,6 +233,51 @@ export function readLocalTaskConsoleSnapshot(): LocalTaskConsoleSnapshot {
       arbitraryCommandsAllowed: false,
     },
     failureLearning: readFailureLearning(),
+    taskCapsule,
+    ownerActionRequestPreview: buildOwnerActionRequestPreview(taskCapsule, now),
+  };
+}
+
+function buildOwnerActionRequestPreview(
+  taskCapsule: AiPainterTaskCapsule,
+  generatedAt: Date,
+): OwnerActionRequestPreview {
+  return {
+    schemaVersion: "local-ai-owner-action-request-preview-v1",
+    status: "draft_unexecuted",
+    generatedFromCapsuleId: taskCapsule.capsuleId,
+    generatedAtUtc: generatedAt.toISOString(),
+    actionCode: taskCapsule.nextAllowedAction.code,
+    titleZh: taskCapsule.nextAllowedAction.labelZh,
+    summaryZh:
+      "当前候选已失败关闭。该预览仅帮助Owner选择新的只读失败分析、有界候选设计或暂停Stage4；当前不存在可执行的训练授权。",
+    ownerDecisionStatus: "not_recorded",
+    allowedOwnerChoices: [
+      {
+        code: "request_new_readonly_failure_analysis",
+        labelZh: "请求新的只读失败分析",
+        currentlyExecutable: false,
+      },
+      {
+        code: "request_new_bounded_candidate_design",
+        labelZh: "请求新的有界候选设计",
+        currentlyExecutable: false,
+      },
+      {
+        code: "pause_stage4",
+        labelZh: "暂停Stage4并保留现有证据",
+        currentlyExecutable: false,
+      },
+    ],
+    forbiddenActions: [...taskCapsule.forbiddenActions],
+    evidence: taskCapsule.evidence.map((item) => ({ ...item })),
+    boundaries: {
+      persistedAsAuthorization: false,
+      ownerDecisionRecorded: false,
+      authorizationConsumptionAllowed: false,
+      executionAllowed: false,
+      postRequestAllowed: false,
+    },
   };
 }
 

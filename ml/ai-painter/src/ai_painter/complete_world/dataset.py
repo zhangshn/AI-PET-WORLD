@@ -108,6 +108,7 @@ class AiAssistedConditionalDenoiserDataset:
         channel_order: list[str],
         image_size: tuple[int, int],
         require_v7_capacity_contribution: bool = False,
+        selection_contract: str | None = None,
     ):
         torch = require_torch()
         self._torch = torch
@@ -123,20 +124,26 @@ class AiAssistedConditionalDenoiserDataset:
             raise ValueError("AI-assisted package contains unpaired condition records")
         if manifest.get("formalInferenceEligible") is not False:
             raise ValueError("AI-assisted conditional package must not claim formal inference readiness")
+        self.selection_contract = resolve_conditional_dataset_selection_contract(
+            require_v7_capacity_contribution=require_v7_capacity_contribution,
+            selection_contract=selection_contract,
+        )
         source_index = read_json(self.root / manifest["sourceIndexPath"])
         self.rows = [
             row for row in source_index.get("samples", [])
             if is_ai_assisted_conditional_row(
                 row,
                 split,
-                require_v7_capacity_contribution=require_v7_capacity_contribution,
+                selection_contract=self.selection_contract,
             )
         ]
         if not self.rows:
             raise ValueError(f"no AI-assisted conditional complete-map samples in split={split}")
         self.channel_order = channel_order
         self.image_size = image_size
-        self.require_v7_capacity_contribution = require_v7_capacity_contribution
+        self.require_v7_capacity_contribution = (
+            self.selection_contract == "registered_v7_capacity_contribution_v1"
+        )
 
     def __len__(self):
         return len(self.rows)
@@ -177,10 +184,15 @@ def is_ai_assisted_conditional_row(
     split: str,
     *,
     require_v7_capacity_contribution: bool = False,
+    selection_contract: str | None = None,
 ) -> bool:
+    resolved_selection = resolve_conditional_dataset_selection_contract(
+        require_v7_capacity_contribution=require_v7_capacity_contribution,
+        selection_contract=selection_contract,
+    )
     binding_matches = (
         row.get("v7CapacityContributionRegistered") is True
-        if require_v7_capacity_contribution
+        if resolved_selection == "registered_v7_capacity_contribution_v1"
         else row.get("currentConditionIdentityMatches") is True
     )
     return (
@@ -195,6 +207,27 @@ def is_ai_assisted_conditional_row(
         and row.get("aiAssistedColdStartEligible") is True
         and row.get("independentTrainingEligible") is False
     )
+
+
+def resolve_conditional_dataset_selection_contract(
+    *,
+    require_v7_capacity_contribution: bool = False,
+    selection_contract: str | None = None,
+) -> str:
+    if selection_contract is None:
+        return (
+            "registered_v7_capacity_contribution_v1"
+            if require_v7_capacity_contribution
+            else "current_condition_identity_v1"
+        )
+    if selection_contract not in {
+        "registered_v7_capacity_contribution_v1",
+        "current_condition_identity_v1",
+    }:
+        raise ValueError(f"unsupported AI-assisted conditional dataset selection contract: {selection_contract}")
+    if require_v7_capacity_contribution and selection_contract != "registered_v7_capacity_contribution_v1":
+        raise ValueError("legacy V7 capacity flag conflicts with the explicit dataset selection contract")
+    return selection_contract
 
 
 def read_image(path: Path, mode: str, size: tuple[int, int], resampling):

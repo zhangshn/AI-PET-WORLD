@@ -111,6 +111,14 @@ V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_SHA256 = "1c497e6802da24bd6e16e3
 V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_IMPLEMENTATION_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-new-execution-20260806/implementation-authorization-consumption.json"
 V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_IMPLEMENTATION_CONSUMPTION_SHA256 = "7ed86af0f3fb94ef3585c83cb5511fbd72273da94fbb69bb594ab6f683f5ab7f"
 V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_EXECUTION_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-new-execution-20260806/gpu-execution-authorization-consumption.json"
+V7_REPAIR_R5_STAGE4_CONFIG_BOUND_AUTHORIZATION_MODE = "config_bound_immutable_owner_authorization_v1"
+V7_REPAIR_R5_STAGE4_PROJECT_RUNTIME_LOGICAL_ENTRY = ".runtime"
+V7_REPAIR_R5_STAGE4_REGISTERED_HOT_RUNTIME_ROOT = "D:/AI-PET-WORLD-DATA/hot/runtime"
+V8_STAGE4_SMOKE_INACTIVE_STATUS = "v8_stage4_shared_readout_training_loss_supported_inactive"
+V8_STAGE4_SMOKE_PREFLIGHT_STATUS = "owner_authorized_v8_stage4_single_sample_smoke_preflight_only"
+V8_STAGE4_SMOKE_ACTIVE_STATUS = "owner_authorized_v8_stage4_single_sample_gpu_smoke"
+V9_STAGE4_CPU_INACTIVE_STATUS = "v9_stage4_object_semantic_decoder_alignment_cpu_supported_inactive"
+V9_STAGE4_SMOKE_ACTIVE_STATUS = "owner_authorized_v9_stage4_single_sample_gpu_smoke"
 V7_MVP64_SPLIT_COUNTS = {
     "train": 48,
     "validation": 8,
@@ -133,6 +141,17 @@ V7_R5_STAGE4_ROUTE_DIAGNOSTIC_MEASUREMENTS = (
     "spatial_distribution",
     "centroid",
     "required_boundary_contact",
+)
+V9_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS = tuple(
+    f"stage4DiagnosticObject{object_name}{measurement}"
+    for object_name in ("Footprints", "Tree", "Rock", "Vegetation")
+    for measurement in ("IndependentLoss", "GradientContribution", "DecodedResponsePrototypeMae")
+) + (
+    "stage4DiagnosticObjectGradientAvailable",
+    "stage4DiagnosticRouteActivationMassRatio",
+    "stage4DiagnosticRouteSpatialDistributionL1",
+    "stage4DiagnosticRouteCentroidDrift",
+    "stage4DiagnosticRouteRequiredBoundaryContactMinimum",
 )
 
 
@@ -180,7 +199,11 @@ def main() -> int:
             raise ValueError("V7 R4 authorized Smoke epoch count does not match")
         if int(args.overfit_evaluation_interval) != int(smoke_contract.get("plannedEvaluationInterval", 0)):
             raise ValueError("V7 R4 authorized Smoke evaluation interval does not match")
-    if config.get("training", {}).get("boundedRepairVersion") == "v7_bounded_repair_r5_candidate":
+    if (
+        config.get("training", {}).get("boundedRepairVersion") == "v7_bounded_repair_r5_candidate"
+        and not is_v8_stage4_decoded_alignment(config)
+        and not is_v9_stage4_object_semantic_decoded_alignment(config)
+    ):
         training = config["training"]
         authorization_status = training.get("trainingAuthorizationStatus")
         stage4_bounded_smoke = authorization_status in {
@@ -246,6 +269,56 @@ def main() -> int:
                 raise ValueError("V7 R5 authorized Smoke epoch count does not match")
             if int(args.overfit_evaluation_interval) != int(training.get("smokeStabilityGate", {}).get("evaluationInterval", 0)):
                 raise ValueError("V7 R5 authorized Smoke evaluation interval does not match")
+    if is_v8_stage4_decoded_alignment(config):
+        training = config["training"]
+        authorization_status = training.get("trainingAuthorizationStatus")
+        if authorization_status == V8_STAGE4_SMOKE_INACTIVE_STATUS:
+            if args.preflight_only is not True:
+                raise ValueError("V8 Stage 4 inactive Smoke config cannot execute training")
+            if args.initial_denoiser_checkpoint is not None:
+                raise ValueError("V8 Stage 4 Smoke must start from project random V8 initialization")
+        elif authorization_status in {V8_STAGE4_SMOKE_PREFLIGHT_STATUS, V8_STAGE4_SMOKE_ACTIVE_STATUS}:
+            if authorization_status == V8_STAGE4_SMOKE_PREFLIGHT_STATUS and args.preflight_only is not True:
+                raise ValueError("V8 Stage 4 preflight config cannot execute training")
+            smoke_contract = training.get("v8Stage4SingleSampleSmokeContract", {})
+            if args.single_sample_overfit_smoke is not True or args.smoke_test:
+                raise ValueError("V8 Stage 4 authorization permits only single-sample overfit Smoke")
+            if args.overfit_sample_id != training.get("authorizedOverfitSampleId") or args.overfit_sample_id != smoke_contract.get("sampleId"):
+                raise ValueError("V8 Stage 4 fixed Smoke sample identity does not match")
+            if args.initial_denoiser_checkpoint is not None:
+                raise ValueError("V8 Stage 4 Smoke must start from project random V8 initialization")
+            if int(args.overfit_epochs or 0) != 30 or int(smoke_contract.get("epochCount", 0)) != 30:
+                raise ValueError("V8 Stage 4 Smoke requires exactly 30 Epoch")
+            if int(args.overfit_evaluation_interval) != 5 or smoke_contract.get("previewEpochs") != [1, 5, 10, 20, 30]:
+                raise ValueError("V8 Stage 4 Smoke preview schedule is invalid")
+            if args.resolution_stage != 0 or training.get("authorizedInitialization") != "project_random_v8_denoiser":
+                raise ValueError("V8 Stage 4 Smoke initialization or resolution is invalid")
+        else:
+            raise ValueError("V8 Stage 4 training authorization status is invalid")
+    if is_v9_stage4_object_semantic_decoded_alignment(config):
+        training = config["training"]
+        smoke_contract = training.get("v9Stage4SingleSampleSmokeContract", {})
+        authorization_status = training.get("trainingAuthorizationStatus")
+        if authorization_status == V9_STAGE4_CPU_INACTIVE_STATUS:
+            if args.preflight_only is not True:
+                raise ValueError("V9 Stage 4 inactive CPU support configuration cannot execute training")
+        elif authorization_status == V9_STAGE4_SMOKE_ACTIVE_STATUS:
+            if args.preflight_only is True:
+                raise ValueError("V9 Stage 4 active Smoke configuration cannot be used as a preflight substitute")
+        else:
+            raise ValueError("V9 Stage 4 training authorization status is invalid")
+        if args.initial_denoiser_checkpoint is not None:
+            raise ValueError("V9 Stage 4 must reject every V7 or V8 parent Denoiser Checkpoint")
+        if args.single_sample_overfit_smoke is not True or args.smoke_test:
+            raise ValueError("V9 Stage 4 authorization permits only the bound single-sample Smoke")
+        if args.overfit_sample_id != smoke_contract.get("sampleId") or args.overfit_sample_id != training.get("authorizedOverfitSampleId"):
+            raise ValueError("V9 Stage 4 fixed Smoke sample identity does not match")
+        if int(args.overfit_epochs or 0) != 30 or int(smoke_contract.get("epochCount", 0)) != 30:
+            raise ValueError("V9 Stage 4 Smoke requires exactly 30 Epoch")
+        if int(args.overfit_evaluation_interval) != 5 or smoke_contract.get("previewEpochs") != [1, 5, 10, 20, 30]:
+            raise ValueError("V9 Stage 4 Smoke preview schedule does not match")
+        if args.resolution_stage != 0 or training.get("authorizedInitialization") != "project_random_v9_denoiser":
+            raise ValueError("V9 Stage 4 Smoke initialization or resolution is invalid")
     if args.resolution_stage < 0 or args.resolution_stage >= len(config["training"]["resolutionStages"]):
         raise ValueError("resolution stage is outside the configured progressive stages")
     stage = config["training"]["resolutionStages"][args.resolution_stage]
@@ -256,20 +329,24 @@ def main() -> int:
             split,
             list(config["conditionChannelOrder"]),
             image_size,
-            require_v7_capacity_contribution=is_v7(config),
+            selection_contract=conditional_dataset_selection_contract(config),
         )
         for split in ("train", "validation", "challenge", "regression")
     }
     dataset_binding_evidence = (
         validate_loaded_v7_datasets(datasets)
-        if is_v7(config)
+        if uses_registered_v7_capacity_dataset(config)
         else {
             "selectionMode": "current_condition_identity",
             "actualLoadedConditionalSampleCount": sum(len(dataset) for dataset in datasets.values()),
             "actualSplitCounts": {split: len(dataset) for split, dataset in datasets.items()},
         }
     )
-    overfit_evidence = build_single_sample_overfit_evidence(datasets, args)
+    overfit_evidence = build_single_sample_overfit_evidence(datasets, args, config)
+    sample_bound_boundary_provenance = validate_stage4_sample_bound_boundary_provenance(
+        config,
+        overfit_evidence,
+    )
     if args.preflight_only:
         print(json.dumps({
             "status": "conditional_denoiser_python_preflight_passed",
@@ -282,6 +359,7 @@ def main() -> int:
             "checkpointCreated": False,
             "formalInferenceEligible": False,
             "singleSampleOverfitSmoke": overfit_evidence,
+            "sampleBoundBoundaryProvenance": sample_bound_boundary_provenance,
         }, ensure_ascii=False, indent=2))
         return 0
 
@@ -289,6 +367,12 @@ def main() -> int:
     set_seed(seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     args.output_dir.mkdir(parents=True, exist_ok=False)
+    step_telemetry_path = initialize_stage4_step_telemetry(
+        args.output_dir,
+        config,
+        overfit_evidence,
+        device,
+    )
     started_at = utc_now()
     started_at_shanghai = asia_shanghai_now()
     started = time.perf_counter()
@@ -303,9 +387,15 @@ def main() -> int:
         for split, dataset in optimization_datasets.items()
     }
 
+    record_stage4_step(step_telemetry_path, "model_device_placement", "started", device=str(device))
     model = build_complete_world_system(config).to(device)
+    record_stage4_step(step_telemetry_path, "model_device_placement", "completed", device=str(device))
+    record_stage4_step(step_telemetry_path, "autoencoder_checkpoint_read", "started")
     autoencoder_checkpoint = load_autoencoder_checkpoint(args.autoencoder_checkpoint, config)
+    record_stage4_step(step_telemetry_path, "autoencoder_checkpoint_read", "completed")
+    record_stage4_step(step_telemetry_path, "autoencoder_state_load", "started")
     model.autoencoder.load_state_dict(autoencoder_checkpoint["autoencoderState"])
+    record_stage4_step(step_telemetry_path, "autoencoder_state_load", "completed")
     model.autoencoder.eval()
     for parameter in model.autoencoder.parameters():
         parameter.requires_grad_(False)
@@ -314,19 +404,24 @@ def main() -> int:
     r5_checkpoint_continuation = (
         config.get("training", {}).get("boundedRepairVersion") == "v7_bounded_repair_r5_candidate"
         and args.single_sample_overfit_smoke
+        and is_v7(config)
     )
     if r5_checkpoint_continuation:
         if args.resolution_stage != 0 or args.initial_denoiser_checkpoint is None:
             raise ValueError("V7 R5 checkpoint continuation is restricted to the Stage 0 single-sample Smoke")
         if config.get("training", {}).get("trainingAuthorizationStatus") == V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS:
+            record_stage4_step(step_telemetry_path, "denoiser_checkpoint_read", "started")
             parent_denoiser_checkpoint = load_stage4_bounded_repair_checkpoint(
                 args.initial_denoiser_checkpoint,
                 config,
                 package,
             )
+            record_stage4_step(step_telemetry_path, "denoiser_checkpoint_read", "completed")
         else:
             parent_denoiser_checkpoint = load_r5_continuation_checkpoint(args.initial_denoiser_checkpoint, config, package)
+        record_stage4_step(step_telemetry_path, "denoiser_state_load", "started")
         model.denoiser.load_state_dict(parent_denoiser_checkpoint["denoiserState"])
+        record_stage4_step(step_telemetry_path, "denoiser_state_load", "completed")
         if config.get("training", {}).get("trainingAuthorizationStatus") == V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS:
             denoiser_initialization = "project_stage4_failed_stage0_checkpoint_continuation_nonformal_smoke"
         else:
@@ -346,7 +441,7 @@ def main() -> int:
 
     record_stage4_smoke_state_hashes = (
         config.get("training", {}).get("trainingAuthorizationStatus")
-        == V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS
+        in {V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS, V8_STAGE4_SMOKE_ACTIVE_STATUS, V9_STAGE4_SMOKE_ACTIVE_STATUS}
     )
     initial_denoiser_state_sha256 = (
         state_dict_sha256(model.denoiser.state_dict())
@@ -360,7 +455,9 @@ def main() -> int:
         else compute_latent_normalization(model, datasets["train"], device)
     )
     diffusion = build_diffusion_schedule(config, device)
+    record_stage4_step(step_telemetry_path, "optimizer_creation", "started")
     optimizer = torch.optim.AdamW(model.denoiser.parameters(), lr=float(config["training"]["denoiserLearningRate"]))
+    record_stage4_step(step_telemetry_path, "optimizer_creation", "completed")
     epoch_count = (
         int(args.overfit_epochs)
         if args.single_sample_overfit_smoke
@@ -405,6 +502,11 @@ def main() -> int:
     trajectory_steps_per_sample = (
         int(config["training"].get("shortTrajectorySupervision", {}).get("steps", 0))
         if config["training"].get("shortTrajectorySupervision", {}).get("enabled") is True
+        else 0
+    )
+    cross_domain_rollout_steps_per_sample = (
+        int(config["inferenceSteps"])
+        if config["training"].get("stage4CrossDomainVisualConsistency", {}).get("enabled") is True
         else 0
     )
     latent_spatial_positions = (
@@ -461,8 +563,9 @@ def main() -> int:
                 + batch_progress["samplesProcessedInEpoch"]
             )
             local_denoiser_sample_forward_passes = completed_training_samples * (
-                1 + trajectory_steps_per_sample
-            ) * optimizer_steps_per_batch
+                (1 + trajectory_steps_per_sample) * optimizer_steps_per_batch
+                + cross_domain_rollout_steps_per_sample
+            )
             persist_live_progress(build_live_progress(
                 phase="training_batch",
                 epoch=epoch + 1,
@@ -491,6 +594,7 @@ def main() -> int:
             epoch,
             max_train_batches,
             on_batch_progress,
+            step_telemetry_path,
         )
         evaluate_this_epoch = (
             not args.single_sample_overfit_smoke
@@ -514,6 +618,7 @@ def main() -> int:
             for key, value in train_metrics.items():
                 if key not in {"compositeLoss", "velocityPredictionMse", "cleanLatentMae"}:
                     row[f"train{upper_camel(key)}"] = value
+            register_v9_stage4_diagnostic_manifest_fields(row, train_metrics, epoch + 1, config)
             metrics.append(row)
             latest_live_progress = build_live_progress(
                 phase="epoch_completed",
@@ -558,7 +663,7 @@ def main() -> int:
         )
         validation_loss = validation["compositeConditionQualityScore"]
         rollout_validation = None
-        if is_v7(config):
+        if uses_v7_rollout_validation(config):
             rollout_validation = evaluate_deterministic_rollout_rgb_quality_v7(
                 model,
                 optimization_datasets["validation"],
@@ -610,6 +715,7 @@ def main() -> int:
         for key, value in validation.items():
             if key not in {"compositeConditionQualityScore", "velocityPredictionMse", "cleanLatentMae", "fixedTimesteps"}:
                 row[f"validationFixedGrid{upper_camel(key)}"] = value
+        register_v9_stage4_diagnostic_manifest_fields(row, train_metrics, epoch + 1, config)
         if validation_loss < best_validation_loss:
             best_validation_loss = validation_loss
             best_epoch = epoch + 1
@@ -734,7 +840,9 @@ def main() -> int:
             "finalDenoiserStateSha256": final_denoiser_state_sha256,
             "weightsChanged": initial_denoiser_state_sha256 != final_denoiser_state_sha256,
         }
+    record_stage4_step(step_telemetry_path, "checkpoint_write", "started")
     torch.save(checkpoint, checkpoint_path)
+    record_stage4_step(step_telemetry_path, "checkpoint_write", "completed")
 
     created_at = utc_now()
     manifest = {
@@ -828,15 +936,21 @@ def main() -> int:
         rolling_epoch_loss=metrics[-1]["trainCompositeLoss"] if metrics else None,
         validation_score=metrics[-1].get("validationFixedGridCompositeConditionQualityScore") if metrics else None,
         checkpoint_score=metrics[-1].get("validationCheckpointSelectionScore") if metrics else None,
-        local_denoiser_sample_forward_passes=epoch_count * train_samples_target_per_epoch * (1 + trajectory_steps_per_sample),
-        local_training_token_count=epoch_count * train_samples_target_per_epoch * (1 + trajectory_steps_per_sample) * latent_spatial_positions,
+        local_denoiser_sample_forward_passes=epoch_count * train_samples_target_per_epoch * (
+            (1 + trajectory_steps_per_sample) * optimizer_steps_per_batch
+            + cross_domain_rollout_steps_per_sample
+        ),
+        local_training_token_count=epoch_count * train_samples_target_per_epoch * (
+            (1 + trajectory_steps_per_sample) * optimizer_steps_per_batch
+            + cross_domain_rollout_steps_per_sample
+        ) * latent_spatial_positions,
     )
     write_progress(args.output_dir, config, package, stage, started_at, started_at_shanghai, None, metrics, "completed", run_is_smoke, manifest, completed_live_progress)
     print(json.dumps({**manifest, "manifestPath": project_path(manifest_path)}, ensure_ascii=False, indent=2))
     return 0
 
 
-def build_single_sample_overfit_evidence(datasets, args):
+def build_single_sample_overfit_evidence(datasets, args, config):
     if not args.single_sample_overfit_smoke:
         return {
             "enabled": False,
@@ -845,21 +959,37 @@ def build_single_sample_overfit_evidence(datasets, args):
     if args.smoke_test:
         raise ValueError("single-sample overfit smoke and program smoke-test are mutually exclusive")
     configured_split = "train"
-    if args.config:
-        smoke_config = read_json(args.config)
-        if smoke_config.get("training", {}).get("trainingAuthorizationStatus") in {
+    training = config.get("training", {})
+    authorization_status = training.get("trainingAuthorizationStatus")
+    if is_v8_stage4_decoded_alignment(config):
+        if authorization_status not in {
+            V8_STAGE4_SMOKE_INACTIVE_STATUS,
+            V8_STAGE4_SMOKE_PREFLIGHT_STATUS,
+            V8_STAGE4_SMOKE_ACTIVE_STATUS,
+        }:
+            raise ValueError("V8 Stage 4 Smoke sample selection requires an authorized V8 Smoke status")
+        configured_split = training.get("v8Stage4SingleSampleSmokeContract", {}).get("sampleSplit")
+        if configured_split != "validation":
+            raise ValueError("V8 Stage 4 Smoke must use the bound validation diagnostic sample")
+    elif is_v9_stage4_object_semantic_decoded_alignment(config):
+        if authorization_status not in {V9_STAGE4_CPU_INACTIVE_STATUS, V9_STAGE4_SMOKE_ACTIVE_STATUS}:
+            raise ValueError("V9 Stage 4 sample selection requires an authorized V9 status")
+        configured_split = training.get("v9Stage4SingleSampleSmokeContract", {}).get("sampleSplit")
+        if configured_split != "validation":
+            raise ValueError("V9 Stage 4 must preserve the bound validation sample")
+    elif authorization_status in {
             V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS,
             V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS,
-        }:
-            configured_split = smoke_config.get("training", {}).get("authorizedOverfitSampleSplit")
-            if configured_split != "validation":
-                raise ValueError("V7 R5 Stage 4 bounded-repair Smoke must use the bound validation diagnostic sample")
+    }:
+        configured_split = training.get("authorizedOverfitSampleSplit")
+        if configured_split != "validation":
+            raise ValueError("V7 R5 Stage 4 bounded-repair Smoke must use the bound validation diagnostic sample")
     rows = datasets[configured_split].rows
     selected_index = 0
     if args.overfit_sample_id:
         matches = [index for index, row in enumerate(rows) if row.get("sampleId") == args.overfit_sample_id]
         if len(matches) != 1:
-            raise ValueError("single-sample overfit sample id must match exactly one train row")
+            raise ValueError(f"single-sample overfit sample id must match exactly one {configured_split} row")
         selected_index = matches[0]
     row = rows[selected_index]
     return {
@@ -873,6 +1003,238 @@ def build_single_sample_overfit_evidence(datasets, args):
         "fullDatasetBindingStillRequired": True,
         "formalModelPromotionEligible": False,
     }
+
+
+def validate_stage4_sample_bound_boundary_provenance(config, overfit_evidence):
+    training = config.get("training", {})
+    authorization_status = training.get("trainingAuthorizationStatus")
+    if authorization_status not in {
+        V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS,
+        V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS,
+        V8_STAGE4_SMOKE_INACTIVE_STATUS,
+        V8_STAGE4_SMOKE_ACTIVE_STATUS,
+        V9_STAGE4_CPU_INACTIVE_STATUS,
+        V9_STAGE4_SMOKE_ACTIVE_STATUS,
+    }:
+        return {
+            "enabled": False,
+            "status": "not_applicable_non_stage4_bounded_smoke",
+        }
+    if overfit_evidence.get("enabled") is not True:
+        raise ValueError("Stage4 sample-bound boundary provenance requires the fixed Smoke sample")
+    if is_v9_stage4_object_semantic_decoded_alignment(config):
+        smoke_contract = training.get("v9Stage4SingleSampleSmokeContract", {})
+    elif is_v8_stage4_decoded_alignment(config):
+        smoke_contract = training.get("v8Stage4SingleSampleSmokeContract", {})
+    else:
+        smoke_contract = training.get("r5Stage4BoundedRepairSmokeContract", {})
+    sample_id = overfit_evidence.get("sampleId")
+    condition_pack_path = overfit_evidence.get("conditionPackPath")
+    if sample_id != smoke_contract.get("sampleId") or sample_id != training.get("authorizedOverfitSampleId"):
+        raise ValueError("Stage4 sample-bound boundary provenance sample identity mismatch")
+    if condition_pack_path != smoke_contract.get("conditionPackPath"):
+        raise ValueError("Stage4 sample-bound boundary provenance condition pack mismatch")
+    condition_pack = read_json(condition_pack_path)
+    if condition_pack.get("status") != "compiled_conditions_ready":
+        raise ValueError("Stage4 sample-bound boundary provenance condition pack is not ready")
+    task_package_path = condition_pack.get("sourceBindings", {}).get("taskPackagePath")
+    if not task_package_path:
+        raise ValueError("Stage4 sample-bound boundary provenance task package path is missing")
+    task_package = read_json(task_package_path)
+    blueprint_path = task_package.get("sourceBindings", {}).get("trainingBlueprintPath")
+    connectivity_path = task_package.get("sourceBindings", {}).get("connectivityBlueprintPath")
+    if not blueprint_path or not connectivity_path:
+        raise ValueError("Stage4 sample-bound boundary provenance source paths are missing")
+    blueprint = read_json(blueprint_path)
+    connectivity = read_json(connectivity_path)
+    source_sides = {
+        "taskPackageWorldFrame": task_package.get("worldFrameContract", {}).get("boundaryConnectivity", {}).get("pathBoundarySide"),
+        "blueprintWorldFrame": blueprint.get("worldFrameContract", {}).get("boundaryConnectivity", {}).get("pathBoundarySide"),
+        "blueprintRouteAudit": blueprint.get("geometry", {}).get("routeWaterAvoidanceAudit", {}).get("pathBoundarySide"),
+        "regionalConnectivityPathPlan": connectivity.get("anonymousTrainingCoordinateProjection", {}).get("pathPlan", {}).get("boundarySide"),
+    }
+    source_side_values = list(source_sides.values())
+    if any(side not in {"north", "south", "west", "east"} for side in source_side_values):
+        raise ValueError("Stage4 sample-bound boundary provenance source side is missing or invalid")
+    if len(set(source_side_values)) != 1:
+        raise ValueError("Stage4 sample-bound boundary provenance source sides disagree")
+    authoritative_sides = [source_side_values[0]]
+    configured_sides = list(training.get("authorizedBoundaryTopology", {}).get("requiredBoundarySides", []))
+    if configured_sides != authoritative_sides:
+        raise ValueError(
+            "Stage4 sample-bound boundary provenance required sides do not match current sample: "
+            f"configured={configured_sides}, authoritative={authoritative_sides}"
+        )
+    canvas = condition_pack.get("canvas", {})
+    canvas_width = int(canvas.get("width", 0))
+    canvas_height = int(canvas.get("height", 0))
+    path_centerline = blueprint.get("geometry", {}).get("pathCenterline", [])
+    if canvas_width <= 0 or canvas_height <= 0 or not path_centerline:
+        raise ValueError("Stage4 sample-bound boundary provenance route geometry is missing")
+    geometry_contacts = route_geometry_boundary_contacts(path_centerline, canvas_width, canvas_height)
+    if geometry_contacts != authoritative_sides:
+        raise ValueError(
+            "Stage4 sample-bound boundary provenance route geometry contact mismatch: "
+            f"geometry={geometry_contacts}, authoritative={authoritative_sides}"
+        )
+    path_channel = next(
+        (channel for channel in condition_pack.get("channels", []) if channel.get("id") == "terrain_path_ground"),
+        None,
+    )
+    if not path_channel or path_channel.get("derivation") != "rasterized_from_current_task_geometry":
+        raise ValueError("Stage4 sample-bound boundary provenance terrain_path_ground binding is invalid")
+    mask_path = path_channel.get("path")
+    if not mask_path or sha256_file(mask_path) != path_channel.get("sha256"):
+        raise ValueError("Stage4 sample-bound boundary provenance terrain_path_ground hash mismatch")
+    band_ratio = float(training.get("authorizedBoundaryTopology", {}).get("boundaryBandRatio", 0.04))
+    resolution_evidence = []
+    for stage in training.get("resolutionStages", []):
+        width = int(stage.get("width", 0))
+        height = int(stage.get("height", 0))
+        contacted_sides, counts, band_pixels = mask_boundary_contacts(
+            mask_path,
+            width,
+            height,
+            band_ratio,
+        )
+        if contacted_sides != authoritative_sides:
+            raise ValueError(
+                "Stage4 sample-bound boundary provenance mask contact mismatch: "
+                f"resolution={width}x{height}, mask={contacted_sides}, authoritative={authoritative_sides}"
+            )
+        resolution_evidence.append({
+            "width": width,
+            "height": height,
+            "bandPixels": band_pixels,
+            "contactedSides": contacted_sides,
+            "boundaryNonZeroCounts": counts,
+        })
+    return {
+        "enabled": True,
+        "status": "current_sample_world_fact_geometry_and_mask_topology_verified_before_checkpoint_read",
+        "sampleId": sample_id,
+        "conditionPackPath": condition_pack_path,
+        "conditionPackSha256": sha256_file(condition_pack_path),
+        "taskPackagePath": task_package_path,
+        "taskPackageSha256": sha256_file(task_package_path),
+        "worldFactBlueprintPath": blueprint_path,
+        "worldFactBlueprintSha256": sha256_file(blueprint_path),
+        "regionalConnectivityPath": connectivity_path,
+        "regionalConnectivitySha256": sha256_file(connectivity_path),
+        "authority": "current_sample_world_fact_topology_and_project_route_geometry",
+        "conditionMaskRole": "consistency_validation_only",
+        "sourceBoundarySides": source_sides,
+        "authoritativeRequiredBoundarySides": authoritative_sides,
+        "configuredRequiredBoundarySides": configured_sides,
+        "geometryContactSides": geometry_contacts,
+        "maskResolutionEvidence": resolution_evidence,
+        "checkpointFileRead": False,
+        "gpuStarted": False,
+    }
+
+
+def route_geometry_boundary_contacts(points, width, height):
+    contacts = []
+    if any(float(point.get("y", 1)) <= 0 for point in points):
+        contacts.append("north")
+    if any(float(point.get("y", -1)) >= height - 1 for point in points):
+        contacts.append("south")
+    if any(float(point.get("x", 1)) <= 0 for point in points):
+        contacts.append("west")
+    if any(float(point.get("x", -1)) >= width - 1 for point in points):
+        contacts.append("east")
+    return contacts
+
+
+def mask_boundary_contacts(mask_path, width, height, band_ratio):
+    if width <= 0 or height <= 0:
+        raise ValueError("Stage4 sample-bound boundary provenance resolution is invalid")
+    resampling = getattr(Image, "Resampling", Image)
+    with Image.open(Path.cwd() / mask_path) as image:
+        mask = np.asarray(image.convert("L").resize((width, height), resampling.NEAREST)) > 0
+    band = max(1, round(min(width, height) * band_ratio))
+    counts = {
+        "north": int(mask[:band, :].sum()),
+        "south": int(mask[-band:, :].sum()),
+        "west": int(mask[:, :band].sum()),
+        "east": int(mask[:, -band:].sum()),
+    }
+    return [side for side in ("north", "south", "west", "east") if counts[side] > 0], counts, band
+
+
+def initialize_stage4_step_telemetry(output_dir, config, overfit_evidence, device):
+    authorization_status = config.get("training", {}).get("trainingAuthorizationStatus")
+    if authorization_status not in {
+        V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS,
+        V8_STAGE4_SMOKE_ACTIVE_STATUS,
+        V9_STAGE4_SMOKE_ACTIVE_STATUS,
+    }:
+        return None
+    telemetry_path = output_dir / "stage4-step-telemetry.json"
+    write_json_atomic(telemetry_path, {
+        "schemaVersion": "stage4-bounded-repair-smoke-step-telemetry-v1",
+        "status": "initialized_before_model_device_placement",
+        "createdAtUtc": utc_now(),
+        "createdAtAsiaShanghai": asia_shanghai_now(),
+        "sampleId": overfit_evidence.get("sampleId"),
+        "device": str(device),
+        "events": [],
+        "state": {},
+        "latestStep": None,
+        "latestStatus": None,
+    })
+    return telemetry_path
+
+
+def record_stage4_step(telemetry_path, step, status, **details):
+    if telemetry_path is None:
+        return
+    allowed_steps = {
+        "model_device_placement",
+        "autoencoder_checkpoint_read",
+        "autoencoder_state_load",
+        "denoiser_checkpoint_read",
+        "denoiser_state_load",
+        "optimizer_creation",
+        "batch_device_transfer",
+        "forward_loss",
+        "backward",
+        "optimizer_step",
+        "checkpoint_write",
+    }
+    if step not in allowed_steps or status not in {"started", "completed", "failed"}:
+        raise ValueError("Stage4 step telemetry event is invalid")
+    telemetry = read_json(telemetry_path)
+    events = telemetry.get("events", [])
+    event = {
+        "sequence": len(events) + 1,
+        "step": step,
+        "status": status,
+        "recordedAtUtc": utc_now(),
+        "recordedAtAsiaShanghai": asia_shanghai_now(),
+        **details,
+    }
+    events.append(event)
+    prefix = "".join(part[:1].upper() + part[1:] for part in step.split("_"))
+    prefix = prefix[:1].lower() + prefix[1:]
+    state = telemetry.get("state", {})
+    if status == "started":
+        state[f"{prefix}Started"] = True
+    elif status == "completed":
+        state[f"{prefix}Started"] = True
+        state[f"{prefix}Completed"] = True
+    else:
+        state[f"{prefix}Failed"] = True
+    telemetry.update({
+        "status": "step_recorded",
+        "events": events,
+        "state": state,
+        "latestStep": step,
+        "latestStatus": status,
+        "updatedAtUtc": event["recordedAtUtc"],
+        "updatedAtAsiaShanghai": event["recordedAtAsiaShanghai"],
+    })
+    write_json_atomic(telemetry_path, telemetry)
 
 
 def build_optimization_datasets(datasets, overfit_evidence):
@@ -997,6 +1359,10 @@ def validate_training_inputs(config, package):
             validate_v7_r4_candidate_contract(config)
         if training.get("boundedRepairVersion") == "v7_bounded_repair_r5_candidate":
             allowed_loss_versions.add("velocity_decoded_rgb_path_replay_trajectory_stability_v7_repair_r5_candidate")
+            if "r5Stage4CrossDomainVisualConsistencySelectionEvidence" in training:
+                allowed_loss_versions.add("velocity_decoded_rgb_path_replay_cross_domain_visual_consistency_v7_repair_r5_candidate")
+            if "r5Stage4StructuredStabilitySelectionEvidence" in training:
+                allowed_loss_versions.add("velocity_decoded_rgb_path_replay_cross_domain_structured_stability_v7_repair_r5_candidate")
             allowed_checkpoint_metrics.add("all_validation_multiseed_path_replay_trajectory_stability_score_v7_repair_r5_candidate")
             validate_v7_r5_candidate_contract(config)
         if training.get("denoiserLossVersion") not in allowed_loss_versions:
@@ -1013,6 +1379,10 @@ def validate_training_inputs(config, package):
         required_sparse = {"terrain_water", "terrain_path_ground", "terrain_shoreline", "object_footprints", "focal_area"}
         if set(training.get("sparseRgbConditionChannels", [])) != required_sparse:
             raise ValueError("V7 sparse RGB condition channels are incomplete")
+    elif architecture == "multiscale_condition_unet_v8_stage4_decoded_alignment":
+        validate_v8_stage4_decoded_domain_alignment_training_contract(config, package)
+    elif architecture == "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment":
+        validate_v9_stage4_object_semantic_decoded_alignment_cpu_contract(config, package)
     else:
         raise ValueError("unsupported conditional denoiser architecture")
     if package.get("schemaVersion") != "ai-assisted-cold-start-dataset-package-v1":
@@ -1339,6 +1709,93 @@ def build_v7_r5_candidate_config(
     return config
 
 
+def validate_v7_r5_stage4_inactive_full_training_contract(config):
+    training = config.get("training", {})
+    contract = training.get("stage4FullTrainingContract")
+    if not isinstance(contract, dict):
+        raise ValueError("V7 R5 Stage 4 inactive full-training contract is missing")
+    if training.get("trainingAuthorizationStatus") != "not_authorized_candidate_only":
+        raise ValueError("V7 R5 Stage 4 inactive full-training contract cannot activate training")
+    if contract.get("status") != "compiled_not_active":
+        raise ValueError("V7 R5 Stage 4 inactive full-training contract status is invalid")
+    if contract.get("datasetCapacityCount") != 64 or contract.get("splitCounts") != {
+        "train": 48,
+        "validation": 8,
+        "challenge": 4,
+        "regression": 4,
+    }:
+        raise ValueError("V7 R5 Stage 4 inactive full-training dataset contract is invalid")
+    expected_stages = [
+        {
+            "index": 0,
+            "width": 256,
+            "height": 192,
+            "epochs": 40,
+            "initialization": "deterministic_project_random",
+        },
+        {
+            "index": 1,
+            "width": 512,
+            "height": 384,
+            "epochs": 40,
+            "initialization": "current_run_stage_0_checkpoint_only",
+        },
+        {
+            "index": 2,
+            "width": 1024,
+            "height": 768,
+            "epochs": 40,
+            "initialization": "current_run_stage_1_checkpoint_only",
+        },
+    ]
+    if contract.get("stages") != expected_stages:
+        raise ValueError("V7 R5 Stage 4 inactive full-training stages must remain 40 Epoch each")
+    if contract.get("fixedPreviewEpochsPerStage") != [1, 5, 10, 20, 30, 40]:
+        raise ValueError("V7 R5 Stage 4 inactive full-training preview policy is invalid")
+    expected_flags = {
+        "machineReviewRequiredPerStage": True,
+        "stopOnFirstFailure": True,
+        "automaticRetryAuthorized": False,
+        "stage3SmokeCheckpointInitializationAuthorized": False,
+        "strictRevalidationAuthorized": False,
+    }
+    for key, expected in expected_flags.items():
+        if contract.get(key) is not expected:
+            raise ValueError(f"V7 R5 Stage 4 inactive full-training boundary is invalid: {key}")
+    if int(training.get("denoiserEpochs", 0)) != 40:
+        raise ValueError("V7 R5 Stage 4 inactive full-training denoiserEpochs must be 40")
+    return {
+        "status": "v7_r5_stage4_inactive_full_training_contract_valid_not_active",
+        "stageCount": 3,
+        "epochsPerStage": 40,
+        "stage3SmokeContinuationEpochs": 30,
+    }
+
+
+def is_v7_r5_stage4_contract_mode(config):
+    training = config.get("training", {})
+    authorization_status = training.get("trainingAuthorizationStatus")
+    stage4_bounded_repair_candidate = any(key in training for key in (
+        "r5Stage4DiagnosticEvidenceBoundedSelectionEvidence",
+        "r5Stage4CrossDomainVisualConsistencySelectionEvidence",
+        "r5Stage4StructuredStabilitySelectionEvidence",
+    ))
+    inactive_full_training = (
+        authorization_status == "not_authorized_candidate_only"
+        and "stage4FullTrainingContract" in training
+    )
+    if inactive_full_training:
+        validate_v7_r5_stage4_inactive_full_training_contract(config)
+    return (
+        authorization_status in {
+            V7_REPAIR_R5_STAGE4_PREFLIGHT_AUTHORIZATION_STATUS,
+            V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_STATUS,
+        }
+        or stage4_bounded_repair_candidate
+        or inactive_full_training
+    )
+
+
 def validate_v7_r5_candidate_contract(config):
     training = config.get("training", {})
     evidence = training.get("r5BoundedSelectionEvidence", {})
@@ -1350,11 +1807,12 @@ def validate_v7_r5_candidate_contract(config):
         raise ValueError("V7 R5 candidate cannot change object weights")
 
     authorization_status = training.get("trainingAuthorizationStatus")
-    stage4_bounded_repair_candidate = "r5Stage4DiagnosticEvidenceBoundedSelectionEvidence" in training
-    stage4_mode = authorization_status in {
-        V7_REPAIR_R5_STAGE4_PREFLIGHT_AUTHORIZATION_STATUS,
-        V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_STATUS,
-    } or stage4_bounded_repair_candidate
+    stage4_bounded_repair_candidate = (
+        "r5Stage4DiagnosticEvidenceBoundedSelectionEvidence" in training
+        or "r5Stage4CrossDomainVisualConsistencySelectionEvidence" in training
+        or "r5Stage4StructuredStabilitySelectionEvidence" in training
+    )
+    stage4_mode = is_v7_r5_stage4_contract_mode(config)
     selected_fields = {
         # Stage 3 bounded-selection evidence governs its 30-Epoch Smoke only.
         # Stage 4 has an independent formal per-stage epoch contract validated below.
@@ -1407,6 +1865,10 @@ def validate_v7_r5_candidate_contract(config):
         "stage4RequiredBoundaryContact",
     )):
         validate_v7_r5_stage4_diagnostic_evidence_bounded_repair_contract(config)
+    if "r5Stage4CrossDomainVisualConsistencySelectionEvidence" in training:
+        validate_v7_r5_stage4_cross_domain_visual_consistency_contract(config)
+    if "r5Stage4StructuredStabilitySelectionEvidence" in training:
+        validate_v7_r5_stage4_structured_stability_candidate_contract(config)
 
     continuation = training.get("r5CheckpointContinuation", {})
     if continuation.get("sourceBoundedRepairVersion") != "v7_bounded_repair_r4_candidate":
@@ -1729,6 +2191,954 @@ def validate_v7_r5_stage4_diagnostic_evidence_bounded_repair_contract(config):
         "pathActivationMassCalibrationWeight": activation_weight,
         "requiredBoundaryContactLossWeight": contact_weight,
         "requiredBoundarySides": required_sides,
+    }
+
+
+def validate_v7_r5_stage4_cross_domain_visual_consistency_contract(config):
+    training = config.get("training", {})
+    evidence = training.get("r5Stage4CrossDomainVisualConsistencySelectionEvidence", {})
+    contract = training.get("stage4CrossDomainVisualConsistency", {})
+    if evidence.get("candidateVersion") != "v7_r5_stage4_cross_domain_visual_consistency_candidate_v1":
+        raise ValueError("V7 R5 Stage 4 cross-domain candidate identity is invalid")
+    if evidence.get("candidateStatus") != "selected_inactive_not_authorized":
+        raise ValueError("V7 R5 Stage 4 cross-domain candidate provenance must remain inactive")
+    if evidence.get("selectionPolicy") != "five_preview_failure_prevalence_linear_mapping_with_existing_training_weight_caps":
+        raise ValueError("V7 R5 Stage 4 cross-domain selection policy is invalid")
+    if evidence.get("reviewThresholdPolicy") != "preserved_unchanged_not_used_as_training_target":
+        raise ValueError("V7 R5 Stage 4 cross-domain candidate cannot reinterpret review thresholds")
+    expected_selections = {
+        "crossDomainRolloutWeight": (0.175, 0.35, 0.35),
+        "gradientTailSteps": (2.0, 5.0, 5.0),
+        "objectRockRelativeMultiplier": (1.0, 1.25, 1.25),
+    }
+    selections = evidence.get("selectedValues", {})
+    for name, expected in expected_selections.items():
+        record = selections.get(name, {})
+        actual = tuple(float(record.get(key, float("nan"))) for key in ("minimum", "maximum", "selectedValue"))
+        if not all(math.isfinite(value) for value in actual):
+            raise ValueError(f"V7 R5 Stage 4 cross-domain {name} selection is invalid")
+        if any(not math.isclose(value, wanted, rel_tol=0.0, abs_tol=1e-12) for value, wanted in zip(actual, expected)):
+            raise ValueError(f"V7 R5 Stage 4 cross-domain {name} selection does not match its bounded evidence")
+        if not actual[0] <= actual[2] <= actual[1]:
+            raise ValueError(f"V7 R5 Stage 4 cross-domain {name} selection is outside its bounds")
+
+    required_identity = {
+        "enabled": True,
+        "targetSource": "original_owner_approved_rgb_and_condition_pack_only",
+        "rolloutInitializationSource": "deterministic_noise_from_task_seed_plus_preview_offset_without_preview_pixels",
+        "conditionChannel": "terrain_path_ground",
+        "objectChannel": "object_rock",
+        "failedPreviewPixelsUsedAsTrainingTargets": False,
+        "machineReviewThresholdUsedAsTrainingTarget": False,
+        "inferenceStepsSource": "model_config_inference_steps",
+    }
+    for key, expected in required_identity.items():
+        if contract.get(key) != expected:
+            raise ValueError(f"V7 R5 Stage 4 cross-domain contract {key} is invalid")
+    if int(contract.get("previewSeedOffset", -1)) != 3000:
+        raise ValueError("V7 R5 Stage 4 cross-domain preview seed offset is invalid")
+    if int(contract.get("gradientTailSteps", 0)) != 5:
+        raise ValueError("V7 R5 Stage 4 cross-domain gradient tail is invalid")
+    if int(contract.get("gradientTailSteps", 0)) > int(config.get("inferenceSteps", 0)):
+        raise ValueError("V7 R5 Stage 4 cross-domain gradient tail exceeds the rollout")
+    if not math.isclose(float(contract.get("weight", float("nan"))), 0.35, rel_tol=0.0, abs_tol=1e-12):
+        raise ValueError("V7 R5 Stage 4 cross-domain rollout weight is invalid")
+    route = contract.get("route", {})
+    if route.get("lossForm") != "path_rgb_plus_activation_mass_plus_required_boundary_contact":
+        raise ValueError("V7 R5 Stage 4 cross-domain route loss form is invalid")
+    if route.get("requiredSidesSource") != "authorizedBoundaryTopology.requiredBoundarySides":
+        raise ValueError("V7 R5 Stage 4 cross-domain route side source is invalid")
+    rock = contract.get("rock", {})
+    if rock.get("lossForm") != "masked_rgb_plus_masked_edge_reference_consistency":
+        raise ValueError("V7 R5 Stage 4 cross-domain Rock loss form is invalid")
+    if not math.isclose(float(rock.get("rgbWeight", float("nan"))), 1.25, rel_tol=0.0, abs_tol=1e-12):
+        raise ValueError("V7 R5 Stage 4 cross-domain Rock RGB weight is invalid")
+    if not math.isclose(float(rock.get("edgeWeight", float("nan"))), 0.35, rel_tol=0.0, abs_tol=1e-12):
+        raise ValueError("V7 R5 Stage 4 cross-domain Rock edge weight is invalid")
+    if evidence.get("candidateActive") is not False:
+        raise ValueError("V7 R5 Stage 4 cross-domain evidence cannot activate itself")
+    return {
+        "status": "r5_stage4_cross_domain_visual_consistency_contract_valid_not_formally_promoted",
+        "crossDomainRolloutWeight": float(contract["weight"]),
+        "gradientTailSteps": int(contract["gradientTailSteps"]),
+        "requiredBoundarySides": list(training.get("authorizedBoundaryTopology", {}).get("requiredBoundarySides", [])),
+    }
+
+
+def validate_v7_r5_stage4_structured_stability_candidate_contract(config):
+    training = config.get("training", {})
+    evidence = training.get("r5Stage4StructuredStabilitySelectionEvidence", {})
+    contract = training.get("stage4StructuredTrajectoryStability", {})
+    qualification = training.get("stage4LateStabilityQualification", {})
+    if evidence.get("candidateVersion") != "v7_r5_stage4_structured_stability_candidate_v2":
+        raise ValueError("V7 R5 Stage 4 structured stability candidate identity is invalid")
+    if evidence.get("candidateStatus") != "selected_inactive_not_authorized":
+        raise ValueError("V7 R5 Stage 4 structured stability candidate must remain inactive")
+    if evidence.get("selectionPolicy") != "observed_failure_prevalence_linear_mapping_with_existing_weight_caps":
+        raise ValueError("V7 R5 Stage 4 structured stability selection policy is invalid")
+    if evidence.get("reviewThresholdPolicy") != "preserved_unchanged_not_used_as_training_target":
+        raise ValueError("V7 R5 Stage 4 structured stability cannot reinterpret review thresholds")
+    if (
+        evidence.get("failedPreviewPixelsUsedAsTrainingTargets") is not False
+        or evidence.get("machineReviewThresholdUsedAsTrainingTarget") is not False
+    ):
+        raise ValueError("V7 R5 Stage 4 structured stability evidence uses a forbidden training target")
+    expected_selections = {
+        "trajectoryTailStepCount": (2.0, 3.0, 3.0),
+        "routeTrajectoryStabilityWeight": (0.05, 0.2, 0.11),
+        "rockTrajectoryStabilityWeight": (0.05, 0.25, 0.21),
+    }
+    selections = evidence.get("selectedValues", {})
+    for name, expected in expected_selections.items():
+        record = selections.get(name, {})
+        actual = tuple(float(record.get(key, float("nan"))) for key in ("minimum", "maximum", "selectedValue"))
+        if not all(math.isfinite(value) for value in actual):
+            raise ValueError(f"V7 R5 Stage 4 structured stability {name} selection is invalid")
+        if any(not math.isclose(value, wanted, rel_tol=0.0, abs_tol=1e-12) for value, wanted in zip(actual, expected)):
+            raise ValueError(f"V7 R5 Stage 4 structured stability {name} selection does not match evidence")
+        if not actual[0] <= actual[2] <= actual[1]:
+            raise ValueError(f"V7 R5 Stage 4 structured stability {name} selection is outside bounds")
+    required_identity = {
+        "enabled": True,
+        "status": "candidate_support_not_active",
+        "targetSource": "original_owner_approved_rgb_and_condition_pack_only",
+        "trajectorySource": "current_cross_domain_gradient_tail_predictions_only",
+        "failedPreviewPixelsUsedAsTrainingTargets": False,
+        "machineReviewThresholdUsedAsTrainingTarget": False,
+    }
+    for key, expected in required_identity.items():
+        if contract.get(key) != expected:
+            raise ValueError(f"V7 R5 Stage 4 structured stability contract {key} is invalid")
+    tail_steps = int(contract.get("tailStepCount", 0))
+    if tail_steps != 3 or tail_steps > int(training.get("stage4CrossDomainVisualConsistency", {}).get("gradientTailSteps", 0)):
+        raise ValueError("V7 R5 Stage 4 structured stability tail step count is invalid")
+    route = contract.get("route", {})
+    if route.get("conditionChannel") != "terrain_path_ground" or route.get("lossForm") != "original_reference_plus_adjacent_tail_step_consistency":
+        raise ValueError("V7 R5 Stage 4 structured route stability identity is invalid")
+    if not math.isclose(float(route.get("weight", float("nan"))), 0.11, rel_tol=0.0, abs_tol=1e-12):
+        raise ValueError("V7 R5 Stage 4 structured route stability weight is invalid")
+    rock = contract.get("rock", {})
+    if rock.get("conditionChannel") != "object_rock" or rock.get("lossForm") != "original_reference_plus_adjacent_tail_step_consistency":
+        raise ValueError("V7 R5 Stage 4 structured Rock stability identity is invalid")
+    if not math.isclose(float(rock.get("weight", float("nan"))), 0.21, rel_tol=0.0, abs_tol=1e-12):
+        raise ValueError("V7 R5 Stage 4 structured Rock stability weight is invalid")
+    if qualification.get("status") != "qualification_gate_not_training_target_not_active":
+        raise ValueError("V7 R5 Stage 4 late stability qualification status is invalid")
+    if qualification.get("requiredEpochs") != [20, 30] or int(qualification.get("minimumConsecutivePasses", 0)) != 2:
+        raise ValueError("V7 R5 Stage 4 late stability qualification window is invalid")
+    if qualification.get("finalEpochMustPass") is not True:
+        raise ValueError("V7 R5 Stage 4 late stability qualification must include the final epoch")
+    if (
+        qualification.get("machineReviewThresholdUsedAsTrainingTarget") is not False
+        or qualification.get("failedPreviewPixelsUsedAsTrainingTargets") is not False
+        or qualification.get("trainingTarget") is not False
+    ):
+        raise ValueError("V7 R5 Stage 4 late stability qualification cannot become a training target")
+    if evidence.get("candidateActive") is not False:
+        raise ValueError("V7 R5 Stage 4 structured stability evidence cannot activate itself")
+    return {
+        "status": "r5_stage4_structured_stability_contract_valid_not_active",
+        "tailStepCount": tail_steps,
+        "routeTrajectoryStabilityWeight": float(route["weight"]),
+        "rockTrajectoryStabilityWeight": float(rock["weight"]),
+        "lateQualificationEpochs": list(qualification["requiredEpochs"]),
+    }
+
+
+def validate_v8_stage4_decoded_domain_alignment_cpu_support_contract(config, project_root=None):
+    if config.get("denoiserArchitecture") != "multiscale_condition_unet_v8_stage4_decoded_alignment":
+        raise ValueError("V8 Stage 4 decoded alignment architecture identity is invalid")
+    if config.get("conditionChannels") != 23 or len(config.get("conditionChannelOrder", [])) != 23:
+        raise ValueError("V8 Stage 4 decoded alignment must preserve the 23-channel condition contract")
+    if config.get("conditionResizeContract") != "discrete_nearest_continuous_bilinear_v1":
+        raise ValueError("V8 Stage 4 decoded alignment typed resize contract is invalid")
+    if config.get("conditionOutputBinding") != "predicted_clean_latent_and_decoded_rgb_v1":
+        raise ValueError("V8 Stage 4 decoded alignment latent and RGB output binding changed")
+
+    training = config.get("training", {})
+    contract = training.get("stage4DecodedDomainAlignment", {})
+    expected_identity = {
+        "enabled": False,
+        "status": "cpu_support_verified_not_active",
+        "contractId": "stage4_decoded_domain_alignment_bridge_v1",
+        "architectureId": "multiscale_condition_unet_v8_stage4_decoded_alignment",
+        "conditionChannelCount": 23,
+        "latentOutputShapeChanged": False,
+        "legacyStage3AndStage4ModesPreserved": True,
+        "existingDenoiserCheckpointCompatible": False,
+        "stage0InitializationIfLaterAuthorized": "project_random_initialization_only",
+        "trainingLossImplementationStatus": "not_implemented_not_authorized",
+    }
+    for key, expected in expected_identity.items():
+        if contract.get(key) != expected:
+            raise ValueError(f"V8 Stage 4 decoded alignment contract {key} is invalid")
+
+    adapters = contract.get("typedConditionDecoderAdapters", {})
+    if adapters.get("scales") != ["up1", "up0"]:
+        raise ValueError("V8 Stage 4 decoded alignment typed adapter scales are invalid")
+    if adapters.get("source") != "original_compiled_23_channel_condition_pack":
+        raise ValueError("V8 Stage 4 decoded alignment typed adapter source is invalid")
+    if adapters.get("channelOrder") != config.get("conditionChannelOrder"):
+        raise ValueError("V8 Stage 4 decoded alignment typed adapter channel order changed")
+    if adapters.get("resizeContract") != config.get("conditionResizeContract"):
+        raise ValueError("V8 Stage 4 decoded alignment typed adapter resize contract changed")
+
+    expected_readout_channels = [
+        "terrain_path_ground",
+        "route_required_boundary",
+        "object_footprints",
+        "object_tree",
+        "object_rock",
+        "object_vegetation",
+    ]
+    readout = contract.get("sharedSemanticTopologyReadout", {})
+    if readout.get("channels") != expected_readout_channels:
+        raise ValueError("V8 Stage 4 decoded alignment shared readout channel order is invalid")
+    if readout.get("sourceFeatures") != "existing_up0_decoder_features_after_up1_and_up0_typed_condition_adapters":
+        raise ValueError("V8 Stage 4 decoded alignment shared readout source is invalid")
+    if readout.get("changesLatentOutputShape") is not False:
+        raise ValueError("V8 Stage 4 decoded alignment readout cannot change latent output shape")
+
+    decoded_path = contract.get("frozenAutoencoderDecodedConsistencyPath", {})
+    expected_decoded_path = {
+        "status": "support_contract_only_not_active",
+        "autoencoderParametersFrozen": True,
+        "gradientMayFlowToDenoiserPrediction": True,
+        "autoencoderCheckpointReadRequiresSeparateAuthorization": True,
+    }
+    if decoded_path != expected_decoded_path:
+        raise ValueError("V8 Stage 4 decoded alignment frozen autoencoder path contract is invalid")
+
+    supervision = contract.get("supervisionContract", {})
+    expected_sources = [
+        "original_owner_approved_reference_rgb",
+        "original_compiled_23_channel_condition_pack",
+        "approved_world_facts_region_graph_and_edge_ports",
+        "project_generated_game_coordinate_route_geometry",
+        "original_object_identity_and_semantic_masks",
+        "current_training_prediction_and_frozen_project_autoencoder_decode",
+    ]
+    if supervision.get("allowedSources") != expected_sources:
+        raise ValueError("V8 Stage 4 decoded alignment supervision sources are invalid")
+    if (
+        supervision.get("failedPreviewPixelsUsedAsTrainingTargets") is not False
+        or supervision.get("machineReviewThresholdsUsedAsTrainingTargets") is not False
+        or supervision.get("conditionMaskIsWorldFactAuthority") is not False
+    ):
+        raise ValueError("V8 Stage 4 decoded alignment uses a forbidden supervision source")
+    if contract.get("hyperparameterSelections") != []:
+        raise ValueError("V8 Stage 4 decoded alignment CPU support cannot select hyperparameters")
+
+    activation_gate = contract.get("activationGate", {})
+    expected_activation_fields = {
+        "configurationActiveNow",
+        "checkpointReadNow",
+        "optimizerCreationNow",
+        "backwardExecutionNow",
+        "modelParameterUpdateNow",
+        "gpuUseNow",
+        "trainingNow",
+        "validationNow",
+        "formalInferenceNow",
+        "checkpointPromotionNow",
+        "runtimeFrameNow",
+        "worldEntryNow",
+    }
+    if set(activation_gate) != expected_activation_fields or any(
+        activation_gate.get(key) is not False for key in expected_activation_fields
+    ):
+        raise ValueError("V8 Stage 4 decoded alignment activation gate is not fully closed")
+
+    root = Path(project_root or Path.cwd()).resolve()
+    evidence = contract.get("evidenceBindings", {})
+    evidence_specs = (
+        (
+            "architectureDesignTerminal",
+            "8f5a6f2a59ade9ee5fed8c7e8cd42944ff4188630e2f5f80bf176536c06c1608",
+            "architecture design terminal",
+        ),
+        (
+            "architectureDesignReport",
+            "2b6b4702987f14fb9de1c7ba3e15f090519b230b1d7df00920ffcfa54b302613",
+            "architecture design report",
+        ),
+        (
+            "inactiveImplementationContract",
+            "da53f0005c99c64d525ec25d784b52304d76775a405847a02a71800c1212438e",
+            "inactive architecture implementation contract",
+        ),
+    )
+    verified_paths = {}
+    for key, expected_sha, label in evidence_specs:
+        identity = evidence.get(key, {})
+        if identity.get("sha256") != expected_sha:
+            raise ValueError(f"V8 Stage 4 decoded alignment {label} identity is invalid")
+        verified_paths[key] = verify_config_bound_project_file(
+            root,
+            identity.get("path"),
+            identity.get("sha256"),
+            label,
+        )
+    design_terminal = read_json(verified_paths["architectureDesignTerminal"])
+    implementation_contract = read_json(verified_paths["inactiveImplementationContract"])
+    if (
+        design_terminal.get("recommendedContractId") != "stage4_decoded_domain_alignment_bridge_v1"
+        or design_terminal.get("recommendedDirectionId") != "condition_to_decoded_visual_domain_consistency"
+        or implementation_contract.get("contractId") != "stage4_decoded_domain_alignment_bridge_v1"
+        or implementation_contract.get("proposedArchitectureId")
+        != "multiscale_condition_unet_v8_stage4_decoded_alignment"
+    ):
+        raise ValueError("V8 Stage 4 decoded alignment bound architecture decision changed")
+
+    implementation = contract.get("ownerImplementationAuthorization", {})
+    authorization_path = verify_config_bound_project_file(
+        root,
+        implementation.get("authorizationPath"),
+        implementation.get("authorizationSha256"),
+        "decoded alignment Owner authorization",
+    )
+    consumption_path = verify_config_bound_project_file(
+        root,
+        implementation.get("implementationConsumptionPath"),
+        implementation.get("implementationConsumptionSha256"),
+        "decoded alignment implementation consumption",
+    )
+    authorization = read_json(authorization_path)
+    consumption = read_json(consumption_path)
+    command_ref = "owner-authorized-r5-stage4-decoded-domain-alignment-cpu-support-20260808-204122373"
+    scope = "implement_stage4_decoded_domain_alignment_bridge_v1_cpu_support_compile_inactive_config_and_regress_only"
+    if (
+        authorization.get("schemaVersion")
+        != "owner-authorized-r5-stage4-decoded-domain-alignment-cpu-support-input-v1"
+        or authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or authorization.get("commandRef") != command_ref
+        or authorization.get("scope") != scope
+        or implementation.get("commandRef") != command_ref
+        or implementation.get("scope") != scope
+    ):
+        raise ValueError("V8 Stage 4 decoded alignment Owner authorization identity is invalid")
+    if (
+        consumption.get("status") != "consumed_once_for_cpu_support_implementation"
+        or consumption.get("commandRef") != command_ref
+        or consumption.get("scope") != scope
+        or consumption.get("authorizationSha256") != implementation.get("authorizationSha256")
+        or consumption.get("oneTimeConsumption") is not True
+    ):
+        raise ValueError("V8 Stage 4 decoded alignment implementation consumption identity is invalid")
+    authorized = authorization.get("authorizedBoundaries", {})
+    if any(authorized.get(key) is not True for key in (
+        "modelCodeModificationAuthorized",
+        "trainerCodeModificationAuthorized",
+        "existingInactiveCompilerAndCpuCheckerModificationAuthorized",
+        "syntheticCpuTensorForwardAuthorized",
+        "syntheticCpuAutogradInspectionAuthorized",
+        "inactiveConfigCompilationAuthorized",
+    )):
+        raise ValueError("V8 Stage 4 decoded alignment CPU implementation actions are incomplete")
+    if any(authorized.get(key) is not False for key in (
+        "hyperparameterSelectionAuthorized",
+        "checkpointReadOrLoadAuthorized",
+        "optimizerCreationAuthorized",
+        "backwardMethodExecutionAuthorized",
+        "modelParameterUpdateAuthorized",
+        "modelWeightModificationAuthorized",
+        "gpuUseAuthorized",
+        "trainingAuthorized",
+        "reviewThresholdModificationAuthorized",
+        "strictRevalidationAuthorized",
+        "formalInferenceAuthorized",
+        "checkpointPromotionAuthorized",
+        "runtimeFrameAuthorized",
+        "worldEntryAuthorized",
+        "automaticRetryAuthorized",
+    )):
+        raise ValueError("V8 Stage 4 decoded alignment Owner authorization opens a forbidden action")
+
+    owner_training = training.get("ownerTrainingAuthorization", {})
+    if training.get("trainingAuthorizationStatus") != "not_authorized_candidate_only":
+        raise ValueError("V8 Stage 4 decoded alignment configuration must remain inactive")
+    if owner_training.get("status") != "not_authorized_candidate_only" or any(
+        owner_training.get(key) is not False for key in (
+            "checkpointLoadingAuthorized",
+            "optimizerCreationAuthorized",
+            "modelWeightMutationAuthorized",
+            "gpuTrainingAuthorizedNow",
+            "fullTrainingAuthorized",
+            "singleSampleGpuOverfitSmokeAuthorized",
+            "automaticRetryAuthorized",
+            "strictRevalidationAuthorized",
+            "validationAuthorized",
+            "formalInferenceAuthorized",
+            "checkpointPromotionAuthorized",
+            "runtimeFrameAuthorized",
+            "worldEntryAuthorized",
+        )
+    ):
+        raise ValueError("V8 Stage 4 decoded alignment nested training authorization is not closed")
+    return {
+        "status": "v8_stage4_decoded_domain_alignment_cpu_support_contract_valid_not_active",
+        "conditionChannels": 23,
+        "adapterScales": list(adapters["scales"]),
+        "sharedReadoutChannels": list(readout["channels"]),
+        "existingDenoiserCheckpointCompatible": False,
+    }
+
+
+def validate_v8_stage4_decoded_domain_alignment_training_contract(config, package, project_root=None):
+    if config.get("denoiserArchitecture") != "multiscale_condition_unet_v8_stage4_decoded_alignment":
+        raise ValueError("V8 Stage 4 training architecture identity is invalid")
+    if config.get("conditionChannels") != 23 or len(config.get("conditionChannelOrder", [])) != 23:
+        raise ValueError("V8 Stage 4 training must preserve the 23-channel condition contract")
+    if config.get("conditionOutputBinding") != "predicted_clean_latent_and_decoded_rgb_v1":
+        raise ValueError("V8 Stage 4 decoded output binding changed")
+    training = config.get("training", {})
+    if training.get("denoiserLossVersion") != "velocity_decoded_rgb_shared_semantic_topology_alignment_v8_stage4":
+        raise ValueError("V8 Stage 4 training loss version is invalid")
+    if training.get("bestCheckpointMetric") != "fixed_grid_plus_shared_semantic_topology_rollout_score_v8_stage4":
+        raise ValueError("V8 Stage 4 checkpoint metric identity is invalid")
+    if conditional_dataset_selection_contract(config) != "registered_v7_capacity_contribution_v1":
+        raise ValueError("V8 Stage 4 must use the registered V7 capacity dataset")
+    if package.get("v7CapacityContributionCount") != 64:
+        raise ValueError("V8 Stage 4 dataset does not contain the approved 64 capacity rows")
+
+    contract = training.get("stage4DecodedDomainAlignment", {})
+    expected_channels = [
+        "terrain_path_ground", "route_required_boundary", "object_footprints",
+        "object_tree", "object_rock", "object_vegetation",
+    ]
+    if contract.get("contractId") != "stage4_decoded_domain_alignment_bridge_v1":
+        raise ValueError("V8 Stage 4 training contract identity is invalid")
+    if contract.get("architectureId") != config.get("denoiserArchitecture"):
+        raise ValueError("V8 Stage 4 training contract architecture changed")
+    if contract.get("sharedSemanticTopologyReadout", {}).get("channels") != expected_channels:
+        raise ValueError("V8 Stage 4 shared readout channel order is invalid")
+    supervision = contract.get("sharedReadoutTrainingSupervision", {})
+    if supervision.get("loss") != "balanced_binary_cross_entropy_v1":
+        raise ValueError("V8 Stage 4 shared readout loss identity is invalid")
+    if supervision.get("weightSource") != "training.denoiserLossWeights.discreteConditionOutputBinding":
+        raise ValueError("V8 Stage 4 shared readout must reuse the existing discrete condition weight")
+    if float(training.get("denoiserLossWeights", {}).get("discreteConditionOutputBinding", 0.0)) <= 0.0:
+        raise ValueError("V8 Stage 4 reused discrete condition weight is missing")
+    if supervision.get("targetChannels") != expected_channels:
+        raise ValueError("V8 Stage 4 shared readout targets changed")
+    if (
+        supervision.get("failedPreviewPixelsUsedAsTrainingTargets") is not False
+        or supervision.get("machineReviewThresholdsUsedAsTrainingTargets") is not False
+        or supervision.get("newFreeHyperparameterSelected") is not False
+        or supervision.get("conditionMaskIsWorldFactAuthority") is not False
+    ):
+        raise ValueError("V8 Stage 4 shared readout uses a forbidden training target or parameter")
+    allowed_sources = [
+        "original_owner_approved_reference_rgb",
+        "original_compiled_23_channel_condition_pack",
+        "approved_world_facts_region_graph_and_edge_ports",
+        "project_generated_game_coordinate_route_geometry",
+        "original_object_identity_and_semantic_masks",
+        "current_training_prediction_and_frozen_project_autoencoder_decode",
+    ]
+    if supervision.get("allowedSources") != allowed_sources or contract.get("hyperparameterSelections") != []:
+        raise ValueError("V8 Stage 4 supervision source or hyperparameter boundary changed")
+    smoke = training.get("v8Stage4SingleSampleSmokeContract", {})
+    if (
+        smoke.get("sampleId") != "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6"
+        or smoke.get("sampleSplit") != "validation"
+        or smoke.get("seed") != 20263722
+        or smoke.get("requiredBoundarySides") != ["west"]
+        or smoke.get("epochCount") != 30
+        or smoke.get("previewEpochs") != [1, 5, 10, 20, 30]
+        or smoke.get("resolution") != {"width": 256, "height": 192}
+    ):
+        raise ValueError("V8 Stage 4 fixed Smoke identity is invalid")
+    if training.get("seed") != 20263722 or training.get("authorizedOverfitSampleId") != smoke.get("sampleId"):
+        raise ValueError("V8 Stage 4 seed or sample binding changed")
+    if training.get("authorizedBoundaryTopology", {}).get("requiredBoundarySides") != ["west"]:
+        raise ValueError("V8 Stage 4 west topology binding changed")
+    if training.get("fixedEpochPreviewPolicy", {}).get("smoke") != [1, 5, 10, 20, 30]:
+        raise ValueError("V8 Stage 4 fixed preview policy changed")
+
+    status = training.get("trainingAuthorizationStatus")
+    active = status == V8_STAGE4_SMOKE_ACTIVE_STATUS
+    if status not in {V8_STAGE4_SMOKE_INACTIVE_STATUS, V8_STAGE4_SMOKE_ACTIVE_STATUS}:
+        raise ValueError("V8 Stage 4 training authorization status is invalid")
+    expected_gate = {
+        "configurationActiveNow": active,
+        "autoencoderCheckpointReadNow": active,
+        "oldDenoiserCheckpointReadNow": False,
+        "optimizerCreationNow": active,
+        "backwardExecutionNow": active,
+        "modelParameterUpdateNow": active,
+        "gpuUseNow": active,
+        "trainingNow": active,
+        "checkpointWriteNow": active,
+        "stage4FullTrainingNow": False,
+        "stage1OrStage2Now": False,
+        "strictRevalidationNow": False,
+        "formalInferenceNow": False,
+        "checkpointPromotionNow": False,
+        "runtimeFrameNow": False,
+        "worldEntryNow": False,
+    }
+    if contract.get("activationGate") != expected_gate or contract.get("enabled") is not active:
+        raise ValueError("V8 Stage 4 activation gate is invalid")
+    expected_implementation = "implemented_active_owner_authorized" if active else "implemented_cpu_verified_not_active"
+    if contract.get("trainingLossImplementationStatus") != expected_implementation:
+        raise ValueError("V8 Stage 4 training loss implementation status is invalid")
+
+    owner = training.get("ownerTrainingAuthorization", {})
+    if not active:
+        if owner.get("status") != "not_authorized_candidate_only" or any(
+            owner.get(key) is True
+            for key in (
+                "checkpointLoadingAuthorized", "optimizerCreationAuthorized",
+                "modelWeightMutationAuthorized", "gpuTrainingAuthorizedNow",
+                "singleSampleGpuOverfitSmokeAuthorized", "fullTrainingAuthorized",
+            )
+        ):
+            raise ValueError("V8 Stage 4 inactive config opens an execution action")
+    else:
+        root = Path(project_root or Path.cwd()).resolve()
+        authorization_path = verify_config_bound_project_file(
+            root, owner.get("authorizationPath"), owner.get("authorizationSha256"),
+            "V8 Stage 4 Smoke Owner authorization",
+        )
+        consumption_path = verify_config_bound_project_file(
+            root, owner.get("executionConsumptionPath"), owner.get("executionConsumptionSha256"),
+            "V8 Stage 4 Smoke execution consumption",
+        )
+        authorization = read_json(authorization_path)
+        consumption = read_json(consumption_path)
+        if (
+            authorization.get("requestId") != "owner-authorized-v8-stage4-training-loss-and-30-epoch-smoke-20260808"
+            or authorization.get("status") != "resolved_owner_authorized"
+            or authorization.get("ownerDecision", {}).get("commandRef")
+            != "owner-authorized-v8-stage4-training-loss-and-30-epoch-smoke-20260808"
+            or consumption.get("status") != "gpu_smoke_authorization_atomically_consumed"
+            or consumption.get("authorizationSha256") != owner.get("authorizationSha256")
+        ):
+            raise ValueError("V8 Stage 4 active Owner authorization or consumption is invalid")
+        actions = authorization.get("authorizedActions", {})
+        if not all(actions.get(key) is True for key in (
+            "autoencoderCheckpointReadAndLoad", "optimizerCreation", "backwardExecution",
+            "boundedModelWeightMutation", "singleSampleThirtyEpochTraining",
+            "smokeCheckpointWrite", "fivePreviewWriteAndMachineReview",
+        )):
+            raise ValueError("V8 Stage 4 active authorization actions are incomplete")
+        if actions.get("oldDenoiserCheckpointReadOrLoad") is not False or actions.get("stage4FullTraining") is not False:
+            raise ValueError("V8 Stage 4 active authorization opens forbidden lineage or full training")
+    return {
+        "status": "v8_stage4_shared_readout_training_contract_valid_active" if active else "v8_stage4_shared_readout_training_contract_valid_inactive",
+        "sharedReadoutChannels": expected_channels,
+        "sharedReadoutWeight": float(training["denoiserLossWeights"]["discreteConditionOutputBinding"]),
+    }
+
+
+def validate_v9_stage4_object_semantic_decoded_alignment_cpu_contract(config, package, project_root=None):
+    if config.get("training", {}).get("trainingAuthorizationStatus") == V9_STAGE4_SMOKE_ACTIVE_STATUS:
+        return validate_v9_stage4_active_smoke_contract(config, package, project_root)
+    if config.get("denoiserArchitecture") != "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment":
+        raise ValueError("V9 Stage 4 object semantic alignment architecture identity is invalid")
+    if config.get("conditionChannels") != 23 or len(config.get("conditionChannelOrder", [])) != 23:
+        raise ValueError("V9 Stage 4 must preserve the locked 23-channel condition contract")
+    if config.get("conditionResizeContract") != "discrete_nearest_continuous_bilinear_v1":
+        raise ValueError("V9 Stage 4 typed condition resize contract is invalid")
+    if config.get("conditionOutputBinding") != "predicted_clean_latent_and_decoded_rgb_v1":
+        raise ValueError("V9 Stage 4 latent and decoded RGB output binding changed")
+    if conditional_dataset_selection_contract(config) != "registered_v7_capacity_contribution_v1":
+        raise ValueError("V9 Stage 4 must reuse the approved registered V7 capacity dataset")
+    if package.get("v7CapacityContributionCount") != 64:
+        raise ValueError("V9 Stage 4 dataset does not contain the approved 64 capacity rows")
+
+    training = config.get("training", {})
+    if training.get("trainingAuthorizationStatus") != V9_STAGE4_CPU_INACTIVE_STATUS:
+        raise ValueError("V9 Stage 4 CPU support configuration must remain inactive")
+    if training.get("denoiserLossVersion") != "velocity_decoded_rgb_independent_object_semantic_topology_alignment_v9_stage4":
+        raise ValueError("V9 Stage 4 training Loss identity is invalid")
+    if training.get("bestCheckpointMetric") != "fixed_grid_plus_independent_object_semantic_topology_rollout_score_v9_stage4":
+        raise ValueError("V9 Stage 4 checkpoint metric identity is invalid")
+
+    contract = training.get("stage4ObjectSemanticDecoderAlignment", {})
+    expected_identity = {
+        "enabled": False,
+        "status": "cpu_support_verified_not_active",
+        "contractId": "stage4_object_semantic_decoder_alignment_v9_v1",
+        "architectureId": "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment",
+        "conditionChannelCount": 23,
+        "latentOutputShapeChanged": False,
+        "legacyStage3Stage4AndV8ModesPreserved": True,
+        "v7OrV8DenoiserCheckpointCompatible": False,
+        "stage0InitializationIfLaterAuthorized": "project_random_initialization_only",
+        "trainingLossImplementationStatus": "implemented_cpu_verified_not_active",
+    }
+    for key, expected in expected_identity.items():
+        if contract.get(key) != expected:
+            raise ValueError(f"V9 Stage 4 contract {key} is invalid")
+
+    adapters = contract.get("typedConditionDecoderAdapters", {})
+    if (
+        adapters.get("scales") != ["up1", "up0"]
+        or adapters.get("source") != "original_compiled_23_channel_condition_pack"
+        or adapters.get("channelOrder") != config.get("conditionChannelOrder")
+        or adapters.get("resizeContract") != config.get("conditionResizeContract")
+    ):
+        raise ValueError("V9 Stage 4 typed condition adapter contract is invalid")
+
+    expected_objects = list(V7_R5_STAGE4_OBJECT_DIAGNOSTIC_CHANNELS)
+    projections = contract.get("independentObjectSemanticProjections", {})
+    if (
+        projections.get("objectChannels") != expected_objects
+        or projections.get("scales") != ["up1", "up0"]
+        or projections.get("projectionCount") != 8
+        or projections.get("independentPerObject") is not True
+        or projections.get("independentReadoutPerObject") is not True
+        or projections.get("source") != "matching_original_object_semantic_condition_channel_only"
+        or projections.get("changesLatentOutputShape") is not False
+    ):
+        raise ValueError("V9 Stage 4 independent object projection contract is invalid")
+
+    route = contract.get("preservedRouteTopologyReadout", {})
+    if (
+        route.get("channels") != ["terrain_path_ground", "route_required_boundary"]
+        or route.get("requiredBoundarySides") != ["west"]
+        or route.get("worldFactAuthority") != "approved_world_facts_and_project_route_geometry"
+        or route.get("conditionMaskRole") != "consistency_projection_only_not_world_fact_authority"
+    ):
+        raise ValueError("V9 Stage 4 preserved west route topology contract is invalid")
+
+    decoded_path = contract.get("frozenAutoencoderDecodedConsistencyPath", {})
+    if decoded_path != {
+        "status": "cpu_support_only_not_active",
+        "autoencoderParametersFrozen": True,
+        "gradientMayFlowToDenoiserPrediction": True,
+        "autoencoderCheckpointReadRequiresSeparateAuthorization": True,
+    }:
+        raise ValueError("V9 Stage 4 frozen Autoencoder decoded consistency contract is invalid")
+
+    supervision = contract.get("objectSemanticTrainingSupervision", {})
+    expected_sources = [
+        "original_owner_approved_reference_rgb",
+        "original_compiled_23_channel_condition_pack",
+        "approved_world_facts",
+        "original_object_semantic_and_identity_masks",
+        "current_training_prediction_decoded_by_frozen_project_autoencoder",
+        "frozen_project_autoencoder_decoded_features",
+        "approved_project_route_geometry_and_region_graph_for_west_topology_consistency",
+    ]
+    if (
+        supervision.get("loss") != "independent_two_scale_balanced_binary_cross_entropy_plus_existing_masked_decoded_rgb_alignment_v1"
+        or supervision.get("weightSource") != "training.denoiserLossWeights.discreteConditionOutputBinding"
+        or supervision.get("targetChannels") != expected_objects
+        or supervision.get("allowedSources") != expected_sources
+        or supervision.get("failedPreviewPixelsUsedAsTrainingTargets") is not False
+        or supervision.get("machineReviewThresholdsUsedAsTrainingTargets") is not False
+        or supervision.get("machineReviewLabelsUsedAsTrainingTargets") is not False
+        or supervision.get("newFreeHyperparameterSelected") is not False
+    ):
+        raise ValueError("V9 Stage 4 object semantic supervision contract is invalid")
+    if float(training.get("denoiserLossWeights", {}).get("discreteConditionOutputBinding", 0.0)) <= 0.0:
+        raise ValueError("V9 Stage 4 must reuse the existing discrete condition output binding weight")
+    if contract.get("hyperparameterSelections") != []:
+        raise ValueError("V9 Stage 4 CPU implementation cannot select hyperparameters")
+
+    registry = contract.get("diagnosticManifestRegistry", {})
+    if (
+        registry.get("contractId") != "stage4_diagnostic_manifest_registration_contract_v1"
+        or registry.get("recordLocation") != "manifest.metrics[*]"
+        or registry.get("fixedEpochs") != [1, 5, 10, 20, 30]
+        or registry.get("exactFieldCount") != 17
+        or registry.get("exactFields") != list(V9_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS)
+        or registry.get("rejectUnknownDiagnosticFields") is not True
+        or registry.get("finiteNonnegativeNumbersRequired") is not True
+        or registry.get("visualReviewIndependent") is not True
+    ):
+        raise ValueError("V9 Stage 4 exact diagnostic Manifest registry contract is invalid")
+
+    diagnostic = training.get("stage4FailureDiagnostics", {})
+    if (
+        diagnostic.get("enabled") is not True
+        or diagnostic.get("status") != "v9_diagnostic_manifest_registry_supported_inactive"
+        or diagnostic.get("objectSemanticDiagnostics", {}).get("channels") != expected_objects
+        or diagnostic.get("objectSemanticDiagnostics", {}).get("gradientTarget")
+        != "matching_v9_object_projection_features_up1_and_up0"
+        or diagnostic.get("routeLateRegressionDiagnostics", {}).get("requiredBoundarySidesSource")
+        != "authorizedBoundaryTopology.requiredBoundarySides"
+    ):
+        raise ValueError("V9 Stage 4 diagnostic calculation contract is invalid")
+
+    activation_gate = contract.get("activationGate", {})
+    expected_activation_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "validationNow", "checkpointWriteNow", "stage4FullTrainingNow",
+        "stage1OrStage2Now", "strictRevalidationNow", "formalInferenceNow",
+        "checkpointPromotionNow", "runtimeFrameNow", "worldEntryNow",
+    }
+    if set(activation_gate) != expected_activation_fields or any(
+        activation_gate.get(key) is not False for key in expected_activation_fields
+    ):
+        raise ValueError("V9 Stage 4 activation gate is not fully closed")
+
+    smoke = training.get("v9Stage4SingleSampleSmokeContract", {})
+    if (
+        smoke.get("status") != "compiled_inactive_not_authorized"
+        or smoke.get("sampleId") != "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6"
+        or smoke.get("sampleSplit") != "validation"
+        or smoke.get("seed") != 20263722
+        or smoke.get("requiredBoundarySides") != ["west"]
+        or smoke.get("epochCount") != 30
+        or smoke.get("previewEpochs") != [1, 5, 10, 20, 30]
+        or smoke.get("resolution") != {"width": 256, "height": 192}
+        or smoke.get("oldDenoiserCheckpointCompatible") is not False
+        or smoke.get("oldDenoiserCheckpointReadAuthorized") is not False
+        or smoke.get("stage0Initialization") != "project_random_v9_denoiser"
+    ):
+        raise ValueError("V9 Stage 4 fixed sample and west topology identity is invalid")
+    if training.get("seed") != 20263722 or training.get("authorizedOverfitSampleId") != smoke.get("sampleId"):
+        raise ValueError("V9 Stage 4 fixed seed or sample binding changed")
+    if training.get("authorizedBoundaryTopology", {}).get("requiredBoundarySides") != ["west"]:
+        raise ValueError("V9 Stage 4 west topology binding changed")
+    if training.get("fixedEpochPreviewPolicy", {}).get("smoke") != [1, 5, 10, 20, 30]:
+        raise ValueError("V9 Stage 4 fixed preview policy changed")
+
+    root = Path(project_root or Path.cwd()).resolve()
+    evidence = contract.get("evidenceBindings", {})
+    evidence_specs = (
+        ("v9DesignTerminal", "18a82b764b80d004d6361d7674926d38c9d7e3d2236bea1c7143377eafbcab34"),
+        ("v9DesignReport", "7fe5700f89966ea84004d9379679c41807ce9396299078997ea5097e25107d13"),
+        ("v9InactiveDesignContract", "85ec0ce486738a722e513a41dd63225123528ad65cd73243cfa41970c4e3642c"),
+    )
+    verified_paths = {}
+    for key, expected_sha in evidence_specs:
+        identity = evidence.get(key, {})
+        if identity.get("sha256") != expected_sha:
+            raise ValueError(f"V9 Stage 4 bound design evidence identity is invalid: {key}")
+        verified_paths[key] = verify_config_bound_project_file(
+            root, identity.get("path"), identity.get("sha256"), key,
+        )
+    design_terminal = read_json(verified_paths["v9DesignTerminal"])
+    design_contract = read_json(verified_paths["v9InactiveDesignContract"])
+    if (
+        design_terminal.get("status") != "v9_stage4_architecture_design_and_diagnostic_manifest_contract_completed_closed"
+        or design_terminal.get("designContractId") != "stage4_object_semantic_decoder_alignment_v9_v1"
+        or design_contract.get("status") != "designed_inactive_not_implemented"
+        or design_contract.get("proposedArchitectureId") != config.get("denoiserArchitecture")
+        or [row.get("manifestField") for row in design_contract.get("diagnosticManifestFields", [])]
+        != list(V9_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS)
+    ):
+        raise ValueError("V9 Stage 4 bound design decision or diagnostic mapping changed")
+
+    implementation = contract.get("ownerImplementationAuthorization", {})
+    authorization_path = verify_config_bound_project_file(
+        root, implementation.get("authorizationPath"), implementation.get("authorizationSha256"),
+        "V9 Stage 4 Owner implementation authorization",
+    )
+    consumption_path = verify_config_bound_project_file(
+        root, implementation.get("implementationConsumptionPath"), implementation.get("implementationConsumptionSha256"),
+        "V9 Stage 4 implementation consumption",
+    )
+    authorization = read_json(authorization_path)
+    consumption = read_json(consumption_path)
+    command_ref = "owner-authorized-v9-stage4-cpu-support-and-manifest-registry-20260809"
+    scope = "implement_v9_cpu_architecture_object_semantic_supervision_exact_17_manifest_registry_inactive_config_and_regressions_only"
+    if (
+        authorization.get("requestId") != command_ref
+        or authorization.get("status") != "resolved_owner_authorized"
+        or authorization.get("ownerDecision", {}).get("commandRef") != command_ref
+        or authorization.get("ownerDecision", {}).get("scope") != scope
+        or implementation.get("commandRef") != command_ref
+        or implementation.get("scope") != scope
+        or consumption.get("status") != "v9_cpu_support_implementation_authorization_atomically_consumed"
+        or consumption.get("authorizationSha256") != implementation.get("authorizationSha256")
+        or consumption.get("oneTimeConsumption") is not True
+    ):
+        raise ValueError("V9 Stage 4 implementation authorization or consumption identity is invalid")
+    actions = authorization.get("authorizedActions", {})
+    required_actions = (
+        "modelV9ArchitectureBranchImplementation", "trainerV9AuthorizationAndLegalSupervisionImplementation",
+        "exact17DiagnosticManifestRegistryImplementation", "v9InactiveConfigCompilerImplementation",
+        "v9CpuCheckerImplementation", "syntheticCpuTensorForward", "syntheticCpuAutogradInspection",
+        "cpuPositiveNegativeRegression", "legacyV7V8CompatibilityRegression", "inactiveConfigWrite",
+        "supportContractWrite", "cpuReportWrite", "terminalEvidenceWrite", "uniquePlanUpdate",
+    )
+    forbidden_actions = (
+        "hyperparameterSelection", "checkpointFileReadOrLoad", "optimizerCreation",
+        "backwardMethodExecution", "modelWeightModification", "gpuUse", "training",
+        "reviewThresholdModification", "stage4FullTraining", "stage1OrStage2",
+        "strictRevalidation", "formalInference", "checkpointPromotion", "runtimeFrame",
+        "worldEntry", "automaticRetry",
+    )
+    if any(actions.get(key) is not True for key in required_actions):
+        raise ValueError("V9 Stage 4 implementation actions are incomplete")
+    if any(actions.get(key) is not False for key in forbidden_actions):
+        raise ValueError("V9 Stage 4 implementation authorization opens a forbidden action")
+
+    owner = training.get("ownerTrainingAuthorization", {})
+    if owner.get("status") != "not_authorized_cpu_support_only" or any(
+        owner.get(key) is not False for key in (
+            "checkpointLoadingAuthorized", "optimizerCreationAuthorized", "backwardExecutionAuthorized",
+            "modelWeightMutationAuthorized", "gpuTrainingAuthorizedNow", "singleSampleGpuOverfitSmokeAuthorized",
+            "fullTrainingAuthorized", "stage1Authorized", "stage2Authorized", "strictRevalidationAuthorized",
+            "validationAuthorized", "formalInferenceAuthorized", "checkpointPromotionAuthorized",
+            "runtimeFrameAuthorized", "worldEntryAuthorized", "automaticRetryAuthorized",
+        )
+    ):
+        raise ValueError("V9 Stage 4 nested training authorization is not fully closed")
+    return {
+        "status": "v9_stage4_object_semantic_decoder_alignment_cpu_contract_valid_inactive",
+        "objectChannels": expected_objects,
+        "projectionScales": ["up1", "up0"],
+        "diagnosticManifestFields": list(V9_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS),
+        "reusedWeight": float(training["denoiserLossWeights"]["discreteConditionOutputBinding"]),
+        "v7OrV8DenoiserCheckpointCompatible": False,
+    }
+
+
+def validate_v9_stage4_active_smoke_contract(config, package, project_root=None):
+    root = Path(project_root or Path.cwd()).resolve()
+    training = config.get("training", {})
+    execution = training.get("v9Stage4SmokeExecution", {})
+    required_execution_fields = {
+        "sourceInactiveConfigPath", "sourceInactiveConfigSha256",
+        "ownerAuthorizationPath", "ownerAuthorizationSha256",
+        "gpuConsumptionPath", "gpuConsumptionSha256",
+        "implementationAttestationPath", "implementationAttestationSha256",
+    }
+    if set(execution) != required_execution_fields:
+        raise ValueError("V9 Stage 4 active Smoke execution identity fields are invalid")
+    source_path = verify_config_bound_project_file(
+        root, execution.get("sourceInactiveConfigPath"), execution.get("sourceInactiveConfigSha256"),
+        "V9 Stage 4 inactive source config",
+    )
+    authorization_path = verify_config_bound_project_file(
+        root, execution.get("ownerAuthorizationPath"), execution.get("ownerAuthorizationSha256"),
+        "V9 Stage 4 Smoke Owner authorization",
+    )
+    consumption_path = verify_config_bound_project_file(
+        root, execution.get("gpuConsumptionPath"), execution.get("gpuConsumptionSha256"),
+        "V9 Stage 4 Smoke GPU consumption",
+    )
+    attestation_path = verify_config_bound_project_file(
+        root, execution.get("implementationAttestationPath"), execution.get("implementationAttestationSha256"),
+        "V9 Stage 4 Smoke implementation attestation",
+    )
+    if execution.get("sourceInactiveConfigSha256") != "e4a90350ea1263bcef0a90ba36491f4a9477c8886aeac4ae0f44b846f1e4bef6":
+        raise ValueError("V9 Stage 4 active Smoke source config identity changed")
+    source = read_json(source_path)
+    source_result = validate_v9_stage4_object_semantic_decoded_alignment_cpu_contract(
+        source, package, project_root,
+    )
+    authorization = read_json(authorization_path)
+    consumption = read_json(consumption_path)
+    attestation = read_json(attestation_path)
+    request_id = "owner-authorized-v9-stage4-sample194-30-epoch-gpu-smoke-20260809"
+    scope = "extend_v9_stage4_smoke_support_cpu_regress_preflight_then_one_sample194_30_epoch_gpu_smoke_only"
+    if (
+        authorization.get("requestId") != request_id
+        or authorization.get("status") != "resolved_owner_authorized"
+        or authorization.get("ownerDecision", {}).get("commandRef") != request_id
+        or authorization.get("ownerDecision", {}).get("scope") != scope
+        or consumption.get("status") != "v9_stage4_smoke_gpu_authorization_atomically_consumed"
+        or consumption.get("requestId") != request_id
+        or consumption.get("authorizationSha256") != execution.get("ownerAuthorizationSha256")
+        or consumption.get("oneTimeConsumption") is not True
+        or attestation.get("status") != "v9_stage4_smoke_implementation_cpu_verified"
+        or attestation.get("authorizationSha256") != execution.get("ownerAuthorizationSha256")
+    ):
+        raise ValueError("V9 Stage 4 active Smoke authorization, consumption or attestation is invalid")
+    actions = authorization.get("authorizedActions", {})
+    for key in (
+        "projectAutoencoderCheckpointReadAndLoad", "v9FixedRandomInitialization",
+        "optimizerCreation", "backwardMethodExecution", "boundedModelWeightModification",
+        "singleSampleThirtyEpochTraining", "fivePreviewWrite",
+        "exact17DiagnosticManifestWrite", "machineReview", "smokeCheckpointWrite",
+        "modelStateHashEvidenceWrite", "terminalEvidenceWrite",
+    ):
+        if actions.get(key) is not True:
+            raise ValueError(f"V9 Stage 4 active Smoke authorized action is closed: {key}")
+    for key in (
+        "oldV7OrV8DenoiserCheckpointReadOrLoad", "hyperparameterSelection",
+        "machineReviewThresholdModification", "stage4FullTraining", "stage1OrStage2",
+        "strictRevalidation", "formalInference", "checkpointPromotion", "runtimeFrame",
+        "worldEntry", "automaticRetry",
+    ):
+        if actions.get(key) is not False:
+            raise ValueError(f"V9 Stage 4 active Smoke forbidden action is open: {key}")
+
+    smoke = training.get("v9Stage4SingleSampleSmokeContract", {})
+    contract = training.get("stage4ObjectSemanticDecoderAlignment", {})
+    expected_gate = {
+        "configurationActiveNow": True,
+        "checkpointReadNow": True,
+        "optimizerCreationNow": True,
+        "backwardExecutionNow": True,
+        "modelParameterUpdateNow": True,
+        "gpuUseNow": True,
+        "trainingNow": True,
+        "validationNow": False,
+        "checkpointWriteNow": True,
+        "stage4FullTrainingNow": False,
+        "stage1OrStage2Now": False,
+        "strictRevalidationNow": False,
+        "formalInferenceNow": False,
+        "checkpointPromotionNow": False,
+        "runtimeFrameNow": False,
+        "worldEntryNow": False,
+    }
+    if (
+        config.get("architectureVersion")
+        != "all-validation-multiseed-semantic-rollout-unet-v9-stage4-object-semantic-decoded-alignment-smoke"
+        or smoke.get("status") != "active_owner_authorized_single_execution"
+        or contract.get("enabled") is not True
+        or contract.get("status") != "training_loss_active_owner_authorized"
+        or contract.get("trainingLossImplementationStatus") != "implemented_active_owner_authorized"
+        or contract.get("activationGate") != expected_gate
+    ):
+        raise ValueError("V9 Stage 4 active Smoke configuration gate is invalid")
+    owner = training.get("ownerTrainingAuthorization", {})
+    expected_owner_flags = {
+        "checkpointLoadingAuthorized": True,
+        "optimizerCreationAuthorized": True,
+        "backwardExecutionAuthorized": True,
+        "modelWeightMutationAuthorized": True,
+        "gpuTrainingAuthorizedNow": True,
+        "singleSampleGpuOverfitSmokeAuthorized": True,
+        "fullTrainingAuthorized": False,
+        "stage1Authorized": False,
+        "stage2Authorized": False,
+        "strictRevalidationAuthorized": False,
+        "validationAuthorized": False,
+        "formalInferenceAuthorized": False,
+        "checkpointPromotionAuthorized": False,
+        "runtimeFrameAuthorized": False,
+        "worldEntryAuthorized": False,
+        "automaticRetryAuthorized": False,
+    }
+    if (
+        owner.get("authorizationId") != request_id
+        or owner.get("authorizationPath") != execution.get("ownerAuthorizationPath")
+        or owner.get("authorizationSha256") != execution.get("ownerAuthorizationSha256")
+        or owner.get("executionConsumptionPath") != execution.get("gpuConsumptionPath")
+        or owner.get("executionConsumptionSha256") != execution.get("gpuConsumptionSha256")
+        or owner.get("status") != V9_STAGE4_SMOKE_ACTIVE_STATUS
+        or any(owner.get(key) is not expected for key, expected in expected_owner_flags.items())
+    ):
+        raise ValueError("V9 Stage 4 active nested Owner authorization is invalid")
+
+    sanitized = deepcopy(config)
+    sanitized["architectureVersion"] = source["architectureVersion"]
+    sanitized_training = sanitized["training"]
+    source_training = source["training"]
+    sanitized_training["trainingAuthorizationStatus"] = source_training["trainingAuthorizationStatus"]
+    sanitized_training["v9Stage4SingleSampleSmokeContract"] = deepcopy(source_training["v9Stage4SingleSampleSmokeContract"])
+    sanitized_training["ownerTrainingAuthorization"] = deepcopy(source_training["ownerTrainingAuthorization"])
+    sanitized_training["stage4ObjectSemanticDecoderAlignment"] = deepcopy(source_training["stage4ObjectSemanticDecoderAlignment"])
+    sanitized_training.pop("v9Stage4SmokeExecution", None)
+    if sanitized != source:
+        raise ValueError("V9 Stage 4 active Smoke changed fields outside the bounded activation contract")
+    return {
+        **source_result,
+        "status": "v9_stage4_object_semantic_decoder_alignment_smoke_contract_valid_active",
+        "authorizationId": request_id,
+        "sampleId": smoke.get("sampleId"),
     }
 
 
@@ -2254,6 +3664,13 @@ def validate_v7_repair_r5_coverage_convergence_smoke_authorization(config, packa
 def validate_v7_repair_r5_stage4_bounded_smoke_authorization(config, package, project_root=None):
     training = config.get("training", {})
     nested = training.get("ownerTrainingAuthorization", {})
+    if nested.get("authorizationBindingMode") == V7_REPAIR_R5_STAGE4_CONFIG_BOUND_AUTHORIZATION_MODE:
+        validate_config_bound_v7_r5_stage4_bounded_smoke_authorization(
+            config,
+            package,
+            project_root,
+        )
+        return
     status = training.get("trainingAuthorizationStatus")
     preflight_only = status == V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS
     active_smoke = status == V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS
@@ -2314,6 +3731,11 @@ def validate_v7_repair_r5_stage4_bounded_smoke_authorization(config, package, pr
         "stage0CheckpointSha256": continuation.get("sourceCheckpointSha256"),
         "autoencoderCheckpointPath": nested.get("autoencoderCheckpointPath"),
         "autoencoderCheckpointSha256": nested.get("autoencoderCheckpointSha256"),
+        "runnerPath": nested.get("runnerPath"),
+        "runnerSha256": nested.get("runnerSha256"),
+        "telemetryLibraryPath": nested.get("telemetryLibraryPath"),
+        "telemetryLibrarySha256": nested.get("telemetryLibrarySha256"),
+        "outputDirectoryPath": nested.get("outputDirectoryPath"),
         "datasetManifestPath": nested.get("datasetManifestPath"),
         "datasetManifestSha256": nested.get("datasetManifestSha256"),
         "sourceIndexPath": nested.get("sourceIndexPath"),
@@ -2401,6 +3823,316 @@ def validate_v7_repair_r5_stage4_bounded_smoke_authorization(config, package, pr
             or execution.get("automaticRetryAuthorized") is not False
         ):
             raise ValueError("V7 R5 Stage 4 bounded-repair Smoke execution consumption identity is invalid")
+
+
+def validate_config_bound_v7_r5_stage4_bounded_smoke_authorization(config, package, project_root=None):
+    training = config.get("training", {})
+    nested = training.get("ownerTrainingAuthorization", {})
+    status = training.get("trainingAuthorizationStatus")
+    preflight_only = status == V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS
+    active_smoke = status == V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS
+    if not preflight_only and not active_smoke:
+        raise ValueError("V7 R5 Stage 4 config-bound Smoke authorization status is invalid")
+
+    root = Path(project_root or Path.cwd()).resolve()
+    authorization_path = resolve_config_bound_owner_evidence_path(
+        root,
+        nested.get("authorizationPath"),
+        "authorization",
+    )
+    implementation_path = resolve_config_bound_owner_evidence_path(
+        root,
+        nested.get("implementationConsumptionPath"),
+        "implementation consumption",
+    )
+    authorization_sha = nested.get("authorizationSha256")
+    implementation_sha = nested.get("implementationConsumptionSha256")
+    if sha256_file(authorization_path) != authorization_sha:
+        raise ValueError("V7 R5 Stage 4 config-bound Owner authorization changed")
+    if sha256_file(implementation_path) != implementation_sha:
+        raise ValueError("V7 R5 Stage 4 config-bound implementation consumption changed")
+
+    record = read_json(authorization_path)
+    implementation = read_json(implementation_path)
+    request_id = nested.get("authorizationId")
+    command_ref = nested.get("authorizationCommandRef")
+    scope = nested.get("authorizationScope")
+    if (
+        record.get("status") != "resolved_owner_authorized"
+        or record.get("requestId") != request_id
+        or authorization_path.parent.name != request_id
+        or record.get("ownerDecision", {}).get("commandRef") != command_ref
+        or record.get("ownerDecision", {}).get("scope") != scope
+    ):
+        raise ValueError("V7 R5 Stage 4 config-bound Owner authorization identity is invalid")
+    if (
+        implementation.get("status")
+        != "consumed_before_config_bound_stage4_smoke_preflight_and_evidence_writes"
+        or implementation.get("requestId") != request_id
+        or implementation.get("authorizationSha256") != authorization_sha
+        or implementation.get("commandRef") != command_ref
+        or implementation.get("scope") != scope
+        or int(implementation.get("allowedImplementationCount", 0)) != 1
+        or int(implementation.get("allowedConfigCompilationCount", 0)) != 1
+        or int(implementation.get("allowedCpuRegressionCount", 0)) != 1
+        or implementation.get("gpuExecutionConsumed") is not False
+    ):
+        raise ValueError("V7 R5 Stage 4 config-bound implementation consumption identity is invalid")
+
+    resolution = record.get("resolution", {})
+    if (
+        resolution.get("configBoundStage4SmokeAuthorization") is not True
+        or resolution.get("stage4BoundedSmokePreflightAuthorized") is not True
+    ):
+        raise ValueError("V7 R5 Stage 4 config-bound preflight authorization is missing")
+    forbidden_resolution_flags = (
+        "reviewThresholdChangeAuthorized",
+        "strictRevalidationAuthorized",
+        "formalInferenceAuthorized",
+        "checkpointFormalPromotionAuthorized",
+        "runtimeFrameAuthorized",
+        "worldEntryAuthorized",
+        "automaticRetryAuthorized",
+    )
+    if any(resolution.get(key) is not False for key in forbidden_resolution_flags):
+        raise ValueError("V7 R5 Stage 4 config-bound authorization opens a forbidden downstream action")
+    execution_resolution_flags = (
+        "checkpointFileReadAuthorized",
+        "checkpointDeserializationAuthorized",
+        "checkpointLoadingAuthorized",
+        "optimizerCreationAuthorized",
+        "backwardExecutionAuthorized",
+        "modelWeightMutationAuthorized",
+        "gpuUseAuthorized",
+        "trainingAuthorized",
+        "singleSampleGpuOverfitSmokeAuthorized",
+    )
+    expected_execution_value = active_smoke
+    if any(resolution.get(key) is not expected_execution_value for key in execution_resolution_flags):
+        raise ValueError("V7 R5 Stage 4 config-bound execution authorization boundary is invalid")
+
+    identity = record.get("taskIdentity", {})
+    smoke = training.get("r5Stage4BoundedRepairSmokeContract", {})
+    continuation = training.get("r5Stage4BoundedRepairCheckpointContinuation", {})
+    expected_identity = {
+        "modelId": config.get("modelId"),
+        "fixedStageNumber": 4,
+        "sampleId": training.get("authorizedOverfitSampleId"),
+        "conditionLabel": training.get("authorizedOverfitConditionLabel"),
+        "sampleSplit": training.get("authorizedOverfitSampleSplit"),
+        "seed": training.get("seed"),
+        "requiredBoundarySides": training.get("authorizedBoundaryTopology", {}).get("requiredBoundarySides"),
+        "resolutionStages": training.get("resolutionStages"),
+        "epochCount": smoke.get("epochCount"),
+        "evaluationInterval": smoke.get("evaluationInterval"),
+        "requiredPreviewEpochs": smoke.get("requiredPreviewEpochs"),
+        "requiredDiagnosticMetricCount": smoke.get("requiredDiagnosticMetricCount"),
+        "sourceInactiveConfigPath": nested.get("sourceConfigPath"),
+        "sourceInactiveConfigSha256": nested.get("sourceConfigSha256"),
+        "selectionContractPath": nested.get("selectionContractPath"),
+        "selectionContractSha256": nested.get("selectionContractSha256"),
+        "boundaryAnalysisPath": nested.get("boundaryAnalysisPath"),
+        "boundaryAnalysisSha256": nested.get("boundaryAnalysisSha256"),
+        "topologyTelemetrySupportContractPath": nested.get("topologyTelemetrySupportContractPath"),
+        "topologyTelemetrySupportContractSha256": nested.get("topologyTelemetrySupportContractSha256"),
+        "datasetManifestPath": nested.get("datasetManifestPath"),
+        "datasetManifestSha256": nested.get("datasetManifestSha256"),
+        "sourceIndexPath": nested.get("sourceIndexPath"),
+        "sourceIndexSha256": nested.get("sourceIndexSha256"),
+        "projectRuntimeLogicalEntry": nested.get("projectRuntimeLogicalEntry"),
+        "registeredHotRuntimeRoot": nested.get("registeredHotRuntimeRoot"),
+        "storageAuthorityPath": nested.get("storageAuthorityPath"),
+        "storageAuthoritySha256": nested.get("storageAuthoritySha256"),
+        "architectureAuthorityPath": nested.get("architectureAuthorityPath"),
+        "architectureAuthoritySha256": nested.get("architectureAuthoritySha256"),
+        "previousCpuFailureTerminalPath": nested.get("previousCpuFailureTerminalPath"),
+        "previousCpuFailureTerminalSha256": nested.get("previousCpuFailureTerminalSha256"),
+        "stage0ManifestPath": continuation.get("sourceManifestPath"),
+        "stage0ManifestSha256": continuation.get("sourceManifestSha256"),
+        "stage0CheckpointPath": continuation.get("sourceCheckpointPath"),
+        "stage0CheckpointSha256": continuation.get("sourceCheckpointSha256"),
+        "autoencoderCheckpointPath": nested.get("autoencoderCheckpointPath"),
+        "autoencoderCheckpointSha256": nested.get("autoencoderCheckpointSha256"),
+    }
+    for key, value in expected_identity.items():
+        if identity.get(key) != value:
+            raise ValueError(f"V7 R5 Stage 4 config-bound identity is invalid: {key}")
+
+    for path_key, sha_key, code in (
+        ("sourceInactiveConfigPath", "sourceInactiveConfigSha256", "source inactive config"),
+        ("selectionContractPath", "selectionContractSha256", "selection contract"),
+        ("boundaryAnalysisPath", "boundaryAnalysisSha256", "boundary analysis"),
+        (
+            "topologyTelemetrySupportContractPath",
+            "topologyTelemetrySupportContractSha256",
+            "topology telemetry support contract",
+        ),
+        ("datasetManifestPath", "datasetManifestSha256", "dataset manifest"),
+        ("sourceIndexPath", "sourceIndexSha256", "source index"),
+        ("storageAuthorityPath", "storageAuthoritySha256", "storage authority"),
+        ("architectureAuthorityPath", "architectureAuthoritySha256", "architecture authority"),
+        (
+            "previousCpuFailureTerminalPath",
+            "previousCpuFailureTerminalSha256",
+            "previous CPU failure terminal",
+        ),
+        ("stage0ManifestPath", "stage0ManifestSha256", "Stage 0 manifest"),
+        ("runnerPath", "runnerSha256", "Smoke runner"),
+        ("telemetryLibraryPath", "telemetryLibrarySha256", "step telemetry library"),
+    ):
+        verify_config_bound_project_file(root, identity.get(path_key), identity.get(sha_key), code)
+
+    if nested.get("projectRuntimeLogicalEntry") != V7_REPAIR_R5_STAGE4_PROJECT_RUNTIME_LOGICAL_ENTRY:
+        raise ValueError("V7 R5 Stage 4 config-bound logical runtime identity is invalid")
+    if nested.get("registeredHotRuntimeRoot") != V7_REPAIR_R5_STAGE4_REGISTERED_HOT_RUNTIME_ROOT:
+        raise ValueError("V7 R5 Stage 4 config-bound registered hot runtime identity is invalid")
+    if resolution.get("registeredRuntimePathIdentityFixAuthorized") is not True:
+        raise ValueError("V7 R5 Stage 4 config-bound registered runtime path support is not authorized")
+
+    stage0_manifest = read_json(root / Path(identity["stage0ManifestPath"]))
+    if (
+        stage0_manifest.get("checkpointPath") != identity.get("stage0CheckpointPath")
+        or stage0_manifest.get("checkpointSha256") != identity.get("stage0CheckpointSha256")
+        or stage0_manifest.get("autoencoderCheckpointPath") != identity.get("autoencoderCheckpointPath")
+        or stage0_manifest.get("autoencoderCheckpointSha256") != identity.get("autoencoderCheckpointSha256")
+    ):
+        raise ValueError("V7 R5 Stage 4 config-bound Checkpoint identity does not match the bound manifest")
+
+    if package.get("packageId") != "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z":
+        raise ValueError("V7 R5 Stage 4 config-bound dataset identity is invalid")
+    if package.get("v7CapacityContributionCount") != 64:
+        raise ValueError("V7 R5 Stage 4 config-bound dataset capacity must remain 64")
+    if smoke.get("status") != ("preflight_only" if preflight_only else "active_single_execution"):
+        raise ValueError("V7 R5 Stage 4 config-bound Smoke contract status is invalid")
+    if smoke.get("nonFormalValidationSampleOverfit") is not True or smoke.get("checkpointPromotionEligible") is not False:
+        raise ValueError("V7 R5 Stage 4 config-bound Smoke formal boundary is invalid")
+    if smoke.get("stage1Authorized") is not False or smoke.get("stage2Authorized") is not False:
+        raise ValueError("V7 R5 Stage 4 config-bound Smoke Stage 1/2 boundary is invalid")
+    if continuation.get("stage1OrStage2InitializationAuthorized") is not False:
+        raise ValueError("V7 R5 Stage 4 config-bound Smoke Stage 1/2 initialization is invalid")
+    if continuation.get("loadingAuthorizedNow") is not active_smoke:
+        raise ValueError("V7 R5 Stage 4 config-bound Checkpoint loading boundary is invalid")
+    if training.get("fixedEpochPreviewPolicy", {}).get("smoke") != [1, 5, 10, 20, 30]:
+        raise ValueError("V7 R5 Stage 4 config-bound preview policy is invalid")
+
+    diagnostics = training.get("stage4FailureDiagnostics", {})
+    if diagnostics.get("enabled") is not True or diagnostics.get("trainingAuthorized") is not active_smoke:
+        raise ValueError("V7 R5 Stage 4 config-bound diagnostics activation is invalid")
+    validate_v7_r5_stage4_failure_diagnostic_support_contract(config)
+
+    nested_active_flags = (
+        "checkpointLoadingAuthorized",
+        "optimizerCreationAuthorized",
+        "modelWeightMutationAuthorized",
+        "gpuTrainingAuthorizedNow",
+        "singleSampleGpuOverfitSmokeAuthorized",
+    )
+    nested_forbidden_flags = (
+        "automaticRetryAuthorized",
+        "fullTrainingAuthorized",
+        "strictRevalidationAuthorized",
+        "validationAuthorized",
+        "formalInferenceAuthorized",
+        "checkpointPromotionAuthorized",
+        "runtimeFrameAuthorized",
+        "worldEntryAuthorized",
+    )
+    if any(nested.get(key) is not active_smoke for key in nested_active_flags):
+        raise ValueError("V7 R5 Stage 4 config-bound nested execution flags are invalid")
+    if any(nested.get(key) is not False for key in nested_forbidden_flags):
+        raise ValueError("V7 R5 Stage 4 config-bound nested forbidden flags are open")
+    if nested.get("status") != status:
+        raise ValueError("V7 R5 Stage 4 config-bound nested status is invalid")
+
+    if preflight_only:
+        if nested.get("executionConsumptionPath") is not None or nested.get("executionConsumptionSha256") is not None:
+            raise ValueError("V7 R5 Stage 4 config-bound preflight cannot bind GPU execution consumption")
+        return
+
+    execution_path = resolve_config_bound_owner_evidence_path(
+        root,
+        nested.get("executionConsumptionPath"),
+        "GPU execution consumption",
+    )
+    if sha256_file(execution_path) != nested.get("executionConsumptionSha256"):
+        raise ValueError("V7 R5 Stage 4 config-bound GPU execution consumption changed")
+    execution = read_json(execution_path)
+    if (
+        execution.get("status") != "consumed_after_all_preflights_before_checkpoint_read_and_gpu_smoke"
+        or execution.get("authorizationSha256") != authorization_sha
+        or execution.get("commandRef") != command_ref
+        or execution.get("scope") != scope
+        or int(execution.get("allowedExecutionCount", 0)) != 1
+        or execution.get("automaticRetryAuthorized") is not False
+    ):
+        raise ValueError("V7 R5 Stage 4 config-bound GPU execution consumption identity is invalid")
+
+
+def resolve_config_bound_owner_evidence_path(root, path_value, code):
+    if not isinstance(path_value, str) or not path_value:
+        raise ValueError(f"V7 R5 Stage 4 config-bound {code} path is missing")
+    relative = Path(path_value)
+    owner_parts = tuple(
+        part.casefold()
+        for part in Path(".runtime/ai-painter/owner-action-requests").parts
+    )
+    relative_parts = tuple(part.casefold() for part in relative.parts)
+    if relative_parts[: len(owner_parts)] != owner_parts:
+        raise ValueError(f"V7 R5 Stage 4 config-bound {code} path is outside Owner evidence")
+    resolved_path = resolve_config_bound_project_path(root, path_value, code)
+    if not resolved_path.is_file():
+        raise ValueError(f"V7 R5 Stage 4 config-bound {code} file is missing")
+    return resolved_path
+
+
+def verify_config_bound_project_file(root, path_value, expected_sha256, code):
+    if not isinstance(path_value, str) or not path_value or not isinstance(expected_sha256, str):
+        raise ValueError(f"V7 R5 Stage 4 config-bound {code} identity is missing")
+    resolved_path = resolve_config_bound_project_path(root, path_value, code)
+    if not resolved_path.is_file():
+        raise ValueError(f"V7 R5 Stage 4 config-bound {code} file is missing")
+    if sha256_file(resolved_path) != expected_sha256:
+        raise ValueError(f"V7 R5 Stage 4 config-bound {code} changed")
+    return resolved_path
+
+
+def resolve_config_bound_project_path(root, path_value, code):
+    if not isinstance(path_value, str) or not path_value:
+        raise ValueError(f"V7 R5 Stage 4 config-bound {code} path is missing")
+    project_root = Path(root).resolve()
+    relative = Path(path_value)
+    if relative.is_absolute():
+        raise ValueError(f"V7 R5 Stage 4 config-bound {code} path must be project-relative")
+    if not relative.parts or any(part == ".." for part in relative.parts):
+        raise ValueError(f"V7 R5 Stage 4 config-bound {code} path traversal is forbidden")
+
+    resolved_path = (project_root / relative).resolve()
+    first_part = relative.parts[0].casefold()
+    if first_part == V7_REPAIR_R5_STAGE4_PROJECT_RUNTIME_LOGICAL_ENTRY.casefold():
+        logical_runtime_root = (
+            project_root / V7_REPAIR_R5_STAGE4_PROJECT_RUNTIME_LOGICAL_ENTRY
+        )
+        registered_hot_runtime_root = Path(
+            V7_REPAIR_R5_STAGE4_REGISTERED_HOT_RUNTIME_ROOT
+        ).resolve()
+        if not logical_runtime_root.is_dir():
+            raise ValueError("V7 R5 Stage 4 config-bound logical runtime entry is missing")
+        if logical_runtime_root.resolve() != registered_hot_runtime_root:
+            raise ValueError(
+                "V7 R5 Stage 4 config-bound logical runtime entry does not match the registered hot root"
+            )
+        if (
+            resolved_path != registered_hot_runtime_root
+            and registered_hot_runtime_root not in resolved_path.parents
+        ):
+            raise ValueError(
+                f"V7 R5 Stage 4 config-bound {code} path escapes the registered hot runtime root"
+            )
+        return resolved_path
+
+    if resolved_path != project_root and project_root not in resolved_path.parents:
+        raise ValueError(f"V7 R5 Stage 4 config-bound {code} path is outside the project")
+    return resolved_path
 
 
 def validate_v7_repair_r5_stage4_full_training_authorization(config, package, project_root=None):
@@ -2883,17 +4615,21 @@ def build_training_token_accounting(config, datasets, stage, epoch_count, smoke_
     fixed_timestep_count = len(training["fixedValidationTimesteps"])
     evaluation_epoch_count = epoch_count if evaluation_epoch_count is None else int(evaluation_epoch_count)
     trajectory_supervision_steps = int(training.get("shortTrajectorySupervision", {}).get("steps", 0)) if training.get("shortTrajectorySupervision", {}).get("enabled") is True else 0
+    cross_domain_rollout_steps = int(config["inferenceSteps"]) if training.get("stage4CrossDomainVisualConsistency", {}).get("enabled") is True else 0
     path_replay_passes = r5_path_replay_passes_per_epoch(config)
     train_samples_per_epoch = min(len(datasets["train"]), batch_size) if smoke_test else len(datasets["train"])
     effective_training_presentations_per_epoch = train_samples_per_epoch * (1 + path_replay_passes)
     optimizer_steps_per_epoch = ((train_samples_per_epoch + batch_size - 1) // batch_size) * (1 + path_replay_passes)
     validation_samples = len(datasets["validation"])
     fixed_validation_sample_passes = validation_samples * fixed_timestep_count
-    rollout_seeds = int(training.get("checkpointRolloutSeedsPerSample", 2)) if is_v7(config) else 0
-    rollout_steps = int(config["inferenceSteps"]) if is_v7(config) else 0
+    rollout_seeds = int(training.get("checkpointRolloutSeedsPerSample", 2)) if uses_v7_rollout_validation(config) else 0
+    rollout_steps = int(config["inferenceSteps"]) if uses_v7_rollout_validation(config) else 0
     rollout_trajectories = validation_samples * rollout_seeds
     rollout_sample_passes = rollout_trajectories * rollout_steps
-    training_denoiser_passes_per_epoch = effective_training_presentations_per_epoch * (1 + trajectory_supervision_steps)
+    training_denoiser_passes_per_epoch = (
+        effective_training_presentations_per_epoch * (1 + trajectory_supervision_steps)
+        + train_samples_per_epoch * cross_domain_rollout_steps
+    )
     evaluated_epoch_sample_passes = training_denoiser_passes_per_epoch + fixed_validation_sample_passes + rollout_sample_passes
 
     strict_held_out = training.get("strictHeldOutInferenceSplit")
@@ -2913,7 +4649,10 @@ def build_training_token_accounting(config, datasets, stage, epoch_count, smoke_
         + (fixed_validation_sample_passes + rollout_sample_passes) * evaluation_epoch_count
     )
     total_sample_passes = epoch_sample_passes + final_evaluation_sample_passes + evidence_sample_passes
-    decoded_rgb_training_frames_per_epoch = effective_training_presentations_per_epoch * (1 + trajectory_supervision_steps)
+    decoded_rgb_training_frames_per_epoch = (
+        effective_training_presentations_per_epoch * (1 + trajectory_supervision_steps)
+        + (train_samples_per_epoch if cross_domain_rollout_steps else 0)
+    )
     decoded_rgb_frames_per_evaluated_epoch = decoded_rgb_training_frames_per_epoch + fixed_validation_sample_passes + rollout_trajectories
     decoded_rgb_frames_total = (
         decoded_rgb_training_frames_per_epoch * epoch_count
@@ -2965,6 +4704,7 @@ def build_training_token_accounting(config, datasets, stage, epoch_count, smoke_
             "pathHardExampleReplayPassesPerEpoch": path_replay_passes,
             "optimizerSteps": optimizer_steps_per_epoch,
             "shortTrajectoryDenoiserStepsPerTrainingSample": trajectory_supervision_steps,
+            "crossDomainRolloutDenoiserStepsPerPrimaryTrainingSample": cross_domain_rollout_steps,
             "fixedValidationSamplePasses": fixed_validation_sample_passes,
             "rolloutTrajectories": rollout_trajectories,
             "rolloutDenoiserSteps": rollout_sample_passes,
@@ -2985,6 +4725,7 @@ def build_training_token_accounting(config, datasets, stage, epoch_count, smoke_
             "pathHardExampleReplaySamplePresentations": train_samples_per_epoch * path_replay_passes * epoch_count,
             "optimizerSteps": optimizer_steps_per_epoch * epoch_count,
             "shortTrajectoryDenoiserSteps": train_samples_per_epoch * trajectory_supervision_steps * epoch_count,
+            "crossDomainRolloutDenoiserSteps": train_samples_per_epoch * cross_domain_rollout_steps * epoch_count,
             "fixedValidationSamplePasses": fixed_validation_sample_passes * evaluation_epoch_count,
             "rolloutTrajectories": rollout_trajectories * evaluation_epoch_count,
             "rolloutDenoiserSteps": rollout_sample_passes * evaluation_epoch_count,
@@ -2995,6 +4736,7 @@ def build_training_token_accounting(config, datasets, stage, epoch_count, smoke_
         "scope": {
             "included": [
                 "denoiser_training_forward_passes",
+                "cross_domain_visual_consistency_rollout_denoiser_steps",
                 "fixed_grid_validation_forward_passes",
                 "checkpoint_rollout_denoiser_steps",
                 "post_epoch_split_evaluation",
@@ -3142,6 +4884,7 @@ def train_epoch(
     epoch_index,
     max_batches=None,
     on_batch_progress=None,
+    step_telemetry_path=None,
 ):
     model.denoiser.train()
     totals = {}
@@ -3151,8 +4894,22 @@ def train_epoch(
         if max_batches is not None and batch_index >= max_batches:
             break
         batch_started = time.perf_counter()
+        record_stage4_step(
+            step_telemetry_path,
+            "batch_device_transfer",
+            "started",
+            epoch=epoch_index + 1,
+            batch=batch_index + 1,
+        )
         image = batch["image"].to(device)
         conditions = batch["conditions"].to(device)
+        record_stage4_step(
+            step_telemetry_path,
+            "batch_device_transfer",
+            "completed",
+            epoch=epoch_index + 1,
+            batch=batch_index + 1,
+        )
         with torch.no_grad():
             latent = model.autoencoder.encode(image)
             latent = normalize_latent(latent, latent_normalization)
@@ -3169,6 +4926,13 @@ def train_epoch(
         noisy_latent = add_noise(latent, noise, timestep, diffusion["alphasCumulative"])
         target_velocity = velocity_target(latent, noise, timestep, diffusion["alphasCumulative"])
         optimizer.zero_grad(set_to_none=True)
+        record_stage4_step(
+            step_telemetry_path,
+            "forward_loss",
+            "started",
+            epoch=epoch_index + 1,
+            batch=batch_index + 1,
+        )
         loss_metrics = predict_and_measure(
             model,
             noisy_latent,
@@ -3199,8 +4963,59 @@ def train_epoch(
             )
             loss_metrics["compositeLoss"] = loss_metrics["compositeLossTensor"]
             loss_metrics.update(trajectory_metrics)
+        cross_domain_metrics = stage4_cross_domain_rollout_supervision(
+            model,
+            latent,
+            conditions,
+            image,
+            diffusion["alphasCumulative"],
+            latent_normalization,
+            config,
+        )
+        if cross_domain_metrics is not None:
+            loss_metrics["compositeLossTensor"] = (
+                loss_metrics["compositeLossTensor"]
+                + cross_domain_metrics["stage4CrossDomainVisualConsistencyLossTensor"]
+            )
+            loss_metrics["compositeLoss"] = loss_metrics["compositeLossTensor"]
+            loss_metrics.update(cross_domain_metrics)
+        record_stage4_step(
+            step_telemetry_path,
+            "forward_loss",
+            "completed",
+            epoch=epoch_index + 1,
+            batch=batch_index + 1,
+        )
+        record_stage4_step(
+            step_telemetry_path,
+            "backward",
+            "started",
+            epoch=epoch_index + 1,
+            batch=batch_index + 1,
+        )
         loss_metrics["compositeLossTensor"].backward()
+        record_stage4_step(
+            step_telemetry_path,
+            "backward",
+            "completed",
+            epoch=epoch_index + 1,
+            batch=batch_index + 1,
+        )
+        record_stage4_step(
+            step_telemetry_path,
+            "optimizer_step",
+            "started",
+            epoch=epoch_index + 1,
+            batch=batch_index + 1,
+        )
         optimizer.step()
+        record_stage4_step(
+            step_telemetry_path,
+            "optimizer_step",
+            "completed",
+            epoch=epoch_index + 1,
+            batch=batch_index + 1,
+        )
         replay_passes = r5_path_replay_passes_per_epoch(config)
         replay_totals = {}
         for replay_index in range(replay_passes):
@@ -3269,6 +5084,261 @@ def train_epoch(
     if count == 0:
         raise ValueError("conditional denoiser training loader produced no batches")
     return {key: value / count for key, value in totals.items()}
+
+
+def stage4_cross_domain_rollout_supervision(
+    model,
+    clean_latent,
+    conditions,
+    target_image,
+    alpha_bars,
+    latent_normalization,
+    config,
+):
+    contract = config.get("training", {}).get("stage4CrossDomainVisualConsistency", {})
+    if contract.get("enabled") is not True:
+        return None
+    validate_v7_r5_stage4_cross_domain_visual_consistency_contract(config)
+    stability_contract = config.get("training", {}).get("stage4StructuredTrajectoryStability", {})
+    stability_enabled = stability_contract.get("enabled") is True
+    if stability_enabled:
+        validate_v7_r5_stage4_structured_stability_candidate_contract(config)
+    inference_steps = inference_timesteps(
+        int(config["diffusionSteps"]),
+        int(config["inferenceSteps"]),
+        clean_latent.device,
+    )
+    gradient_tail_steps = int(contract["gradientTailSteps"])
+    no_gradient_steps = len(inference_steps) - gradient_tail_steps
+    seed = int(config["training"]["seed"]) + int(contract["previewSeedOffset"])
+    generated_latents = []
+    for sample_index in range(clean_latent.shape[0]):
+        generator = torch.Generator(device=clean_latent.device).manual_seed(seed + sample_index)
+        generated_latents.append(torch.randn(
+            clean_latent[sample_index:sample_index + 1].shape,
+            device=clean_latent.device,
+            dtype=clean_latent.dtype,
+            generator=generator,
+        ))
+    rollout_latent = torch.cat(generated_latents, dim=0)
+    stability_tail_latents = []
+    stability_tail_steps = int(stability_contract.get("tailStepCount", 0)) if stability_enabled else 0
+    for step_index, timestep in enumerate(inference_steps):
+        timestep_value = int(timestep.item())
+        previous = int(inference_steps[step_index + 1].item()) if step_index + 1 < len(inference_steps) else -1
+        timestep_batch = torch.full(
+            (rollout_latent.shape[0],),
+            timestep_value,
+            device=rollout_latent.device,
+            dtype=torch.long,
+        )
+        if step_index < no_gradient_steps:
+            with torch.no_grad():
+                velocity = model.predict_velocity(rollout_latent, timestep_batch, conditions)
+                rollout_latent = deterministic_velocity_step(
+                    rollout_latent,
+                    velocity,
+                    timestep_value,
+                    previous,
+                    alpha_bars,
+                )
+            rollout_latent = rollout_latent.detach()
+        else:
+            velocity = model.predict_velocity(rollout_latent, timestep_batch, conditions)
+            rollout_latent = deterministic_velocity_step(
+                rollout_latent,
+                velocity,
+                timestep_value,
+                previous,
+                alpha_bars,
+            )
+        if stability_enabled and step_index >= len(inference_steps) - stability_tail_steps:
+            stability_tail_latents.append(rollout_latent)
+    predicted_rgb_steps = [
+        model.autoencoder.decode(
+            denormalize_latent(value, latent_normalization)
+        ).clamp(0.0, 1.0)
+        for value in stability_tail_latents
+    ] if stability_enabled else []
+    predicted_rgb = predicted_rgb_steps[-1] if predicted_rgb_steps else model.autoencoder.decode(
+        denormalize_latent(rollout_latent, latent_normalization)
+    ).clamp(0.0, 1.0)
+    result = stage4_cross_domain_visual_consistency_losses(
+        predicted_rgb,
+        target_image,
+        conditions,
+        config,
+        len(inference_steps),
+        gradient_tail_steps,
+    )
+    if stability_enabled:
+        stability = stage4_cross_domain_trajectory_stability_losses(
+            predicted_rgb_steps,
+            target_image,
+            conditions,
+            config,
+        )
+        result["stage4CrossDomainVisualConsistencyLossTensor"] = (
+            result["stage4CrossDomainVisualConsistencyLossTensor"]
+            + stability["stage4StructuredTrajectoryStabilityLossTensor"]
+        )
+        result["stage4CrossDomainVisualConsistencyWeightedLoss"] = result["stage4CrossDomainVisualConsistencyLossTensor"]
+        result.update(stability)
+    return result
+
+
+def stage4_cross_domain_visual_consistency_losses(
+    predicted_rgb,
+    target_rgb,
+    conditions,
+    config,
+    rollout_steps=None,
+    gradient_tail_steps=None,
+):
+    training = config.get("training", {})
+    contract = training.get("stage4CrossDomainVisualConsistency", {})
+    if contract.get("enabled") is not True:
+        return None
+    route_contract = contract["route"]
+    rock_contract = contract["rock"]
+    path_rgb = path_interior_rgb_loss(predicted_rgb, target_rgb, conditions, config)
+    activation_mass = path_activation_mass_calibration_loss(
+        predicted_rgb,
+        target_rgb,
+        conditions,
+        config,
+    )
+    required_boundary = required_boundary_contact_loss(
+        predicted_rgb,
+        target_rgb,
+        conditions,
+        config,
+    )
+    route_loss = (
+        path_rgb * float(training["denoiserLossWeights"]["pathInteriorRgb"])
+        + activation_mass * float(training["pathActivationMassCalibration"]["weight"])
+        + required_boundary * float(training["stage4RequiredBoundaryContact"]["weight"])
+    )
+    rock_rgb = masked_condition_rgb_loss(
+        predicted_rgb,
+        target_rgb,
+        conditions,
+        config,
+        "object_rock",
+    )
+    rock_edge = masked_condition_gradient_rgb_loss(
+        predicted_rgb,
+        target_rgb,
+        conditions,
+        config,
+        "object_rock",
+    )
+    rock_loss = (
+        rock_rgb * float(rock_contract["rgbWeight"])
+        + rock_edge * float(rock_contract["edgeWeight"])
+    )
+    raw = route_loss + rock_loss
+    weighted = raw * float(contract["weight"])
+    return {
+        "stage4CrossDomainVisualConsistencyLossTensor": weighted,
+        "stage4CrossDomainVisualConsistencyWeightedLoss": weighted,
+        "stage4CrossDomainVisualConsistencyRawLoss": raw,
+        "stage4CrossDomainRouteLoss": route_loss,
+        "stage4CrossDomainRoutePathInteriorRgbMae": path_rgb,
+        "stage4CrossDomainRouteActivationMassLoss": activation_mass,
+        "stage4CrossDomainRouteRequiredBoundaryContactLoss": required_boundary,
+        "stage4CrossDomainRockLoss": rock_loss,
+        "stage4CrossDomainRockRgbMae": rock_rgb,
+        "stage4CrossDomainRockEdgeMae": rock_edge,
+        "stage4CrossDomainRolloutStepCount": predicted_rgb.new_tensor(float(
+            int(config["inferenceSteps"]) if rollout_steps is None else rollout_steps
+        )),
+        "stage4CrossDomainGradientTailStepCount": predicted_rgb.new_tensor(float(
+            int(contract["gradientTailSteps"]) if gradient_tail_steps is None else gradient_tail_steps
+        )),
+    }
+
+
+def stage4_cross_domain_trajectory_stability_losses(
+    predicted_rgb_steps,
+    target_rgb,
+    conditions,
+    config,
+):
+    training = config.get("training", {})
+    contract = training.get("stage4StructuredTrajectoryStability", {})
+    if contract.get("enabled") is not True:
+        return None
+    validate_v7_r5_stage4_structured_stability_candidate_contract(config)
+    required_steps = int(contract["tailStepCount"])
+    if len(predicted_rgb_steps) != required_steps or required_steps < 2:
+        raise ValueError("Stage 4 structured stability requires the selected tail prediction count")
+    route_reference = torch.stack([
+        path_interior_rgb_loss(value, target_rgb, conditions, config)
+        + required_boundary_contact_loss(value, target_rgb, conditions, config)
+        for value in predicted_rgb_steps
+    ]).mean()
+    route_temporal = torch.stack([
+        masked_pair_rgb_l1(
+            predicted_rgb_steps[index],
+            predicted_rgb_steps[index - 1],
+            conditions,
+            config,
+            "terrain_path_ground",
+        )
+        for index in range(1, len(predicted_rgb_steps))
+    ]).mean()
+    rock_reference = torch.stack([
+        masked_condition_rgb_loss(value, target_rgb, conditions, config, "object_rock")
+        + masked_condition_gradient_rgb_loss(value, target_rgb, conditions, config, "object_rock")
+        for value in predicted_rgb_steps
+    ]).mean()
+    rock_temporal = torch.stack([
+        masked_pair_rgb_l1(
+            predicted_rgb_steps[index],
+            predicted_rgb_steps[index - 1],
+            conditions,
+            config,
+            "object_rock",
+        )
+        for index in range(1, len(predicted_rgb_steps))
+    ]).mean()
+    route_raw = (route_reference + route_temporal) * 0.5
+    rock_raw = (rock_reference + rock_temporal) * 0.5
+    weighted = (
+        route_raw * float(contract["route"]["weight"])
+        + rock_raw * float(contract["rock"]["weight"])
+    )
+    return {
+        "stage4StructuredTrajectoryStabilityLossTensor": weighted,
+        "stage4StructuredTrajectoryStabilityWeightedLoss": weighted,
+        "stage4StructuredRouteTrajectoryRawLoss": route_raw,
+        "stage4StructuredRouteReferenceLoss": route_reference,
+        "stage4StructuredRouteAdjacentStepConsistencyLoss": route_temporal,
+        "stage4StructuredRockTrajectoryRawLoss": rock_raw,
+        "stage4StructuredRockReferenceLoss": rock_reference,
+        "stage4StructuredRockAdjacentStepConsistencyLoss": rock_temporal,
+        "stage4StructuredTrajectoryTailStepCount": target_rgb.new_tensor(float(required_steps)),
+    }
+
+
+def masked_condition_gradient_rgb_loss(predicted_rgb, target_rgb, conditions, config, channel_name):
+    order = list(config["conditionChannelOrder"])
+    if channel_name not in order:
+        raise ValueError(f"condition channel is missing: {channel_name}")
+    mask = conditions[:, order.index(channel_name):order.index(channel_name) + 1]
+    mask = torch.nn.functional.interpolate(mask, size=predicted_rgb.shape[-2:], mode="nearest")
+    horizontal_mask = torch.maximum(mask[:, :, :, 1:], mask[:, :, :, :-1])
+    vertical_mask = torch.maximum(mask[:, :, 1:, :], mask[:, :, :-1, :])
+    predicted_horizontal = predicted_rgb[:, :, :, 1:] - predicted_rgb[:, :, :, :-1]
+    target_horizontal = target_rgb[:, :, :, 1:] - target_rgb[:, :, :, :-1]
+    predicted_vertical = predicted_rgb[:, :, 1:, :] - predicted_rgb[:, :, :-1, :]
+    target_vertical = target_rgb[:, :, 1:, :] - target_rgb[:, :, :-1, :]
+    horizontal_denominator = (horizontal_mask.sum() * predicted_rgb.shape[1]).clamp_min(1.0)
+    vertical_denominator = (vertical_mask.sum() * predicted_rgb.shape[1]).clamp_min(1.0)
+    horizontal_loss = ((predicted_horizontal - target_horizontal).abs() * horizontal_mask).sum() / horizontal_denominator
+    vertical_loss = ((predicted_vertical - target_vertical).abs() * vertical_mask).sum() / vertical_denominator
+    return (horizontal_loss + vertical_loss) * 0.5
 
 
 def r5_path_replay_passes_per_epoch(config):
@@ -3602,7 +5672,18 @@ def evaluate_velocity_prediction(model, loader, diffusion, latent_normalization,
 def predict_and_measure(model, noisy_latent, target_velocity, clean_latent, timesteps, alpha_bars, conditions, config, target_image=None, latent_normalization=None):
     alpha = alpha_bars[timesteps].view(-1, 1, 1, 1)
     if is_v5_or_later(config):
-        predicted_velocity = model.predict_velocity(noisy_latent, timesteps, conditions)
+        stage4_alignment_readout = None
+        stage4_object_alignment = None
+        if is_v9_stage4_object_semantic_decoded_alignment(config):
+            predicted_velocity, stage4_object_alignment = model.predict_velocity_with_stage4_object_alignment(
+                noisy_latent, timesteps, conditions
+            )
+        elif is_v8_stage4_decoded_alignment(config):
+            predicted_velocity, stage4_alignment_readout = model.predict_velocity_with_stage4_alignment(
+                noisy_latent, timesteps, conditions
+            )
+        else:
+            predicted_velocity = model.predict_velocity(noisy_latent, timesteps, conditions)
         predicted_clean = alpha.sqrt() * noisy_latent - (1.0 - alpha).sqrt() * predicted_velocity
         predicted_conditions = model.reconstruct_conditions_from_clean_latent(predicted_clean)
         target_conditions = model.prepare_typed_conditions(conditions, predicted_clean.shape[-2:])
@@ -3610,6 +5691,34 @@ def predict_and_measure(model, noisy_latent, target_velocity, clean_latent, time
             if target_image is None or latent_normalization is None:
                 raise ValueError("V6 decoded RGB supervision requires target image and latent normalization")
             predicted_rgb = model.autoencoder.decode(denormalize_latent(predicted_clean, latent_normalization))
+            if is_v9_stage4_object_semantic_decoded_alignment(config):
+                return composite_denoiser_losses_v9_stage4(
+                    predicted_velocity,
+                    target_velocity,
+                    predicted_clean,
+                    clean_latent,
+                    predicted_conditions,
+                    target_conditions,
+                    predicted_rgb,
+                    target_image,
+                    conditions,
+                    stage4_object_alignment,
+                    config,
+                )
+            if is_v8_stage4_decoded_alignment(config):
+                return composite_denoiser_losses_v8_stage4(
+                    predicted_velocity,
+                    target_velocity,
+                    predicted_clean,
+                    clean_latent,
+                    predicted_conditions,
+                    target_conditions,
+                    predicted_rgb,
+                    target_image,
+                    conditions,
+                    stage4_alignment_readout,
+                    config,
+                )
             return composite_denoiser_losses_v6(
                 predicted_velocity,
                 target_velocity,
@@ -3858,6 +5967,244 @@ def composite_denoiser_losses_v6(predicted_velocity, target_velocity, predicted_
     }
 
 
+def composite_denoiser_losses_v8_stage4(
+    predicted_velocity,
+    target_velocity,
+    predicted_clean,
+    clean_latent,
+    predicted_conditions,
+    target_conditions,
+    predicted_rgb,
+    target_rgb,
+    full_conditions,
+    alignment_readout,
+    config,
+):
+    base = composite_denoiser_losses_v6(
+        predicted_velocity,
+        target_velocity,
+        predicted_clean,
+        clean_latent,
+        predicted_conditions,
+        target_conditions,
+        predicted_rgb,
+        target_rgb,
+        full_conditions,
+        config,
+    )
+    targets, channel_order = stage4_decoded_alignment_targets(
+        full_conditions,
+        alignment_readout.shape[-2:],
+        config,
+    )
+    channel_losses = [
+        balanced_binary_condition_loss(
+            alignment_readout[:, index:index + 1],
+            targets[:, index:index + 1],
+        )
+        for index in range(len(channel_order))
+    ]
+    shared_readout_loss = torch.stack(channel_losses).mean()
+    reused_weight = float(config["training"]["denoiserLossWeights"]["discreteConditionOutputBinding"])
+    checkpoint_weight = float(
+        config["training"]["bestCheckpointMetricWeights"]["discreteConditionOutputBindingBce"]
+    )
+    composite = base["compositeLossTensor"] + shared_readout_loss * reused_weight
+    checkpoint = base["compositeConditionQualityScore"] + shared_readout_loss * checkpoint_weight
+    metrics = {
+        "stage4DecodedAlignmentSharedReadoutBce": shared_readout_loss,
+        "stage4DecodedAlignmentReusedDiscreteConditionWeight": alignment_readout.new_tensor(reused_weight),
+    }
+    for name, value in zip(channel_order, channel_losses):
+        metrics[f"stage4DecodedAlignment{upper_camel(name)}Bce"] = value
+    return {
+        **base,
+        **metrics,
+        "compositeLossTensor": composite,
+        "compositeLoss": composite,
+        "compositeConditionQualityScore": checkpoint,
+    }
+
+
+def composite_denoiser_losses_v9_stage4(
+    predicted_velocity,
+    target_velocity,
+    predicted_clean,
+    clean_latent,
+    predicted_conditions,
+    target_conditions,
+    predicted_rgb,
+    target_rgb,
+    full_conditions,
+    alignment,
+    config,
+):
+    if not isinstance(alignment, dict):
+        raise ValueError("V9 Stage 4 object alignment outputs are missing")
+    object_order = list(V7_R5_STAGE4_OBJECT_DIAGNOSTIC_CHANNELS)
+    object_up1 = alignment.get("objectReadoutUp1")
+    object_up0 = alignment.get("objectReadoutUp0")
+    route_readout = alignment.get("routeReadout")
+    features_up1 = tuple(alignment.get("objectProjectionFeaturesUp1", ()))
+    features_up0 = tuple(alignment.get("objectProjectionFeaturesUp0", ()))
+    if (
+        object_up1 is None or object_up0 is None or route_readout is None
+        or object_up1.shape[1] != 4 or object_up0.shape[1] != 4
+        or route_readout.shape[1] != 2
+        or len(features_up1) != 4 or len(features_up0) != 4
+    ):
+        raise ValueError("V9 Stage 4 object or route readout shape is invalid")
+
+    base = composite_denoiser_losses_v6(
+        predicted_velocity,
+        target_velocity,
+        predicted_clean,
+        clean_latent,
+        predicted_conditions,
+        target_conditions,
+        predicted_rgb,
+        target_rgb,
+        full_conditions,
+        config,
+    )
+    target_up1 = stage4_v9_object_targets(full_conditions, object_up1.shape[-2:], config)
+    target_up0 = stage4_v9_object_targets(full_conditions, object_up0.shape[-2:], config)
+    route_targets, _ = stage4_decoded_alignment_targets(
+        full_conditions,
+        route_readout.shape[-2:],
+        config,
+    )
+    route_targets = route_targets[:, :2]
+    object_losses = []
+    object_gradients = []
+    metrics = {}
+    reused_weight = float(config["training"]["denoiserLossWeights"]["discreteConditionOutputBinding"])
+    prefix_by_channel = {
+        "object_footprints": "ObjectFootprints",
+        "object_tree": "ObjectTree",
+        "object_rock": "ObjectRock",
+        "object_vegetation": "ObjectVegetation",
+    }
+    for index, name in enumerate(object_order):
+        up1_loss = balanced_binary_condition_loss(
+            object_up1[:, index:index + 1],
+            target_up1[:, index:index + 1],
+        )
+        up0_loss = balanced_binary_condition_loss(
+            object_up0[:, index:index + 1],
+            target_up0[:, index:index + 1],
+        )
+        independent_loss = (up1_loss + up0_loss) * 0.5
+        object_losses.append(independent_loss)
+        gradient = predicted_rgb.new_zeros(())
+        if torch.is_grad_enabled() and independent_loss.requires_grad:
+            contributions = torch.autograd.grad(
+                independent_loss * reused_weight,
+                (features_up1[index], features_up0[index]),
+                retain_graph=True,
+                create_graph=False,
+                allow_unused=True,
+            )
+            finite_contributions = [
+                value.abs().mean().detach()
+                for value in contributions
+                if value is not None
+            ]
+            if finite_contributions:
+                gradient = torch.stack(finite_contributions).sum()
+        object_gradients.append(gradient)
+        prefix = prefix_by_channel[name]
+        metrics.update({
+            f"stage4V9{prefix}Up1ReadoutBce": up1_loss,
+            f"stage4V9{prefix}Up0ReadoutBce": up0_loss,
+            f"stage4Diagnostic{prefix}IndependentLoss": independent_loss.detach(),
+            f"stage4Diagnostic{prefix}GradientContribution": gradient,
+            f"stage4Diagnostic{prefix}DecodedResponsePrototypeMae": masked_rgb_prototype_mae(
+                predicted_rgb,
+                target_rgb,
+                full_conditions,
+                config,
+                name,
+            ).detach(),
+        })
+    gradient_stack = torch.stack(object_gradients)
+    metrics["stage4DiagnosticObjectGradientAvailable"] = (
+        torch.isfinite(gradient_stack) & (gradient_stack > 0.0)
+    ).all().to(predicted_rgb.dtype)
+
+    route_channel_losses = [
+        balanced_binary_condition_loss(
+            route_readout[:, index:index + 1],
+            route_targets[:, index:index + 1],
+        )
+        for index in range(2)
+    ]
+    route_loss = torch.stack(route_channel_losses).mean()
+    independent_object_loss = torch.stack(object_losses).mean()
+    object_and_route_loss = torch.stack((*object_losses, route_loss)).mean()
+    checkpoint_weight = float(
+        config["training"]["bestCheckpointMetricWeights"]["discreteConditionOutputBindingBce"]
+    )
+    composite = base["compositeLossTensor"] + object_and_route_loss * reused_weight
+    checkpoint = base["compositeConditionQualityScore"] + object_and_route_loss * checkpoint_weight
+    metrics.update({
+        "stage4V9IndependentObjectSemanticReadoutBce": independent_object_loss,
+        "stage4V9PreservedRouteTopologyReadoutBce": route_loss,
+        "stage4V9ReusedDiscreteConditionWeight": predicted_rgb.new_tensor(reused_weight),
+    })
+    return {
+        **base,
+        **metrics,
+        "compositeLossTensor": composite,
+        "compositeLoss": composite,
+        "compositeConditionQualityScore": checkpoint,
+    }
+
+
+def stage4_v9_object_targets(full_conditions, output_size, config):
+    order = list(config["conditionChannelOrder"])
+    resized = torch.nn.functional.interpolate(full_conditions, size=output_size, mode="nearest")
+    return torch.cat([
+        resized[:, order.index(name):order.index(name) + 1].clamp(0.0, 1.0)
+        for name in V7_R5_STAGE4_OBJECT_DIAGNOSTIC_CHANNELS
+    ], dim=1)
+
+
+def stage4_decoded_alignment_targets(full_conditions, output_size, config):
+    order = list(config["conditionChannelOrder"])
+    channel_names = [
+        "terrain_path_ground",
+        "route_required_boundary",
+        "object_footprints",
+        "object_tree",
+        "object_rock",
+        "object_vegetation",
+    ]
+    resized = torch.nn.functional.interpolate(full_conditions, size=output_size, mode="nearest")
+    path_index = order.index("terrain_path_ground")
+    path = resized[:, path_index:path_index + 1].clamp(0.0, 1.0)
+    required_boundary = torch.zeros_like(path)
+    topology = config.get("training", {}).get("authorizedBoundaryTopology", {})
+    required_sides = list(topology.get("requiredBoundarySides", []))
+    if not required_sides or any(side not in {"north", "south", "west", "east"} for side in required_sides):
+        raise ValueError("V8 Stage 4 decoded alignment requires valid world-fact boundary sides")
+    band = max(1, round(min(path.shape[-2:]) * float(topology.get("boundaryBandRatio", 0.04))))
+    for side in required_sides:
+        if side == "north":
+            required_boundary[:, :, :band, :] = path[:, :, :band, :]
+        elif side == "south":
+            required_boundary[:, :, -band:, :] = path[:, :, -band:, :]
+        elif side == "west":
+            required_boundary[:, :, :, :band] = path[:, :, :, :band]
+        else:
+            required_boundary[:, :, :, -band:] = path[:, :, :, -band:]
+    target_channels = [path, required_boundary]
+    for name in channel_names[2:]:
+        index = order.index(name)
+        target_channels.append(resized[:, index:index + 1].clamp(0.0, 1.0))
+    return torch.cat(target_channels, dim=1), channel_names
+
+
 def sparse_region_rgb_loss(predicted_rgb, target_rgb, conditions, config):
     order = list(config["conditionChannelOrder"])
     losses = []
@@ -3917,10 +6264,43 @@ def stage4_failure_diagnostic_metrics(predicted_rgb, target_rgb, conditions, con
     contract = config.get("training", {}).get("stage4FailureDiagnostics", {})
     if contract.get("enabled") is not True:
         return {}
+    if is_v9_stage4_object_semantic_decoded_alignment(config):
+        validate_v9_stage4_diagnostic_manifest_support_contract(config)
+        return route_late_regression_diagnostic_metrics(predicted_rgb, target_rgb, conditions, config)
     validate_v7_r5_stage4_failure_diagnostic_support_contract(config)
     return {
         **object_semantic_diagnostic_metrics(predicted_rgb, target_rgb, conditions, config),
         **route_late_regression_diagnostic_metrics(predicted_rgb, target_rgb, conditions, config),
+    }
+
+
+def validate_v9_stage4_diagnostic_manifest_support_contract(config):
+    contract = config.get("training", {}).get("stage4FailureDiagnostics", {})
+    object_contract = contract.get("objectSemanticDiagnostics", {})
+    route_contract = contract.get("routeLateRegressionDiagnostics", {})
+    if (
+        contract.get("enabled") is not True
+        or contract.get("status") != "v9_diagnostic_manifest_registry_supported_inactive"
+        or object_contract.get("channels") != list(V7_R5_STAGE4_OBJECT_DIAGNOSTIC_CHANNELS)
+        or object_contract.get("measurements") != list(V7_R5_STAGE4_OBJECT_DIAGNOSTIC_MEASUREMENTS)
+        or object_contract.get("gradientTarget") != "matching_v9_object_projection_features_up1_and_up0"
+        or object_contract.get("changesTrainingWeightsNow") is not False
+        or route_contract.get("measurements") != list(V7_R5_STAGE4_ROUTE_DIAGNOSTIC_MEASUREMENTS)
+        or route_contract.get("conditionChannel") != "terrain_path_ground"
+        or route_contract.get("requiredBoundarySidesSource") != "authorizedBoundaryTopology.requiredBoundarySides"
+        or route_contract.get("preserveExistingPathLossWeights") is not True
+    ):
+        raise ValueError("V9 Stage 4 diagnostic Manifest support contract is invalid")
+    for key in (
+        "reviewThresholdsModified", "failedPreviewPixelsUsedAsTrainingTargets",
+        "executionValuesSelected", "trainingConfigApplied", "checkpointFileReadAuthorized",
+        "gpuUseAuthorized", "trainingAuthorized",
+    ):
+        if contract.get(key) is not False:
+            raise ValueError(f"V9 Stage 4 diagnostic execution boundary is invalid: {key}")
+    return {
+        "status": "v9_stage4_diagnostic_manifest_support_contract_valid_inactive",
+        "exactFields": list(V9_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS),
     }
 
 
@@ -4588,8 +6968,32 @@ def is_v7(config):
     return config.get("denoiserArchitecture") == "multiscale_condition_unet_v7"
 
 
+def is_v8_stage4_decoded_alignment(config):
+    return config.get("denoiserArchitecture") == "multiscale_condition_unet_v8_stage4_decoded_alignment"
+
+
+def is_v9_stage4_object_semantic_decoded_alignment(config):
+    return config.get("denoiserArchitecture") == "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment"
+
+
+def uses_registered_v7_capacity_dataset(config):
+    return is_v7(config) or is_v8_stage4_decoded_alignment(config) or is_v9_stage4_object_semantic_decoded_alignment(config)
+
+
+def uses_v7_rollout_validation(config):
+    return is_v7(config) or is_v8_stage4_decoded_alignment(config) or is_v9_stage4_object_semantic_decoded_alignment(config)
+
+
+def conditional_dataset_selection_contract(config):
+    return (
+        "registered_v7_capacity_contribution_v1"
+        if uses_registered_v7_capacity_dataset(config)
+        else "current_condition_identity_v1"
+    )
+
+
 def is_v6_or_later(config):
-    return is_v6(config) or is_v7(config)
+    return is_v6(config) or is_v7(config) or is_v8_stage4_decoded_alignment(config) or is_v9_stage4_object_semantic_decoded_alignment(config)
 
 
 def is_v5_or_later(config):
@@ -4635,6 +7039,30 @@ def serialize_condition_evidence_metrics(loss_metrics):
             continue
         raise ValueError(f"condition evidence metric has unsupported type: {key}")
     return serialized
+
+
+def register_v9_stage4_diagnostic_manifest_fields(row, train_metrics, epoch, config):
+    if not is_v9_stage4_object_semantic_decoded_alignment(config):
+        return row
+    registry = config.get("training", {}).get("stage4ObjectSemanticDecoderAlignment", {}).get(
+        "diagnosticManifestRegistry", {}
+    )
+    if int(epoch) not in registry.get("fixedEpochs", []):
+        return row
+    expected = list(V9_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS)
+    if registry.get("exactFields") != expected or registry.get("exactFieldCount") != len(expected):
+        raise ValueError("V9 Stage 4 diagnostic Manifest registry identity changed")
+    actual = sorted(key for key in train_metrics if key.startswith("stage4Diagnostic"))
+    if actual != sorted(expected):
+        missing = sorted(set(expected) - set(actual))
+        unknown = sorted(set(actual) - set(expected))
+        raise ValueError(f"V9 Stage 4 diagnostic Manifest field set changed: missing={missing}, unknown={unknown}")
+    for key in expected:
+        value = float(train_metrics[key])
+        if not math.isfinite(value) or value < 0.0:
+            raise ValueError(f"V9 Stage 4 diagnostic Manifest metric is not finite nonnegative: {key}")
+        row[key] = value
+    return row
 
 
 def save_condition_evidence(model, datasets, diffusion, latent_normalization, device, seed, output_path, config):
@@ -4694,7 +7122,7 @@ def save_condition_evidence(model, datasets, diffusion, latent_normalization, de
     if was_training:
         model.denoiser.train()
     payload = {
-        "schemaVersion": "ai-assisted-conditional-denoiser-evidence-v4" if is_v7(config) else ("ai-assisted-conditional-denoiser-evidence-v3" if is_v6(config) else ("ai-assisted-conditional-denoiser-evidence-v2" if is_v5(config) else "ai-assisted-conditional-denoiser-evidence-v1")),
+        "schemaVersion": "ai-assisted-conditional-denoiser-evidence-v4" if uses_v7_rollout_validation(config) else ("ai-assisted-conditional-denoiser-evidence-v3" if is_v6(config) else ("ai-assisted-conditional-denoiser-evidence-v2" if is_v5(config) else "ai-assisted-conditional-denoiser-evidence-v1")),
         "createdAtUtc": utc_now(),
         "createdAtAsiaShanghai": asia_shanghai_now(),
         "records": records,

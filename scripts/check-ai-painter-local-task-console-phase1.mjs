@@ -15,6 +15,7 @@ const storeSource = read("src/server/ai-painter-local-task-run-store.mjs");
 const serverSource = read("src/server/ai-painter-local-task-console.ts");
 const apiSource = read("src/app/api/ai-painter/task-console/route.ts");
 const pageSource = read("src/app/ai-painter-progress/task-console/task-console.tsx");
+const stylesheetSource = read("src/app/ai-painter-progress/task-console/page.module.css");
 const navigationSource = read("src/app/ai-painter-progress/progress-client.tsx");
 
 assert.equal(catalog.schemaVersion, "local-ai-task-catalog-v1");
@@ -22,27 +23,49 @@ assert.ok([
   "phase1_preview_only",
   "phase2_failure_learning_contract_preview",
   "phase2_r3_candidate_cpu_verified_training_not_authorized",
+  "r5_stage4_task_capsule_preview_active_no_execution_authorized",
 ].includes(catalog.status));
 assert.equal(catalog.executionPolicy.allowArbitraryCommands, false);
 assert.equal(catalog.executionPolicy.phase1RealLaunchEnabled, false);
 assert.ok(catalog.tasks.length >= 4);
 assert.ok(catalog.tasks.every((task) => task.executionCommand === null));
 assert.ok(catalog.tasks.some((task) => task.recommendedNow));
+assert.equal(catalog.tasks.find((task) => task.recommendedNow)?.taskTypeId, "v7-next-bounded-repair-design");
 assert.ok(catalog.tasks.every((task) => task.inputs.length && task.plannedSteps.length && task.excludedPermissions.length));
 
 assert.ok(apiSource.includes("export async function GET"));
 assert.ok(!apiSource.includes("export async function POST"));
+assert.ok(apiSource.includes("await readLocalTaskConsoleSnapshot()"));
 assert.ok(serverSource.includes("launchEnabled: false"));
+assert.ok(serverSource.includes("readCurrentTrainingDashboard"));
+assert.ok(serverSource.includes("taskCapsule"));
+assert.ok(serverSource.includes('status: "draft_unexecuted"'));
+assert.ok(serverSource.includes("persistedAsAuthorization: false"));
+assert.ok(serverSource.includes("ownerDecisionRecorded: false"));
+assert.ok(serverSource.includes("authorizationConsumptionAllowed: false"));
+assert.ok(serverSource.includes("executionAllowed: false"));
+assert.ok(serverSource.includes("postRequestAllowed: false"));
 assert.ok(serverSource.includes("owner_key_provisioning_required"));
 assert.ok(serverSource.includes("AI_PET_WORLD_OWNER_TRUST_REGISTRY_SHA256"));
 assert.ok(serverSource.includes("local-ai-failure-learning-r3-candidates/latest.json"));
 assert.ok(pageSource.includes('data-testid="local-task-selector"'));
 assert.ok(pageSource.includes('data-testid="local-task-contract-preview"'));
 assert.ok(pageSource.includes('data-testid="local-task-launch-button"'));
+assert.ok(pageSource.includes('data-testid="local-task-capsule-summary"'));
+assert.ok(pageSource.includes('data-testid="local-owner-action-request-preview"'));
+assert.ok(pageSource.includes('data-testid="local-owner-action-request-boundaries"'));
 assert.ok(pageSource.includes("disabled={!snapshot.launchEnabled}"));
 assert.ok(pageSource.includes("本按钮不会发出POST请求"));
+assert.ok(pageSource.includes("未批准 / 未消费 / 未执行"));
 assert.ok(pageSource.includes('data-testid="local-ai-r3-candidate-terminal"'));
+assert.ok(stylesheetSource.includes(".taskCapsulePanel"));
+assert.ok(stylesheetSource.includes(".ownerPreviewPanel"));
 assert.ok(navigationSource.includes('href: "/ai-painter-progress/task-console"'));
+
+assert.ok(!apiSource.includes("POST("));
+assert.ok(!pageSource.includes('method: "POST"'));
+assert.ok(!pageSource.includes("method: 'POST'"));
+assert.ok(!serverSource.match(/\b(writeFile|appendFile|mkdir|unlink|rename)Sync\b/));
 
 assert.ok(!storeSource.includes("child_process"));
 assert.ok(!storeSource.includes("spawn("));

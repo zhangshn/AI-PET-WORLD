@@ -1,6 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
+import { createHash } from "node:crypto";
 import { selectAuthoritativeTrainingEvidence } from "../src/server/ai-painter-training-status-projection.mjs";
+import { projectR5Stage4TaskCapsule } from "../src/server/ai-painter-task-capsule-projection.mjs";
 
 const root = process.cwd();
 const files = {
@@ -19,11 +21,13 @@ const files = {
   imageApi: "src/app/api/ai-painter/training-data-image/route.ts",
   server: "src/server/ai-painter-current-training.ts",
   liveProjection: "src/server/ai-painter-live-activity-projection.mjs",
+  taskCapsuleProjection: "src/server/ai-painter-task-capsule-projection.mjs",
   types: "src/app/ai-painter-progress/_lib/current-training-dashboard-types.ts",
   contract:
     "data/ai-painter/system-governance/ai-painter-current-training-dashboard-contract-v1.json",
   migration:
     "data/ai-painter/system-governance/local-ai-capability-migration-registry-v1.json",
+  plan: "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md",
   resourceUsage: "src/server/ai-painter-resource-usage.ts",
   validationRunner: "scripts/run-ai-assisted-v7-post-training-validation.mjs",
   singleValidationRunner:
@@ -48,6 +52,73 @@ const pointer = JSON.parse(source.pointer);
 const contract = JSON.parse(source.contract);
 const parameterDictionary = JSON.parse(source.parameterDictionary);
 const migration = JSON.parse(source.migration);
+const sha256File = (relativePath) => createHash("sha256")
+  .update(fs.readFileSync(path.join(root, relativePath)))
+  .digest("hex");
+const r5Stage4FinalizationRoot = path.join(
+  root,
+  ".runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-finalizations",
+);
+const r5Stage4TerminalCandidates = fs.readdirSync(r5Stage4FinalizationRoot, {
+  withFileTypes: true,
+}).filter((entry) => entry.isDirectory()).map((entry) => {
+  const terminalPath = `.runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-finalizations/${entry.name}/phase-terminal.json`;
+  if (!fs.existsSync(path.join(root, terminalPath))) return null;
+  return {
+    path: terminalPath,
+    value: JSON.parse(fs.readFileSync(path.join(root, terminalPath), "utf8")),
+  };
+}).filter(Boolean).sort((left, right) =>
+  Date.parse(right.value.recordedAtUtc ?? "") - Date.parse(left.value.recordedAtUtc ?? ""));
+const r5Stage4TerminalRecord = r5Stage4TerminalCandidates[0];
+const r5Stage4Terminal = r5Stage4TerminalRecord.value;
+const r5Stage4Finalization = JSON.parse(
+  fs.readFileSync(path.join(root, r5Stage4Terminal.finalizationReportPath), "utf8"),
+);
+const r5Stage4Review = JSON.parse(
+  fs.readFileSync(path.join(root, r5Stage4Finalization.review.reviewPath), "utf8"),
+);
+const r5Stage4Authorization = JSON.parse(
+  fs.readFileSync(path.join(root, r5Stage4Finalization.authorizationPath), "utf8"),
+);
+const r5TaskCapsuleEvidence = [
+  ["stage4_terminal", r5Stage4TerminalRecord.path, null],
+  ["stage4_finalization", r5Stage4Terminal.finalizationReportPath, r5Stage4Terminal.finalizationReportSha256],
+  ["machine_review", r5Stage4Finalization.review.reviewPath, r5Stage4Finalization.review.reviewSha256],
+  ["owner_authorization", r5Stage4Finalization.authorizationPath, r5Stage4Finalization.authorizationSha256],
+  ["owner_implementation_consumption", r5Stage4Finalization.implementationConsumptionPath, r5Stage4Finalization.implementationConsumptionSha256],
+  ["owner_gpu_execution_consumption", r5Stage4Finalization.executionConsumptionPath, r5Stage4Finalization.executionConsumptionSha256],
+  ["unique_module_plan", files.plan, null],
+  ["migration_registry", files.migration, null],
+].map(([kind, evidencePath, expectedSha256]) => ({
+  kind,
+  labelZh: kind,
+  path: evidencePath,
+  sha256: sha256File(evidencePath),
+  expectedSha256,
+}));
+const r5TaskCapsule = projectR5Stage4TaskCapsule({
+  terminal: r5Stage4Terminal,
+  finalization: r5Stage4Finalization,
+  review: r5Stage4Review,
+  authorization: r5Stage4Authorization,
+  evidence: r5TaskCapsuleEvidence,
+  migrationRegistryStatus: migration.status,
+  planEvidenceConfirmed:
+    source.plan.includes("固定总进度为3/5（60%）")
+    && source.plan.includes("新的分析、候选或执行均需独立明确授权"),
+});
+const mismatchedCapsule = projectR5Stage4TaskCapsule({
+  terminal: r5Stage4Terminal,
+  finalization: r5Stage4Finalization,
+  review: r5Stage4Review,
+  authorization: r5Stage4Authorization,
+  evidence: r5TaskCapsuleEvidence.map((item) => item.kind === "machine_review"
+    ? { ...item, expectedSha256: "0".repeat(64) }
+    : item),
+  migrationRegistryStatus: migration.status,
+  planEvidenceConfirmed: true,
+});
 const reconciliationPointer = JSON.parse(
   fs.readFileSync(
     path.join(
@@ -258,6 +329,40 @@ const checks = [
     "dashboard_route_get_only",
     source.api.includes("export async function GET") &&
       !source.api.includes("export async function POST"),
+  ],
+  [
+    "r5_stage4_task_capsule_positive_projection",
+    r5TaskCapsule.schemaVersion === "ai-painter-local-task-capsule-v1"
+      && r5TaskCapsule.integrity.status === "verified"
+      && r5TaskCapsule.fixedOverallProgress.percent === 60
+      && r5TaskCapsule.currentStage.number === 4
+      && r5TaskCapsule.candidateTerminal.status === "failed_closed"
+      && r5TaskCapsule.candidateTerminal.previewPassCount === 1
+      && r5TaskCapsule.candidateTerminal.previewCount === 5
+      && r5TaskCapsule.taskIdentity.seed === 20263722
+      && r5TaskCapsule.taskIdentity.requiredBoundarySides.join(",") === "west",
+  ],
+  [
+    "r5_stage4_task_capsule_negative_hash_gate",
+    mismatchedCapsule.integrity.status === "incomplete_or_mismatched"
+      && mismatchedCapsule.integrity.boundEvidenceVerified === false
+      && mismatchedCapsule.candidateTerminal.status === "unknown_or_stale",
+  ],
+  [
+    "r5_stage4_task_capsule_is_in_existing_read_only_api",
+    source.server.includes("readCurrentR5Stage4TaskCapsule")
+      && source.server.includes("taskCapsule,")
+      && source.api.includes("readCurrentTrainingDashboard")
+      && !source.api.includes("export async function POST"),
+  ],
+  [
+    "r5_stage4_task_capsule_frontend_fields_visible",
+    source.page.includes('data-testid="local-task-capsule"')
+      && source.page.includes("固定总进度")
+      && source.page.includes("当前阶段")
+      && source.page.includes("候选终态")
+      && source.page.includes("证据完整性")
+      && source.page.includes("forbiddenActions"),
   ],
   [
     "server_aggregator_read_only",

@@ -89,9 +89,15 @@ export function analyzeFailureLearningLoop({
   const familyGroups = groupFamilies(issueClusters)
   const diagnosticInterpretation = diagnosticEvidence === null
     ? null
-    : interpretStage4DiagnosticEvidence(diagnosticEvidence)
+    : diagnosticEvidence?.schemaVersion === "stage4-bounded-repair-smoke-diagnostic-evidence-v1"
+      ? interpretStage4TrainingDiagnosticTimeline(diagnosticEvidence)
+      : interpretStage4DiagnosticEvidence(diagnosticEvidence)
+  const diagnosticVisualDifferential = diagnosticInterpretation?.evidenceMode === "post_training_epoch_timeline"
+    ? buildStage4TrainingTimelineVisualDifferential(timeline, diagnosticInterpretation)
+    : null
   const rootCauseCandidates = buildRootCauseCandidates({ timeline, issueClusters, familyGroups })
   if (diagnosticInterpretation) rootCauseCandidates.push(...buildDiagnosticEvidenceCandidates(diagnosticInterpretation))
+  if (diagnosticVisualDifferential) rootCauseCandidates.push(...diagnosticVisualDifferential.rootCauseCandidates)
   const currentTraining = overlay?.patch?.training ?? {}
   const sourceSmokePolicy = currentTraining.fixedEpochPreviewPolicy?.smoke ?? []
   const repairContract = buildRepairContract({
@@ -129,6 +135,7 @@ export function analyzeFailureLearningLoop({
     familyGroups,
     rootCauseCandidates,
     diagnosticInterpretation,
+    ...(diagnosticVisualDifferential ? { diagnosticVisualDifferential } : {}),
     repairContract,
     closure: {
       evidenceNormalized: true,
@@ -141,6 +148,107 @@ export function analyzeFailureLearningLoop({
       validationStarted: false,
       ownerReviewRequired: true,
       nextState: "waiting_for_owner_review_of_bounded_repair_contract",
+    },
+  }
+}
+
+export function interpretStage4TrainingDiagnosticTimeline(evidence) {
+  assert(evidence?.schemaVersion === "stage4-bounded-repair-smoke-diagnostic-evidence-v1", "failure_learning_training_timeline_schema_invalid")
+  assert(evidence?.metricCount === 17 && evidence?.allMetricsPresent === true, "failure_learning_training_timeline_metric_contract_invalid")
+  const objectMetricNames = STAGE4_DIAGNOSTIC_OBJECT_CHANNELS.flatMap((channel) => [
+    `stage4DiagnosticObject${channel}IndependentLoss`,
+    `stage4DiagnosticObject${channel}GradientContribution`,
+    `stage4DiagnosticObject${channel}DecodedResponsePrototypeMae`,
+  ])
+  const requiredMetricNames = [...objectMetricNames, "stage4DiagnosticObjectGradientAvailable", ...STAGE4_DIAGNOSTIC_ROUTE_METRICS]
+  assert(sameSet(evidence.metricNames, requiredMetricNames), "failure_learning_training_timeline_metric_identity_invalid")
+  assert(Array.isArray(evidence.epochs), "failure_learning_training_timeline_epochs_missing")
+  assert(JSON.stringify(evidence.epochs.map((row) => row.epoch)) === JSON.stringify([1, 5, 10, 20, 30]), "failure_learning_training_timeline_epoch_identity_invalid")
+  for (const row of evidence.epochs) {
+    const metrics = row?.metrics
+    assert(metrics && typeof metrics === "object" && !Array.isArray(metrics), `failure_learning_training_timeline_epoch_${row.epoch}_metrics_missing`)
+    assert(sameSet(Object.keys(metrics), requiredMetricNames), `failure_learning_training_timeline_epoch_${row.epoch}_metric_identity_invalid`)
+    for (const name of requiredMetricNames) assert(Number.isFinite(metrics[name]) && metrics[name] >= 0, `failure_learning_training_timeline_epoch_${row.epoch}_metric_value_invalid:${name}`)
+    assert(metrics.stage4DiagnosticObjectGradientAvailable === 1, `failure_learning_training_timeline_epoch_${row.epoch}_object_gradient_unavailable`)
+  }
+
+  const first = evidence.epochs[0]
+  const final = evidence.epochs.at(-1)
+  const objectChannels = STAGE4_DIAGNOSTIC_OBJECT_CHANNELS.map((name) => {
+    const prefix = `stage4DiagnosticObject${name}`
+    const independentLossStart = first.metrics[`${prefix}IndependentLoss`]
+    const independentLossFinal = final.metrics[`${prefix}IndependentLoss`]
+    const decodedResponseStart = first.metrics[`${prefix}DecodedResponsePrototypeMae`]
+    const decodedResponseFinal = final.metrics[`${prefix}DecodedResponsePrototypeMae`]
+    return {
+      channel: name.toLowerCase(),
+      independentLoss: independentLossFinal,
+      gradientContribution: final.metrics[`${prefix}GradientContribution`],
+      decodedResponsePrototypeMae: decodedResponseFinal,
+      independentLossStart,
+      independentLossDelta: independentLossFinal - independentLossStart,
+      decodedResponsePrototypeMaeStart: decodedResponseStart,
+      decodedResponsePrototypeMaeDelta: decodedResponseFinal - decodedResponseStart,
+      decodedResponseImprovementRatio: decodedResponseStart === 0 ? null : (decodedResponseStart - decodedResponseFinal) / decodedResponseStart,
+    }
+  })
+  const byLoss = descendingRank(objectChannels, "independentLoss")
+  const byGradient = descendingRank(objectChannels, "gradientContribution")
+  const byDecodedResponse = descendingRank(objectChannels, "decodedResponsePrototypeMae")
+  const gradientMinimum = Math.min(...objectChannels.map((row) => row.gradientContribution))
+  for (const row of objectChannels) {
+    row.lossRankDescending = byLoss.indexOf(row.channel) + 1
+    row.gradientContributionRankDescending = byGradient.indexOf(row.channel) + 1
+    row.decodedResponsePrototypeMaeRankDescending = byDecodedResponse.indexOf(row.channel) + 1
+    row.gradientContributionRelativeToMinimum = gradientMinimum === 0 ? null : row.gradientContribution / gradientMinimum
+  }
+  const routeTimeline = evidence.epochs.map((row) => ({
+    epoch: row.epoch,
+    activationMassRatio: row.metrics.stage4DiagnosticRouteActivationMassRatio,
+    spatialDistributionL1: row.metrics.stage4DiagnosticRouteSpatialDistributionL1,
+    centroidDrift: row.metrics.stage4DiagnosticRouteCentroidDrift,
+    requiredBoundaryContactMinimum: row.metrics.stage4DiagnosticRouteRequiredBoundaryContactMinimum,
+  }))
+  const finalRoute = routeTimeline.at(-1)
+  return {
+    schemaVersion: "local-ai-stage4-training-diagnostic-timeline-interpretation-v1",
+    status: "post_training_five_epoch_diagnostic_timeline_interpreted_read_only",
+    evidenceMode: "post_training_epoch_timeline",
+    metricCount: requiredMetricNames.length,
+    epochCount: evidence.epochs.length,
+    epochs: evidence.epochs.map((row) => row.epoch),
+    objectMetrics: {
+      gradientAvailableAtEveryEpoch: true,
+      channels: objectChannels,
+      highestIndependentLossChannel: byLoss[0],
+      highestGradientContributionChannel: byGradient[0],
+      highestDecodedResponsePrototypeMaeChannel: byDecodedResponse[0],
+      finding: "All object diagnostics remained available during the existing Smoke. Lower loss or prototype MAE describes the training diagnostic response only; it does not imply that the separately generated fixed preview passes held-out semantic review.",
+    },
+    routeMetrics: {
+      activationMassRatio: finalRoute.activationMassRatio,
+      activationMassDifferenceFromTarget: finalRoute.activationMassRatio - 1,
+      activationMassPercentDifferenceFromTarget: (finalRoute.activationMassRatio - 1) * 100,
+      activationDirectionRelativeToTarget: finalRoute.activationMassRatio > 1 ? "above_target" : finalRoute.activationMassRatio < 1 ? "below_target" : "equal_target",
+      spatialDistributionL1: finalRoute.spatialDistributionL1,
+      centroidDrift: finalRoute.centroidDrift,
+      requiredBoundaryContactMinimum: finalRoute.requiredBoundaryContactMinimum,
+      requiredBoundaryContactState: finalRoute.requiredBoundaryContactMinimum > 0 ? "positive_internal_response_not_visual_acceptance" : "absent_internal_response",
+      timeline: routeTimeline,
+      finding: "The training diagnostic records a positive internal route response. Machine review evaluates visible pixels in separately generated fixed previews, so internal response magnitude is not a visual boundary-contact pass and must not be compared as if both values used the same acceptance domain.",
+    },
+    sourceMutationContext: {
+      sourceWeightsChangedDuringExistingSmoke: true,
+      analyzerReadsEvidenceOnly: true,
+      analyzerChangesWeights: false,
+      representedAsWeightsUnchangedDiagnostic: false,
+    },
+    evidenceLimits: {
+      fixedSingleSampleOnly: true,
+      trainingEpochTimelineOnly: true,
+      machineReviewThresholdPassFailInferredFromMetrics: false,
+      datasetWideCausalityEstablished: false,
+      executionValueSelected: false,
     },
   }
 }
@@ -226,7 +334,99 @@ function descendingRank(rows, field) {
   return [...rows].sort((left, right) => right[field] - left[field] || left.channel.localeCompare(right.channel)).map((row) => row.channel)
 }
 
+function sameSet(left, right) {
+  return Array.isArray(left) && left.length === right.length && [...left].sort().every((value, index) => value === [...right].sort()[index])
+}
+
+function buildStage4TrainingTimelineVisualDifferential(timeline, interpretation) {
+  const finalRow = timeline.at(-1)
+  const finalIssues = new Set(finalRow.issueCodes)
+  const routeCoverageFailed = finalIssues.has("condition_terrain_path_ground_coverage_mismatch")
+  const routeBoundaryFailed = finalIssues.has("condition_terrain_path_ground_required_boundary_contact_missing")
+  const rockReviewFailed = finalIssues.has("condition_object_rock_reference_semantic_mismatch")
+  const rock = interpretation.objectMetrics.channels.find((row) => row.channel === "rock")
+  const rootCauseCandidates = []
+  if (routeCoverageFailed || routeBoundaryFailed) {
+    rootCauseCandidates.push({
+      id: "route_internal_metric_and_fixed_preview_visual_review_domain_gap",
+      category: "evidence_domain_mismatch",
+      confidence: 0.91,
+      titleZh: "道路内部响应指标与固定预览视觉审核不在同一判定域",
+      findingZh: `Epoch ${finalRow.epoch}内部道路激活量比为${interpretation.routeMetrics.activationMassRatio.toFixed(6)}、边界接触最小响应为${interpretation.routeMetrics.requiredBoundaryContactMinimum.toFixed(6)}，但固定预览仍报告${[routeCoverageFailed ? "覆盖量不匹配" : null, routeBoundaryFailed ? "west边界可见接触缺失" : null].filter(Boolean).join("、")}。内部响应衡量训练诊断张量，机器审核衡量另行生成预览中的可见像素；正内部响应不能替代视觉通过。`,
+      evidenceIssueCodes: [...finalIssues].filter((code) => code.startsWith("condition_terrain_path_ground_")),
+      evidenceEpochs: interpretation.epochs,
+      proposedTarget: "保持审核阈值不变，分离记录训练诊断域与固定预览视觉域，并仅提出未激活的跨域一致性候选。",
+    })
+  }
+  if (rockReviewFailed) {
+    rootCauseCandidates.push({
+      id: "rock_training_diagnostic_improvement_without_heldout_visual_acceptance",
+      category: "cross_evidence_non_convergence",
+      confidence: 0.88,
+      titleZh: "Rock训练诊断改善但未达到留出视觉语义验收",
+      findingZh: `Rock独立Loss从${rock.independentLossStart.toFixed(6)}降至${rock.independentLoss.toFixed(6)}，解码响应Prototype MAE从${rock.decodedResponsePrototypeMaeStart.toFixed(6)}降至${rock.decodedResponsePrototypeMae.toFixed(6)}，但Epoch ${finalRow.epoch}留出视觉审核仍失败。该结果说明训练响应改善真实存在，但尚不能代表留出掩码颜色、边缘与亮度相关结构已经收敛。`,
+      evidenceIssueCodes: ["condition_object_rock_reference_semantic_mismatch"],
+      evidenceEpochs: interpretation.epochs,
+      proposedTarget: "保持其他对象通道与审核阈值不变，只形成Rock跨证据一致性的有界未激活候选。",
+    })
+  }
+  return {
+    schemaVersion: "local-ai-stage4-training-metric-visual-review-differential-v1",
+    status: "training_metric_and_fixed_preview_visual_review_domains_compared_read_only",
+    finalEpoch: finalRow.epoch,
+    route: {
+      internalActivationMassRatio: interpretation.routeMetrics.activationMassRatio,
+      internalSpatialDistributionL1: interpretation.routeMetrics.spatialDistributionL1,
+      internalCentroidDrift: interpretation.routeMetrics.centroidDrift,
+      internalRequiredBoundaryContactMinimum: interpretation.routeMetrics.requiredBoundaryContactMinimum,
+      visualCoverageReviewFailed: routeCoverageFailed,
+      visualRequiredWestBoundaryContactReviewFailed: routeBoundaryFailed,
+      conclusion: "internal_training_response_does_not_establish_fixed_preview_visual_topology_acceptance",
+    },
+    rock: {
+      independentLossStart: rock.independentLossStart,
+      independentLossFinal: rock.independentLoss,
+      decodedResponsePrototypeMaeStart: rock.decodedResponsePrototypeMaeStart,
+      decodedResponsePrototypeMaeFinal: rock.decodedResponsePrototypeMae,
+      heldoutVisualSemanticReviewFailed: rockReviewFailed,
+      conclusion: "training_diagnostic_improved_but_heldout_visual_semantics_not_accepted",
+    },
+    thresholdsReinterpreted: false,
+    executionValuesSelected: false,
+    sourceWeightsChangedByExistingSmoke: true,
+    analyzerModifiedSourceWeights: false,
+    rootCauseCandidates,
+  }
+}
+
 function buildDiagnosticEvidenceCandidates(interpretation) {
+  if (interpretation.evidenceMode === "post_training_epoch_timeline") {
+    return [
+      {
+        id: "training_timeline_object_residual_single_sample",
+        category: "diagnostic_evidence_pattern",
+        confidence: 0.74,
+        titleZh: "训练期对象诊断残差时间线",
+        findingZh: `五个固定Epoch的对象诊断均完整；终态最高独立Loss通道为${interpretation.objectMetrics.highestIndependentLossChannel}。该排序只用于形成未激活候选，不选择执行参数。`,
+        evidenceIssueCodes: ["condition_object_rock_reference_semantic_mismatch"],
+        evidenceEpochs: interpretation.epochs,
+        proposedTarget: "保留其他对象通道，仅形成跨证据一致性修复候选并等待独立Owner授权。",
+      },
+      {
+        id: "training_timeline_route_internal_response_single_sample",
+        category: "diagnostic_evidence_pattern",
+        confidence: 0.8,
+        titleZh: "训练期道路内部响应时间线",
+        findingZh: `终态激活量相对目标偏差${interpretation.routeMetrics.activationMassPercentDifferenceFromTarget.toFixed(4)}%，内部边界响应为${interpretation.routeMetrics.requiredBoundaryContactMinimum.toFixed(6)}；这些数值不重新解释机器审核阈值。`,
+        evidenceIssueCodes: [
+          "condition_terrain_path_ground_coverage_mismatch",
+          "condition_terrain_path_ground_required_boundary_contact_missing",
+        ],
+        evidenceEpochs: interpretation.epochs,
+        proposedTarget: "保持机器审核阈值不变，仅形成道路内部响应与固定预览可见结果的一致性候选。",
+      },
+    ]
+  }
   return [
     {
       id: "diagnostic_object_rock_dominant_residual_single_sample",

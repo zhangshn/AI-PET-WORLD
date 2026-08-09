@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import type {
   CurrentExecutionActivity,
   CurrentTrainingDashboardSnapshot,
+  AiPainterTaskCapsule,
   TrainingTokenAccounting,
   TrainingLiveProgress,
   TrainingEpochMetric,
@@ -23,6 +24,7 @@ import {
 } from "@/server/ai-painter-training-state";
 import { selectAuthoritativeTrainingEvidence } from "@/server/ai-painter-training-status-projection.mjs";
 import { selectLiveActivityState } from "@/server/ai-painter-live-activity-projection.mjs";
+import { projectR5Stage4TaskCapsule } from "@/server/ai-painter-task-capsule-projection.mjs";
 
 const execFileAsync = promisify(execFile);
 const root = process.cwd();
@@ -71,6 +73,28 @@ const modelSources = [
       ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r3",
     runPrefix: "ai-assisted-v7-repair-r3-",
   },
+  {
+    absoluteRoot: path.join(
+      /* turbopackIgnore: true */ root,
+      ".runtime",
+      "ai-painter",
+      "project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4",
+    ),
+    relativeRoot:
+      ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4",
+    runPrefix: "ai-assisted-v7-r5-stage4-full-training-",
+  },
+  {
+    absoluteRoot: path.join(
+      /* turbopackIgnore: true */ root,
+      ".runtime",
+      "ai-painter",
+      "project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4-bounded-repair-smoke",
+    ),
+    relativeRoot:
+      ".runtime/ai-painter/project-owned-complete-world-conditional-denoiser-v7-repair-r5-stage4-bounded-repair-smoke",
+    runPrefix: "ai-assisted-v7-r5-stage4-",
+  },
 ] as const;
 const configPath =
   "ml/ai-painter/config/complete-world-ai-assisted-cold-start-v7.json";
@@ -88,6 +112,10 @@ const r2SmokeFinalizationPointerPath =
   ".runtime/ai-painter/v7-bounded-repair-r2-overfit-smoke-finalizations/latest.json";
 const strictValidationRootPath =
   ".runtime/ai-painter/v7-repair-r1-strict-revalidations";
+const r5Stage4FinalizationRootPath =
+  ".runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-finalizations";
+const uniqueModulePlanPath =
+  "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md";
 const expectedSplits = {
   train: 48,
   validation: 8,
@@ -145,6 +173,7 @@ async function buildSnapshot(): Promise<CurrentTrainingDashboardSnapshot> {
     validationReconciliationPointer,
     fullTrainingFinalization,
     localProcesses,
+    taskCapsule,
   ] = await Promise.all([
     readJson(configPath),
     readJson(datasetPointerPath),
@@ -159,6 +188,7 @@ async function buildSnapshot(): Promise<CurrentTrainingDashboardSnapshot> {
     readJson(validationReconciliationPointerPath),
     readJson(fullTrainingFinalizationPath),
     readRelevantLocalProcesses(),
+    readCurrentR5Stage4TaskCapsule(),
   ]);
   const validationReconciliationPath =
     text(validationReconciliationPointer?.reportPath) ?? "";
@@ -366,6 +396,24 @@ async function buildSnapshot(): Promise<CurrentTrainingDashboardSnapshot> {
           (!fullTrainingFinalization || fullTrainingCompleted),
       },
       {
+        code: "candidate_failed_closed",
+        label: "Stage4候选失败关闭",
+        summary: taskCapsule.latestBlocker.summaryZh,
+        currentStep: "stage4_candidate_failed_closed_waiting_owner_decision",
+        source: "r5_stage4_task_capsule",
+        occurredAtUtc: taskCapsule.candidateTerminal.recordedAtUtc,
+        terminalPriority: 95,
+        taskIdentity: {
+          modelId: taskCapsule.taskIdentity.modelId,
+          datasetPackageId: activeTaskIdentity.datasetPackageId,
+          checkpointSha256: null,
+          trainingChainId: null,
+        },
+        valid:
+          taskCapsule.integrity.status === "verified" &&
+          taskCapsule.candidateTerminal.status === "failed_closed",
+      },
+      {
         code: "idle",
         label: "空闲",
         summary: "没有与当前模型和数据集匹配的活动训练或更新终态证据。",
@@ -422,6 +470,7 @@ async function buildSnapshot(): Promise<CurrentTrainingDashboardSnapshot> {
     schemaVersion: "ai-painter-current-training-dashboard-v1",
     generatedAtUtc: new Date().toISOString(),
     readOnly: true,
+    taskCapsule,
     activity,
     status: projectedStatus,
     model: {
@@ -510,6 +559,13 @@ async function buildSnapshot(): Promise<CurrentTrainingDashboardSnapshot> {
     },
     events,
     evidence: [
+      ...taskCapsule.evidence.map((item) => ({
+        label: `任务胶囊：${item.labelZh}`,
+        path: item.path,
+        sha256: item.sha256,
+        recordedAtUtc: item.recordedAtUtc,
+        recordedAtAsiaShanghai: item.recordedAtAsiaShanghai,
+      })),
       ...(authorization.requestPath
         ? [
             {
@@ -606,6 +662,154 @@ async function buildSnapshot(): Promise<CurrentTrainingDashboardSnapshot> {
         : []),
     ],
   };
+}
+
+async function readCurrentR5Stage4TaskCapsule(): Promise<AiPainterTaskCapsule> {
+  const absoluteFinalizationRoot = resolveInsideRoot(
+    r5Stage4FinalizationRootPath,
+  );
+  const entries = await readdir(absoluteFinalizationRoot, {
+    withFileTypes: true,
+  }).catch(() => []);
+  const terminals = (
+    await Promise.all(
+      entries
+        .filter((entry) => entry.isDirectory())
+        .map(async (entry) => {
+          const terminalPath = `${r5Stage4FinalizationRootPath}/${entry.name}/phase-terminal.json`;
+          return {
+            path: terminalPath,
+            value: await readJson(terminalPath),
+          };
+        }),
+    )
+  )
+    .filter(
+      (item): item is { path: string; value: JsonObject } => Boolean(item.value),
+    )
+    .sort(
+      (left, right) =>
+        Date.parse(text(right.value.recordedAtUtc) ?? "") -
+        Date.parse(text(left.value.recordedAtUtc) ?? ""),
+    );
+  const selectedTerminal = terminals[0] ?? { path: "", value: {} };
+  const terminal = selectedTerminal.value;
+  const finalizationPath = text(terminal.finalizationReportPath) ?? "";
+  const finalization = finalizationPath
+    ? ((await readJson(finalizationPath)) ?? {})
+    : {};
+  const reviewBinding = object(finalization.review) ?? {};
+  const reviewPath = text(reviewBinding.reviewPath) ?? "";
+  const review = reviewPath ? ((await readJson(reviewPath)) ?? {}) : {};
+  const authorizationPath = text(finalization.authorizationPath) ?? "";
+  const authorization = authorizationPath
+    ? ((await readJson(authorizationPath)) ?? {})
+    : {};
+  const implementationConsumptionPath =
+    text(finalization.implementationConsumptionPath) ?? "";
+  const implementationConsumption = implementationConsumptionPath
+    ? ((await readJson(implementationConsumptionPath)) ?? {})
+    : {};
+  const executionConsumptionPath =
+    text(finalization.executionConsumptionPath) ?? "";
+  const executionConsumption = executionConsumptionPath
+    ? ((await readJson(executionConsumptionPath)) ?? {})
+    : {};
+  const migrationRegistry = (await readJson(migrationRegistryPath)) ?? {};
+  const planText = await readFile(resolveInsideRoot(uniqueModulePlanPath), "utf8").catch(
+    () => "",
+  );
+  const evidenceInput = [
+    {
+      kind: "stage4_terminal",
+      labelZh: "R5 Stage4最新终态",
+      path: selectedTerminal.path,
+      sha256: selectedTerminal.path ? await sha256(selectedTerminal.path) : null,
+      expectedSha256: null,
+      recordedAtUtc: text(terminal.recordedAtUtc),
+      recordedAtAsiaShanghai: text(terminal.recordedAtAsiaShanghai),
+    },
+    {
+      kind: "stage4_finalization",
+      labelZh: "R5 Stage4 Finalization",
+      path: finalizationPath,
+      sha256: finalizationPath ? await sha256(finalizationPath) : null,
+      expectedSha256: text(terminal.finalizationReportSha256),
+      recordedAtUtc: text(finalization.createdAtUtc),
+      recordedAtAsiaShanghai: text(finalization.createdAtAsiaShanghai),
+    },
+    {
+      kind: "machine_review",
+      labelZh: "五张固定预览机器审核",
+      path: reviewPath,
+      sha256: reviewPath ? await sha256(reviewPath) : null,
+      expectedSha256: text(reviewBinding.reviewSha256),
+      recordedAtUtc: text(review.createdAtUtc),
+      recordedAtAsiaShanghai: text(review.createdAtAsiaShanghai),
+    },
+    {
+      kind: "owner_authorization",
+      labelZh: "当前Smoke Owner授权",
+      path: authorizationPath,
+      sha256: authorizationPath ? await sha256(authorizationPath) : null,
+      expectedSha256: text(finalization.authorizationSha256),
+      recordedAtUtc: text(authorization.recordedAtUtc),
+      recordedAtAsiaShanghai: text(authorization.recordedAtAsiaShanghai),
+    },
+    {
+      kind: "owner_implementation_consumption",
+      labelZh: "训练实施授权消费",
+      path: implementationConsumptionPath,
+      sha256: implementationConsumptionPath
+        ? await sha256(implementationConsumptionPath)
+        : null,
+      expectedSha256: text(finalization.implementationConsumptionSha256),
+      recordedAtUtc: text(implementationConsumption.consumedAtUtc),
+      recordedAtAsiaShanghai: text(
+        implementationConsumption.consumedAtAsiaShanghai,
+      ),
+    },
+    {
+      kind: "owner_gpu_execution_consumption",
+      labelZh: "GPU执行授权消费",
+      path: executionConsumptionPath,
+      sha256: executionConsumptionPath
+        ? await sha256(executionConsumptionPath)
+        : null,
+      expectedSha256: text(finalization.executionConsumptionSha256),
+      recordedAtUtc: text(executionConsumption.consumedAtUtc),
+      recordedAtAsiaShanghai: text(executionConsumption.consumedAtAsiaShanghai),
+    },
+    {
+      kind: "unique_module_plan",
+      labelZh: "唯一模块计划表",
+      path: uniqueModulePlanPath,
+      sha256: await sha256(uniqueModulePlanPath),
+      expectedSha256: null,
+      recordedAtUtc: null,
+      recordedAtAsiaShanghai: null,
+    },
+    {
+      kind: "migration_registry",
+      labelZh: "本地AI能力迁移注册表",
+      path: migrationRegistryPath,
+      sha256: await sha256(migrationRegistryPath),
+      expectedSha256: null,
+      recordedAtUtc: text(migrationRegistry.updatedAtUtc),
+      recordedAtAsiaShanghai: text(migrationRegistry.updatedAtAsiaShanghai),
+    },
+  ];
+  return projectR5Stage4TaskCapsule({
+    terminal,
+    finalization,
+    review,
+    authorization,
+    evidence: evidenceInput,
+    migrationRegistryStatus: migrationRegistry.status,
+    planEvidenceConfirmed:
+      planText.includes("固定总进度为3/5（60%）") &&
+      planText.includes("新的分析、候选或执行均需独立明确授权"),
+  }) as AiPainterTaskCapsule;
 }
 
 async function readStrictValidationBatches(): Promise<StrictValidationBatch[]> {
@@ -1167,8 +1371,21 @@ async function readTrainingStages(): Promise<TrainingStageDetail[]> {
       const tokenLedgerPath = `.runtime/ai-painter/training-token-ledgers/${entry.name}/ledger.json`;
       const tokenLedger = await readJson(tokenLedgerPath);
       const metrics = arrayObjects(record.metrics).map(toEpochMetric);
-      const previewReviewPath = `${source.relativeRoot}/${entry.name}/fixed-preview-hard-gate-review.json`;
-      const previewReview = await readJson(previewReviewPath);
+      const previewReviewCandidates = [
+        `${source.relativeRoot}/${entry.name}/fixed-preview-hard-gate-review.json`,
+        `${source.relativeRoot}/${entry.name}/fixed-preview-reviews.json`,
+      ];
+      const previewReviewEntries = await Promise.all(
+        previewReviewCandidates.map(async (candidatePath) => ({
+          path: candidatePath,
+          value: await readJson(candidatePath),
+        })),
+      );
+      const selectedPreviewReview = previewReviewEntries.find(
+        (candidate) => candidate.value,
+      );
+      const previewReviewPath = selectedPreviewReview?.path ?? previewReviewCandidates[0];
+      const previewReview = selectedPreviewReview?.value ?? null;
       const previews = await readStagePreviews({
         sourceAbsoluteRoot: source.absoluteRoot,
         sourceRelativeRoot: source.relativeRoot,

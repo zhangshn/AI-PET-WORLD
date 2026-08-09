@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import type { AiPainterTaskCapsule } from "../_lib/current-training-dashboard-types";
 import styles from "./page.module.css";
 
 type TaskContract = {
@@ -26,7 +27,7 @@ type Snapshot = {
   schemaVersion: "local-ai-task-console-snapshot-v1";
   generatedAtUtc: string;
   generatedAtAsiaShanghai: string;
-  mode: "contract_and_failure_learning_preview";
+  mode: "task_capsule_and_owner_action_preview";
   launchEnabled: false;
   gate: {
     status: "blocked";
@@ -122,6 +123,31 @@ type Snapshot = {
           closure: Record<string, string | number | boolean>;
         };
       };
+  taskCapsule: AiPainterTaskCapsule;
+  ownerActionRequestPreview: {
+    schemaVersion: "local-ai-owner-action-request-preview-v1";
+    status: "draft_unexecuted";
+    generatedFromCapsuleId: string;
+    generatedAtUtc: string;
+    actionCode: string;
+    titleZh: string;
+    summaryZh: string;
+    ownerDecisionStatus: "not_recorded";
+    allowedOwnerChoices: Array<{
+      code: string;
+      labelZh: string;
+      currentlyExecutable: false;
+    }>;
+    forbiddenActions: string[];
+    evidence: AiPainterTaskCapsule["evidence"];
+    boundaries: {
+      persistedAsAuthorization: false;
+      ownerDecisionRecorded: false;
+      authorizationConsumptionAllowed: false;
+      executionAllowed: false;
+      postRequestAllowed: false;
+    };
+  };
 };
 
 export function LocalTaskConsole() {
@@ -205,6 +231,54 @@ export function LocalTaskConsole() {
             状态码：{snapshot.gate.code} · 已登记公钥 {snapshot.gate.trustedKeyCount} 个 · 注册表哈希
             {snapshot.gate.configuredRegistryHashMatches ? "已匹配" : "未配置或不匹配"}
           </p>
+        </div>
+      </section>
+
+      <section className={styles.taskCapsulePanel} data-testid="local-task-capsule-summary">
+        <header>
+          <div>
+            <span>AI PAINTER LOCAL TASK CAPSULE</span>
+            <h2>{snapshot.taskCapsule.module.nameZh}</h2>
+          </div>
+          <strong>{snapshot.taskCapsule.fixedOverallProgress.completedStages}/{snapshot.taskCapsule.fixedOverallProgress.totalStages} · {snapshot.taskCapsule.fixedOverallProgress.percent}%</strong>
+        </header>
+        <div className={styles.taskCapsuleGrid}>
+          <StatusItem label="当前阶段" value={`${snapshot.taskCapsule.currentStage.number}/${snapshot.taskCapsule.currentStage.total} · ${snapshot.taskCapsule.currentStage.labelZh}`} />
+          <StatusItem label="候选终态" value={snapshot.taskCapsule.candidateTerminal.status} danger />
+          <StatusItem label="最新阻断" value={snapshot.taskCapsule.latestBlocker.code} danger />
+          <StatusItem label="证据完整性" value={snapshot.taskCapsule.integrity.status} danger={snapshot.taskCapsule.integrity.status !== "verified"} />
+        </div>
+        <p>{snapshot.taskCapsule.latestBlocker.summaryZh}</p>
+        <div className={styles.taskCapsuleLists}>
+          <ListPanel title="当前禁止动作" items={snapshot.taskCapsule.forbiddenActions} danger />
+          <details className={styles.machineContract}>
+            <summary>查看任务胶囊证据路径与SHA-256（{snapshot.taskCapsule.evidence.length}项）</summary>
+            <pre>{JSON.stringify(snapshot.taskCapsule.evidence, null, 2)}</pre>
+          </details>
+        </div>
+      </section>
+
+      <section className={styles.ownerPreviewPanel} data-testid="local-owner-action-request-preview">
+        <header>
+          <div>
+            <span>OWNER ACTION REQUEST PREVIEW</span>
+            <h2>{snapshot.ownerActionRequestPreview.titleZh}</h2>
+          </div>
+          <strong>{snapshot.ownerActionRequestPreview.status}</strong>
+        </header>
+        <p>{snapshot.ownerActionRequestPreview.summaryZh}</p>
+        <div className={styles.ownerChoiceGrid}>
+          {snapshot.ownerActionRequestPreview.allowedOwnerChoices.map((choice) => (
+            <div key={choice.code}>
+              <span>仅供Owner选择</span>
+              <strong>{choice.labelZh}</strong>
+              <code>{choice.code}</code>
+            </div>
+          ))}
+        </div>
+        <div className={styles.previewBoundaries} data-testid="local-owner-action-request-boundaries">
+          <strong>未批准 / 未消费 / 未执行</strong>
+          <span>未保存为授权 · 未记录Owner决策 · 不允许消费授权 · 不允许执行 · 不允许POST</span>
         </div>
       </section>
 

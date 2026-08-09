@@ -7,35 +7,105 @@ import { auditAiAssistedConditionAlignment } from "./lib/ai-assisted-condition-a
 import { auditAiAssistedProfessionalAesthetic } from "./lib/ai-assisted-professional-aesthetic.mjs"
 import { normalizePreviewWithWindowsSafeIo } from "./lib/ai-assisted-v7-r5-stage3-preview-review.mjs"
 import { evaluateV7TrainingGpuResourceGate } from "./lib/ai-assisted-v7-training-resource-gate.mjs"
+import { deriveStage4ExecutionBoundaries, validateStage4StepTelemetry } from "./lib/ai-assisted-v7-r5-stage4-step-telemetry.mjs"
 import { formatShanghai } from "./lib/ai-painter-program-event-store.mjs"
+
+if (process.argv.includes("--v8-decoded-alignment") || process.argv.includes("--v9-object-alignment")) {
+  const { runV8Stage4Smoke } = await import("./run-ai-assisted-v8-r5-stage4-smoke.mjs")
+  process.exit(await runV8Stage4Smoke(process.argv.slice(2)))
+}
 
 const ROOT = process.cwd()
 const PYTHON = resolve("ml/ai-painter/.venv/Scripts/python.exe")
 const TRAINER = "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py"
-const TRAINER_SHA256 = "f9a6b6d6a7c7a4b5e5f98178ad5b2ec1696a33354fbf294b56d5ff1e90ee7ccc"
 const RUNNER_PATH = "scripts/run-ai-assisted-v7-r5-stage4-bounded-repair-smoke.mjs"
-const CPU_CHECKER_PATH = "ml/ai-painter/scripts/check_ai_assisted_v7_r5_stage4_bounded_repair_smoke_authorization_cpu.py"
-const REQUEST_ID = "owner-action-request-v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-new-execution-20260806"
-const AUTHORIZATION_PATH = `.runtime/ai-painter/owner-action-requests/${REQUEST_ID}/request.json`
-const AUTHORIZATION_SHA256 = "1c497e6802da24bd6e16e3b981b7ff5438639047d04f3d9afa677bb33937efed"
-const IMPLEMENTATION_CONSUMPTION_PATH = `.runtime/ai-painter/owner-action-requests/${REQUEST_ID}/implementation-authorization-consumption.json`
-const IMPLEMENTATION_CONSUMPTION_SHA256 = "7ed86af0f3fb94ef3585c83cb5511fbd72273da94fbb69bb594ab6f683f5ab7f"
+const CPU_CHECKER_PATH = "scripts/check-ai-assisted-v7-r5-stage4-sample-bound-topology-step-telemetry-cpu.mjs"
+const LEGACY_MODE = process.argv.includes("--legacy-20260806")
+const AUTHORIZATION_ARGUMENT_INDEX = process.argv.indexOf("--authorization")
+const CURRENT_AUTHORIZATION_PATH = AUTHORIZATION_ARGUMENT_INDEX >= 0 ? process.argv[AUTHORIZATION_ARGUMENT_INDEX + 1] : null
+const PREFLIGHT_AUTHORIZATION_ARGUMENT_INDEX = process.argv.indexOf("--preflight-authorization")
+const CURRENT_PREFLIGHT_AUTHORIZATION_PATH = PREFLIGHT_AUTHORIZATION_ARGUMENT_INDEX >= 0 ? process.argv[PREFLIGHT_AUTHORIZATION_ARGUMENT_INDEX + 1] : null
+const LEGACY_REQUEST_ID = "owner-action-request-v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-new-execution-20260806"
+const LEGACY_AUTHORIZATION_PATH = `.runtime/ai-painter/owner-action-requests/${LEGACY_REQUEST_ID}/request.json`
+const LEGACY_AUTHORIZATION_SHA256 = "1c497e6802da24bd6e16e3b981b7ff5438639047d04f3d9afa677bb33937efed"
+const LEGACY_IMPLEMENTATION_CONSUMPTION_PATH = `.runtime/ai-painter/owner-action-requests/${LEGACY_REQUEST_ID}/implementation-authorization-consumption.json`
+const LEGACY_IMPLEMENTATION_CONSUMPTION_SHA256 = "7ed86af0f3fb94ef3585c83cb5511fbd72273da94fbb69bb594ab6f683f5ab7f"
+const AUTHORIZATION_PATH = LEGACY_MODE ? LEGACY_AUTHORIZATION_PATH : CURRENT_AUTHORIZATION_PATH
+if (!LEGACY_MODE && !AUTHORIZATION_PATH) throw new Error("stage4_config_bound_authorization_argument_required")
+if (!LEGACY_MODE && !CURRENT_PREFLIGHT_AUTHORIZATION_PATH) throw new Error("stage4_config_bound_preflight_authorization_argument_required")
+const AUTHORIZATION_SHA256 = LEGACY_MODE ? LEGACY_AUTHORIZATION_SHA256 : sha256File(AUTHORIZATION_PATH)
+const AUTHORIZATION_RECORD = readJson(AUTHORIZATION_PATH)
+const CURRENT_TASK_IDENTITY = LEGACY_MODE ? {} : (AUTHORIZATION_RECORD.taskIdentity ?? {})
+const STRUCTURED_STABILITY_MODE = !LEGACY_MODE
+  && CURRENT_TASK_IDENTITY.candidateVersion === "v7_r5_stage4_structured_stability_candidate_v2"
+const REQUEST_ID = LEGACY_MODE ? LEGACY_REQUEST_ID : AUTHORIZATION_RECORD.requestId
+const IMPLEMENTATION_CONSUMPTION_PATH = LEGACY_MODE
+  ? LEGACY_IMPLEMENTATION_CONSUMPTION_PATH
+  : projectPath(path.join(path.dirname(resolve(AUTHORIZATION_PATH)), "training-implementation-consumption.json"))
+const IMPLEMENTATION_CONSUMPTION_SHA256 = LEGACY_MODE
+  ? LEGACY_IMPLEMENTATION_CONSUMPTION_SHA256
+  : sha256File(IMPLEMENTATION_CONSUMPTION_PATH)
+const PREFLIGHT_AUTHORIZATION_PATH = LEGACY_MODE ? null : CURRENT_PREFLIGHT_AUTHORIZATION_PATH
+const PREFLIGHT_AUTHORIZATION_SHA256 = LEGACY_MODE ? null : sha256File(PREFLIGHT_AUTHORIZATION_PATH)
+const PREFLIGHT_AUTHORIZATION_RECORD = LEGACY_MODE ? null : readJson(PREFLIGHT_AUTHORIZATION_PATH)
+const PREFLIGHT_IMPLEMENTATION_CONSUMPTION_PATH = LEGACY_MODE
+  ? null
+  : projectPath(path.join(path.dirname(resolve(PREFLIGHT_AUTHORIZATION_PATH)), "preflight-implementation-consumption.json"))
+const PREFLIGHT_IMPLEMENTATION_CONSUMPTION_SHA256 = LEGACY_MODE
+  ? null
+  : sha256File(PREFLIGHT_IMPLEMENTATION_CONSUMPTION_PATH)
 const EXECUTION_CONSUMPTION_PATH = `.runtime/ai-painter/owner-action-requests/${REQUEST_ID}/gpu-execution-authorization-consumption.json`
-const COMMAND_REF = "owner-authorized-v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-new-execution-20260806"
-const SCOPE = "fix_only_two_diagnostic_success_status_bindings_sync_related_hashes_then_one_cpu_gate_preflights_and_one_30_epoch_bounded_gpu_smoke"
-const PREVIOUS_FAILURE_TERMINAL_PATH = ".runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-finalizations/ai-assisted-v7-r5-stage4-bounded-repair-smoke-2026-08-05T15-36-34-038Z-finalization/phase-terminal.json"
-const PREVIOUS_FAILURE_TERMINAL_SHA256 = "c9804cd03a5ca706a0230a695a440c57adfe0d6d125e3a3495db1e109eb3cbc7"
-const INACTIVE_CONFIG_PATH = ".runtime/ai-painter/v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-runs/ai-assisted-v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-2026-08-05T14-10-00-000Z/inactive-config.json"
-const INACTIVE_CONFIG_SHA256 = "6bcc1a6f49b4e9fd5a7ac1eca5f25783445894097b22cf349e15b365cad07332"
-const SELECTION_PATH = ".runtime/ai-painter/v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-runs/ai-assisted-v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-2026-08-05T14-10-00-000Z/selection-contract.json"
-const SELECTION_SHA256 = "6b4b6c9e23836b2d483625594b254f725c1e0ebc799c54f20507210a9db8e228"
-const SUPPORT_CONTRACT_PATH = "data/ai-painter/system-governance/v7-r5-stage4-diagnostic-evidence-bounded-repair-trainer-support-contract.json"
-const SUPPORT_CONTRACT_SHA256 = "8b0bbd53283af7faff236797d51d418170e520da63522c2e91d07331432ac1b4"
-const BOUNDED_CPU_REPORT_PATH = ".runtime/ai-painter/v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-runs/ai-assisted-v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-2026-08-05T14-10-00-000Z/cpu-positive-negative-regression.json"
-const BOUNDED_CPU_REPORT_SHA256 = "975332317a237b7da5ad96c131d6420c5a9d8033790fcb113976e96544a7e05c"
-const BOUNDED_TERMINAL_PATH = ".runtime/ai-painter/v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-runs/ai-assisted-v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-2026-08-05T14-10-00-000Z/phase-terminal.json"
-const BOUNDED_TERMINAL_SHA256 = "7d602540466eb08a44985357508bd9f9fbcb981935dd031a3d1a2acafd3c6643"
-const CPU_REPORT_PATH = ".runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-authorization-cpu-regressions/20260806-001500000/report.json"
+const COMMAND_REF = LEGACY_MODE
+  ? "owner-authorized-v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-new-execution-20260806"
+  : AUTHORIZATION_RECORD.ownerDecision?.commandRef
+const SCOPE = LEGACY_MODE
+  ? "fix_only_two_diagnostic_success_status_bindings_sync_related_hashes_then_one_cpu_gate_preflights_and_one_30_epoch_bounded_gpu_smoke"
+  : AUTHORIZATION_RECORD.ownerDecision?.scope
+const PREVIOUS_FAILURE_TERMINAL_PATH = LEGACY_MODE
+  ? ".runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-finalizations/ai-assisted-v7-r5-stage4-bounded-repair-smoke-2026-08-05T15-36-34-038Z-finalization/phase-terminal.json"
+  : (STRUCTURED_STABILITY_MODE ? CURRENT_TASK_IDENTITY.candidateTerminalPath : CURRENT_TASK_IDENTITY.cpuTerminalPath)
+const PREVIOUS_FAILURE_TERMINAL_SHA256 = LEGACY_MODE
+  ? "c9804cd03a5ca706a0230a695a440c57adfe0d6d125e3a3495db1e109eb3cbc7"
+  : (STRUCTURED_STABILITY_MODE ? CURRENT_TASK_IDENTITY.candidateTerminalSha256 : CURRENT_TASK_IDENTITY.cpuTerminalSha256)
+const INACTIVE_CONFIG_PATH = LEGACY_MODE
+  ? ".runtime/ai-painter/v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-runs/ai-assisted-v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-2026-08-05T14-10-00-000Z/inactive-config.json"
+  : CURRENT_TASK_IDENTITY.inactiveConfigPath
+const INACTIVE_CONFIG_SHA256 = LEGACY_MODE
+  ? "6bcc1a6f49b4e9fd5a7ac1eca5f25783445894097b22cf349e15b365cad07332"
+  : CURRENT_TASK_IDENTITY.inactiveConfigSha256
+const SELECTION_PATH = LEGACY_MODE
+  ? ".runtime/ai-painter/v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-runs/ai-assisted-v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-2026-08-05T14-10-00-000Z/selection-contract.json"
+  : CURRENT_TASK_IDENTITY.selectionContractPath
+const SELECTION_SHA256 = LEGACY_MODE
+  ? "6b4b6c9e23836b2d483625594b254f725c1e0ebc799c54f20507210a9db8e228"
+  : CURRENT_TASK_IDENTITY.selectionContractSha256
+const SUPPORT_CONTRACT_PATH = LEGACY_MODE
+  ? "data/ai-painter/system-governance/v7-r5-stage4-diagnostic-evidence-bounded-repair-trainer-support-contract.json"
+  : CURRENT_TASK_IDENTITY.cpuSupportContractPath
+const SUPPORT_CONTRACT_SHA256 = LEGACY_MODE
+  ? "8b0bbd53283af7faff236797d51d418170e520da63522c2e91d07331432ac1b4"
+  : CURRENT_TASK_IDENTITY.cpuSupportContractSha256
+const BOUNDED_CPU_REPORT_PATH = LEGACY_MODE
+  ? ".runtime/ai-painter/v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-runs/ai-assisted-v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-2026-08-05T14-10-00-000Z/cpu-positive-negative-regression.json"
+  : CURRENT_TASK_IDENTITY.cpuReportPath
+const BOUNDED_CPU_REPORT_SHA256 = LEGACY_MODE
+  ? "975332317a237b7da5ad96c131d6420c5a9d8033790fcb113976e96544a7e05c"
+  : CURRENT_TASK_IDENTITY.cpuReportSha256
+const BOUNDED_TERMINAL_PATH = LEGACY_MODE
+  ? ".runtime/ai-painter/v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-runs/ai-assisted-v7-r5-stage4-diagnostic-evidence-bounded-repair-cpu-2026-08-05T14-10-00-000Z/phase-terminal.json"
+  : PREVIOUS_FAILURE_TERMINAL_PATH
+const BOUNDED_TERMINAL_SHA256 = LEGACY_MODE
+  ? "7d602540466eb08a44985357508bd9f9fbcb981935dd031a3d1a2acafd3c6643"
+  : PREVIOUS_FAILURE_TERMINAL_SHA256
+const CPU_REPORT_PATH = LEGACY_MODE
+  ? ".runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-authorization-cpu-regressions/20260806-001500000/report.json"
+  : (STRUCTURED_STABILITY_MODE ? CURRENT_TASK_IDENTITY.smokeCpuReportPath : CURRENT_TASK_IDENTITY.cpuReportPath)
+const TRAINER_SHA256 = LEGACY_MODE
+  ? "7fb60831c0f57a397567e805ff57e0e4b7fe511e5c35fd5514f998b0be964da9"
+  : CURRENT_TASK_IDENTITY.trainerSha256
+if (!LEGACY_MODE && !/^[a-f0-9]{64}$/.test(TRAINER_SHA256 ?? "")) {
+  throw new Error("stage4_config_bound_trainer_sha256_authorization_binding_missing")
+}
 const DATASET_MANIFEST_PATH = "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json"
 const DATASET_MANIFEST_SHA256 = "8001f5a27bb8bc18883184b0c7e39ef1336eb295ce5787618bf4e60059dd48aa"
 const SOURCE_INDEX_PATH = "data/world-samples/ai-assisted-cold-start-dataset-packages/natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/source-index.json"
@@ -81,8 +151,14 @@ const ATTEMPT_REGISTRATION_PATH = path.join(MODEL_ROOT, "execution-registrations
 const LOCK_PATH = path.join(MODEL_ROOT, ".stage4-bounded-repair-smoke.lock")
 const startedAt = new Date().toISOString()
 const suffix = startedAt.replace(/[:.]/g, "-")
-const runId = `ai-assisted-v7-r5-stage4-bounded-repair-smoke-${suffix}`
+const runId = LEGACY_MODE
+  ? `ai-assisted-v7-r5-stage4-bounded-repair-smoke-${suffix}`
+  : AUTHORIZATION_RECORD.taskIdentity?.outputRunId
+if (!runId) throw new Error("stage4_config_bound_output_run_id_missing")
 const runDir = path.join(MODEL_ROOT, runId)
+const runnerCheckpointHashTelemetryPath = LEGACY_MODE
+  ? path.join(runDir, "runner-checkpoint-hash-read-telemetry.json")
+  : path.join(MODEL_ROOT, "runner-checkpoint-hash-telemetry", `${runId}.json`)
 const derivedConfigPath = path.join(MODEL_ROOT, "derived-configs", `${runId}.json`)
 const preflightReportPath = path.join(MODEL_ROOT, "preflights", `${runId}.json`)
 const finalizationPath = path.join(FINALIZATION_ROOT, `${runId}-finalization`, "finalization-report.json")
@@ -155,8 +231,18 @@ async function main() {
     }
 
     executionConsumption = consumeGpuExecution(preflight)
-    if (!fileHashMatches(STAGE0_CHECKPOINT_PATH, STAGE0_CHECKPOINT_SHA256)) throw new Error("bound_stage0_checkpoint_missing_or_changed_after_consumption")
-    if (!fileHashMatches(AUTOENCODER_CHECKPOINT_PATH, AUTOENCODER_CHECKPOINT_SHA256)) throw new Error("bound_autoencoder_checkpoint_missing_or_changed_after_consumption")
+    recordRunnerCheckpointHashRead("stage0_denoiser", "started", STAGE0_CHECKPOINT_PATH, STAGE0_CHECKPOINT_SHA256)
+    if (!fileHashMatches(STAGE0_CHECKPOINT_PATH, STAGE0_CHECKPOINT_SHA256)) {
+      recordRunnerCheckpointHashRead("stage0_denoiser", "failed", STAGE0_CHECKPOINT_PATH, STAGE0_CHECKPOINT_SHA256)
+      throw new Error("bound_stage0_checkpoint_missing_or_changed_after_consumption")
+    }
+    recordRunnerCheckpointHashRead("stage0_denoiser", "completed", STAGE0_CHECKPOINT_PATH, STAGE0_CHECKPOINT_SHA256)
+    recordRunnerCheckpointHashRead("autoencoder", "started", AUTOENCODER_CHECKPOINT_PATH, AUTOENCODER_CHECKPOINT_SHA256)
+    if (!fileHashMatches(AUTOENCODER_CHECKPOINT_PATH, AUTOENCODER_CHECKPOINT_SHA256)) {
+      recordRunnerCheckpointHashRead("autoencoder", "failed", AUTOENCODER_CHECKPOINT_PATH, AUTOENCODER_CHECKPOINT_SHA256)
+      throw new Error("bound_autoencoder_checkpoint_missing_or_changed_after_consumption")
+    }
+    recordRunnerCheckpointHashRead("autoencoder", "completed", AUTOENCODER_CHECKPOINT_PATH, AUTOENCODER_CHECKPOINT_SHA256)
     if (!fileHashMatches(context.sample.imagePath, EXPECTED_IMAGE_SHA256)) throw new Error("bound_sample_image_missing_or_changed_after_consumption")
     if (!fileHashMatches(context.sample.conditionPackPath, EXPECTED_CONDITION_PACK_SHA256)) throw new Error("bound_condition_pack_missing_or_changed_after_consumption")
     const activeConfig = activateConfig(context.inactiveConfig, context, executionConsumption, false)
@@ -170,9 +256,19 @@ async function main() {
       const manifestIssues = validateManifest(manifest, context)
       if (manifestIssues.length > 0) throw new Error(manifestIssues.join(","))
       const diagnosticEvidence = collectDiagnosticEvidence(manifest)
-      const review = await reviewPreviews(context.sample)
+      const review = await reviewPreviews(
+        context.sample,
+        context.inactiveConfig?.training?.stage4LateStabilityQualification,
+      )
       const blockers = []
-      if (review.previewCount !== 5 || review.previewFailCount > 0) blockers.push("fixed_preview_machine_review_failed")
+      if (review.previewCount !== 5) blockers.push("fixed_preview_machine_review_incomplete")
+      if (STRUCTURED_STABILITY_MODE) {
+        if (review.lateStabilityQualification?.passed !== true) {
+          blockers.push("late_stability_qualification_failed")
+        }
+      } else if (review.previewFailCount > 0) {
+        blockers.push("fixed_preview_machine_review_failed")
+      }
       if (diagnosticEvidence.metricCount !== 17 || diagnosticEvidence.epochs.length !== 5) blockers.push("diagnostic_metric_evidence_incomplete")
       const status = blockers.length === 0
         ? "stage4_bounded_repair_single_sample_gpu_smoke_passed_stopped"
@@ -214,6 +310,21 @@ function loadContext() {
 function validateStaticPreflight(context, hardware, disk) {
   const issues = []
   const check = (condition, code) => { if (!condition) issues.push(code) }
+  const expectedCandidateTerminalStatus = STRUCTURED_STABILITY_MODE
+    ? "r5_stage4_structured_stability_selected_compiled_cpu_verified_not_active"
+    : "stage4_sample194_west_gpu_smoke_cpu_gate_passed_gpu_not_started"
+  const expectedInactiveConfigStatus = STRUCTURED_STABILITY_MODE
+    ? "r5_stage4_structured_stability_inactive_smoke_config_cpu_verified_not_authorized"
+    : "r5_stage4_sample_bound_inactive_smoke_config_cpu_verified_not_authorized"
+  const expectedSupportStatus = STRUCTURED_STABILITY_MODE
+    ? "cpu_verified_structured_stability_support_not_active"
+    : "cpu_verified_sample194_west_gpu_smoke_preflight_gate_execution_not_consumed"
+  const expectedCandidateCpuStatus = STRUCTURED_STABILITY_MODE
+    ? "passed_cpu_only_structured_stability_not_active"
+    : "passed_cpu_only_sample194_west_gpu_smoke_authorization_gate_gpu_not_started"
+  const expectedSmokeCpuStatus = STRUCTURED_STABILITY_MODE
+    ? "passed_cpu_only_structured_stability_smoke_qualification_gate_gpu_not_started"
+    : "passed_cpu_only_sample194_west_gpu_smoke_authorization_gate_gpu_not_started"
   for (const [file, hash, code] of [
     [AUTHORIZATION_PATH, AUTHORIZATION_SHA256, "authorization"],
     [IMPLEMENTATION_CONSUMPTION_PATH, IMPLEMENTATION_CONSUMPTION_SHA256, "implementation_consumption"],
@@ -223,6 +334,7 @@ function validateStaticPreflight(context, hardware, disk) {
     [SUPPORT_CONTRACT_PATH, SUPPORT_CONTRACT_SHA256, "support_contract"],
     [BOUNDED_CPU_REPORT_PATH, BOUNDED_CPU_REPORT_SHA256, "bounded_cpu_report"],
     [BOUNDED_TERMINAL_PATH, BOUNDED_TERMINAL_SHA256, "bounded_terminal"],
+    [CPU_REPORT_PATH, STRUCTURED_STABILITY_MODE ? CURRENT_TASK_IDENTITY.smokeCpuReportSha256 : BOUNDED_CPU_REPORT_SHA256, "smoke_cpu_report"],
     [DATASET_MANIFEST_PATH, DATASET_MANIFEST_SHA256, "dataset_manifest"],
     [SOURCE_INDEX_PATH, SOURCE_INDEX_SHA256, "source_index"],
     [DIAGNOSTIC_REPORT_PATH, DIAGNOSTIC_REPORT_SHA256, "diagnostic_report"],
@@ -230,17 +342,45 @@ function validateStaticPreflight(context, hardware, disk) {
     [STAGE0_MANIFEST_PATH, STAGE0_MANIFEST_SHA256, "stage0_manifest"],
     [TRAINER, TRAINER_SHA256, "trainer"],
   ]) check(fileHashMatches(file, hash), `${code}_missing_or_changed`)
+  if (STRUCTURED_STABILITY_MODE) {
+    check(fileHashMatches(CPU_CHECKER_PATH, CURRENT_TASK_IDENTITY.cpuCheckerSha256), "structured_cpu_checker_missing_or_changed")
+  }
+  if (!LEGACY_MODE) {
+    check(fileHashMatches(PREFLIGHT_AUTHORIZATION_PATH, PREFLIGHT_AUTHORIZATION_SHA256), "preflight_authorization_missing_or_changed")
+    check(fileHashMatches(PREFLIGHT_IMPLEMENTATION_CONSUMPTION_PATH, PREFLIGHT_IMPLEMENTATION_CONSUMPTION_SHA256), "preflight_implementation_missing_or_changed")
+    check(PREFLIGHT_AUTHORIZATION_RECORD?.status === "resolved_owner_authorized", "preflight_authorization_not_resolved")
+    check(PREFLIGHT_AUTHORIZATION_RECORD?.taskIdentity?.runnerSha256 === sha256File(RUNNER_PATH), "preflight_runner_authorization_binding_invalid")
+    for (const flag of ["checkpointFileReadAuthorized", "checkpointDeserializationAuthorized", "checkpointLoadingAuthorized", "optimizerCreationAuthorized", "backwardExecutionAuthorized", "modelWeightMutationAuthorized", "gpuUseAuthorized", "trainingAuthorized", "singleSampleGpuOverfitSmokeAuthorized"]) {
+      check(PREFLIGHT_AUTHORIZATION_RECORD?.resolution?.[flag] === false, `preflight_${flag}_opened`)
+    }
+  }
   check(context.authorization?.status === "resolved_owner_authorized", "authorization_not_resolved")
   check(context.authorization?.ownerDecision?.commandRef === COMMAND_REF && context.authorization?.ownerDecision?.scope === SCOPE, "authorization_identity_invalid")
-  check(context.implementation?.status === "consumed_before_seed_fix_authorization_binding_and_new_cpu_gate_writes", "implementation_not_consumed")
-  check(context.previousFailureTerminal?.status === "stage4_bounded_repair_smoke_preflight_failed_closed", "previous_failure_terminal_status_invalid")
-  check(context.authorization?.previousFailedExecution?.failureTerminalPath === PREVIOUS_FAILURE_TERMINAL_PATH && context.authorization?.previousFailedExecution?.failureTerminalSha256 === PREVIOUS_FAILURE_TERMINAL_SHA256 && context.authorization?.previousFailedExecution?.closedNoRetry === true, "previous_failure_authorization_binding_invalid")
-  check(context.inactiveConfig?.status === "r5_stage4_diagnostic_evidence_bounded_repair_candidate_inactive", "inactive_config_status_invalid")
+  check(context.implementation?.status === (LEGACY_MODE
+    ? "consumed_before_seed_fix_authorization_binding_and_new_cpu_gate_writes"
+    : "consumed_before_config_bound_stage4_smoke_preflight_and_evidence_writes"), "implementation_not_consumed")
+  check(context.previousFailureTerminal?.status === (LEGACY_MODE
+    ? "stage4_bounded_repair_smoke_preflight_failed_closed"
+    : expectedCandidateTerminalStatus), "previous_failure_terminal_status_invalid")
+  if (LEGACY_MODE) {
+    check(context.authorization?.previousFailedExecution?.failureTerminalPath === PREVIOUS_FAILURE_TERMINAL_PATH && context.authorization?.previousFailedExecution?.failureTerminalSha256 === PREVIOUS_FAILURE_TERMINAL_SHA256 && context.authorization?.previousFailedExecution?.closedNoRetry === true, "previous_failure_authorization_binding_invalid")
+  }
+  check(context.inactiveConfig?.status === (LEGACY_MODE
+    ? "r5_stage4_diagnostic_evidence_bounded_repair_candidate_inactive"
+    : expectedInactiveConfigStatus), "inactive_config_status_invalid")
   check(context.selection?.status === "selected_inactive_not_authorized", "selection_status_invalid")
-  check(context.support?.status === "cpu_verified_bounded_repair_support_not_active", "support_status_invalid")
-  check(context.boundedCpu?.status === "passed_cpu_only_bounded_repair_not_active", "bounded_cpu_not_passed")
-  check(context.boundedTerminal?.status === "r5_stage4_bounded_repair_selected_compiled_cpu_verified_not_active", "bounded_terminal_not_closed")
-  check(context.cpuReport?.status === "passed_cpu_only_stage4_bounded_repair_smoke_authorization_gate_gpu_not_started", "smoke_cpu_gate_not_passed")
+  check(context.support?.status === (LEGACY_MODE
+    ? "cpu_verified_bounded_repair_support_not_active"
+    : expectedSupportStatus), "support_status_invalid")
+  check(context.boundedCpu?.status === (LEGACY_MODE
+    ? "passed_cpu_only_bounded_repair_not_active"
+    : expectedCandidateCpuStatus), "bounded_cpu_not_passed")
+  check(context.boundedTerminal?.status === (LEGACY_MODE
+    ? "r5_stage4_bounded_repair_selected_compiled_cpu_verified_not_active"
+    : expectedCandidateTerminalStatus), "bounded_terminal_not_closed")
+  check(context.cpuReport?.status === (LEGACY_MODE
+    ? "passed_cpu_only_stage4_bounded_repair_smoke_authorization_gate_gpu_not_started"
+    : expectedSmokeCpuStatus), "smoke_cpu_gate_not_passed")
   check(context.cpuReport?.inputs?.trainerSha256 === TRAINER_SHA256, "smoke_cpu_trainer_identity_invalid")
   check(context.cpuReport?.inputs?.runnerSha256 === sha256File(RUNNER_PATH), "smoke_cpu_runner_identity_invalid")
   check(context.diagnostic?.status === "read_only_single_sample_gpu_diagnostic_completed_weights_unchanged", "diagnostic_report_status_invalid")
@@ -255,6 +395,40 @@ function validateStaticPreflight(context, hardware, disk) {
   check(fs.existsSync(PYTHON), "python_runtime_missing")
   check(!fs.existsSync(resolve(EXECUTION_CONSUMPTION_PATH)), "gpu_execution_already_consumed")
   check(!fs.existsSync(runDir), "run_directory_already_exists")
+  if (!LEGACY_MODE) {
+    const resolution = context.authorization?.resolution ?? {}
+    const identity = context.authorization?.taskIdentity ?? {}
+    check(identity.inactiveConfigPath === INACTIVE_CONFIG_PATH && identity.inactiveConfigSha256 === INACTIVE_CONFIG_SHA256, "current_inactive_config_authorization_binding_invalid")
+    check(identity.runnerPath === RUNNER_PATH && identity.runnerSha256 === sha256File(RUNNER_PATH), "current_runner_authorization_binding_invalid")
+    check(identity.trainerPath === TRAINER && identity.trainerSha256 === TRAINER_SHA256, "current_trainer_authorization_binding_invalid")
+    check(sameJson(identity.requiredBoundarySides, ["west"]), "current_required_boundary_sides_invalid")
+    check(identity.seed === SEED && identity.sampleId === EXPECTED_SAMPLE_ID, "current_sample_seed_binding_invalid")
+    if (STRUCTURED_STABILITY_MODE) {
+      const gateIssues = validateLateStabilityQualificationContract(
+        context.inactiveConfig?.training?.stage4LateStabilityQualification,
+      )
+      for (const issue of gateIssues) check(false, issue)
+      check(identity.candidateTerminalPath === PREVIOUS_FAILURE_TERMINAL_PATH && identity.candidateTerminalSha256 === PREVIOUS_FAILURE_TERMINAL_SHA256, "structured_candidate_terminal_binding_invalid")
+      check(identity.cpuSupportContractPath === SUPPORT_CONTRACT_PATH && identity.cpuSupportContractSha256 === SUPPORT_CONTRACT_SHA256, "structured_support_contract_binding_invalid")
+      check(identity.cpuReportPath === BOUNDED_CPU_REPORT_PATH && identity.cpuReportSha256 === BOUNDED_CPU_REPORT_SHA256, "structured_candidate_cpu_report_binding_invalid")
+      check(identity.smokeCpuReportPath === CPU_REPORT_PATH && identity.smokeCpuReportSha256 === sha256File(CPU_REPORT_PATH), "structured_smoke_cpu_report_binding_invalid")
+      check(sameJson(identity.lateStabilityQualification, {
+        requiredEpochs: [20, 30],
+        minimumConsecutivePasses: 2,
+        finalEpochMustPass: true,
+        reviewAllPreviewEpochs: true,
+        reviewThresholdsChanged: false,
+        trainingTarget: false,
+      }), "structured_late_qualification_authorization_identity_invalid")
+      check(resolution.lateStabilityQualificationGateAuthorized === true, "structured_late_qualification_gate_not_authorized")
+    }
+    for (const flag of ["checkpointFileReadAuthorized", "checkpointDeserializationAuthorized", "checkpointLoadingAuthorized", "optimizerCreationAuthorized", "backwardExecutionAuthorized", "modelWeightMutationAuthorized", "gpuUseAuthorized", "trainingAuthorized", "singleSampleGpuOverfitSmokeAuthorized"]) {
+      check(resolution[flag] === true, `current_${flag}_missing`)
+    }
+    for (const flag of ["stage4FullTrainingAuthorized", "stage1Authorized", "stage2Authorized", "strictRevalidationAuthorized", "formalInferenceAuthorized", "checkpointFormalPromotionAuthorized", "runtimeFrameAuthorized", "worldEntryAuthorized", "automaticRetryAuthorized"]) {
+      check(resolution[flag] === false, `current_${flag}_opened`)
+    }
+  }
   issues.push(...evaluateV7TrainingGpuResourceGate(hardware.gpu))
   check(disk.passed, "disk_budget_insufficient")
   return [...new Set(issues)]
@@ -267,6 +441,7 @@ function activateConfig(inactiveConfig, context, consumption, preflightOnly) {
   config.status = preflightOnly ? "stage4_bounded_repair_smoke_preflight_only" : "stage4_bounded_repair_smoke_active_single_execution"
   config.architectureVersion = "all-validation-multiseed-semantic-rollout-unet-v7-repair-r5-stage4-diagnostic-evidence-bounded-smoke"
   const training = config.training
+  const inactiveAuthorization = structuredClone(training.ownerTrainingAuthorization ?? {})
   training.seed = SEED
   training.trainingAuthorizationStatus = status
   training.authorizedOverfitSampleId = EXPECTED_SAMPLE_ID
@@ -325,7 +500,76 @@ function activateConfig(inactiveConfig, context, consumption, preflightOnly) {
     gpuUseAuthorized: !preflightOnly,
     trainingAuthorized: !preflightOnly,
   }
+  if (sample) {
+    training.r5Stage4BoundedRepairSmokeContract.imagePath = sample.imagePath
+    training.r5Stage4BoundedRepairSmokeContract.conditionPackPath = sample.conditionPackPath
+  }
+  if (!LEGACY_MODE && preflightOnly) {
+    training.ownerTrainingAuthorization = {
+      ...inactiveAuthorization,
+      authorizationBindingMode: "config_bound_immutable_owner_authorization_v1",
+      authorizationId: PREFLIGHT_AUTHORIZATION_RECORD.requestId,
+      authorizationPath: PREFLIGHT_AUTHORIZATION_PATH,
+      authorizationSha256: PREFLIGHT_AUTHORIZATION_SHA256,
+      authorizationCommandRef: PREFLIGHT_AUTHORIZATION_RECORD.ownerDecision?.commandRef,
+      authorizationScope: PREFLIGHT_AUTHORIZATION_RECORD.ownerDecision?.scope,
+      implementationConsumptionPath: PREFLIGHT_IMPLEMENTATION_CONSUMPTION_PATH,
+      implementationConsumptionSha256: PREFLIGHT_IMPLEMENTATION_CONSUMPTION_SHA256,
+      executionConsumptionPath: null,
+      executionConsumptionSha256: null,
+      sourceConfigPath: INACTIVE_CONFIG_PATH,
+      sourceConfigSha256: INACTIVE_CONFIG_SHA256,
+      selectionContractPath: SELECTION_PATH,
+      selectionContractSha256: SELECTION_SHA256,
+      trainerSupportContractPath: SUPPORT_CONTRACT_PATH,
+      trainerSupportContractSha256: SUPPORT_CONTRACT_SHA256,
+      boundedRepairCpuReportPath: BOUNDED_CPU_REPORT_PATH,
+      boundedRepairCpuReportSha256: BOUNDED_CPU_REPORT_SHA256,
+      boundedRepairTerminalPath: BOUNDED_TERMINAL_PATH,
+      boundedRepairTerminalSha256: BOUNDED_TERMINAL_SHA256,
+      runnerPath: RUNNER_PATH,
+      runnerSha256: sha256File(RUNNER_PATH),
+      outputDirectoryPath: projectPath(runDir),
+      status,
+      checkpointLoadingAuthorized: false,
+      optimizerCreationAuthorized: false,
+      modelWeightMutationAuthorized: false,
+      gpuTrainingAuthorizedNow: false,
+      singleSampleGpuOverfitSmokeAuthorized: false,
+      fullTrainingAuthorized: false,
+      automaticRetryAuthorized: false,
+      strictRevalidationAuthorized: false,
+      validationAuthorized: false,
+      formalInferenceAuthorized: false,
+      checkpointPromotionAuthorized: false,
+      runtimeFrameAuthorized: false,
+      worldEntryAuthorized: false,
+    }
+    return config
+  }
   training.ownerTrainingAuthorization = {
+    ...(LEGACY_MODE ? {} : {
+      authorizationBindingMode: "config_bound_immutable_owner_authorization_v1",
+      authorizationCommandRef: COMMAND_REF,
+      authorizationScope: SCOPE,
+      boundaryAnalysisPath: inactiveAuthorization.boundaryAnalysisPath,
+      boundaryAnalysisSha256: inactiveAuthorization.boundaryAnalysisSha256,
+      topologyTelemetrySupportContractPath: inactiveAuthorization.topologyTelemetrySupportContractPath,
+      topologyTelemetrySupportContractSha256: inactiveAuthorization.topologyTelemetrySupportContractSha256,
+      projectRuntimeLogicalEntry: inactiveAuthorization.projectRuntimeLogicalEntry,
+      registeredHotRuntimeRoot: inactiveAuthorization.registeredHotRuntimeRoot,
+      storageAuthorityPath: inactiveAuthorization.storageAuthorityPath,
+      storageAuthoritySha256: inactiveAuthorization.storageAuthoritySha256,
+      architectureAuthorityPath: inactiveAuthorization.architectureAuthorityPath,
+      architectureAuthoritySha256: inactiveAuthorization.architectureAuthoritySha256,
+      previousCpuFailureTerminalPath: inactiveAuthorization.previousCpuFailureTerminalPath,
+      previousCpuFailureTerminalSha256: inactiveAuthorization.previousCpuFailureTerminalSha256,
+      runnerPath: RUNNER_PATH,
+      runnerSha256: sha256File(RUNNER_PATH),
+      telemetryLibraryPath: inactiveAuthorization.telemetryLibraryPath,
+      telemetryLibrarySha256: inactiveAuthorization.telemetryLibrarySha256,
+      outputDirectoryPath: projectPath(runDir),
+    }),
     authorizationId: REQUEST_ID,
     authorizationPath: AUTHORIZATION_PATH,
     authorizationSha256: AUTHORIZATION_SHA256,
@@ -419,6 +663,9 @@ function consumeGpuExecution(preflight) {
     trainerSha256: TRAINER_SHA256,
     runnerSha256: sha256File(RUNNER_PATH),
     inactiveConfigSha256: INACTIVE_CONFIG_SHA256,
+    lateStabilityQualification: STRUCTURED_STABILITY_MODE
+      ? CURRENT_TASK_IDENTITY.lateStabilityQualification
+      : null,
     checkpointFileReadPerformedAtConsumption: false,
     checkpointLoadedAtConsumption: false,
     optimizerCreatedAtConsumption: false,
@@ -481,6 +728,9 @@ function validateManifest(value, context) {
   check(value?.singleSampleOverfitSmoke?.sampleId === EXPECTED_SAMPLE_ID && value?.singleSampleOverfitSmoke?.selectedSplit === EXPECTED_SPLIT, "manifest_sample_invalid")
   check(value?.parentDenoiserCheckpointPath === STAGE0_CHECKPOINT_PATH && value?.parentDenoiserCheckpointSha256 === STAGE0_CHECKPOINT_SHA256, "manifest_parent_invalid")
   check(value?.metrics?.at(-1)?.epoch === 30, "manifest_epoch_invalid")
+  if (STRUCTURED_STABILITY_MODE) {
+    check(value?.denoiserLossVersion === "velocity_decoded_rgb_path_replay_cross_domain_structured_stability_v7_repair_r5_candidate", "manifest_structured_stability_loss_version_invalid")
+  }
   check(value?.formalInferenceEligible === false && value?.denoiserTrained === false, "manifest_formal_boundary_invalid")
   check(value?.modelStateHashEvidence?.weightsChanged === true, "manifest_model_state_hash_invalid")
   check(typeof value?.modelStateHashEvidence?.initialDenoiserStateSha256 === "string" && value.modelStateHashEvidence.initialDenoiserStateSha256.length === 64, "manifest_initial_state_hash_missing")
@@ -505,7 +755,7 @@ function collectDiagnosticEvidence(value) {
   }
 }
 
-async function reviewPreviews(sample) {
+async function reviewPreviews(sample, lateQualificationContract) {
   const previewRoot = path.join(runDir, "fixed-epoch-previews")
   const files = fs.existsSync(previewRoot) ? fs.readdirSync(previewRoot).filter((name) => name.endsWith(".png")).sort() : []
   const epochs = files.map((file) => Number(file.match(/^epoch-(\d+)/)?.[1] ?? 0))
@@ -535,9 +785,16 @@ async function reviewPreviews(sample) {
       conditionAlignment: alignment,
     })
   }
+  const lateStabilityQualification = STRUCTURED_STABILITY_MODE
+    ? evaluateLateStabilityQualification(reviews, lateQualificationContract)
+    : null
   const report = {
     schemaVersion: "stage4-bounded-repair-smoke-fixed-preview-reviews-v1",
-    status: reviews.every((row) => row.passed) ? "machine_reviews_passed" : "machine_reviews_failed_closed",
+    status: STRUCTURED_STABILITY_MODE
+      ? (lateStabilityQualification.passed
+          ? "machine_reviews_late_stability_qualified"
+          : "machine_reviews_late_stability_failed_closed")
+      : (reviews.every((row) => row.passed) ? "machine_reviews_passed" : "machine_reviews_failed_closed"),
     runId,
     createdAtUtc: new Date().toISOString(),
     createdAtAsiaShanghai: formatShanghai(new Date().toISOString()),
@@ -548,19 +805,123 @@ async function reviewPreviews(sample) {
     previewCount: reviews.length,
     previewPassCount: reviews.filter((row) => row.passed).length,
     previewFailCount: reviews.filter((row) => !row.passed).length,
+    lateStabilityQualification,
   }
   const reviewPath = path.join(runDir, "fixed-preview-reviews.json")
   writeImmutableJson(reviewPath, report)
   return { ...report, reviewPath: projectPath(reviewPath), reviewSha256: sha256File(reviewPath) }
 }
 
+function validateLateStabilityQualificationContract(contract) {
+  const issues = []
+  if (contract?.status !== "qualification_gate_not_training_target_not_active") issues.push("late_stability_qualification_status_invalid")
+  if (!sameJson(contract?.requiredEpochs, [20, 30])) issues.push("late_stability_required_epochs_invalid")
+  if (contract?.minimumConsecutivePasses !== 2) issues.push("late_stability_minimum_consecutive_passes_invalid")
+  if (contract?.finalEpochMustPass !== true) issues.push("late_stability_final_epoch_requirement_invalid")
+  if (contract?.trainingTarget !== false) issues.push("late_stability_training_target_opened")
+  if (contract?.machineReviewThresholdUsedAsTrainingTarget !== false) issues.push("late_stability_review_threshold_training_target_opened")
+  if (contract?.failedPreviewPixelsUsedAsTrainingTargets !== false) issues.push("late_stability_failed_preview_training_target_opened")
+  return issues
+}
+
+function evaluateLateStabilityQualification(reviews, contract) {
+  const contractIssues = validateLateStabilityQualificationContract(contract)
+  const requiredEpochs = contract?.requiredEpochs ?? []
+  const requiredReviews = requiredEpochs.map((epoch) => reviews.find((row) => row.epoch === epoch) ?? null)
+  const requiredEpochsPresent = requiredReviews.every(Boolean)
+  const passVector = requiredReviews.map((row) => row?.passed === true)
+  const consecutivePassCount = passVector.reduce((count, passed) => passed ? count + 1 : 0, 0)
+  const finalEpochPassed = requiredReviews.at(-1)?.passed === true
+  const passed = contractIssues.length === 0
+    && requiredEpochsPresent
+    && consecutivePassCount >= contract.minimumConsecutivePasses
+    && (!contract.finalEpochMustPass || finalEpochPassed)
+  return {
+    schemaVersion: "stage4-late-stability-qualification-result-v1",
+    status: passed ? "late_stability_qualified" : "late_stability_not_qualified",
+    passed,
+    requiredEpochs,
+    requiredEpochsPresent,
+    requiredEpochPasses: Object.fromEntries(requiredEpochs.map((epoch, index) => [String(epoch), passVector[index]])),
+    minimumConsecutivePasses: contract?.minimumConsecutivePasses ?? null,
+    observedConsecutivePasses: consecutivePassCount,
+    finalEpochMustPass: contract?.finalEpochMustPass ?? null,
+    finalEpochPassed,
+    consecutiveDefinition: "ordered_required_preview_points",
+    allFivePreviewsReviewed: reviews.length === 5 && sameJson(reviews.map((row) => row.epoch), REQUIRED_PREVIEW_EPOCHS),
+    reviewThresholdsChanged: false,
+    trainingTarget: false,
+    blockers: contractIssues,
+  }
+}
+
+function recordRunnerCheckpointHashRead(checkpointRole, status, checkpointPath, checkpointSha256) {
+  fs.mkdirSync(path.dirname(runnerCheckpointHashTelemetryPath), { recursive: true })
+  const current = fs.existsSync(runnerCheckpointHashTelemetryPath)
+    ? readJson(runnerCheckpointHashTelemetryPath)
+    : {
+        schemaVersion: "stage4-runner-checkpoint-hash-read-telemetry-v1",
+        status: "initialized_after_gpu_authorization_consumption_before_checkpoint_hash_read",
+        runId,
+        authorizationPath: AUTHORIZATION_PATH,
+        authorizationSha256: AUTHORIZATION_SHA256,
+        executionConsumptionPath: EXECUTION_CONSUMPTION_PATH,
+        events: [],
+        state: {},
+      }
+  const event = {
+    sequence: current.events.length + 1,
+    checkpointRole,
+    status,
+    checkpointPath,
+    expectedSha256: checkpointSha256,
+    recordedAtUtc: new Date().toISOString(),
+  }
+  current.events.push(event)
+  const prefix = checkpointRole === "autoencoder" ? "autoencoderCheckpointHashRead" : "denoiserCheckpointHashRead"
+  current.state[`${prefix}Started`] = true
+  if (status === "completed") current.state[`${prefix}Completed`] = true
+  if (status === "failed") current.state[`${prefix}Failed`] = true
+  current.status = status === "completed"
+    ? "checkpoint_hash_read_completed_not_deserialized"
+    : status === "failed"
+      ? "checkpoint_hash_read_failed_not_deserialized"
+      : "checkpoint_hash_read_started_not_deserialized"
+  const temporaryPath = `${runnerCheckpointHashTelemetryPath}.tmp-${process.pid}`
+  fs.writeFileSync(temporaryPath, `${JSON.stringify(current, null, 2)}\n`, { encoding: "utf8", flag: "w" })
+  fs.renameSync(temporaryPath, runnerCheckpointHashTelemetryPath)
+}
+
 function closeRun(status, blockers, extra = {}) {
   if (fs.existsSync(finalizationPath)) return readJson(finalizationPath)
   const checkpointPath = manifest?.checkpointPath ?? null
   const checkpointSha256 = manifest?.checkpointSha256 ?? null
+  const stepTelemetryPath = path.join(runDir, "stage4-step-telemetry.json")
+  const stepTelemetry = fs.existsSync(stepTelemetryPath) ? readJson(stepTelemetryPath) : null
+  const stepTelemetryValidation = validateStage4StepTelemetry(stepTelemetry)
+  const finalBlockers = [...blockers]
+  if (executionConsumption && childResult && !stepTelemetryValidation.valid) {
+    finalBlockers.push("stage4_step_telemetry_missing_or_invalid")
+  }
+  const finalStatus = status === "stage4_bounded_repair_single_sample_gpu_smoke_passed_stopped" && finalBlockers.length > 0
+    ? "stage4_bounded_repair_single_sample_gpu_smoke_execution_failed_stopped"
+    : status
+  const executionBoundaries = deriveStage4ExecutionBoundaries({
+    executionConsumed: Boolean(executionConsumption),
+    telemetry: stepTelemetry,
+    manifest,
+    checkpointPath,
+  })
+  const runnerCheckpointHashTelemetry = fs.existsSync(runnerCheckpointHashTelemetryPath)
+    ? readJson(runnerCheckpointHashTelemetryPath)
+    : null
+  const runnerHashReadState = runnerCheckpointHashTelemetry?.state ?? {}
+  if (runnerHashReadState.autoencoderCheckpointHashReadCompleted === true || runnerHashReadState.denoiserCheckpointHashReadCompleted === true) {
+    executionBoundaries.checkpointFileRead = true
+  }
   const report = {
     schemaVersion: "stage4-bounded-repair-single-sample-gpu-smoke-finalization-v1",
-    status,
+    status: finalStatus,
     runId,
     createdAtUtc: new Date().toISOString(),
     createdAtAsiaShanghai: formatShanghai(new Date().toISOString()),
@@ -581,16 +942,23 @@ function closeRun(status, blockers, extra = {}) {
     modelStateHashEvidence: manifest?.modelStateHashEvidence ?? null,
     trainingTokenAccounting: manifest?.trainingTokenAccounting ?? null,
     child: childResult ? { exitCode: childResult.exitCode, signal: childResult.signal, stdoutTail: childResult.stdout.slice(-12000), stderrTail: childResult.stderr.slice(-12000) } : null,
-    blockers,
+    stepTelemetryPath: stepTelemetry ? projectPath(stepTelemetryPath) : null,
+    stepTelemetrySha256: stepTelemetry ? sha256File(stepTelemetryPath) : null,
+    stepTelemetryValidation,
+    stepTelemetry,
+    runnerCheckpointHashTelemetryPath: runnerCheckpointHashTelemetry ? projectPath(runnerCheckpointHashTelemetryPath) : null,
+    runnerCheckpointHashTelemetrySha256: runnerCheckpointHashTelemetry ? sha256File(runnerCheckpointHashTelemetryPath) : null,
+    runnerCheckpointHashTelemetry,
+    blockers: [...new Set(finalBlockers)],
     fixedOverallProgress: { completedStages: 3, totalStages: 5, percent: 60 },
-    ...boundaries(Boolean(executionConsumption), Boolean(manifest), Boolean(manifest), Boolean(manifest), Boolean(checkpointPath)),
+    ...executionBoundaries,
     ...extra,
   }
   writeImmutableJson(finalizationPath, report)
   const reportWithIdentity = { ...report, reportPath: projectPath(finalizationPath), reportSha256: sha256File(finalizationPath) }
   writeImmutableJson(terminalPath, {
     schemaVersion: "stage4-bounded-repair-single-sample-gpu-smoke-terminal-v1",
-    status,
+    status: finalStatus,
     runId,
     recordedAtUtc: report.createdAtUtc,
     recordedAtAsiaShanghai: report.createdAtAsiaShanghai,
@@ -598,7 +966,7 @@ function closeRun(status, blockers, extra = {}) {
     finalizationReportSha256: reportWithIdentity.reportSha256,
     checkpointPath,
     checkpointSha256,
-    blockers,
+    blockers: [...new Set(finalBlockers)],
     stage4Complete: false,
     stage1Started: false,
     stage2Started: false,
@@ -642,7 +1010,12 @@ function hardwareSnapshot() {
 }
 
 function boundaries(consumed, checkpointLoaded, optimizerCreated, weightsModified, checkpointWritten) {
-  return { gpuExecutionAuthorizationConsumed: consumed, checkpointFileRead: checkpointLoaded, checkpointLoaded, optimizerCreated, backwardExecuted: optimizerCreated, modelWeightsModified: weightsModified, gpuTrainingStarted: optimizerCreated, smokeCheckpointWritten: checkpointWritten, automaticRetryStarted: false, stage4FullTrainingStarted: false, stage1Started: false, stage2Started: false, strictRevalidationStarted: false, formalInferenceStarted: false, checkpointFormallyPromoted: false, runtimeFrameStarted: false, worldEntryStarted: false }
+  return deriveStage4ExecutionBoundaries({
+    executionConsumed: consumed,
+    telemetry: null,
+    manifest: weightsModified ? { modelStateHashEvidence: { weightsChanged: true } } : null,
+    checkpointPath: checkpointWritten ? "legacy-checkpoint-present" : null,
+  })
 }
 
 function isV7CapacityRow(row) { return row?.categoryId === "complete-maps" && row?.trainingRoles?.includes("conditional_denoiser") && row?.formalConditionalTrainingEligible === true && row?.conditionBound === true && row?.v7CapacityContributionRegistered === true && row?.ownerReviewStatus === "owner_approved" && row?.machineReviewStatus === "passed" && row?.aiAssistedColdStartEligible === true && row?.independentTrainingEligible === false }

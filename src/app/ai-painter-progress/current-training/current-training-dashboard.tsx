@@ -431,23 +431,46 @@ function TrainingMission({
         </dl>
         <small>{activity.accounting.codex.noteZh}</small>
       </div>
+      <div
+        className={styles.missionCapsule}
+        data-integrity={snapshot.taskCapsule.integrity.status}
+        data-testid="local-task-capsule"
+      >
+        <span>LOCAL TASK CAPSULE / V1</span>
+        <strong>{snapshot.taskCapsule.module.nameZh}</strong>
+        <dl>
+          <Definition
+            label="固定总进度"
+            value={`${snapshot.taskCapsule.fixedOverallProgress.completedStages ?? "—"}/${snapshot.taskCapsule.fixedOverallProgress.totalStages ?? "—"}（${snapshot.taskCapsule.fixedOverallProgress.percent ?? "—"}%）`}
+          />
+          <Definition
+            label="当前阶段"
+            value={`${snapshot.taskCapsule.currentStage.number}/${snapshot.taskCapsule.currentStage.total} · ${snapshot.taskCapsule.currentStage.status}`}
+          />
+          <Definition
+            label="候选终态"
+            value={`${snapshot.taskCapsule.candidateTerminal.status} · 预览 ${snapshot.taskCapsule.candidateTerminal.previewPassCount ?? "—"}/${snapshot.taskCapsule.candidateTerminal.previewCount ?? "—"}`}
+          />
+          <Definition
+            label="证据完整性"
+            value={`${snapshot.taskCapsule.integrity.status} · ${snapshot.taskCapsule.evidence.filter((item) => item.sha256Verified).length}/${snapshot.taskCapsule.evidence.length}`}
+          />
+        </dl>
+        <code>{snapshot.taskCapsule.latestBlocker.code}</code>
+        <small>
+          禁止动作 {snapshot.taskCapsule.forbiddenActions.length} 项 · 样本 {snapshot.taskCapsule.taskIdentity.conditionLabel ?? "未记录"} · Seed {snapshot.taskCapsule.taskIdentity.seed ?? "未记录"}
+        </small>
+      </div>
       <div className={styles.missionGate}>
         <span>业务终态 / OWNER ACTION</span>
-        <strong>
-          {snapshot.authorization.ownerMessage ?? snapshot.status.summary}
-        </strong>
-        <p>
-          {snapshot.authorization.minimumRequestedAction ??
-            "当前没有待处理Owner动作。"}
-        </p>
-        <code>
-          {snapshot.authorization.blockerCode ?? snapshot.status.source}
-        </code>
+        <strong>{snapshot.taskCapsule.latestBlocker.summaryZh}</strong>
+        <p>{snapshot.taskCapsule.nextAllowedAction.labelZh}</p>
+        <code>{snapshot.taskCapsule.nextAllowedAction.code}</code>
         <small className={styles.gateTimestamp}>
           记录时间：
           {formatDetailedTimestamp(
-            snapshot.authorization.recordedAtAsiaShanghai ??
-              snapshot.authorization.recordedAtUtc,
+            snapshot.taskCapsule.candidateTerminal.recordedAtAsiaShanghai ??
+              snapshot.taskCapsule.candidateTerminal.recordedAtUtc,
           )}
         </small>
       </div>
