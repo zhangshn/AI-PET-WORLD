@@ -14,8 +14,14 @@ export function projectR5Stage4TaskCapsule(input) {
   const finalization = record(input?.finalization)
   const review = record(input?.review)
   const authorization = record(input?.authorization)
-  const taskIdentity = record(authorization.taskIdentity)
-  const progress = record(terminal.fixedOverallProgress)
+  const taskIdentity = {
+    ...record(authorization.fixedTaskIdentity),
+    ...record(authorization.taskIdentity),
+  }
+  const progress = {
+    ...record(terminal.fixedTotalProgress),
+    ...record(terminal.fixedOverallProgress),
+  }
   const evidence = Array.isArray(input?.evidence) ? input.evidence.map(normalizeEvidence) : []
   const evidenceByKind = new Map(evidence.map((item) => [item.kind, item]))
   const requiredEvidencePresent = REQUIRED_EVIDENCE_KINDS.every((kind) => evidenceByKind.has(kind))
@@ -34,9 +40,20 @@ export function projectR5Stage4TaskCapsule(input) {
   const previewFailCount = finiteNumber(review.previewFailCount)
   const blockerCodes = strings(terminal.blockers)
   const latestBlockerCode = blockerCodes[0] ?? "unknown_or_stale"
-  const failedClosed = verified
-    && terminal.status === "stage4_bounded_repair_single_sample_gpu_smoke_failed_stopped"
-    && review.status === "machine_reviews_failed_closed"
+  const failedClosed = verified && (
+    (
+      terminal.status === "stage4_bounded_repair_single_sample_gpu_smoke_failed_stopped"
+      && review.status === "machine_reviews_failed_closed"
+    )
+    || (
+      terminal.status === "stage4_continuous_closure_candidate_route_failed_closed"
+      && review.status === "machine_reviews_not_started_training_execution_failed_closed"
+    )
+    || (
+      terminal.status === "v9-kernel_stage4_single_sample_30_epoch_gpu_smoke_execution_failed_closed"
+      && review.status === "machine_reviews_not_started_training_authorization_gate_failed_closed"
+    )
+  )
 
   return {
     schemaVersion: "ai-painter-local-task-capsule-v1",
@@ -77,13 +94,25 @@ export function projectR5Stage4TaskCapsule(input) {
     },
     latestBlocker: {
       code: latestBlockerCode,
-      summaryZh: latestBlockerCode === "fixed_preview_machine_review_failed"
+      summaryZh: terminal.status === "v9-kernel_stage4_single_sample_30_epoch_gpu_smoke_execution_failed_closed"
+        ? "Phase0工程资格已通过；唯一模型Smoke在样本选择授权状态门停止，训练未启动、权重未修改、预览与Checkpoint未生成。"
+        : latestBlockerCode === "fixed_preview_machine_review_failed"
         ? `固定预览机器审核仅${previewPassCount ?? 0}/${previewCount ?? 0}通过，当前候选失败关闭。`
+        : latestBlockerCode === "unified_preview_determinism_scope_blocks_training_backward"
+          ? "统一预览确定性范围阻断首次训练反向传播；优化器步数为0、权重未修改、预览与Checkpoint均未生成，当前候选路线失败关闭。"
         : "当前R5 Stage4证据不完整或身份不一致，禁止推导下一执行。",
     },
     nextAllowedAction: {
-      code: "owner_must_explicitly_choose_new_analysis_candidate_or_execution",
-      labelZh: "由项目所有者以新的明确授权选择后续分析、候选或执行；不得自动重试或直接启动完整训练。",
+      code: terminal.status === "v9-kernel_stage4_single_sample_30_epoch_gpu_smoke_execution_failed_closed"
+        ? "owner_must_authorize_single_gate_status_fix_and_new_independent_model_smoke"
+        : failedClosed
+          ? "owner_must_choose_materially_different_stage4_route_or_stop_candidate_development"
+        : "owner_must_explicitly_choose_new_analysis_candidate_or_execution",
+      labelZh: terminal.status === "v9-kernel_stage4_single_sample_30_epoch_gpu_smoke_execution_failed_closed"
+        ? "由项目所有者以新的不可变授权绑定本次失败终态，仅集中修正样本选择授权状态门，并授予新的独立模型Smoke额度；不得使用已消费授权重跑或直接启动完整训练。"
+        : failedClosed
+          ? "由项目所有者选择实质不同的Stage4路线或停止候选开发；不得修补后重跑本次Smoke，也不得直接启动完整训练。"
+        : "由项目所有者以新的明确授权选择后续分析、候选或执行；不得自动重试或直接启动完整训练。",
       ownerAuthorizationRequired: true,
       automaticExecutionAllowed: false,
       planEvidenceConfirmed: input?.planEvidenceConfirmed === true,

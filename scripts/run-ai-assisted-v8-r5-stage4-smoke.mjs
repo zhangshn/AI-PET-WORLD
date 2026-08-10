@@ -31,15 +31,34 @@ const DIAGNOSTIC_METRICS = [
 const V9_REQUEST_ID = "owner-authorized-v9-stage4-sample194-30-epoch-gpu-smoke-20260809"
 const V9_SCOPE = "extend_v9_stage4_smoke_support_cpu_regress_preflight_then_one_sample194_30_epoch_gpu_smoke_only"
 const V9_CPU_CHECKER = "ml/ai-painter/scripts/check_ai_assisted_v9_r5_stage4_cpu.py"
+const CONTINUOUS_REQUEST_ID = "owner-authorized-stage4-continuous-closure-20260809"
+const CONTINUOUS_SCOPE = "continuous_stage4_business_closure_or_route_exit_with_bounded_implementation_repairs"
+const CONTINUOUS_AUTHORIZATION_PATH = "data/ai-painter/system-governance/owner-authorized-stage4-continuous-closure-20260809.json"
+const CONTINUOUS_AUTHORIZATION_SHA256 = "fcc1ca399339b249d4dc2d12212af999a50720751a841143c6626c54bf12e1a4"
+const CONTINUOUS_ROOT = ".runtime/ai-painter/stage4-continuous-closures/20260809-184740761"
+const VALIDATION_KERNEL_REQUEST_ID = "owner-authorized-stage4-validation-kernel-through-stage5-20260810"
+const VALIDATION_KERNEL_SCOPE = "stage4_validation_kernel_then_single_smoke_full_training_and_stage5_strict_revalidation"
+const VALIDATION_KERNEL_AUTHORIZATION_PATH = "data/ai-painter/system-governance/owner-authorized-stage4-validation-kernel-through-stage5-20260810.json"
+const VALIDATION_KERNEL_AUTHORIZATION_SHA256 = "73776d1fb0db6e5e0b0e5de8df12a5727238e08969943e5ab25173d64182c229"
+const VALIDATION_KERNEL_IMPLEMENTATION_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-validation-kernel-through-stage5-20260810/implementation-consumption.json"
+const VALIDATION_KERNEL_IMPLEMENTATION_CONSUMPTION_SHA256 = "cb140b5552a92eddb99d634503bc1e1e1583f3dbe3b7597e7632e4a3723b10b1"
+const VALIDATION_KERNEL_ROOT = ".runtime/ai-painter/stage4-validation-kernel-closures/20260810-023613404"
+const SOURCE_V9_AUTHORIZATION_PATH = "data/ai-painter/system-governance/owner-authorized-v9-stage4-sample194-30-epoch-gpu-smoke-20260809.json"
+const SOURCE_V9_AUTHORIZATION_SHA256 = "e77183c6c0f6f94e0db75a5dc94f3c66f376e86c598f8164175a8551b7142e1e"
 
 export async function runV8Stage4Smoke(argv = process.argv.slice(2)) {
+  if (argv.includes("--stage4-validation-kernel-phase0")) {
+    return runStage4ValidationKernelPhase0(argv)
+  }
   const authorizationPath = argument(argv, "--gpu-authorization")
   const preflightOnly = argv.includes("--preflight-only")
   const cpuContractOnly = argv.includes("--cpu-contract-only")
   const v9Mode = argv.includes("--v9-object-alignment")
+  const continuousPreviewMode = argv.includes("--stage4-continuous-preview-contract")
+  const validationKernelSmokeMode = argv.includes("--stage4-validation-kernel-model-smoke")
   if (!authorizationPath) throw new Error("v8_smoke_gpu_authorization_argument_required")
   const authorization = readJsonRequired(authorizationPath)
-  const context = validateAuthorization(authorizationPath, authorization, { v9Mode, cpuContractOnly })
+  const context = validateAuthorization(authorizationPath, authorization, { v9Mode, continuousPreviewMode, validationKernelSmokeMode, cpuContractOnly })
   if (cpuContractOnly) {
     console.log(JSON.stringify({ status: `${context.mode}_stage4_smoke_authorization_contract_valid_cpu_only`, gpuStarted: false }, null, 2))
     return 0
@@ -83,7 +102,214 @@ export async function runV8Stage4Smoke(argv = process.argv.slice(2)) {
   }
 }
 
+async function runStage4ValidationKernelPhase0(argv) {
+  const authorizationPath = argument(argv, "--gpu-authorization") ?? VALIDATION_KERNEL_AUTHORIZATION_PATH
+  if (projectPath(authorizationPath) !== VALIDATION_KERNEL_AUTHORIZATION_PATH || sha256File(authorizationPath) !== VALIDATION_KERNEL_AUTHORIZATION_SHA256) throw new Error("validation_kernel_authorization_identity_invalid")
+  if (!fileHashMatches(VALIDATION_KERNEL_IMPLEMENTATION_CONSUMPTION_PATH, VALIDATION_KERNEL_IMPLEMENTATION_CONSUMPTION_SHA256)) throw new Error("validation_kernel_implementation_consumption_changed")
+  const authorization = readJsonRequired(authorizationPath)
+  if (authorization.requestId !== VALIDATION_KERNEL_REQUEST_ID || authorization.status !== "resolved_owner_authorized" || authorization.ownerDecision?.commandRef !== VALIDATION_KERNEL_REQUEST_ID || authorization.ownerDecision?.scope !== VALIDATION_KERNEL_SCOPE) throw new Error("validation_kernel_command_identity_invalid")
+  const identity = authorization.fixedTaskIdentity ?? {}
+  if (identity.architecture !== "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment" || identity.sampleId !== SAMPLE_ID || identity.sampleSplit !== "validation" || identity.seed !== 20263722 || !sameJson(identity.requiredBoundarySides, ["west"]) || !sameJson(identity.datasetSplit, SPLITS) || !sameJson(identity.phase0Resolution, { width: 256, height: 192 })) throw new Error("validation_kernel_fixed_task_identity_invalid")
+  for (const [key, expected] of Object.entries({ formalInference: false, checkpointFormalPromotion: false, ownerFormalVisualAcceptance: false, runtimeFrame: false, worldEntry: false, worldRuntime: false })) {
+    if (authorization.authorizedActions?.[key] !== expected) throw new Error(`validation_kernel_forbidden_action_open:${key}`)
+  }
+  for (const key of ["phase0ProjectAutoencoderReadAndLoadFrozen", "phase0V9FixedRandomInitialization", "phase0OptimizerCreation", "phase0BackwardAndSingleOptimizerStep", "phase0BoundedWeightModification", "phase0DiagnosticCheckpointWriteAndReload", "phase0DoublePreviewReproduction"]) {
+    if (authorization.authorizedActions?.[key] !== true) throw new Error(`validation_kernel_authorized_action_closed:${key}`)
+  }
+  for (const binding of Object.values(authorization.bindings ?? {})) {
+    if (!fileHashMatches(binding.path, binding.sha256) && ![authorization.bindings.baselineTrainer, authorization.bindings.baselineCpuChecker, authorization.bindings.baselineSmokeRunner].includes(binding)) throw new Error("validation_kernel_source_binding_changed")
+  }
+  const sourceAuthorization = readJsonRequired(SOURCE_V9_AUTHORIZATION_PATH)
+  if (sha256File(SOURCE_V9_AUTHORIZATION_PATH) !== SOURCE_V9_AUTHORIZATION_SHA256) throw new Error("validation_kernel_source_v9_authorization_changed")
+  for (const key of ["v9InactiveConfig", "datasetManifest", "datasetSourceIndex", "projectAutoencoderCheckpoint", "conditionAlignmentAuditor", "professionalAestheticAuditor", "windowsSafePreviewNormalizer", "gpuResourceGate"]) {
+    const binding = sourceAuthorization.bindings?.[key]
+    if (!binding || !fileHashMatches(binding.path, binding.sha256)) throw new Error(`validation_kernel_source_v9_binding_changed:${key}`)
+  }
+  const attestationPath = `${VALIDATION_KERNEL_ROOT}/implementation-attestation.json`
+  const cpuContractOnly = argv.includes("--cpu-contract-only")
+  if (cpuContractOnly) {
+    console.log(JSON.stringify({ status: "stage4_validation_kernel_phase0_authorization_contract_valid_cpu_only", gpuStarted: false, checkpointRead: false, optimizerCreated: false }, null, 2))
+    return 0
+  }
+  const attestation = readJsonRequired(attestationPath)
+  if (attestation.status !== "stage4_validation_kernel_phase0_implementation_cpu_verified" || attestation.authorizationSha256 !== VALIDATION_KERNEL_AUTHORIZATION_SHA256 || attestation.trainerSha256 !== sha256File(TRAINER) || attestation.runnerSha256 !== sha256File("scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs") || attestation.cpuCheckerSha256 !== sha256File(V9_CPU_CHECKER)) throw new Error("validation_kernel_implementation_attestation_invalid")
+
+  const context = {
+    authorization,
+    authorizationPath: VALIDATION_KERNEL_AUTHORIZATION_PATH,
+    authorizationSha256: VALIDATION_KERNEL_AUTHORIZATION_SHA256,
+    implementationAttestationPath: projectPath(attestationPath),
+    implementationAttestationSha256: sha256File(attestationPath),
+    inactiveConfigPath: sourceAuthorization.bindings.v9InactiveConfig.path,
+    datasetPath: sourceAuthorization.bindings.datasetManifest.path,
+    sourceIndexPath: sourceAuthorization.bindings.datasetSourceIndex.path,
+    autoencoderPath: sourceAuthorization.bindings.projectAutoencoderCheckpoint.path,
+    autoencoderSha256: sourceAuthorization.bindings.projectAutoencoderCheckpoint.sha256,
+  }
+  const sourceIndex = readJsonRequired(context.sourceIndexPath)
+  const rows = (sourceIndex.samples ?? []).filter(isCapacityRow)
+  const sample = rows.find((row) => row.sampleId === SAMPLE_ID)
+  if (!sample || rows.filter((row) => row.sampleId === SAMPLE_ID).length !== 1 || sample.split !== "validation" || !sameJson(countSplits(rows), SPLITS)) throw new Error("validation_kernel_dataset_identity_invalid")
+  context.sample = sample
+
+  const preflight = runValidationKernelPreflights(context)
+  if (argv.includes("--preflight-only")) {
+    console.log(JSON.stringify(preflight, null, 2))
+    return preflight.blockers.length === 0 ? 0 : 1
+  }
+  if (preflight.blockers.length > 0) {
+    writeValidationKernelPreflightFailure(preflight)
+    return 1
+  }
+  const consumptionRoot = resolve(authorization.output.phase0ConsumptionRoot)
+  fs.mkdirSync(consumptionRoot, { recursive: true })
+  const previousConsumptions = fs.readdirSync(consumptionRoot).filter((name) => name.endsWith("-consumption.json"))
+  const ordinal = previousConsumptions.length + 1
+  if (ordinal > Number(authorization.executionPolicy.maximumPhase0GpuQualificationExecutions)) throw new Error("validation_kernel_phase0_gpu_execution_budget_exhausted")
+  const runId = `phase0-${timestampId()}-r${ordinal}`
+  const runRoot = resolve(`${VALIDATION_KERNEL_ROOT}/phase0/${runId}`)
+  const consumptionPath = path.join(consumptionRoot, `${runId}-consumption.json`)
+  const consumptionValue = {
+    schemaVersion: "ai-painter-stage4-validation-kernel-phase0-gpu-consumption-v1",
+    status: "stage4_validation_kernel_phase0_gpu_authorization_atomically_consumed",
+    requestId: VALIDATION_KERNEL_REQUEST_ID,
+    commandRef: VALIDATION_KERNEL_REQUEST_ID,
+    scope: VALIDATION_KERNEL_SCOPE,
+    runId,
+    phase0GpuExecutionOrdinal: ordinal,
+    maximumPhase0GpuQualificationExecutions: authorization.executionPolicy.maximumPhase0GpuQualificationExecutions,
+    authorizationPath: VALIDATION_KERNEL_AUTHORIZATION_PATH,
+    authorizationSha256: VALIDATION_KERNEL_AUTHORIZATION_SHA256,
+    implementationAttestationPath: projectPath(attestationPath),
+    implementationAttestationSha256: sha256File(attestationPath),
+    preflightStatus: preflight.status,
+    consumedAtUtc: new Date().toISOString(),
+    oneTimeConsumption: true,
+    modelSmokeQuotaConsumed: false,
+    formalInferenceAuthorized: false,
+    checkpointPromotionAuthorized: false,
+  }
+  writeImmutableJson(consumptionPath, consumptionValue)
+  const consumption = { ...consumptionValue, path: projectPath(consumptionPath), sha256: sha256File(consumptionPath) }
+  fs.mkdirSync(runRoot, { recursive: false })
+  const baseIdentity = {
+    schemaVersion: "ai-painter-stage4-validation-kernel-phase0-execution-identity-v1",
+    status: "phase0_execution_identity_active_not_completed",
+    runId,
+    authorizationPath: VALIDATION_KERNEL_AUTHORIZATION_PATH,
+    authorizationSha256: VALIDATION_KERNEL_AUTHORIZATION_SHA256,
+    phase0ConsumptionPath: consumption.path,
+    phase0ConsumptionSha256: consumption.sha256,
+    implementationAttestationPath: projectPath(attestationPath),
+    implementationAttestationSha256: sha256File(attestationPath),
+    sourceInactiveConfigPath: context.inactiveConfigPath,
+    sourceInactiveConfigSha256: sha256File(context.inactiveConfigPath),
+    datasetManifestPath: context.datasetPath,
+    datasetManifestSha256: sha256File(context.datasetPath),
+    datasetSourceIndexPath: context.sourceIndexPath,
+    datasetSourceIndexSha256: sha256File(context.sourceIndexPath),
+    autoencoderCheckpointPath: context.autoencoderPath,
+    autoencoderCheckpointSha256: context.autoencoderSha256,
+    trainerPath: TRAINER,
+    trainerSha256: sha256File(TRAINER),
+    sampleId: SAMPLE_ID,
+    sampleSplit: "validation",
+    seed: 20263722,
+    requiredBoundarySides: ["west"],
+  }
+  const updateIdentityPath = path.join(runRoot, "phase0-update-execution-identity.json")
+  writeImmutableJson(updateIdentityPath, { ...baseIdentity, executionPart: "single_optimizer_step" })
+  const updateDir = path.join(runRoot, "update")
+  try {
+    const update = await runValidationKernelTrainerPart(context, ["--stage4-validation-kernel-phase0-update", "--phase0-execution-identity", updateIdentityPath], updateDir)
+    if (update.exitCode !== 0) throw new Error(`validation_kernel_phase0_update_failed:${update.exitCode}`)
+    const updateReportPath = path.join(updateDir, "phase0-update-report.json")
+    const updateReport = readJsonRequired(updateReportPath)
+    if (updateReport.status !== "phase0_single_cuda_optimizer_step_passed_closed" || updateReport.weightsChanged !== true || updateReport.gradientFinite !== true || updateReport.gradientNonzero !== true) throw new Error("validation_kernel_phase0_update_evidence_invalid")
+    const checkpointPath = resolve(updateReport.checkpointPath)
+    if (!fileHashMatches(checkpointPath, updateReport.checkpointSha256)) throw new Error("validation_kernel_phase0_checkpoint_missing_or_changed")
+    const reproduceIdentity = { ...baseIdentity, executionPart: "fresh_process_checkpoint_preview_reproduction", diagnosticCheckpointPath: updateReport.checkpointPath, diagnosticCheckpointSha256: updateReport.checkpointSha256 }
+    const reproductionRows = []
+    for (const label of ["a", "b"]) {
+      const identityPath = path.join(runRoot, `phase0-reproduce-${label}-execution-identity.json`)
+      writeImmutableJson(identityPath, { ...reproduceIdentity, reproductionLabel: label.toUpperCase() })
+      const outputDir = path.join(runRoot, `reproduce-${label}`)
+      const result = await runValidationKernelTrainerPart(context, ["--stage4-validation-kernel-phase0-reproduce", "--phase0-execution-identity", identityPath, "--phase0-diagnostic-checkpoint", checkpointPath], outputDir)
+      if (result.exitCode !== 0) throw new Error(`validation_kernel_phase0_reproduction_${label}_failed:${result.exitCode}`)
+      const reportPath = path.join(outputDir, "phase0-reproduction-report.json")
+      const report = readJsonRequired(reportPath)
+      reproductionRows.push({ label: label.toUpperCase(), reportPath: projectPath(reportPath), reportSha256: sha256File(reportPath), report })
+    }
+    const [left, right] = reproductionRows.map((row) => row.report)
+    const equality = {
+      modelStateSha256Matches: left.modelStateSha256 === right.modelStateSha256,
+      conditionTensorSha256Matches: left.previewArtifact?.conditionTensorSha256 === right.previewArtifact?.conditionTensorSha256,
+      rgbTensorSha256Matches: left.previewArtifact?.rgbTensorSha256 === right.previewArtifact?.rgbTensorSha256,
+      pngByteSha256Matches: left.previewArtifact?.previewSha256 === right.previewArtifact?.previewSha256,
+      latentNormalizationSha256Matches: left.previewArtifact?.latentNormalizationSha256 === right.previewArtifact?.latentNormalizationSha256,
+    }
+    if (Object.values(equality).some((value) => value !== true)) throw new Error(`validation_kernel_phase0_reproduction_mismatch:${JSON.stringify(equality)}`)
+    const finalizationDir = path.join(runRoot, "finalization")
+    fs.mkdirSync(finalizationDir, { recursive: false })
+    const reportPath = path.join(finalizationDir, "finalization-report.json")
+    const terminalPath = path.join(finalizationDir, "phase-terminal.json")
+    writeImmutableJson(reportPath, { schemaVersion: "ai-painter-stage4-validation-kernel-phase0-finalization-v1", status: "stage4_validation_kernel_phase0_passed_closed", recordedAtUtc: new Date().toISOString(), runId, consumption, preflight, updateReport: { path: projectPath(updateReportPath), sha256: sha256File(updateReportPath) }, diagnosticCheckpoint: { path: updateReport.checkpointPath, sha256: updateReport.checkpointSha256, promotable: false, fullTrainingInitializationEligible: false }, reproductions: reproductionRows.map(({ label, reportPath, reportSha256 }) => ({ label, reportPath, reportSha256 })), equality, modelSmokeQuotaConsumed: false })
+    writeImmutableJson(terminalPath, { schemaVersion: "ai-painter-stage4-validation-kernel-phase0-terminal-v1", status: "stage4_validation_kernel_phase0_passed_closed", recordedAtUtc: new Date().toISOString(), fixedTotalProgress: { completedStages: 3, totalStages: 5, percent: 60 }, runId, finalizationPath: projectPath(reportPath), finalizationSha256: sha256File(reportPath), nextAction: "execute_single_v9_30_epoch_model_smoke_under_independent_consumption", diagnosticCheckpointPromotable: false, diagnosticCheckpointFullTrainingInitializationEligible: false, automaticRetryStarted: false })
+    console.log(JSON.stringify({ status: "stage4_validation_kernel_phase0_passed_closed", terminalPath: projectPath(terminalPath), terminalSha256: sha256File(terminalPath), equality }, null, 2))
+    return 0
+  } catch (error) {
+    const finalizationDir = path.join(runRoot, "finalization")
+    if (!fs.existsSync(finalizationDir)) fs.mkdirSync(finalizationDir, { recursive: false })
+    const reportPath = path.join(finalizationDir, "finalization-report.json")
+    const terminalPath = path.join(finalizationDir, "phase-terminal.json")
+    if (!fs.existsSync(reportPath)) writeImmutableJson(reportPath, { schemaVersion: "ai-painter-stage4-validation-kernel-phase0-finalization-v1", status: "stage4_validation_kernel_phase0_failed_closed", recordedAtUtc: new Date().toISOString(), runId, consumption, preflight, failureMessage: String(error?.message ?? error), stack: error?.stack, modelSmokeQuotaConsumed: false })
+    if (!fs.existsSync(terminalPath)) writeImmutableJson(terminalPath, { schemaVersion: "ai-painter-stage4-validation-kernel-phase0-terminal-v1", status: "stage4_validation_kernel_phase0_failed_closed", recordedAtUtc: new Date().toISOString(), fixedTotalProgress: { completedStages: 3, totalStages: 5, percent: 60 }, runId, finalizationPath: projectPath(reportPath), finalizationSha256: sha256File(reportPath), failureMessage: String(error?.message ?? error), modelSmokeStarted: false, automaticRetryStarted: false })
+    console.error(JSON.stringify({ status: "stage4_validation_kernel_phase0_failed_closed", terminalPath: projectPath(terminalPath), terminalSha256: sha256File(terminalPath), failureMessage: String(error?.message ?? error) }, null, 2))
+    return 1
+  }
+}
+
+function runValidationKernelPreflights(context) {
+  const hardware = hardwareSnapshot()
+  const disk = diskBudgetSnapshot()
+  const blockers = [...evaluateV7TrainingGpuResourceGate(hardware.gpu)]
+  if (!disk.passed) blockers.push("disk_budget_insufficient")
+  const python = spawnSync(PYTHON, [TRAINER, "--config", resolve(context.inactiveConfigPath), "--dataset-package", resolve(context.datasetPath), "--autoencoder-checkpoint", resolve(context.autoencoderPath), "--output-dir", resolve(`${VALIDATION_KERNEL_ROOT}/preflight-output-must-not-be-created`), "--resolution-stage", "0", "--single-sample-overfit-smoke", "--overfit-sample-id", SAMPLE_ID, "--overfit-epochs", "30", "--overfit-evaluation-interval", "5", "--preflight-only"], { cwd: ROOT, env: pythonEnv(), encoding: "utf8", windowsHide: true, timeout: 180000 })
+  if (python.status !== 0) blockers.push("python_preflight_failed")
+  return { schemaVersion: "ai-painter-stage4-validation-kernel-phase0-preflight-v1", status: blockers.length === 0 ? "phase0_preflights_passed_gpu_execution_not_consumed" : "phase0_preflights_failed_closed_gpu_execution_not_consumed", recordedAtUtc: new Date().toISOString(), hardware, disk, python: { exitCode: python.status, signal: python.signal, stdout: python.stdout, stderr: python.stderr }, blockers: [...new Set(blockers)], checkpointRead: false, optimizerCreated: false, backwardExecuted: false, modelWeightsModified: false, phase0ExecutionConsumed: false }
+}
+
+function writeValidationKernelPreflightFailure(preflight) {
+  const root = resolve(`${VALIDATION_KERNEL_ROOT}/preflight-failures/${timestampId()}`)
+  fs.mkdirSync(root, { recursive: true })
+  const reportPath = path.join(root, "preflight-report.json")
+  const terminalPath = path.join(root, "phase-terminal.json")
+  writeImmutableJson(reportPath, preflight)
+  writeImmutableJson(terminalPath, { schemaVersion: "ai-painter-stage4-validation-kernel-preflight-terminal-v1", status: "stage4_validation_kernel_preflight_failed_closed", recordedAtUtc: new Date().toISOString(), fixedTotalProgress: { completedStages: 3, totalStages: 5, percent: 60 }, reportPath: projectPath(reportPath), reportSha256: sha256File(reportPath), blockers: preflight.blockers, phase0ExecutionConsumed: false })
+}
+
+function runValidationKernelTrainerPart(context, extraArgs, outputDir) {
+  return new Promise((complete) => {
+    const args = [TRAINER, "--config", resolve(context.inactiveConfigPath), "--dataset-package", resolve(context.datasetPath), "--autoencoder-checkpoint", resolve(context.autoencoderPath), "--output-dir", outputDir, "--resolution-stage", "0", "--single-sample-overfit-smoke", "--overfit-sample-id", SAMPLE_ID, "--overfit-epochs", "1", "--overfit-evaluation-interval", "1", ...extraArgs]
+    const child = spawn(PYTHON, args, { cwd: ROOT, env: { ...pythonEnv(), CUBLAS_WORKSPACE_CONFIG: ":4096:8" }, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] })
+    let stdout = ""
+    let stderr = ""
+    child.stdout.on("data", (chunk) => { stdout += chunk.toString("utf8"); process.stdout.write(chunk) })
+    child.stderr.on("data", (chunk) => { stderr += chunk.toString("utf8"); process.stderr.write(chunk) })
+    child.on("error", (error) => { stderr += error.stack || error.message })
+    child.on("close", (exitCode, signal) => complete({ exitCode, signal, stdout, stderr }))
+  })
+}
+
+function timestampId() {
+  const now = new Date()
+  const pad = (value, width = 2) => String(value).padStart(width, "0")
+  return `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}-${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}${pad(now.getUTCMilliseconds(), 3)}`
+}
+
 function validateAuthorization(authorizationPath, authorization, options = {}) {
+  if (options.validationKernelSmokeMode) return validateValidationKernelSmokeAuthorization(authorizationPath, authorization, options)
+  if (options.continuousPreviewMode) return validateContinuousPreviewAuthorization(authorizationPath, authorization, options)
   if (options.v9Mode) return validateV9Authorization(authorizationPath, authorization, options)
   if (authorization.schemaVersion !== "ai-painter-r5-stage4-v8-smoke-gpu-execution-authorization-v1") throw new Error("v8_smoke_authorization_schema_invalid")
   if (authorization.status !== "owner_authorized_gpu_smoke_not_consumed") throw new Error("v8_smoke_authorization_status_invalid")
@@ -135,6 +361,122 @@ function validateAuthorization(authorizationPath, authorization, options = {}) {
     autoencoderPath: authorization.bindings.autoencoderCheckpoint.path,
     autoencoderSha256: authorization.bindings.autoencoderCheckpoint.sha256,
     datasetPath: authorization.bindings.datasetManifest.path,
+  }
+}
+
+function validateValidationKernelSmokeAuthorization(authorizationPath, authorization, { cpuContractOnly = false } = {}) {
+  if (projectPath(authorizationPath) !== VALIDATION_KERNEL_AUTHORIZATION_PATH || sha256File(authorizationPath) !== VALIDATION_KERNEL_AUTHORIZATION_SHA256) throw new Error("validation_kernel_smoke_authorization_identity_invalid")
+  if (authorization.requestId !== VALIDATION_KERNEL_REQUEST_ID || authorization.status !== "resolved_owner_authorized" || authorization.ownerDecision?.commandRef !== VALIDATION_KERNEL_REQUEST_ID || authorization.ownerDecision?.scope !== VALIDATION_KERNEL_SCOPE) throw new Error("validation_kernel_smoke_command_identity_invalid")
+  const identity = authorization.fixedTaskIdentity ?? {}
+  if (identity.sampleId !== SAMPLE_ID || identity.sampleSplit !== "validation" || identity.seed !== 20263722 || !sameJson(identity.requiredBoundarySides, ["west"]) || identity.smokeEpochs !== 30 || !sameJson(identity.smokePreviewEpochs, PREVIEW_EPOCHS) || !sameJson(identity.datasetSplit, SPLITS)) throw new Error("validation_kernel_smoke_fixed_identity_invalid")
+  if (authorization.authorizedActions?.singleThirtyEpochV9Smoke !== true || authorization.authorizedActions?.smokeOptimizerBackwardWeightAndCheckpointWrite !== true) throw new Error("validation_kernel_smoke_authorized_actions_closed")
+  for (const key of ["formalInference", "checkpointFormalPromotion", "ownerFormalVisualAcceptance", "runtimeFrame", "worldEntry", "worldRuntime"]) if (authorization.authorizedActions?.[key] !== false) throw new Error(`validation_kernel_smoke_forbidden_action_open:${key}`)
+  const sourceAuthorization = readJsonRequired(SOURCE_V9_AUTHORIZATION_PATH)
+  if (sha256File(SOURCE_V9_AUTHORIZATION_PATH) !== SOURCE_V9_AUTHORIZATION_SHA256) throw new Error("validation_kernel_smoke_source_v9_authorization_changed")
+  for (const key of ["v9InactiveConfig", "datasetManifest", "datasetSourceIndex", "projectAutoencoderCheckpoint", "conditionAlignmentAuditor", "professionalAestheticAuditor", "windowsSafePreviewNormalizer", "gpuResourceGate"]) {
+    const binding = sourceAuthorization.bindings?.[key]
+    if (!binding || !fileHashMatches(binding.path, binding.sha256)) throw new Error(`validation_kernel_smoke_source_binding_changed:${key}`)
+  }
+  const phase0Terminal = findSuccessfulValidationKernelPhase0Terminal()
+  const attestationPath = `${VALIDATION_KERNEL_ROOT}/model-smoke-implementation-attestation.json`
+  if (!cpuContractOnly) {
+    const attestation = readJsonRequired(attestationPath)
+    if (attestation.status !== "stage4_validation_kernel_model_smoke_implementation_cpu_verified" || attestation.authorizationSha256 !== VALIDATION_KERNEL_AUTHORIZATION_SHA256 || attestation.phase0TerminalSha256 !== phase0Terminal.sha256 || attestation.trainerSha256 !== sha256File(TRAINER) || attestation.runnerSha256 !== sha256File("scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs") || attestation.cpuCheckerSha256 !== sha256File(V9_CPU_CHECKER)) throw new Error("validation_kernel_smoke_implementation_attestation_invalid")
+  }
+  const sourceIndex = readJsonRequired(sourceAuthorization.bindings.datasetSourceIndex.path)
+  const rows = (sourceIndex.samples ?? []).filter(isCapacityRow)
+  const sample = rows.find((row) => row.sampleId === SAMPLE_ID)
+  if (!sample || rows.filter((row) => row.sampleId === SAMPLE_ID).length !== 1 || sample.split !== "validation" || !sameJson(countSplits(rows), SPLITS)) throw new Error("validation_kernel_smoke_dataset_identity_invalid")
+  const runId = "model-smoke-20260810-validated-kernel"
+  const runRoot = `${VALIDATION_KERNEL_ROOT}/model-smoke/${runId}`
+  const outputDir = resolve(`${runRoot}/training`)
+  const finalizationDir = resolve(`${runRoot}/finalization`)
+  const activeConfigPath = resolve(`${runRoot}/active-config.json`)
+  const consumptionPath = resolve(authorization.output.smokeConsumptionPath)
+  if (!cpuContractOnly && [outputDir, finalizationDir, activeConfigPath, consumptionPath].some((value) => fs.existsSync(value))) throw new Error("validation_kernel_smoke_output_or_consumption_already_exists")
+  return { mode: "v9-kernel", authorization, authorizationPath: projectPath(authorizationPath), authorizationSha256: sha256File(authorizationPath), implementationAttestationPath: projectPath(attestationPath), implementationAttestationSha256: cpuContractOnly ? null : sha256File(attestationPath), phase0TerminalPath: phase0Terminal.path, phase0TerminalSha256: phase0Terminal.sha256, inactiveConfig: readJsonRequired(sourceAuthorization.bindings.v9InactiveConfig.path), inactiveConfigPath: sourceAuthorization.bindings.v9InactiveConfig.path, sample, outputDir, finalizationDir, activeConfigPath, consumptionPath, autoencoderPath: sourceAuthorization.bindings.projectAutoencoderCheckpoint.path, autoencoderSha256: sourceAuthorization.bindings.projectAutoencoderCheckpoint.sha256, datasetPath: sourceAuthorization.bindings.datasetManifest.path }
+}
+
+function findSuccessfulValidationKernelPhase0Terminal() {
+  const root = resolve(`${VALIDATION_KERNEL_ROOT}/phase0`)
+  if (!fs.existsSync(root)) throw new Error("validation_kernel_phase0_root_missing")
+  const terminals = fs.readdirSync(root, { withFileTypes: true }).filter((entry) => entry.isDirectory()).map((entry) => path.join(root, entry.name, "finalization", "phase-terminal.json")).filter((value) => fs.existsSync(value)).map((value) => ({ path: projectPath(value), sha256: sha256File(value), value: readJsonRequired(value) })).filter((row) => row.value.status === "stage4_validation_kernel_phase0_passed_closed")
+  if (terminals.length !== 1) throw new Error("validation_kernel_unique_successful_phase0_terminal_invalid")
+  return terminals[0]
+}
+
+function validateContinuousPreviewAuthorization(authorizationPath, authorization, { cpuContractOnly = false } = {}) {
+  if (projectPath(authorizationPath) !== CONTINUOUS_AUTHORIZATION_PATH) throw new Error("continuous_preview_authorization_path_invalid")
+  if (sha256File(authorizationPath) !== CONTINUOUS_AUTHORIZATION_SHA256) throw new Error("continuous_preview_authorization_sha256_invalid")
+  if (authorization.schemaVersion !== "ai-painter-owner-action-request-v1" || authorization.status !== "resolved_owner_authorized") throw new Error("continuous_preview_authorization_schema_or_status_invalid")
+  if (authorization.requestId !== CONTINUOUS_REQUEST_ID || authorization.ownerDecision?.commandRef !== CONTINUOUS_REQUEST_ID || authorization.ownerDecision?.scope !== CONTINUOUS_SCOPE) throw new Error("continuous_preview_command_identity_invalid")
+  const identity = authorization.fixedTaskIdentity ?? {}
+  if (identity.sampleId !== SAMPLE_ID || identity.sampleSplit !== "validation" || identity.seed !== 20263722) throw new Error("continuous_preview_sample_or_seed_identity_invalid")
+  if (!sameJson(identity.requiredBoundarySides, ["west"]) || !sameJson(identity.smokePreviewEpochs, PREVIEW_EPOCHS) || identity.smokeEpochs !== 30) throw new Error("continuous_preview_topology_or_schedule_invalid")
+  if (!sameJson(identity.resolution, { width: 256, height: 192 })) throw new Error("continuous_preview_resolution_invalid")
+  const actions = authorization.authorizedActions ?? {}
+  for (const key of ["projectAutoencoderCheckpointReadAndLoad", "boundedSmokeOptimizerCreation", "boundedSmokeBackwardExecution", "boundedSmokeWeightModification", "boundedSmokeCheckpointWrite", "singleThirtyEpochGpuSmoke", "machineReview", "evidenceAndTerminalWrite"]) {
+    if (actions[key] !== true) throw new Error(`continuous_preview_authorized_action_closed:${key}`)
+  }
+  for (const key of ["stage5StrictRevalidation", "formalInference", "checkpointPromotion", "runtimeFrame", "worldEntry", "machineReviewThresholdReduction", "failedPreviewPixelsAsTrainingTarget", "freeHyperparameterSearch"]) {
+    if (actions[key] !== false) throw new Error(`continuous_preview_forbidden_action_open:${key}`)
+  }
+  if (authorization.continuousExecutionPolicy?.maximumGpuSmokeExecutions !== 1) throw new Error("continuous_preview_gpu_smoke_budget_invalid")
+  const decisionBinding = authorization.bindings?.causalGpuDiagnosticReport
+  if (!decisionBinding?.path || !fileHashMatches(decisionBinding.path, decisionBinding.sha256)) throw new Error("continuous_preview_gpu_diagnostic_binding_invalid")
+  const decisionPath = ".runtime/ai-painter/stage4-causal-boundary-diagnostics/20260809-182939654/causal-boundary-decision.json"
+  if (!fileHashMatches(decisionPath, "b086954df85568ade5d0dbfde58289af6899e01ce538196b0c8b5ae0bef40b9d")) throw new Error("continuous_preview_fault_decision_binding_invalid")
+  if (readJsonRequired(decisionPath).faultLayer !== "training_preview_pipeline_layer") throw new Error("continuous_preview_fault_layer_invalid")
+
+  const previousAuthorizationPath = "data/ai-painter/system-governance/owner-authorized-v9-stage4-sample194-30-epoch-gpu-smoke-20260809.json"
+  if (!fileHashMatches(previousAuthorizationPath, "e77183c6c0f6f94e0db75a5dc94f3c66f376e86c598f8164175a8551b7142e1e")) throw new Error("continuous_preview_source_v9_authorization_changed")
+  const previousAuthorization = readJsonRequired(previousAuthorizationPath)
+  for (const key of ["v9InactiveConfig", "datasetManifest", "datasetSourceIndex", "projectAutoencoderCheckpoint", "conditionAlignmentAuditor", "professionalAestheticAuditor", "windowsSafePreviewNormalizer", "gpuResourceGate"]) {
+    const binding = previousAuthorization.bindings?.[key]
+    if (!binding?.path || !binding?.sha256 || !fileHashMatches(binding.path, binding.sha256)) throw new Error(`continuous_preview_source_binding_changed:${key}`)
+  }
+  const inactiveConfigPath = `${CONTINUOUS_ROOT}/unified-preview-contract/inactive-config.json`
+  const inactiveConfig = readJsonRequired(inactiveConfigPath)
+  if (inactiveConfig.training?.trainingAuthorizationStatus !== "v9_stage4_object_semantic_decoder_alignment_cpu_supported_inactive") throw new Error("continuous_preview_inactive_config_status_invalid")
+  const previewContract = inactiveConfig.training?.stage4UnifiedTrainingPreviewSamplingContract
+  if (previewContract?.enabled !== false || previewContract?.status !== "compiled_inactive_not_authorized" || previewContract?.checkpointPreviewIdentityGate !== "byte_exact_best_epoch_reproduction") throw new Error("continuous_preview_inactive_contract_invalid")
+  const sourceIndex = readJsonRequired(previousAuthorization.bindings.datasetSourceIndex.path)
+  const rows = (sourceIndex.samples ?? []).filter(isCapacityRow)
+  const sample = rows.find((row) => row.sampleId === SAMPLE_ID)
+  if (!sample || rows.filter((row) => row.sampleId === SAMPLE_ID).length !== 1 || sample.split !== "validation" || !sameJson(countSplits(rows), SPLITS)) throw new Error("continuous_preview_dataset_identity_invalid")
+
+  const outputDir = resolve(`${CONTINUOUS_ROOT}/unified-preview-smoke`)
+  const finalizationDir = resolve(`${CONTINUOUS_ROOT}/unified-preview-smoke-finalization`)
+  const activeConfigPath = resolve(`${CONTINUOUS_ROOT}/unified-preview-contract/active-smoke-config.json`)
+  const consumptionPath = resolve(".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-continuous-closure-20260809/unified-preview-smoke-gpu-consumption.json")
+  if ([outputDir, finalizationDir, activeConfigPath, consumptionPath].some((value) => fs.existsSync(value))) throw new Error("continuous_preview_output_or_consumption_already_exists")
+  const implementationAttestationPath = resolve(`${CONTINUOUS_ROOT}/unified-preview-contract/implementation-attestation.json`)
+  if (!cpuContractOnly) {
+    const attestation = readJsonRequired(implementationAttestationPath)
+    if (
+      attestation.status !== "stage4_unified_preview_pipeline_implementation_cpu_verified"
+      || attestation.authorizationSha256 !== CONTINUOUS_AUTHORIZATION_SHA256
+      || attestation.runnerSha256 !== sha256File("scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs")
+      || attestation.trainerSha256 !== sha256File(TRAINER)
+    ) throw new Error("continuous_preview_implementation_attestation_invalid")
+  }
+  return {
+    mode: "v9-preview",
+    authorization,
+    authorizationPath: projectPath(authorizationPath),
+    authorizationSha256: sha256File(authorizationPath),
+    implementationAttestationPath: projectPath(implementationAttestationPath),
+    implementationAttestationSha256: cpuContractOnly ? null : sha256File(implementationAttestationPath),
+    inactiveConfig,
+    inactiveConfigPath,
+    sample,
+    outputDir,
+    finalizationDir,
+    activeConfigPath,
+    consumptionPath,
+    autoencoderPath: previousAuthorization.bindings.projectAutoencoderCheckpoint.path,
+    autoencoderSha256: previousAuthorization.bindings.projectAutoencoderCheckpoint.sha256,
+    datasetPath: previousAuthorization.bindings.datasetManifest.path,
   }
 }
 
@@ -279,6 +621,32 @@ function runPreflights(context) {
 }
 
 function consumeGpuAuthorization(context, preflight) {
+  if (context.mode === "v9-kernel") {
+    const value = { schemaVersion: "ai-painter-stage4-validation-kernel-model-smoke-gpu-consumption-v1", status: "stage4_validation_kernel_model_smoke_gpu_authorization_atomically_consumed", requestId: VALIDATION_KERNEL_REQUEST_ID, commandRef: VALIDATION_KERNEL_REQUEST_ID, scope: VALIDATION_KERNEL_SCOPE, authorizationPath: context.authorizationPath, authorizationSha256: context.authorizationSha256, phase0TerminalPath: context.phase0TerminalPath, phase0TerminalSha256: context.phase0TerminalSha256, implementationAttestationPath: context.implementationAttestationPath, implementationAttestationSha256: context.implementationAttestationSha256, preflightStatus: preflight.status, consumedAtUtc: new Date().toISOString(), oneTimeConsumption: true, modelSmokeOrdinal: 1, maximumModelSmokeExecutions: 1, stage4FullTrainingStarted: false, automaticRetryAuthorized: false }
+    writeImmutableJson(context.consumptionPath, value)
+    return { ...value, path: projectPath(context.consumptionPath), sha256: sha256File(context.consumptionPath) }
+  }
+  if (context.mode === "v9-preview") {
+    const value = {
+      schemaVersion: "ai-painter-r5-stage4-unified-preview-smoke-gpu-consumption-v1",
+      status: "stage4_unified_preview_smoke_gpu_authorization_atomically_consumed",
+      requestId: CONTINUOUS_REQUEST_ID,
+      commandRef: CONTINUOUS_REQUEST_ID,
+      scope: CONTINUOUS_SCOPE,
+      authorizationPath: context.authorizationPath,
+      authorizationSha256: context.authorizationSha256,
+      implementationAttestationPath: context.implementationAttestationPath,
+      implementationAttestationSha256: context.implementationAttestationSha256,
+      preflightStatus: preflight.status,
+      consumedAtUtc: new Date().toISOString(),
+      oneTimeConsumption: true,
+      gpuSmokeOrdinal: 1,
+      maximumGpuSmokeExecutions: 1,
+      stage4FullTrainingStarted: false,
+    }
+    writeImmutableJson(context.consumptionPath, value)
+    return { ...value, path: projectPath(context.consumptionPath), sha256: sha256File(context.consumptionPath) }
+  }
   if (context.mode === "v9") {
     const value = {
       schemaVersion: "ai-painter-r5-stage4-v9-smoke-gpu-consumption-v1",
@@ -317,6 +685,70 @@ function consumeGpuAuthorization(context, preflight) {
 function activateConfig(context, consumption) {
   const config = structuredClone(context.inactiveConfig)
   const training = config.training
+  if (context.mode === "v9-kernel") {
+    config.architectureVersion = "all-validation-multiseed-semantic-rollout-unet-v9-stage4-validation-kernel-smoke"
+    training.trainingAuthorizationStatus = "owner_authorized_v9_stage4_validation_kernel_single_sample_gpu_smoke"
+    training.v9Stage4SingleSampleSmokeContract.status = "active_owner_authorized_single_execution"
+    training.ownerTrainingAuthorization = { authorizationId: VALIDATION_KERNEL_REQUEST_ID, authorizationPath: context.authorizationPath, authorizationSha256: context.authorizationSha256, executionConsumptionPath: consumption.path, executionConsumptionSha256: consumption.sha256, status: "owner_authorized_v9_stage4_validation_kernel_single_sample_gpu_smoke", checkpointLoadingAuthorized: true, optimizerCreationAuthorized: true, backwardExecutionAuthorized: true, modelWeightMutationAuthorized: true, gpuTrainingAuthorizedNow: true, singleSampleGpuOverfitSmokeAuthorized: true, fullTrainingAuthorized: false, stage1Authorized: false, stage2Authorized: false, strictRevalidationAuthorized: false, validationAuthorized: false, formalInferenceAuthorized: false, checkpointPromotionAuthorized: false, runtimeFrameAuthorized: false, worldEntryAuthorized: false, automaticRetryAuthorized: false }
+    const modelContract = training.stage4ObjectSemanticDecoderAlignment
+    modelContract.enabled = true
+    modelContract.status = "training_loss_active_owner_authorized"
+    modelContract.trainingLossImplementationStatus = "implemented_active_owner_authorized"
+    for (const key of ["configurationActiveNow", "checkpointReadNow", "optimizerCreationNow", "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow", "checkpointWriteNow"]) modelContract.activationGate[key] = true
+    training.stage4UnifiedTrainingPreviewSamplingContract = { schemaVersion: "stage4-unified-training-preview-sampling-contract-v1", enabled: true, status: "active_owner_authorized_single_execution", samplingFunction: "evaluate_deterministic_rollout_rgb_quality_v7", modelStateBinding: "sha256_sorted_tensor_bytes_v1", seedBinding: "training_seed_plus_3000", normalizationBinding: "checkpoint_latent_normalization", decodeBinding: "frozen_project_autoencoder_decode_clamp_0_1", checkpointPreviewIdentityGate: "byte_exact_best_epoch_reproduction", deterministicAlgorithmsRequired: true, cublasWorkspaceConfig: ":4096:8", failedPreviewPixelsUsedAsTrainingTargets: false, machineReviewThresholdsUsedAsTrainingTargets: false }
+    training.v9Stage4SmokeExecution = { sourceInactiveConfigPath: context.inactiveConfigPath, sourceInactiveConfigSha256: sha256File(context.inactiveConfigPath), ownerAuthorizationPath: context.authorizationPath, ownerAuthorizationSha256: context.authorizationSha256, gpuConsumptionPath: consumption.path, gpuConsumptionSha256: consumption.sha256, implementationAttestationPath: context.implementationAttestationPath, implementationAttestationSha256: context.implementationAttestationSha256, phase0TerminalPath: context.phase0TerminalPath, phase0TerminalSha256: context.phase0TerminalSha256 }
+    return config
+  }
+  if (context.mode === "v9-preview") {
+    config.architectureVersion = "all-validation-multiseed-semantic-rollout-unet-v9-stage4-unified-preview-pipeline-smoke"
+    training.trainingAuthorizationStatus = "owner_authorized_v9_stage4_unified_preview_pipeline_single_sample_gpu_smoke"
+    training.v9Stage4SingleSampleSmokeContract.status = "active_owner_authorized_single_execution"
+    training.ownerTrainingAuthorization = {
+      authorizationId: CONTINUOUS_REQUEST_ID,
+      authorizationPath: context.authorizationPath,
+      authorizationSha256: context.authorizationSha256,
+      executionConsumptionPath: consumption.path,
+      executionConsumptionSha256: consumption.sha256,
+      status: "owner_authorized_v9_stage4_unified_preview_pipeline_single_sample_gpu_smoke",
+      checkpointLoadingAuthorized: true,
+      optimizerCreationAuthorized: true,
+      backwardExecutionAuthorized: true,
+      modelWeightMutationAuthorized: true,
+      gpuTrainingAuthorizedNow: true,
+      singleSampleGpuOverfitSmokeAuthorized: true,
+      fullTrainingAuthorized: false,
+      stage1Authorized: false,
+      stage2Authorized: false,
+      strictRevalidationAuthorized: false,
+      validationAuthorized: false,
+      formalInferenceAuthorized: false,
+      checkpointPromotionAuthorized: false,
+      runtimeFrameAuthorized: false,
+      worldEntryAuthorized: false,
+      automaticRetryAuthorized: false,
+    }
+    const modelContract = training.stage4ObjectSemanticDecoderAlignment
+    modelContract.enabled = true
+    modelContract.status = "training_loss_active_owner_authorized"
+    modelContract.trainingLossImplementationStatus = "implemented_active_owner_authorized"
+    for (const key of ["configurationActiveNow", "checkpointReadNow", "optimizerCreationNow", "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow", "checkpointWriteNow"]) modelContract.activationGate[key] = true
+    training.stage4UnifiedTrainingPreviewSamplingContract = {
+      ...training.stage4UnifiedTrainingPreviewSamplingContract,
+      enabled: true,
+      status: "active_owner_authorized_single_execution",
+    }
+    training.v9Stage4SmokeExecution = {
+      sourceInactiveConfigPath: context.inactiveConfigPath,
+      sourceInactiveConfigSha256: sha256File(context.inactiveConfigPath),
+      ownerAuthorizationPath: context.authorizationPath,
+      ownerAuthorizationSha256: context.authorizationSha256,
+      gpuConsumptionPath: consumption.path,
+      gpuConsumptionSha256: consumption.sha256,
+      implementationAttestationPath: context.implementationAttestationPath,
+      implementationAttestationSha256: context.implementationAttestationSha256,
+    }
+    return config
+  }
   if (context.mode === "v9") {
     config.architectureVersion = "all-validation-multiseed-semantic-rollout-unet-v9-stage4-object-semantic-decoded-alignment-smoke"
     training.trainingAuthorizationStatus = "owner_authorized_v9_stage4_single_sample_gpu_smoke"
@@ -424,11 +856,16 @@ function runTrainer(context) {
 function validateManifest(context, manifest) {
   const issues = []
   const check = (condition, code) => { if (!condition) issues.push(code) }
+  const v9Like = context.mode === "v9" || context.mode === "v9-preview" || context.mode === "v9-kernel"
   check(manifest.status === "conditional_denoiser_single_sample_overfit_smoke_completed", "manifest_status_invalid")
-  check(manifest.architectureVersion === (context.mode === "v9"
-    ? "all-validation-multiseed-semantic-rollout-unet-v9-stage4-object-semantic-decoded-alignment-smoke"
+  check(manifest.architectureVersion === (context.mode === "v9-kernel"
+    ? "all-validation-multiseed-semantic-rollout-unet-v9-stage4-validation-kernel-smoke"
+    : context.mode === "v9-preview"
+    ? "all-validation-multiseed-semantic-rollout-unet-v9-stage4-unified-preview-pipeline-smoke"
+    : context.mode === "v9"
+      ? "all-validation-multiseed-semantic-rollout-unet-v9-stage4-object-semantic-decoded-alignment-smoke"
     : "all-validation-multiseed-semantic-rollout-unet-v8-stage4-decoded-alignment-smoke"), "manifest_architecture_invalid")
-  check(manifest.denoiserLossVersion === (context.mode === "v9"
+  check(manifest.denoiserLossVersion === (v9Like
     ? "velocity_decoded_rgb_independent_object_semantic_topology_alignment_v9_stage4"
     : "velocity_decoded_rgb_shared_semantic_topology_alignment_v8_stage4"), "manifest_loss_version_invalid")
   check(manifest.actualLoadedConditionalSampleCount === 64 && manifest.actualLoadedV7CapacityCount === 64, "manifest_capacity_invalid")
@@ -440,12 +877,24 @@ function validateManifest(context, manifest) {
   check(manifest.formalInferenceEligible === false && manifest.denoiserTrained === false, "manifest_formal_boundary_invalid")
   check(fileHashMatches(manifest.checkpointPath, manifest.checkpointSha256), "smoke_checkpoint_missing_or_changed")
   check(manifest.autoencoderCheckpointSha256 === context.autoencoderSha256, "manifest_autoencoder_identity_invalid")
+  if (context.mode === "v9-preview" || context.mode === "v9-kernel") {
+    const preview = manifest.stage4UnifiedTrainingPreviewSampling
+    check(preview?.status === "checkpoint_bound_preview_reproduced_exactly", "unified_preview_status_invalid")
+    check(preview?.denoiserStateIdentityMatches === true, "unified_preview_state_identity_invalid")
+    check(preview?.previewSha256Matches === true, "unified_preview_sha_identity_invalid")
+    check(preview?.machineReviewThresholdsChanged === false, "unified_preview_threshold_policy_invalid")
+    if (context.mode === "v9-kernel") {
+      const fixedRows = PREVIEW_EPOCHS.map((epoch) => manifest.metrics?.find((row) => row.epoch === epoch))
+      check(fixedRows.every((row) => row?.validationPreviewReproductionArtifact?.status === "fixed_epoch_preview_reproduced_exactly"), "fixed_epoch_preview_reproduction_missing")
+      check(fixedRows.every((row) => ["modelStateSha256Matches", "conditionTensorSha256Matches", "rgbTensorSha256Matches", "pngByteSha256Matches"].every((key) => row.validationPreviewReproductionArtifact?.[key] === true)), "fixed_epoch_preview_reproduction_identity_mismatch")
+    }
+  }
   return issues
 }
 
 function collectDiagnosticEvidence(manifest) {
   const rows = PREVIEW_EPOCHS.map((epoch) => manifest.metrics.find((row) => row.epoch === epoch)).filter(Boolean)
-  if (manifest.architectureVersion === "all-validation-multiseed-semantic-rollout-unet-v9-stage4-object-semantic-decoded-alignment-smoke") {
+  if (["all-validation-multiseed-semantic-rollout-unet-v9-stage4-object-semantic-decoded-alignment-smoke", "all-validation-multiseed-semantic-rollout-unet-v9-stage4-unified-preview-pipeline-smoke", "all-validation-multiseed-semantic-rollout-unet-v9-stage4-validation-kernel-smoke"].includes(manifest.architectureVersion)) {
     const epochs = rows.map((row) => ({
       epoch: row.epoch,
       metrics: Object.fromEntries(DIAGNOSTIC_METRICS.map((name) => [name, row[name]])),
@@ -534,3 +983,7 @@ function fileHashMatches(value, expected) { const absolute = resolve(value); ret
 function sameJson(left, right) { return JSON.stringify(left) === JSON.stringify(right) }
 function pythonEnv() { return { ...process.env, PYTHONUTF8: "1", PYTHONPATH: `${resolve("ml/ai-painter/src")};${resolve("ml/ai-painter/scripts")}` } }
 function writeImmutableJson(value, body) { const absolute = resolve(value); fs.mkdirSync(path.dirname(absolute), { recursive: true }); const handle = fs.openSync(absolute, "wx"); try { fs.writeFileSync(handle, `${JSON.stringify(body, null, 2)}\n`, "utf8"); fs.fsyncSync(handle) } finally { fs.closeSync(handle) } }
+
+if (process.argv.includes("--stage4-validation-kernel-phase0") || process.argv.includes("--stage4-validation-kernel-model-smoke")) {
+  process.exit(await runV8Stage4Smoke(process.argv.slice(2)))
+}

@@ -108,6 +108,17 @@ const r5TaskCapsule = projectR5Stage4TaskCapsule({
     source.plan.includes("固定总进度为3/5（60%）")
     && source.plan.includes("新的分析、候选或执行均需独立明确授权"),
 });
+const r5TaskCapsulePreviewEvidenceMatches =
+  (
+    r5Stage4Terminal.status === "stage4_continuous_closure_candidate_route_failed_closed"
+    && r5TaskCapsule.candidateTerminal.previewPassCount === 0
+    && r5TaskCapsule.candidateTerminal.previewCount === 0
+  )
+  || (
+    r5Stage4Terminal.status === "stage4_bounded_repair_single_sample_gpu_smoke_failed_stopped"
+    && r5TaskCapsule.candidateTerminal.previewPassCount === 1
+    && r5TaskCapsule.candidateTerminal.previewCount === 5
+  );
 const mismatchedCapsule = projectR5Stage4TaskCapsule({
   terminal: r5Stage4Terminal,
   finalization: r5Stage4Finalization,
@@ -337,8 +348,7 @@ const checks = [
       && r5TaskCapsule.fixedOverallProgress.percent === 60
       && r5TaskCapsule.currentStage.number === 4
       && r5TaskCapsule.candidateTerminal.status === "failed_closed"
-      && r5TaskCapsule.candidateTerminal.previewPassCount === 1
-      && r5TaskCapsule.candidateTerminal.previewCount === 5
+      && r5TaskCapsulePreviewEvidenceMatches
       && r5TaskCapsule.taskIdentity.seed === 20263722
       && r5TaskCapsule.taskIdentity.requiredBoundarySides.join(",") === "west",
   ],

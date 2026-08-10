@@ -10,7 +10,7 @@ import { evaluateV7TrainingGpuResourceGate } from "./lib/ai-assisted-v7-training
 import { deriveStage4ExecutionBoundaries, validateStage4StepTelemetry } from "./lib/ai-assisted-v7-r5-stage4-step-telemetry.mjs"
 import { formatShanghai } from "./lib/ai-painter-program-event-store.mjs"
 
-if (process.argv.includes("--v8-decoded-alignment") || process.argv.includes("--v9-object-alignment")) {
+if (process.argv.includes("--v8-decoded-alignment") || process.argv.includes("--v9-object-alignment") || process.argv.includes("--stage4-continuous-preview-contract")) {
   const { runV8Stage4Smoke } = await import("./run-ai-assisted-v8-r5-stage4-smoke.mjs")
   process.exit(await runV8Stage4Smoke(process.argv.slice(2)))
 }

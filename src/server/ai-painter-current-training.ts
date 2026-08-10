@@ -114,6 +114,10 @@ const strictValidationRootPath =
   ".runtime/ai-painter/v7-repair-r1-strict-revalidations";
 const r5Stage4FinalizationRootPath =
   ".runtime/ai-painter/v7-r5-stage4-bounded-repair-smoke-finalizations";
+const validationKernelModelSmokeTerminalPath =
+  ".runtime/ai-painter/stage4-validation-kernel-closures/20260810-023613404/model-smoke/model-smoke-20260810-validated-kernel/finalization/phase-terminal.json";
+const validationKernelImplementationConsumptionPath =
+  ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-validation-kernel-through-stage5-20260810/implementation-consumption.json";
 const uniqueModulePlanPath =
   "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md";
 const expectedSplits = {
@@ -692,26 +696,78 @@ async function readCurrentR5Stage4TaskCapsule(): Promise<AiPainterTaskCapsule> {
         Date.parse(text(right.value.recordedAtUtc) ?? "") -
         Date.parse(text(left.value.recordedAtUtc) ?? ""),
     );
+  const validationKernelTerminal = await readJson(
+    validationKernelModelSmokeTerminalPath,
+  );
+  if (validationKernelTerminal) {
+    terminals.push({
+      path: validationKernelModelSmokeTerminalPath,
+      value: validationKernelTerminal,
+    });
+    terminals.sort(
+      (left, right) =>
+        Date.parse(text(right.value.recordedAtUtc) ?? "") -
+        Date.parse(text(left.value.recordedAtUtc) ?? ""),
+    );
+  }
   const selectedTerminal = terminals[0] ?? { path: "", value: {} };
-  const terminal = selectedTerminal.value;
-  const finalizationPath = text(terminal.finalizationReportPath) ?? "";
-  const finalization = finalizationPath
+  const rawTerminal = selectedTerminal.value;
+  const derivedRunId = selectedTerminal.path.includes("model-smoke-20260810-validated-kernel")
+    ? "model-smoke-20260810-validated-kernel"
+    : text(rawTerminal.runId);
+  const terminal: JsonObject = {
+    ...rawTerminal,
+    runId: derivedRunId,
+    fixedOverallProgress:
+      object(rawTerminal.fixedOverallProgress) ??
+      object(rawTerminal.fixedTotalProgress),
+  };
+  const finalizationPath =
+    text(rawTerminal.finalizationReportPath) ??
+    text(rawTerminal.finalizationPath) ??
+    "";
+  const rawFinalization = finalizationPath
     ? ((await readJson(finalizationPath)) ?? {})
     : {};
-  const reviewBinding = object(finalization.review) ?? {};
+  const finalization: JsonObject = { ...rawFinalization, runId: derivedRunId };
+  const reviewBinding = object(rawFinalization.review) ?? {};
   const reviewPath = text(reviewBinding.reviewPath) ?? "";
-  const review = reviewPath ? ((await readJson(reviewPath)) ?? {}) : {};
-  const authorizationPath = text(finalization.authorizationPath) ?? "";
+  const review = reviewPath
+    ? ((await readJson(reviewPath)) ?? {})
+    : rawTerminal.status ===
+        "v9-kernel_stage4_single_sample_30_epoch_gpu_smoke_execution_failed_closed"
+      ? {
+          runId: derivedRunId,
+          status: "machine_reviews_not_started_training_authorization_gate_failed_closed",
+          previewCount: 0,
+          previewPassCount: 0,
+          previewFailCount: 0,
+          recordedAtUtc: rawTerminal.recordedAtUtc,
+        }
+      : {};
+  const executionConsumptionBinding = object(
+    object(rawFinalization.details)?.consumption,
+  ) ?? {};
+  const authorizationPath =
+    text(rawFinalization.authorizationPath) ??
+    text(executionConsumptionBinding.authorizationPath) ??
+    "";
   const authorization = authorizationPath
     ? ((await readJson(authorizationPath)) ?? {})
     : {};
   const implementationConsumptionPath =
-    text(finalization.implementationConsumptionPath) ?? "";
+    text(rawFinalization.implementationConsumptionPath) ??
+    (rawTerminal.status ===
+    "v9-kernel_stage4_single_sample_30_epoch_gpu_smoke_execution_failed_closed"
+      ? validationKernelImplementationConsumptionPath
+      : "");
   const implementationConsumption = implementationConsumptionPath
     ? ((await readJson(implementationConsumptionPath)) ?? {})
     : {};
   const executionConsumptionPath =
-    text(finalization.executionConsumptionPath) ?? "";
+    text(rawFinalization.executionConsumptionPath) ??
+    text(executionConsumptionBinding.path) ??
+    "";
   const executionConsumption = executionConsumptionPath
     ? ((await readJson(executionConsumptionPath)) ?? {})
     : {};
@@ -734,15 +790,21 @@ async function readCurrentR5Stage4TaskCapsule(): Promise<AiPainterTaskCapsule> {
       labelZh: "R5 Stage4 Finalization",
       path: finalizationPath,
       sha256: finalizationPath ? await sha256(finalizationPath) : null,
-      expectedSha256: text(terminal.finalizationReportSha256),
+      expectedSha256:
+        text(rawTerminal.finalizationReportSha256) ??
+        text(rawTerminal.finalizationSha256),
       recordedAtUtc: text(finalization.createdAtUtc),
       recordedAtAsiaShanghai: text(finalization.createdAtAsiaShanghai),
     },
     {
       kind: "machine_review",
       labelZh: "五张固定预览机器审核",
-      path: reviewPath,
-      sha256: reviewPath ? await sha256(reviewPath) : null,
+      path: reviewPath || finalizationPath,
+      sha256: reviewPath
+        ? await sha256(reviewPath)
+        : finalizationPath
+          ? await sha256(finalizationPath)
+          : null,
       expectedSha256: text(reviewBinding.reviewSha256),
       recordedAtUtc: text(review.createdAtUtc),
       recordedAtAsiaShanghai: text(review.createdAtAsiaShanghai),
@@ -752,7 +814,9 @@ async function readCurrentR5Stage4TaskCapsule(): Promise<AiPainterTaskCapsule> {
       labelZh: "当前Smoke Owner授权",
       path: authorizationPath,
       sha256: authorizationPath ? await sha256(authorizationPath) : null,
-      expectedSha256: text(finalization.authorizationSha256),
+      expectedSha256:
+        text(rawFinalization.authorizationSha256) ??
+        text(executionConsumptionBinding.authorizationSha256),
       recordedAtUtc: text(authorization.recordedAtUtc),
       recordedAtAsiaShanghai: text(authorization.recordedAtAsiaShanghai),
     },

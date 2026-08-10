@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from argparse import ArgumentParser
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
@@ -119,6 +120,10 @@ V8_STAGE4_SMOKE_PREFLIGHT_STATUS = "owner_authorized_v8_stage4_single_sample_smo
 V8_STAGE4_SMOKE_ACTIVE_STATUS = "owner_authorized_v8_stage4_single_sample_gpu_smoke"
 V9_STAGE4_CPU_INACTIVE_STATUS = "v9_stage4_object_semantic_decoder_alignment_cpu_supported_inactive"
 V9_STAGE4_SMOKE_ACTIVE_STATUS = "owner_authorized_v9_stage4_single_sample_gpu_smoke"
+V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS = "owner_authorized_v9_stage4_unified_preview_pipeline_single_sample_gpu_smoke"
+V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS = "owner_authorized_v9_stage4_validation_kernel_single_sample_gpu_smoke"
+STAGE4_VALIDATION_KERNEL_PHASE0_UPDATE_STATUS = "owner_authorized_stage4_validation_kernel_phase0_single_step_update"
+STAGE4_VALIDATION_KERNEL_PHASE0_REPRODUCE_STATUS = "owner_authorized_stage4_validation_kernel_phase0_checkpoint_preview_reproduction"
 V7_MVP64_SPLIT_COUNTS = {
     "train": 48,
     "validation": 8,
@@ -169,11 +174,20 @@ def main() -> int:
     parser.add_argument("--overfit-epochs", type=int)
     parser.add_argument("--overfit-evaluation-interval", type=int, default=10)
     parser.add_argument("--preflight-only", action="store_true")
+    parser.add_argument("--stage4-validation-kernel-phase0-update", action="store_true")
+    parser.add_argument("--stage4-validation-kernel-phase0-reproduce", action="store_true")
+    parser.add_argument("--phase0-execution-identity", type=Path)
+    parser.add_argument("--phase0-diagnostic-checkpoint", type=Path)
     args = parser.parse_args()
 
     config = read_json(args.config)
     package = read_json(args.dataset_package)
     validate_training_inputs(config, package)
+    phase0_mode = args.stage4_validation_kernel_phase0_update or args.stage4_validation_kernel_phase0_reproduce
+    if args.stage4_validation_kernel_phase0_update and args.stage4_validation_kernel_phase0_reproduce:
+        raise ValueError("Stage4 validation kernel Phase0 update and reproduction modes are mutually exclusive")
+    if phase0_mode:
+        validate_stage4_validation_kernel_phase0_cli(args, config, package)
     if config.get("training", {}).get("boundedRepairVersion") == "v7_bounded_repair_r3_candidate":
         training = config["training"]
         if args.single_sample_overfit_smoke is not True:
@@ -300,9 +314,9 @@ def main() -> int:
         smoke_contract = training.get("v9Stage4SingleSampleSmokeContract", {})
         authorization_status = training.get("trainingAuthorizationStatus")
         if authorization_status == V9_STAGE4_CPU_INACTIVE_STATUS:
-            if args.preflight_only is not True:
+            if args.preflight_only is not True and not phase0_mode:
                 raise ValueError("V9 Stage 4 inactive CPU support configuration cannot execute training")
-        elif authorization_status == V9_STAGE4_SMOKE_ACTIVE_STATUS:
+        elif authorization_status in {V9_STAGE4_SMOKE_ACTIVE_STATUS, V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS, V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS}:
             if args.preflight_only is True:
                 raise ValueError("V9 Stage 4 active Smoke configuration cannot be used as a preflight substitute")
         else:
@@ -313,10 +327,14 @@ def main() -> int:
             raise ValueError("V9 Stage 4 authorization permits only the bound single-sample Smoke")
         if args.overfit_sample_id != smoke_contract.get("sampleId") or args.overfit_sample_id != training.get("authorizedOverfitSampleId"):
             raise ValueError("V9 Stage 4 fixed Smoke sample identity does not match")
-        if int(args.overfit_epochs or 0) != 30 or int(smoke_contract.get("epochCount", 0)) != 30:
-            raise ValueError("V9 Stage 4 Smoke requires exactly 30 Epoch")
-        if int(args.overfit_evaluation_interval) != 5 or smoke_contract.get("previewEpochs") != [1, 5, 10, 20, 30]:
-            raise ValueError("V9 Stage 4 Smoke preview schedule does not match")
+        if phase0_mode:
+            if int(args.overfit_epochs or 0) != 1 or int(args.overfit_evaluation_interval) != 1:
+                raise ValueError("Stage4 validation kernel Phase0 requires exactly one bounded step schedule")
+        else:
+            if int(args.overfit_epochs or 0) != 30 or int(smoke_contract.get("epochCount", 0)) != 30:
+                raise ValueError("V9 Stage 4 Smoke requires exactly 30 Epoch")
+            if int(args.overfit_evaluation_interval) != 5 or smoke_contract.get("previewEpochs") != [1, 5, 10, 20, 30]:
+                raise ValueError("V9 Stage 4 Smoke preview schedule does not match")
         if args.resolution_stage != 0 or training.get("authorizedInitialization") != "project_random_v9_denoiser":
             raise ValueError("V9 Stage 4 Smoke initialization or resolution is invalid")
     if args.resolution_stage < 0 or args.resolution_stage >= len(config["training"]["resolutionStages"]):
@@ -362,6 +380,17 @@ def main() -> int:
             "sampleBoundBoundaryProvenance": sample_bound_boundary_provenance,
         }, ensure_ascii=False, indent=2))
         return 0
+
+    if phase0_mode:
+        return run_stage4_validation_kernel_phase0(
+            args,
+            config,
+            package,
+            datasets,
+            dataset_binding_evidence,
+            overfit_evidence,
+            sample_bound_boundary_provenance,
+        )
 
     seed = int(config["training"]["seed"])
     set_seed(seed)
@@ -441,7 +470,7 @@ def main() -> int:
 
     record_stage4_smoke_state_hashes = (
         config.get("training", {}).get("trainingAuthorizationStatus")
-        in {V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS, V8_STAGE4_SMOKE_ACTIVE_STATUS, V9_STAGE4_SMOKE_ACTIVE_STATUS}
+        in {V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS, V8_STAGE4_SMOKE_ACTIVE_STATUS, V9_STAGE4_SMOKE_ACTIVE_STATUS, V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS, V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS}
     )
     initial_denoiser_state_sha256 = (
         state_dict_sha256(model.denoiser.state_dict())
@@ -664,17 +693,53 @@ def main() -> int:
         validation_loss = validation["compositeConditionQualityScore"]
         rollout_validation = None
         if uses_v7_rollout_validation(config):
-            rollout_validation = evaluate_deterministic_rollout_rgb_quality_v7(
-                model,
-                optimization_datasets["validation"],
-                diffusion,
-                latent_normalization,
-                device,
-                seed + 3000,
-                config,
-                args.output_dir / "fixed-epoch-previews",
-                epoch + 1,
-            )
+            with stage4_fixed_preview_determinism_scope(
+                uses_stage4_unified_preview_sampling_contract(config)
+            ):
+                rollout_validation = evaluate_deterministic_rollout_rgb_quality_v7(
+                    model,
+                    optimization_datasets["validation"],
+                    diffusion,
+                    latent_normalization,
+                    device,
+                    seed + 3000,
+                    config,
+                    args.output_dir / "fixed-epoch-previews",
+                    epoch + 1,
+                )
+            if uses_stage4_unified_preview_sampling_contract(config):
+                source_preview = rollout_validation.get("previewArtifact")
+                if not isinstance(source_preview, dict):
+                    raise ValueError("Stage4 fixed Epoch preview artifact is missing")
+                with stage4_fixed_preview_determinism_scope(True):
+                    repeated_metrics = evaluate_deterministic_rollout_rgb_quality_v7(
+                        model,
+                        optimization_datasets["validation"],
+                        diffusion,
+                        latent_normalization,
+                        device,
+                        seed + 3000,
+                        config,
+                        args.output_dir / "fixed-epoch-preview-reproductions",
+                        epoch + 1,
+                    )
+                repeated_preview = repeated_metrics.get("previewArtifact")
+                reproduction = {
+                    "schemaVersion": "stage4-fixed-epoch-preview-reproduction-v1",
+                    "status": "fixed_epoch_preview_reproduced_exactly",
+                    "sourcePreview": source_preview,
+                    "repeatedPreview": repeated_preview,
+                    "modelStateSha256Matches": isinstance(repeated_preview, dict) and source_preview.get("denoiserStateSha256") == repeated_preview.get("denoiserStateSha256"),
+                    "conditionTensorSha256Matches": isinstance(repeated_preview, dict) and source_preview.get("conditionTensorSha256") == repeated_preview.get("conditionTensorSha256"),
+                    "rgbTensorSha256Matches": isinstance(repeated_preview, dict) and source_preview.get("rgbTensorSha256") == repeated_preview.get("rgbTensorSha256"),
+                    "pngByteSha256Matches": isinstance(repeated_preview, dict) and source_preview.get("previewSha256") == repeated_preview.get("previewSha256"),
+                }
+                if not all(reproduction[key] is True for key in (
+                    "modelStateSha256Matches", "conditionTensorSha256Matches",
+                    "rgbTensorSha256Matches", "pngByteSha256Matches",
+                )):
+                    raise ValueError("Stage4 fixed Epoch preview reproduction identity mismatch")
+                rollout_validation["previewReproductionArtifact"] = reproduction
             validation_loss += (
                 rollout_validation["rolloutRgbQualityScore"]
                 * float(config["training"].get("checkpointRolloutWeight", 1.0))
@@ -750,6 +815,42 @@ def main() -> int:
         if record_stage4_smoke_state_hashes
         else None
     )
+    unified_preview_reproduction = None
+    if uses_stage4_unified_preview_sampling_contract(config):
+        best_row = next((row for row in metrics if row.get("epoch") == best_epoch), None)
+        source_preview = best_row.get("validationPreviewArtifact") if best_row else None
+        if not isinstance(source_preview, dict):
+            raise ValueError("Stage4 unified preview source artifact is missing for the selected checkpoint")
+        with stage4_fixed_preview_determinism_scope(True):
+            reproduction_metrics = evaluate_deterministic_rollout_rgb_quality_v7(
+                model,
+                optimization_datasets["validation"],
+                diffusion,
+                latent_normalization,
+                device,
+                seed + 3000,
+                config,
+                args.output_dir / "checkpoint-bound-preview-reproduction",
+                best_epoch,
+            )
+        reproduced_preview = reproduction_metrics.get("previewArtifact")
+        if not isinstance(reproduced_preview, dict):
+            raise ValueError("Stage4 unified preview checkpoint reproduction artifact is missing")
+        unified_preview_reproduction = {
+            "schemaVersion": "stage4-unified-training-preview-reproduction-v1",
+            "status": "checkpoint_bound_preview_reproduced_exactly" if source_preview.get("previewSha256") == reproduced_preview.get("previewSha256") else "checkpoint_bound_preview_reproduction_mismatch",
+            "bestEpoch": int(best_epoch),
+            "selectedCheckpointDenoiserStateSha256": final_denoiser_state_sha256,
+            "sourcePreview": source_preview,
+            "reproducedPreview": reproduced_preview,
+            "denoiserStateIdentityMatches": source_preview.get("denoiserStateSha256") == final_denoiser_state_sha256 == reproduced_preview.get("denoiserStateSha256"),
+            "previewSha256Matches": source_preview.get("previewSha256") == reproduced_preview.get("previewSha256"),
+            "machineReviewThresholdsChanged": False,
+        }
+        if not unified_preview_reproduction["denoiserStateIdentityMatches"]:
+            raise ValueError("Stage4 unified preview selected checkpoint state identity mismatch")
+        if not unified_preview_reproduction["previewSha256Matches"]:
+            raise ValueError("Stage4 unified preview byte-exact checkpoint reproduction mismatch")
 
     split_metrics = {}
     for index, split in enumerate(datasets):
@@ -833,6 +934,8 @@ def main() -> int:
         "autoencoderState": {key: value.detach().cpu() for key, value in model.autoencoder.state_dict().items()},
         "denoiserState": {key: value.detach().cpu() for key, value in model.denoiser.state_dict().items()},
     }
+    if unified_preview_reproduction is not None:
+        checkpoint["stage4UnifiedTrainingPreviewSampling"] = unified_preview_reproduction
     if record_stage4_smoke_state_hashes:
         checkpoint["modelStateHashEvidence"] = {
             "algorithm": "sha256_sorted_tensor_bytes_v1",
@@ -920,6 +1023,8 @@ def main() -> int:
         "metrics": metrics,
         "automaticStorage": True,
     }
+    if unified_preview_reproduction is not None:
+        manifest["stage4UnifiedTrainingPreviewSampling"] = unified_preview_reproduction
     if record_stage4_smoke_state_hashes:
         manifest["modelStateHashEvidence"] = deepcopy(checkpoint["modelStateHashEvidence"])
     manifest_path = args.output_dir / "manifest.json"
@@ -972,7 +1077,7 @@ def build_single_sample_overfit_evidence(datasets, args, config):
         if configured_split != "validation":
             raise ValueError("V8 Stage 4 Smoke must use the bound validation diagnostic sample")
     elif is_v9_stage4_object_semantic_decoded_alignment(config):
-        if authorization_status not in {V9_STAGE4_CPU_INACTIVE_STATUS, V9_STAGE4_SMOKE_ACTIVE_STATUS}:
+        if authorization_status not in {V9_STAGE4_CPU_INACTIVE_STATUS, V9_STAGE4_SMOKE_ACTIVE_STATUS, V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS}:
             raise ValueError("V9 Stage 4 sample selection requires an authorized V9 status")
         configured_split = training.get("v9Stage4SingleSampleSmokeContract", {}).get("sampleSplit")
         if configured_split != "validation":
@@ -1015,6 +1120,8 @@ def validate_stage4_sample_bound_boundary_provenance(config, overfit_evidence):
         V8_STAGE4_SMOKE_ACTIVE_STATUS,
         V9_STAGE4_CPU_INACTIVE_STATUS,
         V9_STAGE4_SMOKE_ACTIVE_STATUS,
+        V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS,
+        V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS,
     }:
         return {
             "enabled": False,
@@ -1168,6 +1275,7 @@ def initialize_stage4_step_telemetry(output_dir, config, overfit_evidence, devic
         V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS,
         V8_STAGE4_SMOKE_ACTIVE_STATUS,
         V9_STAGE4_SMOKE_ACTIVE_STATUS,
+        V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS,
     }:
         return None
     telemetry_path = output_dir / "stage4-step-telemetry.json"
@@ -2733,6 +2841,11 @@ def validate_v8_stage4_decoded_domain_alignment_training_contract(config, packag
 
 
 def validate_v9_stage4_object_semantic_decoded_alignment_cpu_contract(config, package, project_root=None):
+    if config.get("training", {}).get("trainingAuthorizationStatus") in {
+        V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS,
+        V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS,
+    }:
+        return validate_v9_stage4_unified_preview_active_contract(config, package, project_root)
     if config.get("training", {}).get("trainingAuthorizationStatus") == V9_STAGE4_SMOKE_ACTIVE_STATUS:
         return validate_v9_stage4_active_smoke_contract(config, package, project_root)
     if config.get("denoiserArchitecture") != "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment":
@@ -2989,6 +3102,156 @@ def validate_v9_stage4_object_semantic_decoded_alignment_cpu_contract(config, pa
         "diagnosticManifestFields": list(V9_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS),
         "reusedWeight": float(training["denoiserLossWeights"]["discreteConditionOutputBinding"]),
         "v7OrV8DenoiserCheckpointCompatible": False,
+    }
+
+
+def validate_v9_stage4_unified_preview_active_contract(config, package, project_root=None):
+    root = Path(project_root or Path.cwd()).resolve()
+    training = config.get("training", {})
+    validation_kernel_mode = training.get("trainingAuthorizationStatus") == V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS
+    execution = training.get("v9Stage4SmokeExecution", {})
+    required_execution_fields = {
+        "sourceInactiveConfigPath", "sourceInactiveConfigSha256",
+        "ownerAuthorizationPath", "ownerAuthorizationSha256",
+        "gpuConsumptionPath", "gpuConsumptionSha256",
+        "implementationAttestationPath", "implementationAttestationSha256",
+    }
+    if validation_kernel_mode:
+        required_execution_fields.update({"phase0TerminalPath", "phase0TerminalSha256"})
+    if set(execution) != required_execution_fields:
+        raise ValueError("V9 Stage 4 unified preview execution identity fields are invalid")
+    source_path = verify_config_bound_project_file(root, execution.get("sourceInactiveConfigPath"), execution.get("sourceInactiveConfigSha256"), "V9 unified preview inactive config")
+    authorization_path = verify_config_bound_project_file(root, execution.get("ownerAuthorizationPath"), execution.get("ownerAuthorizationSha256"), "V9 unified preview Owner authorization")
+    consumption_path = verify_config_bound_project_file(root, execution.get("gpuConsumptionPath"), execution.get("gpuConsumptionSha256"), "V9 unified preview GPU consumption")
+    attestation_path = verify_config_bound_project_file(root, execution.get("implementationAttestationPath"), execution.get("implementationAttestationSha256"), "V9 unified preview implementation attestation")
+    phase0_terminal = None
+    if validation_kernel_mode:
+        phase0_terminal_path = verify_config_bound_project_file(root, execution.get("phase0TerminalPath"), execution.get("phase0TerminalSha256"), "Stage4 validation kernel Phase0 terminal")
+        phase0_terminal = read_json(phase0_terminal_path)
+    source = read_json(source_path)
+    source_result = validate_v9_stage4_object_semantic_decoded_alignment_cpu_contract(source, package, project_root)
+    authorization = read_json(authorization_path)
+    consumption = read_json(consumption_path)
+    attestation = read_json(attestation_path)
+    request_id = (
+        "owner-authorized-stage4-validation-kernel-through-stage5-20260810"
+        if validation_kernel_mode
+        else "owner-authorized-stage4-continuous-closure-20260809"
+    )
+    scope = (
+        "stage4_validation_kernel_then_single_smoke_full_training_and_stage5_strict_revalidation"
+        if validation_kernel_mode
+        else "continuous_stage4_business_closure_or_route_exit_with_bounded_implementation_repairs"
+    )
+    expected_consumption_status = (
+        "stage4_validation_kernel_model_smoke_gpu_authorization_atomically_consumed"
+        if validation_kernel_mode
+        else "stage4_unified_preview_smoke_gpu_authorization_atomically_consumed"
+    )
+    expected_attestation_status = (
+        "stage4_validation_kernel_model_smoke_implementation_cpu_verified"
+        if validation_kernel_mode
+        else "stage4_unified_preview_pipeline_implementation_cpu_verified"
+    )
+    if (
+        authorization.get("requestId") != request_id
+        or authorization.get("status") != "resolved_owner_authorized"
+        or authorization.get("ownerDecision", {}).get("commandRef") != request_id
+        or authorization.get("ownerDecision", {}).get("scope") != scope
+        or consumption.get("status") != expected_consumption_status
+        or consumption.get("requestId") != request_id
+        or consumption.get("authorizationSha256") != execution.get("ownerAuthorizationSha256")
+        or consumption.get("oneTimeConsumption") is not True
+        or attestation.get("status") != expected_attestation_status
+        or attestation.get("authorizationSha256") != execution.get("ownerAuthorizationSha256")
+        or (validation_kernel_mode and phase0_terminal.get("status") != "stage4_validation_kernel_phase0_passed_closed")
+    ):
+        raise ValueError("V9 Stage 4 unified preview authorization lineage is invalid")
+    actions = authorization.get("authorizedActions", {})
+    required_actions = (
+        ("singleThirtyEpochV9Smoke", "smokeOptimizerBackwardWeightAndCheckpointWrite", "phase0ProjectAutoencoderReadAndLoadFrozen")
+        if validation_kernel_mode
+        else ("projectAutoencoderCheckpointReadAndLoad", "boundedSmokeOptimizerCreation", "boundedSmokeBackwardExecution", "boundedSmokeWeightModification", "boundedSmokeCheckpointWrite", "singleThirtyEpochGpuSmoke", "machineReview")
+    )
+    for key in required_actions:
+        if actions.get(key) is not True:
+            raise ValueError(f"V9 Stage 4 unified preview authorized action is closed: {key}")
+    forbidden_actions = (
+        ("formalInference", "checkpointFormalPromotion", "ownerFormalVisualAcceptance", "runtimeFrame", "worldEntry", "worldRuntime")
+        if validation_kernel_mode
+        else ("stage5StrictRevalidation", "formalInference", "checkpointPromotion", "runtimeFrame", "worldEntry", "machineReviewThresholdReduction", "failedPreviewPixelsAsTrainingTarget", "freeHyperparameterSearch")
+    )
+    for key in forbidden_actions:
+        if actions.get(key) is not False:
+            raise ValueError(f"V9 Stage 4 unified preview forbidden action is open: {key}")
+
+    smoke = training.get("v9Stage4SingleSampleSmokeContract", {})
+    model_contract = training.get("stage4ObjectSemanticDecoderAlignment", {})
+    preview_contract = training.get("stage4UnifiedTrainingPreviewSamplingContract", {})
+    expected_preview_contract = {
+        "schemaVersion": "stage4-unified-training-preview-sampling-contract-v1",
+        "enabled": True,
+        "status": "active_owner_authorized_single_execution",
+        "samplingFunction": "evaluate_deterministic_rollout_rgb_quality_v7",
+        "modelStateBinding": "sha256_sorted_tensor_bytes_v1",
+        "seedBinding": "training_seed_plus_3000",
+        "normalizationBinding": "checkpoint_latent_normalization",
+        "decodeBinding": "frozen_project_autoencoder_decode_clamp_0_1",
+        "checkpointPreviewIdentityGate": "byte_exact_best_epoch_reproduction",
+        "deterministicAlgorithmsRequired": True,
+        "cublasWorkspaceConfig": ":4096:8",
+        "failedPreviewPixelsUsedAsTrainingTargets": False,
+        "machineReviewThresholdsUsedAsTrainingTargets": False,
+    }
+    if preview_contract != expected_preview_contract:
+        raise ValueError("V9 Stage 4 unified preview sampling contract is invalid")
+    if (
+        config.get("architectureVersion") != (
+            "all-validation-multiseed-semantic-rollout-unet-v9-stage4-validation-kernel-smoke"
+            if validation_kernel_mode
+            else "all-validation-multiseed-semantic-rollout-unet-v9-stage4-unified-preview-pipeline-smoke"
+        )
+        or smoke.get("status") != "active_owner_authorized_single_execution"
+        or model_contract.get("enabled") is not True
+        or model_contract.get("status") != "training_loss_active_owner_authorized"
+        or model_contract.get("trainingLossImplementationStatus") != "implemented_active_owner_authorized"
+    ):
+        raise ValueError("V9 Stage 4 unified preview active gate is invalid")
+    owner = training.get("ownerTrainingAuthorization", {})
+    if (
+        owner.get("authorizationId") != request_id
+        or owner.get("authorizationPath") != execution.get("ownerAuthorizationPath")
+        or owner.get("authorizationSha256") != execution.get("ownerAuthorizationSha256")
+        or owner.get("executionConsumptionPath") != execution.get("gpuConsumptionPath")
+        or owner.get("executionConsumptionSha256") != execution.get("gpuConsumptionSha256")
+        or owner.get("status") != (
+            V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS
+            if validation_kernel_mode
+            else V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS
+        )
+    ):
+        raise ValueError("V9 Stage 4 unified preview nested Owner authorization is invalid")
+
+    sanitized = deepcopy(config)
+    sanitized["architectureVersion"] = source["architectureVersion"]
+    sanitized_training = sanitized["training"]
+    source_training = source["training"]
+    sanitized_training["trainingAuthorizationStatus"] = source_training["trainingAuthorizationStatus"]
+    sanitized_training["v9Stage4SingleSampleSmokeContract"] = deepcopy(source_training["v9Stage4SingleSampleSmokeContract"])
+    sanitized_training["ownerTrainingAuthorization"] = deepcopy(source_training["ownerTrainingAuthorization"])
+    sanitized_training["stage4ObjectSemanticDecoderAlignment"] = deepcopy(source_training["stage4ObjectSemanticDecoderAlignment"])
+    if "stage4UnifiedTrainingPreviewSamplingContract" in source_training:
+        sanitized_training["stage4UnifiedTrainingPreviewSamplingContract"] = deepcopy(source_training["stage4UnifiedTrainingPreviewSamplingContract"])
+    else:
+        sanitized_training.pop("stage4UnifiedTrainingPreviewSamplingContract", None)
+    sanitized_training.pop("v9Stage4SmokeExecution", None)
+    if sanitized != source:
+        raise ValueError("V9 Stage 4 unified preview Smoke changed fields outside the bounded activation contract")
+    return {
+        **source_result,
+        "status": "v9_stage4_unified_preview_pipeline_smoke_contract_valid_active",
+        "authorizationId": request_id,
+        "sampleId": smoke.get("sampleId"),
     }
 
 
@@ -4861,6 +5124,324 @@ def load_stage4_bounded_repair_checkpoint(path, config, package):
     return checkpoint
 
 
+def validate_stage4_validation_kernel_phase0_cli(args, config, package):
+    identity_path = args.phase0_execution_identity
+    if identity_path is None or not identity_path.is_file():
+        raise ValueError("Stage4 validation kernel Phase0 execution identity is required")
+    identity = read_json(identity_path)
+    if identity.get("schemaVersion") != "ai-painter-stage4-validation-kernel-phase0-execution-identity-v1":
+        raise ValueError("Stage4 validation kernel Phase0 execution identity schema is invalid")
+    if identity.get("status") != "phase0_execution_identity_active_not_completed":
+        raise ValueError("Stage4 validation kernel Phase0 execution identity is not active")
+    request_id = "owner-authorized-stage4-validation-kernel-through-stage5-20260810"
+    authorization_path = Path(identity.get("authorizationPath", ""))
+    consumption_path = Path(identity.get("phase0ConsumptionPath", ""))
+    attestation_path = Path(identity.get("implementationAttestationPath", ""))
+    source_config_path = Path(identity.get("sourceInactiveConfigPath", ""))
+    for label, candidate, expected_sha in (
+        ("authorization", authorization_path, identity.get("authorizationSha256")),
+        ("Phase0 consumption", consumption_path, identity.get("phase0ConsumptionSha256")),
+        ("implementation attestation", attestation_path, identity.get("implementationAttestationSha256")),
+        ("source inactive config", source_config_path, identity.get("sourceInactiveConfigSha256")),
+        ("dataset manifest", Path(identity.get("datasetManifestPath", "")), identity.get("datasetManifestSha256")),
+        ("Autoencoder checkpoint", Path(identity.get("autoencoderCheckpointPath", "")), identity.get("autoencoderCheckpointSha256")),
+    ):
+        if not candidate.is_file() or sha256_file(candidate) != expected_sha:
+            raise ValueError(f"Stage4 validation kernel bound {label} is missing or changed")
+    if sha256_file(authorization_path) != "73776d1fb0db6e5e0b0e5de8df12a5727238e08969943e5ab25173d64182c229":
+        raise ValueError("Stage4 validation kernel Owner authorization identity changed")
+    authorization = read_json(authorization_path)
+    consumption = read_json(consumption_path)
+    attestation = read_json(attestation_path)
+    fixed = authorization.get("fixedTaskIdentity", {})
+    if (
+        authorization.get("requestId") != request_id
+        or authorization.get("status") != "resolved_owner_authorized"
+        or authorization.get("ownerDecision", {}).get("commandRef") != request_id
+        or consumption.get("status") != "stage4_validation_kernel_phase0_gpu_authorization_atomically_consumed"
+        or consumption.get("authorizationSha256") != identity.get("authorizationSha256")
+        or consumption.get("runId") != identity.get("runId")
+        or attestation.get("status") != "stage4_validation_kernel_phase0_implementation_cpu_verified"
+        or attestation.get("authorizationSha256") != identity.get("authorizationSha256")
+        or attestation.get("trainerSha256") != sha256_file(Path(__file__))
+    ):
+        raise ValueError("Stage4 validation kernel authorization lineage is invalid")
+    actions = authorization.get("authorizedActions", {})
+    for key in (
+        "phase0ProjectAutoencoderReadAndLoadFrozen", "phase0V9FixedRandomInitialization",
+        "phase0OptimizerCreation", "phase0BackwardAndSingleOptimizerStep",
+        "phase0BoundedWeightModification", "phase0DiagnosticCheckpointWriteAndReload",
+        "phase0DoublePreviewReproduction",
+    ):
+        if actions.get(key) is not True:
+            raise ValueError(f"Stage4 validation kernel authorized action is closed: {key}")
+    for key in ("formalInference", "checkpointFormalPromotion", "ownerFormalVisualAcceptance", "runtimeFrame", "worldEntry", "worldRuntime"):
+        if actions.get(key) is not False:
+            raise ValueError(f"Stage4 validation kernel forbidden action is open: {key}")
+    if (
+        fixed.get("architecture") != config.get("denoiserArchitecture")
+        or fixed.get("sampleId") != args.overfit_sample_id
+        or fixed.get("sampleSplit") != "validation"
+        or fixed.get("seed") != int(config.get("training", {}).get("seed", -1))
+        or fixed.get("requiredBoundarySides") != ["west"]
+        or fixed.get("datasetSplit") != V7_MVP64_SPLIT_COUNTS
+        or fixed.get("phase0Resolution") != {"width": 256, "height": 192}
+    ):
+        raise ValueError("Stage4 validation kernel fixed task identity changed")
+    if sha256_file(args.config) != identity.get("sourceInactiveConfigSha256") or args.config.resolve() != source_config_path.resolve():
+        raise ValueError("Stage4 validation kernel source config CLI identity changed")
+    dataset_path = Path(identity["datasetManifestPath"])
+    if args.dataset_package.resolve() != dataset_path.resolve():
+        raise ValueError("Stage4 validation kernel dataset CLI identity changed")
+    if args.autoencoder_checkpoint.resolve() != Path(identity["autoencoderCheckpointPath"]).resolve():
+        raise ValueError("Stage4 validation kernel Autoencoder CLI identity changed")
+    if args.initial_denoiser_checkpoint is not None:
+        raise ValueError("Stage4 validation kernel forbids old Denoiser Checkpoint input")
+    if args.stage4_validation_kernel_phase0_reproduce:
+        if args.phase0_diagnostic_checkpoint is None or not args.phase0_diagnostic_checkpoint.is_file():
+            raise ValueError("Stage4 validation kernel reproduction requires its diagnostic Checkpoint")
+        if (
+            project_path(args.phase0_diagnostic_checkpoint) != identity.get("diagnosticCheckpointPath")
+            or sha256_file(args.phase0_diagnostic_checkpoint) != identity.get("diagnosticCheckpointSha256")
+        ):
+            raise ValueError("Stage4 validation kernel diagnostic Checkpoint identity changed")
+    elif args.phase0_diagnostic_checkpoint is not None:
+        raise ValueError("Stage4 validation kernel update cannot load a Denoiser Checkpoint")
+    return identity
+
+
+def run_stage4_validation_kernel_phase0(
+    args,
+    config,
+    package,
+    datasets,
+    dataset_binding_evidence,
+    overfit_evidence,
+    sample_bound_boundary_provenance,
+):
+    identity = validate_stage4_validation_kernel_phase0_cli(args, config, package)
+    if not torch.cuda.is_available():
+        raise RuntimeError("Stage4 validation kernel Phase0 requires CUDA device 0")
+    device = torch.device("cuda:0")
+    torch.cuda.init()
+    if torch.cuda.current_device() != 0:
+        raise RuntimeError("Stage4 validation kernel Phase0 CUDA device 0 confirmation failed")
+    if torch.are_deterministic_algorithms_enabled():
+        raise RuntimeError("Stage4 validation kernel training backward entered strict deterministic scope")
+    seed = int(config["training"]["seed"])
+    set_seed(seed)
+    args.output_dir.mkdir(parents=True, exist_ok=False)
+    telemetry_path = args.output_dir / "phase0-step-telemetry.json"
+    write_json(telemetry_path, {
+        "schemaVersion": "ai-painter-stage4-validation-kernel-phase0-step-telemetry-v1",
+        "status": "initialized",
+        "runId": identity["runId"],
+        "events": [],
+    })
+
+    def event(step, status, **details):
+        payload = read_json(telemetry_path)
+        payload["events"].append({
+            "sequence": len(payload["events"]) + 1,
+            "step": step,
+            "status": status,
+            "recordedAtUtc": utc_now(),
+            **details,
+        })
+        payload["status"] = f"{step}_{status}"
+        write_json(telemetry_path, payload)
+
+    event("model_device_placement", "started")
+    model = build_complete_world_system(config).to(device)
+    event("model_device_placement", "completed")
+    event("autoencoder_checkpoint_read_and_load", "started")
+    autoencoder_checkpoint = load_autoencoder_checkpoint(args.autoencoder_checkpoint, config)
+    model.autoencoder.load_state_dict(autoencoder_checkpoint["autoencoderState"])
+    model.autoencoder.eval()
+    for parameter in model.autoencoder.parameters():
+        parameter.requires_grad_(False)
+    event("autoencoder_checkpoint_read_and_load", "completed", frozen=True)
+    diffusion = build_diffusion_schedule(config, device)
+
+    if args.stage4_validation_kernel_phase0_update:
+        return run_stage4_validation_kernel_phase0_update(
+            args, config, package, datasets, dataset_binding_evidence, overfit_evidence,
+            sample_bound_boundary_provenance, identity, model, diffusion, device, event, telemetry_path,
+        )
+    return run_stage4_validation_kernel_phase0_reproduce(
+        args, config, package, datasets, dataset_binding_evidence, overfit_evidence,
+        sample_bound_boundary_provenance, identity, model, diffusion, device, event, telemetry_path,
+    )
+
+
+def run_stage4_validation_kernel_phase0_update(
+    args, config, package, datasets, dataset_binding_evidence, overfit_evidence,
+    sample_bound_boundary_provenance, identity, model, diffusion, device, event, telemetry_path,
+):
+    event("latent_normalization", "started")
+    latent_normalization = compute_latent_normalization(model, datasets["train"], device)
+    event("latent_normalization", "completed", sampleCount=latent_normalization["sampleCount"])
+    selected = build_optimization_datasets(datasets, overfit_evidence)
+    loader = torch.utils.data.DataLoader(selected["train"], batch_size=1, shuffle=False, num_workers=0)
+    event("optimizer_creation", "started")
+    optimizer = torch.optim.AdamW(model.denoiser.parameters(), lr=float(config["training"]["denoiserLearningRate"]))
+    event("optimizer_creation", "completed")
+    before = state_dict_sha256(model.denoiser.state_dict())
+    event("single_training_step", "started", deterministicAlgorithmsEnabled=torch.are_deterministic_algorithms_enabled())
+    metrics = train_epoch(
+        model, loader, optimizer, diffusion, latent_normalization, device, config, 0,
+        max_batches=1, step_telemetry_path=None, enable_path_replay=False,
+    )
+    gradients = [parameter.grad.detach() for parameter in model.denoiser.parameters() if parameter.grad is not None]
+    if not gradients or any(not bool(torch.isfinite(value).all()) for value in gradients):
+        raise ValueError("Stage4 validation kernel Phase0 gradients are missing or non-finite")
+    gradient_abs_sum = sum(float(value.abs().sum()) for value in gradients)
+    gradient_nonzero_count = sum(int(torch.count_nonzero(value)) for value in gradients)
+    if gradient_abs_sum <= 0.0 or gradient_nonzero_count <= 0:
+        raise ValueError("Stage4 validation kernel Phase0 gradient is zero")
+    after = state_dict_sha256(model.denoiser.state_dict())
+    if before == after:
+        raise ValueError("Stage4 validation kernel Phase0 optimizer step did not change model state")
+    event("single_training_step", "completed", gradientFinite=True, gradientNonzero=True, weightsChanged=True)
+    checkpoint_path = args.output_dir / "phase0-diagnostic-checkpoint.pt"
+    event("diagnostic_checkpoint_write", "started")
+    checkpoint = {
+        "schemaVersion": "ai-painter-stage4-validation-kernel-phase0-diagnostic-checkpoint-v1",
+        "status": "phase0_diagnostic_checkpoint_nonpromotable_not_training_initialization",
+        "runId": identity["runId"],
+        "modelId": config["modelId"],
+        "architectureId": config["denoiserArchitecture"],
+        "denoiserState": {key: value.detach().cpu() for key, value in model.denoiser.state_dict().items()},
+        "optimizerState": optimizer.state_dict(),
+        "epoch": 0,
+        "step": 1,
+        "cpuRngState": torch.get_rng_state(),
+        "cudaRngStates": torch.cuda.get_rng_state_all(),
+        "pythonRandomState": random.getstate(),
+        "numpyRandomState": np.random.get_state(),
+        "latentNormalization": serialize_latent_normalization(latent_normalization),
+        "configPath": project_path(args.config),
+        "configSha256": sha256_file(args.config),
+        "datasetManifestPath": project_path(args.dataset_package),
+        "datasetManifestSha256": sha256_file(args.dataset_package),
+        "autoencoderCheckpointPath": project_path(args.autoencoder_checkpoint),
+        "autoencoderCheckpointSha256": sha256_file(args.autoencoder_checkpoint),
+        "sampleId": overfit_evidence["sampleId"],
+        "sampleSplit": overfit_evidence["selectedSplit"],
+        "seed": int(config["training"]["seed"]),
+        "requiredBoundarySides": ["west"],
+        "initialDenoiserStateSha256": before,
+        "finalDenoiserStateSha256": after,
+        "gradientFinite": True,
+        "gradientNonzero": True,
+        "gradientAbsSum": gradient_abs_sum,
+        "gradientNonzeroCount": gradient_nonzero_count,
+        "formalInferenceEligible": False,
+        "checkpointPromotionEligible": False,
+        "fullTrainingInitializationEligible": False,
+    }
+    torch.save(checkpoint, checkpoint_path)
+    event("diagnostic_checkpoint_write", "completed", checkpointSha256=sha256_file(checkpoint_path))
+    report = {
+        "schemaVersion": "ai-painter-stage4-validation-kernel-phase0-update-report-v1",
+        "status": "phase0_single_cuda_optimizer_step_passed_closed",
+        "recordedAtUtc": utc_now(),
+        "runId": identity["runId"],
+        "dataset": dataset_binding_evidence,
+        "sample": overfit_evidence,
+        "boundaryProvenance": sample_bound_boundary_provenance,
+        "trainingDeterministicAlgorithmsEnabled": False,
+        "lossFinite": all(math.isfinite(float(value)) for value in metrics.values()),
+        "gradientFinite": True,
+        "gradientNonzero": True,
+        "gradientAbsSum": gradient_abs_sum,
+        "gradientNonzeroCount": gradient_nonzero_count,
+        "initialDenoiserStateSha256": before,
+        "finalDenoiserStateSha256": after,
+        "weightsChanged": before != after,
+        "checkpointPath": project_path(checkpoint_path),
+        "checkpointSha256": sha256_file(checkpoint_path),
+        "telemetryPath": project_path(telemetry_path),
+        "formalInferenceEligible": False,
+        "checkpointPromotionEligible": False,
+        "fullTrainingInitializationEligible": False,
+    }
+    report_path = args.output_dir / "phase0-update-report.json"
+    write_json(report_path, report)
+    print(json.dumps({**report, "reportPath": project_path(report_path), "reportSha256": sha256_file(report_path)}, ensure_ascii=False, indent=2))
+    return 0
+
+
+def run_stage4_validation_kernel_phase0_reproduce(
+    args, config, package, datasets, dataset_binding_evidence, overfit_evidence,
+    sample_bound_boundary_provenance, identity, model, diffusion, device, event, telemetry_path,
+):
+    event("diagnostic_checkpoint_read", "started")
+    checkpoint = torch.load(args.phase0_diagnostic_checkpoint, map_location="cpu", weights_only=False)
+    if (
+        checkpoint.get("schemaVersion") != "ai-painter-stage4-validation-kernel-phase0-diagnostic-checkpoint-v1"
+        or checkpoint.get("status") != "phase0_diagnostic_checkpoint_nonpromotable_not_training_initialization"
+        or checkpoint.get("runId") != identity.get("runId")
+        or checkpoint.get("configSha256") != sha256_file(args.config)
+        or checkpoint.get("datasetManifestSha256") != sha256_file(args.dataset_package)
+        or checkpoint.get("autoencoderCheckpointSha256") != sha256_file(args.autoencoder_checkpoint)
+        or checkpoint.get("sampleId") != overfit_evidence.get("sampleId")
+        or checkpoint.get("sampleSplit") != "validation"
+        or checkpoint.get("formalInferenceEligible") is not False
+        or checkpoint.get("checkpointPromotionEligible") is not False
+        or checkpoint.get("fullTrainingInitializationEligible") is not False
+    ):
+        raise ValueError("Stage4 validation kernel diagnostic Checkpoint contract is invalid")
+    model.denoiser.load_state_dict(checkpoint["denoiserState"])
+    model_state_sha = state_dict_sha256(model.denoiser.state_dict())
+    if model_state_sha != checkpoint.get("finalDenoiserStateSha256"):
+        raise ValueError("Stage4 validation kernel restored model state identity changed")
+    latent_normalization = load_latent_normalization(checkpoint, device)
+    event("diagnostic_checkpoint_read", "completed", denoiserStateSha256=model_state_sha)
+    selected = build_optimization_datasets(datasets, overfit_evidence)
+    preview_root = args.output_dir / "fixed-preview"
+    event("fixed_preview_generation", "started")
+    with stage4_fixed_preview_determinism_scope(True):
+        metrics = evaluate_deterministic_rollout_rgb_quality_v7(
+            model, selected["validation"], diffusion, latent_normalization, device,
+            int(config["training"]["seed"]) + 3000, config, preview_root, 1,
+        )
+    artifact = metrics.get("previewArtifact")
+    if not isinstance(artifact, dict):
+        raise ValueError("Stage4 validation kernel fixed preview artifact is missing")
+    if artifact.get("denoiserStateSha256") != model_state_sha:
+        raise ValueError("Stage4 validation kernel preview model state identity changed")
+    event("fixed_preview_generation", "completed", rgbTensorSha256=artifact.get("rgbTensorSha256"), previewSha256=artifact.get("previewSha256"))
+    report = {
+        "schemaVersion": "ai-painter-stage4-validation-kernel-phase0-reproduction-report-v1",
+        "status": "phase0_checkpoint_fixed_preview_reproduction_passed_closed",
+        "recordedAtUtc": utc_now(),
+        "runId": identity["runId"],
+        "dataset": dataset_binding_evidence,
+        "sample": overfit_evidence,
+        "boundaryProvenance": sample_bound_boundary_provenance,
+        "checkpointPath": project_path(args.phase0_diagnostic_checkpoint),
+        "checkpointSha256": sha256_file(args.phase0_diagnostic_checkpoint),
+        "modelStateSha256": model_state_sha,
+        "previewArtifact": artifact,
+        "samplingIdentity": {
+            "seed": int(config["training"]["seed"]) + 3000,
+            "sampler": "deterministic_velocity_step",
+            "timestepSequence": [int(value) for value in inference_timesteps(int(config["diffusionSteps"]), int(config["inferenceSteps"]), device).detach().cpu().tolist()],
+            "normalization": "checkpoint_latent_normalization",
+            "decode": "frozen_project_autoencoder_decode_clamp_0_1",
+            "pngEncoder": "Pillow_PNG_optimize_true_no_dynamic_metadata",
+        },
+        "telemetryPath": project_path(telemetry_path),
+        "formalInferenceEligible": False,
+        "checkpointPromotionEligible": False,
+    }
+    report_path = args.output_dir / "phase0-reproduction-report.json"
+    write_json(report_path, report)
+    print(json.dumps({**report, "reportPath": project_path(report_path), "reportSha256": sha256_file(report_path)}, ensure_ascii=False, indent=2))
+    return 0
+
+
 def build_diffusion_schedule(config, device):
     beta_start = 0.0001
     beta_end = 0.02
@@ -4885,6 +5466,7 @@ def train_epoch(
     max_batches=None,
     on_batch_progress=None,
     step_telemetry_path=None,
+    enable_path_replay=True,
 ):
     model.denoiser.train()
     totals = {}
@@ -5016,7 +5598,7 @@ def train_epoch(
             epoch=epoch_index + 1,
             batch=batch_index + 1,
         )
-        replay_passes = r5_path_replay_passes_per_epoch(config)
+        replay_passes = r5_path_replay_passes_per_epoch(config) if enable_path_replay else 0
         replay_totals = {}
         for replay_index in range(replay_passes):
             replay_timestep = training_timesteps(
@@ -6508,6 +7090,7 @@ def evaluate_deterministic_rollout_rgb_quality(model, dataset, diffusion, latent
 def evaluate_deterministic_rollout_rgb_quality_v7(model, dataset, diffusion, latent_normalization, device, seed, config, preview_output_dir=None, epoch_number=None):
     was_training = model.denoiser.training
     model.denoiser.eval()
+    preview_artifact = None
     totals = {
         "rolloutRgbMae": 0.0,
         "rolloutRgbGradientMae": 0.0,
@@ -6563,6 +7146,32 @@ def evaluate_deterministic_rollout_rgb_quality_v7(model, dataset, diffusion, lat
                     preview_output_dir.mkdir(parents=True, exist_ok=True)
                     preview_path = preview_output_dir / f"epoch-{epoch_number:03d}-{row['conditionLabel']}-seed-{seed}.png"
                     save_tensor_png(predicted_rgb[0], preview_path)
+                    preview_artifact = {
+                        "schemaVersion": "stage4-unified-training-preview-artifact-v1",
+                        "epoch": int(epoch_number),
+                        "sampleId": row["sampleId"],
+                        "conditionLabel": row["conditionLabel"],
+                        "seed": int(seed),
+                        "seedIndex": 0,
+                        "sampleIndex": 0,
+                        "denoiserStateSha256": state_dict_sha256(model.denoiser.state_dict()),
+                        "conditionTensorSha256": tensor_sha256(conditions),
+                        "rgbTensorSha256": tensor_sha256(predicted_rgb),
+                        "latentNormalizationSha256": hashlib.sha256(
+                            json.dumps(
+                                serialize_latent_normalization(latent_normalization),
+                                sort_keys=True,
+                                separators=(",", ":"),
+                            ).encode("utf-8")
+                        ).hexdigest(),
+                        "previewPath": project_path(preview_path),
+                        "previewSha256": sha256_file(preview_path),
+                        "samplingFunction": "evaluate_deterministic_rollout_rgb_quality_v7",
+                        "deterministicAlgorithmsEnabled": torch.are_deterministic_algorithms_enabled(),
+                        "cudnnDeterministic": bool(torch.backends.cudnn.deterministic),
+                        "cudnnBenchmark": bool(torch.backends.cudnn.benchmark),
+                        "cublasWorkspaceConfig": os.environ.get("CUBLAS_WORKSPACE_CONFIG"),
+                    }
     if was_training:
         model.denoiser.train()
     trajectory_count = sample_count * seed_count
@@ -6579,6 +7188,8 @@ def evaluate_deterministic_rollout_rgb_quality_v7(model, dataset, diffusion, lat
     result["rolloutSampleCount"] = sample_count
     result["rolloutSeedCountPerSample"] = seed_count
     result["rolloutTrajectoryCount"] = trajectory_count
+    if preview_artifact is not None:
+        result["previewArtifact"] = preview_artifact
     return result
 
 
@@ -6976,6 +7587,46 @@ def is_v9_stage4_object_semantic_decoded_alignment(config):
     return config.get("denoiserArchitecture") == "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment"
 
 
+def uses_stage4_unified_preview_sampling_contract(config):
+    contract = config.get("training", {}).get("stage4UnifiedTrainingPreviewSamplingContract", {})
+    return (
+        config.get("training", {}).get("trainingAuthorizationStatus") in {
+            V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS,
+            V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS,
+        }
+        and contract.get("enabled") is True
+        and contract.get("status") == "active_owner_authorized_single_execution"
+        and contract.get("samplingFunction") == "evaluate_deterministic_rollout_rgb_quality_v7"
+        and contract.get("checkpointPreviewIdentityGate") == "byte_exact_best_epoch_reproduction"
+    )
+
+
+@contextmanager
+def stage4_fixed_preview_determinism_scope(enabled=True):
+    """Limit strict CUDA determinism to fixed-preview sampling and restore training state."""
+    if not enabled:
+        yield
+        return
+    previous_debug_mode = torch.get_deterministic_debug_mode()
+    previous_cudnn_deterministic = bool(torch.backends.cudnn.deterministic)
+    previous_cudnn_benchmark = bool(torch.backends.cudnn.benchmark)
+    previous_workspace = os.environ.get("CUBLAS_WORKSPACE_CONFIG")
+    try:
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
+        torch.use_deterministic_algorithms(True)
+        yield
+    finally:
+        torch.set_deterministic_debug_mode(previous_debug_mode)
+        torch.backends.cudnn.deterministic = previous_cudnn_deterministic
+        torch.backends.cudnn.benchmark = previous_cudnn_benchmark
+        if previous_workspace is None:
+            os.environ.pop("CUBLAS_WORKSPACE_CONFIG", None)
+        else:
+            os.environ["CUBLAS_WORKSPACE_CONFIG"] = previous_workspace
+
+
 def uses_registered_v7_capacity_dataset(config):
     return is_v7(config) or is_v8_stage4_decoded_alignment(config) or is_v9_stage4_object_semantic_decoded_alignment(config)
 
@@ -7276,6 +7927,15 @@ def state_dict_sha256(state_dict):
         digest.update(str(tensor.dtype).encode("ascii"))
         digest.update(json.dumps(list(tensor.shape), separators=(",", ":")).encode("ascii"))
         digest.update(tensor.numpy().tobytes(order="C"))
+    return digest.hexdigest()
+
+
+def tensor_sha256(tensor):
+    value = tensor.detach().cpu().contiguous()
+    digest = hashlib.sha256()
+    digest.update(str(value.dtype).encode("ascii"))
+    digest.update(json.dumps(list(value.shape), separators=(",", ":")).encode("ascii"))
+    digest.update(value.numpy().tobytes(order="C"))
     return digest.hexdigest()
 
 
