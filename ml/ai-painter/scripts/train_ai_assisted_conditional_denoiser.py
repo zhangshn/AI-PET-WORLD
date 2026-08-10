@@ -27,6 +27,7 @@ from ai_painter_preview_reproduction import (
     tensor_sha256,
 )
 from ai_painter_stage_mode_registry import (
+    FORMAL_MODE_REGISTRY,
     V7_R5_STAGE3_COVERAGE_SMOKE_STATUS,
     V7_R5_STAGE3_SMOKE_STATUS,
     V7_R5_STAGE4_BOUNDED_PREFLIGHT_STATUS,
@@ -41,15 +42,18 @@ from ai_painter_stage_mode_registry import (
     V9_STAGE4_UNIFIED_PREVIEW_SMOKE_STATUS,
     V9_STAGE4_VALIDATION_KERNEL_SMOKE_STATUS,
     STRUCTURE_FACT_FIRST_STAGE4_INACTIVE_STATUS,
+    STRUCTURE_FACT_FIRST_STAGE4_PHASE0_STATUS,
     resolve_stage_mode,
 )
 
 from ai_painter.complete_world import (
+    STAGE4_STRUCTURE_FACT_CHANNEL_ORDER,
     add_noise,
     build_complete_world_system,
     deterministic_velocity_step,
     inference_timesteps,
     recover_from_velocity,
+    resize_stage4_structure_fact_layout,
     velocity_target,
 )
 from ai_painter.complete_world.dataset import AiAssistedConditionalDenoiserDataset
@@ -214,6 +218,7 @@ def main() -> int:
     parser.add_argument("--preflight-only", action="store_true")
     parser.add_argument("--stage4-validation-kernel-phase0-update", action="store_true")
     parser.add_argument("--stage4-validation-kernel-phase0-reproduce", action="store_true")
+    parser.add_argument("--stage4-structure-fact-first-phase0-causal", action="store_true")
     parser.add_argument("--phase0-execution-identity", type=Path)
     parser.add_argument("--phase0-diagnostic-checkpoint", type=Path)
     parser.add_argument("--stage-control-dry-run", action="store_true")
@@ -239,24 +244,37 @@ def main() -> int:
             verify_owner_files=args.stage_control_dry_run,
         )
     except ValueError:
-        if is_v8_stage4_decoded_alignment(config) or is_v9_stage4_object_semantic_decoded_alignment(config):
+        if is_registered_stage_control_config(config):
             raise
     if args.stage_control_dry_run:
         if not args.preflight_only:
             raise ValueError("Stage control dry-run requires --preflight-only")
-        if args.stage_control_authorization is None or not args.stage_control_authorization_sha256:
-            raise ValueError("Stage control dry-run requires the immutable control authorization identity")
-        control_grant = resolve_control_refactor_grant(
-            args.stage_control_authorization,
-            args.stage_control_authorization_sha256,
-        )
-        control_grant.require(ExecutionAction.SELECT_BOUND_SAMPLE)
-        control_grant.require(ExecutionAction.INSPECT_AUTOENCODER_IDENTITY)
-        control_grant.require(ExecutionAction.INSPECT_CHECKPOINT_IDENTITY)
-    phase0_mode = args.stage4_validation_kernel_phase0_update or args.stage4_validation_kernel_phase0_reproduce
-    if args.stage4_validation_kernel_phase0_update and args.stage4_validation_kernel_phase0_reproduce:
-        raise ValueError("Stage4 validation kernel Phase0 update and reproduction modes are mutually exclusive")
-    if phase0_mode:
+        if stage_mode is not None and stage_mode.mode_id == "structure_fact_first_stage4_phase0":
+            stage_execution_grant.require(ExecutionAction.SELECT_BOUND_SAMPLE)
+            stage_execution_grant.require(ExecutionAction.INSPECT_AUTOENCODER_IDENTITY)
+            stage_execution_grant.require(ExecutionAction.INSPECT_CHECKPOINT_IDENTITY)
+        else:
+            if args.stage_control_authorization is None or not args.stage_control_authorization_sha256:
+                raise ValueError("Stage control dry-run requires the immutable control authorization identity")
+            control_grant = resolve_control_refactor_grant(
+                args.stage_control_authorization,
+                args.stage_control_authorization_sha256,
+            )
+            control_grant.require(ExecutionAction.SELECT_BOUND_SAMPLE)
+            control_grant.require(ExecutionAction.INSPECT_AUTOENCODER_IDENTITY)
+            control_grant.require(ExecutionAction.INSPECT_CHECKPOINT_IDENTITY)
+    phase0_mode = (
+        args.stage4_validation_kernel_phase0_update
+        or args.stage4_validation_kernel_phase0_reproduce
+        or args.stage4_structure_fact_first_phase0_causal
+    )
+    if sum(bool(value) for value in (
+        args.stage4_validation_kernel_phase0_update,
+        args.stage4_validation_kernel_phase0_reproduce,
+        args.stage4_structure_fact_first_phase0_causal,
+    )) > 1:
+        raise ValueError("Stage4 validation kernel Phase0 execution modes are mutually exclusive")
+    if phase0_mode and not args.stage_control_dry_run:
         validate_stage4_validation_kernel_phase0_cli(args, config, package)
     if config.get("training", {}).get("boundedRepairVersion") == "v7_bounded_repair_r3_candidate":
         training = config["training"]
@@ -405,6 +423,29 @@ def main() -> int:
                 raise ValueError("V9 Stage 4 Smoke preview schedule does not match")
         if args.resolution_stage != 0 or training.get("authorizedInitialization") != "project_random_v9_denoiser":
             raise ValueError("V9 Stage 4 Smoke initialization or resolution is invalid")
+    if stage_mode is not None and stage_mode.adapter_binding == "structure_fact_first_phase0_adapter":
+        training = config["training"]
+        phase0_contract = training.get("structureFactFirstPhase0Contract", {})
+        execution_state = training.get("ownerTrainingAuthorization", {}).get("executionState")
+        if args.stage_control_dry_run:
+            if execution_state != "preflight_unconsumed":
+                raise ValueError("structure-fact-first Phase0 dry-run requires an unconsumed execution identity")
+        elif execution_state != "consumed":
+            raise ValueError("structure-fact-first Phase0 execution requires an atomically consumed identity")
+        if not phase0_mode:
+            raise ValueError("structure-fact-first Phase0 ModeSpec cannot enter a non-Phase0 execution")
+        if args.initial_denoiser_checkpoint is not None:
+            raise ValueError("structure-fact-first Phase0 forbids every parent Denoiser Checkpoint")
+        if args.single_sample_overfit_smoke is not True or args.smoke_test:
+            raise ValueError("structure-fact-first Phase0 requires its bound single-sample path")
+        if args.overfit_sample_id != phase0_contract.get("sampleId") or args.overfit_sample_id != training.get("authorizedOverfitSampleId"):
+            raise ValueError("structure-fact-first Phase0 fixed sample identity does not match")
+        if int(args.overfit_epochs or 0) != 1 or int(args.overfit_evaluation_interval) != 1:
+            raise ValueError("structure-fact-first Phase0 requires exactly one bounded step schedule")
+        if args.resolution_stage != 0 or training.get("authorizedInitialization") != "project_random_structure_fact_first_denoiser":
+            raise ValueError("structure-fact-first Phase0 initialization or resolution is invalid")
+        if phase0_contract.get("sampleSplit") != "validation" or phase0_contract.get("requiredBoundarySides") != ["west"]:
+            raise ValueError("structure-fact-first Phase0 sample split or topology is invalid")
     if args.resolution_stage < 0 or args.resolution_stage >= len(config["training"]["resolutionStages"]):
         raise ValueError("resolution stage is outside the configured progressive stages")
     stage = config["training"]["resolutionStages"][args.resolution_stage]
@@ -454,6 +495,9 @@ def main() -> int:
             "stageControlMode": stage_mode.mode_id if stage_mode else None,
             "stageControlExecutionGrant": stage_execution_grant.as_dict() if stage_execution_grant else None,
             "stageControlDryRun": bool(args.stage_control_dry_run),
+            "phase0ExecutionAuthorizationLineageValidated": bool(
+                phase0_mode and not args.stage_control_dry_run
+            ),
         }, ensure_ascii=False, indent=2))
         return 0
 
@@ -1143,6 +1187,8 @@ def build_single_sample_overfit_evidence(datasets, args, config, execution_grant
         try:
             execution_grant = resolve_stage_execution_grant(config)
         except ValueError:
+            if is_registered_stage_control_config(config):
+                raise
             execution_grant = None
     if execution_grant is not None and execution_grant.permits(ExecutionAction.SELECT_BOUND_SAMPLE):
         configured_split = execution_grant.dataset_constraints.get("selectedSplit") or "train"
@@ -1178,6 +1224,8 @@ def validate_stage4_sample_bound_boundary_provenance(config, overfit_evidence):
     try:
         execution_grant = resolve_stage_execution_grant(config)
     except ValueError:
+        if is_registered_stage_control_config(config):
+            raise
         execution_grant = None
     if execution_grant is None or not execution_grant.permits(ExecutionAction.SELECT_BOUND_SAMPLE):
         return {
@@ -1186,7 +1234,9 @@ def validate_stage4_sample_bound_boundary_provenance(config, overfit_evidence):
         }
     if overfit_evidence.get("enabled") is not True:
         raise ValueError("Stage4 sample-bound boundary provenance requires the fixed Smoke sample")
-    if is_v9_stage4_object_semantic_decoded_alignment(config):
+    if is_structure_fact_first_stage4(config):
+        smoke_contract = training.get("structureFactFirstPhase0Contract", {})
+    elif is_v9_stage4_object_semantic_decoded_alignment(config):
         smoke_contract = training.get("v9Stage4SingleSampleSmokeContract", {})
     elif is_v8_stage4_decoded_alignment(config):
         smoke_contract = training.get("v8Stage4SingleSampleSmokeContract", {})
@@ -1330,6 +1380,8 @@ def initialize_stage4_step_telemetry(output_dir, config, overfit_evidence, devic
     try:
         execution_grant = resolve_stage_execution_grant(config)
     except ValueError:
+        if is_registered_stage_control_config(config):
+            raise
         execution_grant = None
     if execution_grant is None or not execution_grant.permits(ExecutionAction.CREATE_OPTIMIZER):
         return None
@@ -3166,13 +3218,15 @@ def validate_v9_stage4_object_semantic_decoded_alignment_cpu_contract(config, pa
 def validate_structure_fact_first_stage4_cpu_contract(config, package, project_root=None):
     mode = resolve_stage_mode(config)
     architecture = "stage4_structure_fact_first_dual_stage_generator_v1"
+    phase0_mode = mode.mode_id == "structure_fact_first_stage4_phase0"
     if (
-        mode.mode_id != "structure_fact_first_stage4_inactive"
-        or mode.execution_kind != "cpu_inactive"
-        or mode.active_execution is not False
+        mode.mode_id not in {"structure_fact_first_stage4_inactive", "structure_fact_first_stage4_phase0"}
+        or (not phase0_mode and mode.execution_kind != "cpu_inactive")
+        or (phase0_mode and mode.execution_kind != "phase0_engineering")
+        or mode.active_execution is not phase0_mode
         or config.get("denoiserArchitecture") != architecture
     ):
-        raise ValueError("Stage 4 structure-fact-first mode must remain CPU inactive")
+        raise ValueError("Stage 4 structure-fact-first mode identity is invalid")
     if config.get("conditionChannels") != 23 or len(config.get("conditionChannelOrder", [])) != 23:
         raise ValueError("Stage 4 structure-fact-first must preserve all 23 condition channels")
     if config.get("conditionResizeContract") != "discrete_nearest_continuous_bilinear_v1":
@@ -3339,17 +3393,24 @@ def validate_structure_fact_first_stage4_cpu_contract(config, package, project_r
     ):
         raise ValueError("Stage 4 structure-fact-first implementation lineage is invalid")
     owner = training.get("ownerTrainingAuthorization", {})
-    if owner.get("status") != "not_authorized_cpu_support_only" or any(
-        owner.get(key) is not False for key in (
-            "checkpointLoadingAuthorized", "optimizerCreationAuthorized", "backwardExecutionAuthorized",
-            "modelWeightMutationAuthorized", "gpuTrainingAuthorizedNow", "fullTrainingAuthorized",
-            "strictRevalidationAuthorized", "formalInferenceAuthorized", "checkpointPromotionAuthorized",
-            "runtimeFrameAuthorized", "worldEntryAuthorized", "automaticRetryAuthorized",
-        )
-    ):
-        raise ValueError("Stage 4 structure-fact-first nested training authorization is not fully closed")
+    if not phase0_mode:
+        if owner.get("status") != "not_authorized_cpu_support_only" or any(
+            owner.get(key) is not False for key in (
+                "checkpointLoadingAuthorized", "optimizerCreationAuthorized", "backwardExecutionAuthorized",
+                "modelWeightMutationAuthorized", "gpuTrainingAuthorizedNow", "fullTrainingAuthorized",
+                "strictRevalidationAuthorized", "formalInferenceAuthorized", "checkpointPromotionAuthorized",
+                "runtimeFrameAuthorized", "worldEntryAuthorized", "automaticRetryAuthorized",
+            )
+        ):
+            raise ValueError("Stage 4 structure-fact-first nested training authorization is not fully closed")
+    elif owner.get("status") != STRUCTURE_FACT_FIRST_STAGE4_PHASE0_STATUS:
+        raise ValueError("Stage 4 structure-fact-first Phase0 Owner status is invalid")
     return {
-        "status": "stage4_structure_fact_first_dual_stage_cpu_contract_valid_inactive",
+        "status": (
+            "stage4_structure_fact_first_phase0_contract_valid"
+            if phase0_mode
+            else "stage4_structure_fact_first_dual_stage_cpu_contract_valid_inactive"
+        ),
         "structureChannels": expected_channels,
         "stageBInjectionScales": ["level0", "level1", "middle", "up1", "up0"],
         "diagnosticManifestFields": list(STRUCTURE_FACT_FIRST_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS),
@@ -5486,6 +5547,8 @@ def validate_stage4_validation_kernel_phase0_cli(args, config, package):
     if identity_path is None or not identity_path.is_file():
         raise ValueError("Stage4 validation kernel Phase0 execution identity is required")
     identity = read_json(identity_path)
+    if identity.get("schemaVersion") == "ai-painter-stage4-structure-fact-first-phase0-execution-identity-v1":
+        return validate_structure_fact_first_phase0_cli(args, config, identity)
     if identity.get("schemaVersion") != "ai-painter-stage4-validation-kernel-phase0-execution-identity-v1":
         raise ValueError("Stage4 validation kernel Phase0 execution identity schema is invalid")
     if identity.get("status") != "phase0_execution_identity_active_not_completed":
@@ -5567,6 +5630,101 @@ def validate_stage4_validation_kernel_phase0_cli(args, config, package):
     return identity
 
 
+def validate_structure_fact_first_phase0_cli(args, config, identity):
+    if identity.get("status") != "phase0_execution_identity_active_not_completed":
+        raise ValueError("structure-fact-first Phase0 execution identity is not active")
+    expected_step = (
+        "causal_readonly" if args.stage4_structure_fact_first_phase0_causal
+        else "single_step_update" if args.stage4_validation_kernel_phase0_update
+        else "checkpoint_reproduction"
+    )
+    if identity.get("phase0Step") != expected_step:
+        raise ValueError("structure-fact-first Phase0 execution part is inconsistent")
+    owner = config.get("training", {}).get("ownerTrainingAuthorization", {})
+    if owner.get("phase0Step") != expected_step:
+        raise ValueError("structure-fact-first Phase0 Owner step is inconsistent")
+    bound_files = (
+        ("authorization", "authorizationPath", "authorizationSha256"),
+        ("execution consumption", "phase0ConsumptionPath", "phase0ConsumptionSha256"),
+        ("implementation authorization", "implementationAuthorizationPath", "implementationAuthorizationSha256"),
+        ("implementation consumption", "implementationConsumptionPath", "implementationConsumptionSha256"),
+        ("source config", "sourceConfigPath", "sourceConfigSha256"),
+        ("dataset manifest", "datasetManifestPath", "datasetManifestSha256"),
+        ("Autoencoder checkpoint", "autoencoderCheckpointPath", "autoencoderCheckpointSha256"),
+        ("trainer", "trainerPath", "trainerSha256"),
+        ("Validation Kernel runner", "runnerPath", "runnerSha256"),
+        ("CPU checker", "cpuCheckerPath", "cpuCheckerSha256"),
+    )
+    for label, path_key, sha_key in bound_files:
+        candidate = Path(str(identity.get(path_key, "")))
+        if not candidate.is_file() or sha256_file(candidate) != identity.get(sha_key):
+            raise ValueError(f"structure-fact-first Phase0 bound {label} is missing or changed")
+    authorization = read_json(Path(identity["authorizationPath"]))
+    consumption = read_json(Path(identity["phase0ConsumptionPath"]))
+    request_id = identity.get("requestId")
+    command_ref = identity.get("commandRef")
+    scope = identity.get("scope")
+    if (
+        authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or authorization.get("requestId") != request_id
+        or authorization.get("commandRef") != command_ref
+        or authorization.get("scope") != scope
+        or expected_step not in authorization.get("authorizedPhase0Steps", [])
+        or authorization.get("executionActions") != owner.get("executionActions")
+        or authorization.get("execution", {}).get("consumptionPath") != identity.get("phase0ConsumptionPath")
+        or consumption.get("status") != "structure_fact_first_phase0_execution_authorization_atomically_consumed"
+        or consumption.get("requestId") != request_id
+        or consumption.get("commandRef") != command_ref
+        or consumption.get("scope") != scope
+        or consumption.get("authorizationPath") != identity.get("authorizationPath")
+        or consumption.get("authorizationSha256") != identity.get("authorizationSha256")
+        or consumption.get("oneTimeConsumption") is not True
+        or expected_step not in consumption.get("authorizedPhase0Steps", [])
+    ):
+        raise ValueError("structure-fact-first Phase0 authorization lineage is invalid")
+    if (
+        owner.get("authorizationPath") != identity.get("authorizationPath")
+        or owner.get("authorizationSha256") != identity.get("authorizationSha256")
+        or owner.get("executionConsumptionPath") != identity.get("phase0ConsumptionPath")
+        or owner.get("executionConsumptionSha256") != identity.get("phase0ConsumptionSha256")
+        or owner.get("requestId") != request_id
+        or owner.get("commandRef") != command_ref
+        or owner.get("scope") != scope
+    ):
+        raise ValueError("structure-fact-first Phase0 config Owner binding changed")
+    fixed = identity.get("fixedTaskIdentity", {})
+    if (
+        fixed.get("architecture") != "stage4_structure_fact_first_dual_stage_generator_v1"
+        or fixed.get("sampleId") != args.overfit_sample_id
+        or fixed.get("sampleSplit") != "validation"
+        or fixed.get("seed") != int(config.get("training", {}).get("seed", -1))
+        or fixed.get("requiredBoundarySides") != ["west"]
+        or fixed.get("datasetSplit") != V7_MVP64_SPLIT_COUNTS
+        or fixed.get("phase0Resolution") != {"width": 256, "height": 192}
+        or fixed.get("timestep") != 999
+    ):
+        raise ValueError("structure-fact-first Phase0 fixed task identity changed")
+    if args.config.resolve() != Path(identity["sourceConfigPath"]).resolve() or sha256_file(args.config) != identity.get("sourceConfigSha256"):
+        raise ValueError("structure-fact-first Phase0 config CLI identity changed")
+    if args.dataset_package.resolve() != Path(identity["datasetManifestPath"]).resolve():
+        raise ValueError("structure-fact-first Phase0 dataset CLI identity changed")
+    if args.autoencoder_checkpoint.resolve() != Path(identity["autoencoderCheckpointPath"]).resolve():
+        raise ValueError("structure-fact-first Phase0 Autoencoder CLI identity changed")
+    if args.initial_denoiser_checkpoint is not None:
+        raise ValueError("structure-fact-first Phase0 forbids old Denoiser Checkpoint input")
+    if expected_step == "checkpoint_reproduction":
+        if args.phase0_diagnostic_checkpoint is None or not args.phase0_diagnostic_checkpoint.is_file():
+            raise ValueError("structure-fact-first Phase0 reproduction requires its diagnostic Checkpoint")
+        if (
+            project_path(args.phase0_diagnostic_checkpoint) != identity.get("diagnosticCheckpointPath")
+            or sha256_file(args.phase0_diagnostic_checkpoint) != identity.get("diagnosticCheckpointSha256")
+        ):
+            raise ValueError("structure-fact-first Phase0 diagnostic Checkpoint identity changed")
+    elif args.phase0_diagnostic_checkpoint is not None:
+        raise ValueError("structure-fact-first Phase0 causal/update execution cannot load a Denoiser Checkpoint")
+    return identity
+
+
 def run_stage4_validation_kernel_phase0(
     args,
     config,
@@ -5620,6 +5778,11 @@ def run_stage4_validation_kernel_phase0(
     event("autoencoder_checkpoint_read_and_load", "completed", frozen=True)
     diffusion = build_diffusion_schedule(config, device)
 
+    if args.stage4_structure_fact_first_phase0_causal:
+        return run_structure_fact_first_phase0_causal(
+            args, config, datasets, dataset_binding_evidence, overfit_evidence,
+            sample_bound_boundary_provenance, identity, model, diffusion, device, event, telemetry_path,
+        )
     if args.stage4_validation_kernel_phase0_update:
         return run_stage4_validation_kernel_phase0_update(
             args, config, package, datasets, dataset_binding_evidence, overfit_evidence,
@@ -5631,19 +5794,307 @@ def run_stage4_validation_kernel_phase0(
     )
 
 
+def run_structure_fact_first_phase0_causal(
+    args, config, datasets, dataset_binding_evidence, overfit_evidence,
+    sample_bound_boundary_provenance, identity, model, diffusion, device, event, telemetry_path,
+):
+    model.eval()
+    denoiser_before = state_dict_sha256(model.denoiser.state_dict())
+    autoencoder_before = state_dict_sha256(model.autoencoder.state_dict())
+    selected = build_optimization_datasets(datasets, overfit_evidence)
+    sample = selected["validation"][0]
+    image = sample["image"].unsqueeze(0).to(device)
+    conditions = sample["conditions"].unsqueeze(0).to(device).requires_grad_(True)
+    with torch.no_grad():
+        raw_latent = model.autoencoder.encode(image)
+        mean = raw_latent.mean(dim=(0, 2, 3), keepdim=True)
+        std = raw_latent.std(dim=(0, 2, 3), keepdim=True).clamp_min(1e-6)
+        clean_latent = (raw_latent - mean) / std
+    timestep = torch.tensor([999], dtype=torch.long, device=device)
+    set_seed(int(config["training"]["seed"]))
+    noise = torch.randn(clean_latent.shape, device=device, dtype=clean_latent.dtype)
+    noisy_latent = add_noise(clean_latent, noise, timestep, diffusion["alphasCumulative"])
+    alpha = diffusion["alphasCumulative"][timestep].view(-1, 1, 1, 1)
+    channel_names = tuple(STRUCTURE_FACT_FIRST_STAGE4_CHANNEL_LOSS_KEYS)
+
+    def decode_velocity(velocity):
+        predicted_clean = alpha.sqrt() * noisy_latent - (1.0 - alpha).sqrt() * velocity
+        return model.autoencoder.decode(predicted_clean * std + mean)
+
+    def deterministic_backend_state():
+        return {
+            "deterministicAlgorithmsEnabled": bool(torch.are_deterministic_algorithms_enabled()),
+            "cudnnDeterministic": bool(torch.backends.cudnn.deterministic),
+            "cudnnBenchmark": bool(torch.backends.cudnn.benchmark),
+            "cublasWorkspaceConfig": os.environ.get("CUBLAS_WORKSPACE_CONFIG"),
+        }
+
+    determinism_state_before = deterministic_backend_state()
+    determinism_state_after = None
+    route_reproduction_evidence = {}
+    try:
+        with stage4_fixed_preview_determinism_scope(True):
+            determinism_state_inside = deterministic_backend_state()
+            event("phase0_a_local_determinism_scope", "started", backendState=determinism_state_inside)
+            event("phase0_a_normal_forward", "started", backendState=determinism_state_inside)
+            try:
+                normal_velocity, normal_alignment = model.predict_velocity_with_stage4_structure_fact(
+                    noisy_latent, timestep, conditions,
+                )
+                normal_heads = {
+                    name: value.detach()
+                    for name, value in zip(channel_names, normal_alignment["structureHeadOutputs"])
+                }
+                normal_rgb = decode_velocity(normal_velocity)
+            except Exception as error:
+                event("phase0_a_normal_forward", "failed", backendState=deterministic_backend_state(), errorType=type(error).__name__, errorMessage=str(error))
+                raise
+            route_reproduction_evidence["normal"] = {
+                "backendState": deterministic_backend_state(),
+                "velocitySha256": tensor_sha256(normal_velocity),
+                "decodedRgbSha256": tensor_sha256(normal_rgb),
+            }
+            event("phase0_a_normal_forward", "completed", **route_reproduction_evidence["normal"])
+
+            def run_with_head_override(route):
+                handles = []
+                permutation = tuple(reversed(channel_names))
+                try:
+                    for index, name in enumerate(channel_names):
+                        if route == "zero":
+                            hook = lambda module, inputs, output: torch.zeros_like(output)
+                        else:
+                            source = normal_heads[permutation[index]]
+                            shift = (index + 1, (index * 3 + 1) % max(1, source.shape[-1]))
+                            transformed = torch.roll(source, shifts=shift, dims=(-2, -1))
+                            hook = lambda module, inputs, output, value=transformed: value.to(
+                                device=output.device, dtype=output.dtype
+                            )
+                        handles.append(model.denoiser.structure_fact_heads[name].register_forward_hook(hook))
+                    with torch.no_grad():
+                        velocity, alignment = model.predict_velocity_with_stage4_structure_fact(
+                            noisy_latent, timestep, conditions.detach(),
+                        )
+                        rgb = decode_velocity(velocity)
+                    return velocity, rgb, alignment
+                finally:
+                    for handle in handles:
+                        handle.remove()
+
+            def run_marked_causal_route(step, route, evidence_key):
+                event(step, "started", route=route, backendState=deterministic_backend_state())
+                try:
+                    result = run_with_head_override(route)
+                except Exception as error:
+                    event(step, "failed", route=route, backendState=deterministic_backend_state(), errorType=type(error).__name__, errorMessage=str(error))
+                    raise
+                route_reproduction_evidence[evidence_key] = {
+                    "route": route,
+                    "backendState": deterministic_backend_state(),
+                    "velocitySha256": tensor_sha256(result[0]),
+                    "decodedRgbSha256": tensor_sha256(result[1]),
+                }
+                event(step, "completed", **route_reproduction_evidence[evidence_key])
+                return result
+
+            zero_velocity, zero_rgb, zero_alignment = run_marked_causal_route("phase0_a_zero_forward", "zero", "zeroFirst")
+            shuffle_velocity, shuffle_rgb, shuffle_alignment = run_marked_causal_route("phase0_a_shuffle_forward", "shuffle", "shuffleFirst")
+            zero_velocity_repeat, zero_rgb_repeat, _ = run_marked_causal_route("phase0_a_zero_repeat_forward", "zero", "zeroRepeat")
+            shuffle_velocity_repeat, shuffle_rgb_repeat, _ = run_marked_causal_route("phase0_a_shuffle_repeat_forward", "shuffle", "shuffleRepeat")
+
+            route_tensors = {
+                "normal": (normal_velocity.detach(), normal_rgb.detach()),
+                "zero": (zero_velocity, zero_rgb),
+                "shuffle": (shuffle_velocity, shuffle_rgb),
+            }
+            route_hashes = {
+                name: {
+                    "velocitySha256": tensor_sha256(values[0]),
+                    "decodedRgbSha256": tensor_sha256(values[1]),
+                }
+                for name, values in route_tensors.items()
+            }
+            repeat_matches = {
+                "zeroVelocity": route_reproduction_evidence["zeroFirst"]["velocitySha256"] == route_reproduction_evidence["zeroRepeat"]["velocitySha256"],
+                "zeroDecodedRgb": route_reproduction_evidence["zeroFirst"]["decodedRgbSha256"] == route_reproduction_evidence["zeroRepeat"]["decodedRgbSha256"],
+                "shuffleVelocity": route_reproduction_evidence["shuffleFirst"]["velocitySha256"] == route_reproduction_evidence["shuffleRepeat"]["velocitySha256"],
+                "shuffleDecodedRgb": route_reproduction_evidence["shuffleFirst"]["decodedRgbSha256"] == route_reproduction_evidence["shuffleRepeat"]["decodedRgbSha256"],
+            }
+            event("phase0_a_repeat_determinism", "started", matches=repeat_matches, routes=route_reproduction_evidence)
+            try:
+                if not all(repeat_matches.values()):
+                    raise ValueError("structure-fact-first Phase0-A causal routes are not deterministic")
+            except Exception as error:
+                event("phase0_a_repeat_determinism", "failed", matches=repeat_matches, routes=route_reproduction_evidence, errorType=type(error).__name__, errorMessage=str(error))
+                raise
+            event("phase0_a_repeat_determinism", "completed", matches=repeat_matches)
+            differences = {}
+            event("phase0_a_causal_difference_qualification", "started")
+            try:
+                for route in ("zero", "shuffle"):
+                    velocity_mae = float((route_tensors["normal"][0] - route_tensors[route][0]).abs().mean().cpu())
+                    rgb_mae = float((route_tensors["normal"][1] - route_tensors[route][1]).abs().mean().cpu())
+                    if not math.isfinite(velocity_mae) or not math.isfinite(rgb_mae) or velocity_mae <= 0.0 or rgb_mae <= 0.0:
+                        raise ValueError(f"structure-fact-first Phase0-A {route} route has no finite nonzero causal response")
+                    differences[route] = {"velocityMaeFromNormal": velocity_mae, "decodedRgbMaeFromNormal": rgb_mae}
+            except Exception as error:
+                event("phase0_a_causal_difference_qualification", "failed", errorType=type(error).__name__, errorMessage=str(error))
+                raise
+            event("phase0_a_causal_difference_qualification", "completed")
+            event("phase0_a_local_determinism_scope", "completed", backendState=deterministic_backend_state())
+    finally:
+        determinism_state_after = deterministic_backend_state()
+        event(
+            "phase0_a_local_determinism_scope_restore",
+            "completed",
+            backendStateBefore=determinism_state_before,
+            backendStateAfter=determinism_state_after,
+            restored=determinism_state_after == determinism_state_before,
+        )
+
+    if determinism_state_after != determinism_state_before:
+        raise ValueError("structure-fact-first Phase0-A deterministic backend state was not restored")
+
+    head_parameters = [
+        parameter
+        for name in channel_names
+        for parameter in model.denoiser.structure_fact_heads[name].parameters()
+    ]
+    stage_b_parameters = [
+        next(model.denoiser.structure_fact_stage_b_adapters[name].parameters())
+        for name in ("level0", "level1", "middle", "up1", "up0")
+    ]
+    base_parameter = model.denoiser.latent_stem.weight
+    stage_a_parameter = next(model.denoiser.structure_fact_shared_trunk.parameters())
+    event("phase0_a_gradient_qualification", "started")
+    try:
+        gradients = torch.autograd.grad(
+            normal_velocity.square().mean(),
+            (stage_a_parameter, *head_parameters, *stage_b_parameters, base_parameter, conditions),
+            retain_graph=False,
+            create_graph=False,
+            allow_unused=True,
+        )
+        if any(value is None or not bool(torch.isfinite(value).all()) or float(value.abs().sum()) <= 0.0 for value in gradients):
+            raise ValueError("structure-fact-first Phase0-A response gradient route is missing or invalid")
+        condition_gradient = gradients[-1]
+        condition_norms = [float(condition_gradient[:, index:index + 1].abs().mean().cpu()) for index in range(23)]
+        if any(not math.isfinite(value) or value <= 0.0 for value in condition_norms):
+            raise ValueError("structure-fact-first Phase0-A original 23-channel response is incomplete")
+    except Exception as error:
+        event("phase0_a_gradient_qualification", "failed", errorType=type(error).__name__, errorMessage=str(error))
+        raise
+    event("phase0_a_gradient_qualification", "completed")
+
+    base_height, base_width = clean_latent.shape[-2:]
+    if tuple(channel_names) != STAGE4_STRUCTURE_FACT_CHANNEL_ORDER:
+        raise ValueError("structure-fact-first Phase0-A topology channel order changed")
+    synthetic = torch.zeros((1, len(channel_names), base_height, base_width), device=device)
+    synthetic[:, 0, :, : max(1, base_width // 8)] = 1.0
+    synthetic[:, 1, :, 0] = 1.0
+    synthetic[:, 2, base_height // 3: max(base_height // 3 + 1, base_height * 2 // 3), base_width // 3: max(base_width // 3 + 1, base_width * 2 // 3)] = 1.0
+    scale_sizes = {
+        "level0": (base_height, base_width),
+        "level1": (max(1, base_height // 2), max(1, base_width // 2)),
+        "middle": (max(1, base_height // 4), max(1, base_width // 4)),
+        "up1": (max(1, base_height // 2), max(1, base_width // 2)),
+        "up0": (base_height, base_width),
+    }
+    topology = {}
+    event("phase0_a_multiscale_topology_qualification", "started")
+    try:
+        for scale, size in scale_sizes.items():
+            transferred = resize_stage4_structure_fact_layout(
+                synthetic,
+                size=size,
+                channel_order=channel_names,
+            )
+            row = {
+                "shape": list(transferred.shape),
+                "finite": bool(torch.isfinite(transferred).all()),
+                "westBoundaryContact": float(transferred[:, 1, :, 0].sum().cpu()),
+                "routeNonEmptySupport": int(torch.count_nonzero(transferred[:, 0:2] > 0).cpu()),
+                "footprintNonEmptyArea": int(torch.count_nonzero(transferred[:, 2] > 0).cpu()),
+            }
+            if not row["finite"] or row["westBoundaryContact"] <= 0.0 or row["routeNonEmptySupport"] <= 0 or row["footprintNonEmptyArea"] <= 0:
+                raise ValueError(f"structure-fact-first Phase0-A bilinear topology evidence failed:{scale}")
+            topology[scale] = row
+    except Exception as error:
+        event("phase0_a_multiscale_topology_qualification", "failed", errorType=type(error).__name__, errorMessage=str(error))
+        raise
+    event("phase0_a_multiscale_topology_qualification", "completed")
+
+    torch.cuda.synchronize(0)
+    cuda = {
+        "deviceIndex": 0,
+        "deviceName": torch.cuda.get_device_name(0),
+        "memoryAllocatedBytes": int(torch.cuda.memory_allocated(0)),
+        "memoryReservedBytes": int(torch.cuda.memory_reserved(0)),
+        "peakMemoryAllocatedBytes": int(torch.cuda.max_memory_allocated(0)),
+        "peakMemoryReservedBytes": int(torch.cuda.max_memory_reserved(0)),
+    }
+    denoiser_after = state_dict_sha256(model.denoiser.state_dict())
+    autoencoder_after = state_dict_sha256(model.autoencoder.state_dict())
+    if denoiser_before != denoiser_after or autoencoder_before != autoencoder_after:
+        raise ValueError("structure-fact-first Phase0-A changed model state")
+    report = {
+        "schemaVersion": "ai-painter-stage4-structure-fact-first-phase0-a-causal-report-v1",
+        "status": "structure_fact_first_phase0_a_causal_and_topology_qualification_passed_closed",
+        "recordedAtUtc": utc_now(),
+        "runId": identity["runId"],
+        "dataset": dataset_binding_evidence,
+        "sample": overfit_evidence,
+        "boundaryProvenance": sample_bound_boundary_provenance,
+        "routeTensorHashes": route_hashes,
+        "routeReproductionEvidence": route_reproduction_evidence,
+        "repeatMatches": repeat_matches,
+        "determinismScope": {
+            "backendStateBefore": determinism_state_before,
+            "backendStateInside": determinism_state_inside,
+            "backendStateAfter": determinism_state_after,
+            "restored": determinism_state_after == determinism_state_before,
+        },
+        "causalDifferences": differences,
+        "stageAHeadCount": len(channel_names),
+        "stageBScaleCount": len(stage_b_parameters),
+        "conditionChannelGradientNorms": condition_norms,
+        "topologyPreservation": topology,
+        "cuda": cuda,
+        "denoiserStateSha256Before": denoiser_before,
+        "denoiserStateSha256After": denoiser_after,
+        "autoencoderStateSha256Before": autoencoder_before,
+        "autoencoderStateSha256After": autoencoder_after,
+        "modelStateUnchanged": True,
+        "optimizerCreated": False,
+        "backwardMethodExecuted": False,
+        "checkpointWritten": False,
+        "telemetryPath": project_path(telemetry_path),
+    }
+    topology_path = args.output_dir / "phase0-a-topology-report.json"
+    report_path = args.output_dir / "phase0-a-causal-report.json"
+    write_json(topology_path, {"schemaVersion": "ai-painter-stage4-phase0-a-bilinear-topology-report-v1", "status": "bilinear_topology_preserved_at_all_five_scales", "scales": topology})
+    write_json(report_path, report)
+    print(json.dumps({**report, "reportPath": project_path(report_path), "reportSha256": sha256_file(report_path), "topologyReportPath": project_path(topology_path), "topologyReportSha256": sha256_file(topology_path)}, ensure_ascii=False, indent=2))
+    return 0
+
+
 def run_stage4_validation_kernel_phase0_update(
     args, config, package, datasets, dataset_binding_evidence, overfit_evidence,
     sample_bound_boundary_provenance, identity, model, diffusion, device, event, telemetry_path,
 ):
-    event("latent_normalization", "started")
-    latent_normalization = compute_latent_normalization(model, datasets["train"], device)
-    event("latent_normalization", "completed", sampleCount=latent_normalization["sampleCount"])
+    structure_phase0 = identity.get("schemaVersion") == "ai-painter-stage4-structure-fact-first-phase0-execution-identity-v1"
     selected = build_optimization_datasets(datasets, overfit_evidence)
+    event("latent_normalization", "started")
+    latent_normalization = compute_latent_normalization(
+        model, selected["train"] if structure_phase0 else datasets["train"], device
+    )
+    event("latent_normalization", "completed", sampleCount=latent_normalization["sampleCount"])
     loader = torch.utils.data.DataLoader(selected["train"], batch_size=1, shuffle=False, num_workers=0)
     event("optimizer_creation", "started")
     optimizer = torch.optim.AdamW(model.denoiser.parameters(), lr=float(config["training"]["denoiserLearningRate"]))
     event("optimizer_creation", "completed")
     before = state_dict_sha256(model.denoiser.state_dict())
+    autoencoder_before = state_dict_sha256(model.autoencoder.state_dict())
     event("single_training_step", "started", deterministicAlgorithmsEnabled=torch.are_deterministic_algorithms_enabled())
     metrics = train_epoch(
         model, loader, optimizer, diffusion, latent_normalization, device, config, 0,
@@ -5656,12 +6107,44 @@ def run_stage4_validation_kernel_phase0_update(
     gradient_nonzero_count = sum(int(torch.count_nonzero(value)) for value in gradients)
     if gradient_abs_sum <= 0.0 or gradient_nonzero_count <= 0:
         raise ValueError("Stage4 validation kernel Phase0 gradient is zero")
+    gradient_groups = {}
+    if structure_phase0:
+        groups = {
+            **{
+                f"stageA.{name}": tuple(model.denoiser.structure_fact_heads[name].parameters())
+                for name in STRUCTURE_FACT_FIRST_STAGE4_CHANNEL_LOSS_KEYS
+            },
+            **{
+                f"stageB.{name}": tuple(model.denoiser.structure_fact_stage_b_adapters[name].parameters())
+                for name in ("level0", "level1", "middle", "up1", "up0")
+            },
+            "baseDenoiser": (model.denoiser.latent_stem.weight,),
+        }
+        for name, parameters in groups.items():
+            values = [parameter.grad for parameter in parameters if parameter.grad is not None]
+            finite = bool(values) and all(bool(torch.isfinite(value).all()) for value in values)
+            absolute_sum = sum(float(value.abs().sum()) for value in values)
+            if not finite or absolute_sum <= 0.0:
+                raise ValueError(f"structure-fact-first Phase0-B required gradient is missing:{name}")
+            gradient_groups[name] = {"finite": True, "absoluteSum": absolute_sum}
+    optimizer_steps = {
+        int(value["step"].detach().cpu()) if torch.is_tensor(value.get("step")) else int(value.get("step", 0))
+        for value in optimizer.state.values()
+    }
+    if structure_phase0 and optimizer_steps != {1}:
+        raise ValueError("structure-fact-first Phase0-B optimizer step count is not exactly one")
     after = state_dict_sha256(model.denoiser.state_dict())
+    autoencoder_after = state_dict_sha256(model.autoencoder.state_dict())
     if before == after:
         raise ValueError("Stage4 validation kernel Phase0 optimizer step did not change model state")
+    if autoencoder_before != autoencoder_after:
+        raise ValueError("Stage4 validation kernel Phase0 changed the frozen Autoencoder")
     event("single_training_step", "completed", gradientFinite=True, gradientNonzero=True, weightsChanged=True)
     checkpoint_path = args.output_dir / "phase0-diagnostic-checkpoint.pt"
     event("diagnostic_checkpoint_write", "started")
+    selected_sample = selected["validation"][0]
+    condition_sha256 = tensor_sha256(selected_sample["conditions"])
+    effective_config_sha256 = phase0_effective_config_sha256(config) if structure_phase0 else sha256_file(args.config)
     checkpoint = {
         "schemaVersion": "ai-painter-stage4-validation-kernel-phase0-diagnostic-checkpoint-v1",
         "status": "phase0_diagnostic_checkpoint_nonpromotable_not_training_initialization",
@@ -5679,20 +6162,34 @@ def run_stage4_validation_kernel_phase0_update(
         "latentNormalization": serialize_latent_normalization(latent_normalization),
         "configPath": project_path(args.config),
         "configSha256": sha256_file(args.config),
+        "phase0EffectiveConfigSha256": effective_config_sha256,
         "datasetManifestPath": project_path(args.dataset_package),
         "datasetManifestSha256": sha256_file(args.dataset_package),
         "autoencoderCheckpointPath": project_path(args.autoencoder_checkpoint),
         "autoencoderCheckpointSha256": sha256_file(args.autoencoder_checkpoint),
         "sampleId": overfit_evidence["sampleId"],
         "sampleSplit": overfit_evidence["selectedSplit"],
+        "conditionTensorSha256": condition_sha256,
         "seed": int(config["training"]["seed"]),
         "requiredBoundarySides": ["west"],
         "initialDenoiserStateSha256": before,
         "finalDenoiserStateSha256": after,
+        "autoencoderStateSha256": autoencoder_after,
+        "executionAuthorizationIdentity": {
+            "requestId": identity.get("requestId"),
+            "commandRef": identity.get("commandRef"),
+            "scope": identity.get("scope"),
+            "authorizationPath": identity.get("authorizationPath"),
+            "authorizationSha256": identity.get("authorizationSha256"),
+            "consumptionPath": identity.get("phase0ConsumptionPath"),
+            "consumptionSha256": identity.get("phase0ConsumptionSha256"),
+        },
         "gradientFinite": True,
         "gradientNonzero": True,
         "gradientAbsSum": gradient_abs_sum,
         "gradientNonzeroCount": gradient_nonzero_count,
+        "requiredGradientGroups": gradient_groups,
+        "optimizerStepCount": 1 if structure_phase0 else None,
         "formalInferenceEligible": False,
         "checkpointPromotionEligible": False,
         "fullTrainingInitializationEligible": False,
@@ -5716,6 +6213,12 @@ def run_stage4_validation_kernel_phase0_update(
         "initialDenoiserStateSha256": before,
         "finalDenoiserStateSha256": after,
         "weightsChanged": before != after,
+        "initialAutoencoderStateSha256": autoencoder_before,
+        "finalAutoencoderStateSha256": autoencoder_after,
+        "autoencoderWeightsChanged": autoencoder_before != autoencoder_after,
+        "requiredGradientGroups": gradient_groups,
+        "optimizerStepCount": 1 if structure_phase0 else None,
+        "conditionTensorSha256": condition_sha256,
         "checkpointPath": project_path(checkpoint_path),
         "checkpointSha256": sha256_file(checkpoint_path),
         "telemetryPath": project_path(telemetry_path),
@@ -5735,11 +6238,16 @@ def run_stage4_validation_kernel_phase0_reproduce(
 ):
     event("diagnostic_checkpoint_read", "started")
     checkpoint = torch.load(args.phase0_diagnostic_checkpoint, map_location="cpu", weights_only=False)
+    structure_phase0 = identity.get("schemaVersion") == "ai-painter-stage4-structure-fact-first-phase0-execution-identity-v1"
     if (
         checkpoint.get("schemaVersion") != "ai-painter-stage4-validation-kernel-phase0-diagnostic-checkpoint-v1"
         or checkpoint.get("status") != "phase0_diagnostic_checkpoint_nonpromotable_not_training_initialization"
         or checkpoint.get("runId") != identity.get("runId")
-        or checkpoint.get("configSha256") != sha256_file(args.config)
+        or (
+            checkpoint.get("phase0EffectiveConfigSha256") != phase0_effective_config_sha256(config)
+            if structure_phase0
+            else checkpoint.get("configSha256") != sha256_file(args.config)
+        )
         or checkpoint.get("datasetManifestSha256") != sha256_file(args.dataset_package)
         or checkpoint.get("autoencoderCheckpointSha256") != sha256_file(args.autoencoder_checkpoint)
         or checkpoint.get("sampleId") != overfit_evidence.get("sampleId")
@@ -5750,10 +6258,16 @@ def run_stage4_validation_kernel_phase0_reproduce(
     ):
         raise ValueError("Stage4 validation kernel diagnostic Checkpoint contract is invalid")
     model.denoiser.load_state_dict(checkpoint["denoiserState"])
+    model.denoiser.eval()
     model_state_sha = state_dict_sha256(model.denoiser.state_dict())
     if model_state_sha != checkpoint.get("finalDenoiserStateSha256"):
         raise ValueError("Stage4 validation kernel restored model state identity changed")
     latent_normalization = load_latent_normalization(checkpoint, device)
+    if structure_phase0:
+        torch.set_rng_state(checkpoint["cpuRngState"])
+        torch.cuda.set_rng_state_all(checkpoint["cudaRngStates"])
+        random.setstate(checkpoint["pythonRandomState"])
+        np.random.set_state(checkpoint["numpyRandomState"])
     event("diagnostic_checkpoint_read", "completed", denoiserStateSha256=model_state_sha)
     selected = build_optimization_datasets(datasets, overfit_evidence)
     preview_root = args.output_dir / "fixed-preview"
@@ -5768,6 +6282,8 @@ def run_stage4_validation_kernel_phase0_reproduce(
         raise ValueError("Stage4 validation kernel fixed preview artifact is missing")
     if artifact.get("denoiserStateSha256") != model_state_sha:
         raise ValueError("Stage4 validation kernel preview model state identity changed")
+    if structure_phase0 and artifact.get("conditionTensorSha256") != checkpoint.get("conditionTensorSha256"):
+        raise ValueError("structure-fact-first Phase0 preview condition identity changed")
     event("fixed_preview_generation", "completed", rgbTensorSha256=artifact.get("rgbTensorSha256"), previewSha256=artifact.get("previewSha256"))
     report = {
         "schemaVersion": "ai-painter-stage4-validation-kernel-phase0-reproduction-report-v1",
@@ -5797,6 +6313,16 @@ def run_stage4_validation_kernel_phase0_reproduce(
     write_json(report_path, report)
     print(json.dumps({**report, "reportPath": project_path(report_path), "reportSha256": sha256_file(report_path)}, ensure_ascii=False, indent=2))
     return 0
+
+
+def phase0_effective_config_sha256(config):
+    value = deepcopy(config)
+    training = value.get("training", {})
+    training.pop("ownerTrainingAuthorization", None)
+    training["trainingAuthorizationStatus"] = STRUCTURE_FACT_FIRST_STAGE4_PHASE0_STATUS
+    return hashlib.sha256(
+        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()
 
 
 def build_diffusion_schedule(config, device):
@@ -8152,11 +8678,18 @@ def is_structure_fact_first_stage4(config):
     return config.get("denoiserArchitecture") == "stage4_structure_fact_first_dual_stage_generator_v1"
 
 
+def is_registered_stage_control_config(config):
+    status = str(config.get("training", {}).get("trainingAuthorizationStatus", ""))
+    return status in FORMAL_MODE_REGISTRY.snapshot()
+
+
 def uses_stage4_unified_preview_sampling_contract(config):
     contract = config.get("training", {}).get("stage4UnifiedTrainingPreviewSamplingContract", {})
     try:
         execution_grant = resolve_stage_execution_grant(config)
     except ValueError:
+        if is_registered_stage_control_config(config):
+            raise
         return False
     return (
         execution_grant.preview_constraints.get("enabled") is True

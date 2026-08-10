@@ -31,6 +31,9 @@ V9_STAGE4_VALIDATION_KERNEL_SMOKE_STATUS = (
 STRUCTURE_FACT_FIRST_STAGE4_INACTIVE_STATUS = (
     "stage4_structure_fact_first_dual_stage_cpu_supported_inactive"
 )
+STRUCTURE_FACT_FIRST_STAGE4_PHASE0_STATUS = (
+    "owner_authorized_stage4_structure_fact_first_phase0_engineering"
+)
 SYNTHETIC_EXTENSION_TEST_STATUS = "synthetic_inactive_stage4_extension_contract_test_only"
 
 
@@ -113,6 +116,16 @@ FORMAL_MODE_REGISTRY = ModeRegistry(
             "structure_fact_first_stage4_adapter",
             "validation",
             False,
+        ),
+        ModeSpec(
+            "structure_fact_first_stage4_phase0",
+            STRUCTURE_FACT_FIRST_STAGE4_PHASE0_STATUS,
+            _STRUCTURE_FACT_FIRST,
+            4,
+            "phase0_engineering",
+            "structure_fact_first_phase0_adapter",
+            "validation",
+            True,
         ),
     )
 )

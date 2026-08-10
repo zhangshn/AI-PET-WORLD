@@ -5,6 +5,49 @@ import math
 from ai_painter.training.torch_runtime import require_torch
 
 
+STAGE4_STRUCTURE_FACT_CHANNEL_ORDER = (
+    "terrain_path_ground",
+    "route_required_boundary",
+    "object_footprints",
+    "object_tree",
+    "object_rock",
+    "object_vegetation",
+)
+STAGE4_STRUCTURE_FACT_DISCRETE_CHANNELS = ("route_required_boundary",)
+
+
+def resize_stage4_structure_fact_layout(structure_layout, size, channel_order=STAGE4_STRUCTURE_FACT_CHANNEL_ORDER):
+    """Resize Stage A facts without erasing one-pixel discrete boundary topology."""
+    torch = require_torch()
+    order = tuple(channel_order)
+    if order != STAGE4_STRUCTURE_FACT_CHANNEL_ORDER:
+        raise ValueError(
+            "Stage 4 structure-fact channel order must match the immutable six-channel contract"
+        )
+    if structure_layout.ndim != 4:
+        raise ValueError("Stage 4 structure-fact layout must be a four-dimensional tensor")
+    if int(structure_layout.shape[1]) != len(STAGE4_STRUCTURE_FACT_CHANNEL_ORDER):
+        raise ValueError("Stage 4 structure-fact layout must contain exactly six channels")
+
+    continuous = torch.nn.functional.interpolate(
+        structure_layout,
+        size=size,
+        mode="bilinear",
+        align_corners=False,
+    )
+    resized_channels = []
+    for index, channel_id in enumerate(STAGE4_STRUCTURE_FACT_CHANNEL_ORDER):
+        if channel_id in STAGE4_STRUCTURE_FACT_DISCRETE_CHANNELS:
+            resized_channels.append(torch.nn.functional.interpolate(
+                structure_layout[:, index:index + 1],
+                size=size,
+                mode="nearest",
+            ))
+        else:
+            resized_channels.append(continuous[:, index:index + 1])
+    return torch.cat(resized_channels, dim=1)
+
+
 def build_complete_world_system(config: dict[str, object]):
     """Build the project-owned complete-world model with newly initialized weights."""
     torch = require_torch()
@@ -20,14 +63,7 @@ def build_complete_world_system(config: dict[str, object]):
     condition_channel_types = config.get("conditionChannelTypes", {})
     discrete_condition_ids = list(condition_channel_types.get("discrete", []))
     continuous_condition_ids = list(condition_channel_types.get("continuous", []))
-    stage4_alignment_readout_channels = (
-        "terrain_path_ground",
-        "route_required_boundary",
-        "object_footprints",
-        "object_tree",
-        "object_rock",
-        "object_vegetation",
-    )
+    stage4_alignment_readout_channels = STAGE4_STRUCTURE_FACT_CHANNEL_ORDER
     stage4_object_alignment_channels = (
         "object_footprints",
         "object_tree",
@@ -427,11 +463,9 @@ def build_complete_world_system(config: dict[str, object]):
             condition1 = self.condition_down1(condition0)
             if structure_fact_layout is not None:
                 condition1 = condition1 + self.structure_fact_stage_b_adapters["level1"](
-                    functional.interpolate(
+                    resize_stage4_structure_fact_layout(
                         structure_fact_layout,
                         size=condition1.shape[-2:],
-                        mode="bilinear",
-                        align_corners=False,
                     )
                 )
             level1 = self.block1(
@@ -441,11 +475,9 @@ def build_complete_world_system(config: dict[str, object]):
             condition2 = self.condition_down2(condition1)
             if structure_fact_layout is not None:
                 condition2 = condition2 + self.structure_fact_stage_b_adapters["middle"](
-                    functional.interpolate(
+                    resize_stage4_structure_fact_layout(
                         structure_fact_layout,
                         size=condition2.shape[-2:],
-                        mode="bilinear",
-                        align_corners=False,
                     )
                 )
             middle = self.fuse2(torch.cat((self.latent_down2(level1), condition2), dim=1))
@@ -459,11 +491,9 @@ def build_complete_world_system(config: dict[str, object]):
                 decoded_up1 = decoded_up1 + self.typed_condition_adapter_up1(typed_up1)
             if structure_fact_layout is not None:
                 decoded_up1 = decoded_up1 + self.structure_fact_stage_b_adapters["up1"](
-                    functional.interpolate(
+                    resize_stage4_structure_fact_layout(
                         structure_fact_layout,
                         size=decoded_up1.shape[-2:],
-                        mode="bilinear",
-                        align_corners=False,
                     )
                 )
             if self.v9_object_projection_up1 is not None:
@@ -486,11 +516,9 @@ def build_complete_world_system(config: dict[str, object]):
                 decoded_up0 = decoded_up0 + self.typed_condition_adapter_up0(typed_up0)
             if structure_fact_layout is not None:
                 decoded_up0 = decoded_up0 + self.structure_fact_stage_b_adapters["up0"](
-                    functional.interpolate(
+                    resize_stage4_structure_fact_layout(
                         structure_fact_layout,
                         size=decoded_up0.shape[-2:],
-                        mode="bilinear",
-                        align_corners=False,
                     )
                 )
             if self.v9_object_projection_up0 is not None:

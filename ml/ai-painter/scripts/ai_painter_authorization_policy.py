@@ -35,6 +35,15 @@ _OWNER_FIELDS = {
     "executionConsumptionSha256",
     "implementationConsumptionPath",
     "implementationConsumptionSha256",
+    "implementationAuthorizationPath",
+    "implementationAuthorizationSha256",
+    "requestId",
+    "commandRef",
+    "scope",
+    "executionActions",
+    "explicitlyDeniedActions",
+    "phase0Step",
+    "executionState",
     "status",
     "checkpointLoadingAuthorized",
     "optimizerCreationAuthorized",
@@ -52,6 +61,32 @@ _OWNER_FIELDS = {
     "runtimeFrameAuthorized",
     "worldEntryAuthorized",
     "automaticRetryAuthorized",
+}
+
+_PHASE0_MODE_ID = "structure_fact_first_stage4_phase0"
+_PHASE0_ALLOWED_ACTIONS = frozenset(
+    {
+        ExecutionAction.SELECT_BOUND_SAMPLE,
+        ExecutionAction.INSPECT_AUTOENCODER_IDENTITY,
+        ExecutionAction.LOAD_AUTOENCODER,
+        ExecutionAction.INSPECT_CHECKPOINT_IDENTITY,
+        ExecutionAction.CREATE_OPTIMIZER,
+        ExecutionAction.EXECUTE_BACKWARD,
+        ExecutionAction.MUTATE_MODEL_WEIGHTS,
+        ExecutionAction.WRITE_DIAGNOSTIC_CHECKPOINT,
+    }
+)
+_PHASE0_REQUIRED_ACTIONS = {
+    "causal_readonly": frozenset(
+        {
+            ExecutionAction.SELECT_BOUND_SAMPLE,
+            ExecutionAction.INSPECT_AUTOENCODER_IDENTITY,
+            ExecutionAction.LOAD_AUTOENCODER,
+            ExecutionAction.INSPECT_CHECKPOINT_IDENTITY,
+        }
+    ),
+    "single_step_update": frozenset(_PHASE0_ALLOWED_ACTIONS),
+    "checkpoint_reproduction": frozenset(_PHASE0_ALLOWED_ACTIONS),
 }
 
 
@@ -127,6 +162,8 @@ def _actions_for_mode(spec: ModeSpec) -> set[ExecutionAction]:
                 ExecutionAction.WRITE_SMOKE_CHECKPOINT,
             }
         )
+    elif spec.execution_kind == "phase0_engineering":
+        allowed.update(_PHASE0_ALLOWED_ACTIONS)
     if spec.architecture == "multiscale_condition_unet_v7" and spec.execution_kind == "single_sample_smoke":
         allowed.add(ExecutionAction.LOAD_PARENT_DENOISER)
     return allowed
@@ -154,6 +191,7 @@ def _validate_owner_training_authorization(
             raise ValueError("inactive Stage3/Stage4 mode has an active Owner authorization status")
         if any(value is True for key, value in owner.items() if key.endswith("Authorized") or key.endswith("AuthorizedNow")):
             raise ValueError("inactive Stage3/Stage4 mode opens an execution action")
+    verify_files = bool(verify_files or spec.active_execution)
     if verify_files:
         authorization_path = _verify_bound_file(
             project_root,
@@ -162,31 +200,118 @@ def _validate_owner_training_authorization(
             "Owner authorization",
         )
         authorization = json.loads(authorization_path.read_text(encoding="utf-8"))
+        command_ref = owner.get("commandRef") or owner.get("authorizationId")
+        scope = owner.get("scope")
+        authorization_command_ref = authorization.get("commandRef") or authorization.get(
+            "ownerDecision", {}
+        ).get("commandRef")
+        authorization_scope = authorization.get("scope") or authorization.get(
+            "ownerDecision", {}
+        ).get("scope")
         if (
-            authorization.get("status") != "resolved_owner_authorized"
-            or authorization.get("requestId") != owner.get("authorizationId")
-            or authorization.get("ownerDecision", {}).get("commandRef")
-            != owner.get("authorizationId")
+            authorization.get("status") not in {
+                "resolved_owner_authorized",
+                "resolved_owner_authorized_not_consumed",
+            }
+            or authorization.get("requestId") != (owner.get("requestId") or owner.get("authorizationId"))
+            or authorization_command_ref != command_ref
+            or (scope is not None and authorization_scope != scope)
         ):
             raise ValueError("Owner authorization immutable identity is invalid")
-        consumption_path = _verify_bound_file(
-            project_root,
-            str(owner.get("executionConsumptionPath")),
-            str(owner.get("executionConsumptionSha256")),
-            "execution consumption",
-        )
-        consumption = json.loads(consumption_path.read_text(encoding="utf-8"))
-        if (
-            consumption.get("oneTimeConsumption") is not True
-            or consumption.get("authorizationSha256") != owner.get("authorizationSha256")
-        ):
-            raise ValueError("execution consumption immutable identity is invalid")
+        execution_state = owner.get("executionState", "consumed")
+        if spec.mode_id == _PHASE0_MODE_ID and execution_state == "preflight_unconsumed":
+            if owner.get("executionConsumptionPath") is not None or owner.get("executionConsumptionSha256") is not None:
+                raise ValueError("unconsumed Phase0 preflight cannot carry an execution consumption")
+            if authorization.get("status") != "resolved_owner_authorized_not_consumed":
+                raise ValueError("unconsumed Phase0 preflight authorization state is invalid")
+        else:
+            if execution_state != "consumed":
+                raise ValueError("active execution consumption state is invalid")
+            consumption_path = _verify_bound_file(
+                project_root,
+                str(owner.get("executionConsumptionPath")),
+                str(owner.get("executionConsumptionSha256")),
+                "execution consumption",
+            )
+            consumption = json.loads(consumption_path.read_text(encoding="utf-8"))
+            if (
+                consumption.get("oneTimeConsumption") is not True
+                or consumption.get("authorizationSha256") != owner.get("authorizationSha256")
+                or consumption.get("requestId") != (owner.get("requestId") or owner.get("authorizationId"))
+                or consumption.get("commandRef") != command_ref
+                or (scope is not None and consumption.get("scope") != scope)
+            ):
+                raise ValueError("execution consumption immutable identity is invalid")
+        if spec.mode_id == _PHASE0_MODE_ID:
+            implementation_authorization_path = _verify_bound_file(
+                project_root,
+                str(owner.get("implementationAuthorizationPath")),
+                str(owner.get("implementationAuthorizationSha256")),
+                "implementation authorization",
+            )
+            implementation_consumption_path = _verify_bound_file(
+                project_root,
+                str(owner.get("implementationConsumptionPath")),
+                str(owner.get("implementationConsumptionSha256")),
+                "implementation consumption",
+            )
+            implementation_authorization = json.loads(
+                implementation_authorization_path.read_text(encoding="utf-8")
+            )
+            implementation_consumption = json.loads(
+                implementation_consumption_path.read_text(encoding="utf-8")
+            )
+            if (
+                implementation_authorization.get("status") != "resolved_owner_authorized_not_consumed"
+                or implementation_consumption.get("requestId") != implementation_authorization.get("requestId")
+                or implementation_consumption.get("commandRef") != implementation_authorization.get("commandRef")
+                or implementation_consumption.get("scope") != implementation_authorization.get("scope")
+                or implementation_consumption.get("authorizationSha256")
+                != owner.get("implementationAuthorizationSha256")
+                or implementation_consumption.get("oneTimeConsumption") is not True
+            ):
+                raise ValueError("implementation authorization lineage is invalid")
+            auth_actions = authorization.get("executionActions")
+            owner_actions = owner.get("executionActions")
+            if not isinstance(auth_actions, list) or auth_actions != owner_actions:
+                raise ValueError("Owner execution action identity is invalid")
+            try:
+                normalized_actions = frozenset(ExecutionAction(value) for value in auth_actions)
+            except ValueError as error:
+                raise ValueError("Owner execution authorization contains an unknown action") from error
+            phase0_step = str(owner.get("phase0Step", ""))
+            required_actions = _PHASE0_REQUIRED_ACTIONS.get(phase0_step)
+            if required_actions is None:
+                raise ValueError("Owner Phase0 step is unknown")
+            if normalized_actions != required_actions:
+                raise ValueError("Owner Phase0 actions are incomplete, excessive, or crossed")
+            if normalized_actions - _PHASE0_ALLOWED_ACTIONS:
+                raise ValueError("Owner Phase0 action is outside the ModeSpec")
+            denied_values = owner.get("explicitlyDeniedActions")
+            if not isinstance(denied_values, list):
+                raise ValueError("Owner denied action classification is missing")
+            try:
+                normalized_denied = frozenset(ExecutionAction(value) for value in denied_values)
+            except ValueError as error:
+                raise ValueError("Owner denied action contains an unknown action") from error
+            if normalized_actions & normalized_denied or normalized_actions | normalized_denied != ALL_ACTIONS:
+                raise ValueError("Owner action classification is conflicting or incomplete")
     return {
         "authorizationId": owner.get("authorizationId"),
         "authorizationPath": owner.get("authorizationPath"),
         "authorizationSha256": owner.get("authorizationSha256"),
         "executionConsumptionPath": owner.get("executionConsumptionPath"),
         "executionConsumptionSha256": owner.get("executionConsumptionSha256"),
+        "implementationAuthorizationPath": owner.get("implementationAuthorizationPath"),
+        "implementationAuthorizationSha256": owner.get("implementationAuthorizationSha256"),
+        "implementationConsumptionPath": owner.get("implementationConsumptionPath"),
+        "implementationConsumptionSha256": owner.get("implementationConsumptionSha256"),
+        "requestId": owner.get("requestId") or owner.get("authorizationId"),
+        "commandRef": owner.get("commandRef") or owner.get("authorizationId"),
+        "scope": owner.get("scope"),
+        "phase0Step": owner.get("phase0Step"),
+        "executionState": owner.get("executionState", "consumed"),
+        "executionActions": owner.get("executionActions"),
         "status": owner.get("status"),
     }
 
@@ -246,8 +371,15 @@ def resolve_stage_execution_grant(
         "previewConstraints": preview_constraints,
         "authorizationIdentity": dict(owner_identity),
     }
+    mode_actions = _actions_for_mode(spec)
+    owner_actions = owner_identity.get("executionActions")
+    if spec.mode_id == _PHASE0_MODE_ID:
+        explicit_owner_actions = {ExecutionAction(value) for value in owner_actions or []}
+        allowed_actions = mode_actions & explicit_owner_actions
+    else:
+        allowed_actions = mode_actions
     return issue_execution_grant(
-        allowed_actions=_actions_for_mode(spec),
+        allowed_actions=allowed_actions,
         dataset_constraints=dataset_constraints,
         checkpoint_constraints=checkpoint_constraints,
         preview_constraints=preview_constraints,

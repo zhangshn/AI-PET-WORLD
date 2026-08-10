@@ -1,8 +1,8 @@
 # AI-PET-WORLD 唯一模块计划表
 
-更新时间：2026-08-10 23:09:16 +08:00
+更新时间：2026-08-11 04:30:00 +08:00
 
-状态：active-module-plan / V9路线已退出，结构事实优先双阶段架构只读GPU梯度诊断已闭环；Stage4仍未完成
+状态：active-module-plan / Phase0-A类型化拓扑保持传递已通过真实GPU资格，等待独立Phase0-B/C授权；Stage4仍未完成
 
 不允许自由发挥；除非发现错误导致无法继续，必须先停下来询问项目所有者。
 
@@ -13,7 +13,7 @@
 | 顺序 | 模块 | 目标与边界 | 状态 | 验收依据 | 后续模块准入条件 |
 |---:|---|---|---|---|---|
 | 1 | 平台可靠性与文档治理修复 | 修复Owner写授权、验证授权一次性消费、训练互斥锁、生产构建、控制台状态投影、测试隔离和全项目文档职责；不启动训练或世界运行 | 当前范围完成 | 类型、Lint、权限门禁、控制台、文档治理、编码和游戏地图合同通过；生产构建实测按Owner范围调整延期至正式部署前 | 非生产构建平台检查通过，生产构建延期不授权绕过安全门禁 |
-| 2 | V7失败学习与R5隔离候选 | 由本地自研AI程序读取训练和机器审核失败证据，生成有界修复提案、训练器合同、隔离配置和不可变终态；旧Checkpoint、审核阈值及R2/R3/R4来源证据保持不可变 | 固定五阶段中的第1、2、3阶段已完成，固定总进度为3/5（60%）。V9路线已正式退出。`stage4_structure_fact_first_dual_stage_generator_v1`的CPU实现、未激活配置、训练器合法监督、诊断Manifest、固定预览复现身份合同和只读GPU梯度路由诊断已经闭环；Stage A先预测可审核的语义—拓扑结构层，Stage B同时消费原23通道与该结构层并保持原潜变量输出形状。Stage 0/1/2完整训练仍未启动，第4阶段未完成，第5阶段未启动 | R4/R5来源证据保持不可变；失败预览不得作为训练目标；审核阈值不得降低；道路边界必须绑定当前执行样本，不得跨样本继承。第4阶段正式训练固定使用64/64合格数据与48/8/4/4划分，Stage 0/1/2按256×192、512×384、1024×768顺序执行，每阶段40 Epoch及Epoch 1/5/10/20/30/40固定预览机器审核；Stage 0从固定随机初始化开始，Stage 1/2只能加载本次前一Stage的Checkpoint。任一预检、训练或机器审核失败立即停止，后续Stage不得启动且不自动重试 | 下一合法动作是Owner单独授权双阶段架构的Phase0工程资格；Phase0和独立模型Smoke依次通过后，才可授权Stage 0→1→2完整训练。不得继续V9参数修补、相同配置Smoke重试或Checkpoint晋级；正式推理、Owner正式画面验收、RuntimeFrame和进入世界继续禁止 |
+| 2 | V7失败学习与R5隔离候选 | 由本地自研AI程序读取训练和机器审核失败证据，生成有界修复提案、训练器合同、隔离配置和不可变终态；旧Checkpoint、审核阈值及R2/R3/R4来源证据保持不可变 | 固定五阶段中的第1、2、3阶段已完成，固定总进度为3/5（60%）。V9路线已正式退出。`stage4_structure_fact_first_dual_stage_generator_v1`的CPU实现、未激活配置、训练器合法监督、诊断Manifest、固定预览复现身份合同和只读GPU梯度路由诊断已经闭环。共享类型化传递使`route_required_boundary`使用nearest、其余五通道保持bilinear，CPU正反回归及新的A-only真实GPU资格均已通过；原单像素夹具和四项判据未改变，B/C未建立。Stage 0/1/2完整训练仍未启动，第4阶段未完成，第5阶段未启动 | R4/R5来源证据保持不可变；失败预览不得作为训练目标；审核阈值不得降低；道路边界必须绑定当前执行样本，不得跨样本继承。第4阶段正式训练固定使用64/64合格数据与48/8/4/4划分，Stage 0/1/2按256×192、512×384、1024×768顺序执行，每阶段40 Epoch及Epoch 1/5/10/20/30/40固定预览机器审核；Stage 0从固定随机初始化开始，Stage 1/2只能加载本次前一Stage的Checkpoint。任一预检、训练或机器审核失败立即停止，后续Stage不得启动且不自动重试 | 下一合法动作是独立授权B/C一次权重更新、不可晋级诊断Checkpoint及双进程字节复现；B/C和独立模型Smoke依次通过后，才可授权Stage 0→1→2完整训练。正式推理、Owner正式画面验收、RuntimeFrame和进入世界继续禁止 |
 | 3 | 本地自研AI MVP能力迁移 | 优先迁移训练、验证、审核、失败学习、记录和控制台任务发起能力；代码实现仍由Codex协助，直到本地执行器逐项验收 | 建设中：实时执行主体、Batch级原子进度和三类计量边界已接入只读监控台；任务操作台具备V7任务合同、任务ID、互斥锁、原子启动、终态和失败关闭；本地程序已能从R4训练与审核终态自动分析9张拒绝证据、形成R5修复方向、执行候选正反回归并保存不可变终态 | 能力迁移注册表、Owner验收、失败证据时间轨迹、机器可读修复合同、隔离候选、正反回归、原子进度与终态证据完整性和Codex退出门禁 | R5训练器支持与CPU回归需独立Owner授权；Owner密钥初始化后才能从操作台真实发起任务；训练、验证、推理仍分别取得独立授权 |
 | 4 | 世界生成与自主角色MVP接入 | 将通过验证的视觉生成、世界自动生长和人物自主性接入受控Runtime；泰国数据仅作为阶段性MVP启动数据 | 规划 | 正式推理、RuntimeFrame、动态世界和角色自主性独立验收 | 前序本地AI能力及正式推理资格通过 |
 
@@ -26,7 +26,7 @@
 | 1 | 失败证据与修复方向 | 本地程序只读分析正式失败证据，形成有界、未激活修复提案并闭环终态 | 完成 |
 | 2 | 候选、训练器支持与隔离配置 | 选择有界参数，完成训练器支持、未激活配置和CPU正反回归，不读取Checkpoint、不训练 | 完成 |
 | 3 | 固定单样本GPU Smoke | 在明确绑定的样本、种子、Checkpoint和Epoch范围内证明候选具备可学习性，固定预览机器审核通过 | 完成 |
-| 4 | Stage 0→1→2完整训练 | 使用64/64合格数据和48/8/4/4划分，依次完成256×192、512×384、1024×768三阶段训练及固定预览机器审核 | 尚未完成；V9路线已经退出，结构事实优先双阶段架构的CPU支持与只读GPU梯度路由诊断已完成。当前无完整训练准入，下一步是独立Phase0工程资格 |
+| 4 | Stage 0→1→2完整训练 | 使用64/64合格数据和48/8/4/4划分，依次完成256×192、512×384、1024×768三阶段训练及固定预览机器审核 | 尚未完成；V9路线已经退出，结构事实优先双阶段架构的CPU支持、只读GPU梯度诊断和Phase0-A真实GPU资格已完成。`route_required_boundary`类型化nearest传递与其余五通道bilinear传递已在CPU及CUDA五尺度验证通过。等待独立Phase0-B/C授权，当前无完整训练准入 |
 | 5 | 独立严格复验 | 使用未参与权重更新和Checkpoint选择的challenge轨迹完成多种子严格复验 | 未开始 |
 
 ## Stage4当前业务状态与退出路线
@@ -64,18 +64,49 @@
 | 29 | Stage4新模型路线设计收敛闭环 | 绑定V9路线退出终态、二选一裁决和失败归因报告后，CPU设计合同正向20/20、反向14/14通过，唯一CPU只读授权原子消费。三条实质差异路线完成比较；唯一推荐`stage4_structure_fact_first_dual_stage_generator_v1`，通过显式、可审核的语义—拓扑结构中间层阻止语义响应只停留在辅助头。合同未激活，未选择超参数，未读取Checkpoint、未修改权重、未使用GPU或训练 |
 | 30 | 结构事实优先双阶段CPU支持闭环 | 新架构已接入正式模型注册、训练器与Mode Registry；Stage A输出道路、边界和四类对象的六通道可审核结构层，Stage B在五个现有尺度同时消费原23通道与结构层并保持潜变量形状。CPU正向36/36、反向17/17通过，覆盖形状、通道顺序、响应耦合、`torch.autograd.grad`路由与隔离、合法监督、非法来源、旧Checkpoint拒绝、诊断Manifest、固定预览身份及V7/V8/V9兼容。配置保持未激活，未读取Checkpoint、未创建优化器、未执行`.backward()`、未修改权重、未使用GPU或训练 |
 | 31 | 结构事实优先双阶段只读GPU梯度诊断闭环 | 六类Stage A结构Loss使用训练器唯一不可变注册表，CPU正向38/38、反向33/33通过。固定样本194、validation身份、种子20263722、256×192、时间步999和west拓扑的真实CUDA诊断通过；六类结构头梯度相互隔离，Stage A到Stage B、五尺度注入、原23通道和基础Denoiser梯度均有效，17项诊断Manifest完整。Denoiser和冻结Autoencoder前后状态哈希一致；未创建优化器、未执行`.backward()`、未修改权重、未写Checkpoint、未训练 |
-| 32 | Stage4完成条件 | 新的完整训练必须从Stage 0固定随机初始化开始，Stage 1/2只继承本次前一Stage；三阶段训练和机器审核全部通过后，固定总进度才从3/5（60%）更新为4/5（80%） |
+| 32 | Phase0 baseline合同修正通过、可执行入口失败关闭 | 历史`behavior-baseline.json`保持只读且哈希不变，新baseline写入独立不可变路径；完整CPU正向12/12、反向11/11、旧V7/V8/V9兼容回归及真实Trainer dry-run全部通过。正式Node命令返回0但未执行Phase0：导出分派函数已支持structure-fact-first标志，可执行文件末尾主入口仅接入两个旧Validation Kernel标志。预检和正式输出目录均未创建，Phase0-A及B/C授权均未消费，未读取Checkpoint、未创建优化器、未启动GPU或修改权重；本次执行失败关闭且不得自动重试 |
+| 33 | Phase0入口修正实施授权未消费关闭 | Owner已授权修正真实Node入口并重走Phase0，但实施授权的原子消费命令在执行前因PowerShell字符串插值语法错误被拒绝。消费文件未创建，运行器和CPU检查器均未修改，CPU回归、预检、Checkpoint访问、GPU及Phase0-A/B/C均未开始；该未消费授权随失败终态关闭且不得复用 |
+| 34 | Phase0真实CLI闭环、预检父目录阻断关闭 | 新实施授权原子消费成功；运行器真实CLI入口已接入structure-fact-first Phase0，CPU正向12/12、反向11/11、旧V7/V8/V9兼容、真实Trainer dry-run及Python/CUDA/磁盘检查全部通过。正式Phase0执行在A授权消费前创建runId预检目录时失败：运行器使用`recursive:false`，但固定父目录尚不存在。A/B/C授权均未消费，未读取Checkpoint、未创建优化器、未启动GPU或修改权重；本次执行失败关闭且不得自动重试 |
+| 35 | Phase0预检父目录准备完成、输出父目录所有权冲突关闭 | `.runtime`正式Junction身份已验证，固定预检父目录已按授权建立且为空；没有提前创建runId或正式输出。全新A/B/C合同通过真实Node入口核验，但正式启动前发现运行器会在消费A后以`recursive:false`创建输出runId，而固定输出父目录仍不存在；本次命令只授权预检父目录并禁止提前创建正式输出。为避免明知必败后消费A，执行在GPU前关闭；A/B/C均未消费，未读取Checkpoint或修改权重 |
+| 36 | Phase0-A授权已消费、Runner与Trainer状态合同冲突关闭 | 两个固定父目录准备完成，真实Node合同及全部预检通过，Phase0-A随后原子消费。Trainer在创建输出、初始化CUDA和读取Checkpoint前拒绝执行：运行器要求执行授权状态为`resolved_owner_authorized_not_consumed`，训练器对同一授权要求`resolved_owner_authorized`，两者不可同时满足。A已消费但未进入因果前向，B/C未消费；未读取Checkpoint、未创建优化器、未启动GPU或修改权重，执行失败关闭且不得重试 |
+| 37 | Phase0授权状态合同统一、CPU夹具所有权失败关闭 | Trainer已接受不可变授权保持`resolved_owner_authorized_not_consumed`并要求独立原子消费记录；真实Trainer合法消费血缘通过，状态错误、缺失消费、消费哈希错误、requestId/commandRef/scope错误、禁止动作和重复消费均被拒绝，所有子进程均未创建输出或启动GPU。唯一失败项是CPU检查器的禁止动作负向夹具按引用修改了共享`readonly_actions`期望列表，导致最终只读动作精确断言失败；CPU结果为13/14正向、20/20反向。未建立新A/B/C授权，未读取Checkpoint、未创建优化器、未启动GPU或修改权重，本次失败关闭且不得自动重试 |
+| 38 | Phase0-A真实CUDA正常前向通过、因果消融失败关闭 | CPU夹具所有权修正后，完整CPU正向14/14、反向20/20、真实Trainer消费血缘、旧V7/V8/V9兼容、真实Node合同及Python/CUDA/磁盘预检全部通过。全新A授权原子消费，项目Autoencoder按绑定身份加载并冻结，双阶段Denoiser完成正常Stage A→Stage B CUDA前向；执行在zero/shuffle消融、梯度资格和拓扑报告完成前退出。现有运行器未持久化子进程stdout/stderr，因此只能证明失败区间，不能裁决具体Python异常。B/C未消费，未创建优化器、未执行`.backward()`、未修改权重或写诊断Checkpoint；本次失败关闭且不自动重试 |
+| 39 | Phase0-A完整异常证据闭环、重复确定性失败关闭 | 子进程退出码、stdout、stderr与精确步骤遥测已保存；CPU正向17/17、反向20/20及全部资源门通过后，全新A-only授权原子消费。正常、zero、shuffle、zero-repeat和shuffle-repeat CUDA前向全部完成，随后在重复确定性比较中明确抛出`causal routes are not deterministic`。故障已从未知退出收敛为因果消融重复结果身份不一致；梯度与多尺度拓扑资格尚未开始。未建立B/C，未创建优化器、未执行`.backward()`、未修改权重或写Checkpoint，本次关闭且不自动重试 |
+| 40 | Phase0-A重复确定性CPU只读根因分析闭环 | 源码与合成CPU张量共同证明：zero/shuffle路线内部无随机调用，RNG状态不变，hook均在`finally`移除，Stage B五尺度响应有效，同一输入的Autoencoder解码及四组路线结果在CPU上字节一致。失败CUDA执行要求字节相等，但Phase0-A没有进入项目已有固定预览严格确定性作用域；具体单一CUDA算子因没有每张量GPU哈希且本次禁止GPU复跑而不能诚实裁决。最小故障范围确定为CUDA Denoiser与Autoencoder前向字节复现作用域。未激活合同仅建议在Phase0-A局部启用并恢复严格确定性，禁止影响B/C反向或训练 |
+| 41 | Phase0-A局部严格确定性CPU支持闭环 | CPU检查器已精确识别直接调用与绑定的`model.predict_velocity_with_stage4_structure_fact`属性调用，同时继续拒绝严格作用域包含`torch.autograd.grad`、`.backward()`、优化器或训练动作。完整CPU回归30/30正向、21/21反向通过；zero/shuffle路线字节重复、RNG不变、hook成功与异常清理、后端状态恢复和旧V7/V8/V9兼容全部通过。训练器、运行器、模型、Loss、数据、Checkpoint、授权策略和审核阈值保持冻结；未读取Checkpoint、未启动GPU或重跑A，B/C未建立。支持合同保持未激活，下一步仅可由新授权执行一次A-only GPU资格 |
+| 42 | Phase0-A确定性与梯度通过、middle拓扑失败关闭 | CPU授权门以及Python、CUDA资源和磁盘预检全部通过后，全新A-only授权原子消费。normal、zero、shuffle及重复CUDA前向和Autoencoder解码完成，zero/shuffle的velocity与decoded RGB均字节一致；因果差异与`torch.autograd.grad`梯度资格通过。执行随后在五尺度bilinear拓扑资格的`middle`尺度失败；现有遥测没有在退出前导出具体失败子指标，因此不得猜测为边界接触、道路支持、footprint面积或有限值中的任一项。未建立B/C，未创建优化器、未执行`.backward()`、未修改权重、未写Checkpoint或启动训练，且没有自动重试 |
+| 43 | Phase0-A middle拓扑CPU根因裁决闭环 | 使用与GPU执行完全相同的`1×6×48×64`合成结构掩码和五尺度尺寸执行CPU只读复现。bilinear在`middle`得到有限值、道路支持24和footprint面积24，但`westBoundaryContact=0`且边界通道质量完全为0；同一未修改夹具使用现有离散nearest语义时`middle westBoundaryContact=12`并通过全部判据。正式归类为Stage A到Stage B的bilinear拓扑保持合同缺陷，而非测试夹具缺陷。未修改代码、未读取Checkpoint、未使用GPU或重跑A，未建立B/C、未训练 |
+| 44 | Phase0-A类型化拓扑保持传递CPU支持闭环 | 生产模型与Phase0拓扑检查共用唯一传递实现：`route_required_boundary`按离散nearest语义进入level1、middle、up1和up0，其余五通道保持bilinear。原`1×6×48×64`单像素west夹具和有限值、边界接触、道路支持、footprint面积四项判据均未改变；五尺度全部通过，原全通道bilinear方案仍在middle被拒绝。CPU正向17/17、反向13/13通过；未读取Checkpoint、未创建优化器、未执行`.backward()`、未使用GPU或训练 |
+| 45 | 新Phase0-A真实Node门禁捕获失败关闭 | 首次调用因PowerShell将Node的SQLite实验警告stderr升级为终止错误而停止；文件化stdout/stderr捕获随后证明Node stdout声明`structure_fact_first_phase0_runner_contract_valid_cpu_only`，stderr仅含该实验警告，但宿主等待在正式退出码写入前超过30秒工具时限，因此仍不能把门禁登记为通过。两次A-only授权均未消费且已关闭；未执行Python、CUDA资源或磁盘预检，未读取Checkpoint、未启动GPU或A-only诊断，B/C未建立。该失败不推翻已通过的类型化拓扑CPU实现 |
+| 46 | Phase0-A类型化拓扑真实GPU资格闭环 | 使用直接进程API取得真实Node退出码0并分离保存stdout/stderr；Python、CUDA资源和磁盘预检全部通过后，新A-only授权原子消费。固定样本194、validation身份、种子20263722、256×192、时间步999和west拓扑保持不变。normal/zero/shuffle及重复前向与解码字节一致，因果差异、23通道梯度、Stage A六头、Stage B五尺度和基础Denoiser梯度资格通过；五尺度原四项拓扑判据全部通过，middle west边界接触为12。Denoiser与Autoencoder前后哈希一致，未创建优化器、未执行`.backward()`、未写Checkpoint，B/C未建立 |
+| 47 | Phase0-B/C续接CPU路径身份失败关闭 | 成功Phase0-A五份证据保持有效且没有重跑；续接运行器和CPU检查器已形成独立入口，真实Trainer B/C dry-run通过，CPU负向10/10全部通过。正向Node合同因CPU检查器把注册`.runtime`证据解析为`D:\AI-PET-WORLD-DATA\hot\runtime`物理绝对路径传入，而运行器要求项目逻辑`.runtime/...`身份，被路径绑定门拒绝，CPU结果为5/8正向、10/10反向。未建立或消费B/C授权，未读取Checkpoint、未创建优化器、未启动GPU或修改权重；本次失败关闭且不自动重试 |
+| 48 | Phase0-B单步更新通过、C固定预览条件身份失败关闭 | CPU逻辑路径修正后，正向8/8、反向11/11、真实Node/Trainer及Python/CUDA/磁盘门全部通过；新B/C授权原子消费。固定样本194完成一次合法Loss、`.backward()`和一次`optimizer.step`，梯度有限非零，Denoiser状态由`65549c88…0180`变为`a022cf88…0120`，冻结Autoencoder不变；不可晋级诊断Checkpoint已保存。第一个独立复现进程成功加载Checkpoint并恢复相同模型状态，但固定预览条件张量哈希与Checkpoint绑定身份不一致，在训练器第6286行失败；第二个复现进程未启动。本次授权不得复用或重试，Checkpoint不得晋级或作为完整训练初始化 |
+| 49 | Stage4完成条件 | 新的完整训练必须从Stage 0固定随机初始化开始，Stage 1/2只继承本次前一Stage；三阶段训练和机器审核全部通过后，固定总进度才从3/5（60%）更新为4/5（80%） |
 
 执行器、授权门、路径或证据写入缺陷必须在下一次GPU授权消费前做一次完整CPU合同审计并集中关闭。没有进入第一次授权权重更新的执行，只能形成“执行前阻断”结论，不能冒充模型Smoke结果；进入有效训练后发生机器审核失败，则当前候选必须失败关闭，不得通过连续单字段修补或自动重试延长同一候选。
 
-## AI Painter R5 Stage4 当前准入状态（2026-08-10 23:09 +08:00）
+## AI Painter R5 Stage4 当前准入状态（2026-08-11 04:30 +08:00）
 
 - 固定总进度仍为3/5（60%）：第1、2、3阶段完成，第4阶段进行中，第5阶段未开始。
 - V9只读路线裁决已经正式闭环，当前V9候选路线正式退出；不得继续参数修补、相同配置Smoke重试或失败Checkpoint晋级。
 - 结构事实优先双阶段架构CPU支持与只读GPU梯度诊断均已闭环：最新CPU门正向38/38、反向33/33通过；未激活配置、支持合同、诊断Manifest及固定预览复现身份均已形成机器证据。
 - Stage A使用原23通道与合法结构监督生成道路、边界和四类对象的六通道可审核中间层；Stage B在现有五个尺度同时消费原23通道和该结构层，保持潜变量输出形状。项目Autoencoder、64/64数据与48/8/4/4划分、机器审核阈值和旧V7/V8/V9行为不变。
 - 本次只读GPU诊断仅加载并冻结项目Autoencoder；双阶段Denoiser从固定随机初始化开始，模型与Autoencoder前后状态哈希一致。未创建优化器、未执行`.backward()`、未修改权重、未写Checkpoint、未训练。当前仍无Stage4完整训练准入。
-- 下一合法动作是Owner单独授权双阶段架构的Phase0工程资格：一次真实CUDA权重更新、诊断Checkpoint保存与双进程固定预览字节复现。Phase0与后续独立30 Epoch模型Smoke依次通过后，才能获得Stage 0→1→2完整训练准入。
+- Phase0-A局部严格确定性CPU支持已通过30/30正向、21/21反向回归；本轮CPU授权门、真实Node合同以及Python/CUDA/磁盘资源预检全部通过。
+- 全新A-only授权已原子消费；项目Autoencoder按绑定Checkpoint读取、加载并冻结，双阶段Denoiser从固定随机初始化开始。normal、zero、shuffle、zero-repeat和shuffle-repeat CUDA前向及解码全部完成。
+- 严格确定性问题已实际关闭：zero与shuffle路线的velocity和decoded RGB首次/重复SHA-256均完全一致；严格作用域退出后CUDA后端状态也恢复一致。
+- 因果差异资格和`torch.autograd.grad`梯度资格均已完成，证明Stage A结构中介参与Stage B且所需梯度路径有效。
+- 类型化拓扑保持传递CPU支持已闭环：生产Stage B和Phase0拓扑检查共用唯一实现，`route_required_boundary`使用nearest，其余五个Stage A通道继续使用bilinear。
+- 原单像素west夹具与四项判据未修改；level0、level1、middle、up1、up0全部通过。全通道bilinear仍在middle得到`westBoundaryContact=0`并被原判据拒绝，证明本次没有通过放宽门槛获得通过。
+- CPU正向17/17、反向13/13通过；route边界到middle传递、Stage B middle适配器和基础Denoiser的`torch.autograd.grad`路径有效，旧V7/V8/V9及Stage3/旧Stage4注册保持兼容。
+- 本轮未读取Checkpoint、未创建优化器、未执行`.backward()`、未修改模型权重、未启动GPU或训练，也未建立或消费B/C身份。
+- 直接进程API已取得真实Node退出码0，并分别保存stdout与SQLite实验警告stderr；CPU合同正式通过。Python退出码0，CUDA资源与磁盘预算无阻断，新的A-only授权随后原子消费。
+- Phase0-A真实GPU资格已通过：zero/shuffle路线的velocity与decoded RGB首次和重复哈希完全一致；两条消融均对正常输出产生非零差异，23个条件通道、Stage A六类结构头、Stage B五尺度适配器和基础Denoiser梯度有效。
+- 原单像素west夹具在五尺度全部通过：middle的`westBoundaryContact=12`、道路支持36、footprint面积24且全部有限。Denoiser和Autoencoder前后状态哈希一致；未创建优化器、未执行`.backward()`、未修改权重或写入Checkpoint。
+- Phase0-B/C逻辑路径修正已通过CPU正向8/8、反向11/11和全部资源门；一次真实权重更新、有限非零梯度、单次`optimizer.step`、Denoiser哈希变化、冻结Autoencoder不变及不可晋级诊断Checkpoint保存均已证明。
+- Phase0-C尚未闭环：第一个独立复现进程加载了正确Checkpoint并恢复相同模型状态，但固定预览`conditionTensorSha256`与更新阶段写入Checkpoint的条件身份不一致；第二个复现进程没有启动，当前B/C授权已消费且不得重试。
+- 下一合法动作是Owner仅授权一次CPU只读条件身份根因分析，比较更新阶段条件张量构建与固定预览采样路径中的样本选择、seed、分辨率、条件缩放和哈希口径；不得读取Checkpoint权重、启动GPU或重跑B/C。
+- Phase0与后续独立30 Epoch模型Smoke依次通过后，才能获得Stage 0→1→2完整训练准入。
 ## Stage4历史闭环摘要
 
 - `stage4_decoded_domain_alignment_bridge_v1`的V8 CPU结构支持和独立GPU梯度诊断均已闭环。V8现在通过显式`registered_v7_capacity_contribution_v1`合同复用已批准的64份V7容量贡献，实际划分为48/8/4/4；旧V7选择不变，旧非V7条件身份选择继续保留。

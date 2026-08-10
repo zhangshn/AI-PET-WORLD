@@ -120,6 +120,12 @@ const DUAL_IDENTITY_IMPLEMENTATION_ATTESTATION_STATUS = "stage4_dual_identity_im
 const DUAL_IDENTITY_GPU_SCOPE = "stage4_v9_single_sample_model_smoke_execution_only"
 
 export async function runV8Stage4Smoke(argv = process.argv.slice(2)) {
+  if (argv.includes("--stage4-structure-fact-first-phase0-bc-continuation")) {
+    return runStructureFactFirstPhase0BCContinuation(argv)
+  }
+  if (argv.includes("--stage4-structure-fact-first-phase0")) {
+    return runStructureFactFirstPhase0(argv)
+  }
   if (argv.includes("--stage4-validation-kernel-phase0")) {
     return runStage4ValidationKernelPhase0(argv)
   }
@@ -174,6 +180,493 @@ export async function runV8Stage4Smoke(argv = process.argv.slice(2)) {
     closeFailure(context, `${context.mode}_stage4_single_sample_30_epoch_gpu_smoke_execution_failed_closed`, [String(error?.message ?? error)], { preflight, consumption, stack: error?.stack })
     return 1
   }
+}
+
+const STRUCTURE_PHASE0_STATUS = "owner_authorized_stage4_structure_fact_first_phase0_engineering"
+const STRUCTURE_PHASE0_ARCHITECTURE = "stage4_structure_fact_first_dual_stage_generator_v1"
+const STRUCTURE_PHASE0_READONLY_ACTIONS = ["inspect_autoencoder_identity", "inspect_checkpoint_identity", "load_autoencoder", "select_bound_sample"].sort()
+const STRUCTURE_PHASE0_UPDATE_ACTIONS = [
+  ...STRUCTURE_PHASE0_READONLY_ACTIONS,
+  "create_optimizer", "execute_backward", "mutate_model_weights", "write_diagnostic_checkpoint",
+].sort()
+const ALL_EXECUTION_ACTIONS = [
+  "select_bound_sample", "inspect_autoencoder_identity", "load_autoencoder", "inspect_checkpoint_identity",
+  "load_parent_denoiser", "create_optimizer", "execute_backward", "mutate_model_weights",
+  "write_diagnostic_checkpoint", "write_smoke_checkpoint", "run_stage0", "run_stage1", "run_stage2",
+  "run_strict_revalidation", "run_formal_inference", "promote_checkpoint", "create_runtime_frame",
+  "enter_world", "automatic_retry",
+].sort()
+
+async function runStructureFactFirstPhase0(argv) {
+  const implementationAuthorizationPath = argument(argv, "--implementation-authorization")
+  const implementationConsumptionPath = argument(argv, "--implementation-consumption")
+  const phase0AAuthorizationPath = argument(argv, "--phase0-a-authorization")
+  const phase0BCAuthorizationPath = argument(argv, "--phase0-bc-authorization")
+  const phase0AOnly = argv.includes("--phase0-a-only")
+  const cpuReportPath = argument(argv, "--cpu-report")
+  const implementationAttestationPath = argument(argv, "--implementation-attestation")
+  const requiredIdentities = { implementationAuthorizationPath, implementationConsumptionPath, phase0AAuthorizationPath }
+  if (!phase0AOnly) requiredIdentities.phase0BCAuthorizationPath = phase0BCAuthorizationPath
+  for (const [label, value] of Object.entries(requiredIdentities)) {
+    if (!value) throw new Error(`structure_phase0_${label}_required`)
+  }
+  const implementationAuthorization = readJsonRequired(implementationAuthorizationPath)
+  const implementationConsumption = readJsonRequired(implementationConsumptionPath)
+  if (
+    implementationAuthorization.status !== "resolved_owner_authorized_not_consumed"
+    || implementationConsumption.authorizationSha256 !== sha256File(implementationAuthorizationPath)
+    || implementationConsumption.oneTimeConsumption !== true
+  ) throw new Error("structure_phase0_implementation_lineage_invalid")
+  const phase0A = validateStructurePhase0Authorization(phase0AAuthorizationPath, "causal_readonly", STRUCTURE_PHASE0_READONLY_ACTIONS, implementationAuthorizationPath, implementationConsumptionPath)
+  const phase0BC = phase0AOnly
+    ? null
+    : validateStructurePhase0Authorization(phase0BCAuthorizationPath, "update_and_reproduction", STRUCTURE_PHASE0_UPDATE_ACTIONS, implementationAuthorizationPath, implementationConsumptionPath)
+  if (argv.includes("--cpu-contract-only")) {
+    console.log(JSON.stringify({ status: "structure_fact_first_phase0_runner_contract_valid_cpu_only", executionScope: phase0AOnly ? "phase0_a_only" : "phase0_a_then_bc", gpuStarted: false, checkpointRead: false, optimizerCreated: false }, null, 2))
+    return 0
+  }
+  if (!cpuReportPath || !implementationAttestationPath) throw new Error("structure_phase0_cpu_evidence_required")
+  const cpuReport = readJsonRequired(cpuReportPath)
+  const attestation = readJsonRequired(implementationAttestationPath)
+  if (
+    cpuReport.status !== "structure_fact_first_phase0_cpu_regression_passed"
+    || attestation.status !== "structure_fact_first_phase0_implementation_cpu_verified"
+    || attestation.cpuReportSha256 !== sha256File(cpuReportPath)
+    || attestation.runnerSha256 !== sha256File("scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs")
+    || attestation.trainerSha256 !== sha256File(TRAINER)
+    || attestation.cpuCheckerSha256 !== sha256File(V9_CPU_CHECKER)
+  ) throw new Error("structure_phase0_cpu_evidence_invalid")
+
+  const executionRoot = resolve(phase0A.execution.outputRoot)
+  const preflightRoot = resolve(phase0A.execution.preflightRoot)
+  if (fs.existsSync(executionRoot)) throw new Error("structure_phase0_execution_root_already_exists")
+  fs.mkdirSync(preflightRoot, { recursive: false })
+  const preflightConfigPath = path.join(preflightRoot, "phase0-a-preflight-config.json")
+  writeImmutableJson(preflightConfigPath, buildStructurePhase0Config(phase0A, null, "causal_readonly", true))
+  const python = runStructurePhase0PythonPreflight(phase0A, preflightConfigPath)
+  const hardware = hardwareSnapshot()
+  const disk = diskBudgetSnapshot()
+  const blockers = []
+  if (python.exitCode !== 0) blockers.push("python_preflight_failed")
+  blockers.push(...evaluateV7TrainingGpuResourceGate(hardware.gpu))
+  if (!disk.passed) blockers.push("disk_budget_insufficient")
+  const preflightReportPath = path.join(preflightRoot, "preflight-report.json")
+  writeImmutableJson(preflightReportPath, { schemaVersion: "ai-painter-structure-fact-first-phase0-preflight-v1", status: blockers.length === 0 ? "all_preflights_passed_execution_not_consumed" : "preflights_failed_closed_execution_not_consumed", recordedAtUtc: new Date().toISOString(), cpuReport: { path: projectPath(cpuReportPath), sha256: sha256File(cpuReportPath) }, python, hardware, disk, blockers, phase0AConsumed: false, phase0BCConsumed: false })
+  if (blockers.length > 0) throw new Error(`structure_phase0_preflight_failed:${blockers.join(",")}`)
+
+  const runId = `structure-phase0-${timestampId()}`
+  const phase0AConsumption = consumeStructurePhase0Authorization(phase0A, phase0AAuthorizationPath, runId, "causal_readonly", preflightReportPath)
+  fs.mkdirSync(executionRoot, { recursive: false })
+  const phase0ARoot = path.join(executionRoot, "phase0-a")
+  fs.mkdirSync(phase0ARoot, { recursive: false })
+  const phase0AConfigPath = path.join(phase0ARoot, "active-config.json")
+  writeImmutableJson(phase0AConfigPath, buildStructurePhase0Config(phase0A, phase0AConsumption, "causal_readonly", false))
+  const phase0AIdentityPath = path.join(phase0ARoot, "execution-identity.json")
+  writeImmutableJson(phase0AIdentityPath, buildStructurePhase0Identity(phase0A, phase0AAuthorizationPath, phase0AConsumption, phase0AConfigPath, runId, "causal_readonly"))
+  const phase0AOutput = path.join(phase0ARoot, "output")
+  const phase0AResult = await runStructurePhase0Trainer(phase0A, phase0AConfigPath, phase0AIdentityPath, phase0AOutput, ["--stage4-structure-fact-first-phase0-causal"])
+  const phase0AProcessEvidence = persistStructurePhase0ChildProcessEvidence(phase0ARoot, phase0AResult)
+  if (phase0AResult.exitCode !== 0) throw new Error(`structure_phase0_a_failed:${phase0AResult.exitCode}:${phase0AProcessEvidence.reportPath}`)
+  const phase0AReportPath = path.join(phase0AOutput, "phase0-a-causal-report.json")
+  const phase0AReport = readJsonRequired(phase0AReportPath)
+  if (phase0AReport.status !== "structure_fact_first_phase0_a_causal_and_topology_qualification_passed_closed" || phase0AReport.modelStateUnchanged !== true) throw new Error("structure_phase0_a_evidence_invalid")
+  if (phase0AOnly) {
+    console.log(JSON.stringify({ status: "stage4_structure_fact_first_phase0_a_readonly_qualification_passed_closed", runId, phase0AReportPath: projectPath(phase0AReportPath), phase0AReportSha256: sha256File(phase0AReportPath), processEvidence: phase0AProcessEvidence, phase0BCStarted: false, phase0BCConsumed: false }, null, 2))
+    return 0
+  }
+
+  return executeStructurePhase0BC({
+    phase0BC,
+    phase0BCAuthorizationPath,
+    executionRoot,
+    runId,
+    phase0AEvidence: {
+      mode: "same_run",
+      reportPath: projectPath(phase0AReportPath),
+      reportSha256: sha256File(phase0AReportPath),
+      consumption: phase0AConsumption,
+    },
+  })
+}
+
+async function runStructureFactFirstPhase0BCContinuation(argv) {
+  const implementationAuthorizationPath = argument(argv, "--implementation-authorization")
+  const implementationConsumptionPath = argument(argv, "--implementation-consumption")
+  const phase0BCAuthorizationPath = argument(argv, "--phase0-bc-authorization")
+  const phase0ATerminalPath = argument(argv, "--phase0-a-terminal")
+  const phase0AFinalizationPath = argument(argv, "--phase0-a-finalization")
+  const phase0AReportPath = argument(argv, "--phase0-a-report")
+  const phase0APreflightPath = argument(argv, "--phase0-a-preflight")
+  const phase0AConsumptionPath = argument(argv, "--phase0-a-consumption")
+  const cpuReportPath = argument(argv, "--cpu-report")
+  const implementationAttestationPath = argument(argv, "--implementation-attestation")
+  const required = {
+    implementationAuthorizationPath,
+    implementationConsumptionPath,
+    phase0BCAuthorizationPath,
+    phase0ATerminalPath,
+    phase0AFinalizationPath,
+    phase0AReportPath,
+    phase0APreflightPath,
+    phase0AConsumptionPath,
+  }
+  for (const [label, value] of Object.entries(required)) {
+    if (!value) throw new Error(`structure_phase0_bc_continuation_${label}_required`)
+  }
+  if (argument(argv, "--phase0-a-authorization") || argv.includes("--phase0-a-only")) {
+    throw new Error("structure_phase0_bc_continuation_phase0_a_reuse_rejected")
+  }
+  const implementationAuthorization = readJsonRequired(implementationAuthorizationPath)
+  const implementationConsumption = readJsonRequired(implementationConsumptionPath)
+  if (
+    implementationAuthorization.status !== "resolved_owner_authorized_not_consumed"
+    || implementationConsumption.authorizationSha256 !== sha256File(implementationAuthorizationPath)
+    || implementationConsumption.oneTimeConsumption !== true
+  ) throw new Error("structure_phase0_bc_continuation_implementation_lineage_invalid")
+  const phase0BC = validateStructurePhase0Authorization(
+    phase0BCAuthorizationPath,
+    "update_and_reproduction",
+    STRUCTURE_PHASE0_UPDATE_ACTIONS,
+    implementationAuthorizationPath,
+    implementationConsumptionPath,
+  )
+  const phase0AEvidence = validateCompletedStructurePhase0A({
+    authorization: phase0BC,
+    terminalPath: phase0ATerminalPath,
+    finalizationPath: phase0AFinalizationPath,
+    reportPath: phase0AReportPath,
+    preflightPath: phase0APreflightPath,
+    consumptionPath: phase0AConsumptionPath,
+  })
+  if (fs.existsSync(resolve(phase0BC.execution.consumptionPath))) {
+    throw new Error("structure_phase0_bc_continuation_execution_authorization_already_consumed")
+  }
+  if (argv.includes("--cpu-contract-only")) {
+    console.log(JSON.stringify({
+      status: "structure_fact_first_phase0_bc_continuation_contract_valid_cpu_only",
+      executionScope: "successful_phase0_a_to_phase0_bc_only",
+      boundPhase0ARunId: phase0AEvidence.runId,
+      phase0ARerun: false,
+      phase0AAuthorizationReused: false,
+      gpuStarted: false,
+      checkpointRead: false,
+      optimizerCreated: false,
+    }, null, 2))
+    return 0
+  }
+  if (!cpuReportPath || !implementationAttestationPath) throw new Error("structure_phase0_bc_continuation_cpu_evidence_required")
+  const cpuReport = readJsonRequired(cpuReportPath)
+  const attestation = readJsonRequired(implementationAttestationPath)
+  if (
+    cpuReport.status !== "structure_fact_first_phase0_bc_continuation_cpu_regression_passed"
+    || attestation.status !== "structure_fact_first_phase0_bc_continuation_implementation_cpu_verified"
+    || attestation.cpuReportSha256 !== sha256File(cpuReportPath)
+    || attestation.runnerSha256 !== sha256File("scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs")
+    || attestation.trainerSha256 !== sha256File(TRAINER)
+    || attestation.cpuCheckerSha256 !== sha256File(V9_CPU_CHECKER)
+  ) throw new Error("structure_phase0_bc_continuation_cpu_evidence_invalid")
+
+  const executionRoot = resolve(phase0BC.execution.outputRoot)
+  const preflightRoot = resolve(phase0BC.execution.preflightRoot)
+  if (fs.existsSync(executionRoot)) throw new Error("structure_phase0_bc_continuation_execution_root_already_exists")
+  if (fs.existsSync(preflightRoot)) throw new Error("structure_phase0_bc_continuation_preflight_root_already_exists")
+  fs.mkdirSync(preflightRoot, { recursive: false })
+  const preflightConfigPath = path.join(preflightRoot, "phase0-bc-preflight-config.json")
+  writeImmutableJson(preflightConfigPath, buildStructurePhase0Config(phase0BC, null, "single_step_update", true))
+  const python = runStructurePhase0BCPythonPreflight(phase0BC, preflightConfigPath)
+  const hardware = hardwareSnapshot()
+  const disk = diskBudgetSnapshot()
+  const blockers = []
+  if (python.exitCode !== 0) blockers.push("python_preflight_failed")
+  blockers.push(...evaluateV7TrainingGpuResourceGate(hardware.gpu))
+  if (!disk.passed) blockers.push("disk_budget_insufficient")
+  const preflightReportPath = path.join(preflightRoot, "preflight-report.json")
+  writeImmutableJson(preflightReportPath, {
+    schemaVersion: "ai-painter-structure-fact-first-phase0-bc-continuation-preflight-v1",
+    status: blockers.length === 0 ? "all_preflights_passed_execution_not_consumed" : "preflights_failed_closed_execution_not_consumed",
+    recordedAtUtc: new Date().toISOString(),
+    cpuReport: { path: projectPath(cpuReportPath), sha256: sha256File(cpuReportPath) },
+    phase0AEvidence,
+    python,
+    hardware,
+    disk,
+    blockers,
+    phase0ARerun: false,
+    phase0AAuthorizationReused: false,
+    phase0BCConsumed: false,
+  })
+  if (blockers.length > 0) throw new Error(`structure_phase0_bc_continuation_preflight_failed:${blockers.join(",")}`)
+  const runId = `structure-phase0-bc-${timestampId()}`
+  fs.mkdirSync(executionRoot, { recursive: false })
+  return executeStructurePhase0BC({ phase0BC, phase0BCAuthorizationPath, executionRoot, runId, phase0AEvidence, prerequisitePath: preflightReportPath })
+}
+
+function validateCompletedStructurePhase0A({ authorization, terminalPath, finalizationPath, reportPath, preflightPath, consumptionPath }) {
+  const expectedBindings = {
+    phase0ASuccessTerminal: terminalPath,
+    phase0AFinalization: finalizationPath,
+    phase0AReport: reportPath,
+    phase0APreflight: preflightPath,
+    phase0AConsumption: consumptionPath,
+  }
+  for (const [key, value] of Object.entries(expectedBindings)) {
+    const bound = authorization.bindings?.[key]
+    if (!bound || projectPath(value) !== bound.path || sha256File(value) !== bound.sha256) {
+      throw new Error(`structure_phase0_bc_continuation_phase0_a_binding_invalid:${key}`)
+    }
+  }
+  const terminal = readJsonRequired(terminalPath)
+  const finalization = readJsonRequired(finalizationPath)
+  const report = readJsonRequired(reportPath)
+  const preflight = readJsonRequired(preflightPath)
+  const consumption = readJsonRequired(consumptionPath)
+  if (
+    terminal.status !== "stage4_structure_fact_first_phase0_a_readonly_qualification_passed_closed"
+    || terminal.phase0ACompleted !== true
+    || terminal.phase0BCStarted !== false
+    || terminal.phase0BCAuthorizationConsumed !== false
+    || terminal.modelStateUnchanged !== true
+    || terminal.optimizerCreated !== false
+    || terminal.backwardExecuted !== false
+    || terminal.checkpointWritten !== false
+  ) throw new Error("structure_phase0_bc_continuation_phase0_a_terminal_not_successful")
+  if (
+    finalization.status !== "stage4_structure_fact_first_phase0_a_readonly_qualification_passed_closed"
+    || finalization.phase0A?.reportSha256 !== sha256File(reportPath)
+    || finalization.cpuAndResourceQualification?.preflightReport?.sha256 !== sha256File(preflightPath)
+    || finalization.authorization?.consumptionSha256 !== sha256File(consumptionPath)
+    || finalization.authorization?.atomicallyConsumed !== true
+    || finalization.phase0BC?.authorizationCreated !== false
+    || finalization.phase0BC?.authorizationConsumed !== false
+    || finalization.phase0BC?.started !== false
+  ) throw new Error("structure_phase0_bc_continuation_phase0_a_finalization_invalid")
+  if (
+    report.status !== "structure_fact_first_phase0_a_causal_and_topology_qualification_passed_closed"
+    || report.modelStateUnchanged !== true
+    || report.optimizerCreated !== false
+    || report.backwardMethodExecuted !== false
+    || report.checkpointWritten !== false
+  ) throw new Error("structure_phase0_bc_continuation_phase0_a_report_invalid")
+  if (
+    preflight.status !== "all_preflights_passed_execution_not_consumed"
+    || consumption.status !== "structure_fact_first_phase0_execution_authorization_atomically_consumed"
+    || consumption.executionPart !== "causal_readonly"
+    || consumption.oneTimeConsumption !== true
+  ) throw new Error("structure_phase0_bc_continuation_phase0_a_lineage_invalid")
+  return {
+    mode: "bound_successful_prior_run",
+    runId: finalization.runId,
+    terminalPath: projectPath(terminalPath),
+    terminalSha256: sha256File(terminalPath),
+    finalizationPath: projectPath(finalizationPath),
+    finalizationSha256: sha256File(finalizationPath),
+    reportPath: projectPath(reportPath),
+    reportSha256: sha256File(reportPath),
+    preflightPath: projectPath(preflightPath),
+    preflightSha256: sha256File(preflightPath),
+    consumptionPath: projectPath(consumptionPath),
+    consumptionSha256: sha256File(consumptionPath),
+    phase0ARerun: false,
+    phase0AAuthorizationReused: false,
+  }
+}
+
+async function executeStructurePhase0BC({ phase0BC, phase0BCAuthorizationPath, executionRoot, runId, phase0AEvidence, prerequisitePath = null }) {
+  const prerequisite = prerequisitePath ?? resolve(phase0AEvidence.reportPath)
+  const phase0BCConsumption = consumeStructurePhase0Authorization(phase0BC, phase0BCAuthorizationPath, runId, "update_and_reproduction", prerequisite)
+  const phase0BCRoot = path.join(executionRoot, "phase0-bc")
+  fs.mkdirSync(phase0BCRoot, { recursive: false })
+  const updateConfigPath = path.join(phase0BCRoot, "update-config.json")
+  writeImmutableJson(updateConfigPath, buildStructurePhase0Config(phase0BC, phase0BCConsumption, "single_step_update", false))
+  const updateIdentityPath = path.join(phase0BCRoot, "update-identity.json")
+  writeImmutableJson(updateIdentityPath, buildStructurePhase0Identity(phase0BC, phase0BCAuthorizationPath, phase0BCConsumption, updateConfigPath, runId, "single_step_update"))
+  const updateOutput = path.join(phase0BCRoot, "update")
+  const updateResult = await runStructurePhase0Trainer(phase0BC, updateConfigPath, updateIdentityPath, updateOutput, ["--stage4-validation-kernel-phase0-update"])
+  const updateProcessEvidence = persistStructurePhase0ChildProcessEvidence(updateOutput, updateResult)
+  if (updateResult.exitCode !== 0) throw new Error(`structure_phase0_b_update_failed:${updateResult.exitCode}:${updateProcessEvidence.reportPath}`)
+  const updateReportPath = path.join(updateOutput, "phase0-update-report.json")
+  const updateReport = readJsonRequired(updateReportPath)
+  if (updateReport.status !== "phase0_single_cuda_optimizer_step_passed_closed" || updateReport.optimizerStepCount !== 1 || updateReport.weightsChanged !== true || updateReport.autoencoderWeightsChanged !== false) throw new Error("structure_phase0_b_evidence_invalid")
+  const checkpointPath = resolve(updateReport.checkpointPath)
+  if (!fileHashMatches(checkpointPath, updateReport.checkpointSha256)) throw new Error("structure_phase0_checkpoint_invalid")
+
+  const reproductionReports = []
+  for (const label of ["a", "b"]) {
+    const reproductionConfigPath = path.join(phase0BCRoot, `reproduction-${label}-config.json`)
+    writeImmutableJson(reproductionConfigPath, buildStructurePhase0Config(phase0BC, phase0BCConsumption, "checkpoint_reproduction", false))
+    const reproductionIdentityPath = path.join(phase0BCRoot, `reproduction-${label}-identity.json`)
+    const identity = buildStructurePhase0Identity(phase0BC, phase0BCAuthorizationPath, phase0BCConsumption, reproductionConfigPath, runId, "checkpoint_reproduction")
+    identity.diagnosticCheckpointPath = projectPath(checkpointPath)
+    identity.diagnosticCheckpointSha256 = sha256File(checkpointPath)
+    identity.reproductionLabel = label.toUpperCase()
+    writeImmutableJson(reproductionIdentityPath, identity)
+    const reproductionOutput = path.join(phase0BCRoot, `reproduction-${label}`)
+    const result = await runStructurePhase0Trainer(phase0BC, reproductionConfigPath, reproductionIdentityPath, reproductionOutput, ["--stage4-validation-kernel-phase0-reproduce", "--phase0-diagnostic-checkpoint", checkpointPath])
+    const processEvidence = persistStructurePhase0ChildProcessEvidence(reproductionOutput, result)
+    if (result.exitCode !== 0) throw new Error(`structure_phase0_c_reproduction_${label}_failed:${result.exitCode}:${processEvidence.reportPath}`)
+    const reportPath = path.join(reproductionOutput, "phase0-reproduction-report.json")
+    reproductionReports.push({ path: projectPath(reportPath), sha256: sha256File(reportPath), value: readJsonRequired(reportPath), processEvidence })
+  }
+  const [left, right] = reproductionReports.map((row) => row.value)
+  const equality = {
+    modelStateSha256: left.modelStateSha256 === right.modelStateSha256,
+    conditionTensorSha256: left.previewArtifact?.conditionTensorSha256 === right.previewArtifact?.conditionTensorSha256,
+    rgbTensorSha256: left.previewArtifact?.rgbTensorSha256 === right.previewArtifact?.rgbTensorSha256,
+    pngByteSha256: left.previewArtifact?.previewSha256 === right.previewArtifact?.previewSha256,
+  }
+  if (Object.values(equality).some((value) => value !== true)) throw new Error(`structure_phase0_c_reproduction_mismatch:${JSON.stringify(equality)}`)
+  const finalizationRoot = path.join(executionRoot, "finalization")
+  fs.mkdirSync(finalizationRoot, { recursive: false })
+  const reportPath = path.join(finalizationRoot, "finalization-report.json")
+  const terminalPath = path.join(finalizationRoot, "phase-terminal.json")
+  writeImmutableJson(reportPath, {
+    schemaVersion: "ai-painter-stage4-structure-fact-first-phase0-finalization-v1",
+    status: "stage4_structure_fact_first_phase0_engineering_qualification_passed_closed",
+    recordedAtUtc: new Date().toISOString(),
+    runId,
+    phase0A: phase0AEvidence,
+    phase0BC: {
+      updateReportPath: projectPath(updateReportPath),
+      updateReportSha256: sha256File(updateReportPath),
+      updateProcessEvidence,
+      checkpoint: { path: projectPath(checkpointPath), sha256: sha256File(checkpointPath), promotable: false, fullTrainingInitializationEligible: false },
+      reproductions: reproductionReports.map(({ path, sha256, processEvidence }) => ({ path, sha256, processEvidence })),
+      consumption: phase0BCConsumption,
+    },
+    equality,
+    phase0ARerun: false,
+    smokeStarted: false,
+    visualQualityPromotionPerformed: false,
+  })
+  writeImmutableJson(terminalPath, { schemaVersion: "ai-painter-stage4-structure-fact-first-phase0-terminal-v1", status: "stage4_structure_fact_first_phase0_engineering_qualification_passed_closed", recordedAtUtc: new Date().toISOString(), fixedTotalProgress: { completedStages: 3, totalStages: 5, percent: 60 }, finalizationPath: projectPath(reportPath), finalizationSha256: sha256File(reportPath), nextAction: "owner_may_authorize_one_structure_fact_first_30_epoch_model_smoke", checkpointPromotable: false, fullTrainingInitializationEligible: false, phase0ARerun: false, automaticRetryStarted: false })
+  console.log(JSON.stringify({ status: "stage4_structure_fact_first_phase0_engineering_qualification_passed_closed", terminalPath: projectPath(terminalPath), terminalSha256: sha256File(terminalPath), equality }, null, 2))
+  return 0
+}
+
+function validateStructurePhase0Authorization(value, expectedPart, expectedActions, implementationAuthorizationPath, implementationConsumptionPath) {
+  const authorization = readJsonRequired(value)
+  const actions = [...(authorization.executionActions ?? [])].sort()
+  const denied = [...(authorization.explicitlyDeniedActions ?? [])].sort()
+  const expectedDenied = ALL_EXECUTION_ACTIONS.filter((item) => !expectedActions.includes(item)).sort()
+  if (
+    authorization.schemaVersion !== "ai-painter-stage4-structure-fact-first-phase0-execution-authorization-v1"
+    || authorization.status !== "resolved_owner_authorized_not_consumed"
+    || authorization.executionPart !== expectedPart
+    || !sameJson(actions, expectedActions)
+    || !sameJson(denied, expectedDenied)
+    || actions.some((item) => denied.includes(item))
+    || authorization.taskIdentity?.architecture !== STRUCTURE_PHASE0_ARCHITECTURE
+    || authorization.taskIdentity?.sampleId !== SAMPLE_ID
+    || authorization.taskIdentity?.sampleSplit !== "validation"
+    || authorization.taskIdentity?.seed !== 20263722
+    || authorization.taskIdentity?.timestep !== 999
+    || !sameJson(authorization.taskIdentity?.requiredBoundarySides, ["west"])
+    || authorization.bindings?.implementationAuthorization?.sha256 !== sha256File(implementationAuthorizationPath)
+    || authorization.bindings?.implementationConsumption?.sha256 !== sha256File(implementationConsumptionPath)
+  ) throw new Error(`structure_phase0_${expectedPart}_authorization_invalid`)
+  for (const binding of Object.values(authorization.bindings ?? {})) {
+    if (!fileHashMatches(binding.path, binding.sha256)) throw new Error(`structure_phase0_${expectedPart}_binding_changed`)
+  }
+  for (const [key, currentPath] of Object.entries({ authorizationPolicy: STAGE_CONTROL_POLICY, executionGrant: "ml/ai-painter/scripts/ai_painter_execution_grant.py", modeRegistry: "ml/ai-painter/scripts/ai_painter_stage_mode_registry.py", trainer: TRAINER, runner: "scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs", cpuChecker: V9_CPU_CHECKER, model: "ml/ai-painter/src/ai_painter/complete_world/model.py" })) {
+    if (authorization.codeBindings?.[key]?.path !== currentPath || !fileHashMatches(currentPath, authorization.codeBindings?.[key]?.sha256)) throw new Error(`structure_phase0_code_binding_changed:${key}`)
+  }
+  authorization._path = projectPath(value)
+  authorization._sha256 = sha256File(value)
+  return authorization
+}
+
+function buildStructurePhase0Config(authorization, consumption, phase0Step, preflight) {
+  const config = structuredClone(readJsonRequired(authorization.bindings.sourceInactiveConfig.path))
+  config.training.trainingAuthorizationStatus = STRUCTURE_PHASE0_STATUS
+  config.training.structureFactFirstPhase0Contract = { sampleId: SAMPLE_ID, sampleSplit: "validation", conditionPackPath: ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-194-2026-08-01T15-47-45-117Z/complete-map-condition-task/compiled-conditions/condition-pack.json", seed: 20263722, timestep: 999, resolution: { width: 256, height: 192 }, requiredBoundarySides: ["west"], executionType: "phase0_engineering", smokeAuthorized: false, fullTrainingAuthorized: false }
+  config.training.ownerTrainingAuthorization = {
+    authorizationId: authorization.requestId,
+    requestId: authorization.requestId,
+    commandRef: authorization.commandRef,
+    scope: authorization.scope,
+    authorizationPath: authorization._path,
+    authorizationSha256: authorization._sha256,
+    executionConsumptionPath: preflight ? null : consumption.path,
+    executionConsumptionSha256: preflight ? null : consumption.sha256,
+    implementationAuthorizationPath: authorization.bindings.implementationAuthorization.path,
+    implementationAuthorizationSha256: authorization.bindings.implementationAuthorization.sha256,
+    implementationConsumptionPath: authorization.bindings.implementationConsumption.path,
+    implementationConsumptionSha256: authorization.bindings.implementationConsumption.sha256,
+    executionActions: [...authorization.executionActions],
+    explicitlyDeniedActions: [...authorization.explicitlyDeniedActions],
+    phase0Step,
+    executionState: preflight ? "preflight_unconsumed" : "consumed",
+    status: STRUCTURE_PHASE0_STATUS,
+    checkpointLoadingAuthorized: phase0Step === "checkpoint_reproduction",
+    optimizerCreationAuthorized: phase0Step === "single_step_update",
+    backwardExecutionAuthorized: phase0Step === "single_step_update",
+    modelWeightMutationAuthorized: phase0Step === "single_step_update",
+    gpuTrainingAuthorizedNow: !preflight,
+    singleSampleGpuOverfitSmokeAuthorized: false,
+    fullTrainingAuthorized: false,
+    stage1Authorized: false,
+    stage2Authorized: false,
+    strictRevalidationAuthorized: false,
+    validationAuthorized: true,
+    formalInferenceAuthorized: false,
+    checkpointPromotionAuthorized: false,
+    runtimeFrameAuthorized: false,
+    worldEntryAuthorized: false,
+    automaticRetryAuthorized: false,
+  }
+  return config
+}
+
+function consumeStructurePhase0Authorization(authorization, authorizationPath, runId, executionPart, prerequisitePath) {
+  const consumptionPath = resolve(authorization.execution.consumptionPath)
+  const value = { schemaVersion: "ai-painter-stage4-structure-fact-first-phase0-execution-consumption-v1", status: "structure_fact_first_phase0_execution_authorization_atomically_consumed", requestId: authorization.requestId, commandRef: authorization.commandRef, scope: authorization.scope, executionPart, authorizedPhase0Steps: authorization.authorizedPhase0Steps, runId, authorizationPath: projectPath(authorizationPath), authorizationSha256: sha256File(authorizationPath), prerequisitePath: projectPath(prerequisitePath), prerequisiteSha256: sha256File(prerequisitePath), consumedAtUtc: new Date().toISOString(), oneTimeConsumption: true }
+  writeImmutableJson(consumptionPath, value)
+  return { ...value, path: projectPath(consumptionPath), sha256: sha256File(consumptionPath) }
+}
+
+function buildStructurePhase0Identity(authorization, authorizationPath, consumption, configPath, runId, phase0Step) {
+  return { schemaVersion: "ai-painter-stage4-structure-fact-first-phase0-execution-identity-v1", status: "phase0_execution_identity_active_not_completed", runId, phase0Step, requestId: authorization.requestId, commandRef: authorization.commandRef, scope: authorization.scope, authorizationPath: projectPath(authorizationPath), authorizationSha256: sha256File(authorizationPath), phase0ConsumptionPath: consumption.path, phase0ConsumptionSha256: consumption.sha256, implementationAuthorizationPath: authorization.bindings.implementationAuthorization.path, implementationAuthorizationSha256: authorization.bindings.implementationAuthorization.sha256, implementationConsumptionPath: authorization.bindings.implementationConsumption.path, implementationConsumptionSha256: authorization.bindings.implementationConsumption.sha256, sourceConfigPath: projectPath(configPath), sourceConfigSha256: sha256File(configPath), datasetManifestPath: authorization.bindings.datasetManifest.path, datasetManifestSha256: authorization.bindings.datasetManifest.sha256, autoencoderCheckpointPath: authorization.bindings.projectAutoencoderCheckpoint.path, autoencoderCheckpointSha256: authorization.bindings.projectAutoencoderCheckpoint.sha256, trainerPath: TRAINER, trainerSha256: sha256File(TRAINER), runnerPath: "scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs", runnerSha256: sha256File("scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs"), cpuCheckerPath: V9_CPU_CHECKER, cpuCheckerSha256: sha256File(V9_CPU_CHECKER), fixedTaskIdentity: { architecture: STRUCTURE_PHASE0_ARCHITECTURE, sampleId: SAMPLE_ID, sampleSplit: "validation", seed: 20263722, timestep: 999, requiredBoundarySides: ["west"], datasetSplit: SPLITS, phase0Resolution: { width: 256, height: 192 } } }
+}
+
+function runStructurePhase0PythonPreflight(authorization, configPath) {
+  const result = spawnSync(PYTHON, [TRAINER, "--config", configPath, "--dataset-package", resolve(authorization.bindings.datasetManifest.path), "--autoencoder-checkpoint", resolve(authorization.bindings.projectAutoencoderCheckpoint.path), "--output-dir", resolve(`${authorization.execution.preflightRoot}/trainer-output-must-not-exist`), "--resolution-stage", "0", "--single-sample-overfit-smoke", "--overfit-sample-id", SAMPLE_ID, "--overfit-epochs", "1", "--overfit-evaluation-interval", "1", "--stage4-structure-fact-first-phase0-causal", "--stage-control-dry-run", "--preflight-only"], { cwd: ROOT, env: pythonEnv(), encoding: "utf8", windowsHide: true, timeout: 180000 })
+  return { exitCode: result.status, signal: result.signal, stdout: result.stdout, stderr: result.stderr }
+}
+
+function runStructurePhase0BCPythonPreflight(authorization, configPath) {
+  const result = spawnSync(PYTHON, [TRAINER, "--config", configPath, "--dataset-package", resolve(authorization.bindings.datasetManifest.path), "--autoencoder-checkpoint", resolve(authorization.bindings.projectAutoencoderCheckpoint.path), "--output-dir", resolve(`${authorization.execution.preflightRoot}/trainer-output-must-not-exist`), "--resolution-stage", "0", "--single-sample-overfit-smoke", "--overfit-sample-id", SAMPLE_ID, "--overfit-epochs", "1", "--overfit-evaluation-interval", "1", "--stage4-validation-kernel-phase0-update", "--stage-control-dry-run", "--preflight-only"], { cwd: ROOT, env: pythonEnv(), encoding: "utf8", windowsHide: true, timeout: 180000 })
+  return { exitCode: result.status, signal: result.signal, stdout: result.stdout, stderr: result.stderr }
+}
+
+function runStructurePhase0Trainer(authorization, configPath, identityPath, outputDir, extraArgs) {
+  return new Promise((complete) => {
+    const args = [TRAINER, "--config", configPath, "--dataset-package", resolve(authorization.bindings.datasetManifest.path), "--autoencoder-checkpoint", resolve(authorization.bindings.projectAutoencoderCheckpoint.path), "--output-dir", outputDir, "--resolution-stage", "0", "--single-sample-overfit-smoke", "--overfit-sample-id", SAMPLE_ID, "--overfit-epochs", "1", "--overfit-evaluation-interval", "1", "--phase0-execution-identity", identityPath, ...extraArgs]
+    const child = spawn(PYTHON, args, { cwd: ROOT, env: { ...pythonEnv(), CUBLAS_WORKSPACE_CONFIG: ":4096:8" }, windowsHide: true, stdio: ["ignore", "pipe", "pipe"] })
+    let stdout = ""; let stderr = ""
+    child.stdout.on("data", (value) => { stdout += value.toString() })
+    child.stderr.on("data", (value) => { stderr += value.toString() })
+    child.on("close", (exitCode, signal) => complete({ exitCode, signal, stdout, stderr }))
+  })
+}
+
+function persistStructurePhase0ChildProcessEvidence(phaseRoot, result) {
+  const evidenceRoot = path.join(phaseRoot, "trainer-process-evidence")
+  fs.mkdirSync(evidenceRoot, { recursive: false })
+  const stdoutPath = path.join(evidenceRoot, "stdout.txt")
+  const stderrPath = path.join(evidenceRoot, "stderr.txt")
+  writeImmutableText(stdoutPath, result.stdout ?? "")
+  writeImmutableText(stderrPath, result.stderr ?? "")
+  const reportPath = path.join(evidenceRoot, "process-report.json")
+  writeImmutableJson(reportPath, {
+    schemaVersion: "ai-painter-stage4-structure-fact-first-phase0-child-process-evidence-v1",
+    status: result.exitCode === 0 ? "phase0_child_process_completed" : "phase0_child_process_failed_closed",
+    recordedAtUtc: new Date().toISOString(),
+    exitCode: result.exitCode,
+    signal: result.signal,
+    stdout: { path: projectPath(stdoutPath), sha256: sha256File(stdoutPath) },
+    stderr: { path: projectPath(stderrPath), sha256: sha256File(stderrPath) },
+  })
+  return { reportPath: projectPath(reportPath), reportSha256: sha256File(reportPath), stdoutPath: projectPath(stdoutPath), stdoutSha256: sha256File(stdoutPath), stderrPath: projectPath(stderrPath), stderrSha256: sha256File(stderrPath) }
 }
 
 async function runStage4ValidationKernelPhase0(argv) {
@@ -1249,7 +1742,13 @@ function resolveStageControlMode(modeId) {
   return decision
 }
 function writeImmutableJson(value, body) { const absolute = resolve(value); fs.mkdirSync(path.dirname(absolute), { recursive: true }); const handle = fs.openSync(absolute, "wx"); try { fs.writeFileSync(handle, `${JSON.stringify(body, null, 2)}\n`, "utf8"); fs.fsyncSync(handle) } finally { fs.closeSync(handle) } }
+function writeImmutableText(value, body) { const absolute = resolve(value); fs.mkdirSync(path.dirname(absolute), { recursive: true }); const handle = fs.openSync(absolute, "wx"); try { fs.writeFileSync(handle, body, "utf8"); fs.fsyncSync(handle) } finally { fs.closeSync(handle) } }
 
-if (process.argv.includes("--stage4-validation-kernel-phase0") || process.argv.includes("--stage4-validation-kernel-model-smoke")) {
+if (
+  process.argv.includes("--stage4-structure-fact-first-phase0-bc-continuation")
+  || process.argv.includes("--stage4-structure-fact-first-phase0")
+  || process.argv.includes("--stage4-validation-kernel-phase0")
+  || process.argv.includes("--stage4-validation-kernel-model-smoke")
+) {
   process.exit(await runV8Stage4Smoke(process.argv.slice(2)))
 }
