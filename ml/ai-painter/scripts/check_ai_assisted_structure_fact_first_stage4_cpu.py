@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[3]
 AUTHORIZATION_PATH = compiler.AUTHORIZATION_PATH
 CONSUMPTION_PATH = compiler.CONSUMPTION_PATH
 OUTPUT_ROOT = Path(
-    ".runtime/ai-painter/stage4-structure-fact-first-dual-stage-cpu-support/20260810-212419895"
+    ".runtime/ai-painter/stage4-structure-fact-first-dual-stage-cpu-support/20260810-215503422"
 )
 CONFIG_PATH = OUTPUT_ROOT / "inactive-config.json"
 REPORT_PATH = OUTPUT_ROOT / "cpu-positive-negative-regression.json"
@@ -183,7 +183,7 @@ def main() -> int:
         write_json_exclusive(TERMINAL_PATH, terminal)
         capsule = {
             "schemaVersion": "ai-painter-local-task-capsule-v1",
-            "capsuleId": "ai-painter-stage4-structure-fact-first-cpu-20260810-212419895",
+            "capsuleId": "ai-painter-stage4-structure-fact-first-cpu-20260810-215503422",
             "module": "AI Painter R5",
             "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
             "currentStage": 4,

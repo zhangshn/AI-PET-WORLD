@@ -12,10 +12,25 @@ import train_ai_assisted_conditional_denoiser as trainer
 ROOT = Path(__file__).resolve().parents[3]
 AUTHORIZATION_PATH = Path(
     ".runtime/ai-painter/owner-action-requests/"
-    "owner-authorized-stage4-structure-fact-first-dual-stage-cpu-support-20260810-212419895/"
+    "owner-authorized-stage4-structure-fact-first-lineage-correction-20260810-215503422/"
     "implementation-authorization.json"
 )
 CONSUMPTION_PATH = AUTHORIZATION_PATH.parent / "implementation-consumption.json"
+REQUEST_ID = "owner-authorized-stage4-structure-fact-first-lineage-correction-20260810-215503422"
+SCOPE = "correct_stage4_structure_fact_first_pre_and_post_implementation_lineage_then_run_cpu_regression_once"
+ORIGINAL_REQUEST_ID = (
+    "owner-authorized-stage4-structure-fact-first-dual-stage-cpu-support-20260810-212419895"
+)
+ORIGINAL_SCOPE = "implement_stage4_structure_fact_first_dual_stage_generator_v1_cpu_support_inactive_only"
+ORIGINAL_PRE_IMPLEMENTATION_SHA256 = {
+    "modelBefore": "e189fa70c0d28633b9313636afadd6f16a241118442ab6eae5074706092708e7",
+    "trainerBefore": "15f7f14c876ac6afc051284c6853521be0174c5f0def2815570019fd0e643d05",
+    "modeRegistryBefore": "207365a1cac598638ed641aafccf1f95a35e134844e4e649d85c62cb70ce94d1",
+}
+CORRECTION_BASELINE_SHA256 = {
+    "compilerBeforeCorrection": "38bb8152e89dff2ab221c98cfd514fc0aeb65bc33eb234cbc34016a8679368c8",
+    "cpuCheckerBeforeCorrection": "4d8962e905cb1a5d7e1e61d75253fe7ebffbb5f05cba6df31264321a34657b11",
+}
 SOURCE_CONFIG_PATH = Path(
     ".runtime/ai-painter/v9-r5-stage4-cpu-support/20260809-161005213/inactive-config.json"
 )
@@ -95,27 +110,23 @@ def main() -> int:
 
 def validate_authorization() -> dict:
     authorization = read_json(resolve(AUTHORIZATION_PATH))
-    request_id = "owner-authorized-stage4-structure-fact-first-dual-stage-cpu-support-20260810-212419895"
-    scope = "implement_stage4_structure_fact_first_dual_stage_generator_v1_cpu_support_inactive_only"
     if (
-        authorization.get("requestId") != request_id
-        or authorization.get("commandRef") != request_id
-        or authorization.get("scope") != scope
+        authorization.get("requestId") != REQUEST_ID
+        or authorization.get("commandRef") != REQUEST_ID
+        or authorization.get("scope") != SCOPE
         or authorization.get("status") != "resolved_owner_authorized_not_consumed"
     ):
-        raise ValueError("Stage 4 structure-fact-first implementation authorization identity is invalid")
+        raise ValueError("Stage 4 structure-fact-first lineage correction authorization identity is invalid")
     required_true = (
-        "modelArchitectureRegistryImplementation", "stageALayoutPredictorCpuImplementation",
-        "stageBConditionPreservingDenoiserCpuImplementation", "trainerLegalSupervisionCpuImplementation",
-        "checkpointSourceIsolationImplementation", "modeRegistryImplementation",
-        "inactiveConfigCompilerImplementation", "diagnosticManifestImplementation",
-        "previewReproductionIdentityContractImplementation", "syntheticCpuTensorForward",
-        "syntheticCpuAutogradGrad", "cpuPositiveNegativeRegression", "fullInactiveConfigAudit",
+        "implementationLineageValidationCorrection", "cpuCheckerLineageValidationCorrection",
+        "syntheticCpuTensorForward", "syntheticCpuAutogradGrad", "cpuPositiveNegativeRegression",
+        "fullInactiveConfigAudit",
         "legacyV7V8V9CompatibilityRegression", "inactiveConfigWrite", "supportContractWrite",
         "cpuReportWrite", "ownerActionRequestWrite", "terminalEvidenceWrite",
         "uniquePlanUpdate", "localTaskCapsuleWrite",
     )
     required_false = (
+        "modelModification", "trainerModification", "modeRegistryModification",
         "freeHyperparameterSelection", "checkpointReadOrLoad", "optimizerCreation",
         "backwardMethodExecution", "modelWeightModification", "gpuUse", "training",
         "reviewThresholdModification", "stage4FullTraining", "stage5StrictRevalidation",
@@ -125,17 +136,70 @@ def validate_authorization() -> dict:
     if any(actions.get(key) is not True for key in required_true):
         raise ValueError("Stage 4 structure-fact-first implementation actions are incomplete")
     if any(actions.get(key) is not False for key in required_false):
-        raise ValueError("Stage 4 structure-fact-first forbidden implementation action is open")
+        raise ValueError("Stage 4 structure-fact-first forbidden lineage correction action is open")
+    if set(actions) != set(required_true) | set(required_false):
+        raise ValueError("Stage 4 structure-fact-first lineage correction action set is not exact")
+
     for key in (
-        "designTerminal", "architectureComparison", "inactiveImplementationContract",
-        "designCpuRegression", "modelBefore", "trainerBefore", "modeRegistryBefore",
-        "v9CompilerBaseline", "v9CpuCheckerBaseline",
+        "previousFailureTerminal", "originalImplementationAuthorization",
+        "originalImplementationConsumption", "currentModelImplementation",
+        "currentTrainerImplementation", "currentModeRegistryImplementation",
     ):
         binding = authorization.get("bindings", {}).get(key, {})
         if binding.get("sha256") != sha256_file(resolve(Path(binding.get("path", "missing")))):
-            raise ValueError(f"Stage 4 structure-fact-first immutable binding changed: {key}")
-    design_terminal = read_json(resolve(Path(authorization["bindings"]["designTerminal"]["path"])))
-    design_contract = read_json(resolve(Path(authorization["bindings"]["inactiveImplementationContract"]["path"])))
+            raise ValueError(f"Stage 4 structure-fact-first live immutable binding changed: {key}")
+    for key, expected_sha in CORRECTION_BASELINE_SHA256.items():
+        binding = authorization.get("bindings", {}).get(key, {})
+        if binding.get("sha256") != expected_sha:
+            raise ValueError(f"Stage 4 structure-fact-first correction baseline changed: {key}")
+
+    previous_failure = read_json(resolve(Path(authorization["bindings"]["previousFailureTerminal"]["path"])))
+    if (
+        previous_failure.get("status")
+        != "stage4_structure_fact_first_dual_stage_cpu_support_failed_closed"
+        or previous_failure.get("failureMessage")
+        != "Stage 4 structure-fact-first immutable binding changed: modelBefore"
+    ):
+        raise ValueError("Stage 4 structure-fact-first previous failure binding is invalid")
+
+    original = read_json(resolve(Path(
+        authorization["bindings"]["originalImplementationAuthorization"]["path"]
+    )))
+    if (
+        original.get("requestId") != ORIGINAL_REQUEST_ID
+        or original.get("commandRef") != ORIGINAL_REQUEST_ID
+        or original.get("scope") != ORIGINAL_SCOPE
+        or original.get("status") != "resolved_owner_authorized_not_consumed"
+    ):
+        raise ValueError("Stage 4 structure-fact-first original implementation identity is invalid")
+    for key, expected_sha in ORIGINAL_PRE_IMPLEMENTATION_SHA256.items():
+        historical = original.get("bindings", {}).get(key, {})
+        if historical.get("sha256") != expected_sha:
+            raise ValueError(f"Stage 4 structure-fact-first historical pre-implementation identity changed: {key}")
+    for key in (
+        "designTerminal", "architectureComparison", "inactiveImplementationContract",
+        "designCpuRegression", "v9CompilerBaseline", "v9CpuCheckerBaseline",
+    ):
+        identity = original.get("bindings", {}).get(key, {})
+        if identity.get("sha256") != sha256_file(resolve(Path(identity.get("path", "missing")))):
+            raise ValueError(f"Stage 4 structure-fact-first original evidence changed: {key}")
+
+    original_consumption = read_json(resolve(Path(
+        authorization["bindings"]["originalImplementationConsumption"]["path"]
+    )))
+    if (
+        original_consumption.get("status") != "consumed_once_before_cpu_implementation"
+        or original_consumption.get("requestId") != ORIGINAL_REQUEST_ID
+        or original_consumption.get("commandRef") != ORIGINAL_REQUEST_ID
+        or original_consumption.get("scope") != ORIGINAL_SCOPE
+        or original_consumption.get("authorizationSha256")
+        != authorization["bindings"]["originalImplementationAuthorization"]["sha256"]
+        or original_consumption.get("oneTimeConsumption") is not True
+    ):
+        raise ValueError("Stage 4 structure-fact-first original implementation consumption is invalid")
+
+    design_terminal = read_json(resolve(Path(original["bindings"]["designTerminal"]["path"])))
+    design_contract = read_json(resolve(Path(original["bindings"]["inactiveImplementationContract"]["path"])))
     if (
         design_terminal.get("status")
         != "stage4_new_model_route_design_converged_recommended_contract_inactive_closed"
@@ -146,14 +210,15 @@ def validate_authorization() -> dict:
         raise ValueError("Stage 4 structure-fact-first design prerequisite is not valid and inactive")
     consumption = read_json(resolve(CONSUMPTION_PATH))
     if (
-        consumption.get("status") != "consumed_once_before_cpu_implementation"
-        or consumption.get("requestId") != request_id
-        or consumption.get("commandRef") != request_id
-        or consumption.get("scope") != scope
+        consumption.get("status") != "consumed_once_before_lineage_correction"
+        or consumption.get("requestId") != REQUEST_ID
+        or consumption.get("commandRef") != REQUEST_ID
+        or consumption.get("scope") != SCOPE
         or consumption.get("authorizationSha256") != sha256_file(resolve(AUTHORIZATION_PATH))
         or consumption.get("oneTimeConsumption") is not True
     ):
-        raise ValueError("Stage 4 structure-fact-first authorization was not atomically consumed")
+        raise ValueError("Stage 4 structure-fact-first lineage correction was not atomically consumed")
+    authorization["_originalImplementationAuthorization"] = original
     return authorization
 
 
@@ -216,8 +281,15 @@ def compile_config(source: dict, authorization: dict, sample: dict) -> dict:
         "gpuUseAuthorized": False,
         "trainingAuthorized": False,
     }
-    authorization_binding = binding(AUTHORIZATION_PATH)
-    consumption_binding = binding(CONSUMPTION_PATH)
+    original_authorization = authorization["_originalImplementationAuthorization"]
+    original_authorization_binding = deepcopy(
+        authorization["bindings"]["originalImplementationAuthorization"]
+    )
+    original_consumption_binding = deepcopy(
+        authorization["bindings"]["originalImplementationConsumption"]
+    )
+    correction_authorization_binding = binding(AUTHORIZATION_PATH)
+    correction_consumption_binding = binding(CONSUMPTION_PATH)
     training["stage4StructureFactFirstDualStage"] = {
         "enabled": False,
         "status": "cpu_support_verified_not_active",
@@ -287,18 +359,31 @@ def compile_config(source: dict, authorization: dict, sample: dict) -> dict:
         },
         "hyperparameterSelections": [],
         "evidenceBindings": {
-            "designTerminal": deepcopy(authorization["bindings"]["designTerminal"]),
-            "architectureComparison": deepcopy(authorization["bindings"]["architectureComparison"]),
-            "inactiveImplementationContract": deepcopy(authorization["bindings"]["inactiveImplementationContract"]),
-            "designCpuRegression": deepcopy(authorization["bindings"]["designCpuRegression"]),
+            "designTerminal": deepcopy(original_authorization["bindings"]["designTerminal"]),
+            "architectureComparison": deepcopy(original_authorization["bindings"]["architectureComparison"]),
+            "inactiveImplementationContract": deepcopy(original_authorization["bindings"]["inactiveImplementationContract"]),
+            "designCpuRegression": deepcopy(original_authorization["bindings"]["designCpuRegression"]),
         },
         "ownerImplementationAuthorization": {
-            "authorizationPath": authorization_binding["path"],
-            "authorizationSha256": authorization_binding["sha256"],
-            "implementationConsumptionPath": consumption_binding["path"],
-            "implementationConsumptionSha256": consumption_binding["sha256"],
-            "commandRef": authorization["commandRef"],
-            "scope": authorization["scope"],
+            "authorizationPath": original_authorization_binding["path"],
+            "authorizationSha256": original_authorization_binding["sha256"],
+            "implementationConsumptionPath": original_consumption_binding["path"],
+            "implementationConsumptionSha256": original_consumption_binding["sha256"],
+            "commandRef": original_authorization["commandRef"],
+            "scope": original_authorization["scope"],
+        },
+        "implementationLineageCorrection": {
+            "authorizationPath": correction_authorization_binding["path"],
+            "authorizationSha256": correction_authorization_binding["sha256"],
+            "consumptionPath": correction_consumption_binding["path"],
+            "consumptionSha256": correction_consumption_binding["sha256"],
+            "previousFailureTerminal": deepcopy(authorization["bindings"]["previousFailureTerminal"]),
+            "historicalBeforeBindingsPreserved": True,
+            "currentImplementationBindings": {
+                "model": deepcopy(authorization["bindings"]["currentModelImplementation"]),
+                "trainer": deepcopy(authorization["bindings"]["currentTrainerImplementation"]),
+                "modeRegistry": deepcopy(authorization["bindings"]["currentModeRegistryImplementation"]),
+            },
         },
         "activationGate": {
             "configurationActiveNow": False,
@@ -318,11 +403,11 @@ def compile_config(source: dict, authorization: dict, sample: dict) -> dict:
         },
     }
     training["ownerTrainingAuthorization"] = {
-        "authorizationId": authorization["requestId"],
-        "authorizationPath": authorization_binding["path"],
-        "authorizationSha256": authorization_binding["sha256"],
-        "implementationConsumptionPath": consumption_binding["path"],
-        "implementationConsumptionSha256": consumption_binding["sha256"],
+        "authorizationId": original_authorization["requestId"],
+        "authorizationPath": original_authorization_binding["path"],
+        "authorizationSha256": original_authorization_binding["sha256"],
+        "implementationConsumptionPath": original_consumption_binding["path"],
+        "implementationConsumptionSha256": original_consumption_binding["sha256"],
         "status": "not_authorized_cpu_support_only",
         "checkpointLoadingAuthorized": False,
         "optimizerCreationAuthorized": False,
