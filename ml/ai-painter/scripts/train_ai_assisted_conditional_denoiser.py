@@ -39,6 +39,7 @@ from ai_painter_stage_mode_registry import (
     V9_STAGE4_SMOKE_STATUS,
     V9_STAGE4_UNIFIED_PREVIEW_SMOKE_STATUS,
     V9_STAGE4_VALIDATION_KERNEL_SMOKE_STATUS,
+    STRUCTURE_FACT_FIRST_STAGE4_INACTIVE_STATUS,
     resolve_stage_mode,
 )
 
@@ -148,6 +149,7 @@ V9_STAGE4_CPU_INACTIVE_STATUS = V9_STAGE4_INACTIVE_STATUS
 V9_STAGE4_SMOKE_ACTIVE_STATUS = V9_STAGE4_SMOKE_STATUS
 V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS = V9_STAGE4_UNIFIED_PREVIEW_SMOKE_STATUS
 V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS = V9_STAGE4_VALIDATION_KERNEL_SMOKE_STATUS
+STRUCTURE_FACT_FIRST_STAGE4_CPU_INACTIVE_STATUS = STRUCTURE_FACT_FIRST_STAGE4_INACTIVE_STATUS
 STAGE4_VALIDATION_KERNEL_PHASE0_UPDATE_STATUS = "owner_authorized_stage4_validation_kernel_phase0_single_step_update"
 STAGE4_VALIDATION_KERNEL_PHASE0_REPRODUCE_STATUS = "owner_authorized_stage4_validation_kernel_phase0_checkpoint_preview_reproduction"
 V7_MVP64_SPLIT_COUNTS = {
@@ -184,6 +186,7 @@ V9_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS = tuple(
     "stage4DiagnosticRouteCentroidDrift",
     "stage4DiagnosticRouteRequiredBoundaryContactMinimum",
 )
+STRUCTURE_FACT_FIRST_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS = V9_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS
 
 
 def main() -> int:
@@ -1534,6 +1537,8 @@ def validate_training_inputs(config, package):
         validate_v8_stage4_decoded_domain_alignment_training_contract(config, package)
     elif architecture == "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment":
         validate_v9_stage4_object_semantic_decoded_alignment_cpu_contract(config, package)
+    elif architecture == "stage4_structure_fact_first_dual_stage_generator_v1":
+        validate_structure_fact_first_stage4_cpu_contract(config, package)
     else:
         raise ValueError("unsupported conditional denoiser architecture")
     if package.get("schemaVersion") != "ai-assisted-cold-start-dataset-package-v1":
@@ -3146,6 +3151,200 @@ def validate_v9_stage4_object_semantic_decoded_alignment_cpu_contract(config, pa
         "diagnosticManifestFields": list(V9_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS),
         "reusedWeight": float(training["denoiserLossWeights"]["discreteConditionOutputBinding"]),
         "v7OrV8DenoiserCheckpointCompatible": False,
+    }
+
+
+def validate_structure_fact_first_stage4_cpu_contract(config, package, project_root=None):
+    mode = resolve_stage_mode(config)
+    architecture = "stage4_structure_fact_first_dual_stage_generator_v1"
+    if (
+        mode.mode_id != "structure_fact_first_stage4_inactive"
+        or mode.execution_kind != "cpu_inactive"
+        or mode.active_execution is not False
+        or config.get("denoiserArchitecture") != architecture
+    ):
+        raise ValueError("Stage 4 structure-fact-first mode must remain CPU inactive")
+    if config.get("conditionChannels") != 23 or len(config.get("conditionChannelOrder", [])) != 23:
+        raise ValueError("Stage 4 structure-fact-first must preserve all 23 condition channels")
+    if config.get("conditionResizeContract") != "discrete_nearest_continuous_bilinear_v1":
+        raise ValueError("Stage 4 structure-fact-first typed resize contract changed")
+    if config.get("conditionOutputBinding") != "predicted_clean_latent_and_decoded_rgb_v1":
+        raise ValueError("Stage 4 structure-fact-first latent output binding changed")
+    if conditional_dataset_selection_contract(config) != "registered_v7_capacity_contribution_v1":
+        raise ValueError("Stage 4 structure-fact-first must use the registered V7 capacity dataset")
+    if package.get("v7CapacityContributionCount") != 64:
+        raise ValueError("Stage 4 structure-fact-first dataset capacity must remain 64")
+
+    training = config.get("training", {})
+    if training.get("denoiserLossVersion") != "velocity_structure_fact_layout_condition_preserving_rgb_v1":
+        raise ValueError("Stage 4 structure-fact-first Loss identity is invalid")
+    if training.get("bestCheckpointMetric") != "fixed_grid_structure_fact_and_rgb_semantic_score_v1":
+        raise ValueError("Stage 4 structure-fact-first checkpoint metric identity is invalid")
+    contract = training.get("stage4StructureFactFirstDualStage", {})
+    expected_identity = {
+        "enabled": False,
+        "status": "cpu_support_verified_not_active",
+        "contractId": "stage4_structure_fact_first_dual_stage_generator_v1",
+        "architectureId": architecture,
+        "conditionChannelCount": 23,
+        "conditionSchemaChanged": False,
+        "latentOutputShapeChanged": False,
+        "autoencoderWeightsChanged": False,
+        "datasetCapacityOrSplitChanged": False,
+        "legacyV7V8V9ModesPreserved": True,
+        "oldDenoiserCheckpointCompatible": False,
+        "stage0InitializationIfLaterAuthorized": "project_random_initialization_only",
+        "trainingLossImplementationStatus": "implemented_cpu_verified_not_active",
+    }
+    for key, expected in expected_identity.items():
+        if contract.get(key) != expected:
+            raise ValueError(f"Stage 4 structure-fact-first contract {key} is invalid")
+
+    expected_channels = [
+        "terrain_path_ground", "route_required_boundary", "object_footprints",
+        "object_tree", "object_rock", "object_vegetation",
+    ]
+    stage_a = contract.get("stageA", {})
+    if (
+        stage_a.get("component") != "typed_semantic_topology_layout_predictor"
+        or stage_a.get("inputChannels") != config.get("conditionChannelOrder")
+        or stage_a.get("outputChannels") != expected_channels
+        or stage_a.get("independentTypedHeads") is not True
+        or stage_a.get("auditableIntermediate") is not True
+    ):
+        raise ValueError("Stage 4 structure-fact-first Stage A contract is invalid")
+    stage_b = contract.get("stageB", {})
+    if (
+        stage_b.get("component") != "condition_preserving_rgb_latent_denoiser"
+        or stage_b.get("originalConditionChannels") != config.get("conditionChannelOrder")
+        or stage_b.get("structureInputChannels") != expected_channels
+        or stage_b.get("injectionScales") != ["level0", "level1", "middle", "up1", "up0"]
+        or stage_b.get("originalConditionsPreservedAtEveryScale") is not True
+    ):
+        raise ValueError("Stage 4 structure-fact-first Stage B contract is invalid")
+
+    expected_sources = [
+        "original_owner_approved_reference_rgb",
+        "original_compiled_23_channel_condition_pack",
+        "approved_world_facts_visual_fact_manifest_region_graph_and_edge_ports",
+        "project_generated_game_coordinate_route_geometry",
+        "original_object_identity_and_semantic_masks",
+        "frozen_project_autoencoder_encoder_and_decoder_features",
+        "current_model_prediction_derived_without_failed_preview_targets",
+    ]
+    supervision = contract.get("legalSupervision", {})
+    if (
+        supervision.get("allowedSources") != expected_sources
+        or supervision.get("layoutLoss") != "balanced_binary_condition_loss_over_six_typed_structure_channels"
+        or supervision.get("weightSource") != "training.denoiserLossWeights.discreteConditionOutputBinding"
+        or supervision.get("failedPreviewPixelsUsedAsTrainingTargets") is not False
+        or supervision.get("machineReviewThresholdsUsedAsTrainingTargets") is not False
+        or supervision.get("machineReviewLabelsUsedAsTrainingTargets") is not False
+        or supervision.get("newFreeHyperparameterSelected") is not False
+    ):
+        raise ValueError("Stage 4 structure-fact-first legal supervision contract is invalid")
+    if float(training.get("denoiserLossWeights", {}).get("discreteConditionOutputBinding", 0.0)) <= 0.0:
+        raise ValueError("Stage 4 structure-fact-first must reuse the existing condition binding weight")
+    if contract.get("hyperparameterSelections") != []:
+        raise ValueError("Stage 4 structure-fact-first CPU support cannot select hyperparameters")
+
+    checkpoint = contract.get("checkpointIsolation", {})
+    if checkpoint != {
+        "v7V8V9DenoiserReadOrLoadAuthorized": False,
+        "newRouteCheckpointReadOrLoadAuthorized": False,
+        "fixedRandomInitializationRequiredForFutureQualification": True,
+        "checkpointSchema": "stage4_structure_fact_first_dual_stage_generator_v1_only",
+    }:
+        raise ValueError("Stage 4 structure-fact-first checkpoint isolation is invalid")
+    preview = contract.get("previewReproductionIdentity", {})
+    if (
+        preview.get("status") != "contract_supported_inactive"
+        or preview.get("fixedEpochs") != [1, 5, 10, 20, 30]
+        or preview.get("dynamicMetadataForbidden") is not True
+        or preview.get("configurationActiveNow") is not False
+        or set(preview.get("requiredIdentityFields", [])) != {
+            "modelStateSha256", "seed", "sampler", "timestepSequence",
+            "conditionTensorSha256", "autoencoderSha256", "decodeConfigSha256",
+            "rgbTensorSha256", "pngSha256",
+        }
+    ):
+        raise ValueError("Stage 4 structure-fact-first preview identity contract is invalid")
+    registry = contract.get("diagnosticManifestRegistry", {})
+    if (
+        registry.get("exactFieldCount") != len(STRUCTURE_FACT_FIRST_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS)
+        or registry.get("exactFields") != list(STRUCTURE_FACT_FIRST_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS)
+        or registry.get("fixedEpochs") != [1, 5, 10, 20, 30]
+        or registry.get("rejectUnknownDiagnosticFields") is not True
+    ):
+        raise ValueError("Stage 4 structure-fact-first diagnostic Manifest registry is invalid")
+
+    activation_gate = contract.get("activationGate", {})
+    expected_activation_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow",
+        "checkpointWriteNow", "stage4FullTrainingNow", "stage5StrictRevalidationNow",
+        "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow", "worldEntryNow",
+    }
+    if set(activation_gate) != expected_activation_fields or any(
+        activation_gate.get(key) is not False for key in expected_activation_fields
+    ):
+        raise ValueError("Stage 4 structure-fact-first activation gate is not fully closed")
+
+    root = Path(project_root or Path.cwd()).resolve()
+    evidence = contract.get("evidenceBindings", {})
+    evidence_specs = {
+        "designTerminal": "63fc3b3c59943f8ff7028746551113d65bf16665e6aaa395582c1feae0f6f197",
+        "architectureComparison": "d6d33c0819b180562846d6fc449bfc050dca588bd97aa9d057f2589995469203",
+        "inactiveImplementationContract": "039b2dba38e5c3f42ee48a982a1401302bcdb1f50e3233a9e6bb0bfa0e20e75a",
+        "designCpuRegression": "6b3114124d471f8e3585033fe3eb87a415b08919ef55b259266e0ac7415b7652",
+    }
+    for key, expected_sha in evidence_specs.items():
+        identity = evidence.get(key, {})
+        if identity.get("sha256") != expected_sha:
+            raise ValueError(f"Stage 4 structure-fact-first evidence identity is invalid: {key}")
+        verify_config_bound_project_file(root, identity.get("path"), expected_sha, key)
+
+    implementation = contract.get("ownerImplementationAuthorization", {})
+    authorization_path = verify_config_bound_project_file(
+        root, implementation.get("authorizationPath"), implementation.get("authorizationSha256"),
+        "Stage 4 structure-fact-first implementation authorization",
+    )
+    consumption_path = verify_config_bound_project_file(
+        root, implementation.get("implementationConsumptionPath"), implementation.get("implementationConsumptionSha256"),
+        "Stage 4 structure-fact-first implementation consumption",
+    )
+    authorization = read_json(authorization_path)
+    consumption = read_json(consumption_path)
+    command_ref = "owner-authorized-stage4-structure-fact-first-dual-stage-cpu-support-20260810-212419895"
+    scope = "implement_stage4_structure_fact_first_dual_stage_generator_v1_cpu_support_inactive_only"
+    if (
+        authorization.get("requestId") != command_ref
+        or authorization.get("commandRef") != command_ref
+        or authorization.get("scope") != scope
+        or authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or consumption.get("status") != "consumed_once_before_cpu_implementation"
+        or consumption.get("requestId") != command_ref
+        or consumption.get("scope") != scope
+        or consumption.get("authorizationSha256") != implementation.get("authorizationSha256")
+        or consumption.get("oneTimeConsumption") is not True
+    ):
+        raise ValueError("Stage 4 structure-fact-first implementation lineage is invalid")
+    owner = training.get("ownerTrainingAuthorization", {})
+    if owner.get("status") != "not_authorized_cpu_support_only" or any(
+        owner.get(key) is not False for key in (
+            "checkpointLoadingAuthorized", "optimizerCreationAuthorized", "backwardExecutionAuthorized",
+            "modelWeightMutationAuthorized", "gpuTrainingAuthorizedNow", "fullTrainingAuthorized",
+            "strictRevalidationAuthorized", "formalInferenceAuthorized", "checkpointPromotionAuthorized",
+            "runtimeFrameAuthorized", "worldEntryAuthorized", "automaticRetryAuthorized",
+        )
+    ):
+        raise ValueError("Stage 4 structure-fact-first nested training authorization is not fully closed")
+    return {
+        "status": "stage4_structure_fact_first_dual_stage_cpu_contract_valid_inactive",
+        "structureChannels": expected_channels,
+        "stageBInjectionScales": ["level0", "level1", "middle", "up1", "up0"],
+        "diagnosticManifestFields": list(STRUCTURE_FACT_FIRST_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS),
+        "oldDenoiserCheckpointCompatible": False,
     }
 
 
@@ -6405,7 +6604,12 @@ def predict_and_measure(model, noisy_latent, target_velocity, clean_latent, time
     if is_v5_or_later(config):
         stage4_alignment_readout = None
         stage4_object_alignment = None
-        if is_v9_stage4_object_semantic_decoded_alignment(config):
+        stage4_structure_fact = None
+        if is_structure_fact_first_stage4(config):
+            predicted_velocity, stage4_structure_fact = model.predict_velocity_with_stage4_structure_fact(
+                noisy_latent, timesteps, conditions
+            )
+        elif is_v9_stage4_object_semantic_decoded_alignment(config):
             predicted_velocity, stage4_object_alignment = model.predict_velocity_with_stage4_object_alignment(
                 noisy_latent, timesteps, conditions
             )
@@ -6422,6 +6626,20 @@ def predict_and_measure(model, noisy_latent, target_velocity, clean_latent, time
             if target_image is None or latent_normalization is None:
                 raise ValueError("V6 decoded RGB supervision requires target image and latent normalization")
             predicted_rgb = model.autoencoder.decode(denormalize_latent(predicted_clean, latent_normalization))
+            if is_structure_fact_first_stage4(config):
+                return composite_denoiser_losses_structure_fact_first_stage4(
+                    predicted_velocity,
+                    target_velocity,
+                    predicted_clean,
+                    clean_latent,
+                    predicted_conditions,
+                    target_conditions,
+                    predicted_rgb,
+                    target_image,
+                    conditions,
+                    stage4_structure_fact,
+                    config,
+                )
             if is_v9_stage4_object_semantic_decoded_alignment(config):
                 return composite_denoiser_losses_v9_stage4(
                     predicted_velocity,
@@ -6757,6 +6975,123 @@ def composite_denoiser_losses_v8_stage4(
     }
 
 
+def composite_denoiser_losses_structure_fact_first_stage4(
+    predicted_velocity,
+    target_velocity,
+    predicted_clean,
+    clean_latent,
+    predicted_conditions,
+    target_conditions,
+    predicted_rgb,
+    target_rgb,
+    full_conditions,
+    alignment,
+    config,
+):
+    if not isinstance(alignment, dict):
+        raise ValueError("Stage 4 structure-fact-first outputs are missing")
+    layout = alignment.get("structureLayout")
+    head_outputs = tuple(alignment.get("structureHeadOutputs", ()))
+    channel_order = list(alignment.get("structureChannelOrder", ()))
+    expected_order = [
+        "terrain_path_ground", "route_required_boundary", "object_footprints",
+        "object_tree", "object_rock", "object_vegetation",
+    ]
+    if (
+        layout is None
+        or layout.shape[1] != len(expected_order)
+        or len(head_outputs) != len(expected_order)
+        or channel_order != expected_order
+        or list(alignment.get("stageBInjectionScales", ()))
+        != ["level0", "level1", "middle", "up1", "up0"]
+    ):
+        raise ValueError("Stage 4 structure-fact-first layout identity or shape is invalid")
+
+    base = composite_denoiser_losses_v6(
+        predicted_velocity,
+        target_velocity,
+        predicted_clean,
+        clean_latent,
+        predicted_conditions,
+        target_conditions,
+        predicted_rgb,
+        target_rgb,
+        full_conditions,
+        config,
+    )
+    targets, target_order = stage4_decoded_alignment_targets(
+        full_conditions,
+        layout.shape[-2:],
+        config,
+    )
+    if target_order != expected_order or targets.shape != layout.shape:
+        raise ValueError("Stage 4 structure-fact-first legal layout targets are invalid")
+    channel_losses = [
+        balanced_binary_condition_loss(
+            layout[:, index:index + 1],
+            targets[:, index:index + 1],
+        )
+        for index in range(len(expected_order))
+    ]
+    layout_loss = torch.stack(channel_losses).mean()
+    reused_weight = float(config["training"]["denoiserLossWeights"]["discreteConditionOutputBinding"])
+    checkpoint_weight = float(
+        config["training"]["bestCheckpointMetricWeights"]["discreteConditionOutputBindingBce"]
+    )
+    composite = base["compositeLossTensor"] + layout_loss * reused_weight
+    checkpoint = base["compositeConditionQualityScore"] + layout_loss * checkpoint_weight
+    prefix_by_channel = {
+        "object_footprints": "ObjectFootprints",
+        "object_tree": "ObjectTree",
+        "object_rock": "ObjectRock",
+        "object_vegetation": "ObjectVegetation",
+    }
+    metrics = {
+        "stage4StructureFactLayoutBce": layout_loss,
+        "stage4StructureFactReusedDiscreteConditionWeight": layout.new_tensor(reused_weight),
+    }
+    object_gradients = []
+    for index, name in enumerate(expected_order):
+        metrics[f"stage4StructureFact{upper_camel(name)}Bce"] = channel_losses[index]
+        if name not in prefix_by_channel:
+            continue
+        gradient = predicted_rgb.new_zeros(())
+        if torch.is_grad_enabled() and channel_losses[index].requires_grad:
+            contribution = torch.autograd.grad(
+                channel_losses[index] * reused_weight,
+                head_outputs[index],
+                retain_graph=True,
+                create_graph=False,
+                allow_unused=True,
+            )[0]
+            if contribution is not None:
+                gradient = contribution.abs().mean().detach()
+        object_gradients.append(gradient)
+        prefix = prefix_by_channel[name]
+        metrics.update({
+            f"stage4Diagnostic{prefix}IndependentLoss": channel_losses[index].detach(),
+            f"stage4Diagnostic{prefix}GradientContribution": gradient,
+            f"stage4Diagnostic{prefix}DecodedResponsePrototypeMae": masked_rgb_prototype_mae(
+                predicted_rgb,
+                target_rgb,
+                full_conditions,
+                config,
+                name,
+            ).detach(),
+        })
+    gradient_stack = torch.stack(object_gradients)
+    metrics["stage4DiagnosticObjectGradientAvailable"] = (
+        torch.isfinite(gradient_stack) & (gradient_stack > 0.0)
+    ).all().to(predicted_rgb.dtype)
+    return {
+        **base,
+        **metrics,
+        "compositeLossTensor": composite,
+        "compositeLoss": composite,
+        "compositeConditionQualityScore": checkpoint,
+    }
+
+
 def composite_denoiser_losses_v9_stage4(
     predicted_velocity,
     target_velocity,
@@ -6995,8 +7330,11 @@ def stage4_failure_diagnostic_metrics(predicted_rgb, target_rgb, conditions, con
     contract = config.get("training", {}).get("stage4FailureDiagnostics", {})
     if contract.get("enabled") is not True:
         return {}
-    if is_v9_stage4_object_semantic_decoded_alignment(config):
-        validate_v9_stage4_diagnostic_manifest_support_contract(config)
+    if is_v9_stage4_object_semantic_decoded_alignment(config) or is_structure_fact_first_stage4(config):
+        if is_structure_fact_first_stage4(config):
+            validate_structure_fact_first_stage4_diagnostic_manifest_support_contract(config)
+        else:
+            validate_v9_stage4_diagnostic_manifest_support_contract(config)
         return route_late_regression_diagnostic_metrics(predicted_rgb, target_rgb, conditions, config)
     validate_v7_r5_stage4_failure_diagnostic_support_contract(config)
     return {
@@ -7032,6 +7370,36 @@ def validate_v9_stage4_diagnostic_manifest_support_contract(config):
     return {
         "status": "v9_stage4_diagnostic_manifest_support_contract_valid_inactive",
         "exactFields": list(V9_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS),
+    }
+
+
+def validate_structure_fact_first_stage4_diagnostic_manifest_support_contract(config):
+    contract = config.get("training", {}).get("stage4FailureDiagnostics", {})
+    object_contract = contract.get("objectSemanticDiagnostics", {})
+    route_contract = contract.get("routeLateRegressionDiagnostics", {})
+    if (
+        contract.get("enabled") is not True
+        or contract.get("status") != "structure_fact_first_diagnostic_manifest_supported_inactive"
+        or object_contract.get("channels") != list(V7_R5_STAGE4_OBJECT_DIAGNOSTIC_CHANNELS)
+        or object_contract.get("measurements") != list(V7_R5_STAGE4_OBJECT_DIAGNOSTIC_MEASUREMENTS)
+        or object_contract.get("gradientTarget") != "matching_structure_fact_independent_typed_head_output"
+        or object_contract.get("changesTrainingWeightsNow") is not False
+        or route_contract.get("measurements") != list(V7_R5_STAGE4_ROUTE_DIAGNOSTIC_MEASUREMENTS)
+        or route_contract.get("conditionChannel") != "terrain_path_ground"
+        or route_contract.get("requiredBoundarySidesSource") != "authorizedBoundaryTopology.requiredBoundarySides"
+        or route_contract.get("preserveExistingPathLossWeights") is not True
+    ):
+        raise ValueError("Stage 4 structure-fact-first diagnostic Manifest support contract is invalid")
+    for key in (
+        "reviewThresholdsModified", "failedPreviewPixelsUsedAsTrainingTargets",
+        "executionValuesSelected", "trainingConfigApplied", "checkpointFileReadAuthorized",
+        "gpuUseAuthorized", "trainingAuthorized",
+    ):
+        if contract.get(key) is not False:
+            raise ValueError(f"Stage 4 structure-fact-first diagnostic boundary is invalid: {key}")
+    return {
+        "status": "stage4_structure_fact_first_diagnostic_manifest_contract_valid_inactive",
+        "exactFields": list(STRUCTURE_FACT_FIRST_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS),
     }
 
 
@@ -7774,6 +8142,10 @@ def is_v9_stage4_object_semantic_decoded_alignment(config):
     return config.get("denoiserArchitecture") == "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment"
 
 
+def is_structure_fact_first_stage4(config):
+    return config.get("denoiserArchitecture") == "stage4_structure_fact_first_dual_stage_generator_v1"
+
+
 def uses_stage4_unified_preview_sampling_contract(config):
     contract = config.get("training", {}).get("stage4UnifiedTrainingPreviewSamplingContract", {})
     try:
@@ -7790,11 +8162,21 @@ def uses_stage4_unified_preview_sampling_contract(config):
 
 
 def uses_registered_v7_capacity_dataset(config):
-    return is_v7(config) or is_v8_stage4_decoded_alignment(config) or is_v9_stage4_object_semantic_decoded_alignment(config)
+    return (
+        is_v7(config)
+        or is_v8_stage4_decoded_alignment(config)
+        or is_v9_stage4_object_semantic_decoded_alignment(config)
+        or is_structure_fact_first_stage4(config)
+    )
 
 
 def uses_v7_rollout_validation(config):
-    return is_v7(config) or is_v8_stage4_decoded_alignment(config) or is_v9_stage4_object_semantic_decoded_alignment(config)
+    return (
+        is_v7(config)
+        or is_v8_stage4_decoded_alignment(config)
+        or is_v9_stage4_object_semantic_decoded_alignment(config)
+        or is_structure_fact_first_stage4(config)
+    )
 
 
 def conditional_dataset_selection_contract(config):
@@ -7806,7 +8188,13 @@ def conditional_dataset_selection_contract(config):
 
 
 def is_v6_or_later(config):
-    return is_v6(config) or is_v7(config) or is_v8_stage4_decoded_alignment(config) or is_v9_stage4_object_semantic_decoded_alignment(config)
+    return (
+        is_v6(config)
+        or is_v7(config)
+        or is_v8_stage4_decoded_alignment(config)
+        or is_v9_stage4_object_semantic_decoded_alignment(config)
+        or is_structure_fact_first_stage4(config)
+    )
 
 
 def is_v5_or_later(config):
@@ -7855,14 +8243,20 @@ def serialize_condition_evidence_metrics(loss_metrics):
 
 
 def register_v9_stage4_diagnostic_manifest_fields(row, train_metrics, epoch, config):
-    if not is_v9_stage4_object_semantic_decoded_alignment(config):
+    if not (
+        is_v9_stage4_object_semantic_decoded_alignment(config)
+        or is_structure_fact_first_stage4(config)
+    ):
         return row
-    registry = config.get("training", {}).get("stage4ObjectSemanticDecoderAlignment", {}).get(
-        "diagnosticManifestRegistry", {}
+    contract_key = (
+        "stage4StructureFactFirstDualStage"
+        if is_structure_fact_first_stage4(config)
+        else "stage4ObjectSemanticDecoderAlignment"
     )
+    registry = config.get("training", {}).get(contract_key, {}).get("diagnosticManifestRegistry", {})
     if int(epoch) not in registry.get("fixedEpochs", []):
         return row
-    expected = list(V9_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS)
+    expected = list(STRUCTURE_FACT_FIRST_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS)
     if registry.get("exactFields") != expected or registry.get("exactFieldCount") != len(expected):
         raise ValueError("V9 Stage 4 diagnostic Manifest registry identity changed")
     actual = sorted(key for key in train_metrics if key.startswith("stage4Diagnostic"))

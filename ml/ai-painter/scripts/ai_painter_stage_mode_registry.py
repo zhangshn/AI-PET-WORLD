@@ -28,6 +28,9 @@ V9_STAGE4_UNIFIED_PREVIEW_SMOKE_STATUS = (
 V9_STAGE4_VALIDATION_KERNEL_SMOKE_STATUS = (
     "owner_authorized_v9_stage4_validation_kernel_single_sample_gpu_smoke"
 )
+STRUCTURE_FACT_FIRST_STAGE4_INACTIVE_STATUS = (
+    "stage4_structure_fact_first_dual_stage_cpu_supported_inactive"
+)
 SYNTHETIC_EXTENSION_TEST_STATUS = "synthetic_inactive_stage4_extension_contract_test_only"
 
 
@@ -83,6 +86,7 @@ class ModeRegistry:
 _V7 = "multiscale_condition_unet_v7"
 _V8 = "multiscale_condition_unet_v8_stage4_decoded_alignment"
 _V9 = "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment"
+_STRUCTURE_FACT_FIRST = "stage4_structure_fact_first_dual_stage_generator_v1"
 
 
 FORMAL_MODE_REGISTRY = ModeRegistry(
@@ -100,6 +104,16 @@ FORMAL_MODE_REGISTRY = ModeRegistry(
         ModeSpec("v9_stage4_smoke", V9_STAGE4_SMOKE_STATUS, _V9, 4, "single_sample_smoke", "legacy_v9_stage4_adapter", "validation", True),
         ModeSpec("v9_stage4_unified_preview_smoke", V9_STAGE4_UNIFIED_PREVIEW_SMOKE_STATUS, _V9, 4, "single_sample_smoke", "legacy_v9_stage4_adapter", "validation", True),
         ModeSpec("v9_stage4_validation_kernel_smoke", V9_STAGE4_VALIDATION_KERNEL_SMOKE_STATUS, _V9, 4, "single_sample_smoke", "legacy_v9_stage4_adapter", "validation", True),
+        ModeSpec(
+            "structure_fact_first_stage4_inactive",
+            STRUCTURE_FACT_FIRST_STAGE4_INACTIVE_STATUS,
+            _STRUCTURE_FACT_FIRST,
+            4,
+            "cpu_inactive",
+            "structure_fact_first_stage4_adapter",
+            "validation",
+            False,
+        ),
     )
 )
 

@@ -38,6 +38,8 @@ def build_complete_world_system(config: dict[str, object]):
         "terrain_path_ground",
         "route_required_boundary",
     )
+    stage4_structure_fact_channels = stage4_alignment_readout_channels
+    structure_fact_first_architecture = "stage4_structure_fact_first_dual_stage_generator_v1"
 
     def group_count(channels: int) -> int:
         for groups in (32, 16, 8, 4, 2):
@@ -53,6 +55,7 @@ def build_complete_world_system(config: dict[str, object]):
             "multiscale_condition_unet_v7",
             "multiscale_condition_unet_v8_stage4_decoded_alignment",
             "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment",
+            structure_fact_first_architecture,
         }:
             return None
         if len(condition_channel_order) != condition_channels:
@@ -301,6 +304,7 @@ def build_complete_world_system(config: dict[str, object]):
                 "multiscale_condition_unet_v7",
                 "multiscale_condition_unet_v8_stage4_decoded_alignment",
                 "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment",
+                structure_fact_first_architecture,
             } else None
             self.typed_condition_adapter_up1 = nn.Sequential(
                 nn.Conv2d(condition_channels, channels * 2, 1),
@@ -309,6 +313,7 @@ def build_complete_world_system(config: dict[str, object]):
             ) if denoiser_architecture in {
                 "multiscale_condition_unet_v8_stage4_decoded_alignment",
                 "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment",
+                structure_fact_first_architecture,
             } else None
             self.typed_condition_adapter_up0 = nn.Sequential(
                 nn.Conv2d(condition_channels, channels, 1),
@@ -317,6 +322,7 @@ def build_complete_world_system(config: dict[str, object]):
             ) if denoiser_architecture in {
                 "multiscale_condition_unet_v8_stage4_decoded_alignment",
                 "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment",
+                structure_fact_first_architecture,
             } else None
             self.shared_semantic_topology_readout = nn.Sequential(
                 nn.GroupNorm(group_count(channels), channels),
@@ -364,6 +370,27 @@ def build_complete_world_system(config: dict[str, object]):
                 nn.Conv2d(channels, len(stage4_route_alignment_channels), 1),
                 nn.Sigmoid(),
             ) if denoiser_architecture == "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment" else None
+            self.structure_fact_shared_trunk = nn.Sequential(
+                nn.Conv2d(condition_channels, channels, 3, padding=1),
+                nn.SiLU(),
+                ResidualBlock(channels),
+            ) if denoiser_architecture == structure_fact_first_architecture else None
+            self.structure_fact_heads = nn.ModuleDict({
+                name: nn.Sequential(
+                    nn.Conv2d(channels, channels, 3, padding=1),
+                    nn.SiLU(),
+                    nn.Conv2d(channels, 1, 1),
+                    nn.Sigmoid(),
+                )
+                for name in stage4_structure_fact_channels
+            }) if denoiser_architecture == structure_fact_first_architecture else None
+            self.structure_fact_stage_b_adapters = nn.ModuleDict({
+                "level0": nn.Conv2d(len(stage4_structure_fact_channels), channels, 1),
+                "level1": nn.Conv2d(len(stage4_structure_fact_channels), channels * 2, 1),
+                "middle": nn.Conv2d(len(stage4_structure_fact_channels), channels * 4, 1),
+                "up1": nn.Conv2d(len(stage4_structure_fact_channels), channels * 2, 1),
+                "up0": nn.Conv2d(len(stage4_structure_fact_channels), channels, 1),
+            }) if denoiser_architecture == structure_fact_first_architecture else None
 
         def forward(
             self,
@@ -373,22 +400,54 @@ def build_complete_world_system(config: dict[str, object]):
             return_condition_reconstruction=False,
             return_stage4_alignment_readout=False,
             return_stage4_object_alignment=False,
+            return_stage4_structure_fact=False,
         ):
             if conditions.shape[1] != condition_channels:
                 raise ValueError(f"expected {condition_channels} condition channels, got {conditions.shape[1]}")
             time_embedding = self.time_embedding(timestep)
             resized_conditions = resize_typed_conditions(conditions, noisy_latent.shape[-2:])
+            structure_fact_head_outputs = ()
+            structure_fact_layout = None
+            if self.structure_fact_shared_trunk is not None:
+                shared_structure = self.structure_fact_shared_trunk(resized_conditions)
+                structure_fact_head_outputs = tuple(
+                    self.structure_fact_heads[name](shared_structure)
+                    for name in stage4_structure_fact_channels
+                )
+                structure_fact_layout = torch.cat(structure_fact_head_outputs, dim=1)
             condition0 = self.condition_stem(resized_conditions)
+            if structure_fact_layout is not None:
+                condition0 = condition0 + self.structure_fact_stage_b_adapters["level0"](
+                    structure_fact_layout
+                )
             level0 = self.block0(
                 self.fuse0(torch.cat((self.latent_stem(noisy_latent), condition0), dim=1)),
                 time_embedding,
             )
             condition1 = self.condition_down1(condition0)
+            if structure_fact_layout is not None:
+                condition1 = condition1 + self.structure_fact_stage_b_adapters["level1"](
+                    functional.interpolate(
+                        structure_fact_layout,
+                        size=condition1.shape[-2:],
+                        mode="bilinear",
+                        align_corners=False,
+                    )
+                )
             level1 = self.block1(
                 self.fuse1(torch.cat((self.latent_down1(level0), condition1), dim=1)),
                 time_embedding,
             )
             condition2 = self.condition_down2(condition1)
+            if structure_fact_layout is not None:
+                condition2 = condition2 + self.structure_fact_stage_b_adapters["middle"](
+                    functional.interpolate(
+                        structure_fact_layout,
+                        size=condition2.shape[-2:],
+                        mode="bilinear",
+                        align_corners=False,
+                    )
+                )
             middle = self.fuse2(torch.cat((self.latent_down2(level1), condition2), dim=1))
             middle = self.middle2(self.middle1(middle, time_embedding), time_embedding)
 
@@ -398,6 +457,15 @@ def build_complete_world_system(config: dict[str, object]):
             if self.typed_condition_adapter_up1 is not None:
                 typed_up1 = resize_typed_conditions(conditions, decoded_up1.shape[-2:])
                 decoded_up1 = decoded_up1 + self.typed_condition_adapter_up1(typed_up1)
+            if structure_fact_layout is not None:
+                decoded_up1 = decoded_up1 + self.structure_fact_stage_b_adapters["up1"](
+                    functional.interpolate(
+                        structure_fact_layout,
+                        size=decoded_up1.shape[-2:],
+                        mode="bilinear",
+                        align_corners=False,
+                    )
+                )
             if self.v9_object_projection_up1 is not None:
                 typed_up1 = resize_typed_conditions(conditions, decoded_up1.shape[-2:])
                 for name in stage4_object_alignment_channels:
@@ -416,6 +484,15 @@ def build_complete_world_system(config: dict[str, object]):
             if self.typed_condition_adapter_up0 is not None:
                 typed_up0 = resize_typed_conditions(conditions, decoded_up0.shape[-2:])
                 decoded_up0 = decoded_up0 + self.typed_condition_adapter_up0(typed_up0)
+            if structure_fact_layout is not None:
+                decoded_up0 = decoded_up0 + self.structure_fact_stage_b_adapters["up0"](
+                    functional.interpolate(
+                        structure_fact_layout,
+                        size=decoded_up0.shape[-2:],
+                        mode="bilinear",
+                        align_corners=False,
+                    )
+                )
             if self.v9_object_projection_up0 is not None:
                 typed_up0 = resize_typed_conditions(conditions, decoded_up0.shape[-2:])
                 for name in stage4_object_alignment_channels:
@@ -447,6 +524,15 @@ def build_complete_world_system(config: dict[str, object]):
                     "objectProjectionFeaturesUp0": tuple(v9_object_features_up0),
                     "routeReadout": self.v9_route_topology_readout(up0),
                 }
+            if return_stage4_structure_fact:
+                if structure_fact_layout is None or len(structure_fact_head_outputs) != len(stage4_structure_fact_channels):
+                    raise ValueError("Stage 4 structure-fact outputs are only available in the dual-stage generator")
+                return predicted_velocity, {
+                    "structureLayout": structure_fact_layout,
+                    "structureHeadOutputs": structure_fact_head_outputs,
+                    "structureChannelOrder": stage4_structure_fact_channels,
+                    "stageBInjectionScales": ("level0", "level1", "middle", "up1", "up0"),
+                }
             return predicted_velocity
 
         def reconstruct_conditions_from_clean_latent(self, predicted_clean):
@@ -472,6 +558,11 @@ def build_complete_world_system(config: dict[str, object]):
                 raise ValueError("Stage 4 route topology alignment is only available in the V9 denoiser")
             return stage4_route_alignment_channels
 
+        def stage4_structure_fact_channel_order(self):
+            if self.structure_fact_shared_trunk is None:
+                raise ValueError("Stage 4 structure-fact channels are only available in the dual-stage generator")
+            return stage4_structure_fact_channels
+
     class ProjectOwnedCompleteWorldSystem(nn.Module):
         def __init__(self):
             super().__init__()
@@ -484,6 +575,7 @@ def build_complete_world_system(config: dict[str, object]):
                 "multiscale_condition_unet_v7",
                 "multiscale_condition_unet_v8_stage4_decoded_alignment",
                 "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment",
+                structure_fact_first_architecture,
             }:
                 self.denoiser = ProjectOwnedMultiscaleConditionUNet()
             elif denoiser_architecture == "shallow_condition_fusion_v2":
@@ -516,6 +608,14 @@ def build_complete_world_system(config: dict[str, object]):
                 return_stage4_object_alignment=True,
             )
 
+        def predict_velocity_with_stage4_structure_fact(self, noisy_latent, timestep, conditions):
+            return self.denoiser(
+                noisy_latent,
+                timestep,
+                conditions,
+                return_stage4_structure_fact=True,
+            )
+
         def reconstruct_conditions_from_clean_latent(self, predicted_clean):
             return self.denoiser.reconstruct_conditions_from_clean_latent(predicted_clean)
 
@@ -530,5 +630,8 @@ def build_complete_world_system(config: dict[str, object]):
 
         def stage4_route_alignment_channel_order(self):
             return self.denoiser.stage4_route_alignment_channel_order()
+
+        def stage4_structure_fact_channel_order(self):
+            return self.denoiser.stage4_structure_fact_channel_order()
 
     return ProjectOwnedCompleteWorldSystem()
