@@ -48,6 +48,29 @@ OBJECT_CHANNELS = ("object_footprints", "object_tree", "object_rock", "object_ve
 REQUEST_ID = "owner-authorized-v9-stage4-readonly-gpu-gradient-diagnostic-20260809"
 SCOPE = "one_v9_sample194_readonly_gpu_forward_autograd_gradient_routing_diagnostic_only"
 AUTHORIZATION_SHA256 = "95d8dc1ef85d9af42618c43d74e7661d62e58acbca0365c02f4f789c2a07aee2"
+STRUCTURE_FACT_IMPLEMENTATION_AUTHORIZATION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-structure-fact-first-loss-registry-correction-20260810-230203646/"
+    "implementation-authorization.json"
+)
+STRUCTURE_FACT_IMPLEMENTATION_CONSUMPTION_PATH = (
+    STRUCTURE_FACT_IMPLEMENTATION_AUTHORIZATION_PATH.parent / "implementation-consumption.json"
+)
+STRUCTURE_FACT_AUTHORIZATION_PATH = (
+    STRUCTURE_FACT_IMPLEMENTATION_AUTHORIZATION_PATH.parent / "gpu-execution-authorization.json"
+)
+STRUCTURE_FACT_REQUEST_ID = (
+    "owner-authorized-stage4-structure-fact-first-loss-registry-correction-20260810-230203646"
+)
+STRUCTURE_FACT_SCOPE = (
+    "one_structure_fact_first_sample194_readonly_gpu_forward_autograd_gradient_routing_diagnostic_only"
+)
+STRUCTURE_FACT_ARCHITECTURE = "stage4_structure_fact_first_dual_stage_generator_v1"
+STRUCTURE_FACT_CHANNELS = (
+    "terrain_path_ground", "route_required_boundary", "object_footprints",
+    "object_tree", "object_rock", "object_vegetation",
+)
+STRUCTURE_FACT_STAGE_B_SCALES = ("level0", "level1", "middle", "up1", "up0")
 
 
 def main() -> int:
@@ -65,8 +88,12 @@ def main() -> int:
         if any((args.implementation_attestation, args.python_report, args.resource_report, args.output_dir)):
             raise ValueError("cpu_contract_check_must_not_receive_execution_paths")
         print(json.dumps({
-            "status": "v9_gpu_diagnostic_authorization_contract_valid_cpu_only",
-            "requestId": REQUEST_ID,
+            "status": (
+                "structure_fact_first_gpu_diagnostic_authorization_contract_valid_cpu_only"
+                if is_structure_fact_authorization(authorization)
+                else "v9_gpu_diagnostic_authorization_contract_valid_cpu_only"
+            ),
+            "requestId": authorization_request_id(authorization),
             "sampleId": SAMPLE_ID,
             "gpuUsed": False,
         }, ensure_ascii=False, indent=2))
@@ -83,6 +110,26 @@ def main() -> int:
 
 def validate_authorization(path: Path) -> dict:
     resolved = resolve(path)
+    if resolved == resolve(STRUCTURE_FACT_AUTHORIZATION_PATH):
+        authorization = read_json(resolved)
+        validate_authorization_document(authorization, verify_bindings=True)
+        implementation_authorization_sha = sha256_file(
+            resolve(STRUCTURE_FACT_IMPLEMENTATION_AUTHORIZATION_PATH)
+        )
+        consumption = read_json(resolve(STRUCTURE_FACT_IMPLEMENTATION_CONSUMPTION_PATH))
+        if (
+            consumption.get("status")
+            != "structure_fact_first_loss_registry_correction_atomically_consumed"
+            or consumption.get("requestId") != STRUCTURE_FACT_REQUEST_ID
+            or consumption.get("commandRef") != STRUCTURE_FACT_REQUEST_ID
+            or consumption.get("authorizationSha256") != implementation_authorization_sha
+            or consumption.get("oneTimeConsumption") is not True
+        ):
+            raise ValueError("structure_fact_diagnostic_implementation_consumption_invalid")
+        authorization["_diagnosticMode"] = "structure_fact_first"
+        authorization["_authorizationPath"] = project_path(resolved)
+        authorization["_authorizationSha256"] = sha256_file(resolved)
+        return authorization
     if resolved != resolve(AUTHORIZATION_PATH) or sha256_file(resolved) != AUTHORIZATION_SHA256:
         raise ValueError("v9_diagnostic_owner_authorization_identity_invalid")
     authorization = read_json(resolved)
@@ -97,10 +144,16 @@ def validate_authorization(path: Path) -> dict:
         or consumption.get("oneTimeConsumption") is not True
     ):
         raise ValueError("v9_diagnostic_implementation_consumption_invalid")
+    authorization["_diagnosticMode"] = "legacy_v9"
+    authorization["_authorizationPath"] = project_path(resolved)
+    authorization["_authorizationSha256"] = AUTHORIZATION_SHA256
     return authorization
 
 
 def validate_authorization_document(authorization: dict, verify_bindings: bool) -> None:
+    if authorization.get("schemaVersion") == "ai-painter-owner-stage4-structure-fact-first-gradient-diagnostic-gpu-authorization-v1":
+        validate_structure_fact_authorization_document(authorization, verify_bindings)
+        return
     if (
         authorization.get("schemaVersion") != "ai-painter-owner-action-request-v1"
         or authorization.get("requestId") != REQUEST_ID
@@ -187,16 +240,110 @@ def validate_authorization_document(authorization: dict, verify_bindings: bool) 
     trainer.validate_training_inputs(config, read_json(resolve(DATASET_PATH)))
 
 
+def validate_structure_fact_authorization_document(authorization: dict, verify_bindings: bool) -> None:
+    if (
+        authorization.get("requestId") != STRUCTURE_FACT_REQUEST_ID
+        or authorization.get("commandRef") != STRUCTURE_FACT_REQUEST_ID
+        or authorization.get("scope") != STRUCTURE_FACT_SCOPE
+        or authorization.get("status") != "resolved_owner_authorized_not_consumed"
+    ):
+        raise ValueError("structure_fact_diagnostic_owner_command_contract_invalid")
+    expected_identity = {
+        "architectureId": STRUCTURE_FACT_ARCHITECTURE,
+        "sampleId": SAMPLE_ID,
+        "sampleSplit": SAMPLE_SPLIT,
+        "seed": SEED,
+        "timestep": TIMESTEP,
+        "resolution": {"width": IMAGE_SIZE[0], "height": IMAGE_SIZE[1]},
+        "requiredBoundarySides": ["west"],
+        "structureChannels": list(STRUCTURE_FACT_CHANNELS),
+        "stageBInjectionScales": list(STRUCTURE_FACT_STAGE_B_SCALES),
+        "conditionChannelCount": 23,
+        "diagnosticManifestMetricCount": 17,
+        "denoiserInitialization": "fixed_random_structure_fact_first_seed_20263722",
+        "autoencoderState": "bound_project_checkpoint_loaded_and_frozen",
+    }
+    identity = authorization.get("taskIdentity", {})
+    for key, expected in expected_identity.items():
+        if identity.get(key) != expected:
+            raise ValueError(f"structure_fact_diagnostic_task_identity_invalid:{key}")
+    expected_actions = {
+        "cpuRegressionVerification": True,
+        "pythonPreflight": True,
+        "cudaResourcePreflight": True,
+        "diskBudgetPreflight": True,
+        "projectAutoencoderCheckpointReadAndLoad": True,
+        "structureFactFirstFixedRandomInitialization": True,
+        "singleSampleValidationRead": True,
+        "singleGpuForward": True,
+        "torchAutogradGradInspection": True,
+        "cudaTelemetryWrite": True,
+        "diagnosticReportWrite": True,
+        "terminalEvidenceWrite": True,
+        "localTaskCapsuleWrite": True,
+        "uniquePlanUpdate": True,
+        "codeModification": False,
+        "oldV7V8V9DenoiserCheckpointReadOrLoad": False,
+        "optimizerCreation": False,
+        "backwardMethodExecution": False,
+        "modelWeightModification": False,
+        "checkpointWrite": False,
+        "smoke": False,
+        "stage4FullTraining": False,
+        "stage1OrStage2": False,
+        "strictRevalidation": False,
+        "formalInference": False,
+        "checkpointPromotion": False,
+        "runtimeFrame": False,
+        "worldEntry": False,
+        "automaticRetry": False,
+    }
+    if authorization.get("authorizedActions") != expected_actions:
+        raise ValueError("structure_fact_diagnostic_action_boundary_invalid")
+    if authorization.get("failurePolicy") != {
+        "stopImmediately": True, "automaticRetry": False, "preserveEvidence": True,
+    }:
+        raise ValueError("structure_fact_diagnostic_failure_policy_invalid")
+    if not verify_bindings:
+        return
+    binding_keys = (
+        "cpuTerminal", "inactiveConfig", "cpuReport", "supportContract", "ownerActionRequest",
+        "projectAutoencoderCheckpoint", "model", "trainer", "modeRegistry", "runner",
+        "cpuChecker", "datasetManifest", "datasetSourceIndex",
+        "implementationAuthorization", "implementationConsumption",
+    )
+    for key in binding_keys:
+        value = authorization.get("bindings", {}).get(key, {})
+        if value.get("sha256") != sha256_file(resolve(Path(value.get("path", "missing")))):
+            raise ValueError(f"structure_fact_diagnostic_binding_changed:{key}")
+    terminal = read_json(resolve(Path(authorization["bindings"]["cpuTerminal"]["path"])))
+    report = read_json(resolve(Path(authorization["bindings"]["cpuReport"]["path"])))
+    support = read_json(resolve(Path(authorization["bindings"]["supportContract"]["path"])))
+    config = read_json(resolve(Path(authorization["bindings"]["inactiveConfig"]["path"])))
+    if (
+        terminal.get("status") != "stage4_structure_fact_first_dual_stage_cpu_support_completed_closed"
+        or report.get("status") != "passed_cpu_only_structure_fact_first_dual_stage_inactive"
+        or support.get("status") != "structure_fact_first_dual_stage_cpu_supported_inactive"
+        or config.get("denoiserArchitecture") != STRUCTURE_FACT_ARCHITECTURE
+    ):
+        raise ValueError("structure_fact_diagnostic_cpu_prerequisite_not_successful")
+    trainer.validate_training_inputs(config, read_json(resolve(DATASET_PATH)))
+
+
 def validate_implementation_attestation(path: Path | None, authorization: dict) -> dict:
     expected = resolve(Path(authorization["implementation"]["implementationAttestationPath"]))
     if path is None or resolve(path) != expected or not expected.is_file():
         raise ValueError("v9_diagnostic_implementation_attestation_missing")
     attestation = read_json(expected)
     cpu_report_path = resolve(Path(authorization["implementation"]["cpuReportPath"]))
+    structure_mode = is_structure_fact_authorization(authorization)
     expected_values = {
-        "status": "v9_gpu_diagnostic_implementation_cpu_verified",
-        "requestId": REQUEST_ID,
-        "authorizationSha256": AUTHORIZATION_SHA256,
+        "status": (
+            "structure_fact_first_gpu_diagnostic_implementation_cpu_verified"
+            if structure_mode else "v9_gpu_diagnostic_implementation_cpu_verified"
+        ),
+        "requestId": authorization_request_id(authorization),
+        "authorizationSha256": authorization_sha256(authorization),
         "runnerSha256": sha256_file(resolve(RUNNER_PATH)),
         "cpuCheckerSha256": sha256_file(resolve(CPU_CHECKER_PATH)),
         "cpuReportSha256": sha256_file(cpu_report_path),
@@ -206,7 +353,10 @@ def validate_implementation_attestation(path: Path | None, authorization: dict) 
             raise ValueError(f"v9_diagnostic_implementation_attestation_invalid:{key}")
     cpu_report = read_json(cpu_report_path)
     if (
-        cpu_report.get("status") != "passed_v9_readonly_gpu_diagnostic_cpu_authorization_regression"
+        cpu_report.get("status") != (
+            "passed_structure_fact_first_readonly_gpu_diagnostic_cpu_authorization_regression"
+            if structure_mode else "passed_v9_readonly_gpu_diagnostic_cpu_authorization_regression"
+        )
         or cpu_report.get("failedPositiveKeys") != []
         or cpu_report.get("failedNegativeKeys") != []
     ):
@@ -221,17 +371,22 @@ def write_preflight_reports(authorization: dict, attestation: dict, python_path:
         raise ValueError("v9_diagnostic_resource_preflight_output_invalid")
     if resolve(python_path).exists() or resolve(resource_path).exists():
         raise FileExistsError("v9_diagnostic_preflight_output_already_exists")
-    config = read_json(resolve(Path(authorization["bindings"]["v9InactiveConfig"]["path"])))
+    structure_mode = is_structure_fact_authorization(authorization)
+    config_binding_key = "inactiveConfig" if structure_mode else "v9InactiveConfig"
+    config = read_json(resolve(Path(authorization["bindings"][config_binding_key]["path"])))
     package = read_json(resolve(DATASET_PATH))
     trainer.validate_training_inputs(config, package)
     python_report = {
-        "schemaVersion": "ai-painter-r5-stage4-v9-gradient-diagnostic-python-preflight-v1",
+        "schemaVersion": (
+            "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-python-preflight-v1"
+            if structure_mode else "ai-painter-r5-stage4-v9-gradient-diagnostic-python-preflight-v1"
+        ),
         "status": "passed_python_preflight_gpu_not_consumed",
         **timestamps("recordedAt"),
         "pythonExecutable": str(Path(sys.executable).resolve()),
         "pythonVersion": sys.version,
         "torchVersion": torch.__version__,
-        "configSha256": authorization["bindings"]["v9InactiveConfig"]["sha256"],
+        "configSha256": authorization["bindings"][config_binding_key]["sha256"],
         "implementationAttestationSha256": sha256_file(resolve(Path(authorization["implementation"]["implementationAttestationPath"]))),
         "checkpointRead": False,
         "gpuExecutionConsumed": False,
@@ -244,7 +399,10 @@ def write_preflight_reports(authorization: dict, attestation: dict, python_path:
     if free_bytes < required_disk_bytes:
         raise ValueError("v9_diagnostic_disk_budget_insufficient")
     resource_report = {
-        "schemaVersion": "ai-painter-r5-stage4-v9-gradient-diagnostic-resource-preflight-v1",
+        "schemaVersion": (
+            "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-resource-preflight-v1"
+            if structure_mode else "ai-painter-r5-stage4-v9-gradient-diagnostic-resource-preflight-v1"
+        ),
         "status": "passed_cuda_resource_and_disk_preflight_gpu_not_consumed",
         **timestamps("recordedAt"),
         "cuda": {
@@ -260,7 +418,10 @@ def write_preflight_reports(authorization: dict, attestation: dict, python_path:
     }
     write_json_exclusive(resource_path, resource_report)
     print(json.dumps({
-        "status": "v9_gradient_diagnostic_all_preflights_passed_gpu_not_consumed",
+        "status": (
+            "structure_fact_first_gradient_diagnostic_all_preflights_passed_gpu_not_consumed"
+            if structure_mode else "v9_gradient_diagnostic_all_preflights_passed_gpu_not_consumed"
+        ),
         "pythonReport": binding(python_path),
         "resourceReport": binding(resource_path),
     }, ensure_ascii=False, indent=2))
@@ -285,14 +446,21 @@ def consume_and_run(authorization_path: Path, authorization: dict, attestation: 
     consumption_path = resolve(Path(authorization["execution"]["gpuConsumptionPath"]))
     if consumption_path.exists():
         raise FileExistsError("v9_diagnostic_gpu_authorization_already_consumed")
+    structure_mode = is_structure_fact_authorization(authorization)
     consumption = {
-        "schemaVersion": "ai-painter-r5-stage4-v9-gradient-diagnostic-gpu-consumption-v1",
-        "status": "v9_readonly_gpu_diagnostic_authorization_atomically_consumed",
-        "requestId": REQUEST_ID,
-        "commandRef": REQUEST_ID,
-        "scope": SCOPE,
+        "schemaVersion": (
+            "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-gpu-consumption-v1"
+            if structure_mode else "ai-painter-r5-stage4-v9-gradient-diagnostic-gpu-consumption-v1"
+        ),
+        "status": (
+            "structure_fact_first_readonly_gpu_diagnostic_authorization_atomically_consumed"
+            if structure_mode else "v9_readonly_gpu_diagnostic_authorization_atomically_consumed"
+        ),
+        "requestId": authorization_request_id(authorization),
+        "commandRef": authorization_request_id(authorization),
+        "scope": authorization_scope(authorization),
         "authorizationPath": project_path(authorization_path),
-        "authorizationSha256": AUTHORIZATION_SHA256,
+        "authorizationSha256": authorization_sha256(authorization),
         "implementationAttestationPath": project_path(Path(authorization["implementation"]["implementationAttestationPath"])),
         "implementationAttestationSha256": sha256_file(resolve(Path(authorization["implementation"]["implementationAttestationPath"]))),
         "pythonPreflightSha256": sha256_file(python_path),
@@ -311,6 +479,10 @@ def consume_and_run(authorization_path: Path, authorization: dict, attestation: 
 
 
 def run_gpu(authorization: dict, output: Path, consumption_path: Path, python_report: dict, resource_report: dict) -> int:
+    if is_structure_fact_authorization(authorization):
+        return run_structure_fact_gpu(
+            authorization, output, consumption_path, python_report, resource_report
+        )
     output.mkdir(parents=True, exist_ok=False)
     started = time.perf_counter()
     steps = []
@@ -359,7 +531,7 @@ def run_gpu(authorization: dict, output: Path, consumption_path: Path, python_re
         denoiser_hash_before = state_dict_sha256(model.denoiser.state_dict())
         if sha256_file(resolve(AUTOENCODER_PATH)) != authorization["bindings"]["projectAutoencoderCheckpoint"]["sha256"]:
             raise ValueError("v9_diagnostic_autoencoder_checkpoint_hash_changed_before_read")
-        checkpoint = trainer.load_autoencoder_checkpoint(AUTOENCODER_PATH, config)
+        checkpoint = load_project_autoencoder_checkpoint(config)
         state["autoencoderCheckpointRead"] = True
         model.autoencoder.load_state_dict(checkpoint["autoencoderState"])
         for parameter in model.autoencoder.parameters():
@@ -570,6 +742,392 @@ def run_gpu(authorization: dict, output: Path, consumption_path: Path, python_re
             "terminalSha256": sha256_file(output / "phase-terminal.json"),
         }, ensure_ascii=False, indent=2))
         return 1
+
+
+def run_structure_fact_gpu(
+    authorization: dict,
+    output: Path,
+    consumption_path: Path,
+    python_report: dict,
+    resource_report: dict,
+) -> int:
+    output.mkdir(parents=True, exist_ok=False)
+    started = time.perf_counter()
+    steps = []
+    state = {
+        "autoencoderCheckpointRead": False,
+        "oldDenoiserCheckpointRead": False,
+        "gpuUsed": False,
+        "forwardCompleted": False,
+        "autogradGradCompleted": False,
+        "optimizerCreated": False,
+        "backwardMethodExecuted": False,
+        "modelWeightsModified": False,
+        "checkpointWritten": False,
+        "trainingStarted": False,
+    }
+    try:
+        def step(code: str, details=None):
+            steps.append({
+                "index": len(steps) + 1,
+                "code": code,
+                "details": details or {},
+                **timestamps("completedAt"),
+            })
+            write_json_atomic(output / "step-telemetry.json", {"completedSteps": steps, **state})
+
+        step("gpu_authorization_consumption_validated", {"sha256": sha256_file(consumption_path)})
+        torch.cuda.init()
+        torch.cuda.set_device(0)
+        if torch.cuda.current_device() != 0:
+            raise ValueError("structure_fact_diagnostic_cuda_device_zero_not_active")
+        torch.cuda.reset_peak_memory_stats(0)
+        state["gpuUsed"] = True
+        step("cuda_context_initialized_device_zero_confirmed")
+
+        config = read_json(resolve(Path(authorization["bindings"]["inactiveConfig"]["path"])))
+        package = read_json(resolve(DATASET_PATH))
+        trainer.validate_training_inputs(config, package)
+        dataset = AiAssistedConditionalDenoiserDataset(
+            DATASET_PATH,
+            SAMPLE_SPLIT,
+            list(config["conditionChannelOrder"]),
+            IMAGE_SIZE,
+            selection_contract=trainer.conditional_dataset_selection_contract(config),
+        )
+        matches = [index for index, row in enumerate(dataset.rows) if row.get("sampleId") == SAMPLE_ID]
+        if len(matches) != 1:
+            raise ValueError("structure_fact_diagnostic_sample194_not_unique_validation")
+        sample = dataset[matches[0]]
+        step("fixed_validation_sample194_loaded", {"sampleId": sample["sampleId"]})
+
+        torch.manual_seed(SEED)
+        torch.cuda.manual_seed_all(SEED)
+        model = build_complete_world_system(config)
+        denoiser_hash_before = state_dict_sha256(model.denoiser.state_dict())
+        if sha256_file(resolve(AUTOENCODER_PATH)) != authorization["bindings"]["projectAutoencoderCheckpoint"]["sha256"]:
+            raise ValueError("structure_fact_diagnostic_autoencoder_checkpoint_hash_changed_before_read")
+        checkpoint = load_project_autoencoder_checkpoint(config)
+        state["autoencoderCheckpointRead"] = True
+        model.autoencoder.load_state_dict(checkpoint["autoencoderState"])
+        for parameter in model.autoencoder.parameters():
+            parameter.requires_grad_(False)
+        autoencoder_hash_before = state_dict_sha256(model.autoencoder.state_dict())
+        device = torch.device("cuda:0")
+        model.to(device).eval()
+        step("project_autoencoder_loaded_frozen_structure_fact_first_random_initialized")
+
+        image = sample["image"].unsqueeze(0).to(device)
+        conditions = sample["conditions"].unsqueeze(0).to(device).requires_grad_(True)
+        with torch.no_grad():
+            raw_latent = model.autoencoder.encode(image)
+            mean = raw_latent.mean(dim=(0, 2, 3), keepdim=True)
+            std = raw_latent.std(dim=(0, 2, 3), keepdim=True).clamp_min(1e-6)
+            clean_latent = (raw_latent - mean) / std
+        diffusion = trainer.build_diffusion_schedule(config, device)
+        timestep = torch.tensor([TIMESTEP], dtype=torch.long, device=device)
+        noise = torch.randn(clean_latent.shape, device=device, dtype=clean_latent.dtype)
+        noisy_latent = add_noise(clean_latent, noise, timestep, diffusion["alphasCumulative"])
+        target_velocity = velocity_target(clean_latent, noise, timestep, diffusion["alphasCumulative"])
+        predicted_velocity, alignment = model.predict_velocity_with_stage4_structure_fact(
+            noisy_latent, timestep, conditions,
+        )
+        alpha = diffusion["alphasCumulative"][timestep].view(-1, 1, 1, 1)
+        predicted_clean = alpha.sqrt() * noisy_latent - (1.0 - alpha).sqrt() * predicted_velocity
+        predicted_conditions = model.reconstruct_conditions_from_clean_latent(predicted_clean)
+        target_conditions = model.prepare_typed_conditions(conditions, predicted_clean.shape[-2:])
+        predicted_rgb = model.autoencoder.decode(predicted_clean * std + mean)
+        losses = trainer.composite_denoiser_losses_structure_fact_first_stage4(
+            predicted_velocity,
+            target_velocity,
+            predicted_clean,
+            clean_latent,
+            predicted_conditions,
+            target_conditions,
+            predicted_rgb,
+            image,
+            conditions,
+            alignment,
+            config,
+        )
+        layout = alignment["structureLayout"]
+        head_outputs = tuple(alignment["structureHeadOutputs"])
+        if (
+            list(alignment["structureChannelOrder"]) != list(STRUCTURE_FACT_CHANNELS)
+            or list(alignment["stageBInjectionScales"]) != list(STRUCTURE_FACT_STAGE_B_SCALES)
+            or layout.shape[1] != len(STRUCTURE_FACT_CHANNELS)
+            or len(head_outputs) != len(STRUCTURE_FACT_CHANNELS)
+        ):
+            raise ValueError("structure_fact_diagnostic_stage_a_or_stage_b_identity_invalid")
+        state["forwardCompleted"] = True
+        step("single_structure_fact_first_forward_and_17_diagnostics_completed")
+
+        all_head_parameters = []
+        head_slices = {}
+        for name in STRUCTURE_FACT_CHANNELS:
+            start = len(all_head_parameters)
+            all_head_parameters.extend(model.denoiser.structure_fact_heads[name].parameters())
+            head_slices[name] = slice(start, len(all_head_parameters))
+        independent_head_routes = {}
+        for name in STRUCTURE_FACT_CHANNELS:
+            gradients = torch.autograd.grad(
+                losses[trainer.STRUCTURE_FACT_FIRST_STAGE4_CHANNEL_LOSS_KEYS[name]],
+                tuple(all_head_parameters),
+                retain_graph=True,
+                create_graph=False,
+                allow_unused=True,
+            )
+            selected = gradients[head_slices[name]]
+            other = [
+                gradient
+                for other_name in STRUCTURE_FACT_CHANNELS
+                if other_name != name
+                for gradient in gradients[head_slices[other_name]]
+            ]
+            selected_norm = sum(gradient_norm(value) for value in selected)
+            other_norm = sum(gradient_norm(value) for value in other)
+            if selected_norm <= 0.0 or other_norm != 0.0:
+                raise ValueError(f"structure_fact_diagnostic_typed_head_isolation_failed:{name}")
+            independent_head_routes[name] = {
+                "selectedHeadGradientNorm": selected_norm,
+                "otherHeadGradientNorm": other_norm,
+            }
+
+        stage_a_parameter = next(model.denoiser.structure_fact_shared_trunk.parameters())
+        stage_b_parameters = [
+            next(model.denoiser.structure_fact_stage_b_adapters[name].parameters())
+            for name in STRUCTURE_FACT_STAGE_B_SCALES
+        ]
+        base_parameter = model.denoiser.latent_stem.weight
+        coupling_gradients = torch.autograd.grad(
+            predicted_velocity.square().mean(),
+            (stage_a_parameter, *stage_b_parameters, base_parameter),
+            retain_graph=True,
+            create_graph=False,
+            allow_unused=True,
+        )
+        stage_a_norm = gradient_norm(coupling_gradients[0])
+        stage_b_norms = {
+            name: gradient_norm(coupling_gradients[index + 1])
+            for index, name in enumerate(STRUCTURE_FACT_STAGE_B_SCALES)
+        }
+        base_norm = gradient_norm(coupling_gradients[-1])
+        if stage_a_norm <= 0.0 or base_norm <= 0.0 or any(
+            value <= 0.0 for value in stage_b_norms.values()
+        ):
+            raise ValueError("structure_fact_diagnostic_stage_a_to_stage_b_gradient_path_missing")
+
+        condition_gradient = torch.autograd.grad(
+            predicted_velocity.square().mean(),
+            conditions,
+            retain_graph=True,
+            create_graph=False,
+            allow_unused=False,
+        )[0]
+        condition_channel_norms = {
+            name: float(condition_gradient[:, index:index + 1].abs().mean().detach().cpu())
+            for index, name in enumerate(config["conditionChannelOrder"])
+        }
+        if len(condition_channel_norms) != 23 or any(
+            not math.isfinite(value) or value <= 0.0 for value in condition_channel_norms.values()
+        ):
+            raise ValueError("structure_fact_diagnostic_original_23_condition_gradient_path_missing")
+
+        diagnostic_fields = trainer.STRUCTURE_FACT_FIRST_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS
+        diagnostic_metrics = {
+            key: float(losses[key].detach().cpu())
+            for key in diagnostic_fields
+        }
+        if (
+            set(diagnostic_metrics) != set(diagnostic_fields)
+            or any(not math.isfinite(value) or value < 0.0 for value in diagnostic_metrics.values())
+            or diagnostic_metrics["stage4DiagnosticObjectGradientAvailable"] != 1.0
+        ):
+            raise ValueError("structure_fact_diagnostic_exact_17_metric_values_invalid")
+        manifest_row = trainer.register_v9_stage4_diagnostic_manifest_fields(
+            {"epoch": 1}, diagnostic_metrics, 1, config,
+        )
+        if any(parameter.grad is not None for parameter in model.parameters()):
+            raise ValueError("structure_fact_diagnostic_parameter_grad_fields_populated")
+        state["autogradGradCompleted"] = True
+        step("torch_autograd_grad_six_heads_stage_a_stage_b_23_conditions_and_base_verified")
+        step("exact_17_diagnostic_manifest_fields_registered")
+
+        torch.cuda.synchronize(0)
+        cuda_telemetry = {
+            "deviceIndex": 0,
+            "deviceName": torch.cuda.get_device_name(0),
+            "memoryAllocatedBytes": int(torch.cuda.memory_allocated(0)),
+            "memoryReservedBytes": int(torch.cuda.memory_reserved(0)),
+            "peakMemoryAllocatedBytes": int(torch.cuda.max_memory_allocated(0)),
+            "peakMemoryReservedBytes": int(torch.cuda.max_memory_reserved(0)),
+        }
+        write_json_exclusive(output / "cuda-telemetry.json", {
+            "schemaVersion": "ai-painter-r5-stage4-structure-fact-first-cuda-telemetry-v1",
+            "status": "collected_after_readonly_forward_and_autograd_grad",
+            **timestamps("recordedAt"),
+            **cuda_telemetry,
+        })
+        step("cuda_telemetry_saved")
+
+        model.to("cpu")
+        denoiser_hash_after = state_dict_sha256(model.denoiser.state_dict())
+        autoencoder_hash_after = state_dict_sha256(model.autoencoder.state_dict())
+        if denoiser_hash_before != denoiser_hash_after or autoencoder_hash_before != autoencoder_hash_after:
+            raise ValueError("structure_fact_diagnostic_model_state_changed")
+        step("denoiser_and_autoencoder_state_hashes_unchanged")
+
+        report = {
+            "schemaVersion": "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-report-v1",
+            "status": "passed_readonly_structure_fact_first_gpu_forward_and_gradient_routing_weights_unchanged",
+            **timestamps("recordedAt"),
+            "durationSeconds": round(time.perf_counter() - started, 3),
+            "identity": {
+                "architectureId": STRUCTURE_FACT_ARCHITECTURE,
+                "sampleId": SAMPLE_ID,
+                "sampleSplit": SAMPLE_SPLIT,
+                "seed": SEED,
+                "timestep": TIMESTEP,
+                "resolution": {"width": IMAGE_SIZE[0], "height": IMAGE_SIZE[1]},
+                "requiredBoundarySides": ["west"],
+            },
+            "tensorShapes": {
+                "image": list(image.shape),
+                "conditions": list(conditions.shape),
+                "latent": list(clean_latent.shape),
+                "predictedVelocity": list(predicted_velocity.shape),
+                "stageAStructureLayout": list(layout.shape),
+                "stageAHeadOutputs": [list(value.shape) for value in head_outputs],
+                "stageBInjectionScales": list(STRUCTURE_FACT_STAGE_B_SCALES),
+            },
+            "losses": {
+                "composite": float(losses["compositeLossTensor"].detach().cpu()),
+                "decodedRgbMae": float(losses["decodedRgbMae"].detach().cpu()),
+                "structureLayoutBce": float(losses["stage4StructureFactLayoutBce"].detach().cpu()),
+            },
+            "gradientRoutes": {
+                "independentStageAHeads": independent_head_routes,
+                "stageAToStageB": {
+                    "stageASharedTrunkGradientNorm": stage_a_norm,
+                    "stageBAdapterGradientNorms": stage_b_norms,
+                    "baseDenoiserGradientNorm": base_norm,
+                },
+                "original23ConditionChannelGradientNorms": condition_channel_norms,
+            },
+            "diagnosticManifest": {
+                "fieldCount": 17,
+                "fields": list(diagnostic_fields),
+                "epoch1Row": manifest_row,
+            },
+            "cuda": cuda_telemetry,
+            "integrity": {
+                "denoiserStateSha256Before": denoiser_hash_before,
+                "denoiserStateSha256After": denoiser_hash_after,
+                "autoencoderStateSha256Before": autoencoder_hash_before,
+                "autoencoderStateSha256After": autoencoder_hash_after,
+                "parameterGradFieldsAbsent": True,
+            },
+            "pythonPreflight": python_report,
+            "resourcePreflight": resource_report,
+            "authorizationConsumption": binding(consumption_path),
+            "completedSteps": steps,
+            **state,
+        }
+        report_path = output / "diagnostic-report.json"
+        write_json_exclusive(report_path, report)
+        capsule = {
+            "schemaVersion": "ai-painter-local-task-capsule-v1",
+            "capsuleId": f"ai-painter-stage4-structure-fact-first-gradient-diagnostic-{output.name}",
+            "module": "AI Painter R5",
+            "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+            "currentStage": 4,
+            "candidateTerminal": "stage4_structure_fact_first_gradient_diagnostic_passed_closed",
+            "latestBlocker": "phase0_engineering_qualification_not_yet_authorized",
+            "nextLegalAction": "owner_may_authorize_structure_fact_first_phase0_engineering_qualification",
+            "forbiddenActions": [
+                "automatic_retry", "optimizer_creation", "backward_method_execution",
+                "model_weight_update", "checkpoint_write", "smoke", "stage4_full_training",
+                "stage5_strict_revalidation", "formal_inference", "checkpoint_promotion",
+                "runtime_frame", "world_entry",
+            ],
+            "evidence": {"diagnosticReport": binding(report_path)},
+            "planPath": "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md",
+            **timestamps("recordedAt"),
+        }
+        write_json_exclusive(output / "local-task-capsule.json", capsule)
+        terminal = {
+            "schemaVersion": "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-terminal-v1",
+            "status": "stage4_structure_fact_first_gradient_diagnostic_passed_closed",
+            **timestamps("recordedAt"),
+            "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+            "reportPath": project_path(report_path),
+            "reportSha256": sha256_file(report_path),
+            "cudaTelemetryPath": project_path(output / "cuda-telemetry.json"),
+            "cudaTelemetrySha256": sha256_file(output / "cuda-telemetry.json"),
+            "localTaskCapsule": binding(output / "local-task-capsule.json"),
+            "nextAction": "separately_authorized_structure_fact_first_phase0_engineering_qualification",
+            "blockers": [],
+            **state,
+            "automaticRetryStarted": False,
+        }
+        write_json_exclusive(output / "phase-terminal.json", terminal)
+        print(json.dumps({
+            **terminal,
+            "terminalPath": project_path(output / "phase-terminal.json"),
+            "terminalSha256": sha256_file(output / "phase-terminal.json"),
+        }, ensure_ascii=False, indent=2))
+        return 0
+    except Exception as error:
+        terminal = {
+            "schemaVersion": "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-terminal-v1",
+            "status": "stage4_structure_fact_first_gradient_diagnostic_failed_closed",
+            **timestamps("recordedAt"),
+            "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+            "failureType": type(error).__name__,
+            "failureMessage": str(error),
+            "traceback": traceback.format_exc(),
+            "completedSteps": steps,
+            **state,
+            "automaticRetryStarted": False,
+            "laterExecutionStarted": False,
+        }
+        write_json_exclusive(output / "phase-terminal.json", terminal)
+        print(json.dumps({
+            **terminal,
+            "terminalPath": project_path(output / "phase-terminal.json"),
+            "terminalSha256": sha256_file(output / "phase-terminal.json"),
+        }, ensure_ascii=False, indent=2))
+        return 1
+
+
+def load_project_autoencoder_checkpoint(config: dict) -> dict:
+    return trainer.load_autoencoder_checkpoint(AUTOENCODER_PATH, config)
+
+
+def gradient_norm(value) -> float:
+    if value is None:
+        return 0.0
+    return float(value.detach().norm().cpu())
+
+
+def is_structure_fact_authorization(authorization: dict) -> bool:
+    return authorization.get("_diagnosticMode") == "structure_fact_first" or authorization.get(
+        "schemaVersion"
+    ) == "ai-painter-owner-stage4-structure-fact-first-gradient-diagnostic-gpu-authorization-v1"
+
+
+def authorization_request_id(authorization: dict) -> str:
+    return STRUCTURE_FACT_REQUEST_ID if is_structure_fact_authorization(authorization) else REQUEST_ID
+
+
+def authorization_scope(authorization: dict) -> str:
+    return STRUCTURE_FACT_SCOPE if is_structure_fact_authorization(authorization) else SCOPE
+
+
+def authorization_sha256(authorization: dict) -> str:
+    if is_structure_fact_authorization(authorization):
+        return authorization.get("_authorizationSha256") or sha256_file(resolve(STRUCTURE_FACT_AUTHORIZATION_PATH))
+    return AUTHORIZATION_SHA256
 
 
 def gradient_group_norms(named_parameters, gradients) -> dict:

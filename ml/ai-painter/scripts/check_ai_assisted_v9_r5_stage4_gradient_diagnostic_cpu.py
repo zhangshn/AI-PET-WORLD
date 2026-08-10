@@ -8,6 +8,9 @@ import json
 from pathlib import Path
 import traceback
 
+import torch
+
+from ai_painter.complete_world import build_complete_world_system
 from ai_painter.complete_world.dataset import AiAssistedConditionalDenoiserDataset
 import run_ai_assisted_v9_r5_stage4_gradient_diagnostic as runner
 import train_ai_assisted_conditional_denoiser as trainer
@@ -26,6 +29,7 @@ def main() -> int:
     attestation_path = runner.resolve(args.attestation)
     try:
         authorization = runner.validate_authorization(args.authorization)
+        structure_mode = runner.is_structure_fact_authorization(authorization)
         if report_path != runner.resolve(Path(authorization["implementation"]["cpuReportPath"])):
             raise ValueError("v9_diagnostic_cpu_report_output_invalid")
         if attestation_path != runner.resolve(Path(authorization["implementation"]["implementationAttestationPath"])):
@@ -36,15 +40,27 @@ def main() -> int:
         failed_positive = [key for key, value in positive.items() if value is not True]
         failed_negative = [key for key, value in negative.items() if value is not True]
         report = {
-            "schemaVersion": "ai-painter-r5-stage4-v9-gradient-diagnostic-cpu-report-v1",
+            "schemaVersion": (
+                "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-cpu-report-v1"
+                if structure_mode else "ai-painter-r5-stage4-v9-gradient-diagnostic-cpu-report-v1"
+            ),
             "status": (
-                "passed_v9_readonly_gpu_diagnostic_cpu_authorization_regression"
+                (
+                    "passed_structure_fact_first_readonly_gpu_diagnostic_cpu_authorization_regression"
+                    if structure_mode else "passed_v9_readonly_gpu_diagnostic_cpu_authorization_regression"
+                )
                 if not failed_positive and not failed_negative
-                else "failed_closed_v9_readonly_gpu_diagnostic_cpu_authorization_regression"
+                else (
+                    "failed_closed_structure_fact_first_readonly_gpu_diagnostic_cpu_authorization_regression"
+                    if structure_mode else "failed_closed_v9_readonly_gpu_diagnostic_cpu_authorization_regression"
+                )
             ),
             **timestamps("recordedAt"),
             "authorization": runner.binding(args.authorization),
-            "implementationConsumption": runner.binding(runner.IMPLEMENTATION_CONSUMPTION_PATH),
+            "implementationConsumption": runner.binding(
+                runner.STRUCTURE_FACT_IMPLEMENTATION_CONSUMPTION_PATH
+                if structure_mode else runner.IMPLEMENTATION_CONSUMPTION_PATH
+            ),
             "positive": positive,
             "negative": negative,
             "failedPositiveKeys": failed_positive,
@@ -63,13 +79,19 @@ def main() -> int:
         }
         runner.write_json_exclusive(report_path, report)
         if failed_positive or failed_negative:
-            raise ValueError(f"V9 diagnostic CPU regression failed: {failed_positive}:{failed_negative}")
+            raise ValueError(f"Stage4 diagnostic CPU regression failed: {failed_positive}:{failed_negative}")
         attestation = {
-            "schemaVersion": "ai-painter-r5-stage4-v9-gradient-diagnostic-implementation-attestation-v1",
-            "status": "v9_gpu_diagnostic_implementation_cpu_verified",
+            "schemaVersion": (
+                "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-implementation-attestation-v1"
+                if structure_mode else "ai-painter-r5-stage4-v9-gradient-diagnostic-implementation-attestation-v1"
+            ),
+            "status": (
+                "structure_fact_first_gpu_diagnostic_implementation_cpu_verified"
+                if structure_mode else "v9_gpu_diagnostic_implementation_cpu_verified"
+            ),
             **timestamps("recordedAt"),
-            "requestId": runner.REQUEST_ID,
-            "authorizationSha256": runner.AUTHORIZATION_SHA256,
+            "requestId": runner.authorization_request_id(authorization),
+            "authorizationSha256": runner.authorization_sha256(authorization),
             "runnerPath": runner.project_path(runner.RUNNER_PATH),
             "runnerSha256": runner.sha256_file(runner.resolve(runner.RUNNER_PATH)),
             "cpuCheckerPath": runner.project_path(runner.CPU_CHECKER_PATH),
@@ -96,8 +118,8 @@ def main() -> int:
     except Exception as error:
         if not report_path.exists():
             failure = {
-                "schemaVersion": "ai-painter-r5-stage4-v9-gradient-diagnostic-cpu-report-v1",
-                "status": "failed_closed_v9_readonly_gpu_diagnostic_cpu_authorization_regression",
+                "schemaVersion": "ai-painter-r5-stage4-gradient-diagnostic-cpu-report-v1",
+                "status": "failed_closed_readonly_gpu_diagnostic_cpu_authorization_regression",
                 **timestamps("recordedAt"),
                 "failureType": type(error).__name__,
                 "failureMessage": str(error),
@@ -116,6 +138,8 @@ def main() -> int:
 
 
 def run_regressions(authorization: dict):
+    if runner.is_structure_fact_authorization(authorization):
+        return run_structure_fact_regressions(authorization)
     runner.validate_authorization_document(authorization, verify_bindings=True)
     config = runner.read_json(runner.resolve(Path(authorization["bindings"]["v9InactiveConfig"]["path"])))
     package = runner.read_json(runner.resolve(runner.DATASET_PATH))
@@ -210,6 +234,295 @@ def run_regressions(authorization: dict):
         "gpuUsed": False,
     }
     return positive, negative, evidence
+
+
+def run_structure_fact_regressions(authorization: dict):
+    runner.validate_authorization_document(authorization, verify_bindings=True)
+    config = runner.read_json(runner.resolve(Path(authorization["bindings"]["inactiveConfig"]["path"])))
+    package = runner.read_json(runner.resolve(runner.DATASET_PATH))
+    trainer.validate_training_inputs(config, package)
+    dataset = AiAssistedConditionalDenoiserDataset(
+        runner.DATASET_PATH,
+        runner.SAMPLE_SPLIT,
+        list(config["conditionChannelOrder"]),
+        runner.IMAGE_SIZE,
+        selection_contract=trainer.conditional_dataset_selection_contract(config),
+    )
+    occurrences = [row.get("sampleId") for row in dataset.rows if row.get("sampleId") == runner.SAMPLE_ID]
+    source_index = runner.read_json(runner.resolve(Path(authorization["bindings"]["datasetSourceIndex"]["path"])))
+    source_matches = [
+        row for row in source_index.get("samples", [])
+        if row.get("sampleId") == runner.SAMPLE_ID
+        and row.get("v7CapacityContributionRegistered") is True
+    ]
+    source_text = runner.resolve(runner.RUNNER_PATH).read_text(encoding="utf-8")
+    source_contract = inspect_source_contract(source_text)
+    implementation_consumption = runner.read_json(
+        runner.resolve(runner.STRUCTURE_FACT_IMPLEMENTATION_CONSUMPTION_PATH)
+    )
+    output_path = runner.resolve(Path(authorization["execution"]["outputDirectory"]))
+    gpu_consumption_path = runner.resolve(Path(authorization["execution"]["gpuConsumptionPath"]))
+    contract = config["training"]["stage4StructureFactFirstDualStage"]
+    legacy_v9 = validate_legacy_v9_behavior_baseline(package)
+    loss_registry = validate_structure_fact_loss_registry_runtime(config)
+    positive = {
+        "ownerAuthorizationIdentityValid": True,
+        "implementationAuthorizationConsumedOnce": implementation_consumption.get("oneTimeConsumption") is True,
+        "cpuTerminalBound": authorization["bindings"]["cpuTerminal"]["sha256"] == "f0de35ee3d49f4f26aec0edc72586e81f90f7c6aef73d2d75e4ad004c1c13418",
+        "inactiveConfigBound": authorization["bindings"]["inactiveConfig"]["sha256"] == "6cefbbaf61fb3b8e932842586901865b1ffa76d71c799c8ed9fc99f0859b05f7",
+        "cpuReportBound": authorization["bindings"]["cpuReport"]["sha256"] == "7d7e9c74e15fc4aac4dbd29cff726406a5476458c5522a50d0cc67cb80678096",
+        "supportContractBound": authorization["bindings"]["supportContract"]["sha256"] == "42d24f9952b899808e2a4fba0f03ee3e308f759c0e47734a899dc100c3605b4e",
+        "ownerActionRequestBound": authorization["bindings"]["ownerActionRequest"]["sha256"] == "4787af5122cd1f3633d100a2ef7d9d368ad38b853fee62d1df9582dfec568249",
+        "autoencoderCheckpointIdentityBound": authorization["bindings"]["projectAutoencoderCheckpoint"]["sha256"] == "5867e9ea29b61f1dd59e835bdb4ace3afaeea3ca234eed82bab2f7790e5e43ba",
+        "structureFactContractValidatedInactive": config["denoiserArchitecture"] == runner.STRUCTURE_FACT_ARCHITECTURE,
+        "sample194UniqueValidation": occurrences == [runner.SAMPLE_ID] and len(source_matches) == 1 and source_matches[0].get("split") == "validation",
+        "conditionChannelOrderPreserved": len(config["conditionChannelOrder"]) == 23,
+        "stageAChannelsExact": contract["stageA"]["outputChannels"] == list(runner.STRUCTURE_FACT_CHANNELS),
+        "stageBScalesExact": contract["stageB"]["injectionScales"] == list(runner.STRUCTURE_FACT_STAGE_B_SCALES),
+        "exact17MetricContract": contract["diagnosticManifestRegistry"]["exactFields"] == list(trainer.STRUCTURE_FACT_FIRST_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS),
+        "sixChannelLossRegistryOrderExact": loss_registry["registryOrder"] == list(runner.STRUCTURE_FACT_CHANNELS),
+        "sixChannelLossRegistryKeysUnique": len(set(loss_registry["registryValues"])) == len(runner.STRUCTURE_FACT_CHANNELS),
+        "sixChannelLossesProducedBySyntheticForward": loss_registry["producedChannelLossKeys"] == set(loss_registry["registryValues"]),
+        "sixChannelLossesRouteOnlyToMatchingStageAHead": all(loss_registry["headIsolation"].values()),
+        "sixChannelLossRegistryImmutable": loss_registry["immutable"],
+        "runnerConsumesSharedLossRegistryWithoutIndependentKeys": (
+            "trainer.STRUCTURE_FACT_FIRST_STAGE4_CHANNEL_LOSS_KEYS" in source_text
+            and all(value not in source_text for value in loss_registry["registryValues"])
+        ),
+        "outputDirectoryNotCreatedBeforeGpu": not output_path.exists(),
+        "gpuConsumptionNotCreatedBeforePreflight": not gpu_consumption_path.exists(),
+        "runnerHasNoBackwardCall": source_contract["backwardCallCount"] == 0,
+        "runnerHasNoOptimizerConstruction": source_contract["optimizerReferenceCount"] == 0,
+        "runnerHasNoCheckpointWrite": source_contract["torchSaveCallCount"] == 0,
+        "runnerOnlyLoadsProjectAutoencoder": source_contract["autoencoderLoaderCount"] == 1 and source_contract["denoiserCheckpointLoaderCount"] == 0,
+        "gpuConsumptionBeforeGpuRun": source_text.index("write_json_exclusive(consumption_path, consumption)") < source_text.index("return run_gpu("),
+        "autoencoderReadOccursInsideConsumedGpuRun": source_text.index("return trainer.load_autoencoder_checkpoint") > source_text.index("def run_gpu("),
+        "cudaInitOccursInsideConsumedGpuRun": source_text.index("torch.cuda.init()") > source_text.index("def run_gpu("),
+        "sixHeadIsolationImplemented": "structure_fact_diagnostic_typed_head_isolation_failed" in source_text,
+        "stageAToStageBValidationImplemented": "structure_fact_diagnostic_stage_a_to_stage_b_gradient_path_missing" in source_text,
+        "original23ConditionValidationImplemented": "structure_fact_diagnostic_original_23_condition_gradient_path_missing" in source_text,
+        "parameterHashVerificationImplemented": "structure_fact_diagnostic_model_state_changed" in source_text,
+        "exact17RegistrationImplemented": "STRUCTURE_FACT_FIRST_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS" in source_text,
+        "legacyV9AuthorizationEvidenceImmutable": legacy_v9["authorizationEvidenceImmutable"],
+        "legacyV9TrainingContractStillValid": legacy_v9["trainingContractValid"],
+        "legacyV9ModelBuildAndForwardStillValid": legacy_v9["modelBuildAndForwardValid"],
+        "failureClosesWithoutRetry": "automaticRetryStarted\": False" in source_text,
+    }
+    negative = {
+        "rejectWrongRequestId": rejects(authorization, lambda value: value.__setitem__("requestId", "wrong")),
+        "rejectWrongScope": rejects(authorization, lambda value: value.__setitem__("scope", "wrong")),
+        "rejectWrongArchitecture": rejects(authorization, lambda value: value["taskIdentity"].__setitem__("architectureId", "v9")),
+        "rejectWrongSample": rejects(authorization, lambda value: value["taskIdentity"].__setitem__("sampleId", "wrong")),
+        "rejectTrainReclassification": rejects(authorization, lambda value: value["taskIdentity"].__setitem__("sampleSplit", "train")),
+        "rejectWrongSeed": rejects(authorization, lambda value: value["taskIdentity"].__setitem__("seed", 1)),
+        "rejectWrongTimestep": rejects(authorization, lambda value: value["taskIdentity"].__setitem__("timestep", 998)),
+        "rejectWrongResolution": rejects(authorization, lambda value: value["taskIdentity"].__setitem__("resolution", {"width": 512, "height": 384})),
+        "rejectWrongTopology": rejects(authorization, lambda value: value["taskIdentity"].__setitem__("requiredBoundarySides", ["east"])),
+        "rejectWrongStructureChannels": rejects(authorization, lambda value: value["taskIdentity"]["structureChannels"].pop()),
+        "rejectWrongStageBScales": rejects(authorization, lambda value: value["taskIdentity"]["stageBInjectionScales"].pop()),
+        "rejectWrongConditionCount": rejects(authorization, lambda value: value["taskIdentity"].__setitem__("conditionChannelCount", 22)),
+        "rejectWrongMetricCount": rejects(authorization, lambda value: value["taskIdentity"].__setitem__("diagnosticManifestMetricCount", 16)),
+        "rejectCodeModification": rejects(authorization, lambda value: value["authorizedActions"].__setitem__("codeModification", True)),
+        "rejectOldDenoiserRead": rejects(authorization, lambda value: value["authorizedActions"].__setitem__("oldV7V8V9DenoiserCheckpointReadOrLoad", True)),
+        "rejectOptimizer": rejects(authorization, lambda value: value["authorizedActions"].__setitem__("optimizerCreation", True)),
+        "rejectBackwardMethod": rejects(authorization, lambda value: value["authorizedActions"].__setitem__("backwardMethodExecution", True)),
+        "rejectWeightMutation": rejects(authorization, lambda value: value["authorizedActions"].__setitem__("modelWeightModification", True)),
+        "rejectCheckpointWrite": rejects(authorization, lambda value: value["authorizedActions"].__setitem__("checkpointWrite", True)),
+        "rejectSmoke": rejects(authorization, lambda value: value["authorizedActions"].__setitem__("smoke", True)),
+        "rejectFullTraining": rejects(authorization, lambda value: value["authorizedActions"].__setitem__("stage4FullTraining", True)),
+        "rejectAutomaticRetry": rejects(authorization, lambda value: value["authorizedActions"].__setitem__("automaticRetry", True)),
+        "rejectUnknownAction": rejects(authorization, lambda value: value["authorizedActions"].__setitem__("startTrainingNow", True)),
+        "rejectAutoencoderReadClosed": rejects(authorization, lambda value: value["authorizedActions"].__setitem__("projectAutoencoderCheckpointReadAndLoad", False)),
+        "rejectRuntimeFrame": rejects(authorization, lambda value: value["authorizedActions"].__setitem__("runtimeFrame", True)),
+        "rejectWorldEntry": rejects(authorization, lambda value: value["authorizedActions"].__setitem__("worldEntry", True)),
+        "rejectTamperedBoundConfig": binding_rejects(authorization, "inactiveConfig"),
+        "rejectTamperedAutoencoderIdentity": binding_rejects(authorization, "projectAutoencoderCheckpoint"),
+        "rejectTamperedRunnerIdentity": binding_rejects(authorization, "runner"),
+        "rejectMissingLossRegistryChannel": loss_registry_rejects(
+            lambda value: value.pop("terrain_path_ground"), loss_registry["producedChannelLossKeys"]
+        ),
+        "rejectUnknownLossRegistryChannel": loss_registry_rejects(
+            lambda value: value.__setitem__("unknown_channel", "stage4StructureFactUnknownBce"),
+            loss_registry["producedChannelLossKeys"],
+        ),
+        "rejectDuplicateLossRegistryKey": loss_registry_rejects(
+            lambda value: value.__setitem__("route_required_boundary", value["terrain_path_ground"]),
+            loss_registry["producedChannelLossKeys"],
+        ),
+        "rejectLossRegistryOrderChange": loss_registry_rejects(
+            lambda value: reverse_mapping_in_place(value), loss_registry["producedChannelLossKeys"]
+        ),
+    }
+    evidence = {
+        "sample194ValidationOccurrences": len(occurrences),
+        "sourceIndexSample194Matches": len(source_matches),
+        "sourceContract": source_contract,
+        "runner": runner.binding(runner.RUNNER_PATH),
+        "cpuChecker": runner.binding(runner.CPU_CHECKER_PATH),
+        "outputDirectoryExists": output_path.exists(),
+        "gpuConsumptionExists": gpu_consumption_path.exists(),
+        "structureFactLossRegistry": {
+            "order": loss_registry["registryOrder"],
+            "values": loss_registry["registryValues"],
+            "headIsolation": loss_registry["headIsolation"],
+        },
+        "checkpointRead": False,
+        "gpuUsed": False,
+    }
+    return positive, negative, evidence
+
+
+def validate_structure_fact_loss_registry_runtime(config: dict) -> dict:
+    registry = trainer.STRUCTURE_FACT_FIRST_STAGE4_CHANNEL_LOSS_KEYS
+    torch.manual_seed(20263722)
+    model = build_complete_world_system(config)
+    latent = torch.randn(1, int(config["latentChannels"]), 8, 8, requires_grad=True)
+    timestep = torch.tensor([999], dtype=torch.long)
+    conditions = torch.rand(1, 23, 32, 32)
+    discrete_indices, _ = trainer.condition_type_indices(config)
+    conditions[:, discrete_indices] = (conditions[:, discrete_indices] > 0.5).to(conditions.dtype)
+    velocity, alignment = model.predict_velocity_with_stage4_structure_fact(
+        latent, timestep, conditions,
+    )
+    predicted_clean = latent - velocity * 0.1
+    predicted_conditions = model.reconstruct_conditions_from_clean_latent(predicted_clean)
+    target_conditions = model.prepare_typed_conditions(conditions, predicted_clean.shape[-2:])
+    predicted_rgb = model.autoencoder.decode(predicted_clean)
+    losses = trainer.composite_denoiser_losses_structure_fact_first_stage4(
+        velocity,
+        torch.randn_like(velocity),
+        predicted_clean,
+        torch.zeros_like(predicted_clean),
+        predicted_conditions,
+        target_conditions,
+        predicted_rgb,
+        torch.rand_like(predicted_rgb),
+        conditions,
+        alignment,
+        config,
+    )
+    validate_structure_fact_loss_registry_contract(registry, set(losses))
+    all_head_parameters = []
+    head_slices = {}
+    for name in runner.STRUCTURE_FACT_CHANNELS:
+        start = len(all_head_parameters)
+        all_head_parameters.extend(model.denoiser.structure_fact_heads[name].parameters())
+        head_slices[name] = slice(start, len(all_head_parameters))
+    head_isolation = {}
+    for name in runner.STRUCTURE_FACT_CHANNELS:
+        gradients = torch.autograd.grad(
+            losses[registry[name]],
+            tuple(all_head_parameters),
+            retain_graph=True,
+            create_graph=False,
+            allow_unused=True,
+        )
+        selected = gradients[head_slices[name]]
+        other = [
+            gradient
+            for other_name in runner.STRUCTURE_FACT_CHANNELS
+            if other_name != name
+            for gradient in gradients[head_slices[other_name]]
+        ]
+        selected_norm = sum(
+            0.0 if gradient is None else float(gradient.detach().norm())
+            for gradient in selected
+        )
+        other_norm = sum(
+            0.0 if gradient is None else float(gradient.detach().norm())
+            for gradient in other
+        )
+        head_isolation[name] = selected_norm > 0.0 and other_norm == 0.0
+    immutable = False
+    try:
+        registry["unknown_channel"] = "stage4StructureFactUnknownBce"
+    except TypeError:
+        immutable = True
+    return {
+        "registryOrder": list(registry),
+        "registryValues": list(registry.values()),
+        "producedChannelLossKeys": {
+            key for key in losses
+            if key.startswith("stage4StructureFact")
+            and key.endswith("Bce")
+            and key != "stage4StructureFactLayoutBce"
+        },
+        "headIsolation": head_isolation,
+        "immutable": immutable,
+    }
+
+
+def validate_structure_fact_loss_registry_contract(registry, produced_keys: set[str]) -> None:
+    if list(registry) != list(runner.STRUCTURE_FACT_CHANNELS):
+        raise ValueError("structure_fact_loss_registry_channel_order_invalid")
+    values = list(registry.values())
+    if len(values) != len(set(values)):
+        raise ValueError("structure_fact_loss_registry_duplicate_key")
+    if set(values) != {
+        key for key in produced_keys
+        if key.startswith("stage4StructureFact")
+        and key.endswith("Bce")
+        and key != "stage4StructureFactLayoutBce"
+    }:
+        raise ValueError("structure_fact_loss_registry_produced_key_set_invalid")
+
+
+def loss_registry_rejects(mutation, produced_keys: set[str]) -> bool:
+    candidate = dict(trainer.STRUCTURE_FACT_FIRST_STAGE4_CHANNEL_LOSS_KEYS)
+    mutation(candidate)
+    try:
+        validate_structure_fact_loss_registry_contract(candidate, produced_keys)
+    except Exception:
+        return True
+    return False
+
+
+def reverse_mapping_in_place(value: dict) -> None:
+    reversed_items = list(value.items())[::-1]
+    value.clear()
+    value.update(reversed_items)
+
+
+def validate_legacy_v9_behavior_baseline(package: dict) -> dict:
+    authorization_path = runner.resolve(runner.AUTHORIZATION_PATH)
+    if runner.sha256_file(authorization_path) != runner.AUTHORIZATION_SHA256:
+        raise ValueError("legacy_v9_authorization_evidence_changed")
+    historical_authorization = runner.read_json(authorization_path)
+    if (
+        historical_authorization.get("requestId") != runner.REQUEST_ID
+        or historical_authorization.get("ownerDecision", {}).get("scope") != runner.SCOPE
+    ):
+        raise ValueError("legacy_v9_authorization_evidence_identity_invalid")
+    config_identity = historical_authorization.get("bindings", {}).get("v9InactiveConfig", {})
+    config_path = runner.resolve(Path(config_identity.get("path", "missing")))
+    if config_identity.get("sha256") != runner.sha256_file(config_path):
+        raise ValueError("legacy_v9_inactive_config_evidence_changed")
+    config = runner.read_json(config_path)
+    trainer.validate_training_inputs(config, package)
+    torch.manual_seed(20263722)
+    model = build_complete_world_system(config)
+    latent = torch.randn(1, int(config["latentChannels"]), 8, 8)
+    timestep = torch.tensor([999], dtype=torch.long)
+    conditions = torch.rand(1, 23, 32, 32)
+    discrete_indices, _ = trainer.condition_type_indices(config)
+    conditions[:, discrete_indices] = (conditions[:, discrete_indices] > 0.5).to(conditions.dtype)
+    with torch.no_grad():
+        velocity, alignment = model.predict_velocity_with_stage4_object_alignment(
+            latent, timestep, conditions,
+        )
+    model_valid = (
+        tuple(velocity.shape) == tuple(latent.shape)
+        and tuple(alignment["objectReadoutUp1"].shape) == (1, 4, 4, 4)
+        and tuple(alignment["objectReadoutUp0"].shape) == (1, 4, 8, 8)
+        and tuple(alignment["routeReadout"].shape) == (1, 2, 8, 8)
+    )
+    if not model_valid:
+        raise ValueError("legacy_v9_model_build_or_forward_behavior_changed")
+    return {
+        "authorizationEvidenceImmutable": True,
+        "trainingContractValid": True,
+        "modelBuildAndForwardValid": True,
+    }
 
 
 def inspect_source_contract(source_text: str) -> dict:

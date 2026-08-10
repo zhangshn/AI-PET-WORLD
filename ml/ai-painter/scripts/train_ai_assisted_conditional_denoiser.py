@@ -10,6 +10,7 @@ from pathlib import Path
 import random
 import time
 from copy import deepcopy
+from types import MappingProxyType
 
 import numpy as np
 from PIL import Image
@@ -187,6 +188,14 @@ V9_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS = tuple(
     "stage4DiagnosticRouteRequiredBoundaryContactMinimum",
 )
 STRUCTURE_FACT_FIRST_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS = V9_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS
+STRUCTURE_FACT_FIRST_STAGE4_CHANNEL_LOSS_KEYS = MappingProxyType({
+    "terrain_path_ground": "stage4StructureFactTerrain_path_groundBce",
+    "route_required_boundary": "stage4StructureFactRoute_required_boundaryBce",
+    "object_footprints": "stage4StructureFactObject_footprintsBce",
+    "object_tree": "stage4StructureFactObject_treeBce",
+    "object_rock": "stage4StructureFactObject_rockBce",
+    "object_vegetation": "stage4StructureFactObject_vegetationBce",
+})
 
 
 def main() -> int:
@@ -6993,10 +7002,7 @@ def composite_denoiser_losses_structure_fact_first_stage4(
     layout = alignment.get("structureLayout")
     head_outputs = tuple(alignment.get("structureHeadOutputs", ()))
     channel_order = list(alignment.get("structureChannelOrder", ()))
-    expected_order = [
-        "terrain_path_ground", "route_required_boundary", "object_footprints",
-        "object_tree", "object_rock", "object_vegetation",
-    ]
+    expected_order = list(STRUCTURE_FACT_FIRST_STAGE4_CHANNEL_LOSS_KEYS)
     if (
         layout is None
         or layout.shape[1] != len(expected_order)
@@ -7052,7 +7058,7 @@ def composite_denoiser_losses_structure_fact_first_stage4(
     }
     object_gradients = []
     for index, name in enumerate(expected_order):
-        metrics[f"stage4StructureFact{upper_camel(name)}Bce"] = channel_losses[index]
+        metrics[STRUCTURE_FACT_FIRST_STAGE4_CHANNEL_LOSS_KEYS[name]] = channel_losses[index]
         if name not in prefix_by_channel:
             continue
         gradient = predicted_rgb.new_zeros(())
