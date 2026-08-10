@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from argparse import ArgumentParser
-from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
@@ -15,6 +14,33 @@ from copy import deepcopy
 import numpy as np
 from PIL import Image
 import torch
+
+from ai_painter_authorization_policy import (
+    resolve_control_refactor_grant,
+    resolve_stage_execution_grant,
+)
+from ai_painter_execution_grant import ExecutionAction
+from ai_painter_preview_reproduction import (
+    fixed_preview_determinism_scope as stage4_fixed_preview_determinism_scope,
+    state_dict_sha256,
+    tensor_sha256,
+)
+from ai_painter_stage_mode_registry import (
+    V7_R5_STAGE3_COVERAGE_SMOKE_STATUS,
+    V7_R5_STAGE3_SMOKE_STATUS,
+    V7_R5_STAGE4_BOUNDED_PREFLIGHT_STATUS,
+    V7_R5_STAGE4_BOUNDED_SMOKE_STATUS,
+    V7_R5_STAGE4_FULL_TRAINING_STATUS,
+    V7_R5_STAGE4_PREFLIGHT_STATUS,
+    V8_STAGE4_INACTIVE_STATUS,
+    V8_STAGE4_PREFLIGHT_STATUS,
+    V8_STAGE4_SMOKE_STATUS,
+    V9_STAGE4_INACTIVE_STATUS,
+    V9_STAGE4_SMOKE_STATUS,
+    V9_STAGE4_UNIFIED_PREVIEW_SMOKE_STATUS,
+    V9_STAGE4_VALIDATION_KERNEL_SMOKE_STATUS,
+    resolve_stage_mode,
+)
 
 from ai_painter.complete_world import (
     add_noise,
@@ -76,7 +102,7 @@ V7_REPAIR_R4_SMOKE_AUTHORIZATION_PATH = ".runtime/ai-painter/owner-action-reques
 V7_REPAIR_R4_SMOKE_AUTHORIZATION_SHA256 = "02a147ab7c3f47595abcdd6f61456b5d7339914585b86fd5a37b405beff2b782"
 V7_REPAIR_R4_SMOKE_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r4-single-sample-gpu-smoke-20260804/authorization-consumption.json"
 V7_REPAIR_R4_SMOKE_CONSUMPTION_SHA256 = "62f3a190a04f01e2c75a55eec5c6fc6e70df151a55e217ddef8451a284f2a6de"
-V7_REPAIR_R5_SMOKE_AUTHORIZATION_STATUS = "owner_authorized_v7_r5_single_sample_overfit_smoke"
+V7_REPAIR_R5_SMOKE_AUTHORIZATION_STATUS = V7_R5_STAGE3_SMOKE_STATUS
 V7_REPAIR_R5_SMOKE_AUTHORIZATION_ID = "owner-action-request-v7-r5-stage3-condition-evidence-serialization-fix-retry-20260804"
 V7_REPAIR_R5_SMOKE_AUTHORIZATION_COMMAND_REF = "owner-authorized-v7-r5-stage3-condition-evidence-serialization-fix-and-one-checkpoint-smoke-retry-20260804"
 V7_REPAIR_R5_SMOKE_AUTHORIZATION_SCOPE = "r5_stage3_condition_evidence_non_scalar_image_tensor_serialization_fix_cpu_regression_and_one_same_checkpoint_gpu_smoke_retry_only"
@@ -84,7 +110,7 @@ V7_REPAIR_R5_SMOKE_AUTHORIZATION_PATH = ".runtime/ai-painter/owner-action-reques
 V7_REPAIR_R5_SMOKE_AUTHORIZATION_SHA256 = "df0de715098933533468668776573cfa88abc17ec0716e4883e005baf7782708"
 V7_REPAIR_R5_SMOKE_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage3-condition-evidence-serialization-fix-retry-20260804/authorization-consumption.json"
 V7_REPAIR_R5_SMOKE_CONSUMPTION_SHA256 = "10873531ed7e9804b9cdc76fde78f7ecc4faf764a4626b277d70373a3f1aea6a"
-V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_STATUS = "owner_authorized_v7_r5_stage3_coverage_convergence_single_sample_gpu_smoke"
+V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_STATUS = V7_R5_STAGE3_COVERAGE_SMOKE_STATUS
 V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_ID = "owner-action-request-v7-r5-stage3-coverage-convergence-single-sample-gpu-smoke-20260805"
 V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_COMMAND_REF = "owner-authorized-v7-r5-stage3-coverage-convergence-single-sample-gpu-smoke-20260805"
 V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_SCOPE = "rebind_r5_stage3_coverage_convergence_smoke_runner_and_trainer_gate_cpu_regression_then_one_checkpoint_continuation_single_sample_30_epoch_gpu_smoke_only"
@@ -92,8 +118,8 @@ V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_PATH = ".runtime/ai-painte
 V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_AUTHORIZATION_SHA256 = "037741e42eeb3c73b7b9fdfc1eae8a0536ce9208e053cfec4aac4d4977515d19"
 V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage3-coverage-convergence-single-sample-gpu-smoke-20260805/authorization-consumption.json"
 V7_REPAIR_R5_COVERAGE_CONVERGENCE_SMOKE_CONSUMPTION_SHA256 = "9281a8ba10c58a68f93a056995a2bfb8f9d7d62430aa5c73ca4a7a0dccb42bc8"
-V7_REPAIR_R5_STAGE4_PREFLIGHT_AUTHORIZATION_STATUS = "owner_authorized_v7_r5_stage4_full_training_preflight_only"
-V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_STATUS = "owner_authorized_v7_r5_stage4_full_training"
+V7_REPAIR_R5_STAGE4_PREFLIGHT_AUTHORIZATION_STATUS = V7_R5_STAGE4_PREFLIGHT_STATUS
+V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_STATUS = V7_R5_STAGE4_FULL_TRAINING_STATUS
 V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_ID = "owner-action-request-v7-r5-stage4-contract-boundary-correction-bounded-execution-20260805"
 V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_COMMAND_REF = "owner-authorized-v7-r5-stage4-contract-boundary-correction-bounded-execution-20260805"
 V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_SCOPE = "split_stage3_smoke_30_epoch_and_stage4_formal_40_epoch_contract_then_one_bounded_stage4_execution_only"
@@ -102,8 +128,8 @@ V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_SHA256 = "2bc4993cf339476d786a5c
 V7_REPAIR_R5_STAGE4_IMPLEMENTATION_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-contract-boundary-correction-bounded-execution-20260805/implementation-authorization-consumption.json"
 V7_REPAIR_R5_STAGE4_IMPLEMENTATION_CONSUMPTION_SHA256 = "698788ed3a5b5b87f25f92ef2234a5345be9a92b2aebb7ce8c8c20127ae690b4"
 V7_REPAIR_R5_STAGE4_TRAINING_CONSUMPTION_PATH = ".runtime/ai-painter/owner-action-requests/owner-action-request-v7-r5-stage4-contract-boundary-correction-bounded-execution-20260805/training-execution-authorization-consumption.json"
-V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS = "owner_authorized_v7_r5_stage4_bounded_repair_smoke_preflight_only"
-V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS = "owner_authorized_v7_r5_stage4_bounded_repair_single_sample_gpu_smoke"
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS = V7_R5_STAGE4_BOUNDED_PREFLIGHT_STATUS
+V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS = V7_R5_STAGE4_BOUNDED_SMOKE_STATUS
 V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_AUTHORIZATION_ID = "owner-action-request-v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-new-execution-20260806"
 V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_COMMAND_REF = "owner-authorized-v7-r5-stage4-bounded-repair-smoke-diagnostic-status-binding-fix-new-execution-20260806"
 V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_SCOPE = "fix_only_two_diagnostic_success_status_bindings_sync_related_hashes_then_one_cpu_gate_preflights_and_one_30_epoch_bounded_gpu_smoke"
@@ -115,13 +141,13 @@ V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_EXECUTION_CONSUMPTION_PATH = ".runtime/ai-pain
 V7_REPAIR_R5_STAGE4_CONFIG_BOUND_AUTHORIZATION_MODE = "config_bound_immutable_owner_authorization_v1"
 V7_REPAIR_R5_STAGE4_PROJECT_RUNTIME_LOGICAL_ENTRY = ".runtime"
 V7_REPAIR_R5_STAGE4_REGISTERED_HOT_RUNTIME_ROOT = "D:/AI-PET-WORLD-DATA/hot/runtime"
-V8_STAGE4_SMOKE_INACTIVE_STATUS = "v8_stage4_shared_readout_training_loss_supported_inactive"
-V8_STAGE4_SMOKE_PREFLIGHT_STATUS = "owner_authorized_v8_stage4_single_sample_smoke_preflight_only"
-V8_STAGE4_SMOKE_ACTIVE_STATUS = "owner_authorized_v8_stage4_single_sample_gpu_smoke"
-V9_STAGE4_CPU_INACTIVE_STATUS = "v9_stage4_object_semantic_decoder_alignment_cpu_supported_inactive"
-V9_STAGE4_SMOKE_ACTIVE_STATUS = "owner_authorized_v9_stage4_single_sample_gpu_smoke"
-V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS = "owner_authorized_v9_stage4_unified_preview_pipeline_single_sample_gpu_smoke"
-V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS = "owner_authorized_v9_stage4_validation_kernel_single_sample_gpu_smoke"
+V8_STAGE4_SMOKE_INACTIVE_STATUS = V8_STAGE4_INACTIVE_STATUS
+V8_STAGE4_SMOKE_PREFLIGHT_STATUS = V8_STAGE4_PREFLIGHT_STATUS
+V8_STAGE4_SMOKE_ACTIVE_STATUS = V8_STAGE4_SMOKE_STATUS
+V9_STAGE4_CPU_INACTIVE_STATUS = V9_STAGE4_INACTIVE_STATUS
+V9_STAGE4_SMOKE_ACTIVE_STATUS = V9_STAGE4_SMOKE_STATUS
+V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS = V9_STAGE4_UNIFIED_PREVIEW_SMOKE_STATUS
+V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS = V9_STAGE4_VALIDATION_KERNEL_SMOKE_STATUS
 STAGE4_VALIDATION_KERNEL_PHASE0_UPDATE_STATUS = "owner_authorized_stage4_validation_kernel_phase0_single_step_update"
 STAGE4_VALIDATION_KERNEL_PHASE0_REPRODUCE_STATUS = "owner_authorized_stage4_validation_kernel_phase0_checkpoint_preview_reproduction"
 V7_MVP64_SPLIT_COUNTS = {
@@ -178,11 +204,43 @@ def main() -> int:
     parser.add_argument("--stage4-validation-kernel-phase0-reproduce", action="store_true")
     parser.add_argument("--phase0-execution-identity", type=Path)
     parser.add_argument("--phase0-diagnostic-checkpoint", type=Path)
+    parser.add_argument("--stage-control-dry-run", action="store_true")
+    parser.add_argument("--stage-control-authorization", type=Path)
+    parser.add_argument("--stage-control-authorization-sha256")
+    parser.add_argument("--authorization-lineage-preflight", action="store_true")
     args = parser.parse_args()
 
     config = read_json(args.config)
     package = read_json(args.dataset_package)
+    lineage_fixture = config.get("training", {}).get("v9Stage4SmokeExecution", {}).get("cpuContractFixture") is True
+    if lineage_fixture and not args.authorization_lineage_preflight:
+        raise ValueError("CPU authorization lineage fixture cannot enter a normal trainer execution")
+    if args.authorization_lineage_preflight and not args.preflight_only:
+        raise ValueError("Authorization lineage preflight requires --preflight-only")
     validate_training_inputs(config, package)
+    stage_mode = None
+    stage_execution_grant = None
+    try:
+        stage_mode = resolve_stage_mode(config)
+        stage_execution_grant = resolve_stage_execution_grant(
+            config,
+            verify_owner_files=args.stage_control_dry_run,
+        )
+    except ValueError:
+        if is_v8_stage4_decoded_alignment(config) or is_v9_stage4_object_semantic_decoded_alignment(config):
+            raise
+    if args.stage_control_dry_run:
+        if not args.preflight_only:
+            raise ValueError("Stage control dry-run requires --preflight-only")
+        if args.stage_control_authorization is None or not args.stage_control_authorization_sha256:
+            raise ValueError("Stage control dry-run requires the immutable control authorization identity")
+        control_grant = resolve_control_refactor_grant(
+            args.stage_control_authorization,
+            args.stage_control_authorization_sha256,
+        )
+        control_grant.require(ExecutionAction.SELECT_BOUND_SAMPLE)
+        control_grant.require(ExecutionAction.INSPECT_AUTOENCODER_IDENTITY)
+        control_grant.require(ExecutionAction.INSPECT_CHECKPOINT_IDENTITY)
     phase0_mode = args.stage4_validation_kernel_phase0_update or args.stage4_validation_kernel_phase0_reproduce
     if args.stage4_validation_kernel_phase0_update and args.stage4_validation_kernel_phase0_reproduce:
         raise ValueError("Stage4 validation kernel Phase0 update and reproduction modes are mutually exclusive")
@@ -215,23 +273,23 @@ def main() -> int:
             raise ValueError("V7 R4 authorized Smoke evaluation interval does not match")
     if (
         config.get("training", {}).get("boundedRepairVersion") == "v7_bounded_repair_r5_candidate"
-        and not is_v8_stage4_decoded_alignment(config)
-        and not is_v9_stage4_object_semantic_decoded_alignment(config)
+        and stage_mode is not None
+        and stage_mode.adapter_binding in {"legacy_v7_stage3_adapter", "legacy_v7_stage4_adapter"}
     ):
         training = config["training"]
         authorization_status = training.get("trainingAuthorizationStatus")
-        stage4_bounded_smoke = authorization_status in {
-            V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS,
-            V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS,
+        stage4_bounded_smoke = stage_mode.mode_id in {
+            "v7_r5_stage4_bounded_preflight",
+            "v7_r5_stage4_bounded_smoke",
         }
-        stage4_mode = authorization_status in {
-            V7_REPAIR_R5_STAGE4_PREFLIGHT_AUTHORIZATION_STATUS,
-            V7_REPAIR_R5_STAGE4_FULL_TRAINING_AUTHORIZATION_STATUS,
+        stage4_mode = stage_mode.mode_id in {
+            "v7_r5_stage4_preflight",
+            "v7_r5_stage4_full_training",
         }
         if stage4_bounded_smoke:
             smoke_contract = training.get("r5Stage4BoundedRepairSmokeContract", {})
             continuation = training.get("r5Stage4BoundedRepairCheckpointContinuation", {})
-            if authorization_status == V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS and args.preflight_only is not True:
+            if stage_mode.execution_kind == "single_sample_preflight" and args.preflight_only is not True:
                 raise ValueError("V7 R5 Stage 4 bounded-repair Smoke preflight cannot execute training")
             if args.single_sample_overfit_smoke is not True or args.smoke_test:
                 raise ValueError("V7 R5 Stage 4 bounded repair permits only single-sample overfit Smoke")
@@ -250,7 +308,7 @@ def main() -> int:
             if training.get("authorizedInitialization") != "project_stage4_failed_stage0_checkpoint_continuation_nonformal_smoke":
                 raise ValueError("V7 R5 Stage 4 bounded-repair Smoke initialization is invalid")
         elif stage4_mode:
-            if authorization_status == V7_REPAIR_R5_STAGE4_PREFLIGHT_AUTHORIZATION_STATUS and args.preflight_only is not True:
+            if stage_mode.execution_kind == "full_training_preflight" and args.preflight_only is not True:
                 raise ValueError("V7 R5 Stage 4 preflight config cannot execute training")
             if args.single_sample_overfit_smoke or args.smoke_test:
                 raise ValueError("V7 R5 Stage 4 full training cannot use a Smoke execution mode")
@@ -283,16 +341,15 @@ def main() -> int:
                 raise ValueError("V7 R5 authorized Smoke epoch count does not match")
             if int(args.overfit_evaluation_interval) != int(training.get("smokeStabilityGate", {}).get("evaluationInterval", 0)):
                 raise ValueError("V7 R5 authorized Smoke evaluation interval does not match")
-    if is_v8_stage4_decoded_alignment(config):
+    if stage_mode is not None and stage_mode.adapter_binding == "legacy_v8_stage4_adapter":
         training = config["training"]
-        authorization_status = training.get("trainingAuthorizationStatus")
-        if authorization_status == V8_STAGE4_SMOKE_INACTIVE_STATUS:
+        if stage_mode.execution_kind == "cpu_inactive":
             if args.preflight_only is not True:
                 raise ValueError("V8 Stage 4 inactive Smoke config cannot execute training")
             if args.initial_denoiser_checkpoint is not None:
                 raise ValueError("V8 Stage 4 Smoke must start from project random V8 initialization")
-        elif authorization_status in {V8_STAGE4_SMOKE_PREFLIGHT_STATUS, V8_STAGE4_SMOKE_ACTIVE_STATUS}:
-            if authorization_status == V8_STAGE4_SMOKE_PREFLIGHT_STATUS and args.preflight_only is not True:
+        elif stage_mode.execution_kind in {"single_sample_preflight", "single_sample_smoke"}:
+            if stage_mode.execution_kind == "single_sample_preflight" and args.preflight_only is not True:
                 raise ValueError("V8 Stage 4 preflight config cannot execute training")
             smoke_contract = training.get("v8Stage4SingleSampleSmokeContract", {})
             if args.single_sample_overfit_smoke is not True or args.smoke_test:
@@ -309,15 +366,14 @@ def main() -> int:
                 raise ValueError("V8 Stage 4 Smoke initialization or resolution is invalid")
         else:
             raise ValueError("V8 Stage 4 training authorization status is invalid")
-    if is_v9_stage4_object_semantic_decoded_alignment(config):
+    if stage_mode is not None and stage_mode.adapter_binding == "legacy_v9_stage4_adapter":
         training = config["training"]
         smoke_contract = training.get("v9Stage4SingleSampleSmokeContract", {})
-        authorization_status = training.get("trainingAuthorizationStatus")
-        if authorization_status == V9_STAGE4_CPU_INACTIVE_STATUS:
+        if stage_mode.execution_kind == "cpu_inactive":
             if args.preflight_only is not True and not phase0_mode:
                 raise ValueError("V9 Stage 4 inactive CPU support configuration cannot execute training")
-        elif authorization_status in {V9_STAGE4_SMOKE_ACTIVE_STATUS, V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS, V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS}:
-            if args.preflight_only is True:
+        elif stage_mode.execution_kind == "single_sample_smoke":
+            if args.preflight_only is True and not args.stage_control_dry_run and not args.authorization_lineage_preflight:
                 raise ValueError("V9 Stage 4 active Smoke configuration cannot be used as a preflight substitute")
         else:
             raise ValueError("V9 Stage 4 training authorization status is invalid")
@@ -360,7 +416,12 @@ def main() -> int:
             "actualSplitCounts": {split: len(dataset) for split, dataset in datasets.items()},
         }
     )
-    overfit_evidence = build_single_sample_overfit_evidence(datasets, args, config)
+    overfit_evidence = build_single_sample_overfit_evidence(
+        datasets,
+        args,
+        config,
+        execution_grant=stage_execution_grant,
+    )
     sample_bound_boundary_provenance = validate_stage4_sample_bound_boundary_provenance(
         config,
         overfit_evidence,
@@ -378,6 +439,9 @@ def main() -> int:
             "formalInferenceEligible": False,
             "singleSampleOverfitSmoke": overfit_evidence,
             "sampleBoundBoundaryProvenance": sample_bound_boundary_provenance,
+            "stageControlMode": stage_mode.mode_id if stage_mode else None,
+            "stageControlExecutionGrant": stage_execution_grant.as_dict() if stage_execution_grant else None,
+            "stageControlDryRun": bool(args.stage_control_dry_run),
         }, ensure_ascii=False, indent=2))
         return 0
 
@@ -438,7 +502,7 @@ def main() -> int:
     if r5_checkpoint_continuation:
         if args.resolution_stage != 0 or args.initial_denoiser_checkpoint is None:
             raise ValueError("V7 R5 checkpoint continuation is restricted to the Stage 0 single-sample Smoke")
-        if config.get("training", {}).get("trainingAuthorizationStatus") == V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS:
+        if stage_mode is not None and stage_mode.mode_id == "v7_r5_stage4_bounded_smoke":
             record_stage4_step(step_telemetry_path, "denoiser_checkpoint_read", "started")
             parent_denoiser_checkpoint = load_stage4_bounded_repair_checkpoint(
                 args.initial_denoiser_checkpoint,
@@ -451,7 +515,7 @@ def main() -> int:
         record_stage4_step(step_telemetry_path, "denoiser_state_load", "started")
         model.denoiser.load_state_dict(parent_denoiser_checkpoint["denoiserState"])
         record_stage4_step(step_telemetry_path, "denoiser_state_load", "completed")
-        if config.get("training", {}).get("trainingAuthorizationStatus") == V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS:
+        if stage_mode is not None and stage_mode.mode_id == "v7_r5_stage4_bounded_smoke":
             denoiser_initialization = "project_stage4_failed_stage0_checkpoint_continuation_nonformal_smoke"
         else:
             denoiser_initialization = (
@@ -469,8 +533,8 @@ def main() -> int:
         raise ValueError("conditional denoiser stage 0 must start from project random initialization")
 
     record_stage4_smoke_state_hashes = (
-        config.get("training", {}).get("trainingAuthorizationStatus")
-        in {V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS, V8_STAGE4_SMOKE_ACTIVE_STATUS, V9_STAGE4_SMOKE_ACTIVE_STATUS, V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS, V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS}
+        stage_execution_grant is not None
+        and stage_execution_grant.permits(ExecutionAction.WRITE_SMOKE_CHECKPOINT)
     )
     initial_denoiser_state_sha256 = (
         state_dict_sha256(model.denoiser.state_dict())
@@ -708,38 +772,32 @@ def main() -> int:
                     epoch + 1,
                 )
             if uses_stage4_unified_preview_sampling_contract(config):
-                source_preview = rollout_validation.get("previewArtifact")
-                if not isinstance(source_preview, dict):
-                    raise ValueError("Stage4 fixed Epoch preview artifact is missing")
-                with stage4_fixed_preview_determinism_scope(True):
-                    repeated_metrics = evaluate_deterministic_rollout_rgb_quality_v7(
-                        model,
-                        optimization_datasets["validation"],
-                        diffusion,
-                        latent_normalization,
-                        device,
-                        seed + 3000,
-                        config,
-                        args.output_dir / "fixed-epoch-preview-reproductions",
-                        epoch + 1,
+                preview_epoch = epoch + 1
+                if should_reproduce_stage4_fixed_epoch_preview(config, preview_epoch):
+                    source_preview = rollout_validation.get("previewArtifact")
+                    with stage4_fixed_preview_determinism_scope(True):
+                        repeated_metrics = evaluate_deterministic_rollout_rgb_quality_v7(
+                            model,
+                            optimization_datasets["validation"],
+                            diffusion,
+                            latent_normalization,
+                            device,
+                            seed + 3000,
+                            config,
+                            args.output_dir / "fixed-epoch-preview-reproductions",
+                            preview_epoch,
+                        )
+                    repeated_preview = repeated_metrics.get("previewArtifact")
+                    rollout_validation["previewReproductionArtifact"] = validate_stage4_fixed_epoch_preview_reproduction(
+                        source_preview,
+                        repeated_preview,
+                        preview_epoch,
                     )
-                repeated_preview = repeated_metrics.get("previewArtifact")
-                reproduction = {
-                    "schemaVersion": "stage4-fixed-epoch-preview-reproduction-v1",
-                    "status": "fixed_epoch_preview_reproduced_exactly",
-                    "sourcePreview": source_preview,
-                    "repeatedPreview": repeated_preview,
-                    "modelStateSha256Matches": isinstance(repeated_preview, dict) and source_preview.get("denoiserStateSha256") == repeated_preview.get("denoiserStateSha256"),
-                    "conditionTensorSha256Matches": isinstance(repeated_preview, dict) and source_preview.get("conditionTensorSha256") == repeated_preview.get("conditionTensorSha256"),
-                    "rgbTensorSha256Matches": isinstance(repeated_preview, dict) and source_preview.get("rgbTensorSha256") == repeated_preview.get("rgbTensorSha256"),
-                    "pngByteSha256Matches": isinstance(repeated_preview, dict) and source_preview.get("previewSha256") == repeated_preview.get("previewSha256"),
-                }
-                if not all(reproduction[key] is True for key in (
-                    "modelStateSha256Matches", "conditionTensorSha256Matches",
-                    "rgbTensorSha256Matches", "pngByteSha256Matches",
-                )):
-                    raise ValueError("Stage4 fixed Epoch preview reproduction identity mismatch")
-                rollout_validation["previewReproductionArtifact"] = reproduction
+                else:
+                    rollout_validation["previewReproductionArtifact"] = build_stage4_fixed_epoch_preview_skip_record(
+                        rollout_validation,
+                        preview_epoch,
+                    )
             validation_loss += (
                 rollout_validation["rolloutRgbQualityScore"]
                 * float(config["training"].get("checkpointRolloutWeight", 1.0))
@@ -1055,7 +1113,7 @@ def main() -> int:
     return 0
 
 
-def build_single_sample_overfit_evidence(datasets, args, config):
+def build_single_sample_overfit_evidence(datasets, args, config, execution_grant=None):
     if not args.single_sample_overfit_smoke:
         return {
             "enabled": False,
@@ -1065,30 +1123,23 @@ def build_single_sample_overfit_evidence(datasets, args, config):
         raise ValueError("single-sample overfit smoke and program smoke-test are mutually exclusive")
     configured_split = "train"
     training = config.get("training", {})
-    authorization_status = training.get("trainingAuthorizationStatus")
-    if is_v8_stage4_decoded_alignment(config):
-        if authorization_status not in {
-            V8_STAGE4_SMOKE_INACTIVE_STATUS,
-            V8_STAGE4_SMOKE_PREFLIGHT_STATUS,
-            V8_STAGE4_SMOKE_ACTIVE_STATUS,
-        }:
-            raise ValueError("V8 Stage 4 Smoke sample selection requires an authorized V8 Smoke status")
-        configured_split = training.get("v8Stage4SingleSampleSmokeContract", {}).get("sampleSplit")
-        if configured_split != "validation":
-            raise ValueError("V8 Stage 4 Smoke must use the bound validation diagnostic sample")
-    elif is_v9_stage4_object_semantic_decoded_alignment(config):
-        if authorization_status not in {V9_STAGE4_CPU_INACTIVE_STATUS, V9_STAGE4_SMOKE_ACTIVE_STATUS, V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS}:
-            raise ValueError("V9 Stage 4 sample selection requires an authorized V9 status")
-        configured_split = training.get("v9Stage4SingleSampleSmokeContract", {}).get("sampleSplit")
-        if configured_split != "validation":
-            raise ValueError("V9 Stage 4 must preserve the bound validation sample")
-    elif authorization_status in {
-            V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS,
-            V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS,
-    }:
-        configured_split = training.get("authorizedOverfitSampleSplit")
-        if configured_split != "validation":
-            raise ValueError("V7 R5 Stage 4 bounded-repair Smoke must use the bound validation diagnostic sample")
+    if execution_grant is None and (
+        is_v8_stage4_decoded_alignment(config)
+        or is_v9_stage4_object_semantic_decoded_alignment(config)
+        or training.get("boundedRepairVersion") == "v7_bounded_repair_r5_candidate"
+    ):
+        try:
+            execution_grant = resolve_stage_execution_grant(config)
+        except ValueError:
+            execution_grant = None
+    if execution_grant is not None and execution_grant.permits(ExecutionAction.SELECT_BOUND_SAMPLE):
+        configured_split = execution_grant.dataset_constraints.get("selectedSplit") or "train"
+        if is_v8_stage4_decoded_alignment(config) or is_v9_stage4_object_semantic_decoded_alignment(config):
+            if configured_split != "validation":
+                raise ValueError("V8/V9 Stage 4 must preserve the bound validation sample")
+        expected_sample_id = execution_grant.dataset_constraints.get("sampleId")
+        if expected_sample_id and args.overfit_sample_id != expected_sample_id:
+            raise ValueError("single-sample selection does not match ExecutionGrant dataset constraints")
     rows = datasets[configured_split].rows
     selected_index = 0
     if args.overfit_sample_id:
@@ -1112,17 +1163,11 @@ def build_single_sample_overfit_evidence(datasets, args, config):
 
 def validate_stage4_sample_bound_boundary_provenance(config, overfit_evidence):
     training = config.get("training", {})
-    authorization_status = training.get("trainingAuthorizationStatus")
-    if authorization_status not in {
-        V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_PREFLIGHT_STATUS,
-        V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS,
-        V8_STAGE4_SMOKE_INACTIVE_STATUS,
-        V8_STAGE4_SMOKE_ACTIVE_STATUS,
-        V9_STAGE4_CPU_INACTIVE_STATUS,
-        V9_STAGE4_SMOKE_ACTIVE_STATUS,
-        V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS,
-        V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS,
-    }:
+    try:
+        execution_grant = resolve_stage_execution_grant(config)
+    except ValueError:
+        execution_grant = None
+    if execution_grant is None or not execution_grant.permits(ExecutionAction.SELECT_BOUND_SAMPLE):
         return {
             "enabled": False,
             "status": "not_applicable_non_stage4_bounded_smoke",
@@ -1270,13 +1315,11 @@ def mask_boundary_contacts(mask_path, width, height, band_ratio):
 
 
 def initialize_stage4_step_telemetry(output_dir, config, overfit_evidence, device):
-    authorization_status = config.get("training", {}).get("trainingAuthorizationStatus")
-    if authorization_status not in {
-        V7_REPAIR_R5_STAGE4_BOUNDED_SMOKE_STATUS,
-        V8_STAGE4_SMOKE_ACTIVE_STATUS,
-        V9_STAGE4_SMOKE_ACTIVE_STATUS,
-        V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS,
-    }:
+    try:
+        execution_grant = resolve_stage_execution_grant(config)
+    except ValueError:
+        execution_grant = None
+    if execution_grant is None or not execution_grant.permits(ExecutionAction.CREATE_OPTIMIZER):
         return None
     telemetry_path = output_dir / "stage4-step-telemetry.json"
     write_json_atomic(telemetry_path, {
@@ -2841,12 +2884,13 @@ def validate_v8_stage4_decoded_domain_alignment_training_contract(config, packag
 
 
 def validate_v9_stage4_object_semantic_decoded_alignment_cpu_contract(config, package, project_root=None):
-    if config.get("training", {}).get("trainingAuthorizationStatus") in {
-        V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS,
-        V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS,
+    mode = resolve_stage_mode(config)
+    if mode.mode_id in {
+        "v9_stage4_unified_preview_smoke",
+        "v9_stage4_validation_kernel_smoke",
     }:
         return validate_v9_stage4_unified_preview_active_contract(config, package, project_root)
-    if config.get("training", {}).get("trainingAuthorizationStatus") == V9_STAGE4_SMOKE_ACTIVE_STATUS:
+    if mode.mode_id == "v9_stage4_smoke":
         return validate_v9_stage4_active_smoke_contract(config, package, project_root)
     if config.get("denoiserArchitecture") != "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment":
         raise ValueError("V9 Stage 4 object semantic alignment architecture identity is invalid")
@@ -2862,7 +2906,7 @@ def validate_v9_stage4_object_semantic_decoded_alignment_cpu_contract(config, pa
         raise ValueError("V9 Stage 4 dataset does not contain the approved 64 capacity rows")
 
     training = config.get("training", {})
-    if training.get("trainingAuthorizationStatus") != V9_STAGE4_CPU_INACTIVE_STATUS:
+    if mode.execution_kind != "cpu_inactive":
         raise ValueError("V9 Stage 4 CPU support configuration must remain inactive")
     if training.get("denoiserLossVersion") != "velocity_decoded_rgb_independent_object_semantic_topology_alignment_v9_stage4":
         raise ValueError("V9 Stage 4 training Loss identity is invalid")
@@ -3108,7 +3152,8 @@ def validate_v9_stage4_object_semantic_decoded_alignment_cpu_contract(config, pa
 def validate_v9_stage4_unified_preview_active_contract(config, package, project_root=None):
     root = Path(project_root or Path.cwd()).resolve()
     training = config.get("training", {})
-    validation_kernel_mode = training.get("trainingAuthorizationStatus") == V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS
+    mode = resolve_stage_mode(config)
+    validation_kernel_mode = mode.mode_id == "v9_stage4_validation_kernel_smoke"
     execution = training.get("v9Stage4SmokeExecution", {})
     required_execution_fields = {
         "sourceInactiveConfigPath", "sourceInactiveConfigSha256",
@@ -3118,6 +3163,8 @@ def validate_v9_stage4_unified_preview_active_contract(config, package, project_
     }
     if validation_kernel_mode:
         required_execution_fields.update({"phase0TerminalPath", "phase0TerminalSha256"})
+    if execution.get("cpuContractFixture") is True:
+        required_execution_fields.add("cpuContractFixture")
     if set(execution) != required_execution_fields:
         raise ValueError("V9 Stage 4 unified preview execution identity fields are invalid")
     source_path = verify_config_bound_project_file(root, execution.get("sourceInactiveConfigPath"), execution.get("sourceInactiveConfigSha256"), "V9 unified preview inactive config")
@@ -3133,57 +3180,162 @@ def validate_v9_stage4_unified_preview_active_contract(config, package, project_
     authorization = read_json(authorization_path)
     consumption = read_json(consumption_path)
     attestation = read_json(attestation_path)
-    request_id = (
-        "owner-authorized-stage4-validation-kernel-through-stage5-20260810"
-        if validation_kernel_mode
-        else "owner-authorized-stage4-continuous-closure-20260809"
+    dual_identity_gpu_authorization = (
+        validation_kernel_mode
+        and authorization.get("schemaVersion") == "ai-painter-stage4-v9-gpu-execution-authorization-v2"
     )
-    scope = (
-        "stage4_validation_kernel_then_single_smoke_full_training_and_stage5_strict_revalidation"
-        if validation_kernel_mode
-        else "continuous_stage4_business_closure_or_route_exit_with_bounded_implementation_repairs"
-    )
+    if dual_identity_gpu_authorization:
+        request_id = authorization.get("requestId")
+        scope = authorization.get("ownerDecision", {}).get("scope")
+        request_prefix = "owner-authorized-stage4-v9-model-smoke-gpu-execution-"
+        if (
+            not isinstance(request_id, str)
+            or not request_id.startswith(request_prefix)
+            or not request_id[len(request_prefix):]
+            or any(not (character.islower() or character.isdigit() or character == "-") for character in request_id)
+            or scope != "stage4_v9_single_sample_model_smoke_execution_only"
+            or Path(execution.get("ownerAuthorizationPath", "")).parent.name != request_id
+            or Path(execution.get("ownerAuthorizationPath", "")).name != "gpu-execution-authorization.json"
+        ):
+            raise ValueError("V9 Stage 4 dynamic GPU command identity is invalid")
+    else:
+        request_id = (
+            "owner-authorized-stage4-validation-kernel-through-stage5-20260810"
+            if validation_kernel_mode
+            else "owner-authorized-stage4-continuous-closure-20260809"
+        )
+        scope = (
+            "stage4_validation_kernel_then_single_smoke_full_training_and_stage5_strict_revalidation"
+            if validation_kernel_mode
+            else "continuous_stage4_business_closure_or_route_exit_with_bounded_implementation_repairs"
+        )
     expected_consumption_status = (
         "stage4_validation_kernel_model_smoke_gpu_authorization_atomically_consumed"
         if validation_kernel_mode
         else "stage4_unified_preview_smoke_gpu_authorization_atomically_consumed"
     )
     expected_attestation_status = (
-        "stage4_validation_kernel_model_smoke_implementation_cpu_verified"
-        if validation_kernel_mode
-        else "stage4_unified_preview_pipeline_implementation_cpu_verified"
+        "stage4_dual_identity_implementation_code_attested_cpu_pending"
+        if dual_identity_gpu_authorization
+        else (
+            "stage4_validation_kernel_model_smoke_implementation_cpu_verified"
+            if validation_kernel_mode
+            else "stage4_unified_preview_pipeline_implementation_cpu_verified"
+        )
+    )
+    expected_attestation_authorization_sha256 = (
+        authorization.get("implementationIdentity", {}).get("authorizationSha256")
+        if dual_identity_gpu_authorization
+        else execution.get("ownerAuthorizationSha256")
     )
     if (
         authorization.get("requestId") != request_id
-        or authorization.get("status") != "resolved_owner_authorized"
+        or authorization.get("status") != (
+            "owner_authorized_gpu_execution_not_consumed"
+            if dual_identity_gpu_authorization
+            else "resolved_owner_authorized"
+        )
         or authorization.get("ownerDecision", {}).get("commandRef") != request_id
         or authorization.get("ownerDecision", {}).get("scope") != scope
         or consumption.get("status") != expected_consumption_status
         or consumption.get("requestId") != request_id
+        or consumption.get("commandRef") != request_id
+        or consumption.get("scope") != scope
         or consumption.get("authorizationSha256") != execution.get("ownerAuthorizationSha256")
         or consumption.get("oneTimeConsumption") is not True
         or attestation.get("status") != expected_attestation_status
-        or attestation.get("authorizationSha256") != execution.get("ownerAuthorizationSha256")
+        or (
+            attestation.get(
+                "implementationAuthorizationSha256" if dual_identity_gpu_authorization else "authorizationSha256"
+            )
+            != expected_attestation_authorization_sha256
+        )
         or (validation_kernel_mode and phase0_terminal.get("status") != "stage4_validation_kernel_phase0_passed_closed")
     ):
         raise ValueError("V9 Stage 4 unified preview authorization lineage is invalid")
-    actions = authorization.get("authorizedActions", {})
-    required_actions = (
-        ("singleThirtyEpochV9Smoke", "smokeOptimizerBackwardWeightAndCheckpointWrite", "phase0ProjectAutoencoderReadAndLoadFrozen")
-        if validation_kernel_mode
-        else ("projectAutoencoderCheckpointReadAndLoad", "boundedSmokeOptimizerCreation", "boundedSmokeBackwardExecution", "boundedSmokeWeightModification", "boundedSmokeCheckpointWrite", "singleThirtyEpochGpuSmoke", "machineReview")
-    )
-    for key in required_actions:
-        if actions.get(key) is not True:
-            raise ValueError(f"V9 Stage 4 unified preview authorized action is closed: {key}")
-    forbidden_actions = (
-        ("formalInference", "checkpointFormalPromotion", "ownerFormalVisualAcceptance", "runtimeFrame", "worldEntry", "worldRuntime")
-        if validation_kernel_mode
-        else ("stage5StrictRevalidation", "formalInference", "checkpointPromotion", "runtimeFrame", "worldEntry", "machineReviewThresholdReduction", "failedPreviewPixelsAsTrainingTarget", "freeHyperparameterSearch")
-    )
-    for key in forbidden_actions:
-        if actions.get(key) is not False:
-            raise ValueError(f"V9 Stage 4 unified preview forbidden action is open: {key}")
+    if dual_identity_gpu_authorization:
+        if "implementationActions" in authorization or "authorizedActions" in authorization:
+            raise ValueError("V9 Stage 4 GPU execution authorization contains implementation permissions")
+        expected_execution_actions = {
+            "cpuPositiveNegativeAuthorizationGate": True,
+            "realNodeStartupPreflight": True,
+            "pythonPreflight": True,
+            "cudaResourcePreflight": True,
+            "diskBudgetPreflight": True,
+            "atomicGpuAuthorizationConsumption": True,
+            "projectAutoencoderReadAndLoadFrozen": True,
+            "v9FixedRandomInitialization": True,
+            "optimizerCreation": True,
+            "backwardExecution": True,
+            "boundedModelWeightMutation": True,
+            "singleThirtyEpochV9Smoke": True,
+            "fiveBoundPreviewWrites": True,
+            "seventeenDiagnosticMetricWrites": True,
+            "machineReview": True,
+            "smokeCheckpointWrite": True,
+            "stage4FullTraining": False,
+            "stage1OrStage2": False,
+            "stage5StrictRevalidation": False,
+            "formalInference": False,
+            "checkpointPromotion": False,
+            "ownerFormalVisualAcceptance": False,
+            "runtimeFrame": False,
+            "worldEntry": False,
+            "worldRuntime": False,
+            "automaticRetry": False,
+            "machineReviewThresholdReduction": False,
+            "failedPreviewPixelsAsTrainingTarget": False,
+            "freeHyperparameterSearch": False,
+        }
+        if authorization.get("executionActions") != expected_execution_actions:
+            raise ValueError("V9 Stage 4 GPU execution action contract is invalid")
+        implementation = authorization.get("implementationIdentity", {})
+        expected_implementation_fields = {
+            "authorizationPath", "authorizationSha256", "consumptionPath", "consumptionSha256",
+            "attestationPath", "attestationSha256",
+        }
+        if set(implementation) != expected_implementation_fields:
+            raise ValueError("V9 Stage 4 implementation identity fields are invalid")
+        implementation_authorization_path = verify_config_bound_project_file(root, implementation.get("authorizationPath"), implementation.get("authorizationSha256"), "V9 implementation authorization")
+        implementation_consumption_path = verify_config_bound_project_file(root, implementation.get("consumptionPath"), implementation.get("consumptionSha256"), "V9 implementation consumption")
+        if Path(implementation.get("attestationPath", "")) != Path(execution.get("implementationAttestationPath", "")) or implementation.get("attestationSha256") != execution.get("implementationAttestationSha256"):
+            raise ValueError("V9 Stage 4 implementation attestation identities differ")
+        implementation_authorization = read_json(implementation_authorization_path)
+        implementation_consumption = read_json(implementation_consumption_path)
+        if (
+            implementation_authorization.get("schemaVersion") != "ai-painter-owner-implementation-authorization-v1"
+            or implementation_authorization.get("status") != "owner_authorized_implementation_not_consumed"
+            or implementation_consumption.get("status") != "stage4_dual_identity_lineage_implementation_authorization_atomically_consumed"
+            or implementation_consumption.get("authorizationSha256") != implementation.get("authorizationSha256")
+            or implementation_consumption.get("requestId") != implementation_authorization.get("requestId")
+            or implementation_consumption.get("commandRef") != implementation_authorization.get("requestId")
+            or implementation_consumption.get("scope") != implementation_authorization.get("ownerDecision", {}).get("scope")
+            or implementation_consumption.get("oneTimeConsumption") is not True
+            or attestation.get("implementationConsumptionSha256") != implementation.get("consumptionSha256")
+            or attestation.get("runnerSha256") != sha256_file(root / "scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs")
+            or attestation.get("trainerSha256") != sha256_file(root / "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py")
+            or attestation.get("cpuCheckerSha256") != sha256_file(root / "ml/ai-painter/scripts/check_ai_assisted_v9_r5_stage4_cpu.py")
+            or bool(authorization.get("cpuContractFixture")) != bool(execution.get("cpuContractFixture"))
+        ):
+            raise ValueError("V9 Stage 4 dual-identity implementation lineage is invalid")
+    else:
+        actions = authorization.get("authorizedActions", {})
+        required_actions = (
+            ("singleThirtyEpochV9Smoke", "smokeOptimizerBackwardWeightAndCheckpointWrite", "phase0ProjectAutoencoderReadAndLoadFrozen")
+            if validation_kernel_mode
+            else ("projectAutoencoderCheckpointReadAndLoad", "boundedSmokeOptimizerCreation", "boundedSmokeBackwardExecution", "boundedSmokeWeightModification", "boundedSmokeCheckpointWrite", "singleThirtyEpochGpuSmoke", "machineReview")
+        )
+        for key in required_actions:
+            if actions.get(key) is not True:
+                raise ValueError(f"V9 Stage 4 unified preview authorized action is closed: {key}")
+        forbidden_actions = (
+            ("formalInference", "checkpointFormalPromotion", "ownerFormalVisualAcceptance", "runtimeFrame", "worldEntry", "worldRuntime")
+            if validation_kernel_mode
+            else ("stage5StrictRevalidation", "formalInference", "checkpointPromotion", "runtimeFrame", "worldEntry", "machineReviewThresholdReduction", "failedPreviewPixelsAsTrainingTarget", "freeHyperparameterSearch")
+        )
+        for key in forbidden_actions:
+            if actions.get(key) is not False:
+                raise ValueError(f"V9 Stage 4 unified preview forbidden action is open: {key}")
 
     smoke = training.get("v9Stage4SingleSampleSmokeContract", {})
     model_contract = training.get("stage4ObjectSemanticDecoderAlignment", {})
@@ -3224,11 +3376,7 @@ def validate_v9_stage4_unified_preview_active_contract(config, package, project_
         or owner.get("authorizationSha256") != execution.get("ownerAuthorizationSha256")
         or owner.get("executionConsumptionPath") != execution.get("gpuConsumptionPath")
         or owner.get("executionConsumptionSha256") != execution.get("gpuConsumptionSha256")
-        or owner.get("status") != (
-            V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS
-            if validation_kernel_mode
-            else V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS
-        )
+        or owner.get("status") != mode.authorization_status
     ):
         raise ValueError("V9 Stage 4 unified preview nested Owner authorization is invalid")
 
@@ -3258,6 +3406,7 @@ def validate_v9_stage4_unified_preview_active_contract(config, package, project_
 def validate_v9_stage4_active_smoke_contract(config, package, project_root=None):
     root = Path(project_root or Path.cwd()).resolve()
     training = config.get("training", {})
+    mode = resolve_stage_mode(config)
     execution = training.get("v9Stage4SmokeExecution", {})
     required_execution_fields = {
         "sourceInactiveConfigPath", "sourceInactiveConfigSha256",
@@ -3381,7 +3530,7 @@ def validate_v9_stage4_active_smoke_contract(config, package, project_root=None)
         or owner.get("authorizationSha256") != execution.get("ownerAuthorizationSha256")
         or owner.get("executionConsumptionPath") != execution.get("gpuConsumptionPath")
         or owner.get("executionConsumptionSha256") != execution.get("gpuConsumptionSha256")
-        or owner.get("status") != V9_STAGE4_SMOKE_ACTIVE_STATUS
+        or owner.get("status") != mode.authorization_status
         or any(owner.get(key) is not expected for key, expected in expected_owner_flags.items())
     ):
         raise ValueError("V9 Stage 4 active nested Owner authorization is invalid")
@@ -7465,6 +7614,44 @@ def should_save_epoch_preview(config, epoch_number):
     return int(epoch_number) in [int(value) for value in policy.get("smoke", []) + policy.get("formalStage", [])]
 
 
+def should_reproduce_stage4_fixed_epoch_preview(config, epoch_number):
+    return uses_stage4_unified_preview_sampling_contract(config) and should_save_epoch_preview(config, epoch_number)
+
+
+def validate_stage4_fixed_epoch_preview_reproduction(source_preview, repeated_preview, epoch_number):
+    if not isinstance(source_preview, dict):
+        raise ValueError("Stage4 fixed Epoch preview artifact is missing")
+    reproduction = {
+        "schemaVersion": "stage4-fixed-epoch-preview-reproduction-v1",
+        "status": "fixed_epoch_preview_reproduced_exactly",
+        "epoch": int(epoch_number),
+        "scheduled": True,
+        "sourcePreview": source_preview,
+        "repeatedPreview": repeated_preview,
+        "modelStateSha256Matches": isinstance(repeated_preview, dict) and source_preview.get("denoiserStateSha256") == repeated_preview.get("denoiserStateSha256"),
+        "conditionTensorSha256Matches": isinstance(repeated_preview, dict) and source_preview.get("conditionTensorSha256") == repeated_preview.get("conditionTensorSha256"),
+        "rgbTensorSha256Matches": isinstance(repeated_preview, dict) and source_preview.get("rgbTensorSha256") == repeated_preview.get("rgbTensorSha256"),
+        "pngByteSha256Matches": isinstance(repeated_preview, dict) and source_preview.get("previewSha256") == repeated_preview.get("previewSha256"),
+    }
+    if not all(reproduction[key] is True for key in (
+        "modelStateSha256Matches", "conditionTensorSha256Matches",
+        "rgbTensorSha256Matches", "pngByteSha256Matches",
+    )):
+        raise ValueError("Stage4 fixed Epoch preview reproduction identity mismatch")
+    return reproduction
+
+
+def build_stage4_fixed_epoch_preview_skip_record(rollout_validation, epoch_number):
+    if "previewArtifact" in rollout_validation:
+        raise ValueError("Stage4 non-preview Epoch emitted an unexpected preview artifact")
+    return {
+        "schemaVersion": "stage4-fixed-epoch-preview-reproduction-v1",
+        "status": "fixed_epoch_preview_reproduction_skipped_not_scheduled",
+        "epoch": int(epoch_number),
+        "scheduled": False,
+    }
+
+
 def save_tensor_png(tensor, output_path):
     pixels = tensor.detach().clamp(0.0, 1.0).mul(255).byte().permute(1, 2, 0).cpu().numpy()
     Image.fromarray(pixels).save(output_path, format="PNG", optimize=True)
@@ -7589,42 +7776,17 @@ def is_v9_stage4_object_semantic_decoded_alignment(config):
 
 def uses_stage4_unified_preview_sampling_contract(config):
     contract = config.get("training", {}).get("stage4UnifiedTrainingPreviewSamplingContract", {})
+    try:
+        execution_grant = resolve_stage_execution_grant(config)
+    except ValueError:
+        return False
     return (
-        config.get("training", {}).get("trainingAuthorizationStatus") in {
-            V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS,
-            V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS,
-        }
+        execution_grant.preview_constraints.get("enabled") is True
         and contract.get("enabled") is True
         and contract.get("status") == "active_owner_authorized_single_execution"
         and contract.get("samplingFunction") == "evaluate_deterministic_rollout_rgb_quality_v7"
         and contract.get("checkpointPreviewIdentityGate") == "byte_exact_best_epoch_reproduction"
     )
-
-
-@contextmanager
-def stage4_fixed_preview_determinism_scope(enabled=True):
-    """Limit strict CUDA determinism to fixed-preview sampling and restore training state."""
-    if not enabled:
-        yield
-        return
-    previous_debug_mode = torch.get_deterministic_debug_mode()
-    previous_cudnn_deterministic = bool(torch.backends.cudnn.deterministic)
-    previous_cudnn_benchmark = bool(torch.backends.cudnn.benchmark)
-    previous_workspace = os.environ.get("CUBLAS_WORKSPACE_CONFIG")
-    try:
-        os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
-        torch.backends.cudnn.benchmark = False
-        torch.backends.cudnn.deterministic = True
-        torch.use_deterministic_algorithms(True)
-        yield
-    finally:
-        torch.set_deterministic_debug_mode(previous_debug_mode)
-        torch.backends.cudnn.deterministic = previous_cudnn_deterministic
-        torch.backends.cudnn.benchmark = previous_cudnn_benchmark
-        if previous_workspace is None:
-            os.environ.pop("CUBLAS_WORKSPACE_CONFIG", None)
-        else:
-            os.environ["CUBLAS_WORKSPACE_CONFIG"] = previous_workspace
 
 
 def uses_registered_v7_capacity_dataset(config):
@@ -7917,26 +8079,6 @@ def project_path(path):
 
 def sha256_file(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
-
-
-def state_dict_sha256(state_dict):
-    digest = hashlib.sha256()
-    for name in sorted(state_dict):
-        tensor = state_dict[name].detach().cpu().contiguous()
-        digest.update(name.encode("utf-8"))
-        digest.update(str(tensor.dtype).encode("ascii"))
-        digest.update(json.dumps(list(tensor.shape), separators=(",", ":")).encode("ascii"))
-        digest.update(tensor.numpy().tobytes(order="C"))
-    return digest.hexdigest()
-
-
-def tensor_sha256(tensor):
-    value = tensor.detach().cpu().contiguous()
-    digest = hashlib.sha256()
-    digest.update(str(value.dtype).encode("ascii"))
-    digest.update(json.dumps(list(value.shape), separators=(",", ":")).encode("ascii"))
-    digest.update(value.numpy().tobytes(order="C"))
-    return digest.hexdigest()
 
 
 def read_json(path):

@@ -14,6 +14,8 @@ export function projectR5Stage4TaskCapsule(input) {
   const finalization = record(input?.finalization)
   const review = record(input?.review)
   const authorization = record(input?.authorization)
+  const controlConvergence = record(input?.controlConvergence)
+  const controlLayerConverged = controlConvergence.status === "stage3_stage4_control_layer_convergence_completed_closed"
   const taskIdentity = {
     ...record(authorization.fixedTaskIdentity),
     ...record(authorization.taskIdentity),
@@ -93,8 +95,12 @@ export function projectR5Stage4TaskCapsule(input) {
       recordedAtAsiaShanghai: stringValue(terminal.recordedAtAsiaShanghai),
     },
     latestBlocker: {
-      code: latestBlockerCode,
-      summaryZh: terminal.status === "v9-kernel_stage4_single_sample_30_epoch_gpu_smoke_execution_failed_closed"
+      code: controlLayerConverged
+        ? "new_independent_v9_validation_kernel_model_smoke_authorization_required"
+        : latestBlockerCode,
+      summaryZh: controlLayerConverged
+        ? "Stage3/Stage4控制层状态分派阻断已结构性关闭；当前没有运行故障，下一步等待Owner授予一个新的独立V9 Validation Kernel模型Smoke额度。"
+        : terminal.status === "v9-kernel_stage4_single_sample_30_epoch_gpu_smoke_execution_failed_closed"
         ? "Phase0工程资格已通过；唯一模型Smoke在样本选择授权状态门停止，训练未启动、权重未修改、预览与Checkpoint未生成。"
         : latestBlockerCode === "fixed_preview_machine_review_failed"
         ? `固定预览机器审核仅${previewPassCount ?? 0}/${previewCount ?? 0}通过，当前候选失败关闭。`
@@ -103,12 +109,16 @@ export function projectR5Stage4TaskCapsule(input) {
         : "当前R5 Stage4证据不完整或身份不一致，禁止推导下一执行。",
     },
     nextAllowedAction: {
-      code: terminal.status === "v9-kernel_stage4_single_sample_30_epoch_gpu_smoke_execution_failed_closed"
+      code: controlLayerConverged
+        ? "owner_may_authorize_one_new_independent_v9_validation_kernel_model_smoke"
+        : terminal.status === "v9-kernel_stage4_single_sample_30_epoch_gpu_smoke_execution_failed_closed"
         ? "owner_must_authorize_single_gate_status_fix_and_new_independent_model_smoke"
         : failedClosed
           ? "owner_must_choose_materially_different_stage4_route_or_stop_candidate_development"
         : "owner_must_explicitly_choose_new_analysis_candidate_or_execution",
-      labelZh: terminal.status === "v9-kernel_stage4_single_sample_30_epoch_gpu_smoke_execution_failed_closed"
+      labelZh: controlLayerConverged
+        ? "由项目所有者建立新的不可变授权并授予一个独立V9 Validation Kernel固定单样本30 Epoch模型Smoke额度；Smoke通过后才能另行授权Stage 0→1→2完整训练。"
+        : terminal.status === "v9-kernel_stage4_single_sample_30_epoch_gpu_smoke_execution_failed_closed"
         ? "由项目所有者以新的不可变授权绑定本次失败终态，仅集中修正样本选择授权状态门，并授予新的独立模型Smoke额度；不得使用已消费授权重跑或直接启动完整训练。"
         : failedClosed
           ? "由项目所有者选择实质不同的Stage4路线或停止候选开发；不得修补后重跑本次Smoke，也不得直接启动完整训练。"
@@ -143,6 +153,7 @@ export function projectR5Stage4TaskCapsule(input) {
       boundEvidenceVerified,
       identityMatches,
       migrationRegistryStatus: stringValue(input?.migrationRegistryStatus),
+      controlLayerConverged,
     },
   }
 }

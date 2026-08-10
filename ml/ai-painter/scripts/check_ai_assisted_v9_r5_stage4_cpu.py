@@ -7,8 +7,11 @@ import hashlib
 import inspect
 import json
 import math
+import os
 from pathlib import Path
 import subprocess
+import sys
+import tempfile
 import traceback
 
 import torch
@@ -17,6 +20,20 @@ from ai_painter.complete_world import build_complete_world_system
 from ai_painter.complete_world.dataset import AiAssistedConditionalDenoiserDataset
 import compile_ai_assisted_v9_r5_stage4_inactive_config as compiler
 import train_ai_assisted_conditional_denoiser as trainer
+from ai_painter_authorization_policy import (
+    POLICY_VERSION as STAGE_CONTROL_POLICY_VERSION,
+    resolve_control_refactor_grant,
+    resolve_stage_execution_grant,
+)
+from ai_painter_execution_grant import ExecutionAction, validate_serialized_execution_grant
+from ai_painter_preview_reproduction import fixed_preview_determinism_scope
+from ai_painter_stage_mode_registry import (
+    FORMAL_MODE_REGISTRY,
+    ModeRegistry,
+    ModeSpec,
+    build_synthetic_extension_registry,
+    resolve_stage_mode,
+)
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -62,6 +79,101 @@ VALIDATION_KERNEL_IMPLEMENTATION_CONSUMPTION_SHA256 = "cb140b5552a92eddb99d63450
 VALIDATION_KERNEL_ROOT = Path(
     ".runtime/ai-painter/stage4-validation-kernel-closures/20260810-023613404"
 )
+STAGE_CONTROL_AUTHORIZATION_PATH = Path(
+    "data/ai-painter/system-governance/owner-authorized-ai-painter-stage-control-convergence-20260810.json"
+)
+STAGE_CONTROL_AUTHORIZATION_SHA256 = "20e6249fc9fdfc398af7a9af37d5c3f1d370a89ecda006f40b0af65d0bd98ed3"
+STAGE_CONTROL_ACTIVE_CONFIG_PATH = Path(
+    ".runtime/ai-painter/stage4-validation-kernel-closures/20260810-023613404/model-smoke/model-smoke-20260810-validated-kernel/active-config.json"
+)
+STAGE_CONTROL_POLICY_PATH = Path("ml/ai-painter/scripts/ai_painter_authorization_policy.py")
+DYNAMIC_VALIDATION_KERNEL_ACTIONS = {
+    "stage4SmokeRunnerAuthorizationEntryModification": True,
+    "cpuCheckerModification": True,
+    "cpuPositiveNegativeRegression": True,
+    "realNodeStartupPreflight": True,
+    "pythonPreflight": True,
+    "cudaResourcePreflight": True,
+    "diskBudgetPreflight": True,
+    "atomicGpuAuthorizationConsumption": True,
+    "projectAutoencoderReadAndLoadFrozen": True,
+    "v9FixedRandomInitialization": True,
+    "optimizerCreation": True,
+    "backwardExecution": True,
+    "boundedModelWeightMutation": True,
+    "singleThirtyEpochV9Smoke": True,
+    "fiveBoundPreviewWrites": True,
+    "seventeenDiagnosticMetricWrites": True,
+    "machineReview": True,
+    "smokeCheckpointWrite": True,
+    "stage4FullTraining": False,
+    "stage1OrStage2": False,
+    "stage5StrictRevalidation": False,
+    "formalInference": False,
+    "checkpointPromotion": False,
+    "ownerFormalVisualAcceptance": False,
+    "runtimeFrame": False,
+    "worldEntry": False,
+    "worldRuntime": False,
+    "automaticRetry": False,
+    "machineReviewThresholdReduction": False,
+    "failedPreviewPixelsAsTrainingTarget": False,
+    "freeHyperparameterSearch": False,
+}
+DYNAMIC_VALIDATION_KERNEL_IMPLEMENTATION_ACTIONS = {
+    "runnerDynamicAuthorizationContractSeparation": True,
+    "cpuCheckerLogicalRuntimeFixturePathFix": True,
+}
+DYNAMIC_VALIDATION_KERNEL_EXECUTION_ACTIONS = {
+    "cpuPositiveNegativeAuthorizationGate": True,
+    "realNodeStartupPreflight": True,
+    "pythonPreflight": True,
+    "cudaResourcePreflight": True,
+    "diskBudgetPreflight": True,
+    "atomicGpuAuthorizationConsumption": True,
+    "projectAutoencoderReadAndLoadFrozen": True,
+    "v9FixedRandomInitialization": True,
+    "optimizerCreation": True,
+    "backwardExecution": True,
+    "boundedModelWeightMutation": True,
+    "singleThirtyEpochV9Smoke": True,
+    "fiveBoundPreviewWrites": True,
+    "seventeenDiagnosticMetricWrites": True,
+    "machineReview": True,
+    "smokeCheckpointWrite": True,
+    "stage4FullTraining": False,
+    "stage1OrStage2": False,
+    "stage5StrictRevalidation": False,
+    "formalInference": False,
+    "checkpointPromotion": False,
+    "ownerFormalVisualAcceptance": False,
+    "runtimeFrame": False,
+    "worldEntry": False,
+    "worldRuntime": False,
+    "automaticRetry": False,
+    "machineReviewThresholdReduction": False,
+    "failedPreviewPixelsAsTrainingTarget": False,
+    "freeHyperparameterSearch": False,
+}
+DUAL_IDENTITY_IMPLEMENTATION_ACTIONS = {
+    "separateImplementationAndGpuExecutionAuthorizationIdentities": True,
+    "runnerDynamicGpuExecutionAuthorizationValidation": True,
+    "trainerDynamicGpuExecutionAuthorizationLineageValidation": True,
+    "cpuCheckerDualIdentityPositiveNegativeRegression": True,
+    "realTrainerStartupPreflight": True,
+    "legacyStage3Stage4V7V8ValidationKernelCompatibility": True,
+}
+FIXED_PREVIEW_SCHEDULE_IMPLEMENTATION_ACTIONS = {
+    "gatePreviewReproductionByContractEpoch": True,
+    "recordNonPreviewEpochSkip": True,
+    "rejectMissingScheduledPreviewArtifact": True,
+    "rejectPreviewReproductionHashMismatch": True,
+    "preserveLegacyStage3Stage4V7V8Behavior": True,
+    "cpuPositiveNegativeRegression": True,
+    "realTrainerStartupPreflight": True,
+}
+DUAL_IDENTITY_GPU_AUTHORIZATION_SCHEMA = "ai-painter-stage4-v9-gpu-execution-authorization-v2"
+DUAL_IDENTITY_IMPLEMENTATION_AUTHORIZATION_SCHEMA = "ai-painter-owner-implementation-authorization-v1"
 
 
 def main() -> int:
@@ -70,12 +182,19 @@ def main() -> int:
     parser.add_argument("--support-contract", type=Path)
     parser.add_argument("--terminal", type=Path)
     parser.add_argument("--smoke-authorization", type=Path)
+    parser.add_argument("--authorization-sha256")
     parser.add_argument("--implementation-attestation", type=Path)
     parser.add_argument("--unified-preview-contract", action="store_true")
     parser.add_argument("--validation-kernel-contract", action="store_true")
     parser.add_argument("--validation-kernel-model-smoke-contract", action="store_true")
+    parser.add_argument("--stage-control-convergence-contract", action="store_true")
+    parser.add_argument("--baseline", type=Path)
     args = parser.parse_args()
+    if args.stage_control_convergence_contract:
+        return run_stage_control_convergence_contract_regression(args)
     if args.validation_kernel_model_smoke_contract:
+        if args.smoke_authorization is not None:
+            return run_dynamic_validation_kernel_model_smoke_contract_regression(args)
         return run_validation_kernel_model_smoke_contract_regression(args)
     if args.validation_kernel_contract:
         return run_validation_kernel_contract_regression(args)
@@ -204,6 +323,464 @@ def main() -> int:
                 "automaticRetryStarted": False,
             }
             write_json_exclusive(args.terminal, terminal)
+        print(json.dumps(read_json(terminal_path), ensure_ascii=False, indent=2))
+        return 1
+
+
+def run_stage_control_convergence_contract_regression(args) -> int:
+    if any(value is None for value in (args.report, args.support_contract, args.terminal, args.baseline)):
+        raise ValueError(
+            "Stage control convergence mode requires --report, --support-contract, --terminal and --baseline"
+        )
+    report_path = resolve(args.report)
+    support_path = resolve(args.support_contract)
+    terminal_path = resolve(args.terminal)
+    baseline_path = resolve(args.baseline)
+    forbidden_output = report_path.parent / "forbidden-training-output"
+    positive: dict[str, bool] = {}
+    negative: dict[str, bool] = {}
+    evidence: dict = {}
+
+    def rejected(callable_value) -> bool:
+        try:
+            callable_value()
+        except (ValueError, FileNotFoundError, PermissionError):
+            return True
+        return False
+
+    try:
+        if forbidden_output.exists():
+            raise ValueError("Stage control CPU dry-run output directory already exists")
+        authorization = read_json(resolve(STAGE_CONTROL_AUTHORIZATION_PATH))
+        control_grant = resolve_control_refactor_grant(
+            STAGE_CONTROL_AUTHORIZATION_PATH,
+            STAGE_CONTROL_AUTHORIZATION_SHA256,
+            project_root=ROOT,
+        )
+        inactive_config = read_json(resolve(CONFIG_PATH))
+        active_config = read_json(resolve(STAGE_CONTROL_ACTIVE_CONFIG_PATH))
+        inactive_mode = resolve_stage_mode(inactive_config)
+        active_mode = resolve_stage_mode(active_config)
+        inactive_grant = resolve_stage_execution_grant(inactive_config, project_root=ROOT)
+        active_grant = resolve_stage_execution_grant(
+            active_config, project_root=ROOT, verify_owner_files=True
+        )
+        formal_modes = FORMAL_MODE_REGISTRY.snapshot()
+        synthetic_registry = build_synthetic_extension_registry()
+        synthetic_spec = synthetic_registry.resolve_mode_id("synthetic_stage4_extension")
+        runner_source = resolve(SMOKE_RUNNER_PATH).read_text(encoding="utf-8")
+        trainer_source = resolve(TRAINER_PATH).read_text(encoding="utf-8")
+        preview_source = resolve(
+            Path("ml/ai-painter/scripts/ai_painter_preview_reproduction.py")
+        ).read_text(encoding="utf-8")
+
+        control_allowed = {action.value for action in control_grant.allowed_actions}
+        positive = {
+            "immutableOwnerAuthorizationIdentityValid": sha256_file(resolve(STAGE_CONTROL_AUTHORIZATION_PATH))
+            == STAGE_CONTROL_AUTHORIZATION_SHA256,
+            "policyVersionIsSingleAndVersioned": STAGE_CONTROL_POLICY_VERSION
+            == "ai-painter-stage-control-authorization-policy-v1",
+            "controlGrantIsReadOnly": control_allowed
+            == {
+                "select_bound_sample",
+                "inspect_autoencoder_identity",
+                "inspect_checkpoint_identity",
+            },
+            "controlGrantClassifiesEveryAction": len(control_grant.allowed_actions)
+            + len(control_grant.explicitly_denied_actions)
+            == len(ExecutionAction),
+            "inactiveV9ModeResolvedByRegistry": inactive_mode.mode_id == "v9_stage4_inactive",
+            "activeV9ModeResolvedByRegistry": active_mode.mode_id
+            == "v9_stage4_validation_kernel_smoke",
+            "activeV9OwnerIdentityVerified": active_grant.authorization_identity.get("modeId")
+            == "v9_stage4_validation_kernel_smoke",
+            "sample194RemainsValidation": active_grant.dataset_constraints.get("sampleId")
+            == SAMPLE_ID
+            and active_grant.dataset_constraints.get("selectedSplit") == "validation",
+            "datasetSplitRemains4844": active_grant.dataset_constraints.get("splitCounts")
+            == EXPECTED_COUNTS,
+            "westTopologyRemainsBound": active_grant.dataset_constraints.get(
+                "requiredBoundarySides"
+            )
+            == ["west"],
+            "inactiveModeCannotExecuteTraining": not inactive_grant.permits(
+                ExecutionAction.CREATE_OPTIMIZER
+            )
+            and not inactive_grant.permits(ExecutionAction.EXECUTE_BACKWARD),
+            "formalRegistryContainsLegacyModes": {
+                "v7_r5_stage3_smoke",
+                "v7_r5_stage3_coverage_smoke",
+                "v7_r5_stage4_full_training",
+                "v7_r5_stage4_bounded_smoke",
+                "v8_stage4_smoke",
+                "v9_stage4_smoke",
+                "v9_stage4_unified_preview_smoke",
+                "v9_stage4_validation_kernel_smoke",
+            }.issubset({spec.mode_id for spec in formal_modes.values()}),
+            "syntheticExtensionUsesRegistryOnly": synthetic_spec.authorization_status
+            == "synthetic_inactive_stage4_extension_contract_test_only"
+            and "synthetic_inactive_stage4_extension_contract_test_only" not in trainer_source,
+            "modeRegistryContainsNoTrainingAlgorithm": all(
+                token not in resolve(
+                    Path("ml/ai-painter/scripts/ai_painter_stage_mode_registry.py")
+                ).read_text(encoding="utf-8")
+                for token in ("optimizer.step(", ".backward(", "torch.load(", "model.forward(")
+            ),
+            "runnerResolvesStatusesFromPolicy": "--mode-id" in runner_source
+            and "resolveStageControlMode" in runner_source
+            and all(
+                literal not in runner_source
+                for literal in (
+                    'training.trainingAuthorizationStatus = "owner_authorized_v8_stage4_single_sample_gpu_smoke"',
+                    'training.trainingAuthorizationStatus = "owner_authorized_v9_stage4_single_sample_gpu_smoke"',
+                    'training.trainingAuthorizationStatus = "owner_authorized_v9_stage4_unified_preview_pipeline_single_sample_gpu_smoke"',
+                    'training.trainingAuthorizationStatus = "owner_authorized_v9_stage4_validation_kernel_single_sample_gpu_smoke"',
+                )
+            ),
+            "trainerConsumesSharedPolicy": "resolve_stage_execution_grant(" in trainer_source
+            and "resolve_stage_mode(" in trainer_source,
+            "previewReproductionBoundaryExtracted": "fixed_preview_determinism_scope" in preview_source
+            and "compare_preview_reproduction_identities" in preview_source
+            and "ai_painter_preview_reproduction import" in trainer_source,
+        }
+
+        serialized = control_grant.as_dict()
+        unknown_action = deepcopy(serialized)
+        unknown_action["allowedActions"] = [*unknown_action["allowedActions"], "start_training_now"]
+        conflict = deepcopy(serialized)
+        conflict["explicitlyDeniedActions"] = [
+            *conflict["explicitlyDeniedActions"],
+            conflict["allowedActions"][0],
+        ]
+        incomplete = deepcopy(serialized)
+        incomplete["explicitlyDeniedActions"] = incomplete["explicitlyDeniedActions"][1:]
+        forged = deepcopy(serialized)
+        forged["decisionDigest"] = "0" * 64
+        unknown_state = deepcopy(active_config)
+        unknown_state["training"]["trainingAuthorizationStatus"] = "unknown_stage4_state"
+        architecture_mismatch = deepcopy(active_config)
+        architecture_mismatch["denoiserArchitecture"] = "multiscale_condition_unet_v8_stage4_decoded_alignment"
+        inactive_action = deepcopy(inactive_config)
+        inactive_action["training"]["ownerTrainingAuthorization"] = {
+            "status": "not_authorized_candidate_only",
+            "gpuTrainingAuthorizedNow": True,
+        }
+
+        negative = {
+            "unknownGrantActionRejected": rejected(
+                lambda: validate_serialized_execution_grant(unknown_action)
+            ),
+            "conflictingGrantActionRejected": rejected(
+                lambda: validate_serialized_execution_grant(conflict)
+            ),
+            "incompleteGrantClassificationRejected": rejected(
+                lambda: validate_serialized_execution_grant(incomplete)
+            ),
+            "forgedDecisionDigestRejected": rejected(
+                lambda: validate_serialized_execution_grant(forged)
+            ),
+            "unknownStageStatusRejected": rejected(lambda: resolve_stage_mode(unknown_state)),
+            "architectureMismatchRejected": rejected(
+                lambda: resolve_stage_mode(architecture_mismatch)
+            ),
+            "duplicateModeRejected": rejected(
+                lambda: ModeRegistry(
+                    (
+                        ModeSpec("duplicate", "duplicate-status", "arch", 4, "cpu_inactive", "test_adapter", None, False),
+                        ModeSpec("duplicate", "other-status", "arch", 4, "cpu_inactive", "test_adapter", None, False),
+                    )
+                )
+            ),
+            "inactiveExecutionActionRejected": rejected(
+                lambda: resolve_stage_execution_grant(inactive_action, project_root=ROOT)
+            ),
+            "pathTraversalRejected": rejected(
+                lambda: resolve_control_refactor_grant(
+                    Path("../outside-owner-authorization.json"),
+                    STAGE_CONTROL_AUTHORIZATION_SHA256,
+                    project_root=ROOT,
+                )
+            ),
+            "checkpointWeightLoadDenied": not control_grant.permits(
+                ExecutionAction.LOAD_PARENT_DENOISER
+            )
+            and not control_grant.permits(ExecutionAction.LOAD_AUTOENCODER),
+            "optimizerBackwardGpuTrainingDenied": not control_grant.permits(
+                ExecutionAction.CREATE_OPTIMIZER
+            )
+            and not control_grant.permits(ExecutionAction.EXECUTE_BACKWARD)
+            and not control_grant.permits(ExecutionAction.MUTATE_MODEL_WEIGHTS),
+            "formalRegistryRejectsSyntheticUntilRegistered": rejected(
+                lambda: FORMAL_MODE_REGISTRY.resolve_mode_id("synthetic_stage4_extension")
+            ),
+        }
+
+        source_authorization = read_json(resolve(SMOKE_AUTHORIZATION_PATH))
+        dataset_path = source_authorization["bindings"]["datasetManifest"]["path"]
+        autoencoder_path = source_authorization["bindings"]["projectAutoencoderCheckpoint"]["path"]
+        common_command = [
+            sys.executable,
+            str(resolve(TRAINER_PATH)),
+            "--config",
+            str(resolve(STAGE_CONTROL_ACTIVE_CONFIG_PATH)),
+            "--dataset-package",
+            str(resolve(Path(dataset_path))),
+            "--autoencoder-checkpoint",
+            str(resolve(Path(autoencoder_path))),
+            "--output-dir",
+            str(forbidden_output),
+            "--resolution-stage",
+            "0",
+            "--single-sample-overfit-smoke",
+            "--overfit-epochs",
+            "30",
+            "--overfit-evaluation-interval",
+            "5",
+            "--preflight-only",
+            "--stage-control-dry-run",
+            "--stage-control-authorization",
+            str(resolve(STAGE_CONTROL_AUTHORIZATION_PATH)),
+            "--stage-control-authorization-sha256",
+            STAGE_CONTROL_AUTHORIZATION_SHA256,
+        ]
+        environment = {**os.environ, "PYTHONUTF8": "1", "CUDA_VISIBLE_DEVICES": ""}
+        positive_run = subprocess.run(
+            [*common_command, "--overfit-sample-id", SAMPLE_ID],
+            cwd=ROOT,
+            env=environment,
+            text=True,
+            encoding="utf-8",
+            capture_output=True,
+            timeout=180,
+        )
+        negative_run = subprocess.run(
+            [*common_command, "--overfit-sample-id", "not-the-authorized-sample"],
+            cwd=ROOT,
+            env=environment,
+            text=True,
+            encoding="utf-8",
+            capture_output=True,
+            timeout=180,
+        )
+        runner_contract = subprocess.run(
+            [
+                "node",
+                str(resolve(SMOKE_RUNNER_PATH)),
+                "--stage4-validation-kernel-model-smoke",
+                "--gpu-authorization",
+                str(resolve(VALIDATION_KERNEL_AUTHORIZATION_PATH)),
+                "--cpu-contract-only",
+            ],
+            cwd=ROOT,
+            env=environment,
+            text=True,
+            encoding="utf-8",
+            capture_output=True,
+            timeout=60,
+        )
+        positive["realTrainerStartupCpuDryRunPassed"] = positive_run.returncode == 0
+        positive["dryRunStoppedBeforeTrainingOutputCreation"] = not forbidden_output.exists()
+        positive["dryRunReportsValidationSampleAndMode"] = all(
+            token in positive_run.stdout
+            for token in (
+                '"selectedSplit": "validation"',
+                '"stageControlDryRun": true',
+                '"modeId": "v9_stage4_validation_kernel_smoke"',
+            )
+        )
+        positive["nodeRunnerRealCpuContractPassed"] = runner_contract.returncode == 0
+        positive["nodeRunnerCpuContractStartedNoGpu"] = '"gpuStarted": false' in runner_contract.stdout
+        negative["wrongAuthorizedSampleRejectedByRealCallChain"] = negative_run.returncode != 0
+        negative["negativeDryRunAlsoCreatedNoOutput"] = not forbidden_output.exists()
+
+        with fixed_preview_determinism_scope(False):
+            preview_scope_cpu_only = True
+        positive["previewScopeCanRemainInactiveDuringCpuContract"] = preview_scope_cpu_only
+
+        failed_positive = [key for key, value in positive.items() if value is not True]
+        failed_negative = [key for key, value in negative.items() if value is not True]
+        evidence = {
+            "realDryRun": {
+                "exitCode": positive_run.returncode,
+                "stdout": positive_run.stdout,
+                "stderr": positive_run.stderr,
+            },
+            "wrongSampleDryRun": {
+                "exitCode": negative_run.returncode,
+                "stdout": negative_run.stdout,
+                "stderr": negative_run.stderr,
+            },
+            "nodeRunnerCpuContract": {
+                "exitCode": runner_contract.returncode,
+                "stdout": runner_contract.stdout,
+                "stderr": runner_contract.stderr,
+            },
+            "controlExecutionGrant": control_grant.as_dict(),
+            "activeStageExecutionGrant": active_grant.as_dict(),
+            "formalModeIds": sorted(spec.mode_id for spec in formal_modes.values()),
+        }
+        baseline = {
+            "schemaVersion": "ai-painter-stage-control-behavior-baseline-v1",
+            "status": "captured_before_behavior_preserving_control_boundary_convergence",
+            **timestamps("recordedAt"),
+            "authorization": binding(STAGE_CONTROL_AUTHORIZATION_PATH),
+            "boundBaselineFiles": authorization["bindings"],
+            "legacyModeIds": evidence["formalModeIds"],
+            "fixedTaskIdentity": authorization["fixedTaskIdentity"],
+            "algorithmAndDataChangesAuthorized": False,
+        }
+        write_json_exclusive(baseline_path, baseline)
+        report = {
+            "schemaVersion": "ai-painter-stage-control-convergence-cpu-regression-report-v1",
+            "status": "passed_cpu_only_control_boundaries_behavior_equivalent"
+            if not failed_positive and not failed_negative
+            else "failed_closed_cpu_only_control_boundaries",
+            **timestamps("recordedAt"),
+            "authorization": binding(STAGE_CONTROL_AUTHORIZATION_PATH),
+            "baseline": binding(baseline_path),
+            "implementationFiles": {
+                "authorizationPolicy": binding(Path("ml/ai-painter/scripts/ai_painter_authorization_policy.py")),
+                "executionGrant": binding(Path("ml/ai-painter/scripts/ai_painter_execution_grant.py")),
+                "modeRegistry": binding(Path("ml/ai-painter/scripts/ai_painter_stage_mode_registry.py")),
+                "previewReproduction": binding(Path("ml/ai-painter/scripts/ai_painter_preview_reproduction.py")),
+                "trainer": binding(TRAINER_PATH),
+                "smokeRunner": binding(SMOKE_RUNNER_PATH),
+                "cpuChecker": binding(CPU_CHECKER_PATH),
+                "inactiveConfigCompiler": binding(COMPILER_PATH),
+            },
+            "positive": positive,
+            "negative": negative,
+            "failedPositiveKeys": failed_positive,
+            "failedNegativeKeys": failed_negative,
+            "positivePassed": sum(value is True for value in positive.values()),
+            "positiveTotal": len(positive),
+            "negativePassed": sum(value is True for value in negative.values()),
+            "negativeTotal": len(negative),
+            "evidence": evidence,
+            "checkpointDeserialized": False,
+            "checkpointWeightsLoaded": False,
+            "optimizerCreated": False,
+            "backwardMethodExecuted": False,
+            "modelWeightsModified": False,
+            "gpuUsed": False,
+            "trainingStarted": False,
+        }
+        write_json_exclusive(report_path, report)
+        if failed_positive or failed_negative:
+            raise ValueError(
+                f"Stage control convergence CPU regression failed: {failed_positive}:{failed_negative}"
+            )
+        support = {
+            "schemaVersion": "ai-painter-stage-control-convergence-support-contract-v1",
+            "status": "stage3_stage4_shared_control_policy_verified_cpu_only",
+            **timestamps("recordedAt"),
+            "policyVersion": STAGE_CONTROL_POLICY_VERSION,
+            "physicalControlModules": [
+                "ai_painter_authorization_policy.py",
+                "ai_painter_execution_grant.py",
+                "ai_painter_stage_mode_registry.py",
+                "ai_painter_preview_reproduction.py",
+            ],
+            "singleTrainerEntry": project_path(TRAINER_PATH),
+            "implementationFiles": {
+                "authorizationPolicy": binding(Path("ml/ai-painter/scripts/ai_painter_authorization_policy.py")),
+                "executionGrant": binding(Path("ml/ai-painter/scripts/ai_painter_execution_grant.py")),
+                "modeRegistry": binding(Path("ml/ai-painter/scripts/ai_painter_stage_mode_registry.py")),
+                "previewReproduction": binding(Path("ml/ai-painter/scripts/ai_painter_preview_reproduction.py")),
+                "trainer": binding(TRAINER_PATH),
+                "smokeRunner": binding(SMOKE_RUNNER_PATH),
+                "cpuChecker": binding(CPU_CHECKER_PATH),
+            },
+            "runnerConsumesSharedPolicy": True,
+            "datasetCheckpointEvidenceRemainInTrainer": True,
+            "modeRegistryContainsTrainingAlgorithm": False,
+            "checkpointIdentityInspectionOnly": True,
+            "checkpointWeightReadOrLoadAuthorized": False,
+            "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+        }
+        write_json_exclusive(support_path, support)
+        terminal = {
+            "schemaVersion": "ai-painter-stage-control-convergence-terminal-v1",
+            "status": "stage3_stage4_control_layer_convergence_completed_closed",
+            **timestamps("recordedAt"),
+            "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+            "reportPath": project_path(report_path),
+            "reportSha256": sha256_file(report_path),
+            "supportContractPath": project_path(support_path),
+            "supportContractSha256": sha256_file(support_path),
+            "baselinePath": project_path(baseline_path),
+            "baselineSha256": sha256_file(baseline_path),
+            "blockers": [],
+            "nextAction": "owner_review_then_separately_authorize_one_v9_validation_kernel_model_smoke",
+            "checkpointDeserialized": False,
+            "checkpointWeightsLoaded": False,
+            "optimizerCreated": False,
+            "backwardMethodExecuted": False,
+            "modelWeightsModified": False,
+            "gpuUsed": False,
+            "trainingStarted": False,
+            "automaticRetryStarted": False,
+        }
+        write_json_exclusive(terminal_path, terminal)
+        print(
+            json.dumps(
+                {
+                    **terminal,
+                    "terminalPath": project_path(terminal_path),
+                    "terminalSha256": sha256_file(terminal_path),
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
+        return 0
+    except Exception as error:
+        if not report_path.exists():
+            write_json_exclusive(
+                report_path,
+                {
+                    "schemaVersion": "ai-painter-stage-control-convergence-cpu-regression-report-v1",
+                    "status": "failed_closed_cpu_only_control_boundaries",
+                    **timestamps("recordedAt"),
+                    "positive": positive,
+                    "negative": negative,
+                    "failedPositiveKeys": [key for key, value in positive.items() if value is not True],
+                    "failedNegativeKeys": [key for key, value in negative.items() if value is not True],
+                    "failureType": type(error).__name__,
+                    "failureMessage": str(error),
+                    "traceback": traceback.format_exc(),
+                    "evidence": evidence,
+                    "checkpointDeserialized": False,
+                    "checkpointWeightsLoaded": False,
+                    "optimizerCreated": False,
+                    "backwardMethodExecuted": False,
+                    "modelWeightsModified": False,
+                    "gpuUsed": False,
+                    "trainingStarted": False,
+                },
+            )
+        if not terminal_path.exists():
+            write_json_exclusive(
+                terminal_path,
+                {
+                    "schemaVersion": "ai-painter-stage-control-convergence-terminal-v1",
+                    "status": "stage3_stage4_control_layer_convergence_failed_closed",
+                    **timestamps("recordedAt"),
+                    "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+                    "failureType": type(error).__name__,
+                    "failureMessage": str(error),
+                    "reportPath": project_path(report_path),
+                    "reportSha256": sha256_file(report_path),
+                    "checkpointDeserialized": False,
+                    "checkpointWeightsLoaded": False,
+                    "optimizerCreated": False,
+                    "backwardMethodExecuted": False,
+                    "modelWeightsModified": False,
+                    "gpuUsed": False,
+                    "trainingStarted": False,
+                    "automaticRetryStarted": False,
+                },
+            )
         print(json.dumps(read_json(terminal_path), ensure_ascii=False, indent=2))
         return 1
 
@@ -675,6 +1252,1039 @@ def run_validation_kernel_model_smoke_contract_regression(args) -> int:
     except Exception as error:
         if not terminal_path.exists():
             write_json_exclusive(args.terminal, {"schemaVersion": "ai-painter-stage4-validation-kernel-model-smoke-cpu-terminal-v1", "status": "stage4_validation_kernel_model_smoke_cpu_gate_failed_closed", **timestamps("recordedAt"), "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60}, "failureType": type(error).__name__, "failureMessage": str(error), "traceback": traceback.format_exc(), "reportPath": project_path(args.report) if report_path.exists() else None, "reportSha256": sha256_file(report_path) if report_path.exists() else None, "checkpointRead": False, "optimizerCreated": False, "gpuUsed": False, "trainingStarted": False})
+        print(json.dumps(read_json(terminal_path), ensure_ascii=False, indent=2))
+        return 1
+
+
+def run_dual_identity_validation_kernel_model_smoke_contract_regression(args, authorization: dict) -> int:
+    if (
+        args.report is None
+        or args.support_contract is None
+        or args.terminal is None
+        or args.implementation_attestation is None
+        or args.authorization_sha256 is None
+    ):
+        raise ValueError("dual-identity Stage4 Smoke CPU mode requires implementation identity and all evidence output paths")
+    authorization_path = resolve(args.smoke_authorization)
+    authorization_sha256 = args.authorization_sha256.lower()
+    report_path = resolve(args.report)
+    support_path = resolve(args.support_contract)
+    terminal_path = resolve(args.terminal)
+    attestation_path = resolve(args.implementation_attestation)
+    try:
+        if sha256_file(authorization_path) != authorization_sha256:
+            raise ValueError("dual-identity implementation authorization SHA-256 changed")
+        request_id = authorization.get("requestId")
+        scope = authorization.get("ownerDecision", {}).get("scope")
+        if (
+            authorization.get("status") != "owner_authorized_implementation_not_consumed"
+            or authorization.get("ownerDecision", {}).get("commandRef") != request_id
+            or not request_id
+            or not scope
+            or authorization.get("implementationActions") != DUAL_IDENTITY_IMPLEMENTATION_ACTIONS
+            or authorization.get("authorizedFiles") != [
+                "scripts/run-ai-assisted-v8-r5-stage4-smoke.mjs",
+                "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+                "ml/ai-painter/scripts/check_ai_assisted_v9_r5_stage4_cpu.py",
+            ]
+            or not all(authorization.get("explicitlyDeniedActions", {}).values())
+        ):
+            raise ValueError("dual-identity implementation authorization contract invalid")
+        expected_outputs = {
+            report_path: authorization.get("output", {}).get("cpuReportPath"),
+            support_path: authorization.get("output", {}).get("supportContractPath"),
+            terminal_path: authorization.get("output", {}).get("cpuTerminalPath"),
+            attestation_path: authorization.get("output", {}).get("implementationAttestationPath"),
+        }
+        for actual, expected in expected_outputs.items():
+            if project_path(actual) != project_path(Path(expected or "missing")):
+                raise ValueError("dual-identity CPU evidence output differs from implementation authorization")
+            if actual.exists():
+                raise FileExistsError(f"dual-identity CPU evidence already exists: {project_path(actual)}")
+        for key in ("previousSmokeFailureTerminal", "previousSmokeFinalization", "previousGpuConsumption"):
+            value = authorization.get("bindings", {}).get(key, {})
+            if not value.get("path") or sha256_file(resolve(Path(value["path"]))) != value.get("sha256"):
+                raise ValueError(f"dual-identity bound failure evidence changed: {key}")
+        implementation_consumption_path = resolve(Path(authorization.get("output", {}).get("implementationConsumptionPath", "missing")))
+        implementation_consumption = read_json(implementation_consumption_path)
+        implementation_consumption_sha256 = sha256_file(implementation_consumption_path)
+        if (
+            implementation_consumption.get("status") != "stage4_dual_identity_lineage_implementation_authorization_atomically_consumed"
+            or implementation_consumption.get("requestId") != request_id
+            or implementation_consumption.get("commandRef") != request_id
+            or implementation_consumption.get("scope") != scope
+            or implementation_consumption.get("authorizationSha256") != authorization_sha256
+            or implementation_consumption.get("oneTimeConsumption") is not True
+        ):
+            raise ValueError("dual-identity implementation consumption invalid")
+
+        previous_gpu_consumption = read_json(resolve(Path(authorization["bindings"]["previousGpuConsumption"]["path"])))
+        source_authorization_path = resolve(Path(previous_gpu_consumption.get("authorizationPath", "missing")))
+        if sha256_file(source_authorization_path) != previous_gpu_consumption.get("authorizationSha256"):
+            raise ValueError("previous GPU authorization identity changed")
+        source_authorization = read_json(source_authorization_path)
+        source_binding_keys = (
+            "phase0SuccessTerminal", "v9InactiveConfig", "datasetManifest", "datasetSourceIndex",
+            "projectAutoencoderCheckpoint", "conditionAlignmentAuditor", "professionalAestheticAuditor",
+            "windowsSafePreviewNormalizer", "gpuResourceGate",
+        )
+        for key in source_binding_keys:
+            value = source_authorization.get("bindings", {}).get(key, {})
+            if not value.get("path") or sha256_file(resolve(Path(value["path"]))) != value.get("sha256"):
+                raise ValueError(f"source GPU authorization binding changed: {key}")
+
+        attestation_path.parent.mkdir(parents=True, exist_ok=True)
+        attestation = {
+            "schemaVersion": "ai-painter-stage4-dual-identity-implementation-attestation-v1",
+            "status": "stage4_dual_identity_implementation_code_attested_cpu_pending",
+            **timestamps("recordedAt"),
+            "implementationAuthorizationPath": project_path(authorization_path),
+            "implementationAuthorizationSha256": authorization_sha256,
+            "implementationConsumptionPath": project_path(implementation_consumption_path),
+            "implementationConsumptionSha256": implementation_consumption_sha256,
+            "runnerPath": project_path(SMOKE_RUNNER_PATH),
+            "runnerSha256": sha256_file(resolve(SMOKE_RUNNER_PATH)),
+            "trainerPath": project_path(TRAINER_PATH),
+            "trainerSha256": sha256_file(resolve(TRAINER_PATH)),
+            "cpuCheckerPath": project_path(CPU_CHECKER_PATH),
+            "cpuCheckerSha256": sha256_file(resolve(CPU_CHECKER_PATH)),
+            "checkpointRead": False,
+            "optimizerCreated": False,
+            "gpuUsed": False,
+            "trainingStarted": False,
+        }
+        write_json_exclusive(args.implementation_attestation, attestation)
+        attestation_sha256 = sha256_file(attestation_path)
+
+        config = read_json(resolve(Path(source_authorization["bindings"]["v9InactiveConfig"]["path"])))
+        package = read_json(resolve(Path(source_authorization["bindings"]["datasetManifest"]["path"])))
+        base_positive, base_negative, evidence = run_regressions(config, package)
+        mode = FORMAL_MODE_REGISTRY.resolve_mode_id("v9_stage4_validation_kernel_smoke")
+
+        fixtures_root = resolve(Path(".runtime/ai-painter/cpu-contract-fixtures"))
+        fixtures_root.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="v9-dual-identity-", dir=fixtures_root) as fixture_dir_value:
+            fixture_root = Path(fixture_dir_value)
+            fixture_request_id = "owner-authorized-stage4-v9-model-smoke-gpu-execution-cpu-fixture"
+            fixture_authorization_dir = fixture_root / fixture_request_id
+            fixture_authorization_dir.mkdir(parents=True, exist_ok=False)
+            fixture_authorization_path = fixture_authorization_dir / "gpu-execution-authorization.json"
+            fixture_consumption_path = fixture_root / "gpu-execution-consumption.json"
+            fixture_active_config_path = fixture_root / "active-config.json"
+            fixture_training_output_path = fixture_root / "training-output"
+            fixture_finalization_path = fixture_root / "finalization"
+            fixture_bindings = {
+                "previousSmokeFailureTerminal": authorization["bindings"]["previousSmokeFailureTerminal"],
+                "previousSmokeFinalization": authorization["bindings"]["previousSmokeFinalization"],
+                "previousGpuConsumption": authorization["bindings"]["previousGpuConsumption"],
+                **{key: source_authorization["bindings"][key] for key in source_binding_keys},
+            }
+            fixture_authorization = {
+                "schemaVersion": DUAL_IDENTITY_GPU_AUTHORIZATION_SCHEMA,
+                "status": "owner_authorized_gpu_execution_not_consumed",
+                "requestId": fixture_request_id,
+                "ownerDecision": {
+                    "commandRef": fixture_request_id,
+                    "scope": "stage4_v9_single_sample_model_smoke_execution_only",
+                },
+                "cpuContractFixture": True,
+                "implementationIdentity": {
+                    "authorizationPath": project_path(authorization_path),
+                    "authorizationSha256": authorization_sha256,
+                    "consumptionPath": project_path(implementation_consumption_path),
+                    "consumptionSha256": implementation_consumption_sha256,
+                    "attestationPath": project_path(attestation_path),
+                    "attestationSha256": attestation_sha256,
+                },
+                "fixedTaskIdentity": {
+                    "module": "AI Painter R5",
+                    "stage": 4,
+                    "modeId": "v9_stage4_validation_kernel_smoke",
+                    "architecture": "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment",
+                    "sampleId": SAMPLE_ID,
+                    "sampleSplit": "validation",
+                    "seed": 20263722,
+                    "requiredBoundarySides": ["west"],
+                    "resolution": {"width": 256, "height": 192},
+                    "smokeEpochs": 30,
+                    "smokePreviewEpochs": FIXED_EPOCHS,
+                    "datasetCapacity": 64,
+                    "datasetSplit": EXPECTED_COUNTS,
+                },
+                "executionActions": deepcopy(DYNAMIC_VALIDATION_KERNEL_EXECUTION_ACTIONS),
+                "executionPolicy": {
+                    "maximumGpuSmokeExecutions": 1,
+                    "allCpuAndResourcePreflightsMustPassBeforeGpuConsumption": True,
+                    "failureStopsImmediately": True,
+                    "automaticRetryAuthorized": False,
+                },
+                "bindings": fixture_bindings,
+                "output": {
+                    "smokeConsumptionPath": project_path(fixture_consumption_path),
+                    "activeConfigPath": project_path(fixture_active_config_path),
+                    "trainingOutputDirectory": project_path(fixture_training_output_path),
+                    "finalizationDirectory": project_path(fixture_finalization_path),
+                },
+            }
+            fixture_authorization_path.write_text(json.dumps(fixture_authorization, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            fixture_authorization_sha256 = sha256_file(fixture_authorization_path)
+
+            def run_node(candidate: Path, candidate_sha256: str | None) -> subprocess.CompletedProcess[str]:
+                try:
+                    candidate_argument = project_path(candidate)
+                except ValueError:
+                    candidate_argument = str(candidate)
+                command = [
+                    "node", str(resolve(SMOKE_RUNNER_PATH)),
+                    "--stage4-validation-kernel-model-smoke",
+                    "--gpu-authorization", candidate_argument,
+                    "--cpu-contract-only",
+                ]
+                if candidate_sha256 is not None:
+                    command.extend(["--gpu-authorization-sha256", candidate_sha256])
+                return subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=120)
+
+            positive_runner = run_node(fixture_authorization_path, fixture_authorization_sha256)
+            legacy_runner = run_node(resolve(VALIDATION_KERNEL_AUTHORIZATION_PATH), None)
+
+            fixture_consumption = {
+                "schemaVersion": "ai-painter-stage4-validation-kernel-model-smoke-gpu-consumption-v1",
+                "status": "stage4_validation_kernel_model_smoke_gpu_authorization_atomically_consumed",
+                "requestId": fixture_request_id,
+                "commandRef": fixture_request_id,
+                "scope": fixture_authorization["ownerDecision"]["scope"],
+                "authorizationPath": project_path(fixture_authorization_path),
+                "authorizationSha256": fixture_authorization_sha256,
+                "implementationAttestationPath": project_path(attestation_path),
+                "implementationAttestationSha256": attestation_sha256,
+                "oneTimeConsumption": True,
+                "modelSmokeOrdinal": 1,
+                "maximumModelSmokeExecutions": 1,
+                "stage4FullTrainingStarted": False,
+                "automaticRetryAuthorized": False,
+            }
+            fixture_consumption_path.write_text(json.dumps(fixture_consumption, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            fixture_consumption_sha256 = sha256_file(fixture_consumption_path)
+
+            active_config = deepcopy(config)
+            training = active_config["training"]
+            active_config["architectureVersion"] = "all-validation-multiseed-semantic-rollout-unet-v9-stage4-validation-kernel-smoke"
+            training["trainingAuthorizationStatus"] = mode.authorization_status
+            training["v9Stage4SingleSampleSmokeContract"]["status"] = "active_owner_authorized_single_execution"
+            training["ownerTrainingAuthorization"] = {
+                "authorizationId": fixture_request_id,
+                "authorizationPath": project_path(fixture_authorization_path),
+                "authorizationSha256": fixture_authorization_sha256,
+                "executionConsumptionPath": project_path(fixture_consumption_path),
+                "executionConsumptionSha256": fixture_consumption_sha256,
+                "status": mode.authorization_status,
+                "checkpointLoadingAuthorized": True,
+                "optimizerCreationAuthorized": True,
+                "backwardExecutionAuthorized": True,
+                "modelWeightMutationAuthorized": True,
+                "gpuTrainingAuthorizedNow": True,
+                "singleSampleGpuOverfitSmokeAuthorized": True,
+                "fullTrainingAuthorized": False,
+                "stage1Authorized": False,
+                "stage2Authorized": False,
+                "strictRevalidationAuthorized": False,
+                "validationAuthorized": False,
+                "formalInferenceAuthorized": False,
+                "checkpointPromotionAuthorized": False,
+                "runtimeFrameAuthorized": False,
+                "worldEntryAuthorized": False,
+                "automaticRetryAuthorized": False,
+            }
+            model_contract = training["stage4ObjectSemanticDecoderAlignment"]
+            model_contract["enabled"] = True
+            model_contract["status"] = "training_loss_active_owner_authorized"
+            model_contract["trainingLossImplementationStatus"] = "implemented_active_owner_authorized"
+            for key in ("configurationActiveNow", "checkpointReadNow", "optimizerCreationNow", "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow", "checkpointWriteNow"):
+                model_contract["activationGate"][key] = True
+            training["stage4UnifiedTrainingPreviewSamplingContract"] = {
+                "schemaVersion": "stage4-unified-training-preview-sampling-contract-v1",
+                "enabled": True,
+                "status": "active_owner_authorized_single_execution",
+                "samplingFunction": "evaluate_deterministic_rollout_rgb_quality_v7",
+                "modelStateBinding": "sha256_sorted_tensor_bytes_v1",
+                "seedBinding": "training_seed_plus_3000",
+                "normalizationBinding": "checkpoint_latent_normalization",
+                "decodeBinding": "frozen_project_autoencoder_decode_clamp_0_1",
+                "checkpointPreviewIdentityGate": "byte_exact_best_epoch_reproduction",
+                "deterministicAlgorithmsRequired": True,
+                "cublasWorkspaceConfig": ":4096:8",
+                "failedPreviewPixelsUsedAsTrainingTargets": False,
+                "machineReviewThresholdsUsedAsTrainingTargets": False,
+            }
+            training["v9Stage4SmokeExecution"] = {
+                "sourceInactiveConfigPath": source_authorization["bindings"]["v9InactiveConfig"]["path"],
+                "sourceInactiveConfigSha256": source_authorization["bindings"]["v9InactiveConfig"]["sha256"],
+                "ownerAuthorizationPath": project_path(fixture_authorization_path),
+                "ownerAuthorizationSha256": fixture_authorization_sha256,
+                "gpuConsumptionPath": project_path(fixture_consumption_path),
+                "gpuConsumptionSha256": fixture_consumption_sha256,
+                "implementationAttestationPath": project_path(attestation_path),
+                "implementationAttestationSha256": attestation_sha256,
+                "phase0TerminalPath": source_authorization["bindings"]["phase0SuccessTerminal"]["path"],
+                "phase0TerminalSha256": source_authorization["bindings"]["phase0SuccessTerminal"]["sha256"],
+                "cpuContractFixture": True,
+            }
+            fixture_active_config_path.write_text(json.dumps(active_config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            trainer_command = [
+                sys.executable, str(resolve(TRAINER_PATH)),
+                "--config", str(fixture_active_config_path),
+                "--dataset-package", str(resolve(Path(source_authorization["bindings"]["datasetManifest"]["path"]))),
+                "--autoencoder-checkpoint", str(resolve(Path(source_authorization["bindings"]["projectAutoencoderCheckpoint"]["path"]))),
+                "--output-dir", str(fixture_training_output_path),
+                "--resolution-stage", "0",
+                "--single-sample-overfit-smoke",
+                "--overfit-sample-id", SAMPLE_ID,
+                "--overfit-epochs", "30",
+                "--overfit-evaluation-interval", "5",
+                "--preflight-only",
+                "--authorization-lineage-preflight",
+            ]
+            trainer_environment = {**os.environ, "PYTHONUTF8": "1", "CUDA_VISIBLE_DEVICES": ""}
+            trainer_preflight = subprocess.run(trainer_command, cwd=ROOT, capture_output=True, text=True, timeout=180, env=trainer_environment)
+
+            def write_authorization_fixture(name: str, value: dict, *, nested_identity: bool = True) -> tuple[Path, str]:
+                target_root = fixture_root / name
+                if nested_identity:
+                    target_root = target_root / value.get("requestId", "missing-request")
+                target_root.mkdir(parents=True, exist_ok=True)
+                target = target_root / "gpu-execution-authorization.json"
+                target.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                return target, sha256_file(target)
+
+            negative_results: dict[str, subprocess.CompletedProcess[str]] = {}
+            negative_results["hashMismatch"] = run_node(fixture_authorization_path, "0" * 64)
+            forged_request = deepcopy(fixture_authorization)
+            forged_request["requestId"] = "owner-authorized-stage4-v9-model-smoke-gpu-execution-forged"
+            forged_request["ownerDecision"]["commandRef"] = forged_request["requestId"]
+            forged_request_path, forged_request_sha = write_authorization_fixture("forged-request", forged_request, nested_identity=False)
+            negative_results["requestIdMismatch"] = run_node(forged_request_path, forged_request_sha)
+            wrong_scope = deepcopy(fixture_authorization)
+            wrong_scope["ownerDecision"]["scope"] = "forged_scope"
+            wrong_scope_path, wrong_scope_sha = write_authorization_fixture("wrong-scope", wrong_scope)
+            negative_results["scopeMismatch"] = run_node(wrong_scope_path, wrong_scope_sha)
+            unknown_action = deepcopy(fixture_authorization)
+            unknown_action["executionActions"]["startTrainingNow"] = True
+            unknown_action_path, unknown_action_sha = write_authorization_fixture("unknown-action", unknown_action)
+            negative_results["unknownExecutionAction"] = run_node(unknown_action_path, unknown_action_sha)
+            forbidden_action = deepcopy(fixture_authorization)
+            forbidden_action["executionActions"]["stage4FullTraining"] = True
+            forbidden_action_path, forbidden_action_sha = write_authorization_fixture("forbidden-action", forbidden_action)
+            negative_results["forbiddenAction"] = run_node(forbidden_action_path, forbidden_action_sha)
+            implementation_injection = deepcopy(fixture_authorization)
+            implementation_injection["implementationActions"] = {"modifyTrainerNow": True}
+            implementation_injection_path, implementation_injection_sha = write_authorization_fixture("implementation-injection", implementation_injection)
+            negative_results["implementationPermissionInjection"] = run_node(implementation_injection_path, implementation_injection_sha)
+            reused = deepcopy(fixture_authorization)
+            reused_path, reused_sha = write_authorization_fixture("reused-consumption", reused)
+            reused_value = read_json(reused_path)
+            reused_value["output"]["smokeConsumptionPath"] = project_path(fixture_consumption_path)
+            reused_path.write_text(json.dumps(reused_value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            negative_results["reusedConsumption"] = run_node(reused_path, sha256_file(reused_path))
+            with tempfile.TemporaryDirectory(prefix="v9-dual-external-") as external_dir:
+                external_path = Path(external_dir) / "gpu-execution-authorization.json"
+                external_path.write_text(json.dumps(fixture_authorization, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                negative_results["externalPathInjection"] = run_node(external_path, sha256_file(external_path))
+
+            positive = {
+                "boundFailureEvidenceHashesVerified": True,
+                "implementationAuthorizationConsumedExactlyOnce": True,
+                "legacyV9PositiveRegressionPreserved": all(base_positive.values()),
+                "legacyV9NegativeRegressionPreserved": all(base_negative.values()),
+                "dynamicGpuExecutionAuthorizationReachesSharedRunnerPolicy": positive_runner.returncode == 0 and "authorization_contract_valid_cpu_only" in positive_runner.stdout,
+                "legacyValidationKernelAuthorizationStillAccepted": legacy_runner.returncode == 0 and "authorization_contract_valid_cpu_only" in legacy_runner.stdout,
+                "modeRegistryResolvesValidationKernelSmoke": mode.execution_kind == "single_sample_smoke" and mode.sample_split == "validation",
+                "realTrainerStartupLineagePreflightPassed": trainer_preflight.returncode == 0 and "conditional_denoiser_python_preflight_passed" in trainer_preflight.stdout,
+                "trainerPreflightDidNotCreateTrainingOutput": not fixture_training_output_path.exists(),
+                "sample194RemainsValidationWithExpectedSplit": evidence.get("actualSplitCounts") == EXPECTED_COUNTS and evidence.get("sample194Occurrences") == ["validation"],
+            }
+            negative = {
+                "authorizationHashMismatchRejected": negative_results["hashMismatch"].returncode != 0 and "authorization_sha256_invalid" in negative_results["hashMismatch"].stderr,
+                "forgedRequestIdRejected": negative_results["requestIdMismatch"].returncode != 0 and "command_identity_invalid" in negative_results["requestIdMismatch"].stderr,
+                "scopeMismatchRejected": negative_results["scopeMismatch"].returncode != 0 and "command_identity_invalid" in negative_results["scopeMismatch"].stderr,
+                "unknownExecutionActionRejected": negative_results["unknownExecutionAction"].returncode != 0 and "exact_execution_action_contract_invalid" in negative_results["unknownExecutionAction"].stderr,
+                "forbiddenActionActivationRejected": negative_results["forbiddenAction"].returncode != 0 and "exact_execution_action_contract_invalid" in negative_results["forbiddenAction"].stderr,
+                "implementationPermissionInjectionRejected": negative_results["implementationPermissionInjection"].returncode != 0 and "implementation_permission_injection" in negative_results["implementationPermissionInjection"].stderr,
+                "repeatedConsumptionRejected": negative_results["reusedConsumption"].returncode != 0 and "already_consumed" in negative_results["reusedConsumption"].stderr,
+                "externalAbsolutePathInjectionRejected": negative_results["externalPathInjection"].returncode != 0 and "path_outside_project" in negative_results["externalPathInjection"].stderr,
+            }
+            failed_positive = [key for key, value in positive.items() if value is not True]
+            failed_negative = [key for key, value in negative.items() if value is not True]
+            report = {
+                "schemaVersion": "ai-painter-stage4-dual-identity-model-smoke-cpu-regression-report-v1",
+                "status": "stage4_dual_identity_model_smoke_cpu_regression_passed" if not failed_positive and not failed_negative else "stage4_dual_identity_model_smoke_cpu_regression_failed_closed",
+                **timestamps("recordedAt"),
+                "implementationAuthorization": binding(authorization_path),
+                "implementationConsumption": binding(implementation_consumption_path),
+                "implementationAttestation": binding(attestation_path),
+                "positive": positive,
+                "negative": negative,
+                "failedPositiveKeys": failed_positive,
+                "failedNegativeKeys": failed_negative,
+                "positivePassed": sum(value is True for value in positive.values()),
+                "positiveTotal": len(positive),
+                "negativePassed": sum(value is True for value in negative.values()),
+                "negativeTotal": len(negative),
+                "runnerCpuContract": {"exitCode": positive_runner.returncode, "stdout": positive_runner.stdout, "stderr": positive_runner.stderr},
+                "legacyRunnerCpuContract": {"exitCode": legacy_runner.returncode, "stdout": legacy_runner.stdout, "stderr": legacy_runner.stderr},
+                "trainerStartupPreflight": {"exitCode": trainer_preflight.returncode, "stdout": trainer_preflight.stdout, "stderr": trainer_preflight.stderr},
+                "negativeRunnerContracts": {key: {"exitCode": value.returncode, "stdout": value.stdout, "stderr": value.stderr} for key, value in negative_results.items()},
+                "checkpointRead": False,
+                "optimizerCreated": False,
+                "gpuUsed": False,
+                "trainingStarted": False,
+            }
+            write_json_exclusive(args.report, report)
+            if failed_positive or failed_negative:
+                raise ValueError(f"dual-identity CPU regression failed: {failed_positive}:{failed_negative}")
+
+        support = {
+            "schemaVersion": "ai-painter-stage4-dual-identity-model-smoke-support-contract-v1",
+            "status": "stage4_dual_identity_model_smoke_cpu_support_verified_inactive",
+            **timestamps("recordedAt"),
+            "implementationAuthorization": binding(authorization_path),
+            "implementationConsumption": binding(implementation_consumption_path),
+            "implementationAttestation": binding(attestation_path),
+            "gpuAuthorizationIdentity": "separate_not_yet_established",
+            "modeId": "v9_stage4_validation_kernel_smoke",
+            "sampleId": SAMPLE_ID,
+            "sampleSplit": "validation",
+            "seed": 20263722,
+            "requiredBoundarySides": ["west"],
+            "epochCount": 30,
+            "previewEpochs": FIXED_EPOCHS,
+            "machineReviewThresholdsChanged": False,
+        }
+        write_json_exclusive(args.support_contract, support)
+        terminal = {
+            "schemaVersion": "ai-painter-stage4-dual-identity-model-smoke-cpu-terminal-v1",
+            "status": "stage4_dual_identity_model_smoke_cpu_gate_passed_closed",
+            **timestamps("recordedAt"),
+            "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+            "reportPath": project_path(args.report),
+            "reportSha256": sha256_file(report_path),
+            "supportContractPath": project_path(args.support_contract),
+            "supportContractSha256": sha256_file(support_path),
+            "implementationAttestationPath": project_path(args.implementation_attestation),
+            "implementationAttestationSha256": sha256_file(attestation_path),
+            "nextAction": "establish_independent_gpu_execution_authorization_then_run_resource_preflights",
+            "checkpointRead": False,
+            "optimizerCreated": False,
+            "gpuUsed": False,
+            "trainingStarted": False,
+        }
+        write_json_exclusive(args.terminal, terminal)
+        print(json.dumps({**terminal, "terminalPath": project_path(args.terminal), "terminalSha256": sha256_file(terminal_path)}, ensure_ascii=False, indent=2))
+        return 0
+    except Exception as error:
+        if not terminal_path.exists():
+            terminal_path.parent.mkdir(parents=True, exist_ok=True)
+            write_json_exclusive(args.terminal, {
+                "schemaVersion": "ai-painter-stage4-dual-identity-model-smoke-cpu-terminal-v1",
+                "status": "stage4_dual_identity_model_smoke_cpu_gate_failed_closed",
+                **timestamps("recordedAt"),
+                "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+                "failureType": type(error).__name__,
+                "failureMessage": str(error),
+                "traceback": traceback.format_exc(),
+                "reportPath": project_path(args.report) if report_path.exists() else None,
+                "reportSha256": sha256_file(report_path) if report_path.exists() else None,
+                "checkpointRead": False,
+                "optimizerCreated": False,
+                "gpuUsed": False,
+                "trainingStarted": False,
+            })
+        print(json.dumps(read_json(terminal_path), ensure_ascii=False, indent=2))
+        return 1
+
+
+def run_fixed_preview_schedule_contract_regression(args, authorization: dict) -> int:
+    if (
+        args.report is None
+        or args.support_contract is None
+        or args.terminal is None
+        or args.implementation_attestation is None
+        or args.authorization_sha256 is None
+    ):
+        raise ValueError("fixed preview schedule CPU mode requires implementation identity and all evidence output paths")
+    authorization_path = resolve(args.smoke_authorization)
+    authorization_sha256 = args.authorization_sha256.lower()
+    report_path = resolve(args.report)
+    support_path = resolve(args.support_contract)
+    terminal_path = resolve(args.terminal)
+    attestation_path = resolve(args.implementation_attestation)
+    try:
+        if sha256_file(authorization_path) != authorization_sha256:
+            raise ValueError("fixed preview schedule implementation authorization SHA-256 changed")
+        request_id = authorization.get("requestId")
+        scope = authorization.get("ownerDecision", {}).get("scope")
+        if (
+            authorization.get("status") != "owner_authorized_implementation_not_consumed"
+            or authorization.get("ownerDecision", {}).get("commandRef") != request_id
+            or not request_id
+            or not scope
+            or authorization.get("implementationActions") != FIXED_PREVIEW_SCHEDULE_IMPLEMENTATION_ACTIONS
+            or authorization.get("authorizedFiles") != [
+                "ml/ai-painter/scripts/train_ai_assisted_conditional_denoiser.py",
+                "ml/ai-painter/scripts/check_ai_assisted_v9_r5_stage4_cpu.py",
+            ]
+            or not all(authorization.get("explicitlyDeniedActions", {}).values())
+        ):
+            raise ValueError("fixed preview schedule implementation authorization contract invalid")
+        expected_outputs = {
+            report_path: authorization.get("output", {}).get("cpuReportPath"),
+            support_path: authorization.get("output", {}).get("supportContractPath"),
+            terminal_path: authorization.get("output", {}).get("cpuTerminalPath"),
+            attestation_path: authorization.get("output", {}).get("implementationAttestationPath"),
+        }
+        for actual, expected in expected_outputs.items():
+            if project_path(actual) != project_path(Path(expected or "missing")):
+                raise ValueError("fixed preview schedule CPU evidence output differs from implementation authorization")
+            if actual.exists():
+                raise FileExistsError(f"fixed preview schedule CPU evidence already exists: {project_path(actual)}")
+        for key in ("previousSmokeFailureTerminal", "previousSmokeFinalization", "previousGpuConsumption", "runnerFrozen"):
+            value = authorization.get("bindings", {}).get(key, {})
+            if not value.get("path") or sha256_file(resolve(Path(value["path"]))) != value.get("sha256"):
+                raise ValueError(f"fixed preview schedule bound evidence changed: {key}")
+        implementation_consumption_path = resolve(Path(authorization.get("output", {}).get("implementationConsumptionPath", "missing")))
+        implementation_consumption = read_json(implementation_consumption_path)
+        implementation_consumption_sha256 = sha256_file(implementation_consumption_path)
+        if (
+            implementation_consumption.get("status") != "stage4_dual_identity_lineage_implementation_authorization_atomically_consumed"
+            or implementation_consumption.get("requestId") != request_id
+            or implementation_consumption.get("commandRef") != request_id
+            or implementation_consumption.get("scope") != scope
+            or implementation_consumption.get("authorizationSha256") != authorization_sha256
+            or implementation_consumption.get("oneTimeConsumption") is not True
+        ):
+            raise ValueError("fixed preview schedule implementation consumption invalid")
+
+        previous_gpu_consumption = read_json(resolve(Path(authorization["bindings"]["previousGpuConsumption"]["path"])))
+        source_authorization_path = resolve(Path(previous_gpu_consumption.get("authorizationPath", "missing")))
+        if sha256_file(source_authorization_path) != previous_gpu_consumption.get("authorizationSha256"):
+            raise ValueError("previous GPU authorization identity changed")
+        source_authorization = read_json(source_authorization_path)
+        source_binding_keys = (
+            "phase0SuccessTerminal", "v9InactiveConfig", "datasetManifest", "datasetSourceIndex",
+            "projectAutoencoderCheckpoint", "conditionAlignmentAuditor", "professionalAestheticAuditor",
+            "windowsSafePreviewNormalizer", "gpuResourceGate",
+        )
+        for key in source_binding_keys:
+            value = source_authorization.get("bindings", {}).get(key, {})
+            if not value.get("path") or sha256_file(resolve(Path(value["path"]))) != value.get("sha256"):
+                raise ValueError(f"fixed preview schedule source binding changed: {key}")
+
+        config = read_json(resolve(Path(source_authorization["bindings"]["v9InactiveConfig"]["path"])))
+        package = read_json(resolve(Path(source_authorization["bindings"]["datasetManifest"]["path"])))
+        base_positive, base_negative, evidence = run_regressions(config, package)
+        active_config = deepcopy(config)
+        active_config["training"]["stage4UnifiedTrainingPreviewSamplingContract"] = {
+            "schemaVersion": "stage4-unified-training-preview-sampling-contract-v1",
+            "enabled": True,
+            "status": "active_owner_authorized_single_execution",
+            "samplingFunction": "evaluate_deterministic_rollout_rgb_quality_v7",
+            "modelStateBinding": "sha256_sorted_tensor_bytes_v1",
+            "seedBinding": "training_seed_plus_3000",
+            "normalizationBinding": "checkpoint_latent_normalization",
+            "decodeBinding": "frozen_project_autoencoder_decode_clamp_0_1",
+            "checkpointPreviewIdentityGate": "byte_exact_best_epoch_reproduction",
+            "deterministicAlgorithmsRequired": True,
+            "cublasWorkspaceConfig": ":4096:8",
+            "failedPreviewPixelsUsedAsTrainingTargets": False,
+            "machineReviewThresholdsUsedAsTrainingTargets": False,
+        }
+        scheduled = [epoch for epoch in range(1, 31) if trainer.should_reproduce_stage4_fixed_epoch_preview(active_config, epoch)]
+        skipped = [epoch for epoch in range(1, 31) if not trainer.should_reproduce_stage4_fixed_epoch_preview(active_config, epoch)]
+        source_preview = {
+            "denoiserStateSha256": "a" * 64,
+            "conditionTensorSha256": "b" * 64,
+            "rgbTensorSha256": "c" * 64,
+            "previewSha256": "d" * 64,
+        }
+        exact_reproduction = trainer.validate_stage4_fixed_epoch_preview_reproduction(
+            source_preview,
+            deepcopy(source_preview),
+            5,
+        )
+        skip_record = trainer.build_stage4_fixed_epoch_preview_skip_record({}, 15)
+
+        def rejects(callable_value, expected_message: str) -> bool:
+            try:
+                callable_value()
+            except ValueError as error:
+                return expected_message in str(error)
+            return False
+
+        mismatch_rejections = {}
+        for key in ("denoiserStateSha256", "conditionTensorSha256", "rgbTensorSha256", "previewSha256"):
+            repeated = deepcopy(source_preview)
+            repeated[key] = "e" * 64
+            mismatch_rejections[key] = rejects(
+                lambda repeated=repeated: trainer.validate_stage4_fixed_epoch_preview_reproduction(source_preview, repeated, 5),
+                "reproduction identity mismatch",
+            )
+        trainer_source = inspect.getsource(trainer.main)
+        helper_source = inspect.getsource(trainer.should_reproduce_stage4_fixed_epoch_preview)
+
+        fixtures_root = resolve(Path(".runtime/ai-painter/cpu-contract-fixtures"))
+        fixtures_root.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="v9-preview-schedule-", dir=fixtures_root) as fixture_dir_value:
+            fixture_root = Path(fixture_dir_value)
+            trainer_output = fixture_root / "trainer-output"
+            trainer_command = [
+                sys.executable, str(resolve(TRAINER_PATH)),
+                "--config", str(resolve(Path(source_authorization["bindings"]["v9InactiveConfig"]["path"]))),
+                "--dataset-package", str(resolve(Path(source_authorization["bindings"]["datasetManifest"]["path"]))),
+                "--autoencoder-checkpoint", str(resolve(Path(source_authorization["bindings"]["projectAutoencoderCheckpoint"]["path"]))),
+                "--output-dir", str(trainer_output),
+                "--resolution-stage", "0",
+                "--single-sample-overfit-smoke",
+                "--overfit-sample-id", SAMPLE_ID,
+                "--overfit-epochs", "30",
+                "--overfit-evaluation-interval", "5",
+                "--preflight-only",
+            ]
+            trainer_environment = {**os.environ, "PYTHONUTF8": "1", "CUDA_VISIBLE_DEVICES": ""}
+            trainer_preflight = subprocess.run(trainer_command, cwd=ROOT, capture_output=True, text=True, timeout=180, env=trainer_environment)
+            trainer_output_absent = not trainer_output.exists()
+
+        positive = {
+            "boundFailureEvidenceHashesVerified": True,
+            "implementationAuthorizationConsumedExactlyOnce": True,
+            "scheduledPreviewEpochsAreExactlyContractEpochs": scheduled == FIXED_EPOCHS,
+            "nonPreviewEpoch15IsExplicitlySkipped": 15 in skipped and skip_record == {
+                "schemaVersion": "stage4-fixed-epoch-preview-reproduction-v1",
+                "status": "fixed_epoch_preview_reproduction_skipped_not_scheduled",
+                "epoch": 15,
+                "scheduled": False,
+            },
+            "scheduledPreviewExactReproductionAccepted": exact_reproduction.get("status") == "fixed_epoch_preview_reproduced_exactly" and all(exact_reproduction.get(key) is True for key in ("modelStateSha256Matches", "conditionTensorSha256Matches", "rgbTensorSha256Matches", "pngByteSha256Matches")),
+            "legacyInactiveModeDoesNotEnableReproduction": not any(trainer.should_reproduce_stage4_fixed_epoch_preview(config, epoch) for epoch in FIXED_EPOCHS),
+            "trainingLoopUsesSharedSchedulePredicate": "should_reproduce_stage4_fixed_epoch_preview(config, preview_epoch)" in trainer_source and "uses_stage4_unified_preview_sampling_contract(config) and should_save_epoch_preview(config, epoch_number)" in helper_source,
+            "legacyV9PositiveRegressionPreserved": all(base_positive.values()),
+            "legacyV9NegativeRegressionPreserved": all(base_negative.values()),
+            "realTrainerStartupPreflightPassed": trainer_preflight.returncode == 0 and "conditional_denoiser_python_preflight_passed" in trainer_preflight.stdout,
+            "trainerPreflightDidNotCreateOutput": trainer_output_absent,
+            "sample194RemainsValidationWithExpectedSplit": evidence.get("actualSplitCounts") == EXPECTED_COUNTS and evidence.get("sample194Occurrences") == ["validation"],
+        }
+        negative = {
+            "missingScheduledPreviewArtifactRejected": rejects(
+                lambda: trainer.validate_stage4_fixed_epoch_preview_reproduction(None, source_preview, 5),
+                "preview artifact is missing",
+            ),
+            "modelStateHashMismatchRejected": mismatch_rejections["denoiserStateSha256"],
+            "conditionTensorHashMismatchRejected": mismatch_rejections["conditionTensorSha256"],
+            "rgbTensorHashMismatchRejected": mismatch_rejections["rgbTensorSha256"],
+            "pngByteHashMismatchRejected": mismatch_rejections["previewSha256"],
+            "unexpectedPreviewOnNonPreviewEpochRejected": rejects(
+                lambda: trainer.build_stage4_fixed_epoch_preview_skip_record({"previewArtifact": source_preview}, 15),
+                "unexpected preview artifact",
+            ),
+            "epochZeroNotScheduled": not trainer.should_reproduce_stage4_fixed_epoch_preview(active_config, 0),
+            "epoch31NotScheduled": not trainer.should_reproduce_stage4_fixed_epoch_preview(active_config, 31),
+        }
+        failed_positive = [key for key, value in positive.items() if value is not True]
+        failed_negative = [key for key, value in negative.items() if value is not True]
+        report = {
+            "schemaVersion": "ai-painter-stage4-fixed-preview-schedule-cpu-regression-report-v1",
+            "status": "stage4_dual_identity_model_smoke_cpu_regression_passed" if not failed_positive and not failed_negative else "stage4_fixed_preview_schedule_cpu_regression_failed_closed",
+            **timestamps("recordedAt"),
+            "implementationAuthorization": binding(authorization_path),
+            "implementationConsumption": binding(implementation_consumption_path),
+            "positive": positive,
+            "negative": negative,
+            "failedPositiveKeys": failed_positive,
+            "failedNegativeKeys": failed_negative,
+            "positivePassed": sum(value is True for value in positive.values()),
+            "positiveTotal": len(positive),
+            "negativePassed": sum(value is True for value in negative.values()),
+            "negativeTotal": len(negative),
+            "trainerStartupPreflight": {"exitCode": trainer_preflight.returncode, "stdout": trainer_preflight.stdout, "stderr": trainer_preflight.stderr},
+            "checkpointRead": False,
+            "optimizerCreated": False,
+            "gpuUsed": False,
+            "trainingStarted": False,
+        }
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        write_json_exclusive(args.report, report)
+        if failed_positive or failed_negative:
+            raise ValueError(f"fixed preview schedule CPU regression failed: {failed_positive}:{failed_negative}")
+        support = {
+            "schemaVersion": "ai-painter-stage4-fixed-preview-schedule-support-contract-v1",
+            "status": "stage4_dual_identity_model_smoke_cpu_support_verified_inactive",
+            **timestamps("recordedAt"),
+            "implementationAuthorization": binding(authorization_path),
+            "implementationConsumption": binding(implementation_consumption_path),
+            "scheduledPreviewEpochs": FIXED_EPOCHS,
+            "nonPreviewEpochBehavior": "explicit_skip_without_preview_artifact_requirement",
+            "gpuAuthorizationIdentity": "separate_not_yet_established",
+            "modelStructureChanged": False,
+            "lossChanged": False,
+            "datasetChanged": False,
+            "machineReviewThresholdsChanged": False,
+        }
+        write_json_exclusive(args.support_contract, support)
+        attestation = {
+            "schemaVersion": "ai-painter-stage4-dual-identity-implementation-attestation-v1",
+            "status": "stage4_dual_identity_implementation_code_attested_cpu_pending",
+            **timestamps("recordedAt"),
+            "implementationAuthorizationPath": project_path(authorization_path),
+            "implementationAuthorizationSha256": authorization_sha256,
+            "implementationConsumptionPath": project_path(implementation_consumption_path),
+            "implementationConsumptionSha256": implementation_consumption_sha256,
+            "runnerPath": project_path(SMOKE_RUNNER_PATH),
+            "runnerSha256": sha256_file(resolve(SMOKE_RUNNER_PATH)),
+            "trainerPath": project_path(TRAINER_PATH),
+            "trainerSha256": sha256_file(resolve(TRAINER_PATH)),
+            "cpuCheckerPath": project_path(CPU_CHECKER_PATH),
+            "cpuCheckerSha256": sha256_file(resolve(CPU_CHECKER_PATH)),
+            "cpuReportPath": project_path(args.report),
+            "cpuReportSha256": sha256_file(report_path),
+            "supportContractPath": project_path(args.support_contract),
+            "supportContractSha256": sha256_file(support_path),
+            "checkpointRead": False,
+            "optimizerCreated": False,
+            "gpuUsed": False,
+            "trainingStarted": False,
+        }
+        write_json_exclusive(args.implementation_attestation, attestation)
+        terminal = {
+            "schemaVersion": "ai-painter-stage4-fixed-preview-schedule-cpu-terminal-v1",
+            "status": "stage4_dual_identity_model_smoke_cpu_gate_passed_closed",
+            **timestamps("recordedAt"),
+            "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+            "reportPath": project_path(args.report),
+            "reportSha256": sha256_file(report_path),
+            "supportContractPath": project_path(args.support_contract),
+            "supportContractSha256": sha256_file(support_path),
+            "implementationAttestationPath": project_path(args.implementation_attestation),
+            "implementationAttestationSha256": sha256_file(attestation_path),
+            "nextAction": "establish_new_independent_gpu_execution_authorization_then_run_resource_preflights",
+            "checkpointRead": False,
+            "optimizerCreated": False,
+            "gpuUsed": False,
+            "trainingStarted": False,
+        }
+        write_json_exclusive(args.terminal, terminal)
+        print(json.dumps({**terminal, "terminalPath": project_path(args.terminal), "terminalSha256": sha256_file(terminal_path)}, ensure_ascii=False, indent=2))
+        return 0
+    except Exception as error:
+        if not terminal_path.exists():
+            terminal_path.parent.mkdir(parents=True, exist_ok=True)
+            write_json_exclusive(args.terminal, {
+                "schemaVersion": "ai-painter-stage4-fixed-preview-schedule-cpu-terminal-v1",
+                "status": "stage4_fixed_preview_schedule_cpu_gate_failed_closed",
+                **timestamps("recordedAt"),
+                "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+                "failureType": type(error).__name__,
+                "failureMessage": str(error),
+                "traceback": traceback.format_exc(),
+                "reportPath": project_path(args.report) if report_path.exists() else None,
+                "reportSha256": sha256_file(report_path) if report_path.exists() else None,
+                "checkpointRead": False,
+                "optimizerCreated": False,
+                "gpuUsed": False,
+                "trainingStarted": False,
+            })
+        print(json.dumps(read_json(terminal_path), ensure_ascii=False, indent=2))
+        return 1
+
+
+def run_dynamic_validation_kernel_model_smoke_contract_regression(args) -> int:
+    candidate_authorization = read_json(resolve(args.smoke_authorization)) if args.smoke_authorization is not None else {}
+    if candidate_authorization.get("schemaVersion") == DUAL_IDENTITY_IMPLEMENTATION_AUTHORIZATION_SCHEMA:
+        if candidate_authorization.get("implementationActions") == FIXED_PREVIEW_SCHEDULE_IMPLEMENTATION_ACTIONS:
+            return run_fixed_preview_schedule_contract_regression(args, candidate_authorization)
+        return run_dual_identity_validation_kernel_model_smoke_contract_regression(args, candidate_authorization)
+    if (
+        args.report is None
+        or args.support_contract is None
+        or args.terminal is None
+        or args.implementation_attestation is None
+        or args.authorization_sha256 is None
+    ):
+        raise ValueError("dynamic validation kernel Smoke CPU mode requires authorization identity and all evidence output paths")
+    authorization_path = resolve(args.smoke_authorization)
+    expected_authorization_sha256 = args.authorization_sha256.lower()
+    report_path = resolve(args.report)
+    terminal_path = resolve(args.terminal)
+    support_path = resolve(args.support_contract)
+    attestation_path = resolve(args.implementation_attestation)
+    try:
+        if sha256_file(authorization_path) != expected_authorization_sha256:
+            raise ValueError("dynamic validation kernel authorization SHA-256 changed")
+        authorization = read_json(authorization_path)
+        if authorization.get("schemaVersion") != "ai-painter-owner-action-request-v1" or authorization.get("status") != "resolved_owner_authorized":
+            raise ValueError("dynamic validation kernel authorization schema or status invalid")
+        request_id = authorization.get("requestId")
+        scope = authorization.get("ownerDecision", {}).get("scope")
+        if not request_id or authorization.get("ownerDecision", {}).get("commandRef") != request_id or not scope:
+            raise ValueError("dynamic validation kernel command identity invalid")
+        split_action_contract = "implementationActions" in authorization or "executionActions" in authorization
+        if split_action_contract:
+            if authorization.get("implementationActions") != DYNAMIC_VALIDATION_KERNEL_IMPLEMENTATION_ACTIONS:
+                raise ValueError("dynamic validation kernel exact implementation action contract invalid")
+            if authorization.get("executionActions") != DYNAMIC_VALIDATION_KERNEL_EXECUTION_ACTIONS:
+                raise ValueError("dynamic validation kernel exact execution action contract invalid")
+            if set(authorization["implementationActions"]) & set(authorization["executionActions"]):
+                raise ValueError("dynamic validation kernel implementation and execution actions overlap")
+        elif authorization.get("authorizedActions") != DYNAMIC_VALIDATION_KERNEL_ACTIONS:
+            raise ValueError("dynamic validation kernel exact legacy action contract invalid")
+        expected_outputs = {
+            report_path: authorization.get("output", {}).get("cpuReportPath"),
+            support_path: authorization.get("output", {}).get("supportContractPath"),
+            attestation_path: authorization.get("output", {}).get("implementationAttestationPath"),
+            terminal_path: authorization.get("output", {}).get("cpuTerminalPath"),
+        }
+        for actual, expected in expected_outputs.items():
+            if project_path(actual) != project_path(Path(expected or "missing")):
+                raise ValueError("dynamic validation kernel CPU evidence output differs from immutable authorization")
+            if actual.exists():
+                raise FileExistsError(f"dynamic validation kernel CPU evidence already exists: {project_path(actual)}")
+        for key in (
+            "previousFailureTerminal", "previousCpuRegressionReport" if split_action_contract else "previousCpuAuthorizationGateReport", "trainerFrozen",
+            "authorizationPolicyFrozen", "executionGrantFrozen", "modeRegistryFrozen",
+            "phase0SuccessTerminal", "v9InactiveConfig", "datasetManifest", "datasetSourceIndex",
+            "projectAutoencoderCheckpoint", "conditionAlignmentAuditor", "professionalAestheticAuditor",
+            "windowsSafePreviewNormalizer", "gpuResourceGate",
+        ):
+            value = authorization.get("bindings", {}).get(key, {})
+            if not value.get("path") or sha256_file(resolve(Path(value["path"]))) != value.get("sha256"):
+                raise ValueError(f"dynamic validation kernel binding changed: {key}")
+        implementation_consumption_path = resolve(Path(authorization.get("output", {}).get("implementationConsumptionPath", "missing")))
+        implementation_consumption = read_json(implementation_consumption_path)
+        if (
+            implementation_consumption.get("oneTimeConsumption") is not True
+            or implementation_consumption.get("authorizationSha256") != expected_authorization_sha256
+            or implementation_consumption.get("commandRef") != request_id
+            or implementation_consumption.get("scope") != scope
+        ):
+            raise ValueError("dynamic validation kernel implementation consumption invalid")
+
+        config = read_json(resolve(Path(authorization["bindings"]["v9InactiveConfig"]["path"])))
+        package = read_json(resolve(Path(authorization["bindings"]["datasetManifest"]["path"])))
+        base_positive, base_negative, evidence = run_regressions(config, package)
+        active_config = deepcopy(config)
+        mode = FORMAL_MODE_REGISTRY.resolve_mode_id("v9_stage4_validation_kernel_smoke")
+        active_config["training"]["trainingAuthorizationStatus"] = mode.authorization_status
+        active_config["training"]["v9Stage4SingleSampleSmokeContract"]["status"] = "active_owner_authorized_single_execution"
+        active_config["training"]["ownerTrainingAuthorization"] = {
+            "authorizationId": request_id,
+            "authorizationPath": project_path(authorization_path),
+            "authorizationSha256": expected_authorization_sha256,
+            "executionConsumptionPath": authorization["output"]["smokeConsumptionPath"],
+            "executionConsumptionSha256": "0" * 64,
+            "status": mode.authorization_status,
+            "checkpointLoadingAuthorized": True,
+            "optimizerCreationAuthorized": True,
+            "backwardExecutionAuthorized": True,
+            "modelWeightMutationAuthorized": True,
+            "gpuTrainingAuthorizedNow": True,
+            "singleSampleGpuOverfitSmokeAuthorized": True,
+            "fullTrainingAuthorized": False,
+            "stage1Authorized": False,
+            "stage2Authorized": False,
+            "strictRevalidationAuthorized": False,
+            "validationAuthorized": False,
+            "formalInferenceAuthorized": False,
+            "checkpointPromotionAuthorized": False,
+            "runtimeFrameAuthorized": False,
+            "worldEntryAuthorized": False,
+            "automaticRetryAuthorized": False,
+        }
+        grant = resolve_stage_execution_grant(active_config, project_root=ROOT, verify_owner_files=False)
+        validated_grant = validate_serialized_execution_grant(grant.as_dict())
+
+        def run_node(candidate: Path, candidate_sha256: str | None) -> subprocess.CompletedProcess[str]:
+            try:
+                candidate_argument = project_path(candidate)
+            except ValueError:
+                candidate_argument = str(candidate)
+            command = [
+                "node", str(resolve(SMOKE_RUNNER_PATH)),
+                "--stage4-validation-kernel-model-smoke",
+                "--gpu-authorization", candidate_argument,
+                "--cpu-contract-only",
+            ]
+            if candidate_sha256 is not None:
+                command.extend(["--gpu-authorization-sha256", candidate_sha256])
+            return subprocess.run(command, cwd=ROOT, capture_output=True, text=True, timeout=120)
+
+        positive_runner = run_node(authorization_path, expected_authorization_sha256)
+        legacy_runner = run_node(resolve(VALIDATION_KERNEL_AUTHORIZATION_PATH), None)
+        negative_results: dict[str, subprocess.CompletedProcess[str]] = {}
+        fixtures_root = resolve(Path(".runtime/ai-painter/cpu-contract-fixtures"))
+        fixtures_root.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="v9-dynamic-auth-", dir=fixtures_root) as fixture_dir_value:
+            fixture_dir = Path(fixture_dir_value)
+
+            def write_fixture(name: str, value: dict) -> tuple[Path, str]:
+                candidate = fixture_dir / name
+                candidate.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                return candidate, sha256_file(candidate)
+
+            negative_results["hashMismatch"] = run_node(authorization_path, "0" * 64)
+            unknown_implementation = deepcopy(authorization)
+            unknown_implementation["implementationActions"]["modifyTrainerNow"] = True
+            unknown_implementation_path, unknown_implementation_sha = write_fixture("unknown-implementation-action.json", unknown_implementation)
+            negative_results["unknownImplementationAction"] = run_node(unknown_implementation_path, unknown_implementation_sha)
+            unknown_execution = deepcopy(authorization)
+            unknown_execution["executionActions"]["startTrainingNow"] = True
+            unknown_execution_path, unknown_execution_sha = write_fixture("unknown-execution-action.json", unknown_execution)
+            negative_results["unknownExecutionAction"] = run_node(unknown_execution_path, unknown_execution_sha)
+            cross_injected = deepcopy(authorization)
+            cross_injected["implementationActions"]["optimizerCreation"] = True
+            cross_injected_path, cross_injected_sha = write_fixture("cross-injected-action.json", cross_injected)
+            negative_results["crossInjectedAction"] = run_node(cross_injected_path, cross_injected_sha)
+            wrong_scope = deepcopy(authorization)
+            wrong_scope["ownerDecision"]["scope"] = "forged_scope"
+            scope_path, scope_sha = write_fixture("wrong-scope.json", wrong_scope)
+            negative_results["scopeMismatch"] = run_node(scope_path, scope_sha)
+            forbidden_open = deepcopy(authorization)
+            forbidden_open["executionActions"]["stage4FullTraining"] = True
+            forbidden_path, forbidden_sha = write_fixture("forbidden-open.json", forbidden_open)
+            negative_results["forbiddenAction"] = run_node(forbidden_path, forbidden_sha)
+            reused = deepcopy(authorization)
+            reused["output"]["smokeConsumptionPath"] = authorization["output"]["implementationConsumptionPath"]
+            reused_path, reused_sha = write_fixture("reused-consumption.json", reused)
+            negative_results["reusedConsumption"] = run_node(reused_path, reused_sha)
+            with tempfile.TemporaryDirectory(prefix="v9-external-auth-") as external_dir:
+                external_path = Path(external_dir) / "external-auth.json"
+                external_path.write_text(json.dumps(authorization, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+                negative_results["externalPathInjection"] = run_node(external_path, sha256_file(external_path))
+
+        positive = {
+            "boundEvidenceHashesVerified": True,
+            "legacyV9PositiveRegressionPreserved": all(base_positive.values()),
+            "legacyV9NegativeRegressionPreserved": all(base_negative.values()),
+            "newOwnerAuthorizationReachesSharedRunnerPolicy": positive_runner.returncode == 0 and "authorization_contract_valid_cpu_only" in positive_runner.stdout,
+            "legacyValidationKernelAuthorizationStillAccepted": legacy_runner.returncode == 0 and "authorization_contract_valid_cpu_only" in legacy_runner.stdout,
+            "modeRegistryResolvesValidationKernelSmoke": mode.execution_kind == "single_sample_smoke" and mode.sample_split == "validation",
+            "executionGrantIssuedAndValidated": validated_grant.get("decisionDigest") == grant.decision_digest,
+            "executionGrantAllowsBoundSmokeActions": all(grant.permits(action) for action in (ExecutionAction.SELECT_BOUND_SAMPLE, ExecutionAction.LOAD_AUTOENCODER, ExecutionAction.CREATE_OPTIMIZER, ExecutionAction.EXECUTE_BACKWARD, ExecutionAction.MUTATE_MODEL_WEIGHTS, ExecutionAction.WRITE_SMOKE_CHECKPOINT)),
+            "executionGrantDeniesLaterStagesAndRuntime": all(not grant.permits(action) for action in (ExecutionAction.RUN_STAGE0, ExecutionAction.RUN_STAGE1, ExecutionAction.RUN_STAGE2, ExecutionAction.RUN_STRICT_REVALIDATION, ExecutionAction.RUN_FORMAL_INFERENCE, ExecutionAction.PROMOTE_CHECKPOINT, ExecutionAction.CREATE_RUNTIME_FRAME, ExecutionAction.ENTER_WORLD, ExecutionAction.AUTOMATIC_RETRY)),
+            "sample194RemainsValidationWithExpectedSplit": evidence.get("actualSplitCounts") == EXPECTED_COUNTS and evidence.get("sample194Occurrences") == ["validation"],
+        }
+        negative = {
+            "authorizationHashMismatchRejected": negative_results["hashMismatch"].returncode != 0 and "authorization_sha256_invalid" in negative_results["hashMismatch"].stderr,
+            "unknownImplementationActionRejected": negative_results["unknownImplementationAction"].returncode != 0 and "exact_implementation_action_contract_invalid" in negative_results["unknownImplementationAction"].stderr,
+            "unknownExecutionActionRejected": negative_results["unknownExecutionAction"].returncode != 0 and "exact_execution_action_contract_invalid" in negative_results["unknownExecutionAction"].stderr,
+            "implementationExecutionActionCrossInjectionRejected": negative_results["crossInjectedAction"].returncode != 0 and "implementation_execution_action_overlap" in negative_results["crossInjectedAction"].stderr,
+            "scopeMismatchRejected": negative_results["scopeMismatch"].returncode != 0,
+            "forbiddenActionActivationRejected": negative_results["forbiddenAction"].returncode != 0 and "exact_execution_action_contract_invalid" in negative_results["forbiddenAction"].stderr,
+            "reusedConsumptionRejected": negative_results["reusedConsumption"].returncode != 0 and "already_consumed" in negative_results["reusedConsumption"].stderr,
+            "externalAbsolutePathInjectionRejected": negative_results["externalPathInjection"].returncode != 0 and "path_outside_project" in negative_results["externalPathInjection"].stderr,
+        }
+        failed_positive = [key for key, value in positive.items() if value is not True]
+        failed_negative = [key for key, value in negative.items() if value is not True]
+        report = {
+            "schemaVersion": "ai-painter-stage4-dynamic-owner-binding-model-smoke-cpu-regression-report-v1",
+            "status": "stage4_dynamic_owner_binding_model_smoke_cpu_regression_passed" if not failed_positive and not failed_negative else "stage4_dynamic_owner_binding_model_smoke_cpu_regression_failed_closed",
+            **timestamps("recordedAt"),
+            "authorization": binding(authorization_path),
+            "implementationConsumption": binding(implementation_consumption_path),
+            "phase0Terminal": binding(Path(authorization["bindings"]["phase0SuccessTerminal"]["path"])),
+            "positive": positive,
+            "negative": negative,
+            "failedPositiveKeys": failed_positive,
+            "failedNegativeKeys": failed_negative,
+            "positivePassed": sum(value is True for value in positive.values()),
+            "positiveTotal": len(positive),
+            "negativePassed": sum(value is True for value in negative.values()),
+            "negativeTotal": len(negative),
+            "runnerCpuContract": {"exitCode": positive_runner.returncode, "stdout": positive_runner.stdout, "stderr": positive_runner.stderr},
+            "legacyRunnerCpuContract": {"exitCode": legacy_runner.returncode, "stdout": legacy_runner.stdout, "stderr": legacy_runner.stderr},
+            "negativeRunnerContracts": {key: {"exitCode": value.returncode, "stdout": value.stdout, "stderr": value.stderr} for key, value in negative_results.items()},
+            "checkpointRead": False,
+            "optimizerCreated": False,
+            "gpuUsed": False,
+            "trainingStarted": False,
+        }
+        write_json_exclusive(args.report, report)
+        if failed_positive or failed_negative:
+            raise ValueError(f"dynamic validation kernel CPU regression failed: {failed_positive}:{failed_negative}")
+        support = {
+            "schemaVersion": "ai-painter-stage4-dynamic-owner-binding-model-smoke-support-contract-v1",
+            "status": "stage4_dynamic_owner_binding_model_smoke_cpu_support_verified_inactive",
+            **timestamps("recordedAt"),
+            "authorization": binding(authorization_path),
+            "policyVersion": STAGE_CONTROL_POLICY_VERSION,
+            "modeId": mode.mode_id,
+            "executionGrantDecisionDigest": grant.decision_digest,
+            "sampleId": SAMPLE_ID,
+            "sampleSplit": "validation",
+            "seed": 20263722,
+            "requiredBoundarySides": ["west"],
+            "epochCount": 30,
+            "previewEpochs": FIXED_EPOCHS,
+            "perPreviewReproductionRequired": True,
+            "machineReviewThresholdsChanged": False,
+            "phase0CheckpointUsedAsInitialization": False,
+        }
+        write_json_exclusive(args.support_contract, support)
+        attestation = {
+            "schemaVersion": "ai-painter-stage4-validation-kernel-model-smoke-implementation-attestation-v1",
+            "status": "stage4_validation_kernel_model_smoke_implementation_cpu_verified",
+            **timestamps("recordedAt"),
+            "authorizationPath": project_path(authorization_path),
+            "authorizationSha256": expected_authorization_sha256,
+            "phase0TerminalPath": authorization["bindings"]["phase0SuccessTerminal"]["path"],
+            "phase0TerminalSha256": authorization["bindings"]["phase0SuccessTerminal"]["sha256"],
+            "trainerPath": project_path(TRAINER_PATH),
+            "trainerSha256": sha256_file(resolve(TRAINER_PATH)),
+            "runnerPath": project_path(SMOKE_RUNNER_PATH),
+            "runnerSha256": sha256_file(resolve(SMOKE_RUNNER_PATH)),
+            "cpuCheckerPath": project_path(CPU_CHECKER_PATH),
+            "cpuCheckerSha256": sha256_file(resolve(CPU_CHECKER_PATH)),
+            "cpuReportPath": project_path(args.report),
+            "cpuReportSha256": sha256_file(report_path),
+            "supportContractPath": project_path(args.support_contract),
+            "supportContractSha256": sha256_file(support_path),
+            "gpuStarted": False,
+            "trainingStarted": False,
+        }
+        write_json_exclusive(args.implementation_attestation, attestation)
+        terminal = {
+            "schemaVersion": "ai-painter-stage4-dynamic-owner-binding-model-smoke-cpu-terminal-v1",
+            "status": "stage4_dynamic_owner_binding_model_smoke_cpu_gate_passed_closed",
+            **timestamps("recordedAt"),
+            "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+            "reportPath": project_path(args.report),
+            "reportSha256": sha256_file(report_path),
+            "supportContractPath": project_path(args.support_contract),
+            "supportContractSha256": sha256_file(support_path),
+            "implementationAttestationPath": project_path(args.implementation_attestation),
+            "implementationAttestationSha256": sha256_file(attestation_path),
+            "nextAction": "execute_python_cuda_resource_disk_preflights_then_one_v9_30_epoch_model_smoke",
+            "checkpointRead": False,
+            "optimizerCreated": False,
+            "gpuUsed": False,
+            "trainingStarted": False,
+        }
+        write_json_exclusive(args.terminal, terminal)
+        print(json.dumps({**terminal, "terminalPath": project_path(args.terminal), "terminalSha256": sha256_file(terminal_path)}, ensure_ascii=False, indent=2))
+        return 0
+    except Exception as error:
+        if not terminal_path.exists():
+            write_json_exclusive(args.terminal, {
+                "schemaVersion": "ai-painter-stage4-dynamic-owner-binding-model-smoke-cpu-terminal-v1",
+                "status": "stage4_dynamic_owner_binding_model_smoke_cpu_gate_failed_closed",
+                **timestamps("recordedAt"),
+                "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+                "failureType": type(error).__name__,
+                "failureMessage": str(error),
+                "traceback": traceback.format_exc(),
+                "reportPath": project_path(args.report) if report_path.exists() else None,
+                "reportSha256": sha256_file(report_path) if report_path.exists() else None,
+                "checkpointRead": False,
+                "optimizerCreated": False,
+                "gpuUsed": False,
+                "trainingStarted": False,
+            })
         print(json.dumps(read_json(terminal_path), ensure_ascii=False, indent=2))
         return 1
 

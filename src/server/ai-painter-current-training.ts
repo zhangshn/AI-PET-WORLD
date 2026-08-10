@@ -118,6 +118,8 @@ const validationKernelModelSmokeTerminalPath =
   ".runtime/ai-painter/stage4-validation-kernel-closures/20260810-023613404/model-smoke/model-smoke-20260810-validated-kernel/finalization/phase-terminal.json";
 const validationKernelImplementationConsumptionPath =
   ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-validation-kernel-through-stage5-20260810/implementation-consumption.json";
+const stageControlConvergenceTerminalPath =
+  ".runtime/ai-painter/stage-control-convergence/20260810-182526279/cycles/cycle-3-20260810-185600000/phase-terminal.json";
 const uniqueModulePlanPath =
   "docs/game-world-generation/CURRENT_EXECUTION_GUIDE_20260710.md";
 const expectedSplits = {
@@ -772,6 +774,8 @@ async function readCurrentR5Stage4TaskCapsule(): Promise<AiPainterTaskCapsule> {
     ? ((await readJson(executionConsumptionPath)) ?? {})
     : {};
   const migrationRegistry = (await readJson(migrationRegistryPath)) ?? {};
+  const controlConvergence =
+    (await readJson(stageControlConvergenceTerminalPath)) ?? {};
   const planText = await readFile(resolveInsideRoot(uniqueModulePlanPath), "utf8").catch(
     () => "",
   );
@@ -862,6 +866,15 @@ async function readCurrentR5Stage4TaskCapsule(): Promise<AiPainterTaskCapsule> {
       recordedAtUtc: text(migrationRegistry.updatedAtUtc),
       recordedAtAsiaShanghai: text(migrationRegistry.updatedAtAsiaShanghai),
     },
+    {
+      kind: "stage_control_convergence",
+      labelZh: "Stage3/Stage4控制层结构收敛终态",
+      path: stageControlConvergenceTerminalPath,
+      sha256: await sha256(stageControlConvergenceTerminalPath),
+      expectedSha256: null,
+      recordedAtUtc: text(controlConvergence.recordedAtUtc),
+      recordedAtAsiaShanghai: text(controlConvergence.recordedAtAsiaShanghai),
+    },
   ];
   return projectR5Stage4TaskCapsule({
     terminal,
@@ -870,6 +883,7 @@ async function readCurrentR5Stage4TaskCapsule(): Promise<AiPainterTaskCapsule> {
     authorization,
     evidence: evidenceInput,
     migrationRegistryStatus: migrationRegistry.status,
+    controlConvergence,
     planEvidenceConfirmed:
       planText.includes("固定总进度为3/5（60%）") &&
       planText.includes("新的分析、候选或执行均需独立明确授权"),
