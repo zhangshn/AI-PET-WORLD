@@ -34,6 +34,21 @@ STRUCTURE_FACT_FIRST_STAGE4_INACTIVE_STATUS = (
 STRUCTURE_FACT_FIRST_STAGE4_PHASE0_STATUS = (
     "owner_authorized_stage4_structure_fact_first_phase0_engineering"
 )
+STRUCTURE_FACT_FIRST_STAGE4_SMOKE_STATUS = (
+    "owner_authorized_stage4_structure_fact_first_single_sample_gpu_smoke"
+)
+CONDITION_PRESERVING_SEMANTIC_RENDERER_STAGE4_INACTIVE_STATUS = (
+    "stage4_condition_preserving_semantic_renderer_cpu_supported_inactive"
+)
+CONDITION_PRESERVING_SEMANTIC_RENDERER_STAGE4_SMOKE_STATUS = (
+    "owner_authorized_stage4_condition_preserving_semantic_renderer_single_sample_gpu_smoke"
+)
+FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_INACTIVE_STATUS = (
+    "stage4_fact_conditioned_semantic_mixture_decoder_cpu_supported_inactive"
+)
+FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_STATUS = (
+    "owner_authorized_stage4_fact_conditioned_semantic_mixture_single_sample_gpu_smoke"
+)
 SYNTHETIC_EXTENSION_TEST_STATUS = "synthetic_inactive_stage4_extension_contract_test_only"
 
 
@@ -90,6 +105,8 @@ _V7 = "multiscale_condition_unet_v7"
 _V8 = "multiscale_condition_unet_v8_stage4_decoded_alignment"
 _V9 = "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment"
 _STRUCTURE_FACT_FIRST = "stage4_structure_fact_first_dual_stage_generator_v1"
+_CONDITION_PRESERVING_SEMANTIC_RENDERER = "stage4_condition_preserving_semantic_renderer_v1"
+_FACT_CONDITIONED_SEMANTIC_MIXTURE = "stage4_fact_conditioned_semantic_mixture_decoder_v1"
 
 
 FORMAL_MODE_REGISTRY = ModeRegistry(
@@ -124,6 +141,56 @@ FORMAL_MODE_REGISTRY = ModeRegistry(
             4,
             "phase0_engineering",
             "structure_fact_first_phase0_adapter",
+            "validation",
+            True,
+        ),
+        ModeSpec(
+            "structure_fact_first_stage4_smoke",
+            STRUCTURE_FACT_FIRST_STAGE4_SMOKE_STATUS,
+            _STRUCTURE_FACT_FIRST,
+            4,
+            "single_sample_smoke",
+            "structure_fact_first_stage4_smoke_adapter",
+            "validation",
+            True,
+        ),
+        ModeSpec(
+            "condition_preserving_semantic_renderer_stage4_inactive",
+            CONDITION_PRESERVING_SEMANTIC_RENDERER_STAGE4_INACTIVE_STATUS,
+            _CONDITION_PRESERVING_SEMANTIC_RENDERER,
+            4,
+            "cpu_inactive",
+            "condition_preserving_semantic_renderer_stage4_adapter",
+            "validation",
+            False,
+        ),
+        ModeSpec(
+            "condition_preserving_semantic_renderer_stage4_smoke",
+            CONDITION_PRESERVING_SEMANTIC_RENDERER_STAGE4_SMOKE_STATUS,
+            _CONDITION_PRESERVING_SEMANTIC_RENDERER,
+            4,
+            "single_sample_smoke",
+            "condition_preserving_semantic_renderer_stage4_smoke_adapter",
+            "validation",
+            True,
+        ),
+        ModeSpec(
+            "fact_conditioned_semantic_mixture_stage4_inactive",
+            FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_INACTIVE_STATUS,
+            _FACT_CONDITIONED_SEMANTIC_MIXTURE,
+            4,
+            "cpu_inactive",
+            "fact_conditioned_semantic_mixture_stage4_adapter",
+            "validation",
+            False,
+        ),
+        ModeSpec(
+            "fact_conditioned_semantic_mixture_stage4_smoke",
+            FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_STATUS,
+            _FACT_CONDITIONED_SEMANTIC_MIXTURE,
+            4,
+            "single_sample_smoke",
+            "fact_conditioned_semantic_mixture_stage4_smoke_adapter",
             "validation",
             True,
         ),

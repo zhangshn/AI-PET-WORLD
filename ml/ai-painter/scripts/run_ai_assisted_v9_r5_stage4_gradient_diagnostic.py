@@ -71,6 +71,27 @@ STRUCTURE_FACT_CHANNELS = (
     "object_tree", "object_rock", "object_vegetation",
 )
 STRUCTURE_FACT_STAGE_B_SCALES = ("level0", "level1", "middle", "up1", "up0")
+SEMANTIC_MIXTURE_AUTHORIZATION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-fact-conditioned-semantic-mixture-readonly-gpu-diagnostic-20260812-010708248/"
+    "authorization.json"
+)
+SEMANTIC_MIXTURE_IMPLEMENTATION_CONSUMPTION_PATH = (
+    SEMANTIC_MIXTURE_AUTHORIZATION_PATH.parent / "implementation-consumption.json"
+)
+SEMANTIC_MIXTURE_REQUEST_ID = (
+    "owner-authorized-stage4-fact-conditioned-semantic-mixture-readonly-gpu-diagnostic-"
+    "20260812-010708248"
+)
+SEMANTIC_MIXTURE_COMMAND_REF = (
+    "stage4-fact-conditioned-semantic-mixture-readonly-gpu-diagnostic-20260812-010708248"
+)
+SEMANTIC_MIXTURE_SCOPE = (
+    "implement_support_preflight_and_execute_one_fact_conditioned_semantic_mixture_"
+    "readonly_gpu_causal_gradient_diagnostic_only"
+)
+SEMANTIC_MIXTURE_ARCHITECTURE = "stage4_fact_conditioned_semantic_mixture_decoder_v1"
+SEMANTIC_MIXTURE_IDENTITIES = ("route", "footprints", "tree", "rock", "vegetation")
 
 
 def main() -> int:
@@ -89,9 +110,13 @@ def main() -> int:
             raise ValueError("cpu_contract_check_must_not_receive_execution_paths")
         print(json.dumps({
             "status": (
-                "structure_fact_first_gpu_diagnostic_authorization_contract_valid_cpu_only"
-                if is_structure_fact_authorization(authorization)
-                else "v9_gpu_diagnostic_authorization_contract_valid_cpu_only"
+                "fact_conditioned_semantic_mixture_gpu_diagnostic_authorization_contract_valid_cpu_only"
+                if is_semantic_mixture_authorization(authorization)
+                else (
+                    "structure_fact_first_gpu_diagnostic_authorization_contract_valid_cpu_only"
+                    if is_structure_fact_authorization(authorization)
+                    else "v9_gpu_diagnostic_authorization_contract_valid_cpu_only"
+                )
             ),
             "requestId": authorization_request_id(authorization),
             "sampleId": SAMPLE_ID,
@@ -110,6 +135,24 @@ def main() -> int:
 
 def validate_authorization(path: Path) -> dict:
     resolved = resolve(path)
+    if resolved == resolve(SEMANTIC_MIXTURE_AUTHORIZATION_PATH):
+        authorization = read_json(resolved)
+        validate_authorization_document(authorization, verify_bindings=True)
+        consumption = read_json(resolve(SEMANTIC_MIXTURE_IMPLEMENTATION_CONSUMPTION_PATH))
+        if (
+            consumption.get("status")
+            != "stage4_fact_conditioned_semantic_mixture_readonly_gpu_diagnostic_implementation_authorization_atomically_consumed"
+            or consumption.get("requestId") != SEMANTIC_MIXTURE_REQUEST_ID
+            or consumption.get("commandRef") != SEMANTIC_MIXTURE_COMMAND_REF
+            or consumption.get("scope") != SEMANTIC_MIXTURE_SCOPE
+            or consumption.get("authorizationSha256") != sha256_file(resolved)
+            or consumption.get("oneTimeConsumption") is not True
+        ):
+            raise ValueError("semantic_mixture_diagnostic_implementation_consumption_invalid")
+        authorization["_diagnosticMode"] = "fact_conditioned_semantic_mixture"
+        authorization["_authorizationPath"] = project_path(resolved)
+        authorization["_authorizationSha256"] = sha256_file(resolved)
+        return authorization
     if resolved == resolve(STRUCTURE_FACT_AUTHORIZATION_PATH):
         authorization = read_json(resolved)
         validate_authorization_document(authorization, verify_bindings=True)
@@ -151,6 +194,11 @@ def validate_authorization(path: Path) -> dict:
 
 
 def validate_authorization_document(authorization: dict, verify_bindings: bool) -> None:
+    if authorization.get("schemaVersion") == (
+        "ai-painter-owner-stage4-fact-conditioned-semantic-mixture-readonly-gpu-diagnostic-v1"
+    ):
+        validate_semantic_mixture_authorization_document(authorization, verify_bindings)
+        return
     if authorization.get("schemaVersion") == "ai-painter-owner-stage4-structure-fact-first-gradient-diagnostic-gpu-authorization-v1":
         validate_structure_fact_authorization_document(authorization, verify_bindings)
         return
@@ -237,6 +285,111 @@ def validate_authorization_document(authorization: dict, verify_bindings: bool) 
         or config.get("denoiserArchitecture") != expected_identity["architectureId"]
     ):
         raise ValueError("v9_diagnostic_cpu_prerequisite_not_successful")
+    trainer.validate_training_inputs(config, read_json(resolve(DATASET_PATH)))
+
+
+def validate_semantic_mixture_authorization_document(
+    authorization: dict, verify_bindings: bool,
+) -> None:
+    if (
+        authorization.get("status") != "owner_authorized_unconsumed"
+        or authorization.get("requestId") != SEMANTIC_MIXTURE_REQUEST_ID
+        or authorization.get("commandRef") != SEMANTIC_MIXTURE_COMMAND_REF
+        or authorization.get("scope") != SEMANTIC_MIXTURE_SCOPE
+    ):
+        raise ValueError("semantic_mixture_diagnostic_owner_identity_invalid")
+    identity = authorization.get("taskIdentity", {})
+    expected_identity = {
+        "architectureId": SEMANTIC_MIXTURE_ARCHITECTURE,
+        "sampleId": SAMPLE_ID,
+        "sampleSplit": SAMPLE_SPLIT,
+        "seed": SEED,
+        "timestep": TIMESTEP,
+        "resolution": {"width": IMAGE_SIZE[0], "height": IMAGE_SIZE[1]},
+        "requiredBoundarySides": ["west"],
+        "expertIdentities": list(SEMANTIC_MIXTURE_IDENTITIES),
+        "diagnosticManifestMetricCount": 17,
+        "denoiserInitialization": "fixed_random_seed_20263722",
+        "autoencoderState": "bound_project_checkpoint_loaded_and_frozen",
+    }
+    if identity != expected_identity:
+        raise ValueError("semantic_mixture_diagnostic_task_identity_invalid")
+    if authorization.get("implementationActions") != {
+        "extendExistingGradientDiagnosticRunner": True,
+        "extendExistingCpuChecker": True,
+        "cpuPositiveNegativeRegression": True,
+        "realPythonPreflight": True,
+        "cudaResourceAndDiskPreflight": True,
+    }:
+        raise ValueError("semantic_mixture_diagnostic_implementation_actions_invalid")
+    if authorization.get("executionActions") != {
+        "projectAutoencoderCheckpointReadAndLoadFrozen": True,
+        "fixedRandomDenoiserInitialization": True,
+        "singleSampleValidationRead": True,
+        "singleReadonlyCudaForward": True,
+        "torchAutogradGradInspection": True,
+        "fiveExpertCausalAndGradientVerification": True,
+        "exactSeventeenDiagnosticManifestExport": True,
+        "cudaTelemetryWrite": True,
+        "diagnosticReportWrite": True,
+        "terminalEvidenceWrite": True,
+        "uniquePlanAndTaskCapsuleSync": True,
+        "oldDenoiserCheckpointReadOrLoad": False,
+        "optimizerCreation": False,
+        "backwardMethodExecution": False,
+        "modelWeightModification": False,
+        "checkpointWrite": False,
+        "smoke": False,
+        "stage4FullTraining": False,
+        "stage5StrictRevalidation": False,
+        "formalInference": False,
+        "checkpointPromotion": False,
+        "runtimeFrame": False,
+        "worldEntry": False,
+        "automaticRetry": False,
+    }:
+        raise ValueError("semantic_mixture_diagnostic_execution_actions_invalid")
+    if authorization.get("failurePolicy") != {
+        "stopImmediately": True, "automaticRetry": False, "preserveEvidence": True,
+    }:
+        raise ValueError("semantic_mixture_diagnostic_failure_policy_invalid")
+    if authorization.get("implementationBefore") != {
+        "runner": {
+            "path": "ml/ai-painter/scripts/run_ai_assisted_v9_r5_stage4_gradient_diagnostic.py",
+            "sha256": "cec40d45ae5b3874d1a9e39ba153a303bbcbcff485ad22a9c12bc52de95b45fc",
+        },
+        "cpuChecker": {
+            "path": "ml/ai-painter/scripts/check_ai_assisted_v9_r5_stage4_gradient_diagnostic_cpu.py",
+            "sha256": "645e972999178705749284f800f2cb415787587a1d798d2625ea84c52d299b82",
+        },
+    }:
+        raise ValueError("semantic_mixture_diagnostic_implementation_before_invalid")
+    if not verify_bindings:
+        return
+    required_bindings = (
+        "cpuTerminal", "inactiveConfig", "cpuReport", "supportContract",
+        "ownerActionRequest", "model", "trainer", "modeRegistry", "datasetManifest",
+        "datasetSourceIndex", "projectAutoencoderCheckpoint",
+    )
+    for key in required_bindings:
+        binding_value = authorization.get("bindings", {}).get(key, {})
+        path = Path(binding_value.get("path", "missing"))
+        if binding_value.get("sha256") != sha256_file(resolve(path)):
+            raise ValueError(f"semantic_mixture_diagnostic_binding_changed:{key}")
+    terminal = read_json(resolve(Path(authorization["bindings"]["cpuTerminal"]["path"])))
+    config = read_json(resolve(Path(authorization["bindings"]["inactiveConfig"]["path"])))
+    report = read_json(resolve(Path(authorization["bindings"]["cpuReport"]["path"])))
+    support = read_json(resolve(Path(authorization["bindings"]["supportContract"]["path"])))
+    if (
+        terminal.get("status")
+        != "stage4_fact_conditioned_semantic_mixture_decoder_cpu_support_completed_inactive_closed"
+        or config.get("denoiserArchitecture") != SEMANTIC_MIXTURE_ARCHITECTURE
+        or report.get("status")
+        != "stage4_fact_conditioned_semantic_mixture_cpu_regression_passed"
+        or support.get("status")
+        != "cpu_support_verified_inactive_not_authorized_for_gpu_or_training"
+    ):
+        raise ValueError("semantic_mixture_diagnostic_cpu_prerequisite_not_successful")
     trainer.validate_training_inputs(config, read_json(resolve(DATASET_PATH)))
 
 
@@ -337,10 +490,15 @@ def validate_implementation_attestation(path: Path | None, authorization: dict) 
     attestation = read_json(expected)
     cpu_report_path = resolve(Path(authorization["implementation"]["cpuReportPath"]))
     structure_mode = is_structure_fact_authorization(authorization)
+    semantic_mixture_mode = is_semantic_mixture_authorization(authorization)
     expected_values = {
         "status": (
-            "structure_fact_first_gpu_diagnostic_implementation_cpu_verified"
-            if structure_mode else "v9_gpu_diagnostic_implementation_cpu_verified"
+            "fact_conditioned_semantic_mixture_gpu_diagnostic_implementation_cpu_verified"
+            if semantic_mixture_mode
+            else (
+                "structure_fact_first_gpu_diagnostic_implementation_cpu_verified"
+                if structure_mode else "v9_gpu_diagnostic_implementation_cpu_verified"
+            )
         ),
         "requestId": authorization_request_id(authorization),
         "authorizationSha256": authorization_sha256(authorization),
@@ -354,8 +512,12 @@ def validate_implementation_attestation(path: Path | None, authorization: dict) 
     cpu_report = read_json(cpu_report_path)
     if (
         cpu_report.get("status") != (
-            "passed_structure_fact_first_readonly_gpu_diagnostic_cpu_authorization_regression"
-            if structure_mode else "passed_v9_readonly_gpu_diagnostic_cpu_authorization_regression"
+            "passed_fact_conditioned_semantic_mixture_readonly_gpu_diagnostic_cpu_authorization_regression"
+            if semantic_mixture_mode
+            else (
+                "passed_structure_fact_first_readonly_gpu_diagnostic_cpu_authorization_regression"
+                if structure_mode else "passed_v9_readonly_gpu_diagnostic_cpu_authorization_regression"
+            )
         )
         or cpu_report.get("failedPositiveKeys") != []
         or cpu_report.get("failedNegativeKeys") != []
@@ -372,14 +534,19 @@ def write_preflight_reports(authorization: dict, attestation: dict, python_path:
     if resolve(python_path).exists() or resolve(resource_path).exists():
         raise FileExistsError("v9_diagnostic_preflight_output_already_exists")
     structure_mode = is_structure_fact_authorization(authorization)
-    config_binding_key = "inactiveConfig" if structure_mode else "v9InactiveConfig"
+    semantic_mixture_mode = is_semantic_mixture_authorization(authorization)
+    config_binding_key = "inactiveConfig" if (structure_mode or semantic_mixture_mode) else "v9InactiveConfig"
     config = read_json(resolve(Path(authorization["bindings"][config_binding_key]["path"])))
     package = read_json(resolve(DATASET_PATH))
     trainer.validate_training_inputs(config, package)
     python_report = {
         "schemaVersion": (
-            "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-python-preflight-v1"
-            if structure_mode else "ai-painter-r5-stage4-v9-gradient-diagnostic-python-preflight-v1"
+            "ai-painter-r5-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-python-preflight-v1"
+            if semantic_mixture_mode
+            else (
+                "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-python-preflight-v1"
+                if structure_mode else "ai-painter-r5-stage4-v9-gradient-diagnostic-python-preflight-v1"
+            )
         ),
         "status": "passed_python_preflight_gpu_not_consumed",
         **timestamps("recordedAt"),
@@ -400,8 +567,12 @@ def write_preflight_reports(authorization: dict, attestation: dict, python_path:
         raise ValueError("v9_diagnostic_disk_budget_insufficient")
     resource_report = {
         "schemaVersion": (
-            "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-resource-preflight-v1"
-            if structure_mode else "ai-painter-r5-stage4-v9-gradient-diagnostic-resource-preflight-v1"
+            "ai-painter-r5-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-resource-preflight-v1"
+            if semantic_mixture_mode
+            else (
+                "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-resource-preflight-v1"
+                if structure_mode else "ai-painter-r5-stage4-v9-gradient-diagnostic-resource-preflight-v1"
+            )
         ),
         "status": "passed_cuda_resource_and_disk_preflight_gpu_not_consumed",
         **timestamps("recordedAt"),
@@ -419,8 +590,12 @@ def write_preflight_reports(authorization: dict, attestation: dict, python_path:
     write_json_exclusive(resource_path, resource_report)
     print(json.dumps({
         "status": (
-            "structure_fact_first_gradient_diagnostic_all_preflights_passed_gpu_not_consumed"
-            if structure_mode else "v9_gradient_diagnostic_all_preflights_passed_gpu_not_consumed"
+            "fact_conditioned_semantic_mixture_gradient_diagnostic_all_preflights_passed_gpu_not_consumed"
+            if semantic_mixture_mode
+            else (
+                "structure_fact_first_gradient_diagnostic_all_preflights_passed_gpu_not_consumed"
+                if structure_mode else "v9_gradient_diagnostic_all_preflights_passed_gpu_not_consumed"
+            )
         ),
         "pythonReport": binding(python_path),
         "resourceReport": binding(resource_path),
@@ -447,14 +622,23 @@ def consume_and_run(authorization_path: Path, authorization: dict, attestation: 
     if consumption_path.exists():
         raise FileExistsError("v9_diagnostic_gpu_authorization_already_consumed")
     structure_mode = is_structure_fact_authorization(authorization)
+    semantic_mixture_mode = is_semantic_mixture_authorization(authorization)
     consumption = {
         "schemaVersion": (
-            "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-gpu-consumption-v1"
-            if structure_mode else "ai-painter-r5-stage4-v9-gradient-diagnostic-gpu-consumption-v1"
+            "ai-painter-r5-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-gpu-consumption-v1"
+            if semantic_mixture_mode
+            else (
+                "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-gpu-consumption-v1"
+                if structure_mode else "ai-painter-r5-stage4-v9-gradient-diagnostic-gpu-consumption-v1"
+            )
         ),
         "status": (
-            "structure_fact_first_readonly_gpu_diagnostic_authorization_atomically_consumed"
-            if structure_mode else "v9_readonly_gpu_diagnostic_authorization_atomically_consumed"
+            "fact_conditioned_semantic_mixture_readonly_gpu_diagnostic_authorization_atomically_consumed"
+            if semantic_mixture_mode
+            else (
+                "structure_fact_first_readonly_gpu_diagnostic_authorization_atomically_consumed"
+                if structure_mode else "v9_readonly_gpu_diagnostic_authorization_atomically_consumed"
+            )
         ),
         "requestId": authorization_request_id(authorization),
         "commandRef": authorization_request_id(authorization),
@@ -479,6 +663,10 @@ def consume_and_run(authorization_path: Path, authorization: dict, attestation: 
 
 
 def run_gpu(authorization: dict, output: Path, consumption_path: Path, python_report: dict, resource_report: dict) -> int:
+    if is_semantic_mixture_authorization(authorization):
+        return run_semantic_mixture_gpu(
+            authorization, output, consumption_path, python_report, resource_report
+        )
     if is_structure_fact_authorization(authorization):
         return run_structure_fact_gpu(
             authorization, output, consumption_path, python_report, resource_report
@@ -725,6 +913,338 @@ def run_gpu(authorization: dict, output: Path, consumption_path: Path, python_re
         terminal = {
             "schemaVersion": "ai-painter-r5-stage4-v9-gradient-diagnostic-terminal-v1",
             "status": "v9_gradient_diagnostic_failed_closed",
+            **timestamps("recordedAt"),
+            "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+            "failureType": type(error).__name__,
+            "failureMessage": str(error),
+            "traceback": traceback.format_exc(),
+            "completedSteps": steps,
+            **state,
+            "automaticRetryStarted": False,
+            "laterExecutionStarted": False,
+        }
+        write_json_exclusive(output / "phase-terminal.json", terminal)
+        print(json.dumps({
+            **terminal,
+            "terminalPath": project_path(output / "phase-terminal.json"),
+            "terminalSha256": sha256_file(output / "phase-terminal.json"),
+        }, ensure_ascii=False, indent=2))
+        return 1
+
+
+def run_semantic_mixture_gpu(
+    authorization: dict,
+    output: Path,
+    consumption_path: Path,
+    python_report: dict,
+    resource_report: dict,
+) -> int:
+    output.mkdir(parents=True, exist_ok=False)
+    started = time.perf_counter()
+    steps = []
+    state = {
+        "autoencoderCheckpointRead": False,
+        "oldDenoiserCheckpointRead": False,
+        "gpuUsed": False,
+        "forwardCompleted": False,
+        "autogradGradCompleted": False,
+        "optimizerCreated": False,
+        "backwardMethodExecuted": False,
+        "modelWeightsModified": False,
+        "checkpointWritten": False,
+        "trainingStarted": False,
+    }
+    try:
+        def step(code: str, details=None):
+            steps.append({
+                "index": len(steps) + 1,
+                "code": code,
+                "details": details or {},
+                **timestamps("completedAt"),
+            })
+            write_json_atomic(output / "step-telemetry.json", {"completedSteps": steps, **state})
+
+        step("gpu_authorization_consumption_validated", {"sha256": sha256_file(consumption_path)})
+        torch.cuda.init()
+        torch.cuda.set_device(0)
+        if torch.cuda.current_device() != 0:
+            raise ValueError("semantic_mixture_diagnostic_cuda_device_zero_not_active")
+        torch.cuda.reset_peak_memory_stats(0)
+        state["gpuUsed"] = True
+        step("cuda_context_initialized_device_zero_confirmed")
+
+        config = read_json(resolve(Path(authorization["bindings"]["inactiveConfig"]["path"])))
+        package = read_json(resolve(DATASET_PATH))
+        trainer.validate_training_inputs(config, package)
+        dataset = AiAssistedConditionalDenoiserDataset(
+            DATASET_PATH, SAMPLE_SPLIT, list(config["conditionChannelOrder"]), IMAGE_SIZE,
+            selection_contract=trainer.conditional_dataset_selection_contract(config),
+        )
+        matches = [index for index, row in enumerate(dataset.rows) if row.get("sampleId") == SAMPLE_ID]
+        if len(matches) != 1:
+            raise ValueError("semantic_mixture_diagnostic_sample194_not_unique_validation")
+        sample = dataset[matches[0]]
+        step("fixed_validation_sample194_loaded", {"sampleId": sample["sampleId"]})
+
+        torch.manual_seed(SEED)
+        torch.cuda.manual_seed_all(SEED)
+        model = build_complete_world_system(config)
+        denoiser_hash_before = state_dict_sha256(model.denoiser.state_dict())
+        expected_autoencoder_sha = authorization["bindings"]["projectAutoencoderCheckpoint"]["sha256"]
+        if sha256_file(resolve(AUTOENCODER_PATH)) != expected_autoencoder_sha:
+            raise ValueError("semantic_mixture_diagnostic_autoencoder_hash_changed_before_read")
+        checkpoint = load_project_autoencoder_checkpoint(config)
+        state["autoencoderCheckpointRead"] = True
+        model.autoencoder.load_state_dict(checkpoint["autoencoderState"])
+        for parameter in model.autoencoder.parameters():
+            parameter.requires_grad_(False)
+        autoencoder_hash_before = state_dict_sha256(model.autoencoder.state_dict())
+        device = torch.device("cuda:0")
+        model.to(device).eval()
+        step("project_autoencoder_loaded_frozen_semantic_mixture_random_initialized")
+
+        image = sample["image"].unsqueeze(0).to(device)
+        conditions = sample["conditions"].unsqueeze(0).to(device)
+        with torch.no_grad():
+            raw_latent = model.autoencoder.encode(image)
+            mean = raw_latent.mean(dim=(0, 2, 3), keepdim=True)
+            std = raw_latent.std(dim=(0, 2, 3), keepdim=True).clamp_min(1e-6)
+            clean_latent = (raw_latent - mean) / std
+        diffusion = trainer.build_diffusion_schedule(config, device)
+        timestep = torch.tensor([TIMESTEP], dtype=torch.long, device=device)
+        generator = torch.Generator(device=device).manual_seed(SEED)
+        noise = torch.randn(
+            clean_latent.shape, device=device, dtype=clean_latent.dtype, generator=generator,
+        )
+        noisy_latent = add_noise(clean_latent, noise, timestep, diffusion["alphasCumulative"])
+        target_velocity = velocity_target(
+            clean_latent, noise, timestep, diffusion["alphasCumulative"],
+        )
+        predicted_velocity, mixture = model.predict_velocity_with_stage4_semantic_mixture(
+            noisy_latent, timestep, conditions,
+        )
+        identities = tuple(mixture.get("expertIdentityOrder", ()))
+        contributions = tuple(mixture.get("expertContributions", ()))
+        gated = tuple(mixture.get("gatedContributions", ()))
+        participation = mixture.get("participation")
+        base_velocity = mixture.get("baseVelocity")
+        if (
+            identities != SEMANTIC_MIXTURE_IDENTITIES
+            or len(contributions) != 5
+            or len(gated) != 5
+            or participation is None
+            or participation.shape[1] != 5
+            or base_velocity is None
+            or mixture.get("typedIdentityCollapsedBeforeOutput") is not False
+        ):
+            raise ValueError("semantic_mixture_diagnostic_forward_identity_invalid")
+        alpha = diffusion["alphasCumulative"][timestep].view(-1, 1, 1, 1)
+        predicted_clean = alpha.sqrt() * noisy_latent - (1.0 - alpha).sqrt() * predicted_velocity
+        base_clean = alpha.sqrt() * noisy_latent - (1.0 - alpha).sqrt() * base_velocity
+        predicted_conditions = model.reconstruct_conditions_from_clean_latent(predicted_clean)
+        target_conditions = model.prepare_typed_conditions(conditions, predicted_clean.shape[-2:])
+        predicted_rgb = model.autoencoder.decode(predicted_clean * std + mean)
+        base_rgb = model.autoencoder.decode(base_clean * std + mean)
+        typed_counterfactual_rgb = {}
+        causal_evidence = {}
+        channel_order = list(config["conditionChannelOrder"])
+        source_channels = tuple(mixture.get("sourceConditionChannels", ()))
+        for index, identity in enumerate(identities):
+            counterfactual_velocity = base_velocity + gated[index]
+            counterfactual_clean = (
+                alpha.sqrt() * noisy_latent
+                - (1.0 - alpha).sqrt() * counterfactual_velocity
+            )
+            counterfactual_rgb = model.autoencoder.decode(counterfactual_clean * std + mean)
+            typed_counterfactual_rgb[identity] = counterfactual_rgb
+            ablated_conditions = conditions.clone()
+            ablated_conditions[:, channel_order.index(source_channels[index])] = 0.0
+            _, ablated = model.predict_velocity_with_stage4_semantic_mixture(
+                noisy_latent, timestep, ablated_conditions,
+            )
+            causal_evidence[identity] = {
+                "contributionAbsMean": float(contributions[index].abs().mean().detach().cpu()),
+                "gatedContributionAbsMean": float(gated[index].abs().mean().detach().cpu()),
+                "decodedRgbVsBaseAbsMean": float(
+                    (counterfactual_rgb - base_rgb).abs().mean().detach().cpu()
+                ),
+                "sourceChannelAblationContributionResponse": float(
+                    (contributions[index] - ablated["expertContributions"][index])
+                    .abs().mean().detach().cpu()
+                ),
+            }
+            if any(
+                not math.isfinite(value) or value <= 0.0
+                for value in causal_evidence[identity].values()
+            ):
+                raise ValueError(f"semantic_mixture_diagnostic_causal_response_missing:{identity}")
+        state["forwardCompleted"] = True
+        step("single_semantic_mixture_forward_and_five_causal_routes_completed")
+
+        losses = trainer.composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
+            predicted_velocity, target_velocity, predicted_clean, clean_latent,
+            predicted_conditions, target_conditions, predicted_rgb, image, conditions,
+            mixture, typed_counterfactual_rgb, config,
+        )
+        named = [
+            (name, parameter) for name, parameter in model.denoiser.named_parameters()
+            if parameter.requires_grad
+        ]
+        expert_gradient_evidence = {}
+        for index, identity in enumerate(identities):
+            own_parameters = tuple(model.denoiser.semantic_mixture_experts[identity].parameters())
+            other_parameters = tuple(
+                parameter
+                for other_identity in identities if other_identity != identity
+                for parameter in model.denoiser.semantic_mixture_experts[other_identity].parameters()
+            )
+            gate_parameters = tuple(
+                model.denoiser.semantic_mixture_participation[identity].parameters()
+            )
+            own = torch.autograd.grad(
+                contributions[index].mean(), own_parameters,
+                retain_graph=True, allow_unused=True,
+            )
+            cross = torch.autograd.grad(
+                contributions[index].mean(), other_parameters,
+                retain_graph=True, allow_unused=True,
+            )
+            gate = torch.autograd.grad(
+                gated[index].mean(), gate_parameters,
+                retain_graph=True, allow_unused=True,
+            )
+            own_norm = sum(gradient_norm(value) for value in own)
+            cross_norm = sum(gradient_norm(value) for value in cross)
+            gate_norm = sum(gradient_norm(value) for value in gate)
+            if own_norm <= 0.0 or cross_norm != 0.0 or gate_norm <= 0.0:
+                raise ValueError(f"semantic_mixture_diagnostic_private_gradient_failed:{identity}")
+            expert_gradient_evidence[identity] = {
+                "ownExpertGradientNorm": own_norm,
+                "otherPrivateExpertGradientNorm": cross_norm,
+                "participationGateGradientNorm": gate_norm,
+            }
+        final_gradients = torch.autograd.grad(
+            predicted_velocity.mean(), gated, retain_graph=True, allow_unused=True,
+        )
+        if any(gradient_norm(value) <= 0.0 for value in final_gradients):
+            raise ValueError("semantic_mixture_diagnostic_final_velocity_gradient_missing")
+        base_parameters = tuple(
+            parameter for name, parameter in named if "semantic_mixture_" not in name
+        )
+        base_gradients = torch.autograd.grad(
+            base_velocity.mean(), base_parameters, retain_graph=True, allow_unused=True,
+        )
+        if sum(gradient_norm(value) for value in base_gradients) <= 0.0:
+            raise ValueError("semantic_mixture_diagnostic_base_denoiser_gradient_missing")
+        if any(parameter.grad is not None for parameter in model.parameters()):
+            raise ValueError("semantic_mixture_diagnostic_parameter_grad_fields_populated")
+        state["autogradGradCompleted"] = True
+        step("torch_autograd_grad_five_private_experts_gates_final_and_base_verified")
+
+        diagnostic_metrics = {
+            key: float(losses[key].detach().cpu())
+            for key in trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS
+        }
+        if (
+            len(diagnostic_metrics) != 17
+            or any(not math.isfinite(value) or value < 0.0 for value in diagnostic_metrics.values())
+        ):
+            raise ValueError("semantic_mixture_diagnostic_exact_17_values_invalid")
+        step("exact_17_semantic_mixture_diagnostic_fields_exported")
+
+        torch.cuda.synchronize(0)
+        cuda_telemetry = {
+            "deviceIndex": 0,
+            "deviceName": torch.cuda.get_device_name(0),
+            "memoryAllocatedBytes": int(torch.cuda.memory_allocated(0)),
+            "memoryReservedBytes": int(torch.cuda.memory_reserved(0)),
+            "peakMemoryAllocatedBytes": int(torch.cuda.max_memory_allocated(0)),
+            "peakMemoryReservedBytes": int(torch.cuda.max_memory_reserved(0)),
+        }
+        write_json_exclusive(output / "cuda-telemetry.json", {
+            "schemaVersion": "ai-painter-stage4-fact-conditioned-semantic-mixture-cuda-telemetry-v1",
+            "status": "collected_after_readonly_forward_and_autograd_grad",
+            **timestamps("recordedAt"),
+            **cuda_telemetry,
+        })
+        step("cuda_telemetry_saved")
+
+        model.to("cpu")
+        denoiser_hash_after = state_dict_sha256(model.denoiser.state_dict())
+        autoencoder_hash_after = state_dict_sha256(model.autoencoder.state_dict())
+        if denoiser_hash_before != denoiser_hash_after or autoencoder_hash_before != autoencoder_hash_after:
+            raise ValueError("semantic_mixture_diagnostic_model_state_changed")
+        step("denoiser_and_autoencoder_state_hashes_unchanged")
+
+        report = {
+            "schemaVersion": "ai-painter-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-report-v1",
+            "status": "passed_readonly_fact_conditioned_semantic_mixture_gpu_causal_and_gradient_diagnostic",
+            **timestamps("recordedAt"),
+            "durationSeconds": round(time.perf_counter() - started, 3),
+            "identity": authorization["taskIdentity"],
+            "tensorShapes": {
+                "image": list(image.shape),
+                "conditions": list(conditions.shape),
+                "latent": list(clean_latent.shape),
+                "predictedVelocity": list(predicted_velocity.shape),
+                "participation": list(participation.shape),
+            },
+            "causalEvidence": causal_evidence,
+            "gradientEvidence": {
+                "typedExperts": expert_gradient_evidence,
+                "finalVelocityGatedContributionGradientNorms": [
+                    gradient_norm(value) for value in final_gradients
+                ],
+                "baseDenoiserGradientNorm": sum(
+                    gradient_norm(value) for value in base_gradients
+                ),
+            },
+            "diagnosticManifest": {
+                "fieldCount": 17,
+                "fields": list(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS),
+                "values": diagnostic_metrics,
+            },
+            "cuda": cuda_telemetry,
+            "integrity": {
+                "denoiserStateSha256Before": denoiser_hash_before,
+                "denoiserStateSha256After": denoiser_hash_after,
+                "autoencoderStateSha256Before": autoencoder_hash_before,
+                "autoencoderStateSha256After": autoencoder_hash_after,
+                "parameterGradFieldsAbsent": True,
+            },
+            "pythonPreflight": python_report,
+            "resourcePreflight": resource_report,
+            "authorizationConsumption": binding(consumption_path),
+            "completedSteps": steps,
+            **state,
+        }
+        report_path = output / "diagnostic-report.json"
+        write_json_exclusive(report_path, report)
+        terminal = {
+            "schemaVersion": "ai-painter-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-terminal-v1",
+            "status": "fact_conditioned_semantic_mixture_gradient_diagnostic_passed_closed",
+            **timestamps("recordedAt"),
+            "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+            "reportPath": project_path(report_path),
+            "reportSha256": sha256_file(report_path),
+            "cudaTelemetryPath": project_path(output / "cuda-telemetry.json"),
+            "cudaTelemetrySha256": sha256_file(output / "cuda-telemetry.json"),
+            "nextAction": "separately_authorized_fixed_sample194_30_epoch_model_smoke",
+            "blockers": [],
+            **state,
+            "automaticRetryStarted": False,
+        }
+        write_json_exclusive(output / "phase-terminal.json", terminal)
+        print(json.dumps({
+            **terminal,
+            "terminalPath": project_path(output / "phase-terminal.json"),
+            "terminalSha256": sha256_file(output / "phase-terminal.json"),
+        }, ensure_ascii=False, indent=2))
+        return 0
+    except Exception as error:
+        terminal = {
+            "schemaVersion": "ai-painter-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-terminal-v1",
+            "status": "fact_conditioned_semantic_mixture_gradient_diagnostic_failed_closed",
             **timestamps("recordedAt"),
             "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
             "failureType": type(error).__name__,
@@ -1116,15 +1636,30 @@ def is_structure_fact_authorization(authorization: dict) -> bool:
     ) == "ai-painter-owner-stage4-structure-fact-first-gradient-diagnostic-gpu-authorization-v1"
 
 
+def is_semantic_mixture_authorization(authorization: dict) -> bool:
+    return authorization.get("_diagnosticMode") == "fact_conditioned_semantic_mixture" or (
+        authorization.get("schemaVersion")
+        == "ai-painter-owner-stage4-fact-conditioned-semantic-mixture-readonly-gpu-diagnostic-v1"
+    )
+
+
 def authorization_request_id(authorization: dict) -> str:
+    if is_semantic_mixture_authorization(authorization):
+        return SEMANTIC_MIXTURE_REQUEST_ID
     return STRUCTURE_FACT_REQUEST_ID if is_structure_fact_authorization(authorization) else REQUEST_ID
 
 
 def authorization_scope(authorization: dict) -> str:
+    if is_semantic_mixture_authorization(authorization):
+        return SEMANTIC_MIXTURE_SCOPE
     return STRUCTURE_FACT_SCOPE if is_structure_fact_authorization(authorization) else SCOPE
 
 
 def authorization_sha256(authorization: dict) -> str:
+    if is_semantic_mixture_authorization(authorization):
+        return authorization.get("_authorizationSha256") or sha256_file(
+            resolve(SEMANTIC_MIXTURE_AUTHORIZATION_PATH)
+        )
     if is_structure_fact_authorization(authorization):
         return authorization.get("_authorizationSha256") or sha256_file(resolve(STRUCTURE_FACT_AUTHORIZATION_PATH))
     return AUTHORIZATION_SHA256

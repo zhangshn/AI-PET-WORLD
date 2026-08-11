@@ -76,6 +76,36 @@ def build_complete_world_system(config: dict[str, object]):
     )
     stage4_structure_fact_channels = stage4_alignment_readout_channels
     structure_fact_first_architecture = "stage4_structure_fact_first_dual_stage_generator_v1"
+    semantic_renderer_architecture = "stage4_condition_preserving_semantic_renderer_v1"
+    semantic_mixture_architecture = "stage4_fact_conditioned_semantic_mixture_decoder_v1"
+    semantic_renderer_channels = (
+        "object_footprints",
+        "object_tree",
+        "object_rock",
+        "object_vegetation",
+        "route_required_boundary",
+    )
+    semantic_renderer_source_channels = {
+        "object_footprints": "object_footprints",
+        "object_tree": "object_tree",
+        "object_rock": "object_rock",
+        "object_vegetation": "object_vegetation",
+        "route_required_boundary": "terrain_path_ground",
+    }
+    semantic_mixture_types = (
+        "route",
+        "footprints",
+        "tree",
+        "rock",
+        "vegetation",
+    )
+    semantic_mixture_source_channels = {
+        "route": "terrain_path_ground",
+        "footprints": "object_footprints",
+        "tree": "object_tree",
+        "rock": "object_rock",
+        "vegetation": "object_vegetation",
+    }
 
     def group_count(channels: int) -> int:
         for groups in (32, 16, 8, 4, 2):
@@ -92,6 +122,8 @@ def build_complete_world_system(config: dict[str, object]):
             "multiscale_condition_unet_v8_stage4_decoded_alignment",
             "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment",
             structure_fact_first_architecture,
+            semantic_renderer_architecture,
+            semantic_mixture_architecture,
         }:
             return None
         if len(condition_channel_order) != condition_channels:
@@ -341,6 +373,8 @@ def build_complete_world_system(config: dict[str, object]):
                 "multiscale_condition_unet_v8_stage4_decoded_alignment",
                 "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment",
                 structure_fact_first_architecture,
+                semantic_renderer_architecture,
+                semantic_mixture_architecture,
             } else None
             self.typed_condition_adapter_up1 = nn.Sequential(
                 nn.Conv2d(condition_channels, channels * 2, 1),
@@ -350,6 +384,8 @@ def build_complete_world_system(config: dict[str, object]):
                 "multiscale_condition_unet_v8_stage4_decoded_alignment",
                 "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment",
                 structure_fact_first_architecture,
+                semantic_renderer_architecture,
+                semantic_mixture_architecture,
             } else None
             self.typed_condition_adapter_up0 = nn.Sequential(
                 nn.Conv2d(condition_channels, channels, 1),
@@ -359,6 +395,8 @@ def build_complete_world_system(config: dict[str, object]):
                 "multiscale_condition_unet_v8_stage4_decoded_alignment",
                 "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment",
                 structure_fact_first_architecture,
+                semantic_renderer_architecture,
+                semantic_mixture_architecture,
             } else None
             self.shared_semantic_topology_readout = nn.Sequential(
                 nn.GroupNorm(group_count(channels), channels),
@@ -427,6 +465,70 @@ def build_complete_world_system(config: dict[str, object]):
                 "up1": nn.Conv2d(len(stage4_structure_fact_channels), channels * 2, 1),
                 "up0": nn.Conv2d(len(stage4_structure_fact_channels), channels, 1),
             }) if denoiser_architecture == structure_fact_first_architecture else None
+            self.semantic_renderer_paths_up1 = nn.ModuleDict({
+                name: nn.Sequential(
+                    nn.Conv2d(1, channels * 2, 3, padding=1),
+                    nn.SiLU(),
+                    ResidualBlock(channels * 2),
+                )
+                for name in semantic_renderer_channels
+            }) if denoiser_architecture == semantic_renderer_architecture else None
+            self.semantic_renderer_paths_up0 = nn.ModuleDict({
+                name: nn.Sequential(
+                    nn.Conv2d(1, channels, 3, padding=1),
+                    nn.SiLU(),
+                    ResidualBlock(channels),
+                )
+                for name in semantic_renderer_channels
+            }) if denoiser_architecture == semantic_renderer_architecture else None
+            self.semantic_renderer_readouts = nn.ModuleDict({
+                name: nn.Sequential(
+                    nn.GroupNorm(group_count(channels), channels),
+                    nn.SiLU(),
+                    nn.Conv2d(channels, 1, 1),
+                    nn.Sigmoid(),
+                )
+                for name in semantic_renderer_channels
+            }) if denoiser_architecture == semantic_renderer_architecture else None
+            self.semantic_renderer_fusion_up1 = nn.Sequential(
+                nn.Conv2d(channels * 4, channels * 2, 1),
+                nn.SiLU(),
+                ResidualBlock(channels * 2),
+            ) if denoiser_architecture == semantic_renderer_architecture else None
+            self.semantic_renderer_fusion_gate_up1 = nn.Sequential(
+                nn.Conv2d(channels * 4, channels * 2, 1),
+                nn.Sigmoid(),
+            ) if denoiser_architecture == semantic_renderer_architecture else None
+            self.semantic_renderer_fusion_up0 = nn.Sequential(
+                nn.Conv2d(channels * 2, channels, 1),
+                nn.SiLU(),
+                ResidualBlock(channels),
+            ) if denoiser_architecture == semantic_renderer_architecture else None
+            self.semantic_renderer_fusion_gate_up0 = nn.Sequential(
+                nn.Conv2d(channels * 2, channels, 1),
+                nn.Sigmoid(),
+            ) if denoiser_architecture == semantic_renderer_architecture else None
+            semantic_mixture_input_channels = channels + condition_channels + 1
+            self.semantic_mixture_experts = nn.ModuleDict({
+                name: nn.Sequential(
+                    nn.Conv2d(semantic_mixture_input_channels, channels, 3, padding=1),
+                    nn.SiLU(),
+                    ResidualBlock(channels),
+                    nn.GroupNorm(group_count(channels), channels),
+                    nn.SiLU(),
+                    nn.Conv2d(channels, latent_channels, 3, padding=1),
+                )
+                for name in semantic_mixture_types
+            }) if denoiser_architecture == semantic_mixture_architecture else None
+            self.semantic_mixture_participation = nn.ModuleDict({
+                name: nn.Sequential(
+                    nn.Conv2d(semantic_mixture_input_channels, channels, 3, padding=1),
+                    nn.SiLU(),
+                    nn.Conv2d(channels, 1, 1),
+                    nn.Sigmoid(),
+                )
+                for name in semantic_mixture_types
+            }) if denoiser_architecture == semantic_mixture_architecture else None
 
         def forward(
             self,
@@ -437,6 +539,8 @@ def build_complete_world_system(config: dict[str, object]):
             return_stage4_alignment_readout=False,
             return_stage4_object_alignment=False,
             return_stage4_structure_fact=False,
+            return_stage4_semantic_renderer=False,
+            return_stage4_semantic_mixture=False,
         ):
             if conditions.shape[1] != condition_channels:
                 raise ValueError(f"expected {condition_channels} condition channels, got {conditions.shape[1]}")
@@ -486,6 +590,11 @@ def build_complete_world_system(config: dict[str, object]):
             decoded_up1 = self.up1(middle)
             v9_object_features_up1 = []
             v9_object_readouts_up1 = []
+            semantic_renderer_features_up1 = []
+            semantic_renderer_features_up0 = []
+            semantic_renderer_readouts = []
+            primary_up1 = None
+            primary_decoded_up0 = None
             if self.typed_condition_adapter_up1 is not None:
                 typed_up1 = resize_typed_conditions(conditions, decoded_up1.shape[-2:])
                 decoded_up1 = decoded_up1 + self.typed_condition_adapter_up1(typed_up1)
@@ -504,16 +613,37 @@ def build_complete_world_system(config: dict[str, object]):
                     v9_object_features_up1.append(projected)
                     v9_object_readouts_up1.append(self.v9_object_readout_up1[name](projected))
                 decoded_up1 = decoded_up1 + torch.stack(v9_object_features_up1, dim=0).sum(dim=0)
+            if self.semantic_renderer_paths_up1 is not None:
+                primary_up1 = self.up_block1(
+                    self.up_fuse1(torch.cat((decoded_up1, level1), dim=1)),
+                    time_embedding,
+                )
+                typed_up1 = resize_typed_conditions(conditions, decoded_up1.shape[-2:])
+                for name in semantic_renderer_channels:
+                    index = condition_channel_order.index(semantic_renderer_source_channels[name])
+                    semantic_renderer_features_up1.append(
+                        self.semantic_renderer_paths_up1[name](typed_up1[:, index:index + 1])
+                    )
+                semantic_up1 = torch.stack(semantic_renderer_features_up1, dim=0).mean(dim=0)
+                fusion_input_up1 = torch.cat((decoded_up1, semantic_up1), dim=1)
+                decoded_up1 = decoded_up1 + (
+                    self.semantic_renderer_fusion_gate_up1(fusion_input_up1)
+                    * self.semantic_renderer_fusion_up1(fusion_input_up1)
+                )
             up1 = self.up_block1(
                 self.up_fuse1(torch.cat((decoded_up1, level1), dim=1)),
                 time_embedding,
             )
             decoded_up0 = self.up0(up1)
+            if primary_up1 is not None:
+                primary_decoded_up0 = self.up0(primary_up1)
             v9_object_features_up0 = []
             v9_object_readouts_up0 = []
             if self.typed_condition_adapter_up0 is not None:
                 typed_up0 = resize_typed_conditions(conditions, decoded_up0.shape[-2:])
                 decoded_up0 = decoded_up0 + self.typed_condition_adapter_up0(typed_up0)
+                if primary_decoded_up0 is not None:
+                    primary_decoded_up0 = primary_decoded_up0 + self.typed_condition_adapter_up0(typed_up0)
             if structure_fact_layout is not None:
                 decoded_up0 = decoded_up0 + self.structure_fact_stage_b_adapters["up0"](
                     resize_stage4_structure_fact_layout(
@@ -529,11 +659,60 @@ def build_complete_world_system(config: dict[str, object]):
                     v9_object_features_up0.append(projected)
                     v9_object_readouts_up0.append(self.v9_object_readout_up0[name](projected))
                 decoded_up0 = decoded_up0 + torch.stack(v9_object_features_up0, dim=0).sum(dim=0)
+            if self.semantic_renderer_paths_up0 is not None:
+                typed_up0 = resize_typed_conditions(conditions, decoded_up0.shape[-2:])
+                for name in semantic_renderer_channels:
+                    index = condition_channel_order.index(semantic_renderer_source_channels[name])
+                    feature = self.semantic_renderer_paths_up0[name](typed_up0[:, index:index + 1])
+                    semantic_renderer_features_up0.append(feature)
+                    semantic_renderer_readouts.append(self.semantic_renderer_readouts[name](feature))
+                semantic_up0 = torch.stack(semantic_renderer_features_up0, dim=0).mean(dim=0)
+                fusion_input_up0 = torch.cat((decoded_up0, semantic_up0), dim=1)
+                decoded_up0 = decoded_up0 + (
+                    self.semantic_renderer_fusion_gate_up0(fusion_input_up0)
+                    * self.semantic_renderer_fusion_up0(fusion_input_up0)
+                )
             up0 = self.up_block0(
                 self.up_fuse0(torch.cat((decoded_up0, level0), dim=1)),
                 time_embedding,
             )
-            predicted_velocity = self.output(up0)
+            base_velocity = self.output(up0)
+            predicted_velocity = base_velocity
+            primary_velocity = predicted_velocity
+            if primary_decoded_up0 is not None:
+                primary_up0 = self.up_block0(
+                    self.up_fuse0(torch.cat((primary_decoded_up0, level0), dim=1)),
+                    time_embedding,
+                )
+                primary_velocity = self.output(primary_up0)
+            semantic_mixture_contributions = []
+            semantic_mixture_participation = []
+            semantic_mixture_gated_contributions = []
+            if self.semantic_mixture_experts is not None:
+                typed_mixture_conditions = resize_typed_conditions(
+                    conditions,
+                    up0.shape[-2:],
+                )
+                for name in semantic_mixture_types:
+                    source_index = condition_channel_order.index(
+                        semantic_mixture_source_channels[name]
+                    )
+                    expert_input = torch.cat((
+                        up0,
+                        typed_mixture_conditions,
+                        typed_mixture_conditions[:, source_index:source_index + 1],
+                    ), dim=1)
+                    contribution = self.semantic_mixture_experts[name](expert_input)
+                    participation = self.semantic_mixture_participation[name](expert_input)
+                    semantic_mixture_contributions.append(contribution)
+                    semantic_mixture_participation.append(participation)
+                    semantic_mixture_gated_contributions.append(
+                        contribution * participation
+                    )
+                predicted_velocity = base_velocity + torch.stack(
+                    semantic_mixture_gated_contributions,
+                    dim=0,
+                ).sum(dim=0)
             if return_condition_reconstruction:
                 if self.condition_reconstruction is None:
                     raise ValueError("condition reconstruction is only available in the V4 denoiser")
@@ -560,6 +739,46 @@ def build_complete_world_system(config: dict[str, object]):
                     "structureHeadOutputs": structure_fact_head_outputs,
                     "structureChannelOrder": stage4_structure_fact_channels,
                     "stageBInjectionScales": ("level0", "level1", "middle", "up1", "up0"),
+                }
+            if return_stage4_semantic_renderer:
+                if (
+                    len(semantic_renderer_features_up1) != len(semantic_renderer_channels)
+                    or len(semantic_renderer_features_up0) != len(semantic_renderer_channels)
+                    or len(semantic_renderer_readouts) != len(semantic_renderer_channels)
+                ):
+                    raise ValueError("Stage 4 learned semantic renderer outputs are unavailable")
+                return predicted_velocity, {
+                    "semanticReadout": torch.cat(semantic_renderer_readouts, dim=1),
+                    "semanticFeaturesUp1": tuple(semantic_renderer_features_up1),
+                    "semanticFeaturesUp0": tuple(semantic_renderer_features_up0),
+                    "semanticChannelOrder": semantic_renderer_channels,
+                    "semanticSourceChannels": tuple(
+                        semantic_renderer_source_channels[name]
+                        for name in semantic_renderer_channels
+                    ),
+                    "fusionScales": ("up1", "up0"),
+                    "primaryVelocity": primary_velocity,
+                    "fusionKind": "learned_condition_preserving_residual_gate_v1",
+                }
+            if return_stage4_semantic_mixture:
+                if (
+                    len(semantic_mixture_contributions) != len(semantic_mixture_types)
+                    or len(semantic_mixture_participation) != len(semantic_mixture_types)
+                    or len(semantic_mixture_gated_contributions) != len(semantic_mixture_types)
+                ):
+                    raise ValueError("Stage 4 fact-conditioned semantic mixture outputs are unavailable")
+                return predicted_velocity, {
+                    "baseVelocity": base_velocity,
+                    "expertContributions": tuple(semantic_mixture_contributions),
+                    "participation": torch.cat(semantic_mixture_participation, dim=1),
+                    "gatedContributions": tuple(semantic_mixture_gated_contributions),
+                    "expertIdentityOrder": semantic_mixture_types,
+                    "sourceConditionChannels": tuple(
+                        semantic_mixture_source_channels[name]
+                        for name in semantic_mixture_types
+                    ),
+                    "compositorKind": "typed_fact_conditioned_gated_additive_mixture_v1",
+                    "typedIdentityCollapsedBeforeOutput": False,
                 }
             return predicted_velocity
 
@@ -591,6 +810,16 @@ def build_complete_world_system(config: dict[str, object]):
                 raise ValueError("Stage 4 structure-fact channels are only available in the dual-stage generator")
             return stage4_structure_fact_channels
 
+        def stage4_semantic_renderer_channel_order(self):
+            if self.semantic_renderer_paths_up0 is None:
+                raise ValueError("Stage 4 semantic renderer channels are only available in the learned renderer")
+            return semantic_renderer_channels
+
+        def stage4_semantic_mixture_identity_order(self):
+            if self.semantic_mixture_experts is None:
+                raise ValueError("Stage 4 semantic mixture identities are unavailable")
+            return semantic_mixture_types
+
     class ProjectOwnedCompleteWorldSystem(nn.Module):
         def __init__(self):
             super().__init__()
@@ -604,6 +833,8 @@ def build_complete_world_system(config: dict[str, object]):
                 "multiscale_condition_unet_v8_stage4_decoded_alignment",
                 "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment",
                 structure_fact_first_architecture,
+                semantic_renderer_architecture,
+                semantic_mixture_architecture,
             }:
                 self.denoiser = ProjectOwnedMultiscaleConditionUNet()
             elif denoiser_architecture == "shallow_condition_fusion_v2":
@@ -644,6 +875,22 @@ def build_complete_world_system(config: dict[str, object]):
                 return_stage4_structure_fact=True,
             )
 
+        def predict_velocity_with_stage4_semantic_renderer(self, noisy_latent, timestep, conditions):
+            return self.denoiser(
+                noisy_latent,
+                timestep,
+                conditions,
+                return_stage4_semantic_renderer=True,
+            )
+
+        def predict_velocity_with_stage4_semantic_mixture(self, noisy_latent, timestep, conditions):
+            return self.denoiser(
+                noisy_latent,
+                timestep,
+                conditions,
+                return_stage4_semantic_mixture=True,
+            )
+
         def reconstruct_conditions_from_clean_latent(self, predicted_clean):
             return self.denoiser.reconstruct_conditions_from_clean_latent(predicted_clean)
 
@@ -661,5 +908,11 @@ def build_complete_world_system(config: dict[str, object]):
 
         def stage4_structure_fact_channel_order(self):
             return self.denoiser.stage4_structure_fact_channel_order()
+
+        def stage4_semantic_renderer_channel_order(self):
+            return self.denoiser.stage4_semantic_renderer_channel_order()
+
+        def stage4_semantic_mixture_identity_order(self):
+            return self.denoiser.stage4_semantic_mixture_identity_order()
 
     return ProjectOwnedCompleteWorldSystem()

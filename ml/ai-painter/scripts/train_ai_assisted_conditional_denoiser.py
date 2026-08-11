@@ -43,6 +43,11 @@ from ai_painter_stage_mode_registry import (
     V9_STAGE4_VALIDATION_KERNEL_SMOKE_STATUS,
     STRUCTURE_FACT_FIRST_STAGE4_INACTIVE_STATUS,
     STRUCTURE_FACT_FIRST_STAGE4_PHASE0_STATUS,
+    STRUCTURE_FACT_FIRST_STAGE4_SMOKE_STATUS,
+    CONDITION_PRESERVING_SEMANTIC_RENDERER_STAGE4_INACTIVE_STATUS,
+    CONDITION_PRESERVING_SEMANTIC_RENDERER_STAGE4_SMOKE_STATUS,
+    FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_INACTIVE_STATUS,
+    FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_STATUS,
     resolve_stage_mode,
 )
 
@@ -155,6 +160,16 @@ V9_STAGE4_SMOKE_ACTIVE_STATUS = V9_STAGE4_SMOKE_STATUS
 V9_STAGE4_UNIFIED_PREVIEW_SMOKE_ACTIVE_STATUS = V9_STAGE4_UNIFIED_PREVIEW_SMOKE_STATUS
 V9_STAGE4_VALIDATION_KERNEL_SMOKE_ACTIVE_STATUS = V9_STAGE4_VALIDATION_KERNEL_SMOKE_STATUS
 STRUCTURE_FACT_FIRST_STAGE4_CPU_INACTIVE_STATUS = STRUCTURE_FACT_FIRST_STAGE4_INACTIVE_STATUS
+STRUCTURE_FACT_FIRST_STAGE4_SMOKE_ACTIVE_STATUS = STRUCTURE_FACT_FIRST_STAGE4_SMOKE_STATUS
+CONDITION_PRESERVING_SEMANTIC_RENDERER_STAGE4_CPU_INACTIVE_STATUS = (
+    CONDITION_PRESERVING_SEMANTIC_RENDERER_STAGE4_INACTIVE_STATUS
+)
+FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_CPU_INACTIVE_STATUS = (
+    FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_INACTIVE_STATUS
+)
+FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_ACTIVE_STATUS = (
+    FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_STATUS
+)
 STAGE4_VALIDATION_KERNEL_PHASE0_UPDATE_STATUS = "owner_authorized_stage4_validation_kernel_phase0_single_step_update"
 STAGE4_VALIDATION_KERNEL_PHASE0_REPRODUCE_STATUS = "owner_authorized_stage4_validation_kernel_phase0_checkpoint_preview_reproduction"
 V7_MVP64_SPLIT_COUNTS = {
@@ -200,6 +215,72 @@ STRUCTURE_FACT_FIRST_STAGE4_CHANNEL_LOSS_KEYS = MappingProxyType({
     "object_rock": "stage4StructureFactObject_rockBce",
     "object_vegetation": "stage4StructureFactObject_vegetationBce",
 })
+CONDITION_PRESERVING_SEMANTIC_RENDERER_CHANNELS = (
+    "object_footprints",
+    "object_tree",
+    "object_rock",
+    "object_vegetation",
+    "route_required_boundary",
+)
+CONDITION_PRESERVING_SEMANTIC_RENDERER_SOURCE_CHANNELS = (
+    "object_footprints",
+    "object_tree",
+    "object_rock",
+    "object_vegetation",
+    "terrain_path_ground",
+)
+CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS = tuple(
+    f"stage4SemanticRenderer{prefix}IndependentLoss"
+    for prefix in ("Footprints", "Tree", "Rock", "Vegetation", "RouteBoundary")
+) + (
+    "stage4SemanticRendererFusionResponseMae",
+    "stage4SemanticRendererPrimaryPathAvailable",
+)
+CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_STATUS = (
+    "condition_preserving_semantic_renderer_diagnostic_manifest_supported_inactive"
+)
+CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_GRADIENT_TARGET = (
+    "matching_condition_preserving_semantic_renderer_typed_readout_features"
+)
+FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES = (
+    "route",
+    "footprints",
+    "tree",
+    "rock",
+    "vegetation",
+)
+FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS = (
+    "terrain_path_ground",
+    "object_footprints",
+    "object_tree",
+    "object_rock",
+    "object_vegetation",
+)
+FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS = tuple(
+    f"stage4SemanticMixture{prefix}{measurement}"
+    for prefix in ("Route", "Footprints", "Tree", "Rock", "Vegetation")
+    for measurement in (
+        "ParticipationBce", "ContributionAbsMean", "GatedContributionAbsMean",
+        "CounterfactualRgbMae", "FinalTypedRgbMae",
+    )
+) + (
+    "stage4SemanticMixtureFinalResponseMae",
+    "stage4SemanticMixtureTypedIdentityCount",
+)
+FACT_CONDITIONED_SEMANTIC_MIXTURE_REGISTRATION_DECISION_BINDINGS = {
+    "ownershipAnalysisTerminal": {
+        "path": ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-diagnostic-field-analyses/20260812-021851078/phase-terminal.json",
+        "sha256": "62d383a67277e0dc839afd946e2036cffbd61187cec47db1728d59fe6aceb77b",
+    },
+    "ownershipAnalysisReport": {
+        "path": ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-diagnostic-field-analyses/20260812-021851078/analysis-report.json",
+        "sha256": "e8381db6ca0b21f043b9cd8ba129552b597447e2df6b6dbf342e6848df179a2c",
+    },
+    "inactiveRegistrationDecisionContract": {
+        "path": ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-diagnostic-field-analyses/20260812-021851078/inactive-registration-decision-contract.json",
+        "sha256": "0b7c3e89c92d443852277e6b97692b4504ca809b7fc2f4d2b564447a4236d405",
+    },
+}
 
 
 def main() -> int:
@@ -218,6 +299,7 @@ def main() -> int:
     parser.add_argument("--preflight-only", action="store_true")
     parser.add_argument("--stage4-validation-kernel-phase0-update", action="store_true")
     parser.add_argument("--stage4-validation-kernel-phase0-reproduce", action="store_true")
+    parser.add_argument("--stage4-structure-fact-first-phase0-c-reproduce", action="store_true")
     parser.add_argument("--stage4-structure-fact-first-phase0-causal", action="store_true")
     parser.add_argument("--phase0-execution-identity", type=Path)
     parser.add_argument("--phase0-diagnostic-checkpoint", type=Path)
@@ -229,6 +311,22 @@ def main() -> int:
 
     config = read_json(args.config)
     package = read_json(args.dataset_package)
+    training_identity = config.get("training", {})
+    structure_smoke_owner = training_identity.get("ownerTrainingAuthorization", {})
+    structure_smoke_registered = (
+        training_identity.get("trainingAuthorizationStatus")
+        == STRUCTURE_FACT_FIRST_STAGE4_SMOKE_STATUS
+    )
+    structure_smoke_preflight = (
+        structure_smoke_registered
+        and structure_smoke_owner.get("executionState") == "preflight_unconsumed"
+        and structure_smoke_owner.get("preflightOnly") is True
+    )
+    if structure_smoke_registered:
+        if structure_smoke_preflight and not args.preflight_only:
+            raise ValueError("structure-fact-first Smoke preflight identity requires --preflight-only")
+        if args.preflight_only and not structure_smoke_preflight:
+            raise ValueError("structure-fact-first Smoke --preflight-only requires the preflight_unconsumed identity")
     lineage_fixture = config.get("training", {}).get("v9Stage4SmokeExecution", {}).get("cpuContractFixture") is True
     if lineage_fixture and not args.authorization_lineage_preflight:
         raise ValueError("CPU authorization lineage fixture cannot enter a normal trainer execution")
@@ -249,7 +347,12 @@ def main() -> int:
     if args.stage_control_dry_run:
         if not args.preflight_only:
             raise ValueError("Stage control dry-run requires --preflight-only")
-        if stage_mode is not None and stage_mode.mode_id == "structure_fact_first_stage4_phase0":
+        if stage_mode is not None and stage_mode.mode_id in {
+            "structure_fact_first_stage4_phase0",
+            "structure_fact_first_stage4_smoke",
+            "condition_preserving_semantic_renderer_stage4_smoke",
+            "fact_conditioned_semantic_mixture_stage4_smoke",
+        }:
             stage_execution_grant.require(ExecutionAction.SELECT_BOUND_SAMPLE)
             stage_execution_grant.require(ExecutionAction.INSPECT_AUTOENCODER_IDENTITY)
             stage_execution_grant.require(ExecutionAction.INSPECT_CHECKPOINT_IDENTITY)
@@ -266,11 +369,13 @@ def main() -> int:
     phase0_mode = (
         args.stage4_validation_kernel_phase0_update
         or args.stage4_validation_kernel_phase0_reproduce
+        or args.stage4_structure_fact_first_phase0_c_reproduce
         or args.stage4_structure_fact_first_phase0_causal
     )
     if sum(bool(value) for value in (
         args.stage4_validation_kernel_phase0_update,
         args.stage4_validation_kernel_phase0_reproduce,
+        args.stage4_structure_fact_first_phase0_c_reproduce,
         args.stage4_structure_fact_first_phase0_causal,
     )) > 1:
         raise ValueError("Stage4 validation kernel Phase0 execution modes are mutually exclusive")
@@ -446,6 +551,91 @@ def main() -> int:
             raise ValueError("structure-fact-first Phase0 initialization or resolution is invalid")
         if phase0_contract.get("sampleSplit") != "validation" or phase0_contract.get("requiredBoundarySides") != ["west"]:
             raise ValueError("structure-fact-first Phase0 sample split or topology is invalid")
+    if stage_mode is not None and stage_mode.adapter_binding == "structure_fact_first_stage4_smoke_adapter":
+        training = config["training"]
+        smoke_contract = training.get("structureFactFirstStage4SingleSampleSmokeContract", {})
+        if phase0_mode:
+            raise ValueError("structure-fact-first model Smoke cannot enter Phase0")
+        if stage_mode.execution_kind != "single_sample_smoke":
+            raise ValueError("structure-fact-first model Smoke ModeSpec is invalid")
+        execution_state = training.get("ownerTrainingAuthorization", {}).get("executionState")
+        if args.preflight_only is True:
+            if execution_state != "preflight_unconsumed" or not args.stage_control_dry_run:
+                raise ValueError("structure-fact-first Smoke preflight requires the isolated unconsumed dry-run identity")
+        elif execution_state != "consumed":
+            raise ValueError("structure-fact-first model Smoke execution requires an atomically consumed identity")
+        if args.initial_denoiser_checkpoint is not None:
+            raise ValueError("structure-fact-first model Smoke forbids every parent Denoiser Checkpoint")
+        if args.single_sample_overfit_smoke is not True or args.smoke_test:
+            raise ValueError("structure-fact-first authorization permits only the bound single-sample Smoke")
+        if args.overfit_sample_id != smoke_contract.get("sampleId") or args.overfit_sample_id != training.get("authorizedOverfitSampleId"):
+            raise ValueError("structure-fact-first fixed Smoke sample identity does not match")
+        if int(args.overfit_epochs or 0) != 30 or int(smoke_contract.get("epochCount", 0)) != 30:
+            raise ValueError("structure-fact-first model Smoke requires exactly 30 Epoch")
+        if int(args.overfit_evaluation_interval) != 5 or smoke_contract.get("previewEpochs") != [1, 5, 10, 20, 30]:
+            raise ValueError("structure-fact-first model Smoke preview schedule does not match")
+        if args.resolution_stage != 0 or training.get("authorizedInitialization") != "project_random_structure_fact_first_denoiser":
+            raise ValueError("structure-fact-first model Smoke initialization or resolution is invalid")
+        if smoke_contract.get("sampleSplit") != "validation" or smoke_contract.get("requiredBoundarySides") != ["west"]:
+            raise ValueError("structure-fact-first model Smoke split or topology is invalid")
+    if stage_mode is not None and stage_mode.adapter_binding == "condition_preserving_semantic_renderer_stage4_smoke_adapter":
+        training = config["training"]
+        smoke_contract = training.get("conditionPreservingSemanticRendererStage4SingleSampleSmokeContract", {})
+        if phase0_mode:
+            raise ValueError("condition-preserving semantic renderer model Smoke cannot enter Phase0")
+        if stage_mode.execution_kind != "single_sample_smoke":
+            raise ValueError("condition-preserving semantic renderer model Smoke ModeSpec is invalid")
+        execution_state = training.get("ownerTrainingAuthorization", {}).get("executionState")
+        if args.stage_control_dry_run:
+            if execution_state != "consumed" or args.preflight_only is not True:
+                raise ValueError("semantic renderer Smoke dry-run requires the isolated consumed CPU fixture identity")
+        elif args.preflight_only:
+            raise ValueError("semantic renderer active Smoke cannot use --preflight-only outside the CPU dry-run")
+        elif execution_state != "consumed":
+            raise ValueError("semantic renderer model Smoke execution requires an atomically consumed identity")
+        if args.initial_denoiser_checkpoint is not None:
+            raise ValueError("semantic renderer model Smoke forbids every parent Denoiser Checkpoint")
+        if args.single_sample_overfit_smoke is not True or args.smoke_test:
+            raise ValueError("semantic renderer authorization permits only the bound single-sample Smoke")
+        if args.overfit_sample_id != smoke_contract.get("sampleId") or args.overfit_sample_id != training.get("authorizedOverfitSampleId"):
+            raise ValueError("semantic renderer fixed Smoke sample identity does not match")
+        if int(args.overfit_epochs or 0) != 30 or int(smoke_contract.get("epochCount", 0)) != 30:
+            raise ValueError("semantic renderer model Smoke requires exactly 30 Epoch")
+        if int(args.overfit_evaluation_interval) != 5 or smoke_contract.get("previewEpochs") != [1, 5, 10, 20, 30]:
+            raise ValueError("semantic renderer model Smoke preview schedule does not match")
+        if args.resolution_stage != 0 or training.get("authorizedInitialization") != "project_random_condition_preserving_semantic_renderer":
+            raise ValueError("semantic renderer model Smoke initialization or resolution is invalid")
+        if smoke_contract.get("sampleSplit") != "validation" or smoke_contract.get("requiredBoundarySides") != ["west"]:
+            raise ValueError("semantic renderer model Smoke split or topology is invalid")
+    if stage_mode is not None and stage_mode.adapter_binding == "fact_conditioned_semantic_mixture_stage4_smoke_adapter":
+        training = config["training"]
+        smoke_contract = training.get("factConditionedSemanticMixtureStage4SingleSampleSmokeContract", {})
+        if phase0_mode:
+            raise ValueError("fact-conditioned semantic mixture model Smoke cannot enter Phase0")
+        if stage_mode.execution_kind != "single_sample_smoke":
+            raise ValueError("fact-conditioned semantic mixture model Smoke ModeSpec is invalid")
+        execution_state = training.get("ownerTrainingAuthorization", {}).get("executionState")
+        if args.stage_control_dry_run:
+            if execution_state != "consumed" or args.preflight_only is not True:
+                raise ValueError("fact-conditioned semantic mixture Smoke dry-run requires the consumed CPU fixture identity")
+        elif args.preflight_only:
+            raise ValueError("fact-conditioned semantic mixture active Smoke cannot use --preflight-only outside CPU dry-run")
+        elif execution_state != "consumed":
+            raise ValueError("fact-conditioned semantic mixture model Smoke requires an atomically consumed identity")
+        if args.initial_denoiser_checkpoint is not None:
+            raise ValueError("fact-conditioned semantic mixture model Smoke forbids every parent Denoiser Checkpoint")
+        if args.single_sample_overfit_smoke is not True or args.smoke_test:
+            raise ValueError("fact-conditioned semantic mixture authorization permits only the bound single-sample Smoke")
+        if args.overfit_sample_id != smoke_contract.get("sampleId") or args.overfit_sample_id != training.get("authorizedOverfitSampleId"):
+            raise ValueError("fact-conditioned semantic mixture fixed Smoke sample identity does not match")
+        if int(args.overfit_epochs or 0) != 30 or int(smoke_contract.get("epochCount", 0)) != 30:
+            raise ValueError("fact-conditioned semantic mixture model Smoke requires exactly 30 Epoch")
+        if int(args.overfit_evaluation_interval) != 5 or smoke_contract.get("previewEpochs") != [1, 5, 10, 20, 30]:
+            raise ValueError("fact-conditioned semantic mixture model Smoke preview schedule does not match")
+        if args.resolution_stage != 0 or training.get("authorizedInitialization") != "project_random_fact_conditioned_semantic_mixture":
+            raise ValueError("fact-conditioned semantic mixture model Smoke initialization or resolution is invalid")
+        if smoke_contract.get("sampleSplit") != "validation" or smoke_contract.get("requiredBoundarySides") != ["west"]:
+            raise ValueError("fact-conditioned semantic mixture model Smoke split or topology is invalid")
     if args.resolution_stage < 0 or args.resolution_stage >= len(config["training"]["resolutionStages"]):
         raise ValueError("resolution stage is outside the configured progressive stages")
     stage = config["training"]["resolutionStages"][args.resolution_stage]
@@ -1235,7 +1425,17 @@ def validate_stage4_sample_bound_boundary_provenance(config, overfit_evidence):
     if overfit_evidence.get("enabled") is not True:
         raise ValueError("Stage4 sample-bound boundary provenance requires the fixed Smoke sample")
     if is_structure_fact_first_stage4(config):
-        smoke_contract = training.get("structureFactFirstPhase0Contract", {})
+        smoke_contract = training.get("structureFactFirstStage4SingleSampleSmokeContract") or training.get("structureFactFirstPhase0Contract", {})
+    elif is_condition_preserving_semantic_renderer_stage4(config):
+        smoke_contract = (
+            training.get("conditionPreservingSemanticRendererStage4SingleSampleSmokeContract")
+            or training.get("conditionPreservingSemanticRendererSampleBinding", {})
+        )
+    elif is_fact_conditioned_semantic_mixture_stage4(config):
+        smoke_contract = (
+            training.get("factConditionedSemanticMixtureStage4SingleSampleSmokeContract")
+            or training.get("factConditionedSemanticMixtureSampleBinding", {})
+        )
     elif is_v9_stage4_object_semantic_decoded_alignment(config):
         smoke_contract = training.get("v9Stage4SingleSampleSmokeContract", {})
     elif is_v8_stage4_decoded_alignment(config):
@@ -1465,6 +1665,61 @@ def build_optimization_datasets(datasets, overfit_evidence):
     }
 
 
+STRUCTURE_FACT_FIRST_PHASE0_CONDITION_CHANNEL_ORDER = (
+    "terrain_grass",
+    "terrain_water",
+    "terrain_path_ground",
+    "terrain_shoreline",
+    "terrain_natural_boundary",
+    "terrain_mud_patch",
+    "terrain_tall_grass",
+    "walkable",
+    "collision",
+    "object_footprints",
+    "object_tree",
+    "object_rock",
+    "object_vegetation",
+    "focal_area",
+    "object_instance",
+    "coordinate_x",
+    "coordinate_y",
+    "signed_distance_path",
+    "signed_distance_water",
+    "signed_distance_shoreline",
+    "signed_distance_object_ground",
+    "signed_distance_boundary",
+    "moisture_proximity",
+)
+
+# The existing Phase0 order is the formal complete-world 23-channel order.
+# Architecture-specific validators must reference this shared identity rather
+# than accepting any 23 distinct names or defining another ordered list.
+FORMAL_COMPLETE_WORLD_CONDITION_CHANNEL_ORDER = (
+    STRUCTURE_FACT_FIRST_PHASE0_CONDITION_CHANNEL_ORDER
+)
+
+
+def stage4_structure_fact_first_phase0_condition_sha256(tensor, config) -> str:
+    """Return one canonical single-sample identity for Phase0 condition tensors."""
+    if tuple(config.get("conditionChannelOrder", ())) != STRUCTURE_FACT_FIRST_PHASE0_CONDITION_CHANNEL_ORDER:
+        raise ValueError("structure-fact-first Phase0 condition channel order changed")
+    if int(config.get("conditionChannels", -1)) != len(STRUCTURE_FACT_FIRST_PHASE0_CONDITION_CHANNEL_ORDER):
+        raise ValueError("structure-fact-first Phase0 condition channel count changed")
+    value = tensor
+    if value.ndim == 4:
+        if int(value.shape[0]) != 1:
+            raise ValueError("structure-fact-first Phase0 condition identity requires a singleton batch")
+        value = value[0]
+    elif value.ndim != 3:
+        raise ValueError("structure-fact-first Phase0 condition identity requires rank three or four")
+    expected_shape = (len(STRUCTURE_FACT_FIRST_PHASE0_CONDITION_CHANNEL_ORDER), 192, 256)
+    if tuple(int(item) for item in value.shape) != expected_shape:
+        raise ValueError("structure-fact-first Phase0 condition identity shape changed")
+    if value.dtype != torch.float32:
+        raise ValueError("structure-fact-first Phase0 condition identity dtype changed")
+    return tensor_sha256(value)
+
+
 def build_timestep_coverage_evidence(config, epoch_count, batch_count, batch_size):
     diffusion_steps = int(config["diffusionSteps"])
     values = []
@@ -1600,6 +1855,10 @@ def validate_training_inputs(config, package):
         validate_v9_stage4_object_semantic_decoded_alignment_cpu_contract(config, package)
     elif architecture == "stage4_structure_fact_first_dual_stage_generator_v1":
         validate_structure_fact_first_stage4_cpu_contract(config, package)
+    elif architecture == "stage4_condition_preserving_semantic_renderer_v1":
+        validate_condition_preserving_semantic_renderer_stage4_cpu_contract(config, package)
+    elif architecture == "stage4_fact_conditioned_semantic_mixture_decoder_v1":
+        validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(config, package)
     else:
         raise ValueError("unsupported conditional denoiser architecture")
     if package.get("schemaVersion") != "ai-assisted-cold-start-dataset-package-v1":
@@ -3215,15 +3474,871 @@ def validate_v9_stage4_object_semantic_decoded_alignment_cpu_contract(config, pa
     }
 
 
+def validate_condition_preserving_semantic_renderer_stage4_cpu_contract(
+    config, package, project_root=None,
+):
+    mode = resolve_stage_mode(config)
+    architecture = "stage4_condition_preserving_semantic_renderer_v1"
+    smoke_mode = mode.mode_id == "condition_preserving_semantic_renderer_stage4_smoke"
+    if (
+        mode.mode_id not in {
+            "condition_preserving_semantic_renderer_stage4_inactive",
+            "condition_preserving_semantic_renderer_stage4_smoke",
+        }
+        or (smoke_mode and (mode.execution_kind != "single_sample_smoke" or mode.active_execution is not True))
+        or (not smoke_mode and (mode.execution_kind != "cpu_inactive" or mode.active_execution is not False))
+        or config.get("denoiserArchitecture") != architecture
+    ):
+        raise ValueError("Stage 4 semantic renderer mode identity is invalid")
+    condition_channel_order = tuple(config.get("conditionChannelOrder", ()))
+    if (
+        config.get("conditionChannels")
+        != len(FORMAL_COMPLETE_WORLD_CONDITION_CHANNEL_ORDER)
+        or condition_channel_order != FORMAL_COMPLETE_WORLD_CONDITION_CHANNEL_ORDER
+        or config.get("conditionResizeContract") != "discrete_nearest_continuous_bilinear_v1"
+        or config.get("conditionOutputBinding") != "predicted_clean_latent_and_decoded_rgb_v1"
+    ):
+        raise ValueError("Stage 4 semantic renderer changed the locked condition or latent contract")
+    if (
+        conditional_dataset_selection_contract(config) != "registered_v7_capacity_contribution_v1"
+        or package.get("v7CapacityContributionCount") != 64
+    ):
+        raise ValueError("Stage 4 semantic renderer changed the approved 64-row dataset identity")
+
+    training = config.get("training", {})
+    contract = training.get("stage4ConditionPreservingSemanticRenderer", {})
+    expected_contract_fields = {
+        "enabled", "status", "contractId", "architectureId", "conditionChannelCount",
+        "latentOutputShapeChanged", "autoencoderFrozen", "newCheckpointSchemaRequired",
+        "oldDenoiserCheckpointCompatible", "newRandomInitializationRequired",
+        "programmaticPixelDrawingAllowed", "ruleTexturePastingAllowed",
+        "reviewThresholdDrivenRenderingAllowed", "newFreeHyperparameterSelected",
+        "learnedSemanticRenderer", "legalSupervision", "diagnosticManifestRegistry",
+        "evidenceBindings", "ownerImplementationAuthorization", "activationGate",
+    }
+    if set(contract) != expected_contract_fields:
+        raise ValueError("Stage 4 semantic renderer contract contains missing or unknown fields")
+    expected_identity = {
+        "enabled": smoke_mode,
+        "status": "training_loss_active_owner_authorized" if smoke_mode else "cpu_support_verified_not_active",
+        "contractId": architecture,
+        "architectureId": architecture,
+        "conditionChannelCount": 23,
+        "latentOutputShapeChanged": False,
+        "autoencoderFrozen": True,
+        "newCheckpointSchemaRequired": True,
+        "oldDenoiserCheckpointCompatible": False,
+        "newRandomInitializationRequired": True,
+        "programmaticPixelDrawingAllowed": False,
+        "ruleTexturePastingAllowed": False,
+        "reviewThresholdDrivenRenderingAllowed": False,
+        "newFreeHyperparameterSelected": False,
+    }
+    for key, expected in expected_identity.items():
+        if contract.get(key) != expected:
+            raise ValueError(f"Stage 4 semantic renderer contract {key} is invalid")
+
+    renderer = contract.get("learnedSemanticRenderer", {})
+    if set(renderer) != {
+        "channels", "sourceConditionChannels", "fusionScales", "fusionKind",
+        "independentPerSemanticType", "primaryRgbPathPreserved",
+        "dimensionsDerivedFromExistingModelScales",
+    }:
+        raise ValueError("Stage 4 learned semantic renderer contains unknown fields")
+    if (
+        renderer.get("channels") != list(CONDITION_PRESERVING_SEMANTIC_RENDERER_CHANNELS)
+        or renderer.get("sourceConditionChannels")
+        != list(CONDITION_PRESERVING_SEMANTIC_RENDERER_SOURCE_CHANNELS)
+        or renderer.get("fusionScales") != ["up1", "up0"]
+        or renderer.get("fusionKind") != "learned_condition_preserving_residual_gate_v1"
+        or renderer.get("independentPerSemanticType") is not True
+        or renderer.get("primaryRgbPathPreserved") is not True
+        or renderer.get("dimensionsDerivedFromExistingModelScales") is not True
+    ):
+        raise ValueError("Stage 4 learned semantic renderer or fusion identity is invalid")
+
+    allowed_sources = [
+        "original_owner_approved_reference_rgb",
+        "original_compiled_23_channel_condition_pack",
+        "approved_world_facts_visual_fact_manifest_region_graph_and_edge_ports",
+        "project_generated_game_coordinate_route_geometry",
+        "original_object_identity_and_semantic_masks",
+        "frozen_project_autoencoder_encoder_and_decoder_features",
+        "current_model_prediction_derived_without_failed_preview_targets",
+    ]
+    supervision = contract.get("legalSupervision", {})
+    if set(supervision) != {
+        "allowedSources", "semanticTargetChannels", "weightSource",
+        "failedPreviewPixelsUsedAsTargets", "machineReviewThresholdsUsedAsTargets",
+        "reviewPassFailUsedAsLossTarget", "failedSmokeCheckpointUsedAsTarget",
+    }:
+        raise ValueError("Stage 4 semantic renderer supervision contains unknown fields")
+    if (
+        supervision.get("allowedSources") != allowed_sources
+        or supervision.get("semanticTargetChannels")
+        != list(CONDITION_PRESERVING_SEMANTIC_RENDERER_CHANNELS)
+        or supervision.get("weightSource")
+        != "training.denoiserLossWeights.discreteConditionOutputBinding"
+        or supervision.get("failedPreviewPixelsUsedAsTargets") is not False
+        or supervision.get("machineReviewThresholdsUsedAsTargets") is not False
+        or supervision.get("reviewPassFailUsedAsLossTarget") is not False
+        or supervision.get("failedSmokeCheckpointUsedAsTarget") is not False
+    ):
+        raise ValueError("Stage 4 semantic renderer legal supervision boundary is invalid")
+    if float(training.get("denoiserLossWeights", {}).get("discreteConditionOutputBinding", 0.0)) <= 0.0:
+        raise ValueError("Stage 4 semantic renderer cannot derive its existing supervision weight")
+
+    registry = contract.get("diagnosticManifestRegistry", {})
+    if (
+        registry.get("exactFields")
+        != list(CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS)
+        or registry.get("exactFieldCount")
+        != len(CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS)
+        or registry.get("rejectUnknownFields") is not True
+    ):
+        raise ValueError("Stage 4 semantic renderer diagnostic Manifest registry is invalid")
+    validate_condition_preserving_semantic_renderer_stage4_diagnostic_manifest_support_contract(
+        config
+    )
+
+    activation = contract.get("activationGate", {})
+    activation_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smoke30EpochNow", "stage4FullTrainingNow",
+        "strictRevalidationNow", "formalInferenceNow", "checkpointPromotionNow",
+        "runtimeFrameNow", "worldEntryNow",
+    }
+    active_smoke_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smoke30EpochNow",
+    } if smoke_mode else set()
+    if set(activation) != activation_fields or any(
+        activation.get(key) is not (key in active_smoke_fields)
+        for key in activation_fields
+    ):
+        raise ValueError("Stage 4 semantic renderer activation gate is invalid")
+
+    sample = training.get("conditionPreservingSemanticRendererSampleBinding", {})
+    if (
+        sample.get("sampleId")
+        != "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6"
+        or sample.get("sampleSplit") != "validation"
+        or sample.get("seed") != 20263722
+        or sample.get("requiredBoundarySides") != ["west"]
+        or sample.get("resolution") != {"width": 256, "height": 192}
+        or sample.get("requiredSplitCounts")
+        != {"train": 48, "validation": 8, "challenge": 4, "regression": 4}
+    ):
+        raise ValueError("Stage 4 semantic renderer fixed sample or topology identity is invalid")
+
+    root = Path(project_root or Path.cwd()).resolve()
+    evidence = contract.get("evidenceBindings", {})
+    expected_evidence = {
+        "routeDecisionTerminal": "30adadb0b9fcef58939ca177cbf850e171e17b3fba9f11285fdb3d6966317b2b",
+        "binaryDecision": "94426b1f71021034731adf01ab0cbbd1f88f50450572976325044737923a67f3",
+        "analysisReport": "ec7931e5f88dc74bdddbad3052af1a15cf1da651c42eece14c884e2f90a55cac",
+        "inactiveArchitectureContract": "d0670cd224fbbd84a0d1ebdedfe3c2f26a4ee4d82ccfbf769b14023d06cfc8d8",
+        "decisionCpuReport": "31cdff05ed5009595aee6e10f260d504e77d873786d6478522b9a817eba2e32b",
+    }
+    verified = {}
+    for key, expected_sha in expected_evidence.items():
+        binding = evidence.get(key, {})
+        if binding.get("sha256") != expected_sha:
+            raise ValueError(f"Stage 4 semantic renderer evidence identity changed: {key}")
+        verified[key] = verify_config_bound_project_file(
+            root, binding.get("path"), expected_sha, key,
+        )
+    decision_contract = read_json(verified["inactiveArchitectureContract"])
+    if (
+        decision_contract.get("contractId") != architecture
+        or decision_contract.get("status") != "owner_review_required_not_implemented_not_activated"
+        or decision_contract.get("implementationBoundary", {}).get("cpuSupportOnlyUntilSeparatelyAuthorized") is not True
+    ):
+        raise ValueError("Stage 4 semantic renderer route decision contract is invalid")
+
+    implementation = contract.get("ownerImplementationAuthorization", {})
+    authorization_path = verify_config_bound_project_file(
+        root, implementation.get("authorizationPath"), implementation.get("authorizationSha256"),
+        "semantic renderer implementation authorization",
+    )
+    consumption_path = verify_config_bound_project_file(
+        root, implementation.get("implementationConsumptionPath"),
+        implementation.get("implementationConsumptionSha256"),
+        "semantic renderer implementation consumption",
+    )
+    authorization = read_json(authorization_path)
+    consumption = read_json(consumption_path)
+    command_ref = "owner-authorized-stage4-condition-preserving-semantic-renderer-cpu-support-20260811-195316458"
+    scope = "implement_stage4_condition_preserving_semantic_renderer_v1_cpu_support_inactive_only"
+    if (
+        authorization.get("requestId") != command_ref
+        or authorization.get("commandRef") != command_ref
+        or authorization.get("scope") != scope
+        or authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or consumption.get("status")
+        != "stage4_condition_preserving_semantic_renderer_cpu_support_implementation_authorization_atomically_consumed"
+        or consumption.get("authorizationSha256") != implementation.get("authorizationSha256")
+        or consumption.get("oneTimeConsumption") is not True
+    ):
+        raise ValueError("Stage 4 semantic renderer implementation lineage is invalid")
+
+    actions = authorization.get("authorizedActions", {})
+    required = (
+        "modelCpuArchitectureBranchImplementation", "modeRegistryInactiveModeRegistration",
+        "trainerLegalSupervisionImplementation", "inactiveConfigCompilerImplementation",
+        "cpuCheckerImplementation", "syntheticCpuTensorForward",
+        "syntheticCpuAutogradGradInspection", "cpuPositiveNegativeRegression",
+        "completeInactiveConfigurationAudit", "inactiveConfigWrite",
+        "architectureSupportContractWrite", "cpuReportWrite", "ownerActionRequestWrite",
+        "terminalEvidenceWrite", "uniquePlanUpdate", "localTaskCapsuleUpdate",
+    )
+    forbidden = (
+        "checkpointReadOrLoad", "optimizerCreation", "backwardExecution",
+        "modelWeightModification", "gpuUse", "training", "smoke30Epoch",
+        "stage4FullTraining", "stage5StrictRevalidation", "formalInference",
+        "checkpointPromotion", "runtimeFrame", "worldEntry", "automaticRetry",
+    )
+    if any(actions.get(key) is not True for key in required):
+        raise ValueError("Stage 4 semantic renderer implementation actions are incomplete")
+    if any(actions.get(key) is not False for key in forbidden):
+        raise ValueError("Stage 4 semantic renderer implementation opens a forbidden action")
+    owner = training.get("ownerTrainingAuthorization", {})
+    if smoke_mode:
+        expected_owner_flags = {
+            "checkpointLoadingAuthorized": True,
+            "optimizerCreationAuthorized": True,
+            "backwardExecutionAuthorized": True,
+            "modelWeightMutationAuthorized": True,
+            "gpuTrainingAuthorizedNow": True,
+            "singleSampleGpuOverfitSmokeAuthorized": True,
+            "fullTrainingAuthorized": False,
+            "stage1Authorized": False,
+            "stage2Authorized": False,
+            "strictRevalidationAuthorized": False,
+            "validationAuthorized": False,
+            "formalInferenceAuthorized": False,
+            "checkpointPromotionAuthorized": False,
+            "runtimeFrameAuthorized": False,
+            "worldEntryAuthorized": False,
+            "automaticRetryAuthorized": False,
+        }
+        if (
+            owner.get("status") != CONDITION_PRESERVING_SEMANTIC_RENDERER_STAGE4_SMOKE_STATUS
+            or any(owner.get(key) is not expected for key, expected in expected_owner_flags.items())
+        ):
+            raise ValueError("Stage 4 semantic renderer Smoke Owner actions are invalid")
+        validate_condition_preserving_semantic_renderer_stage4_smoke_execution_contract(
+            config, project_root,
+        )
+    elif owner.get("status") != "not_authorized_cpu_support_only" or any(
+        owner.get(key) is not False for key in (
+            "checkpointLoadingAuthorized", "optimizerCreationAuthorized",
+            "backwardExecutionAuthorized", "modelWeightMutationAuthorized",
+            "gpuTrainingAuthorizedNow", "singleSampleGpuOverfitSmokeAuthorized",
+            "fullTrainingAuthorized", "stage1Authorized", "stage2Authorized",
+            "strictRevalidationAuthorized", "validationAuthorized",
+            "formalInferenceAuthorized", "checkpointPromotionAuthorized",
+            "runtimeFrameAuthorized", "worldEntryAuthorized", "automaticRetryAuthorized",
+        )
+    ):
+        raise ValueError("Stage 4 semantic renderer nested execution authorization is not closed")
+    return {
+        "status": (
+            "stage4_condition_preserving_semantic_renderer_smoke_contract_valid"
+            if smoke_mode
+            else "stage4_condition_preserving_semantic_renderer_cpu_contract_valid_inactive"
+        ),
+        "conditionChannelOrder": list(FORMAL_COMPLETE_WORLD_CONDITION_CHANNEL_ORDER),
+        "semanticChannels": list(CONDITION_PRESERVING_SEMANTIC_RENDERER_CHANNELS),
+        "fusionScales": ["up1", "up0"],
+        "diagnosticManifestFields": list(CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS),
+        "reusedWeight": float(training["denoiserLossWeights"]["discreteConditionOutputBinding"]),
+    }
+
+
+def validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(
+    config, package, project_root=None,
+):
+    architecture = "stage4_fact_conditioned_semantic_mixture_decoder_v1"
+    mode = resolve_stage_mode(config)
+    smoke_mode = mode.mode_id == "fact_conditioned_semantic_mixture_stage4_smoke"
+    if (
+        mode.mode_id not in {
+            "fact_conditioned_semantic_mixture_stage4_inactive",
+            "fact_conditioned_semantic_mixture_stage4_smoke",
+        }
+        or (smoke_mode and (mode.execution_kind != "single_sample_smoke" or mode.active_execution is not True))
+        or (not smoke_mode and (mode.execution_kind != "cpu_inactive" or mode.active_execution is not False))
+        or mode.sample_split != "validation"
+        or config.get("denoiserArchitecture") != architecture
+    ):
+        raise ValueError("Stage 4 semantic mixture Mode identity is invalid")
+    if (
+        config.get("conditionChannels") != len(FORMAL_COMPLETE_WORLD_CONDITION_CHANNEL_ORDER)
+        or tuple(config.get("conditionChannelOrder", ()))
+        != FORMAL_COMPLETE_WORLD_CONDITION_CHANNEL_ORDER
+        or config.get("conditionResizeContract")
+        != "discrete_nearest_continuous_bilinear_v1"
+        or config.get("conditionOutputBinding")
+        != "predicted_clean_latent_and_decoded_rgb_v1"
+    ):
+        raise ValueError("Stage 4 semantic mixture changed the formal condition or output contract")
+    if (
+        conditional_dataset_selection_contract(config)
+        != "registered_v7_capacity_contribution_v1"
+        or package.get("v7CapacityContributionCount") != 64
+    ):
+        raise ValueError("Stage 4 semantic mixture changed the approved dataset identity")
+
+    training = config.get("training", {})
+    contract = training.get("stage4FactConditionedSemanticMixture", {})
+    expected_fields = {
+        "enabled", "status", "contractId", "architectureId",
+        "conditionChannelCount", "latentOutputShapeChanged", "autoencoderFrozen",
+        "newCheckpointIdentityRequired", "oldDenoiserCheckpointCompatible",
+        "newRandomInitializationRequired", "singleFormalMainline",
+        "parallelBackendCreated", "programmaticPixelRenderingAllowed",
+        "freeHyperparametersSelected", "typedExperts", "learnedCompositor",
+        "legalSupervision", "diagnosticManifestRegistry", "evidenceBindings",
+        "ownerImplementationAuthorization", "activationGate",
+    }
+    if set(contract) != expected_fields:
+        raise ValueError("Stage 4 semantic mixture contract contains missing or unknown fields")
+    expected_identity = {
+        "enabled": smoke_mode,
+        "status": "training_loss_active_owner_authorized" if smoke_mode else "cpu_support_verified_not_active",
+        "contractId": architecture,
+        "architectureId": architecture,
+        "conditionChannelCount": 23,
+        "latentOutputShapeChanged": False,
+        "autoencoderFrozen": True,
+        "newCheckpointIdentityRequired": True,
+        "oldDenoiserCheckpointCompatible": False,
+        "newRandomInitializationRequired": True,
+        "singleFormalMainline": True,
+        "parallelBackendCreated": False,
+        "programmaticPixelRenderingAllowed": False,
+        "freeHyperparametersSelected": False,
+    }
+    for key, expected in expected_identity.items():
+        if contract.get(key) != expected:
+            raise ValueError(f"Stage 4 semantic mixture contract {key} is invalid")
+
+    experts = contract.get("typedExperts", {})
+    if (
+        set(experts) != {
+            "identities", "sourceConditionChannels", "count",
+            "privateContributionBranches", "velocityChannelsDerivedFromExistingOutput",
+            "typedIdentityCollapsedBeforeOutput", "otherExpertPrivateGradientAllowed",
+        }
+        or experts.get("identities")
+        != list(FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES)
+        or experts.get("sourceConditionChannels")
+        != list(FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS)
+        or experts.get("count") != len(FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES)
+        or experts.get("privateContributionBranches") is not True
+        or experts.get("velocityChannelsDerivedFromExistingOutput") is not True
+        or experts.get("typedIdentityCollapsedBeforeOutput") is not False
+        or experts.get("otherExpertPrivateGradientAllowed") is not False
+    ):
+        raise ValueError("Stage 4 semantic mixture typed expert identity is invalid")
+
+    compositor = contract.get("learnedCompositor", {})
+    if compositor != {
+        "kind": "typed_fact_conditioned_gated_additive_mixture_v1",
+        "baseContributionPreserved": True,
+        "typedContributionsIndividuallyObservable": True,
+        "meanCollapseBeforeOutputAllowed": False,
+        "ruleDrawnPixelsAllowed": False,
+    }:
+        raise ValueError("Stage 4 semantic mixture learned compositor contract is invalid")
+
+    supervision = contract.get("legalSupervision", {})
+    expected_sources = [
+        "original_owner_approved_reference_rgb",
+        "original_compiled_23_channel_condition_pack",
+        "approved_world_facts",
+        "visual_fact_manifest",
+        "project_route_geometry",
+        "original_object_semantic_masks",
+        "frozen_project_autoencoder_features",
+    ]
+    if (
+        set(supervision) != {
+            "allowedSources", "participationTargetChannels",
+            "typedDecodedCounterfactualRequired", "finalTypedRegionMetricsSeparate",
+            "weightSource", "failedPreviewPixelsUsedAsTargets",
+            "machineReviewThresholdsUsedAsTargets", "reviewResultsUsedAsTargets",
+            "failedSmokeCheckpointUsedAsTargetOrInitialization",
+        }
+        or supervision.get("allowedSources") != expected_sources
+        or supervision.get("participationTargetChannels")
+        != list(FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS)
+        or supervision.get("typedDecodedCounterfactualRequired") is not True
+        or supervision.get("finalTypedRegionMetricsSeparate") is not True
+        or supervision.get("weightSource")
+        != "training.denoiserLossWeights.discreteConditionOutputBinding"
+        or any(supervision.get(key) is not False for key in (
+            "failedPreviewPixelsUsedAsTargets",
+            "machineReviewThresholdsUsedAsTargets",
+            "reviewResultsUsedAsTargets",
+            "failedSmokeCheckpointUsedAsTargetOrInitialization",
+        ))
+    ):
+        raise ValueError("Stage 4 semantic mixture supervision boundary is invalid")
+    if float(training.get("denoiserLossWeights", {}).get("discreteConditionOutputBinding", 0.0)) <= 0.0:
+        raise ValueError("Stage 4 semantic mixture existing supervision weight is unavailable")
+
+    registry = contract.get("diagnosticManifestRegistry", {})
+    expected_registry_fields = {
+        "exactFields", "exactFieldCount", "rejectUnknownFields",
+        "configurationProvenance", "registrationDecisionBindings",
+    } | ({"fixedEpochs"} if smoke_mode else set())
+    reused_weight_provenance = registry.get("configurationProvenance", {}).get(
+        "reusedDiscreteConditionWeight", {}
+    )
+    if (
+        set(registry) != expected_registry_fields
+        or registry.get("exactFields")
+        != list(FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS)
+        or registry.get("exactFieldCount")
+        != len(FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS)
+        or registry.get("rejectUnknownFields") is not True
+        or reused_weight_provenance != {
+            "source": "training.denoiserLossWeights.discreteConditionOutputBinding",
+            "value": float(training["denoiserLossWeights"]["discreteConditionOutputBinding"]),
+            "epochDiagnosticField": False,
+        }
+        or registry.get("registrationDecisionBindings")
+        != FACT_CONDITIONED_SEMANTIC_MIXTURE_REGISTRATION_DECISION_BINDINGS
+        or "stage4SemanticMixtureReusedDiscreteConditionWeight"
+        in registry.get("exactFields", ())
+    ):
+        raise ValueError("Stage 4 semantic mixture diagnostic registry is invalid")
+
+    activation = contract.get("activationGate", {})
+    activation_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smoke30EpochNow", "stage4FullTrainingNow",
+        "strictRevalidationNow", "formalInferenceNow", "checkpointPromotionNow",
+        "runtimeFrameNow", "worldEntryNow",
+    }
+    active_smoke_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smoke30EpochNow",
+    } if smoke_mode else set()
+    if set(activation) != activation_fields or any(
+        activation.get(key) is not (key in active_smoke_fields)
+        for key in activation_fields
+    ):
+        raise ValueError("Stage 4 semantic mixture activation gate is invalid")
+
+    sample = training.get("factConditionedSemanticMixtureSampleBinding", {})
+    if (
+        sample.get("sampleId")
+        != "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6"
+        or sample.get("sampleSplit") != "validation"
+        or sample.get("seed") != 20263722
+        or sample.get("requiredBoundarySides") != ["west"]
+        or sample.get("resolution") != {"width": 256, "height": 192}
+        or sample.get("requiredSplitCounts") != V7_MVP64_SPLIT_COUNTS
+    ):
+        raise ValueError("Stage 4 semantic mixture sample binding is invalid")
+
+    root = Path(project_root or Path.cwd()).resolve()
+    for key, binding in FACT_CONDITIONED_SEMANTIC_MIXTURE_REGISTRATION_DECISION_BINDINGS.items():
+        verify_config_bound_project_file(
+            root,
+            registry["registrationDecisionBindings"][key]["path"],
+            binding["sha256"],
+            f"semantic mixture diagnostic registration decision {key}",
+        )
+    evidence = contract.get("evidenceBindings", {})
+    expected_evidence = {
+        "designTerminal": "18d8791ab39998e023bbfdb87359225441a0b83bef2a0299157ad148d998ada3",
+        "designReport": "e8be3bf92e094d5552f5d699be6b4664fa99b945e1df73db27059aba56aa08aa",
+        "inactiveDesignContract": "93b34d56f2ed90922e2600d42923bdc28978bc0c29880456172af7d32f46da32",
+        "designCpuRegression": "84fa31bb5d7f77df6e51a20f01ff75207e4af995486d7675bc1f28cf3bc42af2",
+    }
+    verified = {}
+    for key, expected_sha in expected_evidence.items():
+        binding = evidence.get(key, {})
+        if binding.get("sha256") != expected_sha:
+            raise ValueError(f"Stage 4 semantic mixture evidence identity changed: {key}")
+        verified[key] = verify_config_bound_project_file(
+            root, binding.get("path"), expected_sha, key,
+        )
+    design = read_json(verified["inactiveDesignContract"])
+    if (
+        design.get("status") != "owner_review_required_not_activated"
+        or design.get("architectureId") != architecture
+        or design.get("activationGate", {}).get("implementationNow") is not False
+    ):
+        raise ValueError("Stage 4 semantic mixture design prerequisite is invalid")
+
+    implementation = contract.get("ownerImplementationAuthorization", {})
+    authorization_path = verify_config_bound_project_file(
+        root, implementation.get("authorizationPath"),
+        implementation.get("authorizationSha256"),
+        "semantic mixture implementation authorization",
+    )
+    consumption_path = verify_config_bound_project_file(
+        root, implementation.get("implementationConsumptionPath"),
+        implementation.get("implementationConsumptionSha256"),
+        "semantic mixture implementation consumption",
+    )
+    authorization = read_json(authorization_path)
+    consumption = read_json(consumption_path)
+    request_id = "owner-authorized-stage4-fact-conditioned-semantic-mixture-decoder-cpu-support-20260812-003946363"
+    command_ref = "stage4-fact-conditioned-semantic-mixture-decoder-cpu-support-20260812-003946363"
+    scope = "implement_stage4_fact_conditioned_semantic_mixture_decoder_v1_cpu_support_compile_inactive_config_and_regressions_only"
+    if (
+        authorization.get("requestId") != request_id
+        or authorization.get("commandRef") != command_ref
+        or authorization.get("scope") != scope
+        or authorization.get("status") != "owner_authorized_unconsumed"
+        or consumption.get("status")
+        != "stage4_fact_conditioned_semantic_mixture_decoder_cpu_support_implementation_authorization_atomically_consumed"
+        or consumption.get("authorizationSha256")
+        != implementation.get("authorizationSha256")
+        or consumption.get("oneTimeConsumption") is not True
+    ):
+        raise ValueError("Stage 4 semantic mixture implementation lineage is invalid")
+    actions = authorization.get("authorizedActions", {})
+    required = (
+        "modelArchitectureBranchCpuImplementation",
+        "trainerLegalSupervisionAndInactiveAuthorizationImplementation",
+        "modeRegistryInactiveModeImplementation",
+        "inactiveConfigCompilerImplementation", "cpuCheckerImplementation",
+        "syntheticCpuForward", "torchAutogradGradInspection",
+        "cpuPositiveNegativeRegression", "inactiveConfigWrite",
+        "supportContractWrite", "cpuReportWrite", "ownerActionRequestWrite",
+        "terminalEvidenceWrite", "uniquePlanAndTaskCapsuleSync",
+    )
+    forbidden = (
+        "freeHyperparameterSelection", "checkpointReadOrLoad", "optimizerCreation",
+        "backwardExecution", "modelWeightModification", "gpuUse", "smoke",
+        "fullTraining", "stage5StrictRevalidation", "formalInference",
+        "checkpointPromotion", "runtimeFrame", "worldEntry",
+    )
+    if any(actions.get(key) is not True for key in required):
+        raise ValueError("Stage 4 semantic mixture implementation actions are incomplete")
+    if any(actions.get(key) is not False for key in forbidden):
+        raise ValueError("Stage 4 semantic mixture implementation opens a forbidden action")
+
+    owner = training.get("ownerTrainingAuthorization", {})
+    if smoke_mode:
+        expected_owner_flags = {
+            "checkpointLoadingAuthorized": True,
+            "optimizerCreationAuthorized": True,
+            "backwardExecutionAuthorized": True,
+            "modelWeightMutationAuthorized": True,
+            "gpuTrainingAuthorizedNow": True,
+            "singleSampleGpuOverfitSmokeAuthorized": True,
+            "fullTrainingAuthorized": False,
+            "stage1Authorized": False,
+            "stage2Authorized": False,
+            "strictRevalidationAuthorized": False,
+            "validationAuthorized": False,
+            "formalInferenceAuthorized": False,
+            "checkpointPromotionAuthorized": False,
+            "runtimeFrameAuthorized": False,
+            "worldEntryAuthorized": False,
+            "automaticRetryAuthorized": False,
+        }
+        if (
+            owner.get("status") != FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_STATUS
+            or any(owner.get(key) is not expected for key, expected in expected_owner_flags.items())
+        ):
+            raise ValueError("Stage 4 semantic mixture Smoke Owner actions are invalid")
+        validate_fact_conditioned_semantic_mixture_stage4_smoke_execution_contract(
+            config, project_root,
+        )
+    elif owner.get("status") != "not_authorized_cpu_support_only" or any(
+        owner.get(key) is not False for key in (
+            "checkpointLoadingAuthorized", "optimizerCreationAuthorized",
+            "backwardExecutionAuthorized", "modelWeightMutationAuthorized",
+            "gpuTrainingAuthorizedNow", "singleSampleGpuOverfitSmokeAuthorized",
+            "fullTrainingAuthorized", "stage1Authorized", "stage2Authorized",
+            "strictRevalidationAuthorized", "validationAuthorized",
+            "formalInferenceAuthorized", "checkpointPromotionAuthorized",
+            "runtimeFrameAuthorized", "worldEntryAuthorized", "automaticRetryAuthorized",
+        )
+    ):
+        raise ValueError("Stage 4 semantic mixture nested execution authorization is not closed")
+    return {
+        "status": (
+            "stage4_fact_conditioned_semantic_mixture_smoke_contract_valid"
+            if smoke_mode
+            else "stage4_fact_conditioned_semantic_mixture_cpu_contract_valid_inactive"
+        ),
+        "expertIdentities": list(FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES),
+        "sourceConditionChannels": list(FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS),
+        "diagnosticManifestFields": list(FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS),
+        "reusedWeight": float(training["denoiserLossWeights"]["discreteConditionOutputBinding"]),
+    }
+
+
+def validate_fact_conditioned_semantic_mixture_stage4_smoke_execution_contract(
+    config, project_root=None,
+):
+    root = Path(project_root or Path.cwd()).resolve()
+    training = config.get("training", {})
+    sample = training.get("factConditionedSemanticMixtureSampleBinding", {})
+    smoke = training.get("factConditionedSemanticMixtureStage4SingleSampleSmokeContract", {})
+    expected_smoke = {
+        "status": "active_owner_authorized_single_execution",
+        "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+        "sampleSplit": "validation",
+        "imagePath": sample.get("imagePath"),
+        "conditionPackPath": sample.get("conditionPackPath"),
+        "seed": 20263722,
+        "requiredBoundarySides": ["west"],
+        "epochCount": 30,
+        "previewEpochs": [1, 5, 10, 20, 30],
+        "resolution": {"width": 256, "height": 192},
+        "oldDenoiserCheckpointCompatible": False,
+        "oldDenoiserCheckpointReadAuthorized": False,
+        "diagnosticCheckpointReadAuthorized": False,
+        "initialization": "project_random_fact_conditioned_semantic_mixture",
+    }
+    if (
+        sample.get("sampleId") != expected_smoke["sampleId"]
+        or sample.get("sampleSplit") != "validation"
+        or sample.get("requiredBoundarySides") != ["west"]
+        or not expected_smoke["imagePath"]
+        or not expected_smoke["conditionPackPath"]
+        or smoke != expected_smoke
+    ):
+        raise ValueError("Stage 4 semantic mixture active Smoke identity is invalid")
+    preview = training.get("stage4UnifiedTrainingPreviewSamplingContract", {})
+    if (
+        preview.get("enabled") is not True
+        or preview.get("status") != "active_owner_authorized_single_execution"
+        or preview.get("samplingFunction") != "evaluate_deterministic_rollout_rgb_quality_v7"
+        or preview.get("modelStateBinding") != "sha256_sorted_tensor_bytes_v1"
+        or preview.get("checkpointPreviewIdentityGate") != "byte_exact_best_epoch_reproduction"
+        or preview.get("failedPreviewPixelsUsedAsTrainingTargets") is not False
+        or preview.get("machineReviewThresholdsUsedAsTrainingTargets") is not False
+    ):
+        raise ValueError("Stage 4 semantic mixture fixed preview reproduction contract is invalid")
+    execution = training.get("factConditionedSemanticMixtureStage4SmokeExecution", {})
+    required_fields = {
+        "sourceInactiveConfigPath", "sourceInactiveConfigSha256",
+        "ownerAuthorizationPath", "ownerAuthorizationSha256",
+        "gpuConsumptionPath", "gpuConsumptionSha256",
+        "implementationAuthorizationPath", "implementationAuthorizationSha256",
+        "implementationConsumptionPath", "implementationConsumptionSha256",
+        "implementationAttestationPath", "implementationAttestationSha256",
+        "readonlyGpuTerminalPath", "readonlyGpuTerminalSha256",
+        "readonlyGpuDiagnosticPath", "readonlyGpuDiagnosticSha256",
+        "cudaTelemetryPath", "cudaTelemetrySha256",
+        "readonlyCpuReportPath", "readonlyCpuReportSha256",
+    }
+    if set(execution) != required_fields:
+        raise ValueError("Stage 4 semantic mixture Smoke execution identity fields are invalid")
+    verified = {
+        key: verify_config_bound_project_file(
+            root, execution[f"{key}Path"], execution[f"{key}Sha256"],
+            f"semantic mixture Smoke {key}",
+        )
+        for key in (
+            "sourceInactiveConfig", "ownerAuthorization", "gpuConsumption",
+            "implementationAuthorization", "implementationConsumption",
+            "implementationAttestation", "readonlyGpuTerminal",
+            "readonlyGpuDiagnostic", "cudaTelemetry", "readonlyCpuReport",
+        )
+    }
+    source = read_json(verified["sourceInactiveConfig"])
+    authorization = read_json(verified["ownerAuthorization"])
+    consumption = read_json(verified["gpuConsumption"])
+    implementation_authorization = read_json(verified["implementationAuthorization"])
+    implementation_consumption = read_json(verified["implementationConsumption"])
+    attestation = read_json(verified["implementationAttestation"])
+    terminal = read_json(verified["readonlyGpuTerminal"])
+    diagnostic = read_json(verified["readonlyGpuDiagnostic"])
+    cpu_report = read_json(verified["readonlyCpuReport"])
+    expected_actions = sorted(
+        action.value for action in (
+            ExecutionAction.SELECT_BOUND_SAMPLE,
+            ExecutionAction.INSPECT_AUTOENCODER_IDENTITY,
+            ExecutionAction.LOAD_AUTOENCODER,
+            ExecutionAction.INSPECT_CHECKPOINT_IDENTITY,
+            ExecutionAction.CREATE_OPTIMIZER,
+            ExecutionAction.EXECUTE_BACKWARD,
+            ExecutionAction.MUTATE_MODEL_WEIGHTS,
+            ExecutionAction.WRITE_SMOKE_CHECKPOINT,
+        )
+    )
+    if (
+        source.get("denoiserArchitecture")
+        != "stage4_fact_conditioned_semantic_mixture_decoder_v1"
+        or source.get("training", {}).get("trainingAuthorizationStatus")
+        != FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_INACTIVE_STATUS
+        or authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or sorted(authorization.get("executionActions", [])) != expected_actions
+        or consumption.get("status")
+        != "fact_conditioned_semantic_mixture_stage4_smoke_authorization_atomically_consumed"
+        or consumption.get("authorizationSha256") != execution["ownerAuthorizationSha256"]
+        or consumption.get("oneTimeConsumption") is not True
+        or implementation_authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or implementation_consumption.get("authorizationSha256")
+        != execution["implementationAuthorizationSha256"]
+        or implementation_consumption.get("oneTimeConsumption") is not True
+        or attestation.get("status")
+        != "fact_conditioned_semantic_mixture_stage4_smoke_implementation_cpu_verified"
+        or attestation.get("trainerSha256") != sha256_file(Path(__file__))
+        or terminal.get("status")
+        != "fact_conditioned_semantic_mixture_gradient_diagnostic_passed_closed"
+        or diagnostic.get("status")
+        != "passed_readonly_fact_conditioned_semantic_mixture_gpu_causal_and_gradient_diagnostic"
+        or cpu_report.get("status")
+        != "passed_fact_conditioned_semantic_mixture_readonly_gpu_diagnostic_cpu_authorization_regression"
+        or cpu_report.get("positivePassed") != cpu_report.get("positiveTotal")
+        or cpu_report.get("negativePassed") != cpu_report.get("negativeTotal")
+    ):
+        raise ValueError("Stage 4 semantic mixture Smoke execution lineage is invalid")
+    return {
+        "status": "stage4_fact_conditioned_semantic_mixture_smoke_execution_contract_valid"
+    }
+
+
+def validate_condition_preserving_semantic_renderer_stage4_smoke_execution_contract(
+    config, project_root=None,
+):
+    root = Path(project_root or Path.cwd()).resolve()
+    training = config.get("training", {})
+    sample = training.get("conditionPreservingSemanticRendererSampleBinding", {})
+    smoke = training.get("conditionPreservingSemanticRendererStage4SingleSampleSmokeContract", {})
+    expected_smoke = {
+        "status": "active_owner_authorized_single_execution",
+        "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+        "sampleSplit": "validation",
+        "imagePath": sample.get("imagePath"),
+        "conditionPackPath": sample.get("conditionPackPath"),
+        "seed": 20263722,
+        "requiredBoundarySides": ["west"],
+        "epochCount": 30,
+        "previewEpochs": [1, 5, 10, 20, 30],
+        "resolution": {"width": 256, "height": 192},
+        "oldDenoiserCheckpointCompatible": False,
+        "oldDenoiserCheckpointReadAuthorized": False,
+        "initialization": "project_random_condition_preserving_semantic_renderer",
+    }
+    if (
+        sample.get("sampleId") != expected_smoke["sampleId"]
+        or sample.get("sampleSplit") != "validation"
+        or sample.get("requiredBoundarySides") != ["west"]
+        or not expected_smoke["imagePath"]
+        or not expected_smoke["conditionPackPath"]
+        or smoke != expected_smoke
+    ):
+        raise ValueError("Stage 4 semantic renderer active Smoke identity is invalid")
+    preview = training.get("stage4UnifiedTrainingPreviewSamplingContract", {})
+    if (
+        preview.get("enabled") is not True
+        or preview.get("status") != "active_owner_authorized_single_execution"
+        or preview.get("samplingFunction") != "evaluate_deterministic_rollout_rgb_quality_v7"
+        or preview.get("modelStateBinding") != "sha256_sorted_tensor_bytes_v1"
+        or preview.get("checkpointPreviewIdentityGate") != "byte_exact_best_epoch_reproduction"
+        or preview.get("failedPreviewPixelsUsedAsTrainingTargets") is not False
+        or preview.get("machineReviewThresholdsUsedAsTrainingTargets") is not False
+    ):
+        raise ValueError("Stage 4 semantic renderer fixed preview reproduction contract is invalid")
+    execution = training.get("conditionPreservingSemanticRendererStage4SmokeExecution", {})
+    required_fields = {
+        "sourceInactiveConfigPath", "sourceInactiveConfigSha256",
+        "ownerAuthorizationPath", "ownerAuthorizationSha256",
+        "gpuConsumptionPath", "gpuConsumptionSha256",
+        "implementationAuthorizationPath", "implementationAuthorizationSha256",
+        "implementationConsumptionPath", "implementationConsumptionSha256",
+        "implementationAttestationPath", "implementationAttestationSha256",
+        "readonlyGpuTerminalPath", "readonlyGpuTerminalSha256",
+        "readonlyGpuDiagnosticPath", "readonlyGpuDiagnosticSha256",
+        "cudaTelemetryPath", "cudaTelemetrySha256",
+        "readonlyCpuReportPath", "readonlyCpuReportSha256",
+    }
+    if set(execution) != required_fields:
+        raise ValueError("Stage 4 semantic renderer Smoke execution identity fields are invalid")
+    verified = {
+        key: verify_config_bound_project_file(
+            root,
+            execution[f"{key}Path"],
+            execution[f"{key}Sha256"],
+            f"semantic renderer Smoke {key}",
+        )
+        for key in (
+            "sourceInactiveConfig", "ownerAuthorization", "gpuConsumption",
+            "implementationAuthorization", "implementationConsumption",
+            "implementationAttestation", "readonlyGpuTerminal",
+            "readonlyGpuDiagnostic", "cudaTelemetry", "readonlyCpuReport",
+        )
+    }
+    source = read_json(verified["sourceInactiveConfig"])
+    authorization = read_json(verified["ownerAuthorization"])
+    consumption = read_json(verified["gpuConsumption"])
+    implementation_authorization = read_json(verified["implementationAuthorization"])
+    implementation_consumption = read_json(verified["implementationConsumption"])
+    attestation = read_json(verified["implementationAttestation"])
+    terminal = read_json(verified["readonlyGpuTerminal"])
+    diagnostic = read_json(verified["readonlyGpuDiagnostic"])
+    cpu_report = read_json(verified["readonlyCpuReport"])
+    expected_actions = sorted(
+        action.value for action in (
+            ExecutionAction.SELECT_BOUND_SAMPLE,
+            ExecutionAction.INSPECT_AUTOENCODER_IDENTITY,
+            ExecutionAction.LOAD_AUTOENCODER,
+            ExecutionAction.INSPECT_CHECKPOINT_IDENTITY,
+            ExecutionAction.CREATE_OPTIMIZER,
+            ExecutionAction.EXECUTE_BACKWARD,
+            ExecutionAction.MUTATE_MODEL_WEIGHTS,
+            ExecutionAction.WRITE_SMOKE_CHECKPOINT,
+        )
+    )
+    if (
+        source.get("denoiserArchitecture") != "stage4_condition_preserving_semantic_renderer_v1"
+        or source.get("training", {}).get("trainingAuthorizationStatus")
+        != CONDITION_PRESERVING_SEMANTIC_RENDERER_STAGE4_INACTIVE_STATUS
+        or authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or sorted(authorization.get("executionActions", [])) != expected_actions
+        or consumption.get("status")
+        != "condition_preserving_semantic_renderer_stage4_smoke_authorization_atomically_consumed"
+        or consumption.get("authorizationSha256") != execution["ownerAuthorizationSha256"]
+        or consumption.get("oneTimeConsumption") is not True
+        or implementation_authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or implementation_consumption.get("authorizationSha256")
+        != execution["implementationAuthorizationSha256"]
+        or implementation_consumption.get("oneTimeConsumption") is not True
+        or attestation.get("status")
+        != "condition_preserving_semantic_renderer_stage4_smoke_implementation_cpu_verified"
+        or attestation.get("trainerSha256") != sha256_file(Path(__file__))
+        or terminal.get("status")
+        != "stage4_condition_preserving_semantic_renderer_readonly_gpu_diagnostic_passed_closed"
+        or diagnostic.get("status")
+        != "passed_readonly_semantic_renderer_gpu_forward_and_gradient_routing_weights_unchanged"
+        or cpu_report.get("status") != "passed_cpu_only_gpu_not_started"
+        or cpu_report.get("positivePassed") != cpu_report.get("positiveTotal")
+        or cpu_report.get("negativePassed") != cpu_report.get("negativeTotal")
+    ):
+        raise ValueError("Stage 4 semantic renderer Smoke execution lineage is invalid")
+    return {"status": "stage4_condition_preserving_semantic_renderer_smoke_execution_contract_valid"}
+
+
 def validate_structure_fact_first_stage4_cpu_contract(config, package, project_root=None):
     mode = resolve_stage_mode(config)
     architecture = "stage4_structure_fact_first_dual_stage_generator_v1"
     phase0_mode = mode.mode_id == "structure_fact_first_stage4_phase0"
+    smoke_mode = mode.mode_id == "structure_fact_first_stage4_smoke"
     if (
-        mode.mode_id not in {"structure_fact_first_stage4_inactive", "structure_fact_first_stage4_phase0"}
-        or (not phase0_mode and mode.execution_kind != "cpu_inactive")
+        mode.mode_id not in {"structure_fact_first_stage4_inactive", "structure_fact_first_stage4_phase0", "structure_fact_first_stage4_smoke"}
+        or (not phase0_mode and not smoke_mode and mode.execution_kind != "cpu_inactive")
         or (phase0_mode and mode.execution_kind != "phase0_engineering")
-        or mode.active_execution is not phase0_mode
+        or (smoke_mode and mode.execution_kind != "single_sample_smoke")
+        or mode.active_execution is not (phase0_mode or smoke_mode)
         or config.get("denoiserArchitecture") != architecture
     ):
         raise ValueError("Stage 4 structure-fact-first mode identity is invalid")
@@ -3239,14 +4354,26 @@ def validate_structure_fact_first_stage4_cpu_contract(config, package, project_r
         raise ValueError("Stage 4 structure-fact-first dataset capacity must remain 64")
 
     training = config.get("training", {})
+    structure_smoke_preflight = (
+        smoke_mode
+        and training.get("ownerTrainingAuthorization", {}).get("executionState")
+        == "preflight_unconsumed"
+        and training.get("ownerTrainingAuthorization", {}).get("preflightOnly") is True
+    )
     if training.get("denoiserLossVersion") != "velocity_structure_fact_layout_condition_preserving_rgb_v1":
         raise ValueError("Stage 4 structure-fact-first Loss identity is invalid")
     if training.get("bestCheckpointMetric") != "fixed_grid_structure_fact_and_rgb_semantic_score_v1":
         raise ValueError("Stage 4 structure-fact-first checkpoint metric identity is invalid")
     contract = training.get("stage4StructureFactFirstDualStage", {})
     expected_identity = {
-        "enabled": False,
-        "status": "cpu_support_verified_not_active",
+        "enabled": smoke_mode,
+        "status": (
+            "preflight_owner_authorized_readonly"
+            if structure_smoke_preflight
+            else "training_loss_active_owner_authorized"
+            if smoke_mode
+            else "cpu_support_verified_not_active"
+        ),
         "contractId": "stage4_structure_fact_first_dual_stage_generator_v1",
         "architectureId": architecture,
         "conditionChannelCount": 23,
@@ -3257,7 +4384,13 @@ def validate_structure_fact_first_stage4_cpu_contract(config, package, project_r
         "legacyV7V8V9ModesPreserved": True,
         "oldDenoiserCheckpointCompatible": False,
         "stage0InitializationIfLaterAuthorized": "project_random_initialization_only",
-        "trainingLossImplementationStatus": "implemented_cpu_verified_not_active",
+        "trainingLossImplementationStatus": (
+            "implemented_preflight_readonly"
+            if structure_smoke_preflight
+            else "implemented_active_owner_authorized"
+            if smoke_mode
+            else "implemented_cpu_verified_not_active"
+        ),
     }
     for key, expected in expected_identity.items():
         if contract.get(key) != expected:
@@ -3321,10 +4454,16 @@ def validate_structure_fact_first_stage4_cpu_contract(config, package, project_r
         raise ValueError("Stage 4 structure-fact-first checkpoint isolation is invalid")
     preview = contract.get("previewReproductionIdentity", {})
     if (
-        preview.get("status") != "contract_supported_inactive"
+        preview.get("status") != (
+            "preflight_owner_authorized_readonly"
+            if structure_smoke_preflight
+            else "active_owner_authorized_single_execution"
+            if smoke_mode
+            else "contract_supported_inactive"
+        )
         or preview.get("fixedEpochs") != [1, 5, 10, 20, 30]
         or preview.get("dynamicMetadataForbidden") is not True
-        or preview.get("configurationActiveNow") is not False
+        or preview.get("configurationActiveNow") is not smoke_mode
         or set(preview.get("requiredIdentityFields", [])) != {
             "modelStateSha256", "seed", "sampler", "timestepSequence",
             "conditionTensorSha256", "autoencoderSha256", "decodeConfigSha256",
@@ -3348,8 +4487,14 @@ def validate_structure_fact_first_stage4_cpu_contract(config, package, project_r
         "checkpointWriteNow", "stage4FullTrainingNow", "stage5StrictRevalidationNow",
         "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow", "worldEntryNow",
     }
+    active_smoke_fields = {"configurationActiveNow"} if structure_smoke_preflight else {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow",
+        "checkpointWriteNow",
+    } if smoke_mode else set()
     if set(activation_gate) != expected_activation_fields or any(
-        activation_gate.get(key) is not False for key in expected_activation_fields
+        activation_gate.get(key) is not (key in active_smoke_fields)
+        for key in expected_activation_fields
     ):
         raise ValueError("Stage 4 structure-fact-first activation gate is not fully closed")
 
@@ -3393,7 +4538,31 @@ def validate_structure_fact_first_stage4_cpu_contract(config, package, project_r
     ):
         raise ValueError("Stage 4 structure-fact-first implementation lineage is invalid")
     owner = training.get("ownerTrainingAuthorization", {})
-    if not phase0_mode:
+    if smoke_mode:
+        if owner.get("status") != STRUCTURE_FACT_FIRST_STAGE4_SMOKE_STATUS:
+            raise ValueError("Stage 4 structure-fact-first Smoke Owner status is invalid")
+        active_owner_value = not structure_smoke_preflight
+        expected_owner_flags = {
+            "checkpointLoadingAuthorized": active_owner_value,
+            "optimizerCreationAuthorized": active_owner_value,
+            "backwardExecutionAuthorized": active_owner_value,
+            "modelWeightMutationAuthorized": active_owner_value,
+            "gpuTrainingAuthorizedNow": active_owner_value,
+            "singleSampleGpuOverfitSmokeAuthorized": active_owner_value,
+            "fullTrainingAuthorized": False,
+            "stage1Authorized": False,
+            "stage2Authorized": False,
+            "strictRevalidationAuthorized": False,
+            "formalInferenceAuthorized": False,
+            "checkpointPromotionAuthorized": False,
+            "runtimeFrameAuthorized": False,
+            "worldEntryAuthorized": False,
+            "automaticRetryAuthorized": False,
+        }
+        if any(owner.get(key) is not expected for key, expected in expected_owner_flags.items()):
+            raise ValueError("Stage 4 structure-fact-first Smoke Owner actions are invalid")
+        validate_structure_fact_first_stage4_smoke_execution_contract(config, project_root)
+    elif not phase0_mode:
         if owner.get("status") != "not_authorized_cpu_support_only" or any(
             owner.get(key) is not False for key in (
                 "checkpointLoadingAuthorized", "optimizerCreationAuthorized", "backwardExecutionAuthorized",
@@ -3409,12 +4578,132 @@ def validate_structure_fact_first_stage4_cpu_contract(config, package, project_r
         "status": (
             "stage4_structure_fact_first_phase0_contract_valid"
             if phase0_mode
+            else "stage4_structure_fact_first_smoke_contract_valid"
+            if smoke_mode
             else "stage4_structure_fact_first_dual_stage_cpu_contract_valid_inactive"
         ),
         "structureChannels": expected_channels,
         "stageBInjectionScales": ["level0", "level1", "middle", "up1", "up0"],
         "diagnosticManifestFields": list(STRUCTURE_FACT_FIRST_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS),
         "oldDenoiserCheckpointCompatible": False,
+    }
+
+
+def validate_structure_fact_first_stage4_smoke_execution_contract(config, project_root=None):
+    root = Path(project_root or Path.cwd()).resolve()
+    training = config.get("training", {})
+    owner = training.get("ownerTrainingAuthorization", {})
+    preflight_only = (
+        owner.get("executionState") == "preflight_unconsumed"
+        and owner.get("preflightOnly") is True
+    )
+    smoke = training.get("structureFactFirstStage4SingleSampleSmokeContract", {})
+    qualification = training.get("stage4StructureFactFirstQualificationContract", {})
+    expected_smoke = {
+        "status": "preflight_owner_authorized_readonly" if preflight_only else "active_owner_authorized_single_execution",
+        "sampleId": "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6",
+        "sampleSplit": "validation",
+        "imagePath": qualification.get("imagePath"),
+        "conditionPackPath": qualification.get("conditionPackPath"),
+        "seed": 20263722,
+        "requiredBoundarySides": ["west"],
+        "epochCount": 30,
+        "previewEpochs": [1, 5, 10, 20, 30],
+        "resolution": {"width": 256, "height": 192},
+        "oldDenoiserCheckpointCompatible": False,
+        "oldDenoiserCheckpointReadAuthorized": False,
+        "initialization": "project_random_structure_fact_first_denoiser",
+        "phase0DiagnosticCheckpointUsedAsInitialization": False,
+    }
+    if (
+        qualification.get("sampleId") != expected_smoke["sampleId"]
+        or qualification.get("sampleSplit") != "validation"
+        or qualification.get("requiredBoundarySides") != ["west"]
+        or not expected_smoke["imagePath"]
+        or not expected_smoke["conditionPackPath"]
+        or smoke != expected_smoke
+    ):
+        raise ValueError("Stage 4 structure-fact-first active Smoke identity is invalid")
+    preview = training.get("stage4UnifiedTrainingPreviewSamplingContract", {})
+    if (
+        preview.get("enabled") is not True
+        or preview.get("status") != ("preflight_owner_authorized_readonly" if preflight_only else "active_owner_authorized_single_execution")
+        or preview.get("samplingFunction") != "evaluate_deterministic_rollout_rgb_quality_v7"
+        or preview.get("modelStateBinding") != "sha256_sorted_tensor_bytes_v1"
+        or preview.get("checkpointPreviewIdentityGate") != "byte_exact_best_epoch_reproduction"
+        or preview.get("failedPreviewPixelsUsedAsTrainingTargets") is not False
+        or preview.get("machineReviewThresholdsUsedAsTrainingTargets") is not False
+    ):
+        raise ValueError("Stage 4 structure-fact-first fixed preview reproduction contract is invalid")
+    execution = training.get("structureFactFirstStage4SmokeExecution", {})
+    required_fields = {
+        "sourceInactiveConfigPath", "sourceInactiveConfigSha256",
+        "ownerAuthorizationPath", "ownerAuthorizationSha256",
+        "implementationAuthorizationPath", "implementationAuthorizationSha256",
+        "implementationConsumptionPath", "implementationConsumptionSha256",
+        "implementationAttestationPath", "implementationAttestationSha256",
+        "phase0TerminalPath", "phase0TerminalSha256",
+    }
+    if preflight_only:
+        required_fields.add("preflightOnly")
+    else:
+        required_fields.update({"gpuConsumptionPath", "gpuConsumptionSha256"})
+    if set(execution) != required_fields:
+        raise ValueError("Stage 4 structure-fact-first Smoke execution identity fields are invalid")
+    verified = {
+        key: verify_config_bound_project_file(
+            root,
+            execution[f"{key}Path"],
+            execution[f"{key}Sha256"],
+            f"structure-fact-first Smoke {key}",
+        )
+        for key in (
+            "sourceInactiveConfig", "ownerAuthorization",
+            *(tuple() if preflight_only else ("gpuConsumption",)),
+            "implementationAuthorization", "implementationConsumption",
+            "implementationAttestation", "phase0Terminal",
+        )
+    }
+    source = read_json(verified["sourceInactiveConfig"])
+    phase0_terminal = read_json(verified["phase0Terminal"])
+    authorization = read_json(verified["ownerAuthorization"])
+    consumption = None if preflight_only else read_json(verified["gpuConsumption"])
+    implementation_authorization = read_json(verified["implementationAuthorization"])
+    implementation_consumption = read_json(verified["implementationConsumption"])
+    attestation = read_json(verified["implementationAttestation"])
+    if (
+        source.get("denoiserArchitecture") != "stage4_structure_fact_first_dual_stage_generator_v1"
+        or source.get("training", {}).get("trainingAuthorizationStatus") != STRUCTURE_FACT_FIRST_STAGE4_INACTIVE_STATUS
+        or phase0_terminal.get("status") != "stage4_structure_fact_first_phase0_engineering_qualification_passed_closed"
+        or authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or (
+            preflight_only
+            and (
+                execution.get("preflightOnly") is not True
+                or authorization.get("preflightOnly") is not True
+                or sorted(authorization.get("executionActions", []))
+                != ["inspect_autoencoder_identity", "inspect_checkpoint_identity", "select_bound_sample"]
+            )
+        )
+        or (
+            not preflight_only
+            and (
+                consumption.get("status") != "structure_fact_first_stage4_smoke_authorization_atomically_consumed"
+                or consumption.get("authorizationSha256") != execution["ownerAuthorizationSha256"]
+                or consumption.get("oneTimeConsumption") is not True
+            )
+        )
+        or implementation_authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or implementation_consumption.get("authorizationSha256") != execution["implementationAuthorizationSha256"]
+        or implementation_consumption.get("oneTimeConsumption") is not True
+        or attestation.get("status") != "structure_fact_first_stage4_smoke_implementation_cpu_verified"
+        or attestation.get("trainerSha256") != sha256_file(Path(__file__))
+    ):
+        raise ValueError("Stage 4 structure-fact-first Smoke execution lineage is invalid")
+    return {
+        "status": "stage4_structure_fact_first_smoke_preflight_contract_valid"
+        if preflight_only
+        else "stage4_structure_fact_first_smoke_execution_contract_valid"
     }
 
 
@@ -5617,7 +6906,7 @@ def validate_stage4_validation_kernel_phase0_cli(args, config, package):
         raise ValueError("Stage4 validation kernel Autoencoder CLI identity changed")
     if args.initial_denoiser_checkpoint is not None:
         raise ValueError("Stage4 validation kernel forbids old Denoiser Checkpoint input")
-    if args.stage4_validation_kernel_phase0_reproduce:
+    if args.stage4_validation_kernel_phase0_reproduce or args.stage4_structure_fact_first_phase0_c_reproduce:
         if args.phase0_diagnostic_checkpoint is None or not args.phase0_diagnostic_checkpoint.is_file():
             raise ValueError("Stage4 validation kernel reproduction requires its diagnostic Checkpoint")
         if (
@@ -5634,7 +6923,10 @@ def validate_structure_fact_first_phase0_cli(args, config, identity):
     if identity.get("status") != "phase0_execution_identity_active_not_completed":
         raise ValueError("structure-fact-first Phase0 execution identity is not active")
     expected_step = (
-        "causal_readonly" if args.stage4_structure_fact_first_phase0_causal
+        "causal_readonly" if (
+            args.stage4_structure_fact_first_phase0_causal
+            or args.stage4_structure_fact_first_phase0_c_reproduce
+        )
         else "single_step_update" if args.stage4_validation_kernel_phase0_update
         else "checkpoint_reproduction"
     )
@@ -5682,6 +6974,20 @@ def validate_structure_fact_first_phase0_cli(args, config, identity):
         or expected_step not in consumption.get("authorizedPhase0Steps", [])
     ):
         raise ValueError("structure-fact-first Phase0 authorization lineage is invalid")
+    c_only_operation = "checkpoint_reproduction_only"
+    if args.stage4_structure_fact_first_phase0_c_reproduce:
+        if (
+            identity.get("phase0Operation") != c_only_operation
+            or authorization.get("phase0Operation") != c_only_operation
+            or consumption.get("phase0Operation") != c_only_operation
+        ):
+            raise ValueError("structure-fact-first Phase0-C-only operation identity changed")
+        validate_stage4_structure_fact_first_phase0_c_source_lineage(identity)
+    elif any(
+        value.get("phase0Operation") == c_only_operation
+        for value in (identity, authorization, consumption)
+    ):
+        raise ValueError("structure-fact-first Phase0-C-only operation entered a legacy Phase0 path")
     if (
         owner.get("authorizationPath") != identity.get("authorizationPath")
         or owner.get("authorizationSha256") != identity.get("authorizationSha256")
@@ -5712,7 +7018,7 @@ def validate_structure_fact_first_phase0_cli(args, config, identity):
         raise ValueError("structure-fact-first Phase0 Autoencoder CLI identity changed")
     if args.initial_denoiser_checkpoint is not None:
         raise ValueError("structure-fact-first Phase0 forbids old Denoiser Checkpoint input")
-    if expected_step == "checkpoint_reproduction":
+    if expected_step == "checkpoint_reproduction" or args.stage4_structure_fact_first_phase0_c_reproduce:
         if args.phase0_diagnostic_checkpoint is None or not args.phase0_diagnostic_checkpoint.is_file():
             raise ValueError("structure-fact-first Phase0 reproduction requires its diagnostic Checkpoint")
         if (
@@ -5723,6 +7029,79 @@ def validate_structure_fact_first_phase0_cli(args, config, identity):
     elif args.phase0_diagnostic_checkpoint is not None:
         raise ValueError("structure-fact-first Phase0 causal/update execution cannot load a Denoiser Checkpoint")
     return identity
+
+
+def validate_stage4_structure_fact_first_phase0_c_source_lineage(identity):
+    source = identity.get("diagnosticCheckpointSource")
+    if not isinstance(source, dict):
+        raise ValueError("structure-fact-first Phase0-C diagnostic Checkpoint source lineage is missing")
+    required_files = (
+        ("single-step update report", "updateReportPath", "updateReportSha256"),
+        ("single-step update identity", "updateIdentityPath", "updateIdentitySha256"),
+        ("source execution authorization", "executionAuthorizationPath", "executionAuthorizationSha256"),
+        ("source execution consumption", "executionConsumptionPath", "executionConsumptionSha256"),
+    )
+    for label, path_key, sha_key in required_files:
+        path = Path(str(source.get(path_key, "")))
+        if not path.is_file() or sha256_file(path) != source.get(sha_key):
+            raise ValueError(f"structure-fact-first Phase0-C bound {label} is missing or changed")
+
+    update_report = read_json(Path(source["updateReportPath"]))
+    update_identity = read_json(Path(source["updateIdentityPath"]))
+    source_authorization = read_json(Path(source["executionAuthorizationPath"]))
+    source_consumption = read_json(Path(source["executionConsumptionPath"]))
+    source_run_id = source.get("runId")
+    fixed = identity.get("fixedTaskIdentity", {})
+    if (
+        not isinstance(source_run_id, str)
+        or not source_run_id
+        or source_run_id == identity.get("runId")
+        or update_report.get("status") != "phase0_single_cuda_optimizer_step_passed_closed"
+        or update_report.get("runId") != source_run_id
+        or update_report.get("optimizerStepCount") != 1
+        or update_report.get("weightsChanged") is not True
+        or update_report.get("autoencoderWeightsChanged") is not False
+        or update_report.get("checkpointPath") != identity.get("diagnosticCheckpointPath")
+        or update_report.get("checkpointSha256") != identity.get("diagnosticCheckpointSha256")
+        or update_report.get("conditionTensorSha256") != "dbc65181f60013c1f3cd05e6c7334e8fe4a96e2dd6252f60c47bd79017692847"
+        or update_identity.get("schemaVersion") != "ai-painter-stage4-structure-fact-first-phase0-execution-identity-v1"
+        or update_identity.get("status") != "phase0_execution_identity_active_not_completed"
+        or update_identity.get("phase0Step") != "single_step_update"
+        or update_identity.get("runId") != source_run_id
+        or update_identity.get("fixedTaskIdentity") != fixed
+        or update_identity.get("authorizationPath") != source.get("executionAuthorizationPath")
+        or update_identity.get("authorizationSha256") != source.get("executionAuthorizationSha256")
+        or update_identity.get("phase0ConsumptionPath") != source.get("executionConsumptionPath")
+        or update_identity.get("phase0ConsumptionSha256") != source.get("executionConsumptionSha256")
+        or source_authorization.get("schemaVersion") != "ai-painter-stage4-structure-fact-first-phase0-execution-authorization-v1"
+        or source_authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or source_authorization.get("requestId") != update_identity.get("requestId")
+        or source_authorization.get("commandRef") != update_identity.get("commandRef")
+        or source_authorization.get("scope") != update_identity.get("scope")
+        or "single_step_update" not in source_authorization.get("authorizedPhase0Steps", [])
+        or source_authorization.get("taskIdentity") != {
+            "architecture": fixed.get("architecture"),
+            "sampleId": fixed.get("sampleId"),
+            "sampleSplit": fixed.get("sampleSplit"),
+            "seed": fixed.get("seed"),
+            "timestep": fixed.get("timestep"),
+            "resolution": fixed.get("phase0Resolution"),
+            "requiredBoundarySides": fixed.get("requiredBoundarySides"),
+            "datasetSplit": fixed.get("datasetSplit"),
+        }
+        or source_consumption.get("schemaVersion") != "ai-painter-stage4-structure-fact-first-phase0-execution-consumption-v1"
+        or source_consumption.get("status") != "structure_fact_first_phase0_execution_authorization_atomically_consumed"
+        or source_consumption.get("requestId") != source_authorization.get("requestId")
+        or source_consumption.get("commandRef") != source_authorization.get("commandRef")
+        or source_consumption.get("scope") != source_authorization.get("scope")
+        or source_consumption.get("runId") != source_run_id
+        or source_consumption.get("authorizationPath") != source.get("executionAuthorizationPath")
+        or source_consumption.get("authorizationSha256") != source.get("executionAuthorizationSha256")
+        or source_consumption.get("oneTimeConsumption") is not True
+        or "single_step_update" not in source_consumption.get("authorizedPhase0Steps", [])
+    ):
+        raise ValueError("structure-fact-first Phase0-C diagnostic Checkpoint source lineage is invalid")
+    return source
 
 
 def run_stage4_validation_kernel_phase0(
@@ -6143,7 +7522,11 @@ def run_stage4_validation_kernel_phase0_update(
     checkpoint_path = args.output_dir / "phase0-diagnostic-checkpoint.pt"
     event("diagnostic_checkpoint_write", "started")
     selected_sample = selected["validation"][0]
-    condition_sha256 = tensor_sha256(selected_sample["conditions"])
+    condition_sha256 = (
+        stage4_structure_fact_first_phase0_condition_sha256(selected_sample["conditions"], config)
+        if structure_phase0
+        else tensor_sha256(selected_sample["conditions"])
+    )
     effective_config_sha256 = phase0_effective_config_sha256(config) if structure_phase0 else sha256_file(args.config)
     checkpoint = {
         "schemaVersion": "ai-painter-stage4-validation-kernel-phase0-diagnostic-checkpoint-v1",
@@ -6239,10 +7622,32 @@ def run_stage4_validation_kernel_phase0_reproduce(
     event("diagnostic_checkpoint_read", "started")
     checkpoint = torch.load(args.phase0_diagnostic_checkpoint, map_location="cpu", weights_only=False)
     structure_phase0 = identity.get("schemaVersion") == "ai-painter-stage4-structure-fact-first-phase0-execution-identity-v1"
+    c_only_source = (
+        validate_stage4_structure_fact_first_phase0_c_source_lineage(identity)
+        if args.stage4_structure_fact_first_phase0_c_reproduce
+        else None
+    )
+    expected_checkpoint_run_id = c_only_source.get("runId") if c_only_source else identity.get("runId")
+    expected_checkpoint_execution_identity = None
+    if c_only_source:
+        source_identity = read_json(Path(c_only_source["updateIdentityPath"]))
+        expected_checkpoint_execution_identity = {
+            "requestId": source_identity.get("requestId"),
+            "commandRef": source_identity.get("commandRef"),
+            "scope": source_identity.get("scope"),
+            "authorizationPath": c_only_source.get("executionAuthorizationPath"),
+            "authorizationSha256": c_only_source.get("executionAuthorizationSha256"),
+            "consumptionPath": c_only_source.get("executionConsumptionPath"),
+            "consumptionSha256": c_only_source.get("executionConsumptionSha256"),
+        }
     if (
         checkpoint.get("schemaVersion") != "ai-painter-stage4-validation-kernel-phase0-diagnostic-checkpoint-v1"
         or checkpoint.get("status") != "phase0_diagnostic_checkpoint_nonpromotable_not_training_initialization"
-        or checkpoint.get("runId") != identity.get("runId")
+        or checkpoint.get("runId") != expected_checkpoint_run_id
+        or (
+            c_only_source is not None
+            and checkpoint.get("executionAuthorizationIdentity") != expected_checkpoint_execution_identity
+        )
         or (
             checkpoint.get("phase0EffectiveConfigSha256") != phase0_effective_config_sha256(config)
             if structure_phase0
@@ -6280,6 +7685,14 @@ def run_stage4_validation_kernel_phase0_reproduce(
     artifact = metrics.get("previewArtifact")
     if not isinstance(artifact, dict):
         raise ValueError("Stage4 validation kernel fixed preview artifact is missing")
+    if structure_phase0:
+        execution_condition_sha256 = artifact.get("conditionTensorSha256")
+        artifact["executionConditionTensorSha256"] = execution_condition_sha256
+        artifact["conditionTensorSha256"] = stage4_structure_fact_first_phase0_condition_sha256(
+            selected["validation"][0]["conditions"],
+            config,
+        )
+        artifact["conditionIdentityContract"] = "stage4_structure_fact_first_phase0_canonical_single_sample_v1"
     if artifact.get("denoiserStateSha256") != model_state_sha:
         raise ValueError("Stage4 validation kernel preview model state identity changed")
     if structure_phase0 and artifact.get("conditionTensorSha256") != checkpoint.get("conditionTensorSha256"):
@@ -7140,7 +8553,17 @@ def predict_and_measure(model, noisy_latent, target_velocity, clean_latent, time
         stage4_alignment_readout = None
         stage4_object_alignment = None
         stage4_structure_fact = None
-        if is_structure_fact_first_stage4(config):
+        stage4_semantic_renderer = None
+        stage4_semantic_mixture = None
+        if is_fact_conditioned_semantic_mixture_stage4(config):
+            predicted_velocity, stage4_semantic_mixture = model.predict_velocity_with_stage4_semantic_mixture(
+                noisy_latent, timesteps, conditions
+            )
+        elif is_condition_preserving_semantic_renderer_stage4(config):
+            predicted_velocity, stage4_semantic_renderer = model.predict_velocity_with_stage4_semantic_renderer(
+                noisy_latent, timesteps, conditions
+            )
+        elif is_structure_fact_first_stage4(config):
             predicted_velocity, stage4_structure_fact = model.predict_velocity_with_stage4_structure_fact(
                 noisy_latent, timesteps, conditions
             )
@@ -7161,6 +8584,51 @@ def predict_and_measure(model, noisy_latent, target_velocity, clean_latent, time
             if target_image is None or latent_normalization is None:
                 raise ValueError("V6 decoded RGB supervision requires target image and latent normalization")
             predicted_rgb = model.autoencoder.decode(denormalize_latent(predicted_clean, latent_normalization))
+            if is_fact_conditioned_semantic_mixture_stage4(config):
+                typed_counterfactual_rgb = {}
+                for identity, gated_contribution in zip(
+                    stage4_semantic_mixture["expertIdentityOrder"],
+                    stage4_semantic_mixture["gatedContributions"],
+                ):
+                    owned_velocity = (
+                        stage4_semantic_mixture["baseVelocity"].detach()
+                        + gated_contribution
+                    )
+                    owned_clean = (
+                        alpha.sqrt() * noisy_latent
+                        - (1.0 - alpha).sqrt() * owned_velocity
+                    )
+                    typed_counterfactual_rgb[identity] = model.autoencoder.decode(
+                        denormalize_latent(owned_clean, latent_normalization)
+                    )
+                return composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
+                    predicted_velocity,
+                    target_velocity,
+                    predicted_clean,
+                    clean_latent,
+                    predicted_conditions,
+                    target_conditions,
+                    predicted_rgb,
+                    target_image,
+                    conditions,
+                    stage4_semantic_mixture,
+                    typed_counterfactual_rgb,
+                    config,
+                )
+            if is_condition_preserving_semantic_renderer_stage4(config):
+                return composite_denoiser_losses_condition_preserving_semantic_renderer_stage4(
+                    predicted_velocity,
+                    target_velocity,
+                    predicted_clean,
+                    clean_latent,
+                    predicted_conditions,
+                    target_conditions,
+                    predicted_rgb,
+                    target_image,
+                    conditions,
+                    stage4_semantic_renderer,
+                    config,
+                )
             if is_structure_fact_first_stage4(config):
                 return composite_denoiser_losses_structure_fact_first_stage4(
                     predicted_velocity,
@@ -7501,6 +8969,219 @@ def composite_denoiser_losses_v8_stage4(
     }
     for name, value in zip(channel_order, channel_losses):
         metrics[f"stage4DecodedAlignment{upper_camel(name)}Bce"] = value
+    return {
+        **base,
+        **metrics,
+        "compositeLossTensor": composite,
+        "compositeLoss": composite,
+        "compositeConditionQualityScore": checkpoint,
+    }
+
+
+def composite_denoiser_losses_condition_preserving_semantic_renderer_stage4(
+    predicted_velocity,
+    target_velocity,
+    predicted_clean,
+    clean_latent,
+    predicted_conditions,
+    target_conditions,
+    predicted_rgb,
+    target_rgb,
+    full_conditions,
+    renderer,
+    config,
+):
+    if not isinstance(renderer, dict):
+        raise ValueError("Stage 4 semantic renderer outputs are missing")
+    readout = renderer.get("semanticReadout")
+    features_up1 = tuple(renderer.get("semanticFeaturesUp1", ()))
+    features_up0 = tuple(renderer.get("semanticFeaturesUp0", ()))
+    channel_order = tuple(renderer.get("semanticChannelOrder", ()))
+    source_order = tuple(renderer.get("semanticSourceChannels", ()))
+    primary_velocity = renderer.get("primaryVelocity")
+    expected_channels = CONDITION_PRESERVING_SEMANTIC_RENDERER_CHANNELS
+    if (
+        readout is None
+        or readout.shape[1] != len(expected_channels)
+        or len(features_up1) != len(expected_channels)
+        or len(features_up0) != len(expected_channels)
+        or channel_order != expected_channels
+        or source_order != CONDITION_PRESERVING_SEMANTIC_RENDERER_SOURCE_CHANNELS
+        or tuple(renderer.get("fusionScales", ())) != ("up1", "up0")
+        or renderer.get("fusionKind") != "learned_condition_preserving_residual_gate_v1"
+        or primary_velocity is None
+        or primary_velocity.shape != predicted_velocity.shape
+    ):
+        raise ValueError("Stage 4 semantic renderer identity, fusion, or primary path is invalid")
+
+    base = composite_denoiser_losses_v6(
+        predicted_velocity,
+        target_velocity,
+        predicted_clean,
+        clean_latent,
+        predicted_conditions,
+        target_conditions,
+        predicted_rgb,
+        target_rgb,
+        full_conditions,
+        config,
+    )
+    legal_targets, target_order = stage4_decoded_alignment_targets(
+        full_conditions,
+        readout.shape[-2:],
+        config,
+    )
+    target_by_name = {
+        name: legal_targets[:, index:index + 1]
+        for index, name in enumerate(target_order)
+    }
+    if any(name not in target_by_name for name in expected_channels):
+        raise ValueError("Stage 4 semantic renderer legal targets are incomplete")
+    channel_losses = [
+        balanced_binary_condition_loss(
+            readout[:, index:index + 1],
+            target_by_name[name],
+        )
+        for index, name in enumerate(expected_channels)
+    ]
+    renderer_loss = torch.stack(channel_losses).mean()
+    reused_weight = float(config["training"]["denoiserLossWeights"]["discreteConditionOutputBinding"])
+    checkpoint_weight = float(
+        config["training"]["bestCheckpointMetricWeights"]["discreteConditionOutputBindingBce"]
+    )
+    composite = base["compositeLossTensor"] + renderer_loss * reused_weight
+    checkpoint = base["compositeConditionQualityScore"] + renderer_loss * checkpoint_weight
+    prefixes = ("Footprints", "Tree", "Rock", "Vegetation", "RouteBoundary")
+    metrics = {
+        f"stage4SemanticRenderer{prefix}IndependentLoss": channel_losses[index]
+        for index, prefix in enumerate(prefixes)
+    }
+    fusion_response = (predicted_velocity - primary_velocity).abs().mean()
+    metrics.update({
+        "stage4SemanticRendererFusionResponseMae": fusion_response,
+        "stage4SemanticRendererPrimaryPathAvailable": predicted_velocity.new_tensor(1.0),
+        "stage4SemanticRendererReusedDiscreteConditionWeight": predicted_velocity.new_tensor(reused_weight),
+    })
+    return {
+        **base,
+        **metrics,
+        "compositeLossTensor": composite,
+        "compositeLoss": composite,
+        "compositeConditionQualityScore": checkpoint,
+    }
+
+
+def composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
+    predicted_velocity,
+    target_velocity,
+    predicted_clean,
+    clean_latent,
+    predicted_conditions,
+    target_conditions,
+    predicted_rgb,
+    target_rgb,
+    full_conditions,
+    mixture,
+    typed_counterfactual_rgb,
+    config,
+):
+    if not isinstance(mixture, dict) or not isinstance(typed_counterfactual_rgb, dict):
+        raise ValueError("Stage 4 semantic mixture outputs are missing")
+    identities = tuple(mixture.get("expertIdentityOrder", ()))
+    sources = tuple(mixture.get("sourceConditionChannels", ()))
+    contributions = tuple(mixture.get("expertContributions", ()))
+    gated_contributions = tuple(mixture.get("gatedContributions", ()))
+    participation = mixture.get("participation")
+    base_velocity = mixture.get("baseVelocity")
+    if (
+        identities != FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES
+        or sources != FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS
+        or len(contributions) != len(identities)
+        or len(gated_contributions) != len(identities)
+        or participation is None
+        or participation.shape[1] != len(identities)
+        or base_velocity is None
+        or base_velocity.shape != predicted_velocity.shape
+        or mixture.get("compositorKind")
+        != "typed_fact_conditioned_gated_additive_mixture_v1"
+        or mixture.get("typedIdentityCollapsedBeforeOutput") is not False
+        or tuple(typed_counterfactual_rgb) != identities
+    ):
+        raise ValueError("Stage 4 semantic mixture identity or final contribution contract is invalid")
+
+    base = composite_denoiser_losses_v6(
+        predicted_velocity,
+        target_velocity,
+        predicted_clean,
+        clean_latent,
+        predicted_conditions,
+        target_conditions,
+        predicted_rgb,
+        target_rgb,
+        full_conditions,
+        config,
+    )
+    legal_targets, legal_order = stage4_decoded_alignment_targets(
+        full_conditions,
+        participation.shape[-2:],
+        config,
+    )
+    legal_by_name = {
+        name: legal_targets[:, index:index + 1]
+        for index, name in enumerate(legal_order)
+    }
+    participation_losses = []
+    counterfactual_losses = []
+    final_typed_losses = []
+    for index, (identity, source_channel) in enumerate(zip(identities, sources)):
+        if source_channel not in legal_by_name:
+            raise ValueError(f"Stage 4 semantic mixture target is unavailable: {source_channel}")
+        participation_losses.append(balanced_binary_condition_loss(
+            participation[:, index:index + 1],
+            legal_by_name[source_channel],
+        ))
+        counterfactual_losses.append(masked_condition_rgb_loss(
+            typed_counterfactual_rgb[identity],
+            target_rgb,
+            full_conditions,
+            config,
+            source_channel,
+        ))
+        final_typed_losses.append(masked_condition_rgb_loss(
+            predicted_rgb,
+            target_rgb,
+            full_conditions,
+            config,
+            source_channel,
+        ))
+
+    typed_supervision = torch.stack(
+        participation_losses + counterfactual_losses,
+    ).mean()
+    reused_weight = float(
+        config["training"]["denoiserLossWeights"]["discreteConditionOutputBinding"]
+    )
+    checkpoint_weight = float(
+        config["training"]["bestCheckpointMetricWeights"]["discreteConditionOutputBindingBce"]
+    )
+    composite = base["compositeLossTensor"] + typed_supervision * reused_weight
+    checkpoint = base["compositeConditionQualityScore"] + typed_supervision * checkpoint_weight
+    prefixes = ("Route", "Footprints", "Tree", "Rock", "Vegetation")
+    metrics = {}
+    for index, prefix in enumerate(prefixes):
+        metrics[f"stage4SemanticMixture{prefix}ParticipationBce"] = participation_losses[index]
+        metrics[f"stage4SemanticMixture{prefix}ContributionAbsMean"] = contributions[index].abs().mean()
+        metrics[f"stage4SemanticMixture{prefix}GatedContributionAbsMean"] = gated_contributions[index].abs().mean()
+        metrics[f"stage4SemanticMixture{prefix}CounterfactualRgbMae"] = counterfactual_losses[index]
+        metrics[f"stage4SemanticMixture{prefix}FinalTypedRgbMae"] = final_typed_losses[index]
+    metrics.update({
+        "stage4SemanticMixtureFinalResponseMae": (
+            predicted_velocity - base_velocity
+        ).abs().mean(),
+        "stage4SemanticMixtureTypedIdentityCount": predicted_velocity.new_tensor(
+            float(len(identities))
+        ),
+    })
     return {
         **base,
         **metrics,
@@ -7862,6 +9543,20 @@ def stage4_failure_diagnostic_metrics(predicted_rgb, target_rgb, conditions, con
     contract = config.get("training", {}).get("stage4FailureDiagnostics", {})
     if contract.get("enabled") is not True:
         return {}
+    if is_fact_conditioned_semantic_mixture_stage4(config):
+        validate_fact_conditioned_semantic_mixture_stage4_diagnostic_manifest_support_contract(
+            config
+        )
+        return route_late_regression_diagnostic_metrics(
+            predicted_rgb, target_rgb, conditions, config
+        )
+    if is_condition_preserving_semantic_renderer_stage4(config):
+        validate_condition_preserving_semantic_renderer_stage4_diagnostic_manifest_support_contract(
+            config
+        )
+        return route_late_regression_diagnostic_metrics(
+            predicted_rgb, target_rgb, conditions, config
+        )
     if is_v9_stage4_object_semantic_decoded_alignment(config) or is_structure_fact_first_stage4(config):
         if is_structure_fact_first_stage4(config):
             validate_structure_fact_first_stage4_diagnostic_manifest_support_contract(config)
@@ -7872,6 +9567,183 @@ def stage4_failure_diagnostic_metrics(predicted_rgb, target_rgb, conditions, con
     return {
         **object_semantic_diagnostic_metrics(predicted_rgb, target_rgb, conditions, config),
         **route_late_regression_diagnostic_metrics(predicted_rgb, target_rgb, conditions, config),
+    }
+
+
+def validate_condition_preserving_semantic_renderer_stage4_diagnostic_manifest_support_contract(
+    config,
+):
+    smoke_active = (
+        resolve_stage_mode(config).mode_id
+        == "condition_preserving_semantic_renderer_stage4_smoke"
+    )
+    contract = config.get("training", {}).get("stage4FailureDiagnostics", {})
+    expected_contract_fields = {
+        "enabled", "status", "semanticRendererDiagnostics",
+        "routeLateRegressionDiagnostics", "reviewThresholdsModified",
+        "failedPreviewPixelsUsedAsTrainingTargets", "executionValuesSelected",
+        "trainingConfigApplied", "checkpointFileReadAuthorized", "gpuUseAuthorized",
+        "trainingAuthorized",
+    }
+    if set(contract) != expected_contract_fields:
+        raise ValueError(
+            "Stage 4 semantic renderer diagnostic contract contains missing or unknown fields"
+        )
+    semantic_contract = contract.get("semanticRendererDiagnostics", {})
+    route_contract = contract.get("routeLateRegressionDiagnostics", {})
+    if set(semantic_contract) != {
+        "channels", "measurements", "gradientTarget", "manifestFields",
+        "changesTrainingWeightsNow",
+    }:
+        raise ValueError("Stage 4 semantic renderer diagnostic registry contains unknown fields")
+    if (
+        contract.get("enabled") is not True
+        or contract.get("status")
+        != CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_STATUS
+        or semantic_contract.get("channels")
+        != list(CONDITION_PRESERVING_SEMANTIC_RENDERER_CHANNELS)
+        or semantic_contract.get("measurements")
+        != ["independent_loss", "fusion_response", "primary_path_availability"]
+        or semantic_contract.get("gradientTarget")
+        != CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_GRADIENT_TARGET
+        or semantic_contract.get("manifestFields")
+        != list(CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS)
+        or semantic_contract.get("changesTrainingWeightsNow") is not False
+    ):
+        raise ValueError(
+            "Stage 4 semantic renderer diagnostic Manifest support contract is invalid"
+        )
+    if set(route_contract) != {
+        "measurements", "conditionChannel", "requiredBoundarySidesSource",
+        "preserveExistingPathLossWeights", "spatialGridSize",
+    } or (
+        route_contract.get("measurements")
+        != list(V7_R5_STAGE4_ROUTE_DIAGNOSTIC_MEASUREMENTS)
+        or route_contract.get("conditionChannel") != "terrain_path_ground"
+        or route_contract.get("requiredBoundarySidesSource")
+        != "authorizedBoundaryTopology.requiredBoundarySides"
+        or route_contract.get("preserveExistingPathLossWeights") is not True
+        or route_contract.get("spatialGridSize") != 4
+    ):
+        raise ValueError("Stage 4 semantic renderer route diagnostic contract is invalid")
+    for key in (
+        "reviewThresholdsModified", "failedPreviewPixelsUsedAsTrainingTargets",
+        "executionValuesSelected",
+    ):
+        if contract.get(key) is not False:
+            raise ValueError(f"Stage 4 semantic renderer diagnostic boundary is invalid: {key}")
+    for key in (
+        "trainingConfigApplied", "checkpointFileReadAuthorized",
+        "gpuUseAuthorized", "trainingAuthorized",
+    ):
+        if contract.get(key) is not smoke_active:
+            raise ValueError(f"Stage 4 semantic renderer diagnostic activation is invalid: {key}")
+    return {
+        "status": (
+            "stage4_condition_preserving_semantic_renderer_diagnostic_manifest_contract_valid_active_smoke"
+            if smoke_active
+            else "stage4_condition_preserving_semantic_renderer_diagnostic_manifest_contract_valid_inactive"
+        ),
+        "exactFields": list(CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS),
+    }
+
+
+def validate_fact_conditioned_semantic_mixture_stage4_diagnostic_manifest_support_contract(
+    config,
+):
+    smoke_active = (
+        resolve_stage_mode(config).mode_id
+        == "fact_conditioned_semantic_mixture_stage4_smoke"
+    )
+    contract = config.get("training", {}).get("stage4FailureDiagnostics", {})
+    expected_contract_fields = {
+        "enabled", "status", "semanticMixtureDiagnostics",
+        "routeLateRegressionDiagnostics", "reviewThresholdsModified",
+        "failedPreviewPixelsUsedAsTrainingTargets", "executionValuesSelected",
+        "trainingConfigApplied", "checkpointFileReadAuthorized", "gpuUseAuthorized",
+        "trainingAuthorized",
+    }
+    if set(contract) != expected_contract_fields:
+        raise ValueError(
+            "Stage 4 fact-conditioned semantic mixture diagnostic contract contains "
+            "missing or unknown fields"
+        )
+    semantic_contract = contract.get("semanticMixtureDiagnostics", {})
+    route_contract = contract.get("routeLateRegressionDiagnostics", {})
+    if set(semantic_contract) != {
+        "identities", "sourceConditionChannels", "measurements", "gradientTarget",
+        "manifestFields", "changesTrainingWeightsNow",
+    }:
+        raise ValueError(
+            "Stage 4 fact-conditioned semantic mixture diagnostic registry contains "
+            "unknown fields"
+        )
+    if (
+        contract.get("enabled") is not True
+        or contract.get("status")
+        != (
+            "fact_conditioned_semantic_mixture_diagnostic_manifest_supported_active_smoke"
+            if smoke_active
+            else "fact_conditioned_semantic_mixture_diagnostic_manifest_supported_inactive"
+        )
+        or semantic_contract.get("identities")
+        != list(FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES)
+        or semantic_contract.get("sourceConditionChannels")
+        != list(FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS)
+        or semantic_contract.get("measurements")
+        != [
+            "participation_bce", "contribution_abs_mean",
+            "gated_contribution_abs_mean", "counterfactual_rgb_mae",
+            "final_typed_rgb_mae", "final_response",
+        ]
+        or semantic_contract.get("gradientTarget")
+        != "matching_fact_conditioned_semantic_mixture_private_expert_contributions"
+        or semantic_contract.get("manifestFields")
+        != list(FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS)
+        or semantic_contract.get("changesTrainingWeightsNow") is not False
+    ):
+        raise ValueError(
+            "Stage 4 fact-conditioned semantic mixture diagnostic Manifest support "
+            "contract is invalid"
+        )
+    if set(route_contract) != {
+        "measurements", "conditionChannel", "requiredBoundarySidesSource",
+        "preserveExistingPathLossWeights", "spatialGridSize",
+    } or (
+        route_contract.get("measurements")
+        != list(V7_R5_STAGE4_ROUTE_DIAGNOSTIC_MEASUREMENTS)
+        or route_contract.get("conditionChannel") != "terrain_path_ground"
+        or route_contract.get("requiredBoundarySidesSource")
+        != "authorizedBoundaryTopology.requiredBoundarySides"
+        or route_contract.get("preserveExistingPathLossWeights") is not True
+        or route_contract.get("spatialGridSize") != 4
+    ):
+        raise ValueError(
+            "Stage 4 fact-conditioned semantic mixture route diagnostic contract is invalid"
+        )
+    for key in (
+        "reviewThresholdsModified", "failedPreviewPixelsUsedAsTrainingTargets",
+        "executionValuesSelected",
+    ):
+        if contract.get(key) is not False:
+            raise ValueError(
+                f"Stage 4 fact-conditioned semantic mixture diagnostic boundary is invalid: {key}"
+            )
+    for key in (
+        "trainingConfigApplied", "checkpointFileReadAuthorized",
+        "gpuUseAuthorized", "trainingAuthorized",
+    ):
+        if contract.get(key) is not smoke_active:
+            raise ValueError(
+                f"Stage 4 fact-conditioned semantic mixture diagnostic activation is invalid: {key}"
+            )
+    return {
+        "status": (
+            "stage4_fact_conditioned_semantic_mixture_diagnostic_manifest_contract_valid_active_smoke"
+            if smoke_active
+            else "stage4_fact_conditioned_semantic_mixture_diagnostic_manifest_contract_valid_inactive"
+        ),
+        "exactFields": list(FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS),
     }
 
 
@@ -8678,6 +10550,14 @@ def is_structure_fact_first_stage4(config):
     return config.get("denoiserArchitecture") == "stage4_structure_fact_first_dual_stage_generator_v1"
 
 
+def is_condition_preserving_semantic_renderer_stage4(config):
+    return config.get("denoiserArchitecture") == "stage4_condition_preserving_semantic_renderer_v1"
+
+
+def is_fact_conditioned_semantic_mixture_stage4(config):
+    return config.get("denoiserArchitecture") == "stage4_fact_conditioned_semantic_mixture_decoder_v1"
+
+
 def is_registered_stage_control_config(config):
     status = str(config.get("training", {}).get("trainingAuthorizationStatus", ""))
     return status in FORMAL_MODE_REGISTRY.snapshot()
@@ -8706,6 +10586,8 @@ def uses_registered_v7_capacity_dataset(config):
         or is_v8_stage4_decoded_alignment(config)
         or is_v9_stage4_object_semantic_decoded_alignment(config)
         or is_structure_fact_first_stage4(config)
+        or is_condition_preserving_semantic_renderer_stage4(config)
+        or is_fact_conditioned_semantic_mixture_stage4(config)
     )
 
 
@@ -8715,6 +10597,8 @@ def uses_v7_rollout_validation(config):
         or is_v8_stage4_decoded_alignment(config)
         or is_v9_stage4_object_semantic_decoded_alignment(config)
         or is_structure_fact_first_stage4(config)
+        or is_condition_preserving_semantic_renderer_stage4(config)
+        or is_fact_conditioned_semantic_mixture_stage4(config)
     )
 
 
@@ -8733,6 +10617,8 @@ def is_v6_or_later(config):
         or is_v8_stage4_decoded_alignment(config)
         or is_v9_stage4_object_semantic_decoded_alignment(config)
         or is_structure_fact_first_stage4(config)
+        or is_condition_preserving_semantic_renderer_stage4(config)
+        or is_fact_conditioned_semantic_mixture_stage4(config)
     )
 
 
@@ -8785,9 +10671,13 @@ def register_v9_stage4_diagnostic_manifest_fields(row, train_metrics, epoch, con
     if not (
         is_v9_stage4_object_semantic_decoded_alignment(config)
         or is_structure_fact_first_stage4(config)
+        or is_fact_conditioned_semantic_mixture_stage4(config)
     ):
         return row
     contract_key = (
+        "stage4FactConditionedSemanticMixture"
+        if is_fact_conditioned_semantic_mixture_stage4(config)
+        else
         "stage4StructureFactFirstDualStage"
         if is_structure_fact_first_stage4(config)
         else "stage4ObjectSemanticDecoderAlignment"
@@ -8795,10 +10685,19 @@ def register_v9_stage4_diagnostic_manifest_fields(row, train_metrics, epoch, con
     registry = config.get("training", {}).get(contract_key, {}).get("diagnosticManifestRegistry", {})
     if int(epoch) not in registry.get("fixedEpochs", []):
         return row
-    expected = list(STRUCTURE_FACT_FIRST_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS)
+    expected = list(
+        FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS
+        if is_fact_conditioned_semantic_mixture_stage4(config)
+        else STRUCTURE_FACT_FIRST_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS
+    )
     if registry.get("exactFields") != expected or registry.get("exactFieldCount") != len(expected):
         raise ValueError("V9 Stage 4 diagnostic Manifest registry identity changed")
-    actual = sorted(key for key in train_metrics if key.startswith("stage4Diagnostic"))
+    diagnostic_prefix = (
+        "stage4SemanticMixture"
+        if is_fact_conditioned_semantic_mixture_stage4(config)
+        else "stage4Diagnostic"
+    )
+    actual = sorted(key for key in train_metrics if key.startswith(diagnostic_prefix))
     if actual != sorted(expected):
         missing = sorted(set(expected) - set(actual))
         unknown = sorted(set(actual) - set(expected))

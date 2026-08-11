@@ -28,6 +28,48 @@ DATASET_PATH = Path(
     "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json"
 )
 SOURCE_INDEX_PATH = DATASET_PATH.parent / "source-index.json"
+SEMANTIC_RENDERER_AUTHORIZATION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-condition-preserving-semantic-renderer-cpu-support-20260811-195316458.json"
+)
+SEMANTIC_RENDERER_CONSUMPTION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-condition-preserving-semantic-renderer-cpu-support-20260811-195316458-consumption.json"
+)
+SEMANTIC_RENDERER_REPAIR_AUTHORIZATION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-semantic-renderer-diagnostic-contract-repair-20260811-202829255.json"
+)
+SEMANTIC_RENDERER_REPAIR_CONSUMPTION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-semantic-renderer-diagnostic-contract-repair-20260811-202829255-consumption.json"
+)
+SEMANTIC_RENDERER_SOURCE_CONFIG_PATH = Path(
+    ".runtime/ai-painter/stage4-structure-fact-first-dual-stage-cpu-support/"
+    "20260810-215503422/inactive-config.json"
+)
+SEMANTIC_RENDERER_OUTPUT_PATH = Path(
+    ".runtime/ai-painter/stage4-condition-preserving-semantic-renderer-cpu-support/"
+    "20260811-202829255/inactive-config.json"
+)
+SEMANTIC_MIXTURE_AUTHORIZATION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-fact-conditioned-semantic-mixture-decoder-cpu-support-20260812-003946363/"
+    "authorization.json"
+)
+SEMANTIC_MIXTURE_CONSUMPTION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-fact-conditioned-semantic-mixture-decoder-cpu-support-20260812-003946363/"
+    "consumption.json"
+)
+SEMANTIC_MIXTURE_SOURCE_CONFIG_PATH = Path(
+    ".runtime/ai-painter/stage4-condition-preserving-semantic-renderer-cpu-support/"
+    "20260811-210635203/inactive-config.json"
+)
+SEMANTIC_MIXTURE_OUTPUT_PATH = Path(
+    ".runtime/ai-painter/stage4-semantic-mixture-exact-27-field-registry-implementations/"
+    "20260812-023121844/inactive-config.json"
+)
 SAMPLE_ID = "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6"
 OBJECT_CHANNELS = ["object_footprints", "object_tree", "object_rock", "object_vegetation"]
 ALLOWED_SOURCES = [
@@ -44,7 +86,13 @@ ALLOWED_SOURCES = [
 def main() -> int:
     parser = ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--condition-preserving-semantic-renderer", action="store_true")
+    parser.add_argument("--fact-conditioned-semantic-mixture", action="store_true")
     args = parser.parse_args()
+    if args.fact_conditioned_semantic_mixture:
+        return compile_fact_conditioned_semantic_mixture(args.output)
+    if args.condition_preserving_semantic_renderer:
+        return compile_condition_preserving_semantic_renderer(args.output)
     authorization = validate_authorization()
     expected_output = Path(authorization["outputPaths"]["inactiveConfig"])
     if project_path(args.output) != project_path(expected_output):
@@ -78,6 +126,610 @@ def main() -> int:
         "trainingStarted": False,
     }, ensure_ascii=False, indent=2))
     return 0
+
+
+def compile_condition_preserving_semantic_renderer(output: Path) -> int:
+    validate_semantic_renderer_repair_authorization()
+    authorization = validate_semantic_renderer_authorization()
+    if project_path(output) != project_path(SEMANTIC_RENDERER_OUTPUT_PATH):
+        raise ValueError("semantic renderer inactive config output is not the fixed target")
+    source = read_json(resolve(SEMANTIC_RENDERER_SOURCE_CONFIG_PATH))
+    package = read_json(resolve(DATASET_PATH))
+    source_index = read_json(resolve(SOURCE_INDEX_PATH))
+    rows = [
+        row for row in source_index.get("samples", [])
+        if row.get("sampleId") == SAMPLE_ID
+        and row.get("v7CapacityContributionRegistered") is True
+    ]
+    if len(rows) != 1 or rows[0].get("split") != "validation":
+        raise ValueError("semantic renderer sample 194 is not unique validation")
+    config = compile_semantic_renderer_config(source, authorization, rows[0])
+    trainer.validate_training_inputs(config, package)
+    write_json_exclusive(output, config)
+    print(json.dumps({
+        "status": "stage4_condition_preserving_semantic_renderer_inactive_config_compiled_cpu_validated",
+        "configPath": project_path(output),
+        "configSha256": sha256_file(resolve(output)),
+        "sampleId": SAMPLE_ID,
+        "sampleSplit": "validation",
+        "requiredBoundarySides": ["west"],
+        "checkpointRead": False,
+        "optimizerCreated": False,
+        "backwardExecuted": False,
+        "modelWeightsModified": False,
+        "gpuUsed": False,
+        "trainingStarted": False,
+    }, ensure_ascii=False, indent=2))
+    return 0
+
+
+def compile_fact_conditioned_semantic_mixture(output: Path) -> int:
+    authorization = validate_semantic_mixture_authorization()
+    if project_path(output) != project_path(SEMANTIC_MIXTURE_OUTPUT_PATH):
+        raise ValueError("semantic mixture inactive config is not the immutable output target")
+    source = read_json(resolve(SEMANTIC_MIXTURE_SOURCE_CONFIG_PATH))
+    package = read_json(resolve(DATASET_PATH))
+    source_index = read_json(resolve(SOURCE_INDEX_PATH))
+    rows = [
+        row for row in source_index.get("samples", [])
+        if row.get("sampleId") == SAMPLE_ID
+        and row.get("v7CapacityContributionRegistered") is True
+    ]
+    if len(rows) != 1 or rows[0].get("split") != "validation":
+        raise ValueError("semantic mixture sample 194 is not unique validation")
+    config = compile_semantic_mixture_config(source, authorization, rows[0])
+    trainer.validate_training_inputs(config, package)
+    write_json_exclusive(output, config)
+    print(json.dumps({
+        "status": "stage4_fact_conditioned_semantic_mixture_inactive_config_compiled_cpu_validated",
+        "configPath": project_path(output),
+        "configSha256": sha256_file(resolve(output)),
+        "sampleId": SAMPLE_ID,
+        "sampleSplit": "validation",
+        "requiredBoundarySides": ["west"],
+        "diagnosticManifestMetricCount": len(
+            trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS
+        ),
+        "checkpointRead": False,
+        "optimizerCreated": False,
+        "backwardExecuted": False,
+        "modelWeightsModified": False,
+        "gpuUsed": False,
+        "trainingStarted": False,
+    }, ensure_ascii=False, indent=2))
+    return 0
+
+
+def validate_semantic_mixture_authorization() -> dict:
+    authorization = read_json(resolve(SEMANTIC_MIXTURE_AUTHORIZATION_PATH))
+    request_id = (
+        "owner-authorized-stage4-fact-conditioned-semantic-mixture-decoder-"
+        "cpu-support-20260812-003946363"
+    )
+    command_ref = "stage4-fact-conditioned-semantic-mixture-decoder-cpu-support-20260812-003946363"
+    scope = (
+        "implement_stage4_fact_conditioned_semantic_mixture_decoder_v1_cpu_support_"
+        "compile_inactive_config_and_regressions_only"
+    )
+    if (
+        authorization.get("requestId") != request_id
+        or authorization.get("commandRef") != command_ref
+        or authorization.get("scope") != scope
+        or authorization.get("status") != "owner_authorized_unconsumed"
+        or authorization.get("outputNamespace")
+        != project_path(SEMANTIC_MIXTURE_OUTPUT_PATH.parent)
+    ):
+        raise ValueError("semantic mixture implementation authorization identity is invalid")
+    expected_bindings = {
+        "designTerminal": "18d8791ab39998e023bbfdb87359225441a0b83bef2a0299157ad148d998ada3",
+        "designReport": "e8be3bf92e094d5552f5d699be6b4664fa99b945e1df73db27059aba56aa08aa",
+        "inactiveDesignContract": "93b34d56f2ed90922e2600d42923bdc28978bc0c29880456172af7d32f46da32",
+        "designCpuRegression": "84fa31bb5d7f77df6e51a20f01ff75207e4af995486d7675bc1f28cf3bc42af2",
+    }
+    for key, expected_sha in expected_bindings.items():
+        binding = authorization.get("bindings", {}).get(key, {})
+        if (
+            binding.get("sha256") != expected_sha
+            or sha256_file(resolve(Path(binding.get("path", "missing")))) != expected_sha
+        ):
+            raise ValueError(f"semantic mixture immutable binding changed: {key}")
+    actions = authorization.get("authorizedActions", {})
+    required = (
+        "modelArchitectureBranchCpuImplementation",
+        "trainerLegalSupervisionAndInactiveAuthorizationImplementation",
+        "modeRegistryInactiveModeImplementation", "inactiveConfigCompilerImplementation",
+        "cpuCheckerImplementation", "syntheticCpuForward", "torchAutogradGradInspection",
+        "cpuPositiveNegativeRegression", "inactiveConfigWrite", "supportContractWrite",
+        "cpuReportWrite", "ownerActionRequestWrite", "terminalEvidenceWrite",
+        "uniquePlanAndTaskCapsuleSync",
+    )
+    forbidden = (
+        "freeHyperparameterSelection", "checkpointReadOrLoad", "optimizerCreation",
+        "backwardExecution", "modelWeightModification", "gpuUse", "smoke",
+        "fullTraining", "stage5StrictRevalidation", "formalInference",
+        "checkpointPromotion", "runtimeFrame", "worldEntry",
+    )
+    if any(actions.get(key) is not True for key in required):
+        raise ValueError("semantic mixture authorized implementation actions are incomplete")
+    if any(actions.get(key) is not False for key in forbidden):
+        raise ValueError("semantic mixture authorization opens a forbidden action")
+    consumption = read_json(resolve(SEMANTIC_MIXTURE_CONSUMPTION_PATH))
+    if (
+        consumption.get("status")
+        != "stage4_fact_conditioned_semantic_mixture_decoder_cpu_support_implementation_authorization_atomically_consumed"
+        or consumption.get("requestId") != request_id
+        or consumption.get("commandRef") != command_ref
+        or consumption.get("scope") != scope
+        or consumption.get("authorizationSha256")
+        != sha256_file(resolve(SEMANTIC_MIXTURE_AUTHORIZATION_PATH))
+        or consumption.get("oneTimeConsumption") is not True
+    ):
+        raise ValueError("semantic mixture implementation authorization was not atomically consumed")
+    return authorization
+
+
+def compile_semantic_mixture_config(source: dict, authorization: dict, sample: dict) -> dict:
+    config = deepcopy(source)
+    architecture = "stage4_fact_conditioned_semantic_mixture_decoder_v1"
+    config["architectureVersion"] = "fact-conditioned-semantic-mixture-decoder-v1-cpu"
+    config["denoiserArchitecture"] = architecture
+    config["status"] = trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_CPU_INACTIVE_STATUS
+    config["formalInferenceEligible"] = False
+    training = config["training"]
+    for key in (
+        "stage4ConditionPreservingSemanticRenderer",
+        "conditionPreservingSemanticRendererSampleBinding",
+        "conditionPreservingSemanticRendererStage4SingleSampleSmokeContract",
+    ):
+        training.pop(key, None)
+    training["trainingAuthorizationStatus"] = (
+        trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_CPU_INACTIVE_STATUS
+    )
+    training["authorizedInitialization"] = "project_random_fact_conditioned_semantic_mixture"
+    training["seed"] = 20263722
+    training["denoiserLossVersion"] = (
+        "velocity_decoded_rgb_fact_conditioned_semantic_mixture_v1"
+    )
+    training["bestCheckpointMetric"] = (
+        "fixed_grid_plus_fact_conditioned_semantic_mixture_score_stage4"
+    )
+    training["authorizedOverfitSampleId"] = SAMPLE_ID
+    training["authorizedBoundaryTopology"] = {
+        **deepcopy(training.get("authorizedBoundaryTopology", {})),
+        "enabled": True,
+        "requiredBoundarySides": ["west"],
+    }
+    training["factConditionedSemanticMixtureSampleBinding"] = {
+        "sampleId": SAMPLE_ID,
+        "sampleSplit": "validation",
+        "conditionLabel": sample["conditionLabel"],
+        "imagePath": sample["imagePath"],
+        "imageSha256": sample["imageSha256"],
+        "conditionPackPath": sample["conditionPackPath"],
+        "conditionPackSha256": sha256_file(resolve(Path(sample["conditionPackPath"]))),
+        "seed": 20263722,
+        "requiredBoundarySides": ["west"],
+        "resolution": {"width": 256, "height": 192},
+        "requiredSplitCounts": {"train": 48, "validation": 8, "challenge": 4, "regression": 4},
+    }
+    identities = list(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES)
+    sources = list(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS)
+    auth_binding = {
+        "path": project_path(SEMANTIC_MIXTURE_AUTHORIZATION_PATH),
+        "sha256": sha256_file(resolve(SEMANTIC_MIXTURE_AUTHORIZATION_PATH)),
+    }
+    consumption_binding = {
+        "path": project_path(SEMANTIC_MIXTURE_CONSUMPTION_PATH),
+        "sha256": sha256_file(resolve(SEMANTIC_MIXTURE_CONSUMPTION_PATH)),
+    }
+    training["stage4FactConditionedSemanticMixture"] = {
+        "enabled": False,
+        "status": "cpu_support_verified_not_active",
+        "contractId": architecture,
+        "architectureId": architecture,
+        "conditionChannelCount": 23,
+        "latentOutputShapeChanged": False,
+        "autoencoderFrozen": True,
+        "newCheckpointIdentityRequired": True,
+        "oldDenoiserCheckpointCompatible": False,
+        "newRandomInitializationRequired": True,
+        "singleFormalMainline": True,
+        "parallelBackendCreated": False,
+        "programmaticPixelRenderingAllowed": False,
+        "freeHyperparametersSelected": False,
+        "typedExperts": {
+            "identities": identities,
+            "sourceConditionChannels": sources,
+            "count": len(identities),
+            "privateContributionBranches": True,
+            "velocityChannelsDerivedFromExistingOutput": True,
+            "typedIdentityCollapsedBeforeOutput": False,
+            "otherExpertPrivateGradientAllowed": False,
+        },
+        "learnedCompositor": {
+            "kind": "typed_fact_conditioned_gated_additive_mixture_v1",
+            "baseContributionPreserved": True,
+            "typedContributionsIndividuallyObservable": True,
+            "meanCollapseBeforeOutputAllowed": False,
+            "ruleDrawnPixelsAllowed": False,
+        },
+        "legalSupervision": {
+            "allowedSources": [
+                "original_owner_approved_reference_rgb",
+                "original_compiled_23_channel_condition_pack",
+                "approved_world_facts", "visual_fact_manifest", "project_route_geometry",
+                "original_object_semantic_masks", "frozen_project_autoencoder_features",
+            ],
+            "participationTargetChannels": sources,
+            "typedDecodedCounterfactualRequired": True,
+            "finalTypedRegionMetricsSeparate": True,
+            "weightSource": "training.denoiserLossWeights.discreteConditionOutputBinding",
+            "failedPreviewPixelsUsedAsTargets": False,
+            "machineReviewThresholdsUsedAsTargets": False,
+            "reviewResultsUsedAsTargets": False,
+            "failedSmokeCheckpointUsedAsTargetOrInitialization": False,
+        },
+        "diagnosticManifestRegistry": {
+            "exactFieldCount": len(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS),
+            "exactFields": list(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS),
+            "rejectUnknownFields": True,
+            "configurationProvenance": {
+                "reusedDiscreteConditionWeight": {
+                    "source": "training.denoiserLossWeights.discreteConditionOutputBinding",
+                    "value": float(training["denoiserLossWeights"]["discreteConditionOutputBinding"]),
+                    "epochDiagnosticField": False,
+                },
+            },
+            "registrationDecisionBindings": deepcopy(
+                trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_REGISTRATION_DECISION_BINDINGS
+            ),
+        },
+        "evidenceBindings": deepcopy(authorization["bindings"]),
+        "ownerImplementationAuthorization": {
+            "authorizationPath": auth_binding["path"],
+            "authorizationSha256": auth_binding["sha256"],
+            "implementationConsumptionPath": consumption_binding["path"],
+            "implementationConsumptionSha256": consumption_binding["sha256"],
+        },
+        "activationGate": {key: False for key in (
+            "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+            "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+            "trainingNow", "smoke30EpochNow", "stage4FullTrainingNow",
+            "strictRevalidationNow", "formalInferenceNow", "checkpointPromotionNow",
+            "runtimeFrameNow", "worldEntryNow",
+        )},
+    }
+    training["stage4FailureDiagnostics"] = {
+        "enabled": True,
+        "status": "fact_conditioned_semantic_mixture_diagnostic_manifest_supported_inactive",
+        "semanticMixtureDiagnostics": {
+            "identities": identities,
+            "sourceConditionChannels": sources,
+            "measurements": [
+                "participation_bce", "contribution_abs_mean",
+                "gated_contribution_abs_mean", "counterfactual_rgb_mae",
+                "final_typed_rgb_mae", "final_response",
+            ],
+            "gradientTarget": "matching_fact_conditioned_semantic_mixture_private_expert_contributions",
+            "manifestFields": list(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS),
+            "changesTrainingWeightsNow": False,
+        },
+        "routeLateRegressionDiagnostics": {
+            "measurements": list(trainer.V7_R5_STAGE4_ROUTE_DIAGNOSTIC_MEASUREMENTS),
+            "conditionChannel": "terrain_path_ground",
+            "requiredBoundarySidesSource": "authorizedBoundaryTopology.requiredBoundarySides",
+            "preserveExistingPathLossWeights": True,
+            "spatialGridSize": 4,
+        },
+        "reviewThresholdsModified": False,
+        "failedPreviewPixelsUsedAsTrainingTargets": False,
+        "executionValuesSelected": False,
+        "trainingConfigApplied": False,
+        "checkpointFileReadAuthorized": False,
+        "gpuUseAuthorized": False,
+        "trainingAuthorized": False,
+    }
+    training["ownerTrainingAuthorization"] = {
+        "authorizationId": authorization["requestId"],
+        "authorizationPath": auth_binding["path"],
+        "authorizationSha256": auth_binding["sha256"],
+        "implementationConsumptionPath": consumption_binding["path"],
+        "implementationConsumptionSha256": consumption_binding["sha256"],
+        "status": "not_authorized_cpu_support_only",
+        **{key: False for key in (
+            "checkpointLoadingAuthorized", "optimizerCreationAuthorized",
+            "backwardExecutionAuthorized", "modelWeightMutationAuthorized",
+            "gpuTrainingAuthorizedNow", "singleSampleGpuOverfitSmokeAuthorized",
+            "fullTrainingAuthorized", "stage1Authorized", "stage2Authorized",
+            "strictRevalidationAuthorized", "validationAuthorized",
+            "formalInferenceAuthorized", "checkpointPromotionAuthorized",
+            "runtimeFrameAuthorized", "worldEntryAuthorized", "automaticRetryAuthorized",
+        )},
+    }
+    return config
+
+
+def validate_semantic_renderer_authorization() -> dict:
+    authorization = read_json(resolve(SEMANTIC_RENDERER_AUTHORIZATION_PATH))
+    request_id = "owner-authorized-stage4-condition-preserving-semantic-renderer-cpu-support-20260811-195316458"
+    scope = "implement_stage4_condition_preserving_semantic_renderer_v1_cpu_support_inactive_only"
+    if (
+        authorization.get("requestId") != request_id
+        or authorization.get("commandRef") != request_id
+        or authorization.get("scope") != scope
+        or authorization.get("status") != "resolved_owner_authorized_not_consumed"
+    ):
+        raise ValueError("semantic renderer implementation authorization identity is invalid")
+    for key, binding in authorization.get("bindings", {}).items():
+        if binding.get("sha256") != sha256_file(resolve(Path(binding.get("path", "missing")))):
+            raise ValueError(f"semantic renderer immutable binding changed: {key}")
+    consumption = read_json(resolve(SEMANTIC_RENDERER_CONSUMPTION_PATH))
+    if (
+        consumption.get("status")
+        != "stage4_condition_preserving_semantic_renderer_cpu_support_implementation_authorization_atomically_consumed"
+        or consumption.get("requestId") != request_id
+        or consumption.get("commandRef") != request_id
+        or consumption.get("scope") != scope
+        or consumption.get("authorizationSha256")
+        != sha256_file(resolve(SEMANTIC_RENDERER_AUTHORIZATION_PATH))
+        or consumption.get("oneTimeConsumption") is not True
+    ):
+        raise ValueError("semantic renderer implementation authorization was not atomically consumed")
+    return authorization
+
+
+def validate_semantic_renderer_repair_authorization() -> dict:
+    authorization = read_json(resolve(SEMANTIC_RENDERER_REPAIR_AUTHORIZATION_PATH))
+    request_id = "owner-authorized-stage4-semantic-renderer-diagnostic-contract-repair-20260811-202829255"
+    scope = (
+        "implement_stage4_condition_preserving_semantic_renderer_diagnostic_contract_"
+        "and_autograd_assertion_repair_once"
+    )
+    if (
+        authorization.get("requestId") != request_id
+        or authorization.get("commandRef") != request_id
+        or authorization.get("scope") != scope
+        or authorization.get("status") != "resolved_owner_authorized_not_consumed"
+    ):
+        raise ValueError("semantic renderer repair authorization identity is invalid")
+    expected_bindings = {
+        "attributionTerminal": "7c9302d1933eb6a51e33caa783be16df4d70350b71f1eabf6d62554d84520fef",
+        "attributionReport": "23d9804dedf08f040d55826babc64f89efa64a56d6881891f0528f7e4e043cbc",
+        "inactiveRepairContract": "68eddca82378fd8fda822fec9d85f402861b580dab151e130f8242003de97db8",
+    }
+    for key, expected_sha in expected_bindings.items():
+        binding = authorization.get("bindings", {}).get(key, {})
+        if (
+            binding.get("sha256") != expected_sha
+            or sha256_file(resolve(Path(binding.get("path", "missing")))) != expected_sha
+        ):
+            raise ValueError(f"semantic renderer repair immutable binding changed: {key}")
+    frozen = authorization.get("frozenImplementation", {})
+    if (
+        frozen.get("modelSha256")
+        != "0c4c7031fb6bcbfe76d35157efaaecac707691706ec871c59b064b679d7c16cc"
+        or frozen.get("modeRegistrySha256")
+        != "efa421b1670db32c98df86aa477eb150d1a5c14673ac78880b2dd07cd019633d"
+        or sha256_file(resolve(Path("ml/ai-painter/src/ai_painter/complete_world/model.py")))
+        != frozen.get("modelSha256")
+        or sha256_file(resolve(Path("ml/ai-painter/scripts/ai_painter_stage_mode_registry.py")))
+        != frozen.get("modeRegistrySha256")
+    ):
+        raise ValueError("semantic renderer repair changed a frozen implementation")
+    actions = authorization.get("authorizedActions", {})
+    required = (
+        "trainerDiagnosticDispatchImplementation",
+        "trainerDiagnosticContractValidationImplementation",
+        "inactiveConfigCompilerDiagnosticContractImplementation",
+        "cpuCheckerAutogradAssertionImplementation",
+        "cpuCheckerLegacyDiagnosticNegativeCoverage",
+        "cpuPositiveNegativeRegression",
+        "completeInactiveConfigurationAudit",
+        "inactiveConfigWrite",
+        "architectureSupportContractWrite",
+        "cpuReportWrite",
+        "ownerActionRequestWrite",
+        "terminalEvidenceWrite",
+        "uniquePlanUpdate",
+        "localTaskCapsuleUpdate",
+    )
+    forbidden = (
+        "modelModification", "modeRegistryModification", "lossValueOrWeightModification",
+        "toleranceRelaxation", "checkpointReadOrLoad", "optimizerCreation",
+        "backwardExecution", "modelWeightModification", "gpuUse", "smoke", "training",
+        "stage4FullTraining", "stage5StrictRevalidation", "formalInference",
+        "checkpointPromotion", "runtimeFrame", "worldEntry", "automaticRetry",
+    )
+    if any(actions.get(key) is not True for key in required):
+        raise ValueError("semantic renderer repair implementation actions are incomplete")
+    if any(actions.get(key) is not False for key in forbidden):
+        raise ValueError("semantic renderer repair opens a forbidden action")
+    consumption = read_json(resolve(SEMANTIC_RENDERER_REPAIR_CONSUMPTION_PATH))
+    if (
+        consumption.get("status")
+        != "stage4_semantic_renderer_diagnostic_contract_repair_implementation_authorization_atomically_consumed"
+        or consumption.get("requestId") != request_id
+        or consumption.get("commandRef") != request_id
+        or consumption.get("scope") != scope
+        or consumption.get("authorizationSha256")
+        != sha256_file(resolve(SEMANTIC_RENDERER_REPAIR_AUTHORIZATION_PATH))
+        or consumption.get("oneTimeConsumption") is not True
+    ):
+        raise ValueError("semantic renderer repair authorization was not atomically consumed")
+    return authorization
+
+
+def compile_semantic_renderer_config(source: dict, authorization: dict, sample: dict) -> dict:
+    config = deepcopy(source)
+    architecture = "stage4_condition_preserving_semantic_renderer_v1"
+    config["architectureVersion"] = "condition-preserving-semantic-renderer-v1-cpu"
+    config["denoiserArchitecture"] = architecture
+    config["status"] = "stage4_condition_preserving_semantic_renderer_cpu_supported_inactive"
+    config["formalInferenceEligible"] = False
+    training = config["training"]
+    for key in (
+        "stage4StructureFactFirstDualStage", "structureFactFirstPhase0Contract",
+        "structureFactFirstStage4SingleSampleSmokeContract",
+    ):
+        training.pop(key, None)
+    training["trainingAuthorizationStatus"] = (
+        trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_STAGE4_CPU_INACTIVE_STATUS
+    )
+    training["authorizedInitialization"] = "project_random_condition_preserving_semantic_renderer"
+    training["denoiserLossVersion"] = (
+        "velocity_decoded_rgb_condition_preserving_learned_semantic_renderer_stage4"
+    )
+    training["bestCheckpointMetric"] = (
+        "fixed_grid_plus_condition_preserving_semantic_renderer_score_stage4"
+    )
+    training["authorizedOverfitSampleId"] = SAMPLE_ID
+    training["authorizedBoundaryTopology"] = {
+        **deepcopy(training.get("authorizedBoundaryTopology", {})),
+        "enabled": True,
+        "requiredBoundarySides": ["west"],
+    }
+    training["conditionPreservingSemanticRendererSampleBinding"] = {
+        "sampleId": SAMPLE_ID,
+        "sampleSplit": "validation",
+        "conditionLabel": sample["conditionLabel"],
+        "imagePath": sample["imagePath"],
+        "imageSha256": sample["imageSha256"],
+        "conditionPackPath": sample["conditionPackPath"],
+        "conditionPackSha256": sha256_file(resolve(Path(sample["conditionPackPath"]))),
+        "seed": 20263722,
+        "requiredBoundarySides": ["west"],
+        "resolution": {"width": 256, "height": 192},
+        "requiredSplitCounts": {"train": 48, "validation": 8, "challenge": 4, "regression": 4},
+    }
+    semantic_channels = list(trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_CHANNELS)
+    source_channels = list(trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_SOURCE_CHANNELS)
+    allowed_sources = [
+        "original_owner_approved_reference_rgb",
+        "original_compiled_23_channel_condition_pack",
+        "approved_world_facts_visual_fact_manifest_region_graph_and_edge_ports",
+        "project_generated_game_coordinate_route_geometry",
+        "original_object_identity_and_semantic_masks",
+        "frozen_project_autoencoder_encoder_and_decoder_features",
+        "current_model_prediction_derived_without_failed_preview_targets",
+    ]
+    auth_binding = {
+        "path": project_path(SEMANTIC_RENDERER_AUTHORIZATION_PATH),
+        "sha256": sha256_file(resolve(SEMANTIC_RENDERER_AUTHORIZATION_PATH)),
+    }
+    consumption_binding = {
+        "path": project_path(SEMANTIC_RENDERER_CONSUMPTION_PATH),
+        "sha256": sha256_file(resolve(SEMANTIC_RENDERER_CONSUMPTION_PATH)),
+    }
+    activation_gate = {
+        key: False for key in (
+            "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+            "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+            "trainingNow", "smoke30EpochNow", "stage4FullTrainingNow",
+            "strictRevalidationNow", "formalInferenceNow", "checkpointPromotionNow",
+            "runtimeFrameNow", "worldEntryNow",
+        )
+    }
+    training["stage4ConditionPreservingSemanticRenderer"] = {
+        "enabled": False,
+        "status": "cpu_support_verified_not_active",
+        "contractId": architecture,
+        "architectureId": architecture,
+        "conditionChannelCount": 23,
+        "latentOutputShapeChanged": False,
+        "autoencoderFrozen": True,
+        "newCheckpointSchemaRequired": True,
+        "oldDenoiserCheckpointCompatible": False,
+        "newRandomInitializationRequired": True,
+        "programmaticPixelDrawingAllowed": False,
+        "ruleTexturePastingAllowed": False,
+        "reviewThresholdDrivenRenderingAllowed": False,
+        "newFreeHyperparameterSelected": False,
+        "learnedSemanticRenderer": {
+            "channels": semantic_channels,
+            "sourceConditionChannels": source_channels,
+            "fusionScales": ["up1", "up0"],
+            "fusionKind": "learned_condition_preserving_residual_gate_v1",
+            "independentPerSemanticType": True,
+            "primaryRgbPathPreserved": True,
+            "dimensionsDerivedFromExistingModelScales": True,
+        },
+        "legalSupervision": {
+            "allowedSources": allowed_sources,
+            "semanticTargetChannels": semantic_channels,
+            "weightSource": "training.denoiserLossWeights.discreteConditionOutputBinding",
+            "failedPreviewPixelsUsedAsTargets": False,
+            "machineReviewThresholdsUsedAsTargets": False,
+            "reviewPassFailUsedAsLossTarget": False,
+            "failedSmokeCheckpointUsedAsTarget": False,
+        },
+        "diagnosticManifestRegistry": {
+            "exactFieldCount": len(trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS),
+            "exactFields": list(trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS),
+            "rejectUnknownFields": True,
+        },
+        "evidenceBindings": deepcopy(authorization["bindings"]),
+        "ownerImplementationAuthorization": {
+            "authorizationPath": auth_binding["path"],
+            "authorizationSha256": auth_binding["sha256"],
+            "implementationConsumptionPath": consumption_binding["path"],
+            "implementationConsumptionSha256": consumption_binding["sha256"],
+        },
+        "activationGate": activation_gate,
+    }
+    training["stage4FailureDiagnostics"] = {
+        "enabled": True,
+        "status": trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_STATUS,
+        "semanticRendererDiagnostics": {
+            "channels": semantic_channels,
+            "measurements": [
+                "independent_loss",
+                "fusion_response",
+                "primary_path_availability",
+            ],
+            "gradientTarget": trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_GRADIENT_TARGET,
+            "manifestFields": list(trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS),
+            "changesTrainingWeightsNow": False,
+        },
+        "routeLateRegressionDiagnostics": {
+            "measurements": list(trainer.V7_R5_STAGE4_ROUTE_DIAGNOSTIC_MEASUREMENTS),
+            "conditionChannel": "terrain_path_ground",
+            "requiredBoundarySidesSource": "authorizedBoundaryTopology.requiredBoundarySides",
+            "preserveExistingPathLossWeights": True,
+            "spatialGridSize": 4,
+        },
+        "reviewThresholdsModified": False,
+        "failedPreviewPixelsUsedAsTrainingTargets": False,
+        "executionValuesSelected": False,
+        "trainingConfigApplied": False,
+        "checkpointFileReadAuthorized": False,
+        "gpuUseAuthorized": False,
+        "trainingAuthorized": False,
+    }
+    training["ownerTrainingAuthorization"] = {
+        "authorizationId": authorization["requestId"],
+        "authorizationPath": auth_binding["path"],
+        "authorizationSha256": auth_binding["sha256"],
+        "implementationConsumptionPath": consumption_binding["path"],
+        "implementationConsumptionSha256": consumption_binding["sha256"],
+        "status": "not_authorized_cpu_support_only",
+        "checkpointLoadingAuthorized": False,
+        "optimizerCreationAuthorized": False,
+        "backwardExecutionAuthorized": False,
+        "modelWeightMutationAuthorized": False,
+        "gpuTrainingAuthorizedNow": False,
+        "singleSampleGpuOverfitSmokeAuthorized": False,
+        "fullTrainingAuthorized": False,
+        "stage1Authorized": False,
+        "stage2Authorized": False,
+        "strictRevalidationAuthorized": False,
+        "validationAuthorized": False,
+        "formalInferenceAuthorized": False,
+        "checkpointPromotionAuthorized": False,
+        "runtimeFrameAuthorized": False,
+        "worldEntryAuthorized": False,
+        "automaticRetryAuthorized": False,
+    }
+    return config
 
 
 def validate_authorization() -> dict:

@@ -44,6 +44,7 @@ _OWNER_FIELDS = {
     "explicitlyDeniedActions",
     "phase0Step",
     "executionState",
+    "preflightOnly",
     "status",
     "checkpointLoadingAuthorized",
     "optimizerCreationAuthorized",
@@ -64,6 +65,14 @@ _OWNER_FIELDS = {
 }
 
 _PHASE0_MODE_ID = "structure_fact_first_stage4_phase0"
+_STRUCTURE_SMOKE_MODE_ID = "structure_fact_first_stage4_smoke"
+_STRUCTURE_SMOKE_PREFLIGHT_ACTIONS = frozenset(
+    {
+        ExecutionAction.SELECT_BOUND_SAMPLE,
+        ExecutionAction.INSPECT_AUTOENCODER_IDENTITY,
+        ExecutionAction.INSPECT_CHECKPOINT_IDENTITY,
+    }
+)
 _PHASE0_ALLOWED_ACTIONS = frozenset(
     {
         ExecutionAction.SELECT_BOUND_SAMPLE,
@@ -219,12 +228,39 @@ def _validate_owner_training_authorization(
         ):
             raise ValueError("Owner authorization immutable identity is invalid")
         execution_state = owner.get("executionState", "consumed")
-        if spec.mode_id == _PHASE0_MODE_ID and execution_state == "preflight_unconsumed":
+        structure_smoke_preflight = (
+            spec.mode_id == _STRUCTURE_SMOKE_MODE_ID
+            and execution_state == "preflight_unconsumed"
+        )
+        phase0_preflight = (
+            spec.mode_id == _PHASE0_MODE_ID
+            and execution_state == "preflight_unconsumed"
+        )
+        if phase0_preflight or structure_smoke_preflight:
             if owner.get("executionConsumptionPath") is not None or owner.get("executionConsumptionSha256") is not None:
-                raise ValueError("unconsumed Phase0 preflight cannot carry an execution consumption")
+                raise ValueError("unconsumed preflight cannot carry an execution consumption")
             if authorization.get("status") != "resolved_owner_authorized_not_consumed":
-                raise ValueError("unconsumed Phase0 preflight authorization state is invalid")
+                raise ValueError("unconsumed preflight authorization state is invalid")
+            if structure_smoke_preflight:
+                if owner.get("preflightOnly") is not True or authorization.get("preflightOnly") is not True:
+                    raise ValueError("structure-fact-first Smoke preflight requires preflightOnly=true")
+                if any(
+                    owner.get(key) is not False
+                    for key in (
+                        "checkpointLoadingAuthorized", "optimizerCreationAuthorized",
+                        "backwardExecutionAuthorized", "modelWeightMutationAuthorized",
+                        "gpuTrainingAuthorizedNow", "singleSampleGpuOverfitSmokeAuthorized",
+                        "fullTrainingAuthorized", "stage1Authorized", "stage2Authorized",
+                        "strictRevalidationAuthorized", "validationAuthorized",
+                        "formalInferenceAuthorized", "checkpointPromotionAuthorized",
+                        "runtimeFrameAuthorized", "worldEntryAuthorized",
+                        "automaticRetryAuthorized",
+                    )
+                ):
+                    raise ValueError("structure-fact-first Smoke preflight opens a forbidden action")
         else:
+            if owner.get("preflightOnly") is True:
+                raise ValueError("non-preflight execution cannot carry preflightOnly=true")
             if execution_state != "consumed":
                 raise ValueError("active execution consumption state is invalid")
             consumption_path = _verify_bound_file(
@@ -242,7 +278,7 @@ def _validate_owner_training_authorization(
                 or (scope is not None and consumption.get("scope") != scope)
             ):
                 raise ValueError("execution consumption immutable identity is invalid")
-        if spec.mode_id == _PHASE0_MODE_ID:
+        if spec.mode_id in {_PHASE0_MODE_ID, _STRUCTURE_SMOKE_MODE_ID}:
             implementation_authorization_path = _verify_bound_file(
                 project_root,
                 str(owner.get("implementationAuthorizationPath")),
@@ -280,12 +316,18 @@ def _validate_owner_training_authorization(
             except ValueError as error:
                 raise ValueError("Owner execution authorization contains an unknown action") from error
             phase0_step = str(owner.get("phase0Step", ""))
-            required_actions = _PHASE0_REQUIRED_ACTIONS.get(phase0_step)
+            required_actions = (
+                _PHASE0_REQUIRED_ACTIONS.get(phase0_step)
+                if spec.mode_id == _PHASE0_MODE_ID
+                else _STRUCTURE_SMOKE_PREFLIGHT_ACTIONS
+                if structure_smoke_preflight
+                else frozenset(_actions_for_mode(spec))
+            )
             if required_actions is None:
                 raise ValueError("Owner Phase0 step is unknown")
             if normalized_actions != required_actions:
                 raise ValueError("Owner Phase0 actions are incomplete, excessive, or crossed")
-            if normalized_actions - _PHASE0_ALLOWED_ACTIONS:
+            if spec.mode_id == _PHASE0_MODE_ID and normalized_actions - _PHASE0_ALLOWED_ACTIONS:
                 raise ValueError("Owner Phase0 action is outside the ModeSpec")
             denied_values = owner.get("explicitlyDeniedActions")
             if not isinstance(denied_values, list):
@@ -311,6 +353,7 @@ def _validate_owner_training_authorization(
         "scope": owner.get("scope"),
         "phase0Step": owner.get("phase0Step"),
         "executionState": owner.get("executionState", "consumed"),
+        "preflightOnly": owner.get("preflightOnly", False),
         "executionActions": owner.get("executionActions"),
         "status": owner.get("status"),
     }
@@ -328,7 +371,7 @@ def resolve_stage_execution_grant(
     owner_identity = _validate_owner_training_authorization(
         training, spec, root, verify_owner_files
     )
-    smoke = training.get("v9Stage4SingleSampleSmokeContract") or training.get(
+    smoke = training.get("structureFactFirstStage4SingleSampleSmokeContract") or training.get("v9Stage4SingleSampleSmokeContract") or training.get(
         "v8Stage4SingleSampleSmokeContract"
     ) or training.get("r5Stage4BoundedRepairSmokeContract") or {}
     sample_id = smoke.get("sampleId") or training.get("authorizedOverfitSampleId")
@@ -373,7 +416,7 @@ def resolve_stage_execution_grant(
     }
     mode_actions = _actions_for_mode(spec)
     owner_actions = owner_identity.get("executionActions")
-    if spec.mode_id == _PHASE0_MODE_ID:
+    if spec.mode_id in {_PHASE0_MODE_ID, _STRUCTURE_SMOKE_MODE_ID}:
         explicit_owner_actions = {ExecutionAction(value) for value in owner_actions or []}
         allowed_actions = mode_actions & explicit_owner_actions
     else:

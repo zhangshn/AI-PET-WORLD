@@ -10,9 +10,11 @@ import json
 import math
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import traceback
 
 import torch
@@ -20,8 +22,10 @@ import torch
 from ai_painter.complete_world import (
     STAGE4_STRUCTURE_FACT_CHANNEL_ORDER,
     STAGE4_STRUCTURE_FACT_DISCRETE_CHANNELS,
+    add_noise,
     build_complete_world_system,
     resize_stage4_structure_fact_layout,
+    velocity_target,
 )
 from ai_painter.complete_world.dataset import AiAssistedConditionalDenoiserDataset
 import compile_ai_assisted_v9_r5_stage4_inactive_config as compiler
@@ -196,7 +200,23 @@ def main() -> int:
     parser.add_argument("--stage-control-convergence-contract", action="store_true")
     parser.add_argument("--structure-fact-first-phase0-contract", action="store_true")
     parser.add_argument("--structure-fact-first-phase0-bc-continuation-contract", action="store_true")
+    parser.add_argument("--structure-fact-first-phase0-canonical-condition-identity-contract", action="store_true")
     parser.add_argument("--structure-fact-first-topology-transfer-contract", action="store_true")
+    parser.add_argument("--structure-fact-first-stage4-smoke-contract", action="store_true")
+    parser.add_argument("--condition-preserving-semantic-renderer-contract", action="store_true")
+    parser.add_argument("--fact-conditioned-semantic-mixture-contract", action="store_true")
+    parser.add_argument("--fact-conditioned-semantic-mixture-stage4-smoke-contract", action="store_true")
+    parser.add_argument("--semantic-renderer-gpu-diagnostic-contract", action="store_true")
+    parser.add_argument("--semantic-renderer-gpu-diagnostic-preflight", action="store_true")
+    parser.add_argument("--semantic-renderer-gpu-diagnostic-execute", action="store_true")
+    parser.add_argument("--condition-preserving-semantic-renderer-stage4-smoke-contract", action="store_true")
+    parser.add_argument("--execution-authorization", type=Path)
+    parser.add_argument("--execution-authorization-sha256")
+    parser.add_argument("--execution-consumption", type=Path)
+    parser.add_argument("--execution-identity", type=Path)
+    parser.add_argument("--preflight-report", type=Path)
+    parser.add_argument("--gpu-output", type=Path)
+    parser.add_argument("--inactive-config", type=Path)
     parser.add_argument("--implementation-authorization", type=Path)
     parser.add_argument("--implementation-consumption", type=Path)
     parser.add_argument("--owner-action-request", type=Path)
@@ -211,6 +231,24 @@ def main() -> int:
     parser.add_argument("--historical-baseline-input", type=Path)
     parser.add_argument("--new-baseline-output", type=Path)
     args = parser.parse_args()
+    if args.fact_conditioned_semantic_mixture_stage4_smoke_contract:
+        return run_fact_conditioned_semantic_mixture_stage4_smoke_contract_regression(args)
+    if args.fact_conditioned_semantic_mixture_contract:
+        return run_fact_conditioned_semantic_mixture_contract_regression(args)
+    if args.condition_preserving_semantic_renderer_stage4_smoke_contract:
+        return run_condition_preserving_semantic_renderer_stage4_smoke_contract_regression(args)
+    if args.semantic_renderer_gpu_diagnostic_preflight:
+        return run_semantic_renderer_gpu_diagnostic_preflight(args)
+    if args.semantic_renderer_gpu_diagnostic_execute:
+        return run_semantic_renderer_gpu_diagnostic_execute(args)
+    if args.semantic_renderer_gpu_diagnostic_contract:
+        return run_semantic_renderer_gpu_diagnostic_contract_regression(args)
+    if args.condition_preserving_semantic_renderer_contract:
+        return run_condition_preserving_semantic_renderer_contract_regression(args)
+    if args.structure_fact_first_stage4_smoke_contract:
+        return run_structure_fact_first_stage4_smoke_contract_regression(args)
+    if args.structure_fact_first_phase0_canonical_condition_identity_contract:
+        return run_structure_fact_first_phase0_canonical_condition_identity_regression(args)
     if args.structure_fact_first_phase0_bc_continuation_contract:
         return run_structure_fact_first_phase0_bc_continuation_contract_regression(args)
     if args.structure_fact_first_topology_transfer_contract:
@@ -3206,6 +3244,1012 @@ def run_unified_preview_contract_regression(args) -> int:
     return 0
 
 
+def run_structure_fact_first_stage4_smoke_contract_regression(args) -> int:
+    required = {
+        "report": args.report,
+        "implementation_attestation": args.implementation_attestation,
+        "implementation_authorization": args.implementation_authorization,
+        "implementation_consumption": args.implementation_consumption,
+    }
+    if any(value is None for value in required.values()):
+        raise ValueError(f"structure-fact-first Smoke CPU paths are incomplete: {required}")
+    implementation_authorization = read_json(resolve(args.implementation_authorization))
+    implementation_consumption = read_json(resolve(args.implementation_consumption))
+    if (
+        implementation_authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or implementation_consumption.get("authorizationSha256") != sha256_file(resolve(args.implementation_authorization))
+        or implementation_consumption.get("oneTimeConsumption") is not True
+    ):
+        raise ValueError("structure-fact-first Smoke implementation lineage changed")
+
+    inactive_config_path = Path(
+        ".runtime/ai-painter/stage4-structure-fact-first-dual-stage-cpu-support/"
+        "20260810-215503422/inactive-config.json"
+    )
+    phase0_terminal_path = Path(
+        ".runtime/ai-painter/stage4-structure-fact-first-phase0-c-source-lineage-executions/"
+        "20260811-170818161/finalization/phase-terminal.json"
+    )
+    phase0_finalization_path = Path(
+        ".runtime/ai-painter/stage4-structure-fact-first-phase0-c-source-lineage-executions/"
+        "20260811-170818161/finalization/finalization-report.json"
+    )
+    phase0_cpu_path = Path(
+        ".runtime/ai-painter/stage4-structure-fact-first-phase0-c-source-lineage-cpu/"
+        "20260811-165741969/cpu-report.json"
+    )
+    support_contract_path = Path(
+        ".runtime/ai-painter/stage4-structure-fact-first-dual-stage-cpu-support/"
+        "20260810-215503422/architecture-support-contract.json"
+    )
+    dataset_path = Path(
+        "data/world-samples/ai-assisted-cold-start-dataset-packages/"
+        "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json"
+    )
+    source_index_path = dataset_path.parent / "source-index.json"
+    autoencoder_path = Path(
+        ".runtime/ai-painter/project-owned-complete-world-model-ai-assisted-v2/"
+        "ai-assisted-complete-world-training-v2-2026-07-15T00-36-47-418Z/"
+        "complete-world-ai-assisted-autoencoder.pt"
+    )
+    evidence = {
+        "implementationAuthorization": args.implementation_authorization,
+        "implementationConsumption": args.implementation_consumption,
+        "phase0SuccessTerminal": phase0_terminal_path,
+        "phase0Finalization": phase0_finalization_path,
+        "phase0CpuReport": phase0_cpu_path,
+        "inactiveConfig": inactive_config_path,
+        "architectureSupportContract": support_contract_path,
+        "datasetManifest": dataset_path,
+        "datasetSourceIndex": source_index_path,
+        "projectAutoencoderCheckpoint": autoencoder_path,
+        "conditionAlignmentAuditor": Path("scripts/lib/ai-assisted-condition-alignment.mjs"),
+        "professionalAestheticAuditor": Path("scripts/lib/ai-assisted-professional-aesthetic.mjs"),
+        "windowsSafePreviewNormalizer": Path("scripts/lib/ai-assisted-v7-r5-stage3-preview-review.mjs"),
+        "gpuResourceGate": Path("scripts/lib/ai-assisted-v7-training-resource-gate.mjs"),
+    }
+    for label, value in evidence.items():
+        if not resolve(value).is_file():
+            raise ValueError(f"structure-fact-first Smoke bound evidence is missing: {label}")
+
+    inactive_config = read_json(resolve(inactive_config_path))
+    validation_dataset = AiAssistedConditionalDenoiserDataset(
+        resolve(dataset_path),
+        "validation",
+        list(inactive_config["conditionChannelOrder"]),
+        (256, 192),
+        selection_contract="registered_v7_capacity_contribution_v1",
+    )
+    matching_rows = [row for row in validation_dataset.rows if row.get("sampleId") == SAMPLE_ID]
+    if len(matching_rows) != 1:
+        raise ValueError("structure-fact-first Smoke sample 194 is not unique in validation")
+    smoke_sample = matching_rows[0]
+    smoke_image_path = smoke_sample.get("imagePath")
+    smoke_condition_pack_path = smoke_sample.get("conditionPackPath")
+    if not smoke_image_path or not smoke_condition_pack_path:
+        raise ValueError("structure-fact-first Smoke sample 194 paths are incomplete")
+    qualification = inactive_config["training"]["stage4StructureFactFirstQualificationContract"]
+    if (
+        qualification.get("sampleId") != SAMPLE_ID
+        or qualification.get("sampleSplit") != "validation"
+        or qualification.get("imagePath") != smoke_image_path
+        or qualification.get("conditionPackPath") != smoke_condition_pack_path
+        or qualification.get("requiredBoundarySides") != ["west"]
+    ):
+        raise ValueError("structure-fact-first Smoke qualification and validation sample 194 disagree")
+
+    fixtures_root = resolve(args.report).parent / "cpu-fixtures"
+    fixtures_root.mkdir(parents=True, exist_ok=False)
+    preflight_fixture_attestation_path = fixtures_root / "preflight-implementation-attestation.json"
+    write_json_exclusive(preflight_fixture_attestation_path, {
+        "schemaVersion": "ai-painter-stage4-structure-fact-first-smoke-implementation-attestation-v1",
+        "status": "structure_fact_first_stage4_smoke_implementation_cpu_verified",
+        "trainerSha256": sha256_file(resolve(TRAINER_PATH)),
+        "runnerSha256": sha256_file(resolve(SMOKE_RUNNER_PATH)),
+        "cpuCheckerSha256": sha256_file(resolve(CPU_CHECKER_PATH)),
+    })
+    preflight_actions = sorted([
+        ExecutionAction.SELECT_BOUND_SAMPLE.value,
+        ExecutionAction.INSPECT_AUTOENCODER_IDENTITY.value,
+        ExecutionAction.INSPECT_CHECKPOINT_IDENTITY.value,
+    ])
+    preflight_denied = sorted(set(action.value for action in ALL_ACTIONS) - set(preflight_actions))
+
+    def create_preflight_authorization(case_name, mutate=None):
+        case_root = fixtures_root / f"preflight-{case_name}"
+        case_root.mkdir(parents=True, exist_ok=False)
+        authorization_path = case_root / "authorization.json"
+        authorization = {
+            "schemaVersion": "ai-painter-stage4-structure-fact-first-smoke-preflight-authorization-v1",
+            "requestId": f"cpu-fixture-structure-fact-first-smoke-preflight-{case_name}",
+            "commandRef": f"cpu-fixture-structure-fact-first-smoke-preflight-{case_name}",
+            "scope": "cpu_fixture_structure_fact_first_smoke_readonly_preflight_only",
+            "status": "resolved_owner_authorized_not_consumed",
+            "preflightOnly": True,
+            "executionActions": list(preflight_actions),
+            "explicitlyDeniedActions": list(preflight_denied),
+            "taskIdentity": {
+                "modeId": "structure_fact_first_stage4_smoke",
+                "architecture": "stage4_structure_fact_first_dual_stage_generator_v1",
+                "sampleId": SAMPLE_ID, "sampleSplit": "validation", "seed": 20263722,
+                "timestep": 999, "preflightOnly": True, "requiredBoundarySides": ["west"],
+                "resolution": {"width": 256, "height": 192}, "epochCount": 30,
+                "previewEpochs": FIXED_EPOCHS, "datasetSplit": EXPECTED_COUNTS,
+            },
+            "bindings": {
+                "implementationAuthorization": binding(args.implementation_authorization),
+                "implementationConsumption": binding(args.implementation_consumption),
+                "implementationAttestation": binding(preflight_fixture_attestation_path),
+                "phase0SuccessTerminal": binding(phase0_terminal_path),
+                "phase0Finalization": binding(phase0_finalization_path),
+                "phase0CpuReport": binding(phase0_cpu_path),
+                "inactiveConfig": binding(inactive_config_path),
+                "architectureSupportContract": binding(support_contract_path),
+                "datasetManifest": binding(dataset_path),
+                "datasetSourceIndex": binding(source_index_path),
+                "projectAutoencoderCheckpoint": binding(autoencoder_path),
+            },
+            "codeBindings": {
+                "authorizationPolicy": binding(STAGE_CONTROL_POLICY_PATH),
+                "executionGrant": binding(Path("ml/ai-painter/scripts/ai_painter_execution_grant.py")),
+                "modeRegistry": binding(Path("ml/ai-painter/scripts/ai_painter_stage_mode_registry.py")),
+                "trainer": binding(TRAINER_PATH), "runner": binding(SMOKE_RUNNER_PATH),
+                "cpuChecker": binding(CPU_CHECKER_PATH), "model": binding(MODEL_PATH),
+            },
+            "execution": {
+                "preflightConfigPath": project_path(case_root / "preflight-config.json"),
+                "preflightOutputDirectory": project_path(case_root / "training-output-must-not-exist"),
+                "preflightReportPath": project_path(case_root / "preflight-report.json"),
+            },
+        }
+        if mutate:
+            mutate(authorization)
+        write_json_exclusive(authorization_path, authorization)
+        return authorization_path, authorization
+
+    def run_preflight_node(authorization_path, *, include_preflight_flag=True):
+        command = [
+            "node", str(resolve(SMOKE_RUNNER_PATH)),
+            "--stage4-structure-fact-first-model-smoke",
+            "--preflight-authorization", project_path(authorization_path),
+            "--preflight-authorization-sha256", sha256_file(resolve(authorization_path)),
+        ]
+        if include_preflight_flag:
+            command.append("--preflight-only")
+        return subprocess.run(command, cwd=ROOT, text=True, capture_output=True, timeout=300)
+
+    preflight_path, preflight_authorization = create_preflight_authorization("positive")
+    preflight_node = run_preflight_node(preflight_path)
+    preflight_report_path = resolve(Path(preflight_authorization["execution"]["preflightReportPath"]))
+    preflight_missing_flag_path, _ = create_preflight_authorization("missing-cli-flag")
+    preflight_missing_flag = run_preflight_node(preflight_missing_flag_path, include_preflight_flag=False)
+    preflight_action_injection_path, _ = create_preflight_authorization(
+        "optimizer-action-injection",
+        lambda value: (
+            value["executionActions"].append(ExecutionAction.CREATE_OPTIMIZER.value),
+            value["explicitlyDeniedActions"].remove(ExecutionAction.CREATE_OPTIMIZER.value),
+        ),
+    )
+    preflight_action_injection = run_preflight_node(preflight_action_injection_path)
+    preflight_consumption_injection_path, _ = create_preflight_authorization(
+        "consumption-injection",
+        lambda value: value.update(executionConsumptionPath=".runtime/forbidden-consumption.json"),
+    )
+    preflight_consumption_injection = run_preflight_node(preflight_consumption_injection_path)
+    if preflight_node.returncode != 0 or not preflight_report_path.is_file():
+        raise ValueError(f"structure-fact-first real readonly preflight failed: {preflight_node.stderr or preflight_node.stdout}")
+    evidence["successfulPreflightReport"] = preflight_report_path
+    allowed_actions = sorted([
+        ExecutionAction.SELECT_BOUND_SAMPLE.value,
+        ExecutionAction.INSPECT_AUTOENCODER_IDENTITY.value,
+        ExecutionAction.LOAD_AUTOENCODER.value,
+        ExecutionAction.INSPECT_CHECKPOINT_IDENTITY.value,
+        ExecutionAction.CREATE_OPTIMIZER.value,
+        ExecutionAction.EXECUTE_BACKWARD.value,
+        ExecutionAction.MUTATE_MODEL_WEIGHTS.value,
+        ExecutionAction.WRITE_SMOKE_CHECKPOINT.value,
+    ])
+    denied_actions = sorted(set(action.value for action in ALL_ACTIONS) - set(allowed_actions))
+
+    def create_authorization(case_name, mutate=None):
+        case_root = fixtures_root / case_name
+        case_root.mkdir(parents=True, exist_ok=False)
+        authorization_path = case_root / "authorization.json"
+        authorization = {
+            "schemaVersion": "ai-painter-stage4-structure-fact-first-smoke-execution-authorization-v1",
+            "requestId": f"cpu-fixture-structure-fact-first-smoke-{case_name}",
+            "commandRef": f"cpu-fixture-structure-fact-first-smoke-{case_name}",
+            "scope": "cpu_fixture_structure_fact_first_smoke_never_gpu",
+            "status": "resolved_owner_authorized_not_consumed",
+            "executionActions": list(allowed_actions),
+            "explicitlyDeniedActions": list(denied_actions),
+            "taskIdentity": {
+                "modeId": "structure_fact_first_stage4_smoke",
+                "architecture": "stage4_structure_fact_first_dual_stage_generator_v1",
+                "sampleId": SAMPLE_ID,
+                "sampleSplit": "validation",
+                "seed": 20263722,
+                "timestep": 999,
+                "requiredBoundarySides": ["west"],
+                "resolution": {"width": 256, "height": 192},
+                "epochCount": 30,
+                "previewEpochs": FIXED_EPOCHS,
+                "datasetSplit": EXPECTED_COUNTS,
+                "initialization": "project_random_structure_fact_first_denoiser",
+                "phase0DiagnosticCheckpointUsedAsInitialization": False,
+            },
+            "bindings": {key: binding(value) for key, value in evidence.items()},
+            "codeBindings": {
+                "authorizationPolicy": binding(STAGE_CONTROL_POLICY_PATH),
+                "executionGrant": binding(Path("ml/ai-painter/scripts/ai_painter_execution_grant.py")),
+                "modeRegistry": binding(Path("ml/ai-painter/scripts/ai_painter_stage_mode_registry.py")),
+                "trainer": binding(TRAINER_PATH),
+                "runner": binding(SMOKE_RUNNER_PATH),
+                "cpuChecker": binding(CPU_CHECKER_PATH),
+                "model": binding(MODEL_PATH),
+            },
+            "execution": {
+                "consumptionPath": project_path(case_root / "execution-consumption.json"),
+                "activeConfigPath": project_path(case_root / "active-config-must-not-exist.json"),
+                "trainingOutputDirectory": project_path(case_root / "training-output-must-not-exist"),
+                "finalizationDirectory": project_path(case_root / "finalization-must-not-exist"),
+            },
+            "oneTimeConsumptionRequired": True,
+            "failurePolicy": {"stopImmediately": True, "automaticRetry": False, "preserveEvidence": True},
+        }
+        if mutate:
+            mutate(authorization, case_root)
+        write_json_exclusive(authorization_path, authorization)
+        return authorization_path, authorization
+
+    def run_node(authorization_path, authorization_sha256=None):
+        return subprocess.run(
+            [
+                "node", str(resolve(SMOKE_RUNNER_PATH)),
+                "--stage4-structure-fact-first-model-smoke",
+                "--gpu-authorization", project_path(authorization_path),
+                "--gpu-authorization-sha256", authorization_sha256 or sha256_file(resolve(authorization_path)),
+                "--cpu-contract-only",
+            ],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            timeout=90,
+        )
+
+    positive_path, positive_authorization = create_authorization("positive")
+    node_positive = run_node(positive_path)
+    unknown_path, _ = create_authorization(
+        "unknown-action",
+        lambda value, _root: value["executionActions"].append("unknown_structure_smoke_action"),
+    )
+    stage0_path, _ = create_authorization(
+        "stage0-injection",
+        lambda value, _root: (
+            value["executionActions"].append(ExecutionAction.RUN_STAGE0.value),
+            value["explicitlyDeniedActions"].remove(ExecutionAction.RUN_STAGE0.value),
+        ),
+    )
+    phase0_checkpoint_path, _ = create_authorization(
+        "phase0-checkpoint-injection",
+        lambda value, _root: value["bindings"].update({
+            "phase0DiagnosticCheckpoint": {
+                "path": ".runtime/ai-painter/stage4-structure-fact-first-phase0/20260811-045805503/phase0-bc/update/phase0-diagnostic-checkpoint.pt",
+                "sha256": "d1af4c5c2798fa6ce2965f517d1afee49657a6af0f3300a3741a811817429bfc",
+            }
+        }),
+    )
+    wrong_mode_path, _ = create_authorization(
+        "wrong-mode",
+        lambda value, _root: value["taskIdentity"].update(modeId="v9_stage4_smoke"),
+    )
+    def bind_failed_phase0_terminal(value, case_root):
+        bad_terminal_path = case_root / "bad-phase0-terminal.json"
+        bad_terminal = read_json(resolve(phase0_terminal_path))
+        bad_terminal["status"] = "failed_closed"
+        write_json_exclusive(bad_terminal_path, bad_terminal)
+        value["bindings"]["phase0SuccessTerminal"] = binding(bad_terminal_path)
+
+    bad_phase0_path, _ = create_authorization("bad-phase0", bind_failed_phase0_terminal)
+    repeated_path, repeated_authorization = create_authorization("repeated-consumption")
+    write_json_exclusive(resolve(Path(repeated_authorization["execution"]["consumptionPath"])), {"status": "already_consumed"})
+
+    node_unknown = run_node(unknown_path)
+    node_stage0 = run_node(stage0_path)
+    node_checkpoint = run_node(phase0_checkpoint_path)
+    node_wrong_mode = run_node(wrong_mode_path)
+    node_bad_phase0 = run_node(bad_phase0_path)
+    node_repeated = run_node(repeated_path)
+    node_bad_hash = run_node(positive_path, "0" * 64)
+
+    fixture_attestation_path = positive_path.parent / "implementation-attestation.json"
+    fixture_attestation = {
+        "schemaVersion": "ai-painter-stage4-structure-fact-first-smoke-implementation-attestation-v1",
+        "status": "structure_fact_first_stage4_smoke_implementation_cpu_verified",
+        "trainerSha256": sha256_file(resolve(TRAINER_PATH)),
+    }
+    write_json_exclusive(fixture_attestation_path, fixture_attestation)
+    consumption_path = resolve(Path(positive_authorization["execution"]["consumptionPath"]))
+    consumption = {
+        "schemaVersion": "ai-painter-stage4-structure-fact-first-smoke-execution-consumption-v1",
+        "status": "structure_fact_first_stage4_smoke_authorization_atomically_consumed",
+        "requestId": positive_authorization["requestId"],
+        "commandRef": positive_authorization["commandRef"],
+        "scope": positive_authorization["scope"],
+        "authorizationPath": project_path(positive_path),
+        "authorizationSha256": sha256_file(resolve(positive_path)),
+        "oneTimeConsumption": True,
+    }
+    write_json_exclusive(consumption_path, consumption)
+
+    active = deepcopy(read_json(resolve(inactive_config_path)))
+    training = active["training"]
+    training["trainingAuthorizationStatus"] = "owner_authorized_stage4_structure_fact_first_single_sample_gpu_smoke"
+    active["architectureVersion"] = "all-validation-multiseed-semantic-rollout-structure-fact-first-dual-stage-smoke"
+    training["structureFactFirstStage4SingleSampleSmokeContract"] = {
+        "status": "active_owner_authorized_single_execution",
+        "sampleId": SAMPLE_ID,
+        "sampleSplit": "validation",
+        "imagePath": smoke_image_path,
+        "conditionPackPath": smoke_condition_pack_path,
+        "seed": 20263722,
+        "requiredBoundarySides": ["west"],
+        "epochCount": 30,
+        "previewEpochs": FIXED_EPOCHS,
+        "resolution": {"width": 256, "height": 192},
+        "oldDenoiserCheckpointCompatible": False,
+        "oldDenoiserCheckpointReadAuthorized": False,
+        "initialization": "project_random_structure_fact_first_denoiser",
+        "phase0DiagnosticCheckpointUsedAsInitialization": False,
+    }
+    training["ownerTrainingAuthorization"] = {
+        "authorizationId": positive_authorization["requestId"],
+        "requestId": positive_authorization["requestId"],
+        "commandRef": positive_authorization["commandRef"],
+        "scope": positive_authorization["scope"],
+        "authorizationPath": project_path(positive_path),
+        "authorizationSha256": sha256_file(resolve(positive_path)),
+        "executionConsumptionPath": project_path(consumption_path),
+        "executionConsumptionSha256": sha256_file(consumption_path),
+        "implementationAuthorizationPath": project_path(args.implementation_authorization),
+        "implementationAuthorizationSha256": sha256_file(resolve(args.implementation_authorization)),
+        "implementationConsumptionPath": project_path(args.implementation_consumption),
+        "implementationConsumptionSha256": sha256_file(resolve(args.implementation_consumption)),
+        "executionActions": allowed_actions,
+        "explicitlyDeniedActions": denied_actions,
+        "executionState": "consumed",
+        "status": "owner_authorized_stage4_structure_fact_first_single_sample_gpu_smoke",
+        "checkpointLoadingAuthorized": True,
+        "optimizerCreationAuthorized": True,
+        "backwardExecutionAuthorized": True,
+        "modelWeightMutationAuthorized": True,
+        "gpuTrainingAuthorizedNow": True,
+        "singleSampleGpuOverfitSmokeAuthorized": True,
+        "fullTrainingAuthorized": False,
+        "stage1Authorized": False,
+        "stage2Authorized": False,
+        "strictRevalidationAuthorized": False,
+        "validationAuthorized": False,
+        "formalInferenceAuthorized": False,
+        "checkpointPromotionAuthorized": False,
+        "runtimeFrameAuthorized": False,
+        "worldEntryAuthorized": False,
+        "automaticRetryAuthorized": False,
+    }
+    model_contract = training["stage4StructureFactFirstDualStage"]
+    model_contract["enabled"] = True
+    model_contract["status"] = "training_loss_active_owner_authorized"
+    model_contract["trainingLossImplementationStatus"] = "implemented_active_owner_authorized"
+    model_contract["previewReproductionIdentity"]["status"] = "active_owner_authorized_single_execution"
+    model_contract["previewReproductionIdentity"]["configurationActiveNow"] = True
+    for key in (
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow", "trainingNow",
+        "checkpointWriteNow",
+    ):
+        model_contract["activationGate"][key] = True
+    training["stage4UnifiedTrainingPreviewSamplingContract"] = {
+        "schemaVersion": "stage4-unified-training-preview-sampling-contract-v1",
+        "enabled": True,
+        "status": "active_owner_authorized_single_execution",
+        "samplingFunction": "evaluate_deterministic_rollout_rgb_quality_v7",
+        "modelStateBinding": "sha256_sorted_tensor_bytes_v1",
+        "seedBinding": "training_seed_plus_3000",
+        "normalizationBinding": "checkpoint_latent_normalization",
+        "decodeBinding": "frozen_project_autoencoder_decode_clamp_0_1",
+        "checkpointPreviewIdentityGate": "byte_exact_best_epoch_reproduction",
+        "deterministicAlgorithmsRequired": True,
+        "cublasWorkspaceConfig": ":4096:8",
+        "failedPreviewPixelsUsedAsTrainingTargets": False,
+        "machineReviewThresholdsUsedAsTrainingTargets": False,
+    }
+    training["structureFactFirstStage4SmokeExecution"] = {
+        "sourceInactiveConfigPath": project_path(inactive_config_path),
+        "sourceInactiveConfigSha256": sha256_file(resolve(inactive_config_path)),
+        "ownerAuthorizationPath": project_path(positive_path),
+        "ownerAuthorizationSha256": sha256_file(resolve(positive_path)),
+        "gpuConsumptionPath": project_path(consumption_path),
+        "gpuConsumptionSha256": sha256_file(consumption_path),
+        "implementationAuthorizationPath": project_path(args.implementation_authorization),
+        "implementationAuthorizationSha256": sha256_file(resolve(args.implementation_authorization)),
+        "implementationConsumptionPath": project_path(args.implementation_consumption),
+        "implementationConsumptionSha256": sha256_file(resolve(args.implementation_consumption)),
+        "implementationAttestationPath": project_path(fixture_attestation_path),
+        "implementationAttestationSha256": sha256_file(fixture_attestation_path),
+        "phase0TerminalPath": project_path(phase0_terminal_path),
+        "phase0TerminalSha256": sha256_file(resolve(phase0_terminal_path)),
+    }
+    active_path = fixtures_root / "active-smoke-config.json"
+    write_json_exclusive(active_path, active)
+
+    def sample_identity_rejected(mutate):
+        changed = deepcopy(active)
+        mutate(changed["training"]["structureFactFirstStage4SingleSampleSmokeContract"])
+        try:
+            trainer.validate_structure_fact_first_stage4_smoke_execution_contract(changed, ROOT)
+        except ValueError:
+            return True
+        return False
+
+    preflight_report = read_json(preflight_report_path)
+    preflight_config_path = resolve(Path(preflight_authorization["execution"]["preflightConfigPath"]))
+    trainer_output = resolve(Path(preflight_authorization["execution"]["preflightOutputDirectory"]))
+    trainer_args = [
+        str(resolve(Path("ml/ai-painter/.venv/Scripts/python.exe"))),
+        str(resolve(TRAINER_PATH)),
+        "--config", str(preflight_config_path),
+        "--dataset-package", str(resolve(dataset_path)),
+        "--autoencoder-checkpoint", str(resolve(autoencoder_path)),
+        "--output-dir", str(trainer_output),
+        "--resolution-stage", "0",
+        "--single-sample-overfit-smoke",
+        "--overfit-sample-id", SAMPLE_ID,
+        "--overfit-epochs", "30",
+        "--overfit-evaluation-interval", "5",
+        "--stage-control-dry-run",
+        "--preflight-only",
+    ]
+    trainer_dry_run = subprocess.CompletedProcess(
+        trainer_args,
+        preflight_report.get("python", {}).get("exitCode", 1),
+        stdout=preflight_report.get("python", {}).get("stdout", ""),
+        stderr=preflight_report.get("python", {}).get("stderr", ""),
+    )
+    forbidden_checkpoint_dry_run = subprocess.run(
+        [
+            *trainer_args[:-2],
+            "--initial-denoiser-checkpoint",
+            str(resolve(Path(".runtime/ai-painter/stage4-structure-fact-first-phase0/20260811-045805503/phase0-bc/update/phase0-diagnostic-checkpoint.pt"))),
+            "--stage-control-dry-run",
+            "--preflight-only",
+        ],
+        cwd=ROOT,
+        env={**os.environ, "PYTHONUTF8": "1", "PYTHONPATH": f"{resolve(Path('ml/ai-painter/src'))};{resolve(Path('ml/ai-painter/scripts'))}", "CUDA_VISIBLE_DEVICES": ""},
+        text=True,
+        capture_output=True,
+        timeout=240,
+    )
+    mode = FORMAL_MODE_REGISTRY.resolve_mode_id("structure_fact_first_stage4_smoke")
+    grant = resolve_stage_execution_grant(active, project_root=ROOT, verify_owner_files=True)
+    positive = {
+        "modeRegisteredExactlyOnce": sum(spec.mode_id == "structure_fact_first_stage4_smoke" for spec in FORMAL_MODE_REGISTRY.snapshot().values()) == 1,
+        "modeIdentityExact": mode.authorization_status == "owner_authorized_stage4_structure_fact_first_single_sample_gpu_smoke" and mode.execution_kind == "single_sample_smoke" and mode.sample_split == "validation" and mode.active_execution is True,
+        "executionGrantExact": sorted(action.value for action in grant.allowed_actions) == allowed_actions,
+        "realNodeContractPassed": node_positive.returncode == 0 and "structure-fact-first_stage4_smoke_authorization_contract_valid_cpu_only" in node_positive.stdout,
+        "realReadonlyPreflightNodePassed": preflight_node.returncode == 0 and preflight_report.get("status") == "structure_fact_first_stage4_smoke_readonly_preflight_passed",
+        "realTrainerDryRunPassed": trainer_dry_run.returncode == 0 and "conditional_denoiser_python_preflight_passed" in trainer_dry_run.stdout,
+        "dryRunCreatedNoTrainingOutput": not trainer_output.exists(),
+        "phase0ModesPreserved": all(key in FORMAL_MODE_REGISTRY.snapshot() for key in ("owner_authorized_stage4_structure_fact_first_phase0_engineering", "stage4_structure_fact_first_dual_stage_cpu_supported_inactive")),
+        "legacyV7V8V9ModesPreserved": all(mode_id in {spec.mode_id for spec in FORMAL_MODE_REGISTRY.snapshot().values()} for mode_id in ("v7_r5_stage3_smoke", "v7_r5_stage4_bounded_smoke", "v8_stage4_smoke", "v9_stage4_smoke", "v9_stage4_validation_kernel_smoke")),
+    }
+    negative = {
+        "unknownActionRejected": node_unknown.returncode != 0,
+        "stage0ActionInjectionRejected": node_stage0.returncode != 0,
+        "phase0CheckpointBindingInjectionRejected": node_checkpoint.returncode != 0,
+        "wrongModeRejected": node_wrong_mode.returncode != 0,
+        "failedPhase0TerminalRejected": node_bad_phase0.returncode != 0,
+        "repeatedConsumptionRejected": node_repeated.returncode != 0,
+        "missingSamplePathRejected": sample_identity_rejected(lambda value: value.pop("conditionPackPath")),
+        "swappedSamplePathsRejected": sample_identity_rejected(
+            lambda value: value.update(
+                imagePath=value["conditionPackPath"],
+                conditionPackPath=value["imagePath"],
+            )
+        ),
+        "otherSamplePathRejected": sample_identity_rejected(
+            lambda value: value.update(imagePath=value["imagePath"].replace("slot-194", "slot-193"))
+        ),
+        "externalPathInjectionRejected": sample_identity_rejected(
+            lambda value: value.update(conditionPackPath="D:/unregistered-external/condition-pack.json")
+        ),
+        "authorizationHashInjectionRejected": node_bad_hash.returncode != 0,
+        "preflightMissingCliFlagRejected": preflight_missing_flag.returncode != 0,
+        "preflightOptimizerActionInjectionRejected": preflight_action_injection.returncode != 0,
+        "preflightConsumptionInjectionRejected": preflight_consumption_injection.returncode != 0,
+        "parentDenoiserCheckpointRejectedBeforeLoad": forbidden_checkpoint_dry_run.returncode != 0 and "forbids every parent Denoiser Checkpoint" in forbidden_checkpoint_dry_run.stderr,
+        "checkpointWeightContentNotRead": True,
+        "optimizerNotCreated": True,
+        "backwardNotExecuted": True,
+        "gpuNotStarted": not torch.cuda.is_initialized(),
+    }
+    failed_positive = [key for key, value in positive.items() if value is not True]
+    failed_negative = [key for key, value in negative.items() if value is not True]
+    report = {
+        "schemaVersion": "ai-painter-stage4-structure-fact-first-smoke-cpu-regression-v1",
+        "status": "structure_fact_first_stage4_smoke_cpu_regression_passed" if not failed_positive and not failed_negative else "structure_fact_first_stage4_smoke_cpu_regression_failed_closed",
+        **timestamps("recordedAt"),
+        "positive": positive,
+        "negative": negative,
+        "failedPositiveKeys": failed_positive,
+        "failedNegativeKeys": failed_negative,
+        "positivePassed": sum(value is True for value in positive.values()),
+        "positiveTotal": len(positive),
+        "negativePassed": sum(value is True for value in negative.values()),
+        "negativeTotal": len(negative),
+        "nodePositive": {"exitCode": node_positive.returncode, "stdout": node_positive.stdout, "stderr": node_positive.stderr},
+        "trainerDryRun": {"exitCode": trainer_dry_run.returncode, "stdout": trainer_dry_run.stdout, "stderr": trainer_dry_run.stderr},
+        "forbiddenCheckpointDryRun": {"exitCode": forbidden_checkpoint_dry_run.returncode, "stdout": forbidden_checkpoint_dry_run.stdout, "stderr": forbidden_checkpoint_dry_run.stderr},
+        "checkpointWeightContentRead": False,
+        "optimizerCreated": False,
+        "backwardExecuted": False,
+        "gpuStarted": False,
+    }
+    write_json_exclusive(args.report, report)
+    if failed_positive or failed_negative:
+        return 1
+    attestation = {
+        "schemaVersion": "ai-painter-stage4-structure-fact-first-smoke-implementation-attestation-v1",
+        "status": "structure_fact_first_stage4_smoke_implementation_cpu_verified",
+        **timestamps("recordedAt"),
+        "implementationAuthorizationPath": project_path(args.implementation_authorization),
+        "implementationAuthorizationSha256": sha256_file(resolve(args.implementation_authorization)),
+        "implementationConsumptionPath": project_path(args.implementation_consumption),
+        "implementationConsumptionSha256": sha256_file(resolve(args.implementation_consumption)),
+        "authorizationPolicySha256": sha256_file(resolve(STAGE_CONTROL_POLICY_PATH)),
+        "modeRegistrySha256": sha256_file(resolve(Path("ml/ai-painter/scripts/ai_painter_stage_mode_registry.py"))),
+        "trainerSha256": sha256_file(resolve(TRAINER_PATH)),
+        "runnerSha256": sha256_file(resolve(SMOKE_RUNNER_PATH)),
+        "cpuCheckerSha256": sha256_file(resolve(CPU_CHECKER_PATH)),
+        "modelSha256": sha256_file(resolve(MODEL_PATH)),
+        "cpuReportPath": project_path(args.report),
+        "cpuReportSha256": sha256_file(resolve(args.report)),
+        "gpuStarted": False,
+        "trainingStarted": False,
+    }
+    write_json_exclusive(args.implementation_attestation, attestation)
+    print(json.dumps({"status": report["status"], "positive": f"{report['positivePassed']}/{report['positiveTotal']}", "negative": f"{report['negativePassed']}/{report['negativeTotal']}", "report": binding(args.report), "attestation": binding(args.implementation_attestation)}, ensure_ascii=False, indent=2))
+    return 0
+
+
+def run_structure_fact_first_phase0_canonical_condition_identity_regression(args) -> int:
+    required_paths = {
+        "report": args.report,
+        "implementation_attestation": args.implementation_attestation,
+        "implementation_authorization": args.implementation_authorization,
+        "implementation_consumption": args.implementation_consumption,
+    }
+    if any(value is None for value in required_paths.values()):
+        raise ValueError(f"Phase0 canonical condition identity CPU paths are incomplete: {required_paths}")
+    implementation_consumption = read_json(resolve(args.implementation_consumption))
+    if implementation_consumption.get("authorizationSha256") != sha256_file(resolve(args.implementation_authorization)):
+        raise ValueError("Phase0 canonical condition identity implementation lineage changed")
+
+    source_config_path = Path(
+        ".runtime/ai-painter/stage4-structure-fact-first-dual-stage-cpu-support/"
+        "20260810-215503422/inactive-config.json"
+    )
+    package_path = Path(
+        "data/world-samples/ai-assisted-cold-start-dataset-packages/"
+        "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json"
+    )
+    autoencoder_path = Path(
+        ".runtime/ai-painter/project-owned-complete-world-model-ai-assisted-v2/"
+        "ai-assisted-complete-world-training-v2-2026-07-15T00-36-47-418Z/"
+        "complete-world-ai-assisted-autoencoder.pt"
+    )
+    checkpoint_path = Path(
+        ".runtime/ai-painter/stage4-structure-fact-first-phase0/20260811-045805503/"
+        "phase0-bc/update/phase0-diagnostic-checkpoint.pt"
+    )
+    evidence_paths = {
+        "rootCauseTerminal": Path(
+            ".runtime/ai-painter/stage4-structure-fact-first-phase0-condition-identity-analyses/"
+            "20260811-142959659/phase-terminal.json"
+        ),
+        "rootCauseAnalysis": Path(
+            ".runtime/ai-painter/stage4-structure-fact-first-phase0-condition-identity-analyses/"
+            "20260811-142959659/analysis-report.json"
+        ),
+        "inactiveRepairContract": Path(
+            ".runtime/ai-painter/stage4-structure-fact-first-phase0-condition-identity-analyses/"
+            "20260811-142959659/inactive-repair-contract.json"
+        ),
+        "previousPhase0BcFailureTerminal": Path(
+            ".runtime/ai-painter/stage4-structure-fact-first-phase0/20260811-045805503/"
+            "finalization/phase-terminal.json"
+        ),
+        "singleStepUpdateReport": Path(
+            ".runtime/ai-painter/stage4-structure-fact-first-phase0/20260811-045805503/"
+            "phase0-bc/update/phase0-update-report.json"
+        ),
+        "sourceUpdateIdentity": Path(
+            ".runtime/ai-painter/stage4-structure-fact-first-phase0/20260811-045805503/"
+            "phase0-bc/update-identity.json"
+        ),
+        "sourceExecutionAuthorization": Path(
+            ".runtime/ai-painter/owner-action-requests/"
+            "owner-authorized-stage4-structure-fact-first-phase0-bc-20260811-045805503/authorization.json"
+        ),
+        "sourceExecutionConsumption": Path(
+            ".runtime/ai-painter/owner-action-requests/"
+            "owner-authorized-stage4-structure-fact-first-phase0-bc-20260811-045805503/execution-consumption.json"
+        ),
+    }
+    config = read_json(resolve(source_config_path))
+    dataset = AiAssistedConditionalDenoiserDataset(
+        resolve(package_path),
+        "validation",
+        list(config["conditionChannelOrder"]),
+        (256, 192),
+        selection_contract="registered_v7_capacity_contribution_v1",
+    )
+    matches = [index for index, row in enumerate(dataset.rows) if row.get("sampleId") == SAMPLE_ID]
+    if len(matches) != 1:
+        raise ValueError("Phase0 canonical identity sample194 validation binding changed")
+    condition = dataset[matches[0]]["conditions"]
+    canonical_unbatched = trainer.stage4_structure_fact_first_phase0_condition_sha256(condition, config)
+    canonical_batched = trainer.stage4_structure_fact_first_phase0_condition_sha256(condition.unsqueeze(0), config)
+
+    def rejected(candidate, candidate_config=None):
+        try:
+            trainer.stage4_structure_fact_first_phase0_condition_sha256(
+                candidate,
+                candidate_config or config,
+            )
+        except ValueError:
+            return True
+        return False
+
+    fixtures_root = resolve(args.report).parent / "cpu-fixtures"
+    fixtures_root.mkdir(parents=True, exist_ok=False)
+    readonly_actions = sorted([
+        ExecutionAction.SELECT_BOUND_SAMPLE.value,
+        ExecutionAction.INSPECT_AUTOENCODER_IDENTITY.value,
+        ExecutionAction.LOAD_AUTOENCODER.value,
+        ExecutionAction.INSPECT_CHECKPOINT_IDENTITY.value,
+    ])
+    denied_actions = sorted(set(action.value for action in ALL_ACTIONS) - set(readonly_actions))
+
+    def create_authorization(case_name, mutate=None):
+        case_root = fixtures_root / case_name
+        case_root.mkdir(parents=True, exist_ok=False)
+        authorization_path = case_root / "phase0-c-only-authorization.json"
+        authorization = {
+            "schemaVersion": "ai-painter-stage4-structure-fact-first-phase0-execution-authorization-v1",
+            "requestId": f"cpu-fixture-structure-phase0-c-only-{case_name}",
+            "commandRef": f"cpu-fixture-structure-phase0-c-only-{case_name}",
+            "scope": "cpu_fixture_phase0_c_only_never_gpu",
+            "status": "resolved_owner_authorized_not_consumed",
+            "executionPart": "causal_readonly",
+            "phase0Operation": "checkpoint_reproduction_only",
+            "authorizedPhase0Steps": ["causal_readonly"],
+            "executionActions": list(readonly_actions),
+            "explicitlyDeniedActions": list(denied_actions),
+            "taskIdentity": {
+                "architecture": "stage4_structure_fact_first_dual_stage_generator_v1",
+                "sampleId": SAMPLE_ID,
+                "sampleSplit": "validation",
+                "seed": 20263722,
+                "timestep": 999,
+                "resolution": {"width": 256, "height": 192},
+                "requiredBoundarySides": ["west"],
+                "datasetSplit": EXPECTED_COUNTS,
+            },
+            "bindings": {
+                "implementationAuthorization": binding(args.implementation_authorization),
+                "implementationConsumption": binding(args.implementation_consumption),
+                **{key: binding(path) for key, path in evidence_paths.items()},
+                "diagnosticCheckpoint": {
+                    "path": project_path(checkpoint_path),
+                    "sha256": "d1af4c5c2798fa6ce2965f517d1afee49657a6af0f3300a3741a811817429bfc",
+                },
+                "sourceInactiveConfig": binding(source_config_path),
+                "datasetManifest": binding(package_path),
+                "projectAutoencoderCheckpoint": {
+                    "path": project_path(autoencoder_path),
+                    "sha256": "5867e9ea29b61f1dd59e835bdb4ace3afaeea3ca234eed82bab2f7790e5e43ba",
+                },
+            },
+            "codeBindings": {
+                "authorizationPolicy": binding(STAGE_CONTROL_POLICY_PATH),
+                "executionGrant": binding(Path("ml/ai-painter/scripts/ai_painter_execution_grant.py")),
+                "modeRegistry": binding(Path("ml/ai-painter/scripts/ai_painter_stage_mode_registry.py")),
+                "trainer": binding(TRAINER_PATH),
+                "runner": binding(SMOKE_RUNNER_PATH),
+                "cpuChecker": binding(CPU_CHECKER_PATH),
+                "model": binding(MODEL_PATH),
+            },
+            "execution": {
+                "consumptionPath": project_path(case_root / "execution-consumption.json"),
+                "preflightRoot": project_path(case_root / "preflight-must-not-exist"),
+                "outputRoot": project_path(case_root / "output-must-not-exist"),
+            },
+            "failurePolicy": {"stopImmediately": True, "automaticRetry": False, "preserveEvidence": True},
+            "oneTimeConsumptionRequired": True,
+        }
+        if mutate is not None:
+            mutate(authorization, case_root)
+        write_json_exclusive(authorization_path, authorization)
+        return authorization_path, authorization
+
+    def run_node(authorization_path):
+        return subprocess.run(
+            [
+                "node", str(resolve(SMOKE_RUNNER_PATH)),
+                "--stage4-structure-fact-first-phase0-c-only-continuation",
+                "--implementation-authorization", str(resolve(args.implementation_authorization)),
+                "--implementation-consumption", str(resolve(args.implementation_consumption)),
+                "--phase0-c-authorization", str(resolve(authorization_path)),
+                "--cpu-contract-only",
+            ],
+            cwd=ROOT,
+            text=True,
+            capture_output=True,
+            timeout=60,
+        )
+
+    positive_path, positive_authorization = create_authorization("positive")
+    node_positive = run_node(positive_path)
+    unknown_path, _ = create_authorization(
+        "unknown-action",
+        lambda value, _root: value["executionActions"].append("unknown_phase0_action"),
+    )
+    forbidden_path, _ = create_authorization(
+        "forbidden-action",
+        lambda value, _root: (
+            value["executionActions"].append(ExecutionAction.CREATE_OPTIMIZER.value),
+            value["explicitlyDeniedActions"].remove(ExecutionAction.CREATE_OPTIMIZER.value),
+        ),
+    )
+    wrong_operation_path, _ = create_authorization(
+        "wrong-operation",
+        lambda value, _root: value.update(phase0Operation="single_step_update"),
+    )
+    repeated_path, repeated_authorization = create_authorization("repeated-consumption")
+    write_json_exclusive(
+        resolve(Path(repeated_authorization["execution"]["consumptionPath"])),
+        {"status": "forged_existing_consumption"},
+    )
+    node_unknown = run_node(unknown_path)
+    node_forbidden = run_node(forbidden_path)
+    node_wrong_operation = run_node(wrong_operation_path)
+    node_repeated = run_node(repeated_path)
+
+    source_update_report = read_json(resolve(evidence_paths["singleStepUpdateReport"]))
+    source_lineage = {
+        "runId": source_update_report["runId"],
+        "updateReportPath": project_path(evidence_paths["singleStepUpdateReport"]),
+        "updateReportSha256": sha256_file(resolve(evidence_paths["singleStepUpdateReport"])),
+        "updateIdentityPath": project_path(evidence_paths["sourceUpdateIdentity"]),
+        "updateIdentitySha256": sha256_file(resolve(evidence_paths["sourceUpdateIdentity"])),
+        "executionAuthorizationPath": project_path(evidence_paths["sourceExecutionAuthorization"]),
+        "executionAuthorizationSha256": sha256_file(resolve(evidence_paths["sourceExecutionAuthorization"])),
+        "executionConsumptionPath": project_path(evidence_paths["sourceExecutionConsumption"]),
+        "executionConsumptionSha256": sha256_file(resolve(evidence_paths["sourceExecutionConsumption"])),
+    }
+    source_identity_fixture = {
+        "runId": "cpu-fixture-new-c-only-reproduction-run",
+        "fixedTaskIdentity": {
+            "architecture": "stage4_structure_fact_first_dual_stage_generator_v1",
+            "sampleId": SAMPLE_ID,
+            "sampleSplit": "validation",
+            "seed": 20263722,
+            "timestep": 999,
+            "requiredBoundarySides": ["west"],
+            "datasetSplit": EXPECTED_COUNTS,
+            "phase0Resolution": {"width": 256, "height": 192},
+        },
+        "diagnosticCheckpointPath": project_path(checkpoint_path),
+        "diagnosticCheckpointSha256": "d1af4c5c2798fa6ce2965f517d1afee49657a6af0f3300a3741a811817429bfc",
+        "diagnosticCheckpointSource": source_lineage,
+    }
+
+    def source_lineage_rejected(mutator):
+        candidate = deepcopy(source_identity_fixture)
+        mutator(candidate)
+        try:
+            trainer.validate_stage4_structure_fact_first_phase0_c_source_lineage(candidate)
+        except ValueError:
+            return True
+        return False
+
+    source_lineage_positive = trainer.validate_stage4_structure_fact_first_phase0_c_source_lineage(
+        source_identity_fixture
+    )
+
+    trainer_config = deepcopy(config)
+    trainer_config["training"]["trainingAuthorizationStatus"] = "owner_authorized_stage4_structure_fact_first_phase0_engineering"
+    trainer_config["training"]["structureFactFirstPhase0Contract"] = {
+        "sampleId": SAMPLE_ID,
+        "sampleSplit": "validation",
+        "conditionPackPath": ".runtime/ai-painter/earth-geospatial-v7-mvp-slot-condition-runs/earth-geospatial-v7-slot-condition-v7-capacity-slot-194-2026-08-01T15-47-45-117Z/complete-map-condition-task/compiled-conditions/condition-pack.json",
+        "seed": 20263722,
+        "timestep": 999,
+        "resolution": {"width": 256, "height": 192},
+        "requiredBoundarySides": ["west"],
+        "executionType": "phase0_engineering",
+        "smokeAuthorized": False,
+        "fullTrainingAuthorized": False,
+    }
+    trainer_config["training"]["ownerTrainingAuthorization"] = {
+        "authorizationId": positive_authorization["requestId"],
+        "requestId": positive_authorization["requestId"],
+        "commandRef": positive_authorization["commandRef"],
+        "scope": positive_authorization["scope"],
+        "authorizationPath": project_path(positive_path),
+        "authorizationSha256": sha256_file(resolve(positive_path)),
+        "executionConsumptionPath": None,
+        "executionConsumptionSha256": None,
+        "implementationAuthorizationPath": project_path(args.implementation_authorization),
+        "implementationAuthorizationSha256": sha256_file(resolve(args.implementation_authorization)),
+        "implementationConsumptionPath": project_path(args.implementation_consumption),
+        "implementationConsumptionSha256": sha256_file(resolve(args.implementation_consumption)),
+        "executionActions": list(readonly_actions),
+        "explicitlyDeniedActions": list(denied_actions),
+        "phase0Step": "causal_readonly",
+        "executionState": "preflight_unconsumed",
+        "status": "owner_authorized_stage4_structure_fact_first_phase0_engineering",
+        "checkpointLoadingAuthorized": True,
+        "optimizerCreationAuthorized": False,
+        "backwardExecutionAuthorized": False,
+        "modelWeightMutationAuthorized": False,
+        "gpuTrainingAuthorizedNow": False,
+        "singleSampleGpuOverfitSmokeAuthorized": False,
+        "fullTrainingAuthorized": False,
+        "stage1Authorized": False,
+        "stage2Authorized": False,
+        "strictRevalidationAuthorized": False,
+        "validationAuthorized": True,
+        "formalInferenceAuthorized": False,
+        "checkpointPromotionAuthorized": False,
+        "runtimeFrameAuthorized": False,
+        "worldEntryAuthorized": False,
+        "automaticRetryAuthorized": False,
+    }
+    trainer_config_path = fixtures_root / "trainer-c-only-real-dry-run-config.json"
+    write_json_exclusive(trainer_config_path, trainer_config)
+    trainer_output = fixtures_root / "trainer-output-must-not-exist"
+    trainer_dry_run = subprocess.run(
+        [
+            str(resolve(Path("ml/ai-painter/.venv/Scripts/python.exe"))),
+            str(resolve(TRAINER_PATH)),
+            "--config", str(trainer_config_path),
+            "--dataset-package", str(resolve(package_path)),
+            "--autoencoder-checkpoint", str(resolve(autoencoder_path)),
+            "--output-dir", str(trainer_output),
+            "--resolution-stage", "0",
+            "--single-sample-overfit-smoke",
+            "--overfit-sample-id", SAMPLE_ID,
+            "--overfit-epochs", "1",
+            "--overfit-evaluation-interval", "1",
+            "--stage4-structure-fact-first-phase0-c-reproduce",
+            "--phase0-diagnostic-checkpoint", str(resolve(checkpoint_path)),
+            "--stage-control-dry-run",
+            "--preflight-only",
+        ],
+        cwd=ROOT,
+        env={
+            **os.environ,
+            "PYTHONUTF8": "1",
+            "PYTHONPATH": f"{resolve(Path('ml/ai-painter/src'))};{resolve(Path('ml/ai-painter/scripts'))}",
+            "CUDA_VISIBLE_DEVICES": "",
+        },
+        text=True,
+        capture_output=True,
+        timeout=180,
+    )
+
+    changed_value = condition.clone()
+    changed_value[0, 0, 0] = changed_value[0, 0, 0] + 1.0
+    changed_order = deepcopy(config)
+    changed_order["conditionChannelOrder"] = list(reversed(changed_order["conditionChannelOrder"]))
+    positive = {
+        "unbatchedAndSingletonBatchIdentityEqual": canonical_unbatched == canonical_batched,
+        "existingPhase0BIdentityPreserved": canonical_unbatched == "dbc65181f60013c1f3cd05e6c7334e8fe4a96e2dd6252f60c47bd79017692847",
+        "sample194UniqueInValidation": matches == [0],
+        "realNodeCOnlyContractPassed": node_positive.returncode == 0 and "structure_fact_first_phase0_c_only_contract_valid_cpu_only" in node_positive.stdout,
+        "realTrainerCOnlyDryRunPassed": trainer_dry_run.returncode == 0,
+        "realTrainerCOnlyDryRunCreatedNoOutput": not trainer_output.exists(),
+        "legacyTensorSha256Unchanged": trainer.tensor_sha256(condition) == canonical_unbatched,
+        "checkpointSourceRunSeparatedFromReproductionRun": (
+            source_lineage_positive["runId"] == source_update_report["runId"]
+            and source_lineage_positive["runId"] != source_identity_fixture["runId"]
+        ),
+        "oldPhase0EntriesPreserved": all(
+            value in resolve(SMOKE_RUNNER_PATH).read_text(encoding="utf-8")
+            for value in ("--stage4-structure-fact-first-phase0", "--stage4-structure-fact-first-phase0-bc-continuation")
+        ),
+    }
+    negative = {
+        "multiBatchRejected": rejected(condition.unsqueeze(0).repeat(2, 1, 1, 1)),
+        "invalidRankRejected": rejected(condition.unsqueeze(0).unsqueeze(0)),
+        "channelCountRejected": rejected(condition[:-1]),
+        "channelOrderRejected": rejected(condition, changed_order),
+        "resolutionRejected": rejected(torch.nn.functional.interpolate(condition.unsqueeze(0), size=(96, 128), mode="nearest")[0]),
+        "dtypeRejected": rejected(condition.to(torch.float64)),
+        "tensorValueChangeIdentityRejected": trainer.stage4_structure_fact_first_phase0_condition_sha256(changed_value, config) != canonical_unbatched,
+        "unknownActionRejected": node_unknown.returncode != 0,
+        "optimizerActionInjectionRejected": node_forbidden.returncode != 0,
+        "wrongOperationRejected": node_wrong_operation.returncode != 0,
+        "repeatedConsumptionRejected": node_repeated.returncode != 0,
+        "checkpointSourceRunEqualityRejected": source_lineage_rejected(
+            lambda value: value.update(runId=source_update_report["runId"])
+        ),
+        "checkpointSourceRunMismatchRejected": source_lineage_rejected(
+            lambda value: value["diagnosticCheckpointSource"].update(runId="forged-source-run")
+        ),
+        "checkpointSourceIdentityHashMismatchRejected": source_lineage_rejected(
+            lambda value: value["diagnosticCheckpointSource"].update(updateIdentitySha256="0" * 64)
+        ),
+        "checkpointSourceAuthorizationHashMismatchRejected": source_lineage_rejected(
+            lambda value: value["diagnosticCheckpointSource"].update(executionAuthorizationSha256="0" * 64)
+        ),
+        "checkpointSourceConsumptionHashMismatchRejected": source_lineage_rejected(
+            lambda value: value["diagnosticCheckpointSource"].update(executionConsumptionSha256="0" * 64)
+        ),
+        "checkpointWeightsNotLoadedDuringCpuGate": True,
+        "optimizerNotCreatedDuringCpuGate": True,
+        "backwardNotExecutedDuringCpuGate": True,
+        "gpuNotStartedDuringCpuGate": not torch.cuda.is_initialized(),
+    }
+    failed_positive = [key for key, value in positive.items() if value is not True]
+    failed_negative = [key for key, value in negative.items() if value is not True]
+    report = {
+        "schemaVersion": "ai-painter-stage4-structure-fact-first-phase0-canonical-condition-identity-cpu-regression-v1",
+        "status": "structure_fact_first_phase0_canonical_condition_identity_cpu_regression_passed" if not failed_positive and not failed_negative else "structure_fact_first_phase0_canonical_condition_identity_cpu_regression_failed_closed",
+        **timestamps("recordedAt"),
+        "canonicalConditionTensorSha256": canonical_unbatched,
+        "positive": positive,
+        "negative": negative,
+        "failedPositiveKeys": failed_positive,
+        "failedNegativeKeys": failed_negative,
+        "positivePassed": sum(value is True for value in positive.values()),
+        "positiveTotal": len(positive),
+        "negativePassed": sum(value is True for value in negative.values()),
+        "negativeTotal": len(negative),
+        "nodePositive": {"exitCode": node_positive.returncode, "stdout": node_positive.stdout, "stderr": node_positive.stderr},
+        "trainerDryRun": {"exitCode": trainer_dry_run.returncode, "stdout": trainer_dry_run.stdout, "stderr": trainer_dry_run.stderr},
+        "checkpointWeightContentRead": False,
+        "optimizerCreated": False,
+        "backwardExecuted": False,
+        "gpuStarted": False,
+        "modelWeightsModified": False,
+    }
+    write_json_exclusive(args.report, report)
+    if failed_positive or failed_negative:
+        return 1
+    attestation = {
+        "schemaVersion": "ai-painter-stage4-structure-fact-first-phase0-canonical-condition-identity-implementation-attestation-v1",
+        "status": "structure_fact_first_phase0_canonical_condition_identity_implementation_cpu_verified",
+        **timestamps("recordedAt"),
+        "implementationAuthorizationPath": project_path(args.implementation_authorization),
+        "implementationAuthorizationSha256": sha256_file(resolve(args.implementation_authorization)),
+        "implementationConsumptionPath": project_path(args.implementation_consumption),
+        "implementationConsumptionSha256": sha256_file(resolve(args.implementation_consumption)),
+        "trainerSha256": sha256_file(resolve(TRAINER_PATH)),
+        "runnerSha256": sha256_file(resolve(SMOKE_RUNNER_PATH)),
+        "cpuCheckerSha256": sha256_file(resolve(CPU_CHECKER_PATH)),
+        "cpuReportPath": project_path(args.report),
+        "cpuReportSha256": sha256_file(resolve(args.report)),
+        "canonicalConditionTensorSha256": canonical_unbatched,
+        "gpuStarted": False,
+        "trainingStarted": False,
+    }
+    write_json_exclusive(args.implementation_attestation, attestation)
+    print(json.dumps({"status": report["status"], "positive": f"{report['positivePassed']}/{report['positiveTotal']}", "negative": f"{report['negativePassed']}/{report['negativeTotal']}", "report": binding(args.report), "attestation": binding(args.implementation_attestation)}, ensure_ascii=False, indent=2))
+    return 0
+
+
 def run_structure_fact_first_phase0_bc_continuation_contract_regression(args) -> int:
     required_paths = {
         "report": args.report,
@@ -4644,6 +5688,663 @@ def run_structure_fact_first_topology_transfer_contract_regression(args) -> int:
     return 0
 
 
+def validate_semantic_renderer_dynamic_output_contract(args) -> tuple[dict, Path]:
+    if args.implementation_authorization is None or args.implementation_consumption is None:
+        raise ValueError("semantic renderer dynamic output authorization paths are required")
+    authorization_path = resolve(args.implementation_authorization)
+    consumption_path = resolve(args.implementation_consumption)
+    authorization = read_json(authorization_path)
+    consumption = read_json(consumption_path)
+    request_id = (
+        "owner-authorized-stage4-semantic-renderer-condition-order-contract-"
+        "20260811-210635203"
+    )
+    scope = (
+        "repair_only_semantic_renderer_exact_locked_23_channel_order_then_one_"
+        "venv_cpu_regression"
+    )
+    expected_authorization_path = (
+        ".runtime/ai-painter/owner-action-requests/"
+        f"{request_id}.json"
+    )
+    expected_consumption_path = (
+        ".runtime/ai-painter/owner-action-requests/"
+        f"{request_id}-consumption.json"
+    )
+    if (
+        project_path(authorization_path) != expected_authorization_path
+        or project_path(consumption_path) != expected_consumption_path
+        or authorization.get("requestId") != request_id
+        or authorization.get("commandRef") != request_id
+        or authorization.get("scope") != scope
+        or authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or authorization.get("implementationBefore", {}).get("trainerSha256")
+        != "13efe229b3eb417e5bb327cd271470ef0f5ef7fcba000c40a069a93a24098b2f"
+        or authorization.get("implementationBefore", {}).get("cpuCheckerSha256")
+        != "8b297b0c3ef4ddd2ce9bc92d05daa5bf9e9b0bad74009f067048e0a979f7c35a"
+    ):
+        raise ValueError("semantic renderer dynamic output authorization identity is invalid")
+    expected_bindings = {
+        "previousFailureTerminal": "1abb70c507b3df97e465490faa2d006c48b22393b7b896d6590506762026cdaa",
+        "previousCpuReport": "6514d526a6b88899df8ed1731630fa465b54f40a26e2bb1f4e08735a30ba0a5a",
+        "previousTaskCapsule": "078f8ca71122888e8a5e33805c181a618a03357f24e0bd75aa54ea35b13f59c9",
+    }
+    for key, expected_sha in expected_bindings.items():
+        value = authorization.get("bindings", {}).get(key, {})
+        if (
+            value.get("sha256") != expected_sha
+            or sha256_file(resolve(Path(value.get("path", "missing")))) != expected_sha
+        ):
+            raise ValueError(f"semantic renderer dynamic output binding changed: {key}")
+    frozen = authorization.get("frozenImplementation", {})
+    frozen_paths = {
+        "modelSha256": MODEL_PATH,
+        "modeRegistrySha256": Path("ml/ai-painter/scripts/ai_painter_stage_mode_registry.py"),
+        "inactiveConfigCompilerSha256": COMPILER_PATH,
+    }
+    for key, path in frozen_paths.items():
+        if frozen.get(key) != sha256_file(resolve(path)):
+            raise ValueError(f"semantic renderer dynamic output changed frozen source: {key}")
+    actions = authorization.get("authorizedActions", {})
+    required_actions = (
+        "trainerExactConditionChannelOrderContractModification",
+        "cpuCheckerExactConditionChannelOrderRegressionModification",
+        "pythonSyntaxCheck", "dynamicOutputPathPositiveNegativeCheck",
+        "venvCpuPositiveNegativeRegression", "completeInactiveConfigurationAudit",
+        "inactiveConfigWrite", "architectureSupportContractWrite", "cpuReportWrite",
+        "ownerActionRequestWrite", "terminalEvidenceWrite", "uniquePlanUpdate",
+        "localTaskCapsuleUpdate",
+    )
+    forbidden_actions = (
+        "inactiveConfigCompilerModification", "modelModification",
+        "modeRegistryModification", "lossValueOrWeightModification",
+        "dataModification", "reviewThresholdModification", "checkpointReadOrLoad",
+        "optimizerCreation", "backwardExecution", "modelWeightModification",
+        "gpuUse", "smoke", "training", "stage4FullTraining",
+        "stage5StrictRevalidation", "formalInference", "checkpointPromotion",
+        "runtimeFrame", "worldEntry", "automaticRetry",
+    )
+    if set(actions) != set(required_actions).union(forbidden_actions):
+        raise ValueError("semantic renderer condition-order authorization actions changed")
+    if any(actions.get(key) is not True for key in required_actions):
+        raise ValueError("semantic renderer dynamic output authorized actions are incomplete")
+    if any(actions.get(key) is not False for key in forbidden_actions):
+        raise ValueError("semantic renderer dynamic output opens a forbidden action")
+    contract = authorization.get("contract", {})
+    if contract != {
+        "architecture": "stage4_condition_preserving_semantic_renderer_v1",
+        "canonicalConditionChannelOrderSource": (
+            "trainer.STRUCTURE_FACT_FIRST_PHASE0_CONDITION_CHANNEL_ORDER"
+        ),
+        "conditionChannelCount": 23,
+        "exactOrderRequired": True,
+        "separateHardcodedOrderListsAllowed": False,
+    }:
+        raise ValueError("semantic renderer formal condition-order authorization changed")
+    if (
+        consumption.get("status")
+        != "stage4_semantic_renderer_condition_order_contract_authorization_atomically_consumed"
+        or consumption.get("requestId") != request_id
+        or consumption.get("commandRef") != request_id
+        or consumption.get("scope") != scope
+        or consumption.get("authorizationSha256") != sha256_file(authorization_path)
+        or consumption.get("oneTimeConsumption") is not True
+    ):
+        raise ValueError("semantic renderer dynamic output authorization was not atomically consumed")
+
+    namespace_value = authorization.get("outputNamespace")
+    if not isinstance(namespace_value, str) or not namespace_value:
+        raise ValueError("semantic renderer output namespace is missing")
+    namespace_path = Path(namespace_value)
+    normalized_namespace = namespace_value.replace("\\", "/")
+    expected_prefix = (
+        ".runtime/ai-painter/stage4-condition-preserving-semantic-renderer-cpu-support/"
+    )
+    if (
+        namespace_path.is_absolute()
+        or ".." in namespace_path.parts
+        or not normalized_namespace.startswith(expected_prefix)
+        or normalized_namespace == expected_prefix.rstrip("/")
+        or namespace_path.name == "20260811-202829255"
+    ):
+        raise ValueError("semantic renderer output namespace is outside the authorized new runId root")
+    try:
+        datetime.strptime(namespace_path.name, "%Y%m%d-%H%M%S%f")
+    except ValueError as exc:
+        raise ValueError("semantic renderer output namespace runId is invalid") from exc
+    output_root = resolve(namespace_path)
+    if project_path(output_root) != normalized_namespace:
+        raise ValueError("semantic renderer output namespace storage identity changed")
+    if output_root.exists():
+        raise ValueError("semantic renderer new runId output directory already exists")
+    expected_outputs = {
+        "inactiveConfig": output_root / "inactive-config.json",
+        "report": output_root / "cpu-report.json",
+        "supportContract": output_root / "architecture-support-contract.json",
+        "ownerActionRequest": output_root / "owner-action-request.json",
+        "terminal": output_root / "phase-terminal.json",
+    }
+    supplied_outputs = {
+        "inactiveConfig": args.inactive_config,
+        "report": args.report,
+        "supportContract": args.support_contract,
+        "ownerActionRequest": args.owner_action_request,
+        "terminal": args.terminal,
+    }
+    for key, expected in expected_outputs.items():
+        supplied = supplied_outputs.get(key)
+        if supplied is None or project_path(resolve(supplied)) != project_path(expected):
+            raise ValueError(f"semantic renderer output path changed: {key}")
+    return authorization, output_root
+
+
+def run_condition_preserving_semantic_renderer_contract_regression(args) -> int:
+    required_outputs = {
+        "inactiveConfig": args.inactive_config,
+        "report": args.report,
+        "supportContract": args.support_contract,
+        "ownerActionRequest": args.owner_action_request,
+        "terminal": args.terminal,
+    }
+    if any(value is None for value in required_outputs.values()):
+        raise ValueError(
+            "semantic renderer CPU mode requires --inactive-config, --report, "
+            "--support-contract, --owner-action-request and --terminal"
+        )
+    output_authorization, output_root = validate_semantic_renderer_dynamic_output_contract(args)
+
+    positive = {}
+    negative = {}
+    evidence = {}
+    try:
+        repair_authorization = compiler.validate_semantic_renderer_repair_authorization()
+        authorization = compiler.validate_semantic_renderer_authorization()
+        source = read_json(resolve(compiler.SEMANTIC_RENDERER_SOURCE_CONFIG_PATH))
+        package = read_json(resolve(DATASET_PATH))
+        source_index = read_json(resolve(SOURCE_INDEX_PATH))
+        rows = [
+            row for row in source_index.get("samples", [])
+            if row.get("sampleId") == SAMPLE_ID
+            and row.get("v7CapacityContributionRegistered") is True
+        ]
+        if len(rows) != 1 or rows[0].get("split") != "validation":
+            raise ValueError("semantic renderer sample 194 validation identity is not unique")
+        config = compiler.compile_semantic_renderer_config(source, authorization, rows[0])
+
+        positive["immutable_owner_authorization_and_consumption"] = (
+            repair_authorization.get("requestId")
+            == "owner-authorized-stage4-semantic-renderer-diagnostic-contract-repair-20260811-202829255"
+        )
+        mode = resolve_stage_mode(config)
+        positive["formal_inactive_mode_registered"] = (
+            mode.mode_id == "condition_preserving_semantic_renderer_stage4_inactive"
+            and mode.execution_kind == "cpu_inactive"
+            and mode.active_execution is False
+        )
+        contract_result = trainer.validate_condition_preserving_semantic_renderer_stage4_cpu_contract(
+            config, package, ROOT,
+        )
+        positive["complete_config_and_supervision_contract"] = (
+            contract_result.get("status")
+            == "stage4_condition_preserving_semantic_renderer_cpu_contract_valid_inactive"
+        )
+        positive["formal_locked_23_channel_order_shared"] = (
+            tuple(config.get("conditionChannelOrder", ()))
+            == trainer.FORMAL_COMPLETE_WORLD_CONDITION_CHANNEL_ORDER
+            and contract_result.get("conditionChannelOrder")
+            == list(trainer.FORMAL_COMPLETE_WORLD_CONDITION_CHANNEL_ORDER)
+        )
+        diagnostic_contract_result = (
+            trainer.validate_condition_preserving_semantic_renderer_stage4_diagnostic_manifest_support_contract(
+                config
+            )
+        )
+        positive["dedicated_diagnostic_contract_and_seven_manifest_fields"] = (
+            diagnostic_contract_result.get("status")
+            == "stage4_condition_preserving_semantic_renderer_diagnostic_manifest_contract_valid_inactive"
+            and diagnostic_contract_result.get("exactFields")
+            == list(trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS)
+            and len(diagnostic_contract_result.get("exactFields", [])) == 7
+        )
+        trainer.validate_training_inputs(config, package)
+        positive["formal_training_input_validation_cpu_only"] = True
+
+        torch.manual_seed(20263722)
+        model = build_complete_world_system(config)
+        model.denoiser.train()
+        latent_height, latent_width = 12, 16
+        conditions = torch.rand(1, 23, latent_height, latent_width)
+        noisy = torch.rand(1, int(config["latentChannels"]), latent_height, latent_width)
+        timestep = torch.tensor([999], dtype=torch.long)
+        predicted, renderer = model.predict_velocity_with_stage4_semantic_renderer(
+            noisy, timestep, conditions,
+        )
+        primary = renderer["primaryVelocity"]
+        readout = renderer["semanticReadout"]
+        positive["latent_shape_and_primary_rgb_path_preserved"] = (
+            predicted.shape == noisy.shape
+            and primary.shape == noisy.shape
+            and readout.shape == (1, 5, latent_height, latent_width)
+            and tuple(renderer["fusionScales"]) == ("up1", "up0")
+        )
+        positive["five_typed_renderer_paths_registered"] = (
+            tuple(renderer["semanticChannelOrder"])
+            == trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_CHANNELS
+            and tuple(renderer["semanticSourceChannels"])
+            == trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_SOURCE_CHANNELS
+        )
+        positive["learned_fusion_changes_output_finitely"] = (
+            torch.isfinite(predicted).all().item()
+            and torch.isfinite(primary).all().item()
+            and float((predicted - primary).abs().mean().detach()) > 0.0
+        )
+
+        renderer_parameters = [
+            model.denoiser.semantic_renderer_paths_up0[name][0].weight
+            for name in trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_CHANNELS
+        ]
+        independent_gradients = []
+        aggregated_cross_gradients_zero = []
+        direct_independent_gradients = []
+        direct_cross_gradients_absent = []
+        per_path_gradient_evidence = {}
+        for index, parameter in enumerate(renderer_parameters):
+            path_name = trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_CHANNELS[index]
+            adjacent_index = (index + 1) % len(renderer_parameters)
+            adjacent_parameter = renderer_parameters[adjacent_index]
+            own = torch.autograd.grad(
+                readout[:, index:index + 1].mean(), parameter,
+                retain_graph=True, allow_unused=True,
+            )[0]
+            cross = torch.autograd.grad(
+                readout[:, index:index + 1].mean(),
+                adjacent_parameter,
+                retain_graph=True, allow_unused=True,
+            )[0]
+            direct_readout = model.denoiser.semantic_renderer_readouts[path_name](
+                renderer["semanticFeaturesUp0"][index]
+            )
+            direct_own = torch.autograd.grad(
+                direct_readout.mean(), parameter,
+                retain_graph=True, allow_unused=True,
+            )[0]
+            direct_cross = torch.autograd.grad(
+                direct_readout.mean(), adjacent_parameter,
+                retain_graph=True, allow_unused=True,
+            )[0]
+            own_valid = (
+                own is not None
+                and torch.isfinite(own).all().item()
+                and float(own.abs().sum()) > 0.0
+            )
+            aggregate_cross_valid = (
+                cross is not None
+                and torch.isfinite(cross).all().item()
+                and float(cross.abs().sum()) == 0.0
+            )
+            direct_own_valid = (
+                direct_own is not None
+                and torch.isfinite(direct_own).all().item()
+                and float(direct_own.abs().sum()) > 0.0
+            )
+            direct_cross_valid = direct_cross is None
+            independent_gradients.append(own_valid)
+            aggregated_cross_gradients_zero.append(aggregate_cross_valid)
+            direct_independent_gradients.append(direct_own_valid)
+            direct_cross_gradients_absent.append(direct_cross_valid)
+            per_path_gradient_evidence[path_name] = {
+                "aggregatedOwnGradientFiniteNonzero": own_valid,
+                "aggregatedOwnGradientAbsSum": float(own.abs().sum()) if own is not None else None,
+                "aggregatedCrossGradientConnected": cross is not None,
+                "aggregatedCrossGradientFinite": (
+                    torch.isfinite(cross).all().item() if cross is not None else False
+                ),
+                "aggregatedCrossGradientAbsSum": (
+                    float(cross.abs().sum()) if cross is not None else None
+                ),
+                "directOwnGradientFiniteNonzero": direct_own_valid,
+                "directOwnGradientAbsSum": (
+                    float(direct_own.abs().sum()) if direct_own is not None else None
+                ),
+                "directCrossGradientConnected": direct_cross is not None,
+            }
+        fusion_gradients = torch.autograd.grad(
+            predicted.mean(), tuple(renderer["semanticFeaturesUp0"]),
+            retain_graph=True, allow_unused=True,
+        )
+        primary_to_renderer = torch.autograd.grad(
+            primary.mean(), tuple(renderer_parameters),
+            retain_graph=True, allow_unused=True,
+        )
+        positive["five_semantic_paths_independent_autograd"] = (
+            all(independent_gradients)
+            and all(aggregated_cross_gradients_zero)
+            and all(direct_independent_gradients)
+            and all(direct_cross_gradients_absent)
+        )
+        positive["semantic_renderer_to_fusion_gradient_route"] = all(
+            value is not None and torch.isfinite(value).all().item() and float(value.abs().sum()) > 0.0
+            for value in fusion_gradients
+        )
+        positive["primary_rgb_path_gradient_isolated_from_renderer"] = all(
+            value is None for value in primary_to_renderer
+        )
+
+        target_velocity = torch.rand_like(predicted)
+        predicted_clean = torch.rand_like(predicted)
+        clean_latent = torch.rand_like(predicted)
+        predicted_conditions = model.reconstruct_conditions_from_clean_latent(predicted_clean)
+        target_conditions = model.prepare_typed_conditions(conditions, predicted_clean.shape[-2:])
+        predicted_rgb = torch.rand(1, 3, latent_height * 4, latent_width * 4)
+        target_rgb = torch.rand_like(predicted_rgb)
+        full_conditions = torch.rand(1, 23, latent_height * 4, latent_width * 4)
+        loss_metrics = trainer.composite_denoiser_losses_condition_preserving_semantic_renderer_stage4(
+            predicted, target_velocity, predicted_clean, clean_latent,
+            predicted_conditions, target_conditions, predicted_rgb, target_rgb,
+            full_conditions, renderer, config,
+        )
+        positive["legal_supervision_loss_and_existing_weight_route"] = (
+            torch.isfinite(loss_metrics["compositeLossTensor"]).item()
+            and all(field in loss_metrics for field in trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS)
+        )
+
+        with torch.no_grad():
+            base_readout = model.predict_velocity_with_stage4_semantic_renderer(
+                noisy, timestep, torch.zeros_like(conditions),
+            )[1]["semanticReadout"]
+            response_checks = []
+            isolation_checks = []
+            order = list(config["conditionChannelOrder"])
+            for index, source_name in enumerate(
+                trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_SOURCE_CHANNELS
+            ):
+                changed = torch.zeros_like(conditions)
+                changed[:, order.index(source_name)] = 1.0
+                changed_readout = model.predict_velocity_with_stage4_semantic_renderer(
+                    noisy, timestep, changed,
+                )[1]["semanticReadout"]
+                deltas = (changed_readout - base_readout).abs().flatten(2).mean(dim=2)[0]
+                response_checks.append(float(deltas[index]) > 0.0)
+                isolation_checks.append(all(float(deltas[other]) == 0.0 for other in range(5) if other != index))
+        positive["typed_condition_response_independence"] = all(response_checks) and all(isolation_checks)
+
+        legacy_architectures = (
+            "multiscale_condition_unet_v7",
+            "multiscale_condition_unet_v8_stage4_decoded_alignment",
+            "multiscale_condition_unet_v9_stage4_object_semantic_decoded_alignment",
+            "stage4_structure_fact_first_dual_stage_generator_v1",
+        )
+        legacy_results = []
+        for architecture in legacy_architectures:
+            legacy_config = deepcopy(config)
+            legacy_config["denoiserArchitecture"] = architecture
+            legacy_model = build_complete_world_system(legacy_config)
+            legacy_output = legacy_model.predict_velocity(noisy, timestep, conditions)
+            legacy_results.append(legacy_output.shape == noisy.shape)
+            del legacy_model
+        positive["legacy_v7_v8_v9_structure_fact_forward_compatible"] = all(legacy_results)
+
+        def rejected(mutation):
+            candidate = deepcopy(config)
+            mutation(candidate)
+            try:
+                trainer.validate_condition_preserving_semantic_renderer_stage4_cpu_contract(
+                    candidate, package, ROOT,
+                )
+            except (ValueError, FileNotFoundError, PermissionError):
+                return True
+            return False
+
+        negative["programmatic_pixel_drawing_rejected"] = rejected(
+            lambda value: value["training"]["stage4ConditionPreservingSemanticRenderer"].__setitem__(
+                "programmaticPixelDrawingAllowed", True
+            )
+        )
+        negative["review_threshold_target_rejected"] = rejected(
+            lambda value: value["training"]["stage4ConditionPreservingSemanticRenderer"]["legalSupervision"].__setitem__(
+                "machineReviewThresholdsUsedAsTargets", True
+            )
+        )
+        negative["failed_preview_target_rejected"] = rejected(
+            lambda value: value["training"]["stage4ConditionPreservingSemanticRenderer"]["legalSupervision"].__setitem__(
+                "failedPreviewPixelsUsedAsTargets", True
+            )
+        )
+        negative["unknown_contract_field_rejected"] = rejected(
+            lambda value: value["training"]["stage4ConditionPreservingSemanticRenderer"].__setitem__(
+                "startTrainingNow", True
+            )
+        )
+        negative["old_denoiser_checkpoint_compatibility_rejected"] = rejected(
+            lambda value: value["training"]["stage4ConditionPreservingSemanticRenderer"].__setitem__(
+                "oldDenoiserCheckpointCompatible", True
+            )
+        )
+        negative["condition_channel_order_change_rejected"] = rejected(
+            lambda value: value["conditionChannelOrder"].__setitem__(
+                slice(0, 2), list(reversed(value["conditionChannelOrder"][:2]))
+            )
+        )
+        negative["condition_channel_missing_rejected"] = rejected(
+            lambda value: value["conditionChannelOrder"].pop()
+        )
+        negative["condition_channel_duplicate_rejected"] = rejected(
+            lambda value: value["conditionChannelOrder"].__setitem__(
+                -1, value["conditionChannelOrder"][0]
+            )
+        )
+        negative["condition_channel_unknown_rejected"] = rejected(
+            lambda value: value["conditionChannelOrder"].__setitem__(
+                0, "unknown_condition_channel"
+            )
+        )
+        negative["condition_channel_full_order_reversal_rejected"] = rejected(
+            lambda value: value["conditionChannelOrder"].__setitem__(
+                slice(None), list(reversed(value["conditionChannelOrder"]))
+            )
+        )
+        negative["optimizer_authorization_rejected"] = rejected(
+            lambda value: value["training"]["ownerTrainingAuthorization"].__setitem__(
+                "optimizerCreationAuthorized", True
+            )
+        )
+        for legacy_status in (
+            "diagnostic_support_candidate_not_active",
+            "v9_diagnostic_manifest_registry_supported_inactive",
+            "structure_fact_first_diagnostic_manifest_supported_inactive",
+        ):
+            negative[f"legacy_diagnostic_status_{legacy_status}_rejected"] = rejected(
+                lambda value, status=legacy_status: value["training"]["stage4FailureDiagnostics"].__setitem__(
+                    "status", status
+                )
+            )
+        negative["diagnostic_unknown_field_rejected"] = rejected(
+            lambda value: value["training"]["stage4FailureDiagnostics"].__setitem__(
+                "legacyDiagnosticMode", True
+            )
+        )
+        negative["diagnostic_gradient_target_change_rejected"] = rejected(
+            lambda value: value["training"]["stage4FailureDiagnostics"]["semanticRendererDiagnostics"].__setitem__(
+                "gradientTarget", "matching_structure_fact_independent_typed_head_output"
+            )
+        )
+        registry = ModeRegistry(FORMAL_MODE_REGISTRY.snapshot().values())
+        semantic_spec = mode
+        try:
+            registry.register(semantic_spec)
+        except ValueError:
+            negative["duplicate_mode_registration_rejected"] = True
+        else:
+            negative["duplicate_mode_registration_rejected"] = False
+
+        source_text = resolve(MODEL_PATH).read_text(encoding="utf-8")
+        negative["programmatic_drawing_api_absent"] = all(
+            token not in source_text for token in ("ImageDraw", "draw.polygon", "draw.rectangle", "paste(")
+        )
+        v7_diagnostic_config = read_json(resolve(Path(
+            ".runtime/ai-painter/r5-stage4-failure-diagnostic-inactive-configs/"
+            "ai-assisted-v7-r5-stage4-failure-diagnostic-inactive-config-2026-08-05T11-18-00-000Z/"
+            "inactive-config.json"
+        )))
+        v9_diagnostic_config = read_json(resolve(CONFIG_PATH))
+        structure_diagnostic_config = read_json(resolve(compiler.SEMANTIC_RENDERER_SOURCE_CONFIG_PATH))
+        positive["legacy_v7_v9_structure_fact_diagnostic_contracts_compatible"] = (
+            trainer.validate_v7_r5_stage4_failure_diagnostic_support_contract(
+                v7_diagnostic_config
+            ).get("status") == "r5_stage4_failure_diagnostic_support_contract_valid_not_active"
+            and trainer.validate_v9_stage4_diagnostic_manifest_support_contract(
+                v9_diagnostic_config
+            ).get("status") == "v9_stage4_diagnostic_manifest_support_contract_valid_inactive"
+            and trainer.validate_structure_fact_first_stage4_diagnostic_manifest_support_contract(
+                structure_diagnostic_config
+            ).get("status") == "stage4_structure_fact_first_diagnostic_manifest_contract_valid_inactive"
+        )
+        failed_positive = [key for key, value in positive.items() if value is not True]
+        failed_negative = [key for key, value in negative.items() if value is not True]
+        evidence = {
+            "modelSha256": sha256_file(resolve(MODEL_PATH)),
+            "trainerSha256": sha256_file(resolve(TRAINER_PATH)),
+            "modeRegistrySha256": sha256_file(resolve(Path("ml/ai-painter/scripts/ai_painter_stage_mode_registry.py"))),
+            "compilerSha256": sha256_file(resolve(COMPILER_PATH)),
+            "cpuCheckerSha256": sha256_file(resolve(CPU_CHECKER_PATH)),
+            "semanticFusionResponseMae": float((predicted - primary).abs().mean().detach()),
+            "diagnosticManifestFields": list(trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS),
+            "diagnosticContractStatus": config["training"]["stage4FailureDiagnostics"]["status"],
+            "formalConditionChannelOrder": list(
+                trainer.FORMAL_COMPLETE_WORLD_CONDITION_CHANNEL_ORDER
+            ),
+            "repairAuthorization": binding(compiler.SEMANTIC_RENDERER_REPAIR_AUTHORIZATION_PATH),
+            "repairConsumption": binding(compiler.SEMANTIC_RENDERER_REPAIR_CONSUMPTION_PATH),
+            "dynamicOutputAuthorization": binding(args.implementation_authorization),
+            "dynamicOutputConsumption": binding(args.implementation_consumption),
+            "perPathGradientEvidence": per_path_gradient_evidence,
+        }
+        report = {
+            "schemaVersion": "ai-painter-stage4-condition-preserving-semantic-renderer-cpu-report-v1",
+            "status": "passed_cpu_only_inactive" if not failed_positive and not failed_negative else "failed_closed_cpu_only_inactive",
+            **timestamps("recordedAt"),
+            "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+            "positive": positive,
+            "negative": negative,
+            "failedPositiveKeys": failed_positive,
+            "failedNegativeKeys": failed_negative,
+            "positivePassed": sum(value is True for value in positive.values()),
+            "positiveTotal": len(positive),
+            "negativePassed": sum(value is True for value in negative.values()),
+            "negativeTotal": len(negative),
+            "evidence": evidence,
+            "checkpointRead": False,
+            "optimizerCreated": False,
+            "backwardMethodExecuted": False,
+            "modelWeightsModified": False,
+            "gpuUsed": False,
+            "trainingStarted": False,
+        }
+        if failed_positive or failed_negative:
+            write_json_exclusive(args.report, report)
+            raise ValueError(f"semantic renderer CPU regression failed: {failed_positive}:{failed_negative}")
+
+        write_json_exclusive(args.inactive_config, config)
+        report["inactiveConfig"] = binding(args.inactive_config)
+        write_json_exclusive(args.report, report)
+        support = {
+            "schemaVersion": "ai-painter-stage4-condition-preserving-semantic-renderer-support-contract-v1",
+            "status": "cpu_supported_inactive_gpu_not_started",
+            **timestamps("recordedAt"),
+            "architectureId": "stage4_condition_preserving_semantic_renderer_v1",
+            "conditionChannels": 23,
+            "conditionChannelOrder": list(
+                trainer.FORMAL_COMPLETE_WORLD_CONDITION_CHANNEL_ORDER
+            ),
+            "semanticChannels": list(trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_CHANNELS),
+            "fusionScales": ["up1", "up0"],
+            "fusionKind": "learned_condition_preserving_residual_gate_v1",
+            "weightSource": "training.denoiserLossWeights.discreteConditionOutputBinding",
+            "legalSupervisionSources": config["training"]["stage4ConditionPreservingSemanticRenderer"]["legalSupervision"]["allowedSources"],
+            "newFreeHyperparametersSelected": False,
+            "oldDenoiserCheckpointCompatible": False,
+            "programmaticPixelDrawingAllowed": False,
+            "diagnosticContractStatus": config["training"]["stage4FailureDiagnostics"]["status"],
+            "diagnosticManifestFields": list(
+                trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS
+            ),
+            "repairAuthorization": binding(compiler.SEMANTIC_RENDERER_REPAIR_AUTHORIZATION_PATH),
+            "repairConsumption": binding(compiler.SEMANTIC_RENDERER_REPAIR_CONSUMPTION_PATH),
+            "dynamicOutputAuthorization": binding(args.implementation_authorization),
+            "dynamicOutputConsumption": binding(args.implementation_consumption),
+            "activationGate": config["training"]["stage4ConditionPreservingSemanticRenderer"]["activationGate"],
+            "inactiveConfig": binding(args.inactive_config),
+            "cpuReport": binding(args.report),
+        }
+        write_json_exclusive(args.support_contract, support)
+        owner_request = {
+            "schemaVersion": "ai-painter-owner-action-request-preview-v1",
+            "status": "not_authorized_not_consumed_not_executed",
+            **timestamps("recordedAt"),
+            "module": "AI Painter",
+            "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+            "requestedNextAction": "separately_authorize_readonly_gpu_gradient_and_fusion_diagnostic_for_stage4_condition_preserving_semantic_renderer_v1",
+            "architectureSupportContract": binding(args.support_contract),
+            "forbiddenNow": [
+                "checkpoint_read_or_load", "optimizer", "backward", "weight_mutation",
+                "gpu", "training", "smoke", "stage4_full_training", "stage5",
+                "formal_inference", "checkpoint_promotion", "runtime_frame", "world_entry",
+            ],
+        }
+        write_json_exclusive(args.owner_action_request, owner_request)
+        terminal = {
+            "schemaVersion": "ai-painter-stage4-condition-preserving-semantic-renderer-cpu-terminal-v1",
+            "status": "stage4_condition_preserving_semantic_renderer_cpu_support_completed_closed",
+            **timestamps("recordedAt"),
+            "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+            "currentStage": "Stage4",
+            "stage4FullTrainingEligible": False,
+            "inactiveConfig": binding(args.inactive_config),
+            "architectureSupportContract": binding(args.support_contract),
+            "cpuReport": binding(args.report),
+            "ownerActionRequest": binding(args.owner_action_request),
+            "nextLegalAction": owner_request["requestedNextAction"],
+            "boundaries": {
+                "checkpointRead": False, "optimizerCreated": False,
+                "backwardExecuted": False, "modelWeightsModified": False,
+                "gpuUsed": False, "trainingStarted": False,
+                "smokeStarted": False, "stage4FullTrainingStarted": False,
+                "stage5Started": False, "formalInferenceStarted": False,
+                "checkpointPromoted": False, "runtimeFrameCreated": False,
+                "worldEntered": False,
+            },
+        }
+        write_json_exclusive(args.terminal, terminal)
+        print(json.dumps({
+            "status": terminal["status"],
+            "positive": f"{report['positivePassed']}/{report['positiveTotal']}",
+            "negative": f"{report['negativePassed']}/{report['negativeTotal']}",
+            "terminal": binding(args.terminal),
+        }, ensure_ascii=False, indent=2))
+        return 0
+    except Exception as exc:
+        if not resolve(args.terminal).exists():
+            failure_terminal = {
+                "schemaVersion": "ai-painter-stage4-condition-preserving-semantic-renderer-cpu-terminal-v1",
+                "status": "stage4_condition_preserving_semantic_renderer_cpu_support_failed_closed",
+                **timestamps("recordedAt"),
+                "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+                "errorType": type(exc).__name__,
+                "error": str(exc),
+                "failedPositiveKeys": [key for key, value in positive.items() if value is not True],
+                "failedNegativeKeys": [key for key, value in negative.items() if value is not True],
+                "checkpointRead": False,
+                "optimizerCreated": False,
+                "backwardExecuted": False,
+                "modelWeightsModified": False,
+                "gpuUsed": False,
+                "trainingStarted": False,
+                "automaticRetry": False,
+            }
+            write_json_exclusive(args.terminal, failure_terminal)
+        raise
+
+
 def rejected_phase0_owner_field(config):
     candidate = deepcopy(config)
     candidate["training"]["ownerTrainingAuthorization"]["unknownAction"] = True
@@ -4716,6 +6417,614 @@ def rejects(config: dict, package: dict, mutation) -> bool:
     return False
 
 
+SEMANTIC_RENDERER_GPU_DIAGNOSTIC_SCHEMA = (
+    "ai-painter-owner-stage4-semantic-renderer-readonly-gpu-diagnostic-authorization-v1"
+)
+SEMANTIC_RENDERER_GPU_DIAGNOSTIC_SCOPE = (
+    "one_stage4_condition_preserving_semantic_renderer_sample194_readonly_gpu_forward_autograd_diagnostic_only"
+)
+SEMANTIC_RENDERER_GPU_DIAGNOSTIC_ACTIONS = {
+    "cpuPositiveNegativeAuthorizationGate": True,
+    "pythonPreflight": True,
+    "cudaResourcePreflight": True,
+    "diskBudgetPreflight": True,
+    "atomicGpuAuthorizationConsumption": True,
+    "projectAutoencoderReadAndLoadFrozen": True,
+    "semanticRendererFixedRandomInitialization": True,
+    "cudaForward": True,
+    "torchAutogradGrad": True,
+    "sevenDiagnosticManifestExport": True,
+    "cudaTelemetryWrite": True,
+    "diagnosticReportWrite": True,
+    "modelStateHashVerification": True,
+    "optimizerCreation": False,
+    "backwardExecution": False,
+    "modelWeightModification": False,
+    "checkpointWrite": False,
+    "smoke": False,
+    "training": False,
+    "stage4FullTraining": False,
+    "stage1OrStage2": False,
+    "stage5StrictRevalidation": False,
+    "formalInference": False,
+    "checkpointPromotion": False,
+    "runtimeFrame": False,
+    "worldEntry": False,
+    "automaticRetry": False,
+}
+SEMANTIC_RENDERER_AUTOENCODER_PATH = Path(
+    ".runtime/ai-painter/project-owned-complete-world-model-ai-assisted-v2/"
+    "ai-assisted-complete-world-training-v2-2026-07-15T00-36-47-418Z/"
+    "complete-world-ai-assisted-autoencoder.pt"
+)
+
+
+def validate_semantic_renderer_gpu_authorization_document(
+    authorization: dict,
+    *,
+    verify_files: bool,
+) -> None:
+    if (
+        authorization.get("schemaVersion") != SEMANTIC_RENDERER_GPU_DIAGNOSTIC_SCHEMA
+        or authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or authorization.get("commandRef") != authorization.get("requestId")
+        or authorization.get("scope") != SEMANTIC_RENDERER_GPU_DIAGNOSTIC_SCOPE
+        or not str(authorization.get("requestId", "")).startswith(
+            "owner-authorized-stage4-semantic-renderer-readonly-gpu-diagnostic-"
+        )
+        or authorization.get("executionActions") != SEMANTIC_RENDERER_GPU_DIAGNOSTIC_ACTIONS
+    ):
+        raise ValueError("semantic renderer GPU diagnostic Owner contract is invalid")
+    fixed = authorization.get("fixedTaskIdentity", {})
+    expected_fixed = {
+        "architecture": "stage4_condition_preserving_semantic_renderer_v1",
+        "sampleId": SAMPLE_ID,
+        "sampleSplit": "validation",
+        "seed": 20263722,
+        "resolution": {"width": 256, "height": 192},
+        "timestep": 999,
+        "requiredBoundarySides": ["west"],
+        "denoiserInitialization": "fixed_random_initialization_only",
+        "diagnosticManifestFields": list(
+            trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS
+        ),
+    }
+    if fixed != expected_fixed:
+        raise ValueError("semantic renderer GPU diagnostic fixed task identity changed")
+    required_bindings = {
+        "cpuTerminal", "cpuReport", "inactiveConfig", "architectureSupportContract",
+        "ownerActionRequest", "localTaskCapsule", "implementationAuthorization",
+        "implementationConsumption", "implementationAttestation",
+        "projectAutoencoderCheckpoint", "datasetManifest",
+    }
+    if set(authorization.get("bindings", {})) != required_bindings:
+        raise ValueError("semantic renderer GPU diagnostic binding set changed")
+    if not verify_files:
+        return
+    for label, item in authorization["bindings"].items():
+        path = resolve(Path(item.get("path", "")))
+        if not item.get("sha256") or not path.is_file() or sha256_file(path) != item["sha256"]:
+            raise ValueError(f"semantic renderer GPU diagnostic binding changed: {label}")
+    frozen_files = {
+        "modelSha256": MODEL_PATH,
+        "trainerSha256": TRAINER_PATH,
+        "modeRegistrySha256": Path("ml/ai-painter/scripts/ai_painter_stage_mode_registry.py"),
+        "authorizationPolicySha256": STAGE_CONTROL_POLICY_PATH,
+        "executionGrantSha256": Path("ml/ai-painter/scripts/ai_painter_execution_grant.py"),
+        "inactiveConfigCompilerSha256": COMPILER_PATH,
+    }
+    for key, path in frozen_files.items():
+        if authorization.get("frozenImplementation", {}).get(key) != sha256_file(resolve(path)):
+            raise ValueError(f"semantic renderer GPU diagnostic frozen identity changed: {key}")
+    if (
+        authorization.get("implementation", {}).get("runnerSha256")
+        != sha256_file(resolve(SMOKE_RUNNER_PATH))
+        or authorization.get("implementation", {}).get("cpuCheckerSha256")
+        != sha256_file(resolve(CPU_CHECKER_PATH))
+    ):
+        raise ValueError("semantic renderer GPU diagnostic current implementation identity changed")
+    execution = authorization.get("execution", {})
+    required_execution = {
+        "preflightRoot", "evidenceRoot", "outputDirectory", "gpuConsumptionPath"
+    }
+    if set(execution) != required_execution:
+        raise ValueError("semantic renderer GPU diagnostic execution path contract changed")
+    for label, value in execution.items():
+        logical = project_path(resolve(Path(value)))
+        if not logical.startswith(".runtime/ai-painter/"):
+            raise ValueError(f"semantic renderer GPU diagnostic execution path escaped runtime: {label}")
+
+
+def load_semantic_renderer_gpu_authorization(args) -> tuple[Path, dict]:
+    if args.execution_authorization is None or not args.execution_authorization_sha256:
+        raise ValueError("semantic renderer GPU diagnostic authorization arguments are required")
+    path = resolve(args.execution_authorization)
+    if not path.is_file() or sha256_file(path) != args.execution_authorization_sha256.lower():
+        raise ValueError("semantic renderer GPU diagnostic authorization path or hash changed")
+    authorization = read_json(path)
+    validate_semantic_renderer_gpu_authorization_document(authorization, verify_files=True)
+    return path, authorization
+
+
+def run_semantic_renderer_gpu_diagnostic_contract_regression(args) -> int:
+    if args.report is None:
+        raise ValueError("semantic renderer GPU diagnostic CPU contract requires --report")
+    config = read_json(resolve(
+        Path(".runtime/ai-painter/stage4-condition-preserving-semantic-renderer-cpu-support/"
+             "20260811-210635203/inactive-config.json")
+    ))
+    package = read_json(resolve(DATASET_PATH))
+    trainer.validate_condition_preserving_semantic_renderer_stage4_cpu_contract(
+        config, package, ROOT,
+    )
+    diagnostic_contract = (
+        trainer.validate_condition_preserving_semantic_renderer_stage4_diagnostic_manifest_support_contract(
+            config
+        )
+    )
+    runner_source = resolve(SMOKE_RUNNER_PATH).read_text(encoding="utf-8")
+    checker_source = resolve(CPU_CHECKER_PATH).read_text(encoding="utf-8")
+    fixture = {
+        "schemaVersion": SEMANTIC_RENDERER_GPU_DIAGNOSTIC_SCHEMA,
+        "status": "resolved_owner_authorized_not_consumed",
+        "requestId": "owner-authorized-stage4-semantic-renderer-readonly-gpu-diagnostic-cpu-fixture",
+        "commandRef": "owner-authorized-stage4-semantic-renderer-readonly-gpu-diagnostic-cpu-fixture",
+        "scope": SEMANTIC_RENDERER_GPU_DIAGNOSTIC_SCOPE,
+        "executionActions": deepcopy(SEMANTIC_RENDERER_GPU_DIAGNOSTIC_ACTIONS),
+        "fixedTaskIdentity": {
+            "architecture": "stage4_condition_preserving_semantic_renderer_v1",
+            "sampleId": SAMPLE_ID,
+            "sampleSplit": "validation",
+            "seed": 20263722,
+            "resolution": {"width": 256, "height": 192},
+            "timestep": 999,
+            "requiredBoundarySides": ["west"],
+            "denoiserInitialization": "fixed_random_initialization_only",
+            "diagnosticManifestFields": list(
+                trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS
+            ),
+        },
+        "bindings": {key: {"path": ".runtime/fixture.json", "sha256": "0" * 64} for key in (
+            "cpuTerminal", "cpuReport", "inactiveConfig", "architectureSupportContract",
+            "ownerActionRequest", "localTaskCapsule", "implementationAuthorization",
+            "implementationConsumption", "implementationAttestation",
+            "projectAutoencoderCheckpoint", "datasetManifest",
+        )},
+    }
+    validate_semantic_renderer_gpu_authorization_document(fixture, verify_files=False)
+    positive = {
+        "semantic_renderer_cpu_contract_valid": True,
+        "runner_real_entry_registered": (
+            "--stage4-condition-preserving-semantic-renderer-readonly-diagnostic" in runner_source
+            and "runConditionPreservingSemanticRendererReadonlyDiagnostic" in runner_source
+        ),
+        "runner_and_checker_share_exact_action_names": all(
+            key in runner_source and key in checker_source
+            for key in SEMANTIC_RENDERER_GPU_DIAGNOSTIC_ACTIONS
+        ),
+        "exact_seven_manifest_fields_shared": (
+            tuple(diagnostic_contract.get("exactFields", ()))
+            == trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS
+            and tuple(
+                config["training"]["stage4FailureDiagnostics"]
+                ["semanticRendererDiagnostics"]["manifestFields"]
+            ) == trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS
+            and len(trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS) == 7
+        ),
+        "legacy_entry_flags_preserved": all(flag in runner_source for flag in (
+            "--stage4-validation-kernel-phase0", "--stage4-structure-fact-first-phase0",
+            "--stage4-validation-kernel-model-smoke", "--stage4-structure-fact-first-model-smoke",
+        )),
+    }
+
+    def rejected(mutation) -> bool:
+        candidate = deepcopy(fixture)
+        mutation(candidate)
+        try:
+            validate_semantic_renderer_gpu_authorization_document(candidate, verify_files=False)
+        except ValueError:
+            return True
+        return False
+
+    negative = {
+        "unknown_action_rejected": rejected(
+            lambda value: value["executionActions"].__setitem__("startTrainingNow", True)
+        ),
+        "optimizer_action_rejected": rejected(
+            lambda value: value["executionActions"].__setitem__("optimizerCreation", True)
+        ),
+        "backward_action_rejected": rejected(
+            lambda value: value["executionActions"].__setitem__("backwardExecution", True)
+        ),
+        "scope_change_rejected": rejected(
+            lambda value: value.__setitem__("scope", "forged")
+        ),
+        "command_ref_change_rejected": rejected(
+            lambda value: value.__setitem__("commandRef", "forged")
+        ),
+        "sample_split_change_rejected": rejected(
+            lambda value: value["fixedTaskIdentity"].__setitem__("sampleSplit", "train")
+        ),
+        "old_denoiser_initialization_rejected": rejected(
+            lambda value: value["fixedTaskIdentity"].__setitem__(
+                "denoiserInitialization", "old_checkpoint"
+            )
+        ),
+        "binding_omission_rejected": rejected(
+            lambda value: value["bindings"].pop("projectAutoencoderCheckpoint")
+        ),
+    }
+    failed_positive = [key for key, value in positive.items() if value is not True]
+    failed_negative = [key for key, value in negative.items() if value is not True]
+    report = {
+        "schemaVersion": "ai-painter-stage4-semantic-renderer-readonly-gpu-diagnostic-cpu-contract-report-v1",
+        "status": "passed_cpu_only_gpu_not_started" if not failed_positive and not failed_negative else "failed_closed_cpu_only_gpu_not_started",
+        **timestamps("recordedAt"),
+        "positive": positive,
+        "negative": negative,
+        "failedPositiveKeys": failed_positive,
+        "failedNegativeKeys": failed_negative,
+        "positivePassed": sum(value is True for value in positive.values()),
+        "positiveTotal": len(positive),
+        "negativePassed": sum(value is True for value in negative.values()),
+        "negativeTotal": len(negative),
+        "checkpointRead": False,
+        "optimizerCreated": False,
+        "backwardExecuted": False,
+        "modelWeightsModified": False,
+        "gpuUsed": False,
+        "trainingStarted": False,
+    }
+    write_json_exclusive(args.report, report)
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0 if not failed_positive and not failed_negative else 1
+
+
+def run_semantic_renderer_gpu_diagnostic_preflight(args) -> int:
+    _, authorization = load_semantic_renderer_gpu_authorization(args)
+    if args.preflight_report is None or args.gpu_output is not None:
+        raise ValueError("semantic renderer GPU diagnostic preflight paths are invalid")
+    output = resolve(Path(authorization["execution"]["outputDirectory"]))
+    if output.exists():
+        raise ValueError("semantic renderer GPU diagnostic output already exists before preflight")
+    cuda_available = torch.cuda.is_available()
+    device_count = torch.cuda.device_count() if cuda_available else 0
+    device_name = torch.cuda.get_device_name(0) if device_count > 0 else None
+    free_bytes = int(shutil.disk_usage(resolve(args.preflight_report).parent).free)
+    blockers = []
+    if sys.executable.lower() != str(resolve(Path("ml/ai-painter/.venv/Scripts/python.exe"))).lower():
+        blockers.append("project_venv_python_identity_invalid")
+    if not cuda_available or device_count < 1:
+        blockers.append("cuda_device_zero_unavailable")
+    if free_bytes < 2 * 1024 ** 3:
+        blockers.append("disk_budget_insufficient")
+    report = {
+        "schemaVersion": "ai-painter-stage4-semantic-renderer-readonly-gpu-diagnostic-preflight-v1",
+        "status": "semantic_renderer_readonly_gpu_diagnostic_all_preflights_passed_gpu_not_consumed" if not blockers else "semantic_renderer_readonly_gpu_diagnostic_preflight_failed_closed",
+        **timestamps("recordedAt"),
+        "python": {"executable": sys.executable, "version": sys.version, "torchVersion": torch.__version__},
+        "cuda": {"available": cuda_available, "deviceCount": device_count, "device0Name": device_name},
+        "disk": {"freeBytes": free_bytes, "requiredBytes": 2 * 1024 ** 3},
+        "blockers": blockers,
+        "checkpointRead": False,
+        "gpuAuthorizationConsumed": False,
+        "gpuExecutionStarted": False,
+    }
+    write_json_exclusive(args.preflight_report, report)
+    print(json.dumps(report, ensure_ascii=False, indent=2))
+    return 0 if not blockers else 1
+
+
+def run_semantic_renderer_gpu_diagnostic_execute(args) -> int:
+    authorization_path, authorization = load_semantic_renderer_gpu_authorization(args)
+    if any(value is None for value in (args.execution_consumption, args.execution_identity, args.gpu_output)):
+        raise ValueError("semantic renderer GPU diagnostic execution arguments are incomplete")
+    consumption_path = resolve(args.execution_consumption)
+    identity_path = resolve(args.execution_identity)
+    output = resolve(args.gpu_output)
+    if output != resolve(Path(authorization["execution"]["outputDirectory"])) or output.exists():
+        raise ValueError("semantic renderer GPU diagnostic output identity changed or already exists")
+    consumption = read_json(consumption_path)
+    identity = read_json(identity_path)
+    if (
+        consumption.get("status") != "semantic_renderer_readonly_gpu_diagnostic_authorization_atomically_consumed"
+        or consumption.get("requestId") != authorization["requestId"]
+        or consumption.get("authorizationSha256") != sha256_file(authorization_path)
+        or consumption.get("oneTimeConsumption") is not True
+        or identity.get("status") != "semantic_renderer_readonly_gpu_diagnostic_execution_active_not_completed"
+        or identity.get("requestId") != authorization["requestId"]
+        or identity.get("consumptionSha256") != sha256_file(consumption_path)
+        or identity.get("fixedTaskIdentity") != authorization["fixedTaskIdentity"]
+    ):
+        raise ValueError("semantic renderer GPU diagnostic execution lineage is invalid")
+    return execute_semantic_renderer_readonly_gpu_diagnostic(
+        authorization, output, consumption_path, identity_path,
+    )
+
+
+def execute_semantic_renderer_readonly_gpu_diagnostic(
+    authorization: dict,
+    output: Path,
+    consumption_path: Path,
+    identity_path: Path,
+) -> int:
+    output.mkdir(parents=True, exist_ok=False)
+    started = time.perf_counter()
+    steps = []
+    state = {
+        "autoencoderCheckpointRead": False,
+        "oldDenoiserCheckpointRead": False,
+        "gpuUsed": False,
+        "forwardCompleted": False,
+        "autogradGradCompleted": False,
+        "optimizerCreated": False,
+        "backwardMethodExecuted": False,
+        "modelWeightsModified": False,
+        "checkpointWritten": False,
+        "trainingStarted": False,
+    }
+
+    def step(code: str, details=None):
+        steps.append({"index": len(steps) + 1, "code": code, "details": details or {}, **timestamps("completedAt")})
+        write_json_atomic(output / "step-telemetry.json", {"completedSteps": steps, **state})
+
+    try:
+        step("gpu_authorization_consumption_and_execution_identity_validated")
+        torch.cuda.init()
+        torch.cuda.set_device(0)
+        if torch.cuda.current_device() != 0:
+            raise ValueError("semantic renderer diagnostic CUDA device zero is not active")
+        torch.cuda.reset_peak_memory_stats(0)
+        state["gpuUsed"] = True
+        step("cuda_context_initialized_device_zero_confirmed")
+
+        config = read_json(resolve(Path(authorization["bindings"]["inactiveConfig"]["path"])))
+        package_path = resolve(Path(authorization["bindings"]["datasetManifest"]["path"]))
+        package = read_json(package_path)
+        trainer.validate_condition_preserving_semantic_renderer_stage4_cpu_contract(config, package, ROOT)
+        dataset = AiAssistedConditionalDenoiserDataset(
+            package_path,
+            "validation",
+            list(config["conditionChannelOrder"]),
+            (256, 192),
+            selection_contract=trainer.conditional_dataset_selection_contract(config),
+        )
+        matches = [index for index, row in enumerate(dataset.rows) if row.get("sampleId") == SAMPLE_ID]
+        if len(matches) != 1:
+            raise ValueError("semantic renderer diagnostic sample194 validation identity is not unique")
+        sample = dataset[matches[0]]
+        step("fixed_validation_sample194_loaded")
+
+        torch.manual_seed(20263722)
+        torch.cuda.manual_seed_all(20263722)
+        model = build_complete_world_system(config)
+        denoiser_hash_before = state_dict_sha256(model.denoiser.state_dict())
+        autoencoder_path = resolve(Path(authorization["bindings"]["projectAutoencoderCheckpoint"]["path"]))
+        checkpoint = trainer.load_autoencoder_checkpoint(autoencoder_path, config)
+        state["autoencoderCheckpointRead"] = True
+        model.autoencoder.load_state_dict(checkpoint["autoencoderState"])
+        for parameter in model.autoencoder.parameters():
+            parameter.requires_grad_(False)
+        autoencoder_hash_before = state_dict_sha256(model.autoencoder.state_dict())
+        device = torch.device("cuda:0")
+        model.to(device).eval()
+        step("project_autoencoder_loaded_frozen_semantic_renderer_random_initialized")
+
+        image = sample["image"].unsqueeze(0).to(device)
+        conditions = sample["conditions"].unsqueeze(0).to(device).requires_grad_(True)
+        with torch.no_grad():
+            raw_latent = model.autoencoder.encode(image)
+            mean = raw_latent.mean(dim=(0, 2, 3), keepdim=True)
+            std = raw_latent.std(dim=(0, 2, 3), keepdim=True).clamp_min(1e-6)
+            clean_latent = (raw_latent - mean) / std
+        diffusion = trainer.build_diffusion_schedule(config, device)
+        timestep = torch.tensor([999], dtype=torch.long, device=device)
+        generator = torch.Generator(device=device).manual_seed(20263722)
+        noise = torch.randn(clean_latent.shape, generator=generator, device=device, dtype=clean_latent.dtype)
+        noisy_latent = add_noise(clean_latent, noise, timestep, diffusion["alphasCumulative"])
+        target_velocity = velocity_target(clean_latent, noise, timestep, diffusion["alphasCumulative"])
+        predicted_velocity, renderer = model.predict_velocity_with_stage4_semantic_renderer(
+            noisy_latent, timestep, conditions,
+        )
+        alpha = diffusion["alphasCumulative"][timestep].view(-1, 1, 1, 1)
+        predicted_clean = alpha.sqrt() * noisy_latent - (1.0 - alpha).sqrt() * predicted_velocity
+        primary_clean = alpha.sqrt() * noisy_latent - (1.0 - alpha).sqrt() * renderer["primaryVelocity"]
+        predicted_conditions = model.reconstruct_conditions_from_clean_latent(predicted_clean)
+        target_conditions = model.prepare_typed_conditions(conditions, predicted_clean.shape[-2:])
+        predicted_rgb = model.autoencoder.decode(predicted_clean * std + mean)
+        primary_rgb = model.autoencoder.decode(primary_clean * std + mean)
+        losses = trainer.composite_denoiser_losses_condition_preserving_semantic_renderer_stage4(
+            predicted_velocity, target_velocity, predicted_clean, clean_latent,
+            predicted_conditions, target_conditions, predicted_rgb, image,
+            conditions, renderer, config,
+        )
+        state["forwardCompleted"] = True
+        step("semantic_renderer_cuda_forward_and_decoded_rgb_completed")
+
+        channels = trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_CHANNELS
+        prefixes = ("Footprints", "Tree", "Rock", "Vegetation", "RouteBoundary")
+        parameters_by_path = {
+            name: tuple(model.denoiser.semantic_renderer_paths_up1[name].parameters())
+            + tuple(model.denoiser.semantic_renderer_paths_up0[name].parameters())
+            + tuple(model.denoiser.semantic_renderer_readouts[name].parameters())
+            for name in channels
+        }
+        all_parameters = tuple(parameter for name in channels for parameter in parameters_by_path[name])
+        slices = {}
+        cursor = 0
+        for name in channels:
+            slices[name] = slice(cursor, cursor + len(parameters_by_path[name]))
+            cursor += len(parameters_by_path[name])
+        gradient_routes = {}
+        for index, name in enumerate(channels):
+            gradients = torch.autograd.grad(
+                losses[f"stage4SemanticRenderer{prefixes[index]}IndependentLoss"],
+                all_parameters,
+                retain_graph=True,
+                create_graph=False,
+                allow_unused=True,
+            )
+            own = gradients[slices[name]]
+            cross = tuple(
+                gradient for other in channels if other != name
+                for gradient in gradients[slices[other]]
+            )
+            own_norm = sum(gradient_tensor_norm(value) for value in own)
+            cross_norm = sum(gradient_tensor_norm(value) for value in cross)
+            if not math.isfinite(own_norm) or own_norm <= 0.0 or cross_norm != 0.0:
+                raise ValueError(f"semantic renderer typed path gradient isolation failed: {name}")
+            source_index = config["conditionChannelOrder"].index(
+                trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_SOURCE_CHANNELS[index]
+            )
+            readout_gradient = torch.autograd.grad(
+                renderer["semanticReadout"][:, index:index + 1].mean(),
+                conditions,
+                retain_graph=True,
+                create_graph=False,
+            )[0]
+            own_condition_response = float(readout_gradient[:, source_index:source_index + 1].abs().sum().detach().cpu())
+            cross_condition_response = float(torch.cat([
+                readout_gradient[:, other:other + 1]
+                for other in range(readout_gradient.shape[1]) if other != source_index
+            ], dim=1).abs().sum().detach().cpu())
+            if own_condition_response <= 0.0 or cross_condition_response != 0.0:
+                raise ValueError(f"semantic renderer typed condition response isolation failed: {name}")
+            gradient_routes[name] = {
+                "ownGradientNorm": own_norm,
+                "crossGradientNorm": cross_norm,
+                "ownConditionResponseAbsSum": own_condition_response,
+                "crossConditionResponseAbsSum": cross_condition_response,
+            }
+
+        fusion_response = float((predicted_velocity - renderer["primaryVelocity"]).abs().mean().detach().cpu())
+        decoded_response = float((predicted_rgb - primary_rgb).abs().mean().detach().cpu())
+        if (
+            not torch.isfinite(predicted_rgb).all().item()
+            or not torch.isfinite(primary_rgb).all().item()
+            or not math.isfinite(fusion_response)
+            or not math.isfinite(decoded_response)
+            or fusion_response <= 0.0
+            or decoded_response <= 0.0
+        ):
+            raise ValueError("semantic renderer fusion or decoded RGB response is invalid")
+        primary_gradients = torch.autograd.grad(
+            renderer["primaryVelocity"].mean(), all_parameters,
+            retain_graph=True, create_graph=False, allow_unused=True,
+        )
+        if any(value is not None for value in primary_gradients):
+            raise ValueError("semantic renderer primary RGB path is not isolated")
+        base_gradient = torch.autograd.grad(
+            predicted_velocity.square().mean(), model.denoiser.latent_stem.weight,
+            retain_graph=True, create_graph=False, allow_unused=True,
+        )[0]
+        base_gradient_norm = gradient_tensor_norm(base_gradient)
+        if not math.isfinite(base_gradient_norm) or base_gradient_norm <= 0.0:
+            raise ValueError("semantic renderer base Denoiser gradient is missing")
+
+        diagnostic_fields = trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS
+        diagnostic_metrics = {key: float(losses[key].detach().cpu()) for key in diagnostic_fields}
+        if (
+            set(diagnostic_metrics) != set(diagnostic_fields)
+            or any(not math.isfinite(value) or value < 0.0 for value in diagnostic_metrics.values())
+            or diagnostic_metrics["stage4SemanticRendererPrimaryPathAvailable"] != 1.0
+        ):
+            raise ValueError("semantic renderer exact seven diagnostic Manifest values are invalid")
+        if any(parameter.grad is not None for parameter in model.parameters()):
+            raise ValueError("semantic renderer diagnostic populated parameter grad fields")
+        state["autogradGradCompleted"] = True
+        step("five_typed_paths_gradients_fusion_primary_base_and_seven_manifest_verified")
+
+        torch.cuda.synchronize(0)
+        cuda = {
+            "deviceIndex": 0,
+            "deviceName": torch.cuda.get_device_name(0),
+            "memoryAllocatedBytes": int(torch.cuda.memory_allocated(0)),
+            "memoryReservedBytes": int(torch.cuda.memory_reserved(0)),
+            "peakMemoryAllocatedBytes": int(torch.cuda.max_memory_allocated(0)),
+            "peakMemoryReservedBytes": int(torch.cuda.max_memory_reserved(0)),
+        }
+        write_json_exclusive(output / "cuda-telemetry.json", {
+            "schemaVersion": "ai-painter-stage4-semantic-renderer-readonly-gpu-diagnostic-cuda-telemetry-v1",
+            "status": "collected_after_readonly_forward_and_autograd_grad",
+            **timestamps("recordedAt"), **cuda,
+        })
+        model.to("cpu")
+        denoiser_hash_after = state_dict_sha256(model.denoiser.state_dict())
+        autoencoder_hash_after = state_dict_sha256(model.autoencoder.state_dict())
+        if denoiser_hash_before != denoiser_hash_after or autoencoder_hash_before != autoencoder_hash_after:
+            raise ValueError("semantic renderer diagnostic changed model state")
+        step("cuda_telemetry_saved_and_model_state_hashes_unchanged")
+
+        report = {
+            "schemaVersion": "ai-painter-stage4-semantic-renderer-readonly-gpu-diagnostic-report-v1",
+            "status": "passed_readonly_semantic_renderer_gpu_forward_and_gradient_routing_weights_unchanged",
+            **timestamps("recordedAt"),
+            "durationSeconds": round(time.perf_counter() - started, 3),
+            "identity": authorization["fixedTaskIdentity"],
+            "gradientRoutes": gradient_routes,
+            "fusion": {
+                "velocityResponseMae": fusion_response,
+                "decodedRgbResponseMae": decoded_response,
+                "primaryPathIsolated": True,
+                "baseDenoiserGradientNorm": base_gradient_norm,
+            },
+            "diagnosticManifest": {
+                "fieldCount": 7,
+                "fields": list(diagnostic_fields),
+                "values": diagnostic_metrics,
+            },
+            "cuda": cuda,
+            "integrity": {
+                "denoiserStateSha256Before": denoiser_hash_before,
+                "denoiserStateSha256After": denoiser_hash_after,
+                "autoencoderStateSha256Before": autoencoder_hash_before,
+                "autoencoderStateSha256After": autoencoder_hash_after,
+                "parameterGradFieldsAbsent": True,
+            },
+            "authorizationConsumption": binding(consumption_path),
+            "executionIdentity": binding(identity_path),
+            "completedSteps": steps,
+            **state,
+        }
+        write_json_exclusive(output / "diagnostic-report.json", report)
+        terminal = {
+            "schemaVersion": "ai-painter-stage4-semantic-renderer-readonly-gpu-diagnostic-terminal-v1",
+            "status": "stage4_condition_preserving_semantic_renderer_readonly_gpu_diagnostic_passed_closed",
+            **timestamps("recordedAt"),
+            "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+            "report": binding(output / "diagnostic-report.json"),
+            "cudaTelemetry": binding(output / "cuda-telemetry.json"),
+            "nextAction": "owner_may_authorize_one_30_epoch_condition_preserving_semantic_renderer_model_smoke",
+            "automaticRetryStarted": False,
+            **state,
+        }
+        write_json_exclusive(output / "phase-terminal.json", terminal)
+        print(json.dumps({**terminal, "terminal": binding(output / "phase-terminal.json")}, ensure_ascii=False, indent=2))
+        return 0
+    except Exception as exc:
+        terminal = {
+            "schemaVersion": "ai-painter-stage4-semantic-renderer-readonly-gpu-diagnostic-terminal-v1",
+            "status": "stage4_condition_preserving_semantic_renderer_readonly_gpu_diagnostic_failed_closed",
+            **timestamps("recordedAt"),
+            "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
+            "errorType": type(exc).__name__,
+            "error": str(exc),
+            "traceback": traceback.format_exc(),
+            "completedSteps": steps,
+            "automaticRetryStarted": False,
+            **state,
+        }
+        write_json_exclusive(output / "phase-terminal.json", terminal)
+        print(json.dumps({**terminal, "terminal": binding(output / "phase-terminal.json")}, ensure_ascii=False, indent=2))
+        return 1
+
+
+def gradient_tensor_norm(value) -> float:
+    if value is None:
+        return 0.0
+    return float(value.detach().float().norm().cpu())
+
+
 def state_dict_sha256(state_dict) -> str:
     digest = hashlib.sha256()
     for name in sorted(state_dict):
@@ -4725,6 +7034,1074 @@ def state_dict_sha256(state_dict) -> str:
         digest.update(json.dumps(list(tensor.shape), separators=(",", ":")).encode("ascii"))
         digest.update(tensor.numpy().tobytes(order="C"))
     return digest.hexdigest()
+
+
+def run_condition_preserving_semantic_renderer_stage4_smoke_contract_regression(args) -> int:
+    required = {
+        "report": args.report,
+        "implementationAttestation": args.implementation_attestation,
+        "implementationAuthorization": args.implementation_authorization,
+        "implementationConsumption": args.implementation_consumption,
+        "inactiveConfig": args.inactive_config,
+    }
+    if any(value is None for value in required.values()):
+        raise ValueError(f"semantic renderer Smoke CPU paths are incomplete: {required}")
+    implementation_authorization = read_json(resolve(args.implementation_authorization))
+    implementation_consumption = read_json(resolve(args.implementation_consumption))
+    if (
+        implementation_authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or implementation_consumption.get("authorizationSha256")
+        != sha256_file(resolve(args.implementation_authorization))
+        or implementation_consumption.get("oneTimeConsumption") is not True
+    ):
+        raise ValueError("semantic renderer Smoke implementation lineage changed")
+
+    evidence_paths = {
+        "readonlyGpuTerminal": Path(
+            ".runtime/ai-painter/stage4-condition-preserving-semantic-renderer-gpu-diagnostic-executions/"
+            "20260811-221127015/phase-terminal.json"
+        ),
+        "readonlyGpuDiagnostic": Path(
+            ".runtime/ai-painter/stage4-condition-preserving-semantic-renderer-gpu-diagnostic-executions/"
+            "20260811-221127015/diagnostic-report.json"
+        ),
+        "cudaTelemetry": Path(
+            ".runtime/ai-painter/stage4-condition-preserving-semantic-renderer-gpu-diagnostic-executions/"
+            "20260811-221127015/cuda-telemetry.json"
+        ),
+        "readonlyCpuReport": Path(
+            ".runtime/ai-painter/stage4-condition-preserving-semantic-renderer-gpu-diagnostic-support/"
+            "20260811-221127015/cpu-contract-report.json"
+        ),
+        "inactiveConfig": Path(
+            ".runtime/ai-painter/stage4-condition-preserving-semantic-renderer-cpu-support/"
+            "20260811-210635203/inactive-config.json"
+        ),
+        "architectureSupportContract": Path(
+            ".runtime/ai-painter/stage4-condition-preserving-semantic-renderer-cpu-support/"
+            "20260811-210635203/architecture-support-contract.json"
+        ),
+        "datasetManifest": Path(
+            "data/world-samples/ai-assisted-cold-start-dataset-packages/"
+            "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json"
+        ),
+        "datasetSourceIndex": Path(
+            "data/world-samples/ai-assisted-cold-start-dataset-packages/"
+            "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/source-index.json"
+        ),
+        "projectAutoencoderCheckpoint": Path(
+            ".runtime/ai-painter/project-owned-complete-world-model-ai-assisted-v2/"
+            "ai-assisted-complete-world-training-v2-2026-07-15T00-36-47-418Z/"
+            "complete-world-ai-assisted-autoencoder.pt"
+        ),
+        "conditionAlignmentAuditor": Path("scripts/lib/ai-assisted-condition-alignment.mjs"),
+        "professionalAestheticAuditor": Path("scripts/lib/ai-assisted-professional-aesthetic.mjs"),
+        "windowsSafePreviewNormalizer": Path("scripts/lib/ai-assisted-v7-r5-stage3-preview-review.mjs"),
+        "gpuResourceGate": Path("scripts/lib/ai-assisted-v7-training-resource-gate.mjs"),
+    }
+    for label, path in evidence_paths.items():
+        if not resolve(path).is_file():
+            raise ValueError(f"semantic renderer Smoke bound evidence is missing: {label}")
+    evidence_paths = {
+        "implementationAuthorization": args.implementation_authorization,
+        "implementationConsumption": args.implementation_consumption,
+        **evidence_paths,
+    }
+    inactive_config = read_json(resolve(evidence_paths["inactiveConfig"]))
+    package = read_json(resolve(evidence_paths["datasetManifest"]))
+    source_index = read_json(resolve(evidence_paths["datasetSourceIndex"]))
+    rows = [
+        row for row in source_index.get("samples", [])
+        if row.get("categoryId") == "complete-maps"
+        and "conditional_denoiser" in row.get("trainingRoles", [])
+        and row.get("formalConditionalTrainingEligible") is True
+        and row.get("conditionBound") is True
+        and row.get("v7CapacityContributionRegistered") is True
+        and row.get("ownerReviewStatus") == "owner_approved"
+        and row.get("machineReviewStatus") == "passed"
+        and row.get("aiAssistedColdStartEligible") is True
+        and row.get("independentTrainingEligible") is False
+    ]
+    sample_rows = [row for row in rows if row.get("sampleId") == SAMPLE_ID]
+    if len(sample_rows) != 1 or sample_rows[0].get("split") != "validation":
+        raise ValueError("semantic renderer Smoke sample 194 validation identity changed")
+    sample = sample_rows[0]
+    sample_binding = inactive_config["training"]["conditionPreservingSemanticRendererSampleBinding"]
+    if (
+        sample_binding.get("imagePath") != sample.get("imagePath")
+        or sample_binding.get("conditionPackPath") != sample.get("conditionPackPath")
+        or sample_binding.get("requiredBoundarySides") != ["west"]
+    ):
+        raise ValueError("semantic renderer Smoke sample binding changed")
+
+    fixtures_root = resolve(args.report).parent / "cpu-fixtures"
+    fixtures_root.mkdir(parents=True, exist_ok=False)
+    allowed_actions = sorted([
+        ExecutionAction.SELECT_BOUND_SAMPLE.value,
+        ExecutionAction.INSPECT_AUTOENCODER_IDENTITY.value,
+        ExecutionAction.LOAD_AUTOENCODER.value,
+        ExecutionAction.INSPECT_CHECKPOINT_IDENTITY.value,
+        ExecutionAction.CREATE_OPTIMIZER.value,
+        ExecutionAction.EXECUTE_BACKWARD.value,
+        ExecutionAction.MUTATE_MODEL_WEIGHTS.value,
+        ExecutionAction.WRITE_SMOKE_CHECKPOINT.value,
+    ])
+    denied_actions = sorted(set(action.value for action in ALL_ACTIONS) - set(allowed_actions))
+    diagnostic_fields = list(trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS)
+
+    def create_authorization(case_name, mutate=None):
+        case_root = fixtures_root / case_name
+        case_root.mkdir(parents=True, exist_ok=False)
+        authorization_path = case_root / "authorization.json"
+        authorization = {
+            "schemaVersion": "ai-painter-stage4-condition-preserving-semantic-renderer-smoke-execution-authorization-v1",
+            "requestId": "owner-authorized-stage4-semantic-renderer-30-epoch-model-smoke-20260811-230000000",
+            "commandRef": "owner-authorized-stage4-semantic-renderer-30-epoch-model-smoke-20260811-230000000",
+            "scope": "one_stage4_condition_preserving_semantic_renderer_sample194_30_epoch_model_smoke_only",
+            "status": "resolved_owner_authorized_not_consumed",
+            "executionActions": list(allowed_actions),
+            "explicitlyDeniedActions": list(denied_actions),
+            "taskIdentity": {
+                "modeId": "condition_preserving_semantic_renderer_stage4_smoke",
+                "architecture": "stage4_condition_preserving_semantic_renderer_v1",
+                "sampleId": SAMPLE_ID,
+                "sampleSplit": "validation",
+                "seed": 20263722,
+                "requiredBoundarySides": ["west"],
+                "resolution": {"width": 256, "height": 192},
+                "epochCount": 30,
+                "previewEpochs": FIXED_EPOCHS,
+                "datasetSplit": EXPECTED_COUNTS,
+                "initialization": "project_random_condition_preserving_semantic_renderer",
+                "oldDenoiserCheckpointReadAuthorized": False,
+                "diagnosticManifestFields": diagnostic_fields,
+            },
+            "bindings": {key: binding(path) for key, path in evidence_paths.items()},
+            "codeBindings": {
+                "authorizationPolicy": binding(STAGE_CONTROL_POLICY_PATH),
+                "executionGrant": binding(Path("ml/ai-painter/scripts/ai_painter_execution_grant.py")),
+                "modeRegistry": binding(Path("ml/ai-painter/scripts/ai_painter_stage_mode_registry.py")),
+                "trainer": binding(TRAINER_PATH),
+                "runner": binding(SMOKE_RUNNER_PATH),
+                "cpuChecker": binding(CPU_CHECKER_PATH),
+                "model": binding(MODEL_PATH),
+                "inactiveConfigCompiler": binding(COMPILER_PATH),
+            },
+            "execution": {
+                "consumptionPath": project_path(case_root / "execution-consumption.json"),
+                "activeConfigPath": project_path(case_root / "active-config-must-not-exist.json"),
+                "trainingOutputDirectory": project_path(case_root / "training-output-must-not-exist"),
+                "finalizationDirectory": project_path(case_root / "finalization-must-not-exist"),
+                "preflightReportPath": project_path(case_root / "preflight-report-must-not-exist.json"),
+            },
+        }
+        if mutate is not None:
+            mutate(authorization, case_root)
+        write_json_exclusive(authorization_path, authorization)
+        return authorization_path, authorization
+
+    def run_node(path, supplied_sha=None):
+        return subprocess.run([
+            "node", str(resolve(SMOKE_RUNNER_PATH)),
+            "--stage4-condition-preserving-semantic-renderer-model-smoke",
+            "--gpu-authorization", project_path(path),
+            "--gpu-authorization-sha256", supplied_sha or sha256_file(resolve(path)),
+            "--cpu-contract-only",
+        ], cwd=ROOT, text=True, capture_output=True, timeout=120)
+
+    positive_path, positive_authorization = create_authorization("positive")
+    positive_node = run_node(positive_path)
+    unknown_path, _ = create_authorization(
+        "unknown-action", lambda value, _root: value["executionActions"].append("unknown_semantic_smoke_action"),
+    )
+    forbidden_path, _ = create_authorization(
+        "stage0-injection", lambda value, _root: (
+            value["executionActions"].append(ExecutionAction.RUN_STAGE0.value),
+            value["explicitlyDeniedActions"].remove(ExecutionAction.RUN_STAGE0.value),
+        ),
+    )
+    wrong_mode_path, _ = create_authorization(
+        "wrong-mode", lambda value, _root: value["taskIdentity"].update(modeId="v9_stage4_smoke"),
+    )
+    checkpoint_path, _ = create_authorization(
+        "old-checkpoint-injection", lambda value, _root: value["bindings"].update(
+            oldDenoiserCheckpoint=binding(evidence_paths["projectAutoencoderCheckpoint"])
+        ),
+    )
+    repeated_path, repeated_authorization = create_authorization("repeated-consumption")
+    write_json_exclusive(
+        resolve(Path(repeated_authorization["execution"]["consumptionPath"])),
+        {"status": "already_consumed"},
+    )
+    unknown_node = run_node(unknown_path)
+    forbidden_node = run_node(forbidden_path)
+    wrong_mode_node = run_node(wrong_mode_path)
+    checkpoint_node = run_node(checkpoint_path)
+    repeated_node = run_node(repeated_path)
+    bad_hash_node = run_node(positive_path, "0" * 64)
+
+    mode = FORMAL_MODE_REGISTRY.resolve_mode_id(
+        "condition_preserving_semantic_renderer_stage4_smoke"
+    )
+    inactive_contract = trainer.validate_condition_preserving_semantic_renderer_stage4_cpu_contract(
+        inactive_config, package, ROOT,
+    )
+    overfit_evidence = {
+        "enabled": True,
+        "sampleId": SAMPLE_ID,
+        "conditionPackPath": sample.get("conditionPackPath"),
+    }
+    boundary_provenance = trainer.validate_stage4_sample_bound_boundary_provenance(
+        inactive_config, overfit_evidence,
+    )
+    changed_sample_rejected = False
+    try:
+        trainer.validate_stage4_sample_bound_boundary_provenance(
+            inactive_config,
+            {**overfit_evidence, "sampleId": "forbidden-other-sample"},
+        )
+    except ValueError:
+        changed_sample_rejected = True
+    positive = {
+        "modeRegisteredExactlyOnce": sum(
+            spec.mode_id == "condition_preserving_semantic_renderer_stage4_smoke"
+            for spec in FORMAL_MODE_REGISTRY.snapshot().values()
+        ) == 1,
+        "modeIdentityExact": (
+            mode.architecture == "stage4_condition_preserving_semantic_renderer_v1"
+            and mode.execution_kind == "single_sample_smoke"
+            and mode.sample_split == "validation"
+            and mode.active_execution is True
+        ),
+        "inactiveContractPreserved": inactive_contract.get("status")
+        == "stage4_condition_preserving_semantic_renderer_cpu_contract_valid_inactive",
+        "semanticRendererBoundaryProvenanceUsesSharedSampleBinding": (
+            boundary_provenance.get("status")
+            == "current_sample_world_fact_geometry_and_mask_topology_verified_before_checkpoint_read"
+            and boundary_provenance.get("sampleId") == SAMPLE_ID
+            and boundary_provenance.get("authoritativeRequiredBoundarySides") == ["west"]
+        ),
+        "realNodeContractPassed": positive_node.returncode == 0
+        and "semantic-renderer_stage4_smoke_authorization_contract_valid_cpu_only"
+        in positive_node.stdout,
+        "sample194UniqueValidation": len(sample_rows) == 1 and sample_rows[0].get("split") == "validation",
+        "datasetSplit48_8_4_4": {
+            split: sum(row.get("split") == split for row in rows) for split in EXPECTED_COUNTS
+        } == EXPECTED_COUNTS,
+        "exactSevenManifestFieldsShared": diagnostic_fields
+        == list(trainer.CONDITION_PRESERVING_SEMANTIC_RENDERER_DIAGNOSTIC_FIELDS),
+        "legacyModesPreserved": all(
+            mode_id in {spec.mode_id for spec in FORMAL_MODE_REGISTRY.snapshot().values()}
+            for mode_id in (
+                "v7_r5_stage3_smoke", "v7_r5_stage4_bounded_smoke", "v8_stage4_smoke",
+                "v9_stage4_smoke", "structure_fact_first_stage4_smoke",
+            )
+        ),
+    }
+    negative = {
+        "unknownActionRejected": unknown_node.returncode != 0,
+        "stage0ActionInjectionRejected": forbidden_node.returncode != 0,
+        "wrongModeRejected": wrong_mode_node.returncode != 0,
+        "oldCheckpointBindingRejected": checkpoint_node.returncode != 0,
+        "repeatedConsumptionRejected": repeated_node.returncode != 0,
+        "authorizationHashMismatchRejected": bad_hash_node.returncode != 0,
+        "differentSampleBoundaryProvenanceRejected": changed_sample_rejected,
+        "checkpointWeightContentNotRead": True,
+        "optimizerNotCreated": True,
+        "backwardNotExecuted": True,
+        "gpuNotStarted": not torch.cuda.is_initialized(),
+    }
+    failed_positive = [key for key, value in positive.items() if value is not True]
+    failed_negative = [key for key, value in negative.items() if value is not True]
+    report = {
+        "schemaVersion": "ai-painter-stage4-condition-preserving-semantic-renderer-smoke-cpu-regression-v1",
+        "status": "condition_preserving_semantic_renderer_stage4_smoke_cpu_regression_passed"
+        if not failed_positive and not failed_negative
+        else "condition_preserving_semantic_renderer_stage4_smoke_cpu_regression_failed_closed",
+        **timestamps("recordedAt"),
+        "positive": positive,
+        "negative": negative,
+        "failedPositiveKeys": failed_positive,
+        "failedNegativeKeys": failed_negative,
+        "positivePassed": sum(value is True for value in positive.values()),
+        "positiveTotal": len(positive),
+        "negativePassed": sum(value is True for value in negative.values()),
+        "negativeTotal": len(negative),
+        "nodePositive": {"exitCode": positive_node.returncode, "stdout": positive_node.stdout, "stderr": positive_node.stderr},
+        "checkpointWeightContentRead": False,
+        "optimizerCreated": False,
+        "backwardExecuted": False,
+        "gpuStarted": False,
+    }
+    write_json_exclusive(args.report, report)
+    if failed_positive or failed_negative:
+        return 1
+    attestation = {
+        "schemaVersion": "ai-painter-stage4-condition-preserving-semantic-renderer-smoke-implementation-attestation-v1",
+        "status": "condition_preserving_semantic_renderer_stage4_smoke_implementation_cpu_verified",
+        **timestamps("recordedAt"),
+        "implementationAuthorizationPath": project_path(args.implementation_authorization),
+        "implementationAuthorizationSha256": sha256_file(resolve(args.implementation_authorization)),
+        "implementationConsumptionPath": project_path(args.implementation_consumption),
+        "implementationConsumptionSha256": sha256_file(resolve(args.implementation_consumption)),
+        "authorizationPolicySha256": sha256_file(resolve(STAGE_CONTROL_POLICY_PATH)),
+        "modeRegistrySha256": sha256_file(resolve(Path("ml/ai-painter/scripts/ai_painter_stage_mode_registry.py"))),
+        "trainerSha256": sha256_file(resolve(TRAINER_PATH)),
+        "runnerSha256": sha256_file(resolve(SMOKE_RUNNER_PATH)),
+        "cpuCheckerSha256": sha256_file(resolve(CPU_CHECKER_PATH)),
+        "modelSha256": sha256_file(resolve(MODEL_PATH)),
+        "cpuReportPath": project_path(args.report),
+        "cpuReportSha256": sha256_file(resolve(args.report)),
+        "gpuStarted": False,
+        "trainingStarted": False,
+    }
+    write_json_exclusive(args.implementation_attestation, attestation)
+    print(json.dumps({
+        "status": report["status"],
+        "positive": f"{report['positivePassed']}/{report['positiveTotal']}",
+        "negative": f"{report['negativePassed']}/{report['negativeTotal']}",
+        "report": binding(args.report),
+        "implementationAttestation": binding(args.implementation_attestation),
+    }, ensure_ascii=False, indent=2))
+    return 0
+
+
+def run_fact_conditioned_semantic_mixture_stage4_smoke_contract_regression(args) -> int:
+    required = {
+        "report": args.report,
+        "implementationAttestation": args.implementation_attestation,
+        "implementationAuthorization": args.implementation_authorization,
+        "implementationConsumption": args.implementation_consumption,
+    }
+    if any(value is None for value in required.values()):
+        raise ValueError(f"semantic mixture Smoke CPU paths are incomplete: {required}")
+    implementation_authorization = read_json(resolve(args.implementation_authorization))
+    implementation_consumption = read_json(resolve(args.implementation_consumption))
+    if (
+        implementation_authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or implementation_consumption.get("authorizationSha256")
+        != sha256_file(resolve(args.implementation_authorization))
+        or implementation_consumption.get("oneTimeConsumption") is not True
+    ):
+        raise ValueError("semantic mixture Smoke implementation lineage changed")
+
+    evidence_paths = {
+        "readonlyGpuTerminal": Path(
+            ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-gpu-diagnostic-executions/"
+            "20260812-010708248/phase-terminal.json"
+        ),
+        "readonlyGpuDiagnostic": Path(
+            ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-gpu-diagnostic-executions/"
+            "20260812-010708248/diagnostic-report.json"
+        ),
+        "cudaTelemetry": Path(
+            ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-gpu-diagnostic-executions/"
+            "20260812-010708248/cuda-telemetry.json"
+        ),
+        "readonlyCpuReport": Path(
+            ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-gpu-diagnostic-support/"
+            "20260812-010708248/cpu-report.json"
+        ),
+        "inactiveConfig": args.inactive_config,
+        "architectureSupportContract": Path(
+            ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-decoder-cpu-support/"
+            "20260812-003946363/architecture-support-contract.json"
+        ),
+        "datasetManifest": Path(
+            "data/world-samples/ai-assisted-cold-start-dataset-packages/"
+            "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json"
+        ),
+        "datasetSourceIndex": Path(
+            "data/world-samples/ai-assisted-cold-start-dataset-packages/"
+            "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/source-index.json"
+        ),
+        "projectAutoencoderCheckpoint": Path(
+            ".runtime/ai-painter/project-owned-complete-world-model-ai-assisted-v2/"
+            "ai-assisted-complete-world-training-v2-2026-07-15T00-36-47-418Z/"
+            "complete-world-ai-assisted-autoencoder.pt"
+        ),
+        "conditionAlignmentAuditor": Path("scripts/lib/ai-assisted-condition-alignment.mjs"),
+        "professionalAestheticAuditor": Path("scripts/lib/ai-assisted-professional-aesthetic.mjs"),
+        "windowsSafePreviewNormalizer": Path("scripts/lib/ai-assisted-v7-r5-stage3-preview-review.mjs"),
+        "gpuResourceGate": Path("scripts/lib/ai-assisted-v7-training-resource-gate.mjs"),
+        "cpuReport": Path(
+            ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-smoke-support/"
+            "20260812-012755510/cpu-report.json"
+        ),
+        "implementationAttestation": Path(
+            ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-smoke-support/"
+            "20260812-012755510/implementation-attestation.json"
+        ),
+    }
+    for label, path in evidence_paths.items():
+        if not resolve(path).is_file():
+            raise ValueError(f"semantic mixture Smoke bound evidence is missing: {label}")
+    evidence_paths = {
+        "implementationAuthorization": args.implementation_authorization,
+        "implementationConsumption": args.implementation_consumption,
+        **evidence_paths,
+    }
+    inactive_config = read_json(resolve(evidence_paths["inactiveConfig"]))
+    package = read_json(resolve(evidence_paths["datasetManifest"]))
+    source_index = read_json(resolve(evidence_paths["datasetSourceIndex"]))
+    rows = [
+        row for row in source_index.get("samples", [])
+        if row.get("categoryId") == "complete-maps"
+        and "conditional_denoiser" in row.get("trainingRoles", [])
+        and row.get("formalConditionalTrainingEligible") is True
+        and row.get("conditionBound") is True
+        and row.get("v7CapacityContributionRegistered") is True
+        and row.get("ownerReviewStatus") == "owner_approved"
+        and row.get("machineReviewStatus") == "passed"
+        and row.get("aiAssistedColdStartEligible") is True
+        and row.get("independentTrainingEligible") is False
+    ]
+    sample_rows = [row for row in rows if row.get("sampleId") == SAMPLE_ID]
+    if len(sample_rows) != 1 or sample_rows[0].get("split") != "validation":
+        raise ValueError("semantic mixture Smoke sample 194 validation identity changed")
+    sample = sample_rows[0]
+    sample_binding = inactive_config["training"]["factConditionedSemanticMixtureSampleBinding"]
+    if (
+        sample_binding.get("imagePath") != sample.get("imagePath")
+        or sample_binding.get("conditionPackPath") != sample.get("conditionPackPath")
+        or sample_binding.get("requiredBoundarySides") != ["west"]
+    ):
+        raise ValueError("semantic mixture Smoke sample binding changed")
+
+    fixtures_root = resolve(args.report).parent / "cpu-fixtures"
+    fixtures_root.mkdir(parents=True, exist_ok=False)
+    allowed_actions = sorted([
+        ExecutionAction.SELECT_BOUND_SAMPLE.value,
+        ExecutionAction.INSPECT_AUTOENCODER_IDENTITY.value,
+        ExecutionAction.LOAD_AUTOENCODER.value,
+        ExecutionAction.INSPECT_CHECKPOINT_IDENTITY.value,
+        ExecutionAction.CREATE_OPTIMIZER.value,
+        ExecutionAction.EXECUTE_BACKWARD.value,
+        ExecutionAction.MUTATE_MODEL_WEIGHTS.value,
+        ExecutionAction.WRITE_SMOKE_CHECKPOINT.value,
+    ])
+    denied_actions = sorted(set(action.value for action in ALL_ACTIONS) - set(allowed_actions))
+    diagnostic_fields = list(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS)
+
+    def create_authorization(case_name, mutate=None):
+        case_root = fixtures_root / case_name
+        case_root.mkdir(parents=True, exist_ok=False)
+        authorization_path = case_root / "authorization.json"
+        authorization = {
+            "schemaVersion": "ai-painter-stage4-fact-conditioned-semantic-mixture-smoke-execution-authorization-v1",
+            "requestId": "owner-authorized-stage4-fact-conditioned-semantic-mixture-30-epoch-model-smoke-20260812-012755510",
+            "commandRef": "owner-authorized-stage4-fact-conditioned-semantic-mixture-30-epoch-model-smoke-20260812-012755510",
+            "scope": "one_stage4_fact_conditioned_semantic_mixture_sample194_30_epoch_model_smoke_only",
+            "status": "resolved_owner_authorized_not_consumed",
+            "executionActions": list(allowed_actions),
+            "explicitlyDeniedActions": list(denied_actions),
+            "taskIdentity": {
+                "modeId": "fact_conditioned_semantic_mixture_stage4_smoke",
+                "architecture": "stage4_fact_conditioned_semantic_mixture_decoder_v1",
+                "sampleId": SAMPLE_ID,
+                "sampleSplit": "validation",
+                "seed": 20263722,
+                "requiredBoundarySides": ["west"],
+                "resolution": {"width": 256, "height": 192},
+                "epochCount": 30,
+                "previewEpochs": FIXED_EPOCHS,
+                "datasetSplit": EXPECTED_COUNTS,
+                "initialization": "project_random_fact_conditioned_semantic_mixture",
+                "oldDenoiserCheckpointReadAuthorized": False,
+                "diagnosticCheckpointReadAuthorized": False,
+                "diagnosticManifestFields": diagnostic_fields,
+            },
+            "bindings": {key: binding(path) for key, path in evidence_paths.items()},
+            "codeBindings": {
+                "authorizationPolicy": binding(STAGE_CONTROL_POLICY_PATH),
+                "executionGrant": binding(Path("ml/ai-painter/scripts/ai_painter_execution_grant.py")),
+                "modeRegistry": binding(Path("ml/ai-painter/scripts/ai_painter_stage_mode_registry.py")),
+                "trainer": binding(TRAINER_PATH),
+                "runner": binding(SMOKE_RUNNER_PATH),
+                "cpuChecker": binding(CPU_CHECKER_PATH),
+                "model": binding(MODEL_PATH),
+                "inactiveConfigCompiler": binding(COMPILER_PATH),
+            },
+            "execution": {
+                "consumptionPath": project_path(case_root / "execution-consumption.json"),
+                "activeConfigPath": project_path(case_root / "active-config-must-not-exist.json"),
+                "trainingOutputDirectory": project_path(case_root / "training-output-must-not-exist"),
+                "finalizationDirectory": project_path(case_root / "finalization-must-not-exist"),
+                "preflightReportPath": project_path(case_root / "preflight-report-must-not-exist.json"),
+            },
+        }
+        if mutate is not None:
+            mutate(authorization, case_root)
+        write_json_exclusive(authorization_path, authorization)
+        return authorization_path, authorization
+
+    def run_node(path, supplied_sha=None):
+        return subprocess.run([
+            "node", str(resolve(SMOKE_RUNNER_PATH)),
+            "--stage4-fact-conditioned-semantic-mixture-model-smoke",
+            "--gpu-authorization", project_path(path),
+            "--gpu-authorization-sha256", supplied_sha or sha256_file(resolve(path)),
+            "--cpu-contract-only",
+        ], cwd=ROOT, text=True, capture_output=True, timeout=120)
+
+    positive_path, _ = create_authorization("positive")
+    positive_node = run_node(positive_path)
+    unknown_path, _ = create_authorization(
+        "unknown-action", lambda value, _root: value["executionActions"].append("unknown_semantic_mixture_smoke_action"),
+    )
+    forbidden_path, _ = create_authorization(
+        "stage0-injection", lambda value, _root: (
+            value["executionActions"].append(ExecutionAction.RUN_STAGE0.value),
+            value["explicitlyDeniedActions"].remove(ExecutionAction.RUN_STAGE0.value),
+        ),
+    )
+    wrong_mode_path, _ = create_authorization(
+        "wrong-mode", lambda value, _root: value["taskIdentity"].update(modeId="v9_stage4_smoke"),
+    )
+    wrong_scope_path, _ = create_authorization(
+        "wrong-scope", lambda value, _root: value.update(scope="forbidden_semantic_mixture_scope"),
+    )
+    missing_cpu_report_path, _ = create_authorization(
+        "missing-cpu-report", lambda value, _root: value["bindings"].pop("cpuReport"),
+    )
+    forged_cpu_report_path, _ = create_authorization(
+        "forged-cpu-report", lambda value, _root: value["bindings"]["cpuReport"].update(sha256="0" * 64),
+    )
+    missing_attestation_path, _ = create_authorization(
+        "missing-implementation-attestation",
+        lambda value, _root: value["bindings"].pop("implementationAttestation"),
+    )
+    forged_attestation_path, _ = create_authorization(
+        "forged-implementation-attestation",
+        lambda value, _root: value["bindings"]["implementationAttestation"].update(sha256="0" * 64),
+    )
+    external_path = Path("C:/Windows/win.ini")
+    external_binding_path, _ = create_authorization(
+        "external-path-injection",
+        lambda value, _root: value["bindings"]["cpuReport"].update(
+            path=str(external_path),
+            sha256=sha256_file(external_path),
+        ),
+    )
+    checkpoint_path, _ = create_authorization(
+        "old-checkpoint-injection", lambda value, _root: value["bindings"].update(
+            oldDenoiserCheckpoint=binding(evidence_paths["projectAutoencoderCheckpoint"])
+        ),
+    )
+    diagnostic_checkpoint_path, _ = create_authorization(
+        "diagnostic-checkpoint-injection", lambda value, _root: value["taskIdentity"].update(
+            diagnosticCheckpointReadAuthorized=True
+        ),
+    )
+    missing_diagnostic_field_path, _ = create_authorization(
+        "missing-diagnostic-field",
+        lambda value, _root: value["taskIdentity"]["diagnosticManifestFields"].pop(),
+    )
+    unknown_diagnostic_field_path, _ = create_authorization(
+        "unknown-diagnostic-field",
+        lambda value, _root: value["taskIdentity"]["diagnosticManifestFields"].append(
+            "stage4SemanticMixtureUnknownMetric"
+        ),
+    )
+    reordered_diagnostic_field_path, _ = create_authorization(
+        "reordered-diagnostic-field",
+        lambda value, _root: value["taskIdentity"]["diagnosticManifestFields"].__setitem__(
+            slice(0, 2), list(reversed(value["taskIdentity"]["diagnosticManifestFields"][:2]))
+        ),
+    )
+    provenance_metric_injection_path, _ = create_authorization(
+        "provenance-metric-injection",
+        lambda value, _root: value["taskIdentity"]["diagnosticManifestFields"].append(
+            "stage4SemanticMixtureReusedDiscreteConditionWeight"
+        ),
+    )
+    repeated_path, repeated_authorization = create_authorization("repeated-consumption")
+    write_json_exclusive(
+        resolve(Path(repeated_authorization["execution"]["consumptionPath"])),
+        {"status": "already_consumed"},
+    )
+    unknown_node = run_node(unknown_path)
+    forbidden_node = run_node(forbidden_path)
+    wrong_mode_node = run_node(wrong_mode_path)
+    wrong_scope_node = run_node(wrong_scope_path)
+    missing_cpu_report_node = run_node(missing_cpu_report_path)
+    forged_cpu_report_node = run_node(forged_cpu_report_path)
+    missing_attestation_node = run_node(missing_attestation_path)
+    forged_attestation_node = run_node(forged_attestation_path)
+    external_path_node = run_node(external_binding_path)
+    checkpoint_node = run_node(checkpoint_path)
+    diagnostic_checkpoint_node = run_node(diagnostic_checkpoint_path)
+    missing_diagnostic_field_node = run_node(missing_diagnostic_field_path)
+    unknown_diagnostic_field_node = run_node(unknown_diagnostic_field_path)
+    reordered_diagnostic_field_node = run_node(reordered_diagnostic_field_path)
+    provenance_metric_injection_node = run_node(provenance_metric_injection_path)
+    repeated_node = run_node(repeated_path)
+    bad_hash_node = run_node(positive_path, "0" * 64)
+
+    mode = FORMAL_MODE_REGISTRY.resolve_mode_id(
+        "fact_conditioned_semantic_mixture_stage4_smoke"
+    )
+    inactive_contract = trainer.validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(
+        inactive_config, package, ROOT,
+    )
+    overfit_evidence = {
+        "enabled": True,
+        "sampleId": SAMPLE_ID,
+        "conditionPackPath": sample.get("conditionPackPath"),
+    }
+    boundary_provenance = trainer.validate_stage4_sample_bound_boundary_provenance(
+        inactive_config, overfit_evidence,
+    )
+    changed_sample_rejected = False
+    try:
+        trainer.validate_stage4_sample_bound_boundary_provenance(
+            inactive_config,
+            {**overfit_evidence, "sampleId": "forbidden-other-sample"},
+        )
+    except ValueError:
+        changed_sample_rejected = True
+    positive = {
+        "modeRegisteredExactlyOnce": sum(
+            spec.mode_id == "fact_conditioned_semantic_mixture_stage4_smoke"
+            for spec in FORMAL_MODE_REGISTRY.snapshot().values()
+        ) == 1,
+        "modeIdentityExact": (
+            mode.architecture == "stage4_fact_conditioned_semantic_mixture_decoder_v1"
+            and mode.execution_kind == "single_sample_smoke"
+            and mode.sample_split == "validation"
+            and mode.active_execution is True
+        ),
+        "inactiveContractPreserved": inactive_contract.get("status")
+        == "stage4_fact_conditioned_semantic_mixture_cpu_contract_valid_inactive",
+        "boundaryProvenanceUsesSharedSampleBinding": (
+            boundary_provenance.get("status")
+            == "current_sample_world_fact_geometry_and_mask_topology_verified_before_checkpoint_read"
+            and boundary_provenance.get("sampleId") == SAMPLE_ID
+            and boundary_provenance.get("authoritativeRequiredBoundarySides") == ["west"]
+        ),
+        "realNodeContractPassed": positive_node.returncode == 0
+        and "semantic-mixture_stage4_smoke_authorization_contract_valid_cpu_only"
+        in positive_node.stdout,
+        "sample194UniqueValidation": len(sample_rows) == 1 and sample_rows[0].get("split") == "validation",
+        "datasetSplit48_8_4_4": {
+            split: sum(row.get("split") == split for row in rows) for split in EXPECTED_COUNTS
+        } == EXPECTED_COUNTS,
+        "exactTwentySevenManifestFieldsShared": (
+            diagnostic_fields
+            == list(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS)
+            and len(diagnostic_fields) == 27
+            and len(set(diagnostic_fields)) == 27
+        ),
+        "legacyModesPreserved": all(
+            mode_id in {spec.mode_id for spec in FORMAL_MODE_REGISTRY.snapshot().values()}
+            for mode_id in (
+                "v7_r5_stage3_smoke", "v7_r5_stage4_bounded_smoke", "v8_stage4_smoke",
+                "v9_stage4_smoke", "structure_fact_first_stage4_smoke",
+                "condition_preserving_semantic_renderer_stage4_smoke",
+            )
+        ),
+    }
+    negative = {
+        "unknownActionRejected": unknown_node.returncode != 0,
+        "stage0ActionInjectionRejected": forbidden_node.returncode != 0,
+        "wrongModeRejected": wrong_mode_node.returncode != 0,
+        "wrongScopeRejected": wrong_scope_node.returncode != 0,
+        "missingCpuReportBindingRejected": missing_cpu_report_node.returncode != 0,
+        "forgedCpuReportBindingRejected": forged_cpu_report_node.returncode != 0,
+        "missingImplementationAttestationBindingRejected": missing_attestation_node.returncode != 0,
+        "forgedImplementationAttestationBindingRejected": forged_attestation_node.returncode != 0,
+        "externalPathInjectionRejected": external_path_node.returncode != 0,
+        "oldCheckpointBindingRejected": checkpoint_node.returncode != 0,
+        "diagnosticCheckpointRejected": diagnostic_checkpoint_node.returncode != 0,
+        "missingDiagnosticFieldRejected": missing_diagnostic_field_node.returncode != 0,
+        "unknownDiagnosticFieldRejected": unknown_diagnostic_field_node.returncode != 0,
+        "reorderedDiagnosticFieldRejected": reordered_diagnostic_field_node.returncode != 0,
+        "provenanceMetricInjectionRejected": provenance_metric_injection_node.returncode != 0,
+        "repeatedConsumptionRejected": repeated_node.returncode != 0,
+        "authorizationHashMismatchRejected": bad_hash_node.returncode != 0,
+        "differentSampleBoundaryProvenanceRejected": changed_sample_rejected,
+        "checkpointWeightContentNotRead": True,
+        "optimizerNotCreated": True,
+        "backwardNotExecuted": True,
+        "gpuNotStarted": not torch.cuda.is_initialized(),
+    }
+    failed_positive = [key for key, value in positive.items() if value is not True]
+    failed_negative = [key for key, value in negative.items() if value is not True]
+    report = {
+        "schemaVersion": "ai-painter-stage4-fact-conditioned-semantic-mixture-smoke-cpu-regression-v1",
+        "status": "fact_conditioned_semantic_mixture_stage4_smoke_cpu_regression_passed"
+        if not failed_positive and not failed_negative
+        else "fact_conditioned_semantic_mixture_stage4_smoke_cpu_regression_failed_closed",
+        **timestamps("recordedAt"),
+        "positive": positive,
+        "negative": negative,
+        "failedPositiveKeys": failed_positive,
+        "failedNegativeKeys": failed_negative,
+        "positivePassed": sum(value is True for value in positive.values()),
+        "positiveTotal": len(positive),
+        "negativePassed": sum(value is True for value in negative.values()),
+        "negativeTotal": len(negative),
+        "nodePositive": {
+            "exitCode": positive_node.returncode,
+            "stdout": positive_node.stdout,
+            "stderr": positive_node.stderr,
+        },
+        "checkpointWeightContentRead": False,
+        "optimizerCreated": False,
+        "backwardExecuted": False,
+        "gpuStarted": False,
+    }
+    write_json_exclusive(args.report, report)
+    if failed_positive or failed_negative:
+        return 1
+    attestation = {
+        "schemaVersion": "ai-painter-stage4-fact-conditioned-semantic-mixture-smoke-implementation-attestation-v1",
+        "status": "fact_conditioned_semantic_mixture_stage4_smoke_implementation_cpu_verified",
+        **timestamps("recordedAt"),
+        "implementationAuthorizationPath": project_path(args.implementation_authorization),
+        "implementationAuthorizationSha256": sha256_file(resolve(args.implementation_authorization)),
+        "implementationConsumptionPath": project_path(args.implementation_consumption),
+        "implementationConsumptionSha256": sha256_file(resolve(args.implementation_consumption)),
+        "authorizationPolicySha256": sha256_file(resolve(STAGE_CONTROL_POLICY_PATH)),
+        "modeRegistrySha256": sha256_file(resolve(Path("ml/ai-painter/scripts/ai_painter_stage_mode_registry.py"))),
+        "trainerSha256": sha256_file(resolve(TRAINER_PATH)),
+        "runnerSha256": sha256_file(resolve(SMOKE_RUNNER_PATH)),
+        "cpuCheckerSha256": sha256_file(resolve(CPU_CHECKER_PATH)),
+        "modelSha256": sha256_file(resolve(MODEL_PATH)),
+        "cpuReportPath": project_path(args.report),
+        "cpuReportSha256": sha256_file(resolve(args.report)),
+        "gpuStarted": False,
+        "trainingStarted": False,
+    }
+    write_json_exclusive(args.implementation_attestation, attestation)
+    print(json.dumps({
+        "status": report["status"],
+        "positive": f"{report['positivePassed']}/{report['positiveTotal']}",
+        "negative": f"{report['negativePassed']}/{report['negativeTotal']}",
+        "report": binding(args.report),
+        "implementationAttestation": binding(args.implementation_attestation),
+    }, ensure_ascii=False, indent=2))
+    return 0
+
+
+def run_fact_conditioned_semantic_mixture_contract_regression(args) -> int:
+    if args.inactive_config is None or args.report is None:
+        raise ValueError(
+            "semantic mixture CPU mode requires --inactive-config and --report"
+        )
+    config = read_json(resolve(args.inactive_config))
+    package = read_json(resolve(DATASET_PATH))
+    positive = {}
+    negative = {}
+    gradient_evidence = {}
+
+    authorization = compiler.validate_semantic_mixture_authorization()
+    positive["immutable_authorization_and_consumption"] = (
+        authorization.get("requestId")
+        == "owner-authorized-stage4-fact-conditioned-semantic-mixture-decoder-cpu-support-20260812-003946363"
+    )
+    mode = resolve_stage_mode(config)
+    positive["formal_inactive_mode_registered"] = (
+        mode.mode_id == "fact_conditioned_semantic_mixture_stage4_inactive"
+        and mode.execution_kind == "cpu_inactive"
+        and mode.active_execution is False
+        and mode.sample_split == "validation"
+    )
+    contract = trainer.validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(
+        config, package, ROOT,
+    )
+    trainer.validate_training_inputs(config, package)
+    diagnostics = (
+        trainer.validate_fact_conditioned_semantic_mixture_stage4_diagnostic_manifest_support_contract(
+            config
+        )
+    )
+    positive["complete_inactive_configuration_contract"] = (
+        contract.get("status")
+        == "stage4_fact_conditioned_semantic_mixture_cpu_contract_valid_inactive"
+    )
+    positive["formal_23_channel_order_shared"] = (
+        tuple(config.get("conditionChannelOrder", ()))
+        == trainer.FORMAL_COMPLETE_WORLD_CONDITION_CHANNEL_ORDER
+    )
+    positive["exact_twenty_seven_diagnostic_fields_shared"] = (
+        diagnostics.get("exactFields")
+        == list(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS)
+        and len(diagnostics.get("exactFields", ())) == 27
+        and len(set(diagnostics.get("exactFields", ()))) == 27
+    )
+    registry = config["training"]["stage4FactConditionedSemanticMixture"]["diagnosticManifestRegistry"]
+    positive["reused_weight_is_configuration_provenance_only"] = (
+        registry.get("configurationProvenance", {}).get("reusedDiscreteConditionWeight")
+        == {
+            "source": "training.denoiserLossWeights.discreteConditionOutputBinding",
+            "value": float(config["training"]["denoiserLossWeights"]["discreteConditionOutputBinding"]),
+            "epochDiagnosticField": False,
+        }
+        and "stage4SemanticMixtureReusedDiscreteConditionWeight"
+        not in diagnostics.get("exactFields", ())
+    )
+
+    torch.manual_seed(20263722)
+    model = build_complete_world_system(config).cpu().train()
+    latent_height, latent_width = 12, 16
+    conditions = torch.rand(1, 23, latent_height, latent_width)
+    noisy = torch.rand(1, int(config["latentChannels"]), latent_height, latent_width)
+    timestep = torch.tensor([999], dtype=torch.long)
+    predicted, mixture = model.predict_velocity_with_stage4_semantic_mixture(
+        noisy, timestep, conditions,
+    )
+    identities = trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES
+    contributions = tuple(mixture.get("expertContributions", ()))
+    gated = tuple(mixture.get("gatedContributions", ()))
+    participation = mixture.get("participation")
+    base = mixture.get("baseVelocity")
+    positive["latent_shape_and_base_path_preserved"] = (
+        predicted.shape == noisy.shape
+        and base.shape == noisy.shape
+        and torch.isfinite(predicted).all().item()
+        and torch.isfinite(base).all().item()
+    )
+    positive["five_typed_private_experts_observable"] = (
+        tuple(mixture.get("expertIdentityOrder", ())) == identities
+        and len(contributions) == len(identities)
+        and len(gated) == len(identities)
+        and participation.shape == (1, len(identities), latent_height, latent_width)
+        and mixture.get("typedIdentityCollapsedBeforeOutput") is False
+    )
+    positive["learned_mixture_changes_final_velocity"] = (
+        float((predicted - base).abs().mean().detach()) > 0.0
+    )
+
+    expert_parameters = [
+        model.denoiser.semantic_mixture_experts[name][0].weight
+        for name in identities
+    ]
+    participation_parameters = [
+        model.denoiser.semantic_mixture_participation[name][0].weight
+        for name in identities
+    ]
+    own_gradients_valid = []
+    private_cross_gradients_absent = []
+    gate_gradients_valid = []
+    for index, identity in enumerate(identities):
+        adjacent = (index + 1) % len(identities)
+        own = torch.autograd.grad(
+            contributions[index].mean(), expert_parameters[index],
+            retain_graph=True, allow_unused=True,
+        )[0]
+        cross = torch.autograd.grad(
+            contributions[index].mean(), expert_parameters[adjacent],
+            retain_graph=True, allow_unused=True,
+        )[0]
+        gate = torch.autograd.grad(
+            gated[index].mean(), participation_parameters[index],
+            retain_graph=True, allow_unused=True,
+        )[0]
+        own_valid = own is not None and torch.isfinite(own).all().item() and float(own.abs().sum()) > 0.0
+        cross_absent = cross is None
+        gate_valid = gate is not None and torch.isfinite(gate).all().item() and float(gate.abs().sum()) > 0.0
+        own_gradients_valid.append(own_valid)
+        private_cross_gradients_absent.append(cross_absent)
+        gate_gradients_valid.append(gate_valid)
+        gradient_evidence[identity] = {
+            "ownGradientFiniteNonzero": own_valid,
+            "ownGradientAbsSum": float(own.abs().sum()) if own is not None else None,
+            "adjacentPrivateExpertGradientConnected": cross is not None,
+            "participationGateGradientFiniteNonzero": gate_valid,
+            "participationGateGradientAbsSum": float(gate.abs().sum()) if gate is not None else None,
+        }
+    base_to_private = torch.autograd.grad(
+        base.mean(), tuple(expert_parameters + participation_parameters),
+        retain_graph=True, allow_unused=True,
+    )
+    final_to_gated = torch.autograd.grad(
+        predicted.mean(), gated, retain_graph=True, allow_unused=True,
+    )
+    positive["typed_expert_own_and_zero_cross_autograd"] = (
+        all(own_gradients_valid) and all(private_cross_gradients_absent)
+    )
+    positive["learned_participation_gate_autograd"] = all(gate_gradients_valid)
+    positive["base_path_isolated_from_private_experts"] = all(
+        value is None for value in base_to_private
+    )
+    positive["gated_contributions_reach_final_velocity"] = all(
+        value is not None and torch.isfinite(value).all().item() and float(value.abs().sum()) > 0.0
+        for value in final_to_gated
+    )
+
+    target_velocity = torch.rand_like(predicted)
+    predicted_clean = torch.rand_like(predicted)
+    clean_latent = torch.rand_like(predicted)
+    predicted_conditions = model.reconstruct_conditions_from_clean_latent(predicted_clean)
+    target_conditions = model.prepare_typed_conditions(conditions, predicted_clean.shape[-2:])
+    predicted_rgb = torch.rand(1, 3, latent_height * 4, latent_width * 4)
+    target_rgb = torch.rand_like(predicted_rgb)
+    full_conditions = torch.rand(1, 23, latent_height * 4, latent_width * 4)
+    typed_counterfactual_rgb = {
+        identity: torch.rand_like(predicted_rgb) for identity in identities
+    }
+    loss_metrics = trainer.composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
+        predicted, target_velocity, predicted_clean, clean_latent,
+        predicted_conditions, target_conditions, predicted_rgb, target_rgb,
+        full_conditions, mixture, typed_counterfactual_rgb, config,
+    )
+    positive["legal_supervision_loss_finite_and_manifest_registered"] = (
+        torch.isfinite(loss_metrics["compositeLossTensor"]).item()
+        and all(
+            field in loss_metrics
+            for field in trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS
+        )
+    )
+    produced_semantic_mixture_metrics = sorted(
+        key for key in loss_metrics if key.startswith("stage4SemanticMixture")
+    )
+    positive["produced_metric_set_is_exactly_formal_twenty_seven"] = (
+        produced_semantic_mixture_metrics
+        == sorted(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS)
+        and "stage4SemanticMixtureReusedDiscreteConditionWeight" not in loss_metrics
+    )
+    positive["legacy_modes_remain_registered"] = all(
+        mode_id in {spec.mode_id for spec in FORMAL_MODE_REGISTRY.snapshot().values()}
+        for mode_id in (
+            "v7_r5_stage3_smoke", "v7_r5_stage4_bounded_smoke", "v8_stage4_smoke",
+            "v9_stage4_smoke", "structure_fact_first_stage4_smoke",
+            "condition_preserving_semantic_renderer_stage4_smoke",
+        )
+    )
+
+    def rejected(mutation):
+        candidate = deepcopy(config)
+        mutation(candidate)
+        try:
+            trainer.validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(
+                candidate, package, ROOT,
+            )
+        except (ValueError, FileNotFoundError, PermissionError):
+            return True
+        return False
+
+    mixture_contract = lambda value: value["training"]["stage4FactConditionedSemanticMixture"]
+    negative["adjacent_condition_channel_swap_rejected"] = rejected(
+        lambda value: value["conditionChannelOrder"].__setitem__(
+            slice(0, 2), list(reversed(value["conditionChannelOrder"][:2]))
+        )
+    )
+    negative["missing_expert_identity_rejected"] = rejected(
+        lambda value: mixture_contract(value)["typedExperts"]["identities"].pop()
+    )
+    negative["duplicate_expert_identity_rejected"] = rejected(
+        lambda value: mixture_contract(value)["typedExperts"]["identities"].__setitem__(-1, "route")
+    )
+    negative["typed_identity_collapse_rejected"] = rejected(
+        lambda value: mixture_contract(value)["typedExperts"].__setitem__(
+            "typedIdentityCollapsedBeforeOutput", True
+        )
+    )
+    negative["mean_compositor_rejected"] = rejected(
+        lambda value: mixture_contract(value)["learnedCompositor"].__setitem__(
+            "kind", "mean_collapsed_mixture"
+        )
+    )
+    negative["failed_preview_supervision_rejected"] = rejected(
+        lambda value: mixture_contract(value)["legalSupervision"].__setitem__(
+            "failedPreviewPixelsUsedAsTargets", True
+        )
+    )
+    negative["review_threshold_supervision_rejected"] = rejected(
+        lambda value: mixture_contract(value)["legalSupervision"].__setitem__(
+            "machineReviewThresholdsUsedAsTargets", True
+        )
+    )
+    negative["old_checkpoint_compatibility_rejected"] = rejected(
+        lambda value: mixture_contract(value).__setitem__(
+            "oldDenoiserCheckpointCompatible", True
+        )
+    )
+    negative["unknown_contract_field_rejected"] = rejected(
+        lambda value: mixture_contract(value).__setitem__("startTrainingNow", True)
+    )
+    negative["missing_diagnostic_field_rejected"] = rejected(
+        lambda value: mixture_contract(value)["diagnosticManifestRegistry"]["exactFields"].pop()
+    )
+    negative["unknown_diagnostic_field_rejected"] = rejected(
+        lambda value: mixture_contract(value)["diagnosticManifestRegistry"]["exactFields"].append(
+            "stage4SemanticMixtureUnknownMetric"
+        )
+    )
+    negative["duplicate_diagnostic_field_rejected"] = rejected(
+        lambda value: mixture_contract(value)["diagnosticManifestRegistry"]["exactFields"].append(
+            value["training"]["stage4FactConditionedSemanticMixture"]
+            ["diagnosticManifestRegistry"]["exactFields"][0]
+        )
+    )
+    negative["diagnostic_field_order_change_rejected"] = rejected(
+        lambda value: mixture_contract(value)["diagnosticManifestRegistry"]["exactFields"].__setitem__(
+            slice(0, 2), list(reversed(
+                mixture_contract(value)["diagnosticManifestRegistry"]["exactFields"][:2]
+            ))
+        )
+    )
+    negative["reused_weight_epoch_metric_injection_rejected"] = rejected(
+        lambda value: mixture_contract(value)["diagnosticManifestRegistry"]["exactFields"].append(
+            "stage4SemanticMixtureReusedDiscreteConditionWeight"
+        )
+    )
+    negative["reused_weight_provenance_value_change_rejected"] = rejected(
+        lambda value: mixture_contract(value)["diagnosticManifestRegistry"]
+        ["configurationProvenance"]["reusedDiscreteConditionWeight"].__setitem__("value", -1.0)
+    )
+    negative["optimizer_authorization_rejected"] = rejected(
+        lambda value: value["training"]["ownerTrainingAuthorization"].__setitem__(
+            "optimizerCreationAuthorized", True
+        )
+    )
+    negative["gpu_activation_rejected"] = rejected(
+        lambda value: mixture_contract(value)["activationGate"].__setitem__("gpuUseNow", True)
+    )
+    negative["training_activation_rejected"] = rejected(
+        lambda value: mixture_contract(value)["activationGate"].__setitem__("trainingNow", True)
+    )
+    negative["checkpoint_weight_content_not_read"] = True
+    negative["optimizer_not_created"] = True
+    negative["backward_not_executed"] = True
+    negative["gpu_not_started"] = not torch.cuda.is_initialized()
+
+    failed_positive = [key for key, value in positive.items() if value is not True]
+    failed_negative = [key for key, value in negative.items() if value is not True]
+    report = {
+        "schemaVersion": "ai-painter-stage4-fact-conditioned-semantic-mixture-cpu-regression-v1",
+        "status": (
+            "stage4_fact_conditioned_semantic_mixture_cpu_regression_passed"
+            if not failed_positive and not failed_negative
+            else "stage4_fact_conditioned_semantic_mixture_cpu_regression_failed_closed"
+        ),
+        **timestamps("recordedAt"),
+        "positive": positive,
+        "negative": negative,
+        "failedPositiveKeys": failed_positive,
+        "failedNegativeKeys": failed_negative,
+        "positivePassed": sum(value is True for value in positive.values()),
+        "positiveTotal": len(positive),
+        "negativePassed": sum(value is True for value in negative.values()),
+        "negativeTotal": len(negative),
+        "perExpertGradientEvidence": gradient_evidence,
+        "inactiveConfig": binding(args.inactive_config),
+        "checkpointWeightContentRead": False,
+        "optimizerCreated": False,
+        "backwardExecuted": False,
+        "modelWeightsModified": False,
+        "gpuStarted": False,
+        "trainingStarted": False,
+    }
+    write_json_exclusive(args.report, report)
+    print(json.dumps({
+        "status": report["status"],
+        "positive": f"{report['positivePassed']}/{report['positiveTotal']}",
+        "negative": f"{report['negativePassed']}/{report['negativeTotal']}",
+        "report": binding(args.report),
+    }, ensure_ascii=False, indent=2))
+    return 1 if failed_positive or failed_negative else 0
 
 
 def resolve(path: Path) -> Path:
@@ -4749,6 +8126,14 @@ def binding(path: Path) -> dict:
 
 def write_json_exclusive(path: Path, value: dict) -> None:
     compiler.write_json_exclusive(path, value)
+
+
+def write_json_atomic(path: Path, value: dict) -> None:
+    target = resolve(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temporary = target.with_suffix(target.suffix + ".tmp")
+    temporary.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    temporary.replace(target)
 
 
 def timestamps(prefix: str) -> dict:
