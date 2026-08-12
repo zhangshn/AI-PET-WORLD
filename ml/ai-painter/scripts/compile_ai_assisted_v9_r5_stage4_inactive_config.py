@@ -68,7 +68,11 @@ SEMANTIC_MIXTURE_SOURCE_CONFIG_PATH = Path(
 )
 SEMANTIC_MIXTURE_OUTPUT_PATH = Path(
     ".runtime/ai-painter/stage4-semantic-mixture-exact-27-field-registry-implementations/"
-    "20260812-023121844/inactive-config.json"
+    "20260812-111838457/inactive-config.json"
+)
+SEMANTIC_MIXTURE_HISTORICAL_OUTPUT_NAMESPACE = Path(
+    ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-decoder-cpu-support/"
+    "20260812-003946363"
 )
 SAMPLE_ID = "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6"
 OBJECT_CHANNELS = ["object_footprints", "object_tree", "object_rock", "object_vegetation"]
@@ -217,7 +221,7 @@ def validate_semantic_mixture_authorization() -> dict:
         or authorization.get("scope") != scope
         or authorization.get("status") != "owner_authorized_unconsumed"
         or authorization.get("outputNamespace")
-        != project_path(SEMANTIC_MIXTURE_OUTPUT_PATH.parent)
+        != project_path(SEMANTIC_MIXTURE_HISTORICAL_OUTPUT_NAMESPACE)
     ):
         raise ValueError("semantic mixture implementation authorization identity is invalid")
     expected_bindings = {
