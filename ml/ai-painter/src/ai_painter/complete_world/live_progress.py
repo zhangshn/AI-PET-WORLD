@@ -5,6 +5,12 @@ import json
 import os
 from pathlib import Path
 import time
+from uuid import uuid4
+
+
+WINDOWS_ATOMIC_REPLACE_RETRY_ATTEMPTS = 8
+WINDOWS_ATOMIC_REPLACE_RETRY_BASE_SECONDS = 0.05
+WINDOWS_TRANSIENT_ATOMIC_REPLACE_ERROR_CODES = frozenset({5, 32, 33})
 
 
 def build_live_progress(
@@ -65,17 +71,36 @@ def build_live_progress(
 def write_json_atomic(path, value):
     target = Path(path)
     target.parent.mkdir(parents=True, exist_ok=True)
-    temporary = target.with_name(f".{target.name}.{os.getpid()}.tmp")
+    temporary = target.with_name(
+        f".{target.name}.{os.getpid()}.{uuid4().hex}.tmp"
+    )
     try:
         with temporary.open("w", encoding="utf-8", newline="\n") as handle:
             json.dump(value, handle, ensure_ascii=False, indent=2)
             handle.write("\n")
             handle.flush()
             os.fsync(handle.fileno())
-        os.replace(temporary, target)
+        replace_atomic_with_bounded_windows_retry(temporary, target)
     finally:
         if temporary.exists():
             temporary.unlink()
+
+
+def replace_atomic_with_bounded_windows_retry(source, target):
+    attempts = WINDOWS_ATOMIC_REPLACE_RETRY_ATTEMPTS if os.name == "nt" else 1
+    for attempt in range(attempts):
+        try:
+            os.replace(source, target)
+            return
+        except PermissionError as error:
+            if (
+                os.name != "nt"
+                or getattr(error, "winerror", None)
+                not in WINDOWS_TRANSIENT_ATOMIC_REPLACE_ERROR_CODES
+                or attempt + 1 >= attempts
+            ):
+                raise
+            time.sleep(WINDOWS_ATOMIC_REPLACE_RETRY_BASE_SECONDS * (attempt + 1))
 
 
 def utc_now():

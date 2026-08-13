@@ -8,6 +8,7 @@ import { auditAiAssistedProfessionalAesthetic } from "./lib/ai-assisted-professi
 import { normalizePreviewWithWindowsSafeIo } from "./lib/ai-assisted-v7-r5-stage3-preview-review.mjs"
 import { evaluateV7TrainingGpuResourceGate } from "./lib/ai-assisted-v7-training-resource-gate.mjs"
 import { formatShanghai } from "./lib/ai-painter-program-event-store.mjs"
+import { validateStage4ExecutionEvidenceBinding } from "./lib/ai-painter-stage4-evidence-eligibility.mjs"
 
 const ROOT = process.cwd()
 const PYTHON = resolve("ml/ai-painter/.venv/Scripts/python.exe")
@@ -42,17 +43,26 @@ function semanticMixtureDiagnosticMetricsFromConfig(config) {
   const registry = config?.training?.stage4FactConditionedSemanticMixture?.diagnosticManifestRegistry ?? {}
   const fields = registry.exactFields
   const provenance = registry.configurationProvenance?.reusedDiscreteConditionWeight
+  const vegetationRepair = config?.training?.stage4VegetationFinalVisibleSemanticRepair
+  const vegetationLuminance = config?.training?.stage4VegetationLuminanceSpatialStructureSupervision
+  const expectedCount = vegetationLuminance?.enabled === true
+    ? 29
+    : (vegetationRepair?.enabled === true ? 28 : 27)
   if (
-    registry.exactFieldCount !== 27
+    registry.exactFieldCount !== expectedCount
     || !Array.isArray(fields)
-    || fields.length !== 27
-    || new Set(fields).size !== 27
+    || fields.length !== expectedCount
+    || new Set(fields).size !== expectedCount
     || fields.some((field) => typeof field !== "string" || !field.startsWith("stage4SemanticMixture"))
     || fields.includes("stage4SemanticMixtureReusedDiscreteConditionWeight")
     || registry.rejectUnknownFields !== true
     || provenance?.source !== "training.denoiserLossWeights.discreteConditionOutputBinding"
     || provenance?.epochDiagnosticField !== false
     || provenance?.value !== config?.training?.denoiserLossWeights?.discreteConditionOutputBinding
+    || (vegetationRepair?.enabled === true
+      && !fields.includes("stage4SemanticMixtureVegetationFinalTypedEdgeMae"))
+    || (vegetationLuminance?.enabled === true
+      && !fields.includes("stage4SemanticMixtureVegetationFinalTypedLuminanceCorrelationLoss"))
   ) throw new Error("semantic_mixture_diagnostic_registry_invalid")
   return fields
 }
@@ -147,6 +157,9 @@ const DUAL_IDENTITY_IMPLEMENTATION_ATTESTATION_STATUS = "stage4_dual_identity_im
 const DUAL_IDENTITY_GPU_SCOPE = "stage4_v9_single_sample_model_smoke_execution_only"
 
 export async function runV8Stage4Smoke(argv = process.argv.slice(2)) {
+  if (argv.includes("--finalize-existing-semantic-mixture-smoke")) {
+    return runExistingSemanticMixtureSmokeFinalization(argv)
+  }
   if (argv.includes("--stage4-condition-preserving-semantic-renderer-readonly-diagnostic")) {
     return runConditionPreservingSemanticRendererReadonlyDiagnostic(argv)
   }
@@ -234,6 +247,182 @@ export async function runV8Stage4Smoke(argv = process.argv.slice(2)) {
     return blockers.length === 0 ? 0 : 1
   } catch (error) {
     closeFailure(context, `${context.mode}_stage4_single_sample_30_epoch_gpu_smoke_execution_failed_closed`, [String(error?.message ?? error)], { preflight, consumption, stack: error?.stack })
+    return 1
+  }
+}
+
+export function validateExistingSemanticMixtureSmokeFinalizationAuthorization(
+  authorizationPath,
+  authorization,
+  authorizationSha256,
+) {
+  const normalizedAuthorizationPath = assertProjectBoundPath(
+    authorizationPath,
+    "existing_semantic_mixture_finalization_authorization",
+  )
+  if (!fileHashMatches(normalizedAuthorizationPath, authorizationSha256)) {
+    throw new Error("existing_semantic_mixture_finalization_authorization_hash_invalid")
+  }
+  if (
+    authorization.schemaVersion !== "ai-painter-owner-implementation-authorization-v1"
+    || authorization.status !== "owner_authorized_unconsumed"
+    || authorization.requestId !== authorization.commandRef
+    || authorization.scope !== "continue_one_completed_stage4_semantic_mixture_smoke_from_bound_evidence_to_machine_review_and_finalization_only"
+  ) throw new Error("existing_semantic_mixture_finalization_identity_invalid")
+  const requiredActions = [
+    "extend_existing_stage4_runner_with_readonly_existing_smoke_finalization_entry",
+    "add_cpu_positive_negative_contract_regression",
+    "run_existing_machine_review_on_five_bound_previews",
+    "write_machine_review_finalization_terminal_task_capsule_event_ledger_and_sqlite",
+  ]
+  if (!sameJson(authorization.implementationActions, requiredActions)) {
+    throw new Error("existing_semantic_mixture_finalization_actions_invalid")
+  }
+  const forbidden = new Set(authorization.explicitlyDeniedActions ?? [])
+  for (const action of ["trainer_start", "optimizer_creation", "backward_execution", "model_weight_mutation", "checkpoint_write_or_mutation", "smoke_rerun", "machine_review_threshold_change", "failed_preview_pixels_as_training_target", "stage4_full_training_before_smoke_pass"]) {
+    if (!forbidden.has(action)) throw new Error(`existing_semantic_mixture_finalization_denial_missing:${action}`)
+  }
+  const source = authorization.sourceEvidence ?? {}
+  for (const key of ["smokeAuthorization", "executionConsumption", "activeConfig", "preflightReport", "manifest", "progress", "stepTelemetry", "smokeCheckpoint"]) {
+    const binding = source[key]
+    if (!binding?.path || !binding?.sha256 || !fileHashMatches(assertProjectBoundPath(binding.path, `existing_semantic_mixture_${key}`), binding.sha256)) {
+      throw new Error(`existing_semantic_mixture_source_binding_invalid:${key}`)
+    }
+  }
+  if (source.smokeCheckpoint.readWeightsAuthorized !== false || source.smokeCheckpoint.promotable !== false) {
+    throw new Error("existing_semantic_mixture_checkpoint_boundary_invalid")
+  }
+  const consumptionPath = assertProjectBoundPath(
+    authorization.output?.implementationConsumptionPath,
+    "existing_semantic_mixture_implementation_consumption",
+  )
+  const consumption = readJsonRequired(consumptionPath)
+  if (
+    consumption.status !== "implementation_authorization_atomically_consumed"
+    || consumption.requestId !== authorization.requestId
+    || consumption.commandRef !== authorization.commandRef
+    || consumption.scope !== authorization.scope
+    || consumption.authorizationPath !== normalizedAuthorizationPath
+    || consumption.authorizationSha256 !== authorizationSha256
+    || consumption.oneTimeConsumption !== true
+    || !sameJson(consumption.implementationActions, authorization.implementationActions)
+    || !sameJson(consumption.explicitlyDeniedActions, authorization.explicitlyDeniedActions)
+  ) throw new Error("existing_semantic_mixture_implementation_consumption_invalid")
+  const activeConfig = readJsonRequired(source.activeConfig.path)
+  const manifest = readJsonRequired(source.manifest.path)
+  const progress = readJsonRequired(source.progress.path)
+  const originalAuthorization = readJsonRequired(source.smokeAuthorization.path)
+  const originalConsumption = readJsonRequired(source.executionConsumption.path)
+  const outputDir = path.dirname(resolve(source.manifest.path))
+  const finalizationDir = resolve(assertProjectBoundPath(authorization.output?.finalizationDirectory, "existing_semantic_mixture_finalization"))
+  const reviewPath = path.join(outputDir, "fixed-preview-reviews.json")
+  if (fs.existsSync(finalizationDir) || fs.existsSync(reviewPath)) throw new Error("existing_semantic_mixture_finalization_output_already_exists")
+  if (
+    manifest.status !== "conditional_denoiser_single_sample_overfit_smoke_completed"
+    || progress.status !== "completed"
+    || progress.currentEpoch !== 30
+    || progress.liveProgress?.optimizerStep !== 90
+    || progress.liveProgress?.percentage !== 100
+    || originalConsumption.modelSmokeOrdinal !== 1
+    || originalConsumption.maximumModelSmokeExecutions !== 1
+    || originalConsumption.oneTimeConsumption !== true
+  ) throw new Error("existing_semantic_mixture_training_completion_evidence_invalid")
+  if (
+    manifest.checkpointPath !== source.smokeCheckpoint.path
+    || manifest.checkpointSha256 !== source.smokeCheckpoint.sha256
+    || manifest.modelStateHashEvidence?.weightsChanged !== true
+  ) throw new Error("existing_semantic_mixture_checkpoint_identity_invalid")
+  const smokeContract = activeConfig.training?.factConditionedSemanticMixtureStage4SingleSampleSmokeContract
+  if (
+    smokeContract?.sampleId !== SAMPLE_ID
+    || smokeContract.sampleSplit !== "validation"
+    || smokeContract.seed !== 20263722
+    || !sameJson(smokeContract.requiredBoundarySides, ["west"])
+    || smokeContract.epochCount !== 30
+    || !sameJson(smokeContract.previewEpochs, PREVIEW_EPOCHS)
+  ) throw new Error("existing_semantic_mixture_fixed_task_identity_invalid")
+  const datasetPath = originalAuthorization.bindings?.datasetManifest?.path
+  const sourceIndexPath = originalAuthorization.bindings?.datasetSourceIndex?.path
+  if (!sourceIndexPath || !fileHashMatches(sourceIndexPath, originalAuthorization.bindings.datasetSourceIndex.sha256)) {
+    throw new Error("existing_semantic_mixture_dataset_source_index_invalid")
+  }
+  const rows = (readJsonRequired(sourceIndexPath).samples ?? []).filter(isCapacityRow)
+  const sample = rows.find((row) => row.sampleId === SAMPLE_ID)
+  if (!sample || sample.split !== "validation" || sample.imagePath !== smokeContract.imagePath || sample.conditionPackPath !== smokeContract.conditionPackPath) {
+    throw new Error("existing_semantic_mixture_sample_identity_invalid")
+  }
+  if (!sameJson(countSplits(rows), SPLITS)) throw new Error("existing_semantic_mixture_dataset_split_invalid")
+  for (const epoch of PREVIEW_EPOCHS) {
+    const row = manifest.metrics?.find((item) => item.epoch === epoch)
+    const first = row?.validationPreviewArtifact
+    const repeated = row?.validationPreviewReproductionArtifact?.repeatedPreview
+    if (
+      row?.validationPreviewReproductionArtifact?.status !== "fixed_epoch_preview_reproduced_exactly"
+      || !first?.previewPath
+      || !repeated?.previewPath
+      || !fileHashMatches(first.previewPath, first.previewSha256)
+      || !fileHashMatches(repeated.previewPath, repeated.previewSha256)
+      || first.previewSha256 !== repeated.previewSha256
+      || first.rgbTensorSha256 !== repeated.rgbTensorSha256
+      || first.conditionTensorSha256 !== repeated.conditionTensorSha256
+      || first.denoiserStateSha256 !== repeated.denoiserStateSha256
+    ) throw new Error(`existing_semantic_mixture_preview_reproduction_invalid:${epoch}`)
+  }
+  return {
+    mode: "semantic-mixture",
+    requestId: authorization.requestId,
+    scope: authorization.scope,
+    authorization,
+    authorizationPath: normalizedAuthorizationPath,
+    authorizationSha256,
+    inactiveConfig: activeConfig,
+    sample,
+    outputDir,
+    finalizationDir,
+    autoencoderSha256: manifest.autoencoderCheckpointSha256,
+    semanticMixtureDiagnosticMetrics: semanticMixtureDiagnosticMetricsFromConfig(activeConfig),
+    manifest,
+    progress,
+    originalConsumption,
+    preflight: readJsonRequired(source.preflightReport.path),
+    continuationConsumption: { ...consumption, path: consumptionPath, sha256: sha256File(consumptionPath) },
+  }
+}
+
+async function runExistingSemanticMixtureSmokeFinalization(argv) {
+  const authorizationPath = argument(argv, "--implementation-authorization")
+  const authorizationSha256 = argument(argv, "--implementation-authorization-sha256")
+  const cpuContractOnly = argv.includes("--cpu-contract-only")
+  if (!authorizationPath || !authorizationSha256) throw new Error("existing_semantic_mixture_finalization_authorization_required")
+  const authorization = readJsonRequired(authorizationPath)
+  const context = validateExistingSemanticMixtureSmokeFinalizationAuthorization(authorizationPath, authorization, authorizationSha256)
+  if (cpuContractOnly) {
+    console.log(JSON.stringify({ status: "existing_semantic_mixture_smoke_finalization_contract_valid_cpu_only", trainerStarted: false, gpuStarted: false, checkpointWeightsRead: false }, null, 2))
+    return 0
+  }
+  try {
+    const manifestIssues = validateManifest(context, context.manifest)
+    if (manifestIssues.length > 0) throw new Error(manifestIssues.join(","))
+    const diagnostics = collectDiagnosticEvidence(context, context.manifest)
+    const review = await reviewPreviews(context)
+    const blockers = []
+    if (diagnostics.metricCount !== context.semanticMixtureDiagnosticMetrics.length || diagnostics.epochs.length !== 5) blockers.push("diagnostic_metric_evidence_incomplete")
+    if (review.previewCount !== 5) blockers.push("fixed_preview_machine_review_incomplete")
+    if (review.previewFailCount > 0) blockers.push("fixed_preview_machine_review_failed")
+    const status = blockers.length === 0
+      ? "semantic-mixture_stage4_single_sample_30_epoch_gpu_smoke_passed_closed"
+      : "semantic-mixture_stage4_single_sample_30_epoch_gpu_smoke_failed_closed"
+    closeFinal(context, status, blockers, {
+      preflight: context.preflight,
+      consumption: context.originalConsumption,
+      manifest: context.manifest,
+      diagnostics,
+      review,
+      continuation: context.continuationConsumption,
+    })
+    return blockers.length === 0 ? 0 : 1
+  } catch (error) {
+    closeFailure(context, "semantic-mixture_stage4_existing_smoke_finalization_failed_closed", [String(error?.message ?? error)], { stack: error?.stack, continuation: context.continuationConsumption })
     return 1
   }
 }
@@ -1520,10 +1709,37 @@ function validateSemanticMixtureSmokeAuthorization(authorizationPath, authorizat
     "projectAutoencoderCheckpoint", "conditionAlignmentAuditor", "professionalAestheticAuditor",
     "windowsSafePreviewNormalizer", "gpuResourceGate",
   ]
+  if (authorization.taskIdentity?.evidenceEligibilityContractId !== "stage4_execution_evidence_eligibility_v1") {
+    throw new Error("semantic_mixture_smoke_execution_evidence_eligibility_required")
+  }
+  if (!authorization.bindings?.executionEvidenceRegistry) throw new Error("semantic_mixture_smoke_execution_evidence_registry_missing")
+  const registry = authorization.bindings.executionEvidenceRegistry
+  const roleBindings = {
+    "stage4.finalVisibleRgb.gpuQualificationTerminal": authorization.bindings.readonlyGpuTerminal,
+    "stage4.finalVisibleRgb.gpuDiagnosticReport": authorization.bindings.readonlyGpuDiagnostic,
+    "stage4.finalVisibleRgb.cudaTelemetry": authorization.bindings.cudaTelemetry,
+    "stage4.finalVisibleRgb.cpuAuthorizationReport": authorization.bindings.readonlyCpuReport,
+    "stage4.finalVisibleRgb.inactiveConfig": authorization.bindings.inactiveConfig,
+    "stage4.finalVisibleRgb.trainingObjectiveSupportContract": authorization.bindings.architectureSupportContract,
+  }
+  for (const [role, binding] of Object.entries(roleBindings)) {
+    validateStage4ExecutionEvidenceBinding({
+      root: ROOT,
+      registryPath: registry.path,
+      registrySha256: registry.sha256,
+      role,
+      binding,
+    })
+  }
   // CPU contract fixtures and real execution authorizations intentionally share
   // the exact final binding shape.  cpuContractOnly controls execution, not the
   // immutable evidence identity that is being validated.
-  const requiredBindings = [...baseBindings, "cpuReport", "implementationAttestation"]
+  const requiredBindings = [
+    ...baseBindings,
+    "cpuReport",
+    "implementationAttestation",
+    "executionEvidenceRegistry",
+  ]
   if (!sameJson(Object.keys(authorization.bindings ?? {}).sort(), requiredBindings.sort())) throw new Error("semantic_mixture_smoke_binding_set_invalid")
   for (const key of requiredBindings) {
     const binding = authorization.bindings[key]
@@ -1554,13 +1770,34 @@ function validateSemanticMixtureSmokeAuthorization(authorizationPath, authorizat
   if (!sameJson(identity.diagnosticManifestFields, semanticMixtureDiagnosticMetrics)) {
     throw new Error("semantic_mixture_smoke_diagnostic_registry_identity_invalid")
   }
+  const legacySemanticMixtureQualification = (
+    terminal.status === "fact_conditioned_semantic_mixture_gradient_diagnostic_passed_closed"
+    && diagnostic.status === "passed_readonly_fact_conditioned_semantic_mixture_gpu_causal_and_gradient_diagnostic"
+    && readonlyCpu.status === "passed_fact_conditioned_semantic_mixture_readonly_gpu_diagnostic_cpu_authorization_regression"
+  )
+  const finalVisibleRgbQualification = (
+    terminal.status === "stage4_per_class_final_visible_rgb_gpu_qualification_passed_closed"
+    && diagnostic.status === "passed_readonly_stage4_per_class_final_visible_rgb_gpu_gradient_qualification"
+    && readonlyCpu.status === "passed_stage4_final_visible_rgb_readonly_gpu_diagnostic_cpu_authorization_regression"
+  )
+  const vegetationRepairQualification = (
+    terminal.status === "stage4_vegetation_final_visible_gpu_qualification_passed_closed"
+    && diagnostic.status === "passed_readonly_stage4_vegetation_final_visible_gpu_gradient_qualification"
+    && readonlyCpu.status === "passed_stage4_vegetation_final_visible_readonly_gpu_diagnostic_cpu_authorization_regression"
+  )
+  const vegetationLuminanceQualification = (
+    terminal.status === "stage4_per_class_final_visible_rgb_gpu_qualification_passed_closed"
+    && diagnostic.status === "passed_readonly_stage4_per_class_final_visible_rgb_gpu_gradient_qualification"
+    && readonlyCpu.status === "passed_stage4_vegetation_luminance_spatial_readonly_gpu_diagnostic_cpu_authorization_regression"
+    && diagnostic.identity?.trainingObjectiveContractId === "stage4_vegetation_luminance_spatial_structure_supervision_v1"
+    && diagnostic.gradientEvidence?.vegetationLuminanceSpatialStructure?.reachesFinalDenoiserRgbPath === true
+    && diagnostic.gradientEvidence?.vegetationLuminanceSpatialStructure?.reachesFrozenAutoencoderDecodedRgb === true
+  )
   if (
-    implementationAuthorization.status !== "resolved_owner_authorized_not_consumed"
+    !["resolved_owner_authorized_not_consumed", "owner_authorized_unconsumed"].includes(implementationAuthorization.status)
     || implementationConsumption.authorizationSha256 !== authorization.bindings.implementationAuthorization.sha256
     || implementationConsumption.oneTimeConsumption !== true
-    || terminal.status !== "fact_conditioned_semantic_mixture_gradient_diagnostic_passed_closed"
-    || diagnostic.status !== "passed_readonly_fact_conditioned_semantic_mixture_gpu_causal_and_gradient_diagnostic"
-    || readonlyCpu.status !== "passed_fact_conditioned_semantic_mixture_readonly_gpu_diagnostic_cpu_authorization_regression"
+    || (!legacySemanticMixtureQualification && !finalVisibleRgbQualification && !vegetationRepairQualification && !vegetationLuminanceQualification)
     || readonlyCpu.positivePassed !== readonlyCpu.positiveTotal
     || readonlyCpu.negativePassed !== readonlyCpu.negativeTotal
     || inactiveConfig.denoiserArchitecture !== SEMANTIC_MIXTURE_SMOKE_ARCHITECTURE
@@ -3093,7 +3330,7 @@ function validateManifest(context, manifest) {
       ? "all-validation-multiseed-semantic-rollout-unet-v9-stage4-object-semantic-decoded-alignment-smoke"
     : "all-validation-multiseed-semantic-rollout-unet-v8-stage4-decoded-alignment-smoke"), "manifest_architecture_invalid")
   check(manifest.denoiserLossVersion === (semanticMixtureLike
-    ? "velocity_decoded_rgb_fact_conditioned_semantic_mixture_v1"
+    ? context.inactiveConfig?.training?.denoiserLossVersion
     : semanticRendererLike
     ? "velocity_decoded_rgb_condition_preserving_learned_semantic_renderer_stage4"
     : structureLike
@@ -3129,7 +3366,7 @@ function collectDiagnosticEvidence(context, manifest) {
   const rows = PREVIEW_EPOCHS.map((epoch) => manifest.metrics.find((row) => row.epoch === epoch)).filter(Boolean)
   if (manifest.architectureVersion === "all-validation-multiseed-semantic-rollout-fact-conditioned-semantic-mixture-smoke") {
     const metricNames = context.semanticMixtureDiagnosticMetrics
-    if (!Array.isArray(metricNames) || metricNames.length !== 27) throw new Error("semantic_mixture_diagnostic_registry_context_missing")
+    if (!Array.isArray(metricNames) || ![27, 28, 29].includes(metricNames.length)) throw new Error("semantic_mixture_diagnostic_registry_context_missing")
     const epochs = rows.map((row) => ({
       epoch: row.epoch,
       metrics: Object.fromEntries(metricNames.map((name) => [name, row[name]])),
@@ -3176,7 +3413,7 @@ async function reviewPreviews(context) {
     if (!file.includes(CONDITION_LABEL)) throw new Error("preview_condition_identity_invalid")
     const previewPath = path.join(previewRoot, file)
     const normalizedPath = path.join(context.outputDir, "fixed-preview-review-assets", `e${String(epoch).padStart(3, "0")}.png`)
-    const normalized = await normalizePreviewWithWindowsSafeIo({ sourcePath: previewPath, finalAssetPath: normalizedPath, workRoot: resolve(`.runtime/ai-painter/${context.mode}-r5-stage4-smoke-review-work`), workId: sha256Text(path.basename(context.outputDir)).slice(0, 16), epoch })
+    const normalized = await normalizePreviewWithWindowsSafeIo({ sourcePath: previewPath, finalAssetPath: normalizedPath, workRoot: resolve(`.runtime/ai-painter/${context.mode}-r5-stage4-smoke-review-work`), workId: sha256Text(projectPath(context.outputDir)).slice(0, 16), epoch })
     const [aesthetic, alignment] = await Promise.all([
       auditAiAssistedProfessionalAesthetic(normalized.shortOutputPath),
       auditAiAssistedConditionAlignment({ record: { recordId: `${context.mode}-smoke-${epoch}`, conditionBinding: { conditionPackPath: context.sample.conditionPackPath, worldId: conditionPack.worldId, tick: conditionPack.tick }, classification: context.sample.classification }, imagePath: normalized.shortOutputPath, referenceImagePath: context.sample.imagePath }),
@@ -3253,7 +3490,8 @@ function writeImmutableJson(value, body) { const absolute = resolve(value); fs.m
 function writeImmutableText(value, body) { const absolute = resolve(value); fs.mkdirSync(path.dirname(absolute), { recursive: true }); const handle = fs.openSync(absolute, "wx"); try { fs.writeFileSync(handle, body, "utf8"); fs.fsyncSync(handle) } finally { fs.closeSync(handle) } }
 
 if (
-  process.argv.includes("--stage4-condition-preserving-semantic-renderer-readonly-diagnostic")
+  process.argv.includes("--finalize-existing-semantic-mixture-smoke")
+  || process.argv.includes("--stage4-condition-preserving-semantic-renderer-readonly-diagnostic")
   || process.argv.includes("--stage4-condition-preserving-semantic-renderer-model-smoke")
   || process.argv.includes("--stage4-fact-conditioned-semantic-mixture-model-smoke")
   || process.argv.includes("--stage4-structure-fact-first-phase0-c-only-continuation")

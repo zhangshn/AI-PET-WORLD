@@ -74,6 +74,44 @@ SEMANTIC_MIXTURE_HISTORICAL_OUTPUT_NAMESPACE = Path(
     ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-decoder-cpu-support/"
     "20260812-003946363"
 )
+FINAL_VISIBLE_RGB_AUTHORIZATION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-per-class-final-visible-rgb-obligation-cpu-20260812-190738093/"
+    "implementation-authorization.json"
+)
+FINAL_VISIBLE_RGB_CONSUMPTION_PATH = FINAL_VISIBLE_RGB_AUTHORIZATION_PATH.parent / "implementation-consumption.json"
+FINAL_VISIBLE_RGB_SOURCE_CONFIG_PATH = Path(
+    ".runtime/ai-painter/stage4-semantic-mixture-exact-27-field-registry-implementations/"
+    "20260812-111838457/inactive-config.json"
+)
+VEGETATION_REPAIR_AUTHORIZATION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-vegetation-final-visible-semantic-repair-20260813-025311970/"
+    "implementation-authorization.json"
+)
+VEGETATION_REPAIR_CONSUMPTION_PATH = (
+    VEGETATION_REPAIR_AUTHORIZATION_PATH.parent / "implementation-consumption-corrected.json"
+)
+VEGETATION_REPAIR_SOURCE_CONFIG_PATH = Path(
+    ".runtime/ai-painter/stage4-per-class-final-visible-rgb-obligation-cpu/"
+    "20260812-190738093/inactive-config.json"
+)
+VEGETATION_LUMINANCE_AUTHORIZATION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-vegetation-luminance-spatial-structure-supervision-20260813-034000000/"
+    "implementation-authorization.json"
+)
+VEGETATION_LUMINANCE_CONSUMPTION_PATH = (
+    VEGETATION_LUMINANCE_AUTHORIZATION_PATH.parent / "implementation-consumption.json"
+)
+VEGETATION_LUMINANCE_SOURCE_CONFIG_PATH = Path(
+    ".runtime/ai-painter/stage4-vegetation-final-visible-semantic-repairs/"
+    "20260813-025311970/inactive-config.json"
+)
+DISTRIBUTION_AWARE_SOURCE_CONFIG_PATH = Path(
+    ".runtime/ai-painter/stage4-vegetation-luminance-spatial-structure-supervision/"
+    "20260813-034000000/inactive-config.json"
+)
 SAMPLE_ID = "ai-cold-start-v7-v7-capacity-slot-194-wet-season-drainage-hollow-v6"
 OBJECT_CHANNELS = ["object_footprints", "object_tree", "object_rock", "object_vegetation"]
 ALLOWED_SOURCES = [
@@ -92,7 +130,19 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--condition-preserving-semantic-renderer", action="store_true")
     parser.add_argument("--fact-conditioned-semantic-mixture", action="store_true")
+    parser.add_argument("--per-class-final-visible-rgb-obligation", action="store_true")
+    parser.add_argument("--vegetation-final-visible-semantic-repair", action="store_true")
+    parser.add_argument("--vegetation-luminance-spatial-structure-supervision", action="store_true")
+    parser.add_argument("--distribution-aware-visible-spatial-semantic-obligation", action="store_true")
     args = parser.parse_args()
+    if args.distribution_aware_visible_spatial_semantic_obligation:
+        return compile_distribution_aware_visible_spatial_semantic_obligation(args.output)
+    if args.vegetation_luminance_spatial_structure_supervision:
+        return compile_vegetation_luminance_spatial_structure_supervision(args.output)
+    if args.vegetation_final_visible_semantic_repair:
+        return compile_vegetation_final_visible_semantic_repair(args.output)
+    if args.per_class_final_visible_rgb_obligation:
+        return compile_per_class_final_visible_rgb_obligation(args.output)
     if args.fact_conditioned_semantic_mixture:
         return compile_fact_conditioned_semantic_mixture(args.output)
     if args.condition_preserving_semantic_renderer:
@@ -130,6 +180,444 @@ def main() -> int:
         "trainingStarted": False,
     }, ensure_ascii=False, indent=2))
     return 0
+
+
+def compile_per_class_final_visible_rgb_obligation(output: Path) -> int:
+    authorization = validate_final_visible_rgb_authorization()
+    expected_output = Path(authorization["outputNamespace"]) / "inactive-config.json"
+    if project_path(output) != project_path(expected_output):
+        raise ValueError("final visible RGB inactive config output is not the authorized target")
+    source = read_json(resolve(FINAL_VISIBLE_RGB_SOURCE_CONFIG_PATH))
+    package = read_json(resolve(DATASET_PATH))
+    config = deepcopy(source)
+    config["architectureVersion"] = "fact-conditioned-semantic-mixture-decoder-v1-final-visible-rgb-obligation-cpu"
+    training = config["training"]
+    training["denoiserLossVersion"] = (
+        "velocity_decoded_rgb_fact_conditioned_semantic_mixture_per_class_final_visible_rgb_v1"
+    )
+    derived = trainer.derive_stage4_per_class_final_visible_rgb_weights(config)
+    training["stage4PerClassFinalVisibleRgbObligation"] = {
+        "enabled": True,
+        "status": "cpu_support_verified_inactive",
+        "contractId": trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_OBLIGATION_ID,
+        "terms": list(trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_TERMS),
+        "derivedWeights": derived["weights"],
+        "weightDerivation": {
+            **derived["sources"],
+            "sourceValues": derived["sourceValues"],
+            "freeValueSelectionAllowed": False,
+        },
+        "legalSupervision": {
+            "reference": "original_owner_approved_reference_rgb",
+            "conditionPack": "original_compiled_23_channel_condition_pack",
+            "maskChannels": list(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS),
+            "lossFunction": "masked_condition_rgb_loss",
+            "failedPreviewPixelsUsedAsTargets": False,
+            "machineReviewThresholdsUsedAsTargets": False,
+            "machineReviewResultsUsedAsTargets": False,
+        },
+        "checkpointQualification": {
+            "explicitTerms": [
+                term["metric"] for term in trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_TERMS
+            ],
+            "usesSameDerivedWeightsAsTraining": True,
+            "aggregateObjectSemanticRgbCannotReplaceExplicitTerms": True,
+        },
+        "compatibility": {
+            "oldV7V8V9AndHistoricalStage4BehaviorPreserved": True,
+            "oldDenoiserCheckpointCompatible": False,
+            "newModelArchitectureCreated": False,
+        },
+        "evidenceBindings": deepcopy(
+            trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_EVIDENCE_BINDINGS
+        ),
+        "ownerImplementationAuthorization": deepcopy(
+            trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_IMPLEMENTATION_AUTHORIZATION
+        ),
+        "activationGate": {key: False for key in (
+            "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+            "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+            "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage5Now",
+            "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow",
+            "worldEntryNow",
+        )},
+    }
+    trainer.validate_stage4_per_class_final_visible_rgb_obligation(config)
+    trainer.validate_training_inputs(config, package)
+    write_json_exclusive(output, config)
+    print(json.dumps({
+        "status": "stage4_per_class_final_visible_rgb_obligation_inactive_config_compiled",
+        "configPath": project_path(output),
+        "configSha256": sha256_file(resolve(output)),
+        "derivedWeights": derived["weights"],
+        "checkpointRead": False,
+        "optimizerCreated": False,
+        "backwardExecuted": False,
+        "modelWeightsModified": False,
+        "gpuUsed": False,
+        "trainingStarted": False,
+    }, ensure_ascii=False, indent=2))
+    return 0
+
+
+def compile_distribution_aware_visible_spatial_semantic_obligation(output: Path) -> int:
+    authorization_path = Path(
+        ".runtime/ai-painter/owner-action-requests/"
+        "owner-authorized-stage4-distribution-aware-visible-spatial-semantic-obligation-"
+        "20260813-062820868/implementation-authorization.json"
+    )
+    consumption_path = authorization_path.parent / "implementation-consumption.json"
+    authorization = read_json(resolve(authorization_path))
+    consumption = read_json(resolve(consumption_path))
+    if (
+        authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or authorization.get("scope")
+        != "implement_stage4_distribution_aware_visible_spatial_semantic_obligation_v1_cpu_inactive_support_and_qualification"
+        or consumption.get("status")
+        != "stage4_distribution_aware_visible_spatial_semantic_obligation_cpu_implementation_authorization_atomically_consumed"
+        or consumption.get("authorizationSha256") != sha256_file(resolve(authorization_path))
+    ):
+        raise ValueError("distribution-aware implementation authorization lineage invalid")
+    expected_output = Path(authorization["outputNamespace"]) / "inactive-config.json"
+    if project_path(output) != project_path(expected_output):
+        raise ValueError("distribution-aware inactive config output is not authorized")
+    config = deepcopy(read_json(resolve(DISTRIBUTION_AWARE_SOURCE_CONFIG_PATH)))
+    training = config["training"]
+    training["denoiserLossVersion"] = (
+        "velocity_decoded_rgb_fact_conditioned_semantic_mixture_"
+        "per_class_final_visible_rgb_distribution_aware_v1"
+    )
+    training["stage4DistributionAwareVisibleSpatialSemanticObligation"] = {
+        "enabled": True,
+        "status": "cpu_support_verified_inactive",
+        "contractId": trainer.STAGE4_DISTRIBUTION_AWARE_VISIBLE_SPATIAL_SEMANTIC_OBLIGATION_ID,
+        "requiredIdentities": list(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES),
+        "sourceChannels": list(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS),
+        "aggregation": {
+            "perSamplePerClass": True,
+            "classReduction": "maximum_of_existing_derived_weighted_class_obligations",
+            "batchReduction": "maximum_of_per_sample_worst_class_obligations",
+            "freeNumericWeightSelected": False,
+        },
+        "trajectoryBinding": {
+            "source": "existing_short_trajectory_current_training_predictions",
+            "stepReduction": "maximum_across_existing_fixed_trajectory_steps",
+            "newTrajectoryStepCountSelected": False,
+        },
+        "checkpointQualification": {
+            "includeWorstValidationSampleClassObligation": True,
+            "aggregateMeanCannotReplaceWorstSampleClass": True,
+            "usesExistingDerivedClassWeights": True,
+        },
+        "legalSupervision": {
+            "reference": "original_owner_approved_reference_rgb",
+            "conditionPack": "original_compiled_23_channel_condition_pack",
+            "maskChannels": list(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS),
+            "decode": "current_training_prediction_decoded_by_frozen_project_autoencoder",
+            "failedPreviewPixelsUsedAsTargets": False,
+            "machineReviewThresholdsUsedAsTargets": False,
+            "machineReviewResultsUsedAsTargets": False,
+        },
+        "compatibility": {
+            "modelArchitectureChanged": False,
+            "checkpointFormatChanged": False,
+            "datasetSplitChanged": False,
+            "oldModesPreserved": True,
+        },
+        "evidenceBindings": deepcopy(
+            trainer.STAGE4_DISTRIBUTION_AWARE_VISIBLE_SPATIAL_SEMANTIC_EVIDENCE_BINDINGS
+        ),
+        "ownerImplementationAuthorization": deepcopy(
+            trainer.STAGE4_DISTRIBUTION_AWARE_VISIBLE_SPATIAL_SEMANTIC_IMPLEMENTATION_AUTHORIZATION
+        ),
+        "activationGate": {key: False for key in (
+            "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+            "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+            "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage5Now",
+            "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow",
+            "worldEntryNow",
+        )},
+    }
+    trainer.validate_stage4_distribution_aware_visible_spatial_semantic_obligation(config)
+    trainer.validate_training_inputs(config, read_json(resolve(DATASET_PATH)))
+    write_json_exclusive(output, config)
+    print(json.dumps({
+        "status": "stage4_distribution_aware_visible_spatial_semantic_inactive_config_compiled",
+        "configPath": project_path(output),
+        "configSha256": sha256_file(resolve(output)),
+        "checkpointRead": False,
+        "optimizerCreated": False,
+        "backwardExecuted": False,
+        "gpuUsed": False,
+        "trainingStarted": False,
+    }, ensure_ascii=False, indent=2))
+    return 0
+
+
+def compile_vegetation_final_visible_semantic_repair(output: Path) -> int:
+    authorization = validate_vegetation_repair_authorization()
+    expected_output = Path(authorization["outputNamespace"]) / "inactive-config.json"
+    if project_path(output) != project_path(expected_output):
+        raise ValueError("vegetation semantic repair output is not the authorized target")
+    config = deepcopy(read_json(resolve(VEGETATION_REPAIR_SOURCE_CONFIG_PATH)))
+    config["architectureVersion"] = "fact-conditioned-semantic-mixture-vegetation-final-visible-repair-cpu"
+    training = config["training"]
+    training["denoiserLossVersion"] = (
+        "velocity_decoded_rgb_fact_conditioned_semantic_mixture_"
+        "vegetation_final_visible_edge_v1"
+    )
+    derived = trainer.derive_stage4_vegetation_final_visible_semantic_repair_weight(config)
+    training["stage4VegetationFinalVisibleSemanticRepair"] = {
+        "enabled": True,
+        "status": "cpu_support_verified_inactive",
+        "contractId": trainer.STAGE4_VEGETATION_FINAL_VISIBLE_SEMANTIC_REPAIR_ID,
+        "sourceChannel": "object_vegetation",
+        "finalRgbColorTerm": "stage4SemanticMixtureVegetationFinalTypedRgbMae",
+        "finalRgbEdgeStructureTerm": "stage4SemanticMixtureVegetationFinalTypedEdgeMae",
+        "derivedWeight": derived["weight"],
+        "weightDerivation": derived,
+        "legalSupervision": {
+            "reference": "original_owner_approved_reference_rgb",
+            "conditionPack": "original_compiled_23_channel_condition_pack",
+            "maskChannel": "object_vegetation",
+            "lossFunction": "masked_condition_gradient_rgb_loss",
+            "failedPreviewPixelsUsedAsTargets": False,
+            "machineReviewThresholdsUsedAsTargets": False,
+            "machineReviewResultsUsedAsTargets": False,
+        },
+        "compatibility": {
+            "existingColorObligationPreserved": True,
+            "otherFourTypedObligationsPreserved": True,
+            "oldV7V8V9AndHistoricalStage4BehaviorPreserved": True,
+            "newModelArchitectureCreated": False,
+            "failedSmokeCheckpointCompatible": False,
+        },
+        "sourceFailureEvidence": {
+            "smokeTerminalSha256": "2550750455a2b1587ad4916a0ef27cd2e82654bf3c8468c1f96ef772bd8bc32c",
+            "manifestSha256": "e9a16f8b085802dab6beb1ef2679c2c0ebd74bc906d9edace7fc54583dd64edc",
+            "machineReviewSha256": "253d183f882cb33b105f3ffc7cc5bfca5d687921a8a01fd19b5e96b99ff1369f",
+            "epoch30OnlyIssue": "condition_object_vegetation_reference_semantic_mismatch",
+            "reviewThresholdsChanged": False,
+        },
+        "ownerImplementationAuthorization": deepcopy(
+            trainer.STAGE4_VEGETATION_FINAL_VISIBLE_SEMANTIC_REPAIR_AUTHORIZATION
+        ),
+        "activationGate": {key: False for key in (
+            "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+            "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+            "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage5Now",
+            "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow",
+            "worldEntryNow",
+        )},
+    }
+    diagnostic_fields = list(
+        trainer.STAGE4_VEGETATION_FINAL_VISIBLE_SEMANTIC_REPAIR_DIAGNOSTIC_FIELDS
+    )
+    registry = training["stage4FactConditionedSemanticMixture"][
+        "diagnosticManifestRegistry"
+    ]
+    registry["exactFields"] = diagnostic_fields
+    registry["exactFieldCount"] = len(diagnostic_fields)
+    trainer.validate_stage4_vegetation_final_visible_semantic_repair(config)
+    trainer.validate_training_inputs(config, read_json(resolve(DATASET_PATH)))
+    write_json_exclusive(output, config)
+    print(json.dumps({
+        "status": "stage4_vegetation_final_visible_semantic_repair_inactive_config_compiled",
+        "configPath": project_path(output),
+        "configSha256": sha256_file(resolve(output)),
+        "derivedWeight": derived["weight"],
+        "failedPreviewPixelsUsedAsTargets": False,
+        "reviewThresholdsChanged": False,
+        "gpuUsed": False,
+        "trainingStarted": False,
+    }, ensure_ascii=False, indent=2))
+    return 0
+
+
+def compile_vegetation_luminance_spatial_structure_supervision(output: Path) -> int:
+    authorization = validate_vegetation_luminance_authorization()
+    expected_output = Path(authorization["outputNamespace"]) / "inactive-config.json"
+    if project_path(output) != project_path(expected_output):
+        raise ValueError("vegetation luminance supervision output is not the authorized target")
+    config = deepcopy(read_json(resolve(VEGETATION_LUMINANCE_SOURCE_CONFIG_PATH)))
+    config["architectureVersion"] = (
+        "fact-conditioned-semantic-mixture-vegetation-luminance-spatial-structure-cpu"
+    )
+    training = config["training"]
+    training["denoiserLossVersion"] = (
+        "velocity_decoded_rgb_fact_conditioned_semantic_mixture_"
+        "vegetation_final_visible_edge_and_luminance_spatial_structure_v1"
+    )
+    derived = trainer.derive_stage4_vegetation_final_visible_semantic_repair_weight(config)
+    training["stage4VegetationLuminanceSpatialStructureSupervision"] = {
+        "enabled": True,
+        "status": "cpu_support_verified_inactive",
+        "contractId": trainer.STAGE4_VEGETATION_LUMINANCE_SPATIAL_STRUCTURE_SUPERVISION_ID,
+        "sourceChannel": "object_vegetation",
+        "luminanceCoefficients": [0.2126, 0.7152, 0.0722],
+        "lossFunction": "one_minus_masked_zero_mean_normalized_luminance_correlation",
+        "derivedWeight": derived["weight"],
+        "weightDerivation": derived,
+        "legalSupervision": {
+            "reference": "original_owner_approved_reference_rgb",
+            "conditionPack": "original_compiled_23_channel_condition_pack",
+            "maskChannel": "object_vegetation",
+            "failedPreviewPixelsUsedAsTargets": False,
+            "machineReviewThresholdsUsedAsTargets": False,
+            "machineReviewResultsUsedAsTargets": False,
+        },
+        "compatibility": {
+            "existingColorAndEdgeObligationsPreserved": True,
+            "otherFourTypedObligationsPreserved": True,
+            "oldV7V8V9AndHistoricalStage4BehaviorPreserved": True,
+            "newModelArchitectureCreated": False,
+            "failedSmokeCheckpointCompatible": False,
+        },
+        "sourceFailureEvidence": {
+            "smokeTerminalSha256": "4da637c83543e7b0c43a033231b22c854f74bc7f0583e0321263e42b31f0ab97",
+            "manifestSha256": "b5460272d2864cec3bba6f7d7bbdcb3f43d075d27ee00930b5c6e1065cdf99b6",
+            "machineReviewSha256": "72aac2ba1a1ce23d90e0d46c091ba1ba775666b174cb2526bb0cbe186b00a40b",
+            "epoch30OnlyIssue": "condition_object_vegetation_reference_semantic_mismatch",
+            "reviewThresholdsChanged": False,
+            "reviewThresholdUsedAsTrainingTarget": False,
+        },
+        "ownerImplementationAuthorization": deepcopy(
+            trainer.STAGE4_VEGETATION_LUMINANCE_SPATIAL_STRUCTURE_AUTHORIZATION
+        ),
+        "activationGate": {key: False for key in (
+            "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+            "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+            "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage5Now",
+            "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow",
+            "worldEntryNow",
+        )},
+    }
+    registry = training["stage4FactConditionedSemanticMixture"][
+        "diagnosticManifestRegistry"
+    ]
+    fields = list(trainer.STAGE4_VEGETATION_LUMINANCE_SPATIAL_STRUCTURE_DIAGNOSTIC_FIELDS)
+    registry["exactFields"] = fields
+    registry["exactFieldCount"] = len(fields)
+    trainer.validate_stage4_vegetation_luminance_spatial_structure_supervision(config)
+    trainer.validate_training_inputs(config, read_json(resolve(DATASET_PATH)))
+    write_json_exclusive(output, config)
+    print(json.dumps({
+        "status": "stage4_vegetation_luminance_spatial_structure_supervision_inactive_config_compiled",
+        "configPath": project_path(output),
+        "configSha256": sha256_file(resolve(output)),
+        "derivedWeight": derived["weight"],
+        "diagnosticManifestFieldCount": len(fields),
+        "failedPreviewPixelsUsedAsTargets": False,
+        "reviewThresholdUsedAsTrainingTarget": False,
+        "gpuUsed": False,
+        "trainingStarted": False,
+    }, ensure_ascii=False, indent=2))
+    return 0
+
+
+def validate_vegetation_luminance_authorization() -> dict:
+    authorization = read_json(resolve(VEGETATION_LUMINANCE_AUTHORIZATION_PATH))
+    consumption = read_json(resolve(VEGETATION_LUMINANCE_CONSUMPTION_PATH))
+    request_id = (
+        "owner-authorized-stage4-vegetation-luminance-spatial-structure-supervision-"
+        "20260813-034000000"
+    )
+    scope = (
+        "implement_cpu_inactive_stage4_vegetation_luminance_spatial_structure_"
+        "supervision_then_readonly_gpu_qualification_then_one_new_smoke_and_if_"
+        "passed_stage0_stage1_stage2"
+    )
+    if (
+        authorization.get("requestId") != request_id
+        or authorization.get("commandRef") != request_id
+        or authorization.get("scope") != scope
+        or authorization.get("status") != "owner_authorized_unconsumed"
+        or consumption.get("status") != "implementation_authorization_atomically_consumed"
+        or consumption.get("requestId") != request_id
+        or consumption.get("commandRef") != request_id
+        or consumption.get("scope") != scope
+        or consumption.get("authorizationSha256")
+        != sha256_file(resolve(VEGETATION_LUMINANCE_AUTHORIZATION_PATH))
+        or consumption.get("oneTimeConsumption") is not True
+    ):
+        raise ValueError("vegetation luminance implementation authorization identity is invalid")
+    for binding in authorization.get("sourceEvidence", {}).values():
+        if sha256_file(resolve(Path(binding["path"]))) != binding["sha256"]:
+            raise ValueError("vegetation luminance source evidence changed")
+    return authorization
+
+
+def validate_vegetation_repair_authorization() -> dict:
+    authorization = read_json(resolve(VEGETATION_REPAIR_AUTHORIZATION_PATH))
+    consumption = read_json(resolve(VEGETATION_REPAIR_CONSUMPTION_PATH))
+    request_id = "owner-authorized-stage4-vegetation-final-visible-semantic-repair-20260813-025311970"
+    scope = "diagnose_and_implement_bounded_vegetation_final_visible_rgb_edge_structure_obligation_then_cpu_and_readonly_gpu_qualification"
+    if (
+        authorization.get("requestId") != request_id
+        or authorization.get("commandRef") != request_id
+        or authorization.get("scope") != scope
+        or authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or consumption.get("status")
+        != "implementation_authorization_atomically_consumed_corrected_record"
+        or consumption.get("requestId") != request_id
+        or consumption.get("commandRef") != request_id
+        or consumption.get("scope") != scope
+        or consumption.get("authorizationSha256") != sha256_file(resolve(VEGETATION_REPAIR_AUTHORIZATION_PATH))
+        or consumption.get("oneTimeConsumption") is not True
+        or consumption.get("supersedesUnparseableConsumptionSha256")
+        != "c1255c7cc1e9263915bfd3170e1caaddbe75d0526c58026b3fe0dde471654a43"
+    ):
+        raise ValueError("vegetation repair implementation authorization identity is invalid")
+    for binding in authorization.get("sourceEvidence", {}).values():
+        if sha256_file(resolve(Path(binding["path"]))) != binding["sha256"]:
+            raise ValueError("vegetation repair source evidence changed")
+    return authorization
+
+
+def validate_final_visible_rgb_authorization() -> dict:
+    authorization = read_json(resolve(FINAL_VISIBLE_RGB_AUTHORIZATION_PATH))
+    consumption = read_json(resolve(FINAL_VISIBLE_RGB_CONSUMPTION_PATH))
+    expected_request = "owner-authorized-stage4-per-class-final-visible-rgb-obligation-cpu-20260812-190738093"
+    expected_scope = "implement_stage4_per_class_final_visible_rgb_obligation_v1_cpu_inactive_support_only"
+    if (
+        authorization.get("requestId") != expected_request
+        or authorization.get("commandRef") != expected_request
+        or authorization.get("scope") != expected_scope
+        or authorization.get("status") != "owner_authorized_unconsumed"
+        or consumption.get("status")
+        != "stage4_per_class_final_visible_rgb_obligation_cpu_implementation_authorization_atomically_consumed"
+        or consumption.get("requestId") != expected_request
+        or consumption.get("commandRef") != expected_request
+        or consumption.get("scope") != expected_scope
+        or consumption.get("authorizationSha256")
+        != sha256_file(resolve(FINAL_VISIBLE_RGB_AUTHORIZATION_PATH))
+        or consumption.get("oneTimeConsumption") is not True
+        or consumption.get("gpuAuthorized") is not False
+        or consumption.get("trainingAuthorized") is not False
+    ):
+        raise ValueError("final visible RGB implementation authorization identity is invalid")
+    for key, binding in authorization.get("bindings", {}).items():
+        if key.endswith("Before"):
+            continue
+        if sha256_file(resolve(Path(binding.get("path", "missing")))) != binding.get("sha256"):
+            raise ValueError(f"final visible RGB immutable binding changed: {key}")
+    allowed = set(authorization.get("allowedActions", ()))
+    required = {
+        "modify_existing_trainer_objective_contract",
+        "modify_existing_inactive_config_compiler",
+        "modify_existing_cpu_checker",
+        "execute_cpu_positive_negative_regression_with_torch_autograd_grad",
+        "execute_complete_inactive_configuration_audit",
+        "write_inactive_config",
+    }
+    denied = set(authorization.get("deniedActions", ()))
+    required_denied = {
+        "read_or_load_checkpoint", "create_optimizer", "execute_backward",
+        "modify_model_weights", "start_gpu", "start_smoke", "start_stage4_full_training",
+    }
+    if not required.issubset(allowed) or not required_denied.issubset(denied):
+        raise ValueError("final visible RGB implementation action boundary is incomplete")
+    return authorization
 
 
 def compile_condition_preserving_semantic_renderer(output: Path) -> int:

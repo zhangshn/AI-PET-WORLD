@@ -92,6 +92,61 @@ SEMANTIC_MIXTURE_SCOPE = (
 )
 SEMANTIC_MIXTURE_ARCHITECTURE = "stage4_fact_conditioned_semantic_mixture_decoder_v1"
 SEMANTIC_MIXTURE_IDENTITIES = ("route", "footprints", "tree", "rock", "vegetation")
+FINAL_VISIBLE_RGB_AUTHORIZATION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-final-visible-rgb-readonly-gpu-qualification-20260812-232610475/"
+    "gpu-execution-authorization.json"
+)
+FINAL_VISIBLE_RGB_IMPLEMENTATION_CONSUMPTION_PATH = (
+    FINAL_VISIBLE_RGB_AUTHORIZATION_PATH.parent / "implementation-consumption.json"
+)
+FINAL_VISIBLE_RGB_REQUEST_ID = (
+    "owner-authorized-stage4-final-visible-rgb-readonly-gpu-qualification-20260812-232610475"
+)
+FINAL_VISIBLE_RGB_SCOPE = (
+    "one_stage4_per_class_final_visible_rgb_obligation_readonly_gpu_gradient_qualification_only"
+)
+FINAL_VISIBLE_RGB_CONTRACT_ID = "stage4_per_class_final_visible_rgb_obligation_v1"
+VEGETATION_REPAIR_AUTHORIZATION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-vegetation-final-visible-readonly-gpu-qualification-"
+    "20260813-031000000/gpu-execution-authorization.json"
+)
+VEGETATION_REPAIR_IMPLEMENTATION_CONSUMPTION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-vegetation-final-visible-semantic-repair-"
+    "20260813-025311970/implementation-consumption-corrected.json"
+)
+VEGETATION_REPAIR_REQUEST_ID = (
+    "owner-authorized-stage4-vegetation-final-visible-readonly-gpu-qualification-"
+    "20260813-031000000"
+)
+VEGETATION_REPAIR_SCOPE = (
+    "one_stage4_vegetation_final_visible_semantic_repair_readonly_gpu_gradient_"
+    "qualification_only"
+)
+VEGETATION_REPAIR_CONTRACT_ID = "stage4_vegetation_final_visible_semantic_repair_v1"
+VEGETATION_LUMINANCE_AUTHORIZATION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-vegetation-luminance-spatial-readonly-gpu-qualification-"
+    "20260813-035000000/gpu-execution-authorization.json"
+)
+VEGETATION_LUMINANCE_IMPLEMENTATION_CONSUMPTION_PATH = Path(
+    ".runtime/ai-painter/owner-action-requests/"
+    "owner-authorized-stage4-vegetation-luminance-spatial-structure-supervision-"
+    "20260813-034000000/implementation-consumption.json"
+)
+VEGETATION_LUMINANCE_REQUEST_ID = (
+    "owner-authorized-stage4-vegetation-luminance-spatial-readonly-gpu-qualification-"
+    "20260813-035000000"
+)
+VEGETATION_LUMINANCE_SCOPE = (
+    "one_stage4_vegetation_luminance_spatial_structure_readonly_gpu_gradient_"
+    "qualification_only"
+)
+VEGETATION_LUMINANCE_CONTRACT_ID = (
+    "stage4_vegetation_luminance_spatial_structure_supervision_v1"
+)
 
 
 def main() -> int:
@@ -110,13 +165,23 @@ def main() -> int:
             raise ValueError("cpu_contract_check_must_not_receive_execution_paths")
         print(json.dumps({
             "status": (
-                "fact_conditioned_semantic_mixture_gpu_diagnostic_authorization_contract_valid_cpu_only"
-                if is_semantic_mixture_authorization(authorization)
+                "stage4_vegetation_luminance_spatial_gpu_diagnostic_authorization_contract_valid_cpu_only"
+                if is_vegetation_luminance_authorization(authorization)
                 else (
-                    "structure_fact_first_gpu_diagnostic_authorization_contract_valid_cpu_only"
-                    if is_structure_fact_authorization(authorization)
-                    else "v9_gpu_diagnostic_authorization_contract_valid_cpu_only"
-                )
+                "stage4_vegetation_final_visible_gpu_diagnostic_authorization_contract_valid_cpu_only"
+                if is_vegetation_repair_authorization(authorization)
+                else (
+                "stage4_final_visible_rgb_gpu_diagnostic_authorization_contract_valid_cpu_only"
+                if is_final_visible_rgb_authorization(authorization)
+                else (
+                    "fact_conditioned_semantic_mixture_gpu_diagnostic_authorization_contract_valid_cpu_only"
+                    if is_semantic_mixture_authorization(authorization)
+                    else (
+                        "structure_fact_first_gpu_diagnostic_authorization_contract_valid_cpu_only"
+                        if is_structure_fact_authorization(authorization)
+                        else "v9_gpu_diagnostic_authorization_contract_valid_cpu_only"
+                    )
+                )))
             ),
             "requestId": authorization_request_id(authorization),
             "sampleId": SAMPLE_ID,
@@ -135,6 +200,55 @@ def main() -> int:
 
 def validate_authorization(path: Path) -> dict:
     resolved = resolve(path)
+    if resolved == resolve(VEGETATION_LUMINANCE_AUTHORIZATION_PATH):
+        authorization = read_json(resolved)
+        validate_authorization_document(authorization, verify_bindings=True)
+        consumption = read_json(resolve(VEGETATION_LUMINANCE_IMPLEMENTATION_CONSUMPTION_PATH))
+        if (
+            consumption.get("status") != "implementation_authorization_atomically_consumed"
+            or consumption.get("requestId")
+            != "owner-authorized-stage4-vegetation-luminance-spatial-structure-supervision-20260813-034000000"
+            or consumption.get("oneTimeConsumption") is not True
+        ):
+            raise ValueError("vegetation_luminance_diagnostic_implementation_consumption_invalid")
+        authorization["_diagnosticMode"] = "vegetation_luminance_spatial_structure"
+        authorization["_authorizationPath"] = project_path(resolved)
+        authorization["_authorizationSha256"] = sha256_file(resolved)
+        return authorization
+    if resolved == resolve(VEGETATION_REPAIR_AUTHORIZATION_PATH):
+        authorization = read_json(resolved)
+        validate_authorization_document(authorization, verify_bindings=True)
+        consumption = read_json(resolve(VEGETATION_REPAIR_IMPLEMENTATION_CONSUMPTION_PATH))
+        if (
+            consumption.get("status")
+            != "implementation_authorization_atomically_consumed_corrected_record"
+            or consumption.get("requestId")
+            != "owner-authorized-stage4-vegetation-final-visible-semantic-repair-20260813-025311970"
+            or consumption.get("oneTimeConsumption") is not True
+        ):
+            raise ValueError("vegetation_repair_diagnostic_implementation_consumption_invalid")
+        authorization["_diagnosticMode"] = "vegetation_final_visible_semantic_repair"
+        authorization["_authorizationPath"] = project_path(resolved)
+        authorization["_authorizationSha256"] = sha256_file(resolved)
+        return authorization
+    if resolved == resolve(FINAL_VISIBLE_RGB_AUTHORIZATION_PATH):
+        authorization = read_json(resolved)
+        validate_authorization_document(authorization, verify_bindings=True)
+        consumption = read_json(resolve(FINAL_VISIBLE_RGB_IMPLEMENTATION_CONSUMPTION_PATH))
+        if (
+            consumption.get("status")
+            != "stage4_final_visible_rgb_readonly_gpu_qualification_implementation_authorization_atomically_consumed"
+            or consumption.get("requestId") != FINAL_VISIBLE_RGB_REQUEST_ID
+            or consumption.get("commandRef") != FINAL_VISIBLE_RGB_REQUEST_ID
+            or consumption.get("scope")
+            != "extend_existing_v9_readonly_gpu_diagnostic_for_per_class_final_visible_rgb_obligation_only"
+            or consumption.get("oneTimeConsumption") is not True
+        ):
+            raise ValueError("final_visible_rgb_diagnostic_implementation_consumption_invalid")
+        authorization["_diagnosticMode"] = "final_visible_rgb_obligation"
+        authorization["_authorizationPath"] = project_path(resolved)
+        authorization["_authorizationSha256"] = sha256_file(resolved)
+        return authorization
     if resolved == resolve(SEMANTIC_MIXTURE_AUTHORIZATION_PATH):
         authorization = read_json(resolved)
         validate_authorization_document(authorization, verify_bindings=True)
@@ -194,6 +308,21 @@ def validate_authorization(path: Path) -> dict:
 
 
 def validate_authorization_document(authorization: dict, verify_bindings: bool) -> None:
+    if authorization.get("schemaVersion") == (
+        "ai-painter-owner-stage4-vegetation-luminance-spatial-readonly-gpu-qualification-v1"
+    ):
+        validate_vegetation_luminance_authorization_document(authorization, verify_bindings)
+        return
+    if authorization.get("schemaVersion") == (
+        "ai-painter-owner-stage4-vegetation-final-visible-readonly-gpu-qualification-v1"
+    ):
+        validate_vegetation_repair_authorization_document(authorization, verify_bindings)
+        return
+    if authorization.get("schemaVersion") == (
+        "ai-painter-owner-stage4-final-visible-rgb-readonly-gpu-qualification-v1"
+    ):
+        validate_final_visible_rgb_authorization_document(authorization, verify_bindings)
+        return
     if authorization.get("schemaVersion") == (
         "ai-painter-owner-stage4-fact-conditioned-semantic-mixture-readonly-gpu-diagnostic-v1"
     ):
@@ -286,6 +415,277 @@ def validate_authorization_document(authorization: dict, verify_bindings: bool) 
     ):
         raise ValueError("v9_diagnostic_cpu_prerequisite_not_successful")
     trainer.validate_training_inputs(config, read_json(resolve(DATASET_PATH)))
+
+
+def validate_final_visible_rgb_authorization_document(
+    authorization: dict, verify_bindings: bool,
+) -> None:
+    if (
+        authorization.get("status") != "owner_authorized_unconsumed"
+        or authorization.get("requestId") != FINAL_VISIBLE_RGB_REQUEST_ID
+        or authorization.get("commandRef") != FINAL_VISIBLE_RGB_REQUEST_ID
+        or authorization.get("scope") != FINAL_VISIBLE_RGB_SCOPE
+    ):
+        raise ValueError("final_visible_rgb_diagnostic_owner_identity_invalid")
+    expected_identity = {
+        "architectureId": SEMANTIC_MIXTURE_ARCHITECTURE,
+        "trainingObjectiveContractId": FINAL_VISIBLE_RGB_CONTRACT_ID,
+        "sampleId": SAMPLE_ID,
+        "sampleSplit": SAMPLE_SPLIT,
+        "seed": SEED,
+        "timestep": TIMESTEP,
+        "resolution": {"width": IMAGE_SIZE[0], "height": IMAGE_SIZE[1]},
+        "requiredBoundarySides": ["west"],
+        "obligationIdentities": list(SEMANTIC_MIXTURE_IDENTITIES),
+        "diagnosticManifestMetricCount": 27,
+        "denoiserInitialization": "fixed_random_seed_20263722",
+        "autoencoderState": "bound_project_checkpoint_loaded_and_frozen",
+    }
+    if authorization.get("taskIdentity") != expected_identity:
+        raise ValueError("final_visible_rgb_diagnostic_task_identity_invalid")
+    if authorization.get("executionActions") != {
+        "projectAutoencoderCheckpointReadAndLoadFrozen": True,
+        "fixedRandomDenoiserInitialization": True,
+        "singleSampleValidationRead": True,
+        "singleReadonlyCudaForward": True,
+        "torchAutogradGradInspection": True,
+        "fiveFinalVisibleRgbObligationVerification": True,
+        "exactTwentySevenDiagnosticManifestExport": True,
+        "cudaTelemetryWrite": True,
+        "diagnosticReportWrite": True,
+        "terminalEvidenceWrite": True,
+        "uniquePlanAndTaskCapsuleSync": True,
+        "oldDenoiserOrDiagnosticCheckpointReadOrLoad": False,
+        "optimizerCreation": False,
+        "backwardMethodExecution": False,
+        "modelWeightModification": False,
+        "checkpointWrite": False,
+        "smoke": False,
+        "stage4FullTraining": False,
+        "stage5StrictRevalidation": False,
+        "formalInference": False,
+        "checkpointPromotion": False,
+        "runtimeFrame": False,
+        "worldEntry": False,
+        "automaticRetry": False,
+    }:
+        raise ValueError("final_visible_rgb_diagnostic_execution_actions_invalid")
+    if authorization.get("failurePolicy") != {
+        "stopImmediately": True, "automaticRetry": False, "preserveEvidence": True,
+    }:
+        raise ValueError("final_visible_rgb_diagnostic_failure_policy_invalid")
+    if not verify_bindings:
+        return
+    required_bindings = (
+        "cpuTerminal", "cpuReport", "configurationAudit", "supportContract",
+        "inactiveConfig", "model", "trainer", "compiler", "modeRegistry",
+        "datasetManifest", "datasetSourceIndex", "projectAutoencoderCheckpoint",
+        "implementationAuthorization", "implementationConsumption", "runner", "cpuChecker",
+    )
+    for key in required_bindings:
+        binding_value = authorization.get("bindings", {}).get(key, {})
+        path = Path(binding_value.get("path", "missing"))
+        if binding_value.get("sha256") != sha256_file(resolve(path)):
+            raise ValueError(f"final_visible_rgb_diagnostic_binding_changed:{key}")
+    terminal = read_json(resolve(Path(authorization["bindings"]["cpuTerminal"]["path"])))
+    report = read_json(resolve(Path(authorization["bindings"]["cpuReport"]["path"])))
+    audit = read_json(resolve(Path(authorization["bindings"]["configurationAudit"]["path"])))
+    support = read_json(resolve(Path(authorization["bindings"]["supportContract"]["path"])))
+    config = read_json(resolve(Path(authorization["bindings"]["inactiveConfig"]["path"])))
+    if (
+        terminal.get("status")
+        != "stage4_per_class_final_visible_rgb_obligation_cpu_succeeded_closed"
+        or report.get("status")
+        != "stage4_per_class_final_visible_rgb_obligation_cpu_regression_passed"
+        or audit.get("status")
+        != "stage4_per_class_final_visible_rgb_obligation_configuration_audit_passed"
+        or support.get("status")
+        != "stage4_per_class_final_visible_rgb_obligation_cpu_support_verified_inactive"
+        or config.get("denoiserArchitecture") != SEMANTIC_MIXTURE_ARCHITECTURE
+    ):
+        raise ValueError("final_visible_rgb_diagnostic_cpu_prerequisite_not_successful")
+    trainer.validate_training_inputs(config, read_json(resolve(DATASET_PATH)))
+    objective = trainer.validate_stage4_per_class_final_visible_rgb_obligation(config)
+    if objective.get("status") != (
+        "stage4_per_class_final_visible_rgb_obligation_cpu_contract_valid_inactive"
+    ):
+        raise ValueError("final_visible_rgb_diagnostic_objective_contract_invalid")
+
+
+def validate_vegetation_repair_authorization_document(
+    authorization: dict, verify_bindings: bool,
+) -> None:
+    if (
+        authorization.get("status") != "owner_authorized_unconsumed"
+        or authorization.get("requestId") != VEGETATION_REPAIR_REQUEST_ID
+        or authorization.get("commandRef") != VEGETATION_REPAIR_REQUEST_ID
+        or authorization.get("scope") != VEGETATION_REPAIR_SCOPE
+    ):
+        raise ValueError("vegetation_repair_diagnostic_owner_identity_invalid")
+    expected_identity = {
+        "architectureId": SEMANTIC_MIXTURE_ARCHITECTURE,
+        "trainingObjectiveContractId": VEGETATION_REPAIR_CONTRACT_ID,
+        "sampleId": SAMPLE_ID,
+        "sampleSplit": SAMPLE_SPLIT,
+        "seed": SEED,
+        "timestep": TIMESTEP,
+        "resolution": {"width": IMAGE_SIZE[0], "height": IMAGE_SIZE[1]},
+        "requiredBoundarySides": ["west"],
+        "sourceChannel": "object_vegetation",
+        "diagnosticManifestMetricCount": 28,
+        "denoiserInitialization": "fixed_random_seed_20263722",
+        "autoencoderState": "bound_project_checkpoint_loaded_and_frozen",
+    }
+    if authorization.get("taskIdentity") != expected_identity:
+        raise ValueError("vegetation_repair_diagnostic_task_identity_invalid")
+    if authorization.get("executionActions") != {
+        "projectAutoencoderCheckpointReadAndLoadFrozen": True,
+        "fixedRandomDenoiserInitialization": True,
+        "singleSampleValidationRead": True,
+        "singleReadonlyCudaForward": True,
+        "torchAutogradGradInspection": True,
+        "fiveFinalVisibleRgbObligationVerification": True,
+        "vegetationFinalVisibleEdgeStructureVerification": True,
+        "exactTwentyEightDiagnosticManifestExport": True,
+        "cudaTelemetryWrite": True,
+        "diagnosticReportWrite": True,
+        "terminalEvidenceWrite": True,
+        "localTaskCapsuleEventLedgerSqliteSync": True,
+        "oldDenoiserOrDiagnosticCheckpointReadOrLoad": False,
+        "optimizerCreation": False,
+        "backwardMethodExecution": False,
+        "modelWeightModification": False,
+        "checkpointWrite": False,
+        "smoke": False,
+        "stage4FullTraining": False,
+        "stage5StrictRevalidation": False,
+        "formalInference": False,
+        "checkpointPromotion": False,
+        "runtimeFrame": False,
+        "worldEntry": False,
+        "automaticRetry": False,
+    }:
+        raise ValueError("vegetation_repair_diagnostic_execution_actions_invalid")
+    if authorization.get("failurePolicy") != {
+        "stopImmediately": True, "automaticRetry": False, "preserveEvidence": True,
+    }:
+        raise ValueError("vegetation_repair_diagnostic_failure_policy_invalid")
+    if not verify_bindings:
+        return
+    required_bindings = (
+        "cpuTerminal", "cpuReport", "supportContract", "inactiveConfig", "model",
+        "trainer", "compiler", "modeRegistry", "datasetManifest", "datasetSourceIndex",
+        "projectAutoencoderCheckpoint", "implementationAuthorization",
+        "implementationConsumption", "runner", "cpuChecker",
+    )
+    for key in required_bindings:
+        value = authorization.get("bindings", {}).get(key, {})
+        if value.get("sha256") != sha256_file(resolve(Path(value.get("path", "missing")))):
+            raise ValueError(f"vegetation_repair_diagnostic_binding_changed:{key}")
+    terminal = read_json(resolve(Path(authorization["bindings"]["cpuTerminal"]["path"])))
+    report = read_json(resolve(Path(authorization["bindings"]["cpuReport"]["path"])))
+    support = read_json(resolve(Path(authorization["bindings"]["supportContract"]["path"])))
+    config = read_json(resolve(Path(authorization["bindings"]["inactiveConfig"]["path"])))
+    if (
+        terminal.get("status")
+        != "stage4_vegetation_final_visible_semantic_repair_cpu_succeeded_closed"
+        or report.get("status")
+        != "stage4_vegetation_final_visible_semantic_repair_cpu_regression_passed"
+        or support.get("status")
+        != "stage4_vegetation_final_visible_semantic_repair_cpu_support_verified_inactive"
+        or config.get("denoiserArchitecture") != SEMANTIC_MIXTURE_ARCHITECTURE
+    ):
+        raise ValueError("vegetation_repair_diagnostic_cpu_prerequisite_not_successful")
+    trainer.validate_training_inputs(config, read_json(resolve(DATASET_PATH)))
+    trainer.validate_stage4_vegetation_final_visible_semantic_repair(config)
+
+
+def validate_vegetation_luminance_authorization_document(
+    authorization: dict, verify_bindings: bool,
+) -> None:
+    if (
+        authorization.get("status") != "owner_authorized_unconsumed"
+        or authorization.get("requestId") != VEGETATION_LUMINANCE_REQUEST_ID
+        or authorization.get("commandRef") != VEGETATION_LUMINANCE_REQUEST_ID
+        or authorization.get("scope") != VEGETATION_LUMINANCE_SCOPE
+    ):
+        raise ValueError("vegetation_luminance_diagnostic_owner_identity_invalid")
+    expected_identity = {
+        "architectureId": SEMANTIC_MIXTURE_ARCHITECTURE,
+        "trainingObjectiveContractId": VEGETATION_LUMINANCE_CONTRACT_ID,
+        "sampleId": SAMPLE_ID,
+        "sampleSplit": SAMPLE_SPLIT,
+        "seed": SEED,
+        "timestep": TIMESTEP,
+        "resolution": {"width": IMAGE_SIZE[0], "height": IMAGE_SIZE[1]},
+        "requiredBoundarySides": ["west"],
+        "sourceChannel": "object_vegetation",
+        "diagnosticManifestMetricCount": 29,
+        "denoiserInitialization": "fixed_random_seed_20263722",
+        "autoencoderState": "bound_project_checkpoint_loaded_and_frozen",
+    }
+    if authorization.get("taskIdentity") != expected_identity:
+        raise ValueError("vegetation_luminance_diagnostic_task_identity_invalid")
+    if authorization.get("executionActions") != {
+        "projectAutoencoderCheckpointReadAndLoadFrozen": True,
+        "fixedRandomDenoiserInitialization": True,
+        "singleSampleValidationRead": True,
+        "singleReadonlyCudaForward": True,
+        "torchAutogradGradInspection": True,
+        "fiveFinalVisibleRgbObligationVerification": True,
+        "vegetationFinalVisibleLuminanceSpatialVerification": True,
+        "exactTwentyNineDiagnosticManifestExport": True,
+        "cudaTelemetryWrite": True,
+        "diagnosticReportWrite": True,
+        "terminalEvidenceWrite": True,
+        "localTaskCapsuleEventLedgerSqliteSync": True,
+        "oldDenoiserOrDiagnosticCheckpointReadOrLoad": False,
+        "optimizerCreation": False,
+        "backwardMethodExecution": False,
+        "modelWeightModification": False,
+        "checkpointWrite": False,
+        "smoke": False,
+        "stage4FullTraining": False,
+        "stage5StrictRevalidation": False,
+        "formalInference": False,
+        "checkpointPromotion": False,
+        "runtimeFrame": False,
+        "worldEntry": False,
+        "automaticRetry": False,
+    }:
+        raise ValueError("vegetation_luminance_diagnostic_execution_actions_invalid")
+    if authorization.get("failurePolicy") != {
+        "stopImmediately": True, "automaticRetry": False, "preserveEvidence": True,
+    }:
+        raise ValueError("vegetation_luminance_diagnostic_failure_policy_invalid")
+    if not verify_bindings:
+        return
+    required_bindings = (
+        "cpuTerminal", "cpuReport", "supportContract", "inactiveConfig", "model",
+        "trainer", "compiler", "modeRegistry", "datasetManifest", "datasetSourceIndex",
+        "projectAutoencoderCheckpoint", "implementationAuthorization",
+        "implementationConsumption", "runner", "cpuChecker",
+    )
+    for key in required_bindings:
+        value = authorization.get("bindings", {}).get(key, {})
+        if value.get("sha256") != sha256_file(resolve(Path(value.get("path", "missing")))):
+            raise ValueError(f"vegetation_luminance_diagnostic_binding_changed:{key}")
+    terminal = read_json(resolve(Path(authorization["bindings"]["cpuTerminal"]["path"])))
+    report = read_json(resolve(Path(authorization["bindings"]["cpuReport"]["path"])))
+    support = read_json(resolve(Path(authorization["bindings"]["supportContract"]["path"])))
+    config = read_json(resolve(Path(authorization["bindings"]["inactiveConfig"]["path"])))
+    if (
+        terminal.get("status")
+        != "stage4_vegetation_luminance_spatial_structure_cpu_succeeded_closed"
+        or report.get("status")
+        != "stage4_vegetation_luminance_spatial_structure_cpu_regression_passed"
+        or support.get("status")
+        != "stage4_vegetation_luminance_spatial_structure_cpu_support_verified_inactive"
+        or config.get("denoiserArchitecture") != SEMANTIC_MIXTURE_ARCHITECTURE
+    ):
+        raise ValueError("vegetation_luminance_diagnostic_cpu_prerequisite_not_successful")
+    trainer.validate_training_inputs(config, read_json(resolve(DATASET_PATH)))
+    trainer.validate_stage4_vegetation_luminance_spatial_structure_supervision(config)
 
 
 def validate_semantic_mixture_authorization_document(
@@ -491,14 +891,27 @@ def validate_implementation_attestation(path: Path | None, authorization: dict) 
     cpu_report_path = resolve(Path(authorization["implementation"]["cpuReportPath"]))
     structure_mode = is_structure_fact_authorization(authorization)
     semantic_mixture_mode = is_semantic_mixture_authorization(authorization)
+    final_visible_rgb_mode = is_final_visible_rgb_authorization(authorization)
+    vegetation_repair_mode = is_vegetation_repair_authorization(authorization)
+    vegetation_luminance_mode = is_vegetation_luminance_authorization(authorization)
     expected_values = {
         "status": (
-            "fact_conditioned_semantic_mixture_gpu_diagnostic_implementation_cpu_verified"
-            if semantic_mixture_mode
+            "stage4_vegetation_luminance_spatial_gpu_diagnostic_implementation_cpu_verified"
+            if vegetation_luminance_mode
             else (
-                "structure_fact_first_gpu_diagnostic_implementation_cpu_verified"
-                if structure_mode else "v9_gpu_diagnostic_implementation_cpu_verified"
-            )
+            "stage4_vegetation_final_visible_gpu_diagnostic_implementation_cpu_verified"
+            if vegetation_repair_mode
+            else (
+            "stage4_final_visible_rgb_gpu_diagnostic_implementation_cpu_verified"
+            if final_visible_rgb_mode
+            else (
+                "fact_conditioned_semantic_mixture_gpu_diagnostic_implementation_cpu_verified"
+                if semantic_mixture_mode
+                else (
+                    "structure_fact_first_gpu_diagnostic_implementation_cpu_verified"
+                    if structure_mode else "v9_gpu_diagnostic_implementation_cpu_verified"
+                )
+            )))
         ),
         "requestId": authorization_request_id(authorization),
         "authorizationSha256": authorization_sha256(authorization),
@@ -512,12 +925,22 @@ def validate_implementation_attestation(path: Path | None, authorization: dict) 
     cpu_report = read_json(cpu_report_path)
     if (
         cpu_report.get("status") != (
-            "passed_fact_conditioned_semantic_mixture_readonly_gpu_diagnostic_cpu_authorization_regression"
-            if semantic_mixture_mode
+            "passed_stage4_vegetation_luminance_spatial_readonly_gpu_diagnostic_cpu_authorization_regression"
+            if vegetation_luminance_mode
             else (
-                "passed_structure_fact_first_readonly_gpu_diagnostic_cpu_authorization_regression"
-                if structure_mode else "passed_v9_readonly_gpu_diagnostic_cpu_authorization_regression"
-            )
+            "passed_stage4_vegetation_final_visible_readonly_gpu_diagnostic_cpu_authorization_regression"
+            if vegetation_repair_mode
+            else (
+            "passed_stage4_final_visible_rgb_readonly_gpu_diagnostic_cpu_authorization_regression"
+            if final_visible_rgb_mode
+            else (
+                "passed_fact_conditioned_semantic_mixture_readonly_gpu_diagnostic_cpu_authorization_regression"
+                if semantic_mixture_mode
+                else (
+                    "passed_structure_fact_first_readonly_gpu_diagnostic_cpu_authorization_regression"
+                    if structure_mode else "passed_v9_readonly_gpu_diagnostic_cpu_authorization_regression"
+                )
+            )))
         )
         or cpu_report.get("failedPositiveKeys") != []
         or cpu_report.get("failedNegativeKeys") != []
@@ -535,18 +958,31 @@ def write_preflight_reports(authorization: dict, attestation: dict, python_path:
         raise FileExistsError("v9_diagnostic_preflight_output_already_exists")
     structure_mode = is_structure_fact_authorization(authorization)
     semantic_mixture_mode = is_semantic_mixture_authorization(authorization)
-    config_binding_key = "inactiveConfig" if (structure_mode or semantic_mixture_mode) else "v9InactiveConfig"
+    final_visible_rgb_mode = is_final_visible_rgb_authorization(authorization)
+    vegetation_repair_mode = is_vegetation_repair_authorization(authorization)
+    config_binding_key = (
+        "inactiveConfig"
+        if (structure_mode or semantic_mixture_mode or final_visible_rgb_mode)
+        else "v9InactiveConfig"
+    )
     config = read_json(resolve(Path(authorization["bindings"][config_binding_key]["path"])))
     package = read_json(resolve(DATASET_PATH))
     trainer.validate_training_inputs(config, package)
     python_report = {
         "schemaVersion": (
-            "ai-painter-r5-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-python-preflight-v1"
-            if semantic_mixture_mode
+            "ai-painter-r5-stage4-vegetation-final-visible-gradient-diagnostic-python-preflight-v1"
+            if vegetation_repair_mode
             else (
-                "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-python-preflight-v1"
-                if structure_mode else "ai-painter-r5-stage4-v9-gradient-diagnostic-python-preflight-v1"
-            )
+            "ai-painter-r5-stage4-final-visible-rgb-gradient-diagnostic-python-preflight-v1"
+            if final_visible_rgb_mode
+            else (
+                "ai-painter-r5-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-python-preflight-v1"
+                if semantic_mixture_mode
+                else (
+                    "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-python-preflight-v1"
+                    if structure_mode else "ai-painter-r5-stage4-v9-gradient-diagnostic-python-preflight-v1"
+                )
+            ))
         ),
         "status": "passed_python_preflight_gpu_not_consumed",
         **timestamps("recordedAt"),
@@ -567,12 +1003,19 @@ def write_preflight_reports(authorization: dict, attestation: dict, python_path:
         raise ValueError("v9_diagnostic_disk_budget_insufficient")
     resource_report = {
         "schemaVersion": (
-            "ai-painter-r5-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-resource-preflight-v1"
-            if semantic_mixture_mode
+            "ai-painter-r5-stage4-vegetation-final-visible-gradient-diagnostic-resource-preflight-v1"
+            if vegetation_repair_mode
             else (
-                "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-resource-preflight-v1"
-                if structure_mode else "ai-painter-r5-stage4-v9-gradient-diagnostic-resource-preflight-v1"
-            )
+            "ai-painter-r5-stage4-final-visible-rgb-gradient-diagnostic-resource-preflight-v1"
+            if final_visible_rgb_mode
+            else (
+                "ai-painter-r5-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-resource-preflight-v1"
+                if semantic_mixture_mode
+                else (
+                    "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-resource-preflight-v1"
+                    if structure_mode else "ai-painter-r5-stage4-v9-gradient-diagnostic-resource-preflight-v1"
+                )
+            ))
         ),
         "status": "passed_cuda_resource_and_disk_preflight_gpu_not_consumed",
         **timestamps("recordedAt"),
@@ -590,12 +1033,19 @@ def write_preflight_reports(authorization: dict, attestation: dict, python_path:
     write_json_exclusive(resource_path, resource_report)
     print(json.dumps({
         "status": (
-            "fact_conditioned_semantic_mixture_gradient_diagnostic_all_preflights_passed_gpu_not_consumed"
-            if semantic_mixture_mode
+            "stage4_vegetation_final_visible_gradient_diagnostic_all_preflights_passed_gpu_not_consumed"
+            if vegetation_repair_mode
             else (
-                "structure_fact_first_gradient_diagnostic_all_preflights_passed_gpu_not_consumed"
-                if structure_mode else "v9_gradient_diagnostic_all_preflights_passed_gpu_not_consumed"
-            )
+            "stage4_final_visible_rgb_gradient_diagnostic_all_preflights_passed_gpu_not_consumed"
+            if final_visible_rgb_mode
+            else (
+                "fact_conditioned_semantic_mixture_gradient_diagnostic_all_preflights_passed_gpu_not_consumed"
+                if semantic_mixture_mode
+                else (
+                    "structure_fact_first_gradient_diagnostic_all_preflights_passed_gpu_not_consumed"
+                    if structure_mode else "v9_gradient_diagnostic_all_preflights_passed_gpu_not_consumed"
+                )
+            ))
         ),
         "pythonReport": binding(python_path),
         "resourceReport": binding(resource_path),
@@ -623,22 +1073,45 @@ def consume_and_run(authorization_path: Path, authorization: dict, attestation: 
         raise FileExistsError("v9_diagnostic_gpu_authorization_already_consumed")
     structure_mode = is_structure_fact_authorization(authorization)
     semantic_mixture_mode = is_semantic_mixture_authorization(authorization)
+    final_visible_rgb_mode = is_final_visible_rgb_authorization(authorization)
+    vegetation_repair_mode = is_vegetation_repair_authorization(authorization)
+    vegetation_luminance_mode = is_vegetation_luminance_authorization(authorization)
     consumption = {
         "schemaVersion": (
-            "ai-painter-r5-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-gpu-consumption-v1"
-            if semantic_mixture_mode
+            "ai-painter-r5-stage4-vegetation-luminance-spatial-gradient-diagnostic-gpu-consumption-v1"
+            if vegetation_luminance_mode
             else (
-                "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-gpu-consumption-v1"
-                if structure_mode else "ai-painter-r5-stage4-v9-gradient-diagnostic-gpu-consumption-v1"
-            )
+            "ai-painter-r5-stage4-vegetation-final-visible-gradient-diagnostic-gpu-consumption-v1"
+            if vegetation_repair_mode
+            else (
+            "ai-painter-r5-stage4-final-visible-rgb-gradient-diagnostic-gpu-consumption-v1"
+            if final_visible_rgb_mode
+            else (
+                "ai-painter-r5-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-gpu-consumption-v1"
+                if semantic_mixture_mode
+                else (
+                    "ai-painter-r5-stage4-structure-fact-first-gradient-diagnostic-gpu-consumption-v1"
+                    if structure_mode else "ai-painter-r5-stage4-v9-gradient-diagnostic-gpu-consumption-v1"
+                )
+            )))
         ),
         "status": (
-            "fact_conditioned_semantic_mixture_readonly_gpu_diagnostic_authorization_atomically_consumed"
-            if semantic_mixture_mode
+            "stage4_vegetation_luminance_spatial_readonly_gpu_diagnostic_authorization_atomically_consumed"
+            if vegetation_luminance_mode
             else (
-                "structure_fact_first_readonly_gpu_diagnostic_authorization_atomically_consumed"
-                if structure_mode else "v9_readonly_gpu_diagnostic_authorization_atomically_consumed"
-            )
+            "stage4_vegetation_final_visible_readonly_gpu_diagnostic_authorization_atomically_consumed"
+            if vegetation_repair_mode
+            else (
+            "stage4_final_visible_rgb_readonly_gpu_diagnostic_authorization_atomically_consumed"
+            if final_visible_rgb_mode
+            else (
+                "fact_conditioned_semantic_mixture_readonly_gpu_diagnostic_authorization_atomically_consumed"
+                if semantic_mixture_mode
+                else (
+                    "structure_fact_first_readonly_gpu_diagnostic_authorization_atomically_consumed"
+                    if structure_mode else "v9_readonly_gpu_diagnostic_authorization_atomically_consumed"
+                )
+            )))
         ),
         "requestId": authorization_request_id(authorization),
         "commandRef": authorization_request_id(authorization),
@@ -663,7 +1136,7 @@ def consume_and_run(authorization_path: Path, authorization: dict, attestation: 
 
 
 def run_gpu(authorization: dict, output: Path, consumption_path: Path, python_report: dict, resource_report: dict) -> int:
-    if is_semantic_mixture_authorization(authorization):
+    if is_final_visible_rgb_authorization(authorization) or is_semantic_mixture_authorization(authorization):
         return run_semantic_mixture_gpu(
             authorization, output, consumption_path, python_report, resource_report
         )
@@ -939,6 +1412,9 @@ def run_semantic_mixture_gpu(
     python_report: dict,
     resource_report: dict,
 ) -> int:
+    final_visible_rgb_mode = is_final_visible_rgb_authorization(authorization)
+    vegetation_repair_mode = is_vegetation_repair_authorization(authorization)
+    vegetation_luminance_mode = is_vegetation_luminance_authorization(authorization)
     output.mkdir(parents=True, exist_ok=False)
     started = time.perf_counter()
     steps = []
@@ -1086,6 +1562,160 @@ def run_semantic_mixture_gpu(
             predicted_conditions, target_conditions, predicted_rgb, image, conditions,
             mixture, typed_counterfactual_rgb, config,
         )
+        final_visible_rgb_evidence = {}
+        vegetation_edge_evidence = {}
+        vegetation_luminance_evidence = {}
+        if final_visible_rgb_mode:
+            objective = trainer.validate_stage4_per_class_final_visible_rgb_obligation(config)
+            expected_terms = list(trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_TERMS)
+            if objective.get("terms") != expected_terms:
+                raise ValueError("final_visible_rgb_diagnostic_term_registry_invalid")
+            for term in expected_terms:
+                identity = term["identity"]
+                source_channel = term["sourceChannel"]
+                loss = losses[term["metric"]]
+                predicted_gradient = torch.autograd.grad(
+                    loss, predicted_rgb, retain_graph=True, allow_unused=False,
+                )[0]
+                denoiser_gradients = torch.autograd.grad(
+                    loss,
+                    tuple(parameter for parameter in model.denoiser.parameters() if parameter.requires_grad),
+                    retain_graph=True,
+                    allow_unused=True,
+                )
+                source_index = channel_order.index(source_channel)
+                mask = conditions[:, source_index:source_index + 1]
+                mask = torch.nn.functional.interpolate(
+                    mask, size=predicted_rgb.shape[-2:], mode="nearest",
+                )
+                inside = float((predicted_gradient.abs() * mask).sum().detach().cpu())
+                outside = float(
+                    (predicted_gradient.abs() * (1.0 - mask)).sum().detach().cpu()
+                )
+                denoiser_norm = sum(gradient_norm(value) for value in denoiser_gradients)
+                value = float(loss.detach().cpu())
+                weight = float(objective["derivedWeights"][identity])
+                if (
+                    not math.isfinite(value)
+                    or value <= 0.0
+                    or inside <= 0.0
+                    or outside != 0.0
+                    or denoiser_norm <= 0.0
+                    or not math.isfinite(weight)
+                    or weight <= 0.0
+                ):
+                    raise ValueError(
+                        f"final_visible_rgb_diagnostic_gradient_or_mask_failed:{identity}"
+                    )
+                final_visible_rgb_evidence[identity] = {
+                    "sourceChannel": source_channel,
+                    "metric": term["metric"],
+                    "lossValue": value,
+                    "derivedWeight": weight,
+                    "decodedRgbInsideMaskGradientAbsSum": inside,
+                    "decodedRgbOutsideMaskGradientAbsSum": outside,
+                    "denoiserGradientNorm": denoiser_norm,
+                    "reachesFinalDenoiserRgbPath": True,
+                    "reachesFrozenAutoencoderDecodedRgb": True,
+                }
+            step("five_final_visible_rgb_obligations_gradient_and_mask_isolation_verified")
+        if vegetation_repair_mode:
+            repair = trainer.validate_stage4_vegetation_final_visible_semantic_repair(config)
+            edge_loss = losses["stage4SemanticMixtureVegetationFinalTypedEdgeMae"]
+            edge_gradient = torch.autograd.grad(
+                edge_loss, predicted_rgb, retain_graph=True, allow_unused=False,
+            )[0]
+            denoiser_gradients = torch.autograd.grad(
+                edge_loss,
+                tuple(parameter for parameter in model.denoiser.parameters() if parameter.requires_grad),
+                retain_graph=True, allow_unused=True,
+            )
+            source_index = channel_order.index("object_vegetation")
+            mask = conditions[:, source_index:source_index + 1]
+            mask = torch.nn.functional.interpolate(
+                mask, size=predicted_rgb.shape[-2:], mode="nearest",
+            )
+            support = torch.nn.functional.max_pool2d(
+                mask, kernel_size=3, stride=1, padding=1,
+            )
+            inside = float((edge_gradient.abs() * mask).sum().detach().cpu())
+            adjacent = float(
+                (edge_gradient.abs() * (support - mask)).sum().detach().cpu()
+            )
+            outside = float(
+                (edge_gradient.abs() * (1.0 - support)).sum().detach().cpu()
+            )
+            denoiser_norm = sum(gradient_norm(value) for value in denoiser_gradients)
+            value = float(edge_loss.detach().cpu())
+            weight = float(repair["derivedWeight"])
+            if (
+                not math.isfinite(value) or value <= 0.0
+                or inside <= 0.0 or adjacent <= 0.0 or outside != 0.0
+                or denoiser_norm <= 0.0 or not math.isfinite(weight) or weight <= 0.0
+            ):
+                raise ValueError("vegetation_final_visible_edge_gradient_or_support_failed")
+            vegetation_edge_evidence = {
+                "sourceChannel": "object_vegetation",
+                "metric": "stage4SemanticMixtureVegetationFinalTypedEdgeMae",
+                "lossValue": value,
+                "derivedWeight": weight,
+                "decodedRgbInsideMaskGradientAbsSum": inside,
+                "decodedRgbAdjacentBoundaryGradientAbsSum": adjacent,
+                "decodedRgbOutsideOnePixelBoundarySupportGradientAbsSum": outside,
+                "denoiserGradientNorm": denoiser_norm,
+                "reachesFinalDenoiserRgbPath": True,
+                "reachesFrozenAutoencoderDecodedRgb": True,
+            }
+            step("vegetation_final_visible_edge_structure_gradient_verified")
+        if vegetation_luminance_mode:
+            luminance_contract = (
+                trainer.validate_stage4_vegetation_luminance_spatial_structure_supervision(
+                    config
+                )
+            )
+            luminance_loss = losses[
+                "stage4SemanticMixtureVegetationFinalTypedLuminanceCorrelationLoss"
+            ]
+            luminance_gradient = torch.autograd.grad(
+                luminance_loss, predicted_rgb, retain_graph=True, allow_unused=False,
+            )[0]
+            denoiser_gradients = torch.autograd.grad(
+                luminance_loss,
+                tuple(parameter for parameter in model.denoiser.parameters() if parameter.requires_grad),
+                retain_graph=True, allow_unused=True,
+            )
+            source_index = channel_order.index("object_vegetation")
+            mask = conditions[:, source_index:source_index + 1]
+            mask = torch.nn.functional.interpolate(
+                mask, size=predicted_rgb.shape[-2:], mode="nearest",
+            )
+            inside = float((luminance_gradient.abs() * mask).sum().detach().cpu())
+            outside = float(
+                (luminance_gradient.abs() * (1.0 - mask)).sum().detach().cpu()
+            )
+            denoiser_norm = sum(gradient_norm(value) for value in denoiser_gradients)
+            value = float(luminance_loss.detach().cpu())
+            weight = float(luminance_contract["derivedWeight"])
+            if (
+                not math.isfinite(value) or value < 0.0
+                or inside <= 0.0 or outside != 0.0
+                or denoiser_norm <= 0.0 or not math.isfinite(weight) or weight <= 0.0
+            ):
+                raise ValueError(
+                    "vegetation_luminance_spatial_gradient_or_support_failed"
+                )
+            vegetation_luminance_evidence = {
+                "sourceChannel": "object_vegetation",
+                "metric": "stage4SemanticMixtureVegetationFinalTypedLuminanceCorrelationLoss",
+                "lossValue": value,
+                "derivedWeight": weight,
+                "decodedRgbInsideMaskGradientAbsSum": inside,
+                "decodedRgbOutsideMaskGradientAbsSum": outside,
+                "denoiserGradientNorm": denoiser_norm,
+                "reachesFinalDenoiserRgbPath": True,
+                "reachesFrozenAutoencoderDecodedRgb": True,
+            }
+            step("vegetation_luminance_spatial_structure_gradient_verified")
         named = [
             (name, parameter) for name, parameter in model.denoiser.named_parameters()
             if parameter.requires_grad
@@ -1141,16 +1771,21 @@ def run_semantic_mixture_gpu(
         state["autogradGradCompleted"] = True
         step("torch_autograd_grad_five_private_experts_gates_final_and_base_verified")
 
+        expected_diagnostic_fields = trainer.fact_conditioned_semantic_mixture_diagnostic_fields(
+            config
+        )
         diagnostic_metrics = {
             key: float(losses[key].detach().cpu())
-            for key in trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS
+            for key in expected_diagnostic_fields
         }
         if (
-            len(diagnostic_metrics) != 17
+            len(diagnostic_metrics) != len(expected_diagnostic_fields)
             or any(not math.isfinite(value) or value < 0.0 for value in diagnostic_metrics.values())
         ):
-            raise ValueError("semantic_mixture_diagnostic_exact_17_values_invalid")
-        step("exact_17_semantic_mixture_diagnostic_fields_exported")
+            raise ValueError("semantic_mixture_diagnostic_exact_field_values_invalid")
+        step("exact_semantic_mixture_diagnostic_fields_exported", {
+            "fieldCount": len(diagnostic_metrics),
+        })
 
         torch.cuda.synchronize(0)
         cuda_telemetry = {
@@ -1177,8 +1812,24 @@ def run_semantic_mixture_gpu(
         step("denoiser_and_autoencoder_state_hashes_unchanged")
 
         report = {
-            "schemaVersion": "ai-painter-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-report-v1",
-            "status": "passed_readonly_fact_conditioned_semantic_mixture_gpu_causal_and_gradient_diagnostic",
+            "schemaVersion": (
+                "ai-painter-stage4-vegetation-final-visible-gradient-diagnostic-report-v1"
+                if vegetation_repair_mode
+                else (
+                "ai-painter-stage4-final-visible-rgb-gradient-diagnostic-report-v1"
+                if final_visible_rgb_mode
+                else "ai-painter-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-report-v1"
+                )
+            ),
+            "status": (
+                "passed_readonly_stage4_vegetation_final_visible_gpu_gradient_qualification"
+                if vegetation_repair_mode
+                else (
+                "passed_readonly_stage4_per_class_final_visible_rgb_gpu_gradient_qualification"
+                if final_visible_rgb_mode
+                else "passed_readonly_fact_conditioned_semantic_mixture_gpu_causal_and_gradient_diagnostic"
+                )
+            ),
             **timestamps("recordedAt"),
             "durationSeconds": round(time.perf_counter() - started, 3),
             "identity": authorization["taskIdentity"],
@@ -1192,6 +1843,9 @@ def run_semantic_mixture_gpu(
             "causalEvidence": causal_evidence,
             "gradientEvidence": {
                 "typedExperts": expert_gradient_evidence,
+                "finalVisibleRgbObligations": final_visible_rgb_evidence,
+                "vegetationFinalVisibleEdgeStructure": vegetation_edge_evidence,
+                "vegetationLuminanceSpatialStructure": vegetation_luminance_evidence,
                 "finalVelocityGatedContributionGradientNorms": [
                     gradient_norm(value) for value in final_gradients
                 ],
@@ -1200,8 +1854,8 @@ def run_semantic_mixture_gpu(
                 ),
             },
             "diagnosticManifest": {
-                "fieldCount": 17,
-                "fields": list(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS),
+                "fieldCount": len(expected_diagnostic_fields),
+                "fields": list(expected_diagnostic_fields),
                 "values": diagnostic_metrics,
             },
             "cuda": cuda_telemetry,
@@ -1221,8 +1875,24 @@ def run_semantic_mixture_gpu(
         report_path = output / "diagnostic-report.json"
         write_json_exclusive(report_path, report)
         terminal = {
-            "schemaVersion": "ai-painter-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-terminal-v1",
-            "status": "fact_conditioned_semantic_mixture_gradient_diagnostic_passed_closed",
+            "schemaVersion": (
+                "ai-painter-stage4-vegetation-final-visible-gradient-diagnostic-terminal-v1"
+                if vegetation_repair_mode
+                else (
+                "ai-painter-stage4-final-visible-rgb-gradient-diagnostic-terminal-v1"
+                if final_visible_rgb_mode
+                else "ai-painter-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-terminal-v1"
+                )
+            ),
+            "status": (
+                "stage4_vegetation_final_visible_gpu_qualification_passed_closed"
+                if vegetation_repair_mode
+                else (
+                "stage4_per_class_final_visible_rgb_gpu_qualification_passed_closed"
+                if final_visible_rgb_mode
+                else "fact_conditioned_semantic_mixture_gradient_diagnostic_passed_closed"
+                )
+            ),
             **timestamps("recordedAt"),
             "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
             "reportPath": project_path(report_path),
@@ -1243,8 +1913,24 @@ def run_semantic_mixture_gpu(
         return 0
     except Exception as error:
         terminal = {
-            "schemaVersion": "ai-painter-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-terminal-v1",
-            "status": "fact_conditioned_semantic_mixture_gradient_diagnostic_failed_closed",
+            "schemaVersion": (
+                "ai-painter-stage4-vegetation-final-visible-gradient-diagnostic-terminal-v1"
+                if vegetation_repair_mode
+                else (
+                "ai-painter-stage4-final-visible-rgb-gradient-diagnostic-terminal-v1"
+                if final_visible_rgb_mode
+                else "ai-painter-stage4-fact-conditioned-semantic-mixture-gradient-diagnostic-terminal-v1"
+                )
+            ),
+            "status": (
+                "stage4_vegetation_final_visible_gpu_qualification_failed_closed"
+                if vegetation_repair_mode
+                else (
+                "stage4_per_class_final_visible_rgb_gpu_qualification_failed_closed"
+                if final_visible_rgb_mode
+                else "fact_conditioned_semantic_mixture_gradient_diagnostic_failed_closed"
+                )
+            ),
             **timestamps("recordedAt"),
             "fixedTotalProgress": {"completedStages": 3, "totalStages": 5, "percent": 60},
             "failureType": type(error).__name__,
@@ -1643,19 +2329,68 @@ def is_semantic_mixture_authorization(authorization: dict) -> bool:
     )
 
 
+def is_final_visible_rgb_authorization(authorization: dict) -> bool:
+    return is_vegetation_luminance_authorization(authorization) or is_vegetation_repair_authorization(authorization) or authorization.get(
+        "_diagnosticMode"
+    ) == "final_visible_rgb_obligation" or (
+        authorization.get("schemaVersion")
+        == "ai-painter-owner-stage4-final-visible-rgb-readonly-gpu-qualification-v1"
+    )
+
+
+def is_vegetation_repair_authorization(authorization: dict) -> bool:
+    return authorization.get("_diagnosticMode") == (
+        "vegetation_final_visible_semantic_repair"
+    ) or authorization.get("schemaVersion") == (
+        "ai-painter-owner-stage4-vegetation-final-visible-readonly-gpu-qualification-v1"
+    )
+
+
+def is_vegetation_luminance_authorization(authorization: dict) -> bool:
+    return authorization.get("_diagnosticMode") == (
+        "vegetation_luminance_spatial_structure"
+    ) or authorization.get("schemaVersion") == (
+        "ai-painter-owner-stage4-vegetation-luminance-spatial-readonly-gpu-qualification-v1"
+    )
+
+
 def authorization_request_id(authorization: dict) -> str:
+    if is_vegetation_luminance_authorization(authorization):
+        return VEGETATION_LUMINANCE_REQUEST_ID
+    if is_vegetation_repair_authorization(authorization):
+        return VEGETATION_REPAIR_REQUEST_ID
+    if is_final_visible_rgb_authorization(authorization):
+        return FINAL_VISIBLE_RGB_REQUEST_ID
     if is_semantic_mixture_authorization(authorization):
         return SEMANTIC_MIXTURE_REQUEST_ID
     return STRUCTURE_FACT_REQUEST_ID if is_structure_fact_authorization(authorization) else REQUEST_ID
 
 
 def authorization_scope(authorization: dict) -> str:
+    if is_vegetation_luminance_authorization(authorization):
+        return VEGETATION_LUMINANCE_SCOPE
+    if is_vegetation_repair_authorization(authorization):
+        return VEGETATION_REPAIR_SCOPE
+    if is_final_visible_rgb_authorization(authorization):
+        return FINAL_VISIBLE_RGB_SCOPE
     if is_semantic_mixture_authorization(authorization):
         return SEMANTIC_MIXTURE_SCOPE
     return STRUCTURE_FACT_SCOPE if is_structure_fact_authorization(authorization) else SCOPE
 
 
 def authorization_sha256(authorization: dict) -> str:
+    if is_vegetation_luminance_authorization(authorization):
+        return authorization.get("_authorizationSha256") or sha256_file(
+            resolve(VEGETATION_LUMINANCE_AUTHORIZATION_PATH)
+        )
+    if is_vegetation_repair_authorization(authorization):
+        return authorization.get("_authorizationSha256") or sha256_file(
+            resolve(VEGETATION_REPAIR_AUTHORIZATION_PATH)
+        )
+    if is_final_visible_rgb_authorization(authorization):
+        return authorization.get("_authorizationSha256") or sha256_file(
+            resolve(FINAL_VISIBLE_RGB_AUTHORIZATION_PATH)
+        )
     if is_semantic_mixture_authorization(authorization):
         return authorization.get("_authorizationSha256") or sha256_file(
             resolve(SEMANTIC_MIXTURE_AUTHORIZATION_PATH)

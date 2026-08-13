@@ -66,6 +66,11 @@ _OWNER_FIELDS = {
 
 _PHASE0_MODE_ID = "structure_fact_first_stage4_phase0"
 _STRUCTURE_SMOKE_MODE_ID = "structure_fact_first_stage4_smoke"
+_SEMANTIC_MIXTURE_FULL_TRAINING_MODE_IDS = frozenset({
+    "fact_conditioned_semantic_mixture_stage0_full_training",
+    "fact_conditioned_semantic_mixture_stage1_full_training",
+    "fact_conditioned_semantic_mixture_stage2_full_training",
+})
 _STRUCTURE_SMOKE_PREFLIGHT_ACTIONS = frozenset(
     {
         ExecutionAction.SELECT_BOUND_SAMPLE,
@@ -161,6 +166,22 @@ def _actions_for_mode(spec: ModeSpec) -> set[ExecutionAction]:
                 ExecutionAction.RUN_STAGE2,
             }
         )
+    elif spec.execution_kind in {
+        "full_training_stage0", "full_training_stage1", "full_training_stage2",
+    }:
+        allowed.update({
+            ExecutionAction.LOAD_AUTOENCODER,
+            ExecutionAction.CREATE_OPTIMIZER,
+            ExecutionAction.EXECUTE_BACKWARD,
+            ExecutionAction.MUTATE_MODEL_WEIGHTS,
+            {
+                "full_training_stage0": ExecutionAction.RUN_STAGE0,
+                "full_training_stage1": ExecutionAction.RUN_STAGE1,
+                "full_training_stage2": ExecutionAction.RUN_STAGE2,
+            }[spec.execution_kind],
+        })
+        if spec.execution_kind != "full_training_stage0":
+            allowed.add(ExecutionAction.LOAD_PARENT_DENOISER)
     elif spec.execution_kind == "single_sample_smoke":
         allowed.update(
             {
@@ -278,7 +299,10 @@ def _validate_owner_training_authorization(
                 or (scope is not None and consumption.get("scope") != scope)
             ):
                 raise ValueError("execution consumption immutable identity is invalid")
-        if spec.mode_id in {_PHASE0_MODE_ID, _STRUCTURE_SMOKE_MODE_ID}:
+        if spec.mode_id in {
+            _PHASE0_MODE_ID, _STRUCTURE_SMOKE_MODE_ID,
+            *_SEMANTIC_MIXTURE_FULL_TRAINING_MODE_IDS,
+        }:
             implementation_authorization_path = _verify_bound_file(
                 project_root,
                 str(owner.get("implementationAuthorizationPath")),
@@ -390,8 +414,10 @@ def resolve_stage_execution_grant(
     }
     checkpoint_constraints = {
         "identityInspectionOnlyDuringCpuDryRun": True,
-        "parentDenoiserAllowed": spec.architecture == "multiscale_condition_unet_v7"
-        and spec.execution_kind == "single_sample_smoke",
+        "parentDenoiserAllowed": (
+            spec.architecture == "multiscale_condition_unet_v7"
+            and spec.execution_kind == "single_sample_smoke"
+        ) or spec.execution_kind in {"full_training_stage1", "full_training_stage2"},
         "checkpointDeserializationDuringCpuDryRun": False,
         "checkpointWeightLoadDuringCpuDryRun": False,
     }
@@ -416,7 +442,10 @@ def resolve_stage_execution_grant(
     }
     mode_actions = _actions_for_mode(spec)
     owner_actions = owner_identity.get("executionActions")
-    if spec.mode_id in {_PHASE0_MODE_ID, _STRUCTURE_SMOKE_MODE_ID}:
+    if spec.mode_id in {
+        _PHASE0_MODE_ID, _STRUCTURE_SMOKE_MODE_ID,
+        *_SEMANTIC_MIXTURE_FULL_TRAINING_MODE_IDS,
+    }:
         explicit_owner_actions = {ExecutionAction(value) for value in owner_actions or []}
         allowed_actions = mode_actions & explicit_owner_actions
     else:

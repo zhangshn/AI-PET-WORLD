@@ -48,6 +48,9 @@ from ai_painter_stage_mode_registry import (
     CONDITION_PRESERVING_SEMANTIC_RENDERER_STAGE4_SMOKE_STATUS,
     FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_INACTIVE_STATUS,
     FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_STATUS,
+    FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE0_FULL_TRAINING_STATUS,
+    FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE1_FULL_TRAINING_STATUS,
+    FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE2_FULL_TRAINING_STATUS,
     resolve_stage_mode,
 )
 
@@ -170,6 +173,11 @@ FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_CPU_INACTIVE_STATUS = (
 FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_ACTIVE_STATUS = (
     FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_STATUS
 )
+FACT_CONDITIONED_SEMANTIC_MIXTURE_FULL_TRAINING_STATUSES = (
+    FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE0_FULL_TRAINING_STATUS,
+    FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE1_FULL_TRAINING_STATUS,
+    FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE2_FULL_TRAINING_STATUS,
+)
 STAGE4_VALIDATION_KERNEL_PHASE0_UPDATE_STATUS = "owner_authorized_stage4_validation_kernel_phase0_single_step_update"
 STAGE4_VALIDATION_KERNEL_PHASE0_REPRODUCE_STATUS = "owner_authorized_stage4_validation_kernel_phase0_checkpoint_preview_reproduction"
 V7_MVP64_SPLIT_COUNTS = {
@@ -256,6 +264,85 @@ FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS = (
     "object_rock",
     "object_vegetation",
 )
+STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_OBLIGATION_ID = (
+    "stage4_per_class_final_visible_rgb_obligation_v1"
+)
+STAGE4_DISTRIBUTION_AWARE_VISIBLE_SPATIAL_SEMANTIC_OBLIGATION_ID = (
+    "stage4_distribution_aware_visible_spatial_semantic_obligation_v1"
+)
+STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_TERMS = tuple(
+    {
+        "identity": identity,
+        "sourceChannel": source,
+        "metric": f"stage4SemanticMixture{prefix}FinalTypedRgbMae",
+    }
+    for identity, source, prefix in zip(
+        FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES,
+        FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS,
+        ("Route", "Footprints", "Tree", "Rock", "Vegetation"),
+    )
+)
+STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_EVIDENCE_BINDINGS = {
+    "sufficiencyTerminal": {
+        "path": ".runtime/ai-painter/stage4-training-objective-sufficiency-reassessments/20260812-183940631/phase-terminal.json",
+        "sha256": "1c30147809b740a6c92eb8ff64589c189efcfdc70b8b9754b60d173712c3ce7d",
+    },
+    "sufficiencyReport": {
+        "path": ".runtime/ai-painter/stage4-training-objective-sufficiency-reassessments/20260812-183940631/training-objective-sufficiency-report.json",
+        "sha256": "544ef5a2bb913ed251bae79bad13054724c37fad538ae4ca04ea2e5b94f126fd",
+    },
+    "threeWayDecision": {
+        "path": ".runtime/ai-painter/stage4-training-objective-sufficiency-reassessments/20260812-183940631/three-way-decision.json",
+        "sha256": "dcecc4dd463a20e18d9b9d26c77d3363b17f33e8fe4bab85db4ed0a5f7171a16",
+    },
+    "inactiveTrainingObjectiveContract": {
+        "path": ".runtime/ai-painter/stage4-training-objective-sufficiency-reassessments/20260812-183940631/inactive-training-objective-contract.json",
+        "sha256": "b725cd51b6380772a9f5d92a11f41c9515b86a59b457a82b3165a2aadf2aa5c7",
+    },
+}
+STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_IMPLEMENTATION_AUTHORIZATION = {
+    "authorizationPath": ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-per-class-final-visible-rgb-obligation-cpu-20260812-190738093/implementation-authorization.json",
+    "authorizationSha256": "a606a8d5b525d7e01b5f5fbaae3bb4c35368bbfa94fef2f0ee083302548ceb5e",
+    "implementationConsumptionPath": ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-per-class-final-visible-rgb-obligation-cpu-20260812-190738093/implementation-consumption.json",
+    "implementationConsumptionSha256": "48c00d7c6e2322c3f6b676f4d5de5497769e5421b3a2cc489beecc3c19ddd33e",
+}
+STAGE4_DISTRIBUTION_AWARE_VISIBLE_SPATIAL_SEMANTIC_EVIDENCE_BINDINGS = {
+    "causalTerminal": {
+        "path": ".runtime/ai-painter/stage4-stage0-generalization-causal-adjudications/20260813-062536922/phase-terminal.json",
+        "sha256": "3edba5e5f514982a0e134780ce59c983441f21731bd3f79e0cc9461bb0c1a552",
+    },
+    "causalDecision": {
+        "path": ".runtime/ai-painter/stage4-stage0-generalization-causal-adjudications/20260813-062536922/adjudication.json",
+        "sha256": "1abbad98362466fbf7ae7fa6e36cf793f41f9c8905f3090b54a119f1a62ff1d1",
+    },
+    "inactiveRepairContract": {
+        "path": ".runtime/ai-painter/stage4-stage0-generalization-causal-adjudications/20260813-062536922/inactive-repair-contract.json",
+        "sha256": "e958c43f8827e2fbeebefb1c3eeb72db46af2684198d07756bdbd5ad9e2a77d8",
+    },
+}
+STAGE4_DISTRIBUTION_AWARE_VISIBLE_SPATIAL_SEMANTIC_IMPLEMENTATION_AUTHORIZATION = {
+    "authorizationPath": ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-distribution-aware-visible-spatial-semantic-obligation-20260813-062820868/implementation-authorization.json",
+    "authorizationSha256": "3984273525101528a9258937bc6c7716ab518999b6f76c2c5af8fd4c23a85bcd",
+    "implementationConsumptionPath": ".runtime/ai-painter/owner-action-requests/owner-authorized-stage4-distribution-aware-visible-spatial-semantic-obligation-20260813-062820868/implementation-consumption.json",
+    "implementationConsumptionSha256": "49f749b642fd9fd6aa25896f7511773d60363823e52c62655d735889b3ca1745",
+}
+STAGE4_VEGETATION_FINAL_VISIBLE_SEMANTIC_REPAIR_ID = (
+    "stage4_vegetation_final_visible_semantic_repair_v1"
+)
+STAGE4_VEGETATION_FINAL_VISIBLE_SEMANTIC_REPAIR_AUTHORIZATION = {
+    "authorizationPath": (
+        ".runtime/ai-painter/owner-action-requests/"
+        "owner-authorized-stage4-vegetation-final-visible-semantic-repair-"
+        "20260813-025311970/implementation-authorization.json"
+    ),
+    "authorizationSha256": "68d33f0c6bbfe20fffdb1a70842a898a6cdc9abb24a891a649562b53e335bc54",
+    "implementationConsumptionPath": (
+        ".runtime/ai-painter/owner-action-requests/"
+        "owner-authorized-stage4-vegetation-final-visible-semantic-repair-"
+        "20260813-025311970/implementation-consumption-corrected.json"
+    ),
+    "implementationConsumptionSha256": "cc79fcc114c929097837f5a085ad89ba664d0c32dec33058089330aac963b1ff",
+}
 FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS = tuple(
     f"stage4SemanticMixture{prefix}{measurement}"
     for prefix in ("Route", "Footprints", "Tree", "Rock", "Vegetation")
@@ -267,6 +354,40 @@ FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS = tuple(
     "stage4SemanticMixtureFinalResponseMae",
     "stage4SemanticMixtureTypedIdentityCount",
 )
+STAGE4_VEGETATION_FINAL_VISIBLE_SEMANTIC_REPAIR_DIAGNOSTIC_FIELDS = (
+    FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS
+    + ("stage4SemanticMixtureVegetationFinalTypedEdgeMae",)
+)
+STAGE4_VEGETATION_LUMINANCE_SPATIAL_STRUCTURE_SUPERVISION_ID = (
+    "stage4_vegetation_luminance_spatial_structure_supervision_v1"
+)
+STAGE4_VEGETATION_LUMINANCE_SPATIAL_STRUCTURE_AUTHORIZATION = {
+    "authorizationPath": (
+        ".runtime/ai-painter/owner-action-requests/"
+        "owner-authorized-stage4-vegetation-luminance-spatial-structure-supervision-"
+        "20260813-034000000/implementation-authorization.json"
+    ),
+    "authorizationSha256": "dd56bca1cd5dfd1e623b554d5a4dd5c1005d6d6dac9f771b7c588e6607540b5c",
+    "implementationConsumptionPath": (
+        ".runtime/ai-painter/owner-action-requests/"
+        "owner-authorized-stage4-vegetation-luminance-spatial-structure-supervision-"
+        "20260813-034000000/implementation-consumption.json"
+    ),
+    "implementationConsumptionSha256": "c5142f93352d6d30edd051e7ec5845041ec873c7fec4d84d1bf15a23c15c3902",
+}
+STAGE4_VEGETATION_LUMINANCE_SPATIAL_STRUCTURE_DIAGNOSTIC_FIELDS = (
+    STAGE4_VEGETATION_FINAL_VISIBLE_SEMANTIC_REPAIR_DIAGNOSTIC_FIELDS
+    + ("stage4SemanticMixtureVegetationFinalTypedLuminanceCorrelationLoss",)
+)
+
+
+def fact_conditioned_semantic_mixture_diagnostic_fields(config):
+    """Keep exact historical registries and extend only the selected bounded repair."""
+    if "stage4VegetationLuminanceSpatialStructureSupervision" in config.get("training", {}):
+        return STAGE4_VEGETATION_LUMINANCE_SPATIAL_STRUCTURE_DIAGNOSTIC_FIELDS
+    if "stage4VegetationFinalVisibleSemanticRepair" in config.get("training", {}):
+        return STAGE4_VEGETATION_FINAL_VISIBLE_SEMANTIC_REPAIR_DIAGNOSTIC_FIELDS
+    return FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS
 FACT_CONDITIONED_SEMANTIC_MIXTURE_REGISTRATION_DECISION_BINDINGS = {
     "ownershipAnalysisTerminal": {
         "path": ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-diagnostic-field-analyses/20260812-021851078/phase-terminal.json",
@@ -352,8 +473,12 @@ def main() -> int:
             "structure_fact_first_stage4_smoke",
             "condition_preserving_semantic_renderer_stage4_smoke",
             "fact_conditioned_semantic_mixture_stage4_smoke",
+            "fact_conditioned_semantic_mixture_stage0_full_training",
+            "fact_conditioned_semantic_mixture_stage1_full_training",
+            "fact_conditioned_semantic_mixture_stage2_full_training",
         }:
-            stage_execution_grant.require(ExecutionAction.SELECT_BOUND_SAMPLE)
+            if stage_execution_grant.dataset_constraints.get("selectedSplit") is not None:
+                stage_execution_grant.require(ExecutionAction.SELECT_BOUND_SAMPLE)
             stage_execution_grant.require(ExecutionAction.INSPECT_AUTOENCODER_IDENTITY)
             stage_execution_grant.require(ExecutionAction.INSPECT_CHECKPOINT_IDENTITY)
         else:
@@ -636,6 +761,55 @@ def main() -> int:
             raise ValueError("fact-conditioned semantic mixture model Smoke initialization or resolution is invalid")
         if smoke_contract.get("sampleSplit") != "validation" or smoke_contract.get("requiredBoundarySides") != ["west"]:
             raise ValueError("fact-conditioned semantic mixture model Smoke split or topology is invalid")
+    if stage_mode is not None and stage_mode.adapter_binding == "fact_conditioned_semantic_mixture_full_training_adapter":
+        training = config["training"]
+        full_contract = training.get("factConditionedSemanticMixtureStage4FullTrainingContract", {})
+        expected_stage = {
+            "full_training_stage0": 0,
+            "full_training_stage1": 1,
+            "full_training_stage2": 2,
+        }.get(stage_mode.execution_kind)
+        if expected_stage is None or stage_mode.stage != expected_stage:
+            raise ValueError("semantic mixture formal Stage ModeSpec is invalid")
+        if phase0_mode or args.single_sample_overfit_smoke or args.smoke_test:
+            raise ValueError("semantic mixture formal Stage cannot enter Phase0 or Smoke")
+        if args.overfit_sample_id is not None or args.overfit_epochs is not None:
+            raise ValueError("semantic mixture formal Stage cannot carry single-sample arguments")
+        if args.resolution_stage != expected_stage:
+            raise ValueError("semantic mixture formal Stage resolution identity is invalid")
+        if int(training.get("denoiserEpochs", 0)) != 40:
+            raise ValueError("semantic mixture formal Stage requires exactly 40 Epoch")
+        if training.get("fixedEpochPreviewPolicy", {}).get("formalStage") != [1, 5, 10, 20, 30, 40]:
+            raise ValueError("semantic mixture formal Stage preview schedule is invalid")
+        if full_contract != {
+            "status": "active_owner_authorized_independent_stage_execution",
+            "stage": expected_stage,
+            "resolution": training["resolutionStages"][expected_stage],
+            "epochCount": 40,
+            "previewEpochs": [1, 5, 10, 20, 30, 40],
+            "datasetCapacity": 64,
+            "splitCounts": V7_MVP64_SPLIT_COUNTS,
+            "initialization": (
+                "project_random_fact_conditioned_semantic_mixture"
+                if expected_stage == 0
+                else f"current_run_stage_{expected_stage - 1}_checkpoint_only"
+            ),
+            "parentCheckpointRequired": expected_stage > 0,
+            "smokeCheckpointAllowed": False,
+            "historicalCheckpointAllowed": False,
+            "automaticRetryAllowed": False,
+        }:
+            raise ValueError("semantic mixture formal Stage execution contract is invalid")
+        if expected_stage == 0 and args.initial_denoiser_checkpoint is not None:
+            raise ValueError("semantic mixture Stage 0 must use fixed random initialization")
+        if expected_stage > 0 and args.initial_denoiser_checkpoint is None and not args.preflight_only:
+            raise ValueError("semantic mixture progressive Stage requires its current-run parent Checkpoint")
+        if training.get("authorizedInitialization") != (
+            "project_random_fact_conditioned_semantic_mixture"
+            if expected_stage == 0
+            else f"current_run_stage_{expected_stage - 1}_checkpoint_only"
+        ):
+            raise ValueError("semantic mixture formal Stage initialization contract is invalid")
     if args.resolution_stage < 0 or args.resolution_stage >= len(config["training"]["resolutionStages"]):
         raise ValueError("resolution stage is outside the configured progressive stages")
     stage = config["training"]["resolutionStages"][args.resolution_stage]
@@ -780,7 +954,14 @@ def main() -> int:
 
     record_stage4_smoke_state_hashes = (
         stage_execution_grant is not None
-        and stage_execution_grant.permits(ExecutionAction.WRITE_SMOKE_CHECKPOINT)
+        and (
+            stage_execution_grant.permits(ExecutionAction.WRITE_SMOKE_CHECKPOINT)
+            or any(stage_execution_grant.permits(action) for action in (
+                ExecutionAction.RUN_STAGE0,
+                ExecutionAction.RUN_STAGE1,
+                ExecutionAction.RUN_STAGE2,
+            ))
+        )
     )
     initial_denoiser_state_sha256 = (
         state_dict_sha256(model.denoiser.state_dict())
@@ -1123,6 +1304,21 @@ def main() -> int:
     if uses_stage4_unified_preview_sampling_contract(config):
         best_row = next((row for row in metrics if row.get("epoch") == best_epoch), None)
         source_preview = best_row.get("validationPreviewArtifact") if best_row else None
+        if not isinstance(source_preview, dict) and not run_is_smoke:
+            with stage4_fixed_preview_determinism_scope(True):
+                source_metrics = evaluate_deterministic_rollout_rgb_quality_v7(
+                    model,
+                    optimization_datasets["validation"],
+                    diffusion,
+                    latent_normalization,
+                    device,
+                    seed + 3000,
+                    config,
+                    args.output_dir / "checkpoint-bound-preview-source",
+                    best_epoch,
+                    force_checkpoint_bound_preview=True,
+                )
+            source_preview = source_metrics.get("previewArtifact")
         if not isinstance(source_preview, dict):
             raise ValueError("Stage4 unified preview source artifact is missing for the selected checkpoint")
         with stage4_fixed_preview_determinism_scope(True):
@@ -1136,6 +1332,7 @@ def main() -> int:
                 config,
                 args.output_dir / "checkpoint-bound-preview-reproduction",
                 best_epoch,
+                force_checkpoint_bound_preview=True,
             )
         reproduced_preview = reproduction_metrics.get("previewArtifact")
         if not isinstance(reproduced_preview, dict):
@@ -3764,14 +3961,34 @@ def validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(
     architecture = "stage4_fact_conditioned_semantic_mixture_decoder_v1"
     mode = resolve_stage_mode(config)
     smoke_mode = mode.mode_id == "fact_conditioned_semantic_mixture_stage4_smoke"
+    formal_stage_modes = {
+        "fact_conditioned_semantic_mixture_stage0_full_training": 0,
+        "fact_conditioned_semantic_mixture_stage1_full_training": 1,
+        "fact_conditioned_semantic_mixture_stage2_full_training": 2,
+    }
+    formal_stage = formal_stage_modes.get(mode.mode_id)
+    active_training = smoke_mode or formal_stage is not None
     if (
         mode.mode_id not in {
             "fact_conditioned_semantic_mixture_stage4_inactive",
             "fact_conditioned_semantic_mixture_stage4_smoke",
+            *formal_stage_modes,
         }
         or (smoke_mode and (mode.execution_kind != "single_sample_smoke" or mode.active_execution is not True))
-        or (not smoke_mode and (mode.execution_kind != "cpu_inactive" or mode.active_execution is not False))
-        or mode.sample_split != "validation"
+        or (
+            formal_stage is not None
+            and (
+                mode.execution_kind != f"full_training_stage{formal_stage}"
+                or mode.active_execution is not True
+                or mode.stage != formal_stage
+            )
+        )
+        or (
+            not active_training
+            and (mode.execution_kind != "cpu_inactive" or mode.active_execution is not False)
+        )
+        or (formal_stage is None and mode.sample_split != "validation")
+        or (formal_stage is not None and mode.sample_split is not None)
         or config.get("denoiserArchitecture") != architecture
     ):
         raise ValueError("Stage 4 semantic mixture Mode identity is invalid")
@@ -3807,8 +4024,8 @@ def validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(
     if set(contract) != expected_fields:
         raise ValueError("Stage 4 semantic mixture contract contains missing or unknown fields")
     expected_identity = {
-        "enabled": smoke_mode,
-        "status": "training_loss_active_owner_authorized" if smoke_mode else "cpu_support_verified_not_active",
+        "enabled": active_training,
+        "status": "training_loss_active_owner_authorized" if active_training else "cpu_support_verified_not_active",
         "contractId": architecture,
         "architectureId": architecture,
         "conditionChannelCount": 23,
@@ -3890,8 +4107,15 @@ def validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(
         raise ValueError("Stage 4 semantic mixture supervision boundary is invalid")
     if float(training.get("denoiserLossWeights", {}).get("discreteConditionOutputBinding", 0.0)) <= 0.0:
         raise ValueError("Stage 4 semantic mixture existing supervision weight is unavailable")
+    if "stage4PerClassFinalVisibleRgbObligation" in training:
+        validate_stage4_per_class_final_visible_rgb_obligation(config)
+    if "stage4VegetationFinalVisibleSemanticRepair" in training:
+        validate_stage4_vegetation_final_visible_semantic_repair(config)
+    if "stage4VegetationLuminanceSpatialStructureSupervision" in training:
+        validate_stage4_vegetation_luminance_spatial_structure_supervision(config)
 
     registry = contract.get("diagnosticManifestRegistry", {})
+    diagnostic_fields = fact_conditioned_semantic_mixture_diagnostic_fields(config)
     expected_registry_fields = {
         "exactFields", "exactFieldCount", "rejectUnknownFields",
         "configurationProvenance", "registrationDecisionBindings",
@@ -3902,9 +4126,9 @@ def validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(
     if (
         set(registry) != expected_registry_fields
         or registry.get("exactFields")
-        != list(FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS)
+        != list(diagnostic_fields)
         or registry.get("exactFieldCount")
-        != len(FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS)
+        != len(diagnostic_fields)
         or registry.get("rejectUnknownFields") is not True
         or reused_weight_provenance != {
             "source": "training.denoiserLossWeights.discreteConditionOutputBinding",
@@ -3926,13 +4150,17 @@ def validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(
         "strictRevalidationNow", "formalInferenceNow", "checkpointPromotionNow",
         "runtimeFrameNow", "worldEntryNow",
     }
-    active_smoke_fields = {
+    active_fields = {
         "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
         "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
         "trainingNow", "smoke30EpochNow",
-    } if smoke_mode else set()
+    } if smoke_mode else ({
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "stage4FullTrainingNow",
+    } if formal_stage is not None else set())
     if set(activation) != activation_fields or any(
-        activation.get(key) is not (key in active_smoke_fields)
+        activation.get(key) is not (key in active_fields)
         for key in activation_fields
     ):
         raise ValueError("Stage 4 semantic mixture activation gate is invalid")
@@ -3948,6 +4176,38 @@ def validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(
         or sample.get("requiredSplitCounts") != V7_MVP64_SPLIT_COUNTS
     ):
         raise ValueError("Stage 4 semantic mixture sample binding is invalid")
+    if formal_stage is not None:
+        full_contract = training.get(
+            "factConditionedSemanticMixtureStage4FullTrainingContract", {}
+        )
+        expected_full_contract = {
+            "status": "active_owner_authorized_independent_stage_execution",
+            "stage": formal_stage,
+            "resolution": training.get("resolutionStages", [])[formal_stage],
+            "epochCount": 40,
+            "previewEpochs": [1, 5, 10, 20, 30, 40],
+            "datasetCapacity": 64,
+            "splitCounts": V7_MVP64_SPLIT_COUNTS,
+            "initialization": (
+                "project_random_fact_conditioned_semantic_mixture"
+                if formal_stage == 0
+                else f"current_run_stage_{formal_stage - 1}_checkpoint_only"
+            ),
+            "parentCheckpointRequired": formal_stage > 0,
+            "smokeCheckpointAllowed": False,
+            "historicalCheckpointAllowed": False,
+            "automaticRetryAllowed": False,
+        }
+        if full_contract != expected_full_contract:
+            raise ValueError("Stage 4 semantic mixture formal Stage contract changed")
+        if (
+            int(training.get("denoiserEpochs", 0)) != 40
+            or training.get("fixedEpochPreviewPolicy", {}).get("formalStage")
+            != [1, 5, 10, 20, 30, 40]
+            or training.get("authorizedInitialization")
+            != expected_full_contract["initialization"]
+        ):
+            raise ValueError("Stage 4 semantic mixture formal Stage schedule changed")
 
     root = Path(project_root or Path.cwd()).resolve()
     for key, binding in FACT_CONDITIONED_SEMANTIC_MIXTURE_REGISTRATION_DECISION_BINDINGS.items():
@@ -4058,6 +4318,31 @@ def validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(
         validate_fact_conditioned_semantic_mixture_stage4_smoke_execution_contract(
             config, project_root,
         )
+    elif formal_stage is not None:
+        expected_statuses = FACT_CONDITIONED_SEMANTIC_MIXTURE_FULL_TRAINING_STATUSES
+        expected_owner_flags = {
+            "checkpointLoadingAuthorized": formal_stage > 0,
+            "optimizerCreationAuthorized": True,
+            "backwardExecutionAuthorized": True,
+            "modelWeightMutationAuthorized": True,
+            "gpuTrainingAuthorizedNow": True,
+            "singleSampleGpuOverfitSmokeAuthorized": False,
+            "fullTrainingAuthorized": True,
+            "stage1Authorized": formal_stage == 1,
+            "stage2Authorized": formal_stage == 2,
+            "strictRevalidationAuthorized": False,
+            "validationAuthorized": False,
+            "formalInferenceAuthorized": False,
+            "checkpointPromotionAuthorized": False,
+            "runtimeFrameAuthorized": False,
+            "worldEntryAuthorized": False,
+            "automaticRetryAuthorized": False,
+        }
+        if (
+            owner.get("status") != expected_statuses[formal_stage]
+            or any(owner.get(key) is not expected for key, expected in expected_owner_flags.items())
+        ):
+            raise ValueError("Stage 4 semantic mixture formal Stage Owner actions are invalid")
     elif owner.get("status") != "not_authorized_cpu_support_only" or any(
         owner.get(key) is not False for key in (
             "checkpointLoadingAuthorized", "optimizerCreationAuthorized",
@@ -4074,12 +4359,473 @@ def validate_fact_conditioned_semantic_mixture_stage4_cpu_contract(
         "status": (
             "stage4_fact_conditioned_semantic_mixture_smoke_contract_valid"
             if smoke_mode
-            else "stage4_fact_conditioned_semantic_mixture_cpu_contract_valid_inactive"
+            else (
+                f"stage4_fact_conditioned_semantic_mixture_stage{formal_stage}_full_training_contract_valid"
+                if formal_stage is not None
+                else "stage4_fact_conditioned_semantic_mixture_cpu_contract_valid_inactive"
+            )
         ),
         "expertIdentities": list(FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES),
         "sourceConditionChannels": list(FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS),
         "diagnosticManifestFields": list(FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS),
         "reusedWeight": float(training["denoiserLossWeights"]["discreteConditionOutputBinding"]),
+    }
+
+
+def derive_stage4_per_class_final_visible_rgb_weights(config):
+    """Derive typed final-RGB weights without selecting a free value."""
+    training = config.get("training", {})
+    loss_weights = training.get("denoiserLossWeights", {})
+    object_weights = training.get("objectSemanticChannelWeights", {})
+    expected_objects = FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS[1:]
+    if set(object_weights) != set(expected_objects):
+        raise ValueError("Stage 4 final visible RGB object weight identity changed")
+    object_semantic = float(loss_weights.get("objectSemanticRgb", float("nan")))
+    path_boundary = float(loss_weights.get("pathBoundaryRgb", float("nan")))
+    path_interior = float(loss_weights.get("pathInteriorRgb", float("nan")))
+    values = [float(object_weights[name]) for name in expected_objects]
+    denominator = sum(values)
+    if (
+        not all(math.isfinite(value) and value > 0.0 for value in values)
+        or not math.isfinite(object_semantic) or object_semantic <= 0.0
+        or not math.isfinite(path_boundary) or path_boundary <= 0.0
+        or not math.isfinite(path_interior) or path_interior <= 0.0
+        or denominator <= 0.0
+    ):
+        raise ValueError("Stage 4 final visible RGB weights are not uniquely derivable")
+    derived = {"route": path_interior}
+    for identity, value in zip(
+        FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES[1:], values,
+    ):
+        derived[identity] = object_semantic * value / denominator
+    return {
+        "weights": derived,
+        "sources": {
+            "route": "training.denoiserLossWeights.pathInteriorRgb",
+            "routeBoundaryPreserved": "training.denoiserLossWeights.pathBoundaryRgb",
+            "objects": (
+                "training.denoiserLossWeights.objectSemanticRgb * "
+                "training.objectSemanticChannelWeights[channel] / sum(objectSemanticChannelWeights)"
+            ),
+        },
+        "sourceValues": {
+            "pathInteriorRgb": path_interior,
+            "pathBoundaryRgb": path_boundary,
+            "objectSemanticRgb": object_semantic,
+            "objectSemanticChannelWeights": {
+                name: float(object_weights[name]) for name in expected_objects
+            },
+        },
+    }
+
+
+def validate_stage4_per_class_final_visible_rgb_obligation(config):
+    if not is_fact_conditioned_semantic_mixture_stage4(config):
+        raise ValueError("Stage 4 final visible RGB obligation requires semantic mixture architecture")
+    contract = config.get("training", {}).get(
+        "stage4PerClassFinalVisibleRgbObligation", {}
+    )
+    expected_fields = {
+        "enabled", "status", "contractId", "terms", "derivedWeights",
+        "weightDerivation", "legalSupervision", "checkpointQualification",
+        "compatibility", "evidenceBindings", "ownerImplementationAuthorization",
+        "activationGate",
+    }
+    if set(contract) != expected_fields:
+        raise ValueError("Stage 4 final visible RGB obligation has missing or unknown fields")
+    formal_stage_active = resolve_stage_mode(config).mode_id in {
+        "fact_conditioned_semantic_mixture_stage0_full_training",
+        "fact_conditioned_semantic_mixture_stage1_full_training",
+        "fact_conditioned_semantic_mixture_stage2_full_training",
+    }
+    if (
+        contract.get("enabled") is not True
+        or contract.get("status") != (
+            "training_loss_active_owner_authorized"
+            if formal_stage_active else "cpu_support_verified_inactive"
+        )
+        or contract.get("contractId") != STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_OBLIGATION_ID
+        or contract.get("terms") != list(STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_TERMS)
+    ):
+        raise ValueError("Stage 4 final visible RGB obligation identity is invalid")
+    derived = derive_stage4_per_class_final_visible_rgb_weights(config)
+    actual_weights = contract.get("derivedWeights", {})
+    if set(actual_weights) != set(derived["weights"]) or any(
+        not math.isclose(
+            float(actual_weights[name]), float(derived["weights"][name]),
+            rel_tol=0.0, abs_tol=1e-12,
+        )
+        for name in derived["weights"]
+    ):
+        raise ValueError("Stage 4 final visible RGB derived weights changed")
+    if contract.get("weightDerivation") != {
+        **derived["sources"],
+        "sourceValues": derived["sourceValues"],
+        "freeValueSelectionAllowed": False,
+    }:
+        raise ValueError("Stage 4 final visible RGB weight provenance changed")
+    if contract.get("legalSupervision") != {
+        "reference": "original_owner_approved_reference_rgb",
+        "conditionPack": "original_compiled_23_channel_condition_pack",
+        "maskChannels": list(FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS),
+        "lossFunction": "masked_condition_rgb_loss",
+        "failedPreviewPixelsUsedAsTargets": False,
+        "machineReviewThresholdsUsedAsTargets": False,
+        "machineReviewResultsUsedAsTargets": False,
+    }:
+        raise ValueError("Stage 4 final visible RGB legal supervision changed")
+    if contract.get("checkpointQualification") != {
+        "explicitTerms": [term["metric"] for term in STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_TERMS],
+        "usesSameDerivedWeightsAsTraining": True,
+        "aggregateObjectSemanticRgbCannotReplaceExplicitTerms": True,
+    }:
+        raise ValueError("Stage 4 final visible RGB checkpoint qualification changed")
+    if contract.get("compatibility") != {
+        "oldV7V8V9AndHistoricalStage4BehaviorPreserved": True,
+        "oldDenoiserCheckpointCompatible": False,
+        "newModelArchitectureCreated": False,
+    }:
+        raise ValueError("Stage 4 final visible RGB compatibility boundary changed")
+    if contract.get("evidenceBindings") != STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_EVIDENCE_BINDINGS:
+        raise ValueError("Stage 4 final visible RGB evidence bindings changed")
+    if (
+        contract.get("ownerImplementationAuthorization")
+        != STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_IMPLEMENTATION_AUTHORIZATION
+    ):
+        raise ValueError("Stage 4 final visible RGB implementation lineage changed")
+    activation = contract.get("activationGate", {})
+    expected_activation = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage5Now",
+        "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow",
+        "worldEntryNow",
+    }
+    active_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "stage4FullTrainingNow",
+    } if formal_stage_active else set()
+    if set(activation) != expected_activation or any(
+        activation.get(key) is not (key in active_fields) for key in expected_activation
+    ):
+        raise ValueError("Stage 4 final visible RGB inactive gate changed")
+    return {
+        "status": (
+            "stage4_per_class_final_visible_rgb_obligation_contract_valid_active_full_training"
+            if formal_stage_active
+            else "stage4_per_class_final_visible_rgb_obligation_cpu_contract_valid_inactive"
+        ),
+        "terms": list(STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_TERMS),
+        "derivedWeights": derived["weights"],
+    }
+
+
+def validate_stage4_distribution_aware_visible_spatial_semantic_obligation(config):
+    base = validate_stage4_per_class_final_visible_rgb_obligation(config)
+    contract = config.get("training", {}).get(
+        "stage4DistributionAwareVisibleSpatialSemanticObligation", {}
+    )
+    expected_fields = {
+        "enabled", "status", "contractId", "requiredIdentities", "sourceChannels",
+        "aggregation", "trajectoryBinding", "checkpointQualification",
+        "legalSupervision", "compatibility", "evidenceBindings",
+        "ownerImplementationAuthorization", "activationGate",
+    }
+    if set(contract) != expected_fields:
+        raise ValueError("Stage 4 distribution-aware obligation has missing or unknown fields")
+    formal_stage_active = resolve_stage_mode(config).mode_id in {
+        "fact_conditioned_semantic_mixture_stage0_full_training",
+        "fact_conditioned_semantic_mixture_stage1_full_training",
+        "fact_conditioned_semantic_mixture_stage2_full_training",
+    }
+    if (
+        contract.get("enabled") is not True
+        or contract.get("status") != (
+            "training_loss_active_owner_authorized"
+            if formal_stage_active else "cpu_support_verified_inactive"
+        )
+        or contract.get("contractId")
+        != STAGE4_DISTRIBUTION_AWARE_VISIBLE_SPATIAL_SEMANTIC_OBLIGATION_ID
+        or contract.get("requiredIdentities")
+        != list(FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES)
+        or contract.get("sourceChannels")
+        != list(FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS)
+    ):
+        raise ValueError("Stage 4 distribution-aware obligation identity changed")
+    if contract.get("aggregation") != {
+        "perSamplePerClass": True,
+        "classReduction": "maximum_of_existing_derived_weighted_class_obligations",
+        "batchReduction": "maximum_of_per_sample_worst_class_obligations",
+        "freeNumericWeightSelected": False,
+    }:
+        raise ValueError("Stage 4 distribution-aware aggregation changed")
+    if contract.get("trajectoryBinding") != {
+        "source": "existing_short_trajectory_current_training_predictions",
+        "stepReduction": "maximum_across_existing_fixed_trajectory_steps",
+        "newTrajectoryStepCountSelected": False,
+    }:
+        raise ValueError("Stage 4 distribution-aware trajectory binding changed")
+    if contract.get("checkpointQualification") != {
+        "includeWorstValidationSampleClassObligation": True,
+        "aggregateMeanCannotReplaceWorstSampleClass": True,
+        "usesExistingDerivedClassWeights": True,
+    }:
+        raise ValueError("Stage 4 distribution-aware checkpoint qualification changed")
+    if contract.get("legalSupervision") != {
+        "reference": "original_owner_approved_reference_rgb",
+        "conditionPack": "original_compiled_23_channel_condition_pack",
+        "maskChannels": list(FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS),
+        "decode": "current_training_prediction_decoded_by_frozen_project_autoencoder",
+        "failedPreviewPixelsUsedAsTargets": False,
+        "machineReviewThresholdsUsedAsTargets": False,
+        "machineReviewResultsUsedAsTargets": False,
+    }:
+        raise ValueError("Stage 4 distribution-aware legal supervision changed")
+    if contract.get("compatibility") != {
+        "modelArchitectureChanged": False,
+        "checkpointFormatChanged": False,
+        "datasetSplitChanged": False,
+        "oldModesPreserved": True,
+    }:
+        raise ValueError("Stage 4 distribution-aware compatibility changed")
+    if (
+        contract.get("evidenceBindings")
+        != STAGE4_DISTRIBUTION_AWARE_VISIBLE_SPATIAL_SEMANTIC_EVIDENCE_BINDINGS
+        or contract.get("ownerImplementationAuthorization")
+        != STAGE4_DISTRIBUTION_AWARE_VISIBLE_SPATIAL_SEMANTIC_IMPLEMENTATION_AUTHORIZATION
+    ):
+        raise ValueError("Stage 4 distribution-aware implementation lineage changed")
+    activation = contract.get("activationGate", {})
+    expected_activation = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage5Now",
+        "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow",
+        "worldEntryNow",
+    }
+    active_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "stage4FullTrainingNow",
+    } if formal_stage_active else set()
+    if set(activation) != expected_activation or any(
+        activation.get(key) is not (key in active_fields) for key in expected_activation
+    ):
+        raise ValueError("Stage 4 distribution-aware activation gate changed")
+    return {"status": (
+        "stage4_distribution_aware_visible_spatial_semantic_contract_valid_active_full_training"
+        if formal_stage_active
+        else "stage4_distribution_aware_visible_spatial_semantic_contract_valid_inactive"
+    ), "derivedWeights": base["derivedWeights"]}
+
+
+def derive_stage4_vegetation_final_visible_semantic_repair_weight(config):
+    """Reuse the existing vegetation final-RGB weight; never select a new value."""
+    final_visible = derive_stage4_per_class_final_visible_rgb_weights(config)
+    vegetation_weight = float(final_visible["weights"]["vegetation"])
+    if not math.isfinite(vegetation_weight) or vegetation_weight <= 0.0:
+        raise ValueError("Stage 4 vegetation edge weight is not uniquely derivable")
+    return {
+        "weight": vegetation_weight,
+        "source": "stage4PerClassFinalVisibleRgbObligation.derivedWeights.vegetation",
+        "sourceValue": vegetation_weight,
+        "freeValueSelectionAllowed": False,
+    }
+
+
+def validate_stage4_vegetation_final_visible_semantic_repair(config):
+    base = validate_stage4_per_class_final_visible_rgb_obligation(config)
+    contract = config.get("training", {}).get(
+        "stage4VegetationFinalVisibleSemanticRepair", {}
+    )
+    expected_fields = {
+        "enabled", "status", "contractId", "sourceChannel", "finalRgbColorTerm",
+        "finalRgbEdgeStructureTerm", "derivedWeight", "weightDerivation",
+        "legalSupervision", "compatibility", "sourceFailureEvidence",
+        "ownerImplementationAuthorization", "activationGate",
+    }
+    if set(contract) != expected_fields:
+        raise ValueError("Stage 4 vegetation semantic repair has missing or unknown fields")
+    derived = derive_stage4_vegetation_final_visible_semantic_repair_weight(config)
+    formal_stage_active = resolve_stage_mode(config).mode_id in {
+        "fact_conditioned_semantic_mixture_stage0_full_training",
+        "fact_conditioned_semantic_mixture_stage1_full_training",
+        "fact_conditioned_semantic_mixture_stage2_full_training",
+    }
+    if (
+        contract.get("enabled") is not True
+        or contract.get("status") != (
+            "training_loss_active_owner_authorized"
+            if formal_stage_active else "cpu_support_verified_inactive"
+        )
+        or contract.get("contractId") != STAGE4_VEGETATION_FINAL_VISIBLE_SEMANTIC_REPAIR_ID
+        or contract.get("sourceChannel") != "object_vegetation"
+        or contract.get("finalRgbColorTerm")
+        != "stage4SemanticMixtureVegetationFinalTypedRgbMae"
+        or contract.get("finalRgbEdgeStructureTerm")
+        != "stage4SemanticMixtureVegetationFinalTypedEdgeMae"
+        or not math.isclose(
+            float(contract.get("derivedWeight", float("nan"))),
+            derived["weight"], rel_tol=0.0, abs_tol=1e-12,
+        )
+        or contract.get("weightDerivation") != derived
+    ):
+        raise ValueError("Stage 4 vegetation semantic repair identity changed")
+    if contract.get("legalSupervision") != {
+        "reference": "original_owner_approved_reference_rgb",
+        "conditionPack": "original_compiled_23_channel_condition_pack",
+        "maskChannel": "object_vegetation",
+        "lossFunction": "masked_condition_gradient_rgb_loss",
+        "failedPreviewPixelsUsedAsTargets": False,
+        "machineReviewThresholdsUsedAsTargets": False,
+        "machineReviewResultsUsedAsTargets": False,
+    }:
+        raise ValueError("Stage 4 vegetation semantic repair supervision changed")
+    if contract.get("compatibility") != {
+        "existingColorObligationPreserved": True,
+        "otherFourTypedObligationsPreserved": True,
+        "oldV7V8V9AndHistoricalStage4BehaviorPreserved": True,
+        "newModelArchitectureCreated": False,
+        "failedSmokeCheckpointCompatible": False,
+    }:
+        raise ValueError("Stage 4 vegetation semantic repair compatibility changed")
+    evidence = contract.get("sourceFailureEvidence", {})
+    if evidence != {
+        "smokeTerminalSha256": "2550750455a2b1587ad4916a0ef27cd2e82654bf3c8468c1f96ef772bd8bc32c",
+        "manifestSha256": "e9a16f8b085802dab6beb1ef2679c2c0ebd74bc906d9edace7fc54583dd64edc",
+        "machineReviewSha256": "253d183f882cb33b105f3ffc7cc5bfca5d687921a8a01fd19b5e96b99ff1369f",
+        "epoch30OnlyIssue": "condition_object_vegetation_reference_semantic_mismatch",
+        "reviewThresholdsChanged": False,
+    }:
+        raise ValueError("Stage 4 vegetation semantic repair source evidence changed")
+    if (
+        contract.get("ownerImplementationAuthorization")
+        != STAGE4_VEGETATION_FINAL_VISIBLE_SEMANTIC_REPAIR_AUTHORIZATION
+    ):
+        raise ValueError("Stage 4 vegetation semantic repair implementation lineage changed")
+    activation = contract.get("activationGate", {})
+    expected_activation = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage5Now",
+        "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow",
+        "worldEntryNow",
+    }
+    active_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "stage4FullTrainingNow",
+    } if formal_stage_active else set()
+    if set(activation) != expected_activation or any(
+        activation.get(key) is not (key in active_fields) for key in expected_activation
+    ):
+        raise ValueError("Stage 4 vegetation semantic repair inactive gate changed")
+    return {
+        "status": (
+            "stage4_vegetation_final_visible_semantic_repair_contract_valid_active_full_training"
+            if formal_stage_active
+            else "stage4_vegetation_final_visible_semantic_repair_cpu_contract_valid_inactive"
+        ),
+        "baseObjectiveStatus": base["status"],
+        "derivedWeight": derived["weight"],
+    }
+
+
+def validate_stage4_vegetation_luminance_spatial_structure_supervision(config):
+    repair = validate_stage4_vegetation_final_visible_semantic_repair(config)
+    contract = config.get("training", {}).get(
+        "stage4VegetationLuminanceSpatialStructureSupervision", {}
+    )
+    expected_fields = {
+        "enabled", "status", "contractId", "sourceChannel", "luminanceCoefficients",
+        "lossFunction", "derivedWeight", "weightDerivation", "legalSupervision",
+        "compatibility", "sourceFailureEvidence", "ownerImplementationAuthorization",
+        "activationGate",
+    }
+    derived = derive_stage4_vegetation_final_visible_semantic_repair_weight(config)
+    if set(contract) != expected_fields:
+        raise ValueError("Stage 4 vegetation luminance supervision has missing or unknown fields")
+    formal_stage_active = resolve_stage_mode(config).mode_id in {
+        "fact_conditioned_semantic_mixture_stage0_full_training",
+        "fact_conditioned_semantic_mixture_stage1_full_training",
+        "fact_conditioned_semantic_mixture_stage2_full_training",
+    }
+    if (
+        contract.get("enabled") is not True
+        or contract.get("status") != (
+            "training_loss_active_owner_authorized"
+            if formal_stage_active else "cpu_support_verified_inactive"
+        )
+        or contract.get("contractId")
+        != STAGE4_VEGETATION_LUMINANCE_SPATIAL_STRUCTURE_SUPERVISION_ID
+        or contract.get("sourceChannel") != "object_vegetation"
+        or contract.get("luminanceCoefficients") != [0.2126, 0.7152, 0.0722]
+        or contract.get("lossFunction")
+        != "one_minus_masked_zero_mean_normalized_luminance_correlation"
+        or not math.isclose(
+            float(contract.get("derivedWeight", float("nan"))),
+            derived["weight"], rel_tol=0.0, abs_tol=1e-12,
+        )
+        or contract.get("weightDerivation") != derived
+    ):
+        raise ValueError("Stage 4 vegetation luminance supervision identity changed")
+    if contract.get("legalSupervision") != {
+        "reference": "original_owner_approved_reference_rgb",
+        "conditionPack": "original_compiled_23_channel_condition_pack",
+        "maskChannel": "object_vegetation",
+        "failedPreviewPixelsUsedAsTargets": False,
+        "machineReviewThresholdsUsedAsTargets": False,
+        "machineReviewResultsUsedAsTargets": False,
+    }:
+        raise ValueError("Stage 4 vegetation luminance supervision source changed")
+    if contract.get("compatibility") != {
+        "existingColorAndEdgeObligationsPreserved": True,
+        "otherFourTypedObligationsPreserved": True,
+        "oldV7V8V9AndHistoricalStage4BehaviorPreserved": True,
+        "newModelArchitectureCreated": False,
+        "failedSmokeCheckpointCompatible": False,
+    }:
+        raise ValueError("Stage 4 vegetation luminance supervision compatibility changed")
+    if contract.get("sourceFailureEvidence") != {
+        "smokeTerminalSha256": "4da637c83543e7b0c43a033231b22c854f74bc7f0583e0321263e42b31f0ab97",
+        "manifestSha256": "b5460272d2864cec3bba6f7d7bbdcb3f43d075d27ee00930b5c6e1065cdf99b6",
+        "machineReviewSha256": "72aac2ba1a1ce23d90e0d46c091ba1ba775666b174cb2526bb0cbe186b00a40b",
+        "epoch30OnlyIssue": "condition_object_vegetation_reference_semantic_mismatch",
+        "reviewThresholdsChanged": False,
+        "reviewThresholdUsedAsTrainingTarget": False,
+    }:
+        raise ValueError("Stage 4 vegetation luminance source evidence changed")
+    if (
+        contract.get("ownerImplementationAuthorization")
+        != STAGE4_VEGETATION_LUMINANCE_SPATIAL_STRUCTURE_AUTHORIZATION
+    ):
+        raise ValueError("Stage 4 vegetation luminance implementation lineage changed")
+    expected_activation = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "smokeNow", "stage4FullTrainingNow", "stage5Now",
+        "formalInferenceNow", "checkpointPromotionNow", "runtimeFrameNow",
+        "worldEntryNow",
+    }
+    activation = contract.get("activationGate", {})
+    active_fields = {
+        "configurationActiveNow", "checkpointReadNow", "optimizerCreationNow",
+        "backwardExecutionNow", "modelParameterUpdateNow", "gpuUseNow",
+        "trainingNow", "stage4FullTrainingNow",
+    } if formal_stage_active else set()
+    if set(activation) != expected_activation or any(
+        activation.get(key) is not (key in active_fields) for key in expected_activation
+    ):
+        raise ValueError("Stage 4 vegetation luminance inactive gate changed")
+    return {
+        "status": (
+            "stage4_vegetation_luminance_spatial_structure_contract_valid_active_full_training"
+            if formal_stage_active
+            else "stage4_vegetation_luminance_spatial_structure_cpu_contract_valid_inactive"
+        ),
+        "derivedWeight": derived["weight"],
+        "previousRepair": repair,
     }
 
 
@@ -4174,6 +4920,46 @@ def validate_fact_conditioned_semantic_mixture_stage4_smoke_execution_contract(
             ExecutionAction.WRITE_SMOKE_CHECKPOINT,
         )
     )
+    legacy_qualification = (
+        terminal.get("status")
+        == "fact_conditioned_semantic_mixture_gradient_diagnostic_passed_closed"
+        and diagnostic.get("status")
+        == "passed_readonly_fact_conditioned_semantic_mixture_gpu_causal_and_gradient_diagnostic"
+        and cpu_report.get("status")
+        == "passed_fact_conditioned_semantic_mixture_readonly_gpu_diagnostic_cpu_authorization_regression"
+    )
+    final_visible_rgb_qualification = (
+        terminal.get("status")
+        == "stage4_per_class_final_visible_rgb_gpu_qualification_passed_closed"
+        and diagnostic.get("status")
+        == "passed_readonly_stage4_per_class_final_visible_rgb_gpu_gradient_qualification"
+        and cpu_report.get("status")
+        == "passed_stage4_final_visible_rgb_readonly_gpu_diagnostic_cpu_authorization_regression"
+    )
+    vegetation_repair_qualification = (
+        terminal.get("status")
+        == "stage4_vegetation_final_visible_gpu_qualification_passed_closed"
+        and diagnostic.get("status")
+        == "passed_readonly_stage4_vegetation_final_visible_gpu_gradient_qualification"
+        and cpu_report.get("status")
+        == "passed_stage4_vegetation_final_visible_readonly_gpu_diagnostic_cpu_authorization_regression"
+    )
+    vegetation_luminance_qualification = (
+        terminal.get("status")
+        == "stage4_per_class_final_visible_rgb_gpu_qualification_passed_closed"
+        and diagnostic.get("status")
+        == "passed_readonly_stage4_per_class_final_visible_rgb_gpu_gradient_qualification"
+        and cpu_report.get("status")
+        == "passed_stage4_vegetation_luminance_spatial_readonly_gpu_diagnostic_cpu_authorization_regression"
+        and diagnostic.get("identity", {}).get("trainingObjectiveContractId")
+        == STAGE4_VEGETATION_LUMINANCE_SPATIAL_STRUCTURE_SUPERVISION_ID
+        and diagnostic.get("gradientEvidence", {}).get(
+            "vegetationLuminanceSpatialStructure", {}
+        ).get("reachesFinalDenoiserRgbPath") is True
+        and diagnostic.get("gradientEvidence", {}).get(
+            "vegetationLuminanceSpatialStructure", {}
+        ).get("reachesFrozenAutoencoderDecodedRgb") is True
+    )
     if (
         source.get("denoiserArchitecture")
         != "stage4_fact_conditioned_semantic_mixture_decoder_v1"
@@ -4185,19 +4971,20 @@ def validate_fact_conditioned_semantic_mixture_stage4_smoke_execution_contract(
         != "fact_conditioned_semantic_mixture_stage4_smoke_authorization_atomically_consumed"
         or consumption.get("authorizationSha256") != execution["ownerAuthorizationSha256"]
         or consumption.get("oneTimeConsumption") is not True
-        or implementation_authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        or implementation_authorization.get("status")
+        not in {"resolved_owner_authorized_not_consumed", "owner_authorized_unconsumed"}
         or implementation_consumption.get("authorizationSha256")
         != execution["implementationAuthorizationSha256"]
         or implementation_consumption.get("oneTimeConsumption") is not True
         or attestation.get("status")
         != "fact_conditioned_semantic_mixture_stage4_smoke_implementation_cpu_verified"
         or attestation.get("trainerSha256") != sha256_file(Path(__file__))
-        or terminal.get("status")
-        != "fact_conditioned_semantic_mixture_gradient_diagnostic_passed_closed"
-        or diagnostic.get("status")
-        != "passed_readonly_fact_conditioned_semantic_mixture_gpu_causal_and_gradient_diagnostic"
-        or cpu_report.get("status")
-        != "passed_fact_conditioned_semantic_mixture_readonly_gpu_diagnostic_cpu_authorization_regression"
+        or not (
+            legacy_qualification
+            or final_visible_rgb_qualification
+            or vegetation_repair_qualification
+            or vegetation_luminance_qualification
+        )
         or cpu_report.get("positivePassed") != cpu_report.get("positiveTotal")
         or cpu_report.get("negativePassed") != cpu_report.get("negativeTotal")
     ):
@@ -7857,6 +8644,22 @@ def train_epoch(
             )
             loss_metrics["compositeLoss"] = loss_metrics["compositeLossTensor"]
             loss_metrics.update(cross_domain_metrics)
+        full_rollout_metrics = stage4_full_rollout_final_visible_consistency(
+            model,
+            conditions,
+            image,
+            diffusion["alphasCumulative"],
+            latent_normalization,
+            config,
+            batch_index,
+        )
+        if full_rollout_metrics is not None:
+            loss_metrics["compositeLossTensor"] = (
+                loss_metrics["compositeLossTensor"]
+                + full_rollout_metrics["stage4FullRolloutFinalVisibleConsistencyLossTensor"]
+            )
+            loss_metrics["compositeLoss"] = loss_metrics["compositeLossTensor"]
+            loss_metrics.update(full_rollout_metrics)
         record_stage4_step(
             step_telemetry_path,
             "forward_loss",
@@ -7962,6 +8765,167 @@ def train_epoch(
     if count == 0:
         raise ValueError("conditional denoiser training loader produced no batches")
     return {key: value / count for key, value in totals.items()}
+
+
+def validate_stage4_full_rollout_final_visible_consistency(config):
+    training = config.get("training", {})
+    contract = training.get("stage4FullRolloutFinalVisibleConsistency", {})
+    if not contract:
+        return None
+    expected_fields = {
+        "enabled", "status", "contractId", "sampler", "rolloutInitialization",
+        "rolloutSteps", "gradientTailSteps", "gradientTailSource", "weight",
+        "weightSource", "finalVisibleTerms", "legalSupervision", "compatibility",
+        "evidenceBindings", "activationGate",
+    }
+    if set(contract) != expected_fields:
+        raise ValueError("Stage 4 full-rollout final-visible contract fields changed")
+    if (
+        contract.get("enabled") is not True
+        or contract.get("contractId") != "stage4_full_rollout_final_visible_consistency_v1"
+        or contract.get("sampler") != "same_deterministic_velocity_sampler_as_fixed_preview"
+        or contract.get("rolloutInitialization") != "deterministic_noise_from_training_seed_plus_existing_preview_offset"
+        or int(contract.get("rolloutSteps", 0)) != int(config.get("inferenceSteps", 0))
+        or int(contract.get("gradientTailSteps", 0)) != 5
+        or contract.get("gradientTailSource") != "existing_v7_r5_cross_domain_visual_consistency_contract"
+        or not math.isclose(
+            float(contract.get("weight", float("nan"))),
+            float(training["shortTrajectorySupervision"]["weight"]),
+            rel_tol=0.0,
+            abs_tol=1e-12,
+        )
+        or contract.get("weightSource") != "training.shortTrajectorySupervision.weight"
+    ):
+        raise ValueError("Stage 4 full-rollout final-visible identity changed")
+    expected_terms = {
+        "decodedRgb": float(training["denoiserLossWeights"]["decodedRgb"]),
+        "spatialGridRgb": float(training["denoiserLossWeights"]["spatialGridRgb"]),
+        "terrainWaterMaskedRgb": float(training["denoiserLossWeights"]["sparseRegionDecodedRgb"]),
+        "routeInteriorRgb": float(training["denoiserLossWeights"]["pathInteriorRgb"]),
+        "routeForbiddenBoundaryRgb": float(training["denoiserLossWeights"]["pathForbiddenBoundaryRgb"]),
+        "routeCoverage": float(training["pathCoverageCalibration"]["weight"]),
+        "routeActivationMass": float(training["pathActivationMassCalibration"]["weight"]),
+        "routeRequiredBoundary": float(training["denoiserLossWeights"]["pathBoundaryRgb"]),
+        "perClassDistributionAware": "reuse_stage4_distribution_aware_visible_spatial_semantic_obligation",
+    }
+    if contract.get("finalVisibleTerms") != expected_terms:
+        raise ValueError("Stage 4 full-rollout final-visible weight provenance changed")
+    if contract.get("legalSupervision") != {
+        "reference": "original_owner_approved_reference_rgb",
+        "conditionPack": "original_compiled_23_channel_condition_pack",
+        "maskChannels": [
+            "terrain_water", "terrain_path_ground", "object_footprints",
+            "object_tree", "object_rock", "object_vegetation",
+        ],
+        "failedPreviewPixelsUsedAsTargets": False,
+        "machineReviewThresholdsUsedAsTargets": False,
+        "machineReviewResultsUsedAsTargets": False,
+    }:
+        raise ValueError("Stage 4 full-rollout supervision source changed")
+    if contract.get("compatibility") != {
+        "modelArchitectureChanged": False,
+        "checkpointFormatChanged": False,
+        "datasetSplitChanged": False,
+        "oldModesPreserved": True,
+    }:
+        raise ValueError("Stage 4 full-rollout compatibility changed")
+    return contract
+
+
+def stage4_full_rollout_final_visible_consistency(
+    model,
+    conditions,
+    target_image,
+    alpha_bars,
+    latent_normalization,
+    config,
+    batch_index,
+):
+    contract = validate_stage4_full_rollout_final_visible_consistency(config)
+    if contract is None:
+        return None
+    steps = inference_timesteps(
+        int(config["diffusionSteps"]), int(config["inferenceSteps"]), target_image.device,
+    )
+    gradient_tail_steps = int(contract["gradientTailSteps"])
+    no_gradient_steps = len(steps) - gradient_tail_steps
+    latent_shape = model.autoencoder.encode(target_image).shape
+    generator = torch.Generator(device=target_image.device).manual_seed(
+        int(config["training"]["seed"]) + 3000 + int(batch_index)
+    )
+    latent = torch.randn(latent_shape, device=target_image.device, generator=generator)
+    for step_index, timestep in enumerate(steps):
+        timestep_value = int(timestep.item())
+        previous = int(steps[step_index + 1].item()) if step_index + 1 < len(steps) else -1
+        timestep_batch = torch.full(
+            (latent.shape[0],), timestep_value, device=latent.device, dtype=torch.long,
+        )
+        if step_index < no_gradient_steps:
+            with torch.no_grad():
+                velocity = model.predict_velocity(latent, timestep_batch, conditions)
+                latent = deterministic_velocity_step(
+                    latent, velocity, timestep_value, previous, alpha_bars,
+                )
+            latent = latent.detach()
+        else:
+            velocity = model.predict_velocity(latent, timestep_batch, conditions)
+            latent = deterministic_velocity_step(
+                latent, velocity, timestep_value, previous, alpha_bars,
+            )
+    predicted_rgb = model.autoencoder.decode(
+        denormalize_latent(latent, latent_normalization)
+    ).clamp(0.0, 1.0)
+    terms = contract["finalVisibleTerms"]
+    water_rgb = masked_condition_rgb_loss(
+        predicted_rgb, target_image, conditions, config, "terrain_water",
+    )
+    path_inside = path_interior_rgb_loss(predicted_rgb, target_image, conditions, config)
+    path_forbidden = path_forbidden_boundary_rgb_loss(
+        predicted_rgb, target_image, conditions, config,
+    )
+    coverage = path_coverage_calibration_loss(
+        predicted_rgb, target_image, conditions, config,
+    )
+    activation = path_activation_mass_calibration_loss(
+        predicted_rgb, target_image, conditions, config,
+    )
+    boundary = required_boundary_contact_loss(
+        predicted_rgb, target_image, conditions, config,
+    )
+    distribution = stage4_distribution_aware_visible_spatial_semantic_obligation(
+        [predicted_rgb], target_image, conditions, config,
+    )
+    rgb = torch.nn.functional.l1_loss(predicted_rgb, target_image)
+    grid = spatial_grid_rgb_loss(predicted_rgb, target_image)
+    raw = (
+        rgb * float(terms["decodedRgb"])
+        + grid * float(terms["spatialGridRgb"])
+        + water_rgb * float(terms["terrainWaterMaskedRgb"])
+        + path_inside * float(terms["routeInteriorRgb"])
+        + path_forbidden * float(terms["routeForbiddenBoundaryRgb"])
+        + coverage * float(terms["routeCoverage"])
+        + activation * float(terms["routeActivationMass"])
+        + boundary * float(terms["routeRequiredBoundary"])
+        + distribution["stage4DistributionAwareVisibleSpatialSemanticLossTensor"]
+    )
+    weighted = raw * float(contract["weight"])
+    return {
+        "stage4FullRolloutFinalVisibleConsistencyLossTensor": weighted,
+        "stage4FullRolloutFinalVisibleConsistencyWeightedLoss": weighted,
+        "stage4FullRolloutFinalVisibleConsistencyRawLoss": raw,
+        "stage4FullRolloutFinalVisibleRgbMae": rgb,
+        "stage4FullRolloutTerrainWaterRgbMae": water_rgb,
+        "stage4FullRolloutRouteInteriorRgbMae": path_inside,
+        "stage4FullRolloutRouteForbiddenBoundaryRgbMae": path_forbidden,
+        "stage4FullRolloutRouteCoverageLoss": coverage,
+        "stage4FullRolloutRouteActivationMassLoss": activation,
+        "stage4FullRolloutRouteRequiredBoundaryLoss": boundary,
+        "stage4FullRolloutWorstSampleClassFinalRgbObligation": distribution[
+            "stage4DistributionAwareWorstSampleClassFinalRgbObligation"
+        ],
+        "stage4FullRolloutStepCount": predicted_rgb.new_tensor(float(len(steps))),
+        "stage4FullRolloutGradientTailStepCount": predicted_rgb.new_tensor(float(gradient_tail_steps)),
+    }
 
 
 def stage4_cross_domain_rollout_supervision(
@@ -8219,6 +9183,45 @@ def masked_condition_gradient_rgb_loss(predicted_rgb, target_rgb, conditions, co
     return (horizontal_loss + vertical_loss) * 0.5
 
 
+def masked_condition_luminance_correlation_loss(
+    predicted_rgb,
+    target_rgb,
+    conditions,
+    config,
+    channel_name,
+):
+    """Match visible spatial luminance structure inside one typed condition mask."""
+    order = list(config["conditionChannelOrder"])
+    if channel_name not in order:
+        raise ValueError(f"condition channel is missing: {channel_name}")
+    if predicted_rgb.shape[1] != 3 or target_rgb.shape[1] != 3:
+        raise ValueError("masked luminance correlation requires RGB tensors")
+    mask = conditions[:, order.index(channel_name):order.index(channel_name) + 1]
+    mask = torch.nn.functional.interpolate(
+        mask,
+        size=predicted_rgb.shape[-2:],
+        mode="nearest",
+    )
+    support = mask.sum()
+    if float(support.detach().cpu()) <= 1.0:
+        raise ValueError("masked luminance correlation requires non-empty spatial support")
+    coefficients = predicted_rgb.new_tensor([0.2126, 0.7152, 0.0722]).view(1, 3, 1, 1)
+    predicted_luminance = (predicted_rgb * coefficients).sum(dim=1, keepdim=True)
+    target_luminance = (target_rgb * coefficients).sum(dim=1, keepdim=True)
+    predicted_mean = (predicted_luminance * mask).sum() / support
+    target_mean = (target_luminance * mask).sum() / support
+    predicted_centered = (predicted_luminance - predicted_mean) * mask
+    target_centered = (target_luminance - target_mean) * mask
+    numerator = (predicted_centered * target_centered).sum()
+    predicted_energy = predicted_centered.square().sum()
+    target_energy = target_centered.square().sum()
+    epsilon = torch.finfo(predicted_rgb.dtype).eps
+    if float(target_energy.detach().cpu()) <= epsilon:
+        raise ValueError("masked reference luminance must contain spatial variation")
+    denominator = torch.sqrt(predicted_energy * target_energy).clamp_min(epsilon)
+    return predicted_rgb.new_tensor(1.0) - numerator / denominator
+
+
 def r5_path_replay_passes_per_epoch(config):
     contract = config.get("training", {}).get("pathHardExampleReplay", {})
     if contract.get("enabled") is not True:
@@ -8363,6 +9366,18 @@ def short_trajectory_supervision(model, noisy_latent, clean_latent, timesteps, a
         "shortTrajectoryDecodedRgbGradientMae": rgb_gradient_loss,
         "shortTrajectoryStepCount": predicted_clean.new_tensor(float(steps)),
     }
+    if "stage4DistributionAwareVisibleSpatialSemanticObligation" in config.get("training", {}):
+        distribution = stage4_distribution_aware_visible_spatial_semantic_obligation(
+            predicted_rgb_steps, target_image, conditions, config,
+        )
+        result["shortTrajectoryLossTensor"] = (
+            result["shortTrajectoryLossTensor"]
+            + distribution["stage4DistributionAwareVisibleSpatialSemanticLossTensor"]
+        )
+        result["shortTrajectoryWeightedLoss"] = result["shortTrajectoryLossTensor"]
+        result["stage4DistributionAwareTrajectoryWorstSampleClassFinalRgbObligation"] = (
+            distribution["stage4DistributionAwareWorstSampleClassFinalRgbObligation"]
+        )
     path_consistency = path_short_trajectory_consistency_loss(
         predicted_rgb_steps,
         target_image,
@@ -8507,6 +9522,7 @@ def evaluate_velocity_prediction(model, loader, diffusion, latent_normalization,
     was_training = model.denoiser.training
     model.denoiser.eval()
     totals = {}
+    worst_distribution_obligation = None
     count = 0
     with torch.no_grad():
         for batch_index, batch in enumerate(loader):
@@ -8536,15 +9552,36 @@ def evaluate_velocity_prediction(model, loader, diffusion, latent_normalization,
                     if key.endswith("Tensor") or key == "compositeLoss":
                         continue
                     totals[key] = totals.get(key, 0.0) + float(value.detach())
+                distribution_value = loss_metrics.get(
+                    "stage4DistributionAwareWorstSampleClassFinalRgbObligation"
+                )
+                if distribution_value is not None:
+                    current = float(distribution_value.detach())
+                    worst_distribution_obligation = (
+                        current if worst_distribution_obligation is None
+                        else max(worst_distribution_obligation, current)
+                    )
                 count += 1
     if was_training:
         model.denoiser.train()
     if count == 0:
         raise ValueError("conditional denoiser evaluation loader produced no batches")
-    return {
+    result = {
         **{key: value / count for key, value in totals.items()},
         "fixedTimesteps": [int(value) for value in timesteps],
     }
+    if worst_distribution_obligation is not None:
+        averaged = result["compositeConditionQualityScore"]
+        averaged_embedded = result.get(
+            "stage4DistributionAwareWorstSampleClassFinalRgbObligation", 0.0
+        )
+        result["compositeConditionQualityScore"] = (
+            averaged - averaged_embedded + worst_distribution_obligation
+        )
+        result["stage4DistributionAwareWorstValidationSampleClassFinalRgbObligation"] = (
+            worst_distribution_obligation
+        )
+    return result
 
 
 def predict_and_measure(model, noisy_latent, target_velocity, clean_latent, timesteps, alpha_bars, conditions, config, target_image=None, latent_normalization=None):
@@ -9166,6 +10203,52 @@ def composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
     )
     composite = base["compositeLossTensor"] + typed_supervision * reused_weight
     checkpoint = base["compositeConditionQualityScore"] + typed_supervision * checkpoint_weight
+    if "stage4PerClassFinalVisibleRgbObligation" in config.get("training", {}):
+        objective = validate_stage4_per_class_final_visible_rgb_obligation(config)
+        explicit_final_rgb = sum(
+            final_typed_losses[index] * float(objective["derivedWeights"][identity])
+            for index, identity in enumerate(identities)
+        )
+        composite = composite + explicit_final_rgb
+        checkpoint = checkpoint + explicit_final_rgb
+    if "stage4DistributionAwareVisibleSpatialSemanticObligation" in config.get("training", {}):
+        distribution = stage4_distribution_aware_visible_spatial_semantic_obligation(
+            [predicted_rgb], target_rgb, full_conditions, config,
+        )
+        composite = composite + distribution[
+            "stage4DistributionAwareVisibleSpatialSemanticLossTensor"
+        ]
+        checkpoint = checkpoint + distribution[
+            "stage4DistributionAwareVisibleSpatialSemanticLossTensor"
+        ]
+    if "stage4VegetationFinalVisibleSemanticRepair" in config.get("training", {}):
+        repair = validate_stage4_vegetation_final_visible_semantic_repair(config)
+        vegetation_edge = masked_condition_gradient_rgb_loss(
+            predicted_rgb,
+            target_rgb,
+            full_conditions,
+            config,
+            "object_vegetation",
+        )
+        weighted_vegetation_edge = vegetation_edge * float(repair["derivedWeight"])
+        composite = composite + weighted_vegetation_edge
+        checkpoint = checkpoint + weighted_vegetation_edge
+    if "stage4VegetationLuminanceSpatialStructureSupervision" in config.get("training", {}):
+        luminance_contract = validate_stage4_vegetation_luminance_spatial_structure_supervision(
+            config
+        )
+        vegetation_luminance_correlation = masked_condition_luminance_correlation_loss(
+            predicted_rgb,
+            target_rgb,
+            full_conditions,
+            config,
+            "object_vegetation",
+        )
+        weighted_vegetation_luminance_correlation = (
+            vegetation_luminance_correlation * float(luminance_contract["derivedWeight"])
+        )
+        composite = composite + weighted_vegetation_luminance_correlation
+        checkpoint = checkpoint + weighted_vegetation_luminance_correlation
     prefixes = ("Route", "Footprints", "Tree", "Rock", "Vegetation")
     metrics = {}
     for index, prefix in enumerate(prefixes):
@@ -9174,6 +10257,12 @@ def composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
         metrics[f"stage4SemanticMixture{prefix}GatedContributionAbsMean"] = gated_contributions[index].abs().mean()
         metrics[f"stage4SemanticMixture{prefix}CounterfactualRgbMae"] = counterfactual_losses[index]
         metrics[f"stage4SemanticMixture{prefix}FinalTypedRgbMae"] = final_typed_losses[index]
+    if "stage4VegetationFinalVisibleSemanticRepair" in config.get("training", {}):
+        metrics["stage4SemanticMixtureVegetationFinalTypedEdgeMae"] = vegetation_edge
+    if "stage4VegetationLuminanceSpatialStructureSupervision" in config.get("training", {}):
+        metrics[
+            "stage4SemanticMixtureVegetationFinalTypedLuminanceCorrelationLoss"
+        ] = vegetation_luminance_correlation
     metrics.update({
         "stage4SemanticMixtureFinalResponseMae": (
             predicted_velocity - base_velocity
@@ -9182,6 +10271,13 @@ def composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
             float(len(identities))
         ),
     })
+    if "stage4DistributionAwareVisibleSpatialSemanticObligation" in config.get("training", {}):
+        metrics["stage4DistributionAwareWorstSampleClassFinalRgbObligation"] = distribution[
+            "stage4DistributionAwareWorstSampleClassFinalRgbObligation"
+        ]
+        metrics["stage4DistributionAwareMeanSampleWorstClassFinalRgbObligation"] = distribution[
+            "stage4DistributionAwareMeanSampleWorstClassFinalRgbObligation"
+        ]
     return {
         **base,
         **metrics,
@@ -9510,6 +10606,52 @@ def masked_condition_rgb_loss(predicted_rgb, target_rgb, conditions, config, cha
     return ((predicted_rgb - target_rgb).abs() * mask).sum() / denominator
 
 
+def per_sample_masked_condition_rgb_loss(
+    predicted_rgb, target_rgb, conditions, config, channel_name,
+):
+    order = list(config["conditionChannelOrder"])
+    if channel_name not in order:
+        raise ValueError(f"condition channel is missing: {channel_name}")
+    if predicted_rgb.shape != target_rgb.shape or predicted_rgb.shape[0] != conditions.shape[0]:
+        raise ValueError("per-sample final RGB tensors have incompatible shapes")
+    mask = conditions[:, order.index(channel_name):order.index(channel_name) + 1]
+    mask = torch.nn.functional.interpolate(mask, size=predicted_rgb.shape[-2:], mode="nearest")
+    denominator = (mask.sum(dim=(1, 2, 3)) * predicted_rgb.shape[1]).clamp_min(1.0)
+    return ((predicted_rgb - target_rgb).abs() * mask).sum(dim=(1, 2, 3)) / denominator
+
+
+def stage4_distribution_aware_visible_spatial_semantic_obligation(
+    predicted_rgb_values, target_rgb, conditions, config,
+):
+    contract = validate_stage4_distribution_aware_visible_spatial_semantic_obligation(config)
+    if not isinstance(predicted_rgb_values, (list, tuple)) or not predicted_rgb_values:
+        raise ValueError("Stage 4 distribution-aware obligation requires decoded RGB predictions")
+    weighted_steps = []
+    raw_steps = []
+    for predicted_rgb in predicted_rgb_values:
+        raw = torch.stack([
+            per_sample_masked_condition_rgb_loss(
+                predicted_rgb, target_rgb, conditions, config, source,
+            )
+            for source in FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS
+        ], dim=1)
+        weights = predicted_rgb.new_tensor([
+            float(contract["derivedWeights"][identity])
+            for identity in FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES
+        ]).view(1, -1)
+        raw_steps.append(raw)
+        weighted_steps.append(raw * weights)
+    raw_tensor = torch.stack(raw_steps, dim=0)
+    weighted_tensor = torch.stack(weighted_steps, dim=0)
+    per_sample_worst = weighted_tensor.amax(dim=(0, 2))
+    return {
+        "stage4DistributionAwareVisibleSpatialSemanticLossTensor": per_sample_worst.amax(),
+        "stage4DistributionAwareWorstSampleClassFinalRgbObligation": per_sample_worst.amax(),
+        "stage4DistributionAwareMeanSampleWorstClassFinalRgbObligation": per_sample_worst.mean(),
+        "stage4DistributionAwareRawPerStepSampleClass": raw_tensor,
+    }
+
+
 def object_semantic_rgb_losses(predicted_rgb, target_rgb, conditions, config):
     training = config.get("training", {})
     channels = list(training.get("semanticRgbConditionChannels", []))
@@ -9651,10 +10793,14 @@ def validate_condition_preserving_semantic_renderer_stage4_diagnostic_manifest_s
 def validate_fact_conditioned_semantic_mixture_stage4_diagnostic_manifest_support_contract(
     config,
 ):
-    smoke_active = (
-        resolve_stage_mode(config).mode_id
-        == "fact_conditioned_semantic_mixture_stage4_smoke"
-    )
+    resolved_mode = resolve_stage_mode(config)
+    smoke_active = resolved_mode.mode_id == "fact_conditioned_semantic_mixture_stage4_smoke"
+    formal_stage_active = resolved_mode.mode_id in {
+        "fact_conditioned_semantic_mixture_stage0_full_training",
+        "fact_conditioned_semantic_mixture_stage1_full_training",
+        "fact_conditioned_semantic_mixture_stage2_full_training",
+    }
+    execution_active = smoke_active or formal_stage_active
     contract = config.get("training", {}).get("stage4FailureDiagnostics", {})
     expected_contract_fields = {
         "enabled", "status", "semanticMixtureDiagnostics",
@@ -9683,7 +10829,9 @@ def validate_fact_conditioned_semantic_mixture_stage4_diagnostic_manifest_suppor
         or contract.get("status")
         != (
             "fact_conditioned_semantic_mixture_diagnostic_manifest_supported_active_smoke"
-            if smoke_active
+            if smoke_active else
+            "fact_conditioned_semantic_mixture_diagnostic_manifest_supported_active_full_training"
+            if formal_stage_active
             else "fact_conditioned_semantic_mixture_diagnostic_manifest_supported_inactive"
         )
         or semantic_contract.get("identities")
@@ -9733,14 +10881,16 @@ def validate_fact_conditioned_semantic_mixture_stage4_diagnostic_manifest_suppor
         "trainingConfigApplied", "checkpointFileReadAuthorized",
         "gpuUseAuthorized", "trainingAuthorized",
     ):
-        if contract.get(key) is not smoke_active:
+        if contract.get(key) is not execution_active:
             raise ValueError(
                 f"Stage 4 fact-conditioned semantic mixture diagnostic activation is invalid: {key}"
             )
     return {
         "status": (
             "stage4_fact_conditioned_semantic_mixture_diagnostic_manifest_contract_valid_active_smoke"
-            if smoke_active
+            if smoke_active else
+            "stage4_fact_conditioned_semantic_mixture_diagnostic_manifest_contract_valid_active_full_training"
+            if formal_stage_active
             else "stage4_fact_conditioned_semantic_mixture_diagnostic_manifest_contract_valid_inactive"
         ),
         "exactFields": list(FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS),
@@ -10008,7 +11158,19 @@ def evaluate_deterministic_rollout_rgb_quality(model, dataset, diffusion, latent
     return result
 
 
-def evaluate_deterministic_rollout_rgb_quality_v7(model, dataset, diffusion, latent_normalization, device, seed, config, preview_output_dir=None, epoch_number=None):
+def evaluate_deterministic_rollout_rgb_quality_v7(
+    model,
+    dataset,
+    diffusion,
+    latent_normalization,
+    device,
+    seed,
+    config,
+    preview_output_dir=None,
+    epoch_number=None,
+    *,
+    force_checkpoint_bound_preview=False,
+):
     was_training = model.denoiser.training
     model.denoiser.eval()
     preview_artifact = None
@@ -10063,7 +11225,10 @@ def evaluate_deterministic_rollout_rgb_quality_v7(model, dataset, diffusion, lat
                     totals[key] += value
                 weights = config["training"]["rolloutCheckpointMetricWeights"]
                 trajectory_scores.append(sum(values[key] * float(weight) for key, weight in weights.items()))
-                if index == 0 and seed_index == 0 and should_save_epoch_preview(config, epoch_number):
+                if index == 0 and seed_index == 0 and (
+                    should_save_epoch_preview(config, epoch_number)
+                    or force_checkpoint_bound_preview
+                ):
                     preview_output_dir.mkdir(parents=True, exist_ok=True)
                     preview_path = preview_output_dir / f"epoch-{epoch_number:03d}-{row['conditionLabel']}-seed-{seed}.png"
                     save_tensor_png(predicted_rgb[0], preview_path)
@@ -10686,7 +11851,7 @@ def register_v9_stage4_diagnostic_manifest_fields(row, train_metrics, epoch, con
     if int(epoch) not in registry.get("fixedEpochs", []):
         return row
     expected = list(
-        FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS
+        fact_conditioned_semantic_mixture_diagnostic_fields(config)
         if is_fact_conditioned_semantic_mixture_stage4(config)
         else STRUCTURE_FACT_FIRST_STAGE4_DIAGNOSTIC_MANIFEST_FIELDS
     )

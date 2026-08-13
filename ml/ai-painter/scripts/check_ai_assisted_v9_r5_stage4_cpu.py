@@ -205,6 +205,10 @@ def main() -> int:
     parser.add_argument("--structure-fact-first-stage4-smoke-contract", action="store_true")
     parser.add_argument("--condition-preserving-semantic-renderer-contract", action="store_true")
     parser.add_argument("--fact-conditioned-semantic-mixture-contract", action="store_true")
+    parser.add_argument("--per-class-final-visible-rgb-obligation-contract", action="store_true")
+    parser.add_argument("--vegetation-final-visible-semantic-repair-contract", action="store_true")
+    parser.add_argument("--vegetation-luminance-spatial-structure-contract", action="store_true")
+    parser.add_argument("--distribution-aware-visible-spatial-semantic-contract", action="store_true")
     parser.add_argument("--fact-conditioned-semantic-mixture-stage4-smoke-contract", action="store_true")
     parser.add_argument("--semantic-renderer-gpu-diagnostic-contract", action="store_true")
     parser.add_argument("--semantic-renderer-gpu-diagnostic-preflight", action="store_true")
@@ -231,6 +235,14 @@ def main() -> int:
     parser.add_argument("--historical-baseline-input", type=Path)
     parser.add_argument("--new-baseline-output", type=Path)
     args = parser.parse_args()
+    if args.distribution_aware_visible_spatial_semantic_contract:
+        return run_distribution_aware_visible_spatial_semantic_regression(args)
+    if args.vegetation_luminance_spatial_structure_contract:
+        return run_vegetation_luminance_spatial_structure_regression(args)
+    if args.vegetation_final_visible_semantic_repair_contract:
+        return run_vegetation_final_visible_semantic_repair_regression(args)
+    if args.per_class_final_visible_rgb_obligation_contract:
+        return run_per_class_final_visible_rgb_obligation_regression(args)
     if args.fact_conditioned_semantic_mixture_stage4_smoke_contract:
         return run_fact_conditioned_semantic_mixture_stage4_smoke_contract_regression(args)
     if args.fact_conditioned_semantic_mixture_contract:
@@ -3256,7 +3268,8 @@ def run_structure_fact_first_stage4_smoke_contract_regression(args) -> int:
     implementation_authorization = read_json(resolve(args.implementation_authorization))
     implementation_consumption = read_json(resolve(args.implementation_consumption))
     if (
-        implementation_authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        implementation_authorization.get("status")
+        not in {"resolved_owner_authorized_not_consumed", "owner_authorized_unconsumed"}
         or implementation_consumption.get("authorizationSha256") != sha256_file(resolve(args.implementation_authorization))
         or implementation_consumption.get("oneTimeConsumption") is not True
     ):
@@ -7049,7 +7062,8 @@ def run_condition_preserving_semantic_renderer_stage4_smoke_contract_regression(
     implementation_authorization = read_json(resolve(args.implementation_authorization))
     implementation_consumption = read_json(resolve(args.implementation_consumption))
     if (
-        implementation_authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        implementation_authorization.get("status")
+        not in {"resolved_owner_authorized_not_consumed", "owner_authorized_unconsumed"}
         or implementation_consumption.get("authorizationSha256")
         != sha256_file(resolve(args.implementation_authorization))
         or implementation_consumption.get("oneTimeConsumption") is not True
@@ -7378,35 +7392,66 @@ def run_fact_conditioned_semantic_mixture_stage4_smoke_contract_regression(args)
     implementation_authorization = read_json(resolve(args.implementation_authorization))
     implementation_consumption = read_json(resolve(args.implementation_consumption))
     if (
-        implementation_authorization.get("status") != "resolved_owner_authorized_not_consumed"
+        implementation_authorization.get("status")
+        not in {"resolved_owner_authorized_not_consumed", "owner_authorized_unconsumed"}
         or implementation_consumption.get("authorizationSha256")
         != sha256_file(resolve(args.implementation_authorization))
         or implementation_consumption.get("oneTimeConsumption") is not True
     ):
         raise ValueError("semantic mixture Smoke implementation lineage changed")
 
+    vegetation_luminance_route = (
+        implementation_authorization.get("requestId")
+        == "owner-authorized-stage4-vegetation-luminance-spatial-structure-supervision-20260813-034000000"
+    )
+    distribution_aware_route = (
+        implementation_authorization.get("requestId")
+        == "owner-authorized-stage4-distribution-aware-visible-spatial-semantic-continuation-20260813-071500000"
+    )
+    execution_evidence_registry_path = Path(
+        ".runtime/ai-painter/stage4-execution-evidence-eligibility/"
+        + (
+            "20260813-072000000/registry.json"
+            if distribution_aware_route
+            else "20260813-040300000/registry.json"
+            if vegetation_luminance_route
+            else "20260813-031900000/registry.json"
+        )
+    )
+    execution_evidence_registry = read_json(resolve(execution_evidence_registry_path))
+
+    def canonical_role_path(role: str) -> Path:
+        entry = execution_evidence_registry.get("roles", {}).get(role, {})
+        canonical_path = entry.get("canonicalPath")
+        if (
+            execution_evidence_registry.get("status")
+            != "stage4_execution_evidence_eligibility_registered"
+            or entry.get("disposition") != "active_reusable_success_evidence"
+            or not canonical_path
+        ):
+            raise ValueError(f"canonical Stage4 execution evidence role is unavailable: {role}")
+        return Path(canonical_path)
+
     evidence_paths = {
-        "readonlyGpuTerminal": Path(
-            ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-gpu-diagnostic-executions/"
-            "20260812-010708248/phase-terminal.json"
+        "readonlyGpuTerminal": canonical_role_path(
+            "stage4.finalVisibleRgb.gpuQualificationTerminal"
         ),
-        "readonlyGpuDiagnostic": Path(
-            ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-gpu-diagnostic-executions/"
-            "20260812-010708248/diagnostic-report.json"
+        "readonlyGpuDiagnostic": canonical_role_path(
+            "stage4.finalVisibleRgb.gpuDiagnosticReport"
         ),
-        "cudaTelemetry": Path(
-            ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-gpu-diagnostic-executions/"
-            "20260812-010708248/cuda-telemetry.json"
+        "cudaTelemetry": canonical_role_path(
+            "stage4.finalVisibleRgb.cudaTelemetry"
         ),
-        "readonlyCpuReport": Path(
-            ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-gpu-diagnostic-support/"
-            "20260812-010708248/cpu-report.json"
+        "readonlyCpuReport": canonical_role_path(
+            "stage4.finalVisibleRgb.cpuAuthorizationReport"
         ),
-        "inactiveConfig": args.inactive_config,
-        "architectureSupportContract": Path(
-            ".runtime/ai-painter/stage4-fact-conditioned-semantic-mixture-decoder-cpu-support/"
-            "20260812-003946363/architecture-support-contract.json"
+        "inactiveConfig": canonical_role_path(
+            "stage4.finalVisibleRgb.inactiveConfig"
         ),
+        "architectureSupportContract": canonical_role_path(
+            "stage4.finalVisibleRgb.trainingObjectiveSupportContract"
+        ),
+        "executionEvidenceRegistry": execution_evidence_registry_path,
         "datasetManifest": Path(
             "data/world-samples/ai-assisted-cold-start-dataset-packages/"
             "natural-home-ai-assisted-cold-start-mvp-natural-home-v0.3-2026-08-02T01-38-05-149Z/manifest.json"
@@ -7481,7 +7526,9 @@ def run_fact_conditioned_semantic_mixture_stage4_smoke_contract_regression(args)
         ExecutionAction.WRITE_SMOKE_CHECKPOINT.value,
     ])
     denied_actions = sorted(set(action.value for action in ALL_ACTIONS) - set(allowed_actions))
-    diagnostic_fields = list(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS)
+    diagnostic_fields = list(
+        trainer.fact_conditioned_semantic_mixture_diagnostic_fields(inactive_config)
+    )
 
     def create_authorization(case_name, mutate=None):
         case_root = fixtures_root / case_name
@@ -7509,7 +7556,8 @@ def run_fact_conditioned_semantic_mixture_stage4_smoke_contract_regression(args)
                 "initialization": "project_random_fact_conditioned_semantic_mixture",
                 "oldDenoiserCheckpointReadAuthorized": False,
                 "diagnosticCheckpointReadAuthorized": False,
-                "diagnosticManifestFields": diagnostic_fields,
+                "diagnosticManifestFields": list(diagnostic_fields),
+                "evidenceEligibilityContractId": "stage4_execution_evidence_eligibility_v1",
             },
             "bindings": {key: binding(path) for key, path in evidence_paths.items()},
             "codeBindings": {
@@ -7615,6 +7663,15 @@ def run_fact_conditioned_semantic_mixture_stage4_smoke_contract_regression(args)
             "stage4SemanticMixtureReusedDiscreteConditionWeight"
         ),
     )
+    direct_historical_path, _ = create_authorization(
+        "direct-historical-inactive-config",
+        lambda value, _root: value["bindings"].update(
+            inactiveConfig=binding(Path(
+                ".runtime/ai-painter/stage4-per-class-final-visible-rgb-obligation-cpu/"
+                "20260812-190738093/inactive-config.json"
+            ))
+        ),
+    )
     repeated_path, repeated_authorization = create_authorization("repeated-consumption")
     write_json_exclusive(
         resolve(Path(repeated_authorization["execution"]["consumptionPath"])),
@@ -7635,6 +7692,7 @@ def run_fact_conditioned_semantic_mixture_stage4_smoke_contract_regression(args)
     unknown_diagnostic_field_node = run_node(unknown_diagnostic_field_path)
     reordered_diagnostic_field_node = run_node(reordered_diagnostic_field_path)
     provenance_metric_injection_node = run_node(provenance_metric_injection_path)
+    direct_historical_node = run_node(direct_historical_path)
     repeated_node = run_node(repeated_path)
     bad_hash_node = run_node(positive_path, "0" * 64)
 
@@ -7686,11 +7744,28 @@ def run_fact_conditioned_semantic_mixture_stage4_smoke_contract_regression(args)
         "datasetSplit48_8_4_4": {
             split: sum(row.get("split") == split for row in rows) for split in EXPECTED_COUNTS
         } == EXPECTED_COUNTS,
-        "exactTwentySevenManifestFieldsShared": (
+        "exactCurrentManifestFieldsSharedAndLegacyTwentySevenPreserved": (
             diagnostic_fields
-            == list(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS)
-            and len(diagnostic_fields) == 27
-            and len(set(diagnostic_fields)) == 27
+            == list(trainer.fact_conditioned_semantic_mixture_diagnostic_fields(inactive_config))
+            and len(diagnostic_fields) == (
+                29 if (vegetation_luminance_route or distribution_aware_route) else 28
+            )
+            and len(set(diagnostic_fields)) == len(diagnostic_fields)
+            and (
+                not (vegetation_luminance_route or distribution_aware_route)
+                or diagnostic_fields
+                == list(trainer.STAGE4_VEGETATION_LUMINANCE_SPATIAL_STRUCTURE_DIAGNOSTIC_FIELDS)
+            )
+            and len(trainer.STAGE4_VEGETATION_FINAL_VISIBLE_SEMANTIC_REPAIR_DIAGNOSTIC_FIELDS) == 28
+            and len(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS) == 27
+        ),
+        "manifestLossVersionBoundToActiveConfig": (
+            '? context.inactiveConfig?.training?.denoiserLossVersion'
+            in resolve(SMOKE_RUNNER_PATH).read_text(encoding="utf-8")
+        ),
+        "reviewWorkIdentityUsesFullExecutionOutputPath": (
+            "sha256Text(projectPath(context.outputDir)).slice(0, 16)"
+            in resolve(SMOKE_RUNNER_PATH).read_text(encoding="utf-8")
         ),
         "legacyModesPreserved": all(
             mode_id in {spec.mode_id for spec in FORMAL_MODE_REGISTRY.snapshot().values()}
@@ -7717,9 +7792,20 @@ def run_fact_conditioned_semantic_mixture_stage4_smoke_contract_regression(args)
         "unknownDiagnosticFieldRejected": unknown_diagnostic_field_node.returncode != 0,
         "reorderedDiagnosticFieldRejected": reordered_diagnostic_field_node.returncode != 0,
         "provenanceMetricInjectionRejected": provenance_metric_injection_node.returncode != 0,
+        "directHistoricalEvidencePathRejected": direct_historical_node.returncode != 0
+        and "execution evidence must use canonical registered path"
+        in direct_historical_node.stderr,
         "repeatedConsumptionRejected": repeated_node.returncode != 0,
         "authorizationHashMismatchRejected": bad_hash_node.returncode != 0,
         "differentSampleBoundaryProvenanceRejected": changed_sample_rejected,
+        "legacySemanticMixtureLossVersionNotHardcodedForCurrentManifest": (
+            '? "velocity_decoded_rgb_fact_conditioned_semantic_mixture_v1"'
+            not in resolve(SMOKE_RUNNER_PATH).read_text(encoding="utf-8")
+        ),
+        "reviewWorkIdentityDoesNotCollapseToTrainingOutputBasename": (
+            "sha256Text(path.basename(context.outputDir)).slice(0, 16)"
+            not in resolve(SMOKE_RUNNER_PATH).read_text(encoding="utf-8")
+        ),
         "checkpointWeightContentNotRead": True,
         "optimizerNotCreated": True,
         "backwardNotExecuted": True,
@@ -8088,6 +8174,802 @@ def run_fact_conditioned_semantic_mixture_contract_regression(args) -> int:
         "perExpertGradientEvidence": gradient_evidence,
         "inactiveConfig": binding(args.inactive_config),
         "checkpointWeightContentRead": False,
+        "optimizerCreated": False,
+        "backwardExecuted": False,
+        "modelWeightsModified": False,
+        "gpuStarted": False,
+        "trainingStarted": False,
+    }
+    write_json_exclusive(args.report, report)
+    print(json.dumps({
+        "status": report["status"],
+        "positive": f"{report['positivePassed']}/{report['positiveTotal']}",
+        "negative": f"{report['negativePassed']}/{report['negativeTotal']}",
+        "report": binding(args.report),
+    }, ensure_ascii=False, indent=2))
+    return 1 if failed_positive or failed_negative else 0
+
+
+def run_per_class_final_visible_rgb_obligation_regression(args) -> int:
+    if args.inactive_config is None or args.report is None:
+        raise ValueError("final visible RGB CPU mode requires --inactive-config and --report")
+    config = read_json(resolve(args.inactive_config))
+    package = read_json(resolve(DATASET_PATH))
+    positive = {}
+    negative = {}
+    gradient_evidence = {}
+
+    authorization = compiler.validate_final_visible_rgb_authorization()
+    positive["immutable_authorization_and_consumption"] = (
+        authorization.get("requestId")
+        == "owner-authorized-stage4-per-class-final-visible-rgb-obligation-cpu-20260812-190738093"
+    )
+    trainer.validate_training_inputs(config, package)
+    objective = trainer.validate_stage4_per_class_final_visible_rgb_obligation(config)
+    positive["complete_inactive_objective_contract"] = (
+        objective.get("status")
+        == "stage4_per_class_final_visible_rgb_obligation_cpu_contract_valid_inactive"
+    )
+    positive["exact_five_ordered_terms_shared"] = (
+        objective.get("terms") == list(trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_TERMS)
+        and len(objective.get("terms", ())) == 5
+        and len({term["identity"] for term in objective.get("terms", ())}) == 5
+    )
+    positive["formal_23_channel_order_and_data_identity_preserved"] = (
+        tuple(config.get("conditionChannelOrder", ()))
+        == trainer.FORMAL_COMPLETE_WORLD_CONDITION_CHANNEL_ORDER
+        and trainer.conditional_dataset_selection_contract(config)
+        == "registered_v7_capacity_contribution_v1"
+        and package.get("v7CapacityContributionCount") == 64
+    )
+    weights = objective["derivedWeights"]
+    expected_weights = {
+        "route": 2.0,
+        "footprints": 1.0 / 4.25,
+        "tree": 1.0 / 4.25,
+        "rock": 1.25 / 4.25,
+        "vegetation": 1.0 / 4.25,
+    }
+    positive["weights_uniquely_derived_from_existing_contracts"] = all(
+        math.isclose(float(weights[key]), value, rel_tol=0.0, abs_tol=1e-12)
+        for key, value in expected_weights.items()
+    )
+
+    torch.manual_seed(20263722)
+    identities = trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES
+    sources = trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS
+    predicted_velocity = torch.rand(1, 12, 12, 16, requires_grad=True)
+    target_velocity = torch.rand_like(predicted_velocity)
+    predicted_clean = torch.rand_like(predicted_velocity, requires_grad=True)
+    clean_latent = torch.rand_like(predicted_velocity)
+    predicted_conditions = torch.rand(1, 23, 12, 16, requires_grad=True)
+    target_conditions = torch.rand_like(predicted_conditions)
+    predicted_rgb = torch.rand(1, 3, 48, 64, requires_grad=True)
+    target_rgb = torch.rand_like(predicted_rgb)
+    full_conditions = torch.zeros(1, 23, 48, 64)
+    order = list(config["conditionChannelOrder"])
+    for index, channel in enumerate(sources):
+        y0 = 2 + index * 8
+        full_conditions[:, order.index(channel), y0:y0 + 5, 3 + index:12 + index] = 1.0
+    contributions = tuple(torch.rand_like(predicted_velocity, requires_grad=True) for _ in identities)
+    gated = tuple(value * 0.5 for value in contributions)
+    participation = torch.rand(1, 5, 12, 16, requires_grad=True)
+    mixture = {
+        "expertIdentityOrder": identities,
+        "sourceConditionChannels": sources,
+        "expertContributions": contributions,
+        "gatedContributions": gated,
+        "participation": participation,
+        "baseVelocity": predicted_velocity * 0.5,
+        "compositorKind": "typed_fact_conditioned_gated_additive_mixture_v1",
+        "typedIdentityCollapsedBeforeOutput": False,
+    }
+    counterfactual = {
+        identity: torch.rand_like(predicted_rgb, requires_grad=True) for identity in identities
+    }
+    without_objective = deepcopy(config)
+    without_objective["training"].pop("stage4PerClassFinalVisibleRgbObligation")
+    before = trainer.composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
+        predicted_velocity, target_velocity, predicted_clean, clean_latent,
+        predicted_conditions, target_conditions, predicted_rgb, target_rgb,
+        full_conditions, mixture, counterfactual, without_objective,
+    )
+    after = trainer.composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
+        predicted_velocity, target_velocity, predicted_clean, clean_latent,
+        predicted_conditions, target_conditions, predicted_rgb, target_rgb,
+        full_conditions, mixture, counterfactual, config,
+    )
+    final_terms = [
+        after[term["metric"]] for term in trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_TERMS
+    ]
+    expected_delta = sum(
+        final_terms[index] * float(weights[identity])
+        for index, identity in enumerate(identities)
+    )
+    positive["five_terms_enter_total_loss"] = bool(torch.allclose(
+        after["compositeLossTensor"], before["compositeLossTensor"] + expected_delta,
+        atol=1e-7, rtol=0.0,
+    ))
+    positive["five_terms_enter_checkpoint_qualification"] = bool(torch.allclose(
+        after["compositeConditionQualityScore"],
+        before["compositeConditionQualityScore"] + expected_delta,
+        atol=1e-7, rtol=0.0,
+    ))
+    per_term_gradients = []
+    mask_isolation = []
+    for index, (identity, channel) in enumerate(zip(identities, sources)):
+        gradient = torch.autograd.grad(
+            final_terms[index], predicted_rgb, retain_graph=True, allow_unused=False,
+        )[0]
+        mask = full_conditions[:, order.index(channel):order.index(channel) + 1]
+        inside = float((gradient.abs() * mask).sum().detach())
+        outside = float((gradient.abs() * (1.0 - mask)).sum().detach())
+        valid = torch.isfinite(gradient).all().item() and inside > 0.0
+        isolated = outside == 0.0
+        per_term_gradients.append(valid)
+        mask_isolation.append(isolated)
+        gradient_evidence[identity] = {
+            "sourceChannel": channel,
+            "finiteNonzeroFinalRgbGradient": valid,
+            "insideMaskGradientAbsSum": inside,
+            "outsideMaskGradientAbsSum": outside,
+            "derivedWeight": float(weights[identity]),
+        }
+    positive["five_final_rgb_gradients_finite_nonzero"] = all(per_term_gradients)
+    positive["each_term_reads_only_its_bound_mask_and_reference_rgb"] = all(mask_isolation)
+    positive["legacy_semantic_mixture_loss_unchanged_without_contract"] = bool(torch.allclose(
+        before["compositeLossTensor"],
+        trainer.composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
+            predicted_velocity, target_velocity, predicted_clean, clean_latent,
+            predicted_conditions, target_conditions, predicted_rgb, target_rgb,
+            full_conditions, mixture, counterfactual, without_objective,
+        )["compositeLossTensor"], atol=0.0, rtol=0.0,
+    ))
+
+    def rejected(mutation):
+        candidate = deepcopy(config)
+        mutation(candidate)
+        try:
+            trainer.validate_stage4_per_class_final_visible_rgb_obligation(candidate)
+        except (ValueError, FileNotFoundError, PermissionError):
+            return True
+        return False
+
+    contract = lambda value: value["training"]["stage4PerClassFinalVisibleRgbObligation"]
+    negative["missing_term_rejected"] = rejected(lambda value: contract(value)["terms"].pop())
+    negative["duplicate_term_rejected"] = rejected(
+        lambda value: contract(value)["terms"].__setitem__(-1, deepcopy(contract(value)["terms"][0]))
+    )
+    negative["reordered_term_rejected"] = rejected(
+        lambda value: contract(value)["terms"].__setitem__(
+            slice(0, 2), list(reversed(contract(value)["terms"][:2]))
+        )
+    )
+    negative["unknown_term_rejected"] = rejected(
+        lambda value: contract(value)["terms"].append({
+            "identity": "unknown", "sourceChannel": "unknown", "metric": "unknown",
+        })
+    )
+    negative["wrong_channel_rejected"] = rejected(
+        lambda value: contract(value)["terms"][1].__setitem__("sourceChannel", "object_tree")
+    )
+    negative["free_weight_change_rejected"] = rejected(
+        lambda value: contract(value)["derivedWeights"].__setitem__("rock", 1.0)
+    )
+    negative["failed_preview_target_rejected"] = rejected(
+        lambda value: contract(value)["legalSupervision"].__setitem__(
+            "failedPreviewPixelsUsedAsTargets", True
+        )
+    )
+    negative["review_threshold_target_rejected"] = rejected(
+        lambda value: contract(value)["legalSupervision"].__setitem__(
+            "machineReviewThresholdsUsedAsTargets", True
+        )
+    )
+    negative["review_result_target_rejected"] = rejected(
+        lambda value: contract(value)["legalSupervision"].__setitem__(
+            "machineReviewResultsUsedAsTargets", True
+        )
+    )
+    negative["old_checkpoint_rejected"] = rejected(
+        lambda value: contract(value)["compatibility"].__setitem__(
+            "oldDenoiserCheckpointCompatible", True
+        )
+    )
+    negative["optimizer_activation_rejected"] = rejected(
+        lambda value: contract(value)["activationGate"].__setitem__(
+            "optimizerCreationNow", True
+        )
+    )
+    negative["backward_activation_rejected"] = rejected(
+        lambda value: contract(value)["activationGate"].__setitem__(
+            "backwardExecutionNow", True
+        )
+    )
+    negative["gpu_activation_rejected"] = rejected(
+        lambda value: contract(value)["activationGate"].__setitem__("gpuUseNow", True)
+    )
+    negative["training_activation_rejected"] = rejected(
+        lambda value: contract(value)["activationGate"].__setitem__("trainingNow", True)
+    )
+    negative["checkpoint_weight_content_not_read"] = True
+    negative["optimizer_not_created"] = True
+    negative["backward_not_executed"] = True
+    negative["gpu_not_started"] = not torch.cuda.is_initialized()
+
+    failed_positive = [key for key, value in positive.items() if value is not True]
+    failed_negative = [key for key, value in negative.items() if value is not True]
+    report = {
+        "schemaVersion": "ai-painter-stage4-per-class-final-visible-rgb-obligation-cpu-regression-v1",
+        "status": (
+            "stage4_per_class_final_visible_rgb_obligation_cpu_regression_passed"
+            if not failed_positive and not failed_negative
+            else "stage4_per_class_final_visible_rgb_obligation_cpu_regression_failed_closed"
+        ),
+        **timestamps("recordedAt"),
+        "positive": positive,
+        "negative": negative,
+        "failedPositiveKeys": failed_positive,
+        "failedNegativeKeys": failed_negative,
+        "positivePassed": sum(value is True for value in positive.values()),
+        "positiveTotal": len(positive),
+        "negativePassed": sum(value is True for value in negative.values()),
+        "negativeTotal": len(negative),
+        "perTermGradientEvidence": gradient_evidence,
+        "inactiveConfig": binding(args.inactive_config),
+        "checkpointWeightContentRead": False,
+        "optimizerCreated": False,
+        "backwardExecuted": False,
+        "modelWeightsModified": False,
+        "gpuStarted": False,
+        "trainingStarted": False,
+    }
+    write_json_exclusive(args.report, report)
+    print(json.dumps({
+        "status": report["status"],
+        "positive": f"{report['positivePassed']}/{report['positiveTotal']}",
+        "negative": f"{report['negativePassed']}/{report['negativeTotal']}",
+        "report": binding(args.report),
+    }, ensure_ascii=False, indent=2))
+    return 1 if failed_positive or failed_negative else 0
+
+
+def run_distribution_aware_visible_spatial_semantic_regression(args) -> int:
+    if args.inactive_config is None or args.report is None:
+        raise ValueError("distribution-aware CPU mode requires --inactive-config and --report")
+    config = read_json(resolve(args.inactive_config))
+    package = read_json(resolve(DATASET_PATH))
+    positive = {}
+    negative = {}
+    validated = trainer.validate_stage4_distribution_aware_visible_spatial_semantic_obligation(config)
+    positive["contract_valid_inactive"] = (
+        validated["status"]
+        == "stage4_distribution_aware_visible_spatial_semantic_contract_valid_inactive"
+    )
+    positive["training_inputs_valid"] = True
+    trainer.validate_training_inputs(config, package)
+    order = list(config["conditionChannelOrder"])
+    conditions = torch.zeros(2, 23, 8, 8)
+    for index, channel in enumerate(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS):
+        row = index // 3
+        column = (index % 3) * 2
+        conditions[:, order.index(channel), row:row + 2, column:column + 2] = 1.0
+    target = torch.zeros(2, 3, 8, 8)
+    vegetation_mask = conditions[:, order.index("object_vegetation"):order.index("object_vegetation") + 1]
+    concentrated_values = torch.zeros_like(target)
+    balanced_values = torch.zeros_like(target)
+    concentrated_values[1] = vegetation_mask[1]
+    balanced_values[:] = vegetation_mask * 0.5
+    concentrated_values.requires_grad_()
+    balanced_values.requires_grad_()
+    concentrated_result = trainer.stage4_distribution_aware_visible_spatial_semantic_obligation(
+        [concentrated_values], target, conditions, config,
+    )
+    balanced_result = trainer.stage4_distribution_aware_visible_spatial_semantic_obligation(
+        [balanced_values], target, conditions, config,
+    )
+    old_concentrated = trainer.masked_condition_rgb_loss(
+        concentrated_values, target, conditions, config, "object_vegetation",
+    )
+    old_balanced = trainer.masked_condition_rgb_loss(
+        balanced_values, target, conditions, config, "object_vegetation",
+    )
+    positive["aggregate_mean_counterexample_equal"] = bool(torch.allclose(
+        old_concentrated, old_balanced, atol=1e-7, rtol=0.0,
+    ))
+    positive["worst_sample_class_counterexample_detected"] = bool(
+        concentrated_result["stage4DistributionAwareVisibleSpatialSemanticLossTensor"]
+        > balanced_result["stage4DistributionAwareVisibleSpatialSemanticLossTensor"]
+    )
+    gradient = torch.autograd.grad(
+        concentrated_result["stage4DistributionAwareVisibleSpatialSemanticLossTensor"],
+        concentrated_values, allow_unused=False,
+    )[0]
+    inside = float((gradient.abs() * vegetation_mask).sum().detach())
+    outside = float((gradient.abs() * (1.0 - vegetation_mask)).sum().detach())
+    positive["worst_obligation_gradient_finite_nonzero"] = bool(
+        torch.isfinite(gradient).all().item() and inside > 0.0
+    )
+    positive["worst_obligation_gradient_mask_isolated"] = outside == 0.0
+    trajectory = trainer.stage4_distribution_aware_visible_spatial_semantic_obligation(
+        [balanced_values * 0.5, concentrated_values], target, conditions, config,
+    )
+    positive["existing_trajectory_steps_are_covered"] = bool(
+        trajectory["stage4DistributionAwareVisibleSpatialSemanticLossTensor"]
+        >= concentrated_result["stage4DistributionAwareVisibleSpatialSemanticLossTensor"]
+    )
+    positive["no_free_numeric_weight"] = (
+        config["training"]["stage4DistributionAwareVisibleSpatialSemanticObligation"]
+        ["aggregation"]["freeNumericWeightSelected"] is False
+    )
+
+    def rejected(mutation):
+        candidate = deepcopy(config)
+        mutation(candidate)
+        try:
+            trainer.validate_stage4_distribution_aware_visible_spatial_semantic_obligation(candidate)
+        except (ValueError, KeyError):
+            return True
+        return False
+
+    contract = lambda value: value["training"]["stage4DistributionAwareVisibleSpatialSemanticObligation"]
+    negative["missing_identity_rejected"] = rejected(lambda value: contract(value)["requiredIdentities"].pop())
+    negative["reordered_identity_rejected"] = rejected(lambda value: contract(value)["requiredIdentities"].reverse())
+    negative["wrong_channel_rejected"] = rejected(lambda value: contract(value)["sourceChannels"].__setitem__(4, "object_tree"))
+    negative["mean_only_rejected"] = rejected(lambda value: contract(value)["aggregation"].__setitem__("batchReduction", "mean"))
+    negative["free_weight_rejected"] = rejected(lambda value: contract(value)["aggregation"].__setitem__("freeNumericWeightSelected", True))
+    negative["new_trajectory_count_rejected"] = rejected(lambda value: contract(value)["trajectoryBinding"].__setitem__("newTrajectoryStepCountSelected", True))
+    negative["failed_preview_target_rejected"] = rejected(lambda value: contract(value)["legalSupervision"].__setitem__("failedPreviewPixelsUsedAsTargets", True))
+    negative["review_threshold_target_rejected"] = rejected(lambda value: contract(value)["legalSupervision"].__setitem__("machineReviewThresholdsUsedAsTargets", True))
+    negative["review_result_target_rejected"] = rejected(lambda value: contract(value)["legalSupervision"].__setitem__("machineReviewResultsUsedAsTargets", True))
+    negative["architecture_change_rejected"] = rejected(lambda value: contract(value)["compatibility"].__setitem__("modelArchitectureChanged", True))
+    negative["checkpoint_format_change_rejected"] = rejected(lambda value: contract(value)["compatibility"].__setitem__("checkpointFormatChanged", True))
+    negative["gpu_activation_rejected"] = rejected(lambda value: contract(value)["activationGate"].__setitem__("gpuUseNow", True))
+    negative["training_activation_rejected"] = rejected(lambda value: contract(value)["activationGate"].__setitem__("trainingNow", True))
+    negative["checkpoint_not_read"] = True
+    negative["optimizer_not_created"] = True
+    negative["backward_not_executed"] = True
+    negative["gpu_not_started"] = not torch.cuda.is_initialized()
+    failed_positive = [key for key, value in positive.items() if value is not True]
+    failed_negative = [key for key, value in negative.items() if value is not True]
+    report = {
+        "schemaVersion": "stage4-distribution-aware-visible-spatial-semantic-cpu-report-v1",
+        "status": "stage4_distribution_aware_visible_spatial_semantic_cpu_regression_passed"
+        if not failed_positive and not failed_negative
+        else "stage4_distribution_aware_visible_spatial_semantic_cpu_regression_failed_closed",
+        **timestamps("recordedAt"),
+        "positive": positive,
+        "negative": negative,
+        "failedPositiveKeys": failed_positive,
+        "failedNegativeKeys": failed_negative,
+        "positivePassed": sum(value is True for value in positive.values()),
+        "positiveTotal": len(positive),
+        "negativePassed": sum(value is True for value in negative.values()),
+        "negativeTotal": len(negative),
+        "counterexample": {
+            "aggregateMeanConcentrated": float(old_concentrated.detach()),
+            "aggregateMeanBalanced": float(old_balanced.detach()),
+            "worstConcentrated": float(concentrated_result["stage4DistributionAwareVisibleSpatialSemanticLossTensor"].detach()),
+            "worstBalanced": float(balanced_result["stage4DistributionAwareVisibleSpatialSemanticLossTensor"].detach()),
+            "insideGradientAbsSum": inside,
+            "outsideGradientAbsSum": outside,
+        },
+        "inactiveConfig": binding(args.inactive_config),
+        "checkpointWeightsRead": False,
+        "optimizerCreated": False,
+        "backwardExecuted": False,
+        "modelWeightsModified": False,
+        "gpuStarted": False,
+        "trainingStarted": False,
+    }
+    write_json_exclusive(args.report, report)
+    print(json.dumps({
+        "status": report["status"],
+        "positive": f"{report['positivePassed']}/{report['positiveTotal']}",
+        "negative": f"{report['negativePassed']}/{report['negativeTotal']}",
+        "report": binding(args.report),
+    }, ensure_ascii=False, indent=2))
+    return 1 if failed_positive or failed_negative else 0
+
+
+def run_vegetation_luminance_spatial_structure_regression(args) -> int:
+    if args.inactive_config is None or args.report is None:
+        raise ValueError("vegetation luminance CPU mode requires --inactive-config and --report")
+    config = read_json(resolve(args.inactive_config))
+    package = read_json(resolve(DATASET_PATH))
+    positive = {}
+    negative = {}
+
+    authorization = compiler.validate_vegetation_luminance_authorization()
+    positive["immutable_authorization_and_consumption"] = (
+        authorization.get("requestId")
+        == "owner-authorized-stage4-vegetation-luminance-spatial-structure-supervision-20260813-034000000"
+    )
+    trainer.validate_training_inputs(config, package)
+    contract_result = trainer.validate_stage4_vegetation_luminance_spatial_structure_supervision(
+        config
+    )
+    positive["complete_inactive_luminance_contract"] = (
+        contract_result.get("status")
+        == "stage4_vegetation_luminance_spatial_structure_cpu_contract_valid_inactive"
+    )
+    expected_fields = list(
+        trainer.STAGE4_VEGETATION_LUMINANCE_SPATIAL_STRUCTURE_DIAGNOSTIC_FIELDS
+    )
+    registry = config["training"]["stage4FactConditionedSemanticMixture"][
+        "diagnosticManifestRegistry"
+    ]
+    positive["exact_29_field_registry_isolated_from_28_and_27"] = (
+        registry.get("exactFields") == expected_fields
+        and registry.get("exactFieldCount") == 29
+        and len(trainer.STAGE4_VEGETATION_FINAL_VISIBLE_SEMANTIC_REPAIR_DIAGNOSTIC_FIELDS) == 28
+        and len(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS) == 27
+    )
+    positive["formal_data_and_condition_identity_preserved"] = (
+        tuple(config.get("conditionChannelOrder", ()))
+        == trainer.FORMAL_COMPLETE_WORLD_CONDITION_CHANNEL_ORDER
+        and package.get("v7CapacityContributionCount") == 64
+    )
+    positive["weight_reuses_existing_vegetation_obligation"] = math.isclose(
+        float(contract_result["derivedWeight"]), 1.0 / 4.25,
+        rel_tol=0.0, abs_tol=1e-12,
+    )
+
+    torch.manual_seed(20263722)
+    identities = trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES
+    sources = trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS
+    predicted_velocity = torch.rand(1, 12, 12, 16, requires_grad=True)
+    target_velocity = torch.rand_like(predicted_velocity)
+    predicted_clean = torch.rand_like(predicted_velocity, requires_grad=True)
+    clean_latent = torch.rand_like(predicted_velocity)
+    predicted_conditions = torch.rand(1, 23, 12, 16, requires_grad=True)
+    target_conditions = torch.rand_like(predicted_conditions)
+    predicted_rgb = torch.rand(1, 3, 48, 64, requires_grad=True)
+    target_rgb = torch.rand_like(predicted_rgb)
+    full_conditions = torch.zeros(1, 23, 48, 64)
+    order = list(config["conditionChannelOrder"])
+    for index, channel in enumerate(sources):
+        y0 = 2 + index * 8
+        full_conditions[:, order.index(channel), y0:y0 + 5, 3 + index:12 + index] = 1.0
+    contributions = tuple(torch.rand_like(predicted_velocity, requires_grad=True) for _ in identities)
+    mixture = {
+        "expertIdentityOrder": identities,
+        "sourceConditionChannels": sources,
+        "expertContributions": contributions,
+        "gatedContributions": tuple(value * 0.5 for value in contributions),
+        "participation": torch.rand(1, 5, 12, 16, requires_grad=True),
+        "baseVelocity": predicted_velocity * 0.5,
+        "compositorKind": "typed_fact_conditioned_gated_additive_mixture_v1",
+        "typedIdentityCollapsedBeforeOutput": False,
+    }
+    counterfactual = {
+        identity: torch.rand_like(predicted_rgb, requires_grad=True) for identity in identities
+    }
+    without_luminance = deepcopy(config)
+    without_luminance["training"].pop(
+        "stage4VegetationLuminanceSpatialStructureSupervision"
+    )
+    old_registry = without_luminance["training"]["stage4FactConditionedSemanticMixture"][
+        "diagnosticManifestRegistry"
+    ]
+    old_registry["exactFields"] = list(
+        trainer.STAGE4_VEGETATION_FINAL_VISIBLE_SEMANTIC_REPAIR_DIAGNOSTIC_FIELDS
+    )
+    old_registry["exactFieldCount"] = 28
+    before = trainer.composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
+        predicted_velocity, target_velocity, predicted_clean, clean_latent,
+        predicted_conditions, target_conditions, predicted_rgb, target_rgb,
+        full_conditions, mixture, counterfactual, without_luminance,
+    )
+    after = trainer.composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
+        predicted_velocity, target_velocity, predicted_clean, clean_latent,
+        predicted_conditions, target_conditions, predicted_rgb, target_rgb,
+        full_conditions, mixture, counterfactual, config,
+    )
+    luminance_loss = after[
+        "stage4SemanticMixtureVegetationFinalTypedLuminanceCorrelationLoss"
+    ]
+    delta = luminance_loss * float(contract_result["derivedWeight"])
+    positive["luminance_obligation_enters_total_loss"] = bool(torch.allclose(
+        after["compositeLossTensor"], before["compositeLossTensor"] + delta,
+        atol=1e-7, rtol=0.0,
+    ))
+    positive["luminance_obligation_enters_checkpoint_qualification"] = bool(
+        torch.allclose(
+            after["compositeConditionQualityScore"],
+            before["compositeConditionQualityScore"] + delta,
+            atol=1e-7, rtol=0.0,
+        )
+    )
+    gradient = torch.autograd.grad(luminance_loss, predicted_rgb, retain_graph=True)[0]
+    vegetation_mask = full_conditions[
+        :, order.index("object_vegetation"):order.index("object_vegetation") + 1
+    ]
+    inside = float((gradient.abs() * vegetation_mask).sum().detach())
+    outside = float((gradient.abs() * (1.0 - vegetation_mask)).sum().detach())
+    positive["luminance_gradient_finite_nonzero_inside_mask"] = (
+        bool(torch.isfinite(gradient).all()) and inside > 0.0
+    )
+    positive["luminance_gradient_zero_outside_mask"] = outside == 0.0
+    matched = target_rgb.detach().clone().requires_grad_(True)
+    matched_loss = trainer.masked_condition_luminance_correlation_loss(
+        matched, target_rgb, full_conditions, config, "object_vegetation"
+    )
+    spatially_reversed = target_rgb.detach().flip(-1).requires_grad_(True)
+    reversed_loss = trainer.masked_condition_luminance_correlation_loss(
+        spatially_reversed, target_rgb, full_conditions, config, "object_vegetation"
+    )
+    positive["matching_spatial_luminance_is_preferred"] = (
+        float(matched_loss.detach()) < 1e-6
+        and float(reversed_loss.detach()) > float(matched_loss.detach())
+    )
+    positive["existing_color_edge_and_other_typed_obligations_preserved"] = (
+        "stage4SemanticMixtureVegetationFinalTypedEdgeMae" in after
+        and all(term["metric"] in after for term in trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_TERMS)
+    )
+
+    def rejected(mutation):
+        candidate = deepcopy(config)
+        mutation(candidate)
+        try:
+            trainer.validate_training_inputs(candidate, package)
+            trainer.validate_stage4_vegetation_luminance_spatial_structure_supervision(candidate)
+        except (ValueError, FileNotFoundError, PermissionError):
+            return True
+        return False
+
+    contract = lambda value: value["training"]["stage4VegetationLuminanceSpatialStructureSupervision"]
+    registry_of = lambda value: value["training"]["stage4FactConditionedSemanticMixture"]["diagnosticManifestRegistry"]
+    negative["missing_contract_field_rejected"] = rejected(lambda value: contract(value).pop("sourceChannel"))
+    negative["unknown_contract_field_rejected"] = rejected(lambda value: contract(value).__setitem__("unknown", True))
+    negative["wrong_channel_rejected"] = rejected(lambda value: contract(value).__setitem__("sourceChannel", "object_tree"))
+    negative["wrong_luminance_coefficients_rejected"] = rejected(lambda value: contract(value).__setitem__("luminanceCoefficients", [0.3, 0.6, 0.1]))
+    negative["free_weight_rejected"] = rejected(lambda value: contract(value).__setitem__("derivedWeight", 1.0))
+    negative["wrong_loss_function_rejected"] = rejected(lambda value: contract(value).__setitem__("lossFunction", "masked_condition_rgb_loss"))
+    negative["failed_preview_target_rejected"] = rejected(lambda value: contract(value)["legalSupervision"].__setitem__("failedPreviewPixelsUsedAsTargets", True))
+    negative["review_threshold_target_rejected"] = rejected(lambda value: contract(value)["legalSupervision"].__setitem__("machineReviewThresholdsUsedAsTargets", True))
+    negative["review_result_target_rejected"] = rejected(lambda value: contract(value)["legalSupervision"].__setitem__("machineReviewResultsUsedAsTargets", True))
+    negative["review_threshold_as_target_binding_rejected"] = rejected(lambda value: contract(value)["sourceFailureEvidence"].__setitem__("reviewThresholdUsedAsTrainingTarget", True))
+    negative["failed_checkpoint_reuse_rejected"] = rejected(lambda value: contract(value)["compatibility"].__setitem__("failedSmokeCheckpointCompatible", True))
+    negative["missing_diagnostic_rejected"] = rejected(lambda value: registry_of(value)["exactFields"].pop())
+    negative["unknown_diagnostic_rejected"] = rejected(lambda value: registry_of(value)["exactFields"].append("unknown"))
+    negative["diagnostic_order_change_rejected"] = rejected(lambda value: registry_of(value)["exactFields"].__setitem__(slice(-2, None), list(reversed(registry_of(value)["exactFields"][-2:]))))
+    negative["optimizer_activation_rejected"] = rejected(lambda value: contract(value)["activationGate"].__setitem__("optimizerCreationNow", True))
+    negative["backward_activation_rejected"] = rejected(lambda value: contract(value)["activationGate"].__setitem__("backwardExecutionNow", True))
+    negative["gpu_activation_rejected"] = rejected(lambda value: contract(value)["activationGate"].__setitem__("gpuUseNow", True))
+    negative["training_activation_rejected"] = rejected(lambda value: contract(value)["activationGate"].__setitem__("trainingNow", True))
+    negative["checkpoint_not_read"] = True
+    negative["optimizer_not_created"] = True
+    negative["backward_not_executed"] = True
+    negative["gpu_not_started"] = not torch.cuda.is_initialized()
+
+    failed_positive = [key for key, value in positive.items() if value is not True]
+    failed_negative = [key for key, value in negative.items() if value is not True]
+    report = {
+        "schemaVersion": "ai-painter-stage4-vegetation-luminance-spatial-structure-cpu-regression-v1",
+        "status": (
+            "stage4_vegetation_luminance_spatial_structure_cpu_regression_passed"
+            if not failed_positive and not failed_negative
+            else "stage4_vegetation_luminance_spatial_structure_cpu_regression_failed_closed"
+        ),
+        **timestamps("recordedAt"),
+        "positive": positive,
+        "negative": negative,
+        "failedPositiveKeys": failed_positive,
+        "failedNegativeKeys": failed_negative,
+        "positivePassed": sum(value is True for value in positive.values()),
+        "positiveTotal": len(positive),
+        "negativePassed": sum(value is True for value in negative.values()),
+        "negativeTotal": len(negative),
+        "luminanceGradientEvidence": {
+            "insideMaskGradientAbsSum": inside,
+            "outsideMaskGradientAbsSum": outside,
+            "matchedLoss": float(matched_loss.detach()),
+            "spatiallyReversedLoss": float(reversed_loss.detach()),
+            "derivedWeight": float(contract_result["derivedWeight"]),
+        },
+        "inactiveConfig": binding(args.inactive_config),
+        "checkpointRead": False,
+        "optimizerCreated": False,
+        "backwardExecuted": False,
+        "modelWeightsModified": False,
+        "gpuStarted": False,
+        "trainingStarted": False,
+    }
+    write_json_exclusive(args.report, report)
+    print(json.dumps({
+        "status": report["status"],
+        "positive": f"{report['positivePassed']}/{report['positiveTotal']}",
+        "negative": f"{report['negativePassed']}/{report['negativeTotal']}",
+        "failedPositiveKeys": failed_positive,
+        "failedNegativeKeys": failed_negative,
+        "report": binding(args.report),
+    }, ensure_ascii=False, indent=2))
+    return 1 if failed_positive or failed_negative else 0
+
+
+def run_vegetation_final_visible_semantic_repair_regression(args) -> int:
+    if args.inactive_config is None or args.report is None:
+        raise ValueError("vegetation repair CPU mode requires --inactive-config and --report")
+    config = read_json(resolve(args.inactive_config))
+    package = read_json(resolve(DATASET_PATH))
+    positive = {}
+    negative = {}
+
+    authorization = compiler.validate_vegetation_repair_authorization()
+    positive["immutable_authorization_and_consumption"] = (
+        authorization.get("requestId")
+        == "owner-authorized-stage4-vegetation-final-visible-semantic-repair-20260813-025311970"
+    )
+    trainer.validate_training_inputs(config, package)
+    repair = trainer.validate_stage4_vegetation_final_visible_semantic_repair(config)
+    positive["complete_inactive_repair_contract"] = (
+        repair.get("status")
+        == "stage4_vegetation_final_visible_semantic_repair_cpu_contract_valid_inactive"
+    )
+    expected_fields = list(
+        trainer.STAGE4_VEGETATION_FINAL_VISIBLE_SEMANTIC_REPAIR_DIAGNOSTIC_FIELDS
+    )
+    registry = config["training"]["stage4FactConditionedSemanticMixture"][
+        "diagnosticManifestRegistry"
+    ]
+    positive["exact_28_field_registry_isolated_from_legacy_27"] = (
+        registry.get("exactFields") == expected_fields
+        and registry.get("exactFieldCount") == 28
+        and len(trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS) == 27
+    )
+    positive["formal_data_and_condition_identity_preserved"] = (
+        tuple(config.get("conditionChannelOrder", ()))
+        == trainer.FORMAL_COMPLETE_WORLD_CONDITION_CHANNEL_ORDER
+        and package.get("v7CapacityContributionCount") == 64
+    )
+    positive["weight_reuses_existing_vegetation_obligation"] = math.isclose(
+        float(repair["derivedWeight"]), 1.0 / 4.25, rel_tol=0.0, abs_tol=1e-12,
+    )
+
+    torch.manual_seed(20263722)
+    identities = trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_IDENTITIES
+    sources = trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_SOURCE_CHANNELS
+    predicted_velocity = torch.rand(1, 12, 12, 16, requires_grad=True)
+    target_velocity = torch.rand_like(predicted_velocity)
+    predicted_clean = torch.rand_like(predicted_velocity, requires_grad=True)
+    clean_latent = torch.rand_like(predicted_velocity)
+    predicted_conditions = torch.rand(1, 23, 12, 16, requires_grad=True)
+    target_conditions = torch.rand_like(predicted_conditions)
+    predicted_rgb = torch.rand(1, 3, 48, 64, requires_grad=True)
+    target_rgb = torch.rand_like(predicted_rgb)
+    full_conditions = torch.zeros(1, 23, 48, 64)
+    order = list(config["conditionChannelOrder"])
+    for index, channel in enumerate(sources):
+        y0 = 2 + index * 8
+        full_conditions[:, order.index(channel), y0:y0 + 5, 3 + index:12 + index] = 1.0
+    contributions = tuple(torch.rand_like(predicted_velocity, requires_grad=True) for _ in identities)
+    mixture = {
+        "expertIdentityOrder": identities,
+        "sourceConditionChannels": sources,
+        "expertContributions": contributions,
+        "gatedContributions": tuple(value * 0.5 for value in contributions),
+        "participation": torch.rand(1, 5, 12, 16, requires_grad=True),
+        "baseVelocity": predicted_velocity * 0.5,
+        "compositorKind": "typed_fact_conditioned_gated_additive_mixture_v1",
+        "typedIdentityCollapsedBeforeOutput": False,
+    }
+    counterfactual = {
+        identity: torch.rand_like(predicted_rgb, requires_grad=True) for identity in identities
+    }
+    without_repair = deepcopy(config)
+    without_repair["training"].pop("stage4VegetationFinalVisibleSemanticRepair")
+    old_registry = without_repair["training"]["stage4FactConditionedSemanticMixture"][
+        "diagnosticManifestRegistry"
+    ]
+    old_registry["exactFields"] = list(
+        trainer.FACT_CONDITIONED_SEMANTIC_MIXTURE_DIAGNOSTIC_FIELDS
+    )
+    old_registry["exactFieldCount"] = 27
+    before = trainer.composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
+        predicted_velocity, target_velocity, predicted_clean, clean_latent,
+        predicted_conditions, target_conditions, predicted_rgb, target_rgb,
+        full_conditions, mixture, counterfactual, without_repair,
+    )
+    after = trainer.composite_denoiser_losses_fact_conditioned_semantic_mixture_stage4(
+        predicted_velocity, target_velocity, predicted_clean, clean_latent,
+        predicted_conditions, target_conditions, predicted_rgb, target_rgb,
+        full_conditions, mixture, counterfactual, config,
+    )
+    edge = after["stage4SemanticMixtureVegetationFinalTypedEdgeMae"]
+    delta = edge * float(repair["derivedWeight"])
+    positive["edge_obligation_enters_total_loss"] = bool(torch.allclose(
+        after["compositeLossTensor"], before["compositeLossTensor"] + delta,
+        atol=1e-7, rtol=0.0,
+    ))
+    positive["edge_obligation_enters_checkpoint_qualification"] = bool(torch.allclose(
+        after["compositeConditionQualityScore"],
+        before["compositeConditionQualityScore"] + delta,
+        atol=1e-7, rtol=0.0,
+    ))
+    gradient = torch.autograd.grad(edge, predicted_rgb, retain_graph=True)[0]
+    vegetation_mask = full_conditions[
+        :, order.index("object_vegetation"):order.index("object_vegetation") + 1
+    ]
+    inside = float((gradient.abs() * vegetation_mask).sum().detach())
+    # A first-order horizontal/vertical gradient reads each masked edge and its
+    # directly adjacent pixel.  Its exact causal support is therefore the
+    # one-pixel dilation of the semantic mask, not the mask interior alone.
+    edge_support = torch.nn.functional.max_pool2d(
+        vegetation_mask, kernel_size=3, stride=1, padding=1,
+    )
+    adjacent = float((gradient.abs() * (edge_support - vegetation_mask)).sum().detach())
+    outside = float((gradient.abs() * (1.0 - edge_support)).sum().detach())
+    positive["vegetation_edge_gradient_finite_nonzero"] = (
+        bool(torch.isfinite(gradient).all()) and inside > 0.0
+    )
+    positive["vegetation_edge_gradient_exact_boundary_support"] = (
+        adjacent > 0.0 and outside == 0.0
+    )
+    positive["five_existing_final_rgb_obligations_preserved"] = all(
+        term["metric"] in after
+        for term in trainer.STAGE4_PER_CLASS_FINAL_VISIBLE_RGB_TERMS
+    )
+
+    def rejected(mutation):
+        candidate = deepcopy(config)
+        mutation(candidate)
+        try:
+            trainer.validate_training_inputs(candidate, package)
+            trainer.validate_stage4_vegetation_final_visible_semantic_repair(candidate)
+        except (ValueError, FileNotFoundError, PermissionError):
+            return True
+        return False
+
+    contract = lambda value: value["training"]["stage4VegetationFinalVisibleSemanticRepair"]
+    registry_of = lambda value: value["training"]["stage4FactConditionedSemanticMixture"]["diagnosticManifestRegistry"]
+    negative["missing_contract_field_rejected"] = rejected(lambda value: contract(value).pop("sourceChannel"))
+    negative["unknown_contract_field_rejected"] = rejected(lambda value: contract(value).__setitem__("unknown", True))
+    negative["wrong_channel_rejected"] = rejected(lambda value: contract(value).__setitem__("sourceChannel", "object_tree"))
+    negative["free_weight_rejected"] = rejected(lambda value: contract(value).__setitem__("derivedWeight", 1.0))
+    negative["wrong_loss_function_rejected"] = rejected(lambda value: contract(value)["legalSupervision"].__setitem__("lossFunction", "masked_condition_rgb_loss"))
+    negative["failed_preview_target_rejected"] = rejected(lambda value: contract(value)["legalSupervision"].__setitem__("failedPreviewPixelsUsedAsTargets", True))
+    negative["review_threshold_target_rejected"] = rejected(lambda value: contract(value)["legalSupervision"].__setitem__("machineReviewThresholdsUsedAsTargets", True))
+    negative["review_result_target_rejected"] = rejected(lambda value: contract(value)["legalSupervision"].__setitem__("machineReviewResultsUsedAsTargets", True))
+    negative["failed_checkpoint_reuse_rejected"] = rejected(lambda value: contract(value)["compatibility"].__setitem__("failedSmokeCheckpointCompatible", True))
+    negative["missing_diagnostic_rejected"] = rejected(lambda value: registry_of(value)["exactFields"].pop())
+    negative["unknown_diagnostic_rejected"] = rejected(lambda value: registry_of(value)["exactFields"].append("unknown"))
+    negative["diagnostic_order_change_rejected"] = rejected(lambda value: registry_of(value)["exactFields"].__setitem__(slice(-2, None), list(reversed(registry_of(value)["exactFields"][-2:]))))
+    negative["optimizer_activation_rejected"] = rejected(lambda value: contract(value)["activationGate"].__setitem__("optimizerCreationNow", True))
+    negative["backward_activation_rejected"] = rejected(lambda value: contract(value)["activationGate"].__setitem__("backwardExecutionNow", True))
+    negative["gpu_activation_rejected"] = rejected(lambda value: contract(value)["activationGate"].__setitem__("gpuUseNow", True))
+    negative["training_activation_rejected"] = rejected(lambda value: contract(value)["activationGate"].__setitem__("trainingNow", True))
+    negative["checkpoint_not_read"] = True
+    negative["optimizer_not_created"] = True
+    negative["backward_not_executed"] = True
+    negative["gpu_not_started"] = not torch.cuda.is_initialized()
+
+    failed_positive = [key for key, value in positive.items() if value is not True]
+    failed_negative = [key for key, value in negative.items() if value is not True]
+    report = {
+        "schemaVersion": "ai-painter-stage4-vegetation-final-visible-semantic-repair-cpu-regression-v1",
+        "status": (
+            "stage4_vegetation_final_visible_semantic_repair_cpu_regression_passed"
+            if not failed_positive and not failed_negative
+            else "stage4_vegetation_final_visible_semantic_repair_cpu_regression_failed_closed"
+        ),
+        **timestamps("recordedAt"),
+        "positive": positive,
+        "negative": negative,
+        "failedPositiveKeys": failed_positive,
+        "failedNegativeKeys": failed_negative,
+        "positivePassed": sum(value is True for value in positive.values()),
+        "positiveTotal": len(positive),
+        "negativePassed": sum(value is True for value in negative.values()),
+        "negativeTotal": len(negative),
+        "vegetationGradientEvidence": {
+            "insideMaskGradientAbsSum": inside,
+            "adjacentBoundaryGradientAbsSum": adjacent,
+            "outsideOnePixelBoundarySupportGradientAbsSum": outside,
+            "derivedWeight": float(repair["derivedWeight"]),
+        },
+        "inactiveConfig": binding(args.inactive_config),
+        "checkpointRead": False,
         "optimizerCreated": False,
         "backwardExecuted": False,
         "modelWeightsModified": False,

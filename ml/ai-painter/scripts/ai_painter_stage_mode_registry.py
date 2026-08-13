@@ -49,6 +49,15 @@ FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_INACTIVE_STATUS = (
 FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE4_SMOKE_STATUS = (
     "owner_authorized_stage4_fact_conditioned_semantic_mixture_single_sample_gpu_smoke"
 )
+FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE0_FULL_TRAINING_STATUS = (
+    "owner_authorized_stage4_fact_conditioned_semantic_mixture_stage0_full_training"
+)
+FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE1_FULL_TRAINING_STATUS = (
+    "owner_authorized_stage4_fact_conditioned_semantic_mixture_stage1_full_training"
+)
+FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE2_FULL_TRAINING_STATUS = (
+    "owner_authorized_stage4_fact_conditioned_semantic_mixture_stage2_full_training"
+)
 SYNTHETIC_EXTENSION_TEST_STATUS = "synthetic_inactive_stage4_extension_contract_test_only"
 
 
@@ -192,6 +201,36 @@ FORMAL_MODE_REGISTRY = ModeRegistry(
             "single_sample_smoke",
             "fact_conditioned_semantic_mixture_stage4_smoke_adapter",
             "validation",
+            True,
+        ),
+        ModeSpec(
+            "fact_conditioned_semantic_mixture_stage0_full_training",
+            FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE0_FULL_TRAINING_STATUS,
+            _FACT_CONDITIONED_SEMANTIC_MIXTURE,
+            0,
+            "full_training_stage0",
+            "fact_conditioned_semantic_mixture_full_training_adapter",
+            None,
+            True,
+        ),
+        ModeSpec(
+            "fact_conditioned_semantic_mixture_stage1_full_training",
+            FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE1_FULL_TRAINING_STATUS,
+            _FACT_CONDITIONED_SEMANTIC_MIXTURE,
+            1,
+            "full_training_stage1",
+            "fact_conditioned_semantic_mixture_full_training_adapter",
+            None,
+            True,
+        ),
+        ModeSpec(
+            "fact_conditioned_semantic_mixture_stage2_full_training",
+            FACT_CONDITIONED_SEMANTIC_MIXTURE_STAGE2_FULL_TRAINING_STATUS,
+            _FACT_CONDITIONED_SEMANTIC_MIXTURE,
+            2,
+            "full_training_stage2",
+            "fact_conditioned_semantic_mixture_full_training_adapter",
+            None,
             True,
         ),
     )
